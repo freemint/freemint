@@ -1194,6 +1194,39 @@ e_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	
 	if (EXT2_ISDIR (le2cpu16 (inode->in.i_mode)))
 	{
+		COOKIE *itemp = newdirc;
+		_DIR *tmp;
+		
+		for(;;)
+		{
+			if (itemp->inode == inode->inode)
+			{
+				DEBUG (("Ext2-FS [%c]: invalid directory move", itemp->dev+'A'));
+				
+				retval = EACCES;
+				goto end_rename;
+			}
+			
+			if (itemp->inode == EXT2_ROOT_INO)
+				break;
+			
+			tmp = ext2_search_entry (itemp, "..", 2);
+			if (!tmp)
+			{
+				DEBUG (("Ext2-FS [%c]: ext2_search_entry fail in e_rename", itemp->dev+'A'));
+				
+				goto end_rename;
+			}
+			
+			retval = get_cookie (s, tmp->inode, &itemp);
+			if (retval)
+			{
+				DEBUG (("Ext2-FS [%c]: get_cookie fail in e_rename", itemp->dev+'A'));
+				
+				goto end_rename;
+			}
+		}
+		
 		if (le2cpu16 (newdirc->in.i_links_count) >= EXT2_LINK_MAX)
 		{
 			retval = EMLINK;
