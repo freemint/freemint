@@ -180,6 +180,21 @@ name2proc (const char *name)
 	return pid2proc (i);
 }
 
+static struct proc *
+getproc (long index)
+{
+	register struct proc *check = (struct proc *) index;
+	register struct proc *p;
+	
+	for (p = proclist; p; p = p->gl_next)
+	{
+		if (p == check)
+			return p;
+	}
+	
+	return NULL;
+}
+
 long _cdecl 
 proc_root (int drv, fcookie *fc)
 {
@@ -253,7 +268,7 @@ static int p_attr [NUM_QUEUES] =
 static long _cdecl 
 proc_getxattr (fcookie *fc, XATTR *xattr)
 {
-	PROC *p = (PROC *) fc->index;
+	struct proc *p = getproc (fc->index);
 	
 	xattr->nblocks = 1;
 	xattr->blksize = 1;
@@ -297,7 +312,7 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 static long _cdecl 
 proc_chown (fcookie *fc, int uid, int gid)
 {
-	PROC *p = (PROC *) fc->index;
+	struct proc *p = getproc (fc->index);
 	
 	if (!p)
 		return EACCES;
@@ -311,7 +326,7 @@ proc_chown (fcookie *fc, int uid, int gid)
 static long _cdecl
 proc_stat64 (fcookie *fc, STAT *ptr)
 {
-	PROC *p = (PROC *) fc->index;
+	struct proc *p = getproc (fc->index);
 	
 	bzero (ptr, sizeof (*ptr));
 	
@@ -409,7 +424,9 @@ proc_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 	}
 	else
 	{
-		p = (PROC *) dir->index;
+		p = getproc (dir->index);
+		if (!p) return EBADARG;
+		
 		ksprintf (buffer, sizeof (buffer), "%s.03d", p->name, p->pid);
 	}
 	
@@ -607,34 +624,7 @@ proc_open (FILEPTR *f)
 static long _cdecl 
 proc_write (FILEPTR *f, const char *buf, long nbytes)
 {
-	PROC *p = (PROC *) f->devinfo;
-#ifdef OLD_PROC_RW
-	char *where;
-	long bytes_written = 0;
-	int prot_hold;
-
-	where = (char *)f->pos;
-
-	TRACE(("proc_write to pid %d: %ld bytes to %lx", p->pid, nbytes, where));
-
-	prot_hold = mem_access_for(p, (ulong)where,nbytes);
-	if (prot_hold == 0) {
-	    DEBUG(("Can't Fwrite that memory: not all the same or not owner."));
-	    return EACCES;
-	}
-	if (prot_hold == 1) {
-	    DEBUG(("Attempt to Fwrite memory crossing a managed boundary"));
-	    return EACCES;
-	}
-
-	bytes_written = nbytes;
-	quickmovb(where, buf, nbytes);
-	cpush((void *)f->pos, bytes_written);	/* flush cached data */
-
-	/* MEMPROT: done with temp mapping (only call if temp'ed above) */
-	if (prot_hold != -1) prot_temp((ulong)f->pos,bytes_written,prot_hold);
-
-#else
+	struct proc *p = getproc (f->devinfo);
 	MEMREGION *m;
 	long where, bytes_written, txtsize;
 	int prot_hold;
@@ -806,7 +796,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 	}
 
 	bytes_written = where - f->pos;
-#endif
+
 	f->pos += bytes_written;
 	return bytes_written;
 }
@@ -814,33 +804,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 static long _cdecl 
 proc_read (FILEPTR *f, char *buf, long nbytes)
 {
-	PROC *p = (PROC *) f->devinfo;
-#ifdef OLD_PROC_RW
-	char *where;
-	long bytes_read = 0;
-	int prot_hold;
-
-	where = (char *)f->pos;
-
-	TRACE(("proc_read from pid %d: %ld bytes from %lx", p->pid, nbytes, where));
-
-	prot_hold = mem_access_for(p, (ulong)where,nbytes);
-	if (prot_hold == 0) {
-	    DEBUG(("Can't Fread that memory: not all the same."));
-	    return EACCES;
-	}
-	if (prot_hold == 1) {
-	    DEBUG(("Attempt to Fread memory crossing a managed boundary"));
-	    return EACCES;
-	}
-
-	bytes_read = nbytes;
-	quickmovb(buf, where, nbytes);
-
-	/* MEMPROT: done with temp mapping (only call if temp'ed above) */
-	if (prot_hold != -1) prot_temp((ulong)f->pos,bytes_read,prot_hold);
-
-#else
+	struct proc *p = getproc (f->devinfo);
 	MEMREGION *m;
 	long where, bytes_read, txtsize;
 	int prot_hold;
@@ -943,7 +907,7 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
 	}
 
 	bytes_read = where - f->pos;
-#endif
+
 	f->pos += bytes_read;
 	return bytes_read;
 }
@@ -967,7 +931,10 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
 static long _cdecl 
 proc_ioctl (FILEPTR *f, int mode, void *buf)
 {
-	PROC *p = (PROC *) f->devinfo;
+	struct proc *p = getproc (f->devinfo);
+	
+	if (!p)
+		return EACCES;
 	
 	switch (mode)
 	{
@@ -1276,7 +1243,10 @@ proc_lseek (FILEPTR *f, long where, int whence)
 static long _cdecl 
 proc_datime (FILEPTR *f, ushort *timeptr, int flag)
 {
-	PROC *p = (PROC *) f->devinfo;
+	struct proc *p = getproc (f->devinfo);
+	
+	if (!p)
+		return EACCES;
 	
 	switch (flag)
 	{
