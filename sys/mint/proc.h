@@ -162,6 +162,7 @@ struct proc
 # define P_FLAG_SLB	0x0002		/* Unkillable SLB */
 # define P_FLAG_SLO	0x0004		/* Flag for exec_region() */
 # define P_FLAG_SUPER	0x0008		/* Program called Super() or Supexec() */
+# define P_FLAG_BER	0x0010		/* Program wanted to record the bus error vector */
 
 	ushort	p_flag;
 	ushort	p_stat;			/* */
@@ -225,6 +226,8 @@ struct proc
 //	ulong	p_sigignore;		/* signals being ignored	*/
 //	ulong	p_sigcatch;		/* signals being caught by user	*/
 
+	ulong	berr;			/* the value the program tried to write */
+					/* to the bus error vector (see check_exc.c) */
 
 	long	_cdecl (*criticerr)(long);
 					/* critical error handler	*/

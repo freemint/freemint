@@ -150,7 +150,7 @@ struct mc68000_bus_frame
 	ulong data_reg[8];
 	ulong addr_reg[7];
 	struct mc68000_ssw ssw;
-	void *fault_address;
+	ulong fault_address;
 	ushort instruction_register;
 	ushort sr;
 	ushort *pc;
@@ -165,7 +165,7 @@ struct mc68010_bus_frame
 	ushort *pc;
 	ushort format_word;
 	struct mc68010_ssw ssw;
-	void *fault_address;
+	ulong fault_address;
 	ushort unused_1;
 	ushort data_output_buffer;
 	ushort unused_2;
@@ -187,10 +187,17 @@ struct mc68030_bus_frame_short
 	struct mc68030_ssw ssw;
 	ushort stage_c;
 	ushort stage_b;
-	void *fault_address;
+	ulong fault_address;
 	ushort int_2;
 	ushort int_3;
-	ulong data_output_buffer;
+
+	union
+	{
+		uchar byte[4];
+		ushort word[2];
+		ulong one_long;
+	} data_ouput_buffer;
+
 	ushort int_4;
 	ushort int_5;
 };
@@ -207,10 +214,17 @@ struct mc68030_bus_frame_long
 	struct mc68030_ssw ssw;
 	ushort stage_c;
 	ushort stage_b;
-	void *fault_address;
+	ulong fault_address;
 	ushort int_2;
 	ushort int_3;
-	ulong data_output_buffer;
+
+	union
+	{
+		uchar byte[4];
+		ushort word[2];
+		ulong one_long;
+	} data_output_buffer;
+
 	ushort int_4;
 	ushort int_5;
 	ushort int_6;
@@ -218,7 +232,14 @@ struct mc68030_bus_frame_long
 	ushort *stage_b_address;
 	ushort int_8;
 	ushort int_9;
-	ulong data_input_buffer;
+
+	union
+	{
+		uchar byte[4];
+		ushort word[2];
+		ulong one_long;
+	} data_input_buffer;
+
 	ushort int_10;
 	ushort int_11;
 	ushort int_12;
@@ -239,7 +260,7 @@ struct mc68040_bus_frame
 	ushort wb3s;			/* pending write-backs, crap */
 	ushort wb2s;
 	ushort wb1s;
-	void *fault_address;
+	ulong fault_address;
 	void *wb3a;
 	ulong wb3d;
 	void *wb2a;
@@ -259,17 +280,13 @@ struct mc68060_bus_frame
 	ushort sr;
 	ushort *pc;
 	ushort format_word;
-	void *fault_address;
+	ulong fault_address;
+
 	union
 	{
 		ushort *fault_pc;
 		struct mc68060_fslw;
 	} bottom;
-};
-
-struct access
-{
-	long address, size;
 };
 
 long check_bus(struct frame_zero frame);
