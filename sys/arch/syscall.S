@@ -94,31 +94,10 @@ _mint_dos:
 
 #ifdef SYSCALL_REENTRANT
 
-// Reentrant syscall handler
-//
-// Reentrant means here that we can enter the kernel again through
-// the trap handler from inside kernel space.
-// This is not neccessary for the kernel itself but rather if you want
-// to use other subsystems which use the trap#1 to enter the kernel again.
-// You can, for example,use the TOS-VDI subsystem safely and the VDI can
-// reenter the kernel through the trap handler.
-
 	tst.w	_in_kernel
-	beq	norm_gemdos
+	beq.s	norm_gemdos
 
 	movea.l	sp,a0
-	move.w	(a0),d0		| sr before the trap
-	addq.w	#2+4+2,a0	| A0 now points past the stackfram, where the params are
-
-// This should never happen. Since _in_kernel is set, this is
-// a trap done from kernel context, which always runs in supervisor
-//
-//	btst	#13,d0
-//	bne.s	mg_in_super
-//	move.l	usp,sp
-
-mg_in_super:
-// Do some simple saving of registers...
 	movem.l	d2-d7/a2-a6,-(sp)
 	lea	_dos_tab,a5
 	move.w	_dos_max,d5
@@ -196,6 +175,7 @@ _old_xbios:
 	dc.l	0
 _mint_xbios:
 
+#ifdef SYSCALL_REENTRANT
 // Reentrant syscall handler
 //
 // Reentrant means here that we can enter the kernel again through
@@ -209,24 +189,14 @@ _mint_xbios:
 	beq	norm_xbios
 
 	movea.l	sp,a0
-	move.w	(a0),d0		| sr before the trap
-	addq.w	#2+4+2,a0	| A0 now points past the stackfram, where the params are
-
-// This should never happen. Since _in_kernel is set, this is
-// a trap done from kernel context, which always runs in supervisor
-//
-//	btst	#13,d0
-//	bne.s	mg_in_super
-//	move.l	usp,sp
-
-xbios_in_super:
-// Do some simple saving of registers...
 	movem.l	d2-d7/a2-a6,-(sp)
 	lea	_xbios_tab,a5
 	move.w	_xbios_max,d5
 	bra	reentrant_trap
 
 norm_xbios:
+
+#else	//SYSCALL_REENTRANT
 
 // Kludge for Setscreen: under Falcon TOS, this
 // calls a GEMDOS function (Srealloc) and so
@@ -236,6 +206,7 @@ norm_xbios:
 
 	tst.w	_in_kernel
 	bne	LX_rom
+#endif	// SYSCALL_REENTRANT
 	btst	#5,(sp) 		// test for user/super mode
 	beq.s	LX_usr
 #ifdef ONLY030
@@ -317,37 +288,23 @@ ret:	sub.l	a0,a0			// curproc address is our sweet secret
 	dc.l	0x4d694e54		// MiNT
 _old_bios:	dc.l	0
 _mint_bios:
+
+#ifdef	SYSCALL_REENTRANT
+
 // Reentrant syscall handler
-//
-// Reentrant means here that we can enter the kernel again through
-// the trap handler from inside kernel space.
-// This is not neccessary for the kernel itself but rather if you want
-// to use other subsystems which use the trap#1 to enter the kernel again.
-// You can, for example,use the TOS-VDI subsystem safely and the VDI can
-// reenter the kernel through the trap handler.
 
 	tst.w	_in_kernel
 	beq	norm_bios
 
 	movea.l	sp,a0
-	move.w	(a0),d0		| sr before the trap
-	addq.w	#2+4+2,a0	| A0 now points past the stackfram, where the params are
-
-// This should never happen. Since _in_kernel is set, this is
-// a trap done from kernel context, which always runs in supervisor
-//
-//	btst	#13,d0
-//	bne.s	mg_in_super
-//	move.l	usp,sp
-
-bios_in_super:
-// Do some simple saving of registers...
 	movem.l	d2-d7/a2-a6,-(sp)
 	lea	_bios_tab,a5
 	move.w	_bios_max,d5
 	bra	reentrant_trap
 
 norm_bios:
+
+#else	// SYSCALL_REENTRANT
 
 //
 // Entering the kernel can be very expensive so, we take a short-cut
@@ -364,6 +321,9 @@ norm_bios:
 //
 	tst.w	_in_kernel
 	bne.s	rom_bios
+
+#endif	// SYSCALL_REENTRANT
+
 	bset	#0x07,_in_kernel
 	tst.w	_bconbdev		// is BIOS buffering on?
 	bmi	L_bios			// no// skip all this
@@ -760,80 +720,167 @@ ucret:	lea	24(sp),sp		// fix up stack
 	move.l	d0,_usrret		// save returned value
 	rts				// back to caller
 
-// Reentrant trap handling -- not complete yet
+// Reentrant syscall handler
+//
+// Implemented by Odd Skancke.
+//
+// Reentrant means here that we can enter the kernel again through
+// the trap handler from inside kernel space.
+// This is not neccessary for the kernel itself but rather if you want
+// to use other subsystems which use the trap#1 to enter the kernel again.
+// You can, for example,use the TOS-VDI subsystem safely and the VDI can
+// reenter the kernel through the trap handler.
+//
+// This piece of code needs more testing, NEW_SYSCALL not tested,
+// 68000 not tested (without ONLY030)
+//
 reentrant_trap:
+#ifndef ONLY030
+	addq.w	#2+4,a0
+	tst.w	(0x59e).w
+	beq.s	reent_shortframe
+	addq.w	#2,a0
+reent_shortframe:
+#else
+	addq.w	#2+4+2,a0
+#endif
+	// Save hardware registers (CPU/FPU)
 	tst.w	_fpu
-	beq.s	mg_fpu_saved
+	beq.s	reent_fpu_saved
 	fsave	-(sp)
 	cmp.w	#60,_mcpu+2
-	bne.s	mg_no_060
+	bne.s	reent_no_060
 	tst.b	2(sp)
-	beq.s	mg_fpu_notused
-	bra.s	mg_save_fpu
-mg_no_060:
+	beq.s	reent_fpu_notused
+	bra.s	reent_save_fpu
+reent_no_060:
 	tst.b	(sp)
-	beq.s	mg_fpu_notused
-mg_save_fpu:
+	beq.s	reent_fpu_notused
+reent_save_fpu:
 	fmovem.x fp0-fp7,-(sp)
 	fmovem.l fpcr/fpsr/fpiar,-(sp)
 	move.w	#1,-(sp)
-	bra.s	mg_fpu_saved
-mg_fpu_notused:
+	bra.s	reent_fpu_saved
+reent_fpu_notused:
 	clr.w	-(sp)
-mg_fpu_saved:
+reent_fpu_saved:
 
-// Copy parameters
-	lea	24(a0),a0
+	moveq	#0,d1
+	move.w	(a0),d1			// Function number
+	cmp.w	d5,d1			// check if within bounds
+	bcc.s	reent_erange		// Out of range
+
+	// D0 will hold the address of function to call
+	// D1 function number when staring here, indexing function tab
+	// D5 will hold byte size of parameters
+	// A0 will be placed at param_start + D5 (param_size)
+	// A5 contains address of function tab
+
+// ---------- BEGIN without NEW_SYSCALL ---------------
+#ifndef NEW_SYSCALL
+	// Fetch address of function, and copy 24 bytes of the parameters
+	// (or 32 bytes if function table == gemdos) from the original place.
+ #ifdef ONLY030
+	move.l	(a5,d1.l*4),d0
+ #else
+	add.w	d1,d1
+	add.w	d1,d1
+	move.l	(a5,d1.l),d0
+ #endif
+	beq.s	reent_nofunc
+	moveq	#24,d5
 	cmpa.l	#_dos_tab,a5
-	bne.s	mg_only_24
-	addq.w	#8,a0
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-mg_only_24:
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
+	bne.s	reent_24
+	addq.w	#8,d5
+reent_24:
 
-	//lea	_dos_tab,a5
-	//move.w	_dos_max,d5
-
-	move.w	(sp)+,d0
-	cmp.w	d5,d0
-	bhi.s	mg_enosys
-
-#ifdef NEW_SYSCALL
-#error not fully implemented here!
-#error adjust parameter copying etc.
-	move.l	(a5,d0.w*8),d0
+// ---------- BEGIN without NEW_SYSCALL ---------------
 #else
-	move.l	(a5,d0.w*4),d0
-#endif
-	beq.s	mg_enosys
+// ---------- BEGIN with NEW_SYSCALL ------------------
+// Ozk:	When writing this routine, I didnt know if the
+//	size of params in the function table includes
+//	the function number. If not, this code needs
+//	to be modified to reflect that, it now thinks
+//	param size includes function number!
+ #ifdef ONLY030
+	move.l	(a5,d1.l*8),d0
+ #else
+	add.w	d1,d1
+	add.w	d1,d1
+	add.w	d1,d1
+	move.l	(a5,d1.l),d0
+ #endif
+	beq.s	reent_nofunc
+ #ifdef	ONLY030
+	move.w	6(a5,d1.l*8),d5
+ #else
+ 	move.w	6(a5,d1.l),d5
+ #endif
+#endif	//NEW_SYSCALL
+// ------------ END with NEW_SYSCALL ------------------
+	add.w	d5,a0		// A0 now points to the last parameter (first one pushed)
+	subq.w	#2,d5		// Skip the Function number
+	move.w	d5,d1
+	beq.s	reent_noargs	// No args (only function number)
+	lsr.w	#1,d1		// Turn bytes into words
+	subq.w	#1,d1
+reent_cpyargs:
+	move.w	-(a0),-(sp)
+	dbra	d1,reent_cpyargs
+reent_noargs:
 
-	move.l	d0,a0
+	move.l	d0,a0		// Function address
 	jsr	(a0)
-mg_out:
-	lea	22(sp),sp
-	cmpa.l	#_dos_tab,a5
-	bne.s	mg_out_only_24
-	addq.w	#8,sp
-mg_out_only_24:
+	moveq	#0,d1		// Clear D1 -- we're not gonna call anything else
+reent_out:
+	add.w	d5,sp		// Correct stack
+	// Unstack all cpu/fpu registers...
 	tst.w	_fpu
-	beq.s	mg_out_no_fpu
+	beq.s	reent_out_no_fpu
 	tst.w	(sp)+
-	beq.s	mg_no_fpu_saved
+	beq.s	reent_no_fpu_saved
 	fmovem.l (sp)+,fpcr/fpsr/fpiar
 	fmovem.x (sp)+,fp0-fp7
-mg_no_fpu_saved:
+reent_no_fpu_saved:
 	frestore (sp)+
-
-mg_out_no_fpu:
+reent_out_no_fpu:
 	movem.l	(sp)+,d2-d7/a2-a6
+	tst.l	d1		// If D1 is not NULL, it is the address of some old trap
+	bne.s	reent_call_rom
 	rte
+reent_call_rom:
+	move.l	d1,a0
+	jmp	(a0)
 
-mg_enosys:
+// ---- What to do when function number is outside function range
+reent_erange:
+	moveq	#0,d5
+	cmpa.l	#_xbios_tab,a5
+	beq.s	reent_rom_xbios
+	bra.s	reent_enosys
+
+// ---- What to do when there is no funcion installed
+// ---- in the function table
+reent_nofunc:
+	moveq	#0,d5
+	cmpa.l	#_dos_tab,a5
+	beq.s	reent_rom_dos
+	cmpa.l	#_bios_tab,a5
+	beq.s	reent_rom_bios
+	cmpa.l	#_xbios_tab,a5
+	beq.s	reent_rom_xbios
+reent_enosys:
 	moveq	#-32,d0
-	bra.s	mg_out
+	moveq	#0,d1
+	bra.s	reent_out
+
+// ---- set D1 to point to the old trap entry
+reent_rom_bios:
+	move.l	_old_bios,d1
+	bra.s	reent_out
+reent_rom_xbios:
+	move.l	_old_xbios,d1
+	bra.s	reent_out
+reent_rom_dos:
+	move.l	_old_dos,d1
+	bra.s	reent_out
