@@ -22,11 +22,12 @@
 # include "time.h"
 
 # include "biosfs.h"
+# include "kernfs.h"
 # include "nullfs.h"
 # include "pipefs.h"
 # include "procfs.h"
+# include "ramfs.h"
 # include "shmfs.h"
-# include "kernfs.h"
 
 
 static long	_cdecl uni_root		(int drv, fcookie *fc);
@@ -148,9 +149,29 @@ unifs_init (void)
 		
 		switch (i)
  		{
+			case BIOSDRV:
+				strcpy (u->name, "dev");
+				u->fs = &bios_filesys;
+				break;
+			
+			case PIPEDRV:
+				strcpy (u->name, "pipe");
+				u->fs = &pipe_filesys;
+				break;
+			
 			case PROCDRV:
 				strcpy (u->name, "proc");
 				u->fs = &proc_filesys;
+				break;
+			
+			case RAM_DRV:
+				strcpy (u->name, "ram");
+				u->fs = &ramfs_filesys;
+				break;
+			
+			case SHM_DRV:
+				strcpy (u->name, "shm");
+				u->fs = &shm_filesys;
 				break;
 # if WITH_KERNFS
 			case KERNDRV:
@@ -158,21 +179,10 @@ unifs_init (void)
 				u->fs = &kern_filesys;
 				break;
 # endif
-			case PIPEDRV:
-				strcpy (u->name, "pipe");
-				u->fs = &pipe_filesys;
-				break;
-			case BIOSDRV:
-				strcpy (u->name, "dev");
-				u->fs = &bios_filesys;
-				break;
 			case UNIDRV:
 				(u-1)->next = u->next;	/* skip this drive */
 				break;
-			case SHM_DRV:
-				strcpy (u->name, "shm");
-				u->fs = &shm_filesys;
-				break;
+			
 			default:
 				/* drives A..Z1..6 */
 				u->name[0] = i + ((i < 26) ? 'a' : '1' - 26);
