@@ -34,7 +34,7 @@ COBJS = \
 	share.c \
 	textwin.c \
 	vt.c \
-	vt100.c \
+	twterm.c \
 	vt52.c \
 	window.c
 

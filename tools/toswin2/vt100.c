@@ -1674,19 +1674,21 @@ static void escy_putch(TEXTWIN *v, int c)
 }
 
 /*
- * vt100_putch(v, c): put character 'c' on screen 'v'. This is the default
+ * Put character C on screen TW. This is the default
  * for when no escape, etc. is active
  */
-void vt100_putch(TEXTWIN *v, int c)
+void 
+vt100_putch (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
+	int c;
 
 #ifdef DUMP
-dump(c);
+	dump(c);
 #endif
 
-	cx = v->cx; 
-	cy = v->cy;
+	cx = tw->cx; 
+	cy = tw->cy;
 	curs_off(v);
 
 	c &= 0x00ff;
