@@ -300,8 +300,19 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	struct proc *p = NULL;
 	int type = 0;
 
-	DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
-		c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
+#if GENERATE_DIAGS
+	if (caller)
+	{
+		DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
+			c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
+	}
+	else
+	{
+		DIAG((D_shel, caller, "launch for non AES process (pid %ld): 0x%x,%d,%d,%lx,%lx",
+			p_getpid(), mode, wisgr, wiscr, parm, p_tail));
+	}
+#endif
+
 
 	if (!parm)
 		return -1;
@@ -391,15 +402,31 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	}
 	else
 	{
-		/* no drive, no path, use the caller's */
+		if (caller)
+		{
+			/* no drive, no path, use the caller's */
 
-		DIAG((D_shel, 0, "make cmd: '%s' + '%s'", caller->home_path, pcmd));
+			DIAG((D_shel, 0, "make cmd: '%s' + '%s'", caller->home_path, pcmd));
 
-		strcpy(cmd, caller->home_path);
-		if (*pcmd != '\\' && *(caller->home_path + strlen(caller->home_path) - 1) != '\\')
-			strcat(cmd, "\\");
-		strcat(cmd, pcmd);	
+			strcpy(cmd, caller->home_path);
+			if (*pcmd != '\\' && *(caller->home_path + strlen(caller->home_path) - 1) != '\\')
+				strcat(cmd, "\\");
+			strcat(cmd, pcmd);
+		}
+		else
+		{
+			int driv = d_getdrv();
 
+			cmd[0] = (char)driv + 'A';
+			cmd[1] = ':';
+			d_getcwd(cmd + 2, driv + 1, sizeof(cmd) - 3);
+
+			DIAG((D_shel, 0, "make cmd: '%s' + '%s'", cmd, pcmd));
+
+			if (*pcmd != '\\' && *(cmd + strlen(cmd) - 1) != '\\')
+				strcat(cmd, "\\");
+			strcat(cmd, pcmd);
+		}
 		DIAG((D_shel, 0, "cmd appended: '%s'", cmd));
 	}
 
@@ -633,8 +660,18 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(3,1,2)
 
-	DIAG((D_shel, NULL, "shel_write(0x%d,%d,%d) for %s",
-		wdoex, wisgr, wiscr, client->name));
+#if GENERATE_DIAGS
+	if (client)
+	{
+		DIAG((D_shel, NULL, "shel_write(0x%d,%d,%d) for %s",
+			wdoex, wisgr, wiscr, client->name));
+	}
+	else
+	{
+		DIAG((D_shel, NULL, "shel_write(0x%d,%d,%d) for non AES process (pid %ld)",
+			wdoex, wisgr, wiscr, p_getpid()));
+	}
+#endif	
 
 	if ((wdoex & 0xff) < 4)
 	{
@@ -738,7 +775,8 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* notify that app understands AP_TERM */
 			case 9:
 			{
-				client->apterm = (wisgr & 1) != 0;
+				if (client)
+					client->apterm = (wisgr & 1) != 0;
 				break;
 			}
 
@@ -787,19 +825,40 @@ XA_shell_read(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	char *name = (char *)pb->addrin[0];
 	char *tail = (char *)pb->addrin[1];
+	char *myname, *mytail;
+	struct shel_info *info = 0;
 	int f;
 
 	CONTROL(0,1,2)
 
-	strcpy(name, *client->cmd_name ? client->cmd_name : "\\");
-	
-	for (f = 0; f < client->cmd_tail[0] + 1; f++)
-		tail[f] = client->cmd_tail[f];
+	if (client)
+	{
+		myname = client->cmd_name;
+		mytail = client->cmd_tail;
+	}
+	else
+	{
+		info = lookup_extension(NULL, XAAES_MAGIC_SH);
+		if (info)
+		{
+			myname = info->cmd_name;
+			mytail = info->cmd_tail;
+		}
+	}
+	if (!client && !info)
+	{
+		pb->intout[0] = 0;
+	}
+	else
+	{
+		strcpy(name, *myname ? myname : "\\");
+		
+		for (f = 0; f < mytail[0] + 1; f++)
+			tail[f] = mytail[f];
+		tail[f] = 0;
 
-	tail[f] = 0;
-	
-	pb->intout[0] = 1;
-
+		pb->intout[0] = 1;
+	}
 	DIAG((D_shel, client, "shel_read: n='%s', t=%d'%s'",
 		pb->addrin[0], *(char *)pb->addrin[1], (char *)pb->addrin[1]+1));
 
