@@ -22,7 +22,7 @@
  * 
  * 
  * begin:	1998-02-01
- * last change:	2000-01-06
+ * last change:	2000-06-21
  * 
  * Author: Frank Naumann <fnaumann@freemint.de>
  * 
@@ -32,8 +32,11 @@
  * 
  * changes since last version:
  * 
- * 2000-06-13:	(v1.21)
+ * 2000-06-21:	(v1.21)
  * 
+ * - fix: splitted of delete_cookie into real delete and unlink
+ *        to handle Unix style unlinking; changes over the src to
+ *        reflect this, cleaned up some functions
  * - fix: get_bpb don't complain about non FAT DOS partitions
  * 
  * 2000-04-28:	(v1.20)
@@ -788,7 +791,7 @@ struct cookie
 	char	*lastlookup;	/* last lookup fail cache, must be kmalloc'ed */
 	long	nextslot;	/* next free slot in directories */
 	ushort	slots;		/* number of VFAT slots */
-	ushort	res;		/* alignment */	
+	ushort	unlinked;	/* entry is unlinked */	
 };
 
 /* internal eXtended bpb */
@@ -961,7 +964,10 @@ static long	__nextdir	(register oDIR *dir, char *name, long size);
 
 static long	search_cookie	(COOKIE *dir, COOKIE **found, const char *name, int mode);
 static long	write_cookie	(COOKIE *c);
-static long	delete_cookie	(COOKIE *c, long mode); /* mode == 0 -> don't delete cluster chain */
+static void	delete_cookie	(COOKIE *c);
+static void	rel_cookie	(COOKIE *c);
+static long	unlink_cookie_i	(COOKIE *c, int disc_only);
+INLINE long	unlink_cookie	(COOKIE *c);
 static long	make_cookie	(COOKIE *dir, COOKIE **new, const char *name, int attr);
 
 
@@ -1493,22 +1499,15 @@ c_hash_remove  (register COOKIE *c)
 {
 	register const ulong hashval = c_hash_hash (c->name);
 	register COOKIE **temp = & ctable [hashval];
-	register long flag = 1;
 	
 	while (*temp)
 	{
 		if (*temp == c)
 		{
 			*temp = c->next;
-			flag = 0;
 			break;
 		}
 		temp = &(*temp)->next;
-	}
-	
-	if (flag)
-	{
-		FAT_ALERT (("fatfs.c: remove from hashtable fail in: c_hash_remove (addr = %lx, %s)", c, c->name));
 	}
 }
 
@@ -3890,6 +3889,14 @@ write_cookie (COOKIE *c)
 		return EACCES;
 	}
 	
+	if (c->unlinked)
+	{
+		/* entry unlinked but until now it's in use */
+		
+		FAT_DEBUG (("write_cookie: skip unlinked entry"));
+		return E_OK;
+	}
+	
 	/* open the dir */
 	r = __opendir (&dir, c->dir, c->dev);
 	
@@ -3912,25 +3919,52 @@ write_cookie (COOKIE *c)
 	return E_OK;
 }
 
+static void
+delete_cookie (COOKIE *c)
+{
+	if (c->dir == 0)
+		FAT_ALERT (("delete_cookie: leave failure (root)"));
+	
+	if (c->links > 1)
+		FAT_ALERT (("delete_cookie: leave failure (cookie in use)"));
+	
+	/* delete the cluster-chain */
+	if (c->stcl)
+		del_chain (c->stcl, c->dev);
+	
+	c_del_cookie (c);
+	
+	FAT_DEBUG (("delete_cookie: leave ok"));
+}
+
+void
+rel_cookie (COOKIE *c)
+{
+	c->links--;
+	
+	if (!c->links)
+	{
+		if (c->unlinked)
+		{
+			DEBUG (("FATFS [%c]: rel_cookie: free deleted cookie %lx", c->dev+'A', c));
+			delete_cookie (c);
+		}
+	}
+}
+
 static long
-delete_cookie (COOKIE *c, long mode)
+unlink_cookie_i (COOKIE *c, int disc_only)
 {
 	oDIR dir;
 	register long r;
 	
-	FAT_DEBUG (("delete_cookie: enter (dir = %li, offset = %i, dev = %i)", c->dir, c->offset, c->dev));
+	FAT_DEBUG (("unlink_cookie: enter (dir = %li, offset = %i, dev = %i)", c->dir, c->offset, c->dev));
 	
 	if (c->dir == 0)
 	{
 		/* ROOT */
 		
-		FAT_DEBUG (("delete_cookie: leave failure (root)"));
-		return EACCES;
-	}
-	
-	if (c->links > 1)
-	{
-		FAT_DEBUG (("delete_cookie: leave failure (cookie in use)"));
+		FAT_DEBUG (("unlink_cookie: leave failure (root)"));
 		return EACCES;
 	}
 	
@@ -3943,16 +3977,13 @@ delete_cookie (COOKIE *c, long mode)
 	{
 		__closedir (&dir);
 		
-		FAT_DEBUG (("delete_cookie: leave failure (__seekdir)"));
+		FAT_DEBUG (("unlink_cookie: leave failure (__seekdir)"));
 		return r;
 	}
 	
 	/* invalidate the FAT entry */
 	dir.info->name[0] = (char) 0xe5;
 	__updatedir (&dir);
-	
-	/* delete the cluster-chain */
-	if (mode && c->stcl) (void) del_chain (c->stcl, c->dev);
 	
 	if (c->slots)
 	{
@@ -3967,10 +3998,22 @@ delete_cookie (COOKIE *c, long mode)
 	}
 	
 	__closedir (&dir);
-	c_del_cookie (c);
 	
-	FAT_DEBUG (("delete_cookie: leave ok"));
+	/* remove from hash table */
+	c_hash_remove (c);
+	
+	if (!disc_only)
+		/* mark deleted */
+		c->unlinked = 1;
+	
+	FAT_DEBUG (("unlink_cookie: leave ok"));
 	return E_OK;
+}
+
+INLINE long
+unlink_cookie (COOKIE *c)
+{
+	return unlink_cookie_i (c, 0);
 }
 
 INLINE void
@@ -4081,14 +4124,12 @@ search_free (oDIR *dir, long *pos, long slots)
 static long
 make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 {
+	COOKIE save;
 	oDIR odir;
 	char shortname[FAT_NAMEMAX];
 	char *full;
-# if 0
-	long pos = dir->nextslot;
-# else
-	long pos = 0;
-# endif
+	int rename = *new ? 1 : 0;
+	long pos = 0; /* dir->nextslot; */
 	long vfat;
 	long slot;
 	long r;
@@ -4126,18 +4167,25 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 	if (r == E_OK)
 		r = search_free (&odir, &pos, vfat ? vfat + 1 : 1);
 	
+	/* create fullname, so it can't fail later if written to disc */
 	full = fullname (dir, name);
-	*new = c_get_cookie (full);
+	
+	if (rename)
+		/* backup cookie */
+		save = **new;
+	else
+		/* get new cookie */
+		*new = c_get_cookie (full);
 	
 	/* if anything goes wrong we leave here */
 	if (r || !full || !*new)
 	{
 		FAT_DEBUG (("make_cookie: leave failure (r = %li)", r));
 		
-		if (*new)
-		{
+		if (rename)
+			kfree (full);
+		else if (*new)
 			c_del_cookie (*new);
-		}
 		
 		/* close directory */
 		__closedir (&odir);
@@ -4189,8 +4237,14 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 			{
 				FAT_DEBUG (("make_cookie: leave failure (__seekdir = %li)", r));
 				
-				/* remove from cache */
-				c_del_cookie (*new);
+				if (rename)
+				{
+					**new = save;
+					kfree (full);
+				}
+				else
+					/* remove from cache */
+					c_del_cookie (*new);
 				
 				/* close directory */
 				__closedir (&odir);
@@ -4202,28 +4256,62 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 		}
 	}
 	
-	/* now make the FAT entry
-	 */
-	(*new)->info.attr = attr;
-	(*new)->info.lcase = 0;
-	(*new)->info.ctime_ms = 0;
-	(*new)->info.ctime = cpu2le16 (timestamp);
-	(*new)->info.cdate = cpu2le16 (datestamp);
-	(*new)->info.adate = (*new)->info.cdate;
-	(*new)->info.stcl_fat32 = 0;
-	(*new)->info.time = (*new)->info.ctime;
-	(*new)->info.date = (*new)->info.cdate;
-	(*new)->info.stcl = 0;
-	(*new)->info.flen = 0;
+	if (rename)
+	{
+		/* rename mode */
+		
+		/* unlink name on disc only */
+		r = unlink_cookie_i (*new, 1);
+		if (r)
+		{
+			**new = save;
+			kfree (full);
+			
+			return r;
+		}
+		
+		/* clear negative lookup cache */
+		if ((*new)->lastlookup)
+		{
+			kfree ((*new)->lastlookup);
+			(*new)->lastlookup = NULL;
+		}
+		
+		/* and release old name */
+		kfree ((*new)->name);
+		
+		/* update cookie members */
+		(*new)->name = full;
+		(*new)->links++;
+		(*new)->nextslot = 0;
+		
+		/* and finally install new path in hash table */
+		c_hash_install (*new);
+	}
+	else
+	{
+		/* create mode */
+		
+		(*new)->info.attr = attr;
+		(*new)->info.lcase = 0;
+		(*new)->info.ctime_ms = 0;
+		(*new)->info.ctime = cpu2le16 (timestamp);
+		(*new)->info.cdate = cpu2le16 (datestamp);
+		(*new)->info.adate = (*new)->info.cdate;
+		(*new)->info.stcl_fat32 = 0;
+		(*new)->info.time = (*new)->info.ctime;
+		(*new)->info.date = (*new)->info.cdate;
+		(*new)->info.stcl = 0;
+		(*new)->info.flen = 0;
+		
+		(*new)->dev = dir->dev;
+		(*new)->rdev = dir->dev;
+		(*new)->stcl = 0;
+		(*new)->flen = 0;
+	}
 	
-	/* validate the cookie
-	 */
-	(*new)->dev = dir->dev;
-	(*new)->rdev = dir->dev;
 	(*new)->dir = dir->stcl;
 	(*new)->offset = pos;
-	(*new)->stcl = 0;
-	(*new)->flen = 0;
 	(*new)->slots = vfat;
 	
 	*(odir.info) = (*new)->info;
@@ -5636,7 +5724,7 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 					bio_MARK_MODIFIED ((&bio), u);
 					bio_SYNC_DRV ((&bio), DI (c->dev));
 					
-					new->links--;
+					rel_cookie (new);
 					
 					FAT_DEBUG (("fatfs_mkdir: leave ok"));
 					return E_OK;
@@ -5660,7 +5748,8 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 			FAT_DEBUG (("fatfs_mkdir: leave failure (nextcl = %li)", r));
 		}
 		
-		(void) delete_cookie (new, 1);
+		unlink_cookie (new);
+		rel_cookie (new);
 	}
 	else /* if (r == E_OK) */
 	{
@@ -5693,7 +5782,7 @@ fatfs_rmdir (fcookie *dir, const char *name)
 		
 		if (r)
 		{
-			(void) fatfs_release (&(dirh.fc));
+			fatfs_release (&(dirh.fc));
 			
 			FAT_DEBUG (("fatfs_rmdir: leave failure (fatfs_opendir = %li)", r));
 			return r;
@@ -5721,22 +5810,20 @@ fatfs_rmdir (fcookie *dir, const char *name)
 			}
 		}
 		
-		(void) fatfs_closedir (&dirh);
+		fatfs_closedir (&dirh);
 		
-		r = delete_cookie ((COOKIE *) dirh.fc.index, 1);
-		if (r == 0)
+		r = unlink_cookie ((COOKIE *) dirh.fc.index);
+		if (r)
 		{
-			bio_SYNC_DRV ((&bio), DI (dir->dev));
-			
-			FAT_DEBUG (("fatfs_rmdir: leave ok"));
-			return E_OK;
+			FAT_DEBUG (("fatfs_rmdir: leave failure (unlink_cookie = %li)", r));
 		}
 		else
 		{
-			(void) fatfs_release (&(dirh.fc));
-			
-			FAT_DEBUG (("fatfs_rmdir: leave failure (delete_cookie = %li)", r));
+			FAT_DEBUG (("fatfs_rmdir: leave ok"));
 		}
+		
+		fatfs_release (&(dirh.fc));
+		bio_SYNC_DRV ((&bio), DI (dir->dev));
 	}
 	else
 	{
@@ -5785,7 +5872,7 @@ fatfs_creat (fcookie *dir, const char *name, unsigned mode, int attrib, fcookie 
 static long _cdecl
 fatfs_remove (fcookie *dir, const char *name)
 {
-	COOKIE *file;
+	COOKIE *c;
 	long r;
 	
 	FAT_DEBUG (("fatfs_remove [%s]: enter (%s)", ((COOKIE *) dir->index)->name, name));
@@ -5793,23 +5880,21 @@ fatfs_remove (fcookie *dir, const char *name)
 	if (RDONLY (dir->dev))
 		return EROFS;
 	
-	r = search_cookie ((COOKIE *) dir->index, &file, name, 0);
+	r = search_cookie ((COOKIE *) dir->index, &c, name, 0);
 	if (r == E_OK)
 	{
-		r = delete_cookie (file, 1);
-		if (r == E_OK)
+		r = unlink_cookie (c);
+		if (r)
 		{
-			bio_SYNC_DRV ((&bio), DI (dir->dev));
-			
-			FAT_DEBUG (("fatfs_remove: leave ok"));
-			return E_OK;
+			FAT_DEBUG (("fatfs_remove: leave failure (unlink_cookie = %li)", r));
 		}
 		else
 		{
-			file->links--;
-			
-			FAT_DEBUG (("fatfs_remove: leave failure (delete_cookie)"));
+			FAT_DEBUG (("fatfs_remove: leave ok"));
 		}
+		
+		rel_cookie (c);
+		bio_SYNC_DRV ((&bio), DI (dir->dev));
 	}
 	else
 	{
@@ -5919,13 +6004,15 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		return r;
 	}
 	
+# if 0
 	if (old->links > 1)
 	{
-		old->links--;
+		rel_cookie (old);
 		
 		FAT_DEBUG (("fatfs_rename: leave failure (cookie in use)"));
 		return EACCES;
 	}
+# endif
 	
 	if (old->info.attr & FA_DIR)
 	{
@@ -5941,7 +6028,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 				{
 					if (c->links)
 					{
-						old->links--;
+						rel_cookie (old);
 						
 						FAT_DEBUG (("fatfs_rename: leave failure (can't remove subcookies)"));
 						return EACCES;
@@ -5978,7 +6065,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		r = make_shortname (oldd, newname, shortname);
 		if (r)
 		{
-			old->links--;
+			rel_cookie (old);
 			return r;
 		}
 		
@@ -5993,7 +6080,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			name = fullname (oldd, shortname);
 			if (!name)
 			{
-				old->links--;
+				rel_cookie (old);
 				
 				FAT_DEBUG (("fatfs_rename: leave failure (out of memory)"));
 				return ENOMEM;
@@ -6020,26 +6107,64 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		/* update data on disk */
 		r = write_cookie (old);
 		
-		old->links--;
+		rel_cookie (old);
 		bio_SYNC_DRV ((&bio), DI (old->dev));
 	}
 	else
 	{
+# if 1
 		/* normal renaming
-		 * create a new entry and delete the old
 		 * 
 		 * if a directory is moved the '..' entry must be
 		 * updated
 		 */
 		
-		COOKIE *new;
+		FAT_DEBUG (("fatfs_rename: normal method"));
 		
-		FAT_DEBUG (("fatfs_rename: new entry method"));
+		r = make_cookie (newd, &old, newname, old->info.attr);
+		
+		rel_cookie (old);
+		if (r) return r;
+		
+		if ((old->info.attr & FA_DIR) && !COOKIE_EQUAL (olddir, newdir))
+		{
+			UNIT *u;
+			
+			u = bio_data_read (old->dev, DI (old->dev), C2S (old->stcl, old->dev), CLUSTSIZE (old->dev));
+			if (u)
+			{
+				register _DIR *info = (_DIR *) u->data;
+				
+				info++;
+				
+				if (old->dir > 1)	PUT_STCL (info, old->dev, old->dir);
+				else			PUT_STCL (info, old->dev, 0);
+				
+				bio_MARK_MODIFIED ((&bio), u);
+			}
+			else
+			{
+				FAT_ALERT (("FATFS [%c]: can't update '..' in directory rename; possible filesystem corruption!", old->dev+'A'));
+			}
+		}
+		
+		rel_cookie (old);
+		bio_SYNC_DRV ((&bio), DI (old->dev));
+# else
+		/* normal renaming
+		 * 
+		 * if a directory is moved the '..' entry must be
+		 * updated
+		 */
+		
+		COOKIE *new = NULL;
+		
+		FAT_DEBUG (("fatfs_rename: normal method"));
 		
 		r = make_cookie (newd, &new, newname, old->info.attr);
 		if (r)
 		{
-			old->links--;
+			rel_cookie (old);
 			return r;
 		}
 		
@@ -6057,11 +6182,15 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		new->stcl = old->stcl;
 		new->flen = old->flen;
 		
+		/* mark old cookie as free */
+		old->info.stcl = old->stcl = 0;
+		old->info.flen = old->flen = 0;
+		
 		r = write_cookie (new);
 		if (r)
 		{
-			old->links--;
-			/* new->links--; */
+			rel_cookie (old);
+			/* rel_cookie (new); */
 			
 			/* ALERT about to run fsck? */
 			return r;
@@ -6089,10 +6218,13 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			}
 		}
 		
-		r = delete_cookie (old, 0);
+		r = unlink_cookie (old);
 		
-		new->links--;
+		rel_cookie (old);
+		rel_cookie (new);
+		
 		bio_SYNC_DRV ((&bio), DI (new->dev));
+# endif
 	}
 	
 	FAT_DEBUG (("fatfs_rename: leave %s, r = %li", r ? "failure" : "ok", r));
@@ -6260,7 +6392,7 @@ fatfs_closedir (DIR *dirh)
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	
 	__closedir ((oDIR *) dirh->fsstuff);
-	c->links--;
+	rel_cookie (c);
 	
 	FAT_DEBUG (("fatfs_closedir [%s]: ok (links = %li)", c->name, c->links));
 	return E_OK;
@@ -6490,27 +6622,31 @@ fatfs_symlink (fcookie *dir, const char *name, const char *to)
 	
 	f.flags = O_TRUNC | O_WRONLY;
 	f.links = 0;
+	
 	r = fatfs_open (&f);
 	if (r)
 	{
-		delete_cookie ((COOKIE *) f.fc.index, 1);
+		unlink_cookie ((COOKIE *) f.fc.index);
 		
 		FAT_DEBUG (("fatfs_symlink: leave failure (open = %li)", r));
-		return r;
+	}
+	else
+	{
+		linklen = strlen (to) + 1;
+		if (linklen & 1)
+			linklen += 1;
+		
+		fatfs_write (&f, (char *) &linklen, 2);
+		fatfs_write (&f, to, linklen - 1);
+		fatfs_write (&f, "\0", 1);
+		fatfs_close (&f, 0);
+		
+		FAT_DEBUG (("fatfs_symlink: leave ok"));
 	}
 	
-	linklen = strlen (to) + 1;
-	if (linklen & 1) linklen += 1;
+	fatfs_release (&(f.fc));
 	
-	(void) fatfs_write (&f, (char *) &linklen, 2);
-	(void) fatfs_write (&f, to, linklen - 1);
-	(void) fatfs_write (&f, "\0", 1);
-	(void) fatfs_close (&f, 0);
-	
-	(void) fatfs_release (&(f.fc));
-	
-	FAT_DEBUG (("fatfs_symlink: leave ok"));
-	return E_OK;
+	return r;
 }
 
 static long _cdecl
@@ -6661,14 +6797,10 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				if (r) return r;
 				
 				usage->blocksize = buf [2] * buf [3];
-# ifdef __GNUC__
 				usage->blocks = buf [1];
 				usage->free_blocks = buf [0];
 				usage->inodes = FS_UNLIMITED;
 				usage->free_inodes = FS_UNLIMITED;
-# else
-# error 			/* FIXME: PureC doesn't know 'long long' */
-# endif
 			}
 			
 			return E_OK;
@@ -6885,7 +7017,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if (r == E_OK)
 			{
 				r = __FUTIME (c, (ushort *) arg);
-				c->links--;
+				rel_cookie (c);
 			}
 			
 			FAT_DEBUG (("fatfs_fscntl: leave (FUTIME) (r = %li)", r));
@@ -6900,7 +7032,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if (r == E_OK)
 			{
 				r = __FTRUNCATE (c, arg);
-				c->links--;
+				rel_cookie (c);
 			}
 			
 			FAT_DEBUG (("fatfs_fscntl: leave (FTRUNCATE) (r = %li)", r));
@@ -6973,8 +7105,7 @@ fatfs_release (fcookie *fc)
 	register long links = c->links;
 # endif
 	
-	if (c->links)
-		c->links--;
+	rel_cookie (c);
 	
 	FAT_DEBUG (("fatfs_release [%s]: ok (c->dev = %i, c->links = %li -> %li)", c->name, c->dev, links, c->links));
 	return E_OK;
@@ -7845,7 +7976,7 @@ fatfs_close (FILEPTR *f, int pid)
 		/* free the extra info */
 		kfree ((FILE *) f->devinfo);
 		
-		c->links--;
+		rel_cookie (c);
 	}
 	
 	bio_SYNC_DRV ((&bio), DI (c->dev));
@@ -7997,11 +8128,12 @@ fatfs_dump_hashtable (void)
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
 			(void) ksprintf (buf, buflen,
-				"nr: %li\tlinks = %li\tdev = %i\tname = %s\r\n",
+				"nr: %li\tlinks = %li\tdev = %i\tname = %s %s\r\n",
 				i,
 				cookies[i].links,
 				cookies[i].dev,
-				cookies[i].name
+				cookies[i].name,
+				cookies[i].unlinked ? "[unlinked]" : ""
 			);
 			(*f->dev->write)(f, buf, strlen (buf));
 		}
