@@ -795,16 +795,15 @@ do_rootwind_msg(
 			
 			if (get_desktop()->owner == to && widg->display)
 			{
-				//if (lock_screen(to, true, NULL, 3))
-				//{
+				if (to != C.Aes)
 					lock_screen(to, false, NULL, 3);
-					hidem();
-					set_clip((RECT *)&msg[4]);
-					widg->display(0, root_window, widg);
-					clear_clip();
-					showm();
+				hidem();
+				set_clip((RECT *)&msg[4]);
+				widg->display(0, root_window, widg);
+				clear_clip();
+				showm();
+				if (to != C.Aes)
 					unlock_screen(to, 4);
-				//}
 			}
 			break;
 		}

@@ -514,6 +514,12 @@ app_in_front(enum locks lock, struct xa_client *client)
 	}
 }
 
+bool
+is_infront(struct xa_client *client)
+{
+	return (client == APP_LIST_START ? true : false);
+}
+
 void
 set_active_client(enum locks lock, struct xa_client *client)
 {
