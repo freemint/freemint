@@ -101,9 +101,14 @@ gs_xlate_error (int err, const char *funcname)
 			break;
 	}
 	
+# ifdef GS_DEBUG
 	if (funcname)
+	{
+		struct get_err_text_param p = { ret };
 		DEBUG (("%s() returns %i (%s)",
-			funcname, ret, do_get_err_text (ret)));
+			funcname, ret, do_get_err_text (p)));
+	}
+# endif
 	
 	return ret;
 }
