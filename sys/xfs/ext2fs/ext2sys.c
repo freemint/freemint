@@ -28,9 +28,13 @@
 
 # include "ext2sys.h"
 
-# include <mint/endian.h>
-# include <mint/file.h>
-# include <mint/dcntl.h>
+# include "mint/dcntl.h"
+# include "mint/emu_tos.h"
+# include "mint/endian.h"
+# include "mint/file.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
+# include "mint/stat.h"
 
 # include "ext2dev.h"
 # include "inode.h"

@@ -25,6 +25,8 @@
 # include "global.h"
 # include "version.h"
 
+# include "mint/dcntl.h"
+
 
 ushort native_utc = 0;
 

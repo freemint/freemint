@@ -16,6 +16,8 @@
 # include "nfssys.h"
 # include "version.h"
 
+# include "mint/dcntl.h"
+
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR)
 # define MSG_BUILDDATE	__DATE__

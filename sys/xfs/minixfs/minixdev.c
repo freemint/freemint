@@ -12,6 +12,8 @@
 # include "minixdev.h"
 # include "minixsys.h"
 
+# include "mint/ioctl.h"
+
 # include "bitmap.h"
 # include "inode.h"
 # include "zone.h"
