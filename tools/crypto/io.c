@@ -78,7 +78,7 @@ io_init (void)
 		return -1;
 	}
 	
-	printf ("Found XHDI level %x.%x (%x).\n\n", (XHDI_installed >> 8), (XHDI_installed & 0x00ff), XHDI_installed);
+	//printf ("Found XHDI level %x.%x (%x).\n\n", (XHDI_installed >> 8), (XHDI_installed & 0x00ff), XHDI_installed);
 	return 0;
 }
 
@@ -102,13 +102,6 @@ io_open (int64_t _dev)
 	
 	dev = _dev;
 	
-	r = Dlock (1, dev);
-	if (r && r != -32)
-	{
-		printf ("Can't lock %c:, drive in use?\n", 'A'+dev);
-		return -1;
-	}
-	
 	r = XHInqDev2 (dev, &major, &minor, &start, NULL, &sectors, NULL);
 	if (r == 0)
 		r = XHInqTarget2 (major, minor, &ssize, NULL, NULL, 0);
@@ -121,6 +114,7 @@ io_open (int64_t _dev)
 		return -1;
 	}
 	
+# if 0
 	printf ("Information about %c:\n", 'A'+dev);
 	printf ("---------------------\n");
 	printf ("XHDI major number    : %d\n", major);
@@ -129,6 +123,14 @@ io_open (int64_t _dev)
 	printf ("partition length     : %ld sectors\n", sectors);
 	printf ("physical sector size : %ld bytes\n", ssize);
 	printf ("\n");
+# endif
+	
+	r = Dlock (1, dev);
+	if (r && r != -32)
+	{
+		printf ("Can't lock %c:, drive in use?\n", 'A'+dev);
+		return -1;
+	}
 	
 	/* mark as open */
 	drv = dev;
@@ -158,6 +160,14 @@ io_ioctrl (int handle, int mode, void *buf)
 # define PSECSIZE 1
 		case PSECSIZE:
 			*(int32_t *) buf = ssize;
+			break;
+# define PSIZE 2
+		case PSIZE:
+			*(int32_t *) buf = sectors;
+			break;
+# define PSTART 3
+		case PSTART:
+			*(int32_t *) buf = start;
 			break;
 		default:
 			return -1;
