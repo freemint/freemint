@@ -689,16 +689,24 @@ nfs_stat64 (fcookie *fc, STAT *stat)
 		stat->gid	= xattr.gid;
 		stat->rdev	= xattr.rdev;
 		
-		stat->atime.time = *((long *) &(xattr.atime));
-		stat->mtime.time = *((long *) &(xattr.mtime));
-		stat->ctime.time = *((long *) &(xattr.ctime));
+		stat->atime.high_time	= 0;
+		stat->atime.time	= *((long *) &(xattr.atime));
+		stat->atime.nanoseconds	= 0;
+		
+		stat->mtime.high_time	= 0;
+		stat->mtime.time	= *((long *) &(xattr.mtime));
+		stat->mtime.nanoseconds	= 0;
+		
+		stat->ctime.high_time	= 0;
+		stat->ctime.time	= *((long *) &(xattr.ctime));
+		stat->ctime.nanoseconds	= 0;
 		
 		stat->size	= xattr.size;
 		stat->blocks	= (xattr.nblocks * xattr.blksize) >> 9;
 		stat->blksize	= xattr.blksize;
 		
-		/* stat->flags	= 0; */
-		/* stat->gen	= 0; */
+		stat->flags	= 0;
+		stat->gen	= 0;
 		
 		bzero (stat->res, sizeof (stat->res));
 	}

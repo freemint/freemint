@@ -324,9 +324,16 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 		ptr->dev = ptr->rdev = PROCDRV;
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		
+		ptr->atime.high_time = 0;	
 		ptr->atime.time = xtime.tv_sec;
+		
+		ptr->mtime.high_time = 0;	
 		ptr->mtime.time = procfs_stmp.tv_sec;
+		ptr->mtime.nanoseconds = 0;	
+		
+		ptr->ctime.high_time = 0;	
 		ptr->ctime.time = rootproc->started.tv_sec;
+		ptr->ctime.nanoseconds = 0;	
 		
 		return E_OK;
 	}
@@ -337,10 +344,18 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 	ptr->gid = p->p_cred->ucr->egid;
 	ptr->size = ptr->blocks = memused(p);
 	ptr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
-	
+
+	ptr->atime.high_time = 0;	
 	ptr->atime.time = xtime.tv_sec;
+	ptr->atime.nanoseconds = 0;	
+	
+	ptr->mtime.high_time = 0;	
 	ptr->mtime.time = 
+	ptr->mtime.nanoseconds = 0;	
+	
+	ptr->ctime.high_time = 0;	
 	ptr->ctime.time = p->started.tv_sec;
+	ptr->ctime.nanoseconds = 0;	
 	
 	return E_OK;
 }

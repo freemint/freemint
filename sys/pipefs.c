@@ -295,9 +295,17 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 		
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		
+		ptr->atime.high_time = 0;
 		ptr->atime.time = xtime.tv_sec;
+		ptr->atime.nanoseconds = 0;	
+		
+		ptr->mtime.high_time = 0;
 		ptr->mtime.time = pipestamp.tv_sec;
+		ptr->mtime.nanoseconds = 0;	
+		
+		ptr->ctime.high_time = 0;
 		ptr->ctime.time = rootproc->started.tv_sec;
+		ptr->ctime.nanoseconds = 0;	
 	}
 	else
 	{
@@ -307,9 +315,17 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 		ptr->gid = this->gid;
 		ptr->mode = this->mode;
 		
+		ptr->atime.high_time = 0;
 		ptr->atime.time = xtime.tv_sec;
+		ptr->atime.nanoseconds = 0;	
+		
+		ptr->mtime.high_time = 0;
 		ptr->mtime.time = this->mtime.tv_sec;
+		ptr->mtime.nanoseconds = 0;	
+		
+		ptr->ctime.high_time = 0;
 		ptr->ctime.time = this->ctime.tv_sec;
+		ptr->ctime.nanoseconds = 0;	
 		
 		/* note: fifo's that haven't been opened yet can be written to
 		 */
