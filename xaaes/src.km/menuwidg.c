@@ -1015,12 +1015,15 @@ click_desk_popup(struct task_administration_block *tab)
 	int m;
 
 	m = find_menu_object(tab, k->pop_item) - 1;
-	assert(m < appmenusize);
 
 	IFDIAG(tab->dbg = 1;)
 	popout(tab);
 
-	client = appmenu[m].client;
+	client = NULL;
+
+	if (m >= 0 && m < appmenusize)
+		client = appmenu[m].client;
+
 	if (client)
 	{
 		DIAG((D_menu, NULL, "got client %s", c_owner(client)));
