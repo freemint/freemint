@@ -47,6 +47,7 @@
 # include "arch/context.h"
 # include "arch/kernel.h"
 # include "arch/mprot.h"
+# include "arch/user_things.h"
 
 # include "cmdline.h"
 # include "dosdir.h"
@@ -617,6 +618,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	BASEPAGE *b;
 	int i;
 	MEMREGION *m;
+	long *exec_longs;
 
 	TRACE (("exec_region: enter (PROC %lx, mem = %lx)", p, mem));
 	assert (p && mem && fd);
@@ -645,6 +647,31 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		{
 			FD_REMOVE (p, i);
 			do_close (p, f);
+		}
+	}
+
+	/* The text segment of the SLB library is inside its trampoline
+	 * area, so we adapt the p_tbase appropriately.
+	 *
+	 * curproc->p_flag & 4 is only true when this call comes from the
+	 * sys_pexec(106) made by Slbopen().
+	 */
+	if (curproc->p_flag & 4)
+	{
+		exec_longs = (long *)b->p_tbase;
+
+		/* Test for new program format */
+		if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+			exec_longs += (228 / sizeof(long));
+
+		if (exec_longs[0] == 0x70004afcL)
+		{
+			/* attach temporarily to current process to avoid bus error,
+			 * and pickup the address from the trampoline jumptable.
+			 */
+			attach_region(curproc, p->p_mem->tp_reg);
+			b->p_tbase = p->p_mem->tp_ptr->slb_init_and_exit_p;
+			detach_region(curproc, p->p_mem->tp_reg);
 		}
 	}
 
