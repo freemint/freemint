@@ -1351,16 +1351,16 @@ create_env (const char *env, unsigned long flags)
 	}
 
 	/* allocate memory
-	 * if core fails, try alt
 	 *
-	 * XXX: why we default to ST-RAM ???
+	 * fna 2004-07-03:
+	 * default to alt, fallback to core
 	 */
 	{
 		short protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
 		long v;
 
-		v = alloc_region(core, size, protmode);
-		if (!v) v = alloc_region(alt, size, protmode);
+		v = alloc_region(alt, size, protmode);
+		if (!v) v = alloc_region(core, size, protmode);
 
 		if (!v)
 		{
