@@ -138,16 +138,20 @@ init_proc(void)
 	/* get some memory */
 	curproc->p_mem->memflags = F_PROT_S | F_OS_SPECIAL; /* default prot mode: super-only */
 	curproc->p_mem->num_reg = NUM_REGIONS;
-	curproc->p_mem->mem = kmalloc(curproc->p_mem->num_reg * sizeof(MEMREGION *));
-	curproc->p_mem->addr = kmalloc(curproc->p_mem->num_reg * sizeof(long));
+	{
+		const unsigned long size = curproc->p_mem->num_reg * sizeof(void *);
+		void *ptr = kmalloc(size * 2);
+
+		/* make sure kmalloc was successful */
+		assert(ptr);
+
+		/* make sure it's filled with zeros */
+		bzero(ptr, size * 2);
+
+		curproc->p_mem->mem = ptr;
+		curproc->p_mem->addr = ptr + size;
+	}
 	curproc->p_mem->base = _base;
-
-	/* make sure kmalloc was successful */
-	assert(curproc->p_mem->mem && curproc->p_mem->addr);
-
-	/* make sure it's filled with zeros */
-	bzero(curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof(MEMREGION *));
-	bzero(curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof(long));
 
 	/* init trampoline things */
 	curproc->p_mem->tp_ptr = &kernel_things;

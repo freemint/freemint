@@ -51,6 +51,8 @@ void init_page_table_ptr (struct memspace *m);
 struct memspace *copy_mem (struct proc *p);
 void free_mem (struct proc *p);
 
+long increase_mem(struct memspace *mem);
+
 
 /* p_fd */
 
