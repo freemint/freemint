@@ -18,6 +18,8 @@
 # include "debug.h"
 # include "global.h"
 
+# include "mint/asm.h"		/* cpu_stop(), cpu_lpstop() */
+
 # include "arch/mprot.h"
 # include "arch/startup.h"	/* _base */
 # include "libkern/libkern.h"
@@ -467,6 +469,11 @@ halt (void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
+		if (mcpu == 60)
+			cpu_lpstop();
+		else
+			cpu_stop();
+
 		key = Bconin(out_device);
 		
 		if ((key & 0x0c000000L) == 0x0c000000L)
@@ -481,6 +488,12 @@ halt (void)
 	for (;;)
 	{
 		debug_ws(MSG_system_halted);
+		
+		if (mcpu == 60)
+			cpu_lpstop();
+		else
+			cpu_stop();
+
 		r = Bconin(2);
 		if ((r & 0x0ff) == 'x')
 		{
@@ -504,6 +517,11 @@ HALT (void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
+		if (mcpu == 60)
+			cpu_lpstop();
+		else
+			cpu_stop();
+
 		key = Bconin(2);
 		
 		if ((key & 0x0c000000L) == 0x0c000000L)
@@ -518,6 +536,12 @@ HALT (void)
 	for (;;)
 	{
 		debug_ws(MSG_fatal_reboot);
+
+		if (mcpu == 60)
+			cpu_lpstop();
+		else
+			cpu_stop();
+
 		r = Bconin(2);
 		
 		if (((r & 0x0ff) == 'x') || ((r & 0xff) == 's'))
