@@ -1,0 +1,41 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	 fstring.h \
+	 libkern.h \
+	 xfs_xdd_kernel.h
+
+COBJS = \
+	atol.c \
+	bzero.c \
+	ctype.c \
+	dostime.c \
+	ksprintf.c \
+	ksprintf_old.c \
+	memchr.c \
+	memcmp.c \
+	ms_time.c \
+	strcat.c \
+	strcmp.c \
+	strcpy.c \
+	stricmp.c \
+	stricmp_16.c \
+	strlen.c \
+	strlwr.c \
+	strncmp.c \
+	strncpy.c \
+	strncpy_f.c \
+	strnicmp.c \
+	strnicmp_16.c \
+	strrchr.c \
+	strrev.c \
+	strtonumber.c \
+	strupr.c \
+	tolower.c \
+	toupper.c \
+	unix2xbios.c \
+	unixtime.c \
+	vsprintf.c
+
+SRCFILES = $(HEADER) $(COBJS)

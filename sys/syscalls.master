@@ -1,0 +1,616 @@
+/*
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * 
+ * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * begin:	2000-01-01
+ * last change:	2000-03-07
+ * 
+ * Author:	Frank Naumann <fnaumann@freemint.de>
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ */
+
+
+/* 
+ * RESERVED - return ENOSYS
+ * NULL     - no entry
+ * MAX      - size of table
+ * 
+ * otherwise interpreted as systemcall
+ * missing entries are automatically set to NULL
+ * 
+ */
+
+
+[ DOS ]
+
+/* special Opcodes:
+ * 
+ * - 0x16 MagiC-like shared library scheme
+ * - 0x17 MagiC-like shared library scheme
+ * - 0x33 reserved for MagiC - LONG Sconfig(WORD subfn, LONG flags);
+ */
+
+0x000	pterm0		(void)
+
+0x001	cconin		(void)
+0x002	cconout		(int c)
+0x003	cauxin		(void)
+0x004	cauxout		(int c)
+0x005	cprnout		(int c)
+0x006	crawio		(int c)
+0x007	crawcin		(void)
+0x008	cnecin		(void)
+0x009	cconws		(const char *str)
+0x00a	cconrs		(char *buf)
+0x00b	cconis		(void)
+0x00c	NULL
+0x00d	NULL
+0x00e	dsetdrv		(int d)
+0x00f	NULL
+
+0x010	cconos		(void)
+0x011	cprnos		(void)
+0x012	cauxis		(void)
+0x013	cauxos		(void)
+0x014	maddalt		(long start, long size)
+0x015	srealloc	(void)
+0x016	slbopen		(void)				/* 1.15.3, MagiC 5 */
+0x017	slbclose	(void)				/* 1.15.3, MagiC 5 */
+0x018	NULL
+0x019	dgetdrv		(void)
+0x01a	fsetdta		(DTABUF *dta)
+0x01b	NULL
+0x01c	NULL
+0x01d	NULL
+0x01e	NULL
+0x01f	NULL
+
+0x020	super		(long new_ssp)
+0x021	NULL
+0x022	NULL
+0x023	NULL
+0x024	NULL
+0x025	NULL
+0x026	NULL
+0x027	NULL
+0x028	NULL
+0x029	NULL
+0x02a	tgetdate	(void)
+0x02b	tsetdate	(ushort date)
+0x02c	tgettime	(void)
+0x02d	tsettime	(ushort date)
+0x02e	NULL
+0x02f	fgetdta		(void)
+
+0x030	sversion	(void)
+0x031	ptermres	(long save, int code)
+0x032	NULL
+0x033	RESERVED	/* MagiC: Sconfig() */
+0x034	NULL
+0x035	NULL
+0x036	dfree		(long *buf, int d)
+0x037	NULL
+0x038	NULL
+0x039	dcreate		(const char *name, int attrib)
+0x03a	ddelete		(const char *path)
+0x03b	dsetpath	(const char *path)
+0x03c	fcreate		(void)
+0x03d	fopen		(const char *name, int mode)
+0x03e	fclose		(int fh)
+0x03f	fread		(int fh, long count, char *buf)
+
+0x040	fwrite		(int fh, long count, const char *buf)
+0x041	fdelete		(const char *path)
+0x042	fseek		(long place, int fh, int how)
+0x043	fattrib		(const char *name, int rwflag, int attr)
+0x044	mxalloc		(long size, int mode)
+0x045	fdup		(int fh)
+0x046	fforce		(int newh, int oldh)
+0x047	dgetpath	(char *path, int drv)
+0x048	malloc		(long size)
+0x049	mfree		(virtaddr block)
+0x04a	mshrink		(int dummy, virtaddr block, long size)
+0x04b	pexec		(int mode, const void *ptr1, const void *ptr2, const void *ptr3)
+0x04c	pterm		(int code)
+0x04d	NULL
+0x04e	fsfirst		(const char *path, int attrib)
+0x04f	fsnext		(void)
+
+0x050	NULL
+0x051	NULL
+0x052	NULL
+0x053	NULL
+0x054	NULL
+0x055	NULL
+0x056	frename		(int junk, const char *old, const char *new)
+0x057	fdatime		(short *timeptr, int fh, int wflag)
+0x058	NULL
+0x059	NULL
+0x05a	NULL
+0x05b	NULL
+0x05c	flock		(int fh, int mode, long start, long length)
+0x05d	NULL
+0x05e	NULL
+0x05f	NULL
+
+0x060	NULL
+0x061	NULL
+0x062	NULL
+0x063	NULL
+0x064	NULL
+0x065	NULL
+0x066	NULL
+0x067	NULL
+0x068	NULL
+0x069	NULL
+0x06a	NULL
+0x06b	NULL
+0x06c	NULL
+0x06d	NULL
+0x06e	NULL
+0x06f	NULL
+
+0x070	NULL
+0x071	NULL
+0x072	NULL
+0x073	NULL
+0x074	NULL
+0x075	NULL
+0x076	NULL
+0x077	NULL
+0x078	NULL
+0x079	NULL
+0x07a	NULL
+0x07b	NULL
+0x07c	NULL
+0x07d	NULL
+0x07e	NULL
+0x07f	NULL
+
+0x080	NULL
+0x081	NULL
+0x082	NULL
+0x083	NULL
+0x084	NULL
+0x085	NULL
+0x086	NULL
+0x087	NULL
+0x088	NULL
+0x089	NULL
+0x08a	NULL
+0x08b	NULL
+0x08c	NULL
+0x08d	NULL
+0x08e	NULL
+0x08f	NULL
+
+0x090	NULL
+0x091	NULL
+0x092	NULL
+0x093	NULL
+0x094	NULL
+0x095	NULL
+0x096	NULL
+0x097	NULL
+0x098	NULL
+0x099	NULL
+0x09a	NULL
+0x09b	NULL
+0x09c	NULL
+0x09d	NULL
+0x09e	NULL
+0x09f	NULL
+
+0x0a0	NULL
+0x0a1	NULL
+0x0a2	NULL
+0x0a3	NULL
+0x0a4	NULL
+0x0a5	NULL
+0x0a6	NULL
+0x0a7	NULL
+0x0a8	NULL
+0x0a9	NULL
+0x0aa	NULL
+0x0ab	NULL
+0x0ac	NULL
+0x0ad	NULL
+0x0ae	NULL
+0x0af	NULL
+
+0x0b0	NULL
+0x0b1	NULL
+0x0b2	NULL
+0x0b3	NULL
+0x0b4	NULL
+0x0b5	NULL
+0x0b6	NULL
+0x0b7	NULL
+0x0b8	NULL
+0x0b9	NULL
+0x0ba	NULL
+0x0bb	NULL
+0x0bc	NULL
+0x0bd	NULL
+0x0be	NULL
+0x0bf	NULL
+
+0x0c0	NULL
+0x0c1	NULL
+0x0c2	NULL
+0x0c3	NULL
+0x0c4	NULL
+0x0c5	NULL
+0x0c6	NULL
+0x0c7	NULL
+0x0c8	NULL
+0x0c9	NULL
+0x0ca	NULL
+0x0cb	NULL
+0x0cc	NULL
+0x0cd	NULL
+0x0ce	NULL
+0x0cf	NULL
+
+0x0d0	NULL
+0x0d1	NULL
+0x0d2	NULL
+0x0d3	NULL
+0x0d4	NULL
+0x0d5	NULL
+0x0d6	NULL
+0x0d7	NULL
+0x0d8	NULL
+0x0d9	NULL
+0x0da	NULL
+0x0db	NULL
+0x0dc	NULL
+0x0dd	NULL
+0x0de	NULL
+0x0df	NULL
+
+0x0e0	NULL
+0x0e1	NULL
+0x0e2	NULL
+0x0e3	NULL
+0x0e4	NULL
+0x0e5	NULL
+0x0e6	NULL
+0x0e7	NULL
+0x0e8	NULL
+0x0e9	NULL
+0x0ea	NULL
+0x0eb	NULL
+0x0ec	NULL
+0x0ed	NULL
+0x0ee	NULL
+0x0ef	NULL
+
+0x0f0	NULL
+0x0f1	NULL
+0x0f2	NULL
+0x0f3	NULL
+0x0f4	NULL
+0x0f5	NULL
+0x0f6	NULL
+0x0f7	NULL
+0x0f8	NULL
+0x0f9	NULL
+0x0fa	NULL
+0x0fb	NULL
+0x0fc	NULL
+0x0fd	NULL
+0x0fe	NULL
+
+/*
+ * MiNT extensions to GEMDOS
+ */
+
+0x0ff	syield		(void)
+
+0x100	fpipe		(short *usrh)
+0x101	ffchown		(int fh, int uid, int gid)		/* 1.15.2 */
+0x102	ffchmod		(int fh, unsigned mode)			/* 1.15.2 */
+0x103	RESERVED	/* fsync (int fh) */
+0x104	fcntl		(int fh, long arg, int cmd)
+0x105	finstat		(int fh)
+0x106	foutstat	(int fh)
+0x107	fgetchar	(int fh, int mode)
+0x108	fputchar	(int fh, long c, int mode)
+0x109	pwait		(void)
+0x10a	pnice		(int increment)
+0x10b	pgetpid		(void)
+0x10c	pgetppid	(void)
+0x10d	pgetpgrp	(void)
+0x10e	psetpgrp	(int pid, int newgrp)
+0x10f	pgetuid		(void)
+
+0x110	psetuid		(int id)
+0x111	pkill		(int pid, int sig)
+0x112	psignal		(int sig, long handler)
+0x113	pvfork		(void)
+0x114	pgetgid		(void)
+0x115	psetgid		(int id)
+0x116	psigblock	(ulong mask)
+0x117	psigsetmask	(ulong mask)
+0x118	pusrval		(long arg)
+0x119	pdomain		(int arg)
+0x11a	psigreturn	(void)
+0x11b	pfork		(void)
+0x11c	pwait3		(int nohang, long *rusage)
+0x11d	fselect		(unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
+0x11e	prusage		(long *r)
+0x11f	psetlimit	(int i, long v)
+
+0x120	talarm		(long x)
+0x121	ppause		(void)
+0x122	sysconf		(int which)
+0x123	psigpending	(void)
+0x124	dpathconf	(const char *name, int which)
+0x125	pmsg		(int mode, long mbid, char *ptr)
+0x126	fmidipipe	(int pid, int in, int out)
+0x127	prenice		(int pid, int increment)
+0x128	dopendir	(const char *path, int flags)
+0x129	dreaddir	(int len, long handle, char *buf)
+0x12a	drewind		(long handle)
+0x12b	dclosedir	(long handle)
+0x12c	fxattr		(int flag, const char *name, XATTR *xattr)
+0x12d	flink		(const char *old, const char *new)
+0x12e	fsymlink	(const char *old, const char *new)
+0x12f	freadlink	(int buflen, char *buf, const char *linkfile)
+
+0x130	dcntl		(int cmd, const char *name, long arg)
+0x131	fchown		(const char *name, int uid, int gid)
+0x132	fchmod		(const char *name, unsigned mode)
+0x133	pumask		(ushort mode)
+0x134	psemaphore	(int mode, long id, long timeout)
+0x135	dlock		(int mode, int drv)
+0x136	psigpause	(ulong mask)
+0x137	psigaction	(int sig, const struct sigaction *act, struct sigaction *oact)
+0x138	pgeteuid	(void)
+0x139	pgetegid	(void)
+0x13a	pwaitpid	(int pid, int nohang, long *rusage)
+0x13b	dgetcwd		(char *path, int drv, int size)
+0x13c	salert		(char *msg)
+0x13d	tmalarm		(long x)
+0x13e	psigintr	(ushort vec, ushort sig)
+0x13f	suptime		(ulong *cur_uptim, ulong loadave[3])
+
+0x140	RESERVED
+0x141	RESERVED
+0x142	dxreaddir	(int len, long handle, char *buf, XATTR *xattr, long *xret)
+0x143	pseteuid	(int id)
+0x144	psetegid	(int id)
+0x145	pgetauid	(void)
+0x146	psetauid	(int id)
+0x147	pgetgroups	(int gidsetlen, int gidset[])
+0x148	psetgroups	(int ngroups, int gidset[])
+0x149	tsetitimer	(int which, long *interval, long *value, long *ointerval, long *ovalue)
+0x14a	dchroot		(const char *dir)			/* 1.15.3 */
+0x14b	fstat64		(int flag, const char *name, STAT *stat)			/* 1.15.4 */
+0x14c	RESERVED	/* fseek64 (llong place, int fh, int how) */
+0x14d	dsetkey		(llong dev, char *key, int cipher)	/* 1.15.4 */
+0x14e	psetreuid	(int rid, int eid)
+0x14f	psetregid	(int rid, int eid)
+
+0x150	sync		(void)
+0x151	shutdown	(long restart)
+0x152	dreadlabel	(const char *path, char *label, int maxlen)
+0x153	dwritelabel	(const char *path, const char *label)
+0x154	ssystem		(int mode, ulong arg1, ulong arg2)
+0x155	tgettimeofday	(struct timeval *tv, struct timezone *tz)
+0x156	tsettimeofday	(struct timeval *tv, struct timezone *tz)
+0x157	RESERVED	/* tadjtime */
+0x158	pgetpriority	(int which, int who)
+0x159	psetpriority	(int which, int who, int prio)
+0x15a	RESERVED	/* fpoll (POLLFD *fds, ulong nfds, long timeout) */
+0x15b	RESERVED
+0x15c	RESERVED
+0x15d	RESERVED
+0x15e	RESERVED
+0x15f	emulation	(ushort which, ushort op,
+				long a1, long a2, long a3, long a4,
+				long a5, long a6, long a7)	/* 1.15.8 */
+
+0x160	MAX
+
+
+[ BIOS ]
+
+0x000	RESERVED	/* getmpb - useless */
+0x001	ubconstat	(int dev)
+0x002	ubconin		(int dev)
+0x003	ubconout	(int dev, int c)
+0x004	rwabs		(int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
+0x005	setexc		(int number, long vector)
+0x006	tickcal		(void)
+0x007	getbpb		(int dev)
+0x008	ubcostat	(int dev)
+0x009	mediach		(int dev)
+0x00a	drvmap		(void)
+0x00b	kbshift		(int mode)
+0x00c	NULL
+0x00d	NULL
+0x00e	NULL
+0x00f	NULL
+
+0x010	NULL
+0x011	NULL
+0x012	NULL
+0x013	NULL
+0x014	NULL
+0x015	NULL
+0x016	NULL
+0x017	NULL
+0x018	NULL
+0x019	NULL
+0x01a	NULL
+0x01b	NULL
+0x01c	NULL
+0x01d	NULL
+0x01e	NULL
+0x01f	NULL
+
+0x020	MAX
+
+
+[ XBIOS ]
+
+0x000	NULL
+0x001	NULL
+0x002	NULL
+0x003	NULL
+0x004	NULL
+0x005	vsetscreen	(long log, long phys, int rez, int mode)
+0x006	NULL
+0x007	NULL
+0x008	NULL
+0x009	NULL
+0x00a	NULL
+0x00b	NULL
+0x00c	midiws		(int cnt, const char *buf)
+0x00d	NULL
+0x00e	uiorec		(int dev)
+0x00f	ursconf		(int baud, int flow, int uc, int rs, int ts, int sc)
+
+0x010	NULL
+0x011	random		(void)
+0x012	NULL
+0x013	NULL
+0x014	NULL
+0x015	cursconf	(int cmd, int op)
+0x016	settime		(void)
+0x017	gettime		(ulong datetime)
+0x018	NULL
+0x019	NULL
+0x01a	NULL
+0x01b	NULL
+0x01c	NULL
+0x01d	NULL
+0x01e	NULL
+0x01f	NULL
+
+0x020	dosound		(const char *ptr)
+0x021	NULL
+0x022	NULL
+0x023	NULL
+0x024	NULL
+0x025	NULL
+0x026	supexec		(Func funcptr, long a1, long a2, long a3, long a4, long a5)
+0x027	NULL
+0x028	NULL
+0x029	NULL
+0x02a	NULL
+0x02b	NULL
+0x02c	bconmap		(int dev)
+0x02d	NULL
+0x02e	NULL
+0x02f	NULL
+
+0x030	NULL
+0x031	NULL
+0x032	NULL
+0x033	NULL
+0x034	NULL
+0x035	NULL
+0x036	NULL
+0x037	NULL
+0x038	NULL
+0x039	NULL
+0x03a	NULL
+0x03b	NULL
+0x03c	NULL
+0x03d	NULL
+0x03e	NULL
+0x03f	NULL
+
+0x040	NULL
+0x041	NULL
+0x042	NULL
+0x043	NULL
+0x044	NULL
+0x045	NULL
+0x046	NULL
+0x047	NULL
+0x048	NULL
+0x049	NULL
+0x04a	NULL
+0x04b	NULL
+0x04c	NULL
+0x04d	NULL
+0x04e	NULL
+0x04f	NULL
+
+0x050	NULL
+0x051	NULL
+0x052	NULL
+0x053	NULL
+0x054	NULL
+0x055	NULL
+0x056	NULL
+0x057	NULL
+0x058	NULL
+0x059	NULL
+0x05a	NULL
+0x05b	NULL
+0x05c	NULL
+0x05d	NULL
+0x05e	NULL
+0x05f	NULL
+
+0x060	NULL
+0x061	NULL
+0x062	NULL
+0x063	NULL
+0x064	NULL
+0x065	NULL
+0x066	NULL
+0x067	NULL
+0x068	NULL
+0x069	NULL
+0x06a	NULL
+0x06b	NULL
+0x06c	NULL
+0x06d	NULL
+0x06e	NULL
+0x06f	NULL
+
+0x070	NULL
+0x071	NULL
+0x072	NULL
+0x073	NULL
+0x074	NULL
+0x075	NULL
+0x076	NULL
+0x077	NULL
+0x078	NULL
+0x079	NULL
+0x07a	NULL
+0x07b	NULL
+0x07c	NULL
+0x07d	NULL
+0x07e	NULL
+0x07f	NULL
+
+0x080	MAX

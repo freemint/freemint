@@ -1,0 +1,119 @@
+SCC serial driver for FreeMiNT
+==============================
+
+Feedback, Fehlermeldungen, VorschlÑge und sonstige konstruktive
+Kommentare sind sehr erwÅnscht. Entweder per e-Mail direkt an mich
+oder an die MiNT Mailingliste <mint@fishpool.com>.
+
+
+ * 2000-05-24:	(v0.23)
+ * 
+ * - new: hopefully better behaviour on last close()
+ *        (flush buffers, go back to carrier detection & update TS_BLIND)
+ * 
+ * 2000-05-16:	(v0.22)
+ * 
+ * - fix: removed unnecessary debug messages that are printed
+ * 
+ * 2000-05-14:	(v0.21)
+ * 
+ * - fix: corrected TS_BLIND <-> clocal handling; now hopefully correct
+ * - new: bios emulation doesn't poll now, use sleep/wake mechanism
+ *        like the read/write functions
+ * 
+ * 2000-05-12:	(v0.20)
+ * 
+ * - new: reworked the complete high level I/O routines;
+ *        support now (hopefully) true tty functionality
+ *        this include carrier handling, vmin/vtime handling,
+ *        clocal settings and so on
+ * - new: seperate read/write routines for HSMODEM devices;
+ *        they never block
+ * - fix: scc_close doesn't removed device locks
+ * 
+
+
+Features:
+---------
+- native Treiberroutinen fÅr FreeMiNT, vollstÑndig Interruptgesteuert
+- minimale Systemlast
+- stabile und konstante Datenraten bei 115200 Baud komplett im
+  Hintergrund
+- installiert sowohl RSVF kompatible als auch MiNT tty devices;
+- Support aller Filesharing und -locking Mîglichkeiten
+- vollstÑndige UnterstÅtzung durch FreeMiNT
+- kein HSMODEM, HSMINST und sonstiger Krempel mehr erforderlich
+
+
+Installation:
+-------------
+
+1. Deinstallation von HSMODEM (soweit vorhanden)
+   - entfernen/umbenennen aller HSMODEM Programme aus dem AUTO Ordner
+   - entfernen/umbenennen von hsminst.xdd/drvinmnt.xdd
+   - entfernen/auskommentieren der HSMODEM Konfiguration in der MiNT.CNF
+     wie bspw.:
+     --- cut ---
+     # hsmodem config
+     sln u:\dev\hsmodem2 u:\dev\modem2
+     sln u:\dev\hsserial2 u:\dev\serial2
+     --- cut ---
+
+2. Entfernen/auskommentieren der MiNT.CNF EintrÑge die die tty Devices
+   anmelden (soweit vorhanden)
+   wie bspw.:
+   --- cut ---
+   ren u:\dev\modem2  u:\dev\ttyb
+   ren u:\dev\serial1 u:\dev\ttyc
+   ren u:\dev\serial2 u:\dev\ttyd
+   
+   sln u:\dev\ttyb u:\dev\modem2
+   sln u:\dev\ttyc u:\dev\serial1
+   sln u:\dev\ttyd u:\dev\serial2
+   --- cut ---
+
+3. Kopieren des xdd in den MultiTOS oder MiNT Ordner auf dem Bootlaufwerk
+
+4. Sicherstellen das mindestens FreeMiNT 1.15.6 oder neuer installiert ist.
+   Mit einer Ñlteren FreeMiNT Version funktioniert der Treiber nicht.
+
+5. Reboot
+
+
+Bugs:
+-----
+- fehlender ESCC support, fehlender ST-ESCC support
+  bei Interesse bitte melden!
+- lÑuft im Moment nur auf 68020-68060!
+
+
+Dank:
+-----
+- an Rainer Mannigel fÅr die Freigabe der von ihm original
+  entwickelten SCC Routinen fÅr dieses Projekt
+
+
+Copying:
+--------
+Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+Portions copyright 1998, 1999 Rainer Mannigel.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 24.05.2000

@@ -1,0 +1,27 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	in.h \
+	ksocket.h
+
+COBJS = \
+	accept.c \
+	bind.c \
+	connect.c \
+	getpeername.c \
+	getsockname.c \
+	getsockopt.c \
+	listen.c \
+	recv.c \
+	recvfrom.c \
+	recvmsg.c \
+	send.c \
+	sendmsg.c \
+	sendto.c \
+	setsockopt.c \
+	shutdown.c \
+	socket.c \
+	socketpair.c
+
+SRCFILES = $(HEADER) $(COBJS)

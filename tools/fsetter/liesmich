@@ -1,0 +1,12 @@
+Dies ist ein Programm zur Konfiguration
+des neuen FAT/VFAT/FAT32 Dateisystem von
+FreeMiNT 1.15.
+
+Es lÑuft als Programm und als ACC.
+Es kînnen diverse Parameter des Dateisystems
+im Betrieb eingestellt werden.
+
+Eine ausfÅhrliche Doku als HYP folgt noch.
+
+Christian Felsch
+felsch@tu-harburg.de

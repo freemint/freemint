@@ -1,0 +1,161 @@
+0.58
+	- corrected wrong return code ENAMETOOLONG to EBADARG in e_readdir,
+	  e_wlabel, e_rlabel, e_readlink
+	- unified the ALERT messages
+	- changes related to sparse file handling in truncate
+	  and the file read function; seek allow now the sparse feature
+
+0.57
+	- fix bug in Dcntl(V_CNTR_WP), clean flag not updated
+	- added new FUTIME_UTC calls (ioctl & cntl)
+	- added new stat call; support now UTC kernel mode
+	  -> changed getxattr, FUTIME, datetime
+	- fixed bug in ext2_new_inode; use effective uid and gid now
+	- changed to new error codes (see errno.h, kernel header)
+	- added new kernel.h
+	- fix bug in datetime (SWAP68_W instead SWAP68_L)
+	- update now atime on readdir (if allowed)
+	- changed to new FILESYS struct
+
+0.56
+	- fixed bug in rmdir: eventual cached '.' and '..' entries are not removed
+	- fixed possible bug in d_hash_setup: kmalloc result was not checked
+	- added the drive letter to ALERTs; enhanced monitor dump [debug version]
+	- support now block cache revision 2 extension in FreeMiNT 1.15.3 and later
+	  -> faster truncate, freed blocks are not written back
+	- updated Makefile to build two versions:
+	  68020-60 optimized version -> ext2.xfs
+	  68000 optimized version -> ext2_st.xfs [not ready yet]
+	- added C routines for bitmap operations -> 68000 support
+	- update in getxattr
+	- removed old readdir, new work much better
+
+0.55
+	- fix bug in device driver; the file size is a global attribute
+	  for every file descriptor [tail -f problem]
+	- fix bug in readdir; sometimes an invalidated cache
+	  block was accessed
+
+0.54
+	- fix another bug in rename; missing cross device rename check
+	  rename is hopefully correct now :-)
+	- optimized debug messages a little bit
+
+0.53
+	- fix bug in rename; missing DIR links decrement
+
+0.52
+	- readdir rewritten
+	- replaced blocksize access by macros
+	- optimized some time critical multiplications
+	- fix bug in mkdir & symlink; already exist check was missed
+
+0.51
+	- cleanup in ext2_new_inode
+	- fix bug in ext2_free_inode, cookie must be removed from cache
+	  (bit already cleared errors)
+	- some optimizations, cleanup in e_mkdir, e_rmdir, e_creat, e_remove
+	- fix bug in e_readlink
+	- added inode_cache_dump (for debug version)
+	- fix bug in e_rename; missing link decrement
+	  (zero dtime errors during filesystemcheck)
+	- fix bugs in ext2_getblk functions
+	  (unsigned <-> signed, overflow and so on)
+	- optimzed getname; directory operation now in namei.c
+	- some optimizations related to clean shutdown
+	- change history order
+
+0.50
+	- return always EWRPRO for read-only mounted partitions
+	- return always EACCDN for IMMUTABLE inodes
+	- some optimizations
+	- added Ext2 ioctls for special inode flags
+
+0.49
+	- added shutdown support
+	  (to avoid filesystem checks on a normal shutdown)
+
+0.48
+	- added ioctl(FTRUNCATE), Dcntl(FUTIME), Dcntl(FTRUNCATE)
+	- fix bug in ioctl(FUTIME) - missing SWAP68_L in time stuff
+
+0.47
+	- correct version numbers
+	- fix bug in ext2_new_block
+
+0.46
+	- fix bug in getname (doesn't worked)
+	- fix bug in read_super for bigger blocksizes
+
+0.45
+	- fix stupid bug in partial e_read/e_write
+	- fix bug in truncate for dindirect & tindirect truncation
+	- added rename
+
+0.44
+	- correct all sync and RD_ONLY stuff
+	- lot of cleanup and corrections
+	- added sync's for write through mode
+
+0.43
+	- fix bug in truncate
+	- added datime
+	- rewritten read
+	- added write
+	- added rel_cookie that decrease link and check for
+	  busy deleted inodes
+	- added FUTIME
+
+0.42
+	- added rmdir
+	- added truncate
+	- added readlabel
+	- added writelabel
+	- added hardlink
+	- added create
+	- added remove
+	- added symlink
+	- added readlink
+
+0.41
+	- added chattr
+	- added chown
+	- added chmod
+	- added mkdir
+
+0.40
+	- first alpha version; mostly a stable read only version
+	
+	- added inode write
+	- added inode sync
+	- added directory operations:
+	  find_entry/add_entry/delete_entry
+
+0.31
+	- added inode cache
+	- added directory cache
+	- added inode read
+	- added bitmap primitives
+	- added low level allocation/deallocation routines:
+	  bmap functions
+	  getblk functions
+
+0.30
+	- removed completly cache management
+	- changed to buffer cache interface from kernel
+	- restructured completly the source
+	- rewritten Dpathconf()
+	- update to latest kernel xfs interface
+	- correct all protoypes and function declarations
+	- changed to latest ext2 prototypes from Linux source
+	- redesigned completly all data structures:
+	  mirrored super block, makros, inode, COOKIE
+	- completly rewritten super_block read
+	- added superblock writeback (use new buffer cache function)
+	- changed readin strategy -> removed all swap routines
+	- rewritten getxattr to reflect these changes
+	- changed all functions to reflect data and I/O redesign
+
+0.20
+	- get source from Axel Kaiser *thanks*
+	- the source is declared as GPL now

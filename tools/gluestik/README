@@ -1,0 +1,78 @@
+GlueSTiK - STiK to MiNT-Net gateway
+===================================
+
+Feedback, bugreports, suggestions and any other constructive comment
+is strongly recommended. Please send it as e-mail to me or the
+MiNT mailinglist <mint@fishpool.com>.
+
+
+Version 0.13
+------------
+- fixed bug in resolve; spurious crashes
+  Thanks to Erik Hall who pointed it out
+
+Version 0.12
+------------
+- complete rewrite of old GlueSTiK
+
+
+Features:
+---------
+- allow the usage of STiK-API programs under MiNT-Net
+
+
+Installation:
+-------------
+
+1. deinstallation of old GlueSTiK (if installed)
+   - remove gluestik.xdd
+   - remove gsresolv.prg and MiNT.CNF entry for autostart gsresolv.prg
+
+2. copy gluestik.prg to your MultiTOS/MiNT folder and add
+   "exec c:\multitos\gluestik.prg" to autostart new GlueSTiK driver
+   
+   NOTE: You can start GlueSTiK from desktop too. It's not neccessary
+         to start it from MiNT.CNF!
+         
+         You can also end GlueSTiK. Simply send SIGTERM or SIGQUIT.
+         The cookie will be removed too. But be sure nobody use it at this
+         time.
+
+3. Reboot
+
+
+Bugs:
+-----
+- I heard LISTEN mode doesn't work correctly
+
+
+Thanks:
+-------
+- to Scott Bigham for the previous GlueSTiK versions and the permission
+  to rewrite it under the terms of the GPL
+
+
+Copying:
+--------
+Copyright 2000 Frank Naumann <fnaumann@cs.uni-magdeburg.de>
+Portions copyright 1998, 1999 Scott Bigham <dsb@cs.duke.edu>.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+Frank Naumann
+<fnaumann@cs.uni-magdeburg.de>
+
+Magdeburg, 23.02.2000

@@ -1,0 +1,201 @@
+; This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
+; distribution.  See the file Changes.MH for a detailed log of changes.
+
+; This file is dedicated to the FreeMiNT project.
+; It's not allowed to use this file for other projects without my
+; explicit permission.
+
+; mmu040.spp as of 99/04/14
+;
+; Author:
+; Thomas Binder
+; (gryf@hrzpub.tu-darmstadt.de)
+;
+; Purpose:
+; Contains code to deal with the MMU found in the MC68040 and MC68060. Most
+; of it is in dc.w-notation, as some assemblers don't know the new calls/
+; registers. Note that pflush on the 040 is a different opcode than on the 030!
+;
+; History:
+; 99/03/21-
+; 99/03/23: - Creation (Gryf)
+; 99/04/14: - Added read_phys, a function to access a long at a given physical
+;             address (Gryf)
+
+%ifdef MMU040
+
+; set_mmu
+;
+; Switch to a given MMU tree.
+;
+; Input:
+; 4(sp): New root pointer to write into URP and SRP
+
+	TEXT
+	XDEF	_set_mmu
+
+_set_mmu:
+	move.l	4(sp),d0
+%ifdef REAL040ASM
+	pflusha			; flush the ATCs
+	movec	d0,urp		; set user root pointer
+	movec	d0,srp		; set supervisor root pointer
+%else
+	dc.w	$f518
+	dc.w	$4e7b,$0806
+	dc.w	$4e7b,$0807
+%endif
+	rts
+
+; save_mmu, restr_mmu: save and restore the root pointers that came from ROM
+
+	DATA
+
+oldurp:	dc.l	0
+oldsrp:	dc.l	0
+
+	TEXT
+	XDEF	_save_mmu
+
+_save_mmu:
+%ifdef REAL040ASM
+	movec	urp,d0		; save user root pointer
+%else
+	dc.w	$4e7a,$0806
+%endif
+	move.l	d0,oldurp
+%ifdef REAL040ASM
+	movec	srp,d0		; and supervisor root pointer
+%else
+	dc.w	$4e7a,$0807
+%endif
+	move.l	d0,oldsrp
+	rts
+
+
+	XDEF	_restr_mmu
+
+_restr_mmu:
+	dc.w	$f518
+	move.l	oldurp,d0
+	move.l	oldsrp,d1
+%ifdef REAL040ASM
+	pflusha			; flush the ATCs
+	movec	d0,urp		; restore user root pointer
+	movec	d1,srp		; and supervisor root pointer
+%else
+	dc.w	$4e7b,$0806
+	dc.w	$4e7b,$1807
+%endif
+	rts
+
+
+	XDEF	_flush_mmu
+
+_flush_mmu:
+	dc.w	$f518		; 040's pflusha
+	rts
+
+; get_mmuregs
+;
+; Reads the seven configuration registers of the MMU and stores them in an
+; array. The order is TC, ITT0, ITT1, DTT0, DTT1, URP, SRP.
+;
+; Input:
+; 4(sp): Pointer to seven longwords.
+
+	XDEF	_get_mmuregs
+
+_get_mmuregs:
+	move.l	4(sp),a0
+%ifdef REAL040ASM
+	movec	tc,d0
+%else
+	dc.w	$4e7a,$0003
+%endif
+	move.l	d0,(a0)+
+%ifdef REAL040ASM
+	movec	itt0,d0
+%else
+	dc.w	$4e7a,$0004
+%endif
+	move.l	d0,(a0)+
+%ifdef REAL040ASM
+	movec	itt1,d0
+%else
+	dc.w	$4e7a,$0005
+%endif
+	move.l	d0,(a0)+
+%ifdef REAL040ASM
+	movec	dtt0,d0
+%else
+	dc.w	$4e7a,$0006
+%endif
+	move.l	d0,(a0)+
+%ifdef REAL040ASM
+	movec	dtt1,d0
+%else
+	dc.w	$4e7a,$0007
+%endif
+	move.l	d0,(a0)+
+%ifdef REAL040ASM
+	movec	urp,d0
+%else
+	dc.w	$4e7a,$0806
+%endif
+	move.l	d0,(a0)+
+%ifdef REAL040ASM
+	movec	srp,d0
+%else
+	dc.w	$4e7a,$0807
+%endif
+	move.l	d0,(a0)+
+	rts
+
+; read_phys
+;
+; Reads a long word from a given physical address, bypassing the current MMU
+; layout (used to read the original MMU tree, which might well be hidden from
+; physical access).
+; Caution: If the address given is invalid (doesn't exist), an access execption
+; is raised, but the data transpararent translation register 0 is still
+; manipulated, so the system is likely to be in an unstable condition.
+;
+; Input:
+; 4(sp): Physical address to read
+;
+; Returns:
+; d0: Long word found at given address
+
+	XDEF	_read_phys
+
+_read_phys:
+	move.l	4(sp),a0		; get address to read
+	move	sr,d1
+	ori	#$700,sr		; disable all interrupts
+	move.l	#$00ffe060,d0		; value for DTT0: transparently
+					; translate all data accesses, not using
+					; the cache
+%ifdef REAL040ASM
+	movec	dtt0,a1			; save DTT0
+	movec	d0,dtt0			; set new DTT0
+	move.l	(a0),d0			; read the physical longword
+	movec	a1,dtt0			; restore DTT0
+%else
+	dc.w	$4e7a,$9006
+	dc.w	$4e7b,$0006
+	move.l	(a0),d0
+	dc.w	$4e7b,$9006
+%endif
+	move	d1,sr			; restore interrupts
+	rts
+
+%else
+	; it seems GNU ld doesn't like completely empty object files
+	TEXT
+	XDEF	mmu040dummy
+
+mmu040dummy:
+	nop
+
+%endif

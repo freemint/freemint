@@ -1,0 +1,59 @@
+        MINIX.XFS is the minix filesystem driver. To use it copy MINIX.XFS to
+the root directory of whichever partition you start MiNT from. Reboot and
+you should get the startup Minixfs message. Any Minixfs partitions should then
+be immediately accessible.
+
+	If you don't use MultiTOS then you should also copy nohog.acc into your
+root directory (or wherever you load accessories from).
+
+	There isn't a great deal more to say about it from a normal users point
+of view. The only thing which can potentially cause trouble is filename 
+translation.
+
+        The system calls specific to Minixfs are described in syscall.doc.
+These are only likely to interest programmers. 
+
+FILENAME TRANSLATION
+
+        Some programs cannot cope properly with mixed case filenames. In
+general a program which is not MiNT aware (and some which are) will only
+receive 13 chacacters of a filename. This is not the fault of Minixfs, in
+pre-MiNT days there was simply no way to pass more characters to a program.
+Some quite common (!) programs have problems, for example the desktop and
+the standard file selector. As a result Minixfs has the option to translate
+filenames to the standard TOS form, that is 8 characters with 3 character
+extension and upper case (this will be referred to as 8+3 format).
+
+        Naturally this translation is not ideal and some conflicts may occur.
+The normal translation rule is to make the filename upper case and to retain
+the original extension. For example FooBARFilename.C becomes FOOBARFI.C. The
+basename and extension are cut back to 8 and 3 characters respectively as
+would be expected. Periods are replaced by commas in all but the extension.
+
+        There are four cases where translation can occur and 4 'scopes'. The
+scope determines when a program should receive translation. The scopes are
+all, MiNT domain, TOS domain and neither. Usually a program that understands
+MiNT will run in MiNT domain; otherwise it will run in TOS domain. Clearly the 
+'neither' scope means translation will never occur for that case and 'all'
+means it will always occur.
+
+        The 'cases' are search, directory, creation and executability.
+When you attempt to access a file, 'search' is used. For example if the scope
+means translations occurs for a specific program then if the file
+FooBARFilename.C exists then it can be accessed as FOOBARFI.C. When a directory
+is listed 'directory' translation is used, thus FooBARFilename.C will appear 
+as FOOBARFI.C on e.g. the desktop.
+
+        Creation is slightly different. This simply translates all filenames
+created to lower case. So a TOS program creating FOOBARFI.C will actually
+create foobarf.c . This can be useful for certain programs which translate
+filenames to upper case.
+
+        Executability refers to creating files as well, if a file is created
+with the extensions ttp,gtp,tos,prg (either or mixed case) then the 'x' bit
+in the filename is set automatically. This makes sure executable programs
+stay executable. This is useful for utilities that copy files but are not
+aware of MiNT's extensions.
+
+        You can set the translation modes to different values for different
+partitions, using the utility 'mfsconf'.

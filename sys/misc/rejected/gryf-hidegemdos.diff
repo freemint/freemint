@@ -1,0 +1,148 @@
+--- orig/cnf.c	Mon Mar 15 21:09:06 1999
++++ src/cnf.c	Thu Mar 25 19:25:26 1999
+@@ -242,6 +242,7 @@
+  * VFAT=<drives> ....... activate VFAT extension for specified drives
+  * VFATLCASE=[yn] ...... force return of FAT names in lower case
+  * WB_ENABLE=<drives> .. enable write back mode for specified drives
++ * HIDEGEMDOS=<drives> . don't return these drives from uni_readdir()
+  * 
+  * dependant on global compile time switches:
+  * 
+@@ -265,6 +266,9 @@
+ static PCB_Dx	pCB_vfat;		/* VFAT=<drives>	*/
+ static PCB_B	pCB_vfatlcase;		/* VFATLCASE=[yn]	*/
+ static PCB_Dx	pCB_wb_enable;		/* WB_ENABLE=<drives>	*/
++# ifdef HIDE_GEMDOS_DRIVES
++static PCB_Dx	pCB_hide_gemdos;	/* HIDEGEMDOS=<drives>	*/
++# endif
+ 
+ # ifdef FASTTEXT
+ extern int	pCB_hardscroll;		/* HARDSCROLL=n		*/
+@@ -346,6 +350,9 @@
+ 	{ "VFAT",        PI_V_D,   pCB_vfat           },
+ 	{ "VFATLCASE",   PI_V_B,   pCB_vfatlcase      },
+ 	{ "WB_ENABLE",   PI_V_D,   pCB_wb_enable      },
++# ifdef HIDE_GEMDOS_DRIVES
++	{ "HIDEGEMDOS",  PI_V_D,   pCB_hide_gemdos    },
++# endif
+ 	
+ 	{ "HARDSCROLL",  PI_R_S,   pCB_hardscroll     , Range (-1, 99) },
+ 	{ "NEWFATFS",    PI_V_D,   pCB_newfatfs       },
+@@ -684,6 +691,17 @@
+ 	}
+ 	if (flag) boot_printf ("\r\n");
+ }
++
++# ifdef HIDE_GEMDOS_DRIVES
++/*----------------------------------------------------------------------------*/
++static void
++pCB_hide_gemdos (ulong list, PARSINF *inf)
++{
++	extern long hidden_map; /* in unifs.c */
++
++	hidden_map = list;
++}
++#endif
+ 
+ 
+ /*----------------------------------------------------------------------------*/
+--- orig/ssystem.h	Fri Mar  5 18:56:28 1999
++++ src/ssystem.h	Thu Mar 25 18:35:24 1999
+@@ -42,7 +42,7 @@
+ # define S_TIOCMGET	0x54f8	/* 21752 */
+ 
+ /* experimental - need feedback
+- * additional informations about the kernel
++ * additional information about the kernel
+  * reserved 900 - 999
+  */
+ # define S_KNAME	900	/* kernel name - arg1 pointer to a buffer of arg2 len */
+@@ -50,6 +50,10 @@
+ # define S_CVERSION	911	/* compiler version - arg1 pointer to a buffer of arg2 len */
+ # define S_CDEFINES	912	/* compiler definitions - arg1 pointer to a buffer of arg2 len */
+ # define S_COPTIM	913	/* compiler flags - arg1 pointer to a buffer of arg2 len */
++
++# ifdef HIDE_GEMDOS_DRIVES
++# define S_HIDEGEMDOS	914	/* (un)hide GEMDOS drives in uni_readdir() */ 
++# endif
+ 
+ /* debug section
+  * reserved 1000 - 1999
+--- orig/unifs.c	Tue Mar  2 22:31:46 1999
++++ src/unifs.c	Thu Mar 25 18:38:56 1999
+@@ -83,6 +83,14 @@
+ static UNIFILE u_drvs[UNI_NUM_DRVS];
+ static UNIFILE *u_root = 0;
+ 
++# ifdef HIDE_GEMDOS_DRIVES
++/*
++ * If one bit is set here, the corresponding drive letter will not be returned
++ * by uni_readdir()
++ */
++long hidden_map;
++# endif
++
+ static long	do_ulookup	P_((fcookie *, const char *, fcookie *, UNIFILE **));
+ 
+ FILESYS *
+@@ -107,6 +115,9 @@
+ 	UNIFILE *u = u_drvs;
+ 	int i;
+ 	
++# ifdef HIDE_GEMDOS_DRIVES
++	hidden_map = 0L;
++# endif
+ 	u_root = u;
+ 	for (i = 0; i < UNI_NUM_DRVS; i++, u++)
+ 	{
+@@ -571,7 +579,12 @@
+ 		}
+ 		else
+ 		{
++# ifndef HIDE_GEMDOS_DRIVES
+ 			if ((map & (1L << u->dev)) == 0)
++#else
++			if (((map & (1L << u->dev)) == 0) ||
++				((hidden_map & (1L << u->dev)) != 0))
++# endif
+ 			{
+ 				dirh->index++;
+ 				u = u->next;
+--- orig/ssystem.c	Fri Mar  5 18:58:52 1999
++++ src/ssystem.c	Thu Mar 25 22:48:20 1999
+@@ -557,6 +557,35 @@
+ 			((char *) arg1) [arg2 - 1] = '\0';
+ 			break;
+ 		}
++
++# ifdef HIDE_GEMDOS_DRIVES
++		case S_HIDEGEMDOS:
++		{
++			extern long hidden_map; /* in unifs.c */
++
++			r = hidden_map;
++			if (isroot = 0)
++				r = EACCDN;
++			else switch (arg1)
++			{
++				/* Inquire if function is available */
++				case 0:
++					r = E_OK;
++					break;
++				/* Set new mask */
++				case 1:
++					hidden_map = arg2;
++					break;
++				/* Inquire current setting */
++				case -1:
++					break;
++				default:
++					r = EINVFN;
++					break;
++			}
++			break;
++		}
++# endif
+ 		
+ 		/* debug section
+ 		 */

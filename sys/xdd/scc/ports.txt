@@ -1,0 +1,32 @@
+serial port mapping
+===================
+
+Every driver support two devices for each port, one HSMODEM device
+and one Unix terminal device.
+
+HSMODEM devices use the traditional Atari port names. UNIX terminal devices
+are always called ttyS followed by a number:
+
+port names on the machines:
+===========================
+
+HSMODEM  terminal
+device   device     ST      MegaSTE   TT        Falcon   Hades     Milan
+------------------------------------------------------------------------------
+modem1   ttyS0      MODEM   MODEM1    MODEM1    -        unknown   MFP port
+modem2   ttyS1      -       MODEM2    MODEM2    MODEM2   unknown   UART1 (3f8)
+serial1  ttyS2      -       -         SERIAL1   -        unknown   -
+serial2  ttyS3      -       SERIAL2   SERIAL2   -        unknown   UART2 (2f8)
+lan      ttyS4      -       LAN       LAN       LAN      unknown   -
+midi     ttyS5      Midi    Midi      Midi      Midi     unknown   -
+
+
+NOTE:  Serial2 and LAN are mutually exclusive, on the MegaSTE and
+       TT; selecting Serial2 disables LAN and vice-versa, because
+       they both use SCC-A
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 05.05.2000

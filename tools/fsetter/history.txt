@@ -1,0 +1,25 @@
+ Version 0.6 (03.09.98)
+	- Beim Start als APP wird das Laufwerk vom aktiven Verzeichnis selektiert.
+	  -> Wenn man FSetter bei Thing als Applikation mit Startpfad 'Fenster'
+	  anmeldet, wird beim Start gleich das Laufwerk des obersten Fensters
+	  eingestellt!
+	- Neuer Button 'Setzen+Ende'
+ 	- EditFeld 'Aktive FAT' nicht mehr disabled.
+	
+ Version 0.5 (06.08.98)
+	- énderungen bei FAT32 werden nun auch gesetzt.
+	- Klappt der statfs() bei Info nicht (z.B. bei fehlendes ZIP-Medium), 
+	  gibts statt Zufallsdaten im Dialog jetzt einen Alert :-)
+ 	- FS_INFO wird benutzt.
+ 	
+ Version 0.4 (24.07.98)
+	- FAT32-Config eingebaut.
+
+ Version 0.3 (03.07.98)
+	- Da MX_KER_XFSNAME nun auch von MiNT unterstÅtzt wird, prÅft FSetter
+	  zuerst mit statfs(). Ist f_type != 0, wird der Name benutzt, den z.B. 
+	  auch 'df' anzeigt. Ist f_type == 0, wird MX_KER_XFSNAME versucht und 
+	  wenn es das auch nicht gibt, ist FS-Name 'tos'.
+	- Umgestellt auf neuen dcntl.h von MiNT 1.15.0.2.1
+	
+ Version 0.2 (29.06.98)

@@ -1,0 +1,49 @@
+/*
+ * This file has been modified as part of the FreeMiNT project. See
+ * the file Changes.MH for details and dates.
+ */
+
+# ifndef _dos_h
+# define _dos_h
+
+# include "mint/mint.h"
+
+
+long _cdecl s_version	(void);
+long _cdecl s_uper	(long new_ssp);
+long _cdecl s_yield	(void);
+long _cdecl p_getpid	(void);
+long _cdecl p_getppid	(void);
+long _cdecl p_getpgrp	(void);
+long _cdecl p_setpgrp	(int pid, int newgrp);
+long _cdecl p_getuid	(void);
+long _cdecl p_getgid	(void);
+long _cdecl p_geteuid	(void);
+long _cdecl p_getegid	(void);
+long _cdecl p_setuid	(int id);
+long _cdecl p_setgid	(int id);
+long _cdecl p_seteuid	(int id);
+long _cdecl p_setegid	(int id);
+long _cdecl p_setreuid	(int rid, int eid);
+long _cdecl p_setregid	(int rid, int eid);
+long _cdecl p_getauid	(void);
+long _cdecl p_setauid	(int id);
+long _cdecl p_getgroups	(int gidsetlen, int gidset[]);
+long _cdecl p_setgroups	(int ngroups, int gidset[]);
+long _cdecl p_usrval	(long arg);
+long _cdecl p_umask	(unsigned mode);
+long _cdecl p_domain	(int arg);
+long _cdecl p_rusage	(long *r);
+long _cdecl p_setlimit	(int i, long v);
+long _cdecl p_pause	(void);
+long _cdecl t_alarm	(long x);
+long _cdecl t_malarm	(long x);
+long _cdecl t_setitimer	(int which, long *interval, long *value, long *ointerval, long *ovalue);
+long _cdecl s_ysconf	(int which);
+long _cdecl s_alert	(char *msg);
+long _cdecl s_uptime	(ulong *cur_uptim, ulong loadave[3]);
+long _cdecl s_hutdown	(long restart);
+
+void shutdown (void);
+
+# endif /* _dos_h */

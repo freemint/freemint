@@ -1,0 +1,40 @@
+XCONOUT2.XDD
+============
+
+ This piece of code implements a device /dev/xconout2 to MiNT. Once
+installed it doesn't do anything at all, which is why it should be
+quite save to install it even if you don't actually always use it.
+
+ If you open /dev/xconout2 (which can only be done by one program)
+a new routine will be installed as a xconout2 handler. After this
+all data being written to the console, may it be any program writing
+directly to /dev/console or any daemon which was started with stdout
+pointing to /dev/console or even MiNT's internal debugging routines
+is not printed but buffered instead.
+
+ So if you write a program which opens and selects this device for
+reading you'll be able to catch everything which might possibly destroy
+the screen contents under any kind of graphic application. If you should
+want to print the data to the console anyway, you can do this by writing
+it back to /dev/xconout2. Note that both read and write calls will
+never block.
+
+ The only reason why this appears as a device driver is that a user
+level program doesn't need any MiNT specific functions (contrary to the
+stuff implemented in W0R8) and it's quite save: In case of a program
+crash the file will be closed by MiNT, which will install the original
+routine again. So even in cases of severe program crashes there's no
+chance of the vector pointing to abandoned memory and thus perhaps
+crashing the whole system any more (as it sometimes did in W0R8).
+
+ BUGS: None (?).
+
+ KNOWN FEATURES: Doesn't use XBRA and things like these. I very much doubt
+that under a multitasking environment it's very clever to change vectors
+from elsewhere that inside the OS itself. So I hope there isn't any
+program which will cause greater problems.
+
+ Anyway: USE IT AT YOUR OWN RISK! THERE'S NO WARRANTY!
+
+ciao,
+TeSche <itschere@techfak.uni-bielefeld.de>

@@ -1,0 +1,70 @@
+Draconis to MiNT-Net gateway
+============================
+
+Feedback, Fehlermeldungen, VorschlÑge und sonstige konstruktive
+Kommentare sind sehr erwÅnscht. Am besten per e-Mail direkt an mich.
+
+
+Version 0.21
+------------
+- gethostbyname hat manchmal nicht funktioniert
+
+Version 0.20
+------------
+- erste îffentliche Version, beta Status
+
+
+Features:
+---------
+- ermîglicht das Benutzen von Draconis Clients unter FreeMiNT/MiNT-Net
+
+
+Vorausetzungen:
+---------------
+- FreeMiNT mit konfiguriertem MiNT-Net
+
+
+Installation:
+-------------
+
+1. Kopieren von mgw.prg in den MultiTOS oder MiNT Ordner auf dem Bootlaufwerk
+
+3. HinzufÅgen folgendes Eintrags in die MiNT.CNF:
+   --- cut ---
+   # start Draconis to MiNT-Net gateway
+   exec c:\multitos\mgw.prg
+   echo 
+   --- cut ---
+
+2. Reboot
+
+
+Bugs:
+-----
+- keine bekannt
+
+
+Copying:
+--------
+Copyright 1999 Frank Naumann <fnaumann@cs.uni-magdeburg.de>
+Copyright 1999 Jens Heitmann
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+Frank Naumann
+<fnaumann@cs.uni-magdeburg.de>
+
+Magdeburg, 22.08.1999

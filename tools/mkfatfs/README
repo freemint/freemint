@@ -1,0 +1,42 @@
+mkfatfs, filesystem tool
+========================
+
+Here is the first public release of mkfatfs, a filesystem creation tool.
+Main reason for this programm is to build TOS and DOS FAT32 partitions also
+on ATARI computers.
+
+Sorry, it's a commandline tool. Contact me if you will write
+a graphical user interface.
+
+
+Ok, what is FAT32 you ask now?
+
+FAT32 is a extension of the existing FAT definition. The FAT (File
+Allocation Table) on existing partitions is 16 bit wide.
+This limits the maximum number of cluster to 65536 (under TOS
+to 32768 because of some bugs). So if you need large partitions
+you must increase cluster size. But this has a negative side effect.
+Large cluster also increase 
+
+It requires a harddiskdriver that support at least XHDI level 1.10.
+
+If you start mkfatfs without any parameter, you get the
+following output:
+------------------------------------------------------------------------------
+./mkfatfs 0.2b, 1998-08-01 for TOS and DOS FAT/FAT32-FS
+Found XHDI level 1.30.
+
+No drive specified.
+
+Usage: ./mkfatfs [OPTIONS] drv:
+  -c            Check filesystem as is gets built
+  -f <num>      Number of FATs (between 1 and 4)
+  -F <num>      FAT size (12, 16, or 32)
+  -i <id>       Volume ID as hexadecimal number (i.e. 0x0410)
+  -l <filename> Bad block filename
+  -m <filename> Boot message filename--text is used as a boot message
+  -n <name>     Volume name
+  -r <num>      Root directory entries (not applicable to FAT32)
+  -s <num>      Sectors per cluster (2, 4, 8, 16, 32, 64, or 128)
+  -a            Create filesystem always (disables partition ID checking)
+------------------------------------------------------------------------------

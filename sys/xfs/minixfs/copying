@@ -1,0 +1,39 @@
+Minixfs is copyright S.N. Henson 1991,1992,1993,1994,1995.
+This code may be freely distributed unmodified, provided this copyright notice
+is intact. A small copying fee may be charged for redistribution provided this
+does not exceed the equivalent of five pounds Sterling (UK currency).
+
+	You are free to compile, modify and recompile modified versions of this
+program. Modified versions of this source may be redistributed provided:
+
+1. Modified versions are clearly marked as such in each file modified.
+2. This copying file is included unmodified in any distribution.
+3. An additional startup message is added stating that it is a modified
+version after the original startup message.
+4. The orginal copyright startup message is not modified in any way.
+5. No additional restrictions are placed on the modified version, in particular
+full source must still be freely available and freely distributable.
+
+	Binaries compiled from this code may also be redistributed. Binaries
+compiled from modified versions of this code may also be redistributed provided
+this copying file is included intact and conditions 1 to 5 above are met.
+
+	This version may not be used for profit or in a commercial environment,
+this includes the development of software that requires a registration fee.
+If you wish to use Minixfs to develop anything other than free software or use
+it in a commercial environment then Minixfs must be registered for a small fee,
+please contact me for further details.
+
+	Distribution of this program with commercial packages is not allowed
+without my written permission, please contact me if you wish to do this,
+or indeed if you want a similar filesystem writing for a different purpose
+(e.g. TT Unix or Spectre), however I am not in a position to write filesystems
+for other commercial packages free of charge.
+
+	I reserve the right to modify these conditions at some future date.
+
+	Please note that although I believe each release to be stable and
+test it thoroughly I offer no guarantee. Therefore, THIS PROGRAM COMES
+WITH NO WARANTEE WHATSOEVER AND USE IS ENTIRELY AT YOUR OWN RISK, I WILL
+NOT BE LIABLE FOR ANY DAMAGE CAUSED DIRECTLY OR INDIRECTLY FROM ITS USE.
+

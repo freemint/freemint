@@ -1,0 +1,12 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+SOBJS = \
+	blockcopy.spp \
+	memset.spp \
+	quickmove.spp \
+	quickswap.spp \
+	quickzero.spp \
+#	peekpoke.spp
+
+SRCFILES = $(SOBJS)

@@ -1,0 +1,473 @@
+;
+; Cache tricks
+;
+	XDEF	_cpush
+	XREF	_mcpu		; in main.c
+	XDEF	_init_cache
+
+; this is a vector for jumping into appropriate cache
+; routine. initialized at startup.
+
+	DATA
+_cachevec:
+	dc.l	_cache000
+
+; vectors for CCW/CACR conversions
+
+l2cv:	dc.l	clq		; CCW -> CACR
+c2lv:	dc.l	clq		; CACR -> CCW
+
+; flag: cache present
+
+hascaches:
+	dc.w	$00
+
+	TEXT
+
+; init cache routines
+
+_init_cache:
+	move.l	_mcpu,d0
+	beq.s	icquit
+	cmp.w	#10,d0
+	beq.s	icquit
+	lea	_cache030,a0
+	lea	l2c020,a1
+	lea	c2l020,a2
+	cmp.w	#20,d0
+	beq.s	icset
+	lea	l2c030,a1
+	lea	c2l030,a2
+	cmp.w	#30,d0
+	beq.s	icset
+	lea	_cache040,a0
+	lea	l2c040,a1
+	lea	c2l040,a2
+	cmp.w	#40,d0
+	beq.s	icset
+	lea	_cache060,a0
+	lea	l2c060,a1
+	lea	c2l060,a2
+	cmp.w	#60,d0
+	bne.s	icquit
+icset:	move.l	a0,_cachevec
+	move.l	a1,l2cv
+	move.l	a2,c2lv
+	st	hascaches
+	nop
+icquit:	rts
+
+; Cache control routines.
+;
+; These are intended to serve for (super) user programs so that
+; they needn't to get into supervisor mode for controlling caches.
+; Also, this code automagically handles the differences between
+; 020, 030, 040 and 060 cache controls.
+;
+; The idea is that you use a logical Cache Control Word, which
+; is automatically converted to and from physical CACR register.
+; Bits of the CCW are defined as follows:
+;
+; 0 - instruction cache enable
+; 1 - data cache enable
+; 2 - branch cache enable
+; 3 - instruction cache freeze
+; 4 - data cache freeze
+; 5 - instruction burst enable
+; 6 - data burst enable
+; 7 - data write allocate enable
+; 8 - instruction cache full mode enable
+; 9 - instruction cache read/write allocate
+; 10 - data cache full mode enable
+; 11 - data cache read/write allocate enable
+; 12 - branch cache invalidate all
+; 13 - branch cache invalidate user entries
+; 14 - CPUSH invalidate enable
+; 15 - store buffer enable
+; 
+; This is translated into the physical CACR
+; independently for each processor (as they differ).
+;
+; ssystem(S_CTRLCACHE, control, mask);
+;
+; where control is the actual Cache Control Word
+; and mask indicates, what bits of CCW should be taken into account.
+;
+	
+; table of default CCW masks for processors
+
+ccw_dmasks:
+	dc.w	$0000		; 68000
+	dc.w	$0000		; 68010
+	dc.w	$0009		; 68020	
+	dc.w	$00fb		; 68030
+	dc.w	$0003		; 68040
+	dc.w	$0000		; 68050 (does not exist)
+	dc.w	$ff07		; 68060
+
+	XDEF	_ccw_getdmask
+	XDEF	_ccw_get
+	XDEF	_ccw_set
+
+; Set the CACR according to the Cache Control Word and Mask
+
+_ccw_set:
+	tst.w	hascaches
+	beq.s	clq
+	bsr.s	_ccw_get		; get the current CCW
+	move.l	d0,-(sp)		; save it for later reference
+	movem.l	8(sp),d1/d2		; user specified CCW and CCM
+	and.l	d2,d1			; clear "unused" user-CCW bits
+	not.l	d2			; negate all bits in CCM
+	and.l	d2,d0			; clear bits to change in actual CCW
+	or.l	d0,d1			; apply user CCW bits
+	bsr	_ccw_getdmask
+	and.w	d1,d0
+	and.l	#$0000ffff,d0
+	move.l	d0,-(sp)		; save new CCW
+	move.l	l2cv,a0			; convert new CCW ...
+	jsr	(a0)
+	move.l	(sp)+,d2		; restore new CCW
+	move.l	(sp)+,d1		; restore old CCW
+	cmpi.w	#40,_mcpu+2		; the following is only necessary
+	blt.s	lt040			; on 68040 and 68060 (copyback cache!)
+	btst	#0,d2			; instruction cache going to be enabled?
+	beq.s	ic_off
+	btst	#0,d1			; if yes, is it currently disabled?
+	bne.s	no_icache
+	dc.w	$F498			; yes, so invalidate it (cinva ic)
+	bra.s	no_icache
+ic_off:
+	btst	#0,d1			; if it's going to be disabled,
+	beq.s	no_icache		; is it currently enabled?
+	dc.w	$F4B8			; yes, so write it back (cpusha ic)
+no_icache:
+	btst	#1,d2			; same as above, but for the data cache
+	beq.s	dc_off
+	btst	#1,d1
+	bne.s	lt040
+	dc.w	$F458			; cinva dc
+	bra.s	lt040
+dc_off:
+	btst	#1,d1
+	beq.s	lt040
+	dc.w	$F478			; cpusha dc
+lt040:
+	movec	d0,cacr			; write CACR
+clq:	clr.l	d0			; E_OK
+	rts	
+
+; Extract Cache Control Word from the CACR
+
+_ccw_get:
+	tst.w	hascaches
+	beq.s	clq
+	movec	cacr,d0			; read CACR
+	move.l	c2lv,a0			; convert
+	jsr	(a0)
+	move.w	d0,d1
+	bsr	_ccw_getdmask
+	and.w	d1,d0
+	and.l	#$0000ffff,d0
+	rts
+
+; get default Cache Control Mask for currently used CPU
+
+_ccw_getdmask:
+	move.l	_mcpu,d0		; high word assumed 0
+	divu.w	#5,d0
+	and.l	#$0000ffff,d0		; better to be safe...
+	lea	ccw_dmasks(pc),a0
+	move.w	0(a0,d0.w),d0		; _not_ a (a0,d0.w*2), see divu
+	rts
+
+; These are called by routines above. Notice CACR is ulong,
+; while CCW is in fact ushort, but the user sees it as ulong too.
+
+; 68020, bit 0 enables the cache, bit 1 freezes it.
+
+l2c020:	move.w	d0,d1
+	and.w	#$0001,d0	; leave the CE bit
+	lsr.w	#$02,d1		; shift the CF bit left
+	or.w	d1,d0
+	rts
+
+c2l020:	move.l	d0,d1
+	and.w	#$0001,d0
+	lsl.w	#$02,d1
+	or.w	d1,d0
+	rts
+
+; 68030
+
+cacr30:	dc.w	$0001,$0100,$0000,$0002
+	dc.w	$0200,$0010,$1000,$2000
+
+ccw30:	dc.w	$0001,$0008,$0000,$0000
+	dc.w	$0020,$0000,$0000,$0000
+	dc.w	$0002,$0010,$0000,$0000
+	dc.w	$0040,$0080,$0000,$0000
+
+l2c030:	lea	cacr30(pc),a0
+	clr.l	d1
+	moveq	#$07,d2
+l30:	lsr.w	#$01,d0
+	bcc.s	s30
+	or.w	(a0),d1
+s30:	addq.l	#$02,a0
+	dbra.w	d2,l30
+	move.l	d1,d0
+	rts
+
+c2l030:	lea	ccw30(pc),a0
+	clr.l	d1
+	moveq	#$0f,d2
+c30:	lsr.w	#$01,d0
+	bcc.s	s31
+	or.w	(a0),d1
+s31:	addq.l	#$02,a0
+	dbra.w	d2,c30
+	move.l	d1,d0
+	rts
+
+; 68040, bit 15 enables the instruction cache, bit 31 enables the data cache.
+
+l2c040:	ror.l	#$01,d0		; move IE bit to position 31
+	ror.w	#$01,d0		; move DE bit to position 15
+	swap	d0		; swap them
+	rts
+
+c2l040:	swap	d0
+	rol.w	#$01,d0
+	rol.l	#$01,d0
+	rts
+
+; 68060
+;
+; This is some special case, because function of the bits in CACR
+; has been reverted in the CCW for consistency, so that each '1'
+; means 'enable' rather than a 'disable' (in real 68060 CACR this
+; varies).
+
+cacr60:	dc.l	$00008000,$80000000,$00800000,$00000000
+	dc.l	$00000000,$00000000,$00000000,$00000000
+	dc.l	$00002000,$00004000,$08000000,$40000000
+	dc.l	$00400000,$00200000,$10000000,$20000000
+
+ccw60:	dc.w	$0000,$0100,$0200,$0001
+	dc.w	$0000,$0000,$0000,$0000
+	dc.w	$0000,$1000,$2000,$0004
+	dc.w	$0000,$0000,$0000,$0400
+	dc.w	$4000,$8000,$0800,$0002
+
+l2c060:	lea	cacr60(pc),a0
+	clr.l	d1
+	moveq	#$0f,d2
+l60:	lsr.w	#$01,d0
+	bcc.s	s60
+	or.l	(a0),d1
+s60:	addq.l	#$04,a0
+	dbra.w	d2,l60
+	move.l	d1,d0
+	eori.l	#$58006000,d0	; adjust reverted bits
+	rts	
+
+c2l060:	lea	ccw60(pc),a0
+	lsr.l	#$08,d0		; first 13 bits of CACR aren't used 
+	lsr.l	#$04,d0
+	clr.l	d1
+	moveq	#$13,d2
+c60:	lsr.l	#$01,d0
+	bcc.s	s61
+	or.w	(a0),d1
+s61:	addq.l	#$02,a0
+	dbra.w	d2,c60
+	move.l	d1,d0
+	eor.w	#$4f00,d0	; adjust reverted bits
+	rts
+
+;
+; cpush(void *base, long length):
+; flush both caches from base over a distance of length. If length is -1
+; then the entire cache is flushed
+;
+
+_cpush:
+	movem.l	4(sp),d0/a0	; get parameters
+	exg	a0,d0		; and in the right order
+	nop			; flush pipelines
+	move.l	_cachevec,a1
+	jmp	(a1)
+
+_cache030:			; 68030 cache
+	movec	cacr,d1
+	move.l	d1,-(sp)
+	addq.l	#1,d0		; if was -1
+	beq.s	abc030		; then flush everything
+	addq.l	#2,d0		; round up to long boundary
+	lsr.l	#2,d0		; convert to number of longs
+	cmp.l	#64,d0
+	bcs.s	fls030		; dump selectively
+	
+abc030:	or.w	#$0808,d1
+	movec	d1,cacr
+	bra.s	rescacr
+
+fls030:	or.w	#$0404,d1	; clear DC/IC entries
+; run through d0+1 times (since a0 may not be on a long boundary)
+do030:	movec	a0,caar
+	movec	d1,cacr
+	addq.w	#4,a0
+	dbf	d0,do030
+rescacr:
+	move.l	(sp)+,d0
+	movec	d0,cacr
+_cache000:			; 68000 cache (i.e. no cache)
+	rts
+
+_cache040:			; 68040 cache
+	addq.l	#1,d0		; if was -1
+	beq.s	abc040		; then flush everything
+	add.l	#14,d0		; round up to line boundary
+	lsr.l	#4,d0		; convert to number of lines
+	cmp.l	#256,d0
+	bcs.s	fls040		; not too many lines, so dump only some
+abc040:	dc.w	$F4F8		; this is "cpusha bc" if your asm knows '040
+	rts
+	
+fls040:
+; run through d0+1 times (since a0 may not be on a line boundary)
+	moveq	#16,d1
+do040:
+	; As the MC68040 (and the MC68060, which uses the following code as
+	; well) needs physical addresses for cpushl, we have to convert the
+	; address(es) to push. This has to be done for each line, as memory
+	; may not be linearly mapped (i.e. there may be gaps in the physical
+	; memory used to form the logical address space). Of course, the
+	; conversion would actually only be necessary when the address to push
+	; crosses a page boundary, but I don't think the gain this could mean
+	; would be enough to judge the additional overhead needed.
+	move.l	a0,-(sp)
+	bsr.s	log2phys
+	cmpa.l	#-1,a0
+	movea.l	(sp)+,a0	; does not affect the CCR, so no problem here
+	beq.s	abc040		; if there's no physical address, flush all
+	dc.w	$F4E8		; this is "cpushl bc,(a0)" for the '040
+	add.w	d1,a0
+	dbf	d0,do040
+	rts
+
+_cache060:			; 68060 cache (double the 040)
+%ifdef never
+	addq.l	#1,d0		; if was -1
+	beq.s	abc040		; then flush everything
+	add.l	#14,d0		; round up to line boundary
+	lsr.l	#4,d0		; convert to number of lines
+	cmp.l	#512,d0
+	bcs.s	fls040
+	dc.w	$F4F8		; see abc040
+	rts
+%else
+	; Until I have no possibility to get the log2phys()-code really work on
+	; the 060, it's the safest to allways flush all caches (one shouldn't
+	; rely on a linear mapping of the memory)
+	dc.w	$F4F8		; cpusha bc
+	rts
+%endif
+
+; log2phys
+;
+; Convert logical to physical address on 040 and 060. The method necessary
+; for the 060 is a bit braindead, but Motorola decided to remove the ptest
+; opcode in favor of plpa, which has the big disadvantage of triggering an
+; access exception ("bus error") for logical addresses that do not have a
+; (valid) physical counterpart - very clever :-/
+;
+; Bugs:
+; - Assumes that the logical address to convert modulo pagesize is never
+;   (pagesize - 1), as -1 (which is used to signal an unmapped address) could
+;   be a valid answer in this case.
+;
+; Input:
+; a0: logical address; use even addresses only to be on the safe side
+;     (see "Bugs" above)
+;
+; Returns:
+; a0: physical address (-1 if the address is not currently mapped)
+
+log2phys:
+	; We're going to use a temporary exception handler, so better mask
+	; all interrupts
+	move	sr,-(sp)
+	ori	#0x700,sr
+	movem.l	d0-d2/a1,-(sp)	; save some registers
+	cmpi.w	#$60,_mcpu+2	; is this a 060?
+	beq.s	l2p_060		; yes, so use plpa
+	dc.w	$4e7a,$0003	; movec tc,d0
+	btst	#15,d0
+	beq.s	l2p_exit	; MMU is disabled, logical == physical
+	; determine the current pagesize - 1
+	move.l	#8191,d1
+	btst	#14,d0
+	bne.s	l2p_goon
+	move.l	#4095,d1
+l2p_goon:
+	move.l	d1,d2
+	not.l	d2		; ~(pagesize - 1)
+	dc.w	$f568		; let the MMU translate the address (ptestr (a0))
+	dc.w	$4e7a,$0805	; movec mmusr,d0
+	btst	#1,d0		; match with a transparent translation register?
+	bne.s	l2p_exit	; yes, logical == physical
+	btst	#0,d0		; was a valid desriptor found?
+	bne.s	l2p_resident
+	moveq	#-1,d0		; no, so return -1
+	move.l	d0,a0
+	bra.s	l2p_exit
+l2p_resident:
+	and.l	d2,d0		; extract the physical page address
+	exg	d0,a0
+	and.l	d1,d0		; extract the offset from the logical address
+	add.l	d0,a0		; and build the effective phyiscal address
+l2p_exit:
+	movem.l	(sp)+,d0-d2/a1	; restore registers
+	move	(sp)+,sr	; restore interrupts
+	rts
+
+	; Here's the code for the MC68060. Note that it needs a temporary
+	; access exception handler because plpa may trigger such an exception
+	; if the logical address doesn't have a valid physical counterpart
+l2p_060:
+	; Install the temporary access exception handler
+	movec	vbr,a1
+	move.l	8(a1),old_access
+	move.l	#temp_access,8(a1)
+	move.l	sp,a1			; save the sp for the handler
+	dc.w	$f5c8			; translate the address (plpar (a0))
+l2p_return:
+	movec	vbr,a1
+	move.l	old_access,8(a1)	; restore the access exception handler
+	bra.s	l2p_exit
+
+; This is the temporary access exception handler. If it gets called, there's
+; no valid physical address for the logical address we want to convert.
+
+old_access:
+	dc.l	0
+temp_access:
+	move.l	a1,sp		; Restore the stackpointer
+	moveq	#-1,d0
+	move.l	d0,a0		; Signal "no valid physical address found"
+	bra.s	l2p_return
+
+;
+; Set the stack pointer to a new value
+; Called when we're starting GEM from the exec_os vector
+
+	XDEF	_setstack
+_setstack:
+	move.l	(sp)+,a0	; pop return address
+	move.l	(sp)+,sp	; set stack pointer
+	jmp	(a0)		; return
+
+
+	END

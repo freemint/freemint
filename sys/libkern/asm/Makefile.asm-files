@@ -1,0 +1,55 @@
+#
+# Makefile for m68k assembler modules
+#
+
+SHELL = /bin/sh
+SUBDIRS = 
+
+srcdir = ..
+top_srcdir = ../../..
+subdir = 
+
+default: all
+
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
+
+all-here: asm-files
+
+# default overwrites
+INCLUDES = -I$(top_srcdir)
+DEFINITIONS = 
+ifeq ($(CPU),030)
+DEFINITIONS = -DONLY030
+endif
+ifeq ($(CPU),020-60)
+DEFINITIONS = -DONLY030
+endif
+
+# default definitions
+ASMTRANS = $(top_srcdir)/arch/asmtrans/asmtrans
+OBJS = $(SOBJS:.spp=.o)
+
+VPATH = ..
+
+#
+# main target
+#
+asm-files: $(OBJS)
+	echo $(OBJS) > $@
+
+#
+# assembler source files
+#
+%.o: %.spp
+	$(ASMTRANS) $(DEFINITIONS) -gas -o $*.s $<
+	$(CRLF) $*.s
+	$(AS) $(ASFLAGS) -c $*.s -o $@
+	$(RM) $*.s	
+
+memset.o:	memset.spp
+peekpoke.o:	peekpoke.spp
+quickzero.o:	quickzero.spp
+quickmove.o:	quickmove.spp
+quickswap.o:	quickswap.spp
