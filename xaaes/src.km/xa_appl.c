@@ -39,6 +39,7 @@
 #include "widgets.h"
 #include "xa_types.h"
 #include "xa_evnt.h"
+#include "xa_rsrc.h"
 #include "xa_user_things.h"
 
 #include "mint/fcntl.h"
@@ -325,7 +326,6 @@ remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 		wl = wl->next;
 	}
 }
-
 /*
  * close and free all client resources
  * 
@@ -364,7 +364,12 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 * Figure out which client to make active
 	 */
 	if (cfg.next_active == 1)
-		top_owner = previous_client(lock);
+	{
+		if (client == S.client_list)
+			top_owner = previous_client(lock);
+		else
+			top_owner = S.client_list;
+	}
 	else if (cfg.next_active == 0)
 		top_owner = window_list->owner;
 	else
@@ -389,7 +394,8 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	app_in_front(lock, top_owner);
 
 	client->rsrc = NULL;
-	client->resources = NULL;
+	FreeResources(client, NULL);
+	//client->resources = NULL;
 
 	/* Free name *only if* it is malloced: */
 	if (client->tail_is_heap)
