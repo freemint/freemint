@@ -117,54 +117,54 @@ static int flags [64] =
 
 
 static void *
-do_KRmalloc (int32 size)
+do_KRmalloc (struct KRmalloc_param p)
 {
-	return gs_mem_alloc (size);
+	return gs_mem_alloc (p.size);
 }
 
 static void
-do_KRfree (void *mem)
+do_KRfree (struct KRfree_param p)
 {
-	gs_mem_free (mem);
+	gs_mem_free (p.mem);
 }
 
 static int32
-do_KRgetfree (int16 flag)
+do_KRgetfree (struct KRgetfree_param p)
 {
-	return gs_mem_getfree (flag);
+	return gs_mem_getfree (p.flag);
 }
 
 static void *
-do_KRrealloc (void *mem, int32 newsize)
+do_KRrealloc (struct KRrealloc_param p)
 {
-	return gs_mem_realloc (mem, newsize);
+	return gs_mem_realloc (p.mem, p.newsize);
 }
 
 char *
-do_get_err_text (int16 code)
+do_get_err_text (struct get_err_text_param p)
 {
-	if (code < 0)
-		code = -code;
+	if (p.code < 0)
+		p.code = -p.code;
 	
-	if (code > 2000)
+	if (p.code > 2000)
 		return err_unknown;
 	
-	if (code > 1000)
+	if (p.code > 1000)
 	{
 		/* Encoded GEMDOS errors */
-		return strerror (code - 1000);
+		return strerror (p.code - 1000);
 	}
 	
-	if (code > E_LASTERROR)
+	if (p.code > E_LASTERROR)
 		return err_unknown;
 	
-	return err_list [code];
+	return err_list [p.code];
 }
 
 static char *
-do_getvstr (char *var)
+do_getvstr (struct getvstr_param p)
 {
-	return gs_getvstr (var);
+	return gs_getvstr (p.var);
 }
 
 /* Incompatibility:  Does nothing.
@@ -179,32 +179,32 @@ do_carrier_detect (void)
 }
 
 static int16
-do_TCP_open (uint32 rhost, int16 rport, int16 tos, uint16 obsize)
+do_TCP_open (struct TCP_open_param p)
 {
 	uint32 lhost; int16 lport;
 	int fd;
 	long ret;
 	
-	if (rhost == 0)
+	if (p.rhost == 0)
 	{
-		rhost = 0;
-		rport = 0;
+		p.rhost = 0;
+		p.rport = 0;
 		lhost = INADDR_ANY;
-		lport = rport;
+		lport = p.rport;
 	}
-	else if (rport == 0)
+	else if (p.rport == 0)
 	{
-		CIB *cib = (CIB *) rhost;
+		CIB *cib = (CIB *) p.rhost;
 		
-		rhost = cib->rhost;
-		rport = cib->rport;
+		p.rhost = cib->rhost;
+		p.rport = cib->rport;
 		lhost = cib->lhost;
 		lport = cib->lport;
 	}
 	else
 	{
-		rhost = rhost;
-		rport = rport;
+		p.rhost = p.rhost;
+		p.rport = p.rport;
 		lhost = INADDR_ANY;
 		lport = 0;
 	}
@@ -216,7 +216,7 @@ do_TCP_open (uint32 rhost, int16 rport, int16 tos, uint16 obsize)
 	/* The TCP_OPEN_CMD command transmogrifies this descriptor into an
 	 * actual connection.
 	 */
-	ret = gs_connect (fd, rhost, rport, lhost, lport);
+	ret = gs_connect (fd, p.rhost, p.rport, lhost, lport);
 	if (ret < 0)
 		return ret;
 	
@@ -224,35 +224,35 @@ do_TCP_open (uint32 rhost, int16 rport, int16 tos, uint16 obsize)
 }
 
 static int16
-do_TCP_close (int16 fd, int16 timeout)
+do_TCP_close (struct TCP_close_param p)
 {
-	gs_close (fd);
+	gs_close (p.fd);
 	return 0;
 }
 
 static int16
-do_TCP_send (int16 fd, void *buf, int16 len)
+do_TCP_send (struct TCP_send_param p)
 {
-	return gs_write (fd, buf, len);
+	return gs_write (p.fd, p.buf, p.len);
 }
 
 static int16
-do_TCP_wait_state (int16 fd, int16 state, int16 timeout)
+do_TCP_wait_state (struct TCP_wait_state_param p)
 {
-	return gs_wait (fd, timeout);
+	return gs_wait (p.fd, p.timeout);
 }
 
 /* Incompatibility:  Does nothing.
  * MiNTnet handles this internally.
  */
 static int16
-do_TCP_ack_wait (int16 fd, int16 timeout)
+do_TCP_ack_wait (struct TCP_ack_wait_param p)
 {
 	return E_NORMAL;
 }
 
 static int16
-do_UDP_open (uint32 rhost, int16 rport)
+do_UDP_open (struct UDP_open_param p)
 {
 	int fd;
 	int ret;
@@ -264,7 +264,7 @@ do_UDP_open (uint32 rhost, int16 rport)
 	/* The UDP_OPEN_CMD command transmogrifies this descriptor into an
 	 * actual connection.
 	 */
-	ret = gs_udp_open (fd, rhost, rport);
+	ret = gs_udp_open (fd, p.rhost, p.rport);
 	if (ret < 0)
 		return ret;
 	
@@ -272,40 +272,40 @@ do_UDP_open (uint32 rhost, int16 rport)
 }
 
 static int16
-do_UDP_close (int16 fd)
+do_UDP_close (struct UDP_close_param p)
 {
-	gs_close (fd);
+	gs_close (p.fd);
 	return 0;
 }
 
 static int16
-do_UDP_send (int16 fd, void *buf, int16 len)
+do_UDP_send (struct UDP_send_param p)
 {
-	return gs_write (fd, buf, len);
+	return gs_write (p.fd, p.buf, p.len);
 }
 
 /* Incompatibility:  Does nothing.
  * MiNTnet handles its own "kicking"
  */
 static int16
-do_CNkick (int16 fd)
+do_CNkick (struct CNkick_param p)
 {
 	return E_NORMAL;
 }
 
 static int16
-do_CNbyte_count (int16 fd)
+do_CNbyte_count (struct CNbyte_count_param p)
 {
-	return gs_canread (fd);
+	return gs_canread (p.fd);
 }
 
 static int16
-do_CNget_char (int16 fd)
+do_CNget_char (struct CNget_char_param p)
 {
 	char c;
 	long ret;
 	
-	ret = gs_read (fd, &c, 1L);
+	ret = gs_read (p.fd, &c, 1L);
 	if (ret < 0)
 		return ret;
 	
@@ -316,15 +316,15 @@ do_CNget_char (int16 fd)
 }
 
 static NDB *
-do_CNget_NDB (int16 fd)
+do_CNget_NDB (struct CNget_NDB_param p)
 {
-	return gs_readndb (fd);
+	return gs_readndb (p.fd);
 }
 
 static int16
-do_CNget_block (int16 fd, void *buf, int16 len)
+do_CNget_block (struct CNget_block_param p)
 {
-	return gs_read (fd, buf, len);
+	return gs_read (p.fd, p.buf, p.len);
 }
 
 static void
@@ -334,9 +334,9 @@ do_housekeep (void)
 }
 
 static int16
-do_resolve (char *dn, char **rdn, uint32 *alist, int16 lsize)
+do_resolve (struct resolve_param p)
 {
-	return gs_resolve (dn, rdn, alist, lsize);
+	return gs_resolve (p.dn, p.rdn, p.alist, p.lsize);
 }
 
 static void
@@ -352,11 +352,11 @@ do_ser_enable (void)
 }
 
 static int16
-do_set_flag (int16 flag)
+do_set_flag (struct set_flag_param p)
 {
 	int flg_val;
 	
-	if (flag < 0 || flag >= 64)
+	if (p.flag < 0 || p.flag >= 64)
 		return E_PARAMETER;
 	
 	/* This is probably not necessary, since a MiNT process currently
@@ -364,17 +364,17 @@ do_set_flag (int16 flag)
 	 * chances...
 	 */
 	Psemaphore (2, FLG_SEM, -1);
-	flg_val = flags [flag];
-	flags [flag] = 1;
+	flg_val = flags [p.flag];
+	flags [p.flag] = 1;
 	Psemaphore (3, FLG_SEM, 0);
 	
 	return flg_val;
 }
 
 static void
-do_clear_flag (int16 flag)
+do_clear_flag (struct clear_flag_param p)
 {
-	if (flag < 0 || flag >= 64)
+	if (p.flag < 0 || p.flag >= 64)
 		return;
 	
 	/* This is probably not necessary, since a MiNT process currently
@@ -382,14 +382,14 @@ do_clear_flag (int16 flag)
 	 * chances...
 	 */
 	Psemaphore (2, FLG_SEM, -1);
-	flags [flag] = 0;
+	flags [p.flag] = 0;
 	Psemaphore (3, FLG_SEM, 0);
 }
 
 static CIB *
-do_CNgetinfo (int16 fd)
+do_CNgetinfo (struct CNgetinfo_param p)
 {
-	GS *gs = gs_get (fd);
+	GS *gs = gs_get (p.fd);
 	
 	if (!gs)
 		return (CIB *) E_BADHANDLE;
@@ -401,32 +401,32 @@ do_CNgetinfo (int16 fd)
  * Don't use a STiK dialer with GlueSTiK, gods know what will happen!
  */
 static int16
-do_on_port (char *port)
+do_on_port (struct on_port_param p)
 {
 	return E_NOROUTINE;
 }
 
 static void
-do_off_port (char *port)
+do_off_port (struct off_port_param p)
 {
 }
 
 static int16
-do_setvstr (char *vs, char *value)
+do_setvstr (struct setvstr_param p)
 {
-	return gs_setvstr (vs, value);
+	return gs_setvstr (p.vs, p.value);
 }
 
 static int16
-do_query_port (char *port)
+do_query_port (struct query_port_param p)
 {
 	return E_NOROUTINE;
 }
 
 static int16
-do_CNgets (int16 fd, char *buf, int16 len, char delim)
+do_CNgets (struct CNgets_param p)
 {
-	return gs_read_delim (fd, buf, len, delim);
+	return gs_read_delim (p.fd, p.buf, p.len, p.delim);
 }
 
 
