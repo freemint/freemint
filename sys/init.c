@@ -1145,7 +1145,9 @@ init (void)
 	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
 # endif
 
+# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_pid_0);
+# endif
 
 	/* zero the user registers, and set the FPU in a "clear" state */
 	for (r = 0; r < 15; r++)
@@ -1246,7 +1248,9 @@ mint_thread(void *arg)
 	int pid;
 	long r;
 
+# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
+# endif
 
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
