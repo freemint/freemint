@@ -80,7 +80,7 @@ xaaes_on_exit(void *_client, struct proc *p, int code)
 		enum locks lock = NOLOCKS;
 
 		DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
-		exit_client(lock, _client, code);
+		exit_client(lock, _client, code, true);
 	}
 	else
 		DIAGS(("xaaes_on_exit - thread terminate"));
@@ -126,7 +126,7 @@ static void _cdecl
 premature_xaaes_on_exit(void *_client, struct proc *p, int nr)
 {
 	DIAGS(("premature_xaaes_on_signal for %u (signal %u)", p->pid, nr));
-	exit_proc(0, p);
+	exit_proc(0, p, nr);
 }
 
 static void _cdecl xaaes_sh_info_release(void *);

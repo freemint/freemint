@@ -111,6 +111,13 @@ proc_is_now_client(struct xa_client *client)
 
 }
 
+/*
+ * Ozk: New scheme; We keep the shel_info extension throughout the processes
+ * lifetime. Reason for this is that applications may call appl_init()/appl_exit()
+ * more than once. And that means we need the shel_info on the second init() too.
+ * So, shel_info extension is not freed until we are absolutely sure the process
+ * is about to terminate...
+ */
 struct xa_client *
 init_client(enum locks lock)
 {
@@ -228,16 +235,13 @@ init_client(enum locks lock)
 			 */
 			client->rppid = info->rppid;
 
-			client->tail_is_heap = info->tail_is_heap;
 			client->cmd_tail = info->cmd_tail;
-
+			
 			/* invalidate */
-			info->cmd_tail = NULL;
+			//info->cmd_tail = NULL;
 
 			strcpy(client->cmd_name, info->cmd_name);
 			strcpy(client->home_path, info->home_path);
-
-			detach_extension(client->p, XAAES_MAGIC_SH);
 		}
 	}
 
@@ -298,37 +302,38 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->globl_ptr = globl;
 			client->forced_init_client = false;
 		}
-		//ALERT(("Double appl_init for %s, ignored!", client->proc_name));
-		goto clean_out;
+	}
+	else
+	{
+		if ((client = init_client(lock)))
+		{
+			/* Preserve the pointer to the globl array
+			 * so we can fill in the resource address later
+			 */
+			client->globl_ptr = globl;
+		}
 	}
 
-	if (!(client = init_client(lock)))
-		return XAC_DONE;
+	if (client)
+	{
+		/* fill out global */
+		globl->version = 0x0410;		/* Emulate AES 4.1 */
+		globl->count = -1;			/* unlimited applications XXX -> mint process limit */
+		globl->id = p->pid;			/* appid -> pid */
+		globl->pprivate = NULL;
+		globl->ptree = NULL;			/* Atari: pointer to pointerarray of trees in rsc. */
+		globl->rshdr = NULL;			/* Pointer to resource header. */
+		globl->lmem = 0;
+		globl->nplanes = screen.planes;
+		globl->res1 = 0;
+		globl->res2 = 0;
+		globl->c_max_h = screen.c_max_h;	/* AES 4.0 extensions */
+		globl->bvhard = 4;
 
-	/* Preserve the pointer to the globl array
-	 * so we can fill in the resource address later
-	 */
-	client->globl_ptr = globl;
-
-
-clean_out:
-	pb->intout[0] = -1;
-
-	/* fill out global */
-	globl->version = 0x0410;		/* Emulate AES 4.1 */
-	globl->count = -1;			/* unlimited applications XXX -> mint process limit */
-	globl->id = p->pid;			/* appid -> pid */
-	globl->pprivate = NULL;
-	globl->ptree = NULL;			/* Atari: pointer to pointerarray of trees in rsc. */
-	globl->rshdr = NULL;			/* Pointer to resource header. */
-	globl->lmem = 0;
-	globl->nplanes = screen.planes;
-	globl->res1 = 0;
-	globl->res2 = 0;
-	globl->c_max_h = screen.c_max_h;	/* AES 4.0 extensions */
-	globl->bvhard = 4;
-
-	pb->intout[0] = p->pid;
+		pb->intout[0] = p->pid;
+	}
+	else
+		pb->intout[0] = -1;
 
 	return XAC_DONE;
 }
@@ -350,10 +355,11 @@ send_ch_exit(struct xa_client *client, short pid, int code)
  * client.
  */
 void
-exit_proc(enum locks lock, struct proc *p)
+exit_proc(enum locks lock, struct proc *p, int code)
 {
 	struct shel_info *info;
-	
+	struct xa_client *clnt = lookup_extension(p, XAAES_MAGIC);
+
 	/* Unlock mouse & screen */
 	if (update_locked() == p)
 		free_update_lock();
@@ -369,16 +375,32 @@ exit_proc(enum locks lock, struct proc *p)
 		C.mouse_lock = NULL;
 		C.mouselock_count = 0;
 	}
-
-	/*
-	 * If shel_info is still attached, this process did not call appl_init().
-	 * Or it crashed before it got that far. In anycase, see if we were started
-	 * by any existing client, which is our "real" parent, and send it a CH_EXIT.
+	
+	
+	/* NOT FINISHED WITH THESE COMMENTS, THEY ARE INCORRECT NOW */
+	/* If both xaaes and shel_info extensions are attached, we rely on
+	 * the facts that either;
+	 *
+	 * a -	if both xaaes and shel_info extension are attached, exit_proc()
+	 *	is called from exit_client(), and does not necessarily mean that
+	 *	the process terimnates (may be an appl_exit())
+	 *
+	 * b -	Only shel_info extension present - the application either crashed
+	 *	before doing appl_init(), or it terminates without ever being an
+	 *	AES client, or terminates normally after doing an appl_exit().
+	 *	In this case we can be sure we are terminating, because exit_proc()
+	 *	is only called from exit_client() or on_exit() module callback.
+	 *	exit_client() will remove both extensions if it is called on real
+	 *	process termination.
+	 *
+	 * This makes us able to find out our 'real' AES parent and send it a CH_EXIT
+	 * AES message.
 	 */
-	if ((info = lookup_extension(p, XAAES_MAGIC_SH)))
+	if ((info = lookup_extension(p, XAAES_MAGIC_SH)) && (!clnt || (clnt && clnt->pexit)) )
 	{
 		struct xa_client *client = pid2client(info->rppid);
-		send_ch_exit(client, p->pid, 0);
+		
+		send_ch_exit(client, p->pid, code);
 #if GENERATE_DIAGS
 		if (client)
 		{
@@ -388,6 +410,31 @@ exit_proc(enum locks lock, struct proc *p)
 		else
 			DIAGS(("No real parent client"));
 #endif
+		remove_shel_info(p);
+	}
+}
+
+void
+remove_shel_info(struct proc *p)
+{
+	struct shel_info *info = lookup_extension(p, XAAES_MAGIC_SH);
+
+	DIAGS((" -- removing shel_info=%lx from pid %d (%s)",
+		info, p->pid, p->name));
+
+	if (info)
+	{
+		if (info->tail_is_heap)
+		{
+			kfree(info->cmd_tail);
+			info->cmd_tail = NULL;
+			info->tail_is_heap = false;
+		}
+		
+		/* 
+		 * ozk: Hmm... cannot detach from within module callbacks?
+		 */
+		//detach_extension(p, XAAES_MAGIC_SH);
 	}
 }
 	
@@ -400,7 +447,7 @@ exit_proc(enum locks lock, struct proc *p)
  * cleanup related to this client.
  */
 void
-exit_client(enum locks lock, struct xa_client *client, int code)
+exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 {
 	struct xa_client *top_owner;
 	long redraws;
@@ -428,7 +475,11 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		popout(TAB_LIST_START);
 	}
 
-	exit_proc(lock, client->p);
+	/* Ozk:
+	 * exit_proc() will not detach shel_write extension, because
+	 * xaaes_client extension is still attached.
+	 */
+	exit_proc(lock, client->p, code);
 
 	if (S.wait_mouse == client)
 	{
@@ -472,6 +523,10 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		client->tail_is_heap = false;
 	}
 
+	/* Ozk:
+	 * sending CH_EXIT is done when shel_info extension is detached
+	 */
+#if 0
 	if (client->p->ppid != C.AESpid)
 	{
 		/* Send a CH_EXIT message if the client
@@ -499,7 +554,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 				real_parent->p->pid, real_parent->name, client->p->pid, client->name));
 #endif
 	}
-
+#endif
 	/* remove any references */
 	{
 		XA_WIDGET *widg = get_menu_widg();
@@ -599,6 +654,21 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	client->cmd_tail = "\0";
 	//client->wt.e.obj = -1;
 
+	/* Ozk:
+	 * If we are called to really terminate the process, we detach
+	 * AES extensions here and now. If not, we leave detaching to
+	 * our caller(s)...
+	 */
+	if (pexit)
+	{
+		struct proc *p = client->p;
+		
+		DIAG((D_appl, NULL, "Process terminating - detaching extensions..."));
+		client->pexit = true;
+		//detach_extension(p, XAAES_MAGIC);
+		remove_shel_info(p);
+	}
+		
 	S.clients_exiting--;
 
 	DIAG((D_appl, NULL, "client exit done"));
@@ -632,7 +702,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 	/* we assume correct termination */
-	exit_client(lock, client, 0);
+	exit_client(lock, client, 0, false);
 
 	/* and decouple from process context */
 	detach_extension(NULL, XAAES_MAGIC);

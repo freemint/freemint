@@ -536,6 +536,7 @@ struct xa_client
 
 	bool apterm;			/* true if application understands AP_TERM. */
 	bool forced_init_client;
+	bool pexit;
 
 	struct xa_aesmsg_list *msg;		/* Pending AES messages */
 	struct xa_aesmsg_list *rdrw_msg;	/* WM_REDRAW messages */
