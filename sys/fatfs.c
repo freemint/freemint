@@ -6816,7 +6816,7 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 
 			if ((dirh->flags & TOS_SEARCH) == 0)
 			{
-				*(long *) (nm - 4) = INDEX (new);
+				unaligned_putl(nm - 4, INDEX (new));
 			}
 
 			FAT_DEBUG_COOKIE ((new));

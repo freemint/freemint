@@ -1456,7 +1456,7 @@ found:
 		
 		if ((dirh->flags & TOS_SEARCH) == 0)
 		{
-			*(long *) name = inode;
+			unaligned_putl(name, inode);
 			namelen -= 4;
 			name += 4;
 		}

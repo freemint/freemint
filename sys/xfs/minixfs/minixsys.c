@@ -1007,7 +1007,7 @@ m_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 				{
 					namelen -= sizeof (long);
 					if (namelen <= 0) return EBADARG;
-					*((long *) name) = (long) try->d_inum;
+					unaligned_putl(name, (long) try->d_inum);
 					name += sizeof (long);
 	       			}
 
