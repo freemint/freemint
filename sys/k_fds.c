@@ -264,7 +264,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	 */
 	r = relpath2cookie (&dir, temp1, follow_links, &fc, 0);
 
-# ifdef CREATE_PIPES
+# if 1
 	/*
 	 * file found: this is an error if (O_CREAT|O_EXCL) are set
 	 *	...or if this is Fcreate with nonzero attr on the pipe filesystem
