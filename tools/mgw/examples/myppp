@@ -1,0 +1,25 @@
+/dev/ttyb
+
+38400
+
+crtscts
+#require-chap
+
+lock
+modem
+# debug
+defaultroute
+#vj
+
+usepeerdns
+
+asyncmap 0
+noipdefault
+netmask 255.255.255.0
+noauth
+mru 1500
+mtu 1500
+user "myppp"
+name "myppp"
+
+connect "chat -f u:/etc/ppp/peers/myppp.chat"
