@@ -626,6 +626,6 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 		fp->links = 0;
 		FP_FREE(fp);
 
-		ALERT("parse_cnf: can't open %s", path);
+		ALERT(MSG_cnf_cant_open, path);
 	}
 }
