@@ -194,10 +194,12 @@ DeBug(enum debug_item item, struct xa_client *client, char *t, ...)
 
 			l += sprintf(line+l, sizeof(line)-l, "[B%d]", b);
 
+#if 0
 			if (mu_button.got || mu_button.have)
 				l += sprintf(line+l, sizeof(line)-l, "[%c%c]",
 					     mu_button.have ? 'H' : ' ',
 					     mu_button.got ? 'G' : ' ');
+#endif
 		}
 
 		{
