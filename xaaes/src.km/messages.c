@@ -250,7 +250,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	if (C.shutdown & QUIT_NOW)
 		return;	
 
-	if (!rc || rc == dest_client)
+	if (rc == dest_client) //(!rc || rc == dest_client)
 	{
 		deliver_message(lock, dest_client, msg);
 	}
@@ -319,7 +319,6 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 		/* Write success to client's reply pipe to unblock the process */
 		dest_client->usr_evnt = 1;
 		//Unblock(dest_client, XA_OK, 22);
-
 	}
 	else /* Create a new entry in the destination client's pending messages list */
 	{
