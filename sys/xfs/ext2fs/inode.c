@@ -558,11 +558,10 @@ ext2_delete_inode (COOKIE *inode)
 	}
 	
 	inode->in.i_dtime = cpu2le32 (CURRENT_TIME);
-	inode->in.i_size = 0;
 	mark_inode_dirty (inode);
 	
 	if (inode->in.i_blocks)
-		ext2_truncate (inode);
+		ext2_truncate (inode, 0);
 	
 	ext2_free_inode (inode);
 }

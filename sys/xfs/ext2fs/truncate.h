@@ -28,7 +28,7 @@
 # include "global.h"
 
 
-void	ext2_truncate	(COOKIE *inode);
+void	ext2_truncate	(COOKIE *inode, unsigned long newsize);
 
 
 # endif /* _truncate_h */

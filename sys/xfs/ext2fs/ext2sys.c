@@ -2085,17 +2085,20 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				return EROFS;
 			}
 			
-			if (IS_IMMUTABLE (c)
-				|| le2cpu32 (c->in.i_size) < *((long *) arg))
+			if (!EXT2_ISREG (le2cpu16 (c->in.i_mode)))
 			{
 				e_release (&fc);
 				return EACCES;
 			}
 			
-			c->in.i_size = cpu2le32 (*((long *) arg));
-			mark_inode_dirty (c);
+			if (IS_IMMUTABLE (c)
+				|| le2cpu32 (c->in.i_size) < *((unsigned long *) arg))
+			{
+				e_release (&fc);
+				return EACCES;
+			}
 			
-			ext2_truncate (c);
+			ext2_truncate (c, *(unsigned long *)arg);
 			e_release (&fc);
 			
 			bio_SYNC_DRV ((&bio), s->di);
