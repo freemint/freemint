@@ -48,6 +48,7 @@
 # define TRAP_Super(ptr)			Super(ptr)
 # define TRAP_Tgettime()			Tgettime()
 # define TRAP_Fgetdta()				Fgetdta()
+# define TRAP_Sversion()			Sversion()
 # define TRAP_Dfree(buf,d)			Dfree(buf,d)
 # define TRAP_Dcreate(path)			Dcreate(path)
 # define TRAP_Ddelete(path)			Ddelete(path)

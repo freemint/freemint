@@ -8,6 +8,10 @@
  * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ *  
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,13 +26,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 1998-07-02
- * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- *  
  */
 
 # ifndef _global_h
@@ -49,8 +46,6 @@ extern short fpu;		/* flag if fpu is present */
 extern int tosvers;		/* the underlying TOS version */
 extern short falcontos;
 extern int secure_mode;
-extern int screen_boundary;
-extern int flk;
 extern int FalconVideo;
 extern short ste_video;
 extern char sysdir[];
@@ -58,10 +53,6 @@ extern short sysdrv;
 
 # define MAXLANG 6	/* languages supported */
 extern int gl_lang;
-
-# ifdef OLDTOSFS
-extern long gemdos_version;
-# endif
 
 typedef struct kbdvbase KBDVEC;
 struct kbdvbase
@@ -79,6 +70,5 @@ struct kbdvbase
 };
 
 extern KBDVEC *syskey;
-
 
 # endif /* _global_h */
