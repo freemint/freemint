@@ -36,7 +36,7 @@
 #include "messages.h"
 
 #include "mint/proc.h"
-#include "../../sys/adi/whlmoose/whlmoose.h"
+#include "adi/moose.h"
 
 #include "xa_list.h"
 

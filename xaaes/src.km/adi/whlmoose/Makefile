@@ -19,7 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir)/../../sys
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=whlmoose
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
