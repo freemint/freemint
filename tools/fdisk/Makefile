@@ -30,11 +30,11 @@ FDISKOBJS = fdisk.o
 SFDISKOBJS = sfdisk.o
 
 fdisk: $(FDISKOBJS) $(LIBIOSTMP)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(FDISKOBJS) $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
 	$(STRIP) $@
 
 sfdisk: $(SFDISKOBJS) $(LIBIOSTMP)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SFDISKOBJS) $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
 	$(STRIP) $@
 
 
