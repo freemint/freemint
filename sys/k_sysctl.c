@@ -238,6 +238,9 @@ hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *ne
 
 		case HW_PAGESIZE:
 			return sysctl_rdlong (oldp, oldlenp, newp, QUANTUM);
+
+		case HW_FREEPHYSMEM:
+			return sysctl_rdlong (oldp, oldlenp, newp, freephysmem ());
 	}
 
 	return EOPNOTSUPP;
