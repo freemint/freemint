@@ -69,10 +69,10 @@ struct sem_undo
 
 union __semun;
 
-long sys_semctl (long semid, long semnum, long cmd, union __semun *arg);
-long sys_semget (long key, long nsems, long semflg);
-long sys_semop (long semid, struct sembuf *sops, long nsops);
-long sys_semconfig (long flag);
+long sys_p_semctl (long semid, long semnum, long cmd, union __semun *arg);
+long sys_p_semget (long key, long nsems, long semflg);
+long sys_p_semop (long semid, struct sembuf *sops, long nsops);
+long sys_p_semconfig (long flag);
 
 
 # endif	/* _sysv_sem_h  */
