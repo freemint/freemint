@@ -1,14 +1,10 @@
 
 #include <mintbind.h>
 
-#include "global.h"
-#include "config.h"
 #include "console.h"
-#include "proc.h"
 #include "textwin.h"
+#include "proc.h"
 #include "toswin2.h"
-#include "window.h"
-
 
 long con_fd = 0;
 long con_log_fd = 0;
