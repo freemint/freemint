@@ -157,6 +157,10 @@ static void km_debug (const char *fmt, ...);
 #  endif
 #  endif
 
+#  if 0
+#  define KM_TRACE
+#  endif
+
 #  if 1
 #  define KM_DEBUG_FILE		"u:\\ram\\kmemdebug.txt"
 #  endif
@@ -389,6 +393,11 @@ static void	km_lb_dump	(void);
 
 # ifdef KM_STAT
 static void	km_stat_dump	(void);
+# endif
+
+# ifdef KM_TRACE
+static void	alloc_register	(void *ptr, unsigned long size, const char *func);
+static void	alloc_unregister(void *ptr);
 # endif
 
 /* END definition part */
@@ -1493,6 +1502,10 @@ _kmalloc (ulong size, const char *func)
 	}
 # endif
 
+# ifdef KM_TRACE
+	alloc_register(ptr, size, func);
+# endif
+
 	return ptr;
 }
 
@@ -1506,6 +1519,10 @@ _kfree (void *place, const char *func)
 		KM_ALERT (("%s: kfree on NULL ptr!", func));
 		return;
 	}
+
+# ifdef KM_TRACE
+	alloc_unregister(place);
+# endif
 
 	page = km_hash_lookup (place);
 	if (page)
@@ -1803,6 +1820,109 @@ km_stat_dump (void)
 # endif
 
 /* END start part */
+/****************************************************************************/
+
+/****************************************************************************/
+/* BEGIN allocation tracer infos */
+
+# ifdef KM_TRACE
+
+struct km_trace
+{
+	void *ptr;
+	unsigned long size;
+	const char *func;
+};
+
+#define KM_TRACE_LEN 10000
+static struct km_trace km_trace[KM_TRACE_LEN];
+static int km_trace_used = 0;
+static int km_trace_first_free = 0;
+static int km_trace_last_used = 0;
+
+static void
+alloc_register(void *ptr, unsigned long size, const char *func)
+{
+	int i;
+
+	for (i = km_trace_first_free; i < KM_TRACE_LEN; i++)
+	{
+		if (km_trace[i].ptr == NULL)
+		{
+			km_trace_used++;
+
+			km_trace[i].ptr = ptr;
+			km_trace[i].size = size;
+			km_trace[i].func = func;
+
+			if (km_trace_last_used < i)
+				km_trace_last_used = i + 1;
+
+			break;
+		}
+	}
+}
+
+static void
+alloc_unregister(void *ptr)
+{
+	int i;
+
+	for (i = 0; i < km_trace_last_used; i++)
+	{
+		if (km_trace[i].ptr == ptr)
+		{
+			km_trace_used--;
+
+			km_trace[i].ptr = NULL;
+
+			if (km_trace_first_free > i)
+				km_trace_first_free = i;
+
+			if (i == (km_trace_last_used - 1))
+			{
+				while (km_trace[--i].ptr == NULL)
+					;
+
+				km_trace_last_used = i + 1;
+			}
+
+			break;
+		}
+	}
+}
+
+# endif
+
+const char *
+alloc_lookup(void *ptr, unsigned long *size)
+{
+# ifdef KM_TRACE
+	const unsigned long loc = (long)ptr;
+	int i;
+
+	KM_FORCE(("km_trace_used: %i", km_trace_used));
+	KM_FORCE(("km_trace_first_free: %i", km_trace_first_free));
+	KM_FORCE(("km_trace_last_used: %i", km_trace_last_used));
+
+	for (i = 0; i < km_trace_last_used; i++)
+	{
+		const unsigned long block = (long)km_trace[i].ptr;
+
+		if (loc >= block && loc < (block + km_trace[i].size))
+		{
+			if (size)
+				*size = km_trace[i].size;
+
+			return km_trace[i].func;
+		}
+	}
+# endif
+
+	return NULL;
+}
+
+/* END allocation tracer part */
 /****************************************************************************/
 
 /****************************************************************************/
