@@ -31,41 +31,88 @@
 # include "proc.h"
 
 
-void
-_semaphore_init(struct semaphore *s, const char *file)
+#if 0
+
+void _cdecl
+_semaphore_init(struct semaphore *s, const char *info)
 {
-	DEBUG(("semaphore_init((0x%lx) from %s", s, file));
-	
+	DEBUG(("semaphore_init((0x%lx) from %s", s, info));
+
 	s->lock = 0;
-	s->count = 0;
+	s->sleepers = 0;
+	s->pid = 0;
+	s->pad = 0;
 }
 
-void
-_semaphore_lock(struct semaphore *s, const char *file)
+void _cdecl
+_semaphore_lock(struct semaphore *s, const char *info)
 {
-	DEBUG(("want semaphore(0x%lx) from %s", s, file));
-	
-	s->count++;
-	
-	while (s->lock)
-		sleep(WAIT_Q, (long)s);
-	
+	short pid = curproc->pid;
+
+	DEBUG(("want semaphore(0x%lx) from %s for %u", s, info, pid));
+
+	if (s->lock && s->pid != pid)
+	{
+		s->sleepers++;
+
+		while (s->lock)
+			sleep(WAIT_Q, (long)s);
+
+		s->sleepers--;
+	}
+
 	/* enter semaphore */
-	s->lock = 1;
-	
-	DEBUG(("semaphore(0x%lx) aquired for %s", s, file));
+	s->lock++;
+	s->pid = pid;
+
+	DEBUG(("semaphore(0x%lx) locked from %s for %u", s, info, s->pid));
 }
 
-void
-_semaphore_rel(struct semaphore *s, const char *file)
+int _cdecl
+_semaphore_rel(struct semaphore *s, const char *info)
 {
-	DEBUG(("semaphore(0x%lx) released from %s", s, file));
-	
-	s->count--;
-	
-	if (s->count)
-		wake(WAIT_Q, (long)s);
-	
+	short pid = curproc->pid;
+
+	DEBUG(("semaphore(0x%lx) released from %s for %u", s, info, pid));
+
+	/* check for correct usage */
+	assert(s->lock && s->pid == pid);
+
 	/* exit semaphore */
-	s->lock = 0;
+	s->lock--;
+
+	/* if completed wakup any waiter */
+	if (!s->lock)
+	{
+		if (s->sleepers)
+			wake(WAIT_Q, (long)s);
+
+		/* completed, semaphore free */
+		return 1;
+	}
+
+	/* not completed */
+	return 0;
 }
+
+int _cdecl
+_semaphore_try(struct semaphore *s, const char *info)
+{
+	short pid = curproc->pid;
+
+	DEBUG(("try semaphore(0x%lx) from %s for %u", s, info, pid));
+
+	if (s->lock && s->pid != pid)
+	{
+		DEBUG(("semaphore(0x%lx) in use from %s for %u", s, info, s->pid));
+		return 0;
+	}
+
+	/* enter semaphore */
+	s->lock++;
+
+	DEBUG(("semaphore(0x%lx) locked from %s for %u", s, info, s->pid));
+	return 1;
+}
+
+#endif

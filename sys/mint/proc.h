@@ -18,7 +18,11 @@
 # ifndef _mint_proc_h
 # define _mint_proc_h
 
-# include "ktypes.h"
+# ifndef __KERNEL__
+# error __KERNEL__ not defined!
+# endif
+
+# include "mint.h"
 
 # include "basepage.h"
 # include "config.h"
@@ -283,14 +287,12 @@ struct proc
 # define NUM_QUEUES	8
 
 
-# ifdef __KERNEL__
 # if __KERNEL__ == 1
 
 extern PROC *proclist;			/* list of all active processes */
 extern PROC *curproc;			/* current process		*/
 extern PROC *rootproc;			/* pid 0 -- MiNT itself		*/
 
-# endif
 # endif
 
 
