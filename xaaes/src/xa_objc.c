@@ -654,8 +654,9 @@ check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree)
 	XA_WINDOW *wind = client->fmd.wind;
 	XA_TREE *wt = &client->wt;
 
-	DIAG((D_form, client, "check_widget_tree for %s: cl:%lx, ed:%d, tree:%lx, %d/%d\n",
-		c_owner(client), wt->tree, wt->edit_obj, tree, tree->r.x, tree->r.y));
+	DIAG((D_form, client, "check_widget_tree for %s: wh=%d obj:%lx, ed:%d, tree:%lx, %d/%d\n",
+		c_owner(client), wind?wind->handle:-1,
+		wt->tree, wt->edit_obj, tree, tree->r.x, tree->r.y));
 
 	/* HR 220401: x & y governed by fmd.wind */
 	if (wind)
@@ -666,10 +667,6 @@ check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree)
 		if (ct)
 			wt = ct;
 
-		wt->zen = true;
-		wt->tree = tree;
-		wt->owner = client;
-
 		DIAG((D_form, client, "check_widget_tree: fmd.wind: %d/%d, wt: %d/%d\n",
 			client->fmd.wind->wa.x, client->fmd.wind->wa.y,
 			wt->tree ? wt->tree->r.x : -1, wt->tree ? wt->tree->r.y : -1));
@@ -679,14 +676,16 @@ check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree)
 			tree->r.y = client->fmd.wind->wa.y;
 		/* else governed by widget.loc */
 
+		wt->zen = true;
 	}
 	else if (tree != wt->tree)
 	{
 		bzero(wt, sizeof(XA_TREE));
 		wt->edit_obj = -1;
-		wt->tree = tree;
-		wt->owner = client;
 	}
+
+	wt->tree = tree;
+	wt->owner = client;
 
 	DIAG((D_form, client, "  --  zen: %d\n", wt->zen));
 	return wt;
@@ -1330,37 +1329,34 @@ edit_object(LOCK lock,
 {
 	TEDINFO *ted;
 	OBJECT *otree = wt->tree;
-	int ret, last = 0, old = -1;
+	int  last = 0, old = -1;
 	bool update = false;
 
 #if GENERATE_DIAGS
 	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
-	DIAG((D_form,wt->owner,"  --  edit_object: %lx, obj:%d, k:%x, m:%s\n", form, ed_obj, keycode, funcstr));
+	DIAG((D_form,wt->owner,"  --  edit_object: wt=%lx form=%lx, obj:%d, k:%x, m:%s\n", wt, form, ed_obj, keycode, funcstr));
 #endif
 
-	ret = 0;
-
+	/* go through the objects until the LASTOB */
 	do {
+		/* exit if ed_obj is not editable */
 		if (last == ed_obj && (form[last].ob_flags & EDITABLE) == 0)
-			return false;
-	}
-	while (!(form[last++].ob_flags & LASTOB));
-	/* HR: Check LASTOB before incrementing Could this be the cause ??? of the crash? */
+			return 0;
+	} while (!(form[last++].ob_flags & LASTOB));
 
-	if (ed_obj >= last)
-		return ret;
+	/* the ed_obj is past the LASTOB (last is past the one -> decrement) */
+	if (ed_obj >= --last)
+		return 0;
 
 	wt = check_widget_tree(lock, client, form);
 	if (otree != form)
 	{
 		wt->edit_obj = ed_obj;
 		update = true;
-		old = wt->edit_obj;
+		old = wt->edit_obj; /* BUG? old assigment to the new ed_obj? */
 	}
 
 	ted = get_ob_spec(&form[ed_obj])->tedinfo;
-
-	ret = 1;
 
 	switch(func)
 	{
@@ -1375,9 +1371,8 @@ edit_object(LOCK lock,
 
 	/* process a character */
 	case ED_CHAR:
-		wt->edit_obj = ed_obj;		
+		wt->edit_obj = ed_obj;
 		update = update || ed_char(wt, ted, keycode);
-		*newpos = wt->edit_pos;
 		break;
 
 	/* turn off the cursor */
@@ -1386,19 +1381,20 @@ edit_object(LOCK lock,
 		break;
 
 	default:
-		return ret;
+		return 1;
 	}
+
+	*newpos = wt->edit_pos;
 
 	if (update)
 	{
-		DIAGS(("newpos %lx, wt %lx, old %d, ed_obj %d\n", newpos, wt, old, ed_obj));
+		DIAGS(("newpos wt %lx, old %d, ed_obj %d ed_pos %d\n", wt, old, ed_obj, wt->edit_pos));
 		if (old != -1)
 			redraw_object(lock, wt, old);
 		redraw_object(lock, wt, ed_obj);
-		*newpos = wt->edit_pos;
 	}
 
-	return ret;
+	return 1;
 }
 /* HR: Only the '\0' in the te_ptext field is determining the corsor position, NOTHING ELSE!!!!
 		te_tmplen is a constant and strictly owned by the APP.
