@@ -155,20 +155,43 @@ static void
 XA_keyboard_event(enum locks lock, const struct rawkey *key)
 {
 	struct xa_window *top = window_list;
+	struct xa_window *keywind;
 	struct xa_client *locked_client;
 	struct xa_client *client;
 	struct rawkey *rk;
 	bool waiting;
 
-	client = find_focus(&waiting, &locked_client);
+	if (!(client = find_focus(true, &waiting, &locked_client, &keywind)))
+		return;
 
 	DIAG((D_keybd,client,"XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
 		waiting ? "waiting" : "", update_locked() ? update_locked()->p->pid : 0,
-		c_owner(client), w_owner(top)));
+		c_owner(client), w_owner(keywind)));
 
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
 	{
+		rk = kmalloc(sizeof(*rk));
+		if (rk)
+		{
+			*rk = *key;
+			if (client->fmd.lock && client->fmd.keypress)
+				post_cevent(client, cXA_fmdkey, rk, NULL, 0,0, NULL, NULL);
+			else
+			{
+				if (keywind && is_hidden(keywind))
+					unhide_window(lock, keywind);
+				if (keywind && keywind->keypress)
+					post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
+				else if (client->waiting_pb)
+					post_cevent(client, cXA_keybd_event, rk, NULL, 0,0, NULL,NULL);
+#if GENERATE_DIAGS
+				else
+					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));			
+#endif
+			}
+		}
+#if 0
 		struct xa_client *check = update_locked();
 
 		/* See if a (classic) blocked form_do is active */
@@ -221,6 +244,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		Sema_Up(clients);
 		keybd_event(lock, client, key);
 		Sema_Dn(clients);
+#endif
 #endif
 	}
 	else

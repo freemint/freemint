@@ -418,8 +418,8 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 				C.menu_base = NULL;
 				widg->stuff = C.Aes->std_menu;
 			}
-			else
-				widg->stuff = C.Aes->std_menu;
+		//	else
+		//		widg->stuff = C.Aes->std_menu;
 
 			client->std_menu = NULL;
 		}

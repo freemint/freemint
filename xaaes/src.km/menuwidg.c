@@ -428,7 +428,7 @@ built_desk_popup(enum locks lock, short x, short y)
 {
 	int n = 0, i = 0, xw = 0, obs, split = 0;
 	OBJECT *ob;
-	struct xa_client *client;
+	struct xa_client *client, *fo;
 
 	/* go throug all the clients, store pid and name */
 	/* count in n */
@@ -487,7 +487,10 @@ built_desk_popup(enum locks lock, short x, short y)
 	ob[0] = drop_box;
 	ob[0].ob_tail = obs-1;
 	ob[0].ob_height = obs-1;
-	
+
+	fo = find_focus(false, NULL, NULL, NULL);
+	DIAGS(("built_: client with focus = %s", fo->name));
+
 	for (i = 0; i < n; i++)		/* fix the tree */
 	{
 		int m;
@@ -500,7 +503,7 @@ built_desk_popup(enum locks lock, short x, short y)
 		{
 			char *txt = menu_regt[i];
 
-			if (menu_regcl[i] == focus_owner())
+			if (menu_regcl[i] == fo) //focus_owner())
 				ob[j].ob_state |= OS_CHECKED;
 			else
 				ob[j].ob_state &= ~OS_CHECKED;
@@ -943,6 +946,7 @@ click_desk_popup(struct task_administration_block *tab)
 			{
 			/* Accessory - send AC_OPEN */
 			case APP_ACCESSORY:
+			{
 				DIAG((D_menu, NULL, "is an accessory"));
 				/* found the reason some acc's wouldnt wake up: msgbuf[4] must receive
 				 * the meu_register reply, which in our case is the pid.
@@ -951,12 +955,14 @@ click_desk_popup(struct task_administration_block *tab)
 							AC_OPEN,        0, 0, 0,
 							client->p->pid, 0, 0, 0);
 				break;
-
+			}
 			/* Application, swap topped app */
 			case APP_APPLICATION:
+			{
 				DIAG((D_menu, NULL, "is a real GEM client"));
 				app_in_front(tab->lock, client);
 				break;
+			}
 			}
 		}
 	}
