@@ -296,6 +296,16 @@ simple_parameter
 		
 		$$ = l;
 	}
+|	simple_type '*' '*' Identifier
+	{
+		struct arg *l = $1;
+		
+		strcpy(l->name, $4);
+		l->flags |= FLAG_POINTER;
+		l->flags |= FLAG_POINTER2;
+		
+		$$ = l;
+	}
 |	simple_type Identifier '[' ']'
 	{
 		struct arg *l = $1;
