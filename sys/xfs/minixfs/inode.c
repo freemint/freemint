@@ -37,6 +37,7 @@ read_inode (unsigned int num, d_inode *rip, ushort drv)
 		
 		return 0;
 	}
+	
 	bzero (rip, sizeof (*rip));
 	return -1;
 }
@@ -62,6 +63,7 @@ write_inode (unsigned int num, d_inode *rip, ushort drv)
 		bio_MARK_MODIFIED (&(bio), u);
 		return 0;
 	}
+	
 	return -1;	
 }
 
@@ -89,20 +91,16 @@ trunc_inode (d_inode *rip, ushort drive, long count, int zap)
 		for (i = count; i < psblk->dzpi; i++)
 		{
 			if (rip->i_zone[i])
-			{
 				free_zone (drive, rip->i_zone[i]);
-			}
+			
 			if (zap)
-			{
 				rip->i_zone[i] = 0;
-			}
 		}
+		
 		count = 0;
 	}
 	else
-	{
 		count -= psblk->dzpi;
-	}
 
 	/* Handle indirect zone */
 	if (count < psblk->zpind)
