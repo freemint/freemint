@@ -629,7 +629,7 @@ norm_trap2:
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 trap2_out:
-	moveq	#1,d2
+	//moveq	#1,d2
 	bra	out_select
 
 	// Call the VDI
@@ -641,6 +641,7 @@ enter_vdi:
 	move.l	d1,-(sp)		// VDI parameter block address
 	jsr	(a0)
 	addq.w	#4,sp
+	moveq	#1,d2
 	bra.s	trap2_out
 
 	// Call the AES
@@ -652,6 +653,7 @@ enter_aes:
 	move.l	d1,-(sp)
 	jsr	(a0)
 	addq.w	#4,sp
+	moveq	#0,d2
 	bra.s	trap2_out
 
 	// Return the GDOS version if VDI is installed
@@ -660,17 +662,20 @@ trap2_gdosvers:
 	tst.l	_vdi_handler
 	beq.s	old_trap2
 	move.l	_gdos_version,d0
+	moveq	#1,d2
 	bra.s	trap2_out
 
 	// Deliver the address of the VDI function dispatcher
 	// if we have it.
 trap2_vdihandler:
 	move.l	_vdi_handler,d0
+	moveq	#1,d2
 	bne.s	trap2_out
 
 	// Call old trap 2, when no function registered
 old_trap2:
 	bsr	_trap_2_emu
+	moveq	#1,d2
 	bra.s	trap2_out
 
 rom_trap2:
