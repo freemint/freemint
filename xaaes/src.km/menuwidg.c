@@ -528,7 +528,7 @@ menu_pop(Tab *tab)
 		if (cfg.menu_locking)
 		{
 			hidem();
-			form_restore(k->border, k->drop, k->Mpreserve);
+			form_restore(k->border, k->drop, &(k->Mpreserve));
 			showm();
 		}
 		delete_window(tab->lock, w);
@@ -537,11 +537,11 @@ menu_pop(Tab *tab)
 	else
 	{
 		hidem();
-		form_restore(k->border, k->drop, k->Mpreserve);
+		form_restore(k->border, k->drop, &(k->Mpreserve));
 		showm();
 	}
 
-	k->root[k->point_at_menu].ob_state&=~OS_SELECTED;
+	k->root[k->point_at_menu].ob_state &= ~OS_SELECTED;
 
 	if (tab->nest)
 	{
@@ -801,7 +801,7 @@ display_popup(Tab *tab, OBJECT *root, int item, short rdx, short rdy)
 		else
 		{
 			hidem();
-			k->Mpreserve = form_save(k->border, k->drop, NULL);
+			form_save(k->border, k->drop, &(k->Mpreserve));
 			DIAG((D_menu, tab->client, "locking pop window %lx + %d", root, item));
 			wind->is_open = true;
 			display_window(tab->lock, 71, wind, NULL);
@@ -815,7 +815,7 @@ display_popup(Tab *tab, OBJECT *root, int item, short rdx, short rdy)
 		object_area(&r, root, item, 0, 0);
 		r = popup_inside(tab, r);
 		hidem();
-		k->Mpreserve = form_save(k->border, k->drop, NULL);
+		form_save(k->border, k->drop, &(k->Mpreserve));
 		DIAG((D_menu, tab->client, "pop draw %lx + %d", root, item));
 		wr_mode(MD_TRANS);
 		root->ob_x = k->rdx;

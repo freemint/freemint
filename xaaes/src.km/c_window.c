@@ -622,7 +622,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	/* Is this a 'preserve own background' window? */
 	if (wind->active_widgets & STORE_BACK)
 	{
-		wind->background = form_save(0, wind->r, NULL);
+		form_save(0, wind->r, &(wind->background));
 		/* This is enough, it is only for TOOLBAR windows. */
 		draw_window(lock|winlist, wind);
 		redraw_menu(lock);
@@ -1265,9 +1265,7 @@ close_window(enum locks lock, struct xa_window *wind)
 
 		if (wind->active_widgets & STORE_BACK)
 		{
-			form_restore(0, wind->r, wind->background);
-			//free(wind->background);
-			wind->background = NULL;
+			form_restore(0, wind->r, &(wind->background));
 			return true;
 		}
 
