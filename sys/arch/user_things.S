@@ -43,12 +43,14 @@
 _kernel_things:
 	.long	0,0			// two useless fields, which must be here, see below
 
-// now the jumptable, with *absolute* addresses
+// now the jumptable, with +absolute+ addresses
 
 	.long	terminateme
 	.long	sig_return
 	.long	pc_valid_return
 	.long	0,0,0,0,0		// SLB stuff is currently useless for the kernel/threads
+	.long	user_xhdi
+	.long	0
 
 	.text
 
@@ -71,6 +73,8 @@ usr_bp:	.long	0			// user process' basepage pointer (filled in by Slbopen())
 	.long	slb_close-_user_things
 	.long	slb_close_and_pterm-_user_things
 	.long	slb_exec-_user_things
+	.long	user_xhdi-_user_things
+	.long	0
 
 terminateme:
 	move.w	4(sp),-(sp)
@@ -274,12 +278,28 @@ slb_exec:
 	move.l	SH_FUNCTIONS(a0,d0.l),d0
 #endif
 	beq.s	einvfn
-	move.l	usr_bp.w(pc),a0
-	move.l	(a0),4(sp)
+	move.l	usr_bp.w(pc),4(sp)	// replace the SLB handle with basepage pointer
 	move.l	d0,a0
 	jmp	(a0)
 
 einvfn:	moveq	#-32,d0
+	rts
+
+	dc.l	0x27011992		// XHDIMAGIC
+
+user_xhdi:
+	move.l	30(sp),-(sp)
+	move.l	30(sp),-(sp)
+	move.l	30(sp),-(sp)
+	move.l	30(sp),-(sp)
+	move.l	30(sp),-(sp)
+	move.l	30(sp),-(sp)
+	move.l	30(sp),-(sp)
+	move.w	32(sp),-(sp)
+	move.w	#0x0001,-(sp)		// we want XHDI EMU
+	move.w	#0x015f,-(sp)		// system EMU
+	trap	#1
+	lea	34(sp),sp
 	rts
 
 user_end:
