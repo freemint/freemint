@@ -205,13 +205,17 @@ init_tables(void)
     TRACE(("init_tables"));
 
 #define phys_top_tt (*(ulong *)0x5a4L)
+    
     falcon = ct2 = 0;
     offset_tt_ram = 0;
-    if (phys_top_tt == 0x01000000L) mint_top_tt = 0;
+    
+    if (phys_top_tt == 0x01000000L)
+        mint_top_tt = 0;
     else
     {
         mint_top_tt = phys_top_tt;
         cookie = *CJAR;
+        
         if (cookie)
         {
             while (cookie->tag)
@@ -223,8 +227,12 @@ init_tables(void)
                 cookie++;
            }
        }
+       
        if (falcon && ct2)
+       {
             offset_tt_ram = 0x03000000L;
+            DEBUG (("init_tables: Falcon CT2 -> offset 0x%lx", offset_tt_ram));
+       }
        else
             ct2=0;
     }
@@ -462,7 +470,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
     c_index = (int)(start >> LOG2_ONE_MEG) & 0xf;
     d_index = (int)(start >> LOG2_EIGHT_K) & 0x7f;
 
-	  if ((long)base_tbl >= 0x01000000L)
+   if ((long)base_tbl >= 0x01000000L)
        offset = offset_tt_ram;
     else
        offset = 0;
@@ -935,6 +943,8 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
     if (!mmu_is_set_up)
     {
+        DEBUG (("init_page_table: call set_mmu"));
+        
         set_mmu(proc->ctxt[0].crp,proc->ctxt[0].tc);
         mmu_is_set_up = 1;
     }
