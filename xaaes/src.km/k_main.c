@@ -414,7 +414,7 @@ static vdi_vec *svwhlv = NULL;
  * initialise the mouse device
  */
 #define MIN_MOOSE_VER_MAJOR 0
-#define MIN_MOOSE_VER_MINOR 8
+#define MIN_MOOSE_VER_MINOR 9
 
 static bool
 init_moose(void)

@@ -640,12 +640,69 @@ void
 XA_wheel_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_window *wind = window_list;
-	struct xa_client *client = NULL;
+	struct xa_client *client = NULL, *locker = NULL;
 	XA_WIDGET *widg = wheel_arrow(wind, md);
 	int n,c;
 
-	DIAGS(("mouse wheel %d has wheeled %d", md->state, md->clicks));
+	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 
+	locker = C.mouse_lock;
+	if (!locker)
+		locker = C.update_lock;
+	/*
+	 * If a client has mouselock and it owns the window ontop...
+	 */
+	if (!locker)
+	{
+		wind = find_window(lock, md->x, md->y);
+		if (wind)
+			client = wind == root_window ? get_desktop()->owner : wind->owner;
+	}
+
+	else if (wind && wind->owner == locker && widg && wind->send_message)
+	{
+		client = locker;
+	}
+	/*
+	 * By now we should have a client to which the wheel event should go...
+	 */
+	if (client)
+	{
+		if (client->waiting_for & MU_WHEEL)
+		{
+			struct moose_data *nmd = client->wheel_md;
+			
+			if (!nmd)
+				nmd = kmalloc(sizeof(*nmd));
+			if (nmd)
+			{
+				*nmd = *md;
+				client->wheel_md = nmd;
+			}
+		}
+		else if (wind)
+		{
+			if (client->wa_wheel || wind->wa_wheel)
+			{
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
+						   WM_ARROWED, 0,0, wind->handle,
+						   WA_WHEEL, 0, md->state, md->clicks);
+			}
+			else if ((widg = wheel_arrow(wind, md)))
+			{
+				n = c = abs(md->clicks);
+				while (c)
+				{
+					wind->send_message(lock, wind, NULL, AMQ_NORM,
+							   WM_ARROWED, 0,0, wind->handle,
+							   client->options.wheel_reverse ? widg->xarrow : widg->arrowx,
+							   c == n ? 0x4d57 : 0x4d77, 0, c);
+					c--;
+				}
+			}
+		}
+	}
+#if 0
 	client = mouse_locked();
 
 	if (   ( client && widg && wind->send_message && wind->owner == client)
@@ -685,6 +742,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			 /* Might be a model dialogue; implement at this point . */
 		else
 #endif
+
 		if (client->waiting_for & MU_WHEEL)
 		{
 			AESPB *pb = client->waiting_pb;
@@ -700,6 +758,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			}
 		}
 	}
+#endif
 }
 static bool
 chk_button_waiter(struct moose_data *md)
@@ -735,6 +794,9 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		/*
 		 * Check if a client is actually waiting. If not, buffer the packet.
 		 */
+		if (md->ty == MOOSE_WHEEL_PREFIX)
+			return true;
+
 		if (internal || (S.wait_mouse && (S.wait_mouse->waiting_for & XAWAIT_MOUSE)))
 		{
 			/* a client wait exclusivly for the mouse */
@@ -888,6 +950,8 @@ move_timeout(struct proc *p, long arg)
 		 * Construct a moose_data using the the latest
 		 * button-event data, only changing the mouse coords.
 		*/
+		mainmd.sx = x_mouse;
+		mainmd.sy = y_mouse;
 		md = mainmd;
 		md.x = last_x;
 		md.y = last_y;
@@ -1010,8 +1074,8 @@ button_timeout(struct proc *p, long arg)
 		struct moose_data md;
 
 		get_md(&md);
-		DIAGS(("adi_button_event: (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
-			md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
+		DIAGS(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
+			md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 			md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) ));
 
 		vq_key_s(C.vh, &md.kstate);
@@ -1066,6 +1130,11 @@ adi_button(struct adif *a, struct moose_data *md)
 void
 adi_wheel(struct adif *a, struct moose_data *md)
 {
+	add_md(md);
+	if (!b_to)
+	{
+		b_to = addroottimeout(0L, button_timeout, 1);
+	}
 }
 
 /*

@@ -56,7 +56,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	8
+# define VER_MINOR	9
 # define VER_STATUS	
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -66,8 +66,8 @@
 	"\033p Moose " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"½ May 17 2003 by Odd Skancke <ozk@atari.org>\r\n" \
-	"½ " MSG_BUILDDATE " by Odd Skancke for AssemSoft.\r\n\r\n"
+	" May 17 2003 by Odd Skancke <ozk@atari.org>\r\n" \
+	" " MSG_BUILDDATE " by Odd Skancke for AssemSoft.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -295,6 +295,20 @@ cbutv(void)
 void
 cwhlv(void)
 {
+	struct moose_data md;
+
+	md.l		= sizeof(md);
+	md.ty		= MOOSE_WHEEL_PREFIX;
+	md.x = md.sx	= sample_x;
+	md.y = md.sy	= sample_y;
+	md.state	= sample_wheel; //pak_head->t.whl.wheel;
+	md.cstate	= md.state;
+	md.clicks	= sample_wclicks; //pak_head->t.whl.clicks;
+	md.kstate	= 0;
+	md.dbg1		= 0;
+	md.dbg2		= 0;
+	(*ainf->wheel)(&moose_aif, &md);
+#if 0
 	pak_tail->len		= sizeof(struct mouse_pak);
 	pak_tail->ty		= WHL_PAK;
 	pak_tail->t.whl.wheel	= (unsigned char)sample_wheel;
@@ -309,6 +323,7 @@ cwhlv(void)
 		pak_tail = (struct mouse_pak *)&pak_buffer;
 
 	inbuf += sizeof(struct mouse_pak);
+#endif
 }
 
 void
@@ -417,26 +432,6 @@ timer_handler(void)
 					else
 						chk_but_timeout(tm);
 				}
-#ifdef	HAVE_WHEEL 
-				else if (pak_head->ty == WHL_PAK)
-				{
-					struct moose_data md;
-
-					md.l		= sizeof(md);
-					md.ty		= MOOSE_WHEEL_PREFIX;
-					md.x		= pak_head->x;
-					md.y		= pak_head->y;
-					md.sx		= sample_x;
-					md.sy		= sample_y;
-					md.state	= pak_head->t.whl.wheel;
-					md.cstate	= md.state;
-					md.clicks	= pak_head->t.whl.clicks;
-					md.kstate	= 0;
-					md.dbg1		= 0;
-					md.dbg2		= 0;
-					(*ainf->wheel)(&moose_aif, &md);
-				}
-#endif
 				/* more pak types here ... */
 				pak_head++;
 				if (pak_head > pak_end)

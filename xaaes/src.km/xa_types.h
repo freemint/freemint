@@ -600,6 +600,8 @@ struct xa_client
 	struct moose_data *md_end;
 	struct moose_data mdb[CLIENT_MD_BUFFERS+1];
 
+	struct moose_data *wheel_md;
+
 #define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
 	int	sleepqueue;
 	long	sleeplock;
