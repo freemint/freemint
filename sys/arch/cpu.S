@@ -147,7 +147,8 @@ _ccw_set:
 	movem.l	d1-d2/a0-a2,-(sp)
 	bsr.s	_ccw_get		// get the current CCW
 	move.l	d0,-(sp)		// save it for later reference
-	movem.l	28(sp),d1/d2		// user specified CCW and CCM
+	move.l	28(sp),d1		// user specified CCW
+	move.l	32(sp),d2		// user specified CCM
 	and.l	d2,d1			// clear "unused" user-CCW bits
 	not.l	d2			// negate all bits in CCM
 	and.l	d2,d0			// clear bits to change in actual CCW
@@ -306,7 +307,7 @@ s60:	addq.l	#0x04,a0
 	eori.l	#0x58006000,d0		// adjust reverted bits
 	rts
 
-c2l060:	lea	ccw60.w,a0
+c2l060:	lea	ccw60,a0
 	lsr.l	#0x08,d0		// first 13 bits of CACR aren't used
 	lsr.l	#0x04,d0
 	clr.l	d1
