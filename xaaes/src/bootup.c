@@ -828,6 +828,7 @@ BTRACE(21);
 						/* FIX_ME: Those who know how to reach ptsout for other
 						   compilers libraries, please come forward. :-)
 						 */
+						work_out[45] = lcfg.modecode;
 #endif
 						/* Ronald Andersson: This should be the mehod for falcon. */
 						work_in[0] = 5;
