@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -14,10 +14,5 @@
 extern long sync_time;
 
 void start_sysupdate (void);
-
-# ifdef SYSUPDATE_DAEMON
-extern short update_pid;
-# endif
-
 
 # endif /* _update_h */
