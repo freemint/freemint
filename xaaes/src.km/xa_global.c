@@ -27,8 +27,8 @@
 #include "xa_global.h"
 #include "version.h"
 
-char version[16];
-char vversion[32];
+char version[32];
+char vversion[128];
 char arch_target[] = ASCII_ARCH_TARGET;
 char long_name[] = LONG_NAME;
 char aes_id[] = AES_ID;
