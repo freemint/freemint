@@ -44,6 +44,7 @@ long	del_rsvfentry	(char *name);
 /* List of currently available tag values
  */
 
+/* TOS cookies */
 # define COOKIE__CPU	0x5f435055L
 # define COOKIE__VDO	0x5f56444fL
 # define COOKIE__FPU	0x5f465055L
@@ -57,14 +58,20 @@ long	del_rsvfentry	(char *name);
 # define COOKIE__IDT	0x5f494454L
 # define COOKIE__AKP	0x5f414b50L
 
+/* MiNT cookies */
 # define COOKIE_MiNT	0x4d694e54L
 # define COOKIE_PMMU	0x504d4d55L
+
+/* Some third party cookies */
 # define COOKIE_XHDI	0x58484449L
 # define COOKIE_SCSI	0x53435349L
 # define COOKIE_NVDI	0x4e564449L
 # define COOKIE_FSMC	0x46534d43L
 # define COOKIE_RSVF	0x52535646L
+
+/* Not that we want to support these two below ... */
 # define COOKIE_STiK	0x5354694bL
+# define COOKIE_ICIP	0x49434950L
 
 /* values of MCH cookie
  */
