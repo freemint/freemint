@@ -18,8 +18,9 @@ void paint(TEXTWIN *v, unsigned int c)
 	int line = v->cy;
 
 	ulong use_attribute = ~CLINEDRAW & v->curr_cattr;
-
-	if ((v->curr_cattr & CLINEDRAW) &&
+	char charset = v->gsets[v->curr_tflags & TCHARSET_MASK];
+	
+	if ((charset == '0') &&
 	    (c== '`' ||
 	     c == 'a' ||
 	     (c >= 'f' && c <= '~') ||
@@ -449,6 +450,7 @@ save_cursor (TEXTWIN* tw)
 	tw->saved_y = tw->cy;
 	tw->saved_tflags = tw->curr_tflags;
 	tw->saved_cattr = tw->curr_cattr;
+	memcpy (tw->saved_gsets, tw->gsets, sizeof tw->saved_gsets);
 }
 
 /* Restore cursor position and attributes.
@@ -459,20 +461,23 @@ restore_cursor (TEXTWIN* tw)
 {
 	/* Xterm restores the character sets if the cursor has
 	   actually never been saved before.  */
-	tw->curr_tflags &= ~(TCSG | TCSGS);
-	if (tw->saved_x != -1 && tw->saved_y != -1)
-		tw->curr_tflags |= (tw->saved_tflags &
-				    (TCSG | TCSGS));
-	else
-		tw->curr_tflags |= TCSGS;
-
-	tw->curr_cattr &= ~DECSC_FLAGS;
-	tw->curr_cattr |= (tw->saved_cattr & DECSC_FLAGS);
-
+	if (tw->saved_x != -1 && tw->saved_y != -1) {
+		memcpy (tw->gsets, tw->saved_gsets, sizeof tw->gsets);
+	} else {
+		tw->gsets[0] = 'B';
+		tw->gsets[1] = '0';
+		tw->gsets[2] = 'B';
+		tw->gsets[3] = 'B';
+	}
+	
+	tw->curr_cattr &= ~ATTRIBUTES;
+	tw->curr_cattr |= (tw->saved_cattr & ATTRIBUTES);
+	tw->curr_tflags &= ~DECSC_FLAGS;
+	tw->curr_tflags |= (tw->saved_tflags & DECSC_FLAGS);
 	/* If never saved the coordinates will be negative.
 	   but that will place the cursor in the upper left
 	   corner anyway, which is exactly what we want.  */	
-	gotoxy (tw, tw->cx, tw->cy - RELOFFSET (tw));
+	gotoxy (tw, tw->saved_x, tw->saved_y - RELOFFSET (tw));
 }
 
 
@@ -488,8 +493,8 @@ vt_reset (struct textwin* tw, bool full, bool saved)
 	tw->curr_tflags &= ~TORIGIN;
 	original_colors (tw);
 	
-	tw->curr_tflags &= ~TCSG;
-	tw->curr_tflags |= TCSGS;
+	memcpy (tw->gsets, "B0BB", sizeof tw->gsets);
+	tw->curr_tflags = (tw->curr_tflags & ~TCHARSET_MASK);
 	
 	if (full) {
 		tw->curr_tflags |= TWRAPAROUND;
