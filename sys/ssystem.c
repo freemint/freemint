@@ -175,7 +175,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 		{
 			arg1 &= 0xfffffffeUL;
 			lpointer = (ulong *) arg1;
-			if (arg1 < 0x08 || arg1 > 0xfffcUL)
+			if (arg1 < 0x0420 || arg1 > 0xfffcUL)
 				DEBUG (("GET_LVAL: address out of range"));
 			else
 				r = *lpointer;
@@ -185,7 +185,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 		{
 			arg1 &= 0xfffffffeUL;
 			wpointer = (ushort *) arg1;
-			if (arg1 < 0x08 || arg1 > 0xfffeUL)
+			if (arg1 < 0x0420 || arg1 > 0xfffeUL)
 				DEBUG (("GET_WVAL: address out of range"));
 			else
 				r = *wpointer;
@@ -194,7 +194,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 		case S_GETBVAL:
 		{
 			bpointer = (uchar *) arg1;
-			if (arg1 < 0x08 || arg1 > 0xffffUL)
+			if (arg1 < 0x0420 || arg1 > 0xffffUL)
 				DEBUG (("GET_BVAL: address out of range"));
 			else
 				r = *bpointer;
@@ -210,7 +210,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			}
 			arg1 &= 0xfffffffeUL;
 			lpointer = (ulong *) arg1;
-			if (arg1 < 0x08 || arg1 > 0xfffc)
+			if (arg1 < 0x0420 || arg1 > 0xfffc)
 			{
 				DEBUG (("SET_LVAL: address out of range"));
 				r = EBADARG;
@@ -229,7 +229,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			}
 			arg1 &= 0xfffffffeUL;
 			wpointer = (ushort *) arg1;
-			if (arg1 < 0x08 || arg1 > 0xfffe)
+			if (arg1 < 0x0420 || arg1 > 0xfffe)
 			{
 				DEBUG (("SET_WVAL: address out of range"));
 				r = EBADARG;
@@ -247,7 +247,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 				break;
 			}
 			bpointer = (uchar*) arg1;
-			if (arg1 < 0x08 || arg1 > 0xffff)
+			if (arg1 < 0x0420 || arg1 > 0xffff)
 			{
 				DEBUG (("SET_BVAL: address out of range"));
 				r = EBADARG;
