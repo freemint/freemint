@@ -52,7 +52,7 @@
 	"\033pIncompatible FreeMiNT buffer cache version!\033q\r\n"
 
 # define MSG_BIOREVISION	\
-	"\033pFreeMiNT buffer cache revision to old!\033q\r\n"
+	"\033pFreeMiNT buffer cache revision too old!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
