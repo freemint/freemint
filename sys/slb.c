@@ -496,7 +496,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 				 * up.
 				 */
 				if (!proc_clock)
-					s_yield();
+					sys_s_yield();
 
 				np = npath;
 

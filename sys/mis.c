@@ -1012,7 +1012,7 @@ sh_exit(long argc, char **argv)
 	y = (short)sys_c_conin();
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
-		s_hutdown(2);
+		sys_s_hutdown(2);
 
 	shell_fprintf(stdout, "\n");
 
@@ -1485,9 +1485,9 @@ shell(void *arg)
 	uchar *lbuff;
 	long r;
 
-	(void)p_domain(1);			/* switch to MiNT domain */
+	(void)sys_p_domain(1);			/* switch to MiNT domain */
 	(void)f_force(STDERR, -1);		/* redirect the stderr to console */
-	(void)p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
+	(void)sys_p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
 
 	/* If there is no $PATH defined, enable internal commands by default
 	 */

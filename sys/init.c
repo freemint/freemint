@@ -1264,7 +1264,8 @@ mint_thread(void *arg)
 	 */
 	if (r <= 0)
 	{
-		char shellpath[32];	/* 32 should be plenty */
+		char *ext, shellpath[32];	/* 32 should be plenty */
+		fcookie dir;
 
 		if (r < 0)
 			boot_printf(MSG_couldnt_run_init, init_prg, r);
@@ -1273,9 +1274,15 @@ mint_thread(void *arg)
 		 * For that, the absolute path must be used, because the user
 		 * could have changed the current drive/dir inside mint.cnf file.
 		 */
-		ksprintf(shellpath, sizeof(shellpath), "u:\\a%sshell.tos", sysdir);
+		ksprintf(shellpath, sizeof(shellpath), "u:\\a%s", sysdir);
+		shellpath[3] = (char)sysdrv + 'a';
 
-		shellpath[3] = (char)sysdrv + 'a';	/* the boot drive */
+		path2cookie(shellpath, NULL, &dir);
+		ext = (dir.fs->fsflags & FS_NOXBIT) ? ".tos" : "";
+		release_cookie(&dir);
+
+		strcat(shellpath, "sh");
+		strcat(shellpath, ext);
 
 		r = sys_pexec(100, shellpath, init_tail, init_env);
 		if (r < 0)
@@ -1295,7 +1302,7 @@ mint_thread(void *arg)
 	 * in proc.c moves it to the run queue then (q.v.). In this case,
 	 * instead of calling sleep() again and force the CPU to execute the
 	 * loop again and again, we request it to be stopped.
-         *
+	 *
 	 */
 	pid = (int) r;
 	if (pid > 0)
@@ -1306,11 +1313,11 @@ mint_thread(void *arg)
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (r == 0)
 			{
-				sleep(WAIT_Q, (long)init);
-				// LPSTOP don't work (at least on Milan060)
-				// if (mcpu == 60)
-				//	cpu_lpstop();	/* low power stop and wait for an interrupt */
-				//else
+				sleep(WAIT_Q, (long)mint_thread);
+				/* LPSTOP don't work (at least on Milan060)
+				 * if (mcpu == 60)
+				 *	cpu_lpstop();
+				 * else */
 					cpu_stop();	/* stop and wait for an interrupt */
 			}
 # else
@@ -1321,16 +1328,16 @@ mint_thread(void *arg)
 	}
 # ifndef DEBUG_INFO
 	else
-		s_hutdown(0);		/* Everything failed. Halt. */
+		sys_s_hutdown(0);		/* Everything failed. Halt. */
 
 	/* If init program exited, reboot the system.
 	 * Never go back to TOS.
 	 */
-	(void) s_hutdown(2);	/* cold reboot is more efficient ;-) */
+	(void) sys_s_hutdown(2);	/* cold reboot is more efficient ;-) */
 # else
 	/* With debug kernels, always halt
 	 */
-	(void) s_hutdown(0);
+	(void) sys_s_hutdown(0);
 # endif
 
 	/* Never returns */

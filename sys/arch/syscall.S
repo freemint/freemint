@@ -84,7 +84,7 @@
 	.globl	_bconbuf,_bconbsiz,_bconbdev
 	.globl	_bflush
 
-	.globl	_ubconstat,_do_bconin,_ubcostat,_kbshift
+	.globl	_sys_b_ubconstat,_do_bconin,_sys_b_ubcostat,_sys_b_kbshift
 
 	.globl	_secure_mode,_falcontos
 
@@ -118,6 +118,16 @@ _mint_dos:
 //
 	move.l	_curproc,a0
 	move.l	(a0),sp 		// this puts us in our private stack
+#ifdef NEW_SYSCALL
+	move.w (a1),d0
+	cmp.w	_dos_max,d0
+	bcc	gemdos
+// offset 0 is func pointer, 4 is nr of args, 6 is their size
+nospr:	move.w	6(a5,d0.w*8),d0		// fetch size in bytes
+	lsr.w	#1,d0			// we need size in words
+cparg:	move.w	(a1,d0.w*2),-(sp)
+	dbra.w	d0,cparg
+#else
 	move.l	32(a1),-(sp)		// a1 was set by build_context
 	move.l	28(a1),-(sp)
 	move.l	24(a1),-(sp)
@@ -127,7 +137,8 @@ _mint_dos:
 	move.l	8(a1),-(sp)
 	move.l	4(a1),-(sp)
 	move.l	(a1),-(sp)
-	jsr	_enter_gemdos		// set up vectors appropriately
+#endif
+noargs:	jsr	_enter_gemdos		// set up vectors appropriately
 #ifdef DEBUG_INFO
 	cmpi.w	#4201,(sp)		// special case Sys_Printf
 	bne.s	no_sys_printf
@@ -277,7 +288,7 @@ L_ubios:
 	cmp.w	#1,d0			// Bconstat?
 	bne.s	L_00
 	move.w	2(a1),-(sp)		// push arg
-	jsr	_ubconstat
+	jsr	_sys_b_ubconstat
 L_1out:
 	addq.l	#2,sp
 L_0out:
@@ -297,13 +308,13 @@ L_01:
 	cmp.w	#8,d0			// Bcostat?
 	bne.s	L_02
 	move.w	2(a1),-(sp)		// push device
-	jsr	_ubcostat		// get status
+	jsr	_sys_b_ubcostat		// get status
 	bra.s	L_1out
 L_02:
 	cmp.w	#11,d0			// Kbshift?
 	bne.s	L_bios
 	move.w	2(a1),-(sp)		// push arg
-	jsr	_kbshift
+	jsr	_sys_b_kbshift
 	bra.s	L_1out
 L_bios:
 	clr.w	-(sp)			// no frame format needed
@@ -344,8 +355,15 @@ L_noflush:
 	cmp.w	d5,d0
 	bcc	error
 #ifdef ONLY030
-	move.l	0(a5,d0.w*4),d0 	// d0 = syscall_tab[d0]
+#ifdef NEW_SYSCALL
+	move.l	0(a5,d0.w*8),d0
 #else
+	move.l	0(a5,d0.w*4),d0 	// d0 = syscall_tab[d0]
+#endif
+#else
+#ifdef NEW_SYSCALL
+	add.w	d0,d0
+#endif
 	add.w	d0,d0
 	add.w	d0,d0			// multiply by 4
 	move.l	0(a5,d0.w),d0		// d0 = syscall_tab[d0]
