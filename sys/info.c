@@ -1,38 +1,38 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1999-02-19
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Set compilation time variables
- * 
- */  
+ *
+ */
 
 # include "info.h"
 
@@ -93,7 +93,7 @@ const char COMPILER_VERS [] = str (__GNUC__) "." str (__GNUC_MINOR__);
 
 
 /* MiNT welcome messages
- * 
+ *
  * Copyright 1992,1993,1994 Atari Corp.  All Rights Reserved.
  * ===========================================================================
  */
@@ -351,8 +351,53 @@ const char *MSG_keytable_faulty = "Keyboard table is BAD!\r\n";
 
 /* ------------ mis.c ------------- */
 
+# ifdef BUILTIN_SHELL
 const char *MSG_shell_name = "MiS v.%d.%d, the FreeMiNT internal shell,\r\n%s";
-const char *MSG_shell_missing_arg = "missing argument: ";
+const char *MSG_shell_missing_arg = ": missing argument.";
+const char *MSG_shell_error = "mint: %s: error %ld\r\n";
+const char *MSG_shell_type_help = "Type `help' for help\r\n\r\n";
+const char *MSG_shell_unmatched_quotes = "mint: unmatched quotes.\r\n";
+const char *MSG_shell_export_help = "Usage: %s [NAME=value]\r\n";
+const char *MSG_shell_setenv_help = "Usage: %s [NAME value]\r\n";
+const char *MSG_shell_rm_help = "Usage: %s [-f] FILE [FILE...]\r\n";
+const char *MSG_shell_exit_q = "Are you sure to exit and reboot (y/n)?";
+const char *MSG_shell_xcmd_help = "Usage: %s [on|off]\r\n";
+const char *MSG_shell_xcmd_info = "Extended commands are %s\r\n";
+const char *MSG_shell_xcmd_on = "on";
+const char *MSG_shell_xcmd_off = "off";
+const char *MSG_shell_cd_help = "Usage: %s [NEWDIR]\r\n";
+const char *MSG_shell_ls_help = "Usage: %s [DIR]\r\n";
+const char *MSG_shell_help = \
+	"	MiS is not intended to be a regular system shell, so don't\r\n" \
+	"	expect much. It is only a tool to fix bigger problems that\r\n" \
+	"	prevent the system from booting normally. Basic commands:\r\n" \
+	"\r\n" \
+	"	cd [DIR] - change directory\r\n" \
+	"	echo TEXT - display `text'\r\n" \
+	"	exit - leave and reboot\r\n" \
+	"	export [NAME=value] - set an environment variable\r\n" \
+	"	help - display this message\r\n" \
+	"	setenv [NAME value] - set an environment variable\r\n" \
+	"	ver - display version information\r\n" \
+	"	xcmd [on|off] - switch the extended command set on/off\r\n"
+	"\r\n" \
+	"	Extended commands (now %s):\r\n" \
+	"\r\n" \
+	"	chgrp DEC-GROUP FILE - change group the file belongs to\r\n" \
+	"	chmod OCTAL-MODE FILE - change access permissions for file\r\n" \
+	"	chown DEC-OWNER[:DEC-GROUP] FILE - change file's ownership\r\n" \
+	"	*cp - copy file\r\n" \
+	"	ln OLD NEW - create a symlink `new' pointing to file `old'\r\n" \
+	"	ls [DIR] - display directory\r\n" \
+	"	*mv - move/rename a file\r\n" \
+	"	rm [-f] FILE [FILE...] - delete a file\r\n" \
+	"\r\n" \
+	"	All other words typed are understood as names of programs\r\n" \
+	"	to execute. In case you'd want to execute something, that\r\n" \
+	"	has been named like one of the internal commands, use the\r\n" \
+	"	full pathname." \
+	"\r\n";
+# endif
 
 /* ------------ slb.c ------------- */
 
