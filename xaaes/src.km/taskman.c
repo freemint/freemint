@@ -520,7 +520,7 @@ open_taskmanager(enum locks lock)
 						created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						remember, NULL, &remember);
+						remember, NULL, NULL);
 
 		/* Set the window title */
 		set_window_title(dialog_window, " Task Manager ", false);
@@ -694,7 +694,7 @@ open_systemalerts(enum locks lock)
 						created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						remember, NULL, &remember);
+						remember, NULL, NULL);
 
 		/* Set the window title */
 		set_window_title(dialog_window, " System window & Alerts log", false);

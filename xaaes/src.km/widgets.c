@@ -789,7 +789,8 @@ calc_work_area(struct xa_window *wind)
 	int bottom = 0;
 	int right = 0;
 	int tl_margin, br_margin, wa_margins;
-	int winside /* , hinside */;
+	int t_margin, b_margin, l_margin, r_margin;
+	int winside; /* , hinside */;
 
 	wind->wa = r;
 
@@ -821,6 +822,11 @@ calc_work_area(struct xa_window *wind)
 
 		/* in color aligning is on the top & left light line of tha wa */
 		//tl_margin = (MONO || thin) ? 1 : 2;
+		t_margin = (MONO || thin) ? 0 : 2;
+		b_margin = (MONO || thin) ? 0 : 2;
+		l_margin = (MONO || thin) ? 1 : 2;
+		r_margin = (MONO || thin) ? 0 : 2;
+		
 		tl_margin = (MONO || thin) ? 0 : 2;
 
 		/* The visual thing :-) */
@@ -838,20 +844,29 @@ calc_work_area(struct xa_window *wind)
 			wind->wa.h -= frame << 1;
 			
 			/* Used for border sizing */
-			wind->ba = wind->wa;
+		//	wind->ba = wind->wa;
 			
-			wind->wa.x += tl_margin;
-			wind->wa.y += tl_margin;
-			wind->wa.w -= wa_margins + SHADOW_OFFSET;
-			wind->wa.h -= wa_margins + SHADOW_OFFSET;
+			wind->wa.x += l_margin; //tl_margin;
+			wind->wa.y += t_margin; //tl_margin;
+			wind->wa.w -= l_margin + r_margin + SHADOW_OFFSET; //wa_margins + SHADOW_OFFSET;
+			wind->wa.h -= t_margin + b_margin + SHADOW_OFFSET; //wa_margins + SHADOW_OFFSET;
+
+			if (frame < 4)
+				frame = 4;
 		}
-		else	/* Used for border sizing. */
-			wind->ba = wind->wa;
+		if (frame < 0)
+			frame = 0;
+
+		wind->ba.x = wind->r.x + frame;
+		wind->ba.y = wind->r.y + frame;
+		frame <<= 1;
+		wind->ba.w = wind->r.w - frame;
+		wind->ba.h = wind->r.h - frame;
 
 		/*
 		 * calculate correct width for windows title line
 		 */
-		winside = wind->wa.w + wa_margins;
+		winside = wind->wa.w + l_margin + r_margin; //wa_margins;
 		/* hinside = wind->wa.h + wa_margins; */
 
 		rt = &get_widget(wind, XAW_TITLE)->r;
@@ -963,7 +978,7 @@ calc_work_area(struct xa_window *wind)
 				//sl->r.w = 0;
 
 				rt = &widg->r;
-				rt->w = wind->wa.w + wa_margins;
+				rt->w = wind->wa.w + l_margin + r_margin; //wa_margins;
 
 				if (k & LFARROW)
 					rt->w -= get_widget(wind, XAW_LFLN)->r.w;
@@ -984,7 +999,7 @@ calc_work_area(struct xa_window *wind)
 				//sl->r.h = 0;
 
 				rt = &widg->r;
-				rt->h = wind->wa.h + wa_margins;
+				rt->h = wind->wa.h + t_margin + b_margin; //wa_margins;
 
 				if (k & UPARROW)
 					rt->h -= get_widget(wind, XAW_UPLN)->r.h;
@@ -1088,6 +1103,7 @@ stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     XAWS_ICONIFIED,			W
 stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,            WIP_ACTIVE, free_xawidget_resources },
 stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,                     0, free_xawidget_resources },
 stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,    WIP_ACTIVE, free_xawidget_resources },
+stdl_nresize = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,             0, free_xawidget_resources },
 stdl_uscroll = {RT, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_UP,      WIP_ACTIVE, free_xawidget_resources },
 stdl_upage   = {NO, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
 stdl_vslide  = {RT, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
@@ -1496,38 +1512,108 @@ DIAG((D_widg, wind->owner, "display_def_widget %d: state %d, global clip: %d:%d,
  */
  
 static void
-draw_widg_box(struct xa_wcol_inf *wci, short state, RECT *wr)
+draw_widg_box(short d, struct xa_wcol_inf *wcoli, short state, RECT *wr)
 {
-	short f = wci->flags, o = 0;
+	struct xa_wcol *wcol;
+	bool sel = state & OS_SELECTED;
+	short f = wcoli->flags, o = 0;
 	RECT r = *wr;
 
-	wr_mode(wci->wrm);
+	wr_mode(wcoli->wrm);
 	
+	if (sel)
+		wcol = &wcoli->s;
+	else
+		wcol = &wcoli->n;
+
+	if (d)
+	{
+		r.x -= d;
+		r.y -= d;
+		r.w += d+d;
+		r.h += d+d;
+	}
+
+	if (f & WCOL_BOXED)
+	{
+		int i = wcol->box_th;
+		l_color(wcol->box_c);
+		while (i > 0)
+			gbox(o, &r), o--, i--;
+	}
+		
 	if (f & WCOL_DRAW3D)
 	{
-		if ((state & OS_SELECTED) && (f & WCOL_ACT3D))
+		if (sel)
 		{
-			br_hook(0, &r, wci->tlc);
-			tl_hook(0, &r, wci->brc);
+			tl_hook(o, &r, wcol->tlc);
+			br_hook(o, &r, wcol->brc);
 		}
 		else
 		{
-			tl_hook(0, &r, wci->tlc);
-			br_hook(0, &r, wci->brc);
+			br_hook(o, &r, wcol->brc);
+			tl_hook(o, &r, wcol->tlc);
 		}
 		o -= 1;
 	}
 
 	if (f & WCOL_DRAWBKG)
 	{
-		f_interior(wci->i);
-		if (wci->i > 1)
-			f_style(wci->f);
+		f_interior(wcol->i);
+		if (wcol->i > 1)
+			f_style(wcol->f);
 	
-		f_color(wci->c);
+		f_color(wcol->c);
 		gbar(o, &r);
 	}
 }
+static void
+draw_widget_text(struct xa_widget *widg, struct xa_wtxt_inf *wtxti, char *txt, short xoff, short yoff)
+{
+	struct xa_wtxt *wtxt;
+	short x, y, f = wtxti->flags;
+	bool sel = widg->state & OS_SELECTED;
+	char t[200];
+
+	if (sel)
+		wtxt = &wtxti->s;
+	else
+		wtxt = &wtxti->n;
+
+	wr_mode(MD_TRANS);
+	t_font(wtxt->p, wtxt->f);
+
+	vst_effects(C.vh, wtxt->e);
+
+	prop_clipped_name(txt, t, widg->ar.w - (xoff << 1));
+	
+	t_extent(t, &x, &y);
+	y = widg->ar.y + ((widg->ar.h - y) >> 1);
+	
+	if (f & WTXT_CENTER)
+		x = xoff + widg->ar.x + ((widg->ar.w - x) >> 1);
+	else
+		x = yoff + widg->ar.x;
+
+	if (f & WTXT_DRAW3D)
+	{
+		if (sel && (f & WTXT_ACT3D))
+			x++, y++;
+	
+		t_color(wtxt->bgc);
+		x++;
+		y++;
+		v_gtext(C.vh, x, y, t);
+		x--;
+		y--;
+	}
+	t_color(wtxt->fgc);
+	v_gtext(C.vh, x, y, t);
+
+	/* normal */
+	vst_effects(C.vh, 0);
+}
+
 static void
 draw_widg_icon(struct xa_widget *widg, XA_TREE *wt, short ind)
 {
@@ -1553,7 +1639,7 @@ display_closer(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wcol_inf *wci = &wind->colours->closer;
 
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1563,7 +1649,7 @@ display_hider(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wcol_inf *wci = &wind->colours->hider;
 	
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1572,7 +1658,7 @@ display_fuller(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_wcol_inf *wci = &wind->colours->fuller;
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1583,7 +1669,7 @@ display_iconifier(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	struct xa_wcol_inf *wci = &wind->colours->iconifier;
 
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1593,7 +1679,7 @@ display_sizer(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wcol_inf *wci = &wind->colours->sizer;
 
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1604,7 +1690,7 @@ display_uparrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wcol_inf *wci = &wind->colours->uparrow;
 
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1614,7 +1700,7 @@ display_dnarrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wcol_inf *wci = &wind->colours->dnarrow;
 
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1624,7 +1710,7 @@ display_lfarrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wcol_inf *wci = &wind->colours->lfarrow;
 
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1634,7 +1720,7 @@ display_rtarrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct xa_wcol_inf *wci = &wind->colours->rtarrow;
 
 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(wci, widg->state, &widg->ar);
+	draw_widg_box(0, wci, widg->state, &widg->ar);
 	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
 	return true;
 }
@@ -1648,11 +1734,11 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct options *o = &wind->owner->options;
 	struct xa_wcol_inf *wci = &wind->colours->title;
 	struct xa_wtxt_inf *wti = &wind->colours->title_txt;
-	char temp[256];
+	//char temp[256];
 	char tn[256];
 	//RECT r;
-	short x, y;
-	int effect = wti->e;
+	//short x, y;
+	//int effect = wti->e;
 	bool dial = (wind->dial & (created_for_FORM_DO|created_for_FMD_START)) != 0;
 
 	/* Convert relative coords and window location to absolute screen location */
@@ -1664,13 +1750,13 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	{
 		f_color(G_WHITE);
 		t_color(G_BLACK);
-
+#if 0
 		if (wind->nolist || is_topped(wind))
 			/* Highlight the title bar of the top window */
 			effect = cfg.topname;
 		else
 			effect = cfg.backname;
-
+#endif
 		/* with inside border */
 		p_gbar(0, &widg->ar);
 	}
@@ -1679,13 +1765,13 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		/* no move, no 3D */
 		if (wind->active_widgets & MOVER)
 		{
-			draw_widg_box(wci, widg->state, &widg->ar);
+			draw_widg_box(0, wci, widg->state, &widg->ar);
 		}
 		else
 		{
 			l_color(screen.dial_colours.shadow_col);
 			p_gbar(0, &widg->ar);
-			f_color(wci->c);
+			f_color(wci->n.c);
 			gbar(-1, &widg->ar);
 		#if 0
 			
@@ -1731,9 +1817,12 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	if (*temp != ' ')
 		++r.x;
 #endif
+#if 0
 	if (dial)
 		effect |= ITALIC;
-
+#endif
+	draw_widget_text(widg, wti, tn, 1, 0);
+#if 0
 	t_font(wti->p, wti->f);
 
 	vst_effects(C.vh, effect);
@@ -1762,7 +1851,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 
 	/* normal */
 	vst_effects(C.vh, 0);
-
+#endif
 	return true;
 }
 /*
@@ -2008,14 +2097,16 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 static bool
 display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	char t[160];
-	short x, y;
+	//char t[160];
+	//short x, y;
 	struct xa_wcol_inf *wci = &wind->colours->info;
 	struct xa_wtxt_inf *wti = &wind->colours->info_txt;
 
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &widg->ar);
 
+	draw_widg_box(0, wci, widg->state, &widg->ar);
+#if 0
 	wr_mode(wci->wrm);
 	f_color(wci->c);
 	f_interior(wci->i);
@@ -2033,16 +2124,19 @@ display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	}
 	else
 		t_color(G_BLACK);
+#endif
+
+	draw_widget_text(widg, wti, widg->stuff, 4, 0); 
+#if 0
 
 	t_font(wti->p, wti->f);
 	t_extent(widg->stuff, &x, &y);
 	y = widg->ar.y + ((widg->ar.h - y) >> 1);
 	x = widg->ar.x;
 	wr_mode(MD_TRANS);
-	//r.y += (r.h - screen.c_max_h) / 2;
 	
-	v_gtext(C.vh, x + 4, y, prop_clipped_name(widg->stuff, t, widg->ar.w - 6)); //(widg->ar.w / screen.c_max_w) -1 ));
-
+	v_gtext(C.vh, x + 4, y, prop_clipped_name(widg->stuff, t, widg->ar.w - 6));
+#endif
 	return true;
 }
 
@@ -2500,7 +2594,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 	cancel_widget_active(wind, 2);
 	return true;
 }
-
+#if 0
 static void
 slider_back(RECT *cl, struct xa_wcol_inf *wc)
 {
@@ -2508,25 +2602,6 @@ slider_back(RECT *cl, struct xa_wcol_inf *wc)
 	short f = wc->flags;
 
 	wr_mode(wc->wrm);
-#if 0
-	l_color(1);
-	gbox(0, (const RECT *)&r);
-	r.x += 1, r.y += 1;
-	r.w -= 2, r.h -= 2;
-#endif
-#if 0
-	tl_hook(0, &r, G_LBLACK);
-	br_hook(0, &r, G_LWHITE);
-	
-	tl_hook(-1, &r, G_BLACK);
-	br_hook(-1, &r, G_WHITE);
-
-	f_color(G_LBLACK);
-	f_interior(FIS_SOLID);
-	gbar(-2, &r);
-#endif
-
-#if 1
 	if (f & WCOL_DRAW3D)
 	{
 		tl_hook(0, &r, wc->tlc);
@@ -2544,8 +2619,8 @@ slider_back(RECT *cl, struct xa_wcol_inf *wc)
 
 		gbar(0, &r);
 	}
-#endif
 }
+
 static void
 draw_slider(short d, RECT *cl, short state, struct xa_wcol_inf *wc)
 {
@@ -2555,31 +2630,6 @@ draw_slider(short d, RECT *cl, short state, struct xa_wcol_inf *wc)
 
 	r.x -= d, r.y -= d;
 	r.w += d+d, r.h += d+d;
-#if 0
-	l_color(1);
-	gbox(0, (const RECT *)&r);
-	r.x += 1, r.y += 1;
-	r.w -= 2, r.h -= 2;
-#endif
-#if 0
-	tl_hook(-1, &r, G_BLACK);
-	br_hook(-1, &r, G_BLACK);
-	if (sel)
-	{
-		br_hook(-2, &r, G_WHITE);
-		tl_hook(-2, &r, G_LBLACK);
-	}
-	else
-	{
-		tl_hook(-2, &r, G_WHITE);
-		br_hook(-2, &r, G_LBLACK);
-	}
-	
-	f_color(G_LWHITE);
-	f_interior(FIS_SOLID);
-	gbar(-3, &r);
-#endif
-#if 1
 	if (f & WCOL_DRAW3D)
 	{
 		if (sel && (f & WCOL_ACT3D))
@@ -2605,8 +2655,8 @@ draw_slider(short d, RECT *cl, short state, struct xa_wcol_inf *wc)
 	
 		gbar(0, &r);
 	}
-#endif
 }
+#endif
 
 /*======================================================
 	VERTICAL SLIDER WIDGET BEHAVIOUR
@@ -2628,16 +2678,35 @@ draw_slider(short d, RECT *cl, short state, struct xa_wcol_inf *wc)
 	Optimization of drawing.
 ========================================================*/
 static bool
+display_unused(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+{
+	struct xa_wcol_inf *wc = &wind->colours->win;
+
+	rp_2_ap(wind, widg, &widg->ar);
+	draw_widg_box(0, wc, 0, &widg->ar);
+#if 0
+	wr_mode(wc->wrm);
+	f_color(wc->n.c);
+	f_interior(wc->n.i);
+	if (wc->n.i > 1)
+		f_style(wc->n.f);
+
+	gbar(0, &widg->ar);
+#endif
+	return true;
+}
+
+static bool
 display_nvslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_wcol_inf *wc = &wind->colours->win;
 
 	rp_2_ap(wind, widg, &widg->ar);
 	wr_mode(wc->wrm);
-	f_color(wc->c);
-	f_interior(wc->i);
-	if (wc->i > 1)
-		f_style(wc->f);
+	f_color(wc->n.c);
+	f_interior(wc->n.i);
+	if (wc->n.i > 1)
+		f_style(wc->n.f);
 
 	gbar(0, &widg->ar);
 
@@ -2662,8 +2731,9 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
 		cl = widg->ar;
-		slider_back(&widg->ar, &wc->slider);
-		//draw_slider(0, &widg->ar, 0, &wc->slider);
+		draw_widg_box(0, &wc->slider, 0, &widg->ar);
+		
+		//slider_back(&widg->ar, &wc->slider);
 		return true;
 	}
 
@@ -2679,8 +2749,9 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		offs = widg->ar.y;
 	if (offs + len > widg->ar.y + widg->ar.h)
 		len = widg->ar.y + widg->ar.h - offs;
-	
-	slider_back(&widg->ar, &wc->slide);
+
+	draw_widg_box(0, &wc->slide, 0, &widg->ar);	
+	//slider_back(&widg->ar, &wc->slide);
 	
 	sl->r.y = offs - widg->ar.y;
 	sl->r.h = len;
@@ -2691,92 +2762,8 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	draw_slider(0, &cl, widg->state, &wc->slider);
-#if 0
-	{
-		int thick = 1, mode = 3;
-
-		if (MONO)
-			mode = 1;
-		else if (!is_topped(wind))
-			thick = 0;
-
-		
-		d3_pushbutton(-3, &cl, NULL, widg->state, thick, mode);
-	}
-#endif
-#if 0	
-
-	wr_mode(MD_REPLACE);
-
-	len = sl_to_pix(widg->ar.h, sl->length);
-	if (len < cfg.widg_h - 3)
-		/* not too small please */
-		len = cfg.widg_h - 3;
-
-	offs = widg->ar.y + sl_to_pix(widg->ar.h - len, sl->position);
-
-	if (offs < widg->ar.y)
-		offs = widg->ar.y;
-	if (offs + len > widg->ar.y + widg->ar.h)
-		len = widg->ar.y + widg->ar.h - offs;
-
-	if (   sl->r.h == 0 || !is_topped(wind))
-	{
-		sl->r.x = sl->r.y = 0;
-		sl->r.w = widg->ar.w;
-		sl->r.h = widg->ar.h;
-		cl = widg->ar;
-		slider_back(&cl);	/* whole background */
-	}
-	else
-	{				/* should really use xa_rc_intersect */
-		cl.x = sl->r.x + widg->ar.x;
-		cl.y = sl->r.y + widg->ar.y;
-		cl.w = sl->r.w;
-		cl.h = sl->r.h;
-		if (   sl->r.h == len	/* parts work only when physical length didnt change */
-		    && !(offs + len < sl->r.y + widg->ar.y ||
-		         offs > sl->r.y + sl->r.h + widg->ar.y)) /* if overlap */ 		
-		{
-			if (sl->r.y + widg->ar.y < offs)		/* down */
-				cl.h = offs - (widg->ar.y + sl->r.y);
-			else				/* up */
-			{
-				cl.y = offs + len;
-				cl.h = (sl->r.y + widg->ar.y) - offs;
-			}
-		}
-		if (cl.h)
-			slider_back(&cl);
-	}
-
-	/* this rectangle to be used for click detection and drawing */
-	sl->r.y = offs - widg->ar.y;
-	sl->r.h = len;
-
-	/* HR: there are so much nice functions, use them!!! :-) */
-	/* The small corrections are needed because the slider sits in a enclosure,
-	 * the function is normally used for buttons that may be drawn a little larger
-	 * than there official size. the small negative numbers makes the button
-	 * exactly that amount smaller than the standard. (The standard is 1 outline border)
-	 */
-	{
-		int thick = 1, mode = 3;
-
-		if (MONO)
-			mode = 1;
-		else if (!is_topped(wind))
-			thick = 0;
-
-		cl.x = sl->r.x + widg->ar.x;
-		cl.y = sl->r.y + widg->ar.y;
-		cl.w = sl->r.w;
-		cl.h = sl->r.h;
-
-		d3_pushbutton(-2, &cl, NULL, widg->state, thick, mode);
-	}
-#endif
+	//draw_slider(0, &cl, widg->state, &wc->slider);
+	draw_widg_box(-1, &wc->slider, widg->state, &cl);
 	wr_mode(MD_TRANS);
 	return true;
 }
@@ -2801,7 +2788,8 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		sl->r.x = sl->r.y = 0;
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
-		slider_back(&widg->ar, &wc->slider);
+		draw_widg_box(0, &wc->slider, 0, &widg->ar);
+		//slider_back(&widg->ar, &wc->slider);
 		return true;
 	}
 
@@ -2818,7 +2806,8 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	if (offs + len > widg->ar.x + widg->ar.w)
 		len = widg->ar.x + widg->ar.w - offs;
 	
-	slider_back(&widg->ar, &wc->slide);
+	draw_widg_box(0, &wc->slide, 0, &widg->ar);	
+	//slider_back(&widg->ar, &wc->slide);
 	
 	sl->r.x = offs - widg->ar.x;
 	sl->r.w = len;
@@ -2829,73 +2818,8 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	draw_slider(0, &cl, widg->state, &wc->slider);
-#if 0
-	wr_mode(MD_REPLACE);
-
-	len = sl_to_pix(widg->ar.w, sl->length);
-	if (len < cfg.widg_w-3)
-		len = cfg.widg_w-3;
-
-	offs = widg->ar.x + sl_to_pix(widg->ar.w - len, sl->position);
-
-	if (offs < widg->ar.x)
-		offs = widg->ar.x;
-	if (offs + len > widg->ar.x + widg->ar.w)
-		len = widg->ar.x + widg->ar.w - offs;
-
-	if (sl->r.w == 0 || !is_topped(wind))
-	{
-		sl->r.x = sl->r.y = 0;
-		sl->r.w = widg->ar.w;
-		sl->r.h = widg->ar.h;
-		slider_back(&widg->ar);
-	}
-	else
-	{
-		cl.x = sl->r.x + widg->ar.x;
-		cl.y = sl->r.y + widg->ar.y;
-		cl.w = sl->r.w;
-		cl.h = sl->r.h;
-
-		if (sl->r.w == len
-		    && !(offs + len < sl->r.x + widg->ar.x ||
-		         offs > sl->r.x + sl->r.w + widg->ar.x))
-		{
-			if (sl->r.x + widg->ar.x < offs)
-			{
-				cl.w = offs - (sl->r.x + widg->ar.x);
-			}
-			else
-			{
-				cl.x = offs + len;
-				cl.w = (sl->r.x + widg->ar.x) - offs;
-			}
-		}
-		if (cl.w)
-			slider_back(&cl);
-	}
-
-	sl->r.x = offs - widg->ar.x;
-	sl->r.w = len;
-
-	{
-		int thick = 1, mode = 3;
-		RECT r;
-
-		if (MONO)
-			mode = 1;
-		else if (!is_topped(wind))
-			thick = 0;
-
-		r.x = sl->r.x + widg->ar.x;
-		r.y = sl->r.y + widg->ar.y;
-		r.w = sl->r.w;
-		r.h = sl->r.h;
-
-		d3_pushbutton(-2, &r, NULL, widg->state, thick, mode);
-	}
-#endif
+	draw_widg_box(-1, &wc->slider, widg->state, &cl);
+	//draw_slider(0, &cl, widg->state, &wc->slider);
 	wr_mode(MD_TRANS);
 	return true;
 }
@@ -3089,31 +3013,6 @@ display_arrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	return true;
 }
 
-#if 0
-/* HR : moved the following to the end of the file, this way all function that are referenced, are already defined */
-/*      removed a very annoying & confusing connection between bit number of a mask and a enum value */
-static void
-shift_from_top(struct xa_window *wind, XA_WIDGET *widg, long tp, int xtra)
-{
-	int wd;
-
-	/* Shift any widgets we might interfere with */
-	for (wd = 0; wd < XA_MAX_WIDGETS; wd++)
-	{
-		XA_WIDGET *tw = wind->widgets + wd;
-		if (tp & tw->loc.mask)
-		{
-			if (   tw->loc.relative_type == LT
-			    || tw->loc.relative_type == RT
-			    || tw->loc.relative_type == CT)
-			{
-				tw->r.y += widg->r.h + xtra;
-			}
-		}
-	}
-}
-#endif
-
 static inline void
 zwidg(struct xa_window *wind, short n, bool keepstuff)
 {
@@ -3210,8 +3109,8 @@ set_title_size(struct xa_window *wind, struct xa_widget *widg)
 
 	widg->r.w = cfg.widg_w;
 		
-	t_font(wti->p, wti->f);
-	vst_effects(C.vh, wti->e);
+	t_font(wti->n.p, wti->n.f);
+	vst_effects(C.vh, wti->n.e);
 	t_extent("A", &w, &h);
 	vst_effects(C.vh, 0);
 	
@@ -3231,8 +3130,8 @@ set_info_size(struct xa_window *wind, struct xa_widget *widg)
 
 	widg->r.w = cfg.widg_w;
 		
-	t_font(wti->p, wti->f);
-	vst_effects(C.vh, wti->e);
+	t_font(wti->n.p, wti->n.f);
+	vst_effects(C.vh, wti->n.e);
 	t_extent("A", &w, &h);
 	vst_effects(C.vh, 0);
 	
@@ -3328,7 +3227,7 @@ set_sizer_size(struct xa_window *wind, struct xa_widget *widg)
 static void
 set_vslide_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->uparrow, 6);
+	set_widg_size(wind, widg, &wind->ontop_cols->uparrow, WIDG_UP);
 }
 
 /* 
@@ -3435,6 +3334,10 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		DIAGS(("clear sizer"));
 		zwidg(wind, XAW_RESIZE, keep_stuff);
+	}
+	if (!(tp & SIZER) && bottom & right)
+	{
+		make_widget(wind, &stdl_nresize, display_unused, NULL, NULL, NULL, set_sizer_size);
 	}
 
 	if ( (tp & BORDER) || ((tp & (SIZER|MOVER)) == (SIZER|MOVER)) )
@@ -3588,7 +3491,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	
 	if (!(tp & VSLIDE) && (tp & (SIZER|UPARROW|DNARROW)))
 	{
-		widg = make_widget(wind, &stdl_nvslide, display_nvslide, NULL, NULL, NULL, set_vslide_size);
+		widg = make_widget(wind, &stdl_nvslide, display_unused, NULL, NULL, NULL, set_vslide_size);
 		utp |= VSLIDE;
 	}	
 
@@ -4363,7 +4266,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 			if (wind->active_widgets & (SIZER|BORDER))
 			{
 				widg = wind->widgets + XAW_RESIZE;
-				if ( wind->frame > 0 &&
+				if ( /*wind->frame > 0 && */
 				    (wind->active_widgets & BORDER) &&
 				   !(wind->widgets[XAW_BORDER].loc.statusmask & status) &&
 				    (!m_inside(x, y, &wind->ba)))

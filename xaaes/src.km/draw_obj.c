@@ -402,6 +402,7 @@ void line(short x, short y, short x1, short y1, short col)
 	v_pline(C.vh, 2, pxy);
 }
 
+
 void bar(short d,  short x, short y, short w, short h)
 {
 	short l[4];
@@ -512,6 +513,73 @@ void gbox(short d, const RECT *r)
 #else
 #define PW 0
 #endif
+
+void
+top_line(short d, const RECT *r, short col)
+{
+	short pnt[4];
+
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+
+	l_color(col);
+	pnt[0] = x;
+	pnt[1] = y;
+	pnt[2] = x + w - 1;
+	pnt[3] = y;
+	v_pline(C.vh, 2, pnt);
+}
+void
+bottom_line(short d, const RECT *r, short col)
+{
+	short pnt[4];
+
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+	short h = r->h + d+d;
+
+	l_color(col);
+	pnt[0] = x;
+	pnt[1] = y + h - 1;
+	pnt[2] = x + w - 1;;
+	pnt[3] = pnt[1];
+	v_pline(C.vh, 2, pnt);
+}
+void
+left_line(short d, const RECT *r, short col)
+{
+	short pnt[4];
+
+	short x = r->x - d;
+	short y = r->y - d;
+	short h = r->h + d+d;
+
+	l_color(col);
+	pnt[0] = x;
+	pnt[1] = y;
+	pnt[2] = x;
+	pnt[3] = y + h - 1;
+	v_pline(C.vh, 2, pnt);
+}
+void
+right_line(short d, const RECT *r, short col)
+{
+	short pnt[4];
+
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+	short h = r->h + d+d;
+
+	l_color(col);
+	pnt[0] = x + w - 1;
+	pnt[1] = y;
+	pnt[2] = pnt[0];
+	pnt[3] = y + h - 1;
+	v_pline(C.vh, 2, pnt);
+}
 
 void tl_hook(short d, const RECT *r, short col)
 {
