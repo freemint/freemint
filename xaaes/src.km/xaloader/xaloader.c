@@ -1,12 +1,15 @@
 
+#include <mint/cookie.h>
 #include <mint/mintbind.h>
+#include <mint/ssystem.h>
 #include <sys/fcntl.h>
 #include <string.h>
 
 /* KM_RUN */
 #include "../../../sys/mint/ioctl.h"
 
-#define DEFAULT "xaaes.km"
+#define DEFAULT        "xaaes.km"
+#define DEFAULT_68000  "xaaes000.km"
 
 static void
 my_strlcpy(char *dst, const char *src, size_t n)
@@ -129,7 +132,18 @@ loader_init(int argc, char **argv, char **env)
 			name = argv[1];
 	}
 	else
+	{
+		long cpu;
+		
 		name = DEFAULT;
+		
+		/* if the system have a 68000 CPU we use the 68000 compiled
+		 * module
+		 */
+		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
+		if (r == 0 && cpu < 20)
+			name = DEFAULT_68000;
+	}
 
 	/* change to the XaAES module directory */
 	r = Dsetpath(path);
