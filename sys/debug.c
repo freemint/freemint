@@ -37,7 +37,7 @@
 # include <osbind.h>
 
 
-static void VDEBUGOUT (int, const char *, va_list);
+static void VDEBUGOUT(const char *, va_list, int);
 
 
 int debug_level = 1;	/* how much debugging info should we print? */
@@ -79,11 +79,11 @@ char out_next[] = { 1, 3, 0, 6, 0, 0, 7, 8, 9, 2 };
 # endif
 # define LB_LINE_LEN	(SPRINTF_MAX + 20)	/* width of a line */
 
-static char logbuf [LBSIZE][LB_LINE_LEN];
-static ushort logtime [LBSIZE];	/* low 16 bits of 200 Hz: timestamp of msg */
+static char logbuf[LBSIZE][LB_LINE_LEN];
+static ushort logtime[LBSIZE];	/* low 16 bits of 200 Hz: timestamp of msg */
 
-int debug_logging;
-int logptr;
+int debug_logging = 0;
+int logptr = 0;
 
 
 /*
@@ -105,7 +105,7 @@ int logptr;
  */
 
 void
-debug_ws (const char *s)
+debug_ws(const char *s)
 {
 	long key;
 	int scan;
@@ -113,9 +113,9 @@ debug_ws (const char *s)
 	
 	while (*s)
 	{
-		(void) Bconout (out_device, *s);
+		(void) Bconout(out_device, *s);
 		
-		while (*s == '\n' && out_device != 0 && Bconstat (out_device))
+		while (*s == '\n' && out_device != 0 && Bconstat(out_device))
 		{
 			stopped = 0;
 			while (1)
@@ -125,9 +125,9 @@ debug_ws (const char *s)
 					/* got a key; if ctl-alt then do it */
 					if ((Kbshift (-1) & 0x0c) == 0x0c)
 					{
-						key = Bconin (out_device);
-						scan = (int) (((key >> 16) & 0xff));
-						do_func_key (scan);
+						key = Bconin(out_device);
+						scan = (int)(((key >> 16) & 0xff));
+						do_func_key(scan);
 						
 						goto ptoggle;
 					}
@@ -138,7 +138,7 @@ debug_ws (const char *s)
 				}
 				else
 				{
-					key = Bconin (out_device);
+					key = Bconin(out_device);
 					if (key < '0' || key > '9')
 					{
 ptoggle:
@@ -150,8 +150,8 @@ ptoggle:
 					{
 						/* digit key from debug device == Fn */
 						if (key == '0') scan = 0x44;
-						else scan = (int) (key - '0' + 0x3a);
-						do_func_key (scan);
+						else scan = (int)(key - '0' + 0x3a);
+						do_func_key(scan);
 					}
 				}
 			}
@@ -171,7 +171,7 @@ cont:
  */
 
 int
-_ALERT (char *s)
+_ALERT(char *s)
 {
 	FILEPTR *fp;
 	long ret;
@@ -185,9 +185,9 @@ _ALERT (char *s)
 	debug_level = 0;
 	debug_logging = 0;
 	
-	ret = FP_ALLOC (rootproc, &fp);
+	ret = FP_ALLOC(rootproc, &fp);
 	if (!ret)
-		ret = do_open (&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
+		ret = do_open(&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
 	
 	debug_level = olddebug;
 	debug_logging = oldlogging;
@@ -205,13 +205,13 @@ _ALERT (char *s)
 		}
 		else
 		{
-			char alertbuf [SPRINTF_MAX + 10];
+			char alertbuf[SPRINTF_MAX + 10];
 			char *ptr;
 			char *lastspace;
 			int counter;
 			
 			alert = alertbuf;
-			ksprintf (alertbuf, sizeof (alertbuf), "[1][%s", s);
+			ksprintf(alertbuf, sizeof(alertbuf), "[1][%s", s);
 			
 			/* make sure no lines exceed 30 characters;
 			 * also, filter out any reserved characters
@@ -245,7 +245,7 @@ _ALERT (char *s)
 					if (lastspace)
 					{
 						*lastspace = '|';
-						counter = (int) (ptr - lastspace);
+						counter = (int)(ptr - lastspace);
 						lastspace = 0;
 					}
 					else
@@ -258,11 +258,11 @@ _ALERT (char *s)
 				ptr++;
 			}
 			
-			strcpy (ptr, "][  OK  ]");
+			strcpy(ptr, "][  OK  ]");
 		}
 		
-		(*fp->dev->write)(fp, alert, strlen (alert) + 1);
-		do_close (rootproc, fp);
+		(*fp->dev->write)(fp, alert, strlen(alert) + 1);
+		do_close(rootproc, fp);
 		
 		return 1;
 	}
@@ -271,14 +271,14 @@ _ALERT (char *s)
 }
 
 static void
-VDEBUGOUT (int level, const char *s, va_list args)
+VDEBUGOUT(const char *s, va_list args, int alert_flag)
 {
 	char *lp;
 	char *lptemp;
 	long len;
 	
-	logtime [logptr] = (ushort)(*(long *) 0x4baL);
-	lptemp = lp = logbuf [logptr];
+	logtime[logptr] = (ushort)(*(long *) 0x4baL);
+	lptemp = lp = logbuf[logptr];
 	len = LB_LINE_LEN;
 	
 	if (++logptr == LBSIZE)
@@ -286,100 +286,106 @@ VDEBUGOUT (int level, const char *s, va_list args)
 	
 	if (curproc)
 	{
-		ksprintf (lp, len, "pid %3d (%s): ", curproc->pid, curproc->name);
-		lptemp += strlen (lp);
-		len -= strlen (lp);
+		ksprintf(lp, len, "pid %3d (%s): ", curproc->pid, curproc->name);
+		lptemp += strlen(lp);
+		len -= strlen(lp);
 	}
 	
-	vsprintf (lptemp, len, s, args);
+	vsprintf(lptemp, len, s, args);
 	
 	/* for alerts, try the alert pipe unconditionally */
-	if (level == ALERT_LEVEL && _ALERT (lp))
+	if (alert_flag && _ALERT(lp))
 		return;
 	
-	if (debug_level >= level)
+	debug_ws(lp);
+	debug_ws("\r\n");
+}
+
+void _cdecl
+Tracelow(const char *s, ...)
+{
+	if (debug_logging
+	    || (debug_level >= LOW_LEVEL)
+	    || (curproc->debug_level >= LOW_LEVEL))
 	{
-		debug_ws (lp);
-		debug_ws ("\r\n");
+		va_list args;
+		
+		va_start(args, s);
+		VDEBUGOUT(s, args, 0);
+		va_end(args);
 	}
 }
 
 void _cdecl
-Tracelow (const char *s, ...)
+Trace(const char *s, ...)
 {
-	if (debug_logging || (debug_level >= LOW_LEVEL)
-			  || (curproc->debug_level >= LOW_LEVEL))
+	if (debug_logging
+	    || (debug_level >= TRACE_LEVEL)
+	    || (curproc->debug_level >= TRACE_LEVEL))
 	{
 		va_list args;
 		
-		va_start (args, s);
-		VDEBUGOUT (LOW_LEVEL, s, args);
-		va_end (args);
+		va_start(args, s);
+		VDEBUGOUT(s, args, 0);
+		va_end(args);
 	}
 }
 
 void _cdecl
-Trace (const char *s, ...)
+Debug(const char *s, ...)
 {
-	if (debug_logging || (debug_level >= TRACE_LEVEL)
-			  || (curproc->debug_level >= TRACE_LEVEL))
+	if (debug_logging
+	    || (debug_level >= DEBUG_LEVEL)
+	    || (curproc->debug_level >= DEBUG_LEVEL))
 	{
 		va_list args;
 		
-		va_start (args, s);
-		VDEBUGOUT (TRACE_LEVEL, s, args);
-		va_end (args);
-	}
-}
-
-void _cdecl
-Debug (const char *s, ...)
-{
-	if ( debug_logging || (debug_level >= DEBUG_LEVEL)
-			   || (curproc->debug_level >= DEBUG_LEVEL))
-	{
-		va_list args;
-		
-		va_start (args, s);
-		VDEBUGOUT (DEBUG_LEVEL, s, args);
-		va_end (args);
+		va_start(args, s);
+		VDEBUGOUT(s, args, 0);
+		va_end(args);
 	}
 	
-	if (	debug_logging &&
-		(debug_level >= DEBUG_LEVEL) || (curproc->debug_level >= DEBUG_LEVEL))
-		DUMPLOG ();
+	if (debug_logging
+	    && ((debug_level >= DEBUG_LEVEL)
+	        || (curproc->debug_level >= DEBUG_LEVEL)))
+	{
+		DUMPLOG();
+	}
 }
 
 void _cdecl
-ALERT (const char *s, ...)
+ALERT(const char *s, ...)
 {
 	if (debug_logging || debug_level >= ALERT_LEVEL)
 	{
 		va_list args;
 		
-		va_start (args, s);
-		VDEBUGOUT (ALERT_LEVEL, s, args);
-		va_end (args);
+		va_start(args, s);
+		VDEBUGOUT(s, args, 1);
+		va_end(args);
 	}
 	
 	if (debug_logging && (debug_level >= ALERT_LEVEL))
-		DUMPLOG ();
+		DUMPLOG();
 }
 
 void _cdecl
-FORCE (const char *s, ...)
+FORCE(const char *s, ...)
 {
-	va_list args;
-	
-	va_start (args, s);
-	VDEBUGOUT (FORCE_LEVEL, s, args);
-	va_end (args);
+	if (debug_level >= FORCE_LEVEL)
+	{
+		va_list args;
+		
+		va_start(args, s);
+		VDEBUGOUT(s, args, 0);
+		va_end(args);
+	}
 	
 	/* don't dump log here - hardly ever what you mean to do. */
 }
 
 void
-DUMPLOG (void)
+DUMPLOG(void)
 {
 	char *end;
 	char *start;
@@ -388,17 +394,17 @@ DUMPLOG (void)
 	
 	/* logbuf [logptr] is the oldest string here */
 	
-	end = start = logbuf [logptr];
-	timeptr = &logtime [logptr];
+	end = start = logbuf[logptr];
+	timeptr = &logtime[logptr];
 	
 	do
 	{
 		if (*start)
 		{
-			ksprintf (timebuf, sizeof (timebuf), "%04x ", *timeptr);
-			debug_ws (timebuf);
-			debug_ws (start);
-			debug_ws ("\r\n");
+			ksprintf(timebuf, sizeof(timebuf), "%04x ", *timeptr);
+			debug_ws(timebuf);
+			debug_ws(start);
+			debug_ws("\r\n");
 			*start = '\0';
 		}
 		
@@ -418,27 +424,25 @@ DUMPLOG (void)
 
 /* wait for a key to be pressed */
 void
-PAUSE (void)
+PAUSE(void)
 {
-	debug_ws (MSG_init_hitanykey);
-	(void) Bconin (2);
+	debug_ws(MSG_init_hitanykey);
+	(void) Bconin(2);
 }
   
 EXITING _cdecl
-FATAL (const char *s, ...)
+FATAL(const char *s, ...)
 {
 	va_list args;
 	
-	va_start (args, s);
-	VDEBUGOUT (-1, s, args);
-	va_end (args);
+	va_start(args, s);
+	VDEBUGOUT(s, args, 0);
+	va_end(args);
 	
 	if (debug_logging)
-	{
-		DUMPLOG ();
-	}
+		DUMPLOG();
 	
-	HALT ();
+	HALT();
 }
 
 
@@ -454,32 +458,30 @@ halt (void)
 	long key;
 	int scan;
 	
-	DEBUG (("halt() called, system halting...\r\n"));
-	debug_ws (MSG_system_halted);
+	DEBUG(("halt() called, system halting...\r\n"));
+	debug_ws(MSG_system_halted);
 	
 	sys_q[READY_Q] = 0;	/* prevent context switches */
 	restr_intr();		/* restore interrupts to normal */
 	
-	for(;;)
+	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
-		key = Bconin (out_device);
+		key = Bconin(out_device);
 		
 		if ((key & 0x0c000000L) == 0x0c000000L)
 		{
-			scan = (int) ((key >> 16) & 0xff);
-			do_func_key (scan);
+			scan = (int)((key >> 16) & 0xff);
+			do_func_key(scan);
 		}
 		else
-		{
 			break;
-		}
 	}
 	
-	for(;;)
+	for (;;)
 	{
-		debug_ws (MSG_system_halted);
-		r = Bconin (2);
+		debug_ws(MSG_system_halted);
+		r = Bconin(2);
 		if ((r & 0x0ff) == 'x')
 		{
 		}
@@ -493,8 +495,8 @@ HALT (void)
 	long key;
 	int scan;
 	
-	DEBUG (("Fatal MiNT error: adjust debug level and hit a key...\r\n"));
-	debug_ws (MSG_fatal_reboot);
+	DEBUG(("Fatal MiNT error: adjust debug level and hit a key...\r\n"));
+	debug_ws(MSG_fatal_reboot);
 	
 	sys_q[READY_Q] = 0;	/* prevent context switches */
 	restr_intr ();		/* restore interrupts to normal */
@@ -502,12 +504,12 @@ HALT (void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
-		key = Bconin (2);
+		key = Bconin(2);
 		
 		if ((key & 0x0c000000L) == 0x0c000000L)
 		{
-			scan = (int) ((key >> 16) & 0xff);
-			do_func_key (scan);
+			scan = (int)((key >> 16) & 0xff);
+			do_func_key(scan);
 		}
 		else
 			break;
@@ -515,26 +517,26 @@ HALT (void)
 	
 	for (;;)
 	{
-		debug_ws (MSG_fatal_reboot);
-		r = Bconin (2);
+		debug_ws(MSG_fatal_reboot);
+		r = Bconin(2);
 		
 		if (((r & 0x0ff) == 'x') || ((r & 0xff) == 's'))
 		{
-			close_filesys ();
+			close_filesys();
 			
 			/* if the user pressed 's', try to sync before halting the system */
 			if ((r & 0xff) == 's')
 			{
-				debug_ws (MSG_debug_syncing);
-				s_ync ();
-				debug_ws (MSG_debug_syncdone);
+				debug_ws(MSG_debug_syncing);
+				s_ync();
+				debug_ws(MSG_debug_syncdone);
 			}
 		}
 	}
 }
 
 void
-do_func_key (int scan)
+do_func_key(int scan)
 {
 	switch (scan)
 	{
@@ -557,7 +559,7 @@ do_func_key (int scan)
 		/* F3: cycle out_device */
 		case 0x3d:
 		{
-			out_device = out_next [out_device];
+			out_device = out_next[out_device];
 			break;
 		}
 		
@@ -571,14 +573,14 @@ do_func_key (int scan)
 		/* F5: dump memory */
 		case 0x3f:
 		{
-			DUMP_ALL_MEM ();
+			DUMP_ALL_MEM();
 			break;
 		}
 		
 		/* shift+F5: dump kernel allocated memory */
 		case 0x58:
 		{
-			km_config (KM_STAT_DUMP, 0);
+			km_config(KM_STAT_DUMP, 0);
 			
 			{
 				static long mode = DISABLE;
@@ -588,10 +590,10 @@ do_func_key (int scan)
 				else
 					mode = ENABLE;
 				
-				fatfs_config (0, FATFS_DEBUG, mode);
-				fatfs_config (0, FATFS_DEBUG_T, mode);
+				fatfs_config(0, FATFS_DEBUG, mode);
+				fatfs_config(0, FATFS_DEBUG_T, mode);
 				
-				bio.config (0, BIO_DEBUG_T, mode);
+				bio.config(0, BIO_DEBUG_T, mode);
 			}
 			
 			break;
@@ -600,8 +602,8 @@ do_func_key (int scan)
 		/* F6: dump processes */
 		case 0x40:
 		{
-			DUMPPROC ();
-			_s_ync ();
+			DUMPPROC();
+			_s_ync();
 			break;
 		}
 		
@@ -609,14 +611,14 @@ do_func_key (int scan)
 		/* shift+F6: control profiling */
 		case 0x59:
 		{
-			write_profiling ();
+			write_profiling();
 			break;
 		}
 		
 		/* shift+F7: toogle profiling */
 		case 0x5A:
 		{
-			toogle_profiling ();
+			toogle_profiling();
 			break;
 		}
 # endif
@@ -631,35 +633,35 @@ do_func_key (int scan)
 		/* F6: always print MiNT basepage */
 		case 0x40:
 		{
-			FORCE ("MiNT base %lx (%lx)", rootproc->base, _base);
+			FORCE("MiNT base %lx (%lx)", rootproc->base, _base);
 			break;
 		}
 # endif
 		/* F8: dump log */
 		case 0x42:
 		{
-			DUMPLOG ();
+			DUMPLOG();
 			break;
 		}
 # ifdef DEBUG_INFO
 		/* F9: dump the global memory table */
 		case 0x43:
 		{
-			QUICKDUMP ();
+			QUICKDUMP();
 			break;
 		}
 		
 		/* shift-F9: dump the mmu tree */
 		case 0x5c:
 		{
-			BIG_MEM_DUMP (1, curproc);
+			BIG_MEM_DUMP(1, curproc);
 			break;
 		}
 		
 		/* F10: do an annotated dump of memory */
 		case 0x44:
 		{
-			BIG_MEM_DUMP (0, 0);
+			BIG_MEM_DUMP(0, 0);
 			break;
 		}
 # endif
