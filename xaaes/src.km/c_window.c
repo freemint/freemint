@@ -476,7 +476,7 @@ create_window(
 	}
 #endif
 
-	new = xcalloc(1, sizeof(struct xa_window), 104);
+	new = xcalloc(1, sizeof(*new), 104);
 	if (!new)
 		/* Unable to allocate memory for window? */
 		return NULL;
