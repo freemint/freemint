@@ -48,8 +48,11 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
-
+#if GENERATE_DIAGS
+static const char *cnf_name = "xaaesdbg.cnf";
+#else
 static const char *cnf_name = "xaaes.cnf";
+#endif
 
 static char Aes_display_name[32];
 Path Aes_home_path;
