@@ -821,31 +821,26 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md)
 		 * delivered, queued as pending or not.
 		 */
 		mu_button.got = true;
+
 		break;
 	}
 	case MOOSE_MOVEMENT_PREFIX:
 	{
-		/* HR: new mouse rectangle events */
-		//DIAG((D_v, NULL,"mouse move to: %d/%d", mdata.x, mdata.y));
-
-		/* no_mouse(); 
-		 * HR 061201: needed here, because the button
-		 * state cannot be up to date in this case.
-		 * This leaves the button info to multi_intout()
-		 */
+		/* mouse rectangle events */
+		/* DIAG((D_v, NULL,"mouse move to: %d/%d", mdata.x, mdata.y)); */
 
 		/* Call the mouse movement event handler (doesnt use md->state) */
 		x_mouse = md->x;
 		y_mouse = md->y;
 		XA_move_event(lock, md);
+
 		break;
 	}
 
 	case MOOSE_WHEEL_PREFIX:
 	{
-		//x_mouse = md->x;
-		//y_mouse = md->y;
 		XA_wheel_event(lock, md);
+
 		break;
 	}
 	default:
@@ -855,28 +850,18 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md)
 			md->l, md->ty, md->x, md->y, md->state, md->clicks));
 		DIAG((D_mouse, NULL, " dbg1=0x%x, dbg2=0x%x",
 			md->dbg1, md->dbg2));
+
 		return false;
 	}
 	}
 	return true;
 }
 
-static void
-no_mouse(void)
-{
-	DIAG((D_v, NULL, "no_mouse"));
-	mu_button.have = false;
-/*	button.got = false; */		/* This is for still button handling.
-					 * Ozk: yes, but it should not be cleared until we
-					 * have a new button event!!!!
-					 */
-}
-
 void
 preprocess_mouse(enum locks lock)
 {
 	/*
-	 * Ozk: Check if a fake button-released packet needs to be sent
+	 * Check if a fake button-released packet needs to be sent
 	 */
 	if (mainmd.state && !mainmd.cstate)
 	{
@@ -886,7 +871,9 @@ preprocess_mouse(enum locks lock)
 
 		new_moose_pkt(lock, 0, &mainmd);
 	}
-	no_mouse();
+
+	/* no_mouse */
+	mu_button.have = false;
 }
 
 int
@@ -937,7 +924,7 @@ mouse_input(enum locks lock, int internal)
 			return new_moose_pkt(lock, internal, &md);
 	}
 
-	// DIAG((D_mouse, NULL, "Moose channel yielded %ld", n));
+	/* DIAG((D_mouse, NULL, "Moose channel yielded %ld", n)); */
 	return false;
 }
 

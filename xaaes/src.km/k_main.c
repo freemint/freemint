@@ -275,8 +275,13 @@ sigchld(void)
 {
 	long r;
 
+again:
 	r = p_waitpid(-1, 0, NULL);
-	DIAGS(("sigchld -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
+	if (r > 0)
+	{
+		DIAGS(("sigchld -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
+		goto again;
+	}
 }
 
 static void k_exit(void);
@@ -320,6 +325,7 @@ k_main(void *dummy)
 	p_signal(SIGUSR1,  (long) ignore);
 	p_signal(SIGUSR2,  (long) ignore);
 
+#if !GENERATE_DIAGS
 	/* fatal signals */
 	p_signal(SIGILL,   (long) k_exit);
 	p_signal(SIGTRAP,  (long) k_exit);
@@ -329,6 +335,7 @@ k_main(void *dummy)
 	p_signal(SIGBUS,   (long) k_exit);
 	p_signal(SIGSEGV,  (long) k_exit);
 	p_signal(SIGSYS,   (long) k_exit);
+#endif
 
 	/* other stuff */
 	p_signal(SIGTERM,  (long) sigterm);
@@ -485,14 +492,14 @@ k_main(void *dummy)
 		input_channels |= 1UL << C.KBD_dev;	/* We are waiting on all these channels */
 		input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 
-		DIAG((D_kern, NULL, "Fselect mask: 0x%08lx", input_channels));
+		/* DIAG((D_kern, NULL, "Fselect mask: 0x%08lx", input_channels)); */
 
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard, mouse and the AES command pipe(s).
 		 */
 		fs_rtn = f_select(C.active_timeout.timeout, (long *) &input_channels, 0L, 0L);	
 
-		DIAG((D_kern, NULL,">>Fselect(t%d) :: %d, channels: 0x%08lx, U%dM%d",
+		DIAG((D_kern, NULL,">>Fselect(t%d) :: %d, channels: 0x%08lx, update_lock %d, mouse_lock %d",
 			C.active_timeout.timeout, fs_rtn, input_channels,
 			update_locked() ? update_locked()->p->pid : 0,
 			mouse_locked() ? mouse_locked()->p->pid : 0));
@@ -577,6 +584,15 @@ leave:
 static void
 k_exit(void)
 {
+	/* don't reenter on fatal signals */
+	p_signal(SIGILL,   SIG_DFL);
+	p_signal(SIGTRAP,  SIG_DFL);
+	p_signal(SIGTRAP,  SIG_DFL);
+	p_signal(SIGABRT,  SIG_DFL);
+	p_signal(SIGFPE,   SIG_DFL);
+	p_signal(SIGBUS,   SIG_DFL);
+	p_signal(SIGSEGV,  SIG_DFL);
+
 	if (svmotv)
 	{
 		void *m, *b, *h;
