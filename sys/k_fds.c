@@ -356,17 +356,19 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	r = xfs_getxattr (fc.fs, &fc, &xattr);
 	if (r)
 	{
-		DEBUG(("do_open(%s): couldn't get file attributes",name));
+		DEBUG(("do_open(%s): couldn't get file attributes", name));
 		release_cookie (&dir);
 		release_cookie (&fc);
 		return r;
 	}
 
+	DEBUG(("do_open(%s): mode 0x%x", name, xattr.mode));
+
 	/* we don't do directories
 	 */
-	if ((xattr.mode & S_IFMT) == S_IFDIR)
+	if (S_ISDIR(xattr.mode))
 	{
-		DEBUG(("do_open(%s): file is a directory",name));
+		DEBUG(("do_open(%s): file is a directory", name));
 		release_cookie (&dir);
 		release_cookie (&fc);
 		return ENOENT;
@@ -540,6 +542,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 # endif
 	}
 
+	DEBUG(("do_open(%s) -> 0", name));
 	return 0;
 }
 
