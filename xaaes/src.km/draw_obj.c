@@ -551,13 +551,16 @@ inline long calc_back(const RECT *r, int planes)
 		  * r->h;
 }
 
-void *form_save(int d, RECT r, void *area)
+void form_save(int d, RECT r, void **area)
 {
 	MFDB Mscreen = { 0 };
 	MFDB Mpreserve;
 	short pnt[8];
 
-	r.x-=d, r.y-=d, r.w+=2*d, r.h+=2*d;
+	r.x -= d;
+	r.y -= d;
+	r.w += d * 2;
+	r.h += d * 2;
 
 	rtopxy(pnt, &r);
 	ritopxy(pnt+4,0,0,r.w,r.h);
@@ -570,43 +573,47 @@ void *form_save(int d, RECT r, void *area)
 	Mpreserve.fd_nplanes = screen.planes;
 	Mpreserve.fd_stand = 0;
 
-	if (area == NULL)
-		area = xmalloc(calc_back(&r,screen.planes), 210);
+	/* if something is allocated free it */
+	if (*area)
+		free(*area);
 
-	if (area)
+	*area = xmalloc(calc_back(&r,screen.planes), 210);
+	if (*area)
 	{
-		Mpreserve.fd_addr = area;
+		Mpreserve.fd_addr = *area;
 		vro_cpyfm(C.vh, S_ONLY, pnt, &Mscreen, &Mpreserve);
 	}
-
-	return area;
 }
 
-void form_restore(int d, RECT r, void *area)
+void form_restore(int d, RECT r, void **area)
 {
-	MFDB Mscreen = { 0 };
-	MFDB Mpreserve;
-	short pnt[8];
-	
-	if (!area)
-		return;
+	if (*area)
+	{
+		MFDB Mscreen = { 0 };
+		MFDB Mpreserve;
+		short pnt[8];
 
-	r.x-=d, r.y-=d, r.w+=2*d, r.h+=2*d;
+		r.x -= d;
+		r.y -= d;
+		r.w += d * 2;
+		r.h += d * 2;
 
-	rtopxy(pnt+4, &r);
-	ritopxy(pnt,0,0,r.w,r.h);
+		rtopxy(pnt+4, &r);
+		ritopxy(pnt,0,0,r.w,r.h);
 
-	DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+		DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d", r.x, r.y, r.w, r.h));
 
-	Mpreserve.fd_w = r.w;
-	Mpreserve.fd_h = r.h;
-	Mpreserve.fd_wdwidth = (r.w + 15) / 16;
-	Mpreserve.fd_nplanes = screen.planes;
-	Mpreserve.fd_stand = 0;
-	Mpreserve.fd_addr = area;
-	vro_cpyfm(C.vh, S_ONLY, pnt, &Mpreserve, &Mscreen);
+		Mpreserve.fd_w = r.w;
+		Mpreserve.fd_h = r.h;
+		Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+		Mpreserve.fd_nplanes = screen.planes;
+		Mpreserve.fd_stand = 0;
+		Mpreserve.fd_addr = *area;
+		vro_cpyfm(C.vh, S_ONLY, pnt, &Mpreserve, &Mscreen);
 
-	free(area);
+		free(*area);
+		*area = NULL;
+	}
 }
 
 void form_copy(const RECT *fr, const RECT *to)
