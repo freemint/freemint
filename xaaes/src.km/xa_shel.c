@@ -633,7 +633,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		}
 		else
 		{
-			ikill(SIGKILL, p->pid);
+			ikill(p->pid, SIGKILL);
 			ret = ENOMEM;
 		}
 	}
