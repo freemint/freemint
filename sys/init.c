@@ -44,6 +44,7 @@
 # include "delay.h"	/* calibrate_delay */
 # include "dos.h"	/* */
 # include "dosdir.h"	/* */
+# include "dosmem.h"	/* QUANTUM */
 # include "filesys.h"	/* init_filesys, s_ync, close_filesys */
 # ifdef FLOPPY_ROUTINES
 # include "floppy.h"	/* init_floppy */
@@ -739,6 +740,126 @@ check_for_gem (void)
 
 static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 
+/* This seems to be an overkill, but we sometimes need to set something
+ * in the environment.
+ */
+
+/* A macro used to calculate the remaining free part of an
+ * allocated block of memory (in other words, the difference
+ * between the requested/used size and the size actually allocated).
+ */
+# define RAM_PAD(x) (QUANTUM - (x % QUANTUM))
+
+/* Measures the size of the environment */
+
+long
+env_size(char *var)
+{
+	long count = 1;			/* Trailing NULL */
+
+	while (var && *var)
+	{
+		while (*var)
+		{
+			var++;
+			count++;
+		}
+		var++;
+		count++;
+	}
+
+	return count;
+}
+
+/* _mint_delenv() idea is borrowed from mintlib's del_env() */
+void
+_mint_delenv(BASEPAGE *bp, const char *strng)
+{
+	char *name, *var;
+
+	/* find the tag in the environment */
+	var = _mint_getenv(bp, strng);
+	if (!var)
+		return;
+
+	/* if it's found, move all the other environment variables down by 1 to
+   	 * delete it
+         */
+	var -= (strlen(strng) + 1);
+	name = var + strlen(var) + 1;
+
+	do
+	{
+		while (*name)
+			*var++ = *name++;
+		*var++ = *name++;
+
+	} while (*name);
+
+	*var = 0;
+
+	sys_m_shrink(0, (long)bp->p_env, env_size(bp->p_env));
+}
+
+void
+_mint_setenv(BASEPAGE *bp, const char *var, char *value)
+{
+	char *env_str = bp->p_env, *new_env, *es, *ne;
+	long old_size, var_size;
+
+	/* If it already exists, delete it */
+	_mint_delenv(bp, var);
+
+	old_size = env_size(env_str);
+	var_size = strlen(var) + strlen(value) + 1;	/* '=' */
+
+	/* If there is enough place in the current environment,
+	 * don't reallocate it.
+	 */
+	if (RAM_PAD(old_size) >= var_size)
+	{
+		ne = env_str;
+
+		while (*ne)
+		{
+			while (*ne)
+				ne++;
+			ne++;
+		}
+	}
+	else
+	{
+		new_env = (char *)sys_m_xalloc(old_size + var_size, 3);
+
+		if (new_env == NULL)
+			return;
+
+		es = env_str;
+		ne = new_env;
+
+		/* Copy old env to new place */
+		while (*es)
+		{
+			while (*es)
+				*ne++ = *es++;
+			*ne++ = *es++;
+		}
+
+		bp->p_env = new_env;
+
+		sys_m_free((long)env_str);
+	}
+
+	/* Append new variable at the end */
+	strcpy(ne, var);
+	strcat(ne, "=");
+	strcat(ne, value);
+
+	/* and place the zero terminating the environment */
+	ne += strlen(ne);
+	*++ne = 0;
+}
+
 void
 init (void)
 {
@@ -1215,16 +1336,36 @@ init (void)
 
 	if (init_env == 0)
 		init_env = (char *) _base->p_env;
+	else
+		_base->p_env = init_env;
 
-	/* empty environment?
+	/*
 	 * Set the PATH variable to the root of the current drive
 	 */
-	if (init_env[0] == 0)
+	if (_mint_getenv(_base, "PATH") == NULL)
 	{
-		static char path_env[] = "PATH=c:/";
-		path_env[5] = rootproc->p_cwd->curdrv + 'a';	/* this actually means drive u: */
-		init_env = path_env;
+		static char path_env[] = "c:/";
+
+		path_env[0] = rootproc->p_cwd->curdrv + 'a';	/* this actually means drive u: */
+		_mint_setenv(_base, "PATH", path_env);
 	}
+
+	/* Export the sysdir to the environment */
+	_mint_setenv(_base, "SYSDIR", sysdir);
+
+	/* Setup some common variables, if not set by the user */
+	if (_mint_getenv(_base, "TERM") == NULL)
+		_mint_setenv(_base, "TERM", "st52");
+
+	if (_mint_getenv(_base, "SLBPATH") == NULL)
+		_mint_setenv(_base, "SLBPATH", sysdir);
+
+	/* These two are for the MiNTLib */
+	if (_mint_getenv(_base, "UNIXMODE") == NULL)
+		_mint_setenv(_base, "UNIXMODE", "/brUs");
+
+	if (_mint_getenv(_base, "PCONVERT") == NULL)
+		_mint_setenv(_base, "PCONVERT", "PATH,HOME,SHELL");
 
 	/* if we are MultiTOS, we're running in the AUTO folder, and our INIT
 	 * is in fact GEM, take the exec_os() vector. (We know that INIT
