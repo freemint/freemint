@@ -742,13 +742,16 @@ init (void)
 	FILEPTR *f;
 	char curpath[128];
 
-	/* Initialize sysdir
+	/* 
+	 * Initialize sysdir
+	 * 
 	 * from 1.16 we ignore any multitos folder
 	 * from 1.16 we default to \mint
 	 * from 1.16 we search for \mint\<MINT_VERSION>
-	 *           for example \mint\1.16.0
+	 *           for example "\mint\1.16.0"   for 1.16.0 version
+	 *                    or "\mint\1.16-cur" for cvs-current of 1.16 line
 	 */
-	strcpy(sysdir, "\\mint");
+	strcpy(sysdir, "\\mint\\");
 
 	if (TRAP_Fsfirst("\\mint\\" MINT_VERS_PATH_STRING "\\mint.cnf", 0) == 0)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
