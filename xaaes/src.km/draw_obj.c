@@ -1872,14 +1872,16 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	OBJECT *ob = wt->tree + wt->current;
 	ICONBLK *iconblk;
-	CICONBLK *ciconblk;
-	CICON	*c, *best_cicon;
+	//CICONBLK *ciconblk;
+	CICON	*best_cicon;
 	MFDB Mscreen;
 	MFDB Micon;
 	bool have_sel;
 	RECT ic;
 	short pxy[8], cols[2] = {0,1}, obx, oby, blitmode;
 
+	best_cicon = getbest_cicon(object_get_spec(ob)->ciconblk);
+#if 0
 	ciconblk = object_get_spec(ob)->ciconblk;
 	best_cicon = NULL;
 	
@@ -1902,7 +1904,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 
 		c = c->next_res;	
 	}
-
+#endif
 	/* No matching icon, so use the mono one instead */
 	if (!best_cicon)
 	{
@@ -1911,7 +1913,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		return;
 	}
 
-	c = best_cicon;
+	//c = best_cicon;
 
 	iconblk = object_get_spec(ob)->iconblk;
 	obx = wt->r.x;
@@ -1932,31 +1934,32 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	Micon.fd_stand = 0;
 	Mscreen.fd_addr = NULL;
 
-	have_sel = c->sel_data != NULL;
+	//have_sel = c->sel_data != NULL;
+	have_sel = best_cicon->sel_data ? true : false;
 
 	//DIAG((D_o, wt->owner, "cicon sel_mask 0x%lx col_mask 0x%lx", c->sel_mask, c->col_mask));
 
 	/* check existence of selection. */
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
-		Micon.fd_addr = c->sel_mask;
+		Micon.fd_addr = best_cicon->sel_mask; //c->sel_mask;
 	else
-		Micon.fd_addr = c->col_mask;
+		Micon.fd_addr = best_cicon->col_mask; //c->col_mask;
 
 	blitmode = screen.planes > 8 ? S_AND_D : S_OR_D;
 
 	vrt_cpyfm(C.vh, MD_TRANS, pxy, &Micon, &Mscreen, cols);
 
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
-		Micon.fd_addr = c->sel_data;
+		Micon.fd_addr = best_cicon->sel_data; //c->sel_data;
 	else
-		Micon.fd_addr = c->col_data;
+		Micon.fd_addr = best_cicon->col_data; //c->col_data;
 
 	Micon.fd_nplanes = screen.planes;
 	vro_cpyfm(C.vh, blitmode, pxy, &Micon, &Mscreen);
 
 	if ((ob->ob_state & OS_SELECTED) && !have_sel)
 	{
-		Micon.fd_addr = c->col_mask;
+		Micon.fd_addr = best_cicon->col_mask; //c->col_mask;
 		Micon.fd_nplanes = 1;
 		vrt_cpyfm(C.vh, MD_XOR, pxy, &Micon, &Mscreen, cols);
 	}

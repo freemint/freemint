@@ -394,10 +394,12 @@ struct widget_tree
 {
 	struct widget_tree *next;	/* Next widget tree */
 
-#define WTF_ALLOC	1
-#define WTF_XTRA_ALLOC	2
-#define WTF_TREE_ALLOC	4
-#define WTF_STATIC	8
+#define WTF_ALLOC	0x0001
+#define WTF_XTRA_ALLOC	0x0002
+#define WTF_TREE_ALLOC	0x0004
+#define WTF_TREE_CALLOC 0x0008
+#define WTF_STATIC	0x0010
+#define WTF_AUTOFREE	0x0020
 
 	ulong	flags;
 
@@ -972,6 +974,7 @@ struct xa_window
 	char winfo[MAX_WINDOW_INFO];	/* window info line (copy) */
 
 	struct wdlg_info *wdlg;
+	void		*data;
 };
 
 struct xa_window *get_top(void);
@@ -981,10 +984,9 @@ extern struct xa_window *root_window;
 
 struct scroll_info;
 
-typedef int scrl_click(enum locks lock, OBJECT *form, int objc);
+typedef int scrl_click(enum locks lock, struct scroll_info *list, OBJECT *form, int objc);
 typedef void scrl_widget(struct scroll_info *list);
 typedef void scrl_vis(struct scroll_info *list, struct scroll_entry *s);
-
 
 /* HR: The FS_LIST box is the place holder and the
  *     entrypoint via its TOUCHEXIT flag.
@@ -1021,19 +1023,20 @@ struct scroll_entry
 };
 typedef struct scroll_entry SCROLL_ENTRY;
 
-
 struct scroll_info
 {
 	enum locks lock;
 
-	struct xa_window *wi;			/* make the scroll box a real window */
-	struct xa_window *pw;			/* If the listbox is part of a windowed dialogue, we must know that,
+	struct xa_window *wi;		/* make the scroll box a real window */
+	struct xa_window *pw;		/* If the listbox is part of a windowed dialogue, we must know that,
 					 * otherwise we couldnt move that window (rp_2_ap). */
 	XA_TREE *wt;
 
 	OBJECT *tree;			/* originating object */
-
 	short item;
+
+	OBJECT prev_ob;
+
 	SCROLL_ENTRY *start;		/* Pointer to first element */
 	SCROLL_ENTRY *cur;		/*            current selected element */
 	SCROLL_ENTRY *top;		/*            top-most displayed element */
@@ -1058,6 +1061,8 @@ struct scroll_info
 	scrl_widget *fuller;		/* fuller function */
 
 	scrl_vis *vis;			/* check visibility */
+
+	void	*data;
 };
 typedef struct scroll_info SCROLL_INFO;
 

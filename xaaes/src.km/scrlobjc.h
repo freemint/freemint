@@ -30,6 +30,7 @@
 #include "global.h"
 
 int set_scroll(struct xa_client *client, OBJECT *form, int objc);
+void unset_G_SLIST(struct xa_client *client, OBJECT *form, short item);
 bool add_scroll_entry(OBJECT *form, int objc, OBJECT *icon, void *text, SCROLL_ENTRY_TYPE flag);
 void empty_scroll_list(OBJECT *form, int objc, SCROLL_ENTRY_TYPE flag);
 void click_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
@@ -38,12 +39,14 @@ SCROLL_INFO *set_slist_object(
 		enum locks lock,
 		XA_TREE *wt,
 		OBJECT *form,
+		struct xa_window *parentwind,
 		short item,
 		scrl_widget *closer,
 		scrl_widget *fuller,
 		scrl_click *dclick,
 		scrl_click *click,
 		char *title, char *info,
+		void *data,
 		short line_max);
 int scrl_cursor(SCROLL_INFO *list, ushort keycode);
 void free_scrollist(SCROLL_INFO *list);

@@ -31,14 +31,37 @@
 #include "xa_types.h"
 
 #define DRV_MAX ('z'-('a'-1) + '9'-('0'-1))
+#define NAME_MAX 128
 
-typedef void fsel_handler(enum locks lock, const char *path, const char *file);
+struct fsel_data;
+typedef void fsel_handler(enum locks lock, struct fsel_data *fs, const char *path, const char *file);
+struct fsel_data
+{
+	struct xa_window *wind;
+	XA_TREE *form;
+	XA_TREE *menu;
+	struct xa_client *owner;
+	fsel_handler	*selected;
+	fsel_handler	*canceled;
+	Path path;
+	char fslash[2];
+	char fs_pattern[NAME_MAX * 2];
+	char filter[NAME_MAX * 2];
+	char file  [NAME_MAX + 2];		/* Is the tedindo->te_ptext of FS_FILE */
+	long fcase,trunc;
+	int drives;
+	int clear_on_folder_change;
+	int ok;
+	int done;
+	
+};
 
-void open_fileselector(enum locks lock, struct xa_client *client,
+
+void open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
 		       const char *path, const char *file, const char *title,
 		       fsel_handler *s, fsel_handler *c);
 
-void close_fileselector(enum locks lock);
+void close_fileselector(enum locks lock, struct fsel_data *fs);
 
 void init_fsel(void);
 
