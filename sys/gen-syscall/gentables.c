@@ -73,7 +73,7 @@ generate_proto(FILE *out, struct systab *tab)
 	{
 		struct syscall *call = tab->table[i];
 		
-		if (call && IS_REGULAR_SYSCALL(call))
+		if (call && is_regular_syscall(call))
 		{
 			fprintf(out, "long _cdecl sys_%c_%s\t", call->class, call->name);
 			
@@ -110,25 +110,25 @@ generate_tab(FILE *out, struct systab *tab, const char *prefix)
 		{
 			int nr_args = arg_length(call->args);
 			
-			if (IS_REGULAR_SYSCALL(call))
+			if (is_regular_syscall(call))
 			{
 				fprintf(out, "sys_%c_%s, ", call->class, call->name);
 				fprintf(out, "%i, ", nr_args);
 				
 				if (call->args)
-					fprintf(out, "sizeof(struct sys_%c_%s_args)", call->class, call->name);
+					fprintf(out, "sizeof(struct sys_%c_%s_args)",
+						call->class, call->name);
 				else
 					fprintf(out, "0");
 			}
+			else if (is_passthrough_syscall(call))
+				fprintf(out, "NULL, 0, 0");
 			else
-			{
 				fprintf(out, "sys_enosys, 0, 0");
-			}
 		}
 		else
-		{
-			fprintf(out, "NULL, 0, 0");
-		}
+			/* unspecified -> ENOSYS */
+			fprintf(out, "sys_enosys, 0, 0");
 		
 		fprintf(out, " },\n");
 		
@@ -152,7 +152,7 @@ generate_wrapper(FILE *out, struct systab *tab, const char *prefix)
 	{
 		struct syscall *call = tab->table[i];
 		
-		if (call && IS_REGULAR_SYSCALL(call))
+		if (call && is_regular_syscall(call))
 		{
 			fprintf(out, "static long\n");
 			fprintf(out, "old_%c_%s(", call->class, call->name);
@@ -190,13 +190,16 @@ generate_wrapper(FILE *out, struct systab *tab, const char *prefix)
 		
 		if (call)
 		{
-			if (IS_REGULAR_SYSCALL(call))
+			if (is_regular_syscall(call))
 				fprintf(out, "old_%c_%s", call->class, call->name);
+			else if (is_passthrough_syscall(call))
+				fprintf(out, "NULL");
 			else
 				fprintf(out, "old_enosys");
 		}
 		else
-			fprintf(out, "NULL");
+			/* unspecified -> ENOSYS */
+			fprintf(out, "old_enosys");
 		
 		fprintf(out, ",\n");
 		

@@ -114,7 +114,7 @@ static struct arg *make_arg(int type, const char *s);
 %token	<ident>	_IDENT_UNDEFINED
 %token	<ident>	_IDENT_UNSUPPORTED
 %token	<ident>	_IDENT_UNIMPLEMENTED
-%token	<ident>	_IDENT_NULL
+%token	<ident>	_IDENT_PASSTHROUGH
 
 %token	<ident>	Identifier
 %token	<value>	Integer
@@ -226,12 +226,12 @@ definition
 		if (add_tab(systab, $1, 0, $2, NULL, SYSCALL_UNDEFINED))
 		{ yyerror("out of memory"); YYERROR; }
 	}
-|	Integer _IDENT_NULL
+|	Integer _IDENT_PASSTHROUGH
 	{
 		if (systab->max && $1 >= systab->max)
 		{ yyerror("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab(systab, $1, 0, NULL, NULL, SYSCALL_NULL))
+		if (add_tab(systab, $1, 0, $2, NULL, SYSCALL_PASSTHROUGH))
 		{ yyerror("out of memory"); YYERROR; }
 	}
 |	Integer _IDENT_MAX
@@ -461,9 +461,9 @@ status
 	{
 		$$ = SYSCALL_UNIMPLEMENTED;
 	}
-|	_IDENT_NULL
+|	_IDENT_PASSTHROUGH
 	{
-		$$ = SYSCALL_NULL;
+		$$ = SYSCALL_PASSTHROUGH;
 	}
 ;
 
