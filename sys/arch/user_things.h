@@ -40,7 +40,7 @@
  * which are accessed by applications in user mode and reside in their (applications')
  * memory space. The struct below defines a set of vectors necessary for the kernel to
  * manage all this stuff properly. Everything this is not directly visible for the user
- * (i.e. there is not any pointer in the user space that would point to here).
+ * (i.e. there is not any pointer in the user space that would point to the struct).
  */
 
 typedef struct
@@ -54,15 +54,18 @@ typedef struct
 	long terminateme_p;		/* a pointer to Pterm() */
 	long sig_return_p;		/* a pointer to Psigreturn() (internal use ONLY) */
 	long pc_valid_return_p;		/* this is signalling a return from a sighandler (internal use ONLY) */
+
 	long slb_init_and_exit_p;	/* startup code for an SLB library (its `TEXT segment') */
 	long slb_open_p;		/* a pointer to a call to SLB open() function */
 	long slb_close_p;		/* a pointer to a call to SLB close() function */
 	long slb_close_and_pterm_p;	/* a pointer to a call to slb_close_and_pterm() */
 	long slb_exec_p;		/* exec an SLB function */
+
 	long user_xhdi_p;		/* call the XHDI interface */
 # ifdef JAR_PRIVATE
 	long user_jar_p;		/* user's copy of the Cookie Jar */
 # endif
+
 } USER_THINGS;
 
 extern USER_THINGS user_things;
