@@ -71,16 +71,12 @@
 
 /* Own getdelim(). The `n' buffer size must definitely be bigger than 0!
  */
-static short eof = 0;
-
-static long
+static int
 getdelim(char **lineptr, size_t *n, int terminator, FILE *stream)
 {
 	int ch;
-	char *buf;
+	char *buf = *lineptr;
 	size_t len = 0;
-
-	buf = *lineptr;
 
 	while ((ch = fgetc(stream)) != -1)
 	{
@@ -90,21 +86,29 @@ getdelim(char **lineptr, size_t *n, int terminator, FILE *stream)
 			*n += 256L;
 			*lineptr = buf;
 		}
-
 		buf[len++] = (char)ch;
 
 		if (ch == terminator)
 			break;
 	}
 
-	if (eof && ch == -1)
-		return -1;
-	else if (eof && ch != -1)
-		eof = 0;
-	else if (!eof && ch == -1)
-		eof = 1;
+	buf[len] = 0;
 
-	buf[len] = 0;	
+	/* A problem here: returning -1 on EOF may cause data loss
+	 * if there is no terminator character at the end of the file
+	 * (in this case all the previously read characters of the
+	 * line are discarded). At the other hand returning 0 at
+	 * first EOF and -1 at the other creates an additional false
+	 * empty line, if there *was* terminator character at the
+	 * end of the file. So the check must be more extensive
+	 * to behave correctly.
+	 */
+	if (ch == -1)
+	{
+		if (len == 0)	/* Nothing read before EOF in this line */
+			return -1;
+		/* Pretend success otherwise */
+	}
 
 	return 0;
 }
