@@ -17,6 +17,6 @@ long	_cdecl	ikill		(int p, ushort sig);
 void		check_sigs	(void);
 void	_cdecl	raise		(ushort sig);
 void		handle_sig	(ushort sig);
-void		stop		(ushort sig);
+void	_cdecl	stop		(ushort sig);
 
 # endif /* _signal_h */
