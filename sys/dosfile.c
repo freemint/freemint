@@ -376,6 +376,7 @@ f_force (short newfd, short oldfd)
 		if (!tty->pgrp)
 		{
 			tty->pgrp = curproc->pgrp;
+			DEBUG (("f_force: assigned tty->pgrp = %i", tty->pgrp));
 			
 			if (!(fp->flags & O_NDELAY) && (tty->state & TS_BLIND))
 				(*fp->dev->ioctl)(fp, TIOCWONLINE, 0);
