@@ -49,43 +49,33 @@ SLATTACHOBJS  = slattach.o
 
 arp: $(ARPOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 diald: $(DIALDOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 ifconfig: $(IFCONFIGOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 iflink: $(IFLINKOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 ifstats: $(IFSTATSOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 masqconf: $(MASQCONFOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 netstat: $(NETSTATOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 pppconf: $(PPPCONFOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 route: $(ROUTEOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 slattach: $(SLATTACHOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES

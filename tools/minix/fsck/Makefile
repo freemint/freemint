@@ -28,7 +28,6 @@ GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBIOSTMP)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(STRIP) $@
 
 fsck1.o: fsck.c fsck.o
 	@echo "$(CC) -DV1 $(CFLAGS) -c $< -o $@"; \
