@@ -826,11 +826,19 @@ obj_change(XA_TREE *wt,
 void
 obj_draw(XA_TREE *wt, short obj, struct xa_rect_list *rl)
 {
+	short start = obj, i;
 	RECT or;
 
 	hidem();
 
 	ob_area(wt->tree, obj, &or);
+
+	while (object_is_transparent(wt->tree + start))
+	{
+		if ((i = ob_get_parent(wt->tree, start)) < 0)
+			break;
+		start = i;
+	}
 
 	if (rl)
 	{
@@ -840,14 +848,14 @@ obj_draw(XA_TREE *wt, short obj, struct xa_rect_list *rl)
 			if (xa_rect_clip(&rl->r, &or, &r))
 			{
 				set_clip(&r);
-				draw_object_tree(0, wt, wt->tree, 0, MAX_DEPTH, 1);
+				draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, 1);
 			}
 		} while ((rl = rl->next));
 	}
 	else
 	{
 		set_clip(&or);
-		draw_object_tree(0, wt, wt->tree, 0, MAX_DEPTH, 1);
+		draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, 1);
 	}
 	clear_clip();
 
