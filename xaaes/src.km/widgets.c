@@ -3034,7 +3034,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 		display(" -- widg->display=%lx", widg->display);
 #endif
 
-		if (!(winstatus & widg->loc.statusmask) && widg->display)					/* Is the widget in use? */
+		if (!(winstatus & widg->loc.statusmask) && widg->display)	/* Is the widget in use? */
 		{
 			if (    widg->loc.mask         == 0		/* not maskable */
 			    || (widg->loc.mask & mask) == 0)		/* masked */
