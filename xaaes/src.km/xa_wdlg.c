@@ -1104,14 +1104,7 @@ click_wdlg_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 {
 	struct xa_client *client = wind->owner;
 
-	//if (client->waiting_for & MU_BUTTON)
-	//{
-		button_event(lock, client, md);
-	//}
-	//else
-	//{
-	//	add_pending_button(lock, client);
-	//}
+	button_event(lock, client, md);
 	return true;
 }
 

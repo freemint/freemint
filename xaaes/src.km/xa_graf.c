@@ -126,21 +126,6 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 	}
 }
 
-#if 0
-static void
-check_wh(RECT *c, int minw, int minh, int maxw, int maxh)
-{
-	if (c->w < minw)
-		c->w = minw;
-	if (c->w > maxw)
-		c->w = maxw;
-	if (c->h < minh)
-		c->h = minh;
-	if (c->h > maxh)
-		c->h = maxh;
-}
-#endif
-
 /* fit rectangle r in bounding rectangle b */
 void
 keep_inside(RECT *r, const RECT *b)
@@ -388,16 +373,6 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (!wt)
 		wt = set_client_wt(client, obtree);
 
-	//wt = check_widget_tree(lock, client, (OBJECT*)pb->addrin[0]);
-	
-#if 0
-	pb->intout[0] = watch_object(	lock,
-					wt,
-					/*	pb->intin[0]   is reserved */
-					pb->intin[1],
-					pb->intin[2],
-					pb->intin[3]);
-#endif
 	pb->intout[0] = obj_watch( wt,
 				   pb->intin[1],
 				   pb->intin[2],
@@ -937,8 +912,6 @@ set_mouse_shape(short m_shape, MFORM *m_form, bool aesm)
 void
 graf_mouse(int m_shape, MFORM *mf, bool aesm)
 {
-	//C.mouse_form = NULL;
-
 	if (m_shape == -1 && aesm)
 	{
 		set_mouse_shape(m_shape, NULL, aesm);
@@ -985,17 +958,6 @@ graf_mouse(int m_shape, MFORM *mf, bool aesm)
 		return;
 	case USER_DEF:
 		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, aesm);
-#if 0
-		if (!mf)
-			mf = &M_BUBD_MOUSE;	/* HR: Scare people ;-) */
-		C.mouse_form = mf;
-		if (C.aesmouse == -1)
-		{
-			hidem();
-			vsc_form(C.vh, (short *)mf);
-			showm();
-		}
-#endif
 		break;
 	case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
 		set_mouse_shape(m_shape, &M_BUBD_MOUSE, aesm);
@@ -1019,7 +981,6 @@ graf_mouse(int m_shape, MFORM *mf, bool aesm)
 		set_mouse_shape(m_shape, &M_POINTSLIDE_MOUSE, aesm);
 		break;
 	}
-	//C.mouse = m_shape;
 }
 
 /* Slight differance from GEM here - each application can have a different mouse form,
@@ -1028,7 +989,7 @@ graf_mouse(int m_shape, MFORM *mf, bool aesm)
  * are done correctly
  */
 /*
- * Ozk: XA_graf_mkstate() may be called by processes not yet called
+ * Ozk: XA_graf_mouse() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
@@ -1159,48 +1120,13 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 		struct mbs mbs;
 
 		get_mbstate(client, &mbs);
-		
 		pb->intout[1] = mbs.x;
 		pb->intout[2] = mbs.y;
 		pb->intout[3] = mbs.b;
 		pb->intout[4] = mbs.ks;
-#if 0
-		short clicks;
-
-		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
-			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
-
-		clicks = client->md_head->clicks;
-				
-		if (clicks == -1)
-		{
-			if (client->md_head != client->md_tail)
-			{
-				client->md_head++;
-				if (client->md_head > client->md_end)
-					client->md_head = client->mdb;
-				clicks = client->md_head->clicks;
-			}
-			else
-				clicks = 0;
-		}
-
-		if (clicks)
-		{
-			pb->intout[3] = client->md_head->state;
-			client->md_head->clicks = 0;
-		}
-		else
-		{
-			pb->intout[3] = client->md_head->cstate;
-			client->md_head->clicks = -1;
-		}
-		vq_key_s(C.vh, &pb->intout[4]);
-		check_mouse(client, NULL, &pb->intout[1], &pb->intout[2]);
-#endif
 	}
 	else
-		multi_intout(client, pb->intout, 0);
+		multi_intout(NULL, pb->intout, 0);
 
 	pb->intout[0] = 1;
 

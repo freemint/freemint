@@ -152,9 +152,14 @@ no definitions are made yet.
 -------------------------------------------------------------------------------
  wind_set(handle, WF_OPTS, mode, hi_opts, lo_opts, 0);
 
-  mode       0 = clear, 1 = set option bits
-  hi_opts    upper 16 bits of option bitmask
-  lo_opts    lower 16 bits of option bitmask
+ 'handle'     is window handle or zero. If handle is a legal window handle,
+              the options will only apply to that window. If 'handle' is
+              -1, the settings will apply to all windows the application
+              creates AFTER this call.
+
+ 'mode'       is 0 to clear the selected bits or 1 to set the selected bits.
+ 'hi_opts'    is the upper 16-bits of the option bitmask.
+ 'lo_opts'    is the lower 16-bits of the option bitmask.
 
 Currently available options are as follows;
 
@@ -217,8 +222,8 @@ Currently available options are as follows;
 
   wind_set(handle, WF_WHEEL, mode, wheel_mode, 0, 0);
 
-  handle      Window handle, or 0 if one wants settings to apply to all windows
-              opened hereafter by the application.
+  handle      Window handle, or -1 if one wants settings to apply to all windows
+              created hereafter by the application.
   
   mode        0 = Turn extended wheel awareness off, 1 = Turn on.
   

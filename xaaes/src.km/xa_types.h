@@ -134,7 +134,6 @@ struct options
 #if GENERATE_DIAGS
 	enum debug_item point[D_max];
 #endif
-	//IFDIAG(enum debug_item point[D_max];)
 };
 
 struct opt_list
@@ -273,24 +272,12 @@ typedef void FormExit(struct xa_client *client,
 typedef int WindowKeypress(enum locks lock, struct xa_window *wind,
 			   struct widget_tree *wt,
 			   unsigned short keycode, unsigned short nkcode, struct rawkey key);
-#if 0
-typedef void ClassicClick(enum locks lock, struct xa_client *client,
-			  const struct moose_data *md);
-#endif
 
 /* Object display function type */
 typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt);
 
 /* Object handler function type */
 typedef void ObjectHandler(enum locks lock, struct widget_tree *wt);
-
-#if 0
-/* Exit form condition handlers */
-typedef void ExitForm(enum locks lock, struct xa_window *wind,
-                                 struct xa_widget *widg,
-                                 struct widget_tree *wt,
-                                 int f, int os, int dbl, int which, struct rawkey *key);
-#endif
 
 typedef short _cdecl wdlg_exit  (void *dialog,
 				EVNT *evnt,
@@ -308,7 +295,7 @@ struct wdlg_info
 	void *user_data;
 	void *data;
 	EVNT *evnt;
-	wdlg_exit *exit; //HNDL_OBJ exit;
+	wdlg_exit *exit;
 
 	short ify_obj;
 	struct widget_tree *std_wt;
@@ -527,9 +514,7 @@ struct xa_client
 	struct xa_user_things *ut;	/* trampoline code for user callbacks */
 	struct proc *tp;		/* Thread */
 
-	bool apterm;			/* true if application understands 
-	AP_TERM. */
-	//bool wa_wheel;			/* The client wants WA_HEEL messages. */
+	bool apterm;			/* true if application understands AP_TERM. */
 
 	struct xa_aesmsg_list *msg;	 /* Pending AES messages */
 	struct xa_aesmsg_list *rdrw_msg; /* WM_REDRAW messages */
@@ -658,16 +643,6 @@ struct xa_client
 };
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
-
-struct button_data
-{
-	struct xa_client *client;
-	short x, y;
-	short b, cb, clicks, ks;
-	//bool got, have, skip;
-	short newc, newr;
-};
-typedef struct button_data BUTTON;
 
 /*-----------------------------------------------------------------
  * Windows & Widgets
@@ -856,17 +831,6 @@ typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 #define XAWS_HIDDEN	0x0010
 #define XAWS_FULLED	0x0020
 
-/* Window options */
-//#define XAWO_NAES_FF	0x00000001	/**/
-//#define XAWO_WHEEL	0x00000002	/* Windows want WHEEL messages */
-//#define XAWO_WM_REPOS	0x00000004	/* Window interpretes all coords in WM_MOVED messages */
-
-//#define WHL_REALWHEEL	0	/* */
-//#define WHL_AROWWHEEL	1
-//#define WHL_SLDRWHEEL	2
-//#define MAX_WHLMODE	2
-//#define DEF_WHLMODE	WHL_AROWWHEEL
-
 /* Window Descriptor */
 struct xa_window
 {
@@ -880,7 +844,6 @@ struct xa_window
 	short wheel_mode;		/* mouse wheel mode */
 	bool nolist;			/* If true, dont put in the window_list. For embedded listboxes mainly. */
 	bool thinwork;			/* if true and colour then work := single line box */
-	//bool wa_wheel;			/* Client wants to receive WA_WHEEL */
 	bool outline_adjust;		/* For outlined root object put ny XaAES in a window:
 					 * let the window draw the 3 pixel space that emanates from construction. */
 	bool dial_followed;		/* false immediate after opening a dial window.
@@ -924,7 +887,6 @@ struct xa_window
 					 *      - 8 = or created on behalf of wdlg_xxx extension. */
 
 	WindowDisplay *redraw;		/* Pointer to the window's auto-redraw function (if any) */
-	//WindowKeypress *keypress;	/* Pointer to the window's keyboard handler function (if any) */
 	FormKeyInput *keypress;		/* Pointer to the window's keyboard handler function (if any) */
 	WindowDisplay *destructor;	/* Pointer to the window's destructor function (auto-called on
 					 * window deletion if a fully auto window) */

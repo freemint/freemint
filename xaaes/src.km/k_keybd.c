@@ -295,7 +295,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case NK_HOME:				/*     "    Home       "     */
 		{
 			update_windows_below(lock, &screen.r, NULL, window_list);
-			//display_windows_below(lock, &screen.r, window_list);
 		}
 		case 'M':				/* ctrl+alt+M  recover mouse */
 		{
@@ -331,8 +330,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 			if (wind)
 			{
 				top_window(lock, true, wind, (void *)-1L, NULL);
-				//swap_menu(lock, wind->owner, true, 60);
-				//after_top(lock, true);
 			}
 			return true;
 		}
