@@ -171,8 +171,6 @@
  * statical limit - these routines are in stubs.s
  */
 
-# define __KERNEL_XDD__
-
 # include "mint/mint.h"
 
 # include "libkern/libkern.h"

@@ -54,8 +54,6 @@
  * 
  */
 
-# define __KERNEL_XDD__
-
 # include "mint/mint.h"
 
 # include "arch/timer.h"

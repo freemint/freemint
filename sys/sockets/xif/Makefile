@@ -22,7 +22,8 @@ all-here: entry
 
 # default overwrites
 INCLUDES = -I.. -I$(top_srcdir)
-DEFINITIONS = 
+XIF_DEFINITIONS = 
+DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
@@ -89,13 +90,13 @@ lance:
 	$(MAKE) lance.xif \
 		"TARGET=lance.xif" \
 		"XOBJS=$(COMMON_OBJS) $(LANCE_OBJS)" \
-		"DEFINITIONS=-DPAMs_INTERN"
+		"XIF_DEFINITIONS=-DPAMs_INTERN"
 
 rieblspc:
 	$(MAKE) rieblspc.xif \
 		"TARGET=rieblspc.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_OBJS)" \
-		"DEFINITIONS=-DSPECIAL -DHACK"
+		"XIF_DEFINITIONS=-DSPECIAL -DHACK"
 
 rieblspc.c:
 	ln -s lance.c $@
@@ -104,7 +105,7 @@ rieblspc_fast:
 	$(MAKE) rieblspc_fast.xif \
 		"TARGET=rieblspc_fast.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_FAST_OBJS)" \
-		"DEFINITIONS=-DSPECIAL"
+		"XIF_DEFINITIONS=-DSPECIAL"
 
 rieblspc_fast.c:
 	ln -s lance.c $@
@@ -113,7 +114,7 @@ rieblmst:
 	$(MAKE) rieblmst.xif \
 		"TARGET=rieblmst.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_MST_OBJS)" \
-		"DEFINITIONS=-DMEGA_ST -DHACK" \
+		"XIF_DEFINITIONS=-DMEGA_ST -DHACK" \
 		"PRGFLAGS=--msuper-memory"
 
 rieblmst.c:
@@ -123,7 +124,7 @@ rieblmst_fast:
 	$(MAKE) rieblmst_fast.xif \
 		"TARGET=rieblmst_fast.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_MST_FAST_OBJS)" \
-		"DEFINITIONS=-DMEGA_ST"
+		"XIF_DEFINITIONS=-DMEGA_ST"
 
 rieblmst_fast.c:
 	ln -s lance.c $@
@@ -132,7 +133,7 @@ rieblste:
 	$(MAKE) rieblste.xif \
 		"TARGET=rieblste.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_MSTE_OBJS)" \
-		"DEFINITIONS=-DMEGA_STE"
+		"XIF_DEFINITIONS=-DMEGA_STE"
 
 rieblste.c:
 	ln -s lance.c $@
@@ -141,7 +142,7 @@ riebltt:
 	$(MAKE) riebltt.xif \
 		"TARGET=riebltt.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_TT_OBJS)" \
-		"DEFINITIONS=-DATARI_TT"
+		"XIF_DEFINITIONS=-DATARI_TT"
 
 riebltt.c:
 	ln -s lance.c $@
@@ -158,7 +159,7 @@ biodma:
 	$(MAKE) biodma.xif \
 		"TARGET=biodma.xif" \
 		"XOBJS=$(COMMON_OBJS) $(BIODMA_OBJS)" \
-		"DEFINITIONS=-DSTANDARD_SEND_FIRST"
+		"XIF_DEFINITIONS=-DSTANDARD_SEND_FIRST"
 
 rtl8012:
 	$(MAKE) rtl8012.xif \

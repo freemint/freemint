@@ -48,6 +48,8 @@ struct file;
 struct ilock;
 struct mfp;
 struct nf_ops;
+struct parser_item;
+struct parsinf;
 struct timeout;
 struct timeval;
 
@@ -285,6 +287,22 @@ struct kentry_module
 }
 
 
+/* cnf related
+ */
+struct kentry_cnf
+{
+	void	_cdecl (*parse_cnf)(const char *name, struct parser_item *, void *);
+	void	_cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
+	void	_cdecl (*parser_msg)(struct parsinf *, const char *msg);
+};
+#define DEFAULTS_kentry_cnf \
+{ \
+	parse_cnf, \
+	parse_include, \
+	parser_msg, \
+}
+
+
 /* miscellanous things
  */
 struct kentry_misc
@@ -495,6 +513,7 @@ struct kentry
 	struct kentry_fs vec_fs;
 	struct kentry_sockets vec_sockets;
 	struct kentry_module vec_module;
+	struct kentry_cnf vec_cnf;
 	struct kentry_misc vec_misc;
 	struct kentry_debug vec_debug;
 	struct kentry_libkern vec_libkern;

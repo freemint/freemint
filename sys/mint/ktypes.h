@@ -21,6 +21,8 @@
 # include "kcompiler.h"
 
 
+typedef enum { false = (0 == 1), true  = (1 == 1) } bool;
+
 typedef unsigned char			uchar;
 typedef unsigned short			ushort;
 typedef unsigned long 			ulong;

@@ -12,8 +12,6 @@
 # ifndef _global_h
 # define _global_h
 
-# define __KERNEL_XFS__
-
 # include "mint/mint.h"
 
 # include "libkern/libkern.h"

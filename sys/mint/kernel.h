@@ -34,7 +34,10 @@
 # ifndef _mint_kernel_h
 # define _mint_kernel_h
 
-# ifndef __KERNEL__
+# if !defined(__KERNEL__) && \
+     !defined(__KERNEL_XFS__) && !defined(__KERNEL_XDD__) && \
+     !defined(__KERNEL_MODULE__)
+# error __KERNEL__ not defined!
 # endif
 
 # undef __KERNEL__

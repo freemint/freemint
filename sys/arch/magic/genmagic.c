@@ -6,6 +6,8 @@
 # include <stddef.h>
 # include <mint/mintbind.h>
 
+# define __KERNEL__
+
 # include "mint/mint.h"
 # include "mint/ktypes.h"
 # include "mint/kerinfo.h"
@@ -19,14 +21,14 @@
 /*
  * conventions:
  *
- * B_XXX	offset of XXX in struct BASEPAGE
- * C_XXX	offset of XXX in struct CONTEXT
- * P_XXX	offset of XXX in struct PROC
- * SL_XXX	offset of XXX in struct SHARED_LIB
- * SH_XXX	offset of XXX in struct SLB_HEAD
+ * B_XXX	offset of XXX in struct basepage
+ * C_XXX	offset of XXX in struct context
+ * P_XXX	offset of XXX in struct proc
+ * SL_XXX	offset of XXX in struct shared_lib
+ * SH_XXX	offset of XXX in struct slb_head
  * KER_XXX	offset of XXX in struct kerninfo
- * DMA_XXX	offset of XXX in struct DMA
- * TM_XXX	offset of XXX in struct TIMEOUT
+ * DMA_XXX	offset of XXX in struct dma
+ * TM_XXX	offset of XXX in struct timeout
  */
 struct magics
 {
@@ -35,140 +37,140 @@ struct magics
 }
 magics [] =
 {
-	{ "B_LOWTPA",		offsetof (BASEPAGE, p_lowtpa)		},
-	{ "B_HITPA",		offsetof (BASEPAGE, p_hitpa)		},
-	{ "B_TBASE",		offsetof (BASEPAGE, p_tbase)		},
-	{ "B_TLEN",		offsetof (BASEPAGE, p_tlen)		},
-	{ "B_DBASE",		offsetof (BASEPAGE, p_dbase)		},
-	{ "B_DLEN",		offsetof (BASEPAGE, p_dlen)		},
-	{ "B_BBASE",		offsetof (BASEPAGE, p_bbase)		},
-	{ "B_BLEN",		offsetof (BASEPAGE, p_blen)		},
-	{ "B_DTA",		offsetof (BASEPAGE, p_dta)		},
-	{ "B_PARENT",		offsetof (BASEPAGE, p_parent)		},
-	{ "B_FLAGS",		offsetof (BASEPAGE, p_flags)		},
-	{ "B_ENV", 		offsetof (BASEPAGE, p_env)		},
-	{ "B_CMDLIN",		offsetof (BASEPAGE, p_cmdlin)		},
+	{ "B_LOWTPA",		offsetof(struct basepage, p_lowtpa)		},
+	{ "B_HITPA",		offsetof(struct basepage, p_hitpa)		},
+	{ "B_TBASE",		offsetof(struct basepage, p_tbase)		},
+	{ "B_TLEN",		offsetof(struct basepage, p_tlen)		},
+	{ "B_DBASE",		offsetof(struct basepage, p_dbase)		},
+	{ "B_DLEN",		offsetof(struct basepage, p_dlen)		},
+	{ "B_BBASE",		offsetof(struct basepage, p_bbase)		},
+	{ "B_BLEN",		offsetof(struct basepage, p_blen)		},
+	{ "B_DTA",		offsetof(struct basepage, p_dta)		},
+	{ "B_PARENT",		offsetof(struct basepage, p_parent)		},
+	{ "B_FLAGS",		offsetof(struct basepage, p_flags)		},
+	{ "B_ENV", 		offsetof(struct basepage, p_env)		},
+	{ "B_CMDLIN",		offsetof(struct basepage, p_cmdlin)		},
 
-	{ "C_PTRACE",		offsetof (CONTEXT, ptrace)		},
-	{ "C_SFMT",		offsetof (CONTEXT, sfmt)		},
-	{ "C_INTERNAL",		offsetof (CONTEXT, internal)		},
-	{ "C_SR",		offsetof (CONTEXT, sr)			},
-	{ "C_PC",		offsetof (CONTEXT, pc)			},
-	{ "C_FSTATE",		offsetof (CONTEXT, fstate)		},
-	{ "C_FREGS",		offsetof (CONTEXT, fregs)		},
-	{ "C_FCTRL",		offsetof (CONTEXT, fctrl)		},
-	{ "C_USP",		offsetof (CONTEXT, usp)			},
-	{ "C_SSP",		offsetof (CONTEXT, ssp)			},
-	{ "C_TERM",		offsetof (CONTEXT, term_vec)		},
-	{ "C_D0",		offsetof (CONTEXT, regs)		},
-	{ "C_D1",		offsetof (CONTEXT, regs) + 4		},
-	{ "C_D2",		offsetof (CONTEXT, regs) + 8		},
-	{ "C_A0",		offsetof (CONTEXT, regs) + 32		},
-	{ "C_A1",		offsetof (CONTEXT, regs) + 36		},
-	{ "C_CRP",		offsetof (CONTEXT, crp)			},
-	{ "C_TC",		offsetof (CONTEXT, tc)			},
+	{ "C_PTRACE",		offsetof(struct context, ptrace)		},
+	{ "C_SFMT",		offsetof(struct context, sfmt)			},
+	{ "C_INTERNAL",		offsetof(struct context, internal)		},
+	{ "C_SR",		offsetof(struct context, sr)			},
+	{ "C_PC",		offsetof(struct context, pc)			},
+	{ "C_FSTATE",		offsetof(struct context, fstate)		},
+	{ "C_FREGS",		offsetof(struct context, fregs)			},
+	{ "C_FCTRL",		offsetof(struct context, fctrl)			},
+	{ "C_USP",		offsetof(struct context, usp)			},
+	{ "C_SSP",		offsetof(struct context, ssp)			},
+	{ "C_TERM",		offsetof(struct context, term_vec)		},
+	{ "C_D0",		offsetof(struct context, regs)			},
+	{ "C_D1",		offsetof(struct context, regs) + 4		},
+	{ "C_D2",		offsetof(struct context, regs) + 8		},
+	{ "C_A0",		offsetof(struct context, regs) + 32		},
+	{ "C_A1",		offsetof(struct context, regs) + 36		},
+	{ "C_CRP",		offsetof(struct context, crp)			},
+	{ "C_TC",		offsetof(struct context, tc)			},
 
-	{ "P_CTXT0",		offsetof (PROC, ctxt)			},
-	{ "P_EUID",		offsetof (PROC, _euid)	/* XXX */	},
-	{ "P_SYSTIME",		offsetof (PROC, systime)		},
-	{ "P_USRTIME",		offsetof (PROC, usrtime)		},
-	{ "P_PTRACER",		offsetof (PROC, ptracer)		},
-	{ "P_SYSCTXT",		offsetof (PROC, ctxt)			},
-	{ "P_EXCPC",		offsetof (PROC, exception_pc)		},
-	{ "P_EXCSSP",		offsetof (PROC, exception_ssp)		},
-	{ "P_EXCADDR",		offsetof (PROC, exception_addr)		},
-	{ "P_EXCTBL",		offsetof (PROC, exception_tbl)		},
-	{ "P_EXCMMUSR",		offsetof (PROC, exception_mmusr)	},
-	{ "P_EXCACCESS",	offsetof (PROC, exception_access)	},
-	{ "P_SIGMASK",		offsetof (PROC, p_sigmask)		},
-	{ "P_SIGPENDING",	offsetof (PROC, sigpending)		},
-	{ "P_INDOS",		offsetof (PROC, in_dos)			},
-	{ "P_BASE",		offsetof (PROC, base)			},
+	{ "P_CTXT0",		offsetof(struct proc, ctxt)			},
+	{ "P_EUID",		offsetof(struct proc, _euid)	/* XXX */	},
+	{ "P_SYSTIME",		offsetof(struct proc, systime)			},
+	{ "P_USRTIME",		offsetof(struct proc, usrtime)			},
+	{ "P_PTRACER",		offsetof(struct proc, ptracer)			},
+	{ "P_SYSCTXT",		offsetof(struct proc, ctxt)			},
+	{ "P_EXCPC",		offsetof(struct proc, exception_pc)		},
+	{ "P_EXCSSP",		offsetof(struct proc, exception_ssp)		},
+	{ "P_EXCADDR",		offsetof(struct proc, exception_addr)		},
+	{ "P_EXCTBL",		offsetof(struct proc, exception_tbl)		},
+	{ "P_EXCMMUSR",		offsetof(struct proc, exception_mmusr)		},
+	{ "P_EXCACCESS",	offsetof(struct proc, exception_access)		},
+	{ "P_SIGMASK",		offsetof(struct proc, p_sigmask)		},
+	{ "P_SIGPENDING",	offsetof(struct proc, sigpending)		},
+	{ "P_INDOS",		offsetof(struct proc, in_dos)			},
+	{ "P_BASE",		offsetof(struct proc, base)			},
 
-	{ "SL_HEAD",		offsetof (SHARED_LIB, slb_head)		},
-	{ "SL_NAME",		offsetof (SHARED_LIB, slb_name)		},
+	{ "SL_HEAD",		offsetof(struct shared_lib, slb_head)		},
+	{ "SL_NAME",		offsetof(struct shared_lib, slb_name)		},
 
-	{ "SH_NAME",		offsetof (SLB_HEAD, slh_name)		},
-	{ "SH_VERSION",		offsetof (SLB_HEAD, slh_version)	},
-	{ "SH_INIT",		offsetof (SLB_HEAD, slh_slb_init)	},
-	{ "SH_EXIT",		offsetof (SLB_HEAD, slh_slb_exit)	},
-	{ "SH_OPEN",		offsetof (SLB_HEAD, slh_slb_open)	},
-	{ "SH_CLOSE",		offsetof (SLB_HEAD, slh_slb_close)	},
-	{ "SH_NO_FUNCS",	offsetof (SLB_HEAD, slh_no_funcs)	},
-	{ "SH_FUNCTIONS",	offsetof (SLB_HEAD, slh_functions)	},
+	{ "SH_NAME",		offsetof(struct slb_head, slh_name)		},
+	{ "SH_VERSION",		offsetof(struct slb_head, slh_version)		},
+	{ "SH_INIT",		offsetof(struct slb_head, slh_slb_init)		},
+	{ "SH_EXIT",		offsetof(struct slb_head, slh_slb_exit)		},
+	{ "SH_OPEN",		offsetof(struct slb_head, slh_slb_open)		},
+	{ "SH_CLOSE",		offsetof(struct slb_head, slh_slb_close)	},
+	{ "SH_NO_FUNCS",	offsetof(struct slb_head, slh_no_funcs)		},
+	{ "SH_FUNCTIONS",	offsetof(struct slb_head, slh_functions)	},
 
-	{ "KER_MAJ_VERSION",	offsetof (struct kerinfo, maj_version)	},
-	{ "KER_MIN_VERSION",	offsetof (struct kerinfo, min_version)	},
-	{ "KER_VERSION",	offsetof (struct kerinfo, version)	},
-	{ "KER_KMALLOC",	offsetof (struct kerinfo, kmalloc)	},
-	{ "KER_KFREE",		offsetof (struct kerinfo, kfree)	},
-	{ "KER_NAP",		offsetof (struct kerinfo, nap)		},
-	{ "KER_SLEEP",		offsetof (struct kerinfo, sleep)	},
-	{ "KER_WAKE",		offsetof (struct kerinfo, wake)		},
-	{ "KER_WAKESELECT",	offsetof (struct kerinfo, wakeselect)	},
-	{ "KER_DENYSHARE",	offsetof (struct kerinfo, denyshare)	},
-	{ "KER_DENYLOCK",	offsetof (struct kerinfo, denylock)	},
-	{ "KER_ADDTIMEOUT",	offsetof (struct kerinfo, addtimeout)	},
-	{ "KER_CANCELTIMEOUT",	offsetof (struct kerinfo, canceltimeout)		},
-	{ "KER_ADDROOTTIMEOUT",	offsetof (struct kerinfo, addroottimeout)		},
-	{ "KER_CANCELROOTTIMEOUT",		offsetof (struct kerinfo, cancelroottimeout)		},
-	{ "KER_IKILL",		offsetof (struct kerinfo, ikill)	},
-	{ "KER_IWAKE",		offsetof (struct kerinfo, iwake)	},
-	{ "KER_BIO",		offsetof (struct kerinfo, bio)		},
-	{ "KER_XTIME",		offsetof (struct kerinfo, xtime)	},
-	{ "KER_KILLGROUP",	offsetof (struct kerinfo, killgroup)	},
-	{ "KER_DMA",		offsetof (struct kerinfo, dma)		},
+	{ "KER_MAJ_VERSION",	offsetof(struct kerinfo, maj_version)		},
+	{ "KER_MIN_VERSION",	offsetof(struct kerinfo, min_version)		},
+	{ "KER_VERSION",	offsetof(struct kerinfo, version)		},
+	{ "KER_KMALLOC",	offsetof(struct kerinfo, kmalloc)		},
+	{ "KER_KFREE",		offsetof(struct kerinfo, kfree)			},
+	{ "KER_NAP",		offsetof(struct kerinfo, nap)			},
+	{ "KER_SLEEP",		offsetof(struct kerinfo, sleep)			},
+	{ "KER_WAKE",		offsetof(struct kerinfo, wake)			},
+	{ "KER_WAKESELECT",	offsetof(struct kerinfo, wakeselect)		},
+	{ "KER_DENYSHARE",	offsetof(struct kerinfo, denyshare)		},
+	{ "KER_DENYLOCK",	offsetof(struct kerinfo, denylock)		},
+	{ "KER_ADDTIMEOUT",	offsetof(struct kerinfo, addtimeout)		},
+	{ "KER_CANCELTIMEOUT",	offsetof(struct kerinfo, canceltimeout)		},
+	{ "KER_ADDROOTTIMEOUT",	offsetof(struct kerinfo, addroottimeout)	},
+	{ "KER_CANCELROOTTIMEOUT", offsetof(struct kerinfo, cancelroottimeout)	},
+	{ "KER_IKILL",		offsetof(struct kerinfo, ikill)			},
+	{ "KER_IWAKE",		offsetof(struct kerinfo, iwake)			},
+	{ "KER_BIO",		offsetof(struct kerinfo, bio)			},
+	{ "KER_XTIME",		offsetof(struct kerinfo, xtime)			},
+	{ "KER_KILLGROUP",	offsetof(struct kerinfo, killgroup)		},
+	{ "KER_DMA",		offsetof(struct kerinfo, dma)			},
 
-	{ "DMA_GET_CHANNEL",	offsetof (DMA, get_channel)		},
-	{ "DMA_FREE_CHANNEL",	offsetof (DMA, free_channel)		},
-	{ "DMA_START",		offsetof (DMA, dma_start)		},
-	{ "DMA_END",		offsetof (DMA, dma_end)			},
-	{ "DMA_BLOCK",		offsetof (DMA, block)			},
-	{ "DMA_DEBLOCK",	offsetof (DMA, deblock)			},
+	{ "DMA_GET_CHANNEL",	offsetof(struct dma, get_channel)		},
+	{ "DMA_FREE_CHANNEL",	offsetof(struct dma, free_channel)		},
+	{ "DMA_START",		offsetof(struct dma, dma_start)			},
+	{ "DMA_END",		offsetof(struct dma, dma_end)			},
+	{ "DMA_BLOCK",		offsetof(struct dma, block)			},
+	{ "DMA_DEBLOCK",	offsetof(struct dma, deblock)			},
 
-	{ "TM_NEXT",		offsetof (TIMEOUT, next)		},
-	{ "TM_PROC",		offsetof (TIMEOUT, proc)		},
-	{ "TM_WHEN",		offsetof (TIMEOUT, when)		},
-	{ "TM_FUNC",		offsetof (TIMEOUT, func)		},
-	{ "TM_FLAGS",		offsetof (TIMEOUT, flags)		},
-	{ "TM_ARG",		offsetof (TIMEOUT, arg)			},
+	{ "TM_NEXT",		offsetof(struct timeout, next)			},
+	{ "TM_struct proc",	offsetof(struct timeout, proc)			},
+	{ "TM_WHEN",		offsetof(struct timeout, when)			},
+	{ "TM_FUNC",		offsetof(struct timeout, func)			},
+	{ "TM_FLAGS",		offsetof(struct timeout, flags)			},
+	{ "TM_ARG",		offsetof(struct timeout, arg)			},
  
-	{ "",			0					}
+	{ "",			0						}
 };
 
 char *outfile = "magic.i";
 
 void
-small_main (void)
+small_main(void)
 {
-	char buf [128];
+	char buf[128];
 	long fd;
 	int i;
 
 //	if (argc != 2)
 //	{
-//		Cconws ("Usage: genmagic outputfile\r\n");
+//		Cconws("Usage: genmagic outputfile\r\n");
 //
 //		goto leave;
 //	}
 
-	fd = Fopen (outfile, O_WRONLY | O_CREAT | O_TRUNC);
+	fd = Fopen(outfile, O_WRONLY | O_CREAT | O_TRUNC);
 	if (fd < 0)
 	{
-		ksprintf (buf, sizeof (buf), "Fopen(%s) -> %li\r\n", outfile, fd);
-		Cconws (buf);
+		ksprintf(buf, sizeof (buf), "Fopen(%s) -> %li\r\n", outfile, fd);
+		Cconws(buf);
 
 		goto leave;
 	}
 
 	for (i = 0; *magics[i].name; i++)
 	{
-		ksprintf (buf, sizeof (buf), "#define %s %ld\n", magics[i].name, magics[i].value);
-		Fwrite (fd, strlen (buf), buf);
+		ksprintf(buf, sizeof (buf), "#define %s %ld\n", magics[i].name, magics[i].value);
+		Fwrite(fd, strlen (buf), buf);
 	}
 
-	Fclose (fd);
+	Fclose(fd);
 
 leave:
-	Pterm0 ();
+	Pterm0();
 }

@@ -20,7 +20,7 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
-DEFINITIONS = 
+DEFINITIONS = -D__KERNEL_XFS__
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
