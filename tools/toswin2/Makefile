@@ -22,7 +22,6 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES += -I/usr/GEM/include
-CFLAGS += -DLINUX_YELLOW
 #CFLAGS += -DDEBUG
 #CFLAGS += -g
 
