@@ -580,13 +580,22 @@ built_desk_popup(enum locks lock, short x, short y)
 				DIAGS((" - %s", client->name));
 
 				appmenu[n].client = client;
-				sprintf(appmenu[n].name, sizeof(appmenu[n].name),
-					"  %d->%d %s",
-					client->p->ppid,
-					client->p->pid,
-					*client->name 
-						? client->name + 2
-						: client->proc_name);
+				if (cfg.menupop_pids)
+				{
+				
+					sprintf(appmenu[n].name, sizeof(appmenu[n].name),
+						"  %d(%d)->%d %s",
+						client->p->ppid,
+						client->rppid,
+						client->p->pid,
+						*client->name ? client->name + 2 : client->proc_name);
+				}
+				else
+				{
+					sprintf(appmenu[n].name, sizeof(appmenu[n].name),
+						"  %s",
+						*client->name ? client->name + 2 : client->proc_name);
+				}
 				n++;
 			}
 		}
@@ -605,15 +614,25 @@ built_desk_popup(enum locks lock, short x, short y)
 			if (n < appmenusize)
 			{
 				appmenu[n].client = client;
-				sprintf(appmenu[n].name, sizeof(appmenu[n].name),
-					"  %d->%d %s",
-					client->p->ppid,
-					client->p->pid,
-					*client->name 
-						? client->name + 2
-						  /* You can always do a menu_register
-						   * in multitasking AES's  :-) */
-						: client->proc_name);
+				if (cfg.menupop_pids)
+				{
+					sprintf(appmenu[n].name, sizeof(appmenu[n].name),
+						"  %d(%d)->%d %s",
+						client->p->ppid,
+						client->rppid,
+						client->p->pid,
+						*client->name 
+							? client->name + 2
+							  /* You can always do a menu_register
+							   * in multitasking AES's  :-) */
+							: client->proc_name);
+				}
+				else
+				{
+					sprintf(appmenu[n].name, sizeof(appmenu[n].name),
+						"  %s",
+						*client->name ? client->name + 2 : client->proc_name);
+				}
 				n++;
 			}
 		}

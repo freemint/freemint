@@ -247,8 +247,9 @@ typedef struct pEvntrec
 #define MU_TIMER			0x0020
 #define MU_WHEEL			0x0040		/* XaAES */
 #define MU_MX				0x0080		/* XaAES */
-#define MU_NORM_KEYBD		0x0100		/* XaAES */
-#define MU_DYNAMIC_KEYBD	0x0200	/* XaAES */
+#define MU_NORM_KEYBD			0x0100		/* XaAES */
+#define MU_DYNAMIC_KEYBD		0x0200		/* XaAES */
+#define MU_FSELECT			0x0400		/* XaAES */
 
 /* form_dial opcodes */
 #define FMD_START 			0

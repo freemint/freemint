@@ -186,6 +186,23 @@ menu = leave
 #popscroll = 0
 
 #
+# menupop_pids = <bool>         (default = 'no')
+#
+# Setting menupop_pids = yes makes XaAES list its clients in the client-list-
+# menupopup using the following format;
+#
+# "  PPID(RPPID) -> PID Client nice name"
+#
+# where 'PPID' is the physical parent-pid of the Client (which is the AESSYS).
+# 'RPPID' is the Process ID of the process that called shel_write() to start
+# it, it is the "Real Parent PID". 'PID' is the Process ID of the client.
+#
+# If set to 'no' (the default), only the client's nice name (when available,
+# else its 'proc_name') is listed.
+#
+#menupop_pids = yes
+
+#
 # popup_timeout - Time in milliseconds before popups opens.  (default = 10)
 # popout_timeout - Time in millisecods before popups close.  (default = 1000)
 #
