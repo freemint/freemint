@@ -13,18 +13,21 @@
 
 	BSS
 __base	ds.l	1
+__stack ds.b	4094			; 4k is a minimum
+__botst	ds.b	2
 
 	TEXT
-_main	move.l	$04(sp),a2		; basepage address
-	move.l	a2,__base
-	move.l	$0c(a2),d0		; size of the TEXT segment
-	add.l	$14(a2),d0		; size of the DATA segment
-	add.l	$1c(a2),d0		; size of the BSS segment
-	add.l	#$00001100,d0		; size of the basepage and stack
-	lea	0(a2,d0.l),sp		; new stack pointer
+_main	move.l	$04(sp),a0		; basepage address
+	move.l	a0,__base
+
+	lea	__botst,sp
+
+	move.l	$18(a0),d0		; base of the BSS segment
+	add.l	$1c(a0),d0		; size of the BSS segment
+	sub.l	a0,d0
 	
 	move.l	d0,-(sp)		; new size
-	move.l	a2,-(sp)		; start address
+	move.l	a0,-(sp)		; start address
 	pea	($004a0000).l		; Mshrink()
 	trap	#1
 	lea	$0c(sp),sp
