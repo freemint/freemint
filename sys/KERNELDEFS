@@ -1,27 +1,52 @@
-#
+
+# 
+# generic flags
+# 
 # -DMULTITOS		build MultiTOS kernel
 # -DVERBOSE_BOOT	include extensive messages
-# -DTRAPS_PRIVATE	make traps private
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
-# -DFASTTEXT		include the u:\dev\fasttext fast console driver
-# -DDEBUG_INFO		include debugging information
+# -DSOFT_UNITABLE	loadable unicode tables
+# -DTRAPS_PRIVATE	make traps private
+
+#
+# machine flags
+#  
 # -DONLY030		build for 68020+
 # -DCPU030		build for 68030
 # -DCPU040		build for 040/060
 # -DMILAN		build Milan kernel
 # -DMMU040		add 040/060 MMU support instead 030 MMU
+
+# 
+# deprecated flags (not recommended)
+# 
+# -DFASTTEXT		include the u:\dev\fasttext fast console driver
+
+# 
+# debug flags
+# 
+# -DDEBUG_INFO		include debugging information
 # -DPROFILING		include profiling support
-#
+
+# 
+# experimental; for developers only
+# 
+# -DWITHOUT_TOS		exclude TOS dependencies
+# 			warning, experimental and work in progress
+
 
 # mandatory for kernel source now
 KERNELDEFAULTDEFS = -D__KERNEL__
 
 KERNELDEFAULTDEFS += -DMULTITOS
-KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 KERNELDEFAULTDEFS += -DTRAPS_PRIVATE
+KERNELDEFAULTDEFS += -DLANG_ENGLISH
+
+ifneq ($(kernel),000)
+KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 KERNELDEFAULTDEFS += -DCRYPTO_CODE
 KERNELDEFAULTDEFS += -DSOFT_UNITABLE
-KERNELDEFAULTDEFS += -DLANG_ENGLISH
+endif
 
 ifeq ($(kernel),000)
 MINT = mint000.prg
