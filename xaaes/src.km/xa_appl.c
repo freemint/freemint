@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -580,44 +580,6 @@ handle_XaAES_msgs(enum locks lock, union msg_buf *msg)
 
 	switch (mt)
 	{
-		case XA_M_EXEC:
-		{
-#if 0
-			char *txt = m.s.p2;
-			if (txt)
-			{
-				DIAGS(("Exec scl '%s'", txt));
-				SCL(lock, 1, 0, 0, txt);
-				m.s.msg = XA_M_OK;
-			}
-#endif
-		}
-		break;
-
-		case XA_M_GETSYM:
-		{
-#if 0
-			char *txt = m.s.p2;
-			if (txt)
-			{
-				SYMBOL *t, *f = m.s.p1;
-				DIAGS(("Get sym '%s'", txt));
-				
-				if (f)
-				{
-					t = find_sym(txt, 0);
-					if (t)
-					{
-						DIAGS((" --> '%s'", t->s));
-						*f = *t;
-						m.s.msg = XA_M_OK;
-					}
-				}
-			}
-#endif
-		}
-		break;
-
 		case XA_M_DESK:
 		{
 			DIAGS(("Desk %d, '%s'", m.s.m3, m.s.p2 ? m.s.p2 : "~~~"));

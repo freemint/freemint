@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -39,21 +39,14 @@ struct lconfig
 	Path widg_name;
 	Path rsc_name;
 
-	unsigned long mint;
 	unsigned long falcon;	  /* cookies & cookie values */
 
 	int modecode;
 	int double_click_time;	/* Double click timing */
-	int direct_call;        /* Flag for enabling of direct call */
-
-	bool havemode;
-	bool oldcnf;
-	bool booting;
 };
 
 extern struct lconfig lcfg;
 
-void SCL(enum locks lock, int co, char *name, char *full, char *txt);
-char *xa_find(char *fn);
+void SCL(const char *name);
 
 #endif /* _cnf_xaaes_h */

@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -173,15 +173,7 @@ enum xa_mouse
 #define ITALIC		SKEWED
 #endif
 
-enum xa_msgs
-{
-	XA_M_CNF = 200,
-	XA_M_SCL,
-	XA_M_OPT,
-	XA_M_GETSYM,
-	XA_M_DESK,
-	XA_M_EXEC = 250,
-	XA_M_OK = 300
-};
+#define XA_M_DESK	204
+#define XA_M_OK		300
 
 #endif /* _xa_aes_h */
