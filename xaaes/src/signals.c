@@ -50,7 +50,7 @@ HandleSIGCHLD(long signo)
 	short pid,x;
 	long r;
 
-	if (C.shutdown & QUIT_XAAES)
+	if (C.shutdown & QUIT_NOW)
 	{
 		/* IFDIAG(D.debug_level = 4;) */
 		DIAGS(("SIGCHLD *AND* shutdown\n"));
