@@ -2642,7 +2642,7 @@ bio_debug (const char *fmt, ...)
 		FILEPTR *fp;
 		long ret;
 		
-		ret = fp_alloc (rootproc, &fp);
+		ret = FP_ALLOC (rootproc, &fp);
 		if (ret) return;
 		
 		va_start (args, fmt);
@@ -2659,7 +2659,7 @@ bio_debug (const char *fmt, ...)
 		}
 		else
 		{
-			fp_free (fp);
+			FP_FREE (fp);
 			
 			vsprintf (buf, buflen, fmt, args);
 			BIO_FORCE ((buf));
@@ -2676,7 +2676,7 @@ bio_dump_cache (void)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	ret = do_open (&fp, BIO_DUMPFILE, (O_WRONLY|O_CREAT|O_TRUNC), 0, NULL);
@@ -2728,7 +2728,7 @@ bio_dump_cache (void)
 		do_close (rootproc, fp);
 	}
 	else
-		fp_free (fp);
+		FP_FREE (fp);
 }
 # endif
 

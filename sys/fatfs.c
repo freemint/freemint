@@ -8234,7 +8234,7 @@ fatfs_debug (const char *fmt, ...)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	va_start (args, fmt);
@@ -8251,7 +8251,7 @@ fatfs_debug (const char *fmt, ...)
 	}
 	else
 	{
-		fp_free (fp);
+		FP_FREE (fp);
 		
 		vsprintf (buf, buflen, fmt, args);
 		DEBUG ((buf));
@@ -8334,7 +8334,7 @@ fatfs_dump_hashtable (void)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	FAT_FORCE (("fatfs.c: dynamic used memory = %li bytes", fatfs_dynamic_mem));
@@ -8400,7 +8400,7 @@ fatfs_dump_hashtable (void)
 		do_close (rootproc, fp);
 	}
 	else
-		fp_free (fp);
+		FP_FREE (fp);
 }
 
 # if FS_DEBUG_COOKIE

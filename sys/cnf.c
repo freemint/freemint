@@ -158,7 +158,7 @@ load_config (void)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	ret = do_open (&fp, inf.file = cnf_path_1, O_RDONLY, 0, &xattr);
@@ -440,7 +440,7 @@ pCB_aux (const char *path)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
@@ -492,7 +492,7 @@ pCB_con (const char *path)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
@@ -582,7 +582,7 @@ pCB_include (const char *path, PARSINF *inf)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	ret = do_open (&fp, path, O_RDONLY, 0, &xattr);
@@ -654,7 +654,7 @@ pCB_prn (const char *path)
 	FILEPTR *fp;
 	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
