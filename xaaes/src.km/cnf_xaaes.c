@@ -63,8 +63,8 @@ static PCB_A    pCB_filters;
 static PCB_T    pCB_menu;
 static PCB_A    pCB_helpserver;
 
-static PCB_Tx   pCB_shell;
-static PCB_Tx   pCB_run;
+static PCB_ATK  pCB_shell;
+static PCB_ATK  pCB_run;
 
 
 /* The item table, note the 'NULL' entry at the end. */
@@ -101,10 +101,8 @@ static struct parser_item parser_tab[] =
 	{ "HELPSERVER",     PI_V_A,   pCB_helpserver            },
 	
 	/* startup things */
-	{ "SHELL",          PI_V_T,   pCB_shell                 },
-	{ "DESK",           PI_V_T,   pCB_shell                 },
-	{ "EXEC",           PI_V_T,   pCB_run                   },
-	{ "RUN",            PI_V_T,   pCB_run                   },
+	{ "SHELL",          PI_V_ATK, pCB_shell                 },
+	{ "RUN",            PI_V_ATK, pCB_run                   },
 	
 	/* debug */
 	
@@ -382,16 +380,48 @@ pCB_helpserver(const char *line)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_shell(const char *path, struct parsinf *inf)
+pCB_shell(const char *path, const char *line, long data)
 {
-	/* remember */
-	strcpy(cfg.cnf_shell, path);
-	DIAGS(("pCB_shell -> %s", path));
+	if (cfg.cnf_shell)
+	{
+		kfree(cfg.cnf_shell);
+		cfg.cnf_shell = NULL;
+	}
+	if (cfg.cnf_shell_arg)
+	{
+		kfree(cfg.cnf_shell_arg);
+		cfg.cnf_shell_arg = NULL;
+	}
+
+	cfg.cnf_shell = kmalloc(strlen(path)+1);
+	cfg.cnf_shell_arg = kmalloc(strlen(line)+1);
+
+	if (cfg.cnf_shell && cfg.cnf_shell_arg)
+	{
+		strcpy(cfg.cnf_shell, path);
+		strcpy(cfg.cnf_shell_arg, line);
+
+		DIAGS(("pCB_shell: %s", path));
+		DIAGS(("pCB_shell: args %s", line));
+	}
+	else
+	{
+		if (cfg.cnf_shell)
+		{
+			kfree(cfg.cnf_shell);
+			cfg.cnf_shell = NULL;
+		}
+		if (cfg.cnf_shell_arg)
+		{
+			kfree(cfg.cnf_shell_arg);
+			cfg.cnf_shell_arg = NULL;
+		}
+	}
 }
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_run(const char *path, struct parsinf *inf)
+pCB_run(const char *path, const char *line, long data)
 {
 	int i;
 
@@ -400,42 +430,61 @@ pCB_run(const char *path, struct parsinf *inf)
 		if (!cfg.cnf_run[i])
 		{
 			cfg.cnf_run[i] = kmalloc(strlen(path)+1);
-			if (cfg.cnf_run[i])
+			cfg.cnf_run_arg[i] = kmalloc(strlen(line)+1);
+
+			if (cfg.cnf_run[i] && cfg.cnf_run_arg[i])
 			{
 				strcpy(cfg.cnf_run[i], path);
+				strcpy(cfg.cnf_run_arg[i], line);
 				DIAGS(("pCB_run[%i]: %s", i, path));
+				DIAGS(("pCB_run[%i]: args %s", i, line));
 			}
+			else
+			{
+				if (cfg.cnf_run[i])
+				{
+					kfree(cfg.cnf_run[i]);
+					cfg.cnf_run[i] = NULL;
+				}
+				if (cfg.cnf_run_arg[i])
+				{
+					kfree(cfg.cnf_run_arg[i]);
+					cfg.cnf_run_arg[i] = NULL;
+				}
+			}
+
 			break;
 		}
 	}
 }
 
 /*============================================================================*/
-/* find cnf file
- */
 
 /*
  * Read & parse the '.scl' files.
  */
+
 #if GENERATE_DIAGS
-#define debugp(d,s) curopt->point[d] = s
+#define CNF_NAME "xaaesdbg.cnf"
+#else
+#define CNF_NAME "xaaes.cnf"
 #endif
 
 void
-load_config(const char *name)
+load_config(void)
 {
+	char path[128];
+
 	struct cnfdata mydata;
 //	struct options *curopt = &default_options;	/* specify some options for some programs. */
 //	bool have_brace = false, have_opt = false;
 //	char *cnf = NULL;
 
-	if (name)
-	{
-		DIAGS(("Loading config %s", name));
-		parse_cnf(name, parser_tab, &mydata);
-	}
-	else
-		ALERT(("no config filename?"));
+	strcpy(path, C.Aes->home_path);
+	strcat(path, CNF_NAME);
+
+	DIAGS(("Loading config %s", path));
+	parse_cnf(path, parser_tab, &mydata);
 
 #if GENERATE_DIAGS
 	{

@@ -749,6 +749,8 @@ leave:
 static void
 k_exit(void)
 {
+	C.shutdown |= QUIT_NOW;
+
 	/* don't reenter on fatal signals */
 	p_signal(SIGILL,   SIG_DFL);
 	p_signal(SIGTRAP,  SIG_DFL);

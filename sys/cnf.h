@@ -119,7 +119,7 @@ struct parser_item
 void parser_msg(struct parsinf *, const char *msg);
 
 void parse_include(const char *path, struct parsinf *, struct parser_item *);
-void parse_cnf(const char *name, struct parser_item *, void *);
+void parse_cnf(const char *path, struct parser_item *, void *);
 
 # endif
 
