@@ -1886,6 +1886,12 @@ nfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			}
 			
 			ni = get_mount_slot (name, info);
+			if (!ni)
+			{
+				DEBUG (("nfs_fscntl: failure"));
+				return EACCES;
+			}
+			
 			if (ni->link > 0)
 			{
 				/* this file was mounted before */

@@ -116,6 +116,7 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 	NFS_MOUNT_OPT *opt;
 	NFS_INDEX *ni;
 	
+	DEBUG(("get_mount_slot: for %s (server %s)", name, info->hostname));
 	
 	if (info->version != NFS_MOUNT_VERS)
 	{
@@ -123,6 +124,25 @@ get_mount_slot (const char *name, NFS_MOUNT_INFO *info)
 		       " Got %ld, expected %ld", info->version, NFS_MOUNT_VERS));
 		return NULL;
 	}
+	
+	if (!name)
+	{
+		DEBUG(("get_mount_slot: no mount name specified"));
+		return NULL;
+	}
+	
+	if (name[0] == '\0')
+	{
+	illegal:
+		DEBUG(("get_mount_slot: illegal name '%s'", name));
+		return NULL;
+	}
+	
+	if (name[0] == '.' && name[1] == '\0')
+		goto illegal;
+	
+	if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
+		goto illegal;
 	
 	ni = mounted;
 	while (ni)
