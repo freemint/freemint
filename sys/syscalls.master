@@ -400,7 +400,7 @@ opcode	class name	args */
 0x13e	p sigintr	(ushort vec, ushort sig)
 0x13f	s uptime	(ulong *cur_uptim, ulong loadave[3])
 
-0x140	p trace		(short request, short pid, void *addr, long data) /* 1.15.10 */
+0x140	p trace		(short request, short pid, void *addr, long data) /* 1.15.11 */
 0x141	m validate	(short pid, void *addr, long size) /* 1.15.11 */
 0x142	d xreaddir	(short len, long handle, char *buf, XATTR *xattr, long *xret)
 0x143	p seteuid	(short id)
