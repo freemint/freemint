@@ -103,6 +103,10 @@
  *
  */
 
+/* XXX: Frank, please revert this, not all TOS versions have complete
+ * keyboard tables! (draco)
+ */
+
 # ifdef WITHOUT_TOS
 #  include "key_tables.h"
 # endif
@@ -847,3 +851,6 @@ init_keybd(void)
 	gl_kbd = (akp_val & 0xffL);
 # endif
 }
+
+/* EOF */
+
