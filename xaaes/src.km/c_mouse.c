@@ -279,7 +279,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 				k->em.t1(C.menu_base);	/* call the function */
 				break;
 			}
-			else if (k->em.flags & MU_M1)
+			if (k->em.flags & MU_M1)
 			{
 				if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
 				{
@@ -289,19 +289,16 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 					k->em.t1(C.menu_base);	/* call the function */
 					break;
 				}
-				else
-				/* HR: MU_M2 not used for menu's anymore, replaced by MU_MX */
-				/* I leave the text in, because one never knows. */
-				if (k->em.flags & MU_M2)
+			}
+			if (k->em.flags & MU_M2)
+			{
+				if (is_rect(x, y, k->em.flags & 1, &k->em.m2))
 				{
-					if (is_rect(x, y, k->em.flags & 2, &k->em.m2))
-					{
-						k->em.flags = 0;
-						k->x = x;
-						k->y = y;
-						k->em.t2(C.menu_base);
-						break;
-					}
+					k->em.flags = 0;
+					k->x = x;
+					k->y = y;
+					k->em.t2(C.menu_base);
+					break;
 				}
 			}
 			tab = tab->nest;

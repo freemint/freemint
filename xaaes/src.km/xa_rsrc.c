@@ -620,10 +620,33 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			/* Not a menu tree */
 			do {
 				/* Fix all object coordinates */
+#if 1
+				unsigned short *c;
+				short ch, cl;
+				
+				c = (short *)&obj->ob_x;
+				
+				for (j = 0; j < 4; j++)
+				{
+					cl = *c & 0xff;
+					ch = *c >> 8;
+					if (j & 1)
+						cl *= designHeight;
+					else
+					{
+						if (cl == 80 && j == 2)
+							cl = screen.r.w;
+						else
+							cl *= designWidth;
+					}
+					*c++ = cl + (ch > 128 ? ch - 256 : ch);
+				}
+#else			
 				obj->ob_x = (((obj->ob_x & 255) * designWidth + (obj->ob_x >> 8)) * resWidth) / designWidth;
 				obj->ob_y = (((obj->ob_y & 255) * designHeight + (obj->ob_y >> 8)) * resHeight) / designHeight;
 				obj->ob_width = (((obj->ob_width & 255) * designWidth + (obj->ob_width >> 8)) * resWidth) / designWidth;
 				obj->ob_height = (((obj->ob_height & 255) * designHeight + (obj->ob_height >> 8)) * resHeight) / designHeight;
+#endif			
 			}
 			while (!(obj++->ob_flags & OF_LASTOB));
 		}

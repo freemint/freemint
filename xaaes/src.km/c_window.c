@@ -224,12 +224,12 @@ inside_minmax(RECT *r, struct xa_window *wind)
 {
 	if (wind->max.w && r->w > wind->max.w)
 		r->w = wind->max.w;
-	else if (wind->min.w && r->w < wind->min.w)
+	if (wind->min.w && r->w < wind->min.w)
 		r->w = wind->min.w;
 	
 	if (wind->max.h && r->h > wind->max.h)
 		r->h = wind->max.h;
-	else if (wind->min.h && r->h < wind->min.h)
+	if (wind->min.h && r->h < wind->min.h)
 		r->h = wind->min.h;
 }
 
@@ -883,7 +883,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
 		{
 			inside_root(&r, &wind->owner->options);
-			inside_minmax(&r, wind);
+			//inside_minmax(&r, wind);
 		}
 
 		wind->rc = wind->r = r;

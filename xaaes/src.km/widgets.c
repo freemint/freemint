@@ -776,14 +776,21 @@ calc_work_area(struct xa_window *wi)
 		/* This is the largest work area possible */
 		if (frame >= 0)
 		{
-			wi->wa.x +=    frame + tl_margin;
-			wi->wa.y +=    frame + tl_margin;
-			wi->wa.w -= 2 * frame + wa_margins + SHADOW_OFFSET;
-			wi->wa.h -= 2 * frame + wa_margins + SHADOW_OFFSET;
+			wi->wa.x += frame;
+			wi->wa.y += frame;
+			wi->wa.w -= frame << 1;
+			wi->wa.h -= frame << 1;
+			
+			/* Used for border sizing */
+			wi->ba = wi->wa;
+			
+			wi->wa.x += tl_margin;
+			wi->wa.y += tl_margin;
+			wi->wa.w -= wa_margins + SHADOW_OFFSET;
+			wi->wa.h -= wa_margins + SHADOW_OFFSET;
 		}
-
-		/* For use by border sizing. */
-		wi->ba = wi->wa;
+		else	/* Used for border sizing. */
+			wi->ba = wi->wa;
 
 		/*
 		 * calculate correct width for windows title line
