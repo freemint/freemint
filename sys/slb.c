@@ -1,38 +1,38 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * Started: 1999-08-17
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
+ *
+ *
  * Purpose:
  * Routines for MagiC-style "shared libraries". EXPERIMENTAL! USE WITH CAUTION!
- * 
+ *
  * History:
  * 00/05/02: - Removed proc_self and pbaseaddr, as slb_util.spp no longer needs
  *             them (Gryf)
@@ -43,7 +43,7 @@
  *           - Correctly initialized slb_list to 0L (Gryf)
  * 99/07/04-
  * 99/08/17: - Creation, with pauses (Gryf)
- * 
+ *
  */
 
 # include "slb.h"
@@ -69,8 +69,6 @@
 
 # include <osbind.h>
 
-const char slbpath[]="SLBPATH=";	/* used by slb_util.spp */
-
 /* The linked list of used SLBs */
 SHARED_LIB *slb_list = NULL;
 
@@ -93,7 +91,7 @@ slb_init_and_exit (BASEPAGE *b)
 {
 	long *exec_longs;
 	volatile SLB_HEAD *head;
-	
+
 	/* Act like a daemon */
 	P_domain (1);
 	Fclose (0);
@@ -103,29 +101,29 @@ slb_init_and_exit (BASEPAGE *b)
 	Fclose (4);
 	P_sigsetmask (-1L);
 	P_setpgrp (0, 0);
-	
+
 	/*
 	 * Note: Unlike MagiC, this implementation calls a library's init() and
 	 * exit() function in user mode, as anything else would be a security
 	 * risk. Maybe this should depend on secure_mode?
 	 */
-	
+
 	/* Test for the new programm-format */
 	exec_longs = (long *) (b->p_lowtpa + 256L);
-	if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL) 
+	if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
 	{
 		head = (SLB_HEAD *)(b->p_lowtpa + 256L + 228L);
 	}
 	else
-	{	
+	{
 		head = (SLB_HEAD *)(b->p_lowtpa + 256L);
 	}
-	
+
 	if (head->slh_magic != 0x70004afcL)
 		*(long *) b->p_cmdlin = -1L;
 	else
 		*(long *) b->p_cmdlin = head->slh_slb_init ();
-	
+
 	P_kill (0, SIGSTOP);
 	head->slh_slb_exit ();
 	Pterm0 ();
@@ -243,15 +241,12 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	long		*exec_longs;
 
 	/* Construct the full path name of the SLB */
-
-# if 1
 	/* Treat SLBPATH value as a single pathname pointing to the default
 	 * folder supposed to contain libraries (draco)
 	 */
-
 	if (!path)
-		path = getslbpath(curproc->base);
-# endif		
+		path = _mint_getenv(curproc->base, "SLBPATH");
+
 	if (!path)
 		path = "./";
 
@@ -264,7 +259,7 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	strcpy(fullpath, path);
 	strcat(fullpath, "/");
 	strcat(fullpath, name);
-	
+
 	/* Create the new shared library structure */
 	mr = get_region(alt, sizeof(SHARED_LIB) + strlen(name), PROT_PR);
 	if (mr == 0L)
@@ -321,7 +316,7 @@ slb_error:
 	{
 		(*sl)->slb_head = (SLB_HEAD *)b->p_tbase;
 	}
-	
+
 	/* Check the magic value */
 	if ((*sl)->slb_head->slh_magic != 0x70004afcL)
 	{
@@ -329,7 +324,7 @@ slb_error:
 		r = ENOEXEC;
 		goto slb_error;
 	}
-	
+
 	/* Check the name */
 	if (stricmp((*sl)->slb_head->slh_name, name))
 	{
@@ -338,7 +333,7 @@ slb_error:
 		r = ENOENT;
 		goto slb_error;
 	}
-	
+
 	/* Check the version number */
 	(*sl)->slb_version = (*sl)->slb_head->slh_version;
 	if ((*sl)->slb_version < min_ver)
@@ -386,21 +381,21 @@ slb_error:
 	}
 
 	/* Wait for the init routine to finish */
-	
+
 	assert (curproc->p_sigacts);
-	
+
 	oldsigint = SIGACTION(curproc, SIGINT).sa_handler;
 	oldsigquit = SIGACTION(curproc, SIGQUIT).sa_handler;
-	
+
 	SIGACTION(curproc, SIGINT).sa_handler =
 	SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
-	
+
 	newpid = (int) r;
 	r = sys_pwaitpid (newpid, 2, NULL);
-	
+
 	SIGACTION(curproc, SIGINT).sa_handler = oldsigint;
 	SIGACTION(curproc, SIGQUIT).sa_handler = oldsigquit;
-	
+
 	if (r < 0)
 	{
 		p_kill(newpid, SIGKILL);
@@ -586,7 +581,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 	else
 # endif
 		*fn = slb_exec;
-	
+
 	usp = (long *)curproc->ctxt[SYSCALL].usp;
 	*(--usp) = curproc->ctxt[SYSCALL].pc;
 	*(--usp) = (long)slb;
@@ -732,7 +727,7 @@ slb_close_on_exit (int terminate)
 	MEMREGION	**mr;
 	ulong		i;
 	long		*usp;
-	
+
 	/* Is curproc user of a shared library? */
 	for (slb = slb_list; slb; slb = slb->slb_next)
 	{
@@ -741,7 +736,7 @@ slb_close_on_exit (int terminate)
 	}
 	if (slb == 0L)
 		return 0;
-	
+
 	/*
 	 * On termination (i.e. non-planned exit), just remove curproc from the
 	 * list of users and exit the library, if necessary. Do the same if the
