@@ -54,9 +54,8 @@ long	_cdecl	new_spurious	(void);
 long	_cdecl	new_pmmuacc	(void);
 
 extern long gdos_version;
-
-long	_cdecl	(*aes_handler)	(void *);
-long	_cdecl	(*vdi_handler)	(void *);
+extern long _cdecl (*aes_handler)(void *);
+extern long _cdecl (*vdi_handler)(void *);
 
 char *	_cdecl	lineA0		(void);
 void	_cdecl	call_aes	(short **);
