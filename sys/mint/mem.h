@@ -138,6 +138,8 @@ typedef struct fileheader FILEHEAD;
 
 typedef MEMREGION **MMAP;
 
+# ifndef NO_MMU
+
 /* QUANTUM: the page size for the mmu: 8K.  This is hard-coded elsewhere. */
 # define QUANTUM	0x2000L
 
@@ -154,6 +156,19 @@ typedef MEMREGION **MMAP;
  * how much memory should be allocated to the kernel? (24K)
  */
 # define KERNEL_MEM	(3 * QUANTUM)
+
+# else
+
+/* For 68000 machines (always short of RAM) we may try to decrease
+ * the page size. This should save some memory per process.
+ */
+
+# define QUANTUM	0x0800L
+# define TOS_MEM	(QUANTUM*4)
+# define KEEP_MEM	(QUANTUM*4)
+# define KERNEL_MEM	(12 * QUANTUM)
+
+# endif
 
 /* macro for rounding off region sizes to QUANTUM (page) boundaries */
 /* there is code in mem.c that assumes it's OK to put the screen
