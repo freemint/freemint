@@ -32,12 +32,9 @@
 extern short load_xfs_f;
 extern short load_xdd_f;
 extern short load_auto;
-extern short save_ini;
 
 int boot_kernel_p(void);
 void read_ini(void);
 void pause_and_ask(void);
 
 # endif
-
-/* EOF */
