@@ -19,7 +19,6 @@
 #include "magic/magic.i"
 
 	.globl	_enter_gemdos
-	.globl	_enter_bios
 	.globl	_leave_kernel
 
 	.globl	_curproc
@@ -47,10 +46,6 @@ _in_kernel:
 	dc.w	0
 
 	.text
-
-_enter_bios:
-	bset	#0x07,_in_kernel
-	rts
 
 _enter_gemdos:
 	bset	#0x07,_in_kernel

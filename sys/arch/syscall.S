@@ -1,19 +1,19 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1992 Eric R. Smith
  * Copyright 1992,1993,1994 Atari Corporation
  * All rights reserved.
- * 
- * 
+ *
+ *
  * Interface for system calls
- * 
+ *
  * The following entry points are defined:
- * 
+ *
  * _mint_bios:	entry point for the BIOS calls (trap #13)
  * _mint_xbios: entry point for XBIOS calls (trap #14)
  * _mint_dos:	entry point for GEMDOS calls (trap #1)
@@ -23,9 +23,9 @@
  *              arguments supplied from global variables usrarg1, usrarg2, etc.
  * _callout:	calls an external function, after first saving all registers,
  *              and restores the registers afterward
- * 
+ *
  * external variables referenced:
- * 
+ *
  * _bios_tab, _bios_max:
  *    table of entry points for BIOS routines, max # of routines
  * _xbios_tab, _xbios_max:
@@ -40,16 +40,16 @@
  *    256 byte buffer for Bconout() output. If _bconbsiz is non-zero,
  *    there are that many bytes in _bconbuf waiting to be flushed. The
  *    output is for device _bconbdev.
- * 
- * The function enter_gemdos() resp. enter_bios() is called while entering
+ *
+ * The function enter_gemdos() is called while entering
  * the kernel and leave_kernel() while leaving the kernel. These are
  * responsible for managing appropriate semaphores and pointers.
- * 
+ *
  * we also call certain BIOS functions directly if these are known not to
  * require saving/restoring of context
- * 
+ *
  * Best view in 800x600 ;-)
- * 
+ *
  */
 
 #include "magic/magic.i"
@@ -63,7 +63,6 @@
 	.globl	_restore_context
 	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_enter_gemdos
-	.globl	_enter_bios
 	.globl	_leave_kernel
 	.globl	_in_kernel
 	.globl	_preempt
@@ -222,7 +221,7 @@ sk:	clr.w	-(sp)			// no frame format needed
 	move.l	8(a1),-(sp)
 	move.l	4(a1),-(sp)
 	move.l	(a1),-(sp)
-	jsr	_enter_bios		// set up vectors appropriately
+	bset	#0x07,_in_kernel
 	bra	_syscall
 
 // For Dsp_LodToBinary(), Dsp_LoadProg()
@@ -258,7 +257,7 @@ _mint_bios:
 //
 	tst.w	_in_kernel
 	bne.s	rom_bios
-	jsr	_enter_bios		// set up BIOS vectors
+	bset	#0x07,_in_kernel
 	tst.w	_bconbdev		// is BIOS buffering on?
 	bmi	L_bios			// no// skip all this
 

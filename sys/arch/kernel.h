@@ -1,6 +1,6 @@
-/* 
+/*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  */
@@ -10,10 +10,7 @@
 
 # include "mint/mint.h"
 
-
 void enter_gemdos (void);
-void enter_bios   (void);
 void leave_kernel (void);
-
 
 # endif /* _m68k_kernel_h */
