@@ -1681,7 +1681,7 @@ static char *pstates[] =
 };
 #endif
 
-#if 0
+#if 1
 struct user_things
 {
 	const long len;		/* number of bytes to copy (this struct and the code) */
@@ -1706,8 +1706,8 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 	struct proc *curproc = get_curproc();
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
 
-	KERNEL_DEBUG("XaAES d_g_progdef: curproc - pid %i, name %s", curproc->pid, curproc->name);
-	KERNEL_DEBUG("XaAES d_g_progdef: client  - pid %i, name %s", client->p->pid, client->name);
+	DIAGS(("XaAES d_g_progdef: curproc - pid %i, name %s", curproc->pid, curproc->name));
+	DIAGS(("XaAES d_g_progdef: client  - pid %i, name %s", client->p->pid, client->name));
 
 	// XXX alloc it on client creation
 	ut = umalloc(xa_user_things.len);
@@ -1720,15 +1720,15 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 	ut->ret_p     += (long)ut;
 	ut->parmblk_p += (long)ut;
 
-	KERNEL_DEBUG("ut = 0x%lx", ut);
-	KERNEL_DEBUG("ut->progdef_p = 0x%lx", ut->progdef_p);
-	KERNEL_DEBUG("ut->userblk_p = 0x%lx", ut->userblk_p);
-	KERNEL_DEBUG("ut->ret_p     = 0x%lx", ut->ret_p    );
-	KERNEL_DEBUG("ut->parmblk_p = 0x%lx", ut->parmblk_p);
+//	KERNEL_DEBUG("ut = 0x%lx", ut);
+//	KERNEL_DEBUG("ut->progdef_p = 0x%lx", ut->progdef_p);
+//	KERNEL_DEBUG("ut->userblk_p = 0x%lx", ut->userblk_p);
+//	KERNEL_DEBUG("ut->ret_p     = 0x%lx", ut->ret_p    );
+//	KERNEL_DEBUG("ut->parmblk_p = 0x%lx", ut->parmblk_p);
 
 	userblk(ut) = get_ob_spec(ob)->userblk;
 
-	KERNEL_DEBUG("userblk 0x%lx (0x%lx)", get_ob_spec(ob)->userblk, userblk(ut));
+//	KERNEL_DEBUG("userblk 0x%lx (0x%lx)", get_ob_spec(ob)->userblk, userblk(ut));
 
 	parmblk(ut)->pb_tree = wt->tree;
 	parmblk(ut)->pb_obj = wt->current;
@@ -1754,6 +1754,8 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 		DIAG((D_o, wt->owner, "progdef before %s %04x", statestr, *wt->state_mask & ob->ob_state));
 	}
 #endif
+	/* flush data cache, we jump now to it */
+	cpush(ut, xa_user_things.len);
 
 	act.sa_handler = ut->progdef_p;
 	act.sa_mask = 0xffffffff;
@@ -1762,9 +1764,9 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 	/* set new signal handler; remember old */
 	p_sigaction(SIGUSR2, &act, &oact);
 
-	KERNEL_DEBUG("raise(SIGUSR2)");
+	DIAGS(("raise(SIGUSR2)"));
 	raise(SIGUSR2);
-	KERNEL_DEBUG("-> back from SIGUSR2");
+	DIAGS(("handled SIGUSR2 progdef callout"));
 
 	/* restore old handler */
 	p_sigaction(SIGUSR2, &oact, NULL);
