@@ -1,0 +1,41 @@
+#
+# global definitions
+#
+include $(top_srcdir)/../../CONFIGVARS
+
+#
+# private definitions
+#
+
+#
+# MiNT must be compiled with 16 bit integers (-mshort)
+#
+GENERAL = -mshort -g
+
+#
+# XaAES configuration
+#
+
+#XAAESDEFAULTDEFS += -DGENERATE_DIAGS=1
+
+XAAESDEFAULTDEFS += -DRSCNAME="\"xaaes.rsc\""
+XAAESDEFAULTDEFS += -DWIDGNAME="\"xaaeswdg.rsc\""
+XAAESDEFAULTDEFS += -DRSCHNAME="\"rsc/xaaes.h\""
+XAAESDEFAULTDEFS += -DWIDGHNAME="\"rsc/xaaeswdg.h\""
+
+XAAESDEFAULTDEFS += -DDEBUG_SEMA=0	# Other than update lock
+XAAESDEFAULTDEFS += -DDEBUG_CONTROL=0	# debug the settings in pb->contrl (CONTROL macro)
+XAAESDEFAULTDEFS += -DVECTOR_VALIDATION=0
+
+XAAESDEFAULTDEFS += -DWDIAL=0	# implementation of wdlg_xxx 
+XAAESDEFAULTDEFS += -DLBOX=0	# implementation of lbox_xxx
+XAAESDEFAULTDEFS += -DFNTS=0	# implementation of fnts_xxx
+XAAESDEFAULTDEFS += -DFSLX=0	# implementation of fslx_xxx
+
+
+WARN = 	-Wall \
+	-Wmissing-prototypes \
+	-Winline \
+	-Wshadow \
+	-Wpointer-arith \
+	-Wcast-qual

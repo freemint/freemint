@@ -1,0 +1,4296 @@
+Development Log for XaAES v0.8 and higher
+=========================================
+
+First a little remark.
+K&R made many bad mistakes while inventing C.
+We have to live with that.
+We certainly do not have to live with the mistakes they made in their
+writing style.
+My brains are *not* trained to recognize indentation, because my brains
+know that indentation doesnt run in computers.
+Braces do though!
+So only if I can see matching braces in a single glance
+I can understand the text.
+Vertically aligned braces give me that possibility.
+Only then the indentation makes sense, and thats also
+the reason why braces must not be part of the indentation.
+
+
+ù AD 1999
+  =======
+ 
+ù 18 november
+
+Henk Robbers        Mailto:h.robbers@chello.nl
+                    http://members.ams.chello.nl/h.robbers
+
+Took over further development.
+
+ù 25 nov 99
+Ported to Pure C, fixes: grep (or run AHCX) FIX_PC
+
+ù 28 nov
+It runs as it is.
+Informed Johan. He encouraged me :-)
+
+I'll try to mark all my amendments /* HR */
+
+ù 29 nov
+Got a lot of the mono stuff look quite a lot better.
+This is the first thing I'll do. I work on a TTM194 and I'll have to
+look at it for the coming months. ;-)
+
+replaced some identical code by XA_3D_pushbutton (sliders)
+
+Fixes on behalf of the fact that vsf_perimeter only works as expected
+in XOR writing mode.  function p_bar().
+
+ù 30 nov
+wrote a general failsafe calculation at the end of calc_work_area()
+Later I will revise the whole stuff, there are still misplaced widgets
+in uncommon combinations.
+
+I understand what Craig? was trying to do: keeping the code free of
+interpretation. But alas, in vain, it does not work good.
+
+ù 1 dec
+wrote cramped_name()
+    constructs things like 'c:\s...ng\foo.bar'
+wrote clipped_name()   for info_bar
+
+ù 2 dec
+In monochrome selected objects were selected twice, fixed.
+
+ù 4 dec
+Start implementing the desk menu.
+Some acc's will not start (xcontrol & hoelaat)
+I think I must check the Pure C bindings, or use what comes with the mintlib.
+
+ù 7 dec
+Implemented IPFF;     (Input Package for Free Format data)
+Needed it for more sophisticated debugging.
+Embraced pathnames.
+Any number of white space.
+(Also got rid of scanf :-) and stream io.
+
+ù 10 dec
+Removed pixel corrections on w & h in wind_calc
+(This was already wrong in the original 7b version)
+When using wind_calc to go from inside to outside, the outside became
+1 line to large, but wind_get WF_work delivered the correct workarea,
+leaving a line shaped hole in the workarea.
+
+ù 11 dec
+Desk menu now in a usable state.
+Hoelaat & Xcontrol still dont start. ST-Guide does.
+Actually, they start, but lock up after XA_new_client.
+
+ù 14 dec
+Made sure that global[0] was zero before calling appl_getinfo()  :-)
+
+Started static pid array along with dynamic client pool.
+
+ù 16 dec
+Problems with locking I suppose. The basic routines work.
+#if'd the dynamic pool, but kept the separate pid array.
+I want to be able to work on more than 1 topic concurrently.
+
+ù 18 dec
+Got the locking right. Dynamic client pool now works.
+Pid2Client is now a function. It *must* lock/unlock the client pool.
+
+maximum pid is now 999, as it should be. maximum no of clients 32;
+Saves a lot of BSS.
+
+Note: The client pool is in the bss! no malloc's needed.
+
+What is this stupid looking pid numbering for?
+Is there a need for a kernel session unique pid? Then why the cobol like
+maximum of 999? Or is MiNT just emulating the primitivities of Unix?
+
+ù 24 dec
+Trying to run TERADESK as desktop program. Its small & for free and
+multitasking capable.
+
+shell_find: strlen(cwd) changed to sizeof(cwd). :-)
+This could be the cause of XaAES not finding its resource when not in a
+root dir.
+
+The PATH env could be simply absent. shell_find fixed
+Also checked for filename that starts with p.e. C: (a full hierarchic name)
+
+It seems that LATTICE's printf prints "(null)" for %s if a zero pointer is
+passed.
+Pure C's printf doesnt do that. (So you can notice programming errors!)
+Several fixes.
+
+rsrc_gaddr(R_STRING) : It seems that this is really exactly the same as
+           R_FSTR       except for the return value, which seems to be
+                        a single in stead of a double ref.
+Fixed ResourceString() accordingly.
+
+This could be right, because TERADESK now runs as expected. ;-)
+
+ù 25 dec         (Merry Christmas)
+Fixed a bad bug in shell_write handling the (PASCAL) string 'tail'.
+
+Found the reason why some acc's wouldnt wake up:
+AC_OPEN must supply the menu_register() reply in msgbuf[4].
+In our case this is the pid. fixed.
+
+There are still many pixel errors of the kind: x,y,x+w,y+h left.
+I will now replace x,y,w,h by RECT{short x,y,w,h} where possible
+and use wrapper functions or macros for pxy stuff where possible.
+
+So in a single streak I can correct this for good.
+functions: rtopxy(coords,RECT *r);
+           RECT to a pxy array.
+           ritopxy(coords,x,y,w,h);
+           RECT values presented as int's to a pxy array.
+
+ù 26 dec
+Fixed for b/w: highlight_col --> WHITE.
+drag_hslide: call to display_vslide --> display_hslide.	:-)
+
+drag_hslide is obviously a modified copy of drag_vslide.
+
+Boxes that have 3d flags (indicater or background) but have no
+border, are not anymore written by XA_3D_pushbutton.
+(Example: MagiC) Have to test the colour though.
+
+ù 27 dec
+The single character was missing in mono icons. fixed.
+Mono icon text is now centered in the (white) box defined in
+RECT iconblk->tx.
+
+Colour icons were not affected by this changes. They were already displayed
+correct.
+Are ch & text part of the colour icon pixel data ?
+Or does THING write colour icons himself ?
+Anyhow, if not, just insert the call to 'icon_characters'.
+
+Wrote a simple amd nice routine for finding cnf & rsc using a table
+of various (standard) paths.
+(The rsc was not found when not in c:\)
+
+ù 28 dec  (very early in the morning ;-)
+*********************************************************
+Found missing paremthesis' in MOUSE_CL.C  threaded rectangle checking.
+Among innumerate spurious pairs :-(
+Certainly the reason why the whole stuff doesnt work.
+Not yet tried though.
+I will now check ALL use of & in if's
+*********************************************************
+
+The afternoon.
+Well, :-)  mouse rectangle events now simply work.
+
+There is 1 big disadvantage: The pid number is enormously boosted up.
+
+ù The fourth of january of the year 2000 and all's well!!
+
+I didnt like Pid2Client to issue 2 Psemaphore call's.
+It is only needed the very first call after the client is started.
+So I moved the call's to around the Pid2Client call in Handler.C.
+For a non debugging XaAES, Pid2Client is now a simple macro (as it was).
+
+sliderbars now have a minimum length of ICON_H resp ICON_W.
+
+ù AD 2000
+  =======
+
+ù 6 jan
+
+All icons: fixed|inserted monochrome parts.
+
+Increased in the rsc file the height of the listbox of the fileselecter
+from 8 to 14.
+It worked immediately, without needing any modifications in the text.
+Thanx folks! :-) Excellent behaviour.
+
+Now it must be easy to adapt the height dynamically to the actual
+screen height.  Later!
+
+Most AES's allow null text pointers in menu's.
+Put a check in d_g_string(), d_g_title() & d_g_button accordingly.
+Pixel corrections as well for string & title.
+
+Draw_objects: implemented odc_p->x,y.
+The additions parent_x/y + ob_x/y were already done once in the caller.
+So why not pass them.
+ODC_PARM structure extended with short x,y which receive the result of the
+additions;
+Saves about a Kb room for new features.
+Size matters!! Not only in the computer, but certainly outside it as well.
+Lots of ritopxy() as well.
+
+ù 7 jan
+
+objc_change:
+Must write the whole tree.
+But clipped by the area the objects takes on top of the supplied clipping
+rectangle. Otherwise transparent objects go wrong.
+Preliminary fix. New function: object_area(RECT *c, OBJECT *ob, int item)
+Not yet complete.
+New function: short thickness(OBJECT *ob)
+outlined &  shadowed remain to do.
+
+ob_spec macro: moved the #if to the macro definition.
+Clears up the text considerably. :-)
+
+next_app_menu()
+If there is a deskprogram, root window menu_bar owner will be
+the desktop, not the AES.
+Not yet complete though. This is intimately related to the kb focus
+question.
+
+Sampled some code duplication in functiom swap_menu()
+
+ù 8 jan
+
+Use clear_clip() in stead of vs_clip(h,0,NULL).
+simplifies FIX_PC corrections.
+
+Destilled function: change_object() from XA_objc_change().
+This is now used in the menu selection stuff (click_menu_widget()).
+
+The less duplication, the easier a program is to maintain.
+
+ù 9 jan
+constructed function: display_def_widgets()
+replaces 8 exactly the same individual display functions.
+New member 'src_index' in XA_WIDGET structure.
+
+XA_new_client:
+Really try to isolate the file name proper to use as proc name.
+
+ù 10 - 19 jan
+Struggling with the mouse rectangle events.
+Got the threading working, but way way too slow.
+So threading is out.
+
+Found a simple and effective solution:
+Mouse movement is sampled in the moose.
+In the VBI the sample is compared to the sample of the last VBI and when
+the mouse position has changed a mouse_movement packet is queued for
+XaAES. The latter can detect this packet in the normal way via Fselect
+and Fread on the moose device.
+The actual checking of the rectangles is done in XaAES in interruptable
+user mode. Changes in MOUSE_CL.C accordingly.
+
+Fixes in the moose:
+The position of x & y in the lina_a struct are updated by the VDI
+AFTER!! the IKBD vector is processed.
+So I had to add the x & y increments locally to the line_a x & y.
+
+ù 20 jan
+Tried to use the Mintlib Getcookie, for Ssystem.
+(Didnt work though, look at that later)
+
+Removed massive code duplication in XA_form.handle_form_key
+ & XA_objc_edit
+(They should have been the same, but were different.)
+
+ù 23 jan
+moose: some optimizations and fixes
+
+Assembler programmers: Please, always jump forward. (Except of course
+when a piece of code has to be repeated. ;-)
+
+Check for movement only 1 in 4 VBI's.
+It looks that mouse rectangle events now work rather well.
+Only 1 or 2 button clicks get lost after heavy MU_M.. event processing
+in the APP. (I think). This may of course be a bug still in the moose,
+so I do not yet consider it finished, but at least it is good enough to
+let it sink for a while and go to other important stuff.
+For instance finding out why ENTER/RETURN inputs do not reach the APP's
+in dialogues.
+
+ù 24 jan
+XA_form_keybd & handle_form_keybd:
+
+Fixes to be able to handle default button by <RETURN|ENTER>
+in case there are no editable fields at all.
+
+new functions:
+bool has_default(OBJECT *form);
+short find_flag(OBJECT *form, short flag);
+
+Because alerts return a number which is not a object index, a new
+keypress handler is added for alerts: key_alert_widget(.......)
+
+ù 25 jan
+Many places:
+looping for all objects in a tree: check LASTOB before incrementing object
+index.
+The only place where this was done correctly was in resource load itself. :-)
+
+I made the same mistake once in AHCX which doesnt use form_keybd
+nor objc_edit.
+
+Wrote a nice routine: find_cancel_button(), to be called for <UNDO>.
+
+There is a new config keyword 'cancel' which is used to introduce known
+cancel button texts dynamically to XaAES.
+
+Regained good humour.    ;-)
+
+ù 26 jan
+Preparations for correct positioning of curser in nonleft aligned text.
+Moved everything that is common to all text objects to set_text().
+I need the stuff there anyhow, so I can calculate the cursor position
+correctly. After that I can try to position correctly in prop fonts.
+
+Replaced the use of vst_alignment by vqt_extent in combination with
+own coded centering.
+
+Balanced vst_alignment, vst_point & vst_font call's in such a way that
+procs using a non standard call, revert themselves back to standard,
+avoiding spurious call's.
+
+Although I add more & more code to XaAES, it is still considerably
+smaller than the original. :-P
+
+Cursor is now correctly placed in nonleft aligned text.
+
+Published 'progression report'.
+-------------------------------
+
+ù 28 jan
+kernal: handling active_function: added missing parentheses in if statement:
+(evnt_count & 0xff == 1)  --> ((evnt_count & 0xff) == 1)
+
+Several patches to let the client bomb out in stead of XaAES.
+
+New config keyword for monochrome
+toppage x
+x = bold: top window title displayed in bold, others normal
+x = faint: top window title displayed normal, others faint
+
+ù 29 jan
+replaced printf(..), it now calls sprintf(...) & Cconws().
+I noticed that redirection of debug output was performed by calling
+Fforce (The GEMDOS one), which was always working fine and still is.
+Now got rid of ALL stream IO. We no more suffer from particularities of
+a multitude of libraries supplied with compilers.
+
+IPFF is a nice stream IO of it's own.
+
+ù 30 jan
+Investigating the keyboard focus question:
+moved the (heavily #if'd) text out of do_keyboard to a function)
+Little global struct FOCUS focus.
+
+Really new:
+When no window is open or on top, focus pid will be taken from the current
+menu bar.
+
+ù 31 jan
+new function top_next_window(void)
+tops the first window that is open and not already on top.
+
+close_window: Some generalization.
+disabled (heavily #if'd) code.
+Instead call swap_menu() & top_next_window()
+
+This makes XaAES behave more like the other AES's.
+
+It was APITA, but very therapeutic ;-)
+
+ù 1 feb
+Finally found what was really missing in the original.
+I managed to confuse myself a little.
+Indeed the call to top_next_window was necessary: in stead of
+nullify focus.window, a window of another app is topped (if there).
+Or I may be completely wrong.
+
+Removed yet another massive code duplication: 
+new functions: bottom_window(w) & top_window(w)
+
+Next target: drag_..slide.	(needs quite a trick)
+
+display_window: moved v_hide/show_c to the edges.
+Made quite a lot of pairs elsewhere spurious. Removed them.
+Saved another half Kb for new features. :-)
+
+ù 2 feb
+removed code dupication in evnt_mult & evnt_mesag:
+new function pending_msgs()
+
+dynamic window handles.
+Use a bit array to record handle's in use,
+if a bit is 0, handle is free and can be reused.
+This is rather important! It makes very long up times possible.
+new functions:
+new_wind_handle, free_wind_handle, btst, bclr, bset
+
+Corrected the values for appl_getinfo.
+Enum values were used, instead of bit mask values.
+After repairing, Thing suddenly displayed the iconify widget.
+Which was nice, because that gave me the opportunity to detect
+some inconsistencies in handling the iconify stuff.
+
+ù 3 feb
+Completely off topic. ;-)  published TT-Digger 6.1
+
+ù 4 feb
+Menu titles can be DISABLED.
+Fixed that. Disabled titles are now ignored.
+
+Contrl[0] was checked after accessing Kcall_direct[contrl[0]].
+Reversed that.
+
+ù 5 & 6 feb
+World championship speed skating. :-)
+
+ù 7 feb
+Removed all casts from and to void *.
+Pre ANSI or non proper ANSI compilers are out for ages.
+These casts confuse and make lines long.
+
+Started analysis of the calc_work_area() plus related widget
+location mechanisms.
+I'll try to put complete generalization into the stuff.
+There are connections that use knowledge that shouldnt be used.
+
+I do not want to break the system by doing it simple.
+(Although I may be forced to do that as a temporary solution when it
+ holds up other important developments).
+
+ù 8 feb
+Already generalized the code for all the arrows. Saved another Kb.
+I have idees to generalize the code for both sliders as well.
+
+Repaired a funny error in WF_(UN)ICONIFY.
+The status was changed after, in stead of before, drawing.
+
+rubber_box: extra parameters dx, dy, used for resizing.
+Maintain the distance between the mouse and the lower right corner of the
+window, just as WINX and MagiC.
+If you dont move the mouse because you change your mind, the window
+does not change.
+
+ù 9 feb
+NEW_SLIDE
+Greatly cleaned up the drag_..slide code, now arrows are unified elsewhere
+and are vanished from the slider code.
+It is now almost comprehensible.
+
+Next step is: Grand Unification of all the slider code.
+The idee is to make a slider true 2 dimensional.
+That means a slider can move freely in all directions, combining
+x and y movement. Vertical sliders are horizontally always full size,
+Horizontal sliders are vertically always full sized. If I optimize
+the full size detection, this hardly slow things down, but greatly
+reduces the amount of code because that is only slightly different
+for each type of slider.
+
+But it is just an idee. :-)
+
+Draw of the slider background moved from update_v/hslde to
+display_..slide. They are now always drawn correctly transparent.
+
+ù 11 feb
+Finished standard_widgets() for ALL combinations of widgets.
+
+Replaced the existing calc_work_area() completely.
+The old one couldnt work: the information in the loc structure is not
+adaquate enough, and the specific widget types were used anyhow.
+Replaced by a dedicated version that is at least completely correct.
+
+Summarizing:
+  in standard_widgets() relative x & y of all widgets is adapted once.
+  in calc_work_area() w & h of variable size widgets is adapted dynamically.
+
+The whole thing confused me for a long time, until I discoverd that
+misplaceent of widgets in uncommon combinations was not the fault
+of calc_work_area(), but the fault of standard_widgets().
+
+Standard_widgets() was always completely type dedicated. Which is now
+the case for calc_work_area() as well.
+
+If generalized widgets will ever be reality, the whole stuff must be
+completely redesigned.
+My recommandation is to design a completely freestanding window manager
+including interface protocol.
+
+But beware: XaAES will get slower and slower, just like MS Windows!
+(or X). Protocols slow down exponentially to the number of protocols.
+
+Adaptations in display_..slide to keep the slider within it's enclosure
+independant of arithmatic rounding. (or errors :-)
+
+Optimization in drag_..slide:
+    If slidersize = 1000 nothing is attempted,
+             in display_v/hslide:
+                         nothing is calculated or drawn,
+                         apart from back_ground.
+
+NEW_SLIDE not yet completely correct:  reversed.
+Look at that later.
+
+create_window():
+If only one of corresponding arrows is specified, both are set.
+This is nice for internal consistency as well.
+
+ù 13 feb
+Greatly improved XA_3D_pushbutton, which now includes DEFAULT & EXIT as well.
+The x,y,w,h are now related to GEM rectangle's in a controlled and
+flexible way.
+Widget state now same as ob_state.
+
+new functions (using GEM x,y,w,h as base)
+    tl_line,   top left line
+    br_line    bottom right line
+
+ù 15 feb
+NEW_SLIDE:
+As usual, I didnt remove enough code.
+Now it is running perfectly in 1/3th the original code size.
+
+ù 24 feb
+NEW_SLIDE: Well, I must have made a silly mistake somewhere:
+In case of sliders only, no arrows, strange things happen.
+Perhaps 'nested widgets' are really needed.
+un#if'd the lot. It consumes too much time for now. I want to improve the
+file selector. Both functionality and quality of the code; too much use
+of small constant values.
+
+ù 25 feb
+I thought I'd seen everything in my die hard 32 years experience as a
+programmer. ;-)
+do_form_alert() corrupts the user's alert string for extremely opportunistic
+reasons, making it impossible for a application to do a certain alert more
+than once.
+
+Partly rewritten by using the decent and beautifull little parser IPFF.
+
+Changed such, that a alert is always displayed, whether format error or not.
+Otherwise the app is suspended and the screen & keyb are locked, but there
+is nothing to click on and you can do nothing but a reset. :-(
+
+To close at least the log_file properly:
+When GENERATE_DIAGS=1, you can press CNTRL|ALT|LSHIFT whenever you
+like, to brutally quit XaAES. (That is if the kernel is still looping).
+
+ù 4 mar
+I couldnt find the place where STORE_BACK background were restored, and
+I believe that this not done, so until that is sorted out, I #if 0'd that
+code. XaAES seems to be able to do without.
+(Mainly because app's either store the background themselves, or use
+form_dial, which is OK)
+
+Nevertheless wrote the functions form_save, form_restore & form_copy.
+I need the 1st 2 for menu's. (both pop & pull).
+
+ù 6 mar
+Tool_bar widgets: when a toolbar window was moved, find_object didnt
+find anymore; the OBJECT's x & y were not updated.
+I have put a little hack in rp_2_ap().
+(Better should be to send a WM_MOVED message to XaAES self, but that is another
+thing on the todo list).
+
+ù 7 mar
+Started generalization of 'active_function' concept intruducing Tab structure:
+Task administration block. (Internal multitasking within a process).
+I need this in the new code for menu's.
+
+ù 10 mar
+Moved all static variables from click_menu_widget to Tab active_menu.task_data
+Use mouse rectangle event for pulling menu's (The GEM way).
+New config keyword 'menu'
+You can set menu to pull, push (the old XaAES way) or leave.
+leave implies pull; in stead of clicking on the desktop to cancel a menu
+action, just leave the pull down menu.
+
+I very much like the 'leave' myself, so there is at least 1 happy user. :-)
+
+ù 13 mar
+Found a third place where the menu_bar was swapped.
+I already amalgamated 2, creating the function swap_menu().
+This third one, check_menu_desktop(), was wrong.
+If the target app had no menu_bar it pointed to the system menu, then the
+menu_bar owner was incorrectly set to the app, so this system menu couldnt
+be used. So I replaced that code by swap_menu().
+I hope I now have catched ALL places where the menu bar is swapped. 8-|
+
+ù 15,16 mar
+Continued working on menu handling.
+Selecting titles and dropping and pulling menu's now work, as well as clicking
+on a menu entry.
+
+Before I do the menu entry selection, first I'll do menu_popup.
+
+ù 17 mar
+I wanted the popup menu's implemented, to be able to use SELECTRIC.
+S bombs out when clicking on a popup (Of course, it thinks its AES 4? :-)
+The following happened:
+The alert pipe is activated (by MiNT I suppose, kernel 1.15.7b), but
+Finstat returns 0, which resulted in a loop on Fselect, resulting in
+quite a few alerts per second. I dont know why this happens and if I do
+something wrong, but if it happens I just close & reopen the alert pipe.
+This is under GENERATE_DIAGS.
+
+The bombing of SELECTRIC was due to wind_get(..,WF_SCREEN...) not present.
+Implemented WF_SCREEN; return a very small area in the hope that app's
+then decide to allocate space themselves. Which is the case for SELECTRIC.
+
+Reactivated pull_wind_to_top() in XA_form_do; This was necessary to get the
+focus correct. click_object_widget() uses wind_find(), which needs the
+correct window at the front of the window list.
+
+Deactivated display_windows_below() in exit_form() for dialogues not
+guarded by form_dial pairs.
+For this kind of dialogues XaAES has no control at all.
+Many app's do a lot of form_do's without the need for repeating the drawing
+of the object tree.	(TOUCH_EXIT mechanisms).
+
+SELECTRIC is now working, but apparently does it's own popup's.
+
+Now I know that I must look for another software to test popup's :-(
+(Hey, maybe I put a popup in XaAES's fsel, but that wouldnt be a proper
+independant test of course).
+
+Although a lot of work is spent on XaAES's fsel, I fear that it is simply
+not good enough to prevent people from using replacements. This can of course
+be changed in the future.
+ 
+ù 20 mar
+Replaced constant 'c_max_h+10', to define the toolbar relative location,
+by 'dialogue_window->wa.y - dialogue_window->r.y'.
+
+In analogy to WINX, wind_get(0,'XA') returns 'XA'.
+
+ù 21 mar
+Finally completed the desk menu with a entry to XaAES itself.
+Now you can switch the menu to reach the task manager and the system log. :-)
+
+ù 23 mar
+Popups now seem to work. I had to make several small changes in fix_menu()
+and set_menu_widget() to make them more general.
+Also reduced the number of fixes in fix_menu(); it may have been good for
+some programs, but it was not good for some good programs. :-)
+
+Popups run in a window that have a menu widget set. (Which is nice :-)
+
+#if'd out the window of the popup. As a cross check.
+Save windowing for future sophistications.
+
+Used a popup in AHCX, for testing. It runs OK under MagiC, so I may suppose
+that the calling is compatible and correct.
+
+It seems that Thing does it's own popup's, although appl_getinfo() gives
+the rquired replies.
+
+ù 26 mar
+Abandoned the idee of a 'focus' as a globally available state.
+Updating that state is tedious, it must be done in very many places.
+The difference between 'focus window' and 'top window' leads to ambiguities
+and loose ends in the code.
+Simplified top_window() & bottom_window() accordingly.
+Small simplifications elsewhere.
+New function find_focus().
+It is called when a key is pressed, so only when it is actually needed.
+The function uses the primary information present, not something derived.
+Now you can actually implement 'point to type' dynamically.
+New cfg keyword 'focus', operand 'point'. (#if POINT_TO_TYPE)
+Not used though; Somebody ever wanted to 'point to type'?
+
+ù 27 mar
+evnt_button: should return the number of clicks, not the state.
+Reversed return of clicks & state in intout.
+
+ù 28 mar
+Calling prog defs:
+Suddenly ST-Guide started to bomb out.
+Pure C puts local variables in registers. This behaviour cannot be influenced
+by the programmer.
+Wrote a wrapper function that saves and restores register variables.
+ST-Guide now runs again.
+
+Calling prog defs in supermode is now a config option: 'superprogdef'
+
+format_dialog_text():
+In case a template ends with '_' and the text is completely filled,
+the real cursor position remained uninitialized. Fixed that.
+
+While doing this I discovered that the te_tmplen field is used for the
+cursorposition. To my knowledge this is wrong! The field is supplied and
+owned by the app. It specifies the room available for the template.
+Marked the relevant places. This wont be an easy fix.
+I think the XA_WIDGET_TREE pointer must be passed to draw_object_tree() and
+all its sub routines.
+
+ù 29 mar
+The desk menu I implemented very early, used the Multitos approach,
+which was rather tedious because I had to switch between the original menu
+tree and a enhanced copy of the desk menu.
+So I changed that. The approach is now rather simple, straightforward and nice.
+In fix_menu() the desk menu is shortened.
+The entry 'Desk accessory 1' is changed to 'Clients'.
+The rest is hidden and disabled. When you hit the 'Clients' entry a popup
+(which I just happened to have implemented :-) is built and showm, listing
+all the clients.
+Later this can be changed into a sub menu, but then it will technically
+remain to be a popup.
+
+ù 4 april
+Did some experimenting with popup's in window with vertical scroll bar.
+Start implementing sub menu's.
+Replaced simple OBJECT *std_menu to XA_WIDGET_TREE *std_menu.
+I need room for a table of attachments per client per menu_bar.
+So this XA_WIDGET_TREE structure is a nice place for that.
+
+ù 5 april
+Spend some time understanding the match_pattern() in ENTRIES.C ;-)
+Fixed 2 omissions:
+1: a missing pointer advance after [..]
+2: expand the while to be able to match *.C* c.q *.[CH]* with N.C
+	Didnt fancy to rewrite the lot.
+In short: "empty matches *" now at end as well.
+
+Sorting the fileselector entries is now case insensitive.
+
+When you switch often between TOS & MiNT (like me :-) it is more convenient
+to have 8+3 names in uppercase in the fileselector.
+Simply put the word 'tosucase' in the cnf file.
+
+ù 6 april
+Published 'progression report'
+------------------------------
+
+ù 7 - 14 april
+Steadily working on the menu stuff implementing sub menu's.
+It is a complete rewrite.
+I want it to be as flexible and general as can be.
+popups and menu pull downs are the same. In principle it should be possible
+to attach submenu's to popup's.
+
+ù 15 april
+Got submenu's working such, that the desk menu now uses a submenu for the
+clients popup.
+
+ù 16 april
+shadow_object: The shadow was written as a full black box beforehand.
+This is not good for I-boxes.
+Replaced by a simple classic loop around br_line().
+Maxinized the border thickness to 4. (I have seen strange things on the
+screen in the past with corrupted OBJECT tree's :-)
+
+Heavily cleaned up display_object().
+Parts were duplicated in the individual display routines.
+Parts that should have been moved to individual routines were not moved.
+All individual routines that do not handle states return these now.
+So states that are very generic can still be handled in display_object() but
+now in a controlled way.
+
+Maximize use of RECT. Smaller and faster interfaces.
+Some usefull small functions for primitive drawing based on combination
+of RECT plus a enlargement value.
+
+Saved another 1.5 Kb for new features.
+
+ù 17 april
+The idee that objc_change should write the whole tree while clipping on
+the item is of course good. :-)
+Unfortunately current AES's do not do that. Apparently they handle
+transparent objects individually.
+Wrote a quick temporary hack to handle G_STRING, G_TITLE and G_SHORTCUT.
+This should cater for 98% of the cases (I hope ;-).
+New function: i = get_parent(root,item)
+
+The menu now looks normal and behaves smooth. No white flimmering anymore.
+
+ù 20 april
+Trying to get LUNA running, not bad.
+Lunna's progdef 3D buttons were all black.
+Looked in the wrong directions for ages.
+Implemented objc_sysvar.  Which cured it.  Amazing.
+
+Spent a few days finding out why Luna doesnt find it's config file.
+It does under TOS & MagiC. Alas not under MiNT/XaAES.
+
+Didnt find the reason.
+
+ù 23 april
+Compliled XaAES completely without file selector AND without Mintlib.
+Works with Selectric.
+Boxkite MUST be run before MiNT. So I put a little adaptation in Handler.C
+such that if XaAES is compiled without fsel and fsel is called by a app
+the AES call is returned to Handler.s which then jumps through the
+old vector.
+
+Alas: Thing calls scrap_write() and bombs out. :-(
+
+Inserted initializer for scrap_path. In case clipboard is not set via
+XaAES's cnf.
+scrap_read returns 0 if *scrap_path == 0.
+
+Thing keeps bombing though.
+
+ù 24 april
+Now that calc_work_area() is perfect ;-), I decided that I want to be
+able to draw windows without a border at all.
+For the root_window and windowed listboxes in dialogues.
+New parameter to create_window(): short frame_size.
+generalization of window frame.
+Removed the bordersize from the XA_WIDGET_LOCATION's.
+The border size is now handled dynamically in  rp_2_ap().
+
+ù 26 april
+Not completely off topic: bought myself a used Milan040. :-)
+Spent a week playing around.
+
+ù 6 may
+Finished submenu's for applications such, that they are guaranteed to work at
+least 1 level deep.
+They are designed to work on levels only restricted by the memory that is
+granted to the system. I will spent test time on that later.
+
+ù 8 may
+Start implementation of full fledged windowing for the listbox.
+(I want to slide!)
+
+ù 10 may
+Listboxes are now windows.
+The fileselector uses the new list box code. (As do automagically task
+manager and sysalert list)
+Didnt add to the functionality, but the code
+needed has already become easier to understand, smaller and cleaner.
+
+ù 14 may
+Super bonus: you can page and slide through the list boxes.
+
+ù 16 may
+Revitalized menu's in windows for use in the file selector.
+The menu bar in a window has the same status as the title bar and the
+info bar. Besides 'NAME' and 'INFO' there is now 'XaMENU'.
+The menu bar is now a standard widget. set_menu_widget is still needed
+to submit the resource tree.
+
+ù 17 may
+Incorporated a window menu bar in the fileselector.
+For drive and pattern switching.
+
+New config keyword 'filters'.
+
+The pattern switching menu works.
+For the drive switching menu I have to get rid of the mintlib stuff first.
+I'll save the sexy parts for last. :-)
+
+To my surprise (I didnt notice until now. ;-) find_object() actually
+did find hidden objects. (I checked the original, it wasnt there either)
+Fixed.
+
+ù 18 may
+A form can be a single editable (box)text.
+Fixed form_cur() accordingly.
+
+Earlier I had to pass a key_press handler for dialogues that have a DEFAULT
+button.
+I forgot that checking for EDITABLE had to be done anyhow, but at a later stage.
+Fixed form_cur() accordingly. This is now a fine safe guard as well.
+Cursor keys are now devoured even when there are NO editable fields.
+
+As a byproduct reduced the text to a A4 page by changing all
+for statements to while statements.
+
+ù 20 may
+Flag field now in SCROLL_ENTRY as well. Removed a weird and very
+dangerous use of pointer - 1 below structure start.
+
+Fileselector now fully working. Very much like Selectric, except for
+the desktoplike functions of course.
+
+Moved match_pattern() to it's own file MATCH_PAT.C
+(It doesnt even need a include file :-)
+
+ù 23 may
+If you dont want clogware in your system, declare POSIX_ENTRIES=0 in your
+project or make file.
+
+The POSIX_ENTRIES=0 new fileselector doesnt need the mintlib anymore.
+Only the Gemdos bindings, which most compilers have nowadays.
+
+ù Spent most of the time switching all my stuff over to the Milan
+  and playing around.
+
+ù 4 june
+Forgot to move the moose to the Milan mint folder :-)
+Scared the hell out of me.
+
+ù 5 june
+XaAES runs on the Milan!  Hurray!!!
+wind_get(WF_SCREEN) problem! PS_CONTR.ACC doesnt use the length value
+and overwrites the small default. changed the value WHATS_SMALL to
+something large. Yak :-P
+PS_CONTR now works.
+
+ù 6&7 june
+Try multistrip. Kills everything when loading rsc.
+Investigating the color icon stuff in rsrc_load.
+The clumsiness of the code inhibited me to realize that masks
+are always the size of the mono icon.
+Simplified the code to make it easy to read & understand.
+
+ù 8 june
+bug: icon word width not always rounded up. fixed.
+
+bug??
+Icon text can be more than 12 butes.
+Did an educated guess which worked. The text is handled the same as for
+all other objects when > 12.
+
+bug??
+You can have color icons having no color icons :-), only the mono icon.
+Fixed by delaying the setting of cib->main_list.
+
+multistrip now at least loads.
+
+ù 9 june
+Official implementation of screen buffer for WF_SCREEN.
+planes < 8 ? quarter : half.
+Needless to say that the use of this buffer is totally obscure to the
+AES. Applications that use this must lock the screen. They are able to
+know how much there is, and when they use more they bring the system down.
+
+ù 10 june
+When transforming color icons, wrong size was used, resulting in
+garbage on screen. fixed.
+
+ù 13 june
+Still trying multistrip. It loads and runs, but will not show the bar.
+
+appl_find: 
+When looking for 0x0000, 0xffff or 0xfffe, the lower part of
+addr_in[0] was taken, not the upper part.
+
+appl_search:
+The maximum pid number was overrun by 1.
+I think APP_FIRST means the first app, not the current.
+Simplified and made fail safe.
+Made N.Aes compatible.
+
+appl_write:
+Default reply 0 was mistakenly put in intout[1]
+If the destination is not a AES client, no action is taken.
+Especially no messages are queued that will never arrive anywhere.
+
+ù 15 june
+The mouse data were not filled out for evnt_multi replies on MU_TIMER 
+and MU_MESAG. The reason why multistrip wouldnt show it's bar.
+(got rubbish x&y on it's 1 second timer interrupts)
+
+menu_settings(inquire,...)
+Pass sensible values. Although XaAES is not using these, multistrip does.
+
+Multistrip now functions. Only 2 exceptions:
+The 'leiste' tab page in MSCONFIG bombs.
+The popup from the bar doesnt show as should, the submenu's do.
+
+Note: multistrip does *not* call menu_popup nor menu_attach.
+probably because it wants to animate them.
+(I have tested menu_popup myself in a test app).
+
+
+Next targets: Jo Evens Taskbar and Christians Toswin2.
+
+Published 'progression report'
+------------------------------
+
+ù 18 june
+Since quite some time there are problems leaving app's cleanly:
+ps_contrl & multistrip showed that AES clients wont leave the computer
+after XA_client_exit() was called. This could be caused by the dynamic
+client pool. So I returned back to the static array.
+
+Then use the static array to get the new XaAES behave the same as the old.
+
+Then I discovered that the old version kicked out the app's via SIGCHILD.
+causing XA_client_exit() to be called twice.
+
+Now I wonder if the old version was actually correct at this point.
+
+But well.... at least the new version now does the same. :-) or :-(  ??
+
+This explains why some old Atari programs didnt run: These programs call
+appl_init/exit pairs twice. (LINES.APP & GEM_TEST.PRG)
+
+
+ù 19 june
+Still analyzing the exit stuff in both versions.
+
+There is of course a important and fundamental difference between the 2
+methods: In the dynamic pool a freed client structure is completely gone,
+where as in the static pool, traces of it still lurk around, remain accessable
+and can be used for cleaning up.
+
+And that could well be the cause of my problems.
+Needs more analysis of the code.
+
+In the mean time improved debugging considerably.
+When you combine 'debug all' with debugpoints, the meaning of the latter
+is reversed, leading to 'debug all except .......'.
+(In fact 'except' can be typed in stead of 'debugpoint'. :-)
+
+ù 20 june
+wind_set(WF_NEWDESK, nil)  remove a client desktop.
+root_window->owner not changed back to AESpid. Leading to a pid hangin'round
+in the system of a client that in most cases wasnt there anymore.
+
+Very nasty bug in move_window() solved.
+Failed to see it, because I forgot that the window_list is NOT cyclic.
+But the real reason was that somewhere the root_window was pulled to top.
+Put a safeguard there. It has all to do with the SIGCHILD stuff.
+Need some analysis!
+
+ù 22 june
+As long as TOSRUN isnt evaluated, run TOS programs immediate.
+(So I can use my little program to switch between Tos's).
+
+ù 23 june
+Solved the app exit problems.
+Static client pool now back again.
+Replaced the very confusing names 'clnt_pipe_rd' and 'clnt_pipe_wr'
+by 'client_end' and 'kernel_end' respectively.
+The exit procedures for the dynamic client pool will be solved in the
+near future. A good working XaAES is more important.
+Did some preparations for going back to dynamic pool.
+Moved finishing the kernel_end to XA_client_exit() such that the client
+structure isnt needed anymore.
+I think that XA_client_exit() now isnt called twice anymore.
+
+ù 25 june
+rsrc_gaddr(6,n) 'get image':
+Changed #if 0    to    #if 1
+Seems to be confusion about name and/or meaning of the field in RSHDR.
+
+Multistrip configure (MSCONFIG) doesnt bomb anymore.
+And the animated popup in multistrip is displayed correctly.
+
+ù 27 june
+boxchar, boxtext & fboxtext:
+When 3d flags, text always written transparent, despite opaque setting.
+
+ù Spent a week finding a amazingly stupid beginners bug.
+So stupid, my psyche refused to recognize the buggy statement completely. :-)
+
+ù Spent another week to get the system adapted to the fact that a client
+structure is *not* always any time accessable for any possible pid number.
+(I should have done this earlier)
+
+  All final cleanup for a client is now postponed to the very terminating
+of the client process at the SIGCHILD signal.
+
+  App's that do multiple appl_init/exit pairs now work again.
+I think they worked in v7b rather by accident.
+
+ù Several smallbugs found & fixed.
+                                                                         v0.8
+ù 20 july                                                                ====
+I think XaAES is now good enough to be published for beta testing.
+Basically I improved the AES/GUI side. Nothing more.
+It is not finished and will definitely remain beta.
+Especially the MiNT side needs one or more experts.
+
+Another good reason is SUMMER! While leaving the stuff at rest myself
+I'll give others the opportunity to have a look at it.
+
+ù 15 august
+Fixed a small bug in the pattern separation of the file selector.
+Implemented a remember string for the launcher: launch_path
+Small bug fixes calling file_selectorin launcher.
+CH_EXIT bit in appl_init()
+root window displayed again.
+
+ù 21 august
+Call Pdomain(1) in bootup.
+inq_xfs() always sets fs_slash to back_slash.
+The fsel now correctly works with minix partitions using
+back slashes. (Just like Thing, no problems)
+
+ù 23 august
+Cleaned the code of all mintlib related stuff.
+There really is no need to go back.
+If there is still something to fix it's much easier to do in the XaAES
+code proper.
+
+ù 25 august
+Killed a strange bug in cnf parser. (zombie v0.7 code)
+Added some error messages & a hit key (if errors).
+Increased solidity of the parser.
+
+ù 30 august
+SIGNAL.C  Pwait3 --> Pwaitpid(-1...)
+Loop while pid > 0. (ENOENT)
+
+Cleanup of the Psemaphore call's.
+Some lower level functions try to raise a already raised semaphore.
+
+Published a binary distribution on my homepage.
+Notified the mailing list.                                             v0.801
+                                                                       ======
+ù 31 august
+New config keyword: 'launcher'.
+Specify initial path and filter for launcher
+
+wind_get(WF_BOTTOM..)
+XaAES hides unopen windows behind root.
+Fixed a bug that found the last in the chain, instead of the last before
+root. When no windows are berfore root, root is returned.
+
+Salert_pipe: buf+4 was passed to the SYS_ALERT list, which meant that
+the malloc'd buf could never be freed. Pass buf.
+
+Removed comparison to dummy_cmd_line to determine if a command line must be
+freed.
+This is very unreliable, what if another constant has been assigned?
+In stead use now a boolean that tells whether the string has been
+malloc'd.
+Same for cmd_tail.
+
+shell_read: The compendium must be rubbish.
+Pass the caller's commandline, NOT the commandline of the caller's parent.
+Now TW_CALL starts up and spawns TOSWIN2.
+(Nvertheless: TW_CALL crashed when confronted with 'XaAES' as command line.
+A weakness of TW_CALL. Programs must deny wrong input, NOT crash.)
+
+ù 3 september
+KERNAL.C
+Removed silly inner loop around input_channels, which caused a Fread to
+non existing handle 32 at each AES call. Definately inherited from v0.7
+
+Amalgamated the 3 Fread's on the command pipe to a single one.
+If the Fselect bug in mint still exists: the reply is checked anyhow.
+
+Noticable increase in speed!!!
+
+ù 4 september
+wind_calc: the temporary window created for the calculation is kept outside
+the window_list; saves semaphore call's and other overhead.
+
+The -fvideo argument wasnt working due to lack of a Pure C binding for
+VsetScreen. Fixed that.
+
+Extended syntax for video mode: octal 'o', hex 'x' or binary 'b' followed
+by a appropriaty number denotation.
+exemple: o32   x1a  b11010   or just 26
+
+Actualized  DOCS\USRGUIDE.TXT
+
+ù 5 september
+Installed version 2.5 of TosWin2
+The older version bombed out at a form_center on a strange tree pointer
+(Not on the Milan + N.AES though, so there is definetely something still
+wrong)
+
+
+WARNING!!!
+This version (and I think all version before) have a nasty bug which
+I am still trying to find. It is a non random memory corruption.
+Very difficult to locate.
+
+Strategy: 
+1: Stumble on a stably reproducable occurence that corrupts a traceble
+   location within XaAES itself.
+2: Use the variable trace facility of the debugger to pinpoint the corruption
+   between 2 call's of the debugger.   :-)
+
+
+So please, before you start betatesting, backup!!!!
+
+
+
+TosWin2.5 move's a window before it is opened by wind_open.
+Wrong or not, XaAES was not prepared for that and bombed.
+Fixed that.
+
+Now TW2.5 runs my little autofolder switch program.
+(You see? I am very carefull in my statements.)
+XaAES's shell_write doesnt yet use the TOSRUN,
+but if TW2 has a console open, the output of ttp.s will pop up in there.
+
+ù 6 september
+Moved open_about to BOOTUP.C, so they have always the same __DATE__
+
+When sizing a window, width & height are checked against sizes given
+by wind_create, position remains free. (at least needed for toswin2)
+
+Fixed a small bug that prevented XaAES to find its resource when it was
+not in one of the standard paths.
+
+fixed a bug in the fsel comcerning a typed name not in the list.
+There is a bug left though, which I didnt find yet.
+
+ù 7 september
+Published a binary distribution on my homepage.
+Notified the mailing list.                                             v0.802
+                                                                       ======
+ù 7 september
+The tree pointer array in the resource was not fixed up.
+This array is pointed to by the global array.
+(I checked TOS 3.06 to see if this was correct, they were fixed up by TOS)
+Pointer arrays to free strings and free images were dynamically fixed
+up by their rsrc_gaddr call's.
+All fixing up is now done permanent when loading.
+(So if programs that think they are clever access the resource directly,
+ they will find the true addresses in these arrays)
+
+All detecting now performed by Ssystem, That is MiNT + version
+and all cookies.
+
+Implemented XA_alloc(), XA_free() & XA_free_all().
+Used in rsrc_load & XA_client_exit.
+
+Malloc's in rsrc_load got orphane, as well as subidiary call's to
+rsrc_load.
+
+The allocated area's go into a list, based in the client structure.
+This list is completely freed in XA_client_exit.
+
+rsrc_free() frees the last read resource.
+
+For instance:
+
+rsrc_load(aaaa)
+	all! rsrc_gaddr for aaaa
+rsrc_load(bbbb)
+	all! rsrc_gaddr for bbbb
+....
+rsrc_free()			will free bbbb  and put back aaaa in global
+rsrc_free()			will free aaaa
+
+This behaviour is made acceptable and behave as expected.
+No more memory leaks.
+
+ù 8 september
+XaAES didnt free its own resources, better do that.
+
+Removed the Syield from cleanup(), it constantly bombs.
+
+ù 9 september
+Simple bool client->init to guard appl_init/exit pairing,
+cient_end no longer used for this purpose.
+
+ù 11 september
+Silly me!!
+Discovered that I didnt use  mintbind.s & mintbind.o
+containing all correct extra bindings.
+
+Alert_pipe problem solved, wrong Finstat, and Syield bombing solved. :-)
+Prenice works again!
+
+The keyboard much better, although not perfect yet.
+
+Fixed a typo in objc_sysvar.
+Boxkite is now OK. You must run boxkite from xaaes.cnf.
+
+Published a binary distribution on my homepage.
+Notified the mailing list.                                             v0.803
+                                                                       ======
+
+ù 12 september
+Implemented horizontal sliders/arrows in the listbox object.
+This was needed for the system alert list dialogue.
+Minor adaptations to the users of the listbox software: fsel, task manager
+and system alerts log, so that the widgets are indeed activated.
+
+ù 13 september
+MENUWIDG.C, TASK popup
+Found a bug in the menu handler.
+The mouse device can report entering a rectangle, but the mouse can
+move so fast that at the time the event arrives in the menu handler
+the mouse may already have left the rectangle again.
+So find_object can report -1.
+Check for that and resume for TASK where_are_we.
+
+The -1 resulted in changing titles or entries tree[-1] which is not very
+good.
+
+Unfortunately this didnt fix the bus error on form_center within a older
+TosWin2 that runs OK on N.Aes
+
+ù 14 september
+Separate resource file for the window gadgets.
+(And a demonstration of multiple resource usage. :-)
+
+!!!!! Managed to get rid of 4 semaphore calls for each AES call. !!!!!
+The ROOT_SEMAPHORE wasnt needed anymore since I moved the command
+structure that it was meant for to local name space.
+
+The semaphore around the Pid2Client() in HANDLER.C (the trap handler)
+is only needed for appl_init amd the internal code XA_NEW_CLIENT,
+which of course are only issued occasionally.
+
+ù 15 september
+The persisting spurious semaphore calls started to annoy me.
+So I began revising the whole topic.
+
+Basic idee: every function that raises a remaphore gets a bitmask
+passed in a parameter containing the current locks that are set.
+Functions check this mask before semaphoring, if already raised leave it.
+The passed semaphores bit is together with the new bits forwarded to every
+function that does a semaphore, or sits in the chain of action leading
+to a function that can raise a semaphore.
+
+In paractice the chain is started in either the kernel or the trap handler,
+that is under the AES pid and the client pid respectively,
+or some direct subsidiaries.
+
+This approach makes it reliable, easy to use, easy to maintain, and
+THREAD SAFE. The lock parameter in all these function is a constant reminder.
+It is very difficult to do it wrong.
+
+ù 16 september
+Finished the above.
+No spurious semaphore calls. (MiNT: curproc already owns ......)
+As a reward:
+Found some that were apparently missing.
+
+ù 17 september
+Use calloc() for allocating window structures. Fixes a redraw error in
+the title when dragging non topped windows.
+Possibly increases stability, who knows?
+
+Environment strings implemented in xaaes.cnf. You can use
+'string', 'export' or 'setenv' as keyword. A separating '=' is optional.
+The new variables are used.
+Wrote private getenv() to cater for requests of the form 'NAME='
+
+New system menu entry 'environment'. When chosen, the environment variables
+are listed to the system(alert) window. (I wanted to see what I'd done. :-)
+
+Implemented new internal function calc_window() together with center_form()
+wherever sizing of a dialogue window is needed.
+calc_window() leaves the temporary window outside the window_list.
+No locking is needed, and it is much faster.
+
+ù 18 september
+empty_scroll_list(): the texts were not freed; fixed that. See also 31/8.
+Introduction of FLAG_MAL flag in scroll entry structure.
+Removed local declarations of SCROLL_ENTRY; pass its values in the call to
+add_scroll_entr(). Gives tighter control ove the content.
+
+Embedded windows like a listbox within a windowed dialogue were left behind
+when moving the parent window.
+Called the wrong function in the chain of events.
+
+New function: display_toolbar(wind, item)
+
+ù 21 september
+Streamlining of window topping.
+Sometimes UNTOPPED was not sent.
+sometimes the untopped window wasnt redrawn (to give different widget looks).
+New function; after_top(lock, untop)
+The new function replaces duplicate code from many places.
+DUPLICATION OF CODE!!! Main cause of inconsistent behaviour!!!!
+
+The 'About' window could be opened many times on top of itself. :-)
+Applied the same mechanism to prevent this as for the system(alert) window.
+
+Getting the chains of structures involving the listboxes behaving
+completely correct when moving, is souping up too much time, so I leave
+that for later. Disabled moveability for these windows.
+They are: file selector, task manager and system(alerts) window.
+
+Fixed a small bug in scrl_cur() which prevented the OK button working
+after typing a new name in the file selector.
+
+Vertical sliders in task manager and system(alert) now work.
+
+ù 23 september
+The button up events were not reported by the moose.
+Not vary many programs I use actually need it. TeraDesk does.
+So I stumbled on this error only now because I didnt try TeraDesk for
+a long time.
+For some reason mooses code to convert KBD buttons to AES buttons does not
+work. I failed to see why (programmers streak of blindness, or just impatience)
+Anyhow; I thought the AES can do such a thing pretty well himself.
+So I moved this code to XA_button_event. As a benefit a few instructions less
+performed in interrupt time.
+
+ù 24 september
+Apart from not sending button up events by the moose, the handling in
+evnt_multi was so bad, that I had to remove the above changes.
+
+This will be done later.
+
+Found a BIG BUG in P_HANDLR.S: the very trap #14 code.
+Before calling C, d2 wasnt saved. Pure C code destroyes d2.
+
+Many bindings rely on the fact that only a0,a1,d0,d1 are destroyed by the
+AES. These programs will now run again.
+
+ù 26 september
+Implementation of shell_write(8, ...)
+Manipulate the AES environment.
+This will please Ulrich Kaiser and his GEM-init.
+
+Send WM_TOPPED when clicked on a non topped workarea.
+
+ù 27 september
+
+Published a full distribution on my homepage.
+Notified the mailing list.                                             v0.804
+                                                                       ======
+
+ù 1 october
+Quick fix regarding sending WM_TOPPED: Dont send it for the root window. :-)
+
+ù 2 october
+A few fixes to keep the menu bar on the app, after a window is closed.
+
+Implementation of WF_BEVENT.
+
+First try of Taskbar. Wind_set before the window is opened. Simple check
+to prevent XaAES from doing stupid things.
+
+ù 3 october
+Greatly improved the menu bar switching. When the last window of a app is
+closed, the menu bar will stay on the app. Focus will be put on the
+root_window. A global variable 'focus' is reintroduced, but the mechanism is
+different. Focus points either to the head of the window list or to the
+root window. No other possibilities. It could as well be a boolean.
+If the menu bar owner is different from the top window owner, focus is
+set to the root window (effectively the menu bar). This way keyboard input
+can be routed to the correct application. Menu shortcuts mainly.
+Focus is also used to decide on the appearance of the title bar.
+
+ù 4 october
+As a distraction of the mind, I made a different set of widgets.
+OTHERWIDG.RSC.
+Of course only the colour icons are affected, the mono icons already
+being perfect.
+
+Submenu's in popups (the real ones, by the official menu_popup() AES call)
+were not tested at all. Doing that now on behalf of Taskbar.
+
+Completely forgotten that I postponed fitting them inside the screem.
+new function:
+RECT move_inside(RECT in, RECT out);
+
+
+ù 7 october
+Never realized that popups and their submenu's could be in the same tree.
+(For submenu's in menu_bar this wasnt the case of course. :-)
+Several small fixes in the menu task routines.
+
+appl_getinfo 11: bits for WF_BEVENT & (WF_TOP gives window below).
+
+ù 8 october
+shell_write:
+If no drive and no path in name, use drive and path of the caller.
+
+appl_getinfo:
+Supply values for gi_type 64 & 65.
+All zeroes except the 1 for 'appl_search with long name'.
+
+Taskbar's config.ovl now starts up, loads its resources and then fails.
+But under N.Aes v1.2.0 it fails as well.
+So I'll leave this subject for now and go do other stuff that is waiiting.
+
+
+Delay of allocation of the half screen buffer until a program actually
+calls for it. Remember the fact in the client structure. When no app's
+using this buffer are left, the buffer is released to GEMDOS.
+
+
+Published a binary distribution on my homepage.
+Notified the mailing list.                                             v0.805
+                                                                       ======
+ù 9 october
+Made sure that all functions are in the locking chain from the very
+beginning. That is from kernal(), respectively handler().
+Just a finishing touch.
+
+ù 10 october
+The function find_focus wasnt perfect yet. :-)
+Because windowed non blocking dialogues (form_do(), fsel_..input()) dont
+set the update lock, checking these must be done before checking
+update_lock. Now app's that write to background windows (famous example
+is lines.app, a good testing aid!!!!) behave correct.
+
+The fileselector runs under the client pid, only because of 1 semaphore.
+If the fileselector object tree is copied, as is done for form_alert, and
+is otherwise handled exactly the same as form_do(), the fileselector
+semaphore is not needed anymore, and the fileselector can run in user mode
+under the AES pid.
+Moreover: each client could have a fileselector open concurrently.
+
+But first the semaphore call is moved to handler(), and the fileselector
+is moved out of the call direct table.
+
+And it works perfect!!!!
+
+As a immense benefit, also made possible by the revised locking system,
+the winlist semaphore is now obsolete, and effectively switched off.
+Not removed, calling direct is still a option.
+
+If calling direct is enabled, the winlist semaphore becomes active again.
+
+But XaAES runs so smoothly now, that there is no need for calling direct
+anymore. Except the functions that must always be run under the client pid.
+
+ù 12 october
+Finally found time to repair the button up events.
+I already repaired the moose. See 23/24 september.
+Got rid of the strange code involving unguarded globals to compensate
+the fact that the moose was wrong, but nevertheless failed to do so.
+
+In stead of calling VsetScreen and passing 1 to workin[0]
+XaAES now passes the modecode directly to workin[0].
+Let the falcon CT Vdi do what it thinks is the best.
+Not tested but sent a prliminary 0.806 to Patrick Prokopowicz.
+
+ù 16 october
+Launching accessories:
+Changed Pexec(104, ...) into Pexec(106. ...)		(No memory sharing)
+I have no idee whether this actually saves memory, but at least the
+figures given by PS_CONTR look much better and more realistic.
+
+Since XaAES is able to change it's environment a smaphore must be put
+on the global static environment string. Done so: ENV_SEMA.
+
+All shell_... functions run normally under XaAES's pid, so I also
+made a new lock control enum value 'envstr'.
+
+When direct call is disabled, the lock is not needed and disabled as well. :-)
+
+XaAES now runs at priority 19, 1 less then MiNT.
+Accessories run at priority 0, I tried to get them to -19 by issuing
+Prenice(.., -38), but that resulted in zero. ?????
+Gem applications all run at 10.
+
+N.B. This is a little preliminary, but better then everything at 20. :-)
+
+Extended information in the task manager window by pid and priority.
+Later I will also give memory and time usage.
+
+ù 18 october
+Cntrl + Alt + M
+Recover the mouse. Force the mouse pointer to be displayed again.
+
+ù 19 october
+Implemented VDI vector usage in the moose. The button response seems
+to be better.	This should make it possible to use mouse accellerators.
+
+If no client is waiting for a key, put the key in a queue.
+New function: bool pending_keys()
+
+I think there is a problem when timer events and keyboard events clash.
+
+Now XaAES is complete regarding AES 4.01 and this last change makes it
+usable at last. :-)  Hence the huge leap in the version number. ;-)
+
+We have still enough room until v1 to fix bugs and add 4.1 stuff
+that I have forgotten about.
+
+Published a complete distribution on my homepage.
+Notified the MiNT list.                                                v0.9
+                                                                       ====
+
+ù 22 october
+Fixes to make it possible to have windows outside the window_list.
+This was necessary for windowed listboxes. Having these interfere with free
+windows in the window_list was very annoying.
+Windowed objects have no handle, are not in the window_list and are accessible
+through the object tree.
+
+menu's inside windows do not need to check the global update lock.
+Now the fsel menu can be used again for app's.
+
+It is not anymore possible to move a window over the menu bar.
+
+ù 24 october
+C doesnt know array assignment.
+For frequently moved arrays it is very comvenient to declare them
+in a struct. new type: struct MSG_BUF { short m[8];}
+
+Leave it to the compiler to decide on the method of copying aggregates. :-)
+
+Removed duplicate code for sending messages out of appl_write.
+replaced by call to send_a_message().
+send_a_message is a generalization of send_app_message().
+send_app_message still exists for internal AES messages.
+send_app_message calls send_a_message as well.
+
+Fixed a bad bug in wind_get() for the rectangle list.
+A unchecked rc_intersect could lead to w or h <= 0 before the end of the
+list. Apps will stop eading further, leaving parts of the screen dirty.
+Skip these rectangles.
+
+This fixes very annoying behaviour.
+I was quite relieved that the eror was not due to incorrect rectangle
+lists. :-)
+
+ù 25 october
+Implemented an idee of Ronald Andersson about v_opnwk for Falcon video.
+
+Analyzing incorrect draw of colour icons in higher colours.
+quick fix to draw at least something.
+
+ù 26 october
+The AV/VA protocol didnt seem to work.
+Fixed by letting appl_find do a case insitive comparison to the short name's.
+Now XaAES keeps the proc_name (the short name) always upper case.
+
+Pressing cntrl+alt+T Tidies the screen and recovers the mouse.
+
+ù 27 october
+Implemented the TOSRUN variable. Still without the use of ARGV.
+That will come later.
+
+ù 29 october
+Small fix: Disabled menu items with a submenu attached. Do not pop up the
+submenu.  :-)
+
+ù 30 october
+Implemented 'pending_button'. This allows evnt_multi to fall thru.
+This fixes the missing button clicks!!!!
+The pending button is a single shot.
+
+Fixed a small bug in the moose, which still prevented button up events
+being reported. This one was less urgent though, because most of the
+button releases were already detected by the evnt fall thru code.
+I wonder if this special code for button up can now be removed.
+
+
+The button handling is still not perfect. I think the moose meeds a
+complete redesign. But it is much better than it ever was.
+So I leave the moose as it is for a while now.
+
+Anyhow, enough improvements again!
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.901
+                                                                       ======
+
+ù 2 november
+Bootup.C  Initialize the focus pointer.
+This fixes bombing when XaAES is started without at least a program
+with a menu bar or a window open at start up.
+
+ù 4 november
+Little mess up of #if/#endif pair, resulting in a file select semaphore lock
+getting in again. Removed completely.  (see also october 10).
+
+Dialogues have a title bar: Relatively large dialogues can thus overlap
+the menu bar after form_center; form_center centers the dialogue window
+work area for compatability.
+Fixed.
+
+menu_popup():
+Close reading sometimes fails. :-)
+If you click outside the popup, cancelling it, the function returns 0.
+
+fileselector drive menu: fix for uneven number of drives.
+
+Several fixes concerning the desktop object.
+Initial desktop written only once.
+wind_set(WF_NEWDESK, ...) doesnt anymore adjust the rectangle.
+XaAES does its own adjustment in bootup.
+
+INTRFACE's desktop draw error is now fixed.
+
+wind_get(WF_FULLXYW, ...) was wrong!
+In stead of always returning the root_window's max, the max of the specified
+window is returned.	Only if no valid window is specified, the root_window
+max is returned. (max is the rectangle specified in wind_create()).
+
+wind_open constrained to root_window work area. (wind_move() already was).
+
+ù 5 november
+
+2 small fixes in the menu handling concerning sub menus.
+The only thing still lacking is a snall time delay.
+This has low priority.
+
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.902
+                                                                       ======
+ù 6 november
+Small fixes regarding attempts to move windows over the menu bar.
+
+ù 8 november
+Small fix for box_text objects: treat te_thickness as char.
+Procalc now looks good again.
+
+menu_popup(): MENU mdata not completely filled out.
+fixed.
+
+ù 9 november
+Had a look in procalc using TT-digger. Procalc doesnt use a0 to see
+whether it is started as acc. However it does something with basepage+36
+So I took a change and changed accstart in p_handler.s such that
+basepage+36 is cleared. And lo and behold! it worked.
+Procalc now keeps quiet until it is woken up via the desk menu
+
+Fixed a stupid bug in shell_read which removed the extension from the path.
+
+Preparations for drag tasks: turn tab->task_data into a union.
+
+Tidy screen: cntrl+alt+Home
+
+ù 10 november
+Applied Ronald Andersson's patch fors -fvideo & modecode.
+
+Fixed a stupid bug in reading oct,hex or bin modecode from the commandline.
+
+Windows without any visible widgets have a border of only a single line
+and a shadow.
+Multistrip's popup's now completely look like popup's.
+(In fact they are 'form_dial, objc_draw, form_do, form_dial' sequences,
+ which are implemented by XaAES as a window).
+This is a good preparation for windowed menu's too.
+
+Dynamic adaptation of the version number in the desk menu title.
+
+ù 11 november
+Sizing a window over its maximim now inhibited. This will keep the internals
+in sync with the app's assumptions. This is a similar fix as for moving
+over the menu bar.
+
+ù 12 november
+shell_find used ':' as separator in PATH. Removed that.
+
+Use shell_find now for xaaes.cnf, xaaes.rsc & xaaeswdg.rsc.
+
+ù 13 november
+Important fixes in the key handler regarding pending keys.
+Consequences are difficult to grasp, but should cover key losses.
+It may even repair other strange effects.
+
+90% of the pending keys however will disappear when the kernel loop
+is reorganized. The latter is a little bit more dangerous. ;-)
+
+ù 14 november
+Fix in menu_popup that allows a popup be part of a tree.
+
+ù 15 november
+Fix in drawing borders of boxes:
+inside borders must be counted from 0 upwards,
+outside from 1 downwards.
+Fixed inside borders. :-)
+
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.903
+                                                                       ======
+
+ù 16 november
+The window list split into 2 parts.
+List of open windows and list of closed windows.
+new functions wi_put_first, wi_put_last, wi_remove.
+new structure WIN_BASE.
+
+This makes manipulating the window list much easier, and less prone to
+stupid annoying mistakes.
+The window list (closed windows behind root) was comparable to a bucket
+with a hole in it. As long as you keep your finger on the hole, everything
+is OK. The new approach doesnt need the finger. :-)
+
+Also XaAES's own windows are now handled exactly the same as other windows:
+First create, then open. So improvements in open_window will work auto-
+matically for these windows as well.
+
+ù 19 november
+XA_new_client:
+Stupid typo in finding extension: strrchr    (was strchr)
+definitaly the cause of the appl_find problems.
+
+For instance: If you run Thing from a directory with a dot, the AVSERVER
+could not be located.
+
+Finally found the cause of the extra line in the menu bar.
+It had nothing to do with the drawing of the G_TITLE object.
+When I wrote object_area(), which includes both border & shadow, I
+simply forgot to remove the area adjustment parameter to form_save.
+So part of the selected title was saved, and then restored after the title
+was turned to normal.
+Sigh.
+
+Pattern matching of the file selector is now case INsensitive.
+
+
+ù 21 november
+Small fix in the moose: select checked the wromg queue.
+
+ù 23 november
+Fixed draw errors for selected box_char's and box_texts.
+Ditto crossed objects.
+
+ù 24 november
+Pass a parameter 'bool is_menu' to all object drawing functions.
+new function is_menu(OBJECT *tree)
+
+Finaly allowed myself the time to get the colours and look of all the
+menus correct.
+This is:
+background color for popups and submenus.
+representation of disabled entries.
+representation of spacers. Mono: faint double line, colour: chiseled line.
+
+Such things are fun, and help to get XaAES taken seriously. 
+
+ù 25 november
+Removed a priori filling of the workarea of dialogue windows.
+The workarea should be filled by the dialogue completely. This speeds up
+drawing dialogues considerably, especially on my ET4000 NOVA. :-)
+
+User dialogues represented by a form_dial and/or form_do are inplemented
+as toolbars by XaAES.
+
+Had to fix all XaAES's toolbar windows for that. ;-)
+
+Improvements in centering and placement of toolbars.
+Generalizations in the toolbar location code, which eliminates
+duplication of code.
+A toolbar is standerd placed in the top left corner of the work area.
+The rest of the workarea is for the user to fill.
+XaAES's toolbars all fill the whole workarea.
+
+These are: Taskmanager windows, form alerts and the file selector.
+
+ù 26 november
+Fix for no_list windows in delete_window:
+Misplaced check for open. This also fixes a memory leak.
+
+At last!! Fixed the strange behaviour of the exit buttons in windowed forms.
+Most notably: the fileselector.
+The window was closed before the button state was changed.
+I was happy that it was a simple reversal of a few lines of code. :-)
+Also a hide/show mouse pair was missing.
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.904
+                                                                       ======
+ù 28 november
+Begin implementing windowed menus.
+Have lines.app running underneath a pull down menu, while selecting/
+deselecting menu entries. A beautifull sight. It demonstrates the power
+and excellent design of XaAES.
+New flags in wind->active_widgets :: XaPOP and XaTOP.
+
+Switched it off again, because the XaTOP not yet implemented.
+The flag tells that the window must always remain on top.
+Especially the top_window handling gets a little bit more complicated.
+
+ù 29 november
+Got a luminous idee: call Syield() before vq_mouse in the busy loops in
+drag_box and rubber_box. Now the premature button releases are almost
+gone. This a not a final solution. But it makes XaAES much more usable.
+
+ù 30 november
+Implementation of graf_slidebox.
+Heaven knows why it wasnt there. Now it is.
+ST-ZIP's sliders now work.
+
+Managed to find a pixel error in drag_box. Could this be the last?? ;-)
+
+ù 2 december
+Thanks Ronald Andersson!
+The short name wasnt completed with spaces to 8.
+App's that dont do menu_register for short name and were < 8 couldnt
+be found by appl_find.
+Fixed.
+
+ù 3 december
+In colour text is always written transparent.
+There is no way to specify a text background color. We may assume that
+in colour people do not want to see white text background in dialogues.
+
+Use is_menu in change_object.
+If not a menu, draw the whole tree while clipping,
+otherwise only from the parent up while clipping.
+
+A compromise to multitos and N.aes users: the clients menu appears
+below the client entry. :-)
+
+ù 4 december
+Nobody wants to see a white background in these beautiful modern grey
+dialogue boxes.
+
+Current VDI's lack the facility to specify text background colour.
+
+This urged me to get the functions object_area & thickness correct
+and finished for all object types in all possible plane depths.
+
+New function ob_text. It replaces v_gtext in drawing of objects with text.
+If a text must be written opaque and the 3D flags are set and we are in
+colour mode, first a bar of standard background coloured is written to do
+the replacement. Then the text is written transparent over that bar.
+This combination mimics a text background color.
+
+Fixed a small bug in set_text returning the text extent rectangle,
+which I needed for the background bar.
+
+Most often called vdi attribute functions wrapped. The wrapper functions
+keep track of the current state. Saves a lot of superfluous VDI calls.
+It also makes the use of functions less critical. When in doubt, call.
+
+ù 5 december
+If the cnf didnt contain any run or desk statement, the environment wasnt
+merged and copied.   Probably leading to strange behaviour and even
+bombing.     Fixed.
+
+Renamed xaaeswdg.rsc to baroqwdg.rsc
+Renamed simplwdg.rsc to xaaeswdg.rsc
+
+constructed xa_momo.rsc and monowidg.rsc
+Thse have converted all colour icons to standard mono icons.
+(No 3D widgets!) Saves 27 Kb in mono.
+
+Default names remain xaaes.rsc & xaaeswdg.rsc
+
+You can specify others in the cnf.
+If you dont care about colourfull widgets and have not that big a computer
+and only a colour monitor, you can specify the mono rsc's in the cnf
+and spare 170Kb compared to 256 colours, and much much more compared
+to higher colours.
+
+Small fix in the logic of finding resources.
+If a file could not be found by xa_find, xaaes didnt stop.
+
+ù 6 december
+Applied Ronald Andersson's patch for _appl_yield (see P_HANDLER.TXT in the
+source tree).
+
+Applied Ulrich Kaiser's idee of renaming XaAES to AESSYS.
+
+ù 7 deceber
+shell_write: extended bit 0x80 implemented; pass environment.
+
+ù 9 december
+A discussion with Drace pointed out that I didnt read the docs carefully
+enough. The priorities listed in the taskmanager were 20 too high.
+Fixed that.
+
+Also XaAES itself lowered its priority too late. After reading the cnf
+and after starting Acc's and run's.
+That is now fixed.
+
+New config keyword 'priority  n'
+n is absolute priority at which you want the AES to run.
+This will also have effect on the priorities at which XaAES's children run.
+
+This might be preliminary. It gives an opportunity to play around somewhat.
+
+ù 10 december
+Implemented the '@' in editable fields.
+I dont know if it works exactly the same as in the old tos's.
+But it looks like it.
+
+Applied 'finishing touch' to the menu code.
+The x and y of the root of every menu is disconnected from the OBJECT
+structure, and retained in the recursive Tab structure.
+Whenever something has to be done to a menu which requires the correct
+root position, these x and y are copied to the that root.
+
+All menus, including the normal pull down menus, pop_ops and submenu's
+can be placed in any combination on any level in any tree.
+Ditched the last piece of code that made a distinction between different
+kind of menus.
+
+You can even have recursive submenus. Not of any particular use, but it
+gave me a simple method of stretching the code to its limits, reaching
+the edges of the screen, and the maximim depth.
+
+ù 13 december
+Spent the 2 days to get the 'call direct' feauture working again.
+As long as it isnt abolished, it must be working, even if switched off.
+
+It also helps to find hidden errors.
+(Found already 1 missing environment semaphore unlock, and 1 missing
+ lock forwarding)
+
+I also wanted to see how mouse and keyboard behave in direct mode.
+This could help the debugging.
+
+'call direct' needs a lot of more work, especially the locking.
+It seems that a few windowlist lock are still missing.
+I'll pick this up again later.
+
+ù 15 december
+Placement of iconified windows is now correct and flexible.
+You can move iconified windows without disturbing their status.
+Positions that have become free by either moving or uniconifying are
+reused.
+
+Improved the look of the title bar of iconified windows.
+
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.905
+                                                                       ======
+ù 21 december
+Big clean up:
+All code that must run under the client pid moved to HANDLER.C
+	appl_init, appl_exit and wind_update.
+All local to bootup config variables to static struct lcfg.
+All common config variables to global struct cfg.
+All variables shared by server and handler to global struct shared.
+All variables common to server modules only to global struct common.
+All variables common to handler only made static.
+
+Removed the word 'global' from any definitions that contained it.
+reinstated #define global in PRELUDE.H and XA_DEFS.H
+
+the word global should really be kept reserved for (future?)
+use as the opposite of auto, local or static.
+(Actually added this word to every declaration that is supposed to be
+global).
+
+Checked every function to see if they should be declared static.
+If so, declare as static, otherwise insert the word 'global'.
+
+Abolished the PRGNAME in the project file.
+XaAES reads its name from u:\proc.
+
+New function get_procname(short pid)
+
+Same function now used in XA_new_client in stead of parsing a command
+line, which may be empty or absent. This should cater for overlaying of
+GEM applications. The overlayed app issues appl_init, and the new name
+can be found by appl_find.
+
+Some of the globally available pointers are better accessed via function.
+(desktop, wind_handles, client_handle_mask, ...)
+This makes accessing them easier to control.
+
+XaAES doesnt do any stream input/output.
+Consequently removed all includes for stdio.h + iocntl.h and most cases
+of fcntl.h
+
+However, sprintf is a usefull function, and because I already supplied
+a private version, I replaced all 'printf' by 'display'.
+This eliminates confusion.
+
+new files DISPLAY.C and DISPLAY.H
+
+ù 23 december
+Fileslector:
+Small fix in inq_xfs: no need to check negative reply.
+If Dpathconf returns a negative reply under MiNT, it certailny is not
+a valid 8+3 path. So converting to uppercase will not do any good.
+
+Replaced Dreaddir/Fattrib by Dxreaddir. Only call Fxattr if it is a
+symbolic link.
+
+ù 24 december
+XA_client_exit doesnt need(and use) the pb parameter.
+Replaced dummy pb's by nil in SIGNAL.C and APP_MAN.C
+
+ù 26 december
+Big clean up in the widget behaviour calling.
+They are comparable to C++ methods, be it handiwork.
+All direct calling removed. All calling done via the pointers.
+The concept must be reliable.
+(One exception: display_vslide in d_g_slist. This code must be rewritten
+anyhow).
+
+New function display_widget().
+Does all drawing of widgets over the rectangle list.
+Replaces rectangle list looping in many places.
+
+Put the single function in SYS_MENU.C into TASKMAN.C
+
+Overall improvement of locality by some rearrangement of functions
+over files.
+
+
+ù AD 2001
+  =======
+
+ù 4 january 2001
+Fix a typo in shell_envrn (Too small a piece of memory allocated).
+
+ù 6 january
+Implemented thread safe memory allocation system (XA_memory).
+It is supplied completely in folder XMEMORY in the full distrubution.
+
+Fixed all memory leaks. (thanks to XA_leak function, and key parameter. :-)
+
+ù 30 january
+Removed all usage of te_tmplen field for cursor positioning in editable objects.
+Also removed the XaAES special flag IS_EDIT.
+These are now provided in the ODC_PARM structure (edit_obj & edit_pos).
+Amalgamated XA_WIDGET_TREE & ODC_PARM to a single structure XA_TREE.
+This structure is supplied to ALL object drawing functions. It contains
+data which cannot be held in the OBJECT trees.
+
+form_keybd(), form_button() & objc_edit() use a XA_TREE in the client structure.
+form_do() uses a private dynamically allocated XA_TREE.
+
+Removed yet another code duplication in form_do() (stuff already done in
+set_toolbar_widget() ).
+
+set_toolbar_widget() returns the allocated XA_TREE and accepts start_edit.
+
+Doubleclick was not returned by form_do(). (obno|0x8000).  Fixed.
+ 
+ù 12 february
+New function remove_toolbar_widget(XA_WINDOW *wind)
+Needed when a form_do() is exited.
+This makes switching between form_do and individual form functions possible
+inside a form_dial pair.
+In general, makes usage of form_button,form_keybd & objc_edit possible
+in any circumstance.
+
+ù 13 februari
+Finished the work started on 30 jan.
+
+Fixed  bug reported by Ulrich in shell_envrn (If a env doesnt exit, a pointer
+is left uninitialized.
+
+ù 16 february
+Because I have now my own (threadsave and debug friendly) memory allocation
+system, there is no reason to hold on to the array of 32 clients.
+The client list is still handled the same, but the structures are not anymore
+taken from the array, but simply malloc'd.
+
+ù 19 february
+Fixed a memory leak and a very obscure and nasty bug in the menu attachment
+handling. In particular the desk menu attachment.
+The table of attachments was erroneously put in the menu widget tree structure.
+Not a good idee for a malloc'd table. :-(
+This structure is copied across Aes and clients when switching menu bars.
+Happily I remained patient and in the end managed to find it.
+
+The table of attachments is now a direct member of the client structure.
+
+This might repair one of Draco's complaints.
+
+ù 20 february
+Fixed shadow_object. (Basically a typo).
+
+New function check_widget_tree(). For use by objc_draw, form_button,
+form_keybd, objc_edit and objc_change. Smoothens the behaviour if the
+tree parameter is different from the last used by these functions.
+
+ù 21 february
+form_do(): See 16 november, forgot to open the window. Fixed.
+You can now set date and time in XCONTROL again.
+
+ù 4 march
+Small code duplication in form_do and form_keybd removed, so I needed to
+apply the following fix only once. :-)
+Fix cursor behaviour when moving cursor to a field having a smaller
+text length than the position in the previous field.
+
+ù 5 march
+New functions lock_screen, unlock_screen.
+Used internally and by wind_update. Increased uniformity and modularity.
+
+ù 23 march
+Handler.C
+   new_client_contrl
+   client_exit_contrl
+   new_client_packet
+   new_client_pb;
+moved these areas to local name space in XA_appl_init
+                                     and XA_appl_exit   !!!!!!!
+Solved many problems with GEM-init of Ulrich Kayser.
+Solved problems with proper shutdown. (Many apps issue appl_exit concurrently.
+Sigh of relief. :-)
+
+ù 27 march
+FreeClient: pass lock|clients to remove_menu_attachments()
+
+ù 28 march
+Implementation of ARGV:
+tail[0]: 0xff, 0x7f, shell_write: wiscr = 1 (force ARGV)
+
+ù 29 march
+object drawing:
+Implemented OUTLINED, including special handling for root object.
+
+set_text(): Dont let the text violate its object space.
+This fixes problem for twoinone, the packer shell.
+
+form_center(): widen the returned rectangle values for the root of
+the object tree when OUTLINED. (x-3,y-3,w+6,h+6)
+
+ù 3 april
+New config keyword:  windowner xxxxx.
+Controls display of window owner in a window's title.
+
+XA_client_exit: The menu bar wasnt swapped correctly; small fix.
+
+ù 4 april
+Left click on de desktop root object brings the owner of the desktop forward.
+
+When a window was opened from the background, the menu bar wasnt switched;
+fixed.
+
+ù 5 april
+Implemented fall through for mouse events.
+Now Thing will continue after some dialogues.
+
+Removed another 2 semaphore calls (for the client list) from the handler.
+These seem not to be necessary. The client entry is already savely established.
+The contents of the entry are now local to the application. The application
+that is actually doing this. The server may be running concurrently of course,
+but defininately NOT on behalf of this app. :-)
+
+Unless I overlook something. Please tell me wrong!
+
+Sigh!
+All the time I was struggling with menu swapping! Apps that have no menu bar
+have the field in there client structure clear. Everywhere this is used.
+Completely forgot to remove the assignment of XaAES's menu bar to accessories.
+(Or to be exact: setting this bar as default to all app's in XA_new_client)
+Fixed this.
+
+The debug version of XaAES (XAAESDBG.TOS) now opens its own config file
+(XAAESDBG.CNF). The normal version now illustrates how little is needed in
+normal circumstances. The dbg version gives all the explanations, plus the
+extras only applicable to debugging.
+
+ù 6 april
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.906
+                                                                       ======
+
+ù 14 april
+Config: debug_lines n
+If absent or zero, debugging is appended to the logfile indefinately.
+If n > 0, when n is reached, filepointer of debugfile is reset to 0
+Now it is possible to have debugging on for a very long time without
+the danger of filling up your HD.
+The value of clock() is put in front of each line.
+
+ù 18 april
+Implemented 'Gruppenrahmen', checkboxes, round radiobuttons, underlined
+text and shortcuts (underlined character). (The 'MagiC objects')
+
+ù 19 april
+After adjusting appl_getinfo parameters for the 'Magic objects', suddenly
+the iconifier widgets appeared again in Thing. ?? ;-)
+Hope they will stay now.
+
+ù 20 april
+Fixed a typo in do_keyboard: CTRL+ALT+HOME (tidy screen) now works.
+
+ù 21 april
+Needed nkcc to be able to work comfortably (and language independent)
+with CTRL|ALT combinations. So I linked nkcc_tos.o in, which added
+about 3.5Kb to the binary.
+Very frustrating! I only need nkc_tconv().
+
+Reduced existing nkcc.s to xa_nkcc.s
+
+Saved about 3 Kb. Leaving only 0.5Kb.
+
+Now you see what a crippled assembler together with a crippled object format
+in combination with crippled modularity does to your computer memory.
+(Sorry, Harald Siegmund :-) otherwise very usefull software!
+
+Actually: nkcc is only called when ALT is down.
+
+ù 22 april
+Finished the changes that made the combination:
+		form_dial
+		objc_draw
+		form_do
+		form_dial
+	work correct in all circumstances (I hope :-)
+	Especially when the window title caused the window to overlap the
+	menu bar.
+
+	Turned the field 'created_by_FMD_START' into a enum field(dial), and turned
+	'created_by_FMD_START' into a enum value.
+	The word can now also hold the enum value 'created_by_FORM_DO'
+
+New function strip_name(); strips leading and trailing spaces from a name
+where applicable.
+
+Fixed a bug in form_do() when called without form_dial pair.
+
+ù 23 april
+Finished work on the 'MagiC objects'.
+New function find_shortcut(form, keycode)
+If a shortcut is found, the internal function form_button is called.
+This is in XA_form_keybd() and in handle_form_key() via XA_form_do().
+
+Shortcuts now work.
+
+The whole 'MagiC objects' project was not difficult to implement.
+Comprising in total say 2 A4 pages of code.
+N.B. Not after the immense efforts I spent on improving the overall
+quality of the code.
+
+ù 24 april
+Decided to (at last) spent plenty time on the keyboard stuff.
+
+Fixed find_focus(): There is always a client; question is: is that
+client waiting for a key yet? find_focus now always returns a client and
+additional passes a bool telling whether the client is waitinng for a key.
+
+Fixed interference by evnt_multi(MU_TIMER|MU_KEYBD) of unfocused app's.
+                                 ^^^^^^^^
+The queue data must hold the focus pid alongside the key.
+
+do_keyboard: Use Bconin in stead of Crawcin. The status bits returned by
+Bconin are used and kept alongside the key in stead of calling vq_key_s().
+Bit 3 of systen variable conterm nust be set. That seems to be the case
+by default.
+
+multi_intout(): When the key status is known, it is passed.
+Saves another call to vq_key_s() for keyboard input.
+
+The keyboard improvement and the 'MagiC objects' are enough reason
+to jump the version number.
+
+Double click in the file selector works again.
+
+Selecting a application in desk menu brings the app completely in front.
+CTRL+ALT+tab is disabled, needs a overhaul.
+
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.910
+                                                                       ======
+
+ù 26 april
+Bugfix in objc_draw: Correct line color in monochrome for MagiC objects.
+
+ù 27 april
+Bugfix in shell_write: use stricmp() for examining extension. (case insensitive)
+
+ù 28 april
+Turned the macro ob_spec(ob) into a function. (It used the parameter ob twice!)
+The macro takes in account the INDIRECT flag.
+Saved another 0.5Kb.   Tch! (This is the amount spent by NKCC ;-)
+
+ù 29 april
+Enhanced the ob_spec definition in the OBJECT structure. (See xa_aes.h)
+Accordingly replaced the assemblyish kind of writing that was the consequence
+of the former method by proper type checked C.
+
+Boxes having the background flag only are no longer written as
+as push buttons. (Corrects the popups in, for instance, twoinone.app)
+
+ù 1 may
+set_desktop(): If the newdesk objects height is smaller then the screen height,
+set y to the difference. (Fixes Thing 1.09).
+Notes:
+ Thing 1.27 already sets y correct. (to 19)
+ Teradesk has the newdesk objects y = 0 and h = screen height.
+    this was already catered for elsewhere.
+
+XaAES's menu bar is different from other AES's.
+It is a true widget in the root window.
+
+ù 2 may
+Some popup menus (Smurf!) leave space between entries, to accomodate the
+enlargement for 3D representation.
+Small fix in menu handling (function popup()) to avoid selecting the
+whole popup.
+
+object_area()
+Added special case: boxtext, indicater NO border!
+
+XA_3D_pushbutton()
+Adapted interface to more possibilities regarding borders.
+Basically a generalization of border & DFEAULT|EXIT.
+Now they look even better than those of N.Aes.  :-)
+Principle: if a border, then only 1 black outline and 3D outlines same as
+abs(thickness).
+
+ù 7 may
+Further fixes in 3D. Mostly 'illogical' combinations of object type and
+border thickness that have special meaning in 3D.
+
+Push buttons can have a shadow.
+Colour in 3D (f)boxtext objects is back again.
+
+ù 8 may
+If a window title doesnt start with a space, the title is kept free from
+the inside border.
+
+ù 9 may
+Menu in a window other than the root window:
+Titles are displayed as pushbuttons.
+The line below the titles is omitted. (The window workarea is already outlined
+sufficiently).
+
+ù 13 may
+In analogy to 'string', you can specify 'int' (or 'integer' or 'integral').
+The environment variable will technically be a ascii string, but guaranteed
+to contain only decimal digits, optionally preceded by a minus sign '-'.
+
+Filters in the 'filters' command can be separated by commas as well.
+Spaces after the separator are omitted.
+
+ù 14 may
+Two fixes in menu handling. Usage of incorrect pid in menu_title()
+Asymmetry in calling unlock_screen(pid) in menu_title().
+Moved the unlock_screen() call to click_menu_widget().
+Additional fix to other call of menu_title().
+
+All this fixes occasional screen lock ups.
+(Also when using file selector menu.)
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.911
+                                                                       ======
+
+ù 15 may
+At last give in to the fact that the global array is really a structure.
+See xa_aes.h
+As a benefit global[5] and global[7], which are now called global.ptree and
+global.rshdr, are filled in correctly. Directly beneficial to programs
+aICQ and GemBench, the first is a GFA basic program, the last a Hisoft basic
+program.
+
+ù 16 may
+If the values for x,y,w,h are seemingly meant as dummy (small or <= 0)
+they are ignored.
+
+ù 21 may
+short version;
+wind_get(0,'XA',&version);
+If XaAES's version is v0.912, version recieves the value 0x0912
+version holds a packed decimal midpoint (u.ddd) number.
+
+PureC users who use the original binding for wind_get from pcgemlib.lib,
+the one that allows to have:
+int wind_get(int handle, int command, ...);
+
+I have made a new binding which you can find in folder
+PURE_C of the distribution.
+
+wind_get.s
+wind_get.o
+
+Link this into your programs before linking pcgemlib.lib
+
+DIALTEST offers a demonstration of the binding by issuing:
+xa = wind_get(0,'XA',&version);
+
+Fixed internal get_env() such that it conforms to the compendium description
+of shell_envrn.
+As a result finding PATH= in PATH=c:\ returns  c:\
+    whereas finding PATH  in PATH=c:\ returns =c:\
+
+Moving windows by blitting:
+Fixed a bug. x and y of the old position must be >= 0.
+In other words if a window is partly off the screen, blitting is not possible.
+(This was only checked for right and bottom, now it is correct for left and
+top as well).
+
+ù 22 may
+do_form_alert: See 25 feb.
+Forgot to malloc the parsed texts for each form_alert. :-(
+Fixed.
+
+There is no need for the alert texts to be of ob_type TEXT.
+Changed to STRING.
+Some version of MiNT put a extra '|' in the alert text.
+Alerts can no have 6 text lines.
+
+Fixed problems in XA_appl_init/exit. Local areas (K_CMD_PACKET)
+are now in the client structure. Silly mistake to have kept them in
+local name space. Fixes the AP_TERM problem, among others.
+
+Small fix in XA_client_exit: must check new_menu->tree, not new_menu for
+presence of menu bar.
+
+Fix in XA_move_event: M1,M2 can be combined.
+Made MU_MX available to the outside world.
+MU_MX ($100) report any mouse movement. No rectangle need be specified.
+Only available in evnt_multi. Mouse data is filled out as for M1|M2.
+
+Alerts can be topped by clicking anywhere in the alert.
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.912
+                                                                       ======
+
+ù 23 may
+Applied same fix as done for XA_appl_init/exit (see above) to the trap handler.
+A area in local name space is removed. Suitable areas in the client structure
+are used in stead. (K_CMD_PACKET)
+
+kernel.c, signal.c
+Due to the nature of the signal handlers in MiNT (The handler interrupts
+currently running XaAES and runs as if a seperate thread, but alas! under
+XaAES's pid, which makes the use of a semaphore inappropriate.
+But well, if the handler is running, the kernel is not!
+So it looks like the easiest way is to just set and check a global variable
+that indicates a XA_client_exit action is pending.
+
+This fixed the situation in STZIP (as an exemple) when stzip starts up with
+the fileselector and you then cancel. Stzip quits without calling appl_init
+and hence XA_client_exit is called in the signal handler asynchronously,
+leading to a whole bunch of confusion internally and heavy bombing.
+
+ù 25 may
+Fix in group box title. (A colour setting was lost since v0.910 due to testing
+I presume).
+
+ù 26 may
+Menuwidg.c
+Submenus work again. Screen was locked with the wrong pid number.
+
+BTW: Aniplayer 204 & Papyrus 7 use a strange kind of own submenus.
+(I have papyrus office 7.25a on my MILAN; that works OK with official submenus.)
+
+Widgets.c
+Attempt to display widgets other than title and iconifier in a iconified
+window prohibited.
+(Occasionally Thing sets the vertical slider in a iconified window.)
+
+ù 27 may
+Preparations to be able to submit more than 15 attributes to wind_create.
+If the kind parameter to wind_create has bit 15 set (is negative) and
+pb->control[1] (entries in intin array) is 6, than pb->intin[5] holds
+the extra attributes.
+Currently this is available to submit the attribute XMENU.
+The extension 'windset(hdl, WF_MENU, object_tree)'
+will be implemented later!
+
+ù 28 may
+Ensured that color and shadow are only changed in menus when the object type
+allows it. Especially inportant for popups and submenus. They can be any type.
+
+Fixed inconsistent behaviour of right clicking in menus.
+
+ù 29 may
+functions of type WindowKeypress (internal key handlers):
+Besides the AES keycode the normalized and BIOS key code format are passed.
+At any time it is now possible to normalize using the keyboard at the time
+of pressing the key. Exception is form_keybd because of lack of interface.
+
+Note: if the code is not normalized yet, a zero is passed. This is to avoid
+spurious normalization.
+
+Harald Siegmund's NKCC has now become a integral part of the AES.
+
+New event mask MU_NORM_KEYBD for use in evnt_multi. It implies MU_KEYBD, but
+instead of the AES code, the normalized keycode is returned.
+
+ù 31 may
+Fix in rsrc_gaddr for app's that dont use rsrc_load.
+The global array was accessed inappropriate. See also 15 may  :-)
+
+File selector: CTRL+letter or ALT+letter: select drive and redisplay.
+
+Important fix in button event matching:
+<MU_BUTTON|MU_TIMER clks=2 mask=1 state=0 timer value=0>
+was cause of fall thru on MU_BUTTON, and made some programs loop around this
+event, monopolizing XaAES.
+
+exemple:
+Aniplayer .204
+
+This might well fix speed problems on certain environments.
+
+ù 2 june
+menu leave option:
+Made a usefull restriction.
+The menu is only canceled if the mouse is moved sideways out of it.
+The menu will stay put when left from the bottom.
+
+objc_add:
+The object must be inserted at the END of the parents list of children, NOT
+at the beginning.
+I had to go thruough the PC GEM sources to get this knowledge.
+
+Now my favourate backup program (SBBACKUP) works again.
+
+I wonder how many programs use objc_add.
+Oh well, another cataguory of programs will now start working under XaAES :-)
+
+
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.913
+                                                                       ======
+
+ù 4 june
+Reorganization of the files XA_EVENT.C and XA_MOUSE.C
+resulting in a single file XA_EVENT.C
+This file mow contains ALL event processing, including the mouse and button
+events.
+
+ù 5 june
+widgets.c
+
+Found the error made in NEW_SLIDE!! (See 24 feb 2000 :-)
+So XaAES will now use the (simpler) slider handling.
+As a additional benefit, sliders do not show anymore the strange and very 
+unnatural sticky behaviour. (XaAES aint Windows ;-)
+This is a preparation for a complete revision of the whole event matching
+system.
+
+The active widgets are intimately connected to the mouse.
+There is only 1 mouse, so there is only need for 1 global structure.
+
+The beginning of decreasing the complexity of the widget dragging system.
+NEW_SLIDE was the first tremendous and now successfull effort.
+
+Those who are interested might compare with the v0.7b code.
+Files: XAAES\WIDGETS.C vs XAAES7.993\SCRLWIDG.C   ;-)
+functions drag_hslide & drag_vslide in both.
+
+ù 6 june
+Small fix in do_widgets for page arrows (new since 5 june!)
+
+When you release the button outside the small widget, the state is now
+reversed to normal.
+
+ù 7 june
+Start reorganizing the event matching system (kernel.c)
+All #if'd to be able to leave it incomplete.
+
+In the slider code for listboxes was a abolished variable still checked
+leading to crippled sliding (taskmanager, system log & file selector).
+Now it is smooth again :-)
+
+ù 8 june
+New functions:
+void Block(client)
+void Unblock(client, reply)
+
+The latter writes reply to the client to unblock the client.
+Both keep track of blocking in a global bitmask.
+
+If a bit is set in client_waiting_mask, the client handle associated with
+it is excluded from the central Fselect.
+I dont know if this could make everything a little bit faster, certainly
+not slower. But the most important reason is to have a feedback on the
+blocking/unblocking. If there is an error, I will at least notice something.
+
+ù 11 june
+Clean up of the clipping.
+set_clip & clear_clip calls were already truly balanced.
+So I removed all free standing clear_clip call's.
+
+Note that this clipping is constrained to XaAES's own virtual work station.
+
+ù 12 june
+objc_change: further completion. Good for LUNA's 1.56 menu.
+Also a few fixes in 3D drawing.
+
+ù 15 june
+Fix in button_events: click on non topped windows: check mouse lock!!
+Mouse lock is of course also applicable to rectangle events!!
+Fixed that as well.
+
+ù 18 june
+When a button click event falls through in evnt_multi, the number of clicks
+was not returned in intout[6].
+Fixed.
+
+Do a vq_mouse & vq_key_s once every Fselect, in stead of in many places
+of which some are almost certainly spurious. The mouse data are remembered
+in a global structure (same type as for pending buttons)
+
+multi_intout does not call vq_mouse & vq_key_s anymore, but instead uses
+the above structure (BUTTON).
+
+Now it can be more freely used.
+
+XA_graf_mkstate uses the same structure.
+
+ù 19 june
+Reworked evnt_multi such, that events that fall through can be combined.
+
+ù 21 june
+Small fix to prevent spurious redraws of disabled menu entries.
+
+ù 23 june
+Problems with fall through in evnt_multi for button still up/down.
+The Fselect is slower than vq_mouse ;-) resulting in synchronization
+problems. This stuff has to wait for a while.
+
+ù 24 june
+First attempts to use wdialog.
+It seems to works if loaded from the desktop, when loaded any time earlier
+it causes several continguencies in a diverse number of combinations.
+
+Then I had to implement rsrc_rcfix. :-)
+
+I made a very good assumption, so it worked almost immediately.
+rsrc_rcfix is basically a rsrc_load, but without the load. :-)
+
+So I amended the internal function LoadResources() such that it accepts a
+file name and a RSHDR pointer. If filename is nil rshdr must be non nil and
+that area in RAM will be used.
+
+There are still programs that wont start up with XaAES.
+rsrc_rcfix is not related to wdialog, but a true AES 4.1 feature.
+Now that it is there, those programs are worth a try again.
+
+ù 25 june
+Fixed a stupid bug in shell_write(7,..) (broadcast) that caused XaAES to loop.
+Dont ask me how and why, but when boxkite was installed it caused Thing
+to issue such a broadcast when ^O was pressed before any other fileselector
+request was made.
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.914
+                                                                       ======
+ù 28 june
+Fixed evnt_button & MU_BUTTON for button up fall through.
+The number of clicks is no criterium. N.Aes & aniplayer have weaknesses.
+
+ù 29 june
+Fixed a bug in the half_screen calculation. Forgot to divide by CHAR_BIT.
+Now calc_back() is used.
+The routine designed to be used by form_save() after all. :-)
+
+ù 30 june
+Enabled setting of F_OS_SPECIAL to be able to run with memory protection.
+The basic functions work.
+st-guide brings everything down when it sends 0x4700.
+
+Starting programs from Thing desktops doesnt work.
+
+ù 1 july
+Disabled st-guide.
+
+Disabled xshell->psetlimit and xshell->prenice.
+Now everythings works with memory protection.
+
+Well, at least the programs I regularly use.
+tw_call, toswin2, Pure C, AHCX, sbbackup, TT-Digger
+xcontrol, hoelaat, ps_contr
+In the following days I'll start all the programs I have around somewhere.
+
+2 problems pop up: The signal handler issuing Pwaitpid might not be good.
+The call of do_form_alert on the alert_pipe must wait until the update
+locks are released.
+
+ù 2 july
+shell_write problem solved by copying the extended shell structure to
+local name space.
+Enabled xshell->psetlimit and xshell->prenice again.
+
+ù 9 july
+First use of Pvalidate for debugging the tremendous crash of XaAES
+when st-guide issues the 0x4700 (AV server) message.
+
+ù 10 july
+When a client is killed, all its objects are gone.
+Especially a desktop object. (Thing)
+Several fixes to deal with this situation.
+
+A new flag in the client structure: bool killed. The flag is set in the signal
+handler.
+The flag is used to prevent the use of pointers to client resources.
+As a double check, all references to clients resources are removed in the
+signal handler for SIGCHLD.
+New function: renove_refs(client).
+The function serves as a nice reminder of which references to a clients
+memory might be present. :-)
+
+Also fixed the bug that prevented the correct desktop redisplayed
+after exiting a app, or after removing a desktop.
+
+new functions:
+find_menu_bar()
+find_desktop()
+
+The functions must be called after a menu or a desktop is destroyed.
+They find those for a app still active. Or the AES itself, of course.
+
+ù 16 july
+Reorganized the order of things happening in cleanup().
+(Preventing references to just freed areas.)
+
+Found a version of st-guide that doesnt crash Thing.
+
+ù 31 july
+wind_set(..., WF_TOP)
+Forgot to send WM_UNTOPPED
+fixed.
+
+It is now possible to leave the fileselector returning a path only.
+The file name text field must be empty (use ESCAPE).
+Ensure that the cursor is on the single dot line or there is no cursor
+at all. You can remove the cursor by entering a 'wrong' character and then
+press ESCAPE again to empty. This would be necessary for the root directory.
+
+ù 4 august
+Used the excellent XA3DCHK program of Joakim H”gberg to finally make all
+the 3d object drawing compatible to N.Aes.
+Note however that the implementation of the shading is not the same.
+I think XaAES does a better job here. Most important is that 3d object at least
+occupy the same space on the screen and have the same transparency as N.Aes.
+
+ù 6 august
+Small fix in pending_msgs to prevent active_widget processing on other
+clients evnt_multi(...MESAG...) calls. (See 5 june). Missed the check on
+client.pid.
+
+objc_add: initialize ob_head and ob_tail of the new sibling to -1.
+
+When a menu bar is switched on and the owner doesnt have a window of its own
+on top, the current top window is untopped and focus is set on the menu bar.
+The unfocused top window gets the UNTOPPED message.
+Toswin2 relies on this message.
+This allows the use of shortcuts right after a app is started and it has only
+a menu bar.
+
+Also send ONTOP when the situation is the other way around.
+Unfocused topwindow of the application that switched the menu_bar on.
+Thing relies on this message.
+
+All in all, handling of focus and menu bar existence has now improved further.
+
+Send also WM_ONTOP to new top window after closing the top window.
+Thing relies on this message.
+
+ù 7 august
+Fixed a bug in XA3DCHK for buttons.
+Incorrect mask when setting default/exit flags resulted in always setting
+default.
+
+Fixed thickness(), object_area() and d_g_button() such that thickness of
+buttons derived from flags is handled in thickness() only and not anymore
+confused with extra enlargement for 3d. That is the task of object_area() and
+d_g_button().
+
+ù 8 august
+Fix in object_area(): Thickness 0 includes 3d enlargement as well.
+Smurf's popup menus now look good.
+
+rsrc_load & shell_find:
+These function must be able to use any path set by Dsetpath in the client.
+For these functions the trap handler (which runs under the clients pid)
+now calls Dgetdrv() and Dgetpath() and stores the result in the client
+list (home_path). Now this path is used by shell_find(), which is called
+internally by rsrc_load().
+
+As a result, FalcAMP is now able to find its resource.
+
+ù 10 august
+Click on a unfocused top window:
+Move focus to the window, redisplay (for appearance),
+swap menu if applicable
+and send WM_ONTOP to the window owner.
+N.B.!! we dont send WM_TOPPED, because the client might think it is already
+on top and therefore ignores WM_TOPPED.
+
+ù 11 august
+click_menu_entry():
+Fixed a hole in the 'if' symmetrie in the function for clicking a menu entry.
+The bug was the cause of restoring the menu background twice, the second
+time from a already freed area. This crashed XaAES on the Milan with memory
+protection on.
+
+Thanks Joakim H”gberg. Your sharp observation of a small inconsistancy in
+the menu behaviour provided a clue to the solution.
+
+Small fixes in do_form_alert:
+Make the dialogue a little wider.
+Shrink the dialogue hight according to the number of lines.
+
+Memory protection now working:
+A small step for mankind, a huge step for XaAES.
+
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.920
+                                                                       ======
+
+ù 12 august
+Changes in XaAES's about dialogue. The text is now in a listbox, which makes
+it easier to change it.
+
+The dialogues is fitted with a Ok button as well, so pressing return will
+close the dialogue and window.
+Same for the system/alert window.
+
+Windows created by XaAES around dialogues handled by form_dial and/or form_do:
+The title is diplayed in italic for better recognition as a special case.
+
+ù 15 august
+shell_find:
+Fixed usage of the path set by a client.
+The path set by the client must be remembered separately and tried separately.
+(It must not replace the path from which the client is started)
+
+ù 19 august
+Fix in uniconify:
+The slider positions and info bar text got lost on uniconify.
+
+ù 21 august
+Implementation of hider widget.
+
+Hiddem windows will be automatically unhidden when a key would be sent
+to them, or when they are topped by the application calling
+wind_set(..., WF_TOPPED, ...).
+
+New config keywords:
+windows nohide
+
+xa_windows nomove,nohide
+
+ù 22 august
+Implentation of appl_control.
+Taskbar doesnt use appl_getinfo to detect existence of appl_control. :-(
+
+It is unclear what multistrip does to get the window names.
+Perhaps check the nAES cookie halfheartedly? It doesnt use all the options
+of appl_control.
+
+ù 24 august
+Fix in do_form_alert. Alerts with 2 or less lines were not shrunken.
+ 
+ù 25 august
+cramped_name():
+If a name doesnt fit in the title bar, a sufficient amount of characters
+somewhere in the middle is replaced by 3 dots.
+Fix: If a name is too long, leading and trailing spaces are removed and
+the name is refitted.
+
+ù 27 august
+At last got ctrl+alt+tab working.
+
+Implemented ctrl+alt+[X,Y,V] 
+X: hide other apps
+Y: hide app and swap
+V: unhide all
+
+ù 28 - 30 august
+Changed the desktop object into a true toolbar widget.
+Now root window ownership (the AES) can be different from menu ownership
+and desktop ownership. This was needed.
+
+Removed any usage of the pid number by the AES internally.
+Instead of pid, the pointer to the client structure is used.
+Changed 'short pid' from all structures except the client structure
+into 'XA_CLIENT *owner'.
+The number is now only used for determining the address of the client
+structure in the trap handler.
+Any other use is passing it to the outside world if asked for.
+
+The operation will lower ambiguity and increase reliabity and uniformity.
+Changes involve many prototypes and pieces of code.
+
+It already proved to be usefull to get soft behaviour solid.
+(When a number is wrong, you can still display it, when a pointer is wrong
+ you must get it right. :-)
+
+ù 30 august
+Inserted a missing colour setting in the list box drawing in mono.
+It looked like a box wasnt drawn, but in fact it was drawn in white.
+Such errors pop up when circumstances in the code change.
+
+ù 1 september
+XaAES extension for appl_search:
+mode:
+APP_TASKINFO  0x100     aditive to APP_FIRST 0 and APP_NEXT 1
+When this aditive mode is provided, long names will be returned.
+extra flags will be returned in *type:
+APP_HIDDEN  0x100    application is hidden.
+APP_FOCUS   0x200    application has focus.
+
+A typical taskbar program now only needs a single loop around appl_search
+to get all the relevant information.
+
+Unfortunately not all taskbar programs investigate appl_getinfo properly.
+But Jo Evens taskbar program might be adapted soon.
+
+ù 4 september
+Used Mario Becroft's transformation routine for icons when run in higher
+colours.
+This gets rid of the black boxes in high or true colour.
+
+ù 6 september.
+Reorganization of the lump and chaotic Launch function.
+Put more stuff in functions, simplifying the flow.
+It might be necessary to run the fork and exec part under the callers pid.
+So I sampled the code needed in a function called, surprise!, fork_and_exec()
+
+ù 7 september
+As a result the SW_PDEFDIR extension to shell_write now works.
+
+ù 9 september
+
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.930
+                                                                       ======
+
+ù 10 september
+Launch() in shel_write:
+Inserted missing call to path_and_name() for ACC's
+
+Published a quickfix binary on my home page.
+Notified the MiNT list.                                                v0.931
+                                                                       ======
+
+
+ù 19 september
+drag_box & rubber_box: replaced -1 by more suitable value.
+This fixes the drawing error near the left and top edge of the screen.
+Thanks Xavier Joubert.
+
+ù 24 september
+New operand for options  windows & xa_windows:  noleft
+
+Options windows,xa_windows,windowner (and all future ones :-):
+Different settings can be specified for individual or groups of applications.
+
+Program names must not have a extension.
+
+options <Program names separated by comma> or <default>
+{
+	<specification_of_options>
+}
+
+e.g.
+
+options PC, Xcontrol
+{
+	windows noleft,thinframe
+}
+
+options aICQ			; Hi Joakim! :-)
+{
+	windows thinwork
+}
+
+:-) You see? Pure C really needed the noleft and thinframe options;
+noleft means that windows cannot be moved outside the left side of the screen.
+
+In colour:
+thinframe means that the outermost window margin is only a single line.
+(Pure C assumes this is the case. If wider, calculations go wrong and
+ windows are moved to the right each Pure C session. :-)
+thinwork means that the fancy workarea border is only a single black line.
+
+See xaaesdbg.cnf or the doc's
+
+The great amount of work I spent on the window and widget drawing mechanisms
+long ago now has payed off. It worked right away and was very easy to do.
+
+ù 25 september
+Extended parsing of path names, or generally spoken, literal strings:
+String delimiters are: apostrophes and  quotes exclusively.
+() are no more!!!
+Any character can be put in a string by catanating embraced
+strings and numbers
+< + '"' + ' ' + "'" + (1) + #39 + ' ' + '"' + >   yields <" '(1)' ">
+< + 39 + >   yields <39>
+
+This parsing is used for paths, program names and filters.
+
+Removed separators '\', and '/' for filters.
+
+Comma is the standard separator. Generally, if a delimitor or separator
+character is part of a literal string, use non conflicting delimiters to
+make it a delimited string.
+If delimiters are used, no restriction is posed upon allowed characters
+except, of course, the corresponding right delimiter.
+
+ù 26 september
+Standard widgets are kept in a array. This might change in the future.
+A function and macro are written and used which move the widget mechanism
+out of sight.   make_widget() and get_widget().
+
+ù 27 september
+There was no need for an array of behaviours. The behaviours are not accessed
+in a loop anywhere.
+Replaced the array by appropriate pointers.
+
+ù 28 september
+New XaAES system meny entry: Process -> Launch desk
+The program specified in the 'desk' command is launched again.
+
+!!! Important !!!
+string and int are no longer synonyms for export or setenv!!!
+() are no longer string delimiters.
+I fully admit these were a mistake. :-)
+
+string and int now declare jobspace variables and can be used as such.
+export can be used to place a variable in the environment.
+
+quick example:
+string tosrun = c:\gemsys\xaaes\tw\tw-call.app
+export tosrun
+run tosrun
+
+:-)
+
+ù 29 september
+Thing 1.09 desktop drawing repaired again.
+
+export now removes a already existing environment variable.
+
+ù 1 november
+Solved the never ending problems with the maximum coordinates of windows.
+It seems that these maximums (supplied to wind_create) are not used by the
+AES at all. That is: they are only passed to wind_get(h, WF_FULLXYWH).
+It is then completely up the app to use these values.
+This is how TosWin2 handles it. The reason for all this messing around was
+the fact that I implemented wind_get(h, WF_FULLXYWH) too late. After trying
+to hack TosWin2's behaviour. :-)
+
+ù 2 november
+Fixed a bug in taskmanager that caused bombing if no program was selected
+when clicking the trash can.
+
+Fixed a bug in colour icon display: If there is no selection bitmap, dont
+try to display it. :-)
+
+Fixed handling of icon masks in true colour.
+For vrt_cpyfm: use normal colours 0,1 (not reversed)
+For vro_cpyfm: use blitmode S_AND_D   (not S_OR_D)
+
+Icons that are not used because not needed in the current number of planes
+are not expanded and/or transformed anymore. Saves 50Kb in 16 colours
+compared to 256 colours for XaAES and Thing.
+
+ù 4 november
+shel_write(1,1,x)
+Removed the code that lets a application block and wait for CH_EXIT.
+Is the compendium wrong?
+
+Many programs suffered problems.
+I.c. QED when starting OLGA
+     TW_CALL when starting TosWin2
+These all blocked when there was certainly no intention to do so.
+
+Fixed a very stupid bug in shel_write.
+The tail parameter pointer wasnt checked against NULL.
+This happened with SMURF when starting OLGA.
+Might also be the reason why CAB bombs.
+
+Perhaps GEM-INIT suffered the same problem all the time.
+
+Fixed a small bug in the keyboard queue.
+
+Double click on iconified window workarea sends UNICONIFY.
+(Not anymore only the iconify widget)
+
+ù 5 november
+Fixed a bus error while shutting down.
+
+Implemented AES function 135; form_popup.
+
+Hiding/unhiding a window only sends WM_MOVED to the application.
+(Remember you could only hide moveable windows).
+
+Thing bombed after hiding on my 1280/1024 TFT screen.
+After I switched hiding from vertical to horizontal everything worked OK. :-)
+Happy as I was that I didnt write knowledge about the hiding method into
+the unhide algorithm.
+
+ù 8 november - 12 november
+Generalizing the concept of running everything visible on the screen in
+a window. This is specially of importance for popups. Including the
+(pulldown) popups of standard menus.
+It is switchable (handy as long as it isnt completed :-)
+
+Once all popups run in a window, it is very easy to implement scrolling
+popups, and from then scrolling dialogues.
+
+Scrolling dialogues are usefull when your screen happens to be too small
+for some 'modern' applications.
+
+XaAES will automatically make popups and dialogues scrollable when they dont
+fit the screen.
+
+Had to make some fixes in the object drawing routine for root objects
+and to wind_calc when it comes to borderless windows (new).
+
+display_object(),
+change_object(),
+draw_object_tree():
+Removed the parameter is_menu. The attribute had already become a permanent
+part of the widget tree that is passed to these functions.
+
+ù 13 november
+Extra flag in widget tree: menu_line.
+Needed to be able to make a difference between complete menu bars in a window
+or only a popup in a window.
+Changed the name NO_WORK in TOOLBAR. That is what it is used for. Besides,
+technically the toolbar is placed in the workarea. So there is one.
+
+New window attribute USE_MAX. If passed to wind_create (extended call),
+the max given in the create_window() call will actually be used when sizing.
+Needed this internally for sizeable TOOLBAR windows. :-)
+
+ù 14 november
+new function: xa_slider(window, which, total, visible, top)
+Generalizes ALL internal slider calculations. (Because popup/dialogue
+sliders now come into play. We only had listbox sliders thus far. :-)
+
+ù 15 november
+Several small fixes to make the window border and frame handling totally
+consistent.
+
+ù 20 november
+Many more small fixes to make it possible to remove any restriction on
+running visible objects in a window.
+
+Finished the generalization of popups.
+
+Any popup can now run in a window and have scroll bars, arrows and a sizer.
+Currently only the vertical bar and arrows are used.
+
+As a demonstration of the power of the concept I put a command in the cfg:
+popscroll n
+where n is the number of lines (standard font height) above which any popup
+will be made scrollable. This works for the standard menus as well as for
+the AES functions menu_popup() and form_popup(). :-)
+
+If a popup would be larger than the screen, it is automatically made
+scrollable.
+
+There is no restriction on attacchability of submenu's
+You can attach submenus to any popup, scrollable or not.
+
+Fixed a heavy bug in shell_write with extended mode SW_PDEFDIR.
+A local copy of the default directory name was not made, causing the whole
+lot to crash with MiNT memory protection.
+
+(How many people actually use memory protection together with GEM ?)
+
+
+ù 21 november
+Implemented live window moving and sizing.
+Only for real application windows.
+The right mouse does the oldfashioned outline method.
+
+It is important to have something really clearly visible each release. :-)
+
+
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.932
+                                                                       ======
+
+
+ù 23 november
+Fixed a bug in 'export' parsing.
+I forgot to change a local character array from identifier size to maximum
+string size.
+
+A '=' sign in the elaborated string is detected and handled as the = of
+the environment string.
+
+It basically means that the = is now handled on 2 syntactic levels.
+The level of XaAES cnf parser and the level of the environment string format.
+
+It also means that the format NAME=string can be maintained.
+
+Fixed the bus error when hiding (and unhiding) XaAES's private windows.
+Notably the task manager.
+The absence of a message handler for those windows was not detected and XaES
+jumped through a zero vector.
+
+Fixes to allow mintsetter to run as accessory.
+
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.933
+                                                                       ======
+
+ù 25 november
+A few changes in bootup.c to make starting up more flexible.
+
+ù 27 november
+Start writing the WDIALOG extension wdlg_xxx from MagiC.
+Actually, not a great pleausure. The interface relies on calling back from
+the AES to the application. How on earth could Andres Kromke have let this
+pass through. Sigh.
+
+ù 28 november
+Fix in menu_attach. Check tree pointer.
+Now aMail works again.
+It attached a null tree pointer, dont know if this a corruption emanating
+from XaAES.
+
+ù 2 december
+Changed the submenu attachment method.
+No longer is the INDIRECT flag and ob_spec indirection used.
+In stead of displacing the text to the XA_MENU_ATTACHMENT structure,
+the latter no holds the tree and item of the attached_to object.
+Only for G_STRING objects a > will be placed in the last character of the
+string.
+
+XaAES, having no direct pointer into the attachment list anymore,
+must now search that list.
+
+It is now possible to attach a submenu to any kind of object.
+Also none of the restrictions mentioned in the compendium are applied to
+the XaAES submenu system.
+
+All this didnt make a difference for aMail, but it is better anyhow. We cannot
+rely on the fact that programs that do not set the flag themselves nevertheless
+all and always check its existence.
+
+ù 4 december
+Removed the function cancel_evnt_multi() from many places.
+The function is now called in Unblock(). The functions are intimitely related.
+This makes the consistency of the concept less vulnerable.
+Also, to increase consistency, not only the waiting flags are cleared, but
+the AES parameterblock pointer as well, making it really unavailable.
+
+ù 5 december
+Unclumsified the timer handling. It never stopped confusing me.
+The timer value is now simply passed via the client structure, so the
+difficult to follow and hardly explainable fudging with return values is
+gone at last.
+
+ù 6 december
+Found a glitch in the mouse handling.
+The moose works a little quantum mechanical.
+It can give you either the exact button state when it changes, or the
+exact mouse position when that changes. But not both exact at all times.
+
+The reason is that the moose is e real interrupt handler.
+There is no sampling.
+
+So if a button change interrupt arises, the mouse position must sampled
+and vice versa.
+
+The moose leaves the sampling to the XaAES kernel, because only the kernel is
+able to decide whether the sampling is actually needed.
+
+And there the problem was hidden. The sampling in the XaAES kernel was
+not quite solid. :-)
+
+That is now fixed. The fix has especially effect on still button up events
+in combination with move events.
+A situation that is very common in application coded popups.
+
+ù 7 december
+Fixed a bug in the trap handler for foreign clients.
+The handler didnt return to the app correctly. Amazing and not easy to
+explain side effects occurred.
+This bug repairs the problem reported by Anthony Green regarding the program
+DOC2RTF (a module of papyrus).
+
+Perhaps this also fixes problems with modules of other programs (CAB?)
+
+ù 9 december
+Dont write icon texts when the text rectangles width or height are zero.
+(popups in GEMSETUP)
+
+ù 10 december
+Increased control over objc_draw (and related) by improvement of the
+function check_widget_tree. Fixed a bug as well.
+
+Now certain combinations of form_dial and objc_draw behave better.
+(GEMSETUP)
+
+ù 10 december
+Fixed a bug in the fileselector which made a mess of names starting with
+a dot.
+
+ù 11 december
+Fixed a typo in xa_aes.h
+FAINT is same as SHADED, not SHADOWED.
+In monocnrome untopped window titles are faint again.
+
+At last discovered (or stumbled upon ;-) the reason why the client end of the
+pipe couldnt be closed in XA_appl_exit. There was still a Fread needed to
+achieve the block. This Fread is issued in the trap handler.
+New exit code XAC_EXIT. (in stead of the XAC_BLOCK in XA_appl_exit).
+The code makes the trap handler issue the Fread for blocking the client
+and after that close the pipe.
+
+Fixed a open end in swap_menu() which prevented swapping application
+by CTRL+ALT+Tab when no windows were open.
+
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.934
+                                                                       ======
+
+ù 17 december
+My last original atari mouse broke down. (I have now 4, none of them usable)
+Installed a serial PC mouse driver. The PC mouse cable was too short.
+So I also had to rearrange my real desktop.
+Life aint easy and nothing comes free. (Dr Hook)
+
+
+Fixed a hole and a bug in the keyboard queue.
+This solves problems with some editors.
+Especially in combination with QED when keystrokes leaked into the
+wrong window.
+
+Some programs install a embedded resource only as array of tree pointers
+in pb->globl. This is now detected and handled correctly.
+The only rsrc_gaddr() allowed with these programs is: rsrc_gaddr(R_TREE, index).
+All the others are undefined.
+
+This lets AUTOSORT.PRG work.
+
+Somewhow, sometime, the copying of the command of the shel_write got lost.
+Reinserted it. It is the commandline that is returned by shel_read().
+
+ù 18 december
+Button event matching:
+Apply mask on requested button state as well. :->
+Marijuana Mail  now sees button events. 
+
+ù 19 december
+Right click on a arrow reverses the action.
+Double click on a arrow slides to the appropriate end.
+Both line and page arrows.
+
+Small fix in check_widget_tree() and root object drawing in windowed
+dialogues. (a flag got lost, resulting in drawing obsolete borders again)
+
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.935
+                                                                       ======
+
+ù 19 december
+Fixed a few glitches in live moving and sizing.
+I teeny tiny forgot a little bit to keep 
+the relative position of the mouse within the widget constant. :-)
+
+ù 21 december
+Integrated debug configuring into options block.
+It is now much easier to restrict debug output to one or more applications.
+There is no need anymore to know the pid.
+
+example:
+
+options PC,LC
+{
+	windows thinwork
+	debugpoint wind,widg,evnt,multi,m
+}
+
+options OLGA
+{
+	debugpoint trap
+}
+
+If you are a programmer and one of your programs behaves strange
+and you suspect it to be a AES thingy, use XaAESdbg and MiNT.
+Or you might simply want to know how other programmers do it. :-)
+
+ù 25 december
+Fixed a bug in object_area():
+The extra 2 pixels for foreground mode were not added for inside thickness.
+ 
+ù 26 december
+Greatly improved the widget handling.
+It is now possible to have any widget size.
+That is: All widgets must have the same sizes. XaAES uses the closer widget
+to determine this size. The size influences the sizes of the window borders.
+
+A possible 3D enlargement effect for non-icon widgets is recognized.
+
+As a demonstrtation I made 6 flavours of boxchar widget sets.
+
+I also redid the xa_mono.rsc, so this is now up to date again.
+It is the same as xaaes.rsc but all colour icons are changed to mono icons.
+
+If you use a boxchar widget rsc and xa_mono.rsc you might save upto
+100 Kb in 256 colours.
+
+It even works with rectangular widgets :-) See cbox1214.rsc
+You'll see that the vertical slider is narrower than the horizontal slider.
+Generally: horizontal bars get the height of the widgets,
+           vertical bars get the width of the widgets.
+
+
+ù AD 2002
+  =======
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.936
+                                                                       ======
+
+ù 14 jan
+Reduced the ugliness of the start up logo.
+
+Fixed a small inconsistency in the hiding mechanism.
+This affects windows that are partly outside the left side of the screen.
+
+ù 15 jan
+Unhide the application that becomes the current after termination of a
+application.
+This fixes a problem with Thing where its hidden windows were replaced
+by Thing itself to default locations.
+Now they are restored to the original locations beforehand.
+
+Well, not all the time.
+I discovered that the misplacing of the windows also happens with N.AES and
+that the behaviour disappears when the 'window refresh after terminating a app'
+in Thing is switched off.
+
+Bug in the debugger ;-). Default debugpoints got lost. Fixed.
+
+ù 16 jan
+Nice arrows for sliders.
+
+ù 17 jan
+Improved the wind_get(WF_SCREEN) handling.
+The function is used to get memory for saving the background of menus or
+dialogues.
+Note that the use of this function must be strongly advised against.
+Use of form_dial is the appropriate way.
+
+New option:
+half_screen n
+
+where n is the amount of memory needed for all or particular applications.
+
+The option can be given in a options block.
+
+The default is half a 640*400 screen in the current number of planes.
+This means that you probably never need to use the option.
+
+n overrules the default unconditionally. So it can also be used to restrict
+the amount of memory spoiled by this obscure AES feature. 
+When the application using the memory is terminated, the memory will be
+released. Because we are running a multitasking system, there is no global
+such area.
+
+ù 23 jan
+Implemented a simple and mostly safe shut down procedure.
+
+Shut down can be chosen from XaAES menu or by pressing ctrl+alt+A
+                                 (or ... Q when I can get that working)
+
+The taskmanager will appear on the screen and show you which clients
+did not respond to the shutdown request.
+
+If only accessories remain, you can savely press the button
+'Quit now' to finish the actual shutdown, or if you want to leave your
+computer alone, just switch the power off.
+
+Otherwise it might be necessary to close the remaining clients in their
+respective approppriate way. Just switch hence and forth, the taskmanager
+will stay available on the screen.
+
+The taskmanager has also a button 'Shut down' in case you invoked the
+taskmanager via other means. If the 'Quit now' button isnt there, it
+will appear after you clicked the 'Shut down' button.
+
+ù 25 jan
+The taskmanager is now also updated when creating clients.
+New config command:
+
+open taskmanager
+
+The taskmanager is opened as soon as possible in bootup.
+Nice demonstration.
+
+ù 26 jan
+display_toolbar()
+Draw over the rectangle list.
+
+Macros Sema_Up and Sema_Dn, belonging to the locking system:
+Moved the phrase 'if unlocked(x)' from all over the place
+to these macros.
+
+ù 27 jan
+LINES.APP,IMGCOPY4 and PRGFLAG.APP didnt start anymore.
+The reason was the change made in XA_appl_exit described in this log.
+See 11 december (of 2001 ;-)
+Because it was not a fix of a problem, but more a cosmetic one, I simply
+undid the fix. Now the above programs start again.
+The programs mentioned belong to a catagory that issues multiple
+pairs of appl_init/appl_exit.
+Of course the real fix will be done later.
+
+ù 28 jan
+Implemented sizing by grabbing any border or corner of a window.
+The window must be moveable AND sizeable.
+
+New operand to the option 'windows'
+
+thickframe
+
+The most outer frame of a window will be 1 pixel wider.
+Makes it just that easier to grab the border.
+
+ù 30 january
+
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.940
+                                                                       ======
+
+
+ù 2 februari
+wind_get(0, WF_OWNER, ...)
+handle 0 is the root window.
+Return the owner of the desktop object. (See 28 - 30 august)
+
+Fixes desktop draw failure in TeraDesk after selecting icons.
+
+ù 6 februari
+Fix in drawing the character of a boxchar object.
+In 3D mode the character was always written in replace mode.
+
+Implemented a quick and dirty wind_get(WF_(D)COLOR).
+The whole concept of WF_(D)COLOR doesnt fit well in the XaAES window system.
+So it is NOT reported as implemented in appl_getinfo. However if a app asks
+for the window colours, it will get a sensible reply.
+Sliders in CAB 2.xx  now better.
+CAB does some strange WF_DCOLOR calls which I dont have figured out yet.
+As a result I didnt succeed in letting CAB draw the slider background
+in dark grey.
+
+It appeared that the mouse was not changed in graf_mouse() in certain
+circumstances. Very confusing for most of the applications, and of course
+their users. I lifted those restrictions.
+This makes for instance snapshot.acc usable.
+
+The fileselector didnt use the plain filename parameter at all.
+This was already wrong in v0.7b.
+Fixed.
+
+ù 7 february
+Clip text to its object rectangle in all circumstances.
+Fixes drawing problems in papyrus.
+We know that this program is a big offender in this respect.
+No reason not to do a good job here.
+
+ù 8 februaru
+Clear the screen before closing VDI workstation.
+
+ù 9 februari
+Improved handling of disabled for all object types.
+This affects disabled icons and disabled own coded menu separators.
+Text not in a box gets the chiseled out look.
+For text in a box (including buttons) the whole box content is made lighter.
+
+Icons are not perfect yet. Now the icon_blk rectangle is used in stead of
+the object rectangle. That is slightly better.
+In fact the mask should be used, but I havnt figured out yet how to do that.
+
+See CAB and LUNA.
+
+ù 10 februari
+Fix in writing G_IMAGE objects.
+Removed structure  OBJC_COLOURS from BITBLK definition and replaced by simple
+short bi_color. Also removed call to set_color().
+The settings of set_color are not used and cause a messup of previous settings.
+
+Replaced the images for extended button formats in boxchar widgets by icons.
+These images do not perform as expected in the context for which they are
+designed.
+
+ù 11 februari
+The setting of the sizes of the small (IBM) font was incorrect. (4*8) Oef!!
+Use vst_point() to get the character cell measures of ALL used system fonts!
+
+DRAW_OBJ.C
+Small fix in setting the small font cursor position.
+
+Editing in 6X6 fields now works OK.
+
+Fix in graf_dragbox and graf_rubberbox:
+If the button isnt down anymore at the moment of the call return correct
+values anyhow.
+
+This all fixes the problems in INTERFACE editing a icon text or character.
+
+ù 13 february
+Fixed a bug in resource handling.
+rsrc_gaddr() first looks in the global area passed to it for rsrc header
+and tree array.
+
+rsrc_load() puts the resource header address and tree array pointer in the 
+global area that is passed to it as well.
+
+This makes Jinnee start up.
+Jinnee needs WDIALOG or N_DLG
+I used Jinnee with N_DLG, which seems to work.
+(As far as I got with Jinnee demo version.)
+
+ù 14 february
+Implemented outlined border sizing using the right button.
+
+
+ù 15 february
+
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.941
+                                                                       ======
+
+ù 16 february
+Fix in windows noleft feature with live moving.
+
+ù 17 februari
+Unified the functions drag_border and drag_resize.
+
+drag_resize being a special case of drag_border.
+Common function size_window.
+
+ù 19 february
+Wrote the user interface for toolbars and menus in windows.
+
+wind_set(window_handle, WF_TOOLBAR, object, start_item, edit_object)
+wind_set(window_handle, WF_MENU,    object)
+
+Needless to say that XaAES doesnt suffer the restriction of N.Aes.
+The XaAES toolbar mechanism is basically a embedded (non blocking)
+form_do.
+There is no need (although provided for comapatibility) for the FTOOLBAR/
+NTOOLBAR rectangle retrieving mechanism.
+Simply call wind_set(WF_TOOLBAR) again with the approppriate start item
+will redraw the objects using the rectangle list.
+
+ù 25 februari
+Many function in XaAES are non blocking where they are blocking in other
+AES.s. This doesnt mean that while XaAES is drawing to the screen there
+would be no need to lock the screen.
+But only for the short duration of the drawing, not while waiting for the
+events.
+This is only applicable to those function that have always locked the screen
+in older AES's
+
+To name a few: form_alert, form_error and fileselector.
+And now also needed for form_dial, form_do  because these will now draw a window.
+
+This locking has been absent in XaAES until now.
+Now that XaAES becomes widely used on big and fast and busy systems, the need
+becomes urgent.
+
+I did the following: (amazingly simple ;-)
+In the table of AES functions a flag is set indicating that this type of
+locking is required.
+In the trap handler, prior to calling, or writing the AES command,
+lock_screen() is called if the flag is set.
+In the kernel, if the flag is set and the function blocks, to be able to
+unlock the screen, a reply is written back to the handler which then will
+unlock the screen and block again on a Fread on the reply pipe.
+This is the correct place, because the trap handler runs under the client pid.
+
+The mechanism doesnt suspend the AES :-)
+It also doesnt influence the behaviour of the client blocking mechanisms.
+
+Nasty screen drawing errors with alerts and the fileselector have now gone.
+
+
+Fixed a bug in the file selector which could cause a crash when the
+display list is longer than the display window and the file selector is
+called for the first time.
+
+
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.942
+                                                                       ======
+
+
+ù 11 march
+AES function graf_mouse:
+Implemented M_SAVE, M_LAST & M_RESTORE.
+This repairs mouse problems with Xcontrol v1.31
+and hopefully unexplained problems with other relatively modern applications.
+
+ù 12 march
+Before XaAES leaves, the bios curser is enabled and set to the home position.
+
+ù 15 march
+Split up the config file in 2 parts
+The first is needed for initializing XaAES.
+The second needs a fully initialized XaAES.
+
+The first replaces xaaes.cnf and is now called xa_setup.scl.
+The second is new and is called xa_exec.scl
+
+All executorial commands go to xa_exec.scl.
+Currently these are:
+open
+run
+desk
+shell
+
+xa_exec.scl is executed immediately befor entering the main kernel loop,
+but prior to the release of the semaphores.
+
+The change solves a lot of severe and dangerous entanglements while
+processing the single xaaes.cnf.
+
+The debug version of xa_setup.scl is called xa_debug.scl
+
+If xa_....scl do not yet exist, xaaes.cnf and xaaesdbg.cnf are used
+and processed as before.
+But this will disappear soon. It is only maintained during transition time.
+
+ù 16 march
+Fix in preparing the AES client structure.
+This prevents shel_find from accessing the floppy drive when XaAES tries
+to find its files.
+
+ù 21 march
+'debugpoint all' is the same as 'debug all'.
+
+Fixed rsrc_gaddr() for R_FSTRING and R_FRIMG.
+The index was not added to the start address.
+
+This fixes 3D_CALC, CDISO ea,
+
+The feature is used by many programs to hold format strings.
+A wrong format string can result in bus errors (%s and no correct pointer)
+So this might fix many unexpected bus errors in many programs.
+
+ù 22 march
+Added the program XaNNaX to the distribution.
+I use it to switch between TOS, MiNT+N.Aes and MiNT+XaAES
+
+Read the readme in the folder XANNAX
+
+
+ù 23 march
+Moved all the standard headers used by the current XaAES to the folder
+xinclude in the xaaes source folder itself, and use them from there.
+This gives a clear overview of the headers used by XaAES.
+It also makes it perfectly clear which version and which brand of headers
+are currently suited to get XaAES compiled at all.
+
+If someone has more recent header files and want to use them, if it fails
+there is at least a set of headers to which the more recent can be compared.
+So the cause of the compilation failure can be determined unambiguously.
+
+ù 31 march
+Implemented wind_get(-1, WF_TOP, apid)    MagiC 4
+Put apid in front.
+
+Implemented wind_set(hdl, WF_ICONIFY, -1,-1,-1,-1)    MagiC 4
+Iconify to next free position.
+Also a closed window can be iconified and uniconified.
+Papyrus uses this form of iconify.
+
+wind_get(..., WF_DCOLOR, ..., &flgs3D)   MagiC 4
+flgs3D := 0x0f0f
+
+appl_control:
+If APC_TOP is issued on a accessory, AC_OPEN is sent to that acc.
+
+XaNNaX works entirely in lower case now.
+
+
+ù 1 april
+wind_calc:
+default for request is WC_WORK
+Fixes redraw problems in MJM (Marijuana Mail uses 3)
+
+Refreshed pas_wdg.rsc in the distribution (was corrupted).
+
+ù 2 april
+wind_get:
+Clear arguments of wind_get when invalid window handle is passed.
+This prevents FIRST/NEXTXYWH loops from looping forever.
+Fixes such a loop in CDISO.PRG when selecting a option from the menu.
+
+Fixed a bug in export command.
+the string:
+avserver="THING   "
+was incorrectly interpreted.
+
+where
+avserver "THING   "
+and
+avserver = "THING   "
+were OK.
+
+
+ù 3 april
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.943
+                                                                       ======
+
+ù 5 - 9 april
+Continue implementing WDIALOG functions started on 27 november.
+Got wdlg_... as far as jinnee demo booting up and displaying demo dialogue
+and about dialogue. (Including reaction on Ok buttons :-)
+
+ù 10 april.
+open_window()
+Removed any adaptation of x, y, w and h of a window when it is opened.
+(Giving apps the opportunity to open ghost windows (for whatever reason).
+
+ù 13 april
+Very important reorganization:
+XaAES now includes the header file np_aes.h in xa_aes.h
+np_aes.h is the header file for clients that is recommended for use with
+new or modern applications. (Not published yet, parallel under test)
+
+XaAES now uses the same standard AES header as suitable for clients,
+no causes for synchronization loss with the world outside.
+xa_aes.h isnt anymore partly a duplicate of a aes.h
+
+np_aes includes gempb.h which provides proper type names for integers used by
+GEM.
+
+Replaced ALL short in XaAES by type names based on usage and origin in stead
+of availability in a particular compiler.
+
+i.e.
+G_i and G_u for integers in GEM structers and other constructs coming from
+outside. Types that need to be 16 bits. See header gempb.h
+Went back to int for those integers that do not care how wide they are.
+Local and private integer types.
+
+I leave it to the compiler to decide what the best is for these integers.
+If your compiler thinks that they should be 32 bits, so be it, I wont stand
+in your way.
+Contemplating that 90 percent of the integers in programs are used for small
+numbers, I begin to understand what the notion '32 bit clean' means.
+
+ù 14 april
+Reorganization of options database. Make it more work as the syntax suggests.
+Any groupimg of options and program names is allowed.
+
+Options specifications always add up per specified program.
+
+Combined the sourcefiles new_clnt.c and clients.c into xa_clnt.c
+renamed new_clnt.h into xa_clnt.h
+
+Moved the config parser code (function SCL) to a separate file.
+new sourcefile names config.c and config.h
+
+ù 15 april
+Created xa_scl.prg.
+It is a separate program for executing xa_exec.scl. (and other)
+The setup scl will remain simple and restricted to only a few commands
+and option settings.
+
+Any future enhancements to the scl itself will be implemented in xa_scl.
+
+New function fdisplay():
+Writes to a file created by Fcreate.
+It can also echo to the screen.
+
+ù 16 april
+Implemented boolean variable type 'bool':
+boolean value denotations are 'true' and 'false'.
+Any other type is coerced to one of these.
+int: not zero yields true,
+string: not empty yields true.
+undefined yields false.
+
+Simple if statement implemented.
+In the setup the statement is restricted to 1 bool and there is no nesting.
+No expressions.
+
+Same restriction for xa_scl. But that will change in the future.
+
+The simple if statement is mainly implemented to make it easier to have
+different versions of your setup in a single file without the excessive and
+cumbersome use of commenting by '#'.
+
+See the example xa_exec.scl included.
+
+ù 18 april
+Idees of Martin Tarenskeen and Patrick Prokopovitch:
+
+run command can have wildcards.
+All matching names in the directory are launched.
+
+Sort of autogem function.
+
+ù 22 april
+A setup log is created independant of debug status.
+File: xa_setup.log
+
+--------------------------------------------------------
+ù may and most of june:
+Spent some time on AHCC (ANSI HCC (Sozobon 1.2 --> 3.0))
+--------------------------------------------------------
+
+ù 24 june
+Introduced a check on object height and text height.
+Charboxes used to draw a underline only are handled correctly (The character is
+not written.)
+
+ù 25 june
+The combination:
+
+form_center
+form_dial(FMD_START)
+form_do
+form_dial(FMD_FINISH)
+
+occasinally left a 3 pixel gap between the dialogue object and the window
+border. This was caused by the OUTLINED state of the root object.
+This problem is solved by moving the filling of the gap from display_object()
+to display_window()
+
+Why this became problematic was due to the attempt to decrease the number
+of borders around the object. (outline AND window together)
+Which I still think is good.
+
+ù 26 june
+Restrictions on the XaAES function of putting dialogues (the above combination)
+in windows.
+
+No window is created:
+1 If the application does not call form_do at all.
+2 The application already locked the screen (wind_update()) beforehand.
+
+In both cases XaAES behaves like all the other AES's.
+
+Because many applications rely on the fact that all AES's restore a form_alert
+background, this is done by XaAES as well now; be it only when the app has
+locked the screen. There might be something on the screen that is not a window.
+
+ù 27 june
+Implemented the easiest (and rather effective) redraw optimization:
+'engulfing' queued redraw message are amalgamated.
+
+ù 28 june
+Fix in text and formatted text objects: 
+Forgot to remove a bar drawing after a fix on transparency some time ago.
+Now transparency of these texts should be correct.
+This fixes the bug reported by Olivier Landemarre on Kronos.
+
+ù 30 june
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.950
+                                                                       ======
+
+ù 3 july
+Fix in button event handling: if the mouse is locked and the app has a classic
+dialogue on the screen and is not in a form_do() and is waiting for mouse
+events, it will now recieve the event.
+
+ù 4 july
+More fixes in fitting text in boxes. Now 3D widening effect is taken into
+account.
+
+ù 5 july
+More fixes in drawing of transparent text.
+
+ù 6 july
+More fixes in handling windowed and classic dialogues.
+(Because window creation is postponed until form_do() is called, I could
+ do away with the handling of the 3 pixel gap caused by form_center() on
+ outlined boxes).
+
+ù 7 july
+Fix in graf_slidebox():
+Forgot to set the mouse distance rectangle properly.
+
+At last got the button down fall through event working.
+(Fall through evnt_multi(MU_BUTTON, down) and the button is already (or still) down)
+For almost 2 years I withstood the temptation of writing some ugly hack or do
+bad things to the Fselect loop. And now this stubborn attitude has payed off (grin!).
+
+The alterations in the dialogue handling on july 3 have repaired the weaknesses in
+the button event handler which caused unwanted interference with window widgets.
+
+I just enabled the code for the fall thru events, and lo and behold!, it worked.
+I knew that this code must be correct. I just never could find the reason of the
+malfunctioning.
+
+ù 8 july
+Published a binary distribution on my home page.
+Notified the MiNT list.                                                v0.951
+                                                                       ======
+
+ù 15 july
+debug_lines is now a long.
+
+ù 29 july
+Removed the need for a parent window in function set_slist_object.
+A slist is an object, not a widget.
+
+ù 11 august
+Small AES function that do not need the winlist semaphore
+are called direct. Occasional speed improvements.
+See NO_SEMA in kernel.c setup_k_function_table().
+
+appl_find: missing client semaphore lock inserted.
+
+ù 16 august
+Renamed Xmemory package to 'AHCM' (A Home Cooked Memory allocation system)
+which will be published separate from XaAES. (Including a full blown
+hypertext ;-)
+
+Made sure that XaAES uses exactly this version.
+This made a separate header file necessary (xalloc.h) which holds the
+extended (type,key) calls.
+
+Progdefs can spoil the intout array. (vmg_tt.prg).
+Made sure that intout is filled out AFTER any object drawing.
+
+ù 5 october
+Fixed a bug in F_TEXT, G_FTEXT objects:
+If 3D object, do not write a black rectangle for selection.
+
+The opaque setting for buttons was wrong; (must be zero = transparent).
+(Should really have seen this in the first place!)
+As a result the code for faking transparency in ob_text() now obsolete,
+and hence removed.
+
+This corrects at least MINTSETTER.
+
+Obect colour & style settings had got a little bit messy.
+Cleanup.
+
+Implemented use of home directory for shell_find.
+Activated by the command usehome in xa_setup.scl.
+
+If activated and a environment variable named HOME exists,
+shell_find will look in the HOME directory after looking
+in the clients homepath and before looking in the PATH directory list.
+
+This applies also to XaAES itself, so in a multiuser environment each
+user can have its own XaAES scl files and hence its own setup.
+
+ù 10 october
+removed any reference to 'mintmouse'.
+MiNT keeps its hands off the VDI. Because vmoose uses the VDI, it
+will never be implemented as a builtin xdd.
+
+ù 11 october
+Implemented mouse wheel support.
+
+To be able to use the mouse wheels under XaAES, your VDI must support
+the new VDI function 134;  vex_wheel_v.
+If you run a MILAN with the latest release TOS, you've got it.
+
+You can activate the use of mouse wheels in XaAES by replacing
+vmoose.xdd by whlmoose.xdd.
+
+XaAES converts wheel action to corresponding WM_ARROWED
+messages. So there is no need to change applications.
+
+The messages are sent to the top window, and only if this window has
+the approppriate arrow widgets.
+
+More functionality for wheel aware applications and any configurable
+options will be implemented in future releases.
+
+ù 21 october
+Fixed a bug in wind_close:
+The rectangle list was not removed.
+This fixes the behaviour in the JayGrpII program.
+
+The behaviour, getting rectangles after wind_close,
+should be undefined.
+
+Nevertheless, it was a bug in XaAES and the fix may well affect
+many other applications.
+
+ù 23 october
+When the alert pipe reports a alert and the screen was locked, the alert
+was flagged as pending. Alas the pending alert was never displayed.
+You might have heard a ping in stead.
+It was in the system alert window, so it wasnt lost.
+Now any pending alert is displeyed as soon as the screen is unlocked.
+
+In colour the title of windows without the move attribute is displayed
+without 3D effects.
+
+ù 24 october
+Fixed a bug in popups.
+In stead of moving the popup inside the visible screen, it was shortened
+and made scrolling.
+Popups are now only made scrolling when they are larger than the desktop
+workarea height.
+
+ù 25 october
+Redraw optimization for newly topped windows. If the window was already
+completely visible, no redraw message is sent.
+
+ù 
+Published a complete distribution on my home page.
+Notified the MiNT list.                                                v0.960
+                                                                       ======
+
+ù 30 october
+Fixed a typo in click_menu_widget().
+Due to a uncarefully inserted debug statement (without {} :-(  ),
+locking the menu popups didnt work. This applied only to xaaesdbg.tos,
+not to the normal xaaes.tos.
+
+ù 31 october
+menu locking now also applies to the mouse lock.
+Some programs only lock the mouse when displaying a modal dialogue.
+This was needed because otherwise no keyboard events could be identified
+for these dialogues.
+
+Also a fix in find_focus was needed.
+Keyboard events are directed to the client that has locked the screen
+OR locked the mouse.
+
+ù 6 november
+evnt_multi: if parameter 'clicks' is zero, treat it as 1 where applicable.
+This fixes problems in ScanxPro.
+
+Fixed a bug in menu handling: If the popup is part of a root menu bar,
+the popup must be kept within the whole screen, otherwise within the
+window work area.
+
+The bug was a result of the fixes made on the 24th of october and caused
+unwanted and irritating flimmering of the menus.
+
+ù 9 november
+Menu handling must lock the mouse as well.
+Various fixes causing more robust behaviour of modal dialogues.
+
+Increased intuitivity of debugging.
+Changed syntax of 'debug all' and 'except'
+'except follows 'all' on the same line.
+
+A 'typical' debug setting could look like this:
+
+options testprg
+{
+	debugpoint all except kern,a,i,k,o,r,s,v,x
+}
+
+'but' can be used as a synomym of 'except'
+
+The example reduces the output for testprg a little bit.
+At the same time the debugging system provides a little bit more info
+from the environment. This increases the chances of getting the info I need.
+
+ù 10 november
+Fixed a logic hole in menu_finish().
+This became manifest after implementing mouse locking for the menu bar.
+
+
+Published a binary distribution on my home page.
+Notified the MiNT list, the Aranym list and comp.sys.atari.st.         v0.961
+                                                                       ======
+
+ù 11 november
+Removed the restrictions on shell_write(4, ...) (shut_down)
+XaAES's shutdown is already restricted by nature.
+
+Fixed a bug in file selector when clicking a '.' entry.
+The bug caused XaAES to crash miserably. :-(
+
+Improved the behaviour of the '.' as well, making it consistent.
+
+Removed wind_calc from the NO_SEMA catagory; it allocates memory from the server
+base.
+
+ù 29 november
+Small fix in swap_menu.
+The bug caused wrong setting of focus in rare situations.
+
+ù 10 december
+Problems using the new Teradesk(2.0x)
+The console device was lost by XaAES irregularly after booting up.
+Inserted flag O_DENYRW in Fopen(u:\dev\console)
+This seems to help.
+I still havnt found what Teradesk does wrong.
+In the very early history of XaAES I experienced that wrong GEMDOS calls
+were able to mess the console reading.
+
+
+ù 12 december
+
+Published a binary distribution on my home page.
+Notified the MiNT list, the Aranym list and comp.sys.atari.st.         v0.962
+                                                                       ======
+ 
+
+ù 13 december
+Fixed a bug in find_focus() (got too complicated :-)
+Programs having a top window, but NO menu_bar didnt receive all keystrokes.
+This fixes a problem in LUNA.
+
+ù 2 jaunuary 2003
+
+Published a complete distribution on my home page.
+Notified the MiNT list, the Aranym list and comp.sys.atari.st.         v0.963
+                                                                       ======
