@@ -111,10 +111,10 @@ Setup_form_do(struct xa_client *client,
 		wt = set_toolbar_widget(lock, wind, obtree, edobj);
 		wt->zen = false; //true;
 	}
+#if 0
 	/*
 	 * Should this client do classic blocking form_do's?
 	 */
-#if 0
 	else if (client->fmd.lock)
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
@@ -187,7 +187,7 @@ Setup_form_do(struct xa_client *client,
 			return false;
 		}
 	}
-okexit:
+/* okexit: */
 	DIAGS(("Key_form_do: returning - edobj=%d, wind %lx",
 		wt->e.obj, wind));
 	if (ret_edobj)
