@@ -219,7 +219,7 @@ max_w(int m, char to[][MAX_X+1], int *tot)
  * 
  * HR 250602: reactivated the STORE_BACK facility for form_alert only.
  *            If a application has locked the screen, there might be something
- *            unser the alert that is not a window.
+ *            under the alert that is not a window.
  */
 int
 do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
@@ -246,7 +246,7 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 	for (f = 0; f < ALERT_LINES; f++)
 		alertxt->text[f][0] = '\0';
 
-	ipff_init(MAX_X,-1,0,NULL,alert,NULL);
+	ipff_init(MAX_X, -1, 0 ,NULL, alert, NULL);
 
 	if (sk() == '[')		/* skip white space and give non_white char */
 	{
