@@ -580,9 +580,13 @@ menu_finish(struct task_administration_block *tab)
 
 	if (cfg.menu_locking)
 	{
+		if (!strcmp("  FontList 1.11 ", client->name))
+			display("unlocking now\n");
+
 		if (is_bar)
 			unlock_mouse(client, 10);
-		unlock_screen(client, 10);
+
+		unlock_screen(C.Aes, 10);	/*client, 10);*/
 	}
 }
 
