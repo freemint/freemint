@@ -37,7 +37,6 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "menuwidg.h"
-//#include "objects.h"
 #include "widgets.h"
 
 #include "mint/signal.h"
