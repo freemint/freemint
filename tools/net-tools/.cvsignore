@@ -1,0 +1,13 @@
+.deps
+*.o
+*~
+arp
+diald
+ifconfig
+iflink
+ifstats
+masqconf
+netstat
+pppconf
+route
+slattach

@@ -1,0 +1,129 @@
+.TH ifconfig 8 MintNet
+.SH NAME
+ifconfig \- network interface configuration
+.SH SYNOPSIS
+.B "ifconfig [-a|-v] [-f <filename>] [interface options]"
+.SH DESCRIPTION
+.I Ifconfig
+is used to set and show the addresses, flags and options
+of network interfaces.
+.PP
+When
+.I ifconfig
+is invoked without arguments,
+it shows a table of all running network interfaces, their addresses
+and flags in a human readable form.
+The option
+.B "-a"
+forces
+.I ifconfig
+to display all interfaces in the system, no
+matter if they are running or not. The option
+.B "-f <filename>"
+passes driver specific options to
+.I ifconfig
+. You will find descriptions for these specific options in the
+README files of every driver that supports this.
+.PP
+When a single argument (the name of a network interface) is given,
+.I ifconfig
+just shows the status of this interface.
+.PP
+.I ifconfig
+sets flags and addresses of the interface named as the first
+argument when additional options are given.
+.SH OPTIONS
+.TP 15
+.SM interface
+The name of the interface to deal with.
+.BR lo0 ,
+and
+.B sl0
+are valid names for the loopback interface and the SLIP interface
+(channel 0) respectively.
+.TP
+.SM "addr \fBinetaddr\fP"
+This option causes
+.I ifconfig
+to set the local IP address of the interface to
+.BR inetaddr .
+This is the address your machine can be reached at over this interface.
+.B inetaddr
+can be in standard IP address dot notation or can be a symbolic name
+which is resolved into an IP address.
+NOTE that you must not use a symbolic name when setting up the loopback
+interface, because symbolic names cannot be resolved before the loopback
+interface is set up.
+.TP
+.SM "dstaddr \fBinetaddr\fP"
+Set the point to point destination address of the interface to
+.BR inetaddr ,
+which
+can be an IP address or a symbolic name.
+This option will only work on point to point interfaces, like the
+.B sl?
+ones.
+.TP
+.SM "broadaddr \fBaa.bb.cc.dd\fP"
+Set the broadcast address of the interface to
+.BR "aa.bb.cc.dd" .
+This defaults to the net broadcast address of the attached network, but
+can be set to any valid IP address.
+This option will only work on interfaces that support broadcasting, like
+the
+.B lo0
+interface.
+.TP
+.SM "netmask \fBaa.bb.cc.dd\fP"
+Set the subnet mask of the interface to
+.BR "aa.bb.cc.dd" .
+This is by default the class A, B or C netmask of the local address
+of the interface set with the
+.B "addr"
+option.
+It can be used to split a large network into many small subnetworks.
+.TP
+.SM up
+This sets the UP flag on the interface. This is used to activate the
+interface.
+.TP
+.SM down
+This clears the UP flags on the interface. This is used to shut down
+the interface.
+.TP
+.SM [-]arp
+(De)activate usage of the ARP (address resolution protocol) protocol
+for resolving IP addresses into hardware addresses.
+.TP
+.SM [-]trailers
+(De)activate usage of trailer encapsulation for this interface.
+.TP
+.SM [-]debug
+(De)activate debugging for this interface. Debugging is currently
+a no-op.
+.TP
+.SM mtu NN
+Set the mtu (maximum transmission unit) of the interface to NN bytes.
+Better make it large enough as long as fragmentation is not implemented.
+.TP
+.SM metric NN
+Set the metric of the interface to NN. This value is currently not used.
+.TP
+.SM [-]linkNN
+This option sets (clears) the bit with number NN in the link level flag
+word of the interface.
+The flag word is 16 bits wide, so [-]link0 through [-]link15 are valid.
+Bit 0 is the least significant, bit 15 the most significant bit.
+.br
+Link level flags are interface type specific. Thats why
+.I ifconfig
+only uses bit numbers instead of meaningful names for them.
+Currently only SLIP interfaces support link level flags.
+Bit 3 turns auto compression on: if set and a VJ compressed SLIP
+frame is received the interface enables compression for outgoing frames.
+Bit 4 is the compression bit: if set VJ header compression is enabled.
+.SH AUTHOR
+Kay Roemer <roemer@rbi.informatik.uni-frankfurt.de>
+Torsten Lang <Torsten@Lang.net>
+.SH SEE ALSO
+.IR route(8).
