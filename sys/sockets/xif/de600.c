@@ -47,6 +47,9 @@
 
 # define DE600_VERSION	"0.4"
 
+/* there must be a better place for that */
+volatile long *hz_200 = _hz_200;
+
 /*
  * Some macros for managing the output queue.
  */
