@@ -82,7 +82,7 @@ static SCSIDRV emu_scsidrv =
 
 
 # ifdef DEBUG_INFO
-# define SCSIDRV_DEBUG(x)	FORCE x
+# define SCSIDRV_DEBUG(x)	DEBUG (x)
 # else
 # define SCSIDRV_DEBUG(x)	
 # endif
