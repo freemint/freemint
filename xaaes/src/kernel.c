@@ -338,6 +338,7 @@ kernel_key(LOCK lock, KEY *key)
 		case 'A':
 			DIAGS(("shutdown by CtlAlt Q/A\n"));
 			shutdown(lock);
+			C.shutdown = QUIT_XAAES;
 	#if 0 /* GENERATE_DIAGS */
 			D.debug_level = 4;
 	#endif
@@ -479,7 +480,7 @@ XaAES(void)
 		DIAG((D_kern, NULL,">>Fselect(t%d) :: %d, channels: 0x%08lx, U%dM%d\n",
 			C.active_timeout.timeout, fs_rtn, input_channels, S.update_lock, S.mouse_lock));
 
-		if (C.shutdown & QUIT_XAAES)
+		if (C.shutdown & QUIT_NOW)
 			break;
 
 		/* get_mouse(0); */
@@ -884,7 +885,7 @@ cont:
 			}
 		}
 	}
-	while ( !(C.shutdown & QUIT_XAAES) );
+	while ( !(C.shutdown & QUIT_NOW) );
 
 	DIAGS(("**** Leave kernel for shutdown\n"));
 }

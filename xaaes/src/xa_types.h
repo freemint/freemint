@@ -954,9 +954,10 @@ struct common
 /*
  * definitions for shutdown in struct common
  */
-#define QUIT_XAAES    1
+#define QUIT_NOW      1
 #define HALT_SYSTEM   2
 #define REBOOT_SYSTEM 4
+#define QUIT_XAAES    8
 
 
 /* 
