@@ -36,7 +36,7 @@ ip_local_addr (ulong dstaddr)
 	struct route *rt;
 
 	if (dstaddr == INADDR_ANY)
-		ifa = if_af2ifaddr (if_primary, AF_INET);
+		ifa = if_af2ifaddr (rt_primary.nif, AF_INET);
 	else
 	{
 		rt = route_get (dstaddr);
@@ -168,7 +168,10 @@ ip_dst_addr (ulong addr)
 		/*
 		 * Use address of primary interface
 		 */
-		ifa = if_af2ifaddr (if_primary, AF_INET);
+		ifa = if_af2ifaddr (rt_primary.nif, AF_INET);
+
+		DEBUG (("ip_dst_addr: nif = %s any", ifa ? ifa->ifp->name : "??"));
+
 		return ifa ? SIN (&ifa->addr)->sin_addr.s_addr
 			   : INADDR_LOOPBACK;
 	}
@@ -177,8 +180,11 @@ ip_dst_addr (ulong addr)
 		/*
 		 * Use broadcast address of primary interface
 		 */
-		if (if_primary->flags & IFF_BROADCAST)
-			ifa = if_af2ifaddr (if_primary, AF_INET);
+		if (rt_primary.nif->flags & IFF_BROADCAST)
+			ifa = if_af2ifaddr (rt_primary.nif, AF_INET);
+
+		DEBUG (("ip_dst_addr: nif = %s brcst", ifa ? ifa->ifp->name : "??"));
+
 		return ifa ? SIN (&ifa->ifu.broadaddr)->sin_addr.s_addr
 			   : INADDR_BROADCAST;
 	}
@@ -285,7 +291,6 @@ ip_output (BUF *buf)
 	if (iph->saddr == INADDR_ANY)
 	{
 		struct ifaddr *ifa = if_af2ifaddr (rt->nif, AF_INET);
-		
 		if (!ifa)
 		{
 			DEBUG (("if_output: chosen net if has no inet addr"));
@@ -354,7 +359,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 	iph->chksum  = 0;
 	
 	nbuf->info = ip_priority (opts->pri, iph->tos);
-	
+
 	/*
 	 * Route datagram to next interface
 	 */
@@ -365,7 +370,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 		icmp_send (ICMPT_DSTUR, ICMPC_NETUR, saddr, nbuf, 0);
 		return ENETUNREACH;
 	}
-	
+
 	addrtype = ip_chk_addr (daddr, rt);
 	if (addrtype == IPADDR_BADCLASS)
 	{
@@ -392,10 +397,9 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 	if (saddr == INADDR_ANY)
 	{
 		struct ifaddr *ifa = if_af2ifaddr (rt->nif, AF_INET);
-		
 		if (!ifa)
 		{
-			DEBUG (("if_send: chosen net if has no inet addr"));
+			DEBUG (("if_send: nif %s has no ifaddr", rt->nif->name));
 			buf_deref (nbuf, BUF_NORMAL);
 			route_deref (rt);
 			return EADDRNOTAVAIL;
@@ -651,6 +655,7 @@ ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short isbrcst)
 	{
 		iph->chksum = 0;
 		iph->chksum = chksum (iph, iph->hdrlen * sizeof (short));
+		DEBUG (("ip_frag: short enough -> if_send()"));
 		return if_send (nif, buf, nexthop, isbrcst);
 	}
 	
