@@ -144,6 +144,8 @@ xaaes_sh_info_release(void *_info)
 {
 	struct shel_info *info = _info;
 
+	DIAGS(("xaaes_sh_info_release: releasing 0x%lx"));
+
 	if (info->tail_is_heap && info->cmd_tail)
 		kfree(info->cmd_tail);
 }

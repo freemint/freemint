@@ -753,22 +753,22 @@ free_limits (struct proc *p)
 struct p_ext *
 share_ext(struct proc *p)
 {
-	struct p_ext *p_ext;
+	struct p_ext *p_ext = NULL;
 
-	if (!p->p_ext)
-		return NULL;
-
-	p_ext = kmalloc(sizeof(*p_ext));
-	if (p_ext)
+	if (p->p_ext)
 	{
-		int i;
-
-		p_ext->size = p->p_ext->size;
-		p_ext->used = p->p_ext->used;
-
-		for (i = 0; i < p_ext->size; i++)
+		p_ext = kmalloc(sizeof(*p_ext));
+		if (p_ext)
 		{
-			if (i < p_ext->used)
+			int i;
+
+			/* clean memory */
+			bzero(p_ext, sizeof(*p_ext));
+
+			p_ext->size = p->p_ext->size;
+			p_ext->used = p->p_ext->used;
+
+			for (i = 0; i < p_ext->used; i++)
 			{
 				struct proc_ext *ext;
 
@@ -782,8 +782,6 @@ share_ext(struct proc *p)
 				if (ext->cb_vector && ext->cb_vector->share)
 					(*ext->cb_vector->share)(ext->data);
 			}
-			else
-				p_ext->ext[i] = NULL;
 		}
 	}
 
@@ -793,43 +791,39 @@ share_ext(struct proc *p)
 void
 free_ext(struct proc *p)
 {
-	struct p_ext *p_ext;
-	int i;
-
-	if (!p->p_ext)
-		return;
-
-	p_ext = p->p_ext;
-	p->p_ext = NULL;
-
-	for (i = 0; i < p_ext->used; i++)
+	if (p->p_ext)
 	{
-		struct proc_ext *ext = p_ext->ext[i];
+		struct p_ext *p_ext = p->p_ext;
+		int i;
 
-		if (--ext->links <= 0)
+		for (i = 0; i < p_ext->used; i++)
 		{
-			/* release callback */
-			if (ext->cb_vector && ext->cb_vector->release)
-				(*ext->cb_vector->release)(ext->data);
+			struct proc_ext *ext = p_ext->ext[i];
 
-			kfree(ext->data);
-			kfree(ext);
+			if (--ext->links <= 0)
+			{
+				/* release callback */
+				if (ext->cb_vector && ext->cb_vector->release)
+					(*ext->cb_vector->release)(ext->data);
+
+				kfree(ext->data);
+				kfree(ext);
+			}
 		}
-	}
 
-	kfree(p_ext);
+		p->p_ext = NULL;
+		kfree(p_ext);
+	}
 }
 
 void * _cdecl
 proc_lookup_extension(struct proc *p, long ident)
 {
-	struct p_ext *p_ext;
-
 	if (!p) p = curproc;
 
-	p_ext = p->p_ext;
-	if (p_ext)
+	if (p->p_ext)
 	{
+		struct p_ext *p_ext = p->p_ext;
 		int i;
 
 		for (i = 0; i < p_ext->used; i++)
@@ -920,13 +914,11 @@ proc_attach_extension(struct proc *p, long ident, unsigned long size, struct mod
 void _cdecl
 proc_detach_extension(struct proc *p, long ident)
 {
-	struct p_ext *p_ext;
-
 	if (!p) p = curproc;
 
-	p_ext = p->p_ext;
-	if (p_ext)
+	if (p->p_ext)
 	{
+		struct p_ext *p_ext = p->p_ext;
 		int i;
 
 		for (i = 0; i < p_ext->used; i++)
