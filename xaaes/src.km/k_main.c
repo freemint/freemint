@@ -185,9 +185,6 @@ Block(struct xa_client *client, int which)
 void
 Unblock(struct xa_client *client, unsigned long value, int which)
 {
-	wake(IO_Q, (long)client);
-	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
-
 	/* the following served as a excellent safeguard on the
 	 * internal consistency of the event handling mechanisms.
 	 */
@@ -195,6 +192,17 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	{
 		cancel_evnt_multi(client,1);
 	}
+	wake(IO_Q, (long)client);
+	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
+#if 0
+	/* the following served as a excellent safeguard on the
+	 * internal consistency of the event handling mechanisms.
+	 */
+	if (value == XA_OK)
+	{
+		cancel_evnt_multi(client,1);
+	}
+#endif
 }
 
 

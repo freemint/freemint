@@ -355,14 +355,19 @@ unsigned long
 XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	RECT r, d = {0};
-	short mb;
+	short mb, x, y;
 
 	CONTROL(4,3,0)
 
-	r.x = pb->intin[0],
+	check_mouse(client, &mb, &x, &y);
+	r.x = pb->intin[0];
 	r.y = pb->intin[1];
-
-	check_mouse(client, &mb, &r.w, &r.h);
+	r.w = pb->intin[0] - x;
+	if (r.w < 0)
+		r.w = 0;
+	r.h = pb->intin[1] - y;
+	if (r.h < 0)
+		r.h = 0;
 
 	rubber_box(client, SE, r, &d,
 		pb->intin[2],		/* minimum */

@@ -224,7 +224,7 @@ pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 
 	len = strlen(var) + strlen(arg) + 2;
 
-	if (len > sizeof(p))
+	if (len < sizeof(p))
 	{
 		strcpy(p, var);
 		strcat(p, "=");
@@ -363,6 +363,7 @@ pCB_run(const char *path, struct parsinf *inf)
 				strcpy(cfg.cnf_run[i], path);
 				DIAGS(("pCB_run[%i]: %s", i, path));
 			}
+			break;
 		}
 	}
 }
