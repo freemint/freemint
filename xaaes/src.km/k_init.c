@@ -174,13 +174,16 @@ k_init(void)
 			return -1;
 		}
 
-		/* We need to get rid of the cursor */
+		/*
+		 * We need to get rid of the cursor
+		 */
 		v_exit_cur(C.P_handle);
 		DIAGS(("v_exit_cur ok!"));
 	}
 	else
 	{
-		/* The GEM AES has already been started,
+		/*
+		 * The GEM AES has already been started,
 		 * so get the physical workstation handle from it
 		 */
 		short junk;
@@ -207,7 +210,9 @@ k_init(void)
 
 	DIAGS(("Virtual work station opened: %d", C.vh));
 
-	/* Setup the screen parameters */
+	/*
+	 * Setup the screen parameters
+	 */
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;	/* HR + 1 */
 	screen.r.h = work_out[1] + 1;	/* HR + 1 */
@@ -224,7 +229,8 @@ k_init(void)
 	DIAGS(("Video info: width(%d/%d), planes :%d, colours %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours));
 
-	/* If we are using anything apart from the system font for windows,
+	/*
+	 * If we are using anything apart from the system font for windows,
 	 * better check for GDOS and load the fonts.
 	 */
 	if (cfg.font_id != 1)
@@ -235,7 +241,9 @@ k_init(void)
 			cfg.font_id = 1;
 	}
 
-	/* Set standard AES font */
+	/*
+	 * Set standard AES font
+	 */
 	screen.standard_font_id = screen.small_font_id =
 		vst_font(C.vh, cfg.font_id);
 
@@ -243,7 +251,9 @@ k_init(void)
 	 * Use the ability of vst_point to return the character cell measures.
 	 */
 
-	/* Select Small font */
+	/*
+	 * Select Small font
+	 */
 	screen.small_font_point = vst_point(C.vh,
 					cfg.small_font_point,
 					&f,
@@ -251,7 +261,9 @@ k_init(void)
 					&screen.c_min_w,
 					&screen.c_min_h);
 
-	/* Select standard font */
+	/*
+	 * Select standard font
+	 */
 	screen.standard_font_point = vst_point(C.vh,
  		(screen.r.h <= 280) ? cfg.medium_font_point : cfg.standard_font_point,
 		&f,
@@ -259,7 +271,13 @@ k_init(void)
 		&screen.c_max_w,
 		&screen.c_max_h);
 
-	/* Open a diagnostics file? All console output can be considered diagnostics,
+	/*
+	 * Init certain things in the info_tab used by appl_getinfo()
+	 */
+	init_apgi_infotab();
+
+	/*
+	 * Open a diagnostics file? All console output can be considered diagnostics,
 	 * so I just redirect the console to the required file/device
 	 */
 	DIAGS(("Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, C.vh));
@@ -346,10 +364,12 @@ k_init(void)
 	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
 	fix_menu(C.Aes, C.Aes->std_menu->tree, true);
 	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
+#if 0
 	{
 		char *vs = object_get_spec(C.Aes->std_menu->tree + SYS_DESK)->free_string;
 		strcpy(vs + strlen(vs) - 3, version + 3);
 	}
+#endif
 	DIAGS(("menu widget set"));
 
 	/* Fix up the file selector menu */

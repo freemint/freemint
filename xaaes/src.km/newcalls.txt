@@ -10,17 +10,132 @@
 ===============================================================================
                             -= Detecting XaAES =-
 
- XaAES is detected using appl_getinfo(XAAES_GETVERSION); which will return
- in ap_gout1-4 the following;
+ appl_getinfo() is the correct call to use if the application wants to know
+ which AES it runs under.
 
- ap_gout1 = Major version number
- ap_gout2 = Minor version number
- ap_gout3 = Target platform this XaAES was compiled for
- ap_gout4 = Status (Beta, alpha, etc.)
+ Normal binding;
 
-Add to your header file
+ INPUT:
+  control[0]    130                              Opcode
+  control[1]      1                              Elements in intin
+  control[2]      5 (or 1 - extended appl_info)  Elements in intout
+  control[3]      0 (or n - extended appl_info)  Elements in addrin
+  control[4]      0                              Elements in addrout
 
-#define XA_AGI_VERSION  0x5800
+  intin[0]        Mode
+
+ OUTPUT:
+  intout[0]       Return value - 0 = failure, 1 = success
+  intout[1]       ap_gout1
+  intout[2]       ap_gout2
+  intout[3]       ap_gout3
+  intout[4]       ap_gout4
+
+ With extended appl_info, control[N_ADDRIN] and control[N_INTOUT] is consulted
+ to determine what information should be returned based on 'Mode'. The meaning
+ of the different extended parameters are documented for each extended 'Mode'.
+
+ If control[N_INTOUT] have a value of 1, the normal ap_gout[1-4] elements are
+ not used.
+
+ If control[N_ADDRIN] have a value other than 0, then pointers are passed in
+ addrin[0 .. N_ADDRIN], whose value depends on the 'Mode' being used.
+
+
+ AES_WINDOW (11) - XaAES adds the following;
+
+ 'ap_gout1'     Bit  9 wind_get/set(WF_WHEEL)
+                Bit 10 wind_get(WF_FIRSTAREAXYWH)
+                Bit 11 wind_get/set(WF_OPTS)
+                Bit 12 wind_get/set(WF_MENU) 
+
+ AES_MESSAGES (12) - XaAES addes the following;
+
+ 'ap_gout1'     Bit 10 WM_REPOSED supported.
+
+---------------------- Extended appl_info() modes --------------------------
+
+ AES_VERSION (96)
+
+ This is a new extended mode which will return detailed version information
+ about the AES. When control[N_INTOUT] == 5, the following is filled into
+ ap_gout[1-4];
+
+  ap_gout1 = Major version number (decimal)
+  ap_gout2 = Minor version number (decimal)
+  ap_gout3 = Development Status (Beta, alpha, etc.)
+  ap_gout4 = Target platform (m68k, etc.)
+ 'ap_gout1' &     Together, these two contain the decimal representation of
+ 'ap_gout2'       the AES's version number. For XaAES v0.992, 'ap_out1'
+                  contains 0 (0x0000) and 'ap_out2' contains 992 (0x3e0).
+ 'ap_gout3'       This is a 16-bit integer where bits 0-7 (the low byte) is
+                  a value indicating the development status of the AES,
+                  see below (AES_DEVSTATUS_xxx) for meaning of different
+                  values. Bits 8-15 are flags, see below (AES_FDEVSTATUS_xxx)
+                  for current definitions.
+ 'ap_gout4'       This is a value indicating which platform the AES was built
+                  for. See below (AES_ARCH_xxx) for meaning of different
+                  values.
+
+ When control[N_ADDRIN] == 4, the meaning of the pointers and what is filled
+ is defined as follows;
+
+  addrin[0]     'aes_id' pointer
+  addrin[1]     'long_name' pointer
+  addrin[2]     'info_string' pointer
+  addrin[3]	reserved, set to NULL.
+ 
+ 'aes_id'       This is a character string with a fixed lenght of 8 bytes,
+                into which the AES will write its unique AES ID.
+                the AES ID is a left-aligned, space padded string, and can
+                be considered to be the current AES's short name.
+                For XaAES this string is filled with "   XaAES".
+
+ 'long_name'    This is a character buffer that the application must ensure
+                can take up to 256 (255 + 0 termination) characters. The AES
+                fills its long name description into this buffer. Lines in
+                here are delimitted using CR (ascii 13). For XaAES, this
+                buffer contains the following after the call;
+
+                "XaAES Ain't the AES, a free MultiTasking AES for FreeMiNT"
+
+ 'info_string'  This is a character buffer that the application must ensure
+                can take up to 256 (255 + 0 termination) characters. The AES
+                fills this buffer with the following information where each
+                element is delimitted by the "|" (ascii 0x7c) character.
+                The string is constructed as follows;
+
+                "asci version|development status|architecture target|
+                 build date & time|compiler used",0
+
+                Example string returned might be;
+                "0.992|Alpha|m68k|Dec 17 2004 22:58:52|gcc 2.95.3",0
+ 
+ Here are new appl_info() constants to add to your header file;
+
+/*
+ * AES_VERSION mode for appl_init()
+ */
+#define AES_VERSION  96
+
+/*
+ * Target architecture definitions, returned by
+ * appl_getinfo(AES_VERSION) in ap_gout4.
+ */
+#define AES_ARCH_M68K 0
+
+/*
+ * Development status - values low byte returned
+ * by appl_getinfo(AES_VERSION) in low byte of ap_gout3 
+ */
+#define AES_DEVSTATUS_ALPHA   0
+#define AES_DEVSTATUS_BETA    1
+#define AES_DEVSTATUS_RELEASE 2
+/*
+ * Development status flags - bits 8-15 of ap_gout3
+ * returned by appl_getinfo(AES_VERSION)
+ */
+#define AES_FDEVSTATUS STABLE 0x100
 
 ===============================================================================
                        -= New window kind definitions =-
@@ -150,57 +265,58 @@ no definitions are made yet.
         need for a wind_get(handle, WF_CURRXYWH,...) call.
  
 -------------------------------------------------------------------------------
- wind_set(handle, WF_OPTS, mode, hi_opts, lo_opts, 0);
+ wind_set(handle, WF_OPTS, mode, wopt0, wopt1, wopt2);
 
- 'handle'     is window handle or zero. If handle is a legal window handle,
+ 'handle'     is window handle or -1. If handle is a legal window handle,
               the options will only apply to that window. If 'handle' is
               -1, the settings will apply to all windows the application
               creates AFTER this call.
 
  'mode'       is 0 to clear the selected bits or 1 to set the selected bits.
- 'hi_opts'    is the upper 16-bits of the option bitmask.
- 'lo_opts'    is the lower 16-bits of the option bitmask.
 
-Currently available options are as follows;
+ 'wopt0'      Currently available options are as follows;
 
-#define WO_WHEEL	0x00000001
- Setting this bit will enable extended mouse wheel support, and go into
- WHL_AROWWHEEL mode causing XaAES to send extended WM_ARROWED messages
- to the application when the mouse wheel turns. Read section "XaAES and
- wheel mouse handling." for details.
+           #define WO0_WHEEL           0x0001
+              Setting this bit will enable extended mouse wheel support, and
+              go into WHL_AROWWHEEL mode causing XaAES to send extended
+              WM_ARROWED messages to the application when the mouse wheel turns.
+              Read section "XaAES and wheel mouse handling." for details.
 
-#define WO_FULLREDRAW	0x00000002
- Setting this bit will make XaAES send WM_REDRAW messages to cover the
- whole work-area of the window when it is FULLED. Default behaviour is
- to only send WM_REDRAW messages for the areas that need it, blitting
- the already visible parts. This can also be configured via xaaes.cnf,
- see the app_options argument 'naesff'.
+           #define WO0_FULLREDRAW      0x0002
+              Setting this bit will make XaAES send WM_REDRAW messages to cover
+              the whole work-area of the window when it is FULLED. Default
+              behaviour is to only send WM_REDRAW messages for the areas that
+              need it, blitting the already visible parts. This can also be
+              configured via xaaes.cnf, see the app_options argument 'naesff'.
 
-#define WO_NOBLITW	0x00000004
- Setting this bit will make XaAES send WM_REDRAW messages to cover the
- whole work-area of the window when its WIDTH changes. This is handy
- for apps like HighWire, Textprocessors ,etc, that need to reformat
- when window width changes. Default behaviour is to send WM_REDRAW
- messages for the areas that need it.
+           #define WO0_NOBLITW         0x0004
+              Setting this bit will make XaAES send WM_REDRAW messages to cover
+              the whole work-area of the window when its WIDTH changes. This is
+              handy for apps like HighWire, Textprocessors ,etc, that need to
+              reformat when window width changes. Default behaviour is to send
+              WM_REDRAW messages for the areas that need it.
 
-#define WO_NOBLITH	0x00000008
- Setting this bit will make XaAES send WM_REDRAW messages to cover the
- whole work-area of the window when its HEIGHT changes.
- Default behaviour is to send WM_REDRAW messages for the areas that
- need it.
+           #define WO0_NOBLITH         0x0008
+              Setting this bit will make XaAES send WM_REDRAW messages to cover
+              the whole work-area of the window when its HEIGHT changes.
+              Default behaviour is to send WM_REDRAW messages for the areas
+              that need it.
 
-#define WO_SENDREPOS	0x00000010
- Setting this bit will make XaAES send a WM_REPOSED(38) message when a
- windows X/WIDTH and/or Y/HEIGHT coordinate pair changes. Such changes
- happes when the user resizes the window using upper/left borders.
- Default behaviour is to first send a WM_MOVED followed by a WM_SIZED
- message under these conditions, because older apps dont evaluate the
- WIDTH/HEIGHT in WM_MOVED messages. So, dudes, set this bit and use
- WM_REPOSED! :)
+           #define WO0_SENDREPOS       0x0010
+              Setting this bit will make XaAES send a WM_REPOSED(38) message
+              when a windows X/WIDTH and/or Y/HEIGHT coordinate pair changes.
+              Such changes happes when the user resizes the window using
+              upper/left borders. Default behaviour is to first send a WM_MOVED
+              followed by a WM_SIZED message under these conditions, because
+              older apps dont evaluate the WIDTH/HEIGHT in WM_MOVED messages.
+              So, dudes, set this bit and use WM_REPOSED! :)
 
- usage: 'opts' is a unsigned long containing the options bits;
-      wind_set(handle, 1, opts >> 16, (short)opts, 0); to set selected bits
-      wind_set(handle, 0, opts >> 16, (short)otps, 0); to clear selected bits
+ 'wopt1'      Currently undefined and must be cleared.
+ 'wopt2'      Currently undefined and must be cleared.
+
+ usage:
+      wind_set(handle, 1, wopt0, wopt1, wopt2); to set selected bits
+      wind_set(handle, 0, wopt0, wopt1, wopt2); to clear selected bits
 
 -------------------------------------------------------------------------------
 ===============================================================================

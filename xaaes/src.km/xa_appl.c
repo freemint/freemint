@@ -936,7 +936,10 @@ static short info_tab[][4] =
 #define AGI_WF_BOTTOM		0x0040
 #define AGI_WF_ICONIFY		0x0080
 #define AGI_WF_UNICONIFY	0x0100
-#define AGI_WF_WHEEL		0x0200
+#define AGI_WF_WHEEL		0x0200	/* wind_set(handle, WF_WHEEL, mode, whl_mode, 0,0) available */
+#define AGI_WF_FIRSTAREAXYWH	0x0400	/* wind_get(handle, WF_FIRSTAREAXYWH, clip_x, clip_y, clip_w, clip_h) available */
+#define AGI_WF_OPTS		0x0800	/* wind_set(handle, WF_OPTS, wopt0, wopt1, wopt2) available */
+#define AGI_WF_MENU		0x1000	/* wind_set(handle, WF_MENU) exists */
 
 #define AGI_WF_WIDGETS		0x0001
 
@@ -959,6 +962,9 @@ static short info_tab[][4] =
 	|	AGI_WF_ICONIFY
 	|	AGI_WF_UNICONIFY
 	|	AGI_WF_WHEEL		/*01763, see above */
+	|	AGI_WF_FIRSTAREAXYWH
+	|	AGI_WF_OPTS
+	|	AGI_WF_MENU
 		,
 		0
 		,
@@ -982,6 +988,7 @@ static short info_tab[][4] =
 #define AGI_WM_ICONIFY		0x0080
 #define AGI_WM_UNICONIFY	0x0100
 #define AGI_WM_ALLICONIFY	0x0200
+#define AGI_WM_REPOSED		0x0400
 
 	/*12 messages
 	 * WM_UNTOPPED + WM_ONTOP + AP_TERM + CH_EXIT (HR) + WM_BOTTOMED +
@@ -999,6 +1006,7 @@ static short info_tab[][4] =
 	|	AGI_WM_ICONIFY
 	|	AGI_WM_UNICONIFY
 	|	AGI_WM_ALLICONIFY	/*0756,	see above */ /* XXX is this correct? 0756 is octal */
+	|	AGI_WM_REPOSED
 		,
 		0
 		,
@@ -1043,26 +1051,18 @@ static short info_tab[][4] =
 		0
 	},
 
-	/* 18 <-- XaAES index 0 */
-	/* XaAES version information */
+	/* 18 <-- 96 */
+	/* AES version information */
 	/* Frank, I need correct data here .. could you fix this for me? */
 	{
-		0,		/* Major */
-		HEX_VERSION,	/* Minor */
-		0,		/* Target */
-		0		/* Status */ 
+		VER_MAJOR,	/* Major */
+		VER_MINOR,	/* Minor */
+		DEV_STATUS,	/* Status */ 
+		ARCH_TARGET	/* Target */
 	},
-	/* 19 <-- XaAES index 1 */
-	{
-		0,
-		0,
-		0,
-		0
-	}
 };
 
-#define XA_AGI	18
-#define XA_MAGI	XA_AGI + 1
+#define XA_VERSION_INFO	18
 
 /*
  * appl_getinfo() handler
@@ -1074,19 +1074,59 @@ static short info_tab[][4] =
 #define AGI_WINX WF_WINX
 #endif
 
+//static char status[256] = ASCII_DEV_STATUS;
+
+static char *
+mcs(char *d, char *s)
+{
+	while ((*d++ = *s++))
+		;
+
+	return d - 1;
+}
+
 void
 init_apgi_infotab(void)
 {
+	char *s = info_string;
+	
+	info_tab[0][0] = screen.standard_font_height;
+ 	info_tab[0][1] = screen.standard_font_id;
+	info_tab[1][0] = screen.small_font_height;
+	info_tab[1][1] = screen.small_font_id;
+	
 	info_tab[2][0] = xbios_getrez();
 	info_tab[2][1] = 256;
 	info_tab[2][2] = 1;
 	info_tab[2][3] = 1 + 2;
+
+	/*
+	 * Build status string
+	 */
+	s = mcs(s, version);
+	*s++ = 0x7c;
+
+	if (DEV_STATUS & AES_FDEVSTATUS_STABLE)
+		s = mcs(s, "Stable ");
+		
+	s = mcs(s, ASCII_DEV_STATUS);
+	*s++ = 0x7c;
+	s = mcs(s, ASCII_ARCH_TARGET);
+	*s++ = 0x7c;
+	s = mcs(s, BDATE);*s++ = 0x20;s = mcs(s, BTIME);
+	*s++ = 0x7c;
+	s = mcs(s, BCOMPILER);
+	*s++ = 0;
+
+	DIAGS(("Build status-string '%s'", status));
 }
+
 
 unsigned long
 XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	unsigned short gi_type = pb->intin[0];
+	int i, n_intout = 5;
 
 	CONTROL(1,5,0)
 
@@ -1109,11 +1149,24 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			gi_type = 17;
 		}
-		else if ((gi_type & 0xff00) == 0x5800)
+		else if (gi_type == AES_VERSION)
 		{
-			gi_type = (gi_type & 0xff) + XA_AGI;
-			if (gi_type > XA_MAGI)
-				gi_type = -1;
+			if (pb->control[N_ADDRIN] >= 3)
+			{
+				char *d = (char *)pb->addrin[0];
+				
+				if (d)
+				{
+					for (i = 0; i < 8; i++)
+						*d++ = aes_id[i];
+				}
+				if (pb->addrin[1])
+					strcpy((char *)pb->addrin[1], long_name);
+				if (pb->addrin[2])
+					strcpy((char *)pb->addrin[2], info_string);
+			}
+			n_intout = pb->control[N_INTOUT];
+			gi_type = XA_VERSION_INFO;
 		}
 		else
 			gi_type = -1;
@@ -1125,18 +1178,10 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		return XAC_DONE;
 	}
 
-	info_tab[0][0] = screen.standard_font_height;
- 	info_tab[0][1] = screen.standard_font_id;
-	info_tab[1][0] = screen.small_font_height;
-	info_tab[1][1] = screen.small_font_id;
-
-	//info_tab[2][0] = xbios_getrez() + 2;
-
 	pb->intout[0] = 1;
-	pb->intout[1] = info_tab[gi_type][0];
-	pb->intout[2] = info_tab[gi_type][1];
-	pb->intout[3] = info_tab[gi_type][2];
-	pb->intout[4] = info_tab[gi_type][3];
+
+	for (i = 1; i < n_intout; i++)
+		pb->intout[i] = info_tab[gi_type][i-1];
 
 	return XAC_DONE;
 }

@@ -25,6 +25,14 @@
  */
 
 #include "xa_global.h"
+#include "version.h"
+
+char version[16];
+char vversion[32];
+char arch_target[] = ASCII_ARCH_TARGET;
+char long_name[] = LONG_NAME;
+char aes_id[] = AES_ID;
+char info_string[256];
 
 struct config cfg;
 struct options default_options;
