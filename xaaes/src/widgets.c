@@ -841,7 +841,7 @@ click_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 
 	vq_key_s( C.vh, &b);
 
-	/* Ozk 100503: If either shifts pressed, unconditionally send the window to bottom */
+	/* Ozk: If either shifts pressed, unconditionally send the window to bottom */
 	if ((b & 3) && (!((wind->active_widgets & STORE_BACK) !=0 ) || !((wind->active_widgets & BACKDROP) == 0)))
 	{
 		if (wind->send_message)
@@ -995,25 +995,25 @@ click_iconify(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 
 	switch(wind->window_status)
 	{
-	case XAWS_OPEN:			/* Window is open - send request to iconify it */
-		IFWL(Sema_Up(winlist);)
+		case XAWS_OPEN:			/* Window is open - send request to iconify it */
+			IFWL(Sema_Up(winlist);)
 
-		ic = free_icon_pos(lock|winlist);
+			ic = free_icon_pos(lock|winlist);
 
-	/* Could the whole screen be covered by iconified windows? That would be an achievement, wont it? */
-		if (ic.y > root_window->wa.y)
-			wind->send_message(lock|winlist, wind, NULL,
-					WM_ICONIFY, 0, 0, wind->handle,
-					ic.x, ic.y, ic.w, ic.h);
+		/* Could the whole screen be covered by iconified windows? That would be an achievement, wont it? */
+			if (ic.y > root_window->wa.y)
+				wind->send_message(lock|winlist, wind, NULL,
+						WM_ICONIFY, 0, 0, wind->handle,
+						ic.x, ic.y, ic.w, ic.h);
 
-		IFWL(Sema_Dn(winlist);)
-	break;	
+			IFWL(Sema_Dn(winlist);)
+			break;	
 
-	case XAWS_ICONIFIED:	/* Window is already iconified - send request to restore it */
-		wind->send_message(lock, wind, NULL,
-					WM_UNICONIFY, 0, 0, wind->handle,
-					wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
-		break;
+		case XAWS_ICONIFIED:	/* Window is already iconified - send request to restore it */
+			wind->send_message(lock, wind, NULL,
+						WM_UNICONIFY, 0, 0, wind->handle,
+						wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
+			break;
 	}
 	
 	return true; /* Redisplay.... */
@@ -2198,10 +2198,31 @@ do_widgets(LOCK lock, XA_WINDOW *w, XA_WIND_ATTR mask, struct moose_data *md)
 			
 						else				/*  otherwise, process as a mouse click(s) */
 						{
+							short tx = widget_active.nx, ty = widget_active.ny;
+							bool ins = 1;
 							while (b)				/* Wait for the mouse to be released */
+							{
 								vq_mouse(C.vh, &b, &rx, &ry);
+								if (tx != rx || ty != ry)
+								{
+									if (m_inside(rx, ry, &r))
+									{
+										if (!ins)
+										{												redisplay_widget(lock, w, widg, SELECTED);
+											redisplay_widget(lock, w, widg, SELECTED);
+											ins = 1;
+										}
+									}
+									else if (ins)
+									{
+											redisplay_widget(lock, w, widg, NONE);
+										ins = 0;
+									}
+									tx = rx;
+									ty = ry;
+								}
 
-
+							}
 							if (m_inside(rx, ry, &r))
 							{
 				/* Ozk 100503: added check for number of clicks and call the dclick function if apropriate */

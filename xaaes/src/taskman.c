@@ -175,39 +175,39 @@ handle_taskmanager(LOCK lock, struct widget_tree *wt)
 	
 	switch(wt->current)
 	{
-	case TM_TERM:
-		client = cur_client(list);
-		DIAGS(("TM_TERM for %s\n", c_owner(client)));
-		send_terminate(lock, client);
-		deselect(wt->tree, TM_TERM);
-		display_toolbar(lock, task_man_win, TM_TERM);
-		break;
-	case TM_SHUT:
-		DIAGS(("shutdown by taskmanager\n"));
-		deselect(wt->tree, TM_SHUT);
-		shutdown(lock);
-		break;
-	case TM_KILL:
-		client = cur_client(list);		
-		if (is_client(client))
-		{
-			(void) Pkill(client->pid, SIGKILL);
-			(void) Fselect(200, NULL, NULL, NULL);
-			refresh_tasklist(lock);
-			display_toolbar(lock, task_man_win, TM_LIST);
-		}
-		deselect(wt->tree, TM_KILL);
-		display_toolbar(lock, task_man_win, TM_KILL);
-		break;
-	case TM_OK:
-		deselect(wt->tree, TM_OK);
-		display_toolbar(lock, task_man_win, TM_OK);
-		close_window(lock, task_man_win);
-		delete_window(lock, task_man_win);
-		break;
-	case TM_QUIT:
-		C.shutdown = true;
-		break;
+		case TM_TERM:
+			client = cur_client(list);
+			DIAGS(("TM_TERM for %s\n", c_owner(client)));
+			send_terminate(lock, client);
+			deselect(wt->tree, TM_TERM);
+			display_toolbar(lock, task_man_win, TM_TERM);
+			break;
+		case TM_SHUT:
+			DIAGS(("shutdown by taskmanager\n"));
+			deselect(wt->tree, TM_SHUT);
+			shutdown(lock);
+			break;
+		case TM_KILL:
+			client = cur_client(list);		
+			if (is_client(client))
+			{
+				(void) Pkill(client->pid, SIGKILL);
+				(void) Fselect(200, NULL, NULL, NULL);
+				refresh_tasklist(lock);
+				display_toolbar(lock, task_man_win, TM_LIST);
+			}
+			deselect(wt->tree, TM_KILL);
+			display_toolbar(lock, task_man_win, TM_KILL);
+			break;
+		case TM_OK:
+			deselect(wt->tree, TM_OK);
+			display_toolbar(lock, task_man_win, TM_OK);
+			close_window(lock, task_man_win);
+			delete_window(lock, task_man_win);
+			break;
+		case TM_QUIT:
+			C.shutdown = true;
+			break;
 	}
 
 	Sema_Dn(clients);
