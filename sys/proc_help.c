@@ -667,65 +667,93 @@ free_limits (struct proc *p)
 
 /* p_ext */
 
-struct proc_ext *
+struct p_ext *
 share_ext(struct proc *p)
 {
-	struct proc_ext *p_ext;
+	struct p_ext *p_ext;
 
-	p_ext = p->p_ext;
-	while (p_ext)
+	if (!p->p_ext)
+		return NULL;
+
+	p_ext = kmalloc(sizeof(*p_ext));
+	if (p_ext)
 	{
-		p_ext->links++;
+		int i;
 
-		if (p_ext->cb_vector && p_ext->cb_vector->share)
-			(*p_ext->cb_vector->share)(p_ext->data);
+		p_ext->size = p->p_ext->size;
+		p_ext->used = p->p_ext->used;
 
-		p_ext = p_ext->next;
+		for (i = 0; i < p_ext->size; i++)
+		{
+			if (i < p_ext->used)
+			{
+				struct proc_ext *ext;
+
+				ext = p->p_ext->ext[i];
+				assert(ext);
+
+				ext->links++;
+				p_ext->ext[i] = ext;
+
+				/* share callback */
+				if (ext->cb_vector && ext->cb_vector->share)
+					(*ext->cb_vector->share)(ext->data);
+			}
+			else
+				p_ext->ext[i] = NULL;
+		}
 	}
 
-	return p->p_ext;
+	return p_ext;
 }
 
 void
 free_ext(struct proc *p)
 {
-	struct proc_ext *p_ext;
+	struct p_ext *p_ext;
+	int i;
+
+	if (!p->p_ext)
+		return;
 
 	p_ext = p->p_ext;
 	p->p_ext = NULL;
 
-	while (p_ext)
+	for (i = 0; i < p_ext->used; i++)
 	{
-		struct proc_ext *next = p_ext->next;
+		struct proc_ext *ext = p_ext->ext[i];
 
-		if (--p_ext->links <= 0)
+		if (--ext->links <= 0)
 		{
-			/* call release callback */
-			if (p_ext->cb_vector && p_ext->cb_vector->release)
-				(*p_ext->cb_vector->release)(p_ext->data);
+			/* release callback */
+			if (ext->cb_vector && ext->cb_vector->release)
+				(*ext->cb_vector->release)(ext->data);
 
-			kfree(p_ext->data);
-			kfree(p_ext);
+			kfree(ext->data);
+			kfree(ext);
 		}
-
-		p_ext = next;
 	}
+
+	kfree(p_ext);
 }
 
 void * _cdecl
 proc_lookup_extension(struct proc *p, long ident)
 {
-	struct proc_ext *p_ext;
+	struct p_ext *p_ext;
 
 	if (!p) p = curproc;
 
 	p_ext = p->p_ext;
-	while (p_ext)
+	if (p_ext)
 	{
-		if (p_ext->ident == ident)
-			return p_ext->data;
+		int i;
 
-		p_ext = p_ext->next;
+		for (i = 0; i < p_ext->used; i++)
+		{
+			if (p_ext->ext[i]->ident == ident)
+				return p_ext->ext[i]->data;
+		}
 	}
 
 	/* not found */
@@ -735,154 +763,213 @@ proc_lookup_extension(struct proc *p, long ident)
 void * _cdecl
 proc_attach_extension(struct proc *p, long ident, unsigned long size, struct module_callback *cb)
 {
-	struct proc_ext *p_ext = NULL;
+	struct p_ext *p_ext;
+	struct proc_ext *ext;
 
 	if (!p) p = curproc;
 
 	assert(size);
 
-	p_ext = kmalloc(sizeof(*p_ext));
-	if (p_ext)
+	p_ext = p->p_ext;
+	if (!p_ext)
 	{
+		p_ext = kmalloc(sizeof(*p_ext));
+		if (!p_ext)
+		{
+			DEBUG(("proc_attach_extension: out of memory"));
+			return NULL;
+		}
+
+		/* clean memory */
 		bzero(p_ext, sizeof(*p_ext));
 
-		/* initialize data */
-		p_ext->ident = ident;
-		p_ext->links = 1;
-		p_ext->cb_vector = cb;
+		/* initialize */
+		p_ext->size = sizeof(p_ext->ext) / sizeof(p_ext->ext[0]);
+		DEBUG(("proc_attach_extension: free slots %i", p_ext->size));
 
-		/* allocate data area */
-		p_ext->data = kmalloc(size);
-		if (p_ext->data)
-		{
-			struct proc_ext **list;
-
-			/* clean data area */
-			bzero(p_ext->data, size);
-
-			/* search end of list */
-			list = &(p->p_ext);
-			while (*list)
-				list = &((*list)->next);
-
-			/* and add */
-			*list = p_ext;
-
-			/* return success */
-			return p_ext->data;
-		}
-		else
-			kfree(p_ext);
+		/* remember */
+		p->p_ext = p_ext;
 	}
 
-	/* out of memory */
+	if (p_ext->used >= p_ext->size)
+	{
+		DEBUG(("proc_attach_extension: no free extension slots"));
+		return NULL;
+	}
+
+	ext = kmalloc(sizeof(*ext));
+	if (ext)
+	{
+		bzero(ext, sizeof(*ext));
+
+		/* initialize data */
+		ext->ident = ident;
+		ext->links = 1;
+		ext->cb_vector = cb;
+
+		/* allocate data area */
+		ext->data = kmalloc(size);
+		if (ext->data)
+		{
+			/* clean data area */
+			bzero(ext->data, size);
+
+			/* remember */
+			p_ext->ext[p_ext->used++] = ext;
+
+			/* return success */
+			return ext->data;
+		}
+		else
+			kfree(ext);
+	}
+
+	if (!p_ext->used)
+	{
+		p->p_ext = NULL;
+		kfree(p_ext);
+	}
+
+	DEBUG(("proc_attach_extension: out of memory"));
 	return NULL;
 }
 
 void _cdecl
 proc_detach_extension(struct proc *p, long ident)
 {
-	struct proc_ext **p_ext;
+	struct p_ext *p_ext;
 
 	if (!p) p = curproc;
 
-	p_ext = &(p->p_ext);
-	while (*p_ext)
+	p_ext = p->p_ext;
+	if (p_ext)
 	{
-		struct proc_ext *check = *p_ext;
+		int i;
 
-		if (check->ident == ident)
+		for (i = 0; i < p_ext->used; i++)
 		{
-			/* remove from list */
-			*p_ext = check->next;
+			struct proc_ext *ext = p_ext->ext[i];
 
-			/* adjust link counter */
-			check->links--;
-
-			/* if no longer in use free up memory */
-			if (check->links == 0)
+			if (ext->ident == ident)
 			{
-				/* call release callback */
-				if (check->cb_vector && check->cb_vector->release)
-					(*check->cb_vector->release)(check->data);
+				/* if no longer in use free up memory */
+				if (--ext->links <= 0)
+				{
+					/* call release callback */
+					if (ext->cb_vector && ext->cb_vector->release)
+						(*ext->cb_vector->release)(ext->data);
 
-				kfree(check->data);
-				kfree(check);
+					kfree(ext->data);
+					kfree(ext);
+				}
+
+				p_ext->used--;
+				break;
 			}
-
-			break;
 		}
 
-		p_ext = &(check->next);
+		for ( ; i < p_ext->used; i++)
+			p_ext->ext[i] = p_ext->ext[i+1];
+
+		if (!p_ext->used)
+		{
+			p->p_ext = NULL;
+			kfree(p_ext);
+		}
 	}
 }
 
 void
 proc_ext_on_exit(struct proc *p, int code)
 {
-	struct proc_ext *p_ext = p->p_ext;
+	struct p_ext *p_ext = p->p_ext;
 
-	while (p_ext)
+	if (p_ext)
 	{
-		if (p_ext->cb_vector && p_ext->cb_vector->on_exit)
-			(*p_ext->cb_vector->on_exit)(p_ext->data, p, code);
+		int i;
 
-		p_ext = p_ext->next;
+		for (i = 0; i < p_ext->used; i++)
+		{
+			struct proc_ext *ext = p_ext->ext[i];
+
+			if (ext->cb_vector && ext->cb_vector->on_exit)
+				(*ext->cb_vector->on_exit)(ext->data, p, code);
+		}
 	}
 }
 
 void
 proc_ext_on_exec(struct proc *p)
 {
-	struct proc_ext *p_ext = p->p_ext;
+	struct p_ext *p_ext = p->p_ext;
 
-	while (p_ext)
+	if (p_ext)
 	{
-		if (p_ext->cb_vector && p_ext->cb_vector->on_exec)
-			(*p_ext->cb_vector->on_exec)(p_ext->data, p);
+		int i;
 
-		p_ext = p_ext->next;
+		for (i = 0; i < p_ext->used; i++)
+		{
+			struct proc_ext *ext = p_ext->ext[i];
+
+			if (ext->cb_vector && ext->cb_vector->on_exec)
+				(*ext->cb_vector->on_exec)(ext->data, p);
+		}
 	}
 }
 
 void
 proc_ext_on_fork(struct proc *p, long flags, struct proc *child)
 {
-	struct proc_ext *p_ext = p->p_ext;
+	struct p_ext *p_ext = p->p_ext;
 
-	while (p_ext)
+	if (p_ext)
 	{
-		if (p_ext->cb_vector && p_ext->cb_vector->on_fork)
-			(*p_ext->cb_vector->on_fork)(p_ext->data, p, flags, child);
+		int i;
 
-		p_ext = p_ext->next;
+		for (i = 0; i < p_ext->used; i++)
+		{
+			struct proc_ext *ext = p_ext->ext[i];
+
+			if (ext->cb_vector && ext->cb_vector->on_fork)
+				(*ext->cb_vector->on_fork)(ext->data, p, flags, child);
+		}
 	}
 }
 
 void
 proc_ext_on_stop(struct proc *p, unsigned short nr)
 {
-	struct proc_ext *p_ext = p->p_ext;
+	struct p_ext *p_ext = p->p_ext;
 
-	while (p_ext)
+	if (p_ext)
 	{
-		if (p_ext->cb_vector && p_ext->cb_vector->on_stop)
-			(*p_ext->cb_vector->on_stop)(p_ext->data, p, nr);
+		int i;
 
-		p_ext = p_ext->next;
+		for (i = 0; i < p_ext->used; i++)
+		{
+			struct proc_ext *ext = p_ext->ext[i];
+
+			if (ext->cb_vector && ext->cb_vector->on_stop)
+				(*ext->cb_vector->on_stop)(ext->data, p, nr);
+		}
 	}
 }
 
 void
 proc_ext_on_signal(struct proc *p, unsigned short nr)
 {
-	struct proc_ext *p_ext = p->p_ext;
+	struct p_ext *p_ext = p->p_ext;
 
-	while (p_ext)
+	if (p_ext)
 	{
-		if (p_ext->cb_vector && p_ext->cb_vector->on_signal)
-			(*p_ext->cb_vector->on_signal)(p_ext->data, p, nr);
+		int i;
 
-		p_ext = p_ext->next;
+		for (i = 0; i < p_ext->used; i++)
+		{
+			struct proc_ext *ext = p_ext->ext[i];
+
+			if (ext->cb_vector && ext->cb_vector->on_signal)
+				(*ext->cb_vector->on_signal)(ext->data, p, nr);
+		}
 	}
 }

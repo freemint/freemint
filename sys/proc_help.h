@@ -96,7 +96,7 @@ void free_limits (struct proc *p);
 
 /* P_ext */
 
-struct proc_ext *share_ext(struct proc *p);
+struct p_ext *share_ext(struct proc *p);
 void free_ext(struct proc *p);
 
 void *_cdecl proc_lookup_extension(struct proc *, long ident);
