@@ -65,7 +65,7 @@ static PCB_T    pCB_menu;
 static PCB_A    pCB_helpserver;
 
 static PCB_ATK  pCB_shell;
-static PCB_ATK  pCB_run;
+static PCB_TAx  pCB_run;
 
 
 /* The item table, note the 'NULL' entry at the end. */
@@ -104,7 +104,7 @@ static struct parser_item parser_tab[] =
 	
 	/* startup things */
 	{ "SHELL",          PI_V_ATK, pCB_shell                 },
-	{ "RUN",            PI_V_ATK, pCB_run                   },
+	{ "RUN",            PI_C_TA,  pCB_run                   },
 	
 	/* debug */
 	
@@ -441,7 +441,7 @@ pCB_shell(const char *path, const char *line, long data)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_run(const char *path, const char *line, long data)
+pCB_run(const char *path, const char *line, struct parsinf *inf)
 {
 	int i;
 
