@@ -4,7 +4,7 @@
 
 SHELL = /bin/sh
 SUBDIRS = IO crypto fdisk fsetter gluestik mgw \
-		minix mkfatfs nfs toswin2
+		minix mkfatfs nfs sysctl toswin2
 
 srcdir = .
 top_srcdir = .
