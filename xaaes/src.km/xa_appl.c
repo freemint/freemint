@@ -296,7 +296,7 @@ remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 			 * any refs, making sure it is not attempted redrawn
 			 * during remove_windows() later on.
 			 */
-			if (wl->is_open)
+			if ((wl->window_status & XAWS_OPEN))
 				close_window(0, wl);
 
 			remove_widget(0, wl, XAW_TOOLBAR);
@@ -414,7 +414,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		{
 			DIAGS(("sending CH_EXIT to %d for %s", client->p->ppid, c_owner(client)));
 
-			send_app_message(NOLOCKS, NULL, parent,
+			send_app_message(NOLOCKS, NULL, parent, AMQ_NORM,
 					 CH_EXIT, 0, 0, client->p->pid,
 					 code,    0, 0, 0);
 		}
@@ -699,7 +699,7 @@ handle_XaAES_msgs(enum locks lock, union msg_buf *msg)
 
 		dest_clnt = pid2client(m.m[1]);
 		if (dest_clnt)
-			send_a_message(lock, dest_clnt, &m);
+			send_a_message(lock, dest_clnt, AMQ_NORM, &m);
 	}
 }
 
@@ -753,7 +753,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (dest_clnt)
 		{
-			send_a_message(lock, dest_clnt, m);
+			send_a_message(lock, dest_clnt, AMQ_NORM, m);
 			yield();
 		}
 	}
@@ -765,7 +765,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 /*
  * Data table for appl_getinfo
  */
-static short info_tab[17][4] =
+static short info_tab[18][4] =
 {
 	/* 0 large font */
 	{
@@ -901,8 +901,16 @@ static short info_tab[17][4] =
 		APC_INFO,	/* highest opcode for appl_control */
 		0,		/* shel_help exists. */
 		0		/* wind_draw exists. */
+	},
+	/*17 <-- 22360 Winx */
+	{
+		0x0008,			/* WF_SHADE is supportd */
+		(0x0002|0x0004),	/* WM_SHADED/WM_UNSHADED supported */
+		0,
+		0
 	}
-};										
+};
+									
 
 /*
  * appl_getinfo() handler
@@ -910,6 +918,9 @@ static short info_tab[17][4] =
  * Ozk: appl_getinfo() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
  */
+#ifndef AGI_WINX
+#define AGI_WINX WF_WINX
+#endif
 unsigned long
 XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -931,6 +942,10 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (gi_type == 64 || gi_type == 65)
 		{
 			gi_type -= (64 - 15);
+		}
+		else if (gi_type == AGI_WINX)
+		{
+			gi_type = 17;
 		}
 		else
 		{
@@ -1131,7 +1146,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				app_in_front(lock, cl);
 				if (cl->type == APP_ACCESSORY)
-					send_app_message(lock, NULL, cl,
+					send_app_message(lock, NULL, cl, AMQ_NORM,
 							 AC_OPEN, 0, 0, 0,
 							 cl->p->pid, 0, 0, 0);
 				break;

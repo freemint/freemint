@@ -385,7 +385,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	else if (wind->send_message && md->state)
 	{
 		DIAG((D_mouse, target, "XA_button_event: Sending WM_TOPPED to %s", target->name));
-		wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
+		wind->send_message(lock, wind, NULL, AMQ_NORM, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
 	}
 }
 
@@ -703,7 +703,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 		if (client->wa_wheel || wind->wa_wheel)
 		{
 			DIAGS(("clwa %d, wiwa %d", client->wa_wheel, wind->wa_wheel));
-			wind->send_message(lock, wind, NULL,
+			wind->send_message(lock, wind, NULL, AMQ_NORM,
 					WM_ARROWED, 0, 0, wind->handle,
 					WA_WHEEL,
 					0, md->state, md->clicks);
@@ -713,7 +713,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			n = c = abs(md->clicks);
 			while (c)
 			{
-				wind->send_message(lock, wind, NULL,
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						WM_ARROWED, 0, 0, wind->handle,
 						client->options.wheel_reverse ? widg->xarrow : widg->arrowx,
 						/* 'MW' and 'Mw' */

@@ -496,8 +496,9 @@ struct xa_client
 	bool apterm;			/* true if application understands AP_TERM. */
 	bool wa_wheel;			/* The client wants WA_HEEL messages. */
 
-	struct xa_aesmsg_list *msg;	/* Pending AES messages */
-	struct xa_aesmsg_list *rdrw_msg;
+	struct xa_aesmsg_list *msg;	 /* Pending AES messages */
+	struct xa_aesmsg_list *rdrw_msg; /* WM_REDRAW messages */
+	struct xa_aesmsg_list *crit_msg; /* Critical AES messages - these are prioritized */
 
 #define CS_LAGGING		0x0001
 #define CS_CE_REDRAW_SENT 	0x0002
@@ -681,6 +682,7 @@ struct xa_widget_location
 	RECT r;				/* Position */
 	XA_WIDGETS n;			/* index */
 	XA_WIND_ATTR mask;		/* disconnect NAME|SMALLER etc from emumerated type XA_WIDGETS */
+	short statusmask;
 	int rsc_index;			/* If a bitmap widget, index in rsc file */
 	bool top;			/* does the widget add to the number widgets at the top of the window. */
 	void (*destruct)(struct xa_widget *widg);
@@ -784,13 +786,10 @@ typedef enum window_type WINDOW_TYPE;
 /* Callback for a window's auto-redraw function */
 typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 
-/* Window status codes */
-typedef enum
-{
-	XAWS_CLOSED,
-	XAWS_OPEN,
-	XAWS_ICONIFIED
-} XAWS;
+#define XAWS_OPEN	1
+#define XAWS_ICONIFIED	2
+#define XAWS_SHADED	4
+#define XAWS_ZWSHADED	8
 
 /* Window Descriptor */
 struct xa_window
@@ -810,21 +809,25 @@ struct xa_window
 	                        	 * true after first objc_draw. */
 
 	RECT max;			/* Creator dimension's, maximum for sizing */
+	RECT min;
 	RECT r;				/* Current dimensions */
+	RECT rc;
 	RECT ro;			/* Original dimemsions when iconified */
 	RECT wa;			/* user work area */
 	RECT bd;			/* border displacement */
 	RECT ba;			/* border area for use by border sizing facility. */
 	RECT pr;			/* previous dimensions */
-		 
+	RECT t;				/* Temporary coordinates used internally */
+
+	short sw, sh;			/* width(not used) and height to use when SHADED */
+
 	RECT *remember;			/* Where to store the current position for remembering. */
 
 	struct xa_client *owner;
 
-	int handle;			/* Window handle */
-	int is_open;			/* Flag - is the window actually open? */
-	int window_status;		/* Window status */
-	int frame;			/* Size of the frame (0 for windowed listboxes) */
+	short handle;			/* Window handle */
+	short window_status;		/* Window status */
+	short frame;			/* Size of the frame (0 for windowed listboxes) */
 
 	struct xa_rect_list *rect_list;	/* The rectangle list for redraws in this window */
 	struct xa_rect_list *rect_user;	/* User (wind_get) rect list current pointer */
@@ -862,16 +865,6 @@ struct xa_window
 	XA_WIDGET widgets[XA_MAX_WIDGETS]; /* The windows standard widget set (array for speed) */
 
 	XA_TREE widg_info;		/* Holds the object tree information for def_widgets. */
-
-#if 0
-	XA_TREE *wdlg_info;
-	XA_TREE *menu_bar;
-	XA_TREE *toolbar;
-
-	XA_TREE widg_info;		/* Holds the object tree information for def_widgets. */
-	XA_TREE menu_bar;		/*   "         "              "      for a menu bar. */
-	XA_TREE toolbar;		/*   "         "              "      for a tool bar. */
-#endif
 
 	char wname[MAX_WINDOW_NAME];	/* window name line (copy) */
 	char winfo[MAX_WINDOW_INFO];	/* window info line (copy) */

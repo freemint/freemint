@@ -184,7 +184,7 @@ Set_desktop(XA_TREE *new_desktop)
 			draw_window(0, wl);
 			if (wl->send_message)
 			{
-				wl->send_message(0, wl, NULL,
+				wl->send_message(0, wl, NULL, AMQ_REDRAW,
 					WM_REDRAW, 0, 0, wl->handle,
 					rl->r.x, rl->r.y, rl->r.w, rl->r.h);
 			}

@@ -126,6 +126,7 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 	}
 }
 
+#if 0
 static void
 check_wh(RECT *c, int minw, int minh, int maxw, int maxh)
 {
@@ -138,6 +139,7 @@ check_wh(RECT *c, int minw, int minh, int maxw, int maxh)
 	if (c->h > maxh)
 		c->h = maxh;
 }
+#endif
 
 /* fit rectangle r in bounding rectangle b */
 void

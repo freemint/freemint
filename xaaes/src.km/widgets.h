@@ -42,6 +42,7 @@ void	set_toolbar_coords(struct xa_window *wind);
 XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obj, short item);
 
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
+void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 
 XA_TREE * obtree_to_wt(struct xa_client *client, OBJECT *obtree);

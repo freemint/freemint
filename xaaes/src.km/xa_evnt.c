@@ -41,6 +41,37 @@
 
 
 static int
+pending_critical_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	struct xa_aesmsg_list *msg;
+	int rtn = 0;
+
+	Sema_Up(clients);
+
+	msg = client->crit_msg;
+	if (msg)
+	{
+		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
+
+		/* dequeue */
+		client->crit_msg = msg->next;
+
+		/* write to client */
+		*buf = msg->message;
+
+		DIAG((D_m, NULL, "Got pending critical message %s for %s from %d - %d,%d,%d,%d,%d",
+			pmsg(buf->m[0]), c_owner(client), buf->m[1],
+			buf->m[3], buf->m[4], buf->m[5], buf->m[6], buf->m[7]));
+
+		kfree(msg);
+		rtn = 1;
+	}
+
+	Sema_Dn(clients);
+	return rtn;
+}
+
+static int
 pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_aesmsg_list *msg;
@@ -60,12 +91,15 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 		*buf = msg->message;
 
 		DIAG((D_m, NULL, "Got pending WM_REDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
-			msg, buf->m[3], (RECT *)&buf->m[4], c_owner(client) ));
+			msg, buf->m[3], *(RECT *)&buf->m[4], c_owner(client) ));
 
 		kfree(msg);
 		rtn = 1;
 
-		C.redraws--;
+		if (--C.redraws)
+			kick_mousemove_timeout();
+
+		//C.redraws--;		
 	}
 
 	Sema_Dn(clients);
@@ -91,8 +125,9 @@ pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 		/* write to client */
 		*buf = msg->message;
 
-		DIAG((D_m, NULL, "Got pending message %s for %s from %d",
-			pmsg(buf->m[0]), c_owner(client), buf->m[1]));
+		DIAG((D_m, NULL, "Got pending message %s for %s from %d - %d,%d,%d,%d,%d",
+			pmsg(buf->m[0]), c_owner(client), buf->m[1],
+			buf->m[3], buf->m[4], buf->m[5], buf->m[6], buf->m[7]));
 
 		kfree(msg);
 		rtn = 1;
@@ -237,15 +272,18 @@ check_queued_events(struct xa_client *client)
 	check_mouse(client, NULL, &mx, &my);
 	vq_key_s(C.vh, &ks);
 
-	if ((client->waiting_for & MU_MESAG) && (client->msg || client->rdrw_msg))
+	if ((client->waiting_for & MU_MESAG) && (client->msg || client->rdrw_msg || client->crit_msg))
 	{
 		union msg_buf *cbuf;
 
 		cbuf = (union msg_buf *)pb->addrin[0];
 		if (cbuf)
 		{
-			if (!pending_redraw_msgs(0, client, pb))
-				pending_msgs(0, client, pb);
+			if (!pending_critical_msgs(0, client, pb))
+			{
+				if (!pending_redraw_msgs(0, client, pb))
+					pending_msgs(0, client, pb);
+			}
 
 			if (client->waiting_for & XAWAIT_MULTI)
 			{
@@ -416,16 +454,26 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	*/
 	if (events & MU_MESAG)
 	{
-		if ( pending_redraw_msgs(lock, client, pb) )
+		short e = 0;
+
+		if ( pending_critical_msgs(lock, client, pb) )
 		{
-			multi_intout(client, pb->intout, 0);
-			pb->intout[0] = MU_MESAG;
+			e = MU_MESAG;
+		}
+		else if ( pending_redraw_msgs(lock, client, pb) )
+		{
+			e = MU_MESAG;
 			/*
 			 * Ozk: If this was the last redraw message,
 			 * reenable delivery of mouse-movement events.
 			*/
 			if (!C.redraws)
 				kick_mousemove_timeout();
+		}
+		if (e)
+		{
+			multi_intout(client, pb->intout, 0);
+			pb->intout[0] = e;
 			return XAC_DONE;
 		}
 	}
@@ -479,6 +527,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	check_mouse(client, NULL, &x, &y);
 	vq_key_s(C.vh, &ks);
+	mx = x, my = y;
 
 	if (events & MU_BUTTON)
 	{
@@ -547,17 +596,18 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			else
 			{
 				new_waiting_for |= MU_BUTTON;
-				mx = x, my = y;
+				//mx = x, my = y;
 				DIAG((D_b, client, "new_waiting_for |= MU_BUTTON"));
 			}
 		}
 	}
+#if 0
 	else
 	{
 		mx = x;
 		my = y;
 	}
-
+#endif
 	if (events & (MU_NORM_KEYBD|MU_KEYBD))		
 	{
 		short ev = events&(MU_NORM_KEYBD|MU_KEYBD);
@@ -734,6 +784,11 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 	/*
 	 * Ozk: look at XA_evnt_multi() for explanations..
 	*/
+	if (pending_critical_msgs(lock, client, pb))
+	{
+		pb->intout[0] = 1;
+		return XAC_DONE;
+	}
 	if (pending_redraw_msgs(lock, client, pb))
 	{
 		pb->intout[0] = 1;
@@ -760,7 +815,6 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	short clicks, ks, mbutts, mx, my;
 
 	CONTROL(3,5,1)
 
@@ -777,6 +831,7 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	Sema_Up(pending);
 
 	{
+		short clicks, ks, mbutts, mx, my;
 		bool bev = false;
 
 		DIAG((D_button, NULL, "still_button? o[0,2] "

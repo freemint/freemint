@@ -359,17 +359,22 @@ was_visible(struct xa_window *w)
 bool
 xa_rc_intersect(const RECT s, RECT *d)
 {
-	const short w1 = s.x + s.w;
-	const short w2 = d->x + d->w;
-	const short h1 = s.y + s.h;
-	const short h2 = d->y + d->h;
+	if ( !(*(const long *)&s.w) || !(*(const long *)&d->w) )
+		return false;
+	else
+	{
+		const short w1 = s.x + s.w;
+		const short w2 = d->x + d->w;
+		const short h1 = s.y + s.h;
+		const short h2 = d->y + d->h;
 
-	d->x = max(s.x, d->x);
-	d->y = max(s.y, d->y);
-	d->w = min(w1, w2) - d->x;
-	d->h = min(h1, h2) - d->y;
+		d->x = max(s.x, d->x);
+		d->y = max(s.y, d->y);
+		d->w = min(w1, w2) - d->x;
+		d->h = min(h1, h2) - d->y;
 
-	return (d->w > 0) && (d->h > 0);
+		return (d->w > 0) && (d->h > 0);
+	}
 }
 /* Ozk:
  * This is my (ozk) version of the xa_rc_intersect.
@@ -379,15 +384,20 @@ xa_rc_intersect(const RECT s, RECT *d)
 bool
 xa_rect_clip(const RECT *s, RECT *d, RECT *r)
 {
-	const short w1 = s->x + s->w;
-	const short w2 = d->x + d->w;
-	const short h1 = s->y + s->h;
-	const short h2 = d->y + d->h;
+	if ( !(*(const long *)&s->w) || !(*(const long *)&d->w) )
+		return false;
+	else
+	{
+		const short w1 = s->x + s->w;
+		const short w2 = d->x + d->w;
+		const short h1 = s->y + s->h;
+		const short h2 = d->y + d->h;
 
-	r->x = s->x > d->x ? s->x : d->x;	//max(s->x, d->x);
-	r->y = s->y > d->y ? s->y : d->y;	//max(s->y, d->y);
-	r->w = (w1 < w2 ? w1 : w2) - r->x; 	//min(w1, w2) - d->x;
-	r->h = (h1 < h2 ? h1 : h2) - r->y;	//min(h1, h2) - d->y;
+		r->x = s->x > d->x ? s->x : d->x;	//max(s->x, d->x);
+		r->y = s->y > d->y ? s->y : d->y;	//max(s->y, d->y);
+		r->w = (w1 < w2 ? w1 : w2) - r->x; 	//min(w1, w2) - d->x;
+		r->h = (h1 < h2 ? h1 : h2) - r->y;	//min(h1, h2) - d->y;
 
-	return (r->w > 0) && (r->h > 0);
+		return (r->w > 0) && (r->h > 0);
+	}
 }
