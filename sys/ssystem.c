@@ -655,6 +655,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 			break;
 		}
+#if MINT_STATUS_CVS
 		/* XXX only for testing */
 		case 2000:
 		{
@@ -677,6 +678,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				r = register_trap2( arg1, 0, 1, arg2);
 			break;
 		}
+#endif
 		default:
 		{
 			DEBUG (("s_system(): invalid mode %d", mode));
