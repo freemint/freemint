@@ -57,7 +57,7 @@
 # include "mint/errno.h"
 # include "mint/stat.h"		/* struct stat */
 
-# include "cnf.h"		/* init_env */
+# include "cnf_mint.h"		/* init_env */
 # include "console.h"		/* c_conin(), c_conrs() */
 # include "dos.h"		/* p_umask(), p_domain() */
 # include "dosdir.h"		/* d_opendir(), d_readdir(), d_closedir(), f_symlink(), f_stat64(), ...*/

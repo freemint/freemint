@@ -36,7 +36,7 @@
 
 # include "bios.h"	/* */
 # include "block_IO.h"	/* init_block_IO */
-# include "cnf.h"	/* load_config, some variables */
+# include "cnf_mint.h"	/* load_config, some variables */
 # include "console.h"	/* */
 # include "cookie.h"	/* restr_cookie */
 # include "crypt_IO.h"	/* init_crypt_IO */
