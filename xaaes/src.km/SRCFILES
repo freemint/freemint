@@ -39,6 +39,7 @@ HEADER = \
 	vaproto.h \
 	version.h \
 	widgets.h \
+	win_draw.h \
 	xa_aes.h \
 	xa_appl.h \
 	xa_defs.h \
@@ -96,6 +97,7 @@ COBJS = \
 	trnfm.c \
 	util.c \
 	widgets.c \
+	win_draw.c \
 	xa_appl.c \
 	xa_evnt.c \
 	xa_fnts.c \
