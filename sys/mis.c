@@ -39,6 +39,7 @@
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
 # include "mint/mem.h"		/* F_FASTLOAD et contubernales */
+# include "mint/signal.h"	/* SIGCHLD etc. */
 # include "mint/stat.h"		/* struct stat */
 
 # include "arch/cpu.h"		/* setstack() */
@@ -96,18 +97,12 @@ static void shell_start(long bp) __attribute__((noreturn));
 static BASEPAGE *shell_base;
 static short xcommands;
 
-static const char *months[] =
-{
-	"Jan", "Feb", "Mar", "Apr", "May", "Jun", \
-	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
-
 /* Utility routines */
 
 static void
 shell_fprintf(long handle, const char *fmt, ...)
 {
-	char buf[1024];
+	char buf[2048];
 	va_list args;
 
 	va_start(args, fmt);
@@ -223,46 +218,85 @@ env_append(char *where, char *what)
 {
 	strcpy(where, what);
 	where += strlen(where);
-
-	return ++where;
+	*where++ = 0;
+	
+	return where;
 }
 
 static char *
-sh_getenv(const char *var)
+shell_getenv(const char *var)
 {
-	char *es, *env_str = shell_base->p_env;
+	char *env_str = shell_base->p_env;
 	long vl;
 
 	if (env_str == NULL || *env_str == 0)
-	{
-		shell_fprintf(STDERR, "mint: %s: no environment string!\r\n", __FUNCTION__);
-
-		return 0;
-	}
+		return NULL;
 
 	vl = strlen(var);
 
 	while (*env_str)
 	{
-		if (strncmp(env_str, var, vl) == 0)
-		{
-			es = env_str;
-			while (*es != '=')
-				es++;
-			es++;
-
-			return es;
-		}
+		if ((strncmp(env_str, var, vl) == 0) && (env_str[vl] == '='))
+			return env_str + vl + 1;
 		while (*env_str)
 			env_str++;
 		env_str++;
 	}
 
-	return 0;
+	return NULL;
+}
+
+/* shell_delenv() idea is borrowed from mintlib's del_env() */
+static void
+shell_delenv(const char *strng)
+{
+	char *name, *env_str = shell_base->p_env;
+	long len;
+
+	if (!env_str)
+		return;
+
+	/* find the length of "tag" in "tag=value" */
+	len = strlen(strng);
+
+	/* find the tag in the environment */
+	while (*env_str)
+	{
+		if ((strncmp(env_str, strng, len) == 0) && (env_str[len] == '='))
+			break;
+		while (*env_str)
+			env_str++;
+		env_str++;
+	}
+
+	if (!*env_str)
+		return;
+
+	/* if it's found, move all the other environment variables down by 1 to
+   	 * delete it
+         */
+	name = env_str + strlen(env_str) + 1;
+
+	if (!*name)
+	{
+		env_str[0] = env_str[1] = 0;
+	}
+	else
+	{
+		while (*name)
+		{
+			while (*name)
+				*env_str++ = *name++;
+			*env_str++ = *name++;
+		}
+		*env_str = *name;
+	}
+
+	Mshrink((void *)shell_base->p_env, env_size());
 }
 
 static void
-sh_setenv(const char *var, char *value)
+shell_setenv(const char *var, char *value)
 {
 	char *env_str = shell_base->p_env;
 	char *new_env, *old_var, *es, *ne;
@@ -272,13 +306,14 @@ sh_setenv(const char *var, char *value)
 	new_size = env_size();
 	new_size += strlen(value);
 
-	old_var = sh_getenv(var);
+	old_var = shell_getenv(var);
+
 	if (old_var)
 		new_size -= strlen(old_var);	/* this is the VALUE of the var */
 	else
 		new_size += varlen;		/* this is its NAME */
 
-	new_size++;				/* trailing zero */
+	new_size += 2;				/* '=' and trailing zero */
 
 	new_env = (char *)Mxalloc(new_size, 3);
 	if (new_env == NULL)
@@ -290,7 +325,7 @@ sh_setenv(const char *var, char *value)
 	/* Copy old env to new place skipping `var' */
 	while (*es)
 	{
-		if (strncmp(es, var, varlen) == 0)
+		if ((strncmp(es, var, varlen) == 0) && (es[varlen] == '='))
 		{
 			while (*es)
 				es++;
@@ -305,6 +340,7 @@ sh_setenv(const char *var, char *value)
 	}
 
 	strcpy(ne, var);
+	strcat(ne, "=");
 	strcat(ne, value);
 
 	ne += strlen(ne);
@@ -325,7 +361,7 @@ sh_setenv(const char *var, char *value)
  *
  */
 INLINE long
-crunch(char *cmdline, char *argv[])
+crunch(char *cmdline, char **argv)
 {
 	char *cmd = cmdline, *start;
 	long cmdlen, idx = 0;
@@ -369,7 +405,7 @@ crunch(char *cmdline, char *argv[])
 
 /* Execute an external program */
 INLINE long
-execvp(char *oldcmd, char *argv[])
+execvp(char *oldcmd, char **argv)
 {
 	char *var, *new_env, *new_var, *t, *path, *np, npath[2048];
 	long count = 0, x, r = -1L;
@@ -423,7 +459,7 @@ execvp(char *oldcmd, char *argv[])
 	t = strrchr(argv[0], '/');
 	if (!t)
 	{
-		path = sh_getenv("PATH=");
+		path = shell_getenv("PATH");
 
 		if (path)
 		{
@@ -459,6 +495,23 @@ xcmdstate(void)
 	shell_fprintf(STDOUT, "Extended commands are %s\r\n", xcommands ? "on" : "off");
 }
 
+static void
+env(void)
+{
+	char *var = shell_base->p_env;
+
+	if (!var)
+		return;
+
+	while (*var)
+	{
+		shell_fprintf(STDOUT, "%s\r\n", var);
+		while (*var)
+			var++;
+		var++;
+	}
+}
+
 /* End utilities, begin commands */
 
 static long
@@ -475,25 +528,25 @@ sh_help(long argc, char **argv)
 	shell_fprintf(STDOUT, \
 	"	MiS is not intended to be a regular system shell, so don't\r\n" \
 	"	expect much. It is only a tool to fix bigger problems that\r\n" \
-	"	prevent the system from booting normally.\r\n" \
+	"	prevent the system from booting normally. Basic commands:\r\n" \
 	"\r\n" \
-	"	Basic commands are:\r\n" \
-	"\r\n" \
-	"	cd - change directory\r\n" \
+	"	cd [dir] - change directory\r\n" \
+	"	echo text - display `text'\r\n" \
 	"	exit - leave and reboot\r\n" \
+	"	export [NAME=value] - set an environment variable\r\n" \
 	"	help - display this message\r\n" \
+	"	setenv [NAME value] - set an environment variable\r\n" \
 	"	ver - display version information\r\n" \
-	"	xcmd - switch the extended command set on/off\r\n"
+	"	xcmd [on|off] - switch the extended command set on/off\r\n"
 	"\r\n" \
-	"	Extended commands (now %s) are:\r\n" \
+	"	Extended commands (now %s):\r\n" \
 	"\r\n" \
-	"	chgrp - change the group a file belongs to\r\n" \
-	"	chmod - change the access permissions for a file\r\n" \
-	"	chown - change file's ownership\r\n" \
+	"	chgrp DEC-GROUP file - change group the file belongs to\r\n" \
+	"	chmod OCTAL-MODE file - change access permissions for file\r\n" \
+	"	chown DEC-OWNER[:DEC-GROUP] file - change file's ownership\r\n" \
 	"	*cp - copy file\r\n" \
-	"	env - display environment\r\n" \
-	"	ln - create a link\r\n" \
-	"	ls - display directory\r\n" \
+	"	ln old new - create a symlink `new' pointing to file `old'\r\n" \
+	"	ls [dir] - display directory\r\n" \
 	"	*mv - move/rename a file\r\n" \
 	"	*rm - delete a file\r\n" \
 	"\r\n" \
@@ -632,7 +685,7 @@ sh_ls(long argc, char **argv)
 				/* And now recalculate the time stamp */
 				unix2calendar(st.mtime.time, &year, &month, &day, &hour, &minute, NULL);
 
-				ksprintf(p, sizeof(path), "%s", months[month - 1]);
+				ksprintf(p, sizeof(path), "%s", months_abbr_3[month - 1]);
 				p = justify_left(p, 4);
 
 				ksprintf(p, sizeof(path), "%d", day);
@@ -674,14 +727,18 @@ sh_ls(long argc, char **argv)
 	return 0;
 }
 
-/* Change cwd to the given path. If none given, change to $HOME */
+/* Change cwd to the given path. If none given, change to $HOME
+ *
+ * XXX crashes when entering /kern/1
+ *
+ */
 static long
 sh_cd(long argc, char **argv)
 {
 	long r = 0;
 	char *home, *pwd, cwd[1024];
 
-	pwd = sh_getenv("PWD=");
+	pwd = shell_getenv("PWD");
 
 	if (argc >= 2)
 	{
@@ -696,7 +753,7 @@ sh_cd(long argc, char **argv)
 	}
 	else
 	{
-		home = sh_getenv("HOME=");
+		home = shell_getenv("HOME");
 		if (home)
 			r = Dsetpath(home);
 		else
@@ -706,7 +763,7 @@ sh_cd(long argc, char **argv)
 	if (r == 0)
 	{
 		if (pwd)
-			sh_setenv("OLDPWD=", pwd);
+			shell_setenv("OLDPWD", pwd);
 
 		Dgetcwd(cwd, 0, sizeof(cwd));
 
@@ -715,7 +772,7 @@ sh_cd(long argc, char **argv)
 		else
 			dos2unix(cwd);
 
-		sh_setenv("PWD=", cwd);
+		shell_setenv("PWD", cwd);
 	}
 
 	return r;
@@ -824,31 +881,6 @@ sh_chmod(long argc, char **argv)
 }
 
 static long
-sh_env(long argc, char **argv)
-{
-	char *var;
-
-	var = shell_base->p_env;
-
-	if (var == NULL || *var == 0)
-	{
-		shell_fprintf(STDERR, "mint: %s: no environment string!\r\n", __FUNCTION__);
-
-		return 0;
-	}
-
-	while (*var)
-	{
-		shell_fprintf(STDOUT, "%s\r\n", var);
-		while (*var)
-			var++;
-		var++;
-	}
-
-	return 0;
-}
-
-static long
 sh_xcmd(long argc, char **argv)
 {
 	if (argc >= 2)
@@ -872,8 +904,14 @@ sh_exit(long argc, char **argv)
 
 	shell_print("Are you sure to exit and reboot (y/n)?");
 	y = (short)Cconin();
+
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
+	{
+		/* Kill the parent to avoid restarting us */
+		(void)Pkill(Pgetppid(), SIGTERM);
+
 		Pterm(0);
+	}
 	shell_print("\r\n");
 
 	return 0;
@@ -882,18 +920,24 @@ sh_exit(long argc, char **argv)
 static long
 sh_cp(long argc, char **argv)
 {
+	shell_fprintf(STDOUT, "%s not implemented yet!\r\n", argv[0]);
+
 	return -1;
 }
 
 static long
 sh_mv(long argc, char **argv)
 {
+	shell_fprintf(STDOUT, "%s not implemented yet!\r\n", argv[0]);
+
 	return -1;
 }
 
 static long
 sh_rm(long argc, char **argv)
 {
+	shell_fprintf(STDOUT, "%s not implemented yet!\r\n", argv[0]);
+
 	return -1;
 }
 
@@ -915,23 +959,88 @@ sh_ln(long argc, char **argv)
 	return Fsymlink(old, new);
 }
 
+static long
+sh_setenv(long argc, char **argv)
+{
+	if (argc < 2)
+		env();
+	else if (argc == 2)
+	{
+		if (strcmp(argv[1], "--help") == 0)
+			shell_fprintf(STDOUT, "%s [NAME value]\r\n", argv[0]);
+		else
+			shell_delenv(argv[1]);
+	}
+	else
+		shell_setenv(argv[1], argv[2]);
+
+	return 0;
+}
+
+static long
+sh_export(long argc, char **argv)
+{
+	char *arg2;
+
+	if (argc < 2)
+		env();
+	else
+	{
+		if (strcmp(argv[1], "--help") == 0)
+			shell_fprintf(STDOUT, "%s [NAME=value]\r\n", argv[0]);
+		else
+		{
+			arg2 = strrchr(argv[1], '=');
+
+			if (arg2 == NULL)
+				shell_delenv(argv[1]);
+			else
+			{
+				*arg2++ = 0;
+				argv[2] = arg2;
+				argv[3] = NULL;
+
+				sh_setenv(argc + 1, argv);
+			}
+		}
+	}
+
+	return 0;
+}
+
+static long
+sh_echo(long argc, char **argv)
+{
+	short x = 1;
+
+	argc--;
+
+	while (argc--)
+		shell_fprintf(STDOUT, "%s ", argv[x++]);
+
+	shell_fprintf(STDOUT, "\r\n");
+
+	return 0;
+}
+
 /* End of the commands, begin control routines */
 
 /* Bitfield of flags for functions (1 = gets switched on/off by xcmd) */
-static const long is_ext = 0x00003fe0L;		/* 0011-1111-1110-0000 */
+static const long is_ext = 0x0000ff00L;		/* -1111-1111-0000-0000 */
 
 typedef long FUNC();
 
 static FUNC *cmd_routs[] =
 {
-	sh_exit, sh_ver, sh_cd, sh_help, sh_xcmd, \
-	sh_env, sh_ls, sh_cp, sh_mv, sh_rm, sh_ln, sh_chmod, sh_chown, sh_chgrp
+	sh_exit, sh_ver, sh_cd, sh_help, sh_xcmd, sh_setenv, sh_export, sh_echo, \
+	sh_ls, sh_cp, sh_mv, sh_rm, sh_ln, sh_chmod, sh_chown, sh_chgrp
 };
 
+/* Add export/setenv */
 static const char *commands[] =
 {
-	"exit", "ver", "cd", "help", "xcmd", \
-	"env", "ls", "cp", "mv", "rm", "ln", "chmod", "chown", "chgrp", NULL
+	"exit", "ver", "cd", "help", "xcmd", "setenv", "export", "echo", \
+	"ls", "cp", "mv", "rm", "ln", "chmod", "chown", "chgrp", NULL
 };
 
 /* Execute the given command */
@@ -1035,7 +1144,7 @@ static void
 shell(void)
 {
 	uchar linebuf[256], *lbuff;
-	long r;
+	long r, s;
 
 	shell_print("\ee\ev\r\n");	/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);
@@ -1046,14 +1155,28 @@ shell(void)
 
 	sh_cd(1, NULL);		/* this sets $HOME as current dir */
 
+	/* This loop restarts the shell when it dies (in case of a bus error for example) */
 	for (;;)
 	{
-		lbuff = prompt(linebuf, sizeof(linebuf));
+		s = Pvfork();
 
-		r = execute(lbuff);
+		/* Child here */
+		if (s == 0)
+		{
+			for (;;)
+			{
+				lbuff = prompt(linebuf, sizeof(linebuf));
 
-		if (r < 0)
-			shell_fprintf(STDERR, "mint: %s: error %ld\r\n", lbuff, r);
+				r = execute(lbuff);
+
+				if (r < 0)
+					shell_fprintf(STDERR, "mint: %s: error %ld\r\n", lbuff, r);
+			}
+		}
+		else		/* Parent here */
+		{
+			(void)Pwaitpid(s, 0, NULL);	/* this is to avoid zombies */
+		}
 	}
 }
 
