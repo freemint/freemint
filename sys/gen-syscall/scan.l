@@ -131,10 +131,10 @@ space		[ \t\n]
 	return _STRUCT;
 }
 
-"int"	{
+"union"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _INT;
+	return _UNION;
 }
 
 "char"	{
