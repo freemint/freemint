@@ -32,6 +32,7 @@
 
 # include "biosfs.h"
 # include "console.h"
+# include "dev-mouse.h"
 # include "dosdir.h"
 # include "dosmem.h"
 # include "filesys.h"
@@ -1452,7 +1453,6 @@ checkkeys (void)
 	short shift;
 	int sig, ret;
 	struct tty *tty = &con_tty;
-	extern char mshift;		/* for mouse -- see biosfs.c */
 	static short oldktail = 0;
 
 	ret = 0;
@@ -1551,7 +1551,6 @@ checkkeys (void)
 short
 ikbd_scan(short scancode)
 {
-	extern char mshift;		/* for mouse -- see biosfs.c */
 	ushort mod = 0, shift = *kbshft;
 
 	scancode &= 0x00ff;		/* better safe than sorry */

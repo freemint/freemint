@@ -39,6 +39,7 @@
 
 
 extern DEVDRV mouse_device;
+extern char mshift;
 
 void _cdecl mouse_handler (const char *buf);
 

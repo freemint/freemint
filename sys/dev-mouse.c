@@ -91,7 +91,7 @@ static long mousersel;
 
 /* shift key status; set by checkkeys() in bios.c
  */
-char mshift;
+char mshift = 0;
 
 /* mouse pos. variables; used by big screen emulators
  */
