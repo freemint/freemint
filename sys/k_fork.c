@@ -1,34 +1,34 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 2000-11-07
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
+ *
  */
 
 # include "k_fork.h"
@@ -61,20 +61,20 @@ struct proc *
 fork_proc1 (struct proc *p1, long flags, long *err)
 {
 	struct proc *p2;
-	
+
 	p2 = kmalloc (sizeof (*p2));
 	if (!p2) goto nomem;
-	
+
 	/* copy */
 	*p2 = *p1;
-	
+
 	p2->p_mem = NULL;
 	p2->p_cred = NULL;
 	p2->p_fd = NULL;
 	p2->p_cwd = NULL;
 	p2->p_sigacts = NULL;
 	p2->p_limits = NULL;
-	
+
 	/* these things are not inherited
 	 */
 	p2->ppid = p1->pid;
@@ -88,7 +88,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	p2->alarmtim = 0;
 	p2->curpri = p2->pri;
 	p2->slices = SLICES (p2->pri);
-	
+
 	p2->itimer[0].interval = 0;
 	p2->itimer[0].reqtime = 0;
 	p2->itimer[0].timeout = 0;
@@ -98,34 +98,38 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	p2->itimer[2].interval = 0;
 	p2->itimer[2].reqtime = 0;
 	p2->itimer[2].timeout = 0;
-	
+
 	((long *) p2->sysstack)[1] = FRAME_MAGIC;
 	((long *) p2->sysstack)[2] = 0;
 	((long *) p2->sysstack)[3] = 0;
-	
+
 	p2->usrtime = p2->systime = p2->chldstime = p2->chldutime = 0;
-	
+
 	/* child isn't traced */
 	p2->ptracer = 0;
 	p2->ptraceflags = 0;
 	p2->ctxt[CURRENT].ptrace = 0;
 	p2->ctxt[SYSCALL].ptrace = 0;
-	
+
 	p2->q_next = NULL;
 	p2->wait_q = 0;
-	
-	
+
+
 	/* Duplicate command line */
 	if (p2->real_cmdline != NULL
+# ifdef ONLY030
+		&& (*(long *)p2->real_cmdline))
+# else
 		&& (p2->real_cmdline [0] != 0 || p2->real_cmdline [1] != 0
 			|| p2->real_cmdline [2] != 0 || p2->real_cmdline [3] != 0))
+# endif
 	{
 		ulong *parent_cmdline = (ulong *) p2->real_cmdline;
-		
+
 		p2->real_cmdline = kmalloc ((*parent_cmdline) + 4);
-		if (!p2->real_cmdline) 
+		if (!p2->real_cmdline)
 			goto nomem;
-		
+
 		memcpy (p2->real_cmdline, parent_cmdline, (*parent_cmdline) + 4);
 	}
 	else if (p2->ppid != 0)
@@ -142,72 +146,72 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 		{
 			ALERT ("Oops: no command line for pid %d (ppid %d)", p2->pid, p2->ppid);
 		}
-		
+
 		p2->real_cmdline = NULL;
 	}
-	
+
 	if (flags & FORK_SHAREVM)
 		p2->p_mem = share_mem (p1);
 	else
 		p2->p_mem = copy_mem (p1);
-	
+
 	p2->p_cred = kmalloc (sizeof (*p2->p_cred));
 	if (p2->p_cred)
 	{
 		memcpy (p2->p_cred, p1->p_cred, sizeof (*p2->p_cred));
 		p2->p_cred->links = 1;
-		
+
 		hold_cred (p2->p_cred->ucr);
 	}
-	
+
 	if (flags & FORK_SHAREFILES)
 		p2->p_fd = share_fd (p1);
 	else
 		p2->p_fd = copy_fd (p1);
-	
+
 	if (flags & FORK_SHARECWD)
 		p2->p_cwd = share_cwd (p1);
 	else
 		p2->p_cwd = copy_cwd (p1);
-	
+
 	if (flags & FORK_SHARESIGS)
 		p2->p_sigacts = share_sigacts (p1);
 	else
 		p2->p_sigacts = copy_sigacts (p1);
-	
+
 //	p_limits
-	
+
 	if (!p2->p_mem || !p2->p_cred || !p2->p_fd || !p2->p_cwd || !p2->p_sigacts)
 		goto nomem;
-	
-	
+
+
 	/* Duplicate cookie for the executable file */
 	dup_cookie (&p2->exe, &p1->exe);
-		
+
 	p2->started = xtime;
-	
+
 	/* now that memory ownership is copied, fill in page table
 	 * WARNING: this must be done AFTER all memory allocations
 	 *          (especially kmalloc)
 	 */
 	if (!(flags & FORK_SHAREVM))
 		init_page_table (p2, p2->p_mem);
-	
+
 	/* hook into the process list */
 	{
 		ushort sr = splhigh ();
-		
+
 		p2->gl_next = proclist;
 		proclist = p2;
-		
+
 		spl (sr);
 	}
-	
+
 	return p2;
-	
+
 nomem:
 	DEBUG (("fork_proc: insufficient memory"));
-	
+
 	if (p2)
 	{
 		if (p2->p_mem) free_mem (p2);
@@ -216,10 +220,10 @@ nomem:
 		if (p2->p_cwd) free_cwd (p2);
 		if (p2->p_sigacts) free_sigacts (p2);
 		if (p2->p_limits) free_limits (p2);
-		
+
 		kfree (p2);
 	}
-	
+
 	if (err) *err = ENOMEM;
 	return NULL;
 }
@@ -251,12 +255,12 @@ sys_pvfork (void)
 		DEBUG(("p_vfork: couldn't get new PROC struct"));
 		return r;
 	}
-	
+
 	assert (p->p_mem && p->p_mem->mem);
-	
+
 	/* set u:\proc time+date */
 	procfs_stmp = xtime;
-	
+
 	p->ctxt[CURRENT] = p->ctxt[SYSCALL];
 	p->ctxt[CURRENT].regs[0] = 0;		/* child returns a 0 from call */
 	p->ctxt[CURRENT].sr &= ~(0x2000);	/* child must be in user mode */
@@ -285,7 +289,7 @@ sys_pvfork (void)
 		sleep(WAIT_Q, (long)p);		/* while we wait for it */
 		spl(sr);
 	}
-	
+
 	TRACE(("p_vfork: parent waking up"));
 
 	curproc->p_sigmask = p_sigmask;
@@ -318,24 +322,24 @@ sys_pfork (void)
 	long txtsize;
 	int i, j, newpid;
 	long r;
-	
+
 	p = fork_proc (0, &r);
 	if (!p)
 	{
 		DEBUG (("p_fork: couldn't get new PROC struct"));
 		return r;
 	}
-	
+
 	assert (p->p_mem && p->p_mem->mem);
-	
+
 	/* set u:\proc time+date */
 	procfs_stmp = xtime;
-	
+
 	/*
 	 * save the parent's address space
 	 */
 	txtsize = p->p_mem->txtsize;
-	
+
 	TRACE (("p_fork: duplicating parent memory"));
 	for (i = 0; i < p->p_mem->num_reg; i++)
 	{
@@ -383,9 +387,9 @@ sys_pfork (void)
 			p->p_mem->mem[i] = n;
 		}
 	}
-	
+
 	assert (curproc->p_mem && curproc->p_mem->mem);
-	
+
 	/* The save regions are initially attached to the child's regions. To
 	 * prevent swapping of the region and its save region (which should
 	 * still be identical) on the next context switch, we attach them here
@@ -427,6 +431,6 @@ sys_pfork (void)
 	run_next(p, 3);
 	newpid = p->pid;
 	yield();
-	
+
 	return newpid;
 }
