@@ -206,7 +206,7 @@ nofpu2:
 	rts
 
 _restore_context:
-//	ori.w	#0x0700,sr
+	ori.w	#0x0400,sr
 	move.l	4(sp),a0		// address of context save area
 
 // Switch stacks now - starting now ssp is in the memory space of
@@ -279,7 +279,7 @@ notrace:
 
 
 _change_context:
-//	ori.w	#0x0700,sr		// mask interrupts
+	ori.w	#0x0400,sr		// mask interrupts
 	move.l	4(sp),a0		// address of context save area
 
 // Switch stacks now - starting now ssp is in the memory space of
