@@ -2,8 +2,6 @@
  * Funktionen, die beide Emulatoren benutzen.
  */
 
-#include <cflib.h>
-
 #include "global.h"
 #include "textwin.h"
 #include "vt.h"

@@ -33,8 +33,6 @@
 #include <mintbind.h>
 #include <sys/ioctl.h>
 
-#include <cflib.h>
-
 #include "../global.h"
 #include "../share.h"
 

@@ -5,8 +5,8 @@
  *
  */
 
-#include <cflib.h>
 #include <string.h>
+#include "global.h"
 
 
 #ifndef WM_SHADED

@@ -4,8 +4,6 @@
 #include <support.h>
 #include <unistd.h>
 
-#include <cflib.h>
-
 #include "global.h"
 #include "av.h"
 #include "config.h"

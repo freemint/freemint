@@ -9,8 +9,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <cflib.h>
-
 #include "global.h"
 #include "clipbrd.h"
 #include "config.h"

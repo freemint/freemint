@@ -3,7 +3,6 @@
  */
 
 #include <osbind.h>
-#include <cflib.h>
 
 #include "global.h"
 #include "console.h"
