@@ -167,8 +167,6 @@ send_terminate(enum locks lock, struct xa_client *client)
 		send_app_message(lock, NULL, client,
 				 AC_CLOSE,    0, 0, client->p->pid,
 				 client->p->pid, 0, 0, 0);
-
-		remove_windows(lock, client);
 	}
 
 	/* XXX
