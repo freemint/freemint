@@ -67,9 +67,9 @@ libkern$(CPU).a: objs asm-files
 objs: .cpu_$(CPU)
 	cd .cpu_$(CPU); $(MAKE)
 
-.cpu_$(CPU):
-	$(MKDIR) $@
-	$(CP) Makefile.objs $@/Makefile
+.cpu_$(CPU): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
 
 asm-files:
 	cd asm; $(MAKE) CPU="$(CPU)" asm-files

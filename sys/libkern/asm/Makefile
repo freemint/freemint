@@ -28,6 +28,6 @@ GENFILES = .cpu_*
 asm-files: .cpu_$(CPU)
 	cd .cpu_$(CPU); $(MAKE)
 
-.cpu_$(CPU):
-	$(MKDIR) $@
-	$(CP) Makefile.objs $@/Makefile
+.cpu_$(CPU): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
