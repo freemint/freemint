@@ -119,6 +119,10 @@ process_getregs (PROC *p, struct reg *reg)
 long
 process_setregs (PROC *p, struct reg *reg)
 {
+	if ((reg->sr & PSL_USERCLR) != 0 ||
+	    (reg->sr & PSL_USERSET) != PSL_USERSET)
+		return EPERM;
+	
 	p->ctxt[SYSCALL].regs[ 0] = reg->regs[ 0];
 	p->ctxt[SYSCALL].regs[ 1] = reg->regs[ 1];
 	p->ctxt[SYSCALL].regs[ 2] = reg->regs[ 2];
