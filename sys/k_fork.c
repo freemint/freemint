@@ -37,6 +37,7 @@
 
 # include "mint/asm.h"
 # include "mint/credentials.h"
+# include "mint/proc.h"
 # include "mint/signal.h"
 
 # include "arch/mprot.h"
@@ -54,20 +55,18 @@
 
 
 /*
- * create a new process that is (practically) a duplicate of the
- * current one
+ * create a new process that is (practically) a duplicate of p1
  */
-
-PROC *
-fork_proc (long flags, long *err)
+struct proc *
+fork_proc1 (struct proc *p1, long flags, long *err)
 {
-	PROC *p2;
+	struct proc *p2;
 	
 	p2 = kmalloc (sizeof (*p2));
 	if (!p2) goto nomem;
 	
 	/* copy */
-	*p2 = *curproc;
+	*p2 = *p1;
 	
 	p2->p_mem = NULL;
 	p2->p_cred = NULL;
@@ -78,7 +77,7 @@ fork_proc (long flags, long *err)
 	
 	/* these things are not inherited
 	 */
-	p2->ppid = curproc->pid;
+	p2->ppid = p1->pid;
 	p2->pid = newpid ();
 	p2->sigpending = 0;
 	p2->nsigs = 0;
@@ -146,34 +145,33 @@ fork_proc (long flags, long *err)
 	}
 	
 	if (flags & FORK_SHAREVM)
-		p2->p_mem = share_mem (curproc);
+		p2->p_mem = share_mem (p1);
 	else
-		p2->p_mem = copy_mem (curproc);
+		p2->p_mem = copy_mem (p1);
 	
 	p2->p_cred = kmalloc (sizeof (*p2->p_cred));
 	if (p2->p_cred)
 	{
-		memcpy (p2->p_cred, curproc->p_cred, sizeof (*p2->p_cred));
+		memcpy (p2->p_cred, p1->p_cred, sizeof (*p2->p_cred));
 		p2->p_cred->links = 1;
 		
-//		p2->p_cred->ucr = copy_cred (p2->p_cred->ucr);
 		hold_cred (p2->p_cred->ucr);
 	}
 	
 	if (flags & FORK_SHAREFILES)
-		p2->p_fd = share_fd (curproc);
+		p2->p_fd = share_fd (p1);
 	else
-		p2->p_fd = copy_fd (curproc);
+		p2->p_fd = copy_fd (p1);
 	
 	if (flags & FORK_SHARECWD)
-		p2->p_cwd = share_cwd (curproc);
+		p2->p_cwd = share_cwd (p1);
 	else
-		p2->p_cwd = copy_cwd (curproc);
+		p2->p_cwd = copy_cwd (p1);
 	
 	if (flags & FORK_SHARESIGS)
-		p2->p_sigacts = share_sigacts (curproc);
+		p2->p_sigacts = share_sigacts (p1);
 	else
-		p2->p_sigacts = copy_sigacts (curproc);
+		p2->p_sigacts = copy_sigacts (p1);
 	
 //	p_limits
 	
@@ -182,7 +180,7 @@ fork_proc (long flags, long *err)
 	
 	
 	/* Duplicate cookie for the executable file */
-	dup_cookie (&p2->exe, &curproc->exe);
+	dup_cookie (&p2->exe, &p1->exe);
 	
 	/* clear directory search info */
 	bzero (p2->srchdta, NUM_SEARCH * sizeof (DTABUF *));
@@ -220,6 +218,12 @@ nomem:
 	
 	if (err) *err = ENOMEM;
 	return NULL;
+}
+
+struct proc *
+fork_proc (long flags, long *err)
+{
+	return fork_proc1 (curproc, flags, err);
 }
 
 /*
