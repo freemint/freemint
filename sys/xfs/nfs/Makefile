@@ -4,7 +4,7 @@
 TARGET = nfs.xfs
 
 SHELL = /bin/sh
-SUBDIRS = ksocket
+SUBDIRS = 
 
 srcdir = .
 top_srcdir = ../..
@@ -22,7 +22,7 @@ all-here: $(TARGET)
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = -Lksocket/ -lksocket16 $(LIBKERN) -lgcc
+LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
