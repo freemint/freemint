@@ -10,11 +10,14 @@
 
 # define __KERNEL_XDD__
 
-# include <mint/mint.h>
-# include <mint/dcntl.h>
-# include <mint/file.h>
-# include <mint/proc.h>
-# include <libkern/libkern.h>
+# include "mint/mint.h"
+
+# include "libkern/libkern.h"
+# include "mint/dcntl.h"
+# include "mint/file.h"
+# include "mint/ioctl.h"
+# include "mint/proc.h"
+# include "mint/stat.h"
 
 # include <osbind.h>
 
