@@ -35,6 +35,7 @@
 
 # include "mint/arch/mfp.h"
 # include "arch/cpu.h"
+# include "arch/syscall.h"
 
 # include "block_IO.h"		/* bio */
 # include "cookie.h"		/* add_rsvfentry, del_rsvfentry, get_toscookie */
@@ -46,7 +47,6 @@
 # include "ipc_socketutil.h"	/* so_* */
 # include "k_exec.h"		/* create_process */
 # include "k_kthread.h"		/* kthread_create, kthread_exit */
-# include "kerinfo.h"		/* */
 # include "kmemory.h"		/* kmalloc, kfree */
 # include "memory.h"		/* addr2mem, attach_region, detach_region */
 # include "module.h"		/* load_modules */
