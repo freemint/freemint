@@ -336,7 +336,7 @@ sys_psetgroups (int ngroups, int gidset[])
 /* utility functions */
 
 int
-ngroupmatch (struct ucred *cred, ushort group)
+groupmember (struct ucred *cred, ushort group)
 {
 	int i;
 	
