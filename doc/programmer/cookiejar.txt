@@ -1,0 +1,63 @@
+The Cookie Jar
+--------------
+
+1. The Cookie Jar pointer
+=========================
+
+The system maintains a global pointer to the Cookie Jar. The address
+of the pointer is 0x05a0 ($05a0). This location finds itself in the
+supervisor area, however, it is strongly discouraged to enter the
+supervisor mode to read the vector. Using system calls is more appro-
+priate and will be more compatible with future versions of MiNT.
+
+The Cookie Jar pointer is returned on the following system calls:
+
+a) BIOS' Setexc() function:
+
+	jar_address = Setexc(0x0168, -1L);
+
+b) MiNT Ssystem() function:
+
+	jar_address = Ssystem(S_GETLVAL, 0x05a0L, 0L);
+
+The first method also works in TOS.
+
+2. Manipulating cookies
+=======================
+
+The Cookie Jar is guaranteed to be located in memory area, that is
+accessible for applications in user mode. As a result, once the
+Cookie Jar pointer has been obtained the way specified above, it
+is legal to directly manipulate the cookies. However, the operating
+system provides functions that may facilitate doing that:
+
+- Ssystem(S_GETCOOKIE, tag, &value)
+
+Reads the cookie `tag' and stores its value in `value'.
+
+- Ssystem(S_SETCOOKIE, tag, value);
+
+Stores new cookie in the Cookie Jar.
+
+- Ssystem(S_DELCOOKIE, tag, 0L);
+
+Removes the cookie from the Cookie Jar.
+
+Refer to the Ssystem() call documentation for further details.
+
+3. Caveats
+==========
+
+1) Application programs should NEVER EVER create new Cookie Jar
+   entries, especially if the information stored could get
+   invalid when the application terminates. The Jar is a BIOS
+   resource that provides an information for applications about
+   BIOS services, NOT an area, where applications store data
+   to use for other applications.
+
+2) Nobody, not even resident programs, should store pointers
+   as the Jar entry value. Following such pointers is simply
+   illegal for application programs.
+
+<draco@atari.org>
+16.III.2003.
