@@ -910,9 +910,9 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 
 static short last_x = 0;
 static short last_y = 0;
-static TIMEOUT *b_to = 0;
-static TIMEOUT *m_to = 0;
-static TIMEOUT *m_rto = 0;
+static TIMEOUT *b_to = NULL;
+static TIMEOUT *m_to = NULL;
+static TIMEOUT *m_rto = NULL;
 
 static void move_timeout(struct proc *, long arg);
 
@@ -1106,7 +1106,8 @@ button_timeout(struct proc *p, long arg)
 	vq_key_s(C.vh, &md->kstate);
 	mu_button.ks = md->kstate;
 	new_moose_pkt(0, 0, md);
-	kfree(md);
+	/* XXX see below */
+	_kfree(md, FUNCTION);
 	b_to = 0;
 }
 
@@ -1145,7 +1146,10 @@ adi_button(struct adif *a, struct moose_data *md)
 		t->arg = (long)md;
 	}
 	else
-		kfree(md);
+		/* XXX that's not so good, we get allocated memory from adi
+		 * driver and free this ourself
+		 */
+		_kfree(md, FUNCTION);
 }
 
 /* XXX */
