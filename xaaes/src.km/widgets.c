@@ -2267,6 +2267,52 @@ is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
    structures and made it global.
    Another reason to have the active_widget handling in the kernel. */
 
+bool
+checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md)
+{
+	XA_WIDGET *widg;
+	int f, clicks;
+	bool inside = false;
+
+	clicks = md->clicks;
+	if (clicks > 2)
+		clicks = 2;
+
+	/* Scan through widgets to find the one we clicked on */
+	for (f = 0; f < XA_MAX_WIDGETS; f++)
+	{
+		RECT r;
+
+		while (is_page(f))
+			f++;
+
+		widg = w->widgets + f;
+
+		if (widg->display)					/* Is the widget in use? */
+		{
+			if (    widg->loc.mask         == 0		/* not maskable */
+			    || (widg->loc.mask & mask) == 0)		/* masked */
+			{
+
+				if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
+				{					/* Normal widgets */
+					rp_2_ap(w, widg, &r);		/* Convert relative coords and window location to absolute screen location */
+					inside = m_inside(md->x, md->y, &r);
+				}
+				else
+				{
+					r = w->r;			/* Inside window and outside border area = border. */
+					inside = !m_inside(md->x, md->y, &w->ba);
+				}
+				if (inside)
+					return true;
+			}
+		}
+	}
+	return false;
+}
+
+
 /* HR 161101: possibility to mask out certain widgets. */
 int
 do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md)

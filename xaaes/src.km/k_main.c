@@ -209,6 +209,9 @@ init_moose(void)
 {
 	bool ret = false;
 
+	C.button_waiter = 0;
+	C.redraws = 0;
+
 	C.adi_mouse = adi_name2adi("moose");
 	if (C.adi_mouse)
 	{

@@ -306,6 +306,12 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	top_owner = window_list->owner;
 
 	/*
+	 * It is no longer interested in button released packet
+	 */
+	if (C.button_waiter == client)
+		C.button_waiter = 0;
+
+	/*
 	 * Dispose of any pending messages for the client
 	*/
 	while (client->msg)
@@ -320,6 +326,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	while (client->rdrw_msg)
 	{
 		struct xa_aesmsg_list *nm = client->rdrw_msg->next;
+		C.redraws--;
 		kfree(client->rdrw_msg);
 		client->rdrw_msg = nm;
 	}

@@ -230,6 +230,13 @@ cXA_menu_move(enum locks lock, struct c_event *ce)
 }
 
 void
+cXA_do_widgets(enum locks lock, struct c_event *ce)
+{
+	DIAG((D_mouse, ce->client, "cXA_do_widgets for %s", ce->client->name));
+	do_widgets(lock, (struct xa_window *)ce->ptr1, 0, &ce->md);
+}
+ 
+void
 cXA_active_widget(enum locks lock, struct c_event *ce)
 {
 	DIAG((D_mouse, ce->client, "cXA_active_widget for %s", ce->client->name));
