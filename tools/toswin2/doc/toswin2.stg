@@ -8,7 +8,7 @@
 
 @limage logo.img 36
                                  TosWin2
-                               Version 2.6
+                               Version 2.7
 
 
                                    von
@@ -734,6 +734,43 @@ noch folgende verschickt:
 @{U}Entwicklungsgeschichte@{0}
 
 @autorefoff
+ @{U}Version 2.7 from 07.04.01@{0}
+
+   ù changed default cursor to underline (ugly block cursor is still
+     available as "very visible", i. e. "tput cvvis")
+
+   ù colors are now fully ansi-compatible 
+
+   ù terminal capabilities `bold' and `dim' are now represented using
+     light resp. half-bright colors where applicable
+
+   ù support for alternate character set (pc graphics)
+
+   ù TERM is automatically set to `tw52-m' or `tw100-m' if less than
+     8 colors are available
+
+   ù terminfo source files updated (many bugfixes), recompile
+     it with tic on the target system
+
+   ù environment variable COLORTERM is set to 1 if color support available
+
+   ù The horizontal slider has vanished.  If you want to get it back
+     call me at office hours and keep your credit card at hand.  Please
+     allow six weeks for delivery.
+
+   ù The checkbox for so-called auto-wrapping has vanished.  Explanation:
+     It really enabled semi-automatic margins, i. e. printing in the
+     last column caused a line-break.  Now both tw52 and tw100 have
+     proper automatic margins and there is no more need for such a
+     user-definable feature.
+
+   ù Ultra-smart srcolling. ;-)
+     Displaying large amounts of data is now 3-9 times faster.
+
+   ù Implemented origin mode.
+
+   ù Implemented full (RSI) and soft (DECSTR) terminal reset.
+
  @{U}Version 2.6 vom 09.09.00@{0}
 
    ù Wenn keine Fontauswahl verfgbar ist und man trotzdem versucht, den
