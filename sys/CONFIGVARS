@@ -15,6 +15,7 @@ NATIVECC = gcc
 NATIVECFLAGS = -O
 RANLIB = m68k-atari-mint-ranlib
 STRIP = m68k-atari-mint-strip
+FLAGS = m68k-atari-mint-flags
 
 else
 
@@ -24,6 +25,7 @@ NATIVECC = gcc -pipe
 NATIVECFLAGS = -O
 RANLIB = ranlib
 STRIP = strip
+FLAGS = flags
 
 endif
 

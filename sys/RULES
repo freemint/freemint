@@ -72,6 +72,6 @@ ASFLAGS = $(DEFINITIONS) $(GENERAL) -m68030
 #
 # libkern target
 #
-#LIBKERNTARGET = $(top_srcdir)/libkern/libkern$(CPU).a
 LIBKERNTARGET = libkern$(CPU).a
+LIBKERNSTMP = $(top_srcdir)/libkern/libkern$(CPU).a
 LIBKERN = -L$(top_srcdir)/libkern -lkern$(CPU)

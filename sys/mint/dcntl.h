@@ -38,13 +38,11 @@
 # define _mint_dcntl_h
 
 
+/* 64 bit support */
 # ifndef LLONG
 # define LLONG
-# ifdef __GNUC__
-typedef long long				llong;	/* 64bit int */
-# else
-typedef struct { long hi; unsigned long lo; }	llong;	/* 64bit int */
-# endif
+typedef long long		llong;
+typedef unsigned long long	ullong;
 # endif
 
 
@@ -300,6 +298,7 @@ struct pmeminfo
  * Socket ioctls: these require MiNT-Net 3.0 (or later)
  */
 
+/* socket-level I/O control calls */
 # define SIOCGLOWAT	(('S' << 8) | 1)
 # define SIOCSLOWAT	(('S' << 8) | 2)
 # define SIOCGHIWAT	(('S' << 8) | 3)
@@ -308,6 +307,9 @@ struct pmeminfo
 # define SIOCGPGRP	(('S' << 8) | 6)
 # define SIOCATMARK	(('S' << 8) | 7)
 
+/* socket configuration controls */
+# define SIOCGIFNAME	(('S' << 8) | 10)	/* get iface name */
+# define SIOCSIFLINK	(('S' << 8) | 11)	/* connect iface to device */
 # define SIOCGIFCONF	(('S' << 8) | 12)	/* get iface list */
 # define SIOCGIFFLAGS	(('S' << 8) | 13)	/* get flags */
 # define SIOCSIFFLAGS	(('S' << 8) | 14)	/* set flags */
@@ -321,16 +323,21 @@ struct pmeminfo
 # define SIOCSIFNETMASK	(('S' << 8) | 22)	/* set iface network mask */
 # define SIOCGIFMETRIC	(('S' << 8) | 23)	/* get metric */
 # define SIOCSIFMETRIC	(('S' << 8) | 24)	/* set metric */
-
+# define SIOCSLNKFLAGS	(('S' << 8) | 25)	/* set link level flags */
+# define SIOCGLNKFLAGS	(('S' << 8) | 26)	/* get link level flags */
 # define SIOCGIFMTU	(('S' << 8) | 27)	/* get MTU size */
 # define SIOCSIFMTU	(('S' << 8) | 28)	/* set MTU size */
-
+# define SIOCGIFSTATS	(('S' << 8) | 29)	/* get interface statistics */
 # define SIOCADDRT	(('S' << 8) | 30)	/* add routing table entry */
 # define SIOCDELRT	(('S' << 8) | 31)	/* delete routing table entry */
 
 # define SIOCDARP	(('S' << 8) | 40)	/* delete ARP table entry */
 # define SIOCGARP	(('S' << 8) | 41)	/* get ARP table entry */
 # define SIOCSARP	(('S' << 8) | 42)	/* set ARP table entry */
+
+# define SIOCGIFHWADDR	(('S' << 8) | 50)	/* get hardware address */
+# define SIOCGLNKSTATS	(('S' << 8) | 51)	/* get link statistics */
+# define SIOCSIFOPT	(('S' << 8) | 52)	/* set interface option */
 
 
 /*

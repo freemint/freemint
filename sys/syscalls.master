@@ -115,7 +115,7 @@
 0x039	dcreate		(const char *name, int attrib)
 0x03a	ddelete		(const char *path)
 0x03b	dsetpath	(const char *path)
-0x03c	fcreate		(void)
+0x03c	fcreate		(const char *name, int attrib)
 0x03d	fopen		(const char *name, int mode)
 0x03e	fclose		(int fh)
 0x03f	fread		(int fh, long count, char *buf)
