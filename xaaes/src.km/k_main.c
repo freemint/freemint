@@ -79,7 +79,8 @@ dispatch_cevent(struct xa_client *client)
 	ce = &client->ce[t];
 	t++;
 	t &= MAX_CEVENTS;
-	DIAG((D_kern, client, "Dispatch evnt %d, nxt %d (head %d) for %s", client->ce_tail, t, client->ce_head, client->name));
+	DIAG((D_kern, client, "Dispatch evnt %d, nxt %d (head %d) for %s",
+		client->ce_tail, t, client->ce_head, client->name));
 	client->ce_tail = t;
 	(*func)(0, ce);
 	return 1;
@@ -92,7 +93,7 @@ Block(struct xa_client *client, int which)
 
 	/*
 	 * Get rid of any event queue
-	*/
+	 */
 	while (dispatch_cevent(client))
 	{
 		if (client->usr_evnt)
@@ -109,7 +110,7 @@ Block(struct xa_client *client, int which)
 	 * Looping around doing client events until a user event
 	 * happens.. that is, we've got something to pass back to
 	 * the application.
-	*/
+	 */
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
@@ -135,8 +136,8 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	wake(IO_Q, (long)client);
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 
-	/* HR 041201: the following served as a excellent safeguard on the
-	 *            internal consistency of the event handling mechanisms.
+	/* the following served as a excellent safeguard on the
+	 * internal consistency of the event handling mechanisms.
 	 */
 	if (value == XA_OK)
 	{
@@ -220,14 +221,14 @@ init_moose(void)
 }
 
 
-/* HR 050601: The active widgets are intimately connected to the mouse.
- *            There is only 1 mouse, so there is only need for 1 global structure.
+/* The active widgets are intimately connected to the mouse.
+ * There is only 1 mouse, so there is only need for 1 global structure.
  */
 XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
 
 
 
-/* HR 180601: Now use the global (once) set values in the button structure */
+/* Now use the global (once) set values in the button structure */
 void
 multi_intout(struct xa_client *client, short *o, int evnt)
 {
@@ -666,7 +667,7 @@ k_exit(void)
 	k_shutdown();
 
 	/*
-	 * deinstall trap#2 handler
+	 * deinstall trap #2 handler
 	 */
 	register_trap2(XA_handler, 1, 0, 0);
 
@@ -684,6 +685,9 @@ k_exit(void)
 
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
+
+	if (loader_pid > 0)
+		ikill(loader_pid, SIGCONT);
 
 	/* XXX todo -> module_exit */
 	kthread_exit(0);

@@ -873,6 +873,7 @@ void
 graf_mouse(int m_shape, MFORM *mf)
 {
 	C.mouse_form = NULL;
+
 	switch (m_shape)
 	{
 	case M_ON:
@@ -972,9 +973,6 @@ graf_mouse(int m_shape, MFORM *mf)
 		break;
 	}
 	C.mouse = m_shape;
-//	hidem();				/* Hide/reveal cursor to update on screen image immediately */
-//	showm();
-//	forcem();
 }
 
 /* Slight differance from GEM here - each application can have a different mouse form,

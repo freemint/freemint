@@ -115,15 +115,14 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 	if (client->waiting_for & XAWAIT_MULTI)
 	{
 		/* If the client is waiting on a multi, the response is
-		 *  slightly different to the evnt_keybd() response.
+		 * slightly different to the evnt_keybd() response.
 		 */
 		check_mouse(client, NULL, NULL, NULL);
 
 		/* XaAES extension: return normalized keycode for MU_NORM_KEYBD */
 		if (client->waiting_for & MU_NORM_KEYBD)
 		{
-			/* if (key->norm == 0) */
-				key->norm = nkc_tconv(key->raw.bcon);
+			key->norm = nkc_tconv(key->raw.bcon);
 			multi_intout(client, pb->intout, MU_NORM_KEYBD);
 			pb->intout[5] = key->norm;
 			pb->intout[4] = key->norm; /* for convenience */
@@ -153,13 +152,12 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 void
 XA_keyboard_event(enum locks lock, struct rawkey *key)
 {
-	bool waiting;
 	struct xa_window *top = window_list;
-	struct xa_client *client, *locked_client;
-	AESPB *pb;
+	struct xa_client *locked_client;
+	struct xa_client *client;
+	bool waiting;
 
 	client = find_focus(&waiting, &locked_client);
-	pb     = client->waiting_pb;
 
 	DIAG((D_keybd,client,"XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
 		waiting ? "waiting" : "", update_locked() ? update_locked()->p->pid : 0,
@@ -168,22 +166,17 @@ XA_keyboard_event(enum locks lock, struct rawkey *key)
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
 	{
-		/* See if a (classic) blocked form_do is active */
-		if (update_locked())
-		{
-			struct xa_client *check = update_locked();
+		struct xa_client *check = update_locked();
 
-			if (check == client)
+		/* See if a (classic) blocked form_do is active */
+		if (check && check == client)
+		{
+			DIAGS(("Classic: fmd.lock %d, via %lx", client->fmd.lock, client->fmd.keypress));
+
+			if (client->fmd.lock && client->fmd.keypress)
 			{
-				DIAGS(("Classic: fmd.lock %d, via %lx", client->fmd.lock, client->fmd.keypress));
-				if (client->fmd.lock)
-				{
-					if (client->fmd.keypress)
-					{
-						client->fmd.keypress(lock, NULL, &client->wt, key->aes, key->norm, *key);
-						return;
-					}
-				}
+				client->fmd.keypress(lock, NULL, &client->wt, key->aes, key->norm, *key);
+				return;
 			}
 		}
 
@@ -199,7 +192,7 @@ XA_keyboard_event(enum locks lock, struct rawkey *key)
 			top->keypress(lock, top, NULL, key->aes, key->norm, *key);
 			return;
 		}
-		else if (!pb)
+		else if (!client->waiting_pb)
 		{
 			DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));
 			return;
@@ -211,20 +204,19 @@ XA_keyboard_event(enum locks lock, struct rawkey *key)
 	}
 	else
 	{
-		int c = pending_keys.cur,
-		    e = pending_keys.last;
+		int c = pending_keys.cur;
+		int e = pending_keys.last;
 
 		Sema_Up(pending);
 
 		DIAG((D_keybd,NULL,"pending key cur=%d", c));
 		/* If there are pending keys and the top window owner has changed, throw them away. */
 
-		/* HR 041101: FIX! must compare with last queued key!!! */
-		if (   c != e
-		    && client != pending_keys.q[e-1].client)
+		/* FIX! must compare with last queued key!!! */
+		if (c != e && client != pending_keys.q[e-1].client)
 		{
-			DIAG((D_keybd,NULL," -  clear: cl=%s", c_owner(client)));
-			DIAG((D_keybd,NULL,"           qu=%s", c_owner(pending_keys.q[e-1].client)));
+			DIAG((D_keybd, NULL, " -  clear: cl=%s", c_owner(client)));
+			DIAG((D_keybd, NULL, "           qu=%s", c_owner(pending_keys.q[e-1].client)));
 			e = c = 0;
 		}
 

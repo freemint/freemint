@@ -30,6 +30,8 @@
 
 extern char version[];
 extern Path Aes_home_path;
+
+extern long loader_pid;
 extern struct file *log;
 
 #endif /* _init_h */
