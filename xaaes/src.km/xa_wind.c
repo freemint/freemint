@@ -197,16 +197,6 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 		/* Display the window */
 		display_window(lock, 41, w, 0);
 
-#if 0
-	/* Small but effective optimization. */
-	if (w->send_message
-	    && !was_visible(w))
-	{
-		w->send_message(lock, w, NULL, AMQ_REDRAW,
-				WM_REDRAW, 0, 0, w->handle,
-				w->r.x, w->r.y, w->r.w, w->r.h);
-	}
-#endif
 	set_winmouse();
 }
 
@@ -819,19 +809,30 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_SHADE:
 	{
-		short status;
+		short status, msg;
 
 		/* Ozk: Pure guessing - a non-zero value in intin[2] == set shade?
 		*/
 		if (pb->intin[2])
+		{
 			status = XAWS_SHADED;
+			msg = WM_SHADED;
+		}
 		else
+		{
 			status = ~XAWS_SHADED;
+			msg = WM_UNSHADED;
+		}
 	
 		DIAGS(("wind_set: WF_SHADE, wind %d, status %x for %s",
 			w->handle, status, client->name));
 
+		if (w->send_message)
+			w->send_message(lock, w, NULL, AMQ_CRITICAL,
+				msg, 0, 0, w->handle, 0,0,0,0);
+
 		move_window(lock, w, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
+		break;
 	}
 
 	}
@@ -1407,7 +1408,8 @@ remove_windows(enum locks lock, struct xa_client *client)
 		if (wl->owner == client)
 		{
 			/* checks is_open */
-			close_window(lock|winlist, wl);
+			if (wl->window_status & XAWS_OPEN)
+				close_window(lock|winlist, wl);
 			delete_window(lock|winlist, wl);
 		}
 
@@ -1424,6 +1426,20 @@ remove_windows(enum locks lock, struct xa_client *client)
 
 		wl = nwl;
 	}
+
+	wl = S.nolist_windows.first;
+	while (wl)
+	{
+		nwl = wl->next;
+		if (wl->owner == client)
+		{
+			if (wl->window_status & XAWS_OPEN)
+				close_window(lock, wl);
+			delete_window(lock, wl);
+		}
+		wl = nwl;
+	}
+	
 }
 
 unsigned long

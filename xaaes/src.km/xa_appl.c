@@ -328,6 +328,8 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	/*
 	 * Clear if client was exclusively waiting for mouse input
 	 */
+	client->status |= CS_EXITING;
+
 	if (S.wait_mouse == client)
 	{
 		S.wm_count = 0;
@@ -346,19 +348,21 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	if (C.realmouse_form == client->mouse_form)
 		graf_mouse(ARROW, NULL, false);
 
-	cancel_aesmsgs(&client->rdrw_msg);
-	cancel_aesmsgs(&client->msg);
-	cancel_cevents(client);
-	cancel_keyqueue(client);
-
-	remove_wind_refs(window_list, client);
-	remove_wind_refs(S.closed_windows.first, client);
-
 	/*
 	 * Go through and check that all windows belonging to this
 	 * client are closed
 	 */
 	remove_windows(lock, client);
+
+	cancel_aesmsgs(&client->rdrw_msg);
+	cancel_aesmsgs(&client->msg);
+	cancel_cevents(client);
+	cancel_keyqueue(client);
+
+#if 0
+	remove_wind_refs(window_list, client);
+	remove_wind_refs(S.closed_windows.first, client);
+#endif
 
 
 	if (client->attach)

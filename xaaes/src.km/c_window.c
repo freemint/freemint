@@ -802,6 +802,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			form_save(0, wind->r, &(wind->background));
 		}
 
+		wi_put_first(&S.nolist_windows, wind);
+
 		draw_window(lock|winlist, wind);
 
 		send_redraw(lock|winlist, wind, &wind->wa);
@@ -938,12 +940,14 @@ draw_window(enum locks lock, struct xa_window *wind)
 {
 	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
 
+#if 0
 	if (C.update_lock && C.update_lock != wind->owner)
 	{
 		DIAG((D_wind, wind->owner, "draw_window %d for %s, updatelock (%d for %s)",
 			wind->handle, wind->owner->name, C.updatelock_count, C.update_lock->name));
 		return;
 	}
+#endif
 
 	DIAG((D_wind, wind->owner, "draw_window %d for %s to %d/%d,%d/%d",
 		wind->handle, w_owner(wind),
@@ -1133,7 +1137,7 @@ find_window(enum locks lock, short x, short y)
 	w = window_list;
 	while(w)
 	{
-		if (m_inside(x, y, &w->r))
+		if (!(w->owner->status & CS_EXITING) && m_inside(x, y, &w->r))
 			break;
 
 		w = w->next;
@@ -1209,7 +1213,7 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 	{
 		make_rect_list(w, 1);
 	}
-	else
+	else if (!(w->owner->status & CS_EXITING))
 	{
 		wl = w->prev;
 		r = w->r;
@@ -1245,7 +1249,6 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 {
 	struct xa_window *wl;
 	struct xa_window *old_top = window_list;
-
 	RECT r, clip;
 
 	if (   w->next == root_window	/* Can't send to the bottom a window that's already there */
@@ -1286,15 +1289,17 @@ move_window(enum locks lock, struct xa_window *wind, short newstate, short X, sh
 	      (wind->window_status & XAWS_OPEN) ? "open" : "closed",
 	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, X,Y,W,H));
 
-	if (C.redraws)
-		yield();
+	if (wind->owner->status & CS_EXITING)
+		return;
 
 	new.x = X;
 	new.y = Y;
 	new.w = W;
 	new.h = H;
-
 	old = wind->r;
+
+	if (!wind->nolist && C.redraws)
+		yield();
 
 	if (newstate != -1)
 	{
@@ -1358,6 +1363,7 @@ move_window(enum locks lock, struct xa_window *wind, short newstate, short X, sh
 	}
 
 	inside_root(&new, &wind->owner->options);
+
 	set_and_update_window(wind, blit, &new);
 
 	if ((wind->window_status & XAWS_OPEN))
@@ -1399,6 +1405,8 @@ close_window(enum locks lock, struct xa_window *wind)
 	{
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
 			wind->handle, wind->background));
+
+		wi_remove(&S.nolist_windows, wind);
 
 		if (wind->active_widgets & STORE_BACK)
 			form_restore(0, wind->r, &(wind->background));
@@ -1464,7 +1472,7 @@ close_window(enum locks lock, struct xa_window *wind)
 			w = w->next;
 		}
 
-		if (w && w == root_window)
+		if (w && (w == root_window || (w->owner->status & CS_EXITING)))
 			w = NULL;
 	}
 
@@ -1479,7 +1487,7 @@ close_window(enum locks lock, struct xa_window *wind)
 		{
 			case 0: /* Put owner of window ontop infront */
 			{
-				if (window_list != root_window)
+				if (!(window_list->owner->status & CS_EXITING) && window_list != root_window)
 				{
 					set_active_client(lock, window_list->owner);
 					swap_menu(lock, window_list->owner, true, 0);
@@ -1545,6 +1553,8 @@ delete_window1(enum locks lock, struct xa_window *wind)
 		free_standard_widgets(wind);
 		free_rect_list(wind->rect_start);
 		wind->rect_user = wind->rect_list = wind->rect_start = NULL;
+		if (wind->background)
+			kfree(wind->background);
 		if (wind->destructor)
 			wind->destructor(lock, wind);
 	}
@@ -1616,7 +1626,7 @@ do_delayed_delete_window(enum locks lock)
 
 void display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 {
-	if ((wind->window_status & XAWS_OPEN))
+	if (!(wind->owner->status & CS_EXITING) && (wind->window_status & XAWS_OPEN))
 	{
 		{
 			struct xa_rect_list *rl;
@@ -1658,7 +1668,7 @@ update_windows_below(enum locks lock, RECT *old, RECT *new, struct xa_window *wl
 
 	while (wl)
 	{
-		if ((wl->window_status & XAWS_OPEN))
+		if (!(wl->owner->status & CS_EXITING) && (wl->window_status & XAWS_OPEN))
 		{
 			/* Check for newly exposed windows */
 			if (xa_rect_clip(old, &wl->r, &clip))
@@ -1713,21 +1723,24 @@ display_windows_below(enum locks lock, const RECT *r, struct xa_window *wl)
 
 	while (wl)
 	{
-		rl = wl->rect_start;
-		while (rl)
+		if (!(wl->owner->status & CS_EXITING))
 		{
-			if (xa_rect_clip(r, &rl->r, &clip))
+			rl = wl->rect_start;
+			while (rl)
 			{
-				set_clip(&clip);
-
-				draw_window(lock, wl);
-				
-				if (xa_rect_clip(&wl->wa, &clip, &clip))
+				if (xa_rect_clip(r, &rl->r, &clip))
 				{
-					send_redraw(lock, wl, &clip);
+					set_clip(&clip);
+
+					draw_window(lock, wl);
+				
+					if (xa_rect_clip(&wl->wa, &clip, &clip))
+					{
+						send_redraw(lock, wl, &clip);
+					}
 				}
+				rl = rl->next;
 			}
-			rl = rl->next;
 		}
 		wl = wl->next;
 	}
@@ -1892,7 +1905,6 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		/* Temporary hack 070702 */
 		if (wt && wt->tree)
 		{
-			
 			wt->tree->ob_x = wind->wa.x;
 			wt->tree->ob_y = wind->wa.y;
 			if (!wt->zen)
@@ -1903,6 +1915,26 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		}
 	}
 		
+	if (wind->nolist)
+	{
+		if (xmove || ymove || resize)
+		{
+			if (wind->active_widgets & STORE_BACK)
+				form_restore(0, old, &(wind->background));
+		
+			make_rect_list(wind, true);
+
+			if (wind->active_widgets & STORE_BACK)
+				form_save(0, wind->r, &(wind->background));
+
+			draw_window(wlock, wind);
+
+			send_redraw(wlock, wind, &wind->wa);
+		}
+		return;
+	}
+
+
 	if (blit && oldrl && newrl)
 	{
 		//DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",

@@ -316,7 +316,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
-	if (is_topped(wind) || wind->active_widgets & NO_TOPPED)
+	if (wind->nolist || is_topped(wind) || wind->active_widgets & NO_TOPPED)
 	{
 		if (checkif_do_widgets(lock, wind, 0, md))
 		{
@@ -356,50 +356,66 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
 	 */
-	if (C.menu_base && md->state)
+	if (!C.update_lock && !C.mouse_lock)
 	{
-		client = C.menu_base->client;
-		DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
-		post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
-		return;
-	}
-
-	/*
-	 * If button released and widget_active is set (live movements)...
-	 */
-	if (widget_active.widg && !md->state)
-	{
-		widget_active.m = *md;
-		client = widget_active.wind->owner;
-		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
-		post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
-		return;
-	}
-
-	if ( (locker = mouse_locked()) )
-	{
-		DIAG((D_mouse, locker, "XA_button_event - mouse locked by %s", locker->name));
-		if (locker->fmd.lock && locker->fmd.mousepress)
+		if (C.menu_base && md->state)
 		{
-			DIAG((D_mouse, locker, "post form do to %s", locker->name));
-			post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
+			client = C.menu_base->client;
+			DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
+			post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+			return;
+		}
+
+		/*
+		 * If button released and widget_active is set (live movements)...
+		 */
+		if (widget_active.widg && !md->state)
+		{
+			widget_active.m = *md;
+			client = widget_active.wind->owner;
+			DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+			post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
 			return;
 		}
 	}
-	if ( (locker = update_locked()) )
+	else
 	{
-		DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
-		if (locker->fmd.lock && locker->fmd.mousepress)
+		if ( (locker = C.mouse_lock) )//mouse_locked()) )
 		{
-			DIAG((D_mouse, locker, "post form do to %s", locker->name));
-			post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
-			return;
+			DIAG((D_mouse, locker, "XA_button_event - mouse locked by %s", locker->name));
+
+			if ((wind = nolist_list) && wind->owner == locker)
+			{
+				dispatch_button_event(lock, wind, md);
+				return;
+			}
+			else if (locker->fmd.mousepress)
+			{
+				DIAG((D_mouse, locker, "post form do to %s", locker->name));
+				post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
+				return;
+			}
+		}
+		if ( (locker = C.update_lock) )//update_locked()) )
+		{
+			DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
+
+			if ((wind = nolist_list) && wind->owner == locker)
+			{
+				dispatch_button_event(lock, wind, md);
+				return;
+			}
+			else if (locker->fmd.mousepress)
+			{
+				DIAG((D_mouse, locker, "post form do to %s", locker->name));
+				post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
+				return;
+			}
 		}
 	}
 
-	locker = mouse_locked();
-	if (!locker)
-		locker = update_locked();
+	if (!(locker = C.mouse_lock)) //mouse_locked();
+		locker = C.update_lock; //update_locked();
 
 	wind = find_window(lock, md->x, md->y);
 
@@ -431,13 +447,17 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	}
 	else if (locker)
 	{
-		if (wind && wind->owner == locker && (wind->active_widgets & TOOLBAR))
+		if (wind)
+			client = wind == root_window ? get_desktop()->owner : wind->owner;
+		else
+			client = NULL;
+
+		if (wind && client == locker && (wind->active_widgets & TOOLBAR))
 		{
 			dispatch_button_event(lock, wind, md);
 		}
 		else
 		{
-			client = wind == root_window ? get_desktop()->owner : wind->owner;
 			deliver_button_event(client == locker ? wind : NULL, locker, md);
 		}
 	}
@@ -512,10 +532,13 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		}
 	}
 
+	if (!(client = C.mouse_lock))
+		client = C.update_lock;
+#if 0
 	client = mouse_locked();
 	if (!client)
 		client = update_locked();
-	
+#endif	
 	if (client)
 	{
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))

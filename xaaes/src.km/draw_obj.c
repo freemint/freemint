@@ -713,28 +713,42 @@ void form_save(short d, RECT r, void **area)
 	r.w += d * 2;
 	r.h += d * 2;
 
-	rtopxy(pnt, &r);
-	ritopxy(pnt+4,0,0,r.w,r.h);
-
-	DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.x, r.y, r.w, r.h));
-
-	Mpreserve.fd_w = r.w;
-	Mpreserve.fd_h = r.h;
-	Mpreserve.fd_wdwidth = (r.w + 15) / 16;
-	Mpreserve.fd_nplanes = screen.planes;
-	Mpreserve.fd_stand = 0;
-
-	/* if something is allocated free it */
-	if (*area)
-		kfree(*area);
-
-	*area = kmalloc(calc_back(&r,screen.planes));
-	if (*area)
+	if (r.x < 0)
 	{
-		Mpreserve.fd_addr = *area;
-		hidem();
-		vro_cpyfm(C.vh, S_ONLY, pnt, &Mscreen, &Mpreserve);
-		showm();
+		r.w += r.x;
+		r.x = 0;
+	}
+	if (r.y < 0)
+	{
+		r.h += r.y;
+		r.y = 0;
+	}
+	
+	if (r.w > 0 && r.h > 0)
+	{
+		rtopxy(pnt, &r);
+		ritopxy(pnt+4,0,0,r.w,r.h);
+
+		DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+
+		Mpreserve.fd_w = r.w;
+		Mpreserve.fd_h = r.h;
+		Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+		Mpreserve.fd_nplanes = screen.planes;
+		Mpreserve.fd_stand = 0;
+
+		/* if something is allocated free it */
+		if (*area)
+			kfree(*area);
+
+		*area = kmalloc(calc_back(&r,screen.planes));
+		if (*area)
+		{
+			Mpreserve.fd_addr = *area;
+			hidem();
+			vro_cpyfm(C.vh, S_ONLY, pnt, &Mscreen, &Mpreserve);
+			showm();
+		}
 	}
 }
 
@@ -751,23 +765,37 @@ void form_restore(short d, RECT r, void **area)
 		r.w += d * 2;
 		r.h += d * 2;
 
-		rtopxy(pnt+4, &r);
-		ritopxy(pnt,0,0,r.w,r.h);
+		if (r.x < 0)
+		{
+			r.w += r.x;
+			r.x = 0;
+		}
+		if (r.y < 0)
+		{
+			r.h += r.y;
+			r.y = 0;
+		}
 
-		DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+		if (r.w > 0 && r.h > 0)
+		{
+			rtopxy(pnt+4, &r);
+			ritopxy(pnt,0,0,r.w,r.h);
 
-		Mpreserve.fd_w = r.w;
-		Mpreserve.fd_h = r.h;
-		Mpreserve.fd_wdwidth = (r.w + 15) / 16;
-		Mpreserve.fd_nplanes = screen.planes;
-		Mpreserve.fd_stand = 0;
-		Mpreserve.fd_addr = *area;
-		hidem();
-		vro_cpyfm(C.vh, S_ONLY, pnt, &Mpreserve, &Mscreen);
-		showm();
+			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d", r.x, r.y, r.w, r.h));
 
-		kfree(*area);
-		*area = NULL;
+			Mpreserve.fd_w = r.w;
+			Mpreserve.fd_h = r.h;
+			Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+			Mpreserve.fd_nplanes = screen.planes;
+			Mpreserve.fd_stand = 0;
+			Mpreserve.fd_addr = *area;
+			hidem();
+			vro_cpyfm(C.vh, S_ONLY, pnt, &Mpreserve, &Mscreen);
+			showm();
+
+			kfree(*area);
+			*area = NULL;
+		}
 	}
 }
 
