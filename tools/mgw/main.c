@@ -46,7 +46,7 @@
 
 # define VER_MAJOR	0
 # define VER_MINOR	33
-# define VER_STATUS	b
+# define VER_STATUS	b2
 
 
 /*
