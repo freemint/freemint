@@ -349,6 +349,7 @@ const char *MSG_init_sysdrv_is = "Booting from '%c'\r\n";
 const char *MSG_init_saving_mmu = "Saving MMU setup ...";
 const char *MSG_init_tosver_kbshft = "Resident TOS version %d.%02d%s\r\nKbshft 0x%08lx.\r\n";
 const char *MSG_init_bconmap = "BIOS Bconmap() %s.\r\n";
+const char *MSG_init_system = "Initializing system components:\r\n";
 const char *MSG_init_domaininit = "Initializing built-in domain ops ...";
 const char *MSG_init_loading_modules = "Loading external modules ...\r\n\r\n";
 const char *MSG_init_starting_sysupdate = "Starting up the update daemon ...";
@@ -365,8 +366,15 @@ const char *MSG_init_error = " error %ld.\r\n";
 
 /* ---------- keyboard.c ---------- */
 
-const char *MSG_keytable_loaded = "Loaded keyboard table for AKP code %d\r\n";
-const char *MSG_keytable_faulty = "Keyboard table is BAD!\r\n";
+const char *MSG_keytable_loading = "Loading keyboard table `%s' ...";
+const char *MSG_keytable_loaded = " AKP code %d.\r\n";
+
+/* ---------- memory.c ------------- */
+
+const char *MSG_mem_core = "Core: %lu B ";
+const char *MSG_mem_lost = "(lost %lu B)\r\n";
+const char *MSG_mem_alt = "Alt: %lu B\r\n";
+const char *MSG_mem_noalt = "No alternative RAM.\r\n";
 
 /* ------------ mis.c ------------- */
 
@@ -423,13 +431,12 @@ const char *MSG_shell_help = \
 /* ------------ slb.c ------------- */
 
 /* ALERTs */
-const char *MSG_slb_couldnt_open = "Could not open shared library %s";
+const char *MSG_slb_couldnt_open = "Could not open shared library `%s'";
 const char *MSG_slb_freeing_used = "Freeing shared library %s, which is still in use!";
 
 /* ---------- unicode.c ---------- */
 
-const char *MSG_unitable_loaded = "Loaded unicode table %s\r\n";
-const char *MSG_unicode_cannot_below_128 = "Unicode: cannot change codes lower than 128\r\n";
+const char *MSG_unitable_loading = "Loading unicode table `%s' ...";
 
 /* ---------- unifs.c --------- */
 
@@ -440,7 +447,7 @@ const char *MSG_unifs_fs_doesnt_match_dirs = "unifs: drive's file system doesn't
 
 /* ---------- xhdi.c ---------- */
 
-const char *MSG_xhdi_present = "This system features XHDI level %x.%x (kerinfo %s)\r\n\r\n";
+const char *MSG_xhdi_present = "This system features XHDI level %x.%x (kerinfo %s).\r\n\r\n";
 const char *MSG_kerinfo_accepted = "accepted";
 const char *MSG_kerinfo_rejected = "rejected";
 const char *MSG_xhdi_absent = "This system does not feature XHDI.\r\n\r\n";

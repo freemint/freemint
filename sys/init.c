@@ -89,7 +89,7 @@ void mint_thread(void *arg);
 
 /* print an additional boot message
  */
-static short use_sys;
+static short use_sys = 0;
 
 void
 boot_print (const char *s)
@@ -706,7 +706,7 @@ wait:
 }
 
 
-long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
+static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 
 void
 init (void)
@@ -807,6 +807,8 @@ init (void)
 	boot_print(MSG_init_done);
 # endif
 
+	stop_and_ask();
+
 	sysdrv = *((short *) 0x446);	/* get the boot drive number */
 
 # ifdef VERBOSE_BOOT
@@ -820,6 +822,8 @@ init (void)
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
 # endif
+
+	stop_and_ask();
 
 	/* get GEMDOS pointer to current basepage
 	 *
@@ -872,6 +876,12 @@ init (void)
 
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_bconmap, has_bconmap ? MSG_init_present : MSG_init_not_present);
+# endif
+
+	stop_and_ask();
+
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_system);
 # endif
 
 	/* initialize cache */
@@ -957,7 +967,7 @@ init (void)
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
 
-	r = do_open(&f, "U:\\DEV\\CONSOLE", O_RDWR, 0, NULL);
+	r = do_open(&f, "u:/dev/console", O_RDWR, 0, NULL);
 	if (r)
 		FATAL("unable to open CONSOLE device");
 
@@ -968,7 +978,7 @@ init (void)
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
 
-	r = do_open(&f, "U:\\DEV\\MODEM1", O_RDWR, 0, NULL);
+	r = do_open(&f, "u:/dev/modem1", O_RDWR, 0, NULL);
 	if (r)
 		FATAL("unable to open MODEM1 device");
 
@@ -994,7 +1004,7 @@ init (void)
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
 
-	r = do_open(&f, "U:\\DEV\\CENTR", O_RDWR, 0, NULL);
+	r = do_open(&f, "u:/dev/centr", O_RDWR, 0, NULL);
 	if (!r)
 	{
 		rootproc->p_fd->ofiles[3] = f;
@@ -1005,7 +1015,7 @@ init (void)
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
 
-	r = do_open(&f, "U:\\DEV\\MIDI", O_RDWR, 0, NULL);
+	r = do_open(&f, "u:/dev/midi", O_RDWR, 0, NULL);
 	if (!r)
 	{
 		rootproc->p_fd->midiin = f;
@@ -1040,6 +1050,8 @@ init (void)
 		boot_print(buf);
 	}
 
+	stop_and_ask();
+
 	/* initialize internal xdd */
 # ifdef DEV_RANDOM
 	boot_print(random_greet);
@@ -1056,13 +1068,19 @@ init (void)
 	boot_print(MSG_init_done);
 # endif
 
+	stop_and_ask();
+
 	/* Load the keyboard table */
 	load_keytbl();
+
+	stop_and_ask();
 
 	/* Load the unicode table */
 # ifdef SOFT_UNITABLE
 	init_unicode();
 # endif
+
+	stop_and_ask();
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_loading_modules);
@@ -1070,6 +1088,8 @@ init (void)
 
 	/* load the kernel modules */
 	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
+
+	stop_and_ask();
 
 	/* start system update daemon */
 # ifdef VERBOSE_BOOT
@@ -1081,8 +1101,12 @@ init (void)
 	boot_print(MSG_init_done);
 # endif
 
+	stop_and_ask();
+
 	/* load the configuration file */
 	load_config();
+
+	stop_and_ask();
 
 # ifdef OLDTOSFS
 	/*
@@ -1126,8 +1150,8 @@ init (void)
 	 */
 	if (init_env[0] == 0)
 	{
-		static char path_env[] = "PATH=\0C:\0";
-		path_env[6] = rootproc->p_cwd->curdrv + 'A';	/* this actually means drive u: */
+		static char path_env[] = "PATH=c:/";
+		path_env[5] = rootproc->p_cwd->curdrv + 'a';	/* this actually means drive u: */
 		init_env = path_env;
 	}
 
