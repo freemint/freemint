@@ -40,6 +40,7 @@
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
+# include "arch/timer.h"	/* get_hz_200() */
 # include "arch/tosbind.h"
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
@@ -359,14 +360,14 @@ ikbd_scan (ushort scancode)
 					else if ((shift & MM_ESHIFT) == MM_LSHIFT)
 						t->arg = 0;
 
-					hz_ticks = *(long *)0x04baL;
+					hz_ticks = get_hz_200();
 				}
 			}
 			else
 			{
 				long mora;
 
-				mora = *(long *)0x04baL - hz_ticks;
+				mora = get_hz_200() - hz_ticks;
 				if (mora > CAD_TIMEOUT)
 					return scancode;
 			}
@@ -581,10 +582,13 @@ sys_b_bioskeys(void)
 	pointers->caps = tables + 128 + 128;
 
 	/* and the AKP vectors */
-	pointers->alt = tables + 128 + 128 + 128;
-	pointers->altshift = tbl_scan_fwd(pointers->alt);
-	pointers->altcaps = tbl_scan_fwd(pointers->altshift);
-	pointers->altgr = tbl_scan_fwd(pointers->altcaps);
+	if (tosvers >= 0x0400)
+	{
+		pointers->alt = tables + 128 + 128 + 128;
+		pointers->altshift = tbl_scan_fwd(pointers->alt);
+		pointers->altcaps = tbl_scan_fwd(pointers->altshift);
+		pointers->altgr = tbl_scan_fwd(pointers->altcaps);
+	}
 
 	/* Reset the TOS BIOS vectors (this is only necessary
 	 * until we replace all BIOS keyboard routines).
@@ -729,7 +733,7 @@ load_internal_table(void)
 			size += 2;
 	}
 	else
-		size += 5;	/* a byte for each missing part plus a NUL */
+		size += 16;	/* a byte for each missing part plus a NUL plus some space */
 
 	/* If a buffer was allocated previously, we can perhaps reuse it.
 	 */

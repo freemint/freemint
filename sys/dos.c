@@ -18,6 +18,8 @@
 
 # include "arch/halt.h"		/* hw_poweroff, hw_halt, ... */
 # include "arch/intr.h"
+# include "arch/timer.h"
+
 # include "libkern/libkern.h"
 # include "mint/asm.h"
 # include "mint/filedesc.h"
@@ -624,7 +626,6 @@ shutdown(void)
 	struct proc *p;
 	int posts = 0;
 	int i;
-	long hz_200;
 
 	DEBUG(("shutdown() entered"));
 	assert(curproc->p_sigacts);
@@ -697,11 +698,7 @@ shutdown(void)
 	DEBUG(("done"));
 
 	/* Wait for the disks to flush their write cache */
-	hz_200 = *(long *)0x04baL;
-	hz_200 += 200;			/* one second */
-
-	while (hz_200 < *(volatile long *)0x04baL)
-		;
+	delay_seconds(1);
 }
 
 /*

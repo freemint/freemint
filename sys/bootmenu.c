@@ -31,6 +31,7 @@
 # include "libkern/libkern.h"	/* ksprintf() */
 
 # include "arch/mprot.h"	/* no_mem_prot */
+# include "arch/timer.h"	/* get_hz_200() */
 # include "arch/tosbind.h"	/* TOS calls */
 
 # include "debug.h"		/* out_device, debug_level */
@@ -517,18 +518,6 @@ wait:
 	return 1;	/* not reached */
 }
 
-static long
-_get_hz_200(void)
-{
-	return *(volatile long *)0x4baL;
-}
-
-static long
-get_hz_200(void)
-{
-	return TRAP_Supexec(_get_hz_200);
-}
-
 void
 pause_and_ask(void)
 {
@@ -538,12 +527,12 @@ pause_and_ask(void)
 	{
 		boot_printf(MSG_init_askmenu, boot_delay);
 
-		pause = get_hz_200();
-		pause += (boot_delay * 200);
+		pause = Supexec(get_hz_200);
+		pause += (boot_delay * HZ);
 
 		do
 		{
-			newstamp = get_hz_200();
+			newstamp = Supexec(get_hz_200);
 
 			if ((TRAP_Kbshift(-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
 			{
