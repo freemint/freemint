@@ -36,6 +36,12 @@ struct xa_window *create_window(enum locks lock, SendMessage *message_handler,
 				int frame, int thinframe, bool thinwork,
 				const RECT r, const RECT *max, RECT *rem);
 
+void change_window_attribs(enum locks lock,
+			   struct xa_client *client,
+			   struct xa_window *w,
+			   XA_WIND_ATTR tp,
+			   RECT r, RECT *remember);
+
 struct xa_window *find_window(enum locks lock, int x, int y);
 struct xa_window *get_wind_by_handle(enum locks lock, int h);
 struct xa_window *pull_wind_to_top(enum locks lock, struct xa_window *w);
