@@ -156,7 +156,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 # ifdef CRYPTO_CODE
 			r =  ((!no_mem_prot) & 0x01) | 0x04;
 # else
-			r = (!no_mem_prot) & 0x01);
+			r = ((!no_mem_prot) & 0x01);
 # endif
 			break;
 		}
