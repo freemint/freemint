@@ -44,6 +44,7 @@ COBJS = \
 	k_resource.c \
 	k_semaphore.c \
 	k_sysctl.c \
+	kentry.c \
 	kerinfo.c \
 	kernfs.c \
 	kernget.c \

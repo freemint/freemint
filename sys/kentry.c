@@ -5,8 +5,12 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  *
  *
- * Copyright 2001 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ *
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,19 +26,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2001-04-24
- *
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- *
  */
 
-# include "kerinfo.h"
+# include "kentry.h"
 
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
+
+# include "mint/arch/mfp.h"
+# include "arch/cpu.h"
 
 # include "block_IO.h"		/* bio */
 # include "cookie.h"		/* add_rsvfentry, del_rsvfentry, get_toscookie */
@@ -43,6 +43,7 @@
 # include "filesys.h"		/* changedrv, denyshare, denylock */
 # include "ipc_socketutil.h"	/* so_* */
 # include "k_kthread.h"		/* kthread_create, kthread_exit */
+# include "kerinfo.h"		/* */
 # include "kmemory.h"		/* kmalloc, kfree, umalloc, ufree */
 # include "module.h"		/* load_modules */
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
@@ -55,78 +56,29 @@
 # undef DEFAULT_MODE
 # define DEFAULT_MODE	(0666)
 
-/* wrapper for the kerinterface */
 
-static void   _cdecl m_changedrv (ushort drv)  { return changedrv (drv, "ext"); }
-static void * _cdecl m_kmalloc   (ulong size)  { return _kmalloc (size, "ext"); }
-static void   _cdecl m_kfree     (void *place) { _kfree (place, "ext"); }
-static void * _cdecl m_umalloc   (ulong size)  { return _umalloc (size, "ext"); }
-static void   _cdecl m_ufree     (void *place) { _ufree (place, "ext"); }
-
-static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
-{ return _dmabuf_alloc (size, cm, "ext"); }
-
-/*
- * kernel info that is passed to loaded file systems and device drivers
- */
-
-struct kerinfo kernelinfo =
+struct kentry kentry =
 {
-	MAJ_VERSION, MIN_VERSION,
-	DEFAULT_MODE,
-	2,
-	bios_tab, dos_tab,
-	m_changedrv,
-	Trace, Debug, ALERT, FATAL,
-	m_kmalloc,
-	m_kfree,
-	m_umalloc,
-	m_ufree,
-	_mint_o_strnicmp,
-	_mint_o_stricmp,
-	_mint_strlwr,
-	_mint_strupr,
-	ksprintf_old,
-	ms_time, unixtime, dostime,
-	nap, sleep, wake, (void _cdecl (*)(long)) wakeselect,
-	denyshare, denylock,
-	addtimeout_curproc, canceltimeout,
-	addroottimeout, cancelroottimeout,
-	ikill, iwake,
-	&bio,
-	&xtime,		/* version 1 extension */
+	MAJ_VERSION,
+	MIN_VERSION,
+	PATCH_LEVEL,
+	KENTRY_VERSION_MAJOR,
+	KENTRY_VERSION_MINOR,
+	
+	0x00000040,
 	0,
 
-	/* version 2
-	 */
+	dos_tab,
+	bios_tab,
+	xbios_tab,
 
-	add_rsvfentry,
-	del_rsvfentry,
-	killgroup,
-	&dma,
-	&loops_per_sec,
-	get_toscookie,
-
-	so_register,
-	so_unregister,
-	so_release,
-	so_sockpair,
-	so_connect,
-	so_accept,
-	so_create,
-	so_dup,
-	so_free,
-
-	load_modules,
-	kthread_create,
-	kthread_exit,
-
-	NULL, /* m_dmabuf_alloc, */
-	NULL, /* nf_ops */
-
-	remaining_proc_time,
-
-	{
-		0
-	}
+	DEFAULTS_kentry_mch,
+	DEFAULTS_kentry_proc,
+	DEFAULTS_kentry_mem,
+	DEFAULTS_kentry_fs,
+	DEFAULTS_kentry_sockets,
+	DEFAULTS_kentry_module,
+	DEFAULTS_kentry_misc,
+	DEFAULTS_kentry_debug,
+	DEFAULTS_kentry_libkern
 };
