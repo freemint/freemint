@@ -94,7 +94,9 @@ struct keytab
 	uchar *altgr;		/* Milan TOS */
 };
 
+/* Interrupt routines */
 short ikbd_scan(ushort scancode);
+void key_repeat(void);
 
 void init_keybd(void);
 void load_keytbl(void);
