@@ -31,11 +31,11 @@
 #include "xa_types.h"
 
 TASK click_form_popup_entry, click_popup_entry, do_scroll_menu;
-void	do_popup(Tab *tab, OBJECT *root, int item, TASK *click, short rdx, short rdy);
-int	inquire_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, MENU *mn);
-int	attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, MENU *mn);
-int	detach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item);
-void	remove_attachments(enum locks lock, struct xa_client *client, OBJECT *menu);
+void	do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy);
+int	inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
+int	attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
+int	detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item);
+void	remove_attachments(enum locks lock, struct xa_client *client, XA_TREE *wt);
 void	set_menu_widget(struct xa_window *wind, XA_TREE *menu);
 void	fix_menu(struct xa_client *client, OBJECT *root, bool);
 

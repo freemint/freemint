@@ -175,10 +175,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				mwt->is_menu = true;
 				mwt->menu_line = true;
 
-				//menu->tree = mnu;
-				//menu->owner = client;
-				//menu->is_menu = true;
-				//menu->menu_line = true;
 				swap_menu(lock|winlist, client, false, 6);
 				pb->intout[0] = 1;
 				DIAG((D_menu, NULL, "done display, lastob = %d", mwt->lastob));
@@ -192,7 +188,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (menu)
 		{
-			remove_attachments(lock|winlist, client, menu->tree);
+			remove_attachments(lock|winlist, client, menu);
 
 			top_owner = C.Aes;
 			wl = window_list;
@@ -409,8 +405,18 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 		short x, y;
 		OBJECT *ob = mn->mn_tree;
 
+		bzero(tab, sizeof(*tab));
+
 		if (tab->ty == NO_TASK)		/* else already locked */
 		{	
+			XA_TREE *wt;
+
+			wt = obtree_to_wt(client, ob);
+			if (!wt)
+				wt = new_widget_tree(client, ob);
+			if (!wt)
+				return XAC_DONE;
+
 			*md = *mn;
 
 			DIAG((D_menu,NULL,"menu_popup %lx + %d",ob, mn->mn_menu));
@@ -430,7 +436,7 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			bzero(&(tab->task_data.menu), sizeof(tab->task_data.menu));
 
-			do_popup(tab, ob, mn->mn_menu,
+			do_popup(tab, wt, mn->mn_menu,
 				 click_popup_entry,
 				 pb->intin[0] - x,
 				 pb->intin[1] - y);
@@ -457,8 +463,18 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		Tab *tab = C.active_menu;
 
+		bzero(tab, sizeof(*tab));
+
 		if (tab->ty == NO_TASK)		/* else already locked */
 		{
+			XA_TREE *wt;
+
+			wt = obtree_to_wt(client, ob);
+			if (!wt)
+				new_widget_tree(client, ob);
+			if (!wt)
+				return XAC_DONE;
+
 			DIAG((D_menu,NULL,"form_popup %lx",ob));
 
 			C.menu_base = tab;
@@ -492,7 +508,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			bzero(&(tab->task_data.menu), sizeof(tab->task_data.menu));
 
-			do_popup(tab, ob, 0,
+			do_popup(tab, wt, 0,
 				 click_form_popup_entry,
 				 x,
 				 y);
@@ -500,7 +516,6 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			return XAC_BLOCK;
 		}
 	}
-
 	return XAC_DONE;
 }
 
@@ -514,30 +529,60 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_menu, client, "menu_attach %d", pb->intin[0]));
 
+	pb->intout[0] = 0;
+
 	if (pb->addrin[0] && pb->addrin[1])
 	{
+		XA_TREE *wt;
+		MENU *mn;
+		XAMENU xamn;
+
+		wt = obtree_to_wt(client, (OBJECT *)pb->addrin[0]);
+		if (!wt)
+			wt = new_widget_tree(client, (OBJECT *)pb->addrin[0]);
+		assert(wt);
+		
 		switch (pb->intin[0])
 		{
 		case ME_ATTACH:
+		{
+			mn = (MENU *)pb->addrin[1];
+
+			xamn.wt = obtree_to_wt(client, mn->mn_tree);
+			if (!xamn.wt)
+				xamn.wt = new_widget_tree(client, mn->mn_tree);
+
+			assert(xamn.wt);
+
+			xamn.menu = *mn;
+
 			pb->intout[0] = attach_menu(lock,
 						    client,
-						    (OBJECT*)pb->addrin[0],
+						    wt,
 						    pb->intin[1],
-						    (MENU*)pb->addrin[1]);
+						    &xamn);
 			break;
+		}
 		case ME_REMOVE:
+		{
 			pb->intout[0] = detach_menu(lock,
 						    client,
-						    (OBJECT*)pb->addrin[0],
+						    wt,
 						    pb->intin[1]);
 			break;
+		}
 		case ME_INQUIRE:
+		{
+			mn = (MENU *)pb->addrin[1];
 			pb->intout[0] = inquire_menu(lock,
 						     client,
-						     (OBJECT*)pb->addrin[0],
+						     wt,
 						     pb->intin[1],
-						     (MENU*)pb->addrin[1]);
+						     &xamn);
+			
+			*mn = xamn.menu;
 			break;
+		}
 		}
 	}
 	else
