@@ -1551,9 +1551,7 @@ d_g_cicon(LOCK lock, struct widget_tree *wt)
 
 	have_sel = c->sel_data != NULL;
 
-	/* check existence of selection. */
-				
-	
+	/* check existence of selection. */			
 	if ((ob->ob_state & SELECTED) && have_sel)
 		Micon.fd_addr = c->sel_mask;
 	else
@@ -1579,16 +1577,7 @@ d_g_cicon(LOCK lock, struct widget_tree *wt)
 	}
 
 	if (ob->ob_state & DISABLED)
-	{
 		write_disable(&ic, WHITE);
-#if 0	/* Ozk: Just testing ... */
-		f_interior(2);
-		f_color(8);
-		f_style(4);
-		wr_mode(2);
-		gbar(0, &ic);
-#endif
-	}
 
 	icon_characters(iconblk, ob->ob_state & (SELECTED|DISABLED), obx, oby, ic.x, ic.y);
 

@@ -2225,7 +2225,7 @@ do_widgets(LOCK lock, XA_WINDOW *w, XA_WIND_ATTR mask, struct moose_data *md)
 							}
 							if (m_inside(rx, ry, &r))
 							{
-				/* Ozk 100503: added check for number of clicks and call the dclick function if apropriate */
+				/* Ozk: added check for number of clicks and call the dclick function if apropriate */
 								if (widget_active.clicks == 1)
 								{
 									if (widg->click)
