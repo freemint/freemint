@@ -69,6 +69,12 @@ const char *clipped_name(const void *s, char *t, short w);
 //bool is_spec(OBJECT *tree, int item);
 void write_disable(RECT *r, short colour);
 
+void enable_objcursor(struct widget_tree *wt);
+void disable_objcursor(struct widget_tree *wt);
+void draw_objcursor(struct widget_tree *wt);
+void undraw_objcursor(struct widget_tree *wt);
+void set_objcursor(struct widget_tree *wt);
+
 ObjectDisplay
 	d_g_box,
 	d_g_boxchar,

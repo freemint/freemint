@@ -1302,11 +1302,24 @@ obj_edit(XA_TREE *wt,
 	{
 		case ED_INIT:
 		{
-			obj_ED_INIT(wt, obj, -1, last, NULL, &old_ed_obj, &upd_obj);
+			hidem();
+			if (wt->edit_obj >= 0)
+				undraw_objcursor(wt);
+			if (!obj_ED_INIT(wt, obj, -1, last, NULL, &old_ed_obj, &upd_obj))
+				disable_objcursor(wt);
+			else
+			{
+				enable_objcursor(wt);
+				draw_objcursor(wt);
+			}
+			showm();
+			upd_obj = -1;
+			old_ed_obj = -1;
 			break;
 		}
 		case ED_END:
 		{
+#if 0
 			/* Ozk:
 			 * Not totally sure here, but we ignore the obj passed to us
 			 * and perform ED_END on the current editable
@@ -1319,6 +1332,12 @@ obj_edit(XA_TREE *wt,
 			}
 			upd_obj = obj;
 			wt->edit_obj = -1;
+#endif
+			upd_obj = -1;
+			old_ed_obj = -1;
+			hidem();
+			disable_objcursor(wt);
+			showm();
 			break;
 		}
 		case ED_CHAR:
@@ -1341,8 +1360,15 @@ obj_edit(XA_TREE *wt,
 
 			DIAGS((" -- obj_edit: ted=%lx", ted));
 
+			hidem();
+			undraw_objcursor(wt);
 			if (obj_ed_char(wt, ted, keycode))
-				upd_obj = obj;
+			{
+				obj_draw(wt, obj, rl);
+				set_objcursor(wt);
+			}
+			draw_objcursor(wt);
+			showm();
 			break;
 		}
 		case ED_CRSR:
@@ -1365,7 +1391,7 @@ obj_edit(XA_TREE *wt,
 			return 0;
 		}
 	}
-
+#if 0
 	if (redraw)
 	{
 		if (old_ed_obj != -1)
@@ -1373,6 +1399,7 @@ obj_edit(XA_TREE *wt,
 		if (upd_obj != -1)
 			obj_draw(wt, upd_obj, rl);
 	}
+#endif
 		
 	if (ret_pos)
 		*ret_pos = wt->edit_pos;
