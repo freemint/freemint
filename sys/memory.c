@@ -2453,8 +2453,8 @@ sanity_check (MMAP map, ulong line)
 			}
 			else if (end == next->loc && ISFREE (m) && ISFREE (next))
 			{
-				ALERT ("%lu: Contiguous memory regions not merged!", line);
-				ALERT ("  m %lx, loc %lx, len %lx, links %u, next %lx", m, m->loc, m->len, m->links, m->next);
+				DEBUG (("%lu: Contiguous memory regions not merged!", line));
+				DEBUG (("  m %lx, loc %lx, len %lx, links %u, next %lx", m, m->loc, m->len, m->links, m->next));
 			}
 			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
 			{
