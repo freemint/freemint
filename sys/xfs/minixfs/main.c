@@ -1,7 +1,12 @@
-/* Minix-FS version 0.60, Copyright S.N. Henson 1991,1992,1993
- * see the file 'copying' for more info.
+/*
+ * This file is part of 'minixfs' Copyright 1991,1992,1993 S.N.Henson
+ * 
+ * Modified for FreeMiNT CVS
+ * by Frank Naumann <fnaumann@freemint.de>
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
  *
- * Minix-FS version 0.70 by Frank Naumann
  */
 
 # include <mintbind.h>

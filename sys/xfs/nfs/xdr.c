@@ -5,12 +5,17 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ * 
+ * Modified for FreeMiNT CVS
+ * by Frank Naumann <fnaumann@freemint.de>
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ *
  */
 
 /*
  * xdr.c functions dealing with the XDR standard
- *
- * Copyright Ulrich KÅhn, 1993 
  */
 
 # include "global.h"
