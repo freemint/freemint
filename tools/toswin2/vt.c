@@ -1,5 +1,8 @@
 /*
  * Funktionen, die beide Emulatoren benutzen.
+ *
+ * This file needs to be rewritten.  Many functions can be 
+ * optimized a lot.
  */
 
 #include "global.h"
@@ -7,13 +10,12 @@
 #include "vt.h"
 #include "window.h"
 
-
 /*
  * paint(v, c): put character 'c' at the current (x, y) coordinates
  * of window v. If insert mode is on, this involves moving all the
  * other characters one space to the left, first.
  */
-void paint(TEXTWIN *v, int c)
+void paint(TEXTWIN *v, unsigned int c)
 {
 	int i;
 	int line = v->cy;
@@ -62,11 +64,34 @@ void paint(TEXTWIN *v, int c)
 	v->dirty[line] |= SOMEDIRTY;
 }
 
+/* Unconditionally display character C even if it is a 
+ * graphic character.  */
+void 
+vt_quote_putch (TEXTWIN* tw, unsigned int c)
+{
+	paint (tw, c);
+	++tw->cx;
+		
+	if (tw->cx >= tw->maxx) {
+		/* Character was drawn in last column.  */
+		if (tw->do_wrap && !(tw->term_flags & FNOAM)) {
+			vt100_putch (tw, '\n');
+			tw->cx = 0;
+			tw->do_wrap = 0;
+		} else {
+			tw->cx = tw->maxx - 1;
+		}
+	} else if (tw->cx >= tw->maxx - 1)
+		tw->do_wrap = 1;
+		
+	curs_on (tw);
+}
+
 /*
  * gotoxy (v, x, y): move current cursor address of window v to (x, y)
  * verifies that (x,y) is within range
  */
-void gotoxy(TEXTWIN *v, int x, int y)
+void gotoxy(TEXTWIN *v, short x, short y)
 {
 	if (x < 0) 
 		x = 0;
@@ -77,14 +102,17 @@ void gotoxy(TEXTWIN *v, int x, int y)
 	else if (y >= v->maxy) 
 		y = v->maxy - 1;
 
+	curs_off (v);
 	v->cx = x;
 	v->cy = y;
+	v->do_wrap = 0;
+	curs_on (v);
 }
 
 /*
  * clrline(v, r): clear line r of window v
  */
-void clrline(TEXTWIN *v, int r)
+void clrline(TEXTWIN *v, short r)
 {
 	int i;
 
@@ -106,12 +134,13 @@ void clear(TEXTWIN *v)
 
 	for (y = v->miny; y < v->maxy; y++)
 		clrline(v, y);
+	v->do_wrap = 0;
 }
 
 /*
  * clrchar(v, x, y): clear the (x,y) position on window v
  */
-void clrchar(TEXTWIN *v, int x, int y)
+void clrchar(TEXTWIN *v, short x, short y)
 {
 	if (v->data[y][x] != ' ') 
 	{
@@ -124,22 +153,47 @@ void clrchar(TEXTWIN *v, int x, int y)
 }
 
 /*
- * clrfrom(v, x1, y1, x2, y2): clear window v from position (x1,y1) to
- * position (x2, y2) inclusive. It is assumed that y2 >= y1.
+ * Clear window TW from position (X1, Y1) to position (X2, Y2) 
+ * inclusive. It is assumed that Y2 >= Y1.
  */
-void clrfrom(TEXTWIN *v, int x1, int y1, int x2, int y2)
+void 
+clrfrom (TEXTWIN* tw, short x1, short y1, short x2, short y2)
 {
-	int i;
+	int x, y;
 
-	for (i = x1; i <= x2; i++)
-		clrchar(v, i, y1);
-	if (y2 > y1) 
-	{
-		for (i = 0; i <= x2; i++)
-			clrchar(v, i, y2);
-		for (i = y1+1; i < y2; i++)
-			clrline(v, i);
+	if (y2 < y1)
+		return;
+	/* Only one line to clear?  */
+	if (y1 == y2) {
+		if (x1 == 0 && x2 == tw->maxx - 1)
+			clrline (tw, y1);
+		else
+			for (x = x1; x <= x2; ++x)
+				clrchar (tw, x, y1);
+		return;
 	}
+
+	/* Clear first line.  */
+	if (x1 == 0 && x2 == tw->maxx - 1)
+		clrline (tw, y1);
+	else
+		for (x = x1; x < tw->maxx; ++x) { 
+			clrchar (tw, x, y1);
+		}
+	y = y1 + 1;	
+	
+	/* Middle part is always entire lines.  */
+	while (y < y2) {
+		clrline (tw, y++);
+	}
+	
+	/* Last line.  */
+	if (x1 == 0 && x2 == tw->maxx - 1)
+		clrline (tw, y2);
+	else
+		for (x = 0; x <= x2; ++x) {
+			clrchar (tw, x, y2);
+		}
 }
 
 /*
@@ -147,7 +201,7 @@ void clrfrom(TEXTWIN *v, int x1, int y1, int x2, int y2)
  * the screen; the rest of the line is scrolled left, and a blank is
  * inserted at the end of the line.
  */
-void delete_char(TEXTWIN *v, int x, int y)
+void delete_char(TEXTWIN *v, short x, short y)
 {
 	int i;
 
@@ -159,6 +213,7 @@ void delete_char(TEXTWIN *v, int x, int y)
 	v->data[y][v->maxx-1] = ' ';
 	v->cflag[y][v->maxx-1] = CDIRTY | (v->term_cattr & (CBGCOL|CFGCOL));
 	v->dirty[y] |= SOMEDIRTY;
+	v->do_wrap = 0;
 }
 
 /*
@@ -203,17 +258,21 @@ void set_size(TEXTWIN *v)
 */
 void set_curs(TEXTWIN *v, int on)
 {
+	short cx = v->cx;
+	if (cx >= v->maxx)
+		cx = v->maxx;
+		
 	if (on && (v->term_flags & FCURS) && !(v->term_flags & FFLASH)) 
 	{
-		v->cflag[v->cy][v->cx] ^= CINVERSE;
-		v->cflag[v->cy][v->cx] |= CTOUCHED;
+		v->cflag[v->cy][cx] ^= CINVERSE;
+		v->cflag[v->cy][cx] |= CTOUCHED;
 		v->dirty[v->cy] |= SOMEDIRTY;
 		v->term_flags |= FFLASH;
 	} 
 	else if ( (!on) && (v->term_flags & FFLASH)) 
 	{
-		v->cflag[v->cy][v->cx] ^= CINVERSE;
-		v->cflag[v->cy][v->cx] |= CTOUCHED;
+		v->cflag[v->cy][cx] ^= CINVERSE;
+		v->cflag[v->cy][cx] |= CTOUCHED;
 		v->dirty[v->cy] |= SOMEDIRTY;
 		v->term_flags &= ~FFLASH;
 	}
