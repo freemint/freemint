@@ -830,27 +830,48 @@ typedef enum
 	/* bit 1 - 0 = left,	1 = right	*/
 	/* bit 2 - 0 = no Center 1 = center	*/
 	
-	R_BOTTOM = 1,
-	R_RIGHT  = 2,
-	R_CENTER = 4,
-	R_NONE	 = 8,
+	R_BOTTOM	= 0x0001,
+	R_RIGHT		= 0x0002,
+	R_CENTER	= 0x0004,
+	R_VERTICAL	= 0x0008,
+	R_VARIABLE	= 0x0010,
+	R_NONE		= 0x8000,
 	
-	LT = 0,	/* 0000 */			/* Top right */
-	LB,	/* 0001 */			/* Bottom right */
-	RT,	/* 0010 */			/* Top left */
-	RB,	/* 0011 */			/* Bottom left */
-	CT,	/* 0100 */			/* Top centred */
-	CB,	/* 0101 */			/* Bottom Centered */
+	LT = 0,		/* 0000 */	/* Top right */
+	LB,		/* 0001 */	/* Bottom right */
+	RT,		/* 0010 */	/* Top left */
+	RB,		/* 0011 */	/* Bottom left */
 	
-	CR,	/* 0110 */			/* Right centered */
-	CL,	/* 0111 */			/* Left centered */
-	NO,	/* 1000 */
+	CT,		/* 0100 */	/* Top centred */
+	CB,		/* 0101 */	/* Bottom Centered */
+	
+	CR,		/* 0110 */	/* Right centered */
+	CL,		/* 0111 */	/* Left centered */
+	
+	HLT,		/* 0000 */	/* Top right */
+	HLB,		/* 0001 */	/* Bottom right */
+	HRT,		/* 0010 */	/* Top left */
+	HRB,		/* 0011 */	/* Bottom left */
+	HCT,		/* 0100 */	/* Top centred */
+	HCB,		/* 0101 */	/* Bottom Centered */
+	
+	HCR,		/* 0110 */	/* Right centered */
+	HCL,		/* 0111 */	/* Left centered */
 
-	//CR,	/* 0101 */			/* right centered */
 	
-	//CB,	/* 0110 */			/* Bottom centred */
-	//CL	/* 0111 */			/* Left centered */
+	NO = 0x8000,	/* */
+
 } XA_RELATIVE;
+
+ /* bit 0 - orientation;	0 = vertical, 1 = horizontal */
+ /* bit 1&2 - placement:	0 = top, 1 = midle, 2 = end */
+
+#define XAR_VERT		1
+#define XAR_PM			6
+#define XAR_START		(1 << 1)
+#define XAR_MIDDLE		(2 << 1)
+#define XAR_END			(3 << 1)
+#define XAR_NO			0x8000
 
 
 /* Widget Index's */
@@ -1002,6 +1023,7 @@ struct widget_row
 	struct xa_widget 	*start;
 	short	rownr;
 	RECT r;
+	short rxy;
 };
 
 
