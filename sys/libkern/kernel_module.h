@@ -484,6 +484,12 @@ extern struct kentry *kentry;
 INLINE long c_conws(const char *str)
 { return ((long _cdecl (*)(const char *)) _c_conws)(str); }
 
+INLINE long d_setdrv(int drv)
+{ return ((long _cdecl (*)(int)) _d_setdrv)(drv); }
+
+INLINE long d_getdrv(void)
+{ return ((long _cdecl (*)(void)) _d_getdrv)(); }
+
 INLINE long f_setdta(DTABUF *dta)
 { return ((long _cdecl (*)(DTABUF *)) _f_setdta)(dta); }
 
@@ -508,11 +514,11 @@ INLINE long f_open(const char *name, int mode)
 INLINE long f_close(int fh)
 { return ((long _cdecl (*)(int)) _f_close)(fh); }
 
-INLINE long f_read(int fh, long count, const char *buf)
-{ return ((long _cdecl (*)(int, long, const char *)) _f_read)(fh, count, buf); }
+INLINE long f_read(int fh, long count, void *buf)
+{ return ((long _cdecl (*)(int, long, void *)) _f_read)(fh, count, buf); }
 
-INLINE long f_write(int fh, long count, char *buf)
-{ return ((long _cdecl (*)(int, long, char *)) _f_write)(fh, count, buf); }
+INLINE long f_write(int fh, long count, const void *buf)
+{ return ((long _cdecl (*)(int, long, const void *)) _f_write)(fh, count, buf); }
 
 INLINE long d_getpath(char *path, int drv)
 { return ((long _cdecl (*)(char *, int)) _d_getpath)(path, drv); }
@@ -549,6 +555,9 @@ INLINE long s_yield(void)
 
 INLINE long f_cntl(int fh, long arg, int cmd)
 { return ((long _cdecl (*)(int, long, int)) _f_cntl)(fh, arg, cmd); }
+
+INLINE long f_instat(int fh)
+{ return ((long _cdecl (*)(int)) _f_instat)(fh); }
 
 INLINE long p_nice(int increment)
 { return ((long _cdecl (*)(int)) _p_nice)(increment); }
@@ -664,6 +673,9 @@ INLINE long s_hutdown(long restart)
 INLINE long s_system(int mode, ulong arg1, ulong arg2)
 { return ((long _cdecl (*)(int, ulong, ulong)) _s_system)(mode, arg1, arg2); }
 
+INLINE long p_getpriority(int which, int who)
+{ return ((long _cdecl (*)(int, int)) _p_getpriority)(which, who); }
+
 INLINE long p_setpriority(int which, int who, int prio)
 { return ((long _cdecl (*)(int, int, int)) _p_setpriority)(which, who, prio); }
 
@@ -687,8 +699,14 @@ INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const
 # define _b_drvmap		(*KENTRY->vec_bios[0x00a])
 # define _b_kbshift		(*KENTRY->vec_bios[0x00b])
 
+INLINE long b_ubconin(int dev)
+{ return ((long _cdecl (*)(int)) _b_ubconin)(dev); }
+
 INLINE long b_ubconout(short dev, short c)
 { return ((long _cdecl (*)(short, short)) _b_ubconout)(dev, c); }
+
+INLINE long b_setexc(short number, long vector)
+{ return ((long _cdecl (*)(short, long)) _b_setexc)(number, vector); }
 
 INLINE long b_drvmap(void)
 { return ((long _cdecl (*)(void)) _b_drvmap)(); }
