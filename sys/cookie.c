@@ -37,9 +37,10 @@
  * available services. The BIOS uses the cookie jar in TOS 1.6 and higher. For
  * earlier versions of TOS, the jar is always empty (unless someone added a
  * cookie before us; POOLFIX does, for example). MiNT establishes an entirely
- * new cookie jar (with the old cookies copied over) and frees it on exit.
- * That's because TSR's run under MiNT will no longer be accessible after MiNT
- * exits. MiNT also puts a cookie in the jar, with tag field 'MiNT' (of course)
+ * new cookie jar (with the old cookies copied over) and frees it on exit (with
+ * notable exception of MiNT 1.15 and up, which never exits). That's because
+ * TSR's run under MiNT will no longer be accessible after MiNT exits.
+ * MiNT also puts a cookie in the jar, with tag field 'MiNT' (of course)
  * and with the major version of MiNT in the high byte of the low word,
  * and the minor version in the low byte.
  * 
@@ -86,7 +87,7 @@ static MEMREGION *newjar_region;
 
 /* cookies to skip on MINT cookie jar
  */
-static long skiplist [] =
+static const long skiplist [] =
 {
 	COOKIE__CPU,
 	COOKIE__FPU,
