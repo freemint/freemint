@@ -38,6 +38,7 @@ TEDINFO *	object_get_tedinfo(OBJECT *ob);
 void		object_deselect(OBJECT *ob);
 bool		object_is_transparent(OBJECT *ob);
 short		object_thickness(OBJECT *ob);
+void		object_offsets(OBJECT *ob, RECT *r);
 
 short	ob_get_parent(OBJECT *t, short object);
 short	ob_remove(OBJECT *obtree, short object);

@@ -146,6 +146,44 @@ object_thickness(OBJECT *ob)
 	return t;
 }
 
+void
+object_offsets(OBJECT *ob, RECT *c)
+{
+	short dx = 0, dy = 0, dw = 0, dh = 0, db = 0;
+	short thick = object_thickness(ob);   /* type dependent */
+
+	if (thick < 0)
+		db = thick;
+
+	/* HR 0080801: oef oef oef, if foreground any thickness has the 3d enlargement!! */
+	if (d3_foreground(ob)) 
+		db -= 2;
+
+	dx = db;
+	dy = db;
+	dw = 2 * db;
+	dh = 2 * db;
+
+	if (ob->ob_state & OS_OUTLINED)
+	{
+		dx = min(dx, -3);
+		dy = min(dy, -3);
+		dw = min(dw, -6);
+		dh = min(dh, -6);
+	}
+
+	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
+	if (thick < 0 && ob->ob_state & OS_SHADOWED)
+	{
+		dw += 2 * thick;
+		dh += 2 * thick;
+	}
+	c->x = dx;
+	c->y = dy;
+	c->w = dw;
+	c->h = dh;
+}	
+
 /*
  * Returns the object number of this object's parent or -1 if it is the root
  */
@@ -573,6 +611,9 @@ ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 	short current = 0;
 	short x = 0, y = 0;
 	
+	DIAG((D_objc, NULL, "ob_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
+		obtree, object, mx, my));
+
 	do
 	{
 		/* Found the object in the tree? cool, return the coords */
@@ -628,48 +669,18 @@ ob_rectangle(OBJECT *obtree, short obj, RECT *c)
 	c->w = b->ob_width;
 	c->h = b->ob_height;
 }
-
 void
 ob_area(OBJECT *obtree, short obj, RECT *c)
 {
 	OBJECT *b = obtree + obj;
-	short dx = 0, dy = 0, dw = 0, dh = 0, db = 0;
-	short thick = object_thickness(b);   /* type dependent */
-
+	RECT r;
+	
 	ob_rectangle(obtree, obj, c);
-
-	if (thick < 0)
-		db = thick;
-
-	/* HR 0080801: oef oef oef, if foreground any thickness has the 3d enlargement!! */
-	if (d3_foreground(b)) 
-		db -= 2;
-
-	dx = db;
-	dy = db;
-	dw = 2 * db;
-	dh = 2 * db;
-
-	if (b->ob_state & OS_OUTLINED)
-	{
-		dx = min(dx, -3);
-		dy = min(dy, -3);
-		dw = min(dw, -6);
-		dh = min(dh, -6);
-	}
-
-	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
-	if (thick < 0 && b->ob_state & OS_SHADOWED)
-	{
-		dw += 2 * thick;
-		dh += 2 * thick;
-	}
-
-	c->x += dx;
-	c->y += dy;
-	c->w -= dw;
-	c->h -= dh;
-
+	object_offsets(b, &r);
+	c->x += r.x;
+	c->y += r.y;
+	c->w -= r.w;
+	c->h -= r.h;
 }
 
 /*
