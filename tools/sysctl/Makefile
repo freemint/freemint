@@ -25,7 +25,7 @@ OBJS = $(COBJS:.c=.o)
 GENFILES = $(TARGET)
 
 
-$(TARGET): $(OBJS) $(LIBIOSTMP)
+$(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
 
 
