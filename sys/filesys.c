@@ -35,6 +35,7 @@
 # include "bios.h"
 # include "dosdir.h"
 # include "dosmem.h"
+# include "ipc_socketdev.h"
 # include "k_fds.h"
 # include "k_prot.h"
 # include "kmemory.h"
@@ -594,43 +595,58 @@ changedrv (ushort d)
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
 			f = fd->ofiles[i];
-			if (f && (f != (FILEPTR *) 1) && (f->fc.dev == d))
+			
+			if (!f || (f == (FILEPTR *) 1))
+				continue;
+			
+# ifdef OLDSOCKDEVEMU
+			if (f->dev == &sockdev || f->dev == &sockdevemu)
+# else
+			if (f->dev == &sockdev)
+# endif
+				continue;
+			
+			/* it's a regular file */
+			
+			if (f->fc.dev != d)
+				continue;
+			
+			/* and it's on the changed dev */
+			
+			if (!warned)
 			{
-			    if (!warned)
-			    {
-				ALERT ("Files were open on a changed drive (0x%x)!", d);
+				ALERT ("Files were open on a changed drive (0x%x, %s)!", d, p->name);
 				warned++;
-			    }
+			}
 
 /* we set f->dev to NULL to indicate to do_pclose that this is an
  * emergency close, and that it shouldn't try to make any
  * calls to the device driver since the file has gone away
  */
-			    f->dev = NULL;
-			    do_close (p, f);
+			f->dev = NULL;
+			do_close (p, f);
 /* we could just zero the handle, but this could lead to confusion if
  * a process doesn't realize that there's been a media change, Fopens
  * a new file, and gets the same handle back. So, we force the
  * handle to point to /dev/null.
  */
 			    
-			    fd->ofiles[i] = (FILEPTR *) 1;
-			    
-			    r = FP_ALLOC (p, &f);
-			    if (!r)
-			    {
-			    	r = do_open (&f, "U:\\DEV\\NULL", O_RDWR, 0, NULL);
-			    	if (r)
-			    	{
-			    		fd->ofiles[i] = NULL;
-			    		FP_FREE (f);
-			    	}
-			    	else
-			    		fd->ofiles[i] = f;
-			    }
-			    else
-			    	fd->ofiles[i] = NULL;	
+			fd->ofiles[i] = (FILEPTR *) 1;
+			
+			r = FP_ALLOC (p, &f);
+			if (!r)
+			{
+				r = do_open (&f, "U:\\DEV\\NULL", O_RDWR, 0, NULL);
+				if (r)
+				{
+					fd->ofiles[i] = NULL;
+					FP_FREE (f);
+				}
+				else
+					fd->ofiles[i] = f;
 			}
+			else
+				fd->ofiles[i] = NULL;
 		}
 		
 		/* terminate any active directory searches on the drive */
