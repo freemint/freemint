@@ -43,7 +43,8 @@ _sig_return:	addq.w	#8,sp		| pop signal number and sfmt
 	move.w	#0x11a,-(sp)		| Psigreturn() system call
 	trap	#1
 _pc_valid_return:			| tells kernel its us
-| we had better not come back| if we did, something terrible
+| we had better not come back
+| if we did, something terrible
 | happened, and we might as well terminate
 	move.w	#-998,-(sp)
 	move.w	#0x4c,-(sp)		| Pterm()
