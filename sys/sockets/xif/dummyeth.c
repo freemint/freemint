@@ -32,7 +32,7 @@ static struct netif if_dummy;
  */
 static long	dummy_open	(struct netif *);
 static long	dummy_close	(struct netif *);
-static long	dummy_output	(struct netif *, BUF *, char *, short, short);
+static long	dummy_output	(struct netif *, BUF *, const char *, short, short);
 static long	dummy_ioctl	(struct netif *, short, long);
 static long	dummy_config	(struct netif *, struct ifopt *);
 
@@ -171,7 +171,7 @@ dummy_close (struct netif *nif)
  */
  
 static long
-dummy_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	BUF *nbuf;
 	short type;

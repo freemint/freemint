@@ -70,7 +70,7 @@ static struct slip	slip_priv[SLIP_CHANNELS];
 static long	slip_link	(struct iflink *);
 static long	slip_open	(struct netif *);
 static long	slip_close	(struct netif *);
-static long	slip_output	(struct netif *, BUF *, char *, short, short);
+static long	slip_output	(struct netif *, BUF *, const char *, short, short);
 static long	slip_ioctl	(struct netif *, short, long);
 static short	slip_send	(struct slbuf *);
 static short	slip_recv	(struct slbuf *);
@@ -88,9 +88,9 @@ driver_init (void)
 static long
 slip_link (struct iflink *ifl)
 {
-	short i;
+	int i;
 	
-	for (i = 0; i < SLIP_CHANNELS; ++i)
+	for (i = 0; i < SLIP_CHANNELS; i++)
 	{
 		if (!(slip_priv[i].flags & SLF_LINKED))
 			break;
@@ -174,7 +174,7 @@ slip_close (struct netif *nif)
 }
 
 static long
-slip_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+slip_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	struct slip *slp = nif->data;
 	long r;

@@ -40,7 +40,6 @@
 
 # include "global.h"
 # include "buf.h"
-# include "inet4/arp.h"
 # include "inet4/if.h"
 # include "inet4/ifeth.h"
 # include "util.h"
@@ -137,7 +136,7 @@ static long	rtl8012_reset		(struct netif *);
 
 static long _cdecl rtl8012_open		(struct netif *);
 static long _cdecl rtl8012_close	(struct netif *);
-static long _cdecl rtl8012_output	(struct netif *, BUF *, char *, short, short);
+static long _cdecl rtl8012_output	(struct netif *, BUF *, const char *, short, short);
 static long _cdecl rtl8012_ioctl	(struct netif *, short, long);
 
 static void rtl8012_install_int		(void);
@@ -901,7 +900,7 @@ struct rtl12
 };
 
 static long _cdecl
-rtl8012_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+rtl8012_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	struct rtl12 *pr = nif->data;
 	ushort len;

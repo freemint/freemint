@@ -44,9 +44,7 @@
 # include "slcompress.h"
 # include "netinfo.h"
 
-# include "buf.h"
 # include "inet4/in.h"
-# include "inet4/ip.h"
 # include "inet4/tcp.h"
 
 

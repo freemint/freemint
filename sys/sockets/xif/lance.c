@@ -103,7 +103,7 @@ static struct netif if_lance;
 
 static long	lance_open	(struct netif *);
 static long	lance_close	(struct netif *);
-static long	lance_output	(struct netif *, BUF *, char *, short, short);
+static long	lance_output	(struct netif *, BUF *, const char *, short, short);
 static long	lance_ioctl	(struct netif *, short, long);
 static long	lance_config	(struct netif *, struct ifopt *);
 
@@ -596,7 +596,7 @@ err:
 }
 
 static long
-lance_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+lance_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	short len;
 	BUF *nbuf;
