@@ -772,7 +772,7 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 		else if (next->type == APP_ACCESSORY)
 			o[1] = APP_ACCESSORY;
 		else
-			o[1] = APP_APPLICATION;
+			o[1] = next->type; //APP_APPLICATION;
 
 		/* XaAES extensions. */
 		if (spec)
@@ -1154,8 +1154,6 @@ static short info_tab[][4] =
 #define AGI_WINX WF_WINX
 #endif
 
-//static char status[256] = ASCII_DEV_STATUS;
-
 static char *
 mcs(char *d, char *s)
 {
@@ -1356,7 +1354,7 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (cl)
 				pb->intout[0] = cl->p->pid;
 			else
-				pb->intout[0] = 0;
+				pb->intout[0] = -1;
 
 			break;
 		}
@@ -1409,7 +1407,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_client *cl = NULL;
 	short pid = pb->intin[0];
-	short f = pb->intin[1];
+	short f = pb->intin[1], ret;
 
 	CONTROL(2,1,1)
 
@@ -1423,80 +1421,113 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 	else
 		cl = pid2client(pid);
 
-	if (cl == NULL)
-	{
-		pb->intout[0] = 0;
-	}
-	else
-	{
-		pb->intout[0] = 1;
+	DIAG((D_appl, client, "  --    on %s, func %d, 0x%lx",
+		c_owner(cl), f, pb->addrin[0]));
 
-		DIAG((D_appl, client, "  --    on %s, func %d, 0x%lx",
-			c_owner(cl), f, pb->addrin[0]));
+	/*
+	 * note: When extending this switch be sure to update
+                *       the appl_getinfo(65) mode corresponding structure
+	 *  tip: grep APC_ * 
+	 */
 
-		/*
-		 * note: When extending this switch be sure to update
-                 *       the appl_getinfo(65) mode corresponding structure
-		 *  tip: grep APC_ * 
-		 */
-		switch (f)
+	ret = 1;
+	switch (f)
+	{
+		case APC_SYSTEM:
 		{
-			case APC_HIDE:
+			if (cl)
 			{
-				struct xa_window *wind;
+				cl->type = APP_SYSTEM;
+			}
+			else
+				ret = 0;
+			break;
+		}
+		case APC_HIDE:
+		{
+			if (cl)
+			{
 				hide_app(lock, cl);
-				wind = get_topwind(lock, cl, true, window_list);
-				if (wind && !is_infront(wind->owner))
-					app_in_front(lock, wind->owner);
-				break;
 			}
-			case APC_SHOW:
+			else
+				ret = 0;
+			break;
+		}
+		case APC_SHOW:
+		{
+			if (pid == -1)
+				unhide_all(lock, cl);
+			else
+				unhide_app(lock, cl);
+			break;
+		}
+		case APC_TOP:
+		{
+			if (cl)
 			{
-				if (pid == -1)
-					unhide_all(lock, cl);
-				else
+				if (any_hidden(lock, cl))
 					unhide_app(lock, cl);
-				break;
-			}
-			case APC_TOP:
-			{
-				app_in_front(lock, cl);
+				else
+					app_in_front(lock, cl);
+
 				if (cl->type == APP_ACCESSORY)
 					send_app_message(lock, NULL, cl, AMQ_NORM, QMF_CHKDUP,
 							 AC_OPEN, 0, 0, 0,
 							 cl->p->pid, 0, 0, 0);
-				break;
 			}
-			case APC_HIDENOT:
+			else
+				ret = 0;
+			break;
+		}
+		case APC_HIDENOT:
+		{
+			if (cl)
 			{
+				if (any_hidden(lock, cl))
+					unhide_app(lock, cl);
 				hide_other(lock, cl);
-				app_in_front(lock, cl);
-				break;
 			}
-			case APC_INFO:
+			else
+				ret = 0;
+			break;
+		}
+		case APC_INFO:
+		{
+			if (cl)
 			{
 				short *ii = (short*)pb->addrin[0];
-				pb->intout[0] = 0;
 
 				if (ii)
 				{
 					*ii = 0;
 					if (any_hidden(lock, cl))
-						*ii |= 1 /* APCI_HIDDEN */;
+						*ii |= APCI_HIDDEN;
 					if (cl->std_menu)
-						*ii |= 2 /* APCI_HASMBAR */;
+						*ii |= APCI_HASMBAR;
 					if (cl->desktop)
-						*ii |= 4 /* APCI_HASDESK */;
+						*ii |= APCI_HASDESK;
 				}
-				break;
 			}
-			default:
-			{
-				pb->intout[0] = 0;
-			}
+			else
+				ret = 0;
+			break;
 		}
-
+		case APC_MENU:
+		{
+			OBJECT **m = (OBJECT **)pb->addrin[0];
+			
+			if (cl && m)
+				*m = cl->std_menu ? cl->std_menu->tree : NULL;
+			else if (m)
+				*m = NULL;
+			break;
+		}
+		default:
+		{
+			ret = 0;
+		}
 	}
+	pb->intout[0] = ret;
 	return XAC_DONE;
 }
 

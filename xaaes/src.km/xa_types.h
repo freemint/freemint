@@ -361,17 +361,26 @@ struct xa_lbox_info
 	struct lbox_slide bslide;	/* Slider B object indexes + info */
 	struct widget_tree *wt;		/* Pointer to the widget tree this LBOX is attached to */
 	void *user_data;		/* User data */
-	long slct;
-	long set;
-#if 0
-	lbox_select	*slct;		/* Select callback function */
-	lbox_set	*set;		/* Set callback funtion */
-#endif
+	long slct;			/* Select callback function */
+	long set;			/* Set callback function */
 };
-	
+
+struct xa_fnts_info
+{
+	void	*handle;
+	struct	xa_window *wind;
+
+	short	vdi_handle;
+	short	num_fonts;
+	short	font_flags;
+	short	dialog_flags;
+	char	*sample_text;
+	char	*opt_button;
+
+};
+
 #define OB_CURS_ENABLED	1
 #define OB_CURS_DRAWN	2
-
 struct objc_edit_info
 {
 	short obj;	/* Index of editable object */
