@@ -457,6 +457,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 				pb->intout[3] = pending_button.q[pbi].b;
 				pb->intout[6] = pending_button.q[pbi].clicks;
 			}
+#if 0
 			else
 			{
 				pb->intout[1] = mu_button.x;
@@ -464,6 +465,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 				pb->intout[3] = mu_button.cb;
 				pb->intout[6] = mu_button.clicks;
 			}
+#endif
 		}
 			
 		pb->intout[0] = fall_through;
