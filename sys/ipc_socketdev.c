@@ -75,7 +75,6 @@ struct devdrv sockdev =
 static long
 sock_open (FILEPTR *f)
 {
-	ALERT ("sock_open not supported, internal failure!");
 	return 0;
 }
 
@@ -88,7 +87,7 @@ sock_write (FILEPTR *f, const char *buf, long buflen)
 	if (so->state == SS_VIRGIN)
 		return EINVAL;
 	
-	return (*so->ops->send) (so, iov, 1, f->flags & O_NDELAY, 0, 0, 0);
+	return (*so->ops->send)(so, iov, 1, f->flags & O_NDELAY, 0, 0, 0);
 }
 
 static long
@@ -100,7 +99,7 @@ sock_read (FILEPTR *f, char *buf, long buflen)
 	if (so->state == SS_VIRGIN)
 		return EINVAL;
 	
-	return (*so->ops->recv) (so, iov, 1, f->flags & O_NDELAY, 0, 0, 0);
+	return (*so->ops->recv)(so, iov, 1, f->flags & O_NDELAY, 0, 0, 0);
 }
 
 static long
@@ -204,7 +203,7 @@ sock_ioctl (FILEPTR *f, int cmd, void *buf)
 		if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
 			return EINVAL;
 		
-		return (*so->ops->ioctl) (so, cmd, buf);
+		return (*so->ops->ioctl)(so, cmd, buf);
 	}
 }
 
@@ -258,7 +257,7 @@ sock_select (FILEPTR *f, long proc, int mode)
 	if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
 		return 1;
 	
-	return (*so->ops->select) (so, mode, proc);
+	return (*so->ops->select)(so, mode, proc);
 }
 
 static void
@@ -292,75 +291,22 @@ sock_unselect (FILEPTR *f, long proc, int mode)
 
 # ifdef OLDSOCKDEVEMU
 
-static long	sockemu_open	(FILEPTR *);
-static long	sockemu_write	(FILEPTR *, const char *, long);
-static long	sockemu_read	(FILEPTR *, char *, long);
-static long	sockemu_lseek	(FILEPTR *, long, int);
 static long	sockemu_ioctl	(FILEPTR *, int, void *);
-static long	sockemu_datime	(FILEPTR *, ushort *, int);
-static long	sockemu_close	(FILEPTR *, int);
-static long	sockemu_select	(FILEPTR *, long, int);
-static void	sockemu_unselect(FILEPTR *, long, int);
 
 struct devdrv sockdevemu =
 {
-	open:		sockemu_open,
-	write:		sockemu_write,
-	read:		sockemu_read,
-	lseek:		sockemu_lseek,
+	open:		sock_open,
+	write:		sock_write,
+	read:		sock_read,
+	lseek:		sock_lseek,
 	ioctl:		sockemu_ioctl,
-	datime:		sockemu_datime,
-	close:		sockemu_close,
-	select:		sockemu_select,
-	unselect:	sockemu_unselect,
+	datime:		sock_datime,
+	close:		sock_close,
+	select:		sock_select,
+	unselect:	sock_unselect,
 	writeb:		NULL,
 	readb:		NULL
 };
-
-static long
-sockemu_open (FILEPTR *f)
-{
-	f->devinfo = -1;		
-	return 0;	 
-}
-
-static long
-sockemu_write (FILEPTR *f, const char *buf, long buflen)
-{
-	short fd = f->devinfo;
-	long ret;
-	
-	if (fd < 0)
-		return EINVAL;
-	
-	ret = fp_get1 (curproc, fd, &f, __FUNCTION__);
-	if (ret)
-		return ret;
-	
-	return f->dev->write (f, buf, buflen);
-}
-
-static long
-sockemu_read (FILEPTR *f, char *buf, long buflen)
-{
-	short fd = f->devinfo;
-	long ret;
-	
-	if (fd < 0)
-		return EINVAL;
-	
-	ret = fp_get1 (curproc, fd, &f, __FUNCTION__);
-	if (ret)
-		return ret;
-	
-	return f->dev->read (f, buf, buflen);
-}
-
-static long
-sockemu_lseek (FILEPTR *f, long where, int whence)
-{
-	return EACCES;
-}
 
 static long
 sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
@@ -368,144 +314,357 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 	if (cmd == SOCKETCALL)
 	{
 		struct generic_cmd *gc = buf;
-		short fd = f->devinfo;
+		struct socket *so = (struct socket *) f->devinfo;
 		
-		if (gc->cmd == SOCKET_CMD || gc->cmd == SOCKETPAIR_CMD)
+		if ((gc->cmd == SOCKET_CMD) || (gc->cmd == SOCKETPAIR_CMD))
 		{
-			if (fd >= 0)
-				return EINVAL;
+			if (so) return EINVAL;
 		}
-		else
-		{
-			if (fd < 0)
-				return EINVAL;
-		}
+		else if (!so)
+			return EINVAL;
 		
 		switch (gc->cmd)
 		{
-/* special (internal use only) ioctl() to get a handle's fileptr */
-# define FD2FP (('S' << 8) | 101)
-			case FD2FP:
-			{
-				*(FILEPTR **) buf = f;
-				return 0;
-			}
+			/* attention, these CMDs create new sockets */
+			
 			case SOCKET_CMD:
 			{
 				struct socket_cmd *c = buf;
+				long ret;
 				
-				fd = sys_socket (c->domain, c->type, c->protocol);
-				if (fd >= 0)
-					f->devinfo = fd;
+				ret = so_create (&so, c->domain, c->type, c->protocol);
+				if (ret) return ret;
 				
-				return fd;
+				f->devinfo = (long) so;
+				return 0;
 			}
 			case SOCKETPAIR_CMD:
+			case ACCEPT_CMD:
 			{
-				struct socketpair_cmd *c = buf;
-				short newfd;
+				PROC *p = curproc;
+				FILEPTR *newfp = NULL;
+				short newfd = MIN_OPEN - 1;
+				long ret;
 				
-				newfd = f_open ("u:\\dev\\socket", O_RDWR);
-				if (newfd >= 0)
+				if (cmd == ACCEPT_CMD)
 				{
-					FILEPTR *newf;
-					short fds[2];
-					long ret;
+					if (so->state != SS_ISUNCONNECTED)
+						return EINVAL;
 					
-					ret = f_cntl (newfd, (long) &newf, FD2FP);
-					if (ret)
+					if (!(so->flags & SO_ACCEPTCON))
 					{
-						f_close (newfd);
-						return ret;
+						DEBUG (("sys_accept: socket not listening"));
+						return EINVAL;
 					}
-					
-					ret = sys_socketpair (c->domain, c->type, c->protocol, fds);
-					if (ret)
-					{
-						f_close (newfd);
-						return ret;
-					}
-					
-					f->devinfo = fds[0];
-					newf->devinfo = fds[1];
 				}
 				
+				ret = FD_ALLOC (p, &newfd, MIN_OPEN);
+				if (ret) goto error;
+				
+				ret = FP_ALLOC (p, &newfp);
+				if (ret) goto error;
+				
+				newfp->flags = O_RDWR;
+				newfp->dev = &sockdevemu;
+				
+				if (cmd == SOCKETPAIR_CMD)
+				{
+					struct socketpair_cmd *c = buf;
+					struct socket *so1 = NULL, *so2 = NULL;
+					
+					ret = so_create (&so1, c->domain, c->type, c->protocol);
+					if (ret) goto error;
+					ret = so_create (&so2, c->domain, c->type, c->protocol);
+					if (ret) { so_free (so1); goto error; }
+					
+					f->devinfo = (long) so1;
+					newfp->devinfo = (long) so2;
+					
+					ret = (*so1->ops->socketpair)(so1, so2);
+					if (ret)
+					{
+						so_free (so1);
+						so_free (so2);
+						goto error;
+					}
+				}
+				else
+				{
+					struct accept_cmd *c = buf;
+					struct socket *newso = NULL;
+					
+					ret = so_dup (&newso, so);
+					if (ret) goto error;
+					
+					newfp->devinfo = (long) newso;
+					
+					ret = (*so->ops->accept)(so, newso, f->flags & O_NDELAY);
+					if (ret < 0)
+					{
+						DEBUG (("sockemu_accept: cannot accept a connection"));
+						so_free (newso);
+						goto error1;
+					}
+					
+					if (c->addr)
+					{
+						ret = (*newso->ops->getname)(newso, c->addr, c->addrlen, PEER_ADDR);
+						if (ret < 0)
+						{
+							DEBUG (("sockemu_accept: getname failed"));
+							*(c->addrlen) = 0;
+						}
+					}
+				}
+				
+				FP_DONE (p, newfp, newfd, FD_CLOEXEC);
 				return newfd;
+				
+			error:
+				if (cmd == ACCEPT_CMD) so_drop (so, f->flags & O_NDELAY);
+			error1:
+				if (newfp) { newfp->links--; FP_FREE (newfp); }
+				if (newfd >= MIN_OPEN) FD_REMOVE (p, newfd);
+				
+				DEBUG (("%s: error %li", ((cmd == ACCEPT_CMD) ? "ACCEPT" : "SOCKETPAIR"), ret));
+				return ret;
 			}
+			
+			/* all other CMDs don't create new sockets */
+			
 			case BIND_CMD:
 			{
 				struct bind_cmd *c = buf;
-				return sys_bind (fd, c->addr, c->addrlen);
+				
+				if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
+					return EINVAL;
+				
+				return (*so->ops->bind)(so, c->addr, c->addrlen);
 			}
 			case LISTEN_CMD:
 			{
 				struct listen_cmd *c = buf;
-				return sys_listen (fd, c->backlog);
-			}
-			case ACCEPT_CMD:
-			{
-				struct accept_cmd *c = buf;
-				return sys_accept (fd, c->addr, c->addrlen);
+				short backlog = c->backlog;
+				long ret;
+				
+				if (so->state != SS_ISUNCONNECTED)
+					return EINVAL;
+				
+				if (backlog < 0)
+					backlog = 0;
+				
+				ret = (*so->ops->listen)(so, backlog);
+				if (ret < 0)
+					return ret;
+				
+				so->flags |= SO_ACCEPTCON;
+				return 0;
 			}
 			case CONNECT_CMD:
 			{
 				struct connect_cmd *c = buf;
-				return sys_connect (fd, c->addr, c->addrlen);
+				
+				switch (so->state)
+				{
+					case SS_ISUNCONNECTED:
+					case SS_ISCONNECTING:
+					{
+						if (so->flags & SO_ACCEPTCON)
+						{
+							DEBUG (("sockemu_connect: attempt to connect a listening socket"));
+							return EINVAL;
+						}
+						return (*so->ops->connect)(so, c->addr, c->addrlen, f->flags & O_NDELAY);
+					}
+					case SS_ISCONNECTED:
+					{
+						/* Connectionless sockets can be connected serveral
+						 * times. So their state must always be
+						 * SS_ISUNCONNECTED.
+						 */
+						DEBUG (("sockemu_connect: already connected"));
+						return EISCONN;
+   					}
+					case SS_ISDISCONNECTING:
+					case SS_ISDISCONNECTED:
+					case SS_VIRGIN:
+					{
+						DEBUG (("sockemu_connect: socket cannot connect"));
+						return EINVAL;
+					}
+				}
+				
+				DEBUG (("sockemu_connect: invalid socket state %d", so->state));
+				return EINTERNAL;
 			} 
 			case GETSOCKNAME_CMD:
 			{
 				struct getsockname_cmd *c = buf;
-				return sys_getsockname (fd, c->addr, c->addrlen);
+				
+				if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
+					return EINVAL;
+				
+				return (*so->ops->getname)(so, c->addr, c->addrlen, SOCK_ADDR);
 			}
 			case GETPEERNAME_CMD:
 			{
 				struct getpeername_cmd *c = buf;
-				return sys_getpeername (fd, c->addr, c->addrlen);
+				
+				if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
+					return EINVAL;
+				
+				return (*so->ops->getname)(so, c->addr, c->addrlen, PEER_ADDR);
 			}
 			case SEND_CMD:
 			{
 				struct send_cmd *c = buf;
-				return sys_sendto (fd, c->buf, c->buflen, c->flags, NULL, 0);
+				struct iovec iov[1] = {{ c->buf, c->buflen }};
+				
+				if (so->state == SS_VIRGIN)
+					return EINVAL;
+				
+				return (*so->ops->send)(so, iov, 1, f->flags & O_NDELAY, c->flags, NULL, 0);
 			}
 			case SENDTO_CMD:
 			{
 				struct sendto_cmd *c = buf;
-				return sys_sendto (fd, c->buf, c->buflen, c->flags, c->addr, c->addrlen);
+				struct iovec iov[1] = {{ c->buf, c->buflen }};
+				
+				if (so->state == SS_VIRGIN)
+					return EINVAL;
+				
+				return (*so->ops->send)(so, iov, 1, f->flags & O_NDELAY, c->flags, c->addr, c->addrlen);
 			}
 			case SENDMSG_CMD:
 			{
 				struct sendmsg_cmd *c = buf;
-				return sys_sendmsg (fd, c->msg, c->flags);
+				struct msghdr *msg = c->msg;
+				
+				if (so->state == SS_VIRGIN)
+					return EINVAL;
+				
+				if (msg->msg_accrights && msg->msg_accrightslen)
+					return EINVAL;
+				
+				return (*so->ops->send)(so, msg->msg_iov, msg->msg_iovlen,
+							f->flags & O_NDELAY, c->flags,
+							msg->msg_name, msg->msg_namelen);
 			}
 			case RECV_CMD:
 			{
 				struct recv_cmd *c = buf;
-				return sys_recvfrom (fd, c->buf, c->buflen, c->flags, NULL, NULL);
+				struct iovec iov[1] = {{ c->buf, c->buflen }};
+				
+				if (so->state == SS_VIRGIN)
+					return EINVAL;
+				
+				return (*so->ops->recv)(so, iov, 1, f->flags & O_NDELAY, c->flags, NULL, NULL);
 			} 
 			case RECVFROM_CMD:
 			{
 				struct recvfrom_cmd *c = buf;
-				return sys_recvfrom (fd, c->buf, c->buflen, c->flags, c->addr, c->addrlen);
+				struct iovec iov[1] = {{ c->buf, c->buflen }};
+				
+				if (so->state == SS_VIRGIN)
+					return EINVAL;
+				
+				return (*so->ops->recv)(so, iov, 1, f->flags & O_NDELAY, c->flags, c->addr, c->addrlen);
 			}
 			case RECVMSG_CMD:
 			{
 				struct recvmsg_cmd *c = buf;
-				return sys_recvmsg (fd, c->msg, c->flags);
+				struct msghdr *msg = c->msg;
+				short namelen = msg->msg_namelen;
+				long ret;
+				
+				if (so->state == SS_VIRGIN)
+					return EINVAL;
+				
+				if (msg->msg_accrights && msg->msg_accrightslen)
+					msg->msg_accrightslen = 0;
+				
+				ret = (*so->ops->recv)(so, msg->msg_iov, msg->msg_iovlen,
+							f->flags & O_NDELAY, c->flags,
+							msg->msg_name, &namelen);
+				msg->msg_namelen = namelen;
+				return ret;
 			}
 			case SETSOCKOPT_CMD:
 			{
 				struct setsockopt_cmd *c = buf;
-				return sys_setsockopt (fd, c->level, c->optname, c->optval, c->optlen);
+				
+				if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
+					return EINVAL;
+				
+				if (c->level == SOL_SOCKET) switch (c->optname)
+				{
+					case SO_DROPCONN:
+					{
+						if (!c->optval || c->optlen < sizeof (long))
+							return EINVAL;
+						
+						if (*(long *)(c->optval))
+							so->flags |= SO_DROP;
+						else
+							so->flags &= ~SO_DROP;
+						
+						return 0;
+					}
+					default:
+						break;
+				}
+				
+				return (*so->ops->setsockopt)(so, c->level, c->optname, c->optval, c->optlen);
 			}
 			case GETSOCKOPT_CMD:
 			{
 				struct getsockopt_cmd *c = buf;
-				return sys_getsockopt (fd, c->level, c->optname, c->optval, c->optlen);
+				
+				if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
+				{
+					DEBUG (("sockemu_getsockopt: virgin state -> EINVAL"));
+					return EINVAL;
+				}
+				
+				if (c->level == SOL_SOCKET) switch (c->optname)
+				{
+					case SO_DROPCONN:
+					{
+						if (!c->optval || !c->optlen || *(c->optlen) < sizeof (long))
+							return EINVAL;
+						
+						*(long *)(c->optval) = !!(so->flags & SO_DROP);
+						*(c->optlen) = sizeof (long);
+						
+						return 0;
+					}
+					default:
+						break;
+				}
+				
+				return (*so->ops->getsockopt)(so, c->level, c->optname, c->optval, c->optlen);
 			}
 			case SHUTDOWN_CMD:
 			{
 				struct shutdown_cmd *c = buf;
-				return sys_shutdown (fd, c->how);
+				
+				if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
+					return EINVAL;
+				
+				switch (c->how)
+				{
+					case 0:
+						so->flags |= SO_CANTRCVMORE;
+						break;
+					case 1:
+						so->flags |= SO_CANTSNDMORE;
+						break;
+					case 2:
+						so->flags |= (SO_CANTRCVMORE|SO_CANTSNDMORE);
+						break;
+				}
+				
+				return (*so->ops->shutdown)(so, c->how);
 			}
 		}
 		
@@ -514,92 +673,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 	}
 	
 	/* else fallthrough */
-	{
-		short fd = f->devinfo;
-		long ret;
-		
-		if (fd < 0)
-			return EINVAL;
-		
-		ret = fp_get1 (curproc, fd, &f, __FUNCTION__);
-		if (ret)
-			return ret;
-		
-		return f->dev->ioctl (f, cmd, buf);
-	}
-}
-
-static long
-sockemu_datime (FILEPTR *f, ushort *timeptr, int rwflag)
-{
-	short fd = f->devinfo;
-	long ret;
-	
-	if (fd < 0)
-		return EINVAL;
-	
-	ret = fp_get1 (curproc, fd, &f, __FUNCTION__);
-	if (ret)
-		return ret;
-	
-	return f->dev->datime (f, timeptr, rwflag);
-}
-
-static long
-sockemu_close (FILEPTR *f, int pid)
-{
-	short fd = f->devinfo;
-	long ret = 0;
-	
-	if (fd < 0)
-		return EINVAL;
-	
-	if (f->links <= 0)
-	{
-		ret = fp_get1 (curproc, fd, &f, __FUNCTION__);
-		if (ret)
-			return ret;
-		
-		/* remove fd */
-		fd_remove (curproc, fd);
-		
-		/* XXX attention, reentrancy */
-		ret = do_close (curproc, f);
-	}
-	
-	return ret;
-}
-
-static long
-sockemu_select (FILEPTR *f, long proc, int mode)
-{
-	short fd = f->devinfo;
-	long ret;
-	
-	if (fd < 0)
-		return EINVAL;
-	
-	ret = fp_get1 (curproc, fd, &f, __FUNCTION__);
-	if (ret)
-		return ret;
-	
-	return f->dev->select (f, proc, mode);
-}
-
-static void
-sockemu_unselect (FILEPTR *f, long proc, int mode)
-{
-	short fd = f->devinfo;
-	long ret;
-	
-	if (fd < 0)
-		return;
-	
-	ret = fp_get1 (curproc, fd, &f, __FUNCTION__);
-	if (ret)
-		return;
-	
-	f->dev->unselect (f, proc, mode);
+	return sock_ioctl (f, cmd, buf);
 }
 
 # endif /* OLDSOCKDEVEMU */

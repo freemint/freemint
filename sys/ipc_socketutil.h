@@ -49,6 +49,7 @@ long _cdecl so_release (struct socket *);
 void _cdecl so_sockpair (struct socket *, struct socket *);
 long _cdecl so_connect (struct socket *, struct socket *, short, short, short);
 long _cdecl so_accept (struct socket *, struct socket *, short);
+void _cdecl so_drop (struct socket *, short);
 
 static inline long so_rselect (struct socket *s, long proc);
 static inline long so_wselect (struct socket *s, long proc);
