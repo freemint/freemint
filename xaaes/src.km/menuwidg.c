@@ -400,7 +400,7 @@ built_desk_popup(enum locks lock, short x, short y)
 	split = n++;
 
 	client = S.client_list;
-	while(client)
+	while (client)
 	{
 		if (client->type != APP_ACCESSORY)
 		{
@@ -1327,8 +1327,9 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 	k->titles = root[root[0].ob_head].ob_head;
 	k->menus  = root[0].ob_tail;
 	k->about = root[root[k->menus].ob_head].ob_head;
-	exclusive_mouse_input(wind->owner, 1, &f, &k->x, &k->y);
-	//vq_mouse(C.vh, &f, &k->x, &k->y);
+
+	check_mouse(wind->owner, &f, &k->x, &k->y);
+
 	k->rdx = r.x;
 	k->rdy = r.y;
 	k->clicked_title = find_menu_object(tab, k->titles);

@@ -88,7 +88,7 @@ void
 show_bits(unsigned short data, char *prf, char *t[], char *x)
 {
 	int i = 0;
-	*x = 0;
+	*x = '\0';
 	if (data)
 	{
 		strcpy(x, prf);
@@ -190,7 +190,7 @@ DeBug(enum debug_item item, struct xa_client *client, char *t, ...)
 #endif
 		if (D.point[D_v])
 		{
-			exclusive_mouse_input(client, 1, &b, &x, &y); //vq_mouse(C.P_handle, &b, &x, &y);
+			check_mouse(client, &b, &x, &y);
 
 			l += sprintf(line+l, sizeof(line)-l, "[B%d]", b);
 
