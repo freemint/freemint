@@ -30,6 +30,10 @@ COBJS = \
 	ipc_socket.c \
 	ipc_socketdev.c \
 	ipc_socketutil.c \
+	ipc_unix.c \
+	ipc_unix_cache.c \
+	ipc_unix_dgram.c \
+	ipc_unix_stream.c \
 	k_exec.c \
 	k_exit.c \
 	k_fds.c \
