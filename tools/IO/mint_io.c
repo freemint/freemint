@@ -86,6 +86,8 @@ ssize_t __write (int __fd, __const void *__buf, size_t __n) __THROW;
 int fstat (int __fd, struct stat *__buf) __THROW;
 int __fstat (int __fd, struct stat *__buf) __THROW;
 
+int stat (const char *filename, struct stat *st) __THROW;
+
 
 struct device
 {
@@ -693,6 +695,21 @@ fstat (int fd, struct stat *st)
 	
 	return 0;
 }
+
+int
+stat (const char *filename, struct stat *st)
+{
+	int fd = open (filename, O_RDONLY);
+	if (fd < 0)
+		return fd;
+
+	{
+		int res = fstat(fd, st); 
+		close(fd);
+		return res;
+	}
+}
+
 
 int
 fsync (int fd)
