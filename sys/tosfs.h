@@ -11,13 +11,14 @@
 # include "mint/mint.h"
 # include "mint/file.h"
 
-
 # ifdef OLDTOSFS
+
+extern int flk;
+extern long gemdos_version;
 
 extern FILESYS tos_filesys;
 extern long clsizb[NUM_DRIVES];
 
 # endif
-
 
 # endif /* _tosfs_h */

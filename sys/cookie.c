@@ -62,6 +62,10 @@
 # include "proc.h"
 # endif
 
+# ifdef OLDTOSFS
+# include "tosfs.h"
+# endif
+
 /****************************************************************************/
 /* BEGIN global data */
 
@@ -104,8 +108,8 @@ void
 init_cookies (void)
 {
 	struct cookie *cookie;
-	ushort i = 0;
-	ushort ncookies = 0;
+	unsigned short i = 0;
+	unsigned short ncookies = 0;
 
 	long ncsize;
 

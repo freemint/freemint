@@ -122,8 +122,6 @@ _getmch (void)
 				{
 					FalconVideo = (jar->value == 0x00030000L);
 					ste_video = (jar->value == 0x00010000L);
-					if (jar->value & 0xffff0000L)
-						screen_boundary = 15;
 					break;
 				}
 				

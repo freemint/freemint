@@ -67,9 +67,12 @@
 # include "unicode.h"	/* init_unicode() */
 # include "update.h"	/* start_sysupdate */
 # include "util.h"	/* */
+# include "xbios.h"	/* has_bconmap, curbconmap */
+
+# ifdef OLDTOSFS
 # include "fatfs.h"	/* fatfs_config() */
 # include "tosfs.h"	/* tos_filesys */
-# include "xbios.h"	/* has_bconmap, curbconmap */
+# endif
 
 
 /* if the user is holding down the magic shift key, we ask before booting */
@@ -1183,8 +1186,8 @@ init (void)
 	 * if there are open files on a drive.
 	 */
 	{
-		ushort	i;
-		char	cwd[PATH_MAX] = "X:";
+		unsigned short i;
+		char cwd[PATH_MAX] = "X:";
 
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
@@ -1195,14 +1198,14 @@ init (void)
 				 * as d_lock() will reset it to \
 				 */
 				cwd[0] = i + ((i < 26) ? 'A' : '1' - 26);
-				if (d_getcwd(cwd + 2, i + 1, PATH_MAX - 2) != E_OK)
+				if (sys_d_getcwd(cwd + 2, i + 1, PATH_MAX - 2) != E_OK)
 				{
 					continue;
 				}
-				if (d_lock (1, i) == E_OK)
+				if (sys_d_lock (1, i) == E_OK)
 				{
-					d_lock(0, i);
-					d_setpath(cwd);
+					sys_d_lock(0, i);
+					sys_d_setpath(cwd);
 				}
 			}
 		}
