@@ -979,6 +979,17 @@ init (void)
 		 * this is the real way to test for Bconmap ability
 		 */
 		has_bconmap = (Bconmap (0) == 0);
+		
+		/* kludge for PAK'ed ST/STE's
+		 * they have TOS 3.06 and say they have Bconmap(),
+		 * but the TOS crash hardly if Bconmap() is used.
+		 */
+		if (has_bconmap)
+		{
+			if (mch == ST || mch == STE || mch == MEGASTE)
+				has_bconmap = 0;
+		}
+		
 		if (has_bconmap)
 			bconmap2 = (BCONMAP2_T *) Bconmap (-2);
 	}
