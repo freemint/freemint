@@ -98,6 +98,14 @@ new_client(enum locks lock, struct xa_client *client)
 
 	DIAG((D_appl, NULL, "XA_new_client for %d", client->p->pid));
 
+	/* Ozk: About the fix_menu() thing; This is just as bad as it
+	 * originally was, the client should have an attachment with
+	 * umalloced space for such things as this. Did it like this
+	 * temporarily...
+	 * When changing this, also change it in k_init.c for the AESSYS
+	*/
+	strncpy(&client->mnu_clientlistname, "  Clients \3", 14);
+
 	strncpy(client->proc_name, client->p->name, 8);
 
 	f = strlen(client->proc_name);
