@@ -732,7 +732,9 @@ void form_save(short d, RECT r, void **area)
 	if (*area)
 	{
 		Mpreserve.fd_addr = *area;
+		hidem();
 		vro_cpyfm(C.vh, S_ONLY, pnt, &Mscreen, &Mpreserve);
+		showm();
 	}
 }
 
@@ -760,7 +762,9 @@ void form_restore(short d, RECT r, void **area)
 		Mpreserve.fd_nplanes = screen.planes;
 		Mpreserve.fd_stand = 0;
 		Mpreserve.fd_addr = *area;
+		hidem();
 		vro_cpyfm(C.vh, S_ONLY, pnt, &Mpreserve, &Mscreen);
+		showm();
 
 		kfree(*area);
 		*area = NULL;
@@ -1223,7 +1227,7 @@ set_objcursor(struct widget_tree *wt)
 	if (wt->e.obj <= 0)
 		return;
 
-	ob_offset(wt->tree, wt->e.obj, &r.x, &r.y);
+	obj_offset(wt, wt->e.obj, &r.x, &r.y);
 	ob = wt->tree + wt->e.obj;
 	r.w  = ob->ob_width;
 	r.h  = ob->ob_height;
@@ -2372,60 +2376,63 @@ display_object(enum locks lock, XA_TREE *wt, short item, short parent_x, short p
 
 	wr_mode(MD_TRANS);
 
-	/* Handle CHECKED object state: */
-	if ((ob->ob_state & state_mask) & OS_CHECKED)
+	if (t != G_PROGDEF)
 	{
-		t_color(G_BLACK);
-		/* ASCII 8 = checkmark */
-		v_gtext(C.vh, r.x + 2, r.y, "\10");
-	}
-
-	/* Handle DISABLED state: */
-	if ((ob->ob_state & state_mask) & OS_DISABLED)
-		write_disable(&r, G_WHITE);
-
-	/* Handle CROSSED object state: */
-	if ((ob->ob_state & state_mask) & OS_CROSSED)
-	{
-		short p[4];
-		l_color(G_BLACK);
-		p[0] = r.x;
-		p[1] = r.y;
-		p[2] = r.x + r.w - 1;
-		p[3] = r.y + r.h - 1;
-		v_pline(C.vh, 2, p);
-		p[0] = r.x + r.w - 1;
-		p[2] = r.x;
-		v_pline(C.vh, 2, p);
-	}
-
-	/* Handle OUTLINED object state: */
-	if ((ob->ob_state & state_mask) & OS_OUTLINED)
-	{
-		/* special handling of root object. */
-		if (!wt->zen || item != 0)
+		/* Handle CHECKED object state: */
+		if ((ob->ob_state & state_mask) & OS_CHECKED)
 		{
-			if (!MONO && d3_any(ob))
+			t_color(G_BLACK);
+			/* ASCII 8 = checkmark */
+			v_gtext(C.vh, r.x + 2, r.y, "\10");
+		}
+
+		/* Handle DISABLED state: */
+		if ((ob->ob_state & state_mask) & OS_DISABLED)
+			write_disable(&r, G_WHITE);
+
+		/* Handle CROSSED object state: */
+		if ((ob->ob_state & state_mask) & OS_CROSSED)
+		{
+			short p[4];
+			l_color(G_BLACK);
+			p[0] = r.x;
+			p[1] = r.y;
+			p[2] = r.x + r.w - 1;
+			p[3] = r.y + r.h - 1;
+			v_pline(C.vh, 2, p);
+			p[0] = r.x + r.w - 1;
+			p[2] = r.x;
+			v_pline(C.vh, 2, p);
+		}
+
+		/* Handle OUTLINED object state: */
+		if ((ob->ob_state & state_mask) & OS_OUTLINED)
+		{
+			/* special handling of root object. */
+			if (!wt->zen || item != 0)
 			{
-				tl_hook(1, &r, screen.dial_colours.lit_col);
-				br_hook(1, &r, screen.dial_colours.shadow_col);
-				tl_hook(2, &r, screen.dial_colours.lit_col);
-				br_hook(2, &r, screen.dial_colours.shadow_col);
-				gbox(3, &r);
-			}
-			else
-			{
-				l_color(G_WHITE);
-				gbox(1, &r);
-				gbox(2, &r);
-				l_color(G_BLACK);
-				gbox(3, &r);
+				if (!MONO && d3_any(ob))
+				{
+					tl_hook(1, &r, screen.dial_colours.lit_col);
+					br_hook(1, &r, screen.dial_colours.shadow_col);
+					tl_hook(2, &r, screen.dial_colours.lit_col);
+					br_hook(2, &r, screen.dial_colours.shadow_col);
+					gbox(3, &r);
+				}
+				else
+				{
+					l_color(G_WHITE);
+					gbox(1, &r);
+					gbox(2, &r);
+					l_color(G_BLACK);
+					gbox(3, &r);
+				}
 			}
 		}
-	}
 
-	if ((ob->ob_state & state_mask) & OS_SELECTED)
-		write_selection(0, &r);
+		if ((ob->ob_state & state_mask) & OS_SELECTED)
+			write_selection(0, &r);
+	}
 
 	wr_mode(MD_TRANS);
 }

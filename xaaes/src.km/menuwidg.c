@@ -179,13 +179,16 @@ bool
 is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat)
 {
 	XA_MENU_ATTACHMENT *at = client->attach;
-	OBJECT *attach_to = wt->tree + item;
+	//OBJECT *attach_to = wt->tree + item;
 	int i;
+
+	DIAGS(("is_attach: for %s, wt=%lx, obj=%d, obtree=%lx",
+		client->name, wt, item, wt->tree));
 
 	if (pat)
 		*pat = NULL;
 
-	if (at == NULL || (attach_to->ob_flags & OF_SUBMENU) == 0)
+	if (at == NULL) // || (attach_to->ob_flags & OF_SUBMENU) == 0)
 		return false;
 
 	DIAG((D_menu, client, "is_attach: at=%lx,flags=%x,type=%x, spec=%lx",
@@ -583,12 +586,14 @@ menu_pop(Tab *tab)
 	if (w)		/* Windowed popup's */
 	{	
 		close_window(tab->lock, w);
+#if 0
 		if (cfg.menu_locking)
 		{
 			hidem();
 			form_restore(k->border, k->drop, &(k->Mpreserve));
 			showm();
 		}
+#endif
 		delete_window(tab->lock, w);
 		k->popw = NULL;
 	}
@@ -598,6 +603,8 @@ menu_pop(Tab *tab)
 		form_restore(k->border, k->drop, &(k->Mpreserve));
 		showm();
 	}
+
+	k->wt->dx = k->wt->dy = 0;
 
 	if (tab->nest)
 	{
@@ -672,7 +679,7 @@ collapse(Tab *tab, Tab *upto)
 	return tab;
 }
 
-static void
+void
 popout(struct task_administration_block *tab)
 {
 	Tab *t;
@@ -689,13 +696,17 @@ popout(struct task_administration_block *tab)
 static RECT
 rc_inside(RECT r, RECT o)
 {
-	if (r.x < o.x || r.w > o.w) r.x = o.x;
-	if (r.y < o.y || r.h > o.h) r.y = o.y;
+	if (r.x < o.x || r.w > o.w)
+		r.x = o.x;
+	if (r.y < o.y || r.h > o.h)
+		r.y = o.y;
 
 	if (r.w < o.w && r.h < o.h)
 	{
-		if (r.x + r.w > o.x + o.w) r.x = o.x + o.w - r.w;
-		if (r.y + r.h > o.y + o.h) r.y = o.y + o.h - r.h;
+		if (r.x + r.w > o.x + o.w)
+			r.x = o.x + o.w - r.w;
+		if (r.y + r.h > o.y + o.h)
+			r.y = o.y + o.h - r.h;
 	}
 	return r;
 }
@@ -740,7 +751,7 @@ find_menu_object(Tab *tab, int start)
 	obtree->ob_x = k->rdx;
 	obtree->ob_y = k->rdy;
 
-	return ob_find(obtree, start, MAX_DEPTH, k->x, k->y);
+	return obj_find(k->wt, start, MAX_DEPTH, k->x, k->y);
 }
 
 
@@ -758,7 +769,7 @@ menu_area(RECT *c, Tab *tab, int item)
 		dy = wt->dy;
 	}
 
-	ob_area(wt->tree, item, c);
+	obj_area(wt, item, c);
 }
 
 static void
@@ -774,21 +785,29 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	k->border = 0;
 	k->wt = wt;
 
+	wt->dx = 0;
+	wt->dy = 0;
+
 	obtree->ob_x = rdx; /* This is where we want to draw the popup object. */
 	obtree->ob_y = rdy;
 
-	ob_rectangle(obtree, item, &r);
+	obj_rectangle(wt, item, &r);
+	//obj_area(wt, item, &r);
 	DIAG((D_menu, tab->client, "display_popup: %d/%d/%d/%d", r));
 	r = popup_inside(tab, r);
 	wash = r.h;
+	obtree->ob_x = k->rdx;
+	obtree->ob_y = k->rdy;
 
 	DIAG((D_menu, tab->client, "display_popup: rdx/y %d/%d (%d/%d/%d/%d)",
 		rdx, rdy, r));
 	DIAG((D_menu, tab->client, " -- scroll=%d, menu_locking=%d",
 		tab->scroll, cfg.menu_locking));
 
+#if 0
 	if (tab->scroll && r.h > 8 * screen.c_max_h)
 		r.h = 8 * screen.c_max_h;
+#endif
 
 	if (r.y + r.h > root_window->wa.y + root_window->wa.h)
 		r.h = root_window->wa.h - r.y; 
@@ -801,37 +820,39 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		if (r.h < wash)
 		{
 			int mg = MONO ? 2 : 1;
-			XA_WIND_ATTR tp = TOOLBAR|VSLIDE|UPARROW|DNARROW;
+			XA_WIND_ATTR tp = TOOLBAR|VSLIDE|UPARROW|DNARROW|STORE_BACK;
 
 			tab->scroll = true;
 
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, 1, 1, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, 0, 1, 0, r);
 
 			wind = create_window(	tab->lock,
 						do_winmesag, //handle_form_window,
 						do_formwind_msg,
 						tab->client,
-						0, //cfg.menu_locking,	/* yields nolist if locking. */
+						cfg.menu_locking,	/* yields nolist if locking. */
 						tp,
 						created_for_AES|created_for_POPUP,
-						0,1,1,
+						0,1,0,
 						r,
 						&r, NULL);
 		}
 		else
 		{
-			ob_area(obtree, item, &r);
-			r = popup_inside(tab, r);
+			int mg = MONO ? 2 : 1;
+			XA_WIND_ATTR tp = TOOLBAR|STORE_BACK;
+
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, 1, 1, r);
 
 			wind = create_window(	tab->lock,
-						NULL,
-						NULL,
+						do_winmesag, //NULL,
+						do_formwind_msg, //NULL,
 						tab->client,
 						cfg.menu_locking,	/* yields nolist if locking. */
-						TOOLBAR,
+						TOOLBAR|STORE_BACK,
 						created_for_AES|created_for_POPUP,
 						0,			/* no margin and no widgets: completely invisible. */
-						0,0,
+						1,1,
 						r,
 						NULL, NULL);
 		}
@@ -852,19 +873,23 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		}
 		else
 		{
+			DIAG((D_menu, tab->client, "locking pop window %lx + %d", obtree, item));
+			open_window(tab->lock, wind, r);
+#if 0			
 			hidem();
 			form_save(k->border, k->drop, &(k->Mpreserve));
 			DIAG((D_menu, tab->client, "locking pop window %lx + %d", obtree, item));
 			wind->is_open = true;
 			display_window(tab->lock, 71, wind, NULL);
 			showm();
+#endif
 		}
 	}
 	else
 	{
 		DIAGS(("display_popup: wt=%lx, obtree=%lx, item=%d", wt, wt->tree, item));
 
-		ob_area(obtree, item, &r);
+		obj_area(wt, item, &r);
 		r = popup_inside(tab, r);
 #if GENERATE_DIAGS
 		if (!strnicmp(wt->owner->proc_name, "start", 5))
@@ -1016,9 +1041,17 @@ popup(struct task_administration_block *tab)
 
 	if (m < 0)
 	{
-		k->stage = IN_DESK;		/* There is no specific rectangle to target */
-		k->em.flags = MU_MX;		/* report any mouse movement */
-		k->em.t1 = where_are_we;	/* This will sort it out. :-) */
+		if (k->popw)
+		{
+			k->em.flags = MU_MX;
+			k->em.t1 = where_are_we;
+		}
+		else
+		{
+			k->stage = IN_DESK;		/* There is no specific rectangle to target */
+			k->em.flags = MU_MX;		/* report any mouse movement */
+			k->em.t1 = where_are_we;	/* This will sort it out. :-) */
+		}
 	}
 	else if (m == k->pop_item)		/* failsafe  HR 010501: check for pop_item (there could be space between entries) */
 	{
@@ -1070,8 +1103,12 @@ popup(struct task_administration_block *tab)
 			new_wt = at->wt;
 			ob = new_wt->tree;
 			menu_area(&tra, tab, k->point_at_menu);
+
+			DIAG((D_menu, NULL, "popup: attach=%lx, wt=%lx, obtree=%lx",
+				at, new_wt, ob));
+
 			ob->ob_x = 0, ob->ob_y = 0;
-			ob_offset(ob, at->item, &rdx, &rdy);
+			obj_offset(new_wt, at->item, &rdx, &rdy);
 
 			rdx = tra.x - rdx;
 			rdy = tra.y - rdy;
@@ -1189,7 +1226,7 @@ new_title(struct task_administration_block *tab)
 		if (title == k->clicked_title)		/* no change */
 		{
 			k->em.flags = MU_M1|1;		/* fill out rect event data; out of title */
-			ob_area(k->wt->tree, k->clicked_title, &k->em.m1);
+			obj_area(k->wt, k->clicked_title, &k->em.m1);
 			k->em.t1 = where_are_we;
 		}
 		else
@@ -1359,7 +1396,7 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 		/* HR: Use the AES's client structure to register the rectangle for the current menu bar. */
 		titles = obtree[obtree[0].ob_head].ob_head;
 		C.Aes->waiting_for = XAWAIT_MENU;
-		ob_area(obtree, titles, &C.Aes->em.m1);
+		obj_area(wt, titles, &C.Aes->em.m1);
 		C.Aes->em.flags = MU_M1;	/* into menu bar */
 	}
 }
@@ -1489,7 +1526,7 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 		C.menu_nest = 0;
 		tab->ty = k->ty = (wind == root_window ? ROOT_MENU : MENU_BAR);
 		k->stage = IN_TITLE;
-		ob_area(obtree, k->titles, &k->bar);
+		obj_area(wt, k->titles, &k->bar);
 		change_title(tab, 1);
 		obtree[k->menus].ob_flags &= ~OF_HIDETREE;
 		n = obtree[k->menus].ob_head;
@@ -1523,7 +1560,7 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 		display_popup(tab, wt, item, r.x, r.y);
 
 		k->em.flags = MU_M1|1;		/* fill out rect event data; out of title */
-		ob_area(obtree, k->clicked_title, &k->em.m1);
+		obj_area(wt, k->clicked_title, &k->em.m1);
 		k->em.t1 = where_are_we;
 		return true;
 	}
@@ -1630,7 +1667,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	widg->stufftype = STUFF_IS_WT;
 	widg->destruct = free_xawidget_resources;
 	widg->start = obj;
-	if (tab->nest)
+//	if (tab->nest)
 		/* HR testing: Use the window borders. */
 		wt->zen = true;
 

@@ -91,7 +91,7 @@ make_rect_list(struct xa_window *wind, bool swap)
 	DIAGS(("make_rect_list: wind=(%d/%d/%d/%d), nrl=(%d/%d/%d/%d)",
 		wind->r, nrl->r));
 
-	if (nrl && wind->prev)
+	if (nrl && wind->prev && !wind->nolist)
 	{
 		short flag, win_x2, win_y2, our_x2, our_y2;
 		short w, h;

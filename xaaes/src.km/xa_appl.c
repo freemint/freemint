@@ -401,6 +401,12 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		}
 	}
 
+	if (C.menu_base && C.menu_base->client == client)
+	{
+		popout(C.menu_base);
+		C.menu_base = NULL;
+	}
+
 	/* remove any references */
 	{
 		XA_WIDGET *widg = get_menu_widg();

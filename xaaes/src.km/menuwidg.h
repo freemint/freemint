@@ -31,6 +31,7 @@
 #include "xa_types.h"
 
 TASK click_form_popup_entry, click_popup_entry, do_scroll_menu;
+void	popout(Tab *tab);
 void	do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy);
 bool	is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat);
 int	inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
