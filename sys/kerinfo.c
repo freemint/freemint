@@ -66,10 +66,24 @@ static void   _cdecl m_ufree     (void *place) { _ufree (place, "xfs/xdd"); }
 static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
 { return _dmabuf_alloc (size, cm, "xfs/xdd"); }
 
+
+static long _cdecl
+old_kthread_create(void _cdecl (*func)(void *), void *arg,
+		   struct proc **np, const char *fmt, ...)
+{
+	va_list args;
+	long r;
+
+	va_start(args, fmt);
+	r = kthread_create_v(NULL, func, arg, np, fmt, args);
+	va_end(args);
+
+	return r;
+}
+
 /*
  * kernel info that is passed to loaded file systems and device drivers
  */
-
 struct kerinfo kernelinfo =
 {
 	MINT_MAJ_VERSION,
@@ -119,7 +133,7 @@ struct kerinfo kernelinfo =
 	so_free,
 
 	load_modules,
-	kthread_create,
+	old_kthread_create,
 	kthread_exit,
 
 	NULL, /* m_dmabuf_alloc, */

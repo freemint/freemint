@@ -8,6 +8,10 @@
  * Copyright 2001 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,25 +26,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2001-04-24
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
  */
 
 # ifndef _k_kthread_h
 # define _k_kthread_h
 
+# include <stdarg.h>
 # include "mint/mint.h"
 
 struct proc;
 
+long _cdecl kthread_create(struct proc *p, void _cdecl (*func)(void *), void *arg,
+			   struct proc **np, const char *fmt, ...);
 
-long _cdecl kthread_create (void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
-void _cdecl kthread_exit (short code);
+long kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
+		      struct proc **np, const char *fmt, va_list args);
 
+void _cdecl kthread_exit(short code);
 
 # endif /* _k_kthread_h */
