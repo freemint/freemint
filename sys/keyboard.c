@@ -28,6 +28,7 @@
 
 # include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
 
+# include "mint/asm.h"		/* spl7() */
 # include "mint/errno.h"
 # include "mint/mint.h"		/* FATAL() */
 # include "mint/signal.h"	/* SIGQUIT */
@@ -119,10 +120,10 @@ static const uchar mmasks[] =
 };
 
 /* Exported variables */
-short kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
-short kbd_mpixels = 8;		/* mouse pixel steps */
-short kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
-struct cad_def cad[3];		/* for halt, warm and cold resp. */
+short	kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
+short	kbd_mpixels = 8;	/* mouse pixel steps */
+short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
+struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
@@ -644,7 +645,7 @@ output_scancode(PROC *p, long arg)
 /* `scancode' is short, but only low byte matters. The high byte
  * is zeroed by newkeys().
  */
-short
+void
 ikbd_scan (ushort scancode, IOREC_T *rec)
 {
 	ushort mod = 0, clk = 0, x = 0, scan, make;
@@ -655,7 +656,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	 * go according to incomplete keyboard translation tables.
 	 */
 	if (kbd_lock)
-		return -1;
+		return;
 
 # ifdef SCANCODE_TESTING
 	{
@@ -745,7 +746,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 		 * ClrHome and Insert must be handled as other keys.
 		 */
 		if ((scan != CLRHOME) && (scan != INSERT))
-			return -1;
+			return;
 	}
 
 	/* Here we handle keys of `system wide' meaning. These are:
@@ -767,7 +768,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 			kbdclick(scan);
 		}
 
-		return -1;
+		return;
 	}
 # endif
 
@@ -803,11 +804,14 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 						long mora = get_hz_200() - hz_ticks;
 
 						if (mora > CAD_TIMEOUT)
-							return scan;			/* we call TOS here */
+						{
+							spl7();
+							reboot();
+						}
 					}
 				}
 
-				return -1;
+				return;
 			}
 			/* Function keys */
 			case 0x003b ... 0x0044:
@@ -825,7 +829,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 					kbdclick(scan);
 				}
 
-				return -1;
+				return;
 			}
 			/* This is in case the keyboard has real F11-F20 keys on it */
 			case 0x0054 ... 0x005d:
@@ -840,7 +844,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 					kbdclick(scan);
 				}
 
-				return -1;
+				return;
 			}
 		}
 	}
@@ -849,7 +853,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
 	{
 		if (generate_mouse_event(shift, scan, make) == -1)
-			return -1;
+			return;
 	}
 
 	if (shift == MM_ALTERNATE)
@@ -867,7 +871,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 					kbdclick(scan);
 				}
 
-				return -1;
+				return;
 			}
 			/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
 			 */
@@ -902,7 +906,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 					kbdclick(scan);
 				}
 
-				return -1;
+				return;
 			}
 		}
 	}
@@ -919,8 +923,6 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 
 		put_key_into_buf(shift, (uchar)scan, 0, ascii);
 	}
-
-	return -1;			/* don't go to TOS, just return */
 }
 
 /* The XBIOS' Keytbl() function
