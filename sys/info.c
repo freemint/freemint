@@ -337,7 +337,8 @@ const char *MSG_init_menuwarn =
 	"# This file is automatically created,\n"
 	"# do not edit.\n\n"
 ;
-const char *MSG_must_be_auto = "MiNT MUST be executed from the AUTO folder!\r\n";
+const char *MSG_init_must_be_auto = "MiNT MUST be executed from the AUTO folder!\r\n";
+const char *MSG_init_no_mint_folder = "No <boot>/mint or <boot>/mint/%s folder found!\r\n";
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
 const char *MSG_init_delay_loop = "Calibrating delay loop ... ";
 # ifdef VERBOSE_BOOT

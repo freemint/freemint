@@ -161,24 +161,16 @@ static long (*_loads[])(struct basepage *, const char *) =
 };
 
 void
-load_all_modules(const char *curpath, unsigned long mask)
+load_all_modules(unsigned long mask)
 {
 	int i;
 
 	for (i = 0; i < (sizeof(_types) / sizeof(*_types)); i++)
 	{
-		/* set path first to make sure that MiNT's directory matches
-		 * GEMDOS's
-		 */
-		sys_d_setpath(curpath);
-
 		/* load external xdd */
 		if (mask & (1L << i))
 			load_modules(_types [i], _loads [i]);
 	}
-
-	/* reset curpath just to be sure */
-	sys_d_setpath(curpath);
 }
 
 static struct basepage *
