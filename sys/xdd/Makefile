@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = audio flop-raw mfp scc skeleton uart xconout2
+SUBDIRS = audio dsp56k flop-raw mfp scc skeleton uart xconout2
 
 srcdir = .
 top_srcdir = ..
