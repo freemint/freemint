@@ -4,7 +4,8 @@
 HEADER = \
 	 fstring.h \
 	 libkern.h \
-	 xfs_xdd_kernel.h
+	 kernel_module.h \
+	 kernel_xfs_xdd.h
 
 COBJS = \
 	atol.c \
