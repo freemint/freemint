@@ -179,8 +179,13 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 
 	if (try == true)
 	{
-		if (ressource_semaphore_try(&update_lock, locker))
-			return true;
+		if (ressource_semaphore_try(&mouse_lock, locker))
+		{
+			if (ressource_semaphore_try(&update_lock, locker))
+				return true;
+			else
+				ressource_semaphore_free(&mouse_lock);
+		}
 
 		if (ret)
 			*ret = 0;
@@ -188,6 +193,7 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 		return false;
 	}
 
+	ressource_semaphore_lock(&mouse_lock, locker);
 	ressource_semaphore_lock(&update_lock, locker);
 	return true;
 }
@@ -214,7 +220,10 @@ unlock_screen(struct xa_client *client, int which)
 		update_lock.client ? update_lock.client->p->pid : -1));
 
 	if (update_lock.client == locker)
+	{
 		r = ressource_semaphore_rel(&update_lock, locker);
+		r = ressource_semaphore_rel(&mouse_lock, locker);
+	}
 	else
 	{
 		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", locker->p->pid));
@@ -223,7 +232,7 @@ unlock_screen(struct xa_client *client, int which)
 		 * apps looks at update and mouse locks as two indipendant locks..
 		 * So lets try treating them this way...
 		*/
-		r = ressource_semaphore_rel(&update_lock, locker);
+		//r = ressource_semaphore_rel(&update_lock, locker);
 		//ALERT(("unlock_screen from %d without lock_screen!", locker->p->pid));
 	}
 
