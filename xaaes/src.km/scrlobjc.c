@@ -47,7 +47,7 @@ slist_msg_handler(
 	short mp4, short mp5, short mp6, short mp7);
 #endif
 static void
-slist_msg_handler(struct xa_window *wind, struct xa_client *to, short *msg);
+slist_msg_handler(struct xa_window *wind, struct xa_client *to, short amq, short *msg);
 
 static void
 sliders(struct scroll_info *list)
@@ -219,7 +219,9 @@ set_slist_object(enum locks lock,
 		list->max = lmax;
 
 		/* recalc for aligned work area */
+		list->wi->rc = list->wi->r;
 		calc_work_area(list->wi);
+		make_rect_list(list->wi, true);
 	}
 	return list;
 }
@@ -314,6 +316,7 @@ static void
 slist_msg_handler(
 	struct xa_window *wind,
 	struct xa_client *to,
+	short amq,
 	short *msg)
 {
 	enum locks lock = 0;
@@ -465,24 +468,14 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 	case 0x4838:			/* shift + up arrow */
 	{
 		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_UPPAGE,0,0,0 };
-		slist_msg_handler(list->wi, NULL, msg);
-#if 0
-		slist_msg_handler(list->lock, list->wi, NULL,
-					WM_ARROWED, 0, 0, list->wi->handle,
-					WA_UPPAGE,  0, 0, 0);
-#endif
+		slist_msg_handler(list->wi, NULL, AMQ_NORM, msg);
 		return keycode;
 	}
 	case 0x5032:			/* shift + down arrow */
 	case 0x5100:			/* page down */
 	{
 		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_DNPAGE,0,0,0 };
-		slist_msg_handler(list->wi, NULL, msg);
-#if 0
-		slist_msg_handler(list->lock, list->wi, NULL,
-					WM_ARROWED, 0, 0, list->wi->handle,
-					WA_DNPAGE,  0, 0, 0);
-#endif
+		slist_msg_handler(list->wi, NULL, AMQ_NORM, msg);
 		return keycode;
 	}
 	case 0x4700:			/* home */
