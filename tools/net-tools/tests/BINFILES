@@ -1,0 +1,23 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into binary distributions.
+
+BINFILES = \
+	client \
+	dgram \
+	dgramd \
+	hostlookup \
+	oobcl \
+	oobsv \
+	pipes \
+	protolookup \
+	server \
+	servlookup \
+	sockname \
+	sockpair \
+	speed \
+	speed2 \
+	speedd \
+	tcpcl \
+	tcpsv \
+	udpclnt \
+	udpserv
