@@ -509,7 +509,7 @@ load_km(const char *path)
 	{
 		void *ptr;
 
-		FORCE("load_module(%s) ok!", path);
+		FORCE("load_module(%s) ok (bp 0x%lx)!", path, bp);
 
 		ptr = callout_init2((void *) bp->p_tbase, &kentry);
 		if (ptr)
