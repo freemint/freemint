@@ -611,7 +611,7 @@ detach_region_by_addr(struct proc *p, long block)
 	struct memspace *mem = p->p_mem;
 	int i;
 
-	TRACELOW(("detach_region_by_addr %lx by pid %i", p->pid));
+	TRACELOW(("detach_region_by_addr %lx by pid %i", block, p->pid));
 
 	if (!mem || !mem->mem)
 	{
