@@ -552,7 +552,7 @@ HALT (void)
 			if ((r & 0xff) == 's')
 			{
 				debug_ws(MSG_debug_syncing);
-				s_ync();
+				sys_s_ync();
 				debug_ws(MSG_debug_syncdone);
 			}
 		}

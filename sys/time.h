@@ -64,14 +64,14 @@ long _cdecl do_gettimeofday (struct timeval *tv);
 long _cdecl do_settimeofday (struct timeval *tv);
 
 /* GEMDOS */
-long _cdecl t_getdate (void);
-long _cdecl t_setdate (ushort date);
-long _cdecl t_gettime (void);
-long _cdecl t_settime (ushort time);
+long _cdecl sys_t_getdate (void);
+long _cdecl sys_t_setdate (ushort date);
+long _cdecl sys_t_gettime (void);
+long _cdecl sys_t_settime (ushort time);
 
 /* New GEMDOS extensions */
-long _cdecl t_gettimeofday (struct timeval *tv, struct timezone *tz);
-long _cdecl t_settimeofday (struct timeval *tv, struct timezone *tz);
+long _cdecl sys_t_gettimeofday (struct timeval *tv, struct timezone *tz);
+long _cdecl sys_t_settimeofday (struct timeval *tv, struct timezone *tz);
 
 /* XBIOS */
 long _cdecl gettime (void);

@@ -26,7 +26,6 @@
 # include "arch/user_things.h"
 
 # include "bios.h"
-# include "dosmem.h"
 # include "filesys.h"
 # include "init.h"	/* __printf(f) */
 # include "k_exec.h"
@@ -108,7 +107,7 @@ long		change_prot_status (PROC *proc, long start, short newmode);
 /* from realloc.c
  */
 long		realloc_region	(MEMREGION *, long);
-long		_cdecl s_realloc(long);
+long		_cdecl sys_s_realloc(long);
 
 
 short forcefastload = 0;	/* for MINT.CNF keyword */
@@ -171,7 +170,7 @@ init_mem (void)
 	}
 
 	/* make sure the screen is set up properly */
-	newbase = s_realloc (scrnsize);
+	newbase = sys_s_realloc (scrnsize);
 
 	/* if we did get a new screen, point the new screen
 	 * at the right place after copying the data
@@ -2409,7 +2408,7 @@ realloc_region (MEMREGION *reg, long newsize)
 MEMREGION *screen_region = 0;
 
 long _cdecl
-s_realloc (long size)
+sys_s_realloc (long size)
 {
 	long r;
 

@@ -160,7 +160,7 @@ ctrl_alt_del(PROC *p, long arg)
 	{
 		/* 1 is to signal a pid */
 		case 1:
-			if (p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
+			if (sys_p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
 				sys_s_hutdown(arg);
 			break;
 

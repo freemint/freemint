@@ -42,7 +42,7 @@
  */
 
 void	init_crypt_IO		(void);
-long	_cdecl d_setkey		(llong dev, char *key, int cipher);
+long	_cdecl sys_d_setkey	(llong dev, char *key, int cipher);
 
 
 # endif /* _crypt_IO_h */

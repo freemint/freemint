@@ -50,7 +50,7 @@ short disallow_single = 0;
 
 
 long _cdecl
-s_system (int mode, ulong arg1, ulong arg2)
+sys_s_system (int mode, ulong arg1, ulong arg2)
 {
 	ushort isroot = suser (curproc->p_cred->ucr);
 	ulong *lpointer;

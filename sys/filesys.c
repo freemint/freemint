@@ -36,7 +36,6 @@
 
 # include "bios.h"
 # include "dosdir.h"
-# include "dosmem.h"
 # include "info.h"
 # include "ipc_socketdev.h"
 # include "k_fds.h"
@@ -481,7 +480,7 @@ _s_ync (void)
 # endif
 
 long _cdecl
-s_ync (void)
+sys_s_ync (void)
 {
 	FILESYS *fs;
 
@@ -505,7 +504,7 @@ long _cdecl
 sys_fsync (short fh)
 {
 	/* dummy function at the moment */
-	return s_ync ();
+	return sys_s_ync ();
 }
 
 void

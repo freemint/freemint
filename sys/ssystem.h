@@ -60,7 +60,7 @@
 
 
 # ifdef __KERNEL__
-long _cdecl s_system (int mode, ulong arg1, ulong arg2);
+long _cdecl sys_s_system (int mode, ulong arg1, ulong arg2);
 # endif
 
 
