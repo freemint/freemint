@@ -532,19 +532,24 @@ create_window(
 	w->r  = r;
 	w->pr = w->r;
 
+	frame = thinframe;
+#if 0
 	if (!MONO && frame > 0)
 	{
 		if (thinframe < 0)
 			frame = 1;
 	}
+#endif
 
-# if 0
+#if 0
 	/* implement border sizing. */
 	if ((tp & (SIZE|MOVE)) == (SIZE|MOVE))
 #endif
+#if 0
 		if (frame > 0 && thinframe > 0)
 			/* see how well it performs. */
 			frame += thinframe;
+#endif
 
 	w->frame = frame;
 	w->thinwork = thinwork;
@@ -768,7 +773,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 static void
 if_bar(short pnt[4])
 {
-	if ((pnt[2] - pnt[0]) !=0 && (pnt[3] - pnt[1]) != 0)
+	//if ((pnt[2] - pnt[0]) !=0 && (pnt[3] - pnt[1]) != 0)
+	if ((pnt[2] - pnt[0]) >= 0 && (pnt[3] - pnt[1]) >= 0)
 		v_bar(C.vh, pnt);
 }
 
@@ -876,13 +882,14 @@ draw_window(enum locks lock, struct xa_window *wind)
 			{
 				if (wind->frame > 0)
 					gbox(0, &cl);
-				gbox(1, &wa);
+				//gbox(1, &wa);
 			}
 			else
 			{
 				if (wind->thinwork)
 				{
-					gbox(1, &wa);
+					//l_color(6);
+					//gbox(1, &wa);
 				}
 				else
 				{
@@ -907,7 +914,7 @@ draw_window(enum locks lock, struct xa_window *wind)
 			gbox(-2, &wa);
 		}
 #endif
-		if (wind->frame > 0)
+		if (wind->frame >= 0)
 		{
 			shadow_object(0, OS_SHADOWED, &cl, G_BLACK, SHADOW_OFFSET/2);
 
@@ -959,51 +966,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 				widg->display(lock, wind, widg);
 			}
 		}
-#if 0
-		int f;
-		XA_WIDGET *widg;
-		XA_WIDGET *mwidg = get_menu_widg();
-
-		/*
-		 * Ozk: Check for the root-window menuline widget (applications menuline)
-		 * and skip redrawing it here. Call redraw_menu() where appropriate instead. 
-		*/
-		if (wind == root_window)
-		{
-			/* XXX - Ozk: also fix root_window contents (XAW_TOOLBAR) to be redrawn via WM_REDRAWs instead of
-			 *	 directly calling widgets drawer here.
-			 */
-			for (f = 0; f < XA_MAX_WIDGETS; f++)
-			{
-				widg = get_widget(wind, f);
-
-				if (widg != mwidg)
-				{
-					if (widg->display)
-					{
-						DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
-							wind->handle, f, widg->display));
-						widg->display(lock, wind, widg);
-					}
-				}
-				else
-				{
-					DIAG((D_wind, wind->owner, "draw_window %d: (%d) draw menu", wind->handle, f));
-				}
-			}
-		}
-		else
-		{
-			for (f = 0; f < XA_MAX_WIDGETS; f++)
-			{
-				widg = get_widget(wind, f);
-
-				if (widg->type != XAW_TOOLBAR && widg->display)
-						widg->display(lock, wind, widg);
-			}
-		}
-#endif
-
 	}
 
 	showm();
