@@ -279,6 +279,12 @@ sys_b_setexc (int number, long vector)
 		/* validate vector; this will cause a bus error if mem
 		 * protection is on and the current process doesn't have
 		 * access to the memory
+		 *
+		 * XXX fna: this *NOT* the recommended way to terminate a
+		 *          process from kernel
+		 *
+		 *          rewrite to check if the address is inside a
+		 *          memregion of the process
 		 */
 		if (*((long *) vector) == 0xDEADBEEFL)
 			return old;
