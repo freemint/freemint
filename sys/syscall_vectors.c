@@ -1,45 +1,45 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@fremint.de>
  * Started: 1999-10-06
- * 
+ *
  * please send suggestions or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * changes since last version:
- * 
+ *
  * 1999-10-06:
- * 
+ *
  * - first version
- * 
+ *
  * known bugs:
- * 
+ *
  * todo:
- * 
+ *
  */
 
 # include "syscall_vectors.h"
@@ -62,6 +62,7 @@
 # include "k_prot.h"
 # include "k_resource.h"
 # include "k_sysctl.h"
+# include "keyboard.h"
 # include "memory.h"
 # include "proc.h"
 # include "ptrace.h"
@@ -95,7 +96,7 @@ enosys (void)
 /* BEGIN DOS initialization */
 
 /* special Opcodes:
- * 
+ *
  * - 0x16 MagiC-like shared library scheme
  * - 0x17 MagiC-like shared library scheme
  * - 0x33 reserved for MagiC - LONG Sconfig(WORD subfn, LONG flags);
@@ -122,7 +123,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x00d */		NULL,
 	/* 0x00e */		d_setdrv,
 	/* 0x00f */		NULL,
-	
+
 	/* 0x010 */		c_conos,
 	/* 0x011 */		c_prnos,
 	/* 0x012 */		c_auxis,
@@ -139,7 +140,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x01d */		NULL,
 	/* 0x01e */		NULL,
 	/* 0x01f */		NULL,
-	
+
 	/* 0x020 */		s_uper,
 	/* 0x021 */		NULL,
 	/* 0x022 */		NULL,
@@ -156,7 +157,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x02d */	(Func)	t_settime,
 	/* 0x02e */		NULL,
 	/* 0x02f */		f_getdta,
-	
+
 	/* 0x030 */		s_version,
 	/* 0x031 */		sys_ptermres,
 	/* 0x032 */		NULL,
@@ -173,7 +174,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x03d */	(Func)	f_open,
 	/* 0x03e */	(Func)	f_close,
 	/* 0x03f */	(Func)	f_read,
-	
+
 	/* 0x040 */	(Func)	f_write,
 	/* 0x041 */		f_delete,
 	/* 0x042 */	(Func)	f_seek,
@@ -190,7 +191,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x04d */		NULL,
 	/* 0x04e */		f_sfirst,
 	/* 0x04f */		f_snext,
-	
+
 	/* 0x050 */		NULL,
 	/* 0x051 */		NULL,
 	/* 0x052 */		NULL,
@@ -207,7 +208,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x05d */		NULL,
 	/* 0x05e */		NULL,
 	/* 0x05f */		NULL,
-	
+
 	/* 0x060 */		NULL,
 	/* 0x061 */		NULL,
 	/* 0x062 */		NULL,
@@ -224,7 +225,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x06d */		NULL,
 	/* 0x06e */		NULL,
 	/* 0x06f */		NULL,
-	
+
 	/* 0x070 */		NULL,
 	/* 0x071 */		NULL,
 	/* 0x072 */		NULL,
@@ -241,7 +242,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x07d */		NULL,
 	/* 0x07e */		NULL,
 	/* 0x07f */		NULL,
-	
+
 	/* 0x080 */		NULL,
 	/* 0x081 */		NULL,
 	/* 0x082 */		NULL,
@@ -258,7 +259,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x08d */		NULL,
 	/* 0x08e */		NULL,
 	/* 0x08f */		NULL,
-	
+
 	/* 0x090 */		NULL,
 	/* 0x091 */		NULL,
 	/* 0x092 */		NULL,
@@ -275,7 +276,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x09d */		NULL,
 	/* 0x09e */		NULL,
 	/* 0x09f */		NULL,
-	
+
 	/* 0x0a0 */		NULL,
 	/* 0x0a1 */		NULL,
 	/* 0x0a2 */		NULL,
@@ -292,7 +293,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0ad */		NULL,
 	/* 0x0ae */		NULL,
 	/* 0x0af */		NULL,
-	
+
 	/* 0x0b0 */		NULL,
 	/* 0x0b1 */		NULL,
 	/* 0x0b2 */		NULL,
@@ -309,7 +310,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0bd */		NULL,
 	/* 0x0be */		NULL,
 	/* 0x0bf */		NULL,
-	
+
 	/* 0x0c0 */		NULL,
 	/* 0x0c1 */		NULL,
 	/* 0x0c2 */		NULL,
@@ -326,7 +327,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0cd */		NULL,
 	/* 0x0ce */		NULL,
 	/* 0x0cf */		NULL,
-	
+
 	/* 0x0d0 */		NULL,
 	/* 0x0d1 */		NULL,
 	/* 0x0d2 */		NULL,
@@ -343,7 +344,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0dd */		NULL,
 	/* 0x0de */		NULL,
 	/* 0x0df */		NULL,
-	
+
 	/* 0x0e0 */		NULL,
 	/* 0x0e1 */		NULL,
 	/* 0x0e2 */		NULL,
@@ -360,7 +361,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0ed */		NULL,
 	/* 0x0ee */		NULL,
 	/* 0x0ef */		NULL,
-	
+
 	/* 0x0f0 */		NULL,
 	/* 0x0f1 */		NULL,
 	/* 0x0f2 */		NULL,
@@ -376,13 +377,13 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0fc */		NULL,
 	/* 0x0fd */		NULL,
 	/* 0x0fe */		NULL,
-	
+
 	/*
 	 * MiNT extensions to GEMDOS
 	 */
-	
+
 	/* 0x0ff */		s_yield,
-	
+
 	/* 0x100 */		sys_pipe,
 	/* 0x101 */	(Func)	f_fchown,	/* 1.15.2  */
 	/* 0x102 */	(Func)	f_fchmod,	/* 1.15.2  */
@@ -399,7 +400,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x10d */		p_getpgrp,
 	/* 0x10e */	(Func)	p_setpgrp,
 	/* 0x10f */		sys_pgetuid,
-	
+
 	/* 0x110 */	(Func)	sys_psetuid,
 	/* 0x111 */	(Func)	p_kill,
 	/* 0x112 */	(Func)	p_signal,
@@ -416,7 +417,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x11d */	(Func)	f_select,
 	/* 0x11e */		sys_prusage,
 	/* 0x11f */	(Func)	sys_psetlimit,
-	
+
 	/* 0x120 */		t_alarm,
 	/* 0x121 */		p_pause,
 	/* 0x122 */	(Func)	s_ysconf,
@@ -433,7 +434,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x12d */		f_link,
 	/* 0x12e */		f_symlink,
 	/* 0x12f */		f_readlink,
-	
+
 	/* 0x130 */		d_cntl,
 	/* 0x131 */		f_chown,
 	/* 0x132 */		f_chmod,
@@ -450,7 +451,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x13d */		t_malarm,
 	/* 0x13e */	(Func)	sys_psigintr,
 	/* 0x13f */		s_uptime,
-	
+
 	/* 0x140 */	(Func)	p_trace,	/* 1.15.11 */
 	/* 0x141 */		sys_m_validate,	/* 1.15.11 */
 	/* 0x142 */		d_xreaddir,
@@ -467,7 +468,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x14d */		d_setkey,	/* 1.15.4  */
  	/* 0x14e */	(Func)	sys_psetreuid,
  	/* 0x14f */	(Func)	sys_psetregid,
- 	
+
 	/* 0x150 */		s_ync,
 	/* 0x151 */		s_hutdown,
 	/* 0x152 */		d_readlabel,
@@ -484,7 +485,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x15d */	(Func)	sys_ffstat,	/* 1.16 */
 	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.15.11 */
 	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
-	
+
 	/* 0x160 */	(Func)	sys_socket,	/* 1.16 */
 	/* 0x161 */	(Func)	sys_socketpair,	/* 1.16 */
 	/* 0x162 */	(Func)	sys_accept,	/* 1.16 */
@@ -501,7 +502,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x16d */	(Func)	sys_getsockname,/* 1.16 */
 	/* 0x16e */	(Func)	sys_shutdown,	/* 1.16 */
 	/* 0x16f */		enosys,		/* reserved */
-	
+
 	/* 0x170 */		sys_p_shmget,
 	/* 0x171 */		sys_p_shmctl,
 	/* 0x172 */	(Func)	sys_p_shmat,
@@ -518,7 +519,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x17d */		sys_m_access,	/* 1.15.12 */
 	/* 0x17e */		enosys,		/* sys_mmap */
 	/* 0x17f */		enosys,		/* sys_munmap */
-	
+
 	/* 0x180 */		/* DOS_MAX */
 };
 
@@ -560,7 +561,7 @@ Func bios_tab [BIOS_MAX] =
 	/* 0x00d */		NULL,
 	/* 0x00e */		NULL,
 	/* 0x00f */		NULL,
-	
+
 	/* 0x010 */		NULL,
 	/* 0x011 */		NULL,
 	/* 0x012 */		NULL,
@@ -577,7 +578,7 @@ Func bios_tab [BIOS_MAX] =
 	/* 0x01d */		NULL,
 	/* 0x01e */		NULL,
 	/* 0x01f */		NULL,
-	
+
 	/* 0x020 */		/* BIOS_MAX */
 };
 
@@ -589,7 +590,7 @@ void
 init_bios (void)
 {
 	keyrec = (IOREC_T *) Iorec (1);
-	
+
 	init_bdevmap ();
 }
 
@@ -620,7 +621,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x00d */		NULL,
 	/* 0x00e */		uiorec,
 	/* 0x00f */		ursconf,
-	
+
 	/* 0x010 */		NULL,
 	/* 0x011 */		random,
 	/* 0x012 */		NULL,
@@ -629,7 +630,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x015 */		cursconf,
 	/* 0x016 */	(Func)	settime,
 	/* 0x017 */		gettime,
-	/* 0x018 */		NULL,
+	/* 0x018 */		bioskeys,
 	/* 0x019 */		NULL,
 	/* 0x01a */		NULL,
 	/* 0x01b */		NULL,
@@ -637,7 +638,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x01d */		NULL,
 	/* 0x01e */		NULL,
 	/* 0x01f */		NULL,
-	
+
 	/* 0x020 */		dosound,
 	/* 0x021 */		NULL,
 	/* 0x022 */		NULL,
@@ -654,7 +655,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x02d */		NULL,
 	/* 0x02e */		NULL,
 	/* 0x02f */		NULL,
-	
+
 	/* 0x030 */		NULL,
 	/* 0x031 */		NULL,
 	/* 0x032 */		NULL,
@@ -671,7 +672,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x03d */		NULL,
 	/* 0x03e */		NULL,
 	/* 0x03f */		NULL,
-	
+
 	/* 0x040 */		NULL,
 	/* 0x041 */		NULL,
 	/* 0x042 */		NULL,
@@ -688,7 +689,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x04d */		NULL,
 	/* 0x04e */		NULL,
 	/* 0x04f */		NULL,
-	
+
 	/* 0x050 */		NULL,
 	/* 0x051 */		NULL,
 	/* 0x052 */		NULL,
@@ -705,7 +706,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x05d */		NULL,
 	/* 0x05e */		NULL,
 	/* 0x05f */		NULL,
-	
+
 	/* 0x060 */		NULL,
 	/* 0x061 */		NULL,
 	/* 0x062 */		NULL,
@@ -722,7 +723,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x06d */		NULL,
 	/* 0x06e */		NULL,
 	/* 0x06f */		NULL,
-	
+
 	/* 0x070 */		NULL,
 	/* 0x071 */		NULL,
 	/* 0x072 */		NULL,
@@ -739,7 +740,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x07d */		NULL,
 	/* 0x07e */		NULL,
 	/* 0x07f */		NULL
-	
+
 	/* 0x080 */		/* XBIOS_MAX */
 };
 
