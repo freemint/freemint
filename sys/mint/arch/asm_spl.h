@@ -34,6 +34,16 @@
 # ifndef _mint_m68k_asm_spl_h
 # define _mint_m68k_asm_spl_h
 
+/* Called inside sleep() in proc.c */
+
+static inline void
+low_power_stop (void)
+{
+	__asm__ volatile
+	(
+		"stop  #0x2000"
+	);
+}
 
 static inline __u16
 splhigh (void)
