@@ -483,6 +483,13 @@ s_ync (void)
 	return 0;
 }
 
+long _cdecl
+sys_fsync (int fh)
+{
+	/* dummy function at the moment */
+	return s_ync ();
+}
+
 /*
  * load file systems from disk
  * this routine is called after process 0 is set up, but before any user
