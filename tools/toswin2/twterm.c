@@ -285,8 +285,8 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 2: /* Designate USASCII for character 
 				   sets G0-G3 (DECANM), and set VT100
 				   mode.  */
-				tw->curr_tflags &= ~(TCSG|TCSGS);
-				tw->curr_cattr |= ~CLINEDRAW;
+				memcpy (tw->gsets, "BBBB", 
+					sizeof tw->gsets);
 				break;
 			case 3:	/* 132 column mode (DECCOLM).  */
 				/* The original VT100
@@ -763,22 +763,21 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		/* Not yet implemented.  */
 		/* If CSI Ps ; Ps ; Ps ; Ps ; Ps T then mouse 
 		   tracking is requested.  */
-		count = 0;
-		do {
-			ei = popescbuf (tw, tw->escbuf);
-			++count;
-		} while (ei >= 0);
 		break;
 	case 'X':		/* Erase Ps character(s) (default = 1)
 				   (ECH).  */
+		count = popescbuf (tw, tw->escbuf);
+		ei = tw->cx;
+		do {
+			paint (tw, ' ');
+			--count;
+			++tw->cx;
+		} while (tw->cx < tw->maxx && count > 1);
+		tw->cx = ei;
+		break;
 	case 'Z':		/* Cursor Backward Tabulation Ps tab 
 				   stops (default = 1) (CBT).  */
 		/* Not yet implemented.  */
-		count = 0;
-		do {
-			ei = popescbuf (tw, tw->escbuf);
-			++count;
-		} while (ei >= 0);
 		break;
 	case '`':		/* Character Position Absolute [column]
 				   (default = [row,1]) (HPA).  */
@@ -1178,10 +1177,7 @@ vt100_esc_codeset (TEXTWIN* tw, unsigned int c)
 }
 
 /* vt100_esc_charset (tw, c): handle control sequences ESC '(',
-   ESC ')', ESC '*', or ESC '+'.  
-   
-   We only treat character set G1 with opcode '0' special
-   (enable line drawing mode).  */
+   ESC ')', ESC '*', or ESC '+'.  */  
 static void
 vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 {
@@ -1212,8 +1208,6 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 		return;
 	case '0':		/* DEC Special Character and Line
 				   Drawing Set.  */
-		tw->curr_tflags |= TCSGS;
-		break;
 	case 'A':		/* United Kingdom (UK).  */
 	case 'B':		/* United States (USASCII).  */
 	case '4':		/* Dutch.  */
@@ -1227,29 +1221,42 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 	case '6':		/* Norwegian/Danish.  */
 	case 'Z':		/* Spanish.  */
 	case 'H':		/* Swedish.  */
-	case '7':		/* Swedish.  */
+	case '7':		/* Spanish.  */
 	case '=':		/* Swiss.  */
-		tw->curr_tflags &= ~TCSGS;
 		break;
 	default:
 #ifdef DEBUG_VT
 		debug ("vt100_esc_codeset: unknown %c\n", c);
 #endif
-		break;
+		tw->output = vt100_putch;
+		return;
 	}
 
 	/* Get first designator.  */
-	g = popescbuf (tw, tw->escbuf);	
-	if (g == ')')
-		tw->curr_tflags |= TCSG;
-	else
-		tw->curr_tflags &= ~TCSG;
+	g = tw->escbuf[0];
+	tw->curr_tflags &= ~TCHARSET_MASK;
+	switch (g) {
+	case '(':
+		g = 0;
+		break;
+	case ')':
+		g = 1;
+		break;
+	case '*':
+		g = 2;
+		break;
+	case '+':
+		g = 3;
+		break;
+	default:
+#ifdef DEBUG_VT
+		debug ("vt100_esc_codeset: unknown Gn %c\n", c);
+#endif
+		tw->output = vt100_putch;
+		return;
+	}
 	
-	if ((tw->curr_tflags & TCSG) && (tw->curr_tflags & TCSGS))
-		tw->curr_cattr |= CLINEDRAW;
-	else
-		tw->curr_cattr &= ~CLINEDRAW;
-		
+	tw->gsets[g] = c;
 	tw->output = vt100_putch;
 }
 
@@ -1479,9 +1486,10 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		tw->scroll_top = tw->miny;
 		break;
 	case 'n':		/* Invoke the G2 Character Set (LS2).  */
+		tw->curr_tflags = (tw->curr_tflags & ~TCHARSET_MASK) | 2;
+		break;
 	case 'o':		/* Invoke the G3 Character Set (LS3).  */
-		tw->curr_tflags &= ~TCSG;
-		tw->curr_cattr &= ~CLINEDRAW;
+		tw->curr_tflags = (tw->curr_tflags & ~TCHARSET_MASK) | 3;
 		break;
 	case 'p':		/* reverse video on */
 		tw->curr_cattr |= CINVERSE;
@@ -1630,18 +1638,15 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 		case '\016':	/* Shift Out (SO) (Ctrl-N) -> Switch 
 				   to Alternate Character Set.  
 				   Invokes the G1 character set.  */
-			tw->curr_tflags |= TCSG;
-			if (tw->curr_tflags & TCSGS)
-				tw->curr_cattr |= CLINEDRAW;
-			else
-				tw->curr_cattr &= ~CLINEDRAW;
+			tw->curr_tflags = 
+				(tw->curr_tflags & ~TCHARSET_MASK) | 1;
 			break;
 
 		case '\017':	/* Shift In (SI) (Ctrl-O) -> Switch 
 				   to Standard Character Set.  
 				   Invokes the G0 character set.  */
-			tw->curr_tflags &= ~TCSG;
-			tw->curr_cattr &= ~CLINEDRAW;
+			tw->curr_tflags = 
+				(tw->curr_tflags & ~TCHARSET_MASK);
 			break;
 
 		case '\033':	/* ESC */
