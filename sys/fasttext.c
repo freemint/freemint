@@ -18,6 +18,7 @@
 
 # include "bios.h"
 # include "dev-null.h"
+# include "info.h"
 # include "kmemory.h"
 # include "time.h"
 
@@ -158,7 +159,7 @@ fasttext_init(void)
 	scrnsize = (v->maxy+1)*(long)linelen;
 	rowoff = kmalloc((long)((v->maxy+1) * sizeof(long)));
 	if (rowoff == 0) {
-		FATAL("Insufficient memory for screen offset table!");
+		FATAL(ERR_ftxt_insuff_mem_for_table);
 	} else {
 		long off, *lptr = (long *)rowoff;
 		for (i=0, off=0; i<=v->maxy; i++) {
@@ -176,7 +177,7 @@ fasttext_init(void)
 					   & 0xffffff00L);
 
 		if (hardbase == 0) {
-			ALERT("Insufficient memory for hardware scrolling!");
+			ALERT(MSG_ftxt_insuff_mem_for_scroll);
 		} else {
 			v->curstimer = 0x7f;
 			quickmove(hardbase, base, scrnsize);
