@@ -1576,7 +1576,7 @@ d_lock (int mode, int _dev)
 		if (dlockproc[dev] == curproc)
 		{
 			dlockproc[dev] = 0;
-			changedrv (dev);
+			/* changedrv (dev); */
 			return E_OK;
 		}
 		DEBUG (("Dlock: no such lock"));
