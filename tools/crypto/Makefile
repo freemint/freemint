@@ -3,58 +3,32 @@
 #
 TARGET = crypto
 
-CC = gcc -pipe
-DEFINITIONS = 
-WARN = -Wall -Wmissing-prototypes -Winline
-OPT = -fomit-frame-pointer -O2
-CFLAGS = $(MODEL) $(OPT) $(DEFINITIONS) $(WARN)
-RANLIB = ranlib
-CRLF = crlf -s
+SHELL = /bin/sh
+SUBDIRS = 
 
-#
-# C source files
-#
-%.o: %.c
-	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
-	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
+srcdir = .
+top_srcdir = ..
+subdir = crypto
 
-#
-# files
-#
-CFILES = \
-	blowfish.c \
-	crypt.c \
-	io.c \
-	main.c \
-	md5.c \
-	xhdi.c
+default: all
 
-OBJS =	$(CFILES:.c=.o)
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
 
-DEPENDENCIES = $(addprefix ./.deps/, $(patsubst %.c,%.P,$(CFILES)))
+all-here: $(TARGET)
 
-#
-# main target
-#
-$(TARGET): $(OBJS)
+# default overwrites
+INCLUDES = -I$(top_srcdir)/IO
+
+# default definitions
+OBJS = $(COBJS:.c=.o)
+LIBS += $(LIBIO)
+GENFILES = $(TARGET)
+
+$(TARGET): $(OBJS) $(LIBIOSTMP)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+	$(STRIP) $@
 
 
-#
-# macros for cleaning up
-#
-clean:
-	$(RM) $(OBJS) $(TARGET)
-
-distclean:
-	$(MAKE) clean
-	$(RM) -r .deps
-	$(RM) *~
-
-
-#
-# dependencies
-#
-DEPS_MAGIC := $(shell mkdir ./.deps > /dev/null 2>&1 || :)
-
--include $(DEPENDENCIES)
+include $(top_srcdir)/DEPENDENCIES

@@ -207,7 +207,7 @@ _my_open (const char *_dev, int iomode)
 		return -1;
 	}
 	
-# if 1
+# if 0
 	printf ("Information about %c:\n", 'A'+dev);
 	printf ("---------------------\n");
 	printf ("XHDI major number : %d\n", xhdi_major);
@@ -215,9 +215,6 @@ _my_open (const char *_dev, int iomode)
 	printf ("length            : %lu sectors\n", xhdi_sectors);
 	printf ("sector size       : %lu bytes\n", xhdi_ssize);
 	printf ("\n");
-	
-	if (xhdi_sectors == 2097152)
-		xhdi_sectors *= 10;
 # endif
 	
 	/* mark as open */
@@ -1306,10 +1303,8 @@ partitions_ok (struct disk_desc *z)
 			}
 		}
 	}
-
-	/* At most one chain of DOS extended partitions ?
-	 * It seems that the OS/2 fdisk has the additional requirement
-	 * that the extended partition must be the fourth one
+	
+	/* Exact one chain of XGM extended partitions ?
 	 */
 	{
 		int ect = 0;
@@ -1326,10 +1321,7 @@ partitions_ok (struct disk_desc *z)
 		}
 	}
 	
-	/* Usually, one can boot only from primary partitions.
-	 * In fact, from a unique one only.
-	 * do not warn about bootable extended partitions -
-	 * often LILO is there
+	/*
 	 */
 	{
 		int pno = -1;
@@ -1485,7 +1477,7 @@ tos_partition (char *dev, int fd, ulong start, struct disk_desc *z)
 			if (!xgm)
 				xgm = 1;
 			else
-				printf ("strange..., more than one xgm partition found?\n");
+				printf ("strange..., more than one XGM partition chain?\n");
 			
 			if (!partitions[i].size)
 			{
@@ -1554,48 +1546,40 @@ write_partitions (char *dev, int fd, struct disk_desc *z)
 	return 1;
 }
 
-# if 0
 /*
  *  F. The standard input
  */
 
 /*
  * Input format:
- * <start> <size> <type> <bootable> <c,h,s> <c,h,s>
+ * <start> <size> <type> <bootable>
  * Fields are separated by whitespace or comma or semicolon possibly
  * followed by whitespace; initial and trailing whitespace is ignored.
  * Numbers can be octal, decimal or hexadecimal, decimal is default
- * The <c,h,s> parts can (and probably should) be omitted.
  * Bootable is specified as [*|-], with as default not-bootable.
- * Type is given in hex, without the 0x prefix, or is [E|S|L|X], where
- * L (LINUX_NATIVE (83)) is the default, S is LINUX_SWAP (82), and E
- * is EXTENDED_PARTITION (5), X is LINUX_EXTENDED (85).
- * The default value of start is the first nonassigned sector/cylinder/...
+ * Type is given in ASCII.
+ * The default value of start is the first nonassigned sector
  * The default value of size is as much as possible (until next
  * partition or end-of-disk).
- * .: end of chain of extended partitions.
- *
+ * 
  * On interactive input an empty line means: all defaults.
  * Otherwise empty lines are ignored.
  */
 
-int eof, eob;
+static int eof, eob;
 
-struct dumpfld {
+static struct dumpfld
+{
     int fldno;
     char *fldname;
     int is_bool;
-} dumpflds[] = {
-    { 0, "start", 0 },
-    { 1, "size", 0 },
-    { 2, "Id", 0 },
-    { 3, "bootable", 1 },
-    { 4, "bh", 0 },
-    { 5, "bs", 0 },
-    { 6, "bc", 0 },
-    { 7, "eh", 0 },
-    { 8, "es", 0 },
-    { 9, "ec", 0 }
+}
+dumpflds[] =
+{
+	{ 0, "start", 0 },
+	{ 1, "size", 0 },
+	{ 2, "Id", 0 },
+	{ 3, "bootable", 1 }
 };
 
 /*
@@ -1604,120 +1588,152 @@ struct dumpfld {
  * (some primitive handwork, but a more elaborate parser seems
  *  unnecessary)
  */
-#define RD_EOF (-1)
-#define RD_CMD (-2)
+# define RD_EOF	(-1)
+# define RD_CMD	(-2)
 
-int
-read_stdin(unsigned char **fields, unsigned char *line, int fieldssize, int linesize) {
-    unsigned char *lp, *ip;
-    int c, fno;
-
-    /* boolean true and empty string at start */
-    line[0] = '*';
-    line[1] = 0;
-    for (fno=0; fno < fieldssize; fno++)
-      fields[fno] = line + 1;
-    fno = 0;
-
-    /* read a line from stdin */
-    lp = fgets(line+2, linesize, stdin);
-    if (lp == NULL) {
-	eof = 1;
-	return RD_EOF;
-    }
-    if (!(lp = index(lp, '\n')))
-      fatal("long or incomplete input line - quitting\n");
-    *lp = 0;
-
-    /* remove comments, if any */
-    if ((lp = index(line+2, '#')) != 0)
-      *lp = 0;
-
-    /* recognize a few commands - to be expanded */
-    if (!strcmp(line+2, "unit: sectors")) {
-	specified_format = F_SECTOR;
-	return RD_CMD;
-    }
-
-    /* dump style? - then bad input is fatal */
-    if ((ip = index(line+2, ':')) != 0) {
-	struct dumpfld *d;
-
-      nxtfld:
-	    ip++;
-	    while(isspace(*ip))
-	      ip++;
-	    if (*ip == 0)
-	      return fno;
-	    for(d = dumpflds; d-dumpflds < SIZE(dumpflds); d++) {
-		if(!strncmp(ip, d->fldname, strlen(d->fldname))) {
-		    ip += strlen(d->fldname);
-		    while(isspace(*ip))
-		      ip++;
-		    if (d->is_bool)
-			fields[d->fldno] = line;
-		    else if (*ip == '=') {
-			while(isspace(*++ip)) ;
-			fields[d->fldno] = ip;
-			while(isalnum(*ip)) 	/* 0x07FF */
-			  ip++;
-		    } else
-		      fatal("input error: `=' expected after %s field\n",
-			    d->fldname);
-		    if (fno <= d->fldno)
-		      fno = d->fldno + 1;
-		    if(*ip == 0)
-		      return fno;
-		    if(*ip != ',' && *ip != ';')
-		      fatal("input error: unexpected character %c after %s field\n",
-			    *ip, d->fldname);
-		    *ip = 0;
-		    goto nxtfld;
+static int
+read_stdin (uchar **fields, uchar *line, int fieldssize, int linesize)
+{
+	uchar *lp, *ip;
+	int c, fno;
+	
+	/* boolean true and empty string at start */
+	line[0] = '*';
+	line[1] = 0;
+	for (fno = 0; fno < fieldssize; fno++)
+		fields[fno] = line + 1;
+	fno = 0;
+	
+	/* read a line from stdin */
+	lp = fgets (line+2, linesize, stdin);
+	if (!lp)
+	{
+		eof = 1;
+		return RD_EOF;
+	}
+	
+	lp = index (lp, '\n');
+	if (!lp)
+		fatal ("long or incomplete input line - quitting\n");
+	
+	*lp = 0;
+	
+	/* remove comments, if any */
+	lp = index (line+2, '#');
+	if (lp) *lp = 0;
+	
+	/* recognize a few commands - to be expanded */
+	if (!strcmp (line+2, "unit: sectors"))
+	{
+		specified_format = F_SECTOR;
+		return RD_CMD;
+	}
+	
+	/* dump style? - then bad input is fatal */
+	ip = index (line+2, ':');
+	if (ip)
+	{
+		struct dumpfld *d;
+		
+nxtfld:
+		ip++;
+		while (isspace (*ip))
+			ip++;
+		
+		if (*ip == 0)
+			return fno;
+		
+		for (d = dumpflds; d-dumpflds < SIZE (dumpflds); d++)
+		{
+			if (!strncmp (ip, d->fldname, strlen (d->fldname)))
+			{
+				ip += strlen (d->fldname);
+				
+				while (isspace (*ip))
+					ip++;
+				
+				if (d->is_bool)
+					fields[d->fldno] = line;
+				else if (*ip == '=')
+				{
+					while (isspace (*++ip))
+						;
+					
+					fields[d->fldno] = ip;
+					while (isalnum (*ip)) 	/* 0x07FF */
+						ip++;
+				}
+				else
+					fatal ("input error: `=' expected after %s field\n", d->fldname);
+				
+				if (fno <= d->fldno)
+					fno = d->fldno + 1;
+				if (*ip == 0)
+					return fno;
+				if (*ip != ',' && *ip != ';')
+					fatal ("input error: unexpected character %c after %s field\n", *ip, d->fldname);
+				*ip = 0;
+				goto nxtfld;
+			}
 		}
-	    }
-	    fatal("unrecognized input: %s\n", ip);
-    }
-
-    /* split line into fields */
-    lp = ip = line+2;
-    fields[fno++] = lp;
-    while((c = *ip++) != 0) {
-	if (!lp[-1] && (c == '\t' || c == ' '))
-	  ;
-	else if (c == '\t' || c == ' ' || c == ',' || c == ';') {
-	    *lp++ = 0;
-	    if (fno < fieldssize)
-		fields[fno++] = lp;
-	    continue;
-	} else
-	  *lp++ = c;
-    }
-
-    if (lp == fields[fno-1])
-      fno--;
-    return fno;
+		
+		fatal ("unrecognized input: %s\n", ip);
+	}
+	
+	/* split line into fields */
+	lp = ip = line+2;
+	fields[fno++] = lp;
+	while ((c = *ip++) != 0)
+	{
+		if (!lp[-1] && (c == '\t' || c == ' '))
+			;
+		else if (c == '\t' || c == ' ' || c == ',' || c == ';')
+		{
+			*lp++ = 0;
+			if (fno < fieldssize)
+				fields[fno++] = lp;
+			continue;
+		}
+		else
+			*lp++ = c;
+	}
+	
+	if (lp == fields[fno-1])
+		fno--;
+	
+	return fno;
 }
 
 /* read a number, use default if absent */
-int
-get_ul(char *u, ulong *up, ulong def, int base) {
-    char *nu;
-
-    if (*u) {
-	errno = 0;
-	*up = strtoul(u, &nu, base);
-	if (errno == ERANGE) {
-	    printf("number too big\n");
-	    return -1;
+static int
+get_ul (char *u, ulong *up, ulong def, int base)
+{
+	char *nu;
+	
+	if (*u)
+	{
+		errno = 0;
+		
+		*up = strtoul (u, &nu, base);
+		if (errno == ERANGE)
+		{
+			printf ("number too big\n");
+			return -1;
+		}
+		
+		if (*nu)
+		{
+			printf ("trailing junk after number\n");
+			return -1;
+		}
 	}
-	if (*nu) {
-	    printf("trailing junk after number\n");
-	    return -1;
-	}
-    } else
-      *up = def;
-    return 0;
+	else
+		*up = def;
+	
+	return 0;
 }
+
+# if 0
 
 /* There are two common ways to structure extended partitions:
    as nested boxes, and as a chain. Sometimes the partitions
@@ -1780,71 +1796,84 @@ first_free(int pno, int is_xgm, struct part_desc *ep, int format,
 }
 
 /* find the default value for <size> - assuming entire units */
-ulong
-max_length(int pno, int is_xgm, struct part_desc *ep, int format,
-	   ulong start, struct disk_desc *z) {
-    ulong fu;
-    ulong unit = unitsize(format);
-    struct part_desc *partitions = &(z->partitions[0]), *pp = 0;
-
-    /* if containing ep undefined, look at its container */
-    if (ep && ep->p.sys_type == EMPTY_PARTITION)
-      ep = ep->ep;
-
-    if (ep) {
-	if (boxes == NESTED || (boxes == CHAINED && !is_xgm))
-	  pp = ep;
-	else if (all_logicals_inside_outermost_extended)
-	  pp = outer_extended_partition(ep);
-    }
-    fu = pp ? (pp->start + pp->size) / unit : get_disksize(format);
-    for(pp = partitions; pp < partitions+pno; pp++)
-      if (!is_parent(pp, ep) && pp->size > 0
-	  && pp->start / unit >= start && pp->start / unit < fu)
-	fu = pp->start / unit;
-
-    return (fu > start) ? fu - start : 0;
+static ulong
+max_length (int pno, int is_xgm, struct part_desc *ep, int format,
+		ulong start, struct disk_desc *z)
+{
+	ulong fu;
+	ulong unit = unitsize(format);
+	struct part_desc *partitions = &(z->partitions[0]), *pp = 0;
+	
+	/* if containing ep undefined, look at its container */
+	if (ep && ep->p.sys_type == EMPTY_PARTITION)
+		ep = ep->ep;
+	
+	if (ep)
+	{
+		if (boxes == NESTED || (boxes == CHAINED && !is_xgm))
+			pp = ep;
+		else if (all_logicals_inside_outermost_extended)
+			pp = outer_extended_partition (ep);
+	}
+	
+	fu = pp ? (pp->start + pp->size) / unit : get_disksize (format);
+	for (pp = partitions; pp < partitions+pno; pp++)
+	{
+		if (!is_parent(pp, ep) && pp->size > 0
+			&& pp->start / unit >= start && pp->start / unit < fu)
+		{
+			fu = pp->start / unit;
+		}
+	}
+	
+	return (fu > start) ? fu - start : 0;
 }
 
 /* compute starting sector of a partition inside an extended one */
 /* ep is 0 or points to surrounding extended partition */
-int
-compute_start_sect(struct part_desc *p, struct part_desc *ep) {
-    ulong base;
-    int inc = (DOS && sectors) ? sectors : 1;
-    int delta;
-
-    if (ep && p->start + p->size >= ep->start + 1)
-      delta = p->start - ep->start - inc;
-    else if (p->start == 0 && p->size > 0)
-      delta = -inc;
-    else
-      delta = 0;
-    if (delta < 0) {
-	p->start -= delta;
-	p->size += delta;
-	if (is_xgm(p->p.sys_type) && boxes == ONESECTOR)
-	  p->size = inc;
-	else if ((int)(p->size) <= 0) {
-	    warn("no room for partition descriptor\n");
-	    return 0;
+static int
+compute_start_sect (struct part_desc *p, struct part_desc *ep)
+{
+	ulong base;
+	int inc = (DOS && sectors) ? sectors : 1;
+	int delta;
+	
+	if (ep && p->start + p->size >= ep->start + 1)
+		delta = p->start - ep->start - inc;
+	else if (p->start == 0 && p->size > 0)
+		delta = -inc;
+	else
+		delta = 0;
+	
+	if (delta < 0)
+	{
+		p->start -= delta;
+		p->size += delta;
+		if (is_xgm (p->p.sys_type) && boxes == ONESECTOR)
+			p->size = inc;
+		else if ((int)(p->size) <= 0)
+		{
+			warn ("no room for partition descriptor\n");
+			return 0;
+		}
 	}
-    }
-    base = (!ep ? 0
-	        : (is_xgm(p->p.sys_type) ?
-		   outer_extended_partition(ep) : ep)->start);
-    p->ep = ep;
-    if (p->p.sys_type == EMPTY_PARTITION && p->size == 0) {
-        p->p.start_sect = 0;
-	put_begin_chs (&p->p, zero_chs);
-	put_end_chs (&p->p, zero_chs);
-    } else {
-        p->p.start_sect = be2cpu32 (p->start - base);
-	put_begin_chs (&p->p, ulong_to_chs(p->start));
-	put_end_chs (&p->p, ulong_to_chs(p->start + p->size - 1));
-    }
-    p->p.nr_sects = be2cpu32 (p->size);
-    return 1;
+	
+	base = (!ep ? 0
+	        : (is_xgm (p->p.id) ?
+		   outer_extended_partition (ep) : ep)->start);
+	
+	p->ep = ep;
+	if (p->p.sys_type == EMPTY_PARTITION && p->size == 0)
+	{
+        	p->p.start = 0;
+	}
+	else
+	{
+        	p->p.start = be2cpu32 (p->start - base);
+	}
+	
+	p->p.size = be2cpu32 (p->size);
+	return 1;
 }    
 
 /* build the extended partition surrounding a given logical partition */
@@ -1882,236 +1911,234 @@ build_surrounding_extended(struct part_desc *p, struct part_desc *ep,
     return 1;
 }
 
-int
-read_line(int pno, struct part_desc *ep, char *dev, int interactive,
-	  struct disk_desc *z) {
-    unsigned char line[1000];
-    unsigned char *fields[11];
-    int fno, pct = pno%4;
-    struct part_desc p, *orig;
-    ulong ff, ff1, ul, ml, ml1, def;
-    int format, lpno, is_extd;
-
-    if (eof || eob)
-      return -1;
-
-    lpno = index_to_tos(pno, z);
-
-    if (interactive) {
-	if (pct == 0 && (show_extended || pno == 0))
-	  warn("\n");
-	warn("%8s%d: ", dev, lpno);
-    }
-
-    /* read input line - skip blank lines when reading from a file */
-    do {
-	fno = read_stdin(fields, line, SIZE(fields), SIZE(line));
-    } while(fno == RD_CMD || (fno == 0 && !interactive));
-    if (fno == RD_EOF) {
-	return -1;
-    } else if (fno > 10 && *(fields[10]) != 0) {
-	printf("too many input fields\n");
-	return 0;
-    }
-
-    if (fno == 1 && !strcmp(fields[0], ".")) {
-	eob = 1;
-	return -1;
-    }
-
-    /* use specified format, but round to cylinders if F_MEGABYTE specified */
-    format = 0;
-    if (cylindersize && specified_format == F_MEGABYTE)
-      format = F_CYLINDER;
-
-    orig = (one_only ? &(oldp.partitions[pno]) : 0);
-
-    p = zero_part_desc;
-    p.ep = ep;
-
-    /* first read the type - we need to know whether it is extended */
-    /* stop reading when input blank (defaults) and all is full */
-    is_extd = 0;
-    if (fno == 0) {		/* empty line */
-	if (orig && is_xgm(orig->p.sys_type))
-	  is_extd = 1;
+static int
+read_line (int pno, struct part_desc *ep, char *dev, int interactive,
+		struct disk_desc *z)
+{
+	uchar line[1000];
+	uchar *fields[11];
+	int fno, pct = pno%4;
+	struct part_desc p, *orig;
+	ulong ff, ff1, ul, ml, ml1, def;
+	int format, lpno, is_extd;
+	
+	if (eof || eob)
+		return -1;
+	
+	lpno = index_to_tos(pno, z);
+	
+	if (interactive)
+	{
+		if (pct == 0 && (show_extended || pno == 0))
+			warn ("\n");
+		warn ("%8s%d: ", dev, lpno);
+	}
+	
+	/* read input line - skip blank lines when reading from a file */
+	do {
+		fno = read_stdin (fields, line, SIZE (fields), SIZE (line));
+	}
+	while (fno == RD_CMD || (fno == 0 && !interactive));
+	
+	if (fno == RD_EOF)
+	{
+		return -1;
+	}
+	else if (fno > 10 && *(fields[10]) != 0)
+	{
+		printf ("too many input fields\n");
+		return 0;
+	}
+	
+	if (fno == 1 && !strcmp (fields[0], "."))
+	{
+		eob = 1;
+		return -1;
+	}
+	
+	format = 0;
+	orig = (one_only ? &(oldp.partitions[pno]) : 0);
+	
+	p = zero_part_desc;
+	p.ep = ep;
+	
+	/* first read the type - we need to know whether it is extended
+	 * stop reading when input blank (defaults) and all is full
+	 */
+	is_extd = 0;
+	if (fno == 0)
+	{
+		/* empty line */
+		
+		if (orig && is_xgm (orig->p.id))
+			is_extd = 1;
+		
+		ff = first_free (pno, is_extd, ep, format, 0, z);
+		ml = max_length (pno, is_extd, ep, format, ff, z);
+		if (ml == 0 && is_extd == 0)
+		{
+			is_extd = 1;
+			ff = first_free (pno, is_extd, ep, format, 0, z);
+			ml = max_length (pno, is_extd, ep, format, ff, z);
+		}
+		
+		if (ml == 0 && pno >= 4)
+		{
+			/* no free blocks left - don't read any further */
+			warn ("No room for more\n");
+			return -1;
+		}
+	}
+	
+	if (fno < 3 || !*(fields[2]))
+		ul = orig ? orig->p.sys_type :
+			(is_extd || (pno > 3 && pct == 1 && show_extended))
+			? EXTENDED_PARTITION : LINUX_NATIVE;
+	else if (get_ul (fields[2], &ul, LINUX_NATIVE, 16))
+		return 0;
+	
+	if (ul > 255)
+	{
+		warn ("Illegal type\n");
+		return 0;
+	}
+	
+	p.p.sys_type = ul;
+	is_extd = is_xgm (ul);
+	
+	/* find start */
 	ff = first_free(pno, is_extd, ep, format, 0, z);
-	ml = max_length(pno, is_extd, ep, format, ff, z);
-	if (ml == 0 && is_extd == 0) {
-	    is_extd = 1;
-	    ff = first_free(pno, is_extd, ep, format, 0, z);
-	    ml = max_length(pno, is_extd, ep, format, ff, z);
+	ff1 = ff * unitsize(format);
+	def = orig ? orig->start : (pno > 4 && pct > 1) ? 0 : ff1;
+	if (fno < 1 || !*(fields[0]))
+		p.start = def;
+	else
+	{
+		if (get_ul (fields[0], &ul, def / unitsize (0), 0))
+			return 0;
+		p.start = ul * unitsize (0);
+		p.start -= (p.start % unitsize (format));
 	}
-	if (ml == 0 && pno >= 4) {
-	    /* no free blocks left - don't read any further */
-	    warn("No room for more\n");
-	    return -1;
+	
+	/* find length */
+	ml = max_length(pno, is_extd, ep, format, p.start / unitsize(format), z);
+	ml1 = ml * unitsize(format);
+	
+	def = orig ? orig->size : (pno > 4 && pct > 1) ? 0 : ml1;
+	if (fno < 2 || !*(fields[1]))
+		p.size = def;
+	else
+	{
+		if (get_ul (fields[1], &ul, def / unitsize (0), 0))
+			return 0;
+		p.size = ul * unitsize(0) + unitsize (format) - 1;
+		p.size -= (p.size % unitsize (format));
 	}
-    }
-    if (fno < 3 || !*(fields[2]))
-      ul = orig ? orig->p.sys_type :
-	   (is_extd || (pno > 3 && pct == 1 && show_extended))
-	     ? EXTENDED_PARTITION : LINUX_NATIVE;
-    else if(!strcmp(fields[2], "L"))
-      ul = LINUX_NATIVE;
-    else if(!strcmp(fields[2], "S"))
-      ul = LINUX_SWAP;
-    else if(!strcmp(fields[2], "E"))
-      ul = EXTENDED_PARTITION;
-    else if(!strcmp(fields[2], "X"))
-      ul = LINUX_EXTENDED;
-    else if (get_ul(fields[2], &ul, LINUX_NATIVE, 16))
-      return 0;
-    if (ul > 255) {
-	warn("Illegal type\n");
-	return 0;
-    }
-    p.p.sys_type = ul;
-    is_extd = is_xgm(ul);
-
-    /* find start */
-    ff = first_free(pno, is_extd, ep, format, 0, z);
-    ff1 = ff * unitsize(format);
-    def = orig ? orig->start : (pno > 4 && pct > 1) ? 0 : ff1;
-    if (fno < 1 || !*(fields[0]))
-      p.start = def;
-    else {
-	if (get_ul(fields[0], &ul, def / unitsize(0), 0))
-	  return 0;
-	p.start = ul * unitsize(0);
-	p.start -= (p.start % unitsize(format));
-    }
-
-    /* find length */
-    ml = max_length(pno, is_extd, ep, format, p.start / unitsize(format), z);
-    ml1 = ml * unitsize(format);
-
-    def = orig ? orig->size : (pno > 4 && pct > 1) ? 0 : ml1;
-    if (fno < 2 || !*(fields[1]))
-      p.size = def;
-    else {
-	if (get_ul(fields[1], &ul, def / unitsize(0), 0))
-	  return 0;
-	p.size = ul * unitsize(0) + unitsize(format) - 1;
-	p.size -= (p.size % unitsize(format));
-    }
-    if (p.size > ml1) {
-	warn("Warning: exceeds max allowable size (%lu)\n", ml1 / unitsize(0));
-	if (!force)
-	  return 0;
-    }
-    if (p.size == 0 && pno >= 4 && (fno < 2 || !*(fields[1]))) {
-	warn("Warning: empty partition\n");
-	if (!force)
-	  return 0;
-    }
-    p.p.nr_sects = be2cpu32 (p.size);
-
-    if (p.size == 0 && !orig) {
-	if(fno < 1 || !*(fields[0]))
-	  p.start = 0;
-	if(fno < 3 || !*(fields[2]))
-	  p.p.sys_type = EMPTY_PARTITION;
-    }
-
-    if (p.start < ff1 && p.size > 0) {
-	warn("Warning: bad partition start (earliest %lu)\n",
-	     (ff1 + unitsize(0) - 1) / unitsize(0));
-	if (!force)
-	  return 0;
-    }
-
-    if (fno < 4 || !*(fields[3]))
-      ul = (orig ? orig->p.bootable : 0);
-    else if (!strcmp(fields[3], "-"))
-      ul = 0;
-    else if (!strcmp(fields[3], "*") || !strcmp(fields[3], "+"))
-      ul = 0x80;
-    else {
-    	warn("unrecognized bootable flag - choose - or *\n");
-    	return 0;
-    }
-    p.p.bootable = ul;
-
-    if (ep && ep->p.sys_type == EMPTY_PARTITION) {
-      if(!build_surrounding_extended(&p, ep, z))
-	return 0;
-    } else
-      if(!compute_start_sect(&p, ep))
-	return 0;
-
-    { longchs aa = chs_to_longchs(get_begin_chs (&p.p)), bb;
-
-      if (fno < 5) {
-	  bb = aa;
-      } else if (fno < 7) {
-	  warn("partial c,h,s specification?\n");
-	  return 0;
-      } else if(get_ul(fields[4], &bb.c, aa.c, 0) ||
-		get_ul(fields[5], &bb.h, aa.h, 0) ||
-		get_ul(fields[6], &bb.s, aa.s, 0))
-	return 0;
-      put_begin_chs (&p.p, longchs_to_chs(bb));
-    }
-    { longchs aa = chs_to_longchs(get_end_chs (&p.p)), bb;
-
-      if (fno < 8) {
-	  bb = aa;
-      } else if (fno < 10) {
-	  warn("partial c,h,s specification?\n");
-	  return 0;
-      } else if(get_ul(fields[7], &bb.c, aa.c, 0) ||
-		get_ul(fields[8], &bb.h, aa.h, 0) ||
-		get_ul(fields[9], &bb.s, aa.s, 0))
-	return 0;
-      put_end_chs (&p.p, longchs_to_chs(bb));
-    }
-
-    if (pno > 3 && p.size && show_extended && p.p.sys_type != EMPTY_PARTITION
-	        && (is_xgm(p.p.sys_type) != (pct == 1))) {
-	warn("Extended partition not where expected\n");
-	if (!force)
-	  return 0;
-    }
-
-    z->partitions[pno] = p;
-    if (pno >= z->partno)
-      z->partno += 4;		/* reqd for out_partition() */
-
-    if (interactive)
-      out_partition(dev, 0, &(z->partitions[pno]), z);
-
-    return 1;
+	
+	if (p.size > ml1)
+	{
+		warn ("Warning: exceeds max allowable size (%lu)\n", ml1 / unitsize (0));
+		if (!force)
+			return 0;
+	}
+	
+	if (p.size == 0 && pno >= 4 && (fno < 2 || !*(fields[1])))
+	{
+		warn ("Warning: empty partition\n");
+		if (!force)
+			return 0;
+	}
+	p.p.size = be2cpu32 (p.size);
+	
+	if (p.size == 0 && !orig) {
+		if (fno < 1 || !*(fields[0]))
+			p.start = 0;
+		if (fno < 3 || !*(fields[2]))
+			p.p.sys_type = EMPTY_PARTITION;
+	}
+	
+	if (p.start < ff1 && p.size > 0)
+	{
+		warn ("Warning: bad partition start (earliest %lu)\n",
+			(ff1 + unitsize(0) - 1) / unitsize(0));
+		if (!force)
+			return 0;
+	}
+	
+	if (fno < 4 || !*(fields[3]))
+		ul = (orig ? orig->p.bootable : 0);
+	else if (!strcmp (fields[3], "-"))
+		ul = 0;
+	else if (!strcmp (fields[3], "*") || !strcmp (fields[3], "+"))
+		ul = 0x80;
+	else
+	{
+    		warn ("unrecognized bootable flag - choose - or *\n");
+    		return 0;
+	}
+	p.p.bootable = ul;
+	
+	if (ep && ep->p.sys_type == EMPTY_PARTITION)
+	{
+		if (!build_surrounding_extended (&p, ep, z))
+			return 0;
+	}
+	else
+		if (!compute_start_sect (&p, ep))
+			return 0;
+	
+	if (pno > 3 && p.size && show_extended && p.p.sys_type != EMPTY_PARTITION
+		&& (is_xgm (p.p.id) != (pct == 1)))
+	{
+		warn ("Extended partition not where expected\n");
+		if (!force)
+			return 0;
+	}
+	
+	z->partitions[pno] = p;
+	if (pno >= z->partno)
+		z->partno += 4;		/* reqd for out_partition() */
+	
+	if (interactive)
+		out_partition (dev, 0, &(z->partitions[pno]), z);
+	
+	return 1;
 }
 
 /* ep either points to the extended partition to contain this one,
-   or to the empty partition that may become extended or is 0 */
-int
-read_partition(char *dev, int interactive, int pno, struct part_desc *ep,
-	       struct disk_desc *z) {
-    struct part_desc *p = &(z->partitions[pno]);
-    int i;
+ * or to the empty partition that may become extended or is 0
+ */
+static int
+read_partition (char *dev, int interactive, int pno, struct part_desc *ep,
+		struct disk_desc *z)
+{
+	struct part_desc *p = &(z->partitions[pno]);
+	int i;
+	
+	if (one_only)
+	{
+		*p = oldp.partitions[pno];
+		if (one_only_pno != pno)
+			goto ret;
+	}
+	else if (!show_extended && pno > 4 && pno%4)
+		goto ret;
+	
+	while (!(i = read_line (pno, ep, dev, interactive, z)))
+		if (!interactive)
+			fatal("bad input\n");
+	
+	if (i < 0)
+	{
+		p->ep = ep;
+		return 0;
+	}
 
-    if (one_only) {
-	*p = oldp.partitions[pno];
-	if (one_only_pno != pno)
-	  goto ret;
-    } else if (!show_extended && pno > 4 && pno%4)
-	  goto ret;
-
-    while (!(i = read_line(pno, ep, dev, interactive, z)))
-      if (!interactive)
-	fatal("bad input\n");
-    if (i < 0) {
-	p->ep = ep;
-	return 0;
-    }
-
-  ret:
+ret:
     p->ep = ep;
     if (pno >= z->partno)
       z->partno += 4;
-    return 1;
+	return 1;
 }
 
 void
@@ -2146,31 +2173,35 @@ read_partition_chain(char *dev, int interactive, struct part_desc *ep,
     }
 }
 
-void
-read_input(char *dev, int interactive, struct disk_desc *z) {
-    int i;
-    struct part_desc *partitions = &(z->partitions[0]), *ep;
-
-    for (i=0; i < SIZE(z->partitions); i++)
-      partitions[i] = zero_part_desc;
-    z->partno = 0;
-
-    if (interactive)
-      warn("
+static void
+read_input (char *dev, int interactive, struct disk_desc *z)
+{
+	int i;
+	struct part_desc *partitions = &(z->partitions[0]), *ep;
+	
+	for (i = 0; i < SIZE (z->partitions); i++)
+		partitions[i] = zero_part_desc;
+	z->partno = 0;
+	
+	if (interactive)
+		warn ("
 Input in the following format; absent fields get a default value.
 <start> <size> <type [E,S,L,X,hex]> <bootable [-,*]> <c,h,s> <c,h,s>
 Usually you only need to specify <start> and <size> (and perhaps <type>).
 ");
-    eof = 0;
-
-    for (i=0; i<4; i++)
-      read_partition(dev, interactive, i, 0, z);
-    for (i=0; i<4; i++) {
-	ep = partitions+i;
-	if (is_xgm(ep->p.sys_type) && ep->size)
-	  read_partition_chain(dev, interactive, ep, z);
-    }
-    add_sector_and_offset(z);
+	eof = 0;
+	
+	for (i = 0; i < 4; i++)
+		read_partition (dev, interactive, i, 0, z);
+	
+	for (i = 0; i < 4; i++)
+	{
+		ep = partitions + i;
+		if (is_xgm (ep->p.id) && ep->size)
+			read_partition_chain (dev, interactive, ep, z);
+	}
+	
+	add_sector_and_offset (z);
 }
 # endif
 

@@ -1,61 +1,41 @@
-TARGETS = sfdisk fdisk
-SBINDIR  = /sbin
-MANDIR  = /usr/man
-
-CC = gcc -pipe
-DEFINITIONS = 
-WARN = -Wall -Wparentheses -Winline
-#OPT = -fomit-frame-pointer -O2
-CFLAGS = $(MODEL) $(OPT) $(DEFINITIONS) $(WARN)
-RANLIB = ranlib
-CRLF = crlf -s
-
 #
-# files
+# Makefile for ATARI and DOS fdisk
 #
-CFILES = \
-	fdisk.o \
-	sfdisk.c \
-	xhdi.c
+TARGET = fdisk sfdisk
 
-OBJS =	$(CFILES:.c=.o)
+SHELL = /bin/sh
+SUBDIRS = 
 
-SFDISKOBJS = sfdisk.o xhdi.o
-FDISKOBJS = fdisk.o xhdi.o
+srcdir = .
+top_srcdir = ..
+subdir = fdisk
 
-#
-# main target
-#
-all: $(TARGETS)
+default: all
 
-sfdisk: $(SFDISKOBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SFDISKOBJS) $(LIBS)
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
 
-fdisk: $(FDISKOBJS)
+all-here: $(TARGET)
+
+# default overwrites
+INCLUDES = -I$(top_srcdir)/IO
+
+# default definitions
+OBJS = $(COBJS:.c=.o)
+LIBS += $(LIBIO)
+GENFILES = $(TARGET)
+
+FDISKOBJS = fdisk.o
+SFDISKOBJS = sfdisk.o
+
+fdisk: $(FDISKOBJS) $(LIBIOSTMP)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(FDISKOBJS) $(LIBS)
+	$(STRIP) $@
 
-clean:
-	rm -f $(TARGETS) $(OBJS)
+sfdisk: $(SFDISKOBJS) $(LIBIOSTMP)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SFDISKOBJS) $(LIBS)
+	$(STRIP) $@
 
-distclean:
-	rm -f $(TARGETS) $(OBJS)
-	rm -f *~
-	rm -rf .deps
 
-install:
-	install -d -m 755 $(SBINDIR)
-	install -m 755 $(TARGET) $(SBINDIR)
-	install -d -m 755 $(MANDIR)/man8
-	install -m 644 $(TARGET).8 $(MANDIR)/man8
-
-#
-# C source files
-#
-%.o: %.c
-	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
-	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
-
-DEPS_MAGIC := $(shell mkdir ./.deps > /dev/null 2>&1 || :)
-DEPENDENCIES = $(addprefix ./.deps/, $(patsubst %.c,%.P,$(CFILES)))
-
--include $(DEPENDENCIES) /dev/null
+include $(top_srcdir)/DEPENDENCIES
