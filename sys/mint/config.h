@@ -37,11 +37,6 @@
 # define _mint_config_h
 
 /*
- * Fcreate() on pipes should not fail
- */
-# define CREATE_PIPES
-
-/*
  * define if you want a daemon process for sync'ing (otherwise uses timeout)
  */
 # define SYSUPDATE_DAEMON
