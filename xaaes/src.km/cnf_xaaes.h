@@ -47,6 +47,6 @@ struct lconfig
 
 extern struct lconfig lcfg;
 
-void SCL(const char *name);
+void load_config(const char *name);
 
 #endif /* _cnf_xaaes_h */
