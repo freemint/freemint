@@ -8,6 +8,7 @@
 
 # include "mint/mint.h"
 # include "mint/mem.h"
+# include "mint/proc.h"
 
 
 extern int no_mem_prot;
@@ -22,7 +23,7 @@ int get_prot_mode (MEMREGION *);
 void mark_region (MEMREGION *region, short int mode);
 void mark_proc_region (PROC *proc, MEMREGION *region, short int mode);
 int prot_temp (ulong loc, ulong len, int mode);
-void init_page_table (PROC *proc);
+void init_page_table (PROC *proc, struct memspace *p_mem); /* XXX */
 void mem_prot_special (PROC *proc);
 void QUICKDUMP (void);
 void report_buserr (void);

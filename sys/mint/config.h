@@ -65,7 +65,7 @@
 /*
  * use GEMDOS FS instead of real FAT XFS
  */
-# define OLDTOSFS
+# undef OLDTOSFS
 
 /*
  * include Linux style /kern pseudo filesystem

@@ -50,6 +50,7 @@
 
 # include "cookie.h"		/* cookie handling */
 # include "init.h"		/* boot_printf */
+# include "k_prot.h"		/* suser */
 
 
 /*
@@ -212,7 +213,7 @@ sys_xhdi (ushort op,
 		return XHDI (6);
 	
 	/* all other functions are restricted to root processes */
-	if (curproc->euid)
+	if (!suser (curproc->p_cred->ucr))
 		return EPERM;
 	
 	/* XHNewCookie and XHMiNTInfo are never allowed */

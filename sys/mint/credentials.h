@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-10-08
- * last change:	2000-10-08
+ * begin:	2000-10-30
+ * last change:	2000-10-30
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,29 +31,36 @@
  * 
  */
 
-# ifndef _m68k_sig_mach_h
-# define _m68k_sig_mach_h
+# ifndef _mint_credentials_h
+# define _mint_credentials_h
 
-# include "mint/mint.h"
-
-
-int		sendsig		(ushort sig);
-long	_cdecl	sys_psigreturn	(void);
-long	_cdecl	sys_psigintr	(ushort vec, ushort sig);
-void		sig_user	(ushort vec);
-void		cancelsigintrs	(void);
-
-void		bombs		(ushort sig);
-void		exception	(ushort sig);
-
-void		sigbus		(void);
-void		sigaddr		(void);
-void		sigill		(void);
-void		sigpriv		(void);
-void		sigfpe		(void);
-void		sigtrap		(void);
-void		haltformat	(void);
-void		haltcpv		(void);
+# include "ktypes.h"
 
 
-# endif /* _m68k_sig_mach_h */
+# define NGROUPS	8
+
+struct ucred
+{
+	short		euid;			/* effective user id */
+	short		egid;			/* effective group id */
+	short		groups [NGROUPS];	/* groups */
+	ushort		ngroups;		/* number of groups */
+	ushort		pad;
+	
+	long		links;			/* number of references */
+};
+
+
+struct pcred
+{
+	struct ucred	*ucr;			/*  */
+	short		ruid;			/* real user id */
+	short		rgid;			/* real group id */
+	short		suid;			/* saved effective user id */
+	short		sgid;			/* saved effective group id */
+	
+	long		links;			/* number of references */
+};
+
+
+# endif /* _mint_credentials_h */

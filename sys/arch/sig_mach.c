@@ -18,6 +18,8 @@
 # include "mint/proc.h"
 # include "mint/signal.h"
 
+# include "bios.h"
+# include "kmemory.h"
 # include "global.h"
 # include "signal.h"
 
@@ -43,12 +45,18 @@ struct sigcontext
 int
 sendsig (ushort sig)
 {
+# if 1
+	struct sigaction *sigact = & SIGACTION (curproc, sig);
+# endif
+	
 	long oldstack, newstack;
 	long *stack;
 	struct sigcontext *sigctxt;
 	CONTEXT *call, contexts[2];
 # define newcurrent (contexts[0])
 # define oldsysctxt (contexts[1])
+	
+	assert (curproc->stack_magic == STACK_MAGIC);
 	
 	/* another kludge: there is one case in which the p_sigreturn
 	 * mechanism is invoked by the kernel, namely when the user
@@ -72,14 +80,14 @@ sendsig (ushort sig)
 	
 	if (sig == 0)
 	{
-		/* kernel_pterm() sets sigmask to let us know to do
+		/* kernel_pterm() sets p_sigmask to let us know to do
 		 * Psigreturn
 		 */
 		
-		if (curproc->sigmask & 1L)
+		if (curproc->p_sigmask & 1L)
 		{
-			p_sigreturn();
-			curproc->sigmask &= ~1L;
+			sys_psigreturn ();
+			curproc->p_sigmask &= ~1L;
 		}
 		else
 		{
@@ -144,6 +152,17 @@ sendsig (ushort sig)
 		call->ssp = ((long) stack);
 	else
 		call->usp = ((long) stack);
+# if 1
+	call->pc = sigact->sa_handler;
+	/* don't restart FPU communication */
+	call->sfmt = call->fstate[0] = 0;
+	
+	if (sigact->sa_flags & SA_RESET)
+	{
+		sigact->sa_handler = SIG_DFL;
+		sigact->sa_flags &= ~SA_RESET;
+	}
+# else
 	call->pc = (long) curproc->sighandle[sig];
 	/* don't restart FPU communication */
 	call->sfmt = call->fstate[0] = 0;
@@ -153,6 +172,7 @@ sendsig (ushort sig)
 		curproc->sighandle[sig] = SIG_DFL;
 		curproc->sigflags[sig] &= ~SA_RESET;
 	}
+# endif
 	
 	if (save_context (&newcurrent) == 0)
 	{
@@ -211,7 +231,7 @@ sendsig (ushort sig)
 }
 
 /*
- * the p_sigreturn system call
+ * the Psigreturn system call
  * When called by the user from inside a signal handler, it indicates a
  * desire to restore the old stack frame prior to a longjmp() out of
  * the handler.
@@ -223,7 +243,7 @@ sendsig (ushort sig)
  */
 
 long _cdecl
-p_sigreturn (void)
+sys_psigreturn (void)
 {
 	CONTEXT *oldctxt;
 	long *frame;
@@ -247,7 +267,7 @@ top:
 	TRACE (("Psigreturn(%d)", (int) sig));
 	
 	curproc->sysstack = frame[1];	/* restore frame */
-	curproc->sigmask &= ~(1L<<sig); /* unblock signal */
+	curproc->p_sigmask &= ~(1L<<sig); /* unblock signal */
 	
 	if (curproc->ctxt[SYSCALL].pc != (long) &pc_valid_return)
 	{
@@ -273,6 +293,140 @@ top:
 		/* dummy -- this isn't reached */
 		return E_OK;
 	}
+}
+
+/*
+ * Psigintr: Set an exception vector to send us the specified signal.
+ *
+ * BUG:
+ *	does not link vectors using XBRA.
+ * CONSOLATION:
+ *	XBRA is not so useful in this case anyways... :)
+ */
+
+typedef struct usig
+{
+	ushort vec;		/* exception vector number */
+	ushort sig;		/* signal to send */
+	PROC *proc;		/* process to get signal */
+	long oldv;		/* old exception vector value */
+	struct usig *next;	/* next entry ... */
+} usig;
+
+static usig *usiglst;
+
+long _cdecl
+sys_psigintr (ushort vec, ushort sig)
+{
+	extern void new_intr();		/* in intr.spp */
+	extern long intr_shadow;
+	long vec2;
+	usig *new;
+	
+	/* This function needs long stack frames,
+	 * hence it only works on 68020+, sorry.
+	 */
+	
+	if (*(ushort *) 0x0000059e == 0 || !intr_shadow)
+		return ENOSYS;
+	
+	if (sig >= NSIG)
+		return EBADARG;
+	
+	if (vec && !sig)		/* ignore signal 0 */
+		return E_OK;
+	
+	if (!sig)			/* remove handlers on Psigintr(0,0) */
+	{
+		cancelsigintrs ();
+		return E_OK;
+	}
+	
+	/* only autovectors ($60-$7c), traps ($80-$bc) and user defined
+	 * interrupts ($0100-$03fc) are allowed, others already generate
+         * signals anyway, no? :)
+	 */
+
+	if (vec < 0x0018 || vec > 0x00ff)
+		return EBADARG;
+
+	if (vec > 0x002f && vec < 0x0040)
+		return EBADARG;
+
+	/* Filter out uninitialized interrupts and odd garbage */
+
+	vec2 = vec<<2;
+	vec2 = *(long *)vec2;
+
+	if (!vec2 || (vec2 & 1L))
+		return ENXIO;
+
+	/* okay, okay, will install, if you wanna so much... */
+
+	vec2 = (long) new_intr;
+
+	new = kmalloc (sizeof (*new));
+	if (!new)			/* hope this never happens...! */
+		return ENOMEM;
+	new->vec = vec;
+	new->sig = sig;
+	new->proc = curproc;
+	new->next = usiglst;		/* simple unsorted list... */
+	usiglst = new;
+
+	new->oldv = setexc(vec, vec2);
+	return E_OK;
+}
+
+/*
+ * Find the process that requested this interrupt, and send it a signal.
+ * Called at interrupt time by new_intr() from intr.spp, with interrupt
+ * vector number on the stack.
+ */
+void
+sig_user (ushort vec)
+{
+	usig *ptr;
+
+	for (ptr = usiglst; ptr; ptr = ptr->next)
+	{
+		if (vec == ptr->vec)
+		{
+			if (ptr->proc->wait_q != ZOMBIE_Q
+				&& ptr->proc->wait_q != TSR_Q)
+			{
+				post_sig (ptr->proc, ptr->sig);
+			}
+		}
+	}
+}
+
+/*
+ * cancelsigintrs: remove any interrupts requested by this process,
+ * called at process termination.
+ */
+void
+cancelsigintrs (void)
+{
+	usig *ptr, **old, *nxt;
+	ushort s;
+	
+	s = splhigh ();
+	for (old = &usiglst, ptr = usiglst; ptr; )
+	{
+		nxt = ptr->next;
+		if (ptr->proc == curproc)
+		{
+			setexc (ptr->vec, ptr->oldv);
+			*old = nxt;
+			kfree (ptr);
+		}
+		else
+			old = &(ptr->next);
+		
+		ptr = nxt;
+	}
+	spl (s);
 }
 
 # ifdef EXCEPTION_SIGS
@@ -436,20 +590,34 @@ bombs (ushort sig)
 void
 exception (ushort sig)
 {
+	assert (curproc->stack_magic == STACK_MAGIC);
+	
 	/* just to be sure */
 	assert (sig < NSIG);
+	assert (curproc->p_sigacts);
 	
-	curproc->sigflags[sig] |= SA_RESET;
-	DEBUG (("exception #%d raised [pc %lx]", sig, curproc->ctxt[SYSCALL].pc));
+	DEBUG (("exception #%d raised [pc %lx, proc pc %lx]", sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
+	SIGACTION(curproc, sig).sa_flags |= SA_RESET;
+//	curproc->sigflags[sig] |= SA_RESET;
 	raise (sig);
 }
 
 void
 sigbus (void)
 {
+	assert (curproc->stack_magic == STACK_MAGIC);
+	assert (curproc->p_sigacts);
+	
+	DEBUG (("sigbus [pc %lx, proc pc %lx]", curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
+	
+# if 1
+	if (SIGACTION(curproc, SIGBUS).sa_handler == SIG_DFL)
+		report_buserr ();
+# else
 	if (curproc->sighandle[SIGBUS] == SIG_DFL)
 		report_buserr ();
+# endif
 	
 	exception (SIGBUS);
 }
@@ -457,24 +625,29 @@ sigbus (void)
 void
 sigaddr (void)
 {
+	assert (curproc->stack_magic == STACK_MAGIC);
 	exception (SIGSEGV);
 }
 
 void
 sigill (void)
 {
+	assert (curproc->stack_magic == STACK_MAGIC);
 	exception (SIGILL);
 }
 
 void
 sigpriv (void)
 {
+	assert (curproc->stack_magic == STACK_MAGIC);
 	raise (SIGPRIV);
 }
 
 void
 sigfpe (void)
 {
+	assert (curproc->stack_magic == STACK_MAGIC);
+	
 	if (fpu)
 	{
 		CONTEXT *ctxt = &curproc->ctxt[SYSCALL];
@@ -499,6 +672,7 @@ sigfpe (void)
 void
 sigtrap (void)
 {
+	assert (curproc->stack_magic == STACK_MAGIC);
 	raise (SIGTRAP);
 }
 

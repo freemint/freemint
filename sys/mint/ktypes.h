@@ -62,7 +62,7 @@ typedef struct dtabuf		DTABUF;
 typedef struct dirstruct	DIR;
 typedef struct xattr		XATTR;
 typedef struct stat		STAT;
-typedef struct fileptr		FILEPTR;
+typedef struct file		FILEPTR;
 typedef struct ilock		LOCK;
 typedef struct filesys		FILESYS;
 typedef struct devdrv		DEVDRV;	
@@ -127,36 +127,6 @@ struct sizebuf
 	ulong	len;
 	char	buf [0];
 };
-
-
-/* structure used to hold i/o buffers */
-typedef struct io_rec
-{
-	char *bufaddr;
-	short buflen;
-	volatile short head;
-	volatile short tail;
-	short low_water;
-	short hi_water;
-	
-} IOREC_T;
-
-/* Bconmap struct, * returned by Bconmap (-2) */
-typedef struct
-{
-	struct
-	{
-		long bconstat;
-		long bconin;
-		long bcostat;
-		long bconout;
-		long rsconf;
-		IOREC_T	*iorec;
-		
-	} *maptab;
-	short	maptabsize;
-	
-} BCONMAP2_T;
 
 
 # endif /* _mint_ktypes_h */

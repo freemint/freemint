@@ -15,11 +15,13 @@
 
 # include "tty.h"
 
+# include "mint/filedesc.h"
 # include "mint/signal.h"
 
 # include "bios.h"
 # include "biosfs.h"
 # include "dosfile.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "proc.h"
 # include "signal.h"
@@ -192,8 +194,8 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		&& ((f->flags & O_HEAD)
 			|| ((tty->state &= ~TS_COOKED), !tty->pgrp)
 			|| tty->pgrp == curproc->pgrp
-			|| f->fc.dev != curproc->control->fc.dev
-			|| f->fc.index != curproc->control->fc.index)
+			|| f->fc.dev != curproc->p_fd->control->fc.dev
+			|| f->fc.index != curproc->p_fd->control->fc.index)
 		&& !(tty->state & TS_BLIND)
 		&& (r = (*f->dev->readb)(f, buf, nbytes)) != ENODEV)
 	{
@@ -409,10 +411,11 @@ tty_checkttou (FILEPTR *f, struct tty *tty)
 	if (tty->pgrp
 		&& (tty->pgrp != curproc->pgrp)
 		&& (tty->sg.sg_flags & T_TOSTOP)
-		&& (curproc->sighandle[SIGTTOU] != SIG_IGN)
-		&& ((curproc->sigmask & (1L << SIGTTOU)) == 0L)
-		&& (f->fc.dev == curproc->control->fc.dev)
-		&& (f->fc.index == curproc->control->fc.index))
+		&& (SIGACTION(curproc, SIGTTOU).sa_handler != SIG_IGN)
+//		&& (curproc->sighandle[SIGTTOU] != SIG_IGN)
+		&& ((curproc->p_sigmask & (1L << SIGTTOU)) == 0L)
+		&& (f->fc.dev == curproc->p_fd->control->fc.dev)
+		&& (f->fc.index == curproc->p_fd->control->fc.index))
 	{
 		TRACE (("job control: tty pgrp is %d proc pgrp is %d", tty->pgrp, curproc->pgrp));
 		killgroup (curproc->pgrp, SIGTTOU, 1);
@@ -1149,11 +1152,11 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		
 		case TIOCNOTTY:
 			/* Disassociate from controlling tty.  */
-			if (curproc->control == NULL)
+			if (curproc->p_fd->control == NULL)
 				return ENOTTY;
 				
-			if (curproc->control->fc.index != f->fc.index ||
-			    curproc->control->fc.dev != f->fc.dev)
+			if (curproc->p_fd->control->fc.index != f->fc.index ||
+			    curproc->p_fd->control->fc.dev != f->fc.dev)
 		    		return ENOTTY;
 		    	
 		    	/* Session leader.  Disassociate from controlling
@@ -1167,8 +1170,8 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				
 			}
 			tty->pgrp = 0;
-			do_close(curproc->control);
-			curproc->control = NULL;
+			do_close(curproc->p_fd->control);
+			curproc->p_fd->control = NULL;
 			return 0;
 			
 		/* Set controlling tty to file descriptor.  The process
@@ -1183,7 +1186,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (f->flags & O_HEAD)
 				return ENOTTY;
 				
-			if (curproc->pgrp != curproc->pid || !curproc->control)
+			if (curproc->pgrp != curproc->pid || !curproc->p_fd->control)
 				return EPERM;
 
 			f->links++;
@@ -1196,23 +1199,25 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (tty->pgrp > 0) {
 				PROC* p;
 				for (p = proclist; p; p = p->gl_next) {
-					if (p->control &&
+					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+						continue;
+					if (p->p_fd->control &&
 					    p->pgrp == p->pid &&
-					    p->control->fc.index == f->fc.index &&
-					    p->control->fc.dev == f->fc.dev) {
-						    if (curproc->euid != 0 ||
+					    p->p_fd->control->fc.index == f->fc.index &&
+					    p->p_fd->control->fc.dev == f->fc.dev) {
+						    if (!suser (curproc->p_cred->ucr) ||
 							(long) arg != 1)
 						    {
 							    do_close (f);
 							    return EPERM;
 						    }
-						    do_close (p->control);
-						    p->control = NULL;
+						    do_close (p->p_fd->control);
+						    p->p_fd->control = NULL;
 					}
 				}
 			}
 			
-			curproc->control = f;
+			curproc->p_fd->control = f;
 			tty->pgrp = curproc->pgrp;
 			if (!(f->flags & O_NDELAY) && (tty->state & TS_BLIND))
 				(*f->dev->ioctl)(f, TIOCWONLINE, 0);
@@ -1383,8 +1388,8 @@ tty_getchar (FILEPTR *f, int mode)
 	 */
 	
 	if ((tty->pgrp && tty->pgrp != curproc->pgrp)
-		&& (f->fc.dev == curproc->control->fc.dev)
-		&& (f->fc.index == curproc->control->fc.index))
+		&& (f->fc.dev == curproc->p_fd->control->fc.dev)
+		&& (f->fc.index == curproc->p_fd->control->fc.index))
 	{
 		TRACE (("job control: tty pgrp is %d proc pgrp is %d", tty->pgrp, curproc->pgrp));
 		killgroup (curproc->pgrp, SIGTTIN, 1);
