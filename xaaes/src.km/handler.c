@@ -96,7 +96,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  10 */ { XA_appl_init,              false, false, DESCR("appl_init")       },
 	/*  11 */ { NULL,                      false, true,  DESCR("appl_read")       }, // unimplemented
 	/*  12 */ { XA_appl_write,             false, true,  DESCR("appl_write")      },
-	/*  13 */ { XA_appl_find,              false, true,  DESCR("appl_find")       },
+	/*  13 */ { XA_appl_find,              false, false, DESCR("appl_find")       },
 	/*  14 */ { NULL,                      false, true,  DESCR("appl_tplay")      }, // unimplemented
 	/*  15 */ { NULL,                      false, true,  DESCR("appl_trecord")    }, // unimplemented
 	/*  16 */ { NULL,                      false, true,  DESCR(NULL)              },
@@ -225,7 +225,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 128 */ { NULL,                      false, true,  DESCR(NULL)              },
 	/* 129 */ { XA_appl_control,           false, true,  DESCR("appl_control")    },
 
-	/* 130 */ { XA_appl_getinfo,           false, true,  DESCR("appl_getinfo")    },
+	/* 130 */ { XA_appl_getinfo,           false, false, DESCR("appl_getinfo")    },
 	/* 131 */ { NULL,                      false, true,  DESCR(NULL)              },
 	/* 132 */ { NULL,                      false, true,  DESCR(NULL)              },
 	/* 133 */ { NULL,                      false, true,  DESCR(NULL)              },
@@ -489,7 +489,7 @@ XA_handler(void *_pb)
 
 	if (!pb)
 	{
-		DIAGS(("XaAES: No AES Parameter Block (pid %d)\n", p_getpid()));
+		DIAGS(("XaAES: No AES Parameter Block (pid %ld)\n", p_getpid()));
 		raise(SIGSYS);
 
 		return 0;
@@ -554,7 +554,7 @@ XA_handler(void *_pb)
 		}
 		else
 		{
-			DIAG((D_trap, NULL, "AES trap: %s[%d] made by non AES process (pid %d)",
+			DIAG((D_trap, NULL, "AES trap: %s[%d] made by non AES process (pid %ld)",
 				aes_tab[cmd].descr, cmd, p_getpid()));
 		}
 #endif
@@ -588,7 +588,7 @@ XA_handler(void *_pb)
 			if (S.deleted_windows.first)
 				do_delayed_delete_window(lock);
 
-#if GENERAGE_DIAGS
+#if GENERATE_DIAGS
 			if (client)
 			{
 				DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
@@ -596,10 +596,13 @@ XA_handler(void *_pb)
 			}
 			else
 			{
-				DIAG((D_trap, client, " %s[%d] retuned %ld for non AES process (pid %d)",
+				DIAG((D_trap, client, " %s[%d] retuned %ld for non AES process (pid %ld)",
 					aes_tab[cmd].descr, cmd, cmd_rtn, p_getpid()));
 			}
 #endif
+
+			if (!client)
+				client = lookup_extension(NULL, XAAES_MAGIC);
 
 			switch (cmd_rtn)
 			{
@@ -609,8 +612,8 @@ XA_handler(void *_pb)
 				/* block indefinitly */
 				case XAC_BLOCK:
 				{
-					if (!client)
-						client = lookup_extension(NULL, XAAES_MAGIC);
+					//if (!client)
+					//	client = lookup_extension(NULL, XAAES_MAGIC);
 					if (client)
 					{
 						DIAG((D_trap, client, "XA_Hand: Block client %s", client->name));
@@ -623,8 +626,8 @@ XA_handler(void *_pb)
 				/* block with timeout */
 				case XAC_TIMER:
 				{
-					if (!client)
-						client = lookup_extension(NULL, XAAES_MAGIC);
+					//if (!client)
+					//	client = lookup_extension(NULL, XAAES_MAGIC);
 
 					if (client)
 					{
@@ -689,6 +692,8 @@ XA_handler(void *_pb)
 				else
 					DIAG((D_kern, client, "Leaving AES %s", client->name));
 			}
+			else
+				DIAG((D_kern, NULL, "Leaving AES non AES process (pid %ld)", p_getpid()));
 #endif
 			return 0;
 		}

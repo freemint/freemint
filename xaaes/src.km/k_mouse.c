@@ -1098,7 +1098,7 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	}
 	else
 	{
-		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for non AES process (%d)",
+		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for non AES process (pid %ld)",
 			mu_button.cb, x_mouse, y_mouse, p_getpid()));
 	}
 #endif
