@@ -68,7 +68,7 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 	{
 		int item;
 
-		item = obj_find(get_desktop(), 0, 1, md->x, md->y);
+		item = obj_find(get_desktop(), 0, 1, md->x, md->y, NULL);
 
 		DIAG((D_button, NULL, "  --  item %d", item));
 

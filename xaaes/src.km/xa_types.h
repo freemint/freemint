@@ -715,6 +715,7 @@ struct xa_widget
 
 	XA_WIDGET_LOCATION loc;		/* Location of widget relative to window extents */
 	RECT r;
+	RECT ar;			/**/
 
 	DisplayWidget *display;		/* Function pointers to the behaviours of the widget */
 	WidgetBehaviour *click;
@@ -769,8 +770,8 @@ typedef struct xa_pending_widget XA_PENDING_WIDGET;
 /* Extra details for a slider widget */
 struct xa_slider_widget
 {
-	int position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
-	int length;			/* Length (0-1000(SL_RANGE)) */
+	short position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
+	short length;			/* Length (0-1000(SL_RANGE)) */
 	RECT r;				/* physical */
 };
 typedef struct xa_slider_widget XA_SLIDER_WIDGET;
@@ -1031,6 +1032,8 @@ struct menu_task
 	XA_TREE *wt;
 	/* root displacements */
 	short rdx, rdy;
+	short pdx, pdy;
+	short dx, dy;
 };
 typedef struct menu_task MENU_TASK;
 

@@ -115,7 +115,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &r);
 
-	f = obj_find(wt, 0, 10, md->x, md->y);
+	f = obj_find(wt, 0, 10, md->x, md->y, NULL);
 
 	if (   f >= ALERT_BUT1			/* Did we click on a valid button? */
 	    && f <  ALERT_BUT1 + ALERT_BUTTONS
@@ -480,7 +480,6 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 		r = calc_window(lock, client, WC_BORDER,
 				kind,
-				MG,
 				C.Aes->options.thinframe,
 				C.Aes->options.thinwork,
 				*(RECT *)&alert_form->ob_x);
@@ -492,7 +491,6 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 					     nolist,
 					     kind,
 					     created_for_AES,
-					     MG,
 					     C.Aes->options.thinframe,
 					     C.Aes->options.thinwork,
 					     r, NULL, NULL);
@@ -562,12 +560,11 @@ XA_form_center(enum locks lock, struct xa_client *client, AESPB *pb)
 		r.h = obtree->ob_height;
 
 		/* desktop work area */
-		r.x = (root_window->wa.w - r.w) / 2;
-		r.y = (root_window->wa.h - r.h) / 2;
+		r.x = root_window->wa.x + ((root_window->wa.w - r.w) / 2);
+		r.y = root_window->wa.y + ((root_window->wa.h - r.h) / 2);
 
 		obtree->ob_x = r.x;
 		obtree->ob_y = r.y;
-
 
  		if (obtree->ob_state & OS_OUTLINED)
 			/* This is what other AES's do */
@@ -785,7 +782,6 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			r = calc_window(lock, client, WC_BORDER,
 					kind,
-					MG,
 					C.Aes->options.thinframe,
 					C.Aes->options.thinwork,
 					*(const RECT *)&pb->intin[5]);

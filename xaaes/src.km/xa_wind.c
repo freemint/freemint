@@ -70,7 +70,6 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				   false,
 				   kind|BACKDROP,
 				   created_for_CLIENT,
-				   MG,
 				   client->options.thinframe,
 				   client->options.thinwork,
 				   r,
@@ -1582,7 +1581,6 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 			    client,
 			    pb->intin[0],		/* request */
 			    pb->intin[1],		/* widget mask */
-			    MG,
 			    client->options.thinframe,
 			    client->options.thinwork,
 			    *(const RECT *)&pb->intin[2]);

@@ -437,8 +437,7 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			tab->locker = client->p->pid;
 			tab->client = client;
 			tab->lock = lock;
-			ob->ob_x = 0;
-			ob->ob_y = 0;
+			ob->ob_x = ob->ob_y = wt->dx = wt->dy = 0;
 			obj_offset(wt, mn->mn_menu, &x, &y);
 			tab->wind = NULL;
 			tab->widg = NULL;

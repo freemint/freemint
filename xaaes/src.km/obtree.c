@@ -816,7 +816,7 @@ ob_border_diff(OBJECT *obtree, short obj1, short obj2, RECT *r)
  *
  */
 short
-obj_find(XA_TREE *wt, short object, short depth, short mx, short my)
+obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 {
 	OBJECT *obtree = wt->tree;
 	short next;
@@ -844,7 +844,19 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my)
 			    && obtree[current].ob_y + y + obtree[current].ob_height >= my)
 			{
 				/* This is only a possible object, as it may have children on top of it. */
-				pos_object = current;
+				if (c)
+				{
+					RECT r;
+					r.x = obtree[current].ob_x + x;
+					r.y = obtree[current].ob_y + y;
+					r.w = obtree[current].ob_width;
+					r.h = obtree[current].ob_height;
+					
+					if (xa_rect_clip(c, &r, &r))
+						pos_object = current;
+				}
+				else
+					pos_object = current;
 			}
 		}
 
@@ -1842,7 +1854,7 @@ obj_watch(XA_TREE *wt,
 			{
 				omx = mx;
 				omy = my;
-				obf = obj_find(wt, obj, 10, mx, my);
+				obf = obj_find(wt, obj, 10, mx, my, NULL);
 
 				if (obf == obj)
 					s = in_state;

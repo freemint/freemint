@@ -81,8 +81,6 @@ void	Exit_form_do	(struct xa_client *client,
 			 XA_TREE *wt,
 			 struct fmd_result *fr);
 
-void set_button_timer(enum locks lock, struct xa_window *wind);
-
 WidgetBehaviour	Click_windowed_form_do;
 FormMouseInput	Click_form_do;
 FormKeyInput	Key_form_do;

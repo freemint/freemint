@@ -126,7 +126,7 @@ open_about(enum locks lock)
 		if (!remember.w)
 		{
 			form_center(form, ICON_H);
-			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME, MG,
+			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork, *(RECT*)&form->ob_x);
 		}
@@ -139,7 +139,6 @@ open_about(enum locks lock)
 						false,
 						CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 						created_for_AES,
-						MG,
 						C.Aes->options.thinframe,C.Aes->options.thinwork,
 						remember, 0, &remember);
 
