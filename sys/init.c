@@ -873,9 +873,6 @@ init (void)
 	boot_print (greet1);
 	boot_print (greet2);
 
-	/* Read user defined defaults */
-	read_ini();
-
 	/* 
 	 * Initialize sysdir
 	 * 
@@ -908,6 +905,9 @@ init (void)
 		(void) TRAP_Cconin();
 		TRAP_Pterm0();
 	}
+
+	/* Read user defined defaults */
+	read_ini();
 
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
