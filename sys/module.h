@@ -35,10 +35,12 @@
 # define _module_h
 
 # include "mint/mint.h"
-# include "mint/basepage.h"
 
 
-BASEPAGE *load_module (const char *filename, long *err);
+struct basepage;
+
+void load_all_modules (const char *curpath, ulong mask);
+void load_modules (const char *extension, long (*loader)(struct basepage *, const char *));
 
 
 # endif /* _module_h */
