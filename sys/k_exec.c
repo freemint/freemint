@@ -692,7 +692,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		
 		if (f && (fd->ofileflags[i] & FD_CLOEXEC))
 		{
-			fd_remove (p, i);
+			FD_REMOVE (p, i);
 			do_close (p, f);
 		}
 	}
