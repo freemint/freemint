@@ -110,9 +110,6 @@ boot_printf (const char *fmt, ...)
 	boot_print(buf);
 }
 
-/* GEMDOS pointer to current basepage */
-BASEPAGE **tosbp;
-
 /* structures for keyboard/MIDI interrupt vectors */
 KBDVEC *syskey, oldkey;
 
@@ -393,8 +390,6 @@ restr_intr (void)
 	syskey_aux = (long *)syskey;
 	syskey_aux--;
 	*syskey_aux = (long) oldkeys;
-
-	*tosbp = _base;		/* restore GEMDOS basepage pointer */
 
 	restr_cookies ();
 
@@ -814,20 +809,8 @@ init (void)
 	sysbase = (long *)sysbase[2];	/* gets the ROM one */
 
 	tosvers = (int)(sysbase[0] & 0x0000ffff);
+	kbshft = (tosvers == 0x100) ? (char *) 0x0e1bL : (char *)sysbase[9];
 	falcontos = (tosvers >= 0x0400 && tosvers <= 0x0404) || (tosvers >= 0x0700);
-	if (tosvers == 0x100)
-	{
-		if ((sysbase[7] & 0xfffe0000L) == 0x00080000L)
-			tosbp = (BASEPAGE **) 0x873cL;	/* SPANISH ROM */
-		else
-			tosbp = (BASEPAGE **) 0x602cL;
-		kbshft = (char *) 0x0e1bL;
-	}
-	else
-	{
-		tosbp = (BASEPAGE **) sysbase[10];
-		kbshft = (char *) sysbase[9];
-	}
 
 	if (falcontos)
 	{

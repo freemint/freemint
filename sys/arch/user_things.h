@@ -24,7 +24,7 @@
  * 
  * 
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
- * Started: 1999-08-17
+ * Started: 26.II.2003.
  * 
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
@@ -35,17 +35,14 @@
 # define _m68k_user_things_h
 
 # include "mint/mint.h"
-# include "mint/slb.h"
 
 typedef struct
 {
-	const long	magic;
-	const long	len;
+	const long	len;		/* number of bytes to copy (this struct and the code) */
 	BASEPAGE	*bp;		/* user basepage ptr, internal use */
-	const long	jmpno;
 
-	long terminateme_p;
-	long sig_return_p;
+	long terminateme_p;		/* pointers to functions; they are longs for conveniency */
+	long sig_return_p;		/* i.e. smaller number of casts. */
 	long pc_valid_return_p;
 	long slb_init_and_exit_p;
 	long slb_open_p;
