@@ -1346,10 +1346,19 @@ do_widget_repeat(struct proc *p, long arg)
 
 	do_active_widget(data->lock, data->client);
 
-	if (widget_active.m.cstate)
+	/*
+	 * Ozk: The action functions clear the active widget by clearing the 
+	 * widg member when the mouse button is released, so we check that
+	 * instead of the button state here.
+	 */
+	if (widget_active.widg)
+	{
 		/* repeat */
-		t = addroottimeout(1, do_widget_repeat, 0);
-
+		/*
+		 * Ozk: had to set the flag to 1, else this didnt work ??
+		*/
+		t = addroottimeout(0, do_widget_repeat, 1);
+	}
 	if (t)
 		t->arg = (long)data;
 	else

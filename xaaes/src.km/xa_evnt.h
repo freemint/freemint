@@ -30,6 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
+bool check_queued_events(struct xa_client *client);
+
 AES_function
 	XA_evnt_button,
 	XA_evnt_keybd,
