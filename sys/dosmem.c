@@ -24,6 +24,7 @@
 
 # include "mint/proc.h"
 # include "arch/mprot.h"
+# include "arch/detect.h"
 
 # include "k_prot.h"
 # include "memory.h"
@@ -31,13 +32,13 @@
 
 
 /* new call for TT TOS, for the user to inform DOS of alternate memory
- * FIXME: we really shouldn't trust the user so completely
  * FIXME: doesn't work if memory protection is on
  */
 long _cdecl
 sys_m_addalt (long start, long size)
 {
 	struct proc *p = curproc;
+	long x;
 
 	assert (p->p_cred && p->p_cred->ucr);
 
@@ -47,6 +48,12 @@ sys_m_addalt (long start, long size)
 	if (!no_mem_prot)
 		/* pretend to succeed */
 		return E_OK;
+
+	for (x = 0; x < size; x += 0x2000)
+	{
+		if (test_long_rd((long *)start + x) == 0)
+			return EFAULT;
+	}
 
 	if (!add_region (alt, start, size, M_ALT))
 		return EINTERNAL;
