@@ -88,10 +88,10 @@ long	freephysmem (void);
 long 	alloc_region (MMAP map, ulong size, short mode);
 MEMREGION *fork_region (MEMREGION *reg, long txtsize);
 MEMREGION *create_env (const char *env, ulong flags);
-MEMREGION *create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize,
-			PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
+MEMREGION *create_base (const char *cmd, MEMREGION *env,
+			unsigned long flags, unsigned long prgsize, long *err);
 MEMREGION *load_region (const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
-			long *fp, short isexec, long *err);
+			long *fp, long *err);
 long	load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start,
 			long nbytes, BASEPAGE *base);
 long	memused (PROC *p);
