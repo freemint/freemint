@@ -1349,7 +1349,6 @@ kt_draw_object_tree(void *_parm)
 static bool
 display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	bool clip;
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	XA_TREE *wt = widg->stuff;
 
