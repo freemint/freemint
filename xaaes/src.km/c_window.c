@@ -621,10 +621,16 @@ create_window(
 
 	/* implement maximum rectangle (needed for at least TosWin2) */
 	w->max = max ? *max : root_window->wa;
+
+	if (tp & (UPARROW|DNARROW|LFARROW|RTARROW))
+	{
+		w->min.x = w->min.y = -1;
+		w->min.w = 6 * cfg.widg_w;
+		w->min.h = 6 * cfg.widg_h;
+	}
+	else
+		w->min.w = w->min.h = 0;
 		
-	w->min.x = w->min.y = -1;
-	w->min.w = 6 * cfg.widg_w;
-	w->min.h = 6 * cfg.widg_h;
 
 #if 0
 	if (root_window)
@@ -820,13 +826,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		DIAGS(("open_window: nolist window"));
 		C.focus  = wind;
 
-#if 0
-		if (wind != root_window)
+		if (wind != root_window && !(wind->dial & created_for_POPUP))
 		{
 			inside_root(&r, &wind->owner->options);
-			//inside_minmax(&r, wind);
+			inside_minmax(&r, wind);
 		}
-#endif
+
 		wind->rc = wind->r = r;
 
 		if ((wind->window_status & XAWS_SHADED))
@@ -860,11 +865,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	if ((wind->window_status & XAWS_ICONIFIED))
 	{
-#if 0
-		if (wind != root_window)
+		if (wind != root_window && !(wind->dial & created_for_POPUP))
 			inside_root(&r, &wind->owner->options);
-#endif
-			
 
 		if (r.w != -1 && r.h != -1)
 			wind->rc = wind->r = r;
@@ -877,13 +879,11 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	{
 		/* Change the window coords */
 
-#if 0
-		if (wind != root_window)
+		if (wind != root_window && !(wind->dial & created_for_POPUP))
 		{
 			inside_root(&r, &wind->owner->options);
-			//inside_minmax(&r, wind);
+			inside_minmax(&r, wind);
 		}
-#endif
 
 		wind->rc = wind->r = r;
 
