@@ -370,8 +370,10 @@ exit_proc(enum locks lock, struct proc *p)
 		send_ch_exit(client, p->pid, 0);
 #if GENERATE_DIAGS
 		if (client)
+		{
 			DIAGS(("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
 				client->p->pid, client->name, p->pid, p->name));
+		}
 		else
 			DIAGS(("No real parent client"));
 #endif

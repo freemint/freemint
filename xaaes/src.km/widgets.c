@@ -2436,7 +2436,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			DIAGS(("Nothing to do for closer"));
 #endif
 	}
-	if (old_tp & CLOSER)
+	else if (old_tp & CLOSER)
 	{
 		DIAGS(("Clear closer"));
 		zwidg(wind, XAW_CLOSE, keep_stuff);
@@ -2454,7 +2454,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			DIAGS(("Nothing to do for fuller"));
 #endif
 	}
-	if (old_tp & FULLER)
+	else if (old_tp & FULLER)
 	{
 		DIAGS(("Clear fuller"));
 		zwidg(wind, XAW_FULL, keep_stuff);
@@ -2520,7 +2520,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		DIAGS(("clear sizer"));
 		zwidg(wind, XAW_RESIZE, keep_stuff);
 	}
-			
+
 	if ( (tp & BORDER) || ((tp & (SIZER|MOVER)) == (SIZER|MOVER)) )
 	{
 		tp |= BORDER;
