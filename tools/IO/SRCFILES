@@ -1,7 +1,14 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-HEADER = bswap.h mytypes.h xhdi.h
-COBJS = xhdi.c
+HEADER = \
+	bswap.h \
+	mytypes.h \
+	mint_io.h \
+	xhdi.h
+
+COBJS = \
+	mint_io.c \
+	xhdi.c
 
 SRCFILES = $(HEADER) $(COBJS)

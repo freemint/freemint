@@ -1,4 +1,10 @@
 /*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * 
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
@@ -15,6 +21,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2000-05-02
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
  * 
  */
 
