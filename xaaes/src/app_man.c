@@ -298,9 +298,9 @@ hide_app(LOCK lock, XA_CLIENT *client)
 	{
 		if (   w != root_window
 		    && w->owner == client
-		    && !is_hidden(w)
-		    && (w->active_widgets&MOVER) != 0	/* fail save */
-		    && (w->active_widgets&HIDE) != 0)	/* fail save */
+		    && !is_hidden(w) )
+		//    && (w->active_widgets&MOVER) != 0	/* fail save */
+		//    && (w->active_widgets&HIDE) != 0)	/* fail save */
 		{
 			RECT r = w->r, d = root_window->r;
 #if HIDE_TO_HEIGHT

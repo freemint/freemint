@@ -834,12 +834,12 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 click_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	short b;
+	//short b;
 
-	vq_key_s(C.vh, &b);
+	//vq_key_s(C.vh, &b);
 
 	/* Ozk: If either shifts pressed, unconditionally send the window to bottom */
-	if ((b & 3) && (!((wind->active_widgets & STORE_BACK) !=0 ) || !((wind->active_widgets & BACKDROP) == 0)))
+	if ((widg->k & 3) && (!((wind->active_widgets & STORE_BACK) !=0 ) || !((wind->active_widgets & BACKDROP) == 0)))
 	{
 		if (wind->send_message)
 			wind->send_message(lock, wind, NULL, WM_BOTTOMED, 0, 0, wind->handle, 0, 0, 0, 0);
@@ -862,8 +862,9 @@ click_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 				top_window(lock, wind, NULL);
 		}
 		/* If window is already top, then send it to the back */
+
 		else if (!((wind->active_widgets & STORE_BACK) != 0		/* Don't bottom STORE_BACK windows */
-			    || (wind->active_widgets & BACKDROP) == 0))		/* Don/t bottom NO BACKDROP windows */
+			    || !((wind->active_widgets & BACKDROP) == 0)) )	/* Don/t bottom NO BACKDROP windows */
 		{
 				if (wind->send_message)
 					wind->send_message(lock, wind, NULL,
@@ -1284,6 +1285,53 @@ click_scroll(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	      && slider->stuff
 	      && ((XA_SLIDER_WIDGET *)slider->stuff)->position == (reverse ? widg->xlimit : widg->limit)))
 	{
+		if (widg->k & 3)
+		{
+			int inside;
+			RECT r;
+
+			/*
+			 * ozk: Center sliders at the clicked position..
+			*/
+
+			/*
+			 * Wait for mousebutton release
+			*/
+			graf_mouse(XACRS_POINTSLIDE, NULL);
+			mb = widg->s;
+			while (mb == widg->s) vq_mouse(C.vh, &mb, &mx, &my);
+
+			rp_2_ap(wind, slider, &r);		/* Convert relative coords and window location to absolute screen location */
+			inside = m_inside(mx, my, &r);
+			if (inside)
+			{
+				XA_SLIDER_WIDGET *ssl = slider->stuff;
+				int offs;
+
+				rp_2_ap(wind, widg, &r);
+
+				widg->x = mx - r.x;
+				widg->y = my - r.y;
+				widg->mx = mx;
+				widg->my = my;
+				widg->s = mb;
+				vq_key_s(C.vh, &widg->k);
+				widg->clicks = 0;
+
+				if (widg->slider_type == XAW_VSLIDE)
+					offs = bound_sl(pix_to_sl(widg->y - (ssl->r.h >> 1), slider->loc.r.h - ssl->r.h) );
+				else
+					offs = bound_sl(pix_to_sl(widg->x - (ssl->r.w >> 1), slider->loc.r.w - ssl->r.w) );
+
+				if (wind->send_message)
+					wind->send_message(lock, wind, NULL,
+							   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID, 0, 0, wind->handle,
+							   offs,     0, 0, 0);
+			}
+			cancel_widget_active(wind, 2);
+			return true;
+		}
+
 		if (widg->clicks > 1)
 		{
 			if (reverse)
@@ -1300,7 +1348,7 @@ click_scroll(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 			}
 		}
 		else
-		{		
+		{
 			wind->send_message(lock, wind, NULL,
 					   WM_ARROWED, 0, 0, wind->handle,
 					   reverse ? widg->xarrow : widg->arrowx, 0, 0, 0);
@@ -1509,8 +1557,7 @@ display_hslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	return true;
 }
 
-
-/* 
+/*
  * HR 050601: Heavily cleaned up the code.
  * As a reward the sliders do NOT behave sticky at the edges.
  * I immensely hate that behaviour, as it seems to be the standard for certain
@@ -1532,47 +1579,50 @@ drag_vslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	/* Ozk: No, we dont! */
 	/* vq_mouse(C.vh, &mb, &pmx, &pmy);*/
 
-	if (!widget_active.cont)
+	if (widg->s & 1)
 	{
-		widget_active.cont = true;
-		/* Always have a nice consistent sizer when dragging a box */
-		graf_mouse(XACRS_VERTSIZER, NULL);
-	}
+		if (!widget_active.cont)
+		{
+			widget_active.cont = true;
+			/* Always have a nice consistent sizer when dragging a box */
+			graf_mouse(XACRS_VERTSIZER, NULL);
+		}
 
-	if (widget_active.widg)
-	{
-		/* pending widget: take that */
+		if (widget_active.widg)
+		{
+			/* pending widget: take that */
 
-		ny = widget_active.y;
-		offs = widget_active.offs;
-	}
-	else
-	{
-		offs = sl->position;
-		ny = widget_active.ny;
-	}
+			ny = widget_active.y;
+			offs = widget_active.offs;
+		}
+		else
+		{
+			offs = sl->position;
+			ny = widget_active.ny;
+		}
 
-	if (widget_active.cb)	/*(mb)*/
-	{
-		/* Drag slider */
+		if (widget_active.cb)	/*(mb)*/
+		{
+			/* Drag slider */
 
-		if (widget_active.ny != ny)
-			/* Has the mouse moved? */
-			offs = bound_sl(offs + pix_to_sl(widget_active.ny - ny, widg->loc.r.h - sl->r.h) );
+			if (widget_active.ny != ny)
+				/* Has the mouse moved? */
+				offs = bound_sl(offs + pix_to_sl(widget_active.ny - ny, widg->loc.r.h - sl->r.h) );
 
-		set_widget_active(wind, widg, drag_vslide,3);
-		widget_active.y = widget_active.ny;
-		widget_active.offs = offs;
+			set_widget_active(wind, widg, drag_vslide,3);
+			widget_active.y = widget_active.ny;
+			widget_active.offs = offs;
 
-		if (wind->send_message)
-			wind->send_message(lock, wind, NULL,
-					   WM_VSLID, 0, 0, wind->handle,
-					   offs,     0, 0, 0);
+			if (wind->send_message)
+				wind->send_message(lock, wind, NULL,
+						   WM_VSLID, 0, 0, wind->handle,
+						   offs,     0, 0, 0);
 
-		/* We return false here so the widget display status stays
-		 * selected whilst it repeats
-		 */
-		return false;
+			/* We return false here so the widget display status stays
+			 * selected whilst it repeats
+			 */
+			return false;
+		}
 	}
 
 	cancel_widget_active(wind, 3);
@@ -2187,7 +2237,7 @@ do_widgets(LOCK lock, XA_WINDOW *w, XA_WIND_ATTR mask, struct moose_data *md)
 						widg->s = md->state;			/* HR 280801: we need the state also some time (desktop widget) */
 						vq_key_s(C.vh, &widg->k);		/* HR 190202: for convenience. */
 						widg->clicks = clicks;
-						rtn = widg->drag(lock, w, widg);		/* we know there is only 1 behaviour for these arrows */
+						rtn = widg->drag(lock, w, widg);	/* we know there is only 1 behaviour for these arrows */
 					}
 					else /* normal widget */
 					{
