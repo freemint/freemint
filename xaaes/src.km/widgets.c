@@ -1390,6 +1390,7 @@ set_widget_repeat(enum locks lock, struct xa_window *wind)
 	t->client = wind->owner;
 	t->task = do_widget_repeat;
 	t->lock = lock;
+	ikill(C.AESpid, SIGCONT);
 }
 
 static bool

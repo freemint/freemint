@@ -323,11 +323,26 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
 
+	/*
+	 * If menu-task (navigating in a menu) in progress and button
+	 * pressed..
+	*/
 	if (C.menu_base && md->state)
 	{
 		client = C.menu_base->client;
 		DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
 		post_cevent(client, cXA_button_event, 0, 0, 0, 0, 0, md);
+		return;
+	}
+	/*
+	 * If button released and widget_active is set (live movements)...
+	*/
+	if (widget_active.widg && !md->state)
+	{
+		widget_active.m = *md;
+		client = widget_active.wind->owner;
+		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+		post_cevent(client, cXA_active_widget, 0,0, 0,0, 0, md);
 		return;
 	}
 
