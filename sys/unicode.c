@@ -836,7 +836,7 @@ init_unicode(void)
 
 		/* print success message */
 # ifdef VERBOSE_BOOT
-		boot_printf(MSG_init_done, name);
+		boot_printf(MSG_init_done);
 # endif
 	}
 	else
