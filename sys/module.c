@@ -339,28 +339,6 @@ load_modules(const char *extension, long (*loader)(struct basepage *, const char
 	}
 }
 
-static void *
-callout_init(void *initfunction, struct kerinfo *k)
-{
-	register void *ret __asm__("d0");
-
-	__asm__ volatile
-	(
-		"moveml d3-d7/a3-a6,sp@-;"
-		"movl	%2,sp@-;"
-		"movl   %1,a0;"
-		"jsr    a0@;"
-		"addqw  #4,sp;"
-		"moveml sp@+,d3-d7/a3-a6;"
-		: "=r"(ret)				/* outputs */
-		: "g"(initfunction), "r"(k)		/* inputs  */
-		: "d0", "d1", "d2", "a0", "a1", "a2",   /* clobbered regs */
-		  "memory"
-	);
-
-	return ret;
-}
-
 /*
  * load file systems from disk
  * this routine is called after process 0 is set up, but before any user
@@ -369,12 +347,15 @@ callout_init(void *initfunction, struct kerinfo *k)
 static long
 load_xfs(struct basepage *b, const char *name)
 {
+	FILESYS *(*init)(struct kerinfo *);
 	FILESYS *fs;
 
 	DEBUG(("load_xfs: enter (0x%lx, %s)", b, name));
 	DEBUG(("load_xfs: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	fs = callout_init((void *) b->p_tbase, &kernelinfo);
+	init = (FILESYS *(*)(struct kerinfo *))b->p_tbase;
+
+	fs = (*init)(&kernelinfo);
 	if (fs)
 	{
 		DEBUG(("load_xfs: %s loaded OK (%lx)", name, fs));
@@ -432,12 +413,15 @@ load_xfs(struct basepage *b, const char *name)
 static long
 load_xdd(struct basepage *b, const char *name)
 {
+	DEVDRV *(*init)(struct kerinfo *);
 	DEVDRV *dev;
 
 	DEBUG(("load_xdd: enter (0x%lx, %s)", b, name));
 	DEBUG(("load_xdd: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	dev = callout_init((void *) b->p_tbase, &kernelinfo);
+	init = (DEVDRV *(*)(struct kerinfo *))b->p_tbase;
+
+	dev = (*init)(&kernelinfo);
 	if (dev)
 	{
 		DEBUG(("load_xdd: %s loaded OK", name));
@@ -476,28 +460,6 @@ load_xdd(struct basepage *b, const char *name)
 	return -1;
 }
 
-static void *
-callout_init2(void *initfunction, struct kentry *k)
-{
-	register void *ret __asm__("d0");
-
-	__asm__ volatile
-	(
-		"moveml d3-d7/a3-a6,sp@-;"
-		"movl	%2,sp@-;"
-		"movl   %1,a0;"
-		"jsr    a0@;"
-		"addqw  #4,sp;"
-		"moveml sp@+,d3-d7/a3-a6;"
-		: "=r"(ret)				/* outputs */
-		: "g"(initfunction), "r"(k)		/* inputs  */
-		: "d0", "d1", "d2", "a0", "a1", "a2",   /* clobbered regs */
-		  "memory"
-	);
-
-	return ret;
-}
-
 /* XXX for testing */
 long _cdecl
 load_km(const char *path)
@@ -508,21 +470,24 @@ load_km(const char *path)
 	bp = load_module(path, &err);
 	if (bp)
 	{
+		void *(*init)(struct kentry *);
 		void *ptr;
 
 		FORCE("load_module(%s) ok (bp 0x%lx)!", path, bp);
 
-		ptr = callout_init2((void *) bp->p_tbase, &kentry);
+		init = (void *(*)(struct kentry *))bp->p_tbase;
+
+		ptr = (*init)(&kentry);
 		if (ptr)
 		{
-			FORCE("callout_init ok!");
+			FORCE("load_module: init ok!");
 			err = 0;
 		}
 		else
 		{
 			kfree(bp);
 
-			FORCE("callout_init failed!");
+			FORCE("load_module: init failed!");
 			err = -1;
 		}
 
