@@ -764,7 +764,8 @@ check_kentry_version(void)
 
 # define ikill			(*KENTRY->vec_proc.ikill)
 # define iwake			(*KENTRY->vec_proc.iwake)
-# define killgroup
+# define killgroup		(*KENTRY->vec_proc.killgroup)
+# define raise			(*KENTRY->vec_proc.raise)
 
 # define addtimeout		(*KENTRY->vec_proc.addtimeout)
 # define canceltimeout		(*KENTRY->vec_proc.canceltimeout)
