@@ -1,0 +1,6 @@
+.deps
+*.o
+*~
+lib*.a
+*.app
+*.prg

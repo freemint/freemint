@@ -1,0 +1,852 @@
+@database "TosWin2"
+@author "Christian Felsch"
+@$VER: 2.6
+@subject "Dokumentation/Sonstiges"
+@options "+z-s"
+
+@node "Titel" "TosWin2: Inhalt"
+
+@limage logo.img 36
+                                 TosWin2
+                               Version 2.6
+
+
+                                   von
+                             Christian Felsch
+
+
+   @{U}Inhalt:@{0}
+
+      Allgemeines
+      Systemvoraussetzungen
+      Installation
+      @{"Die Menleiste" link Menleiste}
+      @{"Das Klemmbrett" link Klemmbrett}
+      @{"Die Kommandozeile" link Kommandozeile}
+      @{"Das Programm tw-call.app" link tw-call.app}
+      @{"Das Environment" link Environment}
+      @{"Untersttzte Protokolle" link Protokolle}
+      @{"Bekannte Fehler" link Fehler}
+      Interna
+      Entwicklungsgeschichte
+
+@endnode
+
+@pnode "Christian Felsch"
+Kontaktaufnahme:
+
+Christian Felsch
+Adalbert-Stifter-Str 33
+63477 Maintal
+
+email: C.Felsch@gmx.de
+       Christian Felsch @ HH
+
+@endnode
+
+
+@node "Allgemeines" "TosWin2: Allgemeines"
+@{U}Allgemeines@{0}
+
+@autorefoff
+Unter Multitasking-Umgebungen ist es n”tig, da die Ausgaben von TOS-
+Programme nicht direkt auf den Bildschirm geschrieben sondern in ein
+Fenster umgeleitet werden. Diese Funktion wurde bereits von den alten 
+Versionen von TosWin mehr oder weniger komfortabel gel”st.
+
+TosWin2 ist nun der Versuch, die verschiedenen Versionen von TosWin 1.4 
+in einer einzigen zu vereinigen. Folgende alten TosWin-Versionen sind in 
+TosWin2 eingeflossen:
+
+  ù das Original von Eric Smith (Version 1.4)
+  ù die Erweiterungen von Warwick Allison
+  ù der VT100-Emulator von Julian Coleman (TW100)
+
+TosWin2 ist, wie alle anderen Versionen auch, Public Domain. Das 
+Programm und die Quellen drfen frei verteilt werden.
+
+TosWin2 besteht aus folgenden Dateien:
+
+  ù toswin2.app      Das Programm mit Resource
+    toswin2.rsc
+
+  ù tw-call.app      Das Programm zur Kommunikation AES -> TosWin2
+
+  ù term/tcapinf     Die Terminal-Definitionen von Petr Stehlik.
+  ù term/test100.vt  Eine Datei zum Test des VT100-Emulators.
+                     Einfach mit `cat test.vt` ausgeben lassen.
+
+  ù hyp/*            Der Hypertext fr ST-Guide
+
+
+  ù xconout/*        Das Device fr die Console
+
+Die aktuelle Version ist hier zu finden:
+
+  ù Mailboxen
+      Maus Hamburg (040 - 53897013)
+      
+  ù Internet
+      http://www.tu-harburg.de/~alumnifc/
+@autorefon
+
+@endnode
+
+
+@node "Systemvoraussetzungen" "TosWin2: Systemvoraussetzungen"
+@{U}Systemvoraussetzungen@{0}
+
+Die wichtigsten Unterschiede zu den alten Versionen sind folgende:
+
+            @{B}TosWin2 l„uft nicht mehr als Accessory@{0}
+
+         @{B}TosWin2 l„uft z.Zt. nur N.AES bzw. AES >= 4.1!@{0}
+
+TosWin2 benutzt diverse AES-Erweiterungen des AES 4.1, ohne vorher 
+explizit auf deren Vorhandensein zu testen. 
+Der von TosWin2 ben”tigte GEMDOS-Call Pfork() ist inzwischen zwar auch
+in MagiC (ab 6.10) verfgbar aber leider gibt es noch verschiedene
+Inkompatibilit„ten, so da TosWin2 derzeit noch nicht mit MagiC eingesetzt
+werden kann. Da der Programmierer von MagiC aber kontinuierlich am GEMDOS
+von MagiC arbeitet, k”nnte es sein, da TosWin2 in Zukunft auch damit
+benutzt werden kann!
+
+@endnode
+
+
+@node "Installation" "TosWin2: Installation"
+@{U}Installation@{0}
+
+Die Installation von TosWin2 gestaltet sich relativ einfach. Die Dateien 
+sollten alle im gleichen Verzeichnis liegen.
+Das Kommunikationsprogramm tw-call.app sollte bei N.AES angemeldet werden,
+und zwar in der Datei N_AES.CNF mit der Zeile
+
+   export  TOSRUN=c:\system\toswin\@{tw-call.app ignore}
+
+Es bietet sich an, TosWin2 automatisch beim Booten zu starten. Dazu kann
+man ebenfalls in der N_AES.CNF folgende Zeile eintragen:
+
+   run x:\...\toswin2.app
+
+Der Hypertext kann irgendwo abgelegt werden, ST-Guide sollte ihn aber
+finden.
+
+Falls es die Datei /etc/termcap im System bereits gibt, sollte der Inhalt
+aus den Dateien tw52.tc und tw100.tc dort eingefgt werden. šber Termcap
+informieren sich UNIX-Programme ber die F„higkeiten der Emulationen von
+TosWin2.
+
+Zur Installation des xconout-Devices zum Umleiten der Console-Ausgaben
+wird auf das beiliegende ReadMe verwiesen.
+
+@endnode
+
+
+@node "Menleiste" "TosWin2: Menleiste"
+@{U}Die Menleiste@{0}
+
+  Datei                        Fenster          Optionen
+@line 1 74 0 0 1
+@box 2 28 4 0
+@box 31 16 4 0
+@box 48 26 8 0
+  TOS-Programm starten... O   Console ”ffnen   Fensterwechsel global
+  Shell starten               @{G}----------------@{0}  Men-Shortcuts benutzen
+ @{G}----------------------------@{0}  Wechseln    W   Immer Loginshell
+  Ende                    Q   Schlieen   U  @{G}--------------------------@{0}
+                                                Console konfigurieren...
+                                                Fenster konfigurieren...
+                                               @{G}--------------------------@{0}
+                                                Einstellungen sichern S
+
+@index "Men-Shortcuts „ndern"
+Die Shortcuts werden aus der Resource ermittelt, so da sie dort auch
+ver„ndert werden k”nnen. Dazu drfen folgende Zeichen verwendet werden:
+
+   ù Alle Buchstaben, Zahlen und Sonderzeichen
+   ù Funktionstasten: F1 .. F10
+   ù Schlsselw”rter: DEL, ESC, HELP, HOME, INS, TAB, UNDO
+
+Zus„tzlich k”nnen den o.g. Zeichen noch die drei blichen Umschalttasten
+vorangestellt werden (auch kombiniert):
+
+    fr Shift
+   ^ fr Control
+    fr Alternate
+
+
+@index Men-Hilfe
+Wird ein Menpunkt mit gedrckter Control-Taste angeklickt, wird die
+entsprechende Position im Hyptertext angesprungen. Dafr setzt TosWin2
+voraus, da ST-GUIDE bereits gestartet ist und den Hypertext findet.
+
+@endnode
+
+
+@node "TOS-Programm starten" "TosWin2: TOS-Programm starten"
+@{U}TOS-Programm starten@{0}
+
+šber diesen Menpunkt kann ein neues TOS-Programm gestartet werden. Dazu 
+wird einfach die Programmdatei in der Dateiauswahlbox ausgew„hlt.
+Nachdem man ein Programm ausgew„hlt hat, bekommt man noch die M”glichkeit,
+Start-Parameter einzugeben.
+
+@endnode
+
+
+@node "Shell starten" "TosWin2: Shell starten"
+@index Loginshell
+@index utmp-Datei
+@index wtmp-Datei
+@index passwd-Datei
+@{U}Shell starten@{0}
+
+šber den Menpunkt ist es m”glich, eine Kommandoshell zu starten.
+Welche Kommandoshell gestartet werden soll, wird in der Datei /etc/passwd
+festgelegt. TosWin2 verwendet aus dieser Datei Homeverzeichnis und 
+Loginshell des aktuellen Users. Um den aktuellen User zu ermitteln wertet
+TosWin2 zun„chst die Variable LOGNAME aus. Ist diese nicht gesetzt, wird
+die effektive User-ID verwendet.
+
+Je nachdem Men-Schalter Immer Loginshell werden entweder alle oder
+nur die erste Shell als sogenannte Loginshell gestartet. Von der 
+Loginshell wird der User in die Dateien /etc/utmp und /var/adm/wtmp 
+vermerkt und auerdem wertet die Shell zus„tzliche Dateien aus 
+(bash: ~/.bash_login, tcsh: ~/.login).
+
+Fr jede gestartete Shell werden die Environmentvariablen HOME und SHELL
+mit den entsprechenden Werten aus der /etc/passwd besetzt.
+
+Die Shell-Funktion wird insbesondere vom GEMinit-Paket von Ulrich Kaiser 
+benutzt.
+
+@endnode
+
+
+@node "Ende" "TosWin2: Ende"
+@index SIGHUP
+@{U}Ende@{0}
+
+šber diesen Menpunkt wird TosWin2 beendet.
+Dabei werden s„mtliche Fenster geschlossen, eventuell noch laufenden 
+Prozesse erhalten ein SIGHUP. Wenn noch eine Loginshell offen ist, wird
+der User korrekt aus /etc/utmp und /var/adm/wtmp abgemeldet.
+
+@endnode
+
+
+@node "Console ”ffnen" "TosWin2: Console ”ffnen"
+@index xconout2
+@{U}Console ”ffnen@{0}
+
+Damit die Console benutzt werden kann, mu das Device xconout2 von Torsten 
+Scherer (TeSche) installiert sein. Dieses Device f„ngt s„mtliche 
+Ausgaben ab, die Programme direkt auf den Bildschirm machen und stellt 
+sie einem anderen Programm ber eine Pipe zur Verfgung.
+TosWin2 bietet die M”glichkeit, diese Ausgaben in ein Fenster umzuleiten,
+so da sie nicht mehr direkt auf dem Bildschirm landen. 
+Wird das Fenster iconifiziert, ”ffnet es sich automatisch, sobald neue
+Ausgaben kommen.
+
+Wird das Fenster geschlossen, meldet sich TosWin2 bei xconout2 ab und die
+Ausgaben erscheinen wieder direkt auf dem Bildschirm. Es bietet sich also 
+an, die Console immer durch TosWin2 ”ffnen zu lassen und man braucht sich 
+nie mehr ber wilde Ausgaben zu „rgern!
+
+Ob TosWin2 die Console berwacht kann man daran erkennen, ob die Datei
+u:\dev\tw-con existiert.
+
+@endnode
+
+
+@node "Fensterwechsel global" "TosWin2: Fensterwechsel global"
+@index AV-Server
+@{U}Fensterwechsel global@{0}
+
+Ist dieser Schalter aktiviert, wird der Fensterwechsel nicht von TosWin2
+durchgefhrt, sondern eine entsprechende Anweisung an den AV-Server
+geschickt. Vorteil ist der, da man von Fenstern von TosWin2 zu denen
+des Desktops und anderen Programmen gelangt (sofern diese Programme ihre
+Fenster beim AV-Server angemeldet haben).
+
+Damit das funktioniert, mu der AV-Server (in aller Regel ein Desktop wie
+Thing oder Jinnee) entsprechend im Environment (n_aes.cnf) angemeldet 
+sein:
+                        
+      export AVSERVER=THING
+
+@endnode
+
+
+@node "Men-Shortcuts benutzen" "TosWin2: Men-Shortcuts benutzen"
+@{U}Men-Shortcuts benutzen@{0}
+
+šber diesen Schalter kann man einstellen, ob TosWin2 die im Men ein-
+getragenen Shortcuts benutzt oder nicht. Wenn ein Shortcut ausgewertet 
+wurde, steht dieser natrlich nicht mehr als Eingabe im obersten 
+Fenster zur Verfgung! 
+Wer also eine Tastenkombination aus dem Men unbedingt als Eingabe in 
+das Fenster ben”tigt, kann entweder diesen Schalter vorbergehend 
+abschalten oder aber den Shortcut dauerhaft aus der Resource 
+(toswin2.rsc) l”schen.
+
+@endnode
+
+
+@node "Immer Loginshell" "TosWin2: Immer Loginshell"
+@{U}Immer Loginshell@{0}
+
+Wird dieser Schalter gesetzt, werden alle Shells als @{Loginshell link "Shell starten"} gestartet.
+Ansonsten ist nur die erste Shell eine Loginshell.
+
+@endnode
+
+
+@node "Console konfigurieren" "TosWin2: Console konfigurieren"
+@{U}Console konfigurieren@{0}
+
+šber den Dialog kann das Verhalten des @{Console-Fensters link "Console ”ffnen"} eingestellt
+werden.
+Folgende Parameter stehen zur Verfgung:
+
+   ù Beim Start anlegen    Dieser Schalter veranlasst TosWin2 das 
+                           Console-Fenster automatisch beim Start 
+                           zu ”ffnen.
+   
+   ù Bei Ausgaben ”ffnen   Ist dieser Schalter gesetzt, wird das 
+                           iconifizierte oder eingeklappte (shaded) 
+                           Console-Fenster wieder ge”ffnet, sobald
+                           neue Ausgaben kommen.
+  
+   ù Mitschrift in Datei   Die im Fenster erscheinenden Ausgaben 
+                           k”nnen in einer Datei abgelegt werden.
+                           
+Sollte die Option "Bei Ausgaben ”ffnen" deaktiviert sein, werden neue
+Ausgaben im iconifizierten Fenster durch ein optisch ver„ndertes Icon
+angezeigt. 
+
+@endnode
+
+
+@node "Fenster konfigurieren" "TosWin2: Fenster konfigurieren"
+@{U}Fenster konfigurieren@{0}
+
+Bei TosWin2 k”nnen die Parameter fr jedes Programm individuell einge-
+stellt werden. Im Gegensatz zu den alten Versionen merkt sich TosWin2 
+nicht nur verschiedene Fensterattribute sondern auch die Position des 
+Fenster. Das bedeutet, da z.B. die Loginshell immer an der gleichen 
+Position ge”ffnet wird.
+Nachteil der neuen Methode: da es pro Programm nur einen Satz Parameter
+gibt, beziehen sich nderungen immer auf alle offenen Fenster, in denen
+das betroffene Programm l„uft. Auerdem ist es z.Zt. nicht m”glich, da 
+TosWin2 sich gestartete Programme merkt und sie beim n„chsten Mal 
+automatisch startet.
+
+šber den Menpunkt wird der Konfigurationsdialog aufgerufen. Ist gerade 
+kein Fenster offen, das konfiguriert werden kann, k”nnen die Standard-
+Einstellungen gemacht werden. Wofr die Konfiguration wirksam wird, 
+erkennt man an dem eingeblendeten @{Titel ignore}.
+
+Fr jedes Fenster k”nnen folgende Parameter eingestellt werden:
+
+   ù Gr”e:       Spalten und Zeilen geben die maximal Gr”e des 
+                  Fenster an, d.h. die Gr”e, die eingestellt wird, 
+                  wenn man den Fuller bet„tigt.
+                  Wird ein Puffer angegeben (xxx Zeilen), werden 
+                  die Ausgaben gepuffert und man kann im Fenster 
+                  xxx Zeilen zurckscrollen.
+  
+   ù Zeichensatz: Es kann ein beliebiger, nicht-proportionaler GDOS-
+                  Zeichensatz verwendet werden.
+                  Fr die Auswahl mu ein xFSL-kompatibles Programm
+                  (z.B. Calvino) oder WDialog ()MagiC-Auswahl) vor-
+                  handen bzw. ein Font-Server abgemeldet sein (z.B. 
+                  Thing).
+                  Unter "Tabelle" kann man einstellen, wie die
+                  Tastendrcke interpretiert werden. Derzeit stehen
+                  Atari und ISO-Codierung zur Verfgung.
+
+   ù Sonstiges:   Mit dem Schalter "Zeilen umbrechen" wird eingestellt,
+                  ob lange Zeilen, die nicht in das Fenster passen, 
+                  umbrochen werden oder nicht.
+                  šber den Schalter "autom. schlieen" kann eingestellt
+                  werden, ob das Fenster nach Beendigung des Programms
+                  sofort geschlossen wird.
+
+   ù Elemente:    Es kann frei definiert werden, welche Elemente das 
+                  Fenster habe soll. 
+                  Auerdem kann ein @{Titel ignore} eingegeben werden. 
+                  Wird kein Titel eingetragen, wird der Programmname
+                  verwendet.
+               
+   ù Terminal:    TosWin2 bietet sowohl die tw52 als auch die tw100-
+                  Emulation. Da TosWin2 VT52 bzw. VT100 nicht komplett
+                  emuliert, verwendet es die eigenen Terminal-Namen.
+                  Eine nderung der Emulation wirkt erst nach erneutem
+                  Start des betroffenen Programms aus.
+                  Neben dem Terminal-Typ k”nnen auerdem noch die 
+                  Vorder- und Hintergrundfarbe eingestellt werden.
+ 
+Neben den im Dialog get„tigten Einstellungen merkt sich TosWin2 die
+Position der Fenster und ob sie beim Sichern der Einstellungen 
+iconifiziert sind.
+
+@endnode
+
+
+@node "Einstellungen sichern" "TosWin2: Einstellungen sichern"
+@index toswin2.cfg
+@{U}Einstellungen sichern@{0}
+
+Die Parameter werden in die Datei toswin2.cfg gespeichert. Dabei werden
+die Daten in einer lesbaren Form abgelegt. Wer die Datei von Hand in 
+einem Editor „ndert, sollte genau wissen, was er tut :-)
+
+Beim Start sucht TosWin2 diese Datei auf verschiedenen Pfaden:
+
+   1. Auf dem Pfad in der Variablen HOME
+
+   2. Auf dem Pfad HOME/defaults
+
+   3. Im Startverzeichnis von TosWin2
+
+   4. Im aktuellen Verzeichnis
+
+@endnode
+
+
+@node "Klemmbrett" "TosWin2: Klemmbrett"
+@index Blockmarkierung
+@{U}Das Klemmbrett@{0}
+
+TosWin2 untersttzt das GEM-Klemmbrett.
+In allen Fenstern k”nnen Textbereiche mit der Maus selektiert werden.
+Die bekannten Funktionen "Kopieren" und "Einfgen" werden dabei z.T.
+automatisch ausgel”st. Folgende Funktionen stehen zur Verfgung:
+
+   ù Linke Taste drcken, halten und ziehen zum Markieren von Text.
+     Wird die Taste losgelassen, wird der markierte Text sofort auf
+     das Klemmbrett geschrieben. 
+     Ist bereits ein Block markiert, kann durch Drcken der Shift-
+     Taste die Markierung ver„ndert werden.
+
+   ù Durch einen Doppelklick-Links kann ein Wort markiert werden.
+     Ein Wort besteht aus Buchstaben, Zahlen und den g„ngigen Zeichen
+     fr Dateinamen.
+     
+   ù Mit einem Rechts-Klick wird der Inhalt der Klemmbrett in dem
+     aktuellen Fenster eingefgt.
+
+   ù Durch Drcken der HELP-Taste wird der markierte Text an ST-Guide
+     geschickt.
+     
+@index StringServer   
+   ù Wird ein markierter Bereich einmal angeklickt, wird der Text an
+     den StringServer geschickt.
+     StringServer ist ein ntzliches Tool, das Strings an verschiedene
+     Programme verschickt. So kann z.B. in TW2 eine URL mariert werden 
+     und ber den Server an CAB geschickt werden.
+     N„heres dazu: http://www.bright.net/~atari/files/sspb2909.lzh
+
+TosWin2 schreibt den Text genau so in das Klemmbrett, wie er von dem 
+TOS-Programm ausgegeben wurde, d.h. es werden keinerlei Blanks ein-
+gefgt oder Zeilenenden ver„ndert.
+
+@endnode
+
+
+@node "Kommandozeile" "TosWin2: Kommandozeile"
+@{U}Die Kommandozeile@{0}
+
+TosWin2 wertet beim Start seine Kommandozeile aus. Derzeit werden 
+folgende Kommandos ausgewertet:
+
+   ù "-l" bewirkt, da TosWin2 nach dem Start sofort ein Fenster mit
+     einer (Login)-Shell ”ffnet.
+
+   ù Ein Programmname wird bergeben. Dabei enth„lt das erste Argument 
+     den Pfad des Programmes (in TOS- oder UNIX-Schreibweise), alle 
+     weiteren Argumente werden von TosWin2 an das gestartet Programm 
+     weitergereicht.
+     Beispiel: toswin /bin/sh -c script
+
+@endnode
+
+
+@node "tw-call.app" "TosWin2: tw-call.app"
+@{U}Das Programm tw-call.app@{0}
+
+Das Programm tw-call.app sollte von N.AES zum Nachstarten von TOS-
+Programmen benutzt werden (-> Installation).
+Der Sinn von tw-call besteht darin, die Daten des zu startenden TOS-
+Programms an TosWin2 weiterzuleiten. Dadurch wird erreicht, da immer
+nur @{I}ein@{0} TosWin2 laufen mu, das sich um @{I}alle@{0} TOS-Programme kmmert.
+Dabei reicht tw-call nicht nur, wie das alte RunTos, Programmname und 
+Argument sondern zus„tzlich noch das aktuelle @{Environment ignore} und das 
+Standardverzeichnis an TosWin2 weiter.
+Neben dem Weitereichen der Programmdaten hat tw-call noch eine andere
+Aufgabe: Wenn ein GEM-Programm ein TOS-Programm nachstartet (z.B. 
+eine TeX-Shell das tex.ttp) erwartet die Shell in der Regel eine 
+Nachricht, wann das TOS-Programm beendet ist. Auerdem kann der 
+Rckgabewert des TOS-Programms von Interesse sein. 
+Das alte RunTos hat sich sofort nach der šbermittlung der Programm-
+daten beendet, die TeX-Shell bekommt also von dem eigentlichen @{Ende ignore}
+des tex.ttp berhaupt nichts mit.
+Das neue tw-call verh„lt sich anders: nachdem es die Daten an TosWin2
+bermittelt hat, wartet es so lange, bis TosWin2 es informiert, da 
+das TOS-Programm sich beendet hat. TosWin2 bergibt dabei an tw-call 
+den Rckgabewert des TOS-Programms. Mit diesem Wert beendet sich 
+schlielich tw-call. Fr das aufrufende Programm sieht es nun so aus, 
+als ob die eintreffende CH_EXIT-Meldung von dem TOS-Programm selbst 
+stammt und es kann den korrekten Rckgabewert verarbeiten.
+
+tw-call ist damit derzeit die einzige M”glichkeit, um unter N.AES die 
+erweiterten Modi von @{"shel_write()" link TOS.HYP/shel_write} (šbergabe von Startverzeichnis und
+@{Environment ignore}) und korrekte CH_EXIT-Meldungen auch bei TOS-Programmen
+zu realisieren.
+
+tw-call tr„gt sich in dem Programm-Men von N.AES mit dem Namen des
+TOS-Programms ein. Wird solch ein Eintrag angeklickt, schickt tw-call
+eine Nachricht an TosWin2 und das zugeh”rige Fenster wird getoppt.
+
+Wird tw-call mit "-l" als Parameter z.B. direkt vom Desktop aus gestartet,
+schickt es TosWin2 eine Nachricht, woraufhin dieses eine neue Shell 
+startet. Damit wird die Funktionalit„t "Shell starten" aus TosWin2 
+herausgereicht und man kann sie ber ein Icon auf dem Desktop oder durch
+Belegung einer F-Taste schnell erreichen.
+
+Wird tw-call ohne irgendwelche Parameter gestartet, schaut es lediglich
+nach, ob TosWin2 bereits l„uft und startet es ggf. nach.
+
+@endnode
+
+
+@node "Environment" "TosWin2: Environment"
+@{U}Das Environment@{0}
+
+Fr die nachgestarteten Programme tr„gt TosWin2 ein Environment ein.
+Dazu wird beim Programmstart ber Men bzw. beim Start einer Shell
+eine Kopie des aktuellen @{B}AES@{0}-Environments angelegt. Das AES-
+Environment wird benutzt, da es sich zur Laufzeit „ndern kann. Beim
+Start durch tw-call wird das bergeben Environment benutzt.
+
+TosWin2 tr„gt einige zus„tzliche Variablen ein. In allen drei F„llen
+sind das:
+
+   ù TERM mit "tw52" bzw. "tw100", je nach der benutzen Emulation.
+
+   ù LINES,
+     COLUMNS mit der aktuelle Fenstergr”e.
+
+Zus„tzlich werden fr die Shell zwei weitere Variablen gesetzt:
+
+   ù HOME mit dem Homeverzeichnis aus der /etc/passwd
+
+   ù SHELL mit der Loginshell aus der /etc/passwd
+
+Falls es die Anzahl der Argumente beim Start durch tw-call erfordert,
+wendet TosWin2 das ARGV-Verfahren an.
+
+@endnode
+
+
+@node "Protokolle" "TosWin2: Protokolle"
+@index Cookies
+@index xFSL
+@index AP_TERM
+@index VA_START
+@index AV_STARTED
+@index Drag&Drop
+@index SC_CHANGED
+@{U}Untersttzte Protokolle@{0}
+
+TosWin2 prft einige Cookies und untersttzt verschiedene Protokolle
+bzw. AES-Nachrichten.
+
+@{U}Cookies@{0}
+
+   ù xFSL         Fontauswahl mit Clavino oder HuGo.
+
+@{U}Empfangene Nachrichten@{0}
+
+   ù AP_TERM      TosWin2 meldet dem AES, da es diese Nachricht 
+                  versteht und verh„lt sich bei derem Empfang genau
+                  so, wie wenn man den Menpunkt Ende w„hlt.
+               
+   ù VA_START     Bisher wird als Argument nur "-l" verstanden. Es 
+                  bewirkt, das TosWin2 ein neues Shell-Fenster ”ffnet. 
+                  šber diese Nachricht kann jedes anderen Programm 
+                  TosWin2 dazu veranlassen, eine neue Shell zu starten.
+                  TosWin2 antwortet mit AV_STARTED, damit der Aufrufer 
+                  den Speicher wieder freigeben kann.
+   
+   ù AP_DRAGDROP  TosWin2 untersttzt das Drag&Drop-Protokoll:
+                  Vom Desktop k”nnen Programme und Verzeichnisse, von
+                  anderen Programmen Texte auf den Fenstern abgelegt werden. 
+                  Wird ein Verzeichnis auf ein Fenster mit einer Shell
+                  gelegt, schickt TosWin2 es mit einem vorgestellten 
+                  "cd " an die Shell, so da diese das Verzeichnis 
+                  wechselt. Dateiname oder Pfad werden in UNIX-
+                  Schreibweise (/c/auto/...) gewandelt und das be-
+                  troffenen Fenster wird getopped.
+
+   ù FONT_CHANGED Antwort des Font-Servers.
+
+@{U}Verschickte Nachrichten@{0}
+
+   ù AV-Protokoll Fr Fensterwechsel ber AV meldet sich TosWin2 mit
+                  entsprechenden Meldungen beim AV-Server an.
+
+   ù Drag&Drop    In TosWin markierte Text-Bl”cke k”nnen als ".TXT"
+                  in andere Fenster gezogen werden.
+
+   ù FONT_SELECT  Wird an einen Font-Server geschickt.
+
+   ù SC_CHANGED   Nachdem TosWin2 das Klemmbrett ver„ndert hat, werden
+                  alle anderen Applikationen darber informiert.
+
+   ù VA_START     An ST-Guide fr die Online-Hilfe bzw. an den
+                  StringServer.
+   
+@endnode
+
+
+@node "Fehler" "TosWin2: Fehler"
+@{U}Bekannte Fehler@{0}
+
+  ù Das neue Parameterkonzept fr die Fenster erlaubt z.Zt. kein 
+    automatisches Starten von Programmen beim Start von TW selbst.
+
+  ù Das wortweise Selektieren mittels Doppelklick ist manchmal etwas 
+    schwierig, da man den Doppelklick innerhalb der Zeit fr die 
+    Timerevents (50ms) schaffen mu :-))
+
+  ù Aus bisher unerfindlichen Grunden ist die VT100-Ausgabe beim 
+    Scrolling etwas tr„ger als die VT52-Ausgabe.
+
+  ù Bei mindestens zwei Leuten treten Probleme im Zusammenhang mit
+    einer PPP-Verbindung zu einem UNIX-Rechner auf. Keiner wei, was
+    hier passiert!?
+    
+@endnode
+
+
+@node "Interna" "TosWin2: Interna"
+@index TIOCSWINSZ
+@index SIGWINCH
+@index Pipe
+@index Font-Protokoll
+@index VT100-Grafik
+@{U}Interna@{0}
+
+Hier noch ein paar Informationen, die fr den reinen Anwender kaum 
+von Interesse sein drften und eher fr den Programmierer gedacht
+sind. 
+
+   ù @{"Protokoll zwischen tw-call und TosWin2" link TW-Protokoll}.
+
+   ù TosWin2 teilt die aktuelle Fenstergr”e dem Proze bei dessen 
+     Start ber Fcntl(fd, &tw, TIOCSWINSZ) mit.
+     Wird die Gr”e ge„ndert, w„hrend ein Proze l„uft, setzt TosWin2 
+     folgendes ab:
+         Fcntl(t->fd, &tw, TIOCSWINSZ);
+         Pkill(-t->pgrp, SIGWINCH);
+     Die Shells bash und tcsh z.B. reagieren darauf, in dem sie die 
+     Werte in den Variablen LINES und COLUMNS entsprechend anpassen.
+
+   ù TosWin2 benutzt fr die Pipes zu MiNT-Net kompatible Namen. 
+     Angelegt werden die Pipes unter u:\pipe\ttyp[0-9a-f], es sind 
+     also maximal 16 Fenster gleichzeitig m”glich. Wenn TosWin2 die 
+     Pipe anlegt, wird automatisch ein Link in u:\dev mit gleichem 
+     Namen erzeugt, da einige Programme das TTY im Device-Ordner 
+     erwarten.
+
+   ù TosWin2 untersttzt die Fontauswahl nach dem Font-Protokoll.
+     Dazu ruft es den ber die Environment-Variable "FONTSELECT" 
+     angemeldete Fontauswahl auf. 
+     Auerdem kann aus einer entsprechenden Fontauswahl (z.B. Thing) 
+     ein Font per D&D auf ein offenes Fenster gezogen werden.
+
+   ù VT100-Grafik:
+     TosWin2 wertet die Steuersequenzen ShiftIn (0x0E) und ShiftOut 
+     (0x0f) bzw. ESC-(0 und ESC-(B zur Umschaltung zwischen ASCII- 
+     und Grafikzeichensatz aus. Ist der Grafikzeichensatz aktiv, 
+     werden die Buchstaben entsprechend der Abbildung auf die Grafik-
+     zeichen umgemappt. TosWin2 verh„lt sich dabei so wie ein XTerm 
+     unter UNIX. Damit das funktioniert, mu ein entsprechender ANSI-
+     Zeichensatz (TMAIL, Connect Light) eingestellt sein. 
+
+@limage table.img 10
+
+@endnode
+
+
+@node "TW-Protokoll" "TosWin2: TW-Protokoll"
+@{U}Kommunikation zwischen tw-call und TosWin2@{0}
+
+Die Kommunikation zwischen tw-call und TosWin2 l„uft ber mehrere
+Nachrichten ab. Zum Datenaustausch wird Shared-Memory benutzt, so
+da es keine Probleme mit der Memory Protection gibt.
+
+Folgende Nachrichten werden ausgetauscht:
+
+   TWSTART (0x0CF1), tw-call -> TosWin2
+      tw-call fragt bei TosWin2 an, ob dieses bereit ist, Daten
+      zu empfangen.
+   
+   TWOK (0x0CF2), TosWin2 -> tw-call
+      Antwort von TosWin2 auf TWSTART.
+      
+   TWWRITE (0x0CF3), tw-call -> TosWin2
+      tw-call hat die Daten im SharedMem abgelegt. Der Block steht
+      unter dem Namen u:\shm\tw-call.xxx zur Verfgung, wobei xxx
+      fr die GEM-ID von tw-call steht. Der Block hat folgende
+      Struktur:
+
+         char  name[256]   Programmname mit Pfad.
+         char  pfad[256]   Aktuelles Verzeichnis.
+         char  arg[4096]   Die Argumente, getrennt durch "\n".
+         char  env[4096]   Das @{Environment ignore} als Kopie aus der 
+                           Basepage von tw-call.
+      
+   TWREAD (0x0CF4) TosWin2 -> tw-Call
+      TosWin2 hat die Daten ausgelesen.
+      
+   TWERR (0x0CF5) TosWin2 -> tw-call
+      Beim Auslesen trat ein @{Fehler ignore} auf.
+
+Neben den Nachrichten fr die šbergabe der Programmdaten, werden 
+noch folgende verschickt:
+
+   TWTOP (0x0CF6) tw-call -> TosWin2
+      Der Meneintrag eines TOS-Programms wurde angeklickt und
+      TosWin2 soll das zugeh”rige Fenster toppen.
+
+   TWSHELL (0x0CF7) tw-call -> TosWin2
+      Wird tw-call mit der Option "-l" gestartet, schickt es TosWin2
+      diese Nachricht, woraufhin TosWin2 eine neue Shell startet.
+
+@endnode
+
+
+@node "Entwicklungsgeschichte" "TosWin2: Entwicklungsgeschichte"
+@{U}Entwicklungsgeschichte@{0}
+
+@autorefoff
+ @{U}Version 2.6 vom 09.09.00@{0}
+
+   ù Wenn keine Fontauswahl verfgbar ist und man trotzdem versucht, den
+     Font zu „ndern, werden die Fontdaten nicht mehr zerst”rt.
+   ù 'Gl”ckchen'-Problem der tw100-Emulation gefixed.
+   ù Timeout fr den Fall eingebaut, da tw-call nicht antwortet.
+   ù NULs in Ausgaben werden ignoriert.
+   ù TW2 nutzt das neue Farb-Popups von Heiko Achilles (CF-Lib).
+
+ @{U}Version 2.5 vom 19.09.99@{0}
+
+   ù Da TW2 die Emus vt52 und vt100 nicht vollst„ndig abbildet, wird
+     jetzt TERM jetzt wieder auf tw52 bzw. tw100 gesetzt.
+   ù Korrekturm am Redraw des Icon-Fensters.
+   ù Man kann markierten Text per D&D in andere Fenster ziehen,
+     auerdem werden jetzt auch D&D-Daten vom Typ ".TXT" akzeptiert.
+   ù tw-call meldet sich beim AES mit dem Namen des TOS-Programms an,
+     soda ein appl_find(TOSName) die ID von tw-call liefert und darber
+     das Fenster erreichbar ist.
+
+ @{U}Version 2.4 vom 16.04.99@{0}
+
+   ù TW2 l„t sich jetzt mit PureC bersetzen, so da sich deutlich
+     kompaktere Programme ergeben.
+   ù Text-Markierung ber Fenstergrenzen hinweg.
+   ù Das autom. Schlieen der Fenster ist jetzt lokale Option.
+   ù Neue Funktionen fr die Console: ™ffnen bei Ausgaben, Mitschrift 
+     in Datei, optische Anzeige im Icon bei neuen Ausgaben.
+   ù TW2 benutzt nun die Standard-Terminals vt52/vt100 statt tw52/tw100.
+   ù Diverse Bugfixes und Korrekturen.
+ 
+ @{U}Version 2.3 vom 29.10.98@{0}
+
+   ù Markierte Bl”cke k”nnen an ST-Guide bzw. an StringServer geschickt
+     werden (Dank an Jo Even Skarstein)
+   ù Zeichentabelle w„hlbar (Atari, ISO Latin1) (Dank an Jo Even Skarstein)
+   ù Vorder/Hintergrundfarbe im Fenster sind konfigurierbar.
+   ù RSC-Versions-Kontrolle
+
+ @{U}Version 2.2 vom 19.07.98@{0}
+
+   ù Umgestellt auf @{CF-Lib link cflib.hyp/main}
+   ù Men-Shortcuts werden jetzt aus der RSC ermittelt. Tasten, die
+     Shortcuts sind, kommen natrlich nicht mehr im Fenster an. 
+   ù Fontauswahl im Fenster (xFSL, FONTSERVER, MagiC)
+   ù TW2 verschickt AV_STARTED als Antwort auf VA_START, damit
+     der Aufrufer den Speicher freigeben kann. (Bei der 2.1 kam 
+     es in diesem Zusammenhang zu Speichermll, der z.B. zu fehler-
+     haften Font-Daten oder Abstrzen fhrte)
+   ù Beim Fensterwechsel werden nun auch die Dialoge beachtet.
+   ù Fensterwechsel ber AV-Server m”glich.
+   ù Neuer Menschalter, um die Auswertung der Shortcuts abzuschalten.
+   ù Neuer Menschalter, damit alle Shells als Loginshell gestartet
+     werden.
+   ù Die aktuelle Fenstergr”e wird in der CFG gesichert, bisher wurde 
+     das Fenster immer in max. Gr”e (Zeilen/Spalten) ge”ffnet.
+
+ @{U}Version 2.1 vom 19.02.98@{0}
+
+   ù nderung der Parameter:
+      tw-call.app ohne alles startet nur noch TW2.
+      "-l" (toswin2.app und tw-call.app) startet Loginshell.
+   ù Die Fensterverwaltung kam beim Toppen/UnToppen/OnToppen durch-
+     einander, so da Tasteneingaben ins falsche Fenster gingen.
+   ù D&D beim Draggen mehrere Dateien korrigiert.
+   ù Neue termcap/terminfo und ein paar Patches fr die Farbdarstellung
+     von Petr Stehlik.
+   ù Ein paar Korrekturen an den USERDEFs fr prop. Systemfonts.
+   ù Korrektur am Fensteredraw bei High/TrueColor Aufl”sungen.
+   ù Fontprotokoll (Dank an Jo Even Skarstein).
+   ù Fensterdialoge.
+   ù Zwar noch keinen englischen Hyp, dafr aber wenigstens eine RSC.
+
+   
+ @{U}Version 2.0 vom 05.08.97@{0}
+
+  Erste ”ffentliche Version. Darin haben sich folgende Dinge gegenber 
+  der alten Version ge„ndert ("-": entfernt, "+": neu):
+
+   - Die sogenannten "Application Menus", d.h. die Mens, die fr das 
+     jeweilige Programm mit einer MNU-Datei definiert wurden, wurden 
+     entfernt.
+   - Die Copyrightbox im Fenster mit dem Icon fr das Klemmbrett ist
+     durch eine normale, ohne Fenster ersetzt.
+   - Die Unterscheidung zwischen "Std Window" und "Alt Window" wurde
+     abgeschaft. Auerdem macht TosWin2 keine direkten Zugriffe auf 
+     LineA mehr.
+   - Konfigurierbarkeit des Klemmbretts ersatztlos entfallen.
+   - Die Menshortcuts k”nnen nicht mehr im Programm eingestellt werden.
+   - Konfiguration des Environments ist nicht mehr m”glich.
+   - Die globalen Optionen "Florishes", "Point to type" und "Smooth 
+     scrolling" sind entfallen. "Align Windows" ist Standard und kann 
+     nicht abgeschaltet werden.
+   - Das Men zur Ausl”sen von Fensteraktionen (Gadges).
+   - Wegen grober Rechenzeitverschwendung gibt es kein Cursor-Blinken
+     mehr.
+   - Die TOSRUN-Pipe wird nicht mehr ben”tigt.
+ 
+   + Externe Resource.
+   + Neues, auf das wesentliche reduziertes @{Men link Menleiste}.
+   + Hypertext und Men-Hilfe.
+   + Neue Dialoge mit modernen Elementen.
+   + Neue @{Klemmbrettverwaltung link Klemmbrett}.
+   + Neue Funktion @{Shell link "Shell starten"}.
+   + Neue Funktion @{Console link "Console ”ffnen"}.
+   + Neues Konzept zur @{Fensterkonfiguration link "Fenster konfigurieren"}.
+   + TosWin2 wertet seine Kommandozeile aus.
+   + @{TW-Call link tw-call.app}
+   + TosWin2 kann jetzt VT52 und VT100. VT100 kann mit geeignetem Font
+   + @{"Drag&Drop" link Protokolle}.
+   + Fontauswahl ber UFSL (XUFSL, Calvino, HuGo).
+   + Diverse Kleinigkeiten wie echtes Iconify, Nutzung der MiNT-Domain,
+     Fenster k”nnen nach hinten gestellt werden.
+@autorefon
+
+@endnode
