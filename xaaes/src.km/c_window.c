@@ -702,7 +702,11 @@ create_window(
 		if (tp & STORE_BACK)
 		{
 			DIAG((D_wind,client," allocating background storage buffer"));
+
+			/* XXX the store back code is not failsafe if kmalloc fail */
+
 			w->background = kmalloc(calc_back(&r, screen.planes));
+			assert(w->background);
 		}
 		else
 			w->background = NULL;
@@ -788,7 +792,10 @@ change_window_attribs(enum locks lock,
 	}
 	else if (!(old_tp & STORE_BACK) && !w->background)
 	{
+		/* XXX the store back code is not failsafe if kmalloc fail */
+
 		w->background = kmalloc(calc_back(&r, screen.planes));
+		assert(w->background);
 	}
 
 	//calc_work_area(w);
@@ -2138,7 +2145,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 				if (xa_rect_clip(&bs, &orl->r, &bd))
 				{
 					nrl = kmalloc(sizeof(*nrl));
-					DIAGS(( "kmalloc %lx (%ld bytes) blitrect", nrl, sizeof(*nrl) ));
+					assert(nrl);
+
+					DIAGS(("kmalloc %lx (%ld bytes) blitrect", nrl, sizeof(*nrl)));
 					
 					//DIAGS(("COMMON brl=%lx, nrl=%lx, brl->nxt=%lx", brl, nrl, brl ? (long)brl->next : 0xFACEDACE));
 					if (brl)
@@ -2335,7 +2344,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 			while (newrl)
 			{
 				nrl = kmalloc(sizeof(*nrl));
-				DIAGS(( "kmalloc %lx (%ld bytes)", nrl, sizeof(*nrl) ));
+				assert(nrl);
+
+				DIAGS(("kmalloc %lx (%ld bytes)", nrl, sizeof(*nrl)));
 				nrl->next = NULL;
 				nrl->r.x = newrl->r.x - new->x;
 				nrl->r.y = newrl->r.y - new->y;
@@ -2401,8 +2412,11 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								if (flag)
 								{
 									prev = rrl;
+
 									rrl = kmalloc(sizeof(*rrl));
-									DIAGS(( "kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl) ));
+									assert(rrl);
+
+									DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
 									rrl->next = prev->next;
 									prev->next = rrl;
 									//DIAGS((" -- 2. new (%lx)", rrl));
@@ -2422,8 +2436,11 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								if (flag)
 								{
 									prev = rrl;
+
 									rrl = kmalloc(sizeof(*rrl));
-									DIAGS(( "kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl) ));
+									assert(rrl);
+
+									DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
 									rrl->next = prev->next;
 									prev->next = rrl;
 									//DIAGS((" -- 3. new (%lx)", rrl));
@@ -2442,8 +2459,11 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								if (flag)
 								{
 									prev = rrl;
+
 									rrl = kmalloc(sizeof(*rrl));
-									DIAGS(( "kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl) ));
+									assert(rrl);
+
+									DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
 									rrl->next = prev->next;
 									prev->next = rrl;
 									//DIAGS((" -- 4. new (%lx)", rrl));
