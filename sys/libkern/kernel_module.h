@@ -659,6 +659,9 @@ INLINE long p_geteuid(void)
 INLINE long p_getegid(void)
 { return ((long _cdecl (*)(void)) _p_getegid)(); }
 
+INLINE long p_waitpid(int pid, int nohang, long *rusage)
+{ return ((long _cdecl (*)(int, int, long *)) _p_waitpid)(pid, nohang, rusage); }
+
 INLINE long d_getcwd(char *path, int drv, int size)
 { return ((long _cdecl (*)(char *, int, int)) _d_getcwd)(path, drv, size); }
 
