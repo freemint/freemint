@@ -168,6 +168,10 @@ struct common
 	struct xa_client *mouse_lock;
 	struct xa_client *menu_lock;
 
+	short updatelock_count;
+	short mouselock_count;
+	short menulock_count;
+	
 	Path desk;			/* Remember the desk path for Launch desk. */
 	short mouse;			/* Remember mouse shape */
 	MFORM *mouse_form;		/* Remember mouse form */
