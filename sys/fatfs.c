@@ -381,7 +381,7 @@
  */
 
 # define VER_MAJOR	1
-# define VER_MINOR	22
+# define VER_MINOR	23
 # define VER_STATUS
 
 # if VER_MINOR > 9
@@ -3093,6 +3093,13 @@ is_short (register const char *src, register const char *table)
 	if (*src == '.')
 	{
 		src++;
+
+		if (!*src)
+		{
+			FAT_DEBUG (("is_short: leave islong 2 (src = %s)", src));
+			return 0;
+		}
+
 		i = 3;
 		while (i-- && *src && *src != '.')
 		{
@@ -3100,7 +3107,7 @@ is_short (register const char *src, register const char *table)
 
 			if (!table[index])
 			{
-				FAT_DEBUG (("is_short: leave islong 2 (src = %s)", src));
+				FAT_DEBUG (("is_short: leave islong 3 (src = %s)", src));
 				return 0;
 			}
 
@@ -3111,7 +3118,7 @@ is_short (register const char *src, register const char *table)
 	/* anything left? */
 	if (*src)
 	{
-		FAT_DEBUG (("is_short: leave check 3 (src = %s)", src));
+		FAT_DEBUG (("is_short: leave islong 4 (src = %s)", src));
 		return 0;
 	}
 
@@ -6211,6 +6218,36 @@ fatfs_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 	return EINTERNAL;
 }
 
+static long
+clean_cache_hierachy (COOKIE *parent)
+{
+	int i;
+
+	for (i = 0; i < COOKIE_CACHE; i++)
+	{
+		COOKIE *c = &(cookies[i]);
+
+		if (c->name)
+		{
+			if (c->dir == parent->stcl)
+			{
+				if (c->links)
+					return EACCES;
+
+				if (c->info.attr & FA_DIR)
+				{
+					if (clean_cache_hierachy (c))
+						return EACCES;
+				}
+
+				c_del_cookie (c);
+			}
+		}
+	}
+
+	return 0;
+}
+
 static long _cdecl
 fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
@@ -6219,8 +6256,8 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	COOKIE *old;
 	long r;
 
-	FAT_DEBUG (("fatfs_rename: enter (oldd = %s, newd = %s)", oldd->name, newd->name));
-	FAT_DEBUG (("fatfs_rename: old = %s, new = %s", oldname, newname));
+	FAT_DEBUG (("fatfs_rename: enter (oldd = \"%s\", newd = \"%s\")", oldd->name, newd->name));
+	FAT_DEBUG (("fatfs_rename: old = \"%s\" new = \"%s\"", oldname, newname));
 
 	if (RDONLY (oldd->dev))
 		return EROFS;
@@ -6280,27 +6317,58 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 
 	if (old->info.attr & FA_DIR)
 	{
-		long i;
+		COOKIE *traverse;
 
-		for (i = 0; i < COOKIE_CACHE; i++)
+		/* check if directory move violate the
+		 * directory hierachy
+		 */
+
+		traverse = newd;
+		traverse->links++;
+
+		for (;;)
 		{
-			COOKIE *c = &(cookies[i]);
+			COOKIE *check;
 
-			if (c->name)
+			if (traverse->stcl == old->stcl)
 			{
-				if (old->stcl == c->dir)
-				{
-					if (c->links)
-					{
-						rel_cookie (old);
+				rel_cookie (traverse);
+				rel_cookie (old);
 
-						FAT_DEBUG (("fatfs_rename: leave failure (can't remove subcookies)"));
-						return EACCES;
-					}
-					else
-						c_del_cookie (c);
-				}
+				FAT_DEBUG (("fatfs_rename: invalid directory move", traverse->dev+'A'));
+				return EINVAL;
 			}
+
+			if (traverse->dir == 0)
+			{
+				rel_cookie (traverse);
+				break;
+			}
+
+			r = search_cookie (traverse, &check, "..", 0);
+			if (r)
+			{
+				rel_cookie (traverse);
+				rel_cookie (old);
+
+				FAT_DEBUG (("fatfs_rename: leave failure (not found \"..\" -> %li)", r));
+				return r;
+			}
+
+			rel_cookie (traverse);
+			traverse = check;
+		}
+
+		/* clean inode cache on directory move
+		 * inode cache is designed in the wrong way :-(
+		 */
+		r = clean_cache_hierachy (old);
+		if (r)
+		{
+			rel_cookie (old);
+
+			FAT_DEBUG (("fatfs_rename: leave failure (can't remove subcookies)"));
+			return r;
 		}
 	}
 
