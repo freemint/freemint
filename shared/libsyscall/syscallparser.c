@@ -28,8 +28,10 @@
  * 
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include "syscalldefs.h"
@@ -114,6 +116,43 @@ arg_length(struct arg *l)
 	}
 	
 	return length;
+}
+
+int
+is_regular_syscall(struct syscall *call)
+{
+	return (call->status == SYSCALL_REGULAR);
+}
+
+int
+is_passthrough_syscall(struct syscall *call)
+{
+	return (call->status == SYSCALL_PASSTHROUGH);
+}
+
+int
+is_syscall(struct syscall *call)
+{
+	int ret = 0;
+
+	switch (call->status)
+	{
+		case SYSCALL_REGULAR:
+		case SYSCALL_UNIMPLEMENTED:
+		case SYSCALL_UNSUPPORTED:
+			ret = 1;
+			break;
+		case SYSCALL_PASSTHROUGH:
+			ret = (strcmp(call->name, "passthrough") != 0);
+			break;
+		case SYSCALL_UNDEFINED:
+			break;
+		default:
+			assert(0);
+			break;
+	}
+
+	return ret;
 }
 
 /* from parser */
