@@ -123,7 +123,7 @@ open_about(enum locks lock)
 		}
 
 		/* Create the window */
-		dialog_window = create_window(lock, 0,
+		dialog_window = create_window(lock, NULL, NULL,
 						C.Aes,
 						false,
 						CLOSER|NAME|
