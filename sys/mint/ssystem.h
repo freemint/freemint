@@ -54,5 +54,6 @@
  */
 # define S_DEBUGLEVEL	1000	/* debug level */
 # define S_DEBUGDEVICE	1001	/* BIOS device number */
+# define S_DEBUGKMTRACE	1100	/* KM_TRACE debug feature */
 
 # endif /* _mint_ssystem_h */
