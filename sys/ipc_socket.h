@@ -41,23 +41,21 @@
 
 /* socket system calls */
 
-long _cdecl sys_socket (short domain, enum so_type type, short protocol);
-long _cdecl sys_socketpair (short domain, enum so_type type, short protocol, short fds[2]);
-long _cdecl sys_bind (short fd, struct sockaddr *addr, short addrlen);
-long _cdecl sys_listen (short fd, short backlog);
-long _cdecl sys_accept (short fdp, struct sockaddr *addr, short *addrlen);
-long _cdecl sys_connect (short fd, struct sockaddr *addr, short addrlen);
-long _cdecl sys_getsockname (short fd, struct sockaddr *addr, short *addrlen);
-long _cdecl sys_getpeername (short fd, struct sockaddr *addr, short *addrlen);
-long _cdecl sys_send (short fd, char *buf, long buflen, short flags);
-long _cdecl sys_sendto (short fd, char *buf, long buflen, short flags, struct sockaddr *addr, short addrlen);
-long _cdecl sys_sendmsg (short fd, struct msghdr *msg, short flags);
-long _cdecl sys_recv (short fd, char *buf, long buflen, short flags);
-long _cdecl sys_recvfrom (short fd, char *buf, long buflen, short flags, struct sockaddr *addr, short *addrlen);
-long _cdecl sys_recvmsg (short fd, struct msghdr *msg, short flags);
-long _cdecl sys_setsockopt (short fd, short level, short optname, void *optval, long optlen);
-long _cdecl sys_getsockopt (short fd, short level, short optname, void *optval, long *optlen);
-long _cdecl sys_shutdown (short fd, short how);
+long _cdecl sys_socket (long domain, long type, long protocol);
+long _cdecl sys_socketpair (long domain, long type, long protocol, short fds[2]);
+long _cdecl sys_bind (short fd, struct sockaddr *addr, long addrlen);
+long _cdecl sys_listen (short fd, long backlog);
+long _cdecl sys_accept (short fd, struct sockaddr *addr, long *addrlen);
+long _cdecl sys_connect (short fd, struct sockaddr *addr, long addrlen);
+long _cdecl sys_getsockname (short fd, struct sockaddr *addr, long *addrlen);
+long _cdecl sys_getpeername (short fd, struct sockaddr *addr, long *addrlen);
+long _cdecl sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long addrlen);
+long _cdecl sys_sendmsg (short fd, struct msghdr *msg, long flags);
+long _cdecl sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long *addrlen);
+long _cdecl sys_recvmsg (short fd, struct msghdr *msg, long flags);
+long _cdecl sys_setsockopt (short fd, long level, long optname, void *optval, long optlen);
+long _cdecl sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen);
+long _cdecl sys_shutdown (short fd, long how);
 
 
 # endif	/* _ipc_socket_h  */
