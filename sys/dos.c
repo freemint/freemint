@@ -699,40 +699,40 @@ shutdown(void)
 	DEBUG(("done"));
 }
 
-/* 
+/*
  * where restart is:
- * 
+ *
  * 0 = halt
  * 1 = warm start
  * 2 = cold start,
  * 3 = poweroff
- * 
+ *
  */
 long _cdecl
 sys_s_hutdown(long restart)
 {
 	PROC *p = curproc;
-	
+
 	/* The -1 argument returns a longword which indicates
 	 * what bits of the `restart' argument are valid
 	 * (new as of 1.15.6)
 	 */
 	if (restart < 0)
 		return 0x00000003L;
-	
+
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
 	{
 		shutdown();
-		
+
 		switch (restart)
 		{
-			case  3:
+			case  0:
 			{
 				hw_poweroff();
 				/* fall through */
 			}
-			case  0:
+			case  3:
 			{
 				DEBUG(("Halting system ..."));
 				hw_halt();
@@ -748,7 +748,7 @@ sys_s_hutdown(long restart)
 				hw_warmboot();
 			}
 		}
-		
+
 		/* not reached */
 	}
 
