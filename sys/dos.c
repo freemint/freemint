@@ -670,12 +670,11 @@ shutdown (void)
 	
 	if (proc_left)
 	{
-# if 1
-		long yields = proc_left << 4;	/* 16 turns for everyone */
-
 		/* sleep a little while, to give the other processes
 		 * a chance to shut down
 		 */
+# if 1
+		long yields = proc_left << 4;	/* 16 turns for everyone */
 
 		for (i = 0; i < yields; i++)
 			s_yield();
@@ -688,8 +687,7 @@ shutdown (void)
 			}
 			while (curproc->wait_cond == (long) s_hutdown);
 		}
-# endif
-# if 0
+
 		for (p = proclist; p; p = p->gl_next)
 		{
 			if (!p->pid || (p == curproc) || \
@@ -701,6 +699,7 @@ shutdown (void)
 	}
 	
 	sys_q[READY_Q] = 0;
+	splhigh();
 	
 	DEBUG (("Close open files ..."));
 	close_filesys ();
