@@ -49,7 +49,7 @@
 
 static OBJECT *def_widgets;
 
-//#if GENERATE_DIAGS
+#if GENERATE_DIAGS
 static char *t_widg[] =
 {
 	"XAW_TITLE",
@@ -74,7 +74,7 @@ static char *t_widg[] =
 	"XAW_BORDER",			/* Extended XaAES widget, used for border sizing. */
 	"XAW_MENU"			/* Extended XaAES widget, must be drawn last. */
 };
-//#endif
+#endif
 
 /*
  * WINDOW WIDGET SET HANDLING ROUTINES
@@ -1658,7 +1658,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		{
 			pmx = widget_active.m.x;
 			pmy = widget_active.m.y;
-			xy  = sizer ? SE : compass(10, pmx, pmy, r);
+			xy  = sizer ? SE : compass(16, pmx, pmy, r);
 			rect_dist(wind->owner, &r, &d);
 		}
 
