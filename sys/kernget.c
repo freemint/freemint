@@ -1086,7 +1086,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 				p->pgrp,
 				get_session_id (p),
 				ttypgrp,
-				p->memflags,
+				p->p_mem->memflags,
 
 				0UL, 0UL, 0UL, 0UL, /* Page faults */
 				p->systime, p->usrtime, p->chldstime, p->chldutime,
