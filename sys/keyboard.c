@@ -807,8 +807,10 @@ load_keytbl(void)
 	r = load_keyboard_table(name, 0);
 	if (r == 0)
 		boot_printf(MSG_keytable_loaded, gl_kbd);
+# if VERBOSE_BOOT
 	else
 		boot_printf(MSG_init_error, r);
+# endif
 }
 
 /* Initialize the built-in keyboard tables.
