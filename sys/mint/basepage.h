@@ -11,9 +11,9 @@
 # define _mint_basepage_h
 
 
-typedef struct basep BASEPAGE;
+typedef struct basepage BASEPAGE;
 
-struct basep
+struct basepage
 {
 	long		p_lowtpa;	/* pointer to self (bottom of TPA) */
 	long		p_hitpa;	/* pointer to top of TPA + 1 */
