@@ -11,13 +11,15 @@
 
 
 /* Used for uploading DSP binary code */
-struct dsp56k_upload {
+struct dsp56k_upload
+{
 	long len;
 	char *bin;
 };
 
 /* For the DSP host flags */
-struct dsp56k_host_flags {
+struct dsp56k_host_flags
+{
 	ushort dir;	/* Bit field. 1 = write output bit, 0 = do nothing.
 			 * 0x0000 means reading only, 0x0011 means
 			 * writing the bits stored in `out' on HF0 and HF1.
