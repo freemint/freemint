@@ -251,6 +251,7 @@ add_client_md(struct xa_client *client, const struct moose_data *md)
 		mdt = client->mdb;
 	if (mdt == client->md_head)
 		return false;
+
 	*mdt = *md;
 	client->md_tail = mdt;
 	return true;
@@ -263,9 +264,27 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 {
 	DIAG((D_button, NULL, "button event for %s", c_owner(client)));
 
+	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
+		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+
+	if (md->state && md->cstate)
+		C.button_waiter = client;
+
+	add_client_md(client, md);
+
+	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
+		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+}
+#if 0
+
+	
+
 	if ((add_client_md(client, md)) && (client->waiting_for & MU_BUTTON) && client->waiting_pb)
 	{
 		short *to = client->waiting_pb->intout;
+
+		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
+			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
 		if (client->waiting_for & XAWAIT_MULTI)
 		{
@@ -307,7 +326,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 		}
 	}
 }
-
+#endif
 /*
  * When a client is delivered a button event, we store the event
  * in the clients private moose_data structure. This is the _only_
@@ -323,13 +342,15 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 	 * released event later, and this event belongs to the
 	 * receiver of the click-hold.
 	 */
+#if 0
 	if (md->state && md->cstate)
 		C.button_waiter = target;
+#endif
 
 	if (wind && wind->owner != target)
 	{
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_button_event (rootwind) to %s", target->name));
-		post_cevent(target, cXA_button_event, wind,0, 0,0, 0,md);
+		post_cevent(target, cXA_button_event, wind,NULL, 0,0, NULL,md);
 	}
 	else
 	{
@@ -337,7 +358,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 		 * And post a "deliver this button event" client event
 		 */
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
-		post_cevent(target, cXA_deliver_button_event, wind,0, 0,0, 0,md);
+		post_cevent(target, cXA_deliver_button_event, wind,NULL, 0,0, NULL,md);
 	}
 }
 
@@ -351,7 +372,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 		if (checkif_do_widgets(lock, wind, 0, md))
 		{
 			DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets to %s", target->name));
-			post_cevent(target, cXA_do_widgets, wind, 0, 0,0, 0,md);
+			post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
 		}
 		else
 			deliver_button_event(wind, target, md);
@@ -359,7 +380,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, 0, md))
 	{
 		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
-		post_cevent(target, cXA_do_widgets, wind,0, 0,0, 0,md);
+		post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
 	}			
 	else if (wind->send_message && md->state)
 	{
@@ -390,7 +411,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	{
 		client = C.menu_base->client;
 		DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
-		post_cevent(client, cXA_button_event, 0, 0, 0, 0, 0, md);
+		post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
 		return;
 	}
 
@@ -402,7 +423,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		widget_active.m = *md;
 		client = widget_active.wind->owner;
 		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
-		post_cevent(client, cXA_active_widget, 0,0, 0,0, 0, md);
+		post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
 		return;
 	}
 
@@ -412,7 +433,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		if (locker->fmd.lock && locker->fmd.mousepress)
 		{
 			DIAG((D_mouse, locker, "post form do to %s", locker->name));
-			post_cevent(locker, cXA_form_do, 0, 0, 0, 0, 0, md);
+			post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
 			return;
 		}
 	}
@@ -422,7 +443,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		if (locker->fmd.lock && locker->fmd.mousepress)
 		{
 			DIAG((D_mouse, locker, "post form do to %s", locker->name));
-			post_cevent(locker, cXA_form_do, 0, 0, 0, 0, 0, md);
+			post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
 			return;
 		}
 	}
@@ -518,10 +539,10 @@ dispatch_mu_event(struct xa_client *client, const struct moose_data *md, bool is
 					wo = wind == root_window ? get_desktop()->owner : wind->owner;
 
 				if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
-					post_cevent(client, cXA_deliver_rect_event, (void *)client->status, 0, events, 0, 0, 0);
+					post_cevent(client, cXA_deliver_rect_event, (void *)client->status, NULL, events, 0, NULL,NULL);
 			}
 			else
-				post_cevent(client, cXA_deliver_rect_event, (void *)client->status, 0, events, 0, 0, 0);
+				post_cevent(client, cXA_deliver_rect_event, (void *)client->status, NULL, events, 0, NULL,NULL);
 		}
 	}
 }
@@ -541,7 +562,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		widget_active.m = *md;
 		client = widget_active.wind->owner;
 		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
-		post_cevent(client, cXA_active_widget, 0,0, 0,0, 0, md);
+		post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
 		return false;
 	}
 
@@ -549,7 +570,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	{
 		client = C.menu_base->client;
 		DIAG((D_mouse, client, "post menumove to %s", client->name));
-		post_cevent(client, cXA_menu_move, 0,0, 0,0, 0, md);
+		post_cevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
 		return false;
 	}
 
@@ -580,7 +601,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 				client = menu->owner;
 				DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
 				C.ce_open_menu = client;
-				post_cevent(client, cXA_open_menu, widg, menu,0,0,0,md);
+				post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
 				return false;
 			}
 		}
@@ -727,6 +748,19 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 		}
 	}
 }
+static bool
+chk_button_waiter(struct moose_data *md)
+{
+	if (C.button_waiter && md->ty == MOOSE_BUTTON_PREFIX)
+	{
+		DIAGS(("new_moose_pkt: Got button_waiter %s", C.button_waiter->name));
+		add_client_md(C.button_waiter, md);
+		Unblock(C.button_waiter, 1, 1);
+		C.button_waiter = NULL;
+		return true;
+	}
+	return false;
+}
 
 /*
  * Here we decide what to do with a new moose packet.
@@ -753,6 +787,12 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 			/* a client wait exclusivly for the mouse */
 			short *data = S.wait_mouse->waiting_short;
 			
+			if (C.button_waiter == S.wait_mouse && md->ty == MOOSE_BUTTON_PREFIX)
+			{
+				add_client_md(C.button_waiter, md);
+				C.button_waiter = NULL;
+			}
+
 			data[0] = md->cstate;
 			data[1] = md->x;
 			data[2] = md->y;
@@ -771,6 +811,9 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	 */
 	if (md_buff_head != md_buff_tail)
 		md_buff_head = md_buff_tail = md_lmvalid = 0;
+
+	if (chk_button_waiter(md))
+		return true;
 
 	/*
 	 * Ozk: now go dispatch the mouse event....
@@ -1014,14 +1057,19 @@ button_timeout(struct proc *p, long arg)
 		struct moose_data md;
 
 		get_md(&md);
+		DIAGS(("adi_button_event: (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
+			md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
+			md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) ));
+
 		vq_key_s(C.vh, &md.kstate);
 
+#if 0
 		if (C.button_waiter)
 		{
 			add_client_md(C.button_waiter, &md);
 			C.button_waiter = NULL;
 		}
-
+#endif
 		new_moose_pkt(0, 0, &md);
 
 		if ( pending_md() )
