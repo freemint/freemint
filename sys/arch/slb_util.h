@@ -48,13 +48,9 @@
 long slb_open (void);
 long slb_close (void);
 long slb_close_and_pterm (void);
+void _cdecl slb_init_and_exit(BASEPAGE *b);
+
 long _cdecl slb_exec (SHARED_LIB *sl, long fn, short nargs, ...);
 long _cdecl slb_fast (SHARED_LIB *sl, long fn, short nargs, ...);
-long _cdecl P_kill (short, short);
-long _cdecl P_setpgrp (short, short);
-long _cdecl P_sigsetmask (long);
-long _cdecl P_domain (short);
-char * _cdecl getslbpath(BASEPAGE *base);
-
 
 # endif /* _m68k_slb_util_h */
