@@ -3,11 +3,24 @@
 ; this below is only called from init.c on 68060 or newer
 
 	XDEF	_get_superscalar
+	XREF	_mcpu
 
 _get_superscalar:
+	cmp.w	#60,_mcpu+2
+	bmi.s	ssret
 	dc.l	$4e7a0808	; movec pcr,d0
 	ori.w	#$0001,d0	; enable the superscalar dispatch
 	dc.l	$4e7b0808	; movec d0,pcr
+ssret:	rts
+
+	XDEF	_is_superscalar
+
+_is_superscalar:
+	clr.w	d0
+	cmp.w	#60,_mcpu+2
+	bmi.s	ssret
+	dc.l	$4e7a0808	; movec pcr,d0
+	andi.w	#$0001,d0
 	rts
 
 ;
@@ -43,23 +56,23 @@ _init_cache:
 	beq.s	icquit
 	cmp.w	#10,d0
 	beq.s	icquit
-	lea	_cache030,a0
-	lea	l2c020,a1
-	lea	c2l020,a2
+	lea	_cache030.w(pc),a0
+	lea	l2c020.w(pc),a1
+	lea	c2l020.w(pc),a2
 	cmp.w	#20,d0
 	beq.s	icset
-	lea	l2c030,a1
-	lea	c2l030,a2
+	lea	l2c030.w(pc),a1
+	lea	c2l030.w(pc),a2
 	cmp.w	#30,d0
 	beq.s	icset
-	lea	_cache040,a0
-	lea	l2c040,a1
-	lea	c2l040,a2
+	lea	_cache040.w(pc),a0
+	lea	l2c040.w(pc),a1
+	lea	c2l040.w(pc),a2
 	cmp.w	#40,d0
 	beq.s	icset
-	lea	_cache060,a0
-	lea	l2c060,a1
-	lea	c2l060,a2
+	lea	_cache060.w(pc),a0
+	lea	l2c060.w(pc),a1
+	lea	c2l060.w(pc),a2
 	cmp.w	#60,d0
 	bne.s	icquit
 icset:	move.l	a0,_cachevec
@@ -189,7 +202,7 @@ _ccw_getdmask:
 	move.l	_mcpu,d0		; high word assumed 0
 	divu.w	#5,d0
 	and.l	#$0000ffff,d0		; better to be safe...
-	lea	ccw_dmasks(pc),a0
+	lea	ccw_dmasks.w(pc),a0
 	move.w	0(a0,d0.w),d0		; _not_ a (a0,d0.w*2), see divu
 	rts
 
@@ -220,7 +233,7 @@ ccw30:	dc.w	$0001,$0008,$0000,$0000
 	dc.w	$0002,$0010,$0000,$0000
 	dc.w	$0040,$0080,$0000,$0000
 
-l2c030:	lea	cacr30(pc),a0
+l2c030:	lea	cacr30.w(pc),a0
 	clr.l	d1
 	moveq	#$07,d2
 l30:	lsr.w	#$01,d0
@@ -231,7 +244,7 @@ s30:	addq.l	#$02,a0
 	move.l	d1,d0
 	rts
 
-c2l030:	lea	ccw30(pc),a0
+c2l030:	lea	ccw30.w(pc),a0
 	clr.l	d1
 	moveq	#$0f,d2
 c30:	lsr.w	#$01,d0
@@ -272,7 +285,7 @@ ccw60:	dc.w	$0000,$0100,$0200,$0001
 	dc.w	$0000,$0000,$0000,$0400
 	dc.w	$4000,$8000,$0800,$0002
 
-l2c060:	lea	cacr60(pc),a0
+l2c060:	lea	cacr60.w(pc),a0
 	clr.l	d1
 	moveq	#$0f,d2
 l60:	lsr.w	#$01,d0
@@ -284,7 +297,7 @@ s60:	addq.l	#$04,a0
 	eori.l	#$58006000,d0	; adjust reverted bits
 	rts	
 
-c2l060:	lea	ccw60(pc),a0
+c2l060:	lea	ccw60.w(pc),a0
 	lsr.l	#$08,d0		; first 13 bits of CACR aren't used 
 	lsr.l	#$04,d0
 	clr.l	d1
