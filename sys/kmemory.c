@@ -1967,7 +1967,7 @@ km_trace_lookup(void *ptr, char *buf, unsigned long buflen)
 
 # ifdef KMEMDEBUG
 
-# include "arch/startup.h"
+# include "global.h"
 
 static FILEPTR *kmemdebug_fp = NULL;
 static int kmemdebug_initialized = 0;

@@ -34,12 +34,4 @@
 # ifndef _m68k_startup_h
 # define _m68k_startup_h
 
-# include "mint/mint.h"
-# include "mint/basepage.h"
-
-
-/* pointer to our basepage */
-extern BASEPAGE *_base;
-
-
 # endif /* _m68k_startup_h */

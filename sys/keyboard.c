@@ -40,7 +40,6 @@
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
-# include "arch/startup.h"	/* _base */
 # include "arch/tosbind.h"
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */

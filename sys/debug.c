@@ -23,7 +23,6 @@
 # include "arch/aranym.h"
 # include "arch/halt.h"
 # include "arch/mprot.h"
-# include "arch/startup.h"	/* _base */
 # include "arch/syscall.h"
 # include "arch/tosbind.h"
 
