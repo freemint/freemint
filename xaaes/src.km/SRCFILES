@@ -1,0 +1,99 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	about.h \
+	accstart.h \
+	app_man.h \
+	cnf_xaaes.h \
+	c_window.h \
+	debug.h \
+	desktop.h \
+	global.h \
+	handler.h \
+	kernel.h \
+	libkern.h \
+	matchpat.h \
+	menuwidg.h \
+	messages.h \
+	my_aes.h \
+	nkcc.h \
+	objects.h \
+	op_names.h \
+	rectlist.h \
+	scrlobjc.h \
+	semaphores.h \
+	sys_proc.h \
+	taskman.h \
+	trnfm.h \
+	util.h \
+	vaproto.h \
+	version.h \
+	widgets.h \
+	xalloc.h \
+	xa_aes.h \
+	xa_appl.h \
+	xa_codes.h \
+	xa_defs.h \
+	xa_evnt.h \
+	xa_form.h \
+	xa_fsel.h \
+	xa_global.h \
+	xa_graf.h \
+	xa_rsrc.h \
+	xa_shel.h \
+	xa_types.h
+
+COBJS = \
+	about.c \
+	app_man.c \
+	cnf_xaaes.c \
+	c_window.c \
+	debug.c \
+	desktop.c \
+	draw_obj.c \
+	handler.c \
+	init.c \
+	k_init.c \
+	k_keybd.c \
+	k_main.c \
+	k_mouse.c \
+	k_shutdown.c \
+	matchpat.c \
+	menuwidg.c \
+	messages.c \
+	my_aes.c \
+	nkcc.c \
+	op_names.c \
+	rectlist.c \
+	scrlobjc.c \
+	semaphores.c \
+	sys_proc.c \
+	taskman.c \
+	trnfm.c \
+	util.c \
+	widgets.c \
+	xalloc.c \
+	xa_appl.c \
+	xa_evnt.c \
+	xa_form.c \
+	xa_fsel.c \
+	xa_global.c \
+	xa_graf.c \
+	xa_lbox.c \
+	xa_menu.c \
+	xa_objc.c \
+	xa_rsrc.c \
+	xa_scrp.c \
+	xa_shel.c \
+	xa_wdlg.c \
+	xa_wind.c
+
+SOBJS = \
+	accstart.s \
+	nkcc-gc.s \
+	p_handlr.s
+
+SSOBJS = 
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
