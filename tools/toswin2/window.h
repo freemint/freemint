@@ -22,9 +22,10 @@ struct win
 	GRECT	work;		/* size of window working area */
 	GRECT	full;
 	GRECT	prev;
-	int	 max_w, max_h;	/* max size of window working area */
+	int	max_w, max_h;	/* max size of window working area */
 	int	icon_x, icon_y;	/* WINICON Position, da der Objektbaum mehrfach benutzt wird. */
 	int	flags;		/* various window flags */
+	int	redraw;		/* redraw flag, true if a AES redraw is in progress */
 	int	old_wkind;	/* old window gadgets before iconification */
 	void	*extra;		/* Pointer to extra data for subclasses */
 

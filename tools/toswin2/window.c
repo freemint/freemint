@@ -263,6 +263,7 @@ WINDOW *create_window(char *title, short kind,
 	v->title = (char*) title;
 	v->extra = NULL;
 	v->flags = 0;
+	v->redraw = 0;
 
 	v->draw = clear_win;
 	v->topped = top_win;
@@ -384,15 +385,16 @@ void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 	GRECT t1, t2;
 	bool off = FALSE;
 	
-/*	wind_update(TRUE);*/
-
+	v->redraw = 1;
+	// XXX wind_update (TRUE);
+	
 	t2.g_x = xc;
 	t2.g_y = yc;
 	t2.g_w = wc;
 	t2.g_h = hc;
 	rc_intersect(&gl_desk, &t2);
 	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
-	while (t1.g_w && t1.g_h) 
+	while (t1.g_w > 0 && t1.g_h > 0) 
 	{
 		if (rc_intersect(&t2, &t1)) 
 		{
@@ -404,9 +406,12 @@ void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
 	}
+	
 	if (off)
 		show_mouse();
-/*	wind_update(FALSE);*/
+	
+	// XXX wind_update (FALSE);
+	v->redraw = 0;
 }
 
 
@@ -755,7 +760,7 @@ void window_timer (void)
 	WINDOW* topwin = get_top ();
 	
 	for (win = gl_winlist; win != NULL; win = win->next) {
-		if (!is_console (win))
+		if (!is_console (win) && win->timer)
 			win->timer (win, win == topwin ? 1 : 0);
 	}
 }
