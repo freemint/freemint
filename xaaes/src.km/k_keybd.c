@@ -119,7 +119,7 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 		 * slightly different to the evnt_keybd() response.
 		 */
 		check_mouse(client, NULL, NULL, NULL);
-
+		mu_button.ks = key->raw.conin.state;
 		/* XaAES extension: return normalized keycode for MU_NORM_KEYBD */
 		if (client->waiting_for & MU_NORM_KEYBD)
 		{
