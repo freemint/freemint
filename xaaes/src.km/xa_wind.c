@@ -202,7 +202,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 	if (w->send_message
 	    && !was_visible(w))
 	{
-		w->send_message(lock, w, 0,
+		w->send_message(lock, w, NULL, AMQ_REDRAW,
 				WM_REDRAW, 0, 0, w->handle,
 				w->r.x, w->r.y, w->r.w, w->r.h);
 	}
@@ -248,7 +248,7 @@ bottom_window(enum locks lock, struct xa_window *w)
 			display_window(lock, 44, wl, &clip);
 
 			if (wl->send_message)
-				wl->send_message(lock, wl, 0,
+				wl->send_message(lock, wl, NULL, AMQ_REDRAW,
 						 WM_REDRAW, 0, 0, wl->handle,
 						 clip.x, clip.y, clip.w, clip.h);
 		}
@@ -369,9 +369,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				short width = pb->intin[4];
 				short height = pb->intin[5];
 
-				if (w->r.x != x || w->r.y != y)
+				if (w->rc.x != x || w->rc.y != y)
 					msg[0] = WM_MOVED;
-				else if (w->r.w == width && w->r.h == height)
+				else if (w->rc.w == width && w->rc.h == height)
 				{
 					pb->intout[0] = 1;
 					return XAC_DONE;
@@ -392,7 +392,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				pmsg(msg[0]), w->handle, w->owner->name, client->name,
 				msg[1],msg[2],msg[3],msg[4]));
 				
-			send_app_message(lock, w, NULL, msg[0], client->p->pid, 0, w->handle, msg[1],msg[2],msg[3],msg[4]);
+			send_app_message(lock, w, NULL, AMQ_NORM, msg[0], client->p->pid, 0, w->handle, msg[1],msg[2],msg[3],msg[4]);
 			pb->intout[0] = 1;
 			return XAC_DONE;
 		}
@@ -509,7 +509,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_wind, w->owner, "    -   %s", w->wname));
 
 		/* redraw if necessary */
-		if ((w->active_widgets & NAME) && w->is_open)
+		if ((w->active_widgets & NAME) && (w->window_status & XAWS_OPEN))
 		{
 			RECT clip;
 
@@ -541,7 +541,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_wind, w->owner, "    -   %s", w->winfo));
 
-		if ((w->active_widgets & INFO) && w->is_open)
+		if ((w->active_widgets & INFO) && (w->window_status & XAWS_OPEN))
 		{
 			RECT clip;
 
@@ -557,15 +557,52 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		short mw = pb->intin[4];
 		short mh = pb->intin[5];
+		short status = -1, msg = -1;
 
-		if (w->active_widgets & USE_MAX)
+		if (!mh)
 		{
-			if (w->max.w && mw > w->max.w)
-				mw = w->max.w;
-			if (w->max.h && mh > w->max.h)
-				mh = w->max.h;
+			if (!(w->window_status & XAWS_SHADED))
+			{
+				DIAGS(("wind_set: zero heigh, shading window %d for %s",
+					w->handle, client->name));
+
+				status = XAWS_SHADED|XAWS_ZWSHADED;
+				msg = WM_SHADED;
+			}
+#if GENERATE_DIAGS
+			else
+				DIAGS(("wind_set: zero heigh, window %d already shaded for %s",
+					w->handle, client->name));
+#endif
 		}
-		move_window(lock, w, -1, pb->intin[2], pb->intin[3], mw, mh);
+		else
+		{
+			if (!(w->window_status & XAWS_SHADED))
+			{
+				if (w->active_widgets & USE_MAX)
+				{
+					if (w->max.w && mw > w->max.w)
+						mw = w->max.w;
+					if (w->max.h && mh > w->max.h)
+						mh = w->max.h;
+				}
+			}
+			else if ((w->window_status & XAWS_ZWSHADED) && mh != w->sh)
+			{
+				DIAGS(("wind_set: window %d for %s shaded - unshade by different height",
+					w->handle, client->name));
+
+				status = ~(XAWS_SHADED|XAWS_ZWSHADED);
+				msg = WM_UNSHADED;
+			}
+		}
+
+		DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
+		
+		move_window(lock, w, status, pb->intin[2], pb->intin[3], mw, mh);
+		if (msg != -1 && w->send_message)
+			w->send_message(lock, w, NULL, AMQ_NORM, msg, 0, 0, w->handle, 0,0,0,0);
+
 		break;
 	}
 
@@ -582,7 +619,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Extension, send window to the bottom */
 	case WF_BOTTOM:
 	{
-		if (w->is_open)
+		if ((w->window_status & XAWS_OPEN))
 			bottom_window(lock, w);
 		break;
 	}
@@ -605,7 +642,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));
 			}
 		}
-		else if (w->is_open)
+		else if ((w->window_status & XAWS_OPEN))
 		{
 			//if (    w != window_list ||
 			//       (w == window_list && w != C.focus))
@@ -678,22 +715,22 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_ICONIFY:
 	{
 		RECT in = *((const RECT *)(pb->intin+2));
-		if (in.w == -1 && in.h == -1)
-			in = free_icon_pos(lock);
-		w->save_widgets = w->active_widgets;
-		standard_widgets(w, (w->active_widgets & (NO_TOPPED)) | NAME|MOVER|ICONIFIER, true);
-		move_window(lock, w, XAWS_ICONIFIED, in.x, in.y, in.w, in.h);
+		iconify_window(lock, w, &in);
 		break;
 	}
 
 	/* Un-Iconify a window */
 	case WF_UNICONIFY:
 	{
-		standard_widgets(w, w->save_widgets, true);
-		move_window(lock, w, XAWS_OPEN, w->ro.x, w->ro.y, w->ro.w, w->ro.h);
+		uniconify_window(lock, w, (RECT *)&w->ro);
 		break;
 	}
 
+	case WF_UNICONIFYXYWH:
+	{
+		w->ro = *((const RECT *)(pb->intin+2));
+		break;
+	}
 	/* */
 	case WF_TOOLBAR:
 	{
@@ -713,7 +750,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (wt && wt == widg->stuff)
 			{
 				DIAGS((" --- Same toolbar installed"));
-				if (w->is_open)
+				if ((w->window_status & XAWS_OPEN))
 				{
 					widg->start = pb->intin[4];
 					wt->e.obj = pb->intin[5];
@@ -733,12 +770,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("  --- Remove toolbar"));
 			remove_widget(lock, w, XAW_TOOLBAR);
 		}
-		if (w->is_open && w->send_message)
+		if ((w->window_status & XAWS_OPEN))
 		{
 			DIAGS(("  --- send WM_REDRAW"));
-			w->send_message(lock, w, 0,
-					WM_REDRAW, 0, 0, w->handle,
-					w->r.x, w->r.y, w->r.w, w->r.h);
+			send_redraw(lock, w, &w->wa);
 		}
 		DIAGS(("  wind_set(WF_TOOLBAR) done"));
 		break;
@@ -747,7 +782,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_MENU:
 	{
-		if (!w->is_open
+		if (!(w->window_status & XAWS_OPEN)
 		    && w->handle != 0
 		    && (w->active_widgets & XaMENU) != 0)
 		{
@@ -782,6 +817,23 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		break;
 	}
+	case WF_SHADE:
+	{
+		short status;
+
+		/* Ozk: Pure guessing - a non-zero value in intin[2] == set shade?
+		*/
+		if (pb->intin[2])
+			status = XAWS_SHADED;
+		else
+			status = ~XAWS_SHADED;
+	
+		DIAGS(("wind_set: WF_SHADE, wind %d, status %x for %s",
+			w->handle, status, client->name));
+
+		move_window(lock, w, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
+	}
+
 	}
 
 	return XAC_DONE;
@@ -901,7 +953,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		rl = rect_get_user_first(w);
 		/* HR: Oh, Oh  Leaving a intersect unchecked!! And forcing me to use a goto :-( */
-		if (rl)
+		if (rl && w->wa.w && w->wa.h)
 		{
 			d = w->wa;
 			if (!xa_rc_intersect(rl->r, &d))
@@ -985,7 +1037,7 @@ next:
 	 */
 	case WF_CURRXYWH:
 	{
-		*ro = w->r;
+		*ro = w->rc;
 		DIAG((D_w, w->owner, "get curr for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;
@@ -1122,7 +1174,7 @@ next:
 		o[2] = is_hidden(w) ? 0 : 1;
 #else
 		/* Is the window open? */
-		o[2] = w->is_open ? 0 : 1;
+		o[2] = (w->window_status & XAWS_OPEN) ? 0 : 1;
 #endif
 		if (w->prev)	/* If there is a window above, return its handle */
 			o[3] = w->prev->handle;
@@ -1270,14 +1322,20 @@ next:
 	}
 	case WF_ICONIFY:
 	{
-		o[1] = w->window_status == XAWS_ICONIFIED ? 1 : 0;
+		o[1] = (w->window_status & XAWS_ICONIFIED) ? 1 : 0;
 		o[2] = C.iconify.w;
 		o[3] = C.iconify.h;
 		break;
 	}
 	case WF_UNICONIFY:
 	{
-		*ro = w->window_status == XAWS_ICONIFIED ? w->ro : w->r;
+		*ro = (w->window_status & XAWS_ICONIFIED) ? w->ro : w->r;
+		break;
+	}
+	case WF_SHADE:
+	{
+		*o = (w->window_status & XAWS_SHADED) ? 1 : 0;
+		o[1] = *o;
 		break;
 	}
 	case WF_XAAES: /* 'XA' */
@@ -1305,7 +1363,7 @@ XA_wind_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(1,1,0)	
 
 	w = get_wind_by_handle(lock, pb->intin[0]);
-	if (w && w->is_open == false)
+	if (w && !(w->window_status & XAWS_OPEN))
 	{
 		delete_window(lock, w);
 		pb->intout[0] = 1;

@@ -828,7 +828,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (wind)
 			{
-				if (!wind->is_open)
+				if (!(wind->window_status & XAWS_OPEN))
 					open_window(lock, wind, wind->r);
 				else if (wind != window_list)
 					top_window(lock, wind, client);
@@ -936,7 +936,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 		 */
 		check_mouse(client, &md.cstate, &md.x, &md.y);
 		if ((md.clicks = pb->intin[1]))
-			md.state = MBS_RIGHT;
+			md.state = MBS_LEFT;
 	
 		/* XXX - Ozk:
 		 * I think we need to look for this obtree to see if we have it in
