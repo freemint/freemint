@@ -2,6 +2,7 @@
 # the files that should go only into source distributions.
 
 HEADER = \
+	ansicol.h \
 	av.h \
 	clipbrd.h \
 	config.h \
@@ -19,6 +20,7 @@ HEADER = \
 	window.h
 
 COBJS = \
+	ansicol.c \
 	av.c \
 	clipbrd.c \
 	config.c \

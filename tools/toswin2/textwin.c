@@ -13,6 +13,7 @@
 #include "textwin.h"
 #include "vt.h"
 #include "window.h"
+#include "ansicol.h"
 
 #ifdef DEBUG
 extern int do_debug;
@@ -118,9 +119,6 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 	unsigned char letter[2] = { '\0', '\0' };
 	
 	while (*crs && x < max_x) {
-		printf ("Should draw character %c at position (%d|%d)\n",
-			*crs, x, y);
-			
 		switch (*crs) {
 			case '}': /* ACS_STERLING */
 				/* We assume that if the Atari font is 
@@ -557,16 +555,7 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short 
 	short temp[4];
 	int acs = flag & CACS;
 
-	fillcolor = flag & CBGCOL;
-	textcolor = (flag & CFGCOL) >> 4;
-	texteffects = (flag & CEFFECTS) >> 8;
-
-	if (flag & (CINVERSE|CSELECTED)) 
-	{	
-		x2 = fillcolor; 
-		fillcolor = textcolor; 
-		textcolor = x2;
-	}
+	use_ansi_colors (t, flag, &textcolor, &fillcolor, &texteffects);
 	x2 = x;
 	s = buf;
 	if (*s) 
@@ -733,7 +722,7 @@ static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstl
 		{
 			flushbuf();
 		}
-		if (WIDE) 
+		if (WIDE)
 		{
 			/* the line's 'tail' */
 			draw_buf(t, "", px, py, t->cflag[firstline][t->maxx-1], lineforce);
@@ -802,9 +791,10 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 	}
 
 	/* if `force' is set, clear the area to be redrawn -- it looks better */
+#if 0
 	if (force == CLEARED) 
 	{
-		set_fillcolor(t->cfg->bg_color);
+		set_fillcolor(get_ansi_color (t->cfg->bg_color));
 		set_fillstyle(1, 1);
 		pxy[0] = xc;
 		pxy[1] = yc;
@@ -812,6 +802,7 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 		pxy[3] = yc + hc - 1;
 		vr_recfl(vdi_handle, pxy);
 	}
+#endif
 
 	/* convert from on-screen coordinates to window rows & columns */
 	pixel2char(t, xc, yc, &firstcol, &firstline);
