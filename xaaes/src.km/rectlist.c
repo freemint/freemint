@@ -30,358 +30,237 @@
 #include "c_window.h"
 #include "rectlist.h"
 
-/*
- * Rectangle List Generator 
- * - Generates a list of clipping rectangles for a given window.
- * (Not a routine I'm proud of I'm afraid, but it seems to work ok)
- * ++cg[29/9/96]: as I've not managed to debug Johan's rect list stuff,
- * here's a mod to my original algorithm that only does a single malloc...
- */
+#define max(x,y) (((x)>(y))?(x):(y))
+#define min(x,y) (((x)<(y))?(x):(y))
 
 struct xa_rect_list *
-generate_rect_list(enum locks lock, struct xa_window *w, short which)
+make_rect_list(struct xa_window *wind, bool swap)
 {
 	struct xa_window *wl;
-	struct xa_rect_list *rl, *rlist, *nrl, *cnrl, *rl_next;
-	struct xa_rect_list *free_list;
+	struct xa_rect_list *rl, *nrl, *rl_next, *rl_prev;
 	RECT r_ours, r_win;
-	short win_cnt, f;
 
-
-	if (w->rect_start)
+	if (swap)
 	{
-		w->prev_rect = *w->rect_start;	/* remember the first rectangle before calc */
-		w->rect_prev = &w->prev_rect;	/* This can be used to see if redraw are necessary. */
-		w->prev_rect.next = NULL;
-		kfree(w->rect_start);
+		DIAGS(("Freeing old rect_list for %d", wind->handle));
+		free_rect_list(wind->rect_start);
+		wind->rect_list = wind->rect_user = wind->rect_start = NULL;
 	}
-	else
-		w->rect_prev = NULL;
 
-	win_cnt = 0;
-	for (wl = w->prev; wl; wl = wl->prev)
-		win_cnt++;		
+	DIAGS(("make_rect_list for wind %d", wind->handle));
 
-	/* Block allocate the required space (approximately) */	
-	w->rect_start = kmalloc(sizeof(*rlist) * (win_cnt * 6 + 2));
-	assert(w->rect_start);
+	nrl = kmalloc(sizeof(*nrl));
+	assert(nrl);
+	nrl->next = NULL;
+	nrl->r = wind->r;
 
-	rlist = w->rect_start;
-	rlist++;
-	rlist->r = w->r;
-	rlist->next = NULL;
-
-	if (win_cnt)
+	if (nrl && wind->prev)
 	{
-		rl = free_list = rlist + 1;
-		for (f = 0; f < win_cnt * 6; f++)
-			free_list[f].next = &free_list[f + 1];
-		
-		free_list[win_cnt * 6 - 1].next = NULL;
-		
-		wl = w->prev;
-		while(wl)
+		short flag, win_x2, win_y2, our_x2, our_y2;
+		short w, h;
+#if GENERATE_DIAGS
+		short i;
+#endif
+
+		wl = wind->prev;
+
+		while (wl)
 		{
-			nrl = NULL;
-			for (rl = rlist; rl; rl = rl_next)
+#if GENERATE_DIAGS
+			i = 0;
+#endif
+			rl_prev = NULL;
+
+			for (rl = nrl; rl; rl = rl_next)
 			{
+
 				r_win = wl->r;		
-				r_ours = rl->r;				
-				/* If window intersects this rectangle, process */
-				if (xa_rc_intersect(r_ours, &r_win))
+				r_ours = rl->r;
+
+				win_x2 = r_win.x + r_win.w;
+				win_y2 = r_win.y + r_win.h;
+
+				flag = 0;
+
+				h = r_win.y - r_ours.y;
+				w = r_win.x - r_ours.x;
+
+				DIAGS((" -- nrl=%lx, rl_prev=%lx", nrl, rl_prev));
+				DIAGS((" -- [%d] ours=(%d/%d/%d/%d), wind %d = (%d/%d/%d/%d)", i, r_ours, wl->handle, r_win));
+				DIAGS((" --      win2=%d/%d, w=%d, h=%d",
+					win_x2, win_y2, w, h));
+#if GENERATE_DIAGS
+				i++;
+#endif
+
+				if (   h < r_ours.h
+				    && w < r_ours.w
+				    && win_x2 > r_ours.x
+				    && win_y2 > r_ours.y)
 				{
-					/* If window doesn't completely mask this rectangle,
-					 * create new results */
-					if((r_ours.w != r_win.w) || (r_ours.h != r_win.h))
+					our_x2 = r_ours.x + r_ours.w;
+					our_y2 = r_ours.y + r_ours.h;
+
+					if (r_win.y > r_ours.y)
 					{
-						if(r_win.x != r_ours.x)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_ours.x;
-							cnrl->r.y = r_ours.y;
-							cnrl->r.w = r_win.x - r_ours.x;
-							cnrl->r.h = r_ours.h;
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
-						if(r_win.x + r_win.w != r_ours.x + r_ours.w)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_win.x + r_win.w;
-							cnrl->r.y = r_ours.y;
-							cnrl->r.w = (r_ours.x + r_ours.w) - (r_win.x + r_win.w);
-							cnrl->r.h = r_ours.h;
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
-						if(r_win.y != r_ours.y)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_win.x;
-							cnrl->r.y = r_ours.y;
-							cnrl->r.w = r_win.w;
-							cnrl->r.h = r_win.y - r_ours.y;
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
-						if(r_win.y + r_win.h != r_ours.y + r_ours.h)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_win.x;
-							cnrl->r.y = r_win.y + r_win.h;
-							cnrl->r.w = r_win.w;
-							cnrl->r.h = (r_ours.y + r_ours.h) - (r_win.y + r_win.h);
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
+						rl->r.x = r_ours.x;
+						rl->r.y = r_ours.y;
+						rl->r.w = r_ours.w;
+						rl->r.h = h;
+
+						r_ours.y += h;
+						r_ours.h -= h;
+						
+						flag |= 1;
+						DIAGS((" -- 1. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
-					else
+					if (r_win.x > r_ours.x)
 					{
-						DIAG((D_r,w->owner,"  Obscured - freeing"));
+						if (flag & 1)
+						{
+							rl_prev = rl;
+							rl = kmalloc(sizeof(*rl));
+							assert(rl);
+							rl->next = rl_prev->next;
+							rl_prev->next = rl;
+							DIAGS((" -- 2. alloc new=%lx", rl));
+						}
+#if GENERATE_DIAGS
+						else
+							DIAGS((" -- 2. using orig=%lx", rl));
+#endif
+						rl->r.x = r_ours.x;
+						rl->r.y = r_ours.y;
+						rl->r.w = w;
+						rl->r.h = r_ours.h;
+
+						r_ours.x += w;
+						r_ours.w -= w;
+						flag |= 2;
+						DIAGS((" -- 2. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
-					rl_next = rl->next;	/* Release the original rectangle */
-					rl->next = free_list;	/* Add original rectangle to the free list */
-					free_list = rl;
+					if (our_y2 > win_y2)
+					{
+						if (flag & 3)
+						{
+							rl_prev = rl;
+							rl = kmalloc(sizeof(*rl));
+							assert(rl);
+							rl->next = rl_prev->next;
+							rl_prev->next = rl;
+							DIAGS((" -- 3. alloc new=%lx", rl));
+						}
+#if GENERATE_DIAGS
+						else
+							DIAGS((" -- 3. using orig=%lx", rl));
+#endif
+						rl->r.x = r_ours.x;
+						rl->r.y = win_y2;
+						rl->r.w = r_ours.w;
+						rl->r.h = our_y2 - win_y2;
+
+						r_ours.h -= rl->r.h;
+						flag |= 4;
+						DIAGS((" -- 3. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+					}
+					if (our_x2 > win_x2)
+					{
+						if (flag & 7)
+						{
+							rl_prev = rl;
+							rl = kmalloc(sizeof(*rl));
+							assert(rl);
+							rl->next = rl_prev->next;
+							rl_prev->next = rl;
+							DIAGS((" -- 4. alloc new=%lx", rl));
+						}
+#if GENERATE_DIAGS
+						else
+							DIAGS((" -- 4. using orig=%lx", rl));
+#endif
+
+						rl->r.x = win_x2;
+						rl->r.y = r_ours.y;
+						rl->r.w = our_x2 - win_x2; //win_x2 - our_x2;
+						rl->r.h = r_ours.h;
+
+						r_ours.w -= rl->r.w;
+						flag |= 8;
+						DIAGS((" -- 4. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+					}
 				}
 				else
 				{
-					/* Keep the current rectangle, it hasn't been changed */
-					rl_next = rl->next;
-					rl->next = nrl;
-					nrl = rl;
+					flag |= 1;
+					DIAGS((" -- 1. whole=(%d/%d/%d/%d)", rl->r));
 				}
-			}
-			rlist = nrl;
-			wl = wl->prev;
-		}
-	}
 
-	if (rlist)
-	{
-		w->rect_list = w->rect_user = w->rect_start;
-		*w->rect_start = *rlist;
-	}
-	else
-	{
-		kfree(w->rect_start);
-		w->rect_list = w->rect_user = w->rect_start = NULL;
-	}	
+				rl_next = rl->next;
 
-#if GENERATE_DIAGS
-	if (w->handle)
-	{
-		DIAG((D_r,w->owner,    "[%d]rect_list dump h:%d (%d/%d,%d/%d) for %s:", which, w->handle, w->r, w_owner(w) ));
-		if (w->rect_prev)
-		{
-			DIAG((D_r,w->owner,"rect_prev            (%d/%d,%d/%d)", w->rect_prev->r));
-		}
-		rlist = w->rect_start;
-		while (rlist)
-		{
-			DIAG((D_r,w->owner,"(%d/%d,%d/%d) @%lx, next=%lx", rlist->r, rlist, rlist->next));
-			rlist = rlist->next;
-		}
-	}
-#endif
-
-	return w->rect_start;
-}
-
-#if 0
-struct xa_rect_list *
-make_rect_list(enum locks lock, struct xa_window *w, short which, struct xa_rect_list **redraw)
-{
-	struct xa_window *wl;
-	struct xa_rect_list *rl, *rlist, *nrl, *cnrl, *rl_next, *rl_old;
-	struct xa_rect_list *free_list;
-	RECT r_ours, r_win;
-	short win_cnt, f;
-
-
-#if 0
-	if (w->rect_start)
-	{
-		w->prev_rect = *w->rect_start;	/* remember the first rectangle before calc */
-		w->rect_prev = &w->prev_rect;	/* This can be used to see if redraw are necessary. */
-		w->prev_rect.next = NULL;
-		kfree(w->rect_start);
-	}
-	else
-		w->rect_prev = NULL;
-#endif
-	rl_old = w->rect_start;
-
-	for (win_cnt = 0, wl = w->prev; wl; win_cnt++, wl = wl->prev)
-		;		
-
-	/* Block allocate the required space (approximately) */	
-	w->rect_start = kmalloc(sizeof(*rlist) * (win_cnt * 6 + 2));
-	assert(w->rect_start);
-
-	rlist = w->rect_start;
-	rlist++;
-	rlist->r = w->r;
-	rlist->next = NULL;
-
-	if (win_cnt)
-	{
-		rl = free_list = rlist + 1;
-		for (f = 0; f < win_cnt * 6; f++)
-			free_list[f].next = &free_list[f + 1];
-		
-		free_list[win_cnt * 6 - 1].next = NULL;
-		
-		wl = w->prev;
-		while(wl)
-		{
-			nrl = NULL;
-			for (rl = rlist; rl; rl = rl_next)
-			{
-				r_win = wl->r;		
-				r_ours = rl->r;				
-				/* If window intersects this rectangle, process */
-				if (xa_rc_intersect(r_ours, &r_win))
+				if (!flag)
 				{
-					/* If window doesn't completely mask this rectangle,
-					 * create new results */
-					if((r_ours.w != r_win.w) || (r_ours.h != r_win.h))
-					{
-						if(r_win.x != r_ours.x)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_ours.x;
-							cnrl->r.y = r_ours.y;
-							cnrl->r.w = r_win.x - r_ours.x;
-							cnrl->r.h = r_ours.h;
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
-						if(r_win.x + r_win.w != r_ours.x + r_ours.w)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_win.x + r_win.w;
-							cnrl->r.y = r_ours.y;
-							cnrl->r.w = (r_ours.x + r_ours.w) - (r_win.x + r_win.w);
-							cnrl->r.h = r_ours.h;
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
-						if(r_win.y != r_ours.y)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_win.x;
-							cnrl->r.y = r_ours.y;
-							cnrl->r.w = r_win.w;
-							cnrl->r.h = r_win.y - r_ours.y;
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
-						if(r_win.y + r_win.h != r_ours.y + r_ours.h)
-						{
-							cnrl = free_list;
-							free_list = free_list->next;
-							cnrl->r.x = r_win.x;
-							cnrl->r.y = r_win.y + r_win.h;
-							cnrl->r.w = r_win.w;
-							cnrl->r.h = (r_ours.y + r_ours.h) - (r_win.y + r_win.h);
-							cnrl->next = nrl;
-							nrl = cnrl;
-						}
-					}
-					else
-					{
-						DIAG((D_r,w->owner,"  Obscured - freeing"));
-					}
-					rl_next = rl->next;	/* Release the original rectangle */
-					rl->next = free_list;	/* Add original rectangle to the free list */
-					free_list = rl;
+					DIAGS((" covered, releasing (nrl=%lx) %lx=(%d/%d/%d/%d) rl_prev=%lx(%lx)",
+						nrl, rl, rl->r, rl_prev, rl_prev ? (long)rl_prev->next : 0));
+					if (rl == nrl)
+						nrl = rl_next;
+					if (rl_prev)
+						rl_prev->next = rl_next;
+					kfree(rl);
 				}
 				else
 				{
-					/* Keep the current rectangle, it hasn't been changed */
-					rl_next = rl->next;
-					rl->next = nrl;
-					nrl = rl;
+					rl_prev = rl;
 				}
-			}
-			rlist = nrl;
-			wl = wl->prev;
-		}
-	}
-
-	if (rlist)
-	{
-		w->rect_list = w->rect_user = w->rect_start;
-		*w->rect_start = *rlist;
-
-		if (redraw)
-		{
-			struct xa_rect_list *n, *c, *p;
-			RECT dirty;
-
-			for (n = rl_old, c = w->rect_list; n; n = n->next)
-			{
-				if (xa_rect_diff
-	}
-	else
-	{
-		kfree(w->rect_start);
-		w->rect_list = w->rect_user = w->rect_start = NULL;
-	}	
-
+			} /* for (rl = nrl; rl; rl = rl_next) */
+			wl = wl->prev;			
+		} /* while (wl) */
+	} /* if (nrl && w->prev) */
 #if GENERATE_DIAGS
-	if (w->handle)
+	else
+		DIAGS((" -- wind is topped"));
+#endif
+
+	if (swap)
+		wind->rect_list = wind->rect_user = wind->rect_start = nrl;
+		
+#if GENERATE_DIAGS
 	{
-		DIAG((D_r,w->owner,    "[%d]rect_list dump h:%d (%d/%d,%d/%d) for %s:", which, w->handle, w->r, w_owner(w) ));
-		if (w->rect_prev)
+		short i = 0;
+		rl = nrl;
+		while (rl)
 		{
-			DIAG((D_r,w->owner,"rect_prev            (%d/%d,%d/%d)", w->rect_prev->r));
+			i++;
+			rl = rl->next;
 		}
-		rlist = w->rect_start;
-		while (rlist)
-		{
-			DIAG((D_r,w->owner,"(%d/%d,%d/%d) @%lx, next=%lx", rlist->r, rlist, rlist->next));
-			rlist = rlist->next;
-		}
+		DIAGS((" make_rect_list: created %d rectangles, first=%lx", i, nrl));
 	}
 #endif
 
-	return w->rect_start;
-}
-#endif
-
-void
-dispose_rect_list(struct xa_window *w)
-{
-	if (w->rect_start)
-	{
-		DIAG((D_rect, w->owner, "free rect list"));
-		kfree(w->rect_start);
-	}
-	w->rect_start = w->rect_user = w->rect_list = NULL;
+	return nrl;
 }
 
-#if 0
 void
 free_rect_list(struct xa_rect_list *first)
 {
 	struct xa_rect_list *next;
+#if GENERATE_DIAGS
+	short i = 0;
+#endif
 
+	DIAGS(("free_rect_list: start=%lx", first));
 	while (first)
 	{
+		DIAGS((" -- freeing %lx, next=%lx",
+			first, (long)first->next));
+#if GENERATE_DIAGS
+		i++;
+#endif
 		next = first->next;
 		kfree(first);
 		first = next;
 	}
+	DIAGS((" -- freed %d rectnagles", i));
 }
-#endif
 
 struct xa_rect_list *
 rect_get_user_first(struct xa_window *w)
@@ -436,8 +315,6 @@ was_visible(struct xa_window *w)
  * GEM sample application `DEMO' [aka `DOODLE'],  Version 1.1,
  * March 22, 1985)
  */
-#define max(x,y) (((x)>(y))?(x):(y))
-#define min(x,y) (((x)<(y))?(x):(y))
 bool
 xa_rc_intersect(RECT s, RECT *d)
 {
@@ -468,22 +345,6 @@ xa_rect_clip(RECT *s, RECT *d, RECT *r)
 
 	r->x = s->x > d->x ? s->x : d->x;	//max(s->x, d->x);
 	r->y = s->y > d->y ? s->y : d->y;	//max(s->y, d->y);
-	r->w = (w1 < w2 ? w1 : w2) - r->x; 		//min(w1, w2) - d->x;
-	r->h = (h1 < h2 ? h1 : h2) - r->y;		//min(h1, h2) - d->y;
-
-	return (r->w > 0) && (r->h > 0);
-}
-
-bool
-xa_rect_diff(RECT *old, RECT *new, RECT *r)
-{
-	short w1 = old->x + old->w;
-	short w2 = new->x + new->w;
-	short h1 = old->y + old->h;
-	short h2 = new->y + new->h;
-
-	r->x = old->x > new->x ? old->x : new->x;	//max(s->x, d->x);
-	r->y = old->y > new->y ? old->y : new->y;	//max(s->y, d->y);
 	r->w = (w1 < w2 ? w1 : w2) - r->x; 		//min(w1, w2) - d->x;
 	r->h = (h1 < h2 ? h1 : h2) - r->y;		//min(h1, h2) - d->y;
 

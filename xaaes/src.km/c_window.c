@@ -718,7 +718,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			clip = wl->r;
 
 			if (xa_rc_intersect(our_win, &clip))
-				generate_rect_list(lock|winlist, wl, 1);
+				make_rect_list(wl, 1);
 
 			wl = wl->next;
 		}
@@ -1059,7 +1059,7 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 
 	if (w == root_window) /* just a safeguard */
 	{
-		generate_rect_list(wlock, w, 3);
+		make_rect_list(w, 1);
 	}
 	else
 	{
@@ -1080,12 +1080,12 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 				clip = wl->r;
 				DIAG((D_r, wl->owner, "wllist %d", wl->handle));
 				if (xa_rc_intersect(r, &clip))
-					generate_rect_list(wlock, wl, 2);
+					make_rect_list(wl, 1);
 				wl = wl->prev;
 			}
 		}
 		else			/* already on top */
-			generate_rect_list(wlock, w, 3);
+			make_rect_list(w, 1);
 	}
 
 	return w;
@@ -1114,11 +1114,11 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 	{
 		clip = wl->r;
 		if (xa_rc_intersect(r, &clip))
-			generate_rect_list(lock|winlist, wl, 4);
+			make_rect_list(wl, 1);
 		wl = wl->next;
 	}
 
-	generate_rect_list(lock|winlist, w, 5);
+	make_rect_list(w, 1);
 
 	check_menu_desktop(lock|winlist, old_top, window_list);
 }
@@ -1201,7 +1201,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 			}
 
 			/* Update the window's rectangle list, it will be out of date now */
-			generate_rect_list(wlock, wind, 6);
+			make_rect_list(wind, 1);
 
 			/* If window is being blit mode transferred, do the blit instead of redrawing */
 			if (blit_mode)
@@ -1263,7 +1263,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 				/* Check for newly exposed windows */
 				if (xa_rc_intersect(old, &clip))
 				{			
-					generate_rect_list(wlock, wl, 7);
+					make_rect_list(wl, 1);
 					display_window(wlock, 13, wl, &clip);
 					if (wl->send_message)
 						wl->send_message(wlock, wl, NULL,
@@ -1280,7 +1280,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 						/* We don't need to send a redraw to
 						 * these windows, we just have to update
 						 * their rect lists */
-						generate_rect_list(wlock, wl, 8);
+						make_rect_list(wl, 1);
 					}
 				}
 
@@ -1336,7 +1336,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	r = wind->r;
 
 	if (wind->rect_start)
-		kfree(wind->rect_start);
+		free_rect_list(wind->rect_start);
 
 	wind->rect_user = wind->rect_list = wind->rect_start = NULL;
 
@@ -1405,7 +1405,7 @@ close_window(enum locks lock, struct xa_window *wind)
 		{
 			DIAG((D_wind, client, "   --   clip %d/%d,%d/%d", clip));
 			/* If a new focus was pulled up, some of these are not needed */
-			generate_rect_list(lock|winlist, wl, 9);
+			make_rect_list(wl, 1);
 			display_window(lock|winlist, 14, wl, &clip);
 			if (wl->send_message)
 				wl->send_message(lock|winlist, wl, NULL,
@@ -1492,7 +1492,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 			kfree(wind->background);
 
 		if (wind->rect_start)
-			kfree(wind->rect_start);
+			free_rect_list(wind->rect_start);
 	}
 	else
 	{
