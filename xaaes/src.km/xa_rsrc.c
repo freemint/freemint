@@ -82,13 +82,14 @@ obfix(OBJECT *tree, int object)
 /* new function to make the code orthogonal.
  */
 static short *
-transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long len, int planes, short vdih)
+transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *icon, short *map, long len, int planes, short vdih)
 {
 	MFDB src, dst;
 	short *new_data = map;
 	short *tmp = NULL;
 	long icon_len = len * planes;
 	long new_len = len * screen.planes;
+	struct remember_alloc *ra;
 
 	DIAG((D_s, client, "icon_len %ld, new_len %ld", icon_len, new_len));
 
@@ -96,15 +97,34 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 	{
 		DIAG((D_x, client, "alloc of %ld bytes", new_len));
 
-		if (client == C.Aes)
-			new_data = kmalloc(new_len);
+		/*
+		 * Ozk: we needs to remember mallocs done when new icon data
+		 * is created.
+		 */
+		if ((ra = kmalloc(sizeof(*ra))))
+		{
+			if (client == C.Aes)
+				new_data = kmalloc(new_len);
+			else
+				new_data = umalloc(new_len);
+
+			if (!new_data)
+			{
+				kfree(ra);
+				return map;
+			}
+
+			/*
+			 * setup and attach the new remember_alloc
+			 */
+			ra->addr = new_data;
+			ra->next = rscs->ra;
+			rscs->ra = ra;
+			
+			memcpy(new_data, map, icon_len);
+		}
 		else
-			new_data = umalloc(new_len);
-
-		if (!new_data)
 			return map;
-
-		memcpy(new_data, map, icon_len);
 	}
 
 	src.fd_w = icon->monoblk.ib_wicon; /* Transform MFDB's */
@@ -127,7 +147,6 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 		transform_gem_bitmap_data(vdih, src, dst, planes, screen.planes);
 		kfree(tmp);
 	}
-
 	return new_data;
 }
 
@@ -135,7 +154,7 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
  * FixColourIconData: Convert a colour icon from device independent to device specific
  */
 static void
-FixColourIconData(struct xa_client *client, CICONBLK *icon, long base, short vdih)
+FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs, short vdih)
 {
 	CICON *best_cicon = NULL;
 	CICON *c;
@@ -152,13 +171,13 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, long base, short vdi
 	while (c)
 	{
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
-	
+
 		if (    c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
 			best_cicon = c;
 		}
-		c = c->next_res;	
+		c = c->next_res;
 	}
 
 	if (best_cicon)
@@ -167,9 +186,9 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, long base, short vdi
 
 		c = best_cicon;
 		if (c->col_data)
-			c->col_data = transform_icon_bitmap(client, icon, c->col_data, len, c->num_planes, vdih);
+			c->col_data = transform_icon_bitmap(client, rscs, icon, c->col_data, len, c->num_planes, vdih);
 		if (c->sel_data)
-			c->sel_data = transform_icon_bitmap(client, icon, c->sel_data, len, c->num_planes, vdih);
+			c->sel_data = transform_icon_bitmap(client, rscs, icon, c->sel_data, len, c->num_planes, vdih);
 
 		/* set the new data plane count */
 		c->num_planes = screen.planes;
@@ -180,17 +199,18 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, long base, short vdi
 	}
 }
 
-static void
-list_resource(struct xa_client *client, void *resource)
+static struct xa_rscs *
+list_resource(struct xa_client *client, void *resource, short flags)
 {
 	struct xa_rscs *new;
 
-	DIAG((D_x, client, "XA_alloc 2 %ld", sizeof(*new)));
 
 	if (client == C.Aes)
 		new = kmalloc(sizeof(*new));
 	else
 		new = umalloc(sizeof(*new));
+
+	DIAG((D_x, client, "XA_alloc 2 %ld, at %lx", sizeof(*new), new));
 
 	if (new)
 	{
@@ -208,9 +228,12 @@ list_resource(struct xa_client *client, void *resource)
 		/* set defaults up */
 		new->id = 2;
 		new->handle = client->rsct;
+		new->flags = flags;
 		new->rsc = resource;
+		new->ra = NULL;
 		new->globl = client->globl_ptr;
 	}
+	return new;
 }
 
 /*
@@ -229,6 +252,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	OBJECT *obj, **trees;
 	unsigned long osize = 0, size = 0;
 	char *base = NULL;
+	struct xa_rscs *rscs = NULL; 
 	int i, j, type, numCibs = 0;
 	short vdih = C.vh;
 
@@ -279,6 +303,24 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		/* Reread everything */
 		kernel_read(f, base, size);
 		kernel_close(f);
+
+		/*
+		 * Ozk: Added 'flags' to xa_rscs structure, so we know
+		 * if the resource associated with it was allocated by
+		 * XaAES or not. Added this parameter to list_resource().
+		 * list_resource() also return the address of the new
+		 * xa_rscs attached to the client for further references.
+		 */
+		client->rsct++;
+		if (!(rscs = list_resource(client, base, RSRC_ALLOC)))
+		{
+			client->rsct--;
+
+			if (client == C.Aes)
+				kfree(base);
+			else
+				ufree(base);
+		}
 	}
 	else
 	{
@@ -289,13 +331,13 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			(RSHDR *)base = rshdr;
 			size = (unsigned long)hdr.rsh_rssize;
 			osize = (size + 1UL) & 0xfffffffeUL;
+			client->rsct++;
+			rscs = list_resource(client, base, 0);
 		}
 	}
 
-	client->rsct++;
-
-	/* Put the resource in a list. */
-	list_resource(client, base);
+	if (!rscs)
+		return NULL;
 
 	/* fixup all free string pointers */
 	{
@@ -363,7 +405,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	if (hdr.rsh_vrsn & 4)
 	{
 		/* It's an enhanced RSC file */
-
 		unsigned long *earray, *addr;
 
 		DIAG((D_rsrc, client, "Enhanced resource file"));
@@ -372,14 +413,20 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		/* terminated by a 0L */
 		earray = (unsigned long *)(osize + (long)base);
 		earray++;						/* ozk: skip filesize */
-		cibh = (CICONBLK **)(*earray + (long)base);
+		cibh = (CICONBLK **)(*earray + (long)base);		/* address of the CICONBLK pointer table */
 		if (*earray && *earray != -1L) /* Get colour icons */
 		{
 			CICONBLK *cib, **cp = cibh;
 
+			/*
+			 * Find out how many CICONBLK's are present
+			 */
 			while (*cp++ != (CICONBLK *) -1L)
 				numCibs++;
 
+			/*
+			 * Pointer to the first CICONBLK (went past the -1L above)
+			 */
 			cib = (CICONBLK *)cp;
 
 			/* Fix up all the CICONBLK's */
@@ -392,6 +439,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 				cibh[i] = cib;
 				isize = calc_back((RECT*)&ib->ib_xicon, 1);
+
 				addr = (unsigned long*)((long)cib + sizeof(ICONBLK));
 				numRez = addr[0];
 				pdata = (short *)&addr[1];
@@ -426,7 +474,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				/* Get CICON's at different rez's */
 				for (j = 0; j < numRez; j++)
 				{
-					int planes = cicn->num_planes;
+					short planes = cicn->num_planes;
 					long psize = isize * planes;
 					(long)pdata += sizeof(CICON);
 					cicn->col_data = pdata;
@@ -502,32 +550,50 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		/* What kind of object is it? */
 		switch (type)
 		{
-		case G_TEXT:
-		case G_BOXTEXT:
-		case G_IMAGE:
-		case G_BUTTON:
-		case G_STRING:
-		case G_SHORTCUT:
-		case G_FTEXT:
-		case G_FBOXTEXT:
-		case G_TITLE:
-		case G_ICON:
-			obj->ob_spec.free_string += (long)base;
-			break;
-		case G_CICON:
-			FixColourIconData(client, cibh[obj->ob_spec.index], (long)base, vdih);
-			obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
-			break;
-		case G_PROGDEF:
-			obj->ob_spec.userblk = NULL;
-			break;
-		case G_IBOX:
-		case G_BOX:
-		case G_BOXCHAR:
-			break;
-		default:
-			DIAG((D_rsrc, client, "Unknown object type %d", type));
-			break;
+			case G_TEXT:
+			case G_BOXTEXT:
+			case G_IMAGE:
+			case G_BUTTON:
+			case G_STRING:
+			case G_SHORTCUT:
+			case G_FTEXT:
+			case G_FBOXTEXT:
+			case G_TITLE:
+			{
+				obj->ob_spec.free_string += (long)base;
+				break;
+			}
+			case G_ICON:
+			{
+				obj->ob_spec.free_string += (long)base;
+				break;
+			}
+			case G_CICON:
+			{
+				/*
+				 * Ozk: Added xa_rsc * parameter to FixColourIconData(),
+				 * since its needed to remember memory allocs.
+				 */
+				FixColourIconData(client, cibh[obj->ob_spec.index], rscs, vdih);
+				obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
+				break;
+			}
+			case G_PROGDEF:
+			{
+				obj->ob_spec.userblk = NULL;
+				break;
+			}
+			case G_IBOX:
+			case G_BOX:
+			case G_BOXCHAR:
+			{
+				break;
+			}
+			default:
+			{
+				DIAG((D_rsrc, client, "Unknown object type %d", type));
+				break;
+			}
 		}
 	}
 
@@ -624,26 +690,104 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				/* free the entry for the freed rsc. */
 				RSHDR *hdr = cur->rsc;
 				char *base = cur->rsc;
-				OBJECT **trees, *obj;
-				int i;
+				OBJECT **trees, *obtree;
+				short i, j, type;
+
 
 				/* Free the memory allocated for scroll list objects. */
 				(unsigned long)trees = (unsigned long)(base + hdr->rsh_trindex);
 				for (i = 0; i < hdr->rsh_ntree; i++)
 				{
+
+/* ------------------------------------- */
+/* Ozk: I dont know if this was really necessary ... only time will tell.
+ * It makes it easy to add cleanup-code to individual objects loaded
+ * by LoadResources..
+ */
+					obtree = trees[i];
+					j = 0;
+					do
+					{
+						type = obtree[j].ob_type & 255;
+						switch (type)
+						{
+							case G_TEXT:
+							case G_BOXTEXT:
+							case G_IMAGE:
+							case G_BUTTON:
+							case G_STRING:
+							case G_SHORTCUT:
+							case G_FTEXT:
+							case G_FBOXTEXT:
+							case G_TITLE:
+							case G_ICON:
+							{
+								break;
+							}
+							case G_CICON:
+							{
+								break;
+							}
+							case G_PROGDEF:
+							{
+								break;
+							}
+							case G_IBOX:
+							case G_BOX:
+							case G_BOXCHAR:
+							{
+								break;
+							}
+							case G_SLIST:
+							{
+								if (client == C.Aes)
+								{
+									DIAG((D_rsrc, client, "kFree: scroll list info %lx",
+										(long)obtree[j].ob_spec.index));
+									kfree((SCROLL_INFO*)obtree[j].ob_spec.index);
+								}
+								else
+								{
+									DIAG((D_rsrc, client, "uFree: scroll list info %lx",
+										(long)obtree[j].ob_spec.index));
+									ufree((SCROLL_INFO*)obtree[j].ob_spec.index);
+								}
+								break;
+							}
+							default:
+							{
+								DIAG((D_rsrc, client, "Unknown object type %d", type));
+								break;
+							}
+						}
+					} while (!(obtree[j++].ob_flags & OF_LASTOB));
+				}
+/* ------------------------------------- */
+/* Old stuff - -- it will be removed if noone have objections
+ */
+#if 0
 					int f = 0;
 					obj = trees[i];
 					do {
 						if ((obj[f].ob_type & 255) == G_SLIST)
 						{
 							if (client == C.Aes)
+							{
+								DIAG((D_rsrc, client, "kFree: scroll list info %lx",
+									(long)obj[f].ob_spec.index));
 								kfree((SCROLL_INFO*)obj[f].ob_spec.index);
+							}
 							else
+							{
+								DIAG((D_rsrc, client, "uFree: scroll list info %lx",
+									(long)obj[f].ob_spec.index));
 								ufree((SCROLL_INFO*)obj[f].ob_spec.index);
+							}
 						}
 					}
 					while (!(obj[f++].ob_flags & OF_LASTOB));
 				}
+#endif
 
 				/* unhook the entry from the chain */
 				if (cur->prior)
@@ -653,14 +797,50 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				if (!cur->prior)
 					client->resources = cur->next;
 
+				/*
+				 * Ozk: Here we fix and clean up a LOT of memory-leaks.
+				 * Now we remember each allocation done related to loading
+				 * a resource file, and we release the stuff here.
+				 */
 				if (client == C.Aes)
 				{
-					DIAG((D_rsrc, client, "Free: cur %lx for AESSYS", cur));
+					struct remember_alloc *ra;
+					
+					while (cur->ra)
+					{
+						ra = cur->ra;
+						cur->ra = ra->next;
+						DIAG((D_rsrc, client, "kFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
+						kfree(ra->addr);
+						kfree(ra);
+					}
+					
+					if (cur->flags & RSRC_ALLOC)
+					{
+						DIAG((D_rsrc, client, "kFree: cur->rsc %lx", cur->rsc));
+						kfree(cur->rsc);
+					}
+					DIAG((D_rsrc, client, "kFree: cur %lx", cur));
 					kfree(cur);
 				}
 				else
 				{
-					DIAG((D_rsrc, client, "Free: cur %lx", cur));
+					struct remember_alloc *ra;
+
+					while (cur->ra)
+					{
+						ra = cur->ra;
+						cur->ra = ra->next;
+						DIAG((D_rsrc, client, "uFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
+						ufree(ra->addr);
+						kfree(ra);
+					}
+					if (cur->flags & RSRC_ALLOC)
+					{
+						DIAG((D_rsrc, client, "uFree: cur->rsc %lx", cur->rsc));
+						ufree(cur->rsc);
+					}
+					DIAG((D_rsrc, client, "uFree: cur %lx", cur));
 					ufree(cur);
 				}
 			}
