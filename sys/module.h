@@ -48,5 +48,6 @@ void _cdecl kernel_close(struct file *f);
 
 void load_all_modules(const char *curpath, unsigned long mask);
 void _cdecl load_modules(const char *extension, long (*loader)(struct basepage *, const char *));
+long _cdecl register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag);
 
 # endif /* _module_h */

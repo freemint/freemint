@@ -211,7 +211,11 @@ _mint_xbios:
 norm_xbios:
 #else
 	tst.w	_in_kernel
+#ifdef ONLY030
+	bne.s	LX_rom
+#else
 	bne	LX_rom
+#endif
 #endif
 
 	btst	#5,(sp) 		// test for user/super mode
@@ -326,10 +330,12 @@ _mint_bios:
 norm_bios:
 
 #else
-
 	tst.w	_in_kernel
+#ifdef ONLY030
+	bne.s	rom_bios
+#else
 	bne	rom_bios
-
+#endif
 #endif
 
 	bset	#0x07,_in_kernel
@@ -534,7 +540,6 @@ new_dev:
 
 error:	cmp.l	#_xbios_tab,a5
 	bne.s	enosys
-	//trap	#14			// XXX trap#14 here??? -> go over _trap_14_emu
 	jsr	_trap_14_emu
 	bra	out
 enosys:	moveq	#-32,d0	// ENOSYS
@@ -583,7 +588,11 @@ norm_trap2:
 // kernel itself anymore)
 
 	tst.w	_in_kernel
+#ifdef ONLY030
 	bne.s	rom_trap2
+#else
+	bne	rom_trap2
+#endif
 #endif
 	bset	#0x07,_in_kernel
 	// The AES/VDI passes parameters in D0/D1, so we do not touch

@@ -31,6 +31,7 @@
 # include "module.h"
 
 # include "arch/cpu.h"
+# include "arch/syscall.h"
 # include "libkern/libkern.h"
 # include "mint/basepage.h"
 # include "mint/dcntl.h"
@@ -526,4 +527,39 @@ load_km(const char *path)
 	}
 	else
 		FORCE("load_module(%s) failed -> %li", path, err);
+}
+
+long _cdecl
+register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
+{
+	long _cdecl (**handler)(void *) = NULL;
+	long ret = EINVAL;
+
+	if (flag == 0)
+		handler = &aes_handler;
+	else if (flag == 1)
+		handler = &vdi_handler;
+
+	if (mode == 0)
+	{
+		/* install */
+
+		if (*handler == NULL)
+		{
+			*handler = dispatch;
+			ret = 0;
+		}
+	}
+	else if (mode == 1)
+	{
+		/* deinstall */
+
+		if (*handler == dispatch)
+		{
+			*handler = NULL;
+			ret = 0;
+		}
+	}
+
+	return ret;
 }
