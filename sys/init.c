@@ -1181,14 +1181,14 @@ run_auto_prgs (void)
 	/* OK, now let's run through \\AUTO looking for
 	 * programs...
 	 */
-	d_getpath(curpath,0);
-	curdriv = d_getdrv();
+	sys_d_getpath(curpath,0);
+	curdriv = sys_d_getdrv();
 
-	d_setdrv(sysdrv);	/* set above, right after Super() */
-	d_setpath("\\");
+	sys_d_setdrv(sysdrv);	/* set above, right after Super() */
+	sys_d_setpath("\\");
 
-	dta = (DTABUF *) f_getdta();
-	r = f_sfirst("\\auto\\*.prg", 0);
+	dta = (DTABUF *) sys_f_getdta();
+	r = sys_f_sfirst("\\auto\\*.prg", 0);
 	while (r >= 0)
 	{
 		if (strcmp(dta->dta_name, my_name) == 0)
@@ -1200,11 +1200,11 @@ run_auto_prgs (void)
 			strcpy(pathspec+6, dta->dta_name);
 			sys_pexec(0, pathspec, (char *)"", init_env);
 		}
-		r = f_snext();
+		r = sys_f_snext();
 	}
 
- 	d_setdrv(curdriv);
- 	d_setpath(curpath);
+ 	sys_d_setdrv(curdriv);
+ 	sys_d_setpath(curpath);
 }
 
 void
@@ -1314,7 +1314,7 @@ mint_thread(void *arg)
 			if (r == 0)
 			{
 				sleep(WAIT_Q, (long)mint_thread);
-				/* LPSTOP don't work (at least on Milan060)
+				/* LPSTOP doesn't work (at least on Milan060)
 				 * if (mcpu == 60)
 				 *	cpu_lpstop();
 				 * else */
