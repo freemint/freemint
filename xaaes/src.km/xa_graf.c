@@ -1079,9 +1079,9 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
-			MFORM *ud = (MFORM *)pb->addrin[0];
+			MFORM *ud = NULL; //(MFORM *)pb->addrin[0];
 			
-			if (ud && m == USER_DEF)
+			if (m == USER_DEF && (ud = (MFORM *)pb->addrin[0]))
 			{
 				client->user_def = *ud;
 				ud = &client->user_def;
@@ -1090,10 +1090,10 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->prev_mouse = client->mouse;
 			client->prev_mouse_form = client->mouse_form;
 
-			graf_mouse(m, ud/*(MFORM*)pb->addrin[0]*/, client, false);
+			graf_mouse(m, ud, client, false);
 			client->mouse = m;
-			client->mouse_form = ud; //(MFORM*)pb->addrin[0];	
-			DIAG((D_f,client,"mouse_form to %d", m));
+			client->mouse_form = ud;
+			DIAG((D_f,client,"mouse_form to %d(%lx)", m, ud));
 		}
 	}
 	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)

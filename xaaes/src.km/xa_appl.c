@@ -398,7 +398,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	if (C.mouse_owner == client || C.realmouse_owner == client)
 		graf_mouse(ARROW, NULL, NULL, false);
 
-
 	remove_widget_active(client);
 
 	/*
