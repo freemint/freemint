@@ -32,8 +32,8 @@ main(int argc, char *argv[])
 
 	printf("load \"%s\"\n", path);
 	r = Ssystem(2000, path, 0);
-	printf("Ssystem -> %li\n", r);
+	if (r) printf("Ssystem -> %li\n", r);
+	else pause();
 
-	pause();
 	return 0;
 }
