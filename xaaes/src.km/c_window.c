@@ -359,6 +359,12 @@ wi_insert(WIN_BASE *b, struct xa_window *w, struct xa_window *after)
 }
 #endif
 
+bool
+is_topped(struct xa_window *wind)
+{
+	return (wind->owner == S.client_list && wind == window_list && wind == C.focus) ? true : false;
+}
+
 struct xa_window *
 get_top(void)
 {
@@ -435,7 +441,7 @@ send_ontop(enum locks lock)
 	struct xa_window *top = window_list;
 	struct xa_client *client = top->owner;
 
-	if (top->send_message && !client->fmd.wind)
+	if (is_topped(top) && top->send_message && !client->fmd.wind)
 		top->send_message(lock, top, NULL,
 				  WM_ONTOP, 0, 0, top->handle,
 				  0, 0, 0, 0);

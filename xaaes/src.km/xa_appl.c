@@ -142,6 +142,19 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	/* add to client list (sorted in ascending pid order) */
 	{
+		if (S.client_list)
+		{
+			S.client_list->prior = client;
+			client->next = S.client_list;
+			client->prior = NULL;
+			S.client_list = client;
+		}
+		else
+		{
+			S.client_list = client;
+			client->next = client->prior = NULL;
+		}
+#if 0
 		struct xa_client **end = &(S.client_list);
 		struct xa_client *prior = NULL;
 
@@ -159,6 +172,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		*end = client;
 		client->prior = prior;
+#endif
 	}
 
 	client->p = p;
@@ -346,7 +360,16 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 */
 	remove_windows(lock, client);
 
-	top_owner = window_list->owner;
+	/*
+	 * Figure out which client to make active
+	 */
+	if (cfg.next_active == 1)
+		top_owner = previous_client(lock);
+	else if (cfg.next_active == 0)
+		top_owner = window_list->owner;
+	else
+		top_owner = C.Aes;
+	
 
 	if (client->attach)
 	{
