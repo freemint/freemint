@@ -160,6 +160,8 @@ struct config
 	int small_font_point;		/* Size for small text */
 	int popscroll;			/* number of lines of a popup above which it will be made scrollable. */
 
+	int videomode;			/* ID of screen device opened by v_opnwk() */
+
 	/* postponed cnf things */
 	Path cnf_shell;			/* SHELL= */
 	char *cnf_run[32];		/* RUN= */

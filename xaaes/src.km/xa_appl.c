@@ -366,12 +366,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		client->tail_is_heap = false;
 	}
 
-	/* Unlock mouse & screen */
-	if (update_locked() == client)
-		free_update_lock();
-	if (mouse_locked() == client)
-		free_mouse_lock();
-
 	if (client->p->ppid != C.AESpid)
 	{
 		/* Send a CH_EXIT message if the client
@@ -403,16 +397,14 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		{
 			if (client->std_menu.tree == menu_bar->tree)
 			{
-				if (menustruct_locked() == client)
-				{
-					C.menu_base = NULL;
-					*menu_bar = C.Aes->std_menu;
-					free_menustruct_lock();
-				}
-				else
-					*menu_bar = C.Aes->std_menu;
+				C.menu_base = NULL;
+				*menu_bar = C.Aes->std_menu;
 			}
+			else
+				*menu_bar = C.Aes->std_menu;
 		}
+		if (menustruct_locked() == client)
+			free_menustruct_lock();
 
 		client->std_menu.tree = NULL;
 
@@ -425,6 +417,13 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 			}
 		}
 	}
+
+	/* Unlock mouse & screen */
+	if (update_locked() == client)
+		free_update_lock();
+	if (mouse_locked() == client)
+		free_mouse_lock();
+
 
 	// if (!client->killed)
 	//	remove_attachments(lock|clients, client, client->std_menu.tree);
