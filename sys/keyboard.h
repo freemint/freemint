@@ -55,16 +55,16 @@
 # define UNDO		0x61	/* scan code of undo key */
 # define HELP		0x62	/* scan code of help key */
 
-# define NUMPAD_0	0x70	/* definitions for numpad scancodes */
-# define NUMPAD_1	0x6d
-# define NUMPAD_2	0x6e
-# define NUMPAD_3	0x6f
+# define NUMPAD_7	0x67	/* definitions for numpad scancodes */
+# define NUMPAD_8	0x68
+# define NUMPAD_9	0x69
 # define NUMPAD_4	0x6a
 # define NUMPAD_5	0x6b
 # define NUMPAD_6	0x6c
-# define NUMPAD_7	0x67
-# define NUMPAD_8	0x68
-# define NUMPAD_9	0x69
+# define NUMPAD_1	0x6d
+# define NUMPAD_2	0x6e
+# define NUMPAD_3	0x6f
+# define NUMPAD_0	0x70
 
 # define MAXAKP		126	/* maximum _AKP code supported */
 
@@ -80,8 +80,6 @@ struct keytab
 	uchar *altcaps;		/* TOS 4.0x and above */
 	uchar *altgr;		/* Milan TOS */
 };
-
-struct keytab *get_keytab(void);
 
 /* Struct for the default action on C/A/D
  */
@@ -103,11 +101,13 @@ struct cad_def
 short ikbd_scan(ushort scancode, IOREC_T *rec);
 void autorepeat_timer(void);
 
+struct keytab *get_keytab(void);
 struct keytab *sys_b_keytbl(char *unshift, char *shift, char *caps);
 void sys_b_bioskeys(void);
 ushort sys_b_kbrate(ushort del, ushort rep);
 
 extern struct cad_def cad[3];
+extern short pc_style;
 
 long load_keyboard_table(const char *path, short flag);
 void init_keybd(void);
