@@ -174,6 +174,10 @@ extern const char *MSG_couldnt_run_init;
 extern const char *MSG_keytable_loaded;
 extern const char *MSG_keytable_faulty;
 
+/* mis.c */
+extern const char *MSG_shell_name;
+extern const char *MSG_shell_missing_arg;
+
 /* slb.c */
 extern const char *MSG_slb_couldnt_open;
 extern const char *MSG_slb_freeing_used;
