@@ -19,6 +19,7 @@
 int do_debug = 0;
 #endif
 
+/* from mintlib:mintlib/main.c */
 extern int __mint;
 
 #ifdef __GNUC__
