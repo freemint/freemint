@@ -51,6 +51,7 @@ COBJS = \
 	mcount.c \
 	md5.c \
 	memory.c \
+	mis.c \
 	module.c \
 	nullfs.c \
 	pipefs.c \
