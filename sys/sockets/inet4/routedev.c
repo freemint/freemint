@@ -13,7 +13,6 @@
 # include "route.h"
 
 # include "dummydev.h"
-# include "util.h"
 
 # include "mint/file.h"
 # include "mint/socket.h"

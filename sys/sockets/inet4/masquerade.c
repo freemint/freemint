@@ -14,8 +14,6 @@
 # include "tcputil.h"
 # include "udp.h"
 
-# include "util.h"
-
 
 
 # define MBDEBUG TRACE

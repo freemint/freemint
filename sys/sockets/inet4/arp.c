@@ -10,8 +10,6 @@
 # include "in.h"
 # include "route.h"
 
-# include "util.h"
-
 # include <mint/dcntl.h>
 
 

@@ -9,8 +9,6 @@
 
 # include "tcputil.h"
 
-# include "util.h"
-
 
 /*
  * Some macros to extract some tcp header fields given a BUF holding
