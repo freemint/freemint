@@ -1074,27 +1074,27 @@ BTRACE(41);
 	if (resource_name)
 	{
 		C.Aes_rsc = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
-		IFDIAG(if (C.Aes_rsc)
-				fdisplay(loghandle, true, "system resource = %lx\n", C.Aes_rsc);)
+		fdisplay(loghandle, true, "system resource = %lx (%s)\n",
+			 C.Aes_rsc, lcfg.rsc_name);
 	}	
 	if (!resource_name || !C.Aes_rsc)
 	{
-		err = fdisplay(loghandle, true, "ERROR: Can't find/load system resource file '%s'\n",lcfg.rsc_name);
+		err = fdisplay(loghandle, true, "ERROR: Can't find/load system resource file '%s'\n", lcfg.rsc_name);
 		cleanup();
 		return -1;
 	}
 
-	widget_resources = 0;
+	widget_resources = NULL;
 	resource_name = xa_find(lcfg.widg_name);
 	if (resource_name)
 	{
 		widget_resources = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
-		IFDIAG(if (widget_resources)
-				fdisplay(loghandle, true, "widget_resources= %lx\n", widget_resources);)
+		fdisplay(loghandle, true, "widget_resources = %lx (%s)\n",
+			 widget_resources, lcfg.widg_name);
 	}
 	if (!resource_name || !widget_resources)
 	{
-		err = fdisplay(loghandle, true, "ERROR: Can't find/load widget resource file '%s'\n",lcfg.widg_name);
+		err = fdisplay(loghandle, true, "ERROR: Can't find/load widget resource file '%s'\n", lcfg.widg_name);
 		cleanup();
 		return -1;
 	}
