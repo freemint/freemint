@@ -31,7 +31,7 @@
 # include <stdio.h>
 # include <sys/types.h>
 
-# include "include/transprt.h"
+# include "transprt.h"
 
 
 # if 0
