@@ -46,6 +46,7 @@ int edit_object(enum locks lock,
 		int ed_obj, int keycode,
 		short *newpos);
 
+int get_parent(OBJECT *ob, int item);
 void set_ob_spec(OBJECT *root, int s_ob, unsigned long cl);
 OBSPEC *get_ob_spec(OBJECT *ob);
 void redraw_object(enum locks lock, XA_TREE *wt, int );
@@ -90,15 +91,15 @@ void line (short x, short y, short x1,short y1, int col);
 void tl_hook(int d, const RECT *r, int col);
 void br_hook(int d, const RECT *r, int col);
 void chiseled_gbox(int d, const RECT *r);
-void t_extent(char *t, short *w, short *h);
+void t_extent(const char *t, short *w, short *h);
 void rtopxy(short *p, const RECT *r);
 void ritopxy(short *p, short x, short y, short w, short h);
 void *form_save(int d, RECT r, void *area);
 void form_restore(int d, RECT r, void *area);
 void form_copy(const RECT *fr, const RECT *to);
-void strip_name(char *to, char *fro);
-void cramped_name(void *s, char *t, int w);
-char *clipped_name(void *s, char *t, int w);
+void strip_name(char *to, const char *fro);
+void cramped_name(const void *s, char *t, int w);
+const char *clipped_name(const void *s, char *t, int w);
 int thickness(OBJECT *ob);
 bool is_menu(OBJECT *tree);
 void deselect(OBJECT *tree, int item);
@@ -122,8 +123,5 @@ ObjectDisplay
 	d_g_string,
 	d_g_text,
 	d_g_title;
-
-/* XXX in my_aes.c */
-int get_parent(OBJECT *ob, int item);
 
 #endif /* _objects_h */

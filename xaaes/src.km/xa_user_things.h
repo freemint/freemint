@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -24,7 +24,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "my_aes.h"
+#ifndef _xa_user_things_h
+#define _xa_user_things_h
 
-short my_global_aes[16];
+#include "global.h"
 
+struct xa_user_things
+{
+	const long len;		/* number of bytes to copy (this struct and the code) */
+	long progdef_p;
+	long userblk_pp;
+	long ret_p;
+	long parmblk_p;
+};
+
+extern const struct xa_user_things xa_user_things;
+
+#endif /* _xa_user_things_h */

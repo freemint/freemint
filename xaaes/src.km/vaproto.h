@@ -25,9 +25,10 @@
  */
 
 /*
- * AV-Protokoll, erweiterte Definition vom 26.06.1995
- * Genaue Beschreibung der Messages in der Dokumentation
- * zu Thing (THING.HYP ab Version 0.54)
+ * AV-protocol, extended definitions from 26.06.1995
+ * 
+ * You can find a detailed description of these messages
+ * in the Thing documentation (thing.hyp, starting from version 0.54)
  */
 
 #ifndef _vaproto_h
@@ -90,8 +91,7 @@ enum av_va
 	VA_HIGH
 };
 
-
-/* Objekttypen fÅr VA_THAT_IZIT */
+/* Objekttypen for VA_THAT_IZIT */
 enum
 {
 	VA_OB_UNKNOWN,
@@ -140,7 +140,7 @@ enum av_va_have
 	AA_SETWINDPOS	= 0x0008
 };
 
-/* Makros zum Testen auf Quoting */
+/* macros for quotation test */
 #define VA_ACC_QUOTING(a)    ((a) & VV_ACC_QUOTING)
 #define VA_SERVER_QUOTING(a) ((a) & AA_SRV_QUOTING)
 

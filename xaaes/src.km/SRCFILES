@@ -55,6 +55,7 @@ HEADER = \
 	xa_scrp.h \
 	xa_shel.h \
 	xa_types.h \
+	xa_user_things.h \
 	xa_wdlg.h \
 	xa_wind.h \
 	xalloc.h
