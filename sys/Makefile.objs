@@ -22,7 +22,7 @@ DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 WARN =	-Wall \
 	-Wmissing-prototypes \
 	-Winline
-LDFLAGS = -nostdlib
+LDFLAGS = -nostdlib -Wl,--entry -Wl,_main
 LIBS = $(LIBKERN) -lgcc
 
 NOCFLAGS-gmon.c = -pg
