@@ -5,7 +5,6 @@
  */
 
 #include <ctype.h>
-#include <cflib.h>
 
 #include "global.h"
 #include "console.h"

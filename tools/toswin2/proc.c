@@ -1,7 +1,6 @@
 
 #include <mintbind.h>
 #include <errno.h>
-#include <cflib.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>

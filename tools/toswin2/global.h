@@ -5,6 +5,12 @@
 #include <sys/types.h>
 typedef unsigned char uchar;
 
+#include <cflib.h>
+
+#if !defined(__CFLIB__)
+#error at least cflib 0.20.0 is required to compile TosWin2
+#endif
+
 
 typedef enum {FALSE, TRUE} bool;
 

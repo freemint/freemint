@@ -10,8 +10,6 @@
 #include <osbind.h>
 #include <support.h>
 
-#include <cflib.h>
-
 #include "global.h"
 #include "console.h"
 #include "textwin.h"

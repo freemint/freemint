@@ -2,8 +2,6 @@
 #include <string.h>
 #include <support.h>
 
-#include <cflib.h>
-
 #include "global.h"
 #include "environ.h"
 

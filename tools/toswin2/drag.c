@@ -5,8 +5,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <cflib.h>
-
 #include "global.h"
 #include "clipbrd.h"
 #include "textwin.h"
