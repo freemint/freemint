@@ -886,6 +886,7 @@ fileselector_form_exit(struct xa_client *client,
 	{
 		object_deselect(wt->tree + FS_CANCEL);
 		redraw_toolbar(lock, wind, FS_CANCEL);
+		fs->selected_entry = NULL;
 		if (fs->canceled)
 	 		fs->canceled(lock, fs, fs->root, "");
 		else
@@ -1173,7 +1174,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				strcpy(fs_paths[drv], fs->root);
 		}
 		
-		//strcpy(fs->root, fs->path);
+		strcpy(fs->path, fs->root);
 
 		kind = (XaMENU|NAME|TOOLBAR);
 		if (C.update_lock == client->p ||
@@ -1323,9 +1324,9 @@ handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 
 	//display("hfsel '%s' '%s'", path, file);
 	close_fileselector(lock, fs);
-	fs->owner->usr_evnt = 1;
 	fs->ok = 1;
 	fs->done = 1;
+	fs->owner->usr_evnt = 1;
 }
 
 static void
@@ -1334,9 +1335,9 @@ cancel_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 	DIAG((D_fsel, NULL, "fsel CANCEL: path=%s, file=%s", path, file));
 
 	close_fileselector(lock, fs);
-	fs->owner->usr_evnt = 1;
 	fs->ok = 0;
 	fs->done = 1;
+	fs->owner->usr_evnt = 1;
 }
 
 static int locked = 0;
@@ -1383,10 +1384,12 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 			Block(client, 21);
 			client->status &= ~CS_FSEL_INPUT;
 			pb->intout[0] = 1;
-			pb->intout[1] = fs->ok;
-			strcpy(path, fs->path);
-			strcat(path, fs->fs_pattern);
-			strcpy(file, fs->file);
+			if ((pb->intout[1] = fs->ok))
+			{
+				strcpy(path, fs->path);
+				strcat(path, fs->fs_pattern);
+				strcpy(file, fs->file);
+			}
 		}
 		kfree(fs);
 	}
