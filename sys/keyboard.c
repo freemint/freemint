@@ -21,14 +21,16 @@
  *
  */
 
+# include "arch/intr.h"		/* click */
 # include "mint/mint.h"
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "libkern/libkern.h"	/* strcpy(), strcat() */
 
-# include "bios.h"		/* kbshft, kintr, ...  */
+# include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
 # include "cnf.h"		/* init_env */
+# include "cookie.h"		/* get_cookie(), set_cookie() */
 # include "debug.h"		/* do_func_key() */
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
@@ -45,41 +47,44 @@
 
 # include <osbind.h>
 
-/* modifier masks for the kbshift() */
-# define MM_RSHIFT	0x01
-# define MM_LSHIFT	0x02
-# define MM_CTRL	0x04
-# define MM_ALTERNATE	0x08
-# define MM_CAPS	0x10
-# define MM_CLRHOME	0x20
-# define MM_INSERT	0x40
+/* _AKP codes for the keyboard (the upper byte of the low word)
+ * are as follows:
+ *
+ * 127 = all nationalities supported (?)
+ *
+ *  0 = USA          8 = Ger.Suisse    16 = Hungary    24 = Romania
+ *  1 = Germany      9 = Turkey        17 = Poland     25 = Bulgaria
+ *  2 = France      10 = Finnland      18 = Lituania   26 = Slovenia
+ *  3 = England     11 = Norway        19 = Latvia     27 = Croatia
+ *  4 = Spain       12 = Danmark       20 = Estonia    28 = Serbia
+ *  5 = Italy       13 = S. Arabia     21 = Bialorus   29 = Montenegro
+ *  6 = Sweden      14 = Netherlands   22 = Ukraina    30 = Macedonia
+ *  7 = Fr.Suisse   15 = Czech         23 = Slovakia   31 = Greece
+ *
+ * 32 = Russia      40 = Vietnam       48 = Bangladesh
+ * 33 = Israel      41 = India
+ * 34 = Sou. Africa 42 = Iran 
+ * 35 = Portugal    43 = Mongolia
+ * 36 = Belgium     44 = Nepal
+ * 37 = Japan       45 = Laos
+ * 38 = China       46 = Kambodja
+ * 39 = Korea       47 = Indonesia
+ *
+ * The rest of codes are reserved for future extensions. Add ones,
+ * if you find a missing one. Consider there are various countries
+ * which all speak the same language, like all the South America
+ * speaks Spanish or Portughese, the North America English or French
+ * etc.
+ *
+ */
 
-/* masks for key combinations */
-# define MM_ESHIFT	0x03	/* either shift */
-# define MM_CTRLALT	0x0c
-
-/* some key definitions */
-# define CONTROL	0x1d	/* scan code for control key */
-# define LSHIFT		0x2a	/* scan code for left shift */
-# define RSHIFT		0x36	/* scan code for right shift */
-# define ALTERNATE	0x38	/* scan code for alternate key */
-# define CAPS		0x3a	/* scan code of caps lock key */
-# define CLRHOME	0x47	/* scan code for clr/home key */
-# define INSERT		0x52	/* scan code for insert key */
-# define DEL		0x53	/* scan code of delete key */
-# define UNDO		0x61	/* scan code of undo key */
-# define HELP		0x62	/* scan code of help key */
-
-# define MAXAKP		8	/* maximum _AKP code supported */
-
-
-/* Keyboard definition tables (taken off TOS 4.04, with fixes) */
+/* Keyboard definition tables (ripped off TOS 4.04, with fixes) */
 
 /* USA, _AKP code 0 */
 
 /* Unshifted */
 
-static const char usa_kbd[] =
+static const uchar usa_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,0x08,0x09,
@@ -150,14 +155,14 @@ static const char usa_kbd[] =
 
 /* Unshifted */
 
-static const char german_kbd[] =
+static const uchar german_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
-	'7' ,'8' ,'9' ,'0' ,0x9e,'\'',0x08,0x09,
+	'7' ,'8' ,'9' ,'0' ,'ž' ,'\'',0x08,0x09,
 	'q' ,'w' ,'e' ,'r' ,'t' ,'z' ,'u' ,'i' ,
-	'o' ,'p' ,0x81,'+' ,0x0d,0x00,'a' ,'s' ,
-	'd' ,'f' ,'g' ,'h' ,'j' ,'k' ,'l' ,0x94,
-	0x84,'#' ,0x00,'~' ,'y' ,'x' ,'c' ,'v' ,
+	'o' ,'p' ,'' ,'+' ,0x0d,0x00,'a' ,'s' ,
+	'd' ,'f' ,'g' ,'h' ,'j' ,'k' ,'l' ,'”' ,
+	'„' ,'#' ,0x00,'~' ,'y' ,'x' ,'c' ,'v' ,
 	'b' ,'n' ,'m' ,',' ,'.' ,'-' ,0x00,0x00,
 	0x00,' ' ,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -174,9 +179,9 @@ static const char german_kbd[] =
 	0x00,0x1b,'!' ,'"' ,0xdd,'$' ,'%' ,'&' ,
 	'/' ,'(' ,')' ,'=' ,'?' ,'`' ,0x08,0x09,
 	'Q' ,'W' ,'E' ,'R' ,'T' ,'Z' ,'U' ,'I' ,
-	'O' ,'P' ,0x9a,'*' ,0x0d,0x00,'A' ,'S' ,
-	'D' ,'F' ,'G' ,'H' ,'J' ,'K' ,'L' ,0x99,
-	0x8e,'^' ,0x00,'|' ,'Y' ,'X' ,'C' ,'V' ,
+	'O' ,'P' ,'š' ,'*' ,0x0d,0x00,'A' ,'S' ,
+	'D' ,'F' ,'G' ,'H' ,'J' ,'K' ,'L' ,'™' ,
+	'Ž' ,'^' ,0x00,'|' ,'Y' ,'X' ,'C' ,'V' ,
 	'B' ,'N' ,'M' ,';' ,':' ,'_' ,0x00,0x00,
 	0x00,' ' ,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,'7' ,
@@ -191,11 +196,11 @@ static const char german_kbd[] =
 /* Caps */
 
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
-	'7' ,'8' ,'9' ,'0' ,0x9e,'\'',0x08,0x09,
+	'7' ,'8' ,'9' ,'0' ,'ž' ,'\'',0x08,0x09,
 	'Q' ,'W' ,'E' ,'R' ,'T' ,'Z' ,'U' ,'I' ,
-	'O' ,'P' ,0x9a,'+' ,0x0d,0x00,'A' ,'S' ,
-	'D' ,'F' ,'G' ,'H' ,'J' ,'K' ,'L' ,0x99,
-	0x8e,'#' ,0x00,'~' ,'Y' ,'X' ,'C' ,'V' ,
+	'O' ,'P' ,'š' ,'+' ,0x0d,0x00,'A' ,'S' ,
+	'D' ,'F' ,'G' ,'H' ,'J' ,'K' ,'L' ,'™' ,
+	'Ž' ,'#' ,0x00,'~' ,'Y' ,'X' ,'C' ,'V' ,
 	'B' ,'N' ,'M' ,',' ,'.' ,'-' ,0x00,0x00,
 	0x00,' ' ,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -209,29 +214,29 @@ static const char german_kbd[] =
 
 /* Alternate */
 
-	0x1a,'@' ,'\'','[' ,'(' ,']' ,0x00,
+	0x1a,'@' ,0x27,'[' ,0x28,']' ,0x00,
 
 /* Alternate shifted */
 
-	0x1a,'\\','\'','{' ,'(' ,'}' ,0x00,
+	0x1a,'\\',0x27,'{' ,0x28,'}' ,0x00,
 
 /* Alternate Caps */
 
-	0x1a,'@' ,'\'','[' ,'(' ,']' ,0x00
+	0x1a,'@' ,0x27,'[' ,0x28,']' ,0x00
 };
 
 /* French (2) */
 
 /* Unshifted */
 
-static const char french_kbd[] =
+static const uchar french_kbd[] =
 {
-	0x00,0x1b,'&' ,0x82,'"' ,'\'','(' ,0xdd,
-	0x8a,'!' ,0x87,0x85,')' ,'-' ,0x08,0x09,
+	0x00,0x1b,'&' ,'‚' ,'"' ,'\'','(' ,'Ý' ,
+	'Š' ,'!' ,'‡' ,'…' ,')' ,'-' ,0x08,0x09,
 	'a' ,'z' ,'e' ,'r' ,'t' ,'y' ,'u' ,'i' ,
 	'o' ,'p' ,'^' ,'$' ,0x0d,0x00,'q' ,'s' ,
 	'd' ,'f' ,'g' ,'h' ,'j' ,'k' ,'l' ,'m' ,
-	0x97,'`' ,0x00,'#' ,'w' ,'x' ,'c' ,'v' ,
+	'—','`' ,0x00,'#' ,'w' ,'x' ,'c' ,'v' ,
 	'b' ,'n' ,',' ,';' ,':' ,'=' ,0x00,0x00,
 	0x00,' ' ,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -283,22 +288,22 @@ static const char french_kbd[] =
 
 /* Alternate */
 
-	0x1a,'[' ,0x1b,']' ,'(' ,'\\','+' ,'@' ,0x00,
+	0x1a,'[' ,0x1b,']' ,0x28,'\\',0x2b,'@' ,0x00,
 
 /* Alternate shifted */
 
-	0x1a,'{' ,0x1b,'}' ,'(' ,0x00,
+	0x1a,'{' ,0x1b,'}' ,0x28,'\\' ,0x00,
 
 /* Alternate Caps */
 
-	0x1a,'[' ,0x1b,']' ,'(' ,'\\','+' ,'@' ,0x00
+	0x1a,'[' ,0x1b,']' ,0x28,'\\',0x2b,'@' ,0x00
 };
 
 /* British (3) */
 
 /* Unshifted */
 
-static const char british_kbd[] =
+static const uchar british_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,0x08,0x09,
@@ -369,7 +374,7 @@ static const char british_kbd[] =
 
 /* Unshifted */
 
-static const char spanish_kbd[] =
+static const uchar spanish_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,0x08,0x09,
@@ -428,24 +433,24 @@ static const char spanish_kbd[] =
 
 /* Alternate */
 
-	0x1a,'[' ,0x1b,']' ,'+' ,'#' ,'(' ,0x81,
-	'\'',0x00,
+	0x1a,'[' ,0x1b,']' ,0x2b,'#' ,0x28,'' ,
+	0x00,
 
 /* Alternate shifted */
 
-	0x1a,'{' ,0x1b,'}' ,'+' ,'@' ,'(' ,0x00,
+	0x1a,'{' ,0x1b,'}' ,0x2b,'@' ,0x00,
 
 /* Alternate Caps */
 
-	0x1a,'[' ,0x1b,']' ,'+' ,'#' ,'(' ,0x81,
-	'\'',0x00
+	0x1a,'[' ,0x1b,']' ,0x2b,'#' ,0x28,'' ,
+	0x00
 };
 
 /* Italian (5) */
 
 /* Unshifted */
 
-static const char italian_kbd[] =
+static const uchar italian_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'\'',0x8d,0x08,0x09,
@@ -504,22 +509,22 @@ static const char italian_kbd[] =
 
 /* Alternate */
 
-	0x1a,'[' ,0x1b,']' ,'+' ,0xf8,'`' ,'`' ,0x00,
+	0x1a,'[' ,0x1b,']' ,0x2b,0xf8,0x60,'`' ,0x00,
 
 /* Alternate shifted */
 
-	0x1a,'{' ,0x1b,'}' ,'+' ,'~' ,'`' ,'`' ,0x00,
+	0x1a,'{' ,0x1b,'}' ,0x2b,'~' ,0x60,'`' ,0x00,
 
 /* Alternate Caps */
 
-	0x1a,'[' ,0x1b,']' ,'+' ,0xf8,'`' ,'`' ,0x00
+	0x1a,'[' ,0x1b,']' ,0x2b,0xf8,0x60,'`' ,0x00
 };
 
 /* Swiss French (7) */
 
 /* Unshifted */
 
-static const char sw_french_kbd[] =
+static const uchar sw_french_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'\'','^' ,0x08,0x09,
@@ -578,25 +583,25 @@ static const char sw_french_kbd[] =
 
 /* Alternate */
 
-	0x1a,'@' ,'\'','[' ,'(' ,']' ,0x1b,'#' ,
-	'+' ,'~' ,0x00,
+	0x1a,'@' ,0x27,'[' ,0x28,']' ,0x1b,'#' ,
+	0x2b,'~' ,0x00,
 
 /* Alternate shifted */
 
-	0x1a,'\\','\'','{' ,'(' ,'}' ,0x1b,'#' ,
-	'+' ,'|' ,0x00,
+	0x1a,'\\',0x27,'{' ,0x28,'}' ,0x1b,'#' ,
+	0x2b,'|' ,0x00,
 
 /* Alternate Caps */
 
-	0x1a,'@' ,'\'','[' ,'(' ,']' ,0x1b,'#' ,
-	'+' ,'~' ,0x00
+	0x1a,'@' ,0x27,'[' ,0x28,']' ,0x1b,'#' ,
+	0x2b,'~' ,0x00
 };
 
 /* Swiss German (8) */
 
 /* Unshifted */
 
-static const char sw_german_kbd[] =
+static const uchar sw_german_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'\'','^' ,0x08,0x09,
@@ -639,7 +644,7 @@ static const char sw_german_kbd[] =
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'\'','^' ,0x08,0x09,
 	'Q' ,'W' ,'E' ,'R' ,'T' ,'Z' ,'U' ,'I' ,
-	'O' ,'P' ,0x9a,0xb9,0x0d,0x00,'A' ,'S' ,
+	'O' ,'P' ,'š' ,0xb9,0x0d,0x00,'A' ,'S' ,
 	'D' ,'F' ,'G' ,'H' ,'J' ,'K' ,'L' ,0x99,
 	0x8e,0xdd,0x00,'$' ,'Y' ,'X' ,'C' ,'V' ,
 	'B' ,'N' ,'M' ,',' ,'.' ,'-' ,0x00,0x00,
@@ -655,18 +660,18 @@ static const char sw_german_kbd[] =
 
 /* Alternate */
 
-	0x1a,'@' ,'\'','[' ,'(' ,']' ,0x1b,'#' ,
-	'+' ,'~' ,0x00,
+	0x1a,'@' ,0x27,'[' ,0x28,']' ,0x1b,'#' ,
+	0x2b,'~' ,0x00,
 
 /* Alternate shifted */
 
-	0x1a,'\\','\'','{' ,'(' ,'}' ,0x1b,'#' ,
-	'+' ,'|' ,0x00,
+	0x1a,'\\',0x27,'{' ,0x28,'}' ,0x1b,'#' ,
+	0x2b,'|' ,0x00,
 
 /* Alternate Caps */
 
-	0x1a,'@' ,'\'','[' ,'(' ,']' ,0x1b,'#' ,
-	'+' ,'~' ,0x00
+	0x1a,'@' ,0x27,'[' ,0x28,']' ,0x1b,'#' ,
+	0x2b,'~' ,0x00
 };
 
 /* Keyboard interrupt routine.
@@ -688,15 +693,16 @@ static const char sw_german_kbd[] =
  *
  */
 
-/* Define the routine producing the keyclick
- */
-typedef void (*KEYCLK)(void);
-
 struct	cad_def cad[3];	/* for halt, warm and cold resp. */
 short	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
+static	long hz_ticks;	/* place for saving the hz_200 timer value */
 
-const char *keyboards[127];	/* keyboard table pointers indexed by AKP */
+static	uchar numin[3];	/* buffer for storing ASCII code typed in via numpad */
+static	ushort numidx;	/* index for the buffer (0 = empty, 3 = full) */
+
+/* keyboard table pointers indexed by AKP */
+struct keytab keyboards[MAXAKP+1];
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -743,7 +749,7 @@ ctrl_alt_Fxx (PROC *p, long arg)
  *
  * Also a problem here:
  * since the program is executed directly by the kernel,
- * it can at most get the same environment as init does.
+ * it can at most get the same environment as init has.
  *
  */
 static void
@@ -764,21 +770,13 @@ alt_help(void)
 	sys_pexec(100, pname, cmdln, init_env);
 }
 
-/* The keyclick
- */
-static void
-click(void)
-{
-	if (*(long *)0x05b0L)
-		(*(KEYCLK *)0x05b0L)();		/* produce keyclick */
-}
-
 /* The handler
  */
 short
 ikbd_scan (ushort scancode)
 {
 	ushort mod = 0, clk = 0, shift = *kbshft;
+	uchar *chartable;
 
 	scancode &= 0x00ff;		/* better safe than sorry */
 
@@ -855,6 +853,42 @@ ikbd_scan (ushort scancode)
 		{
 			shift &= ~MM_ALTERNATE;
 			mod++;
+
+			/* Generate the char whose code was typed in via numpad */
+			if (numidx)
+			{
+				ushort ascii = 0, tempidx = 0;
+
+				while(numidx--)
+				{
+					ascii += (numin[tempidx] & 0x0f);
+					if (numidx)
+					{
+						tempidx++;
+						ascii *= 10;
+					}
+				}
+
+				/* Only the values 0-255 are valid. Silently
+				 * ignore the elder byte
+				 */
+				ascii &= 0x00ff;
+
+				/* Reset the buffer for next use */
+				numidx = 0;
+
+				/* Insert the character to the keyboard buffer.
+				 * XXX: is this correct?
+				 */
+				keyrec->tail += 4;
+				if (keyrec->tail >= keyrec->buflen)
+					keyrec->tail = 0;
+				(keyrec->bufaddr + keyrec->tail)[0] = 0;
+				(keyrec->bufaddr + keyrec->tail)[1] = 0;
+				(keyrec->bufaddr + keyrec->tail)[2] = 0;
+				(keyrec->bufaddr + keyrec->tail)[3] = (char)ascii;
+				kintr = 1;
+			}
 			break;
 		}
 		case	CLRHOME+0x80:
@@ -877,7 +911,7 @@ ikbd_scan (ushort scancode)
 
 		*kbshft = mshift = (char)shift;
 		if (clk)
-			click();
+			kbdclick(sc);
 		sc &= 0x7f;
 		if ((sc != CLRHOME) && (sc != INSERT))
 			return -1;
@@ -911,11 +945,20 @@ ikbd_scan (ushort scancode)
 					else if ((shift & MM_ESHIFT) == MM_LSHIFT)
 						t->arg--;
 					
-					cad_lock++;
+					cad_lock = 1;
+					hz_ticks = *(long *)0x04baL;
 				}
 			}
-			
-			goto key_done;
+			else
+			{
+				long mora;
+
+				mora = *(long *)0x04baL - hz_ticks;
+				if (mora > 1000)
+					return scancode;
+			}
+
+			return -1;
 		}
 		else if (scancode == UNDO)
 		{
@@ -930,7 +973,7 @@ ikbd_scan (ushort scancode)
 			if (shift & MM_ESHIFT)
 				scancode += 0x0019;	/* emulate F11-F20 */
 			
-			t = addroottimeout (0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+			t = addroottimeout(0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 			
 			goto key_done;
@@ -940,11 +983,22 @@ ikbd_scan (ushort scancode)
 		{
 			TIMEOUT *t;
 			
-			t = addroottimeout (0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+			t = addroottimeout(0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 			
 			goto key_done;
 		}
+		/* We ignore release codes, but catch them to avoid
+		 * spurious execution of checkkeys() on every release of a key.
+		 */
+		else if (scancode == DEL+0x80)
+			return -1;
+		else if (scancode == UNDO+0x80)
+			return -1;
+		else if ((scancode >= 0x003b+0x80) && (scancode <= 0x0044+0x80))
+			return -1;
+		else if ((scancode >= 0x0054+0x80) && (scancode <= 0x005d+0x80))
+			return -1;
 	}
 
 	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
@@ -957,66 +1011,186 @@ ikbd_scan (ushort scancode)
 			addroottimeout(0L, (void _cdecl (*)(PROC *))alt_help, 1);
 			goto key_done;
 		}
-	}
+		else if (scancode == HELP+0x80)
+			return -1;
 
-	/* Alt/Numpad add here ...
-	 */
+		/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
+		 */ 
+		switch (scancode)
+		{
+			uchar ascii;
+
+			/* Ignore release codes as usual */
+			case NUMPAD_0+0x80:
+			case NUMPAD_1+0x80:
+			case NUMPAD_2+0x80:
+			case NUMPAD_3+0x80:
+			case NUMPAD_4+0x80:
+			case NUMPAD_5+0x80:
+			case NUMPAD_6+0x80:
+			case NUMPAD_7+0x80:
+			case NUMPAD_8+0x80:
+			case NUMPAD_9+0x80:
+			{
+				return -1;
+				break;
+			}
+			case NUMPAD_0:
+			case NUMPAD_1:
+			case NUMPAD_2:
+			case NUMPAD_3:
+			case NUMPAD_4:
+			case NUMPAD_5:
+			case NUMPAD_6:
+			case NUMPAD_7:
+			case NUMPAD_8:
+			case NUMPAD_9:
+			{
+				if (numidx >= 3)	/* buffer full? reset it */
+					numidx = 0;
+
+				chartable = keyboards[gl_kbd].unshift;
+				ascii = chartable[scancode];
+				if (ascii)
+				{
+					numin[numidx] = ascii;
+					numidx++;
+				}
+				goto key_done;
+				break;
+			}
+		}
+	}
 
 	/* Ordinary keyboard add here ...
 	 */
 
-	kintr = 1;
+	if ((scancode & 0x80) == 0)
+		kintr = 1;
 
-	return scancode;	/* for now, give the scancode away to TOS */
+	return scancode;		/* for now, give the scancode away to TOS */
 
 key_done:
-	click();			/* produce keyclick */
+	kbdclick(scancode);		/* produce keyclick */
 	return -1;			/* don't go to TOS, just return */
 }
 
-static void
+/* Initialization routines
+ */
+
+static short
+fill_keystruct(short index, uchar *table)
+{
+	uchar *tmp = table + 384;
+	uchar *unshift, *shift, *caps, *alt, *altshift, *altcaps;
+	short sanity = 1;
+
+	unshift = table;
+	shift = table + 128;
+	caps = table + 256;
+	alt = tmp;
+
+	while((sanity != 0) && (*tmp != 0))
+	{
+		sanity++;
+		tmp++;
+	}
+	if (!sanity) return 0;
+	sanity = 1;
+	while((sanity != 0) && (*tmp == 0))
+	{
+		sanity++;
+		tmp++;
+	}
+	if (!sanity) return 0;
+	altshift = tmp;
+
+	sanity = 1;
+	while((sanity != 0) && (*tmp != 0))
+	{
+		sanity++;
+		tmp++;
+	}
+	if (!sanity) return 0;
+	sanity = 1;
+	while((sanity != 0) && (*tmp == 0))
+	{
+		sanity++;
+		tmp++;
+	}
+	if (!sanity) return 0;
+	altcaps = tmp;
+
+	keyboards[index].unshift = unshift;
+	keyboards[index].shift = shift;
+	keyboards[index].caps = caps;
+	keyboards[index].alt = alt;
+	keyboards[index].altshift = altshift;
+	keyboards[index].altcaps = altcaps;
+
+	return 1;	/* OK */
+}
+
+static short
 load_table(FILEPTR *fp, char *name, long size)
 {
 	char *kbuf;
+	short ret = 0;
 
 	/* This is 128+128+128 for unshifted, shifted and caps
 	 * tables respectively; plus 3 bytes for three alt ones,
 	 * plus two bytes magic header, gives 389 bytes minimum.
 	 */
-	if (size < 389L) return;
+	if (size < 389L) return 0;
 
 	kbuf = kmalloc(size);
-	if (!kbuf) return;
+	if (!kbuf) return 0;
 
-	if ((*fp->dev->read)(fp, kbuf, size) != size)
+	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
-		kfree(kbuf);
-		return;
-	}
-	else if (*(short *)kbuf == 0x2771)	/* magic word */
-	{
-		gl_kbd = 6;
-		keyboards[6] = kbuf + sizeof(short);
-	}
-	else if (*(short *)kbuf == 0x2772)	/* extended format */
-	{
-		short *sbuf = (short *)kbuf;
+		switch(*(ushort *)kbuf)
+		{
+			case	0x2771:		/* magic word for std format */
+			{
+				ret = fill_keystruct(gl_kbd, (uchar *)kbuf + sizeof(short));
+				break;
+			}
+			case	0x2772:		/* magic word for ext format */
+			{
+				/* The extended format is identical as the old one
+				 * with exception that the second word of the data
+				 * contains the AKP code for the keyboard table
+				 * loaded.
+				 */
+				ushort *sbuf = (ushort *)kbuf;
 
-		gl_kbd = sbuf[1];
-		keyboards[gl_kbd] = kbuf + sizeof(long);
+				if (sbuf[1] <= MAXAKP)
+				{
+					ret = fill_keystruct(sbuf[1], (uchar *)kbuf + sizeof(long));
+					if (ret)
+						gl_kbd = sbuf[1];
+				}
+				break;
+			}
+		}
 	}
-	else
+
+	if (!ret)
 	{
+		boot_print("Keyboard table is BAD!\r\n");
 		kfree(kbuf);
-		return;
+		return 0;
 	}
 
 	/* Success */
+	boot_printf("Loaded keyboard table for AKP code %d\r\n", gl_kbd);
 
-	boot_printf("Loaded keyboard table %s with AKP code %d\r\n", name, gl_kbd);
+	return 1;
 }
 
-/* This must be done before init_intr() */
+/* Initialize the built-in keyboard tables.
+ * This must be done before init_intr()!
+ */
 void
 init_keybd(void)
 {
@@ -1024,16 +1198,16 @@ init_keybd(void)
 
 	/* The USA keyboard is default */
 	for (x = 0; x < 127; x++)
-		keyboards[x] = usa_kbd;
+		fill_keystruct(x, (uchar *)usa_kbd);
 
-	keyboards[1] = german_kbd;
-	keyboards[2] = french_kbd;
-	keyboards[3] = british_kbd;
-	keyboards[4] = spanish_kbd;
-	keyboards[5] = italian_kbd;
-	keyboards[6] = british_kbd;
-	keyboards[7] = sw_french_kbd;
-	keyboards[8] = sw_german_kbd;
+	fill_keystruct(1, (uchar *)german_kbd);
+	fill_keystruct(2, (uchar *)french_kbd);
+	fill_keystruct(3, (uchar *)british_kbd);
+	fill_keystruct(4, (uchar *)spanish_kbd);
+	fill_keystruct(5, (uchar *)italian_kbd);
+	fill_keystruct(6, (uchar *)british_kbd);
+	fill_keystruct(7, (uchar *)sw_french_kbd);
+	fill_keystruct(8, (uchar *)sw_german_kbd);
 }
 
 void
@@ -1042,19 +1216,32 @@ load_keytbl(void)
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
-	char name[32];
+	char name[32];		/* satis uidetur */
 
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return;
 
-	/* `keybd.tbl' is already used by GEM.SYS, we can't conflict
+	/* `keybd.tbl' is already used by gem.sys, we can't conflict
 	 */
 	strcpy(name, sysdir);
-	strcat(name, "keybd.sys");
+	strcat(name, "keyboard.tbl");
 
 	if (!do_open(&fp, name, O_RDONLY, 0, &xattr))
 	{
-		load_table(fp, name, xattr.size);
+		ret = load_table(fp, name, xattr.size);
 		do_close(rootproc, fp);
 	}
+
+	/* Now fix the _AKP code in the Cookie Jar */
+	if (ret)
+	{
+		long akp_val = 0, gl = (long)gl_kbd & 0x000000ffL;
+
+		get_cookie(COOKIE__AKP, &akp_val);
+		akp_val &= 0xffff00ffL;
+		akp_val |= (gl << 8);
+		set_cookie(COOKIE__AKP, akp_val);
+	}
 }
+
+/* EOF */
