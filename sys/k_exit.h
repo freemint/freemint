@@ -35,9 +35,9 @@
 # include "mint/proc.h"
 
 
-long 		terminate	(PROC *curproc, short code, short que);
+long 		terminate	(struct proc *curproc, short code, short que);
 long _cdecl	sys_pterm	(short code);
-long		kernel_pterm	(PROC *p, short code);
+long		kernel_pterm	(struct proc *p, short code);
 long _cdecl	sys_pterm0	(void);
 long _cdecl	sys_ptermres	(long save, short code);
 

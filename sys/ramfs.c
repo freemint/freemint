@@ -2495,7 +2495,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 
 			if (mode == F_GETLK)
 			{
-				lck = denylock (c->locks, &t);
+				lck = denylock (curproc->pid, c->locks, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -2540,7 +2540,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 			RAM_DEBUG (("ram_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 			/* see if there's a conflicting lock */
-			while ((lck = denylock (c->locks, &t)) != 0)
+			while ((lck = denylock (curproc->pid, c->locks, &t)) != 0)
 			{
 				RAM_DEBUG (("ram_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 				if (mode == F_SETLKW)

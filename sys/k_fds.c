@@ -232,7 +232,7 @@ do_dup (short fd, short min)
 long
 do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 
 	fcookie dir, fc;
 	long devsp;
@@ -295,7 +295,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 		r = xfs_getxattr (dir.fs, &dir, &xattr);
 		if (r == 0)
 		{
-			if (denyaccess (&xattr, S_IWOTH))
+			if (denyaccess (p->p_cred->ucr, &xattr, S_IWOTH))
 				r = EACCES;
 		}
 
@@ -408,7 +408,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	 * execute right to execute a file
 	 */
 	if ((exec_check && ((xattr.mode & (S_IXUSR|S_IXGRP|S_IXOTH)) == 0))
-		|| (!creating && denyaccess (&xattr, perm)))
+		|| (!creating && denyaccess (p->p_cred->ucr, &xattr, perm)))
 	{
 		DEBUG(("do_open(%s): access to file denied", name));
 		release_cookie (&dir);

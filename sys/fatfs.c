@@ -8266,7 +8266,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 
 			if (mode == F_GETLK)
 			{
-				lck = denylock (c->locks, &t);
+				lck = denylock (curproc->pid, c->locks, &t);
 				if (lck)
 				{
 					*fl = lck->l;
@@ -8316,7 +8316,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				long r;
 
 				/* see if there's a conflicting lock */
-				while ((lck = denylock (c->locks, &t)) != 0)
+				while ((lck = denylock (curproc->pid, c->locks, &t)) != 0)
 				{
 					FAT_DEBUG (("fatfs_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 					if (mode == F_SETLKW)

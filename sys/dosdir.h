@@ -13,7 +13,7 @@
 
 
 /* table of processes holding locks on drives */
-extern PROC *dlockproc [NUM_DRIVES];
+extern struct proc *dlockproc[NUM_DRIVES];
 extern long searchtime;
 
 long _cdecl sys_d_setdrv	(int d);

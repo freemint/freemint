@@ -676,7 +676,8 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 {
 	static char newpath[16] = "U:\\DEV\\";
 
-	struct cwd *cwd = curproc->p_cwd;
+	struct proc *p = curproc;
+	struct cwd *cwd = p->p_cwd;
 
 	char temp2[PATH_MAX];
 	char linkstuff[PATH_MAX];
@@ -935,7 +936,7 @@ restart_mount:
 
 		/* we must also have search permission for the directory
 		 */
-		if (denyaccess (&xattr, S_IXOTH))
+		if (denyaccess (p->p_cred->ucr, &xattr, S_IXOTH))
 		{
 			DEBUG (("search permission in directory denied"));
 			release_cookie (&dir);
@@ -1302,9 +1303,8 @@ denyshare (FILEPTR *list, FILEPTR *f)
  */
 
 int
-denyaccess (XATTR *xattr, ushort perm)
+denyaccess(struct ucred *cred, XATTR *xattr, ushort perm)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
 	ushort mode;
 
 	/* the super-user can do anything! */
@@ -1316,7 +1316,7 @@ denyaccess (XATTR *xattr, ushort perm)
 		perm = perm << 6;
 	else if (cred->egid == xattr->gid)
 		perm = perm << 3;
-	else if (groupmember (cred, xattr->gid))
+	else if (groupmember(cred, xattr->gid))
 		perm = perm << 3;
 
 	if ((mode & perm) != perm)
@@ -1339,11 +1339,9 @@ denyaccess (XATTR *xattr, ushort perm)
  * so that l_start is absolute. not relative to the current position or
  * end of file.
  */
-
-LOCK * _cdecl
-denylock (LOCK *list, LOCK *lck)
+LOCK *
+denylock(ushort pid, LOCK *list, LOCK *lck)
 {
-	ushort pid = curproc->pid;
 	LOCK *t;
 	ulong tstart, tend;
 	ulong lstart, lend;
@@ -1382,25 +1380,25 @@ denylock (LOCK *list, LOCK *lck)
  * is granted; return an error code, or 0 if everything is ok.
  */
 long
-dir_access (fcookie *dir, ushort perm, ushort *mode)
+dir_access(struct ucred *cred, fcookie *dir, ushort perm, ushort *mode)
 {
 	XATTR xattr;
 	long r;
 
-	r = xfs_getxattr (dir->fs, dir, &xattr);
+	r = xfs_getxattr(dir->fs, dir, &xattr);
 	if (r)
 	{
-		DEBUG (("dir_access: file system returned %ld", r));
+		DEBUG(("dir_access: file system returned %ld", r));
 		return r;
 	}
 
 	if (!S_ISDIR(xattr.mode))
 	{
-		DEBUG (("file is not a directory"));
+		DEBUG(("file is not a directory"));
 		return ENOTDIR;
 	}
 
-	if (denyaccess (&xattr, perm))
+	if (denyaccess(cred, &xattr, perm))
 	{
 		DEBUG(("no permission for directory"));
 		return EACCES;
@@ -1414,9 +1412,8 @@ dir_access (fcookie *dir, ushort perm, ushort *mode)
 /*
  * returns 1 if the given name contains a wildcard character
  */
-
 int
-has_wild (const char *name)
+has_wild(const char *name)
 {
 	char c;
 
@@ -1440,9 +1437,8 @@ has_wild (const char *name)
  * Long names are truncated. Any extensions after the first one are
  * ignored, i.e. foo.bar.c -> foo.bar, foo.c.bar->foo.c.
  */
-
 void
-copy8_3 (char *dest, const char *src)
+copy8_3(char *dest, const char *src)
 {
 	char fill = ' ', c;
 	int i;
@@ -1451,13 +1447,13 @@ copy8_3 (char *dest, const char *src)
 	{
 		if (src[1] == 0)
 		{
-			strcpy (dest, ".       .   ");
+			strcpy(dest, ".       .   ");
 			return;
 		}
 
 		if (src[1] == '.' && src[2] == 0)
 		{
-			strcpy (dest, "..      .   ");
+			strcpy(dest, "..      .   ");
 			return;
 		}
 	}
@@ -1522,18 +1518,17 @@ copy8_3 (char *dest, const char *src)
  *
  * BUGS: acts a lot like the silly TOS pattern matcher.
  */
-
 int
-pat_match (const char *name, const char *template)
+pat_match(const char *name, const char *template)
 {
-	char expname [TOS_NAMELEN+1];
+	char expname[TOS_NAMELEN+1];
 	register char *s;
 	register char c;
 
 	if (*template == '*')
 		return 1;
 
-	copy8_3 (expname, name);
+	copy8_3(expname, name);
 
 	s = expname;
 	while ((c = *template++) != 0)
@@ -1550,9 +1545,8 @@ pat_match (const char *name, const char *template)
  * int samefile(fcookie *a, fcookie *b): returns 1 if the two cookies
  * refer to the same file or directory, 0 otherwise
  */
-
 int
-samefile (fcookie *a, fcookie *b)
+samefile(fcookie *a, fcookie *b)
 {
 	if (a->fs == b->fs && a->dev == b->dev && a->index == b->index)
 		return 1;
