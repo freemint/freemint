@@ -226,7 +226,7 @@ do_fmd(LOCK lock, int up, struct moose_data *md)
 {
 	XA_CLIENT *client = Pid2Client(up);
 
-	if (client)
+	if (client && md->state == 1)
 	{
 		DIAGS(("Classic?  fmd.lock %d, via %lx\n", client->fmd.lock, client->fmd.mousepress));
 		if (client->fmd.lock && client->fmd.mousepress)
