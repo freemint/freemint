@@ -340,7 +340,7 @@ set_file(enum locks lock, const char *fn)
 	 * didn't call the form_do().
 	 *
 	 * We should call something like the below instead
-	 * of direct edit_pos adjustments.
+	 * of direct e.pos adjustments.
 	 */
 	{
 		short newpos;
@@ -350,7 +350,7 @@ set_file(enum locks lock, const char *fn)
 	}
 #else
 	strcpy(fs.file, fn); /* set the edit field text */
-	wt->edit_pos = strlen(fn);
+	wt->e.pos = strlen(fn);
 #endif
 
 	/* redraw the toolbar file object */

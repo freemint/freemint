@@ -251,30 +251,45 @@ struct wdlg_info
 	HNDL_OBJ exit;
 };
 
-struct widget_tree
-{
-	OBJECT *tree;			/* The object tree */
-	short current;			/* current item within above tree. */
-	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
-					/* And set a usefull RECT as soon as possible, ready for use in
-					 * all kind of functions. */
 #define OB_CURS_ENABLED	1
 #define OB_CURS_DRAWN	2
 
-	short cr_state;			/* Cursor state */
-	RECT cr;			/* Cursor coordinates, relative to 'r' */
+struct objc_edit_info
+{
+	short obj;
+	short pos;
+	short c_state;
+	RECT cr;
+};
+
+struct widget_tree
+{
+	struct widget_tree *next;	/* Next widget tree */
+
+	struct xa_window *wind;		/* Not of any specific use just yet...*/
 	struct xa_client *owner;	/* The tree widget would be owned by a different app to
 					 * the actual window (like the menu bar on the root window),
 					 * or the desktop toolbar widget. HR 270801: was: int pid; */
 	struct xa_widget *widg;		/* Cross pointer to widget. */
-
+	
+	OBJECT *tree;			/* The object tree */
+	RECT c;
+	short current;			/* current item within above tree. */
+	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
+					/* And set a usefull RECT as soon as possible, ready for use in
+					 * all kind of functions. */
 	ushort *state_mask;
 
 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
 	short parent_y;
 
-	short edit_obj;			/* Index of the current editable text field (if any) */
-	short edit_pos;			/* Cursor position within the text field (if any) */
+	struct objc_edit_info e;
+
+	//short edit_obj;			/* Index of the current editable text field (if any) */
+	//short edit_pos;			/* Cursor position within the text field (if any) */
+	//short cr_state;			/* Cursor state */
+	//RECT cr;			/* Cursor coordinates, relative to 'r' */
+
 	short lastob;			/* Can be used to validate item number */
 	short which;			/* kind of event for use by WDIAL exit handler. */
 
@@ -398,6 +413,8 @@ struct xa_client
 	OBJECT **trees_1;
 	int rsct;			/* count up/down the loaded resources. Used by XA_alloc, XA_free */
 
+	XA_TREE *wtlist;
+	
 	XA_MENU_ATTACHMENT *attach;	/* submenus */
 	XA_TREE std_menu;		/* The client's standard GEM-style menu-bar widget */
 	XA_TREE desktop;		/* The clients desktop as a standard toolbar widget */
@@ -544,7 +561,6 @@ struct xa_widget
 	WidgetBehaviour *release;
 
 #define XAWF_STUFFKMALLOC 1
-
 
 	long flags;
 	void (*destruct)(struct xa_widget *w);

@@ -50,6 +50,9 @@
 /*----------------------------------------------------------------- */
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		32
+
+#define MAX_FTEXTLEN		256
+
 /* CONFIGURABLE PARAMETERS */
 #define NUM_CB			32	/* table of cancel button texts */
 #define CB_L			16

@@ -565,7 +565,13 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 		short ks;
 		struct rawkey key;
 
-		wt = check_widget_tree(lock, client, obtree);
+		//check_widget_tree(lock, client, obtree);
+		if (!(wt = obtree_to_wt(client, obtree)))
+			wt = new_widget_tree(client, obtree);
+
+		if (!wt)
+			wt = set_client_wt(client, obtree);
+
 		vq_key_s(C.vh, &ks);
 		key.norm = normkey(ks, pb->intin[1]);
 		key.aes = pb->intin[1];
@@ -951,7 +957,12 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		short newstate, nextobj, clickmask;
 
-		wt = check_widget_tree(lock, client, obtree);
+		//wt = check_widget_tree(lock, client, obtree);
+		if (!(wt = obtree_to_wt(client, obtree)))
+			wt = new_widget_tree(client, obtree);
+
+		if (!wt)
+			wt = set_client_wt(client, obtree);
 		/*
 		 * Create a moose_data packet...
 		 */
