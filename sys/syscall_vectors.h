@@ -5,8 +5,12 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 1999-2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
  * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +26,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 1999-10-06
- * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- * 
  */
 
 # ifndef _syscall_vector_h
@@ -36,14 +33,8 @@
 
 # include "mint/mint.h"
 
-
 extern Func dos_tab [];
 extern Func bios_tab [];
 extern Func xbios_tab [];
-
-void init_dos (void);
-void init_bios (void);
-void init_xbios (void);
-
 
 # endif /* _syscall_vector_h */

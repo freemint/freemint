@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,13 +26,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2000-11-07
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
  */
 
 # ifndef _k_exit_h
@@ -38,14 +35,14 @@
 # include "mint/proc.h"
 
 
-long 		terminate	(PROC *curproc, int code, int que);
-long _cdecl	sys_pterm	(int code);
-long		kernel_pterm	(PROC *p, int code);
+long 		terminate	(PROC *curproc, short code, short que);
+long _cdecl	sys_pterm	(short code);
+long		kernel_pterm	(PROC *p, short code);
 long _cdecl	sys_pterm0	(void);
-long _cdecl	sys_ptermres	(long save, int code);
+long _cdecl	sys_ptermres	(long save, short code);
 
-long _cdecl	sys_pwaitpid	(int pid, int nohang, long *rusage);
-long _cdecl	sys_pwait3	(int nohang, long *rusage);
+long _cdecl	sys_pwaitpid	(short pid, short nohang, long *rusage);
+long _cdecl	sys_pwait3	(short nohang, long *rusage);
 long _cdecl	sys_pwait	(void);
 
 

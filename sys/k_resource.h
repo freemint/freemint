@@ -38,18 +38,18 @@
  * (as specified by WHO) is used. A lower priority number means higher
  * priority. Priorities range from PRIO_MIN to PRIO_MAX (above).
  */
-long _cdecl sys_pgetpriority (int which, int who);
+long _cdecl sys_pgetpriority(short which, short who);
 
 /* Set the priority of all processes specified by WHICH and WHO (see above)
  * to PRIO.  Returns 0 on success, -1 on errors.
  */
-long _cdecl sys_psetpriority (int which, int who, int prio);
+long _cdecl sys_psetpriority(short which, short who, short prio);
 
 /* Provided for backward compatibility */
-long _cdecl sys_prenice (int pid, int increment);
-long _cdecl sys_pnice (int increment);
+long _cdecl sys_prenice(short pid, short increment);
+long _cdecl sys_pnice(short increment);
 
-long _cdecl sys_prusage (long *r);
-long _cdecl sys_psetlimit (int i, long v);
+long _cdecl sys_prusage(long *r);
+long _cdecl sys_psetlimit(short i, long v);
 
 # endif	/* _k_resource_h  */

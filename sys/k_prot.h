@@ -35,26 +35,26 @@
 # include "mint/credentials.h"
 
 
-long _cdecl proc_setuid		(struct proc *p, unsigned int uid);
-long _cdecl proc_setgid		(struct proc *p, unsigned int gid);
+long _cdecl proc_setuid		(struct proc *p, unsigned short uid);
+long _cdecl proc_setgid		(struct proc *p, unsigned short gid);
 
 long _cdecl sys_pgetuid		(void);
 long _cdecl sys_pgetgid		(void);
 long _cdecl sys_pgeteuid	(void);
 long _cdecl sys_pgetegid	(void);
-long _cdecl sys_psetuid		(unsigned int id);
-long _cdecl sys_psetgid		(unsigned int id);
-long _cdecl sys_pseteuid	(unsigned int id);
-long _cdecl sys_psetegid	(unsigned int id);
-long _cdecl sys_psetreuid	(unsigned int rid, unsigned int eid);
-long _cdecl sys_psetregid	(unsigned int rid, unsigned int eid);
-long _cdecl sys_pgetgroups	(int gidsetlen, unsigned int gidset[]);
-long _cdecl sys_psetgroups	(int ngroups, unsigned int gidset[]);
+long _cdecl sys_psetuid		(unsigned short id);
+long _cdecl sys_psetgid		(unsigned short id);
+long _cdecl sys_pseteuid	(unsigned short id);
+long _cdecl sys_psetegid	(unsigned short id);
+long _cdecl sys_psetreuid	(unsigned short rid, unsigned short eid);
+long _cdecl sys_psetregid	(unsigned short rid, unsigned short eid);
+long _cdecl sys_pgetgroups	(short gidsetlen, unsigned short gidset[]);
+long _cdecl sys_psetgroups	(short ngroups, unsigned short gidset[]);
 
-int groupmember (struct ucred *ucr, ushort group);
+int groupmember(struct ucred *ucr, unsigned short group);
 
 INLINE int
-suser (struct ucred *cred)
+suser(struct ucred *cred)
 {
 	if (cred->euid == 0)
 		return 1;
@@ -67,7 +67,7 @@ suser (struct ucred *cred)
 # define hold_cred(cred) \
 		(cred)->links++
 
-struct ucred *copy_cred (struct ucred *ucr);
-void free_cred (struct ucred *ucr);
+struct ucred *copy_cred(struct ucred *ucr);
+void free_cred(struct ucred *ucr);
 
 # endif /* _k_prot_h */

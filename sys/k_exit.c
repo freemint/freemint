@@ -71,10 +71,10 @@
  */
 
 long
-terminate (PROC *curproc, int code, int que)
+terminate(struct proc *curproc, short code, short que)
 {
-	PROC *p;
-	int  i, wakemint = 0;
+	struct proc *p;
+	int i, wakemint = 0;
 
 
 	/* notify proc extensions */
@@ -250,7 +250,7 @@ terminate (PROC *curproc, int code, int que)
 }
 
 long
-kernel_pterm (PROC *p, int code)
+kernel_pterm(struct proc *p, short code)
 {
 	long term_vec = p->ctxt[SYSCALL].term_vec;
 
@@ -288,14 +288,14 @@ kernel_pterm (PROC *p, int code)
  */
 
 long _cdecl
-sys_pterm (int code)
+sys_pterm(short code)
 {
 	/* Exit all non-closed shared libraries */
 	for (;;)
 	{
 		int cont;
 
-		cont = slb_close_on_exit (0);
+		cont = slb_close_on_exit(0);
 		if (cont == 1)
 			return code;
 
@@ -303,19 +303,19 @@ sys_pterm (int code)
 			break;
 	}
 
-	return (kernel_pterm (curproc, code));
+	return (kernel_pterm(curproc, code));
 }
 
 long _cdecl
-sys_pterm0 (void)
+sys_pterm0(void)
 {
-	return sys_pterm (0);
+	return sys_pterm(0);
 }
 
 long _cdecl
-sys_ptermres (long save, int code)
+sys_ptermres(long save, short code)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct memspace *mem = p->p_mem;
 
 	MEMREGION *m;
@@ -398,10 +398,10 @@ sys_ptermres (long save, int code)
  */
 
 long _cdecl
-sys_pwaitpid (int pid, int nohang, long *rusage)
+sys_pwaitpid(short pid, short nohang, long *rusage)
 {
+	struct proc *p;
 	long r;
-	PROC *p;
 	int ourpid, ourpgrp;
 	int found;
 
@@ -580,7 +580,7 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 		}
 		else
 		{
-			PROC *q = proclist;
+			struct proc *q = proclist;
 
 			while (q && q->gl_next != p)
 				q = q->gl_next;
@@ -614,9 +614,9 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
  * compatibility with existing binaries.
  */
 long _cdecl
-sys_pwait3 (int nohang, long *rusage)
+sys_pwait3(short nohang, long *rusage)
 {
-	return sys_pwaitpid (-1, nohang, rusage);
+	return sys_pwaitpid(-1, nohang, rusage);
 }
 
 /*
@@ -626,7 +626,7 @@ sys_pwait3 (int nohang, long *rusage)
  * make do with Pwaitpid().
  */
 long _cdecl
-sys_pwait (void)
+sys_pwait(void)
 {
 	/* BEWARE:
 	 * POSIX says that wait() should be implemented as
@@ -637,5 +637,5 @@ sys_pwait (void)
 	 * POSIX style libraries should use Pwaitpid even
 	 * to implement wait().
 	 */
-	return sys_pwaitpid (-1, 2, NULL);
+	return sys_pwaitpid(-1, 2, NULL);
 }
