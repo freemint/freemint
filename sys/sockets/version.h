@@ -9,9 +9,9 @@
 
 
 # define VER_MAJOR	1
-# define VER_MINOR	4
-# define VER_PL		0
-# define VER_STATUS	"interim"
+# define VER_MINOR	5
+# define VER_PL		1
+# define VER_STATUS	""
 
 # if 0
 # define ALPHA
