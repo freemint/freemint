@@ -579,7 +579,7 @@ write (FILEPTR *f, const char *buf, long bytes)
 		return EACCES;
 	else
 	{
-		short cmd = *(short *) buf;
+		short cmd = *(const short *) buf;
 
 		switch (cmd)
 		{
@@ -603,8 +603,9 @@ write (FILEPTR *f, const char *buf, long bytes)
 			}
 			case MOOSE_DCLICK_PREFIX:
 			{
-				struct moose_dclick_com *dc = (struct moose_dclick_com *) buf;
+				const struct moose_dclick_com *dc;
 
+				dc = (const struct moose_dclick_com *) buf;
 				if (dc->dclick_time > MAX_DC_TIME)
 					dc_time = MAX_DC_TIME;
 				else
