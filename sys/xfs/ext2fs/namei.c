@@ -34,7 +34,7 @@
 # include "super.h"
 
 
-# if 0
+# if 1
 # define CACHE_DIR_HASHBITS	(9)
 # else
 # define CACHE_DIR_HASHBITS	(12)
