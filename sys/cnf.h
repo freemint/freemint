@@ -34,8 +34,7 @@ struct parsinf
 	char *dst;		/* write to, NULL indicates an error */
 	char *src;		/* read from                         */
 	/* */
-	char *env_ptr;		/* temporary pointer into that environment for setenv */
-	long env_len;		/* length of the environment */
+	void *data;		/* parser context data */
 };
 
 #define SET(opt) (1ul << ((opt) -'A'))
@@ -63,13 +62,13 @@ typedef void	(PCB_Bx)  (bool,                       struct parsinf *);
 typedef void	(PCB_D)   (unsigned long                               );
 typedef void	(PCB_Dx)  (unsigned long,              struct parsinf *);
 typedef void	(PCB_T)   (const char *                                );
-typedef PCB_T	 PCB_A                                                  ;
+typedef void	(PCB_A)   (const char *                                );
 typedef void	(PCB_Tx)  (const char *,               struct parsinf *);
-typedef PCB_Tx	 PCB_Ax                                                 ;
+typedef void	(PCB_Ax)  (const char *,               struct parsinf *);
 typedef void	(PCB_TT)  (const char *, const char *                  );
-typedef PCB_TT	 PCB_TA                                                 ;
+typedef void	(PCB_TA)  (const char *, const char *                  );
 typedef void	(PCB_TTx) (const char *, const char *, struct parsinf *);
-typedef PCB_TTx	 PCB_TAx                                                ;
+typedef void	(PCB_TAx) (const char *, const char *, struct parsinf *);
 typedef void	(PCB_0TT) (int,          const char *, const char *    );
 typedef void	(PCB_ATK) (const char *, const char *, long            );
 
@@ -107,12 +106,13 @@ enum pitype
 	PI_R_S   = 0x3001, /*     reference gets short */
 	PI_R_L   = 0x3002, /*     reference gets long */
 	PI_R_B   = 0x3003, /*     reference gets bool */
+	PI_R_T   = 0x3004, /*     reference gets path */
 };
 
 
 struct parser_item
 {
-	char *key;
+	const char *key;
 	enum pitype type;
 	void *cb;
 	long dat;
@@ -121,6 +121,6 @@ struct parser_item
 void parser_msg(struct parsinf *, const char *msg);
 
 void parse_include(const char *path, struct parsinf *, struct parser_item *);
-void parse_cnf(const char *name, struct parser_item *);
+void parse_cnf(const char *name, struct parser_item *, void *);
 
 # endif /* _cnf_h */
