@@ -65,7 +65,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 	register long r = E_OK;
 
-	TRACE(("enter s_system(): mode %04x, arg1 %08x, arg2 %08x", mode, arg1, arg2));
+	TRACE(("enter s_system(): mode %04x, arg1 %08lx, arg2 %08lx", mode, arg1, arg2));
 
 	switch (mode)
 	{
