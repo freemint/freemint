@@ -59,6 +59,7 @@ short	ob_offset(OBJECT *obtree, short object, short *mx, short *my);
 void	ob_rectangle(OBJECT *obtree, short obj, RECT *c);
 void	ob_area(OBJECT *obtree, short obj, RECT *c);
 void	ob_border_diff(OBJECT *obtree, short obj1, short obj2, RECT *r);
+int	ob_spec_xywh(OBJECT *obtree, short obj, RECT *r);
 short	ob_find(OBJECT *obtree, short object, short depth, short mx, short my);
 
 bool	obtree_is_menu(OBJECT *tree);
