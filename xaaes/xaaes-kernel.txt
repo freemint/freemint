@@ -96,3 +96,10 @@ better idea?).
      primitives
  5 - think about things like fork() and the new variable light fork()
  6 - a new transport way for the existing command line arguments is needed
+
+
+6. Future
+
+Next step is having the VDI as kernel module too. Creating an abstract interface
+for the VDI allows the direct usage of VDI functions from within the AES without
+any syscall overhead.
