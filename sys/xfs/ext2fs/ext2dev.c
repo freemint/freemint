@@ -102,10 +102,7 @@ e_open (FILEPTR *f)
 	{
 		DEBUG (("e_open: truncate file to 0 bytes"));
 		
-		c->in.i_size = 0;
-		mark_inode_dirty (c);
-		
-		ext2_truncate (c);
+		ext2_truncate (c, 0);
 		
 		bio_SYNC_DRV ((&bio), c->s->di);
 	}
@@ -660,10 +657,7 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			if (c->i_size < *((long *) arg))
 				return EACCES;
 			
-			c->in.i_size = cpu2le32 (*((long *) arg));
-			mark_inode_dirty (c);
-			
-			ext2_truncate (c);
+			ext2_truncate (c, *(unsigned long *)arg);
 			
 			pos = f->pos;
 			(void) e_lseek (f, 0, SEEK_SET);
