@@ -1,0 +1,31 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	bitmap.h \
+	config.h \
+	dir.h \
+	global.h \
+	inode.h \
+	main.h \
+	minix.h \
+	minixdev.h \
+	minixsys.h \
+	misc.h \
+	trans.h \
+	version.h \
+	zone.h
+
+COBJS = \
+	bitmap.c \
+	dir.c \
+	global.c \
+	inode.c \
+	main.c \
+	minixdev.c \
+	minixsys.c \
+	misc.c \
+	trans.c \
+	zone.c
+
+SRCFILES = $(HEADER) $(COBJS)

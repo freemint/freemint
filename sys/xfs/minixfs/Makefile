@@ -1,83 +1,38 @@
 #
-# Makefile using the GCC
+# Makefile for 
 #
+TARGET = minix.xfs
 
-# cross compiling
-#CROSS = yes
-CROSS = no
+SHELL = /bin/sh
+SUBDIRS = 
 
-#
-# target and host compiler (GCC recommended)
-# 
-ifeq ($(CROSS),yes)
-CC = /scratch_hp/fnaumann/bin/m68k-atari-mint-gcc
-NATIVECC = gcc
-NATIVECFLAGS = -O
-MINTLIBINC = -I/scratch_hp/fnaumann/m68k-atari-mint/include
-MINTINCLUDE = -I/scratch_hp/fnaumann/m68k-atari-mint/include
-STRIP = /scratch_hp/fnaumann/m68k-atari-mint/bin/xstrip
-else
-CC = gcc -pipe
-NATIVECC = $(CC)
-NATIVECFLAGS = -O
-MINTLIBINC =
-MINTINCLUDE = -I/home/fnaumann/mint-1.15/src/include
-endif
+srcdir = .
+top_srcdir = ../..
+subdir = minixfs
 
-AS = $(CC)
-LIBS = 
+default: all
 
-# used tools
-MV = mv
-CP = cp
-RM = rm -f
-TOUCH = touch
-MKDIR = mkdir
-MAKE = make
-MKDEP = $(CC) -MM
-SED = sed
-CRLF = crlf -s
+include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/RULES
+include $(top_srcdir)/PHONY
 
-OPTS =	-fomit-frame-pointer -O2
+all-here: $(TARGET)
 
-WARN =	-Wall \
-	-Wmissing-prototypes \
-	-Wshadow \
-	-Wcast-qual \
-	-Waggregate-return
+# default overwrites
+INCLUDES = -I$(top_srcdir)
+DEFINITIONS = 
 
-CFLAGS = -mshort $(MINTINCLUDE) $(WARN) $(OPTS)
-ASFLAGS = 
+LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
+LIBS = $(LIBKERN) -lgcc
+CPU = 000
+STRIPFLAGS = $(shell for i in `cat syms.mfs` ; do echo -n "-K $$i " ; done)
 
-FLAGS = CC="$(CC)" \
-	CFLAGS="$(CFLAGS)" \
-	NATIVECC="$(NATIVECC)" \
-	NATIVECFLAGS="$(NATIVECFLAGS)" \
-	MINTLIBINC="$(MINTLIBINC)"
+# default definitions
+OBJS = $(COBJS:.c=.o)
 
-#
-# main target
-#
-all:
-	cd minixfs; $(MAKE) $(FLAGS)
-	cd minit; $(MAKE) $(FLAGS)
-	cd fsck; $(MAKE) $(FLAGS)
-	cd tools; $(MAKE) $(FLAGS)
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
+	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(STRIP) $(STRIPFLAGS) $@
 
 
-#
-# macros for cleaning up
-#
-
-clean:
-	cd minixfs; $(MAKE) clean
-	cd minit; $(MAKE) clean
-	cd fsck; $(MAKE) clean
-	cd tools; $(MAKE) clean
-
-distclean:
-	$(RM) *~ core
-	cd minixfs; $(MAKE) distclean
-	cd minit; $(MAKE) distclean
-	cd fsck; $(MAKE) distclean
-	cd tools; $(MAKE) distclean
+include $(top_srcdir)/DEPENDENCIES
