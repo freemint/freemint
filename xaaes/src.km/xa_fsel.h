@@ -54,7 +54,8 @@ struct fsel_data
 	int drives;
 	int clear_on_folder_change;
 	int ok;
-	int done;	
+	int done;
+	bool treeview;	
 };
 
 
