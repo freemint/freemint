@@ -34,6 +34,7 @@
 # ifndef _mint_m68k_context_h
 # define _mint_m68k_context_h
 
+# include "mmu.h"
 
 /*
  * a process context consists, for now, of its registers
