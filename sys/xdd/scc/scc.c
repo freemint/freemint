@@ -1,24 +1,19 @@
 /*
- * Filename:     
- * Version:      
- * Author:       Frank Naumann
- * Started:      1999-09-14
- * Last Updated: 2000-06-12
- * Target O/S:   TOS/MiNT
- * Description:  
+ * $Id$
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
  * 
- * Copying:      Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
- *               Copyright 1998, 1999 Rainer Mannigel.
  * 
- * This program is free software; you can redistribute it and/or modify
+ * Copyright 1999, 2000, 2001 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
  * 
- * This program is distributed in the hope that it will be useful,
+ * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -28,7 +23,19 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 1999-09-14
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * changes since last version:
+ * 
+ * 2001-03-05:	(v0.27)
+ * 
+ * - new: on LAN port RTS is mapped to DTR line;
+ *        the xdd behaves like HSMODEM now
  * 
  * 2001-01-16:	(v0.26)
  * 
@@ -109,18 +116,18 @@
 
 # define __KERNEL_XDD__
 
-# include <mint/mint.h>
+# include "mint/mint.h"
 
-# include <arch/timer.h>
-# include <libkern/libkern.h>
-# include <mint/arch/delay.h>
-# include <mint/asm.h>
-# include <mint/dcntl.h>
-# include <mint/file.h>
-# include <mint/proc.h>
-# include <mint/signal.h>
+# include "arch/timer.h"
+# include "libkern/libkern.h"
+# include "mint/arch/delay.h"
+# include "mint/asm.h"
+# include "mint/dcntl.h"
+# include "mint/file.h"
+# include "mint/proc.h"
+# include "mint/signal.h"
 
-# include <osbind.h>
+# include <mint/osbind.h>
 # include "scc.h"
 
 
@@ -129,7 +136,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	26
+# define VER_MINOR	27
 # define VER_STATUS	
 
 
@@ -260,7 +267,8 @@ struct iovar
 	
 	uchar	iointr;		/* I/O interrupt */
 	uchar	stintr;		/* status interrupt */
-	ushort	res;		/* padding */
+	ushort	lan_dev;	/* device number of LAN port */
+# define LANDEV(iovar)		(iovar->lan_dev)
 	
 	IOREC	input;		/* input buffer */
 	IOREC	output;		/* output buffer */
@@ -393,6 +401,7 @@ static long _cdecl	scc_rsconf	(int dev, int speed, int flowctl, int ucr, int rsr
  * device driver routines - top half
  */
 static long _cdecl	scc_open	(FILEPTR *f);
+static long _cdecl	scc_close	(FILEPTR *f, int pid);
 static long _cdecl	scc_write	(FILEPTR *f, const char *buf, long bytes);
 static long _cdecl	scc_read	(FILEPTR *f, char *buf, long bytes);
 static long _cdecl	scc_writeb	(FILEPTR *f, const char *buf, long bytes);
@@ -402,7 +411,6 @@ static long _cdecl	scc_tread	(FILEPTR *f, char *buf, long bytes);
 static long _cdecl	scc_lseek	(FILEPTR *f, long where, int whence);
 static long _cdecl	scc_ioctl	(FILEPTR *f, int mode, void *buf);
 static long _cdecl	scc_datime	(FILEPTR *f, ushort *timeptr, int rwflag);
-static long _cdecl	scc_close	(FILEPTR *f, int pid);
 static long _cdecl	scc_select	(FILEPTR *f, long proc, int mode);
 static void _cdecl	scc_unselect	(FILEPTR *f, long proc, int mode);
 
@@ -423,6 +431,7 @@ static DEVDRV hsmodem_devtab =
 	scc_write, scc_read, scc_lseek, scc_ioctl, scc_datime,
 	scc_close,
 	scc_select, scc_unselect,
+	NULL, NULL
 };
 
 static DEVDRV tty_devtab =
@@ -740,7 +749,7 @@ static BAUDS baudtable_14_7456_mhz [] =
 /****************************************************************************/
 
 /****************************************************************************/
-/* BEGIN  */
+/* BEGIN SCC register access */
 
 # define ZS_PAUSE	udelay (10)
 
@@ -789,7 +798,7 @@ ZS_READ_DATA (SCC *regs)
 	return regs->sccdat;
 }
 
-/* END  */
+/* END SCC register access */
 /****************************************************************************/
 
 /****************************************************************************/
@@ -999,6 +1008,7 @@ init_SCC (IOVAR **iovar, SCC *regs)
 		(*iovar)->wr3 = 0xC1;
 		(*iovar)->wr4 = STB_ASYNC1|TAKT_16x;
 		(*iovar)->wr5 = TXEN|TX8BIT;
+		(*iovar)->lan = 0;
 		(*iovar)->datmask = 0xff;
 		(*iovar)->baudrate = 9600;
 		
@@ -1028,7 +1038,7 @@ init_SCC (IOVAR **iovar, SCC *regs)
 		
 		(*iovar)->iointr = 0;
 		(*iovar)->stintr = 0;
-		(*iovar)->res = 0;
+		(*iovar)->lan_dev = 0;
 		
 		(*iovar)->input.head = (*iovar)->input.tail = 0;
 		(*iovar)->output.head = (*iovar)->output.tail = 0;
@@ -1053,8 +1063,6 @@ error:
 INLINE void
 init_scc (void)
 {
-	void *old;
-	
 	{
 		SCC *regs = scca;
 		
@@ -1137,11 +1145,11 @@ init_scc (void)
 	 * 0x1bc - unused
 	 */
 	
-# define vector(x)	(x / 4)
-	
 	init_SCC (&iovar_sccb, sccb);
 	if (iovar_sccb)
 	{
+		void *old;
+		
 		if (flag_14_7456_mhz)
 			iovar_sccb->table = baudtable_14_7456_mhz;
 		else if (mch == FALCON)
@@ -1155,15 +1163,21 @@ init_scc (void)
 		/* and the first device in our device list */
 		IOVARS (0) = iovar_sccb;
 		
+# define vector(x)	(x / 4)
+		
 		old = Setexc (vector (0x180), sccb_txempty);
 		old = Setexc (vector (0x188), sccb_stchange);
 		old = Setexc (vector (0x190), sccb_rxavail);
 		old = Setexc (vector (0x198), sccb_special);
+		
+# undef vector
 	}
 	
 	init_SCC (&iovar_scca, scca);
 	if (iovar_scca)
 	{
+		void *old;
+		
 		if (flag_14_7456_mhz)
 			iovar_scca->table = baudtable_14_7456_mhz;
 		/* else if (mch == FALCON)
@@ -1187,18 +1201,26 @@ init_scc (void)
 		{
 			IOVARS (3) = iovar_scca;
 			
-			/* on Falcon it's not switchable */
-			if (mch != FALCON)
-				iovar_scca->lan = 3;
+			if (mch == FALCON)
+				/* fixed lan port */
+				iovar_scca->lan = 1;
+			else
+				/* switchable port
+				 * the lan flag is updated in open()
+				 */
+				iovar_scca->lan_dev = 3;
 		}
+		
+# define vector(x)	(x / 4)
 		
 		old = Setexc (vector (0x1a0), scca_txempty);
 		old = Setexc (vector (0x1a8), scca_stchange);
 		old = Setexc (vector (0x1b0), scca_rxavail);
 		old = Setexc (vector (0x1b8), scca_special);
+		
+# undef vector
 	}
 	
-# undef vector
 }
 
 DEVDRV * _cdecl
@@ -1505,6 +1527,10 @@ scc_rxavail (void)
 		{
 			/* set rts off */
 			rts_off (iovar, regs);
+			
+			if (iovar->lan)
+				/* on lan: RTS emulation on DTR line */
+				dtr_off (iovar, regs);
 		}
 		
 		if (iovar->shake & SHAKE_SOFT)
@@ -2219,6 +2245,10 @@ rx_start (IOVAR *iovar)
 		{
 			/* set rts on */
 			top_rts_on (iovar);
+			
+			if (iovar->lan)
+				/* on lan: RTS emulation on DTR line */
+				top_dtr_on (iovar);
 		}
 		
 		if (iovar->shake & SHAKE_SOFT)
@@ -2249,6 +2279,10 @@ rx_stop (IOVAR *iovar)
 		{
 			/* drop rts */
 			top_rts_off (iovar);
+			
+			if (iovar->lan)
+				/* on lan: RTS emulation on DTR line */
+				top_dtr_off (iovar);
 		}
 		
 		if (iovar->shake & SHAKE_SOFT)
@@ -2294,7 +2328,7 @@ tx_stop (IOVAR *iovar)
 		DEBUG (("tx_stop: stop transmitter"));
 		
 		/* transmitter stopped */
-		iovar->tx_empty = 0;
+		iovar->tx_empty = 1;
 		
 		/* disable interrupts */
 		top_txint_off (iovar);
@@ -2597,7 +2631,7 @@ scc_open (FILEPTR *f)
 	ushort dev = f->fc.aux;
 	IOVAR *iovar;
 	
-	DEBUG (("scc_open [%i]: enter (%lx)", f->fc.aux, f->flags));
+	DEBUG (("scc_open [%i]: enter (%x)", f->fc.aux, f->flags));
 	
 	if (dev > IOVAR_REAL_MAX)
 		return EACCES;
@@ -2606,14 +2640,16 @@ scc_open (FILEPTR *f)
 	if (!iovar)
 		return EACCES;
 	
-	if (iovar->lan && iovar->open && (iovar->open->fc.aux != dev))
+	if (iovar->open && (iovar->open->fc.aux != dev))
 		return EACCES;
 	
 	if (!iovar->open)
 	{
 		/* first open */
 		
-		if (iovar->lan)
+		DEBUG (("scc_open [%i]: first open, %lx (%x, %i)", f->fc.aux, f, f->flags, f->links));
+		
+		if (LANDEV (iovar))
 		{
 			/* select the right port */
 			
@@ -2623,15 +2659,19 @@ scc_open (FILEPTR *f)
 		
 			ushort sr = splhigh ();
 			
-			if (dev == iovar->lan)
+			if (dev == LANDEV (iovar))
 			{
 				*_giselect = 14;
 				*_giwrite = *_giread & 0x7f;
+				
+				iovar->lan = 1;
 			}
 			else
 			{
 				*_giselect = 14;
 				*_giwrite = *_giread | 0x80;
+				
+				iovar->lan = 0;
 			}
 			
 			spl (sr);
@@ -2645,23 +2685,43 @@ scc_open (FILEPTR *f)
 	}
 	else
 	{
+		DEBUG (("scc_open [%i]: next open, %lx (%x, %i)", f->fc.aux, f, f->flags, f->links));
+		{
+			FILEPTR *t = iovar->open;
+			
+			while (t)
+			{
+				DEBUG (("  chain t = 0x%lx, t->next = 0x%lx", t, t->next));
+				DEBUG (("    links = %i, flags = 0x%x", t->links, t->flags));
+				
+				t = t->next;
+			}
+		}
+		
 		if (denyshare (iovar->open, f))
 		{
 # if DEV_DEBUG > 0
 			FILEPTR *t = iovar->open;
+			
+			DEBUG (("f = 0x%lx, f->next = 0x%lx", f, f->next));
+			DEBUG (("  links = %i, flags = 0x%x", f->links, f->flags));
+			DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", f->pos, f->devinfo, f->dev));
+			DEBUG (("  fc.index = %li, fc.dev = 0x%lx, fc.aux = %i", f->fc.index, f->fc.dev, f->fc.aux));
+			
 			while (t)
 			{
-				DEBUG (("t = %lx, t->next = %lx", t, t->next));
-				DEBUG (("  links = %i, flags = %x", t->links, t->flags));
-				DEBUG (("  pos = %li, devinfo = %lx", t->pos, t->devinfo));
-				DEBUG (("  dev = %lx, next = %lx", t->dev, t->next));
-				DEBUG (("  fc.index = %li, fc.dev = %i, fc.aux = %i", t->fc.index, t->fc.dev, t->fc.aux));
+				DEBUG (("chain t = 0x%lx, t->next = 0x%lx", t, t->next));
+				DEBUG (("  links = %i, flags = 0x%x", t->links, t->flags));
+				DEBUG (("  pos = %li, devinfo = 0x%lx, dev = 0x%lx", t->pos, t->devinfo, t->dev));
+				DEBUG (("  fc.index = %li, fc.dev = 0x%lx, fc.aux = %i", t->fc.index, t->fc.dev, t->fc.aux));
 				
 				t = t->next;
 			}
 # endif
-			DEBUG (("scc_open: file sharing denied"));
-			return EACCES;
+			DEBUG (("scc_open: file sharing denied, ignored for bkx now"));
+			
+			// DEBUG (("scc_open: file sharing denied"));
+			// return EACCES;
 		}
 	}
 	
@@ -2684,7 +2744,7 @@ scc_close (FILEPTR *f, int pid)
 {
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	
-	DEBUG (("scc_close [%i]: enter", f->fc.aux));
+	DEBUG (("scc_close [%i]: enter for %lx", f->fc.aux, f));
 	
 	if ((f->flags & O_LOCK)
 	    && ((iovar->lockpid == pid) || (f->links <= 0)))
@@ -3241,14 +3301,14 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 		case TIONOTSEND:
 		case TIOCOUTQ:
 		{
-			DEBUG (("uart_ioctl(TIOCOUTQ) -> %li", iorec_used (&iovar->output)));
+			DEBUG (("scc_ioctl(TIOCOUTQ) -> %li", iorec_used (&iovar->output)));
 			
 			*(long *) buf = iorec_used (&iovar->output);
 			break;
 		}
 		case TIOCSFLAGSB:
 		{
-			DEBUG (("uart_ioctl(TIOCSFLAGSB) -> %lx, %lx", ((long *) buf)[0],
+			DEBUG (("scc_ioctl(TIOCSFLAGSB) -> %lx, %lx", ((long *) buf)[0],
 									((long *) buf)[1]));
 			
 			*(long *) buf = ctl_TIOCSFLAGSB (iovar, ((long *) buf)[0],
@@ -3364,6 +3424,10 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 			/* TIOCMH_TBE */
 			/* TIOCMH_RBF */
 			
+			/* on lan: RTS emulation on DTR line */
+			if (iovar->lan && (iovar->wr5 & DTR))
+				val |= TIOCMH_RTS;
+			
 			*(long *) buf = val;
 			break;
 		}
@@ -3386,8 +3450,17 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 				
 				if (mask & TIOCMH_RTS)
 				{
-					if (val & TIOCMH_RTS)	iovar->wr5 |= RTS;
-					else			iovar->wr5 &= ~RTS;
+					if (iovar->lan)
+					{
+						/* on lan: RTS emulation on DTR line */
+						if (val & TIOCMH_RTS)	iovar->wr5 |= DTR;
+						else			iovar->wr5 &= ~DTR;
+					}
+					else
+					{
+						if (val & TIOCMH_RTS)	iovar->wr5 |= RTS;
+						else			iovar->wr5 &= ~RTS;
+					}
 				}
 				
 				sr = splhigh ();
@@ -3420,6 +3493,10 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 			
 			/* TIOCM_RI */
 			/* TIOCM_DSR */
+			
+			/* on lan: RTS emulation on DTR line */
+			if (iovar->lan && (iovar->wr5 & DTR))
+				val |= TIOCMH_RTS;
 			
 			*(long *) buf = val;
 			break;

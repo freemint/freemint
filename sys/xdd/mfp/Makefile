@@ -32,19 +32,15 @@ OBJS = $(COBJS:.c=.o)
 entry:
 	$(MAKE) DEFINITIONS="" CPU="000" mfp.xdd
 	$(MAKE) DEFINITIONS="-DMILAN" CPU="020-60" mfp_mil.xdd
-	$(MAKE) DEFINITIONS="-DTT_MFP" CPU="030" mfp_tt.xdd
 
-mfp.xdd: mfp.c mfp.h $(LIBKERNTARGET)
+mfp.xdd: mfp.o $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $< $(LIBS)
-	$(STRIP) $@
 
-mfp_tt.xdd: mfp.c mfp.h $(LIBKERNTARGET)
+mfp_mil.xdd: mfp_mil.o $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $< $(LIBS)
-	$(STRIP) $@
 
-mfp_mil.xdd: mfp.c mfp.h $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $< $(LIBS)
-	$(STRIP) $@
+mfp_mil.c:
+	ln -s mfp.c mfp_mil.c
 
 
 include $(top_srcdir)/DEPENDENCIES

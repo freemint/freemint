@@ -1,24 +1,19 @@
 /*
- * Filename:     
- * Version:      
- * Author:       Frank Naumann
- * Started:      1999-07-28
- * Last Updated: 2000-05-24
- * Target O/S:   TOS/MiNT
- * Description:  
+ * $Id$
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
  * 
- * Copying:      Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
- *               Portions copyright 1998, 1999 Rainer Mannigel, Michael Schwingen.
  * 
- * This program is free software; you can redistribute it and/or modify
+ * Copyright 2000, 2001 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
  * 
- * This program is distributed in the hope that it will be useful,
+ * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -26,6 +21,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 1999-07-28
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
  * 
  * 
  * changes since last version:
@@ -171,14 +173,15 @@
 
 # define __KERNEL_XDD__
 
-# include <mint/mint.h>
-# include <mint/dcntl.h>
-# include <mint/file.h>
-# include <mint/proc.h>
-# include <mint/signal.h>
-# include <libkern/libkern.h>
+# include "mint/mint.h"
 
-# include <osbind.h>
+# include "libkern/libkern.h"
+# include "mint/dcntl.h"
+# include "mint/file.h"
+# include "mint/proc.h"
+# include "mint/signal.h"
+
+# include <mint/osbind.h>
 # include "pc16550.h"
 
 
@@ -2435,7 +2438,7 @@ tx_stop (IOVAR *iovar)
 		DEBUG (("tx_stop: stop transmitter"));
 		
 		/* transmitter stopped */
-		iovar->tx_empty = 0;
+		iovar->tx_empty = 1;
 		
 		/* disable interrupts */
 		top_txint_off (iovar);

@@ -1,24 +1,19 @@
 /*
- * Filename:     
- * Version:      
- * Author:       Frank Naumann
- * Started:      2000-01-03
- * Last Updated: 2000-02-28
- * Target O/S:   TOS/MiNT
- * Description:  
+ * $Id$
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
  * 
- * Copying:      Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
- *               Portions copyright 1998, 1999 Rainer Mannigel.
  * 
- * This program is free software; you can redistribute it and/or modify
+ * Copyright 2000, 2001 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
  * 
- * This program is distributed in the hope that it will be useful,
+ * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -26,6 +21,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2000-01-03
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
  * 
  * 
  * changes since last version:
@@ -54,14 +56,17 @@
 
 # define __KERNEL_XDD__
 
-# include <mint/mint.h>
-# include <mint/dcntl.h>
-# include <mint/file.h>
-# include <mint/proc.h>
-# include <mint/signal.h>
-# include <libkern/libkern.h>
+# include "mint/mint.h"
 
-# include <osbind.h>
+# include "arch/timer.h"
+# include "libkern/libkern.h"
+# include "mint/asm.h"
+# include "mint/dcntl.h"
+# include "mint/file.h"
+# include "mint/proc.h"
+# include "mint/signal.h"
+
+# include <mint/osbind.h>
 # include "mfp.h"
 
 
@@ -70,7 +75,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	12
+# define VER_MINOR	30
 # define VER_STATUS	
 
 
@@ -91,20 +96,17 @@
  * default settings
  */
 
-# ifndef TT_MFP
 # define RSVF_MFP	"modem1"
-# else
-# define RSVF_MFP	"serial1"
-# endif
+# define RSVF_MFP_TT	"serial1"
 
-# define TTY_BASENAME	"ttyS"
+# define TTY_MFP	"ttyS0"
+# define TTY_MFP_TT	"ttyS2"
 
 # define BDEV_START	6
-# ifndef TT_MFP
 # define BDEV_OFFSET	6
-# else
-# define BDEV_OFFSET	8
-# endif
+
+# define BDEV_MFP	6
+# define BDEV_MFP_TT	8
 
 
 /*
@@ -134,13 +136,8 @@
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
 # define MSG_BUILDDATE	__DATE__
 
-# ifdef MILAN
 # define MSG_BOOT	\
-	"\033p Milan MFP serial driver version " MSG_VERSION " \033q\r\n"
-# else
-# define MSG_BOOT	\
-	"\033p ST/TT MFP serial driver version " MSG_VERSION " \033q\r\n"
-# endif
+	"\033p MFP serial driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
 	"½ 1998, 1999 by Rainer Mannigel.\r\n" \
@@ -172,6 +169,14 @@ struct kerinfo *kernel;
 /****************************************************************************/
 /* BEGIN definition part */
 
+typedef struct bauds BAUDS;
+struct bauds
+{
+	ulong	baudrate;
+	uchar	timeconst;
+	uchar	mode;
+};
+
 typedef struct iorec IOREC;
 struct iorec
 {
@@ -186,9 +191,8 @@ typedef struct iovar IOVAR;
 struct iovar
 {
 	MFP	*regs;		/* MFP register base address */
-	IOVAR	*next;		/* for Interrupt-Sharing */
 	
-	ushort	state;		/* receiver state */
+	volatile ushort	state;		/* receiver state */
 # define STATE_HARD		0x1		/* CTS is low */
 # define STATE_SOFT		0x2		/* XOFF is set */
 	
@@ -202,16 +206,31 @@ struct iovar
 	uchar	sendnow;	/* one byte of control data, bypasses buffer */
 	uchar	datmask;	/* AND mask for read from sccdat */
 	
+	uchar	iointr;		/* I/O interrupt */
+	uchar	stintr;		/* status interrupt */
+	
+	ushort	tt_port;	/* TT-MFP */
+	
 	IOREC	input;		/* input buffer */
 	IOREC	output;		/* output buffer */
 	
+	BAUDS	*table;		/* baudrate vector */
 	long	baudrate;	/* current baud rate value */
 	
+	ushort	res;		/* padding */
+	
 	ushort	bdev;		/* BIOS devnumber */
+	ushort	iosleepers;	/* number of precesses that are sleeping in I/O */
 	ushort	lockpid;	/* file locking */
+	
+	ushort	clocal;		/* */
+	ushort	brkint;		/* */
 	
 	FILEPTR	*open;		/* open FILEPTRs */
 	TTY	tty;		/* the tty descriptor */
+	
+	char	rsvf_name[10];
+	char	tty_name[10];
 };
 
 
@@ -229,13 +248,6 @@ INLINE int	iorec_put	(IOREC *iorec, uchar data);
 INLINE long	iorec_used	(IOREC *iorec);
 INLINE long	iorec_free	(IOREC *iorec);
 INLINE ushort	iorec_size	(IOREC *iorec);
-
-
-/*
- * locking functions - bottom/top half
- */
-INLINE ushort	splhigh		(void);
-INLINE void	splx		(ushort old_sr);
 
 
 /*
@@ -263,16 +275,17 @@ INLINE void	top_brk_off	(IOVAR *iovar);
 /*
  * initialization - top half
  */
-INLINE int	init_MFP	(IOVAR **iovar, MFP *regs);
-INLINE void	init_mfp	(void);
+INLINE int	init_MFP	(IOVAR **iovar, MFP *regs, ushort tt_port);
+INLINE void	init_mfp	(long mch);
 DEVDRV *	_cdecl init	(struct kerinfo *k);
 
 
 /*
  * interrupt handling - bottom half
  */
-INLINE void	notify_top_half	(void);
+INLINE void	notify_top_half	(IOVAR *iovar);
 static void	wr_mfp		(IOVAR *iovar, MFP *regs);
+static void	mfp_txerror	(void);
 static void	mfp_txempty	(void);
 static void	mfp_rxavail	(void);
 static void	mfp_dcdint	(void);
@@ -280,18 +293,25 @@ static void	mfp_ctsint	(void);
 static void	mfp_rxerror	(void);
 
 static void	mfp_intrwrap	(void);
-       void	mfp1_txempty	(void);
-       void	mfp1_rxavail	(void);
+
        void	mfp1_dcdint	(void);
        void	mfp1_ctsint	(void);
+       void	mfp1_txerror	(void);
+       void	mfp1_txempty	(void);
+       void	mfp1_rxavail	(void);
        void	mfp1_rxerror	(void);
+
+       void	ttmfp1_txerror	(void);
+       void	ttmfp1_txempty	(void);
+       void	ttmfp1_rxavail	(void);
+       void	ttmfp1_rxerror	(void);
 
 
 /*
  * interrupt handling - top half
  */
-static void	check_event	(void);
-static void	soft_dcdchange	(void);
+static void	check_ioevent	(PROC *p, long arg);
+static void	soft_cdchange	(PROC *p, long arg);
 
 
 /*
@@ -299,15 +319,20 @@ static void	soft_dcdchange	(void);
  */
 INLINE void	send_byte	(IOVAR *iovar);
 static long	ctl_TIOCBAUD	(IOVAR *iovar, long *buf);
-static void	ctl_TIOCGFLAGS	(IOVAR *iovar, ushort *buf);
+static ushort	ctl_TIOCGFLAGS	(IOVAR *iovar);
 static long	ctl_TIOCSFLAGS	(IOVAR *iovar, ushort flags);
+static long	ctl_TIOCSFLAGSB	(IOVAR *iovar, long flags, long mask);
 
 
 /*
- * start primitives - top half
+ * start/stop primitives - top half
  */
 static void	rx_start	(IOVAR *iovar);
+static void	rx_stop		(IOVAR *iovar);
 static void	tx_start	(IOVAR *iovar);
+static void	tx_stop		(IOVAR *iovar);
+static void	flush_output	(IOVAR *iovar);
+static void	flush_input	(IOVAR *iovar);
 
 
 /*
@@ -324,6 +349,9 @@ static long _cdecl	mfp_rsconf	(int dev, int speed, int flowctl, int ucr, int rsr
  * device driver routines - top half
  */
 static long _cdecl	mfp_open	(FILEPTR *f);
+static long _cdecl	mfp_close	(FILEPTR *f, int pid);
+static long _cdecl	mfp_write	(FILEPTR *f, const char *buf, long bytes);
+static long _cdecl	mfp_read	(FILEPTR *f, char *buf, long bytes);
 static long _cdecl	mfp_writeb	(FILEPTR *f, const char *buf, long bytes);
 static long _cdecl	mfp_readb	(FILEPTR *f, char *buf, long bytes);
 static long _cdecl	mfp_twrite	(FILEPTR *f, const char *buf, long bytes);
@@ -331,7 +359,6 @@ static long _cdecl	mfp_tread	(FILEPTR *f, char *buf, long bytes);
 static long _cdecl	mfp_lseek	(FILEPTR *f, long where, int whence);
 static long _cdecl	mfp_ioctl	(FILEPTR *f, int mode, void *buf);
 static long _cdecl	mfp_datime	(FILEPTR *f, ushort *timeptr, int rwflag);
-static long _cdecl	mfp_close	(FILEPTR *f, int pid);
 static long _cdecl	mfp_select	(FILEPTR *f, long proc, int mode);
 static void _cdecl	mfp_unselect	(FILEPTR *f, long proc, int mode);
 
@@ -346,10 +373,10 @@ static BDEVMAP bios_devtab =
 	mfp_rsconf
 };
 
-static DEVDRV raw_devtab =
+static DEVDRV hsmodem_devtab =
 {
 	mfp_open,
-	mfp_writeb, mfp_readb, mfp_lseek, mfp_ioctl, mfp_datime,
+	mfp_write, mfp_read, mfp_lseek, mfp_ioctl, mfp_datime,
 	mfp_close,
 	mfp_select, mfp_unselect,
 	NULL, NULL
@@ -507,51 +534,67 @@ iorec_size (IOREC *iorec)
 /****************************************************************************/
 /* BEGIN global data definition & access implementation */
 
+/* for interrupt wrapper */
 static IOVAR *iovar_mfp;
+# ifndef MILAN
+static IOVAR *iovar_mfp_tt;
+# endif
 
 
-static IOVAR *iovar_tab [2];
+# define IOVAR_MAX	2
+
+static IOVAR *iovar_tab [IOVAR_MAX * 2];
 
 # define IOVARS(nr)		(iovar_tab [nr])
-# define IOVAR_TTY_OFFSET	(1)
-# define IOVAR_MAX		(1)
+# define IOVAR_TTY_OFFSET	(IOVAR_MAX)
+# define IOVAR_REAL_MAX		(IOVAR_MAX * 2)
+
+
+static BAUDS baudtable_st [] =
+{
+	{     50, 0x9a, 2 },
+	{     75, 0x66, 2 },
+	{    110, 0xAF, 1 },
+	{    134, 0x8F, 1 },
+	{    150, 0x80, 1 },
+	{    200, 0x60, 1 },
+	{    300, 0x40, 1 },
+	{    600, 0x20, 1 },
+	{   1200, 0x10, 1 },
+	{   1800, 0x0B, 1 },
+	{   2000, 0x0A, 1 },
+	{   2400, 0x08, 1 },
+	{   3600, 0x05, 1 },
+	{   4800, 0x04, 1 },
+	{   9600, 0x02, 1 },
+	{  19200, 0x01, 1 },
+	{      0,    0, 0 }
+};
+
+# ifndef MILAN
+static BAUDS baudtable_rsve [] =
+{
+	{     50, 0x9a, 2 },
+	{     75, 0x66, 2 },
+	{    200, 0x60, 1 },
+	{    300, 0x40, 1 },
+	{    600, 0x20, 1 },
+	{   1200, 0x10, 1 },
+	{   1800, 0x0B, 1 },
+	{   2000, 0x0A, 1 },
+	{   2400, 0x08, 1 },
+	{   3600, 0x05, 1 },
+	{   4800, 0x04, 1 },
+	{   9600, 0x02, 1 },
+	{  19200, 0x01, 1 },
+	{  38400, 0xAF, 1 },
+	{  57600, 0x8F, 1 },
+	{ 115200, 0x80, 1 },
+	{      0,    0, 0 }
+};
+# endif
 
 /* END global data & access implementation */
-/****************************************************************************/
-
-/****************************************************************************/
-/* BEGIN locking functions - bottom/top half */
-
-INLINE ushort
-splhigh (void)
-{
-	ushort old_sr;
-	
-	__asm__ volatile
-	(
-		"move.w %%sr,%0;"
-		"ori #0x0700,%%sr"
-		: "=d" (old_sr)			/* output register */
-		: 				/* input registers */
-		: "cc"				/* clobbered */
-	);
-	
-	return old_sr;
-}
-
-INLINE void
-splx (ushort old_sr)
-{
-	__asm__ volatile
-	(
-		"move.w %0,%%sr"
-		: 				/* output register */
-		: "d" (old_sr)			/* input registers */
-		: "cc"				/* clobbered */
-	);
-}
-
-/* END locking functions - bottom/top half */
 /****************************************************************************/
 
 /****************************************************************************/
@@ -561,7 +604,7 @@ INLINE void
 rts_on (MFP *regs)
 {
 # ifdef MILAN
-	/* regs->gpip &= ~0x01; */	/* RTS (bit0) = 0 */
+	/* regs->gpip &= ~GPIP_RTS; */	/* RTS (bit0) = 0 */
 	asm volatile
 	(
 		"bclr.b #0,3(%0)"
@@ -571,7 +614,7 @@ rts_on (MFP *regs)
 	);
 # else
 	*_giselect = 14;
-	*_giwrite = *_giread & 0xf7;
+	*_giwrite = *_giread & ~GI_RTS;
 # endif
 	DEBUG_I (("MFP: RTS on"));
 }
@@ -580,7 +623,7 @@ INLINE void
 rts_off (MFP *regs)
 {
 # ifdef MILAN
-	/* regs->gpip |= 0x01; */	/* RTS (bit0) = 1 */
+	/* regs->gpip |= GPIP_RTS; */	/* RTS (bit0) = 1 */
 	asm volatile
 	(
 		"bset.b #0,3(%0)"
@@ -590,7 +633,7 @@ rts_off (MFP *regs)
 	);
 # else
 	*_giselect = 14;
-	*_giwrite = *_giread | 0x08;
+	*_giwrite = *_giread | GI_RTS;
 # endif
 	DEBUG_I (("MFP: RTS off"));
 }
@@ -600,7 +643,7 @@ INLINE void
 dtr_on (MFP *regs)
 {
 # ifdef MILAN
-	/* regs->gpip &= ~0x8; */
+	/* regs->gpip &= ~GPIP_DTR; */
 	asm volatile
 	(
 		"bclr.b #3,3(%0)"
@@ -610,7 +653,7 @@ dtr_on (MFP *regs)
 	);
 # else
 	*_giselect = 14;
-	*_giwrite = *_giread & 0xef;
+	*_giwrite = *_giread & ~GI_DTR;
 # endif
 	DEBUG_I (("MFP: DTR on"));
 }
@@ -619,7 +662,7 @@ INLINE void
 dtr_off (MFP *regs)
 {
 # ifdef MILAN
-	/* regs->gpip |= 0x8; */
+	/* regs->gpip |= GPIP_DTR; */
 	asm volatile
 	(
 		"bset.b #3,3(%0)"
@@ -629,7 +672,7 @@ dtr_off (MFP *regs)
 	);
 # else
 	*_giselect = 14;
-	*_giwrite = *_giread | 0x10;
+	*_giwrite = *_giread | GI_DTR;
 # endif
 	DEBUG_I (("MFP: DTR off"));
 }
@@ -638,14 +681,14 @@ dtr_off (MFP *regs)
 INLINE void
 brk_on (MFP *regs)
 {
-	regs->tsr |= 0x8;
+	regs->tsr |= TSR_SEND_BREAK;
 	DEBUG_I (("MFP BRK on"));
 }
 
 INLINE void
 brk_off (MFP *regs)
 {
-	regs->tsr &= ~0x8;
+	regs->tsr &= ~TSR_SEND_BREAK;
 	DEBUG_I (("MFP BRK off"));
 }
 
@@ -665,7 +708,7 @@ top_rts_on (IOVAR *iovar)
 	
 	sr = splhigh ();
 	rts_on (iovar->regs);
-	splx (sr);
+	spl (sr);
 # endif
 }
 
@@ -679,7 +722,7 @@ top_rts_off (IOVAR *iovar)
 	
 	sr = splhigh ();
 	rts_off (iovar->regs);
-	splx (sr);
+	spl (sr);
 # endif
 }
 
@@ -693,7 +736,7 @@ top_dtr_on (IOVAR *iovar)
 	
 	sr = splhigh ();
 	dtr_on (iovar->regs);
-	splx (sr);
+	spl (sr);
 # endif
 }
 
@@ -707,7 +750,7 @@ top_dtr_off (IOVAR *iovar)
 	
 	sr = splhigh ();
 	dtr_off (iovar->regs);
-	splx (sr);
+	spl (sr);
 # endif
 }
 
@@ -718,7 +761,7 @@ top_brk_on (IOVAR *iovar)
 	
 	sr = splhigh ();
 	brk_on (iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 INLINE void
@@ -728,7 +771,7 @@ top_brk_off (IOVAR *iovar)
 	
 	sr = splhigh ();
 	brk_off (iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 /* END inline assembler primitives - top half */
@@ -737,10 +780,183 @@ top_brk_off (IOVAR *iovar)
 /****************************************************************************/
 /* BEGIN initialization - top half */
 
+# ifndef MILAN
+
+/* try to autodetect RSVE, RSFI or similiar RS232 speeders
+ *
+ *  (c) Harun Scheutzow 
+ *	    developer of RSVE, RSFI, ST_ESCC and author of hsmoda-package
+ *
+ *  integrated by Juergen Orschiedt
+ *
+ * noise-free detection of Tx/Rx baudrate
+ *  - set MFP to loopback, syncmode, 8bpc, syncchar=0xff
+ *  - enable transmitter and measure time between syncdetect
+ * depending on the relationship between measured time and
+ * timer-d setting we can tell which (if any) speeder we have.
+ *
+ * returncodes:
+ *	0	something wrong (1200 too slow)
+ *	1	no speeder detected
+ *	2	RSVE detected
+ *	3	RSFI detected
+ *	4	PLL or fixed Baudrate (Hardware-hack)
+ */
+
+static void
+set_timer_D (MFP *regs, uchar baud, uchar prescale)
+{
+	/* set timer d to given value, prescale 4
+	 * allow PLL-settling (3 bit-times)
+	 */
+	
+	int count;
+	
+	regs->tcdcr &= 0xf8;		/* disable timer D */
+	regs->tddr = baud;		/* preset baudrate */
+	regs->tcdcr |= prescale;	/* enable timer D, prescale N */
+	
+	for (count = 6; count; count--)
+	{
+		regs->iprb = ~0x10;
+		while (!(regs->iprb & 0x10))
+			;
+	}
+}
+
+INLINE int
+detect_MFP_speeder (IOVAR *iovar)
+{
+	MFP *regs = iovar->regs;
+	long count, speeder;
+	char imra, imrb;
+	ushort sr;
+	
+	/* prepare IRQ registers for measurement */
+	
+	sr = splhigh ();
+	
+	imra = regs->imra;
+	imrb = regs->imrb;
+	
+	regs->imra = imra & 0xe1;	/* mask off all Rx/Tx ints */
+	regs->imrb = imrb & 0xef;	/* disable timer d int in IMRB */
+	regs->ierb |= 0x10;		/* enable in IERB (to see pending ints) */
+	
+	spl (sr);
+	
+	(void) regs->gpip;		/* consume some cycles */
+	(void) regs->gpip;
+	
+	/* initialize MFP */
+	regs->rsr = 0x00;		/* disable Rx */
+	regs->tsr = TSR_SOMODE_HIGH;	/* disable Tx, output-level high */
+	regs->scr = 0xff;		/* syncchar = 0xff */
+	regs->ucr = (UCR_PARITY_OFF | UCR_SYNC_MODE | UCR_CHSIZE_8);
+	regs->tsr = (TSR_TX_ENAB | TSR_SOMODE_LOOP); 
+	
+	/* look at 1200 baud setting (== effective 19200 in syncmode) */
+	set_timer_D (regs, 0x10, 0x01);
+	
+	sr = splhigh ();
+	
+	/* check for fixed speed / bad speed */
+	regs->rsr = RSR_RX_ENAB;
+	count = -1;
+	do {
+continue_outer:
+		count++;
+		regs->iprb = ~0x10;
+		do {
+			if (regs->iprb & 0x10)
+				goto continue_outer;
+		}
+		while (!(regs->rsr & RSR_SYNC_SEARCH) && count <= 22);
+	}
+	while (0);
+	
+	spl (sr);
+	
+	/* for RSxx or standard MFP we have 8 bittimes (count=16) */
+	DEBUG (("mfp: detect_MFP_speeder: count[1200] = %ld\n", count));
+	
+	if (count < 10)	
+		/* less than 5 bittimes: primitive speeder */
+		speeder = MFP_WITH_PLL;
+	else if (count > 22)
+		/* something wrong - too slow! */
+		speeder = MFP_WITH_WEIRED_CLOCK;
+	else
+	{
+		/* 1200 baud is working, we neither have fixed clock nor simple PLL */ 
+		set_timer_D (regs, 0xaf, 0x01);
+		
+		sr = splhigh ();
+		
+		/* check for RSxx or Standard MFP with 110 baud
+		 * timer D toggles each 290us
+		 *	      bps	sync char count
+		 * RSVE:    614400	 22.33		 13uS
+		 * RSFI:     38400	  1.39		208us
+		 * Standard:  1720	  0.06
+		 * 
+		 */
+		regs->iprb = ~0x10;
+		
+		/* syncronize to timer D */
+		while (!(regs->iprb & 0x10))
+			;
+		
+		regs->iprb = ~0x10;
+		count = -1;
+		do
+		{
+continue_outer2:
+			regs->rsr = 0;			/* disable Rx */
+			count++;
+			(void) regs->gpip;		/* delay */
+			regs->rsr = RSR_RX_ENAB;	/* enable Rx */
+			// nop ();
+			do {
+				/* increment counter if sync char detected */
+				if (regs->rsr & RSR_SYNC_SEARCH)
+					goto continue_outer2;
+			}
+			while (!(regs->iprb & 0x10));
+		}
+		while (0);
+		
+		DEBUG (("mfp: detect_MFP_speeder: count[110] = %ld\n", count));
+		
+		if (count < 1)
+			/* no speeder detected */
+			speeder = MFP_STANDARD;
+		else if (count > 4)
+			speeder = MFP_WITH_RSVE;
+		else
+			speeder = MFP_WITH_RSFI;
+	}
+	
+	spl (sr);
+	
+	regs->rsr   = 0x00;		/* disable Rx */
+	regs->tsr   = TSR_SOMODE_HIGH;	/* disable Tx, output-level high */
+	regs->ucr   = (UCR_PARITY_OFF | UCR_ASYNC_2 | UCR_CHSIZE_8);
+	regs->imra  = imra;
+	regs->imrb  = imrb;
+	regs->ierb &= 0xef;
+	regs->ipra  = 0xe1;		/* mask off pending Rx/Tx */
+	regs->iprb  = 0xef;		/* mask off pending Timer D */
+	
+	return speeder;
+}
+
+# endif
+
 /* only in one place used -> INLINE
  */
 INLINE int
-init_MFP (IOVAR **iovar, MFP *regs)
+init_MFP (IOVAR **iovar, MFP *regs, ushort tt_port)
 {
 	char *buffer;
 	
@@ -754,31 +970,19 @@ init_MFP (IOVAR **iovar, MFP *regs)
 	if (!buffer)
 		goto error;
 	
-	(*iovar)->input.buffer = buffer;
-	(*iovar)->output.buffer = buffer + IOBUFSIZE;
-	
-	(*iovar)->input.low_water = (*iovar)->output.low_water = 1 * (IOBUFSIZE / 4);
-	(*iovar)->input.high_water = (*iovar)->output.high_water = 3 * (IOBUFSIZE / 4);
+	(*iovar)->input.buffer		= buffer;
+	(*iovar)->input.low_water	= 1 * (IOBUFSIZE / 4);
+	(*iovar)->input.high_water	= 3 * (IOBUFSIZE / 4);
+		
+	(*iovar)->output.buffer		= buffer + IOBUFSIZE;
+	(*iovar)->output.low_water	= 1 * (IOBUFSIZE / 4);
+	(*iovar)->output.high_water	= 3 * (IOBUFSIZE / 4);
 	
 	(*iovar)->regs = regs;
 	
-	(*iovar)->datmask = 0xff;
-	
-	/* soft line always on */
-	(*iovar)->state = STATE_SOFT;
-	
-	/* read current CTS state */
-	if (!(regs->gpip & 0x4))
-		(*iovar)->state |= STATE_HARD;
-	
-	/* RTS/CTS handshake */
-	(*iovar)->shake = SHAKE_HARD;
-	
-	/* tx buffer is empty here */
-	(*iovar)->tx_empty = 1;
 	
 	/* reset the MFP to default values */
-	regs->ucr = 0x88;
+	regs->ucr = UCR_PREDIV | UCR_ASYNC_1;
 	regs->rsr = 0x00;
 	regs->tsr = 0x00;
 	
@@ -786,9 +990,44 @@ init_MFP (IOVAR **iovar, MFP *regs)
 	regs->tcdcr &= 0x70;
 	regs->tddr = 0x01;
 	regs->tcdcr |= 1;
-	(*iovar)->baudrate = 19200;
 	
-	rts_on (regs);
+	(*iovar)->datmask = 0xff;
+	(*iovar)->baudrate = 9600;
+	
+	/* soft line always on for TT-MFP */
+	/* ??? if (tt_port)
+		(*iovar)->state = STATE_SOFT; */
+	
+	/* read current CTS state */
+	if (!tt_port && !(regs->gpip & GPIP_CTS))
+		/* CTS is on */
+		(*iovar)->state |= STATE_HARD;
+	
+	/* RTS/CTS handshake */
+	if (!tt_port)
+		(*iovar)->shake = SHAKE_HARD;
+	
+	/* read current CD state */
+	if (!tt_port && (regs->gpip & GPIP_DCD))
+		/* CD is off, no carrier */
+		(*iovar)->tty.state |= TS_BLIND;
+	
+	(*iovar)->rx_full = 1;	/* receiver disabled */
+	(*iovar)->tx_empty = 1;	/* transmitter empty */
+	
+	(*iovar)->sendnow = 0;
+	(*iovar)->datmask = 0xff;
+	
+	(*iovar)->iointr = 0;
+	(*iovar)->stintr = 0;
+	(*iovar)->tt_port = tt_port;
+	
+	(*iovar)->input.head = (*iovar)->input.tail = 0;
+	(*iovar)->output.head = (*iovar)->output.tail = 0;
+	
+	(*iovar)->clocal = 0;
+	(*iovar)->brkint = 1;
+	
 	
 	DEBUG (("init_MFP: iovar initialized for MFP at %lx", regs));
 	return 1;
@@ -804,54 +1043,157 @@ error:
 /* only in one place used -> INLINE
  */
 INLINE void
-init_mfp (void)
+init_mfp (long mch)
 {
-	uchar reg;
+	/* init our MFP */
+	init_MFP (&iovar_mfp, _mfpregs, 0);
+	if (iovar_mfp)
+	{
+		IOVAR *iovar = iovar_mfp;
+		uchar reg;
+# ifndef MILAN
+		int speeder = detect_MFP_speeder (iovar);
+		
+		switch (speeder)
+		{
+			case MFP_WITH_WEIRED_CLOCK:
+				iovar->table = baudtable_st;
+				c_conws ("original MFP with weired clock (unsupported)\r\n");
+				break;
+			case MFP_STANDARD:
+				iovar->table = baudtable_st;
+				c_conws ("original MFP (supported)\r\n");
+				break;
+			case MFP_WITH_PLL:
+				iovar->table = baudtable_st;
+				c_conws ("PLL accelerated MFP (unsupported)\r\n");
+				break;
+			case MFP_WITH_RSVE:
+				iovar->table = baudtable_rsve;
+				c_conws ("RSVE accelerated MFP (supported)\r\n");
+				break;
+			case MFP_WITH_RSFI:
+				iovar->table = baudtable_st;
+				c_conws ("RSVF accelerated MFP (unsupported)\r\n");
+				break;
+			default:
+				FATAL ("mfp: unknown return");
+				break;
+		}
+# else
+		iovar->table = baudtable_st;
+		c_conws ("Milan MFP (supported)\r\n");
+# endif
+		
+		iovar->bdev = BDEV_MFP;
+		
+		IOVARS (0) = iovar;
+		IOVARS (0 + IOVAR_TTY_OFFSET) = iovar;
+		
+		strcpy (IOVARS (0)->rsvf_name, RSVF_MFP);
+		strcpy (IOVARS (0)->tty_name, TTY_MFP);
+		
+		DEBUG (("init_mfp (MFP): installing interrupt handlers ..."));
+		
+		Mfpint ( 1, mfp1_dcdint);	/* 0x104 */
+		Mfpint ( 2, mfp1_ctsint);	/* 0x108 */
+		Mfpint ( 9, mfp1_txerror);	/* 0x124 */
+		Mfpint (10, mfp1_txempty);	/* 0x128 */
+		Mfpint (11, mfp1_rxerror);	/* 0x12c */
+		Mfpint (12, mfp1_rxavail);	/* 0x130 */
+		
+		DEBUG (("init_mfp (MFP): done"));
+		
+		
+		/* enable interrupts */
+		
+		reg = iovar->regs->iera;
+		reg |= 0x2 | 0x4 | 0x8 | 0x10;
+		iovar->regs->iera = reg;
+		
+		reg = iovar->regs->ierb;
+		reg |= 0x2 | 0x4;
+		iovar->regs->ierb = reg;
+		
+		
+		/* set interrupt mask */
+		
+		reg = iovar->regs->imra;
+		reg |= 0x2 | 0x4 | 0x8 | 0x10;
+		iovar->regs->imra = reg;
+		
+		reg = iovar->regs->imrb;
+		reg |= 0x2 | 0x4;
+		iovar->regs->imrb = reg;
+		
+		
+		/* enable rx/tx */
+		
+		iovar->regs->rsr = RSR_RX_ENAB;
+		iovar->regs->tsr = TSR_TX_ENAB;
+	}
 	
+# ifndef MILAN
+# define TT		0x00020000L
+	if (mch != TT)
+	{
+		DEBUG (("init_mfp: initialization done"));
+		return;
+	}
 	
-	init_MFP (&iovar_mfp, _mfpregs);
-	
-	iovar_mfp->bdev = BDEV_OFFSET;
-	
-	IOVARS (0) = iovar_mfp;
-	IOVARS (0 + IOVAR_TTY_OFFSET) = iovar_mfp;
-	
-	DEBUG (("init_mfp: installing interrupt handlers ..."));
-	Mfpint ( 1, mfp1_dcdint);
-	Mfpint ( 2, mfp1_ctsint);
-	Mfpint (10, mfp1_txempty);
-	Mfpint (11, mfp1_rxerror);
-	Mfpint (12, mfp1_rxavail);
-	DEBUG (("init_mfp: done"));
-	
-	
-	/* enable interrupts */
-	
-	reg = iovar_mfp->regs->iera;
-	reg |= 0x4 | 0x8 | 0x10;
-	iovar_mfp->regs->iera = reg;
-	
-	reg = iovar_mfp->regs->ierb;
-	reg |= 0x2 | 0x4;
-	iovar_mfp->regs->ierb = reg;
-	
-	
-	/* set interrupt mask */
-	
-	reg = iovar_mfp->regs->imra;
-	reg |= 0x8 | 0x10;
-	iovar_mfp->regs->imra = reg;
-	
-	reg = iovar_mfp->regs->imrb;
-	reg |= 0x2 | 0x4;
-	iovar_mfp->regs->imrb = reg;
-	
-	
-	/* enable rx/tx */
-	
-	iovar_mfp->regs->rsr = 0x01;
-	iovar_mfp->regs->tsr = 0x01;
-	
+	/* init TT MFP */
+	init_MFP (&iovar_mfp_tt, _mfpregs_tt, 1);
+	if (iovar_mfp_tt)
+	{
+		IOVAR *iovar = iovar_mfp_tt;
+		void *old;
+		uchar reg;
+		
+		iovar->table = baudtable_st;
+		c_conws ("TT MFP (supported)\r\n");
+		
+		iovar->bdev = BDEV_MFP_TT;
+		
+		IOVARS (1) = iovar_mfp_tt;
+		IOVARS (1 + IOVAR_TTY_OFFSET) = iovar_mfp_tt;
+		
+		strcpy (IOVARS (1)->rsvf_name, RSVF_MFP_TT);
+		strcpy (IOVARS (1)->tty_name, TTY_MFP_TT);
+		
+		DEBUG (("init_mfp (TT-MFP): installing interrupt handlers ..."));
+		
+# define vector(x)	(x / 4)
+		
+		old = Setexc (vector (0x164), ttmfp1_txerror);
+		old = Setexc (vector (0x168), ttmfp1_txempty);
+		old = Setexc (vector (0x16c), ttmfp1_rxerror);
+		old = Setexc (vector (0x170), ttmfp1_rxavail);
+		
+# undef vector
+		
+		DEBUG (("init_mfp (TT_MFP): done"));
+		
+		
+		/* enable interrupts */
+		
+		reg = iovar->regs->iera;
+		reg |= 0x2 | 0x4 | 0x8 | 0x10;
+		iovar->regs->iera = reg;
+		
+		
+		/* set interrupt mask */
+		
+		reg = iovar->regs->imra;
+		reg |= 0x2 | 0x4 | 0x8 | 0x10;
+		iovar->regs->imra = reg;
+		
+		
+		/* enable rx/tx */
+		
+		iovar->regs->rsr = RSR_RX_ENAB;
+		iovar->regs->tsr = TSR_TX_ENAB;
+	}
+# endif
 	
 	DEBUG (("init_mfp: initialization done"));
 }
@@ -864,7 +1206,7 @@ init (struct kerinfo *k)
 	
 	struct dev_descr raw_dev_descriptor =
 	{
-		&raw_devtab,
+		&hsmodem_devtab,
 		0,		/* dinfo -> fc.aux */
 		0,		/* flags */
 		NULL,		/* struct tty * */
@@ -929,55 +1271,49 @@ init (struct kerinfo *k)
 # ifdef MILAN
 		|| (mch != MILAN_C))
 # else
-# ifdef TT_MFP
-		|| (mch != TT))
-# else
 		|| ((mch != ST) && (mch != STE) && (mch != MEGASTE) && (mch != TT)))
-# endif
 # endif
 	{
 		c_conws (MSG_MACHINE);
 		goto failure;
 	}
 	
-	init_mfp ();
+	init_mfp (mch);
+	c_conws ("\r\n");
 	
-	i = 0;
+	for (i = 0; i < IOVAR_MAX && IOVARS (i); i++)
 	{
-		if (IOVARS (i))
+		char name [32];
+		
+		
+		ksprintf (name, "u:\\dev\\%s", IOVARS (i)->rsvf_name);
+		
+		raw_dev_descriptor.dinfo = i;
+		raw_dev_descriptor.tty = &(IOVARS (i)->tty);
+		raw_dev_descriptor.bdev = IOVARS (i)->bdev;
+		if (d_cntl (DEV_INSTALL2, name, (long) &raw_dev_descriptor) >= 0)
 		{
-			char name [64];
+			DEBUG (("%s: %s installed with BIOS remap", __FILE__, name));
 			
-			ksprintf (name, "u:\\dev\\%s", RSVF_MFP);
-			
-			raw_dev_descriptor.dinfo = i;
-			raw_dev_descriptor.tty = &(IOVARS (i)->tty);
-			raw_dev_descriptor.bdev = IOVARS (i)->bdev;
-			if (d_cntl (DEV_INSTALL2, name, (long) &raw_dev_descriptor) >= 0)
+			if (add_rsvfentry)
 			{
-				DEBUG (("%s: %s installed with BIOS remap", __FILE__, name));
-				
-				if (add_rsvfentry)
-				{
 # define RSVF_PORT	0x80
 # define RSVF_GEMDOS	0x40
 # define RSVF_BIOS	0x20
-					ksprintf (name, "%s", RSVF_MFP);
-					add_rsvfentry (name, RSVF_PORT | RSVF_GEMDOS | RSVF_BIOS, raw_dev_descriptor.bdev);
-				}
+				add_rsvfentry (IOVARS (i)->rsvf_name, RSVF_PORT | RSVF_GEMDOS | RSVF_BIOS, raw_dev_descriptor.bdev);
 			}
+		}
+		
+		
+		ksprintf (name, "u:\\dev\\%s", IOVARS (i)->tty_name);
+		
+		tty_dev_descriptor.dinfo = i + IOVAR_TTY_OFFSET;
+		tty_dev_descriptor.tty = &(IOVARS (i)->tty);
+		if (d_cntl (DEV_INSTALL, name, (long) &tty_dev_descriptor) >= 0)
+		{
+			DEBUG (("%s: %s installed", __FILE__, name));
 			
-			
-			ksprintf (name, "u:\\dev\\%s%i", TTY_BASENAME, i + (BDEV_OFFSET - BDEV_START));
-			
-			tty_dev_descriptor.dinfo = i + IOVAR_TTY_OFFSET;
-			tty_dev_descriptor.tty = &(IOVARS (i)->tty);
-			if (d_cntl (DEV_INSTALL, name, (long) &tty_dev_descriptor) >= 0)
-			{
-				DEBUG (("%s: %s installed", __FILE__, name));
-				
-				IOVARS (i + IOVAR_TTY_OFFSET) = IOVARS (i);
-			}
+			IOVARS (i + IOVAR_TTY_OFFSET) = IOVARS (i);
 		}
 	}
 	
@@ -994,16 +1330,59 @@ failure:
 /****************************************************************************/
 /* BEGIN interrupt handling - bottom half */
 
-static volatile ushort notified = 0;
-static volatile ushort dcdchange_notified = 0;
-
 INLINE void
-notify_top_half (void)
+notify_top_half (IOVAR *iovar)
 {
-	if (!notified)
+	if (!iovar->iointr)
 	{
-		notified = 1;
-		addroottimeout (0L, check_event, 0x1);
+		TIMEOUT *t;
+		
+		t = addroottimeout (0L, check_ioevent, 0x1);
+		if (t)
+		{
+			t->arg = (long) iovar;
+			iovar->iointr = 1;
+		}
+	}
+}
+
+static void
+wr_mfp (IOVAR *iovar, MFP *regs)
+{
+	DEBUG_I (("wr_mfp: %lx", regs));
+	
+	if (!(regs->tsr & TSR_BUF_EMPTY))
+		return;
+	
+	if (iovar->sendnow)
+	{
+		regs->udr = iovar->sendnow;
+		iovar->sendnow = 0;
+	}
+	else
+	{
+		/* is somebody ready to receive data? */
+		if (iovar->shake && (iovar->shake & iovar->state))
+		{
+			DEBUG_I (("wr_mfp: tx disabled - no action"));
+		}
+		else
+		{
+			if (iorec_empty (&iovar->output))
+			{
+				DEBUG_I (("wr_scc: buffer empty"));
+				
+				/* buffer empty */
+				iovar->tx_empty = 1;
+				
+				// txint_off (iovar, regs);
+			}
+			else
+			{
+				/* send character from buffer */
+				regs->udr = iorec_get (&iovar->output);
+			}
+		}
 	}
 }
 
@@ -1023,18 +1402,12 @@ mfp_dcdint (void)
 	regs = iovar->regs;
 	DEBUG_I (("mfp_dcdint: handling MFP at %lx", regs));
 	
-	if (regs->gpip & 0x02)
+	if (regs->gpip & GPIP_DCD)
 	{
 		/* DCD is off */
 		
 		/* Flankenregister (fallende Flanke) */
 		regs->aer &= ~0x2;
-		
-		if (!dcdchange_notified)
-		{
-			dcdchange_notified = 1;
-			addroottimeout (0L, soft_dcdchange, 0x1);
-		}
 	}
 	else
 	{
@@ -1042,6 +1415,18 @@ mfp_dcdint (void)
 		
 		/* DCD Flanke setzen */
 		regs->aer |= 0x2;
+	}
+	
+	if (!iovar->stintr)
+	{
+		TIMEOUT *t;
+		
+		t = addroottimeout (0L, soft_cdchange, 0x1);
+		if (t)
+		{
+			t->arg = (long) iovar;
+			iovar->stintr = 1;
+		}
 	}
 	
 	/* acknowledge */
@@ -1064,7 +1449,7 @@ mfp_ctsint (void)
 	regs = iovar->regs;
 	DEBUG_I (("mfp_ctsint: handling MFP at %lx", regs));
 	
-	if (regs->gpip & 0x04)
+	if (regs->gpip & GPIP_CTS)
 	{
 		/* CTS is off */
 		
@@ -1094,43 +1479,23 @@ mfp_ctsint (void)
 }
 
 static void
-wr_mfp (IOVAR *iovar, MFP *regs)
+mfp_txerror (void)
 {
-	DEBUG_I (("wr_mfp: %lx", regs));
+	IOVAR *iovar;
+	MFP *regs;
 	
-	if (!(regs->tsr & 0x80))
-		return;
+	asm volatile
+	(
+		"move.l %%a0,%0"
+		: "=da" (iovar)		/* output register */
+		: 			/* input registers */
+	);
 	
-	if (iovar->sendnow)
-	{
-		regs->udr = iovar->sendnow;
-		iovar->sendnow = 0;
-	}
-	else
-	{
-		/* is somebody ready to receive data? */
-		if (iovar->shake && (iovar->shake & iovar->state))
-		{
-			DEBUG_I (("wr_mfp: tx disabled - no action"));
-		}
-		else
-		{
-			if (iorec_empty (&iovar->output))
-			{
-				DEBUG_I (("wr_scc: buffer empty"));
-				
-				/* buffer empty */
-				iovar->tx_empty = 1;
-				
-				//txint_off (iovar, regs);
-			}
-			else
-			{
-				/* send character from buffer */
-				regs->udr = iorec_get (&iovar->output);
-			}
-		}
-	}
+	regs = iovar->regs;
+	DEBUG_I (("mfp_txerror: handling MFP at %lx", regs));
+	
+	/* acknowledge */
+	regs->isra = ~0x02;
 }
 
 static void
@@ -1176,7 +1541,7 @@ mfp_txempty (void)
 				/* send character from buffer */
 				regs->udr = iorec_get (&iovar->output);
 				
-				notify_top_half ();
+				notify_top_half (iovar);
 			}
 		}
 	}
@@ -1240,7 +1605,7 @@ mfp_read_x (IOVAR *iovar, MFP *regs)
 			}
 		}
 //	}
-//	while (regs->rsr & 0x80);
+//	while (regs->rsr & RSR_CHAR_AVAILABLE);
 }
 
 INLINE void
@@ -1254,7 +1619,7 @@ mfp_read_o (IOVAR *iovar, MFP *regs)
 			DEBUG_I (("mfp_read_o: buffer full!"));
 		}
 //	}
-//	while (regs->rsr & 0x80);
+//	while (regs->rsr & RSR_CHAR_AVAILABLE);
 }
 
 static void
@@ -1287,7 +1652,8 @@ mfp_rxavail (void)
 		if (iovar->shake & SHAKE_HARD)
 		{
 			/* set rts off */
-			rts_off (regs);
+			if (!iovar->tt_port)
+				rts_off (regs);
 		}
 		
 		if (iovar->shake & SHAKE_SOFT)
@@ -1298,7 +1664,7 @@ mfp_rxavail (void)
 		}
 	}
 	
-	notify_top_half ();
+	notify_top_half (iovar);
 	
 	/* acknowledge */
 	regs->isra = ~0x10;
@@ -1309,13 +1675,13 @@ mfp_rxavail (void)
 static void
 mfp_intrwrap (void)
 {
-	mfp_dcdint   ();
-	mfp_ctsint   ();
-	mfp_txempty  ();
-	mfp_rxerror  ();
-	mfp_rxavail  ();
-	
-	mfp_intrwrap ();
+	(void) mfp_dcdint;
+	(void) mfp_ctsint;
+	(void) mfp_txerror;
+	(void) mfp_txempty;
+	(void) mfp_rxerror;
+	(void) mfp_rxavail;
+	(void) mfp_intrwrap;
 	
 	
 	/*
@@ -1341,6 +1707,19 @@ mfp_intrwrap (void)
 		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
 		 move.l  _iovar_mfp,%%a0
 		 bsr     _mfp_ctsint
+		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
+		 rte"
+		: 			/* output register */
+		:  			/* input registers */
+		 			/* clobbered */
+	);
+	
+	asm volatile
+	(
+		"_mfp1_txerror:
+		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
+		 move.l  _iovar_mfp,%%a0
+		 bsr     _mfp_txerror
 		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
 		 rte"
 		: 			/* output register */
@@ -1386,6 +1765,64 @@ mfp_intrwrap (void)
 		:  			/* input registers */
 		 			/* clobbered */
 	);
+	
+# ifndef MILAN
+	/*
+	 * TT-MFP port
+	 */
+	
+	asm volatile
+	(
+		"_ttmfp1_txerror:
+		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
+		 move.l  _iovar_mfp_tt,%%a0
+		 bsr     _mfp_txerror
+		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
+		 rte"
+		: 			/* output register */
+		:  			/* input registers */
+		 			/* clobbered */
+	);
+	
+	asm volatile
+	(
+		"_ttmfp1_txempty:
+		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
+		 move.l  _iovar_mfp_tt,%%a0
+		 bsr     _mfp_txempty
+		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
+		 rte"
+		: 			/* output register */
+		:  			/* input registers */
+		 			/* clobbered */
+	);
+	
+	asm volatile
+	(
+		"_ttmfp1_rxerror:
+		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
+		 move.l  _iovar_mfp_tt,%%a0
+		 bsr     _mfp_rxerror
+		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
+		 rte"
+		: 			/* output register */
+		:  			/* input registers */
+		 			/* clobbered */
+	);
+	
+	asm volatile
+	(
+		"_ttmfp1_rxavail:
+		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
+		 move.l  _iovar_mfp_tt,%%a0
+		 bsr     _mfp_rxavail
+		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
+		 rte"
+		: 			/* output register */
+		:  			/* input registers */
+		 			/* clobbered */
+	);
+# endif
 }
 
 /* END interrupt handling - bottom half */
@@ -1395,48 +1832,75 @@ mfp_intrwrap (void)
 /* BEGIN interrupt handling - top half */
 
 static void
-check_event (void)
+check_ioevent (PROC *p, long arg)
 {
-	int i;
+	IOVAR *iovar = (IOVAR *) arg;
 	
-	notified = 0;
+	iovar->iointr = 0;
 	
-	for (i = 0; i < IOVAR_MAX && IOVARS (i); i++)
+	if (iovar->iosleepers)
 	{
-		IOVAR *iovar = IOVARS (i);
-		
-		if (iovar->tty.rsel)
+		if (iorec_used (&iovar->output) < iovar->output.low_water
+			|| !iorec_empty (&iovar->input))
 		{
-			if (!iorec_empty (&iovar->input))
-				wakeselect (iovar->tty.rsel);
-		}
-		
-		if (iovar->tty.wsel)
-		{
-			if (iorec_used (&iovar->output) < iovar->output.low_water)
-				wakeselect (iovar->tty.wsel);
+			DEBUG (("scc.xdd: check_ioevent: waking I/O wait (%lu)", iovar->iosleepers));
+			wake (IO_Q, (long) &iovar->tty.state);
 		}
 	}
+	
+	if (iovar->tty.rsel)
+		if (!iorec_empty (&iovar->input))
+			wakeselect (iovar->tty.rsel);
+	
+	if (iovar->tty.wsel)
+		if (iorec_used (&iovar->output) < iovar->output.low_water)
+			wakeselect (iovar->tty.wsel);
 }
 
 static void
-soft_dcdchange (void)
+soft_cdchange (PROC *p, long arg)
 {
-	int i;
+	IOVAR *iovar = (IOVAR *) arg;
 	
-	dcdchange_notified = 0;
+	iovar->stintr = 0;
 	
-	for (i = 0; i < IOVAR_MAX && IOVARS (i); i++)
+	if (!(iovar->clocal) && (iovar->regs->gpip & GPIP_DCD))
 	{
-		IOVAR *iovar = IOVARS (i);
+		/* CD is off and no local mode */
 		
-		if (iovar->regs->gpip & 0x02)
+		if (!(iovar->tty.state & TS_BLIND))
 		{
-			/* DCD is off */
+			/* lost carrier */
+			iovar->tty.state |= TS_BLIND;
 			
-			if (iovar->tty.pgrp)
+			/* clear break */
+			top_brk_off (iovar);
+			
+			/* sent SIGHUP */
+			if (p && iovar->tty.pgrp)
+			{
+				DEBUG (("soft_cdchange: SIGHUP -> %i", iovar->tty.pgrp));
 				killgroup (iovar->tty.pgrp, SIGHUP, 1);
+			}
+			
+			/* let reads and writes return */
+			wake (IO_Q, (long) &iovar->tty.state);
+			
+			DEBUG (("TS_BLIND set, lost carrier (p = %lx)", p));
 		}
+		
+		return;
+	}
+	
+	if (iovar->tty.state & TS_BLIND)
+	{
+		/* got carrier (or entered local mode),
+		 * clear TS_BLIND and wake whoever waits for it
+		 */
+		iovar->tty.state &= ~(TS_BLIND | TS_HOLD);
+		wake (IO_Q, (long) &iovar->tty.state);
+		
+		DEBUG (("TS_BLIND cleared, clocal = %i", iovar->clocal));
 	}
 }
 
@@ -1449,13 +1913,13 @@ soft_dcdchange (void)
 INLINE void
 send_byte (IOVAR *iovar)
 {
-	if (iovar->regs->tsr & 0x80)
+	if (iovar->regs->tsr & TSR_BUF_EMPTY)
 	{
 		ushort sr;
 		
 		sr = splhigh ();
 		wr_mfp (iovar, iovar->regs);
-		splx (sr);
+		spl (sr);
 	}
 }
 
@@ -1474,39 +1938,14 @@ ctl_TIOCBAUD (IOVAR *iovar, long *buf)
 	{
 		/* clear dtr */
 		
-		top_dtr_off (iovar);
+		if (!iovar->tt_port)
+			top_dtr_off (iovar);
 	}
 	else
 	{
 		/* set baudrate to speed, enable dtr */
 		
-		static const struct
-		{
-			ushort	baudrate;
-			uchar	timeconst;
-			uchar	mode;
-		}
-		table [] =
-		{
-			{    50, 0x9a, 2 },
-			{    75, 0x66, 2 },
-			{   110, 0xAF, 1 },
-			{   134, 0x8F, 1 },
-			{   150, 0x80, 1 },
-			{   200, 0x60, 1 },
-			{   300, 0x40, 1 },
-			{   600, 0x20, 1 },
-			{  1200, 0x10, 1 },
-			{  1800, 0x0B, 1 },
-			{  2000, 0x0A, 1 },
-			{  2400, 0x08, 1 },
-			{  3600, 0x05, 1 },
-			{  4800, 0x04, 1 },
-			{  9600, 0x02, 1 },
-			{ 19200, 0x01, 1 },
-			{     0,    0, 0 }
-		};
-		
+		BAUDS *table = iovar->table;
 		ulong baudrate = 0;
 		int i;
 		
@@ -1542,8 +1981,8 @@ ctl_TIOCBAUD (IOVAR *iovar, long *buf)
 			
 			sr = splhigh ();
 			
-			regs->rsr &= 0xfe;
-			regs->tsr &= 0xfe;
+			regs->rsr &= ~RSR_RX_ENAB;
+			regs->tsr &= ~TSR_TX_ENAB;
 			
 			regs->tcdcr &= 0x70;
 			regs->tddr = table [i].timeconst;
@@ -1552,41 +1991,42 @@ ctl_TIOCBAUD (IOVAR *iovar, long *buf)
 			regs->rsr |= 1;
 			regs->tsr |= 1;
 			
-			splx (sr);
+			spl (sr);
 			
 			iovar->baudrate = baudrate;
 		}
 		
 		/* always enable dtr */
-		top_dtr_on (iovar);
+		if (!iovar->tt_port)
+			top_dtr_on (iovar);
 	}
 	
 	return E_OK;
 }
 
-static void
-ctl_TIOCGFLAGS (IOVAR *iovar, ushort *buf)
+static ushort
+ctl_TIOCGFLAGS (IOVAR *iovar)
 {
 	ushort flags = 0;
 	uchar ucr = iovar->regs->ucr;
 	
-	switch (ucr & 0x60)
+	switch (ucr & UCR_CHSIZE_MASK)
 	{
-		case 0x00: flags |= TF_8BIT;	break;
-		case 0x20: flags |= TF_7BIT;	break;
-		case 0x40: flags |= TF_6BIT;	break;
-		case 0x60: flags |= TF_5BIT;	break;
+		case UCR_CHSIZE_8: flags |= TF_8BIT;	break;
+		case UCR_CHSIZE_7: flags |= TF_7BIT;	break;
+		case UCR_CHSIZE_6: flags |= TF_6BIT;	break;
+		case UCR_CHSIZE_5: flags |= TF_5BIT;	break;
 	}
 	
-	switch (ucr & 0x18)
+	switch (ucr & UCR_MODE_MASK)
 	{
-		case 0x00:
-		case 0x08: flags |= TF_1STOP;	break;
-		case 0x10: flags |= TF_15STOP;	break;
-		case 0x18: flags |= TF_2STOP;	break;
+		case UCR_SYNC_MODE:
+		case UCR_ASYNC_1:  flags |= TF_1STOP;	break;
+		case UCR_ASYNC_15: flags |= TF_15STOP;	break;
+		case UCR_ASYNC_2:  flags |= TF_2STOP;	break;
 	}
 	
-	if (ucr & 0x4)
+	if (ucr & UCR_PARITY_ODD)
 	{
 		if (ucr & 0x2)	flags |= T_EVENP;
 		else		flags |= T_ODDP;
@@ -1598,7 +2038,7 @@ ctl_TIOCGFLAGS (IOVAR *iovar, ushort *buf)
 	if (iovar->shake & SHAKE_HARD)
 		flags |= T_RTSCTS;
 	
-	*buf = flags;
+	return flags;
 }
 
 static long
@@ -1608,22 +2048,22 @@ ctl_TIOCSFLAGS (IOVAR *iovar, ushort flags)
 	uchar datmask;
 	uchar ucr = iovar->regs->ucr;
 	
-	ucr &= ~0x60;
+	ucr &= ~UCR_CHSIZE_MASK;
 	switch (flags & TF_CHARBITS)
 	{
-		case TF_5BIT:	ucr |= 0x60; datmask = 0x1f;	break;
-		case TF_6BIT:	ucr |= 0x40; datmask = 0x3f;	break;
-		case TF_7BIT:	ucr |= 0x20; datmask = 0x7f;	break;
-		case TF_8BIT:	ucr |= 0x00; datmask = 0xff;	break;
+		case TF_5BIT:	ucr |= UCR_CHSIZE_5; datmask = 0x1f; break;
+		case TF_6BIT:	ucr |= UCR_CHSIZE_6; datmask = 0x3f; break;
+		case TF_7BIT:	ucr |= UCR_CHSIZE_7; datmask = 0x7f; break;
+		case TF_8BIT:	ucr |= UCR_CHSIZE_8; datmask = 0xff; break;
 		default:	return EBADARG;
 	}
 	
-	ucr &= ~0x18;
+	ucr &= ~UCR_MODE_MASK;
 	switch (flags & TF_STOPBITS)
 	{
-		case TF_1STOP:	ucr |= 0x08;			break;
-		case TF_15STOP:	ucr |= 0x10;			break;
-		case TF_2STOP:	ucr |= 0x18;			break;
+		case TF_1STOP:	ucr |= UCR_ASYNC_1;	break;
+		case TF_15STOP:	ucr |= UCR_ASYNC_15;	break;
+		case TF_2STOP:	ucr |= UCR_ASYNC_2;	break;
 		default:	return EBADARG;
 	}
 	
@@ -1633,7 +2073,7 @@ ctl_TIOCSFLAGS (IOVAR *iovar, ushort flags)
 			return EBADARG;
 		
 		/* enable parity */
-		ucr |= 0x4;
+		ucr |= UCR_PARITY_ODD;
 		
 		/* set even/odd parity */
 		if (flags & T_EVENP)	ucr |= 0x2;
@@ -1642,7 +2082,7 @@ ctl_TIOCSFLAGS (IOVAR *iovar, ushort flags)
 	else
 	{
 		/* disable parity */
-		ucr &= ~0x4;
+		ucr &= ~UCR_PARITY_ODD;
 		
 		/* even/odd bit ignored in this case */
 	}
@@ -1683,7 +2123,7 @@ ctl_TIOCSFLAGS (IOVAR *iovar, ushort flags)
 	}
 	else
 	{
-		if (flags & T_RTSCTS)
+		if (!iovar->tt_port && (flags & T_RTSCTS))
 		{
 			iovar->shake |= SHAKE_HARD;
 			
@@ -1710,6 +2150,104 @@ ctl_TIOCSFLAGS (IOVAR *iovar, ushort flags)
 	return E_OK;
 }
 
+/* flags - new flags, hi bit set == read only
+ * mask  - what flags to change/read
+ */
+long
+ctl_TIOCSFLAGSB (IOVAR *iovar, long flags, long mask)
+{
+	ulong oflags = ctl_TIOCGFLAGS (iovar);
+	
+	DEBUG (("ctl_TIOCSFLAGSB: flags = %lx, mask = %lx, oflags = %lx", flags, mask, oflags));
+	
+	/* TF_BRKINT|TF_CAR are only handled if masked */
+	if (mask & (TF_BRKINT|TF_CAR))
+	{
+		if (iovar->brkint)
+			oflags |= TF_BRKINT;
+		
+		if (!iovar->clocal)
+			oflags |= TF_CAR;
+	}
+	
+	/* read only */
+	if (flags < 0)
+		return oflags;
+	
+	/* clear unused bits */
+	flags &= (TF_STOPBITS|TF_CHARBITS|TF_BRKINT|TF_CAR|T_RTSCTS|T_TANDEM|T_EVENP|T_ODDP);
+	
+	/* TF_BRKINT|TF_CAR are only handled if masked */
+	if (mask & (TF_BRKINT|TF_CAR))
+	{
+		if (!(mask & TF_CAR))
+		{
+			flags &= ~TF_CAR;
+			flags |= (oflags & TF_CAR);
+		}
+		else
+		{
+# ifdef DEV_DEBUG
+			ushort old = iovar->clocal;
+			iovar->clocal = !(flags & TF_CAR);
+			if (old != iovar->clocal)
+				DEBUG (("CHANGE iovar->clocal to %i", iovar->clocal));
+# else
+			iovar->clocal = !(flags & TF_CAR);
+# endif
+			
+			/* update TS_BLIND */
+			soft_cdchange (NULL, (long) iovar);
+		}
+		
+		if (!(mask & TF_BRKINT))
+		{
+			flags &= ~TF_BRKINT;
+			flags |= (oflags & TF_BRKINT);
+		}
+		else
+			iovar->brkint = flags & TF_BRKINT;
+	}
+	else
+		flags &= ~(TF_BRKINT|TF_CAR);
+	
+	if (!((mask & (T_RTSCTS|T_TANDEM)) == (T_RTSCTS|T_TANDEM)))
+	{
+		flags &= ~(T_RTSCTS|T_TANDEM);
+		flags |= (oflags & (T_RTSCTS|T_TANDEM));
+	}
+	
+	if (!((mask & (T_EVENP|T_ODDP)) == (T_EVENP|T_ODDP)))
+	{
+		flags &= ~(T_EVENP|T_ODDP);
+		flags |= (oflags & (T_EVENP|T_ODDP));
+	}
+	
+	if (!((mask & TF_STOPBITS) == TF_STOPBITS && (flags & TF_STOPBITS)))
+	{
+		flags &= ~TF_STOPBITS;
+		flags |= (oflags & TF_STOPBITS);
+	}
+	
+	if (!((mask & TF_CHARBITS) == TF_CHARBITS))
+	{
+		flags &= ~TF_CHARBITS;
+		flags |= (oflags & TF_CHARBITS);
+	}
+	
+	if (flags != oflags)
+	{
+		long r;
+		
+		r = ctl_TIOCSFLAGS (iovar, flags);
+		if (r) ALERT (("scc.xdd: ctl_TIOCSFLAGSB -> set flags failed!"));
+		
+		DEBUG (("ctl_TIOCSFLAGSB: new flags (%lx) set (= %li)", flags, r));
+	}
+	
+	return flags;
+}
+
 /* END control functions - top half */
 /****************************************************************************/
 
@@ -1726,7 +2264,8 @@ rx_start (IOVAR *iovar)
 		if (iovar->shake & SHAKE_HARD)
 		{
 			/* set rts on */
-			top_rts_on (iovar);
+			if (!iovar->tt_port)
+				top_rts_on (iovar);
 		}
 		
 		if (iovar->shake & SHAKE_SOFT)
@@ -1747,6 +2286,37 @@ rx_start (IOVAR *iovar)
 }
 
 static void
+rx_stop (IOVAR *iovar)
+{
+	if (!iovar->rx_full)
+	{
+		DEBUG (("rx_stop: stop receiver"));
+		
+		if (iovar->shake & SHAKE_HARD)
+		{
+			/* drop rts */
+			if (!iovar->tt_port)
+				top_rts_off (iovar);
+		}
+		
+		if (iovar->shake & SHAKE_SOFT)
+		{
+			/* send XON */
+			iovar->sendnow = XON;
+			
+			send_byte (iovar);
+		}
+		
+		/* receiver stopped */
+		iovar->rx_full = 1;
+	}
+	else
+	{
+		DEBUG (("rx_stop: already stopped"));
+	}
+}
+
+static void
 tx_start (IOVAR *iovar)
 {
 	if (iovar->tx_empty)
@@ -1760,9 +2330,51 @@ tx_start (IOVAR *iovar)
 	}
 	else
 	{
-		DEBUG (("tx_start: buffer not empty"));
+		DEBUG (("tx_start: buffer empty"));
 	}
 }
+
+static void
+tx_stop (IOVAR *iovar)
+{
+	if (!iovar->tx_empty)
+	{
+		DEBUG (("tx_stop: stop transmitter"));
+		
+		/* transmitter stopped */
+		iovar->tx_empty = 1;
+		
+		/* disable interrupts */
+		//top_txint_off (iovar);
+	}
+	else
+	{
+		DEBUG (("tx_start: already stopped"));
+	}
+}
+
+static void
+flush_output (IOVAR *iovar)
+{
+	IOREC *iorec = &iovar->output;
+	ushort sr;
+	
+	sr = splhigh ();
+	iorec->head = iorec->tail = 0;
+	spl (sr);
+}
+
+static void
+flush_input (IOVAR *iovar)
+{
+	IOREC *iorec = &iovar->input;
+	ushort sr;
+	
+	sr = splhigh ();
+	iorec->head = iorec->tail = 0;
+	spl (sr);
+}
+
 
 /* END start primitives - top half */
 /****************************************************************************/
@@ -1778,8 +2390,6 @@ mfp_instat (int dev)
 	long used;
 	
 	used = iorec_used (iorec);
-	
-	DEBUG (("mfp_instat: leave (%li)", (used ? -1 : 0)));
 	return (used ? -1 : 0);
 }
 
@@ -1798,7 +2408,9 @@ mfp_in (int dev)
 			/* start receiver */
 			rx_start (iovar);
 			
-			sleep (READY_Q, 0L);
+			iovar->iosleepers++;
+			sleep (IO_Q, (long) &iovar->tty.state);
+			iovar->iosleepers--;
 		}
 	}
 	else
@@ -1809,8 +2421,6 @@ mfp_in (int dev)
 	}
 	
 	ret = iorec_get (iorec);
-	
-	DEBUG (("mfp_in: leave (%li)", ret));
 	return ret;
 }
 
@@ -1826,7 +2436,6 @@ mfp_outstat (int dev)
 	if (free < 0)
 		free = 0;
 	
-	DEBUG (("mfp_outstat: leave (%li)", (free ? -1 : 0)));
 	return (free ? -1 : 0);
 }
 
@@ -1838,13 +2447,17 @@ mfp_out (int dev, int c)
 	
 	while (!iorec_put (iorec, c))
 	{
-		sleep (READY_Q, 0L);
+		/* start transmitter */
+		tx_start (iovar);
+		
+		iovar->iosleepers++;
+		sleep (IO_Q, (long) &iovar->tty.state);
+		iovar->iosleepers--;
 	}
 	
-	/* start transfer - interrupt controlled */
+	/* start transmitter */
 	tx_start (iovar);
 	
-	DEBUG (("mfp_out: leave (E_OK)"));
 	return E_OK;
 }
 
@@ -1890,6 +2503,7 @@ mfp_out (int dev, int c)
  * tsr: - bit 3 break on/off
  * scr: - not used, 0
  */
+
 static long _cdecl
 mfp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 {
@@ -1920,7 +2534,7 @@ mfp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 	}
 	
 	/* get the current flags */
-	ctl_TIOCGFLAGS (iovar, &flags);
+	flags = ctl_TIOCGFLAGS (iovar);
 	
 	if (flowctl != -1)
 	{
@@ -1970,7 +2584,7 @@ mfp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 		}
 		
 		flags &= ~(T_EVENP | T_ODDP);
-		if (ucr & 0x4)
+		if (ucr & UCR_PARITY_ODD)
 		{
 			if (ucr & 0x2)
 				flags |= T_EVENP;
@@ -1989,7 +2603,7 @@ mfp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 	
 	if (tsr != -1)
 	{
-		if (tsr & 0x8)
+		if (tsr & 0x08)
 			top_brk_on (iovar);
 		else
 			top_brk_off (iovar);
@@ -2000,7 +2614,7 @@ mfp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 	 */
 	
 	/* get the current flags */
-	ctl_TIOCGFLAGS (iovar, &flags);
+	flags = ctl_TIOCGFLAGS (iovar);
 	
 	/* ucr */
 	ret |= ((((long) (flags & TF_CHARBITS)) << 3) << 24);
@@ -2014,7 +2628,7 @@ mfp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
 	}
 	
 	/* tsr */
-	if (iovar->regs->tsr & 0x8)
+	if (iovar->regs->tsr & TSR_SEND_BREAK)
 		ret |= (0x8L << 8);
 	
 	return ret;
@@ -2041,16 +2655,24 @@ mfp_open (FILEPTR *f)
 	if (!iovar)
 		return EACCES;
 	
-	if (iovar->open)
+	if (!iovar->open)
+	{
+		/* first open */
+		
+		/* assign dtr line */
+		if (!iovar->tt_port)
+			top_dtr_on (iovar);
+		
+		/* start receiver */
+		rx_start (iovar);
+	}
+	else
 	{
 		if (denyshare (iovar->open, f))
 		{
 			DEBUG (("mfp_open: file sharing denied"));
 			return EACCES;
 		}
-		
-		/* set dtr if the first process open it */
-		top_dtr_on (iovar);
 	}
 	
 	f->pos = 0;
@@ -2058,28 +2680,207 @@ mfp_open (FILEPTR *f)
 	iovar->open = f;
 	
 	if (dev >= IOVAR_TTY_OFFSET)
-	{
 		f->flags |= O_TTY;
-	}
 	else
-	{
 		/* force nonblocking on HSMODEM devices */
 		f->flags |= O_NDELAY;
-	}
 	
+	DEBUG (("mfp_open: return E_OK (added %lx)", f));
 	return E_OK;
 }
 
 static long _cdecl
-mfp_writeb (FILEPTR *f, const char *buf, long bytes)
+mfp_close (FILEPTR *f, int pid)
+{
+	IOVAR *iovar = IOVARS (f->fc.aux);
+	
+	DEBUG (("mfp_close [%i]: enter", f->fc.aux));
+	
+	if ((f->flags & O_LOCK)
+	    && ((iovar->lockpid == pid) || (f->links <= 0)))
+	{
+		DEBUG (("mfp_close: remove lock by %i", pid));
+		
+		f->flags &= ~O_LOCK;
+		iovar->lockpid = 0;
+		
+		/* wake anyone waiting for this lock */
+		wake (IO_Q, (long) iovar);
+	}
+	
+	if (f->links <= 0)
+	{
+		register FILEPTR **temp;
+		register long flag = 1;
+		
+		DEBUG (("mfp_close: freeing FILEPTR %lx", f));
+		
+		/* remove the FILEPTR from the linked list */
+		temp = &iovar->open;
+		while (*temp)
+		{
+			if (*temp == f)
+			{
+				*temp = f->next;
+				f->next = NULL;
+				flag = 0;
+				
+				break;
+			}
+			
+			temp = &(*temp)->next;
+		}
+		
+		if (flag)
+			ALERT (("mfp_close: remove open FILEPTR fail!", f->fc.aux));
+		
+		if (!(iovar->open))
+		{
+			/* stop receiver */
+			rx_stop (iovar);
+			
+			/* clear dtr line */
+			if (!iovar->tt_port)
+				top_dtr_off (iovar);
+			
+			if (iovar->clocal)
+			{
+				/* clear local carrier */
+				iovar->clocal = 0;
+				
+				/* update TS_BLIND */
+				soft_cdchange (NULL, (long) iovar);
+			}
+			
+			/* always flush receiver buffer, nobody can read */
+			flush_input (iovar);
+			
+			if (iovar->tty.state & TS_BLIND)
+				/* if blind flush transmitter buffer */
+				flush_output (iovar);
+		}
+	}
+	
+	DEBUG (("mfp_close: leave ok"));
+	return E_OK;
+}
+
+/* HSMODEM write/read routines
+ * 
+ * they never block
+ * they don't do any carrier check or so
+ */
+static long _cdecl
+mfp_write (FILEPTR *f, const char *buf, long bytes)
 {
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	IOREC *iorec = &iovar->output;
 	long done = 0;
 	
-	DEBUG (("mfp_writeb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	for (;;)
+	DEBUG (("mfp_write [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	
+	/* copy as much as possible */
+	while ((bytes > 0) && iorec_put (iorec, *buf))
 	{
+		buf++; done++;
+		bytes--;
+	}
+	
+	/* start transmitter */
+	tx_start (iovar);
+	
+	if (!done && (f->flags & O_TTY))
+	{
+		/* return EWOULDBLOCK only for
+		 * non HSMODEM devices
+		 */
+		done = EWOULDBLOCK;
+	}
+	
+	DEBUG (("mfp_write: leave (%ld)", done));
+	return done;
+}
+
+static long _cdecl
+mfp_read (FILEPTR *f, char *buf, long bytes)
+{
+	IOVAR *iovar = IOVARS (f->fc.aux);
+	IOREC *iorec = &iovar->input;
+	long done = 0;
+	
+	DEBUG (("mfp_read [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	
+	/* copy as much as possible */
+	while ((bytes > 0) && !iorec_empty (iorec))
+	{
+		*buf = iorec_get (iorec);
+		
+		buf++; done++;
+		bytes--;
+	}
+	
+	if (iorec_used (iorec) < iorec->low_water)
+		/* start receiver */
+		rx_start (iovar);
+	
+	if (!done && (f->flags & O_TTY))
+	{
+		/* return EWOULDBLOCK only for
+		 * non HSMODEM devices
+		 */
+		done = EWOULDBLOCK;
+	}
+	
+	DEBUG (("mfp_read: leave (%ld)", done));
+	return done;
+}
+
+
+/* terminal fast raw I/O routines
+ * 
+ * they must implement all the nice tty features
+ * like O_NDELAY handling, vmin/vtime support and so on
+ * 
+ * they are called in non-canonical mode
+ */
+static long _cdecl
+mfp_writeb (FILEPTR *f, const char *buf, long bytes)
+{
+	IOVAR *iovar = IOVARS (f->fc.aux);
+	IOREC *iorec = &iovar->output;
+	int ndelay = f->flags & O_NDELAY;
+	long done = 0;
+	
+	DEBUG (("mfp_writeb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
+	
+	if (bytes)
+	do {
+		long free;
+		
+		if (iovar->tty.state & TS_BLIND)
+			/* line disconnected */
+			break;
+		
+		free = iorec_free (iorec);
+		if ((free < 2L)
+ 			|| (!ndelay && (free < bytes) && (iorec_used (iorec) > iorec->high_water)))
+		{
+			if (ndelay)
+				break;
+			
+			DEBUG (("mfp_writeb: sleeping I/O wait"));
+			
+			/* start transmitter */
+			tx_start (iovar);
+			
+			iovar->iosleepers++;
+			sleep (IO_Q, (long) &iovar->tty.state);
+			iovar->iosleepers--;
+			
+			/* restart */
+			continue;
+		}
+		
 		/* copy as much as possible */
 		while ((bytes > 0) && iorec_put (iorec, *buf))
 		{
@@ -2087,33 +2888,27 @@ mfp_writeb (FILEPTR *f, const char *buf, long bytes)
 			bytes--;
 		}
 		
-		/* start transfer - interrupt controlled */
+		/* start transmitter */
 		tx_start (iovar);
-		
-		if (f->flags & O_NDELAY)
-		{
-			if (!done)
-			{
-				/* return EWOULDBLOCK only for non HSMODEM devices */
-				if (f->flags & O_TTY)
-					done = EWOULDBLOCK;
-			}
-			
-			break;
-		}
-		
-		if (!bytes)
-			break;
-		
-		/* sleep until there is enough room in the buffer
-		 * to continue
+	}
+	while (bytes && !ndelay);
+	
+	if (ndelay && !done && (f->flags & O_TTY))
+	{
+		/* return EWOULDBLOCK only for
+		 * non HSMODEM devices
 		 */
-		while (iorec_used (iorec) > iorec->low_water)
-			sleep (READY_Q, 0L);
+		done = EWOULDBLOCK;
 	}
 	
 	DEBUG (("mfp_writeb: leave (%ld)", done));
 	return done;
+}
+
+static void
+timerwake (PROC *p, long cond)
+{
+	wake (IO_Q, cond);
 }
 
 static long _cdecl
@@ -2121,77 +2916,141 @@ mfp_readb (FILEPTR *f, char *buf, long bytes)
 {
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	IOREC *iorec = &iovar->input;
+	int ndelay = (f->flags & O_NDELAY) || iovar->tty.vtime /* ??? */;
 	long done = 0;
 	
 	DEBUG (("mfp_readb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	for (;;)
+	
+	if (!bytes)
+		/* nothing to do... */
+		return 0;
+	
+	if (iovar->tty.state & TS_BLIND)
+		/* line disconnected */
+		return 0;
+	
+	if (!ndelay)
 	{
-		/* copy as much as possible */
-		while ((bytes > 0) && !iorec_empty (iorec))
-		{
-			*buf = iorec_get (iorec);
-			
-			buf++; done++;
-			bytes--;
-		}
-		
-		if (iorec_used (iorec) < iorec->low_water)
-			/* start receiver */
-			rx_start (iovar);
-		
-		if (f->flags & O_NDELAY)
-		{
-			if (!done)
-			{
-				/* return EWOULDBLOCK only for non HSMODEM devices */
-				if (f->flags & O_TTY)
-					done = EWOULDBLOCK;
-			}
-			
-			break;
-		}
-		
-		if (!bytes)
-			break;
-		
-		/* sleep until we received enough data or the buffer
-		 * become to full
+		/* blocking read
+		 * handle all vmin and vtime combinations
 		 */
+		
+		if (iovar->tty.vtime == 0)
 		{
-			long i;
+			/* case D: vmin = 0, vtime = 0
+			 * -> doesn't enter while() and proceed as it's
+			 *    expected
+			 * 
+			 * case B: vmin > 0, vtime = 0
+			 * -> enter while() and block until vmin is ready
+			 *    (no timer, wait until vmin chars received)
+			 * 
+			 * BUG: if vmin > bufsize state is undefined
+			 */
 			
-			i = iorec_used (iorec);
-			while ((i < bytes) && (i < iorec->high_water))
+			while (!(iovar->tty.state & TS_BLIND)
+				&& (iorec_used (iorec) < (long) iovar->tty.vmin))
 			{
-				sleep (READY_Q, 0L);
-				i = iorec_used (iorec);
+				/* start receiver */
+				rx_start (iovar);
+				
+				iovar->iosleepers++;
+				sleep (IO_Q, (long) &iovar->tty.state);
+				iovar->iosleepers--;
+			}
+		}
+		else if (iovar->tty.vmin == 0)
+		{
+			/* case C: vmin = 0, vtime > 0
+			 * -> vtime is a absolut read timer
+			 */
+			if (iorec_empty (iorec))
+			{
+				TIMEOUT *t;
+				
+				/* start receiver */
+				rx_start (iovar);
+				
+				t = addtimeout (iovar->tty.vtime * 100, timerwake);
+				if (!t) return ENOMEM;
+				
+				t->arg = (long) &iovar->tty.state;
+				
+				iovar->iosleepers++;
+				sleep (IO_Q, t->arg);
+				iovar->iosleepers--;
+				
+				canceltimeout (t);
+			}
+		}
+		else
+		{
+			/* case A: vmin > 0, vtime > 0
+			 * -> vtime is an inter byte timer
+			 */
+			while (!(iovar->tty.state & TS_BLIND)
+				&& (iorec_used (iorec) < (long) iovar->tty.vmin))
+			{
+				TIMEOUT *t;
+				
+				/* start receiver */
+				rx_start (iovar);
+				
+				t = addtimeout (iovar->tty.vtime * 100, timerwake);
+				if (!t) return ENOMEM;
+				
+				t->arg = (long) &iovar->tty.state;
+				
+				iovar->iosleepers++;
+				sleep (IO_Q, t->arg);
+				iovar->iosleepers--;
+				
+				canceltimeout (t);
 			}
 		}
 	}
+	
+	/* copy as much as possible */
+	while ((bytes > 0) && !iorec_empty (iorec))
+	{
+		*buf = iorec_get (iorec);
+		
+		buf++; done++;
+		bytes--;
+	}
+	
+	if (iorec_used (iorec) < iorec->low_water)
+		/* start receiver */
+		rx_start (iovar);
 	
 	DEBUG (("mfp_readb: leave (%ld)", done));
 	return done;
 }
 
-/*
- * Note: when a BIOS device is a terminal (i.e. has the O_TTY flag
- * set), bios_read and bios_write will only ever be called indirectly, via
- * tty_read and tty_write. That's why we can afford to play a bit fast and
- * loose with the pointers ("buf" is really going to point to a long) and
- * why we know that "bytes" is divisible by 4.
- */
 
+/* slow terminal I/O routines
+ * 
+ * they must implement only N_DELAY correctly
+ * 
+ * they are called in canonical mode and only from kernel level
+ * with kernel buffers
+ * 
+ * Note: buf doesn't point to a byte stream; it's rather a int32 array
+ *       with one 32bit int for every char; bytes is the array size in _bytes_
+ */
 static long _cdecl
 mfp_twrite (FILEPTR *f, const char *buf, long bytes)
 {
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	IOREC *iorec = &iovar->output;
+	int ndelay = f->flags & O_NDELAY;
 	long done = 0;
 	const long *r = (const long *) buf;
 	
 	DEBUG (("mfp_twrite [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	for (;;)
-	{
+	
+	if (bytes)
+	do {
 		/* copy as much as possible */
 		while ((bytes > 0) && iorec_put (iorec, *r++))
 		{
@@ -2199,26 +3058,25 @@ mfp_twrite (FILEPTR *f, const char *buf, long bytes)
 			bytes -= 4;
 		}
 		
-		/* start transfer - interrupt controlled */
-		tx_start (iovar);
-		
-		if (f->flags & O_NDELAY)
+		if (bytes && !ndelay)
 		{
-			if (!done)
-				done = EWOULDBLOCK;
+			DEBUG (("mfp_twrite: sleeping I/O wait"));
 			
-			break;
+			/* start transmitter */
+			tx_start (iovar);
+			
+			iovar->iosleepers++;
+			sleep (IO_Q, (long) &iovar->tty.state);
+			iovar->iosleepers--;
 		}
 		
-		if (!bytes)
-			break;
-		
-		/* sleep until there is enough room in the buffer
-		 * to continue
-		 */
-		while (iorec_used (iorec) > iorec->low_water)
-			sleep (READY_Q, 0L);
+		/* start transmitter */
+		tx_start (iovar);
 	}
+	while (bytes && !ndelay);
+	
+	if (ndelay && !done)
+		done = EWOULDBLOCK;
 	
 	DEBUG (("mfp_twrite: leave (%ld)", done));
 	return done;
@@ -2229,12 +3087,14 @@ mfp_tread (FILEPTR *f, char *buf, long bytes)
 {
 	IOVAR *iovar = IOVARS (f->fc.aux);
 	IOREC *iorec = &iovar->input;
+	int ndelay = f->flags & O_NDELAY;
 	long done = 0;
 	long *r = (long *) buf;
 	
 	DEBUG (("mfp_tread [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	for (;;)
-	{
+	
+	if (bytes)
+	do {
 		/* copy as much as possible */
 		while ((bytes > 0) && !iorec_empty (iorec))
 		{
@@ -2248,31 +3108,19 @@ mfp_tread (FILEPTR *f, char *buf, long bytes)
 			/* start receiver */
 			rx_start (iovar);
 		
-		if (f->flags & O_NDELAY)
+		if (bytes && !ndelay)
 		{
-			if (!done)
-				done = EWOULDBLOCK;
+			DEBUG (("mfp_tread: sleeping I/O wait"));
 			
-			break;
-		}
-		
-		if (!bytes)
-			break;
-		
-		/* sleep until we received enough data or the buffer
-		 * become to full
-		 */
-		{
-			long i;
-			
-			i = iorec_used (iorec);
-			while ((i < bytes) && (i < iorec->high_water))
-			{
-				sleep (READY_Q, 0L);
-				i = iorec_used (iorec);
-			}
+			iovar->iosleepers++;
+			sleep (IO_Q, (long) &iovar->tty.state);
+			iovar->iosleepers--;
 		}
 	}
+	while (bytes && !ndelay);
+	
+	if (ndelay && !done)
+		done = EWOULDBLOCK;
 	
 	DEBUG (("mfp_tread: leave (%ld)", done));
 	return done;
@@ -2321,7 +3169,7 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case TIOCFLUSH:
 		{
-			int flushtype;
+			long flushtype;
 			
 			/* HSMODEM put the value itself in arg
 			 * MiNT use arg as a pointer to the value
@@ -2332,9 +3180,15 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 			 * ok, or?
 			 */
 			if (f->fc.aux >= IOVAR_TTY_OFFSET)
-				flushtype = *(int *) buf;
+			{
+				long *ptr = buf;
+				if ((!ptr) || (!(*ptr & 3)))
+					flushtype = 3;
+				else
+					flushtype = (int) *ptr;
+			}
 			else
-				flushtype = (int) ((long) buf);
+				flushtype = (long) buf;
 			
 			if (flushtype <= 0)
 			{
@@ -2343,38 +3197,23 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 			}
 			
 			if (flushtype & 1)
-			{
-				IOREC *iorec = &(iovar->input);
-				uchar sr;
-				
-				sr = splhigh ();
-				iorec->head = iorec->tail = 0;
-				splx (sr);
-			}
+				flush_input (iovar);
 			
 			if (flushtype & 2)
-			{
-				IOREC *iorec = &(iovar->output);
-				uchar sr;
-				
-				sr = splhigh ();
-				iorec->head = iorec->tail = 0;
-				splx (sr);
-			}
+				flush_output (iovar);
 			
 			break;
 		}
 		case TIOCSTOP:		/* HSMODEM */
 		{
-			/* if (iovar->shake)
-				rx_stop (iovar); */
-			
-			r = ENOSYS;
+			tx_stop (iovar);	/* stop transmitter */
+			rx_stop (iovar);	/* stop receiver */
 			break;
 		}
 		case TIOCSTART:		/* HSMODEM */
 		{
-			rx_start (iovar);
+			tx_start (iovar);	/* start transmitter */
+			rx_start (iovar);	/* start receiver */
 			break;
 		}
 		case TIOCIBAUD:
@@ -2399,7 +3238,7 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 		{
 			DEBUG (("mfp_ioctl(TIOCGFLAGS) [%lx]", (ushort *) buf));
 			
-			ctl_TIOCGFLAGS (iovar, (ushort *) buf);
+			*(ushort *) buf = ctl_TIOCGFLAGS (iovar);
 			break;
 		}
 		case TIOCSFLAGS:
@@ -2412,12 +3251,18 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 		case TIONOTSEND:
 		case TIOCOUTQ:
 		{
+			DEBUG (("mfp_ioctl(TIOCOUTQ) -> %li", iorec_used (&iovar->output)));
+			
 			*(long *) buf = iorec_used (&iovar->output);
 			break;
 		}
-		case TIOCSFLAGSB:	/* anywhere documented? */
+		case TIOCSFLAGSB:
 		{
-			r = ENOSYS;
+			DEBUG (("scc_ioctl(TIOCSFLAGSB) -> %lx, %lx", ((long *) buf)[0],
+									((long *) buf)[1]));
+			
+			*(long *) buf = ctl_TIOCSFLAGSB (iovar, ((long *) buf)[0],
+								((long *) buf)[1]);
 			break;
 		}
 		case TIOCGVMIN:
@@ -2432,29 +3277,21 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case TIOCSVMIN:
 		{
-			struct tty *tty = (struct tty *) f->devinfo;
 			ushort *v = buf;
 			
-			if (v [0] > iorec_size (&iovar->input) / 2)
-				v [0] = iorec_size (&iovar->input) / 2;
+			if (v[0] > iorec_size (&iovar->input) / 2)
+				v[0] = iorec_size (&iovar->input) / 2;
 			
-			tty->vmin = v [0];
-			tty->vtime = v [1];
-			
-			/* t->vticks = 0; */
+			iovar->tty.vmin = v[0];
+			iovar->tty.vtime = v[1];
 			
 			break;
 		}
 		case TIOCWONLINE:
 		{
-# if 0
-			struct tty *tty = (struct tty *) f->devinfo;
+			while (iovar->tty.state & TS_BLIND)
+				sleep (IO_Q, (long) &iovar->tty.state);
 			
-			while (tty->state & TS_BLIND)
-				sleep (IO_Q, (long) &tty->state);
-# else
-			r = ENOSYS;
-# endif
 			break;
 		}
 		case TIOCBUFFER:	/* HSMODEM special */
@@ -2491,12 +3328,14 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 			
 			ptr [0] = 0
 			/*	| TIOCMH_LE */
-				| TIOCMH_DTR
-				| TIOCMH_RTS
-				| TIOCMH_CTS
-				| TIOCMH_CD
-				| TIOCMH_RI
+			/*	| TIOCMH_DTR */
+			/*	| TIOCMH_RTS */
+			/*	| TIOCMH_CTS */
+			/*	| TIOCMH_CD */
+			/*	| TIOCMH_RI  */
+# ifdef MILAN
 				| TIOCMH_DSR
+# endif
 			/*	| TIOCMH_LEI */
 			/*	| TIOCMH_TXD */
 			/*	| TIOCMH_RXD */
@@ -2506,6 +3345,14 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 				| TIOCMH_TBE
 				| TIOCMH_RBF
 				;
+			
+			if (!iovar->tt_port)
+				ptr [0] |= 0
+					| TIOCMH_DTR
+					| TIOCMH_RTS
+					| TIOCMH_CTS
+					| TIOCMH_CD
+					| TIOCMH_RI;
 			
 			ptr [1] = 0;	/* will be never supported */
 			ptr [2] = 0;	/* will be never supported */
@@ -2524,33 +3371,44 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 			/* TIOCMH_LE */
 			
 # ifndef MILAN
-			*_giselect = 14;
-			reg = *_giread;
-			if (!(reg & 0x10)) val |= TIOCMH_DTR;
-			if (!(reg & 0x08)) val |= TIOCMH_RTS;
+			if (!iovar->tt_port)
+			{
+				*_giselect = 14;
+				reg = *_giread;
+				
+				if (!(reg & GI_DTR)) val |= TIOCMH_DTR;
+				if (!(reg & GI_RTS)) val |= TIOCMH_RTS;
+			}
 # endif
 			
 			reg = iovar->regs->gpip;
 # ifdef MILAN
-			if (!(reg & 0x08)) val |= TIOCMH_DTR;
-			if (!(reg & 0x01)) val |= TIOCMH_RTS;
+			if (!(reg & GPIP_DTR)) val |= TIOCMH_DTR;
+			if (!(reg & GPIP_RTS)) val |= TIOCMH_RTS;
+			if (!(reg & GPIP_DSR)) val |= TIOCMH_DSR;
 # endif
-			if (!(reg & 0x04)) val |= TIOCMH_CTS;
-			if (!(reg & 0x40)) val |= TIOCMH_RI;
-			if (!(reg & 0x02)) val |= TIOCMH_CD;
-			if (!(reg & 0x10)) val |= TIOCMH_DSR;
+			if (!iovar->tt_port)
+			{
+				if (!(reg & GPIP_CTS)) val |= TIOCMH_CTS;
+				if (!(reg & GPIP_DCD)) val |= TIOCMH_CD;
+				if (!(reg & GPIP_RI )) val |= TIOCMH_RI;
+			}
 			
 			/* TIOCMH_LEI */
 			/* TIOCMH_TXD */
 			/* TIOCMH_RXD */
 			
-			if (iovar->regs->rsr & 0x08) val |= TIOCMH_BRK;
+			if (iovar->regs->rsr & RSR_BREAK_DETECT)
+				val |= TIOCMH_BRK;
 			
 			/* TIOCMH_TER */
 			/* TIOCMH_RER */
 			
-			if (iovar->regs->tsr & 0x80) val |= TIOCMH_TBE;
-			if (iovar->regs->rsr & 0x80) val |= TIOCMH_RBF;
+			if (iovar->regs->tsr & TSR_BUF_EMPTY)
+				val |= TIOCMH_TBE;
+			
+			if (iovar->regs->rsr & RSR_CHAR_AVAILABLE)
+				val |= TIOCMH_RBF;
 			
 			*(long *) buf = val;
 			break;
@@ -2562,7 +3420,8 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 			register long mask = *arg++;
 			register long val = *arg;
 			
-			if (mask & (TIOCMH_DTR | TIOCMH_RTS))
+			if (!iovar->tt_port &&
+			    (mask & (TIOCMH_DTR | TIOCMH_RTS)))
 			{
 				if (mask & TIOCMH_DTR)
 				{
@@ -2591,36 +3450,49 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 			
 			/* TIOCM_LE */
 # ifndef MILAN
-			*_giselect = 14;
-			reg = *_giread;
-			if (!(reg & 0x10)) val |= TIOCM_DTR;
-			if (!(reg & 0x08)) val |= TIOCM_RTS;
+			if (!iovar->tt_port)
+			{
+				*_giselect = 14;
+				reg = *_giread;
+				
+				if (!(reg & GI_DTR)) val |= TIOCM_DTR;
+				if (!(reg & GI_RTS)) val |= TIOCM_RTS;
+			}
 # endif
 			
 			reg = iovar->regs->gpip;
 # ifdef MILAN
-			if (!(reg & 0x08)) val |= TIOCM_DTR;
-			if (!(reg & 0x01)) val |= TIOCM_RTS;
+			if (!(reg & GPIP_DTR)) val |= TIOCM_DTR;
+			if (!(reg & GPIP_RTS)) val |= TIOCM_RTS;
+			if (!(reg & GPIP_DSR)) val |= TIOCM_DSR;
 # endif
 			/* TIOCM_ST */
 			/* TIOCM_SR */
 			
-			if (!(reg & 0x04)) val |= TIOCM_CTS;
-			if (!(reg & 0x02)) val |= TIOCM_CD;
-			if (!(reg & 0x40)) val |= TIOCM_RI;
-			if (!(reg & 0x10)) val |= TIOCM_DSR;
+			if (!iovar->tt_port)
+			{
+				if (!(reg & GPIP_CTS)) val |= TIOCM_CTS;
+				if (!(reg & GPIP_DCD)) val |= TIOCM_CD;
+				if (!(reg & GPIP_RI )) val |= TIOCM_RI;
+			}
 			
 			*(long *) buf = val;
 			break;
 		}
 		case TIOCCDTR:
 		{
-			top_dtr_off (iovar);
+			if (!iovar->tt_port)
+				top_dtr_off (iovar);
+			else
+				r = EINVAL;
 			break;
 		}
 		case TIOCSDTR:
 		{
-			top_dtr_on (iovar);
+			if (!iovar->tt_port)
+				top_dtr_on (iovar);
+			else
+				r = EINVAL;
 			break;
 		}
 		
@@ -2633,7 +3505,10 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 			while (iovar->lockpid && iovar->lockpid != cpid)
 			{
 				if (mode == F_SETLKW && lck->l_type != F_UNLCK)
+				{
+					DEBUG (("mfp_ioctl: sleep in SETLKW"));
 					sleep (IO_Q, (long) iovar);
+				}
 				else
 					return ELOCKED;
 			}
@@ -2706,55 +3581,6 @@ mfp_datime (FILEPTR *f, ushort *timeptr, int rwflag)
 	*timeptr++ = timestamp;
 	*timeptr = datestamp;
 	
-	return E_OK;
-}
-
-static long _cdecl
-mfp_close (FILEPTR *f, int pid)
-{
-	IOVAR *iovar = IOVARS (f->fc.aux);
-	
-	DEBUG (("mfp_close [%i]: enter", f->fc.aux));
-	
-	if ((f->flags & O_LOCK)
-	    && ((iovar->lockpid == pid) || (f->links <= 0)))
-	{
-		/* wake anyone waiting for this lock */
-		wake (IO_Q, (long) iovar);
-	}
-	
-	if (f->links <= 0)
-	{
-		register FILEPTR **temp;
-		register long flag = 1;
-		
-		/* remove the FILEPTR from the linked list */
-		temp = &iovar->open;
-		while (*temp)
-		{
-			if (*temp == f)
-			{
-				*temp = f->next;
-				f->next = NULL;
-				flag = 0;
-				
-				break;
-			}
-			
-			temp = &(*temp)->next;
-		}
-		
-		if (flag)
-		{
-			ALERT (("mfp_close: remove open FILEPTR fail!", f->fc.aux));
-		}
-		
-		/* clear dtr if no longer opened */
-		if (!(iovar->open))
-			top_dtr_off (iovar);
-	}
-	
-	DEBUG (("mfp_close: leave ok"));
 	return E_OK;
 }
 

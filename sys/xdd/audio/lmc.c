@@ -9,7 +9,7 @@
  */
 
 # include "global.h"
-# include "mint/ioctl.h"
+# include "mint/dcntl.h"
 
 # include "dmasnd.h"
 # include "device.h"

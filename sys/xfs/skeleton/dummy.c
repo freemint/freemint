@@ -49,13 +49,9 @@
 # include "mint/mint.h"
 
 # include "mint/dcntl.h"
-# include "mint/emu_tos.h"
 # include "mint/endian.h"  // <- for le2cpu/cpu2le, be2cpu/cpu2be
 # include "mint/file.h"
-# include "mint/ioctl.h"
-# include "mint/pathconf.h"
 # include "mint/proc.h"
-# include "mint/stat.h"
 
 # include "libkern/libkern.h"
 

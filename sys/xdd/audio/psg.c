@@ -11,7 +11,7 @@
  */
 
 # include "global.h"
-# include "mint/ioctl.h"
+# include "mint/dcntl.h"
 
 # include "psgsnd.h"
 # include "device.h"
