@@ -2823,24 +2823,29 @@ slist_msg_handler(
 	SCROLL_ENTRY *top, *n;
 	OBJECT *ob;
 	long p, oldp;
+	short amount, msgt;
 
 	ob = wind->winob + wind->winitem;
 	list = object_get_slist(ob); //(SCROLL_INFO *)object_get_spec(ob)->index;
 	top = list->top;
 	oldp = list->start_y;
-	
+	check_movement(list);
+	//display("msg...");	
 	switch (msg[0])		/* message number */
 	{
 	case WM_ARROWED:
 	{
 		if (top)
 		{
-			if (msg[4] < WA_LFPAGE)
+			if ((msgt = msg[4] & 7) < WA_LFPAGE)
 			{
 				p = list->wi->wa.h;
+				if (!(amount = (msg[4] >> 8) & 0xff))
+					amount++;
+
 				if (p < list->total_h)
 				{
-					switch (msg[4])
+					switch (msgt)
 					{
 					case WA_UPLINE:
 					{
@@ -2849,7 +2854,18 @@ slist_msg_handler(
 							if (list->off_y)
 								scroll_down(list, list->off_y, true);
 							else
-								scroll_down(list, n->r.h, true);
+							{
+								long h = n->r.h;
+								amount--;
+								while (amount)
+								{
+									if (!(n = prev_entry(n, ENT_VISIBLE)))
+										break;
+									h += n->r.h;
+									amount--;
+								}
+								scroll_down(list, h, true);
+							}
 						}
 						break;
 					}
@@ -2859,8 +2875,19 @@ slist_msg_handler(
 						{
 							if (list->off_y)
 								scroll_up(list, top->r.h - list->off_y, true);
-							else
-								scroll_up(list, n->r.h, true);
+							else if (n)
+							{
+								long h = n->r.h;
+								amount--;
+								while (amount)
+								{
+									if (!(n = next_entry(n, ENT_VISIBLE, NULL)))
+										break;
+									h += n->r.h;
+									amount--;
+								}
+								scroll_up(list, h, true);
+							}
 						}
 						break;
 					}

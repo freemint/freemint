@@ -41,6 +41,7 @@ struct fsel_data
 	XA_TREE *form;
 	XA_TREE *menu;
 	struct xa_client *owner;
+	struct scroll_entry *selected_entry;
 	fsel_handler	*selected;
 	fsel_handler	*canceled;
 	Path root;
@@ -53,8 +54,7 @@ struct fsel_data
 	int drives;
 	int clear_on_folder_change;
 	int ok;
-	int done;
-	
+	int done;	
 };
 
 

@@ -625,23 +625,66 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 
+	/*
+	 * Ozk: For now we send wheel events to the owner of the window underneath the mouse
+	 * in all cases except when owner of mouse_lock() is waiting for MU_WHEEL.
+	 */
+
+	if ( C.mouse_lock && (locker = get_mouse_locker()))
+	{
+		DIAG((D_mouse, locker, "XA_button_event - mouse locked by %s", locker->name));
+
+		if ((wind = nolist_list) && wind->owner == locker)
+		{
+			post_cevent(locker, cXA_wheel_event, wind, NULL, 0, 0, NULL, md);
+			return;
+		}
+		else if (locker->fmd.mousepress)
+		{
+		//	DIAG((D_mouse, locker, "post form do to %s", locker->name));
+		//	post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
+			return;
+		}
+	}
+	if ( C.update_lock && (locker = get_update_locker()))
+	{
+		DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
+
+		if ((wind = nolist_list) && wind->owner == locker)
+		{
+			post_cevent(locker, cXA_wheel_event, wind, NULL, 0, 0, NULL, md);
+			//dispatch_button_event(lock, wind, md);
+			return;
+		}
+		else if (locker->fmd.mousepress)
+		{
+		//	DIAG((D_mouse, locker, "post form do to %s", locker->name));
+		//	post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
+			return;
+		}
+	}
+
+	locker = NULL;
 	if (!(C.mouse_lock && (locker = get_mouse_locker())))
 	{
 		if (C.update_lock)
 			locker = get_update_locker();
 	}
-
-	/*
-	 * Ozk: For now we send wheel events to the owner of the window underneath the mouse
-	 * in all cases except when owner of mouse_lock() is waiting for MU_WHEEL.
-	 */
-	 
-	wind = find_window(lock, md->x, md->y);
 	
-	if (locker && locker->waiting_for & MU_WHEEL)
-		client = locker;
-	else if (wind)
-		client = wind == root_window ? get_desktop()->owner : wind->owner;
+	wind = find_window(lock, md->x, md->y);
+
+	client = wind == root_window ? get_desktop()->owner : wind->owner;
+
+	if (locker && client != locker)
+	{
+		if ((locker->waiting_for & MU_WHEEL))
+		{
+			client = locker;
+			wind = NULL;
+		}
+		else
+			client = NULL;
+	}
 
 	if (client)
 	{

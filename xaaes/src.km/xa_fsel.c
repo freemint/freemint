@@ -180,7 +180,7 @@ fs_prompt(SCROLL_INFO *list)
 		}
 		list->cur = NULL;
 		s = seget.e;
-
+		fs->selected_entry = s;
 		if (s)
 		{
 			list->cur = s;
@@ -203,6 +203,7 @@ fs_prompt(SCROLL_INFO *list)
 	}
 	else
 	{
+		fs->selected_entry = NULL;
 		list->get(list, NULL, SEGET_SELECTED, &s);
 		if (s)
 		{
@@ -523,6 +524,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	/* Clear out current file list contents */
 	if (!dir_ent)
 	{
+		fs->selected_entry = NULL;
 		while (list->start)
 		{
 			list->start = list->del(list, list->start, false);
@@ -684,7 +686,7 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 
 		list->get(list, list->cur, SEGET_USRFLAGS, &uf);
 
-		if ( (uf & FLAG_DIR) == 0)
+		if (!(uf & FLAG_DIR))
 		{
 			DIAG((D_fsel, NULL, " --- nodir '%s'", list->cur->c.td.text.text->text));
 			/* file entry action */
@@ -692,7 +694,7 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 			p.e = list->cur;
 			p.arg.txt = fs->file;
 			list->get(list, list->cur, SEGET_TEXTCPY, &p);
-			//strcpy(fs->file, list->cur->c.td.text.text->text);
+			fs->selected_entry = list->cur;
 		}
 		else
 		{			
@@ -737,9 +739,22 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 	}
 	DIAG((D_fsel, NULL, "fs_item_action: %s%s", fs->root, fs->file));
 
-	if (fs->selected)
-		fs->selected(lock, fs, fs->root, fs->file);
-
+	
+	strcpy(fs->path, fs->root);
+	if (fs->selected_entry)
+	{
+		struct scroll_entry *this = fs->selected_entry->up;
+		long len = strlen(fs->root);
+			
+		while (this)
+		{
+			strins(fs->path, "\\", len);
+			strins(fs->path, this->c.td.text.text->text, len);
+			this = this->up;
+		}
+	}
+	if (fs->selected)	
+		fs->selected(lock, fs, fs->path, fs->file);
 	return true;
 }
 
@@ -1295,6 +1310,7 @@ handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 {
 	DIAG((D_fsel, NULL, "fsel OK: path=%s, file=%s", path, file));
 
+	//display("hfsel '%s' '%s'", path, file);
 	close_fileselector(lock, fs);
 	fs->owner->usr_evnt = 1;
 	fs->ok = 1;
