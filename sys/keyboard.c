@@ -634,7 +634,12 @@ load_table(FILEPTR *fp, char *name, long size)
 	if (!ret)
 	{
 		detach_region(rootproc, key_reg);
+		
+		key_reg->links--;
+		assert(key_reg->links == 0);
+		
 		free_region(key_reg);
+		
 		return -2;
 	}
 	
@@ -642,6 +647,10 @@ load_table(FILEPTR *fp, char *name, long size)
 	if (key_region)
 	{
 		detach_region(rootproc, key_region);
+		
+		key_region->links--;
+		assert(key_region->links == 0);
+		
 		free_region(key_region);
 	}
 	key_region = key_reg;
@@ -658,6 +667,10 @@ load_default_table(void)
 	if (key_region)
 	{
 		detach_region(rootproc, key_region);
+		
+		key_region->links--;
+		assert(key_region->links == 0);
+		
 		free_region(key_region);
 	}
 	
@@ -688,6 +701,10 @@ load_default_table(void)
 	if (key_region)
 	{
 		detach_region(rootproc, key_region);
+		
+		key_region->links--;
+		assert(key_region->links == 0);
+		
 		free_region(key_region);
 	}
 	
