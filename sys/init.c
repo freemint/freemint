@@ -49,7 +49,7 @@
 # include "k_exec.h"	/* sys_pexec */
 # include "k_exit.h"	/* sys_pwaitpid */
 # include "k_fds.h"	/* do_open/do_pclose */
-# include "keyboard.h"	/* load_keytbl() */
+# include "keyboard.h"	/* init_keytbl() */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
 # include "module.h"	/* load_all_modules */
@@ -286,10 +286,6 @@ init_intr (void)
 
 	if (*syskey_aux)
 		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
-# if 0
-	else
-		new_xbra_install (&old_ikbd, (long)(&syskey->ikbdsys), new_ikbd);
-# endif
 		
 	old_term = (long) Setexc (0x102, -1UL);
 	
@@ -459,7 +455,6 @@ restr_intr (void)
 	spl (savesr);
 }
 
-# ifdef AUTO_FIX
 static char *my_name = "MINT.PRG";
 
 static void
@@ -495,27 +490,25 @@ get_my_name (void)
 			 && strncmp (p + strlen (p) - 4, ".PRG", 4) == 0)
 		{
 			my_name = p ;
-# if 1
+# if 0
 			/* DEBUGGING: */
 			boot_printf ("[MiNT is named \\AUTO\\%s]\r\n", p);
 # endif
 		}
 	}
 }
-# endif
-
 
 /* Boot menu routines. Quite lame I admit. Added 19.X.2000. */
 
-static short load_xfs_modules;
-static short load_xdd_modules;
+static short load_xfs;
+static short load_xdd;
 static short load_auto;
 static short save_ini;
 static const char *ini_keywords[] =
 {
 	"XFS_LOAD",
 	"XDD_LOAD",
-	"AUTOLOAD",
+	"EXE_AUTO",
 	"MEM_PROT",
 	"INI_SAVE"
 };
@@ -542,17 +535,14 @@ static const char *ini_warn =
  * menu defaults, is located at same place as mint.cnf is
  */
 
-static char *
-find_ini (void)
+static short
+find_ini (char *outp)
 {
-	extern char *cnf_path_1, *cnf_path_2, *cnf_path_3;
+	strcpy(outp, sysdir);
+	strcat(outp, "mint.ini");
 
-	if (Fsfirst (cnf_path_1, 0) == 0)
-		return "\\mint.ini";
-	if (Fsfirst (cnf_path_2, 0) == 0)
-		return "\\multitos\\mint.ini";
-	if (Fsfirst (cnf_path_3, 0) == 0)
-		return "\\mint\\mint.ini";
+	if (Fsfirst(outp, 0) == 0)
+		return 1;
 
 	return 0;
 }
@@ -594,36 +584,31 @@ static void
 read_ini (void)
 {
 	DTABUF *dta;
-	char *buf, *s, *ini_file = find_ini();
+	char *buf, *s, ini_file[32];
 	long r, x, len;
 	short inihandle, options[5] = { 1, 1, 1, 1, 1 };
 
-	if (!ini_file)
+	if (!find_ini(ini_file))
 		goto initialize;
 
 	/* Figure out the file's length. Wish I had Fstat() here :-( */
 	dta = (DTABUF *) Fgetdta();
 	r = Fsfirst(ini_file, 0);
-	if (r < 0)
-		goto initialize;	/* No such file, probably */
+	if (r < 0) goto initialize;	/* No such file, probably */
 	len = dta->dta_size;
-	if (len < 10)
-		goto initialize;	/* proper mint.ini can't be so short */
+	if (len < 10) goto initialize;	/* proper mint.ini can't be so short */
 	len++;
 
 	buf = (char *) Mxalloc (len, 0x0003);
 	if ((long)buf < 0)	
 		buf = (char *) Malloc (len);	/* No Mxalloc()? */
-	if ((long)buf <= 0)
-		goto initialize;	/* Out of memory or such */
+	if ((long)buf <= 0) goto initialize;	/* Out of memory or such */
 	bzero (buf, len);
 
 	inihandle = Fopen (ini_file, 0);
-	if (inihandle < 0)
-		goto exit;
+	if (inihandle < 0) goto exit;
 	r = Fread (inihandle, len, buf);
-	if (r < 0)
-		goto close;
+	if (r < 0) goto close;
 
 	strupr (buf);
 	for (x = 0; x < 5; x++)
@@ -639,8 +624,8 @@ exit:
 	Mfree ((long) buf);
 
 initialize:
-	load_xfs_modules = options[0];
-	load_xdd_modules = options[1];
+	load_xfs = options[0];
+	load_xdd = options[1];
 	load_auto = options[2];
 	no_mem_prot = !options[3];
 	save_ini = options[4];
@@ -650,10 +635,10 @@ static void
 write_ini (short *options)
 {
 	short inihandle;
-	char *ini_file = find_ini (), buf[256];
+	char ini_file[32], buf[256];
 	long r, x, l;
 
-	if (!ini_file)
+	if (!find_ini(ini_file))
 		return;
  
 	inihandle = Fcreate (ini_file, 0);
@@ -701,15 +686,15 @@ boot_kernel_p (void)
 		char	yes_let;	/* letter to hit for yes */
 		char	no_let;		/* letter to hit for no */
 	}
-	/* Please change messages to appropriate languages */
+	/* Please change English messages to appropriate languages */
 	boot_it [MAXLANG] =
 	{
 		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* English */
 		{ "Bootmen anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
 		{ "Afficher le menu de d‚marrage? (o)ui (n)on ", 'o', 'n' },	/* French */
-		{ "Menu initiale an fiat? (f)iat (n)on ",  'f', 'n' },	/* Latin */
-		{ "¨Display the boot menu? (s)i (n)o ",  's', 'n' },	/* Spanish, upside down ? is 168 dec. */
-		{ "Display the boot menu? (s)i (n)o ",   's', 'n' }	/* Italian */
+		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* British */
+		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* Spanish, upside down ? is 168 dec. */
+		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' }	/* Italian */
 	};
 	
 	struct yn_message *msg = &boot_it [gl_lang];
@@ -723,8 +708,8 @@ boot_kernel_p (void)
 	/* English only from here, sorry */
 
 	option[0] = 1;			/* Load MiNT or not */
-	option[1] = load_xfs_modules;	/* Load XFS or not */
-	option[2] = load_xdd_modules;	/* Load XDD or not */
+	option[1] = load_xfs;		/* Load XFS or not */
+	option[2] = load_xdd;		/* Load XDD or not */
 	option[3] = load_auto;		/* Load AUTO or not */
 	option[4] = !no_mem_prot;	/* Use memprot or not */
 	option[5] = save_ini;
@@ -748,8 +733,8 @@ wait:
 				return 1;
 			case 0x0a:
 			case 0x0d:
-				load_xfs_modules = option[1];
-				load_xdd_modules = option[2];
+				load_xfs = option[1];
+				load_xdd = option[2];
 				load_auto = option[3];
 				no_mem_prot = !option[4];
 				save_ini = option[5];
@@ -788,6 +773,10 @@ long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_ALLOCZERO
 long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 # endif
 
+/*
+ * The path to the system directory. Added 17.IV.2001.
+ */
+char *sysdir = NULL;
 
 void
 init (void)
@@ -798,6 +787,13 @@ init (void)
 	long r;
 	FILEPTR *f;
 	
+	/* Initialize sysdir */
+	sysdir = "\\";
+	if (Fsfirst("\\multitos\\mint.cnf", 0) == 0)
+		sysdir = "\\multitos\\";
+	else if (Fsfirst("\\mint\\mint.cnf", 0) == 0)
+		sysdir = "\\mint\\";
+
 	read_ini();	/* Read user defined defaults */
 	
 	/* greetings (placed here 19960610 cpbs to allow me to get version
@@ -851,10 +847,8 @@ init (void)
 	/* check for GEM -- this must be done from user mode */
 	gem_active = check_for_gem ();
 	
-# ifdef AUTO_FIX
 	if (!gem_active)
 		get_my_name();
-# endif
 
 # ifdef VERBOSE_BOOT
 	boot_print ("Memory protection ");
@@ -976,6 +970,9 @@ init (void)
 	/* Disable all CPU caches */
 	ccw_set(0x00000000L, 0x0000c57fL);
 	
+	/* initialize basic keyboard stuff */
+	init_keybd();
+
 	/* initialize interrupt vectors */
 	init_intr ();
 	DEBUG (("init_intr() ok!"));
@@ -1103,7 +1100,7 @@ init (void)
 	domaininit ();
 	
 	/* load the kernel modules */
-	load_all_modules (curpath, (load_xdd_modules | (load_xfs_modules << 1)));
+	load_all_modules (curpath, (load_xdd | (load_xfs << 1)));
 	
 	/* start system update daemon */
 	start_sysupdate ();
