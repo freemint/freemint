@@ -41,6 +41,8 @@ AES_function
 	XA_appl_write,
 	XA_appl_getinfo,
 	XA_appl_find,
-	XA_appl_control;
+	XA_appl_control,
+	XA_appl_trecord,
+	XA_appl_tplay;
 
 #endif /* _xa_appl_h */

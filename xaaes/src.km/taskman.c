@@ -56,11 +56,9 @@ static void
 refresh_tasklist(enum locks lock)
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	struct xa_client *client;
-	OBJECT *icon;
 	OBJECT *tl = form + TM_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)tl->ob_spec.index;
-	char *tx;
+	struct xa_client *client;
 
 	/* Empty the task list */
 	empty_scroll_list(form, TM_LIST, -1);
@@ -71,6 +69,9 @@ refresh_tasklist(enum locks lock)
 	client = S.client_list;
 	while (client)
 	{
+		OBJECT *icon;
+		char *tx;
+
 #if 0
 		if (client->msg)
 		{
@@ -112,6 +113,17 @@ refresh_tasklist(enum locks lock)
 
 static struct xa_window *task_man_win = NULL;
 
+void
+update_tasklist(enum locks lock)
+{
+	if (task_man_win)
+	{
+		DIAGS(("update_tasklist"));
+		refresh_tasklist(lock);
+		display_toolbar(lock, task_man_win, TM_LIST);
+	}
+}
+
 static int
 taskmanager_destructor(enum locks lock, struct xa_window *wind)
 {
@@ -125,8 +137,8 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 }
 
 /*
- * XXX this looks not so good;
- * no check if client->next is valid
+ * as long update_tasklist() is called for every *modification* of
+ * the global client list this routine work correct
  */
 static struct xa_client *
 cur_client(SCROLL_INFO *list)
@@ -211,12 +223,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			DIAGS(("taskmanager: KILL for %s", c_owner(client)));
 
 			if (is_client(client))
-			{
 				ikill(client->p->pid, SIGKILL);
-				yield();
-				refresh_tasklist(lock);
-				display_toolbar(lock, task_man_win, TM_LIST);
-			}
 
 			deselect(wt->tree, TM_KILL);
 			display_toolbar(lock, task_man_win, TM_KILL);
@@ -632,15 +639,4 @@ pendig_alerts(OBJECT *form, int item)
 		cur = cur->next;
 	}
 	return NULL;
-}
-
-void
-update_tasklist(enum locks lock)
-{
-	if (task_man_win)
-	{
-		DIAGS(("update_tasklist"));
-		refresh_tasklist(lock);
-		display_toolbar(lock, task_man_win, TM_LIST);
-	}
 }
