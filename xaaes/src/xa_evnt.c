@@ -1158,6 +1158,9 @@ still_button(LOCK lock, XA_CLIENT *client, short *o)
 	vq_mouse(C.vh, &b, &mu_button.x, &mu_button.y);
 	vq_key_s(C.vh, &mu_button.ks);
 
+	if ( !o[2] )
+		return true;
+
 	wind = find_window(lock, mu_button.x, mu_button.y);
 	owner = wind == root_window ? get_desktop()-> owner : wind->owner;
 
