@@ -496,42 +496,38 @@ key_repeat(void)
 	kbdclick(c2);
 }
 
-/* Init section
- *
- * There's our private set of keyboard translation vectors (the
- * struct keytable_vecs above). The init_keybd() called from init.c
- * pre-initializes these to point to the embedded table (usa_kbd[]
- * in key_tables.h). Some time later init.c calls load_keytbl() to
- * load an user supplied keyboard table, if one exists. The file is
- * opened by load_keyboard_table() and its contents is loaded to the
- * memory by load_table(). This one also allocates the buffer long
- * enough to hold the entire table. If the file loaded doesn't look
- * like a keyboard table, the buffer is released and the function fails.
- *
- * In this case the vectors remain as they are after init_keybd().
- *
- * Otherwise the load_table() changes the vectors to point to the newly
- * loaded table and exits with success. Next and last step is bioskeys()
- * which actually moves the contents of the keytable_vecs to the user
- * visible structure in the memory and fixes the value in the Cookie
- * Jar to reflect the current state.
- *
- */
-
 /* The XBIOS' Keytbl() function
+ *
+ * This call imposes a problem. It namely allows programs to reallocate
+ * parts of the keyboard translation tables, and moreover returns a
+ * pointer to the global keytab structure so that programs can directly
+ * manipulate that. This may severely affect system stability, if a
+ * program that changed the translation table and redirected one of the
+ * vectors to own memory (even supervisor protected), and then suddenly
+ * dies.
+ *
+ * The soultion would be to fake the keyboard translation table and
+ * the vectors inside program's memory space and allowing manipulate that.
+ * Such manipulations of course would have no effect, but would be safe
+ * for the system and more programs would continue to operate, even if
+ * in a bit limited way.
+ *
+ * For now we just ignore the passed vectors and trust that programs
+ * call this only to READ the keyboard tables, not write them (esp.
+ * as the translation table is PROT_PR, so it can be read, but
+ * cannot be written to).
  */
 
-# if 0
 struct keytab *
 sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 {
-	
+	return toskeytab;
 }
-# endif
 
 /* The XBIOS' Bioskeys() function
  */
 
+/* Helper */
 static uchar *
 tbl_scan_fwd(uchar *tmp)
 {
@@ -561,9 +557,9 @@ sys_b_bioskeys(void)
 		free_region(user_keytab);
 	}
 
-	/* Reserve one region for both keytable and its vectors */ 
+	/* Reserve one region for both keytable and its vectors */
 	user_keytab = get_region(core, keytab_size, PROT_PR);
-	buf = (char *)attach_region(rootproc, user_keytab);	
+	buf = (char *)attach_region(rootproc, user_keytab);
 
 	/* Copy the master table over */
 	quickmove(buf, keytab_buffer, keytab_size);
@@ -583,7 +579,9 @@ sys_b_bioskeys(void)
 		if (mch == MILAN_C)
 			toskeytab->altgr = tbl_scan_fwd(toskeytab->altcaps);
 
-		/* Fix the _AKP cookie, gl_kbd may get changed in load_table()
+		/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
+		 *
+		 * XXX must be changed for -DJAR_PRIVATE (forward to all processes).
 		 */
 		get_cookie(NULL, COOKIE__AKP, &akp_val);
 		akp_val &= 0xffffff00L;
@@ -594,6 +592,21 @@ sys_b_bioskeys(void)
 	/* Done! */
 	kbd_lock = 0;
 }
+
+/* Init section
+ *
+ * Notice that we deal with two tables here:
+ *
+ * - the "master" table, which is kept at keytab_buffer and is used
+ *   to restore the user table, when Bioskeys() is called;
+ * - the user table, which is kept at user_keytab.
+ *
+ * The load_keyboard_table(), which is called at startup and can be
+ * called at runtime via Ssystem(), loads the master table, so that
+ * after Ssystem(LOAD_KBD) you cannot restore previous settings by
+ * simply calling Bioskeys(). To return to previous config you must
+ * reload the previous table again.
+ */
 
 /* Two following routines prepare the master copy of the keyboard
  * translation table. The master copy is not available for the user,
@@ -766,10 +779,9 @@ load_internal_table(void)
  * First the loading from the disk is attempted, and when
  * this fails, the TOS table is used.
  *
- * When `flag' is zero, the routine attempts to get the keyboard
- * table from the TOS, or simply fails otherwise. The flag is
- * zero during system initialization and 1 when called at runtime. See
- * ssystem.c.
+ * Flag:
+ * 0x01 - don't load TOS BIOS table on failure
+ * 0x02 - don't generate any messages
  */
 long
 load_keyboard_table(char *name, short flag)
@@ -792,7 +804,7 @@ load_keyboard_table(char *name, short flag)
 				size = xattr.size;
 # ifdef VERBOSE_BOOT
 				/* During startup generate a message */
-				if (flag == 0)
+				if ((flag & 0x02) == 0)
 					boot_printf(MSG_keytable_loading, name);
 # endif
 			}
@@ -805,12 +817,12 @@ load_keyboard_table(char *name, short flag)
 	}
 
 	/* Not "else if" */
-	if (!flag && (ret < 0 || size == 0))
+	if (((flag & 0x01) == 0) && (ret < 0 || size == 0))
 	{
 		size = load_internal_table();
 # ifdef VERBOSE_BOOT
 		/* During startup generate a message */
-		if (flag == 0)
+		if ((flag & 0x02) == 0)
 			boot_printf(MSG_keytable_internal);
 # endif
 	}
