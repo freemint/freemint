@@ -25,7 +25,6 @@ HEADER = \
 	matchpat.h \
 	menuwidg.h \
 	messages.h \
-	my_aes.h \
 	nkcc.h \
 	objects.h \
 	rectlist.h \
@@ -83,7 +82,6 @@ COBJS = \
 	matchpat.c \
 	menuwidg.c \
 	messages.c \
-	my_aes.c \
 	nkcc.c \
 	rectlist.c \
 	scrlobjc.c \
