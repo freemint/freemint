@@ -73,7 +73,8 @@ struct memspace
 	void	*page_table;	///< rounded page table pointer.
 	void	*pt_mem;	///< original kmalloc'd block for above.
 	long	txtsize;	///< size of text region (for fork()).
-	void	*tp_ptr;	///< pointer to the trampoline things
+	struct user_things
+		*tp_ptr;	///< pointer to the trampoline things
 	MEMREGION *tp_reg;	///< memregion of the trampoline code
 };
 

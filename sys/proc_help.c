@@ -113,7 +113,7 @@ free_page_table_ptr (struct memspace *m)
 struct memspace *
 copy_mem (struct proc *p)
 {
-	USER_THINGS *ut;
+	struct user_things *ut;
 	struct memspace *m;
 	int i;
 	
@@ -142,7 +142,7 @@ copy_mem (struct proc *p)
 	 * that anybody would need so many cookies.
 	 */
 # define PRIV_JAR_SLOTS	64
-# define PRIV_JAR_SIZE	PRIV_JAR_SLOTS*sizeof(COOKIE)
+# define PRIV_JAR_SIZE	(PRIV_JAR_SLOTS * sizeof(struct cookie))
 
 # else
 
@@ -169,7 +169,7 @@ copy_mem (struct proc *p)
 	}
 	
 	/* initialize trampoline things */
-	ut = (USER_THINGS *) m->tp_ptr = (long *) m->tp_reg->loc;
+	ut = m->tp_ptr = (struct user_things *) m->tp_reg->loc;
 
 	/* temporary attach to curproc so it's accessible */
 	attach_region(curproc, m->tp_reg);
@@ -193,19 +193,19 @@ copy_mem (struct proc *p)
 
 # ifdef JAR_PRIVATE
 	/* Cookie Jar is appended at the end of the trampoline */
-	ut->user_jar_p = (long)ut + user_things.len;
+	ut->user_jar_p = (struct cookie *)((long)ut + user_things.len);
 
 	/* Copy the cookies over */
 	{
-		USER_THINGS *ct;
-		COOKIE *ctj, *utj;
+		struct user_things *ct;
+		struct cookie *ctj, *utj;
 
 		/* The child inherits the jar from the parent
 		 */
-		ct = (USER_THINGS *)p->p_mem->tp_ptr;
+		ct = p->p_mem->tp_ptr;
 
-		utj = (COOKIE *)ut->user_jar_p;
-		ctj = (COOKIE *)ct->user_jar_p;
+		utj = ut->user_jar_p;
+		ctj = ct->user_jar_p;
 
 		for (i = 0; ctj->tag && i < PRIV_JAR_SLOTS-1; i++)
 		{
@@ -228,7 +228,7 @@ copy_mem (struct proc *p)
 
 # endif
 
-	cpush(ut, sizeof(USER_THINGS));
+	cpush(ut, sizeof(*ut));
 	detach_region(curproc, m->tp_reg);
 	
 	TRACE (("copy_mem: ok (%lx)", m));

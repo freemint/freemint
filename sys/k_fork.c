@@ -196,7 +196,11 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	 *          (especially kmalloc)
 	 */
 	if (!(flags & FORK_SHAREVM))
+	{
 		init_page_table (p2, p2->p_mem);
+		/* mapin the trampoline region */
+		mark_proc_region (p2->p_mem, p2->p_mem->tp_reg, PROT_P, p2->pid);
+	}
 
 	/* hook into the process list */
 	{

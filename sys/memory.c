@@ -1615,7 +1615,7 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 
 	if (execproc)
 	{
-		USER_THINGS *ut = (USER_THINGS *)execproc->p_mem->tp_ptr;
+		struct user_things *ut = execproc->p_mem->tp_ptr;
 
 		/* free exec'ing process memory... if the exec returns after this make it
 		 * _exit (SIGKILL << 8);
