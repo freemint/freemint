@@ -297,6 +297,7 @@ struct xa_client
 
 	struct proc *p;			/* context back ptr */
 
+	int blockcnt;
 	bool init;			/* true between appl_init & appl_exit */
 	bool killed;			/* true if the clients memory is destroyed. */
 	bool secured;			/* true if secure remove_refs applied. */
