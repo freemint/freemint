@@ -149,7 +149,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 				client->waiting_pb->intout[0] = f - ALERT_BUT1 +1;
 				client->usr_evnt = 1;
 
-				Unblock(client, XA_OK, 7);
+				//Unblock(client, XA_OK, 7);
 			}
 
 			/* invalidate our data structures */
@@ -1138,7 +1138,7 @@ exit_form_do(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 	client->fmd.state = 0;
 
 	client->usr_evnt = 1;
-	Unblock(client, XA_OK, 8);
+	//Unblock(client, XA_OK, 8);
 
 	/* invalidate our data structures */
 	close_window(lock, wind);
@@ -1163,7 +1163,7 @@ exit_form_dial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 	remove_widget(lock, wind, XAW_TOOLBAR);
 
 	client->usr_evnt = 1;
-	Unblock(client, XA_OK, 9);
+	//Unblock(client, XA_OK, 9);
 }
 
 void
@@ -1180,7 +1180,7 @@ classic_exit_form_do(enum locks lock, struct xa_window *wind, struct xa_widget *
 
 	/* Write success to clients reply pipe to unblock the process */
 	client->usr_evnt = 1;
-	Unblock(client, XA_OK, 10);
+	//Unblock(client, XA_OK, 10);
 }
 
 int
@@ -1440,7 +1440,7 @@ key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt
 			client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
 			client->usr_evnt = 1;
 
-			Unblock(client, XA_OK, 11);
+			//Unblock(client, XA_OK, 11);
 		}
 
 		/* invalidate our data structures */
