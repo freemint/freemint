@@ -138,7 +138,7 @@ get_first_visible_item(struct xa_lbox_info *lbox)
 	int i;
 	struct lbox_item *item;
 
-	for (i = 0, item = lbox->items; (i < lbox->first_a) && (item = item->next); i++)
+	for (i = 0, item = lbox->items; (i < lbox->first_a) && item; i++, item = item->next)
 		;
 
 	DIAGS(("get_first_visible_item: %lx", item));
@@ -1052,7 +1052,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (pb->intin[0] == 9)
 	{
 		struct lbox_item *item, *find;
-		short index = -1, i = 1;
+		short index = -1, i = 0;
 				
 		item = (struct lbox_item *)pb->addrin[0];
 		find = (struct lbox_item *)pb->addrin[1];
