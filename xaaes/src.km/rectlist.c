@@ -285,10 +285,10 @@ xa_rect_clip(RECT *s, RECT *d, RECT *r)
 	short h1 = s->y + s->h;
 	short h2 = d->y + d->h;
 
-	r->x = max(s->x, d->x);
-	r->y = max(s->y, d->y);
-	r->w = min(w1, w2) - d->x;
-	r->h = min(h1, h2) - d->y;
+	r->x = s->x > d->x ? s->x : d->x;	//max(s->x, d->x);
+	r->y = s->y > d->y ? s->y : d->y;	//max(s->y, d->y);
+	r->w = (w1 < w2 ? w1 : w2) - r->x; 		//min(w1, w2) - d->x;
+	r->h = (h1 < h2 ? h1 : h2) - r->y;		//min(h1, h2) - d->y;
 
 	return (r->w > 0) && (r->h > 0);
 }

@@ -587,7 +587,7 @@ change_window_attribs(enum locks lock,
 	//struct xa_window *w;
 	XA_WIND_ATTR old_tp = w->active_widgets;
 
-	DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  no max",
+	DIAG((D_wind, client, "change_window_attribs for %s: r:%d,%d/%d,%d  no max",
 		c_owner(client), r.x,r.y,r.w,r.h));
 
 	/* avoid confusion: if only 1 specified, give both (fail safe!) */
@@ -610,18 +610,19 @@ change_window_attribs(enum locks lock,
 	standard_widgets(w, tp, false);
 
 	/* If STORE_BACK extended attribute is used, window preserves its own background */
-	if ((tp & STORE_BACK) && !(old_tp & STORE_BACK))
+	if (!(tp & STORE_BACK))
 	{
-		DIAG((D_wind,client," allocating background storage buffer"));
+		if ((old_tp & STORE_BACK) && w->background)
+		{
+			DIAG((D_wind,client," allocating background storage buffer"));
+			kfree(w->background);
+			w->background = NULL;
+		}
+	}
+	else if (!(old_tp & STORE_BACK) && !w->background)
+	{
 		w->background = kmalloc(calc_back(&r, screen.planes));
 	}
-	else if (!(old_tp & STORE_BACK))
-	{
-		kfree(w->background);
-		w->background = NULL;
-	}
-	else
-		w->background = NULL;
 
 	calc_work_area(w);
 
