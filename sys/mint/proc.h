@@ -196,8 +196,8 @@ struct proc
 	TIMEOUT	*alarmtim;		/* alarm() event		*/
 	struct	itimervalue itimer[3];	/* interval timers */
 	
-	struct pgrp *p_pgrp;		/* process group		*/
-	void	*p_ctxlink;		/* uc_link {get,set}context 	*/
+	struct pgrp *p_pgrp;		/* XXX process group		*/
+	void	*p_ctxlink;		/* XXX uc_link {get,set}context */
 	
 	
 	ulong	sigpending;		/* pending signals		*/
@@ -207,15 +207,6 @@ struct proc
 //	ulong	p_sigignore;		/* signals being ignored	*/
 //	ulong	p_sigcatch;		/* signals being caught by user	*/
 	
-	
-	DIR	*searches;		/* open directory searches	*/
-	
-	/* XXX TOS emulation */
-	DTABUF	*dta;			/* current DTA			*/
-# define NUM_SEARCH	10		/* max. number of searches	*/
-	DTABUF *srchdta[NUM_SEARCH];	/* for Fsfirst/next		*/
-	DIR	srchdir[NUM_SEARCH];	/* for Fsfirst/next		*/
-	long	srchtim[NUM_SEARCH];	/* for Fsfirst/next		*/
 	
 	long	_cdecl (*criticerr)(long);
 					/* critical error handler	*/

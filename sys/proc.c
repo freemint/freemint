@@ -133,7 +133,7 @@ init_proc (void)
 	((long *) curproc->sysstack)[2] = 0;
 	((long *) curproc->sysstack)[3] = 0;
 	
-	curproc->dta = &dta;		/* looks ugly */
+	curproc->p_fd->dta = &dta;	/* looks ugly */
 	curproc->base = _base;
 	strcpy (curproc->name, "MiNT");
 	

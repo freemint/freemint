@@ -78,9 +78,6 @@ terminate (PROC *curproc, int code, int que)
 {
 	PROC *p;
 	int  i, wakemint = 0;
-	DIR *dirh, *nexth;
-	ushort sr;
-	FILEPTR *fp;
 	
 	
 	if (bconbsiz)
@@ -89,14 +86,14 @@ terminate (PROC *curproc, int code, int que)
 	assert (que == ZOMBIE_Q || que == TSR_Q);
 	
 	/* Exit all non-closed shared libraries */
-	while (slb_close_on_exit(1))
+	while (slb_close_on_exit (1))
 		;
 	
 	/* Remove structure if curproc is an SLB */
-	remove_slb();
+	remove_slb ();
 	
 	if (curproc->pid == 0)
-		FATAL("attempt to terminate MiNT");
+		FATAL ("attempt to terminate MiNT");
 	
 	/* cancel all user-specified interrupt signals */
 	cancelsigintrs();
@@ -106,130 +103,6 @@ terminate (PROC *curproc, int code, int que)
 	
 	/* cancel alarm clock */
 	curproc->alarmtim = 0;
-	
-	/* release any drives locked by Dlock */
-	for (i = 0; i < NUM_DRIVES; i++)
-	{
-		if (dlockproc[i] == curproc)
-			dlockproc[i] = NULL;
-	}
-	
-# if 1
-	/* release the controlling terminal,
-	 * if we're the last member of this pgroup
-	 */
-	fp = curproc->p_fd->control;
-	if (fp && is_terminal(fp))
-	{
-		struct tty *tty = (struct tty *)fp->devinfo;
-		int pgrp = curproc->pgrp;
-
-		if (pgrp == tty->pgrp)
-		{
-			PROC *p;
-			FILEPTR *pfp;
-
-			if (tty->use_cnt > 1)
-			{
-				for (p = proclist; p; p = p->gl_next)
-				{
-					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
-						continue;
-					
-					if (p->pgrp == pgrp
-						&& p != curproc
-						&& (0 != (pfp = p->p_fd->control))
-						&& pfp->fc.index == fp->fc.index
-						&& pfp->fc.dev == fp->fc.dev)
-					{
-						goto found;
-					}
-				}
-			}
-			else
-			{
-				for (p = proclist; p; p = p->gl_next)
-				{
-					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
-						continue;
-					
-					if (p->pgrp == pgrp
-						&& p != curproc
-						&& p->p_fd->control == fp)
-					{
-						goto found;
-					}
-				}
-			}
-			tty->pgrp = 0;
-		}
-found:
-		;
-	}
-
-	/* close all files */
-	for (i = MIN_HANDLE; i < curproc->p_fd->nfiles; i++)
-	{
-		if ((fp = curproc->p_fd->ofiles[i]) != 0)
-			do_close(curproc, fp);
-		curproc->p_fd->ofiles[i] = 0;
-	}
-# else
-	free_fd (curproc);
-# endif
-	
-	/* close any unresolved Fsfirst/Fsnext directory searches */
-	for (i = 0; i < NUM_SEARCH; i++)
-	{
-		if (curproc->srchdta[i])
-		{
-			DIR *dirh = &curproc->srchdir[i];
-			xfs_closedir (dirh->fc.fs, dirh);
-			release_cookie(&dirh->fc);
-			dirh->fc.fs = 0;
-		}
-	}
-	
-	/* close pending opendir/readdir searches */
-	for (dirh = curproc->searches; dirh; )
-	{
-		if (dirh->fc.fs)
-		{
-			xfs_closedir (dirh->fc.fs, dirh);
-			release_cookie(&dirh->fc);
-		}
-		nexth = dirh->next;
-		kfree (dirh);
-		dirh = nexth;
-	}
-	
-# if 1
-	/* release the directory cookies held by the process */
-	for (i = 0; i < NUM_DRIVES; i++)
-	{
-		release_cookie(&curproc->p_cwd->curdir[i]);
-		curproc->p_cwd->curdir[i].fs = 0;
-		release_cookie(&curproc->p_cwd->root[i]);
-		curproc->p_cwd->root[i].fs = 0;
-	}
-	
-	if (curproc->p_cwd->root_dir)
-	{
-		DEBUG (("free root_dir = %s", curproc->p_cwd->root_dir));
-		
-		release_cookie (&curproc->p_cwd->rootdir);
-		curproc->p_cwd->rootdir.fs = 0;
-		kfree (curproc->p_cwd->root_dir);
-		curproc->p_cwd->root_dir = NULL;
-	}
-# else
-	free_cwd (curproc);
-# endif
-	
-	/* make sure that any open files that refer to this process are
-	 * closed
-	 */
-	changedrv (PROC_RDEV_BASE | curproc->pid);
 	
 	/* Free saved commandline */
 	if (curproc->real_cmdline)
@@ -244,65 +117,28 @@ found:
 	/* release all semaphores owned by this process */
 	free_semaphores (curproc->pid);
 	
-	if (que == ZOMBIE_Q)
+	/* make sure that any open files that refer to this process are
+	 * closed
+	 */
+	changedrv (PROC_RDEV_BASE | curproc->pid);
+	
+	/* release any drives locked by Dlock */
+	for (i = 0; i < NUM_DRIVES; i++)
 	{
-# if 0
-		free_mem (curproc);
-# else
-		MEMREGION **hold_mem;
-		virtaddr *hold_addr;
-		
-		for (i = curproc->p_mem->num_reg - 1; i >= 0; i--)
-		{
-			MEMREGION *m = curproc->p_mem->mem[i];
-			
-			curproc->p_mem->mem[i] = 0;
-			curproc->p_mem->addr[i] = 0;
-			
-			if (m)
-			{
-				/* don't free specially allocated memory */
-				if ((m->mflags & M_KEEP) && (m->links <= 1))
-					if (curproc != rootproc)
-						attach_region(rootproc, m);
-				
-				m->links--;
-				if (m->links == 0)
-					free_region(m);
-			}
-		}
-
-# if 0
-		/*
-		 * mark the mem & addr arrays as void so the memory
-		 * protection code won't try to walk them. Do this before
-		 * freeing them so we don't try to walk them when marking
-		 * those pages themselves as free!
-		 *
-		 * Note: when a process terminates, the MMU root pointer
-		 * still points to that process' page table, until the next
-		 * process is dispatched.  This is OK, since the process'
-		 * page table is in system memory, and it isn't going to be
-		 * freed.  It is going to wind up on the free process list,
-		 * though, after dispose_proc. This might be Not A Good
-		 * Thing.
-		 */
-
-		hold_addr = curproc->p_mem->addr;
-		hold_mem = curproc->p_mem->mem;
-
-		curproc->p_mem->mem = NULL;
-		curproc->p_mem->addr = NULL;
-		curproc->p_mem->num_reg = 0;
-
-		kfree(hold_addr);
-		kfree(hold_mem);
-# endif
-# endif
+		if (dlockproc[i] == curproc)
+			dlockproc[i] = NULL;
 	}
-/*	else
+	
+	free_fd (curproc);
+	
+	free_cwd (curproc);
+	
+	/* attention, this invalidates the MMU table */
+	if (que == ZOMBIE_Q)
+		free_mem (curproc);
+	/* else
 		 make TSR process non-swappable */
-		
+	
 	/* find our parent (if parent not found, then use process 0 as parent
 	 * since that process is constantly in a wait loop)
 	 */
@@ -320,16 +156,20 @@ found:
 	 * PROC structure), and also processes that are ignoring SIGCHLD
 	 * but are waiting for us.
 	 */
-	sr = splhigh ();
-	if (p->wait_q == WAIT_Q
-		&& (p->wait_cond == (long) curproc || p->wait_cond == (long) sys_pwaitpid))
 	{
-		rm_q (WAIT_Q, p);
-		add_q (READY_Q, p);
+		ushort sr;
 		
-		TRACE (("terminate: waking up parent"));
+		sr = splhigh ();
+		if (p->wait_q == WAIT_Q
+			&& (p->wait_cond == (long) curproc || p->wait_cond == (long) sys_pwaitpid))
+		{
+			rm_q (WAIT_Q, p);
+			add_q (READY_Q, p);
+			
+			TRACE (("terminate: waking up parent"));
+		}
+		spl (sr);
 	}
-	spl (sr);
 	
 	if (curproc->ptracer && curproc->ptracer != p)
 	{
@@ -355,6 +195,7 @@ found:
 			if (p->wait_q == ZOMBIE_Q) 
 				wakemint = 1;	/* we need to wake proc. 0 */
 		}
+		
 		if (p->ptracer == curproc)
 		{
 			p->ptracer = 0;
@@ -377,15 +218,17 @@ found:
 		ushort sr;
 		
 		sr = splhigh ();
+		
 		p = rootproc;		/* pid 0 */
 		if (p->wait_q == WAIT_Q)
 		{
-			rm_q(WAIT_Q, p);
-			add_q(READY_Q, p);
+			rm_q (WAIT_Q, p);
+			add_q (READY_Q, p);
 		}
-		spl(sr);
+		
+		spl (sr);
 	}
-
+	
 	/* this makes sure that our children are inherited by the system;
 	 * plus, it may help avoid problems if somehow a signal gets
 	 * through to us
@@ -755,9 +598,9 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 	
 	free_sigacts (p);
 	
-	kfree (p->p_fd);
-	kfree (p->p_cwd);
-	free_mem (p);
+	// kfree (p->p_fd);
+	// kfree (p->p_cwd);
+	// free_mem (p);
 	
 	/* free the PROC structure */
 	kfree (p);
