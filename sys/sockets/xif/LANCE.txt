@@ -1,0 +1,89 @@
+LANCE, RIEBLMST, RIEBLSPC, RIEBLTT, RIEBLSTE (C) 1995-1999 by T. Lang
+
+LANCE.XIF:		For PAM's Net VME (TT) and MEGA ST boards
+PAMINTRN.XIF:		Just a link to LANCE.XIF
+RIEBLMST.XIF:		For unmodified Riebl boards for the MEGA BUS
+RIEBLMST_FAST.XIF:	As RIEBLMST.XIF but with fast memory access for
+			unaccelerated systems (8MHz, perhaps >8MHz with 68000)
+RIEBLSPC.XIF:		As RIEBLMST.XIF but for modified boards
+RIEBLSPC_FAST.XIF:	As RIEBLSPC.XIF but with fast memory access for
+			unaccelerated systems (8MHz, perhaps >8MHz with 68000)
+RIEBLTT.XIF:		For Riebl VME boards in a TT's VME bus
+RIEBLSTE.XIF:		For Riebl VME boards in a MEGA STe's VME bus
+
+The driver is based on dummyeth from Kay Roemer, the LANCE code is loosely
+based on the code of the TUW software and the TUM software. Most of the code
+had to be rewritten for the use with mintnet, so the actual LANCE code is
+mainly done by myself and is based on the LANCE documentation from AMD.
+
+Note: The Riebel Card and the TUM board don't have their complete HW address
+in a ROM. I don't know if the developers at TU Vienna or TU Munich got some
+HW address space from the internic. If anyone has information about that
+please let me know. In that case I would use officially assigned addresses
+within the driver.
+
+Kay has implemented a method for setting the hw address of a board "manually".
+This is neccessary for some boards which don't have their complete hw address
+in an NV RAM or a ROM. Please take a look at his documentation to get the
+information how the hw address can be set.
+
+PLEASE NOTE: The hw address cannot be set for all boards!
+
+The LANCE driver is quite stable now but there are still some optimizations
+to do. 
+The first published version (0.0) is based on the code of the TUW
+package to which I added LANCE support for PAM's boards. This code was ported
+to Kay's dummyeth. The actual driver uses only some definitions and some
+initialization code of the TU Wien package. I have completely
+rewritten most of the code.
+
+Please note: Some boards have severe design errors. The PAM's Net boards can
+send only packets with even sizes. The Riebl Card for the MEGA ST allocates
+its ram where TOS versions >2.00 reside so if you want to use these things
+together you have to modify your Riebl card by swapping the MEGA BUS address
+lines 20 and 21. Furthermore the Riebl MEGA ST boards don't work reliable when
+a accelerator board is installed (like the PAK). Receiving works only reliable
+when the board's ram is only read bytewide...
+
+DON'T TRY THESE DRIVERS UNLESS YOU ARE ABSOLUTELY SURE WHAT YOU ARE DOING.
+I'm not responsible for any crashed harddisk or so.
+
+If you want to know which boards are currently supported please take a look
+into "lance.c".
+
+SPECIAL OPTIONS
+hwaddr 0x00:0x00:0x36:0x0[24]:0x??:0x??
+	This is for Riebl cards only! Riebl cards don't have their 
+	address in rom/eeprom but only in battery backed static ram. 
+	Unfortunately there are cards without a battery. And even 
+	when you own a card with backup battery it may happen that it
+	loses its address. The driver will then tell you with a
+	"(no valid hw address!)" in its startup message. If so it 
+	refuses to go up until you setup a valid address. Note: The 
+	first four octets are fixed values for the specific board so 
+	the driver checks these and refuses to accept addresses with
+	an invalid manufacurer number (that's what the four octets 
+	are used for in this case). You will find the address of the 
+	card on	a small label somewhere on it. The first part is always 
+	00:00:36, the next number is 04 for vme boards and 02 for MEGA 
+	bus boards. The last two numbers identify the board itself.
+	For safety you may want to create a config file and always do
+	a "ifconfig -f <filename>" first before setting up the ip 
+	address.
+braddr 0x??:0x??:0x??:0x??:0x??:0x??
+	This is a quite useless funtion to setup the hw broadcast 
+	address. It's quite useless because the broadcast address is 
+	always 0xff:0xff:0xff:0xff:0xff:0xff.
+debug <level>
+	With this option you can set the debug level for the driver. 
+	You normally don't need this. <level> is an integer value.
+log <filename>
+	With this option you can set a filename where to log. You
+	normally don't need this. <filename> is a string.
+
+If you have any suggestions, flames, hints or so do not hesitate to contact me.
+My address:
+Torsten Lang
+Bismarckstr. 6
+35410 Hungen
+EMail: Torsten@Lang.net

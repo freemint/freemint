@@ -1,0 +1,130 @@
+This file contains some notes about the PLIP driver (plip.xif), the
+protocol it uses and how to build a PLIP cable.
+
+What is PLIP ?
+--------------
+
+PLIP is a non standard protocol to transfer IP packets over bidirectional
+parallel (centronics) lines. It is similar to SLIP in that it uses the
+same algorithm to encode/decode outgoing/incoming data.
+
+It is probably incompatible with all other so called protocols, because
+it is my invention :)
+
+I did not use a more `standard' protocol, because the Atari centronics
+port lacks ACKNOWLEDGE, PAPEROUT, SELECT, FORMFEED (and probably other)
+signals, some of which are used by the other protocols.
+
+If you want to use PLIP you will have to build a cable connector
+yourself. Someone told me about a Turbo-Laplink connecter that should
+be compatible with the cable described below, but I did no see one 'til
+now.
+
+PLIP's main advantage over SLIP is that parallel lines are usually much
+faster than the standard (not highspeed) serial lines.
+The throughput depends very much on the speed of the computers you use,
+because handshaking is done in software and can be expected to be at
+least 18 kB/sec for two slow 8MHz ST's connected via PLIP.
+
+Because it is much cheaper then ethernet cards, I could also think of
+building tiny networks (3-4 hosts) using PLIP. When using more than 2
+machines, some of them must have two or more parallel ports (and act
+as gateways).
+
+PLIP cable
+----------
+
+To build a PLIP cable, you need two male DB-25 connectors and some metres
+of >= 11 conductor cable.
+
+Note that the cable should not be longer than about 10 metres, because
+the parallel port uses standard TTL signals.
+
+The wiring is:
+
+	pin (one end)	pin (other end)
+	1  (STROBE)	11 (BUSY)
+	2  (D0)		2  (D0)
+	3  (D1)		3  (D1)
+	4  (D2)		4  (D2)
+	5  (D3)		5  (D3)
+	6  (D4)		6  (D4)
+	7  (D5)		7  (D5)
+	8  (D6)		8  (D6)
+	9  (D7)		9  (D7)
+	11 (BUSY)	1  (STROBE)
+	25 (GROUND)	25 (GROUND)
+
+Pins 18-24 are extra grounds.
+
+Build one yourself and have some fun.
+You can buy the necessary incredients in computer stores for a few bucks.
+
+Nonstandard PLIP protocol
+-------------------------
+
+For the ones interested in the protocol, here we go:
+
+The data is encoded using the SLIP protocol, which defines the following
+special characters:
+
+END = 192 (decimal)
+ESC = 219 (decimal)
+ESC_ESC = 221 (decimal)
+ESC_END = 220 (decimal)
+
+Every character `c' of the IP packet is sent using the following algorithm:
+
+if c == END then send ESC followed by ESC_END
+else if c == ESC then send ESC followed by ESC_ESC
+else send c
+
+After all bytes have been sent this way, a single END character is sent to
+indicate the end of the packet. Optionally the sender may send an END cha-
+racter at the beginning of each packet. The PLIP receiver will drop the
+resulting zero length packet.
+
+Every byte is sent over the parallel line in the following way (note that
+one ends STROBE is connected with the other ends BUSY):
+
+sender:			receiver:
+
+DATA OUT		WAIT ACK
+SEND ACK		DATA IN
+WAIT ACK		SEND ACK
+
+The shortcuts have the following meaning:
+DATA OUT/IN	--	write/read the byte to/from the port
+SEND ACK	--	send an acknowledge (ie drop the STROBE wire for
+			some micro seconds).
+WAIT ACK	--	wait until an acknowledge is received (BUSY has
+			dropped for some micro seconds).
+
+Note that an interrupt is generated when the BUSY wire drops. Thus the
+first byte sent will trigger the BUSY interrupt on the remote side, ie
+transmission of packets is interrupt driven (no polling).
+
+After this first interrupt the receiver disables the BUSY interrupt and
+receives the whole packet polling the BUSY wire. Note that this is done
+at low interrupt priority so that other interrupts can still be handled.
+
+Waiting for acknowledgements is implemented using an adaptive timeout
+mechanism.
+
+Note that the SLIP encoding makes sure that the receiver/sender may get
+in sync with the sender/receiver again after one end has timed out.
+
+Also note that the character transmission protocoll used will let one
+end time out if both ends try to send at the same time, ie collisions
+can be detected.
+
+Establishing a PLIP connection
+------------------------------
+
+This is essentially the same as establishing a SLIP connection with the
+old SLIP driver (oslip.xif). Read the file README.OSLIP. The PLIP interfaces
+are called pl0, pl1, ... Currently only pl0 is implemented (corresponds to
+the standard Atari centronics port).
+
+
+Happy PLIP'ing -- Kay.

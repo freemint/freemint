@@ -1,0 +1,10 @@
+			!!! IMPORTANT !!!
+
+MintNet now needs Mint 1.11h9 or newer to run. I don't consider this a
+problem, because Mint 1.12 and later versions are available in binary form.
+
+If you intend to use MintNet in a SingleTOS+Mint environment, you must copy
+nohog.acc to the root of your boot drive. This accessory keeps AES from
+staying all the time in supervisor mode (thus preventing Mint from switching
+contexts and MintNet from working). nohog.acc is taken from the MinixFS 
+distribution and is written by Stephen N. Henson.

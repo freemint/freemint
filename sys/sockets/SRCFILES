@@ -1,0 +1,29 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	buf.h \
+	config.h \
+	dummydev.h \
+	global.h \
+	in.h \
+	iov.h \
+	mintsock.h \
+	net.h \
+	netinfo.h \
+	socket.h \
+	timer.h \
+	util.h \
+	version.h
+
+COBJS = \
+	buf.c \
+	dummydev.c \
+	global.c \
+	iov.c \
+	main.c \
+	sockdev.c \
+	sockutil.c \
+	timer.c
+
+SRCFILES = $(HEADER) $(COBJS)
