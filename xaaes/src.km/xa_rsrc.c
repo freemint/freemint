@@ -611,54 +611,57 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	(unsigned long)trees = (unsigned long)(base + hdr.rsh_trindex);
 	for (i = 0; i < hdr.rsh_ntree; i++)
 	{
-		(unsigned long)trees[i] += (unsigned long)base;
-		DIAG((D_s,client,"tree[%d]>%ld = %lx",i,(long)trees[i]-(long)base,trees[i]));
-
-		obj = trees[i];
-		if ((obj[3].ob_type & 255) != G_TITLE)
+		if (trees[i] != (void *)-1)
 		{
-			/* Not a menu tree */
-			do {
-				/* Fix all object coordinates */
+			(unsigned long)trees[i] += (unsigned long)base;
+			DIAG((D_s,client,"tree[%d]>%ld = %lx",i,(long)trees[i]-(long)base,trees[i]));
+
+			obj = trees[i];
+			if ((obj[3].ob_type & 255) != G_TITLE)
+			{
+				/* Not a menu tree */
+				do {
+					/* Fix all object coordinates */
 #if 1
-				unsigned short *c;
-				short ch, cl;
+					unsigned short *c;
+					short ch, cl;
 				
-				c = (short *)&obj->ob_x;
+					c = (short *)&obj->ob_x;
 				
-				for (j = 0; j < 4; j++)
-				{
-					cl = *c & 0xff;
-					ch = *c >> 8;
-					if (j & 1)
-						cl *= designHeight;
-					else
+					for (j = 0; j < 4; j++)
 					{
-						if (cl == 80 && j == 2)
-							cl = screen.r.w;
+						cl = *c & 0xff;
+						ch = *c >> 8;
+						if (j & 1)
+							cl *= designHeight;
 						else
-							cl *= designWidth;
+						{
+							if (cl == 80 && j == 2)
+								cl = screen.r.w;
+							else
+								cl *= designWidth;
+						}
+						*c++ = cl + (ch > 128 ? ch - 256 : ch);
 					}
-					*c++ = cl + (ch > 128 ? ch - 256 : ch);
-				}
 #else			
-				obj->ob_x = (((obj->ob_x & 255) * designWidth + (obj->ob_x >> 8)) * resWidth) / designWidth;
-				obj->ob_y = (((obj->ob_y & 255) * designHeight + (obj->ob_y >> 8)) * resHeight) / designHeight;
-				obj->ob_width = (((obj->ob_width & 255) * designWidth + (obj->ob_width >> 8)) * resWidth) / designWidth;
-				obj->ob_height = (((obj->ob_height & 255) * designHeight + (obj->ob_height >> 8)) * resHeight) / designHeight;
+					obj->ob_x = (((obj->ob_x & 255) * designWidth + (obj->ob_x >> 8)) * resWidth) / designWidth;
+					obj->ob_y = (((obj->ob_y & 255) * designHeight + (obj->ob_y >> 8)) * resHeight) / designHeight;
+					obj->ob_width = (((obj->ob_width & 255) * designWidth + (obj->ob_width >> 8)) * resWidth) / designWidth;
+					obj->ob_height = (((obj->ob_height & 255) * designHeight + (obj->ob_height >> 8)) * resHeight) / designHeight;
 #endif			
+				}
+				while (!(obj++->ob_flags & OF_LASTOB));
 			}
-			while (!(obj++->ob_flags & OF_LASTOB));
-		}
-		else
-		{
-			/* Standard AES menu */
+			else
+			{
+				/* Standard AES menu */	
 
-			j = 0;
-			do {
-				obfix(obj, j);
+				j = 0;
+				do {
+					obfix(obj, j);
+				}
+				while (!(obj[j++].ob_flags & OF_LASTOB));
 			}
-			while (!(obj[j++].ob_flags & OF_LASTOB));
 		}
 	}
 	
@@ -676,6 +679,7 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 		/* Fill in the application's global array with a pointer to the resource */
 		gl->ptree = o;
 		gl->rshdr = h;
+		gl->lmem = h->rsh_rssize;
 
 		DIAGS(("Resources %ld(%lx) in global[5,6]", o, o));
 		DIAGS(("      and %ld(%lx) in global[7,8]", h, h));
@@ -1074,7 +1078,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_rsrc,client,"pb %lx, gl %lx, gl->rsc %lx, gl->ptree %lx",
 				pb, pb->global, ((struct aes_global *)pb->global)->rshdr, ((struct aes_global *)pb->global)->ptree));
 
-			if (pb->global)
+			if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
 				/* Fill it out in the global of the rsrc_load. */
 				Rsrc_setglobal(rsc, (struct aes_global *)pb->global);
 
