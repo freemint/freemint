@@ -356,7 +356,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	else if (wind->send_message && md->state)
 	{
 		DIAG((D_mouse, target, "XA_button_event: Sending WM_TOPPED to %s", target->name));
-		wind->send_message(lock, wind, NULL, AMQ_NORM, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
 	}
 }
 
@@ -594,7 +594,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 /* XXX Fixme !! */
 static void
-wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr, short *r)
+wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr, short *r, short *r_amnt)
 {
 	XA_WIDGETS which;
 	XA_WIDGET  *widg;
@@ -607,8 +607,11 @@ wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr,
 	if (r)
 		*r = -1;
 
-	if (md->state == 0)
+	if (md->state == cfg.ver_wheel_id)
 	{
+		if (r_amnt)
+			*r_amnt = cfg.ver_wheel_amount;
+
 		if (md->clicks < 0)
 		{
 			which = rev ? XAW_DNLN : XAW_UPLN;
@@ -620,8 +623,11 @@ wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr,
 			orient = rev ? 0 : 1;
 		}
 	}
-	else if (md->state == 1)
+	else if (md->state == cfg.hor_wheel_id)
 	{
+		if (r_amnt)
+			*r_amnt = cfg.hor_wheel_amount;
+
 		if (md->clicks < 0)
 		{
 			which = rev ? XAW_RTLN : XAW_LFLN;
@@ -661,14 +667,36 @@ wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr,
 		}
 	}
 }
-
+/* If md pointer is NULL, send a standard WM_ARROWED (application dont support wheel)
+ * else send extended WM_ARROWED message
+ */
+static void
+whlarrowed(struct xa_window *wind, short WA, short amount, const struct moose_data *md)
+{
+	if (md)
+	{
+		wind->send_message(0, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				   WM_ARROWED, 0,0, wind->handle,
+				   (amount << 8)|(WA&7), md->x, md->y, md->kstate);
+	}
+	else
+	{
+		while (amount)
+		{
+			wind->send_message(0, wind, NULL, AMQ_NORM, 0,
+					   WM_ARROWED, 0,0, wind->handle,
+					   WA, 0, 0, 0);
+			amount--;
+		}
+	}
+}
 void
 XA_wheel_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_window *wind;
 	struct xa_client *client = NULL, *locker = NULL;
 	XA_WIDGET *widg;
-	int n,c;
+	//int n,c;
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 	//display("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y);
@@ -708,9 +736,9 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 		}
 		else if (wind)
 		{
-			short orient, WA = WA_UPPAGE;
+			short orient, amount, WA = WA_UPPAGE;
 			
-			wheel_arrow(wind, md, &widg, &orient);
+			wheel_arrow(wind, md, &widg, &orient, &amount);
 			
 			if ((md->kstate & K_ALT))
 				orient ^= 2;
@@ -720,6 +748,8 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			
 			if (!(md->kstate & (K_RSHIFT|K_LSHIFT)))
 				WA += WA_UPLINE;
+			else
+				amount = 1;	/* No more than one when paging */
 
 			WA += orient & 1;
 
@@ -729,7 +759,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 				{
 					case XWHL_REALWHEEL:
 					{
-						wind->send_message(lock, wind, NULL, AMQ_NORM,
+						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 								   WM_WHEEL, 0,0, wind->handle,
 								   md->x, md->y,
 								   md->kstate,
@@ -738,9 +768,8 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 					}
 					case XWHL_AROWWHEEL:
 					{
-arrow:						wind->send_message(lock, wind, NULL, AMQ_NORM,
-								   WM_ARROWED, 0,0, wind->handle,
-								   WA, md->x, md->y, md->kstate);
+						amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
+						whlarrowed(wind, WA, amount, md);
 						break;
 					}
 					case XWHL_SLDRWHEEL:
@@ -756,7 +785,7 @@ arrow:						wind->send_message(lock, wind, NULL, AMQ_NORM,
 							w = XAW_VSLIDE, s = WM_VSLID;
 
 						if (w == -1)
-							goto arrow;
+							whlarrowed(wind, WA, 1, NULL);
 
 						widg = get_widget(wind, w);
 
@@ -778,7 +807,7 @@ arrow:						wind->send_message(lock, wind, NULL, AMQ_NORM,
 								sl->rpos = bound_sl(sl->rpos + (unit * md->clicks));
 					
 							{
-								wind->send_message(lock, wind, NULL, AMQ_NORM,
+								wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 										   s, 0,0, wind->handle,
 										   sl->rpos, 0,0,0);
 							}
@@ -789,14 +818,8 @@ arrow:						wind->send_message(lock, wind, NULL, AMQ_NORM,
 			}
 			else
 			{
-				n = c = abs(md->clicks);
-				while (c)
-				{
-					wind->send_message(lock, wind, NULL, AMQ_NORM,
-							   WM_ARROWED, 0,0, wind->handle,
-							   WA, 0,0,0);
-					c--;
-				}
+				amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
+				whlarrowed(wind, WA, amount, NULL);
 			}
 		}
 	}

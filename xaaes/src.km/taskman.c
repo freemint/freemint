@@ -164,7 +164,7 @@ send_terminate(enum locks lock, struct xa_client *client)
 		/* Due to ambiguities in documentation the pid is filled out
 		 * in both msg[3] and msg[4]
 		 */
-		send_app_message(lock, NULL, client, AMQ_CRITICAL,
+		send_app_message(lock, NULL, client, AMQ_CRITICAL, QMF_CHKDUP,
 				 AC_CLOSE,    0, 0, client->p->pid,
 				 client->p->pid, 0, 0, 0);
 	}
@@ -173,7 +173,7 @@ send_terminate(enum locks lock, struct xa_client *client)
 	 * should we only send if client->apterm is true???
 	 */
 	DIAGS(("send AP_TERM to %s", c_owner(client)));
-	send_app_message(lock, NULL, client, AMQ_CRITICAL,
+	send_app_message(lock, NULL, client, AMQ_CRITICAL, QMF_CHKDUP,
 			 AP_TERM,     0,       0, client->p->pid,
 			 client->p->pid, AP_TERM, 0, 0);
 }

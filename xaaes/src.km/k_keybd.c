@@ -243,21 +243,20 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 			md.x = md.sx;
 			md.y = md.sy;
-			cfg.wheel_amount = 1;
 
 			switch (nk)
 			{
 			case 'U':
-				wheel = 0, click = -cfg.wheel_amount;
+				wheel = cfg.ver_wheel_id, click = -1;
 				break;
 			case 'N':
-				wheel = 0, click = cfg.wheel_amount;
+				wheel = cfg.ver_wheel_id, click = 1;
 				break;
 			case 'H':
-				wheel = 1, click = -cfg.wheel_amount;
+				wheel = cfg.hor_wheel_id, click = -1;
 				break;
 			case 'J':
-				wheel = 1, click = cfg.wheel_amount;
+				wheel = cfg.hor_wheel_id, click = 1;
 				break;
 			}
 
