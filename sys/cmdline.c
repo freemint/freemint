@@ -1,37 +1,37 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Guido Flohr <guido@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Guido Flohr <guido@freemint.de>
  * Started: 1999-11-21
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Build argument vector for all processes.
- * 
+ *
  */
 
 # include "cmdline.h"
@@ -70,7 +70,7 @@
  * 3. A NULL-terminated array of offsets into the buffer counted
  *    from the address of this array (resp. its first member)
  *    itself.
- * 4. A null-terminated buffer with the arguments itself.  An 
+ * 4. A null-terminated buffer with the arguments itself.  An
  *    extra null-byte is appended to the end of the buffer to
  *    denote the end of arguments.  The buffer is therefore always
  *    terminated by a double null-byte but you may also encounter
@@ -82,7 +82,7 @@
  *    always terminated by EOF.
  *
  * If this argument vector and the argument buffer should be passed
- * to the process in some future MiNT version, you should proceed 
+ * to the process in some future MiNT version, you should proceed
  * as follows:	First negotiate the required buffer size with the
  * child process.  The required size can be found at offset 0 (i. e.
  * it denote the amount of memory the process should allocate for
@@ -95,7 +95,7 @@
  *
  * The sys pseudo-filesystem has to do slightly more calculations
  * but this is still tolerable.
- */ 
+ */
 
 # define SINGLE_QUOTE	'\''
 
@@ -119,24 +119,39 @@ make_real_cmdline (PROC *p)
 	int quoted = 0;
 	char **raw_argv = NULL;
 	int opt;
-	
+
 	if (p->real_cmdline != NULL)
 	{
 		kfree (p->real_cmdline);
 		p->real_cmdline = NULL;
 	}
-	
+
 	TRACE (("make_real_cmdline: fname: %s", p->fname));
 	if (env != NULL)
 	{
 		char* argv = NULL;
 		from = env;
-		
+
 		for (;;)
 		{
+# ifdef ONLY030
+			if (*(ushort *)from == 0)
+				break;
+
+# define _CMDL_ARGV	0x41524756L
+
+			if (*(ulong *)from == _CMDL_ARGV \
+				&& from[4] == '=' \
+				&& (from == env || from[-1] == '\0'))
+			{
+				argv = from;
+				break;
+			}
+
+# else
 			if (from[0] == '\0' && from[1] == '\0')
 				break;
-			
+
 			if (from[0] == 'A' && from[1] == 'R'
 				&& from[2] == 'G' && from[3] == 'V'
 				&& from[4] == '='
@@ -145,16 +160,27 @@ make_real_cmdline (PROC *p)
 				argv = from;
 				break;
 			}
-			
+# endif
 			from++;
 		}
-		
+
 		if (argv != NULL)
 		{
 			TRACE (("make_real_cmdline: ARGV found"));
 			from += 5;
-			
+
 			/* Check for null list */
+# ifdef ONLY030
+
+# define _CMDL_NULL	0x4e554c4cL
+
+			if (*(ulong*)from == _CMDL_NULL
+				&& from[4] == ':')
+			{
+				from += 5;
+				null_list = from;
+			}
+# else
 			if (from[0] == 'N'
 				&& from[1] == 'U'
 				&& from[2] == 'L'
@@ -164,12 +190,12 @@ make_real_cmdline (PROC *p)
 				from += 5;
 				null_list = from;
 			}
-			
+# endif
 			while (*from++)
 				;
-			
+
 			raw_cmdline = end_parse = from;
-			
+
 			/* Determine the maximum number of arguments
 			 * and the length of the argument list.
 			 */
@@ -181,33 +207,33 @@ make_real_cmdline (PROC *p)
 					if (end_parse[1] == '\0')
 						     break;
 				   }
-				   
+
 				end_parse++;
 				max_length++;
 			}
 		}
 	}
-	
+
 	if (raw_cmdline == NULL)
 	{
 		/* Called by a broken program, no argument vector available.
 		 * Try to make one out of the command line.  In round one
-		 * we try to have a good guess at the maximum size of the 
+		 * we try to have a good guess at the maximum size of the
 		 * command line we need.
 		 */
 		int i;
-		
+
 		TRACE (("make_real_cmdline: fallback"));
-		
+
 		max_length = _mint_strlen (p->cmdlin + 1);
 		translate_space = 1;
 		copy_fname = 1;
-		
-		for (raw_cmdline = p->cmdlin + 1; 
+
+		for (raw_cmdline = p->cmdlin + 1;
 		     *raw_cmdline == ' ' && max_length > 0;
 		     raw_cmdline++, max_length--)
 			;
-		
+
 		/* This ain't no joke.  If the first character of the
 		 * command line is a single quote whitespace between
 		 * single quotes has to be interpreted verbatim.  The
@@ -216,7 +242,7 @@ make_real_cmdline (PROC *p)
 		 */
 		if (*raw_cmdline == SINGLE_QUOTE)
 			silly_quotes = 1;
-		
+
 		/* Try to get an idea of the maximum number of arguments
 		 * we have to expect.
 		 */
@@ -224,27 +250,27 @@ make_real_cmdline (PROC *p)
 		for (i = 0; i < max_length && raw_cmdline[i]; i++, end_parse++)
 			if (raw_cmdline[i] == ' ')
 				  argc++;
-		
+
 		/* Don't forget that we add argv[0] */
 		argc++;
 	}
-	
+
 	/* Now we have a vague idea of how much memory to allocate.  In
 	 * fact our idea is good enough to just allocate it and forget
 	 * about the little rest for now.  We will copy that over later.
 	 */
 	if (copy_fname)
 		max_length += _mint_strlen (p->fname) + 1;
-	
+
 	max_length += 2;     /* Two null-bytes */
-	
+
 	cmdline = kmalloc (max_length);
 	if (cmdline == NULL)
 	{
 		DEBUG (("make_real_cmdline: fatal: out of memory"));
 		return ENOMEM;
 	}
-	
+
 	/* Allocate space for the argument vector */
 	raw_argv = kmalloc ((argc + 1) * sizeof (char *));
 	if (raw_argv == NULL)
@@ -253,13 +279,13 @@ make_real_cmdline (PROC *p)
 		DEBUG (("make_real_cmdline: fatal: out of memory"));
 		return ENOMEM;
 	}
-	
+
 	/* Reset argc because we want the real value now */
 	argc = 0;
-	
+
 	/* Now fill the argument vector */
 	to = cmdline;
-	
+
 	if (copy_fname)
 	{
 		from = p->fname;
@@ -268,27 +294,27 @@ make_real_cmdline (PROC *p)
 			real_length++;
 		}
 		while (*from++);
-		
+
 		argc++;
 		raw_argv[0] = cmdline;
 	}
-	
-	/* Only evaluate one single byte at once so that our 
+
+	/* Only evaluate one single byte at once so that our
 	 * break condition won't lose!
 	 */
 	for (from = raw_cmdline; from < end_parse; from++)
 	{
 		int is_null = 0;
-		
+
 		/* This flag indicates whether the currently
 		 * read byte should be treated as a null-byte
-		 * terminating an argument.  We cannot 
+		 * terminating an argument.  We cannot
 		 * write a null-byte to that location because
-		 * our source has to be considered 
+		 * our source has to be considered
 		 * const (it either belongs to the basepage
 		 * or the environment).
 		 */
-		
+
 		if (*from == SINGLE_QUOTE)
 		{
 			if (quoted)
@@ -302,7 +328,7 @@ make_real_cmdline (PROC *p)
 				continue;
 			}
 		}
-		
+
 		if (translate_space && !quoted && *from == ' ')
 		{
 			if (from + 1 == end_parse)
@@ -310,13 +336,13 @@ make_real_cmdline (PROC *p)
 				argc++;
 				continue;
 			}
-			
+
 			if (from[1] == ' ')
 				continue;
-			
+
 			is_null = 1;
 		}
-		
+
 		if (!translate_space && *from == '\0')
 		{
 			/* FIXME: Check null_list */
@@ -333,22 +359,22 @@ make_real_cmdline (PROC *p)
 			real_length++;
 			continue;
 		}
-		
+
 		if (from == raw_cmdline || to[-1] == '\0')
 			raw_argv[argc] = to;
-		
+
 		*to++ = *from;
 		real_length++;
 	}
-	
+
 	if (!translate_space && argc != 0)
 		 argc++;  /* We had missed this one! */
-	
+
 	*to++ = '\0';
 	*to++ = '\0';
 	real_length += 2;
-	
-	/* Evaluate a possible list of empty parameters.  I'm not 
+
+	/* Evaluate a possible list of empty parameters.  I'm not
 	 * completely sure if I have understood this.	As far as I
 	 * can tell from crtinit.c of the MiNTLib something like
 	 * "ARGV=NULL:2,4,5" would tell us to set argv[2], argv[4],
@@ -361,7 +387,7 @@ make_real_cmdline (PROC *p)
 	 * "/sys/[PID]/cmdline" that an argument is empty?  The
 	 * "natural" solution is to display an empty string
 	 * at the risk of being misunderstood as end of options.
-	 * 
+	 *
 	 * Once decided that this is the preferable solution we
 	 * face the next problem that our command line that we
 	 * have built some ticks ago is now wrong.  We have to
@@ -371,35 +397,35 @@ make_real_cmdline (PROC *p)
 	if (null_list)
 	{
 		from = null_list;
-		
+
 		while (*from)
 		{
 			int valid = (*from >= '0' && *from <= '9') ? 1 : 0;
 			ulong i;
 			opt = 0;
-			
+
 			while (*from >= '0' && *from <= '9')
 			{
 				opt = (opt << 3) + (opt << 1);
 				opt += (*from - '0');
 				from++;
 			}
-			
+
 			if (valid && *from != ',' && *from != '\0')
 				   valid = 0;
-			
+
 			if (opt >= argc)
 				   valid = 0;
-			
+
 			if (raw_argv[opt] == '\0')
 				   valid = 0;
-			
+
 			if (valid)
 			{
 				char* from1 = raw_argv[opt + 1];
 				char* to1 = raw_argv[opt];
 				ulong deleted = 0;
-				
+
 				TRACE (("make_real_cmdline: zero out argv[%lu] (%s)", opt, raw_argv[opt]));
 				if (from1 == NULL)
 				{
@@ -408,28 +434,28 @@ make_real_cmdline (PROC *p)
 						from1++;
 					from1 += 2;
 				}
-				
+
 				*to1++ = '\0';
 				*to1++ = '\0';
-				
+
 				deleted = from1 - to1;
-				
+
 				for (; from1 < raw_argv[0] + real_length; )
 					    *to1++ = *from1++;
 				real_length -= deleted;
-				
+
 				for (i = opt + 1; i < argc; i++)
 					    raw_argv[i] -= deleted;
 			}
-			
+
 			while (*from != ',' && *from)
 				   from++;
-			
+
 			if (*from == ',')
 				   from++;
 		}
 	}
-	
+
 	/* Now correct the argument vector by the size of the vector
 	 * itself.  We need one extra slot for the terminating NULL
 	 * pointer.
@@ -438,35 +464,35 @@ make_real_cmdline (PROC *p)
 		 raw_argv[opt] = (char*) (raw_argv[opt] - cmdline
 					 + ((argc + 1) * sizeof raw_argv[0]));
 	raw_argv[argc] = NULL;
-	
+
 	/* Allocate the final space */
 	p->real_cmdline = kmalloc (sizeof real_length + sizeof argc
 				   + real_length
 				   + (argc + 1) * sizeof raw_argv[0]);
-	
+
 	if (p->real_cmdline == NULL)
 	{
 		kfree (raw_argv);
 		kfree (cmdline);
-		
+
 		DEBUG (("make_real_cmdline: fatal: out of memory"));
 		return ENOMEM;
 	}
-	
+
 	buffer_length = real_length + sizeof argc + (argc + 1) * sizeof raw_argv[0];
 	to = p->real_cmdline;
 	memcpy (to, &buffer_length, sizeof buffer_length);
 	to += sizeof buffer_length;
-	
+
 	memcpy (to, &argc, sizeof argc);
 	to += sizeof argc;
 	memcpy (to, raw_argv, (argc + 1) * sizeof raw_argv[0]);
 	to += (argc + 1) * sizeof raw_argv[0];
 	memcpy (to, cmdline, real_length);
-	
+
 	/* Cleanup */
 	kfree (raw_argv);
 	kfree (cmdline);
-	
+
 	return 0;
 }
