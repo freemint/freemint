@@ -16,6 +16,10 @@
 #include "version.h"
 #include "window.h"
 
+#ifdef DEBUG
+# include <syslog.h>
+int do_debug = 0;
+#endif
 
 extern int __mint;
 
@@ -42,12 +46,20 @@ int main(int argc, char *argv[])
 
 	if (getenv("DEBUG") || strcmp(argv[1], "--debug") == 0)
 	{
+		do_debug = 1;
 /*		debug_init("ntw", Datei, "i:\\ntw.log");*/
 		debug_init("ntw", Con, NULL);
 	}
 
 	(void)Pdomain(1);
 	init_app(RSCNAME);
+
+#ifdef DEBUG
+	if (do_debug) {
+		openlog ("TosWin2", LOG_CONS | LOG_PID, LOG_KERN);
+		syslog (LOG_ERR, "TosWin2 started");
+	}
+#endif
 
 	/* Stimmt die RSC-Version? */
 	rsrc_gaddr(R_TREE, VERSION, &tmp);
