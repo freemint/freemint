@@ -658,20 +658,10 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 #ifdef DEBUG_INFO
 		case S_DEBUGKMTRACE:
 		{
-			if (isroot)
-			{
-				const char *func;
-
-				func = km_trace_lookup((void *)arg1, NULL);
-				if (func)
-					strcpy((char *)arg2, func);
-				else
-					*(char *)arg2 = '\0';
-
-				r = 0;
-			}
-			else
+			if (!isroot)
 				r = EPERM;
+			else
+				r = km_trace_lookup((void *)arg1, (char *)arg2, PATH_MAX);
 
 			break;
 		}
@@ -696,7 +686,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			if (!isroot)
 				r = EPERM;
 			else
-				r = register_trap2( arg1, 0, 1, arg2);
+				r = register_trap2(arg1, 0, 1, arg2);
 			break;
 		}
 #endif
