@@ -302,7 +302,7 @@ set_toscookie (ulong tag, ulong val)
  */
 
 long
-get_cookie (ulong tag, ulong *ret)
+get_cookie (COOKIE *cj, ulong tag, ulong *ret)
 {
 # ifdef JAR_PRIVATE
 	USER_THINGS *ut;
@@ -323,6 +323,9 @@ get_cookie (ulong tag, ulong *ret)
 	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
 	cjar = (COOKIE *)ut->user_jar_p;
 # endif
+
+	if (cj)
+		cjar = cj;
 
 	/* If tag == 0, we return the value of NULL slot
 	 */
@@ -421,7 +424,7 @@ get_cookie (ulong tag, ulong *ret)
  */
 
 long
-set_cookie (ulong tag, ulong val)
+set_cookie (COOKIE *cj, ulong tag, ulong val)
 {
 # ifdef JAR_PRIVATE
 	USER_THINGS *ut;
@@ -435,6 +438,9 @@ set_cookie (ulong tag, ulong val)
 	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
 	cjar = (COOKIE *)ut->user_jar_p;
 # endif
+
+	if (cj)
+		cjar = cj;
 
 	/* 0x0000xxxx feature of GETCOOKIE may be confusing, so
 	 * prevent users from using slotnumber HERE :)
@@ -488,7 +494,7 @@ set_cookie (ulong tag, ulong val)
  */
 
 long
-del_cookie (ulong tag)
+del_cookie (COOKIE *cj, ulong tag)
 {
 # ifdef JAR_PRIVATE
 	USER_THINGS *ut;
@@ -503,6 +509,9 @@ del_cookie (ulong tag)
 # endif
 
 	TRACE (("del_cookie: tag %lx", tag));
+
+	if (cj)
+		cjar = cj;
 
 	while (cjar->tag)
 	{
@@ -563,7 +572,7 @@ add_rsvfentry (char *name, char portflags, char bdev)
 		freepool = (char *) (rsvfvec + MAX_ENTRYS);
 		freesize = RSVF_MEM - (sizeof (RSVF) * MAX_ENTRYS);
 
-		set_cookie (COOKIE_RSVF, (long) rsvfvec);
+		set_cookie (NULL, COOKIE_RSVF, (long) rsvfvec);
 	}
 
 	t = rsvfvec;
