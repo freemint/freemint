@@ -1,7 +1,13 @@
 
-#ifndef _tw_cipbrd_h_
-#define _tw_cipbrd_h_
+#ifndef tw_clipbrd_h
+# define tw_clipbrd_h 1
 
+#ifndef tw_textwin_h
+# include "textwin.h"
+#endif
+#ifndef tw_window_h
+# include "window.h"
+#endif
 
 int	select_word	(TEXTWIN *t, short curcol, short currow);
 int 	select_text	(TEXTWIN *t, short curcol, short currow, short kshift);
