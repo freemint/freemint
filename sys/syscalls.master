@@ -424,8 +424,8 @@
 0x158	pgetpriority	(int which, int who)
 0x159	psetpriority	(int which, int who, int prio)
 0x15a	fpoll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
-0x15b	writev		(int fh, const struct iovec *iovp, long iovcnt)
-0x15c	readv		(int fh, const struct iovec *iovp, long iovcnt)
+0x15b	writev		(short fd, const struct iovec *iovp, long iovcnt)
+0x15c	readv		(short fd, const struct iovec *iovp, long iovcnt)
 0x15d	RESERVED
 0x15e	RESERVED
 0x15f	emulation	(ushort which, ushort op,
@@ -435,20 +435,20 @@
 	/* 1.16 - socket extensions */
 
 0x160	socket		(long domain, long type, long protocol)
-0x161	socketpair	(long domain, long type, long protocol, int *rsv)
-0x162	accept		(int fh, struct sockaddr *name, ulong *anamelen)
-0x163	connect		(int fh, const struct sockaddr *name, ulong namelen)
-0x164	bind		(int fh, const struct sockaddr *name, ulong namelen)
-0x165	listen		(int fh, long backlog)
-0x166	recvmsg		(int fh, struct msghdr *msg, long flags)
-0x167	sendmsg		(int fh, const struct msghdr *msg, long flags)
-0x168	recvfrom	(int fh, void *buf, ulong len, long flags, struct sockaddr *from, ulong *fromlenaddr)
-0x169	sendto		(int fh, const void *buf, ulong len, long flags, const struct sockaddr *to, ulong tolen)
-0x16a	setsockopt	(int fh, long level, long name, const void *val, ulong valsize)
-0x16b	getsockopt	(int fh, long level, long name, void *val, ulong *avalsize)
-0x16c	getpeername	(int fh, struct sockaddr *asa, ulong *alen)
-0x16d	getsockname	(int fh, struct sockaddr *asa, ulong *alen)
-0x16e	shutdown	(int fh, long how)
+0x161	socketpair	(long domain, long type, long protocol, short fds[2])
+0x162	accept		(short fd, struct sockaddr *name, ulong *anamelen)
+0x163	connect		(short fd, const struct sockaddr *name, ulong namelen)
+0x164	bind		(short fd, const struct sockaddr *name, ulong namelen)
+0x165	listen		(short fd, long backlog)
+0x166	recvmsg		(short fd, struct msghdr *msg, long flags)
+0x167	sendmsg		(short fd, const struct msghdr *msg, long flags)
+0x168	recvfrom	(short fd, void *buf, ulong len, long flags, struct sockaddr *from, ulong *fromlenaddr)
+0x169	sendto		(short fd, const void *buf, ulong len, long flags, const struct sockaddr *to, ulong tolen)
+0x16a	setsockopt	(short fd, long level, long name, const void *val, ulong valsize)
+0x16b	getsockopt	(short fd, long level, long name, void *val, ulong *avalsize)
+0x16c	getpeername	(short fd, struct sockaddr *asa, ulong *alen)
+0x16d	getsockname	(short fd, struct sockaddr *asa, ulong *alen)
+0x16e	shutdown	(short fd, long how)
 0x16f	RESERVED
 
 	/* 1.16 - svr5 IPC */
