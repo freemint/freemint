@@ -38,6 +38,9 @@ static ulong sys_lastticks;
 /* The current time in UTC. */
 struct timeval xtime = { 0, 0 };
 
+/* The boot time in UTC. */
+struct timeval boottime = { 0, 0 };
+
 /* The timezone that we're living in. */
 struct timezone sys_tz = { 0, 0 };
 
@@ -297,7 +300,7 @@ t_settimeofday (struct timeval *tv, struct timezone *tz)
  * and Tadjtimex) handle UTC instead.
  */
 void 
-init_time ()
+init_time (void)
 {
 	long value = _mfpregs->tbdr;
 	
@@ -371,6 +374,9 @@ init_time ()
 	xtime.tv_sec = unixtime (timestamp, datestamp);
 	xtime.tv_usec = (sys_lastticks % CLOCKS_PER_SEC) * MICROSECONDS_PER_CLOCK
 		+ value * MICROSECONDS_PER_CLOCK / 192L;
+	
+	/* set booting time */
+	boottime = xtime;
 }
 
 static void

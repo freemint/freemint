@@ -37,20 +37,24 @@
 # include "mint/mint.h"
 
 
-extern ulong MiNT_version;
-extern ulong MiNT_date;
-extern ulong MiNT_time;
+extern const char ostype    [];
+extern const char osrelease [];
+extern const char version   [];
 
-extern char  build_user   [];
-extern char  build_host   [];
-extern char  build_domain [];
-extern char  build_ctime  [];
-extern ulong build_serial;
+extern const ulong MiNT_version;
+extern const ulong MiNT_date;
+extern const ulong MiNT_time;
 
-extern char COMPILER_NAME [];
-extern char COMPILER_OPTS [];
-extern char COMPILER_DEFS [];
-extern char COMPILER_VERS [];
+extern const char  build_user   [];
+extern const char  build_host   [];
+extern const char  build_domain [];
+extern const char  build_ctime  [];
+extern const ulong build_serial;
+
+extern const char COMPILER_NAME [];
+extern const char COMPILER_OPTS [];
+extern const char COMPILER_DEFS [];
+extern const char COMPILER_VERS [];
 
 
 #ifdef DEV_RANDOM
