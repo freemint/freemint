@@ -42,6 +42,7 @@
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
+# include "arch/init_intr.h"	/* syskey */
 # include "arch/timer.h"	/* get_hz_200() */
 # include "arch/tosbind.h"
 
@@ -143,6 +144,8 @@ static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 /* Variables that deal with keyboard autorepeat */
 static	uchar last_key[4];	/* last pressed key */
 static	short key_pressed;	/* flag for keys pressed/released (0 = no key is pressed) */
+static  char last_packet[3];
+static  short keep_sending;	/* flag for mouse packets auto-repetition */
 static	ushort keydel;		/* keybard delay rate and keyboard repeat rate, respectively */
 static	ushort krpdel;
 static	ushort kdel, krep;	/* actual counters */
@@ -157,6 +160,83 @@ static struct keytab *user_keytab = NULL;
 static char *keytab_buffer = NULL;
 static long keytab_size = 0;
 static MEMREGION *user_keytab_region = NULL;
+
+/* 0xf8 - no button
+ * 0xf9 - left button
+ * 0xfa - right button
+ * 0xfb - both buttons
+ * + two bytes (X and Y) of position change relative
+ * to the current position
+ */
+
+# define MOUSE_UP	0
+# define MOUSE_DOWN	1
+# define MOUSE_RIGHT	2
+# define MOUSE_LEFT	3
+# define MOUSE_LCLICK	5
+# define MOUSE_RCLICK	6
+
+static void
+move_mouse(short dir, char pixels)
+{
+	char mouse_packet[3];
+
+	switch (dir)
+	{
+		case MOUSE_UP:
+		{
+			mouse_packet[0] = 0xf8;		/* header */
+			mouse_packet[1] = 0;		/* X axis */
+			mouse_packet[2] = -pixels;	/* Y axis */
+			break;
+		}
+		case MOUSE_DOWN:
+		{
+			mouse_packet[0] = 0xf8;
+			mouse_packet[1] = 0;
+			mouse_packet[2] = pixels;
+			break;
+		}
+		case MOUSE_RIGHT:
+		{
+			mouse_packet[0] = 0xf8;
+			mouse_packet[1] = pixels;
+			mouse_packet[2] = 0;
+			break;
+		}
+		case MOUSE_LEFT:
+		{
+			mouse_packet[0] = 0xf8;
+			mouse_packet[1] = -pixels;
+			mouse_packet[2] = 0;
+			break;
+		}
+		case MOUSE_LCLICK:
+		{
+			mouse_packet[0] = 0xf9;
+			mouse_packet[1] = 0;
+			mouse_packet[2] = 0;
+			break;
+		}
+		case MOUSE_RCLICK:
+		{
+			mouse_packet[0] = 0xfa;
+			mouse_packet[1] = 0;
+			mouse_packet[2] = 0;
+			break;
+		}
+		default:
+		{
+			return;
+		}
+	}
+
+	last_packet[0] = mouse_packet[0];
+	last_packet[1] = mouse_packet[1];
+	last_packet[2] = mouse_packet[2];
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+}
 
 struct keytab *get_keytab(void) { return user_keytab; }
 
@@ -284,6 +364,13 @@ autorepeat_timer(void)
 	if ((*(char *)0x0484L & 0x02) == 0)
 		return;
 
+	if (keep_sending)
+	{
+		send_packet(syskey->mousevec, last_packet, last_packet + 4);
+
+		return;
+	}
+
 	if (key_pressed)
 	{
 		if (kdel)
@@ -369,7 +456,7 @@ scan2asc(uchar scancode)
 			asc = vec[scancode];
 	}
 
-	/* We can optionally emulate the PC-like behaviour or Caps/Shift */
+	/* We can optionally emulate the PC-like behaviour of Caps/Shift */
 	if (pc_style)
 	{
 		if (((shift & MM_ALTGR) == 0) && (shift & MM_CAPS) && (shift & MM_ESHIFT) && isupper(asc))
@@ -466,7 +553,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	switch (scan)
 	{
 		/* Caps toggles its bit, when hit, it also makes keyclick */
-		case	CAPS:
+		case CAPS:
 		{
 			if (make)
 			{
@@ -478,7 +565,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 		/* Releasing Alternate should generate a character, whose ASCII
 		 * code was typed in via the numpad.
 		 */
-		case	ALTERNATE:
+		case ALTERNATE:
 		{
 			if (!make)
 			{
@@ -546,7 +633,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	{
 		switch (scan)
 		{
-			case	DEL:
+			case DEL:
 			{
 				if (make)
 				{
@@ -581,7 +668,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 				return -1;
 			}
 			/* Function keys */
-			case	0x003b ... 0x0044:
+			case 0x003b ... 0x0044:
 			{
 				TIMEOUT *t;
 
@@ -599,7 +686,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 				return -1;
 			}
 			/* This is in case the keyboard has real F11-F20 keys on it */
-			case	0x0054 ... 0x005d:
+			case 0x0054 ... 0x005d:
 			{
 				TIMEOUT *t;
 
@@ -608,6 +695,83 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 					t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 					if (t) t->arg = scan;
 
+					kbdclick(scan);
+				}
+
+				return -1;
+			}
+		}
+	}
+
+	/* Alt/arrow, alt/insert and alt/clrhome emulate the mouse events */
+	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
+	{
+		char delta;
+
+		if (shift & MM_ESHIFT)
+			delta = 1;
+		else
+			delta = 8;
+
+		keep_sending = make;
+
+		switch (scan)
+		{
+			case UP_ARROW:
+			{
+				if (make)
+				{
+					move_mouse(MOUSE_UP, delta);
+					kbdclick(scan);
+				}
+
+				return -1;
+			}
+			case DOWN_ARROW:
+			{
+				if (make)
+				{
+					move_mouse(MOUSE_DOWN, delta);
+					kbdclick(scan);
+				}
+
+				return -1;
+			}
+			case RIGHT_ARROW:
+			{
+				if (make)
+				{
+					move_mouse(MOUSE_RIGHT, delta);
+					kbdclick(scan);
+				}
+
+				return -1;
+			}
+			case LEFT_ARROW:
+			{
+				if (make)
+				{
+					move_mouse(MOUSE_LEFT, delta);
+					kbdclick(scan);
+				}
+
+				return -1;
+			}
+			case INSERT:
+			{
+				if (make)
+				{
+					move_mouse(MOUSE_LCLICK, 0);
+					kbdclick(scan);
+				}
+
+				return -1;
+			}
+			case CLRHOME:
+			{
+				if (make)
+				{
+					move_mouse(MOUSE_RCLICK, 0);
 					kbdclick(scan);
 				}
 

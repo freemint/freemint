@@ -55,6 +55,11 @@
 # define UNDO		0x61	/* scan code of undo key */
 # define HELP		0x62	/* scan code of help key */
 
+# define UP_ARROW	0x48	/* cursor keys */
+# define DOWN_ARROW	0x50
+# define LEFT_ARROW	0x4b
+# define RIGHT_ARROW	0x4d
+
 # define NUMPAD_7	0x67	/* definitions for numpad scancodes */
 # define NUMPAD_8	0x68
 # define NUMPAD_9	0x69
