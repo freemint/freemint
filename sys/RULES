@@ -63,7 +63,7 @@ install-recursive uninstall-recursive dist-recursive:
 #
 # global CFLAGS and ASFLAGS
 #
-INCLUDES = -I.
+INCLUDES = -I$(top_srcdir)
 DEFINITIONS = 
 MODEL = -m68$(CPU)
 CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
