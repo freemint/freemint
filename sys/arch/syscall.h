@@ -1,23 +1,23 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Author: J”rg Westheide <joerg_westheide@su.maus.de>
  * Started: 1999-04-11
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
- * The only intention of this header file is to provide the possibility to 
+ *
+ *
+ * The only intention of this header file is to provide the possibility to
  * call some functions in the ROM (directly).
  * The trap_1_emu call creates a stack frame and then jumps to the ROM (via
  * the old_vec from the XBRA structure). This means that these calls will not
  * pass through the "beginning" of the trap chain (this is it's intention!)
- * 
+ *
  */
 
 # ifndef _m68k_syscall_h
@@ -26,8 +26,6 @@
 
 /* values for original system vectors */
 extern long old_dos, old_bios, old_xbios;
-
-extern void	*pc_valid_return;
 
 long	_cdecl	unused_trap	(void);
 long	_cdecl	mint_bios	(void);
@@ -53,8 +51,6 @@ long	_cdecl	new_cpv		(void);
 long	_cdecl	new_uninit	(void);
 long	_cdecl	new_spurious	(void);
 long	_cdecl	new_pmmuacc	(void);
-
-void		sig_return	(void);
 
 char *	_cdecl	lineA0		(void);
 void	_cdecl	call_aes	(short **);
