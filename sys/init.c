@@ -406,9 +406,16 @@ restr_intr (void)
 {
 	ushort savesr;
 	int i;
+	long *syskey_aux;
 	
 	savesr = spl7 ();
+
 	*syskey = oldkey;	/* restore keyboard vectors */
+
+	syskey_aux = (long *)syskey;
+	syskey_aux--;
+	*syskey_aux = (long) oldkeys;
+
 	*tosbp = _base;		/* restore GEMDOS basepage pointer */
 	
 	restr_cookies ();
