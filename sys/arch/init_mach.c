@@ -72,7 +72,7 @@ getmch (void)
 static long
 _getmch (void)
 {
-	COOKIE *jar;
+	struct cookie *jar;
 	
 	jar = *CJAR;
 	if (jar)

@@ -83,12 +83,12 @@
 /* TOS and MiNT cookie jars, respectively.
  */
 
-static COOKIE *oldcookie = NULL;
-static COOKIE *newcookie;
+static struct cookie *oldcookie = NULL;
+static struct cookie *newcookie;
 
 # ifdef JAR_PRIVATE
 # define MASTERCOOKIES	128
-static COOKIE master_jar[MASTERCOOKIES];
+static struct cookie master_jar[MASTERCOOKIES];
 # else
 /* memory region that hold the cookie jar
  */
@@ -117,7 +117,7 @@ static const long skiplist [] =
 void
 init_cookies (void)
 {
-	COOKIE *cookie;
+	struct cookie *cookie;
 	ushort i = 0;
 	ushort ncookies = 0;
 
@@ -142,7 +142,7 @@ init_cookies (void)
 	 * memory. Jar is no more global, thus the master copy of it
 	 * can be located in kernel's BSS.
 	 */
-	ncsize = MASTERCOOKIES * sizeof(COOKIE);
+	ncsize = MASTERCOOKIES * sizeof(struct cookie);
 	if (ncookies > MASTERCOOKIES)
 		ncookies = MASTERCOOKIES;
 	newcookie = master_jar;
@@ -156,10 +156,10 @@ init_cookies (void)
 	 * then rounds up to a QUANTUM boundary (that's what ROUND does).
 	 * Probably, nobody will have to allocate another cookie jar :-)
 	 */
-	ncsize = (ncsize + 16) * sizeof (COOKIE);
+	ncsize = (ncsize + 16) * sizeof(struct cookie);
 	ncsize = ROUND (ncsize);
 	newjar_region = get_region (core, ncsize, PROT_G);
-	newcookie = (COOKIE *) attach_region (rootproc, newjar_region);
+	newcookie = (struct cookie *) attach_region (rootproc, newjar_region);
 # endif
 
 	/* set the hardware detected CPU and FPU rather
@@ -237,7 +237,7 @@ init_cookies (void)
 	 * the number of slots, total
 	 */
 	newcookie[i].tag   = 0;
-	newcookie[i].value = ncsize / sizeof (COOKIE);
+	newcookie[i].value = ncsize / sizeof(struct cookie);
 
 	/* setup new COOKIE Jar */
 # ifdef JAR_PRIVATE
@@ -255,7 +255,7 @@ init_cookies (void)
 long
 get_toscookie (ulong tag, ulong *val)
 {
-	COOKIE *cookie = oldcookie;
+	struct cookie *cookie = oldcookie;
 
 	if (!cookie)
 		/* not initialized yet */
@@ -282,7 +282,7 @@ get_toscookie (ulong tag, ulong *val)
 long
 set_toscookie (ulong tag, ulong val)
 {
-	COOKIE *cookie = oldcookie;
+	struct cookie *cookie = oldcookie;
 
 	if (!cookie)
 		/* not initialized yet */
@@ -311,13 +311,13 @@ set_toscookie (ulong tag, ulong val)
  */
 
 long
-get_cookie (COOKIE *cj, ulong tag, ulong *ret)
+get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 {
 # ifdef JAR_PRIVATE
-	USER_THINGS *ut;
-	COOKIE *cjar;
+	struct user_things *ut;
+	struct cookie *cjar;
 # else
-	COOKIE *cjar = *CJAR;
+	struct cookie *cjar = *CJAR;
 # endif
 	ushort slotnum = 0;		/* number of already taken slots */
 # ifdef DEBUG_INFO
@@ -329,8 +329,8 @@ get_cookie (COOKIE *cj, ulong tag, ulong *ret)
 	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc, ret));
 
 # ifdef JAR_PRIVATE
-	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
-	cjar = (COOKIE *)ut->user_jar_p;
+	ut = curproc->p_mem->tp_ptr;
+	cjar = ut->user_jar_p;
 # endif
 
 	if (cj)
@@ -433,19 +433,19 @@ get_cookie (COOKIE *cj, ulong tag, ulong *ret)
  */
 
 long
-set_cookie (COOKIE *cj, ulong tag, ulong val)
+set_cookie (struct cookie *cj, ulong tag, ulong val)
 {
 	ushort n = 0;
 # ifdef JAR_PRIVATE
-	USER_THINGS *ut;
-	COOKIE *cjar;
+	struct user_things *ut;
+	struct cookie *cjar;
 # else
-	COOKIE *cjar = *CJAR;
+	struct cookie *cjar = *CJAR;
 # endif
 
 # ifdef JAR_PRIVATE
-	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
-	cjar = (COOKIE *)ut->user_jar_p;
+	ut = curproc->p_mem->tp_ptr;
+	cjar = ut->user_jar_p;
 # endif
 
 	if (cj)
@@ -503,18 +503,18 @@ set_cookie (COOKIE *cj, ulong tag, ulong val)
  */
 
 long
-del_cookie (COOKIE *cj, ulong tag)
+del_cookie (struct cookie *cj, ulong tag)
 {
 # ifdef JAR_PRIVATE
-	USER_THINGS *ut;
-	COOKIE *cjar;
+	struct user_things *ut;
+	struct cookie *cjar;
 # else
-	COOKIE *cjar = *CJAR;
+	struct cookie *cjar = *CJAR;
 # endif
 
 # ifdef JAR_PRIVATE
-	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
-	cjar = (COOKIE *)ut->user_jar_p;
+	ut = curproc->p_mem->tp_ptr;
+	cjar = ut->user_jar_p;
 # endif
 
 	TRACE (("del_cookie: tag %lx", tag));

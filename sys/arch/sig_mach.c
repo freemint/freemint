@@ -51,7 +51,7 @@ sendsig (ushort sig)
 	struct sigaction *sigact = & SIGACTION (curproc, sig);
 	long oldstack, newstack;
 	long *stack;
-	USER_THINGS *ut;
+	struct user_things *ut;
 	struct sigcontext *sigctxt;
 	CONTEXT *call, contexts[2];
 
@@ -141,7 +141,7 @@ sendsig (ushort sig)
 	 * can discriminate amongst the multiple things which may get
 	 * thrown its way
 	 */
-	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+	ut = curproc->p_mem->tp_ptr;
 
 	stack -= 3;
 	sigctxt = (struct sigcontext *) stack;
@@ -242,7 +242,7 @@ sys_psigreturn (void)
 	CONTEXT *oldctxt;
 	long *frame;
 	long sig;
-	USER_THINGS *ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+	struct user_things *ut = curproc->p_mem->tp_ptr;
 
 	unwound_stack = 0;
 top:
