@@ -147,6 +147,7 @@ _save_context:	move.l	a0,-(sp)	// save a0
 
 	tst.w	_no_mem_prot
 	bne.s	noprot2
+	move.w	sr,d1
 #ifdef MMU040
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)
@@ -154,6 +155,7 @@ _save_context:	move.l	a0,-(sp)	// save a0
 	pmove	crp,C_CRP(a0)		// save the CRP from the MMU
 	pmove	tc,C_TC(a0)		// save the TC from the MMU
 #endif
+	move.w	d1,sr
 noprot2:
 
 // if running with a true coprocessor we need to save the FPU state
@@ -274,6 +276,7 @@ _change_context:
 // Set memory context now
 	tst.w	_no_mem_prot
 	bne.s	noprot4
+	move.w	sr,d1
 #ifdef MMU040
 	move.l	C_CRP(a0),d0
 	dc.w	0xf518			// pflusha
@@ -284,6 +287,7 @@ _change_context:
 	pmove	C_CRP(a0),crp		// restore MMU root pointer
 	pmove	C_TC(a0),tc		// restore MMU control register
 #endif
+	move.w	d1,sr
 noprot4:
 #ifndef ONLY030
 	tst.w	(0x59e).w		// test longframe (AKP)
