@@ -1,0 +1,22 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	device.h \
+	dmasnd.h \
+	mfp.h \
+	psgsnd.h
+	
+COBJS = \
+	afmts.c \
+	audiodev.c \
+	dma.c \
+	falcon.c \
+	lmc.c \
+	psg.c \
+	psgtab.c
+
+SOBJS = \
+	audioasm.s
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
