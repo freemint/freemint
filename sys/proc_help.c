@@ -53,6 +53,10 @@
 void
 init_page_table_ptr (struct memspace *m)
 {
+# ifdef NO_MMU
+	m->page_table = NULL;
+	m->pt_mem = NULL;
+# else
 	if (no_mem_prot)
 	{
 		m->page_table = NULL;
@@ -89,11 +93,13 @@ init_page_table_ptr (struct memspace *m)
 		
 		if (!pt) DEBUG(("init_page_table_ptr: no mem for page table"));
 	}
+# endif
 }
 
 static void
 free_page_table_ptr (struct memspace *m)
 {
+# ifndef NO_MMU
 	if (!no_mem_prot)
 	{
 # ifdef MMU040
@@ -114,6 +120,7 @@ free_page_table_ptr (struct memspace *m)
 		kfree(pt);
 # endif
 	}
+# endif
 }
 
 struct memspace *
