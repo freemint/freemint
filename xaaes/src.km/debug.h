@@ -29,8 +29,6 @@
 
 #include "global.h"
 
-
-void fdisplay(struct file *f, const char *fmt, ...);
 void display(const char *fmt, ...);
 
 #if GENERATE_DIAGS
@@ -97,19 +95,20 @@ char *w_owner(struct xa_window *w);
 char *c_owner(struct xa_client *c);
 char *t_owner(struct widget_tree *t);
 
-#define DIAGS(x) if (D.debug_level) display x
-#define DIAG(x) DeBug x
+#define DIAGS(x) if (D.debug_level) diags x
+#define DIAG(x) diag x
 #define IFDIAG(x) x
 
 /* debugging catagories & data */
 extern struct debugger D;
 
-void DeBug(enum debug_item item, struct xa_client *client, char *t, ...);
+void diags(const char *fmt, ...);
+void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #if DEBUG_CONTROL
 #define CONTROL(a,b,c) {short *co = pb->control; \
 			 if (co[1] != a || co[2] != b || co[3] != c) \
-				display(D_cl,a,co[1],b,co[2],c,co[3]); }
+				diags(D_cl,a,co[1],b,co[2],c,co[3]); }
 #else
 #define CONTROL(a,b,c)
 #endif

@@ -294,11 +294,11 @@ k_init(void)
 	if (resource_name)
 	{
 		C.Aes_rsc = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
-		fdisplay(log, "system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name);
+		DIAGS(("system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
 	}	
 	if (!resource_name || !C.Aes_rsc)
 	{
-		fdisplay(log, "ERROR: Can't find/load system resource file '%s'", cfg.rsc_name);
+		display("ERROR: Can't find/load system resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
 
@@ -307,11 +307,11 @@ k_init(void)
 	if (resource_name)
 	{
 		widget_resources = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
-		fdisplay(log, "widget_resources = %lx (%s)", widget_resources, cfg.widg_name);
+		DIAGS(("widget_resources = %lx (%s)", widget_resources, cfg.widg_name));
 	}
 	if (!resource_name || !widget_resources)
 	{
-		fdisplay(log, "ERROR: Can't find/load widget resource file '%s'", cfg.widg_name);
+		display("ERROR: Can't find/load widget resource file '%s'", cfg.widg_name);
 		return -1;
 	}
 
@@ -326,7 +326,7 @@ k_init(void)
 		cfg.widg_dw = (tree[1].ob_width - c.w)/2;
 		cfg.widg_dh = (tree[1].ob_height - c.h)/2;
 
-		fdisplay(log, "cfg.widg: %d/%d   %d/%d", cfg.widg_w, cfg.widg_h, cfg.widg_dw, cfg.widg_dh);
+		DIAGS(("cfg.widg: %d/%d   %d/%d", cfg.widg_w, cfg.widg_h, cfg.widg_dw, cfg.widg_dh));
 	}
 
 #if FILESELECTOR
@@ -448,7 +448,7 @@ load_accs(void)
 	name = buf + len;
 	len = sizeof(buf) - len;
 
-	DEBUG(("load_accs: enter (%s)", buf));
+	DIAGS(("load_accs: enter (%s)", buf));
 
 	r = kernel_opendir(&dirh, buf);
 	if (r == 0)
@@ -473,7 +473,7 @@ load_accs(void)
 
 				*ptr1 = '\0';
 
-				DEBUG(("load_accs: launch (%s)", buf));
+				DIAGS(("load_accs: launch (%s)", buf));
 				launch(NOLOCKING, 3, 0, 0, buf, "", C.Aes);
 			}
 
