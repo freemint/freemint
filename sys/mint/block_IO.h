@@ -95,7 +95,10 @@ struct di
 	/* revision 3 extension - xfs error callback */
 	long	_cdecl (*uniterror)(DI *di, long err);
 	
-	long	res [3];
+	long	res [2];
+	
+	ushort	pad;
+	ushort	links;			/* use counter */
 	
 	/* these are pointer to the real I/O vectors
 	 * so the vectors can be overloaded

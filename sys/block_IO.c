@@ -205,6 +205,10 @@
 # define BIO_DUMPFILE "u:\\ram\\block_IO.dmp"
 # endif
 
+# ifndef DEV_RANDOM
+# define add_blkdev_randomness (drv)
+# endif
+
 /****************************************************************************/
 /* BEGIN definition part */
 
@@ -376,10 +380,14 @@ rwabs_log (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	register ulong n;
 	register ulong recno;
 	
-# ifdef DEV_RANDOM
 	add_blkdev_randomness (di->drv);
-# endif
 	
+//	if (rw && (di->mode & BIO_WP_MODE))
+//	{
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		return EROFS;
+//	}
+	 
 	n = size >> di->pshift;
 	recno = rec << di->lshift;
 	
@@ -398,10 +406,14 @@ rwabs_log_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	register ulong n;
 	register ulong recno;
 	
-# ifdef DEV_RANDOM
 	add_blkdev_randomness (di->drv);
-# endif
 	
+//	if (rw && (di->mode & BIO_WP_MODE))
+//	{
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		return EROFS;
+//	}
+	 
 	n = size >> di->pshift;
 	recno = rec << di->lshift;
 	
@@ -421,10 +433,14 @@ rwabs_phy (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	register ulong n;
 	register ulong recno;
 	
-# ifdef DEV_RANDOM
 	add_blkdev_randomness (di->drv);
-# endif
 	
+//	if (rw && (di->mode & BIO_WP_MODE))
+//	{
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		return EROFS;
+//	}
+	 
 	n = size >> di->pshift;
 	recno = rec << di->lshift;
 	
@@ -454,10 +470,14 @@ rwabs_phy_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	register ulong n;
 	register ulong recno;
 	
-# ifdef DEV_RANDOM
 	add_blkdev_randomness (di->drv);
-# endif
 	
+//	if (rw && (di->mode & BIO_WP_MODE))
+//	{
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		return EROFS;
+//	}
+	 
 	n = size >> di->pshift;
 	recno = rec << di->lshift;
 	
@@ -486,10 +506,14 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	register ulong n;
 	register ulong recno;
 	
-# ifdef DEV_RANDOM
 	add_blkdev_randomness (di->drv);
-# endif
 	
+//	if (rw && (di->mode & BIO_WP_MODE))
+//	{
+//		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
+//		return EROFS;
+//	}
+	 
 	n = size >> di->pshift;
 	recno = rec << di->lshift;
 	
@@ -1084,6 +1108,11 @@ bio_unit_remove_cache (register UNIT *u)
 	/* remove from hash table */
 	bio_hash_remove (u);
 	
+	if (u->io_pending != BIO_UNIT_READY)
+		BIO_ALERT (("block_IO [%c]: io_pending != BIO_UNIT_READY (%ld)", u->di->drv+'A', u->sector));
+	if (u->io_sleep)
+		BIO_ALERT (("block_IO [%c]: someone sleep here??? (%ld)", u->di->drv+'A', u->sector));
+	
 	if (u->cbl)
 	{
 		const ulong chunks = bio_get_chunks (u->size);
@@ -1271,10 +1300,6 @@ retry:
 			}
 			found--;
 		}
-		
-		new->io_pending = BIO_UNIT_READY;
-		if (new->io_sleep)
-			wake (IO_Q, (long) new);
 		
 		b->free -= n;
 		*(b->active + found) = new;
@@ -1608,6 +1633,8 @@ bio_init_di (DI *di)
 	di->pshift = 0;
 	di->lshift = 0;
 	di->p_l_shift = 0;
+	
+	di->links = 0;
 	
 	/* default I/O routines */
 	*di->rrwabs = rwabs_log;
@@ -1946,6 +1973,12 @@ bio_getunit (DI *di, ulong sector, ulong blocksize)
 	{
 		/* can block but always success */
 		u = bio_unit_get (di, sector, blocksize);
+		if (u)
+		{
+			u->io_pending = BIO_UNIT_READY;
+			if (u->io_sleep)
+				wake (IO_Q, (long) u);
+		}
 	}
 	
 	BIO_DEBUG (("bio_getunit: leave %s", u ? "ok" : "failure"));
@@ -2010,7 +2043,14 @@ bio_units_add (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf, c
 			u = bio_unit_get (di, sector, blocksize);
 			if (u)
 			{
+				/* copy */
 				quickmovb (u->data, buf, blocksize);
+				
+				/* mark unit as ready */
+				u->io_pending = BIO_UNIT_READY;
+				if (u->io_sleep)
+					wake (IO_Q, (long) u);
+				
 				(char *) buf += blocksize;
 				sector += incr;
 				blocks--;
