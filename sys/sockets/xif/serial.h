@@ -67,7 +67,8 @@ struct slcmd
 };
 
 
-long		serial_init (void);
+void		serial_init (void);
+
 long		serial_close (struct slbuf *);
 long		serial_send (struct slbuf *);
 struct slbuf *	serial_open (struct netif *, char *,
