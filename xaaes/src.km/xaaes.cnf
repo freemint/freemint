@@ -113,10 +113,27 @@ menu = leave
 
 #
 # next_active = 'client' or 'window' (default is 'window')
+#
 # Selects wether the previous active application or
 # the owner of the previous topped (or only) window
 # should be set active upon client termination.
 # next_active = client
+
+#
+# close_lastwind = 'client' or 'window' (default is 'window')
+#
+# Selects what to do when the last window of a client is closed.
+#
+#   Setting to 'client' will keep the application whose
+#   last window is closed as the top application. This prevents
+#   XaAES from putting infront another application when the last
+#   window of the application currently infront is closed.
+#
+#   Setting to 'window' will make XaAES put the application
+#   who owns the foremost window infront, making it active.
+#   This is the normal behaviour done by other AES's we thinks.
+#
+# close_lastwind = client
 
 #
 # app_options = appname,option1,option2,...

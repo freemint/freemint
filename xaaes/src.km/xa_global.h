@@ -197,6 +197,9 @@ struct config
 	
 	short next_active;		/* 0 = set previous active client active upon client termination */
 					/* 1 = set owner of previous topped (or only) window upon client termination */
+	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
+					/* 1 = Keep client whose last window was closed infront. */
+
 	bool no_xa_fsel;
 	bool auto_program;
 	bool point_to_type;

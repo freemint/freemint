@@ -510,9 +510,7 @@ dispatch_mu_event(struct xa_client *client, const struct moose_data *md)
 int
 XA_move_event(enum locks lock, const struct moose_data *md)
 {
-	struct xa_client *client, *locker;
-	short x = md->x;
-	short y = md->y;
+	struct xa_client *client;
 
 	/* Ozk 040503: Moved the continuing handling of widgets actions here
 	 * so we dont have to msg the client to make real-time stuff
@@ -551,7 +549,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		{
 			if (   cfg.menu_behave != PUSH
 			    && !update_locked()
-			    && is_rect(x, y, aesp->em.flags & 1, &aesp->em.m1))
+			    && is_rect(md->x, md->y, aesp->em.flags & 1, &aesp->em.m1))
 			{
 				XA_WIDGET *widg = get_widget(root_window, XAW_MENU);
 				XA_TREE *menu;
@@ -566,18 +564,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		}
 	}
 
-
-#if 0
-	/* mouse lock is also for rectangle events! */
-	if (mouse_locked())
-	{
-		client = mouse_locked();
-		if (!client)
-			return false;
-	}
-	else
-		client = CLIENT_LIST_START;
-#endif
 	client = mouse_locked();
 	if (!client)
 		client = update_locked();
@@ -594,99 +580,12 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		while (client)
 		{
 			dispatch_mu_event(client, md);
-			//if (mouse_locked())
-			//	break;
-
 			client = NEXT_CLIENT(client);
 		}
 	}
 	Sema_Dn(clients);
 
 	return false;
-}
-
-/*
- * HR: Generalization of focus determination.
- *     Each step checks MU_KEYBD except the first.
- *     The top or focus window can have a keypress handler
- *     instead of the XAWAIT_KEY flag.
- *
- *       first:  check focus keypress handler (no MU_KEYBD or update_lock needed)
- *       second: check update lock
- *       last:   check top or focus window
- *
- *  240401: Interesting bug found and killed:
- *       If the update lock is set, then the key must go to that client,
- *          If that client is not yet waiting, the key must be queued,
- *          the routine MUST pass the client pointer, so there is a pid to be
- *          checked later.
- *       In other words: There can always be a client returned. So we must only know
- *          if that client is already waiting. Hence the ref bool.
- */
-struct xa_client *
-find_focus(bool *waiting, struct xa_client **locked_client)
-{
-	struct xa_window *top = window_list;
-	struct xa_client *client, *locked = NULL;
-
-#if GENERATE_DIAGS
-	if (C.focus == root_window)
-	{
-		DIAGS(("C.focus == root_window"));
-	}
-#endif
-	if (top == C.focus && top->keypress)
-	{
-		/* this is for windowed form_do which doesn't
-		 * set the update lock.
-		 */
-		*waiting = true;
-		DIAGS(("-= 1 =-"));
-		return top->owner;
-	}
-
-	/* special case, no menu bar, possibly no windows either
-	 * but a dialogue on the screen, not governed by form_do. (handled above)
-	 * The client must also be waiting.
-	 */
-	if (update_locked())
-	{
-		locked = update_locked();
-
-		*locked_client = locked;
-		DIAGS(("-= 2 =-"));
-	}
-	else if (mouse_locked())
-	{
-		locked = mouse_locked();
-
-		*locked_client = locked;
-		DIAGS(("-= 3 =-"));
-	}
-
-	if (locked)
-	{
-		client = locked;
-		if (client->fmd.keypress) /* classic (blocked) form_do */
-		{
-			*waiting = true;
-			DIAGS(("-= 4 =-"));
-			return client;
-		}
-
-		if ((client->waiting_for & (MU_KEYBD|MU_NORM_KEYBD)) != 0 || top->keypress != NULL)
-		{
-			*waiting = true;
-			DIAGS(("-= 5 =-"));
-			return client;
-		}
-	}
-
-	client = focus_owner();
-	*waiting = (client->waiting_for & (MU_KEYBD|MU_NORM_KEYBD)) != 0 || top->keypress != NULL;
-
-	DIAGS(("-= 9 =-"));
-	return client;
 }
 
 /* XXX Fixme !! */

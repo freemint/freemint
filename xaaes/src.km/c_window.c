@@ -159,7 +159,7 @@ static void
 check_menu_desktop(enum locks lock, struct xa_window *old_top, struct xa_window *new_top)
 {
 	/* If we're getting a new top window, we may need to swap menu bars... */
-	if (old_top && old_top->owner != new_top->owner)
+	if (old_top && (old_top == root_window || old_top->owner != new_top->owner))
 	{
 		Sema_Up(desk);
 
@@ -364,14 +364,20 @@ wi_insert(WIN_BASE *b, struct xa_window *w, struct xa_window *after)
 bool
 is_topped(struct xa_window *wind)
 {
+
+	DIAGS(("is_topped: app infront %s, window_list owner %s",
+		APP_LIST_START->name, window_list->owner->name));
+
 	if (wind->owner != APP_LIST_START)
 		return false;
 
 	if (wind != window_list)
 		return false;
 
+#if 0
 	if (wind != C.focus)
 		return false;
+#endif
 
 	return true;
 }
@@ -1176,7 +1182,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 bool
 close_window(enum locks lock, struct xa_window *wind)
 {
-	struct xa_window *wl;
+	struct xa_window *wl, *w = NULL;
 	struct xa_client *client = wind->owner;
 	RECT r;
 	bool is_top;
@@ -1194,7 +1200,9 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (wind->is_open == false || wind->nolist)
 		return false;
 
-	is_top = (wind == window_list);
+	is_top = is_topped(wind);
+
+	wl = wind->next;
 
 	wi_remove(&S.open_windows, wind);
 	wi_put_first(&S.closed_windows, wind);
@@ -1217,12 +1225,11 @@ close_window(enum locks lock, struct xa_window *wind)
 	wind->is_open = false;
 	wind->window_status = XAWS_CLOSED;
 
-	wl = window_list;
+	if (!wl)
+		wl = window_list;
 
 	if (is_top)
 	{
-		struct xa_window *w, *napp = NULL;
-
 		if (wind->active_widgets & STORE_BACK)
 		{
 			form_restore(0, wind->r, &(wind->background));
@@ -1231,40 +1238,20 @@ close_window(enum locks lock, struct xa_window *wind)
 
  		w = window_list;
 
-		/* v_hide/show_c now correctly done in draw_window()  */
-		/* if you want point_to_type, handle that in do_keyboard */
-
-		/* First: find a window of the owner */
-		while (w)
+		while (w && w != root_window)
 		{
-			if (w != root_window)
-			{ 
-				if (w->owner == client) /* gotcha */
-				{
-					top_window(lock|winlist, w, client);
-					/* send WM_ONTOP to just topped window. */
-					send_ontop(lock);
-					wl = w->next;
-					break;
-				}
-				else if (!napp)
-					/* remember the first window of another app. */
-					napp = w;
-			}
-
-			w = w->next;
-
-			if (w == NULL && napp)
+			if (w->owner == client)
 			{
-				/* Second: If none: top any other open window  */
-				/* this is the one I was really missing */
-				top_window(lock|winlist, napp, menu_owner());
-				/* send WM_ONTOP to just topped window. */
+				top_window(lock|winlist, w, client);
 				send_ontop(lock);
-				wl = window_list->next;
+				wl = w->next;
 				break;
 			}
+			w = w->next;
 		}
+
+		if (w && w == root_window)
+			w = NULL;
 	}
 
 	/* Redisplay any windows below the one we just have closed
@@ -1272,18 +1259,40 @@ close_window(enum locks lock, struct xa_window *wind)
 	 */
 	update_windows_below(lock, &r, NULL, wl);
 
+	if (window_list && is_top && !w)
+	{
+		switch (cfg.last_wind)
+		{
+			case 0: /* Put owner of window ontop infront */
+			{
+				if (window_list != root_window)
+				{
+					set_active_client(lock, window_list->owner);
+					swap_menu(lock, window_list->owner, true, 0);
+					top_window(lock, window_list, NULL);
+					send_ontop(lock);
+				}
+				break;
+			}
+			case 1: /* Keep this app infront */
+			{
+				break;
+			}
+		}
+	}			
+#if 0
 	if (window_list)
 	{
 		if (   window_list->owner != client
 		    && !client->std_menu) //client->std_menu.tree == NULL)
 		{
-			/* get the menu bar right (only if the pid has no menu bar
-			 * and no more open windows for pid.
-			 */
-			DIAG((D_menu, NULL, "close_window: swap_menu to %s", w_owner(window_list)));
-			swap_menu(lock|winlist, window_list->owner, true, 3);
+			set_active_client(lock, window_list->owner);
+			swap_menu(lock, window_list->owner, true, 0);
+			top_window(lock, window_list, NULL);
+			send_ontop(lock);
 		}
 	}
+#endif
 
 	return true;
 }

@@ -37,6 +37,7 @@ struct xa_client * previous_client(enum locks lock);
 void swap_menu(enum locks lock, struct xa_client *, bool, int);
 void app_in_front(enum locks lock, struct xa_client *client);
 bool is_infront(struct xa_client *client);
+struct xa_client * get_app_infront(void);
 void set_active_client(enum locks lock, struct xa_client *client);
 void hide_app(enum locks lock, struct xa_client *client);
 void unhide_app(enum locks lock, struct xa_client *client);
@@ -47,6 +48,7 @@ void recover(void);
 XA_TREE * find_menu_bar(enum locks lock);
 struct xa_client *find_desktop (enum locks lock);
 struct xa_client *focus_owner  (void);
+struct xa_client *find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind);
 
 bool any_hidden(enum locks lock, struct xa_client *client);
 bool taskbar(struct xa_client *client);
