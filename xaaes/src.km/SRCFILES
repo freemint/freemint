@@ -50,6 +50,7 @@ HEADER = \
 	xa_global.h \
 	xa_graf.h \
 	xa_lbox.h \
+	xa_list.h \
 	xa_menu.h \
 	xa_objc.h \
 	xa_rsrc.h \

@@ -38,8 +38,12 @@
 #include "mint/proc.h"
 #include "../../sys/adi/whlmoose/whlmoose.h"
 
+#include "xa_list.h"
+
+
 #define MAX_WINDOW_NAME 200
 #define MAX_WINDOW_INFO 200
+
 
 /* forward declarations */
 struct task_administration_block;
@@ -47,6 +51,7 @@ struct widget_tree;
 struct xa_widget;
 struct scroll_entry;
 struct fmd_result;
+
 
 enum menu_behave
 {
@@ -443,8 +448,6 @@ struct fmd
 #define CEVNT_BUTTON	2
 #define CEVNT_MENUSTART 4
 
-struct c_event;
-
 struct c_event
 {
 	struct c_event		*next;
@@ -461,7 +464,8 @@ struct c_event
 /* Main client application descriptor */
 struct xa_client
 {
-	struct xa_client *next, *prior;
+	LIST_ENTRY(xa_client) client_entry;
+	LIST_ENTRY(xa_client) app_entry;
 
 	struct proc *p;			/* context back ptr */
 	struct xa_user_things *ut;	/* trampoline code for user callbacks */
@@ -472,10 +476,10 @@ struct xa_client
 	struct xa_aesmsg_list *msg;	/* Pending AES messages */
 	struct xa_aesmsg_list *rdrw_msg;
 
-#define CS_LAGGING	1
-#define CS_CE_REDRAW_SENT 2
-#define CS_FORM_ALERT 4
-#define CS_WAIT_MENU 8
+#define CS_LAGGING		0x1
+#define CS_CE_REDRAW_SENT	0x2
+#define CS_FORM_ALERT		0x4
+#define CS_WAIT_MENU		0x8
 
 	long status;
 
