@@ -179,7 +179,7 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	/* HR 150501:
 	   At last give in to the fact that it is a struct, NOT an array */
 	pb->intout[0] = -1;
-	pb->globl->version = 0x0401;		/* Emulate AES4.1 */
+	pb->globl->version = 0x0410;		/* Emulate AES4.1 */
 	pb->globl->count = -1;			/* Unlimited applications (well, not really) HR: only 32??? */
 	pb->globl->id = client->pid;		/* appid==pid */
 	pb->globl->pprivate = NULL;
@@ -615,7 +615,7 @@ timer_intout(short *o)
 		vq_key_s(C.vh, o+4);
 	}
 
-	o[0] |= MU_TIMER;
+	o[0] = MU_TIMER;
 	o[5] = 0;
 	o[6] = 0;
 }
