@@ -105,9 +105,8 @@ boot_printf (const char *fmt, ...)
 	vsprintf (buf, sizeof (buf), fmt, args);
 	va_end (args);
 
-	Cconws (buf);
+	boot_print(buf);
 }
-
 
 /* GEMDOS pointer to current basepage */
 BASEPAGE **tosbp;
@@ -786,11 +785,7 @@ init (void)
 	get_my_name();
 
 # ifdef VERBOSE_BOOT
-	boot_print(MSG_init_mp);
-	if (no_mem_prot)
-		boot_print(MSG_init_mp_disabled);
-	else
-		boot_print(MSG_init_mp_enabled);
+	boot_printf(MSG_init_mp, no_mem_prot ? MSG_init_mp_disabled : MSG_init_mp_enabled);
 # endif
 
 	/* get the current directory, so that we can switch back to it after
@@ -1048,7 +1043,7 @@ init (void)
 # endif
 
 	/* Make newline before external modules print out own messages */
-	boot_print("\r\n");
+	c_conws("\r\n");
 
 	/* load the kernel modules */
 	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
