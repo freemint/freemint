@@ -13,12 +13,11 @@
 # include "serial.h"
 
 # include "mint/basepage.h"
+# include "mint/filedesc.h"
 # include "mint/ioctl.h"
+# include "mint/proc.h"
 
-# include <mintbind.h>
 
-
-# define STKSIZE		8192L
 # define NSLBUFS		4
 
 # define FDZERO(fd)		((fd) = 0)
@@ -28,25 +27,9 @@
 
 static short glfd;
 static char *pname = "u:\\pipe\\sld";
-static struct slbuf *currsl, allslbufs[NSLBUFS];
+static struct slbuf allslbufs[NSLBUFS];
+static struct proc *sld_p;
 
-static void
-_send (void)
-{
-	(*currsl->send)(currsl);
-}
-
-static void
-_recv (void)
-{
-	(*currsl->recv)(currsl);
-}
-
-/*
- * when calling Fcntl(fd, arg, cmd) directly gcc 2.5.8 does not detect that
- * *arg might be clobbered. Same for Supexec(). That is why we use those
- * wrapper functions instead ...
- */
 
 static void
 _sld (void)
@@ -56,13 +39,13 @@ _sld (void)
 	short i, pipefd, p, tmout = 0;
 	long r, rset, wset, wready, rready, space;
 	
-	pipefd = Fopen (pname, O_RDONLY|O_NDELAY);
+	pipefd = f_open (pname, O_RDONLY|O_NDELAY);
 	if (pipefd < 0)
 	{
 		char buf[128];
 		
 		ksprintf (buf, "sld: PANIC: Cannot open pipe (-> %i)\r\n", pipefd);
-		Cconws (buf);
+		c_conws (buf);
 		
 		return;
 	}
@@ -75,17 +58,27 @@ _sld (void)
 	{
 		wready = wset;
 		rready = rset;
+		
 		/*
 		 * Poll if some channels are active
 		 */
 		tmout = (rset & ~(1L << pipefd)) ? SL_VTIME : 0;
-		r = Fselect (tmout, &rready, &wready, 0);
+		r = f_select (tmout, &rready, &wready, 0);
 		if (r < 0)
+		{
+			char buf[128];
+			
+			ksprintf (buf, "sld: Fselect failed (%li)\r\n", r);
+			c_conws (buf);
+			
+			f_select (1000, 0L, 0L, 0L);
+			
 			continue;
+		}
 		
 		if (FDISSET (pipefd, rready))
 		{
-			r = Fread (pipefd, 1, &cmd);
+			r = f_read (pipefd, 1, (char *) &cmd);
 			if (r == 1 && cmd.slnum < NSLBUFS)
 			{
 				sl = &allslbufs[cmd.slnum];
@@ -94,17 +87,22 @@ _sld (void)
 				{
 					char buf[128];
 					
-					ksprintf (buf, "sld: SLCMD_OPEN (sl->fd = %i)", sl->fd);
-					Cconws (buf);
+					ksprintf (buf, "sld: SLCMD_OPEN (sl->fd = %i)\r\n", sl->fd);
+					c_conws (buf);
 					
 					r = sl->fd;
-					sl->fd = Fdup (r);
-					Fclose (r);
+					sl->fd = f_dup (r);
+					f_close (r);
+					
 					if (sl->fd < 0)
 					{
-						Cconws ("sld: PANIC: Fdup failed\r\n");
+						c_conws ("sld: PANIC: Fdup failed\r\n");
 						return;
 					}
+					
+					ksprintf (buf, "sld: SLCMD_OPEN -> sl->fd = %i (0x%lx)\r\n", sl->fd, sld_p->p_fd->ofiles[sl->fd]);
+					c_conws (buf);
+					
 					FDSET (sl->fd, rset);
 					break;
 				}
@@ -112,14 +110,14 @@ _sld (void)
 				{
 					char buf[128];
 					
-					ksprintf (buf, "sld: SLCMD_CLOSE (sl->fd = %i)", sl->fd);
-					Cconws (buf);
+					ksprintf (buf, "sld: SLCMD_CLOSE (sl->fd = %i)\r\n", sl->fd);
+					c_conws (buf);
 					
 					FDCLR (sl->fd, rset);
 					FDCLR (sl->fd, wset);
 					FDCLR (sl->fd, wready);
 					FDCLR (sl->fd, rready);
-					Fclose (sl->fd);
+					f_close (sl->fd);
 					sl->flags &= ~(SL_INUSE|SL_SENDING|SL_CLOSING);
 					break;
 				}
@@ -127,9 +125,7 @@ _sld (void)
 				{
 					FDSET (sl->fd, wset);
 					FDSET (sl->fd, wready); /* pretend we can write */
-					currsl = sl;
-					// Supexec (_send);
-					_send ();
+					(*sl->send)(sl);
 					break;
 				}
 				}
@@ -150,7 +146,7 @@ _sld (void)
 			 * 2) no more input arrived in the last SL_VTIME msecs.
 			 */
 			nr = 0;
-			Fcntl (sl->fd, &nr, FIONREAD);
+			f_cntl (sl->fd, (long) &nr, FIONREAD);
 			if (FDISSET (sl->fd, rready) || (nr && nr <= sl->nread))
 			{
 				p = sl->ihead;
@@ -161,7 +157,7 @@ _sld (void)
 					if (sl->itail == 0) --space;
 					if (space > 0)
 					{
-						r = Fread (sl->fd, space, &sl->ibuf[p]);
+						r = f_read (sl->fd, space, &sl->ibuf[p]);
 						if (r > 0)
 						{
 							p = (p + (short)r) & (sl->isize - 1);
@@ -174,7 +170,7 @@ _sld (void)
 					space = sl->itail - p - 1;
 					if (space > 0)
 					{
-						r = Fread (sl->fd, space, &sl->ibuf[p]);
+						r = f_read (sl->fd, space, &sl->ibuf[p]);
 						if (r > 0)
 						{
 							p = (p + (short)r) & (sl->isize - 1);
@@ -183,16 +179,12 @@ _sld (void)
 					}
 				}
 				if (r < 0)
-					Cconws ("sld: Fread failed\r\n");
+					c_conws ("sld: Fread failed\r\n");
 				sl->ihead = p;
 			}
 			sl->nread = MAX (0, nr);
 			if (sl->ihead != sl->itail)
-			{
-				currsl = sl;
-				// Supexec (_recv);
-				_recv ();
-			}
+				(*sl->recv)(sl);
 			
 			if (!(sl->flags & SL_SENDING))
 				continue;
@@ -205,7 +197,7 @@ _sld (void)
 			 * 4) can send at least SL_VMIN
 			 */
 			nr = 0;
-			Fcntl (sl->fd, &nr, FIONWRITE);
+			f_cntl (sl->fd, (long) &nr, FIONWRITE);
 			if (FDISSET (sl->fd, wready) || (nr && nr <= sl->nwrite) ||
 			nr >= SL_VMIN || nr >= SL_OUSED (sl))
 			{
@@ -217,7 +209,7 @@ _sld (void)
 					space = sl->osize - p;
 					if (space > 0)
 					{
-						r = Fwrite (sl->fd, space, &sl->obuf[p]);
+						r = f_write (sl->fd, space, &sl->obuf[p]);
 						if (r > 0)
 						{
 			    				p = (p + (short)r) & (sl->osize - 1);
@@ -230,7 +222,7 @@ _sld (void)
 					space = sl->ohead - p;
 					if (space > 0)
 					{
-						r = Fwrite (sl->fd, space, &sl->obuf[p]);
+						r = f_write (sl->fd, space, &sl->obuf[p]);
 						if (r > 0)
 						{
 							p = (p + (short)r) & (sl->osize - 1);
@@ -239,7 +231,7 @@ _sld (void)
 					}
 				}
 				if (r < 0)
-					Cconws ("sld: Fwrite failed\r\n");
+					c_conws ("sld: Fwrite failed\r\n");
 				sl->otail = p;
 				/*
 				 * Produce more output if at least a quarter of
@@ -252,9 +244,7 @@ _sld (void)
 						sl->flags &= ~SL_SENDING;
 						FDCLR (sl->fd, wset);
 					}
-					currsl = sl;
-					// Supexec (_send);
-					_send ();
+					(*sl->send)(sl);
 					if (sl->ohead != sl->otail)
 					{
 						sl->flags |= SL_SENDING;
@@ -275,48 +265,34 @@ _sld (void)
 	}
 }
 
-static int
-sld (BASEPAGE *bp)
+static void
+sld (void *bp)
 {
-	// setstack ((char *) bp + STKSIZE);
+	p_domain (1);
+	p_nice (-5);
+	p_sigblock (-1L);
 	
-	// bp->p_tbase = bp->p_parent->p_tbase;
-	// bp->p_tlen  = bp->p_parent->p_tlen;
-	// bp->p_dbase = bp->p_parent->p_dbase;
-	// bp->p_dlen  = bp->p_parent->p_dlen;
-	// bp->p_bbase = bp->p_parent->p_bbase;
-	// bp->p_blen  = bp->p_parent->p_blen;
-	
-	(void) Pdomain (1);
-	(void) Pnice (-5);
-	(void) Psigblock (-1L);
 	_sld ();
-	(void) Pterm (0);
 	
-	return 0;
+	kthread_exit (1);
 }
 
-long
+void
 serial_init (void)
 {
-	BASEPAGE *b;
-	
 	glfd = f_open (pname, O_NDELAY|O_WRONLY|O_CREAT|O_GLOBAL);
 	if (glfd < 100)
 		glfd += 100;
 	
 	f_chmod (pname, 0600);
 	
-	b = (BASEPAGE *) p_exec (PE_CBASEPAGE, 0L, "", 0L);
-	m_shrink (0, (long) b, STKSIZE + 256L);
+	if (!kthread_create)
+		FATAL ("This slip.xif require an uptodate 1.16 kernel!");
 	
-	b->p_tbase = (long) sld;
-	b->p_hitpa = (long) b + STKSIZE + 256L;
-	
-	return p_exec (104, "sld", b, 0L);
+	kthread_create (sld, (void *) 0x1, &sld_p, "sld");
 }
 
-long
+static long
 serial_make_raw (short fd)
 {
 	short vmin[2];
@@ -362,7 +338,8 @@ serial_open (struct netif *nif, char *device,
 			sl->ibuf = sl->obuf = 0;
 		}
 	}
-	if (sl == 0)
+	
+	if (!sl)
 	{
 		DEBUG (("serial_open: out of sl bufs"));
 		return 0;
