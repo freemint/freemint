@@ -363,17 +363,18 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 				CICON *cicn;
 				ICONBLK *ib = &cib->monoblk;
 				short *pdata, numRez;
+				long isize;
 
 				cibh[i] = cib;
-				size = calc_back((RECT*)&ib->ib_xicon, 1);
+				isize = calc_back((RECT*)&ib->ib_xicon, 1);
 				addr = (unsigned long*)((long)cib + sizeof(ICONBLK));
 				numRez = addr[0];
 				pdata = (short *)&addr[1];
 				/* mono data & mask */
 				ib->ib_pdata = pdata;
-				(long)pdata += size;
+				(long)pdata += isize;
 				ib->ib_pmask = pdata;
-				(long)pdata += size;
+				(long)pdata += isize;
 				/* HR: the texts are placed the same way as for all other objects
 				 * when longer than 12 bytes.
 				 */
@@ -401,19 +402,19 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 				for (j = 0; j < numRez; j++)
 				{
 					int planes = cicn->num_planes;
-					long psize = size * planes;
+					long psize = isize * planes;
 					(long)pdata += sizeof(CICON);
 					cicn->col_data = pdata;
 					(long)pdata += psize;
 					cicn->col_mask = pdata;
-					(long)pdata +=  size;
+					(long)pdata +=  isize;
 					if (cicn->sel_data)
 					{
 						/* It's got a selected form */
 						cicn->sel_data = pdata;
 						(long)pdata += psize;
 						cicn->sel_mask = pdata;
-						(long)pdata +=  size;
+						(long)pdata +=  isize;
 					}
 					else
 						/* No selected version */
@@ -624,8 +625,10 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 					cur->prior->next = cur->next;
 				if (cur->next)
 					cur->next->prior = cur->prior;
+				if (!cur->prior)
+					client->resources = cur->next;
 
-				DIAG((D_rsrc,client,"Free cur %lx\n", (long)cur - 16));
+				DIAG((D_rsrc,client,"Free: cur %lx\n", cur));
 				XA_free(&client->base, cur);
 			}
 			else if (cur->handle == client->rsct - 1)
