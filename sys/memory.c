@@ -1961,7 +1961,6 @@ MEMREGION *
 load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, MEMREGION **text, long *fp, int isexec, long *err)
 {
 	FILEPTR *f;
-	DEVDRV *dev;
 	MEMREGION *reg, *shtext;
 	BASEPAGE *b;
 	long size, start;
@@ -1980,8 +1979,7 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 	
 	if (!f) return NULL;
 	
-	dev = f->dev;
-	size = (*dev->read)(f, (void *) &fh, (long) sizeof (fh));
+	size = xdd_read (f, (void *) &fh, (long) sizeof (fh));
 	if (fh.fmagic != GEMDOS_MAGIC || size != (long) sizeof (fh))
 	{
 		DEBUG (("load_region: file not executable"));
@@ -2163,7 +2161,6 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 {
 	uchar c, *next;
 	long r;
-	DEVDRV *dev;
 # define LRBUFSIZ 8196
 	static uchar buffer[LRBUFSIZ];
 	long fixup, size, bytes_read;
@@ -2171,11 +2168,10 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 	
 	
 	TRACE (("load_and_reloc: %ld to %ld at %lx", start, nbytes+start, where));
-	dev = f->dev;
 	
-	r = (*dev->lseek)(f, start + sizeof (FILEHEAD), SEEK_SET);
+	r = xdd_lseek (f, start + sizeof (FILEHEAD), SEEK_SET);
 	if (r < E_OK) return r;
-	r = (*dev->read)(f, where, nbytes);
+	r = xdd_read (f, where, nbytes);
 	if (r != nbytes)
 	{
 		DEBUG (("load_and_reloc: unexpected EOF"));
@@ -2185,11 +2181,11 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 	/* now do the relocation
 	 * skip over symbol table, etc.
 	 */
-	r = (*dev->lseek)(f, sizeof (FILEHEAD) + fh->ftext + fh->fdata + fh->fsym, SEEK_SET);
+	r = xdd_lseek (f, sizeof (FILEHEAD) + fh->ftext + fh->fdata + fh->fsym, SEEK_SET);
 	if (r < E_OK)
 		return ENOEXEC;
 	
-	if (fh->reloc != 0 || (*dev->read)(f, (char *) &fixup, 4L) != 4L || fixup == 0)
+	if (fh->reloc != 0 || xdd_read (f, (char *) &fixup, 4L) != 4L || fixup == 0)
 	{
 		cpush ((void *) base->p_tbase, base->p_tlen);
 		/* no relocation to be performed */
@@ -2236,12 +2232,12 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 		do {
 			if (!bytes_read)
 			{
-				bytes_read = (*dev->read)(f,(char *)buffer,size);
+				bytes_read = xdd_read (f,(char *)buffer,size);
 				next = buffer;
 			}
 			if (bytes_read < 0)
 			{
-				DEBUG(("load_region: EOF in relocation"));
+				DEBUG (("load_region: EOF in relocation"));
 				return ENOEXEC;
 			}
 			else if (bytes_read == 0)

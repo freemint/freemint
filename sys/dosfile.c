@@ -296,7 +296,7 @@ do_open (const char *name, int rwmode, int attr, XATTR *x, long *err)
 	f->dev = dev;
 	release_cookie(&dir);
 	
-	r = (*dev->open)(f);
+	r = xdd_open (f);
 	if (r < E_OK)
 	{
 		DEBUG(("do_open(%s): device open failed with error %ld", name, r));
@@ -491,7 +491,7 @@ do_pclose(PROC *p, FILEPTR *f)
 	}
 
 	if (f->dev) {
-		r = (*f->dev->close)(f, p->pid);
+		r = xdd_close (f, p->pid);
 		if (r) {
 			DEBUG(("close: device close failed"));
 		}
@@ -702,7 +702,7 @@ f_read(int fh, long count, char *buf)
 		return tty_read(f, buf, count);
 
 	TRACELOW(("Fread: %ld bytes from handle %d to %lx", count, fh, buf));
-	return (*f->dev->read)(f, buf, count);
+	return xdd_read (f, buf, count);
 }
 
 long _cdecl
@@ -746,7 +746,7 @@ f_write(int fh, long count, const char *buf)
 	 * way the drivers are easier to write
 	 */
 	if (f->flags & O_APPEND) {
-		r = (*f->dev->lseek)(f, 0L, SEEK_END);
+		r = xdd_lseek (f, 0L, SEEK_END);
 		/* ignore errors from unseekable files (e.g. pipes) */
 		if (r == EACCES)
 			r = 0;
@@ -754,7 +754,7 @@ f_write(int fh, long count, const char *buf)
 		r = 0;
 	if (r >= 0) {
 		TRACELOW(("Fwrite: %ld bytes to handle %d", count, fh));
-		r = (*f->dev->write)(f, buf, count);
+		r = xdd_write (f, buf, count);
 	}
 	if (r < 0) {
 		DEBUG(("Fwrite: error %ld", r));
@@ -785,7 +785,7 @@ f_seek (long place, int fh, int how)
 	if (is_terminal(f)) {
 		return 0;
 	}
-	return (*f->dev->lseek)(f, place, how);
+	return xdd_lseek (f, place, how);
 }
 
 /* duplicate file pointer fh; returns a new file pointer >= min, if
@@ -924,7 +924,7 @@ f_datime (ushort *timeptr, int fh, int wflag)
 		if (wflag)
 			t = unixtime (timeptr [0], timeptr [1]) + timezone;
 		
-		r = (*f->dev->datime)(f, (ushort *) &t, wflag);
+		r = xdd_datime (f, (ushort *) &t, wflag);
 		
 		if (!r && !wflag)
 			*(long *) timeptr = dostime (t - timezone);
@@ -932,7 +932,7 @@ f_datime (ushort *timeptr, int fh, int wflag)
 		return r;
 	}
 	
-	return (*f->dev->datime)(f, timeptr, wflag);
+	return xdd_datime (f, timeptr, wflag);
 }
 
 long _cdecl
@@ -967,7 +967,7 @@ f_lock(int fh, int mode, long start, long length)
 	else
 		return ENOSYS;
 
-	return (*f->dev->ioctl)(f, F_SETLK, &lock);
+	return xdd_ioctl (f, F_SETLK, &lock);
 }
 
 /*
@@ -1301,7 +1301,7 @@ f_cntl (int fh, long arg, int cmd)
 				t [0] = unixtime (buf->actime, buf->acdate) + timezone;
 				t [1] = unixtime (buf->modtime, buf->moddate) + timezone;
 				
-				return (*f->dev->ioctl)(f, cmd, (void *) t);
+				return xdd_ioctl (f, cmd, (void *) t);
 			}
 			
 			break;
@@ -1335,7 +1335,7 @@ f_cntl (int fh, long arg, int cmd)
 	}
 	else
 	{
-		r = (*f->dev->ioctl)(f, cmd, (void *) arg);
+		r = xdd_ioctl (f, cmd, (void *) arg);
 	}
 	
 	return r;
