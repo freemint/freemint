@@ -185,6 +185,8 @@ do_TCP_open (struct TCP_open_param p)
 	int fd;
 	long ret;
 	
+	DEBUG (("do_TCP_open: rhost = %lu, rport = %i", p.rhost, p.rport));
+	
 	if (p.rhost == 0)
 	{
 		p.rhost = 0;
@@ -203,8 +205,8 @@ do_TCP_open (struct TCP_open_param p)
 	}
 	else
 	{
-		p.rhost = p.rhost;
-		p.rport = p.rport;
+	//	p.rhost = p.rhost;
+	//	p.rport = p.rport;
 		lhost = INADDR_ANY;
 		lport = 0;
 	}
@@ -220,6 +222,7 @@ do_TCP_open (struct TCP_open_param p)
 	if (ret < 0)
 		return ret;
 	
+	DEBUG (("do_TCP_open: fd = %i", fd));
 	return fd;
 }
 

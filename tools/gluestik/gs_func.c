@@ -307,8 +307,8 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	int pending = 0;
 # endif
 	
-	DEBUG (("gs_connect(%i, {%lu, %i}, {%lu, %i})",
-		fd, lhost, lport, rhost, rport));
+	DEBUG (("gs_connect(%i, {%lu, %i}, {%lu, %i}) [%x]",
+		fd, rhost, rport, lhost, lport, gs ? gs->flags : 0xffff));
 	
 	if (!gs || !(gs->flags & GS_NOSOCKET))
 	{
@@ -412,7 +412,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 # endif
 	}
 	
-	DEBUG (("gs_connect: returns 0"));
+	DEBUG (("gs_connect: returns 0 [%x]", gs->flags));
 	return 0;
 }
 
@@ -514,9 +514,9 @@ gs_wait (int fd, int timeout)
 	long rfs, wfs;
 	long n;
 	
-	DEBUG (("gs_wait(%i, %i)", fd, timeout));
+	DEBUG (("gs_wait(%i, %i) [%x]", fd, timeout, gs ? gs->flags : 0xffff));
 	
-	if (!gs || gs->flags & GS_NOSOCKET)
+	if (!gs || (gs->flags & GS_NOSOCKET))
 	{
 		DEBUG (("gs_wait: bad handle"));
 		return E_BADHANDLE;
@@ -586,7 +586,7 @@ gs_canread (int fd)
 	GS *gs = gs_get (fd);
 	long r, n;
 	
-	/* DEBUG (("gs_canread(%i)", fd)); */
+	DEBUG (("gs_canread(%i)", fd));
 	
 	if (gs->flags & GS_NOSOCKET)
 	{
@@ -625,7 +625,7 @@ gs_canread (int fd)
 		return E_EOF;
 	}
 	
-	/* DEBUG (("gs_canread: returns %li", n)); */
+	DEBUG (("gs_canread: returns %li", n));
 	return n;
 }
 
@@ -748,14 +748,12 @@ gs_write (int fd, char *buf, long buflen)
 	if (gs->flags & GS_NOSOCKET)
 	{
 		DEBUG (("gs_write: bad handle"));
-		
 		return E_BADHANDLE;
 	}
 	
 	if ((gs->flags & GS_LISTENING) && gs_accept (fd) != 0)
 	{
 		DEBUG (("gs_write: no connections arrived"));
-		
 		return E_LISTEN;
 	}
 	
@@ -766,7 +764,6 @@ gs_write (int fd, char *buf, long buflen)
 	if ((gs->flags & GS_PEND_OPEN) && gs_establish (fd) != 0)
 	{
 		DEBUG (("gs_write: open in progress"));
-		
 		return E_OBUFFULL;
 	}
 # endif
@@ -802,7 +799,7 @@ gs_write (int fd, char *buf, long buflen)
 	if (r < buflen)
 		DEBUG (("gs_write: only got %li of %li bytes", r, buflen));
 	
-	DEBUG (("gs_write: returns E_NORMAL"));
+	DEBUG (("gs_write: returns E_NORMAL [%x]", gs->flags));
 	return E_NORMAL;
 }
 
