@@ -28,6 +28,8 @@
 
 #include "app_man.h"
 #include "bootup.h"
+#include "config.h"
+#include "ipff.h"
 
 
 /*
@@ -134,6 +136,67 @@ XA_appl_search(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	}
 
 	return XAC_DONE;
+}
+
+static void
+handle_XaAES_msgs(LOCK lock, union msg_buf *msg)
+{
+	union msg_buf m = *msg;
+	int mt = m.s.msg;
+
+	DIAGS(("Message to AES %d\n", mt));
+	m.s.msg = 0;
+
+	switch (mt)
+	{
+		case XA_M_EXEC:
+		{
+			char *txt = m.s.p2;
+			if (txt)
+			{
+				DIAGS(("Exec scl '%s'\n", txt));
+				SCL(lock, 1, 0, 0, txt);
+				m.s.msg = XA_M_OK;
+			}
+		}
+		break;
+
+		case XA_M_GETSYM:
+		{
+			char *txt = m.s.p2;
+			if (txt)
+			{
+				SYMBOL *t, *f = m.s.p1;
+				DIAGS(("Get sym '%s'\n", txt));
+				
+				if (f)
+				{
+					t = find_sym(txt, 0);
+					if (t)
+					{
+						DIAGS((" --> '%s'\n", t->s));
+						*f = *t;
+						m.s.msg = XA_M_OK;
+					}
+				}
+			}
+		}
+		break;
+
+		case XA_M_DESK:
+		{
+			DIAGS(("Desk %d, '%s'\n", m.s.m3, m.s.p2 ? m.s.p2 : "~~~"));
+			if (m.s.p2 && m.s.m3)
+			{
+				strcpy(C.desk, m.s.p2);
+				C.DSKpid = m.s.m3;
+				m.s.msg = XA_M_OK;
+			}
+		}
+		break;
+	}
+
+	send_a_message(lock, m.m[1], &m);
 }
 
 /*
