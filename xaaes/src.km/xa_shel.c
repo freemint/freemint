@@ -215,9 +215,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	{
 		DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
 			c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
-		DIAG((D_shel, caller, " --- parm='%s', tail='%s'",
-			parm ? parm : "no parm",
-			tail ? tail : "no tail"));
+		DIAG((D_shel, caller, " --- parm=%lx, tail=%lx", parm, tail));
+		//DIAG((D_shel, caller, " --- parm='%s', tail='%s'",
+		//	parm ? parm : "no parm",
+		//	tail ? tail : "no tail"));
 	}
 	else
 	{
@@ -297,8 +298,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	
 		if (longtail)
 		{
+			DIAG((D_shel, NULL, " -- longtailsize=%ld", longtail));
 			tailsize = longtail;
 			tail = kmalloc(tailsize + 2);
+			DIAG((D_shel, NULL, " -- ltail=%lx", tail));
 			if (!tail)
 				return 0;
 			strcpy(tail + 1, p_tail + 1);
@@ -307,8 +310,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		}
 		else
 		{
-			tailsize = p_tail[0];
+			(unsigned long)tailsize = (unsigned char)p_tail[0];
+			DIAG((D_shel, NULL, " -- tailsize1 = %ld", tailsize));
 			tail = kmalloc(tailsize + 2);
+			DIAG((D_shel, NULL, " -- tail=%lx", tail));
 			if (!tail)
 				return 0;
 			strncpy(tail, p_tail, tailsize + 1);
