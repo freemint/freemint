@@ -231,18 +231,18 @@ shell_getenv(const char *var)
 	char *env_str = shell_base->p_env;
 	long len;
 
-	if (env_str == NULL || *env_str == 0)
-		return NULL;
-
-	len = strlen(var);
-
-	while (*env_str)
+	if (env_str)
 	{
-		if ((strncmp(env_str, var, len) == 0) && (env_str[len] == '='))
-			return env_str + len + 1;
+		len = strlen(var);
+
 		while (*env_str)
+		{
+			if ((strncmp(env_str, var, len) == 0) && (env_str[len] == '='))
+				return env_str + len + 1;
+			while (*env_str)
+				env_str++;
 			env_str++;
-		env_str++;
+		}
 	}
 
 	return NULL;
@@ -440,32 +440,34 @@ execvp(char *oldcmd, char **argv)
 	 * have specified the explicit pathname.
 	 */
 	t = strrchr(argv[0], '/');
-	if (!t)
+
+	if (t == NULL)
 	{
 		path = shell_getenv("PATH");
-
-		if (path)
-		{
-			do
-			{
-				np = npath;
-
-				while (*path && *path != ';' && *path != ',')
-					*np++ = *path++;
-				if (*path)
-					path++;			/* skip the separator */
-
-				*np = 0;
-				strcat(npath, "/");
-				strcat(npath, argv[0]);
-
-				r = Pexec(0, npath, oldcmd, new_env);
-
-			} while (*path && r < 0);
-		}
+		if (path == NULL)
+			path = "./";
 	}
 	else
-		r = Pexec(0, argv[0], oldcmd, new_env);
+		path = "";
+
+	do
+	{
+		np = npath;
+
+		while (*path && *path != ';' && *path != ',')
+			*np++ = *path++;
+		if (*path)
+			path++;			/* skip the separator */
+
+		*np = 0;
+		/* t == NULL means that we really search through $PATH */
+		if (t == NULL)
+			strcat(npath, "/");
+		strcat(npath, argv[0]);
+
+		r = Pexec(0, npath, oldcmd, new_env);
+
+	} while (*path && r < 0);
 
 	Mfree(new_env);
 
@@ -1046,8 +1048,11 @@ execute(char *cmdline)
 	while (*c && !isspace(*c))
 		c++;
 
-	bzero(newcmd, sizeof(newcmd));
-
+	/* The `newcmd' does not have to be zeroed, because the Atari GEMDOS
+	 * manual says that the GEMDOS only copies the command line up to
+	 * 125 characters or until it encounters a zero byte. Let's hope
+	 * this to be true.
+	 */
 	strncpy(newcmd, c, 127);		/* crunch() destroys the `cmdline', so we need to copy it */
 
 	argc = crunch(cmdline, argv);
