@@ -133,10 +133,13 @@ norm_gemdos:
 	clr.w	-(sp)			// no frame format needed
 // NOTE: FOR NOW, WE PRESERVE A0 ACROSS GEMDOS CALLS. THIS WILL CHANGE
 // SOMEDAY, DON'T RELY ON IT!!!
-	move.l	_curproc,d0		// note: preserve all regs but d0
-	addq.l	#4,d0			// for compatibility
+	//move.l	_curproc,d0		// note: preserve all regs but d0
+	//addq.l	#4,d0			// for compatibility
 
-	move.l	d0,-(sp)		// push pointer to syscall context save
+	//move.l	d0,-(sp)		// push pointer to syscall context save
+	move.l	_curproc,-(sp)
+	addq.l	#4,(sp)
+	
 	jsr	_build_context
 	lea	_dos_tab,a5		// set syscall_tab
 	move.w	_dos_max,d5		// set syscall_max
@@ -146,14 +149,14 @@ norm_gemdos:
 	move.l	_curproc,a0
 	move.l	(a0),sp 		// this puts us in our private stack
 #ifdef NEW_SYSCALL
-	move.w (a1),d0
-	cmp.w	_dos_max,d0
+	move.w (a1),d1
+	cmp.w	_dos_max,d1
 	bcc	gemdos
 // offset 0 is func pointer, 4 is nr of args, 6 is their size
-nospr:	move.w	6(a5,d0.w*8),d0		// fetch size in bytes
-	lsr.w	#1,d0			// we need size in words
-cparg:	move.w	(a1,d0.w*2),-(sp)
-	dbra.w	d0,cparg
+nospr:	move.w	6(a5,d1.w*8),d1		// fetch size in bytes
+	lsr.w	#1,d1			// we need size in words
+cparg:	move.w	(a1,d1.w*2),-(sp)
+	dbra.w	d1,cparg
 #else
 	move.l	32(a1),-(sp)		// a1 was set by build_context
 	move.l	28(a1),-(sp)
@@ -407,6 +410,11 @@ L_bios:
 	move.l	(a1),-(sp)
 
 _syscall:
+// Ozk: From now on we preserve cpu register D0.. it seems to be important
+//      for XBIOS, since some functions return shorts while other returns
+//      longs. And apps apparently have ways of checking this...
+//
+
 //
 // check here to see if we need to flush the Bconout() buffer
 //
@@ -435,27 +443,26 @@ pt_ende:
 //
 // figure out which routine to call
 //
-	move.w	(sp),d0
-	cmp.w	d5,d0
+	move.w	(sp),d1
+	cmp.w	d5,d1
 	bcc	error
 #ifdef ONLY030
 #ifdef NEW_SYSCALL
-	move.l	0(a5,d0.w*8),d0
+	move.l	0(a5,d1.w*8),d1
 #else
-	move.l	0(a5,d0.w*4),d0 	// d0 = syscall_tab[d0]
+	move.l	0(a5,d1.w*4),d1 	// d0 = syscall_tab[d0]
 #endif
 #else
 #ifdef NEW_SYSCALL
-	add.w	d0,d0
+	add.w	d1,d1
 #endif
-	add.w	d0,d0
-	add.w	d0,d0			// multiply by 4
-	move.l	0(a5,d0.w),d0		// d0 = syscall_tab[d0]
+	add.w	d1,d1
+	add.w	d1,d1			// multiply by 4
+	move.l	0(a5,d1.w),d1		// d0 = syscall_tab[d0]
 #endif
 	beq	error			// null entry means invalid call
 	addq.w	#2,sp			// pop function number off stack
-	move.l	d0,a0
-	moveq.l	#0,d0
+	move.l	d1,a0
 	jsr	(a0)			// go do the call
 
 out:	moveq	#0,d2
@@ -507,7 +514,6 @@ nosig:
 	jsr	_restore_context	// never returns
 
 rom_bios:
-	moveq	#0,d0
 	move.l	_old_bios.w(pc),-(sp)
 	rts
 
@@ -704,11 +710,13 @@ _trap_1_emu:
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_D
 #endif
-	move.l	(sp)+,d0
-	clr.w	-(sp)			// frame format word
-	move.l	d0,-(sp)		// return address
+	move.w	(sp),-(sp)
+	move.w	4(sp),2(sp)
+	clr.w	4(sp)
+//	move.l	(sp)+,d0
+//	clr.w	-(sp)			// frame format word
+//	move.l	d0,-(sp)		// return address
 TE_D:	move.w	sr,-(sp)
-	moveq	#0,d0
 #ifdef	ONLY030
 	jmp	([_old_dos])
 #else
@@ -739,11 +747,13 @@ _trap_13_emu:
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_B
 #endif
-	move.l	(sp)+,d0
-	clr.w	-(sp)			// frame format word
-	move.l	d0,-(sp)		// return address
+	move.w	(sp),-(sp)
+	move.w	4(sp),2(sp)
+	clr.w	4(sp)
+//	move.l	(sp)+,d0
+//	clr.w	-(sp)			// frame format word
+//	move.l	d0,-(sp)		// return address
 TE_B:	move.w	sr,-(sp)
-	moveq	#0,d0
 #ifdef	ONLY030
 	jmp	([_old_bios])
 #else
@@ -756,11 +766,13 @@ _trap_14_emu:
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_X
 #endif
-	move.l	(sp)+,d0
-	clr.w	-(sp)			// frame format word
-	move.l	d0,-(sp)		// return address
+	move.w	(sp),-(sp)
+	move.w	4(sp),2(sp)
+	clr.w	4(sp)
+//	move.l	(sp)+,d0
+//	clr.w	-(sp)			// frame format word
+//	move.l	d0,-(sp)		// return address
 TE_X:	move.w	sr,-(sp)
-	moveq	#0,d0
 #ifdef	ONLY030
 	jmp	([_old_xbios])
 #else
@@ -990,11 +1002,11 @@ reent_fpu_saved:
 	// Fetch address of function, and copy 24 bytes of the parameters
 	// (or 32 bytes if function table == gemdos) from the original place.
  #ifdef ONLY030
-	move.l	(a5,d1.l*4),d0
+	move.l	(a5,d1.l*4),d2
  #else
 	add.w	d1,d1
 	add.w	d1,d1
-	move.l	(a5,d1.l),d0
+	move.l	(a5,d1.l),d2
  #endif
 	beq.s	reent_nofunc
 	moveq	#24,d5
@@ -1012,12 +1024,12 @@ reent_24:
 //	to be modified to reflect that, it now thinks
 //	param size includes function number!
  #ifdef ONLY030
-	move.l	(a5,d1.l*8),d0
+	move.l	(a5,d1.l*8),d2
  #else
 	add.w	d1,d1
 	add.w	d1,d1
 	add.w	d1,d1
-	move.l	(a5,d1.l),d0
+	move.l	(a5,d1.l),d2
  #endif
 	beq.s	reent_nofunc
  #ifdef	ONLY030
@@ -1038,8 +1050,7 @@ reent_cpyargs:
 	dbra	d1,reent_cpyargs
 reent_noargs:
 
-	move.l	d0,a0		// Function address
-	moveq	#0,d0
+	move.l	d2,a0		// Function address
 	jsr	(a0)
 	moveq	#0,d1		// Clear D1 -- we're not gonna call anything else
 reent_out:
@@ -1060,7 +1071,6 @@ reent_out_no_fpu:
 	rte
 reent_call_rom:
 	move.l	d1,a0
-	moveq	#0,d0
 	jmp	(a0)
 
 // ---- What to do when function number is outside function range
