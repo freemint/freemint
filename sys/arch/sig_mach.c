@@ -98,6 +98,26 @@ sendsig (ushort sig)
 	}
 	
 	++curproc->nsigs;
+	
+	if (sigact->sa_flags & SA_RESET)
+	{
+		sigact->sa_handler = SIG_DFL;
+		sigact->sa_flags &= ~SA_RESET;
+	}
+	
+	if (curproc->p_flag & P_FLAG_SYS)
+	{
+		/* This is a system process, e.g. a kernel thread. We can't
+		 * go into user mode for signal handling. As we know we are
+		 * already in kernel and a kernel thread must rts from the
+		 * signal handler we can simply callout the signal handler
+		 * as function.
+		 */
+		
+		((void (*)(void)) sigact->sa_handler)();
+		return 0;
+	}
+	
 	call = &curproc->ctxt[SYSCALL];
 	
 	/* what we do is build two fake stack frames; the top one is
@@ -115,7 +135,6 @@ sendsig (ushort sig)
 	if (newstack < (long) curproc->stack + ISTKSIZE + 256)
 	{
 		ALERT ("stack overflow");
-		// XXX goto _default;
 		return 1;
 	}
 	else if ((long) curproc->stack + STKSIZE < newstack)
@@ -160,12 +179,6 @@ sendsig (ushort sig)
 	call->pc = sigact->sa_handler;
 	/* don't restart FPU communication */
 	call->sfmt = call->fstate[0] = 0;
-	
-	if (sigact->sa_flags & SA_RESET)
-	{
-		sigact->sa_handler = SIG_DFL;
-		sigact->sa_flags &= ~SA_RESET;
-	}
 	
 	if (save_context (&newcurrent) == 0)
 	{
