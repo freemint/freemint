@@ -5,7 +5,7 @@
  * distribution.  See the file Changes.MH for a detailed log of changes.
  * 
  * 
- * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * Copyright 2003 Konrad M. Kokoszkiewicz <draco@atari.org>
  * All rights reserved.
  * 
  * This file is free software; you can redistribute it and/or modify
@@ -23,27 +23,22 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
  * Started: 1999-08-17
  * 
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  * 
- * 
- * Purpose:
- * Prototypes necessary for MagiC-style "share libraries".
- * 
- * History:
- * 99/07/04-
- * 99/08/17: - Creation, with pauses (Gryf)
- * 
  */
 
-# ifndef _m68k_slb_util_h
-# define _m68k_slb_util_h
+# ifndef _m68k_user_things_h
+# define _m68k_user_things_h
 
 # include "mint/mint.h"
+# include "mint/slb.h"
 
+void sig_return (void);
+void *pc_valid_return;
 
 long slb_open (void);
 long slb_close (void);
@@ -51,6 +46,5 @@ long slb_close_and_pterm (void);
 void _cdecl slb_init_and_exit(BASEPAGE *b);
 
 long _cdecl slb_exec (SHARED_LIB *sl, long fn, short nargs, ...);
-long _cdecl slb_fast (SHARED_LIB *sl, long fn, short nargs, ...);
 
-# endif /* _m68k_slb_util_h */
+# endif /* _m68k_user_things_h */

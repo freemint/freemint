@@ -5,7 +5,7 @@
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
  *
- * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * Copyright 2003 Konrad M. Kokoszkiewicz <draco@atari.org>
  * All rights reserved.
  *
  * This file is free software; you can redistribute it and/or modify
@@ -23,22 +23,11 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *
- * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
- * Started: 1999-08-17
+ * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
+ * Started: 26.II.2003.
  *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- *
- *
- * Purpose:
- * Contains assembler subroutines needed for Slbopen(), Slbclose(), ...
- *
- * History:
- * 00/05/02: - slb_exec now reads *tosbp to get the basepage address (Gryf)
- * 99/08/18: - Changed slb_exec to pass the basepage of the calling process,
- *             instead of its PID (Gryf)
- * 99/08/11-
- * 99/08/17: - Creation (Gryf)
  *
  */
 
@@ -46,8 +35,57 @@
 
 	.text
 
+// Some sort of a header first
+
+	.globl	_user_header
+
+_user_header:
+	.long	0xdeadbabe		// nice magic value first, for validation
+	.long	0x00000100		// version number
+	.long	user_end-_user_header	// total number of bytes (to copy)
+	.long	0			// user process' basepage pointer (to be filled)
+	.long	8			// number of valid addresses in the jumptable below
+
+// now the jumptable, with relative addresses
+
+	.long	_user_terminateme-_user_header
+	.long	_user_sig_return-_user_header
+	.long	_user_pc_valid_return-_user_header
+	.long	_user_slb_init_and_exit-_user_header
+	.long	_user_slb_open-_user_header
+	.long	_user_slb_close-_user_header
+	.long	_user_slb_close_and_pterm-_user_header
+	.long	_user_slb_exec-_user_header
+	.long	0
+
+_user_terminateme:
+	clr.w	-(sp)
+	trap	#1
+
+// sig_return: user signal handlers return to us. At that point, the
+// stack looks like this:
+//  -4(sp)	(long) sfmt
+//    (sp)	(long) signal number -- was a parameter for user routine
+
+	.globl	_sig_return
+	.globl	_pc_valid_return
+
+_user_sig_return:
+_sig_return:	addq.w	#8,sp		// pop signal number and sfmt
+	move.w	#0x011a,-(sp)		// Psigreturn() system call
+	trap	#1
+_user_pc_valid_return:
+_pc_valid_return:			// tells kernel its us
+// we had better not come back
+// if we did, something terrible
+// happened, and we might as well terminate
+	move.w	#-998,-(sp)
+	move.w	#0x4c,-(sp)		// Pterm()
+	trap	#1
+
 	.globl	_slb_init_and_exit
 
+_user_slb_init_and_exit:
 _slb_init_and_exit:
 
 	move.l	4(sp),a0		// basepage pointer
@@ -128,6 +166,7 @@ halt:	move.w	#0x0011,-(sp)
 
 	.globl	_slb_open
 
+_user_slb_open:
 _slb_open:
 	move.l	(sp),a0
 	move.l	4(sp),d0
@@ -173,6 +212,7 @@ failed:	move.l	8(sp),a0
 
 	.globl	_slb_close
 
+_user_slb_close:
 _slb_close:
 	move.l	4(sp),a0
 	move.l	SL_HEAD(a0),a0
@@ -195,6 +235,7 @@ _slb_close:
 
 	.globl	_slb_close_and_pterm
 
+_user_slb_close_and_pterm:
 _slb_close_and_pterm:
 	move.l	d0,-(sp)
 	move.l	8(sp),a0
@@ -226,15 +267,12 @@ _slb_close_and_pterm:
 // d0: EINVFN: Function not implemented (or function number out of range)
 //     Otherwise: Return code of function
 //
-// slb_fast is an alternative stub which avoids trapping to
-// GEMDOS at each library call.
 
 	.globl	_slb_exec
 	.globl	_tosbp
 
+_user_slb_exec:
 _slb_exec:
-	move.l	_tosbp,a0
-	move.l	(a0),d1
 	move.l	8(sp),d0
 	bmi.s	einvfn
 	move.l	4(sp),a0
@@ -248,12 +286,15 @@ _slb_exec:
 	move.l	SH_FUNCTIONS(a0,d0.l),d0
 #endif
 	beq.s	einvfn
+	move.l	_tosbp,a0
+	move.l	(a0),4(sp)
 	move.l	d0,a0
-	move.l	d1,4(sp)
 	jmp	(a0)
 
-einvfn:
+einvfn:	sub.l	a0,a0		// hide the shared lib struct address
 	moveq	#-32,d0
 	rts
+
+user_end:
 
 // EOF
