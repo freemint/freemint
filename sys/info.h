@@ -180,6 +180,7 @@ extern const char *MSG_init_starting_sysupdate;
 extern const char *MSG_init_pid_0;
 extern const char *MSG_init_launching_init;
 extern const char *MSG_init_no_init_specified;
+extern const char *MSG_init_rom_AES;
 extern const char *MSG_init_starting_shell;
 extern const char *MSG_init_starting_internal_shell;
 extern const char *MSG_init_done;
