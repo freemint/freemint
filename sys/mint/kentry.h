@@ -184,6 +184,7 @@ struct kentry_proc
 	void	_cdecl	(*iwake)(int que, long cond, short pid);
 
 	long	_cdecl	(*killgroup)(int, unsigned short, int);
+	void	_cdecl	(*raise)(unsigned short sig);
 
 	/* functions for adding/cancelling timeouts
 	 * ----------------------------------------
@@ -255,6 +256,7 @@ struct kentry_proc
 	ikill, \
 	iwake, \
 	killgroup, \
+	raise, \
 	\
 	addtimeout_curproc, \
 	canceltimeout, \
