@@ -241,7 +241,7 @@ init_cookies (void)
 
 	/* setup new COOKIE Jar */
 # ifdef JAR_PRIVATE
-	kernel_things.user_jar_p = (long)newcookie;
+	kernel_things.user_jar_p = newcookie;
 # endif
 	*CJAR = newcookie;
 }

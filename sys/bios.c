@@ -270,7 +270,7 @@ sys_b_setexc (int number, long vector)
 # ifdef JAR_PRIVATE
 	else if (number == 0x0168)
 		/* The cookie jar pointer */
-		old = ut->user_jar_p;
+		old = (long)ut->user_jar_p;
 # endif
 	else
 		old = *place;
@@ -290,7 +290,7 @@ sys_b_setexc (int number, long vector)
 		}
 # ifdef JAR_PRIVATE
 		else if (number == 0x0168)
-			ut->user_jar_p = vector;
+			ut->user_jar_p = (struct cookie *)vector;
 # endif
 		else if (number == 0x101)
 		{
