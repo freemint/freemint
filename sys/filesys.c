@@ -553,7 +553,7 @@ load_xfs (const char *path, const char *name)
 	{
 		FILESYS *fs;
 		
-		DEBUG (("load_xfs: initializing %s, bp = %lx, size = %lx", path, b, b->p_tlen + b->p_dlen + b->p_blen));
+		DEBUG (("load_xfs: initializing %s, bp = %lx (init %lx), size = %li", path, b, (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 		
 		fs = callout_init ((void *) b->p_tbase, &kernelinfo);
 		if (fs)
@@ -626,7 +626,7 @@ load_xdd (const char *path, const char *name)
 	{
 		DEVDRV *dev;
 		
-		DEBUG (("load_xdd: initializing %s, bp = %lx, size = %lx", path, b, b->p_tlen + b->p_dlen + b->p_blen));
+		DEBUG (("load_xdd: initializing %s, bp = %lx (init %lx), size = %li", path, b, (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 		
 		dev = callout_init ((void *) b->p_tbase, &kernelinfo);
 		if (dev)
@@ -735,6 +735,23 @@ static void (*loads [])(const char *, const char *) =
 	load_xfs
 };
 
+static const char *dont_load_list [] =
+{
+	"fnramfs.xfs"
+};
+
+int
+dont_load (const char *name)
+{
+	int i;
+	
+	for (i = 0; i < (sizeof (dont_load_list) / sizeof (*dont_load_list)); i++)
+		if (stricmp (dont_load_list [i], name) == 0)
+			return 1;
+	
+	return 0;
+}
+
 void
 load_modules (long type)
 {
@@ -750,10 +767,10 @@ load_modules (long type)
 	
 	for (i = 0; i < (sizeof (paths) / sizeof (*paths)); i++)
 	{
+		DIR dirh;
 		char buf [128];
 		long len;
 		char *name;
-		DIR dirh;
 		long r;
 		
 		strcpy (buf, paths [i]);
@@ -761,7 +778,7 @@ load_modules (long type)
 		buf [len++] = '\\';
 		buf [len] = '\0';
 		name = buf + len;
-		len = 128 - len;
+		len = sizeof (buf) - len;
 		
 		r = _d_opendir (&dirh, buf);
 		DEBUG (("load_modules: d_opendir (%s) = %li", buf, r));
@@ -774,7 +791,9 @@ load_modules (long type)
 			while (r == 0)
 			{
 				r = strlen (name+4) - 4;
-				if ((r > 0) && !stricmp (name+4 + r, types [type]))
+				if ((r > 0) &&
+				    stricmp (name+4 + r, types [type]) == 0 &&
+				    !dont_load (name+4))
 				{
 					char *ptr1 = name;
 					char *ptr2 = name+4;
