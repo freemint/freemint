@@ -1514,6 +1514,9 @@ d_g_cicon(LOCK lock, struct widget_tree *wt)
 	c = ciconblk->mainlist;
 	while (c)
 	{
+		/* Jinnee v<2.5 has misunderstood the next_res NULL rule :( */
+		if ( c == (CICON*)-1 ) break;
+
 		if (c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
