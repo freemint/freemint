@@ -3339,30 +3339,33 @@ wind_mshape(struct xa_window *wind, short x, short y)
 
 	if (wind)
 	{
-		struct xa_window *rwind = NULL;
-		struct xa_widget *hwidg, *rwidg = NULL;
+		if (cfg.widg_auto_highlight)
+		{
+			struct xa_window *rwind = NULL;
+			struct xa_widget *hwidg, *rwidg = NULL;
 
-		checkif_do_widgets(0, wind, 0, x, y, &hwidg);
+			checkif_do_widgets(0, wind, 0, x, y, &hwidg);
 		
-		if (hwidg && !hwidg->owner && hwidg->display)
-		{
-			if (wind != C.hover_wind || hwidg != C.hover_widg)
+			if (hwidg && !hwidg->owner && hwidg->display)
 			{
-				rwind = C.hover_wind;
-				rwidg = C.hover_widg;
-				redisplay_widget(0, wind, hwidg, OS_SELECTED);
-				C.hover_wind = wind;
-				C.hover_widg = hwidg;
+				if (wind != C.hover_wind || hwidg != C.hover_widg)
+				{
+					rwind = C.hover_wind;
+					rwidg = C.hover_widg;
+					redisplay_widget(0, wind, hwidg, OS_SELECTED);
+					C.hover_wind = wind;
+					C.hover_widg = hwidg;
+				}
 			}
-		}
-		else if ((rwind = C.hover_wind))
-		{
-			rwidg = C.hover_widg;
-			C.hover_wind = NULL, C.hover_widg = NULL;
-		}
+			else if ((rwind = C.hover_wind))
+			{
+				rwidg = C.hover_widg;
+				C.hover_wind = NULL, C.hover_widg = NULL;
+			}
 		
-		if (rwind)
-			redisplay_widget(0, rwind, rwidg, OS_NORMAL);
+			if (rwind)
+				redisplay_widget(0, rwind, rwidg, OS_NORMAL);
+		}
 		
 		if (wind->active_widgets & SIZER)
 		{
