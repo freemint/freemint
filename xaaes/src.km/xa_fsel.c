@@ -167,9 +167,9 @@ fs_prompt(SCROLL_INFO *list)
 		SCROLL_ENTRY *old = list->cur;
 
 		seget.e = s;
-		seget.arg.pnent.flags = ENT_VISIBLE;
-		seget.arg.pnent.maxlevel = 1;
-		seget.arg.pnent.curlevel = 0;
+		seget.arg.flags = ENT_VISIBLE;
+		seget.arg.maxlevel = -1;
+		seget.arg.curlevel = 0;
 		p.idx = 0;
 		while (seget.e)
 		{
@@ -692,7 +692,7 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 			/* file entry action */
 			p.idx = 0;
 			p.e = list->cur;
-			p.arg.txt = fs->file;
+			p.arg.typ.txt = fs->file;
 			list->get(list, list->cur, SEGET_TEXTCPY, &p);
 			fs->selected_entry = list->cur;
 		}
@@ -701,7 +701,7 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 			/* folder entry action */
 			DIAG((D_fsel, NULL, " --- folder '%s'", list->cur->c.td.text.text->text));
 			p.idx = 0;
-			p.arg.txt = "..";
+			p.arg.typ.txt = "..";
 			
 			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && !p.ret.ret)
 			{
@@ -712,7 +712,7 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 				fs_updir(lock, fs);
 				return true;
 			}
-			p.arg.txt = ".";
+			p.arg.typ.txt = ".";
 			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && p.ret.ret)
 			{
 				int drv;
@@ -797,7 +797,7 @@ fs_click(enum locks lock, struct scroll_info *list, OBJECT *form, int objc)
 		list->get(list, list->cur, SEGET_TEXTPTR, &p);
 		if ( ! (uf & FLAG_DIR))
 		{
-			set_file(lock, fs, p.ret.ptr); //list->cur->c.td.text.text->text);
+			set_file(lock, fs, p.ret.ptr);
 		}
 		else if (strcmp(p.ret.ptr, ".") == 0)
 		{
