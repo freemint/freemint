@@ -319,7 +319,7 @@ sys_socketpair (long domain, long type, long protocol, short fds[2])
 	if (!ret)
 	{
 		fp_done (p, fp1, fd1, FD_CLOEXEC);
-		fp_done (p, fp1, fd1, FD_CLOEXEC);
+		fp_done (p, fp2, fd2, FD_CLOEXEC);
 		
 		fds[0] = fd1;
 		fds[1] = fd2;
