@@ -2,60 +2,106 @@
 # the files that should go only into source distributions.
 
 HEADER = \
+	about.h \
+	accstart.h \
+	aes_defs.h \
+	ahcm.h \
+	app_man.h \
+	bootup.h \
+	c_window.h \
+	config.h \
+	debug.h \
+	desktop.h \
+	display.h \
+	get_parent.h \
+	global.h \
+	handler.h \
+	ipff.h \
+	kernel.h \
+	libkern.h \
+	matchpat.h \
+	menuwidg.h \
+	messages.h \
+	my_aes.h \
+	nkcc.h \
+	objects.h \
+	op_names.h \
+	rectlist.h \
+	scrlobjc.h \
+	signals.h \
+	taskman.h \
+	trnfm.h \
+	util.h \
+	vaproto.h \
+	vdi_defs.h \
+	version.h \
+	widgets.h \
+	xalloc.h \
+	xa_aes.h \
+	xa_clnt.h \
+	xa_codes.h \
+	xa_defs.h \
+	xa_evnt.h \
+	xa_form.h \
+	xa_fsel.h \
+	xa_global.h \
+	xa_graf.h \
+	xa_rsrc.h \
+	xa_shel.h \
+	xa_types.h
 
 COBJS = \
 	about.c \
+	ahcm.c \
+	app_man.c \
 	bootup.c \
 	config.c \
-	handler.c \
-	kernel.c \
-	app_man.c \
-	util.c \
-	\
-	xa_clnt.c \
-	xa_appl.c \
-	xa_evnt.c \
-	xa_graf.c \
-	xa_wind.c \
-	xa_form.c \
-	xa_menu.c \
-	xa_objc.c \
-	xa_fsel.c \
-	xa_rsrc.c \
-	xa_fork.c \
-	xa_shel.c \
-	xa_scrp.c \
-	xa_wdial.c \
-	\
+	crtinit.c \
 	c_window.c \
-	widgets.c \
-	menuwidg.c \
+	debug.c \
 	desktop.c \
 	display.c \
+	draw_obj.c \
+	get_parent.c \
+	handler.c \
 	ipff.c \
-	debug.c \
+	kernel.c \
+	matchpat.c \
+	menuwidg.c \
 	messages.c \
+	my_aes.c \
+	nkcc.c \
+	nkcc_gem_to_norm.c \
 	rectlist.c \
 	scrlobjc.c \
 	signals.c \
 	taskman.c \
-	draw_obj.c \
-	matchpat.c \
 	trnfm.c \
-	ahcm.c \
+	util.c \
+	widgets.c \
 	xalloc.c \
-	\
-	get_parent.c \
-	my_aes.c \
-	nkcc.c \
-	nkcc_gem_to_norm.c
+	xa_appl.c \
+	xa_clnt.c \
+	xa_evnt.c \
+	xa_fork.c \
+	xa_form.c \
+	xa_fsel.c \
+	xa_graf.c \
+	xa_menu.c \
+	xa_objc.c \
+	xa_rsrc.c \
+	xa_scrp.c \
+	xa_shel.c \
+	xa_wdial.c \
+	xa_wind.c
 
 SOBJS = \
 	accstart.s \
-	p_handlr.s \
-	nkcc-gc.s
+	nkcc-gc.s \
+	p_handlr.s
 
 SSOBJS = \
-	startup.S
+	startup.S \
+	setstack.S
 
 SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
