@@ -78,6 +78,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 	}
 	else
 	{
+		S.wm_count++;
 		while (mb)
 		{
 			wait_mouse(wt->owner, &mb, &mx, &my);
@@ -102,6 +103,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 				}
 			}
 		}
+		S.wm_count--;
 		
 	}
 
@@ -272,6 +274,7 @@ rubber_box(struct xa_client *client, COMPASS cp,
 	wr_mode(MD_XOR);
 	new_box(&r, NULL);
 
+	S.wm_count++;
 	do {
 		wait_mouse(client, &mb, &x, &y);
 
@@ -280,6 +283,7 @@ rubber_box(struct xa_client *client, COMPASS cp,
 		new_box(&r, &old);
 	}
 	while(mb);
+	S.wm_count--;
 	
 	new_box(&r, NULL);
 	wr_mode(MD_TRANS);
@@ -301,6 +305,7 @@ drag_box(struct xa_client *client, RECT r,
 	wr_mode(MD_XOR);
 	new_box(&r, NULL);
 
+	S.wm_count++;
 	do
 	{
 		wait_mouse(client, &mb, &x, &y);
@@ -310,6 +315,7 @@ drag_box(struct xa_client *client, RECT r,
 		new_box(&r, &old);
 	}
 	while (mb);
+	S.wm_count--;
 
 	new_box(&r,NULL);
 	wr_mode(MD_TRANS);

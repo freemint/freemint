@@ -27,6 +27,7 @@
 #include "k_shutdown.h"
 #include "xa_global.h"
 
+#include "k_main.h"
 #include "c_window.h"
 #include "init.h"
 #include "my_aes.h"
@@ -62,6 +63,7 @@ k_shutdown(void)
 			{
 				flag = 0;
 				DIAGS(("client '%s' still running", client->name));
+				Unblock(client, 1, 1);
 			}
 
 			client = client->next;
