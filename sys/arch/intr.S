@@ -449,7 +449,7 @@ _new_bus:
 #ifndef ONLY030
 	move.w	#0x8,_sig_exc
 	cmp.l	#30,_mcpu
-	bne.s	noMMU
+	bmi.s	noMMU
 #endif
 	move.l	#_mmu_sigbus,_sig_routine
 #ifndef ONLY030
@@ -458,7 +458,11 @@ noMMU:
 	move.l	#_nommu_sigbus,_sig_routine
 #endif
 
-Do_sig:	move.l	a0,-(sp)		// save a0
+Do_sig:
+#ifdef ONLY030
+	nop			// flush pipes (better safe than sorry)
+#endif
+	move.l	a0,-(sp)		// save a0
 	move.l	_curproc,a0
 	move.l	sp,P_EXCSSP(a0)
 	addq.l	#4,P_EXCSSP(a0)
@@ -630,7 +634,7 @@ _new_cpv:
 	move.l	#_haltcpv,_sig_routine
 	bra	Do_sig
 
-	.globl	_old_priv		// old privilege violation vector
+	.globl	_check_priv
 _new_priv:
 #ifndef ONLY030
 	move.w	#0x20,_sig_exc
@@ -640,15 +644,12 @@ _new_priv:
 	tst.w	(0x59e).w		// 68000s always get SIGPRIV
 	beq	Do_sig
 #endif
-	movem.l	d0/a0,-(sp)
-	move.l	10(sp),a0		// fetch exception address
-	move.w	(a0),d0
-	and.w	#0xffc0,d0		// partially decode move sr,...
-	cmp.w	#0x40c0,d0		// and test it
-	movem.l	(sp)+,d0/a0		// preserves the flags
-	bne	Do_sig		// doesn't look like sr,...
-	move.l	_old_priv+8,-(sp)	// let our parent handle it
-	rts
+	movem.l	d0-a6,-(sp)		// check_priv() relies on this!
+	jsr	_check_priv
+	tst.l	d0
+	movem.l	(sp)+,d0-a6
+	beq	Do_sig
+	rte
 
 // system entry points from syscall.spp
 

@@ -5,6 +5,7 @@ STARTUP = startup.o
 
 COBJS = \
 	aranym.c \
+	check_exc.c \
 	halt.c \
 	info_mach.c \
 	init_mach.c \
