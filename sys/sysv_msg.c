@@ -31,17 +31,29 @@
  * 
  */
 
-# ifndef _sysv_shm_h
-# define _sysv_shm_h
-
-# include "mint/mint.h"
-# include "mint/shm.h"
+# include "sysv_msg.h"
 
 
-void *	sys_p_shmat  (long shmid, const void *shmaddr, long shmflg);
-long	sys_p_shmctl (long shmid, long cmd, struct shmid_ds *buf);
-long	sys_p_shmdt  (const void *shmaddr);
-long	sys_p_shmget (long key, long size, long shmflg);
+long
+sys_p_msgctl (long msqid, long cmd, struct msqid_ds *buf)
+{
+	return ENOSYS;
+}
 
+long
+sys_p_msgget (long key, long msgflg)
+{
+	return ENOSYS;
+}
 
-# endif	/* _sysv_shm_h  */
+long
+sys_p_msgsnd (long msqid, const void *msgp, long msgsz, long msgflg)
+{
+	return ENOSYS;
+}
+
+long
+sys_p_msgrcv (long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
+{
+	return ENOSYS;
+}

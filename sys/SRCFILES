@@ -66,6 +66,10 @@ COBJS = \
 	ssystem.c \
 	sys_emu.c \
 	syscall_vectors.c \
+	sysv_ipc.c \
+	sysv_msg.c \
+	sysv_sem.c \
+	sysv_shm.c \
 	time.c \
 	timeout.c \
 	tosfs.c \
