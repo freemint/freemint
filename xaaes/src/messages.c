@@ -192,6 +192,9 @@ static char va_msgs[][32] =
 static char unknown[32];
 
 char *
+pmsg(short m);
+
+char *
 pmsg(short m)
 {
 	char *ret;

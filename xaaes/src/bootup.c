@@ -91,7 +91,9 @@ static char *scle_name = "xa_exec.scl";
 static char *scl1_name = "xa_user1.scl";
 static char *scl2_name = "xa_user2.scl";
 #endif
+#if SEPARATE_SCL
 static char *sclp_name = "xa_scl.prg";
+#endif
 
 static char Aes_display_name[32];
 Path Aes_home_path;
@@ -117,8 +119,8 @@ static void *widget_resources;
 /* current no of env strings. */
 static int envs = 0;
 
-static XA_COLOUR_SCHEME default_colours = {LWHITE, BLACK, LBLACK, WHITE, BLACK, CYAN};
-static XA_COLOUR_SCHEME bw_default_colours = {WHITE, BLACK, BLACK, WHITE, BLACK, WHITE};
+static XA_COLOUR_SCHEME default_colours = {G_LWHITE, G_BLACK, G_LBLACK, G_WHITE, G_BLACK, G_CYAN};
+static XA_COLOUR_SCHEME bw_default_colours = {G_WHITE, G_BLACK, G_BLACK, G_WHITE, G_BLACK, G_WHITE};
 
 static vdi_vec *svmotv = 0;
 static vdi_vec *svbutv = 0;
@@ -411,7 +413,7 @@ cleanup(void)
 		Fclose(D.debug_file);
 #endif
 
-	t_color(BLACK);
+	t_color(G_BLACK);
 	wr_mode(MD_REPLACE);
 
 	/* Shut down the VDI */
@@ -1104,8 +1106,8 @@ BTRACE(41);
 		object_area(&c, tree, 1, 0, 0);
 		cfg.widg_w = c.w;
 		cfg.widg_h = c.h;
-		cfg.widg_dw = (tree[1].r.w - c.w)/2;
-		cfg.widg_dh = (tree[1].r.h - c.h)/2;
+		cfg.widg_dw = (tree[1].ob_width - c.w)/2;
+		cfg.widg_dh = (tree[1].ob_height - c.h)/2;
 
 		fdisplay(loghandle, true, "cfg.widg: %d/%d   %d/%d\n", cfg.widg_w, cfg.widg_h, cfg.widg_dw, cfg.widg_dh);
 	}
@@ -1149,7 +1151,7 @@ BTRACE(45);
 
 BTRACE(46);
 	{
-		char *vs = get_ob_spec(C.Aes->std_menu.tree + SYS_DESK)->string;
+		char *vs = get_ob_spec(C.Aes->std_menu.tree + SYS_DESK)->free_string;
 		strcpy(vs + strlen(vs) - 3, version + 3);
 	}
 
@@ -1173,9 +1175,9 @@ BTRACE(47);
 	
 	{
 		OBJECT *ob = get_xa_desktop();
-		ob->r = root_window->r;
-		(ob + DESKTOP_LOGO)->r.x = (root_window->wa.w - (ob + DESKTOP_LOGO)->r.w) / 2;
-		(ob + DESKTOP_LOGO)->r.y = (root_window->wa.h - (ob + DESKTOP_LOGO)->r.h) / 2;
+		*(RECT*)&ob->ob_x = root_window->r;
+		(ob + DESKTOP_LOGO)->ob_x = (root_window->wa.w - (ob + DESKTOP_LOGO)->ob_width) / 2;
+		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
 		C.Aes->desktop.tree = ob;
 		C.Aes->desktop.owner = C.Aes;
 		
@@ -1283,7 +1285,7 @@ BTRACE(53);
 	Sema_Dn(trap);
 #endif
 	Sema_Dn(desk);
-	Sema_Dn(update);
+	Sema_Dn(lck_update);
 	Sema_Dn(mouse);
 	Sema_Dn(fsel);
 

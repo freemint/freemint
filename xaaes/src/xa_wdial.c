@@ -63,21 +63,21 @@ XA_wdlg_create(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	if (pb->addrin[0] && pb->addrin[1] && pb->addrout)
 	{
-		XA_WIND_ATTR tp = MOVE|NAME;
+		XA_WIND_ATTR tp = MOVER|NAME;
 		RECT r;
-		OBJECT *tree = pb->addrin[1];
+		OBJECT *tree = (OBJECT*)pb->addrin[1];
 
 		pb->addrout[0] = 0;
 
-		tree->ob_state &= ~OUTLINED;
-		if (tree->r.x <= 0 && tree->r.y <= 0)
+		tree->ob_state &= ~OS_OUTLINED;
+		if (tree->ob_x <= 0 && tree->ob_y <= 0)
 			center_form(tree, ICON_H);
 
 		r = calc_window(lock, client, WC_BORDER,
 				tp,
 				MG,
 				false, false,
-				tree->r);
+				*(RECT*)&tree->ob_x);
 
 		wind = create_window(lock, send_app_message, client, false,
 				     tp,
@@ -92,15 +92,15 @@ XA_wdlg_create(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			wt = set_toolbar_widget(lock, wind, tree, 0);
 			wt->exit_form = exit_wdial;
 			wt->exit_handler = 0;
-			wt->wdlg.handle = wind->handle;
+			wt->wdlg.handle = (void*)(long)wind->handle;
 			wt->wdlg.wind = wind;
 			wt->wdlg.code = pb->intin[0];
 			wt->wdlg.flag = pb->intin[1];
-			wt->wdlg.user_data = pb->addrin[2];
-			wt->wdlg.data      = pb->addrin[3];
+			wt->wdlg.user_data = (void*)pb->addrin[2];
+			wt->wdlg.data      = (void*)pb->addrin[3];
 
 #if WDIAL_CALLBACK
-			wt->wdlg.exit      = pb->addrin[0];
+			wt->wdlg.exit      = (void*)pb->addrin[0];
 			rep = wt->wdlg.exit(0, 0, HNDL_INIT, wt->wdlg.code, wt->wdlg.data);
 			if (rep == 0)
 				delete_window(lock, wind);
@@ -128,7 +128,7 @@ XA_wdlg_open(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	if (*(unsigned char *)pb->addrin != 0xae)
+	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
@@ -145,7 +145,7 @@ XA_wdlg_open(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		RECT r = wind->r;
 		XA_WIND_ATTR tp = pb->intin[0];
 
-		tp &= CLOSE|MOVE|NAME;
+		tp &= CLOSER|MOVER|NAME;
 
 		/* The following if is a result of the clumsiness of the
 		 * WDIALOG interface. So dont blame me. */
@@ -165,7 +165,7 @@ XA_wdlg_open(LOCK lock, XA_CLIENT *client, AESPB *pb)
 					tp,
 					MG,
 					false, false,
-					tree->r);
+					*(RECT*)&tree->ob_x);
 
 			wind = create_window(lock, send_app_message, client, false,
 					     tp,
@@ -191,11 +191,11 @@ XA_wdlg_open(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		}
 
 		if (pb->addrin[1])
-			get_widget(wind, XAW_TITLE)->stuff = pb->addrin[1];
+			get_widget(wind, XAW_TITLE)->stuff = (void*)pb->addrin[1];
 
 		open_window(lock, wind, r);
 		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-		wt->wdlg.data = pb->addrin[2];
+		wt->wdlg.data = (void*)pb->addrin[2];
 
 #if WDIAL_CALLBACK
 		wt->wdlg.exit(wt->wdlg.handle, 0, HNDL_OPEN, pb->intin[3], wt->wdlg.data);
@@ -216,7 +216,7 @@ XA_wdlg_close(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	if (*(unsigned char *)pb->addrin != 0xae)
+	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
@@ -246,7 +246,7 @@ XA_wdlg_delete(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	if (*(unsigned char *)pb->addrin != 0xae)
+	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
@@ -276,7 +276,7 @@ XA_wdlg_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	if (*(unsigned char *)pb->addrin != 0xae)
+	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
@@ -302,7 +302,7 @@ XA_wdlg_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			/* wdlg_get_tree */
 			case 0:
-				r = pb->addrin[2];
+				r = (RECT*)pb->addrin[2];
 				if (r)
 					*r = wind->wa;
 				if (pb->addrin[1])
@@ -323,7 +323,7 @@ XA_wdlg_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			case 2:
 				if (pb->addrout)
 				{
-					pb->addrout[0] = wt->wdlg.user_data;
+					pb->addrout[0] = (long)wt->wdlg.user_data;
 					DIAG((D_wdlg, client, " -- udata %lx\n", pb->addrout[0]));
 				}
 			break;
@@ -351,14 +351,13 @@ XA_wdlg_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	XA_WINDOW *wind;
 	XA_TREE *wt;
-	OBJECT *tree;
 	short handle;
 
 	CONTROL(2,1,1)
 
 	pb->intout[0] = 0;
 
-	if (*(unsigned char *)pb->addrin != 0xae)
+	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
@@ -378,7 +377,7 @@ XA_wdlg_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			/* wdlg_set_edit */
 			case 0:
-				edit_object(lock,
+				edit_object(lock, client,
 					    pb->intin[1] ? ED_INIT : ED_END,
 					    wt, wt->tree, pb->intin[1], 0, &pb->intout[0]);
 			break;
@@ -398,7 +397,7 @@ XA_wdlg_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 					wt->exit_form = exit_edial;
 					wt->exit_handler = 0;
 			
-					tree->ob_state &= ~OUTLINED;
+					tree->ob_state &= ~OS_OUTLINED;
 
 					move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
 				}
@@ -437,7 +436,7 @@ XA_wdlg_event(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	if (*(unsigned char *)pb->addrin != 0xae)
+	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
@@ -452,7 +451,7 @@ XA_wdlg_event(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		if (wt)
 		{
-			EVNT *ev = pb->addrin[1];
+			EVNT *ev = (EVNT*)pb->addrin[1];
 			if (ev)
 			{
 				/* I wnat to see if the programs react. */
@@ -515,7 +514,7 @@ XA_wdlg_redraw(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	if (*(unsigned char *)pb->addrin != 0xae)
+	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];

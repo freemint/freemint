@@ -119,7 +119,7 @@ set_scroll(XA_CLIENT *client, OBJECT *form, int item)
 	/* HR: colours are those for windows */
 	set_ob_spec(form, item, (unsigned long)sinfo);
 	ob->ob_type = G_SLIST;
-	ob->ob_flags |= TOUCHEXIT;
+	ob->ob_flags |= OF_TOUCHEXIT;
 	sinfo->tree = form;
 	sinfo->item = item;
 
@@ -146,7 +146,7 @@ set_slist_object(LOCK lock,
 	RECT r;
 	XA_WIND_ATTR wkind = UPARROW|VSLIDE|DNARROW;
 	OBJECT *ob = form + item;
-	SCROLL_INFO *list = get_ob_spec(ob)->listbox;
+	SCROLL_INFO *list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 
 	list->wt = wt;
 
@@ -155,7 +155,7 @@ set_slist_object(LOCK lock,
 
 	list->title = title;
 	/* rp_2_ap; it is an OBJECT, not a widget */
-	r = ob->r;
+	r = *(RECT*)&ob->ob_x;
 	/* We want to use the space normally occupied by the shadow;
 	    so we do a little cheat here. */
 	r.w += SHADOW_OFFSET;
@@ -166,9 +166,9 @@ set_slist_object(LOCK lock,
 	if (info)
 		wkind |= INFO;
 	if (closer)
-		wkind |= CLOSE;
+		wkind |= CLOSER;
 	if (fuller)
-		wkind |= FULL;
+		wkind |= FULLER;
 	if (lmax*screen.c_max_w + ICON_W > r.w - 24)
 		wkind |= LFARROW|HSLIDE|RTARROW;
 	wkind |= TOOLBAR;
@@ -193,7 +193,7 @@ set_slist_object(LOCK lock,
 		r.h *= screen.c_max_h;		/* snap the workarea hight */
 		list->s = r.h / screen.c_max_h;
 		dh = list->wi->wa.h - r.h;
-		ob->r.h -= dh;
+		ob->ob_height -= dh;
 		list->wi->r.h -= dh;
 		list->slider = sliders;
 		list->closer = closer;
@@ -219,7 +219,7 @@ add_scroll_entry(OBJECT *form, int item,
 	SCROLL_ENTRY *last, *new;
 	OBJECT *ob = form + item;
 	
-	list = get_ob_spec(ob)->listbox;
+	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 
 	new = xmalloc(sizeof(*new), 5);
 	if (!new)
@@ -245,7 +245,7 @@ add_scroll_entry(OBJECT *form, int item,
 	new->icon = icon;
 	new->flag = flag;
 	if (icon)
-		icon->r.x = icon->r.y = 0;
+		icon->ob_x = icon->ob_y = 0;
 
 	list->n = new->n;
 	return true;
@@ -259,7 +259,7 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 	SCROLL_ENTRY *this, *next, *prior = NULL;
 	OBJECT *ob = form + item;
 	int n = 0;
-	list = get_ob_spec(ob)->listbox;
+	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 	this = next = list->start;
 	
 	while (this)
@@ -309,7 +309,7 @@ slist_msg_handler(
 	int p,ol;
 
 	ob = wind->winob + wind->winitem;
-	list = get_ob_spec(ob)->listbox;
+	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 	old = list->top;
 	ol  = list->left;
 
@@ -477,7 +477,7 @@ click_scroll_list(LOCK lock, OBJECT *form, int item, struct moose_data *md)
 	OBJECT *ob = form + item;
 	short cy = md->y;
 
-	list = get_ob_spec(ob)->listbox;
+	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 
 	if (!do_widgets(lock, list->wi, 0, md))
 	{
@@ -516,7 +516,7 @@ dclick_scroll_list(LOCK lock, OBJECT *form, int item, struct moose_data *md)
 	OBJECT *ob = form + item;
 	short y = screen.c_max_h, cx = md->x, cy = md->y;	
 
-	list = get_ob_spec(ob)->listbox;
+	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 
 	if (!do_widgets(lock, list->wi, 0, md))		/* HR 161101: mask */
 	{

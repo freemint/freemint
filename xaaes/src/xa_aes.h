@@ -28,27 +28,40 @@
 #ifndef _xa_aes_h
 #define _xa_aes_h
 
-#include "aes_defs.h"
-#include "vdi_defs.h"
+#include "mt_gemx.h"
 
+/* TODO: Usage of RECT should be eliminated somehow
+         and replaced by the gemlib's GRECT.
+         It is quite a lot of work however. :( */
+typedef struct { short x, y, w, h; } RECT;
+
+/*
+ * XaAES/oAESis Extended Shell Write structure 
+ * Extra fields for UID/GID setting of spawned clients.
+ * Different naming.
+ */
+struct xshelw
+{
+	char *newcmd;
+	long psetlimit;
+	long prenice;
+	char *defdir;
+	char *env;
+	short uid;			/* New child's UID */
+	short gid;			/* New child's GID */
+};
+typedef struct xshelw XSHELW;
+
+/* The shel_write extensions (used in xa_fork_exec()) */
+#define SW_UID 	0x1000	/* Set user id of launched child */
+#define	SW_GID	0x2000	/* Set group id of launched child */
+
+/* extended OBJECT types, XaAES only */
+#define G_SLIST		39
+#define G_UNKNOWN	40
 
 /* To ensure that both XaAES and clients talk about the same things :-) */
 #define SL_RANGE	1000
-
-/* Process id of the screen manager - this is redundant
- * and will probably require a kludge to redirect it to the
- * 'real' desktop (check the AVSERVER variable?) */
-#define SCR_MGR		0x0001
-
-#define AP_MSG		0
-
-/* Object library definitions */
-#define ROOT		0
-
-/* System foreground and background rules */
-#define SYS_FG		0x1100	/* but transparent */
-#define WTS_FG		0x11a1	/* Window title selected; using pattern 2 & replace mode text */
-#define WTN_FG		0x1100	/* Window title normal   */
 
 
 /* AES 4.1 extended te_font types */
@@ -61,24 +74,10 @@ enum te_defs
 	TE_SMALL = 5		/* Use the small system font (8 point) */
 };
 
-
-/* Graphics library definitions */
-#define VERTICAL	0
-#define HORIZONTAL	1
-
-/* Scrap library definitions */
-#define SCRAP_CSV	0x0001
-#define SCRAP_TXT	0x0002
-#define SCRAP_GEM	0x0004
-#define SCRAP_IMG	0x0008
-#define SCRAP_DCA	0x0010
-#define SCRAP_USR	0x8000
-
 /* Window library definitions */
 
 typedef unsigned long XA_WIND_ATTR;
 
-#define USE_INTIN5 0x8000
 enum wind_xattr
 {
 	XMENU = 0x0001,		/*  A window with a menu bar */
@@ -106,121 +105,30 @@ enum wind_xattr
 #define HIDER		HIDE
 
 /* visible widgets */
-#define V_WIDG  (CLOSE|NAME|MOVE|ICONIFY|FULL|XaMENU|HIDE|INFO|SIZE|UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE)
+#define V_WIDG  (CLOSER|NAME|MOVER|ICONIFIER|FULLER|XaMENU|HIDE|INFO|SIZER|UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE)
 
-#define DESK	0
-
-/* redifined AES parameter block */
-typedef struct
+/* At last give in to the fact that it is a struct, NOT an array */
+struct aes_global
 {
-	short *contrl;
-	struct aes_global *globl;
-	short *intin;
-	short *intout;
-	void **addrin;
-	void **addrout;
-} AESPB;
-
-
-/*------------------------------------------------------------ */
-/* SPECIAL N.Aes/XaAES stuff */
-
-/* appl_control */
-enum apc_code
-{
-	APC_HIDE = 10,
-	APC_SHOW,
-	APC_TOP,
-	APC_HIDENOT,
-	APC_INFO,
-	/* APC_MENU, This is a very bad idea */
-	APC_HIGH
+	short	version;
+	short	count;
+	short	id;
+	union private *pprivate;	/*  3,  4 */
+	void	*ptree;			/*  5,  6 */
+	void	*rshdr;			/*  7,  8 */
+	short	lmem;			/*  9     */
+	short	nplanes;		/* 10     */
+	short	res1, client_end;	/* 11, 12 */
+	short	c_max_h, bvhard;	/* 13, 14 */
 };
 
 /* appl_search */
-enum client_type				/* compendium */
+enum client_type
 {
-	APP_FIRST,
-	APP_NEXT,
-	APP_DESK,
 	APP_TASKINFO    = 0x100,	/* XaAES extension for taskbar applications. */
-	APP_SYSTEM      = 0x01,
-	APP_APPLICATION = 0x02,
-	APP_ACCESSORY   = 0x04,
-	APP_SHELL       = 0x08,
 	APP_HIDDEN      = 0x100,	/* XaAES extension for taskbar applications. */
 	APP_FOCUS       = 0x200		/* idem  */
 };
-
-/*------------------------------------------------------------ */
-/* SPECIAL WDIALOG stuff */
-
-/* HR: This is the worst piece of interface design I have ever seen.
- *     How on earth could Andreas Kromke have accepted this clumsy work
- *     of the Behne brothers. They really should have known better.
- *     Given the problems that progdefs have caused in multitasking OS's.
- *
- *     Calling back from the OS into user code is something known to be a bad thing
- *     for half a century now.
- *     
- *     This whole lot of crap has succeeded to spoil my good humour for much too long.
- *     It would have been so much easier to use a few message types in stead.
- */
-
-typedef void *DIALOG;
-typedef short _cdecl HNDL_OBJ(void *dialog, EVNT *events, short obj, short clicks, void *data);
-typedef HNDL_OBJ *HANDL_OBJ;
-
-typedef enum
-{
-	/* Function numbers for <obj> with handle_exit(...) */
-	HNDL_UNTP =-11,		/* Dialog-window is not active */
-	HNDL_TOPW,		/* Dialog-window has been topped */
-	HNDL_MOVE,		/* Dialog was moved */
-	HNDL_EDCH,		/* Edit-field was changed */
-	HNDL_EDDN,		/* Character was entered in edit-field */
-	HNDL_EDIT,		/* Test characters for an edit-field */
-	HNDL_OPEN,		/* End of dialog initialisation (second  call at end of wdlg_init) */
-	HNDL_CLSD =-3,		/* Dialog window was closed */
-	HNDL_MESG,		/* Initialise dialog */
-	HNDL_INIT,		/* Initialise dialog */
-
-	/* Definitions for <flags> */
-	WDLG_BKGD = 1		/* Permit background operation */
-} WDLG_OPT;
-
-/****** Listbox definitions ***********************************************/
-struct lbox_item
-{
-	struct lbox_item *next;	/* Pointer to the next entry in the list */
-	short selected;		/* Specifies if the object is selected */
-
-	short data1;		/* Data for the program... */
-	void *data2;
-	void *data3;
-
-};
-typedef struct lbox_item LBOX_ITEM;
-
-typedef void *LIST_BOX;
-
-typedef void (_cdecl *SLCT_ITEM)(LIST_BOX *box, OBJECT *tree, struct lbox_item *item,
-				 void *user_data, short obj_index, short last_state);
-
-typedef short (_cdecl *SET_ITEM)(LIST_BOX *box, OBJECT *tree, struct lbox_item *item,
-				 short obj_index, void *user_data, RECT *rect, short first);
-
-typedef enum
-{
-	LBOX_VERT     =   1,	/* Listbox with vertical slider */
-	LBOX_AUTO     =   2,	/* Auto-scrolling */
-	LBOX_AUTOSLCT =   4,	/* Automatic display during auto-scrolling */
-	LBOX_REAL     =   8,	/* Real-time slider */
-	LBOX_SNGL     =  16,	/* Only a selectable entry */
-	LBOX_SHFT     =  32,	/* Multi-selection with Shift */
-	LBOX_TOGGLE   =  64,	/* Toggle status of an entry at selection */
-	LBOX_2SLDRS   = 128	/* Listbox has a horiz. and a vertical slider */
-} LBOX_FLG;
 
 
 /*------------------------------------------------------------ */

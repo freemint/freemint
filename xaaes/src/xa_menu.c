@@ -40,6 +40,9 @@
 
 #if GENERATE_DIAGS
 bool
+check_tree(XA_CLIENT *client, OBJECT *tree, int item);
+
+bool
 check_tree(XA_CLIENT *client, OBJECT *tree, int item)
 {
 	long ltree = (long)tree;
@@ -84,7 +87,7 @@ check_tree(XA_CLIENT *client, OBJECT *tree, int item)
 				{
 					int j = 0;
 
-					while ((ob->ob_flags & LASTOB) == 0)
+					while ((ob->ob_flags & OF_LASTOB) == 0)
 					{
 						ob++;
 						j++;
@@ -126,7 +129,7 @@ XA_menu_bar(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	XA_TREE *menu_bar;
 	XA_TREE *menu = &client->std_menu;
 
-	OBJECT *mnu = pb->addrin[0];
+	OBJECT *mnu = (OBJECT*)pb->addrin[0];
 	XA_WINDOW *wl;
 	XA_CLIENT *top_owner;
 
@@ -149,12 +152,12 @@ XA_menu_bar(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			fix_menu(mnu,true);
 			DIAG((D_menu,NULL,"fixed menu\n"));
 
-			mnu->r.w = mnu[mnu->ob_tail].r.w = mnu[mnu->ob_head].r.w = screen.r.w;
+			mnu->ob_width = mnu[mnu->ob_tail].ob_width = mnu[mnu->ob_head].ob_width = screen.r.w;
 	
 #if GENERATE_DIAGS
 			{
 				int i = 0;
-				while ((mnu[i].ob_flags & LASTOB) == 0)
+				while ((mnu[i].ob_flags & OF_LASTOB) == 0)
 					i++;
 				menu_bar->lastob = i;
 			}
@@ -216,9 +219,9 @@ XA_menu_tnormal(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	/* Change the highlight / normal status of a menu title */
 	if (pb->intin[1])
-		tree[pb->intin[0]].ob_state &= ~SELECTED;
+		tree[pb->intin[0]].ob_state &= ~OS_SELECTED;
 	else
-		tree[pb->intin[0]].ob_state |= SELECTED;
+		tree[pb->intin[0]].ob_state |= OS_SELECTED;
 
 	/* If we just changed the main root window's menu, better redraw it */
 	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
@@ -241,9 +244,9 @@ XA_menu_ienable(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
-		tree[pb->intin[0]].ob_state &= ~DISABLED;
+		tree[pb->intin[0]].ob_state &= ~OS_DISABLED;
 	else
-		tree[pb->intin[0]].ob_state |= DISABLED;
+		tree[pb->intin[0]].ob_state |= OS_DISABLED;
 
 	/* If we just changed the main root window's menu, better redraw it */
 	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
@@ -266,9 +269,9 @@ XA_menu_icheck(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
-		tree[pb->intin[0]].ob_state |= CHECKED;
+		tree[pb->intin[0]].ob_state |= OS_CHECKED;
 	else
-		tree[pb->intin[0]].ob_state &= ~CHECKED;
+		tree[pb->intin[0]].ob_state &= ~OS_CHECKED;
 
 	/* If we just changed the main root window's menu, better redraw it */
 	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
@@ -291,7 +294,7 @@ XA_menu_text(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	CONTROL(1,1,2)
 
-	strcpy(get_ob_spec(&tree[pb->intin[0]])->string, text);
+	strcpy(get_ob_spec(&tree[pb->intin[0]])->free_string, text);
 
 	/* If we just changed the main root window's menu, better redraw it */
 	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
@@ -307,7 +310,7 @@ XA_menu_text(LOCK lock, XA_CLIENT *client, AESPB *pb)
 unsigned long
 XA_menu_register(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	int f; char *n = pb->addrin[0];
+	int f; char *n = (char*)pb->addrin[0];
 	
 	CONTROL(1,1,1)
 
@@ -370,7 +373,7 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	    /*&& lock_screen(client, 0, NULL, 6)*/)
 	{
 		Tab *tab = C.active_menu;
-		MENU *mn = pb->addrin[0], *md = pb->addrin[1];
+		MENU *mn = (MENU*)pb->addrin[0], *md = (MENU*)pb->addrin[1];
 		short x, y;
 		OBJECT *ob = mn->mn_tree;
 
@@ -389,8 +392,8 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			tab->locker = client->pid; /*C.Aes->pid;*/ /*client->pid;*/
 			tab->client = client;
 			tab->lock = lock;
-			ob->r.x = 0;
-			ob->r.y = 0;
+			ob->ob_x = 0;
+			ob->ob_y = 0;
 			object_offset(ob, mn->mn_menu, 0, 0, &x, &y);
 			tab->wind = NULL;
 			tab->widg = NULL;
@@ -418,7 +421,7 @@ unsigned long
 XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	short x, y;
-	OBJECT *ob = pb->addrin[0];
+	OBJECT *ob = (OBJECT*)pb->addrin[0];
 	CONTROL(2,1,1)
 
 	pb->intout[0] = -1;
@@ -448,20 +451,20 @@ XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			y = pb->intin[1];
 			if (x == 0 && y == 0)
 			{
-				x = ob->r.x;
-				y = ob->r.y;
+				x = ob->ob_x;
+				y = ob->ob_y;
 			}
 			else
 			{
-				x -= ob->r.w/2;
-				y -= ob->r.h/2;
+				x -= ob->ob_width/2;
+				y -= ob->ob_height/2;
 			}
 			if (x < 4)
 				x = 4;
 			if (y < MENU_H)
 				y = MENU_H;
-			ob->r.x = 0;
-			ob->r.y = 0;
+			ob->ob_x = 0;
+			ob->ob_y = 0;
 
 			bzero(&tab->task_data.menu, sizeof(MENU_TASK));
 
@@ -496,22 +499,22 @@ XA_menu_attach(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		case ME_ATTACH:
 			pb->intout[0] = attach_menu(lock,
 						    client,
-						    pb->addrin[0],
+						    (OBJECT*)pb->addrin[0],
 						    pb->intin[1],
-						    pb->addrin[1]);
+						    (MENU*)pb->addrin[1]);
 			break;
 		case ME_REMOVE:
 			pb->intout[0] = detach_menu(lock,
 						    client,
-						    pb->addrin[0],
+						    (OBJECT*)pb->addrin[0],
 						    pb->intin[1]);
 			break;
 		case ME_INQUIRE:
 			pb->intout[0] = inquire_menu(lock,
 						     client,
-						     pb->addrin[0],
+						     (OBJECT*)pb->addrin[0],
 						     pb->intin[1],
-						     pb->addrin[1]);
+						     (MENU*)pb->addrin[1]);
 			break;
 		}
 	}
@@ -549,7 +552,7 @@ XA_menu_settings(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	pb->intout[0] = 1;
 	if (pb->intin[0] == 0)
 	{
-		MN_SET *mn = pb->addrin[0];
+		MN_SET *mn = (MN_SET*)pb->addrin[0];
 		mn->display = 200;
 		mn->drag = 10000;
 		mn->delay = 250;

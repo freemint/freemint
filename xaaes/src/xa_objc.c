@@ -45,10 +45,10 @@
 void
 set_ob_spec(OBJECT *root, int s_ob, unsigned long cl)
 {
-	if (root[s_ob].ob_flags & INDIRECT)
-		root[s_ob].ob_spec.indirect->lspec = cl;
+	if (root[s_ob].ob_flags & OF_INDIRECT)
+		root[s_ob].ob_spec.indirect->index = cl;
 	else
-		root[s_ob].ob_spec.lspec = cl;
+		root[s_ob].ob_spec.index = cl;
 }
 
 /*
@@ -146,8 +146,14 @@ is_menu(OBJECT *tree)
 }
 
 #if GENERATE_DIAGS
-static char *ob_types[] =
-{
+/* OB_STATES OB_FLAGS */
+char *pstates[] = {"SEL","CROSS","\10","DIS","OUTL","SHA","WBAK","D3D",
+						  "8","9","10","11","12","13","14","15"};
+
+char *pflags[]  = {"S","DEF","EXIT","ED","RBUT","LAST","TOUCH","HID",
+						  ">>","INDCT","BACKGR","SUBM","12","13","14","15"};
+
+char *ob_types[] = {
 	"box",
 	"text",
 	"boxtext",
@@ -171,25 +177,19 @@ static char *ob_types[] =
 	"40"
 };
 
-/* OB_STATES OB_FLAGS */
-char *pstates[] = {"SEL","CROSS","\10","DIS","OUTL","SHA","WBAK","D3D",
-			"8","9","10","11","12","13","14","15"};
-
-char *pflags[]  = {"S","DEF","EXIT","ED","RBUT","LAST","TOUCH","HID",
-			">>","INDCT","BACKGR","SUBM","12","13","14","15"};
-
-static char other[80], nother[160];
 
 char *
 object_type(OBJECT *tree, int t)
 {
+    static char other[80];
+
 	unsigned int ty = tree[t].ob_type,tx;
 
-	if (ty >= G_BOX && ty < G_MAX)
+	if (ty >= G_BOX && ty < G_BOX+sizeof(ob_types)/sizeof(*ob_types))
 		return ob_types[ty-G_BOX];
 
 	tx = ty & 0xff;
-	if (tx >= G_BOX && tx < G_MAX)
+	if (tx >= G_BOX && tx < G_BOX+sizeof(ob_types)/sizeof(*ob_types))
 		sdisplay(other, "ext: 0x%x + %s", ty >> 8, ob_types[tx-G_BOX]);
 	else
 		sdisplay(other, "unknown: 0x%x,%d", ty, ty);
@@ -200,6 +200,7 @@ object_type(OBJECT *tree, int t)
 static char *
 object_txt(OBJECT *tree, int t)			/* HR: I want to know the culprit in a glance */
 {
+    	static char nother[160];
 	int ty = tree[t].ob_type;
 
 	*nother = 0;
@@ -219,28 +220,28 @@ object_txt(OBJECT *tree, int t)			/* HR: I want to know the culprit in a glance 
 		case G_TITLE:
 		case G_STRING:
 		case G_SHORTCUT:
-			sdisplay(nother," '%s'",get_ob_spec(tree + t)->string);
+			sdisplay(nother," '%s'",get_ob_spec(tree + t)->free_string);
 			break;
 	}	
 	return nother;
 }
 
 void
-show_bits(ushort bits, char *prf, char *t[], char *x)
+show_bits(ushort data, char *prf, char *t[], char *x)
 {
 	int i = 0;
 	*x = 0;
-	if (bits)
+	if (data)
 	{
 		strcpy(x,prf);
-		while (bits)
+		while (data)
 		{
-			if (bits & 1)
+			if (data & 1)
 			{
 				strcat(x, t[i]);
 				strcat(x, "|");
 			}
-			bits >>= 1;
+			data >>= 1;
 			i++;
 		}
 		i = strlen(x) - 1;
@@ -261,14 +262,14 @@ XA_TREE nil_tree = { 0 };
  * Initialise the object display jump table
  */
 
-static ObjectDisplay *objc_jump_table[G_MAX];
+static ObjectDisplay *objc_jump_table[G_UNKNOWN];
 
 void
 init_objects(void)
 {
 	int f;
 
-	for (f = 0; f < G_MAX; f++)
+	for (f = 0; f <= G_UNKNOWN; f++)
 		/* Anything with a NULL pointer won't get called */
 		objc_jump_table[f] = NULL;
 
@@ -306,13 +307,13 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 	 * The best thing (no confusion) is to generalize the concept.
 	 * Which I did. :-)
 	 */
-	ushort state_mask = (SELECTED|CROSSED|CHECKED|DISABLED|OUTLINED);
+	ushort state_mask = (OS_SELECTED|OS_CROSSED|OS_CHECKED|OS_DISABLED|OS_OUTLINED);
 	unsigned int t = ob->ob_type & 0xff;
 
-	r.x = parent_x + ob->r.x;
-	r.y = parent_y + ob->r.y;
-	r.w = ob->r.w; 
-	r.h = ob->r.h;
+	r.x = parent_x + ob->ob_x;
+	r.y = parent_y + ob->ob_y;
+	r.w = ob->ob_width; 
+	r.h = ob->ob_height;
 
 	if (   r.x       > C.global_clip[2]	/* x + w */
 	    || r.x+r.w-1 < C.global_clip[0]	/* x     */
@@ -320,7 +321,7 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 	    || r.y+r.h-1 < C.global_clip[1])	/* y     */
 		return;
 
-	if (t < G_MAX)
+	if (t <= G_UNKNOWN)
 		/* Get display routine for this type of object from jump table */
 		display_routine = objc_jump_table[t];
 
@@ -331,7 +332,7 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 		display_routine = objc_jump_table[G_IBOX];
 #else
 	{
-		DIAG((D_objc,wt->owner,"ob_type: %d(0x%x)\n", t, ob->ob_type));
+		DIAG((D_objc,wt->owner,"no display_routine! ob_type: %d(0x%x)\n", t, ob->ob_type));
 		/* dont attempt doing what could be indeterminate!!! */
 		return;
 	}
@@ -357,9 +358,10 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 		show_bits(ob->ob_flags, "flg=", pflags, flagstr);
 		show_bits(ob->ob_state, "st=", pstates, statestr);
 
-		DIAG((D_o, wt->owner, "ob=%d, %d/%d,%d/%d; %s%s %s %s\n",
+		DIAG((D_o, wt->owner, "ob=%d, %d/%d,%d/%d [%d: 0x%lx]; %s%s %s %s\n",
 			 item,
 			 r.x, r.y, r.w, r.h,
+			 t, display_routine,
 			 object_type(wt->tree, item),
 			 object_txt(wt->tree, item),
 			 flagstr,
@@ -373,9 +375,9 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 	wr_mode(MD_TRANS);
 
 	/* Handle CHECKED object state: */
-	if ((ob->ob_state & state_mask) & CHECKED)
+	if ((ob->ob_state & state_mask) & OS_CHECKED)
 	{
-		t_color(BLACK);
+		t_color(G_BLACK);
 		/* ASCII 8 = checkmark */
 		v_gtext(C.vh, r.x + 2, r.y, "\10");
 	}
@@ -384,14 +386,14 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 	/* (May not look too hot in colour mode, but it's better than
 		no disabling at all...) */
 	
-	if ((ob->ob_state & state_mask) & DISABLED)
-		write_disable(&r, WHITE);
+	if ((ob->ob_state & state_mask) & OS_DISABLED)
+		write_disable(&r, G_WHITE);
 
 	/* Handle CROSSED object state: */
-	if ((ob->ob_state & state_mask) & CROSSED)
+	if ((ob->ob_state & state_mask) & OS_CROSSED)
 	{
 		short p[4];
-		l_color(BLACK);
+		l_color(G_BLACK);
 		p[0] = r.x;
 		p[1] = r.y;
 		p[2] = r.x + r.w - 1;
@@ -403,7 +405,7 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 	}
 
 	/* Handle OUTLINED object state: */
-	if ((ob->ob_state & state_mask) & OUTLINED)
+	if ((ob->ob_state & state_mask) & OS_OUTLINED)
 	{
 		/* special handling of root object. */
 		if (!wt->zen || item != 0)
@@ -418,16 +420,16 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 			}
 			else
 			{
-				l_color(WHITE);
+				l_color(G_WHITE);
 				gbox(1, &r);
 				gbox(2, &r);
-				l_color(BLACK);
+				l_color(G_BLACK);
 				gbox(3, &r);
 			}
 		}
 	}
 
-	if ((ob->ob_state & state_mask) & SELECTED)
+	if ((ob->ob_state & state_mask) & OS_SELECTED)
 		write_selection(0, &r);
 
 	wr_mode(MD_TRANS);
@@ -453,10 +455,11 @@ draw_object_tree(LOCK lock, XA_TREE *wt, OBJECT *tree, int item, int depth, int 
 		wt->owner = C.Aes;
 	}
 
-	if (tree == NULL && wt->tree != NULL)
+	if (tree == NULL)
 		tree = wt->tree;
+	else
+		wt->tree = tree;
 
-	wt->tree = tree;
 	if (!wt->owner)
 		wt->owner = C.Aes;
 
@@ -465,8 +468,8 @@ draw_object_tree(LOCK lock, XA_TREE *wt, OBJECT *tree, int item, int depth, int 
 	y = -wt->dy;
 	DIAG((D_objc, wt->owner, "dx = %d, dy = %d\n", x, y));
 	DIAG((D_objc, wt->owner, "[%d]draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d\n",
-		which, t_owner(wt), x + tree->r.x, y + tree->r.y,
-		tree->r.w, tree->r.h, tree, item, depth));
+		which, t_owner(wt), x + tree->ob_x, y + tree->ob_y,
+		tree->ob_width, tree->ob_height, tree, item, depth));
 	DIAG((D_objc, wt->owner, "  -   (%d)%s%s\n",
 		wt->is_menu, is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : ""));
 	DIAG((D_objc, wt->owner, "  -   clip: %d.%d/%d.%d    %d/%d,%d/%d\n",
@@ -481,7 +484,7 @@ draw_object_tree(LOCK lock, XA_TREE *wt, OBJECT *tree, int item, int depth, int 
 			rel_depth = 0;
 		}
 
-		if (start_drawing && !(tree[current].ob_flags & HIDETREE))
+		if (start_drawing && !(tree[current].ob_flags & OF_HIDETREE))
 		{
 			/* Display this object */
 			display_object(lock, wt, current, x, y, 10);
@@ -491,13 +494,13 @@ draw_object_tree(LOCK lock, XA_TREE *wt, OBJECT *tree, int item, int depth, int 
 
 		/* Any non-hidden children? */
 		if (    head != -1
-		    && (tree[current].ob_flags & HIDETREE) == 0
+		    && (tree[current].ob_flags & OF_HIDETREE) == 0
 		    && (start_drawing == 0
 			|| (start_drawing != 0
 			    && rel_depth < depth)))
 		{
-			x += tree[current].r.x;
-			y += tree[current].r.y;
+			x += tree[current].ob_x;
+			y += tree[current].ob_y;
 
 			rel_depth++;
 
@@ -512,8 +515,8 @@ draw_object_tree(LOCK lock, XA_TREE *wt, OBJECT *tree, int item, int depth, int 
 			while (next != -1 && tree[next].ob_tail == current)
 			{
 				current = next;
-				x -= tree[current].r.x;
-				y -= tree[current].r.y;
+				x -= tree[current].ob_x;
+				y -= tree[current].ob_y;
 				next = tree[current].ob_next;
 				rel_depth--;
 			}
@@ -549,16 +552,16 @@ object_offset(OBJECT *tree, int object, short dx, short dy, short *mx, short *my
 		/* Found the object in the tree? cool, return the coords */
 		if (current == object)
 		{
-			*mx = x + tree[current].r.x;
-			*my = y + tree[current].r.y;
+			*mx = x + tree[current].ob_x;
+			*my = y + tree[current].ob_y;
 			return 1;
 		}
 
 		/* Any children? */
 		if (tree[current].ob_head != -1)
 		{
-			x += tree[current].r.x;
-			y += tree[current].r.y;
+			x += tree[current].ob_x;
+			y += tree[current].ob_y;
 			current = tree[current].ob_head;
 		}
 		else
@@ -570,8 +573,8 @@ object_offset(OBJECT *tree, int object, short dx, short dy, short *mx, short *my
 			{
 				/* Trace back up tree if no more siblings */
 				current = next;
-				x -= tree[current].r.x;
-				y -= tree[current].r.y;
+				x -= tree[current].ob_x;
+				y -= tree[current].ob_y;
 				next = tree[current].ob_next;
 			}
 			current = next;
@@ -605,11 +608,11 @@ find_object(OBJECT *tree, int object, int depth, short mx, short my, short dx, s
 		
 		if (start_checking)
 		{
-			if (  (tree[current].ob_flags & HIDETREE) == 0
-			    && tree[current].r.x + x                     <= mx
-			    && tree[current].r.y + y                     <= my
-			    && tree[current].r.x + x + tree[current].r.w >= mx
-			    && tree[current].r.y + y + tree[current].r.h >= my)
+			if (  (tree[current].ob_flags & OF_HIDETREE) == 0
+			    && tree[current].ob_x + x                     <= mx
+			    && tree[current].ob_y + y                     <= my
+			    && tree[current].ob_x + x + tree[current].ob_width  >= mx
+			    && tree[current].ob_y + y + tree[current].ob_height >= my)
 			{
 				/* This is only a possible object, as it may have children on top of it. */
 				pos_object = current;
@@ -618,11 +621,11 @@ find_object(OBJECT *tree, int object, int depth, short mx, short my, short dx, s
 
 		if (((!start_checking) || (rel_depth < depth))
 		    && (tree[current].ob_head != -1)
-		    && (tree[current].ob_flags & HIDETREE) == 0)
+		    && (tree[current].ob_flags & OF_HIDETREE) == 0)
 		{
 			/* Any children? */
-			x += tree[current].r.x;
-			y += tree[current].r.y;
+			x += tree[current].ob_x;
+			y += tree[current].ob_y;
 			rel_depth++;
 			current = tree[current].ob_head;
 		}
@@ -635,8 +638,8 @@ find_object(OBJECT *tree, int object, int depth, short mx, short my, short dx, s
 			while ((next != -1) && (tree[next].ob_tail == current))
 			{
 				current = next;
-				x -= tree[current].r.x;
-				y -= tree[current].r.y;
+				x -= tree[current].ob_x;
+				y -= tree[current].ob_y;
 				next = tree[current].ob_next;
 				rel_depth--;
 			}
@@ -656,7 +659,7 @@ check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree)
 
 	DIAG((D_form, client, "check_widget_tree for %s: wh=%d obj:%lx, ed:%d, tree:%lx, %d/%d\n",
 		c_owner(client), wind?wind->handle:-1,
-		wt->tree, wt->edit_obj, tree, tree->r.x, tree->r.y));
+		wt->tree, wt->edit_obj, tree, tree->ob_x, tree->ob_y));
 
 	/* HR 220401: x & y governed by fmd.wind */
 	if (wind)
@@ -669,11 +672,11 @@ check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree)
 
 		DIAG((D_form, client, "check_widget_tree: fmd.wind: %d/%d, wt: %d/%d\n",
 			client->fmd.wind->wa.x, client->fmd.wind->wa.y,
-			wt->tree ? wt->tree->r.x : -1, wt->tree ? wt->tree->r.y : -1));
+			wt->tree ? wt->tree->ob_x : -1, wt->tree ? wt->tree->ob_y : -1));
 
 		if (!ct)		
-			tree->r.x = client->fmd.wind->wa.x,
-			tree->r.y = client->fmd.wind->wa.y;
+			tree->ob_x = client->fmd.wind->wa.x,
+			tree->ob_y = client->fmd.wind->wa.y;
 		/* else governed by widget.loc */
 
 		wt->zen = true;
@@ -697,8 +700,8 @@ check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree)
 unsigned long
 XA_objc_draw(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	RECT *r = (RECT *)&pb->intin[2];
-	OBJECT *tree = pb->addrin[0];
+	const RECT *r = (const RECT *)&pb->intin[2];
+	OBJECT *tree = (OBJECT*)pb->addrin[0];
 	int item = pb->intin[0];
 	CONTROL(6,1,1)
 
@@ -741,7 +744,7 @@ XA_objc_draw(LOCK lock, XA_CLIENT *client, AESPB *pb)
 unsigned long
 XA_objc_offset(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	OBJECT *tree = pb->addrin[0];
+	OBJECT *tree = (OBJECT*)pb->addrin[0];
 
 	CONTROL(1,3,1)
 
@@ -760,7 +763,7 @@ XA_objc_find(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	CONTROL(4,1,1)
 
-	pb->intout[0] = find_object(pb->addrin[0],
+	pb->intout[0] = find_object((OBJECT*)pb->addrin[0],
 				    pb->intin[0],
 				    pb->intin[1],
 				    pb->intin[2],
@@ -793,24 +796,20 @@ thickness(OBJECT *ob)
 	case G_BOX:
 	case G_IBOX:
 	case G_BOXCHAR:
-		t = get_ob_spec(ob)->this.framesize;
-		if (t & 128)
-			t = -(1 + (t ^ 0xff));
+		t = get_ob_spec(ob)->obspec.framesize;
 		break;
 	case G_BUTTON:
 		flags = ob->ob_flags;
 		t = -1;
-		if (flags&EXIT)
+		if (flags&OF_EXIT)
 			t--;
-		if (flags&DEFAULT)
+		if (flags&OF_DEFAULT)
 			t--;
 		break;
 	case G_BOXTEXT:
 	case G_FBOXTEXT:
 		ted = get_ob_spec(ob)->tedinfo;
-		t = (char)ted->te_thickness;
-		if (t & 128)
-			t = -(1 + (t ^ 0xff));
+		t = (signed char)ted->te_thickness;
 	}
 
 	return t;
@@ -825,8 +824,8 @@ object_rectangle(RECT *c, OBJECT *ob, int i, short transx, short transy)
 	OBJECT *b = ob + i;
 
 	object_offset(ob, i, transx, transy, &c->x, &c->y);
-	c->w = b->r.w;
-	c->h = b->r.h;
+	c->w = b->ob_width;
+	c->h = b->ob_height;
 }
 
 void
@@ -850,7 +849,7 @@ object_area(RECT *c, OBJECT *ob, int i, short transx,  short transy)
 	dw = 2*db;
 	dh = 2*db;
 
-	if (b->ob_state & OUTLINED)
+	if (b->ob_state & OS_OUTLINED)
 	{
 		dx = min(dx, -3);
 		dy = min(dy, -3);
@@ -859,7 +858,7 @@ object_area(RECT *c, OBJECT *ob, int i, short transx,  short transy)
 	}
 
 	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
-	if (thick < 0 && b->ob_state & SHADOWED)
+	if (thick < 0 && b->ob_state & OS_SHADOWED)
 	{
 		dw += 2*thick;
 		dh += 2*thick;
@@ -899,7 +898,7 @@ transparent(OBJECT *root, int i)
 }
 
 void
-change_object(LOCK lock, XA_TREE *wt, OBJECT *root, int i, RECT *r, int state,
+change_object(LOCK lock, XA_TREE *wt, OBJECT *root, int i, const RECT *r, int state,
               bool draw)
 {
 	int start  = i;
@@ -918,7 +917,7 @@ change_object(LOCK lock, XA_TREE *wt, OBJECT *root, int i, RECT *r, int state,
 
 		hidem();
 		object_area(&c,root,i,wt ? wt->dx : 0, wt ? wt->dy : 0);
-		if (!r || (r && rc_intersect(*r, &c)))
+		if (!r || (r && xa_rc_intersect(*r, &c)))
 		{
 			set_clip(&c);
 			draw_object_tree(lock, wt, root, start, MAX_DEPTH, 1);
@@ -939,7 +938,7 @@ redraw_object(LOCK lock, XA_TREE *wt, int item)
 unsigned long
 XA_objc_change(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	OBJECT *tree = pb->addrin[0];
+	OBJECT *tree = (OBJECT*)pb->addrin[0];
 
 	CONTROL(8,1,1)
 
@@ -949,7 +948,7 @@ XA_objc_change(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			      check_widget_tree(lock, client, tree),
 			      tree,
 			      pb->intin[0],
-			      (RECT *)&pb->intin[2],
+			      (const RECT *)&pb->intin[2],
 			      pb->intin[6],
 			      pb->intin[7]);	
 		pb->intout[0] = 1;
@@ -1340,9 +1339,9 @@ edit_object(LOCK lock,
 	/* go through the objects until the LASTOB */
 	do {
 		/* exit if ed_obj is not editable */
-		if (last == ed_obj && (form[last].ob_flags & EDITABLE) == 0)
+		if (last == ed_obj && (form[last].ob_flags & OF_EDITABLE) == 0)
 			return 0;
-	} while (!(form[last++].ob_flags & LASTOB));
+	} while (!(form[last++].ob_flags & OF_LASTOB));
 
 	/* the ed_obj is past the LASTOB (last is past the one -> decrement) */
 	if (ed_obj >= --last)
@@ -1412,7 +1411,7 @@ XA_objc_edit(LOCK lock, XA_CLIENT *client, AESPB *pb)
 					    client,
 				            pb->intin[3],
 				            &client->wt,
-					    pb->addrin[0],
+					    (OBJECT*)pb->addrin[0],
 					    pb->intin[0],
 					    pb->intin[1],
 					    &pb->intout[1]);

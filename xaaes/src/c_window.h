@@ -31,7 +31,7 @@ XA_WINDOW *create_window(LOCK lock, SendMessage *message_handler,
 			 XA_CLIENT *client, bool nolist, XA_WIND_ATTR tp,
 			 WINDOW_TYPE dial,
 			 int frame, int thinframe, bool thinwork,
-			 RECT r, RECT *max, RECT *rem);
+			 const RECT r, const RECT *max, RECT *rem);
 
 XA_WINDOW *find_window(LOCK lock, int x, int y);
 XA_WINDOW *get_wind_by_handle(LOCK lock, int h);
@@ -46,14 +46,14 @@ void	move_window(LOCK lock, XA_WINDOW *wind, int newstate, int x, int y, int w, 
 void	delete_window(LOCK lock, XA_WINDOW *wind);
 void	display_window(LOCK lock, int which, XA_WINDOW *w, RECT *clip);
 void	draw_window(LOCK lock, XA_WINDOW *wind);
-void	display_windows_below(LOCK lock, RECT *r, XA_WINDOW *w);
+void	display_windows_below(LOCK lock, const RECT *r, XA_WINDOW *w);
 
 RECT	free_icon_pos(LOCK lock);
 RECT	calc_window(LOCK lock, XA_CLIENT *client, int request,
 		    unsigned long tp, int mg, int thinframe, bool thinwork,
 		    RECT r);
 
-void	top_window(LOCK lock, XA_WINDOW *w, XA_CLIENT *menu_owner);
+void	top_window(LOCK lock, XA_WINDOW *w, XA_CLIENT *desk_menu_owner);
 void	bottom_window(LOCK lock, XA_WINDOW *w);
 void	after_top(LOCK lock, bool untop);
 void	remove_windows(LOCK lock, XA_CLIENT *client);

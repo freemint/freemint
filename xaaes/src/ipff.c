@@ -114,14 +114,14 @@ ipff_line(long *l)
 
 /* remove trailing spaces */
 void
-ipff_trail(char *ln)
+ipff_trail(char *s)
 {
-	char *t = ln;
+	char *t = s;
 
 	while (*t != 0)
 		t++;
 
-	while (--t >= ln && (*t == ' ' || *t == '\t'))
+	while (--t >= s && (*t == ' ' || *t == '\t'))
 		*t = 0;
 }
 
@@ -405,8 +405,6 @@ bin(void)
 	if (t) return -n;
 	else   return  n;
 }
-
-extern long fl;
 
 /* 0 = true, anything else is false */
 bool

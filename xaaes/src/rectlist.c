@@ -84,7 +84,7 @@ generate_rect_list(LOCK lock, XA_WINDOW *w, short which)
 			{
 				r_win = wl->r;		
 				r_ours = rl->r;				
-				if (rc_intersect(r_ours, &r_win))		/* If window intersects this rectangle, process */
+				if (xa_rc_intersect(r_ours, &r_win))		/* If window intersects this rectangle, process */
 				{
 	/* If window doesn't completely mask this rectangle, create new results */				
 					if((r_ours.w != r_win.w) || (r_ours.h != r_win.h))
@@ -250,7 +250,7 @@ was_visible(XA_WINDOW *w)
  * March 22, 1985)
  */
 bool
-rc_intersect(RECT s, RECT *d)
+xa_rc_intersect(RECT s, RECT *d)
 {
 #define max(x,y) (((x)>(y))?(x):(y))
 #define min(x,y) (((x)<(y))?(x):(y))

@@ -38,7 +38,7 @@ enum locks
 	desk      = 0x010,
 	clients   = 0x020,
 	fsel      = 0x040,
-	update    = 0x080,
+	lck_update  = 0x080,
 	mouse     = 0x100,
 	envstr    = 0x200,
 	pending   = 0x400,

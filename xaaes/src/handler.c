@@ -91,13 +91,13 @@
 struct shared S;
 
 /*
- * Note: since XA_handler now properly loads the global base register,
+ * Note: since XA_handler now properly loads the globl base register,
  *	 'far' data is no longer needed! <mk>
  * (Except if the 64 K limit is reached, of course...)
  */
 
 /* <beta4>
- * New approach here - the XaAES.cmd pipe is no longer a global handle
+ * New approach here - the XaAES.cmd pipe is no longer a globl handle
  * (there were problems re-opening it after a shutdown), so we have to open it
  * especially - this is in fact the only place it's used. Clients introduce themselves
  * via the XaAES.cmd pipe, then do everything else via their individual pipes.
@@ -124,6 +124,7 @@ struct shared S;
 unsigned long
 XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
+	struct aes_global *globl = (struct aes_global *)pb->global;
 	int drv,pid = Pgetpid();
 	long AES_in;
 
@@ -184,19 +185,20 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	/* HR 150501:
 	   At last give in to the fact that it is a struct, NOT an array */
 	pb->intout[0] = -1;
-	pb->globl->version = 0x0410;		/* Emulate AES4.1 */
-	pb->globl->count = -1;			/* Unlimited applications (well, not really) HR: only 32??? */
-	pb->globl->id = client->pid;		/* appid==pid */
-	pb->globl->pprivate = NULL;
-	pb->globl->ptree = NULL;		/* Atari: pointer to pointerarray of trees in rsc. */
-	pb->globl->rshdr = NULL;		/* Pointer to resource header. */
-	pb->globl->nplanes = screen.planes;
-	pb->globl->res1 = 0;
-	pb->globl->client_end = 0;
-	pb->globl->c_max_h = screen.c_max_h;	/* AES4.0 extensions */
-	pb->globl->bvhard = 4;
 
-	client->globl_ptr = pb->globl;		/* Preserve the pointer to the global array */
+	globl->version = 0x0410;		/* Emulate AES4.1 */
+	globl->count = -1;			/* Unlimited applications (well, not really) HR: only 32??? */
+	globl->id = client->pid;		/* appid==pid */
+	globl->pprivate = NULL;
+	globl->ptree = NULL;		/* Atari: pointer to pointerarray of trees in rsc. */
+	globl->rshdr = NULL;		/* Pointer to resource header. */
+	globl->nplanes = screen.planes;
+	globl->res1 = 0;
+	globl->client_end = 0;
+	globl->c_max_h = screen.c_max_h;	/* AES4.0 extensions */
+	globl->bvhard = 4;
+
+	client->globl_ptr = globl;		/* Preserve the pointer to the globl array */
 						/* so we can fill in the resource address later */
 
 	AES_in = Fopen(C.cmd_name, O_RDWR);
@@ -227,7 +229,7 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		}
 
 		/* XaAES extension */
-		pb->globl->client_end = client->client_end;
+		globl->client_end = client->client_end;
 
 		/* Get the client's home directory (where it was started)
 		 * - we use this later to load resource files, etc
@@ -260,7 +262,7 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		 * - The kernal will respond by opening its end of the reply pipe ready for use
 		 */
 		client->app.ctrl[0] = XA_NEW_CLIENT;
-		client->app.pb.contrl = client->app.ctrl;
+		client->app.pb.control = client->app.ctrl;
 		client->app.packet.pid = client->pid;		/* Client pid */
 		client->app.packet.cmd = AESCMD_STD;		/* No reply */
 		client->app.packet.pb = &client->app.pb;	/* Pointer to AES parameter block */
@@ -295,7 +297,6 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 unsigned long
 XA_appl_exit(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-
 	CONTROL(0,1,0)
 
 	DIAG((D_appl,client,"appl_exit for %d client_end %d\n", client->pid, client->client_end));
@@ -311,7 +312,7 @@ XA_appl_exit(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	 * - The kernal will respond by closing its end of the clients reply pipe.
 	 */
 	client->app.ctrl[0] = XA_CLIENT_EXIT;
-	client->app.pb.contrl = client->app.ctrl;
+	client->app.pb.control = client->app.ctrl;
 	client->app.packet.pid = pb->intout[0];		/* Client pid */
 	client->app.packet.cmd = AESCMD_STD;		/* No reply */
 	client->app.packet.pb = &client->app.pb;	/* Pointer to AES parameter block */
@@ -659,7 +660,7 @@ XA_handler(ushort c, AESPB *pb)
 	unsigned long reply_s;
 	short cmd;
 
-	DIAGS(("XA_handler (c=0x%x, pb=%lx)\n", c, pb));
+	DIAG((D_trap,NULL,"XA_handler (c=0x%x, pb=%lx)\n", c, (long)pb));
 
 	/* We must know who we are so we can get our client structure. */
 	clnt_pid = Pgetpid();
@@ -678,7 +679,7 @@ XA_handler(ushort c, AESPB *pb)
 		return AES_MAGIC;
 	}
 
-	cmd = pb->contrl[0];
+	cmd = pb->control[0];
 
 	if (   cmd == XA_NEW_CLIENT
 	    || cmd == XA_APPL_INIT)
@@ -753,7 +754,7 @@ XA_handler(ushort c, AESPB *pb)
 				/* HR: how about this? It means that these
 	                         * semaphores are not needed and are effectively skipped.
 				 */
-				LOCK lock = winlist|envstr|pending;
+				LOCK llock = winlist|envstr|pending;
 
 				vq_mouse(C.vh, &button.b, &button.x, &button.y);
 				vq_key_s(C.vh, &button.ks);
@@ -762,7 +763,7 @@ XA_handler(ushort c, AESPB *pb)
 					lock_screen(client, -1, NULL, 2);
 
 				/* callout the AES function */
-				cmd_rtn = (*cmd_routine)(lock, client, pb);
+				cmd_rtn = (*cmd_routine)(llock, client, pb);
 
 				if (Ktab[cmd].p & LOCKSCREEN && cmd_rtn != XAC_BLOCK)
 					unlock_screen(client, 2);
@@ -770,7 +771,7 @@ XA_handler(ushort c, AESPB *pb)
 				if (!client)
 				{
 					if (cmd == XA_APPL_INIT)
-						client = Sema_Pid2Client(lock, clnt_pid);
+						client = Sema_Pid2Client(llock, clnt_pid);
 
 					if (!client)
 						return AES_MAGIC;
@@ -959,7 +960,7 @@ hook_into_vector(void)
 	void handler(void);
 
 	old_trap2_vector = (long) Setexc(0x22, handler);
-	DIAGS(("hook_into_vector: old = %lx\n", old_trap2_vector));
+	DIAGS(("hook_into_vector: old = 0x%lx\n", old_trap2_vector));
 
 	/* We want to do this with task switching disabled in order
 	 * to prevent a possible race condition...

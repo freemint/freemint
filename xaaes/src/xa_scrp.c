@@ -39,7 +39,7 @@ XA_scrap_read(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		/* display("scrap_read: [%s]\n",cfg.scrap_path); */
 		if (*cfg.scrap_path) /* HR return 0 if not initialized */
 		{
-			strcpy(pb->addrin[0], cfg.scrap_path);
+			strcpy((char*)pb->addrin[0], cfg.scrap_path);
 			pb->intout[0] = 1;
 		}
 	}
@@ -50,7 +50,7 @@ XA_scrap_read(LOCK lock, XA_CLIENT *client, AESPB *pb)
 unsigned long
 XA_scrap_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	char *new_path = pb->addrin[0];
+	char *new_path = (char*)pb->addrin[0];
 
 	CONTROL(0,1,1)
 
