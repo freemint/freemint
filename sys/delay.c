@@ -34,8 +34,8 @@
 # include "delay.h"
 
 # include "libkern/libkern.h"
-# include "mint/arch/delay.h"
 # include "arch/timer.h"
+# include "mint/delay.h"
 
 # include "timeout.h"
 
@@ -54,6 +54,7 @@ ulong loops_per_sec;
 void
 calibrate_delay (void)
 {
+# ifndef NO_DELAY
 	register ulong ticks, loopbit;
 	register long lps_precision = LPS_PREC;
 	
@@ -106,5 +107,6 @@ calibrate_delay (void)
 			((loops_per_sec + 2500) / 5000) % 100);
 		DEBUG ((buf));
 	}
+# endif
 # endif
 }
