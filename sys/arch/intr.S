@@ -18,7 +18,6 @@
 	.globl	_build_context
 	.globl	_restore_context
 	.globl	_curproc
-	.globl	_enter_bios		// see kernel.spp
 	.globl	_leave_kernel
 	.globl	_preempt		// C function in proc.c
 	.globl	_proc_clock		// controls process' allocation of CPU time
@@ -475,7 +474,7 @@ Do_sig:	move.l	a0,-(sp)		// save a0
 	jsr	_build_context
 	move.l	_curproc,a4
 	move.l	(a4),sp 		// put us in the system stack
-	jsr	_enter_bios		// set up kernel vectors
+	bset	#0x07,_in_kernel
 	move.l	_sig_routine,a1 	// get signal handling routine
 	jsr	(a1)		// go do it
 //	ori.w	#0x0700,sr
