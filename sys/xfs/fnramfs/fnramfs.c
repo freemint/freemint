@@ -1024,6 +1024,8 @@ init (struct kerinfo *k)
 	/* remove from linked filesystem list */
 	if (d_cntl (FS_UNINSTALL, INSTALL, (long) &fs_descriptor))
 	{
+		c_conws (MSG_FAILURE ("FS_UNINSTALL failed"));
+		
 		/* can't return NULL here because FS_UNINSTALL failed */
 		return (FILESYS *) 1L;
 	}
@@ -2195,7 +2197,7 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 			
 			if (!ptr)
 			{
-				register long size;
+				register long s;
 				
 				ptr = c->data.data.small;
 				
@@ -2208,20 +2210,20 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 					}
 					
 					c->data.data.small_size = 0;
-					size = data;
+					s = data;
 				}
 				else
 				{
-					size = data + offset;
-					size = MAX (size, c->data.data.small_size);
+					s = data + offset;
+					s = MAX (s, c->data.data.small_size);
 				}
 				
-				if (size > c->data.data.small_size)
+				if (s > c->data.data.small_size)
 				{
-					size += size >> BLOCK_MIN;
-					size = MIN (size, BLOCK_SIZE);
+					s += s >> BLOCK_MIN;
+					s = MIN (s, BLOCK_SIZE);
 					
-					ptr = kmalloc (size);
+					ptr = kmalloc (s);
 					if (!ptr)
 					{
 						DEBUG (("fnramfs: ram_write: kmalloc fail (6)!"));
@@ -2237,9 +2239,9 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 					}
 				}
 				
-				if (size != BLOCK_SIZE)
+				if (s != BLOCK_SIZE)
 				{
-					c->data.data.small_size = size;
+					c->data.data.small_size = s;
 					c->data.data.small = ptr;
 				}
 				else
