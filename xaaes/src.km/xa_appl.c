@@ -1073,6 +1073,16 @@ static short info_tab[][4] =
 #ifndef AGI_WINX
 #define AGI_WINX WF_WINX
 #endif
+
+void
+init_apgi_infotab(void)
+{
+	info_tab[2][0] = xbios_getrez();
+	info_tab[2][1] = 256;
+	info_tab[2][2] = 1;
+	info_tab[2][3] = 1 + 2;
+}
+
 unsigned long
 XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1120,7 +1130,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 	info_tab[1][0] = screen.small_font_height;
 	info_tab[1][1] = screen.small_font_id;
 
-	info_tab[2][0] = xbios_getrez() + 2;
+	//info_tab[2][0] = xbios_getrez() + 2;
 
 	pb->intout[0] = 1;
 	pb->intout[1] = info_tab[gi_type][0];

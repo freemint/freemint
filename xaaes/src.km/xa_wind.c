@@ -305,7 +305,7 @@ setget(int i)
 	"WF_TOP(10)",
 	"WF_FIRSTXYWH(11)",
 	"WF_NEXTXYWH(12)",
-	"13",
+	"WF_FIRSTAREAXYWH(13)",
 	"WF_NEWDESK(14)",
 	"WF_HSLSIZE(15)",
 	"WF_VSLSIZE(16)",
@@ -1202,9 +1202,36 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		o[2] = mode;
 		break;
 	}
+	case WF_FIRSTAREAXYWH:
+	{
+		struct xa_rect_list *rl;
+
+		DIAG((D_wind, client, "wind_xget: N_INTIN=%d, (%d/%d/%d/%d) on wind=%d for %s",
+			pb->control[N_INTIN], *(RECT *)(pb->intin+2), w->handle, client->name));
+				
+		w->rl_clip = *(const RECT *)(pb->intin + 2);
+		w->use_rlc = true;
+		make_rect_list(w, true, RECT_OPT);
+		rl = rect_get_optimal_first(w);
+		
+		if (rl)
+			*ro = rl->r;
+		else
+			ro->x = ro->y = ro->w = ro->h = 0;
+		
+		break;
+	}		
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
 	{
+		w->use_rlc = false;
+
+		if (!get_rect(w, &w->wa, true, ro))
+		{
+			ro->x = w->r.x;
+			ro->y = w->r.y;
+			ro->w = ro->h = 0;
+		}
 #if 0
 		if (pb->control[N_INTIN] >= 6 && (pb->intin[4] | pb->intin[5]))
 		{
@@ -1223,7 +1250,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 				ro->x = ro->y = ro->w = ro->h = 0;
 		}
 		else
-#endif
+
 		{
 			w->use_rlc = false;
 
@@ -1234,6 +1261,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 				ro->w = ro->h = 0;
 			}
 		}
+#endif
 		break;
 	}
 	case WF_NTOOLBAR:		/* suboptimal, but for the moment it is more
@@ -1243,6 +1271,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (w->use_rlc)
 		{
 			struct xa_rect_list *rl = rect_get_optimal_next(w);
+			
 			if (rl)
 				*ro = rl->r;
 			else
