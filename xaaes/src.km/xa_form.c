@@ -116,7 +116,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &r);
 
-	f = ob_find(alert_form, 0, 10, md->x, md->y); //find_object(alert_form, 0, 10, r.x + widg->x, r.y + widg->y, wt->dx, wt->dy);
+	f = obj_find(wt, 0, 10, md->x, md->y);
 
 	if (   f >= ALERT_BUT1			/* Did we click on a valid button? */
 	    && f <  ALERT_BUT1 + ALERT_BUTTONS

@@ -177,7 +177,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 	DIAG((D_lbox, NULL, "redraw_lbox: lbox=%lx, wt=%lx, wind=%lx, parent=%d",
 		lbox, wt, wind, lbox->parent));
 
-	ob_area(wt->tree, obj, &or);
+	obj_area(wt, obj, &or);
 
 	start = obj;
 	while (object_is_transparent(wt->tree + start))
@@ -622,8 +622,8 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 		/*
 		 * new current object = total_object - visible_objects * slider_relpos / 1000
 		 */
-		ob_area(obtree, parent, &sl_r);
-		ob_area(obtree, lbox->parent, &lb_r);
+		obj_area(lbox->wt, parent, &sl_r);
+		obj_area(lbox->wt, lbox->parent, &lb_r);
 
 		first = s->first_visible;
 
@@ -830,14 +830,13 @@ move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, RECT *lbox_
 	bool ret;
 	short parent, child, x, y, mx, my, dir;
 	XA_TREE *wt = lbox->wt;
-	OBJECT *obtree = wt->tree;
 
 	check_mouse(wt->owner, NULL, &mx, &my);
 
 	parent = s->bkg;
 	child  = s->sld;
 
-	ob_offset(obtree, child, &x, &y);
+	obj_offset(wt, child, &x, &y);
 
 	if (s->flags & LBOX_VERT)
 		dir = my > y ? 1 : 0;
@@ -866,7 +865,7 @@ move_slider(struct xa_lbox_info *lbox, struct lbox_slide *s, short num, bool upd
 {
 	bool ret = false;
 
-	if (num)
+	if (num && s->num_visible)
 	{
 		if (num < 0)
 		{
@@ -949,7 +948,7 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * we get a number of visible B slider objects too.
 			 */
 			dst = (short *)&lbox->bslide;
-			if (pb->control[1] == 8 && pb->intin[4])
+			if (pb->control[1] == 8 && pb->intin[4] && (lbox->flags & LBOX_2SLDRS))
 			{
 				for (i = 0; i < 4; i++)
 					*dst++ = *in++;
@@ -1116,7 +1115,6 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		struct widget_tree *wt = lbox->wt;
 		struct lbox_item *item;
-		OBJECT *obtree = wt->tree;
 		short obj = pb->intin[0];
 		short dc = obj & 0x8000;
 		short ks, mb;
@@ -1124,12 +1122,12 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		vq_key_s(C.vh, &ks);
 		obj &= ~0x8000;
-		ob_area(obtree, lbox->parent, &r);
+		obj_area(lbox->wt, lbox->parent, &r);
 
 		if (lbox->aslide.bkg > 0)
-			ob_area(obtree, lbox->aslide.bkg, &asr);
+			obj_area(wt, lbox->aslide.bkg, &asr);
 		if (lbox->bslide.bkg > 0)
-			ob_area(obtree, lbox->bslide.bkg, &bsr);
+			obj_area(wt, lbox->bslide.bkg, &bsr);
 
 		if (obj == lbox->aslide.dr)
 		{
@@ -1237,9 +1235,25 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		{			
 			struct lbox_item *nitem;
 			short nobj, x2, y2, nx, ny;
-			RECT or;
+			struct lbox_slide *v, *h;
+			RECT *vsr, *hsr, or;
 
-			ob_area(obtree, obj, &or);
+			if (lbox->flags & LBOX_VERT)
+			{
+				v = &lbox->aslide;
+				vsr = &asr;
+				h = &lbox->bslide;
+				hsr = &bsr;
+			}
+			else
+			{
+				v = &lbox->bslide;
+				vsr = &bsr;
+				h = &lbox->aslide;
+				hsr = &asr;
+			}
+
+			obj_area(lbox->wt, obj, &or);
 
 			check_mouse(client, &mb, &nx, &ny);
 
@@ -1262,7 +1276,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 					if (m_inside(nx, ny, &r))
 					{
-						nobj = ob_find(obtree, lbox->parent, 1, nx, ny);
+						nobj = obj_find(wt, lbox->parent, 1, nx, ny);
 
 						if (nobj == obj)
 							nobj = -1;
@@ -1279,82 +1293,85 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 								nobj = -1;
 						}
 					}
-					else if (ny > y2)
+					else if (lbox->flags & LBOX_AUTO)
 					{
-						while (mb && ny > y2)
+						if (ny > y2)
 						{
-							if (move_slider(lbox, &lbox->aslide, 1, true, NULL, NULL))
+							while (mb && ny > y2)
 							{
-								short o;
-								nitem = get_last_visible_item(lbox);
-								o = item_to_obj(lbox, nitem);
-								if (o >= 0)
-									click_lbox_obj(lbox, nitem, o, dc, NULL);
-								hidem();
-								redraw_lbox(lbox, lbox->parent, 2, &r);
-								redraw_lbox(lbox, lbox->aslide.bkg, 2, &asr);
-								showm();
-								if (lbox->aslide.pause)
-									f_select(lbox->aslide.pause, NULL, 0, 0);
-							}	
-							check_mouse(client, &mb, &nx, &ny);
-						}
-					}
-					else if (ny < r.y)
-					{
-						while (mb && ny < r.y)
-						{
-							if (move_slider(lbox, &lbox->aslide, -1, true, NULL, NULL))
-							{
-								short o;
-								nitem = get_first_visible_item(lbox);
-								o = item_to_obj(lbox, nitem);
-								if (o >= 0)
-									click_lbox_obj(lbox, nitem, o, dc, NULL);
-								hidem();
-								redraw_lbox(lbox, lbox->parent, 2, &r);
-								redraw_lbox(lbox, lbox->aslide.bkg, 2, &asr);
-								showm();
-								if (lbox->aslide.pause)
-									f_select(lbox->aslide.pause, NULL, 0, 0);
+								if (move_slider(lbox, v, 1, true, NULL, NULL) &&
+								    (lbox->flags & LBOX_AUTOSLCT))
+								{
+									short o;
+									nitem = get_last_visible_item(lbox);
+									o = item_to_obj(lbox, nitem);
+									if (o >= 0)
+										click_lbox_obj(lbox, nitem, o, dc, NULL);
+									hidem();
+									redraw_lbox(lbox, lbox->parent, 2, &r);
+									redraw_lbox(lbox, v->bkg, 2, vsr);
+									showm();
+									if (v->pause)
+										f_select(v->pause, NULL, 0, 0);
+								}	
+								check_mouse(client, &mb, &nx, &ny);
 							}
-							check_mouse(client, &mb, &nx, &ny);
 						}
-					}
-					else if (nx > x2)
-					{
-						while (mb && nx > x2)
+						else if (ny < r.y)
 						{
-							if (move_slider(lbox, &lbox->bslide, 1, true, NULL, NULL))
+							while (mb && ny < r.y)
 							{
-								hidem();
-								redraw_lbox(lbox, lbox->parent, 2, &r);
-								redraw_lbox(lbox, lbox->bslide.bkg, 2, &bsr);
-								showm();
-								if (lbox->bslide.pause)
-									f_select(lbox->bslide.pause, NULL, 0, 0);
+								if (move_slider(lbox, v, -1, true, NULL, NULL) &&
+								    (lbox->flags & LBOX_AUTOSLCT))
+								{
+									short o;
+									nitem = get_first_visible_item(lbox);
+										o = item_to_obj(lbox, nitem);
+									if (o >= 0)
+										click_lbox_obj(lbox, nitem, o, dc, NULL);
+									hidem();
+									redraw_lbox(lbox, lbox->parent, 2, &r);
+									redraw_lbox(lbox, v->bkg, 2, vsr);
+									showm();
+									if (v->pause)
+										f_select(v->pause, NULL, 0, 0);
+								}
+								check_mouse(client, &mb, &nx, &ny);
 							}
-							check_mouse(client, &mb, &nx, &ny);
 						}
-					}
-					else if (nx < r.x)
-					{
-						while (mb && nx < r.x)
+						else if (nx > x2)
 						{
-							if (move_slider(lbox, &lbox->bslide, -1, true, NULL, NULL))
+							while (mb && nx > x2)
 							{
-								hidem();
-								redraw_lbox(lbox, lbox->parent, 2, &r);
-								redraw_lbox(lbox, lbox->bslide.bkg, 2, &bsr);
-								showm();
-								if (lbox->bslide.pause)
-									f_select(lbox->bslide.pause, NULL, 0, 0);
+								if (move_slider(lbox, h, 1, true, NULL, NULL))
+								{
+									hidem();
+									redraw_lbox(lbox, lbox->parent, 2, &r);
+									redraw_lbox(lbox, h->bkg, 2, hsr);
+									showm();
+									if (h->pause)
+										f_select(h->pause, NULL, 0, 0);
+								}
+								check_mouse(client, &mb, &nx, &ny);
 							}
-							check_mouse(client, &mb, &nx, &ny);
+						}
+						else if (nx < r.x)
+						{
+							while (mb && nx < r.x)
+							{
+								if (move_slider(lbox, h, -1, true, NULL, NULL))
+								{
+									hidem();
+									redraw_lbox(lbox, lbox->parent, 2, &r);
+									redraw_lbox(lbox, h->bkg, 2, hsr);
+									showm();
+									if (h->pause)
+										f_select(h->pause, NULL, 0, 0);
+								}
+								check_mouse(client, &mb, &nx, &ny);
+							}
 						}
 					}
-					if (!mb)
-						break;
 				}
 				S.wm_count--;
 			} while (!dc && mb);

@@ -795,6 +795,7 @@ struct xa_window
 	struct xa_rect_list *rect_list;	/* The rectangle list for redraws in this window */
 	struct xa_rect_list *rect_user;	/* User (wind_get) rect list current pointer */
 	struct xa_rect_list *rect_start;/* Start of the rectangle list memory block */
+	struct xa_rect_list *rect_wastart;
 	struct xa_rect_list *rect_prev;	/* Remember the first rectangle */
 	struct xa_rect_list  prev_rect;
 

@@ -666,8 +666,10 @@ app_in_front(enum locks lock, struct xa_client *client)
 
 	if (client)
 	{
+		struct xa_client *infront;
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
 			
+		infront = get_app_infront();
 		set_active_client(lock, client);
 		swap_menu(lock, client, true, 1);
 
@@ -700,10 +702,18 @@ app_in_front(enum locks lock, struct xa_client *client)
 			send_untop(lock, wf);
 			send_ontop(lock);
 		}
-		else if (!is_topped(wf))
+		else
 		{
-			send_untop(lock, wf);
-			display_window(lock, 0, wf, NULL);
+			if (!is_topped(wf))
+			{
+				send_untop(lock, wf);
+				display_window(lock, 0, wf, NULL);
+			}
+			else if (infront != client)
+			{
+				send_ontop(lock);
+				display_window(lock, 0, wf, NULL);
+			}
 		}
 	}
 }

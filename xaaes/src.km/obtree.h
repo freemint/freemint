@@ -54,6 +54,7 @@ short	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_cancel(OBJECT *ob);
 short	ob_find_shortcut(OBJECT *tree, ushort nk);
+
 short	ob_offset(OBJECT *obtree, short object, short *mx, short *my);
 void	ob_rectangle(OBJECT *obtree, short obj, RECT *c);
 void	ob_area(OBJECT *obtree, short obj, RECT *c);
@@ -64,6 +65,11 @@ bool	obtree_is_menu(OBJECT *tree);
 bool	obtree_has_default(OBJECT *obtree);
 bool	obtree_has_exit(OBJECT *obtree);
 bool	obtree_has_touchexit(OBJECT *obtree);
+
+short	obj_offset(XA_TREE *wt, short object, short *mx, short *my);
+void	obj_rectangle(XA_TREE *wt, short object, RECT *c);
+void	obj_area(XA_TREE *wt, short object, RECT *c);
+short	obj_find(XA_TREE *wt, short object, short depth, short mx, short my);
 
 void	obj_change(XA_TREE *wt, short obj, short state, short flags, bool redraw, struct xa_rect_list *r);
 void	obj_draw(XA_TREE *wt, short obj, struct xa_rect_list *r);

@@ -98,7 +98,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 			{
 				obtree->ob_x = 0;
 				obtree->ob_y = 0;
-				ob_offset(obtree, wdlg->ify_obj, &x, &y);
+				obj_offset(wt, wdlg->ify_obj, &x, &y);
 			}
 			obtree->ob_x = wind->wa.x - x;
 			obtree->ob_y = wind->wa.y - y;
@@ -417,10 +417,9 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		/* recreate window with final widget set. */
 		if ((short)tp != (short)wind->active_widgets)
 		{
-			OBJECT *obtree = wdlg->std_wt->tree;
 			RECT or;
 
-			ob_area(obtree, 0, &or);
+			obj_area(wdlg->std_wt, 0, &or);
 
 			r = calc_window(lock, client, WC_BORDER,
 					tp, MG, false, false,
@@ -689,7 +688,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						wt = set_toolbar_widget(lock, wind, obtree, 0);
 						wt->exit_form = NULL;
-						ob_area(obtree, 0, &or);
+						obj_area(wt, 0, &or);
 
 						r = calc_window(lock, client, WC_BORDER,
 							wind->active_widgets, MG, false, false,
@@ -895,7 +894,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 
  					if (cwind && wind == cwind && (wind == top || (wind->active_widgets & NO_TOPPED)) )
 					{
-						if ( (obj = ob_find(wt->tree, 0,7, ev->mx, ev->my)) >= 0)
+						if ( (obj = obj_find(wt, 0,7, ev->mx, ev->my)) >= 0)
 						{
 							ev->mwhich &= ~MU_BUTTON;
 							if (wind->window_status != XAWS_ICONIFIED)

@@ -1064,19 +1064,29 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
-
+/*
+ * Ozk: XA_rsrc_free() may be called by processes not yet called
+ * appl_ini(), or already called appl_exit(). So, it must not
+ * depend on 'client' being valid!
+ */
 unsigned long
 XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
-	if (client->rsrc)
+	if (client)
 	{
-		FreeResources(client, pb);
-		pb->intout[0] = 1;
+		if (client->rsrc)
+		{
+			FreeResources(client, pb);
+			pb->intout[0] = 1;
+		}
+		else
+			pb->intout[0] = 0;
 	}
 	else
-		pb->intout[0] = 0;
+		pb->intout[0] = 1;
+		
 
 	return XAC_DONE;
 }
@@ -1230,8 +1240,8 @@ XA_rsrc_obfix(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	ob = (OBJECT*)pb->addrin[0];
 
-//	DIAG((D_rsrc, client, "rsrc_obfix for %s: tree %lx + %d",
-//		c_owner(client), ob, item));
+	DIAG((D_rsrc, client, "rsrc_obfix for %s: tree %lx + %d",
+		c_owner(client), ob, item));
 
 	if (ob)
 	{

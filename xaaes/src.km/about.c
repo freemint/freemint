@@ -133,13 +133,11 @@ open_about(enum locks lock)
 
 		/* Create the window */
 		dialog_window = create_window(lock,
-						do_winmesag, //NULL,
-						do_formwind_msg, //NULL,
+						do_winmesag,
+						do_formwind_msg,
 						C.Aes,
 						false,
-						CLOSER|NAME|
-						MOVER|
-						TOOLBAR,
+						CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 						created_for_AES,
 						MG,
 						C.Aes->options.thinframe,C.Aes->options.thinwork,
