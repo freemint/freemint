@@ -45,6 +45,7 @@ void change_window_attribs(enum locks lock,
 			   struct xa_client *client,
 			   struct xa_window *w,
 			   XA_WIND_ATTR tp,
+			   bool r_is_wa,
 			   RECT r, RECT *remember);
 
 struct xa_window *find_window(enum locks lock, short x, short y);
