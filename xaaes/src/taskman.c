@@ -107,7 +107,7 @@ refresh_tasklist(LOCK lock)
 
 	list->slider(list);
 	if ( counter==1 && C.shutdown)  /* now all programs are quitted */
-		C.shutdown |= QUIT_XAAES;
+		C.shutdown |= QUIT_NOW;
 
 	Sema_Dn(clients);
 }
@@ -211,7 +211,7 @@ handle_taskmanager(LOCK lock, struct widget_tree *wt)
 			break;
 		case TM_QUIT:
 			deselect(wt->tree, TM_QUIT);
-			C.shutdown = QUIT_XAAES;  /* quit now */
+			C.shutdown = QUIT_NOW;  /* quit now */
 			break;
 		case TM_HALT:
 			deselect(wt->tree, TM_HALT);
@@ -461,7 +461,7 @@ do_system_menu(LOCK lock, int clicked_title, int menu_item)
 			shutdown(lock);
 			break;
 		case SYS_MN_QUIT: /* Quit XaAES */
-			C.shutdown = QUIT_XAAES;
+			C.shutdown = QUIT_NOW;
 			break;
 		
 		case SYS_MN_TASKMNG: /* Open the "Task Manager" window */
