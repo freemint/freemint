@@ -1203,7 +1203,7 @@ init_mfp (long mch)
 DEVDRV * _cdecl
 init (struct kerinfo *k)
 {
-	long mch;
+	long mch = 0;
 	int i;
 	
 	struct dev_descr raw_dev_descriptor =
