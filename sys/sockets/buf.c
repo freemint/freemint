@@ -14,8 +14,6 @@
 # include "mint/file.h"
 # include "mint/net.h"
 
-# include "util.h"
-
 
 # define BUF_BLOCK_SIZE		(1024 * 32L)
 # define BUF_NSPLIT		7

@@ -12,7 +12,7 @@
 # include "global.h"
 
 # include "iov.h"
-# include "util.h"
+
 
 long
 iov2buf_cpy (char *buf, long nbytes, struct iovec *iov, short niov, long skip)
