@@ -73,14 +73,15 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		if ((root_tab = TAB_LIST_START) && md->state && root_tab->client == client)
 		{
 			Tab *tab;
-
-			tab = find_pop(md->x, md->y);
 			
-			if (tab && tab != root_tab)
+			tab = find_pop(md->x, md->y);
+				
+			if (tab && !tab->task_data.menu.entry)// != root_tab)
 				tab = collapse(root_tab, tab);
 			else if (!tab)
 				tab = root_tab;
 
+			
 			DIAG((D_button, client, "cXA_button_event: Menu click"));
 			if (tab->ty)
 			{
@@ -111,6 +112,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 						DIAG((D_button, client, "cXA_button_event: Wrong owner of Tab %s, should be %s", tab->client->name, client->name));
 						return;
 					}
+					k->clicks = md->clicks;
 					k->x = md->x;
 					k->y = md->y;
 					k->entry(tab);
