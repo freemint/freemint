@@ -206,7 +206,7 @@ bootmessage(unsigned long mint)
 	if (cfg.auto_program)
 	{
 		if (lcfg.havemode)
-			fdisplay(loghandle, true, " - video mode %d(x%x)\n",lcfg.modecode,lcfg.modecode);
+			fdisplay(loghandle, true, " - video mode %d(x%x)\n", lcfg.modecode, lcfg.modecode);
 
 		fdisplay(loghandle, true, "auto program\n");
 	}

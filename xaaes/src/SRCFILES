@@ -7,6 +7,8 @@ HEADER = \
 	ahcm.h \
 	app_man.h \
 	bootup.h \
+	cnf.h \
+	cnf_xaaes.h \
 	c_window.h \
 	config.h \
 	debug.h \
@@ -53,6 +55,8 @@ COBJS = \
 	ahcm.c \
 	app_man.c \
 	bootup.c \
+	cnf.c \
+	cnf_xaaes.c \
 	config.c \
 	crtinit.c \
 	c_window.c \
