@@ -64,8 +64,8 @@
 # include "util.h"
 
 
-void		rts		(void);
-static PROC *	exec_region	(PROC *p, MEMREGION *mem, int thread);
+void rts (void);
+static struct proc *exec_region(struct proc *p, MEMREGION *mem, int thread);
 
 /*
  * make a local copy of the name, in case we are overlaying
@@ -167,11 +167,11 @@ make_fname(struct proc *p, const char *source)
 }
 
 long _cdecl
-sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
+sys_pexec(int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 {
 	MEMREGION *base;
 	MEMREGION *env = NULL;	/* assignment suppresses spurious warning */
-	PROC *p = NULL;
+	struct proc *p = NULL;
 	long r, flags = 0;
 	char mkbase = 0, mkload = 0, mkgo = 0, mkwait = 0, mkfree = 0;
 	char overlay = 0;
@@ -250,7 +250,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			flags = (long)ptr1;	/* set program flags */
 			if (((flags & F_PROTMODE) >> F_PROTSHIFT) > PROT_MAX_MODE)
 			{
-				DEBUG (("Pexec: invalid protection mode changed to private"));
+				DEBUG(("Pexec: invalid protection mode changed to private"));
 				flags = (flags & ~F_PROTMODE) | F_PROT_P;
 			}
 			/* and fall through */
@@ -268,7 +268,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 	}
 
-	TRACE ((tfmt, mode, ptr1, (char *) ptr2 + tail_offs, ptr3));
+	TRACE((tfmt, mode, ptr1, (char *) ptr2 + tail_offs, ptr3));
 
 	/* Pexec with mode 0x8000 indicates tracing should be active */
 	ptrace = (!mkwait && (mode & 0x8000));
@@ -277,13 +277,13 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	if (mkname)
 		make_name(localname, ptr1);
 
-	TRACE (("creating environment"));
+	TRACE(("creating environment"));
 	if (mkload || mkbase)
 	{
-		env = create_env ((char *) ptr3, flags);
+		env = create_env((char *) ptr3, flags);
 		if (!env)
 		{
-			DEBUG (("Pexec: unable to create environment"));
+			DEBUG(("Pexec: unable to create environment"));
 			return ENOMEM;
 		}
 	}
@@ -296,7 +296,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		base = create_base((char *)ptr2, env, flags, 0L, &r);
 		if (!base)
 		{
-			DEBUG (("Pexec: unable to create basepage"));
+			DEBUG(("Pexec: unable to create basepage"));
 			detach_region(curproc, env);
 			return r;
 		}
@@ -313,25 +313,25 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		{
 			static char fbuf[PATH_MAX];
 			cbuf[127] = 0;
-			ptr1 = strncpy (fbuf, ptr1, PATH_MAX-2);
-			tail = strncpy (cbuf, ptr2, 127);
+			ptr1 = strncpy(fbuf, ptr1, PATH_MAX-2);
+			tail = strncpy(cbuf, ptr2, 127);
 		}
 
-		base = load_region (ptr1, env, (char *)tail, &xattr, &flags, &r);
+		base = load_region(ptr1, env, (char *)tail, &xattr, &flags, &r);
 		if (!base)
 		{
-			DEBUG (("Pexec: load_region failed"));
+			DEBUG(("Pexec: load_region failed"));
 			detach_region(curproc, env);
 			return r;
 		}
 
-		TRACE (("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+		TRACE(("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
 	}
 	else
 	{
 		/* mode == 4, 6, 104, 106, 204, or 206 -- just go */
 
-		base = addr2mem (curproc, (long) ptr2);
+		base = addr2mem(curproc, (long) ptr2);
 		if (base)
 			env = addr2mem(curproc, *(long *)(base->loc + 0x2c));
 		else
@@ -351,7 +351,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * all along. Here's where we change the protection on
 		 * the environment to match those flags.
 		 */
-		mark_region (env, (short)((flags & F_PROTMODE) >> F_PROTSHIFT), 0);
+		mark_region(env, (short)((flags & F_PROTMODE) >> F_PROTSHIFT), 0);
 	}
 
 	if (mkgo)
@@ -360,7 +360,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		long r = 0;
 
 		/* tell the child who the parent was */
-		b = (BASEPAGE *) base->loc;
+		b = (BASEPAGE *)base->loc;
 
 		if (overlay)
 		{
@@ -398,8 +398,8 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			{
 				if (mkload || mkbase)
 				{
-					detach_region (curproc, base);
-					detach_region (curproc, env);
+					detach_region(curproc, base);
+					detach_region(curproc, env);
 				}
 
 				return r;
@@ -407,22 +407,22 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 
 		if (ptrace)
-			p->ptracer = pid2proc (p->ppid);
+			p->ptracer = pid2proc(p->ppid);
 
 		/* Stephan Haslbeck: GEM kludge no. x+1
 		 * If a program is started by AESSYS, reset its euid/egid,
 		 * so AES can run with root rights, but user programs don't.
 		 * This should be done by the AES, however.
 		 */
-		if (!strcmp (curproc->name, "AESSYS"))
+		if (!strcmp(curproc->name, "AESSYS"))
 		{
 			struct pcred *cred = p->p_cred;
 
-			assert (cred && cred->ucr);
+			assert(cred && cred->ucr);
 
 			aes_hack = 1;
 
-			cred->ucr = copy_cred (cred->ucr);
+			cred->ucr = copy_cred(cred->ucr);
 			cred->ucr->euid = cred->suid = cred->ruid;
 			cred->ucr->egid = cred->sgid = cred->rgid;
 		}
@@ -437,11 +437,11 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		{
 			struct pcred *cred = p->p_cred;
 
-			assert (cred && cred->ucr);
+			assert(cred && cred->ucr);
 
 			if (!aes_hack && (xattr.mode & S_ISUID))
 			{
-				cred->ucr = copy_cred (cred->ucr);
+				cred->ucr = copy_cred(cred->ucr);
 				cred->ucr->euid = cred->suid = xattr.uid;
 			}
 			else
@@ -452,7 +452,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			 */
 			if (!aes_hack && (xattr.mode & S_ISGID))
 			{
-				cred->ucr = copy_cred (cred->ucr);
+				cred->ucr = copy_cred(cred->ucr);
 				cred->ucr->egid = cred->sgid = xattr.gid;
 			}
 			else
@@ -471,9 +471,9 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * original address space that the Pexec was taking place in
 		 * (if this is an overlaid Pexec, we just freed that memory).
 		 */
-		exec_region (p, base, thread);
-		attach_region (p, env);
-		attach_region (p, base);
+		exec_region(p, base, thread);
+		attach_region(p, env);
+		attach_region(p, base);
 
 		if (mkname)
 		{
@@ -511,9 +511,8 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			/* let our parent run, if it Vfork'd() */
 			if ((p = pid2proc(curproc->ppid)) != NULL)
 			{
-				short sr = spl7();
-				if (p->wait_q == WAIT_Q
-					&&  p->wait_cond == (long)curproc)
+				unsigned short sr = splhigh();
+				if (p->wait_q == WAIT_Q &&  p->wait_cond == (long)curproc)
 				{
 					rm_q(WAIT_Q, p);
 					add_q(READY_Q, p);
@@ -525,10 +524,10 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			 * we guarantee ourselves at least 3 timeslices to do
 			 * an Mshrink
 			 */
-			assert (curproc->magic == CTXT_MAGIC);
-			fresh_slices (3);
-			leave_kernel ();
-			change_context (&(curproc->ctxt[CURRENT]));
+			assert(curproc->magic == CTXT_MAGIC);
+			fresh_slices(3);
+			leave_kernel();
+			change_context(&(curproc->ctxt[CURRENT]));
 		}
 		else
 		{
@@ -536,21 +535,21 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			 * so we temporarily give it high priority
 			 * and put it first on the run queue
 			 */
-			run_next (p, 3);
+			run_next(p, 3);
 		}
 	}
 
 	if (mkfree)
 	{
-		detach_region (curproc, base);
-		detach_region (curproc, env);
+		detach_region(curproc, base);
+		detach_region(curproc, env);
 	}
 
 	if (mkwait)
 	{
 		long oldsigint, oldsigquit;
 
-		assert (curproc->p_sigacts);
+		assert(curproc->p_sigacts);
 
 		oldsigint = SIGACTION(curproc, SIGINT).sa_handler;
 		oldsigquit = SIGACTION(curproc, SIGQUIT).sa_handler;
@@ -561,7 +560,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		newpid = p->pid;
 		for(;;)
 		{
-			r = sys_pwaitpid (curproc->pid ? newpid : -1, 0, NULL);
+			r = sys_pwaitpid(curproc->pid ? newpid : -1, 0, NULL);
 			if (r < 0)
 			{
 				ALERT("p_exec: wait error");
@@ -569,18 +568,18 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 				break;
 			}
 
-			if (newpid == ((r&0xffff0000L) >> 16))
+			if (newpid == ((r & 0xffff0000L) >> 16))
 			{
-				TRACE (("leaving Pexec; child return code %ld", r));
+				TRACE(("leaving Pexec; child return code %ld", r));
 				r &= 0x0000ffffL;
 				break;
 			}
 
 			if (curproc->pid)
-				DEBUG (("Pexec: wrong child found"));
+				DEBUG(("Pexec: wrong child found"));
 		}
 
-		assert (curproc->p_sigacts);
+		assert(curproc->p_sigacts);
 
 		SIGACTION(curproc, SIGINT).sa_handler = oldsigint;
 		SIGACTION(curproc, SIGQUIT).sa_handler = oldsigquit;
@@ -593,14 +592,14 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * exist any more (if the child exits right away)
 		 */
 		newpid = p->pid;
-		yield ();	/* let the new process run */
+		yield();	/* let the new process run */
 		return newpid;
 	}
 	else
 	{
 		/* guarantee ourselves at least 3 timeslices to do an Mshrink */
-		fresh_slices (3);
-		TRACE (("leaving Pexec with basepage address %lx", base->loc));
+		fresh_slices(3);
+		TRACE(("leaving Pexec with basepage address %lx", base->loc));
 		return base->loc;
 	}
 }
@@ -615,25 +614,25 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
  * also put "p" on the appropriate queue (most likely READY_Q).
  */
 
-void rts (void) {}		/* dummy termination routine */
+void rts(void) {}		/* dummy termination routine */
 
-static PROC *
-exec_region (PROC *p, MEMREGION *mem, int thread)
+static struct proc *
+exec_region(struct proc *p, MEMREGION *mem, int thread)
 {
 	struct filedesc *fd = p->p_fd;
 	BASEPAGE *b;
 	int i;
 	MEMREGION *m;
 
-	TRACE (("exec_region: enter (PROC %lx, mem = %lx)", p, mem));
-	assert (p && mem && fd);
-	assert (p->p_cwd);
-	assert (p->p_mem);
+	TRACE(("exec_region: enter (PROC %lx, mem = %lx)", p, mem));
+	assert(p && mem && fd);
+	assert(p->p_cwd);
+	assert(p->p_mem);
 
-	b = (BASEPAGE *) mem->loc;
+	b = (BASEPAGE *)mem->loc;
 
 	/* flush cached versions of the text */
-	cpush ((void *) b->p_tbase, b->p_tlen);
+	cpush((void *) b->p_tbase, b->p_tlen);
 
 	/* set some (undocumented) variables in the basepage */
 	b->p_defdrv = p->p_cwd->curdrv;
@@ -641,7 +640,6 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		b->p_devx[i] = i;
 
 	fd->dta = (DTABUF *)(b->p_dta = &b->p_cmdlin[0]);
-	p->p_mem->base = b;
 
 	/* close extra open files */
 	for (i = MIN_OPEN; i < fd->nfiles; i++)
@@ -650,8 +648,8 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 
 		if (f && (fd->ofileflags[i] & FD_CLOEXEC))
 		{
-			FD_REMOVE (p, i);
-			do_close (p, f);
+			FD_REMOVE(p, i);
+			do_close(p, f);
 		}
 	}
 
@@ -681,18 +679,31 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	}
 
 	/* initialize memory */
-	recalc_maxmem (p);
+	recalc_maxmem(p);
 	if (p->maxmem)
 	{
-		shrink_region (mem, p->maxmem);
+		shrink_region(mem, p->maxmem);
 		b->p_hitpa = b->p_lowtpa + mem->len;
 	}
 
-	p->p_mem->memflags = b->p_flags;
-
 	if (!thread)
 	{
-		assert (p->p_mem && p->p_mem->mem);
+		assert(p->p_mem && p->p_mem->mem);
+
+		p->p_mem->memflags = b->p_flags;
+		p->p_mem->base = b;
+
+		/* check for a valid text region. some compilers (e.g. Lattice 3) just
+		 * throw everything into the text region, including data; fork() must
+		 * be careful to save the whole region, then. We assume that if the
+		 * compiler (or assembler, or whatever) goes to the trouble of making
+		 * separate text, data, and bss regions, then the text region is code
+		 * and isn't modified and fork doesn't have to save it.
+		 */
+		if (b->p_blen != 0 || b->p_dlen != 0)
+			p->p_mem->txtsize = b->p_tlen;
+		else
+			p->p_mem->txtsize = 0;
 
 		for (i = 0; i < p->p_mem->num_reg; i++)
 		{
@@ -703,9 +714,9 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 				if (m->links <= 0)
 				{
 					if (!m->links)
-						free_region (m);
+						free_region(m);
 					else
-						FATAL ("exec_region: region %lx bogus link count %d, not freed (len %lx)",
+						FATAL("exec_region: region %lx bogus link count %d, not freed (len %lx)",
 							m->loc, m->links, m->len);
 				}
 				else
@@ -716,20 +727,19 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 					    (m->loc != (long) b->p_env) &&
 					    (mem_prot_flags & MPF_STRICT))
 					{
-						mark_proc_region (p->p_mem, m, PROT_I, p->pid);
+						mark_proc_region(p->p_mem, m, PROT_I, p->pid);
 					}
 				}
 			}
 		}
 
+		/*
+		 * If the proc struct has a larger mem array than
+		 * the default, then free it and allocate a
+		 * default-sized one.
+		 */
 		if (p->p_mem->num_reg > NUM_REGIONS)
 		{
-			/*
-			 * If the proc struct has a larger mem array than
-			 * the default, then free it and allocate a
-			 * default-sized one.
-			 */
-
 			/*
 			 * hoo ha! Memory protection problem here. Use
 			 * temps and pre-clear p->mem so memprot doesn't try
@@ -744,30 +754,31 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 			p->p_mem->mem = NULL;
 			p->p_mem->addr = NULL;
 
-			kfree (pmem);
-			kfree (paddr);
+			kfree(pmem);
+			kfree(paddr);
 
-			pmem = kmalloc (NUM_REGIONS * sizeof (MEMREGION *));
-			paddr = kmalloc (NUM_REGIONS * sizeof (long));
+			pmem = kmalloc(NUM_REGIONS * sizeof(MEMREGION *));
+			paddr = kmalloc(NUM_REGIONS * sizeof(long));
 
-			assert (pmem && paddr);
+			assert(pmem && paddr);
 
 			p->p_mem->mem = pmem;
 			p->p_mem->addr = paddr;
 			p->p_mem->num_reg = NUM_REGIONS;
 		}
 
-		bzero (p->p_mem->mem, (p->p_mem->num_reg) * sizeof (MEMREGION *));
-		bzero (p->p_mem->addr, (p->p_mem->num_reg) * sizeof (long));
+		/* and clear out */
+		bzero(p->p_mem->mem, (p->p_mem->num_reg) * sizeof(MEMREGION *));
+		bzero(p->p_mem->addr, (p->p_mem->num_reg) * sizeof(long));
 	}
 
-	assert (p->p_sigacts);
+	assert(p->p_sigacts);
 
 	/* initialize signals */
 	p->p_sigmask = 0;
 	for (i = 0; i < NSIG; i++)
 	{
-		struct sigaction *sigact = & SIGACTION(p, i);
+		struct sigaction *sigact = &SIGACTION(p, i);
 
 		if (sigact->sa_handler != SIG_IGN)
 		{
@@ -797,7 +808,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	 * to ensure compatibility with older versions of MiNT, which ignore
 	 * p_hitpa.
 	 */
-	if (valid_address (b->p_hitpa - 0x28))
+	if (valid_address(b->p_hitpa - 0x28))
 		p->ctxt[CURRENT].usp = b->p_hitpa - 0x28;
 	else
 		p->ctxt[CURRENT].usp = mem->loc + mem->len - 0x28;
@@ -808,18 +819,6 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	/* set up stack for process */
 	*((long *)(p->ctxt[CURRENT].usp + 4)) = (long) b;
 
-	/* check for a valid text region. some compilers (e.g. Lattice 3) just
-	 * throw everything into the text region, including data; fork() must
-	 * be careful to save the whole region, then. We assume that if the
-	 * compiler (or assembler, or whatever) goes to the trouble of making
-	 * separate text, data, and bss regions, then the text region is code
-	 * and isn't modified and fork doesn't have to save it.
-	 */
-	if (b->p_blen != 0 || b->p_dlen != 0)
-		p->p_mem->txtsize = b->p_tlen;
-	else
-		p->p_mem->txtsize = 0;
-
 	/* An ugly hack: dLibs tries to poke around in the parent's address
 	 * space to find stuff. For now, we'll allow this by faking a pointer
 	 * into the parent's address space in the place in the basepage where
@@ -829,13 +828,13 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	if (curproc != rootproc)
 		curproc->p_mem->base->p_usp = curproc->ctxt[SYSCALL].usp - 0x32;
 
-	TRACE (("exec_region: ok (%lx)", p));
+	TRACE(("exec_region: ok (%lx)", p));
 	return p;
 }
 
 long _cdecl
 create_process(const void *filename, const void *cmdline, const void *newenv,
-		struct proc **pret, long stack)
+	       struct proc **pret, long stack)
 {
 	char localname[PNAMSIZ+1];
 	MEMREGION *env = NULL;
