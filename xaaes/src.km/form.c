@@ -881,8 +881,7 @@ do_formwind_msg(
 				RECT dr;
 				struct xa_rect_list *rl;
 
-				rl = wind->rect_start;
-				if (rl)
+				if ((rl = wind->rect_start))
 				{
 					hidem();
 					while (rl)
