@@ -180,31 +180,13 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 	}
 	
-	TRACE((tfmt, mode, ptr1, (char *) ptr2 + tail_offs, ptr3));
+	TRACE ((tfmt, mode, ptr1, (char *) ptr2 + tail_offs, ptr3));
 	
 	/* Pexec with mode 0x8000 indicates tracing should be active */
 	ptrace = (!mkwait && (mode & 0x8000));
 	
-	/* in most cases, we'll want a process struct to exist,
-	 * so make sure one is around. Note that we must be
-	 * careful to free it later!
-	 */
-	
 	p = NULL;
-# if 0
-	if (!overlay)
-	{
-		TRACE(("Checking for memory for new PROC structure"));
-		
-		p = new_proc();
-		if (!p)
-		{
-			DEBUG(("Pexec: couldn't get a PROC struct"));
-			return ENOMEM;
-		}
-	}
-# endif
-
+	
 	/* make a local copy of the name, in case we are overlaying
 	 * the current process
 	 */
@@ -241,14 +223,13 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		*newname = 0;
 	}
 
-	TRACE(("creating environment"));
+	TRACE (("creating environment"));
 	if (mkload || mkbase)
 	{
-		env = create_env((char *)ptr3, flags);
+		env = create_env ((char *) ptr3, flags);
 		if (!env)
 		{
-			DEBUG(("Pexec: unable to create environment"));
-		//	if (p) dispose_proc(p);
+			DEBUG (("Pexec: unable to create environment"));
 			return ENOMEM;
 		}
 	}
@@ -261,13 +242,12 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		base = create_base((char *)ptr2, env, flags, 0L, 0L, 0L, 0L, 0L, &r);
 		if (!base)
 		{
-			DEBUG(("Pexec: unable to create basepage"));
+			DEBUG (("Pexec: unable to create basepage"));
 			detach_region(curproc, env);
-		//	if (p) dispose_proc(p);
 			return r;
 		}
 		
-		TRACELOW(("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+		TRACELOW (("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
 	}
 	else if (mkload)
 	{
@@ -286,19 +266,18 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		base = load_region (ptr1, env, (char *)tail, &xattr, &flags, 0, &r);
 		if (!base)
 		{
-			DEBUG(("Pexec: load_region failed"));
+			DEBUG (("Pexec: load_region failed"));
 			detach_region(curproc, env);
-		//	if (p) dispose_proc(p);
 			return r;
 		}
 		
-		TRACE(("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+		TRACE (("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
 	}
 	else
 	{
 		/* mode == 4, 6, 104, 106, 204, or 206 -- just go */
 		
-		base = addr2mem(curproc, (virtaddr)ptr2);
+		base = addr2mem (curproc, (virtaddr)ptr2);
 		if (base)
 			env = addr2mem(curproc, *(void **)(base->loc + 0x2c));
 		else
@@ -307,7 +286,6 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		if (!env)
 		{
 			DEBUG(("Pexec: memory not owned by parent"));
-		//	if (p) dispose_proc(p);
 			return EFAULT;
 		}
 	}
@@ -319,24 +297,11 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * all along. Here's where we change the protection on
 		 * the environment to match those flags.
 		 */
-		mark_region(env,(short)((flags & F_PROTMODE) >> F_PROTSHIFT));
+		mark_region (env, (short)((flags & F_PROTMODE) >> F_PROTSHIFT));
 	}
 	
-# if 0
-	if (p)
-	{
-		/* free the PROC struct so fork_proc will succeed
-		 * 
-		 * FIXME: it would be much better to pass the PROC
-		 * as a parameter to fork_proc!!
-		 */
-	//	dispose_proc(p);
-		p = NULL;
-	}
-# else
 	assert (!p);
-# endif
-
+	
 	if (mkgo)
 	{
 		BASEPAGE *b;
@@ -372,7 +337,8 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 		
 		/* jr: add Pexec information to PROC struct */
-		strncpy(p->cmdlin, b->p_cmdlin, 128);
+		strncpy (p->cmdlin, b->p_cmdlin, 128);
+		
 		if (mkload || (thread && ptr1))
 		{
 			char tmp[PATH_MAX];
@@ -548,10 +514,10 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			 * we guarantee ourselves at least 3 timeslices to do
 			 * an Mshrink
 			 */
-			assert(curproc->magic == CTXT_MAGIC);
-			fresh_slices(3);
-			leave_kernel();
-			change_context(&(curproc->ctxt[CURRENT]));
+			assert (curproc->magic == CTXT_MAGIC);
+			fresh_slices (3);
+			leave_kernel ();
+			change_context (&(curproc->ctxt[CURRENT]));
 		}
 		else
 		{
@@ -559,19 +525,18 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			 * so we temporarily give it high priority
 			 * and put it first on the run queue
 			 */
-			run_next(p, 3);
+			run_next (p, 3);
 		}
 	}
 
 	if (mkfree)
 	{
-		detach_region(curproc, base);
-		detach_region(curproc, env);
+		detach_region (curproc, base);
+		detach_region (curproc, env);
 	}
 
 	if (mkwait)
 	{
-# if 1
 		long oldsigint, oldsigquit;
 		
 		assert (curproc->p_sigacts);
@@ -593,12 +558,12 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			}
 			if (newpid == ((r&0xffff0000L) >> 16))
 			{
-				TRACE(("leaving Pexec; child return code %ld", r));
+				TRACE (("leaving Pexec; child return code %ld", r));
 				r = r & 0x0000ffffL;
 				break;
 			}
 			if (curproc->pid)
-				DEBUG(("Pexec: wrong child found"));
+				DEBUG (("Pexec: wrong child found"));
 		}
 		
 		assert (curproc->p_sigacts);
@@ -607,36 +572,6 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		SIGACTION(curproc, SIGQUIT).sa_handler = oldsigquit;
 		
 		return r;
-# else
-		long oldsigint, oldsigquit;
-
-		oldsigint = curproc->sighandle[SIGINT];
-		oldsigquit = curproc->sighandle[SIGQUIT];
-		curproc->sighandle[SIGINT] =
-			 curproc->sighandle[SIGQUIT] = SIG_IGN;
-
-		newpid = p->pid;
-		for(;;)
-		{
-			r = sys_pwaitpid (curproc->pid ? newpid : -1, 0, NULL);
-			if (r < 0)
-			{
-				ALERT("p_exec: wait error");
-				return EINTERNAL;
-			}
-			if (newpid == ((r&0xffff0000L) >> 16))
-			{
-				TRACE(("leaving Pexec; child return code %ld", r));
-				r = r & 0x0000ffffL;
-				break;
-			}
-			if (curproc->pid)
-				DEBUG(("Pexec: wrong child found"));
-		}
-		curproc->sighandle[SIGINT] = oldsigint;
-		curproc->sighandle[SIGQUIT] = oldsigquit;
-		return r;
-# endif
 	}
 	else if (mkgo)
 	{
@@ -644,14 +579,14 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * exist any more (if the child exits right away)
 		 */
 		newpid = p->pid;
-		yield();	/* let the new process run */
+		yield ();	/* let the new process run */
 		return newpid;
 	}
 	else
 	{
 		/* guarantee ourselves at least 3 timeslices to do an Mshrink */
-		fresh_slices(3);
-		TRACE(("leaving Pexec with basepage address %lx", base->loc));
+		fresh_slices (3);
+		TRACE (("leaving Pexec with basepage address %lx", base->loc));
 		return base->loc;
 	}
 }
@@ -797,7 +732,6 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		bzero (p->p_mem->addr, (p->p_mem->num_reg) * sizeof (virtaddr));
 	}
 	
-# if 1
 	assert (p->p_sigacts);
 	
 	/* initialize signals */
@@ -813,19 +747,6 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 			sigact->sa_flags = 0;
 		}
 	}
-# else
-	/* initialize signals */
-	p->p_sigmask = 0;
-	for (i = 0; i < NSIG; i++)
-	{
-		if (p->sighandle[i] != SIG_IGN)
-		{
-			p->sighandle[i] = SIG_DFL;
-			p->sigflags[i] = 0;
-			p->sigextra[i] = 0;
-		}
-	}
-# endif
 	
 	/* zero the user registers, and set the FPU in a "clear" state */
 	for (i = 0; i < 15; i++)
