@@ -16,6 +16,7 @@
 # include "filesys.h"
 # include "global.h"
 
+# include "arch/cpu.h"		/* XXX cpush */
 # include "arch/mprot.h"
 # include "libkern/libkern.h"
 # include "mint/basepage.h"
@@ -552,6 +553,9 @@ load_xfs (const char *path, const char *name)
 		
 		DEBUG (("load_xfs: initializing %s, bp = %lx (init %lx), size = %li", path, b, (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 		
+		/* I don't know why, can someone explain why this is required? */
+		cpush (NULL, -1);
+		
 		fs = callout_init ((void *) b->p_tbase, &kernelinfo);
 		if (fs)
 		{
@@ -624,6 +628,9 @@ load_xdd (const char *path, const char *name)
 		DEVDRV *dev;
 		
 		DEBUG (("load_xdd: initializing %s, bp = %lx (init %lx), size = %li", path, b, (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+		
+		/* I don't know why, can someone explain why this is required? */
+		cpush (NULL, -1);
 		
 		dev = callout_init ((void *) b->p_tbase, &kernelinfo);
 		if (dev)
@@ -805,9 +812,13 @@ load_modules (long type)
 					
 					*ptr1 = '\0';
 					
+	cpush (NULL, -1);
+	
 					DEBUG (("load_modules: load \"%s\" (%s) [%s]", buf, name, types [type]));
 					(*(loads [type]))(buf, name);
 					DEBUG (("load_modules: load done \"%s\" (%s) [%s]", buf, name, types [type]));
+	cpush (NULL, -1);
+	
 				}
 				
 				r = _d_readdir (&dirh, name, len);
