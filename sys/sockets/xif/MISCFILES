@@ -1,0 +1,12 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go both into source and binary distributions.
+
+MISCFILES = \
+	BIODMA.txt \
+	DE600.txt \
+	DIAL.txt \
+	LANCE.txt \
+	PAMs_DMA.txt \
+	PLIP.txt \
+	PPP.txt \
+	SLIP.txt

@@ -1,0 +1,75 @@
+DIAL (C) 1999 by T. Lang
+
+DIAL.XIF:		Autodial driver for ppp0-ppp3
+
+DIAL.XIF is an autodial driver for the ppp interface. It adds the 
+interfaces dial0-dial3. Since DIAL.XIF needs access to the ppp 
+structures it has to be loaded AFTER SLIP.XIF. Since DIAL.XIF is an 
+experimental driver it has not yet been integrated into SLIP.XIF.
+
+You have to start the dial daemon DIALD (in the tool directory) before
+DIAL.XIF works. DIAL.XIF tells the dial daemon which connection to 
+start or stop.
+
+SETTING UP DIAL.XIF
+
+First of all you have to start the dial daemon (best from the /etc/rc.net
+script). DIALD detaches itself from the console so it can be started 
+without the "&" parameter. DIALD starts quietly and only talks if it 
+finds a problem preventing the installation.
+
+You have to setup one of the dial interfaces to some ip address you 
+like and setup a route to it. For typical internet access you may do 
+something like:
+ifconfig dial0 addr 192.168.21.20
+route add default dial0
+
+Whenever a packet is routed to this interface it checks if the 
+corresponding ppp interface (here: ppp0) is up and running. If not it 
+tells the daemon to start a corresponding script (here: 
+/etc/ppp/ppp-up0) to setup the connection. Create a script with this 
+name that sets up the connection and does NOT change the route to the 
+dial interface (here: default).
+
+When the connection is idle for a while the dial interface tells the 
+daemon to start a script (here: /etc/ppp/ppp-down0) to stop the 
+connection.
+
+The dial interface has two timeout values: One for waiting for the 
+connection (default is 60s) and one for the idle time before the 
+connection is being shut down (default is 80s). These values can be 
+changed (see below). Note: LCP packets are not counted here since when 
+authenticating by CHAP LCP packets are exchanged on a regular basis.
+
+Please be careful with the access rights to /etc/ppp since if a normal
+user can place his/her own scripts here he/she may cause serious 
+damage by triggering the dial process.
+
+DON'T TRY THESE DRIVERS UNLESS YOU ARE ABSOLUTELY SURE WHAT YOU ARE DOING.
+I'm not responsible for any crashed harddisk or so.
+
+SPECIAL OPTIONS
+timeout <timeout>
+	With this option you can change the timeout value separately 
+	for every dial interface. <timeout> is an intereger value and
+	is given in seconds.
+waitconnect <timeout>
+	As timeout but for the connection timeout. If a connection 
+	cannot be established the dial interface waits <timeout> 
+	seconds before redialling.
+debug <level>
+	With this option you can set the debug level for the driver. 
+	You normally don't need this. <level> is an integer value.
+log <filename>
+	With this option you can set a filename where to log. You
+	normally don't need this. <filename> is a string.
+
+If you have any suggestions, flames, hints or so do not hesitate to 
+contact me. Please do NOT contact me to help you setting up your ppp 
+connection. That's up to you! If you have a ppp connection running 
+it's really easy to modify the scripts for the use by DIAL.XIF/DIALD.
+My address:
+Torsten Lang
+Bismarckstr. 6
+35410 Hungen
+EMail: Torsten@Lang.net

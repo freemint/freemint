@@ -1,0 +1,88 @@
+BIODMA.XIF (C) 1995-1999 by T. Lang
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!PLEASE READ THE WHOLE DOCUMENT BEFORE USING THIS DRIVER!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+********************************************************************************
+* Please note: Since the BIOODMA adaptors are not designed for asynchronous    *
+* receiving and additionally do NOT conform to the ACSI standard they          *
+* work rather bad & slow. Especially on accelerated machines (TT, PAK/3 etc.)  *
+* the driver is not reliable. So I have decided to stop support for it.        *
+* This is the last release of the driver. It may work for you or not. If it    *
+* doesn't please note that support is stopped and that I will not give         *
+* any support for this driver...                                               *
+********************************************************************************
+
+The driver for the BIONET DMA adaptor is in a very early state but seems to
+work quite stable. I had some problems on my 48MHz PAK/3/4ST/16TT machine but
+since I had connected some other equipment these problems may not be caused
+by the driver itself...
+
+The driver is based on dummyeth from Kay Roemer, the DMA code is 
+(C) T. Lang and is losely based on some assembler source code (C) by Hans-Peter
+Jansen, LISA GmbH, Berlin.
+
+There are some important things to know, so READ THIS BEFORE USING:
+- Starting and stopping the DMA adaptor with ifconfig up or down doesn't
+  really work since there are no possibilities to start or stop the BIODATA
+  adaptor...
+- It is important that a harddisk driver checks the FLOCK flag itself before
+  beginning its work. At least some drivers like HUSHI don't and are NOT
+  recommended for use together with these drivers!!!
+- Be careful with background DMA drivers like the floppy driver or some special
+  harddisk drivers. The protective protocol has been changed for their use:
+  - when sending:
+    Check for FLOCK, if set -> queue packet
+  - interrupt routine:
+    Check FLOCK, if set -> quit, else check for queued send packets, dequeue
+    and send them, then check for received packets, if any get them and pass
+    them to the upper layers.
+  So before testing any background DMA stuff you should make a backup of your
+  harddisk!
+- Floppy access causes massive delays in sending and receiving!
+- 1. Kay told me that MiNT doesn't do any task switches when FLOCK is set.
+  2. I read in the MiNT documentation that MiNT doesn't do any task switches
+     when the processor is in supervisor state.
+  3. Usual harddisk drivers do DMAs in supervisor mode.
+  The LANCEDMA driver relies on these facts. I would have written a completely
+  interrupt driven DMA code (like I've done for my harddsikrecording system
+  for ALL STs working on the ACSI port) but that's a lot of work due to some
+  problems with dirty harddisk drivers like HUSHI ignoring a set FLOCK flag.
+
+Planned features:
+- It should be possible that one BIODMA.XIF manages more than one DMA
+  adaptor. At the moment you can use only one.
+
+Still missing:
+- Error management is missing due to missing documentation.
+- No cache management yet...
+  ...since there are no public cache management routines in the MiNT kernel.
+  If someone exports the internal management routines of MiNT I will
+  use them in the next release ;-)
+
+ATTENTION:
+As a replacement for cache management I've used another trick in this release
+of the driver:
+The DMA buffer is accessed only at a mirrored address. The address is
+ORed with $FF000000 so that the buffer is accessed in an uncached area.
+The only drawback with this trick is that it works DEFINITELY NOT on machines
+with real 32bit adressing without patching the MMU tables. This means that it
+works not on the Atari TT and perhaps also will cause trouble on the Eagle or
+the Medusa since AFAIK they don't mirror the ST RAM.
+If you want to use this driver on one of these machines please use an
+older version of the driver. Well, the driver SHOULD work on tuned STs like
+the MEGA ST + PAK68/3 + FRAK.
+
+DON'T TRY THESE DRIVERS UNLESS YOU ARE ABSOLUTELY SURE WHAT YOU ARE DOING.
+I'm not responsible for any crashed harddisk or so.
+
+SPECIAL OPTIONS:
+None
+
+If you have any suggestions, flames, hints or so do not hesitate to contact me.
+My address:
+Torsten Lang
+Bismarckstr. 6
+35410 Hungen
+EMail: Torsten@Lang.net

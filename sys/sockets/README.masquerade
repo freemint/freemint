@@ -1,0 +1,151 @@
+README FILE FOR IP MASQUERADING
+
+The IP masquerading support was implemented by Mario Becroft in May 1999 and
+is placed in the public domain.
+
+
+The following files changed from the standard net-1.03 distribution:
+
+tool/Makefile
+net/inet/Makefile
+net/inet/ip.c
+net/inet/ip.h
+net/inet/tcp.c
+net/inet/inet.c
+
+
+The following files were added to the standard net-1.03 distribution:
+
+include/masquerade.h
+include/masqextern.h
+tool/masqconf.c
+net/inet/masqdev.c
+net/inet/masquerade.c
+README.masquerade
+
+
+INTRODUCTION
+
+I implemented IP masquerading for MiNTnet, as well as a quick fix for the "land"
+bug which would freeze mintnet.
+
+I am sure that my implementation is not optimal and contains many bugs, because
+this is the first low-level network programming I have ever done and I am not
+very familiar with it. When even experienced programmers get bugs in their code,
+you can only begin to imagine the kind of errors I am likely to make.
+
+Nevertheless it does seem to work, so I must have done something right.
+
+To use the IP masquerading features, simply copy the new sockdev.xdd into
+your mint folder and reboot the machine. IP masquerading is still disabled by
+default, but can be enabled using the masqconf program, as explained below.
+
+
+USING MASQCONF / QUICK START GUIDE
+
+To configure the IP masquerading you use the masqconf program from the tool
+directory.
+
+To show the current configuration and any masquerade database entries, invoke
+masqconf with no arguments.
+
+To get help, invoke masqconf with help or any unknown command as an argument.
+
+Normally you don't need to worry about all the available settings, the only
+important ones are address, netmask and flags. The rest can be left at the
+default values.
+
+address should be set to the address of the network to be masqueraded for,
+and netmask should be the netmask of that network.
+
+For example if you have a local network 10.0.0.0 you might configure IP
+masquerading for all machines on the network with the following command:
+
+masqconf address 10.0.0.0 netmask 255.0.0.0
+
+Once you have correctly set the parameters you must set the ENABLED flag to
+make IP masquerading operate, like so:
+
+masqconf set ENABLED
+
+That is all there is to it. Now you can access the internet from any of
+the machines on your network, even though you only have one actual IP address!
+
+
+PORT REDIRECTION
+
+Apart from allowing a masqueraded machine to initiate connections to another
+computer the IP masquerading supports permanent redirection of certain ports
+on the masquerading gateway to go to a masqueraded machine. You configure this
+with the masqconf redirect command. The parameters are gateway port,
+destination address an destination port.
+
+For example to redirect incoming HTTP requests on the gateway machine to
+port 456 of masqueraded machine 10.0.0.5, you could use the following command:
+
+masqconf redirect 80 10.0.0.5 456
+
+To stop redirecting a port, use the masqconf unredirect command. For example
+to reverse the above redirection, issue the following command:
+
+masqconf unredirect 80
+
+
+FAQ
+
+Q. Why does (xyz feature) not work properly?
+
+A. Like I said this is my first project with any kind of low-level network
+programming, and I probably made quite a lot of mistakes. Certainly notify me
+if you find a bug, but it's even better if you try to fix it yourself then
+mail me and explain how you fixed it. But also see the next question.
+
+Q. Why do some protocols like FTP and DCC not work via IP masquerading?
+
+A. Some programs send low-level protocol information in a high-level protocol,
+including IP addresses and port numbers. IP masquerading doesn't know about
+that, and doesn't masquerade those addresses properly. Eventually I plan to
+add support for this, but it is very complicated. In the mean time, you can
+sometimes avoid the problem by adjusting the settings in the problematic
+program, for example if you set your FTP client to passive mode it will work
+ok.
+
+Q. Why doesn't this documentation explain a whole lot of things like the
+timeouts, masquerade database, port redirection, flags, etc., etc.?
+
+A. I want to make IP masquerading available, but I did not have time to
+write lots of documentation. Read the source code! Or if you send me an email
+I will be happy to help. I hope to write some better documentation later.
+
+
+BUGS
+
+Lots!
+
+Seriously, it can't be so bad as I've used the IP masquerading quite a lot and
+it doesn't fail. But I have noticed some inconsistencies.
+
+Sometimes a condition occurs where a TCP connection that is not yet opened
+(or not yet properly closed) tosses lots of packets backwards and forwards in
+an endless loop. I don't know why this happens, but I am looking into it. If
+you see this bug, try to track it down and fix it. As a temporary fix, just
+disable IP masquerading (masqconf unset ENABLED) then enable it again
+(masqconf set ENABLED) to break the loop.
+
+I think there is some sort of bug handling incoming ICMP error messages
+for a masqueraded host. Particularly, error messages about UDP datagrams
+seem to get through to the host that sent the datagram which caused the error,
+but the host doesn't seem to interpret them. Is the checksum wrong, or
+something?
+
+
+CONTACTING ME
+
+I would like to hear anything you have to say about the IP masquerading.
+Please send an email to:
+
+mb@tos.pl.net
+
+Please note that this address will become invalid in about a month's time.
+I will announce my new address at that time via the MiNT mailing list and
+other appropriate forums.

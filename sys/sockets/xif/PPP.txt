@@ -1,0 +1,8 @@
+
+Some notes on using PPP.
+
+The PPP driver is part of slip.xif. So if you want to connect to another host
+using PPP, copy slip.xif into /c/mint or /c/multitos.
+
+To establish a PPP connection you will need the programm "pppd". Look for
+the file ppp-212.tgz on you favorite Atari ftp server.

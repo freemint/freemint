@@ -1,0 +1,358 @@
+This file contains important notes about the old, hardware dependent
+SLIP (oslip.xif) driver and how to set up a connection with this old
+driver.
+
+Please note that oslip.xif is obsolete, you should better use slip.xif,
+the new hardware independent SLIP driver. oslip.xif will go away soon!
+
+Note that the setup of a SLIP connection with slip.xif is substantially
+different (easier!) from what is described in this file.
+
+For information on the new SLIP driver read README.SLIP.
+
+
+What is SLIP ?
+--------------
+
+SLIP is a protocol for transferring IP packets over serial lines, which
+is specified in RFC 1055.
+
+You can connect two hosts running IP and SLIP drivers to form a so called
+POINT TO POINT connection.
+
+This is usually done by using a null modem cable or a modem.
+In the latter case you dial into a so called SLIP server, a host (often
+connected to the INTERNET) running software that allows you to establish
+a SLIP connection to your computer.
+
+After establishing the connection you can reach all hosts reachable from
+the SLIP server -- in most cases all hosts on the Internet.
+
+Provided your computer has a unique IP address (IP addresses are distributed
+by NIC -- network information centre), your computer is also reachable
+from all the above mentioned hosts under the unique IP address.
+
+Establishing a SLIP connection (with oslip.xif)
+-----------------------------------------------
+
+To simplify explanation lets assume your computer (referred to as local host)
+has the IP address 100.0.0.1 and the host you are going to connect to
+(referred to as remote host) has IP address 149.10.1.1.
+
+First you must connect to the remote machine. You can either use a null modem
+cable, or you have to dial into the remote machine over a modem using a tele
+communication program.
+
+Lets assume the local and remote host are connected now. You will get a prompt
+from the SLIP server. The outline of the prompt depends on the server.
+
+If the remote machine uses the DIP (Dialin IP) program, you must log in as a
+special user, whose login program is DIP. DIP has a database of known SLIP
+users, their IP addresses, ...
+DIP searches its database for your login name and sets IP addresses, ...
+based on the entries in its database.
+
+Other server implementations don't have such a database (this may be an
+advantage, since almost everyone can dial in. DIP allows only members of its
+database to establish SLIP connections). You will need to specify your IP
+address and other information.
+
+After this the remote host will put the serial line into SLIP mode.
+
+Now its time to set up your local host. First leave (suspend) your comms
+program, BUT WITHOUT HANGING UP THE LINE.
+
+MintNet provides two programs to setup your networking environment, ifconfig
+and route.
+
+Ifconfig is used to setup the network interfaces. You may imagine a network
+interface as the hardware and software driver that connect your host with
+other hosts/networks. When using SLIP, the serial line and its driver
+is the network interface you use.
+
+All network interfaces have a name, `osl' is the prefix of the serial line
+network interfaces (old driver). Because there may be several serial line
+interfaces on one host, a so called unit number is used to distinguish
+between them.
+
+Thus the serial line network interfaces are called osl0, osl1, osl2, ...
+
+Under MintNet osl0 correspondends to the modem1 interface of Atari ST and
+TT computers. Note that Falcons don't have a modem1 like the modem1 of
+TT/ST (different hardware).
+
+Currently only the driver for sl0 (modem1) is implemented, look at the
+implementation notes.
+
+This means you must connect your (null)modem to the modem1 interface and
+that SLIP will currently not work with Falcons. This will change in the
+future.
+
+Every interface has an IP address, a maximum transmission unit, a set of flag
+values and a destination IP address (for point to point interfaces like SLIP).
+
+You can set these values with ifconfig. Following our example, one would
+use the following command to set up the sl0 interface:
+
+	ifconfig osl0 addr 100.0.0.1 dstaddr 149.10.1.1 mtu 2000 up
+
+This makes osl0 (and thus your local host) have the IP address 100.0.0.1.
+The destination address (the IP address of the host on the other end of
+the serial link, the remote host) of the link is 149.10.1.1.
+
+Mtu is the maximum transmission unit and says how large (in bytes) packets
+the interface will deliver. 2000 is generally a good value (and the default).
+The MTU is used by IP to decide when to fragment datagrams. When an IP packet
+is longer than the MTU of the interface the packet must be sent over, IP
+splits the large packet up into small pieces that fit into the MTU.
+Fragmentation is time consuming, because the sender must split up the packets
+into small pieces and the receiver must reassemble the pieces into one large
+datagram. Thus you should avoid fragmentation whenever possible by making
+MTUs large enough. However, MTUs are restricted to some upper limit by the
+hardware that transmitts the packets.
+
+`up' switches the interface on, ie activates it. The modem1 line is then
+allocated by the networking driver (/dev/modem1 is blocked while the sl0
+interface is up).
+
+Ifconfig without arguments will show all activated interfaces in the system,
+their addresses and flags in a user readable from. Doing this you will see:
+
+osl0:	flags=0x51<UP,POINTOPOINT,RUNNING>
+	inet 100.0.0.1 netmask 255.0.0.0 dstaddr 149.10.1.1 
+	metric 0 mtu 2000
+
+But this is not enough to use the SLIP link. Because there may be several
+network interfaces in the system, you must tell the system which interface
+to use for which destination IP address. This is done using the route
+command.
+
+A route is an IP destination address and the interface to use for packets to
+this destination. The system has a table of routes to decide which interface
+to use for outgoing packets. The route command modifies this table. You can
+add and delete routes. To add the route necesarry for our example, one would
+issue the following command:
+
+	route add 149.10.1.1 osl0
+
+This adds a route to the IP destination address 149.10.1.1 to go over the
+osl0 interface.
+
+Route without arguments shows the complete routing table of the system. It
+should now look like this:
+
+Destination         Gateway             Flags   Ref      Use Metric Iface
+100.0.0.1           *                   UH        1        8      0 osl0   
+149.10.1.1          *                   UH        1        8      0 osl0   
+
+`Destination' is the route's destination address.
+
+`Gateway' is an optional host which delivers packets for your host to
+another one. `*' indicates that this is a direct route to the destination,
+ie no intermediate host is needed to deliver your packets.
+
+`Flags' shows the flags of this route (`U' == up, `H' == host route).
+`Iface' shows the interface over which the route goes, sl0 in our case.
+
+The first route (to 100.0.0.1) is set up by the system when you activate
+the interface. It is needed to deliver incoming packets to the local host.
+If you delete it you will get no packets at all, so better do not change it.
+
+These settings enable you to communicate with the directly connected host
+149.10.1.1, and the rest of the world to communicate with your local host
+(using the IP address 100.0.0.1).
+
+But in most cases it would be boring to communicate only with the directly
+connected host (here 149.10.1.1). Therefore you can tell the system to
+deliver all packets to destination addresses it has no routes for to one
+host (a gateway) in the hope the gateway knows how to deliver the packets
+to the destinations.
+
+In our example 149.10.1.1 would be the gateway of our choice. You tell this
+the system with:
+
+	route add default osl0 gw 149.10.1.1
+
+Meaning `deliver all packets you have no route for to the gateway (gw)
+149.10.1.1'.
+
+The routing table now looks like this:
+
+Destination         Gateway             Flags   Ref      Use Metric Iface
+100.0.0.1           *                   UH        1        8      0 osl0   
+149.10.1.1          *                   UH        1        8      0 osl0   
+default             149.10.1.1          U         1        0      0 osl0   
+
+This enables you to use your local host as if it were fully integrated into
+the networks your SLIP server is on (eg the Internet).
+
+You can now ftp to your favorite site, ...
+
+The only ugly thing are the IP addresses. Of cause you can use symbolic names
+too. You will have to setup the loopback interface lo0 and (optionally) run
+some daemon processes on your machine that dynamically resolve names into
+IP addresses (called DOMAIN NAME SERVER).
+
+Note that the name server need not run on your machine. If one of the hosts
+on the networks you can reach over the SLIP link runs a name server, you can
+use this one. Suppose the host 149.10.1.1 runs a name server. To use this
+hosts name server add the line
+
+	nameserver 149.10.1.1
+
+to the file /etc/resolv.conf. You can use the tool `udpprobe' to find out
+whether some host runs a name server or not. If
+
+	udpprobe 149.10.1.1 domain "some text"
+
+prints the error message
+
+	recv: connection refused.
+
+then 149.10.1.1 doesn't run a name server. Optionally you can have a look
+at 149.10.1.1's /etc/resolv.conf file to find out the name server it uses.
+
+Without such a name server, names are resolved using the /etc/hosts database.
+You will have to add entries for all hosts you are going to use into this
+file.
+
+Setting up a name server is behind the scope of this README.
+
+Set up the loopback interface with:
+
+	ifconfig lo0 addr 127.0.0.1 up
+	route add 127.0.0.0 lo0
+
+This activates the loopback interface and adds a route to the loopback
+network (127.0.0.0) to the system routing table (this is necessary so
+that broadcasts in the loopback net are delivered to the local software).
+
+Optionally you can give the loopback interface your hosts IP address with
+the commands:
+
+	ifconfig lo0 addr 100.0.0.1 up
+	route add 100.0.0.0 lo0
+
+If you do so you can reach your local host BOTH under 127.0.0.1 AND
+100.0.0.1. This is the preferred method.
+
+When you are finished with your connection (phone taxes eat up your
+money ...) you have to disactivate the osl0 channel with
+
+	ifconfig osl0 down
+
+This will drop the modem1 line, ie hang up the modem and close the connection.
+This also makes work the (/dev/modem1) line for other purposes again. You can
+reenter your comms program now and dial into another host.
+
+You may also want to delete the routing entries with
+
+	route del default
+and
+	route del 149.10.1.1
+
+but usually MintNet deletes all routes for one interface if you disactivate
+it.
+
+Null modem layout
+-----------------
+
+A null modem is used to directly connect two computers over a serial line.
+You can buy such a cable in computer stors for a few bucks, or you can
+build one yourself.
+
+You need two female DB-25 connectors and >= 7 conductor cable to connect
+them in the following way:
+
+	pin (one end)	with	pin (other end)
+	2			3
+	3			2
+	4			5
+	5			4
+	7			7
+	20			6, 8
+	6, 8			20
+
+Do not connect the other pins. Just plug this cable into the serial
+ports of your Mint/Unix/Linux or whatever box and have some fun ...
+
+Implementation Notes
+--------------------
+
+Most Unix based SLIP implementations use another (dynamic) way to
+link serial (tty) lines to network interfaces.
+
+Every tty device driver has a (current) line discipline. A line
+discipline implements the transmission semantics for a tty line.
+
+A terminal device can have several line disciplines (one at a time).
+The usual one is the TTY line discipline you are all familiar with.
+Another one is the SLIP line discipline. If a tty is in SLIP line
+discipline all data written/read to/from the tty is encoded/decoded
+using the SLIP protocol before sent to the lower level drivers.
+
+You can switch the line discipline of a termial device with the
+TIOCSETD ioctl command. (TIOCGETD returns the current line
+discipline).
+
+To set up a SLIP connection on such a system you would set the
+terminal device you want to communicate over into SLIP line
+discipline. Then you activate the interface (eg sl0) by setting
+its UP flag. When you do so the kernel will scan all tty devices
+for one that is in SLIP line discipline. The first one found
+is allocated to the network interface (eg sl0).
+
+This way you can dynamically link device drivers to network
+interfaces.
+
+Unfortunately Mint devices lack line disciplines. Furthermore the
+kernel builtin serial devices (/dev/modem[12] /dev/serial[12])
+are implemented internally using the BconXXX TOS functions.
+
+This makes it nearly impossible to do interrupt driven IO using
+these devices. Worse, the Bconout function blocks the caller
+until the character has been really sent.
+
+Because of these drawbacks I choose to not use the normal device
+drivers and to implement interrupt driven serial line drivers in
+the network interfaces.
+
+These low level drivers only implement sending and receiving of
+characters and RTS/CTS flow control, they are NOT complete
+terminal devices.
+
+Furthermore these drivers are only active as long as the interface
+is up. When the interface is down, the normal device drivers for
+the lines work and the SLIP drivers are inactive.
+
+So you can set line speed and other line characteristics using
+the normal device for the serial line when the network interface
+is down.
+
+For the modem1 line for instance you would setup the line with
+the following commmands:
+
+	stty 19200 < /dev/modem1	/* set line speed, stop bits, ... */
+	ifconfig osl0 up		/* activate the interface */
+
+Note that the low level drivers builtin to the network interfaces
+watch ALWAYS for the CTS and DCD wires and stop transmission if one
+or both of them gets low. Transmission is restarted if they both go
+to `high'.
+
+Note also that the builtin drivers drop the DTR wire of the serial
+line for 1.2 secs when you `down' them to tell the modem and the
+SLIP server on the other end that the connection is finished.
+
+Because of the network interface builtin drivers the linking of
+sl interfaces to serial lines in the current version of the SLIP
+driver is hardcoded:
+
+	sl0	<-->	modem1
+
+Note that the old driver (oslip.xif) ONLY supports sl0/modem1 interface.
+
+If find it's a pitty that I must implement such low level drivers into
+the network interfaces. It would be much better if the normal devices
+could be used, but that requires rewriting the device drivers without
+the BconXXX TOS functions and to add line disciplines to Mint.

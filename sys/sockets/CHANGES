@@ -1,0 +1,1589 @@
+*** Version 1.04 Interim
+
+net/inet/udp.c:
+	Changed udp_input() so that ICMP DSTUR messages are only sent when
+	the destination wasn't a broadcast (otherwise we violate RFC 1122).
+net/tool/diald.c,
+net/drivers/dial.c:
+	New: Autodial interface. Will later be included into slip.xif since
+	it needs some hacks now to get hands on ppp's structures. Must be loaded
+	AFTER slip.xif!
+net/inet/ip.c,
+net/inet/ip.h,
+net/inet/tcp.c,
+net/inet/inet.c,
+plus new files
+include/masquerade.h,
+include/masqextern.h,
+tool/masqconf.c,
+net/inet/masqdev.c,
+net/inet/masquerade.c:
+	Masquerading code and land bug hack by Mario Becroft, ftp protocol
+	support by T. Lang.
+man/man8/ifconfig.8,
+man/cat8/ifconfig.8:
+	Updated versions of the man pages for ifconfig.
+
+Please note:
+1. This is an interim release which still has to be adopted to the new MiNT-Lib
+   and tools. So there will be a new release in near future.
+2. The documentation and man pages are still incomplete and outdated. Anyway
+   I decided that it's better to release the package as is than not releasing it
+   at all.
+
+*** Version 1.03 Beta 2
+
+net/drivers/lance.c,
+net/drivers/biosdma.c,
+net/drivers/lancedma.c:
+	Bugfix for multiple send buffers in lance.c, changed naming scheme
+	of the drivers (LANCE drivers are now "rle" (Riebl) or "ple" (PAMs Net),
+	ne2000 (not in this package) is now "ne" and dma drivers are now "de".
+	Older (unsupported) drivers stay ("en").
+	This should make life easier for admin-tools.
+
+*** Version 1.03 Beta
+
+Note1: New Maintainer since Version 1.02
+       Torsten Lang (Torsten@Lang.net)
+Note2: ifconfig takes a new parameter -f <filename>. In this file you may have
+       some very hw dependant options like the hw address for Riebl boards.
+       You may find the useable options in the driver documentation and/or
+       the source code (..._config()).
+net/inet/port.c,
+net/inet/port.h,
+net/inet/inetutil.c:
+	Added code to support binding on 0.0.0.0 and additionally on other
+	addresses. This is necessary for named and the Samba 1.9.18p3
+	packages. (Kay Roemer)
+net/drivers/lance.c:
+	Use four send buffers instead of one (better performance).
+net/inet/bpf.c:
+	bpf.c Queue has now max. 32 Packets (may be needed for fast udp transfers (nfs!))
+net/inet/icmp.c:
+	icmp will now also generate and answer broadcast echo requests since this is needed by some
+	software to find out what's around in the net.
+	ToDo: ICMP broadcasts to the net (ping to a broadcast address) are not yet reflected
+	      to the local IP system!
+
+*** Patchlevel 1
+
+tools/slattach.c:
+	Added option -c that turns on RTSCTS. Shut down connection and exit
+	when remote end hangs up.
+
+net/drivers/serial.c:
+	Fixed a fatal bug: gcc 2.5.8 does not detect that Fcntl(..., &x, ...)
+	might clobber x (Fcntl is a macro). I don't know whether this is a
+	bug in gcc or in the trap_1_wlww macro.
+	This sometimes caused the connection to hang forever.
+
+*** Version 1.0
+
+net/inet/{tcp.c, tcpout.c}:
+	Fixed a bug in the available-send-space calculation that caused senders
+	to be woken up even if nothing could be written.
+
+net/inet/tcpout.c:
+	Cause a slow start after connection has been idle for at least RTO.
+
+net/inet/tcpin.c:
+	Ack at least every other packet in delayed ack processing.
+
+net/inet/tcpout.c:
+	Fixed a bug in tcp_sndhead()'s calculation of the useable send window
+	(SEQ1ST(b)-tcb->snd_nxt should have been SEQ1ST(b)-tcb->snd_wndack).
+
+net/inet/{tcp.h, tcpout.c, tcputil.c}:
+	Measure the inter-ack arrival time and use this as a lower limit
+	for the timeout (instead of TCP_MINRETRANS which was used as this limit
+	before).
+
+net/inet/{tcpout.c,tcputil.c}:
+	Changed rto calculation to rtt + 4rttdev as suggested in Van Jacobsons
+	and Karels's revised version of the SIGCOMM '88 paper.
+
+net/inet/tcpout.c:
+	Stay in RETRANS state until everything sent has been acked.
+
+net/inet/tcpout.c:
+	Make sure timeout is never lower than TCP_MINRETRANS (because of
+	delayed acks), even if the packet at the front of the queue was
+	sent a long time ago. One remaining problem is the rtt variance caused
+	by sld: if you increase the system load the rtt dramatically increases
+	which causes retransmits in tcp.
+
+Makefile's and MakeVars: 
+	Compile with -fno-defer-pop. Better safe than sorry.
+
+net/drivers/serial.c:
+	Increased stacksize of sld-thread to 8k (was 1k). Also copy the values
+	of sld's basepage from the parent process. Without these changes
+	I got strange problems (ps crashes after some tranferred packets,
+	some reported strange pppd crashes as well). It seems they have
+	vanished with these changes.
+
+*** Version 0.9
+
+install.sh, various files in net/drivers/: ++Torsten Lang
+	Driver fixes for lance.xif. lancedma.xif renamed to pamsdma.xif.
+	New drivers for BIO-DATA external dma adaptor and Riebl cards on
+	{MegaST,MegaSTE,TT}.
+
+net/inet/{bpf.h, bpf.c, bpf_filter.c}, lib/net/bpf.h:
+	Implemented packet filtering (BPF compatible).
+
+lib/netinet/{tcpip.h, udp_var.h, ip_var.h}, lib/net/slcompress.h:
+	New files.
+
+lib/net/if_arp.h:
+	Added some structs.
+
+lib/netinet/if_ethers.h:
+	Added some structures and moved from net/ to netinet/.
+
+net/drivers/{de600.h, de600.c, de600asm.s}:
+	More de600 fixes: Timing problems on faster machines (TT) removed,
+	race condition fixed (after clearing the bit in the mask register
+	one interrupt can still happen).
+
+*** Version 0.8
+
+Makefile, .bindist, .srcexcl:
+	Split distribution into two files: net-???s.tgz (sources)
+	and net-???b.tgz (binaries).
+
+doc/*:
+	New directory containing documentation. New is only FAQ-2, written
+	by Christer Gustavson.
+
+install.sh:
+	Added new drivers.
+
+net/drivers/Makefile:
+	Rewrote for better configurability.
+
+net/drivers/{lance.c, lanceasm.c}:
+	Beautified (ie reformatted) the code somewhat.
+
+net/drivers/{lance.c, lanceasm.s, lancemem.h}: ++Torsten Lang
+	New generic driver for LANCE based cards. Currenlty PAM's internal
+	cards for the MegaST (EMEGA) and TT (VME) are supported. The
+	Riebl card and TUM board are not yet supported.
+	Read net/drivers/LANCE.txt.
+
+net/drivers/lancedma.[ch]: ++Torsten Lang
+	New driver for PAM's external DMA adaptor.
+	Read net/drivers/LANCEDMA.txt.
+
+*** PL 3
+
+net/inet/ip.c:
+	Sends now ICMP redirects.
+
+net/inet/icmp*
+	Finished ICMP implementation.
+
+net/inet/tcp*:
+	Implemented sending of partial segments and sender SWS avoidance.
+	This should cure the problems with peers that have large tcp mss
+	but small tcp windows.
+	Improved handling of window shrinks.
+
+tool/{ifconfig.c, ifopts.c, dummy.cnf}, net/drivers/dummy.c,
+include/if.h, net/inet/{if.c, inet.c}:
+	Added -f option to ifconfig for hardware specific driver configuration.
+	dummy.cnf is a sample config file for the dummy.xif driver.
+
+lib/net/if.h:
+	Added struct iflink and struct ifopt.
+
+lib/sockios.h, lib/net/if_ppp.h, lib/net/if_sl.h:
+	New files containing socket, ppp, slip ioctls and stuff.
+	(these are symlinks to include/ and net/drivers). They will
+	be install in your include directory if you run install.sh or
+	make install.
+
+include/{netinfo.h, if.h}, net/inet/ifload.c, net/drivers/dummy.c:
+	Pass the drivers file name on to the driver in struct netinfo.
+
+net/drivers/de600.[ch]:
+	Wait some more time after printer/nic selection. Added some extra
+	waits () during de600 detection phase (on fast machines the detect
+	sometimes failes mysteriously).
+
+tool/slattach.c:
+	Calls now /usr/etc/route and /usr/etc/ifconfig instead of /etc/route
+	and /etc/ifconfig.
+
+all binaries:
+	Rebuilt all binaries using a cross-gcc 2.5.8 (recently switched to that
+	from good'ol native 2.3.3). Hopefully this doesn't break anything...
+
+MakeVars, Makefile's, lib/{b,}lib*{16,}.a:
+	Added code to make the build work with KGMD binutils (now the default).
+	If your toglclr doesn't understand --super and your libc is called
+	gnu16.olb (ie you don't have the KGMD binutils) then define NOKGMD
+	in MakeVars.
+
+*:
+	Sripped CR's from all text files, finally.
+
+install.sh, README:
+	Wrote foolproof(?) install script and updated installation section in
+	the README accordingly. I'd appreciate any feedback on this script.
+
+tool/pppconf.c:
+	Simple utility to print the configuration of a ppp interface (so you
+	can see which charcters are escaped, flags, mtu, mru, device, ...).
+
+net/drivers/ppp.c:
+	Don't call wake() from outside the kernel. I'm not sure if this
+	is harmful, but better safe than sorry.
+
+net/drivers/ppp.c:
+	Must not escape any chars in the range 0x20-0x3f.
+
+net/drivers/ppp.c:
+	Made ppp_fcs return unsigned short instead of signed short.
+
+nohog.acc, README.1ST:
+	Added nohog.acc and a note to README.1ST that if you intend to use MintNet
+	in a SingleTOS+Mint environment you will need this acc.
+
+*** PL 2
+
+etc/domainname:
+	New file. Holds domainname.
+
+net/drivers/unfinished/*:
+	Unfinished lance driver. Doesn't work. Only for the curious ones.
+
+net/inet/{tcputil.c, tcpin.c}:
+	Set a timer on FINWAIT2 sockets to delete them after TCP_CONN_TMOUT.
+	Otherwise when the peer didn't send its FIN for some reason, the tcb
+	would stay forever.
+
+net/inet/inetutil.c:
+	Ooops, checksums for UDP were turned off by default. Changed this.
+
+net/inet/tcp.c:
+	Destroy tcb in tcp_error () if socket has gone.
+
+*** PL 1
+
+net/inet/tcpout.c:
+	Probes were sent with wrong checksum and a sequence number that
+	didn't force a reply on all implementations.
+
+net/inet/{tcp.h, tcp.c, tcpout.c}:
+	Time out and close connection if peer does not respond to probes
+	for some time.
+
+net/inet/tcpout.c:
+	Destroy tcb if socket has gone away and retransmission times out.
+
+net/inet/tcpout.c:
+	Check for too small probe timeouts.
+
+net/drivers/slip.c:
+	Zero length packets were counted as too short (and dropped) input
+	packets. Thats wrong because most SLIP's send an END before and after
+	each frame, giving a zero length packet for every frame.
+
+tools/ifstats.c:
+	Fixed output for SLIP.
+
+*** Version 0.7
+
+tools/slattach.c: ++Borek Lumpovsky
+	Implemented speed setting via -s <speed> option. I made some more
+	changes, slattach now turns on RTSCTS and makes the tty raw at the
+	right place.
+
+include/if.h, net/inet/{tcputil.c, tcp.c, tcpin.c, tcp.h}:
+	Implemented a method for network interfaces to limit TCP receive
+	window (needed for de600).
+	This required a change of 'struct netif', so all *.xif drivers
+	must be recompiled!
+
+net/drivers/{de600.c, de600asm.s, de600.h}:
+	Wrote driver for Dlink's DE600 pocket lan adaptor connected to the
+	cartridge port via TUW hardware.
+
+net/inet/ifeth.c:
+	Calc and store real length of ethernet frame (needed because enet
+	frames have a min length of 60 bytes).
+
+tool/arp.c:
+	Fixed a bug in hw address printing.
+
+net/inet/arp.h:
+	Oooops! Arp header fields for proto and hw address length are
+	chars not shorts!
+
+net/drivers/serial.[ch]:
+	Drastically reduced cpu load of sld. Both ftp upload and download
+	over 19k2 cause ~12% cpu load on a 16MHz ST.
+
+Makefiles, MakeVars:
+	Added variable COPTS to MakeVars and made CFLAGS := $(COPTS) ...
+	(for libarary, tools, *.xif, *.xdd). As suggested by Gerald Haese.
+
+net/inet/tcpout.c, include/config.h:
+	Made some TCP algorithms compile time configureable (ie turn them
+	globally on or off).
+
+net/inet/tcp*:
+	Implemented delayed acks. You can turn this off the undefining
+	USE_DELAYED_ACKS in config.h.
+
+net/inet/tcp.c:
+	Simplified tcp_recv() and tcp_dropsegs() somewhat.
+
+net/drivers/slip.c:
+	Disable connection ID compression by default. You can turn it on
+	again with ifconfig sl? link5.
+
+net/inet/{tcpout.c, tcputil.c, tcp.h}:
+	Added missing asynchronous error reporting.
+
+net/inet/{tcp.c, tcpin.c, tcpout.c, tcp.h}:
+	Implemented a rather clever algorithm to make the tcp work (much)
+	better over lossy lines.
+
+net/inet/{tcpin.c, tcpout.c}:
+	Fixed a bug that showed up when switching from retransmit to transmit
+	output state.
+
+net/inet/{tcp.c, tcpout.c, tcpin.c}:
+	Removed part of trace output.
+
+net/inet/if.c:
+	Flush arp cache entries for an interface when it goes down. Also
+	make if_lo and if_primary external vars instead of function calls.
+
+net/inet/tcp.[ch]:
+	Tweaked timer values a bit to make retransmission more aggressive.
+	Also take some shortcuts for the usual cases.
+
+net/inet/ip.[ch]:
+	Major IP layer cleanup.
+
+net/drivers/{serial.[ch], slip.c, ppp.c}:
+	Make input buffer larger then output buffers, to reduce input
+	buffer overflowing when running without flow control.
+	Implemented input polling when protocol handler is out of memory.
+
+*** Version 0.6
+
+tool/ifstats.c, net/drivers/{ppp.c, slip.c}, include/sockios.h, net/inet/if.c:
+	Added support for getting link level statistics (SIOCGLNKSTATS) from
+	the drivers, made the ppp/slip driver gather some detailed statistics
+	and wrote ifstats utility for having a look at them (try ifstats ppp0).
+
+tool/arp.c:
+	Wrote arp(8) tool for managing/viewing the unified ARP/RARP cache.
+
+net/inet/{ip.c, if.c}:
+	Use interface hardware broadcast address when sending IP broadcasts
+	to the attached network.
+
+net/drivers/dummyeth.c:
+	Wrote dummy packet driver that looks to the upper layers like an
+	ethernet device but loops back packets locally. See comments in
+	dummyeth.c. Only for testing things like ARP and RARP until "real"
+	drivers are written. May be useful as an example for packet driver
+	writers...
+
+net/drivers/ppp.[ch]:
+	Provided an ioctl and flag for configuring VJ connection ID
+	compression and max. number of compression slots (currenly
+	ignored, always == 16).
+
+net/inet/if.c:
+	Pass SIOCSIFMTU through to the packet driver so it can limit MTU
+	to eg. 1500 bytes for ethernet.
+
+include/netinfo.h, net/inet/ifload.c:
+	Added if_getfreeunit(), eth_build_frame() and eth_remove_frame()
+	to struct netinfo *.
+
+net/inet/ifeth.c, lib/net/if_ether.h:
+	Wrote ethernet packet support routines for building and removing
+	eth headers and added library include file with some constants.
+
+include/if.h:
+	Changed the PKTYPE_* constants to match the ethernet protocol types
+	and the HWTYPE_* constants to match the ARP hardware types.
+	NOTE that this requires recompiling all packet drivers...
+
+net/inet/route.c:
+	In rt_flush() don't delete RTF_LOCAL routes. Before 'ifconfig lo down'
+	would have stopped *all* interfaces from working...
+
+net/inet/{arpdev.c, arp.[ch], if.c, inet.c}, lib/net/if_arp.h:
+	Implemented ARP, RARP and added if_arp.h to the library.
+
+include/sockios.h, net/inet/if.c:
+	Imlemented SIOCGIFHWADDR for figuring out an interface's hardware
+	address (which is returned in an struct sockaddr_hw).
+
+lib/sys/socket.h, include/socket.h:
+	Added AF_LINK.
+
+lib/net/if.h, include/if.h:
+	Added struct sockaddr_hw for carrying hardware addresses.
+
+README*, Timeouf.dif, INSTALL:
+	Rewrote the files README and README.1ST and deleted Timeout.dif,
+	INSTALL.
+
+net/drivers/ppp.c:
+	RMAP must default to all zeros instead of all ones! Also fixed some
+	rfc 1331 incompatibilities.
+
+net/drivers/ppp.c:
+	Fixed another PPP bug: We must be prepared to receive frames of at
+	least MRU+6 bytes (instead of MRU bytes) because MRU does not include
+	header and fcs fields.
+
+net/drivers/ppp.c:
+	Fixed a serious bug in the PPP unescape code which messed up received
+	frames in case the link inserts chars in the range '\x00' to '\x20'.
+
+net/drivers/{plip.c, plip.h, pl0asm.s, pl0.h}:
+	Rewrote the speed critical parts in assemly language. TCP troughput
+	is now at ~20 kb/sec.
+
+net/unix/stream.c, include/config.h:
+	Made write() on AF_UNIX/SOCK_STREAM sockets block until everything
+	has been written and deleted (now) obsolete USE_UNIX_TRANSFER_STYLE
+	option from config.h.
+
+net/drivers/ppp.[ch]:
+	Major update of the PPP driver. Supports now VJ TCP header compression,
+	lots of additional ioctl's and asynchronous IO using SIGIO (last one
+	needs a Mint version with ikill()).
+
+net/sockdev.c, include/{net.h,socket.h}, lib/sys/socket.h:
+	Implemented new socket option SO_DROPCONN. When set on a listening
+	socket and accept fails due to lacking file handles or memory then
+	the incoming connection is dropped (default is OFF).
+
+net/inet/tcpsig.c:
+	Use ikill() when available instead of tcpd deamon.
+
+*** PL 6
+
+etc/rc.net:
+	Updated... Have a look at it if you wondered how to setup a slip
+	connection.
+
+net/inet/tcpout.c:
+	Fixed another urgent bug. Thanks to TeSche for sending me code
+	demonstrating it.
+
+net/sockutil.c: ++tesche
+	Initialize so->pgrp to zero in so_create().
+
+tool/Makefile:
+	Fixed the install target (was hopelessly broken).
+
+tool/ifconfig.c:
+	Added [-]linkNN option to ifconfig to set/clear interface
+	link level flags. Read ifconfig.8 for details.
+
+tool/*.c:
+	Print some more useful (for the user) error messages.
+
+lib/gethostnamadr.c:
+	Incorporated resolv+2.1.1 changes. The resolver is configured
+	via the extra file /etc/host.conf. Read the manual page
+	man/cat8/resolv+.8 for the format. I have provided a sample
+	host.conf file in etc/ with reasonable default settings.
+
+net/inet/inet.c:
+	Autobind on select() only for SOCK_RAW sockets. If have seen programs
+	doing select() right after socket(SOCK_DGRAM). This bound the socket
+	to some radom port and a later bind() failed because the socket is
+	already bound. (eg term's tudpredir).
+
+net/unix/stream.c:
+	Fixed ioctl(FIONWRITE) and select for writing on AF_UNIX stream
+	sockets. They did not work before...
+
+net/inet/ifeth.h:
+	New file containing definitions for Eth.
+
+net/inet/if.c:
+	Cleaned up a bit, added if_getfreeunit() and use if->rcv.maxqlen
+	instead of IF_PACKETS_PER_IF.
+
+include/if.h:
+	Set IF_PACKETS_PER_IF to IF_MAXQ otherwise the interface's
+	input queue may be overflowed. (thanks to tesche's soktest.c).
+
+Makefile: ++knarf@nasim.cube.net
+	Applied knarf's Makefile changes.
+
+net/inet/tcp.c:
+	Made listen on already listening socket succeed without error.
+
+lib/ident.c:
+	Added identification string.
+
+*** PL 5
+
+net/drivers/README.SLIP:
+	Updated for cslip and new slattach.
+
+tool/slattach.c:
+	New option -l <local host address> which you MUST use to specify
+	the IP address the interface should get.
+	Note that you MUST specify an IP address (not host name) if the
+	namservers in /etc/resolv.conf are on the other side of the link
+	currently beeing established.	
+
+lib/gethostnameaddr.c:
+	When DNS resolver fails to resolve a host name/address always try
+	/etc/hosts before giving up. I don't know if this might cause
+	problems. Feedback appreciated.
+
+lib/res_query.c:
+	Open hostalias file in text mode (to strip CR's).
+
+net/drivers/{slcompress.[ch], slip.c}, net/inet/if.c, tool/slattach.c:
+	Added CSLIP. Try slattach -p cslip. Slattach -p slip now enables
+	autocompression, ie. no compressed frames are sent unless a
+	compressed frame is received which will turn on compression.
+
+net/inet/tcp.c:
+	Fixed the 'ftp: accept: invalid function number' bug (in tcp_accept).
+	Thanks to Howard Chu and several other people for reporting this.
+
+net/inet/tcpin.c:
+	Fixed a bug in tcbs_listen() that could result in FIN beeing sent
+	before SYN.
+
+net/sockutil.c:
+	Fixed a bug in so_connect() (so->state was used instead of so->flags).
+
+net/inet/{tcp.h, tcputil.c}:
+	Made some heavily used one-liners inline.
+
+net/inet/tcputil.c:
+	Fixed a bug in tcp_valid(). When dropping out-of-the-window-SYN then
+	the segments sequence number must be increased!
+
+tool/slattach.c:
+	Made iflink 'inline'. Changed meaning of the -p option to indicate
+	the desired protocol, ie. '-p slip' or '-p ppp' or (soon) '-p cslip'.
+	Directly execute /etc/ifconfig, /etc/route instead of using system().
+
+net/drivers/plip.c:
+	Fixed a bug that made the plip driver throw away packets with a length
+	equal to its MTU.
+
+net/inet/{tcp.c, tcp.h, tcpout.c}:
+	Implemented Nagle algorithm and [sg]etsockopt (IPPROTO_TCP,TCP_NODELAY)
+	to switch it on (default) and off.
+
+net/inet/tcp.c:
+	Slow start on source quench. Don't abort connection except for
+	'ICMP destination unreachable' codes 2-4.
+
+net/inet/icmp.c:
+	Pass PARAMP, TIMEX, SOURCEQ along to the upper layers.
+
+net/inet/tcpin.c:
+	Ignore SYN's to broadcast addresses.
+
+net/inet/tcpout.c:
+	Send window probes with one bogus data octect. Otherwise 4.2 BSD
+	and derived software won't answer the probes.
+
+net/inet/{tcp.c, tcpin.c, tcpout.c, tcputil.c, tcp.h}:
+	Implemented sending of TCP maximum segment size option. On directly
+	connected networks compute MSS from interface MTU, which can be
+	substantially greater than the default of 536 bytes.
+
+net/inet/tcp.c:
+	Again fixed window updating strategy. Hopefully works ok now.
+
+net/inet/tcpout.c:
+	Fixed a bug in tcp_rcvwnd(). || was used instead of &&. Argh!
+
+tool/slattach.c:
+	Set DTR on startup.
+
+net/inet/{tcp.h, tcpout.c, tcputil.c}:
+	Implemented congestion control/avoidance.
+
+net/inet/{tcp.h, tcputil.c}:
+	Made initial RTO 3 seconds and set maximum retransmission timeout
+	to 2*MSL (as per RFC 1122).
+
+net/inet/{tcputil.c, udp.c}:
+	Faster (by 100%) checksum routines.
+
+net/inet/tcpin.c:
+	Fixed another urgent bug: Must check for duplicate urgent segments
+	in tcp_rcvurg() and drop them!
+
+net/inet/tcp.c:
+	Fixed a bug with MSG_PEEK. tcp_recv returned 0 under certain conditions
+	even if there was something to read.
+
+net/inet/{tcpout.c, tcpin.c}:
+	Implemented 'fast retransmits' in case of lost packets. Also delete
+	timer backoff (and don't cause backoff when retransmitting lost
+	packets) when a dropped packet is detected.
+	This is actually a great deal in respect to throughput over lossy
+	lines.
+
+net/inet/tcpout.c:
+	Update the round trip time more frequently. Implemented a method to
+	detect timed out packets earlier.
+
+net/inet/{tcpout.c, tcp.h}:
+	Use a separate timer backoff counter (before tcb->nretrans was
+	used to backoff the timer values).
+
+net/inet/tcpin.c:
+	Ack packets even if they arrive out of order (to try to resync
+	the sender and make fast retransmits work).
+
+net/inet/{tcp.c, tcpin.c, tcpout.c}:
+	Fixed/changed urgent handling. There was a nasty bug which caused
+	nonurgent data to be interpreted as urgent under certain conditions,
+	which badly messed up with rlogin.
+	There has been a change to the user interface: recv (... MSG_OOB ...)
+	can now return EWOULDBLOCK (even when in blocking mode!) when there
+	is outstanding urgent data that does not fit into the receive window
+	(ala BSD). Fselect() for exceptional conditions wakes up in this case
+	too.
+
+net/inet/{tcpout.c, ip.c, ip.h, rawip.c}:
+	Send retransmitted segments at higher priority.
+
+net/inet/tcpout.c:
+	Force an upper limit on the timeout value. (was lost on the
+	way from 0.52 to 0.53).
+
+MakeVars and all the Makefiles: ++knarf@nasim.cube.net
+	Put make options into MakeVars, added install targets and
+	cleaned up.
+
+net/tool/slattach.c:
+	Make the tty really raw (ie clear TANDEM and PARITY bits too).
+	Also remember the tty modes at startup and reset them properly
+	when exiting.
+
+net/inet/ifload.c:
+	Made some 'stack eaters' static.
+
+*** PL 4
+
+net/inet/{ip.c, ip.h, tcpout.c, tcputil.c, tcp.h, timer.c, timer.h}:
+	Changed timeout handling. The storage for the 'struct event'
+	is now allocated by the caller of the event handling functions.
+	This saves quit a lot of calls to kmalloc/kfree and completely
+	removes the possibility that freeing a timeout twice removes
+	the wrong timeout.
+
+net/inet/if.c, include/if.h:
+	Added hardware address fields to 'struct netif'.
+
+net/inet/{tcp.c, tcpout.c, tcputil.c, tcp.h}:
+	Use a more sophisticated algorithm to decide when to send receiver
+	window updates.
+
+net/inet/tcp.c:
+	Use tcb->snd_mss instead of TCP_MSS in tcp_send().
+
+net/drivers/{serial.c, serial.h}:
+	Reduced buffer size to 512 bytes (to make the priority stuff work
+	better).
+
+Various files in include/, net/drivers/, net/inet/:
+	Implemented IP delivering priorities. The priority an IP datagram
+	gets is based on its TOS. Currently only IPTOS_LOWDELAY is taken
+	into account for this, ie delivery of datagrams with IPTOS_LOWDELAY
+	set is preferred to others.
+	That way you can concurrently upload files with ftp and have an
+	rlogin session with reasonable delay (of course only if the other
+	side of the link supports priorities too) even over a slow serial
+	line.
+	Note that rlogin sets IPTOS_LOWDELAY on its socket, but telnet does
+	not.
+
+net/inet/{ip.c, ip.h, tcp*.c, rawip.c, icmp.c, udp.c}:
+	Apply TOS/TTL set with IP_TOS/IP_TTL to outgoing datagrams
+	in ip_send().
+
+*** PL 3
+
+tool/ifconfig.c:
+	Print interface statistics using SIOCGIFSTATS.
+
+net/inet/{inet.c, if.c}, include/if.h:
+	Added SIOCGIFSTATS ioctl to get interface statistics (packets
+	in/out, errors in/out, collisions).
+
+net/drivers/{plip.c, pl0.h, pl0asm.c}:
+	Reworked PLIP driver. Uses now channel specific timeouts. Timing
+	is now done using the 200 Hz timer. Some speed enhancements.
+	Implemented collision (ie when both ends try to send at the same
+	time) detection and resolution. Unfortunately this required a
+	PROTOCOL CHANGE. Bidirectional traffic (eg ftp) does no longer
+	'hang' every 8 kB or so -- much faster now.
+
+tool/slattach.c:
+	Fixed a typo. Slattach now installs a default route using the
+	remote host as a gateway. The option '-d' turns this off.
+
+net/inet/tcputil.c:
+	Drop SYN's and FIN's if they are out of the window.
+
+net/inet/tcpin.c:
+	BIG bug fix: When a SYN or RST was received on a socket in
+	SYNRCVD (passive) state some processes or the whole system
+	crashed. (Bug reported by Benni Lorenz. Thanks!)
+
+net/inet/tcpout.c:
+	Don't clear the timer backoff when a retransmit succeds. We keep
+	it until a new RTT is measured. Throughput on slow lines is much
+	higher now.
+
+net/inet/{tcp.h, tcpout.c}:
+	Rewrote RTT measuring code. Previous versions were buggy, often
+	the measured round trip time was much to small.
+
+net/inet/tcp.c:
+	Drop all received but not yet read data when the last process
+	closes the socket. (Now 'telnet localhost chargen' shouldn't
+	any longer leave two deadlocked sockets hanging around).
+
+net/inet/tcp.c:
+	Drop connection with reset when a socket that is not refed by any
+	user process receives data.
+
+net/inet/{tcp.c, tcpin.c}:
+	Select for exceptional conditions wakes up only if urgent data
+	arrives, not when connection is broken or some other error.
+	This broke telnet. (Bug reported by entropy. Thanks!)
+
+net/inet/inet.c:
+	For connected sockets bound to INADDR_ANY, return in getsockname()
+	the inet address of the interface packets are sent out.
+
+net/inet/tcpout.c:
+	Zero out urgptr field before sending if the segment doesn't
+	carry urgent data.
+
+lib/netinet/udp.h:
+	Replaced two shorts by unsigned ones.
+
+net/inet/inet.c:
+	Autobind the socket when doing select(). Otherwise when select()
+	is the first call (after socket() itself) on the socket then
+	this will never wake up.
+
+net/inet/inet.c:
+	If size for SO_SNDBUF/SO_RCVBUF out of range then don't give
+	error but round to nearest legitimate value.
+
+net/inet/{ip.c, ip.h, inet.c, inet.h}:
+	Implemented IP_TOS, IP_TTL, IP_HDRINCL socket options.
+
+include/buf.h, net/inet/{buf.c, ip.c, tcp.c, udp.c, rawip.c, inet.c}:
+	Implemented RAW IP sockets.
+
+include/buf.h, net/inet/{buf.c, ip.c, if.c}:
+	Prepared input processing for non IP protocols (like ARP).
+
+*** PL 2
+
+net/inet/tcpin.c:
+	Some more wakeselects when moving to CLOSEWAIT state.
+
+*** PL 1
+
+net/drivers/{ppp.c, ppp.h}:
+	Started work on PPP interface. This is not complete and rather
+	untested. So be careful!
+
+*** Version 0.5
+
+net/drivers/*, net/inet/*:
+	Converted the network interfaces into the new loadable format
+	and moved them to the 'drivers' directory.
+
+include/netinfo.h, net/inet/{if.c, ifload.c} and others:
+	Implemented loadable network interfaces. They are called *.xif
+	and will be loaded by sockdev.xdd from /mint/ or /multitos/ of
+	your boot drive, just like *.xdd's or *.xfs's.
+
+net/inet/{if.h, if.c, loopback.c, plip.c, nslip.c, slip.c}:
+	Additional argument for the interface output function: packet type.
+
+net/inet/{nslip.c, plip.c, loopback.c}:
+	Use interface statistics counters.
+
+net/inet/udp.c, net/unix/{dgram.c, stream.c}:
+	Return 0 from select when unknown mode. (To make it useable
+	with TeSches Fselect patches).
+
+include/file.h, net/{sockdev.c, sockutil.c}, net/inet/{tcp.c, tcpin.c}:
+	Implemented selecting for exceptional conditions (ie waiting
+	for arrival of urgent data) on TCP sockets. This will only be
+	useful with Torsten Scherer's Fselect patches applied (but it
+	doesn't hurt if you can live without them -- I can't :).
+
+include/{net.h, kerbind.h}, net/sockdev.c:
+	Got rid of isleep. The functionality is in the kernel sleep
+	since 1.10.
+
+net/inet/{inet.h, tcpin.c, inetutil.c}:
+	Allow connecting from same addr/port even if a socket in
+	TIMEWAIT state is hanging around from last connection.
+	With rlogin/rsh (which might bind locally to the same port
+	twice in a row) you don't have to wait until the TIMEWAIT
+	socket on the other end is destroyed.
+
+net/inet/*.c, include/config.h:
+	Include config.h in every file. Changed TCP tracing DEBUG's
+	into KAYDEBUG, which is by default == DEBUG. So if you don't
+	wanna see an exhaustive trace of what is going on in the
+	system, just define KAYDEBUG to nothing in config.h (as
+	suggested by TeSche).
+
+net/inet/udp.c:
+	Ignore ICMP error messages for unconnected UDP sockets.
+	This messed up talkd.
+
+*** PL 4
+
+tool/slattach.c:
+	Implemented -e (exit when interface set up) and -d (don't
+	hangup the tty line when exiting) options.
+
+net/inet/tcputil.c:
+	Fixed timer handling bug (tcp_delete could have freed an
+	event twice, causing another one with same address to be
+	freed).
+
+tool/slattach.c:
+	Utility for simplifying the setup of a SLIP interface. First
+	setup the line speed, parity, (start/stop) bits using stty
+	and then issue the command
+		slattach -t /dev/modem1 -r <remote host> &
+	if you want to connect your computer via SLIP using the
+	/dev/modem1 device to <remote host>. Slattach will make the
+	necessary settings on the tty, set up a SLIP interface and
+	make the necessary routing table entries. It then waits in
+	the background (therefor the '&') until it receives a HUP,
+	INT, TERM or QUIT signal. Then it will reset the terminal
+	settings and shut down the slip interface.
+	If the "-t" option is missing slattach uses its standard in-
+	put as the terminal line (thus you can use it as a login
+	program).
+	Usually the following commands will be enough to get a SLIP
+	connection to <remote host> over /dev/modem1 going:
+		/etc/ifconfig lo0 addr 127.0.0.1 up
+		stty 19200 < /dev/modem1
+		/etc/slattach -t /dev/modem1 -r <remote host> &
+
+tool/iflink.c:
+	Utility used for linking Mint devices to network interfaces.
+	Currenly only the SLIP interfaces support this. Issue
+		iflink -i sl -d /dev/modem1
+	if you want to link /dev/modem1 to one of the SLIP interfaces.
+	If successful iflink will print the interface name to which the
+	device was actually linked, eg 'sl0'.
+	Note that you usually don't use this command directly. You
+	use slattach instead which calls iflink.
+
+net/inet/nslip.c:
+	Rewrote the SLIP driver using the stuff in serial.c. This
+	way the SLIP driver is hardware independent and should work
+	will all Atari machines and all serial devices (if select
+	supported). Hooray!
+
+net/inet/{serial.c, serial.h}:
+	Implemented a way to link Mint device drivers to network
+	interfaces. This will only work with devices that support
+	select(). Currenly you can use T.Bousch's modm0dev and all
+	the Mint builtin serial drivers (/dev/modem[12] /dev/serial[12])
+	if you have Howard Chu's patches applied. (They are included
+	into mint110-h3-diffs.gz and probably in Mint 1.11).
+
+*** PL 3
+
+lib/{bind.c, connect.c, sendto.c, sendmsg.c}:
+	Allow passing of sizeof (struct sockaddr_un) as addrlen in the
+	above calls. Although addrlen should be the length of the data in
+	struct sockaddr_un and NOT the allocation size of struct sockaddr_un
+	some programs rely on this to work (as per Theo Jansen and John H.).
+
+net/inet/tcp.c:
+	Fixed the SIOCATMARK ioctl to return "at mark", when you have
+	read all normal data up until OR beyond the first urgent byte.
+	This messed up rlogin.
+
+net/lib/rcmd.c:
+	Open /etc/hosts.equiv and ~/.rhosts explicitely in text mode
+	and fixed a bug for -mshort.
+
+*** PL 2
+
+net/inet/inetutil.c:
+	Made lingering a bit safer than before.
+
+net/inet/{if.c, if.h, tcpin.c, loopback.c, slip.c, plip.c, ip.c}:
+	Notify the upper layers when the interface's send queue is
+	full. This results in much better performance over slow lines
+	when the sender sends *lots* of small packets very fast. (Compare
+	for instance the TCP chargen over SLIP with 0.41 and 0.42)
+
+net/inet/tcp.c:
+	Implemented a real shutdown().
+
+net/inet/{tcp.c, tcpin.c}:
+	Made close() on TCP sockets non blocking. It caused too much
+	trouble with BSD programs.
+
+net/inet/if.h:
+	Increased IF_MAXQ to a reasonable value. This used to slow down
+	things quite a bit, because lots of datagrams were dropped and
+	had to be retransmitted.
+
+net/inet/tcpout.c:
+	Fixed a serious bug, caused by retransmitting segments that
+	have not been sent yet resulting in an endless loop.
+
+net/inet/inet.h:
+	Fixed a serious bug having to do with sign extension. Sigh!
+
+net/inet/tcp.c:
+	Fixed deadlock condition. Never block when in CLOSEWAIT state.
+
+tool/netstat.c:
+	Added forgotten second argument to getservbyport().
+
+net/inet/timer.c:
+	Also use our own stack when calling event timeout functions.
+
+tool/netstat.c:
+	Overhauled netstat. Shows now inet socket information, address
+	family can be selected with -f, -a shows all sockets (ie show
+	listening TCP sockets too).
+
+net/inet/inetdev.c:
+	Implemented /dev/inet. Used by netstat(8) to print out TCP/UDP
+	socket information.
+
+net/inet/tcp.c:
+	Fixed a bug in select (for writing). If there was space for writing
+	select reported "can't write" :(
+
+net/inet/tcpout.c:
+	Increased the initial retransmission timeout from 2*rtt to 4*rtt,
+	because I got to many retransmits. Now it seems to work ok.
+
+net/inet/if.c:
+	Bug fix. Use an own 8k stack when doing input processing. This is
+	because the TCP input uses a fairly large amount of stack space and
+	the situation of the stack is too uncertain. I even saw crashes because
+	of this.
+
+net/inet/slip.c:
+	Bug fix. Set 'snd_busy' when restarting transmission after CTS went up.
+
+*** PL 1
+
+include/{file.h, kerbind.h}, net/inet/{buf.c, timer.c}:
+	Fixed a serious bug in the timeout handling. YOU NEED TO APPLY
+	THE NEW PATCH IN Timeout.dif. READ README.FIRST.
+
+*** Version 0.4
+
+net/inet/{ip.c, if.c, route.h}:
+	Bug fix. When you had a point to point interface with local addr
+	u.v.w.x and you did (locally) an ftp u.v.w.x the packets were
+	sent to the point to point link instead to the local software.
+	This is fixed now.
+
+net/inet/buf.c:
+	When buf_alloc(..., BUF_ATOMIC) failes, arange for adding
+	a memory block in the near future.
+
+net/inet/{tcp.c, tcpin.c, tcpout.c, tcputil.c, tcpsig.c, tcp.h}:
+	*LOTS* of work on the TCP code.
+
+lib/rcmd.c:
+	New file for the library implementing rcmd().
+
+lib/{getprotoent.c, getservent.c, gethostnamadr.c}:
+	Open the /etc/* files explicitely in text mode (so that
+	crlf -> lf conversion is always done, even if you have a "b"
+	in your UNIXMODE).
+
+net/inet/{ip.c, inet.c}:
+	Prepared for [sg]etsockopt() on the IPPROTO_IP level.
+
+net/inet/{ip.c, ip.h, tcp.h, timer.c}:
+	Made the timer granularity configurable and set it to 10 ms per
+	tick.
+
+net/inet/udp.c:
+	Wake up processes selecting for writing on ICMP error messages,
+	too.
+
+net/inet/timer.c:
+	Fixed a bug where freeing a timeout struct twice caused
+	freeing of another timeout with the same address.
+
+net/inet/{udp.c, tcputil.c}:
+	Fixed a nasty bug in the asm parts of the checksum routines.
+	("sum" must be an input as well as an output to the asm()).
+	This caused gcc to give two variables the same reggie! And
+	only when compiled without -O2!
+
+net/{sockdev.c, sockutil.c, inet/inet.c}:
+	Made sock_close() and so_release() reentrant. This is needed
+	because the TCP close() can sleep.
+
+net/inet/timer.c:
+	Fixed a bug in update_head().
+
+*** PL 2:
+
+net/inet/ip.c:
+	ip_local_addr() returns now INADDR_ANY when it cannot determine
+	the appropriate local address for the given dst address.
+
+FAQ:
+	"Frequently asked questions" regarding MintNet and their
+	answers.
+
+lib/netinet/{udp.h, tcp.h}:
+	New header files for the library.
+
+net/inet/timer.c:
+	New function event_reset() which changes the `delta' of an
+	already existing timeout.
+
+net/inet/ip.c:
+	Don't ever forward datagrams to interfaces they came from.
+
+net/sockutil.c, include/net.h:
+	Added argument `wake' to so_connect(), specifying whether
+	or not it should wake up the server. Used by TCP.
+
+net/inet/udp.c:
+	The receive buffer (to set with SO_RCVBUF) size is now the
+	maximum for the SUMM of the length of all datagrams in the
+	receive queue. For BSD compliance.
+
+net/inet/README.SLIP:
+	Added information on how to use nameservers on remote hosts,
+	what things need to be done so you can reach the local host
+	under its IP address AND 127.0.0.1, about MTUs and fragmen-
+	tation, and automatic deleting of routes.
+
+*** PL 1:
+
+net/inet/{tcp.h, tcp.c, tcputil.c, tcpin.c}:
+	Started work on TCP. Note that this is not operational yet.
+	The files do not even compile without errors.
+
+net/inet/ip.c:
+	Pass errors in ip_forward() and ip_frag() back to the caller
+	of ip_send().
+	Decrease TTL only on incoming packets, not on outgoing ones.
+
+net/inet/inet.c:
+	Bug fix: added a missing argument to a DEBUG() call.
+
+net/iov.c:
+	Added additional argument `skip' to both functions, which makes
+	them skip `skip' bytes at the beginning of the io vector before
+	copying to/from it. Useful when copying io vecs to circular
+	buffers and vice versa.
+
+net/inet/{if.c, inetutil.c}:
+	When lo0 is activated, add a route for net 127, so `localhost'
+	works even when you give the loopback interface an other address
+	than 127.0.0.1.
+
+net/inet/ip.c:
+	Bug fix: 0x7f000000 was used as the AND mask where 0xff000000
+	should be used.
+
+net/unix/{un.h, unix.c}:
+	Attempted to make UN_INDEX() unique for all unix sockets. Before
+	this wasn't guaranteed, because the memory address of the socket
+	was used as the index.
+
+net/inet/buf.c:
+	Fixed another bug in the buffer allocator which caused buf_free()
+	to do a FATAL() (when very tiny bufs were allocated).
+
+net/inet/ip.[ch]:
+	Implemented IP datagram fragmentation.
+
+net/inet/timer.[ch]:
+	Implemented 100 ms resolution timer which supports an
+	additional argument to be passed to the timeout function.
+
+net/inet/route.c:
+	Restricted adding and deleting of routes to super user processes.
+
+net/inet/udp.c:
+	Some more validation checks on incoming UDP datagrams.
+
+*** Version 0.3:
+
+net/inet/if.c:
+	Some changes to if_net2if(), so that you can have several
+	point to point interfaces with the same local address.
+
+net/inet/{plip.c, pl0.c, pl0.h, pl0asm.s}:
+	Implemented PLIP interface. Read the file net/inet/README.PLIP
+	for important notes about the driver.	
+
+net/inet/route.c:
+	Fixed two bugs in route_del() and route_flush() (pointers
+	weren't handled correctly when two continuous entries were
+	deleted).
+
+net/inet/ip.c:
+	Some more validation checks on imcoming packets. If IP now
+	says an incoming packet is valid, then it *is* valid :)
+
+net/inet/buf.c:
+	Fixed two horrible bugs in the buffer allocator.
+	Made the allocater return tighter fitting memory blocks.
+	Introduced a `garbage collector' (invoked once every minute)
+	which frees all unused blocks.
+	That way MintNet can increase its memory usage in times of
+	heavy network traffic without calling kmalloc() to often
+	and all unused memory is returend to Mint.
+
+tool/{ifconfig.8, route.8}:
+	Wrote manual pages for the `ifconfig' and `route' commands.
+	Preformatted versions are in man/cat8/.
+
+net/inet/{udp.c, inetutil.c}:
+	Corrected a bug in the checksum computation routines.
+
+tool/route.c:
+	Wrote route(8) utility. Docu missing. Route without arguments
+	displays the routing table in the `netstat -rn' format.
+
+tool/ifconfig.c:
+	Wrote ifconfig(8) utility. Documentation missing, but is
+	*very* similar to Unix ifconfigs.
+
+lib/net/{if.h, route.h}:
+	New subdirectory and include files for the library.
+
+net/inet/icmp.c:
+	Overhauled the ICMP stuff. Classifies all input messages
+	and prints debug infos when they are received.
+	Destination unreachable/time exceeded messages can be received
+	and sent, Echo Request can be received and Echo Replies sent,
+	thus `ping'ing your Atari with ping(8) works.
+
+net/inet/routedev.c:
+	Implemented /dev/route, from which the routing table can be read.
+	route(8) uses this.
+
+net/inet/{slip.c, sl0.c, sl0asm.s, sl0.h}:
+	Implemented SLIP interface. Read the file net/inet/README.SLIP
+	for important notes about the driver.
+
+net/inet/loopback.c:
+	Wrote loopback interface.
+
+net/inet/if.c:
+	Implemented network interfaces. Arp is still missing.
+
+net/inet/{route.c, route.h}:
+	Implemented a simple IP router.
+
+net/inet/{ip.c, ip.h}:
+	Did a working IP implementation. Fragmentation and option
+	processing are missing.
+
+net/unix/{dgram.c, stream.c}, net/inet/udp.c:
+	Changed the value returned from FIONWRITE/FIONREAD for
+	`unlimited data/space available' from -1L to 0x7fffffff.
+	This is because Fselect() does an 'if (bytes > 0)'. So
+	bytes MUST NOT be less than zero in signed long format.
+
+net/inet/buf.c:
+	Made buf_alloc() and buf_free() interrupt prove.
+
+lib/Makefile:
+	Cleaned up a bit for cross compiling. You need to set
+	SYSINCLUDE to your cross include dir and CROSS to anything
+	when cross compiling.
+	$ gmake SYSINCLUDE=~/cgcc/include CROSS=yes
+	is enough to build the library on a Sun or HP (provided your
+	cpp/cc1 understand \n\r line endings).
+
+net/inet/{udp.c, ip.c}:
+	Added ip_dst_addr(a) which returns the real IP address
+	to which a packet should be sent/socket should be connected.
+	a		->	ip_dst_addr(a)
+	INADDR_ANY		address of the primary interface
+	INADDR_BROADCAST	broadcast address of the primary
+				interface if it supports broadcasts,
+				INADDR_BROADCAST otherwise.
+	other			a
+	udp_send() and udp_connect() use this.
+
+net/inet/inet.c, include/socket.h, lib/sys/socket.h:
+	New option SO_CHKSUM to switch on/off protocol checksum
+	generation for UDP, TCP (off by default).
+
+net/inet/{inet.c, ip.c, ip.h}, lib/sys/socket.h, include/socket.h:
+	Allow only broadcasts if SO_BROADCAST is set on the socket.
+	Pass trough some flags to IP (dontroute, broadcast).
+	Added MSG_DONTROUTE.
+
+net/unix/dgram.c: ++schwab
+	Fixed a bug in unix_dgram_send() which made it impossible to
+	send messages on a DGRAM socketpair.
+
+test/sockpair.c: ++schwab@informatik.uni-dortmund.de (Andreas Schwab)
+	Fixed some return values and close the socket file descriptors
+	where appropriate.
+
+lib/netdb.h:
+	Included the RPC stuff, namley `struct rpcent', getrpcbyname(),
+	getrpcbynumber(), setrpcent(), getrpcent() and endrpcent().
+	To use these functions you need librpc.olb which comes with
+	the Sun RPC 4.0 distribution.
+
+net/netinet/udp.c:
+	Made some changes to connect() so that connecting to INADDR_ANY
+	and INADDR_BROADCAST does what you expect it to do.
+
+lib/netinet/in_systm.h:
+	Included in_systm.h into the library.
+
+lib/res_init.c:
+	By default INADDR_LOOPBACK is used instead of INADDR_ANY (when
+	no /etc/resolv.conf is present).
+
+net/inet/icmp.[ch]:
+	New files implementing some sort of ICMP. Only support for
+	localhost.
+
+*** PL 2:
+
+lib/Makefile:
+	A *much* nicer rule for the `*.olb' targets. Now a .c file
+	needs only to be recompiled if it was modified after the .o
+	file was copied to the archive. This means that if I change
+	a source file only *this modified* file needs to be recompiled,
+	even if you hanven't got all the other .o files.
+
+lib/*:
+	Started work on the inet library.
+
+net/inet/*:
+	Started work on the internet domain.
+
+*** PL 1:
+
+net/unix/unix.c:
+	Changed the behavior of read() and write() for streams. They
+	return now as soon as any data is available (Unix like).
+	However, you can turn it off (ie make read() and write() block
+	as necessary) by undefining USE_UNIX_TRANSFER_STYLE in config.h.
+	
+net/sockutil.c, net/unix/unix.c:
+	Moved the peer wakup stuff from so_release() to the abort()
+	function, because probably not all protos need to do that.
+	Fixed that way a problem with select(). If you select on
+	a connected socket and the peer is released, you were not
+	woken up from the select.
+
+net/unix/{ stream.c, dgram.c }:
+	Fixed again the return values for the FIONREAD/FIONWRITE
+	Fcntl's. They return now -1 ("infinity") for broken connect-
+	ions or shutdown ones.
+
+tool/netstat.8:
+	Wrote a manualpage for netstat(8).
+
+net/unix/unixdev.c:
+	Fixed a silly bug which crashed netstat sometimes. (Forgot
+	the second argument to un_read_header...)
+
+tool/netstat.c:
+	Implemented a simple netstat(8). For now, only the -f option
+	for `unix' is implemented. It uses the new /dev/unix device.
+	So it will not work with earlier versions of MiNT-Net.
+
+net/unix/{ unix.c, dgram.c }:
+	Do un_put() when attaching, not when binding. So you can read
+	also information for unbound sockets out of /dev/unix.
+
+net/unix/{ Makefile, un.h, unixdev.c }:
+	Implemented a /dev/unix device for unix domain configuration/
+	information/statistics/debugging. Currently you can read an
+	info structure for every unix domain socket in the system out
+	of it. See unixdev.c for more infos.
+
+*** Version 0.2:
+
+net/unix/cache.c, net/unix/unix.c, include/config.h:
+	Implemented some sort of file name lookup cache to gain some
+	speed on real filesystems like the minix one. You can switch
+	it on by defining USE_UN_LOOKUP_CACHE in config.h, which is
+	the default. Please read the comments in config.h.
+
+net/unix/dgram.c:
+	Fixed a bug in the FIONREAD Fcntl(). Now returns 1 byte if
+	shut down instead if 0.
+
+*** PL 2:
+
+test/dgram.c, test/dgramd.c:
+	Changed to use the ability to get the senders address with
+	recvfrom() or recvmsg(). Client contacts the server. Server
+	gets the clients address and writes back some stuff.
+
+test/sockname.c, test/Makefile*:
+	New file to test getpeername() and getsockname().
+
+lib/{accept.c, getsockname.c, getpeername.c, recvfrom.c, recvmsg.c}:
+	Changed so they do dos->unix path name conversion when
+	appropriate.
+
+net/unix/*.c, net/unix/un.h:
+	Implemented getpeername(), getsockname() on unix sockets.
+	accept() returns now the address of the client (if it has one).
+	recvfrom() and recvmsg() return the address of the sender.
+	NOTE that the addresses returned from the above calls make only
+	sense if you use ALWAYS ABSOLUTE paths for the socket files
+	(for instance /tmp/sock or u:/tmp/sock, but not just sock) when
+	doing bind().
+	NOTE that the returned path names are always null terminated like
+	normal C strings.
+	The returned address length does NOT include the trailing zero.
+	This is done to let you pass the addrlen returned from one of the
+	above calls unchanged to socket calls like connect() or sendto().
+
+net/unix/unix.c, net/unix/dgram.c:
+	Remove the silly `un_index' and use the address of the `undata'
+	instead.
+
+*** PL 1:
+
+INSTALL, README, lib/Makefile*:
+	Cleaned up a bit, to give more information about installing
+	and compiling MiNT-Net.
+
+include/net.h, net/sockdev.c:
+	Implemented file locking on sockets. It is rarely useful,
+	done for completeness only. :-)
+
+net/sockdev.c:
+	Set addrlen in sock_accept() to zero if getname() failed.
+
+lib/bind.c, lib/connect.c, lib/sendto.c, lib/sendmsg.c:
+	Removed the attempt to terminate the file name in sun_path
+	with '\0'. If the address structure is in read only memory
+	this could cause memory violations.
+
+lib/recvmsg.c, lib/sendmsg.c, man/recvmsg.3, man/sendmsg.3:
+	Complete rewrite so that they use the dev drivers recvmsg()
+	and sendmsg(). Updated the manual pages.
+
+net/Makefile:
+	Cleaned up a bit. Hopefully neither .xdd nor .tos versions
+	are broken now :-)
+
+lib/Makefile, lib/Makefile.tcc, lib/perror.c, lib/strerror.c:
+	Removed Strerror() and Perror() from the socket lib, since 
+	the MiNTLibs as of patchlevel 41 support the new error
+	codes both in errno.h and strerror().
+
+include/sockerr.h:
+	Changed EINTR's value to 128 to match the MiNTLibs EINTR.
+
+include/mintsock.h, include/socket.h, net/sockdev.c:
+	Added recvmsg() and sendmsg() calls to the device driver.
+	They handle io-vectors, but still no access rights.
+
+lib/socket.c (-DKERNEL version only):
+	socket() in ksocket16.olb now opens a O_GLOBAL handle. This
+	is done because normal handles are rarely useful for a file-
+	system or dev driver that uses sockets. However, if you need
+	a non global handle, you can use Fdup() to get one.
+
+include/net.h, include/iov.h, net/sockdev.c, net/unix/*.c:
+	Internally all reads and writes now use io-vectors instead of
+	one continuous buffer. This should make it easy to add readv(),
+	writev() (if the kernel ever implements them), sendmsg() and
+	recvmsg().
+
+net/Makefile:
+	Fixed so that building the .tos version is possible again
+	(init.o must not be linked when building the .tos version).
+
+*** Version 0.1
+
+net/unix/dgram.c:
+	The FIONREAD ioctl() request on unix dgram sockets returns
+	now the size of the next available datagram or zero if none
+	is available.
+
+net/unix/*.c:
+	Made seperate select() and ioctl() functions for unix stream
+	and dgram sockets. Fixed that way some problems with select()
+	and ioctl() on unix dgram sockets.
+
+net/unix/unix.c:
+	Made listen() on dgram sockets return success instead of
+	failure (listen on dgram sockets has no functionality).
+	This is made because BSD lets you do it too, but I'm not
+	sure at all if this is right, since listen() is defined
+	only for SOCK_STREAM sockets. Does anybody know better?
+
+lib/Makefile, lib/*.c:
+	Added a new make target `kernel' to build `ksocket16.olb',
+	a socket library which can be used in MiNT filesystems that
+	uses sockets (such as Ulrich Kuehn's NFS).
+	Note that before using any of the functions in the library
+	you MUST set a variable `kernelinfo' to point at the `struct
+	kerinfo' obtained from the kernel, like this:
+		struct kerinfo *kernelinfo;
+		kernelinfo = (struct kerinfo *)Dcntl (FS_INSTALL, ...);
+	The functions in the library behave as their counterparts
+	in socket16.olb, except that they do not set `errno'. Instead
+	they return the (negative) errorcode as the result.
+	Perror() is totally bogus. But you can use Strerror() on the
+	ABSOLUTE VALUE of the results returned from the library
+	functions, like this:
+		r = socket (AF_UNIX, ...);
+		if (r < 0) {
+			DEBUG (("socket() returned %s", Strerror (-r)));
+			...
+		}
+	`ksocket16.olb' is not made by default, instead you must type:
+		$ cd lib
+		$ make kernel
+
+man/sendmsg.3, man/recvmsg.3:
+	Added manual pages for the new sendmsg() and recvmsg()
+	library calls.
+
+lib/sendmsg.c, lib/recvmsg.c, lib/Makefile, lib/Makefile.tcc:
+	Wrote sendmsg() and recvmsg() emulations which use sendto()
+	and recvfrom(). They are COMPLETELY UNTESTED. If you don't
+	mind trying something out which might not work at all, just
+	go ahead and tell me about the results. <grin!>
+	Note that neither sendmsg() nor recvmsg() support access
+	rights. I'm not sure if it's worth to include the *msg()
+	calls into the device driver (lots of work). I tend to
+	not include them and use the emulation instead. Tell me
+	if you don't think so.
+
+lib/bind.c, lib/connect.c, lib/sendto.c:
+	When `addrlen' is not valid those functions returned EINVAL
+	instead of setting errno to EINVAL and returning -1.
+
+include/sockerr.h, man/*, lib/strerror.c:
+	Made EINVAL an alias for EINVFN to prepare including the
+	socket stuff into the MiNTLibs. Updated the manual pages
+	to reflect this change, also replaced the Atari specific
+	error codes in the manual pages with the appropriate ones
+	from the MiNTLibs (ie Unix style).
+
+net/sockdev.c:
+	From sock_select() we cannot return errors, only 0, 1 or 2.
+
+*** PL 3
+
+net/unix/unix.c, lib/bind.c, lib/sendto.c, lib/connect.c:
+	Cleaned up a bit for BSD compatibility. Namely the address length
+	of a unix domain address doesn't need to include the trailing 0
+	(ie the string terminator) any longer.
+
+test/sockpair.c
+	Made the parent wait for `cat' to exit. You must now type
+	^D or ^C to kill it. This seems to be a better solution than
+	having a stopped `cat' process after running sockpair, which
+	must be kill `by hand'.
+
+net/Makefile, net/main.c, net/init.s: ++ts
+	Changed the .xdd version of the dev driver, so that it installs
+	itself with Dcntl() instead of letting MiNT do the job. So we
+	don't run into trouble when the user chooses to change the dev
+	drivers name to something other than socket.xdd.
+
+lib/Makefile.tcc, test/Makefile.tcc: ++ts@uni-paderborn.de (Thomas Schulze)
+	New makefiles for compiling the library and the test programs
+	with TurboC, tcc (courtesty of Thomas Schulze) and unixname.prg.
+	Does anybody use this besides from Thomas ? :-)
+
+net/unix/unix.c:
+	Allowed decreasing the send buffer size for connected unix stream
+	sockets, which was not possible before.
+
+*** PL 2:
+
+net/unix/unix.c, net/unix/dgram.c: (thanks uk -- kuehn@math.uni-muenster.de)
+	The unix-datas are now managed with a hash table instead
+	of a linear list. send() and sendto() should now be somewhat
+	more efficient for connected unix dgram sockets, espacially
+	if lots of them are used at the same time.
+
+net/unix/dgram.c:
+	Set `head' in recv() to zero instead of subtracting `buflen'
+	when wrapping around. This could save some micro sec's :-).
+
+include/kerbind.h, net/unix/*:
+	Made Unix domain sockets work on MiNT's brain damaged Tos
+	filesystem. They did not work, because Fxattr() manages to
+	return another value for `index' every time you call it
+	on the *same* file. :-(
+
+*** PL 1:
+
+include/config.h:
+	New file for keeping all global configuration defines.
+	Currently you can define:
+	NDEBUG		turn debugging output off.
+	NEW_SELECT	use new way for select() device driver functions
+			(not yet official, so do not use it).
+
+net/Makefile, net/main.c, net/sockdev.c: (thanks uk)
+	Added a new compile time option for making an .xdd. It is
+	only useful if you use MiNT >= 1.08. By default only the
+	.xdd version of the dev driver is made.
+	To make the .tos version of the dev driver, you need to
+	do the following:
+		$ cd net
+		$ make clean
+		$ make
+	To make the .xdd version, type (this is done by the toplevel
+	Makefile by default):
+		$ cd net
+		$ make clean
+		$ make XDD="a"
+
+Makefile:
+	Oops, forgot to change the library's name from libsocket.a
+	to socket.olb.
+
+include/version.h:
+	New file for keeping version information.

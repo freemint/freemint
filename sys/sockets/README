@@ -1,0 +1,324 @@
+
+MintNet alpha release README
+----------------------------
+
+Contents:
+
+0. Disclaimer
+1. What is MintNet?
+2. Things needed to run MintNet
+3. Things needed to recompile MintNet
+4. Recompiling MintNet
+5. How to install
+6. Network programming
+7. BSD Unix (in)compatibilities
+8. If you have found a bug
+
+
+
+0. Disclaimer
+-------------
+
+This package should be regarded as experimental. It is quite possible
+that it contains bugs that may do the weirdest things to your hard drive
+although I believe it is quite stable now. Anyway, make regular backups!
+
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTOR BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+1. What is MintNet?
+-------------------
+
+MintNet is a networking extension for Atari computers running Mint.
+
+It currently implements the suite of networking protocols referred to as
+'TCP/IP' and a local interprocess communication mechanism known as 'unix
+sockets' that is in principle similar to named pipes. MintNet is prepared
+for adding further networking protocol stacks (like Novells IPX/SPX or
+Appletalk for instance).
+
+Thus you can use MintNet to intergrate your Atari into a networked environ-
+ment that consists of systems supporting TCP/IP (as the Internet).
+
+MintNet consists of four major parts, a loadable device driver for Mint
+(sockdev.xdd), several loadable packet drivers (eg. slip.xif), a library
+(socket.olb) and some tool programs (in the tool/ subdirectory) to setup
+and manage MintNet.
+
+The device driver links to the Mint Kernel when loaded and installs the
+device u:/dev/socket through which the services provided by MintNet can
+be accessed.
+
+The libary provides you with the usual BSD socket API functionality using
+the services of u:/dev/socket. That means porting Unix software to MintNet
+using this libary is really easy. In fact many important packages like ftp,
+telnet, ... are ported to MintNet using this library.
+
+The packet drivers are responsible for sending and receiving datagrams over
+some type of hardware, for instance slip.xif is responsible for sending
+datagrams over serial lines using the SLIP or PPP protocol. For every type
+of communication hardware such a packet driver is needed. sockdev.xdd calls
+the proper packet driver for sending and receiving datagrams and does not
+contain communication hardware specific code.
+
+Packet drivers are currently available for SLIP, PPP, PLIP, Ethernet and
+loopback.
+
+Please contact me if you want to write Ethernet hardware drivers or have
+hardware that is worth to write a driver for.
+
+
+
+2. Things needed to run MintNet
+-------------------------------
+
+There are some (in fact a lot) things needed to get MintNet running:
+
+1) An up to date Mint version. Preferably Mint 1.12, MH-Mint 1.12hX or
+newer. A megapatched Mint 1.11h9 will probably work too. This is because
+the MintNet device driver needs some features of the Mint Kernel that have
+been added recently.
+Mint binaries, sources and documentation is available via anonymous FTP
+from ftp.uni-muenster.de:/pub/atari/Mint/Kernel.
+
+2) Until there are no easy to use installer program and window system based
+applications for MintNet you need some experience with cli's and a Unix-like
+setup. That is *not* because MintNet itself needs this, but (un)fortunately
+all the currently available applications using MintNet are ports of Unix
+programs and they need a basic Unix setup to work.
+
+3) Some networking applications for MintNet. A good starting set is inetd,
+ping, telnet, ftp, pppd (if you want to use PPP), dip (if you want to use
+SLIP).
+These programs are not part of this package. They can be found for instance
+at ftp.uni-muenster.de:/pub/atari/Mint/Network.
+
+4) Most of those Networking applications require you to run syslogd, a program
+that logs system messages to files or the console. If you want to run telnet
+or rlogin *servers* on your host you need the login program, too.
+Both programs are part of the MintOS 1.4.1 package which is available via
+anonymous ftp from earth.ox.ac.uk:/pub/mintos.
+
+For the unexperienced KGMD (Knarfs German Mint Distribution) is a good
+starting point. It provides you with a ready to go MintNet environment.
+KGMD 1.0 can be found at ftp.phil.uni-sb.de:/pub/atari/mint/KGMD-1.0/.
+
+Another package that contains a basic Mint setup is the Mint distribution kit
+MDK (which is a bit outdated), available from phlem.ph.kcl.ac.uk.
+
+
+
+3. Things needed for compiling
+------------------------------
+
+This package contains already compiled versions of the libraries and the
+socket device driver for people who are not willing or able to compile
+the stuff. If you are one of them you can ignore the following instructions
+about compiling and use the precompiled binaries instead.
+
+1) tar and gzip to unpack the archive (bit silly this one since you are
+reading this file).
+
+2) gcc, preferably 2.3.3 or >= 2.5.8, since versions inbetween those have
+been reported to be buggy.
+
+3) gmake, preferably 3.6x or later.
+
+4) binutils PL >= 30.
+
+5) MiNTLibs PL >= 41, because as of PL 41 they support the socket library
+in errno.h and strerror(). If you don't mind getting messages like 'unknown
+error' from perror(), you can use earlier versions too.
+
+6) Minixfs or something similar that supports long filenames. This is not
+absolutely neccessary, but there are some filenames that do not fit into
+the 8+3 filename scheme.
+
+
+
+4. Rebuilding the library and device driver
+-------------------------------------------
+
+Edit MakeVars to reflect your setup.
+
+It is easiest to rebuild the whole package by typing
+	1) make clean
+	2) make depend
+	3) make all
+into the top level directory. This will rebuild the socket device driver
+and all the libraries as necessary. 1) deletes all .o files from previous
+compilations. 2) generates the dependency-files that tell make which files
+need to be rebuilt when changing one particular file.
+
+Of cource you can 'cd' to one particular subdirectory and remake only parts
+of the package. Please have a look at the Makefiles.
+
+You should get the following binaries out of the above steps:
+
+lib/socket.olb		-- 32 bit socket library.
+lib/socket16.olb	-- 16 bit socket library.
+lib/bsocket.olb		-- 32 bit -mbaserel socket library.
+lib/bsocket16.olb	-- 16 bit -mbaserel socket library.
+
+net/sockdev.xdd		-- socket device driver.
+
+net/drivers/plip.xif	-- PLIP packet driver
+net/drivers/slip.xif	-- combined SLIP/PPP packet driver
+net/drivers/dummy.xif	-- dummy (lookpback) ethernet driver
+net/drivers/de600.xif	-- driver for de600 adapter connected to ROM port
+net/drivers/riebl*.xif	-- drivers for RIEBL card
+net/drivers/pamsdma.xif	-- driver PAM's external DMA adaptor
+net/drivers/lance.xif	-- driver for PAM's internal card
+net/drivers/biodma.xif	-- driver for BIODATA's external DMA adaptor
+
+tool/netstat		-- netstat utility, show active connections.
+tool/route		-- route utility, change/show routing table.
+tool/ifconfig		-- ifconfig utility, change/show interface config.
+tool/slattach		-- slattach utility, attach SLIP interface.
+tool/iflink		-- iflink utility, link Mint device to interface.
+tool/arp		-- arp utility, change/show ARP table.
+tool/ifstats		-- ifstats utility, show interface statistics.
+
+
+
+5. Installing the libraries and the device driver
+-------------------------------------------------
+
+Run the shell script install.sh in the MintNet top level directory:
+
+	# ./install.sh
+
+You will be asked for your networking parameters like hostname, domainname,
+IP address and what connections to directly connected hosts you wish to
+establish. From your answers the script will generate basic config files, that
+enable you to use MintNet after reboot. 
+
+Now you may want to "hand tune" the configuration files a bit. They are
+hold in /etc. The most important are 
+
+* /etc/resolv.conf (host name resolver config. Read man/cat5/resolver.5)
+* /etc/host.conf (more host name resolver config. Read man/cat8/resolv+.8)
+* /etc/hosts (host name database)
+* /etc/hostname (your hostname)
+* /etc/domainname (your domainname)
+* /etc/rc.net (MintNet startup shell script, *must* be executed after reboot,
+  from /etc/rc or mint.cnf)
+
+The basic MintNet utilities are described by manual pages in man/cat8/.
+Read route.8, ifconfig.8, netstat.8!
+
+The script install.sh is intended for first installation only. If you have
+already a working MintNet installation and only want to update the binaries
+to a newer version, then type 'make install' into the toplevel MintNet
+directory. Change to the 'man' directory and type 'make install' to install
+the manuals.
+
+
+
+6. Getting information about socket and network programming
+-----------------------------------------------------------
+
+Because MintNet providedes you with a BSD socket compatible API (with some
+extensions and omissions) through the socket.olb library, any literature on
+Unix networking would help alot.
+
+You can obtain information about using the facilities provided by this package
+by having a look at the manual pages in the man subdirectory. You could also
+get the texinfo manual from the GNU-C library or a good book, like
+
+- Comer, Stevens: `Internetworking with TCP/IP I-III' (for learning)
+
+- Richard W. Stevens: `Unix Network Programming'
+
+- Andrew S. Tannenbaum: `Computer Networks'
+
+- Leffler, McKusick, Karels, Quaterman: `4.3 BSD Unix -- Design and
+Implementation' (for insiders)
+
+- Santifaller: `TCP/IP und NFS in Theorie und Praxis' (an introduction)
+
+- Loosemore, McGrath, Oram, Stallman: `The GNU C Library Reference Manual'
+(for reference)
+
+- RFCs 786(UDP), 790(assigned numbers), 791(IP), 792(ICMP), 793(TCP),
+1055(SLIP), 1122(Host Requirements), 1331(PPP), 1144(VJ compression),
+894,1042(IP over 802.x), 826(ARP), 903(RARP) (for protcol specifications)
+
+
+
+7. BSD Unix (in)compatibility
+-----------------------------
+
+Here are some notes on incompatibilities to the BSD Unix programming interface
+for the ones familiar with it.
+
+- The socket ioctl's are currently not in the Mint Library. Use the file
+sockios.h from the include dir instead or get my portlib.
+
+- Most IP options are not processed like they should.
+
+- Very few (only the most important from my point of view) ICMP message
+types are implemented.
+
+- Currently sendmsg() and recvmsg() on AF_UNIX sockets do not support sending
+and receiving of access rights. (ie file handles).
+
+- There are lots of new error codes, like ENOTCONN, ... To get meaningful
+messages from perror() and strerror() and for support of the new errorcodes
+you will need the MiNTLibs patchlevel >= 41.
+
+- On AF_UNIX stream sockets you can set the send buffer size with the
+setsockopt() call only if the socket is connected. For AF_UNIX dgram
+sockets you can't at all set the send buffer size, only receive buffer size.
+
+- stat(), fstat() on sockets and AF_UNIX socket files return for the file
+type S_IFCHR and S_IFREG, respectively (not S_IFSOCK).
+
+- select()ing for writing on dgram sockets will always report that writing
+will not block, even if the desriptor is NOT ready for writing.
+
+- The FIONREAD ioctl() call on AF_UNIX/AF_INET dgram sockets returns the
+size of the next datagram or zero if none is available.
+The FIONWRITE ioctl() call on AF_UNIX dgram sockets returns an infinite
+number bytes if you did not specify a destination address for the socket
+using connect().
+FIONWRITE on UDP sockets returns always `infinity'.
+
+- Sending and receiving of more than one TCP urgent data byte is supported.
+Unfortunately this causes some incompatibilities. Read the file net/inet/BUGS
+to learn the differences.
+
+
+
+8. If you have found a bug
+--------------------------
+
+In case you find a bug or incompatibility in MintNet or want me to implement
+some feature you need then don't hesitate to contact me at the below given
+Email address.
+
+If you report a bug I need a detailed description of your setup, of the
+symptoms and the circumstances that caused the bug to appear and if possible
+a small peace of code that reproduces the bug.
+
+Keep in mind that I can't do anything to solve problems described by messages
+like 'MintNet does not work! What shall I do?'
+
+Please report bugs only to me (Torsten Lang) since Kay Roemer does not maintain
+the package any more. Thanks.
+
+Have fun with MintNet,
+--
+Kay Roemer		roemer@informatik.uni-frankfurt.de
+			http://www.uni-frankfurt.de/~roemer/
+--
+Torsten Lang		Torsten@Lang.net

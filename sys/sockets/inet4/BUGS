@@ -1,0 +1,64 @@
+These are strictly speaking no bugs, but unimplemented features or
+BSD incompatibilities:
+
+
+Transmission Control Protocol:
+------------------------------
+
+- MSS fixed at 536 bytes currently. May use larger values on directly
+connected networks. DONE.
+
+- Selecting for exceptional conditions (ie waiting for urgent data)
+does not work. This needs work on the kernel. WORKS with TeSches
+patches applied.
+
+- A process is only notified of urgent data arrival via SIGURG when
+he does a read(), write() or select(). FIXED. Signalling is now done
+asynchronously using a separate process.
+
+- There is currently no round trip time estimation done for calculating
+the retransmission timeout. DONE.
+
+- No "Nagle-Algorithm" implemented.
+
+- No congestion avoidance. DONE.
+
+- No slow start implemented. DONE.
+
+- No delayed acks.
+
+- The following is really a bug in BSD. Here are the BSD out-of-band semantics:
+	Lets say you write 5 bytes of out of band data using the MSG_OOB
+	flag with send().
+	Then the receiver will only be able to receive the urgent data if he
+	has no other unread urgent data pending. If he has no urgent data
+	pending he can receive the last byte of the urgent data using recv()
+	with MSG_OOB.
+	The other 4 bytes are received as normal data. The "mark" (you can
+	query the system if you have received all data up until the mark
+	using the SIOCATMARK ioctl) is placed behind these 4 bytes.
+
+Here are the MintNet semantics of out of band handling.
+	You can write as much urgent data as you want.
+	The receiver can read *all* the urgent data using recv() with the
+	MSG_OOB flag.
+	The "mark" is placed *before* the urgent data byte with the lowest
+	sequence number.
+	If there are several chunks of urgent data waiting to be read, the
+	"mark" moves from the first to the next one when you read data after
+	the current position of the mark.
+	You can partially emulate the BSD semantics by placing the socket
+	into "out-of-band-data-inline" mode using the SO_OOBINLINE socket
+	option. You can then read urgent data using MSG_OOB or the normal
+	read().
+
+User Datagram Protocol:
+-----------------------
+
+- recv/recvfrom return the amount of data copied -- not the size of
+the datagram as BSD does with MSG_PEEK.
+
+Internet Control Message Protocol:
+----------------------------------
+
+- Most message types not implemented.

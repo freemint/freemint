@@ -1,0 +1,18 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into binary distributions.
+
+BINFILES = \
+	biodma.xif \
+	de600.xif \
+	dial.xif \
+	dummy.xif \
+	lance.xif \
+	pamsdma.xif \
+	plip.xif \
+	rieblmst.xif \
+	rieblmst_fast.xif \
+	rieblspc.xif \
+	rieblspc_fast.xif \
+	rieblste.xif \
+	riebltt.xif \
+	slip.xif
