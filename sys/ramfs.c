@@ -232,30 +232,30 @@
 
 static long memory = 0;
 
-INLINE void *
-ram_kmalloc (register long size)
+static void *
+ram_kmalloc (register long size, const char *func)
 {
 	register void *tmp;
 	
 	DEBUG  (("fnramfs: kmalloc called: %li (used mem %li)", size, memory));
 	
-	tmp = kmalloc (size);
+	tmp = _kmalloc (size, func);
 	if (tmp) memory += size;
 	return tmp;
 }
 
-INLINE void
-ram_kfree (void *dst, register long size)
+static void
+ram_kfree (void *dst, register long size, const char *func)
 {
 	memory -= size;
-	kfree (dst);
+	_kfree (dst, func);
 }
 
 # undef kmalloc
 # undef kfree
 
-# define kmalloc	ram_kmalloc
-# define kfree		ram_kfree
+# define kmalloc(size)		ram_kmalloc (size, __FUNCTION__)
+# define kfree(place,size)	ram_kfree (place, size, __FUNCTION__)
 
 /* END tools */
 /****************************************************************************/
