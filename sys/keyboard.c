@@ -21,21 +21,31 @@
  *
  */
 
+/* PROGRAMS WHICH HAVE TO BE TESTED WHETHER THERE IS COMPATIBILITY PROBLEM:
+ *
+ * a) Apex Media
+ * b) JML Snap
+ * c) Midnight Commander (!)
+ * d) something else I forgot
+ *
+ */
+
 # include "arch/intr.h"		/* click */
-# include "mint/mint.h"
 # include "mint/signal.h"	/* SIGQUIT */
 
-# include "libkern/libkern.h"	/* strcpy(), strcat() */
+# include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
 # include "cnf.h"		/* init_env */
+# include "console.h"		/* c_conws() */
 # include "cookie.h"		/* get_cookie(), set_cookie() */
 # include "debug.h"		/* do_func_key() */
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
 # include "dossig.h"		/* p_kill() */
-# include "init.h"		/* boot_printf(), sysdir */
+# include "init.h"		/* boot_printf(), *sysdir */
+# include "info.h"		/* messages */
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_fds.h"		/* fp_alloc() */
 # include "keyboard.h"		/* struct cad */
@@ -45,7 +55,8 @@
 # include "signal.h"		/* killgroup() */
 # include "timeout.h"		/* addroottimeout() */
 
-# include <osbind.h>
+# define CAD_TIMEOUT	5*200
+# define ROOT_TIMEOUT	1
 
 /* _AKP codes for the keyboard (the upper byte of the low word)
  * are as follows:
@@ -693,6 +704,18 @@ static const uchar sw_german_kbd[] =
  *
  */
 
+static const ushort modifiers[] =
+{
+	CONTROL, RSHIFT, LSHIFT,
+	ALTERNATE, CLRHOME, INSERT, 0
+};
+
+static const ushort mmasks[] =
+{
+	MM_CTRL, MM_RSHIFT, MM_LSHIFT,
+	MM_ALTERNATE, MM_CLRHOME, MM_INSERT
+};
+
 struct	cad_def cad[3];	/* for halt, warm and cold resp. */
 short	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
@@ -775,7 +798,7 @@ alt_help(void)
 short
 ikbd_scan (ushort scancode)
 {
-	ushort mod = 0, clk = 0, shift = *kbshft;
+	ushort mod = 0, clk = 0, shift = *kbshft, x = 0;
 	uchar *chartable;
 
 	scancode &= 0x00ff;		/* better safe than sorry */
@@ -786,75 +809,38 @@ ikbd_scan (ushort scancode)
 
 	/* We handle modifiers first
 	 */
+	while(modifiers[x])
+	{
+		if (scancode == modifiers[x])
+		{
+			shift |= mmasks[x];
+			mod++;
+			break;
+		}
+		else if (scancode == (modifiers[x] | 0x80))
+		{
+			shift &= ~mmasks[x];
+			mod++;
+			break;
+		}
+		x++;
+	}
+
 	switch (scancode)
 	{
-		case	CONTROL:
-		{
-			shift |= MM_CTRL;
-			mod++;
-			break;
-		}
-		case	LSHIFT:
-		{
-			shift |= MM_LSHIFT;
-			mod++;
-			break;
-		}
-		case	RSHIFT:
-		{
-			shift |= MM_RSHIFT;
-			mod++;
-			break;
-		}
-		case	ALTERNATE:
-		{
-			shift |= MM_ALTERNATE;
-			mod++;
-			break;
-		}
-		case	CAPS:		/* Caps acts differently */
+		/* Caps toggles its bit, when hit, it also makes keyclick */
+		case	CAPS:
 		{
 			shift ^= MM_CAPS;
 			mod++;
 			clk++;
 			break;
 		}
-		case	CLRHOME:
-		{
-			shift |= MM_CLRHOME;
-			mod++;
-			break;
-		}
-		case	INSERT:
-		{
-			shift |= MM_INSERT;
-			mod++;
-			break;
-		}
-		case	CONTROL+0x80:
-		{
-			shift &= ~MM_CTRL;
-			mod++;
-			break;
-		}
-		case	LSHIFT+0x80:
-		{
-			shift &= ~MM_LSHIFT;
-			mod++;
-			break;
-		}
-		case	RSHIFT+0x80:
-		{
-			shift &= ~MM_RSHIFT;
-			mod++;
-			break;
-		}
+		/* Releasing Alternate should generate a character, whose ASCII
+		 * code was typed in via the numpad
+		 */
 		case	ALTERNATE+0x80:
 		{
-			shift &= ~MM_ALTERNATE;
-			mod++;
-
-			/* Generate the char whose code was typed in via numpad */
 			if (numidx)
 			{
 				ushort ascii = 0, tempidx = 0;
@@ -891,18 +877,6 @@ ikbd_scan (ushort scancode)
 			}
 			break;
 		}
-		case	CLRHOME+0x80:
-		{
-			shift &= ~MM_CLRHOME;
-			mod++;
-			break;
-		}
-		case	INSERT+0x80:
-		{
-			shift &= ~MM_INSERT;
-			mod++;
-			break;
-		}
 	}
 
 	if (mod)
@@ -913,6 +887,7 @@ ikbd_scan (ushort scancode)
 		if (clk)
 			kbdclick(sc);
 		sc &= 0x7f;
+		/* this catches i.a. release code of CapsLock */
 		if ((sc != CLRHOME) && (sc != INSERT))
 			return -1;
 	}
@@ -935,17 +910,16 @@ ikbd_scan (ushort scancode)
 			{
 				TIMEOUT *t;
 
-				t = addroottimeout (0L, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
+				t = addroottimeout (ROOT_TIMEOUT, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
 				if (t)
 				{
-					t->arg = 1;
+					t->arg = cad_lock = 1;
 					
 					if ((shift & MM_ESHIFT) == MM_RSHIFT)
-						t->arg++;
+						t->arg = 2;
 					else if ((shift & MM_ESHIFT) == MM_LSHIFT)
-						t->arg--;
+						t->arg = 0;
 					
-					cad_lock = 1;
 					hz_ticks = *(long *)0x04baL;
 				}
 			}
@@ -954,7 +928,7 @@ ikbd_scan (ushort scancode)
 				long mora;
 
 				mora = *(long *)0x04baL - hz_ticks;
-				if (mora > 1000)
+				if (mora > CAD_TIMEOUT)
 					return scancode;
 			}
 
@@ -973,7 +947,7 @@ ikbd_scan (ushort scancode)
 			if (shift & MM_ESHIFT)
 				scancode += 0x0019;	/* emulate F11-F20 */
 			
-			t = addroottimeout(0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 			
 			goto key_done;
@@ -983,7 +957,7 @@ ikbd_scan (ushort scancode)
 		{
 			TIMEOUT *t;
 			
-			t = addroottimeout(0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 			
 			goto key_done;
@@ -991,9 +965,7 @@ ikbd_scan (ushort scancode)
 		/* We ignore release codes, but catch them to avoid
 		 * spurious execution of checkkeys() on every release of a key.
 		 */
-		else if (scancode == DEL+0x80)
-			return -1;
-		else if (scancode == UNDO+0x80)
+		else if ((scancode == DEL+0x80) || (scancode == UNDO+0x80))
 			return -1;
 		else if ((scancode >= 0x003b+0x80) && (scancode <= 0x0044+0x80))
 			return -1;
@@ -1003,24 +975,48 @@ ikbd_scan (ushort scancode)
 
 	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
 	{
-		/* Alt/Help fires up a program called `althelp.sys'
-		 * located in the system directory (e.g. `c:\multitos\')
-		 */
-		if (scancode == HELP)
-		{
-			addroottimeout(0L, (void _cdecl (*)(PROC *))alt_help, 1);
-			goto key_done;
-		}
-		else if (scancode == HELP+0x80)
-			return -1;
-
-		/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
-		 */ 
 		switch (scancode)
 		{
 			uchar ascii;
 
-			/* Ignore release codes as usual */
+			/* Alt/Help fires up a program named `althelp.sys'
+			 * located in the system directory (e.g. `c:\multitos\')
+			 */
+			case HELP:
+			{
+				addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))alt_help, 1);
+				goto key_done;
+				break;
+			}
+			/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
+			 */ 
+			case NUMPAD_0:
+			case NUMPAD_1:
+			case NUMPAD_2:
+			case NUMPAD_3:
+			case NUMPAD_4:
+			case NUMPAD_5:
+			case NUMPAD_6:
+			case NUMPAD_7:
+			case NUMPAD_8:
+			case NUMPAD_9:
+			{
+				if (numidx > 2)		/* buffer full? reset it */
+					numidx = 0;
+
+				chartable = keyboards[gl_kbd].unshift;
+				ascii = chartable[scancode];
+				if (ascii)
+				{
+					numin[numidx] = ascii;
+					numidx++;
+				}
+				goto key_done;
+				break;
+			}
+			/* Ignore release codes as usual.
+			 */
+			case HELP+0x80:
 			case NUMPAD_0+0x80:
 			case NUMPAD_1+0x80:
 			case NUMPAD_2+0x80:
@@ -1033,30 +1029,6 @@ ikbd_scan (ushort scancode)
 			case NUMPAD_9+0x80:
 			{
 				return -1;
-				break;
-			}
-			case NUMPAD_0:
-			case NUMPAD_1:
-			case NUMPAD_2:
-			case NUMPAD_3:
-			case NUMPAD_4:
-			case NUMPAD_5:
-			case NUMPAD_6:
-			case NUMPAD_7:
-			case NUMPAD_8:
-			case NUMPAD_9:
-			{
-				if (numidx >= 3)	/* buffer full? reset it */
-					numidx = 0;
-
-				chartable = keyboards[gl_kbd].unshift;
-				ascii = chartable[scancode];
-				if (ascii)
-				{
-					numin[numidx] = ascii;
-					numidx++;
-				}
-				goto key_done;
 				break;
 			}
 		}
@@ -1177,13 +1149,18 @@ load_table(FILEPTR *fp, char *name, long size)
 
 	if (!ret)
 	{
-		boot_print("Keyboard table is BAD!\r\n");
+		c_conws(MSG_keytable_faulty);
 		kfree(kbuf);
 		return 0;
 	}
 
 	/* Success */
-	boot_printf("Loaded keyboard table for AKP code %d\r\n", gl_kbd);
+	{
+		char msg[64];
+
+		ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
+		c_conws(msg);
+	}
 
 	return 1;
 }
@@ -1230,6 +1207,11 @@ load_keytbl(void)
 	{
 		ret = load_table(fp, name, xattr.size);
 		do_close(rootproc, fp);
+	}
+	else
+	{
+		fp->links = 0;		/* suppress complaints */
+		FP_FREE(fp);
 	}
 
 	/* Now fix the _AKP code in the Cookie Jar */
