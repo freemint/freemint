@@ -113,12 +113,13 @@ debug_ws(const char *s)
 	int scan;
 	int stopped;
 	
+# ifdef ARANYM
+	if (nf_debug(s))
+		return;
+# endif
+
 	while (*s)
 	{
-# ifdef ARANYM
-		if (!nf_debug(s))
-			/* fall back to Bconout */
-# endif
 		(void) Bconout(out_device, *s);
 		
 		while (*s == '\n' && out_device != 0 && Bconstat(out_device))
