@@ -1134,9 +1134,8 @@ mark_region(MEMREGION *region, short mode, short cmode)
     for (proc = proclist; proc; proc = proc->gl_next) {
 	if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
 		continue;	
-	if (!proc->p_mem)
+	if (!proc->p_mem || !proc->p_mem->page_table)
 		continue;
-	assert(proc->p_mem->page_table);
 	if (!shortcut && (mode == PROT_I || mode == PROT_G)) {
 	    /* everybody gets the same flags */
 	    goto notowner;
