@@ -1115,7 +1115,7 @@ calc_load_average (void)
 	
 	if (uptime % 5) return;
 # endif
-		
+	
 	number_running = 0;
 	
 	for (p = proclist; p; p = p->gl_next)
@@ -1123,9 +1123,7 @@ calc_load_average (void)
 		if (p != rootproc)
 		{
 			if ((p->wait_q == CURPROC_Q) || (p->wait_q == READY_Q))
-			{
 				number_running++;
-			}
 		}
 		
 		/* Check the stack magic here, to ensure the system/interrupt
