@@ -39,15 +39,30 @@
 
 
 long fd_alloc	(struct proc *p, short *fd, short min);
+long fd_alloc_	(struct proc *p, short *fd, short min, const char *func);
 void fd_remove	(struct proc *p, short fd);
+void fd_remove_	(struct proc *p, short fd, const char *func);
+
+# define FD_ALLOC(p, fd, min)      fd_alloc_  (p, fd, min, __FUNCTION__)
+# define FD_REMOVE(p, fd)          fd_remove_ (p, fd, __FUNCTION__)
+
 long fp_alloc	(struct proc *p, FILEPTR **resultfp);
+long fp_alloc_	(struct proc *p, FILEPTR **resultfp, const char *func);
 void fp_done	(struct proc *p, FILEPTR *fp, short fd, char fdflags);
-void fp_free_	(FILEPTR *fp, const char *func);
+void fp_done_	(struct proc *p, FILEPTR *fp, short fd, char fdflags, const char *func);
 # define fp_free(fp) fp_free_ (fp, __FUNCTION__)
+void fp_free_	(FILEPTR *fp, const char *func);
+
+# define FP_ALLOC(p, result)       fp_alloc_  (p, result, __FUNCTION__)
+# define FP_DONE(p, fp, fd, flags) fp_done_   (p, fp, fd, flags, __FUNCTION__)
+# define FP_FREE(fp)               fp_free_   (fp, __FUNCTION__)
+
 long fp_get	(struct proc **p, short *fd, FILEPTR **fp, const char *func);
 long fp_get1	(struct proc *p, short fd, FILEPTR **fp, const char *func);
 
-# define GETFILEPTR(p, fd, fp)	fp_get (p, fd, fp, __FUNCTION__)
+# define FP_GET(p, fd, fp)         fp_get     (p, fd, fp, __FUNCTION__)
+# define FP_GET1(p, fd, fp)        fp_get1    (p, fd, fp, __FUNCTION__)
+# define GETFILEPTR(p, fd, fp)	   fp_get     (p, fd, fp, __FUNCTION__)
 
 long do_dup	(short fd, short min);
 long do_open	(FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x);
