@@ -54,7 +54,7 @@
 #include "mint/filedesc.h"
 #include "mint/ioctl.h"
 #include "mint/signal.h"
-
+#include "mint/ssystem.h"
 
 /*
  * Kernel Message Handler
@@ -187,180 +187,7 @@ dispatch_cevent(struct xa_client *client)
 	}
 	return ret;
 }
-#if 0
-short
-check_cevents(struct xa_client *client)
-{
-	while ((client->status & CS_MENU_NAV))
-	{
-		while (client->irdrw_msg || client->cevnt_count)
-		{
-			if (client->irdrw_msg)
-				exec_iredraw_queue(0, client);
-			
-			dispatch_cevent(client);
-		}
-		if (!(client->status & CS_MENU_NAV))
-			break;
-		do_block(client);
-	}
-	else
-	{
-		while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
-		{
-			if (client->irdrw_msg)
-				exec_iredraw_queue(0, client);
 
-			dispatch_cevent(client);
-		}
-	}
-#if 0
-	while (!client->usr_evnt && dispatch_cevent(client))
-		;
-#endif
-	if (client->usr_evnt)
-	{
-		cancel_evnt_multi(client, 1);
-		return 1;
-	}
-	else
-		return 0;
-}
-#endif
-
-#if 0
-
-void
-TP_entry(void *_client)
-{
-	struct xa_client *client = _client;
-
-	for (;;)
-	{
-		if (client->tp_term)
-			break;
-		if (!dispatch_tpcevent(client))
-			sleep(IO_Q, (long)client->tp);
-	}
-	client->tp = NULL;
-	client->tp_term = 2;
-	kthread_exit(0);
-}
-
-void
-TP_terminate(enum locks lock, struct c_event *ce, bool cancel)
-{
-	ce->client->tp_term = 1;
-}
-
-void
-cancel_tpcevents(struct xa_client *client)
-{
-	struct c_event *ce;
-
-	ce = client->tpcevnt_head;
-	while (ce)
-	{
-		struct c_event *nxt = ce->next;
-
-		DIAG((D_kern, client, "Cancel tp evnt %lx (next %lx) for %s",
-			ce, nxt, client->name));
-
-		/* callout as cancel event
-		 * handler can cleanup and free allocated ressources
-		 */
-		(*ce->funct)(0, ce, true);
-		kfree(ce);
-
-		ce = nxt;
-	}
-
-	client->tpcevnt_head = NULL;
-	client->tpcevnt_tail = NULL;
-	client->tpcevnt_count = 0;
-
-	if (C.ce_open_menu == client)
-		C.ce_open_menu = NULL;
-}
-void
-post_tpcevent(struct xa_client *client,
-	void (*func)(enum locks, struct c_event *, bool cancel),
-	void *ptr1, void *ptr2,
-	int d0, int d1, RECT *r,
-	const struct moose_data *md)
-{
-	struct c_event *c;
-
-	if (client->tp)
-	{
-		c = kmalloc(sizeof(*c));
-		if (c)
-		{
-			c->next		= NULL;
-			c->funct	= func;
-			c->client	= client;
-			c->ptr1		= ptr1;
-			c->ptr2		= ptr2;
-			c->d0		= d0;
-			c->d1		= d1;
-
-			if (r)
-				c->r = *r;
-			if (md)
-				c->md = *md;
-
-			if (!client->tpcevnt_head)
-			{
-				client->tpcevnt_head = c;
-				client->tpcevnt_tail = c;
-			}
-			else
-			{
-				client->tpcevnt_tail->next = c;
-				client->tpcevnt_tail = c;
-			}
-			client->tpcevnt_count++;
-
-			DIAG((D_mouse, client, "added tp cevent %lx(%d) (head %lx, tail %lx) for %s",
-				c, client->tpcevnt_count, client->tpcevnt_head, client->tpcevnt_tail,
-				client->name));
-		}
-		else
-		{
-			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
-		}
-		wake(IO_Q, (long)client->tp);
-	}
-}
-short
-dispatch_tpcevent(struct xa_client *client)
-{
-	struct c_event *ce;
-	short ret = 0;
-
-	ce = client->tpcevnt_head;
-	if (ce)
-	{
-		struct c_event *nxt = ce->next;
-
-		if (!nxt)
-			client->tpcevnt_tail = nxt;
-
-		client->tpcevnt_head = nxt;
-		client->tpcevnt_count--;
-
-		DIAG((D_kern, client, "Dispatch tp evnt %lx (head %lx, tail %lx, count %d) for %s",
-			ce, client->tpcevnt_head, client->tpcevnt_tail, client->tpcevnt_count, client->name));
-
-		(*ce->funct)(0, ce, false);
-		kfree(ce);
-
-		ret = 1;
-	}
-
-	return ret;
-}
-#endif
 static void
 do_block(struct xa_client *client)
 {
@@ -828,6 +655,18 @@ CE_at_restoresigs(enum locks lock, struct c_event *ce, bool cancel)
  * and sigs with all other kernel threads (mainly the idle thread
  * alias rootproc).
  */
+#define C_nAES 0x6E414553L     /* N.AES, the AES for MiNT */
+static N_AESINFO *c_naes = NULL;
+static N_AESINFO naes_cookie =
+{
+	0x0300,				/* version 0.3.0 */
+	(25<<9)|(1<<5)|1,		/* 1 jan, 2005	*/
+	(1<<11)|(2<<5)|3,		/* 01:02:03	*/
+	0x8000,				/* Bit 15 set indicates that this really is XaAES */
+	0L,
+	0L,
+};
+
 void
 k_main(void *dummy)
 {
@@ -843,6 +682,22 @@ k_main(void *dummy)
 	
 	/* join process group of loader */
 	p_setpgrp(0, loader_pgrp);
+
+	c_naes = NULL;
+	
+	if (cfg.naes_cookie)
+	{
+		if ( ((long)c_naes = m_xalloc(sizeof(*c_naes), (4<<4)|(1<<3)|3) ))
+		{
+			memcpy(c_naes, &naes_cookie, sizeof(*c_naes));
+			if (s_system(S_SETCOOKIE, C_nAES, (long)c_naes) != 0)
+			{
+				m_free(c_naes);
+				c_naes = NULL;
+				DIAGS(("Installing nAES cookie failed!"));
+			}
+		}
+	}
 
 	/*
 	 * register trap#2 handler
@@ -1137,6 +992,13 @@ k_exit(void)
 
 	
 	k_shutdown();
+	
+	if (c_naes)
+	{
+		s_system(S_DELCOOKIE, C_nAES, 0L);
+		m_free(c_naes);
+		c_naes = NULL;
+	}
 
 	/*
 	 * deinstall trap #2 handler

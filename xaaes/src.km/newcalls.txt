@@ -8,6 +8,39 @@
  and other AES's.
 
 ===============================================================================
+                            -= The N.AES cookie =-
+
+ Because some programs insists on appl_control(), for example, instead of
+checking with appl_getinfo(), XaAES now has an option to install a fake
+'nAES' cookie. You enable this option by setting;
+
+naes_cookie = yes
+
+ in your xaaes.cnf.
+
+ This fake cookie contains the following;
+
+static N_AESINFO naes_cookie =
+{
+ 0x0300,             /* version 0.3.0 */
+ (25<<9)|(1<<5)|1,   /* 1 jan, 2005   */
+ (1<<11)|(2<<5)|3,   /* 01:02:03      */
+ 0x8000,             /* Bit 15 set indicates that this really is XaAES */
+ 0L,
+ 0L,
+};
+
+ This structures element will never change under XaAES. Since N.AES does not
+to be in development anymore, it is unlikely it will ever hit version 0.3.0.
+Furthermore, if date and time is Jan 1st, 2005/01:02:03 together with bit
+15 set in flags, one can safely assume this is the XaAES fake N.AES cookie.
+
+ It is extremely strongly recommended that one does NOT check cookies at
+all when determining function availability of any AES. The info above is more
+of interest to authors of sysinfo software, etc., and must not be used for
+anything else.
+
+===============================================================================
                             -= Detecting XaAES =-
 
  appl_getinfo() is the correct call to use if the application wants to know

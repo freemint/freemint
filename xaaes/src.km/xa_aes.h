@@ -34,6 +34,16 @@
 #include "mt_gem.h"
 #include "mt_gemx.h"
 
+typedef struct
+{
+    unsigned int    version;
+    unsigned int    date;
+    unsigned int    time;
+    unsigned int    flags;
+    unsigned long   unused_1;
+    unsigned long   unused_2;
+} N_AESINFO;
+
 /* TODO: Usage of RECT should be eliminated somehow
          and replaced by the gemlib's GRECT.
          It is quite a lot of work however. :( */

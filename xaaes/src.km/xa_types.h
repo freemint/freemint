@@ -611,6 +611,7 @@ struct xa_client
 
 	struct fmd fmd;			/* Data needed by the XaAES windowing of dialogues. */
 	void *temp;			/* Temporary storage */
+	struct xa_client *nextclient;	/* Use for appl_find(APP_FIRST/APP_NEXT) */
 	int  type;			/* What type of client is this? */
 
 	char *half_screen_buffer;	/* for wind_get WF_SCREEN (people tend to use what is offered,
