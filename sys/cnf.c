@@ -85,6 +85,7 @@
 # include "fasttext.h"
 # include "fatfs.h"
 # include "filesys.h"
+# include "info.h"		/* messages */
 # include "init.h"
 # include "k_exec.h"
 # include "k_fds.h"
@@ -415,7 +416,7 @@ pCB_alias (const char *drive, const char *path, PARSINF *inf)
 	if (drv >= NUM_DRIVES)
 	{
 		parser_msg  (inf, NULL);
-		boot_printf ("bad drive '%c:' in alias", *drive);
+		boot_printf (MSG_cnf_bad_drive, *drive);
 		parser_msg  (NULL,NULL);
 	}
 	else
@@ -425,7 +426,7 @@ pCB_alias (const char *drive, const char *path, PARSINF *inf)
 		if (r)
 		{
 			parser_msg  (inf, NULL);
-			boot_printf ("TOS error %ld while looking for '%s'", r, path);
+			boot_printf (MSG_cnf_tos_error, r, path);
 			parser_msg  (NULL,NULL);
 		}
 		else
@@ -541,8 +542,8 @@ pCB_exec (const char *path, const char *line, PARSINF *inf)
 	if (i < 0)
 	{
 		parser_msg  (inf, NULL);
-		boot_print  (i == -33 ? "file not found"
-		                      : "error while attempting to execute");
+		boot_print  (i == -33 ? MSG_cnf_file_not_found
+		                      : MSG_cnf_error_executing);
 		boot_printf (" '%s'", path);
 		parser_msg  (NULL,NULL);
 	}
@@ -614,7 +615,7 @@ pCB_include (const char *path, PARSINF *inf)
 	else
 	{
 		parser_msg  (inf, NULL);
-		boot_printf ("cannot open include file '%s'", path);
+		boot_printf (MSG_cnf_cannot_include, path);
 		parser_msg  (NULL, NULL);
 	}
 }
@@ -638,7 +639,7 @@ pCB_newfatfs (ulong list, PARSINF *inf)
 		if (list & 1ul) {
 			if (!(inf->opt & SET('Q'))) {
 				if (!flag) {
-					boot_printf ("\033pNEWFATFS active:\033q ");
+					boot_printf (MSG_cnf_newfatfs);
 					flag = true;
 				}
 				boot_printf ("%c", drv_list[drv]);
@@ -650,7 +651,7 @@ pCB_newfatfs (ulong list, PARSINF *inf)
 	}
 	if (flag) boot_printf ("\r\n");
 # else
-	boot_printf ("\033pNEWFATFS\033q is \033pdefault\033q Filesystem for all drives!\r\n");
+	boot_printf (MSG_cnf_newfatfs);
 # endif
 }
 
@@ -709,7 +710,7 @@ pCB_vfat (ulong list, PARSINF *inf)
 		if (list & 1ul) {
 			if (!(inf->opt & SET('Q'))) {
 				if (!flag) {
-					boot_printf ("\033pVFAT active:\033q ");
+					boot_printf (MSG_cnf_vfat);
 					flag = true;
 				}
 				boot_printf ("%c", drv_list[drv]);
@@ -745,7 +746,7 @@ pCB_wb_enable (ulong list, PARSINF *inf)
 		if (list & 1ul) {
 			if (!(inf->opt & SET('Q'))) {
 				if (!flag) {
-					boot_printf ("\033pWB CACHE active:\033q ");
+					boot_printf (MSG_cnf_wbcache);
 					flag = true;
 				}
 				boot_printf ("%c", drv_list[drv]);
@@ -795,8 +796,8 @@ pCB_set (const char *line, PARSINF *inf)
 			if (!isalpha(c)) break;
 			if (c != 'C' && c != 'Q' && c != 'V') {
 				parser_msg  (inf, NULL);
-				boot_printf ("option '-%c'", c);
-				parser_msg  (NULL," ignored.");
+				boot_printf (MSG_cnf_set_option, c);
+				parser_msg  (NULL, MSG_cnf_set_ignored);
 			} else {
 				if (onNoff == '-') opt |=  SET(c);
 				else               opt &= ~SET(c);
@@ -805,7 +806,7 @@ pCB_set (const char *line, PARSINF *inf)
 		}
 	}
 	if (*line  &&  *line != '#') {
-		parser_msg (inf, "invalid argument line for 'set', skipped.");
+		parser_msg (inf, MSG_cnf_invalid_arg);
 	} else {
 		inf->opt = opt;
 	}
@@ -841,7 +842,7 @@ parser_msg (PARSINF *inf, const char *msg)
 	if (inf) {
 		boot_printf ("[%s:%i] ", inf->file, inf->line);
 	} else if (!msg) {
-		msg = ", skipped.";
+		msg = MSG_cnf_parser_skipped;
 	}
 	if (msg) {
 		boot_print (msg);
@@ -1038,7 +1039,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 	{
 		if (!(inf->opt & SET ('Q')))
 		{
-			boot_printf ("[%s] empty file, skipped.", inf->file);
+			boot_printf (MSG_cnf_empty_file, inf->file);
 		}
 		return;
 	}
@@ -1046,7 +1047,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 	buf = kmalloc (b_len);
 	if (!buf)
 	{
-		boot_printf ("[%s] can't allocate %li bytes, break.", inf->file, b_len);
+		boot_printf (MSG_cnf_cant_allocate, inf->file, b_len);
 		return;
 	}
 	
@@ -1054,18 +1055,18 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 	
 	if (!(inf->opt & SET ('Q')))
 	{
-		boot_printf ("\r\nReading '%s' ... ", inf->file);
+		boot_printf (MSG_cnf_reading_mintcnf, inf->file);
 	}
 	
 	if ((*f->dev->read)(f, inf->src, f_size) != f_size)
 	{
-		boot_print ("not successful, break.\r\n\r\n");
+		boot_print (MSG_cnf_not_successful);
 		kfree (buf);
 		return;
 	}
 	else
 	{
-		boot_printf ("%li bytes done.\r\n\r\n", f_size);
+		boot_printf (MSG_cnf_bytes_done, f_size);
 	}
 	
 	inf->src [f_size] = '\0';
@@ -1113,14 +1114,14 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 			if (!item->key) {   /*--- (1.3.1) keyword not found */
 				parse_spaces (inf);   /* skip to next character */
 				parser_msg (inf, NULL);
-				boot_print (*(inf->src) == '=' ?"unknown variable" :"syntax error");
+				boot_print (*(inf->src) == '=' ? MSG_cnf_unknown_variable : MSG_cnf_syntax_error);
 				boot_printf(" '%s'", buf);
 				parser_msg (NULL,NULL);
 				state = 0;
 			
 			} else if (!item->cb) {   /*--- (1.3.2) found, but not supported */
 				parser_msg (inf, NULL);
-				boot_printf("keyword '%s' not supported yet", item->key);
+				boot_printf(MSG_cnf_keyword_not_supported, item->key);
 				parser_msg (NULL,NULL);
 				state = 0;
 			
@@ -1128,7 +1129,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				parse_spaces (inf);   /* skip to '=' */
 				if (*(inf->src) != '=') {
 					parser_msg (inf, NULL);
-					boot_printf("variable '%s' needs equation", item->key);
+					boot_printf(MSG_cnf_needs_equation, item->key);
 					parser_msg (NULL,NULL);
 					state = 0;
 				} else {
@@ -1159,15 +1160,15 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				case 0x06: arg[arg_num] = parse_drvlst (inf);        break;
 			}
 			if (!inf->dst) {   /*--- (2.3) argument failure */
-				const char *msg = "missed";
+				const char *msg = MSG_cnf_missed;
 				if (inf->src != start) switch (arg[arg_num]._err) {
-					case ARG_NUMB: msg = "must be a number";              break;
-					case ARG_RANG: msg = "out of range";                  break;
-					case ARG_BOOL: msg = "must be of type boolean (y/n)"; break;
-					case ARG_QUOT: msg = "missing quotation";             break;
+					case ARG_NUMB: msg = MSG_cnf_must_be_a_num;		break;
+					case ARG_RANG: msg = MSG_cnf_out_of_range;		break;
+					case ARG_BOOL: msg = MSG_cnf_must_be_a_bool;		break;
+					case ARG_QUOT: msg = MSG_cnf_missing_quotation;		break;
 				}
 				parser_msg (inf, NULL);
-				boot_printf("argument %i for '%s' ", arg_num +1, item->key);
+				boot_printf(MSG_cnf_argument_for, arg_num +1, item->key);
 				boot_print (msg);
 				parser_msg (NULL,NULL);
 				state = 0;
@@ -1189,7 +1190,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 
 			parse_spaces (inf);   /* skip following spaces */
 			if (*(inf->src)  &&  *(inf->src) != '\n'  &&  *(inf->src) != '#') {
-				parser_msg (inf, "junk at end of line ignored.");
+				parser_msg (inf, MSG_cnf_junk);
 				state = 0;
 			}
 			switch (item->type & 0xF7FF) {   /*--- (3.2) do the call */
@@ -1214,7 +1215,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				case PI_R_S: case PI_R_L: case PI_R_B:
 				                           p_REFF (item->type,cb._v,arg[0]); break;
 				
-				default: ALERT("!!! unknown tag type %04x for '%s'!!!\n",
+				default: ALERT(MSG_cnf_unknown_tag,
 					            (int)item->type, item->key);
 			}
 			if (state) {   /*----- (3.3) success */
