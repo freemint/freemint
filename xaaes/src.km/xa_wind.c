@@ -234,7 +234,6 @@ void
 bottom_window(enum locks lock, struct xa_window *w)
 {
 	bool was_top = (is_topped(w) ? true : false);
-	//RECT clip;
 	struct xa_window *wl = w->next;
 
 	DIAG((D_wind, w->owner, "bottom_window %d", w->handle));
@@ -255,25 +254,12 @@ bottom_window(enum locks lock, struct xa_window *w)
 	
 	/* Our window is now right above root_window */
 	update_windows_below(lock, &w->r, NULL, wl, w);
-#if 0
-	while (wl != w)
-	{
-		clip = wl->r;
-		if (xa_rc_intersect(w->r, &clip))
-		{
-			/* Re-display any revealed windows */
-			generate_redraws(lock, wl, &clip, RDRW_ALL);
-			//display_window(lock, 44, wl, &clip);
-		}
-		wl = wl->next;
-	}
-#endif
 
 	if (was_top)
 	{
 		/*  send WM_ONTOP to just topped window. */
-		if (is_topped(window_list))
-			send_ontop(lock);
+		//if (is_topped(window_list))
+		//	send_ontop(lock);
 		send_untop(lock, w);
 		if (!is_infront(window_list->owner))
 		{
@@ -281,7 +267,10 @@ bottom_window(enum locks lock, struct xa_window *w)
 			swap_menu(lock, window_list->owner, true, false, 0);
 		}
 		if (is_topped(window_list))
+		{
 			send_iredraw(lock, window_list, 0, NULL); //display_window(lock, 43, window_list, NULL);
+			send_ontop(lock);
+		}
 	}
 }
 
@@ -378,56 +367,18 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	else if (w->owner != client && w != root_window)
 	{
-		short msg[5] = { 0 };
-
 		switch(cmd)
 		{
 			case WF_TOP:
-			{
-				msg[0] = WM_TOPPED;
-				break;
-			}
 			case WF_BOTTOM:
 			{
-				msg[0] = WM_BOTTOMED;
 				break;
 			}
-			case WF_CURRXYWH:
+			default:
 			{
-				short x = pb->intin[2];
-				short y = pb->intin[3];
-				short width = pb->intin[4];
-				short height = pb->intin[5];
-
-				if (w->rc.x != x || w->rc.y != y)
-				{
-					msg[0] = WM_MOVED;
-					C.move_block = 2;
-				}
-				else if (w->rc.w == width && w->rc.h == height)
-				{
-					pb->intout[0] = 1;
-					return XAC_DONE;
-				}
-				else
-					msg[0] = WM_SIZED;
-				
-				msg[1] = x;
-				msg[2] = y;
-				msg[3] = width;
-				msg[4] = height;
-				break;
+				pb->intout[0] = 0;
+				return XAC_DONE;
 			}
-		}
-		if (msg[0])
-		{
-			DIAGS(("wind_set: Send (%s) to wind %d (owner %s) by %s %d,%d,%d,%d",
-				pmsg(msg[0]), w->handle, w->owner->name, client->name,
-				msg[1],msg[2],msg[3],msg[4]));
-				
-			send_app_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg[0], client->p->pid, 0, w->handle, msg[1],msg[2],msg[3],msg[4]);
-			pb->intout[0] = 1;
-			return XAC_DONE;
 		}
 	}
 	else if (w->owner != client		/* Clients can only change their own windows */
@@ -551,66 +502,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_NAME:
 	{
 		set_window_title(w, *(const char **)(pb->intin+2));
-#if 0
-		const char *src = *(const char **)(pb->intin+2);
-		char *dst = w->wname;
-		XA_WIDGET *widg;
-
-		if (src)
-		{
-			int i;
-
-			for (i = 0; i < (sizeof(w->wname)-1) && (*dst++ = *src++); i++)
-				;
-		}
-		*dst = '\0';
-
-		widg = get_widget(w, XAW_TITLE);
-		widg->stuff = w->wname;
-
-		DIAG((D_wind, w->owner, "    -   %s", w->wname));
-
-		/* redraw if necessary */
-		if ((w->active_widgets & NAME) && (w->window_status & XAWS_OPEN))
-		{
-			RECT clip;
-
-			rp_2_ap(w, widg, &clip);
-			display_window(lock, 45, w, &clip);
-		}
-#endif
 		break;
 	}
 
 	/* set window info line */
 	case WF_INFO:
 	{
-		const char *src = *(const char **)(pb->intin+2);
-		char *dst = w->winfo;
-		XA_WIDGET *widg;
-
-		if (src)
-		{
-			int i;
-
-			for (i = 0; i < (sizeof(w->winfo)-1) && (*dst++ = *src++); i++)
-				;
-		}
-		*dst = '\0';
-
-		widg = get_widget(w, XAW_INFO);
-		widg->stuff = w->winfo;
-
-		DIAG((D_wind, w->owner, "    -   %s", w->winfo));
-
-		if ((w->active_widgets & INFO) && (w->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_ICONIFIED|XAWS_HIDDEN)) == XAWS_OPEN)
-		{
-			RECT clip;
-
-			rp_2_ap(w, widg, &clip);
-			display_window(lock, 46, w, &clip);
-		}
-
+		set_window_info(w, *(const char **)(pb->intin+2));
 		break;
 	}
 	/* Move a window, check sizes */
@@ -781,7 +679,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Extension, send window to the bottom */
 	case WF_BOTTOM:
 	{
-		if ((w->window_status & XAWS_OPEN))
+		if (w != root_window && (w->window_status & XAWS_OPEN) && !is_hidden(w))
 			bottom_window(lock, w);
 		break;
 	}
@@ -804,16 +702,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));
 			}
 		}
-		else if ((w->window_status & XAWS_OPEN))
+		else if (w != root_window && (w->window_status & XAWS_OPEN) && !is_hidden(w))
 		{
 			if ( !is_topped(w))
 			{
-				if (is_hidden(w))
-					unhide_window(lock|winlist, w);
-
 				top_window(lock|winlist, true, w, (void *)-1L, NULL);
 			}
 		}
+		else
+			pb->intout[0] = 0;
+
 		break;
 	}
 
@@ -1177,22 +1075,17 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		 * the worning is not valid here (seems to be fixed in 3.3.2 at least) 
 		 * warns here: char *s = *(char **)&pb->intin[2];
 		 */
-		short sptr[2] = { pb->intin[2], pb->intin[3] };
-		char * const s = *(char * const *)&sptr;
-		if (s)
-			strcpy(s, get_widget(w, XAW_TITLE)->stuff);
+		if (w->active_widgets & NAME)
+			get_window_title(w, (char *)((long)pb->intin[2] << 16 | pb->intin[3]));
+		else
+			o[0] = 0;
+
 		break;
 	}
 	case WF_INFO:		/* new since N.Aes */
 	{
-		if (w->active_widgets&INFO)
-		{
-			/* -Wcast-qual: char * const s = *(char * const *)&pb->intin[2]; */
-			short sptr[2] = { pb->intin[2], pb->intin[3] };
-			char * const s = *(char * const *)&sptr;
-			if (s)
-				strcpy(s, get_widget(w, XAW_INFO)->stuff);
-		}
+		if (w->active_widgets & INFO)
+			get_window_info(w, (char *)((long)pb->intin[2] << 16 | pb->intin[3]));
 		else
 			o[0] = 0;
 		break;
@@ -1236,36 +1129,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			ro->y = w->r.y;
 			ro->w = ro->h = 0;
 		}
-#if 0
-		if (pb->control[N_INTIN] >= 6 && (pb->intin[4] | pb->intin[5]))
-		{
-			struct xa_rect_list *rl;
-
-			DIAG((D_wind, client, "wind_xget: N_INTIN=%d, (%d/%d/%d/%d) on wind=%d for %s",
-				pb->control[N_INTIN], *(RECT *)(pb->intin+2), w->handle, client->name));
-				
-			w->rl_clip = *(const RECT *)(pb->intin + 2);
-			w->use_rlc = true;
-			make_rect_list(w, true, RECT_OPT);
-			rl = rect_get_optimal_first(w);
-			if (rl)
-				*ro = rl->r;
-			else
-				ro->x = ro->y = ro->w = ro->h = 0;
-		}
-		else
-
-		{
-			w->use_rlc = false;
-
-			if (!get_rect(w, &w->wa, true, ro))
-			{
-				ro->x = w->r.x;
-				ro->y = w->r.y;
-				ro->w = ro->h = 0;
-			}
-		}
-#endif
 		break;
 	}
 	case WF_NTOOLBAR:		/* suboptimal, but for the moment it is more
@@ -1390,27 +1253,51 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Extension, gets the bottom window */
 	case WF_BOTTOM:
 	{
-#if 0
-		for (w = window_list; w->next; w = w->next)
-			;
-#else
-		w = root_window;
-		if (w->prev)
-			w = w->prev;
-#endif
-		o[1] = w->handle; /* Return the window handle of the bottom window */
-		o[2] = w->owner->p->pid; /* Return the owner of the bottom window */
+		if ((w = root_window->prev))
+		{
+			o[1] = w->handle;
+			o[2] = w->owner->p->pid;
+		}
+		else
+		{
+			o[1] = -1;
+			o[2] = 0;
+		}
 		break;
 	}
 	case WF_TOP:
 	{
 		w = window_list;
 
-		while (is_hidden(w))
-			w = w->next;
+		o[1] = o[2] = 0;
+		o[3] = o[4] = -1;
 
+		//while (is_hidden(w))
+		//	w = w->next;
 		if (w)
 		{
+			if (w != root_window)
+			{
+				if (wind_has_focus(w))
+				{
+					DIAG((D_w, client, " -- top window=%d, owner='%s' has focus", w->handle, w->owner->name));
+					o[1] = w->handle;
+					o[2] = w->owner->p->pid;
+				}
+#if GENERATE_DIAGS
+				else
+					DIAG((D_w, client, " -- top window=%d, owner='%s' NOT in focus", w->handle, w->owner->name));
+#endif
+				if (w->next && w->next != root_window)
+				{
+					o[3] = w->next->handle;
+					o[4] = w->next->owner->p->pid;
+				}
+				else
+					o[3] = -1, o[4] = 0;
+			}
+#if 0
+	
 			/* HR 100801: Do not report unfocused window as top. */
 			if (!is_topped(w))
 				w = root_window;
@@ -1436,6 +1323,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 				o[3] = 0;
 				o[4] = 0;
 			}
+#endif
 		}
 		else
 		{
@@ -1448,19 +1336,16 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* AES4 compatible stuff */
 	case WF_OWNER:
 	{
-		if (wind == 0)
+		if (w == root_window)
 			/* If it is the root window, things arent that easy. */
 			o[1] = get_desktop()->owner->p->pid;
 		else
 			/* The window owners AESid (==app_id == MiNT pid) */
 			o[1] = w->owner->p->pid;
-#if 0
-		/* Is the window hidden? */
-		o[2] = is_hidden(w) ? 0 : 1;
-#else
+		
 		/* Is the window open? */
 		o[2] = (w->window_status & XAWS_OPEN) ? 0 : 1;
-#endif
+		
 		if (w->prev)	/* If there is a window above, return its handle */
 			o[3] = w->prev->handle;
 		else

@@ -110,6 +110,10 @@ bool	is_hidden(struct xa_window *wind);
 bool	unhide(struct xa_window *w, short *x, short *y);
 
 void	set_window_title(struct xa_window *wind, const char *title);
+void	get_window_title(struct xa_window *wind, char *dst);
+void	set_window_info(struct xa_window *wind, const char *info);
+void	get_window_info(struct xa_window *wind, char *dst);
+
 void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
 
 XA_WIND_ATTR hide_move(struct options *o);
