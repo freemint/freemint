@@ -20,11 +20,12 @@
 # include "mint/signal.h"
 
 # include "biosfs.h"
+# include "block_IO.h"
 # include "dos.h"
 # include "dosfile.h"
 # include "fatfs.h"
-# include "block_IO.h"
 # include "filesys.h"
+# include "gmon.h"
 # include "init.h"
 # include "memory.h"
 # include "kmemory.h"
@@ -609,11 +610,7 @@ do_func_key (int scan)
 		/* shift+F5: dump kernel allocated memory */
 		case 0x58:
 		{
-# ifndef NALLOC2
 			km_config (KM_STAT_DUMP, 0);
-# else
-			NALLOC_DUMP ();
-# endif
 			
 			{
 				static long mode = DISABLE;
@@ -639,6 +636,22 @@ do_func_key (int scan)
 			_s_ync ();
 			break;
 		}
+		
+# ifdef PROFILING
+		/* shift+F6: control profiling */
+		case 0x59:
+		{
+			write_profiling ();
+			break;
+		}
+		
+		/* shift+F7: toogle profiling */
+		case 0x5A:
+		{
+			toogle_profiling ();
+			break;
+		}
+# endif
 		
 		/* F7: toggle debug_logging */
 		case 0x41:

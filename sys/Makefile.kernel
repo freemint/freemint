@@ -25,6 +25,11 @@ WARN =	-Wall \
 LDFLAGS = -nostdlib
 LIBS = $(LIBKERN) -lgcc
 
+NOCFLAGS-gmon.c = -pg
+NOCFLAGS-mcount.c = -pg
+NOCFLAGS-profil.c = -pg
+NOCFLAGS-update.c = -pg
+
 # default definitions
 GENFILES = $(BUILDINFO) $(MINT)
 BUILD = info

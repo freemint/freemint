@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-04-18
- * last change:	2000-04-18
+ * begin:	2000-07-14
+ * last change:	2000-07-14
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,13 +31,20 @@
  * 
  */
 
-# ifndef _m68k_asm_h
-# define _m68k_asm_h
+# ifndef _profil_h
+# define _profil_h
+
+# include "mint/mint.h"
 
 
-# include "asm_atomic.h"
-# include "asm_misc.h"
-# include "asm_spl.h"
+# ifdef PROFILING
 
+extern ushort profil_on;
 
-# endif /* _m68k_asm_h */
+void profil_counter (void *pc);
+long profil (ushort *sample_buffer, ulong size, ulong offset, ulong scale);
+long profile_frequency (void);
+
+# endif /* PROFILING */
+
+# endif /* _profil_h */

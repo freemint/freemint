@@ -26,27 +26,28 @@
 # include "arch/mprot.h"
 # include "arch/syscall.h"	/* call_aes */
 
-# include "bios.h"
+# include "bios.h"	
 # include "block_IO.h"	/* init_block_IO */
 # include "cnf.h"	/* load_config, some variables */
-# include "console.h"
-# include "cookie.h"
+# include "console.h"	
+# include "cookie.h"	
 # include "crypt_IO.h"	/* init_crypt_IO */
-# include "dos.h"
-# include "dosdir.h"
-# include "dosfile.h"
-# include "dosmem.h"
+# include "dos.h"	
+# include "dosdir.h"	
+# include "dosfile.h"	
+# include "dosmem.h"	
 # include "filesys.h"	/* init_filesys, s_ync, load_*, close_filesys */
+# include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
 # include "proc.h"	/* init_proc, add_q, rm_q */
 # include "signal.h"	/* post_sig */
 # include "syscall_vectors.h"
-# include "time.h"
-# include "timeout.h"
+# include "time.h"	
+# include "timeout.h"	
 # include "update.h"	/* start_sysupdate */
-# include "util.h"
+# include "util.h"	
 # include "fatfs.h"	/* fatfs_config() */
 # include "tosfs.h"	/* tos_filesys */
 # include "xbios.h"	/* has_bconmap, curbconmap */
@@ -932,6 +933,11 @@ init (void)
 	
 	/* prepare to run the init program as PID 1. */
 	set_pid_1 ();
+	
+# ifdef PROFILING
+	/* compiled with profiling support */
+	monstartup (_base->p_tbase, (_base->p_tbase + _base->p_tlen));
+# endif
 	
 	/* run the initial program
 	 *

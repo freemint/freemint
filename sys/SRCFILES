@@ -24,16 +24,19 @@ COBJS = \
 	fatfs.c \
 	filesys.c \
 	global.c \
+	gmon.c \
 	init.c \
 	kernfs.c \
 	kernget.c \
 	kmemory.c \
+	mcount.c \
 	md5.c \
 	memory.c \
 	nullfs.c \
 	pipefs.c \
 	proc.c \
 	procfs.c \
+	profil.c \
 	pun.c \
 	random.c \
 	rendez.c \

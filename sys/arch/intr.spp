@@ -40,13 +40,28 @@
 
 	XDEF	_mint_5ms
 	XDEF	_old_5ms
+%ifdef PROFILING
+	XREF	_profil_on
+	XREF	_profil_counter
+%endif
 
 	dc.l	$58425241		; XBRA
 	dc.l	$4d694e54		; MiNT
 _old_5ms:
 	dc.l	0	
-%ifdef ONLY030
 _mint_5ms:
+%ifdef PROFILING
+	tst.w	_profil_on
+	beq.s	L_no_profile
+	movem.l d0-d2/a0-a2,-(sp)	; save C registers
+	move.l	30(sp),d0		; try to get interrupted PC
+	move.l	d0,-(sp)
+	jsr	_profil_counter		; call profiler
+	lea	4(sp),sp
+	movem.l (sp)+,d0-d2/a0-a2	; restore C registers
+L_no_profile:
+%endif
+%ifdef ONLY030
 %ifdef MILAN
 	clr.w	-(sp)			; set up a jump to VBL emulation on Milans
 	pea	L_milan(pc)
@@ -61,7 +76,6 @@ L_systime:
 	addq.l	#5,([_curproc],P_SYSTIME)
 	jmp	([_old_5ms],0)
 %else
-_mint_5ms:
 	move.l	_old_5ms(pc),-(sp)	; push old vector & save a bit of memory
 	move.l	a0,-(sp)
 	subq.w	#1,_uptimetick
