@@ -119,14 +119,14 @@ debug("AV_ACCWINDCLOSED (%d)\n", handle);
 	}
 }
 
-void handle_av(short *msgbuff)
+void handle_av(short *msg)
 {
 	char *p;
 	
-	switch (msgbuff[0])
+	switch (msg[0])
 	{
 		case VA_START :
-			p = (char *)ts2ol(msgbuff[3], msgbuff[4]);
+			p = (char *)ts2ol(msg[3], msg[4]);
 			if (p != NULL)
 			{
 #ifdef DEBUG_AV
@@ -135,36 +135,36 @@ debug("VA_START %s\n", p);
 				if (strcmp(p, "-l") == 0)
 					new_shell();
 			}
-			send_avstarted(msgbuff[1], msgbuff[3], msgbuff[4]);
+			send_avstarted(msg[1], msg[3], msg[4]);
 			break;
 
 		case VA_PROTOSTATUS :
 #ifdef DEBUG_AV
 {
 	unsigned short m;
-	m = (unsigned short)msgbuff[3];
+	m = (unsigned short)msg[3];
 debug("VA_PROTSTATUS %u\n", m);
 }
 #endif
-			av_shell_status = msgbuff[3];
+			av_shell_status = msg[3];
 			if (gl_avcycle && !(av_shell_status & 64))
 				gl_avcycle = FALSE;			/* glob. Fensterwechsel abschalten */
 			break;
 
 		case VA_DRAGACCWIND :				/* bei D&D mit glob. Fensterwechsel */
-			p = (char *)ts2ol(msgbuff[6], msgbuff[7]);
+			p = (char *)ts2ol(msg[6], msg[7]);
 			if (p != NULL)
 			{
 #ifdef DEBUG_AV
 debug("VA_DRAGACCWIND %s\n", p);
 #endif
-				handle_avdd(msgbuff[3], p);
+				handle_avdd(msg[3], p);
 			}
 			break;
 
 		default:
 #ifdef DEBUG_AV
-debug("Unbekannte AV-Meldung: %d, %X\n", msgbuff[0], msgbuff[0]);
+debug("Unbekannte AV-Meldung: %d, %X\n", msg[0], msg[0]);
 #endif
 			break;
 	}

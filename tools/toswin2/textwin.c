@@ -1545,7 +1545,7 @@ void sendstr(TEXTWIN *t, char *s)
 
 void write_text(TEXTWIN *t, char *b, long len)
 {
-	unsigned char *buf = (unsigned char *)b, c;
+	unsigned char *src = (unsigned char *) b, c;
 	int limit = NROWS(t) - 1;
 	long cnt;
 
@@ -1553,9 +1553,10 @@ void write_text(TEXTWIN *t, char *b, long len)
 		cnt = strlen(b);
 	else
 		cnt = len;
+
 	while (cnt-- > 0) 
 	{
-		c = *buf++;
+		c = *src++;
 		if (c != '\0')
 		{
 			(*t->output)(t, c);
