@@ -85,6 +85,7 @@
  */
 
 # include "mprot.h"
+# include "global.h"
 
 # include "libkern/libkern.h"
 
