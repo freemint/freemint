@@ -764,6 +764,21 @@ check_kentry_version(void)
 
 
 /*
+ * kentry_mch
+ */
+
+// define cpu			(*KENTRY->vec_mch.cpu)
+// define fpu			(*KENTRY->vec_mch.fpu)
+// define vdo			(*KENTRY->vec_mch.vdo)
+// define mch			(*KENTRY->vec_mch.mch)
+// define lang			(*KENTRY->vec_mch.lang)
+// define c20ms			(*KENTRY->vec_mch.c20ms)
+// define mfpbase		(*KENTRY->vec_mch.mfpbase)
+
+# define cpush			(*KENTRY->vec_mch.cpush)
+
+
+/*
  * kentry_proc
  */
 
@@ -784,6 +799,8 @@ check_kentry_version(void)
 
 # define kthread_create		(*KENTRY->vec_proc.kthread_create)
 # define kthread_exit		(*KENTRY->vec_proc.kthread_exit)
+
+# define create_process		(*KENTRY->vec_proc.create_process)
 
 # define get_curproc		(*KENTRY->vec_proc.get_curproc)
 # define pid2proc		(*KENTRY->vec_proc.pid2proc)
