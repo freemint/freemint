@@ -96,6 +96,9 @@ static const long skiplist [] =
 # ifndef OLDTOSFS
 	COOKIE__FLK,
 # endif
+# ifndef NO_AKP_KEYBOARD
+	COOKIE__AKP,	/* we install our own _AKP cookie */
+# endif
 	0
 };
 
@@ -305,6 +308,17 @@ init_cookies (void)
 	newcookie[i].tag   = COOKIE__FLK;
 	newcookie[i].value = 0x00000100;
 	i++;
+# endif
+
+# ifndef NO_AKP_KEYBOARD
+	if (!no_mem_prot)
+	{
+		TRACE(("_AKP cookie = %08lx", (long)0L));
+
+		newcookie[i].tag   = COOKIE__AKP;
+		newcookie[i].value = (((gl_lang & 0x000000ff) << 8) | (gl_kbd & 0x000000ff));
+		i++;
+	}
 # endif
 
 	/* jr: install PMMU cookie if memory protection is used
