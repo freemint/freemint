@@ -1076,7 +1076,8 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 	}
 
 	kind = (XaMENU|NAME|TOOLBAR);
-	if (C.update_lock == client->p)
+	if (C.update_lock == client->p ||
+	    C.mouse_lock  == client->p)
 	{
 		nolist = true;
 		kind |= STORE_BACK;
