@@ -322,6 +322,7 @@ kernel_key(LOCK lock, KEY *key)
 			recover();
 			return true;
 		case 'L':						/* open the task manager */
+		case NK_ESC:
 			open_taskmanager(lock);
 			return true;
 		case 'K':						/* tidy up after any clients that have died without calling appl_exit() */
