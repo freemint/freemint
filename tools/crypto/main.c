@@ -226,7 +226,6 @@ verify_decrypt_key (void)
 {
 	char buf1 [1024];
 	char buf2 [1024];
-	char c;
 	
 	printf ("\n");
 	printf ("WARNING: THIS WILL TOTALLY DECRYPT ANY DATA ON %c:\n", 'A'+drv);

@@ -13,15 +13,15 @@
 
 struct MD5Context
 {
-	__u32	buf[4];
-	__u32	bits[2];
+	ulong	buf[4];
+	ulong	bits[2];
 	uchar	in[64];
 };
 
 void MD5Init		(struct MD5Context *context);
 void MD5Update		(struct MD5Context *context, uchar const *buf, ushort len);
 void MD5Final		(uchar digest[16], struct MD5Context *context);
-void MD5Transform	(__u32 buf[4], __u32 const in[16]);
+void MD5Transform	(ulong buf[4], ulong const in[16]);
 
 
 # endif /* _md5_h */

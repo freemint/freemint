@@ -38,12 +38,12 @@
 # include <mintbind.h>
 
 
-static int16_t drv = -1;
-static u_int16_t major = 0;
-static u_int16_t minor = 0;
-static u_int32_t start = 0;
-static u_int32_t sectors = 0;
-static u_int32_t ssize = 0;
+static short drv = -1;
+static ushort major = 0;
+static ushort minor = 0;
+static long start = 0;
+static long sectors = 0;
+static long ssize = 0;
 
 static int64_t pos = 0;
 
@@ -72,7 +72,7 @@ rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
 int
 io_init (void)
 {
-	if (XHDI_init ())
+	if (init_XHDI ())
 	{
 		printf ("No XHDI installed (or to old)!\n");
 		return -1;
@@ -85,8 +85,8 @@ io_init (void)
 int
 io_open (int64_t _dev)
 {
-	int16_t dev;
-	int32_t r;
+	short dev;
+	long r;
 	
 	if (_dev < 0 || _dev > 31)
 	{
@@ -139,7 +139,7 @@ io_open (int64_t _dev)
 int
 io_close (int handle)
 {
-	int32_t ret;
+	long ret;
 	
 	if (handle != drv)
 		return -1;
@@ -166,11 +166,11 @@ io_ioctrl (int handle, int mode, void *buf)
 	return 0;
 }
 
-int32_t
-io_read (int handle, void *buf, int32_t size)
+long
+io_read (int handle, void *buf, long size)
 {
-	u_int32_t recno;
-	int32_t ret;
+	long recno;
+	long ret;
 	
 	if (handle != drv)
 		return -1;
@@ -190,11 +190,11 @@ io_read (int handle, void *buf, int32_t size)
 	return -1;
 }
 
-int32_t
-io_write (int handle, void *buf, int32_t size)
+long
+io_write (int handle, void *buf, long size)
 {
-	u_int32_t recno;
-	int32_t ret;
+	long recno;
+	long ret;
 	
 	if (handle != drv)
 		return -1;
