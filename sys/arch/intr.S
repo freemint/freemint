@@ -393,7 +393,8 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
 _oldkeys:	dc.l	0
-_newkeys:	movem.l	d1-d2/a0-a2,-(sp)
+_newkeys:
+	movem.l	d1-d2/a0-a2,-(sp)
 	move.w	d0,-(sp)
 	jsr	_ikbd_scan
 	addq.l	#0x02,sp
@@ -410,12 +411,14 @@ L_bye:	rts
 _kbdclick:
 	btst	#0,(0x0484).w	// conterm
 	beq.s	L_nocl
+	movem.l	d0-d2/a0-a2,-(sp)
 	move.l	(0x05b0).w,d0	// vector to the keyclick routine
-	beq.s	L_nocl
+	beq.s	L_pop
 	move.l	d0,a0
 	clr.l	d0
-	move.w	4(sp),d0	// scancode
-	jmp	(a0)
+	move.w	28(sp),d0	// scancode
+	jsr	(a0)
+L_pop:	movem.l	(sp)+,d0-d2/a0-a2
 L_nocl:	rts
 
 #endif
