@@ -36,7 +36,9 @@ ip_local_addr (ulong dstaddr)
 	struct route *rt;
 
 	if (dstaddr == INADDR_ANY)
+	{
 		ifa = if_af2ifaddr (rt_primary.nif, AF_INET);
+	}
 	else
 	{
 		rt = route_get (dstaddr);
@@ -161,7 +163,7 @@ ip_same_addr (ulong local, ulong foreign)
 ulong
 ip_dst_addr (ulong addr)
 {
-	struct ifaddr *ifa = 0;
+	struct ifaddr *ifa = NULL;
 	
 	if (addr == INADDR_ANY)
 	{
@@ -196,7 +198,6 @@ ulong
 ip_netmask (ulong addr)
 {
 	struct netif *nif;
-	struct ifaddr *ifa;
 	ulong netmask;
 	
 	if (IN_CLASSA (addr))
@@ -210,6 +211,8 @@ ip_netmask (ulong addr)
 	
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
+		struct ifaddr *ifa;
+		
 		ifa = if_af2ifaddr (nif, AF_INET);
 		if (ifa && ifa->net == (addr & netmask))
 			return ifa->subnetmask;
@@ -290,7 +293,9 @@ ip_output (BUF *buf)
 	 */
 	if (iph->saddr == INADDR_ANY)
 	{
-		struct ifaddr *ifa = if_af2ifaddr (rt->nif, AF_INET);
+		struct ifaddr *ifa;
+		
+		ifa = if_af2ifaddr (rt->nif, AF_INET);
 		if (!ifa)
 		{
 			DEBUG (("if_output: chosen net if has no inet addr"));
@@ -298,6 +303,7 @@ ip_output (BUF *buf)
 			route_deref (rt);
 			return EADDRNOTAVAIL;
 		}
+		
 		iph->saddr = SIN (&ifa->addr)->sin_addr.s_addr;
 	}
 	
@@ -396,7 +402,9 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 	 */
 	if (saddr == INADDR_ANY)
 	{
-		struct ifaddr *ifa = if_af2ifaddr (rt->nif, AF_INET);
+		struct ifaddr *ifa;
+		
+		ifa = if_af2ifaddr (rt->nif, AF_INET);
 		if (!ifa)
 		{
 			DEBUG (("if_send: nif %s has no ifaddr", rt->nif->name));
@@ -404,6 +412,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 			route_deref (rt);
 			return EADDRNOTAVAIL;
 		}
+		
 		iph->saddr = SIN (&ifa->addr)->sin_addr.s_addr;
 	}
 	
