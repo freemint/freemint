@@ -211,10 +211,10 @@ XA_appl_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	int dest_id = pb->intin[0], len = pb->intin[1], rep = 1;
 	union msg_buf *m = pb->addrin[0];
+	IFDIAG(char *pmsg(short m);)
 
 	CONTROL(2,1,1)
 
-	IFDIAG(char *pmsg(short m);)
 	DIAGS(("appl_write: %d --> %d, len=%d msg = (%s) "
 		"%04x,%04x,%04x,%04x,%04x,%04x,%04x,%04x\n",
 		client->pid, dest_id, len,
