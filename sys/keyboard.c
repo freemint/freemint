@@ -134,16 +134,17 @@
  *
  */
 
-static const ushort modifiers[] =
+static const uchar modifiers[] =
 {
-	CONTROL, RSHIFT, LSHIFT,
-	ALTERNATE, CLRHOME, INSERT, 0
+	CONTROL, RSHIFT, LSHIFT, ALTERNATE, CLRHOME, INSERT,
+	ALTGR, 0
 };
 
-static const ushort mmasks[] =
+/* Masks correspond to the above modifier scancodes */
+static const uchar mmasks[] =
 {
-	MM_CTRL, MM_RSHIFT, MM_LSHIFT,
-	MM_ALTERNATE, MM_CLRHOME, MM_INSERT
+	MM_CTRL, MM_RSHIFT, MM_LSHIFT, MM_ALTERNATE, MM_CLRHOME, MM_INSERT,
+	MM_ALTGR
 };
 
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
@@ -270,18 +271,10 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 	kintr = 1;
 }
 
-/* Re-insert last key into the buffer */
 static void
 key_repeat(void)
 {
-	uchar c0, c1, c2, c3;
-
-	c0 = last_key[0];
-	c1 = last_key[1];
-	c2 = last_key[2];
-	c3 = last_key[3];
-
-	put_key_into_buf(c0, c1, c2, c3);
+	put_key_into_buf(last_key[0], last_key[1], last_key[2], last_key[3]);
 }
 
 /* Called every 20ms */
@@ -323,8 +316,8 @@ autorepeat_timer(void)
 /* Translate scancode into ASCII according to the keyboard
  * translation tables.
  */
-static uchar
-scan2asc(ushort scancode)
+INLINE uchar
+scan2asc(uchar scancode)
 {
 	uchar asc = 0, *vec;
 
@@ -333,18 +326,23 @@ scan2asc(ushort scancode)
 	 * where 'ss' is scancode and 'aa' is corresponding
 	 * ASCII value.
 	 */
-	if (*kbshft & MM_ALTERNATE)
+	if (*kbshft & (MM_ALTERNATE | MM_ALTGR))
 	{
-		if (*kbshft & MM_CAPS)
-			vec = user_keytab->altcaps;
-		else if (*kbshft & MM_ESHIFT)
-			vec = user_keytab->altshift;
+		if (*kbshft & MM_ALTGR)
+			vec = user_keytab->altgr;
 		else
-			vec = user_keytab->alt;
+		{
+			if (*kbshft & MM_ESHIFT)
+				vec = user_keytab->altshift;
+			else if ((*kbshft & MM_CAPS) == 0)
+				vec = user_keytab->alt;
+			else
+				vec = user_keytab->altcaps;
+		}
 
 		while (vec && *vec)
 		{
-			if (vec[0] == (uchar)scancode)
+			if (vec[0] == scancode)
 			{
 				asc = vec[1];
 				break;
@@ -362,12 +360,14 @@ scan2asc(ushort scancode)
 	 */
 	if (asc == 0)
 	{
-		if (*kbshft & MM_CAPS)
-			vec = user_keytab->caps;
-		else if (*kbshft & MM_ESHIFT)
+		/* Shift/1 should give "!" regardless of the Caps state
+		 */
+		if (*kbshft & MM_ESHIFT)
 			vec = user_keytab->shift;
-		else
+		else if ((*kbshft & MM_CAPS) == 0)
 			vec = user_keytab->unshift;
+		else
+			vec = user_keytab->caps;
 
 		if (vec)
 			asc = vec[scancode];
@@ -381,7 +381,7 @@ scan2asc(ushort scancode)
 			asc = 0x0a;		/* God bless great ideas */
 
 		if ((asc & 0x80) == 0)
-			asc &= ~0x60;
+			asc &= 0x1f;
 	}
 
 	return asc;
@@ -401,11 +401,14 @@ output_scancode(PROC *p, long arg)
 }
 # endif
 
+/* `scancode' is short, but only low byte matters. The high byte
+ * is zeroed by newkeys().
+ */
 short
-ikbd_scan (ushort scancode)
+ikbd_scan (ushort scancode, IOREC_T *rec)
 {
-	ushort mod = 0, clk = 0, shift = *kbshft, x = 0;
-	uchar *chartable, ascii;
+	ushort mod = 0, clk = 0, x = 0;
+	uchar shift = *kbshft, *chartable, ascii;
 
 	/* This is set during various keyboard table initializations
 	 * e.g. when the user calls Bioskeys(), to prevent processing
@@ -413,8 +416,6 @@ ikbd_scan (ushort scancode)
 	 */
 	if (kbd_lock)
 		return -1;
-
-	scancode &= 0x00ff;		/* better safe than sorry */
 
 # ifdef SCANCODE_TESTING
 	{
@@ -432,15 +433,15 @@ ikbd_scan (ushort scancode)
 
 	/* We handle modifiers first
 	 */
-	while (modifiers[x])
+	while ((uchar)modifiers[x])
 	{
-		if (scancode == modifiers[x])
+		if (scancode == (ushort)modifiers[x])
 		{
 			shift |= mmasks[x];
 			mod++;
 			break;
 		}
-		else if (scancode == (modifiers[x] | 0x80))
+		else if (scancode == ((ushort)modifiers[x] | 0x80))
 		{
 			shift &= ~mmasks[x];
 			mod++;
@@ -496,7 +497,7 @@ ikbd_scan (ushort scancode)
 	{
 		ushort sc = scancode;
 
-		*kbshft = mshift = (char)shift;
+		*kbshft = mshift = shift;
 		if (clk)
 			kbdclick(sc);
 		sc &= 0x7f;
@@ -664,9 +665,9 @@ ikbd_scan (ushort scancode)
 	{
 		key_pressed = 1;
 
-		ascii = scan2asc(scancode);
+		ascii = scan2asc((uchar)scancode);
 
-		put_key_into_buf((uchar)shift, (uchar)scancode, 0, ascii);
+		put_key_into_buf(shift, (uchar)scancode, 0, ascii);
 	}
 
 	return -1;			/* don't go to TOS, just return */

@@ -26,6 +26,7 @@
 # define _keyboard_h
 
 # include "mint/mint.h"
+# include "mint/emu_tos.h"
 
 /* modifier masks for the kbshift() */
 # define MM_RSHIFT	0x01
@@ -35,6 +36,7 @@
 # define MM_CAPS	0x10
 # define MM_CLRHOME	0x20
 # define MM_INSERT	0x40
+# define MM_ALTGR	0x80	/* Milan */
 
 /* masks for key combinations */
 # define MM_ESHIFT	0x03	/* either shift */
@@ -47,6 +49,7 @@
 # define ALTERNATE	0x38	/* scan code for alternate key */
 # define CAPS		0x3a	/* scan code of caps lock key */
 # define CLRHOME	0x47	/* scan code for clr/home key */
+# define ALTGR		0x4c	/* scan code for AltGr key (on Milan) */
 # define INSERT		0x52	/* scan code for insert key */
 # define DEL		0x53	/* scan code of delete key */
 # define UNDO		0x61	/* scan code of undo key */
@@ -64,23 +67,6 @@
 # define NUMPAD_9	0x69
 
 # define MAXAKP		126	/* maximum _AKP code supported */
-
-/* Extended KBDVECS structure (as of TOS 2.0)
- */
-typedef struct
-{
-	uchar (*ikbdscan) (ushort scancode);
-	void (*midivec) (uchar data);
-	void (*vkbderr) (uchar data);
-	void (*vmiderr) (uchar data);
-	void (*statvec) (char *packet);
-	void (*mousevec) (char *packet);
-	void (*clockvec) (char *packet);
-	void (*joyvec) (char *packet);
-	void (*midisys) (void);
-	void (*ikbdsys) (void);
-	char ikbdstate;
-} XKBDVECS;
 
 /* Vectors for scancode -> ASCII conversions
  */
@@ -112,7 +98,7 @@ struct cad_def
 };
 
 /* Interrupt routines */
-short ikbd_scan(ushort scancode);
+short ikbd_scan(ushort scancode, IOREC_T *rec);
 void autorepeat_timer(void);
 
 struct keytab *sys_b_keytbl(char *unshift, char *shift, char *caps);
