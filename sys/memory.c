@@ -50,7 +50,7 @@ static void	terminateme	(int code);
 void		restr_screen	(void);
 
 MEMREGION *	get_region	(MMAP map, ulong size, int mode);
-MEMREGION *	_get_region	(MMAP map, ulong size, int mode, MEMREGION *descr);
+MEMREGION *	_get_region	(MMAP map, ulong size, int mode, MEMREGION *descr, int kernel_flag);
 void		free_region	(MEMREGION *reg);
 long		shrink_region	(MEMREGION *reg, ulong newsize);
 
@@ -282,7 +282,7 @@ add_region (MMAP map, ulong place, ulong size, unsigned mflags)
 	if (!m)
 		return 0;	/* failure */
 	
-	m->links = 0;
+	bzero (m, sizeof (*m));
 	
 	if (place & MASKBITS)
 	{
@@ -296,7 +296,8 @@ add_region (MMAP map, ulong place, ulong size, unsigned mflags)
 	}
 	
 	/* now trim size DOWN to a multiple of pages */
-	if (size & MASKBITS) size &= ~MASKBITS;
+	if (size & MASKBITS)
+		size &= ~MASKBITS;
 	
 	/* only add if there's anything left */
 	if (size)
@@ -851,7 +852,7 @@ get_region (MMAP map, ulong size, int mode)
 	MEMREGION *m = kmr_get ();
 	MEMREGION *n;
 	
-	n = _get_region (map, size, mode, m);
+	n = _get_region (map, size, mode, m, 0);
 	if (!n && m)
 		kmr_free (m);
 	
@@ -859,30 +860,33 @@ get_region (MMAP map, ulong size, int mode)
 }
 
 MEMREGION *
-_get_region (MMAP map, ulong size, int mode, MEMREGION *m)
+_get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 {
-	MEMREGION *n, *nlast, *nfirstp, *s;
+	MEMREGION *n, *nlast, *nfirstp, *s, *k = NULL;
 	
-	TRACE(("get_region(%s, %li (%lx), %x)",
-		(map == core ? "core" : "alt"),
+	TRACE (("get_region (%s, %li (%lx), %x)",
+		((map == core) ? "core" : ((map == alt) ? "alt" : "???")),
 		size, size, mode));
 	
+	SANITY_CHECK (map);
+	
+	if (kernel_flag)
+		assert (m);
+	
 	/* precautionary measures */
-	if (size == 0)
+	if (!size)
 	{
 		DEBUG (("request for 0 bytes??"));
 		size = 1;
 	}
 	
-	size = ROUND(size);
-	
-	SANITY_CHECK (map);
+	size = ROUND (size);
 	
 	/* We come back and try again if we found and freed any unattached shared
 	 * text regions.
 	 */
 	nfirstp = NULL;
-# if 0
+# if 1
 retry:
 # endif
 	n = *map;
@@ -895,28 +899,39 @@ retry2:
 		{
 			if (n->len == size)
 			{
-				if (m) kmr_free (m);
-				
-				n->links++;
-				goto win;
+				if (kernel_flag)
+					k = n;
+				else
+				{
+					if (m) kmr_free (m);
+					goto win;
+				}
 			}
 			else
 			{
 				if (n->len > size)
 				{
+					if (kernel_flag)
+						k = n;
+					else
+					
 					/* split a new region, 'm', which will
 					 * contain the free bytes after n
 					 */
 					if (m)
 					{
+						bzero (m, sizeof (*m));
+						
+						m->mflags = n->mflags & M_MAP;
 						m->next = n->next;
 						n->next = m;
-						m->mflags = n->mflags & M_MAP;
+						
 						m->loc = n->loc + size;
 						m->len = n->len - size;
 						n->len = size;
 						
-						n->links++;
+						assert (n->loc + n->len == m->loc);
+						
 						goto win;
 					}
 					else
@@ -935,7 +950,7 @@ retry2:
 			 */
 			if (n->links == 0xffff && (n->mflags & M_SHTEXT))
 			{
-				if (!s)
+				if (!s && n->len >= size)
 				{
 					s = n;
 					nfirstp = nlast;
@@ -945,10 +960,40 @@ retry2:
 		n = n->next;
 	}
 	
+	if (kernel_flag && k)
+	{
+		if (k->len == size)
+		{
+			kmr_free (m);	
+			
+			n = k;
+			goto win;
+		}
+		else
+		{
+			assert (k->len > size);
+			
+			bzero (m, sizeof (*m));
+			
+			m->mflags = k->mflags & M_MAP;
+			m->next = k->next;
+			k->next = m;
+			
+			k->len = k->len - size;
+			m->len = size;
+			m->loc = k->loc + k->len;
+			
+			assert (k->loc + k->len == m->loc);
+			
+			n = m;
+			goto win;
+		}
+	}
+	
 	/* Looks like we're out of free memory. Try freeing an unattached shared text
 	 * region, and then try again to fill this request.
 	 */
-# if 1
+# if 0
 	if (s && s->len < size)
 	{
 		long lastsize = 0, end = 0;
@@ -1017,13 +1062,16 @@ retry2:
 		goto retry;
 	}
 # endif
-		
-	TRACELOW(("get_region: no memory left in this map"));
+	
+	TRACELOW (("get_region: no memory left in this map"));
 	return NULL;
 	
 win:
+	n->links++;
+	
 	mark_region (n, mode & PROT_PROTMODE);
-	if (mode & M_KEEP) n->mflags |= M_KEEP;
+	if (mode & M_KEEP)
+		n->mflags |= M_KEEP;
 	
 	return n;
 }
@@ -1157,36 +1205,28 @@ free_region (MEMREGION *reg)
 		}
 		if (!s)
 		{
-			 DEBUG(("No shared text entry for M_SHTEXT region??"));
+			 DEBUG (("No shared text entry for M_SHTEXT region??"));
 		}
 	}
 	
 	if (reg->mflags & M_CORE)
-	{
 		map = core;
-	}
+	else if (reg->mflags & M_ALT)
+		map = alt;
 	else
-	{
-		if (reg->mflags & M_ALT)
-		{
-			map = alt;
-		}
-		else
-		{
-			FATAL("free_region: region flags not valid (%x)", reg->mflags);
-		}
-	}
+		FATAL ("free_region: region flags not valid (%x)", reg->mflags);
+	
 	reg->mflags &= M_MAP;
 	
 	/* unhook any vectors pointing into this region */
-	unlink_vectors(reg->loc, reg->loc + reg->len);
+	unlink_vectors (reg->loc, reg->loc + reg->len);
 	
 	/* BUG(?): should invalidate caches entries - a copyback cache could stuff
 	 * things into freed memory.
 	 *	cinv(reg->loc, reg->len);
 	 */
 	m = *map;
-	assert(m);
+	assert (m);
 	
 	/* MEMPROT: invalidate */
 	if (map == core || map == alt)
@@ -1202,17 +1242,15 @@ free_region (MEMREGION *reg)
 		m = m->next;
 	
 	if (m == NULL)
-	{
-		FATAL("couldn't find region %lx: loc: %lx len: %ld",
+		FATAL ("couldn't find region %lx: loc: %lx len: %ld",
 			reg, reg->loc, reg->len);
-	}
-
-	if (ISFREE(m) && (m->loc + m->len == reg->loc))
+	
+	if (ISFREE (m) && ((m->loc + m->len) == reg->loc))
 	{
 		m->len += reg->len;
 		assert(m->next == reg);
 		m->next = reg->next;
-		reg->next = 0;
+		reg->next = NULL;
 		kmr_free (reg);
 		reg = m;
 	}
@@ -1220,7 +1258,7 @@ free_region (MEMREGION *reg)
 merge_after:
 	/* merge next region if it's free and contiguous with 'reg' */
 	m = reg->next;
-	if (m && ISFREE(m) && reg->loc + reg->len == m->loc)
+	if (m && ISFREE (m) && ((reg->loc + reg->len) == m->loc))
 	{
 		reg->len += m->len;
 		reg->next = m->next;

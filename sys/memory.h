@@ -28,7 +28,7 @@ virtaddr attach_region (PROC *proc, MEMREGION *reg);
 void detach_region (PROC *proc, MEMREGION *reg);
 
 MEMREGION *get_region (MMAP map, ulong size, int mode);
-MEMREGION *_get_region (MMAP map, ulong size, int mode, MEMREGION *descr);
+MEMREGION *_get_region (MMAP map, ulong size, int mode, MEMREGION *descr, int kernel_flag);
 void free_region (MEMREGION *reg);
 long shrink_region (MEMREGION *reg, ulong newsize);
 
