@@ -40,6 +40,7 @@ xa_fork_exec(short x_mode, XSHELW *xsh, char *fname, char *tail)
 	Path defdir,shelldir;				/* HR 060901; xshell defdir */
 	int defdrive = -1;
 	int child = 0;
+	long oldmask;
 
 #if GENERATE_DIAGS
 	{
@@ -96,12 +97,18 @@ xa_fork_exec(short x_mode, XSHELW *xsh, char *fname, char *tail)
 	display_env(C.strings, 1);
 #endif
 
+	/* block SIGCHLD until we setup our data structures */
+	oldmask = Psigblock(1UL << SIGCHLD);
+
 	/* Fork off a new process */
 	child = Pvfork();
 	if (!child)
 	{
 		/* In child here */
 		long rep;
+
+		/* restore old sigmask */
+		Psigsetmask(oldmask);
 
 #if GENERATE_DIAGS
       		/*  debug_file is not a handle of the child ? */
@@ -179,6 +186,8 @@ xa_fork_exec(short x_mode, XSHELW *xsh, char *fname, char *tail)
 		}
 	}
 
+	/* restore old sigmask */
+	Psigsetmask(oldmask);
+
 	return new;
 }
-
