@@ -323,7 +323,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 		 * And post a "deliver this button event" client event
 		 */
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
-		post_cevent(target, cXA_deliver_button_event, 0,0, 0,0, 0,md);
+		post_cevent(target, cXA_deliver_button_event, wind,0, 0,0, 0,md);
 	}
 }
 
@@ -340,7 +340,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 			post_cevent(target, cXA_do_widgets, wind, 0, 0,0, 0,md);
 		}
 		else
-			deliver_button_event(NULL, target, md);
+			deliver_button_event(wind, target, md);
 	}
 	else if (wind != window_list && checkif_do_widgets(lock, wind, 0, md))
 	{
@@ -449,7 +449,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 		else
 		{
-			deliver_button_event(NULL, locker, md);
+			deliver_button_event(wind, locker, md);
 		}
 	}
 }

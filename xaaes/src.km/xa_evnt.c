@@ -777,12 +777,18 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
 
-	client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0];
+	if (!(client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]))
+	{
+		yield();
+		return XAC_DONE;
+	}
+	else
+	{
+		/* Flag the app as waiting for messages */
+		client->waiting_pb = pb;
+		/* Store a pointer to the AESPB to fill when the event occurs */
+		client->waiting_for = MU_TIMER;
 
-	/* Flag the app as waiting for messages */
-	client->waiting_pb = pb;
-	/* Store a pointer to the AESPB to fill when the event occurs */
-	client->waiting_for = MU_TIMER;
-
-	return XAC_TIMER;
+		return XAC_TIMER;
+	}
 }
