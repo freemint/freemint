@@ -125,7 +125,7 @@ copy_mem (struct proc *p)
 	init_page_table_ptr (m);
 	
 	m->mem = kmalloc (m->num_reg * sizeof (MEMREGION *));
-	m->addr = kmalloc (m->num_reg * sizeof (virtaddr));
+	m->addr = kmalloc (m->num_reg * sizeof (long));
 	
 	if ((!no_mem_prot && !m->pt_mem) || !m->mem || !m->addr)
 		goto nomem;
@@ -157,7 +157,7 @@ free_mem (struct proc *p)
 {
 	struct memspace *p_mem;
 	MEMREGION **hold_mem;
-	virtaddr *hold_addr;
+	long *hold_addr;
 	int i;
 	
 	assert (p && p->p_mem && p->p_mem->links > 0);

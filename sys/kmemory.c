@@ -1586,7 +1586,7 @@ _umalloc (ulong size, const char *func)
 void _cdecl 
 _ufree (void *place, const char *func)
 {
-	(void) m_free ((virtaddr) place);
+	(void) m_free ((long) place);
 }
 
 /* END kernel memory alloc */
