@@ -1,0 +1,13 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	dsp56k.h \
+	atarihw.h
+	
+COBJS = \
+	dsp56k.c
+
+SOBJS = 
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
