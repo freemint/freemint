@@ -1,34 +1,34 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 2001-04-30
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
+ *
  */
 
 # include "k_sysctl.h"
@@ -40,7 +40,6 @@
 # include "mint/endian.h"
 # include "mint/iov.h"
 # include "mint/pathconf.h"
-# include "mint/proc.h"
 # include "mint/sysctl.h"
 # include "mint/time.h"
 # include "sys/param.h"
@@ -258,10 +257,10 @@ proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	     const void *newp, ulong newlen, struct proc *p)
 {
 	struct proc *ptmp = NULL;
-	
+
 	if (namelen < 2)
 		return EINVAL;
-	
+
 	if (name[0] == PROC_CURPROC)
 	{
 		ptmp = p;
@@ -273,51 +272,51 @@ proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 			if (ptmp->pid == name[0])
 				break;
 		}
-		
+
 		if (ptmp == NULL)
 			return ESRCH;
-		
+
 		if (p->p_cred->ucr->euid != 0)
 		{
 			int i;
-			
+
 			if (p->p_cred->ruid != ptmp->p_cred->ruid ||
 			    p->p_cred->ruid != ptmp->p_cred->suid)
 				return EPERM;
-			
+
 			if (ptmp->p_cred->rgid != ptmp->p_cred->sgid)
 				return EPERM; /* sgid proc */
-			
+
 			for (i = 0; i < p->p_cred->ucr->ngroups; i++)
 			{
 				if (p->p_cred->ucr->groups[i] == ptmp->p_cred->rgid)
 					break;
 			}
-			
+
 			if (i == p->p_cred->ucr->ngroups)
 				return EPERM;
 		}
 	}
-	
+
 	if (name[1] == PROC_PID_DEBUG)
 	{
 		long flag = ptmp->debug_level;
 		long ret;
-		
+
 		if (namelen != 2)
 			return EINVAL;
-		
+
 		ret = sysctl_long (oldp, oldlenp, newp, newlen, &flag);
 		if (ret)
 			return ret;
-		
+
 		ptmp->debug_level = (ushort) flag;
 		DEBUG(("pid %i: debug_level now %i",
 		      ptmp->pid, ptmp->debug_level));
-		
+
 		return 0;
 	}
-	
+
 	return EINVAL;
 }
 
@@ -362,15 +361,15 @@ static long
 SYSCTL_STRING_CORE (void *oldp, ulong *oldlenp, const char *str)
 {
 	long error = 0;
-	
+
 	if (oldlenp)
 	{
 		long len = strlen (str) + 1;
-		
+
 		if (oldp)
 		{
 			long err2 = 0;
-			
+
 			if (*oldlenp < len)
 			{
 				err2 = ENOMEM;
@@ -378,7 +377,7 @@ SYSCTL_STRING_CORE (void *oldp, ulong *oldlenp, const char *str)
 			}
 			else
 				*oldlenp = len;
-			
+
 			error = copyout (str, oldp, len);
 			if (error == 0)
 				error = err2;
@@ -386,7 +385,7 @@ SYSCTL_STRING_CORE (void *oldp, ulong *oldlenp, const char *str)
 		else
 			*oldlenp = len;
 	}
-	
+
 	return error;
 }
 
@@ -398,11 +397,11 @@ long
 sysctl_long (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, long *valp)
 {
 	long error = 0;
-	
+
 	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, long)
 	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, long)
 	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, long)
-	
+
 	return error;
 }
 
@@ -414,12 +413,12 @@ long
 sysctl_rdlong (void *oldp, ulong *oldlenp, const void *newp, long val)
 {
 	long error = 0;
-	
+
 	if (newp)
 		return EPERM;
-	
+
 	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, &val, long)
-	
+
 	return error;
 }
 
@@ -431,11 +430,11 @@ long
 sysctl_quad (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, llong *valp)
 {
 	long error = 0;
-	
+
 	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, llong)
 	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, llong)
 	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, llong)
-	
+
 	return error;
 }
 
@@ -446,12 +445,12 @@ long
 sysctl_rdquad (void *oldp, ulong *oldlenp, const void *newp, llong val)
 {
 	long error = 0;
-	
+
 	if (newp)
 		return EPERM;
-	
+
 	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, &val, llong)
-	
+
 	return error;
 }
 
@@ -463,17 +462,17 @@ long
 sysctl_string (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, char *str, long maxlen)
 {
 	long error;
-	
+
 	if (newp && newlen >= maxlen)
 		return EINVAL;
-	
+
 	error = SYSCTL_STRING_CORE (oldp, oldlenp, str);
 	if (error == 0 && newp)
 	{
 		error = copyin (newp, str, newlen);
 		str[newlen] = 0;
 	}
-	
+
 	return error;
 }
 
@@ -485,7 +484,7 @@ sysctl_rdstring (void *oldp, ulong *oldlenp, const void *newp, const char *str)
 {
 	if (newp)
 		return EPERM;
-	
+
 	return SYSCTL_STRING_CORE (oldp, oldlenp, str);
 }
 
@@ -497,11 +496,11 @@ long
 sysctl_struct (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, void *sp, long len)
 {
 	long error = 0;
-	
+
 	SYSCTL_SCALAR_NEWPCHECK_LEN (newp, newlen, len)
 	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
 	SYSCTL_SCALAR_NEWPCOP_LEN (newp, sp, len)
-	
+
 	return error;
 }
 
@@ -513,12 +512,12 @@ long
 sysctl_rdstruct (void *oldp, ulong *oldlenp, const void *newp, const void *sp, long len)
 {
 	long error = 0;
-	
+
 	if (newp)
 		return EPERM;
-	
+
 	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
-	
+
 	return error;
 }
 
@@ -529,12 +528,12 @@ long
 sysctl_rdminstruct (void *oldp, ulong *oldlenp, const void *newp, const void *sp, long len)
 {
 	long error = 0;
-	
+
 	if (newp)
 		return EPERM;
-	
+
 	len = MIN (*oldlenp, len);
 	SYSCTL_SCALAR_CORE_LEN (oldp, oldlenp, sp, len)
-	
+
 	return error;
 }

@@ -166,7 +166,7 @@ post_sig (PROC *p, ushort sig)
 	 * in slb.c sets and resets the p->p_flag so that p_kill() works
 	 * when it should, and doesn't when shouldn't.
 	 */
-	if (p->p_flag & 0x0002)
+	if (p->p_flag & P_FLAG_SLB)
 	{
 		/* Ignore! */
 		return;
@@ -175,7 +175,7 @@ post_sig (PROC *p, ushort sig)
 	/* Some other processes, notably the update daemon cannot be killed.
 	 * What about the sld daemon started by the mintnet?
 	 */
-	if (sig == SIGKILL && (p->p_flag & 0x0001))
+	if (sig == SIGKILL && (p->p_flag & P_FLAG_SYS))
 	{
 		/* Ignore! */
 		return;

@@ -1,37 +1,37 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Guido Flohr <guido@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Guido Flohr <guido@freemint.de>
  * Started: 1999-10-24
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Kernel system info filesystem.
- * 
+ *
  * This file is way too long and the functions indent too deep.  Besides
  * it should be rewritten from scratch to implement a more object-oriented
  * approach, maybe.
@@ -54,7 +54,6 @@
 # include "mint/filedesc.h"
 # include "mint/ioctl.h"
 # include "mint/pathconf.h"
-# include "mint/proc.h"
 # include "mint/stat.h"
 
 # include "arch/mprot.h"
@@ -104,10 +103,10 @@ static long	_cdecl kern_datime	(FILEPTR *f, ushort *timeptr, int rwflag);
 static long	_cdecl kern_lseek	(FILEPTR *f, long where, int whence);
 
 
-FILESYS kern_filesys = 
+FILESYS kern_filesys =
 {
 	NULL,
-	
+
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -122,7 +121,7 @@ FILESYS kern_filesys =
 	 * FS_EXT_2		extensions level 2 - additional place at the end
 	 * FS_EXT_3		extensions level 3 - stat & native UTC timestamps
 	 */
-	
+
 	FS_CASESENSITIVE	|
 	FS_LONGPATH		|
 	FS_NO_C_CACHE		|
@@ -132,7 +131,7 @@ FILESYS kern_filesys =
 	FS_EXT_1		|
 	FS_EXT_2		|
 	FS_EXT_3		,
-	
+
 	kern_root,
 	kern_lookup, null_creat, kern_getdev, NULL,
 	null_chattr, null_chown, null_chmode,
@@ -143,19 +142,19 @@ FILESYS kern_filesys =
 	NULL, /* release */
 	NULL, /* dupcookie */
 	NULL, /* sync */
-	
+
 	/* FS_EXT_1 */
 	null_mknod, null_unmount,
-	
+
 	/* FS_EXT_2
 	 */
-	
+
 	/* FS_EXT_3 */
 	kern_stat64,
-	
+
 	0, 0, 0, 0, 0,
 	NULL, NULL
-	
+
 };
 
 static DEVDRV kern_device =
@@ -171,9 +170,9 @@ static DEVDRV kern_device =
  * 1 - file system root /sys.
  * 2 - loadavg
  * 3 - ... see ROOTDIR_*
- * 
+ *
  * For the per process directories the inode numbers are:
- * 
+ *
  * /sys/<PID>: 		(pid << 16 | 0x2)
  * /sys/<PID>/status: 	(pid << 16 | 0x3)
  * /sys/<PID>/mem: 	(pid << 16 | 0x4)
@@ -309,11 +308,11 @@ static KENTRY *
 search_inode (KTAB *k, long inode)
 {
 	int i;
-	
+
 	for (i = 0; i < k->size; i++)
 		if (k->tab[i].inode == inode)
 			return &k->tab[i];
-	
+
 	return NULL;
 }
 
@@ -323,34 +322,34 @@ search_name (KTAB *k, const char *name)
 # if 1
 	KENTRY *low = &k->tab[2];
 	KENTRY *high = k->tab + k->size - 1;
-	
+
 	while (low <= high)
 	{
 		if (strcmp (low->name, name) == 0)
 			return low;
-		
+
 		low++;
 	}
-	
+
 	return NULL;
 # else
 	KENTRY *low = &k->tab[2];
 	KENTRY *high = k->tab + k->size - 1;
 	KENTRY *mid;
 	int c;
-	
+
 	while (low <= high)
 	{
 		mid = low + ((high - low) >> 1);
-		
+
 		c = strcmp (mid->name, name);
 		if (c == 0)
 			return mid;
-		
+
 		if (c < 0)	low = mid + 1;
 		else		high = mid - 1;
 	}
-	
+
 	return NULL;
 # endif
 }
@@ -364,10 +363,10 @@ follow_link_denied (PROC *p, char *function)
 			&& (curproc->p_cred->ucr->euid ^ p->p_cred->ruid)
 			&& (curproc->p_cred->ruid ^ p->p_cred->suid)
 			&& (curproc->p_cred->ruid ^ p->p_cred->ruid);
-	
+
 	if (deny)
 		DEBUG (("%s: can't follow links for pid %d: Access denied", function, p->pid));
-	
+
 	return deny;
 }
 
@@ -376,18 +375,18 @@ static long _cdecl
 kern_root (int drv, fcookie *fc)
 {
 	TRACE (("kern_root (%d)", drv));
-	
+
 	if (drv == KERNDRV)
 	{
 		fc->fs = &kern_filesys;
 		fc->dev = drv;
 		fc->index = 0L;
-		
+
 		return E_OK;
 	}
-	
+
 	DEBUG (("kern_root: oops: wrong pseudo-drive"));
-	
+
 	fc->fs = NULL;
 	return EINTERNAL;
 }
@@ -396,27 +395,27 @@ INLINE long
 kern_proc_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	KENTRY *t;
-	
+
 	TRACE (("kern_proc_lookup in [%u:%ld] for %s", dir->dev, dir->index, name));
-	
+
 	/* 1 - itself */
 	if (!*name || (name[0] == '.' && name[1] == '\0'))
 	{
 		*fc = *dir;
 		return E_OK;
 	}
-	
+
 	fc->fs = &kern_filesys;
 	fc->dev = KERNDRV;
 	fc->aux = 0;
-	
+
 	/* 2 - parent dir */
 	if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 	{
 		fc->index = ROOTDIR_ROOT;
 		return E_OK;
 	}
-	
+
 	t = search_name (procdir, name);
 	if (t)
 	{
@@ -424,7 +423,7 @@ kern_proc_lookup (fcookie *dir, const char *name, fcookie *fc)
 		fc->index |= t->inode;
 		return E_OK;
 	}
-	
+
 	DEBUG (("kern_proc_lookup in [%u:%ld] for %s: No such file or directory",  dir->dev, dir->index, name));
 	return ENOENT;
 }
@@ -435,20 +434,20 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 	long desc;
 	short pid = (dir->index & 0xffff0000) >> 16;
 	PROC *p;
-	
+
 	TRACE (("kern_fddir_lookup in [%u:%ld] for %s", dir->dev, dir->index, name));
-	
+
 	p = pid2proc (pid);
 	if (!p)
 	{
 		DEBUG (("kern_fddir_lookup: r.i.p., pid %d", pid));
 		return ENOENT;
 	}
-	
+
 	fc->dev = KERNDRV;
 	fc->fs = &kern_filesys;
 	fc->aux = 0;
-	
+
 	if (name[0] == '.' && name[1] == '\0')
 		*fc = *dir;
 	else if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
@@ -456,28 +455,28 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 	else if (strtonumber (name, &desc, 0, 0) == 0)
 	{
 		char cdesc;
-		
+
 		if (desc < 0 || desc > 255)
 		{
 			DEBUG (("kern_fd_lookup: pid %d, invalid descriptor name: %d", pid, (int) desc));
 			return ENOENT;
 		}
-		
+
 		cdesc = (desc & 0xff);
-		
+
 		if (!p->p_fd)
 		{
 			DEBUG (("kern_fddir_lookup: pid %d, no fd table", pid));
 			return ENOENT;
 		}
-		
+
 		if (cdesc < -5 || cdesc >= p->p_fd->nfiles
 			|| p->p_fd->ofiles[(int) (cdesc)] == NULL)
 		{
 			DEBUG (("kern_fddir_lookup: pid %d, invalid descriptor: %d", pid, (int) cdesc));
 			return ENOENT;
 		}
-		
+
 		fc->index = (dir->index & 0xffff0000) | 0x100 | (desc & 0xff);
 	}
 	else
@@ -485,7 +484,7 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 		DEBUG (("kern_fddir_lookup: /sys/fd/%d/%s: No such file or directory", (int) pid, name));
 		return ENOENT;
 	}
-	
+
 	return E_OK;
 }
 
@@ -494,33 +493,33 @@ kern_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	KENTRY *t;
 	long pid;
-	
+
 	TRACE (("kern_lookup in [%u:%ld] for %s", dir->dev, dir->index, name));
-	
+
 	if ((dir->index & 0xffff0000) && (dir->index & 0x0000ffff) == PROCDIR_FD)
 		return kern_fddir_lookup (dir, name, fc);
-	
+
 	if (dir->index & 0xffff0000)
 		return kern_proc_lookup (dir, name, fc);
-	
+
 	/* 1 - itself */
 	if (!*name || (name[0] == '.' && name[1] == '\0'))
 	{
 		KERN_ASSERT ((dir->index == 0));
-		
+
 		*fc = *dir;
 		return E_OK;
 	}
-	
+
 	/* 2 - parent dir */
 	if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 	{
 		KERN_ASSERT ((dir->index == 0));
-		
+
 		*fc = *dir;
 		return EMOUNT;
 	}
-	
+
 	t = search_name (rootdir, name);
 	if (t)
 	{
@@ -528,28 +527,28 @@ kern_lookup (fcookie *dir, const char *name, fcookie *fc)
 		fc->dev = KERNDRV;
 		fc->aux = 0;
 		fc->index = t->inode;
-		
+
 		return E_OK;
 	}
-	
+
 	if (strtonumber (name, &pid, 0, 0) == 0)
 	{
 		PROC *p = pid2proc (pid);
-		
+
 		if (p == NULL || pid <= 0L)
 		{
 			DEBUG (("kern_lookup in [%u:%ld]: No such process: %d", dir->dev, dir->index, pid));
 			return ENOENT;
 		}
-		
+
 		fc->fs = &kern_filesys;
 		fc->dev = KERNDRV;
 		fc->aux = 0;
 		fc->index = (pid << 16) | PROCDIR_DIR;
-		
+
 		return E_OK;
 	}
-	
+
 	DEBUG (("kern_lookup in [%u:%ld] for %s failed", dir->dev, dir->index, name));
 	return ENOENT;
 }
@@ -566,21 +565,21 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	int pid = file->index >> 16;
 	PROC *p;
 	KENTRY *t;
-	
+
 	TRACE (("kern_proc_stat ([%u:%ld], %i)", file->dev, file->index, pid));
-	
+
 	p = pid2proc (pid);
 	if (!p)
 	{
 		DEBUG (("kern_proc_stat: no such process id %d", pid));
 		return ENOENT;
 	}
-	
+
 	t = search_inode (procdir, file->index & 0xffff);
 	if (!t) return ENOENT;
-	
+
 	synch_timers ();
-	
+
 	stat->dev = KERNDRV;
 	stat->ino = file->index;
 	stat->mode = t->mode;
@@ -591,24 +590,24 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->size = 0;
 	stat->blksize = 1;
 	stat->blocks = 0;
-	
-	stat->atime.high_time = 0;	
+
+	stat->atime.high_time = 0;
 	stat->atime.time = xtime.tv_sec;
 	stat->atime.nanoseconds = xtime.tv_usec;
-	
-	stat->mtime.high_time = 0;	
+
+	stat->mtime.high_time = 0;
 	stat->mtime.time = p->started.tv_sec;
 	stat->mtime.nanoseconds = p->started.tv_usec;
-	
-	stat->ctime.high_time = 0;	
+
+	stat->ctime.high_time = 0;
 	stat->ctime.time = p->started.tv_sec;
 	stat->ctime.nanoseconds = p->started.tv_usec;
-	
+
 	stat->flags = 0;
 	stat->gen = 0;
-	
+
 	bzero (stat->res, sizeof (stat->res));
-	
+
 	switch (file->index & 0xffff)
 	{
 		case PROCDIR_DIR:
@@ -617,7 +616,7 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 			break;
 		}
 	}
-	
+
 	return E_OK;
 }
 
@@ -626,18 +625,18 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 {
 	int pid = file->index >> 16;
 	PROC *p;
-	
+
 	TRACE (("kern_fddir_stat ([%u:%ld], %i)", file->dev, file->index, pid));
-	
+
 	p = pid2proc (pid);
 	if (!p)
 	{
 		DEBUG (("kern_fddir_stat: no such process id %i", pid));
 		return ENOENT;
 	}
-	
+
 	synch_timers ();
-	
+
 	stat->dev = KERNDRV;
 	stat->ino = file->index;
 	stat->mode = S_IFLNK | 0500;
@@ -647,7 +646,7 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->gid = p->p_cred->rgid;
 	stat->size = 0;
 	stat->blksize = 1;
-	stat->blocks = 0;	
+	stat->blocks = 0;
 	stat->mtime.time = p->started.tv_sec;
 	stat->mtime.nanoseconds = p->started.tv_usec;
 	stat->atime.time = xtime.tv_sec;
@@ -656,9 +655,9 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->ctime.nanoseconds = p->started.tv_usec;
 	stat->flags = 0;
 	stat->gen = 0;
-	
+
 	bzero (stat->res, sizeof (stat->res));
-	
+
 	if ((file->index & 0xffff0000) == PROCDIR_FD)
 		stat->mode = S_IFDIR | 0500;
 	else if ((file->index & 0xffff0000) == PROCDIR_DIR)
@@ -666,44 +665,44 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	else
 	{
 		char desc = (char) file->index;
-		
+
 		if ((file->index & 0x0000ff00) != 0x100)
 			return ENOENT;
-		
+
 		if (!p->p_fd)
 		{
 			DEBUG (("kern_fddir_stat64: pid %d, no fd table", pid));
 			return ENOENT;
 		}
-		
+
 		if (desc < -5 || desc >= p->p_fd->nfiles)
 			return ENOENT;
-		
+
 		if (*(p->p_fd->ofiles + desc) == NULL)
 			return ENOENT;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 kern_stat64 (fcookie *file, STAT *stat)
 {
 	KENTRY *t;
-	
+
 	TRACE (("kern_stat64 ([%u:%ld])", file->dev, file->index));
-	
+
 	if ((file->index & 0xffff0000) && (file->index & 0xff00) == 0x100)
 		return kern_fddir_stat64 (file, stat);
-	
+
 	if (file->index & 0xffff0000)
 		return kern_proc_stat64 (file, stat);
-	
+
 	t = search_inode (rootdir, file->index);
 	if (!t) return ENOENT;
-	
+
 	synch_timers ();
-	
+
 	stat->dev = KERNDRV;
 	stat->ino = file->index;
 	stat->rdev = KERNDRV;
@@ -722,9 +721,9 @@ kern_stat64 (fcookie *file, STAT *stat)
 	stat->ctime.nanoseconds = rootproc->started.tv_usec;
 	stat->flags = 0;
 	stat->gen = 0;
-	
+
 	bzero (stat->res, sizeof (stat->res));
-	
+
 	switch (file->index)
 	{
 		case ROOTDIR_ROOT:
@@ -732,18 +731,18 @@ kern_stat64 (fcookie *file, STAT *stat)
 			stat->nlink = 2;
 			stat->mtime.time = procfs_stmp.tv_sec;
 			stat->mtime.nanoseconds = procfs_stmp.tv_usec;
-			
+
 			break;
 		}
 		case ROOTDIR_SELF:
 		{
 			stat->uid = curproc->p_cred->ruid;
 			stat->gid = curproc->p_cred->rgid;
-			
+
 			break;
 		}
 	}
-	
+
 	return E_OK;
 }
 
@@ -761,10 +760,10 @@ kern_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 	ulong len;
 	int depth = 0;
 	int i;
-	
+
 	TRACE (("kern_getname, relto: 0x%lx, dir: 0x%lx",
 		(ulong) relto->index, (ulong) dir->index));
-	
+
 	if (relto->index == dir->index)
 	{
 		if (size <= 0)
@@ -772,22 +771,22 @@ kern_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 		*pathname = '\0';
 		return 0;
 	}
-	
+
 	*crs++ = '\\';
-	
+
 	if (relto->index & 0xffff0000)
 	{
 		depth = 1;
 		if (relto->index & 0x0000ff00)
 			depth++;
 	}
-	
+
 	if (dir->index & 0xffff0000)
 	{
 		ksprintf (crs, sizeof (rootname), "%ld", (dir->index >> 16) & 0xffff);
 		while (*crs != 0)
 			crs++;
-		
+
 		if (dir->index & 0x0000ff00)
 		{
 			*crs++ = '\\';
@@ -796,7 +795,7 @@ kern_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 			*crs++ = '\0';
 		}
 	}
-	
+
 	/* Skip DEPTH backslashes */
 	crs = rootname;
 	for (i = 0; depth != 0 && i <= depth; i++)
@@ -804,24 +803,24 @@ kern_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 		while (*crs++ != '\\');
 		crs++;
 	}
-	
+
 	len = _mint_strlen (crs);
 	if (len >= size)
 	{
 		DEBUG (("kern_getname, relto: 0x%lx, dir: 0x%lx, rootname: %s, crs: %s, name too long",
-			(ulong) relto->index, 
+			(ulong) relto->index,
 			(ulong) dir->index,
 			rootname, crs));
-		
+
 		return ENAMETOOLONG;
 	}
-	
+
 	TRACE (("kern_getname, relto: 0x%lx, dir: 0x%lx, rootname: %s, crs: %s",
 		(ulong) relto->index, (ulong) dir->index,
 		rootname, crs));
-	
+
 	_mint_strncpy_f (pathname, rootname, size);
-	
+
 	return E_OK;
 }
 
@@ -830,54 +829,54 @@ kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	char *src;
 	ulong len;
-	
+
 	TRACE (("kern_pr_readdir: index: %d", dirh->index));
-	
+
 	/* simple check */
 	if (namelen < 4)
 		return EBADARG;
-	
+
 	/* Almost always fits */
 	fc->fs = &kern_filesys;
 	fc->dev = KERNDRV;
 	fc->aux = 0;
-	
+
 	if ((dirh->index >= 0) && (dirh->index < procdir->size))
 	{
 		KENTRY *t = &procdir->tab[dirh->index];
-		
+
 		fc->index = t->inode;
 		src = t->name;
 	}
 	else
 		return ENMFILES;
-	
+
 	if (fc->index != ROOTDIR_ROOT)
 		fc->index |= dirh->fc.index << 16;
-	
+
 	if (!(dirh->flags & TOS_SEARCH))
 	{
 		memcpy (name, &fc->index, 4);
-		
+
 		name += 4;
 		namelen -= 4;
 	}
-	
+
 	/* The MiNT documentation appendix E states that we always have
 	 * to stuff as many bytes as possible into the buffer.
 	 */
 	_mint_strncpy_f (name, src, namelen);
-	
+
 	len = _mint_strlen (src);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_pr_readdir, dirh->index: %d, name: %s: name too long", dirh->index, src));
 		return EBADARG;
 	}
-	
+
 	TRACE (("kern_pr_readdir, dirh->index: %d, name: %s", dirh->index, name));
 	dirh->index++;
-	
+
 	return E_OK;
 }
 
@@ -888,25 +887,25 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	ulong len;
 	short pid = dirh->fc.index >> 16;
 	PROC *p;
-	
+
 	/* simple check */
 	if (namelen < 4)
 		return EBADARG;
-	
+
 	p = pid2proc (pid);
 	if (!p)
 	{
 		DEBUG (("kern_fddir_readdir: r.i.p., pid %d", pid));
 		return ENOENT;
 	}
-	
+
 	TRACE (("kern_fddir_readdir: index: %d in [%04u]:%lu", dirh->index,
 		dirh->fc.dev, (ulong) dirh->fc.index));
-	
+
 	fc->fs = &kern_filesys;
 	fc->dev = KERNDRV;
 	fc->aux = 0;
-	
+
 	/* We map dirh->index like this to files:
 	 * 0 - "."
 	 * 1 - ".."
@@ -917,7 +916,7 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	 * 7 - "0"
 	 * ...
 	 */
-	
+
 	switch (dirh->index)
 	{
 		case 0:
@@ -942,86 +941,86 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 				DEBUG (("kern_fddir_readdir: pid %d, no fd table", pid));
 				return ENMFILES;
 			}
-			
+
 			while (dirh->index < p->p_fd->nfiles + 7)
 			{
 				long desc = ((long) (dirh->index)) - 7;
 				if (p->p_fd->ofiles[desc] != NULL)
 				{
 					ksprintf (buf, sizeof (buf), "%lu", (ulong) (desc & 0xff));
-					fc->index = 
-						(dirh->fc.index & 0xffff0000) | 
+					fc->index =
+						(dirh->fc.index & 0xffff0000) |
 						0x100 | (desc & 0xff);
 					break;
 				}
-				
+
 				dirh->index++;
 			}
-			
+
 			if (dirh->index >= p->p_fd->nfiles + 7)
 				return ENMFILES;
-			
+
 			break;
 		}
 	}
-	
+
 	if (!(dirh->flags & TOS_SEARCH))
 	{
 		memcpy (name, &fc->index, 4);
-		
+
 		name += 4;
 		namelen -= 4;
 	}
-	
+
 	/* The MiNT documentation appendix E states that we always have
 	 * to stuff as many bytes as possible into the buffer.
 	 */
 	_mint_strncpy_f (name, buf, namelen);
-	
+
 	len = _mint_strlen (buf);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_fddir_readdir: /sys/%d/fd/%s: Name too long", pid, buf));
 		return EBADARG;
 	}
-	
+
 	TRACE (("kern_fddir_readdir, dirh->index: %d, name: %s", dirh->index, name));
 	dirh->index++;
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 kern_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	char buf[32];		/* Should be enough */
 	char *src;
 	ulong len;
-	
+
 	TRACE (("kern_readdir: index: %d, namelen: %d", dirh->index, namelen));
-	
+
 	if ((dirh->fc.index & 0xffff0000) && (dirh->fc.index & 0xffff) == PROCDIR_FD)
 		return kern_fddir_readdir (dirh, name, namelen, fc);
-	
+
 	if (dirh->fc.index & 0xffff0000)
 		return kern_proc_readdir (dirh, name, namelen, fc);
-	
+
 	/* simple check */
 	if (namelen < 4)
 		return EBADARG;
-	
+
 	/* Almost always fits */
 	fc->fs = &kern_filesys;
 	fc->dev = KERNDRV;
 	fc->aux = 0;
-	
+
 	if (dirh->index < ROOTDIR_ROOT)
 		dirh->index = ROOTDIR_ROOT;
-	
+
 	if (dirh->index < rootdir->size)
 	{
 		KENTRY *t = &rootdir->tab[dirh->index];
-		
+
 		fc->index = t->inode;
 		src = t->name;
 	}
@@ -1033,58 +1032,58 @@ kern_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		 */
 # define FIRST_PROCDIR_INDEX	31769
 # define LAST_PROCDIR_INDEX	32767
-		
+
 		PROC *p;
-		
+
 		if (dirh->index < FIRST_PROCDIR_INDEX)
 			dirh->index = FIRST_PROCDIR_INDEX;
-		
+
 		for (;;)
 		{
 			p = pid2proc (dirh->index - FIRST_PROCDIR_INDEX + 1);
-			
+
 			/* Don't be smart and put that into the for condition
 			 * as "dirh->index <= LAST_PROCDIR_INDEX".  You will
 			 * run into an endless loop.
 			 */
 			if (p || dirh->index == LAST_PROCDIR_INDEX)
 				break;
-			
+
 			dirh->index++;
 		}
-		
+
 		if (!p)
 			return ENMFILES;
-		
+
 		ksprintf (buf, sizeof (buf), "%d", (int) p->pid);
-		
+
 		fc->index = ((long) p->pid) << 16 | PROCDIR_DIR;
 		src = buf;
 	}
-	
+
 	if (!(dirh->flags & TOS_SEARCH))
 	{
 		memcpy (name, &fc->index, 4);
-		
+
 		name += 4;
 		namelen -= 4;
 	}
-	
+
 	/* The MiNT documentation appendix E states that we always have
 	 * to stuff as many bytes as possible into the buffer.
 	 */
 	_mint_strncpy_f (name, src, namelen);
-	
+
 	len = _mint_strlen (src);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_readdir, dirh->index: %d, name: %s, name too long", dirh->index, src));
 		return EBADARG;
 	}
-	
+
 	TRACE (("kern_readdir, dirh->index: %d, name: %s", dirh->index, name));
 	dirh->index++;
-	
+
 	return E_OK;
 }
 
@@ -1092,9 +1091,9 @@ static long _cdecl
 kern_pathconf (fcookie *dir, int which)
 {
 	UNUSED (dir);
-	
+
 	TRACE (("kern_pathconf (%d)", which));
-	
+
 	switch (which)
 	{
 		case DP_INQUIRE:	return DP_VOLNAMEMAX;
@@ -1130,52 +1129,52 @@ kern_pathconf (fcookie *dir, int which)
 					);
 		case DP_VOLNAMEMAX:	return 0;
 	}
-	
+
 	DEBUG (("kern_pathconf: unknown opcode 0x%04x", (unsigned) which));
-	return EINVAL;	
+	return EINVAL;
 }
 
-static long _cdecl 
+static long _cdecl
 kern_dfree (fcookie *dir, long *buf)
 {
 	long size;
 	long secsiz = ROUND (1);
-	
+
 	/* "sector" size is the size of the smallest amount of memory that
 	 * can be allocated. see mem.h for the definition of ROUND
 	 */
-	
+
 	TRACE (("kern_dfree"));
 	UNUSED (dir);
-	
+
 	/* Number of free clusters */
 	size = tot_rsize (core, 0) + tot_rsize (alt, 0);
 	*buf++ = size / secsiz;
-	
+
 	/* Total number of clusters */
 	size = tot_rsize (core, 1) + tot_rsize (alt, 1);
 	*buf++ = size / secsiz;
-	
+
 	/* Sector size (bytes) */
 	*buf++ = secsiz;
-	
+
 	/* Cluster size (in sectors) */
 	*buf = 1;
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 kern_readlabel (fcookie *dir, char *name, int namelen)
 {
 	UNUSED (dir);
-	
+
 	if (sizeof "Sysinfo" >= namelen)
 	{
 		DEBUG (("kern_readlabel: zut alors! name too long"));
 		return ENAMETOOLONG;
 	}
-	
+
 	_mint_strncpy (name, "Sysinfo", namelen);
 	return E_OK;
 }
@@ -1188,25 +1187,25 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 	struct cwd *cwd;
 	char buf[64];
 	ulong len;
-	
+
 	TRACE (("kern_proc_readlink ([%u:%ld])", dir->dev, dir->index));
-	
+
 	p = pid2proc (pid);
 	if (!p)
 	{
 		DEBUG (("kern_proc_readlink ([%u:%ld]): pid %d: No such process", dir->dev, dir->index, pid));
 		return ENOENT;
 	}
-	
+
 	cwd = p->p_cwd;
-	
+
 	switch (dir->index & 0x0000ffff)
 	{
 		case PROCDIR_CWD:
 		{
 			if (follow_link_denied (p, __FUNCTION__))
 				return EACCES;
-			ksprintf (buf, sizeof (buf), "[%04u]:%lu", 
+			ksprintf (buf, sizeof (buf), "[%04u]:%lu",
 				cwd->curdir[cwd->curdrv].dev,
 				(ulong) cwd->curdir[cwd->curdrv].index);
 			break;
@@ -1215,8 +1214,8 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 		{
 			if (follow_link_denied (p, __FUNCTION__))
 				return EACCES;
-			ksprintf (buf, sizeof (buf), "[%04u]:%lu", 
-				p->exe.dev, 
+			ksprintf (buf, sizeof (buf), "[%04u]:%lu",
+				p->exe.dev,
 				(ulong) p->exe.index);
 			break;
 		}
@@ -1224,7 +1223,7 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 		{
 			if (follow_link_denied (p, __FUNCTION__))
 				return EACCES;
-			ksprintf (buf, sizeof (buf), "[%04u]:%lu", cwd->rootdir.dev, 
+			ksprintf (buf, sizeof (buf), "[%04u]:%lu", cwd->rootdir.dev,
 				(ulong) cwd->rootdir.index);
 			break;
 		}
@@ -1234,16 +1233,16 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 			return EINVAL;
 		}
 	}
-	
+
 	_mint_strncpy_f (name, buf, namelen);
-	
+
 	len = _mint_strlen (buf);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_proc_readlink, dir->index: %ld, name: %s: name too long", dir->index, buf));
 		return EBADARG;
 	}
-	
+
 	TRACE (("kern_proc_readlink, dir->index: %ld, name: %s", dir->index, name));
 	return E_OK;
 }
@@ -1257,93 +1256,93 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 	char buf[64];
 	ulong len;
 	long desc;
-	
+
 	TRACE (("kern_fddir_readlink ([%u:%ld])", file->dev, file->index));
-	
+
 	p = pid2proc (pid);
 	if (!p)
 	{
 		DEBUG (("kern_fddir_readlink: /sys/%d: No such file or directory", pid));
 		return ENOENT;
 	}
-	
+
 	fd = p->p_fd;
 	if (!fd)
 	{
 		DEBUG (("kern_fddir_readlink: pid %d, no fd table", pid));
 		return ENOENT;
-	}	
-	
+	}
+
 	if (follow_link_denied (p, __FUNCTION__))
 		return EACCES;
-	
+
 	/* This cast will preserve the sign */
 	desc = (char) file->index;
-	
+
 	if (desc < -5 || desc >= fd->nfiles || (*(fd->ofiles + desc)) == NULL)
 	{
 		DEBUG (("kern_fddir_readlink: /sys/%d/fd/%d: Invalid descriptor", pid, (int) desc));
 		return ENOENT;
 	}
-	
-	ksprintf (buf, sizeof (buf), "[%04u]:%lu", 
+
+	ksprintf (buf, sizeof (buf), "[%04u]:%lu",
 			(unsigned) fd->ofiles[desc]->fc.dev,
 			(ulong) fd->ofiles[desc]->fc.index);
-	
+
 	_mint_strncpy_f (name, buf, namelen);
-	
+
 	len = _mint_strlen (buf);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_fddir_readlink: /sys/%d/fd/<desc> -> %s: Name too long", pid, buf));
 		return EBADARG;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 kern_readlink (fcookie *file, char *name, int namelen)
 {
 	TRACE (("kern_readlink ([%u:%ld])", file->dev, file->index));
-	
+
 	if ((file->index & 0xffff0000) && (file->index & 0xff00) == 0x100)
 		return kern_fddir_readlink (file, name, namelen);
-	
+
 	if (file->index & 0xffff0000)
 		return kern_proc_readlink (file, name, namelen);
-	
+
 	if (file->index == ROOTDIR_SELF)
 	{
 		char buf[5];
 		int len;
-		
+
 		ksprintf (buf, sizeof (buf), "%d", curproc->pid);
 		_mint_strncpy_f (name, buf, namelen);
 
 		len = _mint_strlen (buf);
-		
+
 		if (len >= namelen)
 		{
-			DEBUG (("kern_readlink ([%u:%ld]) -> %s, name too long", 
+			DEBUG (("kern_readlink ([%u:%ld]) -> %s, name too long",
 				file->dev, file->index, buf));
 			return ENAMETOOLONG;
 		}
-		
+
 		TRACE (("kern_pr_readlink, dir->index: %ld", file->index));
 		return E_OK;
 	}
-	
+
 	DEBUG (("kern_readlink ([%u:%ld]): not a symlink", file->dev, file->index));
 	return EINVAL;
 }
 
-static long _cdecl 
+static long _cdecl
 kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 {
 	UNUSED (dir);
 	UNUSED (name);
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -1354,7 +1353,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		case FS_INFO:
 		{
 			struct fs_info *info;
-			
+
 			info = (struct fs_info *) arg;
 			if (info)
 			{
@@ -1363,7 +1362,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				info->type = 0;
 				strcpy (info->type_asc, "kern pseudo-filesystem");
 			}
-			
+
 			break;
 		}
 		default:
@@ -1372,7 +1371,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			return EINVAL;
 		}
 	}
-	
+
 	return E_OK;
 }
 
@@ -1383,21 +1382,21 @@ static long _cdecl
 kern_open (FILEPTR *f)
 {
 	PROC *p = NULL;
-	
+
 	TRACE (("kern_open: inode: %lu, flags: 0x%04x", f->fc.index, f->flags));
-	
+
 	if ((f->flags & O_RWMODE) != O_RDONLY)
 	{
 		DEBUG (("kern_open: read-only"));
 		return EACCES;
 	}
-	
+
 	if (f->fc.index & 0xffff0000)
 	{
 		short pid = f->fc.index >> 16;
-		
+
 		TRACE (("kern_open (proc): inode: %lu, flags: 0x%04x", f->fc.index & 0xffff, f->flags));
-		
+
 		p = pid2proc (pid);
 		if (!p)
 		{
@@ -1405,20 +1404,20 @@ kern_open (FILEPTR *f)
 			return ENOENT;
 		}
 	}
-	
+
 	if (f->links <= 1)
 	{
 		KENTRY *t;
-		
+
 		if (p)	t = search_inode (procdir, f->fc.index & 0xffff);
 		else	t = search_inode (rootdir, f->fc.index);
-		
+
 		if (!t || !(t->mode & S_IFREG))
 			return EACCES;
-		
+
 		f->devinfo = (long) t;
 	}
-	
+
 	return E_OK;
 }
 
@@ -1426,16 +1425,16 @@ static long _cdecl
 kern_close (FILEPTR *f, int pid)
 {
 	UNUSED (pid);
-	
+
 	TRACE (("kern_close: inode: %lu, flags: 0x%04x", f->fc.index, f->flags));
-	
+
 	if (f->links <= 0)
 		f->devinfo = 0;
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 kern_read (FILEPTR *f, char *buf, long bytes)
 {
 	PROC *p = NULL;
@@ -1444,58 +1443,58 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 	long bytes_read = 0;
 	long ret;
 	char *crs;
-	
+
 	TRACE (("kern_read: inode: %lu, read %ld bytes", f->fc.index, bytes));
-	
+
 	if (bytes < 0)
 	{
 		DEBUG (("kern_read (inode %lu): attempt to read %ld bytes", f->fc.index, bytes));
 		return EINVAL;
 	}
-	
+
 	if (!t)
 	{
 		ALERT ("kernfs: internal problem, t == NULL");
 		return 0;
 	}
-	
+
 	if (f->fc.index & 0xffff0000)
 	{
 		short pid = f->fc.index >> 16;
-		
+
 		TRACE (("kern_read (proc): inode: %lu, flags: 0x%04x", f->fc.index & 0xffff, f->flags));
-		
+
 		p = pid2proc (pid);
 		if (!p)
 		{
 			DEBUG (("kern_read (proc): pid %d: No such process", pid));
-			
+
 			/* XXX - any better error code? */
 			return ENOENT;
 		}
 	}
-	
+
 	/* fill the buffer */
 	if (p)	ret = (*t->get)(&info, p);
 	else	ret = (*t->get)(&info);
-	
+
 	if (ret || !info)
 		return ret;
-	
+
 	if (bytes + f->pos > info->len)
 		bytes = info->len - f->pos;
-	
+
 	crs = info->buf + f->pos;
-	
+
 	while (bytes-- > 0)
 	{
 		*buf++ = *crs++;
 		bytes_read++;
 	}
-	
+
 	/* free the buffer */
 	kfree (info);
-	
+
 	f->pos += bytes_read;
 	return bytes_read;
 }
@@ -1504,7 +1503,7 @@ static long _cdecl
 kern_ioctl (FILEPTR *f, int mode, void *buf)
 {
 	DEBUG (("kern_ioctl: inode: %lu, cmd: %d", f->fc.index, mode));
-	
+
 	switch (mode)
 	{
 		case FIONREAD:
@@ -1519,11 +1518,11 @@ kern_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		default:
 		{
-			DEBUG (("kern_ioctl: inode: %lu, invalid opcode: %d",  f->fc.index, mode));	
+			DEBUG (("kern_ioctl: inode: %lu, invalid opcode: %d",  f->fc.index, mode));
 			return EINVAL;
 		}
 	}
-	
+
 	return E_OK;
 }
 
@@ -1532,10 +1531,10 @@ static long _cdecl
 kern_lseek (FILEPTR *f, long where, int whence)
 {
 	long newpos;
-	
-	DEBUG (("kern_lseek: inode: %lu, where: %ld, whence: %d", 
+
+	DEBUG (("kern_lseek: inode: %lu, where: %ld, whence: %d",
 	        f->fc.index, where, whence));
-	
+
 	switch (whence)
 	{
 		case SEEK_SET:
@@ -1551,13 +1550,13 @@ kern_lseek (FILEPTR *f, long where, int whence)
 			DEBUG (("kern_lseek: inode: %lu, invalid whence argument: %d", f->fc.index, whence));
 			return EINVAL;
 	}
-	
+
 	if (newpos < 0)
 	{
 		DEBUG (("kern_lseek: inode: %lu, invalid position %ld for whence %d", f->fc.index, where, whence));
-		return EINVAL; 
+		return EINVAL;
 	}
-	
+
 	f->pos = newpos;
 	return newpos;
 }
@@ -1566,17 +1565,17 @@ static long _cdecl
 kern_datime (FILEPTR *f, ushort *timeptr, int flag)
 {
 	DEBUG (("kern_datime: inode: %lu, %s mode", f->fc.index, flag ? "write" : "read"));
-	
+
 	switch (flag)
 	{
 		case 0:
 		{
 			short pid = f->fc.index >> 16;
 			PROC *p = pid2proc (pid);
-			
+
 			if (p == NULL)
 				p = rootproc;
-			
+
 			*(long *) timeptr = p->started.tv_sec;
 			break;
 		}
@@ -1588,7 +1587,7 @@ kern_datime (FILEPTR *f, ushort *timeptr, int flag)
 		default:
 			return EBADARG;
 	}
-	
+
 	return E_OK;
 }
 
@@ -1606,22 +1605,22 @@ kern_datime (FILEPTR *f, ushort *timeptr, int flag)
  *	    to has been closed (this assuming that the kernel
  *	    wouldn't even ask us to follow the link if it didn't
  *	    exist earlier).
- * 
+ *
  * If the target of the symbolic link is another symbolic link than
- * all 
+ * all
  *
  * There are not that many symlinks on the sys filesystem:
- * 
- * - /sys/<PID>/self:		 Trivial case.  Do the work for 
+ *
+ * - /sys/<PID>/self:		 Trivial case.  Do the work for
  *				 relpath2cookie and return.
  * - /sys/<PID>/cwd,
  *   /sys/<PID>/exe,
  *   /sys/<PID>/root:		 Duplicate the corresponding cookie from the
  *		        	 proc structure.
- * - /sys/<PID>/fd/<DESCRIPTOR>: Duplicate the cookie for the open 
+ * - /sys/<PID>/fd/<DESCRIPTOR>: Duplicate the cookie for the open
  *				 descriptor.
- * 
- * NOTE: It is sufficient to check whether the caller has permission to follow 
+ *
+ * NOTE: It is sufficient to check whether the caller has permission to follow
  * the link (remember that all links on this filesystem - except for /sys/self -
  * have the special permissions 0500).  Either the caller has superuser
  * privileges and doesn't have to give a fuck about other folks' rights,
@@ -1639,21 +1638,21 @@ kern_follow_link (fcookie *fc, int depth)
 	fcookie *src = NULL;	/* The cookie we have to duplicate */
 	struct filedesc *fd;
 	struct cwd *cwd;
-	
+
 	TRACE (("kern_follow_link ([%u:%ld]), depth %d", fc->dev, fc->index, depth));
-	
+
 	if (depth > MAX_LINKS)
 	{
 		DEBUG (("kern_follow_link: Too many symbolic links"));
 		return ELOOP;
 	}
-	
+
 	if (fc->index == ROOTDIR_SELF)
 	{
 		fc->index = (((long) curproc->pid) << 16) | PROCDIR_DIR;
 		return 0;
 	}
-	
+
 	pid = fc->index >> 16;
 	p = pid2proc (pid);
 	if (p == NULL)
@@ -1661,23 +1660,23 @@ kern_follow_link (fcookie *fc, int depth)
 		DEBUG (("kern_follow_link: pid %ld: No such process", pid));
 		return ENOENT;
 	}
-	
+
 	fd = p->p_fd;
 	cwd = p->p_cwd;
-	
+
 	if (!fd || !cwd)
 		return ENOENT;
-	
+
 	if ((fc->index & 0xff00) == 0x100)
 	{
 		char desc = fc->index & 0xff;
-		
+
 		if (desc < -5 || desc >= fd->nfiles || *(fd->ofiles + desc) == NULL)
 		{
 		    	DEBUG (("kern_follow_link: pid %ld has closed descriptor %d", pid, (int) desc));
 			return ENOENT;
 		}
-		
+
 		src = &(*(fd->ofiles + desc))->fc;
 	}
 	else if ((fc->index & 0xffff) == PROCDIR_CWD)
@@ -1692,23 +1691,23 @@ kern_follow_link (fcookie *fc, int depth)
 	{
 		src = &cwd->rootdir;
 	}
-	
+
 	if (src == NULL)
 	{
 		DEBUG (("kern_follow_link: internal error: inode 0x%08lx not a symbolic link", (ulong) fc->index));
 		return EINVAL;
 	}
-	
+
 	if (follow_link_denied (p, __FUNCTION__))
 		return EACCES;
-	
+
 	/* This happens with "root" very often */
 	if (src->dev == 0 && src->index == 0)
 		src = &cwd->root[UNIDRV];
-	
+
 	release_cookie (fc);
 	dup_cookie (fc, src);
-	
+
 	TRACE (("kern_follow_link returning cookie for [%u:%ld]", fc->dev, fc->index));
 	return 0;
 }

@@ -54,10 +54,6 @@
 
 # include "arch/startup.h"	/* _base */
 
-# ifdef DEBUG_INFO
-# include "mint/proc.h"		/* curproc (for DEBUG) */
-# endif
-
 # include "mint/errno.h"
 # include "mint/stat.h"		/* struct stat */
 
