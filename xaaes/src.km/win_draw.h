@@ -23,3 +23,14 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+struct xawin_functions
+{
+	void	(*draw_border)(struct xa_window *wind);
+	void	(*draw_title)(struct xa_window *wind);
+	void	(*draw_info)(struct xa_window *wind);
+	void	(*draw_widgets)(struct xa_window *wind);
+	void	(*draw_hslide)(struct xa_window *wind);
+	void	(*draw_vslide)(struct xa_window *wind);
+	void	(*draw_sizer)(struct xa_window *wind);
+};
