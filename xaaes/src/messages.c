@@ -398,6 +398,20 @@ send_a_message(LOCK lock, short dest, union msg_buf *msg)
 				ml = ml->next;
 				}
 			}
+			else if (new[0] == WM_ARROWED)
+			{
+				while (ml)
+				{
+					short *old = ml->message.m;
+					
+					if (old[0] == WM_ARROWED && old[3] == new[3] && old[4] == new[4])
+					{
+						msg = NULL;
+						break;
+					}
+				ml = ml->next;
+				}
+			}
 		}
 
 		/* If still there */
