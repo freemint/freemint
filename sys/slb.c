@@ -234,14 +234,14 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	 * folder supposed to contain libraries (draco)
 	 */
 
-	if (path == 0L)
+	if (!path)
 		path = getslbpath(curproc->base);
 # endif		
-	if (path == 0L)
+	if (!path)
 		path = "./";
 
 	fullpath = kmalloc(strlen(path) + strlen(name) + 2);
-	if (fullpath == 0L)
+	if (!fullpath)
 	{
 		DEBUG(("Slbopen: Couldn't kmalloc() full pathname"));
 		return(ENOMEM);
@@ -344,6 +344,7 @@ slb_error:
 		if (r)
 		{
 			DEBUG(("Slbopen: Couldn't shrink basepage"));
+			/* XXX: why not `goto slb_error'? */
 			if (--mr->links == 0)
 				free_region(mr);
 			return(r);
@@ -399,7 +400,6 @@ slb_error:
 	
 	if (r < 0)
 	{
-		ALERT("Slbopen: wait error");
 		p_kill(newpid, SIGKILL);
 		if (--mr->links == 0)
 			free_region(mr);
@@ -534,7 +534,10 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 		/* Library is not available, try to load it */
 		r = load_and_init_slb(name, path, min_ver, sl);
 		if (r < 0L)
+		{
+			ALERT ("Could not open shared library %s", name);
 			return(r); /* DEBUG info already written out */
+		}
 		slb = *sl;
 	}
 
