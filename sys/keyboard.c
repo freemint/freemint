@@ -396,7 +396,7 @@ output_scancode(PROC *p, long arg)
 	uchar ascii;
 
 	ascii = scan2asc((ushort)arg);
-	
+
 	DEBUG(("Scancode: %02lx, ASCII %02x", arg, (short)ascii));
 }
 # endif
@@ -862,14 +862,14 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 	 */
 	if (size < 389L)
 	{
-		DEBUG(("load_external_table(): failure (size %ld)", size));
+		DEBUG(("%s(): failure (size %ld)", __FUNCTION__, size));
 		return EFTYPE;
 	}
 
 	kbuf = kmalloc(size+1); /* Append a zero (if the table is missing the altgr part) */
 	if (!kbuf)
 	{
-		DEBUG(("load_external_table(): out of memory"));
+		DEBUG(("%s(): out of memory", __FUNCTION__));
 		return ENOMEM;
 	}
 
@@ -901,7 +901,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 			}
 			default:
 			{
-				DEBUG(("load_external_table(): unknown format 0x%04x", (ushort *)kbuf));
+				DEBUG(("%s(): unknown format 0x%04x", __FUNCTION__, (ushort *)kbuf));
 
 				ret = EFTYPE;	/* wrong format */
 				break;
@@ -923,7 +923,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 	keytab_buffer = kbuf;
 	keytab_size = size+1;
 
-	TRACE(("load_external_table(): keytab_size %ld", keytab_size));
+	TRACE(("%s(): keytab_size %ld", __FUNCTION__, keytab_size));
 
 	/* Install */
 	sys_b_bioskeys();
@@ -1045,7 +1045,7 @@ load_internal_table(void)
 	keytab_buffer = kbuf;
 	keytab_size = size;
 
-	TRACE(("load_internal_table(): keytab_size %ld", keytab_size));
+	TRACE(("%s(): keytab_size %ld", __FUNCTION__, keytab_size));
 
 	/* Install */
 	sys_b_bioskeys();
@@ -1077,7 +1077,7 @@ load_keyboard_table(const char *path, short flag)
 	else
 		name = path;
 
-	TRACE(("load_keyboard_table(): path `%s'", name));
+	TRACE(("%s(): path `%s'", __FUNCTION__, name));
 
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret == 0)
@@ -1127,7 +1127,7 @@ init_keybd(void)
 	tos_keytab = TRAP_Keytbl(-1, -1, -1);
 # endif
 
-	TRACE(("init_keybd(): BIOS keyboard table at 0x%08lx", tos_keytab));
+	TRACE(("%s(): BIOS keyboard table at 0x%08lx", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
 	delayrate = TRAP_Kbrate(-1, -1);
@@ -1138,7 +1138,8 @@ init_keybd(void)
 	keydel = kdel = delayrate >> 8;
 	krpdel = krep = delayrate & 0x00ff;
 
-	TRACE(("init_keybd(): delay 0x%02x, rate 0x%02x", keydel, krpdel));
+	TRACE(("%s(): delay 0x%02x, rate 0x%02x", __FUNCTION__, keydel, krpdel));
+	TRACE(("%s(): conterm 0x%02x", __FUNCTION__, (short)(*(char *)0x0484L)));
 
 	/* initialize internal table */
 # ifdef VERBOSE_BOOT
