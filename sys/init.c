@@ -1455,16 +1455,16 @@ mint_thread(void *arg)
 	}
 # ifndef DEBUG_INFO
 	else
-		sys_s_hutdown(0);		/* Everything failed. Halt. */
+		sys_s_hutdown(SHUT_HALT);		/* Everything failed. Halt. */
 
 	/* If init program exited, reboot the system.
 	 * Never go back to TOS.
 	 */
-	(void) sys_s_hutdown(2);	/* cold reboot is more efficient ;-) */
+	(void) sys_s_hutdown(SHUT_COLD);	/* cold reboot is more efficient ;-) */
 # else
 	/* With debug kernels, always halt
 	 */
-	(void) sys_s_hutdown(0);
+	(void) sys_s_hutdown(SHUT_HALT);
 # endif
 
 	/* Never returns */

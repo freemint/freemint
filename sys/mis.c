@@ -1012,7 +1012,7 @@ sh_exit(long argc, char **argv)
 	y = (short)sys_c_conin();
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
-		sys_s_hutdown(2);
+		sys_s_hutdown(SHUT_COLD);
 
 	shell_fprintf(stdout, "\n");
 
