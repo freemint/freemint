@@ -3,6 +3,8 @@
 
 HEADER = \
 	about.h \
+	adi.h \
+	adiload.h \
 	accstart.h \
 	app_man.h \
 	cnf_xaaes.h \
@@ -48,6 +50,8 @@ HEADER = \
 
 COBJS = \
 	about.c \
+	adi.c \
+	adiload.c \
 	app_man.c \
 	cnf_xaaes.c \
 	c_keybd.c \
