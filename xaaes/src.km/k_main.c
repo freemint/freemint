@@ -593,7 +593,7 @@ alert_input(enum locks lock)
 			sc.icon = icon;
 			sc.text = data->buf;
 			sc.n_strings = 1;
-			p.arg.txt = "Alerts";
+			p.arg.typ.txt = "Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, FLAG_MAL, true); //add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL, NULL);
 		}

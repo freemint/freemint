@@ -887,7 +887,10 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			struct seget_entrybyarg p = { 0 };
 			struct scroll_content sc = { 0 };
 
-			p.arg.txt = "Environment";
+			p.arg.typ.txt = "Environment";
+			p.arg.flags = 0;
+			p.arg.curlevel = 0;
+			p.arg.maxlevel = 0;
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->empty(list, p.e, 0);
 			this = p.e;
