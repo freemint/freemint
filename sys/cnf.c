@@ -373,7 +373,6 @@ struct parser_item { char *key; PITYPE type; void *cb; long dat;
 	{ "VFATLCASE",   PI_V_B,   pCB_vfatlcase      },
 	{ "WB_ENABLE",   PI_V_D,   pCB_wb_enable      },
 	{ "WRITEPROTECT",PI_V_D,   pCB_writeprotect   },
-	{ "HARDSCROLL",  PI_R_S,   _NOT_SUPPORTED_    },
 	{ "NEWFATFS",    PI_V_D,   pCB_newfatfs       },
 
 	{ NULL }
@@ -1043,7 +1042,8 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 	}
 	else
 	{
-		boot_printf (MSG_cnf_bytes_done, f_size);
+		if (!(inf->opt & SET ('Q')))
+			boot_printf (MSG_cnf_bytes_done, f_size);
 	}
 
 	inf->src [f_size] = '\0';
