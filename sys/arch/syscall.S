@@ -212,11 +212,7 @@ _mint_xbios:
 norm_xbios:
 #else
 	tst.w	_in_kernel
-#ifdef ONLY030
-	bne.s	LX_rom
-#else
 	bne	LX_rom
-#endif
 #endif
 
 	btst	#5,(sp) 		// test for user/super mode
@@ -332,11 +328,7 @@ norm_bios:
 
 #else
 	tst.w	_in_kernel
-#ifdef ONLY030
-	bne.s	rom_bios
-#else
 	bne	rom_bios
-#endif
 #endif
 
 	bset	#0x07,_in_kernel
@@ -590,11 +582,7 @@ norm_trap2:
 // kernel itself anymore)
 
 	tst.w	_in_kernel
-#ifdef	ONLY030
-	bne.s	rom_trap2
-#else
 	bne	rom_trap2
-#endif
 #endif
 	bset	#0x07,_in_kernel
 	// The AES/VDI passes parameters in D0/D1, so we do not touch
