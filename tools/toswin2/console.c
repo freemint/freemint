@@ -1,4 +1,5 @@
 
+#include <mintbind.h>
 #include <cflib.h>
 
 #include "global.h"
@@ -10,14 +11,14 @@
 #include "window.h"
 
 
-int	con_fd = 0;
-int	con_log_fd = 0;
+long con_fd = 0;
+long con_log_fd = 0;
 
 static TEXTWIN	*con_win;
-static bool		is_dirty = FALSE;
+static bool	is_dirty = FALSE;
 
 
-static void uniconify_con(WINDOW *v, int x, int y, int w, int h)
+static void uniconify_con(WINDOW *v, short x, short y, short w, short h)
 {
 	wind_calc(WC_BORDER, v->kind, v->prev.g_x, v->prev.g_y, v->prev.g_w, v->prev.g_h, &x, &y, &w, &h);
   	wind_set(v->handle, WF_UNICONIFY, x, y, w, h);
@@ -35,7 +36,7 @@ void open_console(void)
 
 	if (con_fd == 0)
 	{
-		con_fd = (int)Fopen(XCONNAME, 2);
+		con_fd = Fopen(XCONNAME, 2);
 		if (con_fd > 0)
 		{
 			cfg = get_wincfg("Console");

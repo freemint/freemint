@@ -1,7 +1,9 @@
 
+#include <mintbind.h>
 #include <strings.h>
 #include <support.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <cflib.h>
 
@@ -115,13 +117,13 @@ static void parse(char *cmdline, WINDOW *win)
 }
 
 
-void handle_dragdrop(int msg[])
+void handle_dragdrop(short *msg)
 {
 	WINDOW	*w;
-	int		fd, pnam;
-	char		txtname[DD_NAMEMAX], ext[5];
-	char		*dd_data;
-	long		size;
+	int fd, pnam;
+	char txtname[DD_NAMEMAX], ext[5];
+	char *dd_data;
+	long size;
 
 	w = get_window(msg[3]);
 	if (w && !(w->flags & WICONIFIED) && ! (w->flags & WSHADED) && !(w->flags & WISDIAL))
@@ -147,8 +149,8 @@ void handle_dragdrop(int msg[])
 				}
 				dd_reply(fd, DD_OK);
 				/* size = Fread(fd, size, dd_data); */
-				/* size = _text_read(fd, dd_data, (int)size); */
-				size = read(fd, dd_data, (int)size);
+				/* size = _text_read(fd, dd_data, size); */
+				size = read(fd, dd_data, size);
 				dd_close(fd);
 				dd_data[size] = 0;
 
@@ -166,9 +168,9 @@ void handle_dragdrop(int msg[])
 	}
 }
 
-void handle_avdd(int win_id, char *data)
+void handle_avdd(short win_id, char *data)
 {
-	WINDOW	*w;
+	WINDOW *w;
 	
 	w = get_window(win_id);
 	if (w && !(w->flags & WICONIFIED) && ! (w->flags & WSHADED) && !(w->flags & WISDIAL))
@@ -187,8 +189,8 @@ void handle_avdd(int win_id, char *data)
 
 void drag_selection(TEXTWIN *t)
 {
-	int		x, y, w, h, d;
-	int		win_id, i, app_id, kstate;
+	short x, y, w, h, d;
+	short win_id, i, app_id, kstate;
 	WINDOW	*own;
 		
 	if (t->block_y1 == t->block_y2)

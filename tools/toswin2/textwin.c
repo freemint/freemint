@@ -1,4 +1,5 @@
 
+#include <mintbind.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 
@@ -26,25 +27,25 @@ static MFDB scr_mfdb;	/* left NULL so it refers to the screen by default */
 /*
  * lokale Prototypen
 */
-static void draw_buf(TEXTWIN *t, char *buf, int x, int y, int flag, int force);
-static void update_chars(TEXTWIN *t, int firstcol, int lastcol, int firstline, int lastline, int force);
-static void update_screen(TEXTWIN *t, int xc, int yc, int wc, int hc, int force);
-static void draw_textwin(WINDOW *v, int x, int y, int w, int h);
+static void draw_buf(TEXTWIN *t, char *buf, short x, short y, short flag, short force);
+static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstline, short lastline, short force);
+static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, short force);
+static void draw_textwin(WINDOW *v, short x, short y, short w, short h);
 static void close_textwin(WINDOW *v);
 static void full_textwin(WINDOW *v);
-static void move_textwin(WINDOW *v, int x, int y, int w, int h);
-static void size_textwin(WINDOW *v, int x, int y, int w, int h);
-static void newxoff(TEXTWIN *t, int x);
-static void newyoff(TEXTWIN *t, int y);
-static void scrollupdn(TEXTWIN *t, int off, int direction);
-static void scrollleftright(TEXTWIN *t, int off, int direction);
-static void arrow_textwin(WINDOW *v, int msg);
-static void hslid_textwin(WINDOW *v, int hpos);
-static void vslid_textwin(WINDOW *v, int vpos);
+static void move_textwin(WINDOW *v, short x, short y, short w, short h);
+static void size_textwin(WINDOW *v, short x, short y, short w, short h);
+static void newxoff(TEXTWIN *t, short x);
+static void newyoff(TEXTWIN *t, short y);
+static void scrollupdn(TEXTWIN *t, short off, short direction);
+static void scrollleftright(TEXTWIN *t, short off, short direction);
+static void arrow_textwin(WINDOW *v, short msg);
+static void hslid_textwin(WINDOW *v, short hpos);
+static void vslid_textwin(WINDOW *v, short vpos);
 static void set_scroll_bars(TEXTWIN *t);
 static void set_cwidths(TEXTWIN *t);
 /*
-static void output_textwin(TEXTWIN *t, int c);
+static void output_textwin(TEXTWIN *t, short c);
 */
 
 
@@ -54,10 +55,10 @@ static void output_textwin(TEXTWIN *t, int c);
  * Also: char2pixel accepts out of range character/column combinations,
  * but pixel2char never will generate such combinations.
  */
-void char2pixel(TEXTWIN *t, int col, int row, int *xp, int *yp)
+void char2pixel(TEXTWIN *t, short col, short row, short *xp, short *yp)
 {
 	short *WIDE = t->cwidths;
-	int 	x;
+	short x;
 
 	*yp = t->win->work.g_y - t->offy + row * t->cheight;
 	if (!WIDE) 
@@ -78,9 +79,9 @@ void char2pixel(TEXTWIN *t, int col, int row, int *xp, int *yp)
 	}
 }
 
-void pixel2char(TEXTWIN *t, int x, int y, int *colp, int *rowp)
+void pixel2char(TEXTWIN *t, short x, short y, short *colp, short *rowp)
 {
-	int 	col, row, count, nextcount;
+	short col, row, count, nextcount;
 	short *WIDE = t->cwidths;
 
 	row = (y - t->win->work.g_y + t->offy) / t->cheight;
@@ -113,13 +114,13 @@ void pixel2char(TEXTWIN *t, int x, int y, int *colp, int *rowp)
  * SPECIAL CASE: if buf is an empty string, we clear from "x" to
  * the end of the window.
  */
-static void draw_buf(TEXTWIN *t, char *buf, int x, int y, int flag, int force)
+static void draw_buf(TEXTWIN *t, char *buf, short x, short y, short flag, short force)
 {
-	char 	*s, *lastnonblank;
-	int	x2, fillcolor, textcolor;
-	int	texteffects;
+	char *s, *lastnonblank;
+	int x2, fillcolor, textcolor;
+	int texteffects;
 	short *WIDE = t->cwidths;
-	int	temp[4];
+	short temp[4];
 
 	fillcolor = flag & CBGCOL;
 	textcolor = (flag & CFGCOL) >> 4;
@@ -188,15 +189,15 @@ static void draw_buf(TEXTWIN *t, char *buf, int x, int y, int flag, int force)
  * "dirty" characters. Note that we assume here that clipping
  * rectanges and wind_update() have already been set for us.
  */
-static void update_chars(TEXTWIN *t, int firstcol, int lastcol, int firstline, 
-									int lastline, int force)
+static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstline, 
+									short lastline, short force)
 {
 #define CBUFSIZ 127
-	unsigned char	buf[CBUFSIZ+1], c;
-	int				px, py, ax, i, cnt, flag, bufwidth;
-	short 			*WIDE = t->cwidths;
-	int				lineforce = 0;
-	int				curflag;
+	unsigned char buf[CBUFSIZ+1], c;
+	short px, py, ax, i, cnt, flag, bufwidth;
+	short *WIDE = t->cwidths;
+	short lineforce = 0;
+	short curflag;
 
 #define flushbuf()	\
 	{ 	buf[i] = 0;	\
@@ -320,12 +321,12 @@ void mark_clean(TEXTWIN *t)
  * can't mark the window clean during the update; we have to do
  * it in a separate routine (mark_clean)
  */
-static void update_screen(TEXTWIN *t, int xc, int yc, int wc, int hc, int force)
+static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, short force)
 {
-	int	firstline, lastline, firstscroll;
-	int	firstcol, lastcol;
-	int	pxy[8];
-	long	scrollht = 0;
+	short firstline, lastline, firstscroll;
+	short firstcol, lastcol;
+	short pxy[8];
+	long scrollht = 0;
 
 	if (t->win->flags & WSHADED)
 		return;
@@ -405,11 +406,11 @@ static void update_screen(TEXTWIN *t, int xc, int yc, int wc, int hc, int force)
  * redraw all parts of a window that need redrawing; this is called
  * after, for example, writing some text into the window
  */
-void refresh_textwin(TEXTWIN *t, int force)
+void refresh_textwin(TEXTWIN *t, short force)
 {
 	WINDOW	*v = t->win;
-	GRECT		t1, t2;
-	bool		off = FALSE;
+	GRECT t1, t2;
+	bool off = FALSE;
 	
 	/* exits if window isn't visible or was iconified/shaded */
 	if (v->handle < 0 || (v->flags & WICONIFIED) || (v->flags & WSHADED))
@@ -442,7 +443,7 @@ void refresh_textwin(TEXTWIN *t, int force)
  * Methods for reacting to user events
  */
 /* draw part of a window */
-static void draw_textwin(WINDOW *v, int x, int y, int w, int h)
+static void draw_textwin(WINDOW *v, short x, short y, short w, short h)
 {
 	TEXTWIN *t = v->extra;
 
@@ -461,7 +462,7 @@ static void close_textwin(WINDOW *v)
 /* resize a window to its "full" size */
 static void full_textwin(WINDOW *v)
 {
-	GRECT		new;
+	GRECT new;
 	TEXTWIN	*t = v->extra;
 	
 	if (v->flags & WFULLED) 
@@ -481,9 +482,9 @@ static void full_textwin(WINDOW *v)
 }
 
 /* resize a window */
-static void move_textwin(WINDOW *v, int x, int y, int w, int h)
+static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 {
-	GRECT 	full;
+	GRECT full;
 	TEXTWIN	*t = v->extra;
 	
 	wind_get_grect(v->handle, WF_FULLXYWH, &full);
@@ -517,7 +518,7 @@ static void move_textwin(WINDOW *v, int x, int y, int w, int h)
 	}
 }
 
-static void size_textwin(WINDOW *v, int x, int y, int w, int h)
+static void size_textwin(WINDOW *v, short x, short y, short w, short h)
 {
 	TEXTWIN *t = v->extra;
 
@@ -528,13 +529,13 @@ static void size_textwin(WINDOW *v, int x, int y, int w, int h)
 /*
  * handle an arrow event to a window
  */
-static void newxoff(TEXTWIN *t, int x)
+static void newxoff(TEXTWIN *t, short x)
 {
 	t->offx = x;
 	set_scroll_bars(t);
 }
 
-static void newyoff(TEXTWIN *t, int y)
+static void newyoff(TEXTWIN *t, short y)
 {
 	t->offy = y;
 	set_scroll_bars(t);
@@ -546,12 +547,12 @@ static void newyoff(TEXTWIN *t, int y)
 #define scrollup(t, off) scrollupdn(t, off, UP)
 #define scrolldn(t, off) scrollupdn(t, off, DOWN)
 
-static void scrollupdn(TEXTWIN *t, int off, int direction)
+static void scrollupdn(TEXTWIN *t, short off, short direction)
 {
 	WINDOW	*v = t->win;
-	GRECT		t1, t2;
-	int 		pxy[8];
-	bool		m_off = FALSE;
+	GRECT t1, t2;
+	short pxy[8];
+	bool m_off = FALSE;
 	
 	if (off <= 0)
 		return;
@@ -613,12 +614,12 @@ static void scrollupdn(TEXTWIN *t, int off, int direction)
 #define scrolllf(t, off) scrollleftright(t, off, LEFT)
 #define scrollrt(t, off) scrollleftright(t, off, RIGHT)
 
-static void scrollleftright(TEXTWIN *t, int off, int direction)
+static void scrollleftright(TEXTWIN *t, short off, short direction)
 {
 	WINDOW	*v = t->win;
-	GRECT		t1, t2;
-	int 		pxy[8];
-	bool		m_off = FALSE;
+	GRECT t1, t2;
+	short pxy[8];
+	bool m_off = FALSE;
 
 	if (off <= 0)
 		return;
@@ -675,10 +676,10 @@ static void scrollleftright(TEXTWIN *t, int off, int direction)
 	wind_update(FALSE);
 }
 
-static void arrow_textwin(WINDOW *v, int msg)
+static void arrow_textwin(WINDOW *v, short msg)
 {
 	TEXTWIN	*t = (TEXTWIN *)v->extra;
-	int 		oldoff;
+	short oldoff;
 
 /*
 	refresh_textwin(t, FALSE);
@@ -724,11 +725,11 @@ static void arrow_textwin(WINDOW *v, int msg)
 /*
  * handle horizontal and vertical slider events for a window
  */
-static void hslid_textwin(WINDOW *v, int hpos)
+static void hslid_textwin(WINDOW *v, short hpos)
 {
 	TEXTWIN	*t = (TEXTWIN *)v->extra;
-	long		width;
-	int		oldoff;
+	long width;
+	short oldoff;
 
 	width = t->cmaxwidth * t->maxx - v->work.g_w;
 	oldoff = t->offx;
@@ -740,11 +741,11 @@ static void hslid_textwin(WINDOW *v, int hpos)
 		scrollrt(t, oldoff);
 }
 
-static void vslid_textwin(WINDOW *v, int vpos)
+static void vslid_textwin(WINDOW *v, short vpos)
 {
 	TEXTWIN	*t = (TEXTWIN *)v->extra;
-	long		height;
-	int		oldoff;
+	long height;
+	short oldoff;
 
 	height = t->cheight * t->maxy - v->work.g_h;
 	oldoff = t->offy;
@@ -762,9 +763,9 @@ static void vslid_textwin(WINDOW *v, int vpos)
 static void set_scroll_bars(TEXTWIN *t)
 {
 	WINDOW	*v = t->win;
-	int		hsize, vsize;
-	int		hpos, vpos;
-	long		width, height;
+	short hsize, vsize;
+	short hpos, vpos;
+	long width, height;
 
 	width = t->cmaxwidth * t->maxx;
 	height = t->cheight * t->maxy;
@@ -833,13 +834,13 @@ static void set_scroll_bars(TEXTWIN *t)
 #define READBUFSIZ 256
 static char buf[READBUFSIZ];
 
-static bool text_type(WINDOW *w, int code, int shift)
+static bool text_type(WINDOW *w, short code, short shift)
 {
 	TEXTWIN	*t = w->extra;
 	WINCFG	*cfg = t->cfg;
-	long 		offset, height;
-	long 		c = (code & 0x00ff) | (((long)code & 0x0000ff00L) << 8L) | ((long)shift << 24L);
-	long 		r;
+	long offset, height;
+	long c = (code & 0x00ff) | (((long)code & 0x0000ff00L) << 8L) | ((long)shift << 24L);
+	long r;
 	
 	/* Context-sensitive help */
 	if (code == 0x6200)		/* HELP */
@@ -1025,10 +1026,10 @@ static bool text_type(WINDOW *w, int code, int shift)
 /*
  * Auswertung der Mausklicks innerhalb eines Fensters.
 */
-static bool text_click(WINDOW *w, int clicks, int x, int y, int kshift, int button)
+static bool text_click(WINDOW *w, short clicks, short x, short y, short kshift, short button)
 {
 	TEXTWIN	*t;
-	int 		x1, y1, d;
+	short x1, y1, d;
 
 	t = w->extra;
 
@@ -1085,10 +1086,10 @@ static bool text_click(WINDOW *w, int clicks, int x, int y, int kshift, int butt
  */
 TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 {
-	WINDOW	*v;
-	TEXTWIN	*t;
-	int		firstchar, lastchar, distances[5], maxwidth, effects[3];
-	int		i, j;
+	WINDOW *v;
+	TEXTWIN *t;
+	short firstchar, lastchar, distances[5], maxwidth, effects[3];
+	short i, j;
 
 	t = malloc(sizeof(TEXTWIN));
 	if (!t) 
@@ -1262,13 +1263,13 @@ void textwin_term(void)
 /*
  * reset a window's font: this involves resizing the window, too
  */
-void textwin_setfont(TEXTWIN *t, int font, int points)
+void textwin_setfont(TEXTWIN *t, short font, short points)
 {
-	WINDOW	*w;
-	int		firstchar, lastchar, distances[5], maxwidth, effects[3];
-	int		width, height;
-	int		dummy;
-	int 		reopen = 0;
+	WINDOW *w;
+	short firstchar, lastchar, distances[5], maxwidth, effects[3];
+	short width, height;
+	short dummy;
+	int reopen = 0;
 
 	w = t->win;
 	if (t->cfont == font && t->cpoints == points)
@@ -1317,16 +1318,16 @@ void textwin_setfont(TEXTWIN *t, int font, int points)
  * make a text window have a new number of rows and columns, and
  * a new amount of scrollback
  */
-void resize_textwin(TEXTWIN *t, int cols, int rows, int scrollback)
+void resize_textwin(TEXTWIN *t, short cols, short rows, short scrollback)
 {
-	WINDOW			*w = t->win;
-	int				i, j, mincols;
-	int				delta;
-	unsigned char	**newdata;
-	short 			**newcflag;
-	char 				*newdirty;
-	int 				width, height, dummy;
-	int 				reopen = 0;
+	WINDOW *w = t->win;
+	int i, j, mincols;
+	int delta;
+	unsigned char **newdata;
+	short **newcflag;
+	char *newdirty;
+	short width, height, dummy;
+	int reopen = 0;
 
 	if (t->maxx == cols && t->miny == scrollback && t->maxy == rows + scrollback)
 		return;		/* no change */
@@ -1448,7 +1449,7 @@ void resize_textwin(TEXTWIN *t, int cols, int rows, int scrollback)
 void reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 {
 	struct winsize tw;
-	int				i, j;
+	int i, j;
 
 	curs_off(t);
 	change_window_gadgets(t->win, cfg->kind);
@@ -1487,10 +1488,10 @@ void reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
  */
 static void set_cwidths(TEXTWIN *t)
 {
-	int	i, status, dummy, wide;
-	int	widths[256];
-	int	monospaced = 1;
-	int	dfltwide;
+	short i, status, dummy, wide;
+	short widths[256];
+	short monospaced = 1;
+	short dfltwide;
 
 	if (t->cwidths) 
 	{
@@ -1546,9 +1547,9 @@ void sendstr(TEXTWIN *t, char *s)
 
 void write_text(TEXTWIN *t, char *b, long len)
 {
-	unsigned char	*buf = (unsigned char *)b, c;
-	int 				limit = NROWS(t) - 1;
-	long				cnt;
+	unsigned char *buf = (unsigned char *)b, c;
+	int limit = NROWS(t) - 1;
+	long cnt;
 
 	if (len == -1)
 		cnt = strlen(b);
@@ -1570,9 +1571,9 @@ void write_text(TEXTWIN *t, char *b, long len)
 /*
  * Sucht ein Fenster zu handle bzw. talkID.
 */
-TEXTWIN *get_textwin(int handle, int talkID)
+TEXTWIN *get_textwin(short handle, short talkID)
 {
-	WINDOW	*w;
+	WINDOW *w;
 	TEXTWIN	*t;
 	
 	if (handle < 0 || talkID < 0) 

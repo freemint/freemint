@@ -1,4 +1,5 @@
 
+#include <mintbind.h>
 #include <string.h>
 #include <support.h>
 #include <unistd.h>
@@ -25,7 +26,7 @@ long _stksize = 32768;
 #endif
 
 
-void term_tw(int ret_code)
+static void term_tw(int ret_code)
 {
 	config_term();
 	textwin_term();
@@ -38,8 +39,8 @@ void term_tw(int ret_code)
 
 int main(int argc, char *argv[])
 {
-	char		str[25];
-	OBJECT	*tmp;
+	char str[25];
+	OBJECT *tmp;
 
 	if (getenv("DEBUG") || strcmp(argv[1], "--debug") == 0)
 	{
@@ -65,9 +66,9 @@ int main(int argc, char *argv[])
 		if (alert(1, 0, NOAES41) == 2)
 			term_tw(1);
 	}
-	shel_write(9, 1, 1, 0L, 0L);			/* wir k馬nen AP_TERM */
+	shel_write(9, 1, 1, 0L, 0L);	/* wir k馬nen AP_TERM */
 
-	menu_register(-1, TW2NAME);			/* damit tw-call immer f］dig wird. */
+	menu_register(-1, TW2NAME);	/* damit tw-call immer f］dig wird. */
 	if (gl_debug)
 		menu_register(gl_apid, "  TosWin2 (debug)");
 	else	
@@ -82,7 +83,6 @@ int main(int argc, char *argv[])
 
 	if (gl_con_auto)
 		open_console();
-	
 	
 	if (gl_debug)
 	{
@@ -110,11 +110,9 @@ int main(int argc, char *argv[])
 		else
 		{
 			TEXTWIN	*t;
-			char		filename[80] = "", *p,
-						path[80] = "";
-			char		*env,
-						arg[125] = "";
-			int		i;
+			char filename[80] = "", *p, path[80] = "";
+			char *env, arg[125] = "";
+			int i;
 			WINCFG	*cfg;
 			
 			unx2dos(argv[1], filename);

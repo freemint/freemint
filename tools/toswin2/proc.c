@@ -1,3 +1,5 @@
+
+#include <mintbind.h>
 #include <errno.h>
 #include <cflib.h>
 #include <ctype.h>
@@ -411,7 +413,7 @@ void fd_input(void)
  * more data exists for a window
  */
 
-void dead_kid(void)
+static void dead_kid(void)
 {
 	long	r;
 
@@ -427,7 +429,7 @@ printf("dead_kid: pid=%ld, exit=%ld\n", ((r>>16) & 0x0000ffff),(r & 0x0000ffff))
  * signal handler for SIGINT and SIGQUIT: these get passed along to the
  * process group in the top window
  */
-void send_sig(long sig)
+static void send_sig(long sig)
 {
 	if (gl_topwin) 
 	{
@@ -439,7 +441,7 @@ void send_sig(long sig)
 	}
 }
 
-void ignore()
+static void ignore()
 {
 }
 
