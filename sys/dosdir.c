@@ -467,9 +467,7 @@ d_getcwd (char *path, int drv, int size)
 		if (r) return r;
 		
 		if (strlen (buf) < size)
-		{
 			strcpy (path, buf);
-		}
 		else
 			return EBADARG;
 	}
