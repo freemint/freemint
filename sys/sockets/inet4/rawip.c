@@ -236,7 +236,10 @@ rip_send (struct in_data *data, struct iovec *iov, short niov, short nonblock, s
 		r = ip_send (data->src.addr, dstaddr, buf, data->protonum,
 				ipflags, &data->opts);
 	
-	return (r ? r : copied);
+	if (r == 0)
+		r = copied;
+	
+	return r;
 }
 
 static long
@@ -266,9 +269,15 @@ rip_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock, s
 	{
 		int i;
 		
-		if (nonblock || so->flags & SO_CANTRCVMORE)
+		if (nonblock)
 		{
-			DEBUG (("rip_recv: Shut down or nonblocking mode"));
+			DEBUG (("rip_recv: EAGAIN"));
+			return EAGAIN;
+		}
+		
+		if (so->flags & SO_CANTRCVMORE)
+		{
+			DEBUG (("rip_recv: shut down"));
 			return 0;
 		}
 		

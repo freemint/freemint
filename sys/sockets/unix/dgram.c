@@ -113,12 +113,15 @@ check:
 	if (UN_FREE (dstdata) < nbytes + sizeof (header))
 	{
 		if (nonblock)
-			return 0;
+		{
+			DEBUG (("unix_dgram_send: EAGAIN"));
+			return EAGAIN;
+		}
 		
 		if (nbytes + sizeof (header) > dstdata->buflen)
 			return EMSGSIZE;
 		
-		if (isleep (IO_Q, (long)dstdata->sock))
+		if (isleep (IO_Q, (long) dstdata->sock))
 		{
 			DEBUG (("unix: unix_send: interrupted"));
 			return EINTR;
@@ -193,9 +196,12 @@ unix_dgram_recv (struct socket *so, struct iovec *iov, short niov, short nonbloc
 	while (!UN_USED (undata))
 	{
 		if (nonblock)
-			return 0;
+		{
+			DEBUG (("unix_dgram_recv: EAGAIN"));
+			return EAGAIN;
+		}
 		
-		if (isleep (IO_Q, (long)so))
+		if (isleep (IO_Q, (long) so))
 		{
 			DEBUG (("unix: unix_recv: interrupted"));
 			return EINTR;
@@ -273,7 +279,7 @@ unix_dgram_recv (struct socket *so, struct iovec *iov, short niov, short nonbloc
 # if 0
 	so_wakewsel (so);
 # endif
-	wake (IO_Q, (long)so);
+	wake (IO_Q, (long) so);
 	
 	return nbytes;
 }
