@@ -63,6 +63,9 @@ kthread_create (void (*func)(void *), void *arg, struct proc **np, const char *f
 		vsprintf (p2->name, sizeof (p2->name), fmt, args);
 		va_end (args);
 		
+		/* kernel threads don't have a basepage */
+		p2->base = NULL;
+		
 		/* zero the user registers, and set the FPU in a "clear" state */
 		for (i = 0; i < 15; i++)
 			p2->ctxt[CURRENT].regs[i] = 0;
