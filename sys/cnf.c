@@ -109,10 +109,9 @@ char *init_prg = NULL;
 char *init_env = NULL;
 char init_tail[256];
 /*
- * note: init_tail is also used as a temporary stack for resets in
- * intr.spp
+ * note: init_tail is *NOT* used as a temporary stack for resets in
+ * intr.spp (it was before 1.16)
  */
-
 
 typedef enum {
 	true  = (1 == 1),
@@ -151,20 +150,16 @@ typedef struct {
 static const char *drv_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
 #define CHAR2DRV(c) ((int)(strrchr(drv_list, toupper(c)) - drv_list))
 
-static void	parser	(FILEPTR *f, PARSINF *inf, long f_size);
+static void parser	(FILEPTR *f, PARSINF *inf, long f_size);
 static void parser_msg	(PARSINF *inf, const char *msg);
 
+static char cnf_path[32];	/* should be plenty */
 
 /*----------------------------------------------------------------------------*/
 void
 load_config (void)
 {
-	/* draco: don't add extern; I spent lot of time to remove
-	 * such stuff */
-	extern char *cnf_path_1, *cnf_path_2, *cnf_path_3;
-	
 	PARSINF inf  = { 0ul, NULL, 1, NULL, NULL, NULL, 0ul };
-	
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
@@ -172,13 +167,10 @@ load_config (void)
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
-	ret = do_open (&fp, inf.file = cnf_path_1, O_RDONLY, 0, &xattr);
-	
-	if (ret)
-		ret = do_open (&fp, inf.file = cnf_path_2, O_RDONLY, 0, &xattr);
-	
-	if (ret)
-		ret = do_open (&fp, inf.file = cnf_path_3, O_RDONLY, 0, &xattr);
+	strcpy(cnf_path, sysdir);
+	strcat(cnf_path, "mint.cnf");
+
+	ret = do_open (&fp, inf.file = cnf_path, O_RDONLY, 0, &xattr);
 	
 	if (!ret)
 	{
@@ -691,7 +683,7 @@ pCB_setenv (const char *var, const char *arg, PARSINF *inf)
 		char *new_env = (char *)m_xalloc (inf->env_len += 1024, 0x13);
 		if (init_env) {
 			memcpy (new_env, init_env, env_used);
-			m_free ((long) init_env);
+			m_free ((virtaddr)init_env);
 		}
 		init_env     = new_env;
 		inf->env_ptr = new_env + env_used;
