@@ -39,6 +39,7 @@
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
 # include "mint/mem.h"		/* F_FASTLOAD et contubernales */
+# include "mint/proc.h"		/* curproc (needed by DEBUG()) */
 # include "mint/signal.h"	/* SIGCHLD etc. */
 # include "mint/stat.h"		/* struct stat */
 
