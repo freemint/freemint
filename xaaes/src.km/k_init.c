@@ -269,7 +269,11 @@ k_init(void)
 	resource_name = xaaes_sysfile(cfg.rsc_name);
 	if (resource_name)
 	{
-		C.Aes_rsc = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
+		C.Aes_rsc = LoadResources(C.Aes,
+					  resource_name,
+					  0,
+					  screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
+					  screen.c_max_h); // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 		DIAGS(("system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
 	}	
 	if (!resource_name || !C.Aes_rsc)
@@ -282,7 +286,11 @@ k_init(void)
 	resource_name = xaaes_sysfile(cfg.widg_name);
 	if (resource_name)
 	{
-		widget_resources = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
+		widget_resources = LoadResources(C.Aes,
+						 resource_name,
+						 0,
+						 screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
+						 screen.c_max_h); //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 		DIAGS(("widget_resources = %lx (%s)", widget_resources, cfg.widg_name));
 	}
 	if (!resource_name || !widget_resources)
