@@ -121,6 +121,10 @@ new_client(enum locks lock, struct xa_client *client)
 	DIAG((D_appl, NULL, "Init client '%s' pid=%d",
 		client->proc_name, client->p->pid));
 
+	client->ce_head = 0;
+	client->ce_tail = 0;
+
+	client->init = true;
 	DIAGS(("new_client: checking shel info (pid %i)", client->p->pid));
 	{
 		struct shel_info *info;
