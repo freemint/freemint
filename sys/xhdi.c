@@ -111,7 +111,7 @@ XHDI_init (void)
 		
 		*((long *) 0x4c2L) |= XHDrvMap ();
 		
-		set_cookie (COOKIE_XHDI, (long) emu_xhdi);
+		set_toscookie (COOKIE_XHDI, (long) emu_xhdi);
 		r = E_OK;
 	}
 	else

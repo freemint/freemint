@@ -64,7 +64,6 @@
 # include "global.h"
 
 # include "arch/mprot.h"
-# include "arch/user_things.h"
 
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
@@ -73,6 +72,10 @@
 # include "biosfs.h"	/* rsvf */
 # include "memory.h"	/* get_region, attach_region */
 
+# ifdef JAR_PRIVATE
+# include "arch/user_things.h"
+# include "proc.h"
+# endif
 
 /****************************************************************************/
 /* BEGIN global data */
@@ -133,16 +136,22 @@ init_cookies (void)
 	if (ncookies > ncsize)
 		ncsize = ncookies;
 
-	/* We allocate the cookie jar in global memory so anybody can read
+	/* We allocate the cookie jar in *private* memory so nobody ;-) can read
 	 * it or write it. This code allocates at least 16 more cookies,
 	 * then rounds up to a QUANTUM boundary (that's what ROUND does).
 	 * Probably, nobody will have to allocate another cookie jar :-)
+	 *
+	 * Processes use own copies of the cookie jar located in their
+	 * memory. Jar is no more global.
 	 */
 	ncsize = (ncsize + 16) * sizeof (COOKIE);
 	ncsize = ROUND (ncsize);
+# ifdef JAR_PRIVATE
+	newjar_region = get_region (core, ncsize, PROT_P);
+# else
 	newjar_region = get_region (core, ncsize, PROT_G);
+# endif
 	newcookie = (COOKIE *) attach_region (rootproc, newjar_region);
-	kernel_things.user_jar_p = (long)newcookie;
 
 	/* set the hardware detected CPU and FPU rather
 	 * than trust the TOS
@@ -222,14 +231,10 @@ init_cookies (void)
 	newcookie[i].value = ncsize / sizeof (COOKIE);
 
 	/* setup new COOKIE Jar */
+# ifdef JAR_PRIVATE
+	kernel_things.user_jar_p = (long)newcookie;
+# endif
 	*CJAR = newcookie;
-}
-
-void
-restr_cookies (void)
-{
-	/* restore old cookie jar */
-	*CJAR = oldcookie;
 }
 
 /* END initialization */
@@ -299,7 +304,12 @@ set_toscookie (ulong tag, ulong val)
 long
 get_cookie (ulong tag, ulong *ret)
 {
+# ifdef JAR_PRIVATE
+	USER_THINGS *ut;
+	COOKIE *cjar;
+# else
 	COOKIE *cjar = *CJAR;
+# endif
 	ushort slotnum = 0;		/* number of already taken slots */
 # ifdef DEBUG_INFO
 	char asc [5];
@@ -308,6 +318,11 @@ get_cookie (ulong tag, ulong *ret)
 # endif
 
 	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc, ret));
+
+# ifdef JAR_PRIVATE
+	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+	cjar = (COOKIE *)ut->user_jar_p;
+# endif
 
 	/* If tag == 0, we return the value of NULL slot
 	 */
@@ -408,8 +423,18 @@ get_cookie (ulong tag, ulong *ret)
 long
 set_cookie (ulong tag, ulong val)
 {
+# ifdef JAR_PRIVATE
+	USER_THINGS *ut;
+	COOKIE *cjar;
+# else
 	COOKIE *cjar = *CJAR;
+# endif
 	long n = 0;
+
+# ifdef JAR_PRIVATE
+	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+	cjar = (COOKIE *)ut->user_jar_p;
+# endif
 
 	/* 0x0000xxxx feature of GETCOOKIE may be confusing, so
 	 * prevent users from using slotnumber HERE :)
@@ -465,7 +490,17 @@ set_cookie (ulong tag, ulong val)
 long
 del_cookie (ulong tag)
 {
-	COOKIE *cjar = newcookie;
+# ifdef JAR_PRIVATE
+	USER_THINGS *ut;
+	COOKIE *cjar;
+# else
+	COOKIE *cjar = *CJAR;
+# endif
+
+# ifdef JAR_PRIVATE
+	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+	cjar = (COOKIE *)ut->user_jar_p;
+# endif
 
 	TRACE (("del_cookie: tag %lx", tag));
 

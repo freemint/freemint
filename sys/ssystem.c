@@ -31,6 +31,7 @@
 
 # include "mint/signal.h"
 
+# include "bios.h"
 # include "block_IO.h"
 # include "cookie.h"
 # include "info.h"
@@ -174,6 +175,10 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			lpointer = (ulong *) arg1;
 			if (arg1 < 0x0420 || arg1 > 0xfffcUL)
 				DEBUG (("GET_LVAL: address out of range"));
+# ifdef JAR_PRIVATE
+			else if (arg1 == 0x5a0)
+				r = sys_b_setexc(0x0168, -1L);
+# endif
 			else
 				r = *lpointer;
 			break;
@@ -213,7 +218,14 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				r = EBADARG;
 				break;
 			}
+# ifdef JAR_PRIVATE
+			if (arg1 == 0x5a0)
+				r = sys_b_setexc(0x0168, arg2);
+			else
+				*lpointer = arg2;
+# else
 			*lpointer = arg2;
+# endif
 			break;
 		}
 		case S_SETWVAL:
@@ -264,23 +276,30 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_SETCOOKIE:
 		{
+# ifndef JAR_PRIVATE
 			if (isroot == 0)
 			{
 				DEBUG (("SET_COOKIE: access denied"));
 				r = EPERM;
 			}
 			else	r = set_cookie (arg1, arg2);
-
+# else
+			r = set_cookie(arg1, arg2);
+# endif
 			break;
 		}
 		case S_DELCOOKIE:
 		{
+# ifndef JAR_PRIVATE
 			if (isroot == 0)
 			{
 				DEBUG (("DEL_COOKIE: access denied"));
 				r = EPERM;
 			}
 			else	r = del_cookie (arg1);
+# else
+			r = del_cookie(arg1);
+# endif
 
 			break;
 		}

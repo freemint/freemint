@@ -410,8 +410,6 @@ restr_intr (void)
 	syskey_aux--;
 	*syskey_aux = (long) oldkeys;
 
-	restr_cookies ();
-
 	*((long *) 0x008L) = (long) old_bus.next;
 
 	*((long *) 0x00cL) = (long) old_addr.next;

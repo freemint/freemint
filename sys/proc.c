@@ -411,6 +411,9 @@ do_wakeup_things (short sr, int newslice, long cond)
 	 */
 	auto int foo;
 	PROC *p;
+# ifdef JAR_PRIVATE
+	USER_THINGS *ut;
+# endif
 
 	p = curproc;
 
@@ -440,6 +443,16 @@ do_wakeup_things (short sr, int newslice, long cond)
 			/* check for signals */
 			check_sigs ();
 	}
+
+	/* Kludge: restore the cookie jar pointer. If this to be restored, 
+	 * this means that the process has changed it directly, not through
+	 * Setexc(). We don't like that.
+	 */
+# ifdef JAR_PRIVATE
+	ut = (USER_THINGS *)p->p_mem->tp_ptr;
+	if (*(long *)0x05a0L != ut->user_jar_p)
+		*(long *)0x05a0L = ut->user_jar_p;
+# endif
 
 	if (newslice)
 	{
