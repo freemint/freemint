@@ -498,7 +498,7 @@ callout_init2(void *initfunction, struct kentry *k)
 }
 
 /* XXX for testing */
-void _cdecl
+long _cdecl
 load_km(const char *path)
 {
 	struct basepage *bp;
@@ -515,11 +515,14 @@ load_km(const char *path)
 		if (ptr)
 		{
 			FORCE("callout_init ok!");
+			err = 0;
 		}
 		else
 		{
 			kfree(bp);
+
 			FORCE("callout_init failed!");
+			err = -1;
 		}
 
 		/* just to be sure */
@@ -527,6 +530,8 @@ load_km(const char *path)
 	}
 	else
 		FORCE("load_module(%s) failed -> %li", path, err);
+
+	return err;
 }
 
 long _cdecl
@@ -534,6 +539,8 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
 {
 	long _cdecl (**handler)(void *) = NULL;
 	long ret = EINVAL;
+
+	DEBUG(("register_trap2(0x%lx, %i, %i)", dispatch, mode, flag));
 
 	if (flag == 0)
 		handler = &aes_handler;
@@ -546,6 +553,8 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
 
 		if (*handler == NULL)
 		{
+			DEBUG(("register_trap2: installing 0x%lx as handler"));
+
 			*handler = dispatch;
 			ret = 0;
 		}
@@ -556,6 +565,8 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
 
 		if (*handler == dispatch)
 		{
+			DEBUG(("register_trap2: removing 0x%lx handler"));
+
 			*handler = NULL;
 			ret = 0;
 		}

@@ -658,7 +658,12 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		/* XXX only for testing */
 		case 2000:
 		{
-			load_km((const char *) arg1);
+			long _cdecl load_km(const char *path);
+
+			if (!isroot)
+				r = EPERM;
+			else
+				r = load_km((const char *) arg1);
 			break;
 		}
 		default:
