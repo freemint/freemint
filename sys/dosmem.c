@@ -35,7 +35,7 @@
  * FIXME: doesn't work if memory protection is on
  */
 long _cdecl
-m_addalt (long start, long size)
+sys_m_addalt (long start, long size)
 {
 	struct proc *p = curproc;
 
@@ -134,7 +134,7 @@ _do_malloc (MMAP map, long size, int mode)
 }
 
 long _cdecl
-m_xalloc (long size, int mode)
+sys_m_xalloc (long size, int mode)
 {
 	long r = 0;
 	int protmode;
@@ -268,22 +268,22 @@ m_xalloc (long size, int mode)
 }
 
 long _cdecl
-m_alloc (long size)
+sys_m_alloc (long size)
 {
 	long r;
 
 	TRACE(("Malloc(%lx)", size));
 	if (curproc->p_mem->memflags & F_ALTALLOC)
-		r = m_xalloc(size, 3);
+		r = sys_m_xalloc(size, 3);
 	else
-		r = m_xalloc(size, 0);
+		r = sys_m_xalloc(size, 0);
 
 	TRACE(("Malloc: returning %lx", r));
 	return r;
 }
 
 long _cdecl
-m_free (long block)
+sys_m_free (long block)
 {
 	struct memspace *mem;
 	long r;
@@ -353,7 +353,7 @@ m_free (long block)
 }
 
 long _cdecl
-m_shrink (int dummy, long block, long size)
+sys_m_shrink (int dummy, long block, long size)
 {
 	struct proc *p = curproc;
 	struct memspace *mem = p->p_mem;

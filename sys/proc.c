@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * routines for handling processes
- * 
+ *
  */
 
 # include "proc.h"
@@ -34,7 +34,6 @@
 
 # include "bios.h"
 # include "dosfile.h"
-# include "dosmem.h"
 # include "filesys.h"
 # include "k_exit.h"
 # include "kmemory.h"
@@ -83,7 +82,7 @@ void
 init_proc (void)
 {
 	static DTABUF dta;
-	
+
 	static struct proc	rootproc0;
 	static struct memspace	mem0;
 	static struct ucred	ucred0;
@@ -92,7 +91,7 @@ init_proc (void)
 	static struct cwd	cwd0;
 	static struct sigacts	sigacts0;
 	static struct plimit	limits0;
-	
+
 	/* XXX */
 	bzero (&rootproc0, sizeof (rootproc0));
 	bzero (&mem0, sizeof (mem0));
@@ -102,74 +101,74 @@ init_proc (void)
 	bzero (&cwd0, sizeof (cwd0));
 	bzero (&sigacts0, sizeof (sigacts0));
 	bzero (&limits0, sizeof (limits0));
-	
+
 	pcred0.ucr = &ucred0;			ucred0.links = 1;
-	
+
 	rootproc0.p_mem		= &mem0;	mem0.links = 1;
 	rootproc0.p_cred	= &pcred0;	pcred0.links = 1;
 	rootproc0.p_fd		= &fd0;		fd0.links = 1;
 	rootproc0.p_cwd		= &cwd0;	cwd0.links = 1;
 	rootproc0.p_sigacts	= &sigacts0;	sigacts0.links = 1;
 //	rootproc0.p_limits	= &limits0;	limits0.links = 1;
-	
+
 	fd0.ofiles = fd0.dfiles;
 	fd0.ofileflags = fd0.dfileflags;
 	fd0.nfiles = NDFILE;
-	
+
 	DEBUG (("%lx, %lx, %lx, %lx, %lx, %lx, %lx",
 		&rootproc0, &mem0, &pcred0, &ucred0, &fd0, &cwd0, &sigacts0));
-	
+
 	rootproc = curproc = &rootproc0;	rootproc0.links = 1;
-	
+
 	/* set the stack barrier */
 	curproc->stack_magic = STACK_MAGIC;
-	
+
 	curproc->ppid = -1;		/* no parent */
 //	curproc->pgrp = 1;		/* 0 isn't an process group */
 	curproc->domain = DOM_TOS;	/* TOS domain */
 	curproc->sysstack = (long) (curproc->stack + STKSIZE - 12);
 	curproc->magic = CTXT_MAGIC;
-	
+
 	((long *) curproc->sysstack)[1] = FRAME_MAGIC;
 	((long *) curproc->sysstack)[2] = 0;
 	((long *) curproc->sysstack)[3] = 0;
-	
+
 	curproc->p_fd->dta = &dta;	/* looks ugly */
 	curproc->base = _base;
 	strcpy (curproc->name, "MiNT");
 	strcpy (curproc->fname, "MiNT");
 	strcpy (curproc->cmdlin, "MiNT");
-	
+
 	/* get some memory */
 	curproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
 	curproc->p_mem->num_reg = NUM_REGIONS;
 	curproc->p_mem->mem = kmalloc (curproc->p_mem->num_reg * sizeof (MEMREGION *));
 	curproc->p_mem->addr = kmalloc (curproc->p_mem->num_reg * sizeof (long));
-	
+
 	/* make sure kmalloc was successful */
 	assert (curproc->p_mem->mem && curproc->p_mem->addr);
-	
+
 	/* make sure it's filled with zeros */
 	bzero (curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof (MEMREGION *));
 	bzero (curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof (long));
-	
+
 	/* init trampoline things */
 	curproc->p_mem->tp_ptr = &kernel_things;
 	curproc->p_mem->tp_reg = NULL;
-	
+
 	/* init page table for curproc */
 	init_page_table_ptr (curproc->p_mem);
 	init_page_table (curproc, curproc->p_mem);
-	
+
 	/* get root and current directories for all drives */
 	{
 		FILESYS *fs;
 		int i;
-		
+
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			fcookie dir;
-			
+
 			fs = drives [i];
 			if (fs && xfs_root (fs, i, &dir) == E_OK)
 			{
@@ -183,15 +182,15 @@ init_proc (void)
 			}
 		}
 	}
-	
+
 	/* Set the correct drive. The current directory we
 	 * set later, after all file systems have been loaded.
 	 */
 	curproc->p_cwd->curdrv = Dgetdrv ();
 	proclist = curproc;
-	
+
 	curproc->p_cwd->cmask = 0;
-	
+
 	/* some more protection against job control; unless these signals are
 	 * re-activated by a shell that knows about job control, they'll have
 	 * no effect
@@ -199,22 +198,22 @@ init_proc (void)
 	SIGACTION(curproc, SIGTTIN).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGTTOU).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGTSTP).sa_handler = SIG_IGN;
-	
+
 	/* set up some more per-process variables */
 	curproc->started = xtime;
-	
+
 	if (has_bconmap)
 		/* init_xbios not happened yet */
 		curproc->p_fd->bconmap = (int) Bconmap (-1);
 	else
 		curproc->p_fd->bconmap = 1;
-	
+
 	curproc->logbase = (void *) Logbase();
 	curproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
 }
 
 /* reset_priorities():
- * 
+ *
  * reset all process priorities to their base level
  * called once per second, so that cpu hogs can get _some_ time
  * slices :-).
@@ -223,7 +222,7 @@ void
 reset_priorities (void)
 {
 	PROC *p;
-	
+
 	for (p = proclist; p; p = p->gl_next)
 	{
 		if (p->slices >= 0)
@@ -235,7 +234,7 @@ reset_priorities (void)
 }
 
 /* run_next(p, slices):
- * 
+ *
  * schedule process "p" to run next, with "slices" initial time slices;
  * "p" does not actually start running until the next context switch
  */
@@ -243,27 +242,27 @@ void
 run_next (PROC *p, int slices)
 {
 	register ushort sr;
-	
+
 	sr = spl7 ();
-	
+
 	p->slices = -slices;
 	p->curpri = MAX_NICE;
 	p->wait_q = READY_Q;
 	p->q_next = sys_q[READY_Q];
 	sys_q[READY_Q] = p;
-	
+
 	spl (sr);
 }
 
 /* fresh_slices(slices):
- * 
+ *
  * give the current process "slices" more slices in which to run
  */
 void
 fresh_slices (int slices)
 {
 	reset_priorities ();
-	
+
 	curproc->slices = 0;
 	curproc->curpri = MAX_NICE + 1;
 	proc_clock = time_slice + slices;
@@ -279,11 +278,11 @@ void
 add_q (int que, PROC *proc)
 {
 	PROC *q, **lastq;
-	
+
 	/* "proc" should not already be on a list */
 	assert (proc->wait_q == 0);
 	assert (proc->q_next == 0);
-	
+
 	lastq = &sys_q[que];
 	q = *lastq;
 	while (q)
@@ -292,7 +291,7 @@ add_q (int que, PROC *proc)
 		q = *lastq;
 	}
 	*lastq = proc;
-	
+
 	proc->wait_q = que;
 	if (que != READY_Q && proc->slices >= 0)
 	{
@@ -310,24 +309,24 @@ rm_q (int que, PROC *proc)
 {
 	PROC *q;
 	PROC *old = 0;
-	
+
 	assert (proc->wait_q == que);
-	
+
 	q = sys_q[que];
 	while (q && q != proc)
 	{
 		old = q;
 		q = q->q_next;
 	}
-	
+
 	if (q == 0)
 		FATAL ("rm_q: unable to remove process from queue");
-	
+
 	if (old)
 		old->q_next = proc->q_next;
 	else
 		sys_q[que] = proc->q_next;
-	
+
 	proc->wait_q = 0;
 	proc->q_next = 0;
 }
@@ -352,7 +351,7 @@ preempt (void)
 		if (curproc->curpri >= MIN_NICE)
 			curproc->curpri -= 1;
 	}
-	
+
 	sleep (READY_Q, curproc->wait_cond);
 }
 
@@ -368,9 +367,9 @@ swap_in_curproc (void)
 	long txtsize = curproc->p_mem->txtsize;
 	MEMREGION *m, *shdw, *save;
 	int i;
-	
+
 	assert (mem && mem->mem);
-	
+
 	for (i = 0; i < mem->num_reg; i++)
 	{
 		m = mem->mem[i];
@@ -379,9 +378,9 @@ swap_in_curproc (void)
 			save = m->save;
 			for (shdw = m->shadow; shdw->save; shdw = shdw->shadow)
 				assert (shdw != m);
-			
+
 			assert (m->loc == shdw->loc);
-			
+
 			shdw->save = save;
 			m->save = 0;
 			if (i != 1 || txtsize == 0)
@@ -412,9 +411,9 @@ do_wakeup_things (short sr, int newslice, long cond)
 	 */
 	auto int foo;
 	PROC *p;
-	
+
 	p = curproc;
-	
+
 	if ((sr & 0x700) < 0x500)
 	{
 		/* skip all this if int level is too high */
@@ -423,7 +422,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 			ALERT ("stack underflow");
 			handle_sig (SIGBUS);
 		}
-		
+
 		/* see if process' time limit has been exceeded */
 		if (p->maxcpu)
 		{
@@ -433,15 +432,15 @@ do_wakeup_things (short sr, int newslice, long cond)
 				raise (SIGXCPU);
 			}
 		}
-		
+
 		/* check for alarms and similar time out stuff */
 		checkalarms ();
-		
+
 		if (p->sigpending && cond != (long) sys_pwaitpid)
 			/* check for signals */
 			check_sigs ();
 	}
-	
+
 	if (newslice)
 	{
 		if (p->slices >= 0)
@@ -455,7 +454,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 			proc_clock = time_slice - p->slices;
 			p->curpri = p->pri;
 		}
-		
+
 		p->slices = SLICES (p->curpri);
 	}
 }
@@ -467,7 +466,7 @@ static long sleepcond, iwakecond;
  * if some have
  */
 
-int _cdecl 
+int _cdecl
 sleep (int _que, long cond)
 {
 	PROC *p;
@@ -475,14 +474,14 @@ sleep (int _que, long cond)
 	short que = _que & 0xff;
 	ulong onsigs = curproc->nsigs;
 	int newslice = 1;
-	
+
 	/* save condition, checkbttys may just wake() it right away ...
 	 * note this assumes the condition will never be waked from interrupts
 	 * or other than thru wake() before we really went to sleep, otherwise
 	 * use the 0x100 bit like select
 	 */
 	sleepcond = cond;
-	
+
 	/* if there have been keyboard interrupts since our last sleep,
 	 * check for special keys like CTRL-ALT-Fx
 	 */
@@ -499,12 +498,12 @@ sleep (int _que, long cond)
 			(void) checkkeys ();
 			kintr = 0;
 		}
-		
-# ifdef DEV_RANDOM		
+
+# ifdef DEV_RANDOM
 		/* Wake processes waiting for random bytes */
 		checkrandom ();
 # endif
-		
+
 		sr = splhigh ();
 		if ((curproc->sigpending & ~(curproc->p_sigmask))
 			&& curproc->pid && que != ZOMBIE_Q && que != TSR_Q)
@@ -515,7 +514,7 @@ sleep (int _que, long cond)
 			sr = spl7 ();
 		}
 	}
-	
+
 	/* kay: If _que & 0x100 != 0 then take curproc->wait_cond != cond as
 	 * an indicatation that the wakeup has already happend before we
 	 * actually go to sleep and return immediatly.
@@ -528,10 +527,10 @@ sleep (int _que, long cond)
 		iwakecond = 0;
 		spl (sr);
 		do_wakeup_things (sr, newslice, cond);
-		
+
 		return (onsigs != curproc->nsigs);
 	}
-	
+
 	/* unless our time slice has expired (proc_clock == 0) and other
 	 * processes are ready...
 	 */
@@ -540,14 +539,14 @@ sleep (int _que, long cond)
 		que = READY_Q;
 	else
 		curproc->wait_cond = cond;
-	
+
 	add_q (que, curproc);
-	
+
 	/* alright curproc is on que now... maybe there's an
 	 * interrupt pending that will wakeselect or signal someone
 	 */
 	spl (sr);
-	
+
 	if (!sys_q[READY_Q])
 	{
 		/* hmm, no-one is ready to run. might be a deadlock, might not.
@@ -556,17 +555,17 @@ sleep (int _que, long cond)
 		 * just so we have someone to charge time to.
 		 */
 		wake (SELECT_Q, (long) nap);
-		
-		sr = splhigh ();
+
 		if (!sys_q[READY_Q])
 		{
+			sr = splhigh ();
 			p = rootproc;		/* pid 0 */
 			rm_q (p->wait_q, p);
 			add_q (READY_Q, p);
+			spl (sr);
 		}
-		spl (sr);
 	}
-	
+
 	/*
 	 * Walk through the ready list, to find what process should run next.
 	 * Lower priority processes don't get to run every time through this
@@ -614,24 +613,24 @@ sleep (int _que, long cond)
 		 */
 		swap_in_curproc ();
 		do_wakeup_things (sr, 1, cond);
-		
+
 		return (onsigs != curproc->nsigs);
 	}
-	
+
 	/*
 	 * save per-process variables here
 	 */
 	curproc->ctxt[CURRENT].regs[0] = 1;
 	curproc = p;
-	
+
 	proc_clock = time_slice;			/* fresh time */
-	
+
 	if ((p->ctxt[CURRENT].sr & 0x2000) == 0)	/* user mode? */
 		leave_kernel ();
-	
+
 	assert (p->magic == CTXT_MAGIC);
 	change_context (&(p->ctxt[CURRENT]));
-	
+
 	/* not reached */
 	return 0;
 }
@@ -650,9 +649,9 @@ top:
 	{
 		PROC *q;
 		register short s;
-		
+
 		s = spl7 ();
-		
+
 		/* check p is still on the right queue,
 		 * maybe an interrupt just woke it...
 		 */
@@ -661,7 +660,7 @@ top:
 			spl (s);
 			goto top;
 		}
-		
+
 		q = p;
 		p = p->q_next;
 		if (q->wait_cond == cond)
@@ -669,12 +668,12 @@ top:
 			rm_q (que, q);
 			add_q (READY_Q, q);
 		}
-		
+
 		spl (s);
 	}
 }
 
-void _cdecl 
+void _cdecl
 wake (int que, long cond)
 {
 	if (que == READY_Q)
@@ -682,10 +681,10 @@ wake (int que, long cond)
 		ALERT ("wake: why wake up ready processes??");
 		return;
 	}
-	
+
 	if (sleepcond == cond)
 		sleepcond = 0;
-	
+
 	do_wake (que, cond);
 }
 
@@ -725,27 +724,27 @@ wake (int que, long cond)
  * sleep() for another than the waked que/condition.
  */
 
-void _cdecl 
+void _cdecl
 iwake (int que, long cond, short pid)
 {
 	if (pid >= 0)
 	{
 		register ushort s;
-		
+
 		s = spl7 ();
-		
+
 		if (iwakecond == cond)
 		{
 			spl (s);
 			return;
 		}
-		
+
 		if (curproc->pid == pid && !curproc->wait_q)
 			iwakecond = cond;
-		
+
 		spl (s);
 	}
-	
+
 	do_wake (que, cond);
 }
 
@@ -754,25 +753,25 @@ iwake (int que, long cond, short pid)
  * may be called by an interrupt handler or whatever
  */
 
-void _cdecl 
+void _cdecl
 wakeselect (PROC *p)
 {
 	short s;
-	
+
 	s = spl7 ();
-	
+
 	if (p->wait_cond == (long) wakeselect
 		|| p->wait_cond == (long) &select_coll)
 	{
 		p->wait_cond = 0;
 	}
-	
+
 	if (p->wait_q == SELECT_Q)
 	{
 		rm_q (SELECT_Q, p);
 		add_q (READY_Q, p);
 	}
-	
+
 	spl (s);
 }
 
@@ -801,7 +800,7 @@ static const char *qstring[] =
 
 ulong uptime = 0;
 ulong avenrun[3] = { 0, 0, 0 };
-ushort uptimetick = 200;	
+ushort uptimetick = 200;
 
 static ushort number_running;
 
@@ -833,11 +832,11 @@ gen_average (ulong *sum, uchar *load_ptr, ulong max_size)
 {
 	register long old_load = (long) *load_ptr;
 	register long new_load = number_running;
-	
+
 	*load_ptr = (uchar) new_load;
-	
+
 	*sum += (new_load - old_load) * LOAD_SCALE;
-	
+
 	return (*sum / max_size);
 }
 
@@ -847,26 +846,26 @@ calc_load_average (void)
 	static uchar one_min [SAMPS_PER_MIN];
 	static uchar five_min [SAMPS_PER_5MIN];
 	static uchar fifteen_min [SAMPS_PER_15MIN];
-	
+
 	static ushort one_min_ptr = 0;
 	static ushort five_min_ptr = 0;
 	static ushort fifteen_min_ptr = 0;
-	
+
 	static ulong sum1 = 0;
 	static ulong sum5 = 0;
 	static ulong sum15 = 0;
-	
+
 	register PROC *p;
-	
+
 # if 0	/* moved to intr.spp */
 	uptime++;
 	uptimetick += 200;
-	
+
 	if (uptime % 5) return;
 # endif
-	
+
 	number_running = 0;
-	
+
 	for (p = proclist; p; p = p->gl_next)
 	{
 		if (p != rootproc)
@@ -874,7 +873,7 @@ calc_load_average (void)
 			if ((p->wait_q == CURPROC_Q) || (p->wait_q == READY_Q))
 				number_running++;
 		}
-		
+
 		/* Check the stack magic here, to ensure the system/interrupt
 		 * stack hasn't grown too much. Most noticeably, NVDI 5's new
 		 * bitmap conversion (vr_transfer_bits()) seems to eat _a lot_
@@ -884,19 +883,19 @@ calc_load_average (void)
 		if (p->stack_magic != STACK_MAGIC)
 			FATAL ("proc %lx has invalid stack_magic %lx", (long) p, p->stack_magic);
 	}
-	
+
 	if (one_min_ptr == SAMPS_PER_MIN)
 		one_min_ptr = 0;
-	
+
 	avenrun [0] = gen_average (&sum1, &one_min [one_min_ptr++], SAMPS_PER_MIN);
-	
+
 	if (five_min_ptr == SAMPS_PER_5MIN)
 		five_min_ptr = 0;
-	
+
 	avenrun [1] = gen_average (&sum5, &five_min [five_min_ptr++], SAMPS_PER_5MIN);
-	
+
 	if (fifteen_min_ptr == SAMPS_PER_15MIN)
 		fifteen_min_ptr = 0;
-	
+
 	avenrun [2] = gen_average (&sum15, &fifteen_min [fifteen_min_ptr++], SAMPS_PER_15MIN);
 }

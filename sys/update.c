@@ -30,21 +30,21 @@ long sync_time = 5;
 static void
 do_sync (long sig)
 {
-	s_ync ();
+	sys_s_ync ();
 }
 
 static void
 update (void *arg)
 {
-	p_signal (SIGALRM, (long) do_sync);
-	p_signal (SIGTERM, (long) do_sync);
-	p_signal (SIGQUIT, (long) do_sync);
-	p_signal (SIGHUP,  (long) do_sync);
-	p_signal (SIGTSTP, (long) do_sync);
-	p_signal (SIGINT,  (long) do_sync);
-	p_signal (SIGABRT, (long) do_sync);
-	p_signal (SIGUSR1, (long) do_sync);
-	p_signal (SIGUSR2, (long) do_sync);
+	sys_p_signal (SIGALRM, (long) do_sync);
+	sys_p_signal (SIGTERM, (long) do_sync);
+	sys_p_signal (SIGQUIT, (long) do_sync);
+	sys_p_signal (SIGHUP,  (long) do_sync);
+	sys_p_signal (SIGTSTP, (long) do_sync);
+	sys_p_signal (SIGINT,  (long) do_sync);
+	sys_p_signal (SIGABRT, (long) do_sync);
+	sys_p_signal (SIGUSR1, (long) do_sync);
+	sys_p_signal (SIGUSR2, (long) do_sync);
 
 	for (;;)
 	{
@@ -52,12 +52,12 @@ update (void *arg)
 
 		while (tsync > 32)
 		{
-			f_select (32000, 0L, 0L, 0L);
+			sys_f_select (32000, 0L, 0L, 0L);
 			tsync -= 32;
 		}
 
 		if (tsync > 0)
-			f_select (tsync * 1000, 0L, 0L, 0L);
+			sys_f_select (tsync * 1000, 0L, 0L, 0L);
 
 		do_sync (0);
 	}
@@ -75,7 +75,7 @@ update (void *arg)
 static void
 do_sync (struct proc *p)
 {
-	s_ync ();
+	sys_s_ync ();
 
 	addroottimeout (1000L * sync_time, do_sync, 0);
 }

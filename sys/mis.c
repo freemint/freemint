@@ -68,7 +68,6 @@
 # include "dosdir.h"		/* d_opendir(), d_readdir(), d_closedir(), f_symlink(), f_stat64(), ...*/
 # include "dosfile.h"		/* f_write() */
 # include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
-# include "dossig.h"		/* p_kill() */
 # include "info.h"		/* national stuff */
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_kthread.h"		/* kthread_create(), kthread_exit() */
@@ -124,7 +123,7 @@ shell_fprintf(long handle, const char *fmt, ...)
 	char *buf;
 	va_list args;
 
-	buf = (char *)m_xalloc(SHELL_MAXLINE, 3);
+	buf = (char *)sys_m_xalloc(SHELL_MAXLINE, 3);
 
 	if (buf)
 	{
@@ -132,12 +131,12 @@ shell_fprintf(long handle, const char *fmt, ...)
 		vsprintf(buf, SHELL_MAXLINE, fmt, args);
 		va_end(args);
 
-		f_write(handle, strlen(buf), buf);
+		sys_f_write(handle, strlen(buf), buf);
 
-		m_free((long)buf);
+		sys_m_free((long)buf);
 	}
 	else
-		f_write(stderr, 13, "Out of RAM!\n");
+		sys_f_write(stderr, 13, "Out of RAM!\n");
 }
 
 /* Simple conversion of a pathname from the DOS to Unix format,
@@ -221,7 +220,7 @@ shell_delenv(const char *strng)
 
 	*var = 0;
 
-	m_shrink(0, (long)_base->p_env, env_size(_base->p_env));
+	sys_m_shrink(0, (long)_base->p_env, env_size(_base->p_env));
 }
 
 /* XXX try to avoid reallocation whenever possible */
@@ -239,7 +238,7 @@ shell_setenv(const char *var, char *value)
 	else
 		new_size += strlen(var);	/* this is its NAME */
 
-	new_env = (char *)m_xalloc(new_size, 3);
+	new_env = (char *)sys_m_xalloc(new_size, 3);
 	if (new_env == NULL)
 		return;
 
@@ -266,7 +265,7 @@ shell_setenv(const char *var, char *value)
 
 	_base->p_env = new_env;
 
-	m_free((long)env_str);
+	sys_m_free((long)env_str);
 }
 
 /* Split command line into separate strings, put their pointers
@@ -403,7 +402,7 @@ crunch(char *cmd, char **argv)
 	/* Save the original commandline */
 	if (argv == NULL)
 	{
-		tmp = (char *)m_xalloc(strlen(cmd) + 1, 3);
+		tmp = (char *)sys_m_xalloc(strlen(cmd) + 1, 3);
 		if (!tmp)
 			return ENOMEM;
 		strcpy(tmp, cmd);
@@ -444,7 +443,7 @@ crunch(char *cmd, char **argv)
 			{
 				if (argv)
 				{
-					if ((fd = f_create(argument, 0)) < 0)
+					if ((fd = sys_f_create(argument, 0)) < 0)
 						return fd;
 
 					stdout = (saveio == 1) ? fd : stdout;
@@ -460,7 +459,7 @@ crunch(char *cmd, char **argv)
 		argv[idx] = NULL;
 
 	if (tmp)
-		m_free((long)tmp);
+		sys_m_free((long)tmp);
 
 	return idx;
 }
@@ -485,7 +484,7 @@ execvp(char **argv)
 	count <<= 1;				/* make this twice as big (will be shrunk later) */
 
 	/* Allocate one buffer that would satisfy all requirements of this function */
-	oldcmd = (char *)m_xalloc(count + 128 + SHELL_MAXPATH + SHELL_MAXFN, 3);
+	oldcmd = (char *)sys_m_xalloc(count + 128 + SHELL_MAXPATH + SHELL_MAXFN, 3);
 	if (!oldcmd)
 		return ENOMEM;
 
@@ -543,7 +542,7 @@ execvp(char **argv)
 
 	*new_var = 0;
 
-	(void)m_shrink(0, (long)oldcmd, env_size(new_env) + SHELL_MAXPATH + SHELL_MAXFN + 128);
+	(void)sys_m_shrink(0, (long)oldcmd, env_size(new_env) + SHELL_MAXPATH + SHELL_MAXFN + 128);
 
 	/* Since crunch() evaluates some arguments, we have now to
 	 * re-create the old GEMDOS style command line string.
@@ -598,33 +597,33 @@ execvp(char **argv)
 
 		if (stdout != STDOUT)
 		{
-			dupout = f_dup(STDOUT);		/* duplicate the stdout */
-			f_force(STDOUT, stdout);
+			dupout = sys_f_dup(STDOUT);		/* duplicate the stdout */
+			sys_f_force(STDOUT, stdout);
 		}
 
 		if (stderr != STDERR)
 		{
-			duperr = f_dup(STDERR);		/* duplicate the stderr */
-			f_force(STDERR, stderr);
+			duperr = sys_f_dup(STDERR);		/* duplicate the stderr */
+			sys_f_force(STDERR, stderr);
 		}
 
 		r = sys_pexec(0, npath, oldcmd, new_env);
 
 		if (dupout)
 		{
-			f_force(STDOUT, dupout);
-			f_close(dupout);
+			sys_f_force(STDOUT, dupout);
+			sys_f_close(dupout);
 		}
 
 		if (duperr)
 		{
-			f_force(STDERR, duperr);
-			f_close(duperr);
+			sys_f_force(STDERR, duperr);
+			sys_f_close(duperr);
 		}
 	}
 	while (*path && r < 0);
 
-	m_free((long)oldcmd);
+	sys_m_free((long)oldcmd);
 
 	return r;
 }
@@ -700,9 +699,9 @@ sh_ls(long argc, char **argv)
 	if (handle < 0)
 		return handle;
 
-	t_gettimeofday(&tv, NULL);
+	sys_t_gettimeofday(&tv, NULL);
 
-	path = (char *)m_xalloc((SHELL_MAXPATH * 2) + SHELL_MAXFN, 3);
+	path = (char *)sys_m_xalloc((SHELL_MAXPATH * 2) + SHELL_MAXFN, 3);
 	link = path + SHELL_MAXPATH;
 	entry = link + SHELL_MAXPATH;
 
@@ -814,7 +813,7 @@ sh_ls(long argc, char **argv)
 		}
 	} while (r == 0);
 
-	m_free((long)path);
+	sys_m_free((long)path);
 
 	sys_d_closedir(handle);
 
@@ -851,7 +850,7 @@ sh_cd(long argc, char **argv)
 
 	if (r == 0)
 	{
-		cwd = (char *)m_xalloc(SHELL_MAXPATH, 3);
+		cwd = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
 		if (!cwd)
 			return ENOMEM;
 
@@ -866,18 +865,18 @@ sh_cd(long argc, char **argv)
 
 		if (pwd && strcmp(pwd, cwd))
 		{
-			opwd = (char *)m_xalloc(SHELL_MAXPATH, 3);
+			opwd = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
 			if (opwd)
 			{
 				strcpy(opwd, pwd);
 				shell_setenv("OLDPWD", opwd);
-				m_free((long)opwd);
+				sys_m_free((long)opwd);
 			}
 		}
 
 		shell_setenv("PWD", cwd);
 
-		m_free((long)cwd);
+		sys_m_free((long)cwd);
 	}
 
 	return r;
@@ -1057,17 +1056,17 @@ copy_from_to(short move, char *from, char *to)
 			return r;
 	}
 
-	sfd = f_open(from, O_RDONLY);
+	sfd = sys_f_open(from, O_RDONLY);
 	if (sfd < 0)
 		return sfd;
-	dfd = f_create(to, 0);
+	dfd = sys_f_create(to, 0);
 	if (dfd < 0)
 	{
-		f_close(sfd);
+		sys_f_close(sfd);
 		return dfd;
 	}
 
-	buf = (char *)m_xalloc(SHELL_COPYBUF, 3);
+	buf = (char *)sys_m_xalloc(SHELL_COPYBUF, 3);
 
 	if (buf)
 	{
@@ -1079,15 +1078,15 @@ copy_from_to(short move, char *from, char *to)
 				bufsize = SHELL_COPYBUF;
 			else
 				bufsize = size;
-			r = f_read(sfd, bufsize, buf);
+			r = sys_f_read(sfd, bufsize, buf);
 			if (r == bufsize)
-				r = f_write(dfd, bufsize, buf);
+				r = sys_f_write(dfd, bufsize, buf);
 			if (r < 0)
 				break;
 			size -= bufsize;
 		}
 
-		m_free((long)buf);
+		sys_m_free((long)buf);
 
 		if (r >= 0)
 		{
@@ -1104,8 +1103,8 @@ copy_from_to(short move, char *from, char *to)
 	else
 		r = ENOMEM;
 
-	f_close(sfd);
-	f_close(dfd);
+	sys_f_close(sfd);
+	sys_f_close(dfd);
 
 	return r;
 }
@@ -1124,7 +1123,7 @@ sh_cp(long argc, char **argv)
 		return 0;
 	}
 
-	path = (char *)m_xalloc(SHELL_MAXPATH, 3);
+	path = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
 	if (!path)
 		return ENOMEM;
 
@@ -1152,7 +1151,7 @@ sh_cp(long argc, char **argv)
 		}
 	}
 
-	m_free((long)path);
+	sys_m_free((long)path);
 
 	return r;
 }
@@ -1171,7 +1170,7 @@ sh_mv(long argc, char **argv)
 		return 0;
 	}
 
-	path = (char *)m_xalloc(SHELL_MAXPATH, 3);
+	path = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
 	if (!path)
 		return ENOMEM;
 
@@ -1199,7 +1198,7 @@ sh_mv(long argc, char **argv)
 		}
 	}
 
-	m_free((long)path);
+	sys_m_free((long)path);
 
 	return r;
 }
@@ -1396,7 +1395,7 @@ execute(char *cmdline)
 	}
 
 	/* Construct the proper ARGV stuff now */
-	argv = (char **)m_xalloc(argc * sizeof(void *), 3);
+	argv = (char **)sys_m_xalloc(argc * sizeof(void *), 3);
 	if (!argv)
 		return ENOMEM;
 
@@ -1430,10 +1429,10 @@ execute(char *cmdline)
 	for (x = 1; x < argc; x++)
 	{
 		if (argv[x] && !(((long)argv[x] >= (long)cmdline) && ((long)argv[x] <= ((long)cmdline + cmde))))
-			m_free((long)argv[x]);
+			sys_m_free((long)argv[x]);
 	}
 
-	m_free((long)argv);
+	sys_m_free((long)argv);
 
 	return r;
 }
@@ -1449,7 +1448,7 @@ prompt(uchar *buffer, long buflen)
 	buffer[0] = LINELEN;
 	buffer[1] = 0;
 
-	cwd = (char *)m_xalloc(SHELL_MAXPATH, 3);
+	cwd = (char *)sys_m_xalloc(SHELL_MAXPATH, 3);
 
 	if (cwd)
 	{
@@ -1473,7 +1472,7 @@ prompt(uchar *buffer, long buflen)
 	lbuff[--idx] = 0;
 
 	if (cwd)
-		m_free((long)cwd);
+		sys_m_free((long)cwd);
 
 	return lbuff;
 }
@@ -1486,7 +1485,7 @@ shell(void *arg)
 	long r;
 
 	(void)sys_p_domain(1);			/* switch to MiNT domain */
-	(void)f_force(STDERR, -1);		/* redirect the stderr to console */
+	(void)sys_f_force(STDERR, -1);		/* redirect the stderr to console */
 	(void)sys_p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
 
 	/* If there is no $PATH defined, enable internal commands by default
@@ -1510,13 +1509,13 @@ shell(void *arg)
 		/* Terminate the I/O redirection */
 		if (stdout != STDOUT)
 		{
-			f_close(stdout);
+			sys_f_close(stdout);
 			stdout = STDOUT;
 		}
 
 		if (stderr != STDERR)
 		{
-			f_close(stderr);
+			sys_f_close(stderr);
 			stderr = STDERR;
 		}
 

@@ -1854,7 +1854,7 @@ sys_d_lock (int mode, int _dev)
 			}
 			else
 			{
-				s_ync ();
+				sys_s_ync ();
 
 				DEBUG (("Invalidate %c: ...", 'A'+dev));
 				(void) xfs_dskchng (fs, dev, 1);

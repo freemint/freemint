@@ -25,7 +25,6 @@
 # include "mint/stat.h"
 
 # include "console.h"
-# include "dosfile.h"
 # include "filesys.h"
 # include "k_prot.h"
 # include "memory.h"
@@ -671,7 +670,7 @@ shutdown(void)
 	DEBUG(("done"));
 
 	DEBUG(("Syncing file systems ..."));
-	s_ync();
+	sys_s_ync();
 	DEBUG(("done"));
 
 	for (i = 0; i < NUM_DRIVES; i++)
@@ -694,7 +693,7 @@ shutdown(void)
 	}
 
 	DEBUG(("Syncing file systems ..."));
-	s_ync();
+	sys_s_ync();
 	DEBUG(("done"));
 }
 
