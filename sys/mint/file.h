@@ -514,8 +514,19 @@ struct kerinfo
 	/* lookup cookies in original TOS cookiejar */
 	long	_cdecl (*get_toscookie)(ulong tag, ulong *val);
 	
+	/* XXX temporary until new kernel interface */
+	void	_cdecl (*so_register)(short, struct dom_ops *);
+	void	_cdecl (*so_unregister)(short);
+	long	_cdecl (*so_release)(struct socket *);
+	void	_cdecl (*so_sockpair)(struct socket *, struct socket *);
+	long	_cdecl (*so_connect)(struct socket *, struct socket *, short, short, short);
+	long	_cdecl (*so_accept)(struct socket *, struct socket *, short);
+	long	_cdecl (*so_create)(struct socket **, short, short, short);
+	long	_cdecl (*so_dup)(struct socket **, struct socket *);
+	void	_cdecl (*so_free)(struct socket *);
+	
 	/* reserved, set to 0 */
-	long	res2 [16];
+	long	res2 [7];
 };
 
 
@@ -553,7 +564,7 @@ struct kerinfo
 # define O_LOCK		0x8000
 
 /* macros to be applied to FILEPTRS to determine their type */
-# define is_terminal(f) (f->flags & O_TTY)
+# define is_terminal(f) ((f)->flags & O_TTY)
 
 /* lseek() origins */
 # define SEEK_SET	0		/* from beginning of file */
