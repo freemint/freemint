@@ -128,15 +128,15 @@ static void quote_putch(TEXTWIN *v, int c)
 
 static void fgcol_putch(TEXTWIN *v, int c)
 {
-	v->term_cattr = ((v->term_cattr & ~CFGCOL) | 
-			 (vdi2ansi[c & 0x7] << 4));
+	v->term_cattr = (v->term_cattr & ~CFGCOL) | 
+			 ((c & 0xff) << 4);
 	v->output = vt52_putch;
 }
 
 static void bgcol_putch(TEXTWIN *v, int c)
 {
 	v->term_cattr = (v->term_cattr & ~CBGCOL) | 
-			 vdi2ansi[c & 0x7];
+			 (c & 0xff);
 	v->output = vt52_putch;
 }
 
@@ -158,14 +158,16 @@ ansi_bgcol_putch (TEXTWIN *v, int c)
 static void seffect_putch(TEXTWIN *v, int c)
 {
 	v->term_cattr |= ((c & 0x1f) << 8);
+	if (!v->vdi_colors)
+		v->term_cattr &= ~CE_ANSI_EFFECTS;
 	v->output = vt52_putch;
 }
 
 /* clear special effects */
 static void ceffect_putch(TEXTWIN *v, int c)
 {
-	if (c == '_')
-		v->term_cattr &= ~(C_ANSI_FG | C_ANSI_BG);
+	if (c == '_' && !v->vdi_colors)
+		v->term_cattr &= ~CE_ANSI_EFFECTS;
 	
 	v->term_cattr &= ~((c & 0x1f) << 8);
 	v->output = vt52_putch;
@@ -499,12 +501,10 @@ void vt52_putch(TEXTWIN *v, int c)
 				{
 					curs_off(v);
 					delete_line(v, 0);
-					/* FIXME: Smear background!  */
 				}
 				else 
 				{
 					gotoxy(v, cx, cy+1);
-					smear_background (v, cy); 
 				}
 				break;
 
@@ -529,7 +529,6 @@ void vt52_putch(TEXTWIN *v, int c)
 
 			case '\t':
 				gotoxy(v, (v->cx +8) & ~7, v->cy);
-				smear_background (v, ((v->cx + 8) & ~7) - 1); 
 				break;
 
 			case '\016':		/* smacs, start alternate character set.  */

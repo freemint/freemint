@@ -201,9 +201,9 @@ static void shade_win(WINDOW *v, short flag)
 	}		
 }
 
-WINDOW *create_window(const char *title, short kind, 
-			short wx, short wy, short ww, short wh, 	/* Gr”že zum ”ffnen */
-			short max_w, short max_h)			/* max. Gr”že */
+WINDOW *create_window(char *title, short kind, 
+		      short wx, short wy, short ww, short wh, 	/* Gr”že zum ”ffnen */
+		      short max_w, short max_h)			/* max. Gr”že */
 {
 	WINDOW *v;
 	GRECT full;
