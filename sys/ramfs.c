@@ -256,8 +256,8 @@ ram_kfree (void *dst, register long size, const char *func)
 # undef kmalloc
 # undef kfree
 
-# define kmalloc(size)		ram_kmalloc (size, __FUNCTION__)
-# define kfree(place,size)	ram_kfree (place, size, __FUNCTION__)
+# define kmalloc(size)		ram_kmalloc (size, FUNCTION)
+# define kfree(place,size)	ram_kfree (place, size, FUNCTION)
 
 /* END tools */
 /****************************************************************************/
