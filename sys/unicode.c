@@ -789,7 +789,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 			}
 
 			offset = s[2];
-			
+
 			if (offset<0x80) /* first 128 characters (0..127) are always unicode compatible */
 			{
 				char msg[128];
@@ -836,8 +836,7 @@ init_unicode(void)
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return;
 
-	strcpy(name, sysdir);
-	strcat(name, "unicode.tbl");
+	ksprintf(name, sizeof(name), "%unicode.tbl", sysdir);
 
 	ret = do_open(&fp, name, O_RDONLY, 0, &xa);
 	if (!ret)
