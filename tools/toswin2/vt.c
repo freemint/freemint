@@ -5,10 +5,7 @@
  * optimized a lot.
  */
 
-#include "global.h"
-#include "textwin.h"
 #include "vt.h"
-#include "window.h"
 
 /*
  * paint(v, c): put character 'c' at the current (x, y) coordinates
@@ -20,16 +17,16 @@ void paint(TEXTWIN *v, unsigned int c)
 	int i;
 	int line = v->cy;
 
-	ulong use_attribute = ~CACS & v->term_cattr;
+	ulong use_attribute = ~CLINEDRAW & v->curr_cattr;
 
-	if ((v->term_cattr & CACS) &&
+	if ((v->curr_cattr & CLINEDRAW) &&
 	    (c== '`' ||
 	     c == 'a' ||
 	     (c >= 'f' && c <= '~') ||
 	     (c >= '+' && c <= '.') ||
 	     c == '.' ||
 	     c == '0'))
-	     	use_attribute |= CACS;
+	     	use_attribute |= CLINEDRAW;
 
 	switch (v->cfg->char_tab)
 	{
@@ -46,22 +43,17 @@ void paint(TEXTWIN *v, unsigned int c)
 			break;
 	}
 
-	if (v->term_flags & FINSERT)
+	if (v->curr_tflags & TINSERT)
 	{
-		memmove (v->data[line] + v->cx - 1, v->data[line] + v->cx,
+		memmove (v->cdata[line] + v->cx - 1, v->cdata[line] + v->cx,
 			 NCOLS (v) - v->cx);
 		for (i = v->maxx-1; i > v->cx; --i)
 		{
-			v->cflag[line][i] = v->cflag[line][i-1] | CDIRTY;
+			v->cflags[line][i] = v->cflags[line][i-1] | CDIRTY;
 		}
 	}
-	if (v->data[line][v->cx] != c)
-	{
-		v->data[line][v->cx] = c;
-		v->cflag[line][v->cx] = CDIRTY | use_attribute;
-	}
-	else
-		v->cflag[line][v->cx] = (CTOUCHED | use_attribute);
+	v->cdata[line][v->cx] = c;
+	v->cflags[line][v->cx] = CDIRTY | use_attribute;
 	v->dirty[line] |= SOMEDIRTY;
 }
 
@@ -75,7 +67,7 @@ vt_quote_putch (TEXTWIN* tw, unsigned int c)
 
 	if (tw->cx >= tw->maxx) {
 		/* Character was drawn in last column.  */
-		if (tw->do_wrap && !(tw->term_flags & FNOAM)) {
+		if (tw->do_wrap && (tw->curr_tflags & TWRAPAROUND)) {
 			new_line (tw);
 			tw->cx = 0;
 			tw->do_wrap = 0;
@@ -90,80 +82,56 @@ vt_quote_putch (TEXTWIN* tw, unsigned int c)
 void
 cud1 (TEXTWIN* tw)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx, tw->cy + 1 - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx, tw->cy + 1);
+	gotoxy (tw, tw->cx, tw->cy + 1 - RELOFFSET (tw));
 }
 
 /* Cursor down N lines.  */
 void
 cud (TEXTWIN* tw, short n)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx, tw->cy + n - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx, tw->cy + n);
+	gotoxy (tw, tw->cx, tw->cy + n - RELOFFSET (tw));
 }
 
 /* Cursor up one line.	*/
 void
 cuu1 (TEXTWIN* tw)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx, tw->cy - 1 - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx, tw->cy - 1);
+	gotoxy (tw, tw->cx, tw->cy - 1 - RELOFFSET (tw));
 }
 
 /* Cursor up N lines.  */
 void
 cuu (TEXTWIN* tw, short n)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx, tw->cy - n - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx, tw->cy - n);
+	gotoxy (tw, tw->cx, tw->cy - n - RELOFFSET (tw));
 }
 
 /* Cursor left one column.  */
 void
 cub1 (TEXTWIN* tw)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx - 1, tw->cy - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx - 1, tw->cy);
+	gotoxy (tw, tw->cx - 1, tw->cy - RELOFFSET (tw));
 }
 
 /* Cursor left N columns.  */
 void
 cub (TEXTWIN* tw, short n)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx - n, tw->cy - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx - n, tw->cy);
+	gotoxy (tw, tw->cx - n, tw->cy - RELOFFSET (tw));
 }
 
 /* Cursor right one column.  */
 void
 cuf1 (TEXTWIN* tw)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx + 1, tw->cy - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx + 1, tw->cy);
+	gotoxy (tw, tw->cx + 1, tw->cy - RELOFFSET (tw));
 }
 
 /* Cursor right N columns.  */
 void
 cuf (TEXTWIN* tw, short n)
 {
-	if (tw->origin)
-		gotoxy (tw, tw->cx + n, tw->cy - RELOFFSET (tw));
-	else
-		gotoxy (tw, tw->cx + n, tw->cy);
+	gotoxy (tw, tw->cx + n, tw->cy - RELOFFSET (tw));
 }
 
 /* Move current cursor address of window TW to (X|Y),
@@ -176,19 +144,17 @@ gotoxy (TEXTWIN* tw, short x, short y)
 		x = 0;
 	else if (x >= tw->maxx)
 		x = tw->maxx - 1;
-	if (!tw->origin) {
-		if (y < tw->miny)
-			y = tw->miny;
-		else if (y >= tw->maxy)
-			y = tw->maxy - 1;
-	} else {
-		y += RELOFFSET (tw);
+
+	y += RELOFFSET (tw);
+	if (y < tw->miny)
+		y = tw->miny;
+	if (tw->curr_tflags & TORIGIN) {
 		if (y < tw->scroll_top)
 			y = tw->scroll_top;
 		else if (y >= tw->scroll_bottom - 1)
 			y = tw->scroll_bottom - 1;
 	}
-
+	
 	tw->cx = x;
 	tw->cy = y;
 	tw->do_wrap = 0;
@@ -234,12 +200,15 @@ delete_line (TEXTWIN* tw)
 		cy = 0;
 	lines = tw->scroll_bottom - cy - 1;
 
+	if (tw->last_cy >= cy && tw->last_cy < tw->scroll_bottom)
+		--tw->last_cy;
+		
 	/* FIXME: A ring buffer would be better.  */
-	saved_data = tw->data[cy];
-	saved_cflag = tw->cflag[cy];
-	memmove (tw->data + cy, tw->data + cy + 1,
+	saved_data = tw->cdata[cy];
+	saved_cflag = tw->cflags[cy];
+	memmove (tw->cdata + cy, tw->cdata + cy + 1,
 		 (sizeof saved_data) * lines);
-	memmove (tw->cflag + cy, tw->cflag + cy + 1,
+	memmove (tw->cflags + cy, tw->cflags + cy + 1,
 		 (sizeof saved_cflag) * lines);
 	if (cy == 0) {
 		/* This must be tw->cy, not cy!  */
@@ -247,8 +216,8 @@ delete_line (TEXTWIN* tw)
 	} else {
 		memset (tw->dirty + cy, ALLDIRTY, lines);
 	}
-	tw->data[tw->scroll_bottom - 1] = saved_data;
-	tw->cflag[tw->scroll_bottom - 1] = saved_cflag;
+	tw->cdata[tw->scroll_bottom - 1] = saved_data;
+	tw->cflags[tw->scroll_bottom - 1] = saved_cflag;
 
 	/* clear the last line */
 	clrline (tw, tw->scroll_bottom - 1);
@@ -270,16 +239,19 @@ insert_line (TEXTWIN* tw)
 	tw->do_wrap = 0;
 	lines = tw->scroll_bottom - cy - 1;
 
+	if (tw->last_cy > cy && tw->last_cy < tw->scroll_bottom)
+		++tw->last_cy;
+		
 	/* FIXME: A ring buffer would be better.  */
-	saved_data = tw->data[cy + lines];
-	saved_cflag = tw->cflag[cy + lines];
-	memulset (tw->dirty + cy + 1, ALLDIRTY, lines);
-	memmove (tw->data + cy + 1, tw->data + cy,
+	saved_data = tw->cdata[cy + lines];
+	saved_cflag = tw->cflags[cy + lines];
+	memset (tw->dirty + cy + 1, ALLDIRTY, lines);
+	memmove (tw->cdata + cy + 1, tw->cdata + cy,
 		 (sizeof saved_data) * lines);
-	memmove (tw->cflag + cy + 1, tw->cflag + cy,
+	memmove (tw->cflags + cy + 1, tw->cflags + cy,
 		 (sizeof saved_cflag) * lines);
-	tw->data[cy] = saved_data;
-	tw->cflag[cy] = saved_cflag;
+	tw->cdata[cy] = saved_data;
+	tw->cflags[cy] = saved_cflag;
 
 	clrline (tw, cy);
 	tw->do_wrap = 0;
@@ -295,8 +267,8 @@ void clrline(TEXTWIN *v, short r)
 
 	for (i = v->maxx-1; i >= 0; --i)
 	{
-		v->data[r][i] = ' ';
-		v->cflag[r][i] = v->term_cattr &
+		v->cdata[r][i] = ' ';
+		v->cflags[r][i] = v->curr_cattr &
 			(CBGCOL | CFGCOL);
 	}
 	v->dirty[r] = ALLDIRTY;
@@ -319,13 +291,8 @@ void clear(TEXTWIN *v)
  */
 void clrchar(TEXTWIN *v, short x, short y)
 {
-	if (v->data[y][x] != ' ')
-	{
-		v->data[y][x] = ' ';
-		v->cflag[y][x] = CDIRTY | (v->term_cattr & (CBGCOL|CFGCOL));
-	}
-	else
-		v->cflag[y][x] = CTOUCHED | (v->term_cattr & (CBGCOL|CFGCOL));
+	v->cdata[y][x] = ' ';
+	v->cflags[y][x] = CDIRTY | (v->curr_cattr & (CBGCOL|CFGCOL));
 	v->dirty[y] |= SOMEDIRTY;
 }
 
@@ -384,11 +351,11 @@ void delete_char(TEXTWIN *v, short x, short y)
 
 	for (i = x; i < v->maxx-1; i++)
 	{
-		v->data[y][i] = v->data[y][i+1];
-		v->cflag[y][i] = v->cflag[y][i+1] | CDIRTY;
+		v->cdata[y][i] = v->cdata[y][i+1];
+		v->cflags[y][i] = v->cflags[y][i+1] | CDIRTY;
 	}
-	v->data[y][v->maxx-1] = ' ';
-	v->cflag[y][v->maxx-1] = CDIRTY | (v->term_cattr & (CBGCOL|CFGCOL));
+	v->cdata[y][v->maxx-1] = ' ';
+	v->cflags[y][v->maxx-1] = CDIRTY | (v->curr_cattr & (CBGCOL|CFGCOL));
 	v->dirty[y] |= SOMEDIRTY;
 	v->do_wrap = 0;
 }
@@ -430,57 +397,133 @@ void set_size(TEXTWIN *v)
 	resize_textwin(v, cols, rows, v->miny);
 }
 
-#if 0
-/*
- * routines for setting the cursor state in window v
-*/
-void set_curs(TEXTWIN *v, int on)
+/* Turn inverse video on/off.  */
+void
+inverse_video (TEXTWIN* tw, int flag)
 {
-	short cx = v->cx;
+	if (flag && (tw->curr_tflags & TDECSCNM))
+		return;
+	if (!flag && !(tw->curr_tflags & TDECSCNM))
+		return;
 
-	if (cx >= v->maxx)
-		cx = v->maxx - 1;
+	tw->cfg->bg_color ^= tw->cfg->fg_color;
+	tw->cfg->fg_color ^= tw->cfg->bg_color;
+	tw->cfg->bg_color ^= tw->cfg->fg_color;
+	tw->cfg->bg_effects ^= tw->cfg->fg_effects;
+	tw->cfg->fg_effects ^= tw->cfg->bg_effects;
+	tw->cfg->bg_effects ^= tw->cfg->fg_effects;
 
-	if (on && (v->term_flags & FCURS))
-	{
-		v->cflag[v->cy][cx] ^= CINVERSE;
-		v->cflag[v->cy][cx] |= CTOUCHED;
-		v->dirty[v->cy] |= SOMEDIRTY;
-		v->term_flags |= FFLASH;
-	}
-	else if (!on)
-	{
-		v->cflag[v->cy][cx] ^= CINVERSE;
-		v->cflag[v->cy][cx] |= CTOUCHED;
-		v->dirty[v->cy] |= SOMEDIRTY;
-		v->term_flags &= ~FFLASH;
-	}
+	if (tw->curr_tflags & TDECSCNM)
+		tw->curr_tflags &= ~TDECSCNM;
+	else
+		tw->curr_tflags |= TDECSCNM;
+	
+	memset (tw->dirty + tw->miny, ALLDIRTY, NROWS (tw));
+	refresh_textwin (tw, 0);
 }
-
-void curs_on(TEXTWIN *v)
-{
-	 set_curs(v, 1);
-}
-
-void curs_off(TEXTWIN *v)
-{
-	 set_curs(v, 0);
-}
-#endif
 
 /* Reset colors to original colors (i. e. those that were
  * configured in the window configuration dialog).
  */
-void original_colors(TEXTWIN *v)
+void 
+original_colors(TEXTWIN *v)
 {
 	if (v->cfg->vdi_colors) {
-		v->term_cattr = (v->term_cattr &
+		v->curr_cattr = (v->curr_cattr &
 			~(CFGCOL | CBGCOL)) |
 			COLORS (v->cfg->fg_color, v->cfg->bg_color);
 	} else {
-		v->term_cattr = (v->term_cattr &
+		v->curr_cattr = (v->curr_cattr &
 			~(CFGCOL | CBGCOL | CE_ANSI_EFFECTS)) |
 			COLORS (9, 9);
 	}
 }
 
+/* Save cursor position and attributes.
+   FIXME: Two data sets (standard and alternate display)
+   have to be stored.  */
+void
+save_cursor (TEXTWIN* tw)
+{
+	tw->saved_x = tw->cx;
+	tw->saved_y = tw->cy;
+	tw->saved_tflags = tw->curr_tflags;
+	tw->saved_cattr = tw->curr_cattr;
+}
+
+/* Restore cursor position and attributes.
+   FIXME: Two data sets (standard and alternate display)
+   have to be stored.  */
+void
+restore_cursor (TEXTWIN* tw)
+{
+	/* Xterm restores the character sets if the cursor has
+	   actually never been saved before.  */
+	tw->curr_tflags &= ~(TCSG | TCSGS);
+	if (tw->saved_x != -1 && tw->saved_y != -1)
+		tw->curr_tflags |= (tw->saved_tflags &
+				    (TCSG | TCSGS));
+	else
+		tw->curr_tflags |= TCSGS;
+
+	tw->curr_cattr &= ~DECSC_FLAGS;
+	tw->curr_cattr |= (tw->saved_cattr & DECSC_FLAGS);
+
+	/* If never saved the coordinates will be negative.
+	   but that will place the cursor in the upper left
+	   corner anyway, which is exactly what we want.  */	
+	gotoxy (tw, tw->cx, tw->cy - RELOFFSET (tw));
+}
+
+
+/* Implement hard or soft reset.  Modelled after VTReset in
+   xterm.  */
+void
+vt_reset (struct textwin* tw, bool full, bool saved)
+{	
+	tw->scroll_top = tw->miny;
+	tw->scroll_bottom = tw->maxy;
+	
+	tw->curr_cattr &= ~CPROTECTED;
+	tw->curr_tflags &= ~TORIGIN;
+	original_colors (tw);
+	
+	tw->curr_tflags &= ~TCSG;
+	tw->curr_tflags |= TCSGS;
+	
+	if (full) {
+		tw->curr_tflags |= TWRAPAROUND;
+		tw->curr_tflags &= ~TINSERT;
+		tw->curr_cattr &= ~(ATTRIBUTES ^ CBGCOL ^ CFGCOL);
+
+		reset_tabs (tw);
+		tw->curs_mode = CURSOR_NORMAL;
+		tw->vt_mode = tw->cfg->vt_mode;
+		clear (tw);
+		
+		/* Leave alternate screen!  */
+		
+		/* Reset to 80 columns.  */
+		if (tw->curr_tflags & TDECCOLM)
+			resize_textwin (tw, 80, NROWS (tw), SCROLLBACK (tw));
+		/* Reset to normal video.  */
+		inverse_video (tw, 0);
+
+		gotoxy (tw, 0, 0);
+		save_cursor (tw);			
+	} else {
+		tw->curr_tflags |= TWRAPAROUND;  /* FIXME: Read from config.  */
+		tw->curr_tflags &= ~TINSERT;
+		tw->curr_cattr &= ~(ATTRIBUTES ^ CBGCOL ^ CFGCOL);
+		tw->saved_x = tw->saved_y = -1;
+	}
+	
+	if (saved) {
+		short i;
+		for (i = 0; i < tw->miny; ++i) {
+			memset (tw->cdata[i], ' ', 
+				(sizeof tw->cdata[i][0]) * tw->maxx);
+			memulset (tw->cflags[i], tw->curr_cattr, tw->maxx);
+		}
+	}
+}
