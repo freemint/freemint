@@ -1,35 +1,35 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * Started: 1999-08-17
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
+ *
+ *
  * Purpose:
  * Contains assembler subroutines needed for Slbopen(), Slbclose(), ...
  *
@@ -39,7 +39,7 @@
  *             instead of its PID (Gryf)
  * 99/08/11-
  * 99/08/17: - Creation (Gryf)
- * 
+ *
  */
 
 #include "magic/magic.i"
@@ -163,22 +163,11 @@ _slb_close_and_pterm:
 // GEMDOS at each library call.
 
 	.globl	_slb_exec
-#ifdef SLB_EXT
-	.globl	_slb_fast
-#endif
 	.globl	_tosbp
 
 _slb_exec:
 	move.l	_tosbp,a0
 	move.l	(a0),d1
-
-#ifdef SLB_EXT
-	bra.s	slbcont
-_slb_fast:
-	clr.l	d1
-slbcont:
-#endif
-
 	move.l	8(sp),d0
 	bmi.s	einvfn
 	move.l	4(sp),a0
@@ -199,30 +188,6 @@ slbcont:
 einvfn:
 	moveq	#-32,d0
 	rts
-
-// Search for the 0xSLBPATH value (draco)
-
-	.globl	_getslbpath
-	.globl	_slbpath
-
-_getslbpath:
-	move.l	4(sp),a0		// deep philosophy, really
-	move.l	0x002c(a0),a0
-L_loop:	lea	_slbpath,a1
-	moveq	#0x08,d0
-L_strncmp:
-	cmpm.b	(a0)+,(a1)+
-	bne.s	L_nope
-	subq.w	#0x01,d0
-	bne.s	L_strncmp
-	move.l	a0,d0
-	bne.s	L_got
-L_nope:	clr.l	d0
-L_zs:	tst.b	(a0)+
-	bne.s	L_zs
-	tst.b	(a0)
-	bne.s	L_loop
-L_got:	rts
 
 //
 // Following are some MiNT-GEMDOS-calls

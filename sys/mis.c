@@ -72,9 +72,9 @@
 
 # include "mis.h"
 
-# define STDIN	0
-# define STDOUT	1
-# define STDERR	2
+# define STDIN		0
+# define STDOUT		1
+# define STDERR		2
 
 # define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
 # define SHELL_UMASK	~(S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
@@ -183,27 +183,6 @@ env_append(char *where, char *what)
 	return ++where;
 }
 
-static char *
-shell_getenv(const char *var)
-{
-	char *env_str = shell_base->p_env;
-	long len = strlen(var);
-
-	if (env_str && len)
-	{
-		while (*env_str)
-		{
-			if ((strncmp(env_str, var, len) == 0) && (env_str[len] == '='))
-				return env_str + len + 1;
-			while (*env_str)
-				env_str++;
-			env_str++;
-		}
-	}
-
-	return NULL;
-}
-
 /* shell_delenv() idea is borrowed from mintlib's del_env() */
 static void
 shell_delenv(const char *strng)
@@ -211,7 +190,7 @@ shell_delenv(const char *strng)
 	char *name, *var;
 
 	/* find the tag in the environment */
-	var = shell_getenv(strng);
+	var = _mint_getenv(shell_base, strng);
 	if (!var)
 		return;
 
@@ -247,7 +226,7 @@ shell_setenv(const char *var, char *value)
 	new_size = env_size(env_str);
 	new_size += strlen(value);
 
-	old_var = shell_getenv(var);
+	old_var = _mint_getenv(shell_base, var);
 
 	if (old_var)
 		new_size -= strlen(old_var);	/* this is the VALUE of the var */
@@ -317,7 +296,7 @@ crunch(char *cmd, char **argv)
 			if (*cmd)
 				*cmd++ = 0;		/* terminate the tag for getenv() */
 
-			start = shell_getenv(start);
+			start = _mint_getenv(shell_base, start);
 			if (start)
 				argv[idx++] = start;
 
@@ -486,7 +465,7 @@ execvp(char **argv)
 
 	if (t == NULL)
 	{
-		path = shell_getenv("PATH");
+		path = _mint_getenv(shell_base, "PATH");
 		if (path == NULL)
 			path = "./";
 	}
@@ -708,7 +687,7 @@ sh_cd(long argc, char **argv)
 	}
 	else
 	{
-		newdir = shell_getenv("HOME");
+		newdir = _mint_getenv(shell_base, "HOME");
 		if (!newdir)
 			newdir = "/";
 	}
@@ -724,7 +703,7 @@ sh_cd(long argc, char **argv)
 		else
 			dos2unix(cwd);
 
-		pwd = shell_getenv("PWD");
+		pwd = _mint_getenv(shell_base, "PWD");
 
 		if (pwd && strcmp(pwd, cwd))
 			shell_setenv("OLDPWD", pwd);
@@ -1183,12 +1162,12 @@ shell(void)
  * which changes the stack pointer value.
  */
 static void
-shell_start(long bp)
+shell_start(BASEPAGE *bp)
 {
 	/* we must leave some bytes of `pad' behind the (sp)
 	 * (see arch/syscall.S), this is why it is `-256L'.
 	 */
-	setstack(bp + SHELL_STACK - 256L);
+	setstack((long)bp + SHELL_STACK - 256L);
 
 	Mshrink((void *)bp, SHELL_STACK);
 
