@@ -43,7 +43,6 @@
 # include "mint/arch/register.h"
 # include "mint/asm.h"
 # include "mint/credentials.h"
-# include "mint/proc.h"
 # include "mint/signal.h"
 
 # include "arch/cpu.h"
