@@ -422,7 +422,7 @@ XaAES(void)
 		 *     100701: And do this before building input_channels,
 		 *             otherwise Fselect goes horribly wrong.
 		 */
-		if (S.update_lock == 0)
+		if (S.update_lock == 0 && S.mouse_lock == 0)
 		{
 			int i;
 
