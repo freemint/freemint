@@ -24,9 +24,13 @@
 #ifndef _XA_EVNT_H_
 #define _XA_EVNT_H_
 
-extern BUTTON pending_button;
+extern BUTTON pending_button[];
 
 void multi_intout(short *o, int evnt);
+
+static void do_widget_repeat(Tab *tab);
+void set_widget_repeat(LOCK lock, XA_WINDOW *wind);
+
 void cancel_evnt_multi(XA_CLIENT *client, int which);
 
 void XA_keyboard_event(LOCK lock, KEY *key);

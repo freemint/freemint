@@ -9,6 +9,8 @@ stuff especially from the header files. Uptodate AES/VDI bindings
 are in the gemlib library.
 
 Other important changes:
+- NEEDS NEW MOOSE.XDD DRIVER!!! Compile and use the one in
+  ../sys/xdd/whlmoose/
 - use nkcc routines from cflib (available for PureC/gcc)
 - use VDI bindings from current gemlib (available for PureC/gcc)
 - use libkern support library from FreeMiNT;

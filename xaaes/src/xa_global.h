@@ -56,6 +56,8 @@ XA_CLIENT *pid2client(int,char *,int);
 #define Client2Pid(client_p) ((client_p)->pid)
 
 extern BUTTON button;
+extern BUTTON mu_button;
+
 extern XA_TREE nil_tree;
 
 #ifdef __GNUC__

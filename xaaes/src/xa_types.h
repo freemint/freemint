@@ -173,9 +173,17 @@ struct moose_data
 	short x;
 	short y;
 	short state;
+	short cstate;
 	short clicks;
 	short dbg1;
 	short dbg2;
+};
+
+struct mooses_data
+{
+	short	state;
+	short	x;
+	short	y;
 };
 
 /*-----------------------------------------------------------------
@@ -478,7 +486,7 @@ struct button_data
 {
 	XA_CLIENT *client;
 	short x, y;
-	short b, clicks, ks;
+	short b, cb, clicks, ks;
 	bool got, have, skip;
 };
 typedef struct button_data BUTTON;
@@ -583,6 +591,7 @@ struct xa_pending_widget
 	struct xa_window *wind;		/* Window to which the widget is connected */
 	WidgetBehaviour *action;	/* Function to call */
 	short x, y;
+	short b, nx, ny;
 	int offs;			/* slider information */
 	RECT d;				/* distance information */
 	int xy;				/* compass when border sizing */
@@ -876,7 +885,7 @@ struct task_administration_block
 	int reply;
 	int locker;
 
-	TASK_TY ty;
+	TASK_TY ty;	/* NO_TASK, ROOT_MENU, MENU_BAR, POP_UP... */
 
 	int timeout;	/* Normally 0, otherwise the frequency that we call active_function with */
 	LOCK lock;
