@@ -270,7 +270,6 @@ static PCB_TTx	pCB_setenv;		/* setenv name val	*/
  * PERCENTAGE=n ........ set max. percentage of cache to fill with linear reads
  * PRN=file ............ specify initial file for handle 3
  * SECURELEVEL=n ....... enables the appropriate security level, range 0-2
- * SINGLEMODE=[yn] ..... allow/disallow programs to switch off the scheduler
  * SLICES=n ............ set multitasking granularity
  * UPDATE=n ............ set sync time in seconds for the system update daemon
  * VFAT=<drives> ....... activate VFAT extension for specified drives
@@ -303,13 +302,6 @@ static PCB_Dx	pCB_vfat;		/* VFAT=<drives>	*/
 static PCB_B	pCB_vfatlcase;		/* VFATLCASE=[yn]	*/
 static PCB_Dx	pCB_wb_enable;		/* WB_ENABLE=<drives>	*/
 static PCB_Dx	pCB_writeprotect;	/* WRITEPROTECT=<drives>*/
-
-# if 0
-/*     short	disallow_single;	 * SINGLEMODE=[yn]	*/
-# define	DISALLOW_SINGLE		(& disallow_single)
-# else
-# define	DISALLOW_SINGLE		_NOT_SUPPORTED_
-# endif
 
 /*============================================================================*/
 /* The  parser's  item  table contains for every keyword (comand/variable) one
@@ -383,7 +375,6 @@ struct parser_item { char *key; PITYPE type; void *cb; long dat;
 	{ "WRITEPROTECT",PI_V_D,   pCB_writeprotect   },
 	{ "HARDSCROLL",  PI_R_S,   _NOT_SUPPORTED_    },
 	{ "NEWFATFS",    PI_V_D,   pCB_newfatfs       },
-	{ "SINGLEMODE",  PI_R_B,   DISALLOW_SINGLE    },
 
 	{ NULL }
 };
