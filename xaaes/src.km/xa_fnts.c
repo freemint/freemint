@@ -990,9 +990,13 @@ click_size(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
 	if (list->cur)
 	{
 		struct xa_fnts_info *fnts = list->data;
-
 		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
-		strcpy(ted->te_ptext, list->cur->c.td.text.text->text);
+		struct seget_entrybyarg p;
+
+		p.idx = 0;
+		p.arg.typ.txt = ted->te_ptext;
+		list->get(list, list->cur, SEGET_TEXTCPY, &p);
+		//strcpy(ted->te_ptext, list->cur->c.td.text.text->text);
 		obj_edit(fnts->wt,
 			 ED_INIT,
 			 FNTS_EDSIZE,
