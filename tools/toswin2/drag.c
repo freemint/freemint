@@ -238,18 +238,18 @@ void drag_selection(TEXTWIN *t)
 
 		if (win_id >= 0)			/* Ziel ist Fenster anderer App */
 		{
-			int	pipe;
+			int	mypipe;
 			char	ext[33];
 			char	*text;
 			
-			pipe = dd_create(app_id, win_id, x, y, kstate, ext);
-			if (pipe > 0)
+			mypipe = dd_create(app_id, win_id, x, y, kstate, ext);
+			if (mypipe > 0)
 			{
 				text = read_scrap();
-				d = dd_stry(pipe, ".TXT", "Text", strlen(text));
+				d = dd_stry(mypipe, ".TXT", "Text", strlen(text));
 				if (d == DD_OK)
-					d = (int)Fwrite(pipe, strlen(text), text);
-				dd_close(pipe);
+					d = (int)Fwrite(mypipe, strlen(text), text);
+				dd_close(mypipe);
 			}
 		}
 	}
