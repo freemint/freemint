@@ -202,15 +202,6 @@ _P_kill:
 	addq.l	#6,sp
 	rts
 
-	.globl	_P_sigsetmask
-
-_P_sigsetmask:
-	move.l	4(sp),-(sp)
-	move.w	#0x0117,-(sp)
-	trap	#1
-	addq.l	#6,sp
-	rts
-
 	.globl	_P_setpgrp
 
 _P_setpgrp:
