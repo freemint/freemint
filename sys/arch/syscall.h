@@ -26,7 +26,6 @@
 
 /* values for original system vectors */
 extern long old_dos, old_bios, old_xbios, old_trap2;
-extern long aes_handle, vdi_handle, gdos_version;
 
 long	_cdecl	mint_trap2	(void);
 long	_cdecl	unused_trap	(void);
@@ -53,6 +52,11 @@ long	_cdecl	new_cpv		(void);
 long	_cdecl	new_uninit	(void);
 long	_cdecl	new_spurious	(void);
 long	_cdecl	new_pmmuacc	(void);
+
+extern long gdos_version;
+
+long	_cdecl	(*aes_handler)	(void *);
+long	_cdecl	(*vdi_handler)	(void *);
 
 char *	_cdecl	lineA0		(void);
 void	_cdecl	call_aes	(short **);

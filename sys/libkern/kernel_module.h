@@ -748,7 +748,8 @@ INLINE long
 check_kentry_version(void)
 {
         if ((MINT_MAJOR != MINT_MAJ_VERSION) || (MINT_MINOR != MINT_MIN_VERSION)
-	    || (kentry->version_major != KENTRY_MAJ_VERSION))
+	    || (kentry->version_major != KENTRY_MAJ_VERSION)
+	    || (kentry->version_minor != KENTRY_MIN_VERSION))
 	{
 		c_conws("Wrong FreeMiNT version!\r\n");
 		c_conws("This module is compiled against " MINT_NAME);
@@ -858,6 +859,7 @@ check_kentry_version(void)
  */
 
 # define load_modules		(*KENTRY->vec_module.load_modules)
+# define register_trap2		(*KENTRY->vec_module.register_trap2)
 
 
 /*
