@@ -41,6 +41,30 @@
 
 #include "mint/signal.h"
 
+static char stillrun[] = " is still running.|Wait again or Kill?][Wait|Kill]";
+
+static bool kill_or_wait(struct xa_client *client)
+{
+	char *sr = stillrun;
+	char *cn = &client->name;
+	char *a;
+	char atxt[80] = {"[1]["};
+
+	a = atxt + 4;
+
+	while (*cn == 0x20)
+		cn++;
+
+	while (*cn)
+		*a++ = *cn++;
+
+	while (*sr)
+		*a++ = *sr++;
+
+	*a = 0;
+
+	do_form_alert(0, C.Aes, 1, &atxt);
+}
 
 /*
  * Cleanup on exit
@@ -48,6 +72,8 @@
 void
 k_shutdown(void)
 {
+	long j = 0;
+
 	DIAGS(("Cleaning up ready to exit...."));
 
 	/* send all applications AP_TERM */
@@ -73,21 +99,26 @@ k_shutdown(void)
 		if (flag)
 			break;
 
+		//yield();
 		/* sleep a second */
 		//f_select(5000L, NULL, 0, 0);
 		
-		nap(1000);
+		nap(5000);
 
-		DIAGS(("Cleaning up clients"));
-
-		FOREACH_CLIENT(client)
+		if (j > 10000)
 		{
-			if (client != C.Aes)
+			DIAGS(("Cleaning up clients"));
+
+			FOREACH_CLIENT(client)
 			{
-				DIAGS(("killing client '%s'", client->name));
-				ikill(client->p->pid, SIGKILL);
+				if (client != C.Aes)
+				{
+					DIAGS(("killing client '%s'", client->name));
+					ikill(client->p->pid, SIGKILL);
+				}
 			}
 		}
+		j++;
 	}
 	DIAGS(("all clients have exited"));
 

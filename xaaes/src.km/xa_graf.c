@@ -1092,17 +1092,23 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		short clicks;
 
+		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
+			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+
 		clicks = client->md_head->clicks;
 				
-		if (clicks == -1 && (client->md_head != client->md_tail))
+		if (clicks == -1)
 		{
-			client->md_head++;
-			if (client->md_head > client->md_end)
-				client->md_head = client->mdb;
-			clicks = client->md_head->clicks;
+			if (client->md_head != client->md_tail)
+			{
+				client->md_head++;
+				if (client->md_head > client->md_end)
+					client->md_head = client->mdb;
+				clicks = client->md_head->clicks;
+			}
+			else
+				clicks = 0;
 		}
-		else
-			clicks = 0;
 
 		if (clicks)
 		{
