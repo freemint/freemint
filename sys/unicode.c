@@ -824,7 +824,9 @@ init_unicode(void)
 
 	ksprintf(name, sizeof(name), "%sunicode.tbl", sysdir);
 
+# ifdef VERBOSE_BOOT
 	boot_printf(MSG_unitable_loading, name);
+# endif
 
 	ret = do_open(&fp, name, O_RDONLY, 0, &xa);
 	if (!ret)
@@ -833,14 +835,18 @@ init_unicode(void)
 		do_close(rootproc, fp);
 
 		/* print success message */
+# ifdef VERBOSE_BOOT
 		boot_printf(MSG_init_done, name);
+# endif
 	}
 	else
 	{
 		fp->links = 0;		/* suppress complaints */
 		FP_FREE(fp);
 
+# ifdef VERBOSE_BOOT
 		boot_printf(MSG_init_error, ret);
+# endif
 	}
 }
 
