@@ -1039,24 +1039,24 @@ next:
 		/* HR return a very small area :-) hope app's      */
 		/*    then decide to allocate a buffer themselves. */
 		/*    This worked for SELECTRIC.  */
-#if HALF_SCREEN
 		/*   Alas!!!! not PS_CONTRL.ACC	  */
 		/* So now its all become official */
 
 		/* HR: make the quarter screen buffer for wind_get(WF_SCREEN) :-( :-( */
 		/*    What punishment would be adequate for the bloke (or bird) who invented this? */
 
-		if (client->half_screen_buffer == 0)
+		if (client->half_screen_buffer == NULL)
 		{
-		/* HR 170102: removed from  boot.c */
-			long sc = ((640L*400/2)*screen.planes)/8;
-			DIAGS(("sc: %ld, cl: %ld",sc,client->options.half_screen));
-			if (client->options.half_screen)		/* HR 170102: Use if specified. whether greater or smaller. */
+			long sc = ((640L * 400 / 2) * screen.planes) / 8;
+
+			DIAGS(("sc: %ld, cl: %ld", sc, client->options.half_screen));
+
+			if (client->options.half_screen)
+				/* Use if specified. whether greater or smaller. */
 				client->half_screen_size = client->options.half_screen;
 			else
 				client->half_screen_size = sc;
-			
-			/* XXX client->half_screen_buffer = XA_alloc(&client->base, client->half_screen_size, 1, 1111); */
+
 			client->half_screen_buffer = proc_malloc(client->half_screen_size);
 			DIAGS(("half_screen_buffer for %s: mode:%x, %ld(%lx) size %ld use %ld",
 				c_owner(client),
@@ -1069,9 +1069,6 @@ next:
 
 		*(char  **)&o[1] = client->half_screen_buffer;
 		*(size_t *)&o[3] = client->half_screen_size;
-#else
-		o[0] = o[1] = o[2] = o[3] = o[4] = 0;
-#endif
 		break;
 
 	case WF_DCOLOR:

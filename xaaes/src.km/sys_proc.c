@@ -62,9 +62,7 @@ xaaes_share(void *_client)
 static void _cdecl
 xaaes_release(void *_client)
 {
-	enum locks lock = NOLOCKS;
-
-	release_client(lock, _client);
+	DIAGS(("xaaes_release: %lx", _client));
 }
 
 

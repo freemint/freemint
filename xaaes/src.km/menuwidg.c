@@ -265,23 +265,23 @@ attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, M
 int
 detach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item)
 {
-	int ret = 0;
 	OBJECT *attach_to = tree + item;
 	XA_MENU_ATTACHMENT *xt;
+	int ret = 0;
 
 	Sema_Up(clients);
 
-	if (is_attach(client,tree,item, &xt))
+	if (is_attach(client, tree, item, &xt))
 	{
 		char *text;
 
 		DIAG((D_menu,NULL,"detach_menu %lx + %d for %s %lx + %d",
 			xt->tree, xt->item, client->name, tree, item));
 
-		attach_to->ob_flags&=~OF_SUBMENU;
+		attach_to->ob_flags &= ~OF_SUBMENU;
 		xt->to_tree = NULL;
 		xt->to_item = 0;
-		if ((attach_to->ob_type&0xff) == G_STRING)
+		if ((attach_to->ob_type & 0xff) == G_STRING)
 		{
 			text = get_ob_spec(attach_to)->free_string;
 			text[strlen(text)-1] = ' ';
@@ -1226,9 +1226,6 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 	XA_TREE *wt = widg->stuff;
 	OBJECT *root;
 
-	if (wind->owner->killed || wt->owner->killed)
-		return false;
-
 	DIAG((D_menu,wt->owner,"display_menu_widget on %d for %s%s",
 		wind->handle, t_owner(wt), wt->menu_line ? "; with menu_line" : ""));
 
@@ -1267,11 +1264,7 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 static bool
 click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	XA_TREE *wt = widg->stuff;
 	int pid = C.AESpid;
-
-	if (wind->owner->killed || wt->owner->killed)
-		return false;
 
 	DIAG((D_menu, NULL, "click_menu_widget"));
 

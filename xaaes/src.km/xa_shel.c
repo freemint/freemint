@@ -65,7 +65,7 @@ is_ext(char *s, char **app)
 	return false;
 }
 
-/* HR: 210201 Parse comand tail, while removing separators. */
+/* Parse comand tail, while removing separators. */
 static long
 parse_tail(char *to, char *ti)
 {
@@ -380,7 +380,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	if (get_drv(pcmd) >= 0)
 	{
 		strcpy(cmd, pcmd);
-		DIAG((D_shel,0,"cmd complete: '%s'", cmd));
+		DIAG((D_shel, 0, "cmd complete: '%s'", cmd));
 	}
 	else
 	{
@@ -487,8 +487,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 				}
 			}
 
-			/* HR 260202: 'save_cmd' changed to 'cmd' */
-			drv = drive_and_path(/* save_ */ cmd, path, name, true, true);
+			drv = drive_and_path(cmd, path, name, true, true);
 
 			DIAG((D_shel, 0, "[2]drive_and_path %d,'%s','%s'", drv, path,name));
 
@@ -568,9 +567,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 			strcpy(info->cmd_name, save_cmd);
 
-			/* As we now unambiguously know the path from which the client is loaded,
-			 * why not fill it out here? :-)
-			 */
 			*(info->home_path) = drv + 'a';
 			*(info->home_path + 1) = ':';
 			strcpy(info->home_path+2, path);
@@ -1025,7 +1021,6 @@ put_env(enum locks lock, short wisgr, short wiscr, char *cmd)
 	return ret;
 }
 
-
 /* HR: because everybody can mess around with the AES's environment
  *     (shel_write(8, ...) changing the pointer array strings,
  *     it is necessary to make a permanent copy of the variable.
@@ -1033,20 +1028,20 @@ put_env(enum locks lock, short wisgr, short wiscr, char *cmd)
 unsigned long
 XA_shell_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	char **p = (char**)pb->addrin[0], *pf;
+	char **p = (char**)pb->addrin[0];
 	char *name = (char *)pb->addrin[1];
 
 	CONTROL(0,1,2)
 
 	if (p && name)
 	{
-		*p = 0;
-		pf = get_env(lock, name);
+		char *pf = get_env(lock, name);
+
+		*p = NULL;
 
 		DIAGS(("shell_env for %s: '%s' :: '%s'", c_owner(client), name, pf? pf: "~~~"));	
 		if (pf)
 		{
-			/* XXX *p = XA_alloc(&client->base, strlen(pf) + 1, 0, 0); */
 			*p = proc_malloc(strlen(pf) + 1);
 			if (*p)
 				strcpy(*p, pf);
@@ -1054,6 +1049,5 @@ XA_shell_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 	pb->intout[0] = 1;
-
 	return XAC_DONE;
 }

@@ -242,9 +242,6 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		return;
 	}
 
-	if (dest_client->killed)
-		return;
-
 	/* XaAES has left its main loop, so no point queuing messages. */
 	if (C.shutdown & QUIT_NOW)
 		return;

@@ -118,10 +118,6 @@ bootmessage(unsigned long mint)
 	fdisplay(log, " - Built without file selector");
 #endif
 
-#if !TEAR_OFF
-	fdisplay(log, " - Menu's can *not* be teared off");
-#endif
-
 	if (cfg.fsel_cookie)
 		fdisplay(log, " - FSEL cookie found");
 

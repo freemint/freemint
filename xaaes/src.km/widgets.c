@@ -1735,9 +1735,6 @@ display_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget 
 	XA_TREE *wt = widg->stuff;
 	OBJECT *root;
 
-	if (wind->owner->killed || wt->owner->killed)
-		return false;
-
 	/* Convert relative coords and window location to absolute screen location */
 	root = rp_2_ap(wind, widg, NULL);
 
