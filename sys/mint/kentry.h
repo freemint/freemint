@@ -48,6 +48,7 @@ struct dma;
 struct file;
 struct global;
 struct ilock;
+struct memregion;
 struct mfp;
 struct module_callback;
 struct nf_ops;
@@ -100,7 +101,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	5
+#define KENTRY_MIN_VERSION	6
 
 
 /* hardware dependant vector
@@ -331,6 +332,10 @@ struct kentry_mem
 
 	void *_cdecl (*umalloc)(unsigned long size, const char *func);
 	void  _cdecl (*ufree)(void *place, const char *func);
+
+	struct memregion *_cdecl (*addr2mem)(struct proc *p, long addr);
+	long  _cdecl (*attach_region)(struct proc *proc, struct memregion *reg);
+	void  _cdecl (*detach_region)(struct proc *proc, struct memregion *reg);
 };
 #define DEFAULTS_kentry_mem \
 { \
@@ -342,6 +347,10 @@ struct kentry_mem
 	\
 	_umalloc, \
 	_ufree, \
+	\
+	addr2mem, \
+	attach_region, \
+	detach_region, \
 }
 
 
