@@ -27,6 +27,7 @@
 
 # include "bios.h"	/* kbshft, kintr, ...  */
 # include "debug.h"	/* do_func_key() */
+# include "dev-mouse.h"	/* mshift */
 # include "dos.h"	/* s_hutdown() */
 # include "init.h"	/* boot_printf() */
 # include "k_fds.h"	/* fp_alloc() */
@@ -693,7 +694,6 @@ ctrl_alt_rshift_del(PROC *p)
 short
 ikbd_scan(short scancode)
 {
-	extern char mshift;		/* for mouse -- see biosfs.c */
 	ushort mod = 0, shift = *kbshft;
 
 	scancode &= 0x00ff;		/* better safe than sorry */
