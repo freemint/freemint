@@ -117,14 +117,14 @@ typedef struct cpxlist
 	CPXHEAD	header;
 } CPX_LIST;
 
-/* Funktionen und Flags die von XControl zur Verfügung  */
+/* Funktionen und Flags die von XControl zur Verfuegung  */
 /* gestellt werden.                                     */
 typedef struct
 {
-	short	handle;
-	short	booting;
-	short	reserved;
-	short	SkipRshFix;
+	short handle;
+	short booting;
+	short reserved;
+	short SkipRshFix;
 	
 	CPX_LIST * _cdecl (*get_cpx_list)(void);
 	short _cdecl (*save_header)(CPX_LIST *header);
@@ -167,23 +167,34 @@ typedef struct
 
 } XCPB;
 
-/* Funktionen die vom CPX-Modul zur Verfügung   */
-/* gestellt werden.                             */
+/*
+ * CPX interface entry points
+ * 
+ * 32bit clean
+ */
+
+/* helper structs for 16bit argument alignment */
+struct cpx_key_args { short kstate; short key; short *quit; };
+struct cpx_button_args { MRETS *mrets; short nclicks; short *quit; };
+struct cpx_hook_args { short event; short *msg; MRETS *mrets; short *key; short *nclicks; };
+struct cpx_close_args { short flag; };
+
 typedef struct
 {
-	short _cdecl (*cpx_call)(GRECT *rect);
+	short _cdecl (*cpx_call)(GRECT *rect, DIALOG * /* COPS extension */);
 	void  _cdecl (*cpx_draw)(GRECT *clip);
 	void  _cdecl (*cpx_wmove)(GRECT *work);
 	void  _cdecl (*cpx_timer)(short *quit);
-	void  _cdecl (*cpx_key)(short kstate, short key, short *quit);
-	void  _cdecl (*cpx_button)(MRETS *mrets, short nclicks, short *quit);
+	void  _cdecl (*cpx_key)(struct cpx_key_args);
+	void  _cdecl (*cpx_button)(struct cpx_button_args);
 	void  _cdecl (*cpx_m1)(MRETS *mrets, short *quit);
 	void  _cdecl (*cpx_m2)(MRETS *mrets, short *quit);
-	short _cdecl (*cpx_hook)(short event, short *msg, MRETS *mrets, short *key, short *nclicks);
-	void  _cdecl (*cpx_close)(short flag);
+	short _cdecl (*cpx_hook)(struct cpx_hook_args);
+	void  _cdecl (*cpx_close)(struct cpx_close_args);
 } CPXINFO;
 
-/* Nützliche Definitionen */
+
+/* Nuetzliche Definitionen */
 #define XAL_SAVE_DEFAULTS	0
 #define XAL_MEM_ERR		1
 #define XAL_FILE_ERR		2
@@ -196,22 +207,22 @@ typedef struct
 #define CT_KEY  53
 #endif
 
-#define	CPXD_INVALID	0x8000	/* signalisiert ungültigen CPX_DESC-Eintrag */
+#define	CPXD_INVALID	0x8000	/* signalisiert ungueltigen CPX_DESC-Eintrag */
 #define	CPXD_AUTOSTART	0x0002
 #define	CPXD_INACTIVE	0x0001
 
 typedef	struct cpx_desc
 {
-	struct cpx_desc *next;	/* Zeiger auf die n„chste CPX-Beschreibung oder 0L */
+	struct cpx_desc *next;	/* Zeiger auf die naechste CPX-Beschreibung oder 0L */
 
 	void	*start_of_cpx;	/* Startadresse des CPX im Speicher */
 	void	*end_of_cpx;	/* Endadresse des CPX im Speicher */
-	void	*sp_memory;	/* Start des Stackspeichers für den CPX-Kontext w„hrend cpx_call() */
+	void	*sp_memory;	/* Start des Stackspeichers fuer den CPX-Kontext waehrend cpx_call() */
 	
 	void	*context[16];	/* gesicherter Registerkontext */
-	void	*return_addr;	/* tempor„re Rücksprungadresse */
+	void	*return_addr;	/* temporaere Ruecksprungadresse */
 
-	CPXINFO	*info;		/* Zeiger auf CPXINFO-Struktur die bei cpx_call() zurückgeliefert wird */
+	CPXINFO	*info;		/* Zeiger auf CPXINFO-Struktur die bei cpx_call() zurueckgeliefert wird */
 
 	DIALOG	*dialog;	/* Zeiger auf die Dialogbeschreibung oder 0L, wenn das CPX nicht offen ist */
 	OBJECT	*tree;		/* ist bei Form-CPX 0L, bis cpx_form_do() aufgerufen wird */
@@ -220,14 +231,14 @@ typedef	struct cpx_desc
 	short	window_y;
 
 	short	is_evnt_cpx;	/* 0: Form-CPX 1: Event-CPX */
-	short	button;		/* wird von handle_form_cpx() zurückgeliefert */
-	short	*msg;		/* Zeiger auf den bei Xform_do() übergebenen Messagebuffer */
+	short	button;		/* wird von handle_form_cpx() zurueckgeliefert */
+	short	*msg;		/* Zeiger auf den bei Xform_do() uebergebenen Messagebuffer */
 
 	short	obfix_cnt;
 	short	box_width;
 	short	box_height;
-	GRECT	size;		/* Dialogausmaße und -position */
-	OBJECT	empty_tree[2];	/* IBOX für leeren Objektbaum am Anfang,
+	GRECT	size;		/* Dialogausmasse und -position */
+	OBJECT	empty_tree[2];	/* IBOX fuer leeren Objektbaum am Anfang,
 				   wegen WDIALOG-Fehler aus 2 Objekten bestehend */
 
 	struct cl_segm segm;
@@ -238,17 +249,17 @@ typedef	struct cpx_desc
 	int	selected;
 	short	flags;
 
-	/* Daten auf die das CPX Zugriff hat bzw. über Funktionen ädern kann */
+	/* Daten auf die das CPX Zugriff hat bzw. ueber Funktionen ädern kann */
 
 	GRECT	redraw_area;	/* Bereich den ein CPX nach WM_REDRAW neuzeichnen soll */
 	GRECT	dirty_area;	/* Bereich eines neuzuzeichnenden Rechtecks */
-	short	mask;		/* zus„tzliche Ereignismaske für evnt_multi() */
-	MOBLK	m1;		/* Mausrechteck für evnt_multi() */
-	MOBLK	m2;		/* Mausrechteck für evnt_multi() */
-	long	time;		/* Timerintervall für evnt_multi() */
+	short	mask;		/* zusaetzliche Ereignismaske fuer evnt_multi() */
+	MOBLK	m1;		/* Mausrechteck fuer evnt_multi() */
+	MOBLK	m2;		/* Mausrechteck fuer evnt_multi() */
+	long	time;		/* Timerintervall fuer evnt_multi() */
 
-	CPX_LIST old;		/* Beschreibung für get_cpx_list */
-	XCPB	xctrl_pb;	/* Parameterblock für das CPX */
+	CPX_LIST old;		/* Beschreibung fuer get_cpx_list */
+	XCPB	xctrl_pb;	/* Parameterblock fuer das CPX */
 	
 	char	file_name[0];
 } CPX_DESC;

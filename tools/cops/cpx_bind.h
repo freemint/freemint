@@ -26,8 +26,8 @@
 #ifndef _cpx_bind_h
 #define _cpx_bind_h
 
-#include <gemx.h>
 #include "global.h"
+#include "cpx.h"
 
 short  _cdecl Xform_do(OBJECT *tree, short edit_obj, short *msg);
 GRECT *_cdecl GetFirstRect(GRECT *prect);
@@ -35,22 +35,23 @@ GRECT *_cdecl GetNextRect(void);
 void   _cdecl Set_Evnt_Mask(short mask, MOBLK *m1, MOBLK *m2, long evtime);
 void * _cdecl Get_Buffer(void);
 
-void cpx_userdef(void (*cpx_userdef)(void));
-
 void a_call_main(void);
 void new_context(CPX_DESC *cpx_desc);
 void switch_context(CPX_DESC *cpx_desc);
 
+void cpx_userdef(void (*cpx_userdef)(void));
+
+/* cpx callbacks */
 CPXINFO	*cpx_init(CPX_DESC *cpx_desc, XCPB *xcpb);
-short	cpx_call(CPX_DESC *cpx_desc, GRECT *work);
-void	cpx_draw(CPX_DESC *cpx_desc, GRECT *clip);
-void	cpx_wmove(CPX_DESC *cpx_desc, GRECT *work);
-short	cpx_timer(CPX_DESC *cpx_desc);
-short	cpx_key(CPX_DESC *cpx_desc, short kstate, short key);
-short	cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks);
-short	cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets);
-short	cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets);
-short	cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, short *nclicks);
-void	cpx_close(CPX_DESC *cpx_desc, short flag);
+short cpx_call(CPX_DESC *cpx_desc, GRECT *work);
+void cpx_draw(CPX_DESC *cpx_desc, GRECT *clip);
+void cpx_wmove(CPX_DESC *cpx_desc, GRECT *work);
+short cpx_timer(CPX_DESC *cpx_desc);
+short cpx_key(CPX_DESC *cpx_desc, short kstate, short key);
+short cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks);
+short cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets);
+short cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets);
+short cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, short *nclicks);
+void cpx_close(CPX_DESC *cpx_desc, short flag);
 
 #endif /* _cpx_bind_h */
