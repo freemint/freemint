@@ -1836,7 +1836,7 @@ static void
 Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	XA_TREE *wt = widg->stuff;
-	OBJECT *obtree = rp_2_ap(wind, widg, NULL);
+	OBJECT *obtree = rp_2_ap(wind, widg, &widg->ar);
 
 	if (wind->dial & created_for_POPUP)
 	{
@@ -1866,7 +1866,7 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 		obtree->ob_y = widg->ar.y; //wt->rdy;
 		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
 		draw_object_tree(0, wt, NULL, 0, MAX_DEPTH, NULL);
-		write_menu_line((RECT*)&obtree->ob_x);	/* HR: not in standard menu's object tree */
+		write_menu_line((RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}
 }
 
