@@ -8,6 +8,9 @@
  * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * XHDI_MON debug support contributed by Uwe Seimet
+ * see <http://www.seimet.de/atari_english.html> for more details
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
