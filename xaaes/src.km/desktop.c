@@ -209,7 +209,7 @@ set_desktop(XA_TREE *new_desktop)
 	if (rc == new_desktop->owner || rc == C.Aes)
 	{
 		DIAGS((" set_desktop: Direct from %s to %s",
-			new_desktop->owner->name));
+			rc->name, new_desktop->owner->name));
 
 		Set_desktop(new_desktop);
 	}
@@ -217,7 +217,8 @@ set_desktop(XA_TREE *new_desktop)
 	{
 		DIAGS((" set_desktop: kthreaded from %s to %s",
 			rc->name, new_desktop->owner->name));
-		kthread_create(new_desktop->owner->p, Pset_desktop, new_desktop, NULL, "kt set_desktop (%s)", new_desktop->owner->name);
+		kthread_create(new_desktop->owner->p, Pset_desktop, new_desktop, NULL,
+				"kt set_desktop (%s)", new_desktop->owner->name);
 		sleep(IO_Q, (long)new_desktop);
 	}
 }	
