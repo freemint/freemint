@@ -1,5 +1,8 @@
 Version 2.7 - 7 April 2001
 
+* changed default cursor to underline (ugly block cursor is still
+  available as "very visible", i. e. "tput cvvis")
+
 * colors are now fully ansi-compatible 
 
 * terminal capabilities `bold' and `dim' are now represented using

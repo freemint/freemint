@@ -24,6 +24,10 @@ WINDOW	*gl_topwin;		/* oberstes Fenster */
 WINDOW	*gl_winlist;		/* LIFO Liste der offenen Fenster */
 int	 gl_winanz = 0;		/* Anzahl der offenen Fenster */
 
+static void
+timer_expired (WINDOW* w, int topped)
+{
+}
 
 static void noslid(WINDOW *w, short m)
 {
@@ -278,6 +282,7 @@ WINDOW *create_window(char *title, short kind,
 	v->mouseinp = nomouse;
 	v->oldfulled = v->fulled;
 	v->oldmouse = nomouse;
+	v->timer = timer_expired;
 
 	v->next = gl_winlist;
 	gl_winlist = v;
@@ -464,14 +469,14 @@ bool window_msg(short *msgbuff)
 			(*v->topped)(v);
 			break;
 	 	case WM_ONTOP:
-         (*v->ontopped)(v);
-         break;
-      case WM_UNTOPPED:
-         (*v->untopped)(v);
-         break;
-      case WM_BOTTOMED:
+		        (*v->ontopped)(v);
+		        break;
+		case WM_UNTOPPED:
+        		(*v->untopped)(v);
+		        break;
+		case WM_BOTTOMED:
 			(*v->bottomed)(v);
-         break;
+         		break;
 		case WM_SIZED:
 			(*v->sized)(v, msgbuff[4], msgbuff[5], msgbuff[6], msgbuff[7]);
 			break;
@@ -744,5 +749,16 @@ void window_term(void)
 		}
 		free(v);
 		v = gl_winlist;
+	}
+}
+
+void window_timer (void)
+{
+	WINDOW* win;
+	WINDOW* topwin = get_top ();
+	
+	for (win = gl_winlist; win != NULL; win = win->next) {
+		if (!is_console (win))
+			win->timer (win, win == topwin ? 1 : 0);
 	}
 }

@@ -36,6 +36,7 @@ static OBJECT	*menu;
 static WDIALOG	*about;
 
 int draw_ticks = MAX_DRAW_TICKS;
+int curs_ticks = 0;
 
 /******************************************************************************/
 #include <stdio.h>
@@ -331,10 +332,14 @@ void event_loop(void)
 			if (!click_wdial(mbreturn, msx, msy, kstate, mbutton))
 				window_click(mbreturn, msx, msy, kstate, mbutton);
 
-		if (event & MU_TIMER)
+		if (event & MU_TIMER) {
 			fd_input();
+			if (curs_ticks % 6 == 0)
+				window_timer ();
+		}
 		
 		++draw_ticks;
+		++curs_ticks;
 		if (draw_ticks > MAX_DRAW_TICKS)
 			draw_ticks = 0;
 	}
