@@ -39,8 +39,8 @@
 # include "mint/basepage.h"
 # include "mint/credentials.h"
 # include "mint/filedesc.h"
-# include "mint/proc.h"
 # include "mint/signal.h"
+# include "mint/slb.h"
 # include "mint/stat.h"
 
 # include "arch/cpu.h"		/* cpush */
@@ -317,7 +317,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		{
 			b->p_parent = curproc->base;
 
-			if (thread && (strcmp (curproc->name, "shutdown")))
+			if (thread /* && (strcmp (curproc->name, "shutdown")) ??? */ )
 			{
 				p = fork_proc ( FORK_SHAREVM, &r);
 			}
@@ -391,7 +391,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			{
 			 	if (relpath2cookie (&dir, tmp, follow_links, &exe, 0) == 0)
 			 	{
-			 		/* the release make nothing
+			 		/* the release does nothing
 			 		 * if the exe cookie is clean
 			 		 * (initialized with 0)
 			 		 */
@@ -618,7 +618,6 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	BASEPAGE *b;
 	int i;
 	MEMREGION *m;
-	long *exec_longs;
 
 	TRACE (("exec_region: enter (PROC %lx, mem = %lx)", p, mem));
 	assert (p && mem && fd);
@@ -650,21 +649,21 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		}
 	}
 
-	/* The text segment of the SLB library is inside its trampoline
-	 * area, so we adapt the p_tbase appropriately.
+	/* The "text segment" of the SLB library (i.e. its startup code)
+	 * is inside its trampoline area, so we adapt the p_tbase appropriately.
 	 *
 	 * curproc->p_flag & 4 is only true when this call comes from the
 	 * sys_pexec(106) made by Slbopen().
 	 */
-	if (curproc->p_flag & 4)
+	if (curproc->p_flag & P_FLAG_SLO)
 	{
-		exec_longs = (long *)b->p_tbase;
+		long *exec_longs = (long *)b->p_tbase;
 
 		/* Test for new program format */
 		if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
 			exec_longs += (228 / sizeof(long));
 
-		if (exec_longs[0] == 0x70004afcL)
+		if (exec_longs[0] == SLB_HEADER_MAGIC)
 		{
 			/* attach temporarily to current process to avoid bus error,
 			 * and pickup the address from the trampoline jumptable.
