@@ -71,5 +71,44 @@ extern const char *memprot_warning;
 extern const char *greet1;
 extern const char *greet2;
 
+/* bios.c */
+extern const char *MSG_bios_kill;
+
+/* debug.c */
+extern const char *MSG_debug_syncing;
+extern const char *MSG_debug_syncdone;
+extern const char *MSG_fatal_reboot;
+extern const char *MSG_system_halted;
+
+/* init.c */
+extern const char *MSG_init_getname;
+extern const char *MSG_init_askmenu;
+extern const char *MSG_init_menu_yes;
+extern const char *MSG_init_menu_no;
+extern const char *MSG_init_menu_yesrn;
+extern const char *MSG_init_menu_norn;
+extern const char *MSG_init_bootmenu;
+extern const char *MSG_init_menuwarn;
+extern const char *MSG_init_hitanykey;
+# ifdef VERBOSE_BOOT
+extern const char *MSG_init_mp;
+extern const char *MSG_init_mp_enabled;
+extern const char *MSG_init_mp_disabled;
+# endif
+extern const char *MSG_init_delay_loop;
+extern const char *MSG_init_specify_prg;
+
+/* keyboard.c */
+extern const char *MSG_keytable_loaded;
+extern const char *MSG_keytable_faulty;
+
+/* unicode.c */
+extern const char *MSG_unitable_loaded;
+
+/* xhdi.c */
+extern const char *MSG_xhdi_present;
+extern const char *MSG_kerinfo_accepted;
+extern const char *MSG_kerinfo_rejected;
+extern const char *MSG_xhdi_absent;
 
 # endif /* _info_h */
