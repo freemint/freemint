@@ -575,10 +575,27 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				r = EPERM;
 			else
 			{
+				/* The 'flag' argument is:
+				 * 0x01 - don't load the TOS table on failure
+				 * 0x02 - don't generate any messages
+				 */
+				if (arg1)
+					r = load_keyboard_table((char *)arg1, 2+1);
+				else
+				{
+					/* Passing NULL should reload the power-up table */
+					char kname[32];
+
+					ksprintf(kname, sizeof(kname), "%skeyboard.tbl", sysdir);
+
+					/* Note that if there is no such file, the TOS BIOS
+					 * table will be loaded.
+					 */
+					r = load_keyboard_table(kname, 2);
+				}
 				/* load_keyboard_table() returns positive size of the table,
 				 * or a zero for failure.
 				 */
-				r = load_keyboard_table((char *)arg1, 1);
 				if (r > 0)
 				{
 					sys_b_bioskeys();
