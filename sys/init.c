@@ -1199,7 +1199,7 @@ init (void)
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (!r)
 			{
-				sleep(WAIT_Q, 0L);
+				sleep(WAIT_Q, (long)init);
 				if (mcpu == 60)
 					cpu_lpstop();	/* low power stop and wait for an interrupt */
 				else
