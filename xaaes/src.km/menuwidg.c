@@ -75,7 +75,6 @@ static void new_title(struct task_administration_block *tab);
 
 static XAMENU desk_popup;
 static XA_TREE desk_wt;
-//static MENU desk_popup;
 static bool menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker);
 static XA_TREE *set_popup_widget(Tab *tab, struct xa_window *wind, int item);
 
@@ -410,21 +409,25 @@ nest_menutask(Tab *tab)
 }
 
 
-#define MAX_MREG 32
-
-static OBJECT menu_reg[MAX_MREG];
-static char menu_regt[MAX_MREG][130];
-static struct xa_client *menu_regcl[MAX_MREG];
-
-static OBJECT drop_box =
+struct appmenu
 {
-	-1, 1, 2,		/* Object 0  */
+	char name[200];
+	struct xa_client *client;
+};
+
+static struct appmenu *appmenu = NULL;
+static OBJECT *appmenu_ob = NULL;
+static size_t appmenusize = 0;
+
+
+static const OBJECT drop_box =
+{
+	-1, 1, 2,			/* Object 0  */
 	G_BOX, OF_NONE, OS_SHADOWED,
 	{ 0x00FF1100L },
 	0, 0, 12, 2
 };
-
-static OBJECT drop_choice =	/* Object 1 to n */
+static const OBJECT drop_choice =	/* Object 1 to n */
 {
 	0,-1,-1,
 	G_STRING, OF_NONE, OS_NORMAL,
@@ -432,56 +435,99 @@ static OBJECT drop_choice =	/* Object 1 to n */
 	0, 1, 12, 1
 };
 
+
 static OBJECT *
 built_desk_popup(enum locks lock, short x, short y)
 {
-	int n = 0, i = 0, xw = 0, obs, split = 0;
+	int n, i, xw, obs, split;
 	OBJECT *ob;
 	struct xa_client *client, *fo;
-
-	/* go throug all the clients, store pid and name */
-	/* count in n */
-
-	DIAGS(("built_ fetch ACC/AES names.."));
+	size_t maxclients;
 
 	Sema_Up(clients);
+
+	maxclients = client_list_size() + 2; /* how many apps do we have */
+	maxclients = (maxclients + 31) & ~31; /* increase by 32 slots */
+
+	if (appmenusize < maxclients)
+	{
+		struct appmenu *tmp;
+		OBJECT *tmp_ob;
+
+		tmp = kmalloc(sizeof(*tmp) * maxclients);
+		tmp_ob = kmalloc(sizeof(*tmp_ob) * maxclients);
+
+		if (tmp && tmp_ob)
+		{
+			if (appmenu) kfree(appmenu);
+			if (appmenu_ob) kfree(appmenu_ob);
+
+			appmenu = tmp;
+			appmenu_ob = tmp_ob;
+			appmenusize = maxclients;
+		}
+		else
+		{
+			if (tmp) kfree(tmp);
+			if (tmp_ob) kfree(tmp_ob);
+		}
+	}
+	assert(appmenu && appmenu_ob);
+
+	/*
+	 * go throug all the clients, store pid and name
+	 * count in n
+	 */
+
+	DIAGS(("built_desk_popup: fetch ACC/AES names.."));
+
+	n = 0;
 
 	FOREACH_CLIENT(client)
 	{
 		if (client->type == APP_ACCESSORY || client == C.Aes)
 		{
-			DIAGS((" - %s", client->name));
+			if (n < appmenusize)
+			{
+				DIAGS((" - %s", client->name));
 
-			menu_regcl[n] = client;
-			sprintf(menu_regt[n], sizeof(menu_regt[n]), "  %d->%d %s",
-				client->p->ppid,
-				client->p->pid,
-				*client->name 
-					? client->name + 2
-					: client->proc_name);
-			n++;
+				appmenu[n].client = client;
+				sprintf(appmenu[n].name, sizeof(appmenu[n].name),
+					"  %d->%d %s",
+					client->p->ppid,
+					client->p->pid,
+					*client->name 
+						? client->name + 2
+						: client->proc_name);
+				n++;
+			}
 		}
 	}
 
-	menu_regcl[n] = NULL;
-	strcpy(menu_regt[n],"-");
+	appmenu[n].client = NULL;
+	strcpy(appmenu[n].name, "-");
 	split = n++;
 
-	DIAGS(("built_ fetch APP names.."));
+	DIAGS(("built_desk_popup: fetch APP names.."));
 
 	FOREACH_CLIENT(client)
 	{
 		if (client->type != APP_ACCESSORY && client != C.Aes)
 		{
-			menu_regcl[n] = client;
-			sprintf(menu_regt[n], sizeof(menu_regt[n]), "  %d->%d %s",
-				client->p->ppid,
-				client->p->pid,
-				*client->name 
-					? client->name + 2
-					  /* You can always do a menu_register in multitasking AES's  :-) */
-					: client->proc_name);
-			n++;
+			if (n < appmenusize)
+			{
+				appmenu[n].client = client;
+				sprintf(appmenu[n].name, sizeof(appmenu[n].name),
+					"  %d->%d %s",
+					client->p->ppid,
+					client->p->pid,
+					*client->name 
+						? client->name + 2
+						  /* You can always do a menu_register
+						   * in multitasking AES's  :-) */
+						: client->proc_name);
+				n++;
+			}
 		}
 	}
 
@@ -489,44 +535,50 @@ built_desk_popup(enum locks lock, short x, short y)
 		n--;
 
 	Sema_Dn(clients);
-	DIAGS(("built_: building object.."));
+	DIAGS(("built_desk_popup: building object.."));
 	obs = n+1;
-	ob = menu_reg;
+	ob = appmenu_ob;
 
 	ob[0] = drop_box;
 	ob[0].ob_tail = obs-1;
 	ob[0].ob_height = obs-1;
 
+	xw = 0;
 	fo = find_focus(false, NULL, NULL, NULL);
-	DIAGS(("built_: client with focus = %s", fo->name));
+	DIAGS(("built_desk_popup: client with focus = %s", fo->name));
 
-	for (i = 0; i < n; i++)		/* fix the tree */
+	/* fix the tree */
+	for (i = 0; i < n; i++)
 	{
+		int j = i + (obs - n);
 		int m;
-		int j = i+(obs-n);
 
 		ob[j] = drop_choice;
 		if (i == split)
+		{
 			ob[j].ob_state = OS_DISABLED;
+		}
 		else
 		{
-			char *txt = menu_regt[i];
+			char *txt = appmenu[i].name;
 
-			if (menu_regcl[i] == fo) //focus_owner())
+			if (appmenu[i].client == fo)
 				ob[j].ob_state |= OS_CHECKED;
 			else
 				ob[j].ob_state &= ~OS_CHECKED;
 
-			if (any_hidden(lock, menu_regcl[i]))
+			if (any_hidden(lock, appmenu[i].client))
 				*(txt + 1) = '*';
 			else
 				*(txt + 1) = ' ';
 
 			ob[j].ob_spec.free_string = txt;
 		}
+
 		m = strlen(ob[j].ob_spec.free_string);
 		if (m > xw)
 			xw = m;
+
 		ob[j].ob_next = j+1;
 		ob[j].ob_y = i;
 	}
@@ -534,25 +586,25 @@ built_desk_popup(enum locks lock, short x, short y)
 	ob[obs-1].ob_next = 0;
 
 	xw++;
-	for (i=0; i<obs; i++)
+	for (i = 0; i < obs; i++)
 		ob[i].ob_width = xw;
 
 	if (split < n)
 	{
-		memset(menu_regt[split], '-', xw);
-		menu_regt[split][xw]=0;
+		memset(appmenu[split].name, '-', xw);
+		appmenu[split].name[xw] = '\0';
 	}
 
-	for (i=0; i<obs; i++)
-		obfix(ob,i);
+	for (i = 0; i < obs; i++)
+		obfix(ob, i);
 
 	ob[0].ob_x = x;
 	ob[0].ob_y = y;
 
 	menu_spec(ob, 0);
 
-	DIAGS(("built_: return %lx", menu_reg));
-	return menu_reg;
+	DIAGS(("built_desk_popup: return %lx", appmenu_ob));
+	return appmenu_ob;
 }
 
 static bool
@@ -963,12 +1015,12 @@ click_desk_popup(struct task_administration_block *tab)
 	int m;
 
 	m = find_menu_object(tab, k->pop_item) - 1;
+	assert(m < appmenusize);
 
 	IFDIAG(tab->dbg = 1;)
 	popout(tab);
 
-	client = menu_regcl[m];
-
+	client = appmenu[m].client;
 	if (client)
 	{
 		DIAG((D_menu, NULL, "got client %s", c_owner(client)));
