@@ -29,6 +29,8 @@
 
 #include "global.h"
 
+extern short my_global_aes[];
+
 extern char version[];
 extern Path Aes_home_path;
 

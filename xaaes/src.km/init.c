@@ -36,7 +36,6 @@
 #include "handler.h"
 #include "k_main.h"
 #include "k_shutdown.h"
-#include "my_aes.h"
 #include "nkcc.h"
 #include "objects.h"
 #include "semaphores.h"
@@ -47,6 +46,15 @@
 
 #include "mint/ssystem.h"
 #include "cookie.h"
+
+
+short my_global_aes[16];
+
+/* XXX gemlib */
+//short	mt_appl_init    (short *global_aes);
+//short	mt_appl_exit    (short *global_aes);
+//short	mt_graf_handle	(short *Wchar, short *Hchar, short *Wbox, short *Hbox, short *global_aes);
+
 
 #if GENERATE_DIAGS
 static const char *cnf_name = "xaaesdbg.cnf";
