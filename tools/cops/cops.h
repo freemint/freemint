@@ -72,20 +72,4 @@ extern CPX_DESC *cpx_desc_list;
 void open_cpx_context(CPX_DESC *cpx_desc);
 CPX_DESC *cpx_main_loop(void);
 
-/* gemlib rarely use grect in syscalls */
-
-#define objc_draw_grect(tree,start,depth,r) objc_draw((tree),(start),(depth),(r)->g_x,(r)->g_y,(r)->g_w,(r)->g_h)
-
-#define form_center_grect(t,r) form_center((t),&(r)->g_x,&(r)->g_y,&(r)->g_w,&(r)->g_h)
-
-#define form_xdial_grect(a1,s,f,a2) \
-	form_xdial((a1),(s)->g_x,(s)->g_y,(s)->g_w,(s)->g_h,(f)->g_x,(f)->g_y,(f)->g_w,(f)->g_h,(a2))
-
-#define graf_growbox_grect(s,f) \
-	graf_growbox((s)->g_x,(s)->g_y,(s)->g_w,(s)->g_h,\
-			(f)->g_x,(f)->g_y,(f)->g_w,(f)->g_h)
-#define graf_shrinkbox_grect(f,s) \
-	graf_shrinkbox((f)->g_x,(f)->g_y,(f)->g_w,(f)->g_h,\
-			(s)->g_x,(s)->g_y,(s)->g_w,(s)->g_h)
-
 #endif /* _cops_h */
