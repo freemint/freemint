@@ -21,30 +21,30 @@ extern ulong initialmem;
 
 void init_mem (void);
 void restr_screen (void);
-int add_region (MMAP map, ulong place, ulong size, unsigned mflags);
+int add_region (MMAP map, ulong place, ulong size, ushort mflags);
 void init_core (void);
 void init_swap (void);
 
-long change_prot_status (PROC *proc, long start, int newmode);
+long change_prot_status (PROC *proc, long start, short newmode);
 long attach_region (PROC *proc, MEMREGION *reg);
 void detach_region (PROC *proc, MEMREGION *reg);
 int detach_region_by_addr (PROC *p, long block);
 
-MEMREGION *get_region (MMAP map, ulong size, int mode);
-MEMREGION *_get_region (MMAP map, ulong size, int mode, MEMREGION *descr, int kernel_flag);
+MEMREGION *get_region (MMAP map, ulong size, short mode);
+MEMREGION *_get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *descr, short kernel_flag);
 void free_region (MEMREGION *reg);
 long shrink_region (MEMREGION *reg, ulong newsize);
 
 long max_rsize (MMAP map, long needed);
-long tot_rsize (MMAP map, int flag);
+long tot_rsize (MMAP map, short flag);
 long freephysmem (void);
-long alloc_region (MMAP map, ulong size, int mode);
+long alloc_region (MMAP map, ulong size, short mode);
 MEMREGION *fork_region (MEMREGION *reg, long txtsize);
 MEMREGION *create_env (const char *env, ulong flags);
 MEMREGION *create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize,
 			PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
 MEMREGION *load_region (const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
-			long *fp, int isexec, long *err);
+			long *fp, short isexec, long *err);
 long load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start,
 			long nbytes, BASEPAGE *base);
 long memused (PROC *p);

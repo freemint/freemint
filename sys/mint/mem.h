@@ -118,6 +118,8 @@ typedef struct fileheader FILEHEAD;
 # define F_PROT_PR	0x30		/* any read OK, no write */
 # define F_PROT_I	0x40		/* invalid page */
 
+# define F_PROTSHIFT	4
+
 /* actual values found in page_mode_table and used as args to alloc_region */
 # define PROT_P		0
 # define PROT_G		1
@@ -128,7 +130,13 @@ typedef struct fileheader FILEHEAD;
 # define PROT_PROTMODE	0xf   /* these bits are the prot mode */
 # define PROT_NOCHANGE	-1
 
-# define F_PROTSHIFT	4
+/* cache modi */
+# define CM_NOCHANGE		0
+# define CM_NOCACHE		1
+# define CM_SERIALIZED		2
+# define CM_WRITETHROUGH	3
+# define CM_COPYBACK		4
+# define CM_MAX_MODE		4
 
 typedef MEMREGION **MMAP;
 

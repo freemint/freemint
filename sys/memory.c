@@ -41,11 +41,11 @@
 void		init_mem	(void);
 void		init_core	(void);
 void		init_swap	(void);
-int		add_region	(MMAP map, ulong place, ulong size, unsigned mflags);
+int		add_region	(MMAP map, ulong place, ulong size, ushort mflags);
 
 ulong dp_all = 0;
 
-static long	core_malloc	(long, int);
+static long	core_malloc	(long, short);
 static void	core_free	(long);
 static void	terminateme	(int code);
 
@@ -53,8 +53,8 @@ static void	terminateme	(int code);
 void		restr_screen	(void);
 # endif
 
-MEMREGION *	get_region	(MMAP map, ulong size, int mode);
-MEMREGION *	_get_region	(MMAP map, ulong size, int mode, MEMREGION *descr, int kernel_flag);
+MEMREGION *	get_region	(MMAP map, ulong size, short mode);
+MEMREGION *	_get_region	(MMAP map, ulong size, short mode, short cmode, MEMREGION *descr, short kernel_flag);
 void		free_region	(MEMREGION *reg);
 long		shrink_region	(MEMREGION *reg, ulong newsize);
 
@@ -63,16 +63,16 @@ void		detach_region	(PROC *proc, MEMREGION *reg);
 int		detach_region_by_addr (PROC *p, long block);
 
 long		max_rsize	(MMAP map, long needed);
-long		tot_rsize	(MMAP map, int flag);
+long		tot_rsize	(MMAP map, short flag);
 
-long		alloc_region	(MMAP map, ulong size, int mode);
+long		alloc_region	(MMAP map, ulong size, short mode);
 
 MEMREGION *	fork_region	(MEMREGION *reg, long txtsize);
 MEMREGION *	create_env	(const char *env, ulong flags);
 MEMREGION *	create_base	(const char *cmd, MEMREGION *env, ulong flags, ulong prgsize,
 				 PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
 MEMREGION *	load_region	(const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
-				 long *fp, int isexec, long *err);
+				 long *fp, short isexec, long *err);
 long		load_and_reloc	(FILEPTR *f, FILEHEAD *fh, char *where, long start,
 				 long nbytes, BASEPAGE *base);
 long		memused		(PROC *p);
@@ -104,7 +104,7 @@ static void sanity_check	(MMAP map, ulong line);
 # define SANITY_CHECK(map)	
 # endif
 
-long		change_prot_status (PROC *proc, long start, int newmode);
+long		change_prot_status (PROC *proc, long start, short newmode);
 
 /* from realloc.c
  */
@@ -159,16 +159,16 @@ init_mem (void)
 	for (r = *core; r; r = r->next)
 	{
 		if (r->links)
-			mark_region (r, PROT_S);
+			mark_region (r, PROT_S, 0);
 		else
-			mark_region (r, PROT_I);
+			mark_region (r, PROT_I, 0);
 	}
 	for (r = *alt; r; r = r->next)
 	{
 		if (r->links)
-			mark_region (r, PROT_S);
+			mark_region (r, PROT_S, 0);
 		else
-			mark_region (r, PROT_I);
+			mark_region (r, PROT_I, 0);
 	}
 	
 	/* make sure the screen is set up properly */
@@ -267,7 +267,7 @@ MMAP alt  = &_alt_regions;
  * mflags - initial flags for region
  */
 int
-add_region (MMAP map, ulong place, ulong size, unsigned mflags)
+add_region (MMAP map, ulong place, ulong size, ushort mflags)
 {
   	MEMREGION *m;
 	ulong trimsize;
@@ -322,7 +322,7 @@ lose:
 }
 
 static long
-core_malloc (long amt, int mode)
+core_malloc (long amt, short mode)
 {
 	static int mxalloc = -1;	/* does GEMDOS know about Mxalloc? */
 	long ret;
@@ -530,7 +530,7 @@ init_swap (void)
  */
 
 long
-change_prot_status (PROC *proc, long start, int newmode)
+change_prot_status (PROC *proc, long start, short newmode)
 {
 	MEMREGION **mr;
 	int i;
@@ -548,7 +548,7 @@ change_prot_status (PROC *proc, long start, int newmode)
 	return EACCES;
 	
 found:
-	mark_region(*mr,newmode);
+	mark_region(*mr, newmode, 0);
 	return E_OK;
 }
 # endif
@@ -762,12 +762,12 @@ detach_region_by_addr (PROC *p, long block)
  *         Otherwise a pointer to the region.
  */
 MEMREGION *
-get_region (MMAP map, ulong size, int mode)
+get_region (MMAP map, ulong size, short mode)
 {
 	MEMREGION *m = kmr_get ();
 	MEMREGION *n;
 	
-	n = _get_region (map, size, mode, m, 0);
+	n = _get_region (map, size, mode, 0, m, 0);
 	if (!n && m)
 		kmr_free (m);
 	
@@ -775,7 +775,7 @@ get_region (MMAP map, ulong size, int mode)
 }
 
 MEMREGION *
-_get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
+_get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *m, short kernel_flag)
 {
 	MEMREGION *n, *k = NULL;
 	
@@ -894,7 +894,7 @@ fail:
 win:
 	n->links++;
 	
-	mark_region (n, mode & PROT_PROTMODE);
+	mark_region (n, mode & PROT_PROTMODE, cmode);
 	if (mode & M_KEEP)
 		n->mflags |= M_KEEP;
 	
@@ -1032,7 +1032,7 @@ free_region (MEMREGION *reg)
 	
 	/* MEMPROT: invalidate */
 	if (map == core || map == alt)
-		mark_region (reg, PROT_I);
+		mark_region (reg, PROT_I, 0);
 	
 	if (m == reg)
 	{
@@ -1173,7 +1173,7 @@ shrink_region (MEMREGION *reg, ulong newsize)
 		/* MEMPROT: invalidate the second half
 		 * (part of it is already invalid; that's OK)
 		 */
-		mark_region (n, PROT_I);
+		mark_region (n, PROT_I, 0);
 	}
 	else
 	{
@@ -1191,7 +1191,7 @@ shrink_region (MEMREGION *reg, ulong newsize)
 		reg->next = n;
 		
 		/* MEMPROT: invalidate the new, free region */
-		mark_region (n, PROT_I);
+		mark_region (n, PROT_I, 0);
 	}
 	
 	ret = 0;
@@ -1269,7 +1269,7 @@ max_rsize (MMAP map, long needed)
  *             0: return only the number of free bytes
  */
 long
-tot_rsize (MMAP map, int flag)
+tot_rsize (MMAP map, short flag)
 {
 	MEMREGION *m;
 	long size = 0;
@@ -1300,7 +1300,7 @@ freephysmem (void)
  * @return the address at which the region was attached, or NULL.
  */
 long
-alloc_region (MMAP map, ulong size, int mode)
+alloc_region (MMAP map, ulong size, short mode)
 {
 	MEMREGION *m;
 	PROC *proc = curproc;
@@ -1724,7 +1724,7 @@ leave:
  * @param err      Error code is stored here.
  */
 MEMREGION *
-load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, long *fp, int isexec, long *err)
+load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, long *fp, short isexec, long *err)
 {
 	FILEPTR *f;
 	MEMREGION *reg;
@@ -2203,7 +2203,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		{
 			if (newm) kmr_free (newm);
 			lastfit->links++;
-			mark_region (lastfit, PROT_G);
+			mark_region (lastfit, PROT_G, 0);
 			return (long) lastfit;
 		}
 		if (!newm) return 0;	/* can't get a new region */
@@ -2218,7 +2218,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		newm->links++;
 		newm->next = lastfit->next;
 		lastfit->next = newm;
-		mark_region (newm, PROT_G);
+		mark_region (newm, PROT_G, 0);
 		
 		SANITY_CHECK (map);
 		return (long) newm;
@@ -2257,8 +2257,8 @@ realloc_region (MEMREGION *reg, long newsize)
 			reg->loc += oldsize - newsize;
 			reg->len -= oldsize - newsize;
 			
-			mark_region (prevptr, PROT_I);
-			mark_region (reg, PROT_G);
+			mark_region (prevptr, PROT_I, 0);
+			mark_region (reg, PROT_G, 0);
 			
 			SANITY_CHECK (map);
 			return reg->loc;
@@ -2293,8 +2293,8 @@ realloc_region (MEMREGION *reg, long newsize)
 			*map = m;
 		m->next = reg;
 		
-		mark_region (m, PROT_I);
-		mark_region (reg, PROT_G);
+		mark_region (m, PROT_I, 0);
+		mark_region (reg, PROT_G, 0);
 		
 		SANITY_CHECK (map);
 		return reg->loc;
@@ -2342,7 +2342,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		reg->len += foo->len;
 		reg->next = foo->next;
 		kmr_free (foo);
-		mark_region (reg, PROT_G);
+		mark_region (reg, PROT_G, 0);
 		if (reg->len >= newsize)
 			return reg->loc;
 		oldsize = reg->len;
@@ -2375,7 +2375,7 @@ realloc_region (MEMREGION *reg, long newsize)
 			}
 			kmr_free (prevptr);
 		}
-		mark_region (reg, PROT_G);
+		mark_region (reg, PROT_G, 0);
 	}
 	
 	SANITY_CHECK (map);
