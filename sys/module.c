@@ -538,7 +538,7 @@ long _cdecl
 register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 {
 	long _cdecl (**handler)(void *) = NULL;
-	long *x;
+	long *x = NULL;
 	long ret = EINVAL;
 
 	DEBUG(("register_trap2(0x%lx, %i, %i)", dispatch, mode, flag));
@@ -546,7 +546,6 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 	if (flag == 0)
 	{
 		handler = &aes_handler;
-		x = 0;
 	}
 	else if (flag == 1)
 	{

@@ -67,16 +67,112 @@
 void		rts		(void);
 static PROC *	exec_region	(PROC *p, MEMREGION *mem, int thread);
 
+/*
+ * make a local copy of the name, in case we are overlaying
+ * the current process
+ *
+ * localname must be PNAMSIZ+1
+ */
+static void
+make_name(char *localname, const char *ptr1)
+{
+	const char *n = ptr1;
+	const char *lastslash = NULL;
+	char *newname = localname;
+	int i;
+
+	while (*n)
+	{
+		if (*n == '\\' || *n == '/')
+			lastslash = n;
+
+		n++;
+	}
+
+	if (!lastslash)
+		lastslash = ptr1;
+	else
+		lastslash++;
+
+	i = 0;
+	while (i++ < PNAMSIZ)
+	{
+		if (*lastslash == '.' || *lastslash == '\0')
+		{
+			*newname = '\0';
+			break;
+		}
+		else
+			*newname++ = *lastslash++;
+	}
+
+	*newname = '\0';
+}
+
+static long
+make_fname(struct proc *p, const char *source)
+{
+	char tmp[PATH_MAX];
+	fcookie exe;
+	fcookie dir;
+	long r;
+
+	tmp[1] = ':';
+	if (source[1] == ':')
+	{
+		tmp[0] = toupper((int)source[0] & 0xff);
+		source += 2;
+	}
+	else
+	{
+		assert(curproc->p_cwd);
+		tmp[0] = curproc->p_cwd->curdrv + ((curproc->p_cwd->curdrv < 26) ? 'A' : '1'-26);
+	}
+
+	/* FIXME: This is completely wrong!!! */
+	if (DIRSEP(source[0]))	/* absolute path? */
+	{
+		strncpy(&tmp[2], &source[0], PATH_MAX-2);
+		strcpy(p->fname, tmp);
+	}
+	else
+	{
+		if (!sys_d_getcwd(&tmp[2], tmp[0] - ((tmp[0] <= 'Z'+6) ? 'A' : '1'-26) + 1, PATH_MAX-2))
+			ksprintf(p->fname, sizeof(p->fname), "%s\\%s", tmp, source);
+		else
+			ksprintf(p->fname, sizeof(p->fname), "%s", source);
+	}
+
+	r = make_real_cmdline(p);
+	if (r)
+		return r;
+
+	/* Get a cookie for the name of the executable */
+	if (path2cookie(p->fname, tmp, &dir) == 0)
+	{
+	 	if (relpath2cookie(&dir, tmp, follow_links, &exe, 0) == 0)
+	 	{
+	 		/* the release does nothing
+	 		 * if the exe cookie is clean
+	 		 * (initialized with 0)
+	 		 */
+			release_cookie(&p->exe);
+			p->exe = exe;
+		}
+
+		release_cookie(&dir);
+	}
+
+	return 0;
+}
 
 long _cdecl
 sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 {
 	MEMREGION *base;
 	MEMREGION *env = NULL;	/* assignment suppresses spurious warning */
-	PROC *p;
+	PROC *p = NULL;
 	long r, flags = 0;
-	long status;
-	int i;
 	char mkbase = 0, mkload = 0, mkgo = 0, mkwait = 0, mkfree = 0;
 	char overlay = 0;
 	char thread = 0;
@@ -177,43 +273,9 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	/* Pexec with mode 0x8000 indicates tracing should be active */
 	ptrace = (!mkwait && (mode & 0x8000));
 
-	p = NULL;
-
-	/* make a local copy of the name, in case we are overlaying
-	 * the current process
-	 */
-	if (mkname)	/* Was there passed a filename? */
-	{
-		const char *n = ptr1;
-		const char *lastslash = NULL;
-		char *newname = localname;
-
-		while (*n)
-		{
-			if (*n == '\\' || *n == '/')
-				lastslash = n;
-
-			n++;
-		}
-
-		if (!lastslash)
-			lastslash = ptr1;
-		else
-			lastslash++;
-
-		i = 0;
-		while (i++ < PNAMSIZ)
-		{
-			if (*lastslash == '.' || *lastslash == '\0')
-			{
-				*newname = '\0'; break;
-			}
-			else
-				*newname++ = *lastslash++;
-		}
-
-		*newname = '\0';
-	}
+	/* Was there passed a filename? */
+	if (mkname)
+		make_name(localname, ptr1);
 
 	TRACE (("creating environment"));
 	if (mkload || mkbase)
@@ -292,8 +354,6 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		mark_region (env, (short)((flags & F_PROTMODE) >> F_PROTSHIFT), 0);
 	}
 
-	assert (!p);
-
 	if (mkgo)
 	{
 		BASEPAGE *b;
@@ -319,7 +379,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 		if (!p)
 		{
-			if (mkbase)
+			if (mkload || mkbase)
 			{
 				detach_region(curproc, base);
 				detach_region(curproc, env);
@@ -329,67 +389,20 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 
 		/* jr: add Pexec information to PROC struct */
-		strncpy (p->cmdlin, b->p_cmdlin, 128);
+		strncpy(p->cmdlin, b->p_cmdlin, 128);
 
 		if (mkload || (thread && ptr1))
 		{
-			char tmp[PATH_MAX];
-			const char *source = ptr1;
-			fcookie exe;
-			fcookie dir;
-
-			tmp[1] = ':';
-			if (source[1] == ':')
+			r = make_fname(p, ptr1);
+			if (r)
 			{
-				tmp[0] = toupper((int)source[0] & 0xff);
-				source += 2;
-			}
-			else
-			{
-				assert (curproc->p_cwd);
-				tmp[0] = curproc->p_cwd->curdrv + ((curproc->p_cwd->curdrv < 26) ? 'A' : '1'-26);
-			}
-
-			/* FIXME: This is completely wrong!!! */
-			if (DIRSEP (source[0]))	/* absolute path? */
-			{
-				strncpy (&tmp[2], &source[0], PATH_MAX-2);
-				strcpy (p->fname, tmp);
-			}
-			else
-			{
-				if (!sys_d_getcwd (&tmp[2], tmp[0] - ((tmp[0] <= 'Z'+6) ? 'A' : '1'-26) + 1, PATH_MAX-2))
-					ksprintf (p->fname, sizeof (p->fname), "%s\\%s", tmp, source);
-				else
-					ksprintf (p->fname, sizeof (p->fname), "%s", source);
-			}
-
-			status = make_real_cmdline (p);
-			if (status)
-			{
-				if (mkbase)
+				if (mkload || mkbase)
 				{
 					detach_region (curproc, base);
 					detach_region (curproc, env);
 				}
 
-				return status;
-			}
-
-			/* Get a cookie for the name of the executable */
-			if (path2cookie (p->fname, tmp, &dir) == 0)
-			{
-			 	if (relpath2cookie (&dir, tmp, follow_links, &exe, 0) == 0)
-			 	{
-			 		/* the release does nothing
-			 		 * if the exe cookie is clean
-			 		 * (initialized with 0)
-			 		 */
-					release_cookie (&p->exe);
-					p->exe = exe;
-				}
-
-				release_cookie (&dir);
+				return r;
 			}
 		}
 
@@ -818,4 +831,102 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 
 	TRACE (("exec_region: ok (%lx)", p));
 	return p;
+}
+
+int _cdecl
+create_process(const void *filename, const void *cmdline, const void *newenv,
+		struct proc **pret, long stack)
+{
+	char localname[PNAMSIZ+1];
+	MEMREGION *env = NULL;
+	MEMREGION *base = NULL;
+	BASEPAGE *b;
+	struct proc *p;
+	long r;
+
+	if (pret)
+		*pret = NULL;
+
+	make_name(localname, filename);
+
+	env = create_env(newenv, 0);
+	if (!env)
+	{
+		DEBUG(("create_process: unable to create environment"));
+		r = ENOMEM;
+		goto error;
+	}
+
+	base = load_region(filename, env, cmdline, NULL, NULL, &r);
+	if (!base)
+	{
+		DEBUG(("create_process: load_region failed"));
+		goto error;
+	}
+
+	TRACE(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+
+	b = (BASEPAGE *) base->loc;
+
+	if (stack)
+	{
+		stack += 256 + b->p_tlen + b->p_dlen + b->p_blen;
+		r = shrink_region(base, stack);
+		DEBUG(("create_process: shrink_region(%li) -> %li", stack, r));
+	}
+
+	/* tell the child who the parent was */
+	b->p_parent = curproc->base;
+
+	r = 0;
+	p = fork_proc(0, &r);
+	if (!p)
+		goto error;
+
+	/* jr: add Pexec information to PROC struct */
+	strncpy(p->cmdlin, b->p_cmdlin, 128);
+
+	make_fname(p, filename);
+
+	/* notify proc extensions */
+	proc_ext_on_exec(curproc);
+
+	/* exec_region frees the memory attached to p;
+	 * that's always what we want, since fork_proc duplicates
+	 * the memory, and since if we didn't call fork_proc
+	 * then we're overlaying.
+	 *
+	 * NOTE: after this call, we may not be able to access the
+	 * original address space that the Pexec was taking place in
+	 * (if this is an overlaid Pexec, we just freed that memory).
+	 */
+	exec_region(p, base, 0);
+	attach_region(p, env);
+	attach_region(p, base);
+
+	/* interesting coincidence:
+	 * if a process needs a name, it usually needs to have
+	 * its domain reset to DOM_TOS. Doing it this way
+	 * (instead of doing it in exec_region) means that
+	 * Pexec(4,...) can be used to create new threads of
+	 * execution which retain the same domain.
+	 */
+	p->domain = DOM_TOS;
+
+	/* put in the new process name we saved above */
+	strcpy(p->name, localname);
+
+	/* set the time/date stamp of u:\proc */
+	procfs_stmp = xtime;
+
+	if (pret)
+		*pret = p;
+
+	run_next(p, 3);
+
+error:
+	if (base) detach_region(curproc, base);
+	if (env) detach_region(curproc, env);
+
+	return r;
 }

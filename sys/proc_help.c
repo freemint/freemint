@@ -135,6 +135,8 @@ copy_mem (struct proc *p)
 	
 	bcopy (p->p_mem, m, sizeof (*m));
 	m->links = 1;
+	/* don't copy over F_OS_SPECIAL flag */
+	m->memflags &= ~F_OS_SPECIAL;
 	
 	init_page_table_ptr (m);
 	

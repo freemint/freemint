@@ -99,7 +99,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	1
+#define KENTRY_MIN_VERSION	2
 
 
 /* hardware dependant vector
@@ -233,6 +233,10 @@ struct kentry_proc
 	struct timeout *_cdecl (*addroottimeout)(long, void (*)(), unsigned short);
 	void _cdecl (*cancelroottimeout)(struct timeout *);
 
+	/* create a new process */
+	long _cdecl (*create_process)(const void *ptr1, const void *ptr2, const void *ptr3,
+				      struct proc **pret, long stack);
+
 	/* fork/leave a kernel thread */
 	long _cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
 	void _cdecl (*kthread_exit)(short code);
@@ -262,6 +266,8 @@ struct kentry_proc
 	canceltimeout, \
 	addroottimeout, \
 	cancelroottimeout, \
+	\
+	create_process, \
 	\
 	kthread_create, \
 	kthread_exit, \
