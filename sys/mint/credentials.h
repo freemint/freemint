@@ -34,19 +34,17 @@
 # ifndef _mint_credentials_h
 # define _mint_credentials_h
 
+
+# define NGROUPS	32
+
 # ifdef __KERNEL__
-# include "ktypes.h"
-# endif
-
-
-# define NGROUPS	8
 
 struct ucred
 {
 	short		euid;			/* effective user id */
 	short		egid;			/* effective group id */
 	short		groups [NGROUPS];	/* groups */
-	ushort		ngroups;		/* number of groups */
+	unsigned short	ngroups;		/* number of groups */
 	
 	short		links;			/* number of references */
 };
@@ -64,5 +62,6 @@ struct pcred
 	short		pad;
 };
 
+# endif
 
 # endif /* _mint_credentials_h */
