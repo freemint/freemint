@@ -1,24 +1,614 @@
-The included file `terminfo.src' contains the terminal description for
+The included file `twterm.src' contains the terminal description for
 the toswin terminal emulations tw52 and tw100.  To disable color support
 you must currently manually set your $TERM to `tw52-m' and `tw100-m'
-respectively.
+respectively.  If you have less than 8 colors available toswin2 will
+automatically disable color support.
 
 The tw100 emulations are not yet included (because I haven't changed
 them yet).  You should however find them in most recent ncurses
 installations.
 
-In order to use these descriptions you must run the command
+Using Toswin2 To Remotely Log Into Other Unix Boxes
+===================================================
 
-	tic twterm.src
+If you frequently work remotely on other Unix machines in a Toswin2 
+window you will maybe come across some problems.  It may be worth
+the while reading on.
 
-as root on the machine where you want to log in via toswin2.
+What Are Terminals?
+-------------------
 
-The color mapping for tw52 is basically ANSI except that I have rather
-used the higher color indexes for red, green, blue, yellow, magenty and
-cyan.  These colors are generally darker and should enhance readability.
-The enhanced mapping is done in the terminfo description and Toswin2 
-therefore remains backward compatible to legacy applications that are
-negligent enough to ignore the terminfo database.
+In the good old days a Personal Computer (PC) was something like a
+personal yacht in terms of affordability.  Computers were large and
+expansive and were usually located in universities, big governmental
+institutions, large companies or the like.  Computer users were 
+normally employees or members of these institutions.  They were sitting
+in front of so-called terminals linked via teletype lines to these
+big machines.
+
+The terminals were more or less intelligent combinations of keyboards
+and monitors.  The display was completely text-based so were the 
+user interfaces of the programs.  Window based environments were not
+possible because these terminals were only capable of displaying 
+characters (usually 25 lines of a maximum of 80 characters each).
+
+The basic mode of operation was somewhat like that: The user logged
+into the remote machine, typing commands into the shell and reading
+the output.  From a more technical point of view `typing commands
+into the shell' meant that the terminal detected that the user 
+has hit some keys on the keyboard, for example the keys `l', 's'
+followed by RETURN for issuing the command 'ls'.  This sequence of
+keys was sent to the shell running on the remote machine and the
+shell answered with a listing of the current directory.
+
+Typing commands without seeing them becomes somewhat awkward and
+therefore the terminals were usually put into `echo' mode, i. e.
+characters were displayed on the screen as they were typed in.
+
+Of course it is not possible to send `characters' through a network
+line, you can only send and receive numbers.  Luckily enough most
+hardware manufacturers have agreed at least on a standard mapping
+from numbers to characters and vice versa that was called ASCII
+(or more exactly US-ASCII).  ASCII defines standard meanings for
+128 character codes in the range of 0-127, for instance the character
+`A' has the numerical code 65, the character `7' (i. e. the screen
+representation of a seven) has the code 55.  A computer needs 7 bits
+in order to represent these 128 characters, the eighth bit (eight
+bits make up one byte or octet) was needed for the hardware protocol.
+
+These 128 characters were sufficient to represent the 26 characters
+of the latin alphabet both in upper and lower case, the digits 0-9,
+some interpunctation marks like the colon, comma, period and so on.
+
+The character codes 0-31 represent so-called control characters.
+These control characters are invisible on the display but are rather
+commands that control the displaying terminal.  They include commands
+like a carriage return (move the cursor resp. current writing position
+to the beginning of the line), the newline (move the cursor to the
+next line), ring a bell, and so on.
+
+This set of characters was sufficient to display most English texts.
+Most languages however use special national characters like accented
+characters in French, Italian, Portuguese, Irish, Spanish, Czech,
+Polish, or the Umlaute (vowels with a diaeresis) or the SZ-Ligature
+in Germany, or even non-latin alphabets like Hebrew, Arabic, Asean
+or cyrillic.  This wasn't a big problem those days because people
+in the non-English-spoken regions of the world were still jumping
+from tree to tree, throwing bananas and coconuts at the American tourists
+with their notebooks, palms and cell phones.  It became a problem
+later however.  Type `lynx http://www.unicode.org/' to learn how
+it was solved.
+
+Anyway, the existing solution was sufficient for programs like `ls',
+`echo', even `cc' that were basically one-shot applications.  The
+user typed in the command with options and arguments and saw the
+result on the screen.  One big problem however was the task of editing
+texts, see `man ed', `man sed', or `man ex' to get an impression how
+it was done those days.  Editing was done with these line-based editors,
+and they were really line-based.  You could only see one line of text
+at a time and had to issue cryptic keystroke combinations to manipulate
+the text.  Other popular editors like `sed' (yep, this is really an 
+editor, the Stream EDitor) weren't even interactive.
+
+It only took a decade or so to realize that editing files becomes much
+more handy if you see more than one line of text at once and may even
+be capable of freely moving a cursor.  That was when a revolution in
+user interfaces took place, it was the birth of a comfortable text
+editor with a revolutionary user interface, the `vi', the visual editor.
+
+The `vi' was capable of displaying a screenful of text at once, you
+were able to move a cursor, it distinguished between a command and
+an edit mode and it was even a little WYSIWYG (what you see is what you
+get) since it immediately displayed your changes on the screen.  Advanced
+versions even offered the possibility to issue commands with special
+keys like the cursor (arrow) keys instead of typing hard-to-remember
+characters or character combinations in command mode.
+
+How was this done? We earlier learned that these terminals could only
+handle characters, digits, and so on.  But there were still these control
+characters in the range of 0-31 (plus the character code 127).  People
+simply assigned a new meaning to certain combinations of these control
+characters, which then became control sequences.  Many of these sequences
+were introduced by the character number 27 (escape), for example the
+sequence escape (27) followed by E (69) was interpreted by the terminal
+as a command to clear the screen and put the cursor into the topmost
+line.  If you have a terminal that is compatible to the DEC vt52 you
+can try that with
+
+	echo -n -e '\033E'
+
+(For the curious: `033' is the octal representation of decimal 27).
+
+In order to use these new features modern keyboards were equipped with
+additional keys like the cursor keys, function keys, the home key, and
+so on.  Pressing these keys caused the terminal to send the appropriate
+sequence to the remote machine and update the screen.  For example
+in Toswin2, pressing the cursor up key will cause the terminal to send
+the sequence escape + A, and move the cursor up one line.
+
+Terminal Emulations
+-------------------
+
+Real (hardware) terminals are rarely used today.  First the terminals
+turned into workstations, later into personal computers.  The dumb
+terminals that could only interpret keyboard strokes and display 
+characters turned into intelligent machines with their own CPU.
+
+However, the screen manipulation remained basically the same.  Instead
+of sending everything through a teletype line, the machine managed the
+user interaction on its own behalf and displayed the results on the
+monitor attached to the workstation.  However, most hardware manufacterers
+still used the same or similar control sequences for the user 
+interaction.  Thus it was still possible to use these workstations
+or PCs as terminals for remote machines and software written for
+terminal based applications did not have to be rewritten from scratch.
+
+With the improvement of video hardware, graphical environments like
+X11, GEM or the Apple Macintosh became more and more popular.
+Applications now ran in movable windows, and were operated with a 
+mouse.  However, you still needed a command line shell and if you
+wanted to run applications on remote machines via a network link the
+majority of these remote applications still expected a terminal attached.
+One solution for these remote applications is X11 which provides a
+network enabled graphical user interface; but most systems (even
+X based) still provide pseudo terminals that emulate a hardware terminal
+inside a window.
+
+These terminal emulations (no matter if they run in a window environment
+or not) appear to the application they run more or less like a terminal
+and they still use the same mechanisms.  Thus it is still possible to
+use the terminal-based applications, which is very important especially
+in networked environments.
+
+The File `/etc/termcap'
+-----------------------
+
+Years before there were only few hardware manufacturers and it was still
+easy to agree on a standard mapping from characters to numbers and vice
+versa.  In the days of vi and friends the situation was different.  Many
+different terminals with distinct capabilities were available and 
+disagreement on the meaning of certain control sequence became a major
+problem.
+
+The solution was to maintain a database that mapped symbolic names for
+terminal capabilities or keys on the keyboards to the appropriate control 
+sequences.  The standard location for that database was the file
+`/etc/termcap'.  The file is human-readable, text-based and consists
+of entries for each terminal type followed by the mapping from symbolic
+names to the control sequences (type `man 5 termcap' to learn more about
+that).
+
+A program like `vi' for example basically worked like this: It read
+the environment variable `TERM' to inquire the name of the terminal
+being used.  It then searched the termcap database for an entry for
+that terminal and processed the mapping (an alternative method in 
+absence of the variable `TERM' is to read the correct definition from
+the environment variable `TERMCAP').  When it wants to clear the
+screen for instance, it looks up the correct control sequence and
+prints that control sequence on the terminal.  The terminal will 
+hopefully react in the desired way then.
+
+The other way round works as well: When the user presses for instance
+the cursor up key, the terminal will send the (hard-coded) control
+sequence for that key to the application.  The application is able
+to interpret that key stroke with the help of the termcap database in
+the correct manner.
+
+The Terminfo Database
+---------------------
+
+The main drawback of the termcap database is that it is very inefficient
+to use.  As more and more terminals with more and more features appeared
+the database became larger and larger.  It was relatively easy to handle
+for humans because they were able to read and edit it with standard text
+editors but imposed a considerable performance penalty on the application
+because it had to read and process that text file.  Modern versions of
+the termcap database are typically close to one megabyte in size and if
+the definition for your particular terminal happens to be the last in
+the database, your application has to read almost one megabyte of garbage
+before it can start (it is therefore a good idea to move the definitions
+for the terminals you often use to the front of that file).
+
+The next progress was therefore the curses library which uses terminal
+definitions that are compiled into a binary representation.  These
+binary terminal descriptions are a lot faster to process.  Furthermore
+there is only one terminal definition per file, i. e. the application
+only has to read the stuff it really needs.
+
+The terminfo database is expected to reside in a standard location,
+usually `/usr/share/terminfo' or `/usr/lib/terminfo'.  If you have
+compiled your curses library yourself, it may also be expected in
+`/usr/local/share/terminfo' or `/usr/local/lib/terminfo', see 
+`man curses' or `man ncurses' for details on your system or below
+`Environment Variable' for more information.
+
+The database layout is file-system based and very simple.  For instance
+the definition for the terminal `tw52' is looked up in
+
+	/path/to/terminfo/t/tw52
+	
+i. e., the first character of the terminal name (case matters, t is not
+the same as T) denotes the directory and the filename is the name of
+the terminal itself.  Most terminals also have alias names, for example
+the terminal `tw52' is also known as `tw52-color'.
+
+Termcap, Curses And Ncurses
+---------------------------
+
+There are three main programming libraries available that character
+screen based applications are written with.  The first one was the
+termcap library that uses the database in `/etc/termcap'.  This
+library is considered obsolete today and some Unix distributions 
+have even ceased to install it completely.
+
+BSD Unix introduced the curses library that already makes use of the
+terminfo database instead of termcap.  This library is still shipped
+with many commercial Unix systems but is getting more and more replaced
+by the new curses library `ncurses' which is distributed under the 
+terms and conditions of the GNU General Public License.  It is mostly
+an enhanced version of the original curses implementation.
+
+Atari And Terminals
+-------------------
+
+One common misunderstanding is that the Atari-ST and its successors
+have a `vt52' terminal emulation built in.  The truth is that the
+Atari-ST and its successors all have a terminal emulation built in
+that is mostly backwards compatible to the `vt52' terminal.
+
+The VT52 was one of the earliest hardware terminals available.  Decades
+ago it has quickly become a de-facto standard for other terminals, today
+it would be completely obsolete.  This is the exhaustive description
+for all its capabilities as they are coded into today's termcap and
+terminfo databases:
+
+* 80 columns and 24 lines
+* Control-H performs a backspace	
+* hardcoded tabulators every eighth character
+* ability to display graphical characters (block graphic characters)
+* audible bell
+* ability to clear from the current cursor position to the end of the
+  screen
+* ability to clear from the current cursor position to the end of the
+  current line
+* clear the screen
+* put cursor into top-left corner
+* move cursor to arbitrary position on the screen
+* carriage return
+* move cursor up/down one line
+* a backspace key
+* cursor left/right/up/down key
+* move cursor one character to the left/right
+* scroll forward/backward one line
+* move to next hardware tab
+
+These capabilities would suffice to run most curses based applications
+but the actual descriptions available on many systems silently omit
+some capabilities and keys.  You may easily end up with a program
+telling you that your terminal is too dumb to run the application.
+
+The hard-coded terminal emulation in the Atari-ST (present in the VDI
+and on the console, i. e. the white screen you see when you don't start
+GEM) shows a number of differences to the core vt52:
+
+* no capability to display block graphics characters
+* depending on the hardware the Atari console allows you to change
+  the current foreground and background color
+* erase from cursor position to beginning of screen
+* turn the cursor on and off
+* save and restore the current cursor position
+* erase current line (and move cursor to first column)
+* erase from current cursor position to beginning of line
+* turn on/off reverse video mode (inverted text for emphasis)
+* turn on/off automatic line feed in last column
+
+This is still primitive compared to modern terminal emulations but 
+far more than the VT52 had to offer.  A major drawback of the Atari
+console compared to the VT52 is the lack of block graphical characters
+which are often used to compose fancy looking user interfaces with
+lines and line fragments.
+
+Remote Logins From The Atari
+----------------------------
+
+If you want to login from an Atari into a remote machine via ssh,
+telnet or rlogin you have to tell the applications that run on the
+remote machine which kind of terminal you use and which capabilities
+it has.  The basic way to do this is via the environment variable
+`TERM'.  You can check if your terminal emulation has already set this
+environment variable with the command `echo $TERM' typed into your
+shell.  If this is not the case you should issue the commands
+
+	TERM="tw52"
+	export TERM
+
+at your shell prompt (note that from now on csh users are left alone,
+they have to figure out themselves how to set their environment).
+
+Now you can login to the target machine:
+
+	telnet machine.employer.com
+
+Why should you set the environment variable before the login?
+First of all you should always keep in mind that after the login
+all applications will completely run on the remote machine.  These
+applications will therefore of course check the environment on
+the remote host, not your own.  And, don't forget that, in a telnet
+or rlogin session, the first commands executed on the remote machine
+are probably the program `login' and then your login shell.  Both
+programs already need to know about your terminal or they may mess
+up the display.  If for instance the remote login program thinks that
+it can hide your password by changing your terminal into invisible
+or blank mode but your terminal misinterprets the command, you will
+probably not be very happy.  The same applies to your login shell.
+Even the shell itself may make use of the information retrieved from
+the terminfo and termcap database.  Even if it doesn't need that 
+information, it will execute one or more scripts upon each login
+and these scripts may contain commands that need the information.
+It is not unusual after all that these startup scripts perform some
+initialization tasks based on the terminal you use.
+
+One drawback of that procedure is that you may be forced to set
+`TERM' to a value that is not valid on your local machine.  In order 
+to avoid the necessity of setting back `TERM' to a locally usable value
+after you finished your remote session is to temporarily set the
+environment variable for that single command:
+
+	TERM="tw52" telnet machine.employer.com
+	
+This syntax requires a POSIX compatible shell, for example the Bourne
+Again Shell `bash' or the Korn Shell `ksh'.
+
+Environment Variables
+---------------------
+
+As we have learned before the environment variable `TERM' tells
+the programs on the remote machine under which name they should look
+up the description of your terminal in the terminfo or termcap database.
+The remote login protocols ssh, telnet and rlogin all exchange information
+about the terminal and the environment variable will have the same
+setting on the remote machine.
+
+Unfortunately not all terminfo and termcap installations are always
+up-to-date.  You may happen to log into a machine with your `TERM' set
+to `tw52' and the remote machine does not know about this terminal
+(emulation).  It may also happen that the information available on
+the remote machine is buggy or does not yet contain the latest 
+nitty-gritty features that your terminal provide.  If you simply want
+to quickly login, don't want to use any advanced curses software or
+don't care about messed up display, you should try the following list
+of advices step by step, until your satisfied.  If you want to use
+as many features as possible you should however go as far as possible,
+respectively start trying in backward order.
+
+a) TERM=vt52
+
+The first try is to set `TERM' to `vt52'.  This terminal emulation 
+should be known to every Unix machine.  But as stated before, none
+of the terminal emulations for the Atari ST is fully compatible
+to the VT52.  The `tw52' is at least fully backwards compatible, all
+other terminal emulators will not fully work.  This will often result
+in poor rendering on the screen.  For example, from the Atari console
+you may see something like
+
+	tqqqqqqqqqqu    tqqqqqqqqqqu
+	x    OK    x    x  Cancel  x
+	mqqqqqqqqqqj    mqqqqqqqqqqj
+
+and you can only guess that this should really represent two buttons
+labelled with OK and Cancel (beginning with Toswin2 version 2.7 the
+line graphics are correctly rendered, even in VT52 mode).
+
+You remember that the DEC VT52 had neither color support nor support for
+a reverse video mode.  Reverse video mode is particular important for
+curses applications because these applications are often menu driven
+or even use buttons or combo boxes.  The reverse video mode is used
+to emphasize the current selection from the background and it may
+become very awkward to operate these applications when you cannot
+see what you have currently selected.
+
+As mentioned before, many VT52 terminal descriptions found on remote
+machines are buggy and will make programs display only garbage on
+your terminal.  This may even lead to the result that the remote
+program refuses to work because it has no way to render its user
+interface because of lacking capabilities.   Often these programs will
+become very slow because of missing capabilities: For example to erase
+the screen from the current cursor position to the beginning of the
+screen the application has to print a space on every character cell
+although your terminal would happily do that with one single command.
+
+In other words: With a core VT52 terminal and lynx it is no fun to 
+browse the web.
+
+b) TERM=st52
+
+It may surprise you that despite of the economical failure of Atari
+Corp. its terminal description is available and installed on many
+(also on commercial) Unix systems.  The most commonly available is
+probably `st52'.  But you may also be lucky with `tt52' if you run
+a console on an Atari TT (the TT hardware console has some annoying
+incompatibilities).  Other possibilities are `at', `atari', `at52',
+or `stv52' for the MiNT virtual consoles (provided that they run
+on your machine).  There may even be a description for `stv52pc',
+an enhanced version of the MiNT virtual console with block graphics
+character.  If you can use one of these terminal descriptions you 
+will already be lucky with many applications, they contain commands
+for reverse video mode, for advanced cursor positioning and maybe
+even for color support (but the used color maps are mostly buggy
+and will not show the desired results).  If color support actually
+makes the rendition on screen worse, you may also have a try with
+the monochrome versions `st52-m', `tt52-m', and so on.
+
+Even the block character graphics are now approximated more or less
+correctly:
+
+	+----------+    +----------+
+	|    OK    |    |  Cancel  |
+	+----------+    +----------+
+
+c) TERM=tw52
+
+Even the terminal description for Toswin and its successor Toswin2
+is available on many systems.  Unfortunately, the development of
+Toswin2 has not been as continuous as desirable.  Some features have
+been added in the course of time, some features have changed, and
+the main problem is the terminal description itself which may be
+completely buggy or inaccurate on the remote machine.  If you use
+Toswin(2), setting `TERM' to `tw52' is always an option worth trying
+but be prepared for funny results.  If the colors are unbearable, try
+it with `tw52-m' instead.  Downgrading your terminal by setting `TERM'
+to one of the various hardware consoles like `st52', `st52-m' and so
+on may also be an option.
+
+d) TERM=tw100 or TERM=vt100
+
+Some time ago an attempt has been made to code an emulation of the
+popular DEC VT100 terminal into Toswin2.  Unfortunately both the
+implementation in Toswin2 and the terminal descriptions have changed
+a lot.  The results that you achieve therefore heavily depend on the
+combination of your Toswin version and the terminal descriptions 
+available on the remote system.  If you want to have a try you will
+of course have to choose "tw100" in the window configuration dialog.
+
+e) TERMCAP=/path/to/private/termcap
+
+If none of the above settings fulfill your demands, you may also
+try to set the environment variable `TERMCAP' to the name of a 
+file with alternative terminal descriptions (which you may upload
+from your local machine).  Whether this works or not depends on
+several factors:
+
+* the remote termcap implementation must really evaluate the
+  `TERMCAP' environment variable, most do not ...
+* the termcap file you upload should work on your local machine
+* the application you run remotely must be linked against the
+  termcap library, most modern applications are curses ...
+  
+An alternative possibility with `TERMCAP' is to put the entire 
+terminal description into that environment variable.  Search for
+your terminal in your local `/etc/termcap', copy the relevant section
+to a file, upload it to the remote machine and there do something like
+
+	TERMCAP=`cat /path/to/my/private/termcap`
+	export TERMCAP
+
+This may or may not work.
+
+Of course, if you have the appropriate privileges on the remote machine
+or your system administrator is a nice guy, you can also simply update
+the termcap database on the remote machine.
+
+f) Updating The Remote Terminfo Database
+
+As mentioned above, the terminfo database is simply a directory tree
+with precompiled terminal descriptions.  For example the compiled
+descriptions for the various Toswin emulations will be found in
+
+	/usr/share/terminfo/t/tw52
+	/usr/share/terminfo/t/tw52-color
+	/usr/share/terminfo/t/tw52-m
+	/usr/share/terminfo/t/tw100
+	/usr/share/terminfo/t/tw100-color
+	/usr/share/terminfo/t/tw100-m
+
+Please ask `man ncurses' or `man 5 terminfo' for the exact location.
+Variations include `/usr/local' instead of `/usr' and `lib' instead
+of `share'.
+
+The compiled binary files should be compatibible across architectures.
+It should therefore be possible to simply copy the terminal descriptions
+from your MiNT box to the remote machine, provided that you have the
+privilege to do that.
+
+Another possibility is to compile the terminfo description from the
+file `twterm.src' on the remote machine using the terminfo compiler
+`tic':
+
+	tic -o /home/guido/.terminfo twterm.src 
+
+The command line option `-o' tells `tic' to output the database into
+the directory `/home/guido/.terminfo' instead of the standard location
+`/usr/share/terminfo'.  ATTENTION: The file `twterm.src' does only
+contain descriptions for Toswin terminal emulations, not for the rest
+of the world.  I also vaguely remember that early versions of `tic' 
+expected an empty output directory.  Without the appropriate care you
+may therefore end up with a wiped out terminfo database that only
+consists of Toswin terminal descriptions afterwards.  Explicitely 
+specifying the output directory with `-o' should avoid this but I 
+cannot guaranty that.  Ask your system administrator or consult the
+manual page tic(1) before you do anything.
+
+g) TERMINFO=/path/to/your/own/terminfo
+
+Recent ncurses implementations look for the terminfo database 
+at different locations.  When you don't have the privileges to update
+the terminfo database on your remote machine you may still point
+ncurses to a non-standard directory to look for terminal descriptions.
+
+This directory must have the same hierarchical structure as the
+standard directory `/usr/share/terminfo'.  You can either manually
+create the directory structure and copy the description files or
+do it in one go as described above.
+
+Recent ncurses looks for the terminfo database in the following order:
+
+	1) the directory specified in the environment variable `TERMINFO'
+	2) in the directory `.terminfo' in your home directory (or
+	   `$HOME')
+	3) in the system-wide database, usually `/usr/share/terminfo'
+	
+Even without superuser privileges you will often be able to use your
+terminal description on the remote machine like this.  Consult
+the `man curses', `man ncurses', `man terminfo', or `man 5 terminfo'
+on the remote system or ask your system administrator for details.
+
+Hopeless Cases
+--------------
+
+Both termcap and curses/ncurses provide means to access terminal
+capabilities in a portable manner.  There are however some hopeless
+cases where certain terminal capabilities (mostly the PC console,
+`ansi', `linux', or `xterm') are hard-coded into the applications.
+
+If such an application issues commands for a Linux console, Toswin2
+in tw52-mode will output a lot of garbage, because it misinterprets
+the control sequences.  To avoid this you may check the progress
+that the `tw100' emulation has made and configure your terminal
+window to use that instead.
+
+One example for such an application is the program `ls' which is
+configured to represent the file type with colors.  The control
+sequences used to turn on/off a particular color are often those
+of the target system and not usable with your terminal.  In order
+to fix that you can either run `ls' with the option `--color=never'
+or read the manual page ls(1) for more information.
+
+The curses based web browser `w3m' is also a nuisance with respect
+to curses compliance.  Type `o' for options, move your cursor to the
+color settings and don't forget to press `OK' at the bottom of the
+page to make your changes active.
+
+Many init scripts also use hard-coded terminal capabilities of the 
+target system.  You are generally left alone there.
+ 
+Terminfo/Termcap vs. stty
+-------------------------
+
+You may also have heard of the program `stty' that is used to influence
+some settings of your terminal.  It is often useful but actually has
+nothing to do with (n)curses or termcap.  It is a means to provide 
+access to low-level terminal settings like the line speed or certain
+control characters.
+
+A major nuisance especially when a Linux system is involved is the
+function of the backspace key.  These problems can often be solved
+by typing
+
+	stty erase ...
+	
+Instead of the dots simply hit the key that you want to use instead
+for backspace.  See the manual page stty(1) for details.
+
 
 Guido Flohr <guido@freemint.de>
 
