@@ -117,7 +117,6 @@ f_create (const char *name, short attrib)
 	PROC *p = curproc;
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
-	int global = 0;
 	long ret;
 	
 	TRACE (("Fcreate(%s, %x)", name, attrib));
@@ -125,7 +124,7 @@ f_create (const char *name, short attrib)
 # if O_GLOBAL
 	if (attrib & O_GLOBAL)
 	{
-		DEBUG (("Fcreate(%s): O_GLOBAL denied for non root"));
+		DEBUG (("Fcreate(%s): O_GLOBAL denied"));
 		return EPERM;
 	}
 # endif
