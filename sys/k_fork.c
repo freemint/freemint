@@ -116,10 +116,11 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 
 
 	/* Duplicate command line */
-	if (p2->real_cmdline != NULL
 # ifdef ONLY030
+	if (p2->real_cmdline != NULL \
 		&& (*(long *)p2->real_cmdline))
 # else
+	if (p2->real_cmdline != NULL \
 		&& (p2->real_cmdline [0] != 0 || p2->real_cmdline [1] != 0
 			|| p2->real_cmdline [2] != 0 || p2->real_cmdline [3] != 0))
 # endif

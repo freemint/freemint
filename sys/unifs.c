@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * a simple unified file system
- * 
+ *
  */
 
 # include "unifs.h"
@@ -60,7 +60,7 @@ static long	_cdecl uni_fscntl	(fcookie *dir, const char *name, int cmd, long arg
 FILESYS uni_filesys =
 {
 	NULL,
-	
+
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -79,7 +79,7 @@ FILESYS uni_filesys =
 	FS_REENTRANT_L1	|
 	FS_REENTRANT_L2	|
 	FS_EXT_2	,
-	
+
 	uni_root,
 	uni_lookup, null_creat, uni_getdev, uni_getxattr,
 	null_chattr, null_chown, null_chmode,
@@ -89,16 +89,16 @@ FILESYS uni_filesys =
 	uni_symlink, uni_readlink, null_hardlink, uni_fscntl, null_dskchng,
 	NULL, NULL,
 	NULL,
-	
+
 	/* FS_EXT_1 */
 	NULL, NULL,
-	
+
 	/* FS_EXT_2
 	 */
-	
+
 	/* FS_EXT_3 */
 	NULL,
-	
+
 	0, 0, 0, 0, 0,
 	NULL, NULL
 };
@@ -136,11 +136,11 @@ FILESYS *
 get_filesys (int dev)
 {
 	UNIFILE *u;
-	
+
 	for (u = u_root; u; u = u->next)
 		if (u->dev == dev)
 			return u->fs;
-	
+
 	return NULL;
 }
 
@@ -149,7 +149,7 @@ unifs_init (void)
 {
 	UNIFILE *u = u_drvs;
 	int i;
-	
+
 	u_root = u;
 	for (i = 0; i < UNI_NUM_DRVS; i++, u++)
 	{
@@ -158,29 +158,29 @@ unifs_init (void)
 		u->dev = i;
 		u->cdate = datestamp;
 		u->ctime = timestamp;
-		
+
 		switch (i)
  		{
 			case BIOSDRV:
 				strcpy (u->name, "dev");
 				u->fs = &bios_filesys;
 				break;
-			
+
 			case PIPEDRV:
 				strcpy (u->name, "pipe");
 				u->fs = &pipe_filesys;
 				break;
-			
+
 			case PROCDRV:
 				strcpy (u->name, "proc");
 				u->fs = &proc_filesys;
 				break;
-			
+
 			case RAM_DRV:
 				strcpy (u->name, "ram");
 				u->fs = &ramfs_filesys;
 				break;
-			
+
 			case SHM_DRV:
 				strcpy (u->name, "shm");
 				u->fs = &shm_filesys;
@@ -194,7 +194,7 @@ unifs_init (void)
 			case UNIDRV:
 				(u-1)->next = u->next;	/* skip this drive */
 				break;
-			
+
 			default:
 				/* drives A..Z1..6 */
 				u->name[0] = i + ((i < 26) ? 'a' : '1' - 26);
@@ -203,13 +203,13 @@ unifs_init (void)
 				break;
 		}
 	}
-	
+
 	/* oops, we went too far */
 	u--;
 	u->next = 0;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_root (int drv, fcookie *fc)
 {
 	if (drv == UNIDRV)
@@ -219,12 +219,12 @@ uni_root (int drv, fcookie *fc)
 		fc->index = 0L;
 		return E_OK;
 	}
-	
+
 	fc->fs = 0;
 	return EINTERNAL;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	return do_ulookup (dir, name, fc, NULL);
@@ -249,21 +249,29 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 		DEBUG (("uni_lookup: bad directory"));
 		return ENOTDIR;
 	}
-	
+
 	/* special case: an empty name in a directory means that directory
 	 * so do "." and ".."
 	 */
+# ifdef ONLY030
+# define ___DOTNUL	0x2e00
+# define ___DOTDOT	0x2e2e
 
+	if (!*name
+		|| (*(short *)name == ___DOTNUL)
+		|| (*(short *)name == ___DOTDOT && name [2] == '\0'))
+# else
 	if (!*name
 		|| (name [0] == '.' && name [1] == '\0')
 		|| (name [0] == '.' && name [1] == '.' && name [2] == '\0'))
+# endif
 	{
 		dup_cookie (fc, dir);
 		return E_OK;
 	}
-	
+
 	drvs = drvmap() | dosdrvs;
-	
+
 	/*
 	 * OK, check the list of aliases and special directories
 	 */
@@ -274,7 +282,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 			if ((u->mode & S_IFMT) == S_IFDIR)
 			{
 				struct cwd *cwd = curproc->p_cwd;
-				
+
 				if (u->dev >= NUM_DRIVES)
 				{
 					fs = u->fs;
@@ -292,7 +300,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 					/* drive changed? */
 					if (!changed)
 						changedrv (tmp->dev, __FUNCTION__);
-					
+
 					tmp = &cwd->root[u->dev];
 					if (!tmp->fs)
 						return ENOTDIR;
@@ -310,27 +318,27 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 			return E_OK;
 		}
 	}
-	
+
 	DEBUG (("uni_lookup: name (%s) not found", name));
 	return ENOENT;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_getxattr (fcookie *fc, XATTR *xattr)
 {
 	UNIFILE *u = (UNIFILE *) fc->index;
-	
+
 	if (fc->fs != &uni_filesys)
 	{
 		ALERT(MSG_unifs_wrong_getxattr);
 		return EINTERNAL;
 	}
-	
+
 	xattr->index = fc->index;
 	xattr->dev = xattr->rdev = fc->dev;
 	xattr->nlink = 1;
 	xattr->blksize = 1;
-	
+
 	/* If "u" is null, then we have the root directory, otherwise
 	 * we use the UNIFILE structure to get the info about it
 	 */
@@ -349,7 +357,7 @@ uni_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->mode = u->mode;
 		xattr->attr = 0;
 	}
-	
+
 	if (u)
 	{
 		xattr->mtime = xattr->atime = xattr->ctime = u->ctime;
@@ -360,30 +368,30 @@ uni_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->mtime = xattr->atime = xattr->ctime = timestamp;
 		xattr->mdate = xattr->adate = xattr->cdate = datestamp;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_rmdir (fcookie *dir, const char *name)
 {
 	long r;
-	
+
 	r = uni_remove (dir, name);
 	if (r == ENOENT)
 		r = ENOTDIR;
-	
+
 	return r;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_remove (fcookie *dir, const char *name)
 {
 	UNIFILE *u, *lastu;
 	UNUSED (dir);
-	
+
 	DEBUG (("uni_remove: %s", name));
-	
+
 	lastu = NULL;
 	u = u_root;
 	while (u)
@@ -392,30 +400,30 @@ uni_remove (fcookie *dir, const char *name)
 		{
 			if ((u->mode & S_IFMT) != S_IFLNK)
 				return ENOENT;
-			
+
 			if (!suser (curproc->p_cred->ucr) && (u->dev != curproc->p_cred->ucr->euid))
 				return EACCES;
-			
+
 			kfree (u->data);
-			
+
 			if (lastu)
 				lastu->next = u->next;
 			else
 				u_root = u->next;
-			
+
 			kfree (u);
-			
+
 			return E_OK;
 		}
-		
+
 		lastu = u;
 		u = u->next;
 	}
-	
+
 	return ENOENT;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 {
 	FILESYS *fs;
@@ -519,7 +527,7 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 	return xfs_getname (fs, &curproc->p_cwd->root[dir->dev], dir, pathname, size);
 }
 
-static long _cdecl 
+static long _cdecl
 uni_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
 	UNIFILE *u;
@@ -552,11 +560,11 @@ uni_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 	}
 
 	strncpy (u->name, newname, UNINAME_MAX);
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_opendir (DIR *dirh, int flags)
 {
 	UNUSED (flags);
@@ -566,13 +574,13 @@ uni_opendir (DIR *dirh, int flags)
 		DEBUG (("uni_opendir: bad directory"));
 		return ENOTDIR;
 	}
-	
+
 	dirh->index = 0;
 	return E_OK;
 }
 
 
-static long _cdecl 
+static long _cdecl
 uni_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	long map;
@@ -582,9 +590,9 @@ uni_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	UNIFILE *u;
 	long index;
 	long r;
-	
+
 	map = dosdrvs | drvmap();
-	
+
 	i = dirh->index++;
 	u = u_root;
 	while (i > 0)
@@ -661,15 +669,15 @@ tryagain:
 		release_cookie (fc);
 		return EBADARG;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_pathconf (fcookie *dir, int which)
 {
 	UNUSED (dir);
-	
+
 	switch (which)
 	{
 		case DP_INQUIRE:	return DP_XATTRFIELDS;
@@ -683,11 +691,11 @@ uni_pathconf (fcookie *dir, int which)
 		case DP_MODEATTR:	return DP_FT_DIR | DP_FT_LNK;
 		case DP_XATTRFIELDS:	return DP_INDEX | DP_DEV | DP_NLINK | DP_SIZE;
 	}
-	
+
 	return ENOSYS;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_dfree (fcookie *dir, long *buf)
 {
 	UNUSED (dir);
@@ -696,11 +704,11 @@ uni_dfree (fcookie *dir, long *buf)
 	buf[1] = 0;	/* total number of clusters */
 	buf[2] = 1;	/* sector size (bytes) */
 	buf[3] = 1;	/* cluster size (sectors) */
-	
+
 	return E_OK;
 }
 
-static DEVDRV * _cdecl 
+static DEVDRV * _cdecl
 uni_getdev (fcookie *fc, long *devsp)
 {
 	UNUSED (fc);
@@ -709,13 +717,13 @@ uni_getdev (fcookie *fc, long *devsp)
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_symlink (fcookie *dir, const char *name, const char *to)
 {
 	UNIFILE *u;
 	fcookie fc;
 	long r;
-	
+
 	r = uni_lookup (dir, name, &fc);
 	if (r == E_OK)
 	{
@@ -728,26 +736,26 @@ uni_symlink (fcookie *dir, const char *name, const char *to)
 		/* some other error */
 		return r;
 	}
-	
+
 	if (curproc->p_cred->ucr->egid)
 	{
 		/* only members of admin group may do that */
 		return EACCES;
 	}
-	
+
 	u = kmalloc (sizeof (*u));
 	if (!u) return ENOMEM;
-	
+
 	strncpy (u->name, name, UNINAME_MAX);
 	u->name[UNINAME_MAX] = 0;
-	
+
 	u->data = kmalloc ((long) strlen (to) + 1);
 	if (!u->data)
 	{
 		kfree (u);
 		return ENOMEM;
 	}
-	
+
 	strcpy (u->data, to);
 	u->mode = S_IFLNK | DEFAULT_DIRMODE;
 	u->dev = curproc->p_cred->ucr->euid;
@@ -756,26 +764,26 @@ uni_symlink (fcookie *dir, const char *name, const char *to)
 	u->cdate = datestamp;
 	u->ctime = timestamp;
 	u_root = u;
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 uni_readlink (fcookie *fc, char *buf, int buflen)
 {
 	UNIFILE *u;
-	
+
 	u = (UNIFILE *) fc->index;
-	
+
 	assert (u);
 	assert ((u->mode & S_IFMT) == S_IFLNK);
 	assert (u->data);
-	
+
 	if (strlen (u->data) < buflen)
 		strcpy (buf, u->data);
 	else
 		return EBADARG;
-	
+
 	return E_OK;
 }
 
@@ -813,7 +821,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 {
 	fcookie fc;
 	long r;
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -825,31 +833,31 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 		{
 			struct fs_descr *d = (struct fs_descr *) arg;
 			FILESYS *fs;
-			
+
 			if (!suser (curproc->p_cred->ucr))
 				return EPERM;
-			
+
 			/* check if FS is installed already */
 			for (fs = active_fs; fs; fs = fs->next)
-				if (d->file_system == fs) 
+				if (d->file_system == fs)
 					return 0L;
-			
+
 			/* include new file system into chain of file systems */
 			xfs_add (d->file_system);
-			
+
 			/* return pointer to kernel info as OK */
 			return (long) &kernelinfo;
-	
+
 		}
 		case FS_MOUNT: /* install a new gemdos-only device for this FS */
 		{
 			struct fs_descr *d = (struct fs_descr *) arg;
 			FILESYS *fs;
 			UNIFILE *u;
-			
+
 			if (!suser (curproc->p_cred->ucr))
 				return EPERM;
-			
+
 			/* first check for existing names */
 			r = uni_lookup (dir, name, &fc);
 			if (r == E_OK)
@@ -858,29 +866,29 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 				return EACCES; /* name exists already */
 			}
 			if (r != ENOENT) return r; /* some other error */
-			
+
 			if (!d) return EACCES;
 			if (!d->file_system) return EACCES;
-			
+
 			/* check if FS is installed */
 			for (fs = active_fs; fs; fs = fs->next)
-				if (d->file_system == fs) 
+				if (d->file_system == fs)
 					break;
-			
+
 			if (!fs) return EACCES; /* not installed, so return an error */
-			
+
 			u = kmalloc (sizeof (*u));
 			if (!u) return ENOMEM;
-			
+
 			strncpy (u->name, name, UNINAME_MAX);
 			u->name[UNINAME_MAX] = 0;
 			u->mode = S_IFDIR|DEFAULT_DIRMODE;
 			u->data = 0;
 			u->fs = d->file_system;
-			
+
 			/* now get the file system its own device number */
 			u->dev = d->dev_no = curr_dev_no++;
-			
+
 			/* chain new entry into unifile list */
 			u->next = u_root;
 			u_root = u;
@@ -891,31 +899,31 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			struct fs_descr *d = (struct fs_descr *) arg;
 			FILESYS *fs;
 			UNIFILE *u;
-			
+
 			if (!suser (curproc->p_cred->ucr))
 				return EPERM;
-			
+
 			/* first check that directory exists */
 			/* use special uni_lookup mode to get the unifile entry */
 			r = do_ulookup(dir, name, &fc, &u);
 			if (r != E_OK)  return ENOENT; /* name does not exist */
-			
+
 			if (!d) return ENOENT;
 			if (!d->file_system) return ENOENT;
-			
+
 			if (d->file_system != fc.fs)
 				return ENOENT; /* not the right name! */
-			
+
 			release_cookie (&fc);
-			
+
 			if (!u || (u->fs != d->file_system))
 				return ENOENT;
-			
+
 			/* check if FS is installed */
 			for (fs = active_fs;  fs;  fs = fs->next)
-				if (d->file_system == fs) 
+				if (d->file_system == fs)
 					break;
-			
+
 			if (!fs) return EACCES; /* not installed, so return an error */
 
 			/* here comes the difficult part: we have to close all files on that
@@ -935,10 +943,10 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			struct fs_descr *d = (struct fs_descr *) arg;
 			FILESYS *fs, *last_fs;
 			UNIFILE *u;
-			
+
 			if (!suser (curproc->p_cred->ucr))
 				return EPERM;
-			
+
 			/* first check if there are any files or directories associated with
 			 * this file system
 			 */
@@ -948,7 +956,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 					return EACCES;
 			last_fs = 0;
 			fs = active_fs;
-			
+
 			/* go through the list and remove the file system */
 			while (fs)
 			{
@@ -996,22 +1004,22 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 				else if (cmd == FUTIME)
 				{
 					UNIFILE *u = (UNIFILE *) fc.index;
-					
+
 					if (u)
 					{
 						u->ctime = timestamp;
 						u->cdate = datestamp;
 					}
-					
+
 					release_cookie (&fc);
 					return E_OK;
 				}
-				
+
 				release_cookie (&fc);
 			}
 		}
 	}
-	
+
 	DEBUG (("uni_fscntl(%s, cmd %x, arg %lx) fail!", name, cmd, arg));
 	return ENOSYS;
 }
