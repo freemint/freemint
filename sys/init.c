@@ -621,9 +621,6 @@ write_ini (short *options)
 	char ini_file[32], buf[256];
 	long r, x, l;
 
-	if (!find_ini(ini_file))
-		return;
- 
 	inihandle = Fcreate (ini_file, 0);
 	if (inihandle < 0)
 		return;
