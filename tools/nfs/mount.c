@@ -19,11 +19,11 @@
 #include <stdlib.h>
 #include <support.h>
 #include <limits.h>
+#include <mntent.h>
 
 #include <sys/stat.h>
 
 #include "mount.h"
-#include "mntent.h"
 #include "nfsmnt.h"
 
 
@@ -45,7 +45,7 @@ int unmount = 0;
 int without_mtab = 0;
 int fake_mtab = 0;
 
-char optionstr[MNTMAXSTR+1] = "";
+char optionstr[64+1] = "";
 char noopt = 1;
 
 char whatmsg[] =
@@ -157,7 +157,8 @@ parse_option (char *s)
 }
 
 static long
-update_mtab (int mode, char *filesys, char *dir, char *type, char *opt, int freq, int pass)
+update_mtab (int mode, char *filesys, char *dir, char *type,
+	     char *opt, int freq, int pass)
 {
 	FILE *fp;
 	
@@ -225,7 +226,7 @@ update_mtab (int mode, char *filesys, char *dir, char *type, char *opt, int freq
  * system.
  */
 static char *
-convert_localname (char *s, char *d)
+convert_localname (const char *s, char *d)
 {
 	if (!s || !d)
 		return NULL;
