@@ -1166,6 +1166,76 @@ set_text(OBJECT *ob,
 	*gr = cur;
 }
 
+void
+enable_objcursor(struct widget_tree *wt)
+{
+	if (wt->edit_obj > 0)
+	{
+		set_objcursor(wt);
+		wt->cr_state |= OB_CURS_ENABLED;
+	}
+}
+
+void
+disable_objcursor(struct widget_tree *wt)
+{
+	undraw_objcursor(wt);
+	wt->cr_state &= ~OB_CURS_ENABLED;
+}
+
+void
+draw_objcursor(struct widget_tree *wt)
+{
+	if ( (wt->cr_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
+	{
+		RECT r = wt->cr;
+
+		r.x += wt->tree->ob_x;
+		r.y += wt->tree->ob_y;
+		write_selection(0, &r);
+		wt->cr_state |= OB_CURS_DRAWN;
+	}
+}
+void
+undraw_objcursor(struct widget_tree *wt)
+{
+	if ( (wt->cr_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
+	{
+		RECT r = wt->cr;
+
+		r.x += wt->tree->ob_x;
+		r.y += wt->tree->ob_y;
+		write_selection(0, &r);
+		wt->cr_state &= ~OB_CURS_DRAWN;
+	}
+}
+
+void
+set_objcursor(struct widget_tree *wt)
+{
+	char temp_text[256];
+	RECT r; // = wt->r;
+	OBJECT *ob;
+	RECT gr;
+	BFOBSPEC colours;
+	short thick;
+
+	if (wt->edit_obj <= 0)
+		return;
+
+	ob_offset(wt->tree, wt->edit_obj, &r.x, &r.y);
+	ob = wt->tree + wt->edit_obj;
+	r.w  = ob->ob_width;
+	r.h  = ob->ob_height;
+	
+	set_text(ob, &gr, &wt->cr, true, wt->edit_pos, temp_text, &colours, &thick, r);
+
+	wt->cr.x -= wt->tree->ob_x;
+	wt->cr.y -= wt->tree->ob_y;
+
+	t_font(screen.standard_font_point, screen.standard_font_id);
+}
+
 #if SELECT_COLOR
                                       /*  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 */
 static const short selected_colour[]   = {1, 0,13,15,14,10,12,11, 8, 9, 5, 7, 6, 2, 4, 3};
@@ -1430,10 +1500,14 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt)
 	}
 
 
+	/*
+	 * Save cursor position
+	 */
 	if (is_edit)
 	{
-		/* write cursor */
-		write_selection(0, &cr);
+		wt->cr = cr;
+		wt->cr.x -= wt->tree->ob_x;
+		wt->cr.y -= wt->tree->ob_y;
 	}
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
@@ -1853,15 +1927,17 @@ d_g_ftext(enum locks lock, struct widget_tree *wt)
 		done(OS_SELECTED);
 	}
 
-	/* unwrite cursor */
-	if (is_edit && !colours.textmode)
-		write_selection(0, &cr);
-
 	ob_text(wt, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
+	/*
+	 * Save cursor position
+	 */
 	if (is_edit)
-		/* write cursor */
-		write_selection(0, &cr);
+	{
+		wt->cr = cr;
+		wt->cr.x -= wt->tree->ob_x;
+		wt->cr.y -= wt->tree->ob_y;
+	}
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
 }
@@ -2388,6 +2464,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 
 	depth++;
 
+	undraw_objcursor(wt);
+
 	do {
 		if (current == item)
 		{
@@ -2435,6 +2513,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 		}
 	}
 	while (current != -1 && !(start_drawing && rel_depth < 1));
+
+	draw_objcursor(wt);
 
 	wr_mode(MD_TRANS);
 	f_interior(FIS_SOLID);

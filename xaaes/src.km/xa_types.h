@@ -258,6 +258,11 @@ struct widget_tree
 	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
 					/* And set a usefull RECT as soon as possible, ready for use in
 					 * all kind of functions. */
+#define OB_CURS_ENABLED	1
+#define OB_CURS_DRAWN	2
+
+	short cr_state;			/* Cursor state */
+	RECT cr;			/* Cursor coordinates, relative to 'r' */
 	struct xa_client *owner;	/* The tree widget would be owned by a different app to
 					 * the actual window (like the menu bar on the root window),
 					 * or the desktop toolbar widget. HR 270801: was: int pid; */
