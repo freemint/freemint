@@ -40,11 +40,11 @@
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
+# include "arch/startup.h"	/* _base */
 # include "arch/tosbind.h"
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
-# include "cnf_mint.h"		/* init_env */
 # include "cookie.h"		/* get_cookie(), set_cookie() */
 # include "debug.h"		/* do_func_key() */
 # include "dev-mouse.h"		/* mshift */
@@ -213,7 +213,7 @@ alt_help(void)
 
 	cmdln[0] = (char)(strlen(cmdln) - 1);
 
-	sys_pexec(100, pname, cmdln, init_env);
+	sys_pexec(100, pname, cmdln, _base->p_env);
 }
 
 /* The handler

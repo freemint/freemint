@@ -265,7 +265,7 @@ do_exec_os (long basepage)
 	 */
 	setstack(basepage + QUANTUM - 40L);
 	TRAP_Mshrink((void *)basepage, QUANTUM);
-	r = TRAP_Pexec(200, init_prg, init_tail, init_env);
+	r = TRAP_Pexec(200, init_prg, init_tail, _base->p_env);
 	TRAP_Pterm ((int)r);
 }
 
@@ -803,7 +803,7 @@ _mint_delenv(BASEPAGE *bp, const char *strng)
 }
 
 void
-_mint_setenv(BASEPAGE *bp, const char *var, char *value)
+_mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 {
 	char *env_str = bp->p_env, *new_env, *es, *ne;
 	long old_size, var_size;
@@ -1335,11 +1335,6 @@ init (void)
 	}
 # endif
 
-	if (init_env == 0)
-		init_env = (char *) _base->p_env;
-	else
-		_base->p_env = init_env;
-
 	/*
 	 * Set the PATH variable to the root of the current drive
 	 */
@@ -1452,7 +1447,7 @@ run_auto_prgs (void)
 		else if (runthem)
 		{
 			ksprintf(pathspec, sizeof(pathspec), "/auto/%s", dta->dta_name);
-			sys_pexec(0, pathspec, (char *)"", init_env);
+			sys_pexec(0, pathspec, (char *)"", _base->p_env);
 		}
 		r = sys_f_snext();
 	}
@@ -1509,9 +1504,9 @@ mint_thread(void *arg)
 		if (!init_is_gem)
 		{
 # if 1
-			r = sys_pexec(100, init_prg, init_tail, init_env);
+			r = sys_pexec(100, init_prg, init_tail, _base->p_env);
 # else
-			r = sys_pexec(0, init_prg, init_tail, init_env);
+			r = sys_pexec(0, init_prg, init_tail, _base->p_env);
 # endif
 			DEBUG(("init_prg done!"));
 		}
@@ -1519,7 +1514,7 @@ mint_thread(void *arg)
 		{
 			BASEPAGE *bp;
 
-			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", init_env);
+			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", _base->p_env);
 			bp->p_tbase = *((long *) EXEC_OS);
 
 			r = sys_pexec(106, (char *)"GEM", bp, 0L);
@@ -1541,7 +1536,7 @@ mint_thread(void *arg)
 			boot_print(MSG_init_rom_AES);
 # endif
 			entry = *((long *) EXEC_OS);
-			bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
+			bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
 			bp->p_tbase = entry;
 
 			r = sys_pexec(106, (char *) "GEM", bp, 0L);
@@ -1580,7 +1575,7 @@ mint_thread(void *arg)
 # ifdef VERBOSE_BOOT
 		boot_printf(MSG_init_starting_shell, shellpath);
 # endif
-		r = sys_pexec(100, shellpath, init_tail, init_env);
+		r = sys_pexec(100, shellpath, init_tail, _base->p_env);
 
 # ifdef VERBOSE_BOOT
 		if (r > 0)

@@ -26,6 +26,6 @@ void	install_cookies	(void);
 
 long	env_size	(char *var);
 void	_mint_delenv	(BASEPAGE *bp, const char *strng);
-void	_mint_setenv	(BASEPAGE *bp, const char *var, char *value);
+void	_mint_setenv	(BASEPAGE *bp, const char *var, const char *value);
 
 # endif /* _init_h */
