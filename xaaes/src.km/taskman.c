@@ -216,7 +216,9 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			delete_window(lock, task_man_win);
 			break;
 		case TM_QUIT:
+			DIAGS(("QUIT by taskmanager"));
 			deselect(wt->tree, TM_QUIT);
+			shutdown(lock);
 			C.shutdown = QUIT_NOW;  /* quit now */
 			break;
 		case TM_HALT:

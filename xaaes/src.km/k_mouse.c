@@ -1001,7 +1001,7 @@ void
 check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 {
 	struct moose_data md;
-	short b, x, y;
+	//short b, x, y;
 
 	/*
 	 * First we check if a fake button-released packet is to be delivered
@@ -1017,9 +1017,6 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		mainmd.y = mu_button.y;
 		mainmd.clicks = 0;
 		new_mu_mouse(&mainmd);
-
-		x = mu_button.x;
-		y = mu_button.y;
 	}
 	else
 	{
@@ -1058,9 +1055,6 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 						mainmd.l, mainmd.ty, mainmd.x, mainmd.y, mainmd.state, mainmd.clicks));
 					DIAG((D_mouse, NULL, " dbg1=0x%x, dbg2=0x%x",
 						mainmd.dbg1, mainmd.dbg2));
-
-					x = x_mouse;
-					y = y_mouse;
 					break;
 				}
 			}
@@ -1071,19 +1065,16 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			 * No mouse news today...
 			 */
 			DIAGS(("check_mouse - no new data %lx", n));
-			x = x_mouse;
-			y = y_mouse;
 		}
 	}
-	b = mu_button.b;
 
 	DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
-		b, x, y, client->name));
+		mu_button.b, x_mouse, y_mouse, client->name));
 
 	if (br)
-		*br = b;
+		*br = mu_button.b;
 	if (xr)
-		*xr = x;
+		*xr = x_mouse;
 	if (yr)
-		*yr = y;
+		*yr = y_mouse;
 }
