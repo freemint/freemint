@@ -65,60 +65,62 @@ static char Aes_display_name[32];
 Path Aes_home_path;
 
 long loader_pid = -1;
-struct file *log = NULL;
-
 char version[] = ASCII_VERSION;
 
 static void
 bootmessage(void)
 {
-	fdisplay(log, "%s", Aes_display_name);
-	fdisplay(log, "MultiTasking AES for MiNT");
-	fdisplay(log, "(w)1995,96,97,98,99 Craig Graham, ");
-	fdisplay(log, "Johan Klockars, Martin Koehling, ");
-	fdisplay(log, "Thomas Binder");
-	fdisplay(log, "     and other assorted dodgy characters from around the world...");
-	fdisplay(log, "   Using Harald Siegmunds NKCC");
-	fdisplay(log, "   1999-2003 Henk Robbers @ Amsterdam");
-	fdisplay(log, "        2004 Frank Naumann <fnaumann@freemint.de>");
-	fdisplay(log, "Date: %s, time: %s", __DATE__, __TIME__);
-	fdisplay(log, "Supports mouse wheels");
-	fdisplay(log, "Compile time switches enabled:");
+	display("%s", Aes_display_name);
+	display("MultiTasking AES for MiNT");
+	display("");
+	display("(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder");
+	display("              and other assorted dodgy characters from around the world...");
+	display("(c) 1999-2003 Henk Robbers @ Amsterdam");
+	display("    2003-2004 Frank Naumann <fnaumann@freemint.de> and");
+	display("              Odd Skancke <ozk@atari.org>");
+	display("");
+	display("Using Harald Siegmunds NKCC");
+	display("");
+	display("Date: %s, time: %s", __DATE__, __TIME__);
+	display("Supports mouse wheels");
+	display("Compile time switches enabled:");
 
 #if GENERATE_DIAGNOSTICS
-	fdisplay(log, " - Diagnostics");
+	display(" - Diagnostics");
 #endif
 
 #if DISPLAY_LOGO_IN_TITLE
-	fdisplay(log, " - Logo in title bar");
+	display(" - Logo in title bar");
 #endif
 
 #if POINT_TO_TYPE
-	fdisplay(log, " - Point-to-type capability");
+	display(" - Point-to-type capability");
 #endif
 
 #if ALT_CTRL_APP_OPS
-	fdisplay(log, " - CTRL+ALT key-combo's");
+	display(" - CTRL+ALT key-combo's");
 #endif
 
 	if (C.mvalidate)
-		fdisplay(log, " - Client vector validation");
+		display(" - Client vector validation");
 
-	fdisplay(log, " - Realtime (live) window scrolling, moving and sizing");
+	display(" - Realtime (live) window scrolling, moving and sizing");
 
 #if PRESERVE_DIALOG_BGD
-	fdisplay(log, " - Preserve dialog backgrounds");
+	display(" - Preserve dialog backgrounds");
 #endif
 
 #if !FILESELECTOR
-	fdisplay(log, " - Built without file selector");
+	display(" - Built without file selector");
 #endif
 
 	if (cfg.fsel_cookie)
-		fdisplay(log, " - FSEL cookie found");
+		display(" - FSEL cookie found");
 
 	if (cfg.auto_program)
-		fdisplay(log, "auto program");
+		display("auto program");
+
+	display("");
 }
 
 struct kentry *kentry;
@@ -139,11 +141,6 @@ init(struct kentry *k)
 
 	/* remember loader */
 	loader_pid = p_getpid();
-
-	/* open the log
-	 * if failed nothing is written; fdisplay is failsafe
-	 */
-	log = kernel_open("xa_setup.log", O_WRONLY|O_CREAT|O_TRUNC, NULL);
 
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
@@ -184,8 +181,8 @@ init(struct kentry *k)
 
 		if (flag)
 		{
-			fdisplay(log, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir.");
-			fdisplay(log, "       Please remove it before starting the XaAES kernel module!");
+			display("ERROR: There exist an moose.xdd in your FreeMiNT sysdir.");
+			display("       Please remove it before starting the XaAES kernel module!");
 			return NULL;
 		}
 
@@ -214,8 +211,8 @@ init(struct kentry *k)
 
 		if (flag)
 		{
-			fdisplay(log, "ERROR: There is no moose.adi in your FreeMiNT sysdir.");
-			fdisplay(log, "       Please install it before starting the XaAES kernel module!");
+			display("ERROR: There is no moose.adi in your FreeMiNT sysdir.");
+			display("       Please install it before starting the XaAES kernel module!");
 			return NULL;
 		}
 	}
@@ -282,7 +279,7 @@ init(struct kentry *k)
 	C.Aes = kmalloc(sizeof(*C.Aes));
 	if (!C.Aes)
 	{
-		fdisplay(log, "XaAES ERROR: Can't allocate memory?");
+		display("XaAES ERROR: Can't allocate memory?");
 		goto error;
 	}
 	/* zero out */
@@ -379,16 +376,14 @@ init(struct kentry *k)
 	DIAGS(("call load_adi"));
 	adi_load();
 
-	fdisplay(log, "*** End of successfull setup ***");
-
-	DEBUG(("Creating XaAES kernel thread"));
+	DIAGS(("Creating XaAES kernel thread"));
 	{
 		long r;
 
 		r = kthread_create(NULL, k_main, NULL, &(C.Aes->p), "AESSYS");
 		if (r)
 			/* XXX todo -> exit gracefully */
-			FATAL(("can't create XaAES kernel thread"));
+			FATAL("can't create XaAES kernel thread");
 
 	}
 
@@ -403,9 +398,6 @@ init(struct kentry *k)
 	return (void *)1L;
 
 error:
-	if (log)
-		kernel_close(log);
-
 #if GENERATE_DIAGS
 	/* Close the debug output file */
 	if (D.debug_file)

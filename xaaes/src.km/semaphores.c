@@ -329,7 +329,7 @@ create_semaphore(struct file *log, long value, const char *name, long *error)
 	ret = p_semaphore(0, value, 0);
 	if (ret)
 	{
-		fdisplay(log, "Psemaphore(0, %s) -> %ld", name, ret);
+		DIAGS(("Psemaphore(0, %s) -> %ld", name, ret));
 		*error = ret;
 	}
 }
@@ -353,7 +353,7 @@ create_semaphores(struct file *log)
 	/* there was an error during semaphore creation */
 	if (error)
 	{
-		fdisplay(log, "XaAES ERROR: can't create all semaphores");
+		display("XaAES ERROR: can't create all semaphores");
 		destroy_semaphores(log);
 	}
 
@@ -373,8 +373,8 @@ destroy_semaphore(struct file *log, long value, const char *name)
 	 */
 	if (ret == EACCES)
 	{
-		fdisplay(log, "deleting Psemaphore(%s) -> ", name);
-		fdisplay(log, "locked or free; try to aquire");
+		DIAGS(("deleting Psemaphore(%s) -> ", name));
+		DIAGS(("locked or free; try to aquire"));
 
 		ret = p_semaphore(2, value, 0);
 		if (ret == 0)
@@ -382,36 +382,36 @@ destroy_semaphore(struct file *log, long value, const char *name)
 			ret = p_semaphore(1, value, 0);
 			if (ret != 0)
 			{
-				fdisplay(log, "deleting Psemaphore(%s) -> ", name);
-				fdisplay(log, "aquired but not deleted (%ld)???", ret);
+				DIAGS(("deleting Psemaphore(%s) -> ", name));
+				DIAGS(("aquired but not deleted (%ld)???", ret));
 			}
 			else
 				goto ok;
 		}
 		else
 		{
-			fdisplay(log, "deleting Psemaphore(%s) -> ", name);
-			fdisplay(log, "can't aquire, giving up (%ld)", ret);
+			DIAGS(("deleting Psemaphore(%s) -> ", name));
+			DIAGS(("can't aquire, giving up (%ld)", ret));
 		}
 	}
 	else if (ret)
 	{
 		if (ret == EBADARG)
 		{
-			fdisplay(log, "deleting Psemaphore(%s) -> ", name);
-			fdisplay(log, "don't exist");
+			DIAGS(("deleting Psemaphore(%s) -> ", name));
+			DIAGS(("don't exist"));
 		}
 		else
 		{
-			fdisplay(log, "deleting Psemaphore(%s) -> ", name);
-			fdisplay(log, "unknown error %ld, ignored", ret);
+			DIAGS(("deleting Psemaphore(%s) -> ", name));
+			DIAGS(("unknown error %ld, ignored", ret));
 		}
 	}
 	else
 	{
 ok:
-		fdisplay(log, "deleting Psemaphore(%s) -> ", name);
-		fdisplay(log, "OK");
+		DIAGS(("deleting Psemaphore(%s) -> ", name));
+		DIAGS(("OK"));
 	}
 }
 

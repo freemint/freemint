@@ -50,7 +50,7 @@ load_adi(struct basepage *b, const char *name)
 	long r;
 	
 	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));
-	DIAGS(("load_adi: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DIAGS(("load_adi: init 0x%lx, size %li", (void *)b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 	
 	/* pass a pointer to the drivers file name on to the
 	 * driver.
@@ -68,8 +68,7 @@ load_adi(struct basepage *b, const char *name)
 void
 adi_load(void)
 {
-	c_conws("Loading AES Device Drivers:\r\n");
-	DIAGS(("Loading AES Device Drivers:"));
+	display("Loading AES Device Drivers:");
 	
 	if (!load_modules)
 	{

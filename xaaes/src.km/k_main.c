@@ -306,29 +306,29 @@ init_moose(void)
 				if (vecs.whlv)
 				{
 					vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
-					fdisplay(log, "Wheel support present");
+					DIAGS(("Wheel support present"));
 				}
 				else
-					fdisplay(log, "No wheel support");
+					DIAGS(("No wheel support"));
 
 				if (adi_ioctl(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
-					fdisplay(log, "Moose set dclick time failed");
+					display("Moose set dclick time failed");
 
 				DIAGS(("Using moose adi"));
 				ret = true;
 			}
 			else
-				fdisplay(log, "init_moose: MOOSE_READVECS failed (%lx)", aerr);
+				display("init_moose: MOOSE_READVECS failed (%lx)", aerr);
 		}
 		else
 		{
-			fdisplay(log, "init_moose: opening moose adi failed (%lx)", aerr);	
+			display("init_moose: opening moose adi failed (%lx)", aerr);	
 			C.adi_mouse = NULL;
 		}
 	}
 	else
 	{
-		fdisplay(log, "Could not find moose.adi, please install in %s!", sysdir);
+		display("Could not find moose.adi, please install in %s!", sysdir);
 	}
 
 	return ret;
@@ -495,6 +495,7 @@ fatal(void)
 static void
 sigterm(void)
 {
+	DIAGS(("AESSYS: sigterm received, dispatch_shutdown(0)"));
 	KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");
 	dispatch_shutdown(0);
 }
@@ -524,6 +525,8 @@ int aessys_timeout = 0;
 void
 k_main(void *dummy)
 {
+	int wait = 1;
+
 	/*
 	 * setup kernel thread
 	 */
@@ -590,7 +593,6 @@ k_main(void *dummy)
 
 	bzero(&pending_button, sizeof(pending_button));
 
-
 	mu_button.b = 0;
 	mu_button.cb = 0;
 	mu_button.clicks = 0;
@@ -599,31 +601,30 @@ k_main(void *dummy)
 	mu_button.newc = 0;
 	mu_button.newr = 0;
 
-
 	/* Open the MiNT Salert() pipe to be polite about system errors */
 	C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);
 	if (C.alert_pipe < 0)
 	{
-		fdisplay(log, "XaAES ERROR: Can't open '%s' :: %ld",
-			 alert_pipe_name, C.alert_pipe);
+		display("XaAES ERROR: Can't open '%s' :: %ld",
+			alert_pipe_name, C.alert_pipe);
 		goto leave;
 	}
-	fdisplay(log, "Open '%s' to %ld", alert_pipe_name, C.alert_pipe);
+	DIAGS(("Open '%s' to %ld", alert_pipe_name, C.alert_pipe);
 
 	/* Open the u:/dev/console device to get keyboard input */
-	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY);
+	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY));
 	if (C.KBD_dev < 0)
 	{
-		fdisplay(log, "XaAES ERROR: Can't open '%s' :: %ld",
-			 KBD_dev_name, C.KBD_dev);
+		display("XaAES ERROR: Can't open '%s' :: %ld",
+			KBD_dev_name, C.KBD_dev);
 		goto leave;
 	}
-	fdisplay(log, "Open '%s' to %ld", KBD_dev_name, C.KBD_dev);
+	DIAGS(("Open '%s' to %ld", KBD_dev_name, C.KBD_dev));
 
 	/* initialize mouse */
 	if (!init_moose())
 	{
-		fdisplay(log, "XaAES ERROR: init_moose failed");
+		display("XaAES ERROR: init_moose failed");
 		goto leave;
 	}
 
@@ -733,8 +734,15 @@ k_main(void *dummy)
 	while (!(C.shutdown & QUIT_NOW));
 
 	DIAGS(("**** Leave kernel for shutdown"));
+	wait = 0;
 
 leave:
+	if (wait)
+	{
+		display("press any key to continue ...");
+		_c_conin();
+	}
+
 	k_exit();
 }
 
@@ -776,7 +784,7 @@ k_exit(void)
 
 	if (C.adi_mouse)
 		adi_close(C.adi_mouse);
-		
+
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
 
