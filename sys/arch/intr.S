@@ -199,7 +199,7 @@ L_switch:
 	move.l	_tosbp,a1
 	move.l	_curproc,a0
 	move.l	P_BASE(a0),(a1)
-	ori.w	#0x0700,sr
+//	ori.w	#0x0700,sr
 	clr.w	_in_kernel
 	pea	4(a0)
 	jsr	_restore_context	// back to user (never returns)
@@ -435,7 +435,7 @@ Do_sig:	move.l	a0,-(sp)		// save a0
 	jsr	_enter_bios		// set up kernel vectors
 	move.l	_sig_routine,a1 	// get signal handling routine
 	jsr	(a1)		// go do it
-	ori.w	#0x0700,sr
+//	ori.w	#0x0700,sr
 	jsr	_leave_kernel		// leave kernel
 	addq.w	#4,a4		// get context save area address
 	move.l	a4,-(sp)		// push it
