@@ -49,7 +49,7 @@
 
 static OBJECT *def_widgets;
 
-#if GENERATE_DIAGS
+//#if GENERATE_DIAGS
 static char *t_widg[] =
 {
 	"XAW_TITLE",
@@ -74,7 +74,7 @@ static char *t_widg[] =
 	"XAW_BORDER",			/* Extended XaAES widget, used for border sizing. */
 	"XAW_MENU"			/* Extended XaAES widget, must be drawn last. */
 };
-#endif
+//#endif
 
 /*
  * WINDOW WIDGET SET HANDLING ROUTINES
@@ -2824,6 +2824,7 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 		((XA_TREE *)widg->stuff)->zen  = false;
 	}
 
+	
 	wt = obtree_to_wt(wind->owner, obtree);
 	if (!wt)
 		wt = new_widget_tree(wind->owner, obtree);
@@ -2846,7 +2847,7 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 
 		
 #if WDIALOG_WDLG
-	if (wind->dial & created_for_WDIAL)
+	if ((wind->dial & created_for_WDIAL))
 	{
 		wt->exit_form	= NULL;
 		widg->click	= click_wdlg_widget;
@@ -2891,6 +2892,7 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 	set_toolbar_coords(wind);
 	loc.n	 = XAW_TOOLBAR;
 	loc.mask = TOOLBAR;
+	loc.statusmask = XAWS_SHADED;
 	widg->loc	= loc;
 	return wt;
 }
@@ -3024,6 +3026,14 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 
 		widg = w->widgets + f;
 
+#if 0
+		display("rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
+			t_widg[widg->type], widg, widg->stuff,
+			widg->type == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 );
+		display(" -- statusmask %x, window_status %x", widg->loc.statusmask, winstatus);
+		display(" -- widg->display=%lx", widg->display);
+#endif
+
 		if (!(winstatus & widg->loc.statusmask) && widg->display)					/* Is the widget in use? */
 		{
 			if (    widg->loc.mask         == 0		/* not maskable */
@@ -3034,6 +3044,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 				{					/* Normal widgets */
 					rp_2_ap_cs(w, widg, &r);	/* Convert relative coords and window location to absolute screen location */
 					inside = m_inside(md->x, md->y, &r);
+					//display("%d/%d - %d/%d/%d/%d", md->x, md->y, r);
 				}
 				else
 				{
@@ -3041,10 +3052,16 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 					inside = !m_inside(md->x, md->y, &w->ba);
 				}
 				if (inside)
+				{
+					//display("checkif_do_widgets: true");
 					return true;
+				}
 			}
 		}
+		//else
+		//	display("masked");
 	}
+	//display("checkif_do_widgets: false");
 	return false;
 }
 
