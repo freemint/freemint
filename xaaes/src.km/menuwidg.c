@@ -990,19 +990,6 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 
 	display_popup(tab, wt, item, rdx, rdy);
 
-	if (tab->nest)
-	{
-		TASK where_are_we;
-		Tab *nx = tab->nest;
-		MENU_TASK *kx = &nx->task_data.menu;
-		
-		//kx->wt->tree->ob_x = kx->rdx;
-		//kx->wt->tree->ob_y = kx->rdy;
-		menu_area(&k->em.m1, nx, kx->point_at_menu, kx->pdx, kx->pdy);
-		k->em.flags |= MU_M1|1;	   		/* out of entry */
-		k->em.t1 = where_are_we;
-	}
-	else
 	{
 		short x, y;
 
@@ -1011,12 +998,11 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 		k->em.t1 = popup;
 
 		check_mouse(wt->owner, NULL, &x, &y);
-		if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
+		if (m_inside(x, y, &k->drop))		//is_rect(x, y, k->em.flags & 1, &k->em.m1))
 		{
-			k->em.flags = 0;
 			k->x = x;
 			k->y = y;
-			k->em.t1(C.menu_base);
+			popup(tab);
 		}
 	}
 }
@@ -1187,21 +1173,16 @@ popup(struct task_administration_block *tab)
 
 			new = nest_menutask(tab);
 			do_popup(new, new_wt, at->item, click, rdx, rdy);
+
 		}
-		else
+
 		{
 			RECT r;
 
-			//obj_area(k->wt, m, &r);
 			menu_area(&k->em.m1, tab, m, k->pdx, k->pdy);
 			xa_rect_clip(&k->drop, &r, &k->em.m1);
 			k->em.flags = MU_M1|1;
 			k->em.t1 = where_are_we;
-#if 0
-			menu_area(&k->em.m1, tab, m);
-			k->em.flags = MU_M1|1;			/* out of entry */
-			k->em.t1 = where_are_we;
-#endif
 		}
 	}
 }

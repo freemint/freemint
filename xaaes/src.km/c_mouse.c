@@ -258,43 +258,53 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 
 	if (C.menu_base->client == ce->client)
 	{
+		Tab *tab = C.menu_base;
 		MENU_TASK *k = &C.menu_base->task_data.menu;
 		int x = ce->md.x;
 		int y = ce->md.y;
 
 		DIAG((D_mouse, ce->client, "cXA_menu_move for %s", ce->client->name));
 
-		if (k->em.flags & MU_MX)
+		while (tab)
 		{
-			/* XaAES internal flag: report any mouse movement. */
+			k = &tab->task_data.menu;
 
-			k->em.flags = 0;
-			k->x = x;
-			k->y = y;
-			k->em.t1(C.menu_base);	/* call the function */
-		}
-		else if (k->em.flags & MU_M1)
-		{
-			if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
+			if (k->em.flags & MU_MX)
 			{
+				/* XaAES internal flag: report any mouse movement. */
+
 				k->em.flags = 0;
 				k->x = x;
 				k->y = y;
 				k->em.t1(C.menu_base);	/* call the function */
+				break;
 			}
-			else
-			/* HR: MU_M2 not used for menu's anymore, replaced by MU_MX */
-			/* I leave the text in, because one never knows. */
-			if (k->em.flags & MU_M2)
+			else if (k->em.flags & MU_M1)
 			{
-				if (is_rect(x, y, k->em.flags & 2, &k->em.m2))
+				if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
 				{
 					k->em.flags = 0;
 					k->x = x;
 					k->y = y;
-					k->em.t2(C.menu_base);
+					k->em.t1(C.menu_base);	/* call the function */
+					break;
+				}
+				else
+				/* HR: MU_M2 not used for menu's anymore, replaced by MU_MX */
+				/* I leave the text in, because one never knows. */
+				if (k->em.flags & MU_M2)
+				{
+					if (is_rect(x, y, k->em.flags & 2, &k->em.m2))
+					{
+						k->em.flags = 0;
+						k->x = x;
+						k->y = y;
+						k->em.t2(C.menu_base);
+						break;
+					}
 				}
 			}
+			tab = tab->nest;
 		}
 	}
 }
