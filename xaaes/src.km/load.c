@@ -1,4 +1,5 @@
 
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,8 +33,14 @@ main(int argc, char *argv[])
 
 	printf("load \"%s\"\n", path);
 	r = Ssystem(2000, path, 0);
-	if (r) printf("Ssystem -> %li\n", r);
-	else pause();
+	if (!r)
+	{
+		sigset_t set = 0xffffffff;
+		sigprocmask(SIG_SETMASK, &set, NULL);
+		pause();
+	}
+	else
+		printf("Ssystem -> %li\n", r);
 
 	return 0;
 }
