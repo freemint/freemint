@@ -8,6 +8,7 @@
 #include "textwin.h"
 #include "console.h"
 #include "ansicol.h"
+#include "isotost.h"
 #include "vt.h"
 #include "clipbrd.h"
 #include "proc.h"

@@ -40,12 +40,6 @@ extern int	draw_ticks;
 #define MAX_DRAW_TICKS 3
 extern int	curs_ticks;
 
-/*
- * Translation tables
-*/
-extern unsigned char st_to_iso[];
-extern unsigned char iso_to_st[];
-
 
 /*
  * Hilfsfunktionen
