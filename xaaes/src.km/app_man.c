@@ -223,20 +223,23 @@ recover(void)
 void
 swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind, int which)
 {
-	struct xa_window *top = NULL;
-	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-	XA_WIDGET *widg = get_menu_widg();
+	//struct xa_window *top = NULL;
+	//struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+	//XA_WIDGET *widg = get_menu_widg();
 
 	DIAG((D_appl, NULL, "[%d]swap_menu", which));
 
 	/* If the new client has no menu bar, no need for a change */
 	if (new->std_menu)
 	{
+	
 		DIAG((D_appl, NULL, "  --   to %s", c_owner(new)));
-
+		set_rootmenu(new, do_topwind);
+#if 0
 		/* menu widget.tree */
 		if (new->std_menu != widg->stuff) /* Different menu? */
 		{
+			XA_TREE *wt;
 			bool wastop = false;
 
 			DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
@@ -249,14 +252,14 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 			
 			new->status |= CS_WAIT_MENU;
 			lock_menustruct(rc, false);
-			if (widg->stuff)
+			if ((wt = widg->stuff))
 			{
-				((XA_TREE *)widg->stuff)->widg = NULL;
-				((XA_TREE *)widg->stuff)->flags &= ~WTF_STATIC;
+				wt->widg = NULL;
+				wt->flags &= ~WTF_STATIC;
 			}
-			widg->stuff = new->std_menu;
-			new->std_menu->flags |= WTF_STATIC;
-			new->std_menu->widg = widg;
+			widg->stuff = wt = new->std_menu;
+			wt->flags |= WTF_STATIC;
+			wt->widg = widg;
 			unlock_menustruct(rc);
 			new->status &= ~CS_WAIT_MENU;
 
@@ -280,6 +283,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 		{
 			DIAG((D_appl, NULL, "Same menu %s", c_owner(new)));
 		}
+#endif
 	}
 
 	/* Change desktops? */
@@ -290,14 +294,17 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 	{
 		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
 		set_desktop(new->desktop);
-		redraw_menu(lock);
+		//redraw_menu(lock);
 	}
+#if 0
 	else if (new->std_menu)
 	{
 		/* No - just change menu bar */
 		DIAG((D_appl, NULL, "redrawing menu..."));
+		set_rootmenu(new->desktop);
 		redraw_menu(lock);
 	}
+#endif
 	DIAG((D_appl, NULL, "exit ok"));
 }
 
