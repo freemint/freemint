@@ -713,7 +713,7 @@ CE_at_restoresigs(enum locks lock, struct c_event *ce, bool cancel)
 static N_AESINFO *c_naes = NULL;
 static N_AESINFO naes_cookie =
 {
-	0x0300,				/* version 0.3.0 */
+	0x0300,				/* version 3.0.0 */
 	(25<<9)|(1<<5)|1,		/* 1 jan, 2005	*/
 	(1<<11)|(2<<5)|3,		/* 01:02:03	*/
 	0x8000,				/* Bit 15 set indicates that this really is XaAES */
