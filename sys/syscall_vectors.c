@@ -372,9 +372,9 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0ff */		s_yield,
 	
 	/* 0x100 */		f_pipe,
-	/* 0x101 */		f_fchown,	/* 1.15.2 */
-	/* 0x102 */		f_fchmod,	/* 1.15.2 */
-	/* 0x103 */		enosys, 	/* f_sync */
+	/* 0x101 */		f_fchown,	/* 1.15.2  */
+	/* 0x102 */		f_fchmod,	/* 1.15.2  */
+	/* 0x103 */		sys_fsync, 	/* 1.15.10 */
 	/* 0x104 */		f_cntl,
 	/* 0x105 */		f_instat,
 	/* 0x106 */		f_outstat,
@@ -449,10 +449,10 @@ Func dos_tab [DOS_MAX] =
 	/* 0x147 */		p_getgroups,
 	/* 0x148 */		p_setgroups,
 	/* 0x149 */		t_setitimer,
-	/* 0x14a */		d_chroot,	/* 1.15.3 */
-	/* 0x14b */		f_stat64,	/* 1.15.4 */
-	/* 0x14c */		enosys,		/* f_seek64 */
-	/* 0x14d */		d_setkey,	/* 1.15.4 */
+	/* 0x14a */		d_chroot,	/* 1.15.3  */
+	/* 0x14b */		f_stat64,	/* 1.15.4  */
+	/* 0x14c */		f_seek64,	/* 1.15.10 */
+	/* 0x14d */		d_setkey,	/* 1.15.4  */
  	/* 0x14e */		p_setreuid,
  	/* 0x14f */		p_setregid,
  	
@@ -466,7 +466,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x157 */		enosys,		/* t_adjtime */
 	/* 0x158 */		p_getpriority,
 	/* 0x159 */		p_setpriority,
-	/* 0x15a */		enosys,		/* reserved */
+	/* 0x15a */		f_poll,		/* 1.15.10 */
 	/* 0x15b */		enosys,		/* reserved */
 	/* 0x15c */		enosys,		/* reserved */
 	/* 0x15d */		enosys,		/* reserved */
