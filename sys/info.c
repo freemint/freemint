@@ -141,7 +141,11 @@ const char *greet2 =
 
 # endif /* THIRD_PARTY */
 
-/* Since this place messages can be translated
+/* Since this place messages can be translated.
+ *
+ * But don't bother adding TRACEs or DEBUGs. Add only ALERTs, FATALs and
+ * messages printed out to the console via Cconws().
+ *
  * Don't forget to add specific define that enables the national version,
  * like for example -DLANG_FRENCH for French version and so on.
  * It is assumed, that these defines are exclusive, i.e. you cannot
@@ -196,6 +200,14 @@ const char *MSG_bios_kill =
 	"Please change the protection mode "
 	"to \'Super\' in the program header.";
 
+/* ----------- biosfs.c --------- */
+
+const char *ERR_biosfs_aux_fptr = "Can't allocate default aux FILEPTR!";
+
+/* ---------- block_IO.c ---------- */
+
+const char *ERR_bio_cant_init_cache = "init_block_IO: can't initialize default cache!";
+
 /* ------------ cnf.c ---------- */
 
 const char *MSG_cnf_bad_drive = "bad drive '%c:' in alias";
@@ -246,6 +258,15 @@ const char *MSG_fatal_reboot = "FATAL ERROR. You must reboot the system.\r\n";
  */
 const char *MSG_system_halted = "System halted.\r\n";
 
+/* ----------- dma.c ---------- */
+
+const char *ERR_dma_start_on_inv_handle = "dma_start on invalid handle %lu";
+const char *ERR_dma_end_on_inv_handle = "dma_end on invalid handle %lu";
+const char *ERR_dma_end_on_unlocked_handle = "dma_end on non-locked handle %lu";
+const char *ERR_dma_block_on_inv_handle = "dma_block on invalid handle %lu";
+const char *ERR_dma_deblock_on_inv_handle = "dma_deblock on invalid handle %lu";
+const char *ERR_dma_addroottimeout = "dma_block: addroottimeout failed!";
+
 /* ---------- init.c ---------- */
 
 # if 0
@@ -295,9 +316,23 @@ const char *MSG_init_specify_prg =
 const char *MSG_keytable_loaded = "Loaded keyboard table for AKP code %d\r\n";
 const char *MSG_keytable_faulty = "Keyboard table is BAD!\r\n";
 
+/* ------------ slb.c ------------- */
+
+/* ALERTs */
+const char *MSG_slb_couldnt_open = "Could not open shared library %s";
+const char *MSG_slb_freeing_used = "Freeing shared library %s, which is still in use!";
+
 /* ---------- unicode.c ---------- */
 
 const char *MSG_unitable_loaded = "Loaded unicode table %s\r\n";
+const char *MSG_unicode_cannot_below_128 = "Unicode: cannot change codes lower then 128\r\n";
+
+/* ---------- unifs.c --------- */
+
+/* ALERTs */
+const char *MSG_unifs_wrong_getxattr = "ERROR: wrong file system getxattr called";
+const char *MSG_unifs_couldnt_match = "unifs: couldn't match a drive with a directory";
+const char *MSG_unifs_fs_doesnt_match_dirs = "unifs: drive's file system doesn't match directory's";
 
 /* ---------- xhdi.c ---------- */
 
