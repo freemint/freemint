@@ -139,7 +139,7 @@ struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;		/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;		/* place for saving the hz_200 timer value */
-static	short dead_lock;	/* flag for deakdey processing */
+//static	short dead_lock;	/* flag for deakdey processing */
 
 /* Alt/numpad */
 static	uchar numin[8];		/* buffer for storing ASCII code typed in via numpad */
@@ -379,7 +379,7 @@ INLINE short
 generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
 	short delta = (shift & MM_ESHIFT) ? kbd_mpixels_fine : kbd_mpixels;
-	TIMEOUT *t;
+	//TIMEOUT *t;
 
 	switch (scan)
 	{
@@ -841,7 +841,14 @@ scan2asc(uchar scancode)
 			vec = user_keytab->altgr;
 		else
 		{
-			if (shift & MM_ESHIFT)
+			if (shift & MM_CTRL)
+			{
+				if (shift & MM_ESHIFT)
+					vec = user_keytab->shift;
+				else
+					vec = user_keytab->unshift;
+			}
+			else if (shift & MM_ESHIFT)
 				vec = user_keytab->altshift;
 			else if (shift & MM_CAPS)
 				vec = user_keytab->altcaps;
@@ -859,7 +866,22 @@ scan2asc(uchar scancode)
 			vec++; vec++;
 		}
 	}
+	else
+	{
+		/* Shift/1 should give "!" regardless of the Caps state
+		 */
+		if (shift & MM_ESHIFT)
+			vec = user_keytab->shift;
+		else if (shift & MM_CAPS)
+			vec = user_keytab->caps;
+		else
+			vec = user_keytab->unshift;
 
+		if (vec)
+			asc = vec[scancode];
+		
+	}
+#if 0
 	/* Hmmm, not sure if this should operate so.
 	 * If the AKP translation results 0, we
 	 * continue as if the Alt key was not depressed.
@@ -881,6 +903,7 @@ scan2asc(uchar scancode)
 		if (vec)
 			asc = vec[scancode];
 	}
+#endif
 
 	/* We can optionally emulate the PC-like behaviour of Caps/Shift */
 	if (kbd_pc_style_caps)
