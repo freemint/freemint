@@ -31,6 +31,7 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "k_main.h"
+#include "k_mouse.h"
 #include "k_keybd.h"
 #include "messages.h"
 #include "menuwidg.h"
@@ -333,6 +334,7 @@ void
 exit_client(enum locks lock, struct xa_client *client, int code)
 {
 	struct xa_client *top_owner;
+	long redraws;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
@@ -340,11 +342,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	if (client->tp)
 	{
 		post_tpcevent(client, TP_terminate, NULL, NULL, 0,0, NULL,NULL);
-		yield();
-		yield();
-		yield();
-		yield();
-		yield();
 	}
 #endif
 
@@ -377,17 +374,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 */
 	remove_windows(lock, client);
 
-	cancel_aesmsgs(&client->irdrw_msg);
-	cancel_aesmsgs(&client->rdrw_msg);
-	cancel_aesmsgs(&client->msg);
+	redraws = cancel_app_aesmsgs(client);
 	cancel_cevents(client);
 	cancel_keyqueue(client);
-
-#if 0
-	remove_wind_refs(window_list, client);
-	remove_wind_refs(S.closed_windows.first, client);
-#endif
-
 
 	if (client->attach)
 	{
@@ -522,9 +511,15 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	CLIENT_LIST_REMOVE(client);
 	APP_LIST_REMOVE(client);
 
+	
+	if (redraws)
+	{
+		C.redraws -= redraws - 1;
+		kick_mousemove_timeout();
+	}
+	
 	/* if taskmanager is open the tasklist will be updated */
 	update_tasklist(lock);
-
 
 	/*
 	 * free remaining resources
