@@ -1674,7 +1674,7 @@ set_button_timer(enum locks lock, struct xa_window *wind)
 	Tab *t = &C.active_timeout;
 	MENU_TASK *k = &t->task_data.menu;
 
-	exclusive_mouse_input(wind->owner, 1, &k->exit_mb, &k->x, &k->y); //vq_mouse(C.vh,&k->exit_mb,&k->x,&k->y);
+	check_mouse(wind->owner, &k->exit_mb, &k->x, &k->y);
 	
 	/* still down? */
 	if (k->exit_mb)

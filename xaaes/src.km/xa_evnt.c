@@ -174,12 +174,10 @@ still_button(enum locks lock, struct xa_client *client, const short *o)
 	struct xa_window *wind;
 	short b, x, y;
 
-
 	if (C.menu_base || widget_active.widg || !mouse_ok(client))
 		return false;
 
-	exclusive_mouse_input(client, 1, &b, &x, &y);
-	//vq_mouse(C.vh, &b, &mu_button.x, &mu_button.y);
+	check_mouse(client, &b, &x, &y);
 	//vq_key_s(C.vh, &mu_button.ks);
 
 	if (!o[2])
@@ -359,29 +357,35 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (pending_key_strokes(lock, pb, client, ev))
 			fall_through    |= ev;
 		else
-			new_waiting_for |= ev;			/* Flag the app as waiting for keypresses */
+			/* Flag the app as waiting for keypresses */
+			new_waiting_for |= ev;
 	}
 
-/* HR: event data are now in the client structure */
-/*     040401: Implemented fall thru. */
 	if (events & (MU_M1|MU_M2|MU_MX))
 	{
 		bzero(&client->em, sizeof(client->em));
-		if (events & MU_M1)					/* Mouse rectangle tracking */
+		if (events & MU_M1)
 		{
+			/* Mouse rectangle tracking */
+
 			const RECT *r = (const RECT *)&pb->intin[5];
 			client->em.m1 = *r;
 			client->em.flags = pb->intin[4] | MU_M1;
-			DIAG((D_multi,client,"    M1 rectangle: %d/%d,%d/%d, flag: 0x%x: %s", r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
-			exclusive_mouse_input(client, 1, 0, &x, &y); //get_mouse(4);
+
+			DIAG((D_multi,client,"    M1 rectangle: %d/%d,%d/%d, flag: 0x%x: %s",
+				r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
+
+			check_mouse(client, NULL, &x, &y);
+
 			if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
 				fall_through    |= MU_M1;
 			else
 				new_waiting_for |= MU_M1;
 		}
 
-		if (events & MU_MX)					/* HR: XaAES extension: any mouse movement. */
+		if (events & MU_MX)
 		{
+			/* XaAES extension: any mouse movement. */
 			client->em.flags = pb->intin[4] | MU_MX;
 			DIAG((D_multi,client,"    MX"));
 			new_waiting_for |= MU_MX;
@@ -392,8 +396,12 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			const RECT *r = (const RECT *)&pb->intin[10];
 			client->em.m2 = *r;
 			client->em.flags |= (pb->intin[9] << 1) | MU_M2;
-			DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s", r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
-			exclusive_mouse_input(client, 1, 0, &x, &y); //get_mouse(5);
+
+			DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s",
+				r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
+
+			check_mouse(client, NULL, &x, &y);
+
 			if (mouse_ok(client) && is_rect(x, y, client->em.flags & 2, &client->em.m2))
 				fall_through    |= MU_M2;
 			else
@@ -624,7 +632,7 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->em.m1 = *((const RECT *) &pb->intin[1]);
 	client->em.flags = (long)(pb->intin[0]) | MU_M1;
 
-	exclusive_mouse_input(client, 1, 0, &x, &y); //get_mouse(6);
+	check_mouse(client, NULL, &x, &y);
 	if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
 	{
 		multi_intout(client, pb->intout, 0);

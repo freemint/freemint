@@ -85,8 +85,6 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	}
 }
 
-struct file *kmoose;
-
 static const char alert_pipe_name[] = "u:\\pipe\\alert";
 static const char KBD_dev_name[] = "u:\\dev\\console";
 static const char moose_name[] = "u:\\dev\\moose";
@@ -171,14 +169,14 @@ XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
 void
 multi_intout(struct xa_client *client, short *o, int evnt)
 {
-	//get_mouse(1);
 	short b, x, y;
-	exclusive_mouse_input(client, 1, &b,&x,&y);
+
+	check_mouse(client, &b, &x, &y);
 
 	*o++ = evnt;
-	*o++ = x; //mu_button.x;
-	*o++ = y; //mu_button.y;
-	*o++ = b; //mu_button.cb;	/*button.b;*/
+	*o++ = x;
+	*o++ = y;
+	*o++ = b;
 	*o++ = mu_button.ks;
 
 	if (evnt)
@@ -272,6 +270,16 @@ sigterm(void)
 {
 	C.shutdown |= QUIT_NOW;
 }
+static void
+sigchld(void)
+{
+	long r;
+
+	r = p_waitpid(-1, 0, NULL);
+	DIAGS(("sigchld -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
+}
+
+static void k_exit(void);
 
 /*
  * our XaAES server kernel thread
@@ -296,35 +304,36 @@ k_main(void *dummy)
 
 	C.AESpid = p_getpid();
 
-	p_signal (SIGALRM, (long) ignore);
-	p_signal (SIGTERM, (long) sigterm);
-	p_signal (SIGQUIT, (long) ignore);
-	p_signal (SIGHUP,  (long) ignore);
-	p_signal (SIGTSTP, (long) ignore);
-	p_signal (SIGINT,  (long) ignore);
-	p_signal (SIGABRT, (long) ignore);
-	p_signal (SIGUSR1, (long) ignore);
-	p_signal (SIGUSR2, (long) ignore);
+	/* terminating signals */
+	p_signal(SIGHUP,   (long) ignore);
+	p_signal(SIGINT,   (long) ignore);
+	p_signal(SIGQUIT,  (long) ignore);
+	p_signal(SIGPIPE,  (long) ignore);
+	p_signal(SIGALRM,  (long) ignore);
+	p_signal(SIGTSTP,  (long) ignore);
+	p_signal(SIGTTIN,  (long) ignore);
+	p_signal(SIGTTOU,  (long) ignore);
+	p_signal(SIGXCPU,  (long) ignore);
+	p_signal(SIGXFSZ,  (long) ignore);
+	p_signal(SIGVTALRM,(long) ignore);
+	p_signal(SIGPROF,  (long) ignore);
+	p_signal(SIGUSR1,  (long) ignore);
+	p_signal(SIGUSR2,  (long) ignore);
 
-	/*
-	 * Ozk: Open a fileptr to moose so that every application can read
-	 * indipendant of filedescriptors. I tried to open this in
-	 * exclusive_mouse_input(), which is _after_ moose is opened and
-	 * initialized using normal gemdos calls. This turned out to make
-	 * Fselect() not work properly so I tried here and it worked.
-	 * I dont know if this is pure luck, or what it is. Gurus (That is,
-	 * Frank Naumann ;-) ), please see if this is OK.
-	*/
-	{
-		long err;
+	/* fatal signals */
+	p_signal(SIGILL,   (long) k_exit);
+	p_signal(SIGTRAP,  (long) k_exit);
+	p_signal(SIGTRAP,  (long) k_exit);
+	p_signal(SIGABRT,  (long) k_exit);
+	p_signal(SIGFPE,   (long) k_exit);
+	p_signal(SIGBUS,   (long) k_exit);
+	p_signal(SIGSEGV,  (long) k_exit);
+	p_signal(SIGSYS,   (long) k_exit);
 
-		kmoose = kernel_open(moose_name, O_RDONLY, &err);
-		if (err)
-		{
-			DIAGS(("kernel_open moose failed %lx", err));
-			kmoose = 0;
-		}
-	}
+	/* other stuff */
+	p_signal(SIGTERM,  (long) sigterm);
+	p_signal(SIGCHLD,  (long) sigchld);
+
 
 	/*
 	 * register trap#2 handler
@@ -381,9 +390,27 @@ k_main(void *dummy)
 	}
 	fdisplay(log, "Open '%s' to %ld", KBD_dev_name, C.KBD_dev);
 
+	/*
+	 * Ozk: Open a fileptr to moose so that every application can read
+	 * indipendant of filedescriptors. I tried to open this in
+	 * check_mouse(), which is _after_ moose is opened and
+	 * initialized using normal gemdos calls. This turned out to make
+	 * Fselect() not work properly so I tried here and it worked.
+	 * I dont know if this is pure luck, or what it is. Gurus (That is,
+	 * Frank Naumann ;-) ), please see if this is OK.
+	 */
+	C.kmoose = kernel_open(moose_name, O_RDONLY, NULL);
+	if (!C.kmoose)
+	{
+		fdisplay(log, "XaAES ERROR: kernel_open(%s) failed",
+			 moose_name);
+		goto leave;
+	}
+
 	/* Open /dev/moose (040201: after xa_setup.scl for mouse configuration) */
 	if (!init_moose())
 	{
+		fdisplay(log, "XaAES ERROR: init_moose failed");
 		goto leave;
 	}
 
@@ -544,6 +571,12 @@ k_main(void *dummy)
 	DIAGS(("**** Leave kernel for shutdown"));
 
 leave:
+	k_exit();
+}
+
+static void
+k_exit(void)
+{
 	if (svmotv)
 	{
 		void *m, *b, *h;
@@ -565,6 +598,9 @@ leave:
 	/*
 	 * close input devices
 	 */
+	if (C.kmoose)
+		kernel_close(C.kmoose);
+
 	if (C.MOUSE_dev > 0)
 		f_close(C.MOUSE_dev);
 

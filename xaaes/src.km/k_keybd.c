@@ -117,9 +117,7 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 		/* If the client is waiting on a multi, the response is
 		 *  slightly different to the evnt_keybd() response.
 		 */
-		//get_mouse(2);
-		exclusive_mouse_input(client, 1, 0,0,0);
-		//mu_button.ks =  key->raw.conin.state;
+		check_mouse(client, NULL, NULL, NULL);
 
 		/* XaAES extension: return normalized keycode for MU_NORM_KEYBD */
 		if (client->waiting_for & MU_NORM_KEYBD)
