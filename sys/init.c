@@ -219,28 +219,8 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func) ())
 static long _cdecl
 mint_criticerr (long error) /* high word is error, low is drive */
 {
-	/* Sure that we want to replace AES alert with this one?
-	 * I thought getting rid of an alert at all is more convenient
-	 * (Thing displays own alert anyways, so you have two)
-	 */
-
-	ALERT ("Critical error: %lx (%c: - %i)!",
-		error, (char) (error & 0xf), (short) (error >> 16));
-	
 	/* just return with error */
 	return (error >> 16);
-	
-	/* 
-	 * this concept is totally wrong
-	 * 
-	 * if critical error handler is called
-	 * the system hang at spl5 or spl6
-	 * also there are negative side effects with memory
-	 * protection, namely the system freeze up
-	 * 
-	 * 
-	 * return (*curproc->criticerr)(error);
-	 */
 }
 
 /*
@@ -414,10 +394,6 @@ init_intr (void)
  * BUG: we should restore *all* vectors, not just the ones that MiNT caught.
  */
 
-# ifdef VM_EXTENSION
-extern void Reset_mmu(void);	/* in vm.s */
-# endif
-
 void
 restr_intr (void)
 {
@@ -470,11 +446,6 @@ restr_intr (void)
 	*((long *) 0x47eL) = old_mediach;
 	*((long *) 0x472L) = old_getbpb;
 	*((long *) 0x4c2L) = olddrvs;
-	
-# ifdef VM_EXTENSION
-	if (vm_in_use)
-		Reset_mmu ();
-# endif
 	
 	spl (savesr);
 }
@@ -725,8 +696,8 @@ boot_kernel_p (void)
 	boot_it [MAXLANG] =
 	{
 		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* English */
-		{ "Bootmenue anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
-		{ "Afficher le menu de démarrage? (o)ui (n)on ", 'o', 'n' }, /* French */
+		{ "Bootmenue anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
+		{ "Afficher le menu de démarrage? (o)ui (n)on ", 'o', 'n' },	/* French */
 		{ "Menu initiale an fiat? (f)iat (n)on ",  'f', 'n' },	/* Latin */
 		{ "¨Display the boot menu? (s)i (n)o ",  's', 'n' },	/* Spanish, upside down ? is 168 dec. */
 		{ "Display the boot menu? (s)i (n)o ",   's', 'n' }	/* Italian */
@@ -818,9 +789,6 @@ init (void)
 	long r;
 	FILEPTR *f;
 	
-# ifdef VM_EXTENSION
-	int disable_vm = 0;
-# endif
 	read_ini();	/* Read user defined defaults */
 	
 	/* greetings (placed here 19960610 cpbs to allow me to get version
@@ -888,44 +856,10 @@ init (void)
 	gem_active = check_for_gem ();
 	
 # ifdef AUTO_FIX
-# ifdef BOOT_MENU
 	if (!gem_active)
 		get_my_name();
-# else
-	/* only useful if we're in the AUTO folder... */
-	if (!gem_active)
-	{
-		get_my_name ();
-		
-# ifdef VM_EXTENSION		
-		/* turn off vm and mem prot if name
-		 * matches "MINTNM*.*" or "MNTNM*.*"
-		 */
-		if (!disable_vm)
-		{
-			if (strncmp (my_name, "MINTNM", 6) == 0
-				|| strncmp (my_name, "MNTNM", 5) == 0)
-			{
-				disable_vm = 1;
-				no_mem_prot = 1;
-			}
-		}
-# endif		
-		/* Turn off memory protection if our name matches either
-		 * "MINTN*.PRG" or "MNTN*.PRG":
-		 * (will enable vm)
-		 */
-		if (!no_mem_prot)
-		{
-				if (strncmp (my_name, "MINTN", 5) == 0
-					|| strncmp (my_name, "MNTN", 4) == 0)
-				{
-					no_mem_prot = 1;
-				}
-		}
-	}
 # endif
-# endif
+
 # ifdef VERBOSE_BOOT
 	boot_print ("Memory protection ");
 	if (no_mem_prot)
@@ -996,14 +930,6 @@ init (void)
 			bconmap2 = (BCONMAP2_T *) Bconmap (-2);
 	}
 	
-# ifdef VM_EXTENSION
-	if ((mcpu == 30) && (no_mem_prot) && (!disable_vm))
-	{
-		/* use vm */
-		vm_in_use = 1;
-	}
-# endif
-	
 	/* initialize cache */
 	init_cache ();
 	DEBUG (("%s, %ld: init_cache() ok!", __FILE__, (long) __LINE__));
@@ -1040,19 +966,26 @@ init (void)
 	init_xbios ();
 	DEBUG (("%s, %ld: init_xbios() ok!", __FILE__, (long) __LINE__));
 	
+	/* Disable all CPU caches */
+	ccw_set(0x00000000L, 0x0000c57fL);
+
 	/* initialize interrupt vectors */
 	init_intr ();
 	DEBUG (("%s, %ld: init_intr() ok!", __FILE__, (long) __LINE__));
 	
-	/* set up cookie jar */
-	init_cookies ();
-	DEBUG (("%s, %ld: init_cookies() ok!", __FILE__, (long) __LINE__));
-	
+	/* Enable the FPU and superscalar dispatch on 68060 */
+	if (mcpu >= 60)
+		get_superscalar();
+
 	/* Init done, now enable/unfreeze all caches.
 	 * Don't touch the write/allocate bits, though.
 	 */
 	ccw_set(0x0000c567L, 0x0000c57fL);
 
+	/* set up cookie jar */
+	init_cookies ();
+	DEBUG (("%s, %ld: init_cookies() ok!", __FILE__, (long) __LINE__));
+	
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
 	
@@ -1123,11 +1056,9 @@ init (void)
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
 	
-	
-	/* print warning message if MP is turned off */
+	/* print the warning message if MP is turned off */
 	if (no_mem_prot && mcpu > 20)
 		c_conws (memprot_warning);
-	
 	
 	/* initialize delay */
 	c_conws ("Calibrating delay loop... ");
@@ -1149,7 +1080,6 @@ init (void)
 	c_conws (random_greet);
 # endif
 	
-	
 	/* load external modules
 	 * 
 	 * set path first to make sure that MiNT's directory matches
@@ -1170,7 +1100,6 @@ init (void)
 	
 	/* reset curpath just to be sure */
 	d_setpath (curpath);
-	
 	
 	/* start system update daemon */
 	start_sysupdate ();
@@ -1392,9 +1321,6 @@ getmch (void)
 				 */
 				boot_print ("WARNING: PMMU is already in use!\r\n");
 				no_mem_prot = 1;
-# ifdef VM_EXTENSION
-				vm_in_use = 0;
-# endif
 			}
 			
 			jar++;
