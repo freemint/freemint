@@ -22,7 +22,24 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#include "../../sys/mint/net.h"
+/* possible socket states */
+enum so_state
+{
+	SS_VIRGIN = 0,
+	SS_ISUNCONNECTED,
+	SS_ISCONNECTING,
+	SS_ISCONNECTED,
+	SS_ISDISCONNECTING,
+	SS_ISDISCONNECTED
+};
+
+/* possible socket flags */
+# define SO_ACCEPTCON	0x0001		/* socket is accepting connections */
+# define SO_RCVATMARK	0x0002		/* in-band and oob data are in sync */
+# define SO_CANTRCVMORE	0x0004		/* shut down for receives */
+# define SO_CANTSNDMORE	0x0008		/* shut down for sends */
+# define SO_CLOSING	0x0010		/* socket is close()ing */
+# define SO_DROP	0x0020		/* drop connecting socket when accept() */
 
 
 #define UNIX_DEVICE	"/dev/unix"
