@@ -32,7 +32,6 @@
 #include "app_man.h"
 #include "adiload.h"
 #include "c_window.h"
-#include "cnf_xaaes.h"
 #include "desktop.h"
 #include "handler.h"
 #include "init.h"
@@ -292,7 +291,7 @@ init_moose(void)
 					fdisplay(log, "No wheel support!!");
 			}
 
-			if ((*C.adi_mouse->ioctl)(C.adi_mouse, MOOSE_DCLICK, (long)lcfg.double_click_time))
+			if ((*C.adi_mouse->ioctl)(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
 				fdisplay(log, "Moose set dclick time failed");
 
 			DIAGS(("Using moose adi"));

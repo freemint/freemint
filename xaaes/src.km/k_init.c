@@ -31,7 +31,6 @@
 
 #include "app_man.h"
 #include "c_window.h"
-#include "cnf_xaaes.h"
 #include "desktop.h"
 #include "init.h"
 #include "nkcc.h"
@@ -302,30 +301,30 @@ k_init(void)
 	DIAGS((" size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
 	/* Load the system resource files */
-	resource_name = xa_find(lcfg.rsc_name);
+	resource_name = xa_find(cfg.rsc_name);
 	if (resource_name)
 	{
 		C.Aes_rsc = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
 		fdisplay(log, "system resource = %lx (%s)",
-			 C.Aes_rsc, lcfg.rsc_name);
+			 C.Aes_rsc, cfg.rsc_name);
 	}	
 	if (!resource_name || !C.Aes_rsc)
 	{
-		fdisplay(log, "ERROR: Can't find/load system resource file '%s'", lcfg.rsc_name);
+		fdisplay(log, "ERROR: Can't find/load system resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
 
 	widget_resources = NULL;
-	resource_name = xa_find(lcfg.widg_name);
+	resource_name = xa_find(cfg.widg_name);
 	if (resource_name)
 	{
 		widget_resources = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
 		fdisplay(log, "widget_resources = %lx (%s)",
-			 widget_resources, lcfg.widg_name);
+			 widget_resources, cfg.widg_name);
 	}
 	if (!resource_name || !widget_resources)
 	{
-		fdisplay(log, "ERROR: Can't find/load widget resource file '%s'", lcfg.widg_name);
+		fdisplay(log, "ERROR: Can't find/load widget resource file '%s'", cfg.widg_name);
 		return -1;
 	}
 
