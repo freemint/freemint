@@ -15,6 +15,8 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
+
+# include "mint/credentials.h"
 # include "mint/signal.h"
 
 # include "filesys.h"
@@ -581,8 +583,8 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	b->mtime = b->ctime = xtime;
 	b->dosflags = attrib;
 	b->mode = ((attrib & FA_SYSTEM) ? S_IFCHR : S_IFIFO) | (mode & ~S_IFMT);
-	b->uid = curproc->euid;
-	b->gid = curproc->egid;
+	b->uid = curproc->p_cred->ucr->euid;
+	b->gid = curproc->p_cred->ucr->egid;
 	
 	/* the O_HEAD flag indicates that the file hasn't actually been opened
 	 * yet; the next open gets to be the pty master. pipe_open will

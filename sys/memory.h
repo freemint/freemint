@@ -26,6 +26,7 @@ void init_swap (void);
 long change_prot_status (PROC *proc, long start, int newmode);
 virtaddr attach_region (PROC *proc, MEMREGION *reg);
 void detach_region (PROC *proc, MEMREGION *reg);
+int detach_region_by_addr (PROC *p, virtaddr block);
 
 MEMREGION *get_region (MMAP map, ulong size, int mode);
 MEMREGION *_get_region (MMAP map, ulong size, int mode, MEMREGION *descr, int kernel_flag);
@@ -38,15 +39,11 @@ virtaddr alloc_region (MMAP map, ulong size, int mode);
 MEMREGION *fork_region (MEMREGION *reg, long txtsize);
 MEMREGION *create_env (const char *env, ulong flags);
 MEMREGION *create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize,
-			PROC *execproc, SHTEXT *s, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
+			PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
 MEMREGION *load_region (const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
-			MEMREGION **text, long *fp, int isexec, long *err);
-SHTEXT *get_text_seg (FILEPTR *f, FILEHEAD *fh, XATTR *xp, SHTEXT *s, int noalloc, long *err);
-MEMREGION *find_text_seg (FILEPTR *f);
+			long *fp, int isexec, long *err);
 long load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start,
 			long nbytes, BASEPAGE *base);
-void rts (void);
-PROC *exec_region (PROC *p, MEMREGION *mem, int thread);
 long memused (PROC *p);
 void recalc_maxmem (PROC *p);
 int valid_address (long addr);

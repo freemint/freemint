@@ -62,12 +62,12 @@
 
 # include "libkern/libkern.h"
 
+# include "mint/filedesc.h"
 # include "arch/mprot.h"
 
 # include "bios.h"
 # include "biosfs.h"
 # include "block_IO.h"
-# include "dos.h"
 # include "dosdir.h"
 # include "dosfile.h"
 # include "dosmem.h"
@@ -75,6 +75,8 @@
 # include "fatfs.h"
 # include "filesys.h"
 # include "init.h"
+# include "k_exec.h"
+# include "k_resource.h"
 # include "kmemory.h"
 # include "memory.h"
 # include "proc.h"
@@ -415,10 +417,10 @@ pCB_alias (const char *drive, const char *path, PARSINF *inf)
 		{
 			aliasdrv[drv] = root_dir.dev + 1;
 			*((long *)0x4c2L) |= (1L << drv);
-			release_cookie (&curproc->curdir[drv]);
-			dup_cookie (&curproc->curdir[drv], &root_dir);
-			release_cookie (&curproc->root[drv]);
-			curproc->root[drv] = root_dir;
+			release_cookie (&curproc->p_cwd->curdir[drv]);
+			dup_cookie (&curproc->p_cwd->curdir[drv], &root_dir);
+			release_cookie (&curproc->p_cwd->root[drv]);
+			curproc->p_cwd->root[drv] = root_dir;
 		}
 	}
 }
@@ -430,16 +432,16 @@ pCB_aux (const char *path)
 	FILEPTR *f = do_open (path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL, NULL);
 	if (f)
 	{
-		do_close (curproc->handle[2]);
-		do_close (curproc->aux);
-		curproc->aux = curproc->handle[2] = f;
+		do_close (curproc->p_fd->ofiles[2]);
+		do_close (curproc->p_fd->aux);
+		curproc->p_fd->aux = curproc->p_fd->ofiles[2] = f;
 		f->links++;
 		if (is_terminal (f) && f->fc.fs == &bios_filesys &&
 		    f->dev == &bios_tdevice &&
 		    (has_bconmap ? (f->fc.aux>=6) : (f->fc.aux==1)))
 		{
 			if (has_bconmap)
-				curproc->bconmap = f->fc.aux;
+				curproc->p_fd->bconmap = f->fc.aux;
 			((struct tty *)f->devinfo)->aux_cnt++;
 			f->pos = 1;
 		}
@@ -477,8 +479,8 @@ pCB_con (const char *path)
 	if (f) {
 		int i;
 		for (i = -1; i < 2; i++) {
-			do_close(curproc->handle[i]);
-			curproc->handle[i] = f;
+			do_close(curproc->p_fd->ofiles[i]);
+			curproc->p_fd->ofiles[i] = f;
 			f->links++;
 		}
 		f->links--;	/* correct for overdoing it */
@@ -504,7 +506,7 @@ pCB_exec (const char *path, const char *line, PARSINF *inf)
 	cmdline[0] = i;
 	strncpy(cmdline+1, line, i);
 	cmdline[i+1] = 0;
-	i = (int)p_exec(0, (char*)path, cmdline, init_env);
+	i = (int) sys_pexec (0, (char*) path, cmdline, init_env);
 	if (i < 0)
 	{
 		parser_msg  (inf, NULL);
@@ -587,7 +589,7 @@ static void
 pCB_maxmem (long size)
 {
 	if (size > 0)
-		p_setlimit (2, size * 1024l);
+		sys_psetlimit (2, size * 1024l);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -623,9 +625,9 @@ pCB_prn (const char *path)
 {
 	FILEPTR *f = do_open (path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL, NULL);
 	if (f) {
-		do_close(curproc->handle[3]);
-		do_close(curproc->prn);
-		curproc->prn = curproc->handle[3] = f;
+		do_close(curproc->p_fd->ofiles[3]);
+		do_close(curproc->p_fd->prn);
+		curproc->p_fd->prn = curproc->p_fd->ofiles[3] = f;
 		f->links++;
 	}
 	return;

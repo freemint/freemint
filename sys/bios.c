@@ -16,8 +16,11 @@
 # include "bios.h"
 # include "global.h"
 
+# include "libkern/libkern.h"
+
 # include "mint/arch/mfp.h"
 # include "mint/asm.h"
+# include "mint/filedesc.h"
 # include "mint/signal.h"
 # include "mint/xbra.h"
 
@@ -27,13 +30,12 @@
 # include "arch/syscall.h"
 # include "arch/timer.h"
 
-# include "libkern/libkern.h"
-
 # include "biosfs.h"
 # include "console.h"
 # include "dosdir.h"
 # include "dosmem.h"
 # include "filesys.h"
+# include "k_prot.h"
 # include "memory.h"
 # include "proc.h"
 # include "random.h"
@@ -144,6 +146,7 @@ getbpb (int dev)
 long _cdecl
 rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 {
+	PROC *p = curproc;
 	long r;
 	
 	/* jr: inspect bit 3 of rwflag!!!
@@ -153,7 +156,7 @@ rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 		if (aliasdrv [dev])
 			dev = aliasdrv [dev] - 1;
 		
-		if (dlockproc [dev] && dlockproc [dev] != curproc)
+		if (dlockproc [dev] && dlockproc [dev] != p)
 		{
 			DEBUG (("Rwabs: device %c is locked", dev+'A'));
 			return ELOCKED;
@@ -164,7 +167,7 @@ rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 	 */
 	if (secure_mode)
 	{
-		if (curproc->in_dos || (curproc->euid == 0))
+		if (p->in_dos || suser (p->p_cred->ucr))
 		{
 			/* Note that some (most?) Rwabs device drivers don't
 			 * bother saving registers, whereas our compiler
@@ -196,6 +199,7 @@ rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 long _cdecl
 setexc (int number, long vector)
 {
+	PROC *p = curproc;
 	long *place;
 	long old;
 # ifdef VM_EXTENSION
@@ -216,9 +220,9 @@ setexc (int number, long vector)
 	 * for each process
 	 */
 	if (vector != -1 && number != 0x0101 && number != 0x0102 && \
-		secure_mode && curproc->in_dos == 0)
+		secure_mode && p->in_dos == 0)
 	{
-		if (curproc->euid)
+		if (!suser (p->p_cred->ucr))
 		{
 			DEBUG (("Setexc by non privileged process!"));
 			raise (SIGSYS);
@@ -234,10 +238,10 @@ setexc (int number, long vector)
 			 * Unfortunately some programs go Super() then change
 			 * vectors directly. Common practice in games/demos :(
 	 		 */
-			if ((curproc->memflags & F_OS_SPECIAL) == 0)
+			if ((p->memflags & F_OS_SPECIAL) == 0)
 			{
-				if (((curproc->memflags & F_PROTMODE) == F_PROT_P) ||
-					((curproc->memflags & F_PROTMODE) == F_PROT_PR))
+				if (((p->memflags & F_PROTMODE) == F_PROT_P) ||
+					((p->memflags & F_PROTMODE) == F_PROT_PR))
 				{
 					ALERT  ("KILLED. INVALID PROTECTION MODE. "
 						"Please change the protection mode "
@@ -258,10 +262,10 @@ setexc (int number, long vector)
 	
 	if (number == 0x101)
 		/* critical error vector */
-		old = (long) curproc->criticerr;
+		old = (long) p->criticerr;
 	else if (number == 0x102)
 		/* GEMDOS term vector */
-		old = curproc->ctxt[SYSCALL].term_vec;
+		old = p->ctxt[SYSCALL].term_vec;
 	
 # ifdef VM_EXTENSION
 	else if (number == 0x02)
@@ -281,7 +285,7 @@ setexc (int number, long vector)
 		
 		if (number == 0x102)
 		{
-			curproc->ctxt[SYSCALL].term_vec = vector;
+			p->ctxt[SYSCALL].term_vec = vector;
 		}
 		else if (number == 0x101)
 		{
@@ -293,7 +297,7 @@ setexc (int number, long vector)
 			long mintcerr;
 			
 			mintcerr = (long) Setexc (0x101, (void (*)()) vector);
-			curproc->criticerr = (long _cdecl (*)(long)) *place;
+			p->criticerr = (long _cdecl (*)(long)) *place;
 			*place = mintcerr;
 		}
 		else
@@ -335,7 +339,7 @@ setexc (int number, long vector)
 			 * must not be updated that time.
 			 */
 			
-			if (intr_shadow && number < 0x0100 && curproc->in_dos == 0)
+			if (intr_shadow && number < 0x0100 && p->in_dos == 0)
 				intr_shadow[number] = vector;
 # ifndef VM_EXTENSION
 			old = (long) Setexc (number, (void (*)()) vector);
@@ -493,7 +497,7 @@ ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 {
 	if (has_bconmap)
 	{
-		ushort dev = curproc->bconmap;
+		ushort dev = curproc->p_fd->bconmap;
 		
 		if ((ushort) dev < BDEVMAP_MAX)
 		{
@@ -933,7 +937,7 @@ _ubconstat (int dev)
 {
 	if (dev < MAX_BHANDLE)
 	{
-		FILEPTR *f = curproc->handle [binput [dev]];
+		FILEPTR *f = curproc->p_fd->ofiles [binput [dev]];
 		if (file_instat (f))
 			goto reset;
 		else
@@ -976,7 +980,7 @@ bconstat (int dev)
 	}
 	
 	if (dev == AUXDEV && has_bconmap)
-		dev = curproc->bconmap;
+		dev = curproc->p_fd->bconmap;
 	
 	return BCONSTAT (dev);
 }
@@ -991,7 +995,7 @@ _ubconin (int dev)
 {
 	if (dev < MAX_BHANDLE)
 	{
-		FILEPTR *f = curproc->handle [binput [dev]];
+		FILEPTR *f = curproc->p_fd->ofiles [binput [dev]];
 		
 		return file_getchar (f, RAW);
 	}
@@ -1037,7 +1041,7 @@ again:
 		{
 			if (has_bconmap)
 			{
-				dev = curproc->bconmap;
+				dev = curproc->p_fd->bconmap;
 				h = dev - SERDEV;
 			}
 			else
@@ -1099,7 +1103,7 @@ _ubconout (int dev, int c)
 	
 	if (dev < MAX_BHANDLE)
 	{
-		f = curproc->handle [boutput [dev]];
+		f = curproc->p_fd->ofiles [boutput [dev]];
 		if (!f)
 			return 0;
 		
@@ -1112,7 +1116,7 @@ _ubconout (int dev, int c)
 	else if (dev == 5)
 	{
 		c &= 0x00ff;
-		f = curproc->handle [-1];
+		f = curproc->p_fd->control;
 		if (!f)
 			return 0;
 		
@@ -1143,7 +1147,7 @@ bconout (int dev, int c)
 	int statdev;
 	
 	if (dev == AUXDEV && has_bconmap)
-		dev = curproc->bconmap;
+		dev = curproc->p_fd->bconmap;
 	
 	/* compensate for a known BIOS bug: MIDI and IKBD are switched
 	 */
@@ -1214,7 +1218,7 @@ _ubcostat (int dev)
 	if (dev == 4)
 	{
 		/* really the MIDI port */
-		f = curproc->handle [boutput [3]];
+		f = curproc->p_fd->ofiles [boutput [3]];
 		return file_outstat (f) ? -1 : 0;
 	}
 	
@@ -1223,7 +1227,7 @@ _ubcostat (int dev)
 	
 	if (dev < MAX_BHANDLE)
 	{
-		f = curproc->handle [boutput [dev]];
+		f = curproc->p_fd->ofiles [boutput [dev]];
 		return file_outstat (f) ? -1 : 0;
 	}
 	else
@@ -1240,7 +1244,7 @@ bcostat(int dev)
 	}
 	else if (dev == AUXDEV && has_bconmap)
 	{
-		dev = curproc->bconmap;
+		dev = curproc->p_fd->bconmap;
 	}
 	/* compensate here for the BIOS bug, so that the MIDI and IKBD
 	 * files work correctly
@@ -1305,9 +1309,9 @@ bflush (void)
 	if (dev < MAX_BHANDLE || dev == 5)
 	{
 		if (dev == 5)
-			f = curproc->handle [-1];
+			f = curproc->p_fd->ofiles [-1];
 		else
-			f = curproc->handle [boutput [dev]];
+			f = curproc->p_fd->ofiles [boutput [dev]];
 		
 		if (!f)
 		{
@@ -1381,7 +1385,7 @@ bflush (void)
 	 */
 	if (dev == AUXDEV && has_bconmap)
 	{
-		dev = curproc->bconmap;
+		dev = curproc->p_fd->bconmap;
 		statdev = dev;
 	}
 	
@@ -1440,7 +1444,7 @@ do_bconin(int dev)
 
 	if (dev < MAX_BHANDLE)
 	{
-		f = curproc->handle[binput[dev]];
+		f = curproc->p_fd->ofiles [binput[dev]];
 		if (!f) return 0;
 		nread = 0;
 		(void)(*f->dev->ioctl)(f, FIONREAD, &nread);

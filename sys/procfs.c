@@ -33,15 +33,18 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
+
 # include "mint/asm.h"
+# include "mint/filedesc.h"
 # include "mint/basepage.h"
 # include "mint/signal.h"
 
-# include "arch/cpu.h"	/* cpush */
+# include "arch/cpu.h"		/* cpush */
 # include "arch/mprot.h"
 
 # include "dev-null.h"
 # include "filesys.h"
+# include "k_prot.h"
 # include "memory.h"
 # include "nullfs.h"
 # include "proc.h"
@@ -269,8 +272,9 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->index = p->pid;
 	xattr->dev = xattr->rdev = PROC_RDEV_BASE | p->pid;
 	xattr->nlink = 1;
-	xattr->uid = p->euid; xattr->gid = p->egid;
-	xattr->size = xattr->nblocks = memused(p);
+	xattr->uid = p->p_cred->ucr->euid;
+	xattr->gid = p->p_cred->ucr->egid;
+	xattr->size = xattr->nblocks = memused (p);
 	
 	*(long *) &xattr->atime = xtime.tv_sec;
 	*(long *) &xattr->mtime = 
@@ -308,8 +312,8 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 	
 	ptr->ino = p->pid;
 	ptr->dev = ptr->rdev = PROC_RDEV_BASE | p->pid;
-	ptr->uid = p->euid;
-	ptr->gid = p->egid;
+	ptr->uid = p->p_cred->ucr->euid;
+	ptr->gid = p->p_cred->ucr->egid;
 	ptr->size = ptr->blocks = memused(p);
 	ptr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 	
@@ -321,15 +325,15 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 }
 
 static long _cdecl 
-proc_remove(fcookie *dir, const char *name)
+proc_remove (fcookie *dir, const char *name)
 {
-	PROC *p;
+	PROC *t;
 	
 	if (dir->index != 0)
 		return ENOTDIR;
 	
-	p = name2proc (name);
-	if (!p)
+	t = name2proc (name);
+	if (!t)
 		return ENOENT;
 	
 	/* this check is necessary because the Fdelete code checks for
@@ -342,13 +346,13 @@ proc_remove(fcookie *dir, const char *name)
 	 * (coz daemons start with root privileges, then downgrade themselves,
 	 * nevertheless, ruid remains a zero).
 	 */
-	if (curproc->euid && curproc->euid != p->euid)
+	if (!suser (curproc->p_cred->ucr) && curproc->p_cred->ucr->euid != t->p_cred->ucr->euid)
 	{
 		DEBUG(("proc_remove: wrong user"));
 		return EACCES;
 	}
 	
-	post_sig (p, SIGTERM);
+	post_sig (t, SIGTERM);
 	check_sigs ();		/* it might have been us */
 	
 	return E_OK;
@@ -597,9 +601,6 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 	MEMREGION *m;
 	long where, bytes_written, txtsize;
 	int prot_hold;
-	short save_id[7];
-	ushort save_flags;
-	long save_limit[4];
 
 	where = f->pos;
 
@@ -612,15 +613,24 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 	}
 
 	/* Hmmm, maybe we are writing to the process descriptor */
-	if ((long)p <= where && where < (long)(p + 1)) {
+	if ((long) p <= where && where < (long)(p + 1))
+	{
+# if 1
+		return EACCES;
+# else
+		short save_id[7];
+		ushort save_flags;
+		long save_limit[4];
+		
 		bytes_written = (long)(p + 1) - where;
+		
 		if (bytes_written > nbytes)
 			bytes_written = nbytes;
 		
 		/* Some code against hacking superuser privileges in MiNT :-)
 		 * (draco)
 		 */
-
+		
 		if (secure_mode && curproc->euid)
 		{
 			save_id[0] = p->rgid;
@@ -669,6 +679,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 		cpush((void *)where, bytes_written);	/* flush cached data */
 		f->pos += bytes_written;
 		return bytes_written;
+# endif
 	}
 
 	while (nbytes > 0) {
@@ -980,12 +991,13 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case PFSTAT:
 		{
+			struct filedesc *fd = p->p_fd;
 			FILEPTR *pf;
 			int pfd;
 			
 			pfd = (*(ushort *) buf);
-			if ((pfd < MIN_HANDLE) || (pfd >= MAX_OPEN)
-				|| ((pf = p->handle[pfd]) == 0))
+			if ((pfd < MIN_HANDLE) || (pfd >= fd->nfiles)
+				|| ((pf = fd->ofiles[pfd]) == 0))
 			{
 				return EBADF;
 			}
@@ -1004,7 +1016,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				 * If you ask me, that concept is broken, but well...
 				 */
 
-				if ((secure_mode > 1) && (curproc->euid))
+				if ((secure_mode > 1) && (curproc->p_cred->ucr->euid))
 					return EPERM;
 				/* you're making the process OS_SPECIAL */
 				TRACE (("Fcntl OS_SPECIAL pid %d",p->pid));
@@ -1162,17 +1174,18 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case PMEMINFO:
 		{
-			struct  pmeminfo *mi = buf;
+			struct memspace *mem = p->p_mem;
+			struct pmeminfo *mi = buf;
 			int i;
 			
-			for (i = 0; i < p->num_reg; i++)
+			for (i = 0; i < mem->num_reg; i++)
 			{
 				MEMREGION *m;
 				
 				if (i == mi->mem_blocks)
 					return ENOMEM;
 				
-				m = p->mem [i];
+				m = mem->mem [i];
 				if (m)
 				{
 					mi->mlist[i]->loc = m->loc;

@@ -40,11 +40,13 @@
 # include "arch/mprot.h"
 # include "arch/slb_util.h"
 
-# include "kmemory.h"
-# include "memory.h"
 # include "dos.h"
 # include "dosmem.h"
 # include "dossig.h"
+# include "k_exec.h"
+# include "k_exit.h"
+# include "kmemory.h"
+# include "memory.h"
 # include "rendez.h"
 # include "signal.h"
 # include "util.h"
@@ -267,7 +269,7 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	(*sl)->slb_region = mr;
 
 	/* Load, but don't run the SLB */
-	r = p_exec(3, fullpath, fullpath, 0L);
+	r = sys_pexec (3, fullpath, fullpath, 0L);
 	kfree(fullpath);
 	if (r <= 0L)
 	{
@@ -358,7 +360,7 @@ slb_error:
 
 	/* Run the shared library, i.e. call its init() routine */
 	oldcmdlin = *(long *)b->p_cmdlin;
-	r = p_exec(106, name, b, 0L);
+	r = sys_pexec(106, name, b, 0L);
 	if (r < 0L)
 	{
 		DEBUG(("Slbopen: Pexec() returned: %ld", r));
@@ -367,15 +369,34 @@ slb_error:
 		return(r);
 	}
 
+# if 1
+	/* Wait for the init routine to finish */
+	
+	assert (curproc->p_sigacts);
+	
+	oldsigint = SIGACTION(curproc, SIGINT).sa_handler;
+	oldsigquit = SIGACTION(curproc, SIGQUIT).sa_handler;
+	
+	SIGACTION(curproc, SIGINT).sa_handler =
+	SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
+	
+	newpid = (int) r;
+	r = sys_pwaitpid (newpid, 2, NULL);
+	
+	SIGACTION(curproc, SIGINT).sa_handler = oldsigint;
+	SIGACTION(curproc, SIGQUIT).sa_handler = oldsigquit;
+# else
 	/* Wait for the init routine to finish */
 	oldsigint = curproc->sighandle[SIGINT];
 	oldsigquit = curproc->sighandle[SIGQUIT];
 	curproc->sighandle[SIGINT] =
 		 curproc->sighandle[SIGQUIT] = SIG_IGN;
 	newpid = (int)r;
-	r = p_waitpid(newpid, 2, (long *)0);
+	r = sys_pwaitpid(newpid, 2, (long *)0);
 	curproc->sighandle[SIGINT] = oldsigint;
 	curproc->sighandle[SIGQUIT] = oldsigquit;
+# endif
+	
 	if (r < 0)
 	{
 		ALERT("Slbopen: wait error");
@@ -518,15 +539,15 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 	}
 
 	/* Allow curproc temporary global access to the library structure */
-	mark_proc_region(curproc, slb->slb_region, PROT_G);
+	mark_proc_region (curproc, slb->slb_region, PROT_G);
 
 	/* Mark all memregions of the shared library as "global" for curproc */
-	if ((mr = slb->slb_proc->mem) != 0)
+	if ((mr = slb->slb_proc->p_mem->mem) != 0)
 	{
-		for (i = 0; i < slb->slb_proc->num_reg; i++, mr++)
+		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
 			if (*mr != 0L)
-				mark_proc_region(curproc, *mr, PROT_G);
+				mark_proc_region (curproc, *mr, PROT_G);
 		}
 	}
 
@@ -647,9 +668,9 @@ s_lbclose(SHARED_LIB *sl)
 	 * - if no more users remain - remove the library from memory.
 	 */
 	mark_users(slb, curproc->pid, 0);
-	if ((mr = slb->slb_proc->mem) != 0)
+	if ((mr = slb->slb_proc->p_mem->mem) != 0)
 	{
-		for (i = 0; i < slb->slb_proc->num_reg; i++, mr++)
+		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
 			if (*mr != 0L)
 				mark_proc_region(curproc, *mr, PROT_I);
@@ -725,9 +746,9 @@ slb_close_on_exit (int terminate)
 		if (has_opened(slb, curproc->pid))
 			slb->slb_used--;
 		mark_opened(slb, curproc->pid, 0);
-		if ((mr = slb->slb_proc->mem) != 0)
+		if ((mr = slb->slb_proc->p_mem->mem) != 0)
 		{
-			for (i = 0; i < slb->slb_proc->num_reg; i++, mr++)
+			for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 			{
 				if (*mr != 0L)
 					mark_proc_region(curproc, *mr, PROT_I);

@@ -1,0 +1,418 @@
+/*
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * 
+ * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * begin:	2000-11-07
+ * last change:	2000-11-07
+ * 
+ * Author:	Frank Naumann <fnaumann@freemint.de>
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ */
+
+# include "k_fork.h"
+
+# include "libkern/libkern.h"
+
+# include "mint/asm.h"
+# include "mint/credentials.h"
+# include "mint/signal.h"
+
+# include "arch/mprot.h"
+
+# include "filesys.h"
+# include "k_prot.h"
+# include "kmemory.h"
+# include "memory.h"
+# include "proc.h"
+# include "proc_help.h"
+# include "procfs.h"
+# include "signal.h"
+# include "time.h"
+# include "util.h"
+
+
+/*
+ * create a new process that is (practically) a duplicate of the
+ * current one
+ */
+
+PROC *
+fork_proc (long flags, long *err)
+{
+	PROC *p2;
+	
+	p2 = kmalloc (sizeof (*p2));
+	if (!p2) goto nomem;
+	
+	/* copy */
+	*p2 = *curproc;
+	
+	p2->p_mem = NULL;
+	p2->p_cred = NULL;
+	p2->p_fd = NULL;
+	p2->p_cwd = NULL;
+	p2->p_sigacts = NULL;
+	p2->p_limits = NULL;
+	
+	/* these things are not inherited
+	 */
+	p2->ppid = curproc->pid;
+	p2->pid = newpid ();
+	p2->sigpending = 0;
+	p2->nsigs = 0;
+	p2->sysstack = (long) (p2->stack + STKSIZE - 12);
+	p2->ctxt[CURRENT].ssp = p2->sysstack;
+	p2->ctxt[SYSCALL].ssp = (long) (p2->stack + ISTKSIZE);
+	p2->stack_magic = STACK_MAGIC;
+	p2->alarmtim = 0;
+	p2->curpri = p2->pri;
+	p2->slices = SLICES (p2->pri);
+	
+	p2->itimer[0].interval = 0;
+	p2->itimer[0].reqtime = 0;
+	p2->itimer[0].timeout = 0;
+	p2->itimer[1].interval = 0;
+	p2->itimer[1].reqtime = 0;
+	p2->itimer[1].timeout = 0;
+	p2->itimer[2].interval = 0;
+	p2->itimer[2].reqtime = 0;
+	p2->itimer[2].timeout = 0;
+	
+	((long *) p2->sysstack)[1] = FRAME_MAGIC;
+	((long *) p2->sysstack)[2] = 0;
+	((long *) p2->sysstack)[3] = 0;
+	
+	p2->usrtime = p2->systime = p2->chldstime = p2->chldutime = 0;
+	
+	/* child isn't traced */
+	p2->ptracer = 0;
+	p2->ptraceflags = 0;
+	
+	p2->q_next = 0;
+	p2->wait_q = 0;
+	
+	
+	/* Duplicate command line */
+	if (p2->real_cmdline != NULL
+		&& (p2->real_cmdline [0] != 0 || p2->real_cmdline [1] != 0
+			|| p2->real_cmdline [2] != 0 || p2->real_cmdline [3] != 0))
+	{
+		ulong *parent_cmdline = (ulong *) p2->real_cmdline;
+		
+		p2->real_cmdline = kmalloc ((*parent_cmdline) + 4);
+		if (!p2->real_cmdline) 
+			goto nomem;
+		
+		memcpy (p2->real_cmdline, parent_cmdline, (*parent_cmdline) + 4);
+	}
+	else if (p2->ppid != 0)
+	{
+		if (p2->fname != NULL)
+		{
+			ALERT ("Oops: no command line for %s (pid %d)", p2->fname, p2->pid);
+		}
+		else if (p2->name != NULL)
+		{
+			ALERT ("Oops: no command line for %s (pid %d)", p2->name, p2->pid);
+		}
+		else
+		{
+			ALERT ("Oops: no command line for pid %d (ppid %d)", p2->pid, p2->ppid);
+		}
+		
+		p2->real_cmdline = NULL;
+	}
+	
+	if (flags & FORK_SHAREVM)
+		p2->p_mem = share_mem (curproc);
+	else
+		p2->p_mem = copy_mem (curproc);
+	
+	p2->p_cred = kmalloc (sizeof (*p2->p_cred));
+	if (p2->p_cred)
+	{
+		memcpy (p2->p_cred, curproc->p_cred, sizeof (*p2->p_cred));
+		p2->p_cred->links = 1;
+		
+//		p2->p_cred->ucr = copy_cred (p2->p_cred->ucr);
+		hold_cred (p2->p_cred->ucr);
+	}
+	
+	if (flags & FORK_SHAREFILES)
+		p2->p_fd = share_fd (curproc);
+	else
+		p2->p_fd = copy_fd (curproc);
+	
+	if (flags & FORK_SHARECWD)
+		p2->p_cwd = share_cwd (curproc);
+	else
+		p2->p_cwd = copy_cwd (curproc);
+	
+	if (flags & FORK_SHARESIGS)
+		p2->p_sigacts = share_sigacts (curproc);
+	else
+		p2->p_sigacts = copy_sigacts (curproc);
+	
+//	p_limits
+	
+	if (!p2->p_mem || !p2->p_cred || !p2->p_fd || !p2->p_cwd || !p2->p_sigacts)
+		goto nomem;
+	
+	
+	/* Duplicate cookie for the executable file */
+	dup_cookie (&p2->exe, &curproc->exe);
+	
+	/* clear directory search info */
+	bzero (p2->srchdta, NUM_SEARCH * sizeof (DTABUF *));
+	bzero (p2->srchdir, sizeof (p2->srchdir));
+	p2->searches = NULL;
+	
+	p2->started = xtime;
+	
+	/* now that memory ownership is copied, fill in page table
+	 * WARNING: this must be done AFTER all memory allocations
+	 *          (especially kmalloc)
+	 */
+	init_page_table (p2, p2->p_mem);
+	
+	/* hook into the process list */
+	p2->gl_next = proclist;
+	proclist = p2;
+	
+	return p2;
+	
+nomem:
+	DEBUG (("fork_proc: insufficient memory"));
+	
+	if (p2)
+	{
+		if (p2->p_mem) free_mem (p2);
+		if (p2->p_cred) { free_cred (p2->p_cred->ucr); kfree (p2->p_cred); }
+		if (p2->p_fd) free_fd (p2);
+		if (p2->p_cwd) free_cwd (p2);
+		if (p2->p_sigacts) free_sigacts (p2);
+		if (p2->p_limits) free_limits (p2);
+		
+		kfree (p2);
+	}
+	
+	if (err) *err = ENOMEM;
+	return NULL;
+}
+
+/*
+ * p_vfork(): create a duplicate of  the current process. The parent's
+ * address space is not saved. The parent is suspended until either the
+ * child process (the duplicate) exits or does a Pexec which overlays its
+ * memory space.
+ */
+
+long _cdecl
+sys_pvfork (void)
+{
+	PROC *p;
+	int newpid;
+	long p_sigmask;
+	long r;
+
+	p = fork_proc (0, &r);
+	if (!p)
+	{
+		DEBUG(("p_vfork: couldn't get new PROC struct"));
+		return r;
+	}
+	
+	/* set u:\proc time+date */
+	procfs_stmp = xtime;
+	
+	p->ctxt[CURRENT] = p->ctxt[SYSCALL];
+	p->ctxt[CURRENT].regs[0] = 0;		/* child returns a 0 from call */
+	p->ctxt[CURRENT].sr &= ~(0x2000);	/* child must be in user mode */
+# if 0	/* set up in fork_proc() */
+	p->ctxt[CURRENT].ssp = (long)(p->stack + ISTKSIZE);
+# endif
+
+	/* watch out for job control signals, since our parent can never wake
+	 * up to respond to them. solution: block them; exec_region (in mem.c)
+	 * clears the signal mask, so an exec() will unblock them.
+	 */
+	p->p_sigmask |= (1L << SIGTSTP) | (1L << SIGTTIN) | (1L << SIGTTOU);
+
+	TRACE(("p_vfork: parent going to sleep, wait_cond == %lx", (long)p));
+
+	/* WARNING: This sleep() must absolutely not wake up until the child
+	 * has released the memory space correctly. That's why we mask off
+	 * all signals.
+	 */
+	p_sigmask = curproc->p_sigmask;
+	curproc->p_sigmask = ~(((unsigned long) 1 << SIGKILL) | 1);
+
+	{
+		short sr = spl7();
+		add_q(READY_Q, p);		/* put it on the ready queue */
+		sleep(WAIT_Q, (long)p);		/* while we wait for it */
+		spl(sr);
+	}
+	
+	TRACE(("p_vfork: parent waking up"));
+
+	curproc->p_sigmask = p_sigmask;
+	/* note that the PROC structure pointed to by p may be freed during
+	 * the check_sigs call!
+	 */
+	newpid = p->pid;
+	check_sigs ();	/* did we get any signals while sleeping? */
+	return newpid;
+}
+
+/*
+ * p_fork(save): create a duplicate of  the current process. The parent's
+ * address space is duplicated using a shadow region descriptor and a save
+ * region, so both the parent and the child can be run. On a context switch
+ * the parent's and child's address spaces will be exchanged (see proc.c).
+ *
+ * "txtsize" is the size of the process' TEXT area, if it has a valid one;
+ * this is part of the second memory region attached (the basepage one)
+ * and need not be saved (we assume processes don't write on their own
+ * code segment).
+ */
+
+long _cdecl
+sys_pfork (void)
+{
+	PROC *p;
+	MEMREGION *m, *n;
+	BASEPAGE *b;
+	long txtsize;
+	int i, j, newpid;
+	long r;
+	
+	p = fork_proc (0, &r);
+	if (!p)
+	{
+		DEBUG (("p_fork: couldn't get new PROC struct"));
+		return r;
+	}
+	
+	/* set u:\proc time+date */
+	procfs_stmp = xtime;
+	
+	/*
+	 * save the parent's address space
+	 */
+	txtsize = p->p_mem->txtsize;
+	
+	TRACE (("p_fork: duplicating parent memory"));
+	for (i = 0; i < p->p_mem->num_reg; i++)
+	{
+		m = p->p_mem->mem[i];
+		if (m && !(m->mflags & M_SHARED))
+		{
+			if (m->mflags & M_SEEN)
+			{
+				/* Hmmm, this region has already been duplicated,
+				 * reuse the duplicated region's descriptor and
+				 * correct the link counts. Note that `m' still
+				 * points to the parent's memory descriptor, so
+				 * we must search the parent's memory table here.
+				 */
+				for (j = 0; curproc->p_mem->mem[j] != m; j++)
+					;
+				n = p->p_mem->mem[j];
+				n->links++;
+				m->links--;
+			}
+			else
+			{
+				/* Okay we have to create a new shadow and save
+				 * region for this one
+				 */
+				n = fork_region (m, i == 1 ? txtsize : 0);
+				m->mflags |= M_SEEN; /* save links only once */
+			}
+
+			if (!n)
+			{
+				DEBUG(("p_fork: can't save parent's memory"));
+				p->ppid = 0;		/* abandon the child */
+				post_sig (p, SIGKILL);	/* then kill it */
+				p->ctxt[CURRENT].pc = (long)check_sigs;
+				p->ctxt[CURRENT].sr |= 0x2000; /* use supervisor stack */
+# if 0	/* stack set up in fork_proc() */
+				p->ctxt[CURRENT].ssp = (long)(p->stack + ISTKSIZE);
+# endif
+				p->pri = MAX_NICE+1;
+				run_next(p, 1);
+				yield();
+				return ENOMEM;
+			}
+			p->p_mem->mem[i] = n;
+		}
+	}
+
+	/* The save regions are initially attached to the child's regions. To
+	 * prevent swapping of the region and its save region (which should
+	 * still be identical) on the next context switch, we attach them here
+	 * to the current process.
+	 */
+	for (i = 0; i < curproc->p_mem->num_reg; i++)
+	{
+		m = curproc->p_mem->mem[i];
+		if (m)
+		{
+			m->mflags &= ~M_SEEN;
+			n = p->p_mem->mem[i];
+			if (n->save)
+			{
+				m->save = n->save;
+				n->save = 0;
+			}
+		}
+	}
+
+	/* Correct the parent basepage pointer on the child, it stills
+	 * points to its grandparent's basepage.
+	 */
+	b = (BASEPAGE *) p->p_mem->mem[1]->loc;
+	b->p_parent = (BASEPAGE *) curproc->p_mem->mem[1]->loc;
+
+	p->ctxt[CURRENT] = p->ctxt[SYSCALL];
+	p->ctxt[CURRENT].regs[0] = 0;		/* child returns a 0 from call */
+	p->ctxt[CURRENT].sr &= ~(0x2000);	/* child must be in user mode */
+# if 0	/* set up in fork_proc() */
+	p->ctxt[CURRENT].ssp = (long)(p->stack + ISTKSIZE);
+# endif
+
+	/* Now run the child process. We want it to run ASAP, so we
+	 * temporarily give it high priority and put it first on the
+	 * run queue. Warning: After the yield() the "p" structure may
+	 * not exist any more.
+	 */
+	run_next(p, 3);
+	newpid = p->pid;
+	yield();
+	
+	return newpid;
+}

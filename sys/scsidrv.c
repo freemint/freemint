@@ -50,6 +50,7 @@
 
 # include "cookie.h"	/* cookie handling */
 # include "init.h"	/* boot_printf */
+# include "k_prot.h"
 
 
 static REQDATA emu_scsidrv_ReqData;
@@ -129,7 +130,7 @@ sys_scsidrv (ushort op,
 	typedef long (*wrap4)(long, long, long, long);
 	
 	/* only superuser can use this interface */
-	if (curproc->euid)
+	if (!suser (curproc->p_cred->ucr))
 		return EPERM;
 	
 	if (!scsidrv)

@@ -1516,9 +1516,7 @@ _kfree (void *place)
 			size = *p;
 			
 			if (size < PAGESIZE)
-			{
 				stat [size].req_free++;
-			}
 		}
 		else if (*p == KM_STAT_LMAGIC)
 		{
@@ -1559,6 +1557,13 @@ _kfree (void *place)
 		}
 	}
 }
+
+# if 0
+/* extended kmalloc
+ * 
+ */
+
+# endif
 
 /*
  * "user" memory allocation routines; the kernel can use these to
