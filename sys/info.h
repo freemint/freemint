@@ -162,13 +162,26 @@ extern const char *MSG_init_bootmenu;
 extern const char *MSG_init_menuwarn;
 extern const char *MSG_init_hitanykey;
 extern const char *MSG_must_be_auto;
+extern const char *MSG_init_delay_loop;
 # ifdef VERBOSE_BOOT
 extern const char *MSG_init_mp;
 extern const char *MSG_init_mp_enabled;
 extern const char *MSG_init_mp_disabled;
+extern const char *MSG_init_supermode;
+extern const char *MSG_init_sysdrv_is;
+extern const char *MSG_init_saving_mmu;
+extern const char *MSG_init_tosver_kbshft;
+extern const char *MSG_init_bconmap;
+extern const char *MSG_init_pid_0;
+extern const char *MSG_init_launching_init;
+extern const char *MSG_init_no_init_specified;
+extern const char *MSG_init_starting_shell;
+extern const char *MSG_init_starting_internal_shell;
+extern const char *MSG_init_done;
+extern const char *MSG_init_present;
+extern const char *MSG_init_not_present;
+extern const char *MSG_init_error;
 # endif
-extern const char *MSG_init_delay_loop;
-extern const char *MSG_couldnt_run_init;
 
 /* keyboard.c */
 extern const char *MSG_keytable_loaded;
