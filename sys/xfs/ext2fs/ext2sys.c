@@ -1216,7 +1216,7 @@ e_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 				
 				rel_cookie (check);
 				
-				retval = EACCES;
+				retval = EINVAL;
 				goto end_rename;
 			}
 			
