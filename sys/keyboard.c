@@ -148,6 +148,10 @@ static	long hz_ticks;		/* place for saving the hz_200 timer value */
 static	uchar numin[3];		/* buffer for storing ASCII code typed in via numpad */
 static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 
+static	uchar last_key[4];	/* last pressed key */
+static	short key_pressed;	/* counter for keys pressed/released (0 = no key is pressed) */
+static	ushort keydel, krpdel;	/* keybard delay rate and keyboard repeat reate, respectively */
+
 /* keyboard table pointers */
 static struct keytab *tos_keytab;
 static struct keytab *user_keytab;
@@ -223,6 +227,18 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 {
 	char *new_buf_pos;
 
+	/* c2 == 0 means that this "keypress" was generated
+	 * by typing on the numpad while holding Alt down.
+	 * We don't want this to be repeated.
+	 */
+	if (c2)
+	{
+		last_key[0] = c0;
+		last_key[1] = c1;
+		last_key[2] = c2;
+		last_key[3] = c3;
+	}
+
 	keyrec->tail += 4;
 	if (keyrec->tail >= keyrec->buflen)
 		keyrec->tail = 0;
@@ -236,6 +252,88 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 	*new_buf_pos++ = c3;
 
 	kintr = 1;
+}
+
+void
+key_repeat(void)
+{
+	register uchar c0, c1, c2, c3;
+
+	c0 = last_key[0];
+	c1 = last_key[1];
+	c2 = last_key[2];
+	c3 = last_key[3];
+
+	put_key_into_buf(c0, c1, c2, c3);
+
+	kbdclick(c2);
+}
+
+/* Translate scancode into ASCII according to the keyboard
+ * translation tables.
+ */
+static uchar
+scan2asc(ushort scancode)
+{
+	uchar asc = 0, *vec;
+
+	/* The AKP table structure is:
+	 * ss, aa, ss, aa, ss, aa, 0
+	 * where 'ss' is scancode and 'aa' is corresponding
+	 * ASCII value.
+	 */
+	if (*kbshft & MM_ALTERNATE)
+	{
+		if (*kbshft & MM_CAPS)
+			vec = user_keytab->altcaps;
+		else if (*kbshft & MM_ESHIFT)
+			vec = user_keytab->altshift;
+		else
+			vec = user_keytab->alt;
+
+		while (vec && *vec)
+		{
+			if (vec[0] == (uchar)scancode)
+			{
+				asc = vec[1];
+				break;
+			}
+			vec++; vec++;
+		}
+	}
+
+	/* Hmmm, not sure if this should operate so.
+	 * If the AKP translation results 0, we
+	 * continue as if the Alt key was not depressed.
+	 * Otherwise we ignore the "old" (not AKP)
+	 * tables.
+	 * N.AES Alt/Ctrl/key combos work with this.
+	 */
+	if (asc == 0)
+	{
+		if (*kbshft & MM_CAPS)
+			vec = user_keytab->caps;
+		else if (*kbshft & MM_ESHIFT)
+			vec = user_keytab->shift;
+		else
+			vec = user_keytab->unshift;
+
+		if (vec)
+			asc = vec[scancode];
+	}
+
+	/* I think that Ctrl key works as this:
+	 */
+	if (*kbshft & MM_CTRL)
+	{
+		if (asc == 0x0d)
+			asc = 0x0a;		/* God bless great ideas */
+
+		if ((asc & 0x80) == 0)
+			asc &= ~0x60;
+	}
+
+	return asc;
 }
 
 short
@@ -369,7 +467,7 @@ ikbd_scan (ushort scancode)
 
 				mora = get_hz_200() - hz_ticks;
 				if (mora > CAD_TIMEOUT)
-					return scancode;
+					return scancode;		/* we call TOS here */
 			}
 
 			return -1;
@@ -474,35 +572,35 @@ ikbd_scan (ushort scancode)
 
 	/* Ordinary keyboard here.
 	 */
-	if (scancode < 0x80)
-		kintr = 1;
+# if 0
+	/* This code works, but there's no key repeat yet */
+	if (scancode & 0x80)
+	{
+		/* Definitely don't go below zero */
+		if (key_pressed > 0)
+			key_pressed--;
+	}
+	else
+	{
+		key_pressed++;
+
+		ascii = scan2asc(scancode);
+
+		put_key_into_buf(0, 0, (uchar)scancode, ascii);
+	}
+# else
+	/* This is just to make all this work for now */
+	kintr = 1;
 
 	return scancode;
+# endif
 
 key_done:
+
 	if (scancode < 0x80)
 		kbdclick(scancode);	/* produce keyclick */
 
 	return -1;			/* don't go to TOS, just return */
-}
-
-void
-key_repeat(void)
-{
-	register uchar c0, c1, c2, c3;
-	char *new_buf_pos;
-
-	/* Precalculating this saves some memory */
-	new_buf_pos = keyrec->bufaddr + keyrec->tail;
-
-	c0 = *new_buf_pos++;
-	c1 = *new_buf_pos++;
-	c2 = *new_buf_pos++;
-	c3 = *new_buf_pos++;
-
-	put_key_into_buf(c0, c1, c2, c3);
-
-	kbdclick(c2);
 }
 
 /* The XBIOS' Keytbl() function
@@ -530,7 +628,31 @@ key_repeat(void)
 struct keytab *
 sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 {
+	if ((long)unshifted > 0 || (long)shifted > 0 || (long)caps > 0)
+	{
+		ALERT(("Keytbl(): attempt to modify the table!"));
+	}
+
 	return user_keytab;
+}
+
+/* The XBIOS' Kbrate() function
+ */
+ushort
+sys_b_kbrate(ushort delay, ushort rate)
+{
+	ushort ret;
+
+	ret = keydel & 0x00ff;
+	ret <<= 8;
+	ret |= (krpdel & 0x00ff);
+
+	if (delay >= 0)
+		keydel = delay & 0x00ff;
+	if (rate >= 0)
+		krpdel = rate & 0x00ff;
+
+	return ret;
 }
 
 /* The XBIOS' Bioskeys() function
@@ -582,13 +704,10 @@ sys_b_bioskeys(void)
 	pointers->caps = tables + 128 + 128;
 
 	/* and the AKP vectors */
-	if (tosvers >= 0x0400)
-	{
-		pointers->alt = tables + 128 + 128 + 128;
-		pointers->altshift = tbl_scan_fwd(pointers->alt);
-		pointers->altcaps = tbl_scan_fwd(pointers->altshift);
-		pointers->altgr = tbl_scan_fwd(pointers->altcaps);
-	}
+	pointers->alt = tables + 128 + 128 + 128;
+	pointers->altshift = tbl_scan_fwd(pointers->alt);
+	pointers->altcaps = tbl_scan_fwd(pointers->altshift);
+	pointers->altgr = tbl_scan_fwd(pointers->altcaps);
 
 	/* Reset the TOS BIOS vectors (this is only necessary
 	 * until we replace all BIOS keyboard routines).
