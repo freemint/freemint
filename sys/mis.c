@@ -31,6 +31,8 @@
  *
  */
 
+# ifdef BUILTIN_SHELL
+
 # include <stdarg.h>
 
 # include "libkern/libkern.h"
@@ -44,10 +46,9 @@
 # include "arch/syscall.h"	/* Pexec(), Cconrs() et cetera */
 
 # include "cnf.h"		/* init_env */
+# include "dosmem.h"		/* m_free() */
 # include "info.h"		/* national stuff */
-# include "init.h"		/* boot_print */
-# include "k_exec.h"		/* sys_pexec */
-# include "k_exit.h"		/* sys_pwaitpid */
+# include "k_exec.h"		/* sys_pexec() */
 
 # include "mis.h"
 
@@ -62,15 +63,16 @@
 /* XXX after the code stops changing so quickly, move all the messages to info.c
  */
 
+# define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
+
 # define SH_VER_MAIOR	0
 # define SH_VER_MINOR	1
 
 # define COPYCOPY	"MiS v.%d.%d, the FreeMiNT internal shell,\r\n" \
 			"(c) 2003 by Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
 
-# define SHELL_STACK	32768L
-# define SHELL_ARGS	2048L
-# define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
+# define SHELL_STACK	32768L		/* maximum usage is so far about a half ot this */
+# define SHELL_ARGS	2048L		/* number of pointers in the argument vector table (i.e. 8K) */
 
 /* this is an average number of seconds in Gregorian year
  * (365 days, 6 hours, 11 minutes, 15 seconds).
@@ -114,6 +116,12 @@ static const char *months[] =
 /* Utility routines */
 
 static void
+shell_print(char *text)
+{
+	Cconws(text);
+}
+
+static void
 shell_printf(const char *fmt, ...)
 {
 	char buf[1024];
@@ -123,7 +131,7 @@ shell_printf(const char *fmt, ...)
 	vsprintf(buf, sizeof (buf), fmt, args);
 	va_end(args);
 
-	Cconws(buf);
+	shell_print(buf);
 }
 
 /* Helpers for ls:
@@ -156,15 +164,17 @@ justify_right(char *p, long spaces)
 
 	plen = strlen(p);
 	s = (spaces - plen);
-	if (s <= 0)
-		return (p + plen);
-	strcpy(temp, p);
-	while (s)
+
+	if (s > 0)
 	{
-		*p++ = ' ';
-		s--;
+		strcpy(temp, p);
+		while (s)
+		{
+			*p++ = ' ';
+			s--;
+		}
+		strcpy(p, temp);
 	}
-	strcpy(p, temp);
 
 	return (p + plen);
 }
@@ -200,9 +210,8 @@ env_append(char *where, char *what)
 {
 	strcpy(where, what);
 	where += strlen(where);
-	where++;
 
-	return where;
+	return ++where;
 }
 
 static char *
@@ -226,7 +235,6 @@ sh_getenv(const char *var)
 		if (r == 0)
 		{
 			es = env_str;
-
 			while (*es != '=')
 				es++;
 			es++;
@@ -301,14 +309,14 @@ sh_setenv(const char *var, char *value)
 }
 
 /* Split command line into separate strings and put their pointers
- * into args[].
+ * into argv[].
  *
  * XXX add 'quoted arguments' handling.
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
  *
  */
 INLINE long
-crunch(char *cmdline, char *args[])
+crunch(char *cmdline, char *argv[])
 {
 	char *cmd = cmdline, *start;
 	long cmdlen, idx = 0;
@@ -340,19 +348,19 @@ crunch(char *cmdline, char *args[])
 			cmdlen--;
 		}
 
-		args[idx] = start;
+		argv[idx] = start;
 		idx++;
 
 	} while (cmdlen > 0);
 
-	args[idx] = NULL;
+	argv[idx] = NULL;
 	
 	return idx;
 }
 
 /* Execute an external program */
 INLINE long
-execvp(char *oldcmd, char *args[])
+execvp(char *oldcmd, char *argv[])
 {
 	char *var, *new_env, *new_var, *t, *path, *np, npath[2048];
 	long count = 0, x, r = -1L;
@@ -361,9 +369,7 @@ execvp(char *oldcmd, char *args[])
 
 	/* Check the size of the environment */
 	count = env_size();
-
 	count++;			/* trailing zero */
-
 	count += strlen(oldcmd + 1);	/* add some space for the ARGV= strings */
 	count += sizeof("ARGV=");	/* this is 6 bytes */
 
@@ -395,9 +401,9 @@ execvp(char *oldcmd, char *args[])
 	x = 0;
 	new_var = env_append(new_var, "ARGV=");
 
-	while (args[x])
+	while (argv[x])
 	{
-		new_var = env_append(new_var, args[x]);
+		new_var = env_append(new_var, argv[x]);
 		x++;
 	}
 	*new_var = 0;
@@ -407,7 +413,7 @@ execvp(char *oldcmd, char *args[])
 	/* $PATH searching. Don't do it, if the user seems to
 	 * have specified the explicit pathname.
 	 */
-	t = strrchr(args[0], '/');
+	t = strrchr(argv[0], '/');
 	if (!t)
 	{
 		path = sh_getenv("PATH=");
@@ -425,7 +431,7 @@ execvp(char *oldcmd, char *args[])
 
 				*np = 0;
 				strcat(npath, "/");
-				strcat(npath, args[0]);
+				strcat(npath, argv[0]);
 
 				r = Pexec(0, npath, oldcmd, new_env);
 
@@ -433,7 +439,7 @@ execvp(char *oldcmd, char *args[])
 		}
 	}
 	else
-		r = Pexec(0, args[0], oldcmd, new_env);
+		r = Pexec(0, argv[0], oldcmd, new_env);
 
 	Mfree(new_env);
 
@@ -463,7 +469,7 @@ ver(void)
 INLINE void
 help(void)
 {
-	boot_print( \
+	shell_printf( \
 	"	MiS is not intended to be a regular system shell, so don't\r\n" \
 	"	expect much. It is only a tool to fix bigger problems that\r\n" \
 	"	prevent the system from booting normally.\r\n" \
@@ -475,11 +481,9 @@ help(void)
 	"	help - display this message\r\n" \
 	"	ver - display version information\r\n" \
 	"	xcmd - switch the extended command set on/off\r\n"
-	"\r\n");
-
-	shell_printf("	Extended commands (now %s) are:\r\n\r\n", xcommands ? "on" : "off");
-
-	boot_print( \
+	"\r\n" \
+	"	Extended commands (now %s) are:\r\n" \
+	"\r\n" \
 	"	chgrp - change the group a file belongs to\r\n" \
 	"	chmod - change the access permissions for a file\r\n" \
 	"	chown - change file's ownership\r\n" \
@@ -494,7 +498,8 @@ help(void)
 	"	to execute. In case you'd want to execute something, that\r\n" \
 	"	is named with one of the words displayed above, use 'exec'\r\n" \
 	"	or supply the full pathname." \
-	"\r\n");
+	"\r\n", \
+	xcommands ? "on" : "off");
 }
 
 /* Display all files in the current directory, with attributes et ceteris.
@@ -624,13 +629,10 @@ sh_ls(char *dir)
 					ksprintf(p, sizeof(path), (minute > 9) ? "%d:%d" : "%d:0%d", hour, minute);
 
 				p = justify_right(p, 5);
-				*p++ = ' ';
 
 				*p = 0;
 
-				boot_print(path);
-				boot_print(entry + sizeof(long));
-				boot_print("\r\n");
+				shell_printf("%s %s\r\n", path, entry + sizeof(long));
 			}
 		}
 	} while (r == 0);
@@ -710,7 +712,7 @@ sh_chmod(char *attr, char *fname)
 		d += (c & 0x0007);
 	}
 
-	d &= 0x00007fffL;
+	d &= S_IALLUGO;
 
 	return Fchmod(fname, d);
 }
@@ -725,7 +727,7 @@ env(char *envie)
 	else
 		var = shell_base->p_env;
 
-	if (!var || *var == 0)
+	if (var == NULL || *var == 0)
 	{
 		shell_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
 
@@ -744,11 +746,10 @@ env(char *envie)
 /* End of the commands, begin control routines */
 
 /* Execute the given command */
-
 INLINE long
-execute(char *cmdline, char *args[])
+execute(char *cmdline)
 {
-	char newcmd[128], *c, *home;
+	char *argv[SHELL_ARGS], newcmd[128], *c, *home;
 	long r, cnt, cmdno, argc;
 	short y;
 
@@ -776,7 +777,7 @@ execute(char *cmdline, char *args[])
 
 	strncpy(newcmd, c, 127);		/* crunch() destroys the `cmdline', so we need to copy it */
 
-	argc = crunch(cmdline, args);
+	argc = crunch(cmdline, argv);
 
 	if (!argc)
 		return 0;			/* empty command line (unlikely) */
@@ -789,7 +790,7 @@ execute(char *cmdline, char *args[])
 
 	while (commands[cnt])
 	{
-		if (strcmp(args[0], commands[cnt]) == 0)
+		if (strcmp(argv[0], commands[cnt]) == 0)
 		{
 			cmdno = cnt + 1;
 			break;
@@ -824,11 +825,11 @@ execute(char *cmdline, char *args[])
 	{
 		case	SHCMD_EXIT:
 		{
-			boot_print("Are you sure to exit and reboot (y/n)?");
+			shell_print("Are you sure to exit and reboot (y/n)?");
 			y = (short)Cconin();
 			if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
 				Pterm(0);
-			boot_print("\r\n");
+			shell_print("\r\n");
 			break;
 		}
 		case	SHCMD_VER:
@@ -838,13 +839,13 @@ execute(char *cmdline, char *args[])
 		}
 		case	SHCMD_LS:
 		{
-			r = sh_ls(args[1]);
+			r = sh_ls(argv[1]);
 			break;
 		}
 		case	SHCMD_CD:
 		{
-			if (args[1])
-				r = Dsetpath(args[1]);
+			if (argv[1])
+				r = Dsetpath(argv[1]);
 			else
 			{
 				home = sh_getenv("HOME=");
@@ -855,26 +856,26 @@ execute(char *cmdline, char *args[])
 		}
 		case	SHCMD_CHMOD:
 		{
-			if (args[1] && args[2])
-				r = sh_chmod(args[1], args[2]);
+			if (argv[1] && argv[2])
+				r = sh_chmod(argv[1], argv[2]);
 			else
-				boot_print("chmod OCTAL-MODE FILE\r\n");
+				shell_print("chmod OCTAL-MODE FILE\r\n");
 			break;
 		}
 		case	SHCMD_CHOWN:
 		{
-			if (args[1] && args[2])
-				r = sh_chown(args[1], args[2]);
+			if (argv[1] && argv[2])
+				r = sh_chown(argv[1], argv[2]);
 			else
-				boot_print("chown DEC-OWNER[:DEC-GROUP] FILE\r\n");
+				shell_print("chown DEC-OWNER[:DEC-GROUP] FILE\r\n");
 			break;
 		}
 		case	SHCMD_CHGRP:
 		{
-			if (args[1] && args[2])
-				r = sh_chgrp(args[1], args[2]);
+			if (argv[1] && argv[2])
+				r = sh_chgrp(argv[1], argv[2]);
 			else
-				boot_print("chgrp DEC-GROUP FILE\r\n");
+				shell_print("chgrp DEC-GROUP FILE\r\n");
 			break;
 		}
 		case	SHCMD_HELP:
@@ -889,11 +890,11 @@ execute(char *cmdline, char *args[])
 		}
 		case	SHCMD_XCMD:
 		{
-			if (args[1])
+			if (argv[1])
 			{
-				if (strcmp(args[1], "on") == 0)
+				if (strcmp(argv[1], "on") == 0)
 					xcommands = 1;
-				else if (strcmp(args[1], "off") == 0)
+				else if (strcmp(argv[1], "off") == 0)
 					xcommands = 0;
 			}
 			xcmdstate();
@@ -901,7 +902,7 @@ execute(char *cmdline, char *args[])
 		}
 		default:
 		{
-			r = execvp(newcmd, args);
+			r = execvp(newcmd, argv);
 			break;
 		}
 	}
@@ -914,16 +915,15 @@ execute(char *cmdline, char *args[])
 static void
 shell(void)
 {
-	char *args[SHELL_ARGS];
-	char cwd[1024], linebuf[LINELEN+2], *lb, *home;
+	char cwd[1024], linebuf[LINELEN+2], *lbuff, *home;
 	long r;
 	short x;
 
 	/* XXX enable word wrap for the console, cursor etc. */
-	boot_print("\r\n");
+	shell_print("\r\n");
 	ver();
 	xcmdstate();
-	boot_print("Type `help' for help\r\n\r\n");
+	shell_print("Type `help' for help\r\n\r\n");
 
 	home = sh_getenv("HOME=");
 	if (home)
@@ -935,7 +935,6 @@ shell(void)
 
 	for (;;)
 	{
-		bzero(args, sizeof(args));
 		bzero(linebuf, sizeof(linebuf));
 
 		linebuf[0] = (sizeof(linebuf) - 2);
@@ -956,28 +955,25 @@ shell(void)
 
 		sh_setenv("PWD=", cwd);
 
-		boot_print("mint:");
-		boot_print(cwd);
-		boot_print("#");
+		shell_printf("mint:%s#", cwd);
 		Cconrs(linebuf);
 
 		if (linebuf[1] > 1)
 		{
 			short idx;
 
-			lb = linebuf + 2;
-
 			/* "the string is not guaranteed to be NULL terminated"
 			 * (Atari GEMDOS reference manual)
 			 */
+			lbuff = linebuf + 2;
 			idx = linebuf[1];
 			idx--;
-			lb[idx] = 0;
+			lbuff[idx] = 0;
 
-			r = execute(lb, args);
+			r = execute(lbuff);
 
 			if (r < 0)
-				shell_printf("mint: %s: error %ld\r\n", lb, r);
+				shell_printf("mint: %s: error %ld\r\n", lbuff, r);
 		}
 	}
 }
@@ -1023,9 +1019,11 @@ startup_shell(void)
 
 	r = sys_pexec(104, (char *)"shell", shell_base, 0L);
 
-	Mfree(shell_base);
+	m_free((long)shell_base);
 
 	return r;
 }
+
+# endif /* BUILTIN_SHELL */
 
 /* EOF */
