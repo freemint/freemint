@@ -953,6 +953,7 @@ pending_msgs(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		union msg_buf *buf = pb->addrin[0];
 		XA_AESMSG_LIST *msg = client->msg;
+		IFDIAG(char *pmsg(short m);)
 
 		client->msg = msg->next;
 		/* Copy the message into the clients buffer */
