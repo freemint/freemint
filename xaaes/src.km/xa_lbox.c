@@ -41,6 +41,14 @@
 
 /*
  * WDIALOG FUNCTIONS (lbox)
+ *
+ * documentation about this can be found in:
+ *
+ * - the GEMLIB documentation:
+ *   http://arnaud.bercegeay.free.fr/gemlib/
+ *
+ * - the MagiC documentation project:
+ *   http://www.bygjohn.fsnet.co.uk/atari/mdp/
  */
 
 #if WDIALOG_LBOX
