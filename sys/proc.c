@@ -404,7 +404,7 @@ swap_in_curproc (void)
  * curproc->wait_cond
  */
 
-INLINE void
+static void
 do_wakeup_things (short sr, int newslice, long cond)
 {
 	/*
