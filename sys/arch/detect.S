@@ -35,7 +35,7 @@ _test_byte_rd:
 	nop
 
 	clr.l	d0
-	move.l	4(sp),a2
+	move.l	8(sp),a2
 	tst.b	(a2)
 
 pass:	moveq	#0x01,d0	// passed
@@ -55,7 +55,7 @@ _test_word_rd:
 	nop
 
 	clr.l	d0
-	move.l	4(sp),a2
+	move.l	8(sp),a2
 	tst.w	(a2)
 
 	bra.s	pass
@@ -69,7 +69,7 @@ _test_long_rd:
 	nop
 
 	clr.l	d0
-	move.l	4(sp),a2
+	move.l	8(sp),a2
 	tst.l	(a2)
 
 	bra.s	pass
