@@ -64,6 +64,7 @@ COBJS = \
 	random.c \
 	rendez.c \
 	scsidrv.c \
+	semaphores.c \
 	shmfs.c \
 	signal.c \
 	slb.c \
