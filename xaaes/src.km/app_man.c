@@ -33,6 +33,7 @@
 #include "xa_global.h"
 #include "xa_rsrc.h"
 
+#include "semaphores.h"
 #include "c_window.h"
 #include "desktop.h"
 #include "menuwidg.h"
@@ -105,6 +106,7 @@ void
 swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 {
 	struct xa_window *top;
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	XA_TREE *menu_bar = get_menu();
 
 	DIAG((D_appl, NULL, "[%d]swap_menu", which));
@@ -119,7 +121,14 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 		{
 			DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
 
+			if (!rc)
+				rc = C.Aes;
+
+			new->status |= CS_WAIT_MENU;
+			lock_menustruct(rc, false);
 			*menu_bar = new->std_menu;
+			unlock_menustruct(rc);
+			new->status &= ~CS_WAIT_MENU;
 
 			top = window_list;
 

@@ -35,6 +35,7 @@ void cXA_button_event(enum locks lock, struct c_event *ce);
 void cXA_deliver_button_event(enum locks lock, struct c_event *ce);
 void cXA_deliver_rect_event(enum locks lock, struct c_event *ce);
 void cXA_form_do(enum locks lock, struct c_event *ce);
+void cXA_open_menu(enum locks lock, struct c_event *ce);
 void cXA_menu_move(enum locks lock, struct c_event *ce);
 void cXA_do_widgets(enum locks lock, struct c_event *ce);
 void cXA_active_widget(enum locks lock, struct c_event *ce);

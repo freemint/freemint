@@ -85,6 +85,7 @@ struct common
 	long redraws;			/* Counting WM_REDRAWS being sent and dispatched */
 	struct xa_client *button_waiter; /* Client which is getting the next moose_data packet, */
 					 /* most probably a button released one */
+	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
 
 	int shutdown;
 	bool mvalidate;

@@ -329,6 +329,7 @@ struct xa_client
 #define CS_LAGGING	1
 #define CS_CE_REDRAW_SENT 2
 #define CS_FORM_ALERT 4
+#define CS_WAIT_MENU 8
 
 	long status;
 
