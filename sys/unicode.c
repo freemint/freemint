@@ -768,6 +768,8 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 			uchar *codepage;
 			ushort offset;
 
+			assert((buf + len) > s);
+
 			codepage = t_uni2atari[s[0]];
 			if (codepage == NULL)
 			{
@@ -787,17 +789,27 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 			}
 
 			offset = s[2];
-			codepage[s[1]] = offset;
+			
+			if (offset<0x80) /* first 128 characters (0..127) are always unicode compatible */
+			{
+				char msg[128];
 
-			offset <<= 1;
-			assert(offset+1 < CP_SIZE);
+				ksprintf(msg, sizeof(msg), "Unicode: cannot change codes lower then 128\r\n");
+				c_conws(msg);
+			}
+			else
+			{
+				codepage[s[1]] = offset;
 
-			t_atari2uni[offset] = s[0];
-			t_atari2uni[offset+1] = s[1];
+				offset -= 0x80; /* t_atari2uni table starts from 128 element */
+				offset <<= 1; /* table elements are words */
+				assert(offset+1 < CP_SIZE);
 
+				t_atari2uni[offset] = s[0];
+				t_atari2uni[offset+1] = s[1];
+			}
 			s += 3;		/* moving to the next entry */
 
-			assert((buf + len) > s);
 		}
 	}
 	kfree(buf);
