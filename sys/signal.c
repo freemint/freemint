@@ -525,7 +525,7 @@ do_sigaltstack (PROC *p, const stack_t *ss, stack_t *oss, ulong sp)
 /*
  * stop a process because of signal "sig"
  */
-void
+void _cdecl
 stop (ushort sig)
 {
 	ushort code;
