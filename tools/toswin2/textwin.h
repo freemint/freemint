@@ -16,6 +16,7 @@ void	soft_resize_textwin (TEXTWIN *t, short cols, short rows,
 			     short scrollback);
 void	textwin_setfont (TEXTWIN *t, short font, short points);
 void	reconfig_textwin (TEXTWIN *t, WINCFG *cfg);
+void	notify_winch (TEXTWIN* tw);
 
 void 	sendstr (TEXTWIN *t, char *s);
 void	write_text (TEXTWIN *t, char *b, long len);
