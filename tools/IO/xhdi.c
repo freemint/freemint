@@ -61,11 +61,16 @@ ushort XHDI_installed = 0;
 # define C_XHDI		0x58484449L
 # define XHDIMAGIC	0x27011992L
 
+/* initalize flag */
+static ushort init = 1;
+
 long
 init_XHDI (void)
 {
 	long *val;
 	long r;
+	
+	init = 0;
 	
 	r = Getcookie (C_XHDI, (long *) &val);
 	if (r == C_FOUND)
@@ -111,6 +116,8 @@ init_XHDI (void)
 # define CALL \
 	long oldstack = 0;		\
 	long r;				\
+					\
+	if (init) init_XHDI ();		\
 					\
 	if (!Super (1L))		\
 		oldstack = Super (0L);	\
