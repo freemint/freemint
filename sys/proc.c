@@ -33,6 +33,7 @@
 # include "arch/user_things.h"	/* trampoline */
 
 # include "bios.h"
+# include "cookie.h"
 # include "dosfile.h"
 # include "filesys.h"
 # include "k_exit.h"
@@ -410,10 +411,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 	 * check for stack underflow, just in case
 	 */
 	auto int foo;
-	PROC *p;
-# ifdef JAR_PRIVATE
-	struct user_things *ut;
-# endif
+	struct proc *p;
 
 	p = curproc;
 
@@ -449,9 +447,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 	 * Setexc(). We don't like that.
 	 */
 # ifdef JAR_PRIVATE
-	ut = p->p_mem->tp_ptr;
-	if (*(long *)0x05a0L != ut->user_jar_p)
-		*(long *)0x05a0L = ut->user_jar_p;
+	*CJAR = p->p_mem->tp_ptr->user_jar_p;
 # endif
 
 	if (newslice)
