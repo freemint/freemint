@@ -1,8 +1,12 @@
 # 
-# 
 # cross compiling
-#CROSS = yes
+#
+ifneq (yes,$(M68K_ATARI_MINT_CROSS))
 CROSS = no
+#CROSS = yes
+else
+CROSS = yes
+endif
 
 #
 # target and host compiler
@@ -11,9 +15,14 @@ ifeq ($(CROSS),yes)
 
 CROSSPREFIX=m68k-atari-mint-
 
+LANG=C
 NATIVECC = gcc
 NATIVECFLAGS = -O -Wall
 CRLF = echo crlf -s
+
+# e.g. when you don't have the mintlib/gemlib/cflib in
+#      the /usr/m68k-atari/mint
+GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS)
 
 else
 
@@ -31,6 +40,7 @@ AR = $(CROSSPREFIX)ar
 RANLIB = $(CROSSPREFIX)ranlib
 STRIP = $(CROSSPREFIX)strip
 FLAGS = $(CROSSPREFIX)flags
+OBJDUMP = $(CROSSPREFIX)objdump
 
 # 
 # some tools
