@@ -7,14 +7,12 @@
 
 # include "tcputil.h"
 
+# include "mint/net.h"
+
 # include "inetutil.h"
-# include "in.h"
-# include "ip.h"
 # include "route.h"
 # include "tcpout.h"
 
-# include "net.h"
-# include "sockutil.h"
 # include "util.h"
 
 

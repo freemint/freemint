@@ -13,11 +13,10 @@
 # include "route.h"
 
 # include "dummydev.h"
-# include "net.h"
-# include "socket.h"
 # include "util.h"
 
-# include <mint/file.h>
+# include "mint/file.h"
+# include "mint/socket.h"
 
 
 /*
@@ -49,13 +48,11 @@ static struct dev_descr routedev_descr =
 	driver:		&routedev
 };
 
-static char routedev_name[] = "u:\\dev\\route";
-
 
 long
 routedev_init (void)
 {
-	return dummydev_init (routedev_name, &routedev_descr);
+	return dummydev_init ("u:\\dev\\route", &routedev_descr);
 }	
 
 static long

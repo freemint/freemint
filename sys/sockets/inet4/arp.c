@@ -612,11 +612,11 @@ get_praddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short *type)
 	{
 		case AF_INET:
 		{
-			struct sockaddr_in *sin;
+			struct sockaddr_in *in;
 			
-			sin = (struct sockaddr_in *)sockaddr;
+			in = (struct sockaddr_in *)sockaddr;
 			hwaddr->len = 4;
-			memcpy (hwaddr->addr, &sin->sin_addr.s_addr, 4);
+			memcpy (hwaddr->addr, &in->sin_addr.s_addr, 4);
 			*type = ARPRTYPE_IP;
 			
 			return 0;

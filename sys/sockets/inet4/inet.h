@@ -14,7 +14,6 @@
 # include "ip.h"
 
 # include "buf.h"
-# include "net.h"
 
 
 struct in_dataq

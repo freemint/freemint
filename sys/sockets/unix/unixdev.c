@@ -8,12 +8,12 @@
 
 # include "unixdev.h"
 
+# include "mint/file.h"
+
 # include "unix.h"
 
 # include "dummydev.h"
 # include "util.h"
-
-# include <mint/file.h>
 
 
 /* read() obtains this structure for every unix domain socket */

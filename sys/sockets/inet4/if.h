@@ -2,10 +2,10 @@
 # ifndef _if_h
 # define _if_h
 
-# include "global.h"
+# include "mint/socket.h"
 
+# include "global.h"
 # include "buf.h"
-# include "socket.h"
 
 
 /* net interface flags */
@@ -105,7 +105,7 @@ struct netif
 	
 	long		(*open)(struct netif *);
 	long		(*close)(struct netif *);
-	long		(*output)(struct netif *, BUF *, char *, short, short);
+	long		(*output)(struct netif *, BUF *, const char *, short, short);
 	long		(*ioctl)(struct netif *, short, long);
 	void		(*timeout)(struct netif *);
 

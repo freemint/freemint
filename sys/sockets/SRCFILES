@@ -6,12 +6,9 @@ HEADER = \
 	config.h \
 	dummydev.h \
 	global.h \
-	in.h \
 	iov.h \
 	mintsock.h \
-	net.h \
 	netinfo.h \
-	socket.h \
 	timer.h \
 	util.h \
 	version.h
@@ -22,8 +19,6 @@ COBJS = \
 	global.c \
 	iov.c \
 	main.c \
-	sockdev.c \
-	sockutil.c \
 	timer.c
 
 SRCFILES = $(HEADER) $(COBJS)

@@ -36,7 +36,7 @@
 
 # include "global.h"
 
-# include "net.h"
+# include "mint/net.h"
 # include "un.h"
 
 

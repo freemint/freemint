@@ -3,7 +3,9 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2000, 2001 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 1997, 1998, 1999 Torsten Lang
+ * Copyright 1993, 1994, 1995, 1996 Kay Roemer
  * All rights reserved.
  * 
  * This file is free software; you can redistribute it and/or modify
@@ -34,9 +36,7 @@
 # include "global.h"
 
 # include "buf.h"
-# include "sockdev.h"
-# include "inet4/bpf.h"
-# include "inet4/inet.h"
+# include "inet4/init.h"
 # include "unix/unix.h"
 
 # include "version.h"
@@ -63,7 +63,7 @@
 	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
 
 # define MSG_OLDMINT	\
-	"\033pMiNT to old, this module requires at least a FreeMiNT 1.12!\033q\r\n"
+	"\033pMiNT to old, this module requires at least a FreeMiNT 1.16!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
@@ -72,8 +72,7 @@
 static void (*init_func[])(void) =
 {
 	unix_init,
-	inet_init,
-	bpf_init,
+	inet4_init,
 	NULL
 };
 
@@ -96,17 +95,15 @@ init (struct kerinfo *k)
 # endif
 	c_conws ("\r\n");
 	
-	if (!addroottimeout || !cancelroottimeout)
+	if (MINT_MAJOR != 1 || MINT_MINOR != 16 || MINT_KVERSION != 2 || !so_register)
 	{
 		c_conws (MSG_OLDMINT);
-		c_conws (MSG_FAILURE);
-		
 		return NULL;
 	}
 	
-	if (buf_init () || init_sockdev ())
+	if (buf_init ())
 	{
-		c_conws ("Cannot install socket device\n\r");
+		c_conws ("Cannot initialize buf allocator\n\r");
 		c_conws (MSG_FAILURE);
 		
 		return NULL;

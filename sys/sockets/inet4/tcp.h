@@ -10,7 +10,6 @@
 
 # include "global.h"
 
-# include "buf.h"
 # include "iov.h"
 # include "timer.h"
 
