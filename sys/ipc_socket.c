@@ -698,7 +698,9 @@ sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
-	return so_setsockopt ((struct socket *) fp->devinfo, level, optname, optval, optlen);
+	r = so_setsockopt ((struct socket *) fp->devinfo, level, optname, optval, optlen);
+	if (r) DEBUG (("sys_setsockopt() -> %li", r));
+	return r;
 }
 
 long _cdecl
@@ -713,7 +715,9 @@ sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
-	return so_getsockopt ((struct socket *) fp->devinfo, level, optname, optval, optlen);
+	r = so_getsockopt ((struct socket *) fp->devinfo, level, optname, optval, optlen);
+	if (r) DEBUG (("sys_getsockopt() -> %li", r));
+	return r;
 }
 
 long _cdecl
