@@ -50,6 +50,7 @@ long kern_get_filesystems	(SIZEBUF **buffer);
 long kern_get_hz			(SIZEBUF **buffer);
 long kern_get_loadavg		(SIZEBUF **buffer);
 long kern_get_meminfo		(SIZEBUF **buffer);
+long kern_get_stat              (SIZEBUF **buffer);
 long kern_get_time			(SIZEBUF **buffer);
 long kern_get_uptime		(SIZEBUF **buffer);
 long kern_get_version		(SIZEBUF **buffer);
