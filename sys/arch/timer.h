@@ -43,5 +43,7 @@
 extern volatile long *hz_200;
 # define jiffies    		(*hz_200)
 
+unsigned long get_hz_200(void);
+void delay_seconds(unsigned short seconds);
 
 # endif /* _m68k_timer_h */
