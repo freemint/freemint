@@ -45,6 +45,7 @@
 # include "mint/proc.h"
 # include "mint/signal.h"
 
+# include "arch/cpu.h"
 # include "arch/process_reg.h"
 # include "arch/mprot.h"
 
@@ -257,10 +258,8 @@ p_trace (short request, short pid, void *addr, long data)
 			 *	(3) it's not owned by you, or is set-id on exec
 			 *	    (unless you're root), or...
 			 */
-			/* if ((t->p_cred->p_ruid != p->p_cred->p_ruid ||
-				ISSET(t->p_flag, P_SUGID)) &&
-			    (error = suser(p->p_ucred, &p->p_acflag)) != 0)
-				return (error); */
+			if ((t->ruid != p->ruid) && p->euid)
+				return EPERM;
 			
 			/*
 			 *	(4) ...it's init, which controls the security level
@@ -376,7 +375,12 @@ p_trace (short request, short pid, void *addr, long data)
 				
 				/* XXX - what about forked regions? */
 				if (write)
+				{
 					*(long *) addr = data;
+					
+					/* flush write-back cache */
+					cpush(addr, 4);
+				}
 				else
 					*(long *) data = *(long *) addr;
 				
@@ -393,6 +397,7 @@ p_trace (short request, short pid, void *addr, long data)
 		case PT_ATTACH:
 		{
 			t->ptracer = p;
+			post_sig (t, SIGSTOP);
 			return 0;
 		}
 		case PT_DETACH:
