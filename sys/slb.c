@@ -64,7 +64,6 @@
 # include "kmemory.h"
 # include "memory.h"
 # include "proc.h"		/* proc_clock */
-# include "rendez.h"
 # include "signal.h"
 # include "util.h"
 
@@ -229,8 +228,8 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 		DEBUG(("Slbopen: SLB with shared text bit?!"));
 		r = ENOEXEC;
 slb_error:
-		m_free((long) b->p_env);
-		m_free((long) b);
+		sys_m_free((long) b->p_env);
+		sys_m_free((long) b);
 		if (--mr->links == 0)
 			free_region(mr);
 		return(r);
@@ -279,7 +278,7 @@ slb_error:
 	if (hitpa < b->p_hitpa)
 	{
 		b->p_hitpa = hitpa;
-		r = m_shrink(0, (long) b, b->p_hitpa - (long)b);
+		r = sys_m_shrink(0, (long) b, b->p_hitpa - (long)b);
 		if (r)
 		{
 			DEBUG(("Slbopen: Couldn't shrink basepage"));
@@ -323,7 +322,7 @@ slb_error:
 
 	if (r < 0)
 	{
-		p_kill(newpid, SIGKILL);
+		sys_p_kill(newpid, SIGKILL);
 		/* Not `goto slb_error' because Pexec(106)
 		 * releases the basepage and env
 		 */
@@ -334,7 +333,7 @@ slb_error:
 	if ((r & 0x0000ff00L) != (SIGSTOP << 8))
 	{
 		DEBUG(("Slbopen: child died"));
-		p_kill(newpid, SIGKILL);
+		sys_p_kill(newpid, SIGKILL);
 		if (--mr->links == 0)
 			free_region(mr);
 		return(EXCPT);
@@ -355,7 +354,7 @@ slb_error:
 	if (r < 0L)
 	{
 		DEBUG(("Slbopen: slb_init() returned %ld", r));
-		p_kill(newpid, SIGKILL);
+		sys_p_kill(newpid, SIGKILL);
 		if (--mr->links == 0)
 			free_region(mr);
 		return(r);
@@ -393,7 +392,7 @@ slb_error:
  * Otherwise: The version number of the opened SLB
  */
 long _cdecl
-s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
+sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 {
 	SHARED_LIB *slb;
 	USER_THINGS *ut;
@@ -600,7 +599,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
  * Otherwise: GEMDOS error code
  */
 long _cdecl
-s_lbclose(SHARED_LIB *sl)
+sys_s_lbclose(SHARED_LIB *sl)
 {
 	SHARED_LIB *slb;
 	long *usp;
@@ -686,7 +685,7 @@ s_lbclose(SHARED_LIB *sl)
 		slb->slb_name[0] = 0;
 		slb->slb_proc->p_flag &= ~3;
 		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
-		p_kill(pid, SIGCONT);
+		sys_p_kill(pid, SIGCONT);
 	}
 	else
 		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
@@ -762,7 +761,7 @@ slb_close_on_exit (int terminate)
 
 			slb->slb_name[0] = 0;
 			mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
-			p_kill(pid, SIGCONT);
+			sys_p_kill(pid, SIGCONT);
 		}
 		else
 			mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);

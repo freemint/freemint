@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  */
 
 /* DOS file handling routines */
@@ -45,16 +45,16 @@ short select_coll;
 
 
 long _cdecl
-f_open (const char *name, short mode)
+sys_f_open (const char *name, short mode)
 {
 	PROC *p = curproc;
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
 	int global = 0;
 	long ret;
-	
+
 	TRACE (("Fopen(%s, %x)", name, mode));
-	
+
 # if O_GLOBAL
 	if (mode & O_GLOBAL)
 	{
@@ -63,70 +63,70 @@ f_open (const char *name, short mode)
 			DEBUG (("Fopen(%s): O_GLOBAL denied for non root"));
 			return EPERM;
 		}
-		
+
 		/* from now the sockets are clean */
 		if (!stricmp (name, "u:\\dev\\socket"))
 		{
 			ALERT (MSG_oglobal_denied);
 			return EINVAL;
 		}
-		
+
 		ALERT (MSG_global_handle, name);
-		
+
 		p = rootproc;
 		global = 1;
 	}
 # endif
-	
+
 	/* make sure the mode is legal */
 	mode &= O_USER;
-	
+
 	/* note: file mode 3 is reserved for the kernel;
 	 * for users, transmogrify it into O_RDWR (mode 2)
 	 */
 	if ((mode & O_RWMODE) == O_EXEC)
 		mode = (mode & ~O_RWMODE) | O_RDWR;
-	
+
 	assert (p->p_fd && p->p_cwd);
-	
+
 	ret = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (ret) goto error;
-	
+
 	ret = FP_ALLOC (p, &fp);
 	if (ret) goto error;
-	
+
 	ret = do_open (&fp, name, mode, 0, NULL);
 	if (ret) goto error;
-	
+
 	/* activate the fp, default is to close non-standard files on exec */
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
-	
+
 # if O_GLOBAL
 	if (global)
 		/* we just opened a global handle */
 		fd += 100;
 # endif
-	
+
 	TRACE (("Fopen: returning %d", fd));
 	return fd;
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
 	if (fp) { fp->links--; FP_FREE (fp); }
-	
+
 	return ret;
 }
 
 long _cdecl
-f_create (const char *name, short attrib)
+sys_f_create (const char *name, short attrib)
 {
 	PROC *p = curproc;
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
 	long ret;
-	
+
 	TRACE (("Fcreate(%s, %x)", name, attrib));
-	
+
 # if O_GLOBAL
 	if (attrib & O_GLOBAL)
 	{
@@ -134,29 +134,29 @@ f_create (const char *name, short attrib)
 		return EPERM;
 	}
 # endif
-	
+
 	assert (p->p_fd && p->p_cwd);
-	
+
 	ret = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (ret) goto error;
-	
+
 	ret = FP_ALLOC (p, &fp);
 	if (ret) goto error;
-	
+
 	if (attrib == FA_LABEL)
 	{
 		char temp1[PATH_MAX];
 		fcookie dir;
-		
+
 		/* just in case the caller tries to do something with this handle,
 		 * make it point to u:\dev\null
 		 */
 		ret = do_open (&fp, "u:\\dev\\null", O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 		if (ret) goto error;
-		
+
 		ret = path2cookie (name, temp1, &dir);
 		if (ret) goto error;
-		
+
 		ret = xfs_writelabel (dir.fs, &dir, temp1);
 		release_cookie (&dir);
 		if (ret) goto error;
@@ -176,13 +176,13 @@ f_create (const char *name, short attrib)
 			goto error;
 		}
 	}
-	
+
 	/* activate the fp, default is to close non-standard files on exec */
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
-	
+
 	TRACE (("Fcreate: returning %d", fd));
 	return fd;
-	
+
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
 	if (fp) { fp->links--; FP_FREE (fp); }
@@ -190,37 +190,37 @@ error:
 }
 
 long _cdecl
-f_close (short fd)
+sys_f_close (short fd)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	TRACE (("Fclose: %d", fd));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	r = do_close (p, f);
-	
+
 	/* XXX do this before do_close? */
 	FD_REMOVE (p, fd);
-	
+
 # if 0
 	/* standard handles should be restored to default values
 	 * in TOS domain!
-	 * 
+	 *
 	 * XXX: why?
 	 */
 	if (p->domain == DOM_TOS)
 	{
 		f = NULL;
-		
+
 		if (fd == 0 || fd == 1)
 			f = p->p_fd->ofiles[-1];
 		else if (fd == 2 || fd == 3)
 			f = p->p_fd->ofiles[-fd];
-		
+
 		if (f)
 		{
 			FP_DONE (p, f, fd, 0);
@@ -228,52 +228,52 @@ f_close (short fd)
 		}
 	}
 # endif
-	
+
 	return r;
 }
 
 long _cdecl
-f_read (short fd, long count, char *buf)
+sys_f_read (short fd, long count, char *buf)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	if ((f->flags & O_RWMODE) == O_WRONLY)
 	{
 		DEBUG (("Fread: read on a write-only handle"));
 		return EACCES;
 	}
-	
+
 	if (is_terminal (f))
 		return tty_read (f, buf, count);
-	
+
 	TRACELOW (("Fread: %ld bytes from handle %d to %lx", count, fd, buf));
 	return xdd_read (f, buf, count);
 }
 
 long _cdecl
-f_write (short fd, long count, const char *buf)
+sys_f_write (short fd, long count, const char *buf)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	if ((f->flags & O_RWMODE) == O_RDONLY)
 	{
 		DEBUG (("Fwrite: write on a read-only handle"));
 		return EACCES;
 	}
-	
+
 	if (is_terminal (f))
 		return tty_write (f, buf, count);
-	
+
 	/* Prevent broken device drivers from wiping the disk.
 	 * We return a zero rather than a negative error code
 	 * to help programs those don't handle GEMDOS errors
@@ -284,7 +284,7 @@ f_write (short fd, long count, const char *buf)
 		DEBUG (("Fwrite: invalid count: %d", count));
 		return 0;
 	}
-	
+
 	/* it would be faster to do this in the device driver, but this
 	 * way the drivers are easier to write
 	 */
@@ -296,77 +296,77 @@ f_write (short fd, long count, const char *buf)
 			r = 0;
 	} else
 		r = 0;
-	
+
 	if (r >= 0)
 	{
 		TRACELOW (("Fwrite: %ld bytes to handle %d", count, fd));
 		r = xdd_write (f, buf, count);
 	}
-	
+
 	if (r < 0)
 		DEBUG (("Fwrite: error %ld", r));
-	
+
 	return r;
 }
 
 long _cdecl
-f_seek (long place, short fd, short how)
+sys_f_seek (long place, short fd, short how)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	TRACE (("Fseek(%ld, %d) on handle %d", place, how, fd));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	if (is_terminal (f))
 		return 0;
-	
+
 	return xdd_lseek (f, place, how);
 }
 
 long _cdecl
-f_dup (short fd)
+sys_f_dup (short fd)
 {
 	long r;
-	
+
 	r = do_dup (fd, MIN_OPEN);
-	
+
 	TRACE (("Fdup(%d) -> %ld", fd, r));
 	return r;
 }
 
 long _cdecl
-f_force (short newfd, short oldfd)
+sys_f_force (short newfd, short oldfd)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long ret;
-	
+
 	TRACE (("Fforce(%d, %d)", newfd, oldfd));
-	
+
 	ret = GETFILEPTR (&p, &oldfd, &fp);
 	if (ret) return ret;
-	
+
 	if (newfd < MIN_HANDLE || newfd >= p->p_fd->nfiles)
 	{
 		DEBUG (("Fforce: new handle out of range"));
 		return EBADF;
 	}
-	
+
 	do_close (curproc, curproc->p_fd->ofiles[newfd]);
 	curproc->p_fd->ofiles[newfd] = fp;
-	
+
 	/* set default file descriptor flags */
 	if (newfd >= MIN_OPEN)
 		curproc->p_fd->ofileflags[newfd] = FD_CLOEXEC;
 	else if (newfd >= 0)
 		curproc->p_fd->ofileflags[newfd] = 0;
-	
+
 	fp->links++;
-	
+
 	/* special: for a tty, if this is becoming a control terminal and the
 	 * tty doesn't have a pgrp yet, make it have the pgrp of the process
 	 * doing the Fforce
@@ -374,72 +374,72 @@ f_force (short newfd, short oldfd)
 	if (is_terminal (fp) && newfd == -1 && !(fp->flags & O_HEAD))
 	{
 		struct tty *tty = (struct tty *) fp->devinfo;
-		
+
 		if (!tty->pgrp)
 		{
 			tty->pgrp = curproc->pgrp;
 			DEBUG (("f_force: assigned tty->pgrp = %i", tty->pgrp));
-			
+
 			if (!(fp->flags & O_NDELAY) && (tty->state & TS_BLIND))
 				(*fp->dev->ioctl)(fp, TIOCWONLINE, 0);
 		}
 	}
-	
+
 	return E_OK;
 }
 
 long _cdecl
-f_datime (ushort *timeptr, short fd, short wflag)
+sys_f_datime (ushort *timeptr, short fd, short wflag)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	TRACE (("%s(%i)", __FUNCTION__, fd));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	/* some programs use Fdatime to test for TTY devices */
 	if (is_terminal (f))
 		return EACCES;
-	
+
 	if (f->fc.fs && f->fc.fs->fsflags & FS_EXT_3)
 	{
 		ulong t = 0;
 		long r;
-		
+
 		if (wflag)
 			t = unixtime (timeptr [0], timeptr [1]) + timezone;
-		
+
 		r = xdd_datime (f, (ushort *) &t, wflag);
-		
+
 		if (!r && !wflag)
 			*(long *) timeptr = dostime (t - timezone);
-		
+
 		return r;
 	}
-	
+
 	return xdd_datime (f, timeptr, wflag);
 }
 
 long _cdecl
-f_lock (short fd, short mode, long start, long length)
+sys_f_lock (short fd, short mode, long start, long length)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
 	struct flock lock;
-	
+
 	TRACE (("Flock(%i, %i, %li, %li)", fd, mode, start, length));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	lock.l_whence = SEEK_SET;
 	lock.l_start = start;
 	lock.l_len = length;
-	
+
 	if (mode == 0)
 		/* create a lock */
 		lock.l_type = F_WRLCK;
@@ -448,7 +448,7 @@ f_lock (short fd, short mode, long start, long length)
 		lock.l_type = F_UNLCK;
 	else
 		return EINVAL;
-	
+
 	return xdd_ioctl (f, F_SETLK, &lock);
 }
 
@@ -460,20 +460,20 @@ static long
 sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 {
 	long ret;
-	
+
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
 	if (f->dev == &sockdev
 # endif
 		return so_fstat_old (f, xattr);
-	
+
 	if (!f->fc.fs)
 	{
 		DEBUG (("sys__ffstat_1_12: no xfs!"));
 		return ENOSYS;
 	}
-	
+
 	ret = xfs_getxattr (f->fc.fs, &f->fc, xattr);
 	if ((ret == E_OK) && (f->fc.fs->fsflags & FS_EXT_3))
 	{
@@ -482,7 +482,7 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
-	
+
 	return ret;
 }
 
@@ -495,13 +495,13 @@ sys__ffstat_1_16 (struct file *f, struct stat *st)
 	if (f->dev == &sockdev
 # endif
 		return so_fstat (f, st);
-	
+
 	if (!f->fc.fs)
 	{
 		DEBUG (("sys__ffstat_1_16: no xfs"));
 		return ENOSYS;
 	}
-	
+
 	return xfs_stat64 (f->fc.fs, &f->fc, st);
 }
 
@@ -511,10 +511,10 @@ sys_ffstat (short fd, struct stat *st)
 	struct proc *p = curproc;
 	FILEPTR	*f;
 	long ret;
-	
+
 	ret = GETFILEPTR (&p, &fd, &f);
 	if (ret) return ret;
-	
+
 	return sys__ffstat_1_16 (f, st);
 }
 
@@ -527,20 +527,20 @@ sys_ffstat (short fd, struct stat *st)
  */
 
 long _cdecl
-f_cntl (short fd, long arg, short cmd)
+sys_f_cntl (short fd, long arg, short cmd)
 {
 	PROC *p = curproc;
 	FILEPTR	*f;
 	long r;
-	
+
 	TRACE (("Fcntl(%i, cmd=0x%x)", fd, cmd));
-	
+
 	if (cmd == F_DUPFD)
   		return do_dup (fd, arg);
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	switch (cmd)
 	{
 		case F_GETFD:
@@ -562,18 +562,18 @@ f_cntl (short fd, long arg, short cmd)
 		case F_SETFL:
 		{
 			TRACE (("Fcntl F_SETFL"));
-			
+
 			/* make sure only user bits set */
 			arg &= O_USER;
-			
+
 			/* make sure the file access and sharing modes are not changed */
 			arg &= ~(O_RWMODE | O_SHMODE);
 			arg |= f->flags & (O_RWMODE | O_SHMODE);
-			
+
 			/* set user bits to arg */
 			f->flags &= ~O_USER;
 			f->flags |= arg;
-			
+
 			return E_OK;
 		}
 		case FSTAT:
@@ -592,26 +592,26 @@ f_cntl (short fd, long arg, short cmd)
 			{
 				MUTIMBUF *buf = (MUTIMBUF *) arg;
 				ulong t [2];
-				
+
 				t [0] = unixtime (buf->actime, buf->acdate) + timezone;
 				t [1] = unixtime (buf->modtime, buf->moddate) + timezone;
-				
+
 				return xdd_ioctl (f, cmd, (void *) t);
 			}
-			
+
 			break;
 		}
 	}
-	
+
 	/* fall through to device ioctl */
-	
+
 	TRACE (("Fcntl mode %x: calling ioctl", cmd));
 	if (is_terminal (f))
 	{
 		/* tty in the middle of a hangup? */
 		while (((struct tty *) f->devinfo)->hup_ospeed)
 			sleep (IO_Q, (long) &((struct tty *) f->devinfo)->state);
-		
+
 		if (cmd == FIONREAD
 			|| cmd == FIONWRITE
 			|| cmd == TIOCSTART
@@ -630,7 +630,7 @@ f_cntl (short fd, long arg, short cmd)
 	}
 	else
 		r = xdd_ioctl (f, cmd, (void *) arg);
-	
+
 	return r;
 }
 
@@ -656,7 +656,7 @@ unselectme (PROC *p)
 }
 
 long _cdecl
-f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
+sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 {
 	long rfd, wfd, xfd, col_rfd, col_wfd, col_xfd;
 	long mask, bytes;
@@ -699,7 +699,7 @@ f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	p = curproc;			/* help the optimizer out */
 
 	assert (p->p_fd && p->p_cwd);
-	
+
 	/* first, validate the masks */
 	mask = 1L;
 	for (i = 0; i < p->p_fd->nfiles; i++) {
@@ -725,7 +725,7 @@ retry_after_collision:
 	mask = 1L;
 	wait_cond = (long)wakeselect;
 	count = 0;
-	
+
 	for (i = 0; i < p->p_fd->nfiles; i++) {
 		if (col_rfd & mask) {
 			f = p->p_fd->ofiles[i];
@@ -828,7 +828,7 @@ retry_after_collision:
 			t = addtimeout (curproc, (long)timeout, unselectme);
 			timeout = 0;
 		}
-		
+
 		/* curproc->wait_cond changes when data arrives or the timeout happens */
 		sr = spl7 ();
 		while (curproc->wait_cond == (long)wakeselect)
@@ -970,13 +970,13 @@ retry_after_collision:
  * "out" in the calling process
  */
 long _cdecl
-f_midipipe (short pid, short in, short out)
+sys_f_midipipe (short pid, short in, short out)
 {
 	FILEPTR *fin, *fout;
 	PROC *p;
-	
+
 	/* first, find the process */
-	
+
 	if (pid == 0)
 		p = curproc;
 	else
@@ -985,38 +985,38 @@ f_midipipe (short pid, short in, short out)
 		if (!p)
 			return ENOENT;
 	}
-	
+
 	assert (p->p_fd && p->p_cwd);
-	
+
 	/* next, validate the input and output file handles */
 	if (in < MIN_HANDLE || in >= p->p_fd->nfiles || (0==(fin = p->p_fd->ofiles[in])))
 		return EBADF;
-	
+
 	if ((fin->flags & O_RWMODE) == O_WRONLY)
 	{
 		DEBUG(("Fmidipipe: input side is write only"));
 		return EACCES;
 	}
-	
+
 	if (out < MIN_HANDLE || out >= p->p_fd->nfiles || (0==(fout = p->p_fd->ofiles[out])))
 		return EBADF;
-	
+
 	if ((fout->flags & O_RWMODE) == O_RDONLY)
 	{
 		DEBUG(("Fmidipipe: output side is read only"));
 		return EACCES;
 	}
-	
+
 	/* OK, duplicate the handles and put them in the new process */
 	fin->links++;
 	fout->links++;
-	
+
 	do_close (p, p->p_fd->midiin);
 	do_close (p, p->p_fd->midiout);
-	
+
 	p->p_fd->midiin = fin;
 	p->p_fd->midiout = fout;
-	
+
 	return E_OK;
 }
 
@@ -1026,23 +1026,23 @@ f_midipipe (short pid, short in, short out)
  */
 
 long _cdecl
-f_fchown (short fd, short uid, short gid)
+sys_f_fchown (short fd, short uid, short gid)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	TRACE (("Ffchown(%d,%i,%i)", fd, uid, gid));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	if (!(f->fc.fs))
 	{
 		DEBUG (("Ffchown: not a valid filesystem"));
 		return ENOSYS;
 	}
-	
+
 	/* MiNT acts like _POSIX_CHOWN_RESTRICTED: a non-privileged process
 	 * can only change the ownership of a file that is owned by this
 	 * user, to the effective group id of the process or one of its
@@ -1051,26 +1051,26 @@ f_fchown (short fd, short uid, short gid)
 	if (p->p_cred->ucr->euid)
 	{
 		XATTR xattr;
-		
+
 		if (p->p_cred->ucr->egid != gid && !groupmember (p->p_cred->ucr, gid))
 			r = EACCES;
 		else
 			r = xfs_getxattr (f->fc.fs, &(f->fc), &xattr);
-		
+
 		if (r)
 		{
 			DEBUG (("Ffchown(%i): unable to get file attributes", fd));
 			return r;
 		}
-		
+
 		if (xattr.uid != curproc->p_cred->ucr->euid || xattr.uid != uid)
 		{
 			DEBUG (("Ffchown(%i): not the file's owner", fd));
 			return EACCES;
 		}
-		
+
 		r = xfs_chown (f->fc.fs, &(f->fc), uid, gid);
-		
+
 		/* POSIX 5.6.5.2: if name refers to a regular file the
 		 * set-user-ID and set-group-ID bits of the file mode shall
 		 * be cleared upon successful return from the call to chown,
@@ -1084,7 +1084,7 @@ f_fchown (short fd, short uid, short gid)
 			&& (xattr.mode & (S_ISUID | S_ISGID)))
 		{
 			long s;
-			
+
 			s = xfs_chmode (f->fc.fs, &(f->fc), xattr.mode & ~(S_ISUID | S_ISGID));
 			if (!s)
 				DEBUG (("Ffchown: chmode returned %ld (ignored)", s));
@@ -1092,7 +1092,7 @@ f_fchown (short fd, short uid, short gid)
 	}
 	else
 		r = xfs_chown (f->fc.fs, &(f->fc), uid, gid);
-	
+
 	return r;
 }
 
@@ -1102,24 +1102,24 @@ f_fchown (short fd, short uid, short gid)
  */
 
 long _cdecl
-f_fchmod (short fd, ushort mode)
+sys_f_fchmod (short fd, ushort mode)
 {
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
 	XATTR xattr;
-	
+
 	TRACE (("Ffchmod(%i, %i)", fd, mode));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	if (!(f->fc.fs))
 	{
 		DEBUG (("Ffchmod: not a valid filesystem"));
 		return ENOSYS;
 	}
-	
+
 	r = xfs_getxattr (f->fc.fs, &(f->fc), &xattr);
 	if (r)
 	{
@@ -1136,13 +1136,13 @@ f_fchmod (short fd, ushort mode)
 		if (r)
 			DEBUG (("Ffchmod: error %ld", r));
 	}
-	
+
 	return r;
 }
 
 /*
  * GEMDOS extension: Fseek64 (place, fh, how, newpos)
- * 
+ *
  * - 64bit clean seek system call
  * - newpos is written only if return value is 0 (no failure)
  * - at the moment only a wrapper around Fseek() as there is no
@@ -1150,48 +1150,48 @@ f_fchmod (short fd, ushort mode)
  */
 
 long _cdecl
-f_seek64 (llong place, short fd, short how, llong *newpos)
+sys_f_seek64 (llong place, short fd, short how, llong *newpos)
 {
 	long r;
-	
+
 # define LONG_MAX	2147483647L
 	if (place > LONG_MAX)
 		return EBADARG;
-	
-	r = f_seek ((long) place, fd, how);
+
+	r = sys_f_seek ((long) place, fd, how);
 	if (r >= 0)
 		*newpos = (llong) r;
-	
+
 	return r;
 }
 
 /*
  * GEMDOS extension: Fpoll (fds, nfds, timeout)
- * 
+ *
  * - new Fselect() call for more than 32 filedeskriptors
  * - at the moment only a wrapper around Fselect()
  */
 
 long _cdecl
-f_poll (POLLFD *fds, ulong nfds, ulong timeout)
+sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 {
 	ulong rfds = 0;
 	ulong wfds = 0;
 	ulong xfds = 0;
 	long retval;
 	register long i;
-	
+
 	for (i = 0; i < nfds; i++)
 	{
 		if (fds[i].fd > 31)
 			return EINVAL;
-		
+
 # define LEGAL_FLAGS \
 	(POLLIN | POLLPRI | POLLOUT | POLLERR | POLLHUP | POLLNVAL | POLLRDNORM | POLLWRNORM)
-		
+
 		if ((fds[i].events | LEGAL_FLAGS) != LEGAL_FLAGS)
 			return EINVAL;
-		
+
 		if (fds[i].events & POLLIN)
 			rfds |= (1L << (fds[i].fd));
 		if (fds[i].events & POLLPRI)
@@ -1199,24 +1199,24 @@ f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 		if (fds[i].events & POLLOUT)
 			wfds |= (1L << (fds[i].fd));
 	}
-	
+
 	if (timeout == ~0)
-		retval = f_select (0L, &rfds, &wfds, &xfds);
+		retval = sys_f_select (0L, &rfds, &wfds, &xfds);
 	else if (timeout == 0)
-		retval = f_select (1L, &rfds, &wfds, &xfds);
+		retval = sys_f_select (1L, &rfds, &wfds, &xfds);
 # define USHRT_MAX	65535
 	else if (timeout < USHRT_MAX)
-		retval = f_select (timeout, &rfds, &wfds, &xfds);
+		retval = sys_f_select (timeout, &rfds, &wfds, &xfds);
 	else
 	{
 		ulong saved_rfds, saved_wfds, saved_xfds;
 		ushort this_timeout;
 		int last_round = 0;
-		
+
 		saved_rfds = rfds;
 		saved_wfds = wfds;
 		saved_xfds = xfds;
-		
+
 		do {
 			if ((ulong) timeout > USHRT_MAX)
 				this_timeout = USHRT_MAX;
@@ -1225,37 +1225,37 @@ f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 				this_timeout = timeout;
 				last_round = 1;
 			}
-			
-			retval = f_select (this_timeout, &rfds, &wfds, &xfds);
+
+			retval = sys_f_select (this_timeout, &rfds, &wfds, &xfds);
 			if (retval != 0)
 				break;
-			
+
 			timeout -= this_timeout;
-			
+
 			rfds = saved_rfds;
 			wfds = saved_wfds;
 			xfds = saved_xfds;
 		}
 		while (!last_round);
 	}
-	
+
 	if (retval < 0)
 		return retval;
-	
+
 	for (i = 0; i < nfds; i++)
 	{
 		if (rfds & (1L << (fds[i].fd)))
 			fds[i].revents = POLLIN;
 		else
 			fds[i].revents = 0;
-		
+
 		if (xfds & (1L << (fds[i].fd)))
 			fds[i].revents |= POLLPRI;
-		
+
 		if (wfds & (1L << (fds[i].fd)))
 			fds[i].revents |= POLLOUT;
 	}
-	
+
 	return retval;
 }
 
@@ -1265,18 +1265,18 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	TRACE (("Fwritev(%i, %lx, %li)", fd, iov, niov));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	if ((f->flags & O_RWMODE) == O_RDONLY)
 	{
 		DEBUG (("Fwritev: write on a read-only handle"));
 		return EACCES;
 	}
-	
+
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
@@ -1284,41 +1284,41 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 # endif
 	{
 		struct socket *so = (struct socket *) f->devinfo;
-		
+
 		return (*so->ops->send)(so, iov, niov, f->flags & O_NDELAY, 0, 0, 0);
 	}
-	
+
 	{
 		char *p, *_p;
 		long size;
 		int i;
-		
+
 		size = iov_size (iov, niov);
 		if (size < 0)
 			return EINVAL;
-		
+
 		/* if (size == 0)
 			return 0; */
-		
+
 		p = _p = kmalloc (size);
 		if (!p) return ENOMEM;
-		
+
 		for (i = 0; i < niov; ++i)
 		{
 			memcpy (p, iov[i].iov_base, iov[i].iov_len);
 			p += iov[i].iov_len;
 		}
-		
+
 		if (is_terminal (f))
 			r = tty_write (f, _p, size);
 		else
 		{
 			if (f->flags & O_APPEND)
 				xdd_lseek (f, 0L, SEEK_END);
-			
+
 			r = xdd_write (f, _p, size);
 		}
-		
+
 		kfree (_p);
 		return r;
 	}
@@ -1330,18 +1330,18 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 	PROC *p = curproc;
 	FILEPTR *f;
 	long r;
-	
+
 	TRACE (("Freadv(%i, %lx, %li)", fd, iov, niov));
-	
+
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
-	
+
 	if ((f->flags & O_RWMODE) == O_WRONLY)
 	{
 		DEBUG (("Freadv: read on a write-only handle"));
 		return EACCES;
 	}
-	
+
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
@@ -1349,47 +1349,47 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 # endif
 	{
 		struct socket *so = (struct socket *) f->devinfo;
-		
+
 		return (*so->ops->recv)(so, iov, niov, f->flags & O_NDELAY, 0, 0, 0);
 	}
-	
+
 	{
 		char *p, *_p;
 		long size;
 		int i;
-		
+
 		size = iov_size (iov, niov);
 		if (size < 0)
 			return EINVAL;
-		
+
 		/* if (size == 0)
 			return 0; */
-		
+
 		p = _p = kmalloc (size);
 		if (!p) return ENOMEM;
-		
+
 		if (is_terminal (f))
 			r = tty_read (f, p, size);
 		else
 			r = xdd_read (f, p, size);
-		
+
 		if (r <= 0)
 		{
 			kfree (p);
 			return r;
 		}
-		
+
 		for (i = 0, size = r; size > 0; ++i)
 		{
 			register long copy;
-			
+
 			copy = size > iov[i].iov_len ? iov[i].iov_len : size;
 			memcpy (iov[i].iov_base, p, copy);
-			
+
 			p += copy;
 			size -= copy;
 		}
-		
+
 		kfree (_p);
 		return r;
 	}

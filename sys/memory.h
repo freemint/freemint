@@ -102,7 +102,7 @@ MEMREGION *addr2region (long addr);
 MEMREGION *proc_addr2region (PROC *p, long addr);
 
 long	realloc_region (MEMREGION *, long);
-long	_cdecl s_realloc (long);
+long	_cdecl sys_s_realloc (long);
 
 # ifdef DEBUG_INFO
 void DUMP_ALL_MEM (void);

@@ -36,7 +36,6 @@
 # include "console.h"
 # include "dev-mouse.h"
 # include "dosdir.h"
-# include "dosmem.h"
 # include "filesys.h"
 # include "info.h"
 # include "k_prot.h"

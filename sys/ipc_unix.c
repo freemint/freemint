@@ -4,7 +4,7 @@
  * This file implements the UNIX communication domain.
  * Neither MSG_OOB nor MSG_PEEK flags for send/recv
  * work on UNIX sockets. The getsockname/getpeername calls
- * are not implemented (the wouldn't make sense, because
+ * are not implemented (they wouldn't make sense, because
  * filenames can be relative to the process' current
  * directory).
  *
@@ -211,7 +211,7 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	/* To do the creat(), the user must have write access for the
 	 * directory containing the file.
 	 */
-	fd = f_create (undata->addr.sun_path, O_RDWR);
+	fd = sys_f_create (undata->addr.sun_path, O_RDWR);
 	if (fd < 0)
 	{
 		DEBUG (("unix: unix_bind: could not create file %s",
@@ -223,8 +223,8 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	 * Fxattr() is broken on Tosfs (the index field is junk).
 	 */
 	index = UN_INDEX (undata);
-	r = f_write (fd, sizeof (index), (char *) &index);
-	f_close (fd);
+	r = sys_f_write (fd, sizeof (index), (char *) &index);
+	sys_f_close (fd);
 
 	if (r >= 0 && r != sizeof (index))
 		r = EACCES;

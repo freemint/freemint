@@ -38,7 +38,7 @@
 # include "mint/ptrace.h"
 
 
-long _cdecl p_trace (short request, short pid, void *addr, long data);
+long _cdecl sys_p_trace (short request, short pid, void *addr, long data);
 
 
 # endif /* _ptrace_h */

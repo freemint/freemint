@@ -128,10 +128,10 @@ Func dos_tab [DOS_MAX] =
 	/* 0x011 */		sys_c_prnos,
 	/* 0x012 */		sys_c_auxis,
 	/* 0x013 */		sys_c_auxos,
-	/* 0x014 */		m_addalt,
-	/* 0x015 */		s_realloc,
-	/* 0x016 */		s_lbopen,	/* 1.15.3, MagiC 5 */
-	/* 0x017 */		s_lbclose,	/* 1.15.3, MagiC 5 */
+	/* 0x014 */		sys_m_addalt,
+	/* 0x015 */		sys_s_realloc,
+	/* 0x016 */		sys_s_lbopen,	/* 1.15.3, MagiC 5 */
+	/* 0x017 */		sys_s_lbclose,	/* 1.15.3, MagiC 5 */
 	/* 0x018 */		NULL,
 	/* 0x019 */		sys_d_getdrv,
 	/* 0x01a */		sys_f_setdta,
@@ -151,10 +151,10 @@ Func dos_tab [DOS_MAX] =
 	/* 0x027 */		NULL,
 	/* 0x028 */		NULL,
 	/* 0x029 */		NULL,
-	/* 0x02a */		t_getdate,
-	/* 0x02b */	(Func)	t_setdate,
-	/* 0x02c */		t_gettime,
-	/* 0x02d */	(Func)	t_settime,
+	/* 0x02a */		sys_t_getdate,
+	/* 0x02b */	(Func)	sys_t_setdate,
+	/* 0x02c */		sys_t_gettime,
+	/* 0x02d */	(Func)	sys_t_settime,
 	/* 0x02e */		NULL,
 	/* 0x02f */		sys_f_getdta,
 
@@ -170,22 +170,22 @@ Func dos_tab [DOS_MAX] =
 	/* 0x039 */		sys_d_create,
 	/* 0x03a */		sys_d_delete,
 	/* 0x03b */		sys_d_setpath,
-	/* 0x03c */	(Func)	f_create,
-	/* 0x03d */	(Func)	f_open,
-	/* 0x03e */	(Func)	f_close,
-	/* 0x03f */	(Func)	f_read,
+	/* 0x03c */	(Func)	sys_f_create,
+	/* 0x03d */	(Func)	sys_f_open,
+	/* 0x03e */	(Func)	sys_f_close,
+	/* 0x03f */	(Func)	sys_f_read,
 
-	/* 0x040 */	(Func)	f_write,
+	/* 0x040 */	(Func)	sys_f_write,
 	/* 0x041 */		sys_f_delete,
-	/* 0x042 */	(Func)	f_seek,
+	/* 0x042 */	(Func)	sys_f_seek,
 	/* 0x043 */		sys_f_attrib,
-	/* 0x044 */		m_xalloc,
-	/* 0x045 */	(Func)	f_dup,
-	/* 0x046 */	(Func)	f_force,
+	/* 0x044 */		sys_m_xalloc,
+	/* 0x045 */	(Func)	sys_f_dup,
+	/* 0x046 */	(Func)	sys_f_force,
 	/* 0x047 */		sys_d_getpath,
-	/* 0x048 */		m_alloc,
-	/* 0x049 */		m_free,
-	/* 0x04a */		m_shrink,
+	/* 0x048 */		sys_m_alloc,
+	/* 0x049 */		sys_m_free,
+	/* 0x04a */		sys_m_shrink,
 	/* 0x04b */		sys_pexec,
 	/* 0x04c */		sys_pterm,
 	/* 0x04d */		NULL,
@@ -199,12 +199,12 @@ Func dos_tab [DOS_MAX] =
 	/* 0x054 */		NULL,
 	/* 0x055 */		NULL,
 	/* 0x056 */		sys_f_rename,
-	/* 0x057 */	(Func)	f_datime,
+	/* 0x057 */	(Func)	sys_f_datime,
 	/* 0x058 */		NULL,
 	/* 0x059 */		NULL,
 	/* 0x05a */		NULL,
 	/* 0x05b */		NULL,
-	/* 0x05c */	(Func)	f_lock,
+	/* 0x05c */	(Func)	sys_f_lock,
 	/* 0x05d */		NULL,
 	/* 0x05e */		NULL,
 	/* 0x05f */		NULL,
@@ -378,17 +378,16 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0fd */		NULL,
 	/* 0x0fe */		NULL,
 
-	/*
-	 * MiNT extensions to GEMDOS
+	/* MiNT extensions to GEMDOS
 	 */
 
 	/* 0x0ff */		sys_s_yield,
 
 	/* 0x100 */		sys_pipe,
-	/* 0x101 */	(Func)	f_fchown,	/* 1.15.2  */
-	/* 0x102 */	(Func)	f_fchmod,	/* 1.15.2  */
+	/* 0x101 */	(Func)	sys_f_fchown,	/* 1.15.2  */
+	/* 0x102 */	(Func)	sys_f_fchmod,	/* 1.15.2  */
 	/* 0x103 */	(Func)	sys_fsync, 	/* 1.15.10 */
-	/* 0x104 */	(Func)	f_cntl,
+	/* 0x104 */	(Func)	sys_f_cntl,
 	/* 0x105 */		sys_f_instat,
 	/* 0x106 */		sys_f_outstat,
 	/* 0x107 */		sys_f_getchar,
@@ -402,29 +401,29 @@ Func dos_tab [DOS_MAX] =
 	/* 0x10f */		sys_pgetuid,
 
 	/* 0x110 */	(Func)	sys_psetuid,
-	/* 0x111 */	(Func)	p_kill,
-	/* 0x112 */	(Func)	p_signal,
+	/* 0x111 */	(Func)	sys_p_kill,
+	/* 0x112 */	(Func)	sys_p_signal,
 	/* 0x113 */		sys_pvfork,
 	/* 0x114 */		sys_pgetgid,
 	/* 0x115 */	(Func)	sys_psetgid,
-	/* 0x116 */		p_sigblock,
-	/* 0x117 */		p_sigsetmask,
+	/* 0x116 */		sys_p_sigblock,
+	/* 0x117 */		sys_p_sigsetmask,
 	/* 0x118 */		sys_p_usrval,
 	/* 0x119 */	(Func)	sys_p_domain,
 	/* 0x11a */		sys_psigreturn,
 	/* 0x11b */		sys_pfork,
 	/* 0x11c */		sys_pwait3,
-	/* 0x11d */	(Func)	f_select,
+	/* 0x11d */	(Func)	sys_f_select,
 	/* 0x11e */		sys_prusage,
 	/* 0x11f */	(Func)	sys_psetlimit,
 
 	/* 0x120 */		sys_t_alarm,
 	/* 0x121 */		sys_p_pause,
 	/* 0x122 */	(Func)	sys_s_ysconf,
-	/* 0x123 */		p_sigpending,
+	/* 0x123 */		sys_p_sigpending,
 	/* 0x124 */		sys_d_pathconf,
-	/* 0x125 */		p_msg,
-	/* 0x126 */	(Func)	f_midipipe,
+	/* 0x125 */		sys_p_msg,
+	/* 0x126 */	(Func)	sys_f_midipipe,
 	/* 0x127 */		sys_prenice,
 	/* 0x128 */		sys_d_opendir,
 	/* 0x129 */		sys_d_readdir,
@@ -439,10 +438,10 @@ Func dos_tab [DOS_MAX] =
 	/* 0x131 */		sys_f_chown,
 	/* 0x132 */		sys_f_chmod,
 	/* 0x133 */	(Func)	sys_p_umask,
-	/* 0x134 */		p_semaphore,
+	/* 0x134 */		sys_p_semaphore,
 	/* 0x135 */		sys_d_lock,
-	/* 0x136 */		p_sigpause,
-	/* 0x137 */	(Func)	p_sigaction,
+	/* 0x136 */		sys_p_sigpause,
+	/* 0x137 */	(Func)	sys_p_sigaction,
 	/* 0x138 */		sys_pgeteuid,
 	/* 0x139 */		sys_pgetegid,
 	/* 0x13a */		sys_pwaitpid,
@@ -452,7 +451,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x13e */		sys_enosys,		/* p_sigintr(), disabled as of 1.16.0 */
 	/* 0x13f */		sys_s_uptime,
 
-	/* 0x140 */	(Func)	p_trace,	/* 1.15.11 */
+	/* 0x140 */	(Func)	sys_p_trace,	/* 1.15.11 */
 	/* 0x141 */		sys_m_validate,	/* 1.15.11 */
 	/* 0x142 */		sys_d_xreaddir,
 	/* 0x143 */	(Func)	sys_pseteuid,
@@ -464,22 +463,22 @@ Func dos_tab [DOS_MAX] =
 	/* 0x149 */	(Func)	sys_t_setitimer,
 	/* 0x14a */		sys_d_chroot,	/* 1.15.3  */
 	/* 0x14b */		sys_f_stat64,	/* 1.15.4  */
-	/* 0x14c */	(Func)	f_seek64,	/* 1.15.10 */
-	/* 0x14d */		d_setkey,	/* 1.15.4  */
+	/* 0x14c */	(Func)	sys_f_seek64,	/* 1.15.10 */
+	/* 0x14d */		sys_d_setkey,	/* 1.15.4  */
  	/* 0x14e */	(Func)	sys_psetreuid,
  	/* 0x14f */	(Func)	sys_psetregid,
 
-	/* 0x150 */		s_ync,
+	/* 0x150 */		sys_s_ync,
 	/* 0x151 */		sys_s_hutdown,
 	/* 0x152 */		sys_d_readlabel,
 	/* 0x153 */		sys_d_writelabel,
-	/* 0x154 */		s_system,
-	/* 0x155 */		t_gettimeofday,
-	/* 0x156 */		t_settimeofday,
+	/* 0x154 */		sys_s_system,
+	/* 0x155 */		sys_t_gettimeofday,
+	/* 0x156 */		sys_t_settimeofday,
 	/* 0x157 */		sys_enosys,		/* t_adjtime */
 	/* 0x158 */		sys_pgetpriority,
 	/* 0x159 */		sys_psetpriority,
-	/* 0x15a */		f_poll,		/* 1.15.10 */
+	/* 0x15a */		sys_f_poll,		/* 1.15.10 */
 	/* 0x15b */	(Func)	sys_fwritev,	/* 1.16 */
 	/* 0x15c */	(Func)	sys_freadv,	/* 1.16 */
 	/* 0x15d */	(Func)	sys_ffstat,	/* 1.16 */

@@ -1,16 +1,16 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992,1994 Eric R. Smith.
  * All rights reserved.
- * 
+ *
  */
 
-/* dossig.c:: dos signal handling routines */
+/* dossig.c: dos signal handling routines */
 
 # include "dossig.h"
 
@@ -34,18 +34,18 @@
  */
 
 long _cdecl
-p_kill (short pid, short sig)
+sys_p_kill (short pid, short sig)
 {
 	PROC *p;
 	long r;
-	
+
 	TRACE (("Pkill(%d, %d)", pid, sig));
 	if (sig < 0 || sig >= NSIG)
 	{
 		DEBUG (("Pkill: signal out of range"));
 		return EBADARG;
 	}
-	
+
 	if (pid < 0)
 		r = killgroup (-pid, sig, 0);
 	else if (pid == 0)
@@ -58,29 +58,29 @@ p_kill (short pid, short sig)
 			DEBUG (("Pkill: pid %d not found", pid));
 			return ENOENT;
 		}
-		
+
 		if (curproc->p_cred->ucr->euid && curproc->p_cred->ruid != p->p_cred->ruid)
 		{
 			DEBUG (("Pkill: wrong user"));
 			return EACCES;
 		}
-		
+
 		/* if the user sends signal 0, don't deliver it -- for users,
 		 * signal 0 is a null signal used to test the existence of
 		 * a process
 		 */
 		if (sig != 0)
 			post_sig (p, sig);
-		
+
 		r = E_OK;
 	}
-	
+
 	if (r == E_OK)
 	{
 		check_sigs ();
 		TRACE (("Pkill: returning OK"));
 	}
-	
+
 	return r;
 }
 
@@ -92,25 +92,25 @@ p_kill (short pid, short sig)
  */
 
 long _cdecl
-p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
+sys_p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
 {
 	PROC *p = curproc;
-	
+
 	TRACE (("Psigaction(%d)", sig));
 	assert (p->p_sigacts);
-	
+
 	if (sig < 1 || sig >= NSIG)
 		return EBADARG;
-	
+
 	if (act && (sig == SIGKILL || sig == SIGSTOP))
 		return EACCES;
-	
+
 	if (oact)
 	{
 		*oact = SIGACTION(p, sig);
 		oact->sa_flags &= SAUSER;
 	}
-	
+
 	if (act)
 	{
 		struct sigaction *sigact = & SIGACTION(p, sig);
@@ -134,7 +134,7 @@ p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
 		/* I dunno if this is right, but bash seems to expect it */
 		p->p_sigmask &= ~(1L << sig);
 	}
-	
+
 	return E_OK;
 }
 
@@ -142,47 +142,47 @@ p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
  * set a user-specified signal handler
  */
 long _cdecl
-p_signal (short sig, long handler)
+sys_p_signal (short sig, long handler)
 {
 	PROC *p = curproc;
 	struct sigaction *sigact;
 	long ret;
-	
+
 	TRACE (("Psignal(%u, %lx [%lx])", sig, handler, p->p_sigacts));
 	assert (p->p_sigacts && p->p_sigacts->links > 0);
-	
+
 	if (sig < 1 || sig >= NSIG)
 	{
 		ret = EBADARG;
 		goto out;
 	}
-	
+
 	if (sig == SIGKILL || sig == SIGSTOP)
 	{
 		ret = EACCES;
 		goto out;
 	}
-	
+
 	sigact = & SIGACTION(p, sig);
 	TRACE (("Psignal() sigact = %lx", sigact));
-	
+
 	/* save old value for return */
 	ret = sigact->sa_handler;
-	
+
 	sigact->sa_handler = handler;
 	sigact->sa_mask = 0;
 	sigact->sa_flags = 0;
-	
+
 	/* various special things that should happen */
 	if (handler == SIG_IGN)
 	{
 		/* discard pending signals */
 		p->sigpending &= ~(1L<<sig);
 	}
-	
+
 	/* I dunno if this is right, but bash seems to expect it */
 	p->p_sigmask &= ~(1L<<sig);
-	
+
 out:
 	TRACE (("Psignal() ok (%li)", ret));
 	return ret;
@@ -192,19 +192,19 @@ out:
  * block some signals. Returns the old signal mask.
  */
 long _cdecl
-p_sigblock (ulong mask)
+sys_p_sigblock (ulong mask)
 {
 	PROC *p = curproc;
 	ulong oldmask;
 
 	TRACE (("Psigblock(%lx)",mask));
-	
+
 	/* some signals (e.g. SIGKILL) can't be masked */
 	mask &= ~(UNMASKABLE);
-	
+
 	oldmask = p->p_sigmask;
 	p->p_sigmask |= mask;
-	
+
 	return oldmask;
 }
 
@@ -214,19 +214,19 @@ p_sigblock (ulong mask)
  * Returns the old mask.
  */
 long _cdecl
-p_sigsetmask (ulong mask)
+sys_p_sigsetmask (ulong mask)
 {
 	PROC *p = curproc;
 	ulong oldmask;
 
 	TRACE (("Psigsetmask(%lx)",mask));
-	
+
 	oldmask = p->p_sigmask;
 	p->p_sigmask = mask & ~(UNMASKABLE);
-	
+
 	/* maybe we unmasked something */
 	check_sigs ();
-	
+
 	return oldmask;
 }
 
@@ -234,12 +234,12 @@ p_sigsetmask (ulong mask)
  * p_sigpending: return which signals are pending delivery
  */
 long _cdecl
-p_sigpending (void)
+sys_p_sigpending (void)
 {
 	PROC *p = curproc;
-	
+
 	TRACE (("Psigpending()"));
-	
+
 	/* clear out any that are going to be delivered soon */
 	check_sigs ();
 
@@ -254,27 +254,27 @@ p_sigpending (void)
  * Some signals (e.g. SIGKILL) can't be masked.
  */
 long _cdecl
-p_sigpause (ulong mask)
+sys_p_sigpause (ulong mask)
 {
 	PROC *p = curproc;
 	ulong oldmask;
 
 	TRACE(("Psigpause(%lx)", mask));
-	
+
 	oldmask = p->p_sigmask;
 	p->p_sigmask = mask & ~(UNMASKABLE);
-	
+
 	if (p->sigpending & ~(p->p_sigmask))
 		/* a signal is immediately pending */
 		check_sigs ();
 	else
 		sleep (IO_Q, -1L);
-	
+
 	p->p_sigmask = oldmask;
-	
+
 	/* maybe we unmasked something */
 	check_sigs();
-	
+
 	TRACE(("Psigpause: returning OK"));
 	return E_OK;
 }
