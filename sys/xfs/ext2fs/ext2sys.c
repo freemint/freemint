@@ -576,7 +576,7 @@ e_mkdir (fcookie *dir, const char *name, unsigned mode)
 		return EMLINK;
 	
 	if (ext2_search_entry (dirc, name, namelen))
-		return EACCES;
+		return EEXIST;
 	
 	inode = ext2_new_inode (dirc, EXT2_IFDIR, &err);
 	if (!inode)
@@ -865,6 +865,7 @@ e_creat (fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc)
 	COOKIE *dirc = (COOKIE *) dir->index;
 	COOKIE *inode;
 	
+	long namelen = strlen (name);
 	long err = EIO;
 	
 	
@@ -876,6 +877,9 @@ e_creat (fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc)
 	if (IS_IMMUTABLE (dirc))
 		return EACCES;
 	
+	if (ext2_search_entry (dirc, name, namelen))
+		return EEXIST;
+	
 	inode = ext2_new_inode (dirc, mode, &err);
 	if (!inode)
 		return err;
@@ -885,7 +889,7 @@ e_creat (fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc)
 		ext2_d2 *de;
 		UNIT *u;
 		
-		u = ext2_add_entry (dirc, name, strlen (name), &de, &err);
+		u = ext2_add_entry (dirc, name, namelen, &de, &err);
 		if (!u)
 		{
 			inode->in.i_links_count = cpu2le16 (le2cpu16 (inode->in.i_links_count) - 1);
@@ -1655,7 +1659,7 @@ e_symlink (fcookie *dir, const char *name, const char *to)
 		return EACCES;
 	
 	if (ext2_search_entry (dirc, name, namelen))
-		return EACCES;
+		return EEXIST;
 	
 	if (tolen > EXT2_BLOCK_SIZE (dirc->s))
 		return EACCES;
@@ -1840,10 +1844,17 @@ e_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char *
 	
 	/* add name to directory */
 	{
+		long tonamelen = strlen (toname);
 		ext2_d2 *de;
 		UNIT *u;
 		
-		u = ext2_add_entry (todirc, toname, strlen (toname), &de, &err);
+		if (ext2_search_entry (todirc, toname, tonamelen))
+		{
+			err = EEXIST;
+			goto out;
+		}
+		
+		u = ext2_add_entry (todirc, toname, tonamelen, &de, &err);
 		if (!u)
 			goto out;
 		
@@ -2188,6 +2199,9 @@ int ext2_mknod (struct inode * dir, struct dentry *dentry, int mode, int rdev)
 	struct ext2_dir_entry_2 * de;
 	int err = -EIO;
 
+	if (ext2_search_entry (dirc, name, namelen))
+		return EEXIST;
+	
 	err = -ENAMETOOLONG;
 	if (dentry->d_name.len > EXT2_NAME_LEN)
 		goto out;
