@@ -1177,7 +1177,11 @@ button_timeout(struct proc *p, long arg)
 			DIAGS(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) ));
-
+#if 0
+			display("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
+				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
+				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) );
+#endif			
 			vq_key_s(C.vh, &md.kstate);
 
 			new_moose_pkt(0, 0, &md);
