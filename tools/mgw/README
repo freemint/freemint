@@ -4,6 +4,16 @@ Draconis to MiNT-Net gateway
 Feedback, bugreports, suggestions and any other constructive comment
 is strongly recommended. Please send it as e-mail to me.
 
+Version 0.33b
+-------------
+- Updated select
+- New Usage info
+
+Version 0.32b
+-------------
+- --disable-system-resolve disables the MiNT internal DNS query
+  in combination with --dns1= this enables the asynchronous, non-blocking
+  query of the DNS by DRACONIS applications. 
 
 Version 0.21
 ------------
