@@ -1210,7 +1210,12 @@ obj_ed_char(XA_TREE *wt,
 	DIAG((D_objc, NULL, "ed_char keycode=0x%04x", keycode));
 
 	switch (keycode)
-	{	
+	{
+	case 0x0000:
+	{
+		update = false;
+		break;
+	}	
 	case 0x011b:	/* ESCAPE clears the field */
 	{
 		txt[0] = '\0';
@@ -1397,7 +1402,7 @@ obj_ed_char(XA_TREE *wt,
 		break;
 	}
 	}
-	ei->pos = cursor_pos; //wt->e.pos = cursor_pos;
+	ei->pos = cursor_pos;
 	return update;
 }
 
@@ -1465,7 +1470,7 @@ obj_ED_INIT(struct widget_tree *wt,
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
 		ei->pos = pos;
-		DIAGS(("ED_INIT: te_ptext='%s', %lx", ted->te_ptext, (long)ted->te_ptext));
+		DIAGS(("ED_INIT: type %d, te_ptext='%s', %lx", obtree[obj].ob_type, ted->te_ptext, (long)ted->te_ptext));
 		ret = 1;
 	}
 	else
@@ -1516,111 +1521,230 @@ obj_edit(XA_TREE *wt,
 	if (wt->e.obj != -1 && wt->e.obj > last)
 		wt->e.obj = -1;
 
-	switch (func)
+	if (!wt->owner->options.xa_objced)
 	{
-		case ED_INIT:
+		switch (func)
 		{
-			ei = &wt->e;
-			hidem();
-			if (ei->obj >= 0)
-				undraw_objcursor(wt);
-
-			if (!obj_ED_INIT(wt, ei, obj, -1, last, NULL, &old_ed_obj))
-				disable_objcursor(wt);
-			else
+			case ED_INIT:
 			{
-				enable_objcursor(wt);
-				draw_objcursor(wt);
-			}
-			showm();
-			pos = ei->pos;
-			break;
-		}
-		case ED_END:
-		{
-			/* Ozk: Just turn off cursor :)
-			 */
-			if (wt->e.obj > 0)
+				hidem();
+				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+				eor_objcursor(wt, rl);
+				showm();
 				pos = wt->e.pos;
-
-			hidem();
-			disable_objcursor(wt);
-			showm();
-			break;
-		}
-		case ED_CHAR:
-		{
-			/* Ozk:
-			 * Hmm... we allow to edit objects other than the one in wt->e.obj.
-			 * However, how should we act here when that other object is not an
-			 * editable? Use the wt->e.obj or return with error?
-			 * For now we return with error.
-			 */
-
-			hidem();
-			if ( wt->e.obj == -1 ||
-			     obj != wt->e.obj)
+				break;
+			}
+			case ED_END:
 			{
-				struct objc_edit_info lei;
-
-				/* Ozk:
-				 * If the object is not initiated, or if its different
-				 * from the object holding cursor focus, we do it like this;
+				/* Ozk: Just turn off cursor :)
 				 */
-				DIAGS((" -- obj_edit: on object=%d without cursor focus(=%d)",
-					obj, wt->e.obj));
-				lei.obj = -1;
-				lei.pos = 0;
-				lei.c_state = 0;
-				
-				if (obj_ED_INIT(wt, &lei, obj, -1, last, &ted, &old_ed_obj))
+				if (wt->e.obj > 0)
 				{
-					if (obj_ed_char(wt, &lei, ted, keycode))
-						obj_draw(wt, obj, rl);
-
-					pos = lei.pos;
+					pos = wt->e.pos;
 				}
+				hidem();
+				eor_objcursor(wt, rl);
+				showm();
+				break;
 			}
-			else
+			case ED_CHAR:
 			{
-				/* Ozk:
-				 * Object is the one with cursor focus, so we do it normally
-				 */
-				ted = object_get_tedinfo(obtree + obj);
-				ei = &wt->e;
+				hidem();
+				if ( wt->e.obj == -1 ||
+				     obj == -1 ||
+				     obj != wt->e.obj)
+				{
+					/* Ozk:
+					 * I am not sure if this is correct, but if ED_INIT have not been
+					 * called before ED_CHAR, we get passed an object value of -1.
+					 * If so, we search for for the first editable object in the
+					 * obtree and perform edit on that one. This fixes BoinkOut2's
+					 * 'set timing value' dialog. Wondering if we should do automatic
+					 * ED_INIT in this case.... ?
+					 * 
+					 */
 
-				DIAGS((" -- obj_edit: ted=%lx", ted));
+					if (obj == -1)
+					{
+						obj = wt->e.obj;
+						if (obj == -1)
+							obj = ob_find_next_any_flag(obtree, 0, OF_EDITABLE);
+					}
+					if (obj_ED_INIT(wt, &wt->e, obj, pos, last, &ted, &old_ed_obj))
+					{
+						eor_objcursor(wt, rl);
+						if (obj_ed_char(wt, &wt->e, ted, keycode))
+							obj_draw(wt, wt->e.obj, rl);
+						eor_objcursor(wt, rl);
+						pos = wt->e.pos;
+					}
+				}
+				else
+				{
+					/* Ozk:
+					 * Object is the one with cursor focus, so we do it normally
+					 */
+					ted = object_get_tedinfo(obtree + obj);
+					ei = &wt->e;
 
-				undraw_objcursor(wt);
-				if (obj_ed_char(wt, ei, ted, keycode))
-					obj_draw(wt, obj, rl);
-				set_objcursor(wt);
-				draw_objcursor(wt);
-				pos = ei->pos;
+					DIAGS((" -- obj_edit: ted=%lx", ted));
+
+					eor_objcursor(wt, rl);
+					if (obj_ed_char(wt, ei, ted, keycode))
+						obj_draw(wt, obj, rl);
+					eor_objcursor(wt, rl);
+					pos = ei->pos;
+				}
+				showm();
+				break;
 			}
-			showm();
-			break;
-		}
-		case ED_CRSR:
-		{
+			case ED_CRSR:
+			{
 #if 0
-			/* TODO: x coordinate -> cursor position conversion */
+				/* TODO: x coordinate -> cursor position conversion */
 
-			/* TODO: REMOVE: begin ... ED_INIT like position return */
-			if (*(ted->te_ptext) == '@')
-				wt->e.pos = 0;
-			else
-				wt->e.pos = strlen(ted->te_ptext);
-			/* TODO: REMOVE: end */
+				/* TODO: REMOVE: begin ... ED_INIT like position return */
+				if (*(ted->te_ptext) == '@')
+					wt->e.pos = 0;
+				else
+					wt->e.pos = strlen(ted->te_ptext);
+				/* TODO: REMOVE: end */
 #endif
-			return 0;
-			break;
-		}
-		default:
-		{
-			return 0;
+				return 1;
+				break;
+			}
+			default:
+			{
+				return 0;
+			}
 		}
 	}
+	else
+	{
+		switch (func)
+		{
+			case ED_INIT:
+			{
+				ei = &wt->e;
+				hidem();
+				if (ei->obj >= 0)
+					undraw_objcursor(wt, rl);
+
+				if (!obj_ED_INIT(wt, ei, obj, -1, last, NULL, &old_ed_obj))
+					disable_objcursor(wt, rl);
+				else
+				{
+					enable_objcursor(wt);
+					draw_objcursor(wt, rl);
+				}
+				showm();
+				pos = ei->pos;
+				break;
+			}
+			case ED_DISABLE:
+			case ED_END:
+			{
+				/* Ozk: Just turn off cursor :)
+				 */
+				if (wt->e.obj > 0)
+					pos = wt->e.pos;
+
+				hidem();
+				disable_objcursor(wt, rl);
+				showm();
+				break;
+			}
+			case ED_ENABLE:
+			{
+				enable_objcursor(wt);
+				break;
+			}
+			case ED_CRSROFF:
+			{
+				undraw_objcursor(wt, rl);
+				break;
+			}
+			case ED_CRSRON:
+			{
+				draw_objcursor(wt, rl);
+				break;
+			}
+			case ED_CHAR:
+			{
+				/* Ozk:
+				 * Hmm... we allow to edit objects other than the one in wt->e.obj.
+				 * However, how should we act here when that other object is not an
+				 * editable? Use the wt->e.obj or return with error?
+				 * For now we return with error.
+				 */
+
+				hidem();
+				if ( wt->e.obj == -1 ||
+				     obj == -1 ||
+				     obj != wt->e.obj)
+				{
+					struct objc_edit_info lei;
+
+					/* Ozk:
+					 * If the object is not initiated, or if its different
+					 * from the object holding cursor focus, we do it like this;
+					 */
+					DIAGS((" -- obj_edit: on object=%d without cursor focus(=%d)",
+						obj, wt->e.obj));
+					lei.obj = -1;
+					lei.pos = 0;
+					lei.c_state = 0;
+				
+					if (obj_ED_INIT(wt, &lei, obj, -1, last, &ted, &old_ed_obj))
+					{
+						if (obj_ed_char(wt, &lei, ted, keycode))
+							obj_draw(wt, obj, rl);
+
+						pos = lei.pos;
+					}
+				}
+				else
+				{
+					/* Ozk:
+					 * Object is the one with cursor focus, so we do it normally
+					 */
+					ted = object_get_tedinfo(obtree + obj);
+					ei = &wt->e;
+
+					DIAGS((" -- obj_edit: ted=%lx", ted));
+
+					undraw_objcursor(wt, rl);
+					if (obj_ed_char(wt, ei, ted, keycode))
+						obj_draw(wt, obj, rl);
+					set_objcursor(wt);
+					draw_objcursor(wt, rl);
+					pos = ei->pos;
+				}
+				showm();
+				break;
+			}
+			case ED_CRSR:
+			{
+#if 0
+				/* TODO: x coordinate -> cursor position conversion */
+
+				/* TODO: REMOVE: begin ... ED_INIT like position return */
+				if (*(ted->te_ptext) == '@')
+					wt->e.pos = 0;
+				else
+					wt->e.pos = strlen(ted->te_ptext);
+			/* TODO: REMOVE: end */
+#endif
+				return 1;
+				break;
+			}
+			default:
+			{
+				return 0;
+			}
+		}
+	}
+	
 		
 	if (ret_pos)
 		*ret_pos = pos;

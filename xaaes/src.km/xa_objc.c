@@ -282,20 +282,21 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 		assert(wt);
 
 		pb->intout[0] = obj_edit(wt,
-					  pb->intin[3],		/* function	*/
-					  pb->intin[0],		/* object	*/
-					  pb->intin[1],		/* key		*/
-					  pb->intin[2],		/* pos		*/
-					  true,			/* redraw flag	*/
-					  NULL,			/* rect list	*/
-					  &pb->intout[1],	/* new pos	*/
-					  NULL);		/* new obj	*/
+					 pb->intin[3],		/* function	*/
+					 pb->intin[0],		/* object	*/
+					 pb->intin[1],		/* key		*/
+					 pb->intin[2],		/* pos		*/
+					 false,			/* redraw flag	*/
+					 NULL,			/* rect list	*/
+					 &pb->intout[1],	/* new pos	*/
+					 NULL);			/* new obj	*/
 	}
 	else
 		pb->intout[0] = 0;
 
 	DIAG((D_form, client, "objc_edit exit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
+
 	return XAC_DONE;
 }
 

@@ -67,6 +67,9 @@ Set_form_do(struct xa_client *client,
 	 * If the first obj_edit call fails, we call it again passing the
 	 * object it returned, which obj_edit() looked up. See obj_edit()
 	 */
+	if (edobj == -2)
+		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
+
 	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &new_obj))
 		obj_edit(wt, ED_INIT, new_obj, 0, -1, false, NULL, NULL, NULL);
 
@@ -100,7 +103,7 @@ create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WI
 
 	kind |= (TOOLBAR | USE_MAX);
 	wind = create_window(lock,
-			     do_winmesag, //handle_form_window,
+			     do_winmesag,
 			     do_formwind_msg,
 			     client,
 			     nolist,
@@ -164,40 +167,23 @@ Setup_form_do(struct xa_client *client,
 		wt->zen = false; //true;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h); //wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 	}
-#if 1
 	/*
 	 * Should this client do classic blocking form_do's?
 	 */
-	else if (C.update_lock == client) //client->fmd.lock)
+	else if (C.update_lock == client)
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
 		Set_form_do(client, obtree, edobj);
 		wt = client->fmd.wt;
 		goto okexit;
 	}
-#endif
 	/*
 	 * First time this client does a form_do/dial, do some preps
 	 */
 	else
 	{
 		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
-#if 0
-		RECT r;
 
-		DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
-		ob_area(obtree, 0, &r);
-
-		client->fmd.r = calc_window(lock,
-					    client,
-					    WC_BORDER,
-					    kind,
-					    MG,
-					    0,
-					    C.Aes->options.thinwork,
-					    r);
-
-#endif
 		if (!client->options.xa_nomove)
 			kind |= MOVER;
 
@@ -217,49 +203,10 @@ Setup_form_do(struct xa_client *client,
 			wt->zen = false;
 		}
 		else
-			return false;
-#if 0
-		bool nolist = false;
-		RECT r = client->fmd.r;
-
-		DIAGS(("Setup_form_do: create window"));
-
-		if (C.update_lock && C.update_lock == client)
-		{
-			kind |= STORE_BACK;
-			nolist = true;
-		}
-
-		kind |= (TOOLBAR | USE_MAX);
-		wind = create_window(lock,
-				     do_winmesag, //handle_form_window,
-				     do_formwind_msg,
-				     client,
-				     nolist,
-				     kind,
-				     client->fmd.state ? created_for_FMD_START : created_for_FORM_DO,
-				     MG,
-				     0, //C.Aes->options.thinframe,
-				     C.Aes->options.thinwork,
-				     r,
-				     NULL,
-				     NULL);
-		if (wind)
-		{
-			client->fmd.wind = wind;
-			wt = set_toolbar_widget(lock, wind, obtree, edobj);
-			wt->zen = false;
-		}
-		else
 		{
 			client->fmd.wind = NULL;
-		/* XXX - Ozk:
-		 *     Force a classic formdo here if allocating resources for a 
-		 *     window fails... on the todo list
-		 */
 			return false;
 		}
-#endif
 	}
 okexit:
 	DIAGS(("Key_form_do: returning - edobj=%d, wind %lx",
@@ -456,12 +403,17 @@ form_cursor(XA_TREE *wt,
 	/* At last this piece of code is on the right spot.
 	 * This is important! Now I know that bug fixes in here are good enough for all cases.
 	 */
+
+#if 0
+	/* Big mistake - it is up to the apps themselves to actually move the cursor
+	 */
 	if (o >= 0 && o != obj)
 	{	
 		/* If edit field has changed, update the screen */
 		obj_edit(wt, ED_END, 0, 0, 0, redraw, rl, NULL, NULL);
 		obj_edit(wt, ED_INIT, o, 0, -1, redraw, rl, NULL, NULL);
 	}
+#endif
 	return o;
 }
 /*
@@ -493,7 +445,7 @@ form_keyboard(XA_TREE *wt,
 	/*
 	 * Cursor?
 	 */
-	if (wt->e.obj >= 0)
+	if (wt->owner->options.xa_objced && wt->e.obj >= 0)
 		next_obj = wt->e.obj;
 	else
 		next_obj = obj;
@@ -556,7 +508,7 @@ form_keyboard(XA_TREE *wt,
 				next_obj = obj;
 #endif
 		}
-		else if (keycode !=0x1c0d && keycode != 0x720d)
+		else if (keycode != 0x1c0d && keycode != 0x720d)
 			next_key = keycode;
 	}
 
@@ -593,6 +545,9 @@ Exit_form_do( struct xa_client *client,
 	if (wind)
 	{
 #if 0
+		/* XXX - Ozk: complete this someday, having most XaAES-controlled
+		 *	 dialog-windows using the same exit code..
+		 */
 		if (wind == client->alert)
 		{
 			client->alert == NULL;
@@ -649,41 +604,6 @@ Exit_form_do( struct xa_client *client,
 		client->waiting_pb->intout[0] = fr->obj | fr->dblmask;
 	client->usr_evnt = 1;
 }
-#if 0
-/*
- * XXX - Ozk:
- *     Redo this as soon as possible!
- */
-void
-XA_form_exit( struct xa_client *client,
-	      struct xa_window *wind,
-	      XA_TREE *wt,
-	      struct fmd_result *fr)
-{
-	
-	if (os != -1)
-	{
-		wt->tree[f].ob_state = os;
-		redraw_object(lock, wt, f);
-	}
-	wt->which = 0;			/* After redraw of object. :-) */
-	wt->current = f|dbl;		/* pass the double click to the internal handlers as well. */
-	wt->exit_handler(lock, wt);	/* XaAES application point of view. */
-}	
-
-void
-exit_toolbar(struct xa_client *client,
-	     struct xa_window *wind,
-	     XA_TREE *wt,
-	     struct fmd_result *fr)
-{
-	if (wind->send_message)
-		wind->send_message(lock, wind, NULL, AMQ_NORM,
-				   WM_TOOLBAR, 0, 0, wind->handle,
-				   f, dbl ? 2 : 1, widg->k, 0);
-}
-#endif
-
 /*
  * WidgetBehaviour()
  * Return is used by do_widgets() to check if state of obj is
@@ -874,6 +794,11 @@ Key_form_do(enum locks lock,
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
 					wt->e.obj, wt->e.pos));
 			}
+			else if (wt->e.obj != fr.obj)
+			{
+				obj_edit(wt, ED_END, 0, 0, 0, true, rl, NULL, NULL);
+				obj_edit(wt, ED_INIT, fr.obj, 0, -1, true, rl, NULL, NULL);
+			}
 		}
 		else
 		{
@@ -1009,7 +934,15 @@ do_formwind_msg(
 		{
 		case WM_REDRAW:
 		{
+			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
+			{
+				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, wind->rect_start, NULL, NULL);
+			}
 			dfwm_redraw(wind, wt, (RECT *)&msg[4]);
+			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
+			{
+				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, wind->rect_start, NULL, NULL);
+			}
 			break;
 		}
 		case WM_MOVED:

@@ -142,6 +142,27 @@ new_active_widget_mouse(struct moose_data *md)
 	widget_active.m	= *md;
 }
 
+static void
+modify_md(struct moose_data *md)
+{
+	if (cfg.lrmb_swap)
+	{
+		short ns = 0, ncs = 0;
+
+		if (md->state & MBS_RIGHT)
+			ns |= MBS_LEFT;
+		if (md->state & MBS_LEFT)
+			ns |= MBS_RIGHT;
+
+		if (md->cstate & MBS_RIGHT)
+			ncs |= MBS_LEFT;
+		if (md->cstate & MBS_LEFT)
+			ncs |= MBS_RIGHT;
+
+		md->state = ns, md->cstate = ncs;
+	}
+}
+
 static bool
 add_md(struct moose_data *md)
 {
@@ -1023,6 +1044,7 @@ adi_button(struct adif *a, struct moose_data *md)
 	 * but I dont think it is safe. So we get that in button_timeout()
 	 * instead. Eventually, moose.adi will provide this info...
 	 */
+	modify_md(md);
 	add_md(md);
 	new_mu_mouse(md);
 	new_active_widget_mouse(md);
