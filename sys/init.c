@@ -76,9 +76,6 @@
 # endif
 
 
-/* if the user is holding down the magic shift key, we ask before booting */
-# define MAGIC_SHIFT	0x2		/* left shift */
-
 /* magic number to show that we have captured the reset vector */
 # define RES_MAGIC	0x31415926L
 # define EXEC_OS	0x4feL
@@ -509,7 +506,7 @@ static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 void
 init (void)
 {
-	long newstamp, pause, r, *sysbase;
+	long r, *sysbase;
 	FILEPTR *f;
 
 	/* greetings (placed here 19960610 cpbs to allow me to get version
@@ -567,25 +564,7 @@ init (void)
 	}
 
 	/* Ask the user if s/he wants to boot MiNT */
-	boot_print(MSG_init_askmenu);
-
-	pause = (TRAP_Tgettime() & 0x1fL) + 2;		/* 4 second pause */
-	if (pause > 29)
-		pause -= 29;
-
-	do
-	{
-		newstamp = TRAP_Tgettime() & 0x1fL;
-
-		if ((TRAP_Kbshift (-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
-		{
-			long yn = boot_kernel_p ();
-			if (!yn)
-				TRAP_Pterm0 ();
-			newstamp = pause;
-		}
-	}
-	while (newstamp != pause);
+	pause_and_ask();
 
 	boot_print("\r\n");
 
