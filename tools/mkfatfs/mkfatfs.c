@@ -1,9 +1,9 @@
 /*
+ * $Id$
+ * 
  * Filename:     mkfatfs.c
- * Version:      0.23
  * Author:       Frank Naumann
  * Started:      1998-08-01
- * Last Updated: 2000-06-14
  * Target O/S:   TOS
  * Description:  Utility to allow an FAT filesystem to be created.
  * 
@@ -13,7 +13,7 @@
  * This program is a mostly rewritten version of
  * David Hudson's "mkdosfs".
  * 
- * Copying:      Copyright 1998 Frank Naumann <fnaumann@freemint.de>
+ * Copying: Copyright 1998 Frank Naumann <fnaumann@freemint.de>
  * 
  * Portions copyright 1993, 1994 David Hudson (dave@humbug.demon.co.uk)
  * Portions copyright 1992, 1993 Remy Card (card@masi.ibp.fr)
@@ -97,7 +97,7 @@ extern int optind;
 # include "bswap.h"
 
 
-# define VERSION	"0.25"
+# define VERSION	"0.26"
 # define DEBUG(x)	printf x
 # define INLINE		static inline
 
@@ -1007,13 +1007,13 @@ setup_tables (void)
 	{
 		printf ("Logical informations about partition %c:\n", 'A' + DRV);
 		printf ("---------------------------------------\n");
-		printf ("Media descriptor    : 0x%02x\n", (unsigned int) BOOT.media);
+		printf ("Media descriptor    : 0x%02x\n", (unsigned int)(BOOT.media));
 		printf ("logical sector size : %ld\n", SECSIZE);
-		printf ("sectors per cluster : %ld\n", (long) (BOOT.cluster_size));
-		printf ("clustersize         : %ld\n", (long) (BOOT.cluster_size) * SECSIZE);
-		printf ("number of FATs      : %ld\t\t(%ld bit wide)\n", (long) (BOOT.fats), (long) FTYPE);
-		printf ("sectors per FAT     : %ld\t(%8ld kb)\n", FATSIZE, (FATSIZE * SECSIZE) / 1024);
-		printf ("number of cluster   : %ld\t(%8ld kb)\n", cluster_count, (cluster_count * (long) (BOOT.cluster_size) * SECSIZE) / 1024);
+		printf ("sectors per cluster : %ld\n", (long)(BOOT.cluster_size));
+		printf ("clustersize         : %ld\n", (long)(BOOT.cluster_size) * SECSIZE);
+		printf ("number of FATs      : %ld\t\t(%ld bit wide)\n", (long)(BOOT.fats), (long)FTYPE);
+		printf ("sectors per FAT     : %ld\t(%8qd kb)\n", FATSIZE, ((long long)FATSIZE * SECSIZE) / 1024);
+		printf ("number of cluster   : %ld\t(%8qd kb)\n", cluster_count, ((long long)cluster_count * BOOT.cluster_size * SECSIZE) / 1024);
 		printf ("Volume ID           : %08lx\n", vol_id);
 		
 		if (memcmp (VOL_NAME, "           ", 11) != 0)
