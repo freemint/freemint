@@ -69,6 +69,9 @@
 	.globl	_unwound_stack
 	.globl	_check_sigs
 
+	.globl	_old_trap2
+	.globl	_mint_trap2
+
 	.globl	_curproc
 	.globl	_bios_tab,_bios_max
 	.globl	_xbios_tab,_xbios_max,_old_xbios
@@ -254,7 +257,8 @@ pok:
 
 // _curproc is already in a0 here
 
-sk:	clr.w	-(sp)			// no frame format needed
+sk:	bset	#0x07,_in_kernel
+	clr.w	-(sp)			// no frame format needed
 	pea	4(a0)			// push pointer to syscall context save
 	jsr	_build_context
 	lea	_xbios_tab,a5		// set syscall_tab
@@ -271,7 +275,7 @@ sk:	clr.w	-(sp)			// no frame format needed
 	move.l	8(a1),-(sp)
 	move.l	4(a1),-(sp)
 	move.l	(a1),-(sp)
-	bset	#0x07,_in_kernel
+	//bset	#0x07,_in_kernel
 	bra	_syscall
 
 // For Dsp_LodToBinary(), Dsp_LoadProg()
@@ -436,7 +440,9 @@ L_noflush:
 	addq.w	#2,sp			// pop function number off stack
 	move.l	d0,a0
 	jsr	(a0)			// go do the call
-out:
+
+out:	moveq	#0,d2			// Flag - if clear, check if we should preemtp
+out_select:				// enter here with preempt selection in D2
 	move.l	_curproc,a0
 	move.l	d0,P_SYSCTXT+C_D0(a0)	// set d0 in the saved context
 	move.w	P_SYSCTXT+C_SR(a0),d0	// get saved status register
@@ -447,6 +453,8 @@ out:
 	and.w	#0xc000,d1		// are either of the trace bits set
 	sne	P_SYSCTXT+C_PTRACE(a0)	// mark as trace pending/not
 notrace:
+	tst.w	d2			// If D2 set, dont preemtp
+	bne.s	nosleep
 	tst.w	_proc_clock		// has process exceeded time slice?
 	bne.s	nosleep 		// no -- continue
 	btst	#13,d0			// caller in supervisor mode?
@@ -526,10 +534,140 @@ new_dev:
 
 error:	cmp.l	#_xbios_tab,a5
 	bne.s	enosys
-	trap	#14			// XXX trap#14 here??? -> go over _trap_14_emu
+	//trap	#14			// XXX trap#14 here??? -> go over _trap_14_emu
+	jsr	_trap_14_emu
 	bra	out
 enosys:	moveq	#-32,d0	// ENOSYS
 	bra	out
+
+_vdi_handler:
+	dc.l	0
+_aes_handler:
+	dc.l	0
+_gdos_version:
+	dc.l	0
+
+// ***********************
+// * AES/VDI trap handler *
+// ***********************
+//
+// The VDI intitialization needs to put the GDOS version at symbol
+// gdos_version, because this trap handler returns what is at that
+// symbol when a handler is installed in vdi_handler
+//
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_trap2:
+	dc.l	0
+_mint_trap2:
+
+#ifdef SYSCALL_REENTRANT
+//
+// see at symbol reentrant_trap for a detailed explanation
+//
+	tst.w	_in_kernel
+	beq.s	norm_trap2
+
+	movem.l	d1-d7/a0-a6,-(sp)
+	lea	((7+7)*4)(sp),a0
+	bra	reentrant_trap2
+
+norm_trap2:
+
+#else
+
+// Non-reentrant syscall handler
+//
+// if we are in kernel we simply jump to the old vector
+// this allow direct trapping from kernel (not done from the
+// kernel itself anymore)
+
+	tst.w	_in_kernel
+	bne.s	rom_trap2
+#endif
+	bset	#0x07,_in_kernel
+	// The AES/VDI passes parameters in D0/D1, so we do not touch
+	// them registers..
+	clr.w	-(sp)
+	move.l	_curproc,-(sp)
+	addq.l	#4,(sp)
+	jsr	_build_context
+
+	// A1 set to callers stack by build_context
+	move.l	_curproc,a0
+	move.l	(a0),sp			// fetch our systemstack
+	move.w	6(a0),d0		// D0.w saved by build_context, function code (AES or VDI)
+	move.l	8(a0),d1		// AES/VDI pb
+	cmp.w	#115,d0			// VDI?
+	beq	enter_vdi
+	cmp.w	#200,d0			// AES?
+	beq	enter_aes
+	cmp.w	#201,d0			// appl_yield()?
+	beq	enter_aes		// or should this be its own function ?
+
+	// some VDI special cases, must be prepared by any VDI module ..
+	cmp.w	#-2,d0			// Query GDOS version
+	beq	trap2_gdosvers
+	cmp.w	#-1,d0			// This returns the address of the VDI handler
+	beq	trap2_vdihandler
+	
+	// What to do with trap 2 calls we dont know?
+	// for now just noting..
+trap2_out:
+	moveq	#1,d2			// Dont preempt -- some things are messed up if we do
+	bra	out_select		// after calling old vectors. Gotta experiment much more
+					// with this. The Cursor in Toswin2 didnt appear when
+					// preempting ...
+	// Call the VDI
+	// long VDI_dispach( VDIpb *pb );
+enter_vdi:
+	move.l	_vdi_handler,d2
+	beq.s	old_trap2
+	move.l	d2,a0
+	move.l	d1,-(sp)		// VDI parameter block address
+	jsr	(a0)
+	addq.w	#4,sp
+	bra.s	trap2_out
+
+	// Call the AES
+	// long AES_dispatch ( AESpb *pb );
+enter_aes:
+	move.l	_aes_handler,d2
+	beq.s	old_trap2
+	move.l	d2,a0
+	move.l	d1,-(sp)
+	jsr	(a0)
+	addq.w	#4,sp
+	bra.s	trap2_out
+
+	// Return the GDOS version if VDI is installed
+	// as a kernel module. 
+trap2_gdosvers:
+	tst.l	_vdi_handler
+	beq.s	old_trap2
+	move.l	_gdos_version,d0
+	bra.s	trap2_out
+
+	// Deliver the address of the VDI function dispatcher
+	// if we have it.
+trap2_vdihandler:
+	move.l	_vdi_handler,d0
+	bne.s	trap2_out
+
+old_trap2:
+	clr.w	-(sp)
+	move.l	#trap2_out,-(sp)
+	move.w	sr,-(sp)
+	jmp	([_old_trap2])
+//	move.l	_old_trap2,-(sp)
+//	rts
+	
+//	jsr	_trap_2_emu
+//	bra.s	trap2_out
+
+rom_trap2:
+	move.l	_old_trap2,-(sp)
+	rts
 
 // *********************************
 // * ROM GEMDOS/BIOS/XBIOS callout *
@@ -541,6 +679,7 @@ enosys:	moveq	#-32,d0	// ENOSYS
 #ifdef SYSCALL_REENTRANT
 
 	.globl	_trap_1_emu
+	.globl	_trap_2_emu
 	.globl	_trap_13_emu
 	.globl	_trap_14_emu
 
@@ -558,6 +697,21 @@ TE_D:	move.w	sr,-(sp)
 	move.l	_old_dos.w(pc),-(sp)
 	rts
 
+	// Ozk: we cannot use D0/D1 becaues the ugly VDI and AES
+	// passes paremters in these registers.
+_trap_2_emu:
+#ifndef	ONLY030
+	tst.w	(0x059e).w
+	beq.s	TE_AV
+#endif
+	move.l	(sp)+,-6(sp)		// return address
+	clr.w	-(sp)			// frame format word
+	subq.w	#4,sp			// already got return address here
+TE_AV:	move.w	sr,-(sp)
+	jmp	([_old_trap2])
+//	move.l	_old_trap2.w(pc),-(sp)
+//	rts
+	
 _trap_13_emu:
 #ifndef ONLY030
 	tst.w	(0x059e).w		// test longframe
@@ -904,4 +1058,134 @@ reent_rom_xbios:
 	move.l	_old_xbios,d1
 	bra.s	reent_out
 
+|---------------------------------------------------------------------------------
+
+// Because of different parameter passing, we need a whole different
+// scheme with AES/VDI traps... ARGH!! :-)
+reentrant_trap2:
+	// Since we're not interested in the stack now,
+	// we wont bother with it. VDI/AES passes args in D0/D1.
+#ifdef	TRAP2_STACK_PARAMS
+#ifndef ONLY030
+	addq.w	#2+4,a0
+	tst.w	(0x59e).w
+	beq.s	reent2_shortframe
+	addq.w	#2,a0
+reent2_shortframe:
+#else
+	addq.w	#2+4+2,a0
+#endif
+#endif
+	// Save hardware registers (CPU/FPU)
+	tst.w	_fpu
+	beq.s	reent2_fpu_saved
+	fsave	-(sp)
+	cmp.w	#60,_mcpu+2
+	bne.s	reent2_no_060
+	tst.b	2(sp)
+	beq.s	reent2_fpu_notused
+	bra.s	reent2_save_fpu
+reent2_no_060:
+	tst.b	(sp)
+	beq.s	reent2_fpu_notused
+reent2_save_fpu:
+	fmovem.x fp0-fp7,-(sp)
+	fmovem.l fpcr/fpsr/fpiar,-(sp)
+	move.w	#1,-(sp)
+	bra.s	reent2_fpu_saved
+reent2_fpu_notused:
+	clr.w	-(sp)
+reent2_fpu_saved:
+
+|-----------------------
+/// FUNCTION CALLING HERE
+	cmp.w	#115,d0			// VDI?
+	beq	reent2_enter_vdi
+	cmp.w	#200,d0			// AES?
+	beq	reent2_enter_aes
+	cmp.w	#201,d0			// appl_yield()?
+	beq	reent2_enter_aes	// or should this be its own function ?
+
+	// some VDI special cases, must be prepared by any VDI module ..
+	cmp.w	#-2,d0			// Query GDOS version
+	beq	reent2_trap2_gdosvers
+	cmp.w	#-1,d0			// This returns the address of the VDI handler
+	beq	reent2_trap2_vdihandler
+	
+	// What to do with trap 2 calls we dont know?
+	// for now just noting..
+	moveq	#0,d2
+
+reent2_trap2_out:
+	bra.s	reent2_out
+
+	// Call the VDI
+	// long VDI_dispach( VDIpb *pb );
+reent2_enter_vdi:
+	move.l	_vdi_handler,d2
+	beq.s	reent2_old_trap2
+	move.l	d2,a0
+	move.l	d1,-(sp)
+	jsr	(a0)
+	addq.w	#4,sp
+	moveq	#0,d2
+	bra.s	reent2_trap2_out
+
+	// Call the AES
+	// long AES_dispatch ( AESpb *pb );
+reent2_enter_aes:
+	move.l	_aes_handler,d2
+	beq.s	reent2_old_trap2
+	move.l	d2,a0
+	move.l	d1,-(sp)
+	jsr	(a0)
+	addq.w	#4,sp
+	moveq	#0,d2
+	bra.s	reent2_trap2_out
+
+	// REturn the GDOS version if VDI is installed
+	// as a kernel module. 
+reent2_trap2_gdosvers:
+	tst.l	_vdi_handler
+	beq.s	reent2_old_trap2
+	move.l	_gdos_version,d0
+	moveq	#0,d2
+	bra.s	reent2_trap2_out
+
+	// Deliver the address of the VDI function dispatcher
+	// if we have it.
+reent2_trap2_vdihandler:
+	moveq	#0,d2
+	move.l	_vdi_handler,d0
+	bne.s	reent2_trap2_out
+
+reent2_rom_trap2:
+reent2_old_trap2:
+	moveq	#1,d2
+	bra.s	reent2_trap2_out
+
+/// OUT begins here
+|-----------------------
+	// If D2 is NULL, we exit normally, because we did something
+	// If D2 is not NULL, we call the old trap2
+reent2_out:
+	// Unstack all cpu/fpu registers...
+	tst.w	_fpu
+	beq.s	reent2_out_no_fpu
+	tst.w	(sp)+
+	beq.s	reent2_no_fpu_saved
+	fmovem.l (sp)+,fpcr/fpsr/fpiar
+	fmovem.x (sp)+,fp0-fp7
+reent2_no_fpu_saved:
+	frestore (sp)+
+reent2_out_no_fpu:
+	tst.l	d2
+	bne.s	reent2_call_old
+	movem.l	(sp)+,d1-d7/a0-a6
+	rte
+reent2_call_old:
+	movem.l	(sp)+,d1-d7/a0-a6
+	move.l	_old_trap2,-(sp)
+	rts
+	
 #endif /* SYSCALL_REENTRANT */
