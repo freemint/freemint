@@ -1406,7 +1406,8 @@ init_block_IO (void)
 	pun = get_pun ();
 	if (!pun)
 	{
-		BIO_FORCE (("AHDI 3.0 not supported on this system, please update."));
+		BIO_FORCE(("PUN cookie (from AHDI >=3.0) not found on this system."));
+		BIO_FORCE(("System may have problems with the maximum sector size calculation."));
 	}
 
 
