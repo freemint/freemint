@@ -381,7 +381,7 @@
  */
 
 # define VER_MAJOR	1
-# define VER_MINOR	23
+# define VER_MINOR	24
 # define VER_STATUS
 
 # if VER_MINOR > 9
@@ -2868,6 +2868,16 @@ str2dir (register const char *src, register char *nm)
 	}
 
 	FAT_DEBUG (("str2dir: ok (src = %s, nm = %s)", _src, _nm));
+}
+
+static int
+is_special_name(const char *name)
+{
+	if (name[0] == '.')
+		if (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))
+			return 1;
+	
+	return 0;
 }
 
 INLINE long
@@ -6044,6 +6054,9 @@ fatfs_rmdir (fcookie *dir, const char *name)
 	r = fatfs_lookup (dir, name, &(dirh.fc));
 	if (r == E_OK)
 	{
+		COOKIE *c = (COOKIE *) dirh.fc.index;
+		char *s;
+		
 		FAT_DEBUG (("fatfs_rmdir: found: dev = %i", dirh.fc.dev));
 
 		/* Ordner muss leer sein, ansonsten EACCES
@@ -6083,7 +6096,19 @@ fatfs_rmdir (fcookie *dir, const char *name)
 
 		fatfs_closedir (&dirh);
 
-		r = unlink_cookie ((COOKIE *) dirh.fc.index);
+		s = strrchr(c->name, '\\');
+		if (s) s++;
+		else s = c->name;
+
+		if (is_special_name(s))
+		{
+			fatfs_release (&(dirh.fc));
+			
+			FAT_DEBUG (("fatfs_rmdir: leave failure (rmdir on . or ..)"));
+			return EACCES;
+		}			
+
+		r = unlink_cookie (c);
 		if (r)
 		{
 			FAT_DEBUG (("fatfs_rmdir: leave failure (unlink_cookie = %li)", r));
@@ -6154,6 +6179,20 @@ fatfs_remove (fcookie *dir, const char *name)
 	r = search_cookie ((COOKIE *) dir->index, &c, name, 0);
 	if (r == E_OK)
 	{
+		char *s;
+
+		s = strrchr(c->name, '\\');
+		if (s) s++;
+		else s = c->name;
+
+		if (is_special_name(s))
+		{
+			rel_cookie (c);
+			
+			FAT_DEBUG (("fatfs_remove: leave failure (delete on . or .. ???)"));
+			return EACCES;
+		}			
+		
 		r = unlink_cookie (c);
 		if (r)
 		{
@@ -6218,6 +6257,20 @@ fatfs_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 	return EINTERNAL;
 }
 
+/*
+ * recursivly clean inode cache for all cached entries
+ * of a moved directory
+ * 
+ * XXX this is only neccessary for cached childs of
+ *     the moved directory I think (now the complete
+ *     hierachy is cleaned) -> todo
+ * 
+ * XXX most likely it's also enough to just correct the
+ *     c->dir back pointer to the parent directory;
+ *     but I'm not sure about the side effects
+ * 
+ * btw. the inode cache design is wrong :-/
+ */
 static long
 clean_cache_hierachy (COOKIE *parent)
 {
@@ -6236,8 +6289,24 @@ clean_cache_hierachy (COOKIE *parent)
 
 				if (c->info.attr & FA_DIR)
 				{
-					if (clean_cache_hierachy (c))
-						return EACCES;
+					char *s;
+
+					s = strrchr(c->name, '\\');
+					if (s) s++;
+					else s = c->name;
+
+					FAT_DEBUG (("clean_cache_hierachy(%s)", s));
+					FAT_DEBUG ((" stcl %li, dir %li (parent stcl %li dir %li)",
+						    c->stcl, c->dir,
+						    parent->stcl, parent->dir));
+
+					if (!is_special_name(s))
+					{
+						FAT_ASSERT ((c->dir != c->stcl));
+						
+						if (clean_cache_hierachy (c))
+							return EACCES;
+					}
 				}
 
 				c_del_cookie (c);
@@ -6287,14 +6356,11 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	if (newd->dir == 0)
 	{
 		/* newdir is root directory */
-		if (newname[0] == '.')
+		
+		if (is_special_name(newname))
 		{
-			if (newname[1] == '\0'
-				|| (newname[1] == '.' && newname[2] == '\0'))
-			{
-				FAT_DEBUG (("fatfs_rename: leave failure, rename to '.' or '..'"));
-				return EACCES;
-			}
+			FAT_DEBUG (("fatfs_rename: leave failure, rename to '.' or '..'"));
+			return EACCES;
 		}
 	}
 
@@ -6305,7 +6371,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		return r;
 	}
 
-# if 0
+# if 1
 	if (old->links > 1)
 	{
 		rel_cookie (old);
