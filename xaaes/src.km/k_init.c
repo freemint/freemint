@@ -53,6 +53,10 @@
 #include "menuwidg.h"
 #include "xa_graf.h"
 
+/* kernel header */
+#include "mint/ssystem.h"
+#include "cookie.h"
+
 
 /*
  * find a xaaes file. When the cd command to XaAES load directory is
@@ -144,65 +148,45 @@ k_init(void)
 
 	if (cfg.auto_program)
 	{
-		short mode;
+		short mode = 1;
+		long vdo, r;
 
-		if (cfg.videomode == -1)
+		r = s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&vdo));
+		if (r != 0)
+			vdo = 0;
+
+		if (cfg.videomode)
 		{
-			DIAGS(("Default screenmode"));
-			mode = 1;
-		}
-		else
-		{
-			if (cfg.videomode < 1 || cfg.videomode > 10)
+			if (vdo == 0x00030000L)
 			{
-				DIAGS(("videomode %d invalid, must be between 1 and 10! Forced to 1", cfg.videomode));
-				mode = 1;
+				DIAGS(("Falcon video: mode %d(%x)", cfg.videomode, cfg.videomode));
+
+				/* Ronald Andersson:
+				 * This should be the method for falcon!
+				 */
+				work_out[45] = cfg.videomode;
+				mode = 5;
 			}
 			else
 			{
-				mode = cfg.videomode;
-				DIAGS(("Screenmode %d", mode));
-			}
-		}
-		work_in[0] = mode;
-#if 0
-		/* Set video mode from command line parameter? */			
-		if (argc > 2)
-		{
-			ipff_in(argv[2]);
-			sk();
-			switch (tolower(*argv[2]))
-			{
-			case 'o':  lcfg.modecode = (skc(), oct());  break;
-			case 'x':  lcfg.modecode = (skc(), hex());  break;
-			case 'b':  lcfg.modecode = (skc(), bin());  break;
-			default :  lcfg.modecode =         idec();  break;
-			}
-
-			/* Falcon Video mode switch */
-			if (stricmp("-fvideo", argv[1]) == 0)
-			{
-				/* '_VDO' */
-				s_system(S_GETCOOKIE, 0x5f56444fL, (long)&lcfg.falcon);
-				/* ´SCPN´ - Screenblaster present? */
-				helper = s_system(S_GETCOOKIE, 0x5343504e, 0L);
-				helper = (helper == -1) ? 0 : 1;
-
-				if (lcfg.falcon == 0x00030000L)
+				if (cfg.videomode >= 1 && cfg.videomode <= 10)
 				{
-					work_out[45] = lcfg.modecode;
-					/* Ronald Andersson: This should be the method for falcon. */
-					work_in[0] = 5;
-					DIAGS(("Falcon: mode %d(%x)", lcfg.modecode, lcfg.modecode));
+					mode = cfg.videomode;
 				}
 				else
 				{
-					DIAGS(("-fvideo: No, or incorrect _VDO cookie: %lx", lcfg.falcon));
+					DIAGS(("videomode %d invalid", cfg.videomode));
+					DIAGS(("must be between 1 and 10"));
 				}
-
 			}
 		}
-#endif
+		else
+		{
+			DIAGS(("Default screenmode"));
+		}
+
+		DIAGS(("Screenmode is: %d", mode));
+		work_in[0] = mode;
 
 		v_opnwk(work_in, &(C.P_handle), work_out);
 		DIAGS(("Physical work station opened: %d", C.P_handle));
