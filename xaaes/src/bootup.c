@@ -827,7 +827,7 @@ BTRACE(21);
 				{
 					/* Video mode switch */
 					if (stricmp("-video", argv[1]) == 0)
-[A					{
+					{
 						work_in[0] = lcfg.modecode;
 						DIAGS(("Standard: mode %d(%x)\n", lcfg.modecode, lcfg.modecode));
 					}
