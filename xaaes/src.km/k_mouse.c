@@ -1261,7 +1261,15 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	/* wait for input from AESSYS */	
 	DIAGS(("wait_mouse for %s", client->name));
 
-	if (unbuffer_moose_pkt(&md))
+	if (client->md_head != client->md_tail || client->md_head->clicks != -1)
+	{
+		struct mbs mbs;
+		get_mbstate(client, &mbs);
+		data[0] = mbs.b;
+		data[1] = mbs.x;
+		data[2] = mbs.y;
+	}
+	else if (unbuffer_moose_pkt(&md))
 	{
 		DIAGS(("wait_mouse - return buffered"));
 		data[0] = md.cstate;

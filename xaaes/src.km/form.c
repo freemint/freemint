@@ -223,6 +223,14 @@ form_center(OBJECT *form, short barsizes)
 	form->ob_x = root_window->wa.x + (root_window->wa.w - form->ob_width) / 2;
 	form->ob_y = root_window->wa.y + barsizes + (root_window->wa.h - form->ob_height) / 2;
 }
+void
+form_center_r(OBJECT *form, short barsizes, RECT *r)
+{
+	r->x = root_window->wa.x + (root_window->wa.w - form->ob_width) / 2;
+	r->y = root_window->wa.y + barsizes + (root_window->wa.h - form->ob_height) / 2;
+	r->w = form->ob_width;
+	r->h = form->ob_height;
+}
 
 /*
  * Ozk: Rewritten totally. Returns false if a TOUCHEXIT or EXIT button was selected.
@@ -233,7 +241,7 @@ bool
 form_button(XA_TREE *wt,
 	    short obj,
 	    const struct moose_data *md,
-	    bool redraw,
+	    unsigned long fbflags, //bool redraw,
 	    struct xa_rect_list *rl,
 	    /* Outputs */
 	    short *newstate,
@@ -243,7 +251,7 @@ form_button(XA_TREE *wt,
 	OBJECT *obtree = wt->tree;
 	short next_obj = 0;
 	short flags, state;
-	bool no_exit = true, dc;
+	bool no_exit = true, dc, redraw = (fbflags & FBF_REDRAW);
 
 	DIAG((D_form, NULL, "form_button: wt=%lx, obtree=%lx, obj=%d",
 		wt, wt->tree, obj));
@@ -265,7 +273,13 @@ form_button(XA_TREE *wt,
 
 		if ((obtree[obj].ob_type & 0xff) == G_SLIST)
 		{
-			no_exit = false;		
+			if (fbflags & FBF_DO_SLIST)
+			{
+				click_scroll_list(0, obtree, obj, md);
+				no_exit = true;
+			}
+			else
+				no_exit = false;
 		}
 		else if (flags & OF_RBUTTON)
 		{
@@ -286,6 +300,7 @@ form_button(XA_TREE *wt,
 			}
 		}
 		state = obtree[obj].ob_state;
+		
 	}
 
 	DIAGS(("form_button: state %x, flags %x",
@@ -489,7 +504,7 @@ form_keyboard(XA_TREE *wt,
 			fr.no_exit = form_button(wt,
 					         next_obj,
 					         &md,
-					         redraw,
+					         FBF_REDRAW,
 					         rl,
 					         &fr.obj_state,
 					         &fr.obj,
@@ -680,7 +695,7 @@ Click_form_do(enum locks lock,
 		    !form_button(wt,
 				 fr.obj,
 				 md,
-				 true,
+				 FBF_REDRAW,
 				 wind ? wind->rect_start : NULL,
 				 &fr.obj_state,
 				 &fr.obj,

@@ -921,17 +921,23 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_SHADE:
 	{
-		short status, msg;
+		short status = -1, msg = -1;
 
 		if (pb->intin[2] == 1)
 		{
-			status = XAWS_SHADED;
-			msg = WM_SHADED;
+			if (!(w->window_status & XAWS_SHADED))
+			{
+				status = XAWS_SHADED;
+				msg = WM_SHADED;
+			}
 		}
 		else if (pb->intin[2] == 0 )
 		{
-			status = ~XAWS_SHADED;
-			msg = WM_UNSHADED;
+			if (w->window_status & XAWS_SHADED)
+			{
+				status = ~XAWS_SHADED;
+				msg = WM_UNSHADED;
+			}
 		}
 		else if (pb->intin[2] == -1 )
 		{
@@ -950,11 +956,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAGS(("wind_set: WF_SHADE, wind %d, status %x for %s",
 			w->handle, status, client->name));
 
-		if (w->send_message)
-			w->send_message(lock, w, NULL, AMQ_CRITICAL, QMF_CHKDUP,
-				msg, 0, 0, w->handle, 0,0,0,0);
+		if (msg != -1)
+		{
+			if (w->send_message)
+				w->send_message(lock, w, NULL, AMQ_CRITICAL, QMF_CHKDUP,
+					msg, 0, 0, w->handle, 0,0,0,0);
 
-		move_window(lock, w, true, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
+			move_window(lock, w, true, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
+		}
 		break;
 	}
 	case WF_OPTS:

@@ -49,11 +49,15 @@ bool	Setup_form_do	(struct xa_client *client,
 			 short *ret_edobj);
 
 void	form_center	(OBJECT *obtree, short barsizes);
+void	form_center_r	(OBJECT *obtree, short barsizes, RECT *r);
+
+#define FBF_REDRAW	1
+#define FBF_DO_SLIST	2
 
 bool	form_button	(XA_TREE *wt,
 			 short obj,
 			 const struct moose_data *md,
-			 bool redraw,
+			 unsigned long flags, //bool redraw,
 			 struct xa_rect_list *rl,
 			 /* Outputs */
 			 short *newstate,

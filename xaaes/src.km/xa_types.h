@@ -196,6 +196,8 @@ struct mbs
 	short c;
 	short x, y;
 	short ks;
+
+	bool empty;
 };
 
 /*
@@ -288,6 +290,13 @@ typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt, const RECT *
 /* Object handler function type */
 typedef void ObjectHandler(enum locks lock, struct widget_tree *wt);
 
+struct widget_behaviour
+{
+	WidgetBehaviour *click;
+	WidgetBehaviour *drag;
+};
+
+
 typedef short _cdecl wdlg_exit  (void *dialog,
 				EVNT *evnt,
 				short obj,
@@ -297,6 +306,8 @@ typedef short _cdecl wdlg_exit  (void *dialog,
 /* Object Tree based widget descriptor */
 struct wdlg_info
 {
+	unsigned long datatype;
+
 	void *handle;			/* For use as 'wdialog structure' */
 	struct xa_window *wind;		/* cross reference to parent window. */
 	short code;			/* Data for wdlg_xxx extension. */
@@ -351,6 +362,7 @@ struct lbox_slide
 	
 struct xa_lbox_info
 {
+	unsigned long datatype;
 	struct xa_lbox_info *next;	/* Next lbox attached to this widget tree */
 	void  *wdlg_handle;		/* wdlg handle */
 	void  *lbox_handle;		/* lbox handle */
@@ -366,18 +378,58 @@ struct xa_lbox_info
 	long set;			/* Set callback function */
 };
 
+struct xa_fnts_item;
+struct xa_fnts_item
+{
+	struct xa_fnts_item *link;
+	struct xa_fnts_item *nxt_family;
+	struct xa_fnts_item *nxt_kin;
+
+	FNTS_ITEM f;
+	char	font_name[64];
+	char	family_name[64];
+	char	style_name[64];
+	char	sizes[64];
+};
+
 struct xa_fnts_info
 {
+	unsigned long datatype;
 	void	*handle;
 	struct	xa_window *wind;
 	struct	widget_tree *wt;
 	
 	short	vdi_handle;
+	short	fnts_loaded;
+
 	short	num_fonts;
 	short	font_flags;
 	short	dialog_flags;
+	short	button_flags;
+
+	struct	xa_fnts_item *fnts_ring;
+	struct	xa_fnts_item *fnts_list;
+	
+	struct	xa_fnts_item *fnts_selected;
+	long	fnt_id;
+	long	fnt_pt;
+	long	fnt_ratio;
+
 	char	*sample_text;
 	char	*opt_button;
+	
+};
+
+struct wdlg_evnt_parms
+{
+	struct xa_window *wind;
+	struct widget_tree *wt;
+	EVNT *ev;
+	struct wdlg_info *wdlg;
+	short (*callout)(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short nxtobj, short mclicks, void *udata, void *feedback);
+	void  (*redraw)(enum locks lock, struct xa_window *wind, short start, short depth, RECT *r);
+
+	short obj;
 };
 
 #define OB_CURS_ENABLED	1
@@ -974,7 +1026,9 @@ struct xa_window
 	char winfo[MAX_WINDOW_INFO];	/* window info line (copy) */
 
 	struct wdlg_info *wdlg;
+	
 	void		*data;
+	void		(*data_destruct)(struct xa_window *wind);
 };
 
 struct xa_window *get_top(void);
@@ -986,7 +1040,8 @@ struct scroll_info;
 
 typedef int scrl_click(enum locks lock, struct scroll_info *list, OBJECT *form, int objc);
 typedef void scrl_widget(struct scroll_info *list);
-typedef void scrl_vis(struct scroll_info *list, struct scroll_entry *s);
+typedef void scrl_vis(struct scroll_info *list, struct scroll_entry *s, bool redraw);
+typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scroll_entry *start, void *data, short mode);
 
 /* HR: The FS_LIST box is the place holder and the
  *     entrypoint via its TOUCHEXIT flag.
@@ -1000,9 +1055,13 @@ enum scroll_entry_type
 	FLAG_EXECUTABLE = 0x002,
 	FLAG_LINK       = 0x004,
 	FLAG_MAL        = 0x100,	/* text part is malloc'd and must be freed. */
-	FLAG_ENV        = 0x200
+	FLAG_ENV        = 0x200,
+	FLAG_AMAL	= 0x400
 };
 typedef enum scroll_entry_type SCROLL_ENTRY_TYPE;
+
+#define SEFM_BYDATA	0
+#define SEFM_BYTEXT	1
 
 struct scroll_entry
 {
@@ -1010,7 +1069,8 @@ struct scroll_entry
 	OBJECT *icon;			/* Icon/object to display to the left of text (if any) */
 	struct scroll_entry *next;	/* Next element */
 	struct scroll_entry *prev;	/* Previous element */
-
+	void *data;			/* Content specific */
+	
 	SCROLL_ENTRY_TYPE flag;
 
 	/* This simple number makes everything so easy
@@ -1061,6 +1121,7 @@ struct scroll_info
 	scrl_widget *fuller;		/* fuller function */
 
 	scrl_vis *vis;			/* check visibility */
+	scrl_search *search;
 
 	void	*data;
 };

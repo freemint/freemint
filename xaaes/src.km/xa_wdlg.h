@@ -31,6 +31,10 @@
 #include "xa_types.h"
 
 #if WDIALOG_WDLG
+
+short wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms *wep);
+
+
 AES_function
 	XA_wdlg_create,
 	XA_wdlg_open,

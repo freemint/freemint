@@ -583,7 +583,7 @@ alert_input(enum locks lock)
 		}
 
 		/* Add the log entry */
-		add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL);
+		add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL, NULL);
 
 		 /* Now you can always lookup the error in the log. */
 		DIAGS(("ALERT PIPE: '%s' %s", data->buf, update_locked() ? "pending" : "displayed"));

@@ -201,6 +201,8 @@ struct shel_info
 
 struct common
 {
+	unsigned short nvdi_version;
+
 	short vh;			/* Virtual workstation handle used by the AES */
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */

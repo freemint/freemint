@@ -27,6 +27,10 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
+#include "xa_evnt.h"
+#include "xa_graf.h"
+#include "k_mouse.h"
+
 #include "scrlobjc.h"
 #include "form.h"
 #include "rectlist.h"
@@ -79,31 +83,113 @@ free_scrollist(SCROLL_INFO *list)
 }
 
 static void
-visible(SCROLL_INFO *list, SCROLL_ENTRY *s)
+scroll_up(SCROLL_INFO *list, int num)
 {
-	if (   (list->top && s->n < list->top->n)
-	    || (list->bot && s->n > list->bot->n))		/* HR 250202: must check bot as well. */
+	DIAG((D_fnts, NULL, "scroll_up: %d lines, top = %lx (%s), bot = %lx (%s)",
+		num, list->top, list->top->text, list->bot, list->bot->text));
+
+	while (num && list->bot->next)
 	{
-		int n = list->s/2;
-		list->top = s;
-
-		/* move to the middle */
-		while (n-- && list->top->prev)
-			list->top = list->top->prev;
-
-		n = list->s - (list->last->n - list->top->n + 1);
-
-		if (n > 0)
-			while (n-- && list->top->prev)
-				list->top = list->top->prev;
+		list->top = list->top->next;
+		list->bot = list->bot->next;
+		num--;
 	}
+	
+	DIAG((D_fnts, NULL, " --- top = %lx (%s), bot = %lx (%s)",
+		list->top, list->top->text, list->bot, list->bot->text));
+	
+}
+static void
+scroll_down(SCROLL_INFO *list, int num)
+{
+	DIAG((D_fnts, NULL, "scroll_down: %d lines, top = %lx (%s), bot = %lx (%s)",
+		num, list->top, list->top->text, list->bot, list->bot->text));
+	
+	while (num && list->top->prev)
+	{
+		list->top = list->top->prev;
+		
+		while (list->bot->prev && ((list->bot->n - list->top->n + 1) > list->s))
+		{
+			list->bot = list->bot->prev;
+		}
+		num--;
+	}
+	DIAG((D_fnts, NULL, " --- top = %lx (%s), bot = %lx (%s)",
+		list->top, list->top->text, list->bot, list->bot->text));
+}
 
+static void
+visible(SCROLL_INFO *list, SCROLL_ENTRY *s, bool redraw)
+{
+	int n;
+
+	DIAGS(("scrl_visible: start-n=%d, top-n=%d, bot-n=%d, last-n=%d, vis-n=%d",
+		list->start->n, list->top->n, list->bot->n, list->last->n, s->n));
+
+	n = s->n - list->top->n;
+
+	if (n < 0)
+	{
+		/* scroll down */
+		n = -n + (list->s >> 1);
+		scroll_down(list, n);
+	}
+	else if (n >= list->s)
+	{
+		/* scroll up */
+		n -= list->s >> 1;
+		scroll_up(list, n);
+	}
+	
 	list->slider(list);
 
-	/* HR 290702 (do without parent window; A listbox is a OBJECT and part of a object tree.) */
-	hidem();
-	draw_object_tree(list->lock, list->wt, list->wi->winob, list->wi->winitem, 2, 200);
-	showm();
+	if (redraw)
+	{
+		/* HR 290702 (do without parent window; A listbox is a OBJECT and part of a object tree.) */
+		hidem();
+		draw_object_tree(list->lock, list->wt, list->wi->winob, list->wi->winitem, 2, 200);
+		showm();
+	}
+}
+
+static SCROLL_ENTRY *
+search(SCROLL_INFO *list, SCROLL_ENTRY *start, void *data, short mode)
+{
+	SCROLL_ENTRY *ret = NULL;
+	
+	if (!start)
+		start = list->start;
+
+	switch (mode)
+	{
+		case SEFM_BYDATA:
+		{
+			/*
+			 * Find entry based on data ptr
+			 */
+			while (start)
+			{
+				if (start->data == data)
+					break;
+				start = start->next;
+			}
+			ret = start;
+			break;
+		}
+		case SEFM_BYTEXT:
+		{
+			while (start)
+			{
+				if (!strcmp(start->text, data))
+					break;
+				start = start->next;
+			}
+			ret = start;
+			break;
+		}
+	}
+	return ret;
 }
 
 /*
@@ -114,7 +200,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s)
 
 /* title set by set_slist_object() */
 int
-set_scroll(struct xa_client *client, OBJECT *form, int item)
+set_scroll(struct xa_client *client, OBJECT *form, int item, bool selectable)
 {
 	OBJECT *ob = form + item;
 	SCROLL_INFO *sinfo;
@@ -135,6 +221,12 @@ set_scroll(struct xa_client *client, OBJECT *form, int item)
 	object_set_spec(form + item, (unsigned long)sinfo);
 	ob->ob_type = G_SLIST;
 	ob->ob_flags |= OF_TOUCHEXIT;
+	
+	if (selectable)
+		ob->ob_flags |= OF_SELECTABLE;
+	else
+		ob->ob_flags &= ~ OF_SELECTABLE;
+
 	sinfo->tree = form;
 	sinfo->item = item;
 
@@ -163,6 +255,175 @@ unset_G_SLIST(struct xa_client *client, OBJECT *form, short item)
 		else
 			ufree(list);
 	}
+}
+
+static bool
+drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
+{
+	XA_SLIDER_WIDGET *sl = widg->stuff;
+
+	DIAGS(("scroll object vslide drag!"));
+	
+	if (imd->cstate)
+	{
+		short offs;
+		struct moose_data m = *imd;
+		struct moose_data *md = &m;
+		short msg[8] = { WM_VSLID, 0, 0, wind->handle, 0, 0,0,0};
+		
+		if (md->cstate & MBS_RIGHT)
+		{
+			RECT s, b, d, r;
+
+			rp_2_ap(wind, widg, &widg->ar);
+			
+			b = s = widg->ar;
+			
+			s.x += sl->r.x;
+			s.y += sl->r.y;
+			s.w = sl->r.w;
+			s.h = sl->r.h;
+
+			lock_screen(wind->owner->p, 0, 0, 0);
+			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
+			unlock_screen(wind->owner->p, 0);
+
+			offs = bound_sl(pix_to_sl(r.y - widg->ar.y, widg->r.h - sl->r.h));
+
+			if (offs != sl->position)
+			{
+				sl->rpos = msg[4] = offs;
+				slist_msg_handler(wind, NULL, 0,0, msg);
+			}
+		}
+		else
+		{
+			short y, old_y = 0, old_offs = 0, pmx, pmy;
+			short cont = 0;
+
+			S.wm_count++;
+			while (md->cstate)
+			{
+				if (!cont)
+				{
+					cont = true;
+					/* Always have a nice consistent sizer when dragging a box */
+					graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+					rp_2_ap(wind, widg, &widg->ar);
+					old_offs = md->y - (widg->ar.y + sl->r.y);
+					old_y = md->y;
+					y = md->sy;
+				}
+				else
+					y = md->y;
+
+				if (old_y != y)
+				{
+					offs = bound_sl(pix_to_sl((y - old_offs) - widg->ar.y, widg->r.h - sl->r.h));
+		
+					if (offs != sl->position && wind->send_message)
+					{
+						sl->rpos = msg[4] = offs;
+						slist_msg_handler(wind, NULL, 0,0, msg);
+					}
+					old_y = y;
+				}
+				pmx = md->x, pmy = md->y;
+				while (md->cstate && md->x == pmx && md->y == pmy)
+				{
+					wait_mouse(wind->owner, &md->cstate, &md->x, &md->y);
+				}
+			}
+			S.wm_count--;
+		}
+		graf_mouse(wind->owner->mouse, NULL, NULL, false);
+	}
+	return true;
+}
+static bool
+drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
+{
+	XA_SLIDER_WIDGET *sl = widg->stuff;
+
+	DIAGS(("scroll object vslide drag!"));
+	
+	if (imd->cstate)
+	{
+		short offs;
+		struct moose_data m = *imd;
+		struct moose_data *md = &m;
+		short msg[8] = { WM_HSLID, 0, 0, wind->handle, 0, 0,0,0};
+		
+		if (md->cstate & MBS_RIGHT)
+		{
+			RECT s, b, d, r;
+
+			rp_2_ap(wind, widg, &widg->ar);
+			
+			b = s = widg->ar;
+			
+			s.x += sl->r.x;
+			s.y += sl->r.y;
+			s.w = sl->r.w;
+			s.h = sl->r.h;
+
+			lock_screen(wind->owner->p, 0, 0, 0);
+			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
+			unlock_screen(wind->owner->p, 0);
+
+			offs = bound_sl(pix_to_sl(r.x - widg->ar.x, widg->r.w - sl->r.w));
+
+			if (offs != sl->position)
+			{
+				sl->rpos = msg[4] = offs;
+				slist_msg_handler(wind, NULL, 0,0, msg);
+			}
+		}
+		else
+		{
+			short x, old_x = 0, old_offs = 0, pmx;
+			short cont = 0;
+
+			S.wm_count++;
+			while (md->cstate)
+			{
+				if (!cont)
+				{
+					cont = true;
+					/* Always have a nice consistent sizer when dragging a box */
+					graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+					rp_2_ap(wind, widg, &widg->ar);
+					old_offs = md->x - (widg->ar.x + sl->r.x);
+					old_x = md->x;
+					x = md->sx;
+				}
+				else
+					x = md->x;
+
+				if (old_x != x)
+				{
+					offs = bound_sl(pix_to_sl((x - old_offs) - widg->ar.x, widg->r.w - sl->r.w));
+		
+					if (offs != sl->position && wind->send_message)
+					{
+						sl->rpos = msg[4] = offs;
+						slist_msg_handler(wind, NULL, 0,0, msg);
+					}
+					old_x = x;
+				}
+				pmx = md->x;
+				while (md->cstate && md->x == pmx)
+				{
+					wait_mouse(wind->owner, &md->cstate, &md->x, &md->y);
+				}
+			}
+			S.wm_count--;
+		}
+		graf_mouse(wind->owner->mouse, NULL, NULL, false);
+	}
+	return true;
 }
 
 /* preparations for windowed list box widget;
@@ -198,13 +459,14 @@ set_slist_object(enum locks lock,
 
 	list->title = title;
 	/* rp_2_ap; it is an OBJECT, not a widget */
-	r = *(RECT*)&ob->ob_x;
+	//r = *(RECT*)&ob->ob_x;
+	obj_area(wt, item, &r);
 	/* We want to use the space normally occupied by the shadow;
 	    so we do a little cheat here. */
-	r.w += SHADOW_OFFSET;
-	r.h += SHADOW_OFFSET;
+	//r.w += SHADOW_OFFSET;
+	//r.h += SHADOW_OFFSET;
 	//ob_offset(form, item, &r.x, &r.y);
-	obj_offset(wt, item, &r.x, &r.y);
+	//obj_offset(wt, item, &r.x, &r.y);
 	if (title)
 		wkind |= NAME;
 	if (info)
@@ -213,8 +475,9 @@ set_slist_object(enum locks lock,
 		wkind |= CLOSER;
 	if (fuller)
 		wkind |= FULLER;
-	if (lmax*screen.c_max_w + ICON_W > r.w - 24)
+	if (lmax * screen.c_max_w + ICON_W > r.w - 24)
 		wkind |= LFARROW|HSLIDE|RTARROW;
+	
 	wkind |= TOOLBAR;
 
 	list->wi = create_window(lock,
@@ -231,7 +494,13 @@ set_slist_object(enum locks lock,
 		get_widget(list->wi, XAW_TITLE)->stuff = title;
 		if (info)
 			get_widget(list->wi, XAW_INFO)->stuff = info;
-		list->wi->winob = form;		/* The parent object of the windowed list box */
+
+		get_widget(list->wi, XAW_VSLIDE)->drag = drag_vslide;
+		get_widget(list->wi, XAW_HSLIDE)->drag = drag_hslide;
+
+		list->wi->data = list;
+		
+		list->wi->winob	= form;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;
 		r = list->wi->wa;
 		r.h /= screen.c_max_h;
@@ -240,11 +509,13 @@ set_slist_object(enum locks lock,
 		dh = list->wi->wa.h - r.h;
 		ob->ob_height -= dh;
 		list->wi->r.h -= dh;
-		list->slider = sliders;
-		list->closer = closer;
-		list->fuller = fuller;
-		list->vis = visible;
-		list->lock = lock;
+
+		list->slider	= sliders;
+		list->closer	= closer;
+		list->fuller	= fuller;
+		list->vis	= visible;
+		list->search	= search;
+		list->lock	= lock;
 
 		list->v = (r.w - cfg.widg_w) / screen.c_max_w;
 		list->max = lmax;
@@ -258,7 +529,8 @@ set_slist_object(enum locks lock,
 bool
 add_scroll_entry(OBJECT *form, int item,
 		 OBJECT *icon, void *text,
-		 SCROLL_ENTRY_TYPE flag)
+		 SCROLL_ENTRY_TYPE flag,
+		 void *data)
 {
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *last, *new;
@@ -266,12 +538,18 @@ add_scroll_entry(OBJECT *form, int item,
 
 	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 
-	new = kmalloc(sizeof(*new));
+	if (flag & FLAG_AMAL)
+		new = kmalloc(sizeof(*new) + strlen(text) + 1);
+	else
+		new = kmalloc(sizeof(*new));
+	
 	if (!new)
 		return false;
 
 	new->next = NULL;
 	last = list->start;
+	new->data = data;
+
 	if (last)
 	{
 		while (last->next)
@@ -283,16 +561,29 @@ add_scroll_entry(OBJECT *form, int item,
 	else
 	{
 		new->prev = NULL;
-		list->start = list->top = new;	/* cur is left zero, which means no current : no selection. */
+		list->start = list->top = list->bot = list->last = new;	/* cur is left zero, which means no current : no selection. */
 		new->n = 1;
 	}
-	new->text = text;
+
+	if (new->n <= list->s)
+		list->bot = new;
+
+	if (flag & FLAG_AMAL)
+	{
+		new->text = new->the_text;
+		strcpy(new->the_text, text);
+	}
+	else	
+		new->text = text;
+
 	new->icon = icon;
 	new->flag = flag;
+	
 	if (icon)
 		icon->ob_x = icon->ob_y = 0;
 
 	list->n = new->n;
+	
 	return true;
 }
 
@@ -319,10 +610,18 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 
 		if ((this->flag & flag) || flag == -1)
 		{
-			if (this->flag & FLAG_MAL)
+			if ((this->flag & FLAG_MAL) && this->text)
+			{
 				kfree(this->text);
+				this->text = NULL;
+			}
+			
 			if (this == list->start)
 				list->start = next;
+			
+			if (this == list->last)
+				list->last = prior;
+
 			if (prior)
 				prior->next = next;
 
@@ -341,7 +640,7 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 	list->top = list->start;
 	list->cur = NULL;		/* HR: This does nothing more than inhibit the selection of a line. */
 }
-
+		
 /* HR: The application point of view of the list box */
 /* HR: Immensely cleanup of the code by using a window and it's mechanisms for the list box.
        Including fully functional sliders and all arrows.
@@ -367,6 +666,7 @@ slist_msg_handler(
 	switch (msg[0])		/* message number */
 	{
 	case WM_ARROWED:
+	{
 		if (msg[4] < WA_LFPAGE)
 		{
 			p = list->s;
@@ -375,23 +675,47 @@ slist_msg_handler(
 				switch (msg[4])
 				{
 				case WA_UPLINE:
+				{
+					scroll_down(list, 1);
+					break;
+				}
+			#if 0
 					if (list->top->prev)
 						list->state = SCRLSTAT_UP,
 						list->top = list->top->prev;
 				break;
+			#endif
 				case WA_DNLINE:
+				{
+					scroll_up(list, 1);
+					break;
+				}
+			#if 0
 					if (list->bot->next)
 						list->state = SCRLSTAT_DOWN,
 						list->top = list->top->next;
 				break;
+			#endif
 				case WA_UPPAGE:
+				{
+					scroll_down(list, list->s - 1);
+					break;
+				}
+			#if 0
 					while (--p && list->top->prev) 
 						list->top = list->top->prev;
 				break;
+			#endif
 				case WA_DNPAGE:
+				{
+					scroll_up(list, list->s - 1);
+					break;
+				}
+			#if 0
 					while (--p && list->bot->next)
 						list->bot = list->bot->next,
 						list->top = list->top->next;
+			#endif
 				}
 			}
 		}
@@ -420,12 +744,21 @@ slist_msg_handler(
 					list->left = list->max - p;
 			}
 		}
-	break;
+		break;
+	}
 	case WM_VSLID:
+	{
 		p = list->s;
 		if (p < list->n)
 		{
 			int new = sl_to_pix(list->n - (p-1), msg[4]);
+
+			new -= list->top->n;
+			if (new < 0)
+				scroll_down(list, -new);
+			else
+				scroll_up(list, new);
+		#if 0
 			if (list->top->n > new) /* go up */
 			{
 				while (list->top->n > new && list->top->prev)
@@ -437,22 +770,32 @@ slist_msg_handler(
 					list->bot = list->bot->next,
 					list->top = list->top->next;
 			}
-		}		
-	break;
+		#endif
+		}
+		break;
+	}
 	case WM_HSLID:
+	{
 		p = list->v;
 		if (p < list->max)
 			list->left = sl_to_pix(list->max - p, msg[4]);
-	break;
+		break;
+	}
 	case WM_CLOSED:
+	{
 		if (list->closer)
 			list->closer(list);
-	break;
+		break;
+	}
 	case WM_FULLED:
+	{
 		if (list->fuller)
 			list->fuller(list);
+	}
 	default:
+	{
 		return;
+	}
 	}
 
 	/* next step is to take the scrolling out of d_g_slist and make it a seperate
@@ -523,7 +866,7 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 	}
 	}
 
-	list->vis(list,list->cur);
+	list->vis(list,list->cur, true);
 	return keycode;
 }
 
@@ -537,7 +880,16 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 	short cy = md->y;
 
 	list = (SCROLL_INFO *)object_get_spec(ob)->index;
-
+	
+	DIAGS(("click_scroll_list: state=%d, cstate=%d", md->state, md->cstate));
+	
+	{
+		RECT r;
+		ob_area(form, item, &r);
+		list->wi->r = list->wi->rc = r;
+		calc_work_area(list->wi);
+	}
+	
 	if (!do_widgets(lock, list->wi, 0, md))
 	{
 		short y = screen.c_max_h;
@@ -578,6 +930,13 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 	short y = screen.c_max_h, cx = md->x, cy = md->y;	
 
 	list = (SCROLL_INFO *)object_get_spec(ob)->index;
+
+	{
+		RECT r;
+		ob_area(form, item, &r);
+		list->wi->r = list->wi->rc = r;
+		calc_work_area(list->wi);
+	}
 
 	if (!do_widgets(lock, list->wi, 0, md))		/* HR 161101: mask */
 	{
