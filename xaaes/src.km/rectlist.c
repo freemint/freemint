@@ -69,7 +69,7 @@ build_rect_list(struct build_rl_parms *p)
 			nrl->r.h -= wy2 - sy2;
 	}
 	
-	DIAGS(("make_rect_list: area=(%d/%d/%d/%d), nrl=(%d/%d/%d/%d)",
+	DIAGS(("build_rect_list: area=(%d/%d/%d/%d), nrl=(%d/%d/%d/%d)",
 		*p->area, nrl->r));
 
 	if (nrl)
@@ -91,7 +91,6 @@ build_rect_list(struct build_rl_parms *p)
 
 			for (rl = nrl, rl_prev = NULL; rl; rl = rl_next)
 			{
-
 				r_ours = rl->r;
 
 				flag = 0;
@@ -253,7 +252,11 @@ nextwind_rect(struct build_rl_parms *p)
 
 	while (wind)
 	{
-		if (!(wind->owner->status & CS_EXITING))
+		/*
+		 * Lets skip windows whose owner is exiting or is hidden
+		 */
+		if (!(wind->owner->status & CS_EXITING) &&
+		     (wind->window_status & (XAWS_HIDDEN|XAWS_OPEN)) == XAWS_OPEN)
 		{
 			p->next_r = &wind->r;
 			wind = wind->prev;

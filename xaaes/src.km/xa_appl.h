@@ -33,6 +33,7 @@
 bool is_client(struct xa_client *client);
 void exit_proc(enum locks lock, struct proc *proc);
 void exit_client(enum locks lock, struct xa_client *client, int code);
+void init_apgi_infotab(void);
 
 AES_function
 	XA_appl_init,
