@@ -32,7 +32,7 @@
  * $00E00000- $00E3FFFF: G (ROM)
  * $00E40000- $00FF7FFF: bus error
  * $00FF8000- $00FFFFFF: G (mostly S: I/O space, but that's done in hardware)
- * $01000000- ramtop: P
+ * $01000000- ramtop: P ($04000000 under falcon/CT2)
  * ramtop	 - $7FFFFFFF: G (A32/D32 VME, supervisor only, cacheable)
  * $80000000- $FEFFFFFF: G (A32/D32 VME, supervisor only, non cacheable)
  * $FFxxxxxx	      just like $00xxxxxx.
@@ -92,6 +92,7 @@
 # include "kmemory.h"
 # include "memory.h"
 # include "mmu.h"
+# include "cookie.h"
 
 
 #ifndef MMU040
@@ -128,6 +129,9 @@ tc_reg tc;
 /* mint_top_* get used in mem.c also */
 ulong mint_top_tt;
 ulong mint_top_st;
+
+/* offset for CT2 tt-ram normally to 0 */
+ulong offset_tt_ram;
 
 /* number of megabytes of TT RAM (rounded up, if necessary */
 int tt_mbytes;
@@ -185,24 +189,46 @@ page_type *const proto_page_type[] =
 
 void
 init_tables(void)
-{
+{	
 	if (no_mem_prot)
 	{
 		page_table_size = 0L;
 		return;
 	}
 	
-	{
+{
+    COOKIE *cookie;
+    int falcon,ct2;
     int n_megabytes;
     long global_mode_table_size;
-
 
     TRACE(("init_tables"));
 
 #define phys_top_tt (*(ulong *)0x5a4L)
+    falcon = ct2 = 0;
+    offset_tt_ram = 0;
     if (phys_top_tt == 0x01000000L) mint_top_tt = 0;
-    else mint_top_tt = phys_top_tt;
-
+    else
+    {
+        mint_top_tt = phys_top_tt;
+        cookie = *CJAR;
+        if (cookie)
+        {
+            while (cookie->tag)
+            {
+                if ((cookie->tag == COOKIE__MCH) && ((cookie->value>>16) == 3)) /* Falcon */
+                    falcon=1;
+                if (cookie->tag == 0x5f435432)	/* _CT2 */
+                    ct2=1;
+                cookie++;
+           }
+       }
+       if (falcon && ct2)
+            offset_tt_ram = 0x03000000L;
+       else
+            ct2=0;
+    }
+    
 #define phys_top_st (*(ulong *)0x42eL)
     mint_top_st = phys_top_st;
 
@@ -281,7 +307,7 @@ init_tables(void)
 
     /* set the whole global_mode_table to "global" */
     memset(global_mode_table,PROT_G,global_mode_table_size);
-	}
+}
 }
 
 /*
@@ -341,6 +367,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
     int b_index, c_index, d_index;
     long_desc *tbl, *tbl_b, *tbl_c;
     int dt, s, wp;
+    ulong offset;
 
     if (start < mint_top_st) {
 	/* start is in ST RAM; fail if not entirely in ST RAM */
@@ -366,10 +393,15 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
     c_index = (int)(start >> LOG2_ONE_MEG) & 0xf;
     d_index = (int)(start >> LOG2_EIGHT_K) & 0x7f;
 
+   if ((long)base_tbl >= 0x01000000L)
+       offset = offset_tt_ram;
+    else
+       offset = 0;
+
     /* precompute the table addresses */
-    tbl_b = &base_tbl[0].tbl_address[b_index];
-    tbl_c = &tbl_b->tbl_address[c_index];
-    tbl = &tbl_c->tbl_address[d_index];
+    tbl_b = (long_desc *)((ulong)&base_tbl[0].tbl_address[b_index] - offset);
+    tbl_c = (long_desc *)((ulong)&tbl_b->tbl_address[c_index] - offset);
+    tbl = (long_desc *)((ulong)&tbl_c->tbl_address[d_index] - offset);
 
     dt = tbl->page_type.dt;
     wp = tbl->page_type.wp;
@@ -377,7 +409,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 
     for (;;) {
 	/* quickly loop through the 1MB-block */
-	for (; len && tbl < &tbl_c->tbl_address[0x80]; tbl++)
+	for (; len && tbl < (long_desc *)((ulong)&tbl_c->tbl_address[0x80] - offset); tbl++)
 	  {
 	    if ((tbl->page_type.dt != dt) ||
 		(tbl->page_type.s != s) ||
@@ -394,12 +426,12 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 	/* step to the next d-table */
 	tbl_c++;
 	/* if crossing a 16MB boundary, get the next c-table */
-	if (tbl_c == &tbl_b->tbl_address[0x10])
+	if (tbl_c == (long_desc *)((ulong)&tbl_b->tbl_address[0x10] - offset))
 	  {
 	    tbl_b++;
-	    tbl_c = tbl_b->tbl_address;
+	    tbl_c = (long_desc *)((ulong)tbl_b->tbl_address - offset);
 	  }
-	tbl = tbl_c->tbl_address;
+	tbl = (long_desc *)((ulong)tbl_c->tbl_address - offset);
     }
     /* we passed -- all the pages in question have the same prot. status */
     return (wp << 3) | (s << 2) | dt | 0x8000;
@@ -411,10 +443,10 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 {
 	if (no_mem_prot)
 		return;
-	{
+{
     int b_index, c_index, d_index;
     long_desc *tbl, *tbl_b, *tbl_c;
-    ulong oldlen;
+    ulong oldlen,offset;
 
 
     oldlen = len;
@@ -430,10 +462,15 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
     c_index = (int)(start >> LOG2_ONE_MEG) & 0xf;
     d_index = (int)(start >> LOG2_EIGHT_K) & 0x7f;
 
+	  if ((long)base_tbl >= 0x01000000L)
+       offset = offset_tt_ram;
+    else
+       offset = 0;
+
     /* precompute the table addresses */
-    tbl_b = &base_tbl[0].tbl_address[b_index];
-    tbl_c = &tbl_b->tbl_address[c_index];
-    tbl = &tbl_c->tbl_address[d_index];
+    tbl_b = (long_desc *)((ulong)&base_tbl[0].tbl_address[b_index] - offset);
+    tbl_c = (long_desc *)((ulong)&tbl_b->tbl_address[c_index] - offset);
+    tbl = (long_desc *)((ulong)&tbl_c->tbl_address[d_index] - offset);
 
 #ifdef MEMPROT_SHORTCUT
     /*
@@ -463,7 +500,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
     for (;;)
       {
 	/* quickly loop through the 1MB-block */
-	for (; len && tbl < &tbl_c->tbl_address[0x80]; tbl++)
+	for (; len && tbl < (long_desc *)((ulong)&tbl_c->tbl_address[0x80] - offset); tbl++)
 	  {
 	    tbl->page_type.dt = dt_val;
 	    tbl->page_type.s = s_val;
@@ -477,12 +514,12 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
 	/* get the next d-table */
 	tbl_c++;
 	/* if crossing a 16MB boundary, get the next c-table */
-	if (tbl_c == &tbl_b->tbl_address[0x10])
+	if (tbl_c == (long_desc *)((ulong)&tbl_b->tbl_address[0x10] - offset))
 	  {
 	    tbl_b++;
-	    tbl_c = tbl_b->tbl_address;
+	    tbl_c = (long_desc *)((ulong)tbl_b->tbl_address - offset);
 	  }
-	tbl = tbl_c->tbl_address;
+	tbl = (long_desc *)((ulong)tbl_c->tbl_address - offset);
     }
 
     flush_mmu();
@@ -494,7 +531,7 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
      * is needed.
      */
 	cpush((void *)start, oldlen);
-	}
+}
 }
 
 /* get_prot_mode(r): returns the type of protection region r
@@ -506,10 +543,10 @@ get_prot_mode(MEMREGION *r)
 {
 	if (no_mem_prot)
 		return PROT_G;
-	{
-		ulong start = r->loc;
-		return global_mode_table[(start >> 13)];
-	}
+{
+    ulong start = r->loc;
+    return global_mode_table[(start >> 13)];
+}
 }
 
 void
@@ -517,7 +554,7 @@ mark_region(MEMREGION *region, short int mode)
 {
 	if (no_mem_prot)
 		return;
-	{
+{
     ulong start = region->loc;
     ulong len = region->len;
     ulong i;
@@ -584,7 +621,7 @@ notowner:
 gotvals:
 	mark_pages(proc->p_mem->page_table,start,len,dt_val,s_val,wp_val);
     }
-	}
+}
 }
 
 /* special version of mark_region, used for attaching (mode == PROT_P)
@@ -594,7 +631,7 @@ mark_proc_region(PROC *proc, MEMREGION *region, short int mode)
 {
 	if (no_mem_prot)
 		return;
-	{
+{
     ulong start = region->loc;
     ulong len = region->len;
     ushort dt_val, s_val, wp_val;
@@ -648,7 +685,7 @@ owner:
 
 gotvals:
     mark_pages(proc->p_mem->page_table,start,len,dt_val,s_val,wp_val);
-	}
+}
 }
 
 /*
@@ -674,7 +711,7 @@ prot_temp(ulong loc, ulong len, int mode)
 {
 	if (no_mem_prot)
 		return -1;
-	{
+{
     int cookie;
 
     /* round start down to the previous page and len up to the next one. */
@@ -699,7 +736,7 @@ prot_temp(ulong loc, ulong len, int mode)
 		    mode&3,(mode&4)>>2,(mode&8)>>3);
 	return 0;
     }
-	}
+}
 }
 
 /*
@@ -720,7 +757,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 {
 	if (no_mem_prot)
 		return;
-	{
+{
     long_desc *tptr;
     long_desc *tbl_a;		/* top-level table */
     long_desc *tbl_b0;		/* second level, handles $0 nybble */
@@ -730,13 +767,18 @@ init_page_table (PROC *proc, struct memspace *p_mem)
     ulong i, j, k;
     int g;
     MEMREGION **mr;
-
+    ulong offset;
 
     assert (p_mem->page_table);
 
     TRACELOW(("init_page_table (p_mem = %lx)", p_mem));
 
     tptr = p_mem->page_table;
+    if ((long) tptr >= 0x01000000L)
+       offset = offset_tt_ram;
+    else
+       offset = 0;
+    
     tbl_a = tptr;
     tptr += TBL_SIZE;
     tbl_b0 = tptr;
@@ -753,7 +795,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
      */
 
     tbl_a[0].page_type = page_ptr;
-    tbl_a[0].tbl_address = tbl_b0;
+    tbl_a[0].tbl_address = (long_desc *)((ulong)tbl_b0 + offset);
 
     for (i=1; i<0xf; i++) {
 	if (i < 8)  tbl_a[i].page_type = s_page;
@@ -763,21 +805,21 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
     /* $F entry of table A refers to table BF */
     tbl_a[0xf].page_type = page_ptr;
-    tbl_a[0xf].tbl_address = tbl_bf;
+    tbl_a[0xf].tbl_address = (long_desc *)((ulong)tbl_bf + offset);
 
     /*
      * table B0: entry 0 is $00, the 16MB of ST address space.
      */
 
     tbl_b0[0].page_type = page_ptr;
-    tbl_b0[0].tbl_address = tptr;
+    tbl_b0[0].tbl_address = (long_desc *)((ulong)tptr + offset);
     tbl_c = tptr;
     tptr += TBL_SIZE;
 
     /* for each megabyte that is RAM, allocate a table */
     for (i = 0, k = 0, p = 0; p < mint_top_st; i++, p += 0x00100000L) {
 	tbl_c[i].page_type = page_ptr;
-	tbl_c[i].tbl_address = tptr;
+	tbl_c[i].tbl_address = (long_desc *)((ulong)tptr + offset);
 
 	/* for each page in this megabyte, write a page entry */
 	for (q = p, j = 0; j < 128; j++, q += 0x2000, k++) {
@@ -820,28 +862,28 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
     /* i counts 16MBs */
     for (i = 1, p = 0x01000000L, g = 2048;
-	 p < mint_top_tt;
-	 p += SIXTEEN_MEG, i++) {
+     p < mint_top_tt;
+     p += SIXTEEN_MEG, i++) {
 	    tbl_b0[i].page_type = page_ptr;
-	    tbl_b0[i].tbl_address = tptr;
+	    tbl_b0[i].tbl_address = (long_desc *)((ulong)tptr + offset);
 	    tbl_c = tptr;
 	    tptr += TBL_SIZE;
 
 	    /* j counts MBs */
 	    for (j = 0, q = p; j < 16 && q < mint_top_tt; q += ONE_MEG, j++) {
 		tbl_c[j].page_type = page_ptr;
-		tbl_c[j].tbl_address = tptr;
+		tbl_c[j].tbl_address = (long_desc *)((ulong)tptr + offset);
 		/* k counts pages (8K) */
 		for (r = q, k = 0; k < 128; k++, r += 0x2000, g++) {
 		    tptr->page_type = *proto_page_type[global_mode_table[g]];
-		    tptr->tbl_address = (long_desc *)r;
+		    tptr->tbl_address = (long_desc *)(r + offset_tt_ram);
 		    tptr++;
 		}
 	    }
 	    for ( ; j < 16; j++, q += ONE_MEG) {
 		/* fill in the rest of this 16MB */
 		tbl_c[j].page_type = s_page;
-		tbl_c[j].tbl_address = (long_desc *)q;
+		tbl_c[j].tbl_address = (long_desc *)(q + offset_tt_ram);
 	    }
     }
 
@@ -873,7 +915,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
     proc->ctxt[0].crp.limit = 0x7fff;	/* disable limit function */
     proc->ctxt[0].crp.dt = 3;		/* points to valid 8-byte entries */
-    proc->ctxt[0].crp.tbl_address = tbl_a;
+    proc->ctxt[0].crp.tbl_address = (long_desc *)((ulong)tbl_a + offset);
     proc->ctxt[1].crp = proc->ctxt[0].crp;
     proc->ctxt[0].tc = tc;
     proc->ctxt[1].tc = tc;
@@ -891,11 +933,12 @@ init_page_table (PROC *proc, struct memspace *p_mem)
     	}
     }
 
-    if (!mmu_is_set_up) {
-	set_mmu(proc->ctxt[0].crp,proc->ctxt[0].tc);
-	mmu_is_set_up = 1;
+    if (!mmu_is_set_up)
+    {
+        set_mmu(proc->ctxt[0].crp,proc->ctxt[0].tc);
+        mmu_is_set_up = 1;
     }
-	}
+}
 }
 
 /*
@@ -914,7 +957,7 @@ mem_prot_special(PROC *proc)
 	if (no_mem_prot)
 		return;
 
-	{
+{
     MEMREGION **mr;
     int i;
     unsigned char mode;
@@ -956,7 +999,7 @@ mem_prot_special(PROC *proc)
 	    }
 	}
     }
-	}
+}
 }
 
 /*----------------------------------------------------------------------------
@@ -968,7 +1011,13 @@ _dump_tree(long_desc tbl, int level)
 {
     int i, j;
     long_desc *p;
+    ulong offset;
     static const char spaces[9] = "        ";
+
+    if ((long) &tbl >= 0x01000000L)
+       offset = offset_tt_ram;
+    else
+       offset = 0;
 
     /* print the level and display the table descriptor */
     FORCE("\r%s s:%x wp:%x dt:%x a:%08lx",
@@ -976,7 +1025,7 @@ _dump_tree(long_desc tbl, int level)
 	tbl.page_type.s,
 	tbl.page_type.wp,
 	tbl.page_type.dt,
-	tbl.tbl_address);
+	(long_desc *)((ulong)tbl.tbl_address - offset));
 
     if (tbl.page_type.dt == 3) {
 	if (level == 0) {
@@ -996,7 +1045,7 @@ _dump_tree(long_desc tbl, int level)
 	if ((ulong)tbl.tbl_address & 1) return;
 
 	++level;
-	p = tbl.tbl_address;
+	p = (long_desc *)((ulong)tbl.tbl_address - offset);
 	for (i=0; i<j; i++, p++) {
 	    _dump_tree(*p,level);
 	}
