@@ -179,6 +179,8 @@ load_all_modules(unsigned long mask)
 			DEBUG(("load_all_modules: processing \"%s\"", _types [i]));
 			load_modules(sysdir, _types [i], _loads [i]);
 			DEBUG(("load_all_modules: done with \"%s\"", _types [i]));
+
+			stop_and_ask();
 		}
 	}
 }
