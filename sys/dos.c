@@ -21,6 +21,7 @@
 # include "mint/signal.h"
 # include "arch/intr.h"
 
+# include "console.h"
 # include "dosfile.h"
 # include "filesys.h"
 # include "k_prot.h"
@@ -614,12 +615,15 @@ s_uptime (ulong *cur_uptime, ulong loadaverage[3])
  * shut down processes; this involves waking them all up, and sending
  * them SIGTERM to give them a chance to clean up after themselves
  */
+
+# if 0
 static void _cdecl
 shutmedown (PROC *p)
 {
 	wake (WAIT_Q, (long) s_hutdown);
 	p->wait_cond = 0;
 }
+# endif
 
 /*
  * This is the code that shuts the system down. It's no longer in s_hutdown(),
@@ -632,13 +636,15 @@ void
 shutdown (void)
 {
 	PROC *p;
-	int proc_left = 0;
-	int i;
+	short proc_left = 0;
+	short i;
+	char msg[256];
 	
-	DEBUG (("Shutting processes down..."));
-	DEBUG (("This is pid %d", curproc->pid));
+	ksprintf(msg, sizeof(msg), \
+		"Shutting processes down (the caller is pid %d)\r\n", \
+			curproc->pid);
+	c_conws(msg);
 	
-# if 1
 	assert (curproc->p_sigacts);
 	
 	/* Ignore signals, that could terminate this process */
@@ -647,17 +653,10 @@ shutdown (void)
 	SIGACTION(curproc, SIGABRT).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGHUP).sa_handler = SIG_IGN;
-# else
-	curproc->sighandle[SIGCHLD] = SIG_IGN;
-	curproc->sighandle[SIGTERM] = SIG_IGN;
-	curproc->sighandle[SIGABRT] = SIG_IGN;
-	curproc->sighandle[SIGQUIT] = SIG_IGN;
-	curproc->sighandle[SIGHUP] = SIG_IGN;
-# endif
-	
+
 	for (p = proclist; p; p = p->gl_next)
 	{
-		if (p->pid == 0) continue;
+		if (!p->pid) continue;
 		if (p == curproc) continue;  /* curproc is trapped in this code */
 		if (p->memflags & F_OS_SPECIAL) continue;	/* AES :< */
 		
@@ -670,22 +669,29 @@ shutdown (void)
 				add_q (READY_Q, p);
 				spl (sr);
 			}
-			DEBUG (("Posting SIGTERM for pid %d", p->pid));
+			ksprintf(msg, sizeof(msg), \
+				"Posting SIGTERM for pid %d\r\n", p->pid);
+			c_conws(msg);
 			post_sig (p, SIGTERM);
 			proc_left++;
 		}
 	}
 	
-	/* Give up the CPU, so that the signals above get delivered
-	 */
-	s_yield();
-
 	if (proc_left)
 	{
+		long yields = proc_left << 4;	/* 16 turns for everyone */
+
 		/* sleep a little while, to give the other processes
 		 * a chance to shut down
 		 */
-		
+# if 1
+		c_conws("Sleeping... ");
+
+		for (i = 0; i < yields; i++)
+			s_yield();
+
+		c_conws("done!\r\n");
+# else
 		if (addtimeout (curproc, 1000, shutmedown))
 		{
 			do {
@@ -694,21 +700,16 @@ shutdown (void)
 			}
 			while (curproc->wait_cond == (long) s_hutdown);
 		}
-		
-		DEBUG (("Killing all processes..."));
+# endif
 		for (p = proclist; p; p = p->gl_next)
 		{
-			if ((p->pid == 0) || (p == curproc) || (p->memflags & F_OS_SPECIAL))
+			if (!p->pid || (p == curproc) || \
+					(p->memflags & F_OS_SPECIAL))
 				continue;
-
-			DEBUG (("Posting SIGKILL for pid %d", p->pid));
 			post_sig (p, SIGKILL);
 		}
 	}
 	
-	/* Again */
-	s_yield();
-
 	sys_q[READY_Q] = 0;
 	
 	DEBUG (("Close open files ..."));
