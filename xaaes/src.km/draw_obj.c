@@ -1887,7 +1887,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	c = ciconblk->mainlist;
 	while (c)
 	{
-		DIAG((D_o, wt->owner, "cicon cicon 0x%lx", c));
+		//DIAG((D_o, wt->owner, "cicon cicon 0x%lx", c));
 
 		/* Jinnee v<2.5 has misunderstood the next_res NULL rule :( */
 		if ( c == (CICON*)-1 ) break;
@@ -1895,7 +1895,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		if (c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
-			DIAG((D_o, wt->owner, "cicot best_cicon 0x%lx planes=%d", c, c->num_planes));
+			//DIAG((D_o, wt->owner, "cicot best_cicon 0x%lx planes=%d", c, c->num_planes));
 			best_cicon = c;
 		}
 
@@ -1905,7 +1905,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	/* No matching icon, so use the mono one instead */
 	if (!best_cicon)
 	{
-		DIAG((D_o, wt->owner, "cicon !best_cicon", c));
+		//DIAG((D_o, wt->owner, "cicon !best_cicon", c));
 		d_g_icon(lock, wt, clip);
 		return;
 	}
@@ -1933,7 +1933,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 
 	have_sel = c->sel_data != NULL;
 
-	DIAG((D_o, wt->owner, "cicon sel_mask 0x%lx col_mask 0x%lx", c->sel_mask, c->col_mask));
+	//DIAG((D_o, wt->owner, "cicon sel_mask 0x%lx col_mask 0x%lx", c->sel_mask, c->col_mask));
 
 	/* check existence of selection. */
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
@@ -2440,6 +2440,7 @@ display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short item, short
 	/* Better do this before AND after (fail safe) */
 	wr_mode(MD_TRANS);
 
+#if 0
 #if GENERATE_DIAGS
 	if (wt->tree != get_widgets())
 	{
@@ -2458,6 +2459,7 @@ display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short item, short
 			 ob->ob_flags,flagstr,
 			 ob->ob_state,statestr));
 	}
+#endif
 #endif
 
 	/* Call the appropriate display routine */
@@ -2581,10 +2583,10 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 
 	do {
 
-		DIAG((D_objc, NULL, " ~~~ obj=%d(%d/%d), flags=%x, state=%x, head=%d, tail=%d, next=%d, depth=%d, draw=%s",
-			current, x, y, tree[current].ob_flags, tree[current].ob_state,
-			tree[current].ob_head, tree[current].ob_tail, tree[current].ob_next,
-			rel_depth, start_drawing ? "yes":"no"));
+	//	DIAG((D_objc, NULL, " ~~~ obj=%d(%d/%d), flags=%x, state=%x, head=%d, tail=%d, next=%d, depth=%d, draw=%s",
+	//		current, x, y, tree[current].ob_flags, tree[current].ob_state,
+	//		tree[current].ob_head, tree[current].ob_tail, tree[current].ob_next,
+	//		rel_depth, start_drawing ? "yes":"no"));
 
 		if (current == item)
 		{

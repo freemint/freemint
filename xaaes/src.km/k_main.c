@@ -557,9 +557,13 @@ init_moose(void)
 				{
 					vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
 					DIAGS(("Wheel support present"));
+					display("Wheel support present");
 				}
 				else
+				{
 					DIAGS(("No wheel support"));
+					display("No wheel support present");
+				}
 
 				if (adi_ioctl(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
 					display("Moose set dclick time failed");
@@ -962,6 +966,8 @@ k_main(void *dummy)
 		{
 			if (cfg.cnf_run[i])
 			{
+				DIAGS(("autorun[%d]: cmd=(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
+				DIAGS(("   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
 				parms[0] = '\0';
 				if (cfg.cnf_run_arg[i])
 					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);

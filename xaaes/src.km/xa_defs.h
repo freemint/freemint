@@ -49,7 +49,7 @@
 
 /*----------------------------------------------------------------- */
 /* Maximum space for 'nice name' for app's (menu_register) */
-#define NICE_NAME		32
+#define NICE_NAME		64
 
 #define MAX_FTEXTLEN		256
 
