@@ -1,0 +1,69 @@
+This file is designed as an introduction to minixfs. What it is, what it does
+and why you might want to use it.
+
+        Minixfs is an alternative filesystem which runs under MiNT. It can
+replace the standard TOS MS-DOS like filesystem which is standard on the ST.
+So why would you want to replace the standard TOS filesystem? Here are some
+of the arguments for and against minixfs:
+
+For:
+
+1. Filenames are no longer limited to 8 characters with an optional 3
+character extension, the standard filesystem supports mixed case 14 character
+filenames. Alternative filesystems support 30 or even 62 character filenames.
+
+2. The filesystem is much more U*ix like, supporting the standard user/group 
+ids, 3 access times (well for the V2 filesystem anyway) and so on. If you're
+used to Un*x like filesystems then this will certainly make you feel at home! 
+Symbolic and hard links are supported too as are sparse files and the root
+directory can never fill up.
+
+3. The filesystem is compatible with that used by Minix as might be guessed
+from its name. If you use Minix then using minixfs under MiNT will allow the  
+minix partitions to be accessible under TOS, in fact they can be set up to
+appear almost indistinguishable from TOS partitions.
+
+4. Because it uses an indirection block Un*x like filesystem it tends to be
+somewhat more robust than TOS filesystems. 
+
+5. Full source is available, as am I. You find a bug, tell me and I'll fix it.
+
+6. It is possible to make *huge* partitions, theoretically the limit is 4096Gb 
+if your hardware and software can take it (and I don't know anything that
+can!). This is achieved *without* increasing the sector size, unlike the
+standard TOS filesystems.
+
+7. It is quite a bit quicker than TOS filesystems. If you don't use 
+write-caching disk software then the speedup using turbo mode is considerable.
+Even if you do use write-caching software (e.g. ICD) the speedup is still
+useable.
+
+Against:
+
+1. Programs which depend upon the filesystem format (defraggers consistency 
+checkers etc) will not work. I have written a consistency checker for Minixfs
+however, which is supplied. A port of the Linux defragger is also available.
+
+2. Non MiNT aware programs will not be able to access longer filenames and
+some non conforming MiNT aware programs wont either. You can still use the
+translated TOS compatible names though.
+
+3. Minixfs is not officially supported by Atari. At least they've never told
+me if it is. This has several consequences and some of the more cynical may
+consider this should be put in the 'for' group :-)
+
+4. Huge partitions have a few caveats, mainly due to buggy driver software.
+Although work arounds exist. Roughly speaking this works in spite of the
+driver software rather than because of it :-)
+
+        In spite of the above 'againsts' I regard minixfs as a very powerful 
+and useful addition to the ST (then again I would wouldn't I?). For programmers
+it is very useful indeed particularly if you are porting from Un*x, many of
+the standard kludges to make filenames fit are no longer necessary nor are
+some of the tricks to keep TOS happy (like not unlinking an open file).
+
+        If you haven't decided not to try Minixfs by now then you'll want to
+know more information. If you're unsure you can always experiment with Minixfs
+filesystems on floppy disks first before comitting your hard disk.
+	The remaining files in this directory give information about minixfs
+itself and the various tools for creating and fixing minixfs partitions.
