@@ -15,7 +15,7 @@
  * Blowfish P-box and S-box tables
  */
 
-static ulong bf_P [bf_N + 2] =
+static unsigned long bf_P[bf_N + 2] =
 {
 	0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344,
 	0xa4093822, 0x299f31d0, 0x082efa98, 0xec4e6c89,
@@ -24,7 +24,7 @@ static ulong bf_P [bf_N + 2] =
 	0x9216d5d9, 0x8979fb1b,
 };
 
-static ulong bf_S [4][256] =
+static unsigned long bf_S[4][256] =
 {
 	{
 		0xd1310ba6, 0x98dfb5ac, 0x2ffd72db, 0xd01adfb7, 

@@ -2,19 +2,24 @@
 # the files that should go only into source distributions.
 
 HEADER = \
-	 fstring.h \
-	 libkern.h \
-	 kernel_module.h \
-	 kernel_xfs_xdd.h
+	bf_tab.h \
+	blowfish.h \
+	fstring.h \
+	kernel_module.h \
+	kernel_xfs_xdd.h \
+	libkern.h \
+	md5.h
 
 COBJS = \
 	atol.c \
+	blowfish.c \
 	bzero.c \
 	ctype.c \
 	dostime.c \
 	getenv.c \
 	ksprintf.c \
 	ksprintf_old.c \
+	md5.c \
 	memchr.c \
 	memcmp.c \
 	ms_time.c \
