@@ -38,22 +38,7 @@
  * global variables
  */
 
-struct global
-{
-	long  mch;		/* machine we are are running */
-	long  fputype;		/* fpu type, value for cookie jar */
-
-	short tosvers;		/* the underlying TOS version */
-
-	short gl_lang;		/* language preference */
-# define MAXLANG 6		/* languages supported */
-	short reserved;
-
-	/* The path to the system directory
-	 */
-	short sysdrv;
-	char  sysdir[32];
-};
+# if __KERNEL__ == 1
 
 extern struct global global;
 
@@ -86,5 +71,7 @@ extern unsigned long c20ms;
 extern short falcontos;
 extern short FalconVideo;
 extern short ste_video;
+
+# endif
 
 # endif /* _global_h */

@@ -767,12 +767,12 @@ check_kentry_version(void)
  * kentry_mch
  */
 
-# define mch			( KENTRY->vec_mch.mch)
-# define fputype		( KENTRY->vec_mch.fputype)
-# define tosvers		( KENTRY->vec_mch.tosvers)
-# define gl_lang		( KENTRY->vec_mch.gl_lang)
-# define sysdrv			( KENTRY->vec_mch.sysdrv)
-# define sysdir			( KENTRY->vec_mch.sysdir)
+# define mch			( KENTRY->vec_mch.global->mch)
+# define fputype		( KENTRY->vec_mch.global->fputype)
+# define tosvers		( KENTRY->vec_mch.global->tosvers)
+# define gl_lang		( KENTRY->vec_mch.global->gl_lang)
+# define sysdrv			( KENTRY->vec_mch.global->sysdrv)
+# define sysdir			( KENTRY->vec_mch.global->sysdir)
 # define loops_per_sec_ptr	( KENTRY->vec_mch.loops_per_sec)
 # define c20ms_ptr		( KENTRY->vec_mch.c20ms)
 # define mfpregs		( KENTRY->vec_mch.mfpregs)
