@@ -1,0 +1,15 @@
+MOOSE.XDD
+============
+
+ XaAES depends on moose.xdd to get mouse button and movement events. 
+ Moose.xdd installs /dev/moose and /dev/mooses files. XaAES waits for 
+ button/movement events (using Fselect()) on /dev/moose, while /dev/mooses 
+ is intended to be used instead of vq_mouse(); VDI call.
+
+ Mouse wheel support NOT TESTED! You must define HAVE_WHEEL to compile with 
+ wheel support.
+
+ USE IT AT YOUR OWN RISK! THERE'S NO WARRANTY!
+
+ Have fun,
+ Odd Skancke <ozk@atari.org>

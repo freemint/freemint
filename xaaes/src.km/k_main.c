@@ -30,6 +30,7 @@
 #include "xa_global.h"
 
 #include "app_man.h"
+#include "adiload.h"
 #include "c_window.h"
 #include "cnf_xaaes.h"
 #include "desktop.h"
@@ -472,6 +473,8 @@ k_main(void *dummy)
 		goto leave;
 	}
 
+
+	adi_load();
 
 	/*
 	 * Initialization AES/VDI

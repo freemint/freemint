@@ -838,6 +838,24 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	return true;
 }
 
+void
+adi_move(struct adif *a, short x, short y)
+{
+	x_mouse = x;
+	y_mouse = y;
+}
+void
+adi_button(struct adif *a, struct moose_data *md)
+{
+	vq_key_s(C.vh, &md->kstate);
+	new_moose_pkt(0, 0, md);
+	kfree(md);
+}
+void
+adi_wheel(struct adif *a, struct moose_data *md)
+{
+}
+
 int
 mouse_input(enum locks lock, int internal)
 {
