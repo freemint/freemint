@@ -286,7 +286,7 @@ XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	char *text = (char *)pb->addrin[1];
+	const char *text = (const char *)pb->addrin[1];
 
 	XA_TREE *menu_bar = get_menu();
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
@@ -309,16 +309,19 @@ XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	int f; char *n = (char*)pb->addrin[0];
-	
+	const char *n = (const char *)pb->addrin[0];
+
 	CONTROL(1,1,1)
 
 	if (n)
 	{
 		pb->intout[0] = client->p->pid;
+
 		if (pb->intin[0] != -1)
 		{
-			int l = strlen(n);
+			int l;
+
+			l = strlen(n);
 			if (l >= NICE_NAME)
 			{
 				strncpy(client->name, n, NICE_NAME-1);
@@ -326,6 +329,8 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			else
 				strcpy(client->name, n);
+
+			/* refresh the name change in the taskmanager */
 			update_tasklist(lock);
 
 			DIAGS(("menu_register 'nice' for %d: '%s'",
@@ -333,11 +338,20 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
+			int f;
+
+			/* copy over */
 			strncpy(client->proc_name, n, 8);
 			client->proc_name[8] = '\0';
+
+			/* fill with space */
 			for (f = strlen(client->proc_name); f < 8; f++)
 				client->proc_name[f] = ' ';
+
+			/* uppercase */
 			strnupr(client->proc_name, 8);
+
+			/* refresh the name change in the taskmanager */
 			update_tasklist(lock);
 
 			DIAGS(("menu_register 'proc' for %d: '%s'",
@@ -454,7 +468,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 
-			bzero(&tab->task_data.menu, sizeof(MENU_TASK));
+			bzero(&(tab->task_data.menu), sizeof(MENU_TASK));
 
 			do_popup(tab, ob, 0,
 				 click_form_popup_entry,
