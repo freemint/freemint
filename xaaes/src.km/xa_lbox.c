@@ -160,7 +160,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 	wind = wt->wind;
 
 	DIAG((D_lbox, NULL, "redraw_lbox: lbox=%lx, wt=%lx, wind=%lx, parent=%d",
-		lbox, wt, wind, lbox->aslid.parent));
+		lbox, wt, wind, lbox->parent));
 
 	ob_area(wt->tree, obj, &or);
 
@@ -220,7 +220,7 @@ setup_lbox_objects(struct xa_lbox_info *lbox)
 	struct widget_tree *wt = lbox->wt;
 	OBJECT *obtree = wt->tree;
 	struct lbox_item *item;
-	short x, y, i, ent, first, index, obj, prev, parent = lbox->aslid.parent;
+	short x, y, i, ent, first, index, obj, prev, parent = lbox->parent;
 	
 	DIAG((D_lbox, NULL, "setup_lbox_objects: wt=%lx, wt->lbox=%lx, entries=%d",
 		wt, wt->lbox, wt->lbox ? wt->lbox->entries : -1));
@@ -526,7 +526,7 @@ drag_aslide(struct xa_lbox_info *lbox)
 		 * new current object = total_object - visible_objects * slider_relpos / 1000
 		 */
 		ob_area(obtree, parent, &sl_r);
-		ob_area(obtree, lbox->aslid.parent, &lb_r);
+		ob_area(obtree, lbox->parent, &lb_r);
 
 		first = lbox->first_a;
 
@@ -578,7 +578,7 @@ drag_aslide(struct xa_lbox_info *lbox)
 							set_aslide_pos(lbox);
 							hidem();
 							redraw_lbox(lbox, parent, 2, &sl_r);
-							redraw_lbox(lbox, lbox->aslid.parent, 2, &lb_r);
+							redraw_lbox(lbox, lbox->parent, 2, &lb_r);
 							showm();
 
 							sx = mx;
@@ -615,7 +615,7 @@ drag_aslide(struct xa_lbox_info *lbox)
 							set_aslide_pos(lbox);
 							hidem();
 							redraw_lbox(lbox, parent, 2, &sl_r);
-							redraw_lbox(lbox, lbox->aslid.parent, 2, &lb_r);
+							redraw_lbox(lbox, lbox->parent, 2, &lb_r);
 							showm();
 
 							sx = mx;
@@ -737,35 +737,61 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		if (lbox)
 		{
+			short *in, *dst;
 			short i;
 
-			lbox->handle = (void *)pb->addrin[7];	/* dialog structure (handle to us) */
+			lbox->wdlg_handle = (void *)pb->addrin[7];	/* dialog structure (handle to us) */
 			lbox->lbox_handle = (void *)((ulong)lbox << 16 | (ulong)lbox >> 16);
+
+			/*
+			 * Get objects and data for slider A
+			 */
+			in  = (short *)pb->addrin[4];
+			dst = (short *)&lbox->aslid;
+			lbox->parent = *in++;
+			for (i = 0; i < 4; i++)
+				*dst++ = *in++;
 
 			lbox->visible_a	= pb->intin[0];
 			lbox->first_a	= pb->intin[1];
 			lbox->flags	= pb->intin[2];
 			lbox->pause_a	= pb->intin[3];
-			lbox->visible_b	= pb->intin[4];
-			lbox->first_b	= pb->intin[5];
-			lbox->entries_b	= pb->intin[6];
-			lbox->pause_b	= pb->intin[7];
 
-			lbox->slct	 = (lbox_select *)	pb->addrin[1];
-			lbox->set	 = (lbox_set *)		pb->addrin[2];
-			lbox->items	 = (struct lbox_item *)	pb->addrin[3];
-			lbox->objs	 = (short *)		pb->addrin[5];
-
+			/*
+			 * Get objects and data for slider B
+			 * If only 4 entries in intin, there is no slider B,
+			 * and we fill bslid with -1
+			 */
+			dst = (short *)&lbox->bslid;
+			if (pb->control[1] == 8)
 			{
-				short *in = (short *)pb->addrin[4];
-				short *dst = (short *)&lbox->aslid;
-				if (in)
-				{
-					for (i = 0; i < pb->control[1]; i++)
-						dst[i] = in[i];
-				}
+				for (i = 0; i < 4; i++)
+					*dst++ = *in++;
+
+				lbox->visible_b	= pb->intin[4];
+				lbox->first_b	= pb->intin[5];
+				lbox->entries_b	= pb->intin[6];
+				lbox->pause_b	= pb->intin[7];
 			}
-			lbox->user_data = (void *)pb->addrin[6];
+			else
+			{
+				for (i = 0; i < 4; i++)
+					*dst++ = -1;
+			}
+
+			/*
+			 * lbox callback functions...
+			 */
+			lbox->slct	= (lbox_select *)	pb->addrin[1];
+			lbox->set	= (lbox_set *)		pb->addrin[2];
+
+			/*
+			 * Address of initial items and the list of object indexes
+			 * making up the visible entries in the lbox.
+			 */
+			lbox->items	= (struct lbox_item *)	pb->addrin[3];
+			lbox->objs	= (short *)		pb->addrin[5];
+			lbox->user_data	= (void *)		pb->addrin[6];
 
 			DIAG((D_lbox, client, "N_INTIN=%d, flags=%x, visA=%d, firstA=%d, pauseA=%d, visB=%d, firstB=%d, entriesB=%d, pauseB=%d",
 				pb->control[1], lbox->flags, lbox->visible_a, lbox->first_a, lbox->pause_a,
@@ -773,29 +799,26 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_lbox, client, "entries=%d, slct=%lx, set=%lx, items=%lx, objs=%lx",
 				lbox->entries, (long)lbox->slct, (long)lbox->set, (long)lbox->items, (long)lbox->objs));
 			DIAG((D_lbox, client, "ctrl_obj: parent=%d, up=%d, dn=%d, bkg=%d, sld=%d B: lf=%d, rt=%d, bkg=%d, sld=%d",
-				lbox->aslid.parent, lbox->aslid.up, lbox->aslid.down, lbox->aslid.slide_bkg, lbox->aslid.slider,
+				lbox->parent, lbox->aslid.up, lbox->aslid.down, lbox->aslid.slide_bkg, lbox->aslid.slider,
 				lbox->bslid.left, lbox->bslid.right, lbox->bslid.slide_bkg, lbox->bslid.slider));
 
+			/*
+			 * This bit is needed in cases where the sliders background is of
+			 * no 3-d type and thus no border offsets while the child is a 3-d
+			 * object. We need the difference between parent and child border offset
+			 */
 			{
-				short child = lbox->aslid.slider;
-				short parnt = lbox->aslid.slide_bkg;
+				short child, parnt;
 
+				parnt = lbox->aslid.slide_bkg;
+				child = lbox->aslid.slider;
 				if (child >= 0 && parnt >= 0)
-				{
-					RECT c, p;
+					ob_border_diff(obtree, child, parnt, &lbox->aslid.ofs);
 
-					object_offsets(obtree + child, &c);
-					object_offsets(obtree + parnt, &p);
-
-
-					lbox->aslid.ofs.x = c.x - p.x;
-					lbox->aslid.ofs.y = c.y - p.y;
-					lbox->aslid.ofs.w = c.w - p.w;
-					lbox->aslid.ofs.h = c.h - p.h;
-
-					DIAG((D_lbox, client, "child ofs(%d/%d/%d/%d), parnt ofs(%d/%d/%d/%d), ofs(%d/%d/%d/%d)",
-						c, p, lbox->aslid.ofs));
-				}
+				parnt = lbox->bslid.slide_bkg;
+				child = lbox->bslid.slider;
+				if (parnt >= 0 && child >= 0)
+					ob_border_diff(obtree, child, parnt, &lbox->bslid.ofs);
 			}
 
 			setup_lbox_objects(lbox);
@@ -830,7 +853,7 @@ XA_lbox_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (r)
 		{
 			hidem();
-			redraw_lbox(lbox, lbox->aslid.parent, 10, r);
+			redraw_lbox(lbox, lbox->parent, 10, r);
 			showm();
 		}
 	}
@@ -862,11 +885,8 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		RECT r;
 		
 		vq_key_s(C.vh, &ks);
-
 		obj &= ~0x8000;
-
-
-		ob_area(obtree, lbox->aslid.parent, &r);
+		ob_area(obtree, lbox->parent, &r);
 
 		if (obj == lbox->aslid.down)
 		{
@@ -875,7 +895,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				hidem();
 				set_aslide_pos(lbox);
-				redraw_lbox(lbox, lbox->aslid.parent, 2, &r);
+				redraw_lbox(lbox, lbox->parent, 2, &r);
 				ob_area(obtree, lbox->aslid.slide_bkg, &r);
 				redraw_lbox(lbox, lbox->aslid.slide_bkg, 2, &r);
 				showm();
@@ -888,7 +908,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				hidem();
 				set_aslide_pos(lbox);
-				redraw_lbox(lbox, lbox->aslid.parent, 2, &r);
+				redraw_lbox(lbox, lbox->parent, 2, &r);
 				ob_area(obtree, lbox->aslid.slide_bkg, &r);
 				redraw_lbox(lbox, lbox->aslid.slide_bkg, 2, &r);
 				showm();
@@ -903,7 +923,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				hidem();
 				set_aslide_pos(lbox);
-				redraw_lbox(lbox, lbox->aslid.parent, 2, &r);
+				redraw_lbox(lbox, lbox->parent, 2, &r);
 				ob_area(obtree, lbox->aslid.slide_bkg, &r);
 				redraw_lbox(lbox, lbox->aslid.slide_bkg, 2, &r);
 				showm();
@@ -935,7 +955,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				   pb->intin[0],
 				   last_state);
 
-			redraw_lbox(lbox, lbox->aslid.parent, 2, &r);
+			redraw_lbox(lbox, lbox->parent, 2, &r);
 			showm();
 
 			if (dc)
@@ -1225,7 +1245,7 @@ XA_lbox_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						scroll_up(lbox, num);
 					}
 					if (pb->addrin[1])
-						redraw_lbox(lbox, lbox->aslid.parent, 2, (RECT *)pb->addrin[1]);
+						redraw_lbox(lbox, lbox->parent, 2, (RECT *)pb->addrin[1]);
 					if (pb->addrin[2])
 						redraw_lbox(lbox, lbox->aslid.slide_bkg, 2, (RECT *)pb->addrin[2]);
 				}

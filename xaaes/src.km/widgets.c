@@ -569,53 +569,6 @@ remove_wt(XA_TREE *wt)
 	free_wt(wt);
 }
 
-#if 0
-XA_TREE *
-check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
-{
-	struct xa_window *wind = client->fmd.wind;
-	XA_TREE *wt = &client->wt;
-
-	DIAG((D_form, client, "check_widget_tree for %s: wh=%d obj:%lx, ed:%d, tree:%lx, %d/%d",
-		c_owner(client), wind ? wind->handle:-1,
-		wt->tree, wt->e.obj, tree, tree->ob_x, tree->ob_y));
-
-	/* HR 220401: x & y governed by fmd.wind */
-	if (wind)
-	{
-		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-		XA_TREE *ct = widg->stuff;
-
-		if (ct)
-			wt = ct;
-
-		DIAG((D_form, client, "check_widget_tree: fmd.wind: %d/%d, wt: %d/%d",
-			client->fmd.wind->wa.x, client->fmd.wind->wa.y,
-			wt->tree ? wt->tree->ob_x : -1, wt->tree ? wt->tree->ob_y : -1));
-
-		if (!ct)
-		{
-			tree->ob_x = client->fmd.wind->wa.x,
-			tree->ob_y = client->fmd.wind->wa.y;
-		} /* else governed by widget.loc */
-
-		wt->zen = true;
-	}
-	else if (tree != wt->tree)
-	{		
-		DIAG((D_form, client, " -- different obtree (was %lx)", wt->tree));
-		bzero(wt, sizeof(XA_TREE));
-		wt->e.obj = -1;
-		wt->e.c_state = 0;
-	}
-
-	wt->tree = tree;
-	wt->owner = client;
-
-	DIAG((D_form, client, "  --  zen: %d", wt->zen));
-	return wt;
-}
-#endif
 
 void
 display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
@@ -644,22 +597,34 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 		}
 	}
 }
-
 static void
-Pdisplay_widget(void *_parm)
+CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 {
-	void **parm = _parm;
+	if (!cancel)
+	{
+		struct xa_client *mc;
+		struct xa_widget *widg = get_menu_widg();
 
-	/* draw display; we are in the process context now */
-	display_widget(0, parm[0], parm[1]);
-
-	/* wakup initiator */
-	wake(IO_Q, (long)parm);
-
-	/* and terminate */
-	kthread_exit(0);
+		mc = ((XA_TREE *)widg->stuff)->owner;
+		if (ce->client == mc )
+		{
+			DIAGS(("CE_redraw_menu: for %s", ce->client->name));
+			display_widget(lock, root_window, widg);
+		}
+		else
+		{
+			DIAGS(("CE_redraw_menu: ownership change, forwarding..."));
+			post_cevent(mc,
+				    CE_redraw_menu,
+				    NULL,
+				    NULL,
+				    0, 0,
+				    NULL,
+				    NULL);
+			Unblock(mc, 1, 1);
+		}
+	}
 }
-
 /*
  * Ozk: redraw menu need to check the owner of the menu object tree
  * and draw it in the right context. 
@@ -683,21 +648,14 @@ redraw_menu(enum locks lock)
 	}
 	else
 	{
-		void **parm;
-
-		DIAGS(("Display MENU (owner %s) by %s", mc->name, rc->name));
-
-		parm = kmalloc(sizeof(*parm) * 4);
-		if (parm)
-		{
-			parm[0] = root_window;
-			parm[1] = widg;
-			parm[2] = rc;
-
-			kthread_create(mc->p, Pdisplay_widget, parm, NULL, "k%S", mc->name);
-			sleep(IO_Q, (long)parm);
-			kfree(parm);
-		}
+		DIAGS(("Display MENU: post cevnt (%lx) to owner %s by %s", mc->name, rc->name));
+		post_cevent(mc,
+			    CE_redraw_menu,
+			    NULL,
+			    NULL,
+			    0, 0,
+			    NULL,
+			    NULL);
 	}
 	DIAGS(("Display MENU - exit OK"));
 }

@@ -296,6 +296,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client->status & CS_LAGGING)
 	{
 		client->status &= ~CS_LAGGING;
+		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
 	}
 	
@@ -591,6 +592,7 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client->status & CS_LAGGING)
 	{
 		client->status &= ~CS_LAGGING;
+		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_mesag: %s flagged as lagging! - cleared", client->name));
 	}
 	/*
@@ -630,6 +632,7 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client->status & CS_LAGGING)
 	{
 		client->status &= ~CS_LAGGING;
+		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_button: %s flagged as lagging! - cleared", client->name));
 	}
 
@@ -715,6 +718,7 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client->status & CS_LAGGING)
 	{
 		client->status &= ~CS_LAGGING;
+		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_keybd: %s flagged as lagging! - cleared", client->name));
 	}
 	if (pending_key_strokes(lock, pb, client, 0))
@@ -741,6 +745,7 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client->status & CS_LAGGING)
 	{
 		client->status &= ~CS_LAGGING;
+		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_mouse: %s flagged as lagging! - cleared", client->name));
 	}
 	/* Flag the app as waiting for messages */

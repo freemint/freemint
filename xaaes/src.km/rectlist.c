@@ -101,11 +101,10 @@ make_rect_list(struct xa_window *wind, bool swap)
 #if GENERATE_DIAGS
 				i++;
 #endif
-
-				if (   h < r_ours.h
-				    && w < r_ours.w
-				    && win_x2 > r_ours.x
-				    && win_y2 > r_ours.y)
+				if ( h < r_ours.h	&&
+				     w < r_ours.w	&&
+				     win_x2 > r_ours.x	&&
+				     win_y2 > r_ours.y)
 				{
 					our_x2 = r_ours.x + r_ours.w;
 					our_y2 = r_ours.y + r_ours.h;
@@ -211,7 +210,11 @@ make_rect_list(struct xa_window *wind, bool swap)
 					DIAGS((" covered, releasing (nrl=%lx) %lx=(%d/%d/%d/%d) rl_prev=%lx(%lx)",
 						nrl, rl, rl->r, rl_prev, rl_prev ? (long)rl_prev->next : 0));
 					if (rl == nrl)
+					{
+						if (rl_prev == nrl)
+							rl_prev = NULL;
 						nrl = rl_next;
+					}
 					if (rl_prev)
 						rl_prev->next = rl_next;
 					kfree(rl);

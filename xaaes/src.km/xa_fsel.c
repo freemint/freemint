@@ -951,6 +951,10 @@ fs_msg_handler(
 	{
 		move_window(lock, fs.wind, -1, msg[4], msg[5], fs.wind->r.w, fs.wind->r.h);
 	}
+	default:
+	{
+		do_formwind_msg(wind, to, msg);
+	}
 	}
 }
 

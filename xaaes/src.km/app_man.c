@@ -175,7 +175,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 	{
 		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
 		set_desktop(new->desktop); //set_desktop(&new->desktop);
-		display_window(lock, 30, root_window, NULL);
+		//display_window(lock, 30, root_window, NULL);
 		redraw_menu(lock);
 	}
 	else if (new->std_menu)
@@ -479,7 +479,7 @@ next_app(enum locks lock)
 void
 app_in_front(enum locks lock, struct xa_client *client)
 {
-	struct xa_window *wl,*pr,*wf;
+	struct xa_window *wl,*wf;
 
 	if (client)
 	{
@@ -487,6 +487,27 @@ app_in_front(enum locks lock, struct xa_client *client)
 
 		swap_menu(lock, client, true, 1);
 
+		wl = window_list;
+		wf = NULL;
+
+		while (wl)
+		{
+			if (wl->owner == client && wl != root_window)
+			{
+				if (wl->is_open)
+				{
+					if (!wf)
+						wf = wl;
+					if (is_hidden(wl))
+						unhide_window(lock|winlist, wl);
+				}
+			}
+			wl = wl->next;
+		}
+		if (wf)
+			top_window(lock|winlist, wf, client);
+	}
+#if 0
 		wf = root_window->prev;
 		while (wf)
 		{
@@ -504,7 +525,8 @@ app_in_front(enum locks lock, struct xa_client *client)
 				pr = wl->prev;
 				if (wl->owner == client)
 				{
-					unhide_window(lock|winlist, wl);
+					if (is_hidden(wl))
+						unhide_window(lock|winlist, wl);
 					top_window(lock|winlist, wl, client);
 				}
 				wl = pr;
@@ -513,4 +535,5 @@ app_in_front(enum locks lock, struct xa_client *client)
 			}
 		}
 	}
+#endif
 }
