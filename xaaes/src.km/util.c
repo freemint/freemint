@@ -92,13 +92,10 @@ strnupr(char *s, int n)
 		s[f] = toupper(s[f]);
 }
 
-#if VECTOR_VALIDATION
+#if 0
 bool
 xa_invalid(int which, int pid, void *addr, long size, bool allowNULL)
 {
-	if (!C.mvalidate)
-		return false;
-
 	if (allowNULL && addr == NULL)
 		return false;
 

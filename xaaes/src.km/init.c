@@ -89,10 +89,8 @@ bootmessage(void)
 	fdisplay(log, " - CTRL+ALT key-combo's");
 #endif
 
-#if VECTOR_VALIDATION
 	if (C.mvalidate)
 		fdisplay(log, " - Client vector validation");
-#endif
 
 	fdisplay(log, " - Realtime (live) window scrolling, moving and sizing");
 
