@@ -24,20 +24,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _xa_lbox_h
-#define _xa_lbox_h
+#ifndef _xa_fslx_h
+#define _xa_fslx_h
 
 #include "global.h"
 #include "xa_types.h"
 
-#if WDIALOG_LBOX
+#if WDIALOG_FSLX
 AES_function
-	XA_lbox_create,
-	XA_lbox_update,
-	XA_lbox_do,
-	XA_lbox_delete,
-	XA_lbox_get,
-	XA_lbox_set;
+	XA_fslx_open,
+	XA_fslx_close,
+	XA_fslx_getnxtfile,
+	XA_fslx_evnt,
+	XA_fslx_do,
+	XA_fslx_set_flags;
 #endif
 
-#endif /* _xa_lbox_h */
+#endif /* _xa_fslx_h */

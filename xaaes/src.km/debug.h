@@ -63,6 +63,8 @@ enum debug_item
 	D_kern,			/* Gemdos part of kernel */
 	D_wdlg,			/* WDIALOG extensions */
 	D_lbox,
+	D_fnts,
+	D_fslx,
 	D_a,D_b,D_c,D_d,D_e,D_f,D_g,D_h,D_i,D_j,D_k,D_l,D_m,
 	D_n,D_o,D_p,D_q,D_r,D_s,D_t,D_u,D_v,D_w,D_x,D_y,D_z,
 	D_max

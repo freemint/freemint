@@ -267,7 +267,7 @@ struct widget_tree
 
 	void *extra;			/* Extra info if needed (texts for alert) */
 
-#if WDIAL
+#if WDIALOG_WDLG
 	struct wdlg_info wdlg;
 #endif
 };

@@ -80,16 +80,16 @@ recover(void)
 
 	DIAG((D_appl, NULL, "Attempting to recover control....."));
 
-	if (update_lock)
+	if (update_lock && (update_lock != C.Aes))
 	{
 		DIAG((D_appl, NULL, "Killing owner of update lock"));
-		p_kill(update_lock->p->pid, SIGKILL);
+		ikill(update_lock->p->pid, SIGKILL);
 	}
 
 	if ((mouse_lock && (mouse_lock != update_lock)) && (mouse_lock != C.Aes))
 	{
 		DIAG((D_appl, NULL, "Killing owner of mouse lock"));
-		p_kill(mouse_lock->p->pid, SIGKILL);
+		ikill(mouse_lock->p->pid, SIGKILL);
 	}
 
 	forcem();
@@ -99,7 +99,6 @@ recover(void)
  * Swap the main root window's menu-bar to be another application's
  * NOTE: This only swaps the menu-bar, it doesn't swap the topped window.
  *
- * HR: static pid array.
  * See also click_menu_widget() for APP's
  */
 void
@@ -155,7 +154,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 		}
 	}
 
-	/* Change desktops? HR 270801: now widget tree. */
+	/* Change desktops? */
 	if (   do_desk
 	    && new->desktop.tree
 	    && new->desktop.tree != get_desktop()->tree
@@ -178,7 +177,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 XA_TREE *
 find_menu_bar(enum locks lock)
 {
-	XA_TREE *rtn = &C.Aes->std_menu; /* default */
+	XA_TREE *rtn = &(C.Aes->std_menu); /* default */
 	struct xa_client *last;
 
 	Sema_Up(clients);
