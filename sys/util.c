@@ -23,7 +23,7 @@
  */
 
 struct proc *
-pid2proc (int pid)
+pid2proc(int pid)
 {
 	struct proc *p;
 	
@@ -41,33 +41,34 @@ pid2proc (int pid)
 static int _maxpid = 2;
 	
 int
-newpid (void)
+newpid(void)
 {
 	register int i;
-	register int j = 0;
+	register int j = 2;
 	
 	do {
 		i = _maxpid++;
+		
+		/* dont use PID 1 */
 		if (_maxpid >= MAXPID)
 			_maxpid = 2;
 		
-		assert (j++ < MAXPID);
+		if (j++ > MAXPID)
+		{
+			/* XXX better sleep until a PID is available */
+			FATAL("no free PID's");
+		}
 	}
-	while (pid2proc (i));
+	while (pid2proc(i));
 	
 	return i;
 }
 
 /*
- * set up to run the init program as PID 1
+ * try to run the next process with PID 1
  */
-int
-set_pid_1 (void)
+void
+set_pid_1(void)
 {
-	if (pid2proc (1))
-		/* should never happen, only called once */
-		return -1;
-	
 	_maxpid = 1;
-	return 0;
 }
