@@ -1,5 +1,5 @@
 /*
- * $Id:
+ * $Id: c_mouse.c
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
@@ -167,6 +167,7 @@ cXA_deliver_rect_event(enum locks lock, struct c_event *ce)
 			pb->intout[0] = 1;
 		}
 	}
+	client->usr_evnt = 1;
 }
 
 void
