@@ -126,10 +126,10 @@ post_cevent(struct xa_client *client,
 		else
 			dispatch_cevent(client);
 	}
-#if GENERATE_DIAGS
-	else
-		DIAG((D_mouse, client, "post_cevent: Client %s is lagging - event thrown away!", client->name));
-#endif
+//#if GENERATE_DIAGS
+//	else
+//		DIAG((D_mouse, client, "post_cevent: Client %s is lagging - event thrown away!", client->name));
+//#endif
 }
 
 int
