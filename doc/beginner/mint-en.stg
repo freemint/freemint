@@ -355,7 +355,7 @@ should verify such a statement on the MiNT mailing list
 (mint@@fishpool.com). In the particular case of the HSMODEM, you
 should load the software @{B}before@{b} MiNT (regardless of what
 the HSMODEM documentation says), if you want the MiNT Network
-package to work correctly. Or better use dedicated MiNT serial 
+package to work correctly. Or better use dedicated MiNT serial
 drivers instead of HSMODEM, which is now a bit outdated.
 
 @line 1 70 0
@@ -401,19 +401,19 @@ configuration file (mint.cnf) and other modules like extended
 filesystem drivers (XFS) or extended device drivers (XDD).
 
 All these system files have to be located in the subdirectory
-/mint/ located on the boot drive (e.g. c:/mint/). This is the only 
-place where the FreeMiNT 1.16 will search for its configuration files 
+/mint/ located on the boot drive (e.g. c:/mint/). This is the only
+place where the FreeMiNT 1.16 will search for its configuration files
 and modules.
 
 You may remember as a practical rule, that the kernel loads all its
 modules and configuration files from the same directory, where it has
 found the mint.cnf file.
 
-Optionally, you can put configuration files and modules also to the 
-subdirectory, that is named after the FreeMiNT kernel version number. 
-For example, the kernel version 1.16.0 accepts /mint/1-16-0/ as a 
-folder, where you can store the appropriate files and modules. This 
-allows to keep configuration files and modules for different kernel 
+Optionally, you can put configuration files and modules also to the
+subdirectory, that is named after the FreeMiNT kernel version number.
+For example, the kernel version 1.16.0 accepts /mint/1-16-0/ as a
+folder, where you can store the appropriate files and modules. This
+allows to keep configuration files and modules for different kernel
 versions on the disk separately without a risk to mix them up.
 
 Also, unlike it is with the auto folder stuff, the execution
@@ -480,17 +480,16 @@ your mint.cnf file as one of the first steps.
 @{B}versions of MiNT this limitation is gone, however, you're still
 @{B}encouraged to use blank space as a separator for consistency.
 @{b}
-
 also
 
 @{B}NOTICE:
 @{B}Older versions of MiNT used different mint.cnf keywords. We
-@{B}provide old names inside parentheses here. The old keywords
+@{B}provide old names in the right column here. The old keywords
 @{B}are still supported, however, we encourage you to switch now
 @{B}because the old format will go away some day.
 @{b}
 
-The mint.cnf commands:
+The mint.cnf commands (all valid for both old and new format):
 
                      #               include
                      alias           ren
@@ -500,38 +499,41 @@ The mint.cnf commands:
 
 The mint.cnf control variables
 
-                     FDC_HIDE_B=
+          New format                 Old format
+          ----------                 ----------
 
-                     FS_CACHE_SIZE=
-                     FS_CACHE_PERCENTAGE=
-                     FS_NEWFATFS=
-                     FS_UPDATE=
-                     FS_VFAT=
-                     FS_VFAT_LCASE
-                     FS_WB_ENABLE=
-                     FS_WRITE_PROTECT=
+          FDC_HIDE_B=                HIDE_B=
 
-                     GEM=
+          FS_CACHE_SIZE=             CACHE=
+          FS_CACHE_PERCENTAGE=       PERCENTAGE=
+          FS_NEWFATFS=               NEWFATFS=
+          FS_UPDATE=                 UPDATE=
+          FS_VFAT=                   VFAT=
+          FS_VFAT_LCASE              VFATLCASE=
+          FS_WB_ENABLE=              WB_ENABLE=
+          FS_WRITE_PROTECT=          WRITEPROTECT=
 
-                     GEMDOS_AUX=
-                     GEMDOS_CON=
-                     GEMDOS_PRN=
+          GEM=                       GEM= (no change)
 
-                     INIT=
+          GEMDOS_AUX=                AUX=
+          GEMDOS_CON=                CON=
+          GEMDOS_PRN=                PRN=
 
-                     KERN_BIOSBUF=
-                     KERN_DEBUG_DEVNO=
-                     KERN_DEBUG_LEVEL=
-                     KERN_MPFLAGS=
-                     KERN_SECURITY_LEVEL=
-                     KERN_SLICES=
+          INIT=                      INIT= (no change)
 
-                     PROC_MAXMEM=
+          KERN_BIOSBUF=              BIOSBUF=
+          KERN_DEBUG_DEVNO=          DEBUG_DEVNO=
+          KERN_DEBUG_LEVEL=          DEBUG_LEVEL=
+          KERN_MPFLAGS=              MPFLAGS=
+          KERN_SECURITY_LEVEL=       SECURELEVEL=
+          KERN_SLICES=               SLICES=
 
-                     TPA_FASTLOAD=
-                     TPA_INITIALMEM=
+          PROC_MAXMEM=               MAXMEM=
 
-Here is a mint.cnf example. You find the same file in the directory 
+          TPA_FASTLOAD=              FASTLOAD=
+          TPA_INITIALMEM=            INITIALMEM=
+
+Here is a mint.cnf example. You find the same file in the directory
 freemint/doc/examples/ in the FreeMiNT source distribution.
 
 @line 1 70 0
@@ -773,10 +775,10 @@ functions can be accessed only by software, that runs with
 superuser privileges (so called 'root privileges'). If you have a
 multiuser setup and allow people to access your computer via
 network, so that they are actually able to login and run programs,
-you should set the 'KERN_SECURITY_LEVEL=1' in your mint.cnf file, 
-because otherwise nothing (perhaps except a loyalty or lack of 
-knowledge) prevents them from reformatting your hard drive. The only 
-person, who should be able to do that - and it is really the case 
+you should set the 'KERN_SECURITY_LEVEL=1' in your mint.cnf file,
+because otherwise nothing (perhaps except a loyalty or lack of
+knowledge) prevents them from reformatting your hard drive. The only
+person, who should be able to do that - and it is really the case
 after raising the security level to 1 - is you, i.e. the superuser.
 
 With 'KERN_SECURITY_LEVEL=2' this protection is even more strict - so
@@ -809,7 +811,7 @@ With 'KERN_SECURITY_LEVEL=0' all these limitations are disabled.
 @{B}TPA_FASTLOAD=yes@{b}
 With 'TPA_FASTLOAD=yes' the real state of the 'fastload' bit in the
 program header is ignored and all programs are loaded like it was
-always set. With 'TPA_FASTLOAD=no' this bit is interpreted the same 
+always set. With 'TPA_FASTLOAD=no' this bit is interpreted the same
 way as under TOS. The default is 'no'.
 
 @{B}FDC_HIDE_B=no@{b} or
@@ -932,8 +934,8 @@ the ROM AES, you have to put
 GEM=ROM
 
 in your mint.cnf file. However, remember, that you do it at your
-own risk: ROM AES cannot be shutdown, and forces to switch the power 
-off without flushing the filesystem caches, thus endangering the 
+own risk: ROM AES cannot be shutdown, and forces to switch the power
+off without flushing the filesystem caches, thus endangering the
 consistency of the data on your harddisk.
 
 @line 1 70 0
@@ -952,23 +954,23 @@ This specifies the maximum amount of memory allocated for program's
 TPA (i.e. this is everything over the size of the binary plus the
 size of the BSS segment).
 
-Unlike the PROC_MAXMEM, the TPA_INITIALMEM does not limit the amount 
-of memory available for processes by explicit allocation. The 'x' is 
+Unlike the PROC_MAXMEM, the TPA_INITIALMEM does not limit the amount
+of memory available for processes by explicit allocation. The 'x' is
 measured in kilobytes.
 
 @{B}PROC_MAXMEM=x@{b}
 Specifies the maximum amount of memory that may be used by a
 process. The 'x' is measured in kilobytes.
 
-WARNING: many users tend to understand this option wrong. They set 
-PROC_MAXMEM=1024, and then complain that the system does not "see" 
-more than 1 MB of the memory. The system obviously does, just the 
-program the user uses to interrogate the total amount of memory 
-doesn't, because such a program is a process, and is limited by this 
+WARNING: many users tend to understand this option wrong. They set
+PROC_MAXMEM=1024, and then complain that the system does not "see"
+more than 1 MB of the memory. The system obviously does, just the
+program the user uses to interrogate the total amount of memory
+doesn't, because such a program is a process, and is limited by this
 keyword to 1 MB.
 
-Generally, don't use PROC_MAXMEM, unless you deadly know what you 
-want or what you're doing. If you want to limit the initial TPA size, 
+Generally, don't use PROC_MAXMEM, unless you deadly know what you
+want or what you're doing. If you want to limit the initial TPA size,
 use TPA_INITIALMEM keyword.
 
 @line 1 70 0
@@ -1011,7 +1013,7 @@ If 'KERN_BIOSBUF=yes' appears in your configuration file, then certain
 optimizations in the FreeMiNT kernel concerning BIOS input and
 output are used. These optimizations should normally be transparent
 to user programs - and they usually are, but can be turned off with
-'KERN_BIOSBUF=no', when needed. Especially 'KERN_BIOSBUF=no' may help 
+'KERN_BIOSBUF=no', when needed. Especially 'KERN_BIOSBUF=no' may help
 GFA BASIC programs to run, but the best solution is to avoid using
 GFA BASIC programs at all (unless you're deadly sure the program is
 cleanly written and compiled with a patched version of the GFA
@@ -1102,7 +1104,7 @@ KERN_SLICES=2
 # The average user doesn't want to hear about this stuff, so the
 # default is 1, i.e. display ALERT messages only.
 #
-# KERN_DEBUG_DEVNO is the BIOS device number to which the info should 
+# KERN_DEBUG_DEVNO is the BIOS device number to which the info should
 # be sent.
 #
 # Devno can be: 0=printer, 1=aux/modem, 2=screen(console), 3=midi,
@@ -1138,7 +1140,7 @@ KERN_SECURITY_LEVEL=1
 #KERN_MPFLAGS=1
 
 # TPA_FASTLOAD=YES forces fast loading (without zeroing all the
-# memory) for all programs. This defines a default state, that can be 
+# memory) for all programs. This defines a default state, that can be
 # modified later via appropriate kernel calls (use MiNT Setter
 # utility to toggle it later when neessary, without reboots).
 #
@@ -1204,18 +1206,18 @@ KERN_SECURITY_LEVEL=1
 #FDC_HIDE_B=YES
 
 # PROC_MAXMEM= gives the maximum amount of memory that any process
-# may use (in kilobytes). The default is to make this unlimited, but 
+# may use (in kilobytes). The default is to make this unlimited, but
 # if you have a lot of memory and/or programs that grab more memory
 # than they should, try setting this.
 #
 # E.g. to limit processes to 4096K of memory, remove the '#' at the
 # beginning of the next line.
 #
-# WARNING: the process will not be allowed to allocate memory beyond 
+# WARNING: the process will not be allowed to allocate memory beyond
 # the limit, and it won't "see" more memory as available from the
 # system.
 # Please understand that programs like "free" (or any other that
-# interrogates the system how much memory is available) is a process 
+# interrogates the system how much memory is available) is a process
 # as well, thus it will undergo this limit too!
 #
 # Decent shells (desktops) allow you to limit the maximum amount of
@@ -1398,7 +1400,7 @@ echo
 
 @line 1 70 0
 
-The FreeMiNT kernel 1.16.0, unlike previous versions, exports few 
+The FreeMiNT kernel 1.16.0, unlike previous versions, exports few
 environment variables on its own during startup. These are:
 
 PATH
@@ -1408,7 +1410,7 @@ SYSDIR
 Contains the full path to the system directory.
 
 TERM
-The kernel sets this to "st52" (the terminal type of the Atari ST 
+The kernel sets this to "st52" (the terminal type of the Atari ST
 console).
 
 SLBPATH
@@ -1474,14 +1476,14 @@ initialization and ask the user for confirmation.
 There are also three variables which have numeric values:
 
 @{B}DEBUG_DEVNO@{b} and @{B}DEBUG_LEVEL@{b}
-Identical to the keyword for the mint.cnf file. These have been 
-defined also here, for the debug facilities to be easier enabled 
+Identical to the keyword for the mint.cnf file. These have been
+defined also here, for the debug facilities to be easier enabled
 before mint.cnf is interpreted.
 
 @{B}BOOT_DELAY@{b}
-Defines the time (measured in seconds) the kernel will wait for you 
-to press SHIFT to enter the boot menu. After the time is passed, the 
-kernel will continue booting. You can set this to 0, the boot menu 
+Defines the time (measured in seconds) the kernel will wait for you
+to press SHIFT to enter the boot menu. After the time is passed, the
+kernel will continue booting. You can set this to 0, the boot menu
 will be disabled then (you wont' be able to enter it during bootup).
 
 Notice that the mint.ini is a plain text file and being that can
@@ -1591,8 +1593,8 @@ used in one mint.cnf file!
 @{b}
 Once started, the init program (whatever it is) takes the control
 on the further boot process using own configuration files and/or
-scripts. For example, the Atari GEM (the multitasking versions) and 
-Geneva use gem.cnf file, while the Un*x-like init -known as 
+scripts. For example, the Atari GEM (the multitasking versions) and
+Geneva use gem.cnf file, while the Un*x-like init -known as
 'init.prg' or just 'init' - wants to execute shell scripts
 present in /etc (u:/etc) directory. Hence you must refer to the
 documentation of the init program you choose on how to setup it or
@@ -1936,7 +1938,7 @@ changing as processes are scheduled. The last number currently
 always equals 0.
 
 @{B}/kern/sysdir@{b}
-This is the pathname to the FreeMiNT system directory, usually 
+This is the pathname to the FreeMiNT system directory, usually
 u:/c/mint.
 
 @{B}/kern/time@{b}
@@ -2343,7 +2345,7 @@ shutdown is initiated, the system ensures that all the cached data
 is written out to the media before performing a reboot or entering
 a halted condition.
 
-Refer to the FS_CACHE_SIZE= keyword in the chapter The mint.cnf file 
+Refer to the FS_CACHE_SIZE= keyword in the chapter The mint.cnf file
 on how to activate and configure the FreeMiNT filesystem caches.
 
 @line 1 70 0
