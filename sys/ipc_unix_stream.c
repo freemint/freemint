@@ -40,14 +40,14 @@ unix_stream_connect (struct socket *so, struct sockaddr *addr, short addrlen, sh
 	server_data = un_lookup (index, SOCK_STREAM);
 	if (!server_data)
 	{
-		DEBUG (("unix: unix_connect: server not found"));
+		DEBUG (("unix_stream_connect: server not found"));
 		return EINVAL;
 	}
 	
 	r = so_connect (server_data->sock, so, server_data->backlog, nonblock, 1);
 	if (r < 0)
 	{
-		DEBUG (("unix: unix_connect: connection not finished"));
+		DEBUG (("unix_stream_connect: connection not finished"));
 		return r;
 	}
 	
@@ -71,19 +71,19 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 		
 		case SS_ISDISCONNECTING:
 		case SS_ISDISCONNECTED:
-			DEBUG (("unix: unix_send: broken connection"));
+			DEBUG (("unix_stream_send: broken connection"));
 			raise (SIGPIPE);
 			return EPIPE;
 		
 		default:
-			DEBUG (("unix: unix_send: not connected"));
+			DEBUG (("unix_stream_send: not connected"));
 			return ENOTCONN;
 	}
 	
 	if (so->conn->flags & SO_CANTRCVMORE
 		|| so->flags & SO_CANTSNDMORE)
 	{
-		DEBUG (("unix: unix_send: shut down"));
+		DEBUG (("unix_stream_send: shut down"));
 		raise (SIGPIPE);
 		return EPIPE;
 	}
@@ -105,15 +105,15 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 		
 		if (sleep (IO_Q, (long)so))
 		{
-			DEBUG (("unix: unix_send: interrupted"));
-			return EINTR;
+			DEBUG (("unix_stream_send: interrupted"));
+			// return EINTR;
 		}
 		
 		if (so->state != SS_ISCONNECTED
 			|| so->conn->flags & SO_CANTRCVMORE
 			|| so->flags & SO_CANTSNDMORE)
 		{
-			DEBUG (("unix: unix_send: broken conn or shut down"));
+			DEBUG (("unix_stream_send: broken conn or shut down"));
 			raise (SIGPIPE);
 			return EPIPE;
 		}
@@ -158,7 +158,7 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 				
 				if (sleep (IO_Q, (long) so))
 				{
-					DEBUG (("unix: unix_send: interrupt"));
+					DEBUG (("unix_stream_send: interrupt"));
 					break;
 				}
 				
@@ -166,8 +166,7 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 					|| so->conn->flags & SO_CANTRCVMORE
 					|| so->flags & SO_CANTSNDMORE)
 				{
-					DEBUG (("unix: unix_send: broken conn"
-						" or shut down"));
+					DEBUG (("unix_stream_send: broken conn or shut down"));
 					raise (SIGPIPE);
 					return EPIPE;
 				}
@@ -184,7 +183,7 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 	if ((nbytes > 0) && (so->state == SS_ISCONNECTED))
 	{
 		so_wakersel (so->conn);
-		wake (IO_Q, (long)so->conn);
+		wake (IO_Q, (long) so->conn);
 	}
 	
 	return nbytes;
@@ -209,7 +208,7 @@ unix_stream_recv (struct socket *so, struct iovec *iov, short niov, short nonblo
 			return 0; /* EOF */
 		
 		default:
-			DEBUG (("unix: unix_recv: not connected"));
+			DEBUG (("unix_stream_recv: not connected"));
 			return ENOTCONN;
 	}
 	
@@ -235,8 +234,8 @@ unix_stream_recv (struct socket *so, struct iovec *iov, short niov, short nonblo
 		
 		if (sleep (IO_Q, (long) so))
 		{
-			DEBUG (("unix: unix_recv: interrupted"));
-			return EINTR;
+			DEBUG (("unix_stream_recv: interrupted"));
+			// return EINTR;
 		}
 		
 		if (so->state == SS_ISDISCONNECTED ||
@@ -423,7 +422,7 @@ unix_stream_getname (struct socket *so, struct sockaddr *addr, short *addrlen, s
 	{
 		if (so->state != SS_ISCONNECTED)
 		{
-			DEBUG (("unix_getname: not connected"));
+			DEBUG (("unix_stream_getname: not connected"));
 			return ENOTCONN;
 		}
 		undata = so->conn->data;
@@ -435,7 +434,7 @@ unix_stream_getname (struct socket *so, struct sockaddr *addr, short *addrlen, s
 	{
 		if (*addrlen < 0)
 		{
-			DEBUG (("unix_getname: invalid addresslen"));
+			DEBUG (("unix_stream_getname: invalid addresslen"));
 			return EINVAL;
 		}
 		
