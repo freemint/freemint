@@ -45,6 +45,8 @@ build: $(TARGET)
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
+$(OBJS): ../XAAESDEFS
+
 
 # default dependencies
 # must be included last

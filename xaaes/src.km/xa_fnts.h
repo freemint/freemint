@@ -24,20 +24,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _xa_lbox_h
-#define _xa_lbox_h
+#ifndef _xa_fnts_h
+#define _xa_fnts_h
 
 #include "global.h"
 #include "xa_types.h"
 
-#if WDIALOG_LBOX
+#if WDIALOG_FNTS
 AES_function
-	XA_lbox_create,
-	XA_lbox_update,
-	XA_lbox_do,
-	XA_lbox_delete,
-	XA_lbox_get,
-	XA_lbox_set;
+	XA_fnts_create,
+	XA_fnts_delete,
+	XA_fnts_open,
+	XA_fnts_close,
+	XA_fnts_get,
+	XA_fnts_set,
+	XA_fnts_evnt,
+	XA_fnts_do;
 #endif
 
-#endif /* _xa_lbox_h */
+#endif /* _xa_fnts_h */

@@ -3,21 +3,25 @@
 
 HEADER = \
 	about.h \
+	accstart.h \
 	adi.h \
 	adiload.h \
-	accstart.h \
 	app_man.h \
-	cnf_xaaes.h \
 	c_keybd.h \
 	c_message.h \
 	c_mouse.h \
 	c_window.h \
+	cnf_xaaes.h \
 	debug.h \
 	desktop.h \
 	global.h \
 	handler.h \
-	kernel.h \
-	libkern.h \
+	init.h \
+	k_init.h \
+	k_keybd.h \
+	k_main.h \
+	k_mouse.h \
+	k_shutdown.h \
 	matchpat.h \
 	menuwidg.h \
 	messages.h \
@@ -34,19 +38,26 @@ HEADER = \
 	vaproto.h \
 	version.h \
 	widgets.h \
-	xalloc.h \
 	xa_aes.h \
 	xa_appl.h \
-	xa_codes.h \
 	xa_defs.h \
 	xa_evnt.h \
+	xa_fnts.h \
 	xa_form.h \
 	xa_fsel.h \
+	xa_fslx.h \
 	xa_global.h \
 	xa_graf.h \
+	xa_lbox.h \
+	xa_menu.h \
+	xa_objc.h \
 	xa_rsrc.h \
+	xa_scrp.h \
 	xa_shel.h \
-	xa_types.h
+	xa_types.h \
+	xa_wdlg.h \
+	xa_wind.h \
+	xalloc.h
 
 COBJS = \
 	about.c \
@@ -81,11 +92,12 @@ COBJS = \
 	trnfm.c \
 	util.c \
 	widgets.c \
-	xalloc.c \
 	xa_appl.c \
 	xa_evnt.c \
+	xa_fnts.c \
 	xa_form.c \
 	xa_fsel.c \
+	xa_fslx.c \
 	xa_global.c \
 	xa_graf.c \
 	xa_lbox.c \
@@ -95,7 +107,8 @@ COBJS = \
 	xa_scrp.c \
 	xa_shel.c \
 	xa_wdlg.c \
-	xa_wind.c
+	xa_wind.c \
+	xalloc.c
 
 SOBJS = \
 	accstart.s \

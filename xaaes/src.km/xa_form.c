@@ -36,6 +36,7 @@
 #include "c_window.h"
 #include "k_main.h"
 #include "k_mouse.h"
+#include "k_keybd.h"
 #include "nkcc.h"
 #include "objects.h"
 #include "rectlist.h"
@@ -1081,7 +1082,7 @@ exit_toolbar(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 				   f, dbl ? 2 : 1, widg->k, 0);
 }
 
-#if WDIAL
+#if WDIALOG_WDLG
 void
 exit_wdial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 	   struct widget_tree *wt, int f, int os, int dbl, int which,

@@ -700,11 +700,12 @@ static short info_tab[17][4] =
 	},
 	/* 7 MagiC specific */
 	{
-#if WDIAL
-		3,		/* bit: 0 WDIALOG, 1 SCRLBOX, 2 FONTSEL, 3 FSELX, 4 PDLB  */
-#else
-		0,
-#endif
+		/* bit: 0 wdlg_xx(), 1 lbox_xx(), 2 fnts_xx(), 3 fslx_xx(), 4 pdlg_xx() */
+		WDIALOG_WDLG ? 0x01 : 0 |
+		WDIALOG_LBOX ? 0x02 : 0 |
+		WDIALOG_FNTS ? 0x04 : 0 |
+		WDIALOG_FSLX ? 0x08 : 0 |
+		WDIALOG_PDLG ? 0x10 : 0,
 		0,
 		0,
 		0

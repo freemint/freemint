@@ -24,91 +24,85 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "xa_lbox.h"
-#include "xa_form.h"
-
-#include "objects.h"
-#include "c_window.h"
-#include "widgets.h"
-#include "xa_graf.h"
-#include "xa_rsrc.h"
-#include "xa_form.h"
-#include "objects.h"
-#include "scrlobjc.h"
-
-#include "nkcc.h"
+#include "xa_fnts.h"
 
 
 /*
- * WDIALOG FUNCTIONS (lbox)
+ * WDIALOG FUNCTIONS (fnts)
  */
 
-#if WDIALOG_LBOX
+#if WDIALOG_FNTS
 
 unsigned long
-XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(4,0,8)
-
-	DIAG((D_lbox, client, "XA_lbox_create"));
+	DIAG((D_fnts, client, "XA_fnts_create"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_update(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(0,0,2)
-
-	DIAG((D_lbox, client, "XA_lbox_update"));
+	DIAG((D_fnts, client, "XA_fnts_delete"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(1,1,1)
-
-	DIAG((D_lbox, client, "XA_lbox_do"));
+	DIAG((D_fnts, client, "XA_fnts_open"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_close(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(0,1,1)
-
-	DIAG((D_lbox, client, "XA_lbox_delete"));
+	DIAG((D_fnts, client, "XA_fnts_close"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_get(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(1,0,1)
-
-	DIAG((D_lbox, client, "XA_lbox_get"));
+	DIAG((D_fnts, client, "XA_fnts_get"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_set(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fnts_set(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(2,0,2)
-
-	DIAG((D_lbox, client, "XA_lbox_set"));
+	DIAG((D_fnts, client, "XA_fnts_set"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
-#endif /* WDIALOG_LBOX */
+unsigned long
+XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	DIAG((D_fnts, client, "XA_fnts_evnt"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
+}
+
+unsigned long
+XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	DIAG((D_fnts, client, "XA_fnts_do"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
+}
+
+#endif /* WDIALOG_FNTS */
