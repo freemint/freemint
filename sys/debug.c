@@ -23,12 +23,12 @@
 # include "biosfs.h"
 # include "block_IO.h"
 # include "dos.h"
-# include "dosfile.h"
 # include "fatfs.h"
 # include "filesys.h"
 # include "gmon.h"
 # include "init.h"
 # include "memory.h"
+# include "k_fds.h"
 # include "kmemory.h"
 # include "proc.h"
 # include "signal.h"
@@ -172,7 +172,8 @@ cont:
 int
 _ALERT (char *s)
 {
-	FILEPTR *f;
+	FILEPTR *fp;
+	long ret;
 	
 	/* temporarily reduce the debug level, so errors finding
 	 * u:\pipe\alert don't get reported
@@ -183,12 +184,14 @@ _ALERT (char *s)
 	debug_level = 0;
 	debug_logging = 0;
 	
-	f = do_open ("u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL, NULL);
+	ret = fp_alloc (rootproc, &fp);
+	if (!ret)
+		ret = do_open (&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
 	
 	debug_level = olddebug;
 	debug_logging = oldlogging;
 	
-	if (f)
+	if (!ret)
 	{		
 		char *alert;
 		
@@ -257,8 +260,8 @@ _ALERT (char *s)
 			strcpy (ptr, "][  OK  ]");
 		}
 		
-		(*f->dev->write)(f, alert, strlen (alert) + 1);
-		do_close (f);
+		(*fp->dev->write)(fp, alert, strlen (alert) + 1);
+		do_close (rootproc, fp);
 		
 		return 1;
 	}

@@ -49,8 +49,6 @@ long relpath2cookie (fcookie *dir, const char *path, char *lastnm, fcookie *res,
 long path2cookie (const char *path, char *lastname, fcookie *res);
 void release_cookie (fcookie *fc);
 void dup_cookie (fcookie *new, fcookie *old);
-FILEPTR *new_fileptr (void);
-void dispose_fileptr (FILEPTR *f);
 int _cdecl denyshare (FILEPTR *list, FILEPTR *newfileptr);
 int denyaccess (XATTR *, ushort);
 LOCK * _cdecl denylock (LOCK *list, LOCK *newlock);

@@ -76,6 +76,7 @@
 # include "filesys.h"
 # include "init.h"
 # include "k_exec.h"
+# include "k_fds.h"
 # include "k_resource.h"
 # include "kmemory.h"
 # include "memory.h"
@@ -147,24 +148,31 @@ static void parser_msg	(PARSINF *inf, const char *msg);
 void
 load_config (void)
 {
-	PARSINF inf  = { 0ul, NULL, 1, NULL, NULL, NULL, 0ul };
-	
-	FILEPTR *f;
-	XATTR xattr;
+	/* draco: don't add extern; I spent lot of time to remove
+	 * such stuff */
 	extern char *cnf_path_1, *cnf_path_2, *cnf_path_3;
 	
-	f = do_open (inf.file = cnf_path_1, O_RDONLY, 0, &xattr, NULL);
+	PARSINF inf  = { 0ul, NULL, 1, NULL, NULL, NULL, 0ul };
 	
-	if (!f)
-		f = do_open (inf.file = cnf_path_2, O_RDONLY, 0, &xattr, NULL);
+	XATTR xattr;
+	FILEPTR *fp;
+	long ret;
 	
-	if (!f)
-		f = do_open (inf.file = cnf_path_3, O_RDONLY, 0, &xattr, NULL);
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
 	
-	if (f)
+	ret = do_open (&fp, inf.file = cnf_path_1, O_RDONLY, 0, &xattr);
+	
+	if (ret)
+		ret = do_open (&fp, inf.file = cnf_path_2, O_RDONLY, 0, &xattr);
+	
+	if (ret)
+		ret = do_open (&fp, inf.file = cnf_path_3, O_RDONLY, 0, &xattr);
+	
+	if (!ret)
 	{
-		parser (f, &inf, xattr.size);
-		do_close (f);
+		parser (fp, &inf, xattr.size);
+		do_close (rootproc, fp);
 	}
 }
 
@@ -429,21 +437,27 @@ pCB_alias (const char *drive, const char *path, PARSINF *inf)
 static void
 pCB_aux (const char *path)
 {
-	FILEPTR *f = do_open (path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL, NULL);
-	if (f)
+	FILEPTR *fp;
+	long ret;
+	
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
+	
+	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
+	if (!ret)
 	{
-		do_close (curproc->p_fd->ofiles[2]);
-		do_close (curproc->p_fd->aux);
-		curproc->p_fd->aux = curproc->p_fd->ofiles[2] = f;
-		f->links++;
-		if (is_terminal (f) && f->fc.fs == &bios_filesys &&
-		    f->dev == &bios_tdevice &&
-		    (has_bconmap ? (f->fc.aux>=6) : (f->fc.aux==1)))
+		do_close (curproc, curproc->p_fd->ofiles[2]);
+		do_close (curproc, curproc->p_fd->aux);
+		curproc->p_fd->aux = curproc->p_fd->ofiles[2] = fp;
+		fp->links++;
+		if (is_terminal (fp) && fp->fc.fs == &bios_filesys &&
+		    fp->dev == &bios_tdevice &&
+		    (has_bconmap ? (fp->fc.aux>=6) : (fp->fc.aux==1)))
 		{
 			if (has_bconmap)
-				curproc->p_fd->bconmap = f->fc.aux;
-			((struct tty *)f->devinfo)->aux_cnt++;
-			f->pos = 1;
+				curproc->p_fd->bconmap = fp->fc.aux;
+			((struct tty *)fp->devinfo)->aux_cnt++;
+			fp->pos = 1;
 		}
 	}
 }
@@ -475,15 +489,25 @@ pCB_cd (const char *path)
 static void
 pCB_con (const char *path)
 {
-	FILEPTR *f = do_open (path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL, NULL);
-	if (f) {
+	FILEPTR *fp;
+	long ret;
+	
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
+	
+	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
+	if (!ret)
+	{
 		int i;
-		for (i = -1; i < 2; i++) {
-			do_close(curproc->p_fd->ofiles[i]);
-			curproc->p_fd->ofiles[i] = f;
-			f->links++;
+		for (i = -1; i < 2; i++)
+		{
+			do_close (curproc, curproc->p_fd->ofiles[i]);
+			curproc->p_fd->ofiles[i] = fp;
+			fp->links++;
 		}
-		f->links--;	/* correct for overdoing it */
+		
+		/* correct for overdoing it */
+		fp->links--;
 	}
 }
 
@@ -554,11 +578,15 @@ pCL_securelevel (long level)
 static void
 pCB_include (const char *path, PARSINF *inf)
 {
-	FILEPTR *f;
 	XATTR xattr;
+	FILEPTR *fp;
+	long ret;
 	
-	f = do_open (path, O_RDONLY, 0, &xattr, NULL);
-	if (f)
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
+	
+	ret = do_open (&fp, path, O_RDONLY, 0, &xattr);
+	if (!ret)
 	{
 		PARSINF include =
 		{
@@ -571,10 +599,10 @@ pCB_include (const char *path, PARSINF *inf)
 			inf->env_len
 		};
 		
-		parser (f, &include, xattr.size);
+		parser (fp, &include, xattr.size);
 		inf->env_ptr = include.env_ptr;
 		inf->env_len = include.env_len;
-		do_close (f);
+		do_close (rootproc, fp);
 	}
 	else
 	{
@@ -623,14 +651,20 @@ pCB_newfatfs (ulong list, PARSINF *inf)
 static void
 pCB_prn (const char *path)
 {
-	FILEPTR *f = do_open (path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL, NULL);
-	if (f) {
-		do_close(curproc->p_fd->ofiles[3]);
-		do_close(curproc->p_fd->prn);
-		curproc->p_fd->prn = curproc->p_fd->ofiles[3] = f;
-		f->links++;
+	FILEPTR *fp;
+	long ret;
+	
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
+	
+	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
+	if (!ret)
+	{
+		do_close (curproc, curproc->p_fd->ofiles[3]);
+		do_close (curproc, curproc->p_fd->prn);
+		curproc->p_fd->prn = curproc->p_fd->ofiles[3] = fp;
+		fp->links++;
 	}
-	return;
 }
 
 /*----------------------------------------------------------------------------*/

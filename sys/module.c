@@ -48,8 +48,8 @@
 # include "mint/file.h"
 # include "mint/mem.h"
 
-# include "dosfile.h"
 # include "filesys.h"
+# include "k_fds.h"
 # include "kmemory.h"
 # include "memory.h"
 
@@ -62,8 +62,16 @@ load_module (const char *filename, long *err)
 	long size;
 	FILEHEAD fh;
 	
-	f = do_open (filename, O_DENYW | O_EXEC, 0, NULL, err);
-	if (!f) return NULL;
+	*err = fp_alloc (rootproc, &f);
+	if (*err) return NULL;
+	
+	*err = do_open (&f, filename, O_DENYW | O_EXEC, 0, NULL);
+	if (*err)
+	{
+		f->links--;
+		fp_free (f);
+		return NULL;
+	}
 	
 	size = xdd_read (f, (void *) &fh, (long) sizeof (fh));
 	if (fh.fmagic != GEMDOS_MAGIC || size != (long) sizeof (fh))
@@ -109,12 +117,12 @@ load_module (const char *filename, long *err)
 	
 	DEBUG (("load_module: basepage = %lx", b));
 	
-	do_close (f);
+	do_close (rootproc, f);
 	return b;
 	
 failed:
 	if (b) kfree (b);
 	
-	do_close (f);
+	do_close (rootproc, f);
 	return NULL;
 }

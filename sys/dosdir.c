@@ -15,12 +15,11 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
-
 # include "mint/filedesc.h"
 
 # include "bios.h"
-# include "dosfile.h"
 # include "filesys.h"
+# include "k_fds.h"
 # include "k_prot.h"
 # include "kmemory.h"
 # include "proc.h"
@@ -1566,20 +1565,6 @@ d_cntl (int cmd, const char *name, long arg)
 	
 	switch (cmd)
 	{
-		case F_GETOPENS:
-		{
-			struct listopens *l = (void *) arg;
-			fcookie object;
-			
-			r = relpath2cookie (&dir, temp1, NULL, &object, 0);
-			if (r == E_OK)
-			{
-				r = get_opens (&object, l);
-				release_cookie (&object);
-			}
-			
-			break;
-		}
 		case FUTIME:
 		{
 			if ((dir.fs->fsflags & FS_EXT_3) && arg)

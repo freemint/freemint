@@ -44,9 +44,9 @@
 
 # include "bios.h"
 # include "dosdir.h"
-# include "dosfile.h"
 # include "filesys.h"
 # include "k_exec.h"	/* rts */
+# include "k_fds.h"	/* do_close */
 # include "k_prot.h"	/* free_cred */
 # include "kmemory.h"
 # include "memory.h"
@@ -171,7 +171,7 @@ found:
 	for (i = MIN_HANDLE; i < curproc->p_fd->nfiles; i++)
 	{
 		if ((fp = curproc->p_fd->ofiles[i]) != 0)
-			do_close(fp);
+			do_close(curproc, fp);
 		curproc->p_fd->ofiles[i] = 0;
 	}
 # else
