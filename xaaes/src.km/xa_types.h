@@ -793,10 +793,11 @@ typedef enum window_type WINDOW_TYPE;
 /* Callback for a window's auto-redraw function */
 typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 
-#define XAWS_OPEN	1
-#define XAWS_ICONIFIED	2
-#define XAWS_SHADED	4
-#define XAWS_ZWSHADED	8
+#define XAWS_OPEN	 1
+#define XAWS_ICONIFIED	 2
+#define XAWS_SHADED	 4
+#define XAWS_ZWSHADED	 8
+#define XAWS_HIDDEN	16
 
 /* Window Descriptor */
 struct xa_window
@@ -827,6 +828,7 @@ struct xa_window
 	RECT t;				/* Temporary coordinates used internally */
 
 	short sw, sh;			/* width(not used) and height to use when SHADED */
+	short hx, hy;
 
 	RECT *remember;			/* Where to store the current position for remembering. */
 
