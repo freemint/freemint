@@ -7,7 +7,7 @@
 # distribution.
 #                                                                              
 $f = 'genmagic.o';
-$firstsym = 'C_PTRACE';
+$firstsym = 'B_LOWTPA';
 $val = 'A28 N';
 #       const char name[28];
 #       long value;                                                            
