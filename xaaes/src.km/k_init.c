@@ -325,6 +325,7 @@ k_init(void)
 	/* Tack a menu onto the root_window widget */
 	C.Aes->std_menu.tree = ResourceTree(C.Aes_rsc, SYSTEM_MENU);
 	C.Aes->std_menu.owner = C.Aes;
+	C.Aes->mnu_clientlistname = (char *)kmalloc(20);
 	strncpy(C.Aes->mnu_clientlistname, "  Clients \3", 14);
 	fix_menu(C.Aes, C.Aes->std_menu.tree, true);
 	set_menu_widget(root_window, &C.Aes->std_menu);
