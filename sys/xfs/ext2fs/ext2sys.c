@@ -85,8 +85,9 @@ static long	_cdecl e_unmount	(int drv);
 
 FILESYS ext2_filesys =
 {
-	NULL,
+	next:			NULL,
 	
+	fsflags:
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -109,27 +110,51 @@ FILESYS ext2_filesys =
 	FS_EXT_2		|
 	FS_EXT_3		,
 	
-	e_root,
-	e_lookup, e_creat, e_getdev, e_getxattr,
-	e_chattr, e_chown, e_chmod,
-	e_mkdir, e_rmdir, e_remove, e_getname, e_rename,
-	e_opendir, e_readdir, e_rewinddir, e_closedir,
-	e_pathconf, e_dfree, e_wlabel, e_rlabel,
-	e_symlink, e_readlink, e_hardlink, e_fscntl, e_dskchng,
-	e_release, e_dupcookie,
-	e_sync,
+	root:			e_root,
+	lookup:			e_lookup,
+	creat:			e_creat,
+	getdev:			e_getdev,
+	getxattr:		e_getxattr,
+	chattr:			e_chattr,
+	chown:			e_chown,
+	chmode:			e_chmod,
+	mkdir:			e_mkdir,
+	rmdir:			e_rmdir,
+	remove:			e_remove,
+	getname:		e_getname,
+	rename:			e_rename,
+	opendir:		e_opendir,
+	readdir:		e_readdir,
+	rewinddir:		e_rewinddir,
+	closedir:		e_closedir,
+	pathconf:		e_pathconf,
+	dfree:			e_dfree,
+	writelabel:		e_wlabel,
+	readlabel:		e_rlabel,
+	symlink:		e_symlink,
+	readlink:		e_readlink,
+	hardlink:		e_hardlink,
+	fscntl:			e_fscntl,
+	dskchng:		e_dskchng,
+	release:		e_release,
+	dupcookie:		e_dupcookie,
+	sync:			e_sync,
 	
 	/* FS_EXT_1 */
-	e_mknod, e_unmount,
+	mknod:			e_mknod,
+	unmount:		e_unmount,
 	
 	/* FS_EXT_2
 	 */
 	
 	/* FS_EXT_3 */
-	e_stat64,
+	stat64:			e_stat64,
+	res1:			0, 
+	res2:			0,
+	res3:			0,
 	
-	0, 0, 0, 0, 0,
-	NULL, NULL
+	lock: 0, sleepers: 0,
+	block: NULL, deblock: NULL
 };
 
 
