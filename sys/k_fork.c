@@ -37,7 +37,6 @@
 
 # include "mint/asm.h"
 # include "mint/credentials.h"
-# include "mint/proc.h"
 # include "mint/signal.h"
 
 # include "arch/mprot.h"
@@ -370,7 +369,7 @@ sys_pfork (void)
 			{
 				/* Okay we have to create a new shadow and save
 				 * region for this one
-				 * 
+				 *
 				 * XXX assumes 1 is the MEMREGION of the
 				 * textsegment; this SHOULD be reworked
 				 */

@@ -37,7 +37,6 @@
 # include "libkern/libkern.h"
 # include "mint/credentials.h"
 # include "mint/net.h"
-# include "mint/proc.h"
 # include "mint/sockio.h"
 # include "mint/stat.h"
 # include "sockets/mintsock.h"

@@ -67,8 +67,6 @@
 # include "signal.h"
 # include "util.h"
 
-# include <osbind.h>
-
 /* The linked list of used SLBs */
 SHARED_LIB *slb_list = NULL;
 
@@ -230,7 +228,7 @@ slb_error:
 
 	/* Test for the new program format */
 	exec_longs = (long *) b->p_tbase;
-	if (exec_longs[0] == 0x283a001a && exec_longs[1] == 0x4efb48fa)
+	if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
 	{
 		(*sl)->slb_head = (SLB_HEAD *)(b->p_tbase + 228);
 	}
@@ -240,7 +238,7 @@ slb_error:
 	}
 
 	/* Check the magic value */
-	if ((*sl)->slb_head->slh_magic != 0x70004afcL)
+	if ((*sl)->slb_head->slh_magic != SLB_HEADER_MAGIC)
 	{
 		DEBUG(("Slbopen: SLB is missing the magic value"));
 		r = ENOEXEC;
@@ -299,9 +297,9 @@ slb_error:
 
 	oldcmdlin = *(long *)b->p_cmdlin;
 
-	curproc->p_flag |= 4;
+	curproc->p_flag |= P_FLAG_SLO;
 	r = sys_pexec(106, name, b, 0L);
-	curproc->p_flag &= ~4;
+	curproc->p_flag &= ~P_FLAG_SLO;
 
 	if (r < 0L)
 	{
@@ -371,7 +369,7 @@ slb_error:
 	strcpy((*sl)->slb_name, name);
 	(*sl)->slb_proc = pid2proc(newpid);
 	assert((*sl)->slb_proc);
-	(*sl)->slb_proc->p_flag |= 3;	/* mark as SLB (2) and unkillable process (1) */
+	(*sl)->slb_proc->p_flag |= P_FLAG_SLB;	/* mark as SLB */
 	(*sl)->slb_next = slb_list;
 	slb_list = *sl;
 	mark_proc_region(curproc->p_mem, mr, PROT_PR, curproc->pid);
@@ -690,7 +688,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 		 * finally removed from memory
 		 */
 		slb->slb_name[0] = 0;
-		slb->slb_proc->p_flag &= ~3;
+		slb->slb_proc->p_flag &= ~P_FLAG_SLB;
 		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 		sys_p_kill(pid, SIGCONT);
 	}
@@ -755,7 +753,7 @@ slb_close_on_exit (int terminate)
 		assert (slb->slb_proc->p_mem);
 
 		/* Unblock the signal deliveries */
-		slb->slb_proc->p_flag &= ~3;
+		slb->slb_proc->p_flag &= ~P_FLAG_SLB;
 
 		mr = slb->slb_proc->p_mem->mem;
 		if (mr)

@@ -112,7 +112,7 @@ long		_cdecl sys_s_realloc(long);
 
 
 short forcefastload = 0;	/* for MINT.CNF keyword */
-ulong initialmem = 4096;	/* dito */
+ulong initialmem = 4096;	/* ditto */
 
 /*
  * memory.c:: routines for managing memory regions
@@ -1098,7 +1098,7 @@ end:
 
 /**
  * Shrink a memory region.
- * @param reg     This region should be shrinked.
+ * @param reg     This region should be shrunk.
  * @param newsize New size for the region in bytes.
 
  * @return @retval ESBLOCK New size is bigger than current size.

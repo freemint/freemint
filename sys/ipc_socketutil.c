@@ -1,41 +1,40 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000, 2001 Frank Naumann <fnaumann@freemint.de>
  * Copyright 1993, 1994, 1995, 1996 Kay Roemer
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 2001-01-12
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
+ *
  */
 
 # include "ipc_socketutil.h"
 
 # include "libkern/libkern.h"
-# include "mint/proc.h"
 
 # include "ipc_unix.h"
 # include "kmemory.h"
@@ -65,7 +64,7 @@ void
 so_register (short domain, struct dom_ops *ops)
 {
 	DEBUG (("sockets: registering domain %i (ops %lx)", domain, ops));
-	
+
 	ops->domain = domain;
 	ops->next = alldomains;
 	alldomains = ops;
@@ -78,11 +77,11 @@ void
 so_unregister (short domain)
 {
 	struct dom_ops *ops;
-	
+
 	ops = alldomains;
 	while (ops && (ops->domain == domain))
 		ops = alldomains = ops->next;
-	
+
 	if (ops)
 	{
 		do {
@@ -105,27 +104,27 @@ so_create (struct socket **resultso, short domain, short type, short protocol)
 {
 	struct dom_ops *ops;
 	struct socket *so;
-	
+
 	for (ops = alldomains; ops; ops = ops->next)
 		if (ops->domain == domain)
 			break;
-	
+
 	if (!ops)
 	{
 		DEBUG (("sp_create: domain %i not supported", domain));
 		return EAFNOSUPPORT;
 	}
-	
+
 	so = kmalloc (sizeof (*so));
 	if (so)
 	{
 		long ret;
-		
+
 		bzero (so, sizeof (*so));
-		
+
 		so->date = datestamp;
 		so->time = timestamp;
-		
+
 		switch (type)
 		{
 			case SOCK_DGRAM:
@@ -136,16 +135,16 @@ so_create (struct socket **resultso, short domain, short type, short protocol)
 			{
 				so->ops = ops;
 				so->type = type;
-				
+
 				ret = (*so->ops->attach) (so, protocol);
 				if (!ret)
 				{
 					so->state = SS_ISUNCONNECTED;
-					
+
 					*resultso = so;
 					return 0;
 				}
-				
+
 				DEBUG (("so_create: failed to attach protocol data (%li)", ret));
 				break;
 			}
@@ -155,11 +154,11 @@ so_create (struct socket **resultso, short domain, short type, short protocol)
 				break;
 			}
 		}
-		
+
 		kfree (so);
 		return ret;
 	}
-	
+
 	return ENOMEM;
 }
 
@@ -167,20 +166,20 @@ long _cdecl
 so_dup (struct socket **resultso, struct socket *so)
 {
 	struct socket *newso;
-	
+
 	newso = kmalloc (sizeof (*newso));
 	if (newso)
 	{
 		long ret;
-		
+
 		bzero (newso, sizeof (*newso));
-		
+
 		newso->date = datestamp;
 		newso->time = timestamp;
-		
+
 		newso->ops = so->ops;
 		newso->type = so->type;
-		
+
 		ret = (*so->ops->dup)(newso, so);
 		if (ret == 0)
 		{
@@ -192,10 +191,10 @@ so_dup (struct socket **resultso, struct socket *so)
 			DEBUG (("so_dup: failed to dup protocol data"));
 			kfree (newso);
 		}
-		
+
 		return ret;
 	}
-	
+
 	return ENOMEM;
 }
 
@@ -204,7 +203,7 @@ so_free (struct socket *so)
 {
 	if (so_release (so))
 		return; /* XXX - check for EINTR */
-	
+
 	kfree (so);
 }
 
@@ -216,13 +215,13 @@ so_release (struct socket *so)
 	struct socket *peer;
 	short ostate;
 	long r = 0;
-	
+
 	ostate = so->state;
 	if (ostate != SS_VIRGIN && ostate != SS_ISDISCONNECTED)
 	{
 		so->state = SS_ISDISCONNECTING;
 		so->flags |= SO_CLOSING;
-		
+
 		/* Tell all clients waiting for connections that we are
 		 * closing down. This is done by setting there `conn'-field
 		 * to zero and waking them up.
@@ -240,7 +239,7 @@ so_release (struct socket *so)
 				(*peer->ops->abort)(peer, SS_ISCONNECTING);
 			}
 		}
-		
+
 		/* Remove ourselves from the incomplete connection queue of
 		 * some server. If we are on any queue, so->state is the
 		 * server we are connecting to.
@@ -268,7 +267,7 @@ so_release (struct socket *so)
 				so->conn = 0;
 			}
 		}
-		
+
 		/* Tell the peer we are closing down, but let the underlying
 		 * protocol do its part first.
 		 */
@@ -279,7 +278,7 @@ so_release (struct socket *so)
 			peer->state = SS_ISDISCONNECTING;
 			(*so->ops->abort)(peer, SS_ISCONNECTED);
 		}
-		
+
 		r = (*so->ops->detach) (so);
 		if (r == 0)
 		{
@@ -287,7 +286,7 @@ so_release (struct socket *so)
 			 * disconnected.
 			 */
 			so->state = SS_ISDISCONNECTED;
-			
+
 			/* Wake anyone waiting for `so', since its state
 			 * changed.
 			 */
@@ -299,7 +298,7 @@ so_release (struct socket *so)
 		else
 			ALERT ("so_release: so->ops->detach failed!");
 	}
-	
+
 	return r;
 }
 
@@ -328,13 +327,13 @@ so_connect (struct socket *server, struct socket *client,
 {
 	struct socket *last;
 	short clients;
-	
+
 	if (!(server->flags & SO_ACCEPTCON))
 	{
 		DEBUG (("sockdev: so_connect: server is not listening"));
 		return EINVAL;
 	}
-	
+
 	/* Put client on the incomplete connection queue of server. */
 	client->next = 0;
 	last = server->iconn_q;
@@ -360,7 +359,7 @@ so_connect (struct socket *server, struct socket *client,
 	}
 	client->state = SS_ISCONNECTING;
 	client->conn = server;
-	
+
 	/* Wake proc's selecting for reading on server, which are waiting
 	 * for a connection request on the listening server.
 	 */
@@ -369,10 +368,10 @@ so_connect (struct socket *server, struct socket *client,
 		so_wakersel (server);
 		wake (IO_Q, (long) server);
 	}
-	
+
 	if (nonblock)
 		return EINPROGRESS;
-	
+
 	while (client->state == SS_ISCONNECTING)
 	{
 		if (sleep (IO_Q, (long) client))
@@ -387,7 +386,7 @@ so_connect (struct socket *server, struct socket *client,
 			return ECONNREFUSED;
 		}
 	}
-	
+
 	/* Now we are (at least were) connected to server. */
 	return 0;
 }
@@ -400,7 +399,7 @@ long _cdecl
 so_accept (struct socket *server, struct socket *newso, short nonblock)
 {
 	struct socket *client;
-	
+
 	/* Remove the first waiting client from the queue of incomplete
 	 * connections. Go to sleep if non is waiting, unless nonblocking
 	 * mode is set.
@@ -409,30 +408,30 @@ so_accept (struct socket *server, struct socket *newso, short nonblock)
 	{
 		if (nonblock)
 			return EWOULDBLOCK;
-		
+
 		if (server->flags & SO_CANTRCVMORE)
 			return ECONNABORTED;
-		
+
 		if (sleep (IO_Q, (long)server))
 			/* may be someone closed the server on us */
 			return EINTR;
 	}
-	
+
 	client = server->iconn_q;
 	server->iconn_q = client->next;
-	
+
 	/* Connect the new socket and the client together. */
 	client->next = 0;
 	newso->conn = client;
 	client->conn = newso;
 	newso->state = SS_ISCONNECTED;
 	client->state = SS_ISCONNECTED;
-	
+
 	/* Wake proc's selecting for writing on client, which are waiting
 	 * for a connect() to finish on a nonblocking socket.
 	 */
 	so_wakewsel (client);
-	
+
 	wake (IO_Q, (long) client);
 	return 0;
 }
@@ -442,15 +441,15 @@ so_drop (struct socket *so, short nonblock)
 {
 	struct socket *newso;
 	long ret;
-	
+
 	if (!(so->flags & SO_DROP))
 		return;
-	
+
 	DEBUG (("so_drop: dropping incoming connection"));
-	
+
 	ret = so_dup (&newso, so);
 	if (ret) return;
-	
+
 	(*so->ops->accept)(so, newso, nonblock);
 	so_free (newso);
 }
