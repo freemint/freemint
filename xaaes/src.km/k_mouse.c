@@ -275,58 +275,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 }
-#if 0
-
-	
-
-	if ((add_client_md(client, md)) && (client->waiting_for & MU_BUTTON) && client->waiting_pb)
-	{
-		short *to = client->waiting_pb->intout;
-
-		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
-			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
-
-		if (client->waiting_for & XAWAIT_MULTI)
-		{
-			/* If the client is waiting on a multi, the response is
-			 * slightly different to the evnt_button() response.
-			 */
-			DIAG((D_button, NULL, " -- XAWAIT_MULTI"));
-
-			if (is_bevent(md->state, md->clicks, client->waiting_pb->intin + 1, 11))
-			{
-				*to++ = MU_BUTTON;
-				*to++ = md->x;
-				*to++ = md->y;
-				*to++ = md->state;
-				*to++ = md->kstate;
-				*to++ = 0;
-				*to++ = md->clicks;
-				client->md_tail->clicks = 0;
-
-				client->usr_evnt = 1;
-				DIAG((D_button, NULL, " - written"));
-			}
-		}
-		else
-		{
-			DIAG((D_button, NULL, " -- evnt_button"));
-			if (is_bevent(md->state, md->clicks, client->waiting_pb->intin, 12))
-			{
-				*to++ = md->clicks;
-				*to++ = md->x;
-				*to++ = md->y;
-				*to++ = md->state;
-				*to   = md->kstate;
-				client->md_tail->clicks = 0;
-
-				client->usr_evnt = 1;
-				DIAG((D_button, NULL, " - written"));
-			}
-		}
-	}
-}
-#endif
 /*
  * When a client is delivered a button event, we store the event
  * in the clients private moose_data structure. This is the _only_

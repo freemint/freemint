@@ -2124,8 +2124,8 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 	list = (SCROLL_INFO*)object_get_spec(ob)->index;
 	w = list->wi;
 
-	w->r.x = r.x;
-	w->r.y = r.y;
+	w->r.x = w->rc.x = r.x;
+	w->r.y = w->rc.y = r.y;
 
 	/* for after moving */
 	calc_work_area(w);
