@@ -440,6 +440,52 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (events & (MU_M1|MU_M2|MU_MX))
 	{
+		struct xa_window *wind;
+		struct xa_client *wo = NULL;
+
+		bzero(&client->em, sizeof(client->em));
+
+		check_mouse(client, NULL, &x, &y);
+
+		wind = find_window(0, x, y);
+		if (wind)
+			wo = wind == root_window ? get_desktop()->owner : wind->owner;
+
+		if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
+		{
+			if (events & MU_M1)
+			{
+				const RECT *r = (const RECT *)&pb->intin[5];
+
+				client->em.m1 = *r;
+				client->em.flags = pb->intin[4] | MU_M1;
+
+				if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
+					fall_through |= MU_M1;
+				else
+					new_waiting_for |= MU_M1;
+			}
+			if (events & MU_MX)
+			{
+				client->em.flags = pb->intin[4] | MU_MX;
+				new_waiting_for |= MU_MX;
+			}
+			if (events & MU_M2)
+			{
+				const RECT *r = (const RECT *)&pb->intin[10];
+
+				client->em.m2 = *r;
+				client->em.flags |= (pb->intin[9] << 1) | MU_M2;
+
+				if (mouse_ok(client) && is_rect(x, y, client->em.flags & 2, &client->em.m2))
+					fall_through |= MU_M2;
+				else
+					new_waiting_for |= MU_M2;
+			}
+		}
+		else
+			new_waiting_for |= (events & (MU_M1 | MU_M2 | MU_MX));
+#if 0
 		bzero(&client->em, sizeof(client->em));
 		if (events & MU_M1)
 		{
@@ -484,6 +530,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			else
 				new_waiting_for |= MU_M2;
 		}
+#endif
 	}
 
 	/* AES 4.09 */
@@ -740,6 +787,9 @@ unsigned long
 XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	short x, y;
+	struct xa_window *wind;
+	struct xa_client *wo = NULL;
+
 	CONTROL(5,5,0)
 
 	if (client->status & CS_LAGGING)
@@ -758,11 +808,17 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->em.flags = (long)(pb->intin[0]) | MU_M1;
 
 	check_mouse(client, NULL, &x, &y);
-	if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
+	wind = find_window(0, x, y);
+	if (wind)
+		wo = wind == root_window ? get_desktop()->owner : wind->owner;
+	if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
 	{
-		multi_intout(client, pb->intout, 0);
-		pb->intout[0] = 1;
-		return XAC_DONE;
+		if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
+		{
+			multi_intout(client, pb->intout, 0);
+			pb->intout[0] = 1;
+			return XAC_DONE;
+		}
 	}
 
 	/* Returning false blocks the client app to wait for the event */

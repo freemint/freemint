@@ -36,6 +36,7 @@ struct xa_client * previous_client(enum locks lock);
 
 void swap_menu(enum locks lock, struct xa_client *, bool, int);
 void app_in_front(enum locks lock, struct xa_client *client);
+bool is_infront(struct xa_client *client);
 void set_active_client(enum locks lock, struct xa_client *client);
 void hide_app(enum locks lock, struct xa_client *client);
 void unhide_app(enum locks lock, struct xa_client *client);
