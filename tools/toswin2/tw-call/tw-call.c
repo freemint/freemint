@@ -35,8 +35,8 @@
 
 #include <cflib.h>
 
-#include "global.h"
-#include "share.h"
+#include "../global.h"
+#include "../share.h"
 
 
 int	tw_id;
