@@ -2825,10 +2825,10 @@ slist_msg_handler(
 	long p, oldp;
 
 	ob = wind->winob + wind->winitem;
-	list = (SCROLL_INFO *)object_get_spec(ob)->index;
+	list = object_get_slist(ob); //(SCROLL_INFO *)object_get_spec(ob)->index;
 	top = list->top;
 	oldp = list->start_y;
-
+	
 	switch (msg[0])		/* message number */
 	{
 	case WM_ARROWED:
