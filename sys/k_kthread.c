@@ -84,6 +84,7 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 
 		/* kernel threads don't have a basepage */
 		p2->base = NULL;
+		p2->ppid = 0;
 
 		/* zero the user registers, and set the FPU in a "clear" state */
 		for (i = 0; i < 15; i++)

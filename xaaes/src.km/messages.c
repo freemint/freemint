@@ -251,7 +251,9 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		return;	
 
 	if (!rc || rc == dest_client)
+	{
 		deliver_message(lock, dest_client, msg);
+	}
 	else
 	{
 		m = (union msg_buf *)kmalloc(sizeof(m));
