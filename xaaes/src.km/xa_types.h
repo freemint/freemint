@@ -391,11 +391,23 @@ struct widget_tree
 typedef struct widget_tree XA_TREE;
 
 /* used for linking resources's per client */
+
+#define RSRC_ALLOC 1
+struct remember_alloc;
+struct remember_alloc
+{
+	struct remember_alloc *next;
+	void *addr;
+};
+	
 struct xa_rscs
 {
 	struct xa_rscs *next, *prior;
-	int id, handle;
+	short id;
+	short handle;
+	short flags;
 	struct aes_global *globl;	/* Need a global per resource, otherwise rsrc_gaddr would be ambiguous. */
+	struct remember_alloc *ra;
 	void *rsc;
 };
 
