@@ -24,6 +24,4 @@ long detect_hardware (void);
 long detect_cpu (void);		/* in detect.spp */
 long detect_fpu (void);		/* ibidem */
 
-long verify_access(void *ptr);
-
 # endif  /* _m68k_detect_h */

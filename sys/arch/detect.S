@@ -20,11 +20,13 @@
  * 
  */
 
-	.globl	_verify_access
+// Test hardware registers for presence
 
-// Verify access to the memory pointed to by the ptr
-_verify_access:
-	move.l	sp,a0
+	.globl	_test_byte_rd
+	.globl	_test_word_rd
+	.globl	_test_long_rd
+	
+_test_byte_rd:	move.l	sp,a0
 	move.l	(8).w,a1
 	lea	berr.w(pc),a2
 	move.l	a2,(8).w
@@ -34,12 +36,36 @@ _verify_access:
 	move.l	4(sp),a2
 	tst.b	(a2)
 
-	moveq	#0x01,d0	// passed
+pass:	moveq	#0x01,d0	// passed
 
 berr:	move.l	a1,(8).w
 	move.l	a0,sp
 	nop
 	rts
+
+_test_word_rd:	move.l	sp,a0
+	move.l	(8).w,a1
+	lea	berr.w(pc),a2
+	move.l	a2,(8).w
+	nop
+
+	clr.l	d0
+	move.l	4(sp),a2
+	tst.w	(a2)
+
+	bra.s	pass
+
+_test_long_rd:	move.l	sp,a0
+	move.l	(8).w,a1
+	lea	berr.w(pc),a2
+	move.l	a2,(8).w
+	nop
+
+	clr.l	d0
+	move.l	4(sp),a2
+	tst.l	(a2)
+
+	bra.s	pass
 
 	.globl	_detect_hardware
 
