@@ -455,40 +455,6 @@ next_app(enum locks lock, bool wwom)
 	return client;
 }
 
-#if 0
-	fc = focus_owner();
-	client = NULL;
-
-	if (fc)
-		client = fc->next;
-
-	if (!client)
-	{
-		if (!(client = S.client_list))
-			return NULL;
-	}
-	fc = client;
-	do
-	{
-		bool anywin = any_window(lock, client);
-
-		DIAG((D_appl, NULL, "anywin %d, menu %lx", anywin, client->std_menu->tree));
-
-		if (client->std_menu || anywin)
-		{
-			DIAG((D_appl, NULL, "  --  return %s", c_owner(client)));
-			return client;
-		}
-		if (!(client = client->next))
-			client = S.client_list;
-
-	} while (client != fc);
-
-	DIAG((D_appl, NULL, "  --  fail"));
-	return NULL;
-}
-#endif
-
 struct xa_client *
 previous_client(enum locks lock)
 {
@@ -498,35 +464,44 @@ previous_client(enum locks lock)
 void
 app_in_front(enum locks lock, struct xa_client *client)
 {
-	struct xa_window *wl,*wf;
+	struct xa_window *wl,*wf,*wp;
 
 	if (client)
 	{
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
 			
 		set_active_client(lock, client);
-
 		swap_menu(lock, client, true, 1);
 
-		wl = window_list;
-		wf = NULL;
+		wl = root_window->prev;
+		wf = window_list;
 
 		while (wl)
 		{
+			wp = wl->prev;
+
 			if (wl->owner == client && wl != root_window)
 			{
 				if (wl->is_open)
 				{
-					if (!wf)
-						wf = wl;
 					if (is_hidden(wl))
 						unhide_window(lock|winlist, wl);
+
+					top_window(lock|winlist, wl, NULL);
 				}
 			}
-			wl = wl->next;
+
+			if (wl == wf)
+				break;
+			
+			wl = wp;
 		}
-		if (wf)
-			top_window(lock|winlist, wf, client);
+
+		if (wf != window_list)
+		{
+			send_untop(lock, wf);
+			send_ontop(lock);
+		}
 	}
 }
 
