@@ -43,10 +43,10 @@ static struct adiinfo ai =
 	0,
 };
 
-static void *	 
+static long
 module_init(void *initfunc, struct kentry *k, struct adiinfo *a)
 {
-	register void *ret __asm__("d0");	 
+	register long ret __asm__("d0");	 
 
 	__asm__ volatile	 
 	(	 
@@ -69,19 +69,18 @@ module_init(void *initfunc, struct kentry *k, struct adiinfo *a)
 static long
 load_adi(struct basepage *b, const char *name)
 {
-	long (*init)(struct kentry *, struct adiinfo *);
+	void *initfunc = (void *)(b->p_tbase);
 	long r;
 	
 	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));
-	DIAGS(("load_adi: init 0x%lx, size %li", (void *)b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DIAGS(("load_adi: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 	
 	/* pass a pointer to the drivers file name on to the
 	 * driver.
 	 */
 	ai.fname = name;
 	
-	init = (long (*)(struct kentry *, struct adiinfo *))b->p_tbase;
-	r = (*init)(KENTRY, &ai);
+	r = module_init(initfunc, KENTRY, &ai);
 	
 	ai.fname = NULL;
 	
