@@ -297,7 +297,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * all along. Here's where we change the protection on
 		 * the environment to match those flags.
 		 */
-		mark_region (env, (short)((flags & F_PROTMODE) >> F_PROTSHIFT));
+		mark_region (env, (short)((flags & F_PROTMODE) >> F_PROTSHIFT), 0);
 	}
 	
 	assert (!p);

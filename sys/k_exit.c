@@ -339,7 +339,7 @@ sys_ptermres (long save, int code)
 		{
 			/* only the TSR is owner */
 			if (get_prot_mode (m) == PROT_P)
-				mark_region (m, PROT_G);
+				mark_region (m, PROT_G, 0);
 		}
 	}
 	

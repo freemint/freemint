@@ -423,7 +423,7 @@ dosound (const char *ptr)
 		if (r && get_prot_mode (r) == PROT_P)
 		{
 			DEBUG (("Dosound: changing protection to Super"));
-			mark_region (r, PROT_S);
+			mark_region (r, PROT_S, 0);
 		}
 	}
 	

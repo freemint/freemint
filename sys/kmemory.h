@@ -44,11 +44,14 @@ void		_kmr_free	(MEMREGION *ptr);
 void *	_cdecl	_kcore		(ulong size, const char *func);	/* ST-RAM alloc */
 void *	_cdecl	_kmalloc	(ulong size, const char *func);	/* TT-RAM alloc */
 void	_cdecl	_kfree		(void *place, const char *func);
+
+void *	_cdecl	_dmabuf_alloc	(ulong size, short cmode, const char *func);
+
 void *	_cdecl	_umalloc	(ulong size, const char *func);	/* user space alloc */
 void	_cdecl	_ufree		(void *place, const char *func);/* user space free */
 
 
-void	init_kmemory		(void);		/* initalize km allocator */
+void	init_kmemory		(void); /* initalize km allocator */
 long	km_config		(long mode, long arg);
 
 # define KM_STAT_DUMP	1
@@ -60,6 +63,9 @@ long	km_config		(long mode, long arg);
 # define kcore(size)		_kcore (size, __FUNCTION__)
 # define kmalloc(size)		_kmalloc (size, __FUNCTION__)
 # define kfree(place)		_kfree (place, __FUNCTION__)
+
+# define dmabuf_alloc(size,cm)	_dmabuf_alloc (size, cm, __FUNCTION__)
+
 # define umalloc(size)		_umalloc (size, __FUNCTION__)
 # define ufree(place)		_ufree (place, __FUNCTION__)
 

@@ -63,6 +63,9 @@ static void   _cdecl m_kfree     (void *place) { _kfree (place, "ext"); }
 static void * _cdecl m_umalloc   (ulong size)  { return _umalloc (size, "ext"); }
 static void   _cdecl m_ufree     (void *place) { _ufree (place, "ext"); }
 
+static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
+{ return _dmabuf_alloc (size, cm, "ext"); }
+
 /*
  * kernel info that is passed to loaded file systems and device drivers
  */
@@ -118,8 +121,10 @@ struct kerinfo kernelinfo =
 	kthread_create,
 	kthread_exit,
 	
+	m_dmabuf_alloc,
+	
 	{
-		0, 0, 0, 0
+		0, 0, 0
 	}
 };
 

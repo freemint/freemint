@@ -302,8 +302,12 @@ struct kerinfo
 	long	_cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
 	void	_cdecl (*kthread_exit)(short code);
 	
+	/* allocate DMA buffer (from ST-RAM with cache mode set to cmode
+	 */
+	void *	_cdecl (*dmabuf_alloc)(ulong size, short cmode);
+	
 	/* reserved, set to 0 */
-	long	res2 [4];
+	long	res2 [3];
 };
 
 
