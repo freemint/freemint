@@ -268,12 +268,12 @@ XA_handler(void *_pb)
 		}
 		else
 		{
-			DIAGS(("Unimplemented AES code: %d", cmd));
+			DIAGS(("Unimplemented AES trap: %s[%d]", aes_tab[cmd].descr, cmd));
 		}
 	}
 	else
 	{
-		DIAGS(("Unimplemented AES code: %d", cmd));
+		DIAGS(("Unimplemented AES trap: %d", cmd));
 	}
 
 	/* error exit */
@@ -510,74 +510,43 @@ setup_handler_table(void)
 	 * appl_? class functions
 	 */
 	aes_tab[XA_APPL_INIT      ].descr = "appl_init";
-	aes_tab[XA_APPL_EXIT      ].descr = "appl_exit";
-	aes_tab[XA_APPL_GETINFO   ].descr = "appl_getinfo";
-	aes_tab[XA_APPL_FIND      ].descr = "appl_find";
+	aes_tab[XA_APPL_READ      ].descr = "appl_read";
 	aes_tab[XA_APPL_WRITE     ].descr = "appl_write";
+	aes_tab[XA_APPL_FIND      ].descr = "appl_find";
+	aes_tab[XA_APPL_TPLAY     ].descr = "appl_tplay";
+	aes_tab[XA_APPL_TRECORD   ].descr = "appl_trecord";
 	aes_tab[XA_APPL_YIELD     ].descr = "appl_yield";
 	aes_tab[XA_APPL_SEARCH    ].descr = "appl_search";
+	aes_tab[XA_APPL_EXIT      ].descr = "appl_exit";
 	aes_tab[XA_APPL_CONTROL   ].descr = "appl_control";
-
-
-	/*
-	 * form_? class functions
-	 */
-	aes_tab[XA_FORM_ALERT     ].descr = "form_alert";
-	aes_tab[XA_FORM_ERROR     ].descr = "form_error";
-	aes_tab[XA_FORM_CENTER    ].descr = "form_center";
-	aes_tab[XA_FORM_DIAL      ].descr = "form_dial";
-	aes_tab[XA_FORM_BUTTON    ].descr = "form_button";
-	aes_tab[XA_FORM_DO        ].descr = "form_do";
-	aes_tab[XA_FORM_KEYBD     ].descr = "form_keybd";
-
-
-	/*
-	 * fsel_? class functions
-	 */
-	aes_tab[XA_FSEL_INPUT     ].descr = "fsel_input";
-	aes_tab[XA_FSEL_EXINPUT   ].descr = "fsel_exinput";
+	aes_tab[XA_APPL_GETINFO   ].descr = "appl_getinfo";
 
 
 	/*
 	 * evnt_? class functions
 	 */
-	aes_tab[XA_EVNT_BUTTON    ].descr = "evnt_button";
 	aes_tab[XA_EVNT_KEYBD     ].descr = "evnt_keybd";
-	aes_tab[XA_EVNT_MESAG     ].descr = "evnt_mesag";
-	aes_tab[XA_EVNT_MULTI     ].descr = "evnt_multi";
-	aes_tab[XA_EVNT_TIMER     ].descr = "evnt_timer";
+	aes_tab[XA_EVNT_BUTTON    ].descr = "evnt_button";
 	aes_tab[XA_EVNT_MOUSE     ].descr = "evnt_mouse";
+	aes_tab[XA_EVNT_MESAG     ].descr = "evnt_mesag";
+	aes_tab[XA_EVNT_TIMER     ].descr = "evnt_timer";
+	aes_tab[XA_EVNT_MULTI     ].descr = "evnt_multi";
 	aes_tab[XA_EVNT_DCLICK    ].descr = "evnt_dclick";
 
 
 	/*
-	 * graf_? class functions
+	 * menu_? class functions
 	 */
-	aes_tab[XA_GRAF_RUBBERBOX ].descr = "graf_rubberbox";
-	aes_tab[XA_GRAF_DRAGBOX   ].descr = "graf_dragbox";
-	aes_tab[XA_GRAF_HANDLE    ].descr = "graf_handle";
-	aes_tab[XA_GRAF_MOUSE     ].descr = "graf_mouse";
-	aes_tab[XA_GRAF_MKSTATE   ].descr = "graf_mkstate";
-	aes_tab[XA_GRAF_GROWBOX   ].descr = "graf_growbox";
-	aes_tab[XA_GRAF_SHRINKBOX ].descr = "graf_growbox";
-	aes_tab[XA_GRAF_MOVEBOX   ].descr = "graf_movebox";
-	aes_tab[XA_GRAF_SLIDEBOX  ].descr = "graf_slidebox";
-	aes_tab[XA_GRAF_WATCHBOX  ].descr = "graf_watchbox";
-
-
-	/*
-	 * wind_? class functions
-	 */
-	aes_tab[XA_WIND_CREATE    ].descr = "wind_create";
-	aes_tab[XA_WIND_OPEN      ].descr = "wind_open";
-	aes_tab[XA_WIND_CLOSE     ].descr = "wind_close";
-	aes_tab[XA_WIND_SET       ].descr = "wind_set";
-	aes_tab[XA_WIND_GET       ].descr = "wind_get";
-	aes_tab[XA_WIND_FIND      ].descr = "wind_find";
-	aes_tab[XA_WIND_UPDATE    ].descr = "wind_update";
-	aes_tab[XA_WIND_DELETE    ].descr = "wind_delete";
-	aes_tab[XA_WIND_NEW       ].descr = "wind_new";
-	aes_tab[XA_WIND_CALC      ].descr = "wind_calc";
+	aes_tab[XA_MENU_BAR       ].descr = "menu_bar";
+	aes_tab[XA_MENU_ICHECK    ].descr = "menu_icheck";
+	aes_tab[XA_MENU_IENABLE   ].descr = "menu_ienable";
+	aes_tab[XA_MENU_TNORMAL   ].descr = "menu_tnormal";
+	aes_tab[XA_MENU_TEXT      ].descr = "menu_text";
+	aes_tab[XA_MENU_REGISTER  ].descr = "menu_register";
+	aes_tab[XA_MENU_POPUP     ].descr = "menu_popup";
+	aes_tab[XA_MENU_ATTACH    ].descr = "menu_attach";
+	aes_tab[XA_MENU_ISTART    ].descr = "menu_istart";
+	aes_tab[XA_MENU_SETTINGS  ].descr = "menu_settings";
 
 
 	/*
@@ -589,43 +558,37 @@ setup_handler_table(void)
 	aes_tab[XA_OBJC_FIND      ].descr = "objc_find";
 	aes_tab[XA_OBJC_OFFSET    ].descr = "objc_offset";
 	aes_tab[XA_OBJC_ORDER     ].descr = "objc_order";
-	aes_tab[XA_OBJC_CHANGE    ].descr = "objc_change";
 	aes_tab[XA_OBJC_EDIT      ].descr = "objc_edit";
+	aes_tab[XA_OBJC_CHANGE    ].descr = "objc_change";
 	aes_tab[XA_OBJC_SYSVAR    ].descr = "objc_sysvar";
 
 
 	/*
-	 * rsrc_? class functions
+	 * form_? class functions
 	 */
-	aes_tab[XA_RSRC_LOAD      ].descr = "rsrc_load";
-	aes_tab[XA_RSRC_FREE      ].descr = "rsrc_free";
-	aes_tab[XA_RSRC_GADDR     ].descr = "rsrc_gaddr";
-	aes_tab[XA_RSRC_OBFIX     ].descr = "rsrc_obfix";
-	aes_tab[XA_RSRC_RCFIX     ].descr = "rsrc_rcfix";
+	aes_tab[XA_FORM_DO        ].descr = "form_do";
+	aes_tab[XA_FORM_DIAL      ].descr = "form_dial";
+	aes_tab[XA_FORM_ALERT     ].descr = "form_alert";
+	aes_tab[XA_FORM_ERROR     ].descr = "form_error";
+	aes_tab[XA_FORM_CENTER    ].descr = "form_center";
+	aes_tab[XA_FORM_KEYBD     ].descr = "form_keybd";
+	aes_tab[XA_FORM_BUTTON    ].descr = "form_button";
+	aes_tab[XA_FORM_POPUP     ].descr = "form_popup";
 
 
 	/*
-	 * menu_? class functions
+	 * graf_? class functions
 	 */
-	aes_tab[XA_MENU_BAR       ].descr = "menu_bar";
-	aes_tab[XA_MENU_TNORMAL   ].descr = "menu_tnormal";
-	aes_tab[XA_MENU_ICHECK    ].descr = "menu_icheck";
-	aes_tab[XA_MENU_IENABLE   ].descr = "menu_ienable";
-	aes_tab[XA_MENU_TEXT      ].descr = "menu_text";
-	aes_tab[XA_MENU_REGISTER  ].descr = "menu_register";
-	aes_tab[XA_MENU_POPUP     ].descr = "menu_popup";
-	aes_tab[XA_MENU_ATTACH    ].descr = "menu_attach";
-	aes_tab[XA_MENU_ISTART    ].descr = "menu_istart";
-	aes_tab[XA_MENU_SETTINGS  ].descr = "menu_settings";
-
-
-	/*
-	 * shell_? class functions
-	 */
-	aes_tab[XA_SHELL_WRITE    ].descr = "shell_write";
-	aes_tab[XA_SHELL_READ     ].descr = "shell_read";
-	aes_tab[XA_SHELL_FIND     ].descr = "shell_find";
-	aes_tab[XA_SHELL_ENVRN    ].descr = "shell_envrn";
+	aes_tab[XA_GRAF_RUBBERBOX ].descr = "graf_rubberbox";
+	aes_tab[XA_GRAF_DRAGBOX   ].descr = "graf_dragbox";
+	aes_tab[XA_GRAF_MOVEBOX   ].descr = "graf_movebox";
+	aes_tab[XA_GRAF_GROWBOX   ].descr = "graf_growbox";
+	aes_tab[XA_GRAF_SHRINKBOX ].descr = "graf_shrinkbox";
+	aes_tab[XA_GRAF_WATCHBOX  ].descr = "graf_watchbox";
+	aes_tab[XA_GRAF_SLIDEBOX  ].descr = "graf_slidebox";
+	aes_tab[XA_GRAF_HANDLE    ].descr = "graf_handle";
+	aes_tab[XA_GRAF_MOUSE     ].descr = "graf_mouse";
+	aes_tab[XA_GRAF_MKSTATE   ].descr = "graf_mkstate";
 
 
 	/*
@@ -634,7 +597,51 @@ setup_handler_table(void)
 	aes_tab[XA_SCRAP_READ     ].descr = "scrp_read";
 	aes_tab[XA_SCRAP_WRITE    ].descr = "scrp_write";
 
-	aes_tab[XA_FORM_POPUP     ].descr = "form_popup";
+
+	/*
+	 * fsel_? class functions
+	 */
+	aes_tab[XA_FSEL_INPUT     ].descr = "fsel_input";
+	aes_tab[XA_FSEL_EXINPUT   ].descr = "fsel_exinput";
+
+
+	/*
+	 * wind_? class functions
+	 */
+	aes_tab[XA_WIND_CREATE    ].descr = "wind_create";
+	aes_tab[XA_WIND_OPEN      ].descr = "wind_open";
+	aes_tab[XA_WIND_CLOSE     ].descr = "wind_close";
+	aes_tab[XA_WIND_DELETE    ].descr = "wind_delete";
+	aes_tab[XA_WIND_GET       ].descr = "wind_get";
+	aes_tab[XA_WIND_SET       ].descr = "wind_set";
+	aes_tab[XA_WIND_FIND      ].descr = "wind_find";
+	aes_tab[XA_WIND_UPDATE    ].descr = "wind_update";
+	aes_tab[XA_WIND_CALC      ].descr = "wind_calc";
+	aes_tab[XA_WIND_NEW       ].descr = "wind_new";
+
+
+	/*
+	 * rsrc_? class functions
+	 */
+	aes_tab[XA_RSRC_LOAD      ].descr = "rsrc_load";
+	aes_tab[XA_RSRC_FREE      ].descr = "rsrc_free";
+	aes_tab[XA_RSRC_GADDR     ].descr = "rsrc_gaddr";
+	aes_tab[XA_RSRC_SADDR     ].descr = "rsrc_saddr";
+	aes_tab[XA_RSRC_OBFIX     ].descr = "rsrc_obfix";
+	aes_tab[XA_RSRC_RCFIX     ].descr = "rsrc_rcfix";
+
+
+	/*
+	 * shell_? class functions
+	 */
+	aes_tab[XA_SHELL_READ     ].descr = "shell_read";
+	aes_tab[XA_SHELL_WRITE    ].descr = "shell_write";
+	aes_tab[XA_SHELL_GET      ].descr = "shell_get";
+	aes_tab[XA_SHELL_PUT      ].descr = "shell_put";
+	aes_tab[XA_SHELL_FIND     ].descr = "shell_find";
+	aes_tab[XA_SHELL_ENVRN    ].descr = "shell_envrn";
+
+
 
 
 	/*
