@@ -37,11 +37,12 @@
 #define ATTRIBUTES (CBGCOL | CFGCOL | \
 		    CE_BOLD | CE_LIGHT | CE_ITALIC | CE_UNDERLINE | \
 		    CINVERSE | CINVISIBLE | CPROTECTED)
-#define DECSC_FLAGS (ATTRIBUTES | TORIGIN | TWRAPAROUND)
+#define DECSC_FLAGS (TCHARSET_MASK | TORIGIN | TWRAPAROUND)
 
 /* Per terminal flags.  */
-#define TCSG		   0x1 /* G1 if non-zero, G0 else.  */
-#define TCSGS		   0x2 /* '0' if non-zero, 'B' else.  */
+#define TCHARSET0	   0x1 /* Bit 1 of charset selector.  */
+#define TCHARSET1	   0x2 /* Bit 2 of charset selector.  */
+#define TCHARSET_MASK	(TCHARSET0 | TCHARSET1)
 #define TINSERT		   0x4 /* Non-zero if in insert mode.  */
 #define TORIGIN		   0x8 /* Non-zero if in origin (relative addressing 
 			          mode).  */
@@ -153,7 +154,8 @@ struct textwin
 	int	curs_offy;			/* Distance from bottom of cursor to bottom
 							 of line.  */
 	short	last_cx, last_cy;		/* Last position of cursor.  */
-
+	char	gsets[4];			/* G0-3.  */
+	char	saved_gsets[4];			/* For save/restore cursor.  */
 	/* Various flags.  */
 	unsigned wintop: 1;			/* 1 - if active window.  */
 	unsigned curs_drawn: 1;			/* 1 if cursor currently showing.  */
