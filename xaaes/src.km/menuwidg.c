@@ -201,7 +201,6 @@ attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, M
 
 	attach_to = tree + item;
 
-	DIAGS(("attach_menu"));
 	DIAG((D_menu, NULL, "attach_menu for %s %lx + %d to %lx + %d",
 		c_owner(client), mn->mn_tree, mn->mn_menu, tree, item));
 
@@ -1425,9 +1424,7 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 		tab->ty = k->ty = (wind == root_window ? ROOT_MENU : MENU_BAR);
 		k->stage = IN_TITLE;
 		object_area(&k->bar, root, k->titles, 0, 0);
-		DIAGS((" changing title"));
 		change_title(tab, 1);
-		DIAGS((" ret ok"));
 		root[k->menus].ob_flags &= ~OF_HIDETREE;
 		n = root[k->menus].ob_head;
 		for (f = root[k->titles].ob_head; f != k->titles; f = root[f].ob_next)
@@ -1439,27 +1436,20 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 				
 			n = root[n].ob_next;
 		}
-		DIAGS((" were hree"));
 
 		root[item].ob_flags &= ~OF_HIDETREE;	/* Show the actual menu */
 		k->entry = click_menu_entry;		/* obeyed by XA_MOUSE.C */
 
 		if (desk_menu(tab) && C.menu_nest < CASCADE-1)
 		{
-			DIAGS(("its desk menu"));
 			desk_popup.mn_tree = built_desk_popup(tab->lock, 24,24);
-			DIAGS(("built ok"));
 			desk_popup.mn_menu = 0;
 			desk_popup.mn_item = 0;
 			desk_popup.mn_scroll = 0;
 			desk_popup.mn_keystate = 0;
-			DIAGS(("attach built desk popup"));
 			attach_menu(tab->lock, C.Aes, root, k->about + 2, &desk_popup);
-			DIAGS(("attach ok"));
 		}
-		DIAGS((" show menu popup"));
 		display_popup(tab, root, item, r.x, r.y);
-		DIAGS((" show menu popup - exit ok"));
 
 		k->em.flags = MU_M1|1;		/* fill out rect event data; out of title */
 		object_area(&k->em.m1, root, k->clicked_title, 0, 0);
