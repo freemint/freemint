@@ -96,8 +96,8 @@ struct timeval;
  * major and minor are of type unsigned char. I hope 255 major and minor
  * versions are enough :-)
  */
-#define KENTRY_VERSION_MAJOR	0
-#define KENTRY_VERSION_MINOR	0
+#define KENTRY_MAJ_VERSION	0
+#define KENTRY_MIN_VERSION	0
 
 
 /* hardware dependant vector

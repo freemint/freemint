@@ -32,6 +32,7 @@
 # define _libkern_kernel_module_h
 
 # include "mint/kentry.h"
+# include "buildinfo/version.h"
 
 
 # ifndef KENTRY
@@ -44,6 +45,21 @@ extern struct kentry *kentry;
 # define MINT_MINOR		(KENTRY->minor)
 # define MINT_PATCHLEVEL	(KENTRY->patchlevel)
 
+/*
+ * general version check
+ */
+INLINE long
+check_kentry_version(void)
+{
+        if ((MINT_MAJOR != MINT_MAJ_VERSION) || (MINT_MINOR != MINT_MIN_VERSION)
+	    || (kentry->version_major != KENTRY_MAJ_VERSION))
+	{
+		c_conws("Wrong FreeMiNT version!\r\n");
+		c_conws("This module is compiled against " MINT_NAME);
+		c_conws(MINT_VERS_STRING);
+		return -1;
+	}
+}
 
 /*
  * vec_dos
