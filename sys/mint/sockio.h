@@ -57,8 +57,8 @@
 # define SIOCGIFADDR	(('S' << 8) | 15)	/* get iface address */
 # define SIOCSIFADDR	(('S' << 8) | 16)	/* set iface address */
 # define SIOCGIFDSTADDR	(('S' << 8) | 17)	/* get iface remote address */
-# define SIOCSIFDSTADDR	(('S' << 8) | 18)	/* set iface remotw address */
-# define SIOCGIFBRDADDR	(('S' << 8) | 19)	/* get iface ibroadcast address */
+# define SIOCSIFDSTADDR	(('S' << 8) | 18)	/* set iface remote address */
+# define SIOCGIFBRDADDR	(('S' << 8) | 19)	/* get iface broadcast address */
 # define SIOCSIFBRDADDR	(('S' << 8) | 20)	/* set iface broadcast address */
 # define SIOCGIFNETMASK	(('S' << 8) | 21)	/* get iface network mask */
 # define SIOCSIFNETMASK	(('S' << 8) | 22)	/* set iface network mask */
