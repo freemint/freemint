@@ -30,7 +30,7 @@
 #include "semaphores.h"
 
 
-static long _cdecl xaaes_share(void *);
+static void _cdecl xaaes_share(void *);
 static void _cdecl xaaes_release(void *);
 
 static void _cdecl xaaes_on_exit(void *, struct proc *p, int code);
@@ -53,10 +53,10 @@ struct module_callback xaaes_cb_vector =
 };
 
 
-static long _cdecl
+static void _cdecl
 xaaes_share(void *_client)
 {
-	return 1;
+	DIAGS(("xaaes_share: %lx", _client));
 }
 
 static void _cdecl
@@ -72,16 +72,17 @@ xaaes_release(void *_client)
 static void _cdecl
 xaaes_on_exit(void *_client, struct proc *p, int code)
 {
-	enum locks lock = NOLOCKS;
 	struct xa_client *client = _client;
 
-	if (client->p->pid != p->pid)
-		DIAGS(("xaaes_on_exit - tread terminate"));
-	else
+	if (client->p->pid == p->pid)
 	{
+		enum locks lock = NOLOCKS;
+
 		DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
 		exit_client(lock, _client, code);
 	}
+	else
+		DIAGS(("xaaes_on_exit - tread terminate"));
 }
 
 /*
