@@ -65,12 +65,12 @@ static char stpa[] =
  */
 
 /* translation and stop table for fstr */
-static char fstpa[256];
+static uchar fstpa[256];
 
 
-static char *ln = "";		/* current line */
-static char *xln = "";		/* next line */
-static char *stp = stpa;	/* table */
+static uchar *ln = "";		/* current line */
+static uchar *xln = "";		/* next line */
+static uchar *stp = stpa;	/* table */
 #define max 15			/* default string max */
 #define pax 128			/* default path max */
 static int mc; 			/* current string max */
@@ -80,7 +80,7 @@ static bool vul = false;	/* ide aanvullen met ' ' */
 char *
 ipff_line(long *l)
 {
-	char *t, *s;
+	uchar *t, *s;
 
 	t = s = xln;
 
@@ -223,7 +223,7 @@ sk1(void)
 int
 lstr(char *w, unsigned long lim)
 {
-	int i = 0, c;
+	int i = 0, c = *ln;
 	char *s = (char *)&lim;
 
 	while  (i < mc)
@@ -257,7 +257,7 @@ lstr(char *w, unsigned long lim)
 int
 ide(char *w)
 {
-	int i, c, vc;
+	int i, c = *ln, vc;
 
 	i = 0;
 	while  (i < mc)
@@ -265,7 +265,7 @@ ide(char *w)
 		c = *ln;
 		if (c == 0) break;	/* einde input */
 
-		vc = stp[c & 0xff];
+		vc = stp[(uchar)c];
 		if (vc == 0) break;	/* stop ch     */
 
 		*w++ = vc;
@@ -467,7 +467,7 @@ is_ide(char *s)
 {
 	while (*s)
 	{
-		if (stpa[*s & 0xff] == 0) /* same table as for ide() */
+		if (stpa[(uchar)*s] == 0) /* same table as for ide() */
 			return false;
 		else
 			s++;
@@ -505,9 +505,9 @@ fstr(char *p, int cas, int lval)
 			int apo = brace();
 			while (*ln && *ln != apo && p-start < mp-1)
 			{
-				int c = *ln;
+				c = *ln;
 				if (!apo)
-					if ((c = fstpa[c&0xff]) == 0)
+					if ((c = fstpa[(uchar)c]) == 0)
 						break;
 				*p++ = cas ? cas > 0 ? toupper(c) : tolower(c) : c;
 				ln++;
@@ -696,7 +696,7 @@ list_sym(void)
 }
 
 SYMBOL *
-find_sym(char *name, GetSym *outer_sym)
+find_sym(char *name, GetSym *outer_sym_getter)
 {
 	SYMBOL *t;
 
@@ -709,8 +709,8 @@ find_sym(char *name, GetSym *outer_sym)
 		t = t->next;
 	}
 
-	if (outer_sym && t == NULL)
-		t = outer_sym(name);
+	if (outer_sym_getter && t == NULL)
+		t = outer_sym_getter(name);
 
 	return t;
 }
