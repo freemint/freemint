@@ -22,7 +22,6 @@ void	unmark_zone	(long zone);
 int	ask		(char *str, char *alt);
 void	fatal		(char *str);
 void	sfatal		(char *str);
-void	usage		(void);
 void	read_tables	(void);
 int	do_trunc	(void);
 
