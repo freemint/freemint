@@ -32,7 +32,6 @@ GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES
@@ -41,4 +40,5 @@ install: all
 	$(top_srcdir)/mkinstalldirs $(installdir)
 	cp $(TARGET) $(installdir)
 	chmod 755 $(installdir)/$(TARGET)
+	$(STRIP) $(installdir)/$(TARGET)
 	
