@@ -452,7 +452,7 @@ k_init(void)
 	DIAGS(("setting up file selector"));
 
 	DIAGS(("setting up System Alert log"));
-	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
+	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, 255);

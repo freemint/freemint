@@ -1293,6 +1293,8 @@ enum scroll_info_flags
 	SIF_MULTISELECT = 0x0008,
 	SIF_AUTOSLIDERS = 0x0010,
 	SIF_AUTOSELECT  = 0x0020,
+	SIF_TREEVIEW	= 0x0040,
+
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
 
@@ -1333,6 +1335,7 @@ struct scroll_content
 	short n_strings;
 	char *text;
 	OBJECT *icon;
+	short istate;
 	long usr_flags;
 	void *data;
 	struct xa_wtxt_inf *fnt;
@@ -1390,16 +1393,18 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 #define SEFM_LAST	2
 
 /* scrl_set modes */
-#define SESET_STATE		0
-#define SESET_NFNT		1
-#define SESET_SFNT		2
-#define SESET_HFNT		3
-#define SESET_WTXT		4
-#define SESET_SELECTED		5
-#define SESET_UNSELECTED	6
-#define SESET_MULTISEL		7
-#define SESET_OPEN		8
-#define SESET_TEXTTAB		9
+#define SESET_STATE		 0
+#define SESET_NFNT		 1
+#define SESET_SFNT		 2
+#define SESET_HFNT		 3
+#define SESET_WTXT		 4
+#define SESET_SELECTED		 5
+#define SESET_UNSELECTED	 6
+#define SESET_MULTISEL		 7
+#define SESET_OPEN		 8
+#define SESET_TEXTTAB		 9
+#define SESET_USRFLAG		10
+#define SESET_USRDATA		11
 
 /* SESET_UNSELECTED arguments */
 #define UNSELECT_ONE	0
@@ -1425,10 +1430,15 @@ struct seset_txttab
 #define SEGET_ENTRYBYUSRFLG	10
 #define SEGET_LISTXYWH		11
 #define SEGET_TEXTTAB		12
+#define SEGET_USRFLAG		13
+#define SEGET_USRDATA		14
+#define SEGET_NEXTENT		15
+#define SEGET_PREVENT		16
 
 /*
  * structure used to pass parameters with get(SEGET_ENTRYBYIDX
  */
+
 struct seget_entrybyarg
 {
 	int idx;
@@ -1438,10 +1448,18 @@ struct seget_entrybyarg
 		char *txt;
 		void *data;
 		long usr_flag;
+		struct
+		{
+			short level;
+#define ENT_VISIBLE	1
+#define ENT_ISROOT	2
+			short flags;
+		}pnent;
 	} arg;		
 };
 
 #define OS_OPENED	1
+#define OS_NESTICON	2
 
 struct scroll_entry
 {
