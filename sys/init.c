@@ -696,7 +696,7 @@ boot_kernel_p (void)
 	boot_it [MAXLANG] =
 	{
 		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* English */
-		{ "BootmenueÅ anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
+		{ "Bootmen¸Å anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
 		{ "Afficher le menu de dÈmarrage? (o)ui (n)on ", 'o', 'n' },	/* French */
 		{ "Menu initiale an fiat? (f)iat (n)on ",  'f', 'n' },	/* Latin */
 		{ "®Display the boot menu? (s)i (n)o ",  's', 'n' },	/* Spanish, upside down ? is 168 dec. */
