@@ -23,6 +23,7 @@
 # include "block_IO.h"		/* eXtended kernelinterface */
 
 struct basepage;
+struct nf_ops;
 
 
 /* kerinfo - kernel interface table
@@ -306,8 +307,13 @@ struct kerinfo
 	 */
 	void *	_cdecl (*dmabuf_alloc)(ulong size, short cmode);
 	
+	/* nf operation vector if available
+	 * on this machine; NULL otherwise
+	 */
+	struct nf_ops *nf_ops;
+	
 	/* reserved, set to 0 */
-	long	res2 [3];
+	long	res2 [2];
 };
 
 
