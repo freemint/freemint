@@ -262,6 +262,8 @@ add_pending_button(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 
 	
 	pending_button[pending_button_tail].client = client;
+	pending_button[pending_button_tail].x = md->x;
+	pending_button[pending_button_tail].y = md->y;
 	pending_button[pending_button_tail].b = md->state;
 	pending_button[pending_button_tail].cb = md->cstate;
 	pending_button[pending_button_tail].clicks = md->clicks;
@@ -1434,11 +1436,18 @@ DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s\n", r->x, r-
 			/* Ozk 040501: And we need to take the data from the correct place. */
 			if (mu_butt_p)
 			{
+				pb->intout[1] = pending_button[pbi].x;
+				pb->intout[2] = pending_button[pbi].y;
 				pb->intout[3] = pending_button[pbi].b;
 				pb->intout[6] = pending_button[pbi].clicks;
 			}
 			else
+			{
+				pb->intout[1] = mu_button.x;
+				pb->intout[2] = mu_button.y;
+				pb->intout[3] = mu_button.b;
 				pb->intout[6] = mu_button.clicks;
+			}
 		}
 			
 		pb->intout[0] = fall_through;
@@ -1516,6 +1525,8 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		{
 			multi_intout(pb->intout, 0);
 			pb->intout[0] = pending_button[pbi].clicks;	/* Ozk 040503: Take correct data */
+			pb->intout[1] = pending_button[pbi].x;
+			pb->intout[2] = pending_button[pbi].y;
 			pb->intout[3] = pending_button[pbi].b;
 			Sema_Dn(pending);
 			return XAC_DONE;
