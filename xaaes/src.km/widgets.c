@@ -2056,7 +2056,8 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *form, int it
 
 	if (has_default(form) || wt->edit_obj >= 0)
 		wind->keypress = handle_form_key;
-	if (wind->dial&created_for_FORM_DO)
+
+	if (wind->dial & created_for_FORM_DO)
 		wt->exit_form = exit_form_do;
 	else
 		wt->exit_form = exit_form_dial;
