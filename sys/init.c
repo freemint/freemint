@@ -86,7 +86,7 @@
 static long _cdecl mint_criticerr (long);
 static void _cdecl do_exec_os (register long basepage);
 
-static int	boot_kernel_p (void);
+static int boot_kernel_p (void);
 
 void mint_thread(void *arg);
 
@@ -125,6 +125,7 @@ stop_and_ask(void)
 	if (step_by_step)
 	{
 		boot_print(MSG_init_hitanykey);
+		
 		if (intr_done)
 			sys_c_conin();
 		else
@@ -159,9 +160,9 @@ xbra_vec old_fpcp[7];
 xbra_vec old_pmmuill;
 xbra_vec old_pmmuacc;
 
-long	old_term;
-long	old_resval;	/* old reset validation */
-long	olddrvs;	/* BIOS drive map */
+long old_term;
+long old_resval;	/* old reset validation */
+long olddrvs;		/* BIOS drive map */
 
 /* table of processor frame sizes in _words_ (not used on MC68000) */
 uchar framesizes[16] =
@@ -1481,6 +1482,10 @@ mint_thread(void *arg)
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
 		run_auto_prgs();
+
+	/* we default to U:\ before starting init */
+	sys_d_setdrv('u' - 'a');
+ 	sys_d_setpath("/");
 
 	/* prepare to run the init program as PID 1. */
 	set_pid_1();
