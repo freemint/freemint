@@ -260,7 +260,7 @@ void set_curs(TEXTWIN *v, int on)
 {
 	short cx = v->cx;
 	if (cx >= v->maxx)
-		cx = v->maxx;
+		cx = v->maxx - 1;
 		
 	if (on && (v->term_flags & FCURS) && !(v->term_flags & FFLASH)) 
 	{
