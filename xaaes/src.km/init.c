@@ -187,10 +187,18 @@ init(struct kentry *k)
 	cfg.widg_h = ICON_H;
 
 #if !FILESELECTOR
+#error external fileselectors not supported yet!
 	cfg.no_xa_fsel = true;
 	DIAGS(("XaAES is compiled without builtin fileselector"));
 #endif
 	cfg.fsel_cookie = s_system(S_GETCOOKIE, COOKIE_FSEL, 0) != 0xffffffff;
+	if (cfg.fsel_cookie)
+	{
+		/* we need to kill the cookie for now
+		 * as we don't support external fileslectors yet
+		 */
+		s_system(S_DELCOOKIE, COOKIE_FSEL, 0);
+	}
 
 	/* dynamic window handle allocation. */
 	clear_wind_handles();
