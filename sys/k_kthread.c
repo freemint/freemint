@@ -51,7 +51,7 @@ kthread_create (void (*func)(void *), void *arg, struct proc **np, const char *f
 	
 	DEBUG (("kthread_create: 0x%lx", func));
 	
-	p2 = fork_proc1 (rootproc, 0, &err);
+	p2 = fork_proc1 (rootproc, FORK_SHAREVM|FORK_SHARECWD|FORK_SHAREFILES|FORK_SHARESIGS, &err);
 	if (p2)
 	{
 		va_list args;
