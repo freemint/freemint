@@ -334,10 +334,10 @@ scan2asc(uchar scancode)
 		{
 			if (*kbshft & MM_ESHIFT)
 				vec = user_keytab->altshift;
-			else if ((*kbshft & MM_CAPS) == 0)
-				vec = user_keytab->alt;
-			else
+			else if (*kbshft & MM_CAPS)
 				vec = user_keytab->altcaps;
+			else
+				vec = user_keytab->alt;
 		}
 
 		while (vec && *vec)
@@ -364,10 +364,10 @@ scan2asc(uchar scancode)
 		 */
 		if (*kbshft & MM_ESHIFT)
 			vec = user_keytab->shift;
-		else if ((*kbshft & MM_CAPS) == 0)
-			vec = user_keytab->unshift;
-		else
+		else if (*kbshft & MM_CAPS)
 			vec = user_keytab->caps;
+		else
+			vec = user_keytab->unshift;
 
 		if (vec)
 			asc = vec[scancode];
