@@ -1359,7 +1359,7 @@ redraw_main_window(WINDOW *w, GRECT *area)
 		vs_clip(vdi_handle, 1, clip);
 
 		vswr_mode(vdi_handle, MD_REPLACE);
-		vsf_color(vdi_handle, WHITE);
+		vsf_color(vdi_handle, G_WHITE);
 		vsf_interior(vdi_handle, 1);
 		vr_recfl(vdi_handle, clip); /* Fensterhintergrund weiss */
 
@@ -1412,18 +1412,18 @@ redraw_main_window(WINDOW *w, GRECT *area)
 	
 				vr_recfl(vdi_handle, xy);
 	
-				colors[0] = WHITE;
-				colors[1] = BLACK;
+				colors[0] = G_WHITE;
+				colors[1] = G_BLACK;
 				mode = MD_TRANS;
 			}
 			else
 			{
 				if (cpx_desc->flags & CPXD_INACTIVE)
-					colors[0] = LBLACK;
+					colors[0] = G_LBLACK;
 				else
 					colors[0] = cpx_desc->old.header.i_info.i_color;
 	
-				colors[1] = WHITE;
+				colors[1] = G_WHITE;
 				mode = MD_REPLACE;
 			}
 	
@@ -1434,12 +1434,12 @@ redraw_main_window(WINDOW *w, GRECT *area)
 	
 			if (cpx_desc->flags & CPXD_INACTIVE)
 			{
-				BITBLK	*inactive;
+				BITBLK *inactive;
 	
 				inactive = tree_addr[ICON_DIALOG][INACTIVE_IMG].ob_spec.bitblk;
 				
-				colors[0] = RED;
-				colors[1] = WHITE;
+				colors[0] = G_RED;
+				colors[1] = G_WHITE;
 				
 				src.fd_addr = inactive->bi_pdata;
 				vrt_cpyfm(vdi_handle, MD_TRANS, pxy, &src, &des, colors);
@@ -1884,24 +1884,24 @@ cpx_info(CPX_DESC *cpx_desc)
 	strncpy(cpxinfo[CIID].ob_spec.free_string, (char *) &(cpx->header.cpx_id), 4);
 
 	if (cpx->header.flags.ram_resident)
-		cpxinfo[CIRAM].ob_state |= SELECTED;
+		cpxinfo[CIRAM].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CIRAM].ob_state &= ~SELECTED;
+		cpxinfo[CIRAM].ob_state &= ~OS_SELECTED;
 
 	if (cpx->header.flags.set_only)
-		cpxinfo[CISET].ob_state |= SELECTED;
+		cpxinfo[CISET].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CISET].ob_state &= ~SELECTED;
+		cpxinfo[CISET].ob_state &= ~OS_SELECTED;
 
 	if (cpx->header.flags.boot_init)
-		cpxinfo[CIBOOT].ob_state |= SELECTED;
+		cpxinfo[CIBOOT].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CIBOOT].ob_state &= ~SELECTED;
+		cpxinfo[CIBOOT].ob_state &= ~OS_SELECTED;
 
 	if (cpx_desc->flags & CPXD_AUTOSTART)
-		cpxinfo[CIAUTO].ob_state |= SELECTED;
+		cpxinfo[CIAUTO].ob_state |= OS_SELECTED;
 	else
-		cpxinfo[CIAUTO].ob_state &= ~SELECTED;
+		cpxinfo[CIAUTO].ob_state &= ~OS_SELECTED;
 
 	if (do_dialog(cpxinfo) == CIOK)
 	{
@@ -1951,7 +1951,7 @@ do_dialog(OBJECT *tree)
 	wind_update(END_MCTRL);
 	wind_update(END_UPDATE);
 
-	tree[obj].ob_state &= ~SELECTED;
+	tree[obj].ob_state &= ~OS_SELECTED;
 
 	return obj;
 }
@@ -2665,15 +2665,15 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 
 							if (cpx->flags & CPXD_INACTIVE)
 							{
-								tree[CP_OPEN].ob_state |= DISABLED;
-								tree[CP_DISABLE].ob_state |= DISABLED;
-								tree[CP_ENABLE].ob_state &= ~DISABLED;
+								tree[CP_OPEN].ob_state |= OS_DISABLED;
+								tree[CP_DISABLE].ob_state |= OS_DISABLED;
+								tree[CP_ENABLE].ob_state &= ~OS_DISABLED;
 							}
 							else
 							{
-								tree[CP_OPEN].ob_state &= ~DISABLED;
-								tree[CP_DISABLE].ob_state &= ~DISABLED;
-								tree[CP_ENABLE].ob_state |= DISABLED;
+								tree[CP_OPEN].ob_state &= ~OS_DISABLED;
+								tree[CP_DISABLE].ob_state &= ~OS_DISABLED;
+								tree[CP_ENABLE].ob_state |= OS_DISABLED;
 							}
 							
 							switch (form_popup(tree, 0, 0))
@@ -2717,21 +2717,21 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 
 							if (main_window->wflags.iconified)
 							{
-								tree[PG_TIDY_UP].ob_state |= DISABLED;
-								tree[PG_RELOAD].ob_state |= DISABLED;
-								tree[PG_SELECT_ALL].ob_state |= DISABLED;
+								tree[PG_TIDY_UP].ob_state |= OS_DISABLED;
+								tree[PG_RELOAD].ob_state |= OS_DISABLED;
+								tree[PG_SELECT_ALL].ob_state |= OS_DISABLED;
 							}
 							else
 							{
-								tree[PG_TIDY_UP].ob_state &= ~DISABLED;
-								tree[PG_RELOAD].ob_state &= ~DISABLED;
-								tree[PG_SELECT_ALL].ob_state &= ~DISABLED;
+								tree[PG_TIDY_UP].ob_state &= ~OS_DISABLED;
+								tree[PG_RELOAD].ob_state &= ~OS_DISABLED;
+								tree[PG_SELECT_ALL].ob_state &= ~OS_DISABLED;
 							}
 
 							if (get_help_id() >= 0)
-								tree[PG_HELP].ob_state &= ~DISABLED;
+								tree[PG_HELP].ob_state &= ~OS_DISABLED;
 							else
-								tree[PG_HELP].ob_state |= DISABLED;;
+								tree[PG_HELP].ob_state |= OS_DISABLED;;
 							
 							switch (form_popup(tree, 0, 0))
 							{
@@ -3478,7 +3478,7 @@ fix_tree(OBJECT *obj)
 		obj++;
 		rsrc_obfix(obj, 0);
 	}
-	while ((obj->ob_flags & LASTOB) == 0);
+	while ((obj->ob_flags & OF_LASTOB) == 0);
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -3498,7 +3498,7 @@ fix_popup_strings(OBJECT *obj)
 			if (obj->ob_type == G_STRING)
 				obj->ob_type = G_SHORTCUT;
 		}
-		while ((obj->ob_flags & LASTOB) == 0);
+		while ((obj->ob_flags & OF_LASTOB) == 0);
 	}
 }
 	
