@@ -326,7 +326,6 @@ init_intr (void)
 	new_xbra_install (&old_xbios, 0xb8L, mint_xbios);	/* trap #14, XBIOS */
 # endif
 	
-	new_xbra_install (&old_timer, 0x400L, mint_timer);
 	xbra_install (&old_criticerr, 0x404L, mint_criticerr);
 	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
 	
@@ -439,7 +438,6 @@ restr_intr (void)
 	*((long *) 0x408L) = old_term;
 	*((long *) 0x404L) = (long) old_criticerr.next;
 	*((long *) 0x114L) = old_5ms;
-	*((long *) 0x400L) = old_timer;
 	*((long *) 0x426L) = old_resval;
 	*((long *) 0x42aL) = old_resvec;
 	*((long *) 0x476L) = old_rwabs;
@@ -696,8 +694,8 @@ boot_kernel_p (void)
 	boot_it [MAXLANG] =
 	{
 		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* English */
-		{ "Bootmen¸Å anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
-		{ "Afficher le menu de dÈmarrage? (o)ui (n)on ", 'o', 'n' },	/* French */
+		{ "BootmenÅ anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
+		{ "Afficher le menu de dÇmarrage? (o)ui (n)on ", 'o', 'n' },	/* French */
 		{ "Menu initiale an fiat? (f)iat (n)on ",  'f', 'n' },	/* Latin */
 		{ "®Display the boot menu? (s)i (n)o ",  's', 'n' },	/* Spanish, upside down ? is 168 dec. */
 		{ "Display the boot menu? (s)i (n)o ",   's', 'n' }	/* Italian */
@@ -973,7 +971,7 @@ init (void)
 	init_intr ();
 	DEBUG (("%s, %ld: init_intr() ok!", __FILE__, (long) __LINE__));
 	
-	/* Enable the FPU and superscalar dispatch on 68060 */
+	/* Enable superscalar dispatch on 68060 */
 	get_superscalar();
 
 	/* Init done, now enable/unfreeze all caches.
