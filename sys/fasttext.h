@@ -8,6 +8,7 @@
 
 # include "mint/mint.h"
 # include "mint/file.h"
+# include "mint/ioctl.h"
 
 
 #define ALT_1 0x780000L
