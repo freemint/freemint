@@ -282,6 +282,15 @@ sys_p_trace (short request, short pid, void *addr, long data)
 			/* if (!proc_isunder (t, p))
 				return EPERM; */
 
+			/*
+			 * other special processes
+			 */
+			if (t->p_flag & (P_FLAG_SYS|P_FLAG_SLB|P_FLAG_SLO))
+			{
+				DEBUG (("Ptrace(%i, pid %i) - special processes can't be traced", request, pid));
+				return EPERM;
+			}
+
 			break;
 		}
 		case PT_READ_I:
