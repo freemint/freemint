@@ -160,6 +160,7 @@ _DataRegB:	dc.l 0xFFFF8C87
 	.globl	_detect_cpu
 
 _detect_cpu:
+	movem.l	a0-a2/d1-d2,-(sp)  
 	move.l	(0x10).w,a1	// save the illegal instr. exception vector
 	move.l	(0xf4).w,a2	// save the unimplemented instr. exception vector
 	lea	exit.w(PC),a0
@@ -199,6 +200,7 @@ exit:	move.l	a2,(0xf4).w	// restore stuff and exit
 	move.l	a1,(0x10).w
 	move.l	a0,sp
 	nop			// flush pipelines
+	movem.l	(sp)+,a0-a2/d1-d2
 	rts
 
 // FPU type detection, experimental (draco@atari.org).
@@ -235,6 +237,7 @@ exit:	move.l	a2,(0xf4).w	// restore stuff and exit
 	.globl	_mcpu
 
 _detect_fpu:
+	movem.l	a0-a2/d1,-(sp)  
 	move.l	sp,a0		// save the ssp
 	clr.l	d0		// assume no FPU
 	move.l	(0x2c).w,a1	// save the Line-F vector
@@ -286,4 +289,5 @@ fexit:	move.l	a1,(0x2c).w	// restore Line-F
 	move.l	a0,sp
 	nop			// flush pipelines
 	swap	d0
+	movem.l	(sp)+,a0-a2/d1
 	rts
