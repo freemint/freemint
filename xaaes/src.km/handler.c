@@ -511,7 +511,7 @@ XA_handler(void *_pb)
 		/* inform user what's going on */
 		ALERT(("XaAES: No AES Parameter Block, killing it", p_getpid()));
 	
-		exit_proc(0, get_curproc());
+		exit_proc(0, get_curproc(), 0);
 
 		raise(SIGKILL);
 #else
@@ -556,7 +556,7 @@ XA_handler(void *_pb)
 
 			/* inform user what's going on */
 			ALERT(("XaAES: non-AES process issued AES system call %i, killing it", cmd));
-			exit_proc(0, get_curproc());
+			exit_proc(0, get_curproc(), 0);
 			raise(SIGKILL);
 			return 0;
 		}
@@ -610,6 +610,8 @@ XA_handler(void *_pb)
 		/* if opcode is implemented, call it */
 		if (cmd_routine)
 		{
+			struct proc *p = get_curproc();
+
 			/* The root of all locking under client pid.
 			 * 
 			 * how about this? It means that these
@@ -621,13 +623,20 @@ XA_handler(void *_pb)
 				client->enter++;
 #endif
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
-				lock_screen(client->p, 0, NULL, 2);
-
+				lock_screen(p, 0, NULL, 2);
+			
 			/* callout the AES function */
+
+			/* Ozk:
+			 * ATTENTION: DO _NOT_ actually access the client structure after calling
+			 * the AES function, because it may be released by the function, appl_exit()
+			 * for example! It can be used to check if process _was_ an AES application
+			 * until the lookup_extension below.
+			 */
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
 
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
-				unlock_screen(client->p, 2);
+				unlock_screen(p, 2);
 
 			/* execute delayed delete_window */
 			if (S.deleted_windows.first)
@@ -637,7 +646,7 @@ XA_handler(void *_pb)
 			if (client)
 			{
 				DIAG((D_trap, client, " %s[%d] returned %ld for %s",
-					aes_tab[cmd].descr, cmd, cmd_rtn, client->name));
+					aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
 			}
 			else
 			{
@@ -645,8 +654,11 @@ XA_handler(void *_pb)
 					aes_tab[cmd].descr, cmd, cmd_rtn, p_getpid()));
 			}
 #endif
-
-			if (!client)
+			/* Ozk:
+			 * Now we check if circumstances under which we check if process started/ended
+			 * being a AES client
+			 */
+			if (!client || cmd == 10 || cmd == 19)
 			{
 				client = lookup_extension(NULL, XAAES_MAGIC);
 #if GENERATE_DIAGS
@@ -654,12 +666,14 @@ XA_handler(void *_pb)
 					client->enter++;
 #endif
 			}
-			
+			/* Ozk:
+			* From now on we can rely on 'client' again...
+			*/
 			switch (cmd_rtn)
 			{
 				case XAC_DONE:
 					break;
-
+				
 				/* block indefinitly */
 				case XAC_BLOCK:
 				{
