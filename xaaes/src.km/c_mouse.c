@@ -95,7 +95,15 @@ cXA_button_event(enum locks lock, struct c_event *ce)
 			return;
 		}
 	}
-	else if (md->state)
+
+	if (wind != window_list)
+	{
+		DIAG((D_button, client, "cXA_button_event: wind not on top"));
+		if (do_widgets(lock, wind, 0, md))
+			return;
+	}	
+
+	if (md->state)
 	{
 		DIAG((D_button, client, "cXA_button_event: send click"));
 		wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
