@@ -33,6 +33,7 @@
 # -DNO_CPU_CACHES	disables all CPU cache handling
 # -DNO_RAMFS		disables the internal ramdisk (/ram)
 # -DNO_FAKE_SUPER	disables the extended bus error handler
+# -DNO_AKP_KEYBOARD	disables the extended keyboard routines
 #
 
 # 
@@ -58,7 +59,8 @@ endif
 ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
-KERNELDEFS = -DONLY68000 -DNO_MMU -DNO_CPU_CACHE -DNO_RAMFS -DNO_FAKE_SUPER #-DDEBUG_INFO
+KERNELDEFS = -DONLY68000 -DNO_MMU -DNO_CPU_CACHE -DNO_RAMFS -DNO_FAKE_SUPER 
+KERNELDEFS += -DNO_AKP_KEYBOARD #-DDEBUG_INFO
 OPTS += -fstrength-reduce
 endif
 
