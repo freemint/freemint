@@ -9,19 +9,44 @@ srcdir = .
 top_srcdir = ..
 subdir = libkern
 
-default: all
+default: help
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: 
+all-here: all-libs
 
 # default overwrites
 
 # default definitions
 GENFILES = .cpu_* libkern*.a
 
+
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - $(cputargets)'
+	@echo '#'
+	@echo '# - bakclean'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - help'
+	@echo '#'
+	@echo '# example for a 030 libkern: -> make 030'
+	@echo '#'
+
+all-libs:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(cputargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(cputargets):
+	$(MAKE) libkern$@.a CPU=$@
 
 libkern$(CPU).a: objs asm-files
 	$(shell \
@@ -42,9 +67,9 @@ libkern$(CPU).a: objs asm-files
 objs: .cpu_$(CPU)
 	cd .cpu_$(CPU); $(MAKE)
 
-.cpu_$(CPU):
-	$(MKDIR) $@
-	$(CP) Makefile.objs $@/Makefile
+.cpu_$(CPU): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
 
 asm-files:
 	cd asm; $(MAKE) CPU="$(CPU)" asm-files

@@ -26,21 +26,31 @@ LIBKERN = -L$(top_srcdir)/libkern -lkern$(CPU)
 #
 # generic kernel target
 #
-compile_dir = .compile_$(kernel)
 compile_all_dirs = .compile_*
+
 ifneq ($(kernel),)
+
+compile_dir = .compile_$(kernel)
 kerneltarget = _stmp_$(kernel)
 realtarget = $(kerneltarget)
-else
-kerneltarget =
-realtarget = help
-endif
-
-kernel: $(realtarget)
 
 $(kerneltarget): $(compile_dir)
-	cd $(compile_dir); $(MAKE)
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	list='$(KERNELSUBDIRS)'; for subdir in $$list; do \
+	  echo "Making all in $$subdir"; \
+	  (cd $$subdir && $(MAKE) -r all) \
+	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+	cd $(compile_dir); $(MAKE) all
 
-$(compile_dir):
-	$(MKDIR) $@
-	$(CP) Makefile.objs $@/Makefile
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget = 
+
+endif
+
+buildkernel: $(realtarget)
