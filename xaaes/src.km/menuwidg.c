@@ -1605,6 +1605,7 @@ set_menu_widget(struct xa_window *wind, XA_TREE *menu)
 	if (widg->stuff)
 		((XA_TREE *)widg->stuff)->widg = NULL;
 
+
 	menu->is_menu   = true;				/* set the flags in the original */
 	menu->menu_line = (wind == root_window);	/* menu in root window.*/
 	menu->widg = widg;
@@ -1624,6 +1625,9 @@ set_menu_widget(struct xa_window *wind, XA_TREE *menu)
 
 	wind->tool = widg;
 	wind->active_widgets |= XaMENU;
+
+	widg->loc.statusmask = XAWS_SHADED;
+
 }
 
 /*

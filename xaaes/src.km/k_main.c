@@ -144,7 +144,9 @@ post_cevent(struct xa_client *client,
 	if (client != C.Aes)
 		Unblock(client, 1, 5000);
 	else
+	{
 		dispatch_cevent(client);
+	}
 }
 
 short
