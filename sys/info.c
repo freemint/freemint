@@ -267,6 +267,38 @@ const char *ERR_dma_block_on_inv_handle = "dma_block on invalid handle %lu";
 const char *ERR_dma_deblock_on_inv_handle = "dma_deblock on invalid handle %lu";
 const char *ERR_dma_addroottimeout = "dma_block: addroottimeout failed!";
 
+/* --------- dosfile.c --------- */
+
+# if O_GLOBAL
+const char *MSG_oglobal_denied = "O_GLOBAL for sockets denied; update your network tools";
+const char *MSG_global_handle = "Opening global handle (%s)";
+# endif
+
+/* -------- fasttext.c -------- */
+# ifdef FASTTEXT
+const char *ERR_ftxt_insuff_mem_for_table = "Insufficient memory for screen offset table!";
+const char *MSG_ftxt_insuff_mem_for_scroll = "Insufficient memory for hardware scrolling!";
+# endif
+
+/* -------- filesys.c --------- */
+
+const char *ERR_fsys_inv_fdcwd = "In changedrv() called from %s, invalid fd/cwd";
+const char *MSG_fsys_files_were_open = "Files were open on the changed drive (0x%x, %s)!";
+const char *MSG_fsys_syncing = "Syncing filesystems ...";
+const char *MSG_fsys_syncing_done = "Syncing done";
+
+/* ---------- gmon.c ---------- */
+
+# ifdef PROFILING
+const char *MSG_gmon_out_of_mem = "monstartup: out of memory\n";
+const char *MSG_gmon_fptr_fail = "write_gmon: failed to alloc a FILEPTR";
+const char *MSG_gmon_out_fail = "write_gmon: failed to open gmon.out";
+const char *MSG_gmon_out_written = "written gmon.out profiling file";
+const char *MSG_gmon_profiler_on = "Profiler on";
+const char *MSG_gmon_profiler_off = "Profiler off";
+const char *MSG_gmon_enable_error = "Profiling enable error";
+# endif
+
 /* ---------- init.c ---------- */
 
 # if 0

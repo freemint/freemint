@@ -146,7 +146,7 @@ monstartup (ulong lowpc, ulong highpc)
 	cp = kmalloc (p->kcountsize + p->fromssize + p->tossize);
 	if (!cp)
 	{
-		ALERT ("monstartup: out of memory\n");
+		ALERT (MSG_gmon_out_of_mem);
 		p->tos = NULL;
 		p->state = GMON_PROF_ERROR;
 		return;
@@ -347,7 +347,7 @@ write_gmon (void)
 	ret = FP_ALLOC (rootproc, &f);
 	if (ret)
 	{
-		ALERT ("write_gmon: failed to alloc a FILEPTR");
+		ALERT (MSG_gmon_fptr_fail);
 		return;
 	}
 	
@@ -376,7 +376,7 @@ write_gmon (void)
 	else
 	{
 		FP_FREE (f);
-		ALERT ("write_gmon: failed to open gmon.out");
+		ALERT (MSG_gmon_out_fail);
 	}
 }
 
@@ -389,7 +389,7 @@ write_profiling (void)
 	p->state = GMON_PROF_OFF;
 	if (save == GMON_PROF_ON)
 	{
-		ALERT ("written gmon.out profiling file");
+		ALERT (MSG_gmon_out_written);
 		write_gmon ();
 	}
 	
@@ -404,15 +404,15 @@ toogle_profiling (void)
 	if (p->state == GMON_PROF_OFF)
 	{
 		moncontrol (1);
-		ALERT ("profiler on");
+		ALERT (MSG_gmon_profiler_on);
 	}
 	else if (p->state == GMON_PROF_ON)
 	{
 		moncontrol (0);
-		ALERT ("profilier off");
+		ALERT (MSG_gmon_profiler_off);
 	}
 	else
-		ALERT ("error during profiling, disabled");
+		ALERT (MSG_gmon_enable_error);
 }
 
 # endif /* PROFILING */

@@ -103,10 +103,6 @@
  *
  */
 
-/* XXX: Frank, please revert this, not all TOS versions have complete
- * keyboard tables! (draco)
- */
-
 # ifdef WITHOUT_TOS
 #  include "key_tables.h"
 # endif
@@ -601,6 +597,7 @@ load_table(FILEPTR *fp, char *name, long size)
 		return -1;
 	
 	/* Crap, the keyboard table must be globally readable :/ */
+	/* XXX perhaps it would be safer to go for PROT_PR here? */
 	key_reg = get_region(core, size, PROT_G);
 	kbuf = (uchar *) attach_region(rootproc, key_reg);
 	
