@@ -41,6 +41,7 @@
 # include "k_prot.h"
 # include "kerinfo.h"
 # include "kmemory.h"
+# include "module.h"
 # include "nullfs.h"
 # include "proc.h"
 # include "random.h"
@@ -157,6 +158,7 @@ static struct bios_file BDEV [] =
 
 	/* other miscellaneous devices
 	 */
+	{ "km",		&module_device,  0,       0,     NULL, NULL, S_IFCHR|S_IRUSR|S_IWUSR},
 	{ "mouse",	&mouse_device,	 0,       0,     NULL, NULL},
 	{ "null",	&null_device,	 0,       0,     NULL, NULL},
 	{ "zero",	&zero_device,	 0,       0,     NULL, NULL},

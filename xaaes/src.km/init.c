@@ -130,14 +130,14 @@ struct kentry *kentry;
  * - setup internal data
  * - start main kernel thread
  */
-void *
+long
 init(struct kentry *k)
 {
 	/* setup kernel entry */
 	kentry = k;
 
 	if (check_kentry_version())
-		return NULL;
+		return ENOSYS;
 
 	/* remember loader */
 	loader_pid = p_getpid();
@@ -183,7 +183,7 @@ init(struct kentry *k)
 		{
 			display("ERROR: There exist an moose.xdd in your FreeMiNT sysdir.");
 			display("       Please remove it before starting the XaAES kernel module!");
-			return NULL;
+			return EINVAL;
 		}
 
 
@@ -213,7 +213,7 @@ init(struct kentry *k)
 		{
 			display("ERROR: There is no moose.adi in your FreeMiNT sysdir.");
 			display("       Please install it before starting the XaAES kernel module!");
-			return NULL;
+			return EINVAL;
 		}
 	}
 
@@ -387,15 +387,11 @@ init(struct kentry *k)
 
 	}
 
-	if (loader_pid > 0)
-	{
-		while (!(C.shutdown & QUIT_NOW))
-			sleep(WAIT_Q, (long)&loader_pid);
+	while (!(C.shutdown & QUIT_NOW))
+		sleep(WAIT_Q, (long)&loader_pid);
 
-		return NULL;
-	}
-
-	return (void *)1L;
+	/* succeeded */
+	return 0;
 
 error:
 #if GENERATE_DIAGS
@@ -404,7 +400,7 @@ error:
 		kernel_close(D.debug_file);
 #endif
 
-	return NULL;
+	return ENOMEM;
 }
 
 long

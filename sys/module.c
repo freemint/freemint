@@ -36,17 +36,21 @@
 # include "mint/basepage.h"
 # include "mint/dcntl.h"
 # include "mint/file.h"
+# include "mint/ioctl.h"
 # include "mint/mem.h"
+# include "mint/proc.h"
 
 # include "dosdir.h"
 # include "filesys.h"
 # include "global.h"
 # include "init.h"
 # include "k_fds.h"
+# include "k_prot.h"
 # include "kentry.h"
 # include "kerinfo.h"
 # include "kmemory.h"
 # include "memory.h"
+# include "time.h"
 
 
 long _cdecl
@@ -452,46 +456,6 @@ load_xdd(struct basepage *b, const char *name)
 	return -1;
 }
 
-/* XXX for testing */
-long _cdecl
-load_km(const char *path)
-{
-	struct basepage *bp;
-	long err;
-
-	bp = load_module(path, &err);
-	if (bp)
-	{
-		void *(*init)(struct kentry *);
-		void *ptr;
-
-		FORCE("load_module(%s) ok (bp 0x%lx)!", path, bp);
-
-		init = (void *(*)(struct kentry *))bp->p_tbase;
-
-		ptr = (*init)(&kentry);
-		if (ptr)
-		{
-			FORCE("load_module: init ok!");
-			err = 0;
-		}
-		else
-		{
-			kfree(bp);
-
-			FORCE("load_module: init failed!");
-			err = -1;
-		}
-
-		/* just to be sure */
-		cpush(NULL, -1);
-	}
-	else
-		FORCE("load_module(%s) failed -> %li", path, err);
-
-	return err;
-}
-
 long _cdecl
 register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 {
@@ -546,3 +510,130 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 
 	return ret;
 }
+
+/*
+ * run a kernel module
+ * kernel module init is to be intended to block until finished
+ */
+static long _cdecl
+run_km(const char *path)
+{
+	struct basepage *bp;
+	long err;
+	
+	bp = load_module(path, &err);
+	if (bp)
+	{
+		long (*run)(struct kentry *);
+		
+		FORCE("run_km(%s) ok (bp 0x%lx)!", path, bp);
+		
+		run = (long (*)(struct kentry *))bp->p_tbase;
+		err = (*run)(&kentry);
+		
+		kfree(bp);
+	}
+	else
+		FORCE("run_km(%s) failed -> %li", path, err);
+	
+	return err;
+}
+
+
+/*
+ * kernel module device
+ * intended for runtime configuration/loading/unloading
+ * of kernel modules
+ */
+
+static long _cdecl
+module_open(FILEPTR *f)
+{
+	DEBUG(("module_open [%i]: enter (%lx)", f->fc.aux, f->flags));
+	
+	if (!suser(curproc->p_cred->ucr))
+		return EPERM;
+	
+	return 0;
+}
+
+static long _cdecl
+module_close(FILEPTR *f, int pid)
+{
+	DEBUG(("module_close [%i]: enter", f->fc.aux));
+	
+	return E_OK;
+}
+
+static long _cdecl
+module_write(FILEPTR *f, const char *buf, long bytes)
+{
+	return 0;
+}
+
+static long _cdecl
+module_read(FILEPTR *f, char *buf, long bytes)
+{
+	return 0;
+}
+
+static long _cdecl
+module_lseek(FILEPTR *f, long where, int whence)
+{
+	return 0;
+}
+
+static long _cdecl
+module_ioctl(FILEPTR *f, int mode, void *buf)
+{
+	long r = ENOSYS;
+	
+	DEBUG(("module_ioctl [%i]: (%x, (%c %i), %lx)",
+		f->fc.aux, mode, (char)(mode >> 8), (mode & 0xff), buf));
+	
+	switch (mode)
+	{
+		case KM_RUN:
+		{
+			r = run_km(buf);
+			break;
+		}
+	}
+	
+	DEBUG (("module_ioctl: return %li", r));
+	return r;
+}
+
+static long _cdecl
+module_datime(FILEPTR *f, ushort *timeptr, int rwflag)
+{
+	if (rwflag)
+		return EACCES;
+	
+	*timeptr++ = timestamp;
+	*timeptr = datestamp;
+	
+	return E_OK;
+}
+
+static long _cdecl
+module_select(FILEPTR *f, long proc, int mode)
+{
+	/* default -- we don't know this mode, return 0 */
+	return 0;
+}
+
+static void _cdecl
+module_unselect(FILEPTR *f, long proc, int mode)
+{
+}
+
+
+DEVDRV module_device =
+{
+	module_open,
+	module_write, module_read, module_lseek, module_ioctl, module_datime,
+	module_close,
+	module_select, module_unselect,
+	NULL, NULL
+};

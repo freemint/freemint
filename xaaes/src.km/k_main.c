@@ -788,8 +788,8 @@ k_exit(void)
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
 
-	if (loader_pid > 0)
-		wake(WAIT_Q, (long)&loader_pid);
+	/* wakeup loader */
+	wake(WAIT_Q, (long)&loader_pid);
 
 
 	if (C.shutdown & HALT_SYSTEM)

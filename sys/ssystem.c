@@ -668,17 +668,6 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 #endif
 #if MINT_STATUS_CVS
 		/* XXX only for testing */
-		case 2000:
-		{
-			long _cdecl load_km(const char *path);
-
-			if (!isroot)
-				r = EPERM;
-			else
-				r = load_km((const char *) arg1);
-			break;
-		}
-		/* XXX only for testing */
 		case 3000:
 		{
 			long _cdecl register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
