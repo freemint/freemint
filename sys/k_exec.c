@@ -204,15 +204,15 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		i = 0;
 		while (i++ < PNAMSIZ)
 		{
-			if (*lastslash == '.' || *lastslash == 0)
+			if (*lastslash == '.' || *lastslash == '\0')
 			{
-				*newname = 0; break;
+				*newname = '\0'; break;
 			}
 			else
 				*newname++ = *lastslash++;
 		}
 
-		*newname = 0;
+		*newname = '\0';
 	}
 
 	TRACE (("creating environment"));
@@ -231,7 +231,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	{
 		long r;
 
-		base = create_base((char *)ptr2, env, flags, 0L, 0L, 0L, 0L, 0L, &r);
+		base = create_base((char *)ptr2, env, flags, 0L, &r);
 		if (!base)
 		{
 			DEBUG (("Pexec: unable to create basepage"));
@@ -255,7 +255,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			tail = strncpy (cbuf, ptr2, 127);
 		}
 
-		base = load_region (ptr1, env, (char *)tail, &xattr, &flags, 0, &r);
+		base = load_region (ptr1, env, (char *)tail, &xattr, &flags, &r);
 		if (!base)
 		{
 			DEBUG (("Pexec: load_region failed"));
@@ -314,18 +314,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		else
 		{
 			b->p_parent = curproc->base;
-# if 1
 			p = fork_proc(thread ? FORK_SHAREVM : 0, &r);
-# else
-			if (thread /* && (strcmp (curproc->name, "shutdown")) ??? */ )
-			{
-				p = fork_proc ( FORK_SHAREVM, &r);
-			}
-			else
-			{
-				p = fork_proc (0, &r);
-			}
-# endif
 		}
 
 		if (!p)
@@ -698,7 +687,6 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 			if (m)
 			{
 				m->links--;
-# if 1
 				if (m->links <= 0)
 				{
 					if (!m->links)
@@ -718,19 +706,6 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 						mark_proc_region (p->p_mem, m, PROT_I, p->pid);
 					}
 				}
-# else
-				if (m->links <= 0)
-					free_region (m);
-				else
-				{
-					if ((m->loc != (long) b) &&
-					    (m->loc != (long) b->p_env) &&
-					    (mem_prot_flags & MPF_STRICT))
-					{
-						mark_proc_region (p->p_mem, m, PROT_I, p->pid);
-					}
-				}
-# endif
 			}
 		}
 

@@ -68,10 +68,10 @@ long		alloc_region	(MMAP map, ulong size, short mode);
 
 MEMREGION *	fork_region	(MEMREGION *reg, long txtsize);
 MEMREGION *	create_env	(const char *env, ulong flags);
-MEMREGION *	create_base	(const char *cmd, MEMREGION *env, ulong flags, ulong prgsize,
-				 PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
+MEMREGION *	create_base	(const char *cmd, MEMREGION *env,
+				 unsigned long flags, unsigned long prgsize, long *err);
 MEMREGION *	load_region	(const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
-				 long *fp, short isexec, long *err);
+				 long *fp, long *err);
 long		load_and_reloc	(FILEPTR *f, FILEHEAD *fh, char *where, long start,
 				 long nbytes, BASEPAGE *base);
 long		memused		(PROC *p);
@@ -1439,44 +1439,13 @@ create_env (const char *env, ulong flags)
 }
 
 MEMREGION *
-create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err)
+create_base(const char *cmd, MEMREGION *env,
+	    unsigned long flags, unsigned long prgsize, long *err)
 {
 	long len = 0, minalt = 0, coresize, altsize;
 	MMAP map;
 	MEMREGION *m;
-	BASEPAGE *b, *bparent = 0;
-	PROC *parent = 0;
 	short protmode;
-	int i, ismax = 1;
-
-	/* if we're about to do an exec tell max_rsize which of the exec'ing
-	 * process regions will be freed, but don't free them yet so the process
-	 *  can still get an ENOMEM...
-	 */
-	if (execproc)
-	{
-		assert (execproc->p_mem && execproc->p_mem->mem);
-
-		for (i = 0; i < execproc->p_mem->num_reg; i++)
-		{
-			m = execproc->p_mem->mem[i];
-			if (m && m->links == 1)
-			{
-				m->links = 0xfffe;
-
-				/* if the region has shadows, free_region will
-				 * free the save region of the first shadow.
-				 */
-				if (m->shadow)
-				{
-					if (m->save)
-						m->save->links = 0xfffe;
-					else
-						m->shadow->save->links = 0xfffe;
-				}
-			}
-		}
-	}
 
 	/* if flags & F_ALTLOAD == 1, then we might decide to load in alternate
 	 * RAM if enough is available. "enough" is: if more alt ram than ST ram,
@@ -1489,8 +1458,6 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 		minalt = len = (minalt+1)*128*1024L + prgsize + 256;
 		if ((flags & F_MINALT) == F_MINALT)
 			len = 0;
-		else
-			ismax = 0;
 	}
 
 	if (flags & F_ALTLOAD)
@@ -1539,95 +1506,14 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 		len = prgsize + 1024L * initialmem;
 
 	if (curproc->maxmem && len > curproc->maxmem)
-	{
-		if (ismax >= 0)
-			len = curproc->maxmem;
-		else if (len > curproc->maxmem + fh->ftext)
-			len = curproc->maxmem + fh->ftext;
-	}
+		len = curproc->maxmem;
 
 	if (prgsize && len < prgsize + 0x400)
 	{
-		/* can't possibly load this file in its eligible regions */
 		DEBUG(("create_base: max_rsize smaller than prgsize"));
-
-		if (execproc)
-		{
-			/* error, undo the above */
-			for (i = 0; i < execproc->p_mem->num_reg; i++)
-			{
-				m = execproc->p_mem->mem[i];
-				if (m)
-				{
-					if (m->links == 0xfffe)
-					{
-						m->links = 1;
-						if (m->shadow)
-						{
-							if (m->save)
-								m->save->links = 1;
-							else
-								m->shadow->save->links = 1;
-						}
-					}
-				}
-			}
-		}
 
 		*err = ENOMEM;
 		return NULL;
-	}
-
-	if (execproc)
-	{
-		struct user_things *ut = execproc->p_mem->tp_ptr;
-
-		/* free exec'ing process memory... if the exec returns after this make it
-		 * _exit (SIGKILL << 8);
-		 */
-		*((short *) (execproc->stack + ISTKSIZE + sizeof (void (*)()))) = (SIGKILL << 8);
-		execproc->ctxt[SYSCALL].term_vec = (long)rts;
-		execproc->ctxt[SYSCALL].pc = ut->terminateme_p;
-		execproc->ctxt[SYSCALL].sr |= 0x2000;
-		execproc->ctxt[SYSCALL].ssp = (long)(execproc->stack + ISTKSIZE);
-
-		/* save basepage p_parent */
-		bparent = execproc->base->p_parent;
-
-		/* blocking forks keep the same basepage for parent and child,
-		 * so this p_parent actually was our grandparents...
-		 */
-		parent = pid2proc(execproc->ppid);
-		if (parent
-			&& parent->wait_q == WAIT_Q
-			&& parent->wait_cond == (long) execproc)
-		{
-			bparent = parent->base;
-		}
-
-		for (i = 0; i < execproc->p_mem->num_reg; i++)
-		{
-			m = execproc->p_mem->mem[i];
-			if (m && m->links == 0xfffe)
-			{
-				execproc->p_mem->mem[i] = 0;
-				execproc->p_mem->addr[i] = 0;
-
-				m->links = 0;
-				if (m->shadow)
-				{
-					if (m->save)
-						m->save->links = 1;
-					else
-						m->shadow->save->links = 1;
-				}
-
-				if (mem_prot_flags & MPF_STRICT)
-					mark_proc_region (execproc->p_mem, m, PROT_I, execproc->pid);
-
-				free_region(m);
-			}
-		}
 	}
 
 	protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
@@ -1635,28 +1521,25 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 	m = addr2mem (curproc, alloc_region (map, len, protmode));
 	if (!m)
 	{
-		*err = ENOMEM;
-
 		DEBUG (("create_base: alloc_region failed"));
+
+		*err = ENOMEM;
 		goto leave;
 	}
 
-	b = (BASEPAGE *)(m->loc);
-
-	bzero (b, sizeof (*b));
-	b->p_lowtpa = (long) b;
-	b->p_hitpa = m->loc + m->len;
-	b->p_env = env ? ((char *) env->loc) : NULL;
-	b->p_flags = flags;
-
-	if (execproc)
+	/* initialize basepage */
 	{
-		execproc->base = b;
-		b->p_parent = bparent;
-	}
+		BASEPAGE *b = (BASEPAGE *)(m->loc);
 
-	if (cmd)
-		strncpy (b->p_cmdlin, cmd, 127);
+		bzero (b, sizeof (*b));
+		b->p_lowtpa = (long) b;
+		b->p_hitpa = m->loc + m->len;
+		b->p_env = env ? ((char *) env->loc) : NULL;
+		b->p_flags = flags;
+
+		if (cmd)
+			strncpy (b->p_cmdlin, cmd, 127);
+	}
 
 leave:
 	SANITY_CHECK (map);
@@ -1681,7 +1564,7 @@ leave:
  * @param err      Error code is stored here.
  */
 MEMREGION *
-load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, long *fp, short isexec, long *err)
+load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, long *fp, long *err)
 {
 	FILEPTR *f;
 	MEMREGION *reg;
@@ -1733,7 +1616,7 @@ failed:
 	size = fh.ftext + fh.fdata + fh.fbss;
 
 	if (env) env->links++;
-	reg = create_base (cmdlin, env, fh.flag, size, isexec ? curproc : 0L, 0L, 0L, 0L, err);
+	reg = create_base (cmdlin, env, fh.flag, size, err);
 	if (env) env->links--;
 
 	if (reg && ((size + 1024L) > reg->len))
