@@ -34,6 +34,7 @@ struct cookie
 void	init_cookies	(void);
 void	restr_cookies	(void);
 long	get_toscookie	(ulong tag, ulong *val);
+long	set_toscookie	(ulong tag, ulong val);
 long	get_cookie	(ulong tag, ulong *ret);
 long	set_cookie	(ulong tag, ulong val);
 long	del_cookie	(ulong tag);

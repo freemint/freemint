@@ -262,6 +262,32 @@ get_toscookie (ulong tag, ulong *val)
 	return 1;
 }
 
+long
+set_toscookie (ulong tag, ulong val)
+{
+	COOKIE *cookie = oldcookie;
+	
+	if (!cookie)
+		/* not initialized yet */
+		cookie = *CJAR;
+	
+	if (cookie)
+	{
+		while (cookie->tag)
+		{
+			if (cookie->tag == tag)
+			{
+				cookie->value = val;
+				return 0;
+			}
+			
+			cookie++;
+		}
+	}
+	
+	return 1;
+}
+
 /* find cookie cookiep->tag and return its value in
  * cookiep->value, return E_OK (0)
  * return ERROR (-1) if not found
