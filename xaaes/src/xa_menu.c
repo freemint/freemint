@@ -132,8 +132,6 @@ XA_menu_bar(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	CONTROL(1,1,1)
 
-	IFWL(Sema_Up(winlist);)
-
 	menu_bar = get_menu();
 
 	pb->intout[0] = 0;
@@ -199,10 +197,7 @@ XA_menu_bar(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		break;
 	}
 
-	IFWL(Sema_Dn(winlist);)
-
 	DIAG((D_menu,NULL,"done menu_bar()\n"));
-
 	return XAC_DONE;
 }
 

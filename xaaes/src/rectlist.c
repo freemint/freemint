@@ -47,8 +47,6 @@ generate_rect_list(LOCK lock, XA_WINDOW *w, short which)
 	RECT r_ours, r_win;
 	short win_cnt, f;
 
-	IFWL(Sema_Up(winlist);)
-
 	
 	if (w->rect_start)
 	{
@@ -183,8 +181,6 @@ generate_rect_list(LOCK lock, XA_WINDOW *w, short which)
 		}
 	}
 #endif
-
-	IFWL(Sema_Dn(winlist);)
 
 	return w->rect_start;
 }

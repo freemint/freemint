@@ -123,8 +123,6 @@ free_icon_pos(LOCK lock)
 	RECT ic;
 	int i = 0;
 
-	IFWL(Sema_Up(winlist);)
-
 	for (;;)
 	{
 		XA_WINDOW *w = window_list;
@@ -145,7 +143,6 @@ free_icon_pos(LOCK lock)
 			break;
 	}
 
-	IFWL(Sema_Dn(winlist);)
 	return ic;
 }
 
@@ -513,15 +510,11 @@ create_window(
 	}
 	else
 	{
-		IFWL(Sema_Up(winlist);)
-
 		new->handle = new_wind_handle();
 		DIAG((D_wind,client," allocated handle = %d\n", new->handle));
 
 		wi_put_first(&S.closed_windows, new);
 		DIAG((D_wind,client," inserted in closed_windows list\n"));
-
-		IFWL(Sema_Dn(winlist);)
 
 		/* Attach the appropriate widgets to the window */
 		standard_widgets(new, tp, false);
@@ -570,8 +563,6 @@ open_window(LOCK lock, XA_WINDOW *wind, RECT r)
 		DIAGS(("WARNING: Attempt to open window when it was already open\n"));
 		return 0;
 	}
-
-	IFWL(Sema_Up(winlist);)
 
 	wi_remove(&S.closed_windows, wind);
 	wi_put_first(&S.open_windows, wind);
@@ -637,8 +628,6 @@ open_window(LOCK lock, XA_WINDOW *wind, RECT r)
 					   WM_REDRAW, 0, 0, wind->handle,
 					   wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 	}
-
-	IFWL(Sema_Dn(winlist);)
 
 	DIAG((D_wind, wind->owner, "open_window %d for %s exit with 1\n",
 		wind->handle, c_owner(wind->owner)));
@@ -825,8 +814,6 @@ find_window(LOCK lock, int x, int y)
 {
 	XA_WINDOW *w;
 
-	IFWL(Sema_Up(winlist);)
-
 	w = window_list;
 	while(w)
 	{
@@ -836,7 +823,6 @@ find_window(LOCK lock, int x, int y)
 		w = w->next;
 	}
 
-	IFWL(Sema_Dn(winlist);)
 	return w;
 }
 
@@ -844,8 +830,6 @@ XA_WINDOW *
 get_wind_by_handle(LOCK lock, int h)
 {
 	XA_WINDOW *w;
-
-	IFWL(Sema_Up(winlist);)
 
 	w = window_list;
 	while (w)
@@ -868,7 +852,6 @@ get_wind_by_handle(LOCK lock, int h)
 		}
 	}
 
-	IFWL(Sema_Dn(winlist);)
 	return w;
 }
 
@@ -880,8 +863,6 @@ after_top(LOCK lock, bool untop)
 {
 	XA_WINDOW *below;
 
-	IFWL(Sema_Up(winlist);)
-
 	below = window_list->next;
 
 	/* Refresh the previous top window as being 'non-topped' */
@@ -892,8 +873,6 @@ after_top(LOCK lock, bool untop)
 		if (untop)
 			send_untop(lock, below);
 	}
-
-	IFWL(Sema_Dn(winlist);)
 }
 
 /*
@@ -907,8 +886,6 @@ pull_wind_to_top(LOCK lock, XA_WINDOW *w)
 	RECT clip, r;
 
 	DIAG((D_wind, w->owner, "pull_wind_to_top %d for %s\n", w->handle, w_owner(w)));
-
-	IFWL(Sema_Up(winlist);)
 
 	check_menu_desktop(wlock, window_list, w);
 
@@ -943,8 +920,6 @@ pull_wind_to_top(LOCK lock, XA_WINDOW *w)
 			generate_rect_list(wlock, w, 3);
 	}
 
-	IFWL(Sema_Dn(winlist);)
-
 	return w;
 }
 
@@ -960,8 +935,6 @@ send_wind_to_bottom(LOCK lock, XA_WINDOW *w)
 	    || w       == root_window	/* just a safeguard */
 	    || w->is_open == false)
 		return;
-
-	IFWL(Sema_Up(winlist);)
 
 	wl = w->next;
 	r = w->r;
@@ -980,8 +953,6 @@ send_wind_to_bottom(LOCK lock, XA_WINDOW *w)
 	generate_rect_list(lock|winlist, w, 5);
 
 	check_menu_desktop(lock|winlist, old_top, window_list);
-
-	IFWL(Sema_Dn(winlist);)
 }
 
 /*
@@ -996,11 +967,9 @@ move_window(LOCK lock, XA_WINDOW *wind, int newstate, int x, int y, int w, int h
 	RECT old, new, clip, oldw, pr;
 	bool blit_mode;
 
-	IFWL(Sema_Up(winlist);)
-
-DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d\n",
-	wind->is_open ? "open" : "closed",
-	wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, x,y,w,h));
+	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d\n",
+	      wind->is_open ? "open" : "closed",
+	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, x,y,w,h));
 
 #if 0
 	temporary commented out, because I dont know exactly the consequences.
@@ -1154,8 +1123,6 @@ DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d\n
 
 	if (wind->remember)
 		*wind->remember = wind->r;
-
-	IFWL(Sema_Dn(winlist);)
 }
 
 /*
@@ -1183,8 +1150,6 @@ close_window(LOCK lock, XA_WINDOW *wind)
 
 	if (wind->is_open == false || wind->nolist)
 		return false;
-
-	IFWL(Sema_Up(winlist);)
 
 	is_top = (wind == window_list);
 	r = wind->r;
@@ -1287,8 +1252,6 @@ close_window(LOCK lock, XA_WINDOW *wind)
 		}
 	}
 
-	IFWL(Sema_Dn(winlist);)
-
 	return true;
 }
 
@@ -1333,8 +1296,6 @@ delete_window(LOCK lock, XA_WINDOW *wind)
 		DIAG((D_wind, wind->owner, "delete_window %d for %s: open? %d\n",
 			wind->handle, w_owner(wind), wind->is_open));
 
-		IFWL(Sema_Up(winlist);)
-
 		/* slider widgets leaked. */
 		free_standard_widgets(wind);
 
@@ -1351,8 +1312,6 @@ delete_window(LOCK lock, XA_WINDOW *wind)
 			free(wind->rect_start);
 
 		wi_remove(&S.closed_windows, wind);
-
-		IFWL(Sema_Dn(winlist);)
 	}
 	else
 	{

@@ -741,20 +741,11 @@ XA_handler(ushort c, AESPB *pb)
 				/* This is now done only once per AES call */
 
 				/* HR: The root of all locking under client pid. */
-#if USE_CALL_DIRECT
-				LOCK lock = cfg.direct_call ? NOLOCKS : (winlist|envstr);
-
-				/* The pending sema is only needed if the
-				 * evnt_... functions are called direct.
-				 */
-				if (!Ktab[XA_EVNT_MULTI].d)
-					lock |= pending;
-#else
 				/* HR: how about this? It means that these
 	                         * semaphores are not needed and are effectively skipped.
 				 */
 				LOCK lock = winlist|envstr|pending;
-#endif
+
 				vq_mouse(C.vh, &button.b, &button.x, &button.y);
 				vq_key_s(C.vh, &button.ks);
 
@@ -793,34 +784,6 @@ XA_handler(ushort c, AESPB *pb)
 					Fclose(client->client_end);
 					client->client_end = 0;
 					break;
-#if USE_CALL_DIRECT
-				case XAC_TIMER:
-					reply_s = 1L << client->client_end;
-
-					if (!client->timer_val)
-						/* Immediate timeout */
-						cmd_rtn = 0;
-					else
-						cmd_rtn = Fselect(client->timer_val, (long *)&reply_s, NULL, NULL);
-
-					Sema_Up(clients);
-
-					if (!cmd_rtn)		/* Timed out */
-					{
-						if (client->waiting_for & XAWAIT_MULTI)
-							/* HR: fill out mouse data!!! */
-							timer_intout(client->waiting_pb->intout);
-						else
-							/* evnt_timer() always returns 1 */
-							client->waiting_pb->intout[0] = 1;
-
-						cancel_evnt_multi(client,4);
-					}
-
-					Sema_Dn(clients);
-
-					break;
-#endif
 				}
 
 				return AES_MAGIC;

@@ -413,8 +413,7 @@ cleanup(void)
 	/* Remove semaphores: */
 DIAGS(("Deleting semaphores\n"));
 	Psemaphore(1, APPL_INIT_SEMA, 0);
-/*	Psemaphore(1, TRAP_HANDLER_SEMA, 0);
-*/	IFWL(Psemaphore(1, WIN_LIST_SEMA, 0);)
+//	Psemaphore(1, TRAP_HANDLER_SEMA, 0);
 	Psemaphore(1, ROOT_SEMA, 0);
 	Psemaphore(1, CLIENTS_SEMA, 0);
 	Psemaphore(1, UPDATE_LOCK, 0);
@@ -894,7 +893,7 @@ BTRACE(23);
 
 	Psemaphore(0, APPL_INIT_SEMA, 0);
 /*	Psemaphore(0, TRAP_HANDLER_SEMA, 0); */
-	IFWL(Psemaphore(0, WIN_LIST_SEMA, 0);)
+	Psemaphore(0, WIN_LIST_SEMA, 0);
 	Psemaphore(0, ROOT_SEMA, 0);
 	Psemaphore(0, CLIENTS_SEMA, 0);
 	Psemaphore(0, UPDATE_LOCK, 0);
@@ -1314,7 +1313,6 @@ BTRACE(53);
 	/* Unlock the semaphores...we're ready to go */
 
 /*	Sema_Dn(trap);
-	IFWL(Sema_Dn(winlist);)
 */	Sema_Dn(desk);
 	Sema_Dn(update);
 	Sema_Dn(mouse);
