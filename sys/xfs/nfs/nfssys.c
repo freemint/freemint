@@ -1078,7 +1078,7 @@ nfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 	TRACE (("nfs_rename('%s' -> '%s')", oldname, newname));
 	if ((ROOT_INDEX == oldi) || (ROOT_INDEX == newi))
 	{
-		DEBUG( ("nfs_rename(%s): no rename in the root dir, -> EACCES", oldname));
+		DEBUG (("nfs_rename(%s): no rename in the root dir, -> EACCES", oldname));
 		return EACCES;
 	}
 
@@ -1093,6 +1093,7 @@ nfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 		DEBUG (("nfs_rename(%s): no handle for new dir, -> ENOTDIR", oldname));
 		return ENOTDIR;
 	}
+	
 	if (get_handle (oldi) != 0)
 	{
 		DEBUG (("nfs_rename(%s): no handle for old dir, -> ENOTDIR", oldname));
@@ -1138,8 +1139,8 @@ nfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 		return EACCES;
 	}
 	
-	/* BUG: here we should do the rename also in our local data
-	 */
+	nfs_cache_removebyname (oldi, oldname);
+	
 	TRACE (("nfs_rename('%s' -> '%s') -> OK", oldname, newname));
 	return 0;
 }
