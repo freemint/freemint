@@ -671,22 +671,14 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	long oldgemtimer = 0, gemtimer = 0;
 #endif
 
-	if (rfdp) {
-		col_rfd = rfd = *rfdp;
-	}
-	else
-		col_rfd = rfd = 0;
+	if (rfdp) col_rfd = rfd = *rfdp;
+	else      col_rfd = rfd = 0;
 
-	if (wfdp) {
-		col_wfd = wfd = *wfdp;
-	}
-	else
-		col_wfd = wfd = 0;
-	if (xfdp) {
-		col_xfd = xfd = *xfdp;
-	} else {
-		col_xfd = xfd = 0;
-	}
+	if (wfdp) col_wfd = wfd = *wfdp;
+	else      col_wfd = wfd = 0;
+
+	if (xfdp) col_xfd = xfd = *xfdp;
+	else      col_xfd = xfd = 0;
 
 	/* watch out for aliasing */
 	if (rfdp) *rfdp = 0;
@@ -702,8 +694,10 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 
 	/* first, validate the masks */
 	mask = 1L;
-	for (i = 0; i < p->p_fd->nfiles; i++) {
-		if ( ((rfd & mask) || (wfd & mask) || (xfd & mask)) && !(p->p_fd->ofiles[i]) ) {
+	for (i = 0; i < p->p_fd->nfiles; i++)
+	{
+		if (((rfd & mask) || (wfd & mask) || (xfd & mask)) && !(p->p_fd->ofiles[i]))
+		{
 			DEBUG(("Fselect: invalid handle: %d", i));
 			return EBADF;
 		}
@@ -726,14 +720,17 @@ retry_after_collision:
 	wait_cond = (long)wakeselect;
 	count = 0;
 
-	for (i = 0; i < p->p_fd->nfiles; i++) {
-		if (col_rfd & mask) {
+	for (i = 0; i < p->p_fd->nfiles; i++)
+	{
+		if (col_rfd & mask)
+		{
 			f = p->p_fd->ofiles[i];
 			if (is_terminal(f))
 				rsel = (int) tty_select(f, (long)p, O_RDONLY);
 			else
 				rsel = (int) (*f->dev->select)(f, (long)p, O_RDONLY);
-			switch(rsel) {
+			switch (rsel)
+			{
 			case 0:
 				col_rfd &= ~mask;
 				break;
@@ -746,13 +743,15 @@ retry_after_collision:
 				break;
 			}
 		}
-		if (col_wfd & mask) {
+		if (col_wfd & mask)
+		{
 			f = p->p_fd->ofiles[i];
 			if (is_terminal(f))
 				rsel = (int) tty_select(f, (long)p, O_WRONLY);
 			else
 				rsel = (int) (*f->dev->select)(f, (long)p, O_WRONLY);
-			switch(rsel) {
+			switch (rsel)
+			{
 			case 0:
 				col_wfd &= ~mask;
 				break;
@@ -765,14 +764,16 @@ retry_after_collision:
 				break;
 			}
 		}
-		if (col_xfd & mask) {
+		if (col_xfd & mask)
+		{
 			f = p->p_fd->ofiles[i];
 /* tesche: anybody worried about using O_RDWR for exceptional data? ;) */
 			rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
 /*  tesche: for old device drivers, which don't understand this
  * call, this will never be true and therefore won't disturb us here.
  */
-			switch (rsel) {
+			switch (rsel)
+			{
 			case 0:
 				col_xfd &= ~mask;
 				break;
@@ -861,44 +862,54 @@ retry_after_collision:
 
 	/* OK, let's see what data arrived (if any) */
 		mask = 1L;
-		for (i = 0; i < p->p_fd->nfiles; i++) {
-			if (rfd & mask) {
+		for (i = 0; i < p->p_fd->nfiles; i++)
+		{
+			if (rfd & mask)
+			{
 				f = p->p_fd->ofiles[i];
-				if (f) {
+				if (f)
+				{
 				    bytes = 1L;
 				    if (is_terminal(f))
 					(void)tty_ioctl(f, FIONREAD, &bytes);
 				    else
 					(void)(*f->dev->ioctl)(f, FIONREAD,&bytes);
-				    if (bytes > 0) {
+				    if (bytes > 0)
+				    {
 					*rfdp |= mask;
 					count++;
 				    }
 				}
 			}
-			if (wfd & mask) {
+			if (wfd & mask)
+			{
 				f = p->p_fd->ofiles[i];
-				if (f) {
+				if (f)
+				{
 				    bytes = 1L;
 				    if (is_terminal(f))
 					(void)tty_ioctl(f, FIONWRITE, &bytes);
 				    else
 				        (void)(*f->dev->ioctl)(f, FIONWRITE,&bytes);
-				    if (bytes > 0) {
+				    if (bytes > 0)
+				    {
 					*wfdp |= mask;
 					count++;
 				    }
 				}
 			}
-			if (xfd & mask) {
+			if (xfd & mask)
+			{
 				f = p->p_fd->ofiles[i];
-				if (f) {
+				if (f)
+				{
 /*  tesche: since old device drivers won't understand this call,
  * we set up `no exceptional condition' as default.
  */
 				    bytes = 0L;
 				    (void)(*f->dev->ioctl)(f, FIOEXCEPT,&bytes);
-				    if (bytes > 0) {
+				    if (bytes > 0)
+				    {
 					*xfdp |= mask;
 					count++;
 				    }
@@ -906,7 +917,9 @@ retry_after_collision:
 			}
 			mask = mask << 1L;
 		}
-	} else if (t) {
+	}
+	else if (t)
+	{
 		/* in case data arrived after a collsion, there
 		 * could be a timeout pending even if count > 0
 		 */
@@ -917,18 +930,22 @@ retry_after_collision:
 	/* cancel all the selects */
 	mask = 1L;
 
-	for (i = 0; i < p->p_fd->nfiles; i++) {
-		if (rfd & mask) {
+	for (i = 0; i < p->p_fd->nfiles; i++)
+	{
+		if (rfd & mask)
+		{
 			f = p->p_fd->ofiles[i];
 			if (f)
 				(*f->dev->unselect)(f, (long)p, O_RDONLY);
 		}
-		if (wfd & mask) {
+		if (wfd & mask)
+		{
 			f = p->p_fd->ofiles[i];
 			if (f)
 				(*f->dev->unselect)(f, (long)p, O_WRONLY);
 		}
-		if (xfd & mask) {
+		if (xfd & mask)
+		{
 			f = p->p_fd->ofiles[i];
 			if (f)
 				(*f->dev->unselect)(f, (long)p, O_RDWR);
