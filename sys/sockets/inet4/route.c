@@ -18,16 +18,30 @@
 
 struct route *allroutes[RT_HASH_SIZE];
 struct route *defroute;
+struct route rt_primary;
 
 void
 route_init (void)
 {
 	short i;
 	
+	/* fake broadcast route */
+	rt_primary.net  = INADDR_ANY;
+	rt_primary.mask = 0xffffffffL;
+	rt_primary.gway = INADDR_ANY;
+	rt_primary.metric = 1;
+	rt_primary.nif   = NULL;
+	rt_primary.ttl   = 0xff;
+	rt_primary.next  = NULL;
+	rt_primary.flags = RTF_STATIC|RTF_UP;
+	rt_primary.usecnt = 1;
+	rt_primary.refcnt = 1;
+
 	for (i = 0; i < RT_HASH_SIZE; ++i)
 		allroutes[i] = 0;
 	
 	defroute = 0;
+
 	routedev_init ();
 }
 
@@ -56,12 +70,14 @@ struct route *
 route_get (ulong daddr)
 {
 	struct route *netrt, *rt;
+	DEBUG (("route_get: daddr = 0x%lx", daddr));
 	
 	rt = allroutes[route_hash (daddr)];
 	for (netrt = 0; rt; rt = rt->next)
 	{
 		if (rt->ttl <= 0 || !(rt->flags & RTF_UP))
 			continue;
+		DEBUG (("route_get: try: mask=0x%lx daddr=0x%lx net=0x%lx", rt->mask, daddr, rt->net));
 		if ((rt->mask & daddr) == rt->net)
 		{
 			if (rt->flags & RTF_HOST)
@@ -70,16 +86,33 @@ route_get (ulong daddr)
 		}
 	}
 	
-	if (!rt)
-		rt = netrt ? netrt : defroute;
-	
+	if (!rt) {
+		if (netrt) {
+			DEBUG (("route_get: using 0x%lx via '%s': netmask matched (netrt)", netrt, netrt->nif->name));
+			rt = netrt;
+		} else {
+			rt = defroute;
+			if (rt) DEBUG (("route_get: using 0x%lx via '%s': defroute", defroute, defroute ? defroute->nif->name : "??"));
+		}
+	}
+
+	/*
+	 * Fallback to the /sbin/route invisible route
+	 * for the former if_primary broadcasts.
+	 */
+	if (!rt && daddr == INADDR_BROADCAST) {
+		DEBUG (("route_get: using 0xX via '%s': rt_primary", rt_primary.nif ? rt_primary.nif->name : "??"));
+		rt = &rt_primary;
+	}
+
 	if (rt && rt->flags & RTF_UP)
 	{
 		rt->refcnt++;
 		rt->usecnt++;
 		return rt;
 	}
-	
+
+	DEBUG (("route_get: no route found"));
 	return NULL;
 }
 
@@ -123,7 +156,7 @@ route_add (struct netif *nif, ulong net, ulong mask, ulong gway,
 {
 	struct route *newrt, *rt, **prevrt;
 	
-	DEBUG (("route_add: net 0x%lx mask 0x%lx gway 0x%lx", net, mask, gway));
+	DEBUG (("route_add: net 0x%lx mask 0x%lx gway 0x%lx nif=%s", net, mask, gway, nif->name));
 	
 	newrt = route_alloc (nif, net, mask, gway, flags, ttl, metric);
 	if (!newrt)
@@ -259,7 +292,7 @@ route_ioctl (short cmd, long arg)
 	mask = ip_netmask (net);
 	if (mask == 0)
 	{
-		DEBUG (("if_ioctl: bad dst address"));
+		DEBUG (("if_ioctl: mask == 0"));
 		return EADDRNOTAVAIL;
 	}
 	
@@ -296,11 +329,13 @@ route_ioctl (short cmd, long arg)
 				return ENETUNREACH;
 			}
 			
+			DEBUG (("route_ioctl: route_add"));
 			return route_add (nif, net, mask, gway, flags, RT_TTL,
 						rte->rt_metric);
 		}
 		case SIOCDELRT:
 		{
+			DEBUG (("route_ioctl: route_del"));
 			return route_del (net, mask);
 		}
 		default:

@@ -27,7 +27,7 @@ static TIMEOUT *tmout = 0;
 /*
  * List of all registered interfaces, loopback and primary interface.
  */
-struct netif *allinterfaces, *if_lo, *if_primary;
+struct netif *allinterfaces, *if_lo;
 
 /*
  * Stack used while processing incoming packets
@@ -217,7 +217,7 @@ if_doinput (long proc)
 					break;
 				
 				default:
-					DEBUG (("if_input: unknown pkytpe 0x%x",
+					DEBUG (("if_input: unknown pktype 0x%x",
 						(short)buf->info));
 					buf_deref (buf, BUF_NORMAL);
 					break;
@@ -368,14 +368,27 @@ if_open (struct netif *nif)
 	}
 	
 	/*
-	 * Want a running primary interface
+	 * This route is necessary for IP to deliver incoming packets
+	 * to the local software. It routes the incoming packet and
+	 * then compares the packets destination address and the
+	 * interfaces' local address. If they match, the packet is
+	 * delivered to the local software.
 	 */
-	if (!(if_primary->flags & IFF_UP))
-		if_primary = nif;
+	if (SIN (&ifa->addr)->sin_addr.s_addr != INADDR_ANY)
+	{
+		route_add (if_lo, SIN (&ifa->addr)->sin_addr.s_addr, 0xffffffffL,
+			INADDR_ANY, RTF_STATIC|RTF_UP|RTF_HOST|RTF_LOCAL, 999, 0);
+	}
 	
-	route_add (if_lo, SIN (&ifa->addr)->sin_addr.s_addr, 0xffffffffL,
-		INADDR_ANY, RTF_STATIC|RTF_UP|RTF_HOST|RTF_LOCAL, 999, 0);
+	/*
+	 * Want the new interface to become primary one.
+	 *
+	 * This is usefull to broadcast packets.
+	 */
+	rt_primary.nif = nif;
 	
+	DEBUG (("if_open: primary_nif = %s", rt_primary.nif->name));
+
 	return 0;
 }
 
@@ -410,17 +423,19 @@ if_close (struct netif *nif)
 	/*
 	 * Want a running primary interface
 	 */
-	if (nif == if_primary)
+	if (nif == rt_primary.nif)
 	{
 		for (nif = allinterfaces; nif; nif = nif->next)
 		{
 			if (nif->flags & IFF_UP)
 			{
-				if_primary = nif;
+				rt_primary.nif = nif;
 				break;
 			}
 		}
 	}
+
+	DEBUG (("if_close: primary_nif = %s", rt_primary.nif->name));
 	
 	return 0;
 }
@@ -430,16 +445,19 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 {
 	struct arp_entry *are;
 	long ret;
-	
+
 	if ((nif->flags & (IFF_UP|IFF_RUNNING)) != (IFF_UP|IFF_RUNNING))
 	{
-		DEBUG (("if_send: interface %s%d down", nif->name, nif->unit));
+		DEBUG (("if_send: interface %s%d is not UP and RUNNING", nif->name, nif->unit));
+
 		buf_deref (buf, BUF_NORMAL);
 		return ENETUNREACH;
 	}
 	
 	if (nif->hwtype >= HWTYPE_NONE)
 	{
+		DEBUG (("if_send(%s): >= HWTYPE_NONE", nif->name));
+
 		/*
 		 * This pseudo hardware type needs no ARP resolving
 		 * of the next hop IP address into a hardware address.
@@ -452,6 +470,9 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 	{
 		case HWTYPE_ETH:
 		{
+			DEBUG (("if_send(%s): HWTYPE_ETH (brcst=%d)",
+				nif->name, isbrcst));
+
 			/*
 			 * When broadcast then use interface's broadcast address
 			 */
@@ -856,7 +877,7 @@ if_net2if (ulong addr)
 {
 	struct netif *nif;
 	struct ifaddr *ifa;
-	
+
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		if (!(nif->flags & IFF_UP))
@@ -868,11 +889,17 @@ if_net2if (ulong addr)
 		
 		if (nif->flags & IFF_POINTOPOINT &&
 		    addr == SIN (&ifa->ifu.dstaddr)->sin_addr.s_addr)
+		{
+			DEBUG(("if_net2if: nif '%s' p2p", nif->name));
 			return nif;
+		}
 		
 		if (nif->flags & IFF_BROADCAST &&
 		    addr == SIN (&ifa->ifu.broadaddr)->sin_addr.s_addr)
+		{
+			DEBUG(("if_net2if: nif '%s' broadcast", nif->name));
 			return nif;
+		}
 	}
 	
 	for (nif = allinterfaces; nif; nif = nif->next)
@@ -885,9 +912,13 @@ if_net2if (ulong addr)
 			continue;
 		
 		if ((addr & ifa->netmask) == ifa->net)
+		{
+			DEBUG(("if_net2if: nif '%s' netmask match", nif->name));
 			return nif;
+		}
 	}
 	
+	DEBUG(("if_net2if: no match"));
 	return NULL;
 }
 
@@ -954,9 +985,15 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 			 * interfaces' local address. If they match, the packet is
 			 * delivered to the local software.
 			 */
-			route_add (if_lo, SIN (&ifa->addr)->sin_addr.s_addr,
-				0xffffffff, INADDR_ANY,
-				RTF_STATIC|RTF_UP|RTF_HOST|RTF_LOCAL, 999, 0);
+			if (SIN (&ifa->addr)->sin_addr.s_addr != INADDR_ANY) {
+				route_add (if_lo, SIN (&ifa->addr)->sin_addr.s_addr,
+					0xffffffff, INADDR_ANY,
+					RTF_STATIC|RTF_UP|RTF_HOST|RTF_LOCAL, 999, 0);
+			} else {
+				/* primary broadcast interface */
+				rt_primary.nif = nif;
+				DEBUG (("if_setifaddr: primary_nif = %s", rt_primary.nif->name));
+			}
 			break;
 		}
 		default:
@@ -1061,7 +1098,7 @@ if_init (void)
 	{
 		if (nif->flags & IFF_LOOPBACK)
 		{
-			if_lo = if_primary = nif;
+			if_lo = rt_primary.nif = nif;
 			break;
 		}
 	}

@@ -197,6 +197,9 @@ udp_send (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	else
 	{
 		if (!addr) return EDESTADDRREQ;
+
+		DEBUG (("udp_send: s_addr = 0x%lx", addr->sin_addr.s_addr));
+
 		dstaddr = ip_dst_addr (addr->sin_addr.s_addr);
 		dstport = addr->sin_port;
 		if (dstport == 0)
@@ -236,6 +239,8 @@ udp_send (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	if (data->flags & IN_DONTROUTE || flags & MSG_DONTROUTE)
 		ipflags |= IP_DONTROUTE;
 	
+	DEBUG (("udp_send: dstaddr = 0x%lx", dstaddr));
+
 	r = ip_send (data->src.addr, dstaddr, buf, IPPROTO_UDP, ipflags,
 		&data->opts);
 	
