@@ -46,9 +46,6 @@
 # include "proc.h"		/* rootproc */
 # include "unicode.h"
 
-#undef POLISH_EXTENSION_POLONICA
-#undef POLISH_EXTENSION_ISO
-
 static uchar
 cp00[256] =
 {
@@ -739,7 +736,7 @@ t_atari2uni[256] =
 	0x20, 0x7f, 0x00, 0xb2, 0x00, 0xb3, 0x00, 0xaf
 };
 
-# if 1
+# ifdef SOFT_UNITABLE
 
 # define CP_SIZE 256
 
