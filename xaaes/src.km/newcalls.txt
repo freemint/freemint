@@ -232,3 +232,142 @@ Add to your header file
               slider position match the prevsiously set position, XaAES does
               not set or redraw the slider. But it needs to collect the 'real'
               position of the slider for wheel -> slider calculations to work.
+
+      
+-------------------------------------------------------------------------------
+===============================================================================
+                  New event/poll functions - One entry point!
+
+
+ xevnt_multi(short mode,
+             struct xevnt_mask *in_events,
+             struct xevnt_mask *out_events,
+             struct xevents *inevents,
+             struct xevents *outevents);
+
+ GEM arrays as follows:
+
+	Address     Element    meaning 
+        ------------------------------------------------------
+        control    control[0]   Yes.. what? # Opcode
+        control+2  control[1]   1           # Entries in intin
+        control+4  control[2]   4           # Entries in intout (XaAES only)
+        control+6  control[3]   4           # Entries in addrin 
+        control+8  control[4]   0           # entries in addrout 
+
+        intin      intin[0]    mode (0 = block, 1 = setup for poll, 2 = read)
+        addrin     addrin[0]   Address of struct xevent_mask, conaining a
+                               bit mask denoting events to use.
+        addrin     addrin[1]   Address of struct xevnt_mask into which XaAES
+                               writes events that occured.
+        addrin+4   addrin[2]   Address of a struct xevents containing event
+                               criterias.
+        addrin+8   addrin[3]   Address of a struct xevents that XaAES will
+                               modify according to events happening when in
+                               block-mode.
+
+        intout     intout[0]   Return value (1 = OK, 0 = error)
+        intout+2   intout[1]   Mouse X coordinate
+        intout+4   intout[2]   Mouse Y coordinate
+        intout+6   intout[3]   Keyboard shift status
+
+
+ xevnt_poll(struct xevent_mask *events);
+
+ GEM arrays as follows:
+
+	Address     Element    meaning 
+        ------------------------------------------------------
+        control    control[0]   Yes.. what? # Opcode
+        control+2  control[1]   0           # Entries in intin
+        control+4  control[2]   4           # Entries in intout (XaAES only)
+        control+6  control[3]   1           # Entries in addrin 
+        control+8  control[4]   0           # entries in addrout 
+
+        addrin     addrin[0]   Address of struct xevent_mask, conaining a
+                               bit mask denoting events to use.
+
+        intout     intout[0]   Return value (1 = OK, 0 = error)
+        intout+2   intout[1]   Mouse X coordinate
+        intout+4   intout[2]   Mouse Y coordinate
+        intout+6   intout[3]   Keyboard shift status
+
+struct xevent_mask
+{
+  unsigned long events3;
+  unsigned long events2;
+  unsigned long events1;
+  unsigned long events0;
+};
+
+struct xevnts
+{
+  struct evnt_mu_keyboard  *e_kbd;
+  struct evnt_mu_button    *e_but;
+  struct evnt_mu_m1        *e_mu1;
+  struct evnt_mu_m1        *e_mu2;
+  struct evnt_mu_mx        *e_mx;
+  struct evnt_mu_mesag     *e_mesag;
+  struct evnt_mu_timer     *e_timer;
+  struct evnt_mu_fselect   *e_fselect;
+  struct envt_mu_pmsg      *e_pmsg;
+  long reserved[64-8];
+};
+
+struct evnt_mu_keyboard
+{
+  unsigned short scan;
+  unsigned short ascii;
+  unsigned short aes;
+  unsigned short norm;
+  unsigned short kstate;
+};
+
+struct evnt_mu_button
+{
+  short clicks;
+  short mask;
+  short state;
+  short kstate;
+  short x, y;
+};
+
+struct evnt_mu_mr
+{
+  short x, y, w, h;
+  short flag;
+};
+
+struct evnt_mu_mx
+{
+  short reserved;
+};
+
+struct evnt_mu_mesag
+{
+  short type;
+  short id_sender;
+  short len;
+  short data[16-3];
+};
+
+struct evnt_mu_timer
+{
+  long delta;
+};
+
+struct evnt_mu_pmsg
+{
+  long userlong1;
+  long userlong2;
+  short pid;
+  short reserved[16-5];
+};
+
+struct evnt_mu_fselect
+{
+  long timeout;
+  unsigned long rfds;
+  unsigned long wfds;
+  short reserved[16-6];
+};

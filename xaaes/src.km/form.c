@@ -653,8 +653,8 @@ Click_form_do(enum locks lock,
 		if (!wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
-			top_window(lock, wind, 0);
-			after_top(lock, false);
+			top_window(lock, true, wind, (void *)-1L, NULL);
+			//after_top(lock, false);
 			return false;
 		}
 		
@@ -911,9 +911,9 @@ do_formwind_msg(
 			{
 				if (is_hidden(wind))
 					unhide_window(0, wind);
-				top_window(0, wind, 0);
-				swap_menu(0, wind->owner, true, 0);
-				after_top(0, true);
+				top_window(0, true, wind, (void *)-1L, NULL);
+				//swap_menu(0, wind->owner, true, false, 0);
+				//after_top(0, true);
 			}
 			break;
 		}

@@ -41,7 +41,7 @@
 
 
 static int
-pending_critical_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
+pending_critical_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf/*AESPB *pb*/)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
@@ -51,7 +51,7 @@ pending_critical_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 	msg = client->crit_msg;
 	if (msg)
 	{
-		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
+		//union msg_buf *buf = (union msg_buf *)pb->addrin[0];
 
 		/* dequeue */
 		client->crit_msg = msg->next;
@@ -72,7 +72,7 @@ pending_critical_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 static int
-pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
+pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf/*AESPB *pb*/)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
@@ -82,7 +82,7 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 	msg = client->rdrw_msg;
 	if (msg)
 	{
-		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
+		//union msg_buf *buf = (union msg_buf *)pb->addrin[0];
 
 		/* dequeue */
 		client->rdrw_msg = msg->next;
@@ -108,7 +108,7 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 static int
-pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
+pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf/*AESPB *pb*/)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
@@ -118,7 +118,7 @@ pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 	msg = client->msg;
 	if (msg)
 	{
-		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
+		//union msg_buf *buf = (union msg_buf *)pb->addrin[0];
 
 		/* dequeue */
 		client->msg = msg->next;
@@ -303,10 +303,10 @@ check_queued_events(struct xa_client *client)
 		cbuf = (union msg_buf *)pb->addrin[0];
 		if (cbuf)
 		{
-			if (!pending_critical_msgs(0, client, pb))
+			if (!pending_critical_msgs(0, client, cbuf))
 			{
-				if (!pending_redraw_msgs(0, client, pb))
-					pending_msgs(0, client, pb);
+				if (!pending_redraw_msgs(0, client, cbuf))
+					pending_msgs(0, client, cbuf);
 			}
 
 			if (multi)
@@ -487,9 +487,130 @@ static void
 wakeme_timeout(struct proc *p, struct xa_client *client)
 {
 	client->timeout = NULL;
-	wake(IO_Q, (long)client);
+	
+	if (client->blocktype == XABT_SELECT)
+		wakeselect(client->p);
+	else if (client->blocktype == XABT_SLEEP)
+		wake(IO_Q, (long)client);
+
 }
 
+unsigned long
+XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	struct xevnt_mask *in_ev  = (struct xevnt_mask *)pb->addrin[0];
+	struct xevnt_mask *out_ev = (struct xevnt_mask *)pb->addrin[1];
+	struct xevnts *in  = (struct xevnts *)pb->addrin[2];
+	struct xevnts *out = (struct xevnts *)pb->addrin[3];
+	short mode = pb->intin[0];
+
+	if (in && in_ev && mode >= 0 && mode <= 1)
+	{
+		long ev0 = in_ev->ev_0;
+
+		pb->intout[0] = 1;
+		
+		/* Copy data from the structures we need access to into safe space */		
+		if (ev0 & XMU_BUTTON)
+			client->xev_button = *in->e_but;
+		if (ev0 & XMU_FSELECT)
+			client->xev_fselect = *in->e_fselect;
+		if (ev0 & XMU_PMSG)
+			client->xev_pmsg = *in->e_pmsg;
+	
+		client->em.flags = 0;
+		if (ev0 & XMU_M1)
+		{
+			const RECT *r = (const RECT *)&in->e_mu1->x;
+
+			client->em.m1 = *r;
+			client->em.flags |= (in->e_mu1->flag & 1) | MU_M1;
+		}
+		if (ev0 & XMU_MX)
+		{
+			/* XXX fix this */
+			client->em.flags |= MU_MX;
+		}
+		if (ev0 & XMU_M2)
+		{
+			const RECT *r = (const RECT *)&in->e_mu2->x;
+
+			client->em.m2 = *r;
+			client->em.flags |= ((in->e_mu2->flag & 1) << 1) | MU_M2;
+		}
+		
+		if (ev0 & XMU_TIMER)
+		{
+			long timeout;
+			
+			if ((ev0 & XMU_FSELECT) && client->xev_fselect.timeout > 0)
+			{
+				timeout = client->xev_fselect.timeout;
+				if (timeout > in->e_timer->delta)
+				{
+					timeout = in->e_timer->delta;
+					client->fselect_timeout = false;
+				}
+				else
+					client->fselect_timeout = true;
+			}
+			else
+			{
+				timeout = in->e_timer->delta;
+				client->fselect_timeout = false;
+			}
+			/* The Intel ligent format */
+			client->timer_val = timeout;
+			DIAG((D_i,client,"Timer val: %ld(%ld)",
+				client->timer_val, in_xevnts->e_timer->delta));
+			if (client->timer_val)
+			{
+				client->timeout = addtimeout(client->timer_val, wakeme_timeout);
+				if (client->timeout)
+					client->timeout->arg = (long)client;
+			}
+			else
+			{
+				/* Is this the cause of loosing the key's at regular intervals? */
+				DIAG((D_i,client, "Done timer for %d", client->p->pid));
+
+				/* If MU_TIMER and no timer (which means, return immediately),
+				 * we yield()
+				 */
+				yield();
+			}
+		}
+		else if (ev0 & XMU_FSELECT)
+		{
+			if ((client->timer_val = client->xev_fselect.timeout))
+			{
+				client->fselect_timeout = true;
+			}
+			else
+			{
+				client->fselect_timeout = false;
+			}
+		}
+		
+		client->out_xevnts = out;
+		client->i_xevmask  = *in_ev;
+		client->o_xevmask  = out_ev;
+		bzero((void *)&client->c_xevmask, sizeof(struct xevnt_mask));
+		
+		if (mode == 0)
+		{
+			if (!(check_cevents(client) || check_queued_events(client)))
+				Block(client, 1);
+		}
+	}
+	else
+	{
+		client->out_xevnts = NULL;
+		pb->intout[0] = 0;
+	}
+
+	return XAC_DONE;	
+}
 /* HR 070601: We really must combine events. especially for the button still down situation.
 */
 
@@ -522,6 +643,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	
 	/* here we prepare structures necessary to wait for events
 	*/
+	client->em.flags = 0;
 	if (events & (MU_M1|MU_M2|MU_MX))
 	{
 		if (events & MU_M1)
@@ -529,19 +651,19 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			const RECT *r = (const RECT *)&pb->intin[5];
 
 			client->em.m1 = *r;
-			client->em.flags = pb->intin[4] | MU_M1;
+			client->em.flags = (pb->intin[4] & 1) | MU_M1;
 
 		}
 		if (events & MU_MX)
 		{
-			client->em.flags = pb->intin[4] | MU_MX;
+			client->em.flags = (pb->intin[4] & 1) | MU_MX;
 		}
 		if (events & MU_M2)
 		{
 			const RECT *r = (const RECT *)&pb->intin[10];
 
 			client->em.m2 = *r;
-			client->em.flags |= (pb->intin[9] << 1) | MU_M2;
+			client->em.flags |= ((pb->intin[9] & 1) << 1) | MU_M2;
 		}
 	}
 

@@ -180,7 +180,7 @@ struct common
 	struct xa_window *hover_wind;
 	struct xa_widget *hover_widg;
 
-	struct xa_window *focus;	/* Only 1 of 2: the top window(window_list) or root_window. */
+	//struct xa_window *focus;	/* Only 1 of 2: the top window(window_list) or root_window. */
 	struct xa_client *update_lock;
 	struct xa_client *mouse_lock;
 	struct xa_client *menu_lock;

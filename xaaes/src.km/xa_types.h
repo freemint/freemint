@@ -505,7 +505,17 @@ struct keyqueue
 	struct rawkey	key;
 };
 
+struct fselect_result
+{
+	bool inuse;
+	long ret;
+	long rfds;
+	long wfds;
+	long xfds;
+};
+
 #define XAPP_XT_WF_SLIDE	0x00000001	/**/
+
 
 /* Main client application descriptor */
 struct xa_client
@@ -538,6 +548,22 @@ struct xa_client
 	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
 	short *waiting_short;		/* */
 
+	struct xevnt_mask i_xevmask;
+	struct xevnt_mask c_xevmask;
+	struct xevnt_mask *o_xevmask;
+	struct xevnts *out_xevnts;
+
+	struct evnt_mu_keyboard	xev_kbd;
+	struct evnt_mu_button	xev_button;
+	struct evnt_mu_mr	xev_m1;
+	struct evnt_mu_mr	xev_m2;
+	struct evnt_mu_mx	xev_mx;
+	struct evnt_mu_fselect  xev_fselect;
+	struct evnt_mu_pmsg	xev_pmsg;
+
+	bool fselect_timeout;
+	struct fselect_result fselect;
+		
 	short mouse;			/* The cursor to use when this is top application */
 	short save_mouse;		/* The cursor saved by M_SAVE */
 	short prev_mouse;		/* The cursor previous to any change - used by M_LAST/M_PREVIOUS */
@@ -611,10 +637,14 @@ struct xa_client
 	struct moose_data *wheel_md;
 
 #define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
+
+#define XABT_NONE   0
+#define XABT_SLEEP  1
+#define XABT_SELECT 2
+	int	blocktype;
 	int	sleepqueue;
 	long	sleeplock;
-
-	bool	inblock;
+	
 	int	usr_evnt;
 
 	short	cevnt_count;

@@ -406,9 +406,7 @@ open_taskmanager(enum locks lock)
 	}
 	else if (task_man_win != window_list)
 	{
-		C.focus = pull_wind_to_top(lock, task_man_win);
-		after_top(lock, true);
-		display_window(lock, 100, task_man_win, NULL);
+		top_window(lock, true, task_man_win, (void *)-1L, NULL);
 	}
 }
 #if 0
@@ -463,9 +461,7 @@ open_kill_or_wait(enum locks lock, struct xa_client *client)
 	}
 	else if (korw_win != window_list)
 	{
-		C.focus = pull_wind_to_top(lock, korw_win);
-		after_top(lock, true);
-		display_window(lock, 100, korw_win, NULL);
+		top_window(lock, true, korw_win, (void *)-1L, NULL);
 	}
 }
 #endif
@@ -637,9 +633,7 @@ open_systemalerts(enum locks lock)
 	}
 	else if (systemalerts_win != window_list)
 	{
-		C.focus = pull_wind_to_top(lock, systemalerts_win);
-		after_top(lock, true);
-		display_window(lock, 101, systemalerts_win, NULL);
+		top_window(lock, true, systemalerts_win, (void *)-1L, NULL);
 	}
 }
 
