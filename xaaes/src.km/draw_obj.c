@@ -1879,7 +1879,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 			list->bot = this;
 		}
 		/* scroll list windows are not on top, but are visible! */
-		display_vslide(list->lock, w, get_widget(w, XAW_VSLIDE) );
+		display_vslide(list->lock, w, get_widget(w, XAW_VSLIDE));
 		display_list_element(lock, this, list->left, wa.x, y, wa.w, this == list->cur);
 		list->state = 0;
 	}

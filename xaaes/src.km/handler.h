@@ -31,7 +31,7 @@
 #include "xa_types.h"
 
 /* the main AES trap handler */
-short _cdecl XA_handler(unsigned short c, AESPB *pb);
+long _cdecl XA_handler(void *pb);
 void setup_k_function_table(void);
 
 #endif /* _handler_h */

@@ -510,7 +510,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (pb->intin[2] > 0)
 					target = pid2client(pb->intin[2]);
 				else
-					target = C.focus == root_window ? menu_owner() : C.focus->owner;
+					target = focus_owner();
 
 				app_in_front(lock|winlist, target);
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));

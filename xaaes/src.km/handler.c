@@ -76,6 +76,7 @@
 #include "handler.h"
 #include "xa_global.h"
 
+#include "c_window.h"
 #include "k_main.h"
 #include "k_mouse.h"
 #include "op_names.h"
@@ -100,13 +101,14 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
  * - This routine executes under the client application's pid
  * - I've semaphore locked any sensitive bits
  */
-short _cdecl
-XA_handler(unsigned short c, AESPB *pb)
+long _cdecl
+XA_handler(void *_pb)
 {
+	AESPB *pb = _pb;
 	struct xa_client *client;
 	short cmd;
 
-	DIAG((D_trap, NULL, "XA_handler (c=0x%x, pb=%lx)", c, (long)pb));
+	DIAG((D_trap, NULL, "XA_handler (pb=%lx)", pb));
 
 	if (!pb)
 	{
@@ -202,6 +204,10 @@ XA_handler(unsigned short c, AESPB *pb)
 
 			if (aes_tab[cmd].p & LOCKSCREEN)
 				unlock_screen(client, 2);
+
+			/* execute delayed delete_window */
+			if (S.deleted_windows.first)
+				do_delayed_delete_window(lock);
 
 			switch (cmd_rtn)
 			{
