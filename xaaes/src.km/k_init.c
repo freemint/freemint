@@ -56,6 +56,56 @@
 #include "my_aes.h"
 #include "xa_graf.h"
 
+
+/*
+ * find a xaaes file. When the cd command to XaAES load directory is
+ * missing in mint.cnf (which is likely for inexperienced mint users. ;-) 
+ * XaAES wont fail completely.
+ */
+static char *dirs[] =
+{
+	"",			/* plain name only */
+	Aes_home_path,		/* Dont forget to fill. */
+	NULL
+};
+
+/* last resort if shell_find fails. */
+static char *
+xa_find(char *fn)
+{
+	static char p[128];
+
+	char **aes_path;
+	char *f;
+
+	DIAGS(("xa_find '%s'", fn ? fn : "~"));
+
+	/* combined shell_find & xa_find permanently. */
+	f = shell_find(NOLOCKING, C.Aes, fn);
+	if (f) return f;
+
+	aes_path = dirs;
+	while (*aes_path)
+	{
+		char *pad = *aes_path;
+		struct file *fp;
+
+		sprintf(p, sizeof(p), "%s%s", pad, fn);
+		DIAGS(("%s", p));
+
+		fp = kernel_open(p, O_RDONLY, NULL);
+		if (fp)
+		{
+			kernel_close(fp);
+			return p;
+		}
+		aes_path++;
+	}
+
+	DIAGS((" - NULL"));
+	return NULL;
+}
+
 /*
  * global data
  */
@@ -104,7 +154,6 @@ k_init(void)
 		/* Set video mode from command line parameter? */			
 		if (argc > 2)
 		{
-			lcfg.havemode = true;
 			ipff_in(argv[2]);
 			sk();
 			switch (tolower(*argv[2]))

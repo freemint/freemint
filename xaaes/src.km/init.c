@@ -58,18 +58,8 @@ struct file *log = NULL;
 char version[] = ASCII_VERSION;
 
 static void
-bootmessage(unsigned long mint)
+bootmessage(void)
 {
-	fdisplay(log, "It's FreeMiNT v%ld.%ld.%ld%c%c  (0x%lx)",
-		 (mint >> 24),
-		 (mint >> 16) & 255,
-		 (mint >>  8) & 255,
-		 (mint & 255) ? '.' : ' ',
-		 (mint & 255) ? mint & 255 : ' ', 
-		 (mint));
-
-	fdisplay(log, " and ");
-
 	fdisplay(log, "%s", Aes_display_name);
 	fdisplay(log, "MultiTasking AES for MiNT");
 	fdisplay(log, "(w)1995,96,97,98,99 Craig Graham, ");
@@ -121,12 +111,7 @@ bootmessage(unsigned long mint)
 		fdisplay(log, " - Falcon video handled");
 
 	if (cfg.auto_program)
-	{
-		if (lcfg.havemode)
-			fdisplay(log, " - video mode %d(x%x)", lcfg.modecode, lcfg.modecode);
-
 		fdisplay(log, "auto program");
-	}
 }
 
 struct kentry *kentry;
@@ -139,8 +124,6 @@ struct kentry *kentry;
 void *
 init(struct kentry *k)
 {
-	char *full;
-
 	/* setup kernel entry */
 	kentry = k;
 
@@ -154,7 +137,6 @@ init(struct kentry *k)
 	 */
 	log = kernel_open("xa_setup.log", O_WRONLY|O_CREAT|O_TRUNC, NULL);
 
-	lcfg.booting = true;
 	bzero(&default_options, sizeof(default_options));
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
@@ -246,14 +228,11 @@ init(struct kentry *k)
 
 	cfg.auto_program = (my_global_aes[0] == 0);
 
-	lcfg.mint = s_system(S_OSVERSION, 0, 0);
-	DIAGS(("s_system(S_OSVERSION) ok (%lx)!", lcfg.mint));
-
 	/* requires mint >= 1.15.11 */
 	C.mvalidate = true;
 
 	/* Print a text boot message */
-	bootmessage(lcfg.mint);
+	bootmessage();
 	DIAGS(("bootmessage ok!"));
 
 	/* Setup the kernel OS call jump table */
@@ -285,16 +264,11 @@ init(struct kentry *k)
 
 	/* Parse the standard startup file.
 	 */
-	full = xa_find(scls_name);
-	if (full)
-	{
-		SCL(NOLOCKING, 0, scls_name, full, 0);
-	}
+	SCL(scls_name);
 
 	C.Aes->options = default_options;
 
 	fdisplay(log, "*** End of successfull setup ***");
-	lcfg.booting = false;
 
 	DEBUG(("Creating XaAES kernel thread"));
 	{
