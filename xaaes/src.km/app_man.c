@@ -141,6 +141,20 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		DIAGS(("-= 4 =-"));
 		client = top->owner;
 	}
+	else
+	{
+		struct xa_client *c;
+		c = get_app_infront();
+		if (c->waiting_for & (MU_KEYBD | MU_NORM_KEYBD))
+		{
+			client = c;
+			if (waiting)
+				*waiting = true;
+		}
+		else if (c == C.Aes)
+			client = c;
+	}
+#if 0
 	else if (get_app_infront()->waiting_for & (MU_KEYBD | MU_NORM_KEYBD))
 	{
 		DIAGS(("-= 5 =-"));
@@ -150,7 +164,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 
 		client = get_app_infront();
 	}
-
+#endif
 	DIAGS(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
 
 	return client;
