@@ -227,7 +227,10 @@ struct common
 	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
 	struct xa_client *ce_menu_move; /* If set, this client has been sent a menu_move client event */
 	struct xa_client *ce_menu_click;
-
+	
+	struct xa_client *next_menu;
+	struct widget_tree *next_menu_wt;
+	
 	short shutdown;			/* flags for shutting down xaaes */
 #define QUIT_NOW	0x1		/* - enter shutdown the next possible time */
 #define HALT_SYSTEM	0x2		/* - halt system after xaaes shutdown */

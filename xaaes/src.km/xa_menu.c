@@ -86,7 +86,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (!mwt)
 					mwt = new_widget_tree(client, mnu);
 
-				client->std_menu = mwt;
+			//	client->std_menu = mwt;
 
 				/* Do a special fix on the menu  */
 				fix_menu(client, mnu,true);
@@ -109,7 +109,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				wt_menu_area(mwt);
 
 				if (swap)
-					swap_menu(lock|winlist, client, false, true, 6);
+					swap_menu(lock|winlist, client, mwt, false, true, 6);
 
 				pb->intout[0] = 1;
 				DIAG((D_menu, NULL, "done display, lastob = %d", mwt->lastob));
@@ -117,7 +117,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			else if (mwt && swap)
 			{
 				wt_menu_area(mwt);
-				swap_menu(lock|winlist, client, false, true, 7);
+				swap_menu(lock|winlist, client, NULL, false, true, 7);
 			}
 		}
 		break;
@@ -128,8 +128,10 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (menu)
 		{
-			remove_attachments(lock|winlist, client, menu);
+			if (menustruct_locked() == client->p)
+				popout(TAB_LIST_START);
 
+			
 			top_owner = C.Aes;
 			wl = window_list;
 			while (wl)
@@ -142,7 +144,9 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				wl = wl->next;
 			}
-			swap_menu(lock|winlist, top_owner, false, true, 7);
+			swap_menu(lock|winlist, top_owner, NULL, false, true, 7);
+			remove_attachments(lock|winlist, client, menu);
+			
 			client->std_menu = NULL;
 			pb->intout[0] = 1;
 		}
@@ -390,11 +394,19 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (pb->addrin[0] && pb->addrin[1])
 	{
-		Tab *tab = nest_menutask(NULL);
-		MENU *mn = (MENU*)pb->addrin[0], *md = (MENU*)pb->addrin[1];
+		Tab *tab;
+		MENU *mn, *md;
 		short x, y;
-		OBJECT *ob = mn->mn_tree;
+		OBJECT *ob;
 
+		if (TAB_LIST_START)
+			popout(TAB_LIST_START);
+
+		tab = nest_menutask(NULL);
+		mn = (MENU*)pb->addrin[0];
+		md = (MENU*)pb->addrin[1];
+		ob = mn->mn_tree;
+		
 		if (tab)		/* else already locked */
 		{	
 			XA_TREE *wt;
@@ -425,7 +437,9 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 				 pb->intin[0] - x,
 				 pb->intin[1] - y);
 
+			client->status |= CS_BLOCK_MENU_NAV;
 			Block(client, 1);
+			client->status &= ~CS_BLOCK_MENU_NAV;
 			return XAC_DONE;
 		}
 	}
@@ -445,7 +459,12 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (ob)
 	{
-		Tab *tab = nest_menutask(NULL);
+		Tab *tab;
+
+		if (TAB_LIST_START)
+			popout(TAB_LIST_START);
+
+		tab = nest_menutask(NULL);
 
 		if (tab)		/* else already locked */
 		{
@@ -493,7 +512,9 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 				 x,
 				 y);
 
+			client->status |= CS_BLOCK_MENU_NAV;
 			Block(client, 1);
+			client->status &= ~CS_BLOCK_MENU_NAV;
 			return XAC_DONE;
 		}
 	}

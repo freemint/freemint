@@ -43,6 +43,7 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
+#include "obtree.h"
 
 #include "xa_evnt.h"
 #include "xa_form.h"
@@ -55,6 +56,9 @@
 #include "mint/ioctl.h"
 #include "mint/signal.h"
 #include "mint/ssystem.h"
+
+
+#include "c_mouse.h"
 
 /*
  * Kernel Message Handler
@@ -235,6 +239,7 @@ dispatch_cevent(struct xa_client *client)
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
 
 		(*ce->funct)(0, ce, false);
+		
 		kfree(ce);
 
 		ret = 1;
@@ -589,7 +594,10 @@ alert_input(enum locks lock)
 		}
 
 		/* Add the log entry */
-		add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL, NULL);
+		{
+			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
+			list->add(list, icon, data->buf, FLAG_MAL, NULL); //add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL, NULL);
+		}
 
 		 /* Now you can always lookup the error in the log. */
 		DIAGS(("ALERT PIPE: '%s' %s", data->buf, update_locked() ? "pending" : "displayed"));
