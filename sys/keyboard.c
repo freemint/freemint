@@ -1,51 +1,42 @@
-/*
- * $Id$
- * 
- * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
- * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
- * Copyright 2001 Konrad M. Kokoszkiewicz <draco@atari.org>
- * All rights reserved.
- * 
+/* Keyboard handling stuff
+ *
+ * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
+ * distribution.
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
- * Started: 2001-03-01
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
- * 
- * Keyboard handling stuff
- * 
+ *
  */
 
-# include "arch/detect.h"	/* verify_access() */
+# include "mint/mint.h"
 # include "mint/signal.h"	/* SIGQUIT */
+
+# include "libkern/libkern.h"	/* strcpy(), strcat() */
 
 # include "bios.h"		/* kbshft, kintr, ...  */
 # include "biosfs.h"		/* struct tty */
+# include "cnf.h"		/* init_env */
 # include "debug.h"		/* do_func_key() */
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
 # include "dossig.h"		/* p_kill() */
-# include "init.h"		/* boot_printf() */
+# include "init.h"		/* boot_printf(), sysdir */
 # include "k_exec.h"		/* sys_pexec() */
-# include "k_fds.h"		/* FP_ALLOC() */
+# include "k_fds.h"		/* fp_alloc() */
+# include "keyboard.h"		/* struct cad */
 # include "kmemory.h"		/* kmalloc() */
 # include "proc.h"		/* rootproc */
 # include "random.h"		/* add_keyboard_randomness() */
@@ -83,7 +74,7 @@
 
 /* Functions exported */
 short ikbd_scan(ushort scancode);
-void load_keytbl(void);
+void init_keytbl(void);
 
 /* Keyboard definition tables (taken off TOS 4.04, with fixes) */
 
@@ -385,10 +376,10 @@ static const char spanish_kbd[] =
 {
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,0x08,0x09,
-	'q' ,'w' ,'e' ,'r' ,'t' ,'y' ,'u' ,'i' ,
+	'q' ,'w' ,'e' ,'r' ,'t' ,'z' ,'u' ,'i' ,
 	'o' ,'p' ,'\'','`' ,0x0d,0x00,'a' ,'s' ,
 	'd' ,'f' ,'g' ,'h' ,'j' ,'k' ,'l' ,0xa4,
-	';' ,0x87,0x00,'\\','z' ,'x' ,'c' ,'v' ,
+	';' ,0x87,0x00,'\\','y' ,'x' ,'c' ,'v' ,
 	'b' ,'n' ,'m' ,',' ,'.' ,0xf8,0x00,0x00,
 	0x00,' ' ,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -404,10 +395,10 @@ static const char spanish_kbd[] =
 
 	0x00,0x1b,0xad,0xa8,0x9c,'$' ,'%' ,'/' ,
 	'&' ,'*' ,'(' ,')' ,'_' ,'+' ,0x08,0x09,
-	'Q' ,'W' ,'E' ,'R' ,'T' ,'Y' ,'U' ,'I' ,
+	'Q' ,'W' ,'E' ,'R' ,'T' ,'Z' ,'U' ,'I' ,
 	'O' ,'P' ,'"' ,'^' ,0x0d,0x00,'A' ,'S' ,
 	'D' ,'F' ,'G' ,'H' ,'J' ,'K' ,'L' ,0xa5,
-	':' ,'~' ,0x00,'|' ,'Z' ,'X' ,'C' ,'V' ,
+	':' ,'~' ,0x00,'|' ,'Y' ,'X' ,'C' ,'V' ,
 	'B' ,'N' ,'M' ,'?' ,'!' ,0xdd,0x00,0x00,
 	0x00,' ' ,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,'7' ,
@@ -423,10 +414,10 @@ static const char spanish_kbd[] =
 
 	0x00,0x1b,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,
 	'7' ,'8' ,'9' ,'0' ,'-' ,'=' ,0x08,0x09,
-	'Q' ,'W' ,'E' ,'R' ,'T' ,'Y' ,'U' ,'I' ,
+	'Q' ,'W' ,'E' ,'R' ,'T' ,'Z' ,'U' ,'I' ,
 	'O' ,'P' ,'\'','`' ,0x0d,0x00,'A' ,'S' ,
 	'D' ,'F' ,'G' ,'H' ,'J' ,'K' ,'L' ,0xa5,
-	';' ,0x87,0x00,'\\','Z' ,'X' ,'C' ,'V' ,
+	';' ,0x87,0x00,'\\','Y' ,'X' ,'C' ,'V' ,
 	'B' ,'N' ,'M' ,',' ,'.' ,0xf8,0x00,0x00,
 	0x00,' ' ,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -704,62 +695,31 @@ static const char sw_german_kbd[] =
  */
 typedef void (*KEYCLK)(void);
 
-/* Struct for the default action on C/A/D
- */
-struct cad_def
-{
-	short	action;
-	union
-	{
-		long pid;	/* e.g. pid to be signalled */
-		char *path;	/* e.g. a path to executable file */
-	} par;
-	union
-	{
-		long arg;	/* e.g. signal number */
-		char *cmd;	/* e.g. command line */
-	} aux;
-};
-
+struct	cad_def cad[3];	/* for halt, warm and cold resp. */
+short	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
-short 	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 
-const char *keyboards[] =
-{
-	usa_kbd,
-	german_kbd,
-	french_kbd,
-	british_kbd,
-	spanish_kbd,
-	italian_kbd,
-	british_kbd,
-	sw_french_kbd,
-	sw_german_kbd,
-	NULL
-};
-
-struct cad_def cad[3];		/* for halt, warm and cold resp. */
+const char *keyboards[127];	/* keyboard table pointers indexed by AKP */
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
 static void
-ctrl_alt_del (PROC *p, long arg)
+ctrl_alt_del(PROC *p, long arg)
 {
 	switch (cad[arg].action)
 	{
 		/* 1 is to signal a pid */
 		case 1:
-			if (p_kill (cad[arg].par.pid, cad[arg].aux.arg) < 0)
-				s_hutdown (arg);
+			if (p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
+				s_hutdown(arg);
 			break;
 		
 		/* 2 shall be to exec a program
-		 * with a path pointed to by
-		 * par.path */
+		 * with a path pointed to by par.path
+		 */
 		case 2:
-			if (verify_access (cad[arg].par.path) && verify_access (cad[arg].aux.cmd))
-				if (sys_pexec (100, cad[arg].par.path, cad[arg].aux.cmd, 0L) < 0)
-					s_hutdown (arg);
+			if (sys_pexec (100, cad[arg].par.path, cad[arg].aux.cmd, cad[arg].env) < 0)
+				s_hutdown (arg);
 			break;
 		
 		/* 0 is default */
@@ -776,6 +736,44 @@ static void
 ctrl_alt_Fxx (PROC *p, long arg)
 {
 	do_func_key (arg);
+}
+
+/* Similar callback for the Alt/Help.
+ *
+ * To avoid problems with the actual current directory,
+ * the program gets its path as the command line.
+ * Or shall we explicitly force it to that?
+ *
+ * Also a problem here:
+ * since the program is executed directly by the kernel,
+ * it can at most get the same environment as init does.
+ *
+ */
+static void
+alt_help(void)
+{
+	char pname[32], cmdln[32];
+
+	strcpy(pname, "a:");
+	strcpy(cmdln, " a:");		/* first byte is len */
+	pname[0] += *(short *)0x0446L;	/* boot device */
+	cmdln[1] += *(short *)0x0446L;
+	strcat(pname, sysdir);
+	strcat(cmdln, sysdir);
+	strcat(pname, "althelp.sys");
+
+	cmdln[0] = (char)(strlen(cmdln) - 1);
+
+	sys_pexec(100, pname, cmdln, init_env);
+}
+
+/* The keyclick
+ */
+static void
+click(void)
+{
+	if (*(long *)0x05b0L)
+		(*(KEYCLK *)0x05b0L)();		/* produce keyclick */
 }
 
 /* The handler
@@ -875,13 +873,14 @@ ikbd_scan (ushort scancode)
 			break;
 		}
 	}
+
 	if (mod)
 	{
 		ushort sc = scancode;
 
 		*kbshft = mshift = (char)shift;
 		if (clk)
-			(*(KEYCLK *)0x05b0L)();		/* produce keyclick */
+			click();
 		sc &= 0x7f;
 		if ((sc != CLRHOME) && (sc != INSERT))
 			return -1;
@@ -919,13 +918,13 @@ ikbd_scan (ushort scancode)
 				}
 			}
 			
-			goto key_handled;
+			goto key_done;
 		}
 		else if (scancode == UNDO)
 		{
 			killgroup (con_tty.pgrp, SIGQUIT, 1);
 			
-			goto key_handled;
+			goto key_done;
 		}
 		else if ((scancode >= 0x003b) && (scancode <= 0x0044))
 		{
@@ -937,7 +936,7 @@ ikbd_scan (ushort scancode)
 			t = addroottimeout (0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 			
-			goto key_handled;
+			goto key_done;
 		}
 		/* This is in case the keyboard has real F11-F20 keys on it */
 		else if ((scancode >= 0x0054) && (scancode <= 0x005d))
@@ -947,18 +946,24 @@ ikbd_scan (ushort scancode)
 			t = addroottimeout (0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 			
-			goto key_handled;
+			goto key_done;
 		}
 	}
 
-	/* Add Alt/Help here ... block it for now, until a better idea.
-	 * What about firing up the /c/multitos/althelp.sys ?
-	 */
 	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
 	{
+		/* Alt/Help fires up a program called `althelp.sys'
+		 * located in the system directory (e.g. `c:\multitos\')
+		 */
 		if (scancode == HELP)
-			goto key_handled;
+		{
+			addroottimeout(0L, (void _cdecl (*)(PROC *))alt_help, 1);
+			goto key_done;
+		}
 	}
+
+	/* Alt/Numpad add here ...
+	 */
 
 	/* Ordinary keyboard add here ...
 	 */
@@ -967,9 +972,9 @@ ikbd_scan (ushort scancode)
 
 	return scancode;	/* for now, give the scancode away to TOS */
 
-key_handled:
-	(*(KEYCLK *)0x05b0L)();		/* produce keyclick */
-	return -1;
+key_done:
+	click();			/* produce keyclick */
+	return -1;			/* don't go to TOS, just return */
 }
 
 static void
@@ -991,17 +996,47 @@ load_table(FILEPTR *fp, char *name, long size)
 		kfree(kbuf);
 		return;
 	}
-	if (*(short *)kbuf != 0x2771)	/* magic word */
+	else if (*(short *)kbuf == 0x2771)	/* magic word */
+	{
+		gl_kbd = 6;
+		keyboards[6] = kbuf + sizeof(short);
+	}
+	else if (*(short *)kbuf == 0x2772)	/* extended format */
+	{
+		short *sbuf = (short *)kbuf;
+
+		gl_kbd = sbuf[1];
+		keyboards[gl_kbd] = kbuf + sizeof(long);
+	}
+	else
 	{
 		kfree(kbuf);
 		return;
 	}
 
 	/* Success */
-	gl_kbd = 6;
-	keyboards[6] = kbuf + sizeof(short);
 
-	boot_printf("Loaded keyboard table %s\r\n", name);
+	boot_printf("Loaded keyboard table %s with AKP code %d\r\n", name, gl_kbd);
+}
+
+/* This must be done before init_intr() */
+void
+init_keybd(void)
+{
+	short x;
+
+	/* The USA keyboard is default */
+	for (x = 0; x < 127; x++)
+		keyboards[x] = usa_kbd;
+
+	keyboards[1] = german_kbd;
+	keyboards[2] = french_kbd;
+	keyboards[3] = british_kbd;
+	keyboards[4] = spanish_kbd;
+	keyboards[5] = italian_kbd;
+	keyboards[6] = british_kbd;
+	keyboards[7] = sw_french_kbd;
+	keyboards[8] = sw_german_kbd;
 }
 
 void
@@ -1010,26 +1045,17 @@ load_keytbl(void)
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
-	char *name;
+	char name[32];
 
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return;
 
 	/* `keybd.tbl' is already used by GEM.SYS, we can't conflict
 	 */
-	name = "\\keybd.sys";
-	ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
-	if (ret)
-	{
-		name = "\\multitos\\keybd.sys";
-		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
-	}
-	if (ret)
-	{
-		name = "\\mint\\keybd.sys";
-		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
-	}
-	if (!ret)
+	strcpy(name, sysdir);
+	strcat(name, "keybd.sys");
+
+	if (!do_open(&fp, name, O_RDONLY, 0, &xattr))
 	{
 		load_table(fp, name, xattr.size);
 		do_close(rootproc, fp);
