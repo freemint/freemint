@@ -158,8 +158,18 @@ inet_dup (struct socket *newso, struct socket *oldso)
 static long
 inet_abort (struct socket *so, enum so_state ostate)
 {
-	struct in_data *data = so->data;	
-	return (*data->proto->soops.abort) (data, ostate);
+	struct in_data *data = so->data;
+	long r;
+	
+	r = (*data->proto->soops.abort)(data, ostate);
+	
+	/* wake anyone waiting on the socket */
+	wake (IO_Q, (long) so);
+	so_wakersel (so);
+	so_wakewsel (so);
+	so_wakexsel (so);
+	
+	return r;
 }
 
 static long
