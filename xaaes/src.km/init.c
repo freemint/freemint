@@ -181,10 +181,8 @@ init(struct kentry *k, const char *path)
 
 
 		/* look is there is an moose.adi
-		 * terminate if not
+		 * terminate if yes; moose.adi must be in XaAES module directory
 		 */
-
-		flag = true;
 
 		buf = kmalloc(strlen(sysdir)+16);
 		if (buf)
@@ -196,7 +194,7 @@ init(struct kentry *k, const char *path)
 			if (check)
 			{
 				kernel_close(check);
-				flag = false;
+				flag = true;
 			}
 
 			kfree(buf);
@@ -204,8 +202,9 @@ init(struct kentry *k, const char *path)
 
 		if (flag)
 		{
-			display("ERROR: There is no moose.adi in your FreeMiNT sysdir.");
-			display("       Please install it before starting the XaAES kernel module!");
+			display("ERROR: There exist an moose.adi in your FreeMiNT sysdir.");
+			display("       Please remove it and install it in the XaAES module directory");
+			display("       before starting the XaAES kernel module!");
 			return EINVAL;
 		}
 	}
@@ -310,6 +309,38 @@ init(struct kentry *k, const char *path)
 	C.Aes->xdrive = d_getdrv();
 	d_getpath(C.Aes->xpath, 0);
 
+	/* check if there exist a moose.adi */
+	{
+		struct file *check;
+		char *buf;
+		bool flag;
+
+		flag = false;
+
+		buf = kmalloc(strlen(C.Aes->home_path)+16);
+		if (buf)
+		{
+			strcpy(buf, C.Aes->home_path);
+			strcat(buf, "moose.adi");
+
+			check = kernel_open(buf, O_RDONLY, NULL);
+			if (check)
+			{
+				kernel_close(check);
+				flag = true;
+			}
+
+			kfree(buf);
+		}
+
+		if (!flag)
+		{
+			display("ERROR: There exist no moose.adi in your XaAES module directory.");
+			display("       Please install it before starting the XaAES kernel module!");
+			return EINVAL;
+		}
+	}
+
 
 	/* Are we an auto/mint.cnf launched program? */
 
@@ -374,7 +405,7 @@ init(struct kentry *k, const char *path)
 
 	C.Aes->options = default_options;
 
-	DIAGS(("call load_adi"));
+	DIAGS(("load adi modules"));
 	adi_load();
 
 	DIAGS(("Creating XaAES kernel thread"));
