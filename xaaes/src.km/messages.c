@@ -270,7 +270,7 @@ do_winmesag(enum locks lock,
 		if (!rc)
 			rc = C.Aes;
 
-		if (wind->owner == rc)
+		if (wind->owner == rc || (wind != root_window && wind->owner == C.Aes))
 		{
 			DIAGS((" --==-- do_winmesag: Doing direct handle_form_wind"));
 			wind->do_message(wind, to, msg);
