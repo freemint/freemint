@@ -74,7 +74,8 @@ load_adi(struct basepage *b, const char *name)
 	
 	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));
 	DIAGS(("load_adi: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
-	
+	display("load_adi: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase);
+
 	/* pass a pointer to the drivers file name on to the
 	 * driver.
 	 */
@@ -83,7 +84,6 @@ load_adi(struct basepage *b, const char *name)
 	r = module_init(initfunc, KENTRY, &ai);
 	
 	ai.fname = NULL;
-	
 	return r;
 }
 

@@ -270,6 +270,13 @@ k_shutdown(void)
 		D.debug_file = NULL;
 	}
 #endif
+#if BOOTLOG
+	if (C.bootlog_file)
+	{
+		kernel_close(C.bootlog_file);
+		C.bootlog_file = NULL;
+	}
+#endif
 
 	t_color(G_BLACK);
 	wr_mode(MD_REPLACE);

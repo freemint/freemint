@@ -141,7 +141,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		}
 	}	
 
-	if (is_topped(top)) // && !is_hidden(top))
+	if (is_topped(top) && !is_hidden(top))
 	{
 		if (waiting && ((top->owner->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) || top->keypress))
 			*waiting = true;
@@ -404,7 +404,7 @@ repos_iconified(struct proc *p, long arg)
 
 	while (w)
 	{
-		if ((w->window_status & XAWS_ICONIFIED) && !is_hidden(w))
+		if ((w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_ICONIFIED|XAWS_HIDDEN)) //&& !is_hidden(w))
 		{
 			r = free_icon_pos(lock, w);
 			send_moved(lock, w, AMQ_NORM, &r);
@@ -548,8 +548,7 @@ get_topwind(enum locks lock, struct xa_client *client, bool not, struct xa_windo
 	while (w)
 	{
 		if (w != root_window &&
-		    (w->window_status & XAWS_OPEN) &&
-		    !is_hidden(w))
+		    (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN) // && !is_hidden(w))
 		{
 			if (client)
 			{
@@ -594,8 +593,8 @@ next_wind(enum locks lock)
 	while (wind)
 	{
 		if ( wind != root_window
-		  && (wind->window_status & XAWS_OPEN)
-		  && !is_hidden(wind)
+		  && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
+		  /*&& !is_hidden(wind)*/
 		  && wind->r.w
 		  && wind->r.h )
 		{
@@ -693,7 +692,7 @@ app_in_front(enum locks lock, struct xa_client *client)
 
 	if (client)
 	{
-		bool was_hidden;
+		bool was_hidden = false;
 		struct xa_client *infront;
 		struct xa_window *topped = NULL, *wastop;
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
