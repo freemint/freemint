@@ -40,50 +40,32 @@ struct cnfdata
 {
 };
 
-/*** First the command callback declarations: */
+
+/* callback declarations: */
 
 /*
  * setenv name val ..... set up environment
- */
-
-static PCB_TTx	pCB_setenv;		/* setenv name val	*/
-
-
-/*** Now the variable callback deklarations: */
-
-/*
+ * 
  * toppage=bold|faint
  * cancel=string,string
  * filters=
  * menu=pull,push,leave,nolocking
+ * 
+ * shell=
+ * run=
  */
+
+static PCB_TTx	pCB_setenv;		/* setenv name val	*/
 
 static PCB_T	pCB_toppage;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
 static PCB_T    pCB_menu;
+static PCB_A    pCB_helpserver;
+
 static PCB_Tx   pCB_shell;
 static PCB_Tx   pCB_run;
 
-
-/*** The variable reference declarations: */
-
-/*
- * LAUNCHER=path
- * CLIPBOARD=path
- * ACCPATH=path
- * NOFSEL=[yn]
- * FOCUS=POINT
- * USEHOME=[yn]
- * FONT_ID=n
- * STANDARD_POINT=n
- * MEDIUM_POINT=n
- * SMALL_POINT=n
- * POPSCROLL=n
- * WIDGETS=file
- * RESOURCE=file
- * DC_TIME=n
- */
 
 /* The item table, note the 'NULL' entry at the end. */
 
@@ -93,22 +75,13 @@ static PCB_Tx   pCB_run;
 
 static struct parser_item parser_tab[] =
 {
-	/* generic */
-	{ "SETENV",         PI_C_TT,  pCB_setenv                },
-	
-	/* global config */
+	/* config variables */
 	{ "LAUNCHER",       PI_R_T,     cfg.launch_path         , sizeof(cfg.launch_path) },
 	{ "CLIPBOARD",      PI_R_T,     cfg.scrap_path          , sizeof(cfg.scrap_path)  },
 	{ "ACCPATH",        PI_R_T,     cfg.acc_path            , sizeof(cfg.acc_path)    },
 	{ "WIDGETS",        PI_R_T,     cfg.widg_name           , sizeof(cfg.widg_name)  },
 	{ "RESOURCE",       PI_R_T,     cfg.rsc_name            , sizeof(cfg.rsc_name)   },
-	{ "TOPPAGE",        PI_V_T,   pCB_toppage               },
-	{ "NOFSEL",         PI_R_B,   & cfg.no_xa_fsel          },
-	{ "FOCUS",          PI_V_T,   pCB_point_to_type         },
 	{ "USEHOME",        PI_R_B,   & cfg.usehome             },
-	{ "CANCEL",         PI_V_A,   pCB_cancel                },
-	{ "FILTERS",        PI_V_A,   pCB_filters               },
-	{ "MENU",           PI_V_T,   pCB_menu                  },
 	{ "FONT_ID",        PI_R_S,   & cfg.font_id             },
 	{ "STANDARD_POINT", PI_R_S,   & cfg.standard_font_point },
 	{ "MEDIUM_POINT",   PI_R_S,   & cfg.medium_font_point   },
@@ -117,6 +90,17 @@ static struct parser_item parser_tab[] =
 	{ "DC_TIME",        PI_R_S,   & cfg.double_click_time   },
 	{ "VIDEO",	    PI_R_S,   & cfg.videomode		},
 	
+	/* config settings */
+	{ "SETENV",         PI_C_TT,  pCB_setenv                },
+	
+	{ "TOPPAGE",        PI_V_T,   pCB_toppage               },
+	{ "FOCUS",          PI_V_T,   pCB_point_to_type         },
+	{ "CANCEL",         PI_V_A,   pCB_cancel                },
+	{ "FILTERS",        PI_V_A,   pCB_filters               },
+	{ "MENU",           PI_V_T,   pCB_menu                  },
+	{ "HELPSERVER",     PI_V_A,   pCB_helpserver            },
+	
+	/* startup things */
 	{ "SHELL",          PI_V_T,   pCB_shell                 },
 	{ "DESK",           PI_V_T,   pCB_shell                 },
 	{ "EXEC",           PI_V_T,   pCB_run                   },
@@ -147,9 +131,9 @@ static char *
 get_delim_string(char **line)
 {
 	char *s, *ret;
-	
+
 	s = *line;
-	
+
 	while (*s
 		&& *s != ' '
 		&& *s != '\t'
@@ -157,15 +141,15 @@ get_delim_string(char **line)
 		&& *s != '\n'
 		&& *s != ','
 		&& *s != '|') s++;
-	
+
 	if (s == *line)
 		return NULL;
-	
+
 	ret = *line;
-	
+
 	if (*s) *s++ = '\0';
 	*line = s;
-	
+
 	return ret;
 }
 
@@ -173,27 +157,27 @@ static char *
 get_string(char **line)
 {
 	char *s, *ret;
-	
+
 	s = *line = skip(*line);
-	
+
 	for (;;)
 	{
 		int c = *s;
-		
+
 		if (!isalnum(c) && !(c == '_'))
 			break;
-		
+
 		s++;
 	}
-	
+
 	if (s == *line)
 		return NULL;
-	
+
 	ret = *line;
-	
+
 	if (*s) *s++ = '\0';
 	*line = s;
-	
+
 	return ret;
 }
 
@@ -237,6 +221,11 @@ pCB_toppage(const char *str)
 		cfg.topname = 0;
 		cfg.backname = FAINT;
 	}
+	else
+	{
+		// XXX print error, invalid string
+	}
+
 	DIAGS(("pCB_toppage: %s (topname %i, backname %i)",
 		str, cfg.topname, cfg.backname));
 }
@@ -256,15 +245,15 @@ static void
 pCB_cancel(const char *line)
 {
 	int i = 0;
-	
+
 	while (i < (NUM_CB - 1)) /* last entry kept clear as a stopper */
 	{
 		char *s;
-		
+
 		s = get_string(&line);
 		if (!s)
 			break;
-		
+
 		if (strlen(s) < CB_L)
 		{
 			strcpy(cfg.cancel_buttons[i++], s);
@@ -277,21 +266,23 @@ pCB_cancel(const char *line)
 static void
 pCB_filters(const char *line)
 {
+	const int max = sizeof(cfg.Filters)/sizeof(cfg.Filters[0]);
 	int i = 0;
-	
-	/* XXX array size hardocoded */
-	while (i < 23)
+
+	DIAGS(("pCB_filters: max i = %i", max));
+
+	while (i < max)
 	{
 		char *s;
-		
+
 		/* skip any space */
 		line = skip(line);
-		
+
 		s = get_delim_string(&line);
 		if (!s)
 			break;
-		
-		if (strlen(s) < 16)
+
+		if (strlen(s) < sizeof(cfg.Filters[0]))
 		{
 			strcpy(cfg.Filters[i++], s);
 			DIAGS(("pCB_filters[%i]: %s", i-1, s));
@@ -306,11 +297,11 @@ pCB_menu(const char *line)
 	for (;;)
 	{
 		char *s;
-		
+
 		s = get_string(&line);
 		if (!s)
 			break;
-		
+
 		if (stricmp(s, "pull") == 0)
 			cfg.menu_behave = PULL;
 		else if (stricmp(s, "push") == 0)
@@ -319,8 +310,73 @@ pCB_menu(const char *line)
 			cfg.menu_behave = LEAVE;
 		else if (stricmp(s, "nolocking") == 0)
 			cfg.menu_locking = false;
+		else
+			; // XXX print error, invalid name
 
 		DIAGS(("pCB_menu: %s (menu_locking %i)", s, cfg.menu_locking));
+	}
+}
+
+/*----------------------------------------------------------------------------*/
+static void
+pCB_helpserver(const char *line)
+{
+	struct helpserver *hs;
+	char *ext, *name, *path;
+	size_t len;
+
+	ext  = get_delim_string(&line);
+	name = get_delim_string(&line);
+	path = get_delim_string(&line);
+
+	if (!ext || !name)
+	{
+		DIAGS(("pCB_helpserver: invalid helpserver config line"));
+		// XXX print error message
+		return;
+	}
+
+	DIAGS(("pCB_helpserver: ext '%s' name '%s' path '%s'",
+		ext, name, path ? path : "<null>"));
+
+	len = sizeof(*hs);
+	len += strlen(ext) + 1;
+	len += strlen(name) + 1;
+
+	if (path)
+		len += strlen(path) + 1;
+
+	hs = kmalloc(len);
+	if (hs)
+	{
+		bzero(hs, len);
+
+		hs->ext = (char *)hs + sizeof(*hs);
+		hs->name = hs->ext + strlen(ext) + 1;
+
+		if (path)
+			hs->path = hs->name + strlen(name) + 1;
+
+		strcpy(hs->ext, ext);
+		strcpy(hs->name, name);
+
+		if (path)
+			strcpy(hs->path, path);
+
+		/* remember */
+		{
+			struct helpserver **list = &(cfg.helpservers);
+
+			while (*list)
+				list = &((*list)->next);
+
+			*list = hs;
+		}
+	}
+	else
+	{
+		DIAGS(("pCB_helpserver: out of memory"));
+		// XXX print error message
 	}
 }
 

@@ -118,6 +118,12 @@ launcher  = u:\opt\toswin2\tw-call.prg
 #resource = xa_mono.rsc
 
 #
+# helpserver (like N.AES config, first is the default)
+#
+#helpserver = HYP,ST-GUIDE,d:\help\st-guide.prg
+#helpserver = HTM,CAB,e:\www\cab.app
+
+#
 # cancel = string,string
 #
 cancel = cancel,abbruch,annuler,avbryt,anuluj,afbryd,undo
