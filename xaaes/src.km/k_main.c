@@ -502,6 +502,7 @@ sigchld(void)
 
 static const char alert_pipe_name[] = "u:\\pipe\\alert";
 static const char KBD_dev_name[] = "u:\\dev\\console";
+static struct sgttyb KBD_dev_sg;
 
 int aessys_timeout = 0;
 
@@ -629,6 +630,27 @@ k_main(void *dummy)
 	 * XXX it's just very ugly todo this so
 	 */
 	//get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
+
+	/* next try
+	 * switching tty device into RAW mode
+	 */
+	{
+		struct sgttyb sg;
+		long r;
+
+		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCGETP);
+		KERNEL_DEBUG("fcntl(TIOCGETP) -> %li", r);
+		assert(r == 0);
+
+		sg = KBD_dev_sg;
+		sg.sg_flags &= TF_FLAGS;
+		sg.sg_flags |= T_RAW;
+		KERNEL_DEBUG("sg.sg_flags 0x%x", sg.sg_flags);
+
+		r = f_cntl(C.KBD_dev, (long)&sg, TIOCSETN);
+		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
+		assert(r == 0);
+	}
 
 	/* initialize mouse */
 	if (!init_moose())
@@ -795,7 +817,14 @@ k_exit(void)
 		adi_close(C.adi_mouse);
 
 	if (C.KBD_dev > 0)
+	{
+		long r;
+
+		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
+		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
+
 		f_close(C.KBD_dev);
+	}
 
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
