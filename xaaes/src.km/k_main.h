@@ -34,6 +34,7 @@
 #include "global.h"
 #include "xa_types.h"
 
+int dispatch_cevent(struct xa_client *client);
 void Block(struct xa_client *client, int which);
 void Unblock(struct xa_client *client, unsigned long value, int which);
 

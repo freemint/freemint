@@ -26,6 +26,7 @@
 
 #include "k_mouse.h"
 #include "xa_global.h"
+#include "c_mouse.h"
 
 #include "app_man.h"
 #include "c_window.h"
@@ -138,7 +139,9 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 
 				mu_button.got = true;
 
+				client->usr_evnt = 1;
 				Unblock(client, XA_OK, 3);
+				
 				DIAG((D_button, NULL, " - written"));
 			}
 		}
@@ -154,6 +157,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to   = mu_button.ks;
 				mu_button.got = true;
 
+				client->usr_evnt = 1;
 				Unblock(client, XA_OK, 4);
 				DIAG((D_button, NULL, " - written"));
 			}
@@ -174,7 +178,7 @@ reset_pending_button(void)
 }
 
 /* Ozk: Collect up to 4 pending button events -- do we need more? */
-static void
+void
 add_pending_button(enum locks lock, struct xa_client *client)
 {
 	Sema_Up(pending);
@@ -212,13 +216,42 @@ do_fmd(enum locks lock, struct xa_client *client, const struct moose_data *md)
 	return false;
 }
 
+
+static void
+post_cevent(struct xa_client *client,
+	void (*func)(enum locks, struct c_event *),
+	void *ptr1, void *ptr2,
+	int d1, int d2, RECT *r,
+	const struct moose_data *md)
+{
+	int h = client->ce_head;
+
+	client->ce[h].funct = func;
+	client->ce[h].client = client;
+	client->ce[h].ptr1 = ptr1;
+	client->ce[h].ptr2 = ptr2;
+	if (r)
+		client->ce[h].r = *r;
+	if (md)
+		client->ce[h].md = *md;
+
+	h++;
+	DIAG((D_mouse, client, "added cevnt at %d, nxt %d (tail %d) for %s", client->ce_head, h, client->ce_tail, client->name));
+	client->ce_head = h & MAX_CEVENTS;
+
+	if (client != C.Aes)
+		Unblock(client, 1, 5000);
+	else
+		dispatch_cevent(client);
+}
+
 /*
  * at the moment widgets is always true.
  */
 void
 XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 {
-	struct xa_client *client;
+	struct xa_client *client, *locker;
 	struct xa_window *wind;
 
 	DIAG((D_button, NULL, "XA_button_event: %d/%d, state=0x%x, clicks=%d",
@@ -226,161 +259,35 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
 
-	/* button released? */
-	if (!md->state && widget_active.widg)
+	if (C.menu_base && md->state)
 	{
-		DIAG((D_button, NULL, "Calling do_active_widget"));
-		do_active_widget(lock, widget_active.wind->owner);
+		client = C.menu_base->client;
+		DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
+		post_cevent(client, cXA_button_event, 0, 0, 0, 0, 0, md);
+		return;
 	}
 
-	if (C.menu_base && md->state)		/* any button down */
+	locker = mouse_locked();
+	if (!locker)
+		locker = update_locked();
+	if (locker && md->state)
 	{
-		Tab *tab = C.menu_base;
-		if (tab->ty)
+		if (locker->fmd.lock && locker->fmd.mousepress)
 		{
-			MENU_TASK *k = &tab->task_data.menu;
-			wind = k->popw;
-
-			/* HR 161101: widgets in scrolling popups */
-			if (wind)
-				if (   (wind->dial&created_for_POPUP) != 0
-				    && (wind->active_widgets&V_WIDG) != 0
-				   )
-					if (do_widgets(lock, wind, XaMENU, md))
-						return;
-
-			if (k->entry)
-			{
-				k->x = md->x;
-				k->y = md->y;
-				k->entry(tab);
-				return;
-			}
+			DIAG((D_mouse, locker, "post form do to %s", locker->name));
+			post_cevent(locker, cXA_form_do, 0, 0, 0, 0, 0, md);
+			return;
 		}
 	}
 
-	/* See if a (classic) blocked form_do is active */
-	if (mouse_locked())
-		if (do_fmd(lock, mouse_locked(), md))
-			return;
-	if (update_locked())
-		if (do_fmd(lock, update_locked(), md))
-			return;
-
-	/* Try for a window */
 	wind = find_window(lock, md->x, md->y);
-	if (!wind)
+	if (wind)
 	{
-		DIAG((D_button, NULL, "click not in window"));
+		client = wind->owner;
+		DIAG((D_mouse, client, "post button event (wind) to %s", client->name));
+		post_cevent(client, cXA_button_event, wind, 0, 0, 0, 0, md);
 		return;
 	}
-
-	/* HR 040401: left click on root object of rootwindow (the desktop). */
-	/* HR 280801: is now a true widget with behaviours. */
-
-	/* If mouse isn't locked, do a widgets test first */
-	if (!mouse_locked())
-	{
-		if (md->state && widgets)
-		{
-			DIAG((D_button, NULL, "calling do_widgets"));
-			if (do_widgets(lock, wind, 0, md))
-				return;			/* Window widgets prrocessed. */
-		}
-
-		client = wind == root_window ? get_desktop()->owner : wind->owner;
-	}
-	else
-	{
-		/* Mouse is locked - clicks go to owner of mouse */
-
-		client = mouse_locked();
-		if (!client)
-			return;
-
-		DIAG((D_button, NULL, "mouse is locked by %s", c_owner(client)));
-
-		DIAG((D_button, NULL, "wind=%lx,st=%d,toolbar=%d",
-			wind, md->state, (wind->active_widgets & TOOLBAR) != 0));
-
-		if (wind->owner == client && (wind->active_widgets & TOOLBAR))
-		{
-			if (md->state && widgets)
-			{
-				DIAG((D_button, NULL, "calling do_widgets no_work for %s", c_owner(client)));
-
-				if (do_widgets(lock, wind, 0, md))			/* HR 161101: mask */
-					/* Process window widgets for toolbar windows
-					 * (this'll deal with alerts)
-					 */
-					return;
-			}
-		}
-		else
-		{
-			if (client->waiting_for & MU_BUTTON)
-				button_event(lock, client, md);
-			else
-				add_pending_button(lock, client);
-			return;
-		}
-	}
-
-	/* click on work area of iconified window :: send UNICONIFY. */
-	if (   md->state == 1
-	    && md->clicks == 2
-	    && wind->window_status == XAWS_ICONIFIED)
-	{
-		wind->send_message(lock, wind, NULL,
-					WM_UNICONIFY, 0, 0, wind->handle,
-					wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
-		return;
-	}
-
-	Sema_Up(clients);
-
-	/* If the client owning was waiting for a button event, send it */ 
-	/* - otherwise forget it, 'coz we don't want delayed clicks (they are confusing to the user [ie. me] ) */
-
-	DIAG((D_button,NULL,"  -- client %s", c_owner(client)));
-
-	/* HR: Very annoying not getting WM_TOPPED if you click a workarea	*/
-	if (   md->state == 1
-	    && wind != window_list
-	    && wind != root_window
-	    && wind->owner == client				/* HR 150601: Mouse lock !!! */
-/*	    && (client->waiting_for & MU_MESAG)*/
-	    && (wind->active_widgets&NO_TOPPED) == 0)		/* WF_BEVENT set */
-	{
-		DIAG((D_wind,wind->owner,"send WM_TOPPED to %s", c_owner(client)));
-		wind->send_message(lock|clients, wind, NULL,
-					WM_TOPPED, 0, 0, wind->handle,
-					0, 0, 0, 0);
-	}
-	else if (   md->state == 1
-		 && wind == window_list
-		 && wind != root_window
-		 && C.focus == root_window)
-	{
-		C.focus = window_list;
-		client = window_list->owner;
-		DIAG((D_menu,NULL,"Click on unfocused top_window of %s", c_owner(client)));
-		display_window(lock|clients, 112, window_list, NULL);   /* Redisplay titles */
-		send_ontop(lock|clients);
-		swap_menu(lock|clients, client, true, 4);
-	}
-	else if (client->waiting_for & MU_BUTTON)
-	{
-		//display("deliver\n");
-		button_event(lock, client, md);
-	}
-	else
-	{
-		//display("pending\n");
-		add_pending_button(lock, client);
-	}
-
-	Sema_Dn(clients);
 }
 
 int
@@ -400,49 +307,17 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		widget_active.nx = md->x;
 		widget_active.ny = md->y;
 		widget_active.cb = md->state;
-		do_active_widget(lock, widget_active.wind->owner);
+		client = widget_active.wind->owner;
+		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+		post_cevent(client, cXA_active_widget, 0,0, 0,0, 0, md);
 		return false;
 	}
 
-	/* XaAES internal move event handling */
 	if (C.menu_base)
 	{
-		/* Any part of a menu pulled? */
-
-		MENU_TASK *k = &C.menu_base->task_data.menu;
-
-		if (k->em.flags & MU_MX)
-		{
-			/* XaAES internal flag: report any mouse movement. */
-
-			k->em.flags = 0;
-			k->x = x;
-			k->y = y;
-			k->em.t1(C.menu_base);	/* call the function */
-		}
-		else if (k->em.flags & MU_M1)
-		{
-			if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
-			{
-				k->em.flags = 0;
-				k->x = x;
-				k->y = y;
-				k->em.t1(C.menu_base);	/* call the function */
-			}
-			else
-			/* HR: MU_M2 not used for menu's anymore, replaced by MU_MX */
-			/* I leave the text in, because one never knows. */
-			if (k->em.flags & MU_M2)
-			{
-				if (is_rect(x, y, k->em.flags & 2, &k->em.m2))
-				{
-					k->em.flags = 0;
-					k->x = x;
-					k->y = y;
-					k->em.t2(C.menu_base);
-				}
-			}
-		}
+		client = C.menu_base->client;
+		DIAG((D_mouse, client, "post menumove to %s", client->name));
+		post_cevent(client, cXA_menu_move, 0,0, 0,0, 0, md);
 		return false;
 	}
 
@@ -463,14 +338,12 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			    && is_rect(x, y, aesp->em.flags & 1, &aesp->em.m1))
 			{
 				XA_WIDGET *widg = get_widget(root_window, XAW_MENU);
-				cancel_evnt_multi(aesp,2);
+				XA_TREE *menu;
 
-				Sema_Dn(clients);
-
-				/* This is the root_window function for the menu
-				 * tasks. (could be click_menu_widget)
-				 */
-				widg->click(lock, root_window, widg);
+				menu = (XA_TREE *)widg->stuff;
+				client = menu->owner;
+				DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
+				post_cevent(client, cXA_widget_click, widg, 0,0,0,0,md);
 				return false;
 			}
 		}
@@ -526,7 +399,10 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			}
 
 			if (pb->intout[0])
+			{
+				client->usr_evnt = 1;
 				Unblock(client, XA_OK, 5);
+			}
 		}
 
 		if (mouse_locked())

@@ -287,6 +287,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 
 		DIAG((D_m, NULL, "Send message %s to %s", pmsg(msg->s.msg), c_owner(dest_client)));
 		/* Write success to client's reply pipe to unblock the process */
+		dest_client->usr_evnt = 1;
 		Unblock(dest_client, XA_OK, 22);
 
 	}

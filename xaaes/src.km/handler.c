@@ -138,6 +138,8 @@ XA_handler(void *_pb)
 	 */
 	if (client)
 	{
+		client->usr_evnt = 0;
+
 #if 0
 		if ((!strcmp("  Thing Desktop", client->name)) || (!strcmp("  PORTHOS ", client->name)))
 		{
@@ -252,7 +254,7 @@ XA_handler(void *_pb)
 						}
 
 						Block(client, 1);
-
+						
 						if (client->timeout)
 						{
 							canceltimeout(client->timeout);

@@ -48,6 +48,7 @@ COBJS = \
 	about.c \
 	app_man.c \
 	cnf_xaaes.c \
+	c_mouse.c \
 	c_window.c \
 	debug.c \
 	desktop.c \
