@@ -598,7 +598,7 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 	if (tree != cpx_desc->tree)				/* Objektbaum geaendert? */
 	{
 		if (cpx_desc->tree == 0L)
-			cpx_desc->size.g_y -= desk.g_h;		/* CPX-Rechteck wieder innerhalb des Schirms */
+			cpx_desc->size.g_y -= desk_grect.g_h;	/* CPX-Rechteck wieder innerhalb des Schirms */
 
 		cpx_desc->tree = tree;
 		obj_HIDDEN(tree, ROOT);				/* Baum nicht zeichnen! */

@@ -33,38 +33,37 @@
 
 extern short app_id;
 extern short aes_handle;
+extern short vdi_handle;
 extern short pwchar;
 extern short phchar;
 extern short pwbox;
 extern short phbox;
 
 extern short menu_id;
-extern short quit;
 extern short aes_flags;
 extern short aes_font;
 extern short aes_height;
+extern short quit;
 
-extern short vdi_handle;
-extern GRECT desk;
+extern GRECT desk_grect;
 
-typedef struct
+struct alphaheader
 {
 	long	magic;
 	short	version;
 	GRECT	mw;
 	short	whslide;
 	short	wvslide;
-	short	booticon;		/* Hauptfenster beim Start ”ffnen und ikonifizieren */
-	short	clickact;		/* inaktive CPXe werden durch Doppelklick umbenannt und ge”ffnet */
+	short	booticon;	/* Hauptfenster beim Start oeffnen und ikonifizieren */
+	short	clickact;	/* inaktive CPXe werden durch Doppelklick umbenannt und geoeffnet */
 	short	term;
 	short	after;
 	short	count;
 	char	cpx_path[128];
-	short	sortmode;		/* 0: unsortiert, 1: nach Namen ordnen */
+	short	sortmode;	/* 0: unsortiert, 1: nach Namen ordnen */
 	short	reserved[15];
-} ALPHAHEADER;
-
-extern ALPHAHEADER settings;
+};
+extern struct alphaheader settings;
 
 extern CPX_LIST *cpxlist;
 extern CPX_DESC *cpx_desc_list;
