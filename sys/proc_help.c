@@ -158,13 +158,17 @@ copy_mem (struct proc *p)
 
 	/* Initialize trampoline vectors */
 	ut->terminateme_p += (long)ut;
+
 	ut->sig_return_p += (long)ut;
 	ut->pc_valid_return_p += (long)ut;
+
 	ut->slb_init_and_exit_p += (long)ut;
 	ut->slb_open_p += (long)ut;
 	ut->slb_close_p += (long)ut;
 	ut->slb_close_and_pterm_p += (long)ut;
 	ut->slb_exec_p += (long)ut;
+
+	ut->user_xhdi_p += (long)ut;
 
 	cpush(ut, sizeof(USER_THINGS));
 
