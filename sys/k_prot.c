@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,13 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2000-10-31
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  * 
  */
 
@@ -64,11 +61,9 @@ sys_pgetegid (void)
 }
 
 long _cdecl
-sys_psetuid (unsigned int uid)
+proc_setuid (struct proc *p, unsigned int uid)
 {
-	struct pcred *cred = curproc->p_cred;
-	
-	TRACE (("Psetuid(%i)", uid));
+	struct pcred *cred = p->p_cred;
 	
 	if (cred->ruid != uid && !suser (cred->ucr))
 		return EACCES; /* XXX EPERM */
@@ -85,11 +80,16 @@ sys_psetuid (unsigned int uid)
 }
 
 long _cdecl
-sys_psetgid (unsigned int gid)
+sys_psetuid (unsigned int uid)
 {
-	struct pcred *cred = curproc->p_cred;
-	
-	TRACE (("Psetgid(%i)", gid));
+	TRACE (("Psetuid(%i)", uid));
+	return proc_setuid(curproc, uid);
+}
+
+long _cdecl
+proc_setgid (struct proc *p, unsigned int gid)
+{
+	struct pcred *cred = p->p_cred;
 	
 	if (cred->rgid != gid && !suser (cred->ucr))
 		return EACCES; /* XXX EPERM */
@@ -101,8 +101,15 @@ sys_psetgid (unsigned int gid)
 	cred->ucr->egid = gid;
 	cred->rgid = gid;
 	cred->sgid = gid;
-
+	
 	return gid;
+}
+
+long _cdecl
+sys_psetgid (unsigned int gid)
+{
+	TRACE (("Psetgid(%i)", gid));
+	return proc_setgid(curproc, gid);
 }
 
 /* uk, blank: set effective uid/gid but leave the real uid/gid unchanged. */
@@ -248,8 +255,10 @@ groupmember (struct ucred *cred, ushort group)
 	int i;
 	
 	for (i = 0; i < cred->ngroups; i++)
+	{
 		if (cred->groups[i] == group)
 			return 1;
+	}
 	
 	return 0;
 }

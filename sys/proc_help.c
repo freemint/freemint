@@ -698,15 +698,46 @@ free_sigacts (struct proc *p)
 
 /* p_limits */
 
+#if 0
 struct plimit *
 copy_limits (struct proc *p)
 {
-	return NULL;
+	struct plimit *n;
+	
+	TRACE (("copy_limit: %lx links %li", p_limit, p_limit->links));
+	assert (p_limit->links > 0);
+	
+	if (p_limit->links == 1)
+		return p_limit;
+	
+	n = kmalloc (sizeof (*n));
+	if (n)
+	{
+		/* copy */
+		memcpy (n->limits, p_limit->limits, sizeof (n->limits));
+		
+		/* reset flags */
+		n->flags = 0;
+		
+		/* adjust link counters */
+		p_limit->links--;
+		n->links = 1;
+	}
+		DEBUG(("copy_limit: kmalloc failed -> NULL"));
+	
+	return n;
 }
+#endif
 
 void
 free_limits (struct proc *p)
 {
+#if 0
+	assert (p_limit->links > 0);
+	
+	if (--p_limit->links == 0)
+		kfree (p_limit);
+#endif
 }
 
 /* p_ext */

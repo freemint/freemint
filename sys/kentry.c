@@ -47,6 +47,8 @@
 # include "ipc_socketutil.h"	/* so_* */
 # include "k_exec.h"		/* create_process */
 # include "k_kthread.h"		/* kthread_create, kthread_exit */
+# include "k_prot.h"		/* proc_setuid/proc_setgid */
+# include "k_resource.h"	/* proc_setlimit */
 # include "kmemory.h"		/* kmalloc, kfree */
 # include "memory.h"		/* addr2mem, attach_region, detach_region */
 # include "module.h"		/* load_modules */
