@@ -124,31 +124,31 @@ init_cookies (void)
 			if (cookie->tag == COOKIE__FLK)
 			{
 				flk = 1;
-				TRACE(("_FLK cookie found, value %08lx", cookie->value));
+				TRACE(("_FLK cookie found == %08lx", cookie->value));
 			}
 # endif
 			if (cookie->tag == COOKIE__MCH)
 			{
 				mch_present = 1;
-				TRACE(("_MCH cookie found, value %08lx", cookie->value));
+				TRACE(("_MCH cookie found == %08lx", cookie->value));
 			}
 
 			if (cookie->tag == COOKIE__VDO)
 			{
 				vdo_present = 1;
-				TRACE(("_VDO cookie found, value %08lx", cookie->value));
+				TRACE(("_VDO cookie found == %08lx", cookie->value));
 			}
 
 			if (cookie->tag == COOKIE__SND)
 			{
 				snd_present = 1;
-				TRACE(("_SND cookie found, value %08lx", cookie->value));
+				TRACE(("_SND cookie found == %08lx", cookie->value));
 			}
 
 			if (cookie->tag == COOKIE__FDC)
 			{
 				fdc_present = 1;
-				TRACE(("_FDC cookie found, value %08lx", cookie->value));
+				TRACE(("_FDC cookie found == %08lx", cookie->value));
 			}
 
 			cookie++;
@@ -184,54 +184,70 @@ init_cookies (void)
 	/* set the hardware detected CPU and FPU rather
 	 * than trust the TOS
 	 */
+	TRACE(("_CPU cookie = %08lx", mcpu));
+
 	newcookie[i].tag = COOKIE__CPU;
 	newcookie[i].value = mcpu;
 	i++;
+
+	TRACE(("_FPU cookie = %08lx", fputype));
 
 	newcookie[i].tag = COOKIE__FPU;
 	newcookie[i].value = fputype;
 	i++;
 
-	/* If there was no cookie jar, we install basic
-	 * Atari cookies, assuming we're on an old ST.
+	/* We install basic Atari cookies, if these ain't
+	 * there, assuming we're on an old ST.
+	 *
+	 * This improves things on TOS below 2.0.
 	 */
-	if (!mch_present)
-	{
-		TRACE(("Installing _MCH cookie"));
-		newcookie[i].tag = COOKIE__MCH;
-		newcookie[i].value = 0x00000000L;
-		i++;
-	}
 
-	if (!vdo_present)
+	if (tosvers < 0x0200)
 	{
-		/* Video sync mode on ST shifter */
-		if (test_byte_rd(0xffff820aL))
+		if (!mch_present)
 		{
-			TRACE(("Installing _VDO cookie"));
-			newcookie[i].tag = COOKIE__VDO;
+			TRACE(("_MCH cookie = %08lx", (long)0L));
+
+			newcookie[i].tag = COOKIE__MCH;
 			newcookie[i].value = 0x00000000L;
 			i++;
 		}
-	}
 
-	if (!snd_present)
-	{
-		if (test_byte_rd(0xffff8800L))
+		if (!vdo_present)
 		{
-			TRACE(("Installing _SND cookie"));
+			/* Video sync mode on ST shifter */
+			if (test_byte_rd(0xffff820aL))
+			{
+				TRACE(("_VDO cookie = %08lx", (long)0L));
+
+				newcookie[i].tag = COOKIE__VDO;
+				newcookie[i].value = 0x00000000L;
+				i++;
+			}
+		}
+
+		if (!snd_present)
+		{
+			ulong val;
+
+			/* Yamaha PSG */
+			val = test_byte_rd(0xffff8800L) ?: 0;
+
+			TRACE(("_SND cookie = %08lx", val));
+
 			newcookie[i].tag = COOKIE__SND;
-			newcookie[i].value = 0x00000000L;
+			newcookie[i].value = val;
 			i++;
 		}
-	}
-	
-	if (!fdc_present)
-	{
-		TRACE(("Installing _FDC cookie"));
-		newcookie[i].tag = COOKIE__FDC;
-		newcookie[i].value = 0x00415443L;	/* 720k Atari drive */
-		i++;
+
+		if (!fdc_present)
+		{
+			TRACE(("_FDC cookie = %08lx", (long)0x00415443L));
+
+			newcookie[i].tag = COOKIE__FDC;
+			newcookie[i].value = 0x00415443L;	/* 720k Atari drive */
+			i++;
+		}
 	}
 
 	/* copy the old cookies to the new jar */
@@ -266,6 +282,8 @@ init_cookies (void)
 
 	/* install MiNT cookie
 	 */
+	TRACE(("MiNT cookie = %08lx", (long)((MINT_MAJ_VERSION << 8) | MINT_MIN_VERSION)));
+
 	newcookie[i].tag   = COOKIE_MiNT;
 	newcookie[i].value = (MINT_MAJ_VERSION << 8) | MINT_MIN_VERSION;
 	i++;
@@ -275,11 +293,15 @@ init_cookies (void)
 # ifdef OLDTOSFS
 	if (!flk)
 	{
+		TRACE(("_FLK cookie = %08lx", (long)0x00000100L));
+
 		newcookie[i].tag   = COOKIE__FLK;
 		newcookie[i].value = 0x00000100;	/* This is version number, 1.0 :-) */
 		i++;
 	}
 # else
+	TRACE(("_FLK cookie = %08lx", (long)0x00000100L));
+
 	newcookie[i].tag   = COOKIE__FLK;
 	newcookie[i].value = 0x00000100;
 	i++;
@@ -290,6 +312,8 @@ init_cookies (void)
 # ifndef NO_MMU
 	if (!no_mem_prot)
 	{
+		TRACE(("PMMU cookie = %08lx", (long)0L));
+
 		newcookie[i].tag   = COOKIE_PMMU;
 		newcookie[i].value = 0;
 		i++;
