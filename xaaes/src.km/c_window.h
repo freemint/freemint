@@ -62,7 +62,7 @@ void	delete_window(enum locks lock, struct xa_window *wind);
 void	delayed_delete_window(enum locks lock, struct xa_window *wind);
 void	do_delayed_delete_window(enum locks lock);
 void	display_window(enum locks lock, int which, struct xa_window *w, RECT *clip);
-//void	draw_window(enum locks lock, struct xa_window *wind);
+void	draw_window(enum locks lock, struct xa_window *wind);
 void	display_windows_below(enum locks lock, const RECT *r, struct xa_window *w);
 void	redraw_client_windows(enum locks lock, struct xa_client *client);
 

@@ -2079,7 +2079,10 @@ display_list_element(enum locks lock, struct xa_client *client, SCROLL_ENTRY *th
 			t_color(G_BLACK);
 		}
 		else
+		{
+			t_color(G_BLACK);
 			l_text(xt, y, this->text, w - ICON_W, left);
+		}
 
 		f_color(G_WHITE);
 		bar(0, x, y, ICON_W, screen.c_max_h);
@@ -2119,12 +2122,13 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 
 	w->r.x = r.x;
 	w->r.y = r.y;
+
 	/* for after moving */
 	calc_work_area(w);
 
 	wa = w->wa;
 	y = wa.y;
-	maxy = wa.y + wa.h - screen.c_max_h;
+	maxy = y + wa.h; // - screen.c_max_h;
 	this = list->top;
 
 	t_color(G_BLACK);
@@ -2138,8 +2142,8 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 		else
 			br_hook(2,&r,screen.dial_colours.shadow_col),
 			tl_hook(2,&r,screen.dial_colours.lit_col);
-		display_window(list->lock, 73, w, NULL);
-		for (; y <= maxy; y += screen.c_max_h)
+		draw_window(list->lock, w); //display_window(list->lock, 73, w, NULL);
+		for (; y <= maxy; y += screen.c_max_h) //for (; y <= maxy; y += screen.c_max_h)
 		{
 			/* can handle nil this */
 			display_list_element(lock, wt->owner, this, list->left, wa.x, y, wa.w, this == list->cur);
