@@ -173,6 +173,8 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 		depth++;
 	}
 
+	lock_screen(wt->owner, false, NULL, 0);
+
 	if (wind)
 	{
 		if (wind->is_open)
@@ -209,6 +211,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 		draw_object_tree(0, wt, wt->tree, start, depth, 1);
 	}
 	clear_clip();
+	unlock_screen(wt->owner, 0);
 }
 
 /*

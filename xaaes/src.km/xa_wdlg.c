@@ -78,13 +78,14 @@ static int
 wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, RECT *r)
 {
 	struct wdlg_info *wdlg;
+	struct xa_rect_list *rl;
 
-	if ((wdlg = wind->wdlg))
+	if ((wdlg = wind->wdlg) && (rl = wind->rect_start))
 	{
-		struct xa_rect_list *rl;
 		XA_TREE *wt;
 		OBJECT *obtree;
 		RECT dr;
+
 
 		if (wind->window_status == XAWS_ICONIFIED)
 		{
@@ -112,7 +113,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 			obtree->ob_y = wind->wa.y;
 		}
 
-		rl = wind->rect_start;
+		lock_screen(wind->owner, false, NULL, 0);
 		hidem();
 		if (r)
 		{
@@ -137,6 +138,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		}
 		showm();
 		clear_clip();
+		unlock_screen(wind->owner, 0);
 	}
 	return 0;
 }
