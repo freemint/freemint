@@ -823,7 +823,9 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 	
 	DIAG((D_form, client, "XA_alert %s", (char *)pb->addrin[0]));
+	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0]);
+	client->status &= ~CS_FORM_ALERT;
 
 	return XAC_BLOCK;
 }

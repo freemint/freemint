@@ -31,6 +31,7 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "k_main.h"
+#include "messages.h"
 #include "menuwidg.h"
 #include "sys_proc.h"
 #include "taskman.h"
@@ -319,6 +320,10 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	if (C.button_waiter == client)
 		C.button_waiter = 0;
 
+	cancel_aesmsgs(&client->rdrw_msg);
+	cancel_aesmsgs(&client->msg);
+
+#if 0
 	/*
 	 * Dispose of any pending messages for the client
 	*/
@@ -338,6 +343,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		kfree(client->rdrw_msg);
 		client->rdrw_msg = nm;
 	}
+#endif
+	cancel_cevents(client);
+#if 0
 	/*
 	 * Dispose of any pending client events
 	*/
@@ -347,6 +355,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		kfree(client->cevnt_head);
 		client->cevnt_head = a;
 	}
+#endif
 
 	if (client->attach)
 	{
