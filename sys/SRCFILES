@@ -6,6 +6,7 @@ COBJS = \
 	biosfs.c \
 	block_IO.c \
 	blowfish.c \
+	cnf_mint.c \
 	cnf.c \
 	cmdline.c \
 	console.c \
