@@ -1129,7 +1129,7 @@ setup_k_function_table(void)
 	Ktab[XA_MENU_TEXT    ].f = XA_menu_text;
 	Ktab[XA_MENU_REGISTER].f = XA_menu_register;
 	Ktab[XA_MENU_POPUP   ].f = XA_menu_popup;
-/*	Ktab[XA_MENU_POPUP   ].p = LOCKSCREEN; */	/* Since we cannot lock with client PID
+/*	Ktab[XA_MENU_POPUP   ].p = LOCKSCREEN; */	/* Ozk: Since we cannot lock with client PID
 							 * and unlock under kernel PID
 							 * we gotta let the function itself (under kernel PID)
 							 * do the lock_screen() call
@@ -1153,7 +1153,7 @@ setup_k_function_table(void)
 	Ktab[XA_SCRAP_WRITE].f = XA_scrap_write;
 
 	Ktab[XA_FORM_POPUP ].f = XA_form_popup;
-//	Ktab[XA_FORM_POPUP ].p = LOCKSCREEN;		/* Same situation as for XA_menu_popup */
+//	Ktab[XA_FORM_POPUP ].p = LOCKSCREEN;		/* Ozk: Same situation as for XA_menu_popup */
 
 #if WDIAL
 	/* HR 261101: started implementation of WDIALOG functions. */
