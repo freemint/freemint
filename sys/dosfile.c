@@ -83,17 +83,17 @@ f_open (const char *name, short mode)
 	
 	assert (p->p_fd && p->p_cwd);
 	
-	ret = fd_alloc (p, &fd, MIN_OPEN);
+	ret = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (ret) goto error;
 	
-	ret = fp_alloc (p, &fp);
+	ret = FP_ALLOC (p, &fp);
 	if (ret) goto error;
 	
 	ret = do_open (&fp, name, mode, 0, NULL);
 	if (ret) goto error;
 	
 	/* activate the fp, default is to close non-standard files on exec */
-	fp_done (p, fp, fd, FD_CLOEXEC);
+	FP_DONE (p, fp, fd, FD_CLOEXEC);
 	
 # if O_GLOBAL
 	if (global)
@@ -105,8 +105,8 @@ f_open (const char *name, short mode)
 	return fd;
 
 error:
-	if (fd >= MIN_OPEN) fd_remove (p, fd);
-	if (fp) { fp->links--; fp_free (fp); }
+	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
+	if (fp) { fp->links--; FP_FREE (fp); }
 	
 	return ret;
 }
@@ -132,10 +132,10 @@ f_create (const char *name, short attrib)
 	
 	assert (p->p_fd && p->p_cwd);
 	
-	ret = fd_alloc (p, &fd, MIN_OPEN);
+	ret = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (ret) goto error;
 	
-	ret = fp_alloc (p, &fp);
+	ret = FP_ALLOC (p, &fp);
 	if (ret) goto error;
 	
 	if (attrib == FA_LABEL)
@@ -173,14 +173,14 @@ f_create (const char *name, short attrib)
 	}
 	
 	/* activate the fp, default is to close non-standard files on exec */
-	fp_done (p, fp, fd, FD_CLOEXEC);
+	FP_DONE (p, fp, fd, FD_CLOEXEC);
 	
 	TRACE (("Fcreate: returning %d", fd));
 	return fd;
 	
 error:
-	if (fd >= MIN_OPEN) fd_remove (p, fd);
-	if (fp) { fp->links--; fp_free (fp); }
+	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
+	if (fp) { fp->links--; FP_FREE (fp); }
 	return ret;
 }
 
@@ -200,7 +200,7 @@ f_close (short fd)
 	
 	/* XXX do this before do_close?
 	 * remove fd */
-	fd_remove (curproc, fd);
+	FD_REMOVE (curproc, fd);
 	
 	/* standard handles should be restored to default values
 	 * in TOS domain!
@@ -218,7 +218,7 @@ f_close (short fd)
 		
 		if (f)
 		{
-			fp_done (p, f, fd, 0);
+			FP_DONE (p, f, fd, 0);
 			f->links++;
 		}
 	}
@@ -468,7 +468,7 @@ f_pipe (short *usrh)
 	
 	TRACE (("Fpipe(%lx)", usrh));
 	
-	r = fp_alloc (p, &out);
+	r = FP_ALLOC (p, &out);
 	if (r) return r;
 	
 	/* BUG: more than 999 open pipes hangs the system
@@ -493,13 +493,13 @@ f_pipe (short *usrh)
 	if (r)
 	{
 		out->links--;
-		fp_free (out);
+		FP_FREE (out);
 		
 		DEBUG (("Fpipe: error %d", r));
 		return r;
 	}
 	
-	r = fp_alloc (p, &in);
+	r = FP_ALLOC (p, &in);
 	if (r)
 	{
 		do_close (p, out);
@@ -511,13 +511,13 @@ f_pipe (short *usrh)
 	{
 		do_close (p, out);
 		in->links--;
-		fp_free (in);
+		FP_FREE (in);
 		
 		DEBUG (("Fpipe: in side of pipe not opened (error %d)", r));
 		return r;
 	}
 	
-	r = fd_alloc (p, &infd, MIN_OPEN);
+	r = FD_ALLOC (p, &infd, MIN_OPEN);
 	if (r)
 	{
 		do_close (p, in);
@@ -526,10 +526,10 @@ f_pipe (short *usrh)
 		return r;
 	}
 	
-	r = fd_alloc (p, &outfd, infd+1);
+	r = FD_ALLOC (p, &outfd, infd+1);
 	if (r)
 	{
-		fd_remove (p, infd);
+		FD_REMOVE (p, infd);
 		
 		do_close (p, in);
 		do_close (p, out);
@@ -538,8 +538,8 @@ f_pipe (short *usrh)
 	}
 	
 	/* activate the fps; default is to leave pipes open across Pexec */
-	fp_done (p, in, infd, 0);
-	fp_done (p, out, outfd, 0);
+	FP_DONE (p, in, infd, 0);
+	FP_DONE (p, out, outfd, 0);
 	
 	usrh[0] = infd;
 	usrh[1] = outfd;
