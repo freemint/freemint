@@ -231,7 +231,7 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 	OBJECT *alert_form,
 	       *alert_icons;
 	ALERTXT *alertxt;
-	short x, y, w, h;
+	short x, w;
 	int  n_lines, n_buttons, icon = 0, m_butt_w,
 	      retv = 1, b, f;
 
@@ -322,14 +322,14 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 	/* Fill in & show buttons */
 	for (f = 0; f < n_buttons; f++)
 	{
-		int w = strlen(alertxt->button[f])+3;
-		w *= screen.c_max_w;
+		int width = strlen(alertxt->button[f])+3;
+		width *= screen.c_max_w;
 		alert_form[ALERT_BUT1 + f].ob_spec.string = alertxt->button[f];
-		alert_form[ALERT_BUT1 + f].r.w = w;
+		alert_form[ALERT_BUT1 + f].r.w = width;
 		alert_form[ALERT_BUT1 + f].r.x = x;
 		alert_form[ALERT_BUT1 + f].ob_flags &= ~(HIDETREE|DEFAULT);
 		alert_form[ALERT_BUT1 + f].ob_state = 0;
-		x += w + b;
+		x += width + b;
 	}
 
 	{
@@ -506,12 +506,10 @@ find_cancel_button(OBJECT *ob)
 static int
 form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 {
-#define editable (form[o].ob_flags & EDITABLE)
-
 	OBJECT *form = wt->tree;
 	int o = obj, ed = 0,
 	      last_ob = 0;
-	while ( ! (form[last_ob].ob_flags & LASTOB))	/* Find last object & check for editable */
+	while (!(form[last_ob].ob_flags & LASTOB))	/* Find last object & check for editable */
 	{
 		ed |= form[last_ob].ob_flags & EDITABLE;
 		last_ob++;	
@@ -526,14 +524,14 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 	case 0x0f09:		/* TAB moves to next field */
 	case 0x5000:		/* DOWN ARROW also moves to next field */
 		if (ed)
-			do   o = o == last_ob ? 0       : o + 1;			/* loop round */
-			while (!editable);
+			do o = o == last_ob ? 0 : o + 1;	/* loop round */
+			while (!(form[o].ob_flags & EDITABLE));
 		break;
 
 	case 0x4800:		/* UP ARROW moves to previous field */
 		if (ed)
-			do   o = o == 0       ? last_ob : o - 1;			/* loop round */
-			while (!editable);
+			do o = o == 0       ? last_ob : o - 1;	/* loop round */
+			while (!(form[o].ob_flags & EDITABLE));
 		break;
 
 	case 0x4737:		/* SHIFT+HOME */
@@ -542,7 +540,7 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 		if (ed)
 		{
 			o = last_ob;
-			while (!editable) o--;		/* Search for last editable object */
+			while (!(form[o].ob_flags & EDITABLE)) o--;	/* Search last */
 		}
 		break;
 
@@ -552,7 +550,7 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 		if (ed)
 		{
 			o = 0;
-			while (!editable) o++;		/* Search for first editable object */
+			while (!(form[o].ob_flags & EDITABLE)) o++;	/* Search first */
 		}
 		break;
 	}
@@ -564,7 +562,8 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 		{	
 			TEDINFO *ted = get_ob_spec(&form[o])->tedinfo;
 			int last = strlen(ted->te_ptext);
-			if (wt->edit_pos > last)		/* HR 040201: fix corsor position of new field. */
+			/* fix corsor position of new field. */
+			if (wt->edit_pos > last)
 				wt->edit_pos = last;
 			wt->edit_obj = o;
 			redraw_object(lock, wt, obj);
@@ -1441,9 +1440,10 @@ do_form_button(LOCK lock, XA_TREE *wt,
 					}
 				}
 			}
+
+			if (item)
+				*item = is;
 		}
-		if (item)
-			*item = is;
 	}
 
 	return go_exit;
@@ -1457,7 +1457,7 @@ XA_form_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	XA_TREE *wt;
 	OBJECT *tree = pb->addrin[0], *ob;
 	int f = pb->intin[0], dbl;
-	bool exit;
+	bool retv;
 
 	CONTROL(2,2,1)
 
@@ -1471,7 +1471,7 @@ XA_form_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	dbl = ((ob->ob_flags & TOUCHEXIT) && pb->intin[1] == 2)	/* double click */
 		  ? 0x8000 : 0;
 
-	exit = do_form_button(	lock,
+	retv = do_form_button(	lock,
 				wt,
 				tree,
 				f,
@@ -1479,13 +1479,13 @@ XA_form_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 				dbl,
 				0, 0, 0);
 
-	pb->intout[0] = exit ? 0 : 1;
+	pb->intout[0] = retv ? 0 : 1;
 	pb->intout[1] = f | dbl;
 	/* After any progdef drawing induced by do_form_button */
 
 	/* Only if not EXIT|TOUCHEXIT!!
 	 * I had to find this out, its not described anywhere. */
-	if ( (!(ob->ob_flags & EDITABLE) && !exit)
+	if ( (!(ob->ob_flags & EDITABLE) && !retv)
 	    || (ob->ob_flags & HIDETREE)
 	    || (ob->ob_state & DISABLED))
 	{
