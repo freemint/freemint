@@ -19,6 +19,7 @@ COBJS = \
 	timer.c
 
 SOBJS = \
+	acia.S \
 	aranym_asm.S \
 	context.S \
 	cpu.S \
