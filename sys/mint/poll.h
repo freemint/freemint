@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-10-30
- * last change:	2000-10-30
+ * begin:	2001-03-01
+ * last change:	2001-03-01
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,38 +31,40 @@
  * 
  */
 
-# ifndef _mint_credentials_h
-# define _mint_credentials_h
+# ifndef _mint_poll_h
+# define _mint_poll_h
 
 # ifdef __KERNEL__
 # include "ktypes.h"
 # endif
 
 
-# define NGROUPS	8
-
-struct ucred
+struct pollfd
 {
-	short		euid;			/* effective user id */
-	short		egid;			/* effective group id */
-	short		groups [NGROUPS];	/* groups */
-	ushort		ngroups;		/* number of groups */
-	
-	short		links;			/* number of references */
+	long	fd;		/* File descriptor to poll */
+	ushort	events;		/* Types of events poller cares about */
+	ushort	revents;	/* Types of events that actually occurred */
 };
 
+/*
+ * Testable events (may be specified in events field).
+ */
+# define POLLIN		0x001	/* There is data to read */
+# define POLLPRI	0x002	/* There is urgent data to read */
+# define POLLOUT	0x004	/* Writing now will not block */
 
-struct pcred
-{
-	struct ucred	*ucr;			/*  */
-	short		ruid;			/* real user id */
-	short		rgid;			/* real group id */
-	short		suid;			/* saved effective user id */
-	short		sgid;			/* saved effective group id */
-	
-	short		links;			/* number of references */
-	short		pad;
-};
+# define POLLRDNORM	0x040	/* Normal data may be read */
+# define POLLRDBAND	0x080	/* Priority data may be read */
+# define POLLWRNORM	0x100	/* Writing now will not block */
+# define POLLWRBAND	0x200	/* Priority data may be written */
+# define POLLMSG	0x400
+
+/*
+ * Non-testable events (may not be specified in events field).
+ */
+# define POLLERR	0x0008
+# define POLLHUP	0x0010
+# define POLLNVAL	0x0020
 
 
-# endif /* _mint_credentials_h */
+# endif /* _mint_poll_h */
