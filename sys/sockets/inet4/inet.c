@@ -587,10 +587,10 @@ inet_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 			break;
 		
 		case SO_RCVBUF:
-			if (val > IN_MAX_WSPACE)
-				val = IN_MAX_WSPACE;
-			else if (val < IN_MIN_WSPACE)
-				val = IN_MIN_WSPACE;
+			if (val > IN_MAX_RSPACE)
+				val = IN_MAX_RSPACE;
+			else if (val < IN_MIN_RSPACE)
+				val = IN_MIN_RSPACE;
 			
 			if (so->type == SOCK_STREAM && val < data->rcv.curdatalen)
 			{
