@@ -396,7 +396,8 @@ struct button_data
 	struct xa_client *client;
 	short x, y;
 	short b, cb, clicks, ks;
-	bool got, have, skip;
+	//bool got, have, skip;
+	short newc, newr;
 };
 typedef struct button_data BUTTON;
 
