@@ -318,7 +318,7 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	DIAG((D_button,NULL,"XA_button_event: %d/%d, state=0x%x, clicks=%d\n", md->x, md->y, md->state, md->clicks));
 
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
-	if (!md->state)		/* button released? */
+	if (!md->state && widget_active.widg)		/* button released? */
 	{
 	//	widget_active.cb  = 0;
 		do_active_widget(lock, widget_active.wind->owner);
