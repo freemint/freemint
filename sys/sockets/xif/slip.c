@@ -19,6 +19,7 @@
 # include "mint/config.h"
 # include "mint/sockio.h"
 
+# include "ppp.h"
 # include "slip.h"
 # include "serial.h"
 # include "slcompress.h"
@@ -74,14 +75,22 @@ static long	slip_ioctl	(struct netif *, short, long);
 static short	slip_send	(struct slbuf *);
 static short	slip_recv	(struct slbuf *);
 
+static long	slip_init	(void);
+
 long
 driver_init (void)
 {
-	extern long ppp_init (void);
-	extern long slip_init (void);
+	long r;
 	
-	serial_init ();
-	return (slip_init () || ppp_init ());
+	r = serial_init ();
+	if (r == 0)
+	{
+		r = slip_init ();
+		if (r == 0)
+			r = ppp_init ();
+	}
+	
+	return r;
 }
 
 static long
@@ -245,7 +254,7 @@ slip_ioctl (struct netif *nif, short cmd, long arg)
 	return ENOSYS;
 }
 
-long
+static long
 slip_init (void)
 {
 	char buf[100];
