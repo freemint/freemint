@@ -18,8 +18,6 @@ include $(top_srcdir)/PHONY
 all-here: objs
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)
-DEFINITIONS = 
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
