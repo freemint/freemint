@@ -1218,14 +1218,10 @@ init (void)
 # if 0
 		if (r <= 0)
 			r = internal_shell();	/* r is the shell's pid (not yet exists) */
-# else
+# endif
 		/* Everything failed. Halt. */
 		if (r <= 0)
-		{
-			rootproc->base = _base;
-			s_hutdown(0);
-		}
-# endif
+			s_hutdown(0);		/* never returns */
 	}
 
 	/* Here we have the code for the process 0 (MiNT itself).
@@ -1256,8 +1252,6 @@ init (void)
 
 		r &= 0x0000ffff;
 	}
-
-	rootproc->base = _base;
 
 # ifndef DEBUG_INFO
 	/* If init program exited, reboot the system.
