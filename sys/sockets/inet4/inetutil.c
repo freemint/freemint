@@ -57,43 +57,44 @@ in_data_create (void)
 		DEBUG (("in_data_create: Out of mem"));
 		return 0;
 	}
+	bzero (data, sizeof (*data));
 	
-	data->protonum = 0;
-	data->proto = 0;
-	data->sock = 0;
-	data->next = 0;
-	data->pcb = 0;
+	// data->protonum = 0;
+	// data->proto = 0;
+	// data->sock = 0;
+	// data->next = 0;
+	// data->pcb = 0;
 	
-	bzero (&data->opts, sizeof (data->opts));
+	// bzero (&data->opts, sizeof (data->opts));
 	data->opts.ttl = IP_DEFAULT_TTL;
 	data->opts.tos = IP_DEFAULT_TOS;
 	
 	data->snd.maxdatalen = IN_DEFAULT_WSPACE;
-	data->snd.curdatalen = 0;
-	data->snd.lowat = 0;
-	data->snd.hiwat = 0;
-	data->snd.flags = 0;
-	data->snd.qfirst = 0;
-	data->snd.qlast = 0;
+	// data->snd.curdatalen = 0;
+	// data->snd.lowat = 0;
+	// data->snd.hiwat = 0;
+	// data->snd.flags = 0;
+	// data->snd.qfirst = 0;
+	// data->snd.qlast = 0;
 	
 	data->rcv.maxdatalen = IN_DEFAULT_RSPACE;
-	data->rcv.curdatalen = 0;
-	data->rcv.lowat = 0;
-	data->rcv.hiwat = 0;
-	data->rcv.flags = 0;
-	data->rcv.qfirst = 0;
-	data->rcv.qlast = 0;
+	// data->rcv.curdatalen = 0;
+	// data->rcv.lowat = 0;
+	// data->rcv.hiwat = 0;
+	// data->rcv.flags = 0;
+	// data->rcv.qfirst = 0;
+	// data->rcv.qlast = 0;
 	
-	data->src.port = 0;
-	data->src.addr = 0;
+	// data->src.port = 0;
+	// data->src.addr = 0;
 	
-	data->dst.port = 0;
-	data->dst.addr = 0;
+	// data->dst.port = 0;
+	// data->dst.addr = 0;
 	
 	data->flags = IN_BROADCAST|IN_CHECKSUM;
-	data->backlog = 0;
-	data->linger = 0;
-	data->err = 0;
+	// data->backlog = 0;
+	// data->linger = 0;
+	// data->err = 0;
 	
 	return data;
 }

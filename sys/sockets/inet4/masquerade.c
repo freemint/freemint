@@ -454,8 +454,10 @@ new_port_record (void)
 			record = kmalloc (sizeof (*record));
 			if (record)
 			{
-				masq.port_db[i] = record;
+				bzero (record, sizeof (*record));
 				record->num = i;
+				
+				masq.port_db[i] = record;
 			}
 			else
 				MBDEBUG	(("masq_ip_input: ALERT: could not allocate storage for new record"));
@@ -494,6 +496,8 @@ new_redirection (void)
 	record = kmalloc (sizeof (*record));
 	if (record)
 	{
+		bzero (record, sizeof (*record));
+		
 		record->next_port = masq.redirection_db;
 		masq.redirection_db = record;
 	}

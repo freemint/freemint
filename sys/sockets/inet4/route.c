@@ -105,13 +105,13 @@ route_alloc (struct netif *nif, ulong net, ulong mask, ulong gway, short flags, 
 	}
 	
 	rt->gway = (flags & RTF_GATEWAY) ? gway : INADDR_ANY;
-	rt->nif = nif;
-	rt->flags = flags;
-	rt->ttl = ttl;
 	rt->metric = metric;
+	rt->nif = nif;
+	rt->ttl = ttl;
+	rt->next = NULL;
+	rt->flags = flags;
 	rt->usecnt = 0;
 	rt->refcnt = 1;
-	rt->next = 0;
 	
 	return rt;
 }
