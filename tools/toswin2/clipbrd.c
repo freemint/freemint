@@ -38,11 +38,14 @@ static void selectfrom(TEXTWIN *t, short x1, short y1, short x2, short y2)
 	int	first, last;
 
 	/* first, normalize coordinates */
-	if ( (y1 > y2) || (y1 == y2 && x1 > x2) ) 
+	if ((y1 > y2) || (y1 == y2 && x1 > x2)) 
 	{
-		i = x1; j = y1;
-		x1 = x2; y1 = y2;
-		x2 = i; y2 = j;
+		x1 ^= x2;
+		x2 ^= x1;
+		x1 ^= x2;
+		y1 ^= y2;
+		y2 ^= y1;
+		y1 ^= y2;
 	}
 
 	t->block_x1 = x1;
