@@ -163,15 +163,18 @@ fs_prompt(SCROLL_INFO *list)
 	/* Not if filename empty or list empty */
 	if (*fs->file && s)
 	{
-		struct seget_entrybyarg seget;
+		struct seget_entrybyarg seget, p;
 		SCROLL_ENTRY *old = list->cur;
 
 		seget.e = s;
 		seget.arg.pnent.flags = ENT_VISIBLE;
-		seget.arg.pnent.level = 1;
+		seget.arg.pnent.maxlevel = 1;
+		seget.arg.pnent.curlevel = 0;
+		p.idx = 0;
 		while (seget.e)
 		{
-			if (match_pattern(seget.e->c.td.text.text->text, fs->file, true))
+			list->get(list, seget.e, SEGET_TEXTPTR, &p);
+			if (p.ret.ptr && match_pattern(p.ret.ptr, fs->file, true))
 				break;
 			list->get(list, seget.e, SEGET_NEXTENT, &seget);
 		}
@@ -222,14 +225,19 @@ fs_prompt_refresh(SCROLL_INFO *list)
 
 typedef bool sort_compare(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2);
 
+#define FLAG_FILLED	0x00000001
+#define FLAG_DIR	0x00000002
+#define FLAG_EXE	0x00000004
+#define FLAG_LINK	0x00000008
+
 /*
  * This is called by the slist functions
  */
 static bool
 dirflag_name(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2)
 {
-	unsigned short f1 = s1->type & FLAG_DIR;
-	unsigned short f2 = s2->type & FLAG_DIR;
+	unsigned short f1 = s1->c.usr_flags & FLAG_DIR;
+	unsigned short f2 = s2->c.usr_flags & FLAG_DIR;
 
 	if (f1 < f2)
 	{
@@ -354,20 +362,24 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 		if (dir_ent)
 		{
 			long here;
-
 			SCROLL_ENTRY *this;
+			struct seget_entrybyarg p;
+			
 			strcpy(fs->path, fs->root);
 			here = strlen(fs->path);
 			this = dir_ent;
+			p.idx = 0;
 			while (this)
 			{
+				list->get(list, this, SEGET_TEXTPTR, &p);
 				strins(fs->path, "\\", here);
-				strins(fs->path, this->c.td.text.text->text, here);
+				strins(fs->path, p.ret.ptr, here);
+				
 				this = this->up;
 			}
 			/* If realtime build, open entry here */
 			//list->set(list, dir_ent, SESET_OPEN, 1, true);
-			list->get(list, dir_ent, SEGET_USRFLAG, &here);
+			list->get(list, dir_ent, SEGET_USRFLAGS, &here);
 			if (here & 1)
 			{
 				list->set(list, dir_ent, SESET_OPEN, 1, NORMREDRAW);
@@ -388,6 +400,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 			while (d_xreaddir(NAME_MAX, i, nm, &xat, &rep) == 0)
 			{
+				struct scroll_content sc = { 0 };
 				char *nam = nm+4;
 				bool dir = S_ISDIR(xat.mode);
 				bool sln = S_ISLNK(xat.mode);
@@ -420,15 +433,13 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 				if (match)
 				{
-					short type = FLAG_AMAL;
 					OBJECT *icon = NULL;
-					struct scroll_content sc = { 0 };
 					char *s = nam + strlen(nam) + 1;
 			
 					sc.text = nam;
 					if (dir)
 					{
-						type |= FLAG_DIR;
+						sc.usr_flags |= FLAG_DIR;
 						icon = obtree + FS_ICN_DIR;
 						sc.xstate |= OS_NESTICON;
 					}
@@ -451,7 +462,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 					sc.icon = icon;
 					sc.n_strings = 2;
-					list->add(list, dir_ent, dirflag_name, &sc, dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, type, NORMREDRAW);
+					list->add(list, dir_ent, dirflag_name, &sc, dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, FLAG_AMAL, NORMREDRAW);
 				}
 			}
 			d_closedir(i);
@@ -462,9 +473,9 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			 * Set bit 0 in user flags to indicate that this directory is read
 			 */
 			long uf;
-			list->get(list, dir_ent, SEGET_USRFLAG, &uf);
-			uf |= 1;
-			list->set(list, dir_ent, SESET_USRFLAG, uf, 0);
+			list->get(list, dir_ent, SEGET_USRFLAGS, &uf);
+			uf |= FLAG_FILLED;
+			list->set(list, dir_ent, SESET_USRFLAGS, uf, 0);
 		}
 	}
 	/* If realtime directory building, disable this */
@@ -668,18 +679,29 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 	DIAG((D_fsel, NULL, "fs_item_action %lx, fs=%lx", list->cur, fs));
 	if (list->cur)
 	{
-		if ( (list->cur->type & FLAG_DIR) == 0)
+		struct seget_entrybyarg p;
+		long uf;
+
+		list->get(list, list->cur, SEGET_USRFLAGS, &uf);
+
+		if ( (uf & FLAG_DIR) == 0)
 		{
 			DIAG((D_fsel, NULL, " --- nodir '%s'", list->cur->c.td.text.text->text));
 			/* file entry action */
-			strcpy(fs->file, list->cur->c.td.text.text->text);
+			p.idx = 0;
+			p.e = list->cur;
+			p.arg.txt = fs->file;
+			list->get(list, list->cur, SEGET_TEXTCPY, &p);
+			//strcpy(fs->file, list->cur->c.td.text.text->text);
 		}
 		else
 		{			
 			/* folder entry action */
 			DIAG((D_fsel, NULL, " --- folder '%s'", list->cur->c.td.text.text->text));
+			p.idx = 0;
+			p.arg.txt = "..";
 			
-			if (strcmp(list->cur->c.td.text.text->text, "..") == 0)
+			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && !p.ret.ret) //strcmp(list->cur->c.td.text.text->text, "..") == 0)
 			{
 				if ( fs->clear_on_folder_change )
 					set_file(lock, fs, "");
@@ -688,8 +710,8 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 				fs_updir(lock, fs);
 				return true;
 			}
-
-			if (strcmp(list->cur->c.td.text.text->text, ".") != 0)
+			p.arg.txt = ".";
+			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && p.ret.ret) //strcmp(list->cur->c.td.text.text->text, ".") != 0)
 			{
 				int drv;
 				add_slash(fs->root, fs->fslash);
@@ -742,11 +764,17 @@ fs_click(enum locks lock, struct scroll_info *list, OBJECT *form, int objc)
 
 	if (list->cur)
 	{
-		if ( ! (list->cur->type & FLAG_DIR))
+		struct seget_entrybyarg p;
+		long uf;
+		
+		list->get(list, list->cur, SEGET_USRFLAGS, &uf);
+		p.idx = 0;
+		list->get(list, list->cur, SEGET_TEXTPTR, &p);
+		if ( ! (uf & FLAG_DIR))
 		{
-			set_file(lock, fs, list->cur->c.td.text.text->text);
+			set_file(lock, fs, p.ret.ptr); //list->cur->c.td.text.text->text);
 		}
-		else if (strcmp(list->cur->c.td.text.text->text, ".") == 0)
+		else if (strcmp(p.ret.ptr, ".") == 0)
 		{
 			set_file(lock, fs, "");
 		}
@@ -939,12 +967,19 @@ fs_key_form_do(enum locks lock,
 	/*  If anything in the list and it is a cursor key */
 	if (scrl_cursor(list, keycode) != -1)
 	{
-		if (list->cur && !(list->cur->type & FLAG_DIR))
+		if (list->cur)
 		{
-			if (old_entry != list->cur)
-				fs->clear_on_folder_change = 1;
-
-			set_file(lock, fs, list->cur->c.td.text.text->text);
+			long uf;
+			list->get(list, list->cur, SEGET_USRFLAGS, &uf);
+			if (!(uf & FLAG_DIR))
+			{
+				struct seget_entrybyarg p;
+				p.idx = 0;
+				if (old_entry != list->cur)
+					fs->clear_on_folder_change = 1;
+				list->get(list, list->cur, SEGET_TEXTPTR, &p);
+				set_file(lock, fs, p.ret.ptr);
+			}
 		}
 	}
 	else
