@@ -5,18 +5,21 @@ If something is missing just add it; freestyle text!
 kernel
 - test and bugfix slip.xif (sld, ppp)
 - bugfix rtl8012 driver
+- there are problems with resolution switches
+
+this is the "rather must" kernel-stuff:
+- finish and implement the new syscall stuff.
+- finish the keyboard handler
 
 this is the "not must" kernel-stuff:
 - libkern struct for XDD/XFS modules (a jumptable to libkern functions
   linked with the kernel, purpose: prevent libkern functions to be
   present in memory in many copies (esp. strcpy() and such stuff).
   Adams idea btw.
-- make kernel TEXT+DATA+BSS supervior protected
+- make kernel TEXT+DATA+BSS supervisor protected
 - make ROM and hardware registers supervisor protected, currently
   IDE I/O registers are *freely* available in user mode, at least
   on Falcons :/
-- finish and implement the new syscall stuff.
-- finish the keyboard handler
 - add instruction emulation for 060.
 
 tools
@@ -27,12 +30,11 @@ tools
 
 - would be very nice if the gem tools from draco can be integrated
   (I have the source, but all these things require his gemma slb
-   lib; this won't work at all under memory protection and the
-   gemma lib in cvs is still out of sync (not updated from draco))
+   lib).
   I like much more if these small tools can be depend only on the gemlib
-  someone volunter? it shouldn't be very hard
+  someone volunter? it shouldn't be very hard.
   -> GEM gui for mkfatfs
-  -> crypt (passwort set for crypted partitions, should go into fsetter)
+  -> crypt (password set for crypted partitions, should go into fsetter)
   -> shutdown tool
   -> cache setter
   and they should work under XaAES :-)
