@@ -1117,7 +1117,7 @@ ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 		struct file *f;
 
 		f = kernel_open(ed_scrap_filename(scrp, sizeof(scrp)),
-				O_WRONLY|O_CREAT|O_TRUNC, NULL);
+				O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
 		if (f)
 		{
 			kernel_write(f, ed_txt->te_ptext, len);
@@ -1133,7 +1133,7 @@ ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, int *cur
 	char scrp[256];
 	struct file *f;
 
-	f = kernel_open(ed_scrap_filename(scrp, sizeof(scrp)), O_RDONLY, NULL);
+	f = kernel_open(ed_scrap_filename(scrp, sizeof(scrp)), O_RDONLY, NULL, NULL);
 	if (f)
 	{
 		unsigned char data[128];

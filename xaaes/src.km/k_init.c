@@ -74,7 +74,7 @@ xaaes_sysfile(const char *file)
 
 	DIAGS(("xaaes_sysfile: looking for '%s'", p));
 
-	fp = kernel_open(p, O_RDONLY, NULL);
+	fp = kernel_open(p, O_RDONLY, NULL, NULL);
 	if (fp)
 	{
 		kernel_close(fp);

@@ -24,6 +24,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef _wind_draw_h
+#define _wind_draw_h
+
+struct xa_window;
+
 struct xawin_functions
 {
 	void	(*draw_border)(struct xa_window *wind);
@@ -34,3 +39,5 @@ struct xawin_functions
 	void	(*draw_vslide)(struct xa_window *wind);
 	void	(*draw_sizer)(struct xa_window *wind);
 };
+
+#endif /* _wind_draw_h */

@@ -413,7 +413,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					/* check tosrun pipe */
 					struct file *f;
 
-					f = kernel_open("u:\\pipe\\tosrun", O_WRONLY, NULL);
+					f = kernel_open("u:\\pipe\\tosrun", O_WRONLY, NULL, NULL);
 					if (f)
 					{		
 						kernel_write(f, cmd, strlen(cmd));
