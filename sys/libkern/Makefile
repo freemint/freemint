@@ -24,13 +24,20 @@ GENFILES = .cpu_* libkern*.a
 
 
 libkern$(CPU).a: objs asm-files
-	$(RM) $@
-	$(AR) rc $@ \
-		$(shell for file in `cat .cpu_$(CPU)/objs` ; \
-			do echo .cpu_$(CPU)/$$file ; done) \
-		$(shell for file in `cat asm/.cpu_$(CPU)/asm-files` ; \
-			do echo asm/.cpu_$(CPU)/$$file ; done)
-	$(RANLIB) $@
+	$(shell \
+	  if [ ! -e $@ \
+	         -o .cpu_$(CPU)/objs -nt $@ \
+	         -o asm/.cpu_$(CPU)/asm-files -nt $@ ] ; \
+	  then \
+		objs=`cat .cpu_$(CPU)/objs` ; \
+		objs=`for i in $$objs ; do echo .cpu_$(CPU)/$$i ; done` ; \
+		\
+		asmobjs=`cat asm/.cpu_$(CPU)/asm-files` ; \
+		asmobjs=`for i in $$asmobjs ;  do echo asm/.cpu_$(CPU)/$$i ; done` ; \
+		\
+		echo "$(RM) $@; $(AR) rc $@ $$objs $$asmobjs; $(RANLIB) $@;" ; \
+	  fi \
+	)
 
 objs: .cpu_$(CPU)
 	cd .cpu_$(CPU); $(MAKE)
