@@ -857,7 +857,7 @@ check_exception (fd_set *mint_fds, st_fd_set *st_fds)
 			r = Frecvfrom (i, &c, 1, MSG_PEEK, 0, 0);
 			DEBUG (("[Frecvfrom = %li] ", r));
 			
-			if (r < 0 && r != -EAGAIN) /* Exception on error or EOF */
+			if (r <= 0 && r != -EAGAIN) /* Exception on error or EOF ; 0 = EOF */
 			{
 				/* Wenn EOF dann exception, sollte zwar eigentlich nur
 				 * einmal gesetzt werden, und ist auch etwas unelegant,
