@@ -111,22 +111,22 @@ icquit:	rts
 // 13 - branch cache invalidate user entries
 // 14 - CPUSH invalidate enable
 // 15 - store buffer enable
-// 
+//
 // This is translated into the physical CACR
 // independently for each processor (as they differ).
 //
-// ssystem(S_CTRLCACHE, control, mask)//
+// ssystem(S_CTRLCACHE, control, mask);
 //
 // where control is the actual Cache Control Word
 // and mask indicates, what bits of CCW should be taken into account.
 //
-	
+
 // table of default CCW masks for processors
 
 ccw_dmasks:
 	dc.w	0x0000			// 68000
 	dc.w	0x0000			// 68010
-	dc.w	0x0009			// 68020	
+	dc.w	0x0009			// 68020
 	dc.w	0x00fb			// 68030
 	dc.w	0x0003			// 68040
 	dc.w	0x0000			// 68050 (does not exist)
@@ -139,7 +139,11 @@ ccw_dmasks:
 // Set the CACR according to the Cache Control Word and Mask
 
 _ccw_set:
+#ifdef ONLY030
+	tst.w	hascaches.w(pc)
+#else
 	tst.w	hascaches
+#endif
 	beq.s	clq
 	bsr.s	_ccw_get		// get the current CCW
 	move.l	d0,-(sp)		// save it for later reference
@@ -182,18 +186,22 @@ dc_off:
 lt040:
 	movec	d0,cacr			// write CACR
 clq:	clr.l	d0			// E_OK
-	rts	
+	rts
 
 // Extract Cache Control Word from the CACR
 
 _ccw_get:
+#ifdef ONLY030
+	tst.w	hascaches.w(pc)
+#else
 	tst.w	hascaches
+#endif
 	beq.s	clq
 	movec	cacr,d0			// read CACR
 	move.l	c2lv,a0			// convert
 	jsr	(a0)
 	move.w	d0,d1
-	bsr	_ccw_getdmask
+	bsr.s	_ccw_getdmask
 	and.w	d1,d0
 	and.l	#0x0000ffff,d0
 	rts
@@ -297,10 +305,10 @@ s60:	addq.l	#0x04,a0
 	dbra.w	d2,l60
 	move.l	d1,d0
 	eori.l	#0x58006000,d0		// adjust reverted bits
-	rts	
+	rts
 
 c2l060:	lea	ccw60.w(pc),a0
-	lsr.l	#0x08,d0		// first 13 bits of CACR aren't used 
+	lsr.l	#0x08,d0		// first 13 bits of CACR aren't used
 	lsr.l	#0x04,d0
 	clr.l	d1
 	moveq	#0x13,d2
@@ -323,7 +331,7 @@ _cpush:
 	movem.l	4(sp),d0/a0		// get parameters
 	exg	a0,d0			// and in the right order
 	nop				// flush pipelines
-	move.l	_cachevec,a1
+	move.l	_cachevec.w(pc),a1
 	jmp	(a1)
 
 _cache030:				// 68030 cache
@@ -335,7 +343,7 @@ _cache030:				// 68030 cache
 	lsr.l	#2,d0			// convert to number of longs
 	cmp.l	#64,d0
 	bcs.s	fls030			// dump selectively
-	
+
 abc030:	or.w	#0x0808,d1
 	movec	d1,cacr
 	bra.s	rescacr
@@ -361,7 +369,7 @@ _cache040:				// 68040 cache
 	bcs.s	fls040			// not too many lines, so dump only some
 abc040:	dc.w	0xF4F8			// this is "cpusha bc" if your asm knows '040
 	rts
-	
+
 fls040:
 // run through d0+1 times (since a0 may not be on a line boundary)
 	moveq	#16,d1
