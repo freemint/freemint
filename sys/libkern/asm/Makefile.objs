@@ -37,3 +37,8 @@ VPATH = ..
 #
 asm-files: $(OBJS)
 	echo $(OBJS) > $@
+
+
+# default dependencies
+# must be included last
+include $(top_srcdir)/DEPENDENCIES
