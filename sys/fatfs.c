@@ -7091,7 +7091,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			r = search_cookie ((COOKIE *) dir->index, &c, name, 0);
 			if (r == E_OK)
 			{
-				r = __FTRUNCATE (c, arg);
+				r = __FTRUNCATE (c, *((long *) arg));
 				rel_cookie (c);
 			}
 			
@@ -7769,7 +7769,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				return EACCES;
 			}
 			
-			r = __FTRUNCATE (c, *(long *) buf);
+			r = __FTRUNCATE (c, *((long *) buf));
 			if (r == E_OK)
 			{
 				long pos = f->pos;
