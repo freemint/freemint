@@ -802,12 +802,14 @@ load_keytbl(void)
 	 */
 	ksprintf(name, sizeof(name), "%skeyboard.tbl", sysdir);
 
+# ifdef VERBOSE_BOOT
 	boot_printf(MSG_keytable_loading, name);
+# endif
 
 	r = load_keyboard_table(name, 0);
+# ifdef VERBOSE_BOOT
 	if (r == 0)
 		boot_printf(MSG_keytable_loaded, gl_kbd);
-# ifdef VERBOSE_BOOT
 	else
 		boot_printf(MSG_init_error, r);
 # endif
