@@ -173,10 +173,12 @@ static struct bios_file BDEV [] =
 	 * have a different device number on TTs and STs)
 	 */
 	{ "modem1",	&bios_tdevice,	 6,       O_TTY, &aux_tty, NULL},
+#ifndef MILAN/* these do not really work on Milan, so it is best to use the UART
+	   XDD instead of this // rincewind */
 	{ "modem2",	&bios_tdevice,	 7,       O_TTY, &sccb_tty, NULL},
 	{ "serial1",	&bios_tdevice,	 8,       O_TTY, &ttmfp_tty, NULL},
 	{ "serial2",	&bios_tdevice,	 9,       O_TTY, &scca_tty, NULL},
-
+#endif
 	{"", 0, 0, 0, 0, 0}
 };
 
