@@ -55,7 +55,10 @@
 
 
 # undef DEFAULT_MODE
-# define DEFAULT_MODE	(0666)
+# undef DEFAULT_DIRMODE
+
+# define DEFAULT_MODE		(0644)
+# define DEFAULT_DIRMODE	(0755)
 
 
 struct kentry kentry =

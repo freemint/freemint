@@ -5,8 +5,12 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  *
  *
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2000-2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ *
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,24 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2000-08-29
- *
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- *
- *
- * changes since last version:
- *
- * 2000-08-29:
- *
- * - initial revision
- *
- * known bugs:
- *
- * todo:
  *
  */
 
@@ -60,74 +46,26 @@
 # include "memory.h"
 
 
-static long load_xfs (struct basepage *b, const char *name);
-static long load_xdd (struct basepage *b, const char *name);
-
-
-static const char *_types [] =
-{
-	".xdd",
-	".xfs"
-};
-
-static long (*_loads [])(struct basepage *, const char *) =
-{
-	load_xdd,
-	load_xfs
-};
-
-void
-load_all_modules (const char *curpath, ulong mask)
-{
-	int i;
-
-	for (i = 0; i < (sizeof (_types) / sizeof (*_types)); i++)
-	{
-		/* set path first to make sure that MiNT's directory matches
-		 * GEMDOS's
-		 */
-		sys_d_setpath (curpath);
-
-		/* load external xdd */
-		if (mask & (1L << i))
-			load_modules (_types [i], _loads [i]);
-	}
-
-	/* reset curpath just to be sure */
-	sys_d_setpath (curpath);
-}
-
-
-static long
-_d_opendir (DIR *dirh, const char *name)
+long _cdecl
+kernel_opendir(struct dirstruct *dirh, const char *name)
 {
 	long r;
 
-	r = path2cookie (name, follow_links, &dirh->fc);
+	r = path2cookie(name, follow_links, &dirh->fc);
 	if (r == E_OK)
 	{
 		dirh->index = 0;
 		dirh->flags = 0;
 
-		r = xfs_opendir (dirh->fc.fs, dirh, 0);
-		if (r) release_cookie (&dirh->fc);
+		r = xfs_opendir(dirh->fc.fs, dirh, 0);
+		if (r) release_cookie(&dirh->fc);
 	}
 
 	return r;
 }
 
-static void
-_d_closedir (DIR *dirh)
-{
-	if (dirh->fc.fs)
-	{
-		xfs_closedir (dirh->fc.fs, dirh);
-		release_cookie (&dirh->fc);
-	}
-}
-
-static long
-_d_readdir (DIR *dirh, char *buf, int len)
+long _cdecl
+kernel_readdir(struct dirstruct *dirh, char *buf, int len)
 {
 	fcookie fc;
 	long r;
@@ -135,35 +73,117 @@ _d_readdir (DIR *dirh, char *buf, int len)
 	if (!dirh->fc.fs)
 		return EBADF;
 
-	r = xfs_readdir (dirh->fc.fs, dirh, buf, len, &fc);
-	if (!r) release_cookie (&fc);
+	r = xfs_readdir(dirh->fc.fs, dirh, buf, len, &fc);
+	if (!r) release_cookie(&fc);
 
 	return r;
 }
 
-static struct basepage *
-load_module (const char *filename, long *err)
+void _cdecl
+kernel_closedir(struct dirstruct *dirh)
 {
-	struct basepage *b = NULL;
-	FILEPTR *f;
-	long size;
-	FILEHEAD fh;
+	if (dirh->fc.fs)
+	{
+		xfs_closedir(dirh->fc.fs, dirh);
+		release_cookie(&dirh->fc);
+	}
+}
 
-	*err = FP_ALLOC (rootproc, &f);
+struct file * _cdecl
+kernel_open(const char *path, int rwmode, long *err)
+{
+	struct file *f;
+
+	*err = FP_ALLOC(rootproc, &f);
 	if (*err) return NULL;
 
-	*err = do_open (&f, filename, O_DENYW | O_EXEC, 0, NULL);
+	*err = do_open(&f, path, rwmode, 0, NULL);
 	if (*err)
 	{
 		f->links--;
-		FP_FREE (f);
+		FP_FREE(f);
 		return NULL;
 	}
 
-	size = xdd_read (f, (void *) &fh, sizeof (fh));
-	if (fh.fmagic != GEMDOS_MAGIC || size != sizeof (fh))
+	return f;
+}
+
+long _cdecl
+kernel_read(struct file *f, void *buf, long buflen)
+{
+	return xdd_read(f, buf, buflen);
+}
+
+long _cdecl
+kernel_write(struct file *f, const void *buf, long buflen)
+{
+	return xdd_write(f, buf, buflen);
+}
+
+long _cdecl
+kernel_lseek(FILEPTR *f, long where, int whence)
+{
+	return xdd_lseek(f, where, whence);
+}
+
+void _cdecl
+kernel_close(struct file *f)
+{
+	do_close(rootproc, f);
+}
+
+
+static long load_xfs (struct basepage *b, const char *name);
+static long load_xdd (struct basepage *b, const char *name);
+
+static const char *_types[] =
+{
+	".xdd",
+	".xfs"
+};
+
+static long (*_loads[])(struct basepage *, const char *) =
+{
+	load_xdd,
+	load_xfs
+};
+
+void
+load_all_modules(const char *curpath, unsigned long mask)
+{
+	int i;
+
+	for (i = 0; i < (sizeof(_types) / sizeof(*_types)); i++)
 	{
-		DEBUG (("load_module: file not executable"));
+		/* set path first to make sure that MiNT's directory matches
+		 * GEMDOS's
+		 */
+		sys_d_setpath(curpath);
+
+		/* load external xdd */
+		if (mask & (1L << i))
+			load_modules(_types [i], _loads [i]);
+	}
+
+	/* reset curpath just to be sure */
+	sys_d_setpath(curpath);
+}
+
+static struct basepage *
+load_module(const char *filename, long *err)
+{
+	struct basepage *b = NULL;
+	struct file *f;
+	FILEHEAD fh;
+	long size;
+
+	f = kernel_open(filename, O_DENYW | O_EXEC, err);
+	if (!f) return NULL;
+
+	size = kernel_read(f, (void *) &fh, sizeof(fh));
+	if (size != sizeof(fh) || fh.fmagic != GEMDOS_MAGIC)
+	{
+		DEBUG(("load_module: file not executable"));
 
 		*err = ENOEXEC;
 		goto failed;
@@ -172,18 +192,18 @@ load_module (const char *filename, long *err)
 	size = fh.ftext + fh.fdata + fh.fbss;
 	size += 256; /* sizeof (struct basepage) */
 
-	b = kmalloc (size);
+	b = kmalloc(size);
 	if (!b)
 	{
-		DEBUG (("load_module: out of memory?"));
+		DEBUG(("load_module: out of memory?"));
 
 		*err = ENOMEM;
 		goto failed;
 	}
 
-	bzero (b, size);
+	bzero(b, size);
 	b->p_lowtpa = (long) b;
-	b->p_hitpa = (long) ((char *) b + size);
+	b->p_hitpa = (long)((char *) b + size);
 
 	b->p_flags = fh.flag;
 	b->p_tbase = b->p_lowtpa + 256;
@@ -195,80 +215,80 @@ load_module (const char *filename, long *err)
 
 	size = fh.ftext + fh.fdata;
 
-	*err = load_and_reloc (f, &fh, (char *) b + 256, 0, size, b);
+	*err = load_and_reloc(f, &fh, (char *) b + 256, 0, size, b);
 	if (*err)
 	{
-		DEBUG (("load_and_reloc: failed"));
+		DEBUG(("load_and_reloc: failed"));
 		goto failed;
 	}
 
-	do_close (rootproc, f);
+	kernel_close(f);
 
 	/* just to be sure */
-	cpush (NULL, -1);
+	cpush(NULL, -1);
 
-	DEBUG (("load_module: basepage = %lx", b));
+	DEBUG(("load_module: basepage = %lx", b));
 	return b;
 
 failed:
-	if (b) kfree (b);
+	if (b) kfree(b);
 
-	do_close (rootproc, f);
+	kernel_close(f);
 	return NULL;
 }
 
-static const char *dont_load_list [] =
+static const char *dont_load_list[] =
 {
 	"fnramfs.xfs",
 	"sockdev.xdd"
 };
 
 static int
-dont_load (const char *name)
+dont_load(const char *name)
 {
 	int i;
 
-	for (i = 0; i < (sizeof (dont_load_list) / sizeof (*dont_load_list)); i++)
-		if (stricmp (dont_load_list [i], name) == 0)
+	for (i = 0; i < (sizeof(dont_load_list) / sizeof(*dont_load_list)); i++)
+		if (stricmp(dont_load_list[i], name) == 0)
 			return 1;
 
 	return 0;
 }
 
-void
-load_modules (const char *extension, long (*loader)(struct basepage *, const char *))
+void _cdecl
+load_modules(const char *extension, long (*loader)(struct basepage *, const char *))
 {
-	DIR dirh;
-	char buf [128];
+	struct dirstruct dirh;
+	char buf[128];
 	long len;
 	char *name;
 	long r;
 
-	DEBUG (("load_modules: enter (%s)", extension));
+	DEBUG(("load_modules: enter (%s)", extension));
 
-	strcpy (buf, sysdir);
-	len = strlen (buf);
+	strcpy(buf, sysdir);
+	len = strlen(buf);
 # if 0
-	buf [len++] = '\\';
-	buf [len] = '\0';
+	buf[len++] = '\\';
+	buf[len] = '\0';
 # endif
 	name = buf + len;
-	len = sizeof (buf) - len;
+	len = sizeof(buf) - len;
 
-	r = _d_opendir (&dirh, buf);
-	DEBUG (("load_modules: d_opendir (%s) = %li", buf, r));
+	r = kernel_opendir(&dirh, buf);
+	DEBUG(("load_modules: d_opendir (%s) = %li", buf, r));
 
 	if (r == 0)
 	{
-		r = _d_readdir (&dirh, name, len);
-		DEBUG (("load_modules: d_readdir = %li (%s)", r, name+4));
+		r = kernel_readdir(&dirh, name, len);
+		DEBUG(("load_modules: d_readdir = %li (%s)", r, name+4));
 
 		while (r == 0)
 		{
-			r = strlen (name+4) - 4;
+			r = strlen(name+4) - 4;
 			if ((r > 0) &&
-			    stricmp (name+4 + r, extension) == 0 &&
-			    !dont_load (name+4))
+			    stricmp(name+4 + r, extension) == 0 &&
+			    !dont_load(name+4))
 			{
 				char *ptr1 = name;
 				char *ptr2 = name+4;
@@ -278,37 +298,37 @@ load_modules (const char *extension, long (*loader)(struct basepage *, const cha
 				while (*ptr2)
 				{
 					*ptr1++ = *ptr2++;
-					len2--; assert (len2);
+					len2--; assert(len2);
 				}
 
 				*ptr1 = '\0';
 
-				b = load_module (buf, &r);
+				b = load_module(buf, &r);
 				if (b)
 				{
-					DEBUG (("load_modules: load \"%s\"", buf));
-					r = loader (b, name);
-					DEBUG (("load_modules: load done \"%s\" (%li)", buf, r));
+					DEBUG(("load_modules: load \"%s\"", buf));
+					r = loader(b, name);
+					DEBUG(("load_modules: load done \"%s\" (%li)", buf, r));
 
-					if (r) kfree (b);
+					if (r) kfree(b);
 				}
 				else
-					DEBUG (("load_module of \"%s\" failed (%li)", buf, r));
+					DEBUG(("load_module of \"%s\" failed (%li)", buf, r));
 
 				/* just to be sure */
-				cpush (NULL, -1);
+				cpush(NULL, -1);
 			}
 
-			r = _d_readdir (&dirh, name, len);
-			DEBUG (("load_modules: d_readdir = %li (%s)", r, name+4));
+			r = kernel_readdir(&dirh, name, len);
+			DEBUG(("load_modules: d_readdir = %li (%s)", r, name+4));
 		}
 
-		_d_closedir (&dirh);
+		kernel_closedir(&dirh);
 	}
 }
 
 static void *
-callout_init (void *initfunction, struct kerinfo *k)
+callout_init(void *initfunction, struct kerinfo *k)
 {
 	register void *ret __asm__("d0");
 
@@ -335,17 +355,17 @@ callout_init (void *initfunction, struct kerinfo *k)
  * processes are run
  */
 static long
-load_xfs (struct basepage *b, const char *name)
+load_xfs(struct basepage *b, const char *name)
 {
 	FILESYS *fs;
 
-	DEBUG (("load_xfs: enter (0x%lx, %s)", b, name));
-	DEBUG (("load_xfs: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_xfs: enter (0x%lx, %s)", b, name));
+	DEBUG(("load_xfs: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	fs = callout_init ((void *) b->p_tbase, &kernelinfo);
+	fs = callout_init((void *) b->p_tbase, &kernelinfo);
 	if (fs)
 	{
-		DEBUG (("load_xfs: %s loaded OK (%lx)", name, fs));
+		DEBUG(("load_xfs: %s loaded OK (%lx)", name, fs));
 
 		/* link it into the list of drivers
 		 *
@@ -377,8 +397,8 @@ load_xfs (struct basepage *b, const char *name)
 				/* we ran completly through the list
 				 */
 
-				DEBUG (("load_xfs: xfs_add (%lx)", fs));
-				xfs_add (fs);
+				DEBUG(("load_xfs: xfs_add (%lx)", fs));
+				xfs_add(fs);
 			}
 		}
 
@@ -398,17 +418,17 @@ load_xfs (struct basepage *b, const char *name)
  * so they can make use of external device drivers
  */
 static long
-load_xdd (struct basepage *b, const char *name)
+load_xdd(struct basepage *b, const char *name)
 {
 	DEVDRV *dev;
 
-	DEBUG (("load_xdd: enter (0x%lx, %s)", b, name));
-	DEBUG (("load_xdd: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_xdd: enter (0x%lx, %s)", b, name));
+	DEBUG(("load_xdd: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	dev = callout_init ((void *) b->p_tbase, &kernelinfo);
+	dev = callout_init((void *) b->p_tbase, &kernelinfo);
 	if (dev)
 	{
-		DEBUG (("load_xdd: %s loaded OK", name));
+		DEBUG(("load_xdd: %s loaded OK", name));
 
 		if ((DEVDRV *) 1L != dev)
 		{
@@ -419,22 +439,22 @@ load_xdd (struct basepage *b, const char *name)
 			int i;
 			long r;
 
-			DEBUG (("load_xdd: installing %s itself!\7", name));
+			DEBUG(("load_xdd: installing %s itself!\7", name));
 
-			bzero (&the_dev, sizeof (the_dev));
+			bzero(&the_dev, sizeof(the_dev));
 			the_dev.driver = dev;
 
-			strcpy (dev_name, "u:\\dev\\");
-			i = strlen (dev_name);
+			strcpy(dev_name, "u:\\dev\\");
+			i = strlen(dev_name);
 
 			while (*name && *name != '.')
-				dev_name [i++] = tolower ((int)*name++ & 0xff);
+				dev_name[i++] = tolower((int)*name++ & 0xff);
 
-			dev_name [i] = '\0';
+			dev_name[i] = '\0';
 
-			DEBUG (("load_xdd: final -> %s", dev_name));
+			DEBUG(("load_xdd: final -> %s", dev_name));
 
-			r = sys_d_cntl (DEV_INSTALL, dev_name, (long) &the_dev);
+			r = sys_d_cntl(DEV_INSTALL, dev_name, (long) &the_dev);
 			return r;
 		}
 
