@@ -1683,7 +1683,7 @@ void display_window(enum locks lock, int which, struct xa_window *wind, RECT *cl
  * defines the clip rectangle.
  */
 void
-update_windows_below(enum locks lock, RECT *old, RECT *new, struct xa_window *wl)
+update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_window *wl)
 {
 	RECT clip;
 	enum locks wlock = lock | winlist;

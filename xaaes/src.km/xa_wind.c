@@ -552,8 +552,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_PREVXYWH:
 	case WF_CURRXYWH:
 	{
-		bool blit;
-		bool move = (pb->intin[2] == -1 && pb->intin[3] == -1 && pb->intin[4] == -1 && pb->intin[5] == -1) ? true : false;
+		bool blit = false;
+		bool move = (pb->intin[2] == -1 && pb->intin[3] == -1 &&
+			     pb->intin[4] == -1 && pb->intin[5] == -1) ? true : false;
 		RECT *ir;
 		short mx, my, mw, mh;
 		short status = -1, msg = -1;
@@ -563,14 +564,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("wind_set: WF_PREVXYWH"));
 			ir = (RECT *)&w->pr;
 			status = ~XAWS_FULLED;
-			blit = false;
 		}
 		else if (cmd == WF_FULLXYWH)
 		{
 			DIAGS(("wind_set: WF_FULLXYWH"));
 			ir = (RECT *)&w->max;
 			status = XAWS_FULLED;
-			blit = false;
 		}
 		else
 		{
