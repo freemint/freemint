@@ -748,28 +748,24 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 			 * a table walk if the alloc results in calling
 			 * get_region.)
 			 */
-			void *pmem = p->p_mem->mem;
-			void *paddr = p->p_mem->addr;
+			void *ptr = p->p_mem->mem;
 
 			p->p_mem->mem = NULL;
 			p->p_mem->addr = NULL;
+			p->p_mem->num_reg = 0;
 
-			kfree(pmem);
-			kfree(paddr);
+			kfree(ptr);
 
-			pmem = kmalloc(NUM_REGIONS * sizeof(MEMREGION *));
-			paddr = kmalloc(NUM_REGIONS * sizeof(long));
+			ptr = kmalloc(NUM_REGIONS * sizeof(void *) * 2);
+			assert(ptr);
 
-			assert(pmem && paddr);
-
-			p->p_mem->mem = pmem;
-			p->p_mem->addr = paddr;
+			p->p_mem->mem = ptr;
+			p->p_mem->addr = ptr + NUM_REGIONS * sizeof(void *);
 			p->p_mem->num_reg = NUM_REGIONS;
 		}
 
 		/* and clear out */
-		bzero(p->p_mem->mem, (p->p_mem->num_reg) * sizeof(MEMREGION *));
-		bzero(p->p_mem->addr, (p->p_mem->num_reg) * sizeof(long));
+		bzero(p->p_mem->mem, p->p_mem->num_reg * sizeof(void *) * 2);
 	}
 
 	assert(p->p_sigacts);

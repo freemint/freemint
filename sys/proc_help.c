@@ -121,6 +121,7 @@ copy_mem (struct proc *p)
 {
 	struct user_things *ut;
 	struct memspace *m;
+	void *ptr;
 	int i;
 	
 	TRACE (("copy_mem: pid %i (%lx)", p->pid, p));
@@ -140,8 +141,9 @@ copy_mem (struct proc *p)
 	
 	init_page_table_ptr (m);
 	
-	m->mem = kmalloc (m->num_reg * sizeof (MEMREGION *));
-	m->addr = kmalloc (m->num_reg * sizeof (long));
+	ptr = kmalloc (m->num_reg * sizeof (void *) * 2);
+	m->mem = ptr;
+	m->addr = ptr + m->num_reg * sizeof (void *);
 	
 	/* Trampoline. Space is added for user cookie jar */
 
@@ -163,7 +165,7 @@ copy_mem (struct proc *p)
 	if (!m->tp_reg)
 		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	
-	if ((!no_mem_prot && !m->pt_mem) || !m->mem || !m->addr || !m->tp_reg)
+	if ((!no_mem_prot && !m->pt_mem) || !ptr || !m->tp_reg)
 		goto nomem;
 	
 	/* copy memory */
@@ -244,8 +246,7 @@ copy_mem (struct proc *p)
 	
 nomem:
 	if (m->pt_mem) free_page_table_ptr (m);
-	if (m->mem) kfree (m->mem);
-	if (m->addr) kfree (m->addr);
+	if (ptr) kfree (ptr);
 	if (m->tp_reg) { m->tp_reg->links--; free_region(m->tp_reg); }
 	kfree (m);
 	
@@ -256,8 +257,7 @@ void
 free_mem (struct proc *p)
 {
 	struct memspace *p_mem;
-	MEMREGION **hold_mem;
-	long *hold_addr;
+	void *ptr;
 	int i;
 	
 	assert (p && p->p_mem && p->p_mem->links > 0);
@@ -285,7 +285,7 @@ free_mem (struct proc *p)
 	{
 		MEMREGION *m = p_mem->mem[i];
 		
-		p_mem->mem[i] = 0;
+		p_mem->mem[i] = NULL;
 		p_mem->addr[i] = 0;
 		
 		if (m)
@@ -316,15 +316,13 @@ free_mem (struct proc *p)
 	 * Thing.
 	 */
 	
-	hold_addr = p_mem->addr;
-	hold_mem = p_mem->mem;
+	ptr = p_mem->mem;
 	
 	p_mem->mem = NULL;
 	p_mem->addr = NULL;
 	p_mem->num_reg = 0;
 	
-	kfree (hold_addr);
-	kfree (hold_mem);
+	kfree (ptr);
 	
 	/* invalidate memory space for proc before freeing it
 	 * -> so the MMU code don't access it
@@ -333,6 +331,52 @@ free_mem (struct proc *p)
 	
 	free_page_table_ptr (p_mem);
 	kfree (p_mem);
+}
+
+long
+increase_mem(struct memspace *mem)
+{
+	unsigned long size;
+	void *ptr;
+
+	size = (mem->num_reg + NUM_REGIONS) * sizeof(void *);
+	ptr = kmalloc(size * 2);
+
+	if (ptr)
+	{
+		MEMREGION **newmem = ptr;
+		long *newaddr = ptr + size;
+		int i;
+
+		/* copy over the old address mapping */
+		for (i = 0; i < mem->num_reg; i++)
+		{
+			newmem[i] = mem->mem[i];
+			newaddr[i] = mem->addr[i];
+
+			if (newmem[i] == NULL)
+				assert(newaddr[i] == 0);
+		}
+
+		/* initialize the rest of the tables */
+		for(; i < mem->num_reg + NUM_REGIONS; i++)
+		{
+			newmem[i] = NULL;
+			newaddr[i] = 0;
+		}
+
+		/* free the old tables (carefully for memory protection!) */
+		ptr = mem->mem;
+
+		mem->mem = newmem;
+		mem->addr = newaddr;
+		mem->num_reg += NUM_REGIONS;
+
+		kfree(ptr);
+
+		return 0;
+	}
+	return ENOMEM;
 }
 
 /* p_fd */
