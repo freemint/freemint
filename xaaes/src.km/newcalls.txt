@@ -22,7 +22,7 @@ naes_cookie = yes
 
 static N_AESINFO naes_cookie =
 {
- 0x0300,             /* version 0.3.0 */
+ 0x0300,             /* version 3.0.0 */
  (25<<9)|(1<<5)|1,   /* 1 jan, 2005   */
  (1<<11)|(2<<5)|3,   /* 01:02:03      */
  0x8000,             /* Bit 15 set indicates that this really is XaAES */
@@ -31,7 +31,7 @@ static N_AESINFO naes_cookie =
 };
 
  This structures element will never change under XaAES. Since N.AES does not
-to be in development anymore, it is unlikely it will ever hit version 0.3.0.
+to be in development anymore, it is unlikely it will ever hit version 3.0.0.
 Furthermore, if date and time is Jan 1st, 2005/01:02:03 together with bit
 15 set in flags, one can safely assume this is the XaAES fake N.AES cookie.
 
@@ -168,7 +168,7 @@ anything else.
  * Development status flags - bits 8-15 of ap_gout3
  * returned by appl_getinfo(AES_VERSION)
  */
-#define AES_FDEVSTATUS STABLE 0x100
+#define AES_FDEVSTATUS_STABLE 0x100
 
 ===============================================================================
                        -= New window kind definitions =-
@@ -198,9 +198,9 @@ no definitions are made yet.
 
      wind_set(wh, WF_SHADE, mode, p2, p3, p4)
 
-     'mode' selects wether to SHADE (mode = -1) or UNSHADE (mode = 0) the
-     window in question. p2, p3 and p4 are usused at the moment and
-     must be set to 0.
+     'mode' selects wether to SHADE (mode = 1) or UNSHADE (mode = 0) the
+     window in question. If 'mode' is -1 it toggle between SHADE and UNSHADE.
+     p2, p3 and p4 are usused at the moment and must be set to 0.
 
 ===============================================================================
 =                            wind_set() extensions                            =
