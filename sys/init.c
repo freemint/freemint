@@ -1235,12 +1235,12 @@ mint_thread(void *arg)
 	{
 		if (!init_is_gem)
 		{
-# if 0
+# if 1
 			r = sys_pexec(100, init_prg, init_tail, init_env);
 # else
 			r = sys_pexec(0, init_prg, init_tail, init_env);
 # endif
-			ALERT("init_prg done!");
+			DEBUG(("init_prg done!"));
 		}
 		else
 		{
@@ -1314,7 +1314,7 @@ mint_thread(void *arg)
 			}
 # else
 			r = sys_pwaitpid(-1, 0, NULL);
-			ALERT("sys_pwaitpid done -> %li (%li)", r, ((r & 0xffff0000L) >> 16));
+			DEBUG(("sys_pwaitpid done -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
 # endif
 		} while (pid != ((r & 0xffff0000L) >> 16));
 	}
