@@ -73,7 +73,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				   client->options.thinframe,
 				   client->options.thinwork,
 				   r,
-				   &root_window.wa, //&r,
+				   &root_window->wa, //&r,
 				   NULL);	
 
 	if (new_window)
