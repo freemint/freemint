@@ -23,6 +23,7 @@ all-here: $(TARGET)
 # default overwrites
 INCLUDES += -I/usr/GEM/include
 #CFLAGS += -DDEBUG
+#CFLAGS += -g
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
@@ -33,8 +34,6 @@ GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(STRIP) $@
-
 
 include $(top_srcdir)/DEPENDENCIES
 
@@ -42,4 +41,5 @@ install: all
 	$(top_srcdir)/mkinstalldirs $(installdir)
 	cp $(TARGET) $(srcdir)/toswin2.rsc $(srcdir)/toswin2.hrd $(installdir)
 	chmod 755 $(installdir)/$(TARGET)
+	$(STRIP) $(installdir)/$(TARGET)
 	
