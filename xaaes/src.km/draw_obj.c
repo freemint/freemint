@@ -34,7 +34,6 @@
 #include "obtree.h"
 
 #include "rectlist.h"
-//#include "objects.h"
 #include "c_window.h"
 #include "widgets.h"
 #include "xa_user_things.h"
