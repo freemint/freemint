@@ -54,34 +54,35 @@ typedef unsigned long int sigset_t;
 # define SIGUSR2	30		/* user signal 2 */
 # define SIGPWR		31		/* power failure (restart) */
 
-# define SIG_ERR	-1
-# define SIG_DFL	 0
-# define SIG_IGN	 1
-
 /* XXX which signals are not maskable? */
 # define UNMASKABLE (1L | (1L << SIGKILL) | (1L << SIGCONT) | (1L << SIGSTOP))
 
 /* XXX which signals are stop signals? */
-# define STOPSIGS ((1L<< SIGTTIN)|(1L<< SIGTTOU)|(1L<< SIGTSTP)|(1L<<SIGSTOP))
+# define STOPSIGS ((1L << SIGTTIN)|(1L << SIGTTOU)|(1L << SIGTSTP)|(1L << SIGSTOP))
 
 /* sigaction: extended POSIX signal handling facility
  */
 struct sigaction
 {
-	ulong	sa_handler;	/* pointer to signal handler */
-	ulong	sa_mask;	/* additional signals masked during delivery */
-	ushort	sa_flags;	/* signal specific flags */
+	unsigned long  sa_handler;	/* pointer to signal handler */
+	unsigned long  sa_mask;		/* additional signals masked during delivery */
+	unsigned short sa_flags;	/* signal specific flags */
 };
 
+/* signal handler values */
+# define SIG_ERR	-1
+# define SIG_DFL	 0
+# define SIG_IGN	 1
+
 /* signal flags */
-# define SA_ONSTACK	0x2000	/* take signal on signal stack */
-# define SA_RESTART	0x4000	/* restart system on signal return */
-# define SA_RESET	0x8000	/* reset to SIG_DFL just before delivery */
-# define SA_NODEFER	0x0010	/* don't mask the signal we're delivering */
+# define SA_ONSTACK	0x2000		/* take signal on signal stack */
+# define SA_RESTART	0x4000		/* restart system on signal return */
+# define SA_RESET	0x8000		/* reset to SIG_DFL just before delivery */
+# define SA_NODEFER	0x0010		/* don't mask the signal we're delivering */
 # define SA_SIGINFO	0x0040
 /* only valid for SIGCHLD */
-# define SA_NOCLDSTOP	0x0001	/* don't send SIGCHLD when child stops */
-# define SA_NOCLDWAIT	0x0002	/* do not generate zombies on unwaited child */
+# define SA_NOCLDSTOP	0x0001		/* don't send SIGCHLD when child stops */
+# define SA_NOCLDWAIT	0x0002		/* do not generate zombies on unwaited child */
 # define SA_ALLBITS	0x007f
 
 # define SAUSER		(SA_NOCLDSTOP)	/* XXX signal flags which the process may set */
@@ -99,26 +100,25 @@ struct sigaction
 
 typedef struct sigaltstack
 {
-	void		*ss_sp;
-	long		ss_flags;
-	ulong		ss_size;
+	void *ss_sp;
+	long ss_flags;
+	unsigned long ss_size;
 }
 stack_t;
 
 struct sigacts
 {
 	struct sigaction sigact[NSIG];	/* disposition of signals */
-	stack_t		sigstk;		/* sp & on stack state variable */
-	sigset_t	oldmask;	/* saved mask from before sigpause */
-	long		flags;		/* signal flags, below */
-	void		*sigcode;	/* address of signal trampoline */
-	long		links;		/* reference count */
+	stack_t sigstk;			/* sp & on stack state variable */
+	sigset_t oldmask;		/* saved mask from before sigpause */
+	long flags;			/* signal flags, below */
+	long links;			/* reference count */
 };
 
 /* signal flags */
 # define SAS_OLDMASK	0x01		/* need to restore mask before pause */
 
-# define SIGACTION(p, sig)	((p)->p_sigacts->sigact[(sig)])
-
+/* helper macro */
+# define SIGACTION(p, sig)		((p)->p_sigacts->sigact[(sig)])
 
 # endif /* _mint_signal_h */
