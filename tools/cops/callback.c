@@ -43,11 +43,13 @@
 #undef min
 #undef max
 
+#define DEBUG_CALLBACK(cpx) DEBUG(("%s(%s)\n", __FUNCTION__, cpx ? cpx->file_name : "not found"))
+
 
 static struct cpxlist *_cdecl get_cpx_list(void) { return cpxlist; }
 
-static void    _cdecl rsh_fix(struct rsh_fix_args);
-static void    _cdecl rsh_obfix(struct rsh_obfix_args);
+       void    _cdecl rsh_fix_wrap(struct rsh_fix_args);
+       void    _cdecl rsh_obfix_wrap(struct rsh_obfix_args);
 static short   _cdecl Popup(struct Popup_args);
 static void    _cdecl Sl_size(struct Sl_size_args);
 static void    _cdecl Sl_x(struct Sl_xy_args);
@@ -55,12 +57,13 @@ static void    _cdecl Sl_y(struct Sl_xy_args);
 static void    _cdecl Sl_arrow(struct Sl_arrow_args);
 static void    _cdecl Sl_dragx(struct Sl_dragxy_args);
 static void    _cdecl Sl_dragy(struct Sl_dragxy_args);
-static GRECT * _cdecl GetFirstRect(GRECT *prect);
-static GRECT * _cdecl GetNextRect(void);
-static void    _cdecl Set_Evnt_Mask(struct Set_Evnt_Mask_args);
+       short   _cdecl Xform_do_wrap(struct Xform_do_args);
+       GRECT * _cdecl GetFirstRect_wrap(GRECT *prect);
+       GRECT * _cdecl GetNextRect_wrap(void);
+       void    _cdecl Set_Evnt_Mask_wrap(struct Set_Evnt_Mask_args);
 static short   _cdecl XGen_Alert(struct XGen_Alert_args);
-static short   _cdecl CPX_Save(void *ptr, long bytes);
-static void *  _cdecl Get_Buffer(void);
+       short   _cdecl CPX_Save_wrap(void *ptr, long bytes);
+       void *  _cdecl Get_Buffer_wrap(void);
 static short   _cdecl getcookie(long cookie, long *p_value);
 static void    _cdecl MFsave(struct MFsave_args);
 
@@ -77,8 +80,8 @@ struct xcpb xctrl_pb =
 	get_cpx_list,
 	save_header,
 
-	rsh_fix,
-	rsh_obfix,
+	rsh_fix_wrap,
+	rsh_obfix_wrap,
 
 	Popup,
 
@@ -89,15 +92,15 @@ struct xcpb xctrl_pb =
 	Sl_dragx,
 	Sl_dragy,
 
-	Xform_do,
-	GetFirstRect,
-	GetNextRect,
-	Set_Evnt_Mask,
+	Xform_do_wrap,
+	GetFirstRect_wrap,
+	GetNextRect_wrap,
+	Set_Evnt_Mask_wrap,
 			
 	XGen_Alert,
 
-	CPX_Save,
-	Get_Buffer,
+	CPX_Save_wrap,
+	Get_Buffer_wrap,
 	getcookie,
 
 	1,
@@ -110,15 +113,24 @@ struct xcpb xctrl_pb =
  * search cpx
  */
 CPX_DESC *
-find_cpx_by_addr(const void *addr)
+find_cpx_by_addr(const long *sp)
 {
+	const void *addr = (void *)(*sp);
 	CPX_DESC *cpx;
+
+	DEBUG(("find_cpx_by_addr(%p)\n", addr));
 
 	cpx = cpx_desc_list;
 	while (cpx)
 	{
-		if (addr >= cpx->start_of_cpx && addr < cpx->end_of_cpx)
-			break;
+		if (cpx->start_of_cpx && cpx->end_of_cpx)
+		{
+			DEBUG(("find_cpx_by_addr: [%s] start %p end %p\n",
+				cpx->file_name, cpx->start_of_cpx, cpx->end_of_cpx));
+
+			if (addr >= cpx->start_of_cpx && addr < cpx->end_of_cpx)
+				break;
+		}
 
 		cpx = cpx->next;
 	}
@@ -185,6 +197,8 @@ cpx_rsh_fix(CPX_DESC *cpx_desc, const struct rsh_fix_args *args)
 {
 	OBJECT *obj;
 
+	DEBUG_CALLBACK(cpx_desc);
+
 	if (cpx_desc->xctrl_pb.SkipRshFix == 0)
 	{
 		short num_objs = args->num_objs;
@@ -214,15 +228,20 @@ cpx_rsh_fix(CPX_DESC *cpx_desc, const struct rsh_fix_args *args)
 		cpx_desc->xctrl_pb.SkipRshFix = 1;		/* RSC wurde schon einmal initialisiert */
 	}
 }
-static void _cdecl
-rsh_fix(struct rsh_fix_args args)
+void _cdecl
+rsh_fix(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx_by_addr(addr);
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
+
 	if (cpx)
-		cpx_rsh_fix(cpx, &args);
+	{
+		const struct rsh_fix_args *args = (const struct rsh_fix_args *)(++sp);
+
+		cpx_rsh_fix(cpx, args);
+	}
 }
 
 
@@ -237,6 +256,7 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 {
 	short hpix, ypix;
 
+	DEBUG_CALLBACK(cpx_desc);
 	DEBUG(("rsh_obfix ob %d\n", ob));
 
 	ypix = (tree[ob].ob_y & 0xff00) >> 8;
@@ -281,15 +301,20 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 	 */
 	cpx_desc->xctrl_pb.SkipRshFix = 1;			/* RSC wurde schon einmal initialisiert */
 }
-static void _cdecl
-rsh_obfix(struct rsh_obfix_args args)
+void _cdecl
+rsh_obfix(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx_by_addr(addr);
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
+
 	if (cpx)
-		cpx_rsh_obfix(cpx, args.tree, args.ob);
+	{
+		const struct rsh_obfix_args *args = (const struct rsh_obfix_args *)(++sp);
+
+		cpx_rsh_obfix(cpx, args->tree, args->ob);
+	}
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -401,7 +426,6 @@ Sl_size(struct Sl_size_args args)
 static void
 cpx_Sl_x(OBJECT *tree, short base, short slider, short value,
 	 short min, short max, void (*userdef)(void))
-
 {
 	short w;
 
@@ -693,7 +717,7 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 	short last_edit_obj;
 	short cursor;
 
-	DEBUG(("cpx_form_do\n"));
+	DEBUG_CALLBACK(cpx_desc);
 
 	dialog = cpx_desc->dialog;
 
@@ -740,6 +764,8 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 {
 	GRECT *w;
 
+	DEBUG_CALLBACK(cpx_desc);
+
 	cpx_desc->redraw_area = *redraw_area; /* fuer Aufruf von cpx_get_next_rect() merken */
 	w = &cpx_desc->dirty_area;
 
@@ -769,15 +795,20 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 	return NULL;
 
 }
-static GRECT * _cdecl
-GetFirstRect(GRECT *prect)
+GRECT * _cdecl
+GetFirstRect(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx_by_addr(addr);
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
+
 	if (cpx)
+	{
+		GRECT *prect = (GRECT *)(*++sp);
+
 		return cpx_get_first_rect(cpx, prect);
+	}
 
 	return NULL;
 }
@@ -791,6 +822,8 @@ static inline GRECT *
 cpx_get_next_rect(CPX_DESC *cpx_desc)
 {
 	GRECT *w = &(cpx_desc->dirty_area);
+
+	DEBUG_CALLBACK(cpx_desc);
 
 	/* naechstes Redraw-Rechteck */
 	wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
@@ -813,19 +846,19 @@ cpx_get_next_rect(CPX_DESC *cpx_desc)
 	DEBUG(("cpx_get_next_rect: no more rectangles\n"));
 	return NULL;
 }
-static GRECT * _cdecl
-GetNextRect(void)
+GRECT * _cdecl
+GetNextRect(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx_by_addr(addr);
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
+
 	if (cpx)
 		return cpx_get_next_rect(cpx);
 
 	return NULL;
 }
-
 
 /*----------------------------------------------------------------------------------------*/ 
 /* (Set_Evnt_Mask) Eventmaske fuer evnt_multi veraendern; ggf. Mausrechtecke, Timer setzen	*/
@@ -839,7 +872,7 @@ GetNextRect(void)
 static inline void
 cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long time)
 {
-	DEBUG(("cpx_set_evnt_mask\n"));
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (m1)				/* erstes Mausrechteck? */
 		cpx_desc->m1 = *m1;
@@ -858,15 +891,20 @@ cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long tim
 
 	cpx_desc->mask = mask;		/* zusaetzliche Ereignismaske */
 }
-static void _cdecl
-Set_Evnt_Mask(struct Set_Evnt_Mask_args args)
+void _cdecl
+Set_Evnt_Mask(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx_by_addr(addr);
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
+
 	if (cpx)
-		cpx_set_evnt_mask(cpx, args.mask, args.m1, args.m2, args.evtime);
+	{
+		const struct Set_Evnt_Mask_args *args = (const struct Set_Evnt_Mask_args *)(++sp);
+
+		cpx_set_evnt_mask(cpx, args->mask, args->m1, args->m2, args->evtime);
+	}
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -924,7 +962,7 @@ cpx_save_data(CPX_DESC *cpx_desc, void *buf, long bytes)
 	long handle, offset;
 	short result = 0;
 
-	DEBUG(("CPX_Save\n"));
+	DEBUG_CALLBACK(cpx_desc);
 
 	strcpy(name, settings.cpx_path);
 	strcat(name, cpx_desc->file_name);
@@ -946,15 +984,21 @@ cpx_save_data(CPX_DESC *cpx_desc, void *buf, long bytes)
 
 	return result;
 }
-static short _cdecl
-CPX_Save(void *ptr, long bytes)
+short _cdecl
+CPX_Save(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx_by_addr(addr);
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
+
 	if (cpx)
+	{
+		void *ptr = (void *)(*++sp);
+		long bytes = (*++sp);
+
 		return cpx_save_data(cpx, ptr, bytes);
+	}
 
 	return 0;
 }
@@ -964,15 +1008,14 @@ CPX_Save(void *ptr, long bytes)
 /* Funktionsresultat:	Zeiger auf 64-Bytes						*/
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
-static void * _cdecl
-Get_Buffer(void)
+void * _cdecl
+Get_Buffer(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	DEBUG(("Get_Buffer\n"));
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
 
-	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		return cpx->old.header.buffer;
 
@@ -999,32 +1042,8 @@ getcookie(long cookie, long *p_value)
 /*	flag: 0: Mausform setzen 1: Mausform sichern					*/
 /*	mf: Zeiger auf Mausform								*/
 /*----------------------------------------------------------------------------------------*/ 
-#if 0
 static void _cdecl
-MFsave(short flag, MFORM *mf)
-{
-	DEBUG(("MFsave\n"));
-
-	if (flag)					/* Mausform sichern? */
-	{
-		if (_AESversion >= 0x0399)		/* MagiC oder MultiTOS? */
-			graf_mouse(258, mf);
-		else					/* Mausform ueber LineA auslesen */
-			get_mouse_form(mf);
-	}
-	else
-	{
-		if (_AESversion >= 0x0399)		/* MagiC oder MultiTOS? */
-			graf_mouse(259, mf);
-		else
-			graf_mouse(USER_DEF, mf);
-
-	}
-}
-#else
-/* contributed by Arnaud */
-static void _cdecl
-MFsave(struct MFsave_args args)
+MFsave(struct MFsave_args args) /* contributed by Arnaud */
 {
 	static short has_mouse = 0;
 
@@ -1056,4 +1075,3 @@ MFsave(struct MFsave_args args)
 			graf_mouse(ARROW, NULL);
 	}
 }
-#endif

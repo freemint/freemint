@@ -385,13 +385,14 @@ remove_cpx(CPX_DESC *cpx_desc)
 		unload_cpx(cpx_desc->start_of_cpx);
 
 	free(cpx_desc);
+	DEBUG(("%s: free(%p)\n", __FUNCTION__, cpx_desc));
 }
 
 static void
 init_cpx(char *file_path, char *file_name, short inactive)
 {
-	CPX_DESC *cpx_desc;
 	size_t cpx_desc_len = sizeof(CPX_DESC) + strlen(file_name) + 1;
+	CPX_DESC *cpx_desc;
 
 	cpx_desc = malloc(cpx_desc_len);
 	if (cpx_desc)
@@ -399,6 +400,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 		void *addr;
 		long size;
 
+		DEBUG(("%s: malloc(%lu) -> %p\n", __FUNCTION__, cpx_desc_len, cpx_desc));
 		memset(cpx_desc, 0, cpx_desc_len);
 
 		cpx_desc->button = -1;
@@ -456,7 +458,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 					if (inactive == 0)
 					{
 						cpx_desc->xctrl_pb.booting = 1;
-						if (cpx_init(cpx_desc, &cpx_desc->xctrl_pb) == 0L)
+						if (cpx_init(cpx_desc, &cpx_desc->xctrl_pb) == NULL)
 						{
 							remove_cpx(cpx_desc);
 							return;
@@ -473,14 +475,17 @@ init_cpx(char *file_path, char *file_name, short inactive)
 
 			if ((cpx_desc->old.header.flags.ram_resident == 0) || inactive)
 			{
-				cpx_desc->start_of_cpx = 0L;
-				cpx_desc->end_of_cpx = 0L;
+				cpx_desc->start_of_cpx = NULL;
+				cpx_desc->end_of_cpx = NULL;
 				/* Speicher fuer CPX freigeben */
 				unload_cpx(addr);
 			}
 		}
 		else
+		{
 			free(cpx_desc);
+			DEBUG(("%s: free(%p)\n", __FUNCTION__, cpx_desc));
+		}
 	}
 }
 
@@ -549,9 +554,8 @@ update_cpx_list(void)
 
 	changes = 0;
 
-	cpx_desc = cpx_desc_list;
-
 	/* doppelte oder alte CPXe entfernen */
+	cpx_desc = cpx_desc_list;
 	while (cpx_desc)
 	{
 		cpx_desc->flags |= CPXD_INVALID;
@@ -559,7 +563,6 @@ update_cpx_list(void)
 	}
 
 	dir_handle = Dopendir(settings.cpx_path, DOPEN_NORMAL);
-
 	if (dir_handle >= 0)
 	{
 		long err;
@@ -571,7 +574,6 @@ update_cpx_list(void)
 			#define	name	(buf + 4)
 			
 			err = Dxreaddir(256 + 4, dir_handle, buf, &xattr, &err_xr);
-
 			if (err_xr)
 				err = err_xr;
 
@@ -606,12 +608,15 @@ update_cpx_list(void)
 							{
 								strcpy(tmp, name);
 								tmp[len - 1] = 'Z';
-								cpx_desc = list_search(cpx_desc_list, (long) tmp, offsetof(CPX_DESC, next), search_cpx_name);
-							
+
+								cpx_desc = list_search(cpx_desc_list, (long)tmp,
+										       offsetof(CPX_DESC, next),
+										       search_cpx_name);
+
 								if (cpx_desc)
 									/* alten Eintrag entfernen */
 									remove_cpx(cpx_desc);
-	
+
 								init_cpx(settings.cpx_path, name, 0);
 								changes++;
 							}
@@ -619,13 +624,18 @@ update_cpx_list(void)
 							{
 								strcpy(tmp, name);
 								tmp[len - 1] = 'X';
-								cpx_desc = list_search(cpx_desc_list, (long) tmp, offsetof(CPX_DESC, next), search_cpx_name);
-							
+
+								cpx_desc = list_search(cpx_desc_list, (long)tmp,
+										       offsetof(CPX_DESC, next),
+										       search_cpx_name);
+
 								if (cpx_desc)
 								{
 									cpx_desc->file_name[len - 1] += 'Z' - 'X';
-									cpx_desc->flags |= CPXD_INACTIVE;	/* CPX demnaechst inaktiv */
-									cpx_desc->flags &= ~CPXD_INVALID;	/* Eintrag ist gueltig */
+									/* CPX demnaechst inaktiv */
+									cpx_desc->flags |= CPXD_INACTIVE;
+									/* Eintrag ist gueltig */
+									cpx_desc->flags &= ~CPXD_INVALID;
 								}
 								else
 									init_cpx(settings.cpx_path, name, 1);
@@ -800,17 +810,16 @@ sort_cpx_icons(short x, short y, short window_width)
 static void
 tidy_up_icons(void)
 {
-	CPX_DESC **cpxd_array;
-	CPX_DESC *cpx_desc;
 	long entries;
 
-	entries = list_count((void *) cpx_desc_list, offsetof(CPX_DESC, next));
-
 	/* Kontrollfelder vorhanden? */
+	entries = list_count((void *) cpx_desc_list, offsetof(CPX_DESC, next));
 	if (entries > 0)
 	{
-		cpxd_array = malloc(entries * sizeof(CPX_DESC *));
+		CPX_DESC **cpxd_array;
+		CPX_DESC *cpx_desc;
 
+		cpxd_array = malloc(entries * sizeof(CPX_DESC *));
 		if (cpxd_array)
 		{
 			short i;
@@ -959,7 +968,7 @@ read_inf(void)
 					auto_start = malloc(sizeof(*auto_start));
 					if (auto_start)
 					{
-						auto_start->next = 0L;
+						auto_start->next = NULL;
 						auto_start->cpx_desc = cpx_desc;
 						list_append((void **) &auto_start_list, (void *)auto_start,
 								offsetof(struct auto_start, next));
@@ -3505,8 +3514,8 @@ std_settings(void)
 
 	wind_get(0, WF_WORKXYWH, &desk_grect.g_x, &desk_grect.g_y, &desk_grect.g_w, &desk_grect.g_h);
 
-	cpx_desc_list = 0L;
-	auto_start_list = 0L;	/* CPXe nicht automatisch starten */
+	cpx_desc_list = NULL;
+	auto_start_list = NULL;	/* CPXe nicht automatisch starten */
 	do_reload = 0;		/* CPXe nicht neuladen */
 	do_close = 0;		/* CPXe nicht schliessen */
 	no_open_cpx = 0;	/* keine CPXe offen */
@@ -3750,7 +3759,7 @@ main(int argc, char *argv[])
 					}
 					
 					/* Fenster noch nicht offen und CPXe noch nicht gescannt? */
-					if (main_window == 0L)
+					if (main_window == NULL)
 					{
 						/* CPXe suchen, ggf. cpx_init() aufrufen */
 						update_cpx_list();

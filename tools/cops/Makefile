@@ -20,12 +20,12 @@ all-here: $(TARGET)
 
 # default overwrites
 DEFINITIONS += -D__GEMLIB_OLDNAMES
-OPTS =
+OPTS += -g
 
 NOCFLAGS-cops_rsc.c = -Wall
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
+OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
 LIBS += -lgem #-liio
 GENFILES = $(TARGET)
 
