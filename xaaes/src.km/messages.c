@@ -231,7 +231,6 @@ is_inside(RECT r, RECT o)
 	return true;
 }
 
-extern long redraws;
 /* Ozk:
  * deliver_message is guaranteed to run in the dest_client's context
 */
@@ -285,8 +284,8 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 		dest_client->status &= ~CS_CE_REDRAW_SENT;
 		if (msg->m[0] == WM_REDRAW)
 		{
-			redraws--;
-			if (!redraws)
+			C.redraws--;
+			if (!C.redraws)
 				kick_mousemove_timeout();
 		}
 	}
@@ -302,7 +301,7 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 		 * the client event here.
 		*/
 		if (msgt == WM_REDRAW)
-			redraws--;
+			C.redraws--;
 	}
 }
 
@@ -352,7 +351,7 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 			*next			= new_msg;
 			new_msg->message	= *msg;
 			new_msg->next		= NULL;	
-			redraws++;
+			C.redraws++;
 		}
 		return;
 	}
@@ -502,7 +501,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		if (msg->m[0] == WM_REDRAW)
 		{
 			dest_client->status |= CS_CE_REDRAW_SENT;
-			redraws++;
+			C.redraws++;
 		}
 		deliver_message(lock, dest_client, msg);
 	}
@@ -518,7 +517,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 				if (msg->m[0] == WM_REDRAW)
 				{
 					dest_client->status |= CS_CE_REDRAW_SENT;
-					redraws++;
+					C.redraws++;
 				}
 				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
 			}
