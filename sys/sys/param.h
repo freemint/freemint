@@ -9,8 +9,10 @@
 #ifndef _SYS_PARAM_H
 #define _SYS_PARAM_H 1
 
+#ifndef __MINT__
 #define	MAXPATHLEN	128		/* same as FILENAME_MAX in stdio.h */
 #define	NOFILE		20		/* same as OPEN_MAX in limits.h */
+#endif
 
 /* Only define MAXHOSTNAMELEN if portlib.h got not included!  I wish
    the portlib was as kind as we are.  */
@@ -19,7 +21,7 @@
 #endif
 
 #ifdef __MINT__
-# define HZ		200		/* ticks/second reported by times() */
+/* HZ is in arch/timer.h */
 # define NCARGS		1024		/* actually, we don't limit this */
 #else
 # define HZ		60		/* ticks/second reported by times() */
