@@ -325,6 +325,11 @@ menu = leave
 #     happens when windows are FULLEd. This will fix redraw
 #     problems with apps like Jinnee.
 #
+# inhibit_hide = <bool>   default: false
+#     Setting this will prevent it from being hidden by XaAES, which
+#     is very handy for applications like Taskbar, etc, that one
+#     regards like "system apps".
+#
 #
 # This default setting will make XaAES look closer to n.aes, but
 # will require precision when grabbing the window border for
@@ -346,6 +351,10 @@ menu = leave
 # with 'thinwork" and as small a windowframe as possible.
 #
 #app_options = ataricq, thinwork = true, winframe_size = 1
+#
+# Taskbar needs this to prevent it from being hidden.
+#
+#app_options = taskbar, inhibit_hide = yes
 
 #
 # ctlalta_survivors = <list of app-names>
