@@ -1,23 +1,23 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Author: J”rg Westheide <joerg_westheide@su.maus.de>
  * Started: 1999-06-11
- * 
+ *
  * please send suggestions or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Hardware detection for MiNT.
  * This code _must_ be compiled as -m68030
- * 
+ *
  * Detection of Harun Scheutzows ST-ESCC (Joerg)
  * Detection of CPU and FPU model (Draco)
- * 
+ *
  */
 
 // Test hardware registers for presence
@@ -25,7 +25,7 @@
 	.globl	_test_byte_rd
 	.globl	_test_word_rd
 	.globl	_test_long_rd
-	
+
 _test_byte_rd:	move.l	sp,a0
 	move.l	(8).w,a1
 	lea	berr.w(pc),a2
@@ -72,10 +72,10 @@ _test_long_rd:	move.l	sp,a0
 	.text
 
 //
-// This function detects peripheral hardware components and returns a 
-// bit vector of the found components. A set bit indicates, that a 
+// This function detects peripheral hardware components and returns a
+// bit vector of the found components. A set bit indicates, that a
 // component was found. The meaning of the bits are:
-// 
+//
 //   bit  component
 // --------------------
 //    0   ST-ESCC
@@ -102,36 +102,36 @@ _detect_hardware:
 
 	ori.w	#0x0700,SR			// disable interrupts
 
-// The next instruction will cause a bus error if there is no 
+// The next instruction will cause a bus error if there is no
 // ST-compatible MFP, which makes the odd addresses 0xFFFFFA01 -
 // 0xFFFFFA3F accessible and is neccessary for the ST-ESCC extension
-	
+
 	move.b	#3,(0xFFFFFA31).w		// select register 3, channel B
-	
+
 // If we reach the following instruction we have a ST-compatible MFP.
 // If there is an ST-ESCC we have already selected register 3 of channel B,
 // otherwise we wrote the #3 to "nowhere" and will read a 0xFF from there
-	
+
 	tst.b	(0xFFFFFA31).w			// register is always 0 if ST-ESCC present
-	bne	no_stescc			// no -> no ST-ESCC present
+	bne.s	no_stescc			// no -> no ST-ESCC present
 	move.w	#0xFA35,_ControlRegA+2		// set register adresses to ST-ESCC's
 	move.w	#0xFA37,_DataRegA+2
 	move.w	#0xFA31,_ControlRegB+2
 	move.w	#0xFA33,_DataRegB+2
-	bset	#0x00,d0				// mark ST-ESCC present
+	bset	#0x00,d0			// mark ST-ESCC present
 no_stescc:					// bus error occured or reg 3 != 0 -> ST-ESCC not present
 	move.w	d1,SR				// enable interrupts
 	move.l	a0,(8).w			// restore  bus error vector
 	nop					// flush write pipeline (>= 040)
 	move.l	a1,sp				// restore stack pointer
 
-//**** next detection should start here
+// next detection should start here
 
 	rts
 
 	.data
 
-//**** variables to set in ST-ESCC detection ****
+// variables to set in ST-ESCC detection ****
 
 	.globl _ControlRegA
 	.globl _DataRegA
@@ -163,7 +163,7 @@ _detect_cpu:
 	move.l	(0x10).w,a1	// save the illegal instr. exception vector
 	move.l	(0xf4).w,a2	// save the unimplemented instr. exception vector
 	lea	exit.w(PC),a0
-	move.l	a0,(0x10).w	// set either vector	
+	move.l	a0,(0x10).w	// set either vector
 	move.l	a0,(0xf4).w
 	move.l	sp,a0		// save the ssp
 	nop			// eventually flush pipelines
@@ -247,7 +247,7 @@ _detect_fpu:
 	move.l	_mcpu,d1	// check if 68000 or 68010
 	cmpi.w	#20,d1
 	bmi.s	sfp
-	
+
 	cmpi.w	#60,d1		// enable FPU on 68060 before the check
 	bmi.s	no60
 
@@ -274,7 +274,7 @@ no60:	fnop
 	cmpi.w	#40,d1
 	beq.s	fexit
 	moveq	#0x06,d0	// if neither, so maybe a 68882 (cookie 0x00060000)
-	move.b	(sp)+,d1		
+	move.b	(sp)+,d1
 	cmpi.b	#0x1f,d1
 	beq.s	fexit
 	moveq	#0x04,d0	// must be 68881
