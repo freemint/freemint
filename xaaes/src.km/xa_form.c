@@ -835,6 +835,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					top_window(lock, wind, client);
 				else
 					display_window(lock, 4, wind, NULL);
+
 			}
 			return XAC_BLOCK;
 		}
