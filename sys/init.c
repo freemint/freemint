@@ -109,7 +109,7 @@ boot_printf (const char *fmt, ...)
 	boot_print(buf);
 }
 
-/* Stop and ask the user for conformation to continue */
+/* Stop and ask the user for confirmation to continue */
 short step_by_step;
 
 void
@@ -760,7 +760,7 @@ _mint_delenv(BASEPAGE *bp, const char *strng)
 	if (!var)
 		return;
 
-	TRACE(("_mint_delenv(): delete existing %s=%s", strng, var));
+	TRACE(("%s(): delete existing %s=%s", __FUNCTION__, strng, var));
 
 	/* if it's found, move all the other environment variables down by 1 to
    	 * delete it
@@ -786,7 +786,7 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 	long old_size, var_size;
 	MEMREGION *m;
 
-	TRACE(("_mint_setenv(): %s=%s", var, value));
+	TRACE(("%s(): %s=%s", __FUNCTION__, var, value));
 
 	/* If it already exists, delete it */
 	_mint_delenv(bp, var);
@@ -818,7 +818,7 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 		new_env = (char *)sys_m_xalloc(old_size + var_size, 0x0003);
 		if (new_env == NULL)
 		{
-			DEBUG(("_mint_setenv(): failed to alloc %ld bytes", old_size + var_size));
+			DEBUG(("%s(): failed to alloc %ld bytes", __FUNCTION__, old_size + var_size));
 			return;
 		}
 
@@ -881,13 +881,12 @@ mint_thread(void *arg)
 {
 	int pid;
 	long r;
-	char path_env[] = "c:/";
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
 # endif
 
-	DEBUG(("mint_thread(): startup"));
+	DEBUG(("%s(): startup", __FUNCTION__));
 
 	/* Delete old TOS environment, we don't inherit it */
 	_base->p_env = (char *)sys_m_xalloc(QUANTUM, 0x0003);
@@ -898,10 +897,9 @@ mint_thread(void *arg)
 	bzero(_base->p_env, QUANTUM);
 
 	/*
-	 * Set the PATH variable to the root of the current drive
+	 * Set the PATH variable to our sysdir
 	 */
-	path_env[0] = rootproc->p_cwd->curdrv + 'a';	/* this actually means drive u: */
-	_mint_setenv(_base, "PATH", path_env);
+	_mint_setenv(_base, "PATH", sysdir);
 
 	/* Export the sysdir to the environment */
 	_mint_setenv(_base, "SYSDIR", sysdir);
@@ -1008,7 +1006,7 @@ mint_thread(void *arg)
 	 */
 	if (init_prg)
 	{
-		TRACE(("mint_thread(): init_prg is %s", init_prg));
+		TRACE(("%s(): init_prg is %s", __FUNCTION__, init_prg));
 
 # ifdef VERBOSE_BOOT
 		boot_printf(MSG_init_launching_init, init_is_gem ? "GEM" : "init", init_prg);
@@ -1017,10 +1015,10 @@ mint_thread(void *arg)
 		{
 # if 1
 			r = sys_pexec(100, init_prg, init_tail, _base->p_env);
-			DEBUG(("mint_thread(): exec(%s) returned %ld", init_prg, r));
+			DEBUG(("%s(): exec(%s) returned %ld", __FUNCTION__, init_prg, r));
 # else
 			r = sys_pexec(0, init_prg, init_tail, _base->p_env);
-			DEBUG(("mint_thread(): init terminated, returned %ld", init_prg, r));
+			DEBUG(("%s(): init terminated, returned %ld", __FUNCTION__, init_prg, r));
 # endif
 		}
 		else
@@ -1031,7 +1029,7 @@ mint_thread(void *arg)
 			bp->p_tbase = *((long *) EXEC_OS);
 
 			r = sys_pexec(106, (char *)"GEM", bp, 0L);
-			DEBUG(("mint_thread(): exec(%s) returned %ld", init_prg, r));
+			DEBUG(("%s(): exec(%s) returned %ld", __FUNCTION__, init_prg, r));
 		}
 # ifdef VERBOSE_BOOT
 		if (r >= 0)
@@ -1054,7 +1052,7 @@ mint_thread(void *arg)
 			bp->p_tbase = entry;
 
 			r = sys_pexec(106, (char *) "GEM", bp, 0L);
-			DEBUG(("mint_thread(): exec ROM AES returned %ld", r));
+			DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));
 	  	}
 	  	else
 	  	{
@@ -1136,7 +1134,7 @@ mint_thread(void *arg)
 			}
 # else
 			r = sys_pwaitpid(-1, 0, NULL);
-			TRACE(("sys_pwaitpid done -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
+			TRACE(("%s(): sys_pwaitpid() done -> %li (%li)", __FUNCTION__, r, ((r & 0xffff0000L) >> 16)));
 # endif
 		} while (pid != ((r & 0xffff0000L) >> 16));
 	}
