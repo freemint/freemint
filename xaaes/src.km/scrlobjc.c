@@ -82,6 +82,121 @@ free_scrollist(SCROLL_INFO *list)
 	list->last = NULL;
 }
 
+/* better control over the content of scroll_entry. */
+static int
+add_scroll_entry(SCROLL_INFO *list,
+		 OBJECT *icon, void *text,
+		 SCROLL_ENTRY_TYPE flag,
+		 void *data)
+{
+	SCROLL_ENTRY *last, *new;
+
+	if (flag & FLAG_AMAL)
+		new = kmalloc(sizeof(*new) + strlen(text) + 1);
+	else
+		new = kmalloc(sizeof(*new));
+	
+	if (!new)
+		return false;
+
+	new->next = NULL;
+	last = list->start;
+	new->data = data;
+
+	if (last)
+	{
+		while (last->next)
+			last = last->next;
+		last->next = new;
+		new->prev = last;
+		new->n = last->n + 1;
+	}
+	else
+	{
+		new->prev = NULL;
+		list->start = list->top = list->bot = list->last = new;	/* cur is left zero, which means no current : no selection. */
+		new->n = 1;
+	}
+
+	if (new->n <= list->s)
+		list->bot = new;
+
+	if (flag & FLAG_AMAL)
+	{
+		new->text = new->the_text;
+		strcpy(new->the_text, text);
+	}
+	else	
+		new->text = text;
+
+	new->icon = icon;
+	new->flag = flag;
+	
+	if (icon)
+		icon->ob_x = icon->ob_y = 0;
+
+	list->n = new->n;
+	
+	return true;
+}
+
+static int
+del_scroll_entry(struct scroll_info *list, struct scroll_entry *entry)
+{
+	return 0;
+}
+
+/* Modified such that a choise can be made. */
+static void
+empty_scroll_list(SCROLL_INFO *list, SCROLL_ENTRY_TYPE flag)
+{
+	SCROLL_ENTRY *this, *next, *prior = NULL;
+	int n = 0;
+	this = next = list->start;
+
+	DIAGS(("empty_scroll_list: list=%lx, obtree=%lx, ind=%d",
+		list, list->tree, list->item));
+
+	while (this)
+	{
+		next = this->next;
+		
+		DIAGS((" --- this=%lx, next=%lx, this->flag=%x",
+			this, this->flag));
+
+		if ((this->flag & flag) || flag == -1)
+		{
+			if ((this->flag & FLAG_MAL) && this->text)
+			{
+				kfree(this->text);
+				this->text = NULL;
+			}
+			
+			if (this == list->start)
+				list->start = next;
+			
+			if (this == list->last)
+				list->last = prior;
+
+			if (prior)
+				prior->next = next;
+
+			DIAGS(("empty_scroll_list: free %lx", this));
+			kfree(this);
+		}
+		else
+		{
+			this->n = ++n;
+			prior = this;
+		}
+		this = next;
+	}
+
+	list->n = n;
+	list->top = list->start;
+	list->cur = NULL;		/* HR: This does nothing more than inhibit the selection of a line. */
+}
+
 static void
 scroll_up(SCROLL_INFO *list, int num)
 {
@@ -192,68 +307,93 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, void *data, short mode)
 	return ret;
 }
 
-/*
- * Setup a scrolling list structure for an object
- * - I've provided this as I don't expect any resource editor to support
- * XaAES' extensions to the object types...
- */
-
-/* title set by set_slist_object() */
-int
-set_scroll(struct xa_client *client, OBJECT *form, int item, bool selectable)
+/* HR 181201: pass all mouse data to these functions using struct moose_data. */
+void
+click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
 {
+	SCROLL_INFO *list;
+	SCROLL_ENTRY *this;
 	OBJECT *ob = form + item;
-	SCROLL_INFO *sinfo;
+	short cy = md->y;
 
-	if (client == C.Aes)
-		sinfo = kmalloc(sizeof(*sinfo));
-	else
-		sinfo = umalloc(sizeof(*sinfo));
-
-	if (!sinfo)
-		return false;
-
-	bzero(sinfo, sizeof(*sinfo));
-
-	/* colours are those for windows */
-	sinfo->prev_ob = *ob;
+	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 	
-	object_set_spec(form + item, (unsigned long)sinfo);
-	ob->ob_type = G_SLIST;
-	ob->ob_flags |= OF_TOUCHEXIT;
+	DIAGS(("click_scroll_list: state=%d, cstate=%d", md->state, md->cstate));
 	
-	if (selectable)
-		ob->ob_flags |= OF_SELECTABLE;
-	else
-		ob->ob_flags &= ~ OF_SELECTABLE;
+	{
+		RECT r;
+		ob_area(form, item, &r);
+		list->wi->r = list->wi->rc = r;
+		calc_work_area(list->wi);
+	}
+	
+	if (!do_widgets(lock, list->wi, 0, md))
+	{
+		short y = screen.c_max_h;
 
-	sinfo->tree = form;
-	sinfo->item = item;
+		cy -= list->wi->wa.y;
 
-	return true;
+		this = list->top;
+		while(this && y < cy)
+		{
+			this = this->next;
+			y += screen.c_max_h;
+		}
+
+		if (this)
+		{
+			list->cur = this;			
+
+/* HR 290702 (do without parent window; A listbox is a OBJECT and part of a object tree.) */
+/* HR 111102 Nasty bug :-(  list->click can close the whole window containing the list.
+            So the below draw is moved from the end of this function to here. */
+
+			hidem();
+			draw_object_tree(lock, list->wt, form, item, 2, NULL);
+			showm();
+
+			if (list->click)			/* Call the new object selected function */
+				(*list->click)(lock, list, form, item);
+		}
+	}
 }
 
 void
-unset_G_SLIST(struct xa_client *client, OBJECT *form, short item)
+dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
 {
-	struct scroll_info *list;
+	SCROLL_INFO *list;
+	SCROLL_ENTRY *this;
 	OBJECT *ob = form + item;
+	short y = screen.c_max_h, cx = md->x, cy = md->y;	
 
-	DIAG((D_objc, NULL, "unset_G_SLIST: obtree=%lx, index=%d",
-		form, item));
-	
-	DIAGS(("unset_G_SLIST: obtree=%lx, index=%d",
-		form, item));
+	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 
-	if (ob->ob_type == G_SLIST && (list = (struct scroll_info *)object_get_spec(ob)->index))
 	{
-		DIAGS((" --- emptying..."));
-		empty_scroll_list(form, item, -1);
-		*ob = list->prev_ob;
-		if (client == C.Aes)
-			kfree(list);
-		else
-			ufree(list);
+		RECT r;
+		ob_area(form, item, &r);
+		list->wi->r = list->wi->rc = r;
+		calc_work_area(list->wi);
+	}
+
+	if (!do_widgets(lock, list->wi, 0, md))		/* HR 161101: mask */
+	{
+		if (!m_inside(cx, cy, &list->wi->wa))
+			return;
+	
+		cy -= list->wi->wa.y;
+	
+		this = list->top;
+		while(this && y < cy)
+		{
+			this = this->next;
+			y += screen.c_max_h;
+		}
+	
+		if (this)
+			list->cur = this;
+		
+		if (list->dclick)
+			(*list->dclick)(lock, list, form, item);
 	}
 }
 
@@ -426,40 +566,150 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	return true;
 }
 
+static void
+unset_G_SLIST(struct scroll_info *list)
+{
+	OBJECT *ob = list->tree + list->item;
+
+	DIAG((D_objc, NULL, "unset_G_SLIST: list=%lx, obtree=%lx, index=%d",
+		list, list->tree, list->item));
+	
+	list->empty(list, -1); //empty_scroll_list(form, item, -1);
+
+	if (list->wi)
+	{
+		close_window(0, list->wi);
+		delete_window(0, list->wi);
+		list->wi = NULL;
+	}
+
+	if (list->wt)
+	{
+		list->wt->links--;
+		//display("unset_G_SLIST: links-- on %lx (links=%d)", list->wt, list->wt->links);
+		list->wt = NULL;
+	}
+
+	*ob = list->prev_ob;
+	if (list->flags & SIF_KMALLOC)// == C.Aes)
+		kfree(list);
+	else
+		ufree(list);
+}
+
+/*
+ * Setup a scrolling list structure for an object
+ * - I've provided this as I don't expect any resource editor to support
+ * XaAES' extensions to the object types...
+ */
+#if 0
+/* title set by set_slist_object() */
+int
+set_scroll(struct xa_client *client, OBJECT *form, int item, bool selectable)
+{
+	OBJECT *ob = form + item;
+	SCROLL_INFO *sinfo;
+
+	if (client == C.Aes)
+		sinfo = kmalloc(sizeof(*sinfo));
+	else
+		sinfo = umalloc(sizeof(*sinfo));
+
+	if (!sinfo)
+		return false;
+
+	bzero(sinfo, sizeof(*sinfo));
+	
+	if (client == C.Aes)
+		sinfo->flags |= SIF_KMALLOC;
+
+	/* colours are those for windows */
+	sinfo->prev_ob = *ob;
+	
+	object_set_spec(form + item, (unsigned long)sinfo);
+	ob->ob_type = G_SLIST;
+	ob->ob_flags |= OF_TOUCHEXIT;
+	
+	if (selectable)
+		ob->ob_flags |= OF_SELECTABLE;
+	else
+		ob->ob_flags &= ~OF_SELECTABLE;
+
+	sinfo->tree = form;
+	sinfo->item = item;
+
+	return true;
+}
+#endif
+
 /* preparations for windowed list box widget;
  * most important is to get the drawing smooth and simple.
  * get rid of all those small (confolded) constant value's.
  */
 SCROLL_INFO *
 set_slist_object(enum locks lock,
-        	 XA_TREE *wt,
-		 OBJECT *form,
+		 XA_TREE *wt,
+		// OBJECT *form,
 		 struct xa_window *parentwind,
 		 short item,
+		 short flags,
+
 		 scrl_widget *closer,
 		 scrl_widget *fuller,
 		 scrl_click *dclick,
 		 scrl_click *click,
+
+		 scrl_add	*add,
+		 scrl_del	*del,
+		 scrl_empty	*empty,
+		 scrl_widget	*destroy,
+
 		 char *title,
 		 char *info,
 		 void *data,
 		 short lmax)	/* Used to determine whether a horizontal slider is needed. */
 {
+	struct scroll_info *list;
 	RECT r;
 	XA_WIND_ATTR wkind = UPARROW|VSLIDE|DNARROW;
-	OBJECT *ob = form + item;
-	SCROLL_INFO *list = (SCROLL_INFO *)object_get_spec(ob)->index;
+	OBJECT *ob = wt->tree + item;
+
+	list = kmalloc(sizeof(*list));
+
+	if (!list)
+		return NULL;
+
+	bzero(list, sizeof(*list));
+	
+	list->flags |= SIF_KMALLOC;
+
+	/* colours are those for windows */
+	list->prev_ob = *ob;
+	
+	object_set_spec(wt->tree + item, (unsigned long)list);
+	ob->ob_type = G_SLIST;
+	ob->ob_flags |= OF_TOUCHEXIT;
+	
+	if (flags & SIF_SELECTABLE)
+		ob->ob_flags |= OF_SELECTABLE;
+	else
+		ob->ob_flags &= ~OF_SELECTABLE;
+
+	list->tree = wt->tree;
+	list->item = item;
 
 	list->pw = parentwind;
+	
 	list->wt = wt;
+	wt->links++;
+	//display("set_slist_obj: links++ on %lx (links=%d)", wt, wt->links);
+
 	list->data = data;
 
 	list->dclick = dclick;			/* Pass the scroll list's double click function */
 	list->click = click;			/* Pass the scroll list's click function */
 
 	list->title = title;
-	/* rp_2_ap; it is an OBJECT, not a widget */
-	//r = *(RECT*)&ob->ob_x;
 	obj_area(wt, item, &r);
 	/* We want to use the space normally occupied by the shadow;
 	    so we do a little cheat here. */
@@ -491,16 +741,18 @@ set_slist_object(enum locks lock,
 	if (list->wi)
 	{
 		int dh;
-		get_widget(list->wi, XAW_TITLE)->stuff = title;
-		if (info)
-			get_widget(list->wi, XAW_INFO)->stuff = info;
 
+		if (title)
+			set_window_title(list->wi, title, false);
+		if (info)
+			set_window_info(list->wi, info, false);
+		
 		get_widget(list->wi, XAW_VSLIDE)->drag = drag_vslide;
 		get_widget(list->wi, XAW_HSLIDE)->drag = drag_hslide;
 
 		//list->wi->data = list;
 		
-		list->wi->winob	= form;		/* The parent object of the windowed list box */
+		list->wi->winob	= wt->tree;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;
 		r = list->wi->wa;
 		r.h /= screen.c_max_h;
@@ -512,6 +764,16 @@ set_slist_object(enum locks lock,
 
 		list->slider	= sliders;
 		list->closer	= closer;
+
+		if (add)	list->add	= add;
+		else		list->add	= add_scroll_entry;
+		if (del)	list->del	= del;
+		else		list->del	= del_scroll_entry;
+		if (empty)	list->empty	= empty;
+		else		list->empty	= empty_scroll_list;
+		if (destroy)	list->destroy	= destroy;
+		else		list->destroy	= unset_G_SLIST;
+
 		list->fuller	= fuller;
 		list->vis	= visible;
 		list->search	= search;
@@ -523,122 +785,6 @@ set_slist_object(enum locks lock,
 		open_window(lock, list->wi, list->wi->r);
 	}
 	return list;
-}
-
-/* better control over the content of scroll_entry. */
-bool
-add_scroll_entry(OBJECT *form, int item,
-		 OBJECT *icon, void *text,
-		 SCROLL_ENTRY_TYPE flag,
-		 void *data)
-{
-	SCROLL_INFO *list;
-	SCROLL_ENTRY *last, *new;
-	OBJECT *ob = form + item;
-
-	list = (SCROLL_INFO *)object_get_spec(ob)->index;
-
-	if (flag & FLAG_AMAL)
-		new = kmalloc(sizeof(*new) + strlen(text) + 1);
-	else
-		new = kmalloc(sizeof(*new));
-	
-	if (!new)
-		return false;
-
-	new->next = NULL;
-	last = list->start;
-	new->data = data;
-
-	if (last)
-	{
-		while (last->next)
-			last = last->next;
-		last->next = new;
-		new->prev = last;
-		new->n = last->n + 1;
-	}
-	else
-	{
-		new->prev = NULL;
-		list->start = list->top = list->bot = list->last = new;	/* cur is left zero, which means no current : no selection. */
-		new->n = 1;
-	}
-
-	if (new->n <= list->s)
-		list->bot = new;
-
-	if (flag & FLAG_AMAL)
-	{
-		new->text = new->the_text;
-		strcpy(new->the_text, text);
-	}
-	else	
-		new->text = text;
-
-	new->icon = icon;
-	new->flag = flag;
-	
-	if (icon)
-		icon->ob_x = icon->ob_y = 0;
-
-	list->n = new->n;
-	
-	return true;
-}
-
-/* Modified such that a choise can be made. */
-void
-empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
-{
-	SCROLL_INFO *list;
-	SCROLL_ENTRY *this, *next, *prior = NULL;
-	OBJECT *ob = form + item;
-	int n = 0;
-	list = (SCROLL_INFO *)object_get_spec(ob)->index;
-	this = next = list->start;
-
-	DIAGS(("empty_scroll_list: list=%lx, obtree=%lx, ind=%d",
-		list, form, item));
-
-	while (this)
-	{
-		next = this->next;
-		
-		DIAGS((" --- this=%lx, next=%lx, this->flag=%x",
-			this, this->flag));
-
-		if ((this->flag & flag) || flag == -1)
-		{
-			if ((this->flag & FLAG_MAL) && this->text)
-			{
-				kfree(this->text);
-				this->text = NULL;
-			}
-			
-			if (this == list->start)
-				list->start = next;
-			
-			if (this == list->last)
-				list->last = prior;
-
-			if (prior)
-				prior->next = next;
-
-			DIAGS(("empty_scroll_list: free %lx", this));
-			kfree(this);
-		}
-		else
-		{
-			this->n = ++n;
-			prior = this;
-		}
-		this = next;
-	}
-
-	list->n = n;
-	list->top = list->start;
-	list->cur = NULL;		/* HR: This does nothing more than inhibit the selection of a line. */
 }
 		
 /* HR: The application point of view of the list box */
@@ -868,94 +1014,4 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 
 	list->vis(list,list->cur, true);
 	return keycode;
-}
-
-/* HR 181201: pass all mouse data to these functions using struct moose_data. */
-void
-click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
-{
-	SCROLL_INFO *list;
-	SCROLL_ENTRY *this;
-	OBJECT *ob = form + item;
-	short cy = md->y;
-
-	list = (SCROLL_INFO *)object_get_spec(ob)->index;
-	
-	DIAGS(("click_scroll_list: state=%d, cstate=%d", md->state, md->cstate));
-	
-	{
-		RECT r;
-		ob_area(form, item, &r);
-		list->wi->r = list->wi->rc = r;
-		calc_work_area(list->wi);
-	}
-	
-	if (!do_widgets(lock, list->wi, 0, md))
-	{
-		short y = screen.c_max_h;
-
-		cy -= list->wi->wa.y;
-
-		this = list->top;
-		while(this && y < cy)
-		{
-			this = this->next;
-			y += screen.c_max_h;
-		}
-
-		if (this)
-		{
-			list->cur = this;			
-
-/* HR 290702 (do without parent window; A listbox is a OBJECT and part of a object tree.) */
-/* HR 111102 Nasty bug :-(  list->click can close the whole window containing the list.
-            So the below draw is moved from the end of this function to here. */
-
-			hidem();
-			draw_object_tree(lock, list->wt, form, item, 2, NULL);
-			showm();
-
-			if (list->click)			/* Call the new object selected function */
-				(*list->click)(lock, list, form, item);
-		}
-	}
-}
-
-void
-dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
-{
-	SCROLL_INFO *list;
-	SCROLL_ENTRY *this;
-	OBJECT *ob = form + item;
-	short y = screen.c_max_h, cx = md->x, cy = md->y;	
-
-	list = (SCROLL_INFO *)object_get_spec(ob)->index;
-
-	{
-		RECT r;
-		ob_area(form, item, &r);
-		list->wi->r = list->wi->rc = r;
-		calc_work_area(list->wi);
-	}
-
-	if (!do_widgets(lock, list->wi, 0, md))		/* HR 161101: mask */
-	{
-		if (!m_inside(cx, cy, &list->wi->wa))
-			return;
-	
-		cy -= list->wi->wa.y;
-	
-		this = list->top;
-		while(this && y < cy)
-		{
-			this = this->next;
-			y += screen.c_max_h;
-		}
-	
-		if (this)
-			list->cur = this;
-		
-		if (list->dclick)
-			(*list->dclick)(lock, list, form, item);
-	}
 }

@@ -564,6 +564,9 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 static void
 queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, union msg_buf *msg)
 {
+	
+	amq &= ~AMQ_ANYCASE;
+	
 	switch (amq)
 	{
 		case AMQ_NORM:
@@ -624,9 +627,9 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 		return;
 	}
 	
-	if (amq != AMQ_IREDRAW)
+	if (amq != AMQ_IREDRAW  && !(amq & AMQ_ANYCASE))
 	{
-		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT))
+		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT | CS_BLOCK_MENU_NAV))
 		{
 			if (msg->m[0] == WM_REDRAW)
 			{
@@ -656,10 +659,11 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 				DIAG((D_appl, dest_client, "send_a_message: Client %s is lagging - "
 					"AES message discarded!", dest_client->name));
 #endif
+
 			return;
 		}
 	}
-			
+
 	queue_message(lock, dest_client, amq, qmf, msg);
 
 	Unblock(dest_client, 1, 123);
