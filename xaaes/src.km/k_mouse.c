@@ -378,8 +378,8 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
 	 */
-	if (!C.update_lock && !C.mouse_lock)
-	{
+//	if (!C.update_lock && !C.mouse_lock)
+//	{
 		if (C.menu_base && md->state)
 		{
 			client = C.menu_base->client;
@@ -400,8 +400,8 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 			post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
 			return;
 		}
-	}
-	else
+//	}
+//	else
 	{
 		if ( (locker = C.mouse_lock) )//mouse_locked()) )
 		{
@@ -728,14 +728,18 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 					{
 						wind->send_message(lock, wind, NULL, AMQ_NORM,
 								   WM_WHEEL, 0,0, wind->handle,
-								   orient, md->state, md->clicks, 0);
+								   md->x, md->y,
+								   md->kstate,
+								   ((md->state && 0xf) << 12)|((orient & 0xf) << 8)|(md->clicks & 0xff));
+								   
+								   //orient, md->state, md->clicks, 0);
 						break;
 					}
 					case XWHL_AROWWHEEL:
 					{
 arrow:						wind->send_message(lock, wind, NULL, AMQ_NORM,
 								   WM_ARROWED, 0,0, wind->handle,
-								   WA, 0, 0, 0);
+								   WA, md->x, md->y, md->kstate);
 						break;
 					}
 					case XWHL_SLDRWHEEL:

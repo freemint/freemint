@@ -1541,7 +1541,8 @@ obj_edit(XA_TREE *wt,
 			{
 				hidem();
 				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
-				eor_objcursor(wt, rl);
+				if (redraw)
+					eor_objcursor(wt, rl);
 				showm();
 				pos = wt->e.pos;
 				break;
@@ -1554,9 +1555,12 @@ obj_edit(XA_TREE *wt,
 				{
 					pos = wt->e.pos;
 				}
-				hidem();
-				eor_objcursor(wt, rl);
-				showm();
+				if (redraw)
+				{
+					hidem();
+					eor_objcursor(wt, rl);
+					showm();
+				}
 				break;
 			}
 			case ED_CHAR:
@@ -1584,10 +1588,16 @@ obj_edit(XA_TREE *wt,
 					}
 					if (obj_ED_INIT(wt, &wt->e, obj, pos, last, &ted, &old_ed_obj))
 					{
-						eor_objcursor(wt, rl);
-						if (obj_ed_char(wt, &wt->e, ted, keycode))
-							obj_draw(wt, wt->e.obj, rl);
-						eor_objcursor(wt, rl);
+						if (redraw)
+						{
+							eor_objcursor(wt, rl);
+							if (obj_ed_char(wt, &wt->e, ted, keycode))
+								obj_draw(wt, wt->e.obj, rl);
+							eor_objcursor(wt, rl);
+						}
+						else
+							obj_ed_char(wt, &wt->e, ted, keycode);
+							
 						pos = wt->e.pos;
 					}
 				}
@@ -1601,10 +1611,16 @@ obj_edit(XA_TREE *wt,
 
 					DIAGS((" -- obj_edit: ted=%lx", ted));
 
-					eor_objcursor(wt, rl);
-					if (obj_ed_char(wt, ei, ted, keycode))
-						obj_draw(wt, obj, rl);
-					eor_objcursor(wt, rl);
+					if (redraw)
+					{
+						eor_objcursor(wt, rl);
+						if (obj_ed_char(wt, ei, ted, keycode))
+							obj_draw(wt, obj, rl);
+						eor_objcursor(wt, rl);
+					}
+					else
+						obj_ed_char(wt, ei, ted, keycode);
+					
 					pos = ei->pos;
 				}
 				showm();
@@ -1639,7 +1655,7 @@ obj_edit(XA_TREE *wt,
 			{
 				ei = &wt->e;
 				hidem();
-				if (ei->obj >= 0)
+				if (ei->obj >= 0 && redraw)
 					undraw_objcursor(wt, rl);
 
 				if (!obj_ED_INIT(wt, ei, obj, -1, last, NULL, &old_ed_obj))
@@ -1647,7 +1663,8 @@ obj_edit(XA_TREE *wt,
 				else
 				{
 					enable_objcursor(wt);
-					draw_objcursor(wt, rl);
+					if (redraw)
+						draw_objcursor(wt, rl);
 				}
 				showm();
 				pos = ei->pos;

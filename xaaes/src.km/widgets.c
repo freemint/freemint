@@ -1044,10 +1044,11 @@ set_widget_coords(struct xa_widget *w)
 }
 static XA_WIDGET *
 make_widget(struct xa_window *wind, const XA_WIDGET_LOCATION *loc,
-	    DisplayWidget *disp, WidgetBehaviour *click, WidgetBehaviour *drag)
+	    DisplayWidget *disp, WidgetBehaviour *click, WidgetBehaviour *drag, struct xa_client *owner)
 {
 	XA_WIDGET *widg = get_widget(wind, loc->n);
 
+	widg->owner	= owner;
 	widg->display	= disp;
 	widg->click	= click;
 	widg->drag	= drag;
@@ -2363,7 +2364,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!(old_tp & CLOSER))
 		{
 			DIAGS(("Make CLOSER"));
-			make_widget(wind, &stdl_close, display_def_widget, click_close, 0);
+			make_widget(wind, &stdl_close, display_def_widget, click_close, 0, NULL);
 		}
 #if GENERATE_DIAGS
 		else
@@ -2381,7 +2382,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!(old_tp & FULLER))
 		{
 			DIAGS(("Make fuller"));
-			make_widget(wind, &stdl_full, display_def_widget, click_full, 0);
+			make_widget(wind, &stdl_full, display_def_widget, click_full, 0, NULL);
 		}
 #if GENERATE_DIAGS
 		else
@@ -2399,7 +2400,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!(old_tp & ICONIFIER))
 		{
 			DIAGS(("Make iconifier"));
-			widg = make_widget(wind, &stdl_iconify, display_def_widget, click_iconify, 0);
+			widg = make_widget(wind, &stdl_iconify, display_def_widget, click_iconify, 0, NULL);
 		}
 		else
 		{		
@@ -2421,7 +2422,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!(old_tp & HIDE))
 		{
 			DIAGS(("Make hider"));
-			widg = make_widget(wind, &stdl_hide, display_def_widget, click_hide, 0);
+			widg = make_widget(wind, &stdl_hide, display_def_widget, click_hide, 0, NULL);
 		}
 		else
 		{
@@ -2442,7 +2443,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!(old_tp & SIZER))
 		{
 			DIAGS(("Make sizer"));
-			make_widget(wind, &stdl_resize, display_def_widget, 0, drag_resize);
+			make_widget(wind, &stdl_resize, display_def_widget, 0, drag_resize, NULL);
 		}
 #if GENERATE_DIAGS
 		else
@@ -2460,7 +2461,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if ( (old_tp & (SIZER|MOVER)) != (SIZER|MOVER) )
 		{
 			DIAGS(("Make border"));
-			make_widget(wind, &stdl_border, display_border, drag_border, drag_border);
+			make_widget(wind, &stdl_border, display_border, drag_border, drag_border, NULL);
 		}
 #if GENERATE_DIAGS
 		else
@@ -2478,7 +2479,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!(old_tp & UPARROW))
 		{
 			DIAGS(("Make uparrow"));
-			widg = make_widget(wind, &stdl_uscroll, display_def_widget, click_scroll, click_scroll);
+			widg = make_widget(wind, &stdl_uscroll, display_def_widget, click_scroll, click_scroll, NULL);
 			widg->dclick = click_scroll;
 			widg->arrowx = WA_UPLINE;
 			widg->xarrow = WA_DNLINE;
@@ -2491,7 +2492,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 				{
 					struct xa_widget *w;
 					DIAGS(("Make uppage"));
-					w = make_widget(wind, &stdl_upage, display_arrow, click_scroll, click_scroll);
+					w = make_widget(wind, &stdl_upage, display_arrow, click_scroll, click_scroll, NULL);
 					w->arrowx = WA_UPPAGE;
 					w->xarrow = WA_DNPAGE;
 					w->xlimit = SL_RANGE;
@@ -2525,7 +2526,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & DNARROW))
 		{
-			widg = make_widget(wind, &stdl_dscroll, display_def_widget, click_scroll, click_scroll);
+			widg = make_widget(wind, &stdl_dscroll, display_def_widget, click_scroll, click_scroll, NULL);
 			widg->dclick = click_scroll;
 			widg->arrowx = WA_DNLINE;
 			widg->xarrow = WA_UPLINE;
@@ -2536,7 +2537,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 				if (!(old_tp & VSLIDE))
 				{
 					struct xa_widget *w;
-					w = make_widget(wind, &stdl_dpage, display_arrow, click_scroll, click_scroll);
+					w = make_widget(wind, &stdl_dpage, display_arrow, click_scroll, click_scroll, NULL);
 					w->arrowx = WA_DNPAGE;
 					w->xarrow = WA_UPPAGE;
 					w->limit = SL_RANGE;
@@ -2567,7 +2568,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & LFARROW))
 		{
-			widg = make_widget(wind, &stdl_lscroll, display_def_widget, click_scroll, click_scroll);
+			widg = make_widget(wind, &stdl_lscroll, display_def_widget, click_scroll, click_scroll, NULL);
 			widg->dclick = click_scroll;
 			widg->arrowx = WA_LFLINE;
 			widg->xarrow = WA_RTLINE;
@@ -2578,7 +2579,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 				if (!(old_tp & HSLIDE))
 				{
 					struct xa_widget *w;
-					w = make_widget(wind, &stdl_lpage, display_arrow, click_scroll, click_scroll);
+					w = make_widget(wind, &stdl_lpage, display_arrow, click_scroll, click_scroll, NULL);
 					w->arrowx = WA_LFPAGE;
 					w->xarrow = WA_RTPAGE;
 					w->xlimit = SL_RANGE;
@@ -2600,7 +2601,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & RTARROW))
 		{
-			widg = make_widget(wind, &stdl_rscroll, display_def_widget, click_scroll, click_scroll);
+			widg = make_widget(wind, &stdl_rscroll, display_def_widget, click_scroll, click_scroll, NULL);
 			widg->dclick = click_scroll;
 			widg->arrowx = WA_RTLINE;
 			widg->xarrow = WA_LFLINE;
@@ -2611,7 +2612,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 				if (!(old_tp & HSLIDE))
 				{
 					struct xa_widget *w;
-					w = make_widget(wind, &stdl_rpage, display_arrow, click_scroll, click_scroll);
+					w = make_widget(wind, &stdl_rpage, display_arrow, click_scroll, click_scroll, NULL);
 					w->arrowx = WA_RTPAGE;
 					w->xarrow = WA_LFPAGE;
 					w->limit = SL_RANGE;
@@ -2642,7 +2643,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & VSLIDE))
 		{
-			widg = make_widget(wind, &stdl_vslide, display_vslide, 0, drag_vslide);
+			widg = make_widget(wind, &stdl_vslide, display_vslide, 0, drag_vslide, NULL);
 			if (!keep_stuff)
 			{
 				XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
@@ -2660,7 +2661,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & HSLIDE))
 		{
-			widg = make_widget(wind, &stdl_hslide, display_hslide, 0, drag_hslide);
+			widg = make_widget(wind, &stdl_hslide, display_hslide, 0, drag_hslide, NULL);
 			if (!keep_stuff)
 			{
 				XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
@@ -2677,7 +2678,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & XaPOP) /* popups in a window */
 	{
 		if (!(old_tp & XaPOP))
-			make_widget(wind, &stdl_pop, 0, 0, 0);
+			make_widget(wind, &stdl_pop, 0, 0, 0, NULL);
 	}
 	else if (old_tp & XaPOP)
 		zwidg(wind, XAW_MENU, keep_stuff);
@@ -2686,7 +2687,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & XaMENU))
 		{
-			widg = make_widget(wind, &stdl_menu, 0, 0, 0);
+			widg = make_widget(wind, &stdl_menu, 0, 0, 0, NULL);
 		}
 		else
 		{
@@ -2709,7 +2710,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & INFO))
 		{
-			widg = make_widget(wind, &stdl_info, display_info, click_title, 0);
+			widg = make_widget(wind, &stdl_info, display_info, click_title, 0, NULL);
 			if (!keep_stuff)
 				/* Give the window a default info line until the client changes it */
 				widg->stuff = "Info Bar";
@@ -2732,7 +2733,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (!(old_tp & NAME))
 		{
-			widg = make_widget(wind, &stdl_title, display_title, click_title, drag_title);
+			widg = make_widget(wind, &stdl_title, display_title, click_title, drag_title, NULL);
 			widg->dclick = dclick_title;
 			if (widg->stuff == NULL && !keep_stuff)
 				/* Give the window a default title if not already set */
@@ -2754,7 +2755,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	{
 		if (old_tp & NAME)
 			zwidg(wind, XAW_TITLE, keep_stuff);
-		widg = make_widget(wind, &stdl_notitle, 0,0,0);
+		widg = make_widget(wind, &stdl_notitle, 0,0,0, NULL);
 		widg->r.h = cfg.widg_h;
 	}
 
@@ -2815,7 +2816,7 @@ set_toolbar_coords(struct xa_window *wind)
  * This is also used to setup windowed form_do sessions()
  */
 XA_TREE *
-set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, short edobj)
+set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obtree, short edobj)
 {
 	XA_TREE *wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
@@ -2831,6 +2832,10 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 		((XA_TREE *)widg->stuff)->zen  = false;
 	}
 
+	if (owner)
+		widg->owner = owner;
+	else
+		widg->owner = wind->owner;
 	
 	wt = obtree_to_wt(wind->owner, obtree);
 	if (!wt)
