@@ -549,7 +549,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	/* set window name line */
 	case WF_NAME:
-	{		
+	{
+		set_window_title(w, *(const char **)(pb->intin+2));
+#if 0
 		const char *src = *(const char **)(pb->intin+2);
 		char *dst = w->wname;
 		XA_WIDGET *widg;
@@ -576,7 +578,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			rp_2_ap(w, widg, &clip);
 			display_window(lock, 45, w, &clip);
 		}
-
+#endif
 		break;
 	}
 
