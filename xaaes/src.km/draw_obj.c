@@ -2128,7 +2128,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 
 	wa = w->wa;
 	y = wa.y;
-	maxy = y + wa.h; // - screen.c_max_h;
+	maxy = y + wa.h - screen.c_max_h;
 	this = list->top;
 
 	t_color(G_BLACK);
@@ -2142,8 +2142,8 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 		else
 			br_hook(2,&r,screen.dial_colours.shadow_col),
 			tl_hook(2,&r,screen.dial_colours.lit_col);
-		draw_window(list->lock, w); //display_window(list->lock, 73, w, NULL);
-		for (; y <= maxy; y += screen.c_max_h) //for (; y <= maxy; y += screen.c_max_h)
+		draw_window(list->lock, w);
+		for (; y <= maxy; y += screen.c_max_h)
 		{
 			/* can handle nil this */
 			display_list_element(lock, wt->owner, this, list->left, wa.x, y, wa.w, this == list->cur);
