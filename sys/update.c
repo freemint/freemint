@@ -27,6 +27,9 @@ long sync_time = 5;
 
 # define UPDATE_STKSIZE		6144
 
+# ifdef SYSUPDATE_DAEMON
+short update_pid;
+# endif
 
 static void
 do_sync (long sig)
@@ -110,6 +113,6 @@ start_sysupdate (void)
 	b->p_tbase = (long) update;
 	b->p_hitpa = (long) b + UPDATE_STKSIZE + 256L;
 	
-	sys_pexec (PE_ASYNC_GO, "update", b, 0L);
+	update_pid = sys_pexec (PE_ASYNC_GO, "update", b, 0L);
 # endif
 }
