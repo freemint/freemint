@@ -667,9 +667,6 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(3,1,2)
 
-//	if (client)
-//		display("shel_write(0x%d,%d,%d) for %s",
-//			wdoex, wisgr, wiscr, client->name);
 #if GENERATE_DIAGS
 	if (client)
 	{

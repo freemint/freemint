@@ -343,18 +343,18 @@ setup_handler_table(void)
 	aes_tab[ 33].flags |= DO_LOCKSCREEN; /* XA_MENU_TNORMAL */
 	aes_tab[ 36].flags |= DO_LOCKSCREEN; /* XA_MENU_POPUP */
 
-	aes_tab[ 50].flags |= DO_LOCKSCREEN; /* XA_FORM_DO */
+	//aes_tab[ 50].flags |= DO_LOCKSCREEN; /* XA_FORM_DO */
 	aes_tab[ 51].flags |= DO_LOCKSCREEN; /* XA_FORM_DIAL */
-	aes_tab[ 52].flags |= DO_LOCKSCREEN; /* XA_FORM_ALERT */
-	aes_tab[ 53].flags |= DO_LOCKSCREEN; /* XA_FORM_ERROR */
+	//aes_tab[ 52].flags |= DO_LOCKSCREEN; /* XA_FORM_ALERT */
+	//aes_tab[ 53].flags |= DO_LOCKSCREEN; /* XA_FORM_ERROR */
 
 	aes_tab[ 70].flags |= DO_LOCKSCREEN; /* XA_GRAF_RUBBERBOX */
 	aes_tab[ 71].flags |= DO_LOCKSCREEN; /* XA_GRAF_DRAGBOX */
 	aes_tab[ 75].flags |= DO_LOCKSCREEN; /* XA_GRAF_WATCHBOX */
 	aes_tab[ 76].flags |= DO_LOCKSCREEN; /* XA_GRAF_SLIDEBOX */
 	
-	aes_tab[ 90].flags |= DO_LOCKSCREEN; /* XA_FSEL_INPUT */
-	aes_tab[ 91].flags |= DO_LOCKSCREEN; /* XA_FSEL_EXINPUT */
+	//aes_tab[ 90].flags |= DO_LOCKSCREEN; /* XA_FSEL_INPUT */
+	//aes_tab[ 91].flags |= DO_LOCKSCREEN; /* XA_FSEL_EXINPUT */
 
 	aes_tab[101].flags |= DO_LOCKSCREEN; /* XA_WIND_OPEN */
 	aes_tab[102].flags |= DO_LOCKSCREEN; /* XA_WIND_CLOSE */
@@ -554,6 +554,9 @@ XA_handler(void *_pb)
 				client->xdrive = d_getdrv();
 				d_getpath(client->xpath, 0);
 			}
+			
+			while (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
 		}
 #if 0
 #error external fileselectors not yet supported
@@ -714,6 +717,11 @@ XA_handler(void *_pb)
 		else
 		{
 			DIAGS(("Unimplemented AES trap: %s[%d]", aes_tab[cmd].descr, cmd));
+		}
+		if (client)
+		{
+			while (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
 		}
 	}
 	else

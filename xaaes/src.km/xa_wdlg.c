@@ -368,7 +368,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				wind->wdlg = wdlg;
 
-				wt = set_toolbar_widget(lock, wind, client, obtree, -2);
+				wt = set_toolbar_widget(lock, wind, client, obtree, -2, WIDG_NOTEXT);
 				wt->exit_form = NULL; //exit_wdial;
 				
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
@@ -462,6 +462,8 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			*d = *b = 0;
 			get_widget(wind, XAW_TITLE)->stuff = wind->wname;
 		}
+		wdlg->std_wt->tree->ob_x = wind->wa.x;
+		wdlg->std_wt->tree->ob_y = wind->wa.y;
 		open_window(lock, wind, wind->rc);
 		wdlg->data = (void*)pb->addrin[2];
 		wdlg->exit(wdlg->handle, 0, HNDL_OPEN, pb->intin[3], wdlg->data);
@@ -697,7 +699,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					obtree->ob_state &= ~OS_OUTLINED;
 					if (!(wind->window_status & XAWS_ICONIFIED))
 					{
-						wt = set_toolbar_widget(lock, wind, client, obtree, 0);
+						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT);
 						wt->exit_form = NULL;
 						
 						obj_area(wt, 0, &or);
@@ -716,7 +718,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					}
 				}
 				else
-					display_window(lock, 200, wind, 0);
+					display_window(lock, 200, wind, NULL);
 				break;
 			}
 #endif
@@ -825,7 +827,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					
 					if (wt != get_widget(wind, XAW_TOOLBAR)->stuff)
 					{
-						wt = set_toolbar_widget(lock, wind, client, obtree, 0);
+						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT);
 						wt->exit_form = NULL;
 					}
 

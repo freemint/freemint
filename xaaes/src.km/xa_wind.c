@@ -209,7 +209,7 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	 */
 	if (old_focus && !is_topped(old_focus))
 	{
-		display_window(lock, 40, old_focus, 0);
+		send_iredraw(lock, old_focus, 0, NULL); //display_window(lock, 40, old_focus, NULL);
 		if (domsg) send_untop(lock, old_focus);
 	}
 	/* Ozk: Make sure the window we should top is not the same as
@@ -220,7 +220,7 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	{
 		if (is_topped(w) && w != root_window)
 		{
-			display_window(lock, 41, w, 0);
+			send_iredraw(lock, w, 0, NULL); //display_window(lock, 41, w, NULL);
 			if (domsg) send_ontop(lock);
 		}
 	}
@@ -234,7 +234,7 @@ void
 bottom_window(enum locks lock, struct xa_window *w)
 {
 	bool was_top = (is_topped(w) ? true : false);
-	RECT clip;
+	//RECT clip;
 	struct xa_window *wl = w->next;
 
 	DIAG((D_wind, w->owner, "bottom_window %d", w->handle));
@@ -251,24 +251,23 @@ bottom_window(enum locks lock, struct xa_window *w)
 
 	/* Redisplay titles */
 	if (was_top)
-		display_window(lock, 42, w, NULL);
+		send_iredraw(lock, w, 0, NULL); //display_window(lock, 42, w, NULL);
 	
 	/* Our window is now right above root_window */
+	update_windows_below(lock, &w->r, NULL, wl, w);
+#if 0
 	while (wl != w)
 	{
 		clip = wl->r;
 		if (xa_rc_intersect(w->r, &clip))
 		{
 			/* Re-display any revealed windows */
-			display_window(lock, 44, wl, &clip);
-
-			if (wl->send_message)
-				wl->send_message(lock, wl, NULL, AMQ_REDRAW, QMF_CHKDUP,
-						 WM_REDRAW, 0, 0, wl->handle,
-						 clip.x, clip.y, clip.w, clip.h);
+			generate_redraws(lock, wl, &clip, RDRW_ALL);
+			//display_window(lock, 44, wl, &clip);
 		}
 		wl = wl->next;
 	}
+#endif
 
 	if (was_top)
 	{
@@ -282,7 +281,7 @@ bottom_window(enum locks lock, struct xa_window *w)
 			swap_menu(lock, window_list->owner, true, false, 0);
 		}
 		if (is_topped(window_list))
-			display_window(lock, 43, window_list, NULL);
+			send_iredraw(lock, window_list, 0, NULL); //display_window(lock, 43, window_list, NULL);
 	}
 }
 
@@ -401,7 +400,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				short height = pb->intin[5];
 
 				if (w->rc.x != x || w->rc.y != y)
+				{
 					msg[0] = WM_MOVED;
+					C.move_block = 2;
+				}
 				else if (w->rc.w == width && w->rc.h == height)
 				{
 					pb->intout[0] = 1;
@@ -843,7 +845,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					set_desktop(new->desktop);
 					client->desktop = NULL;
 				}
-				display_window(lock, 47, root_window, 0);
+				//send_iredraw(lock, root_window, 0, NULL); //display_window(lock, 47, root_window, 0);
 			}
 		}
 		else
@@ -856,7 +858,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				new = find_desktop(lock);
 				set_desktop(new->desktop);
 				DIAGS(("  desktop for %s removed", c_owner(client)));
-				display_window(lock, 48, root_window, 0);
+				//send_iredraw(lock, root_window, 0, NULL); //display_window(lock, 48, root_window, 0);
 			}
 		}
 		break;
@@ -916,7 +918,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (ob)
 		{
 			wt = obtree_to_wt(client, ob);
-
+			
 			if (wt && wt == widg->stuff)
 			{
 				DIAGS((" --- Same toolbar installed"));
@@ -931,7 +933,19 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			else if (!widg->stuff)
 			{
 				DIAGS(("  --- Set new toolbar"));
-				set_toolbar_widget(lock, w, client, ob, pb->intin[5]);
+				wt = set_toolbar_widget(lock, w, client, ob, pb->intin[5], 0);
+				rp_2_ap_cs(w, widg, NULL);
+				if (wt && wt->tree)
+				{
+					wt->tree->ob_x = w->wa.x;
+					wt->tree->ob_y = w->wa.y;
+					if (!wt->zen)
+					{
+						wt->tree->ob_x += wt->ox;
+						wt->tree->ob_y += wt->oy;
+					}
+					w->active_widgets |= TOOLBAR;
+				}
 				w->dial |= created_for_TOOLBAR;
 			}
 		}
@@ -940,10 +954,20 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("  --- Remove toolbar"));
 			remove_widget(lock, w, XAW_TOOLBAR);
 		}
-		if ((w->window_status & XAWS_OPEN))
+		if ((w->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN)
 		{
+			//struct xa_rect_list *rl = w->rect_start;
+			
 			DIAGS(("  --- send WM_REDRAW"));
-			send_redraw(lock, w, &w->wa);
+			generate_redraws(lock, w, &w->r, RDRW_EXT);
+#if 0
+			while (rl)
+			{
+				generate_redraws(lock, w, &rl->r);
+				rl = rl->next;
+			}
+#endif
+			//send_redraw(lock, w, &w->wa);
 		}
 		DIAGS(("  wind_set(WF_TOOLBAR) done"));
 		break;
@@ -952,8 +976,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_MENU:
 	{
-		if (!(w->window_status & XAWS_OPEN)
-		    && w->handle != 0
+		if (/*(w->window_status & XAWS_OPEN)*/
+		    w->handle != 0
 		    && (w->active_widgets & XaMENU) != 0)
 		{
 			short obptr[2] = { pb->intin[2], pb->intin[3] };
@@ -969,6 +993,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (ob)
 			{
 				wt = obtree_to_wt(client, ob);
+
 				if (!wt || (wt && wt != widg->stuff))
 				{
 					DIAGS(("  --- install new menu"));
@@ -976,12 +1001,24 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					if (!wt)
 						wt = new_widget_tree(client, ob);
 					set_menu_widget(w, client, wt);
+					rp_2_ap_cs(w, widg, NULL);
+					if (wt && wt->tree)
+					{
+						wt->tree->ob_x = w->wa.x;
+						wt->tree->ob_y = w->wa.y;
+						if (!wt->zen)
+						{
+							wt->tree->ob_x += wt->ox;
+							wt->tree->ob_y += wt->oy;
+						}
+					}
 				}
 			}
 			else if (widg->stuff)
 			{
 				DIAGS(("  --- Remove menu"));
 				remove_widget(lock, w, XAW_MENU);
+				w->active_widgets &= ~XaMENU;
 			}
 			DIAGS(("  wind_set(WF_MENU) done"));
 		}

@@ -147,6 +147,9 @@ k_shutdown(void)
 	DIAGS(("Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
 
+	C.Aes->tp_term = 1;
+	Unblock(C.Aes, 1, 0);
+	
 	DIAGS(("Freeing Aes environment"));
 	if (C.env)
 	{
@@ -218,7 +221,6 @@ k_shutdown(void)
 			op = next;
 		}
 	}
-
 
 	xaaes_kmalloc_leaks();
 	nkc_exit();

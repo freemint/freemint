@@ -1113,7 +1113,7 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 	fs.clear_on_folder_change = 0;
 	strcpy(fs.file, file); /* fill in the file edit field */
 
-	wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE);
+	wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, WIDG_NOTEXT);
 	/* This can be of use for drawing. (keep off border & outline :-) */
 	wt->zen = true;
 	wt->exit_form = fileselector_form_exit;
@@ -1208,6 +1208,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 	{
 		DIAG((D_fsel, NULL, "fsel_(ex)input: in use, sleeping"));
 
+		
 		sleepers++;
 		sleep(IO_Q, (long)do_fsel_exinput);
 		sleepers--;
@@ -1222,7 +1223,9 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 			  path, file, text,
 			  handle_fsel, cancel_fsel);
 
+	client->status |= CS_FSEL_INPUT;
 	Block(client, 21);
+	client->status &= ~CS_FSEL_INPUT;
 	assert(fs.done);
 
 	strcpy(path, fs.path);
