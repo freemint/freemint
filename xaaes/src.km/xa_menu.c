@@ -126,6 +126,7 @@ check_tree(struct xa_client *client, OBJECT *tree, int item)
 unsigned long
 XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	bool swap = true;
 	XA_TREE *menu_bar;
 	XA_TREE *menu = client->std_menu;
 
@@ -143,6 +144,11 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	switch (pb->intin[0])
 	{
+	case MENU_INSTL:
+	{
+		swap = false;
+		/* fall through... */
+	}
 	case MENU_INSTALL:
 	{
 		DIAG((D_menu,NULL,"MENU_INSTALL"));
@@ -176,11 +182,13 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				mwt->is_menu = true;
 				mwt->menu_line = true;
 
-				swap_menu(lock|winlist, client, false, 6);
+				if (swap)
+					swap_menu(lock|winlist, client, false, 6);
+
 				pb->intout[0] = 1;
 				DIAG((D_menu, NULL, "done display, lastob = %d", mwt->lastob));
 			}
-			else if (mwt)
+			else if (mwt && swap)
 				swap_menu(lock|winlist, client, false, 7);
 		}
 		break;

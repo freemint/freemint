@@ -43,7 +43,7 @@
 #include "xa_evnt.h"
 #include "xa_rsrc.h"
 #include "xa_user_things.h"
-
+#include "version.h"
 #include "mint/fcntl.h"
 
 
@@ -782,7 +782,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 /*
  * Data table for appl_getinfo
  */
-static short info_tab[18][4] =
+static short info_tab[][4] =
 {
 	/* 0 large font */
 	{
@@ -831,7 +831,7 @@ static short info_tab[18][4] =
 		0,		/* -1 not a valid app id for appl_read */
 		0,		/* -1 not a valid length parameter to shel_get */
 		1,		/* -1 is a valid mode parameter to menu_bar */
-		0		/* MENU_INSTL is not a valid mode parameter to menu_bar */
+		1		/* MENU_INSTL is not a valid mode parameter to menu_bar */
 	},
 	/* 7 MagiC specific */
 	{
@@ -874,20 +874,83 @@ static short info_tab[18][4] =
 	 * These values are'nt bits, so I dont think this is correct
 	 * WF_TOP + WF_NEWDESK + WF_OWNER + WF_BEVENT + WF_BOTTOM + WF_ICONIFY + WF_UNICONIFY
 	 * bit 9 WF_WHEEL */
+#define AGI_WF_TOP		0x0001
+#define AGI_WF_NEWDESK		0x0002
+#define AGI_WF_COLOR		0x0004
+#define AGI_WF_DCOLOR		0x0008
+#define AGI_WF_OWNER		0x0010
+#define AGI_WF_BEVENT		0x0020
+#define AGI_WF_BOTTOM		0x0040
+#define AGI_WF_ICONIFY		0x0080
+#define AGI_WF_UNICONIFY	0x0100
+#define AGI_WF_WHEEL		0x0200
+
+#define AGI_WF_WIDGETS		0x0001
+
+#define AGI_ICONIFIER		0x0001
+#define AGI_BACKDROP		0x0002
+#define AGI_BDSHIFTCLICK	0x0004
+#define AGI_HOTCLOSER		0x0008
+
+#define AGI_WINDUPD_CAS		0x0001
+
 	{
-		01763,		/* see above */
-		0,
-		5,		/* window behaviours iconifier & click for bottoming */
-		1		/* wind_update(): check and set available (mode + 0x100) */
+		0
+	|	AGI_WF_TOP
+	|	AGI_WF_NEWDESK
+	//|	AGI_WF_COLOR
+	//|	AGI_WF_DCOLOR
+	|	AGI_WF_OWNER
+	|	AGI_WF_BEVENT
+	|	AGI_WF_BOTTOM
+	|	AGI_WF_ICONIFY
+	|	AGI_WF_UNICONIFY
+	|	AGI_WF_WHEEL		/*01763, see above */
+		,
+		0
+		,
+		0
+	|	AGI_ICONIFIER
+	//|	AGI_BACKDROP
+	|	AGI_BDSHIFTCLICK
+	//|	AGI_HOTCLOSER		/*5,	window behaviours iconifier & click for bottoming */
+		,
+		0
+	|	AGI_WINDUPD_CAS		/*1	wind_update(): check and set available (mode + 0x100) */
 	},
+
+#define AGI_WM_NEWTOP		0x0001
+#define AGI_WM_UNTOPPED		0x0002
+#define AGI_WM_ONTOP		0x0004
+#define AGI_AP_TERM		0x0008
+#define AGI_CHRES		0x0010
+#define AGI_CH_EXIT		0x0020
+#define AGI_WM_BOTTOMED		0x0040
+#define AGI_WM_ICONIFY		0x0080
+#define AGI_WM_UNICONIFY	0x0100
+#define AGI_WM_ALLICONIFY	0x0200
+
 	/*12 messages
 	 * WM_UNTOPPED + WM_ONTOP + AP_TERM + CH_EXIT (HR) + WM_BOTTOMED +
 	 * WM_ICONIFY + WM_UNICONIFY
 	 */
 	{
-		0756,		/* see above */ /* XXX is this correct? 0756 is octal */
-		0,
-		1,		/* WM_ICONIFY gives coordinates */
+		0
+	//|	AGI_WM_NEWTOP
+	|	AGI_WM_UNTOPPED
+	|	AGI_WM_ONTOP
+	|	AGI_AP_TERM
+	//|	AGI_CHRES
+	|	AGI_CH_EXIT
+	|	AGI_WM_BOTTOMED
+	|	AGI_WM_ICONIFY
+	|	AGI_WM_UNICONIFY
+	|	AGI_WM_ALLICONIFY	/*0756,	see above */ /* XXX is this correct? 0756 is octal */
+		,
+		0
+		,
+		1
+		,		/* WM_ICONIFY gives coordinates */
 		0
 	},
 	/*13 objects */
@@ -925,9 +988,27 @@ static short info_tab[18][4] =
 		(0x0002|0x0004),	/* WM_SHADED/WM_UNSHADED supported */
 		0,
 		0
+	},
+
+	/* 18 <-- XaAES index 0 */
+	/* XaAES version information */
+	{
+		0,		/* Major */
+		HEX_VERSION,	/* Minor */
+		0,		/* Target */
+		0		/* Status */ 
+	},
+	/* 19 <-- XaAES index 1 */
+	{
+		0,
+		0,
+		0,
+		0
 	}
 };
 									
+#define XA_AGI	18
+#define XA_MAGI	XA_AGI + 1
 
 /*
  * appl_getinfo() handler
@@ -963,6 +1044,15 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		else if (gi_type == AGI_WINX)
 		{
 			gi_type = 17;
+		}
+		else if ((gi_type & 0xff00) == 0x58)
+		{
+			gi_type = (gi_type & 0xff) + XA_AGI;
+			if (gi_type > XA_MAGI)
+			{
+				pb->intout[0] = 0;
+				return XAC_DONE;
+			}
 		}
 		else
 		{
