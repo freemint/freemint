@@ -125,7 +125,7 @@ struct _fnts_item
 
 /* Definition  of <dialog_flags> in mt_fnts_create() */
 #define FNTS_3D			1			/**< Display selector in 3D-look */
-
+#define FNTS_DISPLAY		2
 /* Definition of <button_flags> in mt_fnts_open() */
 #define FNTS_SNAME		0x01		/**< Select checkbox for names */
 #define FNTS_SSTYLE		0x02		/**< Select checkbox for style */

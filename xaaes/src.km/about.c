@@ -169,14 +169,18 @@ open_about(enum locks lock)
 		if (!list->start)
 		{
 			char **t = about_lines;
+			struct scroll_content sc = { 0 };
+
+			sc.n_strings = 1;
 			while (*t)
 			{
-				list->add(list, NULL, *t, 0, NULL);
+				sc.text = *t;
+				list->add(list, NULL, NULL, &sc, false, 0, false);
 				t++;
 			}
 		}
 		
-		list->slider(list);
+		list->slider(list, false);
 
 		/* Set the window destructor */
 		dialog_window->destructor = about_destructor;

@@ -396,11 +396,20 @@ accpath   = c:\
 #launcher  = u:\opt\toswin2\tw-call.prg
 
 #
+#
 # widgets  = <file>
 # resource = <file>
 #
 #widgets  = adam.rsc
 #resource = xa_mono.rsc
+
+#
+#
+use_rsc_palette = yes
+
+#
+#
+remap_cicons = yes
 
 #
 # widget_auto_highlight = <bool> default: no
