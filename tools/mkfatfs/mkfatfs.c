@@ -97,7 +97,7 @@ extern int optind;
 # include "bswap.h"
 
 
-# define VERSION	"0.24"
+# define VERSION	"0.25"
 # define DEBUG(x)	printf x
 # define INLINE		static inline
 
@@ -1354,7 +1354,7 @@ main (int argc, char **argv)
 	else
 		PROGRAM = "mkdosfs";
 	
-	printf ("%s " VERSION ", 2000-06-14 for TOS and DOS FAT/FAT32-FS\n", PROGRAM);
+	printf ("%s " VERSION ", 2002-09-19 for TOS and DOS FAT/FAT32-FS\n", PROGRAM);
 	
 	/* check and initalize XHDI */
 	if (init_XHDI ())
