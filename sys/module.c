@@ -78,7 +78,10 @@ kernel_readdir(struct dirstruct *dirh, char *buf, int len)
 	long r;
 
 	if (!dirh->fc.fs)
+	{
+		DEBUG(("kernel_readdir: bad file cookie???"));
 		return EBADF;
+	}
 
 	r = xfs_readdir(dirh->fc.fs, dirh, buf, len, &fc);
 	if (!r) release_cookie(&fc);
@@ -116,7 +119,6 @@ kernel_open(const char *path, int rwmode, long *err)
 		FP_FREE(f);
 
 		f = NULL;
-		goto leave;
 	}
 
 leave:
@@ -173,7 +175,11 @@ load_all_modules(unsigned long mask)
 	{
 		/* load external xdd */
 		if (mask & (1L << i))
-			load_modules(NULL, _types [i], _loads [i]);
+		{
+			DEBUG(("load_all_modules: processing \"%s\"", _types [i]));
+			load_modules(sysdir, _types [i], _loads [i]);
+			DEBUG(("load_all_modules: done with \"%s\"", _types [i]));
+		}
 	}
 }
 
@@ -221,19 +227,17 @@ load_module(const char *filename, long *err)
 	b->p_bbase = b->p_dbase + b->p_dlen;
 	b->p_blen = fh.fbss;
 
-	size = fh.ftext + fh.fdata;
+	*err = load_and_reloc(f, &fh, (char *)b + 256, 0, fh.ftext + fh.fdata, b);
 
-	*err = load_and_reloc(f, &fh, (char *) b + 256, 0, size, b);
+	/* close file */
+	kernel_close(f);
+
+	/* check for errors */
 	if (*err)
 	{
 		DEBUG(("load_and_reloc: failed"));
 		goto failed;
 	}
-
-	kernel_close(f);
-
-	/* just to be sure */
-	cpush(NULL, -1);
 
 	DEBUG(("load_module: basepage = %lx", b));
 	return b;
@@ -241,7 +245,7 @@ load_module(const char *filename, long *err)
 failed:
 	if (b) kfree(b);
 
-	kernel_close(f);
+	DEBUG(("load_module: -> NULL"));
 	return NULL;
 }
 
@@ -266,7 +270,7 @@ dont_load(const char *name)
 void _cdecl
 load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *))
 {
-	load_modules(NULL, ext, loader);
+	load_modules(sysdir, ext, loader);
 }
 
 void _cdecl
@@ -274,11 +278,10 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 {
 	struct dirstruct dirh;
 	char buf[128];
-	long len;
 	char *name;
-	long r;
+	long len, r;
 
-	DEBUG(("load_modules: enter(\"%s\", %s)", path ? path : sysdir, ext));
+	DEBUG(("load_modules: enter(\"%s\", \"%s\", 0x%lx)", path ? path : sysdir, ext, loader));
 
 	strcpy(buf, path ? path : sysdir);
 	len = strlen(buf);
@@ -309,18 +312,22 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 			    stricmp(name+4 + r, ext) == 0 &&
 			    !dont_load(name+4))
 			{
-				char *ptr1 = name;
-				char *ptr2 = name+4;
-				long len2 = len - 1;
 				struct basepage *b;
 
-				while (*ptr2)
+				/* remove the 4 byte index from readdir */
 				{
-					*ptr1++ = *ptr2++;
-					len2--; assert(len2);
-				}
+					char *ptr1 = name;
+					char *ptr2 = name+4;
+					long len2 = len - 1;
 
-				*ptr1 = '\0';
+					while (*ptr2)
+					{
+						*ptr1++ = *ptr2++;
+						len2--; assert(len2);
+					}
+
+					*ptr1 = '\0';
+				}
 
 				b = load_module(buf, &r);
 				if (b)
@@ -333,9 +340,6 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 				}
 				else
 					DEBUG(("load_module of \"%s\" failed (%li)", buf, r));
-
-				/* just to be sure */
-				cpush(NULL, -1);
 			}
 
 			r = kernel_readdir(&dirh, name, len);
@@ -346,23 +350,59 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 	}
 }
 
+#if 0
+/*
+ * this don't work?!
+ * why need the registers to be preserved?
+ * all the modules are gcc compiled too ...
+ */
+static void *
+module_init(void *initfunc, struct kerinfo *k)
+{
+	void * _cdecl (*init)(struct kerinfo *);
+
+	init = initfunc;
+	return (*init)(k);
+}
+#else
+static void *	 
+module_init(void *initfunc, struct kerinfo *k)
+{
+	register void *ret __asm__("d0");	 
+
+	__asm__ volatile	 
+	(	 
+		"moveml	d3-d7/a3-a6,sp@-;"	 
+		"movl	%2,sp@-;"	 
+		"movl	%1,a0;"	 
+		"jsr	a0@;"	 
+		"addqw	#4,sp;"	 
+		"moveml	sp@+,d3-d7/a3-a6;"	 
+		: "=r"(ret)				/* outputs */	 
+		: "g"(initfunc), "r"(k)			/* inputs  */	 
+		: "d0", "d1", "d2", "a0", "a1", "a2",	/* clobbered regs */	 
+		"memory"	 
+	);	 
+
+	return ret;	 
+}
+#endif
+
 /*
  * load file systems from disk
  * this routine is called after process 0 is set up, but before any user
  * processes are run
  */
-static long
+long
 load_xfs(struct basepage *b, const char *name)
 {
-	FILESYS *(*init)(struct kerinfo *);
+	void *initfunc = (void *)b->p_tbase;
 	FILESYS *fs;
 
 	DEBUG(("load_xfs: enter (0x%lx, %s)", b, name));
-	DEBUG(("load_xfs: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_xfs: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	init = (FILESYS *(*)(struct kerinfo *))b->p_tbase;
-
-	fs = (*init)(&kernelinfo);
+	fs = module_init(initfunc, &kernelinfo);
 	if (fs)
 	{
 		DEBUG(("load_xfs: %s loaded OK (%lx)", name, fs));
@@ -417,18 +457,16 @@ load_xfs(struct basepage *b, const char *name)
  * processes are run, but before the loadable file systems come in,
  * so they can make use of external device drivers
  */
-static long
+long
 load_xdd(struct basepage *b, const char *name)
 {
-	DEVDRV *(*init)(struct kerinfo *);
+	void *initfunc = (void *)b->p_tbase;
 	DEVDRV *dev;
 
 	DEBUG(("load_xdd: enter (0x%lx, %s)", b, name));
-	DEBUG(("load_xdd: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	DEBUG(("load_xdd: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 
-	init = (DEVDRV *(*)(struct kerinfo *))b->p_tbase;
-
-	dev = (*init)(&kernelinfo);
+	dev = module_init(initfunc, &kernelinfo);
 	if (dev)
 	{
 		DEBUG(("load_xdd: %s loaded OK", name));
@@ -535,11 +573,11 @@ run_km(const char *path)
 	bp = load_module(path, &err);
 	if (bp)
 	{
-		long (*run)(struct kentry *, const char *path);
+		long _cdecl (*run)(struct kentry *, const char *path);
 		
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, bp);
 		
-		run = (long (*)(struct kentry *, const char *))bp->p_tbase;
+		run = (long _cdecl (*)(struct kentry *, const char *))bp->p_tbase;
 		err = (*run)(&kentry, path);
 		
 		kfree(bp);
