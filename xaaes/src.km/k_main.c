@@ -45,6 +45,7 @@
 #include "taskman.h"
 #include "widgets.h"
 
+#include "xa_evnt.h"
 #include "xa_form.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
@@ -191,6 +192,8 @@ Block(struct xa_client *client, int which)
 		}
 	}
 
+	if (check_queued_events(client))
+		return;
 	/*
 	 * Getting here if no more client events are in the queue
 	 * Looping around doing client events until a user event
@@ -209,6 +212,16 @@ Block(struct xa_client *client, int which)
 
 		client->inblock = false;
 		client->sleeplock = 0;
+
+		/*
+		 * Ozk: This is gonna be the new style of delivering events;
+		 * If the receiver of an event is not the same as the sender of
+		 * of the event, the event is queued (only for AES messges for now)
+		 * Then the sender will wake up the receiver, which will call
+		 * check_queued_events() and handle the event.
+		*/
+		if (check_queued_events(client))
+			return;
 
 		if ((client->waiting_for & MU_TIMER) && !client->timeout)
 			return;
