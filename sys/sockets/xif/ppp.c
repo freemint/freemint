@@ -24,6 +24,7 @@
 # include "mint/ioctl.h"
 # include "mint/signal.h"
 # include "mint/sockio.h"
+# include "mint/stat.h"
 
 # include "ppp.h"
 # include "serial.h"
@@ -143,7 +144,8 @@ static struct devdrv	ppp_dev =
 
 static struct dev_descr	ppp_desc =
 {
-	driver:		&ppp_dev
+	driver:		&ppp_dev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 static ushort fcstab[256] =
