@@ -1364,7 +1364,7 @@ pipe_lseek (FILEPTR *f, long where, int whence)
 	UNUSED (where);
 	UNUSED (whence);
 	
-	return EACCES;
+	return ESPIPE;
 }
 
 static long _cdecl 
