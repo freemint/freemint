@@ -37,6 +37,7 @@
 #include "taskman.h"
 #include "util.h"
 #include "widgets.h"
+#include "xa_types.h"
 #include "xa_evnt.h"
 #include "xa_user_things.h"
 
@@ -120,6 +121,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		ALERT(("attach_extension for %u failed, out of memory?", p->pid));
 		return XAC_DONE;
 	}
+	bzero(client, sizeof(*client));
 
 	client->ut = umalloc(xa_user_things.len);
 	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
@@ -178,7 +180,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->globl_ptr = globl;
 
 	client->cmd_tail = "\0";
-	client->wt.e.obj = -1;
+	//client->wt.e.obj = -1;
 
 	/* Ozk: About the fix_menu() thing; This is just as bad as it
 	 * originally was, the client should have an attachment with
@@ -394,35 +396,40 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	/* remove any references */
 	{
-		XA_TREE *menu_bar = get_menu();
+		XA_WIDGET *widg = get_menu_widg();
 
-		DIAGS(("remove_refs for %s mtree %lx",
-			c_owner(client), client->std_menu.tree));
+		DIAGS(("remove_refs for %s wt=%lx, mtree=%lx",
+			c_owner(client), client->std_menu, client->std_menu ? (long)client->std_menu->tree : 0));
 
 		root_window->owner = C.Aes;
 
-		if (client->std_menu.tree)
+		/* Ozk:
+		 * The wt's used by apps std_menu and desktop will
+		 * be freed by free_wtlist() later.
+		 */
+		if (client->std_menu)
 		{
-			if (client->std_menu.tree == menu_bar->tree)
+			if (client->std_menu == widg->stuff)
 			{
 				C.menu_base = NULL;
-				*menu_bar = C.Aes->std_menu;
+				widg->stuff = C.Aes->std_menu;
 			}
 			else
-				*menu_bar = C.Aes->std_menu;
+				widg->stuff = C.Aes->std_menu;
+
+			client->std_menu = NULL;
 		}
 		if (menustruct_locked() == client)
 			free_menustruct_lock();
 
-		client->std_menu.tree = NULL;
 
-		if (client->desktop.tree)
+		if (client->desktop)
 		{
-			if (get_desktop()->tree == client->desktop.tree)
+			if (get_desktop() == client->desktop)
 			{
-				set_desktop(&C.Aes->desktop);
-				client->desktop.tree = NULL;
+				set_desktop(C.Aes->desktop);
 			}
+			client->desktop = NULL;
 		}
 	}
 
@@ -449,7 +456,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	/* if taskmanager is open the tasklist will be updated */
 	update_tasklist(lock);
 
-	yield();
 	free_wtlist(client);
 
 	/* free the quart screen buffer */
@@ -466,7 +472,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	bzero(client, sizeof(*client));
 
 	client->cmd_tail = "\0";
-	client->wt.e.obj = -1;
+	//client->wt.e.obj = -1;
 
 	DIAG((D_appl, NULL, "client exit done"));
 }
@@ -1081,9 +1087,9 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 					*ii = 0;
 					if (any_hidden(lock, cl))
 						*ii |= 1 /* APCI_HIDDEN */;
-					if (cl->std_menu.tree)
+					if (cl->std_menu)
 						*ii |= 2 /* APCI_HASMBAR */;
-					if (cl->desktop.tree)
+					if (cl->desktop)
 						*ii |= 4 /* APCI_HASDESK */;
 
 					pb->intout[0] = 1;

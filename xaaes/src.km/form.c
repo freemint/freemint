@@ -46,8 +46,12 @@ Set_form_do(struct xa_client *client,
 	    short edobj)
 {
 	short new_obj;
-	XA_TREE *wt = &client->wt;
+	XA_TREE *wt;
 
+	wt = obtree_to_wt(client, obtree);
+	if (!wt)
+		wt = new_widget_tree(client, obtree);
+	
 	DIAG((D_form, client, "Set_form_do: wt=%lx, obtree=%lx, edobj=%d for %s",
 		wt, obtree, edobj, client->name));
 
@@ -55,9 +59,7 @@ Set_form_do(struct xa_client *client,
 	 *       TOUCHEXIT button, and act accordingly.
 	 */
 	wt->exit_form	= Exit_form_do; //Classic_exit_form_do;
-	wt->tree	= obtree;
-	wt->owner	= client;
-
+	
 	/* Ozk:
 	 * If the first obj_edit call fails, we call it again passing the
 	 * object it returned, which obj_edit() looked up. See obj_edit()
@@ -75,6 +77,7 @@ Set_form_do(struct xa_client *client,
 	 * Install mouse button handler.
 	 */
 	client->fmd.mousepress = Click_form_do;
+	client->fmd.wt = wt;
 }
 
 /*
@@ -112,6 +115,7 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
 		Set_form_do(client, obtree, edobj);
+		wt = client->fmd.wt;
 		goto okexit;
 	}
 	/*
@@ -262,14 +266,6 @@ form_button(XA_TREE *wt,
 
 	if (!no_exit || (flags & OF_EDITABLE))
 		next_obj = obj;
-
-#if 0
-	if (no_exit && (flags & OF_EDITABLE))
-		no_exit = false;
-
-	if (!no_exit)
-		next_obj = obj;
-#endif
 
 	if (clickmsk)
 		*clickmsk = dc ? 0x8000:0;
@@ -654,7 +650,7 @@ Click_form_do(enum locks lock,
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using wind->toolbar"));
-			wt = &wind->toolbar;
+			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		}
 		obtree = rp_2_ap(wind, wt->widg, &r);
 	}
@@ -666,7 +662,7 @@ Click_form_do(enum locks lock,
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using client->wt"));
-			wt = &client->wt;
+			wt = client->fmd.wt;
 		}
 		obtree = wt->tree;
 	}
@@ -736,7 +732,7 @@ Key_form_do(enum locks lock,
 	if (wind)
 	{
 		DIAGS(("Key_form_do: using wind->toolbar"));
-		wt = &wind->toolbar;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		obtree = rp_2_ap(wind, wt->widg, &r);
 	}
 	/*
@@ -747,7 +743,7 @@ Key_form_do(enum locks lock,
 		if (!wt)
 		{
 			DIAGS(("Key_form_do: using client->wt"));
-			wt = &client->wt;
+			wt = client->fmd.wt;
 		}
 		obtree = wt->tree;
 	}
@@ -854,7 +850,6 @@ set_button_timer(enum locks lock, struct xa_window *wind)
  */ 
 void
 do_formwind_msg(
-//handle_form_window(
 	struct xa_window *wind,
 	struct xa_client *to,			/* if different from wind->owner */
 	short *msg)

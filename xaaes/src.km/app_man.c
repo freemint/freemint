@@ -106,17 +106,17 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 {
 	struct xa_window *top;
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-	XA_TREE *menu_bar = get_menu();
+	XA_WIDGET *widg = get_menu_widg();
 
 	DIAG((D_appl, NULL, "[%d]swap_menu", which));
 
 	/* If the new client has no menu bar, no need for a change */
-	if (new->std_menu.tree)	
+	if (new->std_menu)
 	{
 		DIAG((D_appl, NULL, "  --   to %s", c_owner(new)));
 
 		/* menu widget.tree */
-		if (new->std_menu.tree != menu_bar->tree) /* Different menu? */
+		if (new->std_menu != widg->stuff) /* Different menu? */
 		{
 			DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
 
@@ -125,7 +125,14 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 
 			new->status |= CS_WAIT_MENU;
 			lock_menustruct(rc, false);
-			*menu_bar = new->std_menu;
+			if (widg->stuff)
+			{
+				((XA_TREE *)widg->stuff)->widg = NULL;
+				((XA_TREE *)widg->stuff)->flags &= ~WTF_STATIC;
+			}
+			widg->stuff = new->std_menu;
+			new->std_menu->flags |= WTF_STATIC;
+			new->std_menu->widg = widg;
 			unlock_menustruct(rc);
 			new->status &= ~CS_WAIT_MENU;
 
@@ -139,7 +146,6 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 				C.focus = root_window;
 				DIAG((D_appl, NULL, "Focus to root_window."));
 				display_window(lock, 110, top, NULL);   /* Redisplay titles */
-				//redraw_menu(lock);
 				send_untop(lock, top);
 			}
 			else if (C.focus == root_window && top->owner == new)
@@ -147,7 +153,6 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 				C.focus = top;
 				DIAG((D_appl, NULL, "Focus to top_window %s", w_owner(top)));
 				display_window(lock, 111, top, NULL);   /* Redisplay titles */
-				//redraw_menu(lock);
 				send_ontop(lock);
 			}
 			else if (top->owner != new)
@@ -164,16 +169,16 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 
 	/* Change desktops? */
 	if (   do_desk
-	    && new->desktop.tree
-	    && new->desktop.tree != get_desktop()->tree
-	    && new->desktop.tree != get_xa_desktop())
+	    && new->desktop
+	    && new->desktop->tree != get_desktop()->tree
+	    && new->desktop->tree != get_xa_desktop())
 	{
-		DIAG((D_appl, NULL, "  --   with desktop"));
-		set_desktop(&new->desktop);
+		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
+		set_desktop(new->desktop); //set_desktop(&new->desktop);
 		display_window(lock, 30, root_window, NULL);
 		redraw_menu(lock);
 	}
-	else if (new->std_menu.tree)
+	else if (new->std_menu)
 	{
 		/* No - just change menu bar */
 		DIAG((D_appl, NULL, "redrawing menu..."));
@@ -185,7 +190,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 XA_TREE *
 find_menu_bar(enum locks lock)
 {
-	XA_TREE *rtn = &(C.Aes->std_menu); /* default */
+	XA_TREE *rtn = C.Aes->std_menu; //&(C.Aes->std_menu); /* default */
 	struct xa_client *last;
 
 	Sema_Up(clients);
@@ -196,9 +201,9 @@ find_menu_bar(enum locks lock)
 
 	while (last)
 	{
-		if (last->std_menu.tree)
+		if (last->std_menu)
 		{
-			rtn = &last->std_menu;
+			rtn = last->std_menu; //&last->std_menu;
 			DIAGS(("found std_menu %lx", rtn));
 			break;
 		}
@@ -224,13 +229,12 @@ find_desktop(enum locks lock)
 
 	while (last)
 	{
-		if (last->desktop.tree)
+		if (last->desktop)
 		{
 			rtn = last;
 			DIAGS(("found desktop %lx", rtn));
 			break;
 		}
-
 		last = last->prior;
 	}
 
@@ -389,7 +393,7 @@ next_app(enum locks lock)
 	{
 		bool anywin = any_window(lock, client);
 
-		if (client->std_menu.tree || anywin)
+		if (client->std_menu || anywin)
 		{
 			DIAG((D_appl, NULL, "  --  return %s", c_owner(client)));
 			return client;
@@ -403,9 +407,9 @@ next_app(enum locks lock)
 	{
 		bool anywin = any_window(lock, client);
 
-		DIAG((D_appl, NULL, "anywin %d, menu %lx", anywin, client->std_menu.tree));
+		DIAG((D_appl, NULL, "anywin %d, menu %lx", anywin, client->std_menu->tree));
 
-		if (client->std_menu.tree || anywin)
+		if (client->std_menu || anywin)
 		{
 			DIAG((D_appl, NULL, "  --  return %s", c_owner(client)));
 			return client;
