@@ -554,7 +554,7 @@ get_prot_mode(MEMREGION *r)
 }
 
 void
-mark_region(MEMREGION *region, short int mode)
+mark_region(MEMREGION *region, short mode, short cmode)
 {
 	if (no_mem_prot)
 		return;
@@ -631,7 +631,7 @@ gotvals:
 /* special version of mark_region, used for attaching (mode == PROT_P)
    and detaching (mode == PROT_I) a memory region to/from a process. */
 void
-mark_proc_region(PROC *proc, MEMREGION *region, short int mode)
+mark_proc_region(PROC *proc, MEMREGION *region, short mode)
 {
 	if (no_mem_prot)
 		return;
@@ -711,7 +711,7 @@ gotvals:
  */
 
 int
-prot_temp(ulong loc, ulong len, int mode)
+prot_temp(ulong loc, ulong len, short mode)
 {
 	if (no_mem_prot)
 		return -1;
@@ -998,7 +998,7 @@ mem_prot_special(PROC *proc)
 	if (*mr) {
 	    mode = global_mode_table[((*mr)->loc >> 13)];
 	    if (mode == PROT_P)
-		mark_region(*mr, PROT_S);
+		mark_region(*mr, PROT_S, 0);
 	    else
 	    {
 		MP_DEBUG(("mem_prot_special: Not marking region at %lx as super", (*mr)->loc));

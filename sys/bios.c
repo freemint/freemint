@@ -308,7 +308,7 @@ setexc (int number, long vector)
 				if (r && get_prot_mode (r) == PROT_P)
 				{
 					DEBUG (("Changing protection to Supervisor because of Setexc"));
-					mark_region (r, PROT_S);
+					mark_region (r, PROT_S, 0);
 				}
 			}
 # endif
