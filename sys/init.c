@@ -866,23 +866,6 @@ init (void)
 {
 	long newstamp, pause, r, *sysbase;
 	FILEPTR *f;
-	char curpath[128];
-
-	/* 
-	 * Initialize sysdir
-	 * 
-	 * from 1.16 we ignore any multitos folder
-	 * from 1.16 we default to \mint
-	 * from 1.16 we search for \mint\<MINT_VERSION>
-	 *           for example "\mint\1.16.0"   for 1.16.0 version
-	 *                    or "\mint\1.16-cur" for cvs-current of 1.16 line
-	 */
-	strcpy(sysdir, "\\mint\\");
-
-	if (TRAP_Fsfirst("\\mint\\" MINT_VERS_PATH_STRING "\\mint.cnf", 0) == 0)
-		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
-
-	read_ini();	/* Read user defined defaults */
 
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
@@ -890,10 +873,37 @@ init (void)
 	boot_print (greet1);
 	boot_print (greet2);
 
+	/* Read user defined defaults */
+	read_ini();
+
+	/* 
+	 * Initialize sysdir
+	 * 
+	 * from 1.16 we ignore any multitos folder
+	 * from 1.16 we default to \mint
+	 * from 1.16 we search for \mint\<MINT_VERSION>
+	 *           for example "\\mint\\1-16-0"   for 1.16.0 version
+	 *                    or "\\mint\\1-16-cur" for cvs-current of 1.16 line
+	 */
+	if (TRAP_Dsetpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
+		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
+	else if (TRAP_Dsetpath("\\mint\\") == 0)
+		strcpy(sysdir, "\\mint\\");
+	else
+	{
+		/* error, no <boot>/mint or <boot>/mint/<version> directory
+		 * exist
+		 */
+		boot_printf(MSG_init_no_mint_folder, MINT_VERS_PATH_STRING);
+		boot_print(MSG_init_hitanykey);
+		(void) TRAP_Cconin();
+		TRAP_Pterm0();
+	}
+
 	/* check for GEM -- this must be done from user mode */
 	if (check_for_gem())
 	{
-		boot_print(MSG_must_be_auto);
+		boot_print(MSG_init_must_be_auto);
 		boot_print(MSG_init_hitanykey);
 		(void) TRAP_Cconin();
 		TRAP_Pterm0();
@@ -948,18 +958,6 @@ init (void)
 	/* These are set inside getmch() */
 	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
 # endif
-
-	/* get the current directory, so that we can switch back to it after
-	 * the file systems are properly initialized
-	 *
-	 * set the current directory for the current process
-	 */
-	TRAP_Dgetpath (curpath, 0);
-	if (!*curpath)
-	{
-		curpath[0] = '\\';
-		curpath[1] = 0;
-	}
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_supermode);
@@ -1277,7 +1275,7 @@ init (void)
 # endif
 
 	/* load the kernel modules */
-	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
+	load_all_modules((load_xdd_f | (load_xfs_f << 1)));
 
 	/* Make newline */
 	boot_print("\r\n");
