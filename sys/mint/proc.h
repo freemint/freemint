@@ -152,7 +152,7 @@ struct proc
 	ushort	p_flag;			/* */
 	ushort	p_stat;			/* */
 	ushort	debug_level;		/* debug-level of the process	*/
-	
+	ushort	pad;
 	
 	/* sharable substructures */
 	struct memspace	*p_mem;		/* address space */
@@ -161,7 +161,6 @@ struct proc
 	struct cwd	*p_cwd;		/* path stuff */
 	struct sigacts	*p_sigacts;	/* signal stuff */
 	struct plimit	*p_limits;	/* process limits */
-	
 	
 	/* statistics */
 	struct timeval started;		/* start time in UTC		*/
