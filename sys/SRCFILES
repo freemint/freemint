@@ -38,6 +38,7 @@ COBJS = \
 	k_exit.c \
 	k_fds.c \
 	k_fork.c \
+	k_kthread.c \
 	k_prot.c \
 	k_resource.c \
 	kerinfo.c \

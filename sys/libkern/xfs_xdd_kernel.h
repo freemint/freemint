@@ -467,6 +467,9 @@ INLINE long d_getpath (char *path, int drv)
 INLINE long m_xalloc (long size, int mode)
 { return ((long _cdecl (*)(long, int)) _m_xalloc) (size, mode); }
 
+INLINE long f_dup (short fd)
+{ return ((long _cdecl (*)(short)) _f_dup) (fd); }
+
 INLINE long m_alloc (long size)
 { return ((long _cdecl (*)(long)) _m_alloc) (size); }
 
@@ -479,6 +482,9 @@ INLINE long m_shrink (int dummy, long block, long size)
 INLINE long p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 { return ((long _cdecl (*)(int, const void *, const void *, const void *)) _p_exec) (mode, ptr1, ptr2, ptr3); }
 
+INLINE long p_term (int code)
+{ return ((long _cdecl (*)(int)) _p_term) (code); }
+
 INLINE long f_sfirst (const char *path, int attrib)
 { return ((long _cdecl (*)(const char *, int)) _f_sfirst) (path, attrib); }
 
@@ -490,6 +496,9 @@ INLINE long s_yield (void)
 
 INLINE long f_cntl (int fh, long arg, int cmd)
 { return ((long _cdecl (*)(int, long, int)) _f_cntl) (fh, arg, cmd); }
+
+INLINE long p_nice (int increment)
+{ return ((long _cdecl (*)(int)) _p_nice) (increment); }
 
 INLINE long p_getpid (void)
 { return ((long _cdecl (*)(void)) _p_getpid) (); }
@@ -517,6 +526,9 @@ INLINE long p_getgid (void)
 
 INLINE long p_setgid (int id)
 { return ((long _cdecl (*)(int)) _p_setgid) (id); }
+
+INLINE long p_sigblock (ulong mask)
+{ return ((long _cdecl (*)(ulong)) _p_sigblock) (mask); }
 
 INLINE long p_domain (int arg)
 { return ((long _cdecl (*)(int)) _p_domain) (arg); }
@@ -667,6 +679,9 @@ INLINE long t_settimeofday (struct timeval *tv, struct timezone *tz)
 # define so_create		(*KERNEL->so_create)
 # define so_dup			(*KERNEL->so_dup)
 # define so_free		(*KERNEL->so_free)
+# define load_modules		(*KERNEL->load_modules)
+# define kthread_create		(*KERNEL->kthread_create)
+# define kthread_exit		(*KERNEL->kthread_exit)
 
 
 # endif /* _xfs_xdd_kernel_h */
