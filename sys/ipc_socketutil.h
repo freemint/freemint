@@ -39,6 +39,8 @@
 # include "mint/net.h"
 
 
+void domaininit (void);
+
 void _cdecl so_register (short dom, struct dom_ops *ops);
 void _cdecl so_unregister (short dom);
 
