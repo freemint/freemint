@@ -35,6 +35,7 @@
 # include "arch/mprot.h"	/* no_mem_prot */
 # include "arch/tosbind.h"	/* TOS calls */
 
+# include "debug.h"		/* out_device, debug_level */
 # include "global.h"		/* sysdir */
 # include "info.h"		/* info strings */
 # include "init.h"		/* boot_printf() */
@@ -45,16 +46,20 @@
  */
 
 # define MENU_OPTIONS	7
+# define MAX_CMD_LEN	32
 
-short load_xfs_f = 1;
-short load_xdd_f = 1;
-short load_auto = 1;
-short save_ini = 1;
+short load_xfs_f = 1;		/* Flag: load XFS modules (if 1) */
+short load_xdd_f = 1;		/* Flag: load XDD modules (if 1) */
+short load_auto = 1;		/* Flag: load AUTO programs appearing after us (if 1) */
+short save_ini = 1;		/* Flag: write new ini file while exiting bootmenu (if 1) */
+
+short boot_delay;
 
 int boot_kernel_p(void);
 void read_ini(void);
 
-static int
+/* Helper function for getdelim() below */
+INLINE int
 get_a_char(int fd)
 {
 	char ch;
@@ -64,6 +69,13 @@ get_a_char(int fd)
 	return -1;
 }
 
+/* Simplified version of getdelim(): read data into specified buffer
+ * until the specified delimiter is met, or EOF occurs. When the buffer
+ * is full, it continues to read the file, but does not store the
+ * information anywhere.
+ *
+ * Does not place the delimiter into the buffer.
+ */
 static int
 getdelim(char *buf, long n, int terminator, int fd)
 {
@@ -72,11 +84,10 @@ getdelim(char *buf, long n, int terminator, int fd)
 
 	while ((ch = get_a_char(fd)) != -1)
 	{
-		if ((len + 1) >= n)
-			break;
 		if (ch == terminator)
 			break;
-		buf[len++] = (char)ch;
+		if ((len + 1) < n)
+			buf[len++] = (char)ch;
 	}
 
 	buf[len] = 0;
@@ -90,6 +101,252 @@ getdelim(char *buf, long n, int terminator, int fd)
 
 	return 0;
 }
+
+/* Pairs of functions handling each keyword. The do_xxx_yyyy() function
+ * is called when the mint.ini is read; the `arg' points to the line buffer
+ * containing the command, right after the '=' character.
+ *
+ * The emit_xxx_yyyy() function is called when the mint.ini is written out.
+ * It is responsible for emitting the properly formatted keyword with
+ * arguments into the specified file descriptor (fd).
+ *
+ */
+static void
+do_xfs_load(char *arg)
+{
+	load_xfs_f = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static long
+emit_xfs_load(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "XFS_LOAD=%s\n", load_xfs_f ? "YES" : "NO");
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_xdd_load(char *arg)
+{
+	load_xdd_f = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static long
+emit_xdd_load(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "XDD_LOAD=%s\n", load_xdd_f ? "YES" : "NO");
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_exe_auto(char *arg)
+{
+	load_auto = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static long
+emit_exe_auto(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "EXE_AUTO=%s\n", load_auto ? "YES" : "NO");
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_mem_prot(char *arg)
+{
+	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
+}
+
+static long
+emit_mem_prot(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "MEM_PROT=%s\n", no_mem_prot ? "NO" : "YES");
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_ini_step(char *arg)
+{
+	step_by_step = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static long
+emit_ini_step(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "INI_STEP=%s\n", step_by_step ? "YES" : "NO");
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_ini_save(char *arg)
+{
+	save_ini = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static long
+emit_ini_save(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "INI_SAVE=%s\n", save_ini ? "YES" : "NO");
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_debug_level(char *arg)
+{
+	long val;
+	char msg[64];
+
+	if (!isdigit(*arg))
+	{
+		ksprintf(msg, sizeof(msg), "mint.ini: %s requires number as an argument!\r\n", "DEBUG_LEVEL");
+		TRAP_Cconws(msg);
+
+		return;
+	}
+
+	val = atol(arg);
+
+	if (debug_level == (int)val)
+		return;
+
+	if (val < 0 || val > 4)
+	{
+		ksprintf(msg, sizeof(msg), "mint.ini: %s value %ld is out of range (%d-%d)\r\n", "DEBUG_LEVEL", val, (short)0, (short)4);
+		TRAP_Cconws(msg);
+
+		return;
+	}
+
+	debug_level = (int)val;
+}
+
+static long
+emit_debug_level(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "DEBUG_LEVEL=%d\n", debug_level);
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_debug_devno(char *arg)
+{
+	long val;
+	char msg[64];
+
+	if (!isdigit(*arg))
+	{
+		ksprintf(msg, sizeof(msg), "mint.ini: %s requires number as an argument!\r\n", "DEBUG_DEVNO");
+		TRAP_Cconws(msg);
+
+		return;
+	}
+
+	val = atol(arg);
+
+	if (out_device == (int)val)
+		return;
+
+	if (val < 0 || val > 9)
+	{
+		ksprintf(msg, sizeof(msg), "mint.ini: %s value %ld is out of range (%d-%d)\r\n", "DEBUG_DEVNO", val, (short)0, (short)9);
+		TRAP_Cconws(msg);
+
+		return;
+	}
+
+	out_device = (int)val;
+}
+
+static long
+emit_debug_devno(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "DEBUG_DEVNO=%d\n", out_device);
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_boot_delay(char *arg)
+{
+	long val;
+	char msg[64];
+
+	if (!isdigit(*arg))
+	{
+		ksprintf(msg, sizeof(msg), "mint.ini: %s requires number as an argument!\r\n", "BOOT_DELAY");
+		TRAP_Cconws(msg);
+
+		return;
+	}
+
+	val = atol(arg);
+
+	if (val < 0 || val > 59)
+	{
+		ksprintf(msg, sizeof(msg), "mint.ini: %s value %ld is out of range (%d-%d)\r\n", "BOOT_DELAY", val, (short)0, (short)59);
+		TRAP_Cconws(msg);
+
+		return;
+	}
+
+	out_device = (int)val;
+}
+
+static long
+emit_boot_delay(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "BOOT_DELAY=%d\n", boot_delay);
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+/* Keywords. Note that it is not necessary to keep the "XXX_YYYY=" scheme,
+ * this is only some sort of convenience.
+ */
+static const char *ini_keywords[] =
+{
+	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=", "MEM_PROT=", "INI_STEP=",
+	"DEBUG_LEVEL=", "DEBUG_DEVNO=", "BOOT_DELAY=", 
+	"INI_SAVE=", NULL
+};
+
+static typeof(do_xfs_load) *do_func[] =
+{
+	do_xfs_load, do_xdd_load, do_exe_auto, do_mem_prot, do_ini_step,
+	do_debug_level, do_debug_devno, do_boot_delay,
+	do_ini_save
+};
+
+static typeof(emit_xfs_load) *emit_func[] =
+{
+	emit_xfs_load, emit_xdd_load, emit_exe_auto, emit_mem_prot, emit_ini_step,
+	emit_debug_level, emit_debug_devno, emit_boot_delay,
+	emit_ini_save
+};
 
 /* we assume that the mint.ini file, containing the boot
  * menu defaults, is located at same place as mint.cnf is
@@ -106,56 +363,10 @@ find_ini (char *outp, long outsize)
 	return 0;
 }
 
-static void
-do_xfs_load(char *arg)
-{
-	load_xfs_f = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
-}
-
-static void
-do_xdd_load(char *arg)
-{
-	load_xdd_f = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
-}
-
-static void
-do_exe_auto(char *arg)
-{
-	load_auto = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
-}
-
-static void
-do_mem_prot(char *arg)
-{
-	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
-}
-
-static void
-do_ini_step(char *arg)
-{
-	step_by_step = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
-}
-
-static void
-do_ini_save(char *arg)
-{
-	save_ini = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
-}
-
-static const char *ini_keywords[] =
-{
-	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=", "MEM_PROT=", "INI_STEP=", "INI_SAVE=", NULL
-};
-
-static typeof(do_xfs_load) *func[] =
-{
-	do_xfs_load, do_xdd_load, do_exe_auto, do_mem_prot, do_ini_step, do_ini_save
-};
-
 void
 read_ini (void)
 {
-	char *s, ini_file[32], line[256];
+	char *s, ini_file[32], line[MAX_CMD_LEN];
 	long x;
 	short inihandle;
 
@@ -168,7 +379,7 @@ read_ini (void)
 	{
 		while (getdelim(line, sizeof(line), '\n', inihandle) != -1)
 		{
-			if (line[0] != '#')
+			if (line[0] && (line[0] != '#'))
 			{
 				strupr(line);
 				x = 0;
@@ -180,9 +391,20 @@ read_ini (void)
 						while (*s && (*s != '='))
 							s++;
 						if (*s)
-							func[x](++s);
+						{
+							do_func[x](++s);
+							break;
+						}
 					}
 					x++;
+				}
+
+				if (ini_keywords[x] == NULL)
+				{
+					char msg[80];
+
+					ksprintf(msg, sizeof(msg), "mint.ini: unknown command '%s'\r\n", line); 
+					TRAP_Cconws(msg);
 				}
 			}
 		}
@@ -213,24 +435,23 @@ write_ini (short *options)
 		goto close;
 	}
 
-	for (x = 0; x < MENU_OPTIONS-1; x++)
+	x = 0;
+	while (ini_keywords[x] && r > 0)
 	{
-		ksprintf(line, sizeof (line), "%s=%s\n", \
-			ini_keywords[x], options[x] ? "YES" : "NO");
-		l = strlen(line);
-		r = TRAP_Fwrite(inihandle, l, line);
-		if ((r < 0) || (r != l))
-		{
-			r = -1;
-			break;
-		}
+		r = emit_func[x](inihandle);
+		x++;
 	}
 
 close:
 	TRAP_Fclose(inihandle);
 
 	if (r < 0)
+	{
+		ksprintf(line, sizeof(line), "Error %ld writing mint.ini\r\n", r);
+
+		TRAP_Cconws(line);
 		TRAP_Fdelete(ini_file);
+	}
 }
 
 int
