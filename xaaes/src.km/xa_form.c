@@ -828,64 +828,100 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_BLOCK;
 }
 
+struct
+{
+	const char *msg;
+	char icon;
+}
+form_error_msgs[64] =
+{
+/*   0 -     -              */ { NULL },
+/*   1 -  32 - ENOSYS       */ { "Function not implemented",             '5' },
+/*   2 -  33 - ENOENT       */ { "No such file or directory",            '5' },
+/*   3 -  34 - ENOTDIR      */ { "Not a directory",                      '5' },
+/*   4 -  35 - EMFILE       */ { "Too many open files",                  '5' },
+/*   5 -  36 - EACCES       */ { "Permission denied",                    '5' },
+/*   6 -  37 - EBADF        */ { "Bad file descriptor",                  '5' },
+/*   7 -  38 - EPERM        */ { "Operation not permitted",              '5' },
+/*   8 -  39 - ENOMEM       */ { "Cannot allocate memory",               '6' },
+/*   9 -  40 - EFAULT       */ { "Bad address",                          '5' },
+/*  10 -  41 -              */ { "Invalid enviroment.",                  '6' },
+/*  11 -  42 -              */ { "Invalid format.",                      '6' },
+/*  12 -  43 -              */ { NULL },
+/*  13 -  44 -              */ { NULL },
+/*  14 -  45 -              */ { NULL },
+/*  15 -  46 - ENXIO        */ { "No such device or address",            '5' },
+/*  16 -  47 -              */ { "Attempt to delete working directory.", '5' },
+/*  17 -  48 - EXDEV        */ { "Cross-device link",                    '5' },
+/*  18 -  49 - ENMFILES     */ { "No more matching filenames",           '5' },
+/*  19 -  50 - ENFILE       */ { "File table overflow",                  '5' },
+/*  20 -  51 -              */ { NULL },
+/*  21 -  52 -              */ { NULL },
+/*  22 -  53 -              */ { NULL },
+/*  23 -  54 -              */ { NULL },
+/*  24 -  55 -              */ { NULL },
+/*  25 -  56 -              */ { NULL },
+/*  26 -  57 -              */ { NULL },
+/*  27 -  58 - ELOCKED      */ { "Locking conflict",                     '5' },
+/*  28 -  59 - ENSLOCK      */ { "No such lock",                         '5' },
+/*  29 -  60 -              */ { NULL },
+/*  30 -  61 -              */ { NULL },
+/*  31 -  62 -              */ { NULL },
+/*  32 -  63 -              */ { NULL },
+/*  33 -  64 - EBADARG      */ { "Bad argument",                         '5' },
+/*  34 -  65 - EINTERNAL    */ { "Internal error",                       '5' },
+/*  35 -  66 - ENOEXEC      */ { "Invalid executable file format",       '5' },
+/*  36 -  67 - ESBLOCK      */ { "Memory block growth failure",          '5' },
+/*  37 -  68 - EBREAK       */ { "Aborted by user",                      '5' },
+/*  38 -  69 - EXCPT        */ { "Terminated with bombs",                '5' },
+/*  39 -  70 - ETXTBSY      */ { "Text file busy",                       '5' },
+/*  40 -  71 - EFBIG        */ { "File too big",                         '5' },
+/*  41 -  72 -              */ { NULL },
+/*  42 -  73 -              */ { NULL },
+/*  43 -  74 -              */ { NULL },
+/*  44 -  75 -              */ { NULL },
+/*  45 -  76 -              */ { NULL },
+/*  46 -  77 -              */ { NULL },
+/*  47 -  78 -              */ { NULL },
+/*  48 -  79 -              */ { NULL },
+/*  49 -  80 - ELOOP        */ { "Too many symbolic links",              '5' },
+/*  50 -  81 - EPIPE        */ { "Broken pipe",                          '5' },
+/*  51 -  82 - EMLINK       */ { "Too many links",                       '5' },
+/*  52 -  83 - ENOTEMPTY    */ { "Directory not empty",                  '5' },
+/*  53 -  84 -              */ { NULL },
+/*  54 -  85 - EEXIST       */ { "File exists",                          '5' },
+/*  55 -  86 - ENAMETOOLONG */ { "Name too long",                        '5' },
+/*  56 -  87 - ENOTTY       */ { "Not a tty",                            '5' },
+/*  57 -  88 - ERANGE       */ { "Range error",                          '5' },
+/*  58 -  89 - EDOMAIN      */ { "Domain error",                         '5' },
+/*  59 -  90 - EIO          */ { "I/O error",                            '5' },
+/*  60 -  91 - ENOSPC       */ { "No space on device",                   '5' },
+/*  61 -  92 -              */ { NULL },
+/*  62 -  93 -              */ { NULL },
+/*  63 -  94 -              */ { NULL },
+};
+
 unsigned long
 XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	static char error_alert[256]; // XXX
 
-	char *msg;
-	char icon;
+	const char *msg = "Unknown error.";
+	char icon = '7';
+	int num;
 
 	CONTROL(1,1,0)
 
 	client->waiting_pb = pb;
-	
-	switch (pb->intin[0])
+	num = pb->intin[0];
+
+	if (num >= 0 && num < (sizeof(form_error_msgs) / sizeof(form_error_msgs[0])))
 	{
-	case 2:
-		msg = "File not found.";
-		icon = '5';
-		break;
-	case 3:
-		msg = "Path not found.";
-		icon = '5';
-		break;
-	case 4:
-		msg = "No more file handles.";
-		icon = '5';
-		break;
-	case 5:
-		msg = "Access denied.";
-		icon = '5';
-		break;
-	case 8:
-		msg = "Insufficient memory.";
-		icon = '6';
-		break;
-	case 10:
-		msg = "Invalid enviroment.";
-		icon = '6';
-		break;
-	case 11:
-		msg = "Invalid format.";
-		icon = '6';
-		break;
-	case 15:
-		msg = "Invalid drive specification.";
-		icon = '5';
-		break;
-	case 16:
-		msg = "Attempt to delete working directory.";
-		icon = '5';
-		break;
-	case 18:
-		msg = "No more files.";
-		icon = '5';
-		break;
-	default:
-		msg = "Unknown error.";
-		icon = '7';
-		break;
+		if (form_error_msgs[num].msg)
+		{
+			msg = form_error_msgs[num].msg;
+			icon = form_error_msgs[num].icon;
+		}
 	}
 
 	sprintf(error_alert, sizeof(error_alert), "[%c][ ERROR: | %s ][ Ok ]", icon, msg);
