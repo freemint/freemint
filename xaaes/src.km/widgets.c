@@ -3455,8 +3455,8 @@ display_toolbar(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, NULL);
 
-	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d, form: %d/%d",
-		wind->handle, wt, wt->e.obj, wt->e.pos, root->ob_x, root->ob_y));
+	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d",
+		wind->handle, wt, wt->e.obj, wt->e.pos));
 
 	draw_object_tree(lock, wt, NULL, widg->start, 100, NULL);
 
