@@ -214,7 +214,7 @@ sk:	clr.w	-(sp)		; no frame format needed
 ; For Dsp_LodToBinary(), Dsp_LoadProg()
 ; jump directly to the ROM vector -- this avoids all hazards.
 
-LX_rom:	move.l	_old_xbios.w(pc),a0		; jump to ROM
+LX_rom:	move.l	_old_xbios.w(pc),a0	; jump to ROM
 	jmp	(a0)
 
 rom_bios:	move.l	_old_bios.w(pc),-(sp)
@@ -420,10 +420,10 @@ _trap_1_emu:
 	beq.s	TE_D
 %endif
 	move.l	(sp)+,d0
-	move.w	#$0084,-(sp)		; frame format word
+	clr.w	-(sp)		; frame format word
 	move.l	d0,-(sp)		; return address
 TE_D:	move.w	sr,-(sp)
-	move.l	_old_dos,-(sp)
+	move.l	_old_dos.w(pc),-(sp)
 	rts
 
 %ifdef NOT_YET
@@ -433,10 +433,10 @@ _trap_13_emu:
 	beq.s	TE_B
 %endif
 	move.l	(sp)+,d0
-	move.w	#$00b4,-(sp)		; frame format word
+	clr.w	-(sp)		; frame format word
 	move.l	d0,-(sp)		; return address
 TE_B:	move.w	sr,-(sp)
-	move.l	_old_bios,-(sp)
+	move.l	_old_bios.w(pc),-(sp)
 	rts
 
 _trap_14_emu:
@@ -445,10 +445,10 @@ _trap_14_emu:
 	beq.s	TE_X
 %endif
 	move.l	(sp)+,d0
-	move.w	#$00b8,-(sp)		; frame format word
+	clr.w	-(sp)		; frame format word
 	move.l	d0,-(sp)		; return address
 TE_X:	move.w	sr,-(sp)
-	move.l	_old_xbios,-(sp)
+	move.l	_old_xbios.w(pc),-(sp)
 	rts
 %endif
 %endif					; SYSCALL_REENTRANT
@@ -467,15 +467,13 @@ TE_X:	move.w	sr,-(sp)
 	dc.l	$4d694e54		; MiNT
 	dc.l	v_rte
 
-_unused_trap:	movem.l	d0-d2/a0-a2,-(sp)	; save C registers
-	move.w	#$010b,-(sp)		; getpid
+_unused_trap:	move.w	#$010b,-(sp)		; getpid
 	trap	#1
 	move.w	#$000c,-(sp)		; SIGSYS
 	move.w	d0,-(sp)		; himself
 	move.w	#$0111,-(sp)		; kill
 	trap	#1
 	addq.l	#$08,sp
-	movem.l	(sp)+,d0-d2/a0-a2
 v_rte:	rte			; and return :-)
 
 %endif
@@ -529,7 +527,7 @@ _lineA0:	movem.l	d2/a2,-(sp)		; save scratch registers
 	XDEF	_call_aes
 
 _call_aes:	move.l	4(sp),d1		; fetch pointer to parameter block
-	move.w	#$c8,d0 		; magic number for AES
+	move.l	#200,d0 		; magic number for AES
 	movem.l	d2/a2,-(sp)		; save scratch registers
 	trap	#2
 	movem.l	(sp)+,d2/a2
@@ -620,7 +618,7 @@ _do_usrcall:	move.l	_usrarg5,-(sp)
 	move.l	_usrarg2,-(sp)
 	move.l	_usrarg1,-(sp)
 	move.l	_usrcall,-(sp)	; the user expects to see this on the stack
-	pea	ucret.w(pc)	; so rts puts us back here
+	pea	ucret(pc)	; so rts puts us back here
 	move.l	_usrcall,-(sp)	; this copy is for us to use
 	rts		; to jump to (we don't want to use registers)
 ucret:	lea	24(sp),sp	; fix up stack
