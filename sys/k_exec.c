@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,13 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2000-11-08
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  *
  */
 
@@ -59,6 +56,7 @@
 # include "kmemory.h"
 # include "memory.h"
 # include "proc.h"
+# include "proc_help.h"
 # include "procfs.h"
 # include "signal.h"
 # include "time.h"
@@ -458,6 +456,9 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			else
 				cred->sgid = cred->ucr->egid;
 		}
+
+		/* notify proc extensions */
+		proc_ext_on_exec(curproc);
 
 		/* exec_region frees the memory attached to p;
 		 * that's always what we want, since fork_proc duplicates

@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,13 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2000-11-07
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  *
  */
 
@@ -74,6 +71,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	p2->p_cwd = NULL;
 	p2->p_sigacts = NULL;
 	p2->p_limits = NULL;
+	p2->p_ext = NULL;
 
 	/* these things are not inherited
 	 */
@@ -182,6 +180,8 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 
 //	p_limits
 
+//	p_ext
+
 	if (!p2->p_mem || !p2->p_cred || !p2->p_fd || !p2->p_cwd || !p2->p_sigacts)
 		goto nomem;
 
@@ -190,6 +190,9 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	dup_cookie (&p2->exe, &p1->exe);
 
 	p2->started = xtime;
+
+	/* notify proc extensions */
+	proc_ext_on_fork(p1, flags, p2);
 
 	/* now that memory ownership is copied, fill in page table
 	 * WARNING: this must be done AFTER all memory allocations
@@ -204,7 +207,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 
 	/* hook into the process list */
 	{
-		ushort sr = splhigh ();
+		unsigned short sr = splhigh ();
 
 		p2->gl_next = proclist;
 		proclist = p2;
@@ -289,9 +292,11 @@ sys_pvfork (void)
 	curproc->p_sigmask = ~(((unsigned long) 1 << SIGKILL) | 1);
 
 	{
-		short sr = spl7();
-		add_q(READY_Q, p);		/* put it on the ready queue */
-		sleep(WAIT_Q, (long)p);		/* while we wait for it */
+		unsigned short sr = splhigh();
+
+		add_q(READY_Q, p);	/* put it on the ready queue */
+		sleep(WAIT_Q, (long)p);	/* while we wait for it */
+
 		spl(sr);
 	}
 
