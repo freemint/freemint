@@ -17,7 +17,6 @@
 
 /* cookie jar definition
  */
-typedef struct cookie COOKIE;
 struct cookie
 {
 	long tag;
@@ -26,7 +25,7 @@ struct cookie
 
 /* the cookie base address
  */
-# define CJAR		((COOKIE **) 0x5a0)
+# define CJAR		((struct cookie **) 0x5a0)
 
 
 /* exported functions
@@ -34,9 +33,9 @@ struct cookie
 void	init_cookies	(void);
 long	get_toscookie	(ulong tag, ulong *val);
 long	set_toscookie	(ulong tag, ulong val);
-long	get_cookie	(COOKIE *cj, ulong tag, ulong *ret);
-long	set_cookie	(COOKIE *cj, ulong tag, ulong val);
-long	del_cookie	(COOKIE *cj, ulong tag);
+long	get_cookie	(struct cookie *cj, ulong tag, ulong *ret);
+long	set_cookie	(struct cookie *cj, ulong tag, ulong val);
+long	del_cookie	(struct cookie *cj, ulong tag);
 long	add_rsvfentry	(char *name, char portflags, char bdev);
 long	del_rsvfentry	(char *name);
 
