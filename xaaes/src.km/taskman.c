@@ -67,8 +67,7 @@ refresh_tasklist(enum locks lock)
 	Sema_Up(clients);
 
 	/* Add all current tasks to the list */
-	client = S.client_list;
-	while (client)
+	FOREACH_CLIENT(client)
 	{
 		const size_t tx_len = 128;
 		OBJECT *icon;
@@ -101,8 +100,6 @@ refresh_tasklist(enum locks lock)
 		}
 		else
 			add_scroll_entry(form, TM_LIST, icon, client->name, 0);
-
-		client = client->next;
 	}
 
 	list->slider(list);
@@ -146,13 +143,14 @@ static struct xa_client *
 cur_client(SCROLL_INFO *list)
 {
 	SCROLL_ENTRY *this = list->start;
-	struct xa_client *client = S.client_list;
+	struct xa_client *client = CLIENT_LIST_START;
 
 	while (this != list->cur)
 	{
 		this = this->next;
-		client = client->next;
+		client = NEXT_CLIENT(client);
 	}
+
 	return client;
 }
 
@@ -190,16 +188,13 @@ quit_all_apps(enum locks lock, struct xa_client *except)
 	Sema_Up(clients);
 	lock |= clients;
 
-	client = S.client_list;
-	while (client)
+	FOREACH_CLIENT(client)
 	{
 		if (is_client(client) && client != except)
 		{
 			DIAGS(("shutting down %s", c_owner(client)));
 			send_terminate(lock, client);
 		}
-
-		client = client->next;
 	}
 
 	Sema_Dn(clients);

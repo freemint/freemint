@@ -750,13 +750,10 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				Sema_Up(clients);
 
-				cl = S.client_list;
-				while (cl)
+				FOREACH_CLIENT(cl)
 				{
 					if (is_client(cl) && cl != client)
 						send_a_message(lock, cl, (union msg_buf *)cmd);
-
-					cl = cl->next;
 				}
 
 				Sema_Dn(clients);
@@ -1237,13 +1234,10 @@ lookup_proc_name(const char *name)
 {
 	struct xa_client *client;
 
-	client = S.client_list;
-	while (client)
+	FOREACH_CLIENT(client)
 	{
 		if (stricmp(name, client->proc_name) == 0)
 			break;
-
-		client = client->next;
 	}
 
 	return client;

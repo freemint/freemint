@@ -364,7 +364,16 @@ wi_insert(WIN_BASE *b, struct xa_window *w, struct xa_window *after)
 bool
 is_topped(struct xa_window *wind)
 {
-	return (wind->owner == S.client_list && wind == window_list && wind == C.focus) ? true : false;
+	if (wind->owner != APP_LIST_START)
+		return false;
+
+	if (wind != window_list)
+		return false;
+
+	if (wind != C.focus)
+		return false;
+
+	return true;
 }
 
 struct xa_window *
@@ -1641,9 +1650,7 @@ display_windows_below(enum locks lock, const RECT *r, struct xa_window *wl)
 {
 	struct xa_client *client;
 
-	client = S.client_list;
-
-	while (client)
+	FOREACH_CLIENT(client)
 	{
 		post_cevent(client,
 			    CE_display_windows_below,
@@ -1652,7 +1659,6 @@ display_windows_below(enum locks lock, const RECT *r, struct xa_window *wl)
 			    0, 0,
 			    r,
 			    NULL);
-		client = client->next;
 	}
 }
 

@@ -60,8 +60,7 @@ k_shutdown(void)
 		struct xa_client *client;
 		int flag = 1;
 
-		client = S.client_list;
-		while (client)
+		FOREACH_CLIENT(client)
 		{
 			if (client != C.Aes)
 			{
@@ -69,7 +68,6 @@ k_shutdown(void)
 				DIAGS(("client '%s' still running", client->name));
 				Unblock(client, 1, 1);
 			}
-			client = client->next;
 		}
 
 		if (flag)
@@ -79,16 +77,13 @@ k_shutdown(void)
 		nap(1000);
 
 		DIAGS(("Cleaning up clients"));
+
+		FOREACH_CLIENT(client)
 		{
-			client = S.client_list;
-			while (client)
+			if (client != C.Aes)
 			{
-				if (client != C.Aes)
-				{
-					DIAGS(("killing client '%s'", client->name));
-					ikill(client->p->pid, SIGKILL);
-				}
-				client = client->next;
+				DIAGS(("killing client '%s'", client->name));
+				ikill(client->p->pid, SIGKILL);
 			}
 		}
 	}

@@ -522,7 +522,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			return false;
 	}
 	else
-		client = S.client_list;
+		client = CLIENT_LIST_START;
 
 	/* internalized the client loop */
 	while (client)
@@ -564,7 +564,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		if (mouse_locked())
 			break;
 
-		client = client->next;
+		client = NEXT_CLIENT(client);
 	}
 
 	Sema_Dn(clients);
@@ -884,9 +884,9 @@ static void move_timeout(struct proc *, long arg);
 static void
 move_rtimeout(struct proc *p, long arg)
 {
-	struct xa_client *client = S.client_list;
+	struct xa_client *client;
 
-	while (client)
+	FOREACH_CLIENT(client)
 	{
 		if (client->rdrw_msg)
 		{
@@ -903,7 +903,6 @@ move_rtimeout(struct proc *p, long arg)
 				client->status |= CS_LAGGING;
 			}
 		}
-		client = client->next;
 	}
 
 	C.redraws = 0;

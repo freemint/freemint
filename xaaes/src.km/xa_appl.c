@@ -141,41 +141,14 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		return XAC_DONE;
 	}
 
-	/* add to client list (sorted in ascending pid order) */
-	{
-		if (S.client_list)
-		{
-			S.client_list->prior = client;
-			client->next = S.client_list;
-			client->prior = NULL;
-			S.client_list = client;
-		}
-		else
-		{
-			S.client_list = client;
-			client->next = client->prior = NULL;
-		}
-#if 0
-		struct xa_client **end = &(S.client_list);
-		struct xa_client *prior = NULL;
+	/* 
+	 * add to client list
+	 * add to app list
+	 */
+	CLIENT_LIST_INSERT_END(client);
+	APP_LIST_INSERT_START(client);
 
-		while (*end && (*end)->p->pid < p->pid)
-		{
-			prior = *end;
-			end = &((*end)->next);
-		}
-
-		if (*end)
-		{
-			client->next = *end;
-			(*end)->prior = client;
-		}
-
-		*end = client;
-		client->prior = prior;
-#endif
-	}
-
+	/* remember process descriptor */
 	client->p = p;
 
 	/* initialize trampoline
@@ -360,21 +333,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 */
 	remove_windows(lock, client);
 
-	/*
-	 * Figure out which client to make active
-	 */
-	if (cfg.next_active == 1)
-	{
-		if (client == S.client_list)
-			top_owner = previous_client(lock);
-		else
-			top_owner = S.client_list;
-	}
-	else if (cfg.next_active == 0)
-		top_owner = window_list->owner;
-	else
-		top_owner = C.Aes;
-	
 
 	if (client->attach)
 	{
@@ -391,7 +349,24 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		client->attach = NULL;
 	}
 
+
+	/*
+	 * Figure out which client to make active
+	 */
+	if (cfg.next_active == 1)
+	{
+		top_owner = APP_LIST_START;
+
+		if (top_owner == client)
+			top_owner = previous_client(lock);
+	}
+	else if (cfg.next_active == 0)
+		top_owner = window_list->owner;
+	else
+		top_owner = C.Aes;
+
 	app_in_front(lock, top_owner);
+
 
 	client->rsrc = NULL;
 	FreeResources(client, NULL);
@@ -472,18 +447,21 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	// if (!client->killed)
 	//	remove_attachments(lock|clients, client, client->std_menu);
 
+
 	/*
-	 * remove from client pool
+	 * remove from client list
+	 * remove from app list
 	 */
-	if (client == S.client_list)
-		S.client_list = client->next;
-	if (client->prior)
-		client->prior->next = client->next;
-	if (client->next)
-		client->next->prior = client->prior;
+	CLIENT_LIST_REMOVE(client);
+	APP_LIST_REMOVE(client);
 
 	/* if taskmanager is open the tasklist will be updated */
 	update_tasklist(lock);
+
+
+	/*
+	 * free remaining resources
+	 */
 
 	free_wtlist(client);
 
@@ -497,7 +475,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	if (client->mnu_clientlistname)
 		ufree(client->mnu_clientlistname);
 
-	/* zero out */
+	/* zero out; just to be sure */
 	bzero(client, sizeof(*client));
 
 	client->cmd_tail = "\0";
@@ -606,13 +584,13 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (cpid == APP_FIRST)
 		{
 			/* simply the first */
-			next = S.client_list;
+			next = CLIENT_LIST_START;
 		}
 		else if (cpid == APP_NEXT)
 		{
 			next = client->temp;
 			if (next)
-				next = next->next;
+				next = NEXT_CLIENT(next);
 		}
 
 		Sema_Dn(clients);
@@ -987,15 +965,13 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			Sema_Up(clients);
 
-			cl = S.client_list;
-			while (cl)
+			FOREACH_CLIENT(cl)
 			{
 				if (cl->p->pid == lo)
 				{
 					pb->intout[0] = lo;
 					break;
 				}
-				cl = cl->next;
 			}
 
 			Sema_Dn(clients);
@@ -1036,15 +1012,13 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				Sema_Up(clients);
 
-				cl = S.client_list;
-				while (cl)
+				FOREACH_CLIENT(cl)
 				{
 					if (strnicmp(cl->proc_name, name, 8) == 0)
 					{
 						pb->intout[0] = cl->p->pid;
 						break;
 					}
-					cl = cl->next;
 				}
 
 				Sema_Dn(clients);
