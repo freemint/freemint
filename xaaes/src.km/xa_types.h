@@ -528,6 +528,7 @@ struct xa_client
 	struct proc *tp;		/* Thread */
 
 	bool apterm;			/* true if application understands AP_TERM. */
+	bool forced_init_client;
 
 	struct xa_aesmsg_list *msg;		/* Pending AES messages */
 	struct xa_aesmsg_list *rdrw_msg;	/* WM_REDRAW messages */

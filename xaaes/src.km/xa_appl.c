@@ -111,6 +111,172 @@ proc_is_now_client(struct xa_client *client)
 
 }
 
+struct xa_client *
+init_client(enum locks lock)
+{
+	struct xa_client *client;
+	struct proc *p = get_curproc();
+	long f;
+
+	/* if attach_extension succeed it returns a pointer
+	 * to kmalloc'ed and *clean* memory area of the given size
+	 */
+	client = attach_extension(NULL, XAAES_MAGIC, sizeof(*client), &xaaes_cb_vector);
+	if (!client)
+	{
+		ALERT(("attach_extension for %u failed, out of memory?", p->pid));
+		return NULL;
+	}
+	bzero(client, sizeof(*client));
+
+	client->md_head = client->mdb;
+	client->md_tail = client->mdb;
+	client->md_end = client->mdb + CLIENT_MD_BUFFERS;
+
+	client->md_head->clicks = -1;
+
+	client->ut = umalloc(xa_user_things.len);
+	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
+
+	if (!client->ut || !client->mnu_clientlistname)
+	{
+		ALERT(("umalloc for %u failed, out of memory?", p->pid));
+
+		if (client->ut)
+			ufree(client->ut);
+
+		if (client->mnu_clientlistname)
+			ufree(client->mnu_clientlistname);
+
+		detach_extension(NULL, XAAES_MAGIC);
+		return NULL;
+	}
+
+	/* 
+	 * add to client list
+	 * add to app list
+	 */
+	CLIENT_LIST_INSERT_END(client);
+	APP_LIST_INSERT_END(client);
+
+	/* remember process descriptor */
+	client->p = p;
+
+	/* initialize trampoline
+	 */
+	bcopy(&xa_user_things, client->ut, xa_user_things.len);
+	/* relocate relative addresses */
+	client->ut->progdef_p  += (long)client->ut;
+	client->ut->userblk_pp += (long)client->ut;
+	client->ut->ret_p      += (long)client->ut;
+	client->ut->parmblk_p  += (long)client->ut;
+	/* make sure data cache is flushed */
+	cpush(client->ut, xa_user_things.len);
+
+
+
+
+	client->cmd_tail = "\0";
+	//client->wt.e.obj = -1;
+
+	/* Ozk: About the fix_menu() thing; This is just as bad as it
+	 * originally was, the client should have an attachment with
+	 * umalloced space for such things as this. Did it like this
+	 * temporarily...
+	 * When changing this, also change it in k_init.c for the AESSYS
+	 */
+	strcpy(client->mnu_clientlistname, mnu_clientlistname);
+
+	strncpy(client->proc_name, client->p->name, 8);
+	f = strlen(client->proc_name);
+	while (f < 8)
+	{
+		client->proc_name[f] = ' ';
+		f++;
+	}
+	client->proc_name[8] = '\0';
+	strnupr(client->proc_name, 8);
+	DIAGS(("proc_name for %d: '%s'", client->p->pid, client->proc_name));
+
+	client->options = default_options;
+
+	/* Individual option settings. */
+	get_app_options(client);
+
+	/* awaiting menu_register */
+	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
+
+	/* update the taskmanager if open */
+	update_tasklist(lock);
+
+	DIAGS(("appl_init: checking shel info (pid %i)", client->p->pid));
+	{
+		struct shel_info *info;
+
+		info = lookup_extension(client->p, XAAES_MAGIC_SH);
+		if (info)
+		{
+			DIAGS(("appl_init: shel_write started"));
+			DIAGS(("appl_init: type %i", info->type));
+			DIAGS(("appl_init: cmd_name '%s'", info->cmd_name));
+			DIAGS(("appl_init: home_path '%s'", info->home_path));
+
+			client->type = info->type;
+			/*
+			 * The 'real' parent ID, which is the client that called
+			 * shel_write() to start us..
+			 */
+			client->rppid = info->rppid;
+
+			client->tail_is_heap = info->tail_is_heap;
+			client->cmd_tail = info->cmd_tail;
+
+			/* invalidate */
+			info->cmd_tail = NULL;
+
+			strcpy(client->cmd_name, info->cmd_name);
+			strcpy(client->home_path, info->home_path);
+
+			detach_extension(client->p, XAAES_MAGIC_SH);
+		}
+	}
+
+	/* Get the client's home directory (where it was started)
+	 * - we use this later to load resource files, etc
+	 */
+	if (!*client->home_path)
+	{
+		int drv = d_getdrv();
+		client->home_path[0] = (char)drv + 'A';
+		client->home_path[1] = ':';
+		d_getcwd(client->home_path + 2, drv + 1, sizeof(client->home_path) - 3);
+
+		DIAG((D_appl, client, "[1]Client %d home path = '%s'",
+			client->p->pid, client->home_path));
+	}
+	else /* already filled out by launch() */
+	{
+		DIAG((D_appl, client, "[2]Client %d home path = '%s'",
+			client->p->pid, client->home_path));
+	}
+
+	proc_is_now_client(client);
+	
+	app_in_front(lock, client);
+
+	/* Reset the AES messages pending list for our new application */
+	client->msg = NULL;
+	/* Initially, client isn't waiting on any event types */
+	cancel_evnt_multi(client, 0);
+	/* Initial settings for the clients mouse cursor */
+	client->mouse = ARROW;		/* Default client mouse cursor is an arrow */
+	client->mouse_form = NULL;
+	client->save_mouse = client->mouse;
+	client->save_mouse_form = client->mouse_form;
+	
+	return client;
+}
+
 /*
  * Application initialise - appl_init()
  */
@@ -119,7 +285,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct aes_global *globl = (struct aes_global *)pb->global;
 	struct proc *p = get_curproc();
-	long f;
+	//long f;
 
 	CONTROL(0,1,0);
 
@@ -127,10 +293,16 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (client)
 	{
+		if (client->forced_init_client)
+			client->globl_ptr = globl;
 		//ALERT(("Double appl_init for %s, ignored!", client->proc_name));
 		goto clean_out;
 	}
 
+	if (!(client = init_client(lock)))
+		return XAC_DONE;
+
+#if 0
 	/* if attach_extension succeed it returns a pointer
 	 * to kmalloc'ed and *clean* memory area of the given size
 	 */
@@ -186,12 +358,13 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->ut->parmblk_p  += (long)client->ut;
 	/* make sure data cache is flushed */
 	cpush(client->ut, xa_user_things.len);
-
+#endif
 	/* Preserve the pointer to the globl array
 	 * so we can fill in the resource address later
 	 */
 	client->globl_ptr = globl;
 
+#if 0
 	client->cmd_tail = "\0";
 	//client->wt.e.obj = -1;
 
@@ -290,7 +463,10 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	
 	app_in_front(lock, client);
 
+#endif
+
 clean_out:
+#if 0
 	/* Reset the AES messages pending list for our new application */
 	client->msg = NULL;
 	/* Initially, client isn't waiting on any event types */
@@ -300,7 +476,7 @@ clean_out:
 	client->mouse_form = NULL;
 	client->save_mouse = client->mouse;
 	client->save_mouse_form = client->mouse_form;
-
+#endif	
 	pb->intout[0] = -1;
 
 	/* fill out global */

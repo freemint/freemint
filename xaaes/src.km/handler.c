@@ -523,7 +523,16 @@ XA_handler(void *_pb)
 		AES_function *cmd_routine;
 		unsigned long cmd_rtn;
 
-		client = lookup_extension(NULL, XAAES_MAGIC);
+		/* XXX	- ozk:
+		 * I dont know how I like this! However, we test force-init/attaching client structure
+		 * to a process calling the AES wihtout prior appl_init() call.
+		 */
+		if (!(client = lookup_extension(NULL, XAAES_MAGIC)) && cmd != 10)
+		{
+			client = init_client(0);
+			if (client)
+				client->forced_init_client = true;
+		}
 
 		/*
 		 * If process has not called appl_init() yet, it has restricted
