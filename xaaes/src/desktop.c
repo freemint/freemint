@@ -54,15 +54,15 @@ click_desktop_widget(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	DIAG((D_button, NULL, "click_desktop_widget, desktop owner: %s\n", c_owner(client) ));
 	DIAG((D_button, NULL, "                         menu owner: %s\n", c_owner(mowner) ));
 
+
 	/* HR 280801!!!! menu, desktop and rootwindow ownership are all different!!! */
-	if (  S.mouse_lock == 0
-	    && mowner       != client)
+	if ( S.mouse_lock == 0 && mowner != client)
 	{
     		short b,x,y;
     		int item;
 
 		vq_mouse(C.vh, &b, &x, &y);
-		item = find_object(get_desktop()->tree, 0, 1, widg->x, widg->y, 0, 0);
+		item = find_object(get_desktop()->tree, 0, 1, widg->mx, widg->my, 0, 0);
 
 		DIAG((D_button, NULL, "  --  bs %d, item %d\n", b, item));
 

@@ -193,6 +193,8 @@ new_mu_mouse(struct moose_data *md)
 	mu_button.x	= md->x;
 	mu_button.y	= md->y;
 	mu_button.clicks = md->clicks;
+	mu_button.got	= false;
+
 	vq_key_s(C.vh, &mu_button.ks);
 	
 }
@@ -731,6 +733,7 @@ XaAES(void)
 						 * delivered, queued as pending or not.
 						 */
 						button.got = true;
+						mu_button.got = true;
 						break;
 
 #if 0 /* Ozk: Lets skip all this shit.. what is this anyway? */
@@ -762,7 +765,7 @@ XaAES(void)
 						 * state cannot be up to date in this case.
 						 * This leaves the button info to multi_intout()
 						 */
-						
+
 						/* Call the mouse movement event handler (doesnt use md->state) */
 						XA_move_event(lock, &mdata);
 						break;
