@@ -95,7 +95,7 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 		   		"Clocking:\t%lu.%1luMHz\n"
 				"BogoMIPS:\t%lu.%02lu\n"
 		   		"Calibration:\t%lu loops\n",
-				cpu_model, mmu_model, fpu_model,
+				cpu_type, mmu_type, fpu_type,
 		  		clockfreq / 1000000, (clockfreq / 100000) % 10,
 		   		loops_per_sec / 500000, (loops_per_sec / 5000) % 100,
 		   		loops_per_sec

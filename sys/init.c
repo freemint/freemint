@@ -809,25 +809,12 @@ init (void)
 	 * - also sets no_mem_prot
 	 * - 1992-06-25 kbad put it here so memprot_warning can be intelligent
 	 */
-	(void) Supexec (getmch);
-	
-# ifdef ONLY030
-# ifndef MMU040
-	if (mcpu < 20)
-# else
-	if (mcpu < 40)
-# endif
+	if (getmch ())
 	{
-# ifndef MMU040
-		boot_print ("\r\nThis version of MiNT requires a 68020-68060.\r\n");
-# else
-		boot_print ("\r\nThis version of MiNT requires a 68040-68060.\r\n");
-# endif
 		boot_print ("Hit any key to continue.\r\n");
 		(void) Cconin ();
 		Pterm0 ();
 	}
-# endif
 	
 	/* Ask the user if s/he wants to boot MiNT */
 	if ((Kbshift (-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
