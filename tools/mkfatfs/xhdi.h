@@ -1,20 +1,27 @@
 /*
- *	@(#)XHDI/xhdi.h
- *	
- *	Julian F. Reschke, Rainer Seitel, 1997-07-28
- *	
- *	Bindings for the XHDI functions
- *	--- NOT FULLY TESTED, USE AT YOUR OWN RISK ---
- *	
- *	some preprocessor changes for MiNT by frank naumann
+ * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
  */
-
 
 # ifndef _xhdi_h
 # define _xhdi_h
 
-# include <mint/types.h>
-# include <mint/default.h>
+# include "mytypes.h"
 
 
 /*
@@ -108,15 +115,15 @@ typedef struct
 
 extern ushort XHDI_installed;
 
-long	XHDI_init	(void);
+long	init_XHDI	(void);
 
-ushort	XHGetVersion	(void);
+long	XHGetVersion	(void);
 long	XHInqTarget	(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name);
 long	XHReserve	(ushort major, ushort minor, ushort do_reserve, ushort key);
 long	XHLock		(ushort major, ushort minor, ushort do_lock, ushort key);
 long	XHStop		(ushort major, ushort minor, ushort do_stop, ushort key);
 long	XHEject		(ushort major, ushort minor, ushort do_eject, ushort key);
-ulong	XHDrvMap	(void);
+long	XHDrvMap	(void);
 long	XHInqDev	(ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *bpb);
 long	XHInqDriver	(ushort bios, char *name, char *version, char *company, ushort *ahdi_version, ushort *maxIPL);
 long	XHNewCookie	(void *newcookie);
@@ -126,11 +133,10 @@ long	XHInqDev2	(ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *
 long	XHDriverSpecial	(ulong key1, ulong key2, ushort subopcode, void *data);
 long	XHGetCapacity	(ushort major, ushort minor, ulong *blocks, ulong *bs);
 long	XHMediumChanged	(ushort major, ushort minor);
-long	XHMiNTInfo	(ushort opcode, void *data);
+long	XHMiNTInfo	(ushort op, void *data);
 long	XHDOSLimits	(ushort which, ulong limit);
 long	XHLastAccess	(ushort major, ushort minor, ulong *ms);
 long	XHReaccess	(ushort major, ushort minor);
-long	XHInqDev3	(ushort bios, ushort *major, ushort *minor, ulong *start, __xhdi_BPB *bpb, ulong *blocks, uchar *partid, ushort stringlen);
-void	XHMakeName	(ushort major, ushort minor, ulong start, char *name);
+
 
 # endif /* _xhdi_h */

@@ -1,113 +1,57 @@
-#
-# Makefile using the GCC
-#
+TARGET = mkfatfs
+SBINDIR  = /sbin
+MANDIR  = /usr/man
 
-MKFATFS = mkfatfs
-
-# cross compiling
-#CROSS = yes
-CROSS = no
-
-#
-# target and host compiler (GCC recommended)
-# 
-ifeq ($(CROSS),yes)
-CC = /scratch/fnaumann/bin/m68k-atari-mint-gcc
-NATIVECC = gcc
-NATIVECFLAGS = -O
-MINTLIBINC = -I/scratch/fnaumann/m68k-atari-mint/include
-else
 CC = gcc -pipe
-NATIVECC = $(CC)
-NATIVECFLAGS = -O
-MINTLIBINC =
-endif
-
-AS = $(CC)
-LIBS = 
-
-# used tools
-MV = mv
-CP = cp
-RM = rm -f
-TOUCH = touch
-MKDIR = mkdir
-MAKE = make
-MKDEP = $(CC) -MM
-SED = sed
-CRLF = crlf -s
-
-OPTS =	-fomit-frame-pointer -O3
-
+DEFINITIONS = 
 WARN =	-Wall \
 	-Wmissing-prototypes \
 	-Wshadow \
-	-Wpointer-arith \
 	-Wcast-qual \
-	-Waggregate-return
-
-CFLAGS = -mshort -g $(WARN) $(OPTS)
-ASFLAGS = 
-
-
-# generic object dir
-OBJDIR = objs
-
-$(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR)/%.d: %.c
-	@echo "# Computing dependencies for $*.o"
-	@o='o'; \
-	$(MKDEP) $(CFLAGS) $< >$@.tmp \
-	  && $(SED) "s,^\(.*\)\.o:,$(OBJDIR)/\1.$$o $@:," < $@.tmp > $@ \
-	  && $(RM) $@.tmp
-
+	-Waggregate-return \
+	-Wparentheses
+OPT = -O
+CFLAGS = $(MODEL) $(OPT) $(DEFINITIONS) $(WARN)
+RANLIB = ranlib
+CRLF = crlf -s
 
 #
 # files
 #
-
 CFILES = \
-	xhdi.c \
-	mkfatfs.c
+	mkfatfs.o \
+	xhdi.c
 
-OBJS =	\
-	$(OBJDIR)/xhdi.o \
-	$(OBJDIR)/mkfatfs.o
-
-DEPENDENCIES = $(OBJS:.o=.d)
-
+OBJS =	$(CFILES:.c=.o)
 
 #
 # main target
 #
-$(MKFATFS): $(DEPENDENCIES) $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-
-
-#
-# macros for cleaning up
-#
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
 
 clean:
-	$(RM) $(OBJS)
+	rm -f $(TARGET) $(OBJS)
 
 distclean:
-	$(RM) $(OBJS)
-	$(RM) $(DEPENDENCIES)
-	$(RM) *~ core
+	rm -f $(TARGET) $(OBJS)
+	rm -f *~
+	rm -rf .deps
 
-
-#
-# for 'make depend'
-#
-depend: $(DEPENDENCIES)
-	@echo "# Dependencies ok."
-
+install:
+	install -d -m 755 $(SBINDIR)
+	install -m 755 $(TARGET) $(SBINDIR)
+	install -d -m 755 $(MANDIR)/man8
+	install -m 644 $(TARGET).8 $(MANDIR)/man8
 
 #
-# dependencies
+# C source files
 #
+%.o: %.c
+	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
+	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
 
--include $(DEPENDENCIES)
+DEPS_MAGIC := $(shell mkdir ./.deps > /dev/null 2>&1 || :)
+DEPENDENCIES = $(addprefix ./.deps/, $(patsubst %.c,%.P,$(CFILES)))
+
+-include $(DEPENDENCIES) /dev/null
