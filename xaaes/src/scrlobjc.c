@@ -97,7 +97,9 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s)
 	list->slider(list);
 
 	/* HR 290702 (do without parent window; A listbox is a OBJECT and part of a object tree.) */
+	hidem();
 	draw_object_tree(list->lock, list->wt, list->wi->winob, list->wi->winitem, 2, 200);
+	showm();
 }
 
 /*
@@ -412,7 +414,9 @@ slist_msg_handler(
 	{
 		list->slider(list);
 		/* do without parent window; A listbox is a OBJECT and part of a object tree */
+		hidem();
 		draw_object_tree(lock, list->wt, list->wi->winob, list->wi->winitem, 2, 200);
+		showm();
 	}
 
 	/* Because we are not really sending something, but just immediately act,
@@ -500,7 +504,9 @@ click_scroll_list(LOCK lock, OBJECT *form, int item, struct moose_data *md)
 /* HR 111102 Nasty bug :-(  list->click can close the whole window containing the list.
             So the below draw is moved from the end of this function to here. */
 
+			hidem();
 			draw_object_tree(lock, list->wt, form, item, 2, 200);
+			showm();
 
 			if (list->click)			/* Call the new object selected function */
 				(*list->click)(lock, form, item);
