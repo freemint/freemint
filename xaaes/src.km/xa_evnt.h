@@ -30,6 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
+short checkfor_mumx_evnt(struct xa_client *client, bool is_locker, short x, short y);
+void get_mbstate(struct xa_client *client, struct mbs *mbs);
 bool check_queued_events(struct xa_client *client);
 
 AES_function
