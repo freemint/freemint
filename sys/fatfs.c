@@ -32,6 +32,10 @@
  * 
  * changes since last version:
  * 
+ * 2000-06-13:	(v1.21)
+ * 
+ * - fix: get_bpb don't complain about non FAT DOS partitions
+ * 
  * 2000-04-28:	(v1.20)
  * 
  * - new: is_short declared static as is at least two times used
@@ -354,7 +358,7 @@
  */
 
 # define FATFS_MAJOR	1
-# define FATFS_MINOR	20
+# define FATFS_MINOR	21
 # define FATFS_STATUS	
 
 # if FATFS_MINOR > 9
@@ -4737,12 +4741,6 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	{		
 		FAT_DEBUG (("get_bpb: DOS medium detected (%x)", (int) (di->id [2])));
 		
-		/* check media descriptor (must be 0xf8 on harddisks) */
-		if (fbs->media != 0xf8)
-		{
-			FAT_ALERT (("fatfs.c: get_bpb: unknown media deskriptor (%x) on %c (ID = %x)", (int) fbs->media, 'A'+di->drv, (int) (di->id [2])));
-		}
-		
 		switch (di->id [2])
 		{
 			case 0x04:
@@ -4762,10 +4760,15 @@ get_bpb (_x_BPB *xbpb, DI *di)
 			}
 			default:
 			{
-				FAT_FORCE (("fatfs.c: get_bpb: DOS partition type not supported (%x) on %c", (int) (di->id [2]), 'A'+di->drv));
 				FAT_DEBUG (("get_bpb: unknown DOS partition type (%x)", (int) (di->id [2])));
 				return EMEDIUMTYPE;
 			}
+		}
+		
+		/* check media descriptor (must be 0xf8 on harddisks) */
+		if (fbs->media != 0xf8)
+		{
+			FAT_ALERT (("fatfs.c: get_bpb: unknown media deskriptor (%x) on %c (ID = %x)", (int) fbs->media, 'A'+di->drv, (int) (di->id [2])));
 		}
 	}
 	else
