@@ -422,10 +422,11 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (wind && (wdlg = wind->wdlg))
 	{
 		RECT r = wind->wa; //r;
-		XA_WIND_ATTR tp = pb->intin[0];
+		XA_WIND_ATTR tp = (unsigned short)pb->intin[0];
 		char *s;
 
 		tp &= CLOSER|MOVER|NAME;
+		tp |= MOVER|NAME;
 
 		/* The following if is a result of the clumsiness of the
 		 * WDIALOG interface. So dont blame me. */
