@@ -38,7 +38,7 @@
 #include "widgets.h"
 #include "xa_form.h"
 #include "xa_rsrc.h"
-
+#include "version.h"
 #include "about.h"
 
 
@@ -153,7 +153,11 @@ open_about(enum locks lock)
 		/* Set version date */
 		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
 		(form + ABOUT_TARGET)->ob_spec.free_string = arch_target;
+#if XAAES_RELEASE
+		(form + ABOUT_INFOSTR)->ob_spec.free_string = '\0';
+#else
 		(form + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
+#endif
 
 		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, form, -1, WIDG_NOTEXT);
 		wt->exit_form = about_form_exit;
