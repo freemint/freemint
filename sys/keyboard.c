@@ -32,6 +32,7 @@
 
 # include "arch/intr.h"		/* click */
 # include "mint/signal.h"	/* SIGQUIT */
+# include "mint/mint.h"		/* FATAL() */
 
 # include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
 
@@ -55,6 +56,8 @@
 # include "signal.h"		/* killgroup() */
 # include "timeout.h"		/* addroottimeout() */
 
+# include <osbind.h>		/* Keytbl() */
+
 # define CAD_TIMEOUT	5*200
 # define ROOT_TIMEOUT	1
 
@@ -74,7 +77,7 @@
  *
  * 32 = Russia      40 = Vietnam       48 = Bangladesh
  * 33 = Israel      41 = India
- * 34 = Sou. Africa 42 = Iran 
+ * 34 = Sou. Africa 42 = Iran
  * 35 = Portugal    43 = Mongolia
  * 36 = Belgium     44 = Nepal
  * 37 = Japan       45 = Laos
@@ -719,6 +722,7 @@ static const ushort mmasks[] =
 struct	cad_def cad[3];	/* for halt, warm and cold resp. */
 short	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
+static	short kbd_lock;	/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;	/* place for saving the hz_200 timer value */
 
 static	uchar numin[3];	/* buffer for storing ASCII code typed in via numpad */
@@ -726,6 +730,8 @@ static	ushort numidx;	/* index for the buffer (0 = empty, 3 = full) */
 
 /* keyboard table pointers indexed by AKP */
 struct keytab keyboards[MAXAKP+1];
+
+static uchar *current_keytab;	/* keyboard table being in use */
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -739,7 +745,7 @@ ctrl_alt_del(PROC *p, long arg)
 			if (p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
 				s_hutdown(arg);
 			break;
-		
+
 		/* 2 shall be to exec a program
 		 * with a path pointed to by par.path
 		 */
@@ -747,7 +753,7 @@ ctrl_alt_del(PROC *p, long arg)
 			if (sys_pexec (100, cad[arg].par.path, cad[arg].aux.cmd, cad[arg].env) < 0)
 				s_hutdown (arg);
 			break;
-		
+
 		/* 0 is default */
 		default:
 			s_hutdown (arg);
@@ -800,6 +806,13 @@ ikbd_scan (ushort scancode)
 {
 	ushort mod = 0, clk = 0, shift = *kbshft, x = 0;
 	uchar *chartable;
+
+	/* This is set during various keyboard table initializations
+	 * e.g. when the user calls Bioskeys(), to prevent processing
+	 * go according to incomplete keyboard translation tables.
+	 */
+	if (kbd_lock)
+		return -1;
 
 	scancode &= 0x00ff;		/* better safe than sorry */
 
@@ -914,12 +927,12 @@ ikbd_scan (ushort scancode)
 				if (t)
 				{
 					t->arg = cad_lock = 1;
-					
+
 					if ((shift & MM_ESHIFT) == MM_RSHIFT)
 						t->arg = 2;
 					else if ((shift & MM_ESHIFT) == MM_LSHIFT)
 						t->arg = 0;
-					
+
 					hz_ticks = *(long *)0x04baL;
 				}
 			}
@@ -937,29 +950,29 @@ ikbd_scan (ushort scancode)
 		else if (scancode == UNDO)
 		{
 			killgroup (con_tty.pgrp, SIGQUIT, 1);
-			
+
 			goto key_done;
 		}
 		else if ((scancode >= 0x003b) && (scancode <= 0x0044))
 		{
 			TIMEOUT *t;
-			
+
 			if (shift & MM_ESHIFT)
 				scancode += 0x0019;	/* emulate F11-F20 */
-			
+
 			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
-			
+
 			goto key_done;
 		}
 		/* This is in case the keyboard has real F11-F20 keys on it */
 		else if ((scancode >= 0x0054) && (scancode <= 0x005d))
 		{
 			TIMEOUT *t;
-			
+
 			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
-			
+
 			goto key_done;
 		}
 		/* We ignore release codes, but catch them to avoid
@@ -989,7 +1002,7 @@ ikbd_scan (ushort scancode)
 				break;
 			}
 			/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
-			 */ 
+			 */
 			case NUMPAD_0:
 			case NUMPAD_1:
 			case NUMPAD_2:
@@ -1165,6 +1178,83 @@ load_table(FILEPTR *fp, char *name, long size)
 	return 1;
 }
 
+/* The XBIOS' Bioskeys() function
+ */
+void
+bioskeys(void)
+{
+	short x;
+	uchar *src, *dst;
+	long unshift, shift, caps, alt, altshift, altcaps;
+	struct keytab *syskeytab;
+
+	kbd_lock = 1;
+
+	/* Copy the basic keycode definitions (unshifted, shifted
+	 * and caps) to the current buffer
+	 */
+	src = keyboards[gl_kbd].unshift;
+	dst = current_keytab;
+
+	for (x = 0; x < 384; x++)
+		*dst++ = *src++;
+
+	/* Now copy the definitions with Alternate */
+	src = keyboards[gl_kbd].alt;
+	do
+	{
+		*dst++ = *src;
+	} while (*src++);
+
+	src = keyboards[gl_kbd].altshift;
+	do
+	{
+		*dst++ = *src;
+	} while (*src++);
+
+	src = keyboards[gl_kbd].altcaps;
+	do
+	{
+		*dst++ = *src;
+	} while (*src++);
+
+	/* Calculate the addresses */
+	unshift = (long)keyboards[gl_kbd].unshift;
+
+	shift = (long)keyboards[gl_kbd].shift;
+	shift -= unshift;
+	caps = (long)keyboards[gl_kbd].caps;
+	caps -= unshift;
+	alt = (long)keyboards[gl_kbd].alt;
+	alt -= unshift;
+	altshift = (long)keyboards[gl_kbd].altshift;
+	altshift -= unshift;
+	altcaps = (long)keyboards[gl_kbd].altcaps;
+	altcaps -= unshift;
+
+	unshift = (long)current_keytab;
+
+	shift += unshift;
+	caps += unshift;
+	alt += unshift;
+	altshift += unshift;
+	altcaps += unshift;
+
+	/* Now these hold the real addresses inside the table */
+
+	syskeytab = Keytbl(-1, -1, -1);	/* call the underlying XBIOS */
+
+	syskeytab->unshift = (uchar *)unshift;
+	syskeytab->shift = (uchar *)shift;
+	syskeytab->caps = (uchar *)caps;
+	syskeytab->alt = (uchar *)alt;
+	syskeytab->altshift = (uchar *)altshift;
+	syskeytab->altcaps = (uchar *)altcaps;
+
+	/* Done! */
+	kbd_lock = 0;
+}
+
 /* Initialize the built-in keyboard tables.
  * This must be done before init_intr()!
  */
@@ -1172,6 +1262,8 @@ void
 init_keybd(void)
 {
 	short x;
+
+	kbd_lock = 1;
 
 	/* The USA keyboard is default */
 	for (x = 0; x < 127; x++)
@@ -1185,6 +1277,8 @@ init_keybd(void)
 	fill_keystruct(6, (uchar *)british_kbd);
 	fill_keystruct(7, (uchar *)sw_french_kbd);
 	fill_keystruct(8, (uchar *)sw_german_kbd);
+
+	kbd_lock = 0;
 }
 
 void
@@ -1192,7 +1286,7 @@ load_keytbl(void)
 {
 	XATTR xattr;
 	FILEPTR *fp;
-	long ret;
+	long ret, table_len;
 	char name[32];		/* satis uidetur */
 
 	ret = FP_ALLOC(rootproc, &fp);
@@ -1224,6 +1318,20 @@ load_keytbl(void)
 		akp_val |= (gl << 8);
 		set_cookie(COOKIE__AKP, akp_val);
 	}
+
+	/* Alloc the buffer for the `current' keyboard table */
+	table_len = 387L;
+	table_len += strlen(keyboards[gl_kbd].alt);
+	table_len += strlen(keyboards[gl_kbd].altshift);
+	table_len += strlen(keyboards[gl_kbd].altcaps);
+
+	current_keytab = kmalloc(table_len);
+
+	if (!current_keytab)
+		FATAL(__FILE__ ": out of RAM in " __FUNCTION__);
+
+	/* Install the tables in the system */
+	bioskeys();
 }
 
 /* EOF */
