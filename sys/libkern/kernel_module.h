@@ -840,6 +840,10 @@ check_kentry_version(void)
 # define umalloc(x)		_umalloc(x, FUNCTION)
 # define ufree(x)		_ufree(x, FUNCTION)
 
+# define addr2mem		(*KENTRY->vec_mem.addr2mem)
+# define attach_region		(*KENTRY->vec_mem.attach_region)
+# define detach_region		(*KENTRY->vec_mem.detach_region)
+
 
 /*
  * kentry_fs
