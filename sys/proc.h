@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -54,5 +54,6 @@ void	_cdecl	wakeselect	(struct proc *p);
 void		DUMPPROC	(void);
 void		calc_load_average (void);
 
+ulong	_cdecl	remaining_proc_time (void);
 
 # endif /* _proc_h */
