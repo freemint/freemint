@@ -316,7 +316,8 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
-	if (wind->nolist || is_topped(wind) || wind->active_widgets & NO_TOPPED)
+	
+	if ((md->state & MBS_RIGHT) || wind->nolist || is_topped(wind) || wind->active_widgets & NO_TOPPED)
 	{
 		if (checkif_do_widgets(lock, wind, 0, md))
 		{
