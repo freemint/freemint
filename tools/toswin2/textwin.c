@@ -792,18 +792,26 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 	}
 
 	/* if `force' is set, clear the area to be redrawn -- it looks better */
-#if 0
 	if (force == CLEARED) 
 	{
-		set_fillcolor(get_ansi_color (t->cfg->bg_color));
-		set_fillstyle(1, 1);
+		ulong flag = 0;
+		WINCFG* cfg = t->cfg;
+		int bg_color, fg_color, style;
+		
+		if (cfg->vdi_colors) {
+			flag |= cfg->bg_color;
+		} else {
+			flag |= (9 | cfg->bg_effects);
+		}
+		use_ansi_colors (t, flag, &fg_color, &bg_color, &style);		
+		set_fillcolor (bg_color);
+		set_fillstyle (1, 1);
 		pxy[0] = xc;
 		pxy[1] = yc;
 		pxy[2] = xc + wc - 1;
 		pxy[3] = yc + hc - 1;
 		vr_recfl(vdi_handle, pxy);
 	}
-#endif
 
 	/* convert from on-screen coordinates to window rows & columns */
 	pixel2char(t, xc, yc, &firstcol, &firstline);
@@ -1538,7 +1546,8 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	TEXTWIN *t;
 	short firstchar, lastchar, distances[5], maxwidth, effects[3];
 	short i, j;
-
+	ulong flag;
+	
 	t = malloc(sizeof(TEXTWIN));
 	if (!t) 
 		return t;
@@ -1580,8 +1589,19 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	if (!t->dirty || !t->cflag || !t->data) 
 		return 0;
 
+	t->vdi_colors = cfg->vdi_colors;
+	t->fg_effects = cfg->fg_effects;
+	t->bg_effects = cfg->bg_effects;
+
+	t->cfg = cfg;
+	original_colors (t);
+	flag = t->term_cattr;		
+		
 	for (i = 0; i < t->maxy; i++) 
 	{
+		if (cfg->vdi_colors)
+			flag = COLORS (cfg->fg_color, cfg->bg_color);
+		
 		t->dirty[i] = 0; /* the window starts off clear */
 		t->data[i] = malloc((size_t)t->maxx+1);
 		t->cflag[i] = malloc(sizeof(long) * (size_t)(t->maxx+1));
@@ -1590,7 +1610,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 		for (j = 0; j < t->maxx; j++) 
 		{
 			t->data[i][j] = ' ';
-			t->cflag[i][j] = COLORS(cfg->fg_color, cfg->bg_color);
+			t->cflag[i][j] = flag;
 		}
 	}
 
@@ -1642,7 +1662,6 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 		t->cy = t->miny;
 	}
 
-	t->term_cattr = COLORS(cfg->fg_color, cfg->bg_color);
 	if (cfg->wrap)
 		t->term_flags = FWRAP;
 	else
@@ -1652,7 +1671,6 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	
 	t->pty[0] = '\0';
 	t->shell = NO_SHELL;
-	t->cfg = cfg;
 
 	t->prog = t->cmdlin = t->progdir = 0;
 	
@@ -1660,10 +1678,6 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->block_x2 = 0;
 	t->block_y1 = 0;
 	t->block_y2 = 0;
-	
-	t->vdi_colors = cfg->vdi_colors;
-	t->fg_effects = cfg->fg_effects;
-	t->bg_effects = cfg->bg_effects;
 	
 	return t;
 }
@@ -1917,7 +1931,8 @@ void reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 	else
 		t->term_flags &= ~FWRAP;
 
-	t->term_cattr = COLORS(cfg->fg_color, cfg->bg_color);
+	original_colors (t);
+
 	for (i = 0; i < t->maxy; i++) 
 	{
 		t->dirty[i] = ALLDIRTY;

@@ -234,9 +234,14 @@ void curs_off(TEXTWIN *v)
  */
 void original_colors(TEXTWIN *v)
 {
-	v->term_cattr = (v->term_cattr & 
-		~(CFGCOL | CBGCOL)) |
-		COLORS(v->cfg->fg_color, v->cfg->bg_color);
-	v->output = vt52_putch;
+	if (v->cfg->vdi_colors) {
+		v->term_cattr = (v->term_cattr & 
+			~(CFGCOL | CBGCOL)) |
+			COLORS (v->cfg->fg_color, v->cfg->bg_color);
+	} else {
+		v->term_cattr = (v->term_cattr & 
+			~(CFGCOL | CBGCOL | CE_ANSI_EFFECTS)) |
+			COLORS (9, 9);
+	}
 }
 

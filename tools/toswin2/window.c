@@ -43,7 +43,7 @@ static void clear_win(WINDOW *v, short x, short y, short w, short h)
 {
 	short temp[4];
 
-	vsf_color(vdi_handle, 0);
+	set_fillcolor (0);
 	temp[0] = x;
 	temp[1] = y;
 	temp[2] = x + w - 1;
