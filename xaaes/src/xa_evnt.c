@@ -1315,7 +1315,7 @@ XA_evnt_multi(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 		if (pending_button[pbi].client	== client && mouse_ok(client))
 		{
-			DIAG((D_button,NULL,"pending_button multi %d\n", pending_button.b));
+			DIAG((D_button,NULL,"pending_button multi %d\n", pending_button[pbi].b));
 			pending_button[pbi].client = NULL;			/* is single shot. */
 			pending_button_head++;
 			pending_button_head &= 3;
@@ -1534,7 +1534,7 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	if (pending_button[pbi].client == client && mouse_ok(client))
 	{
-		DIAG((D_button,NULL,"pending_button %d\n", pending_button.b));
+		DIAG((D_button,NULL,"pending_button %d\n", pending_button[pbi].b));
 		pending_button[pbi].client = NULL;			/* is single shot. */
 		pending_button_head++;
 		pending_button_head &= 3;
