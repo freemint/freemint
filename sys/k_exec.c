@@ -550,14 +550,17 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			if (r < 0)
 			{
 				ALERT("p_exec: wait error");
-				return EINTERNAL;
+				r = EINTERNAL;
+				break;
 			}
+
 			if (newpid == ((r&0xffff0000L) >> 16))
 			{
 				TRACE (("leaving Pexec; child return code %ld", r));
-				r = r & 0x0000ffffL;
+				r &= 0x0000ffffL;
 				break;
 			}
+
 			if (curproc->pid)
 				DEBUG (("Pexec: wrong child found"));
 		}
