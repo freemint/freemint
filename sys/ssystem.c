@@ -655,6 +655,12 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 			break;
 		}
+		/* XXX only for testing */
+		case 2000:
+		{
+			load_km((const char *) arg1);
+			break;
+		}
 		default:
 		{
 			DEBUG (("s_system(): invalid mode %d", mode));

@@ -307,8 +307,8 @@ init_intr (void)
 
 	new_xbra_install (&dummy, 0x80L, unused_trap);		/* trap #0 */
 	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */
-# if 0
-	new_xbra_install (&dummy, 0x88L, unused_trap);		/* trap #2, GEM */
+# if 1
+	new_xbra_install (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
 # endif
 	new_xbra_install (&dummy, 0x8cL, unused_trap);		/* trap #3 */
 	new_xbra_install (&dummy, 0x90L, unused_trap);		/* trap #4 */

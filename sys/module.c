@@ -41,6 +41,7 @@
 # include "filesys.h"
 # include "global.h"
 # include "k_fds.h"
+# include "kentry.h"
 # include "kerinfo.h"
 # include "kmemory.h"
 # include "memory.h"
@@ -471,4 +472,58 @@ load_xdd(struct basepage *b, const char *name)
 	}
 
 	return -1;
+}
+
+static void *
+callout_init2(void *initfunction, struct kentry *k)
+{
+	register void *ret __asm__("d0");
+
+	__asm__ volatile
+	(
+		"moveml d3-d7/a3-a6,sp@-;"
+		"movl	%2,sp@-;"
+		"movl   %1,a0;"
+		"jsr    a0@;"
+		"addqw  #4,sp;"
+		"moveml sp@+,d3-d7/a3-a6;"
+		: "=r"(ret)				/* outputs */
+		: "g"(initfunction), "r"(k)		/* inputs  */
+		: "d0", "d1", "d2", "a0", "a1", "a2",   /* clobbered regs */
+		  "memory"
+	);
+
+	return ret;
+}
+
+/* XXX for testing */
+void _cdecl
+load_km(const char *path)
+{
+	struct basepage *bp;
+	long err;
+
+	bp = load_module(path, &err);
+	if (bp)
+	{
+		void *ptr;
+
+		FORCE("load_module(%s) ok!", path);
+
+		ptr = callout_init2((void *) bp->p_tbase, &kentry);
+		if (ptr)
+		{
+			FORCE("callout_init ok!");
+		}
+		else
+		{
+			kfree(bp);
+			FORCE("callout_init failed!");
+		}
+
+		/* just to be sure */
+		cpush(NULL, -1);
+	}
+	else
+		FORCE("load_module(%s) failed -> %li", path, err);
 }
