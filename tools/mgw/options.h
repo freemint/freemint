@@ -25,15 +25,15 @@ struct options
 	char modem_fail2[50];
 	
 	/* RS232 settings */
-	int port;
-	int baud;
-	int parity;
-	int bits;
-	int stopbits;
+	short port;
+	short baud;
+	short parity;
+	short bits;
+	short stopbits;
 	
 	/* Protocol options */
 	long prot_cookie;
-	int  protocol;
+	short  protocol;
 	char ip_compression;
 	char soft_compression;  
 	
@@ -44,7 +44,7 @@ struct options
 	unsigned long target2, gateway2;
 	unsigned long target3, gateway3;
 	unsigned long std_gateway;
-	int subnet1, subnet2, subnet3;
+	short subnet1, subnet2, subnet3;
 	char default_gw;
 	
 	/* TCP options */
@@ -73,7 +73,7 @@ struct options
 	char popserver[43];
 	char smtpserver[43];
 	
-	int  timeout;
+	short  timeout;
 	char netlogon, force_enc, tonline;
 	
 };

@@ -3,14 +3,14 @@
  * Version:      
  * Author:       Frank Naumann
  * Started:      1999-05
- * Last Updated: 1999-08-22
- * Target O/S:   MiNT
+ * Last Updated: 2001-04-17
+ * Target O/S:   FreeMiNT 1.16
  * Description:  
  * 
  * Note:         Please send suggestions, patches or bug reports to me
  *               or the MiNT mailing list <mint@fishpool.com>.
  * 
- * Copying:      Copyright 1999 Frank Naumann <fnaumann@cs.uni-magdeburg.de>
+ * Copying:      Copyright 1999, 200, 2001 Frank Naumann <fnaumann@freemint.de>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,7 @@
  */
 
 # include <signal.h>
-# include <osbind.h>
-# include <mintbind.h>
+# include <mint/mintbind.h>
 # include <mint/ssystem.h>
 
 # include "global.h"
@@ -41,7 +40,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	23
+# define VER_MINOR	30
 # define VER_STATUS	b
 
 
@@ -186,7 +185,7 @@ main (void)
 			r = Pmsg (1, 0xffff0000L | pmsg.pid, &pmsg);
 			if (r)
 			{
-				/* printf ("Pmsg back fail!\n"); */
+				printf ("Pmsg back fail!\n");
 			}
 		}
 		
