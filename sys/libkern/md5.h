@@ -17,22 +17,16 @@
 
 # include "mint/mint.h"
 
-
-# ifdef CRYPTO_CODE
-
 struct MD5Context
 {
-	__u32	buf[4];
-	__u32	bits[2];
-	uchar	in[64];
+	__u32 buf[4];
+	__u32 bits[2];
+	unsigned char in[64];
 };
 
-void MD5Init		(struct MD5Context *context);
-void MD5Update		(struct MD5Context *context, uchar const *buf, ushort len);
-void MD5Final		(uchar digest[16], struct MD5Context *context);
-void MD5Transform	(__u32 buf[4], __u32 const in[16]);
-
-# endif /* CRYPTO_CODE */
-
+void MD5Init(struct MD5Context *context);
+void MD5Update(struct MD5Context *context, unsigned char const *buf, unsigned short len);
+void MD5Final(unsigned char digest[16], struct MD5Context *context);
+void MD5Transform(__u32 buf[4], __u32 const in[16]);
 
 # endif /* _md5_h */
