@@ -615,109 +615,13 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	return false;
 }
 
-static void
-wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr, short *r, short *r_amnt)
-{
-	XA_WIDGETS which;
-	XA_WIDGET  *widg;
-	short orient;
-	int fac = wind->owner->options.wheel_page;
-	bool rev = wind->owner->options.wheel_reverse ? true : false;
 
-	if (wr)
-		*wr = NULL;
-	if (r)
-		*r = -1;
-
-	if (md->state == cfg.ver_wheel_id)
-	{
-		if (r_amnt)
-			*r_amnt = cfg.ver_wheel_amount;
-
-		if (md->clicks < 0)
-		{
-			which = rev ? XAW_DNLN : XAW_UPLN;
-			orient = rev ? 1 : 0;
-		}
-		else
-		{
-			which = rev ? XAW_UPLN : XAW_DNLN;
-			orient = rev ? 0 : 1;
-		}
-	}
-	else if (md->state == cfg.hor_wheel_id)
-	{
-		if (r_amnt)
-			*r_amnt = cfg.hor_wheel_amount;
-
-		if (md->clicks < 0)
-		{
-			which = rev ? XAW_RTLN : XAW_LFLN;
-			orient = rev ? 3 : 2;
-		}
-		else
-		{
-			which = rev ? XAW_LFLN : XAW_RTLN;
-			orient = rev ? 2 : 3;
-		}
-	}
-	else
-		return;
-
-	if (r)
-		*r = orient;
-
-	if (wind)
-	{
-		if (fac && abs(md->clicks) > abs(fac))
-		{
-			switch (which)
-			{
-				case XAW_UPLN: which = XAW_UPPAGE; break;
-				case XAW_DNLN: which = XAW_DNPAGE; break;
-				case XAW_LFLN: which = XAW_LFPAGE; break;
-				case XAW_RTLN: which = XAW_RTPAGE; break;
-				default: /* make gcc happy */ break;
-			}
-		}
-
-		widg = get_widget(wind, which);
-		if (widg)
-		{
-			if (widg->type && wr)
-				*wr = widg;
-		}
-	}
-}
-/* If md pointer is NULL, send a standard WM_ARROWED (application dont support wheel)
- * else send extended WM_ARROWED message
- */
-static void
-whlarrowed(struct xa_window *wind, short WA, short amount, const struct moose_data *md)
-{
-	if (md)
-	{
-		wind->send_message(0, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-				   WM_ARROWED, 0,0, wind->handle,
-				   (amount << 8)|(WA&7), md->x, md->y, md->kstate);
-	}
-	else
-	{
-		while (amount)
-		{
-			wind->send_message(0, wind, NULL, AMQ_NORM, 0,
-					   WM_ARROWED, 0,0, wind->handle,
-					   WA, 0, 0, 0);
-			amount--;
-		}
-	}
-}
 void
 XA_wheel_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_window *wind;
 	struct xa_client *client = NULL, *locker = NULL;
-	XA_WIDGET *widg;
+	//XA_WIDGET *widg;
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 
@@ -726,11 +630,12 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 		if (C.update_lock)
 			locker = get_update_locker();
 	}
-	
+
 	/*
 	 * Ozk: For now we send wheel events to the owner of the window underneath the mouse
 	 * in all cases except when owner of mouse_lock() is waiting for MU_WHEEL.
 	 */
+	 
 	wind = find_window(lock, md->x, md->y);
 	
 	if (locker && locker->waiting_for & MU_WHEEL)
@@ -740,6 +645,9 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 
 	if (client)
 	{
+		post_cevent(client, cXA_wheel_event, wind, NULL, 0, 0, NULL, md);
+
+#if 0
 		if (client->waiting_for & MU_WHEEL)
 		{
 			struct moose_data *nmd = client->wheel_md;
@@ -844,6 +752,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 				whlarrowed(wind, WA, amount, NULL);
 			}
 		}
+#endif
 	}
 }
 static bool
