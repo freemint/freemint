@@ -1079,7 +1079,7 @@ init_apgi_infotab(void)
 	info_tab[2][0] = xbios_getrez();
 	info_tab[2][1] = 256;
 	info_tab[2][2] = 1;
-	info_tab[2][3] = 1 + 2;
+	info_tab[2][3] = 1; // + 2;
 
 	/*
 	 * Build status string
