@@ -573,7 +573,7 @@ XaAES(void)
 			/* Did we get a mouse message? */
 			if (input_channels & (1L << C.MOUSE_dev))
 			{
-				// struct moose_data mdata;
+				/* XXX struct moose_data mdata; */
 				long n;
 
 				mdata.l = 0;
