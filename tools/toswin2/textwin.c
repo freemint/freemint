@@ -826,7 +826,7 @@ update_cursor (WINDOW* win, int top)
 		if (tw->curs_vvis) {
 			int selected = old_flag & CINVERSE;
 			
-			if (selected)
+			if (!selected)
 				old_flag &= ~CINVERSE;
 			else
 				old_flag |= CINVERSE;
@@ -843,10 +843,10 @@ update_cursor (WINDOW* win, int top)
 	if (tw->curs_vvis) {
 		int selected = new_flag & CINVERSE;
 		
-		if (selected)
-			new_flag &= ~CINVERSE;
-		else
+		if (selected ^ tw->curs_drawn)
 			new_flag |= CINVERSE;
+		else
+			new_flag &= ~CINVERSE;
 	} else if (tw->curs_drawn) {
 		new_curs.g_y += tw->cheight - 1 -
 			tw->curs_offy - tw->curs_height;
