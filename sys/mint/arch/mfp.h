@@ -151,4 +151,54 @@ typedef struct
 # define scca		((SCC *) 0xff8c80L)
 # define sccb		((SCC *) 0xff8c84L)
 
+#define IRQ_SPURIOUS      (IRQ_MACHSPEC | 0)
+
+/* auto-vector interrupts */
+#define IRQ_AUTO_1        (IRQ_MACHSPEC | 1)
+#define IRQ_AUTO_2        (IRQ_MACHSPEC | 2)
+#define IRQ_AUTO_3        (IRQ_MACHSPEC | 3)
+#define IRQ_AUTO_4        (IRQ_MACHSPEC | 4)
+#define IRQ_AUTO_5        (IRQ_MACHSPEC | 5)
+#define IRQ_AUTO_6        (IRQ_MACHSPEC | 6)
+#define IRQ_AUTO_7        (IRQ_MACHSPEC | 7)
+
+/* ST-MFP interrupts */
+#define IRQ_MFP_BUSY      (IRQ_MACHSPEC | 8)
+#define IRQ_MFP_DCD       (IRQ_MACHSPEC | 9)
+#define IRQ_MFP_CTS       (IRQ_MACHSPEC | 10)
+#define IRQ_MFP_GPU       (IRQ_MACHSPEC | 11)
+#define IRQ_MFP_TIMD      (IRQ_MACHSPEC | 12)
+#define IRQ_MFP_TIMC      (IRQ_MACHSPEC | 13)
+#define IRQ_MFP_ACIA      (IRQ_MACHSPEC | 14)
+#define IRQ_MFP_FDC       (IRQ_MACHSPEC | 15)
+#define IRQ_MFP_ACSI      IRQ_MFP_FDC
+#define IRQ_MFP_FSCSI     IRQ_MFP_FDC
+#define IRQ_MFP_IDE       IRQ_MFP_FDC
+#define IRQ_MFP_TIMB      (IRQ_MACHSPEC | 16)
+#define IRQ_MFP_SERERR    (IRQ_MACHSPEC | 17)
+#define IRQ_MFP_SEREMPT   (IRQ_MACHSPEC | 18)
+#define IRQ_MFP_RECERR    (IRQ_MACHSPEC | 19)
+#define IRQ_MFP_RECFULL   (IRQ_MACHSPEC | 20)
+#define IRQ_MFP_TIMA      (IRQ_MACHSPEC | 21)
+#define IRQ_MFP_RI        (IRQ_MACHSPEC | 22)
+#define IRQ_MFP_MMD       (IRQ_MACHSPEC | 23)
+
+/* SCC interrupts */
+#define IRQ_SCCB_TX          (IRQ_MACHSPEC | 40)
+#define IRQ_SCCB_STAT        (IRQ_MACHSPEC | 42)
+#define IRQ_SCCB_RX          (IRQ_MACHSPEC | 44)
+#define IRQ_SCCB_SPCOND      (IRQ_MACHSPEC | 46)
+#define IRQ_SCCA_TX          (IRQ_MACHSPEC | 48)
+#define IRQ_SCCA_STAT        (IRQ_MACHSPEC | 50)
+#define IRQ_SCCA_RX          (IRQ_MACHSPEC | 52)
+#define IRQ_SCCA_SPCOND      (IRQ_MACHSPEC | 54)
+
+#define INT_CLK   24576     /* CLK while int_clk =2.456MHz and divide = 100 */
+#define INT_TICKS 246       /* to make sched_time = 99.902... HZ */
+
+#define MFP_CTRL_NONE   0    /* no flow control */
+#define MFP_CTRL_SOFT   1    /* software flow control (XON/XOFF) */
+#define MFP_CTRL_HARD   2    /* hardware flow control (RTS/CTS) */
+#define MFP_CTRL_BOTH   3    /* XON/XOFF and RTS/CTS */
+
 # endif /* _mint_m68k_mfp_h */
