@@ -1,34 +1,34 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 2000-11-07
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
+ *
  */
 
 # include "k_exit.h"
@@ -66,7 +66,7 @@
  * terminate a process, with return code "code".
  * If que == ZOMBIE_Q, free all resources attached to the child.
  * If que == TSR_Q, free everything but memory.
- * 
+ *
  * NOTE: terminate() should be called only when the process is to be
  * "terminated with extreme prejuidice". Most times, p_term or p_termres
  * are the functions to use, since they allow the user to do some cleaning
@@ -78,67 +78,68 @@ terminate (PROC *curproc, int code, int que)
 {
 	PROC *p;
 	int  i, wakemint = 0;
-	
-	
+
+
 	if (bconbsiz)
 		(void) bflush();
-	
+
 	assert (que == ZOMBIE_Q || que == TSR_Q);
-	
+
 	/* Exit all non-closed shared libraries */
 	while (slb_close_on_exit (1))
 		;
-	
+
 	/* Remove structure if curproc is an SLB */
 	remove_slb ();
-	
+
 	if (curproc->pid == 0)
 		FATAL ("attempt to terminate MiNT");
-	
+# if 0
 	/* cancel all user-specified interrupt signals */
 	cancelsigintrs();
-	
+# endif
+
 	/* cancel all pending timeouts for this process */
 	cancelalltimeouts();
-	
+
 	/* cancel alarm clock */
 	curproc->alarmtim = 0;
-	
+
 	/* Free saved commandline */
 	if (curproc->real_cmdline)
 	{
 		kfree (curproc->real_cmdline);
 		curproc->real_cmdline = NULL;
 	}
-	
+
 	/* free exec cookie */
 	release_cookie (&curproc->exe);
-	
+
 	/* release all semaphores owned by this process */
 	free_semaphores (curproc->pid);
-	
+
 	/* make sure that any open files that refer to this process are
 	 * closed
 	 */
 	changedrv (PROC_RDEV_BASE | curproc->pid, __FUNCTION__);
-	
+
 	/* release any drives locked by Dlock */
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
 		if (dlockproc[i] == curproc)
 			dlockproc[i] = NULL;
 	}
-	
+
 	free_fd (curproc);
-	
+
 	free_cwd (curproc);
-	
+
 	/* attention, this invalidates the MMU table */
 	if (que == ZOMBIE_Q)
 		free_mem (curproc);
 	/* else
 		 make TSR process non-swappable */
-	
+
 	/* find our parent (if parent not found, then use process 0 as parent
 	 * since that process is constantly in a wait loop)
 	 */
@@ -148,7 +149,7 @@ terminate (PROC *curproc, int code, int que)
 		TRACE (("terminate: parent not found"));
 		p = pid2proc (0);
 	}
-	
+
 	/* NOTE: normally just post_sig is sufficient for sending a signal;
 	 * but in this particular case, we have to worry about processes
 	 * that are blocking all signals because they Vfork'd and are waiting
@@ -158,30 +159,30 @@ terminate (PROC *curproc, int code, int que)
 	 */
 	{
 		ushort sr;
-		
+
 		sr = splhigh ();
 		if (p->wait_q == WAIT_Q
 			&& (p->wait_cond == (long) curproc || p->wait_cond == (long) sys_pwaitpid))
 		{
 			rm_q (WAIT_Q, p);
 			add_q (READY_Q, p);
-			
+
 			TRACE (("terminate: waking up parent"));
 		}
 		spl (sr);
 	}
-	
+
 	if (curproc->ptracer && curproc->ptracer != p)
 	{
 		/* BUG: should we ensure curproc->ptracer is awake ? */
-		
+
 		/* tell tracing process */
 		post_sig (curproc->ptracer, SIGCHLD);
 	}
-	
+
 	/* inform of process termination */
 	post_sig (p, SIGCHLD);
-	
+
 	/* find our children, and orphan them
 	 * also, check for processes we were tracing, and
 	 * cancel the trace
@@ -192,14 +193,14 @@ terminate (PROC *curproc, int code, int que)
 		if (p->ppid == i)
 		{
 			p->ppid = 0;	/* have the system adopt it */
-			if (p->wait_q == ZOMBIE_Q) 
+			if (p->wait_q == ZOMBIE_Q)
 				wakemint = 1;	/* we need to wake proc. 0 */
 		}
-		
+
 		if (p->ptracer == curproc)
 		{
 			p->ptracer = 0;
-			
+
 			/* `FEATURE': we terminate traced processes when the
 			 * tracer terminates. It might plausibly be argued
 			 * that it would be better to let them continue,
@@ -212,35 +213,35 @@ terminate (PROC *curproc, int code, int que)
 			post_sig (p, SIGTERM);	/* arrange for termination */
 		}
 	}
-	
+
 	if (wakemint)
 	{
 		ushort sr;
-		
+
 		sr = splhigh ();
-		
+
 		p = rootproc;		/* pid 0 */
 		if (p->wait_q == WAIT_Q)
 		{
 			rm_q (WAIT_Q, p);
 			add_q (READY_Q, p);
 		}
-		
+
 		spl (sr);
 	}
-	
+
 	/* this makes sure that our children are inherited by the system;
 	 * plus, it may help avoid problems if somehow a signal gets
 	 * through to us
 	 */
 	for (i = 0; i < NSIG; i++)
 		SIGACTION(curproc, i).sa_handler = SIG_IGN;
-	
+
 	/* finally, reset the time/date stamp for /proc and /sys.  */
 	procfs_stmp = xtime;
-	
+
 	sleep (que, (long)(unsigned)code);
-	
+
 	/* we shouldn't ever get here */
 	FATAL ("terminate: sleep woke up when it shouldn't have");
 	return 0;
@@ -250,16 +251,16 @@ long
 kernel_pterm (PROC *p, int code)
 {
 	CONTEXT *syscall;
-	
+
 	TRACE(("Pterm(%d)", code));
-	
+
 	/* call the process termination vector */
 	syscall = &p->ctxt[SYSCALL];
-	
+
 	if (syscall->term_vec != (long) rts)
 	{
 		TRACE(("term_vec: user has something to do"));
-		
+
 		/* we handle the termination vector just like Supexec(), by
 		 * sending signal 0 to the process. See supexec() in xbios.c
 		 * for details. Note that we _always_ want to unwind the
@@ -272,7 +273,7 @@ kernel_pterm (PROC *p, int code)
 		 * if we arrive here, continue with the termination...
 		 */
 	}
-	
+
 	return terminate (p, code, ZOMBIE_Q);
 }
 
@@ -293,15 +294,15 @@ sys_pterm (int code)
 	for (;;)
 	{
 		int cont;
-		
+
 		cont = slb_close_on_exit (0);
 		if (cont == 1)
 			return code;
-		
+
 		if (cont == 0)
 			break;
 	}
-	
+
 	return (kernel_pterm (curproc, code));
 }
 
@@ -316,18 +317,18 @@ sys_ptermres (long save, int code)
 {
 	PROC *p = curproc;
 	struct memspace *mem = p->p_mem;
-	
+
 	MEMREGION *m;
 	int i;
-	
-	
+
+
 	TRACE(("Ptermres(%ld, %d)", save, code));
 	assert (mem);
-	
+
 	m = mem->mem[1];	/* should be the basepage (0 is env.) */
 	if (m)
 		shrink_region (m, save);
-	
+
 	/* make all of the TSR's private memory globally accessible;
 	 * this means that more TSR's will "do the right thing"
 	 * without having to have prgflags set.
@@ -342,16 +343,16 @@ sys_ptermres (long save, int code)
 				mark_region (m, PROT_G, 0);
 		}
 	}
-	
+
 	return terminate (p, code, TSR_Q);
 }
 
 /*
  * routine for waiting for children to die. Return has the pid of the
  * found child in the high word, and the child's exit code in
- * the low word.  
- * If the process was killed by a signal the signal that caused the 
- * termination is put into the last seven bits. If no children exist, 
+ * the low word.
+ * If the process was killed by a signal the signal that caused the
+ * termination is put into the last seven bits. If no children exist,
  * return "File Not Found".
  *
  * If (nohang & 1) is nonzero, then return a 0 immediately if we have
@@ -403,14 +404,14 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 	PROC *p;
 	int ourpid, ourpgrp;
 	int found;
-	
-	
+
+
 	TRACE(("Pwaitpid(%d, %d, %lx)", pid, nohang, rusage));
-	
-	
+
+
 	ourpid = curproc->pid;
 	ourpgrp = curproc->pgrp;
-	
+
 	/* if there are terminated children, clean up and return their info;
 	 * if there are children, but still running, wait for them;
 	 * if there are no children, return an error
@@ -433,7 +434,7 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 				found++;
 				if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 					break;
-				
+
 				/* p->wait_cond == 0 if a stopped process
 				 * has already been waited for
 				 */
@@ -451,7 +452,7 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 				}
 			}
 		}
-		
+
 		if (!p)
 		{
 			if (found)
@@ -461,10 +462,10 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 					TRACE(("Pwaitpid(%d, %d) -> 0 [nohang & 1]", pid, nohang));
 					return 0;
 				}
-				
+
 				if (curproc->pid)
 					TRACE(("Pwaitpid: going to sleep"));
-				
+
 				sleep (WAIT_Q, (long) sys_pwaitpid);
 			}
 			else
@@ -472,7 +473,7 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 				/* Don't report that for WNOHANG.  */
 				if (!(nohang & 1))
 					DEBUG(("Pwaitpid: no children found"));
-				
+
 				return ENOENT;
 			}
 		}
@@ -520,7 +521,7 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 	if (p->wait_q == STOP_Q)
 	{
 		p->wait_cond = 0;
-		
+
 		TRACE(("Pwaitpid(%d, %d) -> %lx [p->wait_q == STOP_Q]", pid, nohang, r));
 		return r;
 	}
@@ -536,7 +537,7 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 		{
 			/* deliver the signal to the tracing process first */
 			TRACE(("Pwaitpid(ptracer): returning status %lx to tracing process", r));
-			
+
 			p->ptracer = NULL;
 			if (p->ppid != -1)
 				return r;
@@ -545,17 +546,17 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 		{
 			/* Hmmm, the real parent got here first */
 			TRACE(("Pwaitpid(ptracer): returning status %lx to parent process", r));
-			
+
 			p->ppid = -1;
 			return r;
 		}
 	}
-	
+
 	/* if it was a TSR, mark it as having been found and return */
 	if (p->wait_q == TSR_Q)
 	{
 		p->ppid = -1;
-		
+
 		TRACE(("Pwaitpid(%d, %d) -> %lx [p->wait_q == TSR_Q]", pid, nohang, r));
 		return r;
 	}
@@ -563,13 +564,13 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 	/* it better have been on the ZOMBIE queue from here on in... */
 	assert (p->wait_q == ZOMBIE_Q);
 	assert (p != curproc);
-	
+
 	/* take the child off both the global and ZOMBIE lists */
 	{
 		ushort sr = splhigh ();
-		
+
 		rm_q (ZOMBIE_Q, p);
-		
+
 		if (proclist == p)
 		{
 			proclist = p->gl_next;
@@ -578,30 +579,30 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 		else
 		{
 			PROC *q = proclist;
-			
+
 			while (q && q->gl_next != p)
 				q = q->gl_next;
-			
+
 			assert (q);
-			
+
 			q->gl_next = p->gl_next;
 			p->gl_next = NULL;
 		}
-		
+
 		spl (sr);
 	}
-	
+
 	if (--p->p_cred->links == 0)
 	{
 		free_cred (p->p_cred->ucr);
 		kfree (p->p_cred);
 	}
-	
+
 	free_sigacts (p);
-	
+
 	/* free the PROC structure */
 	kfree (p);
-	
+
 	TRACE(("Pwaitpid(%d, %d) -> %lx [end]", pid, nohang, r));
 	return r;
 }

@@ -449,7 +449,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x13b */		d_getcwd,
 	/* 0x13c */		s_alert,
 	/* 0x13d */		t_malarm,
-	/* 0x13e */	(Func)	sys_psigintr,
+	/* 0x13e */		enosys,		/* p_sigintr(), disabled as of 1.16.0 */
 	/* 0x13f */		s_uptime,
 
 	/* 0x140 */	(Func)	p_trace,	/* 1.15.11 */

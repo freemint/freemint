@@ -349,6 +349,7 @@ init_intr (void)
 	new_xbra_install (&old_getbpb, 0x472L, new_getbpb);
 	olddrvs = *((long *) 0x4c2L);
 
+# if 0
 	/* initialize psigintr() call stuff (useful on 68010+ only)
 	 */
 # ifndef ONLY030
@@ -359,6 +360,7 @@ init_intr (void)
 		if (intr_shadow)
 			quickmove ((char *)intr_shadow, (char *) 0x0L, 1024L);
 	}
+# endif
 
 	/* we'll be making GEMDOS calls */
 	enter_gemdos ();
