@@ -93,9 +93,10 @@ void	hide_window(enum locks lock, struct xa_window *wind);
 void	unhide_window(enum locks lock, struct xa_window *wind);
 void	clear_wind_handles(void);
 
-void	send_moved(enum locks lock, struct xa_window *wind, short amq, RECT *r);
-void	send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r);
-void	send_redraw(enum locks lock, struct xa_window *wind, RECT *r);
+void	send_moved	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
+void	send_sized	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
+void	send_reposed	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
+void	send_redraw	(enum locks lock, struct xa_window *wind, RECT *r);
 
 void	send_ontop(enum locks lock);
 void	send_untop(enum locks lock, struct xa_window *wind);

@@ -752,11 +752,11 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 
 			WA += orient & 1;
 
-			if (wind->opts & XAWO_WHEEL)
+			if (wind->opts & WO_WHEEL)
 			{
 				switch (wind->wheel_mode)
 				{
-					case XWHL_REALWHEEL:
+					case WHL_REALWHEEL:
 					{
 						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 								   WM_WHEEL, 0,0, wind->handle,
@@ -765,13 +765,13 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 								   ((md->state && 0xf) << 12)|((orient & 0xf) << 8)|(md->clicks & 0xff));
 						break;
 					}
-					case XWHL_AROWWHEEL:
+					case WHL_AROWWHEEL:
 					{
 						amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
 						whlarrowed(wind, WA, amount, md);
 						break;
 					}
-					case XWHL_SLDRWHEEL:
+					case WHL_SLDRWHEEL:
 					{
 						short w = -1, s = 0;
 

@@ -53,15 +53,20 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	const RECT r = *((const RECT *)&pb->intin[1]);
 	struct xa_window *new_window;
-	XA_WIND_ATTR kind = (unsigned short)(pb->intin[0]);
+	XA_WIND_ATTR kind = (unsigned short)pb->intin[0];
 
 	CONTROL(5,1,0)
-	
-	if (pb->intin[0] < 0 && pb->control[1] >= 6)
+	//if (pb->intin[0] < 0 && pb->control[1] >= 6)
+	if (pb->control[N_INTIN] >= 6)
+	{
 		kind |= (long)pb->intin[5] << 16;
+	}
 
 	if (!client->options.nohide)
 		kind |= HIDE;
+
+	DIAG((D_wind, client, "wind_create: kind=%x, tp=%lx",
+		pb->intin[0], kind));
 
 	new_window = create_window(lock,
 				   send_app_message,
@@ -311,7 +316,7 @@ setget(int i)
 	"WF_MENU(33)",
 	"34","35","36","37","38","39",
 	"WF_WHEEL(40)",
-	"WF_BEHAVE(41)",
+	"WF_OPTS(41)",
 	"      "
 	};
 
@@ -348,6 +353,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		case WF_TOP:			/* MagiC 5: wind_get(-1, WF_TOP) */
 		case WF_NEWDESK:		/* Some functions may be allowed without a real window handle */
 		case WF_WHEEL:
+		case WF_OPTS:
 			break;
 		default:
 			DIAGS(("WARNING:wind_set for %s: Invalid window handle %d", c_owner(client), w));
@@ -430,15 +436,15 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_WHEEL:
 	{
-		long o = 0, om = ~(XAWO_WHEEL);
+		long o = 0, om = ~(WO_WHEEL); //XAWO_WHEEL);
 		short mode = -1;
 		
 		if (pb->intin[2])
 		{
-			o |= XAWO_WHEEL;
+			o |= WO_WHEEL; //XAWO_WHEEL;
 			mode = pb->intin[3];
-			if (mode < 0 || mode > MAX_XWHLMODE)
-				mode = DEF_XWHLMODE;
+			if (mode < 0 || mode > MAX_WHLMODE)
+				mode = DEF_WHLMODE;
 		}
 		
 		if (wind == 0)
@@ -662,6 +668,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			mh = ir->h;
 			ir = (RECT *)&w->rc;
 
+			if ( (mw != w->rc.w && (w->opts & WO_NOBLITW)) ||
+			     (mh != w->rc.h && (w->opts & WO_NOBLITH)))
+				blit = false;
+			
 			DIAGS(("wind_set: move to %d/%d/%d/%d for %s",
 				mx, my, mw, mh, client->name));
 
@@ -705,11 +715,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						 *	so we dont render resizing using left/top border useless!
 						 *	Hopefully this will be good enough...
 						 */
-						if (w->opts & XAWO_NAES_FF)
+						if (blit && w->opts & WO_FULLREDRAW)
 						{
 							if (mx != w->rc.x && my != w->rc.y &&
 							    mw != w->rc.w && mh != w->rc.h)
-							blit = false;
+								blit = false;
 						}
 					}
 				}
@@ -1006,9 +1016,28 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		move_window(lock, w, true, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
 		break;
 	}
+	case WF_OPTS:
+	{
+		long  opts, *optr;
+		short mode;
 
+		if (w)
+			optr = &w->opts;
+		else
+			optr = &client->options.wind_opts;
+
+		mode = pb->intin[2];
+ 		opts = (long)pb->intin[3] << 16 | pb->intin[4];
+
+		if (!mode)
+			*optr &= ~opts;
+		else if (mode == 1)
+			*optr |= opts;
+
+		break;
 	}
 
+	}
 	return XAC_DONE;
 }
 
@@ -1072,6 +1101,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			case WF_NEWDESK:
 			case WF_SCREEN:
 			case WF_WHEEL:
+			case WF_OPTS:
 			case WF_XAAES: /* 'XA', idee stolen from WINX */
 				break;
 			default:
@@ -1127,7 +1157,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		long opt = w ? w->opts : client->options.wind_opts;
 		short mode = w ? w->wheel_mode : client->options.wheel_mode;
 		
-		o[1] = (opt & XAWO_WHEEL) ? 1 : 0;
+		o[1] = (opt & WO_WHEEL) ? 1 : 0;
 		o[2] = mode;
 		break;
 	}
@@ -1532,6 +1562,14 @@ next:
 		DIAGS(("hex_version = %04x",o[1]));
 		break;
 	}
+	case WF_OPTS:
+	{
+		long *optr = (w ? &w->opts : &client->options.wind_opts);
+		
+		o[1] = *optr >> 16;
+		o[2] = *optr;
+		break;
+	}
 	default:
 	{
 		DIAG((D_wind,client,"wind_get: %d",cmd));
@@ -1647,12 +1685,15 @@ unsigned long
 XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(6,5,0)	
+	
+	DIAG((D_wind, client, "wind_calc: req=%d, kind=%d",
+		pb->intin[0], pb->intin[1]));
 
 	*(RECT *) &pb->intout[1] =
 		calc_window(lock,
 			    client,
 			    pb->intin[0],		/* request */
-			    pb->intin[1],		/* widget mask */
+			    (unsigned short)pb->intin[1],		/* widget mask */
 			    client->options.thinframe,
 			    client->options.thinwork,
 			    *(const RECT *)&pb->intin[2]);

@@ -150,6 +150,54 @@ no definitions are made yet.
         need for a wind_get(handle, WF_CURRXYWH,...) call.
  
 -------------------------------------------------------------------------------
+ wind_set(handle, WF_OPTS, mode, hi_opts, lo_opts, 0);
+
+  mode       0 = clear, 1 = set option bits
+  hi_opts    upper 16 bits of option bitmask
+  lo_opts    lower 16 bits of option bitmask
+
+Currently available options are as follows;
+
+#define WO_WHEEL	0x00000001
+ Setting this bit will enable extended mouse wheel support, and go into
+ WHL_AROWWHEEL mode causing XaAES to send extended WM_ARROWED messages
+ to the application when the mouse wheel turns. Read section "XaAES and
+ wheel mouse handling." for details.
+
+#define WO_FULLREDRAW	0x00000002
+ Setting this bit will make XaAES send WM_REDRAW messages to cover the
+ whole work-area of the window when it is FULLED. Default behaviour is
+ to only send WM_REDRAW messages for the areas that need it, blitting
+ the already visible parts. This can also be configured via xaaes.cnf,
+ see the app_options argument 'naesff'.
+
+#define WO_NOBLITW	0x00000004
+ Setting this bit will make XaAES send WM_REDRAW messages to cover the
+ whole work-area of the window when its WIDTH changes. This is handy
+ for apps like HighWire, Textprocessors ,etc, that need to reformat
+ when window width changes. Default behaviour is to send WM_REDRAW
+ messages for the areas that need it.
+
+#define WO_NOBLITH	0x00000008
+ Setting this bit will make XaAES send WM_REDRAW messages to cover the
+ whole work-area of the window when its HEIGHT changes.
+ Default behaviour is to send WM_REDRAW messages for the areas that
+ need it.
+
+#define WO_SENDREPOS	0x00000010
+ Setting this bit will make XaAES send a WM_REPOSED(38) message when a
+ windows X/WIDTH and/or Y/HEIGHT coordinate pair changes. Such changes
+ happes when the user resizes the window using upper/left borders.
+ Default behaviour is to first send a WM_MOVED followed by a WM_SIZED
+ message under these conditions, because older apps dont evaluate the
+ WIDTH/HEIGHT in WM_MOVED messages. So, dudes, set this bit and use
+ WM_REPOSED! :)
+
+ usage: 'opts' is a unsigned long containing the options bits;
+      wind_set(handle, 1, opts >> 16, (short)opts, 0); to set selected bits
+      wind_set(handle, 0, opts >> 16, (short)otps, 0); to clear selected bits
+
+-------------------------------------------------------------------------------
 ===============================================================================
                        XaAES and wheel mouse handling.
 
@@ -175,7 +223,7 @@ no definitions are made yet.
   mode        0 = Turn extended wheel awareness off, 1 = Turn on.
   
   wheel_mode
-           XWHL_REALWHEEL ( 0 )
+           WHL_REALWHEEL ( 0 )
               When wheel_mode is set to 0 (XWHL_REALWHEEL), XaAES will send
               real wheel messages, constructed as follows;
 
@@ -204,7 +252,7 @@ no definitions are made yet.
               'wheel ID' contains the wheel number. 0 is wheel #1, etc..
               'wheel amount' holds the number of wheel-turns.
       
-           XWHL_AROWWHEEL ( 1 ) This is the default wheel_mode set if the
+           WHL_AROWWHEEL ( 1 ) This is the default wheel_mode set if the
               value passed is outside the available range. When this mode is
               selected, extended WM_ARROWED messages are sent upon each wheel
               turn. With this mode, only one WM_ARROWED message is send if
@@ -230,7 +278,7 @@ no definitions are made yet.
                      scroll the required amount instantly, wihtout receiveing
                      more than this one extended WM_ARROWED.
 
-           XWHL_SLDRWHEEL ( 2 )
+           WHL_SLDRWHEEL ( 2 )
               When wheel_mode is set to 2 (XHWL_SLDRWHEEL), XaAES converts
               wheel turns into slider movements. XaAES sends standard
               WM_VSLID/WM_HSLID messages reflecting the wheel turns.

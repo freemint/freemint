@@ -161,6 +161,7 @@ typedef struct pEvntrec
 #define WM_UNICONIFY	35
 #define WM_ALLICONIFY	36
 #define WM_TOOLBAR		37
+#define WM_REPOSED		38
 #define AC_OPEN			40
 #define AC_CLOSE		41
 #define AP_TERM			50
@@ -501,6 +502,7 @@ typedef  struct
 #define WF_NTOOLBAR		 32
 #define WF_MENU			 33		 /* XaAEES */
 #define WF_WHEEL		 40		 /* XaAES */
+#define WF_OPTS			 41	/* XaAES */
 #define WF_M_BACKDROP	100      /* KAOS 1.4    */
 #define WF_M_OWNER		101      /* KAOS 1.4    */
 #define WF_M_WINDLIST	102      /* KAOS 1.4    */
@@ -518,6 +520,20 @@ typedef  struct
 /* wind_set(WF_BEVENT) */
 #define BEVENT_WORK     0x0001    /* AES 4.0  */
 #define BEVENT_INFO     0x0002    /* MagiC 6  */
+
+/* wind_set(WF_OPTIONS) */
+#define WO_WHEEL	0x00000001
+#define WO_FULLREDRAW	0x00000002
+#define WO_NOBLITW	0x00000004
+#define WO_NOBLITH	0x00000008
+#define WO_SENDREPOS	0x00000010
+
+/* wind_set(WF_WHEEL) */
+#define WHL_REALWHEEL	0	/* */
+#define WHL_AROWWHEEL	1
+#define WHL_SLDRWHEEL	2
+#define MAX_WHLMODE	2
+#define DEF_WHLMODE	WHL_AROWWHEEL
 
 /* window elements */
 #define W_BOX			0
