@@ -1,0 +1,212 @@
+This file describes some of the syscalls and some special aspects of the
+standard syscalls.
+
+STAT (Fxattr)
+
+Almost all the fields are relevant and not 'faked' unlike most of the
+standard filesystems. There are a couple of minor exceptions. For V1
+filesystems atime/adate and ctime/cdate fields are faked, they are
+the same as mtime/mdate; these are not faked for V2 filesystems. The
+nblocks field is faked by just assuming the file is continuous, this
+will usually be correct; if the file is sparse however this will be
+too high.
+
+The 'dev' field is the drive with the standard form 0=A,1=B etc. The
+field 'index' is the inode number, this is again valid: if two files
+or file descriptors have the same inode and device numbers then they
+are the same file, otherwise they are different.
+
+If there are character or block special files on the device then the
+field 'rdev' gets filled in appropriately.
+
+DOPENDIR (DREADIR)
+
+In normal mode you never get translated filenames, in addition the
+long field is the inode number.
+
+RENAME
+
+You can 'move' directories with this call, as would be expected for
+a U*ix like filesystem. This naturally moves all the contents of that
+subtree as well. This call will not allow a directory to be moved inside
+itself, as this would damage the filesystem (and is illegal anyway).
+
+FDATIME
+
+This is made fairly close to 'utimes', basically setting both atime/mtime
+to the value specified and ctime to the current time. It can't change the
+times for directories because MiNT blocks opening directories.
+
+FATTR
+
+This is largely faked, the fields aren't really valid for U*ix like
+filesystems. Only the DIR/RDONLY bits have any meaning, and RDONLY
+can be set as well.
+
+VOLUME NAMES
+
+Basically these don't exist. I suppose I could add support in some way if
+there was any demand.
+
+LINK/SYMLINK
+
+As would be expected these are perfectly valid. LINK does not allow hard links 
+to directories, even by superuser basically because there is no real need since
+symbolic links can do this and there would be no way to remove them.
+
+UNLINK
+
+Unlink behaves in a U*ix like manner with regard to open files. Basically you
+can unlink() an open file and let all processes with it open read/write as
+normal. When all processes close() the file (or exit which closes anyway) the
+space used by the file is freed up.
+
+You can *not* unlink directories, this would be too risky and isn't needed
+anyway.
+
+FSEEK
+
+Minixfs allows the creation of sparse files in the usual way (seek past EOF and
+write).
+
+DCNTL CALLS
+
+The Dcntl syscall has several options for minixfs filesystems. The 'standard'
+calls FUTIME (set inode times) and FTRUNCATE (truncate file) exist as do their
+Fcntl (ioctl) equivalents. However also inluded are several Minixfs specific
+calls.
+
+Opcode 0x100 MFS_VALID
+
+This interprets the value of the additional argument as a long pointer, and
+is stores the value MFS_MAGIC there. This is intended so that the path passed 
+to Dcntl can verified as being on a minixfs filesystem. MFS_MAGIC has the
+value 0x1870431. Because of the possibility of other filesystems using the
+same numbers for Dcntl functions with different purposes (though none do as
+far as I know) MFS_VALID should always be called before using the other Minixfs
+specific opcodes and MFS_MAGIC checked.
+
+Opcode 0x101 MFS_SYNC
+
+Synchronise *all* filesystems, basically write out internal buffers to disk.
+Currently the filesystem internally sync()'s as well at various points, so 
+this call is not at present necessary before rebooting the system.
+
+Opcode 0x102 MFS_CINVALID
+
+Invalidate all cache entries for a given drive. This is used mainly internally.
+
+Opcode 0x103 MFS_FINVALID
+
+Invalidate all file descriptors on the given drive.
+
+Opcode 0x104 MFS_INFO
+
+This call basically returns some info about the Minixfs filesystem on which
+the path resides. It interprets the value of the additional parameter as a
+pointer to an mfs_info structure. This structure has the following form:
+
+long total_inodes,total_zones;
+long free_inodes,free_zones;
+short version;
+short incr;
+long res1,res2,res3,res4;
+
+(long=32 bits, short=16bits).
+
+total_inodes and total_zones return the total number of inodes and zones
+for the filesystem. Similarly free_inodes and free_zones show how many are
+unused. A 'zone' is always 1K. version is 1 for V1 filesystems and 2 for
+V2. incr is the directory increment. You can use this to determine the 
+maximum filename size with the formula incr*16-2. The MiNT syscall Dconf
+can also be used for this purpose (see MiNT docs).
+
+Opcode 0x106 MFS_IMODE
+
+The extra paramater is interpreted as a long int. Its value is used to set
+the mode of *all* the bits of the file pathname points to. Including the
+type fields, thus you can change directories to files, and vice-versa.
+This is again root only. Extreme caution is needed with this syscall: it
+can do a lot of damage.
+
+Opcode 0x107 MFS_GTRANS
+Opcode 0x108 MFS_STRANS
+
+This call gets and sets the translation modes for this device. Only the
+superuser can do this. The extra parameter is interpreted as a long
+pointer. The scope corresponds to the following values.
+
+#define NONE    0
+#define TOS     1
+#define MINT    2
+#define ALL     3
+
+The 'type' is contained in groups of two bits. Bits 0-1 correspond to
+search translation, bits 2-3 are directory translation, bits 4-5 are for 
+creation translation and bits 6-7 are for execute translation. All other
+bits are currently ignored and should be set to zero.
+
+Opcode 0x10a MFS_IADDR
+
+The argument is a long pointer which will have the start address of Minixfs
+placed in it. If Minixfs has crashed then using this address along with the
+symbol table (or a suitable debugger) allows the precise point of the crash
+to be determined.
+
+Opcode 0x10b MFS_UPDATE
+
+This controls the update daemon. If no daemon is running (e.g. not Turbo mode)
+then this function returns -1. Otherwise the argument is a long which is
+interpreted as follows.
+
+0x0: Return 1 if daemon suspended, 0 if running.
+0x1: Suspend execution of the daemon.
+0x2: Resume execution of daemon.
+0x3: Return the process id (pid) of the daemon (returns -1 if daemon not used)
+
+Opcode 0x10c MFS_MOUNT
+
+This is a bit experimental at present. It is used to mount one Minixfs
+filesystem on another and may go away some day if the kernel implements
+this (which is where it should really be). 'arg' is a pointer to the
+following structure:
+
+unsigned int dev;
+long flags;
+long reserved[4];
+
+dev is the device to mount (the path to Dcntl gives the path to mount on).
+flags is unused at present and should be set to zero. The reserved fields
+are also unused at present. The Dcntl path must be a directory other than
+the root directory. The filesystem of device 'dev' must not have any filesytems
+mounted on it already.
+
+Opcode 0x10d MFS_UMOUNT
+
+The filesystem the Dcntl path is on is umounted.
+
+Opcode 0x10e MFS_LOPEN
+
+arg points to the following structure:
+
+long limit;
+unsigned int ilist[SIZE];
+
+The field 'limit' should be set to the value of SIZE (the size of the ilist
+array). After this call the inode numbers of all open files on the Dcntl path
+filesystem are entered into the ilist array, followed by a zero terminator.
+If there isn't enough room in the array, it is truncated and ERANGE returned.
+
+Opcode 0x10f MFS_MKNOD
+
+arg is a long. The low word is a mode parameter which is the full mode of
+a character or block special file mode. The high word is the major/minor
+device numbers of the file. The Dcntl path is the path to create.
+
+NOTE ON FILENAME TRANSLATION
+
+Using minixfs filesystems you should always use the Dopendir etc. MiNT calls
+in normal mode. This way you never get translated filenames. You can use the
+Dconf or the MFS_INFO Dcntl syscalls to get the maximum filename length (if
+needed).
+

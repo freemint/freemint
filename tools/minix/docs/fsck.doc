@@ -1,0 +1,150 @@
+Fsck is a File System Consistency checKer. It checks Minixfs filesystems for
+consistency and optionally repairs them too. It is important that a Minixfs
+filesystem is checked for errors when, for example, the system crashes or a
+lock up forces a reboot when programs are using the filesystems. This will
+occasionally mean that fsck will perform minor repairs which will cause no
+damage at all. Using a damaged filesystems can result in much more serious
+damage occuring at a later date which require more destructive repairs to
+fix.
+
+ADVICE ON USE OF FSCK
+
+fsck cannot perform miracles; a severely damaged filesystem (such as if a lot
+of sectors get wiped somehow) may have very little salvageable. However, don't
+be overwhelmed by the options available. In practice only fsck -n or fsck on
+its own are used, the -p option is useful in shell scripts where non-interactive
+repair is needed, but you dont want any attempted destructive repair.
+
+If fsck -n does produce what appear like a lot of serious errors then it might
+be an idea to attempt to backup the data before trying repairs; of course if
+you have a full backup (you do make regular backups don't you?) available it
+might be best to forget about repair altogether and just reinitialize the
+filesystem (with minit) and restore from backup.
+
+USING FSCK
+
+Fsck can be used in interactive or non-interactive mode. In interactive mode
+you are prompted before each fix. In non-interactive mode, repairs are carried
+out automatically or not at all. The option '-y' carries out all repairs that
+fsck would suggest, the '-p' (preen) option carries out all repairs if the
+Minixfs filesystems is only slighlty damaged and can be repaired without
+destroying data, the '-n' option only prints out the damage: it does not
+repair anything. The '-y' option is not recommended, unless you are sure it
+is what you want.
+
+The options are followed by the drive letter of the partition you want to
+check for example,
+fsck -p D:
+
+REPAIRS CARRIED OUT
+
+In order to know precisely what repairs are carried out you must know a litle
+about the internal structure of a Minixfs filesystem. Each filesystem is
+divided into blocks or zones, these are always 1K in size.
+
+Each directory/file/symbolic link has an inode associated with it. This is
+a small part of a disk sector which carries all information about a file
+except its name. It contains the file access modes (including what kind of
+entity the inode refers to) as well as it's size and a list of sectors where
+the file can be found. If this list is not large enough then an 'indirection
+block' which is a disk block containing a list of further blocks belonging to
+the file is used (and recorded in the inode). If this is not enough then a
+'double indirection block' is used containing a list of further indirection
+blocks. With this information, all the data in a file can be accessed.
+
+A directory is basically identical to a file except it has a different mode
+number. The 'data' in this file is a list of 'entries' (or links) each entry
+contains a filename and an inode number where that name can be found. The root
+directory is always contained in inode 1. A field in the inode called it's
+'link count' gives a count of the number directory entries that refer to it.
+Every directory has two filenames '.' which refers to itself and '..' which
+refers to the parent directory. The only exception is the root directory where
+'..' refers to itself as well.
+
+Each used inode/block is referenced in a bitmap. If the filesystem crashes
+before this can be written out to disk then it will be inaccurate. Fortunately
+fsck can rebuild the bitmaps from the data contained in inodes. This is what
+the prompts asking about bitmap repair mean. They are harmless and it is
+strongly advised that any bitmap repairs suggested are made.
+
+If you use the filesystem and some used blocks do not have their bits set in
+the bitmap then other files can use them, overwriting the original data. These
+are called 'multiply allocated blocks'. fsck will give a list of these blocks
+and (optionally) allow you to decide which inode is the valid block. Usually
+the valid data is contained in the file with the latest modify time: the '-y'
+option removes all of the references. By finding the files the inodes
+refer to (e.g. with the -i option) you can look to see which file
+contains the valid data and then interactively remove the other references.
+The other files where the references are removed then have 'holes' in them,
+you may want to try to recover them or just delete them after 'fsck' has done
+its work. This is why it is important that the bitmaps are accurate and should
+be checked regularly.
+
+This is the 'best case' scenario of multiply allocated blocks. If the block
+overwritten belongs to a directory then much more trouble is caused. After
+deleting the overwritten reference in a directory lots of inodes may no
+longer be referenced in a directory, these are called 'orphaned' inodes (they
+have no parent directory). fsck has no way of knowing their original names,
+but the data is recoverable. fsck makes entries for these inodes in a
+directory called lost+found . The name chosen is simply the inode number. You 
+can then analyse the files/directories in lost+found and delete, rename or move 
+them to where they were originally.
+
+The worst case is if an indirection block is overwritten. This can cause lots
+of spurious messages about bad zone numbers and other multiply allocated blocks.
+fsck cannot currently help much under such circumstances: if a certain inode
+contains lots of multiple block number or bad zone numbers then it's best to
+delete all multiply allocated blocks in that inode; either with fsck or finding
+the inode on the disk and deleting the associated file.
+
+Here is a summary of the possible repairs fsck performs:
+
+1. Scan all inodes, allow deletion of multiply allocated blocks, inodes with
+bad modes, truncation of inodes which reference too many zones.
+
+2. Scan all directories, check for valid names and the existance of '.' and
+'..' entries and allow fixing.
+
+3. Check filesystem conectivity (that each inode has a directory entry) and
+allow repair of any problems and reconnection of orphaned inodes.
+
+4. Check bitmaps and repair; check inode link counts and allow repair.
+
+MISCELLANEOUS OPTIONS
+
+If the root directory gets destroyed it must be handled separately because the
+lost+found directory will be killed also. If this is the case then the '-R'
+option will reform the root directory. Unfortunately the directory increment
+is determined from the root directory, so you must manually tell fsck the
+directory increment with the '-d' option followed by the increment. If you
+get this wrong then a large number of errors about directory entries will
+be erroneously reported.
+	If for some reason the root inode is no longer a directory Minixfs
+may get confused and not  recognise the filesystem anymore. By asking fsck to
+continue it will still check the root inode as though it were a directory: if
+it looks OK fsck allows you to make it a directory again. However you will
+have to reboot before the filesystem will be recognised by Minixfs again.
+
+	The '-i' option followed by a comma separated list of numbers will
+print out the pathnames of the corresponding inodes. E.g. fsck -i 1,2,3 D:
+This will print out *all* the possible names so e.g. fsck -i 1 d: may
+give something like:
+
+\.
+\..
+\dir\..
+\dir2\..
+etc.
+
+	The '-z' option allows an inode to be zeroed if for example it is
+severely trashed and fixing would do more harm than good (e.g. if an
+indirection block has been overwritten). -z may be followed by a comma
+separated list of inodes to zero. NB use this option with extreme caution,
+the data the inode refers to will be effectively deleted (it will still be
+on the disk but no longer accessible directly). Using this option will also
+cause related "errors" to appear (though all can be fixed) such as inode
+and bitmap errors and links a free inode.
+
+	The '-e' option tries to find out the filesystem size by reading
+as far as it can through a partition: this is an experimental option and
+isn't too useful at present.

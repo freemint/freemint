@@ -1,0 +1,181 @@
+The program 'minit' creates minixfs filesystems. Then can be created on a
+TOS formatted disk or a TOS filesystem, then can also be created to alter
+the parameters of an already existing minixfs partition.
+
+WARNING: USING MINIT TO CREATE FILESYSTEMS WILL IRRETRIEVABLY WIPE ALL DATA
+ON THAT PARTITION. This includes using it to create a filesystem 'on top' of
+an already existing one. Don't say I didn't warn you.
+
+FILESYSTEM VERSIONS.
+Before you decide to make a filesystem you must decide which kind of filesystem
+you want to make. There are two kinds at present V1 and V2. These are
+compatible with the equivalent Minix filesystems. V1 filesystems are the
+standard Minix filesystems used with all versions of Minix, they do have a 
+number of shortcomings, there is only one kind of file access time and V1
+filesystems can be at most 64Mb in size. V2 filesystems are newer and are
+the same as the V2 filesystems used by Minix 1.6xx (and presumably higher).
+They have three access times and can be any size (if you hard disk software
+will support it). I would strongly advise the use of V2 filesystems.
+
+        If you supply the -V option to minit you will make a V2 filesystem,
+otherwise it will be V1.
+
+DIRECTORY INCREMENT
+        
+        It doesn't quite end there though. There are a couple more parameters
+you should know about. Under Minix itself you can have filenames of at most
+14 characters in length. Minixfs uses this value by default. However there is
+a parameter called 'directory increment' which allows you to use longer
+filenames. This parameter must be a power of two between 1 and 8 (inclusive)
+in other words it can be 1,2,4 or 8. The maximum filename size is given by
+the formula maxlength= increment*16 - 2. Thus increments of 1,2,4,8 will
+result in maximum filename lengths of 14,30,62 and 126 respectively. However
+be advised that every filename whatever length occupies this space, so if you
+set the increment to 8 then a filename of length 1 will still use up the same
+space in a directory as a filename of length 126. Setting this too high will
+slow down directory operations somewhat. 2 is a reasonable value for this
+parameter. NB If you use Minix itself then only the default increment (1) is
+accessible to Minix; other values will seriously confuse Minix, so if you want
+partitions to be accessible to Minix use increment 1 (the default).
+
+        The -n option allows you to set the directory increment, follow it by
+the increment you want. If this option is not present then a value of one is
+assumed.
+
+PROTECTION
+
+        A couple of options deal with 'protection'. This is a somewhat tricky
+subject. Basically protection is a method I use to prevent TOS from writing
+to a Minixfs partition when MiNT is not running, if TOS did then the partition
+would be damaged (possibly irreparably). If you will always use MiNT and 
+Minixfs, or you are absolutely certain you will never write to a Minixfs 
+partition without MiNT/Minixfs running then feel free to use no protection at 
+all.
+
+        However this is rather unlikely so you usually will need some form of
+protection. There are currently two methods. Null Disk and other partition ID. 
+        
+        A Null disk makes TOS think it's root directory is full so it
+can't write to a filesystem because it can't create any files.
+
+	If Null disk doesn't work then you can try an alternate partition ID.
+This only works if you have software with an XHDI version of 1.10 or higher,
+if you use the '-t' option to minit you can find out your XHDI version (if any).
+The partition ID is a three character identifier for the partition type. TOS
+uses GEM and BGM for its filesystems; you can use other types to ensure TOS 
+will never access the partition and Minixfs can. There are quite a few problems
+though. Not all hard disk software allows the partition ID to be edited. Also
+Minixfs can only automatically access other partitions with XHDI compliant
+software (see the information provided by the '-t' option). 
+
+	If you have XHDI compliant software and you can edit the partition ID
+then you can use the ID MIX for Minixfs (you can also use RAW, but I wouldn't
+advise it). After altering the ID, reboot and use minit as normal and all should
+be OK.
+
+OTHER OPTIONS
+
+        Normally minit tries to find out the size of a partition by itself,
+this can sometimes fail. If it does then you must enter the partition size
+(in K) manually with the -b option.
+
+        Inodes are part of the filesystem. Every file/directory/symbolic link
+on the filesystem uses precisely one inode. If you run out of inodes then you 
+can't create any more files/directories/symbolic links without first deleting
+some already there. The default number of inodes is a third the partition size
+in K. If you want to create more then use the '-i' option followed by the number
+you want. You can have at most 65535 inodes on a filesystem. The default will
+almost always suffice, but you can increase this if you will need more.
+
+        The -S option writes out part of the filesystem called the 'super
+block' only. If you accidentally wipe out the start of a partition then this
+option may allow some data to be salvaged. If the start of a partition is
+wiped out then the partition may not be even recognised as minix, so the -S
+option can help under these rare circumstances. Note: you must use exactly the
+same pararmeters you used to create the fileystem in the first place.
+
+        The -t option is a test option. It does almost everything needed to
+create a filesystem without writing anything. It also gives a status report
+of any options (e.g. XHDI support) the driver software may have. Use of '-t'
+is recommended before actually creating the partition; it wont harm anything.
+
+HUGE PARTITIONS
+	A *huge* partition is a partition where the logical sector size is
+bigger than 1K. In practice this means bigger than 64Mb (or 32Mb with some
+partitioning software). Unlike TOS filesystems when you create a Minixfs
+filesystem bigger than 64Mb the filesystem is still accessed in 1K blocks.
+In this sense if you create a 1 byte file when the logical sector size is
+e.g. 4K you use up 1K of the disk not the 8K (2 sectors) TOS filesystems
+would use.
+
+        If the partition you are creating is huge then you may have some
+problems. This is basically down to bugs and inconsistencies in driver
+software. I've tried to work around these as much as possible, but I can't
+guarantee anything. The rules are explained below, which should help if you 
+want to create such a partition and minit complains. Generally minit will
+complain if it can't find a work around for your software.
+
+        If the drive letter is A-P (inclusive) you should always be OK.  If 
+you are using software which conforms to XHDI  then you should also have no
+problems (and you might want to set the partition ID to MIX as well). If
+neither is the case then you may need to either obtain XHDI compatible disk
+software or repartition/reorder (set the ID's so the large partition is on
+the first hard drive) to make the large partition drive A-P.
+
+	The A-P restriction may be fixed in future versions of Minixfs if there
+is any demand (however it is rather tricky to do).
+
+RECREATING A TOS PARTITION
+
+	If you decide you want to turn a Minixfs partition back into a normal
+TOS partition then you can use the '-r' option. This will recreate a blank
+TOS filesystem on the partition selected. Certain hard disk software may not
+recognise the new filesystem, so always reboot after you use this option.
+
+Note: This option only works at present if you created the filesystem with
+a newer version of minit. If there is any demand I may add an option for it
+to work if the filesystem is older, by 'improvising' a bit.
+
+	Some hard disk software (e.g. ICD) and disk tools have an option to
+rebuild a single partition without disturbing the others. If you have such
+sofware then please use as opposed to the '-r' option. Such software will
+probably work under all circumstances (e.g. filesystems made with older minit
+versions). The primary reason I added the '-r' option was to allow people
+without partition rebuilding software to be saved the effort of reformatting
+or repartitioning their hard disks to get a TOS filesystem back.
+
+USING MINIT
+
+        After all the options must come a drive letter (either case) followed
+by a colon. You will then be given a warning, if you type 'y' or 'Y' then the
+process continues, otherwise it is aborted. If you are running Minixfs/MiNT
+the partition should be instantly recognisable. To check try using 'mfsconf'
+and you should get some status info about translation modes (see minixfs.doc).
+If you get the message 'drive X: is not minix' then there may be a problem.
+Try rebooting, if that doesn't work try recreating a TOS partition (there
+should be an option in you hard disk driver sofware to do this) and using
+minit without any protection options. If this still fails then your system
+hard disk driver software currently cannot use Minixfs partitions. Send me
+a report (see the file 'bugs.doc') and I'll see what I can do.
+
+WARNING: you should not make the partition you boot from or the partition that
+you load MiNT and minix.xfs a Minixfs partition. This is because TOS cannot boot
+a Minixfs partition or run MiNT/minix.xfs from a Minixfs partition.
+
+EXAMPLES
+
+Create a minixfs filesystem on drive A:
+
+minit A:
+
+Create a V2 filesystem on E:
+
+minit -V E:
+
+Create a V2 filesystem with increment 2 and null disk protection on drive D: 
+
+minit -V -d 2 -P D:
+
+Test the disk driver software used to access drive F:
+
+minit -t F:

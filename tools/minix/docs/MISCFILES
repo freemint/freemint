@@ -1,0 +1,15 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go both into source and binary distributions.
+
+MISCFILES = \
+	address.doc \
+	bugs.doc \
+	flist.doc \
+	fsck.doc \
+	latest.doc \
+	mfsconf.doc \
+	mfsdoc.doc \
+	minit.doc \
+	minixfs.doc \
+	readme.doc \
+	syscall.doc
