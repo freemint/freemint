@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -21,10 +23,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-10-31
- * last change:	2000-10-31
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2000-10-31
  * 
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.

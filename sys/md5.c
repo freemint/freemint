@@ -1,20 +1,20 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
+ * 
+ * 
  * md5.c dated 99/09/26
- *
+ * 
  * Implements MD5-message digest algorithm. Original file from Colin Plumb,
  * with minor modifications for MiNT.
- *
+ * 
  * BUGS: This is actually partially redundant code, as random.c also contains
  * MD5Tranform(), though it's currently disabled there, because random.c uses
  * SHA1.
- */
-
-/*
+ * 
+ * 
  * This code implements the MD5 message-digest algorithm.
  * The algorithm is due to Ron Rivest.  This code was
  * written by Colin Plumb in 1993, no copyright is claimed.
@@ -29,6 +29,7 @@
  * MD5Context structure, pass it to MD5Init, call MD5Update as
  * needed on buffers full of bytes, and then call MD5Final, which
  * will fill a supplied 16-byte array with the digest.
+ * 
  */
 
 # include "md5.h"

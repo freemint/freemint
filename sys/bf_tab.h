@@ -1,17 +1,19 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
+ * 
+ * 
  * bf_tab.h dated 99/09/19
- *
+ * 
  * The initial P- and S-boxes of the Blowfish cipher algorithm. Original file
  * by Bruce Schneier, with modifications to stop gcc from issuing warnings
  * about "missing braces around initializer".
+ * 
+ * 
+ * Blowfish P-box and S-box tables
  */
-
-/* bf_tab.h: Blowfish P-box and S-box tables */
 
 static ulong bf_P [bf_N + 2] =
 {

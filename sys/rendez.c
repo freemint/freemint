@@ -1,15 +1,15 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ * 
+ * 
  * Copyright 1991, 1992 Eric R. Smith
  * Copyright 1992 Atari Corporation.
  * All rights reserved.
- */
-
-/* 
+ * 
+ * 
  * The rendezvous: 
  * a little bit of message passing with a lot of synchronization.
  *
