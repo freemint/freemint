@@ -630,7 +630,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x015 */		cursconf,
 	/* 0x016 */	(Func)	settime,
 	/* 0x017 */		gettime,
-	/* 0x018 */		bioskeys,
+	/* 0x018 */	(Func)	bioskeys,
 	/* 0x019 */		NULL,
 	/* 0x01a */		NULL,
 	/* 0x01b */		NULL,
