@@ -11,6 +11,10 @@
 # include "mint/mint.h"
 # include "mint/proc.h"
 
+# define SHUT_POWER	0
+# define SHUT_BOOT	1
+# define SHUT_COLD	2
+# define SHUT_HALT	3
 
 long _cdecl sys_s_version	(void);
 long _cdecl sys_s_uper		(long new_ssp);
@@ -32,9 +36,5 @@ long _cdecl sys_s_ysconf	(int which);
 long _cdecl sys_s_alert		(char *msg);
 long _cdecl sys_s_uptime	(ulong *cur_uptim, ulong loadave[3]);
 long _cdecl sys_s_hutdown	(long restart);
-
-# if 0
-void shutdown (void);
-# endif
 
 # endif /* _dos_h */
