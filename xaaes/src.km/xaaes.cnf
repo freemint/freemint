@@ -73,7 +73,7 @@
 #
 # setenv name val ..... set up environment
 #
-#setenv 
+#setenv NAME value
 
 #
 # use $HOME in shell_find
@@ -147,11 +147,36 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #small_point=8
 
 #
-# the shell
-#
-shell = c:\thing\thing\thing.app
-
-#
 # start any other programs with run
 #
 #run = <path>\<application>
+
+#
+# system shell
+#
+
+#
+#---------- Thing -----------
+#
+setenv AVSERVER THING
+setenv FONTSELECT THING
+#
+setenv THINGDIR c:\thing\thing
+shell = c:\thing\thing\thing.app
+
+#
+#---------- Jinnee ----------
+#
+#setenv AVSERVER JINNEE
+#setenv FONTSELECT JINNEE
+#
+#shell = c:\jinnee\jinnee.app
+
+#
+#--------- Teradesk ---------
+#
+#setenv AVSERVER DESKTOP
+#setenv FONTSELECT DESKTOP
+#
+#shell = c:\desktop\desktop.app
+
