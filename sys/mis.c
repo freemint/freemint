@@ -62,8 +62,9 @@
 # include "dos.h"		/* p_umask(), p_domain() */
 # include "dosdir.h"		/* d_opendir(), d_readdir(), d_closedir(), f_symlink(), f_stat64(), ...*/
 # include "dosfile.h"		/* f_write() */
-# include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink(), QUANTUM */
+# include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
 # include "info.h"		/* national stuff */
+# include "init.h"		/* env_size(), _mint_delenv(), _mint_setenv() */
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_kthread.h"		/* kthread_create(), kthread_exit() */
 # include "proc.h"		/* struct proc */
@@ -80,7 +81,7 @@
 # define SH_VER_MAIOR	1
 # define SH_VER_MINOR	0
 
-# define COPYCOPY	"(c) 2003 Konrad M.Kokoszkiewicz (draco@atari.org)\n"
+# define COPYCOPY	"(c) 2003-2004 draco@atari.org\n"
 
 # define SHELL_MAXFN	1024L		/* max length of a filename */
 # define SHELL_MAXPATH	6144L		/* max length of a pathname */
@@ -92,12 +93,6 @@
 # define SEC_OF_YEAR	31556925L
 
 # define LINELEN	254
-
-/* A macro used to calculate the remaining free part of an
- * allocated block of memory (in other words, the difference
- * between the requested/used size and the size actually allocated).
- */
-# define RAM_PAD(x) (QUANTUM - (x % QUANTUM))
 
 /* Global variables */
 static short xcommands;		/* if 1, the extended command set is active */
@@ -165,114 +160,18 @@ dos2unix(char *p)
 	}
 }
 
-/* Helper routines for manipulating environment */
-static long
-env_size(char *var)
-{
-	long count = 1;			/* Trailing NULL */
-
-	while (var && *var)
-	{
-		while (*var)
-		{
-			var++;
-			count++;
-		}
-		var++;
-		count++;
-	}
-
-	return count;
-}
-
-/* shell_delenv() idea is borrowed from mintlib's del_env() */
+/* shell_delenv() */
 static void
 shell_delenv(const char *strng)
 {
-	char *name, *var;
-
-	/* find the tag in the environment */
-	var = _mint_getenv(_base, strng);
-	if (!var)
-		return;
-
-	/* if it's found, move all the other environment variables down by 1 to
-   	 * delete it
-         */
-	var -= (strlen(strng) + 1);
-	name = var + strlen(var) + 1;
-
-	do
-	{
-		while (*name)
-			*var++ = *name++;
-		*var++ = *name++;
-
-	} while (*name);
-
-	*var = 0;
-
-	sys_m_shrink(0, (long)_base->p_env, env_size(_base->p_env));
+	_mint_delenv(_base, strng);
 }
 
 /* shell_setenv() */
 static void
 shell_setenv(const char *var, char *value)
 {
-	char *env_str = _base->p_env, *new_env, *es, *ne;
-	long old_size, var_size;
-
-	/* If it already exists, delete it */
-	shell_delenv(var);
-
-	old_size = env_size(env_str);
-	var_size = strlen(var) + strlen(value) + 1;	/* '=' */
-
-	/* If there is enough place in the current environment,
-	 * don't reallocate it.
-	 */
-	if (RAM_PAD(old_size) >= var_size)
-	{
-		ne = env_str;
-
-		while (*ne)
-		{
-			while (*ne)
-				ne++;
-			ne++;
-		}
-	}
-	else
-	{
-		new_env = (char *)sys_m_xalloc(old_size + var_size, 3);
-
-		if (new_env == NULL)
-			return;
-
-		es = env_str;
-		ne = new_env;
-
-		/* Copy old env to new place */
-		while (*es)
-		{
-			while (*es)
-				*ne++ = *es++;
-			*ne++ = *es++;
-		}
-
-		_base->p_env = new_env;
-
-		sys_m_free((long)env_str);
-	}
-
-	/* Append new variable at the end */
-	strcpy(ne, var);
-	strcat(ne, "=");
-	strcat(ne, value);
-
-	/* and place the zero terminating the environment */
-	ne += strlen(ne);
-	*++ne = 0;
+	_mint_setenv(_base, var, value);
 }
 
 /* Split command line into separate strings, put their pointers
@@ -1560,8 +1459,6 @@ startup_shell(void)
 		DEBUG(("can't create \"shell\" kernel thread"));
 		return -1;
 	}
-
-	_base->p_env = init_env;
 
 	p->real_cmdline = (char *)&shell_cmdline;	/* fake cmdline */
 
