@@ -65,6 +65,6 @@ long		km_config	(long mode, long arg);
 # define KM_STAT_DUMP	1
 # define KM_TRACE_DUMP	2
 
-const char *	km_trace_lookup	(void *ptr, unsigned long *size);
+long		km_trace_lookup	(void *ptr, char *buf, unsigned long buflen);
 
 # endif /* _kmemory_h */
