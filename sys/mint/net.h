@@ -90,41 +90,43 @@ struct dom_ops
 {
 	short	domain;
 	struct dom_ops *next;
+	
 	long	(*attach)	(struct socket *s, short proto);
 	long	(*dup)		(struct socket *news, struct socket *olds);
 	long	(*abort)	(struct socket *s, enum so_state ostate);
 	long	(*detach)	(struct socket *s);
 	long	(*bind)		(struct socket *s, struct sockaddr *addr,
-				short addrlen);
+				 short addrlen);
 	
 	long	(*connect)	(struct socket *s, struct sockaddr *addr,
-				short addrlen, short flags);
+				 short addrlen, short flags);
 	
 	long	(*socketpair)	(struct socket *s1, struct socket *s2);
 	long	(*accept)	(struct socket *s, struct socket *new,
-			 	short flags);
+			 	 short flags);
 	
 	long	(*getname)	(struct socket *s, struct sockaddr *addr,
-			 	short *addrlen, short peer);
+			 	 short *addrlen, short peer);
 # define PEER_ADDR	0
 # define SOCK_ADDR	1
 	long	(*select)	(struct socket *s, short sel_type, long proc);
 	long	(*ioctl)	(struct socket *s, short cmd, void *arg);
 	long	(*listen)	(struct socket *s, short backlog);
-	long	(*send)		(struct socket *s, struct iovec *iov,
-				short niov, short block, short flags,
-				struct sockaddr *addr, short addrlen);
 	
-	long	(*recv)		(struct socket *s, struct iovec *iov,
-				short niov, short block, short flags,
-				struct sockaddr *addr, short *addrlen);
+	long	(*send)		(struct socket *s, const struct iovec *iov,
+				 short niov, short block, short flags,
+				 struct sockaddr *addr, short addrlen);
+	
+	long	(*recv)		(struct socket *s, const struct iovec *iov,
+				 short niov, short block, short flags,
+				 struct sockaddr *addr, short *addrlen);
 	
 	long	(*shutdown)	(struct socket *s, short flags);
 	long	(*setsockopt)	(struct socket *s, short level, short optname,
-			 	char *optval, long optlen);
+			 	 char *optval, long optlen);
 	
 	long	(*getsockopt)	(struct socket *s, short level, short optname,
-			 	char *optval, long *optlen);
+			 	 char *optval, long *optlen);
 };
 
 # endif /* __KERNEL__ */

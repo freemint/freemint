@@ -25,7 +25,7 @@ struct netinfo
 	BUF *	(*_eth_build_hdr) (BUF *, struct netif *, const char *, short);
 	short	(*_eth_remove_hdr) (BUF *);
 	
-	char	*fname;
+	const char *fname;
 	
 	long	(*_bpf_input) (struct netif *, BUF *);
 	

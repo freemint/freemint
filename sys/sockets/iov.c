@@ -15,7 +15,7 @@
 
 
 long
-iov2buf_cpy (char *buf, long nbytes, struct iovec *iov, short niov, long skip)
+iov2buf_cpy (char *buf, long nbytes, const struct iovec *iov, short niov, long skip)
 {
 	long cando, todo = nbytes;
 	
@@ -45,7 +45,7 @@ iov2buf_cpy (char *buf, long nbytes, struct iovec *iov, short niov, long skip)
 }
 
 long
-buf2iov_cpy (char *buf, long nbytes, struct iovec *iov, short niov, long skip)
+buf2iov_cpy (char *buf, long nbytes, const struct iovec *iov, short niov, long skip)
 {
 	long cando, todo = nbytes;
 	
