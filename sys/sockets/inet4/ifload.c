@@ -15,8 +15,9 @@
 # include "inetutil.h"
 # include "ifeth.h"
 
-# include <mint/basepage.h>
-# include <mint/config.h>
+# include "mint/basepage.h"
+# include "mint/config.h"
+# include "mint/emu_tos.h"
 
 
 struct netinfo netinfo =

@@ -10,7 +10,7 @@
 # include "in.h"
 # include "route.h"
 
-# include <mint/dcntl.h>
+# include "mint/sockio.h"
 
 
 static struct arp_entry	*arp_alloc (void);

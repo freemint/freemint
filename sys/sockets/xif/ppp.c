@@ -19,9 +19,11 @@
 # include "inet4/if.h"
 # include "inet4/in.h"
 
-# include <mint/dcntl.h>
-# include <mint/file.h>
-# include <mint/signal.h>
+# include "mint/dcntl.h"
+# include "mint/file.h"
+# include "mint/ioctl.h"
+# include "mint/signal.h"
+# include "mint/sockio.h"
 
 # include "ppp.h"
 # include "serial.h"

@@ -12,7 +12,9 @@
 
 # include "serial.h"
 
-# include <mint/basepage.h>
+# include "mint/basepage.h"
+# include "mint/ioctl.h"
+
 # include <mintbind.h>
 
 

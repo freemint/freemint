@@ -16,8 +16,8 @@
 # include "inet4/if.h"
 # include "inet4/in.h"
 
-# include <mint/config.h>
-# include <mint/dcntl.h>
+# include "mint/config.h"
+# include "mint/sockio.h"
 
 # include "slip.h"
 # include "serial.h"
