@@ -909,6 +909,7 @@ ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval
 			if (optlen != sizeof (long) || !optval)
 				return EINVAL;
 			opts->tos = (char) *(long *) optval;
+			return 0;
 		
 		case IP_TTL:
 			if (optlen != sizeof (long) || !optval)
