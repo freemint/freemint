@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _m68k_asm_spl_h
-# define _m68k_asm_spl_h
+# ifndef _mint_m68k_asm_spl_h
+# define _mint_m68k_asm_spl_h
 
 
 static inline __u16
@@ -63,4 +63,4 @@ spl (register __u16 sr)
 }
 
 
-# endif /* _m68k_asm_spl_h */
+# endif /* _mint_m68k_asm_spl_h */

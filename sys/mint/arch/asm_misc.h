@@ -11,8 +11,8 @@
  * All rights reserved.
  */
 
-# ifndef _m68k_misc_h
-# define _m68k_misc_h
+# ifndef _mint_m68k_misc_h
+# define _mint_m68k_misc_h
 
 
 /*
@@ -73,4 +73,4 @@
 })
 
 
-# endif /* _m68k_misc_h */
+# endif /* _mint_m68k_misc_h */

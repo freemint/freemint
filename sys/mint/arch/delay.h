@@ -32,8 +32,8 @@
  * 
  */
 
-# ifndef _m68k_asm_delay_h
-# define _m68k_asm_delay_h
+# ifndef _mint_m68k_asm_delay_h
+# define _mint_m68k_asm_delay_h
 
 # include "mint/ktypes.h"
 
@@ -94,4 +94,4 @@ udelay (register ulong usecs)
 # endif
 
 
-# endif /* _m68k_asm_delay_h */
+# endif /* _mint_m68k_asm_delay_h */

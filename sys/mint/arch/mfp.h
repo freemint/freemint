@@ -6,8 +6,8 @@
  * 
  */
 
-# ifndef _mfp_h
-# define _mfp_h
+# ifndef _mint_m68k_mfp_h
+# define _mint_m68k_mfp_h
 
 
 # ifndef MILAN
@@ -151,4 +151,4 @@ typedef struct
 # define scca		((SCC *) 0xff8c80L)
 # define sccb		((SCC *) 0xff8c84L)
 
-# endif /* _mfp_h */
+# endif /* _mint_m68k_mfp_h */

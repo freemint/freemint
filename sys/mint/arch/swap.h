@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _m68k_swap_h
-# define _m68k_swap_h
+# ifndef _mint_m68k_swap_h
+# define _mint_m68k_swap_h
 
 
 static inline __u32
@@ -50,4 +50,4 @@ __asm_swap32 (register __u32 x)
 # define HAVE_ASM_SWAP32
 
 
-# endif /* _m68k_swap_h */
+# endif /* _mint_m68k_swap_h */
