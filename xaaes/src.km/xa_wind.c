@@ -439,8 +439,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (mode != -1)
 			client->options.app_opts |= XAPP_XT_WF_SLIDE;
 
-		DIAGS(("wind_set(%d,WF_WHEEL,%d) for %s, %d, %d",
-			wind, pb->intin[2], c_owner(client), client->wa_wheel, w->wa_wheel ));
 		break;
 	}
 
