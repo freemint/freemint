@@ -1,6 +1,6 @@
 
-#ifndef _tw_share_h_
-#define _tw_share_h_
+#ifndef tw_share_h
+# define tw_share_h 1
 
 
 #define	SHARENAME	"u:\\shm\\tw-call.%d"
