@@ -285,7 +285,7 @@ L_ubios:
 L_1out:
 	addq.l	#2,sp
 L_0out:
-//	ori.w	#0x0700,sr		// spl7()
+	ori.w	#0x0400,sr		// spl7()
 	jsr	_leave_kernel		// does not change d0
 	rte				// return to user
 L_00:
@@ -403,7 +403,7 @@ nosleep:
 noreload2:
 	jsr	_check_sigs
 nosig:
-//	ori.w	#0x0700,sr		// spl7()
+	ori.w	#0x0400,sr		// spl7()
 	clr.l	_unwound_stack
 	jsr	_leave_kernel		// restore vectors (loads a0)
 	pea	4(a0)
@@ -518,7 +518,7 @@ put_buf:
 	move.b	d0,(a0) 		// store the character
 	addq.w	#1,d1
 	move.w	d1,_bconbsiz
-//	ori.w	#0x0700,sr		// spl7()
+	ori.w	#0x0400,sr		// spl7()
 	jsr	_leave_kernel		// restore vectors
 	moveq.l	#-1,d0			// return character output OK
 	rte

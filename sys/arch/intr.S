@@ -228,10 +228,10 @@ L_switch:
 // so no need to tst.w _in_kernel & stuff. Also, we don't need to increase
 // the IPL anymore.
 //
-	move.w	sr,d0
-	eor.w	d0,d7
-	and.w	#0x0700,d7
-	eor.w	d7,d0
+	move.w	sr,d0		// 2400 -> d0
+	eor.w	d0,d7		// 2400 eor 0000 = 2400 -> d7
+	and.w	#0x0700,d7	// 2400 and 0700 = 0400 -> d7
+	eor.w	d7,d0		// 0400 eor 2400 = 2000 -> d0
 	move.w	d0,sr		// vbl allowed again
 
 	jsr	_preempt		// yield processor
@@ -239,7 +239,7 @@ L_switch:
 // inlined leave_kernel()
 
 	move.l	_curproc,a0
-//	ori.w	#0x0700,sr
+	ori.w	#0x0400,sr		// block VBL
 	clr.w	_in_kernel
 	pea	4(a0)
 	jsr	_restore_context	// back to user (never returns)
@@ -356,9 +356,8 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 
 // The routine is called by TOS prior to processing the IKBD
 // keyboard scancode. The scancode byte is in d0.
-// BUG: not sure if this works on TOS < 2.0. The vector used
-//      seems not published (although it may be just a flaw
-//      in docs).
+// BUG: will not work on TOS < 2.0. The vector used is available
+//	since TOS 2.0.
 
 	.globl	_newkeys
 	.globl	_oldkeys
@@ -477,7 +476,7 @@ Do_sig:	move.l	a0,-(sp)		// save a0
 	bset	#0x07,_in_kernel
 	move.l	_sig_routine,a1 	// get signal handling routine
 	jsr	(a1)		// go do it
-//	ori.w	#0x0700,sr
+	ori.w	#0x0400,sr	// block VBL
 	jsr	_leave_kernel		// leave kernel
 	addq.w	#4,a4		// get context save area address
 	move.l	a4,-(sp)		// push it
