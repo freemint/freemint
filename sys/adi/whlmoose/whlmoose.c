@@ -97,7 +97,7 @@
 /****************************************************************************/
 /* BEGIN kernel interface */
 
-static struct kerinfo	*kernel;
+static struct kentry	*kentry;
 static struct adiinfo	*ainf;
 
 /* END kernel interface */
@@ -176,7 +176,7 @@ static struct adif moose_aif =
 #  define ALERT(x)	KERNEL_ALERT x
 # endif
 
-long _cdecl		init		(struct kerinfo *k, struct adiinfo *ai);
+long _cdecl		init		(struct kentry *k, struct adiinfo *ai);
 
 /* END definition part */
 /****************************************************************************/
@@ -568,11 +568,11 @@ gen_write(struct moose_data *md)
 #endif
 
 long _cdecl
-init (struct kerinfo *k, struct adiinfo *ainfo)
+init (struct kentry *k, struct adiinfo *ainfo)
 {
 	long ret;
 
-	kernel	= k;
+	kentry	= k;
 	ainf	= ainfo;
 
 	//c_conws (MSG_BOOT);
