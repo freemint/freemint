@@ -21,6 +21,7 @@
  *
  */
 
+# include "arch/detect.h"	/* verify_access() */
 # include "mint/mint.h"
 # include "mint/signal.h"	/* SIGQUIT */
 
@@ -29,7 +30,9 @@
 # include "debug.h"		/* do_func_key() */
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
+# include "dossig.h"		/* p_kill() */
 # include "init.h"		/* boot_printf() */
+# include "k_exec.h"		/* sys_pexec() */
 # include "k_fds.h"		/* fp_alloc() */
 # include "kmemory.h"		/* kmalloc() */
 # include "proc.h"		/* rootproc */
@@ -689,6 +692,23 @@ static const char sw_german_kbd[] =
  */
 typedef void (*KEYCLK)(void);
 
+/* Struct for the default action on C/A/D
+ */
+struct cad_def
+{
+	short	action;
+	union
+	{
+		long pid;	/* e.g. pid to be signalled */
+		char *path;	/* e.g. a path to executable file */
+	} par;
+	union
+	{
+		long arg;	/* e.g. signal number */
+		char *cmd;	/* e.g. command line */
+	} aux;
+};
+
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
 short 	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 
@@ -699,12 +719,30 @@ const char *keyboards[] =
 	0
 };
 
+struct cad_def cad[3];		/* for halt, warm and cold resp. */
+
 /* Routine called after the user hit Ctrl/Alt/Del
  */
 static void
 ctrl_alt_del(PROC *p, long arg)
 {
-	s_hutdown(arg);
+	switch(cad[arg].action)
+	{
+		case 1:			/* 1 is to signal a pid */
+			if (p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
+				s_hutdown(arg);
+			break;
+		case 2:			/* 2 shall be to exec a program
+					 * with a path pointed to by
+					 * par.path */
+			if (verify_access(cad[arg].par.path) && verify_access(cad[arg].aux.cmd))
+				if (sys_pexec(100, cad[arg].par.path, cad[arg].aux.cmd, 0L) < 0)
+					s_hutdown(arg);
+			break;
+		default:
+			s_hutdown(arg);	/* 0 is default */
+			break;
+	}
 }
 
 /* The handler
