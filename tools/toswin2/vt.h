@@ -17,8 +17,8 @@ void	curs_on		(TEXTWIN *v);
 void	curs_off	(TEXTWIN *v);
 void	clearalltabs	(TEXTWIN *v);
 
-void	vt100_putch	(TEXTWIN *v, int c);
-void	vt52_putch	(TEXTWIN *v, int c);
+void	vt100_putch	(TEXTWIN *v, unsigned int c);
+void	vt52_putch	(TEXTWIN *v, unsigned int c);
 
 void	original_colors (TEXTWIN *v);
 

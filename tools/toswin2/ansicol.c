@@ -37,7 +37,7 @@ static struct rgb ansi_colors[8 * 3] = {
 		{   94, 1000,   94 },	/* Bright green.  */
 	  	{   94,  698,   94 },	/* Green.  */
 	  	{   94,  408,   94 },	/* Half-bright (dimmed) green.  */
-#ifdef LINUX_YELLOW
+#if 1
 		/* This is the Linux console "yellow".  */
 		{ 1000, 1000,   94 },	/* Bright yellow.  */
 	  	{  698,  408,   94 },	/* Yellow.  */
