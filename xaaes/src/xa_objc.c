@@ -986,8 +986,14 @@ XA_objc_add(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		else
 			root[last_child].ob_next = new_child;
 
+/* 
+	JH: 04/15/2003 Incompatible with N.AES, TOS, etc... 
+	regarding to the objc_add documentation ob_head, ob_tail
+	has to be initialized by the application
+
 		root[new_child].ob_head = -1;
 		root[new_child].ob_tail = -1;
+*/
 
 		pb->intout[0] = 1;
 	}
