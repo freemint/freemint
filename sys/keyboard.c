@@ -54,6 +54,7 @@
 # include "k_fds.h"		/* fp_alloc() */
 # include "keyboard.h"		/* struct cad */
 # include "kmemory.h"		/* kmalloc() */
+# include "memory.h"		/* get_region(), attach_region() */
 # include "proc.h"		/* rootproc */
 # include "random.h"		/* add_keyboard_randomness() */
 # include "signal.h"		/* killgroup() */
@@ -146,10 +147,7 @@ static	ushort numidx;	/* index for the buffer (0 = empty, 3 = full) */
 
 /* keyboard table pointers */
 static struct keytab keytable_vecs;
-/* this is 0, if no external table was loaded,
- * or points to its buffer otherwise
- */
-static uchar *current_keytab;
+static MEMREGION *key_region;
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -585,21 +583,34 @@ fill_keystruct(uchar *table)
 	return 1;	/* OK */
 }
 
-static short
+static void
 load_table(FILEPTR *fp, char *name, long size)
 {
 	char *kbuf;
 	short ret = 0;
 	char msg[64];
+	MEMREGION *key_reg;
+
+	/* Special case: `load' the internal table */
+	if (!fp && !name && !size)
+	{
+		key_region = get_region(core, 387L, PROT_PR);
+		kbuf = (char *)attach_region(rootproc, key_region);
+		quickmove(kbuf, usa_kbd, 387L);
+		fill_keystruct((uchar *)kbuf);
+
+		return;
+	}
 
 	/* This is 128+128+128 for unshifted, shifted and caps
 	 * tables respectively; plus 3 bytes for three alt ones,
 	 * plus two bytes magic header, gives 389 bytes minimum.
 	 */
-	if (size < 389L) return 0;
+	if (size < 389L) return;
 
-	kbuf = kmalloc(size);
-	if (!kbuf) return 0;
+	/* Crap, the keyboard table must be globally readable :/ */
+	key_reg = get_region(core, size, PROT_PR);
+	kbuf = (char *)attach_region(rootproc, key_reg);
 
 	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
@@ -633,19 +644,21 @@ load_table(FILEPTR *fp, char *name, long size)
 	if (!ret)
 	{
 		c_conws(MSG_keytable_faulty);
-		kfree(kbuf);
-		return 0;
+		detach_region(rootproc, key_reg);
+		free_region(key_reg);
+		return;
 	}
 
 	/* Success */
-	if (current_keytab)
-		kfree(current_keytab);
-	current_keytab = (uchar *)kbuf;
+	if (key_region)
+	{
+		detach_region(rootproc, key_region);
+		free_region(key_region);
+	}
+	key_region = key_reg;
 
 	ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
 	c_conws(msg);
-
-	return 1;
 }
 
 void
@@ -666,13 +679,14 @@ load_keyboard_table(char *filename)
 
 	if (!do_open(&fp, name, O_RDONLY, 0, &xattr))
 	{
-		ret = load_table(fp, name, xattr.size);
+		load_table(fp, name, xattr.size);
 		do_close(rootproc, fp);
 	}
 	else
 	{
 		fp->links = 0;		/* suppress complaints */
 		FP_FREE(fp);
+		load_table(0, 0, 0);
 	}
 
 	/* Install the tables in the system */
