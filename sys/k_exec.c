@@ -316,7 +316,9 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		else
 		{
 			b->p_parent = curproc->base;
-
+# if 1
+			p = fork_proc(thread ? FORK_SHAREVM : 0, &r);
+# else
 			if (thread /* && (strcmp (curproc->name, "shutdown")) ??? */ )
 			{
 				p = fork_proc ( FORK_SHAREVM, &r);
@@ -325,6 +327,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			{
 				p = fork_proc (0, &r);
 			}
+# endif
 		}
 
 		if (!p)
