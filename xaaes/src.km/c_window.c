@@ -795,11 +795,16 @@ do_rootwind_msg(
 			
 			if (get_desktop()->owner == to && widg->display)
 			{
-				hidem();
-				set_clip((RECT *)&msg[4]);
-				widg->display(0, root_window, widg);
-				clear_clip();
-				showm();
+				//if (lock_screen(to, true, NULL, 3))
+				//{
+					lock_screen(to, false, NULL, 3);
+					hidem();
+					set_clip((RECT *)&msg[4]);
+					widg->display(0, root_window, widg);
+					clear_clip();
+					showm();
+					unlock_screen(to, 4);
+				//}
 			}
 			break;
 		}

@@ -313,7 +313,7 @@ get_boolarg(char *s, bool *result)
 		ret = 0;
 	}
 
-	if (ret > 0)
+	if (ret >= 0)
 	{
 		if (result)
 			*result = ret ? true : false;
@@ -472,8 +472,13 @@ pCB_app_options(const char *line)
 				
 			}
 		}
+		DIAGS(("opts = %lx (aesys=%lx, default=%lx)",
+			opts, (long)&C.Aes->options, (long)&default_options));
+
 		while ((s = get_commadelim_string(&line)))
 		{
+			DIAGS(("pCB_app_options: arg = '%s'", s));
+
 			if (!strnicmp(s, "windowner", 9))
 				get_boolarg(s + 9, &opts->windowner);
 			else if (!strnicmp(s, "nohide", 6))
@@ -716,6 +721,25 @@ pCB_run(const char *path, const char *line, struct parsinf *inf)
 #define CNF_NAME "xaaes.cnf"
 #endif
 
+#if GENERATE_DIAGS
+static void
+diags_opts(struct options *o)
+{
+	DIAGS(("        windowner  = %s", o->windowner ? "true" : "false"));
+	DIAGS(("        nohide     = %s", o->nohide    ? "true" : "false"));
+	DIAGS(("        naes       = %s", o->naes      ? "true" : "false"));
+	DIAGS(("        naes12     = %s", o->naes12    ? "true" : "false"));
+
+	DIAGS(("        xa_nohide  = %s", o->xa_nohide ? "true" : "false"));
+	DIAGS(("        xa_nomove  = %s", o->xa_nomove ? "true" : "false"));
+	DIAGS(("        noleft     = %s", o->noleft    ? "true" : "false"));
+	DIAGS(("        thinwork   = %s", o->thinwork  ? "true" : "false"));
+	DIAGS(("        nolive     = %s", o->nolive    ? "true" : "false"));
+	DIAGS(("        winframe   = %d", o->thinframe));
+}
+
+#endif
+
 void
 load_config(void)
 {
@@ -737,23 +761,18 @@ load_config(void)
 		struct opt_list *op = S.app_options;
 
 		DIAGS(("Options for:"));
+		DIAGS(("    AESSYS"));
+		diags_opts(&C.Aes->options);
+		DIAGS(("    DEFAULT"));
+		diags_opts(&default_options);
+		
 		while (op)
 		{
 			DIAGS(("    '%s'", op->name));
-			DIAGS(("        windowner  = %s", op->options.windowner ? "true" : "false"));
-			DIAGS(("        nohide     = %s", op->options.nohide    ? "true" : "false"));
-			DIAGS(("        naes       = %s", op->options.naes      ? "true" : "false"));
-			DIAGS(("        naes12     = %s", op->options.naes12    ? "true" : "false"));
-
-			DIAGS(("        xa_nohide  = %s", op->options.xa_nohide ? "true" : "false"));
-			DIAGS(("        xa_nomove  = %s", op->options.xa_nomove ? "true" : "false"));
-			DIAGS(("        noleft     = %s", op->options.noleft    ? "true" : "false"));
-			DIAGS(("        thinwork   = %s", op->options.thinwork  ? "true" : "false"));
-			DIAGS(("        nolive     = %s", op->options.nolive    ? "true" : "false"));
-			DIAGS(("        winframe   = %d", op->options.thinframe));
-
+			diags_opts(&op->options);
 			op = op->next;
 		}
 	}
 #endif
 }
+
