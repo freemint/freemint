@@ -437,7 +437,7 @@ pCB_gem_init(const char *path, const char *line, long val)
 		strcpy(init_prg, path);
 		strncpy(init_tail +1, line, 125);
 		init_tail[126] = '\0';
-		init_tail[0]	 = strlen(init_tail +1);
+		init_tail[0] = strlen(init_tail +1);
 	}
 }
 
@@ -447,8 +447,8 @@ pCB_hide_b(bool onNoff)
 {
 	if (onNoff)
 	{
-		*((long *)0x4c2L) &= ~2;   /* change BIOS map */
-		dosdrvs &= ~2;	     /* already initalized here */
+		*((long *)0x4c2L) &= ~2;	/* change BIOS map */
+		dosdrvs &= ~2;			/* already initalized here */
 	}
 }
 
@@ -499,7 +499,7 @@ pCB_newfatfs(unsigned long list, struct parsinf *inf)
 			fatfs_config(drv, FATFS_DRV, ENABLE);
 		}
 		list >>= 1;
-		drv	+= 1;
+		drv += 1;
 	}
 	if (flag)
 		boot_printf("\r\n");
@@ -568,7 +568,7 @@ pCB_vfat(unsigned long list, struct parsinf *inf)
 			fatfs_config(drv, FATFS_VFAT, ENABLE);
 		}
 		list >>= 1;
-		drv	+= 1;
+		drv += 1;
 	}
 
 	if (flag)
@@ -605,7 +605,7 @@ pCB_wb_enable(unsigned long list, struct parsinf *inf)
 			bio.config(drv, BIO_WB, ENABLE);
 		}
 		list >>= 1;
-		drv	+= 1;
+		drv += 1;
 	}
 
 	if (flag)
@@ -635,7 +635,7 @@ pCB_writeprotect(unsigned long list, struct parsinf *inf)
 			bio.config(drv, BIO_WP, ENABLE);
 		}
 		list >>= 1;
-		drv	+= 1;
+		drv += 1;
 	}
 
 	if (flag)
@@ -647,11 +647,11 @@ static void
 pCB_set(const char *line, struct parsinf *inf)
 {
 	unsigned long opt = 0UL;
-	char  onNoff;
+	char onNoff;
 
 	while ((onNoff = *line))
 	{
-		if (onNoff != '-'  &&  onNoff != '+')
+		if (onNoff != '-' && onNoff != '+')
 		{
 			break;
 		}
@@ -671,7 +671,7 @@ pCB_set(const char *line, struct parsinf *inf)
 			else
 			{
 				if (onNoff == '-') opt |=  SET(c);
-				else	       opt &= ~SET(c);
+				else opt &= ~SET(c);
 			}
 
 			while (isspace(*(++line)))
@@ -679,7 +679,7 @@ pCB_set(const char *line, struct parsinf *inf)
 		}
 	}
 
-	if (*line  &&	*line != '#')
+	if (*line && *line != '#')
 		parser_msg(inf, MSG_cnf_invalid_arg);
 	else
 		inf->opt = opt;
