@@ -43,9 +43,9 @@
 # include "dos.h"	/* */
 # include "dosdir.h"	/* */
 # include "filesys.h"	/* init_filesys, s_ync, close_filesys */
-#ifdef FLOPPY_ROUTINES
+# ifdef FLOPPY_ROUTINES
 # include "floppy.h"	/* init_floppy */
-#endif
+# endif
 # include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
 # include "ipc_socketutil.h" /* domaininit() */
@@ -55,7 +55,9 @@
 # include "keyboard.h"	/* init_keytbl() */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
+# ifdef BUILTIN_SHELL
 # include "mis.h"	/* startup_shell */
+# endif
 # include "module.h"	/* load_all_modules */
 # include "proc.h"	/* init_proc, add_q, rm_q */
 # include "signal.h"	/* post_sig */
@@ -1202,8 +1204,10 @@ init (void)
 		if (r < 0)
 			boot_printf(MSG_couldnt_run_init, shellpath, r);
 
+# ifdef BUILTIN_SHELL
 		if (r <= 0)
 			r = startup_shell();	/* r is the shell's pid */
+# endif
 
 		/* Everything failed. Halt. */
 		if (r <= 0)
