@@ -558,6 +558,8 @@ static void
 handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
 	char parms[200], *t;
+
+	display(" '%s' '%s'", path, file);
 	
 	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
 	parms[0] = '\0';

@@ -517,7 +517,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 
 			WA += orient & 1;
 
-			if (is_topped(wind))
+			if (wind == nolist_list || is_topped(wind))
 			{
 				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 				OBJECT *obtree;
@@ -525,17 +525,17 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 				
 				if (wt && (obtree = wt->tree))
 				{
-					//display("got toolbar - wt %lx", wt);
-					//display("got object tree %lx", obtree);
+				//	display("got toolbar - wt %lx", wt);
+				//	display("got object tree %lx", obtree);
 					obj = obj_find(wt, 0, 10, md->x, md->y, NULL);
-					//display("found obj %d, type = %d", obj, obtree[obj].ob_type);
+				//	display("found obj %d, type = %d", obj, obtree[obj].ob_type);
 					if (obj > 0 && (obtree[obj].ob_type & 0xff) == G_SLIST)
 					{
 						struct scroll_info *list = object_get_slist(obtree + obj);
 						
-						//display("object is slist");
+				//		display("object is slist");
 						amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
-						whlarrowed(list->wi, WA, amount, NULL/*md*/);
+						whlarrowed(list->wi, WA, amount, md);
 						slist = true;
 					}
 				}
