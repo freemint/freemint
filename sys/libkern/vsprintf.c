@@ -99,7 +99,7 @@ PUTL (char *p, long *cnt, ulong u, int base, int width, int fill_char)
 	
 	do {
 		*t++ = "0123456789ABCDEF"[u % base];
-		u /= base;
+		(long)u /= base;
 		width--;
 	}
 	while (u > 0);
