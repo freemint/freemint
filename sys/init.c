@@ -1005,13 +1005,13 @@ init (void)
 
 	/* print the warning message if MP is turned off */
 	if (no_mem_prot && mcpu > 20)
-		c_conws(memprot_warning);
+		sys_c_conws(memprot_warning);
 
 	/* initialize delay */
 	{
 		char buf[128];
 
-		c_conws(MSG_init_delay_loop);
+		sys_c_conws(MSG_init_delay_loop);
 
 		calibrate_delay();
 
@@ -1020,12 +1020,12 @@ init (void)
 			(loops_per_sec + 2500) / 500000,
 			((loops_per_sec + 2500) / 5000) % 100);
 
-		c_conws(buf);
+		sys_c_conws(buf);
 	}
 
 	/* initialize internal xdd */
 # ifdef DEV_RANDOM
-	c_conws(random_greet);
+	sys_c_conws(random_greet);
 # endif
 
 	/* initialize built-in domain ops */
@@ -1040,7 +1040,7 @@ init (void)
 # endif
 
 	/* Make newline before external modules print out own messages */
-	c_conws("\r\n");
+	sys_c_conws("\r\n");
 
 	/* load the kernel modules */
 	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
@@ -1309,8 +1309,8 @@ mint_thread(void *arg)
 				sleep(WAIT_Q, (long)init);
 				// LPSTOP don't work (at least on Milan060)
 				// if (mcpu == 60)
-				// 	cpu_lpstop();	/* low power stop and wait for an interrupt */
-				// else
+				//	cpu_lpstop();	/* low power stop and wait for an interrupt */
+				//else
 					cpu_stop();	/* stop and wait for an interrupt */
 			}
 # else
