@@ -52,6 +52,7 @@
 # define TRAP_Dfree(buf,d)			Dfree(buf,d)
 # define TRAP_Dcreate(path)			Dcreate(path)
 # define TRAP_Ddelete(path)			Ddelete(path)
+# define TRAP_Dsetpath(path)			Dsetpath(path)
 # define TRAP_Fcreate(fn,mode)			Fcreate(fn,mode)
 # define TRAP_Fopen(filename,mode)		Fopen(filename,mode)
 # define TRAP_Fclose(handle)			Fclose(handle)

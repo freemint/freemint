@@ -161,7 +161,8 @@ extern const char *MSG_init_menu_norn;
 extern const char *MSG_init_bootmenu;
 extern const char *MSG_init_menuwarn;
 extern const char *MSG_init_hitanykey;
-extern const char *MSG_must_be_auto;
+extern const char *MSG_init_must_be_auto;
+extern const char *MSG_init_no_mint_folder;
 extern const char *MSG_init_delay_loop;
 # ifdef VERBOSE_BOOT
 extern const char *MSG_init_mp;
