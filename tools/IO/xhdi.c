@@ -49,7 +49,7 @@
 # include <stdlib.h>
 # include <errno.h>
 # include <mintbind.h>
-# include <sys/cookie.h>
+# include <mint/cookie.h>
 
 
 /*
