@@ -1,0 +1,48 @@
+
+Die Installation ist normalerweise recht einfach:
+
+- einfach den richtigen MiNT Kernel in den AUTO Ordner kopieren
+- eine eventuell vorhandene Ñltere Versionen aus dem AUTO Ordner entfernen
+- wenn man nicht mit Memory Protection arbeiten will muû man den
+  Kernel in 'mintnp.prg' umbenennen; mit Memory Protection
+  sollte der Kernel dementsprechend irgendwie anders heiûen.
+
+Achtung: Dieses offizielle Release enthÑlt nicht wie die letzte
+         Beta Version ein BOOT MenÅ. Stattdessen wird der
+         gewohnte Namensmechanismus zur Aktivierung/Deaktivierung
+         der Memory Protection benutzt.
+         
+         Also mintnp.prg zum Ausschalten der Memory Protection,
+         mint.prg zum Aktivieren.
+
+Zur Konfiguration bitte CONFIG.ger lesen.
+
+Weiterhin ist es empfehlenswert FSetter und MiNTSetter zu installieren.
+FSetter lÑuft als ACC und PRG. MiNTSetter nur als ACC.
+
+FSetter und MiNTSetter findet man im util/ Verzeichnis.
+
+mint000.prx - 68000 kernel fÅr die ST Serie und Emulatoren
+mint030.prx - 68030 kernel fÅr alle 030 ATARIs
+mint040.prx - 68040/68060 kernel fÅr alle 040/060 ATARIs auûer dem Milan
+mintmil.prx - 68040 kernel fÅr den Milan
+mintnp.prx  - 68030 debug kernel mit debug code
+              (der debug code bremst die Performance)
+
+Tips & Tricks::
+
+- NVDI muû immer vor FreeMiNT gestartet werden
+
+- WDIALOG muû immer nach FreeMiNT gestartet werden, am besten sogar nach dem
+  Starten des AES
+  WDIALOG ist leider ein ziemlich unsauberes Programm und arbeitet bspw. sehr
+  schlecht unter Memory Protection (Flags auf global setzen hilft nur
+  begrenzt).
+
+  Es wird empfohlen soweit es geht auf Wdialog zu verzichten!
+
+- Freedom ist ebenfalls ein sehr unsauberes Programm. Es treten Åber kurz oder
+  lang ziemlich merkwÅrdige Probleme auf die auf Freedom zurÅckzufÅhren sind.
+  Das System wird dadurch recht instabil.
+  
+  Es wird von dem Einsatz von Freedom unter MiNT in jedem Fall abgeraten!

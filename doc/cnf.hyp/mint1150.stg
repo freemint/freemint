@@ -1,0 +1,2068 @@
+@database "MiNT 1.15.0"
+@author   AltF4
+@subject  Documentation/Programming
+@$VER: mint1150.stg 1.00 (heute)
+@OPTIONS  "-t3 -d0"
+
+
+###########################################################################
+@INDEXOFF
+@NODE  "Main" "MiNT 1.15.0"
+@NEXT  "Main"
+@ALIAS "MiNT"
+
+@{B}MINT.CNF@{b}
+	BIOSBUF    CACHE     DEBUG_DEVNO  DEBUG_LEVEL  FASTLOAD   HIDE_B
+	MAXMEM     NEWFATFS  SECURELEVEL  SLICES       VFAT       VFATLCASE
+	WB_ENABLE
+@if 0
+@{B}mint-doc@{b}
+	README  mint.doc
+	block_io.doc   fatfs.doc      minttime.doc   ssystem.doc
+	timezone.doc 
+	appendix.a     appendix.b     appendix.c     appendix.d     appendix.e
+@endif
+
+@{B}Manual Pages@{b}
+	man.1  man.2  man.3  man.4  man.5  man.6  man.7  man.8
+
+@ENDNODE
+@INDEXON
+
+
+###########################################################################
+@NODE "MINT.CNF"
+@NEXT "MINT.CNF"
+@PREV "MINT.CNF"
+##@SYMBOL air "MINT.CNF"
+@SYMBOL a   "mint.cnf"
+MINT.CNF keywords                                                      MiNT
+@LINE 1 75 0
+
+@SYMBOL air SECURELEVEL
+@{B}SECURELEVEL@{b}={0|1|2}   @{I}default: 0@{i}
+	enables the appropriate security level:
+	0 - recommended for single user setups, like MultiTOS.
+	1 - recommended for multiuser setups, like KGMD.
+	2 - full protection, unsupported by software, thus discouraged.
+
+
+@SYMBOL air FASTLOAD
+@{B}FASTLOAD@{b}={YES|NO}   @{I}default: ???@{i}
+	YES - force  fast  loading  (without  zeroing  all  the  memory) for all
+	      programs. This defines a default state, that can be modified later
+	      via  appropriate kernel calls (a CPX for controlling this would be
+	      great).
+	NO  - means that the information from the program header will be used to
+	      decide (this is like TOS does).
+
+
+@SYMBOL air NEWFATFS
+@{B}NEWFATFS@{b}={[A]..[Z][0]..[5]}   @{I}default: -none-@{i}
+	enables  the new FAT filesystem driver for selected FAT filesystems. The
+	old TOS FS will be used otherwise.
+
+@SYMBOL air VFAT
+@{B}VFAT@{b}={[A]..[Z][0]..[5]}   @{I}default: -none-@{i}
+	enables  VFAT  extension  for selected drives specified in the NEWFATFS=
+	command.
+
+@SYMBOL air WB_ENABLE
+@{B}WB_ENABLE@{b}={[A]..[Z][0]..[5]}   @{I}default: -none-@{i}
+	enables write back cache for selected NEWFATFS drives.
+
+@SYMBOL air CACHE
+@{B}CACHE@{b}={???..???}   @{I}default: ?500?@{i}
+	specifies  the  size of disk cache in kilobytes for the internal caching
+	module
+
+@SYMBOL air VFATLCASE
+@{B}VFATLCASE@{b}={y|n}   @{I}default: y@{i}
+	force return of FAT names in lower case on VFAT drives global option
+	for programs that run in the MiNT domain.
+
+
+@SYMBOL air HIDE_B
+@{B}HIDE_B@{b}={YES|NO}   @{I}default: NO@{i}
+	remove drive B: completely, avoid all 'please insert disk B:' messages.
+
+
+@SYMBOL air MAXMEM
+@{B}MAXMEM@{b}={???..???}   @{I}default: -unlimited-@{i}
+	gives  the  maximum  amount  of  memory  that  any  process  may use (in
+	kilobytes). The default is to make this unlimited, but if you have a lot
+	of  memory  and/or  programs that grab more memory than they should, try
+	setting this.
+	Decent shells (desktops) allow you to limit the maximum amount of memory
+	independently for each program.
+
+
+@SYMBOL air SLICES
+@{B}SLICES@{b}={1..???}   @{I}default: 2@{i}
+	controls  how  long  a process  may  run  before  being interrupted. The
+	default value (2) is usually best, but if you tend to run very processor
+	intensive applications in the foreground, you might want to put SLICES=3
+	(this makes cpu hogs get more time than they otherwise would).
+	The  higher  the  SLICES value, your processes have faster response time
+	but the general performance is worse.
+
+
+@SYMBOL air DEBUG_LEVEL
+@{B}DEBUG_LEVEL@{b}={0..?3?}   @{I}default: 0@{i}
+	controls output of debugging information. The higher the level, the more
+	stuff  @{"MiNT" ignore}  will  spew  about what it's doing. The average user doesn't
+	want to hear about this stuff, so the default is 0.
+
+@SYMBOL air DEBUG_DEVNO
+@{B}DEBUG_DEVNO@{b}={0..5}   @{I}default: 2@{i}
+	is  the  BIOS  device number to which the info should be sent. Devno can
+	be: 0=printer, 1=aux/modem, 2=screen(console), 3=midi, 4=keybrd, 5=raw.
+
+
+@SYMBOL air BIOSBUF
+@{B}BIOSBUF@{b}={yes|no}   @{I}default: yes@{i}
+	controls  how BIOS I/O is performed. Normally, @{"MiNT" ignore} tries to buffer this
+	to   provide   a (considerable)  improvement  in  speed.  However,  some
+	applications  may  get upset by this. BIOSBUF=no turns off all buffering
+	for maximum compatibility.
+
+@ENDNODE
+
+
+
+###########################################################################
+@if 0
+@INDEXOFF
+@NODE "mint-doc"
+mint-doc files                                                         MiNT
+@LINE 1 75 0
+
+README
+mint.doc
+	block_io.doc   fatfs.doc             minttime.doc   ssystem.doc
+	timezone.doc 
+appendix.a     appendix.b     appendix.c     appendix.d     appendix.e
+
+@ENDNODE
+@INDEXON
+#-------------------------------------------------------------------------#
+@INDEXOFF
+@NODE "README"
+README.doc                                                   MiNT: mint-doc
+@LINE 1 75 0
+
+@width 100
+@AUTOREFOFF
+@INCLUDE /home/projects/mint_1.15.0/doc/README.doc
+@width 75
+@AUTOREFON
+
+@ENDNODE
+@INDEXON
+
+#-------------------------------------------------------------------------#
+@INDEXOFF
+@NODE "mint.doc"
+mint.doc                                                     MiNT: mint-doc
+@LINE 1 75 0
+
+@width 100
+@INCLUDE /home/projects/mint_1.15.0/doc/mint.doc
+@width 75
+
+@ENDNODE
+@INDEXON
+@endif
+
+
+###########################################################################
+@INDEXOFF
+@NODE "Manual Pages"
+@NEXT "Manual Pages"
+@PREV "Manual Pages"
+@SYMBOL a   "Manual Pages"
+Manual Pages                                                           MiNT
+@LINE 1 75 0
+
+@{B}man.1: User programs@{b}
+
+@{B}man.2: System calls@{b}
+	Dclosedir  Dcntl       Dgetcwd      Dlock        Dopendir    Dpathconf
+	Dreaddir   Dreadlabel  Drewind      Dwritelabel  Fchmod      Fchown
+	Fcntl      Fgetchar    Finstat      Flink        Fmidipipe   Foutstat
+	Fpipe      Fputchar    Freadlink    Fselect      Fsymlink    Fxattr
+	Itimer     Pause       Pdomain      Pfork        Pgetegid    Pgeteuid
+	Pgetgid    Pgetpgrp    Pgetpid      Pgetppid     Pgetuid     Pkill
+	Pmsg       Pnice       Prenice      Prusage      Psemaphore  Psetgid
+	Psetlimit  Psetpgrp    Psetuid      Psigaction   Psigblock   Psigmask
+	Psignal    Psigpause   Psigpending  Psigreturn   Pumask      Pusrval
+	Pvfork     Pwait       Pwait3       Salert       Syield      Sysconf
+	Talarm     Tsetitimer
+
+@{B}man.3@{b}: Library functions and subroutines
+
+@{B}man.4@{b}: Special files
+
+@{B}man.5@{b}: File formats
+	
+@{B}man.6@{b}: Games
+
+@{B}man.7@{b}: Miscellaneous
+
+@{B}man.8@{b}: System administration
+
+@ENDNODE
+@INDEXON
+
+
+
+#=========================================================================#
+@INDEXOFF
+@NODE     "man.2"
+@NEXT     "man.2"
+@PREV     "man.2"
+man.2: System calls                                      MiNT: Manual Pages
+@LINE 1 75 0
+
+Dclosedir   - close a directory
+Dcntl       - perform file system specific operation on a file or directory
+Dgetcwd     - get current working directory for a process
+Dlock       - lock or unlock a BIOS disk device
+Dopendir    - open a directory for reading
+Dpathconf   - get information about file system configuration
+Dreaddir    - read directory information
+Dreadlabel  - read filesystem label
+Drewinddir  - rewind an open directory
+Dwritelabel - set filesystem label
+
+Fchmod      - set file access permissions
+Fchown      - change a file's ownership
+Fcntl       - perform various control operations on a file
+Fgetchar    - read a character from a file
+Finstat   
+Flink    
+Fmidipipe  
+Foutstat
+Fpipe   
+Fputchar  
+Freadlink  
+Fselect     - select file descriptors that are ready for reading or writing
+Fsymlink  
+Fxattr      - get extended attributes for a file
+
+@{"Itimer" ignore}           @{I}see Tsetitimer@{i}
+
+Pause       - suspend process until a signal is received
+Pdomain     - get or set process execution domain
+Pfork       - create a copy of the current process
+@{"Pgetegid" ignore}    - get the effective group id  (@{I}see Pgetuid(2)@{i})
+@{"Pgeteuid" ignore}    - get the effective user id   (@{I}see Pgetuid(2)@{i})
+@{"Pgetgid" ignore}     - get the current group id    (@{I}see Pgetuid(2)@{i})
+Pgetpgrp    - get the current process group number
+Pgetpid     - get the current process id
+Pgetppid    - get the process id for the parent of the current process
+Pgetuid     - get the current user id
+Pkill
+Pmsg     
+Pnice   
+Prenice    
+Prusage    
+Psemaphore
+@{"Psetgid" ignore}     - change a process' group id  (@{I}see Psetuid(2)@{i})
+Psetlimit
+Psetpgrp 
+Psetuid     - change a process' user id
+Psigaction 
+Psigblock 
+Psigmask         @{I}see Psigblock(2)@{i}
+Psignal  
+Psigpause 
+Psigpending
+Psigreturn 
+Pumask    
+Pusrval
+Pvfork   
+Pwait            @{I}see Pwait3(2)@{i}
+Pwait3   
+
+Salert    
+Syield      - give up the processor
+Sysconf     - get information about operating system configuration
+
+Talarm      - schedule an alarm to occur
+Tsetitimer  - schedule an interval timer
+
+@ENDNODE
+@INDEXON
+
+
+#-------------------------------------------------------------------------#
+@NODE     "Dclosedir(2)"
+@PREV     "Dclosedir(2)"
+@SYMBOL a "Dclosedir"
+Dclosedir                                             MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Dclosedir@{u} - close a directory
+
+SYNOPSIS
+	LONG Dclosedir( LONG dirhandle );
+
+DESCRIPTION
+	@{U}Dclosedir@{u}  closes the directory whose handle (returned from Dopendir) is
+	@{I}dirhandle@{i}.
+
+RETURNS
+	0       on success
+	EIHNDL  if @{I}dirhandle@{i} is not valid
+
+SEE ALSO:
+	Dopendir(2), Dreaddir(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dcntl(2)"
+@SYMBOL a "Dcntl"
+Dcntl                                                 MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.08           Aug. 5, 1993@{i}
+
+NAME
+	@{U}Dcntl@{u} - perform a file system specific operation on a file or directory
+
+SYNOPSIS
+	#include <filesys.h>
+
+	LONG Dcntl( WORD cmd, char *name, LONG arg);
+
+DESCRIPTION
+	@{U}Dcntl@{u}  performs  a file  system specific command, given by @{I}cmd@{i} upon the
+	file  or directory specified by @{I}name@{i}. The exact nature of the operation
+	performed  depends  upon  the  file  system  on which @{I}name@{i} resides. The
+	interpretation  of the  third  argument @{I}arg@{i} depends  upon  the specific
+	command.
+
+	The  only  built-in  file systems which support @{U}Dcntl@{u} operations are the
+	device file system U:\DEV and the unified file system U:\.
+
+	U:\ understands the following commands:
+
+@SYMBOL air "FS_INSTALL" "fs_descr"
+@SYMBOL ar  "struct fs_descr"
+	FS_INSTALL
+		Installs  a new file system. @{I}name@{i} must be U:\, and @{I}arg@{i} is a pointer
+		to an fs_descr structure, which has the following format:
+
+@LINE 8 0 10 0 7
+			struct fs_descr {
+				FILESYS *file_system;   @{I}points to the file system structure for
+				                        this file system@{i}
+				short   dev_no;         @{I}device   number  for a particular mount
+				                        point;  filled in if an @{U}FS_MOUNT@{u}@{U}Dcntl@{u}
+				                        call is made@{i}
+				long    flags;          @{I}may   be  used  by  the file system for
+				                        whatever it wants@{i}
+				long    reserved[4];    @{I}reserved by the kernel@{i}
+			};
+
+		If  the  @{U}FS_INSTALL@{u}  call  is  successful,  a  pointer  to  a  kernel
+		information structure (struct kerinfo) is returned; otherwise, a NULL
+		pointer is returned. Note that even if the call is successful and the
+		file  system  is installed,  it is  still not accessible until it has
+		been given a name with @{U}FS_MOUNT@{u}.
+
+@SYMBOL air "FS_MOUNT"
+	FS_MOUNT
+		Mounts  an  already  existing  file  system into drive U:\. @{I}arg@{i} is a
+		pointer to an fs_descr structure describing the file system, and @{I}name@{i}
+		gives the name under which the file system may be accessed. After the
+		mount, the file systems "dev_no" field will be updated to reflect the
+		new,  kernel-assigned  device  number  for  this instance of the file
+		system.  This  allows  file  systems to be mounted multiple times. On
+		success,  the  (positive)  device  number  is returned; on failure, a
+		negative error number is returned.
+
+@SYMBOL air "FS_UNMOUNT"
+	FS_UNMOUNT
+		Removes  a mount  created  by  @{U}FS_MOUNT@{u}.  @{I}arg@{i} points to the fs_descr
+		structure  describing  the  file  system, and @{I}name@{i} is the name under
+		which the system is mounted.
+
+@SYMBOL air "FS_UNINSTALL"
+	FS_UNINSTALL
+		Removes  a file  system  completely  from  the  kernel.  This call is
+		allowed only if no remaining names exist for the file system, i.e. if
+		all  mount points have been removed by @{U}FS_UNMOUNT@{u}. @{I}arg@{i} points to the
+		fs_descr structure describing the file system, and @{I}name@{i} must be U:\.
+
+	U:\DEV understands the following commands:
+
+@SYMBOL air "DEV_INSTALL" "dev_descr"
+@SYMBOL ar  "struct dev_descr"
+	DEV_INSTALL
+		Installs a new device driver whose name is given by @{I}name@{i} (which must
+		be  the complete path and file name, e.g. U:\DEV\FOO). The device may
+		be accessed only through GEMDOS file operations; the BIOS will not be
+		aware of it. @{I}arg@{i} is a pointer to a device descriptor structure:
+
+@LINE 8 0 8 0 7
+			struct dev_descr {
+				DEVDRV *driver;       @{I}pointer to device driver structure@{i}
+				short	 dinfo;         @{I}placed in the "aux" field of file cookies@{i}
+				short	 flags;         @{I}either 0 or O_TTY@{i}
+				struct tty *tty;      @{I}if  flags&O_TTY, this  points  to the tty
+				                      structure associated with the device@{i}
+				long	 reserved[4];   @{I}reserved for future expansion -- set to 0@{i}
+			};
+
+		If the attempt to install the device is successful, @{U}Dcntl@{u} will return
+		a pointer  to a  structure  with type "struct kerinfo" that describes
+		the  kernel (see the documentation for loadable file systems for more
+		information on this structure). This structure is in protected memory
+		and  can be accessed only in supervisor mode. Moreover, the structure
+		is  read  only;  attempts  to  write to it will produce unpredictable
+		errors.  If  there  is not enough memory to install the new device, a
+		null pointer will be returned.
+	
+@SYMBOL air "DEV_NEWTTY"
+	DEV_NEWTTY
+		Installs  a driver for a new BIOS terminal device whose name is @{I}name@{i}
+		(this  must be the full path name, e.g. U:\DEV\BAR). @{I}arg@{i} is the BIOS
+		device number of this device. Note that the BIOS must  have been told
+		about the device already via the @{I}Bconmap@{i} system call or some similar
+		mechanism;  otherwise,  any attempt to access the file will result in
+		an  unknown  device  error  (EUNDEV). This command simply informs the
+		kernel  about  a BIOS  device that already exists, unlike @{U}DEV_INSTALL@{u}
+		which actually creates a new device.
+
+@SYMBOL air "DEV_NEWBIOS"
+	DEV_NEWBIOS
+		Installs  a driver  for  a new BIOS non-terminal device whose name is
+		@{I}name@{i} (this must be the full path name, e.g. U:\DEV\BAR). @{I}arg@{i} is the
+		BIOS  device number of this device. Note that the BIOS must have been
+		told  about  the  device already via the @{I}Bconmap@{i} system call or some
+		similar  mechanism;  otherwise,  any  attempt to access the file will
+		result  in  an  unknown  device error (EUNDEV). Like DEV_NEWTTY, this
+		command  informs  the  kernel  of the existence of a BIOS device. The
+		difference between the two commands is that @{U}DEV_NEWTTY@{u} should be used
+		for  devices  which  may  be  used  as  terminal devices (e.g. serial
+		ines),  whereas DEV_NEWBIOS is useful for devices for which data must
+		be  always  transmitted  "raw" (e.g. a SCSI tape device, or perhaps a
+		LAN device).
+ 
+RETURNS
+	The  value  returned depends on the specific operation requested and the
+	file  system  involved.  Generally,  a 0 or positive return value should
+	mean  success,  and  a negative  one  failure. An exception is the value
+	returned  by  @{U}DEV_INSTALL@{u},  which  is  either  a  pointer  to  a  kernel
+	information structure, or null on failure.
+
+SEE ALSO:
+	Bconmap(2), Fcntl(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dgetcwd(2)"
+@SYMBOL a "Dgetcwd"
+Dgetcwd                                               MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Dgetcwd@{u} - get current working directory for a process
+
+SYNOPSIS
+	LONG Dgetcwd(char *path, WORD drv, WORD size);
+
+DESCRIPTION
+	@{U}Dgetcwd@{u}  may  be  used  to retrieve the current working directory on the
+	indicated  drive  for  the current process. The directory is copied into
+	the buffer pointed to by @{I}path@{i}, which is at least @{I}size@{i} bytes long.
+
+RETURNS
+	0       on success
+	ERANGE  if the supplied buffer is not long enough to hold the path.
+	EDRIVE  if @{I}drv@{i} is not a valid GEMDOS drive.
+
+SEE ALSO:
+	Dgetpath(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dlock(2)"
+@SYMBOL a "Dlock"
+Dlock                                                 MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Dlock@{u} - lock or unlock a BIOS disk device
+
+SYNOPSIS
+	LONG Dlock( WORD mode, WORD drv );
+
+DESCRIPTION
+	@{U}Dlock@{u}  is  used  to lock or unlock the BIOS device indicated by @{I}drv@{i}. No
+	GEMDOS  file operations are permitted on a locked drive. Thus, the @{U}Dlock@{u}
+	call  provides  a mechanism for disk formatters or re-organizers to lock
+	out  other  processes  while  low-level  BIOS or XBIOS operations are in
+	progress on the device.
+
+	If  bit 0 of @{I}mode@{i} is 1, the drive is locked; if it is @{I}0@{i} then the drive
+	is  unlocked  and  may  be  used  again  by other programs. If a process
+	terminates  while holding a lock on a drive, that drive is automatically
+	unlocked.
+
+	Bit 1  of @{I}mode@{i} indicates what return values are desired. If this bit is
+	1,  and  if  the  drive  is  locked by a user process different from the
+	caller,  or  if  some  process  has  files  open on the drive, then that
+	process'  id  will be returned (see below). This may be used to report a
+	more  useful  error  message  to  the  user (by telling him or her which
+	process is using the drive in question when a lock operation fails).
+
+	All other bits of @{I}mode@{i} are reserved and must be set to 0.
+
+	A lock  operation followed immediately by an unlock is very similar to a
+	media change, except that the lock operation will fail if there are open
+	files that refer to the indicated drive.
+
+RETURNS
+	0        if the lock/unlock operation was successful
+	EDRIVE   if @{I}drv@{i} is not a valid BIOS device number
+
+	For a lock operation, the following error codes may be returned:
+
+	A positive process id if bit 1 of @{I}mode@{i} is set, and the drive is already
+	         locked or in use by another user process.
+
+	EACCDN   if  bit 1  of @{I}mode@{i} is clear and either open files exist on the
+	         drive or another process is searching a directory on the drive,
+	         or  if  bit 1  of  @{I}mode@{i}  is set and the drive is in use by the
+	         operating system.
+	ELOCKED  if  bit 1  of @{I}mode@{i} is clear and another process has locked the
+	         drive, or if bit 1 of @{I}mode@{i} is set and the operating system has
+	         locked the drive.
+
+	For an unlock operation the following error codes may be returned:
+
+	ENSLOCK  if @{I}mode@{i} is 0 and the drive was not locked by this process.
+
+SEE ALSO
+	Fxattr(2)
+
+NOTES
+	Note  that  @{U}Dlock@{u}  operates  on BIOS devices, which may not always be in
+	1-1  correspondence  with GEMDOS drive letters. For this reason, to lock
+	GEMDOS  drive A: (for example), the programmer should call Fxattr on the
+	root  directory  of  A:  ("A:\e")  and  then  use  the @{I}dev@{i} field of the
+	structure  returned  in order to determine the BIOS device corresponding
+	to the GEMDOS drive.
+
+BUGS
+	All  GEMDOS  operations  are  forbidden  on  a locked drive, even by the
+	process  that  created the lock. It would be useful to have a mode which
+	allowed the locking process (and only the locking process) to still make
+	GEMDOS  calls  on  the  drive, but unfortunately the structure of the OS
+	makes  this  difficult;  there  is  also  the above-mentioned difference
+	between BIOS and GEMDOS devices to consider.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dopendir(2)"
+@SYMBOL a "Dopendir"
+Dopendir                                              MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Dopendir@{u} - open a directory for reading
+
+SYNOPSIS
+	LONG Dopendir( char *name, WORD flag );
+
+DESCRIPTION
+	@{U}Dopendir@{u}  opens  the  directory  whose  name  is pointed to by @{I}name@{i} for
+	reading.  A 32 bit  directory  handle is returned which may be passed to
+	Dreaddir  to  actually  read  the  directory.  @{I}flag@{i}  controls  the  way
+	directory  operations are performed. If flag == 1, then the directory is
+	read in "compatibility" mode, if flag == 0 then directory operations are
+	performed in "normal" mode. In "compatibility" mode, file systems act as
+	if the @{I}Fsfirst@{i} and @{I}Fsnext@{i} functions were being used; in particular, if
+	it  is  possible  file  names  will be restricted to the DOS 8 character
+	name  + 3 character extension  convention, and will be in upper case. In
+	"normal"  mode,  file  systems  do  not attempt to restrict the range of
+	names.  Moreover, in this mode the Dreaddir system call will also return
+	a file  index  number  (similar to the Unix inode number) along with the
+	file name.
+
+	New programs should generally use "normal" mode where possible.
+
+RETURNS
+	A 32 bit directory handle,  on  success.  Note  that  this handle may be
+	        negative,  but  will never contain the pattern 0xFF in the upper
+	        byte,  whereas  all  errors do contain this pattern in the upper
+	        byte.
+	        Note  also that the handle must be treated by applications as an
+	        opaque  object: different kernel versions will treat the handles
+	        differently.
+
+	EPTHNF  if @{I}name@{i} is not a valid directory
+	EACCDN  if the directory is not accessible by this program
+	ENSMEM  if  the  kernel  is  unable  to  allocate  memory needed for the
+	        directory operations
+
+SEE ALSO:
+	 Dclosedir(2), Dreaddir(2), Drewinddir(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dpathconf(2)"
+@SYMBOL a "Dpathconf"
+Dpathconf                                             MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Dpathconf@{u} - get information about file system configuration
+
+SYNOPSIS
+	LONG Dpathconf( char *name, WORD mode );
+
+DESCRIPTION
+	@{U}Dpathconf@{u}  returns  information  about various limits or capabilities of
+	the  file  system  containing  the  file  named @{I}name@{i}. The variable @{I}mode@{i}
+	controls which limit or capability is being queried, as follows:
+
+@LINE 12 0 9
+		@{U}mode	Value Returned                                @{u}
+		 -1	max. legal value for n in Dpathconf(n)
+		  0	internal limit on the number of open files
+		  1	max. number of links to a file
+		  2	max. length of a full path name
+		  3	max. length of an individual file name
+		  4	number of bytes that can be written atomically
+		  5	information about file name truncation
+		  6	information about case sensitivity
+		@{B}Any more modes has to be inserted !!!@{b}
+
+	If any of these items are unlimited, then 0x7fffffffL is returned.
+
+	For  mode 5, return information about file name truncation, the returned
+	value has the following meaning:
+	
+	0  File  names  are never truncated; if the file name in any system call
+	   affecting this directory exceeds the maximum length (returned by mode
+	   3), then the error value ERANGE is returned from that system call.
+	
+	1  File names are automatically truncated to the maximum length.
+	
+	2  File  names are truncated according to DOS rules, i.e. to a maximum 8
+	   character base name and a maximum 3 character extension.
+
+	For  mode 6,  information about case sensitivity, the returned value has
+	the following meaning:
+
+	0  File system is case sensitive.
+	
+	1  File  system  is  case  insensitive, and file case information is not
+	   preserved (e.g. file names are always converted to upper case).
+	
+	2  File  system  is  case insensitive, but file names are saved with the
+	   case  they  were  originally given (e.g. file "FooBar" will appear in
+	   the  directory  under  that name, and may be accessed as "foobar" and
+	   "fOObaR", etc.).
+
+SEE ALSO:
+	Sysconf(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dreaddir(2)"
+@SYMBOL a "Dreaddir"
+Dreaddir                                              MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Dreaddir@{u} - read directory information
+
+SYNOPSIS
+	LONG Dreaddir( WORD len, LONG dirhandle, char *buf);
+
+DESCRIPTION
+	@{U}Dreaddir@{u}  returns  the next file in the directory whose handle (from the
+	Dopendir  system call) is @{I}dirhandle@{i}. The file's name and (optionally) a
+	4 byte  index  for  the file are placed in the buffer pointed to by @{I}buf.@{i}
+	The file index is omitted if the directory was opened in "compatibility"
+	mode (see Dopendir(2) for details); otherwise, it is placed first in the
+	buffer,  followed  by  the (null terminated) name. If two names have the
+	same  index, then they refer to the same file; the converse, however, is
+	not true.
+
+	@{I}len@{i}  is  the size of the buffer, in total; it should be large enough to
+	hold the index (if any), the file name, and the trailing 0.
+
+	Successive calls to @{U}Dreaddir@{u} will return all the names in the directory,
+	one  after another, unless the Drewinddir system call is used to restart
+	the reading at the beginning of the directory.
+
+RETURNS
+	0       if successful.
+	ERANGE  if  the  buffer  was  not  large  enough  to  hold the index (if 
+	        present) and the name.
+	ENMFIL  if there are no more file names to be read from the directory.
+
+SEE ALSO:
+	Dclosedir(2), Dopendir(2), Drewinddir(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dreadlabel(2)"
+@SYMBOL a "Dreadlabel"
+Dreadlabel                                            MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual          Version 1.11           Nov. 11, 1994@{i}
+
+NAME
+	@{U}Dreadlabel@{u} - read filesystem label
+
+SYNOPSIS
+	LONG Dreadlabel ( const char *path, char *label, WORD length );
+
+DESCRIPTION
+	@{U}Dreadlabel@{u}  returns  the  label for the filesystem specified by @{I}name@{i} in
+	@{I}label@{i}.  @{I}length@{i}  specifies  the length of the buffer to which @{I}label@{i} is
+	pointing.  Note  that  not all filesystems have labels. Examples are the
+	DOS or TOS filesystem, the Mac HFS filesystem and the ISO9660 filesystem
+	for CD ROMs.
+
+RETURNS
+	0             if successful,
+	ENAMETOOLONG  if the label won't fit into the buffer,
+	EFILNF        if no label present,
+	@{I}or@{i}           another appropiate GEMDOS error code.
+
+SEE ALSO:
+	Dwritelabel(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Drewinddir(2)"
+@SYMBOL a "Drewinddir"
+Drewinddir                                            MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Drewinddir@{u} - rewind an open directory
+
+SYNOPSIS
+	LONG Drewinddir( LONG handle );
+
+DESCRIPTION
+	@{U}Drewinddir@{u}  rewinds  the  open directory whose handle (returned from the
+	Dopendir  system  call)  is @{I}handle@{i}. After the @{U}Drewinddir@{u} call, the next
+	call to Dreaddir will read the first file in the directory.
+
+RETURNS
+	0       on success.
+	EIHNDL  if @{I}handle@{i} does not refer to a valid open directory.
+	EINVFN  if  the directory cannot be rewound (for example, because of the
+	        type of file system on which it is located)
+
+SEE ALSO:
+	Dopendir(2), Dreaddir(2),
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Dwritelabel(2)"
+@SYMBOL a "Dwritelabel"
+Dwritelabel                                           MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual          Version 1.11           NOV. 11, 1994@{i}
+
+NAME
+	Dwritelabel - set filesystem label
+
+SYNOPSIS
+	LONG Dwritelabel ( const char *path, const char *label );
+
+DESCRIPTION
+	@{U}Dwritelabel@{u}  writes  a new label to the filesystem specified by @{I}name@{i} in
+	@{I}label@{i}.  Note that not all filesystems have labels. Examples are the DOS
+	or TOS filesystem, the Mac HFS filesystem and the ISO9660 filesystem for
+	CD ROMs.
+
+RETURNS
+	0              if successful,
+	ENAMETOOLONG   if the label is too long for the filesystem,
+	EACCDN         if the filesystem does not support labels,
+	@{I}or@{i}           another appropiate GEMDOS error code.
+
+SEE ALSO:
+	Dreadlabel(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Fchmod(2)"
+@SYMBOL a "Fchmod"
+Fchmod                                                MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Fchmod@{u} - set file access permissions
+
+SYNOPSIS
+	#include <filesys.h>
+
+	LONG Fchmod( char *name, WORD mode );
+
+DESCRIPTION
+	@{U}Fchmod@{u} changes the file access permissions for the file named @{I}name@{i}. The
+	new  access  permissions  are  given  in  the  word  @{I}mode@{i}, which may be
+	constructed by or'ing together the following symbolic constants (defined
+	in filesys.h):
+	
+@SYMBOL air "S_IRUSR" "S_IWUSR" "S_IXUSR"
+	S_IRUSR, S_IWUSR, S_IXUSR
+		Read,  write,  and execute permission (respectively) for the owner of
+		the file.
+	
+@SYMBOL air "S_IRGRP" "S_IWGRP" "S_IXGRP"
+	S_IRGRP, S_IWGRP, S_IXGRP
+		Read,  write,  and  execute  permission (respectively) for the file's
+		group.
+	
+@SYMBOL air "S_IROTH" "S_IWOTH" "S_IXOTH"
+	S_IROTH, S_IWOTH, S_IXOTH
+		Read, write, and execute permission for everybody else.
+
+@SYMBOL air "S_ISUID"
+	S_ISUID
+		Set  user id bit. When this file is executed, make the effective user
+		id  of  the  resulting  process  be equal to the user id of the file,
+		rather  than  the real user id. Note that this can be very dangerous,
+		and should be used with care!
+
+@SYMBOL air "S_ISGID"
+	S_ISGID
+		Set  group  id  bit.  When  this file is executed, make the effective
+		group  id  of  the  resulting process be equal to the group id of the
+		file,  rather  than  the  real  group  id. Note that this can be very
+		dangerous, and should be used with care!
+
+	Note  that  not  all  file  systems  support all of these bits; bits not
+	supported  by  a file  system  will  be ignored. The set user id and set
+	group  id   bits  are  meaningful only for regular files which have some
+	execute permissions.
+
+	Note  also that "execute" permission for a directory means permission to
+	search the directory for a file name or name component.
+
+RETURNS
+	0        on success.
+	EACCDN   if  the calling process has an effective uid which differs from
+	         the owner of the file and which is not 0.
+	EFILNF   if the file is not found.
+	EPTHNF   if the path to the file is not found.
+
+SEE ALSO:
+	Fattrib(2), Fxattr(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Fchown(2)"
+@SYMBOL a "Fchown"
+Fchown                                                MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Fchown@{u} - change a file's ownership
+
+SYNOPSIS
+	LONG Fchown( char *name, WORD uid, WORD gid );
+
+DESCRIPTION
+	@{U}Fchown@{u}  changes  a file's  user  and  group  ownership  to @{I}uid@{i} and @{I}gid@{i}
+	respectively. These ownerships determine access rights to the file.
+
+	Only  a process  with effective uid 0 or whose effective uid matches the
+	user  ownership  of the file may make this call. In the latter case, the
+	new  @{I}uid@{i} must match the old one, and the calling process must also be a
+	member of the group specified by @{I}gid@{i}.
+
+RETURNS
+	0       on success
+	EACCDN  if  the  calling process has an effective uid which differs from
+	        the owner of the file and which is not 0.
+	EINVFN  if the file system on which the file is located does not support
+	        a notion  of  ownership.  (This  is  true of the normal TOS file
+	        system.)
+	EFILNF  if the file is not found
+	EPTHNF  if the path to the file is not found.
+
+SEE ALSO:
+	Fchmod(2), Fxattr(2)
+
+BUGS
+	Most file systems don't understand file ownership.
+
+	In practice, the call is useful only to processes with effective uid 0.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Fcntl(2)"
+@NEXT     "Fgetchar(2)"
+@SYMBOL a "Fcntl"
+Fcntl                                                 MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.08           Aug. 5, 1993@{i}
+
+NAME
+	@{U}Fcntl@{u} - perform various control operations on a file
+
+SYNOPSIS
+	#include <filesys.h>
+
+	LONG Fcntl( WORD fh, LONG arg, WORD cmd);
+
+DESCRIPTION
+	@{U}Fcntl@{u}  performs  various control operations on the open file with GEMDOS
+	file  handle @{I}fh@{i}.  The specific command to perform is given by @{I}cmd@{i}; the
+	possible  commands are given by symbolic constants in filesys.h, and are
+	listed  below. @{I}arg@{i} is an argument whose meaning depends on the command.
+
+	The @{"following commands" link FcntlÝF} are applicable to any file descriptor:
+
+		F_DUPFD      - duplicate file handle
+		F_GETFD      - get noinherit flag
+		F_SETFD      - set noinherit flag
+		F_GETFL      - get user-settable file descriptor flags
+		F_SETFL      - set user-settable file descriptor flags
+		F_GETLK      - get file locking
+		F_SETLK      - set file locking
+		F_SETLKW     - set file locking (wait mode)
+		FSTAT        - get extended file attributes
+		FIONREAD     - get number of readable bytes
+		FIONWRITE    - get number of writeable bytes
+
+	The  @{"following commands" link FcntlÝTIO}  are  valid  for  any  terminal device, e.g. the
+	console or a pseudo-terminal:
+
+		TIOCGETP     - get terminal parameters
+		TIOCSETP     - set terminal parameters
+		TIOCGETC     - get terminal control characters
+		TIOCSETC     - set terminal control characters
+		TIOCGLTC     - get extended terminal control characters
+		TIOCSLTC     - set extended terminal control characters
+		TIOCGWINSZ   - get window size
+		TIOCSWINSZ   - set window size
+		TIOCGPGRP    - get terminal process group
+		TIOCSPGRP    - set terminal process group
+		TIOCSTART    - restart output to terminal
+		TIOCSTOP     - stop output to terminal
+		TIOCGXKEY    - get function/cursor key definition
+		TIOCSXKEY    - set function/cursor key definition
+
+	The @{"following commands" link FcntlÝP} are valid only for processes opened as files:
+
+		PBASEADDR    - get basepage
+		PPROCADDR    - get control structure
+		PCTXTSIZE    - get context structure length
+		PGETFLAGS    - get memory allocation flags
+		PSETFLAGS    - set memory flags
+		PTRACEGFLAGS - get trace flags
+		PTRACESFLAGS - set trace flags
+		PTRACEGO     - restart traced process
+		PTRACESTEP   - restart traced process, set trace bit
+		PLOADINFO    - get Pexec information
+
+	The  @{"following commands" link FcntlÝSHM}  are valid only for files which represent shared
+	memory:
+	
+		SHMSETBLK    - set shared memory block
+		SHMGETBLK    - get shared memory block
+	
+RETURNS
+	0       or  a positive  number if successful (for most commands; but see
+	        the specific descriptions above).
+	EIHNDL  if @{I}fh@{i} is not a valid GEMDOS open handle.
+	EINVFN  if the specified command is not valid for this file handle
+
+	Some  other  (LONG)  negative error number if an error occurs; different
+	commands may recognize different possible errors.
+
+SEE ALSO
+	Fdup(2), Flock(2), Fopen(2), Fxattr(2), Pgetpgrp(2), Psetpgrp(2)
+
+BUGS
+	Very  little  error  checking  is  done.  In  particular,  ownership  of
+	terminals  is  not  properly  checked,  nor  is read/write access to the
+	files. Do not rely on this bug; it will be fixed some day.
+
+	File locking is not yet implemented for some file systems.
+
+@ENDNODE
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+@INDEXOFF
+@NODE "FcntlÝF" "Fcntl (File Descriptor Comands)"
+@PREV "FcntlÝF"
+File Descriptor Comands                        MiNT: Manual Pages: @{2 link man.2}: Fcntl
+@Line 1 75 0
+
+@SYMBOL air "F_DUPFD"
+F_DUPFD
+	Return  a duplicate for the file handle. The new (duplicate) handle will
+	be  an  integer >= arg and < 32. If no free handles exist in that range,
+	ENHNDL  will  be  returned.  The @{I}Fdup (fh)@{i} system call is equivalent to
+	Fcntl (fh, 6L, F_DUPFD).
+
+@SYMBOL air "F_GETFD"
+F_GETFD
+	Return  the  noinherit  flag  for the file descriptor. This flag is 0 if
+	child  processes  started by @{I}Pexec@{i} should inherit this open file, and 1
+	if they should not. @{I}arg@{i} is ignored.
+
+@SYMBOL air "F_SETFD"
+F_SETFD
+	Set the noinherit flag for the file descriptor from the low order bit of
+	@{I}arg@{i}. The default value of the flag is 0 for handles 0-5 (the "standard"
+	handles) and 1 for other (non-standard) handles. Note that the noinherit
+	flag applies only to this particular file descriptor; another descriptor
+	obtained  from  @{I}fh@{i}  by  the  @{I}Fdup@{i} system call or by use of the @{U}F_DUPFD@{u}
+	option  to  Fcntl  will have the noinherit flag set to the default. Also
+	note  that  these  defaults  are not the same as for the Unix¿ operating
+	system.
+
+@SYMBOL air "F_GETFL"
+F_GETFL
+	Returns  the  user-settable  file  descriptor flags. These flags are the
+	same  as  the  mode  passed  to  @{I}Fopen@{i},  unless  they have been further
+	modified by another Fcntl operation. @{I}arg@{i} is ignored.
+
+@SYMBOL air "F_SETFL"
+F_SETFL
+	Set user-settable file descriptor flags from the argument @{I}arg@{i}. Only the user-settable bits in
+	@{I}arg@{i}  are considered; the settings of other bits are ignored, but should
+	be  0 for future compatibility. Moreover, it is not possible to change a
+	file's  read-write  mode or sharing modes with this call; attempts to do
+	so will (silently) fail.
+
+@SYMBOL air "F_GETLK" "flock"
+@SYMBOL ar  "struct flock"
+@SYMBOL air "F_RDLCK" "F_WRLCK" "F_UNLCK"
+F_GETLK
+	@{I}arg@{i} is a pointer to an flock structure:
+
+@LINE 5 0 10 0 7
+		struct flock {
+			short l_type;      @{I}type of lock@{i}
+		#define F_RDLCK	0
+		#define F_WRLCK	1
+		#define F_UNLCK	3
+			short l_whence;    @{I}0:file start, 1:current, 2:EOF@{i}
+			long  l_start;     @{I}offset of locked region@{i}
+			long  l_len;       @{I}0 for rest of file@{i}
+			short l_pid;       @{I}set by @{U}F_GETLK@{u}@{i}
+		};
+
+	If a lock exists which would prevent this lock from being applied to the
+	file, the existing lock is copied into the structure and the l_pid field
+	is  set  to  the process id of the locking process. Otherwise, l_type is
+	set  to  @{U}F_UNLCK@{u}.  If  a conflicting  lock  is  held  by  a process on a
+	different  machine  on  a network, then the l_pid field will be set to a
+	value  defined  by  the  network  file system. This value will be in the
+	range 0x1000 to 0xFFFF, and will therefore not conflict with any process
+	id since process id's must be less than 0x1000.
+
+@SYMBOL air "F_SETLK"
+F_SETLK
+	Set (if l_type is @{U}F_RDLCK@{u} or @{U}F_WRLCK@{u}) or clear (if l_type is @{U}F_UNLCK@{u}) an
+	advisory  lock  on a file. If the file is a FIFO, the whole file must be
+	locked or unlocked at once, i.e. l_whence, l_start, and l_len must be 0.
+	If this lock would conflict with a lock held by another process, ELOCKED
+	is returned. If an attempt is made to clear a non-existent lock, ENSLOCK
+	is returned. More than one read lock may be placed on the same region of
+	a file,  but no write lock may overlap with any other sort of lock. If a
+	process holds locks on a file, then the locks are automatically released
+	whenever  the process closes an open file handle referring to that file,
+	or when the process terminates.
+
+@SYMBOL air "F_SETLKW"
+F_SETLKW
+	Like  @{U}F_SETLK@{u}, but if the lock requested would conflict with a lock held
+	by   another  process,  the  calling  process  is  suspended  until  all
+	conflicting locks are released.
+	
+@SYMBOL air "FSTAT"
+FSTAT
+	@{I}arg@{i}  points  to  an  XATTR  structure,  which  is  filled  in  with the
+	appropriate  extended  file  attributes for the file to which @{I}fd@{i} refers
+	just as though the Fxattr system call (q.v.) had been made on the file.
+
+@SYMBOL air "FIONREAD"
+FIONREAD
+	@{I}arg@{i}  points  to  a 32 bit  integer, into which is written the number of
+	bytes  that  are  currently available to be read from this descriptor; a
+	read  of  this  number  of bytes or less should not cause the process to
+	block  (wait  for more input). Note that for some files only an estimate
+	can be provided, so the number is not always completely accurate.
+
+@SYMBOL air "FIONWRITE"
+FIONWRITE
+	@{I}arg@{i}  points  to  a 32 bit  integer, into which is written the number of
+	bytes  that  may  be  written  to  the indicated file descriptor without
+	causing  the process to block. Note that for some files only an estimate
+	can be provided, so the number is not always completely accurate.
+
+@ENDNODE
+@INDEXON
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+@INDEXOFF
+@NODE "FcntlÝTIO" "Fcntl (Terminal Device Comands)"
+Terminal Device Comands                        MiNT: Manual Pages: @{2 link man.2}: Fcntl
+@Line 1 75 0
+
+@SYMBOL air "TIOCGETP" "sgttyb"
+@SYMBOL ar  "struct sgttyb"
+TIOCGETP
+	Get terminal parameters. @{I}arg@{i} is a pointer to a block of memory with the
+	following structure:
+
+@LINE 5 0 7 0 7
+		struct sgttyb {
+			char sg_ispeed;   @{I}reserved@{i}
+			char sg_ospeed;   @{I}reserved@{i}
+			char sg_erase;    @{I}erase character@{i}
+			char sg_kill;     @{I}line kill character@{i}
+			short sg_flags;   @{I}terminal control flags@{i}
+		};
+	
+@SYMBOL air "TIOCSETP"
+TIOCSETP
+	Set terminal parameters from the struct @{U}sgttyb@{u} pointed to by @{I}arg@{i}.
+
+@SYMBOL air "TIOCGETC" "tchars"
+@SYMBOL ar  "struct tchars"
+TIOCGETC
+	Get  terminal  control  characters.  @{I}arg@{i}  is a pointer to the following
+	structure:
+
+@LINE 5 0 8 0 7
+		struct tchars {
+			char t_intrc;    @{I}raises SIGINT@{i}
+			char t_quitc;    @{I}raises SIGQUIT@{i}
+			char t_startc;   @{I}starts terminal output@{i}
+			char t_stopc;    @{I}stops terminal output@{i}
+			char t_eofc;     @{I}marks end of file@{i}
+			char t_brkc;     @{I}marks end of line@{i}
+		};
+
+@SYMBOL air "TIOCSETC"
+TIOCSETC
+	Set  terminal  control  characters  from the struct @{U}tchars@{u} pointed to by
+	@{I}arg@{i}.  Setting  any  character  to  the value 0 causes the corresponding
+	function to become unavailable.
+
+@SYMBOL air "TIOCGLTC" "ltchars"
+@SYMBOL ar  "struct ltchars"
+TIOCGLTC
+	Get  extended terminal control characters, and put them in the structure
+	pointed to by @{I}arg@{i}:
+
+@LINE 5 0 8 0 7
+		struct ltchars {
+			char t_suspc;    @{I}raises SIGTSTP now@{i}
+			char t_dsuspc;   @{I}raises SIGTSTP when read@{i}
+			char t_rprntc;   @{I}redraws the input line@{i}
+			char t_flushc;   @{I}flushes output@{i}
+			char t_werasc;   @{I}erases a word@{i}
+			char t_lnextc;   @{I}quotes a character@{i}
+		};
+
+@SYMBOL air "TIOCSLTC"
+TIOCSLTC
+	Set extended terminal control characters from the struct @{U}ltchars@{u} pointed
+	to  by @{I}arg@{i}. Setting any of the characters to 0 causes the corresponding
+	function to become unavailable.
+
+@SYMBOL air "TIOCGWINSZ" "winsize"
+@SYMBOL air "struct winsize"
+TIOCGWINSZ
+	@{I}arg@{i}  has  type  "struct winsize *".  The  current  window size for this
+	window  is  placed  in  t he structure pointed to by @{I}arg@{i}, which has the
+	following fields:
+
+@LINE 5 0 6 0 7
+		struct winsize {
+			short	ws_row;      @{I}# of rows of text in window@{i}
+			short	ws_col;      @{I}# of columns of text@{i}
+			short	ws_xpixel;   @{I}width of window in pixels@{i}
+			short	ws_ypixel;   @{I}height of window in pixels@{i}
+		};
+
+	If  any fields in the structure are 0, this means that the corresponding
+	value is unknown.
+
+@SYMBOL air "TIOCSWINSZ"
+TIOCSWINSZ
+	@{I}arg@{i} has type "struct winsize *". The current window size for the window
+	is  set  from  the  structure  pointed  to by @{I}arg@{i}. Note that the kernel
+	maintains  the  information  but  does @{B}not@{b} act upon it in any way; it is
+	upon  window managers to perform whatever physical changes are necessary
+	to alter the window size, and to raise the SIGWINCH signal if necessary.
+
+@SYMBOL air "TIOCGPGRP"
+TIOCGPGRP
+	@{I}arg@{i}  has  type  "long *";  the process group for the terminal is placed
+	into the long pointed to by it.
+
+@SYMBOL air "TIOCSPGRP"
+TIOCSPGRP
+	@{I}arg@{i}  has  type "long *"; the process group for the terminal is set from
+	the  long pointed to by it. Processes in any other process group will be
+	sent  job  control  signals  if  they  attempt  input  or  output to the
+	terminal.
+
+@SYMBOL air "TIOCSTART"
+TIOCSTART
+	Restart  output  to the terminal (as though the user typed control-Q) if
+	it  was  stopped  by a control-S  or  @{U}TIOCSTOP@{u}  command.  @{I}arg@{i} is
+	ignored.
+
+@SYMBOL air "TIOCSTOP"
+TIOCSTOP
+	Stop  output  to  the terminal (as though the user typed control-S). @{I}arg@{i}
+	is ignored.
+
+@SYMBOL air "TIOCGXKEY" "xkey"
+@SYMBOL ar  "struct xkey"
+TIOCGXKEY
+	Get  the  definition of a function or cursor key. @{I}arg@{i} is a pointer to a
+	structure with the following fields:
+
+@LINE 5 0 4 0 7
+		struct xkey {
+			short	xk_num;      @{I}function key number@{i}
+			char	xk_def[8];   @{I}associated string@{i}
+		};
+
+	The  @{I}xk_num@{i}  field  must  be initialized with the number of the desired
+	key:
+	
+	  @{U}xk_num	 	Key                         @{u}
+	   0-9		F1-F10
+	  10-19		F11-F20 (shift F1-shift F10)
+	   20			cursor up
+	   21			cursor down
+	   22			cursor right
+	   23			cursor left
+	   24			help
+	   25			undo
+	   26			insert
+	   27			clr/home
+	   28			shift+cursor up
+	   29			shift+cursor down
+	   30			shift+cursor right
+	   31			shift+cursor left
+	
+	The  string  currently  associated with the indicated key is copied into
+	xk_def; this string is always null-terminated.
+
+@SYMBOL air "TIOCSXKEY"
+TIOCSXKEY
+	@{I}arg@{i}  is  a structure  of  type  struct @{U}xkey@{u}, as defined above. Both the
+	@{I}xk_num@{i} and the @{I}xk_def@{i}  fields must be defined. After execution of this
+	command, and if the XKEY bit is set in the @{I}sg_flags@{i} field of the sgttyb
+	structure  associated  with  the  terminal, then if the indicated key is
+	pressed  on  the  affected terminal, any @{"MiNT" ignore} domain process using @{I}Fread@{i}
+	to  read the key will get the string in @{I}xk_def@{i} instead of ASCII 0. Note
+	that this translation occurs only for @{"MiNT" ignore} domain processes and only for
+	the  @{I}Fread@{i}  system  call.  Also note that the string in @{I}xk_def@{i} must be
+	null terminated, and so at most 7 characters may be assigned to any key.
+
+@ENDNODE
+@INDEXON
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+@INDEXOFF
+@NODE "FcntlÝP" "Fcntl (Process File Comands)"
+Process File Comands                           MiNT: Manual Pages: @{2 link man.2}: Fcntl
+@Line 1 75 0
+
+@SYMBOL air "PBASEADDR"
+PBASEADDR
+	@{I}arg@{i}  is  a pointer  to  a 32 bit integer, into which the address of the
+	process basepage for the process to which @{I}fh@{i} refers is written.
+
+@SYMBOL air "PPROCADDR"
+PPROCADDR
+	@{I}arg@{i}  is  a pointer  to  a 32 bit integer, into which the address of the
+	process  control  structure  for  the process is written. Note that this
+	control  structure  differs  from  the  one  found  in previous versions
+	(before 0.93)  of @{"MiNT" ignore};  it  no  longer includes the process context, so
+	that  this  part  of  the  structure  may  be  changed  without  causing
+	compatibility problems. See the @{U}PCTXTSIZE@{u} command.
+
+@SYMBOL air "PCTXTSIZE"
+PCTXTSIZE
+	@{I}arg@{i}  is  a pointer  to  a 32 bit  integer,  into  which the length of a
+	process  context structure is written. There are two of these structures
+	located  in  memory  just  before  the  process  control structure whose
+	address  is  returned by the @{U}PPROCADDR@{u} command. The first is the current
+	process  context;  the  second is the saved context from the last system
+	call.
+
+@SYMBOL air "PGETFLAGS"
+PGETFLAGS
+	@{I}arg@{i}  is  a pointer  to  a 32 bit integer, into which the process memory
+	allocation  flags are copied. These flags are the same ones found in the
+	`prgflags'  field  of  GEMDOS  executable  programs,  or  as  the  first
+	parameter to @{I}Pexec@{i} mode 7.
+
+@SYMBOL air "PSETFLAGS"
+PSETFLAGS
+	@{I}arg@{i}  is  a pointer  to  a 32 bit integer, from which the process memory
+	flags  for the target process  will be set. Note that only the low order
+	16 bits are actually used right now, and not all of these are valid.	See
+	the  documentation  for  GEMDOS  executable  programs for details on the
+	meanings of the flags.
+
+@SYMBOL air "PTRACEGFLAGS"
+PTRACEGFLAGS
+	@{I}arg@{i}  is  a pointer  to  a 16 bit  integer, into which the current trace
+	flags  of  the  target  process  are copied. If the process is not being
+	traced, the flags will be 0.
+
+@SYMBOL air "PTRACESFLAGS"
+PTRACESFLAGS
+	@{I}arg@{i}  is  a pointer to a 16 bit integer, the bits of which determine how
+	the target process will respond to signals. If bit #0 is set, the target
+	process  will  respond  to signals and other exceptions by stopping, and
+	the  process which set the flags will receive a SIGCHLD signal informing
+	it  of  this  fact;  it may then use the @{I}Pwait3@{i} system call to retreive
+	information  about why the process stopped, and may use @{I}Fread@{i} and @{I}Fwite@{i}
+	to  interrogate  and  possibly  change  the  state of the process before
+	causing it to continue (see below). If bit #0 is clear, then all process
+	tracing  will  cease,  and  the  process  will respond to signals in the
+	normal  way. All other bits are reserved and should be set to 0 for now.
+	If  some  other  process  has  already  used @{U}PTRACESFLAGS@{u} to set process
+	tracing for the target process, then the call will fail.
+
+@SYMBOL air "PTRACEGO"
+PTRACEGO
+	Restarts a process that was being traced by the caller and which stopped
+	because  of  asignal.  @{I}arg@{i}  is  a pointer to  a 16 bit integer which is
+	either 0  (in which case all pending signals for the stopped process are
+	cleared before it is restarted) or the number of a signal which is to be
+	delivered  to the process after it restarts. Typically, this will be the
+	same as the signal that stopped it.
+
+@SYMBOL air "PTRACESTEP"
+PTRACESTEP
+	Like  @{U}PTRACEGO@{u},  except  that  the  trace  bit will be set in the status
+	register  of  the  restarted  process;  thus,  a SIGTRAP  signal will be
+	generated  in  that  process after 1 user instruction has been executed.
+	Note  that  it  is not possible to trace processes that are executing in
+	the kernel; if the process was stopped while executing in the kernel the
+	trace bit will be set only when the process returns from the kernel.
+
+@SYMBOL air "PLOADINFO"
+@SYMBOL ar  "ploadinfo" "struct ploadinfo"
+PLOADINFO
+	Returns  information about the parameters passed to @{I}Pexec@{i} to start this
+	process.  @{I}arg@{i}  should  be  a pointer  to a structure with the following
+	format:
+
+@LINE 5 0 8 0 7
+		struct ploadinfo {
+			short fnamelen;   @{I}length of fname field@{i}
+			char *cmdlin;     @{I}must point to 128 bytes,to be filled in with the
+			                  process' command line@{i}
+			char *fname;	   @{I}must  point to "fnamelen" bytes, to be filled in
+			                  with  the  full path+name of the file from which
+			                  the process was launched@{i}
+		}
+
+	The data pointed to by the structure elements will be filled in with the
+	appropriate  data  for this process. If the process's full name and path
+	are too long to  into the provided space, ENAMETOOLONG will be returned.
+	On success, a 0 is returned.
+
+@ENDNODE
+@INDEXON
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+@INDEXOFF
+@NODE "FcntlÝSHM" "Fcntl (Shared Memory Comands)"
+@NEXT "FcntlÝSHM"
+Shared Memory Comands                          MiNT: Manual Pages: @{2 link man.2}: Fcntl
+@Line 1 75 0
+
+@SYMBOL air "SHMSETBLK"
+SHMSETBLK
+	@{I}arg@{i}   is  a pointer  to  a block  of  memory  previously  allocated  by
+	@{I}Mxalloc@{i}. The  memory  will be offered for sharing under the name of the
+	file   represented   by  @{I}fd@{i}  (which  must  be  a  file  in  the  U:\SHM
+	subdirectory).
+
+@SYMBOL air "SHMGETBLK"
+SHMGETBLK
+	@{I}arg@{i}  must  be  0,  for future compatibility. Returns the address of the
+	block  of memory previously associated with the file via @{U}SHMSETBLK@{u}, or a
+	NULL  pointer  if an error occurs. Note that different processes may see
+	the  shared memory block at different addresses in their address spaces.
+	Therefore,  the  shared   memory  block  should not contain any absolute
+	pointers to data.
+
+@ENDNODE
+@INDEXON
+
+#-------------------------------------------------------------------------#
+@NODE     "Fgetchar(2)"
+@PREV     "Fcntl(2)"
+@SYMBOL a "Fgetchar"
+Fgetchar                                              MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Fgetchar@{u} - read a character from a file
+
+SYNOPSIS
+	LONG Fgetchar( WORD fh, WORD mode );
+
+DESCRIPTION
+	@{U}Fgetchar@{u}  reads  a character from the open file whose handle is @{I}fh@{i}. The
+	parameter  @{I}mode@{i}  has  an  effect only if the open file is a terminal or
+	pseudo-terminal,  in  which  case  the  bits of @{I}mode@{i} have the following
+	meanings:
+	
+	0x0001
+		Cooked mode; special control characters (control-C and control-Z) are
+		checked  for and interpreted if found (they cause SIGINT and SIGTSTP,
+		respectively,  to  be  raised); also, flow control with control-S and
+		control-Q is activated.
+	
+	0x0002
+		Echo mode; characters read are echoed back to the terminal.
+
+	The ASCII value of the character read is put in the low byte of the long
+	word that is returned. If the file is a terminal or pseudo-terminal, the
+	scan  code  of the character pressed and (possibly) the shift key status
+	are also returned in the long word, just as with the BIOS @{I}Bconin@{i} system
+	call.
+
+RETURNS
+	0x0000FF1A  if end of file is detected.
+	EIHNDL      if @{I}fh@{i} is not a valid handle for an open file.
+	@{I}or@{i}           the character read, if successful.
+
+SEE ALSO:
+	Bconin(2), Cconin(2), Cauxin(2), Fputchar(2), Fread(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Fselect(2)"
+@SYMBOL a "Fselect"
+Fselect                                               MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	Fselect - select file descriptors that are ready for reading or writing
+
+SYNOPSIS
+	WORD Fselect(WORD timeout, LONG *rfds, LONG *wfds, ((long)0));
+
+DESCRIPTION
+	@{U}Fselect@{u}  checks  two  sets of open file descriptors and determines which
+	have  data  ready  to  read, and/or which are ready to be written to. If
+	none  are  ready yet, the process goes to sleep until some member of the
+	sets are ready or until a specified amount of time has elapsed.
+
+	@{I}rfds@{i}  points  to  a long  word  which  represents  a set of GEMDOS file
+	descriptors; bit @{I}n@{i} of this long word is set if file descriptor @{I}n@{i} is to
+	be checked for input data. An empty set may optionally be represented by
+	a NULL  pointer  instead of a pointer to 0. Similarly, _wfds points to a
+	32 bit  long  word  which  indicates  which  file  descriptors are to be
+	checked  for output status. When @{U}Fselect@{u} returns, the old values pointed
+	to  by  @{I}rfds@{i}  and @{I}wfds@{i} (if non-NULL) are overwritten by new long words
+	indicating  which  file  descriptors  are  actually ready for reading or
+	writing;  these  will  always  form  subsets  of  the  file  descriptors
+	originally specified as being of interest.
+
+	@{I}timeout@{i}  is  a 16 bit  unsigned  integer specifying a maximum number of
+	milliseconds  to  wait before returning; if this number is 0, no maximum
+	is  set  and  the  call  will  block  until  one of the file descriptors
+	specified  is  ready  for  reading  or  writing,  as  appropriate. Thus,
+	@{U}Fselect@{u} (0, 0L,0L,0L)  will block forever, whereas @{U}Fselect@{u} (1, 0L,0L,0L)
+	will pause for 1 millisecond.
+
+	The  final  argument,  a long word, must always be 0 (it is reserved for
+	future enhancements).
+
+RETURNS
+	The sum of the numbers  of bits set in the long words pointed to by @{I}rfds@{i}
+	        and  @{I}wfds@{i}. This will be 0 if the timeout expires without any of
+	        the  specified  file  descriptors  becoming ready for reading or
+	        writing, as appropriate, and nonzero otherwise.
+	EIHNDL  if any handle specified by the long words pointed to by @{I}rfds@{i} or
+           @{I}wfds@{i} is not a valid (open) GEMDOS handle.
+
+SEE ALSO:
+	Finstat(2), Foutstat(2)
+
+BUGS
+	The system timer is not actually accurate to the nearest millisecond, so
+	the timeout could last for up to 19 milliseconds longer than specified.
+
+	@{U}Fselect@{u}  does not work correctly on any BIOS device except the keyboard.
+	To  be  more precise, if data arrives on a BIOS device while the process
+	is  sleeping  in  Fselect,  the process will not be woken. To get around
+	this bug, use an explicit timeout.
+
+	Note  that  if  an error condition occurs on one of the file descriptors
+	(for example, if the read status of a pipe with no more writers is being
+	requested)  then  @{U}Fselect@{u}  will mark that file descriptor as being ready
+	for  reading (or writing, as appropriate). This is not strictly speaking
+	a bug,  since  a subsequent read will not block (it will return an error
+	condition), but programmers should be aware of the possibility.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Fxattr(2)"
+@SYMBOL a "Fxattr"
+Fxattr                                                MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Fxattr@{u} - get extended attributes for a file
+
+SYNOPSIS
+	#include <filesys.h>
+
+	LONG Fxattr( WORD flag, char *name, XATTR *xattr );
+
+DESCRIPTION
+	@{U}Fxattr@{u}  gets file attributes for the file named @{I}name@{i} and stores them in
+	the  structure  pointed  to  by @{I}xattr@{i}. This structure is defined in the
+	file filesys.h, and contains the following fields of interest:
+
+	"unsigned short mode"
+		This   field   gives   the   file   type   and   access  permissions;
+		(mode & S_IFMT)  gives  the  file  type  (one  of  S_IFCHR,  S_IFDIR,
+		S_IFREG,  S_IFIFO,  S_IMEM,  or  S_IFLNK); (mode & ~S_IFMT) gives the
+		file  access  mode according to the POSIX standard. See filesys.h for
+		the definitions and meanings of the constants.
+
+	"long index"
+		An  index  for  the  file.  Together  with  the  "dev" field, this is
+		intended to give a unique way of identifying the file. Note, however,
+		that  not all file systems are able to support this meaning, so it is
+		best not to use this field unless absolutely necessary.
+
+	"unsigned short dev"
+		The  device  number for the file. This may be a BIOS device number as
+		passed to the @{I}Rwabs@{i} function, or it may be a device number concocted
+		by the file system to represent a remote device.
+
+	"unsigned short nlink"
+		Number of hard links to the file. Normally this field will be 1.
+
+	"unsigned short uid"
+		The user id of the owner of the file.
+
+	"unsigned short gid"
+		The group id of the owner of the file.
+
+	"long size"
+		The length of the file, in bytes.
+
+	"long blksize"
+		The size of blocks on this file system.
+
+	"long nblocks"
+		The  number of physical blocks occupied by the file on the disk; this
+		count includes any blocks that have been reserved for the file but do
+		not  yet  have data in them, and any blocks that the file system uses
+		internally to keep track of file data (e.g. Unix indirect blocks).
+
+	"short mtime"
+		The  time  of  the  last modification to the file, in standard GEMDOS
+		format.
+
+	"short mdate"
+		The date of the last modification, in standard GEMDOS format.
+
+	"short atime, adate"
+		The  time  and date of the last access to the file, in GEMDOS format.
+		Filesystems  that  do not keep this time will return the values given
+		in "mtime" and "mdate" for these fields as well.
+
+	"short ctime, cdate"
+		The  time  and  date  of  the  file's  creation,  in  GEMDOS  format.
+		Filesystems  that  do not keep this time will return the values given
+		in "mtime" and "mdate" for these fields as well.
+
+	"short attr"
+		The  standard  TOS  attributes  for the file, as returned by @{I}Fattrib@{i}
+		and/or @{I}Fsfirst@{i}.
+
+	The  @{I}flag@{i}  parameter  controls  whether or not symbolic links should be
+	followed.  If  it is 0, then symbolic links are followed (like the Unix¿
+	@{I}stat@{i}  function).  If  @{I}flag@{i}  is  1, then links are not followed and the
+	information  returned is for the symbolic link itself (if the named file
+	is  a symbolic  link);  this  behavior  is  like that of the Unix¿ @{I}lstat@{i}
+	system call.
+
+RETURNS
+	0       on success.
+	EFILNF  if the file is not found.
+	EPTHNF  if the path to the file is not found.
+
+SEE ALSO:
+	Fattrib(2), Fsnext(2)
+
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Pause(2)"
+@SYMBOL a "Pause"
+Pause                                                 MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Pause@{u} - suspend process until a signal is received
+
+SYNOPSIS
+	void Pause();
+
+DESCRIPTION
+	@{U}Pause@{u}  causes  the calling process to go to sleep until a signal that is
+	not  being  ignored  or masked is received. If a signal handler has been
+	established  for  that  signal  with  the @{I}Psignal@{i} system call, then the
+	handler  is  invoked before @{U}Pause@{u} returns; if the handler does a longjmp
+	to  a different point in the program, if it exits the program, or if the
+	signal  handler was set to SIG_DFL and the default action for the signal
+	is to terminate the process, then @{U}Pause@{u} will never return.
+
+SEE ALSO:
+	Psigblock(2), Psignal(2), Psigpause(2), Psigsetmask(2)
+
+BUGS
+	This call has been superseded by @{I}Psigpause@{i} (q.v.)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Pdomain(2)"
+@SYMBOL a "Pdomain"
+Pdomain                                               MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Pdomain@{u} - get or set process execution domain
+
+SYNOPSIS
+	WORD Pdomain( WORD dom );
+
+DESCRIPTION
+	@{U}Pdomain@{u}  gets  or  sets  the  process execution domain. This is a number
+	which controls the behavior of a process. The default domain is 0, which
+	is  the  TOS  compatibility  domain and in which all system calls behave
+	exactly  as  they  do  under  TOS.  Domain 1 is the @{"MiNT" ignore} domain; in this
+	domain, the behavior of the @{I}Fread@{i} and @{I}Fwrite@{i} system calls when applied
+	to  terminals  are  controlled  by  the  current  terminal  settings  as
+	established by the Fcntl system call. Moreover, file names returned from
+	@{I}Fsfirst@{i}  and  @{I}Fsnext@{i} may be treated differently; @{"MiNT" ignore} domain processes
+	are  expected  to  be able to deal with file names that are not standard
+	8 character name  + 3 character extension,  all  upper  case,  DOS  file
+	names.
+
+	If @{I}dom@{i} is  greater than or equal to 0, the process domain is set to its
+	value.  Note  that  only  domains 0 and 1 are currently defined, and the
+	result of using a different (positive) number for @{I}dom@{i} is unpredictable.
+	If @{I}dom@{i} is negative, no change is made to the process domain.
+
+RETURNS
+	The  process  domain  at  the  time of the @{U}Pdomain@{u} call (i.e. before any
+	change).
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Pfork(2)"
+@SYMBOL a "Pfork"
+Pfork                                                 MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	Pfork - create a copy of the current process
+
+SYNOPSIS
+	WORD Pfork();
+
+DESCRIPTION
+	@{U}Pfork@{u}  creates a copy of the current process. The child (the new process
+	created) inherits a copy of the parent's address space, not the parent's
+	original  memory, and so changes to variables in the child do not affect
+	the parent in any way. The new process begins execution with an apparent
+	return from the @{U}Pfork@{u} call.
+
+RETURNS
+	0       in the child.
+	@{I}and@{i}    The new process id (a positive number), in the parent.
+	ENSMEM  if there is not enough memory to create the new process.
+
+SEE ALSO:
+	Pexec(2), Pvfork(2)
+
+BUGS
+	If  the  parent  is in supervisor mode when this call is made, the child
+	will  be  started  in user mode anyway; thus, it is strongly recommended
+	that this call be made only from user mode.
+
+	The  current implementation of @{U}Pfork@{u} acts like Pvfork in that the parent
+	is  suspended until the child either exits or overlays itself with Pexec
+	mode 200.  Do not rely on this behavior, as it will be changed in future
+	versions of @{"MiNT" ignore}.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Pgetpgrp(2)"
+@SYMBOL a "Pgetpgrp"
+Pgetpgrp                                              MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Pgetpgrp@{u} - get the current process group number
+
+SYNOPSIS
+	WORD Pgetpgrp();
+
+DESCRIPTION
+	@{U}Pgetpgrp@{u}  returns  the  process  group  number  of the currently running
+	process.  Process  groups  are  commonly  used for job control and other
+	signalling  purposes;  processes  that  share the same process group are
+	assumed  to  be  closely  related,  and are usually stopped all together
+	rather than 1 at a time.
+	
+SEE ALSO:
+	Pkill(2), Pgetpid(2), Psetpgrp(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Pgetpid(2)"
+@SYMBOL a "Pgetpid"
+Pgetpid                                               MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Pgetpid@{u} - get the current process id
+
+SYNOPSIS
+	WORD Pgetpid();
+
+DESCRIPTION
+	@{U}Pgetpid@{u} returns the process id of the currently running process. This is
+	a positive  16 bit integer which is unique among all processes currently
+	in the system. The call is always successful.
+
+SEE ALSO:
+	Pgetpgrp(2), Pgetppid(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Pgetppid(2)"
+@SYMBOL a "Pgetppid"
+Pgetppid                                              MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Pgetppid@{u} - get the process id for the parent of the current process
+
+SYNOPSIS
+	WORD Pgetppid();
+
+DESCRIPTION
+	@{U}Pgetppid@{u}  returns  the process id of the parent of the currently running
+	process. The process id is a positive 16 bit integer. The call is always
+	successful.
+
+SEE ALSO:
+	Pgetpgrp(2), Pgetpid(2)
+
+NOTES
+	If the current process was started directly by the kernel, then @{U}Pgetppid@{u}
+	will return 0.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Pgetuid(2)" "Pgetuid(2), Pgetgid(2)"
+@ALIAS    "Pgetgid(2)"
+@ALIAS    "Pgeteuid(2)"
+@ALIAS    "Pgetegid(2)"
+@SYMBOL a "Pgetuid" "Pgetgid" "Pgeteuid" "Pgetegid"
+Pgetuid, Pgetgid                                      MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Pgetuid@{u}, @{U}Pgetgid@{u} - get the current user or group id
+
+SYNOPSIS
+
+	WORD Pgetuid();
+	WORD Pgetgid();
+	WORD Pgeteuid();
+	WORD Pgetegid();
+
+DESCRIPTION
+	@{U}Pgetuid@{u}  returns the real user id of the currently running process. This
+	is a number between 0 and 255 which determines the access permissions of
+	the  process, and which may be used in multi-user systems to distinguish
+	different users of the system.
+
+	Similarly,  @{U}Pgetgid@{u}  returns  the real group id of the currently running
+	process; this will also be a number between 0 and 255.
+
+	@{U}Pgeteuid@{u}  and  @{U}Pgetegid@{u} are similar to @{U}Pgetuid@{u} and @{U}Pgetgid@{u} respectively,
+	except that they return the effective user or group id. This is normally
+	the  same  as the real user or group id, except that if a program is run
+	which  has  the  set uid  or  set gid bit  bit  set, it will run with an
+	effective  user  or  group  id  equal  to the owner of the program file.
+	Access  to  files  is  based upon the effective user or group id, so the
+	set uid  (and  set gid)  mechanism allows users (in particular the super
+	user) to grant permissions to other users. This mechanism also exists in
+	the Unix¿ operating system.
+
+SEE ALSO:
+	Psetuid(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Psetuid(2)" "Psetuid(2), Psetgid(2)"
+@ALIAS    "Psetgid(2)"
+@SYMBOL a "Psetuid"   "Psetgid"
+Psetuid, Psetgid                                      MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Psetuid@{u}, @{U}Psetgid@{u} - change a process' user or group id
+
+SYNOPSIS
+	WORD Psetuid(WORD uid);
+	WORD Psetgid(WORD gid);
+
+DESCRIPTION
+	@{U}Psetuid@{u} sets the user id of the current process to @{I}uid@{i}, which must be a
+	number  between 0 and 255 inclusive. This function call will fail if the
+	user id is not already 0, so once a process' user id is set it is fixed.
+	@{U}Psetuid@{u}  returns  @{I}uid@{i},  if  the  call  is successful, and EACCDN if the
+	process  does  not have the authority to change its own user id (i.e. if
+	its effective user id is not 0 at the time of the call).
+
+	Similarly,  @{U}Psetgid@{u}  sets  the  group id  of the current process to @{I}gid,@{i}
+	which again must be between 0 and 255. The new group id @{I}gid@{i} is returned
+	if  successful, and EACCDN is returned if permission to change groups is
+	denied.
+
+SEE ALSO:
+	Pgetuid(2)
+
+BUGS
+	Security  in  @{"MiNT" ignore}  is  a joke;  don't  rely  on these calls to actually
+	protect you from anything, it's more for informational purposes.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Syield(2)"
+@SYMBOL a "Syield"
+Syield                                                MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Syield@{u} - give up the processor
+
+SYNOPSIS
+	void Syield();
+
+DESCRIPTION
+	@{U}Syield@{u} gives up control of the processor temporarily.
+
+SEE ALSO:
+	Pause(2), Fselect(2)
+
+BUGS
+	Doing  @{U}Syield@{u}  in  a tight  loop  can  still  consume  a fair  amount of
+	processor time. Use @{I}Fselect@{i} or Talarm and Pause instead if possible.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Sysconf(2)"
+@SYMBOL a "Sysconf"
+Sysconf                                               MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	Sysconf - get information about operating system configuration
+
+SYNOPSIS
+	LONG Sysconf( WORD n );
+
+DESCRIPTION
+	@{U}Sysconf@{u}  returns information about various limits or capabilities of the
+	currently  running version of @{"MiNT" ignore}. The variable @{I}n@{i} controls which limit
+	or capability is being queried, as follows:
+
+@LINE 10 0 7
+		@{U}n   Value Returned                            @{u}
+		-1  max. legal value for n in Sysconf(n)
+		0   max. number of memory regions per process
+		1   max. length of Pexec() command line string
+		2   max. number of open files per process
+		3   number of supplementary group id's
+		4   max. number of processes per user
+
+	If any of these items are unlimited, then 0x7fffffffL is returned.
+
+SEE ALSO:
+	Dpathconf(2)
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Talarm(2)"
+@SYMBOL a "Talarm"
+Talarm                                                MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual           Version 1.0            Feb. 1, 1993@{i}
+
+NAME
+	@{U}Talarm@{u} - schedule an alarm to occur
+
+SYNOPSIS
+	LONG Talarm( LONG time );
+
+DESCRIPTION
+	If @{I}time@{i} is greater than 0, schedule a SIGALRM signal to be delivered to
+	the  process  that many seconds from now. Note that unless a handler for
+	SIGALRM has been established by means of the @{I}Psignal@{i} function, then the
+	signal will kill the process.
+
+	If @{I}time@{i}== 0, then any previously scheduled alarm is cancelled.
+
+	If  @{I}time@{i}  is  negative,  then  no  change  is  made  to what alarms are 
+	scheduled;  in this case, only the returned value (the number of seconds
+	left before any alarm) is of interest.
+
+RETURNS
+	If  an  alarm  had been scheduled before this call to @{U}Talarm@{u}, return the
+	number of seconds remaining until that previously scheduled alarm.
+
+	Otherwise, return 0.
+
+SEE ALSO:
+	Pause(2), Psignal(2)
+
+BUGS
+	Internal  calculations  are  done  in  milliseconds, not seconds, so the
+	returned value is not exactly accurate.
+
+	For  the same reason, setting an alarm more than 2 million seconds or so
+	into the future will not work correctly.
+
+@ENDNODE
+
+#-------------------------------------------------------------------------#
+@NODE     "Tsetitimer(2)"
+@NEXT     "Tsetitimer(2)"
+@SYMBOL a "Tsetitimer"
+@SYMBOL air "Itimer"
+Tsetitimer                                            MiNT: Manual Pages: @{2 link man.2}
+@box 1 75 1 0
+  @{I}@{"MiNT" ignore} Programmer's Manual          Version 1.11           July 23, 1994@{i}
+
+NAME
+	Tsetitimer - schedule an interval timer
+
+SYNOPSIS
+	LONG Tsetitimer( LONG which, LONG interval, LONG value,
+	                 LONG ointerval, LONG ovalue );
+
+DESCRIPTION
+	@{U}Tsetitimer@{u}  is  used  to schedule a periodic timer. One of three timers,
+	specified  by  @{I}which@{i},  may be selected.  Timer 0 runs in real time, and
+	sends  a SIGALRM  upon expiration.  Timer 1 runs in process virtual time
+	(that is, only when the process that scheduled the timer is running) and
+	sends a SIGVTALRM upon expiration.  Timer 2 runs both in process virtual
+	time  and  when the operating system is running on behalf of the process
+	that scheduled it, and sends a SIGPROF upon expiration.
+
+	@{I}value@{i}  is  the address of a longword specifying the initial timer value
+	in  milliseconds.  If @{I}value@{i} == 0,  then the current timer value remains
+	unchanged.  If the longword that @{I}value@{i} points to contains 0, the  timer
+	is cancelled.
+
+	Upon expiration of the initial timer value,  the timer value is reset to
+	the longword pointed to by @{I}interval@{i}.  If @{I}interval@{i} == 0, the previously
+	requested  interval  remains  unchanged.  If the longword that @{I}interval@{i}
+	points  to  contains  0,  the  timer  will  be  cancelled upon its first 
+	expiration.
+
+	@{I}ovalue@{i} and @{I}ointerval@{i} point to longwords into which will be written the
+	current value and interval of the timer.  If @{I}ovalue@{i} or @{I}ointerval@{i} == 0,
+	the old values will not be passed back to the calling process.
+
+RETURNS
+	If an error occurs, a GEMDOS error code is returned.
+
+	Upon success, 0 is returned.
+
+SEE ALSO:
+	Pause(2), Psignal(2), Talarm(2)
+
+BUGS
+	Internal  calculations are done in milliseconds, so setting a timer more
+	than 2 million seconds or so into the future will not work correctly.
+
+@ENDNODE

@@ -1,0 +1,74 @@
+<html>
+<head>
+	<title> New MiNT system calls: Psetegid() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Psetegid()</H3>
+
+<P>
+<B>LONG Psetegid(<i>egid</i>)</B>
+<P>
+<B>WORD <I>egid</I>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Psetegid()</B> sets the effective group <i>id</i> 
+for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>324 (0x0144)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>egid</I> specifies the new 
+effective group <i>id</i> for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	egid,-(sp)
+move.w	#$0144,-(sp)
+trap	#1
+addq.l	#4,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Psetegid()</B> returns 
+new <i>egid</i> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+<TR><TH><B>Caveats</B></TH><TD>Prior to MiNT version 1.12 this 
+call contained a bug affecting its functionality.
+<p>Setting effective group <i>id</i> needs root privileges.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>This call is often used by daemon 
+processes to <i>downgrade</i> their privileges to user level.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="pseteuid.html"><b>Pseteuid()</b></a>, <b>Psetgid()</b>,
+<a href="psetregid.html"><b>Psetregid()</b></td>
+</tr>
+
+</table>
+</body>
+</html>

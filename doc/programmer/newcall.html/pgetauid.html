@@ -1,0 +1,60 @@
+<html>
+<head>
+	<title> New MiNT system calls: Pgetauid() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Pgetauid()</H3>
+
+<P>
+<B>LONG Pgetauid(VOID)</B>
+<P>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Pgetauid()</B> returns the audit user <i>id</i> for 
+the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>325 (0x0145)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	#$0145,-(sp)
+trap	#1
+addq.l	#2,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Pgetauid()</B> returns the 
+<i>auid</i> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>Audit <i>id</i> never changes once set 
+to != 0 and can therefore be used to determine what <i>id</i> was 
+originally attributed to the user at the begin of the current session.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="psetauid.html"><b>Psetauid()</b></a>, <b>Pgetuid()</b>,
+<a href="pgetreuid.html"><b>Pgetreuid()</b></td>
+</tr>
+
+</table>
+</body>
+</html>

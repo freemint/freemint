@@ -1,0 +1,44 @@
+MiNT is Not TOS: A Multitasking Operating System Extension for the Atari ST
+
+Copyright 1990,1991,1992 Eric R. Smith.
+Copyright 1992,1993,1994 Atari Corporation
+All rights reserved.
+
+THE MiNT DOCUMENTATION IS PROVIDED FREE OF CHARGE, AS IS. ATARI
+CORPORATION AND ERIC R. SMITH MAKE NO REPRESENTATIONS OR
+WARRANTIES WITH RESPECT TO THIS DOCUMENTATION, AND IN PARTICULAR
+SPECIFICALLY DISCLAIM ANY IMPLIED WARRANTIES OF
+MERCHANTIBILITY OR FITNESS FOR A PARTICULAR PURPOSE. USE THIS
+DOCUMENTATION AT YOUR OWN RISK.
+----------------------------------------------------------------------------
+Here is the documentation for the current version of MiNT. It's
+oriented towards programmers rather than users, and is known to be out
+of date and incomplete. It may be better than nothing, though...
+
+Distribution conditions are as follows:
+
+TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION, AND MODIFICATION
+
+1. Redistribution and use of unmodified verbatim copies of the MiNT
+documentation is permitted, provided that this copyright notice
+and disclaimer is included with all such copies.
+
+2. Redistribution and use of modified copies of the MiNT documentation
+is permitted, provided that this copyright notice and disclaimer
+is included with all such copies, and also provided that:
+
+    (a) a prominent notice indicating that the documentation has been
+	modified is included along with the distribution; and
+
+    (b) the modified copies of the documentation may be distributed
+	by all recipients, under the terms of this license. In other
+	words, no additional copying conditions may be attached to
+	modified versions of the documentation.
+
+Appendix for FreeMiNT:
+
+The files `mint.doc' including appendices refer to older versions of
+MiNT.  Please remember that all kernel features are subject to change
+without notice.  The behavior of the kernel has definitely changed
+notably since the documentation was last updated.  Feel free to 
+send changes to the documentation.

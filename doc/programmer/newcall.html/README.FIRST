@@ -1,0 +1,36 @@
+This archive contains a description of 22 `unofficial' FreeMiNT 
+calls. They were subsequently introduced into the kernel from version 
+1.10 up to 1.15.x.
+
+Since some of them have been there for years now and quite a few 
+(all?) are used by the MiNT Libs extensively (which means they're 
+used by loads of software linked with MiNT Libs), I guess, that it 
+would be the time to make them `official'. But it of course is up to 
+the FreeMiNT community to decide on such things.
+
+It is also an attempt to clarify the functions of modes used by 
+Ssystem() call. This mainly means fixing inconsistencies present in 
+the previous ASCII doc, but also means some attempts to expand 
+definitions of values reserved for future usage. Last but not least, 
+the document has been expanded with descriptions of modes defined by 
+the latest kernel release version.
+
+The documentation is not supposed to be finished, feel free to 
+improve it and/or report inconsistencies to me (draco@atari.org).
+
+CHANGES made 18.XI.1999.
+------------------------
+
+dxreaddir.html:     corrected a typo
+pgetauid.html:      clarification
+psetauid.html:      clarification
+psigintr.html:      update for changes made as of kernel 1.15.1
+shutdown.html:      update for changes made as of kernel 1.15.5
+                    mistaken parameter definition corrected.
+slbclose.html:      new file
+slbopen.html:       new file
+ssystem.html:       update for changes made as of kernel 1.15.1
+suptime.html:       update for new error codes
+                    clarification
+talarm.html:        clarification
+tsettimeofday.html: update for new error codes

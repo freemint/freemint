@@ -1,0 +1,134 @@
+  <html>
+    <head>
+      <title>
+	FreeMiNT system calls: Super()
+      </title>
+    </head>
+    
+    <body bgcolor="#FFFFFF">
+      
+      <h3>
+	Super()
+      </h3>
+
+      <b>
+	LONG Super( new_stack )
+      </b>
+
+      <p>
+	<b>
+	  LONG new_stack;
+	</b>
+      </p>
+
+      
+      <table>
+
+	<tr>
+	  <th>
+	  </th>
+	  <td>
+	    <b>Super()</b> inquires and modifies the current CPU mode.
+	  </td>
+	</tr>
+	
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Opcode</b>
+	  </th>
+	  <td>
+	    32 (0x0020)
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Availability</b>
+	  </th>
+	  <td>
+	    All GEMDOS versions.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Parameters</b>
+	  </th>
+	  <td>
+	    <b><i>stack</i></b> can take the following values:
+	    <ul>
+	      <li>
+		<b>SUP_SET (0)</b>: The processor is placed in supervisor mode and
+		the the function returns the old supervisor stack pointer (ssp) used by
+		the process. The process's user stack pointer will be used as the supervisor
+		stack pointer.
+	      </li>
+	      <li>
+		<b>SUP_INQ (1)</b>: The functions returns -1 if the CPU is in supervisor
+		mode and 0 if it is in user mode.
+	      </li>
+	      <li>
+		<b><i>other</i></b>: Just like with, <b>SUP_SET</b>, the CPU is placed
+		in supervisor mode. But at the difference of <b>SUP_SET</b>, the supervisor
+		stack pointer of the process is set to <b><i>new_stack</i></b>.
+	      </li>
+	    </ul>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Binding</b>
+	  </th>
+	  <td>
+	    <pre>pea&nbsp;&nbsp;&nbsp;&nbsp; new_stack,-(sp)
+move.w&nbsp; #$0020,-(sp)
+trap&nbsp;&nbsp;&nbsp; #1
+addq.l&nbsp; #6,sp</pre>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Return Value</b>
+	  </th>
+	  <td>
+	    In <b>SUP_INQ</b> mode, the current state of the processor (-1 if supervisor,
+	    0 if user), otherwize the old supervisor stack pointer.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Comments</b>
+	  </th>
+	  <td>
+	    <p>
+	      When being in supervisor, calling <b>Super</b> with a <b><i>new_stack</i></b>
+	      not being <b>SUP_INQ</b> will make the process go back in user mode.
+	      The supervisor stack pointer is copied into the user stack pointer, and
+	      the supervisor stack pointer is then set to <b><i>new_stack, </i></b>except
+	      if <b><i>new_stack</i></b> was <b>NULL</b>, because it would mean
+	      that you want the system stack pointer to be <b>NULL</b>, which is very dangerous.
+	      When this happens, the stack pointers remain unchanged and the <b>SIGSYS</b>
+	      signal (12) is raised.
+	    </p>
+	    <p>
+	      Also, if you are in <b>SECURELEVEL</b> > 1, you must have root privileges
+	      to get into supervisor mode. If you don't have them and call <b>Super()</b>,
+	      the <b>SIGSYS</b> signal (12) will be raised.
+	    </p>	    
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>See Also</b>
+	  </th>
+	  <td>
+	    <b><a href="Supexec.html">Supexec()</a></b>
+	  </td>
+	</tr>
+      </table>
+    </body>
+  </html>

@@ -1,0 +1,124 @@
+.TH Dpathconf 2 "MiNT Programmer's Manual" "Version 1.15" "1998-10-29"
+.SH NAME
+Dpathconf \- get information about file system configuration
+.SH SYNOPSIS
+.nf
+LONG Dpathconf( char *name, WORD mode );
+.fi
+.SH DESCRIPTION
+.I Dpathconf
+returns information about various limits or capabilities of the file system
+containing the file named
+.IR name .
+The variable
+.I mode
+controls which limit or capability is being queried, as follows:
+.PP
+.nf
+mode               value returned
+
+-1                 max. legal value for n in Dpathconf(n)
+DP_IOPEN (0)       internal limit on the number of open files
+DP_MAXLINKS (1)    maximum number of links to a file
+DP_PATHMAX (2)     maximum length of a full path name
+DP_NAMEMAX (3)     maximum length of an individual file name
+DP_ATOMIC (4)      number of bytes that can be written atomically
+DP_TRUNC (5)       information about file name truncation
+DP_CASE (6)        information about case sensitivity
+DP_MODEATTR (7)    information about supported file mode bits
+DP_XATTRFIELDS (8) information about supported extended attributes
+DP_VOLNAMEMAX (9)  maximum length of a volume name (0 if volume names
+                   not supported)
+.fi
+.PP
+If any of these items are unlimited, then 0x7fffffffL is returned.
+.PP
+For DP_TRUNC (mode 5), return information about file name truncation, the 
+returned value has the following meaning:
+.IP 0
+(DP_NOTRUNC) File names are never truncated; if the file name in any system 
+call affecting this directory exceeds the maximum length (returned by mode 
+3), then the error value ERANGE is returned from that system call.
+.IP 1
+(DP_AUTOTRUNC) File names are automatically truncated to the maximum length.
+.IP 2
+(DP_DOSTRUNC) File names are truncated according to DOS rules, i.e. to a maximum 8 
+character base name and a maximum 3 character extension.
+.PP
+For DP_CASE (mode 6), information about case sensitivity, the returned 
+value has the following meaning:
+.IP 0
+(DP_CASESENS) File system is case sensitive.  
+.IP 1
+(DP_CASECON) File system is case insensitive, and file case information is not 
+preserved (e.g. file names are always converted to upper case).
+.IP 2
+(DP_CASEINSENS) File system is case insensitive, but file names are saved 
+with the case they were originally given (e.g. file "FooBar" will appear 
+in the directory under that name, and may be accessed as "foobar" and 
+"fOObaR", etc.).
+.PP
+For DP_MODEATTR (mode 7), information about the validity of fields in the
+mode and attrib fields of the XATTR structure is returned. Bits 0..5
+contain flags about what field of the attr field is valid:
+.PP
+FA_RDONLY (0x01): only set when read permission is handled by this
+bit, not when it is emulated by means of the mode bits.
+.PP
+FA_HIDDEN (0x02), FA_SYSTEM (0x04): set when the filesystem supports
+these special attributes (normally only DOS filesystems).
+.PP
+FA_LABEL (0x08): set when the filesystem label can be retrieved with
+Fsfirst/Fsnext.
+.PP
+FA_DIR (0x10): reserved. Use the file type bits (see below) to inquire
+whether there are folders on the filesystem.
+.PP
+FA_CHANGED (0x20): set if the filesystem supports the notion of an
+archive flag and uses the attr field for that.
+.PP
+Bits 6 and 7 are reserved. Bits 8..19 contain flags describing the 
+validity of the lower 12 bits of the mode field. Bits 20..27 contain flags 
+about what types of files are supported on this filesystem:
+.nf
+
+DP_FT_DIR   (0x00100000L)  directories (always if . is there)
+DP_FT_CHR   (0x00200000L)  character special files
+DP_FT_BLK   (0x00400000L)  block special files, currently unused
+DP_FT_REG   (0x00800000L)  regular files
+DP_FT_LNK   (0x01000000L)  symbolic links
+DP_FT_SOCK  (0x02000000L)  sockets, currently unused
+DP_FT_FIFO  (0x04000000L)  pipes
+DP_FT_MEM   (0x08000000L)  shared memory or proc files
+.fi
+.PP
+Bits 28..31 are reserved.
+.PP
+For DP_XATTRFIELDS (mode 8), a bit mask of supported fields in the XATTR 
+structure is returned (all other bits are reserved):
+.nf
+
+DP_INDEX    (0x0001)    index field unique for every file on the fs
+DP_DEV      (0x0002)    device field valid
+DP_RDEV     (0x0004)    rdev field valid (and not identical to dev)
+DP_NLINK    (0x0008)    number of links valid
+DP_UID      (0x0010)    user id valid
+DP_GID      (0x0020)    group id valid
+DP_BLKSIZE  (0x0040)    block size valid
+DP_SIZE     (0x0080)    size field valid (and meaningful!)
+DP_NBLOCKS  (0x0100)    number of blocks valid
+DP_ATIME    (0x0200)    file system has last access time
+DP_CTIME    (0x0400)    file system has last status change time
+DP_MTIME    (0x0800)    file system has last modification time
+.fi
+
+.SH EXAMPLES
+.PP
+DP_MODEATTR could be used by a graphical program that manipulates the 
+file's attributes: it could automagically detect which fields to display.
+.PP
+You can use DP_XATTRFIELD to find out which type of timestamp is maintained 
+on a filesystem. Example: the process file system returns the creation time 
+for all timestamps, so none of the time fields in the mask will be set.
+.SH "SEE ALSO"
+.IR Sysconf (2)

@@ -1,0 +1,102 @@
+  <html>
+    <head>
+      <title>
+	FreeMiNT system calls: Sversion()
+      </title>
+    </head>
+    
+    <body bgcolor="#FFFFFF">
+      
+      <h3>
+	Sversion()
+      </h3>
+
+      <b>
+	WORD Sversion( VOID )
+      </b>
+
+      <table>
+
+	<tr>
+	  <th>
+	  </th>
+	  <td>
+	    <b>Sversion()</b> returns the version of the GEMDOS.
+	  </td>
+	</tr>
+
+	<p>
+	</p>
+	
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Opcode</b>
+	  </th>
+	  <td>
+	    48 (0x0030)
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Availability</b>
+	  </th>
+	  <td>
+	    All GEMDOS versions.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Parameters</b>
+	  </th>
+	  <td>
+	    none.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Binding</b>
+	  </th>
+	  <td>
+	    <pre>move.w&nbsp; #$0030,-(sp)
+trap&nbsp;&nbsp;&nbsp; #1
+addq.l&nbsp; #6,sp</pre>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Return Value</b>
+	  </th>
+	  <td>
+	    The <b>WORD</b> returned contains the GEMDOS version. The major version number is in the
+           LSB where as the minor version number is in the MSB. For instance,  a GEMDOS 0.30 will
+           return 0x3000. Expect FreeMiNT to return 0x4000.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Comments</b>
+	  </th>
+	  <td>
+	    <p>
+	      The GEMDOS version number has nothing to do with that of an AES. To get the latter,
+	      check the results of <b>appl_init()</b>. To get more information about the features of the GEMDOS, you may also check <b>Sysconf()</b>.
+	    </p>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>See Also</b>
+	  </th>
+	  <td>
+	    <a href="appl_init.html"><b>appl_init()</b></a>, <a href="Sysconf.html"><b>Sysconf()</b></a>
+	  </td>
+	</tr>
+      </table>
+    </body>
+  </html>

@@ -1,0 +1,134 @@
+<html>
+<head>
+   <title> New MiNT system calls: Tsetitimer() </title>
+<nextid = 1>
+</head>
+<body bgcolor="#FFFFFF">
+
+<h3>
+Tsetitimer()</h3>
+<b>LONG Tsetitimer(<i>which, interval, value, ointerval, ovalue</i>)</b>
+<p><b>WORD <i>which</i>;</b>
+<br><b>LONG <i>*interval</i>;</b>
+<br><b>LONG <i>*value</i>;</b>
+<br><b>LONG <i>*ointerval</i>;</b>
+<br><b>LONG <i>*ovalue</i>;</b>
+<table BORDER >
+<tr>
+<th></th>
+
+<td><b>Tsetitimer()</b> schedule an interval timer.</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Opcode</b></th>
+
+<td>329 (0x0149)</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Availability</b></th>
+
+<td>Available when a '<b>MiNT</b>' cookie with a version of at least 1.11
+exists.</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Parameters</b></th>
+
+<td><b><i>which</i></b> specifies the type of timer to use:
+<br><b>ITIMER_REAL</b> (0). The timer decrements in real time. A <b>SIGALRM
+</b>signal
+is delivered when the timer expires.
+<br><b>ITIMER_VIRTUAL</b> (1). The timer decrements in process virtual
+time. It runs only when the process is executing. A <b>SIGVTALRM</b> signal
+is delivered when it expires.&nbsp;
+<br><b>ITIMER_PROF</b> (2). The timer decrements both in process virtual
+time and when the system is running on behalf of the process. It is designed
+to be used by interpreters in statistically profiling the execution of
+interpreted programs. Each time the <b>ITIMER_PROF</b> timer expires, the
+<b>SIGPROF
+</b>signal is delivered.
+<p>The rest of the parameters are pointers to millisecond values.
+<p><b><i>interval</i></b> is the value to which the timer will be reset
+when it expires. It is useful to program a timer that sends signals at
+regular time intervals.
+<p><b><i>value</i></b> is the current timer value. You must initialize
+it to a non-zero value for the timer to be launched (give it the value
+of <b><i>interval</i></b> if you want regular signals).&nbsp; When you
+want to stop it, call the function again with the <b>LONG </b>pointed to
+by<b> <i>value </i></b>set to 0. The <b>LONG</b> pointed to by <b><i>value
+</i></b>is
+not decreased as time passes.
+<p><b><i>ointerval</i></b> and <b><i>ovalue</i></b> are the values used
+for the last call of the function.</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Binding</b></th>
+
+<td>
+<pre>pea&nbsp;&nbsp;&nbsp;&nbsp; ovalue
+pea&nbsp;&nbsp;&nbsp;&nbsp; ointerval
+pea&nbsp;&nbsp;&nbsp;&nbsp; value
+pea&nbsp;&nbsp;&nbsp;&nbsp; inteval
+move.w&nbsp; which,-(sp)
+move.w&nbsp; #$0149,-(sp)
+trap&nbsp;&nbsp;&nbsp; #1
+lea&nbsp;&nbsp;&nbsp;&nbsp; $12(sp),sp</pre>
+</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Return Value</b></th>
+
+<td><b>Tsetitimer()</b> returns <b>E_OK</b> or a negative GEMDOS error
+code otherwise.</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Comments</b></th>
+
+<td>If you just want to run the timer once, maybe you can use <b>Talarm()</b>
+or <b>Tmalarm()</b>.</td>
+</tr>
+</table>
+
+</body>
+</html>

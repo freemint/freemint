@@ -1,0 +1,6 @@
+The TZ Environment Variable
+===========================
+
+This is now superseeded by the MiNTLib's timezone database. It's
+strictly recommended to remove any TZ environment variable and to
+install the timezone database.

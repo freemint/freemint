@@ -1,0 +1,229 @@
+This is FreeMiNT 1.15.12, official release
+==========================================
+
+Viertes FreeMiNT 1.15 Release
+-----------------------------
+
+Diese Version ist erweiterte und fehlerbereinigte Version der
+1.15.5 FreeMiNT Version.
+
+An dieser Stelle vielen Dank an alle Betatester die alle neuen
+Funktionen intensiv getestet haben und mir mit Ideen und Fehlermeldungen
+geholfen haben. Ebenso vielen Dank an alle die aktiv an der Entwicklung
+beteiligt waren, insbesondere Thomas, Konrad, Jîrg, Ralph und alle anderen.
+
+Noch ein Wort zur Dokumentation und sonstigen Texten. Viele haben kritisiert
+das die Dokumentation ausschlieûlich in English geschrieben ist. Dieses
+Readme und die sonstigen deutschen Texte tragen dem Rechnung. Das ganze ist
+leider alles andere als perfekt oder vollstÑndig. Auch die englischsprachige
+Dokumentation ist teilweise noch auf einem sehr altem Stand oder
+unvollstÑndig. Jede Hilfe um die Dokumentation zu verbessern/aktualisieren/
+berichtigen wird dankbar entgegengenommen.
+
+So, bitte auch die anderen *.ger Files mal anschauen. RÅckmeldungen
+aller Art sind erwÅnscht. Also Kritik und/oder VerbesserungsvorschlÑge
+sowie Fehlermeldungen aller Art in die MiNT-List posten oder auch direkt an
+mich schicken: fnaumann@freemint.de.
+
+Achtung:
+
+Die Kernel Module werden nicht mehr seperat verwaltet!
+Dementsprechend wird es keine seperaten Archive oder Releases
+von den Modulen geben. Es war ein ein horrender Aufwand 10 verschiedene
+Module plus dem Kernel plus den Kernel spezifischen Tools zu verwalten
+und zu aktualisieren. Mittels CVS lÑsst sich ein Grossteil dieser
+Zeit einsparen und die Komplettarchive garantieren zudem das die Module
+konsistent gegenÅber dem Kernel sind.
+
+
+Die wichtigsten énderungen im öberblick:
+
+[english now]
+
+- new system calls: Pvalidate()/Maccess()/Ptrace()/Psysctl()/Fpoll()/
+  Fseek64()/emulation()
+- improvements in the memory management
+- improvements in the module handling and kernel interface
+- bugfixes of some bad bugs
+- finalized cvs integration of all kernel modules
+- updates and enhancements of the kernel modules
+
+See in ChangeLog.#1.15.12 for more details.
+
+
+Contributors:
+
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Guido Flohr <guido@freemint.de>
+  - Michael Schwingen <rincewind@tubul.dascon.de>
+  - Ralph Lowinski <ralph@aquaplan.de>
+  - Jens Heitmann <jheitmann@debitel.net>
+  - Odd Skancke <oskancke@online.no>
+  - and me
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+2000-07-31, Magdeburg
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+
+This is FreeMiNT 1.15.5, official release
+=========================================
+
+Drittes îffentliches FreeMiNT 1.15 Release
+------------------------------------------
+
+Diese Version ist erweiterte und fehlerbereinigte Version der
+1.15.1 FreeMiNT Version.
+
+An dieser Stelle vielen Dank an alle Betatester die alle neuen
+Funktionen intensiv getestet haben und mir mit Ideen und Fehlermeldungen
+geholfen haben. Ebenso vielen Dank an alle die aktiv an der Entwicklung
+beteiligt waren, insbesondere Thomas, Konrad, Jîrg, Ralph und alle anderen.
+
+Noch ein Wort zur Dokumentation und sonstigen Texten. Viele haben kritisiert
+das die Dokumentation ausschlieûlich in English geschrieben ist. Dieses
+Readme und die sonstigen deutschen Texte tragen dem Rechnung.
+Es ist aber so das die RÅckmeldungen die ich persînlich bekomme fast aus-
+schlieûlich aus dem Ausland kommen. Dementsprechend gestalte ich natÅrlich
+auch die Dokumentation fÅr die User die sie auch lesen.
+
+So, bitte auch die anderen *.ger Files mal anschauen. RÅckmeldungen
+aller Art sind erwÅnscht. Also Kritik und/oder VerbesserungsvorschlÑge
+sowie Fehlermeldungen aller Art in die MiNT-List posten oder auch direkt an
+mich schicken: fnaumann@cs.uni-magdeburg.de oder an meinen Maus Account:
+Frank Naumann @ B2.
+
+Die wichtigsten énderungen im öberblick:
+
+[english now]
+
+- new system calls: Ffchown(), Ffchmod(), Dchroot(), Fstat64()
+- optional native UTC mode for filesystems
+- better shutdown, FreeMiNT never returns to TOS now
+- new INITIALMEM configuration option (config file/run time)
+- support MagiC style shared libraries
+- support program header flag F_SMALLTPA (introduced by MagiC)
+- and lot of bugfixes and other improvements
+
+See in ChangeLog.#1.13-1.15.9 for more details.
+
+
+Contributors:
+
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Guido Flohr <gufl0000@stud.uni-sb.de>
+  - Andreas Baer <asbaer@asrael.franken.de>
+  - Michael Schwingen <rincewind@tubul.dascon.de>
+  - Ralph Lowinski <ralph@aquaplan.de>
+  - Joerg Westheide <Joerg_Westheide@su.maus.de>
+  - and I
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 16.11.1999
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+
+FreeMiNT 1.15.1, offizielles Release
+====================================
+
+Zweites îffentliches FreeMiNT 1.15 Release
+------------------------------------------
+
+Diese Version ist zumeist eine stark fehlerbereinigte und optimierte
+Version der 1.15.0 FreeMiNT Version.
+
+An dieser Stelle vielen Dank an alle Betatester die alle neuen
+Funktionen intensiv getestet haben und mir mit Ideen und Fehlermeldungen
+geholfen haben. Ebenso vielen Dank an alle die aktiv an der Entwicklung
+beteiligt waren, insbesondere Thomas, Konrad, Jîrg, Ralph und alle anderen.
+
+Noch ein Wort zur Dokumentation und sonstigen Texten. Viele haben kritisiert
+das die Dokumentation ausschlieûlich in English geschrieben ist. Dieses
+Readme und die sonstigen deutschen Texte tragen dem Rechnung.
+Es ist aber so das die RÅckmeldungen die ich persînlich bekomme fast aus-
+schlieûlich aus dem Ausland kommen. Dementsprechend gestalte ich natÅrlich
+auch die Dokumentation fÅr die User die sie auch lesen.
+
+So, bitte auch die anderen *.ger Files mal anschauen. RÅckmeldungen
+aller Art sind erwÅnscht. Also Kritik und/oder VerbesserungsvorschlÑge
+sowie Fehlermeldungen aller Art in die MiNT-List posten oder auch direkt an
+mich schicken: fnaumann@cs.uni-magdeburg.de oder an meinen Maus Account:
+Frank Naumann @ L2.
+
+Die wichtigsten énderungen im öberblick:
+
+[english now]
+
+- 040/060 MMU (memory protection) support
+- fix bug in 030 memory protection code (working now)
+- complete new and much faster kernel internal memory management
+  - efficient 3 way algorithm
+- new Ssystem information and configuration options
+  - processor cache information & handling
+  - extended kernel informations
+  - extended debug settings
+- new Dcntl supported (DP_VOLNAMEMAX)
+- fixes and improvements in the NEWFATFS:
+  - software configurable writeprotect mode on filesystem level
+  - more sanity checks and verifications
+  - enhanced FAT32 support
+  - better shell support, x-bit emulation
+  - complete working lookup
+  - fix some other minor bugs related to directory handling,
+  - fix floppy disk bug
+  - pseudo permission support
+- fixes and improvements in the buffer cache:
+  - resident caching (interface enhancement)
+  - remove redundant code
+  - large read caching
+  - writeback optimziation
+  - signed - unsigned bugfixes
+  - bugfixes in mapping routines
+- rewritten syscall entry strategie
+- lot of speed optimizations in periodically tasks
+- complete new enhanced CNF parser
+- rewritten Psigintr(), working now much better
+- own processor detection
+- automatic cpush adaption
+- updates for the TOSFS
+- fix 14 partition problem
+- fix for CENTEK II users (TOS version detection)
+- better Milan support
+- and lot of other minor fixes and cleanups
+
+See in ChangeLog.#1.13-1.15.9 for more details.
+
+
+Contributors:
+
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Guido Flohr <gufl0000@stud.uni-sb.de>
+  - Michael Schwingen <rincewind@tubul.dascon.de>
+  - Julian F. Reschke <fjr010@email.mot.com>
+  - Ralph Lowinski <ralph@aquaplan.de>
+  - Joerg Westheide <Joerg_Westheide@su.maus.de>
+  - Katherine L. Ellis <kellis@primenet.com>
+  - Christian Felsch <felsch@tu-harburg.de>
+  - Rainer Seitel <Rainer_Seitel@ka.maus.de>
+  - and I :-)
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 08.05.1999

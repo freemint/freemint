@@ -1,0 +1,128 @@
+<html>
+<head>
+	<title> New MiNT system calls: Tsettimeofday() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Tsettimeofday()</H3>
+
+<P>
+<B>LONG Tsettimeofday( <I>tv</I>, <i>tzp</i>)</B>
+<P><B>
+timeval <i>*tv</i>;<br>
+timezone <i>*tzp</i>;<br>
+</B></p>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD colspan=2><B>Tsettimeofday()</B> sets the state of the 
+internal, high resolution system clock.
+</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD colspan=2>342 (0x0156)</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD colspan=2>Available when a 
+<B>MiNT</B> kernel of a version at least 1.15.0 <i>release</i> is 
+detected.
+</TD></TR>
+
+</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD colspan=2>
+The argument <b><i>tv</i></b> is a pointer to the following structure: 
+<pre>
+struct timeval
+{
+	long int tv_sec;
+	long int tv_usec;
+}; 
+</pre>
+<p>
+<i>tv_sec</i> holds the number of seconds elapsed since the epoch. The 
+epoch is <i>Thu, Jan 1 1970 00:00:00 UTC</i>.</p>
+<p><i>tv_usec</i> holds the fractional part of <i>tv_sec</i> measured 
+in microseconds.</p>
+The argument <b><i>tzp</i></b> is a pointer to another structure:
+<pre> 
+struct timezone
+{
+	long int tz_minuteswest;
+	long int tz_dsttime;
+}; 
+</pre>
+<p><i>tz_minuteswest</i> holds the offset to UTC in seconds. Timezones 
+east of the zero-meridian (e.g. Eastern Europe) have a negative offset, 
+timezones west of the zero-meridian (e.g. America) have a positive 
+one.</p>
+<p><i>tz_dsttime</i> is non-zero, if daylight savings time applies 
+during some part of the year.</p>
+<p>You may safely pass <b>NULL</b> for either argument. This isn't 
+considered an error.</p>
+</td></tr>
+
+<TR><TH><B>Return value</B></TH><TD colspan=2>The following error 
+conditions are defined: 
+<p>
+<b>EPERM</b> - an attempt was made by a user without super-user 
+privileges to change the system time or system time zone 
+information.</p>
+<p>
+<b>EBADARG</b> - one of the arguments is out of range.  Note that the 
+kernel time cannot be set to dates before Jan 1 1980 00:00:00 and after 
+some day in 2038 (yep, <b>MAX_LONG</b> seconds since the epoch). 
+Timezone offsets must be in the range of +/- 720 minutes.
+</td></tr>
+
+<TR><TH><B>Binding</B></TH><TD colspan=2>
+<PRE>
+pea	tzp
+pea	tv
+move.w  #$0156,-(sp)
+trap    #1
+lea     $0a(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Caveats</B></TH><TD colspan=2>Implementors of library 
+bindings should be aware that the definition of <i>struct timezone</i> 
+is non-standard. The members are actually <i>int</i> and not <i>long 
+int</i> (this applies only to <i>struct timezone</i>; the members of 
+<i>struct timeval</i> are always long). 16-bit libraries will have to 
+copy the contents of the structure that <b><i>tzp</i></b> points to.
+</p>
+</TD></TR>
+
+<tr><th><b>Comments</b></th><td colspan=2>
+The <i>tz_dsttime</i> member of <i>timezone</i> is stored, but not 
+evaluated within the kernel. Beware not to misunderstand its meaning: 
+if non-zero it simply signifies that daylight savings time apply during 
+some part of the year, <i>not necessarily now</i>. In other words: if 
+it is non-zero someday, it should be non-zero during the entire year.
+<p>The <b>Ssystem()</b> call has a command <b>S_CLOCKMODE</b>. This 
+command allows to retrieve or set the kernel clock mode, i.e. to 
+specify whether the hardware clock is meant to run in UTC or in local 
+time.</p>
+<p>It is planned to make 
+MiNT compliant with the kernel time keeping model described in RFC1305. 
+This model is already successfully implemented in operating systems 
+such as SunOS, Ultrix, OSF/1, HP-UX and Linux. Please expect the 
+internal realization to change in the future.
+</p>
+</td></tr>
+
+<TR><TH><b>See also</b></TH><TD colspan=2>
+<a href="ssystem.html"><b>Ssystem()</b></a>, 
+<a href="tgettimeofday.html"><b>Tgettimeofday()</b></a>
+</td></tr>
+</table>
+</body>
+</html>

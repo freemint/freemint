@@ -1,0 +1,237 @@
+# MiNT configuration file.
+
+# Edit this with a normal ASCII text editor. Lines starting with '#' 
+# are comments. Other lines are commands for MiNT to execute at boot 
+# up, or variables that control how MiNT behaves.
+
+# For best results, the convention u:\drive\pathname should be used for
+# all specified pathnames.
+
+#
+# Here are things you can change if you want to. There are reasonable
+# defaults for all of these.
+#
+
+# set current working directory to u: respective /
+cd u:\
+
+# SECURELEVEL= enables the appropriate security level:
+# 0 - recommended for single user setups, like MultiTOS (default).
+# 1 - recommended for multiuser setups, like KGMD.
+# 2 - full protection, unsupported by software, thus discouraged.
+
+SECURELEVEL=1
+
+# FASTLOAD=YES forces fast loading (without zeroing all the memory)
+# for all programs. This defines a default state, that can be modified
+# later via appropriate kernel calls (use MiNT Setter utility to 
+# toggle it later when neessary, without reboots).
+# FASTLOAD=NO means that the information from the program header will be
+# used to decide (this is like TOS does).
+
+#FASTLOAD=YES
+
+# NEWFATFS= enables the new FAT filesystem driver for selected FAT
+# filesystems. The old TOS FS will be used otherwise.
+
+#NEWFATFS=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
+
+# VFAT= enables VFAT extension for selected drives specified in the
+# NEWFATFS= command.
+
+#VFAT=A,J
+
+# WB_ENABLE= enables write back cache for selected NEWFATFS drives.
+
+#WB_ENABLE=C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
+
+# CACHE= specifies the size of disk cache in kilobytes for the internal
+# caching module
+
+#CACHE=500
+
+# UPDATE= set update time for system update daemon in seconds
+# default is 5, it isn't recommended to use a value less than 4
+
+#UPDATE=10
+
+# software write protection on filesystem level
+
+#WRITEPROTECT=R,S
+
+# HIDE_B= tells the MiNT to remove floppy drive B: from the system. 
+# It is useful on single floppy systems to get rid of "Insert 
+# disk B: into drive A:" messages from the AES.
+
+#HIDE_B=YES
+
+# MAXMEM= gives the maximum amount of memory that any process may use
+# (in kilobytes). The default is to make this unlimited, but if you have
+# a lot of memory and/or programs that grab more memory than they should,
+# try setting this.
+# e.g. to limit processes to 4096K of memory, remove the '#' at the
+# beginning of the next line.
+# Decent shells (desktops) allow you to limit the maximum amount of memory
+# independently for each program.
+
+#MAXMEM=4096
+
+# set maximum additional TPA size for new processes
+# (in kilobytes)
+
+INITIALMEM=1024
+
+# SLICES controls how long a process may run before being interrupted.
+# The default value (2) is usually best, but if you tend to run
+# very processor intensive applications in the foreground, you might
+# want to put SLICES=3 (this makes CPU hogs get more time than they
+# otherwise would).
+# The higher the SLICES value, your processes have faster response time
+# but the general performance is worse.
+
+SLICES=2
+
+# DEBUG_LEVEL controls output of debugging information. The higher
+# the level, the more stuff MiNT will spew about about what it's doing.
+# The average user doesn't want to hear about this stuff, so the default
+# is 0.
+# DEBUG_DEVNO is the BIOS device number to which the info should be sent.
+# Devno can be: 0=printer, 1=aux/modem, 2=screen(console), 3=midi,
+# 4=keybrd, 5=raw.
+# The default is the console.
+
+#DEBUG_LEVEL=1
+#DEBUG_DEVNO=3
+
+# BIOSBUF controls how BIOS I/O is performed. Normally, MiNT tries to buffer
+# this to provide a (considerable) improvement in speed. However, some
+# applications may get upset by this. BIOSBUF=no turns off all buffering
+# for maximum compatibility.
+
+#BIOSBUF=NO
+
+#
+# Here are some commands that you can give to MiNT:
+#
+# alias d: path -- make a fake "drive" that actually points to the 
+#                  given path
+# cd path       -- changes MiNT's default directory
+# echo message  -- print something on the screen
+# exec program  -- runs a program; you must give the complete path
+#                  and file extensions (e.g. c:\bin\echo.prg)
+# include file  -- include another portion of the MINT.CNF file.
+# sln path link -- make a symbolic link named "link" pointing to "path"
+#                  "link" must be on drive U: for this to work
+
+# Examples follow
+#
+# Notice you have to adjust commands below for your filesystem 
+# structure.
+#
+# You could use "alias" to provide a quick way of getting at
+# nested directories, e.g. if you do
+# alias r: u:\c\some\long\path
+# then clicking on drive r: puts you into the folder c:\some\long\path
+
+# The "sln" command may be used to create "links" on drive U:. If
+# u:\foo is a link to c:\bar, then u:\foo\foo.txt is another way
+# of saying c:\bar\foo.txt. Judicious use of links can make
+# re-arranging hard disks and directories painless (if you always
+# use the names on drive u:, it doesn't matter where you put
+# the actual directories).
+
+# Setting up the root filesystem for UNIX environment
+
+#sln g:\bin      u:\bin
+#sln g:\boot     u:\boot
+#sln g:\etc      u:\etc
+#sln g:\home     u:\home
+#sln g:\lib      u:\lib
+#sln g:\mnt      u:\mnt
+#sln g:\opt      u:\opt
+#sln g:\root     u:\root
+#sln g:\sbin     u:\sbin
+#sln g:\tmp      u:\tmp
+#sln g:\usr      u:\usr
+#sln g:\var      u:\var
+
+
+# Setting default things
+
+setenv PCONVERT PATH,HOME,SHELL
+setenv UNIXMODE /brUs
+
+# default path
+setenv PATH \boot\mint\bin;\sbin;\bin;\usr\sbin;\usr\bin
+
+# checking filesystem if necassar
+# Note: you need a correct /etc/fstab
+#exec u:\c\mint\bin\sh u:\c\mint\bin\fscheck.sh
+#echo
+
+# MiNT Setter can catch ALERT messages
+#setenv ALERT YES
+
+# Set up time stuff. Below are the default settings that the
+# kernel uses. The tzinit program is provided in the util/tzinit
+# subdirectory. For information about the exec keyword see the
+# paragraph above and for general information about MiNT kernel
+# time functions see doc/minttime.doc and doc/timezone.doc.
+
+#exec u:\usr\sbin\tzinit
+
+# The "exec" command is used to launch programs. Note that programs
+# so launched are started before GEM is, so they must be TOS/TTP
+# programs. Most commonly used for starting device drivers.
+
+# start Draconis to MiNT-Net gateway
+#exec u:\boot\mint\mgw.prg
+#echo 
+
+# start Gluestik
+#exec u:\boot\mint\gluestik.prg
+#echo 
+
+# Default login variables. Leave them commented out, if you use
+# UNIX style login. If you're using plain MultiTOS and want to
+# run UNIX shells under TOSWIN, please uncomment it.
+
+#setenv LOGNAME root
+#setenv USER    root
+#setenv HOME    /root
+#setenv SHELL   /bin/bash
+
+# These lines (with proper pathnames) are obligatory, if you're
+# going to use N.AES and Thing Desktop, respectively.
+
+setenv AESDIR   u:\boot\mint\aes\
+setenv THINGDIR u:\boot\mint\aes\desktop
+
+# The best option is to have INIT= command here, after all pathnames
+# are already set up by commands above.
+
+# If the MiNT is supposed to execute GEM, you should specify the full
+# path and filename like that:
+
+#GEM=u:\boot\mint\aes\n_aes.sys
+
+# Otherwise, if your init program is not GEM, you should use INIT= as
+# follows:
+
+INIT=u:\boot\mint\init.prg
+
+# If you leave both commands above commented out, the MiNT will 
+# attempt to execute the GEM version in ROM (the single AES).
+
+# Before the MiNT executes the rest of the operating system, it is 
+# usually the best to change the current directory to the top 
+# directory of all filesystems.
+ 
+cd u:\
+
+#
+# The "echo" command is really straightforward.
+#
+
+echo Setup complete, now booting the system...
+echo
