@@ -445,7 +445,15 @@ _new_intr:	subq.l	#0x08,sp		// make some room on the stack
 // page in and RTE.
 //
 
+	.globl	_check_bus
+
 _new_bus:
+	movem.l	d0-a6,-(sp)		// check_bus() relies on this!
+	jsr	_check_bus
+	tst.l	d0
+	movem.l	(sp)+,d0-a6
+	bne.s	Return_now
+
 #ifndef ONLY030
 	move.w	#0x8,_sig_exc
 	cmp.l	#30,_mcpu
