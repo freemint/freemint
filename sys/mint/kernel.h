@@ -34,18 +34,17 @@
 # ifndef _mint_kernel_h
 # define _mint_kernel_h
 
-# ifdef __KERNEL__
-# undef __KERNEL__
+# ifndef __KERNEL__
 # endif
 
+# undef __KERNEL__
+
 # if defined(__KERNEL_MODULE__)
-# error __KERNEL_MODULE__ not yet implemented
-# else
-# if defined(__KERNEL_XFS__) || defined(__KERNEL_XDD__)
+# define __KERNEL__	3
+# elif defined(__KERNEL_XFS__) || defined(__KERNEL_XDD__)
 # define __KERNEL__	2
 # else
 # define __KERNEL__	1
-# endif
 # endif
 
 # endif /* _mint_kernel_h */
