@@ -31,7 +31,6 @@ OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES
