@@ -76,6 +76,7 @@ struct memspace
 	struct user_things
 		*tp_ptr;	///< pointer to the trampoline things
 	MEMREGION *tp_reg;	///< memregion of the trampoline code
+	BASEPAGE *base;		///< process base page
 };
 
 
