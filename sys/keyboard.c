@@ -22,6 +22,13 @@
  *
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
  *
+ * TO DO:
+ *
+ * - a possibility to map scancodes to other scancodes (before processing)
+ * - deadkey support (expand translation tables with new vectors?)
+ * - translation tables in text form (avoid mktbl)
+ * - three phases of translation (scancode -> unicode -> ISO)?
+ *
  */
 
 # ifndef NO_AKP_KEYBOARD
@@ -125,12 +132,14 @@ long	iso_8859_code;	/* this is 2 for ISO-8859-2, 3 for ISO-8859-3 etc., or 0 for
 short	kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
 short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
+short	kbd_deadkey = -1;	/* ASCII code for deadkey */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;		/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;		/* place for saving the hz_200 timer value */
+static	short dead_lock;	/* flag for deakdey processing */
 
 /* Alt/numpad */
 static	uchar numin[8];		/* buffer for storing ASCII code typed in via numpad */
