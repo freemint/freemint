@@ -82,6 +82,7 @@ typedef struct tty		TTY;
 
 /* forward declarations: proc.h
  */
+struct procwakeup;
 typedef struct context		CONTEXT;
 typedef struct timeout		TIMEOUT;
 typedef struct proc		PROC;

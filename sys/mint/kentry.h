@@ -233,6 +233,9 @@ struct kentry_proc
 	struct timeout *_cdecl (*addroottimeout)(long, void (*)(), unsigned short);
 	void _cdecl (*cancelroottimeout)(struct timeout *);
 
+	/* add wakeup things for process p */
+	void _cdecl (*addprocwakeup)(struct proc *, void _cdecl (*)(struct proc *, void *), void *);
+
 	/* create a new process */
 	long _cdecl (*create_process)(const void *ptr1, const void *ptr2, const void *ptr3,
 				      struct proc **pret, long stack);
@@ -266,6 +269,8 @@ struct kentry_proc
 	canceltimeout, \
 	addroottimeout, \
 	cancelroottimeout, \
+	\
+	addprocwakeup, \
 	\
 	create_process, \
 	\

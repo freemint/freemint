@@ -209,6 +209,7 @@ struct proc
 					 * this process gets to run	*
 					 * again			*/
 
+	struct procwakeup *wakeupthings;/* things todo on the next wake */
 
 	TIMEOUT	*alarmtim;		/* alarm() event		*/
 	struct	itimervalue itimer[3];	/* interval timers */

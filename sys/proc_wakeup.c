@@ -5,7 +5,7 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
  * Please send suggestions, patches or bug reports to me or
@@ -28,15 +28,44 @@
  * 
  */
 
-# ifndef _k_exec_h
-# define _k_exec_h
+# include "proc_wakeup.h"
 
-# include "mint/mint.h"
+# include "mint/proc.h"
+# include "kmemory.h"
 
-void rts (void); /* XXX */
 
-long _cdecl sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3);
-long _cdecl create_process(const void *ptr1, const void *ptr2, const void *ptr3,
-			  struct proc **pret, long stack);
+void _cdecl
+addprocwakeup(struct proc *p, void _cdecl (*func)(struct proc *, void *), void *arg)
+{
+	struct procwakeup *w;
 
-# endif /* _k_exec_h */
+	w = kmalloc(sizeof(*w));
+	if (w)
+	{
+		w->next = p->wakeupthings;
+		p->wakeupthings = w;
+
+		w->func = func;
+		w->p = p;
+		w->arg = arg;
+	}
+}
+
+void
+checkprocwakeup(struct proc *p)
+{
+	struct procwakeup *w;
+
+	w = p->wakeupthings;
+	p->wakeupthings = NULL;
+
+	while (w)
+	{
+		struct procwakeup *next = w->next;
+
+		(*w->func)(w->p, w->arg);
+		kfree(w);
+
+		w = next;
+	}
+}
