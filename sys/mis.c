@@ -85,7 +85,7 @@
 # define SH_VER_MAIOR	1
 # define SH_VER_MINOR	0
 
-# define COPYCOPY	"(c) 2003 Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
+# define COPYCOPY	"(c) 2003 Konrad M.Kokoszkiewicz (draco@atari.org)\n"
 
 # define SHELL_ARGS	2048L		/* number of pointers in the argument vector table (i.e. 8K) */
 # define SHELL_MAXFN	1024L		/* max length of a filename */
@@ -138,12 +138,6 @@ shell_fprintf(long handle, const char *fmt, ...)
 	}
 	else
 		f_write(stderr, 13, "Out of RAM!\n");
-}
-
-INLINE void
-shell_print(const char *text)
-{
-	shell_fprintf(stdout, text);
 }
 
 /* Simple conversion of a pathname from the DOS to Unix format,
@@ -280,7 +274,7 @@ shell_setenv(const char *var, char *value)
  *
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
  */
-INLINE short
+static short
 get_arg(char *cmd, char **arg, char **next, short *io)
 {
 	char *start = NULL, *endquote;
@@ -294,14 +288,12 @@ get_arg(char *cmd, char **arg, char **next, short *io)
 		*io = cmd[0] & 0x0f;
 		*cmd++ = 0;
 		*cmd++ = 0;
-		*next = cmd;
 		r = 1;
 	}
 	else if (cmd[0] == '>')
 	{
 		*io = 1;
 		*cmd++ = 0;
-		*next = cmd;
 		r = 1;
 	}
 	/* If the argument is an enviroment variable, evaluate it.
@@ -327,12 +319,10 @@ get_arg(char *cmd, char **arg, char **next, short *io)
 		if (*cmd)
 			*cmd++ = 0;		/* terminate the tag for getenv() */
 
-		*next = cmd;
-
 		start = _mint_getenv(_base, start);
 
 		if (!start)
-			return 1;		/* ignore and try again */
+			r = 1;			/* ignore and try again */
 	}
 	/* Check if there may be a quoted argument. A quoted argument will begin with
 	 * a quote and end with a quote. Quotes do not belong to the argument.
@@ -402,7 +392,7 @@ crunch(char *cmd, char **argv)
 	while (*cmd && isspace(*cmd))
 		cmd++;
 
-	while (*cmd)
+	while (*cmd && idx < (SHELL_ARGS - 1))
 	{
 		r = get_arg(cmd, &argument, &cmd, &io);
 		/* r == 0 means that getting the argument succeeded;
@@ -425,19 +415,16 @@ crunch(char *cmd, char **argv)
 			 * as an argument for I/O redirection. We can't tolerate that this
 			 * time. Also, syntax like `ls -l 1> 2> out' is not allowed.
 			 */
-			else if (io || r == 1)
-				return -1000;
-			else
+			else if (!io && r != 1)
 			{
-				fd = f_create(argument, 0);
-				if (fd < 0)
+				if ((fd = f_create(argument, 0)) < 0)
 					return fd;
-				if (saveio == 1)
-					stdout = fd;		/* will be closed after we return to shell() */
-				else if (saveio == 2)
-					stderr = fd;
-				/* else ignore */
+
+				stdout = (saveio == 1) ? fd : stdout;
+				stderr = (saveio == 2) ? fd : stderr;
 			}
+			else
+				return -1000;
 		}
 	}
 
@@ -520,12 +507,7 @@ execvp(char **argv)
 	/* Append the argument strings.
 	 */
 	for (x = 0; argv[x]; x++)
-	{
-		if (argv[x][0] == 0)
-			new_var = env_append(new_var, " ");
-		else
-			new_var = env_append(new_var, argv[x]);
-	}
+		new_var = env_append(new_var, argv[x][0] ? argv[x] : " ");
 
 	*new_var = 0;
 
@@ -542,12 +524,7 @@ execvp(char **argv)
 	while (y < 126 && argv[x])
 	{
 		oldcmd[y++] = ' ';
-
-		if (argv[x][0] == 0)
-			strncpy_f(oldcmd + y, "''", 126 - y);
-		else
-			strncpy_f(oldcmd + y, argv[x], 126 - y);
-
+		strncpy_f(oldcmd + y, argv[x][0] ? argv[x] : "''", 126 - y);
 		y += strlen(oldcmd + y);
 		x++;
 	}
@@ -652,7 +629,7 @@ sh_ls(long argc, char **argv)
 {
 	struct stat st;
 	struct timeval tv;
-	short i, all = 0, full = 0;
+	short all = 0, full = 0;
 	long x, r, s, handle;
 	char *dir, *path, *link, *entry;
 
@@ -671,13 +648,10 @@ sh_ls(long argc, char **argv)
 			}
 			else
 			{
-				for (i = 1; argv[x][i]; i++)
-				{
-					if (argv[x][i] == 'a')
-						all = 1;
-					else if (argv[x][i] == 'l')
-						full = 1;
-				}
+				if (strcmp(argv[x], "-a") == 0)
+					all = 1;
+				else if (strcmp(argv[x], "-f") == 0)
+					full = 1;
 			}
 		}
 		else
@@ -800,7 +774,7 @@ sh_ls(long argc, char **argv)
 				if (S_ISLNK(st.mode))
 					shell_fprintf(stdout, " -> %s\n", link);
 				else
-					shell_print("\n");
+					shell_fprintf(stdout, "\n");
 			}
 		}
 	} while (r == 0);
@@ -998,14 +972,14 @@ sh_exit(long argc, char **argv)
 {
 	short y;
 
-	shell_print(MSG_shell_exit_q);
+	shell_fprintf(stdout, MSG_shell_exit_q);
 
 	y = (short)c_conin();
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
 		s_hutdown(2);
 
-	shell_print("\r\n");
+	shell_fprintf(stdout, "\n");
 
 	return 0;
 }
@@ -1026,9 +1000,7 @@ sh_cp(long argc, char **argv)
 static long
 sh_mv(long argc, char **argv)
 {
-	shell_fprintf(stdout, "%s not implemented yet!\n", argv[0]);
-
-	return -1;
+	return sh_cp(argc, argv);
 }
 
 static long
@@ -1304,10 +1276,10 @@ shell(void *arg)
 //	(void)p_sigsetmask(-1L);		/* mask out the signals */
 	(void)p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
 
-	shell_print("\ee\ev\n");		/* enable cursor, enable word wrap, make newline */
+	shell_fprintf(stdout, "\ee\ev\n");	/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);
 	xcmdstate();
-	shell_print(MSG_shell_type_help);
+	shell_fprintf(stdout, MSG_shell_type_help);
 
 	d_setdrv('U' - 'A');
 
