@@ -667,7 +667,7 @@ kern_procdir_get_environ (SIZEBUF **buffer, PROC *p)
 	DEBUG (("get_environ: %lx, %lx, %lx, %lx",
 			proc_addr2region (curproc, (long) p->base),
 			proc_addr2region (p, (long) p->base),
-			addr2mem ((virtaddr) p->base),
+			addr2mem (curproc, (virtaddr) p->base),
 			addr2region ((long) p->base)
 	));
 	
