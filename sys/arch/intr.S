@@ -38,7 +38,8 @@
 #endif
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_5ms:	dc.l	0
+_old_5ms:
+	dc.l	0
 
 #ifdef ONLY030
 _mint_5ms:
@@ -445,8 +446,12 @@ _new_intr:	subq.l	#0x08,sp		// make some room on the stack
 // page in and RTE.
 //
 
-	.globl	_check_bus
+	.globl	_check_bus,_old_bus
 
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_bus:
+	dc.l	0
 _new_bus:
 	movem.l	d0-a6,-(sp)		// check_bus() relies on this!
 	jsr	_check_bus
@@ -578,74 +583,218 @@ NOMMU1:
 	jmp	_sigbus
 #endif
 
+	.globl	_old_addr
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_addr:
+	dc.l	0
 _new_addr:
 #ifndef ONLY030
 	move.w	#0xc,_sig_exc
 #endif
 	move.l	#_sigaddr,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_ill
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_ill:
+	dc.l	0
 _new_ill:
 #ifndef ONLY030
 	move.w	#0x10,_sig_exc
 #endif
 	move.l	#_sigill,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_divzero
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_divzero:
+	dc.l	0
 _new_divzero:
 #ifndef ONLY030
 	move.w	#0x14,_sig_exc
 #endif
 	move.l	#_sigfpe,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_linef
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_linef:
+	dc.l	0
 _new_linef:
 #ifndef ONLY030
 	move.w	#0x2c,_sig_exc
 #endif
 	move.l	#_sigill,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_chk
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_chk:
+	dc.l	0
 _new_chk:
 #ifndef ONLY030
 	move.w	#0x18,_sig_exc
 #endif
 	move.l	#_sigfpe,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_trapv
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_trapv:
+	dc.l	0
 _new_trapv:
 #ifndef ONLY030
 	move.w	#0x1c,_sig_exc
 #endif
 	move.l	#_sigfpe,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_fpcp_0,_old_fpcp_1,_old_fpcp_2,_old_fpcp_3,_old_fpcp_4
+	.globl	_old_fpcp_5,_old_fpcp_6
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_fpcp_0:
+	dc.l	0
+	bra.s	_new_fpcp
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_fpcp_1:
+	dc.l	0
+	bra.s	_new_fpcp
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_fpcp_2:
+	dc.l	0
+	bra.s	_new_fpcp
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_fpcp_3:
+	dc.l	0
+	bra.s	_new_fpcp
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_fpcp_4:
+	dc.l	0
+	bra.s	_new_fpcp
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_fpcp_5:
+	dc.l	0
+	bra.s	_new_fpcp
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_fpcp_6:
+	dc.l	0
 _new_fpcp:
 // don't set _sig_exc - only needed for 68000 vectors
 	move.l	#_sigfpe,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_mmuconf,_new_mmuconf
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_mmuconf:
+	dc.l	0
+_new_mmuconf:
+// don't set _sig_exc - only needed for 68000 vectors
+	move.l	#_sigill,_sig_routine
+	bra	Do_sig
+
+	.globl	_old_pmmuill
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_pmmuill:
+	dc.l	0
 _new_mmu:
 // don't set _sig_exc - only needed for 68000 vectors
 	move.l	#_sigill,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_pmmuacc
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_pmmuacc:
+	dc.l	0
+
 _new_pmmuacc:
 // don't set _sig_exc - only needed for 68000 vectors
 	move.l	#_sigbus,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_uninit
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_uninit:
+	dc.l	0
 _new_uninit:
 #ifndef ONLY030
 	move.w	#0x3c,_sig_exc
 #endif
 	move.l	#_sigbus,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_spurious
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_spurious:
+	dc.l	0
 _new_spurious:
 #ifndef ONLY030
 	move.w	#0x60,_sig_exc
 #endif
 	move.l	#_sigbus,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_format
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_format:
+	dc.l	0
 _new_format:
 	move.l	#_haltformat,_sig_routine
 	bra	Do_sig
+
+	.globl	_old_cpv
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_cpv:
+	dc.l	0
 _new_cpv:
 	move.l	#_haltcpv,_sig_routine
 	bra	Do_sig
 
-	.globl	_check_priv
+	.globl	_check_priv,_old_priv
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_priv:
+	dc.l	0
 _new_priv:
 #ifndef ONLY030
 	move.w	#0x20,_sig_exc
@@ -665,8 +814,12 @@ _new_priv:
 // system entry points from syscall.spp
 
 	.globl	_mint_dos,_mint_bios,_mint_xbios
-	.globl	_old_divzero,_old_chk,_old_trapv
+	.globl	_old_trace
 
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_trace:
+	dc.l	0
 _new_trace:
 	btst	#5,(sp) 		// only check when called from supervisor mode
 	beq.s	S_1
@@ -676,11 +829,11 @@ _new_trace:
 	beq.s	S_2
 	cmp.l	#_mint_bios,2(sp)
 	beq.s	S_2
-	cmp.l	#_old_divzero+12,2(sp)
+	cmp.l	#_new_divzero,2(sp)
 	beq.s	S_2
-	cmp.l	#_old_trapv+12,2(sp)
+	cmp.l	#_new_trapv,2(sp)
 	beq.s	S_2
-	cmp.l	#_old_chk+12,2(sp)
+	cmp.l	#_new_chk,2(sp)
 	beq.s	S_2
 
 // add any other non-traceable entities here...
@@ -785,3 +938,21 @@ noalias2:
 rwdone:
 	clr.l	d0		// 0 means "successful operation"
 	rts
+
+	.globl	_old_criticerr,_new_criticerr,_mint_criticerr
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_criticerr:
+	dc.l	0
+_new_criticerr:
+	jmp	_mint_criticerr
+
+	.globl	_old_exec_os,_new_exec_os,_do_exec_os
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_exec_os:
+	dc.l	0
+_new_exec_os:
+	jmp	_do_exec_os
