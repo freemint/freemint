@@ -470,6 +470,11 @@ p_trace (short request, short pid, void *addr, long data)
 		}
 		case PT_KILL:
 		{
+			t->ptracer = NULL;
+			t->ptraceflags = 0;
+			t->ctxt[SYSCALL].ptrace = 0;
+			t->ctxt[CURRENT].ptrace = 0;
+			
 			post_sig (t, SIGKILL);
 			
 			return 0;
