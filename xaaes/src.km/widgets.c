@@ -803,9 +803,8 @@ calc_work_area(struct xa_window *wind)
 	XA_WIND_ATTR k = wind->active_widgets;
 	int thin = wind->thinwork;
 	int frame = wind->frame;
-	int tl_margin, br_margin, wa_margins;
 	int t_margin, b_margin, l_margin, r_margin;
-
+	short wa_borders = 0;
 	wind->wa = r;
 
 	/*
@@ -835,20 +834,11 @@ calc_work_area(struct xa_window *wind)
 		 */
 
 		/* in color aligning is on the top & left light line of tha wa */
-		//tl_margin = (MONO || thin) ? 1 : 2;
-		t_margin = (MONO || thin) ? 0 : 2;
-		b_margin = (MONO || thin) ? 0 : 2;
-		l_margin = (MONO || thin) ? 0 : 2;
-		r_margin = (MONO || thin) ? 0 : 2;
+		t_margin = (MONO || thin) ? 1 : 2;
+		b_margin = (MONO || thin) ? 1 : 2;
+		l_margin = (MONO || thin) ? 1 : 2;
+		r_margin = (MONO || thin) ? 1 : 2;
 		
-		tl_margin = (MONO || thin) ? 0 : 2;
-
-		/* The visual thing :-) */
-		//br_margin = (MONO || thin) ? 1 : 3;
-		br_margin = (MONO || thin) ? 0 : 2;
-
-		wa_margins = tl_margin + br_margin;
-
 		/* This is the largest work area possible */
 		if (frame >= 0)
 		{
@@ -857,13 +847,8 @@ calc_work_area(struct xa_window *wind)
 			wind->wa.w -= frame << 1;
 			wind->wa.h -= frame << 1;
 			
-			/* Used for border sizing */
-		//	wind->ba = wind->wa;
-			
-			wind->wa.x += l_margin; //tl_margin;
-			wind->wa.y += t_margin; //tl_margin;
-			wind->wa.w -= l_margin + r_margin + SHADOW_OFFSET; //wa_margins + SHADOW_OFFSET;
-			wind->wa.h -= t_margin + b_margin + SHADOW_OFFSET; //wa_margins + SHADOW_OFFSET;
+			wind->wa.w -= SHADOW_OFFSET;
+			wind->wa.h -= SHADOW_OFFSET;
 
 			if (frame < 4)
 				frame = 4;
@@ -884,15 +869,43 @@ calc_work_area(struct xa_window *wind)
 			wind->wa.y += (rows->r.y + rows->r.h);
 			wind->wa.h -= (rows->r.y + rows->r.h);
 		}
+		else if (wind->frame >= 0 && wind->thinwork)
+		{
+			wind->wa.y += t_margin;
+			wind->wa.h -= t_margin;
+			wa_borders |= WAB_TOP;
+		}
+
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START), false)))
 		{
 			wind->wa.x += (rows->r.x + rows->r.w);
 			wind->wa.w -= (rows->r.x + rows->r.w);
 		}
+		else if (wind->frame >= 0 && wind->thinwork)
+		{
+			wind->wa.x += l_margin;
+			wind->wa.w -= l_margin;
+			wa_borders |= WAB_LEFT;
+		}
+
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_END, false)))
 			wind->wa.h -= rows->r.y;
+		else if (wind->frame >= 0 && wind->thinwork)
+			wind->wa.h -= b_margin, wa_borders |= WAB_BOTTOM;
+
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END), false)))
 			wind->wa.w -= rows->r.x;
+		else if (wind->frame >= 0 && wind->thinwork)
+			wind->wa.w -= r_margin, wa_borders |= WAB_RIGHT;
+
+		if (wind->frame >= 0 && !wind->thinwork)
+		{
+			wind->wa.x += 2, wind->wa.y += 2;
+			wind->wa.w -= 4, wind->wa.h -= 4;
+		}
+
+		wind->wa_borders = wa_borders;
+
 	}
 
 	/* border displacement */
@@ -2580,69 +2593,6 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 	cancel_widget_active(wind, 2);
 	return true;
 }
-#if 0
-static void
-slider_back(RECT *cl, struct xa_wcol_inf *wc)
-{
-	RECT r = *cl;
-	short f = wc->flags;
-
-	wr_mode(wc->wrm);
-	if (f & WCOL_DRAW3D)
-	{
-		tl_hook(0, &r, wc->tlc);
-		r.x += 1;
-		r.y += 1;
-		r.w -= 1;
-		r.h -= 1;
-	}
-	if (f & WCOL_DRAWBKG)
-	{
-		f_color(wc->c);
-		f_interior(wc->i);
-		if (wc->i > 1)
-			f_style(wc->f);
-
-		gbar(0, &r);
-	}
-}
-
-static void
-draw_slider(short d, RECT *cl, short state, struct xa_wcol_inf *wc)
-{
-	bool sel = state & OS_SELECTED;
-	short f = wc->flags;
-	RECT r = *cl;
-
-	r.x -= d, r.y -= d;
-	r.w += d+d, r.h += d+d;
-	if (f & WCOL_DRAW3D)
-	{
-		if (sel && (f & WCOL_ACT3D))
-		{
-			br_hook(0, &r, wc->tlc);
-			tl_hook(0, &r, wc->brc);
-		}
-		else
-		{
-			br_hook(0, &r, wc->brc);
-			tl_hook(0, &r, wc->tlc);
-		}
-		r.x += 1, r.y += 1;
-		r.w -= 2, r.h -= 2;
-	}
-
-	if (f & WCOL_DRAWBKG)
-	{
-		f_color(wc->c);
-		f_interior(wc->i);
-		if (wc->i > 1)
-			f_style(wc->f);
-	
-		gbar(0, &r);
-	}
-}
-#endif
 
 /*======================================================
 	VERTICAL SLIDER WIDGET BEHAVIOUR
@@ -2671,24 +2621,6 @@ display_unused(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	draw_widg_box(0, wc, 0, &widg->ar);
 	return true;
 }
-#if 0
-static bool
-display_nvslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wc = &wind->colours->win;
-
-	rp_2_ap(wind, widg, &widg->ar);
-	wr_mode(wc->wrm);
-	f_color(wc->n.c);
-	f_interior(wc->n.i);
-	if (wc->n.i > 1)
-		f_style(wc->n.f);
-
-	gbar(0, &widg->ar);
-
-	return true;
-}
-#endif
 
 /* Display now includes the background */
 bool
