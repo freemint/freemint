@@ -83,20 +83,23 @@ struct common
 	struct xa_client *Aes;		/* */
 
 	long redraws;			/* Counting WM_REDRAWS being sent and dispatched */
-	struct xa_client *button_waiter; /* Client which is getting the next moose_data packet, */
-					 /* most probably a button released one */
+	struct xa_client *button_waiter;/* Client which is getting the next moose_data packet, */
+					/* most probably a button released one */
 	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
 
-	int shutdown;
+	int shutdown;			/* flags for shutting down xaaes */
+#define QUIT_NOW	0x1		/* - enter shutdown the next possible time */
+#define HALT_SYSTEM	0x2		/* - halt system after xaaes shutdown */
+#define REBOOT_SYSTEM	0x4		/* - reboot system after xaaes shutdown */
+
 	bool mvalidate;
 
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
 	struct adif *adi_mouse;
-	
+
 	/* exteneded & generalized (was GeneralCallback & stuff) */
 	Tab active_menu[CASCADE];
-	Tab active_timeout;
 	Tab *menu_base;
 
 	int menu_nest;			/* current depth of submenus */

@@ -211,12 +211,13 @@ set_slist_object(enum locks lock,
 		list->v = (r.w - cfg.widg_w) / screen.c_max_w;
 		list->max = lmax;
 
-		calc_work_area(list->wi);	/* recalc for aligned work area */
+		/* recalc for aligned work area */
+		calc_work_area(list->wi);
 	}
 	return list;
 }
 
-/* HR: better control over the content of scroll_entry. */
+/* better control over the content of scroll_entry. */
 bool
 add_scroll_entry(OBJECT *form, int item,
 		 OBJECT *icon, void *text,
@@ -225,7 +226,7 @@ add_scroll_entry(OBJECT *form, int item,
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *last, *new;
 	OBJECT *ob = form + item;
-	
+
 	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 
 	new = kmalloc(sizeof(*new));
@@ -245,7 +246,7 @@ add_scroll_entry(OBJECT *form, int item,
 	else
 	{
 		new->prev = NULL;
-		list->start = list->top = new;	/* HR cur is left zero, which means no current : no selection. */
+		list->start = list->top = new;	/* cur is left zero, which means no current : no selection. */
 		new->n = 1;
 	}
 	new->text = text;
@@ -258,7 +259,7 @@ add_scroll_entry(OBJECT *form, int item,
 	return true;
 }
 
-/* HR: Modified such that a choise can be made. */
+/* Modified such that a choise can be made. */
 void
 empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 {

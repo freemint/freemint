@@ -677,7 +677,6 @@ enum scroll_entry_type
 	FLAG_DIR        = 0x001,
 	FLAG_EXECUTABLE = 0x002,
 	FLAG_LINK       = 0x004,
-	FLAG_PENDING    = 0x008,	/* For system alerts if the update lock is set. */
 	FLAG_MAL        = 0x100,	/* text part is malloc'd and must be freed. */
 	FLAG_ENV        = 0x200
 };
@@ -790,26 +789,16 @@ struct menu_task
 };
 typedef struct menu_task MENU_TASK;
 
-struct drag_task
-{
-	RECT in,out,dr;
-	short  x,y;
-};
-typedef struct drag_task DRAG_TASK;
-
 struct task_administration_block
 {
 	struct task_administration_block *nx;
 	struct task_administration_block *pr;	/* different concurrent tasks */
 	struct task_administration_block *nest;	/* stages of a recursive task (like sub menu's) */ 
 
-	int reply;
-	int locker;
-
 	TASK_TY ty;	/* NO_TASK, ROOT_MENU, MENU_BAR, POP_UP... */
 
-	int timeout;	/* Normally 0, otherwise the frequency that we call active_function with */
 	enum locks lock;
+	int locker;
 
 	struct xa_client *client;
 	struct xa_window *wind;
@@ -819,23 +808,19 @@ struct task_administration_block
 	AESPB *pb;
 
 	bool scroll;
-	int dbg, dbg2, dbg3;
 
 	union
 	{
 		MENU_TASK menu;
-		DRAG_TASK drag;
 	} task_data;
+
+#if GENERATE_DIAGS
+	int dbg;
+	int dbg2;
+	int dbg3;
+#endif
 };
 typedef struct task_administration_block Tab;
-
-/*
- * definitions for shutdown in struct common
- */
-#define QUIT_NOW      1
-#define HALT_SYSTEM   2
-#define REBOOT_SYSTEM 4
-#define QUIT_XAAES    8
 
 
 /* 

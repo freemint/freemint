@@ -95,6 +95,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	XA_WIDGET_LOCATION loc;
 	XA_TREE *nt;
 
+	/* XXX not freed anywhere */
 	nt = kmalloc(sizeof(*nt));
 
 	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx",
