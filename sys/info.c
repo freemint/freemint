@@ -366,7 +366,7 @@ const char *MSG_shell_xcmd_info = "Extended commands are %s\r\n";
 const char *MSG_shell_xcmd_on = "on";
 const char *MSG_shell_xcmd_off = "off";
 const char *MSG_shell_cd_help = "Usage: %s [NEWDIR]\r\n";
-const char *MSG_shell_ls_help = "Usage: %s [DIR]\r\n";
+const char *MSG_shell_ls_help = "Usage: %s [-l|-a] [DIR]\r\n";
 const char *MSG_shell_help = \
 	"	MiS is not intended to be a regular system shell, so don't\r\n" \
 	"	expect much. It is only a tool to fix bigger problems that\r\n" \
@@ -388,7 +388,7 @@ const char *MSG_shell_help = \
 	"	chown DEC-OWNER[:DEC-GROUP] FILE - change file's ownership\r\n" \
 	"	*cp - copy file\r\n" \
 	"	ln OLD NEW - create a symlink `new' pointing to file `old'\r\n" \
-	"	ls [DIR] - display directory\r\n" \
+	"	ls [-l|-a] [DIR] - display directory\r\n" \
 	"	*mv - move/rename a file\r\n" \
 	"	rm [-f] FILE [FILE...] - delete a file\r\n" \
 	"\r\n" \
