@@ -49,6 +49,6 @@ delay_seconds(unsigned short seconds)
 	ticks = get_hz_200();
 	ticks += (secs * HZ);
 
-	while (ticks < get_hz_200())
+	while (ticks > get_hz_200())
 		;
 }
