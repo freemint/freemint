@@ -7,7 +7,7 @@ TOUCH = touch
 
 
 TARGET = __target
-TARGETS = 000 030 040 deb mil my1 my2
+TARGETS = 000 030 040 deb mil my1 my2 my3
 
 #default: my1
 default: my2
@@ -61,6 +61,10 @@ my2: $(TARGET).my2
 	@echo '# building a special kernel ...'
 	$(MAKE) all -f Makefile.kernel
 
+my3: $(TARGET).my3
+	@echo '# building a special kernel ...'
+	$(MAKE) all -f Makefile.kernel
+
 
 $(TARGET).000:
 	$(MAKE) clean
@@ -96,3 +100,8 @@ $(TARGET).my2:
 	$(MAKE) clean
 	$(RM) $(TARGET).*
 	echo "target=my2" > $@
+
+$(TARGET).my3:
+	$(MAKE) clean
+	$(RM) $(TARGET).*
+	echo "target=my3" > $@
