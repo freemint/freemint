@@ -30,7 +30,7 @@
 int
 get_drv(const char *p)
 {
-	if (*(p+1) == ':')
+	if (*(p + 1) == ':')
 	{
 		int c = *p;
 		if (c >= 'a' && c <= 'z')

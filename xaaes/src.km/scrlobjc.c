@@ -67,14 +67,14 @@ static struct xa_wcol_inf default_col =
 };
 
 static SCROLL_ENTRY *
-next_entry(SCROLL_ENTRY *this, bool only_opened)
+next_entry(SCROLL_ENTRY *this, short flags)
 {
 //	display("next_entry %lx (n=%lx, p=%lx, u=%lx, d=%lx)",
 //		this, this->next, this->prev, this->up, this->down);
 	
 	if (this)
 	{
-		if (only_opened)
+		if (flags & ENT_VISIBLE)//only_opened)
 		{
 			if (this->down && (this->istate & OS_OPENED))
 				this = this->down;
@@ -83,8 +83,28 @@ next_entry(SCROLL_ENTRY *this, bool only_opened)
 			else
 			{
 				this = this->up;
-				if (this)
-					this = this->next;
+				if (flags & ENT_ISROOT)
+				{
+					/*
+					 * If ROOT flag is set, we do not go up past
+					 * the level in  which we started
+					 */
+					if (this)
+						this = this->next;
+				}
+				else
+				{
+					while (this)
+					{
+						if (this->next)
+						{
+							this = this->next;
+							break;
+						}
+						else
+							this = this->up;
+					}
+				}
 			}
 		}
 		else
@@ -96,8 +116,28 @@ next_entry(SCROLL_ENTRY *this, bool only_opened)
 			else
 			{
 				this = this->up;
-				if (this)
-					this = this->next;
+				if (flags & ENT_ISROOT)
+				{
+					/*
+					 * If ROOT flag is set, we do not go up past
+					 * the level in  which we started
+					 */
+					if (this)
+						this = this->next;
+				}
+				else
+				{
+					while (this)
+					{
+						if (this->next)
+						{
+							this = this->next;
+							break;
+						}
+						else
+							this = this->up;
+					}
+				}
 			}
 		}
 	}
@@ -108,7 +148,7 @@ next_entry(SCROLL_ENTRY *this, bool only_opened)
 }
 
 static SCROLL_ENTRY *
-prev_entry(SCROLL_ENTRY *this, bool only_opened)
+prev_entry(SCROLL_ENTRY *this, short flags)
 {
 	if (this->prev)
 	{
@@ -223,15 +263,15 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 	short x_center, y_center, width = 16;
 	short pnt[4];
 
-	x_center = /*xy->x + */(width >> 1);
-	y_center = /*xy->y + */(xy->h >> 1);
+	x_center = (width >> 1);
+	y_center = (xy->h >> 1);
 
-	r.x = xy->x + x_center - 4; //(16 >> 1) - 4;
-	r.y = xy->y + y_center - 4; //(xy->h >> 1) - 4;
-	r.w = 9; //width;
-	r.h = 9; //xy->h;
+	r.x = xy->x + x_center - 4;
+	r.y = xy->y + y_center - 4;
+	r.w = 9;
+	r.h = 9;
 
-	if (this->down)
+	if (this->down || (this->istate & OS_NESTICON))
 	{
 		f_interior(FIS_SOLID);
 		f_color(G_WHITE);
@@ -258,6 +298,7 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 			v_pline(C.vh, 2, pnt);
 		}
 
+		l_color(G_BLACK);
 		pnt[0] = r.x + 2;
 		pnt[1] = r.y + 4;
 		pnt[2] = pnt[0] + 4;
@@ -342,9 +383,12 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 		
 		xy->x += indent;
 
-		x = draw_nesticon(xy, this);
-		xy->x += x;
-		indent += x;
+		if (list->flags & SIF_TREEVIEW)
+		{
+			x = draw_nesticon(xy, this);
+			xy->x += x;
+			indent += x;
+		}
 
 		if (sel)
 			wtxt = &this->c.td.text.fnt->s; //&wtxti->s;
@@ -373,25 +417,26 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 
 			dx = x + tabs->r.x;
 			x2 = dx + tabs->r.w - 1 - indent;
-			indent = 0;
 			dy = y + tabs->r.y;
 			y2 = dy + tabs->r.h - 1;
 
 			x = x2;
 			y = y2;
 			
-			prop_clipped_name(tetext->text, t, tabs->r.w, &w, &h);
+			prop_clipped_name(tetext->text, t, tabs->r.w - indent, &w, &h);
+			indent = 0;
 			
 			if (tabs->flags & SETAB_RJUST)
 			{
-				//t_extent(t, &w, &h);
 				dx = x2 - w;
 			}
 			else if (tabs->flags & SETAB_CJUST)
 			{
 				dx = x2 - (w >> 1);
 			}
-				
+
+			dy += ((this->r.h - h) >> 1); //((this->r.h >> 1) - (h >> 1));
+			
 			if (f & WTXT_DRAW3D)
 			{
 				if (sel && (f & WTXT_ACT3D))
@@ -429,7 +474,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 
 			tr.tree = this->c.icon;
 			tr.owner = list->wt->owner;
-			display_object(lock, &tr, clip, 0, xy->x, xy->y, 12);
+			display_object(lock, &tr, clip, 0, xy->x + 1, xy->y + 1, 12);
 		}
 	}
 }
@@ -468,7 +513,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 			
 			xy.y += this->r.h;
 			xy.h -= this->r.h;
-			this = next_entry(this, true);
+			this = next_entry(this, ENT_VISIBLE);
 		}
 		
 		if (!entry && xy.h > 0)
@@ -636,12 +681,12 @@ get_last_entry(SCROLL_INFO *list)
 static struct scroll_entry *
 get_next_selected(struct scroll_info *list, struct scroll_entry *this)
 {
-	this = next_entry(this, false);
+	this = next_entry(this, 0);
 	while (this)
 	{
 		if (this->state & OS_SELECTED)
 			break;
-		this = next_entry(this, false);
+		this = next_entry(this, 0);
 	}
 	return this;
 }
@@ -655,7 +700,7 @@ get_first_selected(SCROLL_INFO *list)
 	{
 		if (this->state & OS_SELECTED)
 			break;
-		this = next_entry(this, false);
+		this = next_entry(this, 0);
 	}
 	return this;
 }
@@ -702,7 +747,7 @@ find_widest(SCROLL_INFO *list, SCROLL_ENTRY *start)
 	{
 		if (start->r.w > widest)
 			widest = start->r.w;
-		start = next_entry(start, true);
+		start = next_entry(start, ENT_VISIBLE);
 	}
 	return widest;
 }
@@ -719,7 +764,7 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 		if (e == this)
 			break;
 		y += this->r.h;
-		this = next_entry(this, true);
+		this = next_entry(this, ENT_VISIBLE);
 	}
 
 	if (this)
@@ -731,7 +776,7 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 		{
 			struct scroll_entry *stop = this->next;
 
-			while ((this = next_entry(this, true)) && this != stop)
+			while ((this = next_entry(this, ENT_VISIBLE|ENT_ISROOT)) && this != stop)
 				w += this->r.w, h += this->r.h;
 		}
 		r->x = x;
@@ -886,16 +931,6 @@ set(SCROLL_INFO *list,
 			if (!(list->flags & SIF_MULTISELECT))
 			{
 				unselect_all(list, rdrw);
-#if 0				
-				s = get_first_selected(list);
-				if (s != entry)
-					change_entry(list, s, false, rdrw);
-				while ((s = get_next_selected(list, s)))
-				{
-					if (s != entry)
-						change_entry(list, s, false, rdrw);
-				}
-#endif
 			}
 			change_entry(list, entry, true, rdrw);
 			break;
@@ -1018,8 +1053,8 @@ set(SCROLL_INFO *list,
 									clear_clip();
 								}
 							}
-							list->slider(list, rdrw);
 						}
+						list->slider(list, rdrw);
 					}
 				}
 			}
@@ -1050,6 +1085,18 @@ set(SCROLL_INFO *list,
 			}
 			else
 				ret = 0;
+			break;
+		}
+		case SESET_USRFLAG:
+		{
+			if (entry)
+				entry->c.usr_flags = arg;
+			break;
+		}
+		case SESET_USRDATA:
+		{
+			if (entry)
+				entry->c.data	= (void *)arg;
 			break;
 		}
 	}
@@ -1199,6 +1246,45 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 					*(struct scroll_entry **)arg = get_first_selected(list);
 				break;
 			}
+			case SEGET_USRFLAG:
+			{
+				if (arg && entry)
+					*(long *)arg = entry->c.usr_flags;
+				break;
+			}
+			case SEGET_USRDATA:
+			{
+				if (arg && entry)
+					*(void **)arg = entry->c.data;
+				break;
+			}
+			case SEGET_NEXTENT:
+			{
+				struct seget_entrybyarg *p = arg;
+				
+				if (entry)
+				{
+					if (!p->arg.pnent.level)
+						p->e = entry->next;
+					else
+						p->e = next_entry(entry, p->arg.pnent.flags);
+				}
+				break;
+			}
+			case SEGET_PREVENT:
+			{
+				struct seget_entrybyarg *p = arg;
+				
+				if (entry)
+				{
+					if (!p->arg.pnent.level)
+						p->e = entry->prev;
+					else
+						p->e = next_entry(entry, p->arg.pnent.flags);
+				}
+				break;
+			}
+			
 			default:
 			{
 				ret = 0;
@@ -1333,7 +1419,7 @@ add_scroll_entry(SCROLL_INFO *list,
 		new->c.data = sc->data;
 		new->c.usr_flags = sc->usr_flags;
 
-		new->istate |= OS_OPENED;
+		new->istate = sc->istate; //|= OS_OPENED;
 
 		if (sc->fnt)
 			alloc_entry_wtxt(new, sc->fnt);
@@ -1349,6 +1435,7 @@ add_scroll_entry(SCROLL_INFO *list,
 		{
 			object_spec_wh(new->c.icon, &new->r.w, &new->r.h);
 			new->c.icon->ob_x = new->c.icon->ob_y = 0;
+			new->r.w += 2, new->r.h += 2;
 			new->icon_w = new->r.w;
 			new->icon_h = new->r.h;
 			if (new->r.w > list->icon_w)
@@ -1505,7 +1592,7 @@ add_scroll_entry(SCROLL_INFO *list,
 							{
 								struct scroll_entry *next;
 								hidem();
-								if ((next = next_entry(new, true)))
+								if ((next = next_entry(new, ENT_VISIBLE)))
 								{
 									RECT d, s = list->wi->wa;
 							
@@ -1812,7 +1899,7 @@ empty_scroll_list(SCROLL_INFO *list, SCROLL_ENTRY *this, SCROLL_ENTRY_TYPE type)
 			if (type == -2 || (!this->c.usr_flags && ((this->type & type) || type == -1)))
 				this = del_scroll_entry(list, this, false);
 			else
-				this = next_entry(this, false);
+				this = next_entry(this, ENT_ISROOT);
 		}
 	}
 	else
@@ -1843,7 +1930,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 	this = list->top;
 		
-	while (n > 0 && (next = next_entry(this, true))) //this->next)
+	while (n > 0 && (next = next_entry(this, ENT_VISIBLE))) //this->next)
 	{
 		h = this->r.h;
 		if (list->off_y)
@@ -1907,7 +1994,7 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (list->top)
 	{
-		while (n > 0 && ((prev = prev_entry(list->top, true))/*list->top->prev*/ || list->off_y))
+		while (n > 0 && ((prev = prev_entry(list->top, ENT_VISIBLE))/*list->top->prev*/ || list->off_y))
 		{
 			if (list->off_y)
 			{
@@ -2067,25 +2154,48 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 			if (redraw == NORMREDRAW)
 				rdrw = true;
 				
-			if ((r.y + r.h) < list->start_y || r.y > (list->start_y + list->wi->wa.h))
+			if ((r.y + r.h) <= list->start_y || r.y > (list->start_y + list->wi->wa.h))
 			{
-
-				r.y -= list->start_y;
-				if (r.y < 0)
-					scroll_down(list, -r.y + (list->wi->wa.h >> 1), rdrw);
+				/*
+				 * If the entry to make visible is the next-up, we only scroll enough
+				 * to make that visisble, i.e., do not scroll so that it is placed
+				 * in at the center.
+				 */
+				if ((r.y + r.h) == list->start_y)
+				{
+					scroll_down(list, r.h, rdrw);
+				}
 				else
 				{
-					r.y -= list->wi->wa.h;
-					scroll_up(list, r.y + (list->wi->wa.h >> 1), rdrw);
+					/*
+					 * We want to place the entry as  close as possible to the center
+					 * of the list (vertical center, that is)
+					 */
+					r.y -= list->start_y;
+					if (r.y < 0)
+						scroll_down(list, -r.y + (list->wi->wa.h >> 1), rdrw);
+					else
+					{
+						r.y -= list->wi->wa.h;
+						scroll_up(list, r.y + (list->wi->wa.h >> 1), rdrw);
+					}
 				}
 				rdrw = false;
 			}
 			else if (r.y < list->start_y)
 			{
+				/*
+				 * The entry is partially visible, scroll just enough to make it the first
+				 * visible in the list
+				 */
 				scroll_down(list, list->off_y, rdrw);
 			}
 			else if ((r.y + r.h) > (list->start_y + list->wi->wa.h))
 			{
+				/*
+				 * The entry is partially visible at the end of the list, scroll just
+				 * enough to make it visible as the last line in the list
+				 */
 				scroll_up(list, (r.y + r.h) - (list->start_y + list->wi->wa.h), rdrw);
 			}
 			if (rdrw)
@@ -2118,7 +2228,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 			{
 				if (start->c.data == data)
 					break;
-				start = next_entry(start, false); //start->next;
+				start = next_entry(start, 0);
 			}
 			ret = start;
 			break;
@@ -2129,7 +2239,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 			{
 				if (!strcmp(start->c.td.text.text->text, data))
 					break;
-				start = next_entry(start, false); //start->next;
+				start = next_entry(start, 0);
 			}
 			ret = start;
 			break;
@@ -2168,7 +2278,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 		
 			while (this && y < cy)
 			{
-				this = next_entry(this, true);
+				this = next_entry(this, ENT_VISIBLE);
 				if (this) y += this->r.h;
 			}
 		}
@@ -2176,7 +2286,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 		if (this)
 		{
 			LRECT r;
-
+#if 0
 			if (this->down)
 			{
 				if (this->istate & OS_OPENED)
@@ -2185,6 +2295,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 					list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
 			}
 			else
+#endif
 			{
 				list->cur = this;
 				if (!(list->flags & SIF_MULTISELECT))
@@ -2225,7 +2336,7 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 			y = list->top->r.h - list->off_y;
 			while(this && y < cy)
 			{
-				this = next_entry(this, true); //this->next;
+				this = next_entry(this, ENT_VISIBLE); //this->next;
 				if (this) y += this->r.h;
 			}
 		}
@@ -2642,7 +2753,7 @@ slist_msg_handler(
 					{
 					case WA_UPLINE:
 					{
-						if ((n = prev_entry(top, true)) || list->off_y)
+						if ((n = prev_entry(top, ENT_VISIBLE)) || list->off_y)
 						{
 							if (list->off_y)
 								scroll_down(list, list->off_y, true);
@@ -2653,7 +2764,7 @@ slist_msg_handler(
 					}
 					case WA_DNLINE:
 					{
-						if ((n = next_entry(top, true)))
+						if ((n = next_entry(top, ENT_VISIBLE)))
 						{
 							if (list->off_y)
 								scroll_up(list, top->r.h - list->off_y, true);
@@ -2750,6 +2861,7 @@ slist_msg_handler(
 	}
 	}
 }
+
 int
 scrl_cursor(SCROLL_INFO *list, ushort keycode)
 {
@@ -2757,14 +2869,42 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 	{
 	case 0x4800:			/* up arrow */
 	{
-		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_UPLINE,0,0,0 };
-		slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
+		if (!list->cur)
+		{
+			short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_UPLINE,0,0,0 };
+			slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
+		}
+		else
+		{
+			SCROLL_ENTRY *n = prev_entry(list->cur, ENT_VISIBLE);
+			if (n)
+			{
+				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+				list->cur = n;
+				list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
+				list->vis(list, n, NORMREDRAW);
+			}
+		}
 		break;
 	}
 	case 0x5000:			/* down arrow */
 	{
-		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_DNLINE,0,0,0 };
-		slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
+		if (!list->cur)
+		{
+			short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_DNLINE,0,0,0 };
+			slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
+		}
+		else
+		{
+			SCROLL_ENTRY *n = next_entry(list->cur, ENT_VISIBLE);
+			if (n)
+			{
+				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+				list->cur = n;
+				list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
+				list->vis(list, n, NORMREDRAW);
+			}
+		}			
 		break;
 	}
 	case 0x4900:			/* page up */
