@@ -17,6 +17,7 @@ SUBDIRS = \
 	mktbl \
 	net-tools \
 	nfs \
+	strace \
 	sysctl \
 	toswin2
 
