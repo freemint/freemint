@@ -70,7 +70,6 @@ sys_psetuid (int uid)
 	
 	TRACE (("Psetuid(%i)", uid));
 	
-# if 1
 	if (cred->ruid != uid && !suser (cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
@@ -81,14 +80,6 @@ sys_psetuid (int uid)
 	cred->ucr->euid = uid;
 	cred->ruid = uid;
 	cred->suid = uid;
-# else
-	if (cred->ucr->euid == 0)
-		cred->ruid = cred->ucr->euid = cred->suid = uid;
-	else if ((uid == cred->ruid) || (uid == cred->suid))
-		cred->ucr->euid = uid;
-	else
-		return EACCES; /* XXX EPERM */
-# endif
 	
 	return uid;
 }
@@ -100,7 +91,6 @@ sys_psetgid (int gid)
 	
 	TRACE (("Psetgid(%i)", gid));
 	
-# if 1
 	if (cred->rgid != gid && !suser (cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
@@ -111,14 +101,6 @@ sys_psetgid (int gid)
 	cred->ucr->egid = gid;
 	cred->rgid = gid;
 	cred->sgid = gid;
-# else
-	if (cred->ucr->euid == 0)
-		cred->rgid = cred->ucr->egid = cred->sgid = gid;
-	else if ((gid == cred->rgid) || (gid == cred->sgid))
-		cred->ucr->egid = gid;
-	else
-		return EACCES; /* XXX EPERM */
-# endif
 
 	return gid;
 }
@@ -129,7 +111,6 @@ sys_psetreuid (int ruid, int euid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
-# if 1
 	TRACE (("Psetreuid(%i, %i)", ruid, euid));
 	
 	if (ruid != -1 &&
@@ -154,33 +135,6 @@ sys_psetreuid (int ruid, int euid)
 		cred->ruid = ruid;
 		cred->suid = cred->ucr->euid;
 	}
-# else
-	short old_ruid = cred->ruid;
-
-	TRACE (("Psetreuid(%i, %i)", ruid, euid));
-	
-	if (ruid != -1)
-	{
-		if (cred->ucr->euid == ruid || old_ruid == ruid || cred->ucr->euid == 0)
-			cred->ruid = ruid;
-		else
-			return EACCES; /* XXX EPERM */
-	}
-
-	if (euid != -1)
-	{
-		if (cred->ucr->euid == euid || old_ruid == euid || cred->suid == euid || cred->ucr->euid == 0)
-			cred->ucr->euid = euid;
-		else
-		{
-			cred->ruid = old_ruid;
-			return EACCES; /* XXX EPERM */
-		}
-	}
-
-	if (ruid != -1 || (euid != -1 && euid != old_ruid))
-		cred->suid = cred->ucr->euid;
-# endif
 
 	return E_OK;
 }
@@ -190,7 +144,6 @@ sys_psetregid (int rgid, int egid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
-# if 1
 	TRACE (("Psetregid(%i, %i)", rgid, egid));
 	
 	if (rgid != -1 &&
@@ -216,33 +169,6 @@ sys_psetregid (int rgid, int egid)
 		cred->rgid = rgid;
 		cred->sgid = cred->ucr->egid;
 	}
-# else
-	short old_rgid = cred->rgid;
-
-	TRACE (("Psetregid(%i, %i)", rgid, egid));
-	
-	if (rgid != -1)
-	{
-		if ((cred->ucr->egid == rgid) || (old_rgid == rgid) || (cred->ucr->euid == 0))
-			cred->rgid = rgid;
-		else
-			return EACCES; /* XXX EPERM */
-	}
-
-	if (egid != -1)
-	{
-		if ((cred->ucr->egid == egid) || (old_rgid == egid) || (cred->sgid == egid) || (cred->ucr->euid == 0))
-			cred->ucr->egid = egid;
-		else
-		{
-			cred->rgid = old_rgid;
-			return EACCES; /* XXX EPERM */
-		}
-	}
-
-	if (rgid != -1 || (egid != -1 && egid != old_rgid))
-		cred->sgid = cred->ucr->egid;
-# endif
 
 	return E_OK;
 }
@@ -290,7 +216,6 @@ sys_pgetgroups (int gidsetlen, int gidset[])
 long _cdecl
 sys_psetgroups (int ngroups, int gidset[])
 {
-# if 1
 	struct pcred *cred = curproc->p_cred;
 	ushort grsize;
 	
@@ -313,24 +238,6 @@ sys_psetgroups (int ngroups, int gidset[])
 	memcpy (cred->ucr->groups, gidset, grsize);
 	
 	return ngroups;
-# else
-	struct ucred *cred = curproc->p_cred->ucr;
-	int i;
-
-	TRACE (("Psetgroups(%i, ...)", ngroups));
-	
-	if (cred->euid)
-		return EACCES;	/* only superuser may change this */
-
-	if ((ngroups < 0) || (ngroups > NGROUPS))
-		return EBADARG;
-
-	cred->ngroups = ngroups;
-	for (i = 0; i < ngroups; i++)
-		cred->groups[i] = gidset[i];
-
-	return ngroups;
-# endif
 }
 
 /* utility functions */
