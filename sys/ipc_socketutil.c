@@ -174,16 +174,17 @@ so_dup (struct socket **resultso, struct socket *so)
 		newso->type = so->type;
 		
 		ret = (*so->ops->dup)(newso, so);
-		if (!ret)
+		if (ret == 0)
 		{
 			newso->state = SS_ISUNCONNECTED;
 			*resultso = newso;
-			return 0;
+		}
+		else
+		{
+			DEBUG (("so_dup: failed to dup protocol data"));
+			kfree (newso);
 		}
 		
-		kfree (newso);
-		
-		DEBUG (("so_dup: failed to dup protocol data"));
 		return ret;
 	}
 	
@@ -426,4 +427,22 @@ so_accept (struct socket *server, struct socket *newso, short nonblock)
 	
 	wake (IO_Q, (long) client);
 	return 0;
+}
+
+void _cdecl
+so_drop (struct socket *so, short nonblock)
+{
+	struct socket *newso;
+	long ret;
+	
+	if (!(so->flags & SO_DROP))
+		return;
+	
+	DEBUG (("so_drop: dropping incoming connection"));
+	
+	ret = so_dup (&newso, so);
+	if (ret) return;
+	
+	(*so->ops->accept)(so, newso, nonblock);
+	so_free (newso);
 }
