@@ -3,10 +3,6 @@ A list of the most annoying bugs in MiNT
 
 Please don't report bugs listed in this file; send patches instead.
 
-- AES randomly starts to hog all the available memory. NOTE: it is 
-  likely, that it is an AES bug (but I wouldn't trust in it, until 
-  we're sure).
-
 - Time:
   The kernel doesn't know when to change from your standard timezone
   to the alternative timezone (aka DST) and vice versa.  If DST
@@ -19,7 +15,3 @@ Please don't report bugs listed in this file; send patches instead.
   to reboot or run tzinit.  This isn't really considered a bug.
   Actually some time-keeping daemon should keep track of that
   stuff and change the kernel timezone whenever appropriate.
-
-- Virtual memory manager:
-  The virtual memory manager (aka VM) doesn't work correctly.
-  Consider it experimental and feel free to improve it.
