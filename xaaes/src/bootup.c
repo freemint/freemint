@@ -34,6 +34,7 @@
 #include <mint/mintbind.h>
 #include <mint/dcntl.h>
 #include <mint/ssystem.h>
+
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
@@ -73,18 +74,6 @@
 #else
 #define BTRACE(n)
 #endif
-
-/* Ssystem() codes 
-enum
-{
-	S_OSNAME,
-	S_OSXNAME,
-	S_OSVERSION,
-	S_GETCOOKIE = 8,
-	S_SETCOOKIE,
-	S_GET_BVAL = 12,
-	S_SET_BVAL = 15
-}; */
 
 #if GENERATE_DIAGS
 static void punit(XA_memory *base, XA_block *blk, XA_unit *unit, char *txt);
