@@ -32,6 +32,7 @@
 #include WIDGHNAME
 
 #include <mint/mintbind.h>
+#include <mint/dcntl.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
@@ -125,16 +126,6 @@ static int envs = 0;
 
 static XA_COLOUR_SCHEME default_colours = {LWHITE, BLACK, LBLACK, WHITE, BLACK, CYAN};
 static XA_COLOUR_SCHEME bw_default_colours = {WHITE, BLACK, BLACK, WHITE, BLACK, WHITE};
-
-/* HR: Gets the VDI vector routine addresses from the moose. */
-static struct moose_vecs_com vecs_com =
-{
-	MOOSE_VECS_PREFIX,
-	0,
-	0,
-	0,
-	0
-};
 
 static vdi_vec *svmotv = 0;
 static vdi_vec *svbutv = 0;
@@ -491,7 +482,10 @@ DIAGS(("\n"));
 static bool
 init_moose(void)
 {
-	struct moose_init_com i_com;
+	struct fs_info info;
+	long major, minor;
+	struct moose_vecsbuf vecs;
+	unsigned short dclick_time;
 
 	if (!C.MOUSE_dev)
 	{
@@ -503,70 +497,65 @@ init_moose(void)
 		}
 	}
 
-	i_com.init_prefix = MOOSE_INIT_PREFIX; /* Load the command prefix into the command */
-	i_com.dum = 0; /* 19 october 2000; switched over to VMOOSE, the vdi vector using moose. */
-
-	if (Fwrite(C.MOUSE_dev, sizeof(i_com), &i_com) == 0)
+	/* first check the xdd version */
+	if (Fcntl(C.MOUSE_dev, &info, FS_INFO) != 0)
 	{
-		err = fdisplay(loghandle, true, "Moose init failed\n");
-	}
-	else
-	{
-		struct moose_dclick_com dc_com;
-		long dev = 1L << C.MOUSE_dev;
-
-		/* obtain the addresses of the vdi change routines (in the moose) */
-		vecs_com.vecs_prefix = MOOSE_VECS_PREFIX;
-		(void) Fselect(1, &dev, 0, 0);
-		if (dev & (1L << C.MOUSE_dev))
-			Fread(C.MOUSE_dev, sizeof(vecs_com), &vecs_com);
-
-		Fclose(C.MOUSE_dev);
-		C.MOUSE_dev = Fopen(moose_name, O_RDWR);
-		if (C.MOUSE_dev < 0)
-		{
-			err = fdisplay(loghandle, true, "Can't open %s\n", moose_name);
-			return false;
-		}
-
-		dc_com.dclick_prefix = MOOSE_DCLICK_PREFIX;
-		dc_com.dclick_time = lcfg.double_click_time;
-
-		if (Fwrite(C.MOUSE_dev, sizeof(dc_com), &dc_com) == 0)
-			err = fdisplay(loghandle, true, "Moose set dclick time failed\n");
+		err = fdisplay(loghandle, true, "Fcntl(FS_INFO) failed, do you use the right xdd?\n");
+		return false;
 	}
 
-	if (vecs_com.motv)
+	major = info.version >> 16;
+	minor = info.version & 0xffffL;
+	if (major != 0 || minor < 4)
 	{
-		vex_motv(C.P_handle, vecs_com.motv, (void **)(&svmotv));
-		vex_butv(C.P_handle, vecs_com.butv, (void **)(&svbutv));
+		err = fdisplay(loghandle, true, ", do you use the right xdd?\n");
+		return false;
+	}
 
-		if (vecs_com.whlv)
+	if (Fcntl(C.MOUSE_dev, &vecs, MOOSE_READVECS) != 0)
+	{
+		err = fdisplay(loghandle, true, "Moose set dclick time failed\n");
+		return false;
+	}
+
+	if (vecs.motv)
+	{
+		vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
+		vex_butv(C.P_handle, vecs.butv, (void **)(&svbutv));
+
+		if (vecs.whlv)
 		{
-			vex_wheelv(C.P_handle, vecs_com.whlv, (void **)(&svwhlv));
+			vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
 			fdisplay(loghandle, true, "Wheel support present\n");
 		}
 		else
 			fdisplay(loghandle, true, "No wheel support!!\n");
 	}
 
+	dclick_time = lcfg.double_click_time;
+	if (Fcntl(C.MOUSE_dev, &dclick_time, MOOSE_DCLICK) != 0)
+		err = fdisplay(loghandle, true, "Moose set dclick time failed\n");
+
 	return true;
 }
 
 void
 reopen_moose(void)
-{									
-	struct moose_dclick_com dc_com;
+{
+#if 1
+	unsigned short dclick_time = 50;
+#else
+	unsigned short dclick_time = lcfg.double_click_time;
+#endif
 
 	C.MOUSE_dev = Fopen(moose_name, O_RDWR);
 
-	dc_com.dclick_prefix = MOOSE_DCLICK_PREFIX;
-	dc_com.dclick_time = 50;
-	/* dc_com.dclick_time = lcfg.double_click_time; */
-
-	if (Fwrite(C.MOUSE_dev, sizeof(dc_com), &dc_com) == 0)
+	if (C.MOUSE_dev >= 0)
 	{
-		DIAG((D_mouse, 0, "moose set dclick time failed\n"));
+		if (Fcntl(C.MOUSE_dev, &dclick_time, MOOSE_DCLICK) != 0)
+		{
+			DIAG((D_mouse, 0, "moose set dclick time failed\n"));
+		}
 	}
 }
 
@@ -659,11 +648,6 @@ BTRACE(5);
 		Fclose(loghandle);
 		Pterm(1);
 	}
-
-	DIAGS(("sizeof(struct moose_init_com) = %ld\n", sizeof(struct moose_init_com)));
-	DIAGS(("sizeof(struct moose_dclick_com) = %ld\n", sizeof(struct moose_dclick_com)));
-	DIAGS(("sizeof(struct moose_vecs_com) = %ld\n", sizeof(struct moose_vecs_com)));
-	DIAGS(("sizeof(struct moose_data) = %ld\n", sizeof(struct moose_data)));
 
 	/* Let's get our MiNT process id being as MiNT is loaded... */
 BTRACE(6);
