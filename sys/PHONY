@@ -6,4 +6,4 @@ include $(top_srcdir)/../PHONY
 #
 # private definitions
 #
-
+.PHONY: $(SUBDIRS)
