@@ -1,7 +1,7 @@
 #############################################################################
 #
 # Atari ST terminals.
-# From Guido Flohr <gufl0000@stud.uni-sb.de>.
+# From Guido Flohr <guido@freemint.de>
 #
 # The Toswin terminfo descriptions have been changed.  ANSI colors
 # are now mapped to higher indexed VDI colors to enhance readability.
@@ -9,6 +9,7 @@
 # The new escape sequence "\Eu" is used to reset the colors to the
 # original color pair.  You will therefore need at least Toswin 2.7
 # to use the new stuff.
+
 tw52|tw52-color|Toswin window manager with color,
 	colors#8, pairs#64, it#8,
 	setaf=\Eb%?%p1%{0}%=%t?%e%p1%{1}%=%t)%e%p1%{2}%=%t*%e%p1%{3}%=%t+%e%p1%{4}%=%t<%e%p1%{5}%=%t-%e%p1%{6}%=%t.%e%p1%{7}%=%t0%e%p1%{41}%+%c,
