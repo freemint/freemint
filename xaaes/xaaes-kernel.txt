@@ -1,0 +1,98 @@
+XaAES kernel integration notes (Frank Naumann, 2003-06-05)
+
+
+1. Overview
+
+The AES introduced by the TOS is not an unix concept. Therefore the current
+implementation lacks most importantly enough speed to be an real alternative
+against N.AES and MagiC. With speed I mean here the interactive feeling
+on working with windows, dialogs and so on. As the current XaAES
+implementation try to map to unix concepts (pipes, semaphores) for every
+simple action lot of systemcalls and contextswitches are involved. There are
+also other design flaws in this implementation. Most notably XaAES tries
+to be an user program. But as it features kernel services there are lot
+of tricks required to get it working: the F_OS_SPECIAL kernel hack in
+FreeMiNT, installing the trap handler from user space and such things.
+That's why I think that the AES belongs to the kernel and should run in kernel
+space. I also think that with a good design we don't loss any of the current
+advantages of the FreeMiNT kernel (e.g. the nearness to unix). Additionally
+I'm sure it will be much more interactive and stable. We are also then able
+to support features like real debugging of AES applications (just try
+to debug an BEGIN_UPDATE/END_UPDATE of an AES application from another AES
+application (gdb inside TosWin2 for example), the AES simply deadlock
+against itself).
+
+At least it's now generally possible todo this. I already converted the src
+to gcc (what a hard and stupid work) and don't link any library except the
+gemlib for the VDI bindings and the FreeMiNT kernel lib.
+
+
+2. Goals
+
+- loadable kernel module (also at runtime)
+- clean design, no hacks
+- clean kernel integration
+- cleanup and simplify the code; lot of things can be implemented much
+  easier in kernel space
+- debugging support
+
+and a much, much better feeeling on working with it!
+
+
+3. Side effects
+
+- there will be no way back, e.g. the FreeMiNT kernel is an integral
+  requirement; also the kernel version matters
+- PureC will be never supported
+
+
+4. General Concept
+
+At the moment XaAES consist mainly of the trap handler and a manager process
+plus some initialization/exit code. They communicate at the moment over pipes.
+Synchronization is done through Pmsg(). The synchronization is very complex
+and due to this a little bit buggy in the current XaAES (the problem is that
+the FreeMiNT kernel is allowed to preempt at any time).
+
+In kernel space the things will look differently (my ideas): The manager
+process will be implemented as kernel thread. The trap handler is replaced by
+the FreeMiNT one and only provide entry points to the kernel. The
+communication don't need pipes, we can using a simple message queue (all is in
+one kernel address space). Synchronization is much, much easier as we can
+directly use the kernel sleep/wake mechanism and hence self define at which
+points we taskswitch and at which points not.
+
+Mouse handling over xdd can for now be used as it is (or have someone a
+better idea?).
+
+
+5. Implementation tasks
+
+5.1. FreeMiNT kernel
+
+ 1 - counting semaphore (using sleep/wake kernel primitive)
+ 2 - loadable modules at runtime
+ 3 - trap handler stubs for AES syscalls; binding at runtime to
+     the XaAES module
+ 4 - generic mechanism for user callbacks (e.g. implementing
+     like signal handling; reusing the 'userspace things' added
+     recently by draco for example)
+ 5 - enhancing process structure for XaAES (runtime binding)
+ 6 - enhancing syscalls that affect the process lifetime for XaAES
+     (I think here of something like runtime callback bindings
+      for process termination, fork, ptrace and such things the
+      XaAES might be interested in :-))
+ 7 - testing of the above things
+ 8 - adding all this to the module interface (maybe we start with a total
+     new structure here that can be much more easily extended)
+
+5.2. XaAES
+
+ 1 - replace communication pipe by message queue
+ 2 - replace Pmsg() synchronization with kernel semaphores
+ 2 - rework of application init (adding to process structure)
+ 3 - rework of application exit (terminiation callback from kernel)
+ 4 - reimplement process start (shel_write and these things) using kernel
+     primitives
+ 5 - think about things like fork() and the new variable light fork()
+ 6 - a new transport way for the existing command line arguments is needed
