@@ -379,6 +379,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		post_cevent(client, cXA_button_event, 0, 0, 0, 0, 0, md);
 		return;
 	}
+
 	/*
 	 * If button released and widget_active is set (live movements)...
 	 */
@@ -413,6 +414,9 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	}
 
 	locker = mouse_locked();
+	if (!locker)
+		locker = update_locked();
+
 	wind = find_window(lock, md->x, md->y);
 
 	/*
@@ -449,7 +453,8 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 		else
 		{
-			deliver_button_event(wind, locker, md);
+			client = wind == root_window ? get_desktop()->owner : wind->owner;
+			deliver_button_event(client == locker ? wind : NULL, locker, md);
 		}
 	}
 }
