@@ -324,7 +324,7 @@ norm_bios:
 #else
 
 	tst.w	_in_kernel
-	bne.s	rom_bios
+	bne	rom_bios
 
 #endif
 
@@ -740,6 +740,8 @@ ucret:	lea	24(sp),sp		// fix up stack
 	move.l	d0,_usrret		// save returned value
 	rts				// back to caller
 
+#ifdef SYSCALL_REENTRANT
+
 // *****************************
 // * Reentrant syscall handler *
 // *****************************
@@ -901,3 +903,5 @@ reent_rom_bios:
 reent_rom_xbios:
 	move.l	_old_xbios,d1
 	bra.s	reent_out
+
+#endif /* SYSCALL_REENTRANT */
