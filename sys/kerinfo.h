@@ -38,13 +38,8 @@
 # include "mint/kerinfo.h"
 
 
-# define DEFAULT_DIRMODE	(0777)
-
-# if 0
-# define DEFAULT_MODE		(0666)
-# else
 # define DEFAULT_MODE		(kernelinfo.default_perm)
-# endif
+# define DEFAULT_DIRMODE	(0755)
 
 extern struct kerinfo kernelinfo;
 

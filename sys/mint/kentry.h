@@ -43,6 +43,7 @@
 /* forward declarations */
 struct basepage;
 struct bio;
+struct dirstruct;
 struct dma;
 struct file;
 struct ilock;
@@ -144,20 +145,85 @@ struct kentry_mch
  */
 struct kentry_proc
 {
-	/* utility functions for dealing with pauses, or for putting processes
-	 * to sleep
+	/* utility functions for dealing with pauses and sleep
+	 * ---------------------------------------------------
+	 *
+	 * nap(n)
+	 *
+	 * go to sleep temporarily for about "n" milliseconds
+	 * (the exact time slept may vary)
+	 *
+	 * sleep(que, cond)
+	 *
+	 * wait on system queue "que" until a condition occurs
+	 *
+	 * wake(que, cond)
+	 *
+	 * wake all processes on queue "que" that are waiting for
+	 * condition "cond"
+	 *
+	 * wakeselect(p)
+	 *
+	 * wake a process that is doing a select(); "param" should be the
+	 * process code passed to select()
 	 */
 	void	_cdecl	(*nap)(unsigned);
 	int	_cdecl	(*sleep)(int que, long cond);
 	void	_cdecl	(*wake)(int que, long cond);
 	void	_cdecl	(*wakeselect)(struct proc *p);
 
-	/* miscellaneous other things */
+	/* interrupt safe kill and wake
+	 * --------------------------
+	 *
+	 * ikill(p, sig)
+	 * iwake(que, cond, pid)
+	 */
 	long	_cdecl	(*ikill)(int, unsigned short);
 	void	_cdecl	(*iwake)(int que, long cond, short pid);
 	long	_cdecl	(*killgroup)(int, unsigned short, int);
 
-	/* functions for adding/cancelling timeouts */
+	/* functions for adding/cancelling timeouts
+	 * ----------------------------------------
+	 *
+	 * addtimeout(delta, func)
+	 *
+	 * schedules a callback to occur at some future time "delta" is the
+	 * number of milliseconds before the timeout is to occur, and func is
+	 * a pointer to the function which should be called at that time. Note
+	 * that the kernel's timeout facility does not actually have a
+	 * millisecond resolution, so the function will most likely be called
+	 * some time after specified time has elapsed (i.e. don't rely on this
+	 * for really accurate timing). Also note that the timeout may occur
+	 * in the context of a different process than the one which scheduled
+	 * the timeout, i.e. the given function should not make assumptions
+	 * involving the process context, including memory space.
+	 * addtimeout() returns a long "magic cookie" which may be passed to
+	 * the canceltimeout() function to cancel the pending time out.
+	 * This function is only available in MiNT versions 1.06 and later;
+	 * otherwise the pointer will be NULL.
+	 *
+	 * canceltimeout(which)
+	 *
+	 * cancels a pending timeout. The parameter is the "magic cookie"
+	 * returned from addtimeout(). If the timeout has already occured,
+	 * canceltimeout does nothing, otherwise it removes the timeout from the
+	 * kernel's schedule.
+	 *
+	 * addroottimeout(delta, func, flags)
+	 *
+	 * same as addtimeout() but the timeout is attached to the root
+	 * process (MiNT) and is never implicitly (programm termination)
+	 * canceled
+	 * flags - bitvektor, only bit 1 defined at the moment
+	 *         if bit 1 is set, addroottimeout is called from an interrupt
+	 *         handler and use a static list for new timeouts
+	 *         Useful for Softinterrupts!
+	 *       - all other bits must be set to 0
+	 *
+	 * cancelroottimeout(which)
+	 *
+	 * same as canceltimeout() but for root timeouts
+	 */
 	struct timeout *_cdecl (*addtimeout)(long, void (*)());
 	void _cdecl (*canceltimeout)(struct timeout *);
 	struct timeout *_cdecl (*addroottimeout)(long, void (*)(), unsigned short);
@@ -192,7 +258,22 @@ struct kentry_proc
  */
 struct kentry_mem
 {
-	/* memory vector
+	/* memory allocation functions
+	 * ---------------------------
+	 *
+	 * kmalloc(size) / kfree (ptr)
+	 *
+	 * kmalloc and kfree should be used for most purposes, and act like
+	 * malloc and free respectively; kmalloc'ed memory is *exclusive*
+	 * kernel memory, supervisor proteced
+	 *
+	 * umalloc(size) / ufree (ptr)
+	 *
+	 * umalloc and ufree may be used to allocate/free memory that is
+	 * attached to the current process, and which is freed automatically
+	 * when the process exits; this is generally not of much use to a file
+	 * system driver
+	 *
 	 */
 
 	void *	_cdecl (*kcore)(unsigned long size, const char *func);
@@ -224,26 +305,73 @@ struct kentry_fs
 	/* extended filesystem vector
 	 */
 
-	unsigned short default_perm;	/* default file permissions */
+	unsigned short default_perm; /* default file permissions */
+	unsigned short default_dir_perm; /* default directory permissions */
 
-	/* media change vector */
-	void	_cdecl (*drvchng)(unsigned short drv, const char *function);
+	/* media change vector
+	 * -------------------
+	 * call this if a device driver detects a disk
+	 * change during a read or write operation. The parameter is the BIOS
+	 * device number of the disk that changed.
+	 */
+	void _cdecl (*drvchng)(unsigned short drv, const char *function);
 
-	/* file system utility functions */
-	int	_cdecl (*denyshare)(struct file *, struct file *);
-	LOCK *	_cdecl (*denylock)(struct ilock *, struct ilock *);
+	/* file system utility functions
+	 * -----------------------------
+	 *
+	 * denyshare(list, f)
+	 *
+	 * "list" is a list of open files, "f" is a new file that is being
+	 * opened.
+	 * If the file sharing mode of f conflicts with any of the FILEPTRs
+	 * in the list, then this returns 1, otherwise 0.
+	 *
+	 * denylock(list, newlock)
+	 *
+	 * checks a list of locks to see if the new lock conflicts with any
+	 * one in the list. If so, the first conflicting lock is returned;
+	 * otherwise, a NULL is returned.
+	 * This function is only available if maj_version > 0 or
+	 * min_version >= 94. Otherwise, it will be a null pointer.
+	 */
+	int _cdecl (*denyshare)(struct file *, struct file *);
+	LOCK *_cdecl (*denylock)(struct ilock *, struct ilock *);
 
-	struct bio *bio;		/* buffered block I/O */
-	struct timeval *xtime;		/* pointer to current kernel time - UTC */
+	struct bio *bio; /* buffered block I/O */
+	struct timeval *xtime; /* pointer to current kernel time - UTC */
+
+	long _cdecl (*kernel_opendir)(struct dirstruct *dirh, const char *name);
+	long _cdecl (*kernel_readdir)(struct dirstruct *dirh, char *buf, int len);
+	void _cdecl (*kernel_closedir)(struct dirstruct *dirh);
+
+	struct file * _cdecl (*kernel_open)(const char *path, int rwmode, long *err);
+	long _cdecl (*kernel_read)(struct file *f, void *buf, long buflen);
+	long _cdecl (*kernel_write)(struct file *f, const void *buf, long buflen);
+	long _cdecl (*kernel_lseek)(FILEPTR *f, long where, int whence);
+	void _cdecl (*kernel_close)(struct file *f);
 };
 #define DEFAULTS_kentry_fs \
 { \
 	DEFAULT_MODE, \
+	DEFAULT_DIRMODE, \
+	\
 	changedrv, \
+	\
 	denyshare, \
 	denylock, \
+	\
 	&bio, \
 	&xtime, \
+	\
+	kernel_opendir, \
+	kernel_readdir, \
+	kernel_closedir, \
+	\
+	kernel_open, \
+	kernel_read, \
+	kernel_write, \
+	kernel_lseek, \
+	kernel_close, \
 }
 
 
@@ -319,9 +447,15 @@ struct kentry_misc
 	long	_cdecl (*add_rsvfentry)(char *, char, char);
 	long	_cdecl (*del_rsvfentry)(char *);
 
+	/* return the number of milliseconds remaining to preemption time.
+	 */
 	ulong	_cdecl (*remaining_proc_time)(void);
 
-	/* XXX -> kentry_arch or something like this */
+	/* nf operation vector if available
+	 * on this machine; NULL otherwise
+	 * 
+	 * XXX -> kentry_arch or something like this
+	 */
 	struct nf_ops *nf_ops;
 };
 #define DEFAULTS_kentry_misc \
@@ -345,8 +479,13 @@ struct kentry_misc
 struct kentry_debug
 {
 	/* Debugging stuff
+	 * ---------------
+	 *
+	 * trace - informational messages
+	 * debug - error messages
+	 * alert - really serious errors
+	 * fatal - fatal errors
 	 */
-
 	void	_cdecl (*trace)(const char *, ...);
 	void	_cdecl (*debug)(const char *, ...);
 	void	_cdecl (*alert)(const char *, ...);
@@ -376,6 +515,8 @@ struct kentry_libkern
 
 	/*
 	 * kernel string functions
+	 *
+	 * vsprintf, sprintf: floating point formats are not supported!
 	 */
 
 	long	_cdecl (*vsprintf)(char *buf, long buflen, const char *fmt, va_list args);
@@ -416,6 +557,23 @@ struct kentry_libkern
 
 	/*
 	 * kernel time help functions
+	 * --------------------------
+	 *
+	 * millis_time(ms, timeptr)
+	 *
+	 * convert "ms" milliseconds into a DOS time (in td[0]) and date
+	 * (in td[1]) convert a DOS style time and date into a Unix style
+	 * time; returns the Unix time
+	 *
+	 * unixtime(time, date)
+	 *
+	 * convert a DOS style time and date into a Unix style time; returns
+	 * the Unix time
+	 *
+	 * dostime(time)
+	 *
+	 * convert a Unix time into a DOS time (in the high word of the
+	 * returned value) and date (in the low word)
 	 */
 
 	void	_cdecl (*ms_time)(unsigned long ms, short *timeptr);
