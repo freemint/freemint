@@ -1162,7 +1162,7 @@ static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 
 	get_window_rect(v, WF_FULLXYWH, &full);
 
-#if 0
+#if 1
 	if (w > full.g_w)
 		w = full.g_w;
 	if (h > full.g_h)
@@ -1188,8 +1188,6 @@ static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 		/* das sind BORDER-Gr”žen! */
 		t->cfg->xpos = x;
 		t->cfg->ypos = y;
-		t->cfg->width = w;
-		t->cfg->height = h;
 	}
 	t->windirty = 1;
 }
@@ -1650,6 +1648,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	short firstchar, lastchar, distances[5], maxwidth, effects[3];
 	short i;
 	ulong flag;
+	short bwidth, bheight, dummy;
 
 	t = malloc (sizeof *t);
 	if (!t)
@@ -1731,8 +1730,12 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->scrolled = t->nbytes = t->draw_time = 0;
 
 	/* initialize the WINDOW struct */
-	v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos, cfg->width, cfg->height,
-			  SHRT_MAX, SHRT_MAX);
+	wind_calc (WC_BORDER, cfg->kind, 100, 100,
+		   cfg->col * t->cmaxwidth, cfg->row * t->cheight,
+		   &dummy, &dummy, &bwidth, &bheight);
+
+	v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos, 
+			  bwidth, bheight, SHRT_MAX >> 1, SHRT_MAX >> 1);
 	if (!v)
 	{
 		/* FIXME: Cleanup for dirty, data, and cflag, too.  */
@@ -1765,16 +1768,8 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	v->mouseinp = text_click;
 
 	t->cx = 0;
-	if (cfg->height != -1)
-	{
-		t->offy = t->maxy * t->cheight - v->work.g_h;
-		t->cy = t->maxy - (v->work.g_h / t->cheight);
-	}
-	else
-	{
-		t->offy = cfg->scroll * t->cheight;
-		t->cy = t->miny;
-	}
+	t->offy = t->maxy * t->cheight - v->work.g_h;
+	t->cy = t->maxy - (v->work.g_h / t->cheight);
 
 	t->fd = t->pgrp = 0;
 

@@ -69,10 +69,8 @@ static WINCFG *crt_newcfg(char *prog)
 	new->scroll = 0;
 	new->xpos = -1;
 	new->ypos = -1;
-	new->width = -1;
-	new->height = -1;
-	new->vt_mode = MODE_VT52;
-	new->autoclose = FALSE;
+	new->vt_mode = MODE_VT100;
+	new->autoclose = TRUE;
 	new->iconified = FALSE;
 	new->fg_color = 7;
 	new->bg_color = 0;
@@ -692,10 +690,6 @@ static void parse_line(char *zeile)
 				p_cfg->row = atoi(value);
 			else if (strcmp(var, "WinScroll") == 0)
 				p_cfg->scroll = atoi(value);
-			else if (strcmp(var, "WinSizeW") == 0)
-				p_cfg->width = atoi(value);
-			else if (strcmp(var, "WinSizeH") == 0)
-				p_cfg->height = atoi(value);
 			else if (strcmp(var, "WinTitle") == 0)
 				get_str(value, p_cfg->title);
 			else if (strcmp(var, "WinVtMode") == 0)
@@ -828,8 +822,6 @@ void config_save(void)
 				write_int("WinPosY", -1);
 			write_int("WinRow", p->row);
 			write_int("WinScroll", p->scroll);
-			write_int("WinSizeW", p->width);
-			write_int("WinSizeH", p->height);
 			write_str("WinTitle", p->title);
 			write_int("WinVtMode", p->vt_mode);
 			write_int("WinVDIColors", p->vdi_colors);
