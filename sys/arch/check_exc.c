@@ -45,6 +45,8 @@
 
 # include "check_exc.h"
 
+# ifndef NO_FAKE_SUPER
+
 /* This module provides code, that allows old programs to run,
  * even if the Super() system call is modified so that it does
  * not have any real effect, i.e. the CPU remains in the user
@@ -491,6 +493,8 @@ check_bus(struct frame_zero frame)
 	return 0;
 }
 
+# endif /* NO_FAKE_SUPER */
+
 /* Our extended privilege violation handler.
  *
  * Returns:
@@ -522,6 +526,8 @@ check_priv(struct privilege_violation_stackframe frame)
 	ushort opcode;
 
 	opcode = *frame.pc;
+
+# ifndef ONLY68000
 
 	/* Emulate the "move from sr" instruction,
 	 * which is not privileged on 68000, and privileged later.
@@ -613,6 +619,10 @@ check_priv(struct privilege_violation_stackframe frame)
 			}
 		}
 	}
+
+# endif /* ONLY68000 */
+
+# ifndef NO_FAKE_SUPER
 
 	/* We mimic the original behaviour: some instructions are only
 	 * available after Super(), so we must now emulate them, when
@@ -892,6 +902,8 @@ check_priv(struct privilege_violation_stackframe frame)
 			return -1;
 		}
 	}
+
+# endif /* NO_FAKE_SUPER */
 
 	return 0;
 }
