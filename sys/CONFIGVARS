@@ -10,7 +10,7 @@ include $(top_srcdir)/../CONFIGVARS
 #
 # MiNT must be compiled with 16 bit integers (-mshort)
 #
-GENERAL = -mshort
+GENERAL = -mshort -g
 
 #
 # kernel definitions
