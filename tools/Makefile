@@ -9,6 +9,7 @@ SUBDIRS = \
 	fdisk \
 	fsetter \
 	gluestik \
+	lpflush \
 	mgw \
 	minix \
 	mkfatfs \
