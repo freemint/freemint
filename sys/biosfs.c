@@ -18,7 +18,10 @@
 
 # include "mint/arch/mfp.h"
 # include "mint/asm.h"
+# include "mint/dcntl.h"
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
 
 # include "arch/detect.h"
 # include "arch/syscall.h"

@@ -16,6 +16,9 @@
 
 # include "libkern/libkern.h"
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
+# include "mint/stat.h"
 
 # include "bios.h"
 # include "filesys.h"

@@ -25,7 +25,7 @@
 # ifndef _xfs_xdd_kernel_h
 # define _xfs_xdd_kernel_h
 
-# include "mint/file.h"
+# include "mint/kerinfo.h"
 
 
 /* Macros for kernel, bios and gemdos functions

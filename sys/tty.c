@@ -16,6 +16,7 @@
 # include "tty.h"
 
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
 # include "mint/signal.h"
 
 # include "bios.h"

@@ -17,7 +17,13 @@
 # include "libkern/libkern.h"
 
 # include "mint/credentials.h"
+# include "mint/dcntl.h"
+# include "mint/emu_tos.h"
+# include "mint/file.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
 # include "mint/signal.h"
+# include "mint/stat.h"
 
 # include "filesys.h"
 # include "memory.h"

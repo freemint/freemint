@@ -35,6 +35,7 @@
 # define _global_h
 
 # include "mint/mint.h"
+# include "mint/kerinfo.h"
 
 
 # define DEFAULT_DIRMODE	(0777)

@@ -7,7 +7,13 @@
 # define _pipefs_h
 
 # include "mint/mint.h"
-# include "mint/file.h"
+# include "mint/fsops.h"
+# include "mint/time.h"
+
+
+struct file;
+struct pipe;
+struct tty;
 
 
 struct fifo
@@ -25,7 +31,7 @@ struct fifo
 	struct pipe *inp;	/* pipe for reads */
 	struct pipe *outp;	/* pipe for writes (0 if unidirectional) */
 	struct fifo *next;	/* link to next FIFO in list */
-	FILEPTR *open;		/* open file pointers for this fifo */
+	struct file *open;	/* open file pointers for this fifo */
 };
 
 extern struct fifo* piperoot;
