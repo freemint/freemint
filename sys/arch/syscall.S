@@ -668,9 +668,6 @@ rom_trap2:
 // Trap wrapper for calling ROM from the inside of the kernel.
 // Usage: just replace trap #1 with a jsr _trap_1_emu etc.
 
-// Ozk: wouldnt these be useful in any case?
-//#ifdef SYSCALL_REENTRANT
-
 	.globl	_trap_1_emu
 	.globl	_trap_2_emu
 	.globl	_trap_13_emu
@@ -754,8 +751,6 @@ TE_X:	move.w	sr,-(sp)
 	move.l	_old_xbios.w(pc),-(sp)
 	rts
 #endif
-
-//#endif	// SYSCALL_REENTRANT
 
 // ******************************
 // * unused trap's trap handler *
