@@ -47,10 +47,18 @@
 
 # include "arch/xhdi_emu.h"	/* xhdi_emu */
 # include "mint/proc.h"
+# include "libkern/libkern.h"
 
 # include "cookie.h"		/* cookie handling */
 # include "init.h"		/* boot_printf */
 # include "k_prot.h"		/* suser */
+
+
+# ifdef DEBUG_INFO
+# define XHDI_DEBUG(x)		DEBUG (x)
+# else
+# define XHDI_DEBUG(x)	
+# endif
 
 
 /*
@@ -58,7 +66,7 @@
  */
 
 /* dummy routine */
-static long
+static long _cdecl
 XHDIfail (ushort opcode, ...)
 {
 	UNUSED (opcode);
@@ -67,7 +75,7 @@ XHDIfail (ushort opcode, ...)
 }
 
 /* XHDI handler function */
-static long (*XHDI)(ushort opcode, ...) = XHDIfail;
+static long _cdecl (*XHDI)(ushort opcode, ...) = XHDIfail;
 
 ushort XHDI_installed = 0;
 
@@ -76,6 +84,11 @@ long
 XHDI_init (void)
 {
 	long r;
+	
+# ifdef XHDI_MON
+	static void init_xhdi_mon (void);
+	init_xhdi_mon();
+# endif
 	
 	r = get_toscookie (COOKIE_XHDI, (long *) &XHDI);
 	if (!r && XHDI)
@@ -201,8 +214,8 @@ sys_XHDOSLimits (ushort which, ulong limit)
 
 long
 sys_xhdi (ushort op,
-		long a1, long a2, long a3, long a4,
-		long a5, long a6, long a7)
+	  long a1, long a2, long a3, long a4,
+	  long a5, long a6, long a7)
 {
 	/* version information */
 	if (op == 0)
@@ -237,8 +250,8 @@ sys_xhdi (ushort op,
 long
 XHGetVersion (void)
 {
-	long own_version = 0x130;
-	long installed;
+	ushort own_version = 0x130;
+	ushort installed;
 	
 	installed = XHDI (0);
 	if (XHDI_installed)
@@ -360,3 +373,643 @@ XHReaccess (ushort major, ushort minor)
 {
 	return XHDI (19, major, minor);
 }
+
+
+# ifdef XHDI_MON
+
+static long _cdecl xhdi_mon_XHGetVersion(void);
+static long _cdecl xhdi_mon_XHInqTarget(ushort, ushort, ulong *, ulong *, char *);
+static long _cdecl xhdi_mon_XHReserve(ushort, ushort, ushort, ushort);
+static long _cdecl xhdi_mon_XHLock(ushort, ushort, ushort, ushort);
+static long _cdecl xhdi_mon_XHStop(ushort, ushort, ushort, ushort);
+static long _cdecl xhdi_mon_XHEject(ushort, ushort, ushort, ushort);
+static long _cdecl xhdi_mon_XHDrvMap(void);
+static long _cdecl xhdi_mon_XHInqDev(ushort, ushort *, ushort *, ulong *, __BPB *);
+static long _cdecl xhdi_mon_XHInqDriver(ushort, char *, char *, char *, ushort *, ushort *);
+static long _cdecl xhdi_mon_XHNewCookie(void *);
+static long _cdecl xhdi_mon_XHReadWrite(ushort, ushort, ushort, ulong, ushort, void *);
+static long _cdecl xhdi_mon_XHInqTarget2(ushort, ushort, ulong *, ulong *, char *, ushort);
+static long _cdecl xhdi_mon_XHInqDev2(ushort, ushort *, ushort *, ulong *, __BPB *, ulong *, char *);
+static long _cdecl xhdi_mon_XHDriverSpecial(ulong, ulong, ushort, void *);
+static long _cdecl xhdi_mon_XHGetCapacity(ushort, ushort, ulong *, ulong *);
+static long _cdecl xhdi_mon_XHMediumChanged(ushort, ushort);
+static long _cdecl xhdi_mon_XHMiNTInfo(ushort, void *);
+static long _cdecl xhdi_mon_XHDOSLimits(ushort, ulong);
+static long _cdecl xhdi_mon_XHLastAccess(ushort, ushort, ulong *);
+static long _cdecl xhdi_mon_XHReaccess(ushort, ushort);
+
+struct xhdi_mon_dispatcher
+{
+	void *func;
+	ulong len;
+}
+xhdi_mon_dispatcher_table[] =
+{
+	{ xhdi_mon_XHGetVersion,	 0 },
+	{ xhdi_mon_XHInqTarget,		16 },
+	{ xhdi_mon_XHReserve,		 8 },
+	{ xhdi_mon_XHLock,		 8 },
+	{ xhdi_mon_XHStop,		 8 },
+	{ xhdi_mon_XHEject,		 8 },
+	{ xhdi_mon_XHDrvMap,		 0 },
+	{ xhdi_mon_XHInqDev,		18 },
+	{ xhdi_mon_XHInqDriver,		22 },
+	{ xhdi_mon_XHNewCookie,		 4 },
+	{ xhdi_mon_XHReadWrite,		16 },
+	{ xhdi_mon_XHInqTarget2,	18 },
+	{ xhdi_mon_XHInqDev2,		26 },
+	{ xhdi_mon_XHDriverSpecial,	14 },
+	{ xhdi_mon_XHGetCapacity,	12 },
+	{ xhdi_mon_XHMediumChanged,	 4 },
+	{ xhdi_mon_XHMiNTInfo,		 6 },
+	{ xhdi_mon_XHDOSLimits,		 6 },
+	{ xhdi_mon_XHLastAccess,	 8 },
+	{ xhdi_mon_XHReaccess,		 4 }
+};
+
+long _cdecl (*xhdi_mon)(ushort opcode, ...) = XHDIfail;
+
+static void
+init_xhdi_mon (void)
+{
+	long r;
+	
+	r = get_toscookie (COOKIE_XHDI, (long *) &xhdi_mon);
+	if (!r && xhdi_mon)
+	{
+		long *magic_test = (long *) xhdi_mon;
+		
+		magic_test--;
+		
+		if (*magic_test == XHDIMAGIC)
+			set_toscookie (COOKIE_XHDI, (long) xhdi_mon_dispatcher);
+	}
+}
+
+static long xhdi_mon_result (long res);
+static void xhdi_mon_prres (long res, char *buf, long size);
+static void xhdi_mon_prflags (ulong flags, char *buf, long size);
+static void xhdi_mon_prbpb (__BPB *bpb);
+
+static ushort _cdecl
+xhdi_mon_XHGetVersion (void)
+{
+	ushort ret;
+	
+	XHDI_DEBUG(("XHGetVersion"));
+	
+	ret = xhdi_mon (0);
+	
+	XHDI_DEBUG(("-> %x.%02x", ret >> 8, ret & 0xff));
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHInqTarget (ushort major, ushort minor, ulong *block_size,
+		      ulong *device_flags, char *product_name)
+{
+	char buf[256];
+	long ret;
+	
+	XHDI_DEBUG(("XHInqTarget    major %d  minor %d", major, minor));
+	
+	ret = xhdi_mon (1, major, minor, block_size, device_flags, product_name);
+	xhdi_mon_prres (ret, buf, sizeof(buf));
+	
+	if (!ret)
+	{
+		char s[32];
+		
+		if (block_size)
+		{
+			ksprintf (s, sizeof(s), "  block_size %ld", *block_size);
+			strcat (buf, s);
+		}
+		
+		if (device_flags)
+			xhdi_mon_prflags (*device_flags, buf, sizeof(buf));
+		
+		if (product_name)
+		{
+			ksprintf (s, sizeof(s), "  product_name \"%s\"", product_name);
+			strcat (buf, s);
+		}
+	}
+	XHDI_DEBUG(("%s", buf));
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHReserve (ushort major, ushort minor, ushort do_reserve, ushort key)
+{
+	XHDI_DEBUG(("XHReserve    major %d  minor %d  do_reserve %d"
+		    "  key  %d", major, minor, do_reserve, key));
+	
+	return xhdi_mon_result (xhdi_mon (2, major, minor, do_reserve, key));
+}
+
+static long _cdecl
+xhdi_mon_XHLock (ushort major, ushort minor, ushort do_lock, ushort key)
+{
+	XHDI_DEBUG(("XHLock    major %d  minor %d  do_lock %d"
+		    "  key %d", major, minor, do_lock, key));
+	
+	return xhdi_mon_result (xhdi_mon (3, major, minor, do_lock, key));
+}
+
+static long _cdecl
+xhdi_mon_XHStop (ushort major, ushort minor, ushort do_stop, ushort key)
+{
+	XHDI_DEBUG(("XHStop    major %d  minor %d  do_stop %d"
+		    "  key %d", major, minor, do_stop, key));
+	
+	return xhdi_mon_result (xhdi_mon (4, major, minor, do_stop, key));
+}
+
+static long _cdecl
+xhdi_mon_XHEject (ushort major, ushort minor, ushort do_eject, ushort key)
+{
+	XHDI_DEBUG(("XHEject    major %d  minor %d  do_eject %d"
+		    "  key %d", major, minor, do_eject, key));
+	
+	return xhdi_mon_result (xhdi_mon (5, major, minor, do_eject, key));
+}
+
+static ulong _cdecl
+xhdi_mon_XHDrvMap (void)
+{
+	char buf[128];
+	ulong ret;
+	int i;
+	
+	XHDI_DEBUG(("XHDrvMap"));
+	
+	ret = xhdi_mon (6);
+	
+	strcat (buf, "-> ");
+	for (i = 0; i < 32; i++)
+	{
+		if (ret & (1L << i))
+		{
+			char s[2];
+			
+			s[1] = '\0';
+			
+			if (i < 26) { s[0] = 'A'+i; }
+			else { s[0] = i - 26 + '0'; }
+			
+			strcat (buf, s);
+		}
+	}
+	XHDI_DEBUG(("%s", buf));
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHInqDev (ushort bios_device, ushort *major, ushort *minor,
+		   ulong *start_sector, __BPB *bpb)
+{
+	char buf[256];
+	long ret;
+	
+	XHDI_DEBUG(("XHInqDev    bios_device %d", bios_device));
+	
+	ret = xhdi_mon (7, bios_device, major, minor, start_sector, bpb);
+	xhdi_mon_prres (ret, buf, sizeof(buf));
+	
+	if (!ret)
+	{
+		char s[32];
+		
+		if (major)
+		{
+			ksprintf (s, sizeof(s), "  major %d", *major);
+			strcat (buf, s);
+		}
+		
+		if (minor)
+		{
+			ksprintf (s, sizeof(s), "  minor %d", *minor);
+			strcat (buf, s);
+		}
+		
+		if (start_sector)
+		{
+			ksprintf (s, sizeof(s), "  start_sector %ld", *start_sector);
+			strcat (buf, s);
+		}
+		
+		if (bpb)
+		{
+			ksprintf (s, sizeof(s), "  bpb $%lx", bpb);
+			strcat (buf, s);
+		}
+	}
+	else if (ret == -2)
+	{
+		char s[32];
+		
+		if (major)
+		{
+			ksprintf (s, sizeof(s), "  major %d", *major);
+			strcat (buf, s);
+		}
+		
+		if (minor)
+		{
+			ksprintf (s, sizeof(s), "  minor %d", *minor);
+			strcat (buf, s);
+		}
+	}
+	XHDI_DEBUG(("%s", buf));
+	
+	if (bpb && bpb->recsiz)
+		xhdi_mon_prbpb (bpb);
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHInqDriver (ushort bios_device, char *name, char *version,
+		      char *company, ushort *ahdi_version, ushort *maxIPL)
+{
+	char buf[256];
+	long ret;
+
+	XHDI_DEBUG(("XHInqDriver    bios_device %d", bios_device));
+	
+	ret = xhdi_mon (8, bios_device, name, version, company, ahdi_version, maxIPL);
+	xhdi_mon_prres (ret, buf, sizeof(buf));
+	
+	if (!ret)
+	{
+		char s[32];
+		
+		if (name)
+		{
+			ksprintf (s, sizeof(s), "  name \"%s\"", name);
+			strcat (buf, s);
+		}
+		
+		if (version)
+		{
+			ksprintf (s, sizeof(s), "  version \"%s\"", version);
+			strcat (buf, s);
+		}
+		
+		if (company)
+		{
+			ksprintf (s, sizeof(s), "  company \"%s\"", company);
+			strcat (buf, s);
+		}
+		
+		if (ahdi_version)
+		{
+			ksprintf (s, sizeof(s), "  ahdi_version \"%s\"", ahdi_version);
+			strcat (buf, s);
+		}
+		
+		if (maxIPL)
+		{
+			ksprintf (s, sizeof(s), "  maxIPL %d", maxIPL);
+			strcat (buf, s);
+		}
+	}
+	XHDI_DEBUG(("%s", buf));
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHNewCookie (void *newcookie)
+{
+	XHDI_DEBUG(("XHNewCookie    $%lx", newcookie));
+	
+	xhdi_mon = newcookie;
+	return 0;
+}
+
+static long _cdecl
+xhdi_mon_XHReadWrite (ushort major, ushort minor, ushort rwflag, ulong recno,
+		      ushort count, void *buf)
+{
+	XHDI_DEBUG(("XHReadWrite    major %d  minor %d  rwflag %d  "
+		    "recno %ld  count %d  buf $%lx", major, minor, rwflag, recno, count, buf));
+	
+	return xhdi_mon_result (xhdi_mon (10, major, minor, rwflag, recno, count, buf));
+}
+
+static long _cdecl
+xhdi_mon_XHInqTarget2 (ushort major, ushort minor, ulong *block_size,
+		       ulong *device_flags, char *product_name, ushort stringlen)
+{
+	char buf[256];
+	long ret;
+	
+	XHDI_DEBUG(("XHInqTarget2    major %d  minor %d  stringlen %d", major, minor, stringlen));
+	
+	ret = xhdi_mon (11, major, minor, block_size, device_flags, product_name, stringlen);
+	xhdi_mon_prres (ret, buf, sizeof(buf));
+	
+	if (!ret)
+	{
+		char s[32];
+		
+		if (block_size)
+		{
+			ksprintf (s, sizeof(s), "  block_size %ld", *block_size);
+			strcat (buf, s);
+		}
+		
+		if (device_flags)
+			xhdi_mon_prflags (*device_flags, buf, sizeof(buf));
+		
+		if (product_name)
+		{
+			ksprintf (s, sizeof(s), "  product_name \"%s\"", product_name);
+			strcat (buf, s);
+		}
+	}
+	XHDI_DEBUG(("%s", buf));
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHInqDev2 (ushort bios_device, ushort *major, ushort *minor,
+		    ulong *start_sector, __BPB *bpb, ulong *blocks, char *partid)
+{
+	char buf[256];
+	long ret;
+	
+	XHDI_DEBUG(("XHInqDev2    bios_device %d", bios_device));
+	
+	ret = xhdi_mon (12, bios_device, major, minor, start_sector, bpb, blocks, partid);
+	xhdi_mon_prres (ret, buf, sizeof(buf));
+	
+	if (!ret)
+	{
+		char s[32];
+		
+		if (major)
+		{
+			ksprintf (s, sizeof(s), "  major %d", *major);
+			strcat (buf, s);
+		}
+		
+		if (minor)
+		{
+			ksprintf (s, sizeof(s), "  minor %d", *minor);
+			strcat (buf, s);
+		}
+		
+		if (start_sector)
+		{
+			ksprintf (s, sizeof(s), "  start_sector %ld", *start_sector);
+			strcat (buf, s);
+		}
+		
+		if (bpb)
+		{
+			ksprintf (s, sizeof(s), "  bpb $%lx", bpb);
+			strcat (buf, s);
+		}
+		
+		if (partid)
+		{
+			ksprintf (s, sizeof(s), "  partid \"%s\"", partid);
+			strcat (buf, s);
+		}
+	}
+	else if (ret == -2)
+	{
+		char s[32];
+		
+		if (major)
+		{
+			ksprintf (s, sizeof(s), "  major %d", *major);
+			strcat (buf, s);
+		}
+		
+		if (minor)
+		{
+			ksprintf (s, sizeof(s), "  minor %d", *minor);
+			strcat (buf, s);
+		}
+	}
+	XHDI_DEBUG(("%s", buf));
+	
+	if (bpb && bpb->recsiz)
+		xhdi_mon_prbpb (bpb);
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHDriverSpecial (ulong key1, ulong key2, ushort subopcode, void *data)
+{
+	/* 0x55534844L = USHD
+	 */
+	if (key1 == 0x55534844L && (key2 == 0x13497800L || key2 == 0x2690454L))
+		XHDI_DEBUG(("XHDriverSpecial    [HDDRIVER]  subopcode %d"
+			    "  data $%lx", subopcode, data));
+	else
+		XHDI_DEBUG(("XHDriverSpecial    key1 %ld  key2 %ld  subopcode %d"
+			    "  data $%lx", key1, key2, subopcode, data));
+	
+	return xhdi_mon_result (xhdi_mon (13, key1, key2, subopcode, data));
+}
+
+static long _cdecl
+xhdi_mon_XHGetCapacity (ushort major, ushort minor, ulong *blocks, ulong *bs)
+{
+	char buf[256];
+	long ret;
+	
+	XHDI_DEBUG(("XHGetCapacity    major %d  minor %d", major, minor));
+	
+	ret = xhdi_mon (14, major, minor, blocks, bs);
+	xhdi_mon_prres (ret, buf, sizeof(buf));
+	
+	if (!ret)
+	{
+		char s[32];
+		
+		if (blocks)
+		{
+			ksprintf (s, sizeof(s), "  blocks %ld", *blocks);
+			strcat (buf, s);
+		}
+		
+		if (bs)
+		{
+			ksprintf (s, sizeof(s), "  blocksize %ld", *bs);
+			strcat (buf, s);
+		}
+	}
+	XHDI_DEBUG(("%s", buf));
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHMediumChanged(ushort major, ushort minor)
+{
+	XHDI_DEBUG(("XHMediumChanged    major %d  minor %d", major, minor));
+	
+	return xhdi_mon_result (xhdi_mon (15, major, minor));
+}
+
+static long _cdecl
+xhdi_mon_XHMiNTInfo(ushort opcode, void *data)
+{
+	XHDI_DEBUG(("XHMiNTInfo    opcode %d  data $%lx", opcode, data));
+	
+	return xhdi_mon_result (xhdi_mon (16, opcode, data));
+}
+
+static long _cdecl
+xhdi_mon_XHDOSLimits(ushort which, ulong limit)
+{
+	char buf[256];
+	
+	strcpy (buf, "XHDOSLimits    ");
+	
+	switch (which)
+	{
+		case 0:  strcat (buf, "XH_DL_SECSIZ");		break;
+		case 1:  strcat (buf, "XH_DL_MINFAT");		break;
+		case 2:  strcat (buf, "XH_DL_MAXFAT");		break;
+		case 3:  strcat (buf, "XH_DL_MINSPC");		break;
+		case 4:  strcat (buf, "XH_DL_MAXSPC");		break;
+		case 5:  strcat (buf, "XH_DL_CLUSTS");		break;
+		case 6:  strcat (buf, "XH_DL_MAXSEC");		break;
+		case 7:  strcat (buf, "XH_DL_DRIVES");		break;
+		case 8:  strcat (buf, "XH_DL_CLSIZB");		break;
+		case 9:  strcat (buf, "XH_DL_RDLEN");		break;
+		case 12: strcat (buf, "XH_DL_CLUSTS12");	break;
+		case 13: strcat (buf, "XH_DL_CLUSTS32");	break;
+		case 14: strcat (buf, "XH_DL_BFLAGS");		break;
+		default:
+		{
+			char s[32];
+			ksprintf (s, sizeof(s), "%d", which);
+			strcat (buf, s);
+			break;
+		}
+	}
+	
+	if (limit)
+	{
+		char s[32];
+		
+		ksprintf (s, sizeof(s), "  limit %ld", limit);
+		strcat (buf, s);
+	}
+	
+	XHDI_DEBUG(("%s", buf));
+	
+	return xhdi_mon_result (xhdi_mon (17, which, limit));
+}
+
+static long _cdecl
+xhdi_mon_XHLastAccess (ushort major, ushort minor, ulong *ms)
+{
+	char buf[256];
+	char s[32];
+	long ret;
+	
+	XHDI_DEBUG(("XHLastAccess    major %d  minor %d", major, minor));
+	
+	ret = xhdi_mon (18, major, minor, ms);
+	xhdi_mon_prres (ret, buf, sizeof(buf));
+	
+	ksprintf (s, sizeof(s), "  ms %ld", ret, ms);
+	strcat (buf, s);
+	XHDI_DEBUG(("%s", buf));
+	
+	return ret;
+}
+
+static long _cdecl
+xhdi_mon_XHReaccess (ushort major, ushort minor)
+{
+	XHDI_DEBUG(("XHReaccess    major %d  minor %d", major, minor));
+	
+	return xhdi_mon_result (xhdi_mon (19, major, minor));
+}
+
+
+static long
+xhdi_mon_result (long res)
+{
+	char buf[128];
+	
+	xhdi_mon_prres (res, buf, sizeof(buf));
+	XHDI_DEBUG(("%s", buf));
+	
+	return res;
+}
+
+static void
+xhdi_mon_prres (long res, char *buf, long size)
+{
+	char s[32];
+	
+	ksprintf (s, sizeof(s), "%ld", res);
+	if (res < 0)
+	{
+		switch (res)
+		{
+			case -1:  strcpy (s, "ERROR");	break;
+			case -2:  strcpy (s, "EDRVNR"); break;
+			case -13: strcpy (s, "EWRPRO"); break;
+			case -14: strcpy (s, "E_CHNG"); break;
+			case -32: strcpy (s, "EINVFN"); break;
+			case -36: strcpy (s, "EACCDN"); break;
+			case -46: strcpy (s, "EDRIVE"); break;
+			default:
+				break;
+		}
+	}
+	
+	strcpy (buf, "-> ");
+	strcat (buf, s);
+}
+
+static void
+xhdi_mon_prflags (ulong flags, char *buf, long size)
+{
+	strcat (buf, "  device_flags");
+	
+	if (flags & 0xe000000fL)
+	{
+		if (flags & 0x00000001L) strcat (buf, "  XH_TARGET_STOPPABLE");
+		if (flags & 0x00000002L) strcat (buf, "  XH_TARGET_REMOVABLE");
+		if (flags & 0x00000004L) strcat (buf, "  XH_TARGET_LOCKABLE");
+		if (flags & 0x00000008L) strcat (buf, "  XH_TARGET_EJECTABLE");
+		if (flags & 0x20000000L) strcat (buf, "  XH_TARGET_LOCKED");
+		if (flags & 0x40000000L) strcat (buf, "  XH_TARGET_STOPPED");
+		if (flags & 0x80000000L) strcat (buf, "  XH_TARGET_RESERVED");
+	}
+	else
+	{
+		char s[32];
+		
+		ksprintf (s, sizeof(s), "  %ld", flags);
+		strcat (buf, s);
+	}
+}
+
+static void
+xhdi_mon_prbpb (__BPB *bpb)
+{
+	XHDI_DEBUG(("  recsiz %u  clsiz %u  clsizb %u  rdlen %u", bpb->recsiz, bpb->clsiz, bpb->clsizb, bpb->rdlen));
+	XHDI_DEBUG(("  fsiz %u  fatrec %u  datrec %u  numcl %u", bpb->fsiz, bpb->fatrec, bpb->datrec, bpb->numcl));
+	XHDI_DEBUG(("  bflags %u", bpb->bflags));
+}
+
+# endif
