@@ -33,6 +33,7 @@
 
 #include "global.h"
 #include "xa_types.h"
+
 void cancel_cevents(struct xa_client *client);
 void post_cevent(struct xa_client *client, void (*func)(enum locks, struct c_event *), void *ptr1, void *ptr2, int d0, int d1, RECT *r, const struct moose_data *md);
 int dispatch_cevent(struct xa_client *client);
@@ -42,6 +43,7 @@ void Unblock(struct xa_client *client, unsigned long value, int which);
 void multi_intout(struct xa_client *client, short *o, int evnt);
 void cancel_evnt_multi(struct xa_client *client, int which);
 
+void dispatch_shutdown(int flags);
 void k_main(void *);
 
 Tab *new_task(Tab *new);

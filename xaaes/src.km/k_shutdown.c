@@ -33,6 +33,7 @@
 #include "my_aes.h"
 #include "nkcc.h"
 #include "objects.h"
+#include "taskman.h"
 #include "xalloc.h"
 #include "xa_rsrc.h"
 
@@ -46,6 +47,9 @@ void
 k_shutdown(void)
 {
 	DIAGS(("Cleaning up ready to exit...."));
+
+	/* send all applications AP_TERM */
+	quit_all_apps(NOLOCKING, NULL);
 
 	/* wait until the clients are gone */
 	DIAGS(("Wait for all clients to exit ..."));
