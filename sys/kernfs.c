@@ -1345,13 +1345,12 @@ kern_proc_open (FILEPTR *f)
 	
 	if (f->links <= 1)
 	{
-		/* Fill our buffer */
 		KENTRY *t;
 		
 		t = search_inode (procdir, f->fc.index & 0xffff);
 		if (t && (t->mode & S_IFREG))
 		{
-			ret = (*t->get)((SIZEBUF **) &f->devinfo, p);
+			f->devinfo = (long) t;
 		}
 		else
 			ret = EACCES;
@@ -1378,7 +1377,6 @@ kern_open (FILEPTR *f)
 	
 	if (f->links <= 1)
 	{
-		/* Fill our buffer */
 		KENTRY *t;
 		
 		t = search_inode (rootdir, f->fc.index);
