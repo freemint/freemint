@@ -47,6 +47,7 @@
 
 # include "info.h"
 # include "k_prot.h"
+# include "memory.h"
 # include "proc.h"
 # include "time.h"
 
@@ -199,6 +200,9 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *
 
 		case KERN_BOOTTIME:
 			return sysctl_rdstruct (oldp, oldlenp, newp, &boottime, sizeof (struct timeval));
+
+		case KERN_INITIALTPA:
+			return sysctl_long (oldp, oldlenp, newp, newlen, &initialmem);
 	}
 
 	return EOPNOTSUPP;
