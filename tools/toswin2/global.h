@@ -253,6 +253,8 @@ extern OBJECT	*winicon,
 extern int	exit_code;		/* Enth„lt den Exitcode eines Kindprozesses */
 extern int	vdi_handle;
 extern int	font_anz;
+extern int	draw_ticks;
+#define MAX_DRAW_TICKS 3
 
 /*
  * Translation tables

@@ -888,7 +888,11 @@ void refresh_textwin(TEXTWIN *t, short force)
 		{
 			if (!off)
 				off = hide_mouse_if_needed(&t1);
-			set_clipping(vdi_handle, t1.g_x, t1.g_y, t1.g_w, t1.g_h, TRUE);
+			if (memcmp (&t1, &t2, sizeof t1))
+				set_clipping (vdi_handle, t1.g_x, t1.g_y, 
+					      t1.g_w, t1.g_h, TRUE);
+			else
+				set_clipping (vdi_handle, 0, 0, 0, 0, FALSE);
 			update_screen(t, t1.g_x, t1.g_y, t1.g_w, t1.g_h, force);
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
@@ -2136,7 +2140,7 @@ void write_text(TEXTWIN *t, char *b, long len)
 	unsigned char *src = (unsigned char *) b, c;
 	int limit = NROWS(t) - 1;
 	long cnt;
-
+	extern int draw_ticks;
 	if (len == -1)
 		cnt = strlen(b);
 	else
@@ -2149,7 +2153,15 @@ void write_text(TEXTWIN *t, char *b, long len)
 		{
 			(*t->output)(t, c);
 			t->nbytes++;
-			if (t->nbytes >= THRESHOLD || t->scrolled >= limit)
+			/* The number of scrolled lines is ignored 
+			   as an experimental feature.  There is no
+			   point in artificially pulling a break 
+			   when output is too fast too read.  
+			   This may look strange but it enhance the
+			   usability and subjective performance.  */
+			if ((draw_ticks > MAX_DRAW_TICKS && 
+			     t->nbytes >= THRESHOLD) 
+			    || (0 && t->scrolled >= limit))
 				refresh_textwin(t, FALSE);
 		}
 	}

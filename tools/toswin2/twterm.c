@@ -80,7 +80,6 @@ static void insert_char(TEXTWIN* tw, int x, int y)
  */
 static void delete_line(TEXTWIN* tw, int row, int end)
 {
-	int y;
 	int doscroll = (row == 0);
 	unsigned char *oldline;
 	long *oldflag;
@@ -92,14 +91,19 @@ static void delete_line(TEXTWIN* tw, int row, int end)
 
 	oldline = tw->data[row];
 	oldflag = tw->cflag[row];
-	for (y = row; y < end; ++y) {
-		tw->data[y] = tw->data[y + 1];
-		tw->cflag[y] = tw->cflag[y + 1];
-		tw->dirty[y] = doscroll ? tw->dirty[y + 1] : ALLDIRTY;
+	memmove (tw->data + row, tw->data + row + 1,
+		 (end - row) * sizeof (tw->data[row]));
+	memmove (tw->cflag + row, tw->cflag + row + 1,
+		 (end - row) * sizeof (tw->cflag[row]));
+	if (doscroll) {
+		memmove (tw->dirty + row, tw->dirty + row + 1,
+			 (end - row) * sizeof (tw->dirty[row]));
+	} else {
+		memset (tw->dirty, ALLDIRTY, end - row);
 	}
 
-	tw->data[y] = oldline;
-	tw->cflag[y] = oldflag;
+	tw->data[end] = oldline;
+	tw->cflag[end] = oldflag;
 
 	/* clear the last line */
 	clrline(tw, end);
@@ -109,7 +113,7 @@ static void delete_line(TEXTWIN* tw, int row, int end)
 }
 
 /* Scroll the entire window from line ROW to line END down,
-* then clear line ROW.
+ * then clear line ROW.
  */
 static void insert_line(TEXTWIN* tw, int row, int end)
 {
