@@ -1,0 +1,13 @@
+.deps
+.000
+.030
+.020-60
+*.o
+*~
+lib*.a
+*.xdd
+*.xfs
+*.xif
+*.app
+*.prg
+__target.*
