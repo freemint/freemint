@@ -31,25 +31,6 @@
 #include "xa_types.h"
 
 int do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert);
-//void center_form(OBJECT *form, int bars);
-//void display_toolbar(enum locks lock, struct xa_window *wind, int item);
-
-//void init_form_do(enum locks lock, XA_TREE *wt, OBJECT *form, int item, bool draw);
-//void set_form_do(enum locks lock, struct xa_client *client, OBJECT *form, int item);
-
-//void set_button_timer(enum locks lock, struct xa_window *wind);
-
-//SendMessage handle_form_window;
-
-//ClassicClick click_form_do;
-
-//ExitForm
-//	XA_form_exit,
-//	exit_toolbar,
-//	exit_wdial,
-//	exit_form_do,
-//	exit_form_dial,
-//	classic_exit_form_do;
 
 AES_function
 	XA_form_center,

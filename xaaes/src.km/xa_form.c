@@ -497,7 +497,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		{
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
-			wt = set_toolbar_widget(lock, alert_window, client, alert_form, -1, WIDG_NOTEXT, NULL);
+			wt = set_toolbar_widget(lock, alert_window, client, alert_form, -1, WIP_NOTEXT, NULL);
 			wt->extra = alertxt;
 			wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
 

@@ -770,7 +770,10 @@ select_edsize(struct xa_fnts_info *fnts)
 		list->vis(list, ent, false);
 	}
 	else
+	{
 		list->cur = NULL;
+		list->slider(list);
+	}
 
 	fnts_redraw(0, fnts->wind, FNTS_POINTS, 1, NULL);
 }
@@ -837,6 +840,8 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 				list_type->vis(list_type, s, false);
 				list_type->cur = s;
 			}
+			else
+				list_type->slider(list_type);
 		}
 		if (!list_type->cur)
 			list_type->cur = list_type->top;
@@ -1843,7 +1848,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				     client->options.thinwork,
 				     r, NULL, NULL)))
 		{
-			wt = set_toolbar_widget(lock, fwind, client, obtree, -2, WIDG_NOTEXT, &fnts_th);
+			wt = set_toolbar_widget(lock, fwind, client, obtree, -2, WIP_NOTEXT, &fnts_th);
 			wt->zen = false;
 			
 			fnts->wind = fwind;

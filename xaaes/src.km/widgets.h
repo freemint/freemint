@@ -36,7 +36,7 @@ void	fix_default_widgets(void *);
 OBJECT *get_widgets(void);
 void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg);
 void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
-void	display_toolbar(enum locks lock, struct xa_window *wind, short item);
+void	redraw_toolbar(enum locks lock, struct xa_window *wind, short item);
 void	set_toolbar_coords(struct xa_window *wind);
 
 XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, short item, short properties, const struct toolbar_handlers *th);

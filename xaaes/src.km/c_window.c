@@ -435,7 +435,9 @@ void
 send_untop(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
-
+	
+	wind->colours = wind->untop_cols;
+	
 	if (wind->send_message && !client->fmd.wind)
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_UNTOPPED, 0, 0, wind->handle,
@@ -448,10 +450,15 @@ send_ontop(enum locks lock)
 	struct xa_window *top = window_list;
 	struct xa_client *client = top->owner;
 
-	if (top->send_message && !client->fmd.wind)
-		top->send_message(lock, top, NULL, AMQ_NORM, QMF_CHKDUP,
-				  WM_ONTOP, 0, 0, top->handle,
-				  0, 0, 0, 0);
+	if (!client->fmd.wind)
+	{
+		top->colours = top->ontop_cols;
+		
+		if (top->send_message)
+			top->send_message(lock, top, NULL, AMQ_NORM, QMF_CHKDUP,
+					  WM_ONTOP, 0, 0, top->handle,
+					  0, 0, 0, 0);
+	}
 }
 
 void
@@ -600,6 +607,62 @@ uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
 	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
 }
+
+struct xa_window_colours def_otop_wc =
+{
+ G_LBLACK, /* window frame color */
+/* flags	wrmode		color		Interior	style	tl color	br color */
+ { 0,		MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* window areas not covered by a widget/ unused widgets*/
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG,		MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_BLACK },	/* Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG,		MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* Title */
+/* flags	                     fontID	    size	   Effect     forground       background	*/
+/*								                  col	          col		*/
+ { WTXT_DRAW3D|WTXT_ACT3D,	        1,            10,	        0,	G_BLACK,	G_WHITE },		/* Title text info */
+ { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE,	G_WHITE,	FIS_SOLID,	0,	G_LBLACK,	G_BLACK},	/* Info */
+/* flags	                    fontID	    size	   Effect     forground	       background	*/
+/*								                   col	          col		*/
+ { 0,		      		        1,	      9,		0,	G_BLACK,	G_WHITE },		/* Info text info */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* iconify */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* UParrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* DNarrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* LFarrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* RTarrow */
+};
+
+struct xa_window_colours def_utop_wc =
+{
+ G_BLACK,	/* window frame color */
+/* flags	wrmode		color		Interior	style	tl color	br color */
+ { 0,		MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* window areas not covered by a widget/ unused widgets*/
+ { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* Slider */
+ { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	7,	G_LWHITE,	G_BLACK },	/* Slide */
+ 
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	4,	G_LWHITE,	G_BLACK },	/* Title */
+/* flags	  fontID	    size	   Effect     forground	background	*/
+/*								  col	    col		*/
+ {	0,	       1,	       10,	        0,	G_LWHITE,	G_BLACK },		/* Title text info */
+ 
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	4,	G_BLACK,	G_LWHITE },	/* Info */
+/* flags	  fontID	    size	   Effect     forground	background	*/
+/*								  col	    col		*/
+ {	0,	       1,	       9,	   ITALIC,	G_LWHITE,	G_BLACK },		/* Info text info */
+ 
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* closer */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* hider */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* iconify */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* fuller */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* Sizer */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* UParrow */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* DNarrow */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* LFarrow */
+ { WCOL_DRAWBKG,		MD_REPLACE,	G_LBLACK,	FIS_SOLID,	0,	G_LWHITE,	G_BLACK },	/* RTarrow */
+};
+	
 /*
  * Create a window
  *
@@ -641,7 +704,7 @@ create_window(
 	}
 #endif
 
-	w = kmalloc(sizeof(*w));
+	w = kmalloc(sizeof(*w) + (sizeof(struct xa_window_colours) << 1));
 	if (!w)
 		/* Unable to allocate memory for window? */
 		return NULL;
@@ -692,7 +755,13 @@ create_window(
 		w->opts = opts;
 	}
 
-	w->vdi_handle = C.vh;	
+	w->vdi_handle = C.vh;
+	w->ontop_cols = (struct xa_window_colours *)((long)w + sizeof(*w));
+	w->untop_cols = (struct xa_window_colours *)((long)w->ontop_cols + sizeof(struct xa_window_colours));
+	*w->ontop_cols = def_otop_wc;
+	*w->untop_cols = def_utop_wc;
+	w->colours = w->ontop_cols;
+
 	w->wheel_mode = client->options.wheel_mode;
 	w->frame = frame;
 	w->thinwork = thinwork;
@@ -1064,7 +1133,7 @@ do_rootwind_msg(
 }
 
 void
-draw_window(enum locks lock, struct xa_window *wind)
+draw_window(enum locks lock, struct xa_window *wind, RECT *clip)
 {
 	
 	DIAG((D_wind, wind->owner, "draw_window %d for %s to %d/%d,%d/%d",
@@ -1077,7 +1146,9 @@ draw_window(enum locks lock, struct xa_window *wind)
 			wind->handle, w_owner(wind)));
 		return;
 	}
-
+	
+	set_clip(clip);
+	
 	l_color(G_BLACK);
 	hidem();
 
@@ -1090,8 +1161,8 @@ draw_window(enum locks lock, struct xa_window *wind)
 
 		/* Display the window backdrop (borders only, GEM style) */
 
-		cl.w-=SHADOW_OFFSET;
-		cl.h-=SHADOW_OFFSET;
+		cl.w -= SHADOW_OFFSET;
+		cl.h -= SHADOW_OFFSET;
 #if 0
 		if (wind->active_widgets & TOOLBAR)
 		{
@@ -1121,7 +1192,7 @@ draw_window(enum locks lock, struct xa_window *wind)
 			tcl = cl;
 			if (wind->frame > 0)
 			{
-				l_color(9);
+				l_color(wind->colours->frame_col);
 				gbox(0, &cl);
 				tcl.x++;
 				tcl.y++;
@@ -1133,17 +1204,17 @@ draw_window(enum locks lock, struct xa_window *wind)
 			pnt[1] = tcl.y;
 			pnt[2] = tcl.x + tcl.w - 1;
 			pnt[3] = wa.y - 1;
-			if_bar(pnt); 			/* top */
+		//	if_bar(pnt); 			/* top */
 			pnt[1] = wa.y + wa.h;
 			pnt[3] = tcl.y + tcl.h - 1;
-			if_bar(pnt);			/* bottom */
+		//	if_bar(pnt);			/* bottom */
 			pnt[0] = tcl.x;
 			pnt[1] = tcl.y;
 			pnt[2] = wa.x - 1;
-			if_bar(pnt);			/* left */
+		//	if_bar(pnt);			/* left */
 			pnt[0] = wa.x + wa.w;
 			pnt[2] = tcl.x + tcl.w - 1;
-			if_bar(pnt);			/* right */
+		//	if_bar(pnt);			/* right */
 
 			/* Display the work area */
 
@@ -1163,8 +1234,8 @@ draw_window(enum locks lock, struct xa_window *wind)
 				else
 				{
 					RECT nw = wa;
-					nw.w++;
-					nw.h++;
+					//nw.w++;
+					//nw.h++;
 					br_hook(2, &nw, screen.dial_colours.shadow_col);
 					tl_hook(2, &nw, screen.dial_colours.lit_col);
 					br_hook(1, &nw, screen.dial_colours.lit_col);
@@ -1210,19 +1281,31 @@ draw_window(enum locks lock, struct xa_window *wind)
 		int f;
 		short status = wind->window_status;
 		XA_WIDGET *widg;
+		RECT r;
 
 		for (f = 0; f < XA_MAX_WIDGETS; f++)
 		{
 			widg = get_widget(wind, f);
 
-			if ((widg->properties & WIDG_NOTEXT) || (f == XAW_MENU && wind == root_window))
+			if ((widg->loc.properties & WIP_NOTEXT) || (f == XAW_MENU && wind == root_window))
 				continue;
 
 			if (!(status & widg->loc.statusmask) && widg->display)
 			{
 				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
 					wind->handle, f, widg->display));
-				widg->display(lock, wind, widg);
+				
+				if (widg->loc.properties & WIP_WACLIP)
+				{
+					if (xa_rect_clip(clip, &wind->wa, &r))
+					{
+						set_clip(&r);
+						widg->display(lock, wind, widg);
+						set_clip(clip);
+					}
+				}
+				else
+					widg->display(lock, wind, widg);
 			}
 		}
 	}
@@ -1292,6 +1375,8 @@ after_top(enum locks lock, bool untop)
 	/* Refresh the previous top window as being 'non-topped' */
 	if (below && below != root_window)
 	{
+		below->colours = below->untop_cols;
+
 		send_iredraw(lock, below, 0, NULL);
 
 		if (untop)
@@ -1699,7 +1784,10 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	}
 
 	clear_wind_rectlist(wind);
-
+	
+	if (wind->widg_rows)
+		kfree(wind->widg_rows);
+	
 	kfree(wind);
 }
 
@@ -1789,14 +1877,14 @@ display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 				{
 					if (xa_rect_clip(clip, &rl->r, &d))
 					{
-						set_clip(&d);
-						draw_window(lock, wind);
+						//set_clip(&d);
+						draw_window(lock, wind, &d);
 					}
 				}
 				else
 				{
-					set_clip(&rl->r);
-					draw_window(lock, wind);
+					//set_clip(&rl->r);
+					draw_window(lock, wind, &rl->r);
 				}
 				rl = rl->next;
 			}
