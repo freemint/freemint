@@ -1,4 +1,4 @@
-XaAES User Manual
+XaAES User´s Manual
 
 /*
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham 
@@ -25,7 +25,7 @@ XaAES User Manual
 
 
 	1) INSTALLATION
-	-------------------
+	----------------
 
 	Installing is pretty easy, just do the following:
 
@@ -88,8 +88,8 @@ XaAES User Manual
 
 	Ok, thats it.
 
-	1.1) COMMAND LINE ARGUMENTS
 
+	1.1) COMMAND LINE ARGUMENTS
 
 	mode or
 	modecode can be a octal number like o7
@@ -98,6 +98,7 @@ XaAES User Manual
 	                a decimal number as usual
 
 	XaAES has the following command line arguments:
+
 
 	1.1.1) Standard Atari Video Mode Select
 
@@ -119,6 +120,7 @@ XaAES User Manual
 	You should use this if you have an ST/TT - it will work on a falcon
 	but you will get better performance by using the -fvideo switch 
 	instead.
+
 
 	1.1.2) Falcon Video Mode Select
 
@@ -175,8 +177,7 @@ XaAES User Manual
 
 			 					    
 	2) Using XaAES
-	-----------------
-
+	---------------
 
 	Generally XaAES is like GEM, but with a few exceptions. Most notably,
 	menu's can be Mac-style pull down, or GEM style drop down.
@@ -188,7 +189,7 @@ XaAES User Manual
 
 
 	3) XaAES Keyboard Combo's
-	----------------------------
+	--------------------------
 
 	There are a couple of keyboard combo's that XaAES uses for itself.
 	These are:
@@ -235,8 +236,10 @@ XaAES User Manual
 	and executes the shutdown procedure in response to them, so you should
 	be able to get back to your command line in most situations.
 
+
 	4.1) TASK MANAGER
 	------------------
+	
 	The 'Process' menu of the XaAES System menu also contains the
 	'Task Manager' option. This opens a window with a scrolling list
 	of current AES client applications. This is not a list of all
@@ -278,8 +281,8 @@ XaAES User Manual
 	the Task Manager.  
 
 
-	6) WINDOW SCROLLING   and MOVING and SIZING
-	--------------------
+	5) WINDOW SCROLLING, MOVING and SIZING
+	---------------------------------------
 
 	Scroll bars are extended from the usual GEM style to be similar to
 	WinX's behaviour. Clicking and dragging the scroll bar with the right
@@ -290,8 +293,9 @@ XaAES User Manual
 	window updates, but is annoying for old/slow programs (which is why it's
 	on a seperate button).
 
-	7) THE CONFIGURATION FILES
-	--------------------------
+
+	6) THE CONFIGURATION FILES
+	---------------------------
 
 	This is a bit like MultiTOS's GEM.CNF file. It's main purpose is to let
 	you auto-launch programs as XaAES starts up. Generally the syntax of
@@ -372,7 +376,7 @@ XaAES User Manual
 	can be found in the distribution.
 
 
-	8) Shut down.
+	7) SHUT DOWN
 	-------------
 
 	"Quit all App" can be chosen from XaAES menu or by pressing ctrl+alt+A.
@@ -389,8 +393,8 @@ XaAES User Manual
 	taskmanager will stay available on the screen.
 
 
-	9) Programs That Run As APP/ACC.
-	---------------------------------
+	8) Programs running as APP/ACC
+	-------------------------------
 
 	Several programs that run as either APP or ACC will fail to
 	run correctly (or at all) under XaAES. For some reason (don't
@@ -403,3 +407,4 @@ XaAES User Manual
 	there appears to be a subtle differance in the way Pexec() works
 	if you launch a u: relative path. So, instead of clicking on st-guide
 	in a c: window from Thing, use the u:\c\ window instead...
+
