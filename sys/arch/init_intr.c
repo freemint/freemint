@@ -35,8 +35,6 @@
 KBDVEC *syskey;
 static KBDVEC oldkey;
 
-long vnewkeys;
-
 long old_term;
 long old_resval;	/* old reset validation */
 long olddrvs;		/* BIOS drive map */
