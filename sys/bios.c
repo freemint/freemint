@@ -782,11 +782,17 @@ checkbtty (struct bios_tty *b, int sig)
 				/* every break only one interrupt please
 				 */
 				b->bticks += 0x80000000L;
+				
 				DEBUG (("checkbtty: bdev %d break(int)", b->bdev));
+				
 				if (!(b->tty->sg.sg_flags & T_NOFLSH))
 					iread (b->bdev, (char *) NULL, 0, 1, 0);
+				
 				if (b->tty->pgrp)
+				{
+					DEBUG (("checkbtty: killgroup (%i, SIGINT)", b->tty->pgrp));
 					killgroup (b->tty->pgrp, SIGINT, 1);
+				}
 			}
 		}
 		else
