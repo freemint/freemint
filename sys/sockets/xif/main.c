@@ -7,8 +7,6 @@
 # include "global.h"
 # include "netinfo.h"
 
-# include <mint/file.h>
-
 
 long init (struct kerinfo *ker, struct netinfo *net);
 long driver_init (void);

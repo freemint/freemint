@@ -85,8 +85,8 @@
 
 # include "netinfo.h"
 
-# include <mint/asm.h>
-# include <mint/dcntl.h>
+# include "mint/asm.h"
+# include "mint/sockio.h"
 
 
 static struct netif if_lance;

@@ -13,9 +13,11 @@
 # include "buf.h"
 # include "timer.h"
 
-# include <mint/asm.h>
-# include <mint/dcntl.h>
-# include <mint/file.h>
+# include "mint/asm.h"
+# include "mint/dcntl.h"
+# include "mint/file.h"
+# include "mint/ioctl.h"
+# include "mint/sockio.h"
 
 
 # define BPF_MAXPACKETS	60

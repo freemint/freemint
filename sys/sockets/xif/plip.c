@@ -15,8 +15,8 @@
 # include "inet4/if.h"
 # include "inet4/in.h"
 
-# include <mint/asm.h>
-# include <mint/dcntl.h>
+# include "mint/asm.h"
+# include "mint/sockio.h"
 
 # include "plip.h"
 # include "pl0.h"
