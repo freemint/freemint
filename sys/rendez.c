@@ -391,7 +391,7 @@ loop:
 							if (timeout != -1 && !timeout_ptr)
 							{
 								/* schedule a timeout */
-								timeout_ptr = addtimeout(timeout,unsemame);
+								timeout_ptr = addtimeout (curproc, timeout, unsemame);
 							}
 							
 							/* block until it's released, then try again */
