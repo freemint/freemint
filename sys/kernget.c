@@ -57,7 +57,6 @@
 # include "proc.h"
 # include "procfs.h"
 # include "random.h"
-# include "resource.h"
 # include "shmfs.h"
 # include "time.h"
 # include "timeout.h"
