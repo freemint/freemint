@@ -438,7 +438,11 @@ const char *MSG_slb_freeing_used = "Freeing shared library %s, which is still in
 
 /* ---------- unicode.c ---------- */
 
+# ifdef SOFT_UNITABLE
+# ifdef VERBOSE_BOOT
 const char *MSG_unitable_loading = "Loading unicode table `%s' ...";
+# endif
+# endif
 
 /* ---------- unifs.c --------- */
 

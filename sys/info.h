@@ -188,8 +188,10 @@ extern const char *MSG_init_error;
 # endif
 
 /* keyboard.c */
+# ifdef VERBOSE_BOOT
 extern const char *MSG_keytable_loaded;
 extern const char *MSG_keytable_loading;
+# endif
 
 /* memory.c */
 extern const char *MSG_mem_core;
@@ -224,7 +226,11 @@ extern const char *MSG_slb_couldnt_open;
 extern const char *MSG_slb_freeing_used;
 
 /* unicode.c */
+# ifdef SOFT_UNITABLE
+# ifdef VERBOSE_BOOT
 extern const char *MSG_unitable_loading;
+# endif
+# endif
 
 /* unifs.c */
 extern const char *MSG_unifs_wrong_getxattr;
