@@ -56,6 +56,6 @@ void		calc_load_average (void);
 
 ulong	_cdecl	remaining_proc_time (void);
 
-const struct proc *_cdecl get_curproc(void);
+struct proc *_cdecl get_curproc(void);
 
 # endif /* _proc_h */

@@ -599,14 +599,20 @@ INLINE long p_getgid(void)
 INLINE long p_setgid(int id)
 { return ((long _cdecl (*)(int)) _p_setgid)(id); }
 
-INLINE long p_sigblock(ulong mask)
-{ return ((long _cdecl (*)(ulong)) _p_sigblock)(mask); }
+INLINE long p_sigblock(unsigned long mask)
+{ return ((long _cdecl (*)(unsigned long)) _p_sigblock)(mask); }
+
+INLINE long p_sigsetmask(unsigned long mask)
+{ return ((long _cdecl (*)(unsigned long)) _p_sigsetmask)(mask); }
 
 INLINE long p_domain(int arg)
 { return ((long _cdecl (*)(int)) _p_domain)(arg); }
 
 INLINE long f_select(unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
 { return ((long _cdecl (*)(unsigned, long *, long *, long *)) _f_select)(timeout, rfdp, wfdp, xfdp); }
+
+INLINE long p_setlimit(int i, long v)
+{ return ((long _cdecl (*)(int, long)) _p_setlimit)(i, v); }
 
 INLINE long s_ysconf(int which)
 { return ((long _cdecl (*)(int)) _s_ysconf)(which); }
@@ -650,6 +656,9 @@ INLINE long p_geteuid(void)
 INLINE long p_getegid(void)
 { return ((long _cdecl (*)(void)) _p_getegid)(); }
 
+INLINE long d_getcwd(char *path, int drv, int size)
+{ return ((long _cdecl (*)(char *, int, int)) _d_getcwd)(path, drv, size); }
+
 INLINE long d_xreaddir(int len, long handle, char *buf, XATTR *xattr, long *xret)
 { return ((long _cdecl (*)(int, long, char *, XATTR *, long *)) _d_xreaddir)(len, handle, buf, xattr, xret); }
 
@@ -683,8 +692,8 @@ INLINE long s_ync(void)
 INLINE long s_hutdown(long restart)
 { return ((long _cdecl (*)(long)) _s_hutdown)(restart); }
 
-INLINE long s_system(int mode, ulong arg1, ulong arg2)
-{ return ((long _cdecl (*)(int, ulong, ulong)) _s_system)(mode, arg1, arg2); }
+INLINE long s_system(int mode, unsigned long arg1, unsigned long arg2)
+{ return ((long _cdecl (*)(int, unsigned long, unsigned long)) _s_system)(mode, arg1, arg2); }
 
 INLINE long p_getpriority(int which, int who)
 { return ((long _cdecl (*)(int, int)) _p_getpriority)(which, who); }
@@ -692,8 +701,8 @@ INLINE long p_getpriority(int which, int who)
 INLINE long p_setpriority(int which, int who, int prio)
 { return ((long _cdecl (*)(int, int, int)) _p_setpriority)(which, who, prio); }
 
-INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
-{ return ((long _cdecl (*)(long *, ulong, void *, ulong *, const void *, ulong)) _p_sysctl)(name, namelen, old, oldlenp, new, newlen); }
+INLINE long p_sysctl(long *name, unsigned long namelen, void *old, unsigned long *oldlenp, const void *new, unsigned long newlen)
+{ return ((long _cdecl (*)(long *, unsigned long, void *, unsigned long *, const void *, unsigned long)) _p_sysctl)(name, namelen, old, oldlenp, new, newlen); }
 
 
 /*
@@ -765,11 +774,8 @@ check_kentry_version(void)
 # define kthread_create		(*KENTRY->vec_proc.kthread_create)
 # define kthread_exit		(*KENTRY->vec_proc.kthread_exit)
 
-# define semaphore_init(s)	(*KENTRY->vec_proc._semaphore_init)(s, FUNCTION)
-# define semaphore_lock(s)	(*KENTRY->vec_proc._semaphore_lock)(s, FUNCTION)
-# define semaphore_rel(s)	(*KENTRY->vec_proc._semaphore_rel)(s, FUNCTION)
-
 # define get_curproc		(*KENTRY->vec_proc.get_curproc)
+# define pid2proc		(*KENTRY->vec_proc.pid2proc)
 
 # define lookup_extension	(*KENTRY->vec_proc.lookup_extension)
 # define attach_extension	(*KENTRY->vec_proc.attach_extension)

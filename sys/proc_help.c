@@ -772,14 +772,14 @@ proc_detach_extension(struct proc *p, long ident)
 
 
 void
-proc_ext_on_exit(struct proc *p)
+proc_ext_on_exit(struct proc *p, int code)
 {
 	struct proc_ext *p_ext = p->p_ext;
 
 	while (p_ext)
 	{
 		if (p_ext->cb_vector && p_ext->cb_vector->on_exit)
-			(*p_ext->cb_vector->on_exit)(p_ext->data, p);
+			(*p_ext->cb_vector->on_exit)(p_ext->data, p, code);
 
 		p_ext = p_ext->next;
 	}

@@ -100,7 +100,7 @@ void *_cdecl proc_lookup_extension(struct proc *, long ident);
 void *_cdecl proc_attach_extension(struct proc *, long ident, unsigned long size, struct module_callback *);
 void  _cdecl proc_detach_extension(struct proc *, long ident);
 
-void proc_ext_on_exit(struct proc *p);
+void proc_ext_on_exit(struct proc *p, int code);
 void proc_ext_on_exec(struct proc *p);
 void proc_ext_on_fork(struct proc *p, long flags, struct proc *child);
 void proc_ext_on_stop(struct proc *p, unsigned short nr);

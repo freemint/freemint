@@ -75,7 +75,7 @@ PROC *sys_q[NUM_QUEUES] =
 /* default; actual value comes from mint.cnf */
 short time_slice = 2;
 
-const struct proc *_cdecl get_curproc(void) { return curproc; }
+struct proc *_cdecl get_curproc(void) { return curproc; }
 
 /*
  * initialize the process table
