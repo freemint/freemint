@@ -82,6 +82,10 @@ udelay (register ulong usecs)
 	__delay (usecs);
 }
 
+# ifdef loops_per_sec
+# undef loops_per_sec
+# endif
+
 # else
 
 # define NO_DELAY
