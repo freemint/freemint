@@ -19,7 +19,6 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-DEFINITIONS += -D_GNU_SOURCE
 LIBS = 
 
 # default definitions
