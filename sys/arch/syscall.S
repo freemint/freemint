@@ -701,10 +701,16 @@ _trap_2_emu:
 	tst.w	(0x059e).w
 	beq.s	TE_AV
 #endif
-	move.l	(sp)+,a0
-	clr.w	-(sp)
-	move.l	a0,-(sp)
+	move.w	(sp),-(sp)
+	move.w	4(sp),2(sp)
+	clr.w	4(sp)
 TE_AV:	move.w	sr,-(sp)
+
+//	move.l	(sp)+,a0
+//	clr.w	-(sp)
+//	move.l	a0,-(sp)
+//TE_AV:	move.w	sr,-(sp)
+
 //	Ozk: Can someone tell me why this code doesnt work???
 //	move.l	(sp)+,-6(sp)
 //	clr.w	-(sp)
