@@ -45,7 +45,9 @@ static long	core_malloc	(long, int);
 static void	core_free	(long);
 static void	terminateme	(int code);
 
+# if 0
 void		restr_screen	(void);
+# endif
 
 MEMREGION *	get_region	(MMAP map, ulong size, int mode);
 MEMREGION *	_get_region	(MMAP map, ulong size, int mode, MEMREGION *descr, int kernel_flag);
@@ -218,6 +220,9 @@ init_mem (void)
 	}
 }
 
+/* The function below is not used anywhere anymore */
+
+# if 0
 void
 restr_screen(void)
 {
@@ -248,6 +253,7 @@ restr_screen(void)
 		boot_print ("\r\n"); 
 	}
 }
+# endif
 
 /*
  * init_core(): initialize the core memory map (normal ST ram) and also
@@ -367,18 +373,20 @@ init_core (void)
 	ulong size;
 	ulong place;
 	ulong temp;
+# ifdef OLDTOSFS
 	void *tossave;
+# endif
 	
 # ifdef VERBOSE_BOOT
 	boot_print ("Initializing core memory:\r\n");
 # endif
-	
+# ifdef OLDTOSFS	
 	tossave = (void *)core_malloc((long)TOS_MEM, 0);
 	if (!tossave)
 	{
 		FATAL("Not enough memory to run MiNT");
 	}
-	
+# endif
 # ifdef VM_EXTENSION
 	if (vm_in_use)
 	{
@@ -532,8 +540,9 @@ init_core (void)
 	 	}
 	}
 # endif /* VM_EXTENSION */
-	
+# ifdef OLDTOSFS	
 	(void) Mfree (tossave); /* leave some memory for TOS to use */
+# endif
 }
 
 /*
