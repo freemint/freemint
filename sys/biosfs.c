@@ -163,7 +163,7 @@ static struct bios_file BDEV [] =
 	{ "random",	&random_device,	 0,       0,     NULL, NULL},
 	{ "urandom",	&urandom_device, 0,       0,     NULL, NULL},
 # endif
-	{ "unix",	&unixdev,	 0,       0,     NULL, NULL},
+	{ "unix",	&unixdev,	 0,       0,     NULL, NULL, S_IFCHR|S_IRUSR|S_IWUSR},
 # ifdef OLDSOCKDEVEMU
 	{ "socket",	&sockdevemu,	 0,       0,     NULL, NULL},
 # endif
@@ -489,7 +489,8 @@ biosfs_init (void)
 			mindev = b->private;
 		}
 		
-		_set_xattr (&b->xattr, S_IFCHR|DEFAULT_MODE, majdev | (mindev & 0x00ff));
+		_set_xattr (&b->xattr, b->defmode ? b->defmode : S_IFCHR|DEFAULT_MODE,
+			    majdev | (mindev & 0x00ff));
 	}
 }
 

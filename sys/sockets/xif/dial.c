@@ -20,6 +20,7 @@
 # include "mint/ioctl.h"
 # include "mint/signal.h"
 # include "mint/sockio.h"
+# include "mint/stat.h"
 
 # include "ppp.h"
 
@@ -135,7 +136,8 @@ static struct devdrv dial_dev =
 
 static struct dev_descr dial_desc =
 {
-	driver:	&dial_dev
+	driver:		&dial_dev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 

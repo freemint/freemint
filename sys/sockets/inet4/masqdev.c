@@ -16,6 +16,7 @@
 
 # include "mint/file.h"
 # include "mint/socket.h"
+# include "mint/stat.h"
 
 
 static long masqdev_read  (FILEPTR *, char *, long);
@@ -36,7 +37,8 @@ static DEVDRV masqdev =
 
 static struct dev_descr masqdev_descr =
 {
-	driver:		&masqdev
+	driver:		&masqdev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 long
