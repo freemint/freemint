@@ -150,7 +150,7 @@ dummy_close (struct netif *nif)
  * do the same for input BUFs, ie allocate the packet as eg.
  *	buf = buf_alloc (nif->mtu+sizeof (eth_hdr)+100, 50, BUF_ATOMIC);
  *
- * Then up to nif->mtu plus the legth of the ethernet header bytes long
+ * Then up to nif->mtu plus the length of the ethernet header bytes long
  * frames may ne received and there are still 50 bytes after and before
  * the packet.
  *
