@@ -44,33 +44,10 @@ struct netinfo netinfo =
 	_bpf_input:		bpf_input
 };
 
-
-static long
-callout_init (void *initfunction, struct kerinfo *k, struct netinfo *n)
-{
-	register long ret __asm__("d0");
-	
-	__asm__ volatile
-	(
-		"moveml d3-d7/a3-a6,sp@-;"
-		"movl	%3,sp@-;"
-		"movl	%2,sp@-;"
-		"movl   %1,a0;"
-		"jsr    a0@;"
-		"addqw  #8,sp;"
-		"moveml sp@+,d3-d7/a3-a6;"
-		: "=r"(ret)				/* outputs */
-		: "g"(initfunction), "r"(k), "r"(n)	/* inputs  */
-		: "d0", "d1", "d2", "a0", "a1", "a2",   /* clobbered regs */
-		  "memory"
-	);
-	
-	return ret;
-}
-
 static long
 load_xif (struct basepage *b, const char *name)
 {
+	long (*init)(struct kerinfo *, struct netinfo *);
 	long r;
 	
 	DEBUG (("load_xif: enter (0x%lx, %s)", b, name));
@@ -81,7 +58,8 @@ load_xif (struct basepage *b, const char *name)
 	 */
 	netinfo.fname = name;
 	
-	r = callout_init ((void *) b->p_tbase, KERNEL, &netinfo);
+	init = (long (*)(struct kerinfo *, struct netinfo *))b->p_tbase;
+	r = (*init)(KERNEL, &netinfo);
 	
 	netinfo.fname = NULL;
 	
