@@ -34,7 +34,7 @@
 
 
 # define _hz_200		((long *) 0x4baL)
-# define HZ			200
+# define HZ			200L
 
 extern volatile long *hz_200;
 # define jiffies    		(*hz_200)
