@@ -131,25 +131,11 @@ install_cookie (void)
 static void
 uninstall_cookie (void)
 {
-	long old_stk = Super (0L);
-	long *jar;
-	
-	jar = *(long **) JAR;
-	if (jar)
-	{
-		while (*jar)
-		{
-			if (*jar == C_STiK)
-			{
-				*jar++ = FREECOOKIE;
-				*jar++ = 0L;
-			}
-			
-			jar += 2;
-		}
-	}
-	
-	Super ((void *) old_stk);
+# ifndef S_DELCOOKIE
+# define S_DELCOOKIE	26
+# endif
+
+	Ssystem(S_DELCOOKIE, C_STiK, 0L);
 }
 
 
