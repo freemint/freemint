@@ -49,6 +49,9 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_objc,client,"objc_draw rectangle: %d/%d,%d/%d", r->x, r->y, r->w, r->h));
 
+	DIAG((D_objc, client, "objc_draw (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
+
 	if (obtree)
 	{
 		XA_TREE *wt;
@@ -71,6 +74,8 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!wt)
 			wt = set_client_wt(client, obtree);
 
+		assert(wt);
+
 		hidem();
 		set_clip(r);		/* HR 110601: checks for special case? w <= 0 or h <= 0 */
 	
@@ -85,6 +90,10 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 		pb->intout[0] = 0;
+
+
+	DIAG((D_objc, client, "objc_draw exit (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
 	return XAC_DONE;
 }
@@ -141,13 +150,15 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (obtree)
 	{
 		short obj = pb->intin[0];
-		XA_TREE *wt; // = check_widget_tree(lock, client, obtree);
+		XA_TREE *wt;
 		struct xa_rect_list rl;
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 		if (!wt)
 			wt = set_client_wt(client, obtree);
+
+		assert(wt);
 
 		rl.next = NULL;
 		rl.r = *(RECT *)((long)&pb->intin[2]);
@@ -223,16 +234,19 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(4,2,1)
 
-	DIAG((D_form, client, "objc_edit"));
+	DIAG((D_form, client, "objc_edit (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
 	if (obtree)
 	{
-		XA_TREE *wt; // = check_widget_tree(lock, client, obtree);
+		XA_TREE *wt;
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 		if (!wt)
 			wt = set_client_wt(client, obtree);
+
+		assert(wt);
 
 		pb->intout[0] = obj_edit(wt,
 					  pb->intin[3],		/* function	*/
@@ -247,6 +261,8 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	else
 		pb->intout[0] = 0;
 
+	DIAG((D_form, client, "objc_edit exit (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 	return XAC_DONE;
 }
 
