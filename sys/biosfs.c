@@ -352,7 +352,7 @@ _set_xattr (XATTR *xp, ushort mode, int rdev)
 	xp->mdate = xp->adate = xp->cdate = datestamp;
 
 	/* root directory only */
-	if ((mode & S_IFMT) == S_IFDIR)
+	if (S_ISDIR(mode))
 		xp->attr = FA_DIR;
 }
 

@@ -264,12 +264,12 @@ bailout:
 	}
 
 	/* if the "directory" is a symbolic link, really unlink it */
-	if ((xattr.mode & S_IFMT) == S_IFLNK)
+	if (S_ISLNK(xattr.mode))
 	{
 		release_cookie (&targdir);
 		r = xfs_remove (parentdir.fs, &parentdir, temp1);
 	}
-	else if ((xattr.mode & S_IFMT) != S_IFDIR)
+	else if (!S_ISDIR(xattr.mode))
 	{
 		DEBUG(("Ddelete: %s is not a directory", path));
 		r = ENOTDIR;
@@ -880,7 +880,7 @@ baderror:
 		}
 
 		/* if the file is a symbolic link, try to find what it's linked to */
-		if ((xattr.mode & S_IFMT) == S_IFLNK)
+		if (S_ISLNK(xattr.mode))
 		{
 			char linkedto[PATH_MAX];
 			r = xfs_readlink (fc.fs, &fc, linkedto, PATH_MAX);
@@ -1048,7 +1048,7 @@ sys_f_delete (const char *name)
 	}
 
 	/* do not allow directories to be deleted */
-	if ((xattr.mode & S_IFMT) == S_IFDIR)
+	if (S_ISDIR(xattr.mode))
 	{
 		release_cookie (&dir);
 		release_cookie (&fc);
@@ -1131,7 +1131,7 @@ sys_f_rename (int junk, const char *old, const char *new)
 
 	r = xfs_getxattr (oldfil.fs, &oldfil, &xattr);
 	release_cookie (&oldfil);
-	if (r || ((xattr.mode & S_IFMT) == S_IFREG
+	if (r || (S_ISREG(xattr.mode)
 			&& ((xattr.attr & FA_RDONLY)
 				&& cred->euid
 				&& (cred->euid != xattr.uid))))
@@ -1535,9 +1535,13 @@ sys_f_readlink (int buflen, char *buf, const char *linkfile)
 
 	r = xfs_getxattr (file.fs, &file, &xattr);
 	if (r)
+	{
 		DEBUG(("Freadlink: unable to get attributes for %s", linkfile));
-	else if ((xattr.mode & S_IFMT) == S_IFLNK)
+	}
+	else if (S_ISLNK(xattr.mode))
+	{
 		r = xfs_readlink (file.fs, &file, buf, buflen);
+	}
 	else
 	{
 		DEBUG(("Freadlink: %s is not a link", linkfile));
@@ -1671,7 +1675,7 @@ sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
 		 * types. At least for directories with BSD-like setgid semantics,
 		 * these bits should be left unchanged.
 		 */
-		if (!r && (xattr.mode & S_IFMT) != S_IFDIR
+		if (!r && !S_ISDIR(xattr.mode)
 		    && (xattr.mode & (S_ISUID | S_ISGID)))
 		{
 			long s;

@@ -105,10 +105,10 @@ FILESYS uni_filesys =
 
 /*
  * structure that holds files
- * if (mode & S_IFMT == S_IFDIR), then this is an alias for a drive:
+ * if (S_ISDIR(mode)), then this is an alias for a drive:
  *	"dev" holds the appropriate BIOS device number, and
  *	"data" is meaningless
- * if (mode & S_IFMT == S_IFLNK), then this is a symbolic link:
+ * if (S_ISLNK(mode)), then this is a symbolic link:
  *	"dev" holds the user id of the owner, and
  *	"data" points to the actual link data
  */
@@ -279,7 +279,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 	{
 		if (!strnicmp (name, u->name, UNINAME_MAX))
 		{
-			if ((u->mode & S_IFMT) == S_IFDIR)
+			if (S_ISDIR(u->mode))
 			{
 				struct cwd *cwd = curproc->p_cwd;
 
@@ -345,7 +345,7 @@ uni_getxattr (fcookie *fc, XATTR *xattr)
 	/* If "u" is null, then we have the root directory, otherwise
 	 * we use the UNIFILE structure to get the info about it
 	 */
-	if (!u || ((u->mode & S_IFMT) == S_IFDIR))
+	if (!u || S_ISDIR(u->mode))
 	{
 		xattr->uid = xattr->gid = 0;
 		xattr->size = xattr->nblocks = 0;
@@ -401,7 +401,7 @@ uni_remove (fcookie *dir, const char *name)
 	{
 		if (!strnicmp (u->name, name, UNINAME_MAX))
 		{
-			if ((u->mode & S_IFMT) != S_IFLNK)
+			if (!S_ISLNK(u->mode))
 				return ENOENT;
 
 			if (!suser (curproc->p_cred->ucr) && (u->dev != curproc->p_cred->ucr->euid))
@@ -450,7 +450,7 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 
 	for (u = u_root; u; u = u->next)
 	{
-		if (dir->dev == u->dev && (u->mode & S_IFMT) == S_IFDIR)
+		if (dir->dev == u->dev && S_ISDIR(u->mode))
 		{
 			*pathname++ = '\\';
 			if (--size <= 0) return EBADARG;
@@ -611,7 +611,7 @@ tryagain:
 
 	dirname = u->name;
 	index = (long)u;
-	if ((u->mode & S_IFMT) == S_IFDIR)
+	if (S_ISDIR(u->mode))
 	{
 		/* make sure the drive really exists */
 		if (u->dev >= NUM_DRIVES)
@@ -779,7 +779,7 @@ uni_readlink (fcookie *fc, char *buf, int buflen)
 	u = (UNIFILE *) fc->index;
 
 	assert (u);
-	assert ((u->mode & S_IFMT) == S_IFLNK);
+	assert (S_ISLNK(u->mode));
 	assert (u->data);
 
 	if (strlen (u->data) < buflen)
