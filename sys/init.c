@@ -782,6 +782,10 @@ init (void)
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_mp, no_mem_prot ? MSG_init_mp_disabled : MSG_init_mp_enabled);
 # endif
+# ifdef VERBOSE_BOOT
+	/* These are set inside getmch() */
+	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
+# endif
 
 	/* get the current directory, so that we can switch back to it after
 	 * the file systems are properly initialized

@@ -167,6 +167,7 @@ extern const char *MSG_init_delay_loop;
 extern const char *MSG_init_mp;
 extern const char *MSG_init_mp_enabled;
 extern const char *MSG_init_mp_disabled;
+extern const char *MSG_init_kbd_desktop_nationality;
 extern const char *MSG_init_supermode;
 extern const char *MSG_init_sysdrv_is;
 extern const char *MSG_init_saving_mmu;
