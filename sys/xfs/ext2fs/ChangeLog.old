@@ -1,4 +1,9 @@
+
+-*- ChangeLog is now automatically handled by CVS -*-
+
 0.58
+	- integrated into FreeMiNT CVS repositiory, lot of changes
+	  around the Makefile system
 	- corrected wrong return code ENAMETOOLONG to EBADARG in e_readdir,
 	  e_wlabel, e_rlabel, e_readlink
 	- unified the ALERT messages
