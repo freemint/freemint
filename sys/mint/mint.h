@@ -27,7 +27,6 @@
 # include "config.h"
 # include "debug.h"
 
-# define check_addr(x)	0
 # define yield()	sleep(READY_Q, 0L)
 
 # endif

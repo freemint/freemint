@@ -484,9 +484,9 @@ struct kentry
 	unsigned long	status;		/* FreeMiNT status */
 
 	/* OS functions */
-	Func *dos_vec;			/* DOS entry points */
-	Func *bios_vec;			/* BIOS entry points */
-	Func *xbios_vec;		/* XBIOS entry points */
+	Func *vec_dos;			/* DOS entry points */
+	Func *vec_bios;			/* BIOS entry points */
+	Func *vec_xbios;		/* XBIOS entry points */
 
 	/* kernel exported function vectors */
 	struct kentry_mch vec_mch;
