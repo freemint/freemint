@@ -76,6 +76,17 @@ fd_alloc_ (struct proc *p, short *fd, short min, const char *func)
 	}
 	
 	DEBUG (("%s: process out of handles", func));
+# if 1
+	for (i = min; i < p->p_fd->nfiles; i++)
+	{
+		FILEPTR *f = p->p_fd->ofiles[i];
+		
+		if (f && (f != (FILEPTR *) 1))
+			DEBUG (("%i -> %lx, links %i, flags %x, dev = %lx", i, f, f->links, f->flags, f->dev));
+		else
+			DEBUG (("%i -> %lx", i, f));
+	}
+# endif
 	return EMFILE;
 }
 
@@ -119,7 +130,7 @@ fp_alloc_ (struct proc *p, FILEPTR **resultfp, const char *func)
 	
 	*resultfp = fp;
 	
-	TRACE (("fp_alloc: kmalloc %lx", fp));
+	TRACE (("%s: fp_alloc: kmalloc %lx", func, fp));
 	return 0;
 }
 
@@ -150,7 +161,7 @@ fp_free_ (FILEPTR *fp, const char *func)
 	// later
 	// free_cred (fp->cred);
 	
-	TRACE (("fp_free: kfree %lx", fp));
+	TRACE (("%s: fp_free: kfree %lx", func, fp));
 	kfree (fp);
 }
 
