@@ -154,7 +154,12 @@ struct proc
  * magic line:
  * ---------------------------------------------------------------------------
  */
-	ushort	p_flag;			/* bit 0 = unkillable system process, bit 1 = SLB */
+
+# define P_FLAG_SYS	0x0001		/* Unkillable system process */
+# define P_FLAG_SLB	0x0002		/* Unkillable SLB */
+# define P_FLAG_SLO	0x0004		/* Flag for exec_region() */
+
+	ushort	p_flag;
 	ushort	p_stat;			/* */
 	ushort	debug_level;		/* debug-level of the process	*/
 	ushort	pad;
