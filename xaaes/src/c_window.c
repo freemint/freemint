@@ -132,9 +132,12 @@ free_icon_pos(LOCK lock)
 		while (w)
 		{
 			if (w->window_status == XAWS_ICONIFIED)
+			{
+				
 				if (w->r.x == ic.x && w->r.y == ic.y)
 					/* position occupied; advance with next position in grid. */
 					break;
+			}
 			w = w->next;
 		}
 
@@ -381,6 +384,9 @@ unhide_window(LOCK lock, XA_WINDOW *wind)
 	RECT r = wind->r;
 	if (unhide(wind, &r.x, &r.y))
 	{
+		//if (wind->window_status == XAWS_ICONIFIED)
+		//	r = free_icon_pos(lock);
+
 		if (wind->send_message)
 			wind->send_message(lock, wind, NULL,
 					   WM_MOVED, 0, 0, wind->handle,
