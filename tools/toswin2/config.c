@@ -7,6 +7,7 @@
 #include "global.h"
 #include "config.h"
 #include "console.h"
+#include "event.h"
 #include "textwin.h"
 #include "toswin2.h"
 #include "version.h"
@@ -16,14 +17,14 @@
 /*
  * exportierte Variablen
  */
-bool		gl_avcycle = FALSE;
-bool		gl_shortcut = TRUE;
-bool		gl_allogin = FALSE;
+bool	gl_avcycle = FALSE;
+bool	gl_shortcut = TRUE;
+bool	gl_allogin = FALSE;
 
-bool		gl_con_auto = FALSE;			/* beim Start anlegen */
-bool		gl_con_output = FALSE;		/* bei Ausgaben ”ffnen */
-bool		gl_con_log = FALSE;			/* Datei-Loggin */
-char		gl_con_logname[128] = "U:\\ram\\con.log";
+bool	gl_con_auto = FALSE;		/* beim Start anlegen */
+bool	gl_con_output = FALSE;		/* bei Ausgaben ”ffnen */
+bool	gl_con_log = FALSE;		/* Datei-Loggin */
+char	gl_con_logname[128] = "U:\\ram\\con.log";
 
 WINCFG	*gl_wincfg = NULL;
 
@@ -32,15 +33,12 @@ WINCFG	*gl_wincfg = NULL;
 */
 static WDIALOG	*cfg_wd, *con_wd;
 static WINCFG	*p_cfg = NULL;
-static TEXTWIN	*cfg_win;						/* Fenster, fr die der Dialog offen ist */
-static int		new_id, new_pts;				/* neuer Font von FONTSEL */
-static int		new_term, new_fg, new_bg,
-					new_tab;
-static char		new_log[128];
+static TEXTWIN	*cfg_win;		/* Fenster, fr die der Dialog offen ist */
+static short	new_id, new_pts;	/* neuer Font von FONTSEL */
+static int	new_term, new_fg, new_bg, new_tab;
+static char	new_log[128];
 static OBJECT	*popups;
 
-
-extern void menu_help(int title, int item);
 
 /******************************************************************************/
 /* CFG-Liste (FIFO)																				*/
@@ -101,7 +99,7 @@ WINCFG *get_wincfg(const char *prog)
 	return gl_wincfg;
 }
 
-void validate_cfg(WINCFG *cfg)
+static void validate_cfg(WINCFG *cfg)
 {
 	if (cfg->kind < 0)		cfg->kind = 0x4FEF;
 	if (cfg->font_id < 1) 	cfg->font_id = 1;
@@ -127,17 +125,17 @@ static void open_conwd(WDIALOG *wd)
 {
 	char	s[20];
 	
-	set_state(con_wd->tree, CAUTO, SELECTED, gl_con_auto);
-	set_state(con_wd->tree, COUTPUT, SELECTED, gl_con_output);
+	set_state(con_wd->tree, CAUTO, OS_SELECTED, gl_con_auto);
+	set_state(con_wd->tree, COUTPUT, OS_SELECTED, gl_con_output);
 
-	set_state(con_wd->tree, CLOGACTIVE, SELECTED, gl_con_log);
+	set_state(con_wd->tree, CLOGACTIVE, OS_SELECTED, gl_con_log);
 	make_shortpath(gl_con_logname, s, 19);
 	set_string(con_wd->tree, CLOGNAME, s);
 
 	strcpy(new_log, gl_con_logname);
 }
 
-static int exit_conwd(WDIALOG *wd, int exit_obj)
+static int exit_conwd(WDIALOG *wd, short exit_obj)
 {
 	bool	close = FALSE;
 	char	path[128], name[128];
@@ -154,13 +152,13 @@ static int exit_conwd(WDIALOG *wd, int exit_obj)
 				set_string(con_wd->tree, CLOGNAME, name);
 				redraw_wdobj(wd, CLOGNAME);
 			}
-			set_state(wd->tree, exit_obj, SELECTED, FALSE);
+			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, exit_obj);
 			break;
 			
 		case CHELP :
 			menu_help(TOPTION, MCCONFIG);
-			set_state(wd->tree, exit_obj, SELECTED, FALSE);
+			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, exit_obj);
 			break;
 
@@ -169,11 +167,11 @@ static int exit_conwd(WDIALOG *wd, int exit_obj)
 			break;
 			
 		case COK :
-			gl_con_auto = get_state(wd->tree, CAUTO, SELECTED);
-			gl_con_output = get_state(wd->tree, COUTPUT, SELECTED);
+			gl_con_auto = get_state(wd->tree, CAUTO, OS_SELECTED);
+			gl_con_output = get_state(wd->tree, COUTPUT, OS_SELECTED);
 
 			strcpy(gl_con_logname, new_log);
-			gl_con_log = log_console(get_state(wd->tree, CLOGACTIVE, SELECTED));
+			gl_con_log = log_console(get_state(wd->tree, CLOGACTIVE, OS_SELECTED));
 
 			close = TRUE;
 			break;
@@ -205,7 +203,7 @@ static void get_fontname(int id, char *name)
 		if (i == id)
 		{
 			strcpy(name, str);
-			for (i = (int)strlen(name); i < 24; i++)
+			for (i = strlen(name); i < 24; i++)
 				strcat(name, " ");
 			name[24] = '\0';
 			return ;
@@ -268,13 +266,13 @@ static void open_cfgwd(WDIALOG *wd)
 		_ltoa(cfg->font_pts, str, 10);
 		set_string(cfg_wd->tree, WFSIZE, str);
 	
-		set_state(cfg_wd->tree, WGCLOSER, SELECTED, cfg->kind&CLOSER);
-		set_state(cfg_wd->tree, WGTITLE, SELECTED, cfg->kind&NAME);
-		set_state(cfg_wd->tree, WGSMALLER, SELECTED, cfg->kind&SMALLER);
-		set_state(cfg_wd->tree, WGFULLER, SELECTED, cfg->kind&FULLER);
-		set_state(cfg_wd->tree, WGSLVERT, SELECTED, cfg->kind&VSLIDE);
-		set_state(cfg_wd->tree, WGSLHOR, SELECTED, cfg->kind&HSLIDE);
-		set_state(cfg_wd->tree, WGSIZER, SELECTED, cfg->kind&SIZER);
+		set_state(cfg_wd->tree, WGCLOSER, OS_SELECTED, cfg->kind & CLOSER);
+		set_state(cfg_wd->tree, WGTITLE, OS_SELECTED, cfg->kind & NAME);
+		set_state(cfg_wd->tree, WGSMALLER, OS_SELECTED, cfg->kind & SMALLER);
+		set_state(cfg_wd->tree, WGFULLER, OS_SELECTED, cfg->kind & FULLER);
+		set_state(cfg_wd->tree, WGSLVERT, OS_SELECTED, cfg->kind & VSLIDE);
+		set_state(cfg_wd->tree, WGSLHOR, OS_SELECTED, cfg->kind & HSLIDE);
+		set_state(cfg_wd->tree, WGSIZER, OS_SELECTED, cfg->kind & SIZER);
 		set_string(cfg_wd->tree, WTITLE, title);
 	
 		switch (cfg->vt_mode)
@@ -301,8 +299,8 @@ static void open_cfgwd(WDIALOG *wd)
 		set_popobjcolor(cfg_wd->tree, WFGCOL, cfg->fg_color);
 		set_popobjcolor(cfg_wd->tree, WBGCOL, cfg->bg_color);
 		
-		set_state(cfg_wd->tree, WWRAP, SELECTED, cfg->wrap);
-		set_state(cfg_wd->tree, WCLOSE, SELECTED, cfg->autoclose);
+		set_state(cfg_wd->tree, WWRAP, OS_SELECTED, cfg->wrap);
+		set_state(cfg_wd->tree, WCLOSE, OS_SELECTED, cfg->autoclose);
 
 		new_id = cfg->font_id;
 		new_pts = cfg->font_pts;
@@ -315,7 +313,7 @@ static void open_cfgwd(WDIALOG *wd)
 */
 }
 
-static int exit_cfgwd(WDIALOG *wd, int exit_obj)
+static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 {
 	char		str[32];
 	bool		close = FALSE, ok;
@@ -341,7 +339,7 @@ static int exit_cfgwd(WDIALOG *wd, int exit_obj)
 			}
 			else if (new_id == -1)
 				alert(1, 0, NOXFSL);
-			set_state(wd->tree, exit_obj, SELECTED, FALSE);
+			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, WFBOX);
 			break;
 		
@@ -374,7 +372,7 @@ static int exit_cfgwd(WDIALOG *wd, int exit_obj)
 				y = handle_colorpop(wd->tree, WFGCOL, POP_CYCLE, 4, 0);
 			if (y > -1)
 				new_fg = y;
-			set_state(wd->tree, exit_obj, SELECTED, FALSE);
+			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, exit_obj);
 			break;
 
@@ -386,13 +384,13 @@ static int exit_cfgwd(WDIALOG *wd, int exit_obj)
 				y = handle_colorpop(wd->tree, WBGCOL, POP_CYCLE, 4, 0);
 			if (y > -1)
 				new_bg = y;
-			set_state(wd->tree, exit_obj, SELECTED, FALSE);
+			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, exit_obj);
 			break;
 
 		case WHELP :
 			menu_help(TOPTION, MWCONFIG);
-			set_state(wd->tree, WHELP, SELECTED, FALSE);
+			set_state(wd->tree, WHELP, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, WHELP);
 			break;
 
@@ -424,19 +422,19 @@ static int exit_cfgwd(WDIALOG *wd, int exit_obj)
 				cfg->font_pts = new_pts;
 
 			cfg->kind = 0;
-			if (get_state(wd->tree, WGCLOSER, SELECTED))
+			if (get_state(wd->tree, WGCLOSER, OS_SELECTED))
 				cfg->kind |= CLOSER;
-			if (get_state(wd->tree, WGTITLE, SELECTED))
+			if (get_state(wd->tree, WGTITLE, OS_SELECTED))
 				cfg->kind |= (NAME|MOVER);
-			if (get_state(wd->tree, WGSMALLER, SELECTED))
+			if (get_state(wd->tree, WGSMALLER, OS_SELECTED))
 				cfg->kind |= SMALLER;
-			if (get_state(wd->tree, WGFULLER, SELECTED))
+			if (get_state(wd->tree, WGFULLER, OS_SELECTED))
 				cfg->kind |= FULLER;
-			if (get_state(wd->tree, WGSLVERT, SELECTED))
+			if (get_state(wd->tree, WGSLVERT, OS_SELECTED))
 				cfg->kind |= (VSLIDE|UPARROW|DNARROW);
-			if (get_state(wd->tree, WGSLHOR, SELECTED))
+			if (get_state(wd->tree, WGSLHOR, OS_SELECTED))
 				cfg->kind |= (HSLIDE|LFARROW|RTARROW);
-			if (get_state(wd->tree, WGSIZER, SELECTED))
+			if (get_state(wd->tree, WGSIZER, OS_SELECTED))
 				cfg->kind |= SIZER;
 			get_string(wd->tree, WTITLE, cfg->title);
 	
@@ -449,8 +447,8 @@ static int exit_cfgwd(WDIALOG *wd, int exit_obj)
 			cfg->fg_color = new_fg;
 			cfg->bg_color = new_bg;
 
-			cfg->wrap = get_state(wd->tree, WWRAP, SELECTED);
-			cfg->autoclose = get_state(wd->tree, WCLOSE, SELECTED);
+			cfg->wrap = get_state(wd->tree, WWRAP, OS_SELECTED);
+			cfg->autoclose = get_state(wd->tree, WCLOSE, OS_SELECTED);
 
 			if (cfg_win)
 				reconfig_textwin(cfg_win, cfg);
@@ -499,13 +497,13 @@ void update_font(WINDOW *w, int id, int pts)
 /******************************************************************************/
 /* Dateioperationen																				*/
 /******************************************************************************/
-static char	cfg_path[80] = "";
-static FILE	*fd;
+static char cfg_path[80] = "";
+static FILE *fd;
 
-bool path_from_env(char *env, char *path)
+static bool path_from_env(char *env, char *path)
 {
-	char	*p;
-	bool	ret = FALSE;
+	char *p;
+	bool ret = FALSE;
 		
 	p = getenv(env);
 	if (p != NULL)
@@ -518,8 +516,8 @@ bool path_from_env(char *env, char *path)
 
 static bool get_cfg_path(void)
 {
-	bool	found = FALSE;
-	char	env[256], p_for_save[256] = "";
+	bool found = FALSE;
+	char env[256], p_for_save[256] = "";
 	
 	if (!gl_debug)
 	if (path_from_env("HOME", env))				/* 1. $HOME */
@@ -718,10 +716,10 @@ bool config_load(void)
 	if (fd != NULL)
 	{
 		/* 1. Zeile auf ID checken */
-		fgets(buffer, (int)sizeof(buffer), fd);
+		fgets(buffer, sizeof(buffer), fd);
 		if (strncmp(buffer, "ID=TosWin2", 10) == 0)
 		{
-			while (fgets(buffer, (int)sizeof(buffer), fd) != NULL)
+			while (fgets(buffer, sizeof(buffer), fd) != NULL)
 			{
 				if (buffer[strlen(buffer) - 1] == '\n')
 					buffer[strlen(buffer) - 1] = '\0';

@@ -1,17 +1,20 @@
+
 #ifndef _tw_proc_h_
 #define _tw_proc_h_
 
-extern TEXTWIN	*new_proc(char *progname, char *arg, char *env, char *progdir,
-								 WINCFG *cfg, int talkID);
 
-extern void		term_proc(TEXTWIN *t);
+TEXTWIN	*new_proc(char *progname, char *arg, char *env, char *progdir,
+		  WINCFG *cfg, int talkID);
 
-extern TEXTWIN *new_shell(void);
-extern TEXTWIN *start_prog(void);
+void	term_proc(TEXTWIN *t);
 
-extern void 	fd_input(void);
-extern void		add_fd(int fd);
+TEXTWIN *new_shell(void);
+TEXTWIN *start_prog(void);
 
-extern void		proc_init(void);
+void 	fd_input(void);
+void	add_fd(int fd);
+
+void	proc_init(void);
+
 
 #endif

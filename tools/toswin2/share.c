@@ -1,4 +1,5 @@
 
+#include <mintbind.h>
 #include <string.h>
 #include <sys/ioctl.h>
 
@@ -19,33 +20,33 @@ int env_bytes;
 
 static void sendMsg(int id, int what)
 {
-	short	msg[8];
+	short msg[8];
 
 	msg[0] = what;
 	msg[1] = gl_apid;
 	msg[2] = 0;
-	appl_write(id, (int)sizeof(msg), msg);
+
+	appl_write(id, sizeof(msg), msg);
 }
 
 void handle_share(int id)
 {
-	int			fd;
-	int			msg[8];
-	SHAREDATA	*blk;
-	TEXTWIN		*t;
-	char			name[80], 
-					*env;
-	char			arg[125] = " ";
-	WINCFG		*cfg;
-	int			err, ev, d;
+	int fd;
+	short msg[8], d;
+	SHAREDATA *blk;
+	TEXTWIN *t;
+	char name[80], *env;
+	char arg[125] = " ";
+	WINCFG *cfg;
+	int err, ev;
 		
 	sendMsg(id, TWOK);
 	err = 0;
 	do
 	{
 		ev = evnt_multi((MU_MESAG|MU_TIMER), 0, 0, 0, 
-							 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-							 msg, 5000L, &d, &d, &d, &d, &d, &d); 
+				 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				 msg, 5000L, &d, &d, &d, &d, &d, &d); 
 		if ((ev & MU_MESAG) && (msg[0] == TWWRITE))
 			err = 1;
 		if (ev & MU_TIMER)		/* Timeout, tw-call antwortet nicht */

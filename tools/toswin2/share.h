@@ -1,5 +1,7 @@
+
 #ifndef _tw_share_h_
 #define _tw_share_h_
+
 
 #define	SHARENAME	"u:\\shm\\tw-call.%d"
 
@@ -21,7 +23,8 @@ typedef struct
 } SHAREDATA;
 	
 
-extern void		handle_share	(int id);
-extern void		handle_exit		(int id);
+void	handle_share	(int id);
+void	handle_exit	(int id);
+
 
 #endif

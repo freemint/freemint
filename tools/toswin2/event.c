@@ -21,43 +21,49 @@
 #include "version.h"
 #include "window.h"
 
+#include "event.h"
 
-bool		gl_done = FALSE;
+
+bool gl_done = FALSE;
 
 /*
  * lokale Variablen
 */
-static OBJECT		*menu;
-static WDIALOG		*about;
+static OBJECT	*menu;
+static WDIALOG	*about;
 
 
 /******************************************************************************/
+#include <stdio.h>
 
 static void about_open(WDIALOG *dial)
 {
-	extern char	__Ident_gnulib[];
-	extern char	__Ident_gem[];
-	char			pl[10];
+	extern char __Ident_gnulib[];
+	extern char __Ident_gem[];
+	extern char __Ident_cflib[];
+	char pl[32];
 
-	set_string(dial->tree, AVERSION, TWVERSION);
-	set_string(dial->tree, ADATUM, __DATE__);
-#ifdef __GNUC__
-	set_string(dial->tree, ACOMP, "GNU C");
+	set_string (dial->tree, AVERSION, TWVERSION);
+	set_string (dial->tree, ADATUM, __DATE__);
+#if defined(__GNUC__)
+	set_string (dial->tree, ACOMP, "GNU C");
+#elif defined(__PUREC__)
+	set_string (dial->tree, ACOMP, "PureC");
 #endif
-#ifdef __PUREC__
-	set_string(dial->tree, ACOMP, "PureC");
-#endif
-	get_patchlev(__Ident_gnulib, pl);
-	set_string(dial->tree, AMINT, pl);
-	get_patchlev(__Ident_gem, pl);
-	set_string(dial->tree, AGEM, pl);
-	get_patchlev(__Ident_cflib, pl);
-	set_string(dial->tree, ACF, pl);
+
+	get_patchlev (__Ident_gnulib, pl);
+	set_string (dial->tree, AMINT, pl);
+
+	get_patchlev (__Ident_gem, pl);
+	set_string (dial->tree, AGEM, pl);
+
+	get_patchlev (__Ident_cflib, pl);
+	set_string (dial->tree, ACF, pl);
 	
-	wdial_open(dial);
+	wdial_open (dial);
 }
 
-static int about_close(WDIALOG *dial, int obj)
+static int about_close(WDIALOG *dial, short obj)
 {
 	wdial_close(dial);
 
@@ -83,7 +89,7 @@ static void update_menu(void)
 
 void menu_help(int title, int item)
 {
-	char	*p, str[50], s[50];
+	char *p, str[50], s[50];
 	
 	get_string(menu, item, s);
 	/* die fÅhrenden '  ' Åberspringen und das letzte auch nicht */
@@ -190,10 +196,10 @@ static void handle_menu(int title, int item, bool help)
 
 /******************************************************************************/
 
-static void handle_msg(int *msgbuff)
+static void handle_msg(short *msgbuff)
 {
 	TEXTWIN	*t;
-	int		msx, msy, d, kstate;
+	short msx, msy, d, kstate;
 
 	graf_mkstate(&msx, &msy, &d, &kstate);
 	if (!message_wdial(msgbuff))
@@ -252,8 +258,8 @@ static void handle_msg(int *msgbuff)
 				default:
 					if (gl_debug)
 					{
-						char	str[12];
-						int	d, i, id;
+						char str[12];
+						short d, i, id;
 			
 						i = appl_search(0, str, &d, &id);
 						while (i != 0)
@@ -274,8 +280,8 @@ static void handle_msg(int *msgbuff)
 /******************************************************************************/
 void event_loop(void)
 {
-	int		evset, event, msx, msy, mbutton, kstate, mbreturn, kreturn;
-	int		msgbuff[8], item, title;
+	short evset, event, msx, msy, mbutton, kstate, mbreturn, kreturn;
+	short msgbuff[8], item, title;
 
 	evset = (MU_MESAG | MU_BUTTON | MU_KEYBD);
 	do 
@@ -286,13 +292,13 @@ void event_loop(void)
 			evset &= ~MU_TIMER;
 			
 		event = evnt_multi(evset,
-									0x0101, 3, 0,
-									0, 0, 0, 0, 0,
-									0, 0, 0, 0, 0,
-									msgbuff,
-									50,
-									&msx, &msy, &mbutton, &kstate,
-									&kreturn, &mbreturn);
+				0x0101, 3, 0,
+				0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0,
+				msgbuff,
+				50,
+				&msx, &msy, &mbutton, &kstate,
+				&kreturn, &mbreturn);
 
 		if (event & MU_MESAG) 
 			handle_msg(msgbuff);

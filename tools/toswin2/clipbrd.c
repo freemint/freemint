@@ -5,6 +5,7 @@
  *
  */
 
+#include <osbind.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -33,7 +34,7 @@ static int CharClass(char ch)
 		return 1000+ch; /* One class per character */
 }
 
-static void selectfrom(TEXTWIN *t, int x1, int y1, int x2, int y2)
+static void selectfrom(TEXTWIN *t, short x1, short y1, short x2, short y2)
 {
 	int	i, j;
 	int	first, last;
@@ -93,7 +94,7 @@ static void selectfrom(TEXTWIN *t, int x1, int y1, int x2, int y2)
 	refresh_textwin(t, FALSE);
 }
 
-int select_word(TEXTWIN *t, int curcol, int currow)
+int select_word(TEXTWIN *t, short curcol, short currow)
 {
 	int	curclass = CharClass(t->data[currow][curcol]);
 	int	lcol = curcol;
@@ -115,15 +116,15 @@ int select_word(TEXTWIN *t, int curcol, int currow)
 	return 1;
 }
 
-int select_text(TEXTWIN *t, int curcol, int currow, int kshift)
+int select_text(TEXTWIN *t, short curcol, short currow, short kshift)
 {
-	WINDOW	*v = t->win;
-	int 		x, y, firstx, firsty;
-	int 		event, dummy, msx, msy, mbutton;
-	int 		anchorcol, anchorrow;
-	short 	*WIDE = t->cwidths;
-	int 		cboxw;
-	GRECT		w;
+	WINDOW *v = t->win;
+	short x, y, firstx, firsty;
+	short event, dummy, msx, msy, mbutton;
+	short anchorcol, anchorrow;
+	short *WIDE = t->cwidths;
+	short cboxw;
+	GRECT w;
 	
 	refresh_textwin(t, FALSE);
 

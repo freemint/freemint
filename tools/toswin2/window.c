@@ -19,28 +19,28 @@
 #include "av.h"
 #include "window.h"
 
-WINDOW	*gl_topwin;			/* oberstes Fenster */
+WINDOW	*gl_topwin;		/* oberstes Fenster */
 WINDOW	*gl_winlist;		/* LIFO Liste der offenen Fenster */
-int		gl_winanz = 0;		/* Anzahl der offenen Fenster */
+int	 gl_winanz = 0;		/* Anzahl der offenen Fenster */
 
 
-static void	noslid(WINDOW *w, int m)
+static void noslid(WINDOW *w, short m)
 {
 }
 
-static bool	nokey(WINDOW *w, int code, int shft)
+static bool nokey(WINDOW *w, short code, short shft)
 {
 	return FALSE;
 }
 
-static bool	nomouse(WINDOW *w, int clicks, int x, int y, int shift, int mbuttons)
+static bool nomouse(WINDOW *w, short clicks, short x, short y, short shift, short mbuttons)
 {
 	return FALSE;
 }
 
-static void	clear_win(WINDOW *v, int x, int y, int w, int h)
+static void clear_win(WINDOW *v, short x, short y, short w, short h)
 {
-	int temp[4];
+	short temp[4];
 
 	vsf_color(vdi_handle, 0);
 	temp[0] = x;
@@ -53,7 +53,7 @@ static void	clear_win(WINDOW *v, int x, int y, int w, int h)
 
 static WINDOW *get_top(void)
 {
-	int		h, d;
+	short h, d;
 	WINDOW	*v;
 	
 	wind_get(0, WF_TOP, &h, &d, &d, &d);
@@ -86,14 +86,14 @@ static void bottom_win(WINDOW *w)
 	gl_topwin = get_top();
 }
 
-static void	close_win(WINDOW *w)
+static void close_win(WINDOW *w)
 {
 	destroy_window(w);
 }
 
-static void	full_win(WINDOW *v)
+static void full_win(WINDOW *v)
 {
-	GRECT	new;
+	GRECT new;
 
 	if (v->flags & WFULLED) 
 		wind_get_grect(v->handle, WF_PREVXYWH, &new);
@@ -106,9 +106,9 @@ static void	full_win(WINDOW *v)
 	v->flags ^= WFULLED;
 }
 
-static void	move_win(WINDOW *v, int x, int y, int w, int h)
+static void move_win(WINDOW *v, short x, short y, short w, short h)
 {
-	GRECT	full;
+	GRECT full;
 	
 	wind_get_grect(v->handle, WF_FULLXYWH, &full);
 
@@ -124,12 +124,12 @@ static void	move_win(WINDOW *v, int x, int y, int w, int h)
 	wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
 }
 
-static void	size_win(WINDOW *v, int x, int y, int w, int h)
+static void size_win(WINDOW *v, short x, short y, short w, short h)
 {
 	move_win(v, x, y, w, h);
 }
 
-static void iconify_win(WINDOW *v, int x, int y, int w, int h)
+static void iconify_win(WINDOW *v, short x, short y, short w, short h)
 {
 	if (w == -1 && h == -1)
 	{
@@ -152,7 +152,7 @@ static void iconify_win(WINDOW *v, int x, int y, int w, int h)
 */
 }
 
-static void uniconify_win(WINDOW *v, int x, int y, int w, int h)
+static void uniconify_win(WINDOW *v, short x, short y, short w, short h)
 {
 	wind_calc(WC_BORDER, v->kind, v->prev.g_x, v->prev.g_y, v->prev.g_w, v->prev.g_h, &x, &y, &w, &h);
   	wind_set(v->handle, WF_UNICONIFY, x, y, w, h);
@@ -164,7 +164,7 @@ static void uniconify_win(WINDOW *v, int x, int y, int w, int h)
 
 void uniconify_all(void)						/* alle Fenster auf */
 {
-	WINDOW	*v;
+	WINDOW *v;
 	
 	v = gl_winlist;
 	while (v)
@@ -178,7 +178,7 @@ void uniconify_all(void)						/* alle Fenster auf */
 	}
 }
 
-static void shade_win(WINDOW *v, int flag)
+static void shade_win(WINDOW *v, short flag)
 {
 	switch (flag)
 	{
@@ -201,13 +201,13 @@ static void shade_win(WINDOW *v, int flag)
 	}		
 }
 
-WINDOW *create_window(const char *title, int kind, 
-								int wx, int wy, int ww, int wh, 	/* Gr”že zum ”ffnen */
-								int max_w, int max_h)				/* max. Gr”že */
+WINDOW *create_window(const char *title, short kind, 
+			short wx, short wy, short ww, short wh, 	/* Gr”že zum ”ffnen */
+			short max_w, short max_h)			/* max. Gr”že */
 {
-	WINDOW	*v;
-	GRECT 	full;
-	int 		centerwin = 0;
+	WINDOW *v;
+	GRECT full;
+	int centerwin = 0;
 
 	title = strdup(title);
 	v = malloc(sizeof(WINDOW));
@@ -224,8 +224,8 @@ WINDOW *create_window(const char *title, int kind,
 	if (wy < gl_desk.g_y) 
 		wy = gl_desk.g_y;
 
-   v->max_w = max_w;
-   v->max_h = max_h;
+	v->max_w = max_w;
+	v->max_h = max_h;
 
 	if (ww == -1 || wh == -1)
 		wind_calc(WC_WORK, v->kind, wx, wy, gl_desk.g_w, gl_desk.g_h, &v->work.g_x, &v->work.g_y, &v->work.g_w, &v->work.g_h);
@@ -256,22 +256,22 @@ WINDOW *create_window(const char *title, int kind,
 	if (ww == -1 || wh == -1)
 		wind_calc_grect(WC_WORK, v->kind, &full, &v->work);
 
-	v->title = (char *)title;
-	v->extra = (void *)0;
+	v->title = title;
+	v->extra = NULL;
 	v->flags = 0;
 
 	v->draw = clear_win;
 	v->topped = top_win;
-   v->ontopped = ontop_win;
-   v->untopped = untop_win;
-   v->bottomed = bottom_win;
+	v->ontopped = ontop_win;
+	v->untopped = untop_win;
+	v->bottomed = bottom_win;
 	v->closed = close_win;
 	v->fulled = full_win;
 	v->sized = size_win;
 	v->moved = move_win;
 	v->iconify = iconify_win;
-   v->uniconify = uniconify_win;
-   v->shaded = shade_win;
+	v->uniconify = uniconify_win;
+	v->shaded = shade_win;
 	v->arrowed = noslid;
 	v->hslid = noslid;
 	v->vslid = noslid;
@@ -282,14 +282,15 @@ WINDOW *create_window(const char *title, int kind,
 
 	v->next = gl_winlist;
 	gl_winlist = v;
+
 	return v;
 }
 
 
 void open_window(WINDOW *v, bool as_icon)
 {
-	static char	notitle[] = "Untitled";
-	GRECT		r;
+	static char notitle[] = "Untitled";
+	GRECT r;
 	
 	if (v->handle >= 0)
 		return;
@@ -326,8 +327,8 @@ void open_window(WINDOW *v, bool as_icon)
 
 static void unlink_window(WINDOW *v)
 {
-	WINDOW 	**ptr, *w;
-	int		i, dummy;
+	WINDOW **ptr, *w;
+	short i, dummy;
 				
 	/* find v in the window list, and unlink it */
 	ptr = &gl_winlist;
@@ -374,10 +375,10 @@ void destroy_window(WINDOW *v)
 }
 
 
-void redraw_window(WINDOW *v, int xc, int yc, int wc, int hc)
+void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 {
-	GRECT	t1, t2;
-	bool	off = FALSE;
+	GRECT t1, t2;
+	bool off = FALSE;
 	
 /*	wind_update(TRUE);*/
 	t2.g_x = xc;
@@ -403,9 +404,9 @@ void redraw_window(WINDOW *v, int xc, int yc, int wc, int hc)
 }
 
 
-WINDOW *get_window(int handle)
+WINDOW *get_window(short handle)
 {
-	WINDOW	*w;
+	WINDOW *w;
 
 	if (handle < 0) 
 		return NULL;
@@ -417,10 +418,10 @@ WINDOW *get_window(int handle)
 }
 
 
-WINDOW *find_window(int x, int y)
+WINDOW *find_window(short x, short y)
 {
-	int 		wx, wy, ww, wh;
-	WINDOW	*w;
+	short wx, wy, ww, wh;
+	WINDOW *w;
 
 	wind_update(BEG_UPDATE);
 	for (w = gl_winlist; w; w = w->next) 
@@ -441,10 +442,10 @@ found_window:
 }
 
 
-bool window_msg(int *msgbuff)
+bool window_msg(short *msgbuff)
 {
 	WINDOW	*v;
-	bool		ret = TRUE;
+	bool ret = TRUE;
 	
 	v = get_window(msgbuff[3]);
 	if (!v || (v->flags & WISDIAL))
@@ -508,19 +509,19 @@ bool window_msg(int *msgbuff)
 }
 
 
-bool window_key(int keycode, int shift)
+bool window_key(short keycode, short shift)
 {
 	WINDOW	*w;
 
 	w = gl_topwin;
-   if (w && !(w->flags & WISDIAL) && !(w->flags & WICONIFIED) && !(w->flags & WSHADED))
+	if (w && !(w->flags & WISDIAL) && !(w->flags & WICONIFIED) && !(w->flags & WSHADED))
 		return (*w->keyinp)(w, keycode, shift);
 	else
 		return FALSE;
 }
 
 
-bool window_click(int clicks, int x, int y, int kshift, int mbutton)
+bool window_click(short clicks, short x, short y, short kshift, short mbutton)
 {
 	WINDOW *w;
 
@@ -537,10 +538,10 @@ void force_redraw(WINDOW *v)
 }
 
 
-void change_window_gadgets(WINDOW *w, int newkind)
+void change_window_gadgets(WINDOW *w, short newkind)
 {
-	bool	reopen = FALSE;
-	GRECT	n;
+	bool reopen = FALSE;
+	GRECT n;
 	
 	if (newkind == w->kind) 
 		return;
@@ -605,9 +606,9 @@ void title_window(WINDOW *w, char *title)
  */
 void cycle_window(void)
 {
-	WINDOW	*w;
-	short		mbuf[8];
-	int		top, d;
+	WINDOW *w;
+	short mbuf[8];
+	short top, d;
 	
 	w = gl_topwin;
 
@@ -692,7 +693,7 @@ void wdial_close(WDIALOG *dial)
 	}
 }
 
-bool wdial_msg(int *msg)
+bool wdial_msg(short *msg)
 {
 	bool	ret;
 	

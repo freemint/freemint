@@ -16,15 +16,15 @@
  * Globale Variablen
  */
 OBJECT	*winicon,
-			*conicon,
-			*strings;
-int		exit_code;
-int		vdi_handle;
-int		font_anz;
+	*conicon,
+	*strings;
+int	exit_code;
+int	vdi_handle;
+int	font_anz;
 
 /*
  * Translation tables
-*/
+ */
 unsigned char st_to_iso[256] = 
 {
 	/*
@@ -77,12 +77,12 @@ unsigned char iso_to_st[256] =
 */
 static char	**alertarray;
 static int 	lasttextcolor = -1, 
-				lastfillcolor = -1, 
-				lastwrmode = -1, 
-				lastheight = -1, 
-				lastfont = -1;
+		lastfillcolor = -1, 
+		lastwrmode = -1, 
+		lastheight = -1, 
+		lastfont = -1;
 static int 	laststyle = -1,
-				lastindex = -1;
+		lastindex = -1;
 static int 	lasteffects = -1;
 
 
@@ -122,7 +122,7 @@ void	set_wrmode(int mode)
  */
 void	set_font(int font, int height)
 {
-	int cw, ch, bw, bh;
+	short cw, ch, bw, bh;
 
 	if (font != lastfont) 
 	{
@@ -153,8 +153,8 @@ int alert(int def, int undo, int num)
 void draw_winicon(WINDOW *win)
 {
 	OBJECT	*icon;
-	GRECT		t1, t2;
-	bool		off = FALSE;		
+	GRECT	t1, t2;
+	bool	off = FALSE;		
 
 	if (is_console(win))
 		icon = get_con_icon();
@@ -190,7 +190,7 @@ void draw_winicon(WINDOW *win)
 
 void global_init(void)
 {
-	int	work_out[57];
+	short work_out[57];
 	
 	rsrc_gaddr(R_TREE, WINICON, &winicon);
 	rsrc_gaddr(R_TREE, CONICON, &conicon);

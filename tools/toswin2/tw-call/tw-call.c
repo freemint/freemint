@@ -30,7 +30,7 @@
 #include <string.h>
 
 #include <basepage.h>
-#include <osbind.h>
+#include <mintbind.h>
 #include <sys/ioctl.h>
 
 #include <cflib.h>
@@ -68,7 +68,7 @@ static void send_msg(int what)
 }
 
 
-bool write_blk(int argc, char *argv[])
+static bool write_blk(int argc, char *argv[])
 {
 	int			fd, i;
 	SHAREDATA	*blk;
@@ -132,7 +132,7 @@ bool write_blk(int argc, char *argv[])
 }
 
 
-int find_tw(void)
+static int find_tw(void)
 {
 	int	id;
 	char	progname[256], str[256], *p = NULL;
@@ -172,10 +172,10 @@ int find_tw(void)
 
 int main(int argc, char *argv[])
 {
-	short	exit_code = 0, smsg[8];
-	int	msg[8];
-	char	str[256];
-	long	l;
+	short exit_code = 0, smsg[8];
+	short msg[8];
+	char str[256];
+	long l;
 
 	dbg = (getenv("DEBUG") != NULL);
 
