@@ -177,7 +177,9 @@
 # include "scsidrv.h"
 # include "timeout.h"
 # include "xhdi.h"
-
+#ifdef FLOPPY_ROUTINES
+# include "floppy.h"
+#endif
 
 # define DEFAULT	128UL		/* default cache in kB */
 # define DEFAULT_PERC	5UL		/* 5% */
@@ -573,8 +575,14 @@ static long _cdecl
 dskchng_bios (DI *di)
 {
 	register long r;
-	
+
+/* NASTY HACK, FIXME*/
+#ifdef FLOPPY_ROUTINES
+	if (di->drv <2) r = floppy_mediach (di->drv);
+	else 
+#endif
 	r = mediach (di->drv);
+	
 	if (r)
 	{
 		(void) getbpb (di->drv);
@@ -765,7 +773,12 @@ INLINE long
 bio_readin (DI *di, void *buffer, ulong size, ulong sector)
 {
 	register long r;
-	
+
+/* NASTY HACK, FIXME */
+#ifdef FLOPPY_ROUTINES
+	if (di->drv < 2 ) r = floppy_block_io (di, 0, buffer, size, sector);
+	else 
+#endif
 	r = BIO_RWABS (di, 0, buffer, size, sector);
 	if (r)
 	{
@@ -790,7 +803,12 @@ INLINE long
 bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 {
 	register long r;
-	
+
+/* NASTY HACK, FIXME */
+#ifdef FLOPPY_ROUTINES
+	if (di->drv < 2 ) r = floppy_block_io (di, 1, buffer, size, sector);
+	else
+#endif
 	r = BIO_RWABS (di, 1, (void *) buffer, size, sector);
 	if (r)
 	{
