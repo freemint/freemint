@@ -40,10 +40,37 @@
 #include "popup.h"
 #include "objmacro.h"
 
-/*----------------------------------------------------------------------------------------*/ 
-/* Exportstruktur									*/
-/*----------------------------------------------------------------------------------------*/ 
-XCPB xctrl_pb =
+#define	DEBUG	0
+
+#undef min
+#undef max
+
+
+static struct cpxlist *_cdecl get_cpx_list(void) { return cpxlist; }
+
+static void    _cdecl rsh_fix(struct rsh_fix_args);
+static void    _cdecl rsh_obfix(struct rsh_obfix_args);
+static short   _cdecl Popup(struct Popup_args);
+static void    _cdecl Sl_size(struct Sl_size_args);
+static void    _cdecl Sl_x(struct Sl_xy_args);
+static void    _cdecl Sl_y(struct Sl_xy_args);
+static void    _cdecl Sl_arrow(struct Sl_arrow_args);
+static void    _cdecl Sl_dragx(struct Sl_dragxy_args);
+static void    _cdecl Sl_dragy(struct Sl_dragxy_args);
+static short   _cdecl Xform_do(struct Xform_do_args);
+static GRECT * _cdecl GetFirstRect(GRECT *prect);
+static GRECT * _cdecl GetNextRect(void);
+static void    _cdecl Set_Evnt_Mask(struct Set_Evnt_Mask_args);
+static short   _cdecl XGen_Alert(struct XGen_Alert_args);
+static short   _cdecl CPX_Save(void *ptr, long bytes);
+static void *  _cdecl Get_Buffer(void);
+static short   _cdecl getcookie(long cookie, long *p_value);
+static void    _cdecl MFsave(struct MFsave_args);
+
+/* 
+ * exported cpx support functions
+ */
+struct xcpb xctrl_pb =
 {
 	0,
 	0,
@@ -75,24 +102,31 @@ XCPB xctrl_pb =
 	CPX_Save,
 	Get_Buffer,
 	getcookie,
+
 	1,
+
 	MFsave
 };
 
-#define	DEBUG	0
 
-/*----------------------------------------------------------------------------------------*/ 
-/* Zeiger auf die Liste der CPXe zurueckgeben						*/
-/* Funktionsresultat:	CPX-Liste							*/
-/*----------------------------------------------------------------------------------------*/ 
-CPX_LIST * _cdecl
-get_cpx_list(void)
+/*
+ * search cpx
+ */
+static CPX_DESC *
+find_cpx(const void *addr)
 {
-#if DEBUG
-	printf("get_cpx_list\n");
-#endif
+	CPX_DESC *cpx;
 
-	return cpxlist;
+	cpx = cpx_desc_list;
+	while (cpx)
+	{
+		if (addr >= cpx->start_of_cpx && addr < cpx->end_of_cpx)
+			break;
+
+		cpx = cpx->next;
+	}
+
+	return cpx;
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -101,30 +135,33 @@ get_cpx_list(void)
 /*	cpx_list:	alte CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
 short _cdecl
-save_header(CPX_LIST *cpx_list)
+save_header(struct cpxlist *cpx_list)
 {
-	CPX_DESC *cpx_desc;
 	char name[256];
+	CPX_DESC *cpx_desc;
 	long handle;
-	short result;
+	short result = 0;
 
 #if DEBUG
 	printf("save_header\n");
 #endif
 
-	cpx_desc = (CPX_DESC *) ((unsigned char *) cpx_list - offsetof(CPX_DESC, old));
+	cpx_desc = (CPX_DESC *)((unsigned char *)cpx_list - offsetof(CPX_DESC, old));
 	strcpy(name, settings.cpx_path);
 	strcat(name, cpx_desc->file_name);
-	result = 0;
 
 	handle = Fopen(name, O_WRONLY);
 	if (handle > 0)
 	{
-		if (Fwrite((short) handle, sizeof(CPXHEAD), &cpx_list->header) == sizeof(CPXHEAD))
+		long ret;
+
+		ret = Fwrite((short)handle, sizeof(cpx_list->header), &(cpx_list->header));
+		if (ret == sizeof(cpx_list->header))
 			result = 1;
 
-		Fclose((short) handle);
-	}	
+		Fclose((short)handle);
+	}
+
 	return result;
 }
 
@@ -145,42 +182,56 @@ save_header(CPX_LIST *cpx_list)
 /*	rs_trindex:	Feld mit Indizes/Zeigern auf Objektbaeume			*/
 /*	rs_imdope:	Feld mit Zeigern auf Images fuer ICONBLKs			*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
-cpx_fix_rsh(CPX_DESC *cpx_desc, short num_objs, short num_frstr, short num_frimg, short num_tree,
-	    OBJECT *rs_object, TEDINFO *rs_tedinfo, char *rs_string[], ICONBLK *rs_iconblk, BITBLK *rs_bitblk,
-	    long *rs_frstr, long *rs_frimg, long *rs_trindex, struct foobar *rs_imdope)
+
+static void cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob);
+
+static inline void
+cpx_rsh_fix(CPX_DESC *cpx_desc, const struct rsh_fix_args *args)
 {
-	OBJECT	*obj;
+	OBJECT *obj;
 
 	if (cpx_desc->xctrl_pb.SkipRshFix == 0)
 	{
+		short num_objs = args->num_objs;
+
 #if DEBUG
 		printf("rsh_fix num_objs %d, num_frstr %d, num_frimg %d, num_tree %d\n",
-		       num_objs, num_frstr, num_frimg, num_tree);
+		       args->num_objs, args->num_frstr, args->num_frimg, args->num_tree);
 #endif
 
-		fix_rsc(num_objs, num_frstr, num_frimg, num_tree,
-			rs_object, rs_tedinfo, rs_string, rs_iconblk, rs_bitblk,
-			rs_frstr, rs_frimg, rs_trindex, rs_imdope);
-		
-		obj = rs_object;	
-	
+		fix_rsc(args->num_objs, args->num_frstr, args->num_frimg, args->num_tree,
+			args->rs_object, args->rs_tedinfo, args->rs_strings, args->rs_iconblk, args->rs_bitblk,
+			args->rs_frstr, args->rs_frimg, args->rs_trindex, args->rs_imdope);
+
+		obj = args->rs_object;	
+
 		while (num_objs > 0)
 		{
 			cpx_rsh_obfix(cpx_desc, obj, 0);	/* in Pixelkoordinaten wandeln */
 			obj++;
 			num_objs--;
 		}
-	
-		if (rs_object->ob_width > 512)			/* Grundobjekt zu breit? */
-			rs_object->ob_width = 512;
-		
-		if (rs_object->ob_height > 384)			/* Grundobjekt zu hoch? */
-			rs_object->ob_height = 384;
-	
+
+		if (args->rs_object->ob_width > 512)		/* Grundobjekt zu breit? */
+			args->rs_object->ob_width = 512;
+
+		if (args->rs_object->ob_height > 384)		/* Grundobjekt zu hoch? */
+			args->rs_object->ob_height = 384;
+
 		cpx_desc->xctrl_pb.SkipRshFix = 1;		/* RSC wurde schon einmal initialisiert */
 	}
 }
+static void _cdecl
+rsh_fix(struct rsh_fix_args args)
+{
+	const void *addr = __builtin_return_address(1);
+	CPX_DESC *cpx;
+
+	cpx = find_cpx(addr);
+	if (cpx)
+		cpx_rsh_fix(cpx, &args);
+}
+
 
 /*----------------------------------------------------------------------------------------*/ 
 /* Zeichenkoordinaten eines Objekts in Pixel umrechnen					*/
@@ -188,7 +239,7 @@ cpx_fix_rsh(CPX_DESC *cpx_desc, short num_objs, short num_frstr, short num_frimg
 /*	tree:		Adresse des Objektbaums						*/
 /*	ob:		Objektnummer							*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
+static void
 cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 {
 	short hpix, ypix;
@@ -199,12 +250,12 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 
 	ypix = (tree[ob].ob_y & 0xff00) >> 8;
 	tree[ob].ob_y &= 0xff;
-	
+
 	hpix = (tree[ob].ob_height & 0xff00) >> 8;
 	tree[ob].ob_height &= 0xff;
 
 	rsrc_obfix(tree, ob);					/* von Zeichen- in Pixelkoordinaten umrechnen */
-	
+
 	if ((pwchar == 8) && (phchar == 8))			/* unselige Aufl”sung? */
 	{
 		tree[ob].ob_y += tree[ob].ob_y;			/* H”he und Position korrigieren */
@@ -239,6 +290,16 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 	 */
 	cpx_desc->xctrl_pb.SkipRshFix = 1;			/* RSC wurde schon einmal initialisiert */
 }
+static void _cdecl
+rsh_obfix(struct rsh_obfix_args args)
+{
+	const void *addr = __builtin_return_address(1);
+	CPX_DESC *cpx;
+
+	cpx = find_cpx(addr);
+	if (cpx)
+		cpx_rsh_obfix(cpx, args.tree, args.ob);
+}
 
 /*----------------------------------------------------------------------------------------*/ 
 /* Popup zeichnen									*/
@@ -250,14 +311,14 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 /*	button_rect:	Ausmaže des Grundbuttons					*/
 /*	tree_rect:	Ausmaže des CPX						*/
 /*----------------------------------------------------------------------------------------*/ 
-short _cdecl
-Popup(char **strs, short no_strs, short slct, short font, GRECT *button_rect, GRECT *tree_rect)
+static short _cdecl
+Popup(struct Popup_args args)
 {
 #if DEBUG
 	printf("Popup\n");
 #endif
 
-	return do_popup(button_rect, strs, no_strs, 0, slct);
+	return do_popup(args.up, args.items, args.no_items, 0, args.slct);
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -266,19 +327,14 @@ Popup(char **strs, short no_strs, short slct, short font, GRECT *button_rect, GR
 /*	fnt_dialog:	Zeiger auf die Fontdialog-Struktur				*/
 /*	obj:		Nummer des Objekts						*/
 /*----------------------------------------------------------------------------------------*/ 
-
-#define my_objc_draw(a,b,c,g) objc_draw(a,b,c,(g)->g_x,(g)->g_y,(g)->g_w,(g)->g_h)
-
 static void
 redraw_obj(OBJECT *tree, short obj)
 {
-	GRECT rect;
+	GRECT r = *(GRECT *) &tree->ob_x; /* Dialog-Rechteck */
 
-	rect = *(GRECT *) &tree->ob_x;				/* Dialog-Rechteck */
-	
-	wind_update(BEG_UPDATE);				/* Bildschirm sperren */
-	my_objc_draw(tree, obj, MAX_DEPTH, &rect);
-	wind_update(END_UPDATE);				/* Bildschirm freigeben */
+	wind_update(BEG_UPDATE);
+	objc_draw(tree, obj, MAX_DEPTH, r.g_x, r.g_y, r.g_w, r.g_h);
+	wind_update(END_UPDATE);
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -292,19 +348,28 @@ redraw_obj(OBJECT *tree, short obj)
 /*	direction:	Richtung (0: vertikal, 1: horizontal)				*/
 /*	min_size:	minimale Slidergr”že						*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
-Sl_size(OBJECT *tree, short base, short slider, short num_items, short visible, short direction, short min_size)
+static void _cdecl
+Sl_size(struct Sl_size_args args)
+#define tree      args.tree
+#define base      args.base
+#define slider    args.slider
+#define num_items args.num_items
+#define visible   args.visible
+#define direction args.direction
+#define min_size  args.min_size
 {
 #if DEBUG
 	printf("Sl_size base %d, slider %d, num_items %d, visible %d, direction %d, min_size %d\n",
 	       base, slider, num_items, visible, direction, min_size);
 #endif
 
-	if (direction)						/* horizontaler Slider? */
+	if (direction)
 	{
+		/* horizontaler Slider */
+
 		tree[slider].ob_x = 0;
 
-		if (visible >= num_items)			/* weniger Elemente als darstellbar? */
+		if (visible >= num_items) /* weniger Elemente als darstellbar? */
 			tree[slider].ob_width = tree[base].ob_width;
 		else
 			tree[slider].ob_width = (short) (((long) tree[base].ob_width * visible) / num_items);
@@ -312,11 +377,13 @@ Sl_size(OBJECT *tree, short base, short slider, short num_items, short visible, 
 		if (tree[slider].ob_width < min_size)
 			tree[slider].ob_width = min_size;
 	}
-	else							/* vertikaler Slider */
+	else
 	{
+		/* vertikaler Slider */
+
 		tree[slider].ob_y = 0;
 
-		if (visible >= num_items)			/* weniger Elemente als darstellbar? */
+		if (visible >= num_items) /* weniger Elemente als darstellbar? */
 			tree[slider].ob_height = tree[base].ob_height;
 		else
 			tree[slider].ob_height = (short) (((long) tree[base].ob_height * visible) / num_items);
@@ -325,6 +392,13 @@ Sl_size(OBJECT *tree, short base, short slider, short num_items, short visible, 
 			tree[slider].ob_height = min_size;
 	}
 }
+#undef min_size
+#undef direction
+#undef visible
+#undef num_items
+#undef slider
+#undef base
+#undef tree
 
 /*----------------------------------------------------------------------------------------*/ 
 /*	Slider in horizontaler Richtung positionieren					*/
@@ -337,8 +411,10 @@ Sl_size(OBJECT *tree, short base, short slider, short num_items, short visible, 
 /*	max:		Maximalwert, den value annehmen darf				*/
 /*	userdef:	benutzerdefinierte Funktion					*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
-Sl_x(OBJECT *tree, short base, short slider, short value, short min, short max, void (*userdef)(void))
+static void
+cpx_Sl_x(OBJECT *tree, short base, short slider, short value,
+	 short min, short max, void (*userdef)(void))
+
 {
 	short w;
 
@@ -349,7 +425,7 @@ Sl_x(OBJECT *tree, short base, short slider, short value, short min, short max, 
 
 	w = tree[base].ob_width - tree[slider].ob_width;
 
-	if (min <= max)						/* Slider hat links Minimalwert und rechts Maximalwert? */
+	if (min <= max) /* Slider hat links Minimalwert und rechts Maximalwert? */
 	{
 		value -= min;
 		max -= min;
@@ -361,7 +437,7 @@ Sl_x(OBJECT *tree, short base, short slider, short value, short min, short max, 
 
 		tree[slider].ob_x = (short)(((long) w * value) / max);
 	}
-	else							/* Slider hat links Maximalwert und rechts Minimalwert */
+	else /* Slider hat links Maximalwert und rechts Minimalwert */
 	{
 		value -= max;
 		min -= max;
@@ -373,8 +449,15 @@ Sl_x(OBJECT *tree, short base, short slider, short value, short min, short max, 
 
 		tree[slider].ob_x = w - (short)(((long) w * value) / min);
 	}
-	
-	cpx_userdef(userdef);					/* benutzerdefinierte Funktion aufrufen */
+
+	/* benutzerdefinierte Funktion aufrufen */
+	cpx_userdef(userdef);
+}
+static void _cdecl
+Sl_x(struct Sl_xy_args args)
+{
+	cpx_Sl_x(args.tree, args.base, args.slider, args.value,
+		 args.min, args.max, args.userdef);
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -388,8 +471,9 @@ Sl_x(OBJECT *tree, short base, short slider, short value, short min, short max, 
 /*	max:		Maximalwert, den value annehmen darf				*/
 /*	userdef:	benutzerdefinierte Funktion					*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
-Sl_y(OBJECT *tree, short base, short slider, short value, short min, short max, void (*userdef)(void))
+static void
+cpx_Sl_y(OBJECT *tree, short base, short slider, short value,
+	 short min, short max, void (*userdef)(void))
 {
 	short h;
 
@@ -400,7 +484,7 @@ Sl_y(OBJECT *tree, short base, short slider, short value, short min, short max, 
 
 	h = tree[base].ob_height - tree[slider].ob_height;
 
-	if (min <= max)						/* Slider hat oben Maximalwert und unten Minimalwert? */
+	if (min <= max) /* Slider hat oben Maximalwert und unten Minimalwert? */
 	{
 		value -= min;
 		max -= min;
@@ -412,7 +496,7 @@ Sl_y(OBJECT *tree, short base, short slider, short value, short min, short max, 
 
 		tree[slider].ob_y = h - (short)(((long) h * value) / max);
 	}
-	else							/* Slider hat oben Minimalwert und unten Maximalwert */
+	else /* Slider hat oben Minimalwert und unten Maximalwert */
 	{
 		value -= max;
 		min -= max;
@@ -424,8 +508,15 @@ Sl_y(OBJECT *tree, short base, short slider, short value, short min, short max, 
 
 		tree[slider].ob_y = (short)(((long) h * value) / min);
 	}
-	
-	cpx_userdef(userdef);					/* benutzerdefinierte Funktion aufrufen */
+
+	/* benutzerdefinierte Funktion aufrufen */
+	cpx_userdef(userdef);
+}
+static void _cdecl
+Sl_y(struct Sl_xy_args args)
+{
+	cpx_Sl_y(args.tree, args.base, args.slider, args.value,
+		 args.min, args.max, args.userdef);
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -441,12 +532,22 @@ Sl_y(OBJECT *tree, short base, short slider, short value, short min, short max, 
 /*	direction:	Richtung (0: vertikal, 1: horizontal)				*/
 /*	userdef:	benutzerdefinierte Funktion					*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
-Sl_arrow(OBJECT *tree, short base, short slider, short obj, short inc,
-         short min, short max, short *value, short direction, void (*userdef)(void))
+static void _cdecl
+Sl_arrow(struct Sl_arrow_args args)
 {
+#define tree      args.tree
+#define base      args.base
+#define slider    args.slider
+#define obj       args.obj
+#define inc       args.inc
+#define min       args.min
+#define max       args.max
+#define value     args.value
+#define direction args.direction
+#define userdef   args.userdef
+
 	short val;
-	
+
 #if DEBUG
 	printf("Sl_arrow base %d, slider %d, obj %d, inc %d, min %d, max %, value %d, direction %d\n",
 	       base, slider, obj, inc, min, max, *value, direction);
@@ -478,9 +579,9 @@ Sl_arrow(OBJECT *tree, short base, short slider, short obj, short inc,
 	}
 	
 	if (direction)						/* horizontaler Slider? */
-		Sl_x(tree, base, slider, val, min, max, userdef);
+		cpx_Sl_x(tree, base, slider, val, min, max, userdef);
 	else
-		Sl_y(tree, base, slider, val, min, max, userdef);
+		cpx_Sl_y(tree, base, slider, val, min, max, userdef);
 
 	redraw_obj(tree, base);					/* Slider neuzeichnen */
 
@@ -490,6 +591,16 @@ Sl_arrow(OBJECT *tree, short base, short slider, short obj, short inc,
 		obj_DESELECTED(tree, obj);
 		redraw_obj(tree, obj);				/* Button wieder normal */
 	}
+#undef tree
+#undef base
+#undef slider
+#undef obj
+#undef inc
+#undef min
+#undef max
+#undef value
+#undef direction
+#undef userdef
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -504,22 +615,30 @@ Sl_arrow(OBJECT *tree, short base, short slider, short obj, short inc,
 /*	value:		neuer Wert, den der Slider repraesentieren soll			*/
 /*	userdef:	benutzerdefinierte Funktion					*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
-Sl_dragx(OBJECT *tree, short base, short slider, short min, short max,
-         short *value, void (*userdef)(void))
+static void _cdecl
+Sl_dragx(struct Sl_dragxy_args args)
+#define tree    args.tree
+#define base    args.base
+#define slider  args.slider
+#define min     args.min
+#define max     args.max
+#define value   args.value
+#define userdef args.userdef
 {
 	short hpos;
-	
+
 #if DEBUG
 	printf("Sl_dragx base %d, slider %d, min %d, max %d, value %d\n",
 	       base, slider, min, max, *value);
 #endif
 
 	hpos = graf_slidebox(tree, base, slider,0);
-	*value = (short) (((long) (max - min) * hpos) / 1000);
+	*value = (short)(((long)(max - min) * hpos) / 1000);
 	*value += min;
-	Sl_x(tree, base, slider, *value, min, max, userdef);
-	redraw_obj(tree, base);					/* Slider neuzeichnen */
+	cpx_Sl_x(tree, base, slider, *value, min, max, userdef);
+
+	/* Slider neuzeichnen */
+	redraw_obj(tree, base);
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -534,23 +653,31 @@ Sl_dragx(OBJECT *tree, short base, short slider, short min, short max,
 /*	value:		neuer Wert, den der Slider repraesentieren soll			*/
 /*	userdef:	benutzerdefinierte Funktion					*/
 /*----------------------------------------------------------------------------------------*/ 
-void _cdecl
-Sl_dragy(OBJECT *tree, short base, short slider, short min, short max,
-         short *value, void (*userdef)(void))
+static void _cdecl
+Sl_dragy(struct Sl_dragxy_args args)
 {
 	short vpos;
-	
+
 #if DEBUG
 	printf("Sl_dragy base %d, slider %d, min %d, max %d, value %d\n",
 	       base, slider, min, max, *value);
 #endif
 
 	vpos = graf_slidebox(tree, base, slider, 1);
-	*value = (short)(((long) (max - min) * (1000 - vpos)) / 1000);
+	*value = (short)(((long)(max - min) * (1000 - vpos)) / 1000);
 	*value += min;
-	Sl_y(tree, base, slider, *value, min, max, userdef);
-	redraw_obj(tree, base);					/* Slider neuzeichnen */
+	cpx_Sl_y(tree, base, slider, *value, min, max, userdef);
+
+	/* Slider neuzeichnen */
+	redraw_obj(tree, base);
 }
+#undef userdef
+#undef value
+#undef max
+#undef min
+#undef slider
+#undef base
+#undef tree
 
 static short
 is_edit_obj_hidden(OBJECT *tree, short obj)
@@ -558,14 +685,14 @@ is_edit_obj_hidden(OBJECT *tree, short obj)
 	if (is_obj_HIDDEN(tree, obj))
 		return 1;
 	
-	while (tree[obj].ob_next != -1)				/* Wurzel gefunden? */
+	while (tree[obj].ob_next != -1)			/* Wurzel gefunden? */
 	{
 		short last_obj;
 		
 		last_obj = obj;
-		obj = tree[obj].ob_next;			/* naechstes Objekt oder Vater */
+		obj = tree[obj].ob_next;		/* naechstes Objekt oder Vater */
 		
-		if (last_obj == tree[obj].ob_tail)		/* war das letzte Objekt ein Kind, ist obj der Vater? */
+		if (last_obj == tree[obj].ob_tail)	/* war das letzte Objekt ein Kind, ist obj der Vater? */
 		{
 			if (is_obj_HIDDEN(tree, obj))
 				return 1;
@@ -582,7 +709,7 @@ is_edit_obj_hidden(OBJECT *tree, short obj)
 /*	edit_obj:	Nummer des aktiven Editobjekts oder 0				  */
 /*	msg:		Zeiger auf Message-Buffer fuer ausgewaehlte Ereignisse		  */
 /*----------------------------------------------------------------------------------------*/ 
-CPX_DESC *
+static CPX_DESC *
 cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 {
 	DIALOG *dialog;
@@ -631,14 +758,14 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 /* (GetFirstRect) erstes Redraw-Rechteck fuer CPX-Fenster zurueckliefern		*/
 /* Funktionsergebnis:	Redraw-Rechteck oder NULL					*/
 /*	cpx_desc:	CPX-Beschreibung						*/
-/*	redraw_area:	Maximale Gr”že des insgesamt zu zeichnenden Bereichs		*/
+/*	redraw_area:	Maximale Groesse des insgesamt zu zeichnenden Bereichs		*/
 /*----------------------------------------------------------------------------------------*/ 
-GRECT *
+static inline GRECT *
 cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 {
 	GRECT *w;
 
-	cpx_desc->redraw_area = *redraw_area;			/* fuer Aufruf von cpx_get_next_rect() merken */
+	cpx_desc->redraw_area = *redraw_area; /* fuer Aufruf von cpx_get_next_rect() merken */
 	w = &cpx_desc->dirty_area;
 
 #if DEBUG
@@ -664,7 +791,7 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 		/* naechstes Redraw-Rechteck */
 		wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
 	}
-	
+
 #if DEBUG
 	printf("cpx_get_first_rect: kein weiteres Rechteck\n");
 #endif	
@@ -672,16 +799,28 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 	return NULL;
 
 }
+static GRECT * _cdecl
+GetFirstRect(GRECT *prect)
+{
+	const void *addr = __builtin_return_address(1);
+	CPX_DESC *cpx;
+
+	cpx = find_cpx(addr);
+	if (cpx)
+		return cpx_get_first_rect(cpx, prect);
+
+	return NULL;
+}
 
 /*----------------------------------------------------------------------------------------*/ 
 /* (GetNextRect) naechstes Redraw-Rechteck fuer CPX-Fenster zurueckliefern		*/
 /* Funktionsergebnis:	Redraw-Rechteck oder NULL						*/
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
-GRECT *
+static inline GRECT *
 cpx_get_next_rect(CPX_DESC *cpx_desc)
 {
-	GRECT *w = &cpx_desc->dirty_area;
+	GRECT *w = &(cpx_desc->dirty_area);
 
 	/* naechstes Redraw-Rechteck */
 	wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
@@ -708,6 +847,19 @@ cpx_get_next_rect(CPX_DESC *cpx_desc)
 
 	return NULL;
 }
+static GRECT * _cdecl
+GetNextRect(void)
+{
+	const void *addr = __builtin_return_address(1);
+	CPX_DESC *cpx;
+
+	cpx = find_cpx(addr);
+	if (cpx)
+		return cpx_get_next_rect(cpx);
+
+	return NULL;
+}
+
 
 /*----------------------------------------------------------------------------------------*/ 
 /* (Set_Evnt_Mask) Eventmaske fuer evnt_multi veraendern; ggf. Mausrechtecke, Timer setzen	*/
@@ -718,29 +870,39 @@ cpx_get_next_rect(CPX_DESC *cpx_desc)
 /*	m2:		zweites Mausrechteck						*/
 /*	time:		Timerintervall							*/
 /*----------------------------------------------------------------------------------------*/ 
-void
+static inline void
 cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long time)
 {
 #if DEBUG
 	printf("cpx_set_evnt_mask\n");
 #endif
 
-	if (m1)							/* erstes Mausrechteck? */
+	if (m1)				/* erstes Mausrechteck? */
 		cpx_desc->m1 = *m1;
 	else
 		mask &= ~MU_M1;
 			
-	if (m2)							/* zweites Mausrechteck? */
+	if (m2)				/* zweites Mausrechteck? */
 		cpx_desc->m2 = *m2;
 	else
 		mask &= ~MU_M2;
 
-	if (mask & MU_TIMER)					/* Timer? */
+	if (mask & MU_TIMER)		/* Timer? */
 		cpx_desc->time = time;												
 	else
 		cpx_desc->time = 0L;
 
-	cpx_desc->mask = mask;					/* zusaetzliche Ereignismaske */
+	cpx_desc->mask = mask;		/* zusaetzliche Ereignismaske */
+}
+static void _cdecl
+Set_Evnt_Mask(struct Set_Evnt_Mask_args args)
+{
+	const void *addr = __builtin_return_address(1);
+	CPX_DESC *cpx;
+
+	cpx = find_cpx(addr);
+	if (cpx)
+		cpx_set_evnt_mask(cpx, args.mask, args.m1, args.m2, args.evtime);
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -748,21 +910,21 @@ cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long tim
 /* Funktionsergebnis:	Buttonnummer							*/
 /*	alert_id:	Art der Alertbox						*/
 /*----------------------------------------------------------------------------------------*/ 
-short _cdecl
-XGen_Alert(short alert_id)
+static short _cdecl
+XGen_Alert(struct XGen_Alert_args args)
 {
 #if DEBUG
 	printf("XGen_Alert\n");
 #endif
 
-	switch (alert_id)
+	switch (args.alert_id)
 	{
 		/* Voreinstellungen sichern? */
 		case 0:
 		{
 			if (form_alert(1, fstring_addr[SAVE_DFLT_ALERT]) == 1)
 				return 1;
-		
+
 			break;
 		}
 		/* nicht genuegend Speicher */
@@ -784,6 +946,7 @@ XGen_Alert(short alert_id)
 			return 0;
 		}
 	}
+
 	return 0;
 }
 
@@ -792,13 +955,12 @@ XGen_Alert(short alert_id)
 /* Funktionsresultat:	0: Fehler 1: alles in Ordnung					*/
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
-short
-cpx_save_data(CPX_DESC *cpx_desc, void *buf, long no_bytes)
+static inline short
+cpx_save_data(CPX_DESC *cpx_desc, void *buf, long bytes)
 {
 	char name[256];
-	long handle;
-	long offset;
-	short result;
+	long handle, offset;
+	short result = 0;
 
 #if DEBUG
 	printf("CPX_Save\n");
@@ -806,24 +968,35 @@ cpx_save_data(CPX_DESC *cpx_desc, void *buf, long no_bytes)
 
 	strcpy(name, settings.cpx_path);
 	strcat(name, cpx_desc->file_name);
-	result = 0;
 
-	offset = sizeof(CPXHEAD) + sizeof(PH) + cpx_desc->segm.len_text;
-	if (no_bytes > cpx_desc->segm.len_data)			/* laenger als das Data-Segment? */
-		no_bytes = cpx_desc->segm.len_data;
+	offset = sizeof(struct cpxhead) + sizeof(struct program_header) + cpx_desc->segm.len_text;
+	if (bytes > cpx_desc->segm.len_data) /* laenger als das Data-Segment? */
+		bytes = cpx_desc->segm.len_data;
 
 	handle = Fopen(name, O_WRONLY);
-
 	if (handle > 0)
 	{
-		if (Fseek(offset, (short) handle, 0) == offset)
+		if (Fseek(offset, (short)handle, 0) == offset)
 		{
-			if (Fwrite((short) handle, no_bytes, buf) == no_bytes)
+			if (Fwrite((short)handle, bytes, buf) == bytes)
 				result = 1;
 		}
-		Fclose((short) handle);
+		Fclose((short)handle);
 	}	
+
 	return result;
+}
+static short _cdecl
+CPX_Save(void *ptr, long bytes)
+{
+	const void *addr = __builtin_return_address(1);
+	CPX_DESC *cpx;
+
+	cpx = find_cpx(addr);
+	if (cpx)
+		return cpx_save_data(cpx, ptr, bytes);
+
+	return 0;
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -831,14 +1004,21 @@ cpx_save_data(CPX_DESC *cpx_desc, void *buf, long no_bytes)
 /* Funktionsresultat:	Zeiger auf 64-Bytes						*/
 /*	cpx_desc:	CPX-Beschreibung						*/
 /*----------------------------------------------------------------------------------------*/ 
-void *
-cpx_get_tmp_buffer(CPX_DESC *cpx_desc)
+static void * _cdecl
+Get_Buffer(void)
 {
+	const void *addr = __builtin_return_address(1);
+	CPX_DESC *cpx;
+
 #if DEBUG
 	printf("cpx_get_tmp_buffert\n");
 #endif
 
-	return cpx_desc->old.header.buffer;
+	cpx = find_cpx(addr);
+	if (cpx)
+		return cpx->old.header.buffer;
+
+	return NULL;
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -847,7 +1027,7 @@ cpx_get_tmp_buffer(CPX_DESC *cpx_desc)
 /*	cookie: Cookietyp								*/
 /*	p_value: hier wird der Cookiewert zurueckgeliefert				*/
 /*----------------------------------------------------------------------------------------*/ 
-short _cdecl
+static short _cdecl
 getcookie(long cookie, long *p_value)
 {
 #if DEBUG
@@ -864,7 +1044,7 @@ getcookie(long cookie, long *p_value)
 /*	mf: Zeiger auf Mausform								*/
 /*----------------------------------------------------------------------------------------*/ 
 #if 0
-void _cdecl
+static void _cdecl
 MFsave(short flag, MFORM *mf)
 {
 #if DEBUG
@@ -889,8 +1069,8 @@ MFsave(short flag, MFORM *mf)
 }
 #else
 /* contributed by Arnaud */
-void _cdecl
-MFsave(short flag, MFORM *mf)
+static void _cdecl
+MFsave(struct MFsave_args args)
 {
 	static short has_mouse = 0;
 	
@@ -905,17 +1085,17 @@ MFsave(short flag, MFORM *mf)
 			has_mouse = -1;
 	}
 	
-	if (flag)
+	if (args.flag)
 	{
 		if (has_mouse > 0)
-			graf_mouse(M_SAVE, mf);
+			graf_mouse(M_SAVE, args.mf);
 		else
 			/* nothing */ ;
 	}
 	else
 	{
 		if (has_mouse > 0)
-			graf_mouse(M_RESTORE, mf);
+			graf_mouse(M_RESTORE, args.mf);
 		else
 			graf_mouse(ARROW, NULL);
 	}
