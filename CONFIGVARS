@@ -13,6 +13,7 @@ CROSSPREFIX=m68k-atari-mint-
 
 NATIVECC = gcc
 NATIVECFLAGS = -O
+CRLF = echo crlf -s
 
 else
 
@@ -20,6 +21,7 @@ CROSSPREFIX=
 
 NATIVECC = gcc
 NATIVECFLAGS = -O
+CRLF  = crlf -s
 
 endif
 
@@ -40,9 +42,7 @@ CP    = cp
 RM    = rm -f
 TOUCH = touch
 MKDIR = mkdir
-MAKE  = make
 SED   = sed
-CRLF  = crlf -s
 
 
 #
