@@ -1177,7 +1177,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			}
 			
 			tty->pgrp = 0;
-			DEBUG (("TIOCNOTTY: assigned tty->pgrp = 0"));
+			DEBUG (("TIOCNOTTY: assigned tty->pgrp = %i", tty->pgrp));
 			
 			do_close (curproc, curproc->p_fd->control);
 			curproc->p_fd->control = NULL;
