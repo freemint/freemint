@@ -6,7 +6,6 @@
 # -DVERBOSE_BOOT	include extensive messages
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
-# -DTRAPS_PRIVATE	handle all traps on its own
 # -DBUILTIN_SHELL	include the built-in minimal shell
 
 #
@@ -40,7 +39,6 @@
 KERNELDEFAULTDEFS = -D__KERNEL__
 
 KERNELDEFAULTDEFS += -DMULTITOS
-KERNELDEFAULTDEFS += -DTRAPS_PRIVATE
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
 
 ifneq ($(kernel),000)

@@ -291,7 +291,6 @@ init_intr (void)
 	 * enough to link it with XBRA.
 	 */
 
-# ifdef TRAPS_PRIVATE
 	{
 	long dummy;
 
@@ -316,11 +315,6 @@ init_intr (void)
 	new_xbra_install (&dummy, 0xbcL, unused_trap);		/* trap #15 */
 # endif
 	}
-# else
-	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */
-	new_xbra_install (&old_bios, 0xb4L, mint_bios);		/* trap #13, BIOS */
-	new_xbra_install (&old_xbios, 0xb8L, mint_xbios);	/* trap #14, XBIOS */
-# endif
 
 	xbra_install (&old_criticerr, 0x404L, mint_criticerr);
 	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
