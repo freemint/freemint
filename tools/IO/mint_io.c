@@ -700,8 +700,8 @@ int
 stat (const char *filename, struct stat *st)
 {
 	int fd = open (filename, O_RDONLY);
-	if (fd < 0)
-		return fd;
+	if (fd == -1)
+		return -1;
 
 	{
 		int res = fstat(fd, st); 
