@@ -74,6 +74,37 @@ extern const char *greet2;
 /* bios.c */
 extern const char *MSG_bios_kill;
 
+/* cnf.c */
+extern const char *MSG_cnf_bad_drive;
+extern const char *MSG_cnf_tos_error;
+extern const char *MSG_cnf_file_not_found;
+extern const char *MSG_cnf_error_executing;
+extern const char *MSG_cnf_cannot_include;
+extern const char *MSG_cnf_newfatfs;
+extern const char *MSG_cnf_vfat;
+extern const char *MSG_cnf_wbcache;
+extern const char *MSG_cnf_invalid_arg;
+extern const char *MSG_cnf_set_option;
+extern const char *MSG_cnf_set_ignored;
+extern const char *MSG_cnf_parser_skipped;
+extern const char *MSG_cnf_empty_file;
+extern const char *MSG_cnf_cant_allocate;
+extern const char *MSG_cnf_reading_mintcnf;
+extern const char *MSG_cnf_not_successful;
+extern const char *MSG_cnf_bytes_done;
+extern const char *MSG_cnf_unknown_variable;
+extern const char *MSG_cnf_syntax_error;
+extern const char *MSG_cnf_keyword_not_supported;
+extern const char *MSG_cnf_needs_equation;
+extern const char *MSG_cnf_argument_for;
+extern const char *MSG_cnf_missed;
+extern const char *MSG_cnf_must_be_a_num;
+extern const char *MSG_cnf_out_of_range;
+extern const char *MSG_cnf_must_be_a_bool;
+extern const char *MSG_cnf_missing_quotation;
+extern const char *MSG_cnf_junk;
+extern const char *MSG_cnf_unknown_tag;
+
 /* debug.c */
 extern const char *MSG_debug_syncing;
 extern const char *MSG_debug_syncdone;
