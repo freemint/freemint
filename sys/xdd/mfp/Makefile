@@ -1,14 +1,13 @@
 #
-# Makefile for 
+# Makefile for mfp
 #
-TARGET = mfp.xdd
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ../..
-subdir = uart
+subdir = mfp
 
 default: all
 
@@ -28,7 +27,7 @@ LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
-SGENFILES = $(TARGET) mfp_mil.xdd
+SGENFILES = mfp.xdd mfp_mil.xdd
 OBJS = $(COBJS:.c=.o)
 
 entry:

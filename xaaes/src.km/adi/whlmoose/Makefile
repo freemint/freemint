@@ -1,7 +1,6 @@
 #
-# Makefile for 
+# Makefile for moose
 #
-TARGET = moose.adi
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -16,22 +15,34 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: entry
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)/../../sys
-DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=whlmoose
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=whlmoose $(XDD_DEFINITIONS)
+XDD_DEFINITIONS = 
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
-SGENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
+SGENFILES = moose.adi moose_w.adi
+OBJS = $(SOBJS:.s=.o)
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+
+entry:
+	$(MAKE) XDD_DEFINITIONS="" moose.adi
+	$(MAKE) XDD_DEFINITIONS="-DHAVE_WHEEL=1" moose_w.adi
+	
+moose.adi: whlmoose.o $(OBJS) $(LIBKERNTARGET)
+	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
+
+moose_w.adi: whlmoose_w.o $(OBJS) $(LIBKERNTARGET)
+	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
+
+whlmoose_w.c: whlmoose.c
+	ln -s $< $@
 
 
 include $(top_srcdir)/DEPENDENCIES
