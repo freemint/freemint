@@ -86,5 +86,13 @@ killed by XaAES because of it.
  Nova VDI with NVDI 5.01. Just now I tested with oVDI, and MyMail did not have 
  this problem! Hmmm... If anyone tests MyMail I'd be interested in feedback!
 
+------------------------------------------------------------------------------
+ gewicth
+ 
+  Gewicht seems to check an undocumented variable in aes_global structure for
+the size of the loaded resource after a rsrc_load() call instead of correctly
+checking returnvalue of rsrc_load(). This element being an undocumented one,
+XaAES didn't correctly fill it, and Gewicth reported it could not find its
+resource file.
 
 

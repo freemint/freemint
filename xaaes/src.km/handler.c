@@ -220,7 +220,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 122 */ { NULL,                      0,        DESCR("shel_get")        }, // not supported
 	/* 123 */ { NULL,                      0,        DESCR("shel_put")        }, // not supported
 	/* 124 */ { XA_shel_find,              0,        DESCR("shel_find")       },
-	/* 125 */ { XA_shel_envrn,             0,        DESCR("shel_envrn")      },
+	/* 125 */ { XA_shel_envrn,             NOCLIENT, DESCR("shel_envrn")      },
 	/* 126 */ { NULL,                      0,        DESCR("shel_rdef")       }, // unimplemented
 	/* 127 */ { NULL,                      0,        DESCR("shel_wdef")       }, // unimplemented
 	/* 128 */ { NULL,                      0,        DESCR("shel_help")       }, // unimplemented
