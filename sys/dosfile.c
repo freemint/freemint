@@ -206,6 +206,7 @@ f_close (short fd)
 	 * 
 	 * XXX: why?
 	 */
+# if 0
 	if (p->domain == DOM_TOS)
 	{
 		f = NULL;
@@ -221,6 +222,7 @@ f_close (short fd)
 			f->links++;
 		}
 	}
+# endif
 	
 	return r;
 }
