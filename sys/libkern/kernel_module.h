@@ -621,7 +621,10 @@ INLINE long d_pathconf(const char *name, int which)
 { return ((long _cdecl (*)(const char *, int)) _d_pathconf)(name, which); }
 
 INLINE long p_msg(int mode, long _cdecl mbid, char *ptr)
-{ return ((long _cdecl (*)(int, long _cdecl, char *)) _p_msg)(mode, mbid, ptr); }
+{ return ((long _cdecl (*)(int, long, char *)) _p_msg)(mode, mbid, ptr); }
+
+INLINE long p_renice(int pid, int increment)
+{ return ((long _cdecl (*)(int, int)) _p_renice)(pid, increment); }
 
 INLINE long d_opendir(const char *path, int flags)
 { return ((long _cdecl (*)(const char *, int)) _d_opendir)(path, flags); }
