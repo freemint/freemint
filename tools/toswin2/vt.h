@@ -1,6 +1,6 @@
 
-#ifndef _tw_vt_h_
-#define _tw_vt_h_
+#ifndef tw_vt_h_
+#define tw_vt_h_
 
 void	paint		(TEXTWIN *v, int c);
 void	gotoxy		(TEXTWIN *v, int x, int y);
@@ -20,5 +20,6 @@ void	clearalltabs	(TEXTWIN *v);
 void	vt100_putch	(TEXTWIN *v, int c);
 void	vt52_putch	(TEXTWIN *v, int c);
 
+void	original_colors (TEXTWIN *v);
 
 #endif

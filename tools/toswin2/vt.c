@@ -216,3 +216,14 @@ void curs_off(TEXTWIN *v)
 {
 	 set_curs(v, 0);
 }
+
+/* Reset colors to original colors (i. e. those that were
+ * configured in the window configuration dialog).
+ */
+void original_colors(TEXTWIN *v)
+{
+	v->term_cattr = (v->term_cattr & ~(CFGCOL | CBGCOL)) |
+		COLORS(v->cfg->fg_color, v->cfg->bg_color);
+	v->output = vt52_putch;
+}
+
