@@ -7,7 +7,7 @@ SHELL = /bin/sh
 SUBDIRS = ksocket
 
 srcdir = .
-top_srcdir = ../../..
+top_srcdir = ../..
 subdir = nfs
 
 default: all
