@@ -75,6 +75,3 @@ realtarget =
 endif
 
 buildxaaes: $(realtarget)
-
-
-include $(top_srcdir)/DEPENDENCIES

@@ -122,9 +122,6 @@ struct xa_window *root_window;
 /* Pointer to the widget resource (icons) */
 static void *widget_resources;
 
-/* current no of env strings. */
-static int envs = 0;
-
 static struct xa_colour_scheme default_colours = { G_LWHITE, G_BLACK, G_LBLACK, G_WHITE, G_BLACK, G_CYAN };
 static struct xa_colour_scheme bw_default_colours = { G_WHITE, G_BLACK, G_BLACK, G_WHITE, G_BLACK, G_WHITE };
 
