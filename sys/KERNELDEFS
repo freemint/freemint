@@ -116,9 +116,14 @@ CPU  = 030
 KERNELDEFS = -DDEBUG_INFO -DONLY030 -DCPU030
 endif
 
+ifeq ($(kernel),my4)
+MINT = mintmdbg.prg
+CPU = 020-60
+KERNELDEFS = -DONLY030 -DMMU040 -DDEBUG_INFO -DCPU040 -DMILAN
+endif
 
 #
 # all default targets
 #
-kerneltargets = 000 030 040 deb mil ara my1 my2 my3
+kerneltargets = 000 030 040 deb mil ara my1 my2 my3 my4
 cputargets = 000 030 020-60

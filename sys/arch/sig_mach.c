@@ -107,7 +107,7 @@ sendsig(ushort sig)
 		 * as function.
 		 */
 		
-		DEBUG(("system process, calling signal handler 0x%lx directly", sigact->sa_handler));
+		DEBUG(("system process, calling signal handler 0x%lx (%d)(%s) directly", sigact->sa_handler, sig, curproc->name));
 		((void (*)(short)) sigact->sa_handler)(sig);
 		
 		if (sigact->sa_flags & SA_RESET)
