@@ -1,0 +1,39 @@
+
+The device is for Falcon030, obviously, references to the F030 DSP 
+host interface (I mean absolute addresses) are hard-compiled, the 
+driver actually only checks the Cookie Jar to see if it is running on 
+a Falcon (strictly speaking: if the Cookie _SND indicates DSP). I 
+have no clue, whether the DSP cards for Milan/Hades are compatible at 
+the hardware registers level with the Falcon.
+
+There are some cosmetic changes relative to Linux version. 
+
+-> Perhaps the most important one is changed definition for the (user
+-> program visible) struct dsp56k_host_flags.
+
+The members of this struct were orginally defined as type int, which
+probably means they are 32-bit integers. Since MiNT device drivers have to
+be compiled with -mshort flag, this changes the definition of type int
+into a 16-bit integer.
+
+So I explicitly casted the struct members to ushort (not ulong, coz I 
+think they're in fact 16 bits or even 8). Please let me know, if you 
+think it would cause problems - I'll cast them to ulongs then.
+
+Also all other variables have now explicit sizes (there is not a single
+int left). Since the device driver vector table is defined as array
+of pointers to functions, which can have int arguments, casting all
+ints to shorts generates some spurious warnings about "initialization
+from incompatible pointer type". Ignore them.
+
+Hints:
+
+- when the DSP is locked by TOS, Fopen() to the /dev/dsp56k returns 
+  EBUSY (-2 or so)
+- Fopen(), when succeeds, automatically does Dsp_Lock()
+- Fclose() automatically does Dsp_Unlock()
+- calling Pterm() with having an open file descriptor on the 
+  /dev/dsp56k causes DSP reset
+
+Oki, have fun,
+draco@atari.org
