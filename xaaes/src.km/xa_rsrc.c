@@ -1286,14 +1286,16 @@ XA_rsrc_obfix(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	RSHDR *rsc;
 	CONTROL(0,1,1)
 	
 	DIAG((D_rsrc, client, "rsrc_rcfix for %s on %ld(%lx)",
 		c_owner(client), pb->addrin[0], pb->addrin[0]));
 
-	client->rsrc = LoadResources(client, NULL, (RSHDR*)pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV);
-	if (client->rsrc)
+	rsc = LoadResources(client, NULL, (RSHDR*)pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV);
+	if (rsc)
 	{
+		client->rsrc = rsc;
 #if GENERATE_DIAGS
 		if (client->globl_ptr != (struct aes_global *)pb->global)
 		{
@@ -1302,6 +1304,8 @@ XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 #endif
 		Rsrc_setglobal(client->rsrc, client->globl_ptr);
+		if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
+			Rsrc_setglobal(client->rsrc, (struct aes_global *)pb->global);
 
 		pb->intout[0] = 1;
 		return XAC_DONE;

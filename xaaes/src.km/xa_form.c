@@ -642,7 +642,7 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
-	return XAC_DONE; //XAC_BLOCK;
+	return XAC_DONE;
 }
 
 struct

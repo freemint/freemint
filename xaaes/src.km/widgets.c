@@ -2172,32 +2172,60 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 	if (widget_active.m.cstate)
 	{
-		if (!widget_active.cont)
-		{
-			widget_active.cont = true;
-			/* Always have a nice consistent sizer when dragging a box */
-			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
-			rp_2_ap(wind, widg, &widg->ar);
-			widget_active.offs = md->y - (widg->ar.y + sl->r.y);
-			widget_active.y = md->y;
-		}
-		else if (widget_active.y != md->y)
-		{
-			short offs;
-
-			offs = bound_sl(pix_to_sl((md->y - widget_active.offs) - widg->ar.y, widg->r.h - sl->r.h));
+		short offs;
 		
-			if (offs != sl->position && wind->send_message)
+		if (widget_active.m.cstate & MBS_RIGHT)
+		{
+			RECT s, b, d, r;
+
+			rp_2_ap(wind, widg, &widg->ar);
+			
+			b = s = widg->ar;
+			
+			s.x += sl->r.x;
+			s.y += sl->r.y;
+			s.w = sl->r.w;
+			s.h = sl->r.h;
+
+			lock_screen(wind->owner->p, 0, 0, 0);
+			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+			drag_box(wind->owner, s, &b, rect_dist(wind->owner, &s, &d), &r);
+			unlock_screen(wind->owner->p, 0);
+
+			offs = bound_sl(pix_to_sl(r.y - widg->ar.y, widg->r.h - sl->r.h));
+
+			if (offs != sl->position)
 			{
 				sl->rpos = offs;
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-						   WM_VSLID, 0,0, wind->handle,
-						   offs, 0,0,0);
+				send_vslid(lock, wind, offs);
 			}
-			widget_active.y = md->y;
 		}
-		set_widget_active(wind, widg, drag_vslide, 3);
-		return false;
+		else
+		{
+			if (!widget_active.cont)
+			{
+				widget_active.cont = true;
+				/* Always have a nice consistent sizer when dragging a box */
+				graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+				rp_2_ap(wind, widg, &widg->ar);
+				widget_active.offs = md->y - (widg->ar.y + sl->r.y);
+				widget_active.y = md->y;
+			}
+			else if (widget_active.y != md->y)
+			{
+
+				offs = bound_sl(pix_to_sl((md->y - widget_active.offs) - widg->ar.y, widg->r.h - sl->r.h));
+		
+				if (offs != sl->position && wind->send_message)
+				{
+					sl->rpos = offs;
+					send_vslid(lock, wind, offs);
+				}
+				widget_active.y = md->y;
+			}
+			set_widget_active(wind, widg, drag_vslide, 3);
+			return false;
+		}
 	}
 	cancel_widget_active(wind, 3);
 	return true;
@@ -2210,32 +2238,60 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 	if (widget_active.m.cstate)
 	{
-		if (!widget_active.cont)
+		short offs;
+
+		if (widget_active.m.cstate & MBS_RIGHT)
 		{
-			widget_active.cont = true;
-			/* Always have a nice consistent sizer when dragging a box */
-			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+			RECT s, b, d, r;
+
 			rp_2_ap(wind, widg, &widg->ar);
-			widget_active.offs = md->x - (widg->ar.x + sl->r.x);
-			widget_active.x = md->x;
-		}
-		else if (widget_active.x != md->x)
-		{
-			short offs;
 			
-			offs = bound_sl(pix_to_sl((md->x - widget_active.offs) - widg->ar.x, widg->r.w - sl->r.w));
-		
-			if (offs != sl->position && wind->send_message)
+			b = s = widg->ar;
+			
+			s.x += sl->r.x;
+			s.y += sl->r.y;
+			s.w = sl->r.w;
+			s.h = sl->r.h;
+
+			lock_screen(wind->owner->p, 0, 0, 0);
+			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+			drag_box(wind->owner, s, &b, rect_dist(wind->owner, &s, &d), &r);
+			unlock_screen(wind->owner->p, 0);
+			
+			offs = bound_sl(pix_to_sl(r.x - widg->ar.x, widg->r.w - sl->r.w));
+
+			if (offs != sl->position)
 			{
 				sl->rpos = offs;
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-						   WM_HSLID, 0,0, wind->handle,
-						   offs, 0,0,0);
+				send_hslid(lock, wind, offs);
 			}
-			widget_active.x = md->x;
 		}
-		set_widget_active(wind, widg, drag_hslide, 4);
-		return false;
+		else
+		{
+			if (!widget_active.cont)
+			{
+				widget_active.cont = true;
+				/* Always have a nice consistent sizer when dragging a box */
+				graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+				rp_2_ap(wind, widg, &widg->ar);
+				widget_active.offs = md->x - (widg->ar.x + sl->r.x);
+				widget_active.x = md->x;
+			}
+			else if (widget_active.x != md->x)
+			{
+			
+				offs = bound_sl(pix_to_sl((md->x - widget_active.offs) - widg->ar.x, widg->r.w - sl->r.w));
+		
+				if (offs != sl->position && wind->send_message)
+				{
+					sl->rpos = offs;
+					send_hslid(lock, wind, offs);
+				}
+				widget_active.x = md->x;
+			}
+			set_widget_active(wind, widg, drag_hslide, 4);
+			return false;
+		}
 	}
 
 	cancel_widget_active(wind, 4);

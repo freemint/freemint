@@ -570,6 +570,7 @@ struct xa_client
 	MFORM *mouse_form;
 	MFORM *save_mouse_form;
 	MFORM *prev_mouse_form;
+	MFORM user_def;
 
 	struct aes_global *globl_ptr;	/* Pointer to the client's globl array (so we can fill in the resource
 					 * address field later). */
