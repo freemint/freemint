@@ -403,10 +403,7 @@ _newkeys:
 	jsr	_ikbd_scan
 	addq.l	#0x06,sp
 	movem.l	(sp)+,d1-d2/a0-a2
-	cmp.w	#0xffff,d0
-	beq.s	L_bye
-	move.l	_oldkeys.w(pc),-(sp)
-L_bye:	rts
+	rts
 
 // Calling the keyclick routines. This is a helper for keyboard driver.
 
