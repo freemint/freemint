@@ -173,7 +173,8 @@ static int mc; 			/* current string max */
 static void
 ipff_init(int m, char *l)
 {
-	ln = l;
+	if (l)
+		ln = l;
 	mc = m;
 }
 
@@ -419,6 +420,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	{
 		int width = strlen(alertxt->button[f])+3;
 		width *= screen.c_max_w;
+		DIAGS(("button %d, text '%s'", f, alertxt->button[f]));
 		alert_form[ALERT_BUT1 + f].ob_spec.free_string = alertxt->button[f];
 		alert_form[ALERT_BUT1 + f].ob_width = width;
 		alert_form[ALERT_BUT1 + f].ob_x = x;
