@@ -35,8 +35,9 @@
 
 # include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
 
-# include "mint/signal.h"	/* SIGQUIT */
+# include "mint/errno.h"
 # include "mint/mint.h"		/* FATAL() */
+# include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
 
@@ -54,6 +55,7 @@
 # include "info.h"		/* messages */
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_fds.h"		/* fp_alloc() */
+# include "kmemory.h"		/* kmalloc(), kfree() */
 # include "keyboard.h"		/* struct cad */
 # include "memory.h"		/* get_region(), attach_region() */
 # include "proc.h"		/* rootproc */
@@ -139,19 +141,20 @@ static const ushort mmasks[] =
 	MM_ALTERNATE, MM_CLRHOME, MM_INSERT
 };
 
-struct	cad_def cad[3];	/* for halt, warm and cold resp. */
-short	gl_kbd;		/* default keyboard layout */
-static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
-static	short kbd_lock;	/* semaphore to temporarily block the keyboard processing */
-static	long hz_ticks;	/* place for saving the hz_200 timer value */
+struct	cad_def cad[3];		/* for halt, warm and cold resp. */
+short	gl_kbd;			/* default keyboard layout */
+static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
+static	short kbd_lock = 1;	/* semaphore to temporarily block the keyboard processing */
+static	long hz_ticks;		/* place for saving the hz_200 timer value */
 
-static	uchar numin[3];	/* buffer for storing ASCII code typed in via numpad */
-static	ushort numidx;	/* index for the buffer (0 = empty, 3 = full) */
+static	uchar numin[3];		/* buffer for storing ASCII code typed in via numpad */
+static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 
 /* keyboard table pointers */
-static struct keytab *syskeytab;
-static struct keytab keytable_vecs;
-static MEMREGION *key_region;
+static struct keytab *toskeytab;
+static char *keytab_buffer;
+static long keytab_size;
+static MEMREGION *user_keytab;
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -434,7 +437,7 @@ ikbd_scan (ushort scancode)
 				if (numidx > 2)		/* buffer full? reset it */
 					numidx = 0;
 
-				chartable = syskeytab->unshift;
+				chartable = toskeytab->unshift;
 				ascii = chartable[scancode];
 				if (ascii)
 				{
@@ -466,58 +469,10 @@ ikbd_scan (ushort scancode)
 
 	/* Ordinary keyboard here.
 	 */
-# if 0
-	if (scancode < 0x80)
-	{
-		if (shift & MM_ALTERNATE)
-		{
-			if (shift & MM_ESHIFT)
-				chartable = keytable_vecs.altshift;
-			else if (shift & MM_CAPS)
-				chartable = keytable_vecs.altcaps;
-			else
-				chartable = keytable_vecs.alt;
-
-			ascii = 0;
-
-			while (*chartable)
-			{
-				if (chartable[0] == scancode)
-				{
-					ascii = chartable[1];
-					break;
-				}
-				chartable += 2;
-			}
-		}
-		else
-		{
-			if (shift & MM_ESHIFT)
-				chartable = keytable_vecs.shift;
-			else if (shift & MM_CAPS)
-				chartable = keytable_vecs.caps;
-			else
-				chartable = keytable_vecs.unshift;
-
-			ascii = chartable[scancode];
-
-			if (shift & MM_CTRL)
-			{
-				if (isupper(ascii))
-					ascii &= ~0x40;
-				else if (islower(ascii))
-					ascii &= ~0x60;
-			}
-		}
-
-		put_key_into_buf(0, 0, (uchar)scancode, ascii);
-	}
-# else
 	if (scancode < 0x80)
 		kintr = 1;
 
 	return scancode;
-# endif
 
 key_done:
 	if (scancode < 0x80)
@@ -563,27 +518,70 @@ key_repeat(void)
  *
  */
 
+/* The XBIOS' Keytbl() function
+ */
+
+# if 0
+struct keytab *
+sys_b_keytbl(char *unshifted, char *shifted, char *caps)
+{
+	
+}
+# endif
+
 /* The XBIOS' Bioskeys() function
  */
+
+static uchar *
+tbl_scan_fwd(uchar *tmp)
+{
+	while (*tmp)
+		tmp++;
+
+	return ++tmp;		/* skip the ending NULL */
+}
+
 void
 sys_b_bioskeys(void)
 {
 	long akp_val = 0;
+	char *buf;
 
+	/* First block the keyboard processing code */
 	kbd_lock = 1;
 
-	/* Reset the vectors */
-	syskeytab->unshift = keytable_vecs.unshift;
-	syskeytab->shift = keytable_vecs.shift;
-	syskeytab->caps = keytable_vecs.caps;
+	/* Release old user keytables and vectors */
+	if (user_keytab)
+	{
+		detach_region(rootproc, user_keytab);
+
+		user_keytab->links--;
+		assert(user_keytab->links == 0);
+
+		free_region(user_keytab);
+	}
+
+	/* Reserve one region for both keytable and its vectors */ 
+	user_keytab = get_region(core, keytab_size, PROT_PR);
+	buf = (char *)attach_region(rootproc, user_keytab);	
+
+	/* Copy the master table over */
+	quickmove(buf, keytab_buffer, keytab_size);
+
+	/* Reset the BIOS vectors
+	 * (only necessary until we replace all BIOS keyboard routines)
+	 */
+	toskeytab->unshift = buf;
+	toskeytab->shift = buf + 128;
+	toskeytab->caps = buf + 128 + 128;
 
 	if (tosvers >= 0x0400)
 	{
-		syskeytab->alt = keytable_vecs.alt;
-		syskeytab->altshift = keytable_vecs.altshift;
-		syskeytab->altcaps = keytable_vecs.altcaps;
+		toskeytab->alt = buf + 128 + 128 + 128;
+		toskeytab->altshift = tbl_scan_fwd(toskeytab->alt);
+		toskeytab->altcaps = tbl_scan_fwd(toskeytab->altshift);
 		if (mch == MILAN_C)
-			syskeytab->altgr = keytable_vecs.altgr;
+			toskeytab->altgr = tbl_scan_fwd(toskeytab->altcaps);
 
 		/* Fix the _AKP cookie, gl_kbd may get changed in load_table()
 		 */
@@ -597,72 +595,32 @@ sys_b_bioskeys(void)
 	kbd_lock = 0;
 }
 
-static uchar *
-tbl_scan_fwd(uchar *tmp, uchar *end)
-{
-	while (*tmp && tmp < end)
-		tmp++;
+/* Two following routines prepare the master copy of the keyboard
+ * translation table. The master copy is not available for the user,
+ * it only serves for the Bioskeys() call to restore the user
+ * keyboard table, when necessary.
+ *
+ * Notice that full tables are prepared, i.e. with the AKP extensions,
+ * regardless of the TOS version.
+ */
 
-	/* skip terminating '0' */
-	if (tmp < end)
-		tmp++;
-
-	if (tmp == end)
-		return NULL;
-
-	return tmp;
-}
-
+/* Returns status */
 static long
-fill_keystruct(uchar *table, uchar *end)
-{
-	uchar *unshift, *shift, *caps, *alt, *altshift, *altcaps, *altgr;
-
-	unshift = table;
-	shift = table + 128;
-	caps = table + 256;
-	alt = table + 384;
-
-	altshift = tbl_scan_fwd(alt, end);
-	if (!altshift)
-		return 0;
-
-	altcaps = tbl_scan_fwd(altshift, end);
-	if (!altcaps)
-		return 0;
-
-	altgr = tbl_scan_fwd(altcaps, end);
-
-	keytable_vecs.unshift = unshift;
-	keytable_vecs.shift = shift;
-	keytable_vecs.caps = caps;
-	keytable_vecs.alt = alt;
-	keytable_vecs.altshift = altshift;
-	keytable_vecs.altcaps = altcaps;
-	keytable_vecs.altgr = altgr;
-
-	/* OK */
-	return 1;
-}
-
-static long
-load_table(FILEPTR *fp, char *name, long size)
+load_external_table(FILEPTR *fp, char *name, long size)
 {
 	uchar *kbuf;
-	long ret = 0;
-	MEMREGION *key_reg;
+	long x, ret = 0;
 
 	/* This is 128+128+128 for unshifted, shifted and caps
 	 * tables respectively; plus 3 bytes for three alt ones,
 	 * plus two bytes magic header, gives 389 bytes minimum.
 	 */
 	if (size < 389L)
-		return -1;
+		return EFTYPE;
 
-	/* Crap, the keyboard table must be globally readable :/ */
-	/* XXX perhaps it would be safer to go for PROT_PR here? */
-	key_reg = get_region(core, size, PROT_G);
-	kbuf = (uchar *) attach_region(rootproc, key_reg);
+	kbuf = kmalloc(size);
+	if (!kbuf)
+		return ENOMEM;
 
 	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
@@ -670,7 +628,10 @@ load_table(FILEPTR *fp, char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				ret = fill_keystruct(kbuf + sizeof(short), kbuf + size);
+				size -= 2;
+
+				for (x = 0; x < size; x++)
+					kbuf[x] = kbuf[x + 2];
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -683,172 +644,178 @@ load_table(FILEPTR *fp, char *name, long size)
 				ushort *sbuf = (ushort *) kbuf;
 
 				if (sbuf[1] <= MAXAKP)
-				{
-					ret = fill_keystruct(kbuf + sizeof(long), kbuf + size);
-					if (ret)
-						gl_kbd = sbuf[1];
-				}
+					gl_kbd = sbuf[1];
+
+				size -= 4;
+
+				for (x = 0; x < size; x++)
+					kbuf[x] = kbuf[x + 4];
+				break;
+			}
+			default:
+			{
+				ret = EFTYPE;		/* wrong format */
 				break;
 			}
 		}
 	}
 
-	if (!ret)
+	if (ret < 0)
 	{
-		detach_region(rootproc, key_reg);
-
-		key_reg->links--;
-		assert(key_reg->links == 0);
-
-		free_region(key_reg);
-
-		return -2;
+		kfree(kbuf);
+		return ret;
 	}
 
-	/* Success */
-	if (key_region)
-	{
-		detach_region(rootproc, key_region);
-
-		key_region->links--;
-		assert(key_region->links == 0);
-
-		free_region(key_region);
-	}
-	key_region = key_reg;
+	/* Release old buffer. This can only happen when the keytable
+	 * is loaded at runtime via Ssystem() call.
+	 */
+	if (keytab_buffer)
+		kfree(keytab_buffer);
+	keytab_buffer = kbuf;
 
 	return 0;
 }
 
+/* Returns size */
 static long
-load_default_table(void)
+load_internal_table(void)
 {
-# ifdef WITHOUT_TOS
-	uchar *kbuf;
-
-	if (key_region)
-	{
-		detach_region(rootproc, key_region);
-
-		key_region->links--;
-		assert(key_region->links == 0);
-
-		free_region(key_region);
-	}
-
-	key_region = get_region(core, 387L, PROT_PR);
-	kbuf = (uchar *) attach_region(rootproc, key_region);
-	quickmove(kbuf, usa_kbd, 387L);
-	fill_keystruct(kbuf, kbuf + 387L);
-
-	return 0;
-# else
 	uchar *kbuf, *p;
-	long size;
+	long size, len;
 
-# if 1
-	size = 1024;
-# else
 	size = 128 + 128 + 128;
-	size += strlen(syskeytab->alt) + 1;
-	size += strlen(syskeytab->altshift) + 1;
-	size += strlen(syskeytab->altcaps) + 1;
-	size += strlen(syskeytab->altgr) + 1;
-# endif
 
-	if (key_region)
+	if (tosvers >= 0x0400)
 	{
-		detach_region(rootproc, key_region);
+		size += strlen(toskeytab->alt) + 1;
+		size += strlen(toskeytab->altshift) + 1;
+		size += strlen(toskeytab->altcaps) + 1;
+		if (mch == MILAN_C)
+			size += strlen(toskeytab->altgr) + 1;
+		else
+			size += 2;
+	}
+	else
+		size += 8;	/* two bytes for each missing part */
 
-		key_region->links--;
-		assert(key_region->links == 0);
-
-		free_region(key_region);
+	/* If a buffer was allocated previously, we can reuse it.
+	 */
+	if (keytab_buffer && (keytab_size >= size))
+		kbuf = keytab_buffer;
+	else
+	{
+		if (keytab_buffer)
+			kfree(keytab_buffer);
+		kbuf = kmalloc(size);
 	}
 
-	key_region = get_region(core, size, PROT_G);
-	kbuf = (uchar *) attach_region(rootproc, key_region);
+	if (!kbuf)
+		return ENOMEM;
 
 	p = kbuf;
 
-	quickmove(p, syskeytab->unshift, 128);
+	quickmove(p, toskeytab->unshift, 128);
 	p += 128;
 
-	quickmove(p, syskeytab->shift, 128);
+	quickmove(p, toskeytab->shift, 128);
 	p += 128;
 
-	quickmove(p, syskeytab->caps, 128);
+	quickmove(p, toskeytab->caps, 128);
 	p += 128;
 
 	if (tosvers >= 0x0400)
 	{
-		long len;
-
-		len = strlen(syskeytab->alt) + 1;
-		quickmove(p, syskeytab->alt, len);
+		len = strlen(toskeytab->alt) + 1;
+		quickmove(p, toskeytab->alt, len);
 		p += len;
 
-		len = strlen(syskeytab->altshift) + 1;
-		quickmove(p, syskeytab->altshift, len);
+		len = strlen(toskeytab->altshift) + 1;
+		quickmove(p, toskeytab->altshift, len);
 		p += len;
 
-		len = strlen(syskeytab->altcaps) + 1;
-		quickmove(p, syskeytab->altcaps, len);
+		len = strlen(toskeytab->altcaps) + 1;
+		quickmove(p, toskeytab->altcaps, len);
 		p += len;
 
 		if (mch == MILAN_C)
 		{
-			long len;
-
-			len = strlen(syskeytab->altgr) + 1;
-			quickmove(p, syskeytab->altgr, len);
+			len = strlen(toskeytab->altgr) + 1;
+			quickmove(p, toskeytab->altgr, len);
 			p += len;
 		}
+		else
+		{
+			*p++ = 0;
+			*p++ = 0;
+		}
+	}
+	else
+	{
+		short x;
+
+		for (x = 0; x < 7; x++)
+			*p++ = 0;
 	}
 
-	size = fill_keystruct(kbuf, kbuf + size);
-	assert(size == 1);
+	keytab_buffer = kbuf;
 
-	return 0;
-# endif
+	return size;
 }
 
-/* If `flag' is 0, a failure to load new table causes the
- * internal one to be initialized instead.
+/* This routine has to load the keyboard table into memory.
+ * First the loading from the disk is attempted, and when
+ * this fails, the TOS table is used.
+ *
+ * When `flag' is zero, the routine attempts to get the keyboard
+ * table from the TOS, or simply fails otherwise. The flag is
+ * zero during system initialization and 1 when called at runtime. See
+ * ssystem.c.
  */
 long
 load_keyboard_table(char *name, short flag)
 {
 	XATTR xattr;
 	FILEPTR *fp;
-	long ret;
+	long ret, size = 0;
 
 	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return -1;
 
-	ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
-	if (!ret)
+	if (ret == 0)
 	{
-		ret = load_table(fp, name, xattr.size);
-		do_close(rootproc, fp);
-
+		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
 		if (!ret)
-			sys_b_bioskeys();
-	}
-	else
-	{
-		fp->links = 0; /* XXX suppress complaints */
-		FP_FREE(fp);
-
-		/* Special case: `load' the default table */
-		if (flag == 0)
 		{
-			load_default_table();
-			sys_b_bioskeys();
+			ret = load_external_table(fp, name, xattr.size);
+			do_close(rootproc, fp);
+			if (ret == 0)
+			{
+				size = xattr.size;
+# ifdef VERBOSE_BOOT
+				/* During startup generate a message */
+				if (flag == 0)
+					boot_printf(MSG_keytable_loading, name);
+# endif
+			}
+		}
+		else
+		{
+			fp->links = 0;	/* XXX suppress complaints */
+			FP_FREE(fp);
 		}
 	}
 
-	return ret;
+	/* Not "else if" */
+	if (!flag && (ret < 0 || size == 0))
+	{
+		size = load_internal_table();
+# ifdef VERBOSE_BOOT
+		/* During startup generate a message */
+		if (flag == 0)
+			boot_printf(MSG_keytable_internal);
+# endif
+	}
+
+	return size;
 }
 
 /* This is called from init.c at startup
@@ -856,53 +823,33 @@ load_keyboard_table(char *name, short flag)
 void
 load_keytbl(void)
 {
-	char name[64];
-	long r;
+	char name[32];
 
 	/* `keybd.tbl' is already used by gem.sys, we can't conflict
 	 */
 	ksprintf(name, sizeof(name), "%skeyboard.tbl", sysdir);
 
+	/* After this the keytab_buffer points to the loaded AKP-style
+	 * keyboard table, and keytab_size contains its size.
+	 */
+	keytab_size = load_keyboard_table(name, 0);
+
 # ifdef VERBOSE_BOOT
-	boot_printf(MSG_keytable_loading, name);
+	boot_printf(MSG_keytable_loaded, gl_kbd);
 # endif
 
-	r = load_keyboard_table(name, 0);
-# ifdef VERBOSE_BOOT
-	if (r == 0)
-		boot_printf(MSG_keytable_loaded, gl_kbd);
-	else
-		boot_printf(MSG_init_error, r);
-# endif
+	/* Install */
+	sys_b_bioskeys();
 }
 
-/* Initialize the built-in keyboard tables.
+/* Pre-initialize the built-in keyboard tables.
  * This must be done before init_intr()!
  */
 void
 init_keybd(void)
 {
-# ifdef WITHOUT_TOS
-	fill_keystruct(usa_kbd, kbuf + sizeof(usa_kbd));
-	gl_kbd = 0;
-# else
 	/* call the underlying XBIOS */
-	syskeytab = Keytbl(-1, -1, -1);
-
-	/* temporary init */
-	keytable_vecs.unshift = syskeytab->unshift;
-	keytable_vecs.shift = syskeytab->shift;
-	keytable_vecs.caps = syskeytab->caps;
-
-	if (tosvers >= 0x0400)
-	{
-		keytable_vecs.alt = syskeytab->alt;
-		keytable_vecs.altshift = syskeytab->altshift;
-		keytable_vecs.altcaps = syskeytab->altcaps;
-		if (mch == MILAN_C)
-			keytable_vecs.altgr = syskeytab->altgr;
-	}
-# endif
+	toskeytab = Keytbl(-1, -1, -1);
 }
 
 /* EOF */

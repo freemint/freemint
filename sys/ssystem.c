@@ -574,7 +574,19 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			if (isroot == 0)
 				r = EPERM;
 			else
+			{
+				/* load_keyboard_table() returns positive size of the table,
+				 * or a zero for failure.
+				 */
 				r = load_keyboard_table((char *)arg1, 1);
+				if (r > 0)
+				{
+					sys_b_bioskeys();
+					r = 0;
+				}
+				else
+					r = -1;
+			}
 			break;
 		}
 
