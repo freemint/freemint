@@ -708,6 +708,7 @@ _trap_1_emu:
 	move.l	(sp)+,d0
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
+	moveq	#0,d0
 TE_D:	move.w	sr,-(sp)
 #ifdef	ONLY030
 	jmp	([_old_dos])
@@ -742,6 +743,7 @@ _trap_13_emu:
 	move.l	(sp)+,d0
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
+	moveq	#0,d0
 TE_B:	move.w	sr,-(sp)
 #ifdef	ONLY030
 	jmp	([_old_bios])
@@ -758,6 +760,7 @@ _trap_14_emu:
 	move.l	(sp)+,d0
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
+	moveq	#0,d0
 TE_X:	move.w	sr,-(sp)
 #ifdef	ONLY030
 	jmp	([_old_xbios])
