@@ -1256,7 +1256,7 @@ BTRACE(53);
 	v_show_c(C.vh, 0); /* 0 = reset */		
 
 	if (cfg.opentaskman)
-		open_taskmanager(NOLOCKING, false);
+		open_taskmanager(NOLOCKING);
 
 	/* Load Accessories */
 	DIAGS(("loading accs\n"));
@@ -1330,11 +1330,11 @@ BTRACE(53);
 	cleanup();
 
 
-	if (C.shutdown & 8)
+	if (C.shutdown & HALT_SYSTEM)
 	{
 		Shutdown(0);  /* halt */
 	}
-	else if (C.shutdown & 16)
+	else if (C.shutdown & REBOOT_SYSTEM)
 	{
 		Shutdown(1);  /* warm start */
 	}
