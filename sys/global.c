@@ -76,7 +76,7 @@ int screen_boundary = 255;
 /*
  * variable set if someone has already installed an flk cookie
  */
-# if OLDTOSFS
+# ifdef OLDTOSFS
 int flk = 0;
 # endif
 
