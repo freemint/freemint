@@ -248,7 +248,7 @@ cancel_aesmsgs(struct xa_aesmsg_list **m)
 }
 
 /* Ozk:
- * If we want to do direct handling of the message sendt to a window
+ * If we want to do direct handling of the message sent to a window
  * via wind->send_message, we need to install the real handler in
  * wind->do_message and place the address of do_winmesag()
  * in wind->send_message(). This is because direct handling of window
@@ -276,6 +276,7 @@ KT_do_winmesag(void *_parm)
 	}
 	wake(IO_Q, (long)_parm);
 	kfree(_parm);
+
 	kthread_exit(0);
 }
 	
@@ -326,8 +327,8 @@ do_winmesag(enum locks lock,
 		else
 		{
 			void **p;
-			p = kmalloc((sizeof(*p) * 4) + 16);
 
+			p = kmalloc((sizeof(*p) * 4) + 16);
 			if (p)
 			{
 				short i;
