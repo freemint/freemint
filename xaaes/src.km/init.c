@@ -214,7 +214,7 @@ init(struct kentry *k)
 	S.client_list = C.Aes;
 
 	C.Aes->cmd_tail = "\0";
-	C.Aes->wt.edit_obj = -1;
+	C.Aes->wt.e.obj = -1;
 
 	strcpy(C.Aes->cmd_name, "XaAES");
 	strcpy(C.Aes->name, Aes_display_name);

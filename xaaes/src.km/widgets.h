@@ -36,10 +36,19 @@ void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg);
 void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
 void	display_toolbar(enum locks lock, struct xa_window *wind, short item);
 void	set_toolbar_coords(struct xa_window *wind);
+
+
 XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obj, short item);
+
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
 void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
-XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
+
+XA_TREE * obtree_to_wt(struct xa_client *client, OBJECT *obtree);
+XA_TREE * new_widget_tree(struct xa_client *client, OBJECT *obtree);
+XA_TREE * set_client_wt(struct xa_client *client, OBJECT *obtree);
+void free_wtlist(struct xa_client *client);
+//XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
+
 void	calc_work_area(struct xa_window *wind);
 bool	checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
 int	do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);

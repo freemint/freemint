@@ -389,11 +389,20 @@ XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	XA_TREE *wt;
 
 	CONTROL(4,1,1)
 
-	wt = check_widget_tree(lock, client, (OBJECT*)pb->addrin[0]);
+	DIAG((D_graf, client, "graf_watchbox"));
+
+	if (!(wt = obtree_to_wt(client, obtree)))
+		wt = new_widget_tree(client, obtree);
+	if (!wt)
+		wt = set_client_wt(client, obtree);
+
+	//wt = check_widget_tree(lock, client, (OBJECT*)pb->addrin[0]);
+	
 
 	pb->intout[0] = watch_object(	lock,
 					wt,

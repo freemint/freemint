@@ -43,14 +43,15 @@ unsigned long
 XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	const RECT *r = (const RECT *)&pb->intin[2];
-	OBJECT *tree = (OBJECT*)pb->addrin[0];
+	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	int item = pb->intin[0];
 	CONTROL(6,1,1)
 
 	DIAG((D_objc,client,"objc_draw rectangle: %d/%d,%d/%d", r->x, r->y, r->w, r->h));
 
-	if (tree)
+	if (obtree)
 	{
+		XA_TREE *wt;
 #if 0
 		struct xa_window *wind = client->fmd.wind;
 
@@ -65,12 +66,17 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 			wind->dial_followed = true;
 		}
 #endif
+		if (!(wt = obtree_to_wt(client, obtree)))
+			wt = new_widget_tree(client, obtree);
+		if (!wt)
+			wt = set_client_wt(client, obtree);
+
 		hidem();
 		set_clip(r);		/* HR 110601: checks for special case? w <= 0 or h <= 0 */
 	
 		pb->intout[0] = draw_object_tree(lock,
-						 check_widget_tree(lock, client, tree),
-						 tree,
+						 wt, //check_widget_tree(lock, client, tree),
+						 obtree,
 						 item,
 						 pb->intin[1],		/* depth */
 						 0);
@@ -135,8 +141,13 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (obtree)
 	{
 		short obj = pb->intin[0];
-		XA_TREE *wt = check_widget_tree(lock, client, obtree);
+		XA_TREE *wt; // = check_widget_tree(lock, client, obtree);
 		struct xa_rect_list rl;
+
+		if (!(wt = obtree_to_wt(client, obtree)))
+			wt = new_widget_tree(client, obtree);
+		if (!wt)
+			wt = set_client_wt(client, obtree);
 
 		rl.next = NULL;
 		rl.r = *(RECT *)((long)&pb->intin[2]);
@@ -216,7 +227,13 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (obtree)
 	{
-		XA_TREE *wt = check_widget_tree(lock, client, obtree);
+		XA_TREE *wt; // = check_widget_tree(lock, client, obtree);
+
+		if (!(wt = obtree_to_wt(client, obtree)))
+			wt = new_widget_tree(client, obtree);
+		if (!wt)
+			wt = set_client_wt(client, obtree);
+
 		pb->intout[0] = obj_edit(wt,
 					  pb->intin[3],		/* function	*/
 					  pb->intin[0],		/* object	*/

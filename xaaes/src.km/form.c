@@ -68,7 +68,7 @@ Set_form_do(struct xa_client *client,
 	/* Ozk:
 	 * Check if this obtree needs a keypress handler..
 	 */
-	if (wt->edit_obj >= 0 || obtree_has_default(obtree) )
+	if (wt->e.obj >= 0 || obtree_has_default(obtree) )
 		client->fmd.keypress = Key_form_do;
 
 	/*
@@ -173,9 +173,9 @@ Setup_form_do(struct xa_client *client,
 	}
 okexit:
 	DIAGS(("Key_form_do: returning - edobj=%d, wind %lx",
-		wt->edit_obj, wind));
+		wt->e.obj, wind));
 	if (ret_edobj)
-		*ret_edobj = wt->edit_obj;
+		*ret_edobj = wt->e.obj;
 	if (ret_wind)
 		*ret_wind = wind;
 
@@ -368,8 +368,8 @@ form_cursor(XA_TREE *wt,
 	}
 	}
 
-	DIAGS(("form_cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->edit_pos=%d",
-		obj, o, wt->edit_obj, wt->edit_pos));
+	DIAGS(("form_cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->e.pos=%d",
+		obj, o, wt->e.obj, wt->e.pos));
 	
 	/* At last this piece of code is on the right spot.
 	 * This is important! Now I know that bug fixes in here are good enough for all cases.
@@ -411,8 +411,8 @@ form_keyboard(XA_TREE *wt,
 	/*
 	 * Cursor?
 	 */
-	if (wt->edit_obj >= 0)
-		next_obj = wt->edit_obj;
+	if (wt->e.obj >= 0)
+		next_obj = wt->e.obj;
 	else
 		next_obj = obj;
 	
@@ -757,7 +757,7 @@ Key_form_do(enum locks lock,
 		fr.dblmask = 0;
 
 		fr.no_exit = form_keyboard(wt,
-					   wt->edit_obj,
+					   wt->e.obj,
 					   key,
 					   true,
 					   rl,
@@ -774,16 +774,16 @@ Key_form_do(enum locks lock,
 			{
 				obj_edit(wt,
 					  ED_CHAR,
-					  wt->edit_obj,
+					  wt->e.obj,
 					  fr.aeskey,
-					  wt->edit_pos,
+					  wt->e.pos,
 					  true,
 					  rl,
 					  NULL,
 					  NULL);
 				fr.aeskey = 0;
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
-					wt->edit_obj, wt->edit_pos));
+					wt->e.obj, wt->e.pos));
 			}
 		}
 		else
