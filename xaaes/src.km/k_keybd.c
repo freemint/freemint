@@ -232,7 +232,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));
 
-#if GENERATE_DIAGS
+//#if GENERATE_DIAGS
 		/* CTRL|ALT|number key is emulate wheel. */
 		if (   nk=='U' || nk=='N'
 		    || nk=='H' || nk=='J')
@@ -267,7 +267,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			XA_wheel_event(lock, &md);
 			return true;
 		}
-#endif
+//#endif
 
 		switch (nk)
 		{

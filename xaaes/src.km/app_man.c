@@ -549,6 +549,19 @@ any_window(enum locks lock, struct xa_client *client)
 
 	return ret;
 }
+struct xa_window *
+get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw)
+{
+	struct xa_window *w = startw;
+
+	while (w)
+	{
+		if (w != root_window && w->owner == client && (w->window_status & XAWS_OPEN))
+			break;
+		w = w->next;
+	}
+	return w;
+}
 
 struct xa_window *
 next_wind(enum locks lock)

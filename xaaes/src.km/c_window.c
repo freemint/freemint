@@ -658,19 +658,20 @@ create_window(
 			frame += thinframe;
 #endif
 
-	if (client->options.naes_ff)
-		w->opts = XAWO_NAES_FF;
-	else
-		w->opts = 0;
-
-	//w->opts = ((client->options.naes_ff) ? XAWO_NAES_FF : 0);
-
+	{
+		long opts = client->options.wind_opts;
+		
+		if (client->options.naes_ff)
+			opts |= XAWO_NAES_FF;
+		w->opts = opts;
+	}
+	
+	w->wheel_mode = client->options.wheel_mode;
 	w->frame = frame;
 	w->thinwork = thinwork;
 	w->owner = client;
 	w->rect_user = w->rect_list = w->rect_start = NULL;
 	w->handle = -1;
-	//w->window_status = XAWS_CLOSED;
 	w->remember = remember;
 	w->nolist = nolist;
 	w->dial = dial;
