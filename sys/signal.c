@@ -186,7 +186,6 @@ post_sig (PROC *p, ushort sig)
 	/* If the process is traced, the tracer should always be notified */
 	if (sig == 0
 		|| (SIGACTION(p, sig).sa_handler == SIG_IGN
-//		|| (p->sighandle[sig] == SIG_IGN
 			&& !p->ptracer
 			&& sig != SIGCONT))
 	{
@@ -294,7 +293,7 @@ top:
 			{
 				curproc->sigpending &= ~sigm;
 				if (curproc->ptracer && !deliversig
-					&& (i != SIGCONT) /* && (i != SIGKILL) */)
+					&& (i != SIGCONT) && (i != SIGKILL))
 				{
 					TRACE (("tracer being notified of signal %d", i));
 					stop (i);
@@ -314,8 +313,7 @@ top:
 					 * should also be masked
 					 */
 					curproc->p_sigmask |= SIGACTION(curproc, i).sa_mask | sigm;
-//					curproc->p_sigmask |= curproc->sigextra[i] | sigm;
-					handle_sig(i);
+					handle_sig (i);
 					
 /*
  * POSIX.1-3.3.4.2(723) "If and when the user's signal handler returns
@@ -332,7 +330,7 @@ top:
 				}
 			}
 			
-			sigm = sigm << 1;
+			sigm <<= 1;
 		}
 	}
 }
@@ -359,11 +357,9 @@ handle_sig (ushort sig)
 	
 	curproc->last_sig = sig;
 	if (SIGACTION(curproc, sig).sa_handler == SIG_IGN)
-//	if (curproc->sighandle[sig] == SIG_IGN)
 		return;
 	
 	if (SIGACTION(curproc, sig).sa_handler == SIG_DFL)
-//	if (curproc->sighandle[sig] == SIG_DFL)
 	{
 _default:
 		switch (sig)
@@ -545,7 +541,6 @@ stop (ushort sig)
 		PROC *p = pid2proc (curproc->ppid);
 		if (p) assert (p->p_sigacts);
 		if (p && !(SIGACTION(p, SIGCHLD).sa_flags & SA_NOCLDSTOP))
-//		if (p && !(p->sigflags[SIGCHLD] & SA_NOCLDSTOP))
 		{
 			ushort sr;
 			
