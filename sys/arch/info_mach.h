@@ -41,9 +41,11 @@
 extern char *machine;
 extern char *machine_arch;
 
-extern char *cpu_model;
-extern char *mmu_model;
-extern char *fpu_model;
+extern char cpu_model[64];
+
+extern char *cpu_type;
+extern char *mmu_type;
+extern char *fpu_type;
 
 
 # endif	/* _info_mach_h  */

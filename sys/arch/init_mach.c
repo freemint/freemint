@@ -42,11 +42,31 @@
 # include "cookie.h"
 # include "global.h"
 # include "init.h"
+# include "keyboard.h"
 
 # include <mint/osbind.h>
 
 
-static void init_info_mach (void);
+static long _getmch (void);
+static void identifycpu (void);
+
+
+long
+getmch (void)
+{
+	long oldstack = 0;
+	long r;
+	
+	if (!Super (1L))
+		oldstack = Super (0L);
+	
+	r = _getmch ();
+	
+	if (oldstack)
+		Super (oldstack);
+	
+	return r;
+}
 
 /*
  * Get the value of the _MCH cookie, if one exists; also set no_mem_prot if
@@ -60,27 +80,12 @@ static void init_info_mach (void);
  * jar we can bail out early and painlessly.
  */
 
-long
-getmch (void)
+static long
+_getmch (void)
 {
-	COOKIE *jar = *CJAR;
-	extern short gl_kbd;
+	COOKIE *jar;
 	
-	/* own CPU test */
-	mcpu = detect_cpu ();
-	
-	/* own FPU test; this must be done after the CPU detection */
-	fputype = detect_fpu ();
-	
-	if ((fputype >> 16) > 1)
-		fpu = 1;
-	
-	DEBUG (("detecting hardware ... "));
-	/* at the moment only detection of ST-ESCC */
-	if (mcpu < 40 && detect_hardware ())
-		boot_print ("ST-ESCC extension detected\r\n");
-	DEBUG (("ok!\r\n"));
-	
+	jar = *CJAR;
 	if (jar)
 	{
 		while (jar->tag != 0)
@@ -93,17 +98,13 @@ getmch (void)
 				if (mch != MILAN_C)
 				{
 					boot_print ("This MiNT version requires a Milan!\r\n");
-					boot_print ("Hit any key to continue.\r\n");
-					(void) Cconin ();
-					Pterm0 ();
+					return -1;
 				}
 # else
 				if (mch == MILAN_C)
 				{
 					boot_print ("This MiNT version doesn't run on a Milan!\r\n");
-					boot_print ("Hit any key to continue.\r\n");
-					(void) Cconin ();
-					Pterm0 ();
+					return -1;
 				}
 # endif
 			}
@@ -117,7 +118,7 @@ getmch (void)
 			else if (jar->tag == COOKIE_MiNT)
 			{
 				boot_print ("MiNT is already installed!!\r\n");
-				Pterm (2);
+				return -1;
 			}
 			else if (jar->tag == COOKIE__AKP)
 			{
@@ -137,10 +138,44 @@ getmch (void)
 		}
 	}
 	
+	/* own CPU test */
+	mcpu = detect_cpu ();
+	
+	/* own FPU test; this must be done after the CPU detection */
+	fputype = detect_fpu ();
+	
+	if ((fputype >> 16) > 1)
+		fpu = 1;
+	
 # ifndef MMU040
 	if (mcpu != 30)
 		no_mem_prot = 1;
 # endif
+	
+# ifdef ONLY030
+# ifndef MMU040
+	if (mcpu < 20)
+# else
+	if (mcpu < 40)
+# endif
+	{
+# ifndef MMU040
+		boot_print ("\r\nThis version of MiNT requires a 68020-68060.\r\n");
+# else
+		boot_print ("\r\nThis version of MiNT requires a 68040-68060.\r\n");
+# endif
+		return -1;
+	}
+# endif
+	
+	/* initialize the info strings */
+	identifycpu ();
+	
+	DEBUG (("detecting hardware ... "));
+	/* at the moment only detection of ST-ESCC */
+	if (mcpu < 40 && detect_hardware ())
+		boot_print ("ST-ESCC extension detected\r\n");
+	DEBUG (("ok!\r\n"));
 	
 	/*
 	 * if no preference found, look at the country code to decide
@@ -180,75 +215,124 @@ getmch (void)
 	if (gl_lang >= MAXLANG || gl_lang < 0)
 		gl_lang = 0;
 	
-	/* initialize the info strings */
-	init_info_mach ();
-	
-	return 0L;
+	return 0;
 }
 
 static void
-init_info_mach (void)
+identifycpu (void)
 {
+	char buf[64];
+	char *_cpu, *_mmu, *_fpu;
+	
 	switch (mch)
 	{
 		case ST:
-			machine = "ATARI ST";
+			machine = "Atari ST";
 			break;
 		case STE:
-			machine = "ATARI STE";
+			machine = "Atari STE";
 			break;
 		case MEGASTE:
-			machine = "ATARI MegaSTE";
+			machine = "Atari MegaSTE";
 			break;
 		case TT:
-			machine = "ATARI TT";
+			machine = "Atari TT";
 			break;
 		case FALCON:
-			machine = "ATARI Falcon";
+			machine = "Atari Falcon";
 			break;
 		case MILAN_C:
 			machine = "Milan";
 			break;
+		default:
+			machine = "Unknwon";
 	}
 	
-	switch (mcpu)
-	{
-		case 10:
-			cpu_model = "68010";
-			break;
-		case 20:
-			cpu_model = "68020";
-			break;
-		case 30:
-			cpu_model = mmu_model = "68030";
-			break;
-		case 40:
-			cpu_model = mmu_model = "68040";
-			break;
-		case 60:
-			cpu_model = mmu_model = "68060";
-			break;
-	}
+	_fpu = " no ";
 	
 	if (fpu)
 	{
 		switch (fputype >> 16)
 		{
 			case 0x02:
-				fpu_model = "68881/82";
+				fpu_type = "68881/82";
+				_fpu = " 68881/82 ";
 				break;
 			case 0x04:
-				fpu_model = "68881";
+				fpu_type = "68881";
+				_fpu = " 68881 ";
 				break;
 			case 0x06:
-				fpu_model = "68882";
+				fpu_type = "68882";
+				_fpu = " 68882 ";
 				break;
 			case 0x08:
-				fpu_model = "68040";
+				fpu_type = "68040";
+				_fpu = "/";
 				break;
 			case 0x10:
-				fpu_model = "68060";
+				fpu_type = "68060";
+				_fpu = "/";
 				break;
 		}
 	}
+	
+	_cpu = "m68k";
+	_mmu = "";
+	
+	switch (mcpu)
+	{
+		case 0:
+			cpu_type = "68000";
+			_cpu = cpu_type;
+			_mmu = "";
+			break;
+		case 10:
+			cpu_type = "68010";
+			_cpu = cpu_type;
+			_mmu = "";
+			break;
+		case 20:
+			cpu_type = "68020";
+			_cpu = cpu_type;
+			_mmu = "";
+			break;
+		case 30:
+			cpu_type = mmu_type = "68030";
+			_cpu = cpu_type;
+			_mmu = "/MMU";
+			break;
+		case 40:
+			cpu_type = mmu_type = "68040";
+			_cpu = cpu_type;
+			_mmu = "/MMU";
+			break;
+		case 60:
+		{
+			ulong pcr;
+			
+			__asm__
+			(
+				".word 0x4e7a,0x0808;"
+				"movl %%d0,%0"
+				: "=d"(pcr)
+				:
+				: "d0"
+			);
+			
+			ksprintf (buf, sizeof (buf), "68%s060 rev.%d",
+					pcr & 0x10000 ? "LC/EC" : "",
+					(pcr >> 8) & 0xff);
+			
+			cpu_type = mmu_type = "68060";
+			_cpu = buf;
+			_mmu = "/MMU";
+			break;
+		}
+	}
+	
+	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU)",
+			machine, _cpu, _mmu, _fpu);
+	
+	boot_printf ("%s\r\n\r\n", cpu_model);
 }

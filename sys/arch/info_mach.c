@@ -38,6 +38,8 @@
 char *machine      = "m68k";
 char *machine_arch = "m68k";
 
-char *cpu_model    = "68000";
-char *mmu_model    = "none";
-char *fpu_model    = "none";
+char cpu_model[64];
+
+char *cpu_type     = "m68k";
+char *mmu_type     = "none";
+char *fpu_type     = "none";
