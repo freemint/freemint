@@ -192,9 +192,61 @@ check_cevents(struct xa_client *client)
 	else
 		return 0;
 }
+
 #if 0
+
 void
-post_tpevent(struct xa_client *client,
+TP_entry(struct xa_client *client)
+{
+	for (;;)
+	{
+		if (client->tp_term)
+			break;
+		if (!dispatch_tpcevent(client))
+			sleep(IO_Q, (long)client->tp);
+	}
+	client->tp = NULL;
+	client->tp_term = 2;
+	kthread_exit(0);
+}
+
+void
+TP_terminate(enum locks lock, struct c_event *ce, bool cancel)
+{
+	ce->client->tp_term = 1;
+}
+
+void
+cancel_tpcevents(struct xa_client *client)
+{
+	struct c_event *ce;
+
+	ce = client->tpcevnt_head;
+	while (ce)
+	{
+		struct c_event *nxt = ce->next;
+
+		DIAG((D_kern, client, "Cancel tp evnt %lx (next %lx) for %s",
+			ce, nxt, client->name));
+
+		/* callout as cancel event
+		 * handler can cleanup and free allocated ressources
+		 */
+		(*ce->funct)(0, ce, true);
+		kfree(ce);
+
+		ce = nxt;
+	}
+
+	client->tpcevnt_head = NULL;
+	client->tpcevnt_tail = NULL;
+	client->tpcevnt_count = 0;
+
+	if (C.ce_open_menu == client)
+		C.ce_open_menu = NULL;
+}
+void
+post_tpcevent(struct xa_client *client,
 	void (*func)(enum locks, struct c_event *, bool cancel),
 	void *ptr1, void *ptr2,
 	int d0, int d1, RECT *r,
@@ -202,49 +254,74 @@ post_tpevent(struct xa_client *client,
 {
 	struct c_event *c;
 
-	c = kmalloc(sizeof(*c));
-	if (c)
+	if (client->tp)
 	{
-		c->next		= NULL;
-		c->funct	= func;
-		c->client	= client;
-		c->ptr1		= ptr1;
-		c->ptr2		= ptr2;
-		c->d0		= d0;
-		c->d1		= d1;
-
-		if (r)
-			c->r = *r;
-		if (md)
-			c->md = *md;
-
-		if (!client->cevnt_head)
+		c = kmalloc(sizeof(*c));
+		if (c)
 		{
-			client->cevnt_head = c;
-			client->cevnt_tail = c;
+			c->next		= NULL;
+			c->funct	= func;
+			c->client	= client;
+			c->ptr1		= ptr1;
+			c->ptr2		= ptr2;
+			c->d0		= d0;
+			c->d1		= d1;
+
+			if (r)
+				c->r = *r;
+			if (md)
+				c->md = *md;
+
+			if (!client->tpcevnt_head)
+			{
+				client->tpcevnt_head = c;
+				client->tpcevnt_tail = c;
+			}
+			else
+			{
+				client->tpcevnt_tail->next = c;
+				client->tpcevnt_tail = c;
+			}
+			client->tpcevnt_count++;
+
+			DIAG((D_mouse, client, "added tp cevent %lx(%d) (head %lx, tail %lx) for %s",
+				c, client->tpcevnt_count, client->tpcevnt_head, client->tpcevnt_tail,
+				client->name));
 		}
 		else
 		{
-			client->cevnt_tail->next = c;
-			client->cevnt_tail = c;
+			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
 		}
-		client->cevnt_count++;
+		wake(IO_Q, (long)client->tp);
+	}
+}
+short
+dispatch_tpcevent(struct xa_client *client)
+{
+	struct c_event *ce;
+	short ret = 0;
 
-		DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
-			c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
-			client->name));
-	}
-	else
+	ce = client->tpcevnt_head;
+	if (ce)
 	{
-		DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
+		struct c_event *nxt = ce->next;
+
+		if (!nxt)
+			client->tpcevnt_tail = nxt;
+
+		client->tpcevnt_head = nxt;
+		client->tpcevnt_count--;
+
+		DIAG((D_kern, client, "Dispatch tp evnt %lx (head %lx, tail %lx, count %d) for %s",
+			ce, client->tpcevnt_head, client->tpcevnt_tail, client->tpcevnt_count, client->name));
+
+		(*ce->funct)(0, ce, false);
+		kfree(ce);
+
+		ret = 1;
 	}
 
-	if (client != C.Aes)
-		Unblock(client, 1, 5000);
-	else
-	{
-		dispatch_cevent(client);
-	}
+	return ret;
 }
 #endif
 void
@@ -328,21 +405,6 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	wake(IO_Q, (long)client);
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 }
-#if 0
-void
-KT_entry(struct xa_client *client)
-{
-	bool term = false;
-
-	while (!term)
-	{
-		while(
-	}
-
-	client->tp = NULL;
-	kthread_exit(0);
-}
-#endif
 
 static vdi_vec *svmotv = NULL;
 static vdi_vec *svbutv = NULL;
