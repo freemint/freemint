@@ -42,6 +42,7 @@
 #include "xa_evnt.h"
 #include "xa_graf.h"
 #include "xa_rsrc.h"
+#include "xa_wdlg.h"
 
 #include "mint/signal.h"
 
@@ -542,6 +543,11 @@ free_wt(XA_TREE *wt)
 	else
 		DIAGS(("  --- obtree not alloced"));
 #endif
+	if (wt->lbox)
+	{
+		kfree(wt->lbox);
+		wt->lbox = NULL;
+	}
 	if (wt->flags & WTF_ALLOC)
 	{
 		DIAGS(("  --- freed wt=%lx", wt));
@@ -921,6 +927,7 @@ free_xawidget_resources(struct xa_widget *widg)
 					wt, widg));
 				//remove_wt(wt);
 				wt->widg = NULL;
+				wt->wind = NULL;
 				break;
 			}
 			default:
@@ -2833,30 +2840,59 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 		wind->handle, wind->owner->name, obtree, edobj));
 
 	if (widg->stuff)
+	{
 		((XA_TREE *)widg->stuff)->widg = NULL;
+		((XA_TREE *)widg->stuff)->wind = NULL;
+	}
 
 	wt = obtree_to_wt(wind->owner, obtree);
 	if (!wt)
 		wt = new_widget_tree(wind->owner, obtree);
 
+	assert(wt);
+
 	wt->widg = widg;
+	wt->wind = wind;
 
 	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &edobj))
 		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL);
 
+		
+#if WDIALOG_WDLG
+	if (wind->dial & created_for_WDIAL)
+	{
+		wt->exit_form	= NULL;
+		widg->click	= click_wdlg_widget;
+		widg->dclick	= click_wdlg_widget;
+		widg->drag	= click_wdlg_widget;
+		widg->display	= NULL;
+	}
+	else
+	{
+		if (wt->e.obj >= 0 || obtree_has_default(obtree))
+			wind->keypress = Key_form_do;
+
+		wt->exit_form = Exit_form_do;
+		widg->click	= Click_windowed_form_do;
+		widg->dclick	= Click_windowed_form_do;
+		widg->drag	= Click_windowed_form_do;
+		widg->display	= display_object_widget;
+	}
+#else
 	if (wt->e.obj >= 0 || obtree_has_default(obtree))
 		wind->keypress = Key_form_do;
-		
-	wt->exit_form = Exit_form_do;
-
-	widg->display	= display_object_widget;
+	wt->exit_form	= Exit_form_do;
 	widg->click	= Click_windowed_form_do;
+	widg->dclick	= Click_windowed_form_do;
+	widg->drag	= Click_windowed_form_do;
+	widg->display	= display_object_widget;
+#endif
+
 	widg->destruct	= free_xawidget_resources;
 	
 	/* HR 280801: clicks are now put in the widget struct.
 	      NB! use this property only when there is very little difference between the 2 */
-	widg->dclick	= Click_windowed_form_do;
-	widg->drag	= Click_windowed_form_do;
+
 	widg->state	= OS_NORMAL;
 	widg->stuff	= wt;
 	widg->stufftype	= STUFF_IS_WT;
@@ -3200,7 +3236,8 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 					if (rtn)	/* If the widget click/drag function returned true we reset the state of the widget */
 					{
 						DIAG((D_button, NULL, "Deselect widget"));
-						redisplay_widget(lock, w, widg, OS_NORMAL);	/* Flag the widget as de-selected */
+						if (f != XAW_MENU && f != XAW_TOOLBAR)
+							redisplay_widget(lock, w, widg, OS_NORMAL);	/* Flag the widget as de-selected */
 					}
 					else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
 						return false;		/* pass click to desktop owner */
