@@ -46,6 +46,7 @@
 # include "k_exec.h"
 # include "k_fds.h"
 # include "k_resource.h"
+# include "keyboard.h"
 # include "kmemory.h"
 # include "memory.h"
 # include "proc.h"
@@ -153,6 +154,7 @@ static PCB_TTx	pCB_setenv;		/* setenv name val	*/
  * TPA_FASTLOAD=[yn] ............ force FASTLOAD for all programs, if YES
  * TPA_INITIALMEM=n ............. set maximum additional TPA size for new processes
  * FDC_HIDE_B=[yn] .............. really remove drive B
+ * KBD_AT_CAPS=[yn] ............. control the Caps lock key operation
  *
  * GEM=file ..................... specify AES driver
  * INIT=file .................... specify boot program
@@ -219,6 +221,9 @@ static struct parser_item parser_tab[] =
 	{ "TPA_FASTLOAD",		PI_R_B,	& forcefastload			},
 	{ "TPA_INITIALMEM",		PI_R_L,	& initialmem			},
 	{ "FDC_HIDE_B",			PI_V_B,	pCB_hide_b			},
+# ifndef NO_AKP_KEYBOARD
+	{ "KBD_AT_CAPS",		PI_R_B,	& pc_style			},
+# endif
 
 	/* These two remain the same as in the old format */
 

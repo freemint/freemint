@@ -147,6 +147,8 @@ static const uchar mmasks[] =
 	MM_ALTGR
 };
 
+short	pc_style = 0;		/* PC-style vs. Atari-style for Caps operation */
+
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
@@ -185,23 +187,33 @@ ctrl_alt_del(PROC *p, long arg)
 	{
 		/* 1 is to signal a pid */
 		case 1:
+		{
 			if (sys_p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
 				sys_s_hutdown(arg);
+			cad_lock = 0;
 			break;
+		}
 
 		/* 2 shall be to exec a program
 		 * with a path pointed to by par.path
 		 */
 		case 2:
+		{
 			if (sys_pexec (100, cad[arg].par.path, cad[arg].aux.cmd, cad[arg].env) < 0)
-				sys_s_hutdown (arg);
+				sys_s_hutdown(arg);
+			cad_lock = 0;
 			break;
+		}
 
 		/* 0 is default */
 		default:
-			sys_s_hutdown (arg);
+		{
+			sys_s_hutdown(arg);
 			break;
+		}
 	}
+
+	cad_lock = 0;
 }
 
 /* synchronous Ctrl/Alt/F? callback
@@ -321,22 +333,22 @@ autorepeat_timer(void)
 INLINE uchar
 scan2asc(uchar scancode)
 {
-	uchar asc = 0, *vec;
+	uchar asc = 0, *vec, shift = *kbshft;
 
 	/* The AKP table structure is:
 	 * ss, aa, ss, aa, ss, aa, 0
 	 * where 'ss' is scancode and 'aa' is corresponding
 	 * ASCII value.
 	 */
-	if (*kbshft & (MM_ALTERNATE | MM_ALTGR))
+	if (shift & (MM_ALTERNATE | MM_ALTGR))
 	{
-		if (*kbshft & MM_ALTGR)
+		if (shift & MM_ALTGR)
 			vec = user_keytab->altgr;
 		else
 		{
-			if (*kbshft & MM_ESHIFT)
+			if (shift & MM_ESHIFT)
 				vec = user_keytab->altshift;
-			else if (*kbshft & MM_CAPS)
+			else if (shift & MM_CAPS)
 				vec = user_keytab->altcaps;
 			else
 				vec = user_keytab->alt;
@@ -364,9 +376,9 @@ scan2asc(uchar scancode)
 	{
 		/* Shift/1 should give "!" regardless of the Caps state
 		 */
-		if (*kbshft & MM_ESHIFT)
+		if (shift & MM_ESHIFT)
 			vec = user_keytab->shift;
-		else if (*kbshft & MM_CAPS)
+		else if (shift & MM_CAPS)
 			vec = user_keytab->caps;
 		else
 			vec = user_keytab->unshift;
@@ -375,9 +387,16 @@ scan2asc(uchar scancode)
 			asc = vec[scancode];
 	}
 
+	/* We can optionally emulate the PC-like behaviour or Caps/Shift */
+	if (pc_style)
+	{
+		if (((shift & MM_ALTGR) == 0) && (shift & MM_CAPS) && (shift & MM_ESHIFT) && isupper(asc))
+			asc = tolower(asc);
+	}
+
 	/* I think that Ctrl key works as this:
 	 */
-	if (*kbshft & MM_CTRL)
+	if (shift & MM_CTRL)
 	{
 		if (asc == 0x0d)
 			asc = 0x0a;		/* God bless great ideas */
@@ -409,8 +428,8 @@ output_scancode(PROC *p, long arg)
 short
 ikbd_scan (ushort scancode, IOREC_T *rec)
 {
-	ushort mod = 0, clk = 0, x = 0;
-	uchar shift = *kbshft, *chartable, ascii;
+	ushort mod = 0, clk = 0, x = 0, scan, make;
+	uchar shift = *kbshft, ascii;
 
 	/* This is set during various keyboard table initializations
 	 * e.g. when the user calls Bioskeys(), to prevent processing
@@ -433,63 +452,69 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	add_keyboard_randomness ((ushort)((scancode << 8) | shift));
 # endif
 
+	scan = scancode & 0x7f;
+	make = (scancode & 0x80) ? 0 : 1;
+
 	/* We handle modifiers first
 	 */
-	while ((uchar)modifiers[x])
+	while (modifiers[x])
 	{
-		if (scancode == (ushort)modifiers[x])
+		if (scan == (ushort)modifiers[x])
 		{
-			shift |= mmasks[x];
-			mod++;
-			break;
-		}
-		else if (scancode == ((ushort)modifiers[x] | 0x80))
-		{
-			shift &= ~mmasks[x];
-			mod++;
+			if (make)
+				shift |= mmasks[x];
+			else
+				shift &= ~mmasks[x];
+			mod = 1;
 			break;
 		}
 		x++;
 	}
 
-	switch (scancode)
+	switch (scan)
 	{
 		/* Caps toggles its bit, when hit, it also makes keyclick */
 		case	CAPS:
 		{
-			shift ^= MM_CAPS;
-			mod++;
-			clk++;
+			if (make)
+			{
+				shift ^= MM_CAPS;
+				mod = 1;
+				clk = 1;
+			}
 			break;
 		}
 		/* Releasing Alternate should generate a character, whose ASCII
 		 * code was typed in via the numpad
 		 */
-		case	ALTERNATE+0x80:
+		case	ALTERNATE:
 		{
-			if (numidx)
+			if (!make)
 			{
-				ushort ascii_c = 0, tempidx = 0;
-
-				while(numidx--)
+				if (numidx)
 				{
-					ascii_c += (numin[tempidx] & 0x0f);
-					if (numidx)
+					ushort ascii_c = 0, tempidx = 0;
+
+					while(numidx--)
 					{
-						tempidx++;
-						ascii_c *= 10;
+						ascii_c += (numin[tempidx] & 0x0f);
+						if (numidx)
+						{
+							tempidx++;
+							ascii_c *= 10;
+						}
 					}
+
+					/* Only the values 0-255 are valid. Silently
+					 * ignore the elder byte
+					 */
+					ascii_c &= 0x00ff;
+
+					/* Reset the buffer for next use */
+					numidx = 0;
+
+					put_key_into_buf(0, 0, 0, (uchar)ascii_c);
 				}
-
-				/* Only the values 0-255 are valid. Silently
-				 * ignore the elder byte
-				 */
-				ascii_c &= 0x00ff;
-
-				/* Reset the buffer for next use */
-				numidx = 0;
-
-				put_key_into_buf(0, 0, 0, ascii_c);
 			}
 			break;
 		}
@@ -497,14 +522,13 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 
 	if (mod)
 	{
-		ushort sc = scancode;
-
 		*kbshft = mshift = shift;
-		if (clk)
-			kbdclick(sc);
-		sc &= 0x7f;
+
+		if (clk && make)
+			kbdclick(scan);
+
 		/* this catches i.a. release code of CapsLock */
-		if ((sc != CLRHOME) && (sc != INSERT))
+		if ((scan != CLRHOME) && (scan != INSERT))
 			return -1;
 	}
 
@@ -518,95 +542,105 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	 * Ctrl/Alt/Shift/Fx	-> debug information
 	 *
 	 */
+	if ((shift == MM_CTRLALT) && (scan == UNDO))
+	{
+		if (make)
+		{
+			killgroup(con_tty.pgrp, SIGQUIT, 1);
+			kbdclick(scan);
+		}
+
+		return -1;
+	}
+
 	if ((shift & MM_CTRLALT) == MM_CTRLALT)
 	{
-		if (scancode == DEL)
+		switch (scan)
 		{
-			if (!cad_lock)
+			case	DEL:
+			{
+				if (make)
+				{
+					kbdclick(scan);
+
+					if (!cad_lock)
+					{
+						TIMEOUT *t;
+
+						t = addroottimeout (ROOT_TIMEOUT, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
+						if (t)
+						{
+							t->arg = cad_lock = 1;
+
+							if ((shift & MM_ESHIFT) == MM_RSHIFT)
+								t->arg = 2;
+							else if ((shift & MM_ESHIFT) == MM_LSHIFT)
+								t->arg = 0;
+
+							hz_ticks = get_hz_200();
+						}
+					}
+					else
+					{
+						long mora = get_hz_200() - hz_ticks;
+
+						if (mora > CAD_TIMEOUT)
+							return scan;			/* we call TOS here */
+					}
+				}
+
+				return -1;
+			}
+			/* Function keys */
+			case	0x003b ... 0x0044:
 			{
 				TIMEOUT *t;
 
-				t = addroottimeout (ROOT_TIMEOUT, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
-				if (t)
+				if (make)
 				{
-					t->arg = cad_lock = 1;
+					if (shift & MM_ESHIFT)
+						scan += 0x0019;		/* emulate F11-F20 */
 
-					if ((shift & MM_ESHIFT) == MM_RSHIFT)
-						t->arg = 2;
-					else if ((shift & MM_ESHIFT) == MM_LSHIFT)
-						t->arg = 0;
+					t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+					if (t) t->arg = scan;
 
-					hz_ticks = get_hz_200();
+					kbdclick(scan);
 				}
+
+				return -1;
 			}
-			else
+			/* This is in case the keyboard has real F11-F20 keys on it */
+			case	0x0054 ... 0x005d:
 			{
-				long mora;
+				TIMEOUT *t;
 
-				mora = get_hz_200() - hz_ticks;
-				if (mora > CAD_TIMEOUT)
-					return scancode;		/* we call TOS here */
+				if (make)
+				{
+					t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+					if (t) t->arg = scan;
+
+					kbdclick(scan);
+				}
+
+				return -1;
 			}
-
-			return -1;
 		}
-		else if (scancode == UNDO)
-		{
-			killgroup (con_tty.pgrp, SIGQUIT, 1);
-
-			kbdclick(scancode);
-
-			return -1;
-		}
-		else if ((scancode >= 0x003b) && (scancode <= 0x0044))
-		{
-			TIMEOUT *t;
-
-			if (shift & MM_ESHIFT)
-				scancode += 0x0019;	/* emulate F11-F20 */
-
-			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
-			if (t) t->arg = scancode;
-
-			kbdclick(scancode);
-
-			return -1;
-		}
-		/* This is in case the keyboard has real F11-F20 keys on it */
-		else if ((scancode >= 0x0054) && (scancode <= 0x005d))
-		{
-			TIMEOUT *t;
-
-			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
-			if (t) t->arg = scancode;
-
-			kbdclick(scancode);
-
-			return -1;
-		}
-		/* We ignore release codes, but catch them to avoid
-		 * spurious execution of checkkeys() on every release of a key.
-		 */
-		else if ((scancode == DEL+0x80) || (scancode == UNDO+0x80))
-			return -1;
-		else if ((scancode >= 0x003b+0x80) && (scancode <= 0x0044+0x80))
-			return -1;
-		else if ((scancode >= 0x0054+0x80) && (scancode <= 0x005d+0x80))
-			return -1;
 	}
 
-	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
+	if (shift == MM_ALTERNATE)
 	{
-		switch (scancode)
+		switch (scan)
 		{
 			/* Alt/Help fires up a program named `althelp.sys'
-			 * located in the system directory (e.g. `c:\multitos\')
+			 * located in the system directory (e.g. `c:/mint/')
 			 */
 			case HELP:
 			{
-				addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))alt_help, 1);
-
-				kbdclick(scancode);
+				if (make)
+				{
+					addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))alt_help, 1);
+					kbdclick(scan);
+				}
 
 				return -1;
 			}
@@ -623,53 +657,38 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 			case NUMPAD_8:
 			case NUMPAD_9:
 			{
-				if (numidx > 2)		/* buffer full? reset it */
-					numidx = 0;
-
-				chartable = user_keytab->unshift;
-				ascii = chartable[scancode];
-
-				if (ascii)
+				if (make)			/* we ignore release codes */
 				{
-					numin[numidx] = ascii;
-					numidx++;
+					if (numidx > 2)		/* buffer full? reset it */
+						numidx = 0;
+
+					ascii = user_keytab->unshift[scan];
+
+					if (ascii)
+					{
+						numin[numidx] = ascii;
+						numidx++;
+					}
+
+					kbdclick(scan);
 				}
 
-				kbdclick(scancode);
-
 				return -1;
-			}
-			/* Ignore release codes as usual.
-			 */
-			case HELP+0x80:
-			case NUMPAD_0+0x80:
-			case NUMPAD_1+0x80:
-			case NUMPAD_2+0x80:
-			case NUMPAD_3+0x80:
-			case NUMPAD_4+0x80:
-			case NUMPAD_5+0x80:
-			case NUMPAD_6+0x80:
-			case NUMPAD_7+0x80:
-			case NUMPAD_8+0x80:
-			case NUMPAD_9+0x80:
-			{
-				return -1;
-				break;
 			}
 		}
 	}
 
+	/* All keys below undergo user-defined translation and autorepetition
+	 */
+	key_pressed = make;
+
 	/* Ordinary keyboard here.
 	 */
-	if (scancode & 0x80)
-		key_pressed = 0;
-	else
+	if (make)
 	{
-		key_pressed = 1;
+		ascii = scan2asc((uchar)scan);
 
-		ascii = scan2asc((uchar)scancode);
-
-		put_key_into_buf(shift, (uchar)scancode, 0, ascii);
+		put_key_into_buf(shift, (uchar)scan, 0, ascii);
 	}
 
 	return -1;			/* don't go to TOS, just return */
@@ -784,7 +803,6 @@ sys_b_bioskeys(void)
 	pointers->altcaps = tbl_scan_fwd(pointers->altshift);
 	pointers->altgr = tbl_scan_fwd(pointers->altcaps);
 
-# if 1
 	/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
 	 *
 	 * XXX must be changed for -DJAR_PRIVATE (forward to all processes).
@@ -793,34 +811,6 @@ sys_b_bioskeys(void)
 	akp_val &= 0xffffff00L;
 	akp_val |= (gl_kbd & 0x000000ff);
 	set_cookie(NULL, COOKIE__AKP, akp_val);
-
-# else
-	/* Reset the TOS BIOS vectors (this is only necessary
-	 * until we replace all BIOS keyboard routines).
-	 */
-
-	tos_keytab->unshift = pointers->unshift;
-	tos_keytab->shift = pointers->shift;
-	tos_keytab->caps = pointers->caps;
-
-	if (tosvers >= 0x0400)
-	{
-		tos_keytab->alt = pointers->alt;
-		tos_keytab->altshift = pointers->altshift;
-		tos_keytab->altcaps = pointers->altcaps;
-		if (mch == MILAN_C)
-			tos_keytab->altgr = pointers->altgr;
-
-		/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
-		 *
-		 * XXX must be changed for -DJAR_PRIVATE (forward to all processes).
-		 */
-		get_cookie(NULL, COOKIE__AKP, &akp_val);
-		akp_val &= 0xffffff00L;
-		akp_val |= gl_kbd;
-		set_cookie(NULL, COOKIE__AKP, akp_val);
-	}
-# endif
 
 	user_keytab = pointers;
 
