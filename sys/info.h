@@ -83,6 +83,21 @@ extern const char *ERR_biosfs_aux_fptr;
 /* block_IO.c */
 extern const char *ERR_bio_cant_init_cache;
 
+/* bootmenu.c */
+
+extern const char *MSG_init_askmenu;
+extern const char *MSG_init_menu_yes;
+extern const char *MSG_init_menu_no;
+extern const char *MSG_init_menu_yesrn;
+extern const char *MSG_init_menu_norn;
+extern const char *MSG_init_bootmenu;
+extern const char *MSG_init_menuwarn;
+extern const char *MSG_init_unknown_cmd;
+extern const char *MSG_init_no_value;
+extern const char *MSG_init_write_error;
+extern const char *MSG_init_value_out_of_range;
+extern const char *MSG_init_syntax_error;
+
 /* cnf.c */
 extern const char *MSG_cnf_bad_drive;
 extern const char *MSG_cnf_tos_error;
@@ -153,13 +168,6 @@ extern const char *MSG_gmon_enable_error;
 
 /* init.c */
 extern const char *MSG_init_getname;
-extern const char *MSG_init_askmenu;
-extern const char *MSG_init_menu_yes;
-extern const char *MSG_init_menu_no;
-extern const char *MSG_init_menu_yesrn;
-extern const char *MSG_init_menu_norn;
-extern const char *MSG_init_bootmenu;
-extern const char *MSG_init_menuwarn;
 extern const char *MSG_init_hitanykey;
 extern const char *MSG_init_must_be_auto;
 extern const char *MSG_init_no_mint_folder;
@@ -183,7 +191,9 @@ extern const char *MSG_init_launching_init;
 extern const char *MSG_init_no_init_specified;
 extern const char *MSG_init_rom_AES;
 extern const char *MSG_init_starting_shell;
+# ifdef BUILTIN_SHELL
 extern const char *MSG_init_starting_internal_shell;
+# endif
 extern const char *MSG_init_done;
 extern const char *MSG_init_present;
 extern const char *MSG_init_not_present;
