@@ -87,6 +87,18 @@ extern struct shared S;
 #define FOREACH_CLIENT(client) \
 	LIST_FOREACH(&(S.client_list), client, client_entry)
 
+static inline size_t
+client_list_size(void)
+{
+	struct xa_client *cl;
+	size_t length = 0;
+
+	FOREACH_CLIENT(cl)
+		length++;
+
+	return length;
+}
+
 
 /* APP list operations */
 
