@@ -74,13 +74,14 @@
 struct ctlname
 {
 	const char *ctl_name;	/* subsystem name */
-	int	ctl_type;	/* type of name */
+	int ctl_type;		/* type of name */
 };
 # define CTLTYPE_NODE	1	/* name is a node */
-# define CTLTYPE_INT	2	/* name describes an integer */
+# define CTLTYPE_LONG	2	/* name describes a 32bit integer */
 # define CTLTYPE_STRING	3	/* name describes a string */
-# define CTLTYPE_QUAD	4	/* name describes a 64-bit number */
+# define CTLTYPE_QUAD	4	/* name describes a 64bit integer */
 # define CTLTYPE_STRUCT	5	/* name describes a structure */
+# define CTLTYPE_SHORT	6	/* name describes a 16bit integer */
 
 
 /*
@@ -92,7 +93,8 @@ struct ctlname
 # define CTL_MACHDEP	3		/* machine dependent */
 # define CTL_DEBUG	4		/* debugging parameters */
 # define CTL_PROC	5		/* per-proc attr */
-# define CTL_MAXID	6		/* number of valid top-level ids */
+# define CTL_KBD	6		/* keyboard configuration */
+# define CTL_MAXID	7		/* number of valid top-level ids */
 
 # define CTL_NAMES \
 { \
@@ -102,6 +104,7 @@ struct ctlname
 	{ "machdep", CTLTYPE_NODE }, \
 	{ "debug", CTLTYPE_NODE }, \
 	{ "proc", CTLTYPE_NODE }, \
+	{ "keyboard", CTLTYPE_NODE }, \
 }
 
 
@@ -130,18 +133,18 @@ struct ctlname
 	{ 0, 0 }, \
 	{ "ostype", CTLTYPE_STRING }, \
 	{ "osrelease", CTLTYPE_STRING }, \
-	{ "osrevision", CTLTYPE_INT }, \
+	{ "osrevision", CTLTYPE_LONG }, \
 	{ "version", CTLTYPE_STRING }, \
 	{ "hostname", CTLTYPE_STRING }, \
 	{ "domainname", CTLTYPE_STRING }, \
-	{ "securelevel", CTLTYPE_INT }, \
-	{ "maxproc", CTLTYPE_INT }, \
-	{ "maxfiles", CTLTYPE_INT }, \
-	{ "ngroups", CTLTYPE_INT }, \
-	{ "iov_max", CTLTYPE_INT }, \
-	{ "login_name_max", CTLTYPE_INT }, \
+	{ "securelevel", CTLTYPE_LONG }, \
+	{ "maxproc", CTLTYPE_LONG }, \
+	{ "maxfiles", CTLTYPE_LONG }, \
+	{ "ngroups", CTLTYPE_LONG }, \
+	{ "iov_max", CTLTYPE_LONG }, \
+	{ "login_name_max", CTLTYPE_LONG }, \
 	{ "boottime", CTLTYPE_STRUCT }, \
-	{ "initialtpa", CTLTYPE_INT }, \
+	{ "initialtpa", CTLTYPE_LONG }, \
 	{ "sysdir", CTLTYPE_STRING }, \
 }
 
@@ -164,10 +167,10 @@ struct ctlname
 	{ "machine", CTLTYPE_STRING }, \
 	{ "machine_arch", CTLTYPE_STRING }, \
 	{ "model", CTLTYPE_STRING }, \
-	{ "ncpu", CTLTYPE_INT }, \
-	{ "byteorder", CTLTYPE_INT }, \
-	{ "pagesize", CTLTYPE_INT }, \
-	{ "freephysmem", CTLTYPE_INT }, \
+	{ "ncpu", CTLTYPE_LONG }, \
+	{ "byteorder", CTLTYPE_LONG }, \
+	{ "pagesize", CTLTYPE_LONG }, \
+	{ "freephysmem", CTLTYPE_LONG }, \
 }
 
 
@@ -196,16 +199,34 @@ struct ctlname
 
 #define	PROC_PID_NAMES { \
 	{ 0, 0 }, \
-	{ "debug", CTLTYPE_INT }, \
+	{ "debug", CTLTYPE_LONG }, \
+}
+
+
+/*
+ * CTL_KBD identifiers
+ */
+# define KBD_PC_STYLE_CAPS	1	/* int: CAPS key operate in PC style mode */
+# define KBD_MOUSE_PIXELS	2	/* int: keyboard mouse movement pixels */
+# define KBD_MOUSE_PIXELS_FINE	3	/* int: keyboard mouse movement pixels 'fine' */
+# define KBD_MAXID		4	/* number of valid kbd ids */
+
+# define CTL_KBD_NAMES \
+{ \
+	{ 0, 0 }, \
+	{ "pc_style_caps", CTLTYPE_SHORT }, \
+	{ "mouse_pixels", CTLTYPE_SHORT }, \
+	{ "mouse_pixels_fine", CTLTYPE_SHORT }, \
 }
 
 
 # ifndef __KERNEL__
 
-int __sysctl (int *name, unsigned long namelen, void *old, unsigned long *oldlenp,
-              const void *new, unsigned long newlen);
-int sysctl (int *name, unsigned long namelen, void *old, unsigned long *oldlenp,
-            const void *new, unsigned long newlen);
+int __sysctl(int *name, unsigned long namelen, void *old, unsigned long *oldlenp,
+             const void *new, unsigned long newlen);
+
+int sysctl(int *name, unsigned long namelen, void *old, unsigned long *oldlenp,
+           const void *new, unsigned long newlen);
 
 # endif
 

@@ -44,14 +44,23 @@
 # include "global.h"
 # include "info.h"
 # include "k_prot.h"
+# include "keyboard.h"
 # include "memory.h"
 # include "proc.h"
 # include "time.h"
 
 
-long kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p);
-long hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p);
-long proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p);
+static long kern_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
+			const void *newp, ulong newlen, struct proc *p);
+
+static long hw_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
+		      const void *newp, ulong newlen, struct proc *p);
+
+static long proc_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
+			const void *newp, ulong newlen, struct proc *p);
+
+static long kbd_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
+		       const void *newp, ulong newlen, struct proc *p);
 
 long _cdecl
 sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp,
@@ -107,6 +116,9 @@ sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp,
 		case CTL_PROC:
 			fn = proc_sysctl;
 			break;
+		case CTL_KBD:
+			fn = kbd_sysctl;
+			break;
 		default:
 			return EOPNOTSUPP;
 	}
@@ -130,7 +142,7 @@ long securelevel = 0;
 /*
  * kernel related system variables.
  */
-long
+static long
 kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	     const void *newp, ulong newlen, struct proc *p)
 {
@@ -217,7 +229,7 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 /*
  * hardware related system variables.
  */
-long
+static long
 hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	   const void *newp, ulong newlen, struct proc *p)
 {
@@ -253,7 +265,7 @@ hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	return EOPNOTSUPP;
 }
 
-long
+static long
 proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	     const void *newp, ulong newlen, struct proc *p)
 {
@@ -319,6 +331,32 @@ proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	}
 
 	return EINVAL;
+}
+
+static long
+kbd_sysctl(long *name, ulong namelen, void *oldp, ulong *oldlenp,
+	   const void *newp, ulong newlen, struct proc *p)
+{
+	/* all sysctl names at this level are terminal */
+	if (namelen != 1)
+		/* overloaded */
+		return ENOTDIR;
+
+# ifndef NO_AKP_KEYBOARD
+	switch (name[0])
+	{
+		case KBD_PC_STYLE_CAPS:
+			return sysctl_short(oldp, oldlenp, newp, newlen, &kbd_pc_style_caps);
+
+		case KBD_MOUSE_PIXELS:
+			return sysctl_short(oldp, oldlenp, newp, newlen, &kbd_mpixels);
+
+		case KBD_MOUSE_PIXELS_FINE:
+			return sysctl_short(oldp, oldlenp, newp, newlen, &kbd_mpixels_fine);
+	}
+# endif
+
+	return EOPNOTSUPP;
 }
 
 
@@ -395,6 +433,22 @@ SYSCTL_STRING_CORE (void *oldp, ulong *oldlenp, const char *str)
  * for an integer-valued sysctl function.
  */
 long
+sysctl_short (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, short *valp)
+{
+	long error = 0;
+
+	SYSCTL_SCALAR_NEWPCHECK_TYP (newp, newlen, short)
+	SYSCTL_SCALAR_CORE_TYP (oldp, oldlenp, valp, short)
+	SYSCTL_SCALAR_NEWPCOP_TYP (newp, valp, short)
+
+	return error;
+}
+
+/*
+ * Validate parameters and get old / set new parameters
+ * for an integer-valued sysctl function.
+ */
+long
 sysctl_long (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, long *valp)
 {
 	long error = 0;
@@ -405,7 +459,6 @@ sysctl_long (void *oldp, ulong *oldlenp, const void *newp, ulong newlen, long *v
 
 	return error;
 }
-
 
 /*
  * As above, but read-only.

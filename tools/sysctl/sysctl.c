@@ -55,6 +55,7 @@ struct ctlname machdepname[] = CTL_MACHDEP_NAMES;
 struct ctlname debugname[CTL_DEBUG_MAXID];
 /* this one is dummy, it's used only for '-a' or '-A' */
 struct ctlname procname[] = { {0, 0}, {"curproc", CTLTYPE_NODE} };
+struct ctlname kbdname[] = CTL_KBD_NAMES;
 
 char names[BUFSIZ];
 
@@ -74,6 +75,7 @@ struct list secondlevel[] = {
 #endif
 	{ 0, CTL_DEBUG_MAXID },		/* CTL_DEBUG */
 	{ procname, 2 },		/* dummy name */
+	{ kbdname, KBD_MAXID },		/* CTL_KBD */
 	{ 0, 0},
 };
 
@@ -202,7 +204,9 @@ parse(char *string, int flags)
 	int indx, type, len;
 	int special = 0;
 	void *newval = 0;
-	int intval, newsize = 0;
+	int newsize = 0;
+	short shortval;
+	long longval;
 	quad_t quadval;
 	size_t size;
 	struct list *lp;
@@ -260,7 +264,6 @@ parse(char *string, int flags)
 	case CTL_HW:
 		break;
 
-
 	case CTL_DEBUG:
 		mib[2] = CTL_DEBUG_VALUE;
 		len = 3;
@@ -270,11 +273,16 @@ parse(char *string, int flags)
 //	case CTL_USER:
 //	case CTL_DDB:
 		break;
+
 	case CTL_PROC:
 		len = sysctl_proc(string, &bufp, mib, flags, &type);
 		if (len < 0)
 			return;
 		break;
+
+	case CTL_KBD:
+		break;
+
 	default:
 		warnx("Illegal top level value: %d", mib[0]);
 		return;
@@ -286,12 +294,16 @@ parse(char *string, int flags)
 	}
 	if (newsize > 0) {
 		switch (type) {
-		case CTLTYPE_INT:
-			intval = atoi(newval);
-			newval = &intval;
-			newsize = sizeof intval;
+		case CTLTYPE_SHORT:
+			shortval = atoi(newval);
+			newval = &shortval;
+			newsize = sizeof shortval;
 			break;
-
+		case CTLTYPE_LONG:
+			longval = atoi(newval);
+			newval = &longval;
+			newsize = sizeof longval;
+			break;
 #if 0
 		case CTLTYPE_LIMIT:
 			if (strcmp(newval, "unlimited") == 0) {
@@ -344,15 +356,27 @@ parse(char *string, int flags)
 	}
 		
 	switch (type) {
-	case CTLTYPE_INT:
+	case CTLTYPE_SHORT:
 		if (newsize == 0) {
 			if (!nflag)
 				printf("%s = ", string);
-			printf("%d\n", *(int *)buf);
+			printf("%d\n", *(short *)buf);
 		} else {
 			if (!nflag)
-				printf("%s: %d -> ", string, *(int *)buf);
-			printf("%d\n", *(int *)newval);
+				printf("%s: %d -> ", string, *(short *)buf);
+			printf("%d\n", *(short *)newval);
+		}
+		return;
+
+	case CTLTYPE_LONG:
+		if (newsize == 0) {
+			if (!nflag)
+				printf("%s = ", string);
+			printf("%ld\n", *(long *)buf);
+		} else {
+			if (!nflag)
+				printf("%s: %ld -> ", string, *(long *)buf);
+			printf("%ld\n", *(long *)newval);
 		}
 		return;
 
@@ -436,7 +460,7 @@ debuginit(void)
 		if (sysctl(mib, 3, &names[loc], &size, NULL, 0) == -1)
 			continue;
 		debugname[i].ctl_name = &names[loc];
-		debugname[i].ctl_type = CTLTYPE_INT;
+		debugname[i].ctl_type = CTLTYPE_LONG;
 		loc += size;
 	}
 }
