@@ -30,6 +30,7 @@
 # include "arch/kernel.h"
 # include "arch/mprot.h"
 # include "arch/startup.h"
+# include "arch/tosbind.h"
 # include "arch/user_things.h"	/* trampoline */
 
 # include "bios.h"
@@ -46,8 +47,6 @@
 # include "timeout.h"
 # include "random.h"
 # include "xbios.h"
-
-# include <osbind.h>
 
 
 static void swap_in_curproc	(void);
@@ -188,7 +187,7 @@ init_proc (void)
 	/* Set the correct drive. The current directory we
 	 * set later, after all file systems have been loaded.
 	 */
-	curproc->p_cwd->curdrv = Dgetdrv ();
+	curproc->p_cwd->curdrv = TRAP_Dgetdrv ();
 	proclist = curproc;
 
 	curproc->p_cwd->cmask = 0;
@@ -206,11 +205,11 @@ init_proc (void)
 
 	if (has_bconmap)
 		/* init_xbios not happened yet */
-		curproc->p_fd->bconmap = (int) Bconmap (-1);
+		curproc->p_fd->bconmap = (int) TRAP_Bconmap (-1);
 	else
 		curproc->p_fd->bconmap = 1;
 
-	curproc->logbase = (void *) Logbase();
+	curproc->logbase = (void *) TRAP_Logbase();
 	curproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
 }
 

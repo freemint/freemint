@@ -18,11 +18,14 @@
 # include "debug.h"
 # include "global.h"
 
+# include "libkern/libkern.h"
+
 # include "arch/aranym.h"
 # include "arch/halt.h"
 # include "arch/mprot.h"
 # include "arch/startup.h"	/* _base */
-# include "libkern/libkern.h"
+# include "arch/syscall.h"
+# include "arch/tosbind.h"
 
 # include "block_IO.h"
 # include "dos.h"
@@ -35,8 +38,6 @@
 # include "k_fds.h"
 # include "kmemory.h"
 # include "proc.h"
-
-# include <osbind.h>
 
 
 static void VDEBUGOUT(const char *, va_list, int);
@@ -87,6 +88,41 @@ static ushort logtime[LBSIZE];	/* low 16 bits of 200 Hz: timestamp of msg */
 int debug_logging = 0;
 int logptr = 0;
 
+static void
+safe_Bconout(short dev, int c)
+{
+	if (intr_done)
+		ROM_Bconout(dev, c);
+	else
+		TRAP_Bconout(dev, c);
+}
+
+static short
+safe_Bconstat(short dev)
+{
+	if (intr_done)
+		return ROM_Bconstat(dev);
+
+	return TRAP_Bconstat(dev);
+}
+
+static long
+safe_Bconin(short dev)
+{
+	if (intr_done)
+		return ROM_Bconin(dev);
+
+	return TRAP_Bconin(dev);
+}
+
+static long
+safe_Kbshift(short data)
+{
+	if (intr_done)
+		return ROM_Kbshift(data);
+
+	return TRAP_Kbshift(data);
+}
 
 /*
  * The inner loop does this: at each newline, the keyboard is polled. If
@@ -120,9 +156,9 @@ debug_ws(const char *s)
 
 	while (*s)
 	{
-		(void) Bconout(out_device, *s);
+		safe_Bconout(out_device, *s);
 		
-		while (*s == '\n' && out_device != 0 && Bconstat(out_device))
+		while (*s == '\n' && out_device != 0 && safe_Bconstat(out_device))
 		{
 			stopped = 0;
 			while (1)
@@ -130,9 +166,9 @@ debug_ws(const char *s)
 				if (out_device == 2)
 				{
 					/* got a key; if ctl-alt then do it */
-					if ((Kbshift (-1) & 0x0c) == 0x0c)
+					if ((safe_Kbshift (-1) & 0x0c) == 0x0c)
 					{
-						key = Bconin(out_device);
+						key = safe_Bconin(out_device);
 						scan = (int)(((key >> 16) & 0xff));
 						do_func_key(scan);
 						
@@ -145,7 +181,7 @@ debug_ws(const char *s)
 				}
 				else
 				{
-					key = Bconin(out_device);
+					key = ROM_Bconin(out_device);
 					if (key < '0' || key > '9')
 					{
 ptoggle:
@@ -427,14 +463,6 @@ DUMPLOG(void)
         while (start != end);
 	
         logptr = 0;
-}
-
-/* wait for a key to be pressed */
-void
-PAUSE(void)
-{
-	debug_ws(MSG_init_hitanykey);
-	(void) Bconin(2);
 }
 
 EXITING _cdecl

@@ -17,11 +17,14 @@
 
 # include "filesys.h"
 
-# include "arch/mprot.h"
 # include "libkern/libkern.h"
+
 # include "mint/dcntl.h"
 # include "mint/filedesc.h"
 # include "mint/signal.h"
+
+# include "arch/mprot.h"
+# include "arch/tosbind.h"
 
 # include "biosfs.h"
 # include "block_IO.h"
@@ -46,8 +49,6 @@
 # include "proc.h"
 # include "signal.h"
 # include "time.h"
-
-# include <osbind.h>
 
 
 #if 1
@@ -203,7 +204,7 @@ init_filesys (void)
 	}
 
 	/* get the vector of connected GEMDOS drives */
-	dosdrvs = Dsetdrv (Dgetdrv ()) | sys_b_drvmap ();
+	dosdrvs = TRAP_Dsetdrv (TRAP_Dgetdrv ()) | sys_b_drvmap ();
 
 
 # ifdef OLDTOSFS
