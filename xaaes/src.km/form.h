@@ -34,6 +34,13 @@ void	Set_form_do	(struct xa_client *client,
 			 OBJECT *obtree,
 			 short edobj);
 
+struct xa_window *
+	create_fmd_wind	(enum locks lock,
+			 struct xa_client *client,
+			 XA_WIND_ATTR kind,
+			 WINDOW_TYPE dial,
+			 RECT *r);
+
 bool	Setup_form_do	(struct xa_client *client,
 			 OBJECT *obtree,
 			 short edobj,

@@ -43,10 +43,11 @@ struct win_base
 
 struct shared
 {
-	struct win_base open_windows;	/* list of all open windows */
-	struct win_base closed_windows;	/* list of all closed windows */
-	struct win_base side_windows;	/* list of other special windows like menus popups etc */
-	struct win_base deleted_windows;/* list of windows to be deleted (delayed action) */
+	struct win_base open_windows;		/* list of all open windows */
+	struct win_base closed_windows;		/* list of all closed windows */
+	struct win_base side_windows;		/* list of other special windows like menus popups etc */
+	struct win_base deleted_windows;	/* list of windows to be deleted (delayed action) */
+	struct win_base nolist_windows;		/* list of open nolist windows - fmd, alerts, etc. */
 
 	LIST_HEAD(xa_client) client_list;
 	LIST_HEAD(xa_client) app_list;

@@ -518,6 +518,7 @@ struct xa_client
 #define CS_FORM_ALERT		0x0004
 #define CS_FORM_DO		0x0008
 #define CS_WAIT_MENU		0x0100
+#define CS_EXITING		0x8000
 
 	long status;
 
@@ -555,6 +556,8 @@ struct xa_client
 
 	char name[NICE_NAME+2];		/* The clients 'pretty' name (possibly set by menu_register) */
 	char proc_name[10];		/* The clients 'official' (ie. used by appl_find) name. */
+
+	struct xa_window *alert;
 
 	struct fmd fmd;			/* Data needed by the XaAES windowing of dialogues. */
 	void *temp;			/* Temporary storage */
@@ -884,6 +887,7 @@ struct xa_window
 struct xa_window *get_top(void);
 extern struct xa_window *root_window;
 #define window_list S.open_windows.first
+#define nolist_list S.nolist_windows.first
 
 struct scroll_info;
 

@@ -185,8 +185,12 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		if (rk)
 		{
 			*rk = *key;
-			if (client->fmd.lock && client->fmd.keypress)
+			if (keywind && keywind == client->alert)
+				post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
+			else if (client->fmd.keypress)
 				post_cevent(client, cXA_fmdkey, rk, NULL, 0,0, NULL, NULL);
+			else if (keywind && keywind == client->fmd.wind)
+				post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
 			else
 			{
 				if (keywind && is_hidden(keywind))
@@ -291,7 +295,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'T':				/* ctrl+alt+T    Tidy screen */
 		case NK_HOME:				/*     "    Home       "     */
 		{
-			display_windows_below(lock, &screen.r, window_list);
+			update_windows_below(lock, &screen.r, NULL, window_list);
+			//display_windows_below(lock, &screen.r, window_list);
 		}
 		case 'M':				/* ctrl+alt+M  recover mouse */
 		{

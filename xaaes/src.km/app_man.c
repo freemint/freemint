@@ -94,7 +94,7 @@ focus_owner(void)
 struct xa_client *
 find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind)
 {
-	struct xa_window *top = window_list;
+	struct xa_window *top = window_list, *nlwind = nolist_list;
 	struct xa_client *client = NULL, *locked = NULL;
 
 	if (waiting)
@@ -108,14 +108,14 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 
 	if (withlocks)
 	{
-		if (update_locked())
+		if (C.update_lock) //update_locked())
 		{
-			locked = update_locked();
+			locked = C.update_lock; //update_locked();
 			DIAGS(("-= 1 =-"));
 		}
-		else if (mouse_locked())
+		else if (C.mouse_lock) //mouse_locked())
 		{
-			locked = mouse_locked();
+			locked = C.mouse_lock; //mouse_locked();
 			DIAGS(("-= 2 =-"));
 		}
 		if (locked)
@@ -125,6 +125,9 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 				*locked_client = client;
 
 			if (client->fmd.keypress ||				/* classic (blocked) form_do */
+			    //client->alert ||
+			    //client->fmd.wind ||
+			    (nlwind && nlwind->owner == client) ||
 			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
 			    (top->owner == client && top->keypress))		/* Windowed form_do() */
 			{
@@ -133,10 +136,18 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 
 				if (keywind)
 				{
-					if (client->fmd.lock && client->fmd.keypress)
+					if (nlwind && nlwind->owner == client)
+						*keywind = nlwind;
+					else if (top->owner == client && top->keypress)
+						*keywind = top;
+#if 0
+					if (client->alert)
+						*keywind = client->alert;
+					else if ((client->fmd.lock && client->fmd.keypress) || client->fmd.wind)
 						*keywind = client->fmd.wind;
 					else if (top->owner == client && top->keypress)
 						*keywind = top;
+#endif
 				}
 				
 				DIAGS(("-= 3 =-"));
@@ -177,37 +188,43 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 void
 recover(void)
 {
-	struct xa_client *update_lock = update_locked();
-	struct xa_client *mouse_lock = mouse_locked();
+	struct xa_client *client;
 	struct xa_client *menu_lock = menustruct_locked();
 
 	DIAG((D_appl, NULL, "Attempting to recover control....."));
 
-	if (update_lock && (update_lock != C.Aes))
+	swap_menu(0, C.Aes, true, 0);
+
+	if ((client = C.update_lock))
 	{
 		DIAG((D_appl, NULL, "Killing owner of update lock"));
 		free_update_lock();
-		if (mouse_lock == update_lock)
+		if (C.mouse_lock == client) //(mouse_lock == update_lock)
 		{
-			mouse_lock = NULL;
 			free_mouse_lock();
+			C.mouse_lock = NULL;
+			C.mouselock_count = 0;
 		}
-		if (menu_lock == update_lock)
+		if (menu_lock == client)
 		{
 			menu_lock = NULL;
 			free_menustruct_lock();
 		}
-		ikill(update_lock->p->pid, SIGKILL);
+		C.update_lock = NULL;
+		C.updatelock_count = 0;
+		ikill(client->p->pid, SIGKILL);
 	}
-	if (mouse_lock && (mouse_lock != C.Aes))
+	if ((client = C.mouse_lock))
 	{
 		free_mouse_lock();
-		if (menu_lock == mouse_lock)
+		if (menu_lock == client)
 		{
 			menu_lock = NULL;
 			free_menustruct_lock();
 		}
-		ikill(mouse_lock->p->pid, SIGKILL);
+		C.mouse_lock = NULL;
+		C.mouselock_count = 0;
+		ikill(client->p->pid, SIGKILL);
 	}
 	if (menu_lock && (menu_lock != C.Aes))
 	{
