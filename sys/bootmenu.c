@@ -225,9 +225,6 @@ do_debug_level(char *arg)
 
 	val = atol(arg);
 
-	if (debug_level == (int)val)
-		return;
-
 	if (val < 0 || val > 4)
 	{
 		ksprintf(msg, sizeof(msg), "mint.ini: %s value %ld is out of range (%d-%d)\r\n", "DEBUG_LEVEL", val, (short)0, (short)4);
@@ -264,9 +261,6 @@ do_debug_devno(char *arg)
 	}
 
 	val = atol(arg);
-
-	if (out_device == (int)val)
-		return;
 
 	if (val < 0 || val > 9)
 	{
@@ -313,7 +307,7 @@ do_boot_delay(char *arg)
 		return;
 	}
 
-	out_device = (int)val;
+	boot_delay = (short)val;
 }
 
 static long
@@ -365,56 +359,8 @@ find_ini (char *outp, long outsize)
 	return 0;
 }
 
-void
-read_ini (void)
-{
-	char *s, ini_file[32], line[MAX_CMD_LEN];
-	long x;
-	short inihandle;
-
-	if (!find_ini(ini_file, sizeof(ini_file)))
-		return;
-
-	inihandle = TRAP_Fopen(ini_file, 0);
-
-	if (inihandle >= 0)
-	{
-		while (getdelim(line, sizeof(line), '\n', inihandle) != -1)
-		{
-			if (line[0] && (line[0] != '#') && strchr(line, '='))
-			{
-				strupr(line);
-				x = 0;
-				while (ini_keywords[x])
-				{
-					s = strstr(line, ini_keywords[x]);
-					if (s && (s == line))
-					{
-						while (*s && (*s != '='))
-							s++;
-						if (*s)
-						{
-							do_func[x](++s);
-							break;
-						}
-					}
-					x++;
-				}
-
-				if (ini_keywords[x] == NULL)
-				{
-					char msg[80];
-
-					ksprintf(msg, sizeof(msg), "mint.ini: unknown command '%s'\r\n", line);
-					TRAP_Cconws(msg);
-				}
-			}
-		}
-	}
-}
-
-INLINE void
-write_ini (short *options)
+static void
+write_ini (void)
 {
 	short inihandle;
 	char ini_file[32], line[64];
@@ -426,8 +372,6 @@ write_ini (short *options)
 
 	if (inihandle < 0)
 		return;
-
-	options++;		/* Ignore the first one :-) */
 
 	l = strlen(MSG_init_menuwarn);
 	r = TRAP_Fwrite(inihandle, l, MSG_init_menuwarn);
@@ -455,6 +399,58 @@ close:
 		TRAP_Cconws(line);
 		TRAP_Fdelete(ini_file);
 	}
+}
+
+void
+read_ini (void)
+{
+	char *s, ini_file[32], line[MAX_CMD_LEN];
+	long x;
+	short inihandle;
+
+	if (!find_ini(ini_file, sizeof(ini_file)))
+		return;
+
+	inihandle = TRAP_Fopen(ini_file, 0);
+
+	if (inihandle >= 0)
+	{
+		while (getdelim(line, sizeof(line), '\n', inihandle) != -1)
+		{
+			if (line[0] && (line[0] != '#') && strchr(line, '='))
+			{
+				strupr(line);
+				x = 0;
+				while (ini_keywords[x])
+				{
+					s = strstr(line, ini_keywords[x]);
+					if (s && (s == line))
+					{
+						while (*s && (*s != '='))
+							s++;
+						while (*s && (*s == '='))
+							s++;
+						if (*s)
+						{
+							do_func[x](s);
+							break;
+						}
+					}
+					x++;
+				}
+
+				if (ini_keywords[x] == NULL)
+				{
+					char msg[80];
+
+					ksprintf(msg, sizeof(msg), "mint.ini: unknown command '%s'\r\n", line);
+					TRAP_Cconws(msg);
+				}
+			}
+		}
+	}
+	else
+		write_ini();	/* if it doesn't exist, try to create */
 }
 
 int
@@ -500,7 +496,7 @@ wait:
 				step_by_step = option[5];
 				save_ini = option[MENU_OPTIONS-1];
 				if (save_ini)
-					write_ini(option);
+					write_ini();
 				return (int)option[0];
 			}
 			case '0':
@@ -524,7 +520,7 @@ wait:
 static long
 _get_hz_200(void)
 {
-	return *(long *)0x4baL;
+	return *(volatile long *)0x4baL;
 }
 
 static long
