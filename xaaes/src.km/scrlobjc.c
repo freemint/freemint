@@ -67,7 +67,7 @@ static struct xa_wcol_inf default_col =
 };
 
 static SCROLL_ENTRY *
-next_entry(SCROLL_ENTRY *this, short flags, short *level)
+next_entry(SCROLL_ENTRY *this, short flags, short maxlevel, short *level)
 {
 	short lev;
 
@@ -83,7 +83,7 @@ next_entry(SCROLL_ENTRY *this, short flags, short *level)
 	{
 		if (flags & ENT_VISIBLE)
 		{
-			if (this->down && (this->xstate & OS_OPENED))
+			if (this->down && (this->xstate & OS_OPENED) && (maxlevel == -1 || maxlevel > lev))
 				this = this->down, lev++;
 			else if (this->next)
 				this = this->next;
@@ -134,7 +134,7 @@ next_entry(SCROLL_ENTRY *this, short flags, short *level)
 		}
 		else
 		{
-			if (this->down)
+			if (this->down && (maxlevel == -1 || maxlevel > lev))
 				this = this->down, lev++;
 			else if (this->next)
 				this = this->next;
@@ -556,7 +556,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 			
 			xy.y += this->r.h;
 			xy.h -= this->r.h;
-			this = next_entry(this, ENT_VISIBLE, NULL);
+			this = next_entry(this, ENT_VISIBLE, -1, NULL);
 		}
 		
 		if (!entry && xy.h > 0)
@@ -702,7 +702,7 @@ get_last_entry(SCROLL_INFO *list)
 	struct scroll_entry *this = list->start;
 
 	while (this)
-		this = next_entry(this, 0, NULL);
+		this = next_entry(this, 0, -1, NULL);
 	
 	return this;
 }
@@ -710,12 +710,12 @@ get_last_entry(SCROLL_INFO *list)
 static struct scroll_entry *
 get_next_selected(struct scroll_info *list, struct scroll_entry *this)
 {
-	this = next_entry(this, 0, NULL);
+	this = next_entry(this, 0, -1, NULL);
 	while (this)
 	{
 		if (this->state & OS_SELECTED)
 			break;
-		this = next_entry(this, 0, NULL);
+		this = next_entry(this, 0, -1, NULL);
 	}
 	return this;
 }
@@ -729,7 +729,7 @@ get_first_selected(SCROLL_INFO *list)
 	{
 		if (this->state & OS_SELECTED)
 			break;
-		this = next_entry(this, 0, NULL);
+		this = next_entry(this, 0, -1, NULL);
 	}
 	return this;
 }
@@ -776,7 +776,7 @@ find_widest(SCROLL_INFO *list, SCROLL_ENTRY *start)
 	{
 		if (start->r.w > widest)
 			widest = start->r.w;
-		start = next_entry(start, ENT_VISIBLE, NULL);
+		start = next_entry(start, ENT_VISIBLE, -1, NULL);
 	}
 	return widest;
 }
@@ -794,7 +794,7 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 		if (e == this)
 			break;
 		y += this->r.h;
-		this = next_entry(this, ENT_VISIBLE, NULL);
+		this = next_entry(this, ENT_VISIBLE, -1, NULL);
 	}
 	if (this)
 	{
@@ -802,14 +802,14 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 		h = this->r.h;
 		if ((flags & 1))
 		{
-			this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), &level);
+			this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level);
 			if (this && level)
 			{
 				level = 0;
 				while (this)
 				{
 					w += this->r.w, h += this->r.h;
-					this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), &level);
+					this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level);
 				}
 			}
 		}
@@ -1143,6 +1143,22 @@ set(SCROLL_INFO *list,
 	return ret;
 }
 
+static struct se_text *
+get_entry_setext(struct scroll_entry *this, short idx)
+{
+	struct se_text *setext = NULL;
+
+	if (this)
+	{
+		setext = this->c.td.text.text;
+		while (setext && idx--)
+		{
+			setext = setext->next;
+		}
+	}	
+	return setext;
+}
+
 static int
 get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 {
@@ -1218,26 +1234,25 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_ENTRYBYTEXT:
 			{
 				struct seget_entrybyarg *p = arg;
+				struct se_text *setext;
 				struct scroll_entry *this = entry;
-				short idx = 0;
 
 				if (!this)
 					this = list->start;
-				else
-					this = this->down;
-				
-				if (this)
+				while (this)
 				{
-					do
+					setext = get_entry_setext(this, p->idx);
+					if (setext)
 					{
-						idx++;
-						if (!strcmp(this->c.td.text.text->text, p->arg.txt))
+						if (!strcmp(p->arg.typ.txt, setext->text))
 							break;
-						
-					} while ((this = this->next));
+					}
+					this = next_entry(this, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
 				}
-				p->idx = idx;
-				p->e = this;
+				if (this)
+					p->e = this;
+				else
+					ret = 0;
 				break;
 			}
 			case SEGET_LISTXYWH:
@@ -1296,10 +1311,7 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 				
 				if (entry)
 				{
-					if (!p->arg.pnent.maxlevel)
-						p->e = entry->next;
-					else
-						p->e = next_entry(entry, p->arg.pnent.flags, &p->arg.pnent.curlevel);
+					p->e = next_entry(entry, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
 				}
 				break;
 			}
@@ -1309,50 +1321,31 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 				
 				if (entry)
 				{
-					if (!p->arg.pnent.maxlevel)
+					if (!p->arg.maxlevel)
 						p->e = entry->prev;
 					else
-						p->e = prev_entry(entry, p->arg.pnent.flags);
+						p->e = prev_entry(entry, p->arg.flags);
 				}
 				break;
 			}
 			case SEGET_TEXTCPY:
 			{
 				struct seget_entrybyarg *p = arg;
-				struct se_text *setext = NULL;
-				short idx = p->idx;
+				struct se_text *setext;
 
-				if (entry && p && p->arg.txt)
-				{
-					setext = entry->c.td.text.text;
-					while (setext && idx--)
-					{
-						setext = setext->next;
-					}
-				}
-				if (setext)
-					strcpy(p->arg.txt, setext->text);
+				if ((setext = get_entry_setext(entry, p->idx)))
+					strcpy(p->arg.typ.txt, setext->text);
 				else
-					ret = 0, p->ret.ret = 0L;
-
+					ret = 0;
 				break;
 			}
 			case SEGET_TEXTCMP:
 			{
 				struct seget_entrybyarg *p = arg;
-				struct se_text *setext = NULL;
-				short idx = p->idx;
+				struct se_text *setext;
 
-				if (entry && p && p->arg.txt)
-				{
-					setext = entry->c.td.text.text;
-					while (setext && idx--)
-					{
-						setext = setext->next;
-					}
-				}
-				if (setext)
-					p->ret.ret = strcmp(p->arg.txt, setext->text);
+				if ((setext = get_entry_setext(entry, p->idx)))
+					p->ret.ret = strcmp(p->arg.typ.txt, setext->text);
 				else
 					ret = 0;
 				break;
@@ -1360,18 +1353,9 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_TEXTPTR:
 			{
 				struct seget_entrybyarg *p = arg;
-				struct se_text *setext = NULL;
-				short idx = p->idx;
+				struct se_text *setext;
 
-				if (entry && p)
-				{
-					setext = entry->c.td.text.text;
-					while (setext && idx--)
-					{
-						setext = setext->next;
-					}
-				}
-				if (setext)
+				if ((setext = get_entry_setext(entry, p->idx)))
 					p->ret.ptr = setext->text;
 				else
 					ret = 0;
@@ -1685,7 +1669,7 @@ add_scroll_entry(SCROLL_INFO *list,
 							{
 								struct scroll_entry *next;
 								hidem();
-								if ((next = next_entry(new, ENT_VISIBLE, NULL)))
+								if ((next = next_entry(new, ENT_VISIBLE, -1, NULL)))
 								{
 									RECT d, s = list->wi->wa;
 							
@@ -1993,7 +1977,7 @@ empty_scroll_list(SCROLL_INFO *list, SCROLL_ENTRY *this, SCROLL_ENTRY_TYPE type)
 			if (type == -2 || ((this->type & type) || type == -1))
 				this = del_scroll_entry(list, this, false);
 			else
-				this = next_entry(this, ENT_ISROOT, &level);
+				this = next_entry(this, ENT_ISROOT, -1, &level);
 		}
 	}
 	else
@@ -2024,7 +2008,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 	this = list->top;
 		
-	while (n > 0 && (next = next_entry(this, ENT_VISIBLE, NULL))) //this->next)
+	while (n > 0 && (next = next_entry(this, ENT_VISIBLE, -1, NULL))) //this->next)
 	{
 		h = this->r.h;
 		if (list->off_y)
@@ -2322,7 +2306,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 			{
 				if (start->c.data == data)
 					break;
-				start = next_entry(start, 0, NULL);
+				start = next_entry(start, 0, -1, NULL);
 			}
 			ret = start;
 			break;
@@ -2333,7 +2317,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 			{
 				if (!strcmp(start->c.td.text.text->text, data))
 					break;
-				start = next_entry(start, 0, NULL);
+				start = next_entry(start, 0, -1, NULL);
 			}
 			ret = start;
 			break;
@@ -2372,7 +2356,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 		
 			while (this && y < cy)
 			{
-				this = next_entry(this, ENT_VISIBLE, NULL);
+				this = next_entry(this, ENT_VISIBLE, -1, NULL);
 				if (this) y += this->r.h;
 			}
 		}
@@ -2427,7 +2411,7 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 			y = list->top->r.h - list->off_y;
 			while(this && y < cy)
 			{
-				this = next_entry(this, ENT_VISIBLE, NULL); //this->next;
+				this = next_entry(this, ENT_VISIBLE, -1, NULL);
 				if (this) y += this->r.h;
 			}
 		}
@@ -2871,7 +2855,7 @@ slist_msg_handler(
 					}
 					case WA_DNLINE:
 					{
-						if ((n = next_entry(top, ENT_VISIBLE, NULL)))
+						if ((n = next_entry(top, ENT_VISIBLE, -1, NULL)))
 						{
 							if (list->off_y)
 								scroll_up(list, top->r.h - list->off_y, true);
@@ -2881,7 +2865,7 @@ slist_msg_handler(
 								amount--;
 								while (amount)
 								{
-									if (!(n = next_entry(n, ENT_VISIBLE, NULL)))
+									if (!(n = next_entry(n, ENT_VISIBLE, -1, NULL)))
 										break;
 									h += n->r.h;
 									amount--;
@@ -3014,7 +2998,7 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 		}
 		else
 		{
-			SCROLL_ENTRY *n = next_entry(list->cur, ENT_VISIBLE, NULL);
+			SCROLL_ENTRY *n = next_entry(list->cur, ENT_VISIBLE, -1, NULL);
 			if (n)
 			{
 				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);

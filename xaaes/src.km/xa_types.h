@@ -1459,20 +1459,21 @@ struct seget_entrybyarg
 {
 	int idx;
 	struct scroll_entry *e;
-	union
+
+	struct
 	{
-		char *txt;
-		void *data;
-		long usr_flag;
-		struct
+		union
 		{
-			short maxlevel;
-			short curlevel;
+			char *txt;
+			void *data;
+			long usr_flag;
+		}typ;
 #define ENT_VISIBLE	1
 #define ENT_ISROOT	2
-			short flags;
-		}pnent;
-	} arg;
+		short flags;
+		short maxlevel;
+		short curlevel;
+	}arg;
 	
 	union
 	{
