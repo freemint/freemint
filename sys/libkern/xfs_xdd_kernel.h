@@ -658,6 +658,15 @@ INLINE long t_settimeofday (struct timeval *tv, struct timezone *tz)
 # define dma_interface		( KERNEL->dma)
 # define loops_per_sec_ptr	( KERNEL->loops_per_sec)
 # define get_toscookie		(*KERNEL->get_toscookie)
+# define so_register		(*KERNEL->so_register)
+# define so_unregister		(*KERNEL->so_unregister)
+# define so_release		(*KERNEL->so_release)
+# define so_sockpair		(*KERNEL->so_sockpair)
+# define so_connect		(*KERNEL->so_connect)
+# define so_accept		(*KERNEL->so_accept)
+# define so_create		(*KERNEL->so_create)
+# define so_dup			(*KERNEL->so_dup)
+# define so_free		(*KERNEL->so_free)
 
 
 # endif /* _xfs_xdd_kernel_h */
