@@ -797,7 +797,7 @@ check_kentry_version(void)
 # define addroottimeout		(*KENTRY->vec_proc.addroottimeout)
 # define cancelroottimeout	(*KENTRY->vec_proc.cancelroottimeout)
 
-# define addprocwakeup		(*KENTRY->vec_proc.addprocwakeup)
+# define addonprocwakeup	(*KENTRY->vec_proc.addonprocwakeup)
 
 # define create_process		(*KENTRY->vec_proc.create_process)
 

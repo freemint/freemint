@@ -43,7 +43,7 @@ struct procwakeup
 
 # if __KERNEL__ == 1
 
-void _cdecl addprocwakeup(struct proc *, void _cdecl (*)(struct proc *, void *), void *);
+void _cdecl addonprocwakeup(struct proc *, void _cdecl (*)(struct proc *, void *), void *);
 void checkprocwakeup(struct proc *);
 
 # endif

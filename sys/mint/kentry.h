@@ -99,7 +99,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	2
+#define KENTRY_MIN_VERSION	3
 
 
 /* hardware dependant vector
@@ -234,7 +234,7 @@ struct kentry_proc
 	void _cdecl (*cancelroottimeout)(struct timeout *);
 
 	/* add wakeup things for process p */
-	void _cdecl (*addprocwakeup)(struct proc *, void _cdecl (*)(struct proc *, void *), void *);
+	void _cdecl (*addonprocwakeup)(struct proc *, void _cdecl (*)(struct proc *, void *), void *);
 
 	/* create a new process */
 	long _cdecl (*create_process)(const void *ptr1, const void *ptr2, const void *ptr3,
@@ -270,7 +270,7 @@ struct kentry_proc
 	addroottimeout, \
 	cancelroottimeout, \
 	\
-	addprocwakeup, \
+	addonprocwakeup, \
 	\
 	create_process, \
 	\
