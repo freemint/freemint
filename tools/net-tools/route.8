@@ -1,0 +1,76 @@
+.TH route 8 MintNet
+.SH NAME
+route \- display and modify system routing table
+.SH SYNOPSIS
+.B "route [-v]"
+.br
+.B "route add dstaddr interface [metric NN] [gw gateway]"
+.br
+.B "route del dstaddr"
+.SH DESCRIPTION
+.I Route
+is used to display and modify MintNet's routing table. You can add
+an delete routes.
+The whole routing table of the system is displayed (in the format
+.I netstat
+uses when invoked with the
+.B -rn
+option)
+when
+.I route
+is invoked without arguments.
+.SH OPTIONS
+.TP 15
+.SM "add \fBdstaddr\fP"
+This option causes route to add a new route to the systems routing table
+for the destination address
+.BR dstaddr ,
+which can be given in standard dot notation or can be a symbolic name which
+is resolved into an IP address.
+A special case for
+.B dstaddr
+is the name
+.BR default .
+This name causes
+.I route
+to add a default route (used when no other route matches the destination
+address of a packet). This special destination address can only be used
+in conjunction with the
+.B gw
+option.
+.B dstaddr
+can be either the address of a network (thats the case when the host portion
+of the given IP address is zero) or the address of a host (when the host
+portion of the given IP address is non zero).
+Based on the type of the address
+.B route
+will add a route to a network or a route to a host.
+.TP
+.SM "metric NN"
+This option can only be used with the
+.B add
+command and sets the distance metric for the route to the specified
+destination address. The distance metric is a measurement for how good
+the route is. The metric is the number of `hops' (that is the number of
+edges on the route when you imagine the network as a graph with the
+hosts at the vertices) between the source and the destination. The metric
+value is only useful for gateway routes.
+.TP
+.SM "gw \fBaddr\fP"
+This option can only be used with the
+.B add
+command and tells
+.B route
+that this route goes over a gateway host which forwards packets
+to the destination address of the route for you.
+.B addr
+is the address of the gateway and must be the address of a host.
+.TP
+.SM interface
+This is the name of the network interface over which outgoing packets
+to the specified destination address should be sent.
+.SH AUTHOR
+Kay Roemer <roemer@rbi.informatik.uni-frankfurt.de>
+.SH SEE ALSO
+.IR ifconfig (8),
+.IR netstat (8).

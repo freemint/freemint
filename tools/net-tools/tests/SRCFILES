@@ -1,0 +1,27 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = 
+
+COBJS = \
+	client.c \
+	dgram.c \
+	dgramd.c \
+	hostlookup.c \
+	oobcl.c \
+	oobsv.c \
+	pipes.c \
+	protolookup.c \
+	server.c \
+	servlookup.c \
+	sockname.c \
+	sockpair.c \
+	speed.c \
+	speed2.c \
+	speedd.c \
+	tcpcl.c \
+	tcpsv.c \
+	udpclnt.c \
+	udpserv.c
+
+SRCFILES = $(HEADER) $(COBJS)

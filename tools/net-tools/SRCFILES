@@ -1,0 +1,21 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	ifopts.h \
+	masquerade.h
+
+COBJS = \
+	arp.c \
+	diald.c \
+	ifconfig.c \
+	iflink.c \
+	ifopts.c \
+	ifstats.c \
+	masqconf.c \
+	netstat.c \
+	pppconf.c \
+	route.c \
+	slattach.c
+
+SRCFILES = $(HEADER) $(COBJS)
