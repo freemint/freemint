@@ -951,6 +951,14 @@ struct common
 	MFORM *mouse_form;		/* Remember mouse form */
 };
 
+/*
+ * definitions for shutdown in struct common
+ */
+#define QUIT_XAAES    1
+#define HALT_SYSTEM   2
+#define REBOOT_SYSTEM 4
+
+
 /* 
  * definitions for form_alert.
  * The object tree was cloned, but NOT the texts.
