@@ -64,7 +64,9 @@
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 # include "mint/signal.h"
+# include "mint/ssystem.h"
 # include "mint/stat.h"
+# include "cookie.h"
 
 # include <mint/osbind.h>
 # include "mfp.h"
@@ -1257,17 +1259,7 @@ init (struct kerinfo *k)
 		goto failure;
 	}
 	
-# define SSYS_GETCOOKIE	8
-# define COOKIE__MCH	0x5f4d4348L
-/* values of MCH cookie
- */
-# define ST		0
-# define STE		0x00010000L
-# define MEGASTE	0x00010010L
-# define TT		0x00020000L
-# define FALCON		0x00030000L
-# define MILAN_C	0x00040000L
-	if ((s_system (SSYS_GETCOOKIE, COOKIE__MCH, (long) &mch) != 0)
+	if ((s_system (S_GETCOOKIE, COOKIE__MCH, (long) &mch) != 0)
 # ifdef MILAN
 		|| (mch != MILAN_C))
 # else

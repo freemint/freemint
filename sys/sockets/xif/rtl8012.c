@@ -52,8 +52,10 @@
 # include "mint/delay.h"
 # include "mint/mdelay.h"
 # include "mint/sockio.h"
+# include "mint/ssystem.h"
+# include "cookie.h"
 
-# include <osbind.h>
+# include <mint/osbind.h>
 
 
 # ifdef NO_DELAY
@@ -1080,10 +1082,7 @@ driver_init (void)
 		goto failure;
 	}
 	
-# define SSYS_GETCOOKIE	8
-# define COOKIE__MCH	0x5f4d4348L
-# define COOKIE__CPU	0x5f435055L
-	if ((s_system (SSYS_GETCOOKIE, COOKIE__CPU, (long) &cpu) != 0)
+	if ((s_system (S_GETCOOKIE, COOKIE__CPU, (long) &cpu) != 0)
 # ifdef __M68020__
 		|| (cpu < 20))
 	{
