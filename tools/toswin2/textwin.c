@@ -1423,6 +1423,22 @@ static bool text_type(WINDOW *w, short code, short shift)
 		}
 	}
 
+	/* Window scrolling like in Linux's console */
+	if (shift == 2) {				/* Shift pressed */
+		if (code == 0x4900 || code == 0x4838)	/* PageUp or ArrowUp */
+		{
+			/* XXX: Is the 0x4900 really a _shifted_ PageUp scancode? */
+			arrow_textwin(w, WA_UPPAGE);
+			return FALSE;
+		}
+		if (code == 0x5100 || code == 0x5032)	/* PageDown or ArrowDn */
+		{
+			/* XXX: Is the 0x5100 really a _shifted_ PageDown scancode? */
+			arrow_textwin(w, WA_DNPAGE);
+			return FALSE;
+		}
+	}
+
 	/* no input on the console */
 	if (con_fd > 0 && t->fd == con_fd)
 		return FALSE;
