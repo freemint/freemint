@@ -3021,16 +3021,12 @@ is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
    Another reason to have the active_widget handling in the kernel. */
 
 bool
-checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md)
+checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, short x, short y, XA_WIDGET **ret)
 {
 	XA_WIDGET *widg;
-	int f, clicks;
+	int f;
 	short winstatus = w->window_status;
 	bool inside = false;
-
-	clicks = md->clicks;
-	if (clicks > 2)
-		clicks = 2;
 
 	/* Scan through widgets to find the one we clicked on */
 	for (f = 0; f < XA_MAX_WIDGETS; f++)
@@ -3042,14 +3038,6 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 
 		widg = w->widgets + f;
 
-#if 0
-		display("rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
-			t_widg[widg->type], widg, widg->stuff,
-			widg->type == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 );
-		display(" -- statusmask %x, window_status %x", widg->loc.statusmask, winstatus);
-		display(" -- widg->display=%lx", widg->display);
-#endif
-
 		if (!(winstatus & widg->loc.statusmask) && widg->display)	/* Is the widget in use? */
 		{
 			if (    widg->loc.mask         == 0		/* not maskable */
@@ -3059,17 +3047,17 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 				if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
 				{					/* Normal widgets */
 					rp_2_ap_cs(w, widg, &r);	/* Convert relative coords and window location to absolute screen location */
-					inside = m_inside(md->x, md->y, &r);
-					//display("%d/%d - %d/%d/%d/%d", md->x, md->y, r);
+					inside = m_inside(x, y, &r);
 				}
 				else
 				{
 					r = w->r;			/* Inside window and outside border area = border. */
-					inside = !m_inside(md->x, md->y, &w->ba);
+					inside = !m_inside(x, y, &w->ba);
 				}
 				if (inside)
 				{
-					//display("checkif_do_widgets: true");
+					if (ret)
+						*ret = widg;
 					return true;
 				}
 			}
@@ -3078,6 +3066,9 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 		//	display("masked");
 	}
 	//display("checkif_do_widgets: false");
+	if (ret)
+		*ret = NULL;
+	
 	return false;
 }
 
@@ -3280,20 +3271,22 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 void
 redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state)
 {
-
-	widg->state = state;
-
-	/* No rectangle list. */
-	if (wind->nolist)
+	if (widg->display)
 	{
-		hidem();
-		/* Not on top, but visible */
-		widg->display(lock, wind, widg);
-		showm();
+		widg->state = state;
+
+		/* No rectangle list. */
+		if (wind->nolist)
+		{
+			hidem();
+			/* Not on top, but visible */
+			widg->display(lock, wind, widg);
+			showm();
+		}
+		else
+			/* Display the selected widget */
+			display_widget(lock, wind, widg);
 	}
-	else
-		/* Display the selected widget */
-		display_widget(lock, wind, widg);
 }
 
 void
@@ -3334,7 +3327,7 @@ set_winmouse(void)
 
 	wind_mshape(wind, x, y);
 }
-	
+
 short
 wind_mshape(struct xa_window *wind, short x, short y)
 {
@@ -3346,6 +3339,31 @@ wind_mshape(struct xa_window *wind, short x, short y)
 
 	if (wind)
 	{
+		struct xa_window *rwind = NULL;
+		struct xa_widget *hwidg, *rwidg = NULL;
+
+		checkif_do_widgets(0, wind, 0, x, y, &hwidg);
+		
+		if (hwidg && !hwidg->owner && hwidg->display)
+		{
+			if (wind != C.hover_wind || hwidg != C.hover_widg)
+			{
+				rwind = C.hover_wind;
+				rwidg = C.hover_widg;
+				redisplay_widget(0, wind, hwidg, OS_SELECTED);
+				C.hover_wind = wind;
+				C.hover_widg = hwidg;
+			}
+		}
+		else if ((rwind = C.hover_wind))
+		{
+			rwidg = C.hover_widg;
+			C.hover_wind = NULL, C.hover_widg = NULL;
+		}
+		
+		if (rwind)
+			redisplay_widget(0, rwind, rwidg, OS_NORMAL);
+		
 		if (wind->active_widgets & SIZER)
 		{
 			widg = wind->widgets + XAW_RESIZE;

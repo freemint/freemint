@@ -340,7 +340,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	
 	if ((md->state & MBS_RIGHT) || wind->nolist || is_topped(wind) || wind->active_widgets & NO_TOPPED)
 	{
-		if (checkif_do_widgets(lock, wind, 0, md))
+		if (checkif_do_widgets(lock, wind, 0, md->x, md->y, NULL))
 		{
 			DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets to %s", target->name));
 			post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
@@ -348,7 +348,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 		else
 			deliver_button_event(wind, target, md);
 	}
-	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, 0, md))
+	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, 0, md->x, md->y, NULL))
 	{
 		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
 		post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
@@ -378,30 +378,26 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
 	 */
-//	if (!C.update_lock && !C.mouse_lock)
-//	{
-		if (C.menu_base && md->state)
-		{
-			client = C.menu_base->client;
-			DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
-			post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
-			//post_tpcevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
-			return;
-		}
+	if (C.menu_base && md->state)
+	{
+		client = C.menu_base->client;
+		DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
+		post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+		//post_tpcevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+		return;
+	}
 
-		/*
-		 * If button released and widget_active is set (live movements)...
-		 */
-		if (widget_active.widg && !md->state)
-		{
-			widget_active.m = *md;
-			client = widget_active.wind->owner;
-			DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
-			post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
-			return;
-		}
-//	}
-//	else
+	/*
+	 * If button released and widget_active is set (live movements)...
+	 */
+	if (widget_active.widg && !md->state)
+	{
+		widget_active.m = *md;
+		client = widget_active.wind->owner;
+		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+		post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
+		return;
+	}
 	{
 		if ( (locker = C.mouse_lock) )//mouse_locked()) )
 		{

@@ -729,6 +729,7 @@ change_window_attribs(enum locks lock,
 		struct xa_client *client,
 		struct xa_window *w,
 		XA_WIND_ATTR tp,
+		bool r_is_wa,
 		RECT r, RECT *remember)
 {
 	XA_WIND_ATTR old_tp = w->active_widgets;
@@ -748,15 +749,32 @@ change_window_attribs(enum locks lock,
 	if (tp & MENUBAR)
 		tp |= XaMENU;
 
-	w->rc = w->r = r;
+	//w->rc = w->r = r;
+	standard_widgets(w, tp, false);
+
+	if (r_is_wa)
+	{
+		w->r = calc_window(lock, client, WC_BORDER,
+				 tp,
+				 client->options.thinframe,
+				 client->options.thinwork,
+				 *(RECT *)&r);
+	}
+	else
+		w->r = r;
+	
+	w->rc = w->r;
 
 	if ((w->window_status & XAWS_SHADED))
 		w->r.h = w->sh;
 
+	calc_work_area(w);
+
+	free_rect_list(w->rect_start);
 	w->rect_user = w->rect_list = w->rect_start = NULL;
 
 	/* Attach the appropriate widgets to the window */
-	standard_widgets(w, tp, false);
+	//standard_widgets(w, tp, false);
 
 	/* If STORE_BACK extended attribute is used, window preserves its own background */
 	if (!(tp & STORE_BACK))
@@ -773,7 +791,7 @@ change_window_attribs(enum locks lock,
 		w->background = kmalloc(calc_back(&r, screen.planes));
 	}
 
-	calc_work_area(w);
+	//calc_work_area(w);
 
 	if (tp & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
@@ -792,6 +810,14 @@ change_window_attribs(enum locks lock,
 	if ( get_widget(w, XAW_TOOLBAR)->stuff )
 	{
 		set_toolbar_coords(w);
+	}
+	
+	if ( w->active_widgets & XAW_TOOLBAR )
+	{
+		OBJECT *obtree = ((XA_TREE *)get_widget(w, XAW_TOOLBAR)->stuff)->tree;
+
+		obtree->ob_x = w->wa.x;
+		obtree->ob_y = w->wa.y;
 	}
 
 	if (remember)
@@ -1474,6 +1500,9 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (!(wind->window_status & XAWS_OPEN))
 		return false;
 
+	if (wind == C.hover_wind)
+		C.hover_wind = NULL, C.hover_widg = NULL;
+
 	if (wind->nolist)
 	{
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
@@ -1598,6 +1627,9 @@ free_standard_widgets(struct xa_window *wind)
 static void
 delete_window1(enum locks lock, struct xa_window *wind)
 {
+	if (wind == C.hover_wind)
+		C.hover_wind = NULL, C.hover_widg = NULL;
+
 	if (!wind->nolist)
 	{
 		DIAG((D_wind, wind->owner, "delete_window1 %d for %s: open? %s",
@@ -1960,14 +1992,6 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 
 	wa = wind->wa;
 
-	if (!(wind->window_status & XAWS_OPEN))
-		return;
-
-	oldrl = wind->rect_start;
-	wind->rect_start = NULL;
-	newrl = make_rect_list(wind, 0);
-	wind->rect_start = newrl;
-
 	xmove = new->x - old.x;
 	ymove = new->y - old.y;
 	
@@ -1995,6 +2019,14 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		}
 	}
 		
+	if (!(wind->window_status & XAWS_OPEN))
+		return;
+
+	oldrl = wind->rect_start;
+	wind->rect_start = NULL;
+	newrl = make_rect_list(wind, 0);
+	wind->rect_start = newrl;
+
 	if (wind->nolist)
 	{
 		if (xmove || ymove || resize)

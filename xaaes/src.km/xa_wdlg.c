@@ -109,6 +109,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		{
 			wt = wdlg->std_wt;
 			obtree = wt->tree;
+		#if 0
 			obtree->ob_x = wind->wa.x;
 			obtree->ob_y = wind->wa.y;
 			if (!wt->zen)
@@ -116,6 +117,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 				obtree->ob_x += wt->ox;
 				obtree->ob_y += wt->oy;
 			}
+		#endif
 		}
 
 		lock_screen(wind->owner, false, NULL, 0);
@@ -419,7 +421,7 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (wind && (wdlg = wind->wdlg))
 	{
-		RECT r = wind->r;
+		RECT r = wind->wa; //r;
 		XA_WIND_ATTR tp = pb->intin[0];
 		char *s;
 
@@ -429,31 +431,25 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		 * WDIALOG interface. So dont blame me. */
 
 		/* recreate window with final widget set. */
-		if ((short)tp != (short)wind->active_widgets)
+		
+		if (pb->intin[1] == -1 || pb->intin[2] == -1)
+		{
+			r.x = (root_window->wa.w - r.w) / 2;
+			r.y = (root_window->wa.h - r.h) / 2;
+		}
+		else
+		{
+			r.x = pb->intin[1];
+			r.y = pb->intin[2];
+		}
 		{
 			RECT or;
 
 			obj_area(wdlg->std_wt, 0, &or);
-
-			r = calc_window(lock, client, WC_BORDER,
-					tp,
-					client->options.thinframe,
-					client->options.thinwork,
-					*(RECT *)&or); //*(RECT *)&tree->ob_x);
-
-			change_window_attribs(lock, client, wind, tp, r, &r);
+			or.x = r.x;
+			or.y = r.y;
+			change_window_attribs(lock, client, wind, tp, true, or, NULL);
 		}
-	
-		r.x = pb->intin[1];
-		r.y = pb->intin[2];
-
-		if (r.x == -1 || r.y == -1)
-		{
-			/* desktop work area */
-			r.x = (root_window->wa.w - r.w) / 2;
-			r.y = (root_window->wa.h - r.h) / 2;
-		}
-
 		if (!(s = (char *)pb->addrin[1]))
 			s = client->proc_name;
 		{
@@ -466,8 +462,7 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			*d = *b = 0;
 			get_widget(wind, XAW_TITLE)->stuff = wind->wname;
 		}
-
-		open_window(lock, wind, r);
+		open_window(lock, wind, wind->rc);
 		wdlg->data = (void*)pb->addrin[2];
 		wdlg->exit(wdlg->handle, 0, HNDL_OPEN, pb->intin[3], wdlg->data);
 
@@ -837,8 +832,8 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					if (!nr)
 					{
 						nr = &r;
-						r.x = obtree->ob_x = wind->wa.x;
-						r.y = obtree->ob_y = wind->wa.y;
+						r.x = /*obtree->ob_x =*/ wind->wa.x;
+						r.y = /*obtree->ob_y =*/ wind->wa.y;
 						r.w = obtree->ob_width;
 						r.h = obtree->ob_height;
 					}

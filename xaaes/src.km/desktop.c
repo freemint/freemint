@@ -151,6 +151,7 @@ Set_desktop(XA_TREE *new_desktop)
 		((XA_TREE *)wi->stuff)->flags &= ~WTF_STATIC;
 	}
 	new_desktop->widg = wi;
+	wi->owner = new_desktop->owner;
 	new_desktop->flags |= WTF_STATIC;
 
 	ob = new_desktop->tree;
