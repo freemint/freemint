@@ -4,7 +4,7 @@
 TARGET = mount_nfs
 
 SHELL = /bin/sh
-SUBDIRS = lib
+SUBDIRS = 
 
 srcdir = .
 top_srcdir = ..
@@ -19,17 +19,14 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-GENERAL = -mshort
-INCLUDES = -Ilib
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
-LIBS += -Llib -lrpc16 -lsocket16
+LIBS += -lsocket
 GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES

@@ -1,7 +1,7 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-HEADER = common.h mntent.h mount.h
+HEADER = mntent.h mount.h mount_xdr.h nfsmnt.h
 COBJS = mntent.c mount.c mount_xdr.c nfsmnt.c
 
 SRCFILES = $(HEADER) $(COBJS)
