@@ -683,7 +683,7 @@ pCB_setenv (const char *var, const char *arg, PARSINF *inf)
 		char *new_env = (char *)m_xalloc (inf->env_len += 1024, 0x13);
 		if (init_env) {
 			memcpy (new_env, init_env, env_used);
-			m_free ((virtaddr)init_env);
+			m_free ((long) init_env);
 		}
 		init_env     = new_env;
 		inf->env_ptr = new_env + env_used;
