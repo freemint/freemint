@@ -182,15 +182,13 @@ find_menu_bar(enum locks lock)
 
 	while (last)
 	{
-		if (!last->killed)
+		if (last->std_menu.tree)
 		{
-			if (last->std_menu.tree)
-			{
-				rtn = &last->std_menu;
-				DIAGS(("found std_menu %lx", rtn));
-				break;
-			}
+			rtn = &last->std_menu;
+			DIAGS(("found std_menu %lx", rtn));
+			break;
 		}
+
 		last = last->prior;
 	}
 
@@ -212,15 +210,13 @@ find_desktop(enum locks lock)
 
 	while (last)
 	{
-		if (!last->killed)
+		if (last->desktop.tree)
 		{
-			if (last->desktop.tree)
-			{
-				rtn = last;
-				DIAGS(("found desktop %lx", rtn));
-				break;
-			}
+			rtn = last;
+			DIAGS(("found desktop %lx", rtn));
+			break;
 		}
+
 		last = last->prior;
 	}
 
