@@ -78,6 +78,7 @@ make_rect_list(struct xa_window *wind, bool swap)
 		}
 		if (wx2 > sx2)
 			nrl->r.w -= wx2 - sx2;
+
 		if (nrl->r.y < screen.r.y)
 		{
 			nrl->r.h -= screen.r.y - nrl->r.y;
@@ -105,13 +106,11 @@ make_rect_list(struct xa_window *wind, bool swap)
 #if GENERATE_DIAGS
 			i = 0;
 #endif
-			rl_prev = NULL;
-
 			r_win = wl->r;		
 			win_x2 = r_win.x + r_win.w;
 			win_y2 = r_win.y + r_win.h;
 
-			for (rl = nrl; rl; rl = rl_next)
+			for (rl = nrl, rl_prev = NULL; rl; rl = rl_next)
 			{
 
 				r_ours = rl->r;
@@ -120,6 +119,8 @@ make_rect_list(struct xa_window *wind, bool swap)
 
 				h = r_win.y - r_ours.y;
 				w = r_win.x - r_ours.x;
+
+				rl_next = rl->next;
 
 				DIAGS((" -- nrl=%lx, rl_prev=%lx", nrl, rl_prev));
 				DIAGS((" -- [%d] ours=(%d/%d/%d/%d), wind %d = (%d/%d/%d/%d)", i, r_ours, wl->handle, r_win));
@@ -230,18 +231,19 @@ make_rect_list(struct xa_window *wind, bool swap)
 					DIAGS((" -- 1. whole=(%d/%d/%d/%d)", rl->r));
 				}
 
-				rl_next = rl->next;
-
 				if (!flag)
 				{
 					DIAGS((" covered, releasing (nrl=%lx) %lx=(%d/%d/%d/%d) rl_prev=%lx(%lx)",
 						nrl, rl, rl->r, rl_prev, rl_prev ? (long)rl_prev->next : 0));
 					if (rl == nrl)
 					{
-						if (rl_prev == nrl)
-							rl_prev = NULL;
+						//if (rl_prev == nrl)
+						//	rl_prev = NULL;
 						nrl = rl_next;
 					}
+					else if (nrl->next == rl)
+						nrl->next = rl_next;
+
 					if (rl_prev)
 						rl_prev->next = rl_next;
 					kfree(rl);

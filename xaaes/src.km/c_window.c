@@ -2166,6 +2166,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 
 								if (nrl == rrl)
 								{
+									//if (prev == rrl)
+									//	prev = NULL;
 									nrl = next;
 								}
 								else if (nrl->next == rrl)
