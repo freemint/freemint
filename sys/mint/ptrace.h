@@ -48,6 +48,8 @@
 # define PT_DETACH	10	/* detach from running process */
 # define PT_SYSCALL	11	/* continue and stop at next return from syscall */
 
+# define PT_BASEPAGE	999
+
 # define PT_FIRSTMACH	32	/* for machine-specific requests */
 # include "arch/ptrace.h"
 
