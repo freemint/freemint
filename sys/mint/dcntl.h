@@ -484,6 +484,14 @@ struct control_FAT32
 
 
 /*
+ * block device ioctl
+ */
+
+# define BLKGETSIZE		(('b'<< 8) | 1)
+# define BLOCKSIZE		(('b'<< 8) | 2)
+
+
+/*
  * cursor control
  */
 
