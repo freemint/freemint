@@ -802,16 +802,13 @@ load_keytbl(void)
 	 */
 	ksprintf(name, sizeof(name), "%skeyboard.tbl", sysdir);
 
+	boot_printf(MSG_keytable_loading, name);
+
 	r = load_keyboard_table(name, 0);
 	if (r == 0)
-	{
-		char msg[64];
-
-		ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
-		sys_c_conws(msg);
-	}
+		boot_printf(MSG_keytable_loaded, gl_kbd);
 	else
-		sys_c_conws(MSG_keytable_faulty);
+		boot_printf(MSG_init_error, r);
 }
 
 /* Initialize the built-in keyboard tables.

@@ -41,6 +41,7 @@
 # include "console.h"		/* c_conws() */
 # include "global.h"		/* *sysdir */
 # include "info.h"		/* messages */
+# include "init.h"		/* boot_printf() */
 # include "k_fds.h"		/* FP_ALLOC() */
 # include "kmemory.h"		/* kmalloc(), kfree() */
 # include "proc.h"		/* rootproc */
@@ -790,14 +791,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 
 			offset = s[2];
 
-			if (offset<0x80) /* first 128 characters (0..127) are always unicode compatible */
-			{
-				char msg[128];
-
-				ksprintf(msg, sizeof(msg), MSG_unicode_cannot_below_128);
-				sys_c_conws(msg);
-			}
-			else
+			if (offset >= 0x80) /* first 128 characters (0..127) are always unicode compatible */
 			{
 				codepage[s[1]] = offset;
 
@@ -814,14 +808,6 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 	}
 	kfree(buf);
 
-	/* print success message */
-	{
-		char msg[128];
-
-		ksprintf(msg, sizeof(msg), MSG_unitable_loaded, name);
-		sys_c_conws(msg);
-	}
-
 	return 0;
 }
 
@@ -836,18 +822,25 @@ init_unicode(void)
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return;
 
-	ksprintf(name, sizeof(name), "%unicode.tbl", sysdir);
+	ksprintf(name, sizeof(name), "%sunicode.tbl", sysdir);
+
+	boot_printf(MSG_unitable_loading, name);
 
 	ret = do_open(&fp, name, O_RDONLY, 0, &xa);
 	if (!ret)
 	{
 		ret = load_unicode_table(fp, name, xa.size);
 		do_close(rootproc, fp);
+
+		/* print success message */
+		boot_printf(MSG_init_done, name);
 	}
 	else
 	{
 		fp->links = 0;		/* suppress complaints */
 		FP_FREE(fp);
+
+		boot_printf(MSG_init_error, ret);
 	}
 }
 
