@@ -165,7 +165,7 @@ init_cookies (void)
 	/* If there was no cookie jar, we install basic
 	 * Atari cookies, assuming we're on an old ST.
 	 */
-	if (!cookie)
+	if (!oldcookie)
 	{
 		newcookie[i].tag = COOKIE__MCH;
 		newcookie[i].value = 0x00000000L;
