@@ -179,6 +179,7 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 			if (is_hidden(wind))
 				unhide_window(wlock, wind);
 			top_window(wlock, wind, 0);
+			after_top(0, true);
 			break;
 		}
 		case WM_CLOSED:

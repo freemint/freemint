@@ -122,7 +122,8 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	    && f <  ALERT_BUT1 + ALERT_BUTTONS
 	    && !(alert_form[f].ob_flags & OF_HIDETREE))
 	{
-		b = watch_object(lock, wt, f, OS_SELECTED, 0);
+		//b = watch_object(lock, wt, f, OS_SELECTED, 0);
+		b = obj_watch(wt, f, OS_SELECTED, 0, wind->rect_start);
 
 		if (b)
 			sel_b = f + 1 - ALERT_BUT1;
