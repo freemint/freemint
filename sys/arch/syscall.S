@@ -84,6 +84,8 @@
 	.globl	_sys_b_ubconstat,_do_bconin,_sys_b_ubcostat,_sys_b_kbshift
 
 	.globl	_secure_mode,_falcontos
+	
+	.globl	_stop
 
 // ***********************
 // * GEMDOS trap handler *
@@ -415,6 +417,20 @@ _syscall:
 	jsr	_bflush 		// flush the buffer
 
 L_noflush:
+
+// Code for ptrace mode PT_SYSCALL
+	move.l	_curproc,a0
+	tst.l	P_PTRACER(a0)		// is someone tracing us?
+	beq.s	pt_ende
+	tst.w	P_PTRACEFLAGS(a0)	// are system calls being traced?
+	beq.s	pt_ende
+	move.w	#5,-(SP)		// move.w #SIGTRAP,-(sp)
+	jsr	_stop			// send SIGTRAP to the process
+	addq.l	#2,sp
+pt_ende:
+// end of code for ptrace mode PT_SYSCALL
+
+
 //
 // figure out which routine to call
 //
