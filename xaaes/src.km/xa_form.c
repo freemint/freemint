@@ -109,7 +109,7 @@ alert_destructor(enum locks lock, struct xa_window *wind)
  * Small handler for clicks on an alert box
  */
 static bool
-click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	XA_TREE *wt = widg->stuff;
 	RECT r;
@@ -1626,7 +1626,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
  * (xa_)windowed form_do() (double) click handler
  */
 bool
-click_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	int f,is, dbl = widg->clicks > 1 ? 0x8000 : 0;
 	XA_TREE *wt = widg->stuff;

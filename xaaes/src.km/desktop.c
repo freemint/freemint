@@ -48,7 +48,7 @@ get_desktop(void)
 }
 
 bool
-click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	struct xa_client *mowner = menu_owner();
 	struct xa_client *client = desktop_owner();
@@ -60,20 +60,17 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 	/* Ozk:	Trying to get away from vq_mouse() usage. Initial mouse status to act
 	 *	upon is always found in mu_button structure.
 	*/
-	if (!mouse_locked() && mowner != client && (mu_button.b & 1))
+	if (!mouse_locked() && mowner != client && (md->state & 1))
 	{
 		int item;
-		short b;
 
-		item = find_object(get_desktop()->tree, 0, 1, widg->mx, widg->my, 0, 0);
+		item = find_object(get_desktop()->tree, 0, 1, md->x, md->y, 0, 0);
 
 		DIAG((D_button, NULL, "  --  item %d", item));
 
 		/* button must be released on the root object. */
 
-		check_mouse(client, &b, 0, 0);
-
-		if (b == 0 && item == 0)
+		if (md->cstate == 0 && item == 0)
 		{
 			/* Also unhides the windows. */
 			app_in_front(lock, client);

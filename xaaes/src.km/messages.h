@@ -45,6 +45,7 @@ union msg_buf
 const char *pmsg(short m);
 
 void send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
+void deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 
 struct xa_window;
 struct xa_client;

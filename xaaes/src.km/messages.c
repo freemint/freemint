@@ -26,6 +26,7 @@
 
 #include "messages.h"
 
+#include "c_message.h"
 #include "k_main.h"
 #include "vaproto.h"
 #include "xa_types.h"
@@ -236,6 +237,8 @@ is_inside(RECT r, RECT o)
 void
 send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
 {
+	union msg_buf *m;
+
 	if (dest_client == NULL)
 	{
 		DIAG((D_appl, NULL, "WARNING: Invalid target for send_a_message()"));
@@ -244,14 +247,33 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 
 	/* XaAES has left its main loop, so no point queuing messages. */
 	if (C.shutdown & QUIT_NOW)
-		return;
+		return;	
 
-	Sema_Up(clients);
+	m = (union msg_buf *)kmalloc(sizeof(m));
+
+	if (m)
+	{
+		if (dest_client)
+		{
+			*m = *msg;
+			post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
+		}
+	}
+}
+
+/* Ozk:
+ * deliver_message is guaranteed to run in the dest_client's context
+*/
+void
+deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
+{
+	//Sema_Up(clients);
 
 	/* Is the dest client waiting for a message at the moment? */
 	if (dest_client->waiting_for & MU_MESAG)
 	{
 		union msg_buf *clnt_buf;
+
 #if GENERATE_DIAGS
 		if (dest_client->waiting_pb == NULL)
 		{
@@ -288,7 +310,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		DIAG((D_m, NULL, "Send message %s to %s", pmsg(msg->s.msg), c_owner(dest_client)));
 		/* Write success to client's reply pipe to unblock the process */
 		dest_client->usr_evnt = 1;
-		Unblock(dest_client, XA_OK, 22);
+		//Unblock(dest_client, XA_OK, 22);
 
 	}
 	else /* Create a new entry in the destination client's pending messages list */
@@ -446,7 +468,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		}
 	}
 
-	Sema_Dn(clients);
+	//Sema_Dn(clients);
 }
 
 /* AES internal msgs (All standard) */

@@ -1267,7 +1267,7 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 /* Called by XA_move_event()
    and by do_widgets() only for the menu_bar itself */
 static bool
-click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	struct xa_client *client;
 	bool l = false;
@@ -1439,7 +1439,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item)
 	XA_WIDGET *widg = get_widget(wind, XAW_MENU);
 	XA_WIDGET_LOCATION loc;
 	OBJECT *ob = form +item;
-	WidgetBehaviour display_object_widget;
+	DisplayWidget display_object_widget;
 	int frame = wind->frame;
 
 	if (frame < 0)
