@@ -94,10 +94,6 @@ terminate(struct proc *curproc, short code, short que)
 
 	if (curproc->pid == 0)
 		FATAL ("attempt to terminate MiNT");
-# if 0
-	/* cancel all user-specified interrupt signals */
-	cancelsigintrs();
-# endif
 
 	/* cancel all pending timeouts for this process */
 	cancelalltimeouts();
