@@ -27,6 +27,7 @@ LIBS = -Linet4 -linet4 $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
+SGENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
