@@ -278,10 +278,19 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 	char *name;
 	long r;
 
-	DEBUG(("load_modules: enter (%s)", ext));
+	DEBUG(("load_modules: enter(\"%s\", %s)", path ? path : sysdir, ext));
 
 	strcpy(buf, path ? path : sysdir);
 	len = strlen(buf);
+
+	/* add path delimiter if missing */
+	if (buf[len-1] != '/' && buf[len-1] != '\\')
+	{
+		DEBUG(("load_modules: path separator is missing, adding it"));
+		buf[len++] = '\\';
+		buf[len] = '\0';
+	}
+
 	name = buf + len;
 	len = sizeof(buf) - len;
 
