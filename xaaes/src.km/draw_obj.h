@@ -55,7 +55,7 @@ bool d3_background(OBJECT *ob);
 bool d3_activator(OBJECT *ob);
 void d3_pushbutton(short d, RECT *r, BFOBSPEC *col, short state, short thick, short mode);
 
-void	display_object(enum locks lock, XA_TREE *wt, short object, short parent_x, short parent_y, short which);
+void	display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short object, short parent_x, short parent_y, short which);
 short	draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short depth, short which);
 //void	redraw_object(enum locks lock, XA_TREE *wt, int );
 

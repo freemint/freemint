@@ -499,7 +499,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		{
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
-			wt = set_toolbar_widget(lock, alert_window, client, alert_form, -1);
+			wt = set_toolbar_widget(lock, alert_window, client, alert_form, -1, WIDG_NOTEXT);
 			wt->extra = alertxt;
 			wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
 
@@ -634,9 +634,10 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "XA_alert %s", (char *)pb->addrin[0]));
 	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0]);
+	Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
-	return XAC_BLOCK;
+	return XAC_DONE; //XAC_BLOCK;
 }
 
 struct
@@ -738,9 +739,12 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 	sprintf(error_alert, sizeof(error_alert), "[%c][ ERROR: | %s ][ Ok ]", icon, msg);
 
 	DIAG((D_form, client, "alert_err %s", error_alert));
+	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, 1, error_alert);
-
-	return XAC_BLOCK;
+	Block(client, 0);
+	client->status &= ~CS_FORM_ALERT;
+	
+	return XAC_DONE; //XAC_BLOCK;
 }
 
 /*
@@ -825,8 +829,7 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 			/* This was just a redraw request */
-			update_windows_below(lock, (const RECT *)(&(pb->intin[5])), NULL, window_list);
-			//display_windows_below(lock, (const RECT *)&pb->intin[5], window_list);
+			update_windows_below(lock, (const RECT *)(&(pb->intin[5])), NULL, window_list, NULL);
 
 		bzero(&client->fmd, sizeof(client->fmd));
 		break;
@@ -862,6 +865,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (Setup_form_do(client, obtree, nextobj/*pb->intin[0]*/, &wind, &nextobj))
 		{
+			client->status |= CS_FORM_DO;
 			if (wind)
 			{
 				if (!(wind->window_status & XAWS_OPEN))
@@ -872,7 +876,10 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					display_window(lock, 4, wind, NULL);
 
 			}
-			return XAC_BLOCK;
+			Block(client, 0);
+			client->status &= ~CS_FORM_DO;
+			return XAC_DONE;
+			//return XAC_BLOCK;
 		}
 		/* XXX - Ozk:
 		 *  If client didnt fetch update lock calling wind_upd(), XaAES uses

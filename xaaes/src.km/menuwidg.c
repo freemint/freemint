@@ -1687,7 +1687,7 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 		widg->owner = wind->owner;
 
 	menu->is_menu   = true;				/* set the flags in the original */
-	menu->menu_line = (wind == root_window);	/* menu in root window.*/
+	menu->menu_line = true; //(wind == root_window);	/* menu in root window.*/
 	menu->widg = widg;
 
 	/* additional fix to fit in window */

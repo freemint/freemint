@@ -321,6 +321,12 @@ cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
 
 	DIAG((D_mouse, ce->client, "cXA_active_widget for %s", ce->client->name));
 	do_active_widget(lock, ce->client);
+
+	/* If active widget action did not generate any WM_MOVED or other WM_REDRAW generating
+	 * actions, move_block is still 1 in which case we can release the move_block here
+	 */
+	if (C.move_block == 1)
+		C.move_block = 0;
 }
 
 void

@@ -862,7 +862,7 @@ static short menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
 		if (wt->is_menu)
 		{
 			OBJECT *ob = wt->tree + wt->current;
-			if (ob->ob_state&OS_DISABLED)
+			if (ob->ob_state & OS_DISABLED)
 			{
 				c = screen.dial_colours.shadow_col;
 				done(OS_DISABLED);
@@ -1330,7 +1330,7 @@ static const short selected3D_colour[] = {1, 0,13,15,14,10,12,11, 9, 8, 5, 7, 6,
  * Draw a box (respecting 3d flags)
  */
 void
-d_g_box(enum locks lock, struct widget_tree *wt)
+d_g_box(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
@@ -1379,7 +1379,7 @@ d_g_box(enum locks lock, struct widget_tree *wt)
  * Draw a plain hollow ibox
  */
 void
-d_g_ibox(enum locks lock, struct widget_tree *wt)
+d_g_ibox(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
@@ -1430,7 +1430,7 @@ d_g_ibox(enum locks lock, struct widget_tree *wt)
  * Display a boxchar (respecting 3d flags)
  */
 void
-d_g_boxchar(enum locks lock, struct widget_tree *wt)
+d_g_boxchar(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r, gr = r;
 	OBJECT *ob = wt->tree + wt->current;
@@ -1489,7 +1489,7 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt)
  * Draw a boxtext object
  */
 void
-d_g_boxtext(enum locks lock, struct widget_tree *wt)
+d_g_boxtext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	short thick = 0;
 	ushort selected;
@@ -1533,7 +1533,7 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt)
 	done(OS_SELECTED);
 }
 void
-d_g_fboxtext(enum locks lock, struct widget_tree *wt)
+d_g_fboxtext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	char temp_text[256];
 	RECT r = wt->r;
@@ -1596,7 +1596,7 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt)
  * Draw a button object
  */
 void
-d_g_button(enum locks lock, struct widget_tree *wt)
+d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r, gr = r;
 	OBJECT *ob = wt->tree + wt->current;
@@ -1636,7 +1636,7 @@ d_g_button(enum locks lock, struct widget_tree *wt)
 			XA_TREE b;
 			b.owner = wt->owner; //C.Aes;
 			b.tree = get_widgets();
-			display_object(	lock, &b,
+			display_object(	lock, &b, clip,
 					  (ob->ob_flags & OF_RBUTTON)
 					? (selected ? RADIO_SLCT : RADIO_DESLCT )
 					: (selected ? BUT_SLCT   : BUT_DESLCT   ),
@@ -1752,7 +1752,7 @@ icon_characters(ICONBLK *iconblk, short state, short obx, short oby, short icx, 
  * Draw a image
  */
 void
-d_g_image(enum locks lock, struct widget_tree *wt)
+d_g_image(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	OBJECT *ob = wt->tree + wt->current;
 	BITBLK *bitblk;
@@ -1797,7 +1797,7 @@ d_g_image(enum locks lock, struct widget_tree *wt)
  * Draw a mono icon
  */
 void
-d_g_icon(enum locks lock, struct widget_tree *wt)
+d_g_icon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	OBJECT *ob = wt->tree + wt->current;
 	ICONBLK *iconblk;
@@ -1858,7 +1858,7 @@ d_g_icon(enum locks lock, struct widget_tree *wt)
  * Draw a colour icon
  */
 void
-d_g_cicon(enum locks lock, struct widget_tree *wt)
+d_g_cicon(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	OBJECT *ob = wt->tree + wt->current;
 	ICONBLK *iconblk;
@@ -1897,7 +1897,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt)
 	if (!best_cicon)
 	{
 		DIAG((D_o, wt->owner, "cicon !best_cicon", c));
-		d_g_icon(lock, wt);
+		d_g_icon(lock, wt, clip);
 		return;
 	}
 
@@ -1963,7 +1963,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt)
  * Draw a text object
  */
 void
-d_g_text(enum locks lock, struct widget_tree *wt)
+d_g_text(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	short thick,thin;
 	OBJECT *ob = wt->tree + wt->current;
@@ -1986,7 +1986,7 @@ d_g_text(enum locks lock, struct widget_tree *wt)
 	t_font(screen.standard_font_point, screen.standard_font_id);
 }
 void
-d_g_ftext(enum locks lock, struct widget_tree *wt)
+d_g_ftext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	short thick,thin;
 	OBJECT *ob = wt->tree + wt->current;
@@ -2026,7 +2026,7 @@ d_g_ftext(enum locks lock, struct widget_tree *wt)
 #define ret(ut)     (     (long *)(ut->ret_p     ))
 #define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p ))
 void
-d_g_progdef(enum locks lock, struct widget_tree *wt)
+d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	struct sigaction oact, act;
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
@@ -2054,10 +2054,10 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 
 	*(RECT *)&(p->pb_x) = wt->r;
 
-	p->pb_xc = C.global_clip[0];
-	p->pb_yc = C.global_clip[1];
-	p->pb_wc = C.global_clip[2] - C.global_clip[0] + 1;
-	p->pb_hc = C.global_clip[3] - C.global_clip[1] + 1;
+	p->pb_xc = clip->x; //C.global_clip[0];
+	p->pb_yc = clip->y; //C.global_clip[1];
+	p->pb_wc = clip->w - clip->x + 1; //C.global_clip[2] - C.global_clip[0] + 1;
+	p->pb_hc = clip->h - clip->y + 1; //C.global_clip[3] - C.global_clip[1] + 1;
 
 	userblk(client->ut) = object_get_spec(ob)->userblk;
 	p->pb_parm = userblk(client->ut)->ub_parm;
@@ -2085,7 +2085,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 
 	/* restore old handler */
 	p_sigaction(SIGUSR2, &oact, NULL);
-
+	
 	/* The PROGDEF function returns the ob_state bits that
 	 * remain to be handled by the AES:
 	 */
@@ -2139,7 +2139,7 @@ l_text(short x, short y, char *t, short w, short left)
 }
 
 static void
-display_list_element(enum locks lock, struct xa_client *client, SCROLL_ENTRY *this, short left, short x, short y, short w, short sel)
+display_list_element(enum locks lock, struct xa_client *client, const RECT *clip, SCROLL_ENTRY *this, short left, short x, short y, short w, short sel)
 {
 	XA_TREE tr = nil_tree;
 	short xt = x + ICON_W;
@@ -2172,7 +2172,7 @@ display_list_element(enum locks lock, struct xa_client *client, SCROLL_ENTRY *th
 
 			tr.tree = this->icon;
 			tr.owner = client; //C.Aes;
-			display_object(lock, &tr, 0, x, y, 12);
+			display_object(lock, &tr, clip, 0, x, y, 12);
 		}
 	}
 	else /* filler line */
@@ -2183,7 +2183,7 @@ display_list_element(enum locks lock, struct xa_client *client, SCROLL_ENTRY *th
 }
 
 void
-d_g_slist(enum locks lock, struct widget_tree *wt)
+d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r, wa;
 	SCROLL_INFO *list;
@@ -2222,7 +2222,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 		for (; y <= maxy; y += screen.c_max_h)
 		{
 			/* can handle nil this */
-			display_list_element(lock, wt->owner, this, list->left, wa.x, y, wa.w, this == list->cur);
+			display_list_element(lock, wt->owner, clip, this, list->left, wa.x, y, wa.w, this == list->cur);
 			if (this)
 			{
 				list->bot = this;
@@ -2250,14 +2250,14 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 		}
 		/* scroll list windows are not on top, but are visible! */
 		display_vslide(list->lock, w, get_widget(w, XAW_VSLIDE));
-		display_list_element(lock, wt->owner, this, list->left, wa.x, y, wa.w, this == list->cur);
+		display_list_element(lock, wt->owner, clip, this, list->left, wa.x, y, wa.w, this == list->cur);
 		list->state = 0;
 	}
 	done(OS_SELECTED);
 }
 
 void
-d_g_string(enum locks lock, struct widget_tree *wt)
+d_g_string(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
@@ -2308,7 +2308,7 @@ d_g_string(enum locks lock, struct widget_tree *wt)
 }
 
 void
-d_g_title(enum locks lock, struct widget_tree *wt)
+d_g_title(enum locks lock, struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
@@ -2368,7 +2368,7 @@ init_objects(void)
  * Display a primitive object
  */
 void
-display_object(enum locks lock, XA_TREE *wt, short item, short parent_x, short parent_y, short which)
+display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short item, short parent_x, short parent_y, short which)
 {
 	RECT r, o;
 	OBJECT *ob = wt->tree + item;
@@ -2395,10 +2395,10 @@ display_object(enum locks lock, XA_TREE *wt, short item, short parent_x, short p
 	o.w = r.w - o.w;
 	o.h = r.h - o.h;
 	
-	if (   o.x		> C.global_clip[2]	/* x + w */
-	    || o.x + o.w - 1	< C.global_clip[0]	/* x     */
-	    || o.y		> C.global_clip[3]	/* y + h */
-	    || o.y + o.h - 1	< C.global_clip[1])	/* y     */
+	if (   o.x		> clip->w //C.global_clip[2]	/* x + w */
+	    || o.x + o.w - 1	< clip->x //C.global_clip[0]	/* x     */
+	    || o.y		> clip->h //C.global_clip[3]	/* y + h */
+	    || o.y + o.h - 1	< clip->y) //C.global_clip[1])	/* y     */
 		return;
 
 	if (t <= G_UNKNOWN)
@@ -2444,7 +2444,7 @@ display_object(enum locks lock, XA_TREE *wt, short item, short parent_x, short p
 #endif
 
 	/* Call the appropriate display routine */
-	(*display_routine)(lock, wt);
+	(*display_routine)(lock, wt, clip);
 
 	wr_mode(MD_TRANS);
 
@@ -2524,6 +2524,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	short x, y;
 	bool start_drawing = false;
 	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
+	RECT clip = *(RECT *)&C.global_clip;
 
 	IFDIAG(short *cl = C.global_clip;)
 
@@ -2577,7 +2578,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 		if (start_drawing && !(tree[current].ob_flags & OF_HIDETREE))
 		{
 			/* Display this object */
-			display_object(lock, wt, current, x, y, 10);
+			display_object(lock, wt, (const RECT *)&clip, current, x, y, 10);
 		}
 
 		head = tree[current].ob_head;
