@@ -149,7 +149,7 @@ open_about(enum locks lock)
 		/* Set version date */
 		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
 
-		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, form, -1);
+		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, form, -1, WIDG_NOTEXT);
 		wt->exit_form = about_form_exit;
 
 		/* set a scroll list widget */

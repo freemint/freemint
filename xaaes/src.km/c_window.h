@@ -71,8 +71,8 @@ DoWinMesag	do_rootwind_msg;
 
 void	draw_window(enum locks lock, struct xa_window *wind);
 void	update_all_windows(enum locks lock, struct xa_window *wl);
-void	update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_window *wl);
-void	display_windows_below(enum locks lock, const RECT *r, struct xa_window *w);
+void	update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_window *wl, struct xa_window *wend);
+//void	display_windows_below(enum locks lock, const RECT *r, struct xa_window *w);
 void	redraw_client_windows(enum locks lock, struct xa_client *client);
 
 RECT	free_icon_pos(enum locks lock, struct xa_window *ignore);
@@ -97,6 +97,8 @@ void	send_moved	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_sized	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_reposed	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_redraw	(enum locks lock, struct xa_window *wind, RECT *r);
+void	send_iredraw	(enum locks lock, struct xa_window *wind, short xaw, RECT *r);
+void	generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags);
 
 void	send_ontop(enum locks lock);
 void	send_untop(enum locks lock, struct xa_window *wind);

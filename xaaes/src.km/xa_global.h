@@ -151,7 +151,13 @@ struct common
 	short prev_clip[4];
 
 	struct xa_client *Aes;		/* */
-
+	short move_block;		/* 0 = movement allowed
+					 * 1 = internal movement cevent sent to client - no move
+					 * 2 = WM_MOVED AES message sent to client - no move
+					 * 3 = client did a wind_set(WF_CURRXYWH) and we got WM_REDRAWS
+					 *     in the queue. 'move_block' is then reset when all WM_REDRAWS
+					 *     are serviced
+					 */
 	long redraws;			/* Counting WM_REDRAWS being sent and dispatched */
 	struct xa_client *button_waiter;/* Client which is getting the next moose_data packet, */
 					/* most probably a button released one */

@@ -502,6 +502,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		widget_active.m = *md;
 		client = widget_active.wind->owner;
 		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+		C.move_block = 1;
 		post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
 		return false;
 	}
@@ -945,24 +946,28 @@ move_rtimeout(struct proc *p, long arg)
 
 	FOREACH_CLIENT(client)
 	{
-		if (client->rdrw_msg)
+		if (client->rdrw_msg || client->irdrw_msg)
 		{
 			if (client->status & CS_LAGGING)
 			{
 				DIAGS(("%s lagging - cancelling all events", client->name));
+				//display("%s lagging - cancelling all events", client->name);
 				cancel_aesmsgs(&client->rdrw_msg);
 				cancel_aesmsgs(&client->msg);
+				cancel_aesmsgs(&client->irdrw_msg);
 				cancel_cevents(client);
 			}
 			else
 			{
 				DIAGS(("%s flagged as lagging", client->name));
+				//display("%s flagged as lagging", client->name);
 				client->status |= CS_LAGGING;
 			}
 		}
 	}
 
 	C.redraws = 0;
+	C.move_block = 0;
 	m_rto = 0;
 
 	/* XXX - Fixme!
@@ -1014,7 +1019,7 @@ move_timeout(struct proc *p, long arg)
 		*/
 		if (last_x != x_mouse || last_y != y_mouse)
 		{
-			if (C.redraws)
+			if (C.move_block) //C.redraws)
 			{
 				/*
 				 * If redraw messages are still pending,
@@ -1022,7 +1027,7 @@ move_timeout(struct proc *p, long arg)
 				 * not responding/too busy to react to WM_REDRAWS
 				*/
 				if (!m_rto)
-					m_rto = addroottimeout(400L, move_rtimeout, 1);
+					m_rto = addroottimeout(cfg.redraw_timeout/*400L*/, move_rtimeout, 1);
 				m_to = NULL;
 			}
 			else
@@ -1062,7 +1067,7 @@ adi_move(struct adif *a, short x, short y)
 	x_mouse = x;
 	y_mouse = y;
 
-	if (C.redraws)
+	if (C.move_block) //C.redraws)
 	{
 		/*
 		 * If WM_REDRAW messages pending, add timeout
@@ -1090,15 +1095,23 @@ adi_move(struct adif *a, short x, short y)
 void
 kick_mousemove_timeout(void)
 {
+	C.redraws--;
+	
 	if (!C.redraws)
 	{
+		C.move_block = 0;
 		if (m_rto)
 		{
 			cancelroottimeout(m_rto);
 			m_rto = NULL;
-			if (!m_to)
-				m_to = addroottimeout(0L, move_timeout, 1);
 		}
+		if (!m_to)
+			m_to = addroottimeout(0L, move_timeout, 1);
+	}
+	else if (m_rto)
+	{
+		cancelroottimeout(m_rto);
+		m_rto = addroottimeout(cfg.redraw_timeout, move_rtimeout, 1);
 	}
 }
 

@@ -377,6 +377,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 */
 	remove_windows(lock, client);
 
+	cancel_aesmsgs(&client->irdrw_msg);
 	cancel_aesmsgs(&client->rdrw_msg);
 	cancel_aesmsgs(&client->msg);
 	cancel_cevents(client);
@@ -792,7 +793,25 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (dest_clnt)
 		{
-			send_a_message(lock, dest_clnt, AMQ_NORM, QMF_CHKDUP, m);
+			short amq = AMQ_NORM;
+			short qmf = QMF_NORM;
+
+			if (m->m[0] == WM_REDRAW)
+			{
+				struct xa_window *wind = get_wind_by_handle(lock, m->m[3]);
+				if (wind)
+				{
+					generate_redraws(lock, wind, (RECT *)(m->m + 4), RDRW_WA);
+					m = NULL;
+				}
+				else
+				{
+					amq = AMQ_REDRAW;
+					qmf = QMF_CHKDUP;
+				}
+			}
+			if (m)
+				send_a_message(lock, dest_clnt, amq, QMF_CHKDUP, m);
 			yield();
 		}
 	}
@@ -1029,7 +1048,7 @@ static short info_tab[][4] =
 		0
 	}
 };
-									
+
 #define XA_AGI	18
 #define XA_MAGI	XA_AGI + 1
 

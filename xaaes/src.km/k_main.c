@@ -177,7 +177,6 @@ dispatch_cevent(struct xa_client *client)
 
 		ret = 1;
 	}
-
 	return ret;
 }
 
@@ -330,18 +329,22 @@ dispatch_tpcevent(struct xa_client *client)
 void
 Block(struct xa_client *client, int which)
 {
-	/*
-	 * Get rid of any event queue
-	 */
-	while (dispatch_cevent(client))
+	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
-		if (client->usr_evnt)
-		{
-			cancel_evnt_multi(client, 1);
-			return;
-		}
-	}
+		if (client->irdrw_msg)
+			exec_iredraw_queue(0, client);
 
+		dispatch_cevent(client);
+	}
+	if (client->usr_evnt)
+	{
+		cancel_evnt_multi(client, 1);
+		return;
+	}
+	/*
+	 * Now check if there are any events to deliver to the
+	 * application...
+	 */
 	if (check_queued_events(client))
 		return;
 
@@ -380,9 +383,13 @@ Block(struct xa_client *client, int which)
 		 * check_queued_events() and handle the event.
 		*/
 
-		while (!client->usr_evnt && dispatch_cevent(client))
-			;
+		while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
+		{
+			if (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
 
+			dispatch_cevent(client);
+		}
 		if (client->usr_evnt)
 		{
 			if (client->timeout)
@@ -406,13 +413,18 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	/* the following served as a excellent safeguard on the
 	 * internal consistency of the event handling mechanisms.
 	 */
-	if (value == XA_OK)
-		cancel_evnt_multi(client,1);
+	if (client == C.Aes)
+		wake(IO_Q, (long)client->tp);
+	else
+	{
+		if (value == XA_OK)
+			cancel_evnt_multi(client,1);
 
-	if (client->blocktype == XABT_SELECT)
-		wakeselect(client->p);
-	else if (client->blocktype == XABT_SLEEP)
-		wake(IO_Q, (long)client);
+		if (client->blocktype == XABT_SELECT)
+			wakeselect(client->p);
+		else if (client->blocktype == XABT_SLEEP)
+			wake(IO_Q, (long)client);
+	}
 
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 }
@@ -434,6 +446,7 @@ init_moose(void)
 
 	C.button_waiter = 0;
 	C.redraws = 0;
+	C.move_block = 0;
 
 	C.adi_mouse = adi_name2adi("moose");
 	if (C.adi_mouse)
@@ -675,6 +688,39 @@ static struct sgttyb KBD_dev_sg;
 
 int aessys_timeout = 0;
 
+static const char aesthread_name[] = "athr";
+
+/*
+ * AES thread
+ */
+static void
+aesthread_entry(void *c)
+{
+	struct xa_client *client = c;
+
+	for (;;)
+	{
+		if (client->tp_term)
+		{
+			break;
+		}
+		
+		while (client->irdrw_msg)
+			exec_iredraw_queue(0, client);
+		
+		//if (!dispatch_tpcevent(client))
+		if (client->status & (CS_LAGGING | CS_MISS_RDRW))
+		{
+			client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
+		}
+			
+		sleep(IO_Q, (long)client->tp);
+	}
+	client->tp = NULL;
+	client->tp_term = 2;
+	kthread_exit(0);
+}
+
 /*
  * our XaAES server kernel thread
  * 
@@ -821,6 +867,17 @@ k_main(void *dummy)
 	DIAGS(("Handles: KBD %ld, ALERT %ld", C.KBD_dev, C.alert_pipe));
 
 
+	{
+		long tpc;
+
+		tpc = kthread_create(C.Aes->p, aesthread_entry, (void *)C.Aes, &C.Aes->tp, "kt-%s", aesthread_name);
+		if (tpc < 0)
+		{
+			display("XaAES ERROR: start AES thread failed");
+			goto leave;
+		}
+	}
+	
 	/*
 	 * Load Accessories
 	 */
@@ -961,6 +1018,7 @@ k_exit(void)
 			vex_wheelv(C.P_handle, svwhlv, &h);
 	}
 
+
 	k_shutdown();
 
 	/*
@@ -989,7 +1047,7 @@ k_exit(void)
 		f_close(C.alert_pipe);
 
 	DIAGS(("closed all input devices"));
-
+	
 	/* wakeup loader */
 	wake(WAIT_Q, (long)&loader_pid);
 

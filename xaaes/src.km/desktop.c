@@ -174,6 +174,8 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->destruct = free_xawidget_resources;
 
 	{
+		send_iredraw(0, root_window, 0, NULL);
+#if 0
 		struct xa_window *wl = root_window;
 		struct xa_rect_list *rl;
 
@@ -181,16 +183,12 @@ Set_desktop(XA_TREE *new_desktop)
 		rl = wl->rect_start;
 		while (rl)
 		{
-			set_clip(&rl->r);
-			draw_window(0, wl);
-			if (wl->send_message)
-			{
-				wl->send_message(0, wl, NULL, AMQ_REDRAW, QMF_CHKDUP,
-					WM_REDRAW, 0, 0, wl->handle,
-					rl->r.x, rl->r.y, rl->r.w, rl->r.h);
-			}
+			//set_clip(&rl->r);
+			//draw_window(0, wl);
+			generate_redraws(0, wl, &rl->r, RDRW_ALL);
 			rl = rl->next;
 		}
+#endif
 	}
 }
 static void
@@ -203,7 +201,7 @@ CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)
 			newdesk, newdesk->tree, newdesk->owner->name, ce->client->name));
 
 		Set_desktop(newdesk);
-		display_window(lock, 1, root_window, NULL);
+		//display_window(lock, 1, root_window, NULL);
 	}
 }
 void
@@ -220,7 +218,7 @@ set_desktop(XA_TREE *new_desktop)
 			rc->name, new_desktop->owner->name));
 
 		Set_desktop(new_desktop);
-		display_window(0, 2, root_window, NULL);
+		//display_window(0, 2, root_window, NULL);
 	}
 	else
 	{
