@@ -351,7 +351,6 @@ static struct xa_ftab aes_tab[220] =
 };
 #define aes_tab_size	(sizeof(aes_tab) / sizeof(aes_tab[0]))
 
-#define XA_APPL_INIT	 10
 #define XA_RSRC_LOAD	110
 #define XA_SHELL_FIND	124
 
