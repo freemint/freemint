@@ -286,42 +286,6 @@ Pdisplay_widget(void *_parm)
 	kthread_exit(0);
 }
 
-#if 0
-void
-display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
-{
-	Display_widget(lock, wind, widg);
-}
-#endif
-#if 0
-void
-display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
-{
-	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-
-	if (!rc || rc == wind->owner || wind->owner == C.Aes)
-	{
-		DIAGS(("Display widget (same client) for %s", wind->owner->name));
-		Display_widget(lock, wind, widg);
-	}
-	else
-	{
-		long *p;
-
-		DIAGS(("Display widget (other client %s) for %s", wind->owner->name, rc->name));
-		p = (long *)kmalloc(16);
-		if (p)
-		{
-			p[0] = (long)wind;
-			p[1] = (long)widg;
-			p[2] = (long)rc;
-			kthread_create(wind->owner->p, Pdisplay_widget, p, NULL, "k%s", wind->owner->name);
-			sleep(IO_Q, (long)p);
-		}
-	}
-}
-#endif
-
 /*
  * Ozk: redraw menu need to check the owner of the menu object tree
  * and draw it in the right context. 
@@ -336,7 +300,7 @@ redraw_menu(enum locks lock)
 	widg = get_widget(root_window, XAW_MENU);
 	mc = ((XA_TREE *)widg->stuff)->owner;
 
-	if (!rc || mc == rc || rc == C.Aes)
+	if (mc == rc || rc == C.Aes)
 	{
 		DIAGS(("Display MENU (same client) for %s", rc->name));
 		//Display_widget(lock, root_window, widg);
@@ -360,10 +324,6 @@ redraw_menu(enum locks lock)
 	}
 
 	DIAGS(("Display MENU - exit OK"));
-#if 0
-
-	dIsplay_widget(lock, root_window, get_widget(root_window, XAW_MENU) );
-#endif
 }
 
 

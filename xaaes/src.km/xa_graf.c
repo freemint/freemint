@@ -1038,6 +1038,9 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+/*
+ * Callable without a client structure
+*/
 unsigned long
 XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1049,8 +1052,14 @@ XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[2] = screen.c_max_h;
 	pb->intout[3] = screen.c_max_w+2;
 	pb->intout[4] = screen.c_max_h+2;
-	
-	DIAG((D_graf,client,"_handle %d", pb->intout[0]));
+
+#if GENERATE_DIAGS
+	if (client)
+		DIAG((D_graf,client,"_handle %d", pb->intout[0]));
+	else
+		DIAG((D_graf,NULL,"_handle %d for non AES process", pb->intout[0]));
+#endif
+
 	return XAC_DONE;
 }
 
