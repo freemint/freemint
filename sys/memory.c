@@ -27,7 +27,8 @@
 
 # include "bios.h"
 # include "filesys.h"
-# include "init.h"	/* __printf(f) */
+# include "info.h"
+# include "init.h"		/* __printf(f) */
 # include "k_exec.h"
 # include "k_fds.h"
 # include "kmemory.h"
@@ -372,9 +373,6 @@ init_core (void)
 	void *tossave;
 # endif
 
-# ifdef VERBOSE_BOOT
-	boot_print ("Initializing core memory:\r\n");
-# endif
 # ifdef OLDTOSFS
 	tossave = (void *)core_malloc((long)TOS_MEM, 0);
 	if (!tossave)
@@ -451,7 +449,7 @@ init_core (void)
 	size = (ulong) core_malloc(-1L, 0);
 
 # ifdef VERBOSE_BOOT
-	boot_printf ("%lu bytes of ST RAM, ", size);
+	boot_printf (MSG_mem_core, size);
 # endif
 
        	while (size > 0)
@@ -473,7 +471,7 @@ init_core (void)
 	}
 
 # ifdef VERBOSE_BOOT
-	boot_printf ("%lu bytes LOSE of ST RAM\r\n", dp_all);
+	boot_printf (MSG_mem_lost, dp_all);
 # endif
 
 	/* initialize alternate RAM */
@@ -481,9 +479,9 @@ init_core (void)
 
 # ifdef VERBOSE_BOOT
 	if (size)
-		boot_printf ("%lu bytes of Fast RAM found\r\n", size);
+		boot_printf (MSG_mem_alt, size);
 	else
-		boot_print ("no Fast RAM found\r\n");
+		boot_print (MSG_mem_noalt);
 # endif /* VERBOSE_BOOT */
 
 	while (size > 0)
