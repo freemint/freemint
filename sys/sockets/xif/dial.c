@@ -8,13 +8,18 @@
  */
 
 # include "global.h"
+# include "netinfo.h"
+
 # include "buf.h"
 # include "inet4/if.h"
-# include "netinfo.h"
+# include "inet4/in.h"
+# include "inet4/ip.h"
 
 # include <mint/dcntl.h>
 # include <mint/file.h>
 # include <mint/signal.h>
+
+# include "ppp.h"
 
 
 # define PPPF_LINKED   0x01 /* interface is linked to device */
@@ -81,11 +86,14 @@ struct ppp
 	struct pppstats	stat;		/* statistics */
 };
 
+typedef enum {offline, dialling, online} status;
+
 /* our netif structures */
 static struct netif if_dial[DIAL_CHANNELS];
 static int if_connect_timeout[DIAL_CHANNELS];
 static int if_ref_timeout[DIAL_CHANNELS];
 static int if_timeout[DIAL_CHANNELS];
+static status if_states[DIAL_CHANNELS];
 static int in_dial_output = 0;
 
 /*
@@ -128,6 +136,21 @@ static struct dev_descr dial_desc =
 	driver:	&dial_dev
 };
 
+
+/* local functions */
+
+struct ifaddr *
+if_af2ifaddr (struct netif *nif, short family)
+{
+	struct ifaddr *ifa;
+	
+	for (ifa = nif->addrlist; ifa; ifa = ifa->next)
+		if (ifa->family == family)
+			break;
+	
+	return ifa;
+}
+
 /*
  * This gets called when someone makes an 'ifconfig up' on this interface
  * and the interface was down before.
@@ -169,6 +192,40 @@ dial_timeout (struct netif *nif)
 		                  stat->i_qfull    +
 		                  stat->i_nomem;
 		
+		/* Dequeue any queued packets when ppp is linked */
+		if ((((struct ppp *)((struct netif *)nif->data)->data)->flags & PPPF_LINKED)                   &&
+		    !(((struct ppp *)((struct netif *)nif->data)->data)->opts & PPPO_IP_DOWN)                  &&
+		    ((((struct netif *)nif->data)->flags & (IFF_UP | IFF_RUNNING)) == (IFF_UP | IFF_RUNNING)))
+		{
+			BUF *buf;
+			struct ifaddr *ifa1, *ifa2;
+			
+			/* hack: defer enqueued packets a little bit... */
+			if (if_states[nif->unit] == dialling)
+			{
+				ifa1 = if_af2ifaddr(nif, AF_INET);
+				ifa2 = if_af2ifaddr((struct netif *)nif->data, AF_INET);
+				if (memcmp(ifa1, ifa2, sizeof(ifa1->addr)))
+					memcpy(ifa1, ifa2, sizeof(ifa1->addr));
+				else
+					if_states[nif->unit] = online;
+			}
+			else
+			{
+				if ((ifa1 = if_af2ifaddr((struct netif *)nif->data, AF_INET)))
+				{
+					while ((buf = if_dequeue (&nif->snd)))
+					{
+						IP_SADDR(buf) = ((struct sockaddr_in *)&ifa1->addr)->sin_addr.s_addr;
+						dial_output(nif, buf, NULL, 0, PKTYPE_IP);
+					}
+				}
+			}
+		}
+		else if (if_states[nif->unit] == online)
+			/* connection was lost before timeout! */
+			if_timeout[nif->unit] = 1;
+		
 		/* Check if ip output counter of corresponding ppp if has changed */
 		if (stat->i_ip == nif->in_packets)
 		{
@@ -177,11 +234,16 @@ dial_timeout (struct netif *nif)
 			{
 				if (!--if_timeout[nif->unit])
 				{
-					if (((struct netif *)nif->data)->flags & PPPF_LINKED)
+					if ((((struct ppp *)((struct netif *)nif->data)->data)->flags & PPPF_LINKED)                   &&
+					    !(((struct ppp *)((struct netif *)nif->data)->data)->opts & PPPO_IP_DOWN)                  &&
+					    ((((struct netif *)nif->data)->flags & (IFF_UP | IFF_RUNNING)) == (IFF_UP | IFF_RUNNING)))
 					{
 						dial_buffer[nif->unit] = '0'+nif->unit+0x80;
 						if (dial_rsel[nif->unit])
+						{
 							wakeselect(dial_rsel[nif->unit]);
+							if_states[nif->unit] = offline;
+						}
 					}
 				}
 			}
@@ -205,8 +267,17 @@ dial_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktyp
 {
 	long retcode;
 	
+	if (pktype != PKTYPE_IP)
+	{
+		buf_deref (buf, BUF_NORMAL);
+		DEBUG (("dial_output: unsupported packet type"));
+		return EINVAL;
+	}
+	
 	in_dial_output++;
-	if (!(((struct netif *)nif->data)->flags & PPPF_LINKED))
+	if (!(((struct ppp *)((struct netif *)nif->data)->data)->flags & PPPF_LINKED)                   ||
+	    (((struct ppp *)((struct netif *)nif->data)->data)->opts & PPPO_IP_DOWN)                    ||
+	    !((((struct netif *)nif->data)->flags & (IFF_UP | IFF_RUNNING)) == (IFF_UP | IFF_RUNNING)))
 	{
 		if (!if_timeout[nif->unit])
 		{
@@ -214,31 +285,44 @@ dial_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktyp
 			{
 				dial_buffer[nif->unit] = '0'+nif->unit;
 				if (dial_rsel[nif->unit])
-					wakeselect (dial_rsel[nif->unit]);
+				{
+					if_states[nif->unit] = dialling;
+ 					wakeselect(dial_rsel[nif->unit]);
+				}
 				
 				/* We only reset the timeout value when sending. This is not ok but should not */
 				/* cause trouble since we always have some kind of handshaking...              */
 				if_timeout[nif->unit] = if_connect_timeout[nif->unit];
 			}
 		}
-		buf_deref (buf, BUF_NORMAL);
-		nif->out_errors++;
+do_enqueue:
+		retcode = if_enqueue (&nif->snd, buf, buf->info);
+		if (retcode)
+		{
+			nif->out_errors++;
+			DEBUG (("dial_output: dial%d: cannot enqueue", nif->unit));
+		}
 		in_dial_output--;			
-		return 0;
+		return retcode;
 	}
-	if (memcmp (nif->addrlist, ((struct netif *) nif->data)->addrlist, sizeof(nif->addrlist->addr)))
+	else if (if_states[nif->unit] == dialling)
 	{
-		memcpy (nif->addrlist, ((struct netif *)nif->data)->addrlist, sizeof(nif->addrlist->addr));
-		buf_deref(buf, BUF_NORMAL);
-		nif->out_errors++;
-		in_dial_output--;			
-		return 0;
+		struct ifaddr *ifa1, *ifa2;
+		
+		ifa1 = if_af2ifaddr (nif, AF_INET);
+		ifa2 = if_af2ifaddr ((struct netif *) nif->data, AF_INET);
+		if (memcmp (ifa1, ifa2, sizeof (ifa1->addr)))
+			memcpy (ifa1, ifa2, sizeof(ifa1->addr));
+		else
+			if_states[nif->unit] = online;
+		
+		goto do_enqueue;
 	}
-	if_timeout[nif->unit] = if_ref_timeout[nif->unit];
 	
+	if_timeout[nif->unit] = if_ref_timeout[nif->unit];
 	in_dial_output--;
 	
-	retcode = ((struct netif *) nif->data)->output ((struct netif *)nif->data, buf, hwaddr, hwlen, pktype);
+	retcode = ((struct netif *) nif->data)->output ((struct netif *) nif->data, buf, hwaddr, hwlen, pktype);
 	if (!retcode)
 		nif->out_packets++;
 	
@@ -359,12 +443,13 @@ driver_init (void)
 	struct netif *ppp_nif;
 	short i;
 	
-	ksprintf (message, "dial?: DIAL driver v0.1 (dial[0-%d]) (w) 1999 by Torsten Lang\n\r", DIAL_CHANNELS);
+	ksprintf (message, "dial?: DIAL driver v0.2 (dial[0-%d]) (w) 1999 by Torsten Lang\n\r", DIAL_CHANNELS-1);
 	c_conws (message);
 	for (i = 0; i < DIAL_CHANNELS; i++)
 	{
-		if_ref_timeout[i] = 80;     /* default timeout value in seconds */
+		if_ref_timeout[i] = 45;     /* default timeout value in seconds */
 		if_connect_timeout[i] = 60; /* default timeout value in seconds */
+		if_states[i] = offline;
 		strcpy (if_dial[i].name, "dial");
 		if_dial[i].unit        = i;
 		if_dial[i].metric      = 0;
