@@ -1929,12 +1929,22 @@ check_ioevent (PROC *p, long arg)
 	}
 	
 	if (iovar->tty.rsel)
+	{
 		if (!iorec_empty (&iovar->input))
+		{
+			DEBUG (("uart.xdd: wakeselect -> read (%s)", p->fname));
 			wakeselect (iovar->tty.rsel);
+		}
+	}
 	
 	if (iovar->tty.wsel)
+	{
 		if (iorec_used (&iovar->output) < iovar->output.low_water)
+		{
+			DEBUG (("uart.xdd: wakeselect -> write (%s)", p->fname));
 			wakeselect (iovar->tty.wsel);
+		}
+	}
 }
 
 static void
@@ -2359,7 +2369,7 @@ rx_start (IOVAR *iovar)
 	}
 	else
 	{
-		DEBUG (("rx_start: already started"));
+		// DEBUG (("rx_start: already started"));
 	}
 }
 
@@ -2390,7 +2400,7 @@ rx_stop (IOVAR *iovar)
 	}
 	else
 	{
-		DEBUG (("rx_stop: already stopped"));
+		// DEBUG (("rx_stop: already stopped"));
 	}
 }
 
@@ -2409,7 +2419,7 @@ tx_start (IOVAR *iovar)
 	}
 	else
 	{
-		DEBUG (("tx_start: already started"));
+		// DEBUG (("tx_start: already started"));
 	}
 }
 
@@ -2428,7 +2438,7 @@ tx_stop (IOVAR *iovar)
 	}
 	else
 	{
-		DEBUG (("tx_start: already stopped"));
+		// DEBUG (("tx_start: already stopped"));
 	}
 }
 
@@ -2486,6 +2496,8 @@ uart_in (int dev)
 			/* start receiver */
 			rx_start (iovar);
 			
+			DEBUG (("uart_in: I/O sleep"));
+			
 			iovar->iosleepers++;
 			sleep (IO_Q, (long) &iovar->tty.state);
 			iovar->iosleepers--;
@@ -2527,6 +2539,8 @@ uart_out (int dev, int c)
 	{
 		/* start transmitter */
 		tx_start (iovar);
+		
+		DEBUG (("uart_out: I/O sleep"));
 		
 		iovar->iosleepers++;
 		sleep (IO_Q, (long) &iovar->tty.state);
@@ -3041,6 +3055,8 @@ uart_readb (FILEPTR *f, char *buf, long bytes)
 				/* start receiver */
 				rx_start (iovar);
 				
+				DEBUG (("uart_readb: I/O sleep in vtime == 0"));
+				
 				iovar->iosleepers++;
 				sleep (IO_Q, (long) &iovar->tty.state);
 				iovar->iosleepers--;
@@ -3062,6 +3078,8 @@ uart_readb (FILEPTR *f, char *buf, long bytes)
 				if (!t) return ENOMEM;
 				
 				t->arg = (long) &iovar->tty.state;
+				
+				DEBUG (("uart_readb: I/O sleep in vmin == 0"));
 				
 				iovar->iosleepers++;
 				sleep (IO_Q, t->arg);
@@ -3087,6 +3105,8 @@ uart_readb (FILEPTR *f, char *buf, long bytes)
 				if (!t) return ENOMEM;
 				
 				t->arg = (long) &iovar->tty.state;
+				
+				DEBUG (("uart_readb: I/O sleep in vtime && vtime"));
 				
 				iovar->iosleepers++;
 				sleep (IO_Q, t->arg);
@@ -3379,7 +3399,10 @@ uart_ioctl (FILEPTR *f, int mode, void *buf)
 		case TIOCWONLINE:
 		{
 			while (iovar->tty.state & TS_BLIND)
+			{
+				DEBUG (("uart_ioctl: TS_BLIND sleep in TIOCWONLINE"));
 				sleep (IO_Q, (long) &iovar->tty.state);
+			}
 			
 			break;
 		}
@@ -3550,7 +3573,10 @@ uart_ioctl (FILEPTR *f, int mode, void *buf)
 			while (iovar->lockpid >= 0 && iovar->lockpid != cpid)
 			{
 				if (mode == F_SETLKW && lck->l_type != F_UNLCK)
+				{
+					DEBUG (("uart_ioctl: sleep in SETLKW"));
 					sleep (IO_Q, (long) iovar);
+				}
 				else
 					return ELOCKED;
 			}
