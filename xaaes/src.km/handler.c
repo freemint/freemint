@@ -176,8 +176,8 @@ XA_handler(void *_pb)
 			return -1;
 		}
 
-		DIAG((D_trap, client, "AES trap: %s[%d]",
-			op_code_names[cmd], cmd));
+		DIAG((D_trap, client, "AES trap: %s[%d] made by %s",
+			op_code_names[cmd], cmd, client->name));
 
 		cmd_routine = aes_tab[cmd].f;
 
@@ -202,12 +202,16 @@ XA_handler(void *_pb)
 			/* callout the AES function */
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
 
+			DIAG((D_trap, client, " %s[%d] retuned %ld for %s", op_code_names[cmd], cmd, cmd_rtn, client->name));
+
 			if (aes_tab[cmd].p & LOCKSCREEN)
 				unlock_screen(client, 2);
+
 
 			/* execute delayed delete_window */
 			if (S.deleted_windows.first)
 				do_delayed_delete_window(lock);
+
 
 			switch (cmd_rtn)
 			{
@@ -219,10 +223,13 @@ XA_handler(void *_pb)
 				{
 					if (!client)
 						client = lookup_extension(NULL, XAAES_MAGIC);
-
 					if (client)
+					{
+						DIAG((D_trap, client, "Block client %s", client->name));
 						Block(client, 1);
-
+						DIAG((D_trap, client, "Unblocked %s", client->name));
+						break;
+					}
 				}
 
 				/* block with timeout */

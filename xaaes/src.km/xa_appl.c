@@ -190,6 +190,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->type = APP_APPLICATION;
 
 	new_client(lock, client);
+	client->blockcnt = 0;
 
 	/* Get the client's home directory (where it was started)
 	 * - we use this later to load resource files, etc
@@ -233,6 +234,8 @@ clean_out:
 	globl->res2 = 0;
 	globl->c_max_h = screen.c_max_h;	/* AES 4.0 extensions */
 	globl->bvhard = 4;
+
+	pb->intout[0] = p->pid;
 
 	return XAC_DONE;
 }

@@ -66,23 +66,31 @@
 void
 Block(struct xa_client *client, int which)
 {
-        DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
-	sleep(IO_Q, (long)client);
+	//if (!client->blockcnt)
+	//{
+	        DIAG((D_kern, client, "[%d]Blocked %s, cnt %d", which, c_owner(client), client->blockcnt));
+		client->blockcnt++;
+		sleep(IO_Q, (long)client);
+	//}
 }
 
 void
 Unblock(struct xa_client *client, unsigned long value, int which)
 {
-	wake(IO_Q, (long)client);
+	//if (client->blockcnt)
+	//{
+		client->blockcnt--;
+		wake(IO_Q, (long)client);
+		DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx, cnt %d", which, c_owner(client), value, client->blockcnt));
 
-	/* HR 041201: the following served as a excellent safeguard on the
-	 *            internal consistency of the event handling mechanisms.
-	 */
-	if (value == XA_OK)
-	{
-		DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
-		cancel_evnt_multi(client,1);
-	}
+		/* HR 041201: the following served as a excellent safeguard on the
+		 *            internal consistency of the event handling mechanisms.
+		 */
+		if (value == XA_OK)
+		{
+			cancel_evnt_multi(client,1);
+		}
+	//}
 }
 
 static const char alert_pipe_name[] = "u:\\pipe\\alert";
@@ -156,6 +164,7 @@ init_moose(void)
 
 	return true;
 }
+
 
 /* HR 050601: The active widgets are intimately connected to the mouse.
  *            There is only 1 mouse, so there is only need for 1 global structure.
