@@ -494,7 +494,7 @@ fsel_drives(OBJECT *m, int drive)
 	{
 		if (dmap & 1)
 		{
-			m[d].ob_state&=~OS_CHECKED;
+			m[d].ob_state &= ~OS_CHECKED;
 
 			if (drv == drive)
 				m[d].ob_state |= OS_CHECKED;
@@ -510,7 +510,7 @@ fsel_drives(OBJECT *m, int drive)
 		m[d-1].ob_width = m[FSEL_DRVBOX].ob_width;
 
 	do {
-		m[d].ob_flags|=OF_HIDETREE;
+		m[d].ob_flags |= OF_HIDETREE;
 		/* prevent finding those. */
 		*(m[d].ob_spec.free_string + 2) = '~';
 	}
@@ -1056,7 +1056,7 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 			strcpy(fs_paths[drv], fs.path);
 	}
 
-	fs.menu.owner = C.Aes;
+	fs.menu.owner = client; //C.Aes;
 	fs.menu.tree = ResourceTree(C.Aes_rsc, FSEL_MENU);
 	fs.drives = fsel_drives(fs.menu.tree,
 				*(fs.path+1) == ':' ? tolower(*fs.path) - 'a' : d_getdrv());
