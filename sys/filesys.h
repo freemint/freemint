@@ -42,6 +42,7 @@ void load_modules (long type);
 void close_filesys (void);
 long _s_ync (void);
 long _cdecl s_ync (void);
+long _cdecl sys_fsync (int fh);
 void _cdecl changedrv (ushort drv);
 long disk_changed (ushort drv);
 long relpath2cookie (fcookie *dir, const char *path, char *lastnm, fcookie *res, int depth);
