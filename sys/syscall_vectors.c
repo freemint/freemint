@@ -475,7 +475,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x154 */		sys_s_system,
 	/* 0x155 */		sys_t_gettimeofday,
 	/* 0x156 */		sys_t_settimeofday,
-	/* 0x157 */		sys_enosys,		/* t_adjtime */
+	/* 0x157 */		sys_t_adjtime,		/* 1.16 */
 	/* 0x158 */		sys_pgetpriority,
 	/* 0x159 */		sys_psetpriority,
 	/* 0x15a */		sys_f_poll,		/* 1.15.10 */
