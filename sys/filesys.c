@@ -733,7 +733,8 @@ static void (*loads [])(const char *, const char *) =
 
 static const char *dont_load_list [] =
 {
-	"fnramfs.xfs"
+	"fnramfs.xfs",	/* integrated */
+	"inet4.xdd"	/* 1.16 reserved module */
 };
 
 static int
