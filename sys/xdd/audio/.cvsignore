@@ -1,0 +1,9 @@
+.deps
+*.o
+*~
+lib*.a
+*.xdd
+*.xfs
+*.xif
+*.app
+*.prg
