@@ -414,7 +414,6 @@ unlock_screen(XA_CLIENT *client, int which)
 		{
 			r = Psemaphore(3, UPDATE_LOCK, 0);
 			S.update_lock = 0;
-			client->fmd.lock = false;
 
 			DIAG((D_sema, NULL, "Sema U down\n"));
 		}
@@ -483,13 +482,23 @@ unlock_mouse(XA_CLIENT *client, int which)
 		{
 			S.mouse_lock = 0;
 			r = Psemaphore(3, MOUSE_LOCK, 0);
-			client->fmd.lock = false;
+
 			DIAG((D_sema, NULL,"Sema M down\n"));
 		}
 	}
 
 	return r;
 }
+
+/* The fmd.lock may only be updated in the real wind_update,
+ * otherwise screen writing AES functions that use the internal
+ * lock/unlock_screen functions spoil the state.
+ * This repairs zBench dialogues.
+ * Also changed fmd.lock usage to additive flags.
+ */
+
+#define SCREEN_UPD	1
+#define MOUSE_UPD	2
 
 unsigned long
 XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
@@ -511,13 +520,17 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	case BEG_UPDATE:
 	{
 		DIAG((D_sema, NULL, ">> Sema U: lock %d, cnt %d\n", S.update_lock, S.update_cnt));
+
 		lock_screen(client, time_out, pb->intout, 1);
-		client->fmd.lock = true;
+		client->fmd.lock |= SCREEN_UPD;
+
 		break;
 	}
 	case END_UPDATE:
 	{
+		client->fmd.lock &= ~SCREEN_UPD;
 		r = unlock_screen(client, 1);
+
 		DIAG((D_sema, NULL, "<< Sema U: lock %d, cnt %d r:%ld\n", S.update_lock, S.update_cnt, r));
 		break;
 	}
@@ -525,13 +538,17 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	case BEG_MCTRL:
 	{
 		DIAG((D_sema, NULL, ">> Sema M: lock %d, cnt %d\n", S.mouse_lock, S.mouse_cnt));
+
 		lock_mouse(client, time_out, pb->intout, 1);
-		client->fmd.lock = true;
+		client->fmd.lock |= MOUSE_UPD;
+
 		break;
 	}
 	case END_MCTRL:
 	{
+		client->fmd.lock &= ~MOUSE_UPD;
 		r = unlock_mouse(client, 1);
+
 		DIAG((D_sema, NULL, "<< Sema M: lock %d, cnt %d r:%ld\n", S.mouse_lock, S.mouse_cnt, r));
 		break;
 	}
