@@ -117,7 +117,7 @@ struct xa_window *root_window;
  */
 
 /* Pointer to the widget resource (icons) */
-static void *widget_resources;
+static void *widget_resources = NULL;
 
 static struct xa_colour_scheme default_colours = { G_LWHITE, G_BLACK, G_LBLACK, G_WHITE, G_BLACK, G_CYAN };
 static struct xa_colour_scheme bw_default_colours = { G_WHITE, G_BLACK, G_BLACK, G_WHITE, G_BLACK, G_WHITE };
@@ -201,25 +201,6 @@ k_init(void)
 				}
 
 			}
-			else
-			{
-				/* Video mode switch */
-				if (stricmp("-video", argv[1]) == 0)
-				{
-					work_in[0] = lcfg.modecode;
-					DIAGS(("Standard: mode %d(%x)", lcfg.modecode, lcfg.modecode));
-				}
-				else
-				{
-					DIAGS(("Invalid agument: '%s'", argv[1]));
-				}
-			}
-		}
-		else
-#endif
-#if 0
-		{
-			DIAGS(("Default screenmode."));
 		}
 #endif
 
@@ -328,8 +309,7 @@ k_init(void)
 	if (resource_name)
 	{
 		C.Aes_rsc = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
-		fdisplay(log, "system resource = %lx (%s)",
-			 C.Aes_rsc, cfg.rsc_name);
+		fdisplay(log, "system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name);
 	}	
 	if (!resource_name || !C.Aes_rsc)
 	{
@@ -337,13 +317,12 @@ k_init(void)
 		return -1;
 	}
 
-	widget_resources = NULL;
+	/* Load the widget resource files */
 	resource_name = xa_find(cfg.widg_name);
 	if (resource_name)
 	{
 		widget_resources = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
-		fdisplay(log, "widget_resources = %lx (%s)",
-			 widget_resources, cfg.widg_name);
+		fdisplay(log, "widget_resources = %lx (%s)", widget_resources, cfg.widg_name);
 	}
 	if (!resource_name || !widget_resources)
 	{

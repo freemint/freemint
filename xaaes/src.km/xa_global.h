@@ -49,9 +49,10 @@ struct shared
 	struct win_base deleted_windows;/* list of windows to be deleted (delayed action) */
 
 	struct xa_client *client_list;	/* The clients database */
-	short		 wm_count;
 	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
 	struct opt_list *app_options;	/* individual option settings. */
+
+	short wm_count;			/* XXX ??? */
 };
 
 /* Area's shared between server and client, subject to locking. */
@@ -59,7 +60,8 @@ extern struct shared S;
 
 struct shel_info
 {
-	int type;
+	short type;
+	short reserved;
 
 	char *cmd_tail;
 	bool tail_is_heap;
@@ -87,7 +89,7 @@ struct common
 					/* most probably a button released one */
 	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
 
-	int shutdown;			/* flags for shutting down xaaes */
+	short shutdown;			/* flags for shutting down xaaes */
 #define QUIT_NOW	0x1		/* - enter shutdown the next possible time */
 #define HALT_SYSTEM	0x2		/* - halt system after xaaes shutdown */
 #define REBOOT_SYSTEM	0x4		/* - reboot system after xaaes shutdown */
@@ -102,7 +104,7 @@ struct common
 	Tab active_menu[CASCADE];
 	Tab *menu_base;
 
-	int menu_nest;			/* current depth of submenus */
+	short menu_nest;			/* current depth of submenus */
 	RECT iconify;			/* Positioning information for iconifying windows */
 	void *Aes_rsc;			/* Pointer to the XaAES resources */
 	char *env;			/* new environment */
@@ -110,7 +112,7 @@ struct common
 	struct xa_window *focus;	/* Only 1 of 2: the top window(window_list) or root_window. */
 
 	Path desk;			/* Remember the desk path for Launch desk. */
-	int mouse;			/* Remember mouse shape */
+	short mouse;			/* Remember mouse shape */
 	MFORM *mouse_form;		/* Remember mouse form */
 };
 
@@ -127,8 +129,8 @@ struct config
 	Path rsc_name;			/* Path to XaAES rsc */
 
 	/* display modes of window title */
-	int topname;
-	int backname;
+	short topname;
+	short backname;
 
 	bool no_xa_fsel;
 	bool auto_program;
@@ -146,21 +148,21 @@ struct config
 
 	enum menu_behave menu_behave;	/* pull, push or leave */
 
-	int widg_w, widg_h;
-	int widg_dw, widg_dh;		/* flexible widget object types. */
+	short widg_w, widg_h;
+	short widg_dw, widg_dh;		/* flexible widget object types. */
 
-	int ted_filler;
-	int font_id;			/* Font id to use */
-	int double_click_time;		/* Double click timing */
-	int have_wheel_vector;		/* If vex_whlv changed its save_ptr,
+	short ted_filler;
+	short font_id;			/* Font id to use */
+	short double_click_time;	/* Double click timing */
+	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
 					   we have a VDI that supports mouse wheels. */
-	int wheel_amount;		/* amount of lines for a wheel click. */
-	int standard_font_point;	/* Size for normal text */
-	int medium_font_point;		/* The same, but for low resolution screens */
-	int small_font_point;		/* Size for small text */
-	int popscroll;			/* number of lines of a popup above which it will be made scrollable. */
+	short wheel_amount;		/* amount of lines for a wheel click. */
+	short standard_font_point;	/* Size for normal text */
+	short medium_font_point;	/* The same, but for low resolution screens */
+	short small_font_point;		/* Size for small text */
+	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
 
-	int videomode;			/* ID of screen device opened by v_opnwk() */
+	short videomode;		/* ID of screen device opened by v_opnwk() */
 
 	/* postponed cnf things */
 	Path cnf_shell;			/* SHELL= */
