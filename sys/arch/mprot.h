@@ -23,7 +23,7 @@ extern ulong mint_top_tt;
 void init_tables (void);
 int get_prot_mode (MEMREGION *);
 void mark_region (MEMREGION *region, short mode, short cmode);
-void mark_proc_region (PROC *proc, MEMREGION *region, short mode);
+void mark_proc_region (struct memspace *p_mem, MEMREGION *region, short mode, short pid);
 int prot_temp (ulong loc, ulong len, short mode);
 void init_page_table (PROC *proc, struct memspace *p_mem); /* XXX */
 void mem_prot_special (PROC *proc);

@@ -1141,7 +1141,7 @@ mark_region(MEMREGION *region, short mode, short cmode)
 	    /* everybody gets the same flags */
 	    goto notowner;
 	}
-	if (proc->memflags & F_OS_SPECIAL) {
+	if (proc->p_mem->memflags & F_OS_SPECIAL) {
 	    /* you're special; you get owner flags */
 	    MP_DEBUG(("mark_region: pid %d is an OS special!",proc->pid));
 	    goto owner;
@@ -1186,7 +1186,7 @@ finished:
 /* special version of mark_region, used for attaching (mode == PROT_P)
    and detaching (mode == PROT_I) a memory region to/from a process. */
 void
-mark_proc_region(PROC *proc, MEMREGION *region, short mode)
+mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pid)
 {
 	if (no_mem_prot)
 		return;
@@ -1197,21 +1197,21 @@ mark_proc_region(PROC *proc, MEMREGION *region, short mode)
 
 
     MP_DEBUG(("mark_proc_region %lx len %lx mode %d for pid %d",
-	      start, len, mode, proc->pid));
+	      start, len, mode, pid));
 
     global_mode = global_mode_table[(start >> 13)];
 
-    assert(proc->p_mem && proc->p_mem->page_table);
+    assert(p_mem && p_mem->page_table);
     if (global_mode == PROT_I || global_mode == PROT_G)
       mode = global_mode;
     else {
-	if (proc->memflags & F_OS_SPECIAL) {
+	if (p_mem->memflags & F_OS_SPECIAL) {
 	    /* you're special; you get owner flags */
-	    MP_DEBUG(("mark_proc_region: pid %d is an OS special!",proc->pid));
+	    MP_DEBUG(("mark_proc_region: pid %d is an OS special!",pid));
 	    goto owner;
 	}
 	if (mode == PROT_P) {
-	    MP_DEBUG(("mark_proc_region: pid %d is an owner",proc->pid));
+	    MP_DEBUG(("mark_proc_region: pid %d is an owner",pid));
 owner:
 	    mode = PROT_G;
 	    goto gotvals;
@@ -1233,10 +1233,10 @@ owner:
     }
 
 /* if you get here you're not an owner, or mode is G or I */
-    MP_DEBUG(("mark_proc_region: pid %d gets non-owner modes",proc->pid));
+    MP_DEBUG(("mark_proc_region: pid %d gets non-owner modes",pid));
 
 gotvals:
-    mark_pages(proc->p_mem->page_table, start, len, mode, FLUSH_BOTH, 0);
+    mark_pages(p_mem->page_table, start, len, mode, FLUSH_BOTH, 0);
 	}
 }
 
@@ -1352,6 +1352,8 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	if (*mr)
 	    mark_pages(p_mem->page_table, (*mr)->loc, (*mr)->len, PROT_G, 0, 0);
     }
+    if (p_mem->tp_reg)
+	mark_pages(p_mem->page_table, p_mem->tp_reg->loc, p_mem->tp_reg->len, PROT_G, 0, 0);
 
     /*
      * As recommended in the MC68040 user's manual, we mark the table as
@@ -1523,7 +1525,7 @@ report_buserr(void)
 			type, rw, aa, pc, curproc->base);
 	}
 	
-	if (curproc->pid == 0 || curproc->memflags & F_OS_SPECIAL)
+	if (curproc->pid == 0 || curproc->p_mem->memflags & F_OS_SPECIAL)
 	{
 		/* the system is so thoroughly hosed that anything we try will
 		 * likely cause another bus error; so let's just hang up

@@ -365,6 +365,9 @@ sys_pfork (void)
 			{
 				/* Okay we have to create a new shadow and save
 				 * region for this one
+				 * 
+				 * XXX assumes 1 is the MEMREGION of the
+				 * textsegment; this SHOULD be reworked
 				 */
 				n = fork_region (m, i == 1 ? txtsize : 0);
 				m->mflags |= M_SEEN; /* save links only once */

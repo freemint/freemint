@@ -34,6 +34,7 @@
 # include "proc_help.h"
 
 # include "arch/mprot.h"
+# include "arch/user_things.h"	/* user_header */
 # include "libkern/libkern.h"
 # include "mint/file.h"
 
@@ -127,7 +128,11 @@ copy_mem (struct proc *p)
 	m->mem = kmalloc (m->num_reg * sizeof (MEMREGION *));
 	m->addr = kmalloc (m->num_reg * sizeof (long));
 	
-	if ((!no_mem_prot && !m->pt_mem) || !m->mem || !m->addr)
+	m->tp_reg = get_region(alt, user_header[2], PROT_P);
+	if (!m->tp_reg)
+		m->tp_reg = get_region(core, user_header[2], PROT_P);
+	
+	if ((!no_mem_prot && !m->pt_mem) || !m->mem || !m->addr || !m->tp_reg)
 		goto nomem;
 	
 	/* copy memory */
@@ -140,6 +145,14 @@ copy_mem (struct proc *p)
 		m->addr[i] = p->p_mem->addr[i];
 	}
 	
+	/* initialize trampoline things */
+	m->tp_ptr = (long *) m->tp_reg->loc;
+	
+	/* temporary attach to curproc so it's accessible */
+	attach_region(curproc, m->tp_reg);
+	bcopy(user_header, m->tp_ptr, user_header[2]);
+	detach_region(curproc, m->tp_reg);
+	
 	TRACE (("copy_mem: ok (%lx)", m));
 	return m;
 	
@@ -147,6 +160,7 @@ nomem:
 	if (m->pt_mem) free_page_table_ptr (m);
 	if (m->mem) kfree (m->mem);
 	if (m->addr) kfree (m->addr);
+	if (m->tp_reg) { m->tp_reg->links--; free_region(m->tp_reg); }
 	kfree (m);
 	
 	return NULL;
@@ -169,6 +183,15 @@ free_mem (struct proc *p)
 	
 	DEBUG (("freeing p_mem for %s", p->name));
 	
+	if (p_mem->tp_reg)
+	{
+		p_mem->tp_reg->links--;
+		if (p_mem->tp_reg->links == 0)
+			free_region(p_mem->tp_reg);
+		else
+			ALERT("p_mem->tp_reg->links != 0 ???");
+	}
+
 	/* free all memory
 	 * if mflags & M_KEEP then attach it to process 0
 	 */

@@ -648,7 +648,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		b->p_hitpa = b->p_lowtpa + mem->len;
 	}
 	
-	p->memflags = b->p_flags;
+	p->p_mem->memflags = b->p_flags;
 	
 	if (!thread)
 	{
@@ -677,7 +677,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 					    (m->loc != (long) b->p_env) &&
 					    (mem_prot_flags & MPF_STRICT))
 					{
-						mark_proc_region (p, m, PROT_I);
+						mark_proc_region (p->p_mem, m, PROT_I, p->pid);
 					}
 				}
 # else
@@ -689,7 +689,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 					    (m->loc != (long) b->p_env) &&
 					    (mem_prot_flags & MPF_STRICT))
 					{
-						mark_proc_region (p, m, PROT_I);
+						mark_proc_region (p->p_mem, m, PROT_I, p->pid);
 					}
 				}
 # endif

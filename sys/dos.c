@@ -640,7 +640,7 @@ shutdown(void)
 	for (p = proclist; p; p = p->gl_next)
 	{
 		/* Skip MiNT, curproc and AES */
-		if (p->pid && (p != curproc) && ((p->memflags & F_OS_SPECIAL) == 0))
+		if (p->pid && (p != curproc) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0))
 		{
 			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
