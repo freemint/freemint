@@ -39,7 +39,9 @@
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
 # include "mint/mem.h"		/* F_FASTLOAD et contubernales */
-# include "mint/proc.h"		/* curproc (needed by DEBUG()) */
+# ifdef DEBUG_INFO
+# include "mint/proc.h"		/* curproc (for DEBUG) */
+# endif
 # include "mint/signal.h"	/* SIGCHLD etc. */
 # include "mint/stat.h"		/* struct stat */
 
@@ -81,7 +83,7 @@
 # define MISSING_ARG	"missing argument: "
 
 # define SHELL_STACK	32768L		/* maximum usage is so far about a half ot this */
-# define SHELL_ARGS	2048L		/* number of pointers in the argument vector table (i.e. 8K) */
+# define SHELL_ARGS	1024L		/* number of pointers in the argument vector table (i.e. 4K) */
 
 /* this is an average number of seconds in Gregorian year
  * (365 days, 6 hours, 11 minutes, 15 seconds).
@@ -92,11 +94,10 @@
 
 /* Some help for the optimizer */
 static void shell(void) __attribute__((noreturn));
-static void shell_start(long bp) __attribute__((noreturn));
 
 /* Global variables */
 static BASEPAGE *shell_base;
-static short xcommands;
+static short xcommands;		/* if 1, the extended command set is active */
 
 /* Utility routines */
 
@@ -220,7 +221,7 @@ env_append(char *where, char *what)
 	strcpy(where, what);
 	where += strlen(where);
 	*where++ = 0;
-	
+
 	return where;
 }
 
@@ -228,17 +229,17 @@ static char *
 shell_getenv(const char *var)
 {
 	char *env_str = shell_base->p_env;
-	long vl;
+	long len;
 
 	if (env_str == NULL || *env_str == 0)
 		return NULL;
 
-	vl = strlen(var);
+	len = strlen(var);
 
 	while (*env_str)
 	{
-		if ((strncmp(env_str, var, vl) == 0) && (env_str[vl] == '='))
-			return env_str + vl + 1;
+		if ((strncmp(env_str, var, len) == 0) && (env_str[len] == '='))
+			return env_str + len + 1;
 		while (*env_str)
 			env_str++;
 		env_str++;
@@ -251,51 +252,38 @@ shell_getenv(const char *var)
 static void
 shell_delenv(const char *strng)
 {
-	char *name, *env_str = shell_base->p_env;
-	long len;
+	char *name, *var, *env_str = shell_base->p_env;
 
 	if (!env_str)
 		return;
 
-	/* find the length of "tag" in "tag=value" */
-	len = strlen(strng);
-
 	/* find the tag in the environment */
-	while (*env_str)
-	{
-		if ((strncmp(env_str, strng, len) == 0) && (env_str[len] == '='))
-			break;
-		while (*env_str)
-			env_str++;
-		env_str++;
-	}
+	var = shell_getenv(strng);
 
-	if (!*env_str)
+	if (!var)
 		return;
+
+	var -= strlen(strng);
+	var--;
 
 	/* if it's found, move all the other environment variables down by 1 to
    	 * delete it
          */
-	name = env_str + strlen(env_str) + 1;
+	name = var + strlen(var) + 1;
 
-	if (!*name)
-	{
-		env_str[0] = env_str[1] = 0;
-	}
-	else
+	do
 	{
 		while (*name)
-		{
-			while (*name)
-				*env_str++ = *name++;
-			*env_str++ = *name++;
-		}
-		*env_str = *name;
-	}
+			*var++ = *name++;
+		*var++ = *name++;
+	} while (*name);
+
+	*var = 0;
 
 	Mshrink((void *)shell_base->p_env, env_size());
 }
 
+/* XXX try to avoid reallocation whenever possible */
 static void
 shell_setenv(const char *var, char *value)
 {
@@ -323,21 +311,15 @@ shell_setenv(const char *var, char *value)
 	es = env_str;
 	ne = new_env;
 
-	/* Copy old env to new place skipping `var' */
+	/* If it already exists, delete it */
+	shell_delenv(var);
+
+	/* Copy old env to new place */
 	while (*es)
 	{
-		if ((strncmp(es, var, varlen) == 0) && (es[varlen] == '='))
-		{
-			while (*es)
-				es++;
-			es++;
-		}
-		else
-		{
-			while (*es)
-				*ne++ = *es++;
+		while (*es)
 			*ne++ = *es++;
-		}
+		*ne++ = *es++;
 	}
 
 	strcpy(ne, var);
@@ -501,15 +483,15 @@ env(void)
 {
 	char *var = shell_base->p_env;
 
-	if (!var)
-		return;
-
-	while (*var)
+	if (var)
 	{
-		shell_fprintf(STDOUT, "%s\r\n", var);
 		while (*var)
+		{
+			shell_fprintf(STDOUT, "%s\r\n", var);
+			while (*var)
+				var++;
 			var++;
-		var++;
+		}
 	}
 }
 
@@ -588,13 +570,11 @@ sh_ls(long argc, char **argv)
 			dir = argv[1];
 	}
 
-	r = Dopendir(dir, 0);
-	if (r < 0)
-		return r;
+	handle = Dopendir(dir, 0);
+	if (handle < 0)
+		return handle;
 
 	Tgettimeofday(&tv, NULL);
-
-	handle = r;
 
 	do
 	{
@@ -736,10 +716,8 @@ sh_ls(long argc, char **argv)
 static long
 sh_cd(long argc, char **argv)
 {
-	long r = 0;
-	char *home, *pwd, cwd[1024];
-
-	pwd = shell_getenv("PWD");
+	long r;
+	char *newdir, *pwd, cwd[1024];
 
 	if (argc >= 2)
 	{
@@ -750,28 +728,30 @@ sh_cd(long argc, char **argv)
 			return 0;
 		}
 		else
-			r = Dsetpath(argv[1]);
+			newdir = argv[1];
 	}
 	else
 	{
-		home = shell_getenv("HOME");
-		if (home)
-			r = Dsetpath(home);
-		else
-			r = Dsetpath("/");
+		newdir = shell_getenv("HOME");
+		if (!newdir)
+			newdir = "/";
 	}
+
+	r = Dsetpath(newdir);
 
 	if (r == 0)
 	{
-		if (pwd)
-			shell_setenv("OLDPWD", pwd);
-
 		Dgetcwd(cwd, 0, sizeof(cwd));
 
 		if (*cwd == 0)
 			strcpy(cwd, "/");
 		else
 			dos2unix(cwd);
+
+		pwd = shell_getenv("PWD");
+
+		if (pwd && strcmp(pwd, cwd))
+			shell_setenv("OLDPWD", pwd);
 
 		shell_setenv("PWD", cwd);
 	}
@@ -908,7 +888,7 @@ sh_exit(long argc, char **argv)
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
 	{
-		/* Kill the parent to avoid restarting us */
+		/* Tell the parent to exit */
 		(void)Pkill(Pgetppid(), SIGTERM);
 
 		Pterm(0);
@@ -1014,9 +994,7 @@ sh_echo(long argc, char **argv)
 {
 	short x = 1;
 
-	argc--;
-
-	while (argc--)
+	while (--argc)
 		shell_fprintf(STDOUT, "%s ", argv[x++]);
 
 	shell_fprintf(STDOUT, "\r\n");
@@ -1026,8 +1004,7 @@ sh_echo(long argc, char **argv)
 
 /* End of the commands, begin control routines */
 
-/* Bitfield of flags for functions (1 = gets switched on/off by xcmd) */
-static const long is_ext = 0x0000ff00L;		/* -1111-1111-0000-0000 */
+# define MAX_BASIC_CMD	8	/* i.e. echo, counting from exit == 1 */
 
 typedef long FUNC();
 
@@ -1094,17 +1071,11 @@ execute(char *cmdline)
 		cnt++;
 	}
 
-	if (commands[cnt] == NULL)
-		cmdno = 0;
-
 	/* If xcommands == 1 internal code is used for the commands
 	 * below, or external programs are executed otherwise
 	 */
-	if (cmdno && !xcommands)
-	{
-		if (is_ext & (1L << cnt))
-			cmdno = 0;
-	}
+	if ((commands[cnt] == NULL) || (!xcommands && cmdno > MAX_BASIC_CMD))
+		cmdno = 0;
 
 	return (cmdno == 0) ? execvp(newcmd, argv) : cmd_routs[cnt](argc, argv);
 }
