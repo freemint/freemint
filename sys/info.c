@@ -337,9 +337,9 @@ const char *MSG_init_menuwarn =
 const char *MSG_must_be_auto = "MiNT MUST be executed from the AUTO folder!\r\n";
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
 # ifdef VERBOSE_BOOT
-const char *MSG_init_mp = "Memory protection ";
-const char *MSG_init_mp_enabled = "enabled\r\n";
-const char *MSG_init_mp_disabled = "disabled\r\n";
+const char *MSG_init_mp = "Memory protection %s\r\n";
+const char *MSG_init_mp_enabled = "enabled";
+const char *MSG_init_mp_disabled = "disabled";
 # endif
 const char *MSG_init_delay_loop = "Calibrating delay loop... ";
 const char *MSG_couldnt_run_init = "Couldn't run `%s', error %ld!\r\n";
