@@ -80,8 +80,6 @@ void	_cdecl	FORCE		(const char *s, ...);
 void		PAUSE		(void);
 
 EXITING	_cdecl	FATAL		(const char *s, ...)	NORETURN;
-EXITING		halt		(void)			NORETURN;
-EXITING		HALT		(void)			NORETURN;
 
 void		DUMPLOG		(void);
 void		do_func_key	(int);

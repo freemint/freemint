@@ -272,7 +272,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 		base = addr2mem (curproc, (long) ptr2);
 		if (base)
-			env = addr2mem(curproc, *(void **)(base->loc + 0x2c));
+			env = addr2mem(curproc, *(long *)(base->loc + 0x2c));
 		else
 			env = NULL;
 

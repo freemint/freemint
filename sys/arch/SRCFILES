@@ -4,6 +4,8 @@
 STARTUP = startup.o
 
 COBJS = \
+	aranym.c \
+	halt.c \
 	info_mach.c \
 	init_mach.c \
 	kernfs_mach.c \
@@ -14,6 +16,7 @@ COBJS = \
 	timer.c
 
 SOBJS = \
+	aranym_asm.S \
 	context.S \
 	cpu.S \
 	detect.S \

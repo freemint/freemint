@@ -34,6 +34,7 @@
 
 # include "init_mach.h"
 
+# include "arch/aranym.h"
 # include "arch/detect.h"
 # include "arch/info_mach.h"
 # include "arch/mprot.h"
@@ -47,8 +48,23 @@
 # include <mint/osbind.h>
 
 
+/*
+ * _MCH cookie is not exact anymore
+ * (special hades cookie, special ct60 cookie, special aranym cookie)
+ *
+ * XXX todo: we should replace the global mch variable with a more
+ * accurate enum
+ */
+enum special_hw
+{
+	none = 0,
+	hades,
+	ct60,
+	aranym
+};
+
 static long _getmch (void);
-static void identifycpu (void);
+static void identify (enum special_hw);
 
 
 long
@@ -56,6 +72,7 @@ getmch (void)
 {
 	return Supexec(_getmch);
 }
+
 
 /*
  * Get the value of the _MCH cookie, if one exists; also set no_mem_prot if
@@ -68,10 +85,10 @@ getmch (void)
  * initialized, so that if we find a MiNT cookie already in the
  * jar we can bail out early and painlessly.
  */
-
 static long
 _getmch (void)
 {
+	enum special_hw add_info = none;
 	struct cookie *jar;
 	
 	jar = *CJAR;
@@ -79,48 +96,80 @@ _getmch (void)
 	{
 		while (jar->tag != 0)
 		{
-			/* check for machine type */
-			if (jar->tag == COOKIE__MCH)
+			switch (jar->tag)
 			{
-				mch = jar->value;
-# ifdef MILAN
-				if (mch != MILAN_C)
+				case COOKIE__MCH:
 				{
-					boot_print ("This MiNT version requires a Milan!\r\n");
+					mch = jar->value;
+# ifdef MILAN
+					if (mch != MILAN_C)
+					{
+						boot_print ("This MiNT version requires a Milan!\r\n");
+						return -1;
+					}
+# else
+					if (mch == MILAN_C)
+					{
+						boot_print ("This MiNT version doesn't run on a Milan!\r\n");
+						return -1;
+					}
+# endif
+					break;
+				}
+				
+				case COOKIE__VDO:
+				{
+					FalconVideo = (jar->value == 0x00030000L);
+					ste_video = (jar->value == 0x00010000L);
+					if (jar->value & 0xffff0000L)
+						screen_boundary = 15;
+					break;
+				}
+				
+				case COOKIE_MiNT:
+				{
+					boot_print ("MiNT is already installed!!\r\n");
 					return -1;
 				}
-# else
-				if (mch == MILAN_C)
+				
+				case COOKIE__AKP:
 				{
-					boot_print ("This MiNT version doesn't run on a Milan!\r\n");
-					return -1;
+					gl_lang = (int) ((jar->value >> 8) & 0x00ff);
+					gl_kbd = (short)(jar->value & 0x00ffL);
+					break;
+				}
+				
+				case COOKIE_PMMU:
+				{
+					/* jr: if PMMU cookie exists, someone else is
+					 * already using the PMMU
+					 */
+					boot_print ("WARNING: PMMU is already in use!\r\n");
+					no_mem_prot = 1;
+					break;
+				}
+				
+				case COOKIE_HADES:
+				{
+					add_info = hades;
+					break;
+				}
+				
+				case COOKIE_CT60:
+				{
+					add_info = ct60;
+					break;
+				}
+				
+# ifdef ARANYM
+				case COOKIE_NF:
+				{
+					nf_init();
+					
+					add_info = aranym;
+					break;
 				}
 # endif
-			}
-			else if (jar->tag == COOKIE__VDO)
-			{
-				FalconVideo = (jar->value == 0x00030000L);
-				ste_video = (jar->value == 0x00010000L);
-				if (jar->value & 0xffff0000L)
-					screen_boundary = 15;
-			}
-			else if (jar->tag == COOKIE_MiNT)
-			{
-				boot_print ("MiNT is already installed!!\r\n");
-				return -1;
-			}
-			else if (jar->tag == COOKIE__AKP)
-			{
-				gl_lang = (int) ((jar->value >> 8) & 0x00ff);
-				gl_kbd = (short)(jar->value & 0x00ffL);
-			}
-			else if (jar->tag == COOKIE_PMMU)
-			{
-				/* jr: if PMMU cookie exists, someone else is
-				 * already using the PMMU
-				 */
-				boot_print ("WARNING: PMMU is already in use!\r\n");
-				no_mem_prot = 1;
 			}
 			
 			jar++;
@@ -158,7 +207,7 @@ _getmch (void)
 # endif
 	
 	/* initialize the info strings */
-	identifycpu ();
+	identify (add_info);
 	
 	DEBUG (("detecting hardware ... "));
 	/* at the moment only detection of ST-ESCC */
@@ -208,33 +257,57 @@ _getmch (void)
 }
 
 static void
-identifycpu (void)
+identify (enum special_hw info)
 {
 	char buf[64];
 	char *_cpu, *_mmu, *_fpu;
 	
-	switch (mch)
+	machine = "Unknown clone";
+	
+	switch (info)
 	{
-		case ST:
-			machine = "Atari ST";
+		case none:
+		{
+			switch (mch)
+			{
+				case ST:
+					machine = "Atari ST";
+					break;
+				case STE:
+					machine = "Atari STE";
+					break;
+				case MEGASTE:
+					machine = "Atari MegaSTE";
+					break;
+				case TT:
+					machine = "Atari TT";
+					break;
+				case FALCON:
+					machine = "Atari Falcon";
+					break;
+				case MILAN_C:
+					machine = "Milan";
+					break;
+			}
 			break;
-		case STE:
-			machine = "Atari STE";
+		}
+		case hades:
+		{
+			machine = "Hades";
 			break;
-		case MEGASTE:
-			machine = "Atari MegaSTE";
+		}
+		case ct60:
+		{
+			machine = "Atari Falcon/CT60";
 			break;
-		case TT:
-			machine = "Atari TT";
+		}
+# ifdef ARANYM
+		case aranym:
+		{
+			machine = nf_name();
 			break;
-		case FALCON:
-			machine = "Atari Falcon";
-			break;
-		case MILAN_C:
-			machine = "Milan";
-			break;
-		default:
-			machine = "Unknown";
+		}
+# endif
 	}
 	
 	_fpu = " no ";

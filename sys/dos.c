@@ -16,6 +16,7 @@
 # include "dos.h"
 # include "global.h"
 
+# include "arch/halt.h"		/* hw_poweroff, hw_halt, ... */
 # include "arch/intr.h"
 # include "libkern/libkern.h"
 # include "mint/asm.h"
@@ -698,60 +699,57 @@ shutdown(void)
 	DEBUG(("done"));
 }
 
+/* 
+ * where restart is:
+ * 
+ * 0 = halt
+ * 1 = warm start
+ * 2 = cold start,
+ * 3 = poweroff
+ * 
+ */
 long _cdecl
 sys_s_hutdown(long restart)
 {
 	PROC *p = curproc;
-
+	
 	/* The -1 argument returns a longword which indicates
 	 * what bits of the `restart' argument are valid
 	 * (new as of 1.15.6)
 	 */
 	if (restart < 0)
 		return 0x00000003L;
-
+	
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
 	{
 		shutdown();
-
-		/* 0 = halt, 1 = warm start, 2 = cold start, 3 = poweroff
-		 */
+		
 		switch (restart)
 		{
 			case  3:
 			{
-				/* CT60 poweroff */
-				long int dummy;
-
-				if (get_cookie(NULL,COOKIE_CT60,&dummy)==E_OK)
-				{
-					*(char *)0xFA800000L = 1; /* any write to that address causes
-				        	                     poweroff */
-				
-					/* does not return */ 
-				}
+				hw_poweroff();
+				/* fall through */
 			}
 			case  0:
 			{
 				DEBUG(("Halting system ..."));
-				halt();		/* does not return */
+				hw_halt();
 			}
 			case  2:
 			{
-				/* Invalidate the magic values TOS uses to
-				 * detect a warm boot
-				 */
-				*(long *)0x00000420L = 0L;
-				*(long *)0x0000043aL = 0L;
+				hw_coldboot();
 			}
 			case  1:
 			default:
 			{
 				DEBUG(("Rebooting ..."));
-				reboot();		/* does not return */
+				hw_warmboot();
 			}
 		}
+		
+		/* not reached */
 	}
 
 	return EPERM;
