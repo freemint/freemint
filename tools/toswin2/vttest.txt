@@ -27,14 +27,18 @@ Test Of Screen Features
 [x] Graphic rendition light background
 [x] Test of save/restore cursor
 
+Test Of Character Sets
+======================
+[x] Test of character sets
+
 Test Of Double-Sized Characters
 ===============================
-[x] 80 column mode, test 1
-[x] 80 column mode, test 2
-[x] 132 column mode, test 1
-[x] 132 column mode, test 2
-[x] centered frame
-[x] bottom frame
+[ ] 80 column mode, test 1
+[ ] 80 column mode, test 2
+[ ] 132 column mode, test 1
+[ ] 132 column mode, test 2
+[ ] centered frame
+[ ] bottom frame
 Remark: Double-sized character are not supported but at
 least the screen does not get messed up (as for example
 in KDE konsole,
