@@ -44,7 +44,6 @@
 # include "time.h"
 # include "timeout.h"
 # include "random.h"
-# include "util.h"
 # include "xbios.h"
 
 # include <osbind.h>
