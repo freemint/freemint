@@ -1225,9 +1225,49 @@ click_form_popup_entry(struct task_administration_block *tab)
 /*
  * Menu Tree Widget display
  */
+/*
+ * Ozk: We enter here being in either a thread of wind->owner, or wind->owner itself
+ * The menu, however, can be owned by someone else .. we check that.
+*/
+static void
+kt_draw_object_tree(void *_parm)
+{
+	long *parm = _parm;
+	struct xa_widget *widg = (struct xa_widget *)parm[0];
+	XA_TREE *wt = (XA_TREE *)parm[1];
+	OBJECT *root = (OBJECT *)parm[3];
+
+	if (parm[2])
+		set_clip((RECT *)parm[2]);
+
+	draw_object_tree(0, wt, NULL, widg->start, MAX_DEPTH, 6);
+
+	if (parm[2])
+		clear_clip();
+
+	if (wt->menu_line)	/* HR 090501  menu in user window.*/
+	{
+		int titles;
+
+		write_menu_line((RECT*)&root->ob_x);	/* HR: not in standard menu's object tree */
+
+		/* HR: Use the AES's client structure to register the rectangle for the current menu bar. */
+		titles = root[root[0].ob_head].ob_head;
+		C.Aes->waiting_for = XAWAIT_MENU;
+		object_area(&C.Aes->em.m1, root, titles, 0, 0);
+		C.Aes->em.flags = MU_M1;	/* into menu bar */
+	}
+
+	wake(IO_Q, (long)parm);
+	kfree(parm);
+	kthread_exit(0);
+}
+
 static bool
 display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
+	bool clip;
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	XA_TREE *wt = widg->stuff;
 	OBJECT *root;
 
@@ -1239,15 +1279,38 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 
 	/* clip work area */
 	if (wind->nolist && (wind->dial & created_for_POPUP))
+		clip = true;
+	else
+		clip = false;
+
+//	if (clip)
+//		set_clip(&wind->wa);
+
+	if (rc && rc != wt->owner)
 	{
-		set_clip(&wind->wa);
-		draw_object_tree(lock, wt, NULL, widg->start , MAX_DEPTH, 126);
-		clear_clip();
+		struct proc *np;
+		long *p = (long *)kmalloc(16);
+		p[0] = (long)widg;
+		p[1] = (long)wt;
+		if (clip)
+			p[2] = (long)&wind->wa;
+		else
+			p[2] = 0;
+		p[3] = (long)root;
+		DIAG((D_menu, wt->owner, "threaded display_menu_widget for %s by %s", wt->owner->name, rc->name));
+		kthread_create(wt->owner->p, kt_draw_object_tree, p, &np, "k%s", wt->owner->name);
+		sleep(IO_Q, (long)p);
+		return true;
 	}
 	else
-		draw_object_tree(lock, wt, NULL, widg->start , MAX_DEPTH, 6);
+	{
+		DIAG((D_menu, wt->owner, "normal display_menu_widget"));
+		draw_object_tree(lock, wt, NULL, widg->start , MAX_DEPTH, 126);
+	}
+//	if (clip)
+//		clear_clip();
 
-	if (wt->menu_line)			/* HR 090501  menu in user window.*/
+	if (wt->menu_line)	/* HR 090501  menu in user window.*/
 	{
 		int titles;
 

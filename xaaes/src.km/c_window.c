@@ -828,7 +828,51 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 	DIAG((D_wind, wind->owner, "draw_window %d for %s exit ok",
 		wind->handle, w_owner(wind)));
 }
+static void
+Pdraw_window( void *_parm)
+{
+	long *parm = _parm;
+	struct xa_client *c = (struct xa_client *)parm[1];
 
+	Ddraw_window(0, (struct xa_window *)parm[0]);
+	kfree(parm);
+	wake(IO_Q, (long)parm);
+	//if (c->usr_evnt && c->sleeplock)
+	//	Unblock(c, 1, 9000);
+	kthread_exit(0);
+}
+
+void
+draw_window(enum locks lock, struct xa_window *wind)
+{
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+
+	if (!rc || rc == wind->owner || wind->owner == C.Aes)
+	{
+		DIAG((D_wind, rc, "draw_window %d, for %s", wind->handle, rc->name));
+		Ddraw_window(lock, wind);
+	}
+	else
+	{
+		long r;
+		long *p;
+		struct proc *np;
+
+		p = (long *)kmalloc(16);
+		p[0] = (long)wind;
+		p[1] = (long)wind->owner;
+		DIAG((D_wind, rc, "kthreaded draw_window %d for %s by %s", wind->handle, wind->owner->name, rc->name));
+		r = kthread_create(wind->owner->p, Pdraw_window, p, &np, "k%s", wind->owner->name);
+		//p_waitpid(np->pid, 0, NULL);
+		sleep(IO_Q, (long)p);
+		if (wind->owner->usr_evnt && wind->owner->sleeplock)
+			Unblock(wind->owner, 1, 9000);
+		
+
+	}
+	DIAGS(("DrawWind - exit OK"));
+}
+#if 0
 static void
 Pdraw_window(struct proc *p, void *_parm)
 {
@@ -846,7 +890,7 @@ draw_window(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 
-	if (!rc || rc == wind->owner || rc == C.Aes)
+	if (!rc || rc == wind->owner || wind->owner == C.Aes)
 	{
 		DIAG((D_wind, rc, "draw_window %d, for %s", wind->handle, rc->name));
 		Ddraw_window(lock, wind);
@@ -870,6 +914,7 @@ draw_window(enum locks lock, struct xa_window *wind)
 	}
 	DIAGS(("DrawWind - exit OK"));
 }
+#endif
 
 #if 0
 /*
