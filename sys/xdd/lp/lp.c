@@ -44,7 +44,7 @@
 # include "mint/arch/mfp.h"
 
 
-# define  LP_VERSION	"0.8"
+# define  LP_VERSION	"0.9"
 
 /*
  * Global variables
