@@ -139,15 +139,21 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		return XAC_DONE;
 	}
 
-	/* add to client list */
+	/* add to client list (sorted in ascending pid order) */
 	{
 		struct xa_client **end = &(S.client_list);
 		struct xa_client *prior = NULL;
 
-		while (*end)
+		while (*end && (*end)->p->pid < p->pid)
 		{
 			prior = *end;
 			end = &((*end)->next);
+		}
+
+		if (*end)
+		{
+			client->next = *end;
+			(*end)->prior = client;
 		}
 
 		*end = client;
