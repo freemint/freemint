@@ -1768,50 +1768,6 @@ static void
 draw_widget_text(struct xa_widget *widg, struct xa_wtxt_inf *wtxti, char *txt, short xoff, short yoff)
 {
 	wtxt_output(wtxti, txt, widg->state, &widg->ar, xoff, yoff);
-#if 0
-	struct xa_fnt_info *wtxt;
-	short x, y, f = wtxti->flags;
-	bool sel = widg->state & OS_SELECTED;
-	char t[200];
-
-	if (sel)
-		wtxt = &wtxti->s;
-	else
-		wtxt = &wtxti->n;
-
-	wr_mode(MD_TRANS);
-	t_font(wtxt->p, wtxt->f);
-
-	vst_effects(C.vh, wtxt->e);
-
-	prop_clipped_name(txt, t, widg->ar.w - (xoff << 1));
-	
-	t_extent(t, &x, &y);
-	y = yoff + widg->ar.y + ((widg->ar.h - y) >> 1);
-	
-	if (f & WTXT_CENTER)
-		x = xoff + widg->ar.x + ((widg->ar.w - x) >> 1);
-	else
-		x = xoff + widg->ar.x;
-
-	if (f & WTXT_DRAW3D)
-	{
-		if (sel && (f & WTXT_ACT3D))
-			x++, y++;
-	
-		t_color(wtxt->bgc);
-		x++;
-		y++;
-		v_gtext(C.vh, x, y, t);
-		x--;
-		y--;
-	}
-	t_color(wtxt->fgc);
-	v_gtext(C.vh, x, y, t);
-
-	/* normal */
-	vst_effects(C.vh, 0);
-#endif
 }
 
 static void

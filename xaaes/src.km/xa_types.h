@@ -1296,9 +1296,10 @@ enum scroll_info_flags
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
 
-#define SETAB_REL		0x0001
-#define SETAB_RJUST		0x0002
-#define SETAB_RORIG		0x0004
+#define SETAB_RJUST		0x0001
+#define SETAB_CJUST		0x0002
+#define SETAB_REL		0x0004
+#define SETAB_RORIG		0x0008
 #define SETAB_END		0x8000
 struct se_tab
 {

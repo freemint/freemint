@@ -43,6 +43,10 @@
  * 	!z*.?  All files not starting with 'z', and having a single character extension
  * 	*.[co] All '.o' and '.c' files
  * 	*.[ch]* All files with a extension starting with c or h
+ *
+ * Ozk: Added a flag 'auto_wc' which, when true, automatically appends a
+ *	wildcard to the pattern. This allows us to use match_pattern for
+ *	filenamecompletion.
  */
 
 #include "global.h"
