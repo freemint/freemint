@@ -161,7 +161,6 @@ free_mouse_lock(void)
 bool
 lock_screen(struct xa_client *client, bool try, short *ret, int which)
 {
-
 	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s state: %d for (%d)%s, try: %d",
 		which, client->p->pid, c_owner(client), update_lock.counter,
 		update_lock.client ? update_lock.client->p->pid : -1,
@@ -193,10 +192,10 @@ unlock_screen(struct xa_client *client, int which)
 {
 	bool r = false;
 
-	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s state: %d for (%d)%s, try: %d",
+	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s state: %d for (%d)%s",
 		which, client->p->pid, c_owner(client), update_lock.counter,
 		update_lock.client ? update_lock.client->p->pid : -1,
-		update_lock.client ? update_lock.client->name : "", try));
+		update_lock.client ? update_lock.client->name : ""));
 
 	if (update_lock.client == client)
 	{
@@ -205,7 +204,7 @@ unlock_screen(struct xa_client *client, int which)
 	}
 	else
 	{
-		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", locker->p->pid));
+		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", client->p->pid));
 	}
 
 	return r;
@@ -239,10 +238,10 @@ unlock_mouse(struct xa_client *client, int which)
 {
 	bool r = false;
 
-	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s state: %d for (%d)%s, try: %d",
+	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s state: %d for (%d)%s",
 		which, client->p->pid, c_owner(client), update_lock.counter,
 		mouse_lock.client ? mouse_lock.client->p->pid : -1,
-		mouse_lock.client ? mouse_lock.client->name : "", try));
+		mouse_lock.client ? mouse_lock.client->name : ""));
 
 
 
@@ -250,7 +249,7 @@ unlock_mouse(struct xa_client *client, int which)
 		r = ressource_semaphore_rel(&mouse_lock, client);
 	else
 	{
-		DIAG((D_sema, NULL, "unlock_mouse from %d without lock_screen!", locker->p->pid));
+		DIAG((D_sema, NULL, "unlock_mouse from %d without lock_screen!", client->p->pid));
 		r = ressource_semaphore_rel(&mouse_lock, client);
 	}
 
