@@ -586,37 +586,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	{
 		struct xa_window *wind = find_window(0, md->x, md->y);
 
-		if (wind && wind->frame > 0 && (wind->active_widgets & SIZER))
-		{
-			if (!m_inside(md->x, md->y, &wind->ba))
-			{
-				RECT r = wind->r;
-				short xy = border_mouse[compass(16, md->x, md->y, r)];
-
-				if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != xy))
-				{
-					//C.aesmouse = xy;
-					graf_mouse(xy, NULL, true);
-				}
-			}
-			else
-			{
-				if (C.aesmouse != -1)
-					graf_mouse(-1, NULL, true);
-				if (C.mouse_form != wind->owner->mouse_form)
-					graf_mouse(wind->owner->mouse, wind->owner->mouse_form, false);
-			}
-#if 0
-			else if (C.aesmouse != -1)
-			{
-				graf_mouse(-1, NULL, true);
-			}
-#endif
-		}
-		else if (C.aesmouse != -1)
-		{
-			graf_mouse(-1, NULL, true);
-		}
+		wind_mshape(wind, md->x, md->y);
 
 		client = CLIENT_LIST_START;
 
