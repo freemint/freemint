@@ -677,11 +677,11 @@ static int
 fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc)
 {
 	struct fsel_data *fs = list->data;
+	struct seget_entrybyarg p;
 
 	DIAG((D_fsel, NULL, "fs_item_action %lx, fs=%lx", list->cur, fs));
 	if (list->cur)
 	{
-		struct seget_entrybyarg p;
 		long uf;
 
 		list->get(list, list->cur, SEGET_USRFLAGS, &uf);
@@ -703,7 +703,7 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 			p.idx = 0;
 			p.arg.txt = "..";
 			
-			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && !p.ret.ret) //strcmp(list->cur->c.td.text.text->text, "..") == 0)
+			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && !p.ret.ret)
 			{
 				if ( fs->clear_on_folder_change )
 					set_file(lock, fs, "");
@@ -713,15 +713,21 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 				return true;
 			}
 			p.arg.txt = ".";
-			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && p.ret.ret) //strcmp(list->cur->c.td.text.text->text, ".") != 0)
+			if (list->get(list, list->cur, SEGET_TEXTCMP, &p) && p.ret.ret)
 			{
 				int drv;
 				add_slash(fs->root, fs->fslash);
+				if (!fs->treeview)
+				{
+					p.idx = 0;
+					list->get(list, list->cur, SEGET_TEXTPTR, &p);
+					strcat(fs->root, p.ret.ptr);
+				}	
 				if ((drv = get_drv(fs->root)) >= 0)
 					strcpy(fs_paths[drv], fs->root);
 				if (fs->clear_on_folder_change)
 					set_file(lock, fs, "");
-				refresh_filelist(fsel, fs, list->cur);
+				refresh_filelist(fsel, fs, fs->treeview ? list->cur : NULL);
 #if 0
 				/* cur on common folder line (NON dot) */
 				int drv;
@@ -745,11 +751,15 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 	{
 		struct scroll_entry *this = fs->selected_entry->up;
 		long len = strlen(fs->root);
-			
+		
+		p.idx = 0;		
 		while (this)
 		{
-			strins(fs->path, "\\", len);
-			strins(fs->path, this->c.td.text.text->text, len);
+			if (list->get(list, this, SEGET_TEXTPTR, &p))
+			{
+				strins(fs->path, "\\", len);
+				strins(fs->path, p.ret.ptr, len);
+			}
 			this = this->up;
 		}
 	}
@@ -1258,6 +1268,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		strcpy(fs->filter, fs->fs_pattern);
 		fs->wind = dialog_window;
+		fs->treeview = true;
 		open_window(lock, dialog_window, dialog_window->r);
 
 		/* HR: after set_slist_object() & opwn_window */
