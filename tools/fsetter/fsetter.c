@@ -33,6 +33,11 @@
 #include "fsetter.h"
 #include "xhdi.h"
 
+#if !defined(__CFLIB__)
+#error at least cflib 0.20.0 is required to compile FSetter
+#endif
+
+
 #define UNLIMITED	0x7fffffffL
 extern short _app;
 
