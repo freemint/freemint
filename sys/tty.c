@@ -1166,8 +1166,10 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		    	/* Session leader.  Disassociate from controlling
 		    	 * tty.
 		    	 */
-			if (curproc->pgrp == curproc->pid) {
-				if (tty->pgrp > 0) {
+			if (curproc->pgrp == curproc->pid)
+			{
+				if (tty->pgrp > 0)
+				{
 					killgroup (tty->pgrp, SIGHUP, 0);
 					killgroup (tty->pgrp, SIGCONT, 0);
 				}
@@ -1204,15 +1206,20 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			 * another session than the behavior depends on
 			 * arg.  
 			 */
-			if (tty->pgrp > 0) {
-				PROC* p;
-				for (p = proclist; p; p = p->gl_next) {
+			if (tty->pgrp > 0)
+			{
+				struct proc *p;
+
+				for (p = proclist; p; p = p->gl_next)
+				{
 					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 						continue;
+
 					if (p->p_fd->control &&
 					    p->pgrp == p->pid &&
 					    p->p_fd->control->fc.index == f->fc.index &&
-					    p->p_fd->control->fc.dev == f->fc.dev) {
+					    p->p_fd->control->fc.dev == f->fc.dev)
+					{
 						    if (!suser (curproc->p_cred->ucr) ||
 							(long) arg != 1)
 						    {
