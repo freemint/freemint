@@ -125,7 +125,7 @@ killgroup (int pgrp, ushort sig, int priv)
 	int found = 0;
 	long ret = ENOENT;
 	
-	if (pgrp < 0)
+	if (pgrp <= 0)
 		return EINTERNAL;
 	
 	if (sig >= NSIG)
