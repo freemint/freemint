@@ -46,23 +46,50 @@
 
 # define MENU_OPTIONS	7
 
-short load_xfs_f;
-short load_xdd_f;
-short load_auto;
-short save_ini;
-
-static const char *ini_keywords[] =
-{
-	"XFS_LOAD",
-	"XDD_LOAD",
-	"EXE_AUTO",
-	"MEM_PROT",
-	"INI_STEP",
-	"INI_SAVE"
-};
+short load_xfs_f = 1;
+short load_xdd_f = 1;
+short load_auto = 1;
+short save_ini = 1;
 
 int boot_kernel_p(void);
 void read_ini(void);
+
+static int
+get_a_char(int fd)
+{
+	char ch;
+
+	if (TRAP_Fread(fd, 1, &ch) == 1)
+		return (int)ch;
+	return -1;
+}
+
+static int
+getdelim(char *buf, long n, int terminator, int fd)
+{
+	int ch;
+	long len = 0;
+
+	while ((ch = get_a_char(fd)) != -1)
+	{
+		if ((len + 1) >= n)
+			break;
+		if (ch == terminator)
+			break;
+		buf[len++] = (char)ch;
+	}
+
+	buf[len] = 0;
+
+	if (ch == -1)
+	{
+		if (len == 0)	/* Nothing read before EOF in this line */
+			return -1;
+		/* Pretend success otherwise */
+	}
+
+	return 0;
+}
 
 /* we assume that the mint.ini file, containing the boot
  * menu defaults, is located at same place as mint.cnf is
@@ -79,100 +106,107 @@ find_ini (char *outp, long outsize)
 	return 0;
 }
 
-static char *
-find_char (char *s, char c)
+static void
+do_xfs_load(char *arg)
 {
-	while (*s && *s != '\n' && *s != '\r')
-	{
-		if (*s == c)
-			return s;
-		s++;
-	}
-
-	return NULL;
+	load_xfs_f = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
 }
 
-INLINE short
-whether_yes (char *s)
+static void
+do_xdd_load(char *arg)
 {
-	s = find_char(s, '=');
-	if (!s)
-		return 0;
-	s = find_char(s, 'Y');	/* don't add 'y' here, see below */
-	if (!s)
-		return 0;
-	return 1;
+	load_xdd_f = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
 }
+
+static void
+do_exe_auto(char *arg)
+{
+	load_auto = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static void
+do_mem_prot(char *arg)
+{
+	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
+}
+
+static void
+do_ini_step(char *arg)
+{
+	step_by_step = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static void
+do_ini_save(char *arg)
+{
+	save_ini = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+}
+
+static const char *ini_keywords[] =
+{
+	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=", "MEM_PROT=", "INI_STEP=", "INI_SAVE=", NULL
+};
+
+static typeof(do_xfs_load) *func[] =
+{
+	do_xfs_load, do_xdd_load, do_exe_auto, do_mem_prot, do_ini_step, do_ini_save
+};
 
 void
 read_ini (void)
 {
-	DTABUF *dta;
-	char *buf, *s, ini_file[32];
-	long r, x, len;
-	short inihandle, options[MENU_OPTIONS-1] = { 1, 1, 1, 1, 0, 1 };
+	char *s, ini_file[32], line[256];
+	long x;
+	short inihandle;
 
 	if (!find_ini(ini_file, sizeof(ini_file)))
-		goto initialize;
+		return;
 
-	/* Figure out the file's length. Wish I had Fstat() here :-( */
-	dta = (DTABUF *) TRAP_Fgetdta();
-	r = TRAP_Fsfirst(ini_file, 0);
-	if (r < 0) goto initialize;	/* No such file, probably */
-	len = dta->dta_size;
-	if (len < 10) goto initialize;	/* proper mint.ini can't be so short */
-	len++;
+	inihandle = TRAP_Fopen(ini_file, 0);
 
-	buf = (char *) TRAP_Mxalloc (len, 0x0003);
-	if ((long)buf < 0)
-		buf = (char *) TRAP_Malloc (len);	/* No Mxalloc()? */
-	if ((long)buf <= 0) goto initialize;	/* Out of memory or such */
-	bzero (buf, len);
-
-	inihandle = TRAP_Fopen (ini_file, 0);
-	if (inihandle < 0) goto exit;
-	r = TRAP_Fread (inihandle, len, buf);
-	if (r < 0) goto close;
-
-	strupr (buf);
-	for (x = 0; x < MENU_OPTIONS-1; x++)
+	if (inihandle >= 0)
 	{
-		s = strstr (buf, ini_keywords[x]);
-		if (s)
-			options[x] = whether_yes (s);
+		while (getdelim(line, sizeof(line), '\n', inihandle) != -1)
+		{
+			if (line[0] != '#')
+			{
+				strupr(line);
+				x = 0;
+				while (ini_keywords[x])
+				{
+					s = strstr(line, ini_keywords[x]);
+					if (s && (s == line))
+					{
+						while (*s && (*s != '='))
+							s++;
+						if (*s)
+							func[x](++s);
+					}
+					x++;
+				}
+			}
+		}
 	}
-
-close:
-	TRAP_Fclose (inihandle);
-exit:
-	TRAP_Mfree ((long) buf);
-
-initialize:
-	load_xfs_f = options[0];
-	load_xdd_f = options[1];
-	load_auto = options[2];
-	no_mem_prot = !options[3];
-	step_by_step = options[4];
-	save_ini = options[5];
 }
 
 INLINE void
 write_ini (short *options)
 {
 	short inihandle;
-	char ini_file[32], buf[256];
+	char ini_file[32], line[64];
 	long r, x, l;
 
 	ksprintf(ini_file, sizeof(ini_file), "%smint.ini", sysdir);
 
-	inihandle = TRAP_Fcreate (ini_file, 0);
+	inihandle = TRAP_Fcreate(ini_file, 0);
+
 	if (inihandle < 0)
 		return;
 
 	options++;		/* Ignore the first one :-) */
 
-	l = strlen (MSG_init_menuwarn);
-	r = TRAP_Fwrite (inihandle, l, MSG_init_menuwarn);
+	l = strlen(MSG_init_menuwarn);
+	r = TRAP_Fwrite(inihandle, l, MSG_init_menuwarn);
 	if ((r < 0) || (r != l))
 	{
 		r = -1;
@@ -181,21 +215,22 @@ write_ini (short *options)
 
 	for (x = 0; x < MENU_OPTIONS-1; x++)
 	{
-		ksprintf (buf, sizeof (buf), "%s=%s\n", \
+		ksprintf(line, sizeof (line), "%s=%s\n", \
 			ini_keywords[x], options[x] ? "YES" : "NO");
-		l = strlen (buf);
-		r = TRAP_Fwrite (inihandle, l, buf);
+		l = strlen(line);
+		r = TRAP_Fwrite(inihandle, l, line);
 		if ((r < 0) || (r != l))
 		{
 			r = -1;
 			break;
 		}
 	}
+
 close:
-	TRAP_Fclose (inihandle);
+	TRAP_Fclose(inihandle);
 
 	if (r < 0)
-		TRAP_Fdelete (ini_file);
+		TRAP_Fdelete(ini_file);
 }
 
 int
@@ -228,9 +263,12 @@ wait:
 		switch(c)
 		{
 			case 0x03:
+			{
 				return 1;
+			}
 			case 0x0a:
 			case 0x0d:
+			{
 				load_xfs_f = option[1];
 				load_xdd_f = option[2];
 				load_auto = option[3];
@@ -240,12 +278,17 @@ wait:
 				if (save_ini)
 					write_ini(option);
 				return (int)option[0];
+			}
 			case '0':
-				option[6] = option[6] ? 0 : 1;
+			{
+				option[MENU_OPTIONS-1] = option[MENU_OPTIONS-1] ? 0 : 1;
 				break;
+			}
 			case '1' ... '6':
+			{
 				option[(c - 1) & 0x0f] = option[(c - 1) & 0x0f] ? 0 : 1;
 				break;
+			}
 			default:
 				goto wait;
 		}
