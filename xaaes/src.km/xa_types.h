@@ -302,7 +302,7 @@ struct c_event;
 struct c_event
 {
 	struct c_event		*next;
-	void			(*funct)(enum locks, struct c_event *);
+	void			(*funct)(enum locks, struct c_event *, bool cancel);
 	struct xa_client	*client;
 	void			*ptr1;
 	void			*ptr2;
