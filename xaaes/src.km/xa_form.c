@@ -42,7 +42,6 @@
 #include "rectlist.h"
 #include "scrlobjc.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 #include "xa_evnt.h"
 #include "xa_graf.h"
@@ -83,7 +82,7 @@ CloneForm(OBJECT *form)
 	while ((form[num_objs++].ob_flags & OF_LASTOB) == 0)
 		;
 
-	new_form = xmalloc(sizeof(OBJECT) * num_objs, 9);
+	new_form = kmalloc(sizeof(OBJECT) * num_objs);
 	if (new_form)
 	{
 		int o;
@@ -335,7 +334,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 	/* Create a copy of the alert box templates */
 	alert_form = CloneForm(ResourceTree(C.Aes_rsc, ALERT_BOX));
-	alertxt = xmalloc(sizeof(*alertxt), 90);
+	alertxt = kmalloc(sizeof(*alertxt));
 	if (!alert_form || !alertxt)
 		return 0;
 

@@ -26,13 +26,11 @@
 
 #include "cnf_xaaes.h"
 
-#include "xa_types.h"
 #include "xa_global.h"
 #include "xa_shel.h"
 
 #include "cnf_xaaes.h"
 #include "init.h"
-#include "xalloc.h"
 
 #include "mint/fcntl.h"
 #include "cnf.h"
@@ -357,7 +355,7 @@ pCB_run(const char *path, struct parsinf *inf)
 	{
 		if (!cfg.cnf_run[i])
 		{
-			cfg.cnf_run[i] = xmalloc(strlen(path)+1, 23);
+			cfg.cnf_run[i] = kmalloc(strlen(path)+1);
 			if (cfg.cnf_run[i])
 			{
 				strcpy(cfg.cnf_run[i], path);
@@ -393,7 +391,7 @@ load_config(const char *name)
 		parse_cnf(name, parser_tab, &mydata);
 	}
 	else
-		ALERT(("no config filename?\n"));
+		ALERT(("no config filename?"));
 
 #if GENERATE_DIAGS
 	{

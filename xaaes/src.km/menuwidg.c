@@ -36,7 +36,6 @@
 #include "rectlist.h"
 #include "taskman.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 #include "xa_rsrc.h"
 #include "xa_form.h"
@@ -193,9 +192,9 @@ inquire_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, 
 int
 attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, MENU *mn)
 {
-	int ret = 0;
 	XA_MENU_ATTACHMENT *at = client->attach;
 	OBJECT *attach_to;
+	int ret = 0;
 
 	Sema_Up(clients);
 
@@ -210,7 +209,7 @@ attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, M
 		/* Allocate a table for at least ATTACH_MAX attachments */
 		if (!at)
 		{
-			at = xcalloc(ATTACH_MAX, sizeof(XA_MENU_ATTACHMENT), 102);
+			at = kmalloc(sizeof(*at) * ATTACH_MAX);
 			if (!at)
 			{
 				Sema_Dn(clients);

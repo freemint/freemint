@@ -29,7 +29,6 @@
 
 #include "objects.h"
 #include "trnfm.h"
-#include "xalloc.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
 
@@ -98,9 +97,9 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 		DIAG((D_x, client, "XA_calloc 3 %ld", new_len));
 
 		if (client == C.Aes)
-			new_data = xmalloc(new_len, 3);
+			new_data = kmalloc(new_len);
 		else
-			new_data = proc_malloc(new_len);
+			new_data = umalloc(new_len);
 
 		if (!new_data)
 			return map;
@@ -120,13 +119,13 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 	dst.fd_stand = 0;
 
 	DIAG((D_x, client, "XA_calloc %d*%ld", 1, new_len));
-	tmp = xcalloc(1, new_len, 0);
+	tmp = kmalloc(new_len);
 	if (tmp)
 	{
 		memcpy(tmp, new_data, new_len);
 		src.fd_addr = tmp;
 		transform_gem_bitmap_data(vdih, src, dst, planes, screen.planes);
-		free(tmp);
+		kfree(tmp);
 	}
 
 	return new_data;
@@ -189,9 +188,9 @@ list_resource(struct xa_client *client, void *resource)
 	DIAG((D_x, client, "XA_alloc 2 %ld", sizeof(*new)));
 
 	if (client == C.Aes)
-		new = xmalloc(sizeof(*new), 2);
+		new = kmalloc(sizeof(*new));
 	else
-		new = proc_malloc(sizeof(*new));
+		new = umalloc(sizeof(*new));
 
 	if (new)
 	{
@@ -266,9 +265,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		DIAG((D_x, client, "XA_alloc 1 %ld", size));
 
 		if (client == C.Aes)
-			base = xmalloc(size, 1);
+			base = kmalloc(size);
 		else
-			base = proc_malloc(size);
+			base = umalloc(size);
 
 		if (!base)
 		{
@@ -673,9 +672,9 @@ FreeResources(struct xa_client *client, AESPB *pb)
 						if ((obj[f].ob_type & 255) == G_SLIST)
 						{
 							if (client == C.Aes)
-								free((SCROLL_INFO*)obj[f].ob_spec.index);
+								kfree((SCROLL_INFO*)obj[f].ob_spec.index);
 							else
-								proc_free((SCROLL_INFO*)obj[f].ob_spec.index);
+								ufree((SCROLL_INFO*)obj[f].ob_spec.index);
 						}
 					}
 					while (!(obj[f++].ob_flags & OF_LASTOB));
@@ -692,12 +691,12 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				if (client == C.Aes)
 				{
 					DIAG((D_rsrc, client, "Free: cur %lx for AESSYS", cur));
-					free(cur);
+					kfree(cur);
 				}
 				else
 				{
 					DIAG((D_rsrc, client, "Free: cur %lx", cur));
-					proc_free(cur);
+					ufree(cur);
 				}
 			}
 			else if (cur->handle == client->rsct - 1)

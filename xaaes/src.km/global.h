@@ -33,6 +33,7 @@
 #include "mint/config.h"
 #include "libkern/libkern.h"
 
+
 /* XXX -> kassert */
 # define FATAL KERNEL_FATAL
 
@@ -40,9 +41,10 @@
 # define XAAES_MAGIC 0x58614145L 
 # define XAAES_MAGIC_SH 0x58614146L
 
-/* debug section
- */
 
+/*
+ * debug section
+ */
 #if GENERATE_DIAGS
 
 #define ALERT(x)       KERNEL_ALERT x
@@ -58,6 +60,27 @@
 #define ASSERT(x)      assert x
 
 #endif
+
+
+/*
+ * memory management
+ */
+#undef kmalloc
+#undef kfree
+#undef umalloc
+#undef ufree
+
+void *xaaes_kmalloc(size_t size, const char *);
+void  xaaes_kfree  (void *addr, const char *);
+void *xaaes_umalloc(size_t size, const char *);
+void  xaaes_ufree(void *addr, const char *);
+
+#define kmalloc(size)	xaaes_kmalloc(size, FUNCTION)
+#define kfree(addr)	xaaes_kfree(addr, FUNCTION)
+#define umalloc(size)	xaaes_umalloc(size, FUNCTION)
+#define ufree(addr)	xaaes_ufree(addr, FUNCTION)
+
+void xaaes_kmalloc_leaks(void);
 
 
 typedef char Path[PATH_MAX];
@@ -89,6 +112,5 @@ __extension__								\
 	retvalue;							\
 })
 #define xbios_getrez()	(short)trap_14_w((short)(0x04))
-
 
 #endif /* _global_h */

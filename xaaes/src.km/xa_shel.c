@@ -34,7 +34,6 @@
 #include "init.h"
 #include "taskman.h"
 #include "util.h"
-#include "xalloc.h"
 
 #include "mint/signal.h"
 #include "mint/stat.h"
@@ -123,7 +122,7 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 	
 	l = count_env(strings, 0);
 	DIAG((D_shel, NULL, "count_env: %ld", l));
-	argtail = xmalloc(l + 1 + tailsize + 1 + i + 1 + argvl + 1, 2012);
+	argtail = kmalloc(l + 1 + tailsize + 1 + i + 1 + argvl + 1);
 	if (argtail)
 	{
 		int j; char *last;
@@ -135,7 +134,7 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 		strings[j++] = last;
 		strings[j] = 0;
 
-		if (C.env) free(C.env);
+		if (C.env) kfree(C.env);
 		C.env = argtail;
 
 		argvtail[0] = 0x7f;
@@ -354,7 +353,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		if (longtail)
 		{
 			tailsize = longtail;
-			tail = xmalloc(tailsize + 2, 1012);
+			tail = kmalloc(tailsize + 2);
 			if (!tail)
 				return 0;
 			strcpy(tail + 1, p_tail + 1);
@@ -364,7 +363,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		else
 		{
 			tailsize = p_tail[0];
-			tail = xmalloc(tailsize + 2, 12);
+			tail = kmalloc(tailsize + 2);
 			if (!tail)
 				return 0;
 			strncpy(tail, p_tail, tailsize + 1);
@@ -391,7 +390,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	 *     right before my eyes all the time.
 	 *     Dont mix pascal string processing with C string processing! :-)
 	 */
-	save_tail = xmalloc(tailsize + 2, 16);	/* was: strlen(tail+1) */
+	save_tail = kmalloc(tailsize + 2); /* was: strlen(tail+1) */
 	strncpy(save_tail, tail, tailsize + 1);
 	save_tail[tailsize + 1] = '\0';
 
@@ -484,7 +483,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 				}
 				else
 				{
-					char *new_tail = xmalloc(tailsize + 1 + strlen(cmd) + 1, 17);
+					char *new_tail = kmalloc(tailsize + 1 + strlen(cmd) + 1);
 					long new_tailsize;
 
 					if (!new_tail)
@@ -502,7 +501,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 					new_tailsize = strlen(new_tail + 1);
 					strncpy(new_tail + new_tailsize + 1, tail + 1, tailsize);
 					new_tailsize += tailsize;
-					free(tail);
+					kfree(tail);
 					tail = new_tail;
 					tail[new_tailsize + 1] = 0;
 					tailsize = new_tailsize;
@@ -638,7 +637,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 out:
 	if (tail != argvtail)
-		free(tail);
+		kfree(tail);
 
 	DIAG((D_shel, 0, "Launch for %s returns child %d (bp 0x%lx)",
 		c_owner(caller), ret, p ? p->p_mem->base : NULL));
@@ -1163,7 +1162,7 @@ put_env(enum locks lock, const char *cmd)
 		/* ends with '=': remove */
 		if (*(cmd + strlen(cmd) - 1) == '=')
 		{
-			newenv = xmalloc(ct, 19);
+			newenv = kmalloc(ct);
 			if (newenv)
 				/* copy without */
 				copy_env(newenv, strings, cmd, NULL);
@@ -1171,7 +1170,7 @@ put_env(enum locks lock, const char *cmd)
 		else
 		{
 			int l = strlen(cmd) + 1;
-			newenv = xmalloc(ct + l, 20);
+			newenv = kmalloc(ct + l);
 			if (newenv)
 			{
 				char *last;
@@ -1187,7 +1186,7 @@ put_env(enum locks lock, const char *cmd)
 
 		if (newenv)
 		{
-			if (C.env) free(C.env);
+			if (C.env) kfree(C.env);
 			C.env = newenv;
 		}
 
@@ -1220,7 +1219,7 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAGS(("shell_env for %s: '%s' :: '%s'", c_owner(client), name, pf ? pf : "~~~"));	
 		if (pf)
 		{
-			*p = proc_malloc(strlen(pf) + 1);
+			*p = umalloc(strlen(pf) + 1);
 			if (*p)
 				strcpy(*p, pf);
 		}

@@ -29,7 +29,7 @@
  * 
  * modifications:
  * - use C.vh
- * - call xmalloc for temps
+ * - call kmalloc for temps
  * - kept control over allocated permanent areas outside
  * - cast void *fd_addr to char *
  * - just return true or false
@@ -39,7 +39,6 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
-#include "xalloc.h"
 #include "trnfm.h"
 
 
@@ -90,13 +89,13 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 		tmp = msrc;
 		tmp.fd_nplanes = 1;
 		tmp.fd_h = 1 << (src_planes);
-		tmp.fd_addr = xmalloc(map_size(&tmp, 1), 21);
+		tmp.fd_addr = kmalloc(map_size(&tmp, 1));
 		if (!tmp.fd_addr)
 			return false;
 
 		tmp2 = tmp;
 		tmp2.fd_stand = 0;
-		tmp2.fd_addr = xmalloc(map_size(&tmp2, 2), 22);
+		tmp2.fd_addr = kmalloc(map_size(&tmp2, 2));
 		if (!tmp2.fd_addr)
 			tmp2.fd_addr = tmp.fd_addr;
 
@@ -121,9 +120,9 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 			case 1: colour_lut = devtovdi1;	break;
 			default:
 				/* This should never happen */
-				free(tmp.fd_addr);
+				kfree(tmp.fd_addr);
 				if (tmp2.fd_addr != tmp.fd_addr)
-					free(tmp2.fd_addr);
+					kfree(tmp2.fd_addr);
 				return false;
 		}
 
@@ -191,9 +190,9 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 		}
 
 		if (tmp2.fd_addr != tmp.fd_addr)
-			free(tmp2.fd_addr);
+			kfree(tmp2.fd_addr);
 
-		free(tmp.fd_addr);
+		kfree(tmp.fd_addr);
 	}
 	else
 		return false;

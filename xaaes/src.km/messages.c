@@ -33,7 +33,6 @@
 #include "xa_types.h"
 #include "xa_global.h"
 #include "xa_evnt.h"
-#include "xalloc.h"
 
 #if GENERATE_DIAGS
 static char xmsgs[][32] =
