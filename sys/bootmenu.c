@@ -452,6 +452,8 @@ close:
 	{
 		boot_printf(MSG_init_write_error, r, "mint.ini");
 		TRAP_Fdelete(ini_file);
+
+		stop_and_ask();
 	}
 }
 
