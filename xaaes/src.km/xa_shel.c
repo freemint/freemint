@@ -980,7 +980,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 	}
 
 	/* Last ditch - try the file spec on its own */
-	r = f_stat64(0, path, &st);
+	r = f_stat64(0, fn, &st);
 	DIAGS(("[5]  --    try: '%s' :: %ld", fn, r));
 	if (r == 0 && S_ISREG(st.mode))
 		return fn;
