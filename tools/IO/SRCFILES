@@ -4,11 +4,11 @@
 HEADER = \
 	bswap.h \
 	mytypes.h \
-	stdlib.h \
+	mint_io.h \
 	xhdi.h
 
 COBJS = \
-	stdlib.c \
+	mint_io.c \
 	xhdi.c
 
 SRCFILES = $(HEADER) $(COBJS)
