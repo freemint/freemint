@@ -1,0 +1,24 @@
+The included file `terminfo.src' contains the terminal description for
+the toswin terminal emulations tw52 and tw100.  To disable color support
+you must currently manually set your $TERM to `tw52-m' and `tw100-m'
+respectively.
+
+The tw100 emulations are not yet included (because I haven't changed
+them yet).  You should however find them in most recent ncurses
+installations.
+
+In order to use these descriptions you must run the command
+
+	tic twterm.src
+
+as root on the machine where you want to log in via toswin2.
+
+The color mapping for tw52 is basically ANSI except that I have rather
+used the higher color indexes for red, green, blue, yellow, magenty and
+cyan.  These colors are generally darker and should enhance readability.
+The enhanced mapping is done in the terminfo description and Toswin2 
+therefore remains backward compatible to legacy applications that are
+negligent enough to ignore the terminfo database.
+
+Guido Flohr <guido@freemint.de>
+
