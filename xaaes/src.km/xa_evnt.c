@@ -36,7 +36,6 @@
 #include "menuwidg.h"
 #include "messages.h"
 #include "nkcc.h"
-//#include "objects.h"
 #include "rectlist.h"
 #include "widgets.h"
 
