@@ -238,6 +238,11 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("appl_init: home_path '%s'", info->home_path));
 
 			client->type = info->type;
+			/*
+			 * The 'real' parent ID, which is the client that called
+			 * shel_write() to start us..
+			 */
+			client->rppid = info->rppid;
 
 			client->tail_is_heap = info->tail_is_heap;
 			client->cmd_tail = info->cmd_tail;
@@ -316,6 +321,18 @@ clean_out:
 
 	return XAC_DONE;
 }
+
+static void
+send_ch_exit(struct xa_client *client, short pid, int code)
+{
+	if (client)
+	{
+		send_app_message(NOLOCKS, NULL, client, AMQ_NORM, 0,
+				 CH_EXIT, 0,0, pid,
+				 code, 0,0,0);
+	}
+}
+
 /*
  * Clean up client-indipendant stuff, since XaAES must handle
  * some things even when the process is not yet (or ever) a
@@ -324,6 +341,8 @@ clean_out:
 void
 exit_proc(enum locks lock, struct proc *p)
 {
+	struct shel_info *info;
+	
 	/* Unlock mouse & screen */
 	if (update_locked() == p)
 		free_update_lock();
@@ -338,6 +357,24 @@ exit_proc(enum locks lock, struct proc *p)
 	{
 		C.mouse_lock = NULL;
 		C.mouselock_count = 0;
+	}
+
+	/*
+	 * If shel_info is still attached, this process did not call appl_init().
+	 * Or it crashed before it got that far. In anycase, see if we were started
+	 * by any existing client, which is our "real" parent, and send it a CH_EXIT.
+	 */
+	if ((info = lookup_extension(p, XAAES_MAGIC_SH)))
+	{
+		struct xa_client *client = pid2client(info->rppid);
+		send_ch_exit(client, p->pid, 0);
+#if GENERATE_DIAGS
+		if (client)
+			DIAGS(("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
+				client->p->pid, client->name, p->pid, p->name));
+		else
+			DIAGS(("No real parent client"));
+#endif
 	}
 }
 	
@@ -438,6 +475,16 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 					 CH_EXIT, 0, 0, client->p->pid,
 					 code,    0, 0, 0);
 		}
+	}
+	else
+	{
+		struct xa_client *real_parent = pid2client(client->rppid);
+		send_ch_exit(real_parent, client->p->pid, code);
+#if GENERATE_DIAGS
+		if (real_parent)
+			DIAGS(("Sent CH_EXIT to real parent (pid %d)%s for (pid %d)%s",
+				real_parent->p->pid, real_parent->name, client->p->pid, client->name));
+#endif
 	}
 
 	/* remove any references */

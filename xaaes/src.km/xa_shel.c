@@ -576,45 +576,16 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		p->ppid = C.Aes->p->pid;
 
 
-		/*
-		 * post x_mode handling
-		 */
-#if 0
-		if (x_mode & SW_PSETLIMIT)
-		{
-			DIAGS((" -- addonprocwakeup(post_x_mode_psetlimit)"));
-			addonprocwakeup(p, post_x_mode_psetlimit, (void *)x_shell.psetlimit);
-		}
-#endif
 		if (x_mode & SW_PRENICE)
 		{
 			DIAGS((" -- p_renice"));
 			p_renice(p->pid, x_shell.prenice);
 		}
-#if 0
-		if (x_mode & SW_DEFDIR)
-		{
-			char *defdir = kmalloc(strlen(x_shell.defdir) + 1);
-
-			DIAGS((" -- addonprocwakeup(post_x_mode_defdir)"));
-
-			if (defdir)
-			{
-				strcpy(defdir, x_shell.defdir);
-				addonprocwakeup(p, post_x_mode_defdir, defdir);
-			}
-			else
-				/* ignore this here */
-				DIAGS(("    -- out of memory"));
-				
-		}
-#endif
 		if (x_mode & SW_UID)
 		{
 			DIAGS((" -- proc_setuid"));
 			proc_setuid(p, x_shell.uid);
 		}
-
 		if (x_mode & SW_GID)
 		{
 			DIAGS((" -- proc_setgid"));
@@ -630,6 +601,11 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		if (info)
 		{
 			info->type = type;
+			
+			if (caller)
+				info->rppid = caller->p->pid;
+			else
+				info->rppid = p_getpid();
 
 			info->cmd_tail = save_tail;
 			info->tail_is_heap = true;
