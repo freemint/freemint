@@ -408,7 +408,7 @@ init(struct kentry *k, const char *path)
 	}
 
 	/* default to live actions */
-	default_options.live = true;
+	default_options.nolive = false;
 
 	/* Parse the config file */
 	load_config();
