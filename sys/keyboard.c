@@ -1,4 +1,7 @@
-/* Keyboard handling stuff
+/*
+ * $Id$
+ * 
+ * Keyboard handling stuff
  *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.
