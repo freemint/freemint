@@ -612,14 +612,7 @@ sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 
 /*
  * shut down processes; this involves waking them all up, and sending
- * them SIGTERM to give them a chance to clean up after themselves
- */
-/*
- * This is the code that shuts the system down. It's no longer in s_hutdown(),
- * as it's also called from main.c, where there has been a similar routine,
- * which missed some functionality (mainly invalidating/unmounting of
- * filesystems). Thus, ending the initial process and calling Shutdown() now
- * does exactly the same, and we've also removed some redundant code.
+ * them SIGTERM to give them a chance to clean up after themselves.
  */
 static void
 shutdown(void)
@@ -627,6 +620,7 @@ shutdown(void)
 	struct proc *p;
 	int posts = 0;
 	int i;
+	long hz_200;
 
 	DEBUG(("shutdown() entered"));
 	assert(curproc->p_sigacts);
@@ -697,15 +691,22 @@ shutdown(void)
 	DEBUG(("Syncing file systems ..."));
 	sys_s_ync();
 	DEBUG(("done"));
+
+	/* Wait for the disks to flush their write cache */
+	hz_200 = *(long *)0x04baL;
+	hz_200 += 200;			/* one second */
+
+	while (hz_200 < *(volatile long *)0x04baL)
+		;
 }
 
 /*
  * where restart is:
  *
- * 0 = halt
- * 1 = warm start
- * 2 = cold start,
- * 3 = poweroff
+ * SHUT_POWER (0) = halt/power off
+ * SHUT_BOOT  (1) = warm start
+ * SHUT_COLD  (2) = cold start,
+ * SHUT_HALT  (3) = halt
  *
  */
 long _cdecl
