@@ -54,18 +54,7 @@ static void identifycpu (void);
 long
 getmch (void)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L))
-		oldstack = Super (0L);
-	
-	r = _getmch ();
-	
-	if (oldstack)
-		Super (oldstack);
-	
-	return r;
+	return Supexec(_getmch);
 }
 
 /*
@@ -245,7 +234,7 @@ identifycpu (void)
 			machine = "Milan";
 			break;
 		default:
-			machine = "Unknwon";
+			machine = "Unknown";
 	}
 	
 	_fpu = " no ";
