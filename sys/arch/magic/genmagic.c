@@ -75,6 +75,7 @@ magics [] =
 	{ "P_SYSTIME",		offsetof(struct proc, systime)			},
 	{ "P_USRTIME",		offsetof(struct proc, usrtime)			},
 	{ "P_PTRACER",		offsetof(struct proc, ptracer)			},
+	{ "P_PTRACEFLAGS",	offsetof(struct proc, ptraceflags)		},
 	{ "P_EXCPC",		offsetof(struct proc, exception_pc)		},
 	{ "P_EXCSSP",		offsetof(struct proc, exception_ssp)		},
 	{ "P_EXCADDR",		offsetof(struct proc, exception_addr)		},
