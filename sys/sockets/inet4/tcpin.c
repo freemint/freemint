@@ -7,17 +7,15 @@
 
 # include "tcpin.h"
 
+# include "mint/net.h"
+# include "mint/signal.h"
+
 # include "inetutil.h"
-# include "ip.h"
 # include "tcpout.h"
 # include "tcpsig.h"
 # include "tcputil.h"
 
-# include "net.h"
-# include "sockutil.h"
 # include "util.h"
-
-# include <mint/signal.h>
 
 
 static void	tcbs_closed		(struct tcb *, BUF *);
@@ -106,7 +104,7 @@ tcbs_listen (struct tcb *tcb, BUF *buf)
 	
 	ntcb = tcb_alloc ();
 	data = in_data_create ();
-	so = so_create ();
+	so = kmalloc (sizeof (*so));
 	if (!tcb || !data || !so)
 	{
 		DEBUG (("tcp_listen: cannot create new socket, memory low"));
@@ -118,10 +116,13 @@ tcbs_listen (struct tcb *tcb, BUF *buf)
 	/*
 	 * Init the socket
 	 */
+	bzero (so, sizeof (*so));
 	so->state = SS_ISUNCONNECTED;
 	so->data = data;
 	so->ops = tcb->data->sock->ops;
 	so->type = tcb->data->sock->type;
+	so->date = t_getdate ();
+	so->time = t_gettime ();
 	
 	/*
 	 * Init the inet data
@@ -171,8 +172,7 @@ tcbs_listen (struct tcb *tcb, BUF *buf)
 	{
 		DEBUG (("tcp_listen: cannot connect to server"));
 		ntcb->state = TCBS_CLOSED;
-		so_release (so);
-		kfree (so);
+		so_free (so);
 		tcp_sndrst (buf);
 		buf_deref (buf, BUF_NORMAL);
 		return;
@@ -284,10 +284,8 @@ tcbs_synrcvd (struct tcb *tcb, BUF *buf)
 	{
 		if (tcb->flags & TCBF_PASSIVE)
 		{
-			struct socket *so = tcb->data->sock;
 			tcb->state = TCBS_CLOSED;
-			so_release (so);
-			kfree (so);
+			so_free (tcb->data->sock);
 		}
 		else
 		{
@@ -304,10 +302,8 @@ tcbs_synrcvd (struct tcb *tcb, BUF *buf)
 		tcp_sndrst (buf);
 		if (tcb->flags & TCBF_PASSIVE)
 		{
-			struct socket *so = tcb->data->sock;
 			tcb->state = TCBS_CLOSED;
-			so_release (so);
-			kfree (so);
+			so_free (tcb->data->sock);
 		}
 		else
 		{

@@ -5,8 +5,8 @@
  *	09/24/93, kay roemer.
  */
 
-# ifndef _mintsock_h
-# define _mintsock_h
+# ifndef _sockets_mintsock_h
+# define _sockets_mintsock_h
 
 
 /* perform a socket system call, via ioctl() */
@@ -174,4 +174,4 @@ struct recvmsg_cmd
 };
 
 
-# endif /* _mintsock_h */
+# endif /* _sockets_mintsock_h */

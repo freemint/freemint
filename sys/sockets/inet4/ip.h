@@ -14,7 +14,6 @@
 # include "route.h"
 
 # include "buf.h"
-# include "timer.h"
 
 
 /* Minimal accepable length of an IP packet */
@@ -52,19 +51,6 @@ struct ip_dgram
 	ulong		daddr;		/* IP destination address */
 	char		data[0];	/* options and data */
 };
-
-struct fragment
-{
-	BUF		*buf;		/* chain of fragments */
-	short		id;		/* IP datagram id */
-	ulong		saddr;		/* IP source address */
-	long		totlen;		/* total datagram length */
-	long		curlen;		/* current datagram length */
-	struct event	tmout;		/* timeout event */
-};
-
-# define IPFRAG_HEADS	16		/* max # of fragment lists */
-# define IPFRAG_TMOUT	(60000/EVTGRAN)	/* timeout reassambly after 1 min */
 
 struct ip_options
 {
@@ -113,9 +99,6 @@ struct ip_options
 extern struct in_ip_ops *allipprotos;
 extern short ip_dgramid;
 
-long	ip_setsockopt (struct ip_options *, short, short, char *, long);
-long	ip_getsockopt (struct ip_options *, short, short, char *, long *);
-
 short	ip_is_brdcst_addr (ulong);
 short	ip_is_local_addr (ulong);
 
@@ -133,15 +116,10 @@ void	ip_input (struct netif *, BUF *);
 long	ip_send (ulong, ulong, BUF *, short, short, struct ip_options *);
 long	ip_output (BUF *);
 
-long	ip_frag		(BUF *, struct netif *, ulong, short);
-BUF *	ip_defrag	(BUF *);
-long	frag_opts	(struct ip_dgram *, long);
-void	frag_timeout	(long);
-void	frag_delete	(struct fragment *);
-void	frag_insert	(struct fragment *, BUF *);
-BUF *	frag_pullup	(struct fragment *);
+BUF *	ip_defrag (BUF *);
 
-extern	struct fragment	allfrags[IPFRAG_HEADS];
+long	ip_setsockopt (struct ip_options *, short, short, char *, long);
+long	ip_getsockopt (struct ip_options *, short, short, char *, long *);
 
 
 # endif /* _ip_h */

@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-06-28
- * last change:	2000-06-28
+ * begin:	2001-01-15
+ * last change:	2001-01-15
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,15 +31,11 @@
  * 
  */
 
-# ifndef _sockdev_h
-# define _sockdev_h
-
-# include "global.h"
+# ifndef _init_h
+# define _init_h
 
 
-int init_sockdev (void);
-
-extern struct dom_ops *alldomains;
+void inet4_init (void);
 
 
-# endif /* _sockdev_h */
+# endif /* _init_h */

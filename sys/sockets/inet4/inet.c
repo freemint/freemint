@@ -7,23 +7,17 @@
 
 # include "inet.h"
 
+# include "mint/dcntl.h"
+# include "mint/net.h"
+# include "mint/signal.h"
+
 # include "arp.h"
-# include "icmp.h"
 # include "inetdev.h"
 # include "inetutil.h"
-# include "masquerade.h"
 # include "port.h"
-# include "rawip.h"
-# include "route.h"
-# include "tcp.h"
-# include "udp.h"
 
-# include "sockutil.h"
 # include "timer.h"
 # include "util.h"
-
-# include <mint/dcntl.h>
-# include <mint/signal.h>
 
 
 static void	inet_autobind	(struct in_data *);
@@ -72,15 +66,7 @@ static struct dom_ops inet_ops =
 void
 inet_init (void)
 {
-	if_init ();
-	route_init ();
-	rip_init ();	/* must be first of the protocols */
-	icmp_init ();
-	udp_init ();
-	tcp_init ();
 	inetdev_init ();
-	masq_init ();
-	
 	so_register (AF_INET, &inet_ops);
 }
 
@@ -326,7 +312,7 @@ static long
 inet_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short peer)
 {
 	struct in_data *data = so->data;
-	struct sockaddr_in sin;
+	struct sockaddr_in in;
 	long todo;
 	
 	if (!addr || !addrlen || *addrlen < 0)
@@ -335,7 +321,7 @@ inet_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short pe
 		return EINVAL;
 	}
 	
-	sin.sin_family = AF_INET;
+	in.sin_family = AF_INET;
 	if (peer == PEER_ADDR)
 	{
 		if (!(data->flags & IN_ISCONNECTED))
@@ -343,23 +329,23 @@ inet_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short pe
 			DEBUG (("inet_getname: not connected"));
 			return ENOTCONN;
 		}
-		sin.sin_port = data->dst.port;
-		sin.sin_addr.s_addr = data->dst.addr;
+		in.sin_port = data->dst.port;
+		in.sin_addr.s_addr = data->dst.addr;
 	}
 	else
 	{
 		inet_autobind (data);
-		sin.sin_port = data->src.port;
-		sin.sin_addr.s_addr = (data->src.addr != INADDR_ANY)
+		in.sin_port = data->src.port;
+		in.sin_addr.s_addr = (data->src.addr != INADDR_ANY)
 			? data->src.addr
 			: ip_local_addr ((data->flags & IN_ISCONNECTED)
 				? data->dst.addr
 				: INADDR_ANY);
 	}
 	
-	todo = MIN (*addrlen, sizeof (sin));
-	bzero (sin.sin_zero, sizeof (sin.sin_zero));
-	memcpy (addr, &sin, todo);
+	todo = MIN (*addrlen, sizeof (in));
+	bzero (in.sin_zero, sizeof (in.sin_zero));
+	memcpy (addr, &in, todo);
 	*addrlen = todo;
 	
 	return 0;
@@ -517,8 +503,10 @@ inet_shutdown (struct socket *so, short how)
 	inet_autobind (data);
 	r = (*data->proto->soops.shutdown)(data, how);
 	
-	if (((SO_CANTRCVMORE|SO_CANTSNDMORE) & so->flags) ==
-	    (SO_CANTRCVMORE|SO_CANTSNDMORE))
+# define SO_CANTDOMORE	(SO_CANTSNDMORE|SO_CANTRCVMORE)
+	
+	/* Note that sock_shutdown() has already set so->flags for us. */
+	if ((so->flags & SO_CANTDOMORE) == SO_CANTDOMORE)
 	{
 		DEBUG (("inet_shutdown: releasing socket"));
 		so_release (so);

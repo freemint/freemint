@@ -17,11 +17,10 @@
 # include "port.h"
 
 # include "buf.h"
-# include "net.h"
-# include "socket.h"
 # include "util.h"
 
-# include <mint/file.h>
+# include "mint/file.h"
+# include "mint/socket.h"
 
 
 struct in_proto *allinetprotos = NULL;
@@ -110,6 +109,7 @@ in_data_destroy (struct in_data *data, short wait)
 		DEBUG (("in_data_destroy: data == NULL"));
 		return 0;
 	}
+	
 	proto = data->protonum;
 	if (wait && data->flags & IN_LINGER)
 	{

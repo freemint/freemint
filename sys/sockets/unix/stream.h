@@ -36,7 +36,7 @@
 
 # include "global.h"
 
-# include "net.h"
+# include "mint/net.h"
 
 
 long	unix_stream_socketpair	(struct socket *, struct socket *);

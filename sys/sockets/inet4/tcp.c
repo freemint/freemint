@@ -7,22 +7,18 @@
 
 # include "tcp.h"
 
+# include "mint/dcntl.h"
+# include "mint/net.h"
+# include "mint/signal.h"
+
 # include "icmp.h"
-# include "if.h"
-# include "in.h"
-# include "inet.h"
 # include "inetutil.h"
-# include "ip.h"
 # include "tcpin.h"
 # include "tcpout.h"
 # include "tcpsig.h"
 # include "tcputil.h"
 
-# include "sockutil.h"
 # include "util.h"
-
-# include <mint/dcntl.h>
-# include <mint/signal.h>
 
 
 # define TH(b)		((struct tcp_dgram *)(b)->dstart)
@@ -81,10 +77,10 @@ struct in_proto tcp_proto =
 	datas:		NULL
 };
 
+
 void
 tcp_init (void)
 {
-	tcp_siginit ();
 	in_proto_register (IPPROTO_TCP, &tcp_proto);
 }
 
@@ -110,14 +106,10 @@ tcp_attach (struct in_data *data)
 static long
 tcp_abort (struct in_data *data, short ostate)
 {
-	struct socket *so;
-	
 	if (ostate == SS_ISCONNECTING)
 	{
 		DEBUG (("tcp_abort: freeing connecting socket"));
-		so = data->sock;
-		so_release (so);
-		kfree (so);
+		so_free (data->sock);
 	}
 	
 	return 0;
@@ -759,13 +751,13 @@ tcp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	
 	if (addr)
 	{
-		struct sockaddr_in sin;
+		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (struct sockaddr_in));
-		sin.sin_family = AF_INET;
-		sin.sin_addr.s_addr = data->dst.addr;
-		sin.sin_port = data->dst.port;
-		memcpy (addr, &sin, *addrlen);
+		*addrlen = MIN (*addrlen, sizeof (in));
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = data->dst.addr;
+		in.sin_port = data->dst.port;
+		memcpy (addr, &in, *addrlen);
 	}
 	
 	return copied;

@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-06-28
- * last change:	2000-06-28
+ * begin:	2001-01-15
+ * last change:	2001-01-15
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,21 +31,44 @@
  * 
  */
 
-# ifndef _dgram_h
-# define _dgram_h
+# include "init.h"
 
-# include "global.h"
+# include "bpf.h"
+# include "if.h"
+# include "icmp.h"
+# include "inet.h"
+# include "masquerade.h"
+# include "rawip.h"
+# include "route.h"
+# include "tcp.h"
+# include "udp.h"
 
-# include "mint/net.h"
 
-
-long	unix_dgram_socketpair	(struct socket *, struct socket *);
-long	unix_dgram_connect	(struct socket *, struct sockaddr *, short, short);
-long	unix_dgram_send		(struct socket *, struct iovec *, short, short, short, struct sockaddr *, short);
-long	unix_dgram_recv		(struct socket *, struct iovec *, short, short, short, struct sockaddr *, short *);
-long	unix_dgram_select	(struct socket *, short, long);
-long	unix_dgram_ioctl	(struct socket *, short, void *);
-long	unix_dgram_getname	(struct socket *, struct sockaddr *, short *, short);
-					
-
-# endif /* _dgram_h */
+void
+inet4_init (void)
+{
+	/* install packetfilter */
+	bpf_init ();
+	
+	/* load all interfaces */
+	if_init ();
+	
+	/* initialize IP router & control device */
+	route_init ();
+	
+	/* initialize raw IP driver; must be first */
+	rip_init ();
+	
+	/* initialize masquerade support */
+	masq_init ();
+	
+	/* initialize ICMP protocol */
+	icmp_init ();
+	/* initialize UDP protocol */
+	udp_init ();
+	/* initialize TCP protocol */
+	tcp_init ();
+	
+	/* register our domain */
+	inet_init ();
+}

@@ -472,7 +472,7 @@ bpf_write (FILEPTR *fp, const char *buf, long nbytes)
 {
 	struct bpf *bpf = (struct bpf *) fp->devinfo;
 	short daddrlen, pktype;
-	void *daddr;
+	const void *daddr;
 	BUF *b;
 	
 	if (!(bpf->flags & BPF_OPEN))
@@ -493,7 +493,7 @@ bpf_write (FILEPTR *fp, const char *buf, long nbytes)
 			/*
 			 * Assume IP... and pass IP dst as next hop.
 			 */
-			daddr = &((struct ip_dgram *)buf)->daddr;
+			daddr = &((const struct ip_dgram *) buf)->daddr;
 			daddrlen = 4;
 			pktype = PKTYPE_IP;
 			break;
@@ -502,15 +502,15 @@ bpf_write (FILEPTR *fp, const char *buf, long nbytes)
 			/*
 			 * may not be IP...
 			 */
-			daddr = &((struct ip_dgram *)(buf + bpf->hdrlen))->daddr;
+			daddr = &((const struct ip_dgram *)(buf + bpf->hdrlen))->daddr;
 			daddrlen = 4;
 			pktype = PKTYPE_IP;
 			break;
 			
 		case HWTYPE_ETH:
-			daddr = &((struct eth_dgram *)buf)->daddr;
+			daddr = &((const struct eth_dgram *)buf)->daddr;
 			daddrlen = ETH_ALEN;
-			memcpy (&pktype, &((struct eth_dgram *)buf)->proto, 2);
+			memcpy (&pktype, &((const struct eth_dgram *)buf)->proto, 2);
 			if (pktype >= 1536)
 				pktype = ETHPROTO_8023;
 			break;

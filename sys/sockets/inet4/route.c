@@ -11,9 +11,8 @@
 # include "route.h"
 # include "routedev.h"
 
-# include "socket.h"
-
-# include <mint/dcntl.h>
+# include "mint/dcntl.h"
+# include "mint/socket.h"
 
 
 struct route *allroutes[RT_HASH_SIZE];
