@@ -1,43 +1,43 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * Started: 1999-08-15
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
+ *
+ *
  * Purpose:
- * Structures and constants necessary for MagiC-style "share libraries".
- * 
+ * Structures and constants necessary for MagiC-style "shared libraries".
+ *
  * History:
- * 
+ *
  * 99-08-20: - changed definition from *SHARED_LIB to SHARED_LIB
  *             much more logical
- * 
+ *
  * 99-08-15: - Creation (Gryf)
  */
 
@@ -47,6 +47,7 @@
 # include "basepage.h"
 # include "mem.h"
 
+# define SLB_HEADER_MAGIC 0x70004afcL
 
 /* How much stack space for a library's init() call? */
 # define SLB_INIT_STACK	1024L
@@ -96,8 +97,12 @@ struct shared_lib
 	SLB_EXEC	*slb_exec;	/* Pointer to execution function */
 	PROC		*slb_proc;	/* Corresponding process */
 	MEMREGION	*slb_region;	/* Region of this structure */
-	char		slb_name[1];	/* Name of the library. MUST BE THE
-					 * LAST ELEMENT! */
+
+	/* Name of the library. MUST BE THE LAST ELEMENT!
+	 * The proper name size is added while the memory block for the
+	 * struct is being allocated.
+	 */
+	char		slb_name[1];
 };
 
 
