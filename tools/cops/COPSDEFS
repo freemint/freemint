@@ -1,0 +1,16 @@
+
+INCLUDES = -I$(srcdir)/rsc/$(cops)
+
+ifeq ($(cops),english)
+TARGET = ../cops.app
+endif
+
+ifeq ($(cops),france)
+TARGET = ../cops_fr.app
+endif
+
+ifeq ($(cops),german)
+TARGET = ../cops_de.app
+endif
+
+copstargets = english france german
