@@ -5,10 +5,17 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
+ * 
+ * Modified for FreeMiNT CVS
+ * by Frank Naumann <fnaumann@freemint.de>
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ *
  */
 
-# ifndef _nfsfs_h
-# define _nfsfs_h
+# ifndef _nfssys_h
+# define _nfssys_h
 
 # include "global.h"
 
@@ -22,4 +29,4 @@ long	do_sattr (fcookie *fc, sattr *attr);
 long	_cdecl nfs_getxattr	(fcookie *fc, XATTR *xattr);
 
 
-# endif /* _nfsfs_h */
+# endif /* _nfssys_h */
