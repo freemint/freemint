@@ -10,6 +10,10 @@
 #include "vt.h"
 #include "window.h"
 
+#ifdef DEBUG
+extern int do_debug;
+# include <syslog.h>
+#endif
 
 /*
  * lokale prototypen
@@ -120,17 +124,26 @@ static void quote_putch(TEXTWIN *v, int c)
 	v->output = vt52_putch;
 }
 
-short color_translate[]={0,2,3,6,4,7,5,8,9,10,11,14,12,15,13,1};
+/* short color_translate[]={0,2,3,6,4,7,5,8,9,10,11,14,12,15,13,1}; */
+short color_translate[] = { 1, 10, 11, 14, 12, 15, 13, 0, 
+			    0, 9, 2, 3, 6, 4, 7, 5, 8 };
 
 static void fgcol_putch(TEXTWIN *v, int c)
 {
-	v->term_cattr = (v->term_cattr & ~CFGCOL) | (color_translate[c & 0x000f]<<4);
+	v->term_cattr = (v->term_cattr & ~CFGCOL) | (color_translate[c & 0xf]<<4);
 	v->output = vt52_putch;
 }
 
 static void bgcol_putch(TEXTWIN *v, int c)
 {
-	v->term_cattr = (v->term_cattr & ~CBGCOL) | color_translate[c & 0x000f];
+	v->term_cattr = (v->term_cattr & ~CBGCOL) | color_translate[c & 0xf];
+	v->output = vt52_putch;
+}
+
+static void original_colors(TEXTWIN *v)
+{
+	v->term_cattr = (v->term_cattr & ~CFGCOL) | v->cfg->fg_color;
+	v->term_cattr = (v->term_cattr & ~CBGCOL) | v->cfg->bg_color;
 	v->output = vt52_putch;
 }
 
@@ -154,6 +167,24 @@ static void ceffect_putch(TEXTWIN *v, int c)
 static void putesc(TEXTWIN *v, int c)
 {
 	int 		cx, cy;
+	
+#ifdef DEBUG
+	if (do_debug) {
+		char* printable;
+		char ctrl[3] = { '^', 'X', '\0' };
+		char letter[2] = { 'X', '\0' };
+		
+		if (c < ' ') {
+			ctrl[1] = c + 32;
+			printable = ctrl;
+		} else {
+			letter[0] = c;
+			printable = letter;
+		}
+		syslog (LOG_ERR, "got escape character %d (%s, 0x%08x)",
+			c, printable, (unsigned) c);
+	}
+#endif
 
 	curs_off(v);
 	cx = v->cx; 
@@ -162,122 +193,230 @@ static void putesc(TEXTWIN *v, int c)
 	switch (c) 
 	{
 		case 'A':		/* cursor up */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is cursor up");
+#endif
 			gotoxy(v, cx, cy-1);
 			break;
 		case 'B':		/* cursor down */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is cursor down");
+#endif
 			gotoxy(v, cx, cy+1);
 			break;
 		case 'C':		/* cursor right */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is cursor right");
+#endif
 			gotoxy(v, cx+1, cy);
 			break;
 		case 'D':		/* cursor left */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is cursor left");
+#endif
 			gotoxy(v, cx-1, cy);
 			break;
 		case 'E':		/* clear home */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is clear");
+#endif
 			clear(v);
 			/* fall through... */
 		case 'H':		/* cursor home */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is home");
+#endif
 			gotoxy(v, 0, v->miny);
 			break;
 		case 'I':		/* cursor up, insert line */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is cursor up, insert line");
+#endif
 			if (cy == v->miny)
 				insert_line(v, v->miny);
 			else
 				gotoxy(v, cx, cy-1);
 			break;
 		case 'J':		/* clear below cursor */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is clear below cursor");
+#endif
 			clrfrom(v, cx, cy, v->maxx-1, v->maxy-1);
 			break;
 		case 'K':		/* clear remainder of line */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is clear rest of line");
+#endif
 			clrfrom(v, cx, cy, v->maxx-1, cy);
 			break;
 		case 'L':		/* insert a line */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is insert line");
+#endif
 			insert_line(v, cy);
 			gotoxy(v, 0, cy);
 			break;
 		case 'M':		/* delete line */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is delete line");
+#endif
 			delete_line(v, cy);
 			gotoxy(v, 0, cy);
 			break;
 		case 'Q':		/* MW extension: quote next character */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is quote next char");
+#endif
 			v->output = quote_putch;
 			curs_on(v);
 			return;
 		case 'R':		/* TW extension: set window size */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is set window size");
+#endif
 			v->captsiz = 0;
 			v->output = capture;
 			v->callback = set_size;
 			curs_on(v);
 			return;
 		case 'S':		/* MW extension: set title bar */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is set title bar");
+#endif
 			v->captsiz = 0;
 			v->output = capture;
 			v->callback = set_title;
 			curs_on(v);
 			return;
 		case 'Y':
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is goto xy");
+#endif
 			v->output = escy_putch;
 			curs_on(v);
 			return;
 		case 'a':		/* MW extension: delete character */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is delete character");
+#endif
 			delete_char(v, cx, cy);
 			break;
 		case 'b':		/* set foreground color */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is set foreground color");
+#endif
 			v->output = fgcol_putch;
 			curs_on(v);
 			return;		/* `return' to avoid resetting v->output */
 		case 'c':		/* set background color */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is set background color");
+#endif
 			v->output = bgcol_putch;
 			curs_on(v);
 			return;
 		case 'd':		/* clear to cursor position */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is clear to cursor position");
+#endif
 			clrfrom(v, 0, v->miny, cx, cy);
 			break;
 		case 'e':		/* enable cursor */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is cursor on");
+#endif
 			v->term_flags |= FCURS;
 			break;
 		case 'f':		/* cursor off */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is cursor off");
+#endif
 			v->term_flags &= ~FCURS;
 			break;
 		case 'h':		/* MW extension: enter insert mode */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is enter insert mode");
+#endif
 			v->term_flags |= FINSERT;
 			break;
 		case 'i':		/* MW extension: leave insert mode */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is leave insert mode");
+#endif
 			v->term_flags &= ~FINSERT;
 			break;
 		case 'j':		/* save cursor position */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is save cursor position");
+#endif
 			v->savex = v->cx;
 			v->savey = v->cy;
 			break;
 		case 'k':		/* restore saved position */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is restore cursor position");
+#endif
 			gotoxy(v, v->savex, v->savey);
 			break;
 		case 'l':		/* clear line */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is clear line");
+#endif
 			clrline(v, cy);
 			gotoxy(v, 0, cy);
 			break;
 		case 'o':		/* clear from start of line to cursor */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is clear from start of line to cursor");
+#endif
 			clrfrom(v, 0, cy, cx, cy);
 			break;
 		case 'p':		/* reverse video on */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is reverse video on");
+#endif
 			v->term_cattr |= CINVERSE;
 			break;
 		case 'q':		/* reverse video off */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is reverse video off");
+#endif
 			v->term_cattr &= ~CINVERSE;
 			break;
 		case 't':		/* backward compatibility for TW 1.x: set cursor timer */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "set cursor timer");
+#endif
 			return;
 		case 'v':		/* wrap on */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is linewrap on");
+#endif
 			v->term_flags |= FWRAP;
 			break;
+		case 'u':		/* original colors */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is original colors");
+#endif
+			original_colors (v);
+			break;
 		case 'w':
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is linewrap off");
+#endif
 			v->term_flags &= ~FWRAP;
 			break;
 		case 'y':		/* TW extension: set special effects */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is set text effects");
+#endif
 			v->output = seffect_putch;
 			curs_on(v);
 			return;
 		case 'z':		/* TW extension: clear special effects */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "clear text effects");
+#endif
 			v->output = ceffect_putch;
 			curs_on(v);
 			return;
@@ -292,7 +431,11 @@ static void putesc(TEXTWIN *v, int c)
 static void escy1_putch(TEXTWIN *v, int c)
 {
 	curs_off(v);
-	gotoxy(v, c - ' ', v->miny + v->escy1 - ' ');
+	if (v->escy1 - ' ' < 0) {
+		gotoxy (v, c - ' ', v->cy);
+	} else {
+		gotoxy (v, c - ' ', v->miny + v->escy1 - ' ');
+	}
 	v->output = vt52_putch;
 	curs_on(v);
 }
@@ -302,10 +445,8 @@ static void escy1_putch(TEXTWIN *v, int c)
  */
 static void escy_putch(TEXTWIN *v, int c)
 {
-	curs_off(v);
 	v->escy1 = c;
 	v->output = escy1_putch;
-	curs_on(v);
 }
 
 /*
