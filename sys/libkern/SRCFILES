@@ -30,6 +30,7 @@ COBJS = \
 	strnicmp_16.c \
 	strrchr.c \
 	strrev.c \
+	strstr.c \
 	strtol.c \
 	strtoll.c \
 	strtonumber.c \

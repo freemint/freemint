@@ -31,14 +31,20 @@
  * 
  * 
  * changes since last version:
- * 
+ *
+ * 2000-10-20:
+ *
+ * Draco:
+ * - fix: further spelling correction (in ALERTs)
+ * - new: added 'SLB' to the list of executable file extensions
+ *
  * 2000-09-27:	(v1.22)
  * 
  * - fix: spelling correction, replaced most 'actual' with 'current'
  * - new: added kernel ALERT for illegal FAT entries
  * - new: changed getcl{12,16}/fixcl{12,16} to read/write FAT#2 at first
  *        like TOS, MagiC, DOS/Windows
- * 
+ *
  * 2000-06-30:	(v1.21)
  * 
  * - fix: c_del_cookie now bzero the complete COOKIE struct;
@@ -4696,8 +4702,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 	
 	if (xbpb->clsizb > max)
 	{
-		FAT_ALERT (("FATFS [%c]: unitsize (%li) to small (clsizb = %li)!", 'A'+drv, max, xbpb->clsizb));
-		FAT_ALERT (("FATFS [%c]: medium access rejected", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: unitsize (%li) too small (clsizb = %li)!", 'A'+drv, max, xbpb->clsizb));
+		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return ENXIO;
 	}
 	
@@ -4711,7 +4717,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		&& xbpb->ftype != FAT_TYPE_32)
 	{
 		FAT_ALERT (("FATFS [%c]: unknown FAT type (ftype = %i)!", 'A'+drv, xbpb->ftype));
-		FAT_ALERT (("FATFS [%c]: medium access rejected", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return EMEDIUMTYPE;
 	}
 	
@@ -4720,8 +4726,8 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		|| xbpb->recsiz == 0
 		|| xbpb->numcl  == 0)
 	{
-		FAT_ALERT (("FATFS [%c]: illegal vital data (recsiz = %li, numcl = %li)", 'A'+drv, xbpb->recsiz, xbpb->numcl));
-		FAT_ALERT (("FATFS [%c]: medium access rejected", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: vital data illegal (recsiz = %li, numcl = %li)", 'A'+drv, xbpb->recsiz, xbpb->numcl));
+		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return EMEDIUMTYPE;
 	}
 	
@@ -4733,7 +4739,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 			|| xbpb->rdrec > xbpb->numcl + 1)
 		{
 			FAT_ALERT (("FATFS [%c]: illegal root directory cluster (rdlen = %ld, rdstart = %ld)", 'A'+drv, xbpb->rdlen, xbpb->rdrec));
-			FAT_ALERT (("FATFS [%c]: medium access rejected", 'A'+drv));
+			FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 			return EMEDIUMTYPE;
 		}
 	}
@@ -4742,7 +4748,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		if (xbpb->rdlen == 0)
 		{
 			FAT_ALERT (("FATFS [%c]: illegal root directory len (rdlen = %li)", 'A'+drv, xbpb->rdlen));
-			FAT_ALERT (("FATFS [%c]: medium access rejected", 'A'+drv));
+			FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 			return EMEDIUMTYPE;
 		}
 	}
@@ -4752,11 +4758,11 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		|| (xbpb->ftype == FAT_TYPE_16 && xbpb->numcl >= 0x000ffefL)
 		|| (xbpb->ftype == FAT_TYPE_32 && xbpb->numcl >= 0xfffffefL))
 	{
-		FAT_ALERT (("FATFS [%c]: illgeal number of clusters (%li - %s-bit FAT)", 'A'+drv, xbpb->numcl,
+		FAT_ALERT (("FATFS [%c]: illegal number of clusters (%li - %s-bit FAT)", 'A'+drv, xbpb->numcl,
 				(xbpb->ftype == FAT_TYPE_12) ? "12" :
 					(xbpb->ftype == FAT_TYPE_16) ? "16" : "32"
 		));
-		FAT_ALERT (("FATFS [%c]: medium access rejected", 'A'+drv));
+		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return EMEDIUMTYPE;
 	}
 	
@@ -4781,7 +4787,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		if (minfat > xbpb->fsiz)
 		{
 			FAT_ALERT (("FATFS [%c]: FAT too small (FAT size = %li, minfat = %li)", 'A'+drv, xbpb->fsiz, minfat));
-			FAT_ALERT (("FATFS [%c]: medium access rejected", 'A'+drv));
+			FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 			return EMEDIUMTYPE;
 		}
 	}
@@ -4910,7 +4916,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		/* check media descriptor (must be 0xf8 on harddisks) */
 		if (fbs->media != 0xf8)
 		{
-			FAT_ALERT (("fatfs.c: get_bpb: unknown media deskriptor (%x) on %c (ID = %x)", (int) fbs->media, 'A'+di->drv, (int) (di->id [2])));
+			FAT_ALERT (("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)", (int) fbs->media, 'A'+di->drv, (int) (di->id [2])));
 		}
 	}
 	else
@@ -4958,8 +4964,8 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		&& (WPEEK_INTEL (fbs->dir_entries) == 256)
 		&& (xbpb->recsiz >= 16384))
 	{
-		FAT_ALERT (("FATFS [%c]: WARNING: dir_entries have illegal value 256!", 'A'+di->drv));
-		FAT_ALERT (("FATFS [%c]: Please correct your partition!", 'A'+di->drv));
+		FAT_ALERT (("FATFS [%c]: WARNING: dir_entries have illegal value of 256!", 'A'+di->drv));
+		FAT_ALERT (("FATFS [%c]: Please fix your partition!", 'A'+di->drv));
 		xbpb->rdlen = 1;
 	}
 # endif
@@ -6104,8 +6110,8 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		 * 2. the old filename has no VFAT entries [!old->slots]
 		 * 3. the new filename is a 8+3 name [!VFAT (dev)]
 		 *    the new 8+3 name is verified later but !VFAT
-		 *    gurant that the validated name is 8+3 if
-		 *    make_shortname return successful
+		 *    guarantees that the validated name is 8+3 if
+		 *    make_shortname returns successfully
 		 * 
 		 * side effect: the '..' in directories must not be
 		 *              updated
@@ -7558,7 +7564,7 @@ fatfs_open (FILEPTR *f)
 	if (!ptr)
 	{
 		FAT_ALERT (("fatfs.c: kmalloc fail in: fatfs_open (%s)", c->name));
-		FAT_DEBUG (("fatfs_open: leave failure, memory out for FILE struct"));
+		FAT_DEBUG (("fatfs_open: leave failure, out of memory for FILE struct"));
 		return ENOMEM;
 	}
 	

@@ -149,14 +149,15 @@ load_config (void)
 	
 	FILEPTR *f;
 	XATTR xattr;
+	extern char *cnf_path_1, *cnf_path_2, *cnf_path_3;
 	
-	f = do_open (inf.file = "mint.cnf", O_RDONLY, 0, &xattr, NULL);
-	
-	if (!f)
-		f = do_open (inf.file = "\\mint\\mint.cnf", O_RDONLY, 0, &xattr, NULL);
+	f = do_open (inf.file = cnf_path_1, O_RDONLY, 0, &xattr, NULL);
 	
 	if (!f)
-		f = do_open (inf.file = "\\multitos\\mint.cnf", O_RDONLY, 0, &xattr, NULL);
+		f = do_open (inf.file = cnf_path_2, O_RDONLY, 0, &xattr, NULL);
+	
+	if (!f)
+		f = do_open (inf.file = cnf_path_3, O_RDONLY, 0, &xattr, NULL);
 	
 	if (f)
 	{
