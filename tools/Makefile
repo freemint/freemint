@@ -14,6 +14,7 @@ SUBDIRS = \
 	mkfatfs \
 	net-tools \
 	nfs \
+	sysctl \
 	toswin2
 
 srcdir = .
