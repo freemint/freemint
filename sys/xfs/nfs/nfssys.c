@@ -1276,7 +1276,8 @@ nfs_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			namelen -= sizeof(long);
 			if (namelen <= 0)
 				return EBADARG;
-			*((long *)name) = dirh->index;
+
+			unaligned_putl(name, dirh->index);
 			name += sizeof(long);
 		}
 
