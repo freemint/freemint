@@ -256,7 +256,7 @@ WINDOW *create_window(const char *title, short kind,
 	if (ww == -1 || wh == -1)
 		wind_calc_grect(WC_WORK, v->kind, &full, &v->work);
 
-	v->title = title;
+	v->title = (char*) title;
 	v->extra = NULL;
 	v->flags = 0;
 

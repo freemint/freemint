@@ -37,7 +37,7 @@ static int open_pty(char *name)
 {
 	int	fd = -1;
 	char	line[] = "u:\\pipe\\ttypX";
-	char	link[] = "u:\\dev\\ttypX";
+	char	lnk[] = "u:\\dev\\ttypX";
 	char	*c; 
 	
 	for (c = "0123456789abcdef"; *c; c++) 
@@ -50,8 +50,8 @@ static int open_pty(char *name)
 				return -ENOENT;
 			else 
 			{
-				link[11] = *c;
-				(void)Fsymlink(line, link);
+				lnk[11] = *c;
+				(void)Fsymlink(line, lnk);
 				if (name)
 					strcpy(name, line);
 				
@@ -336,7 +336,6 @@ static char buf[READBUFSIZ];
 void fd_input(void)
 {
 	long		readfds, r, checkdead;
-	long		read;
 	WINDOW 	*w;
 	TEXTWIN 	*t;
 
@@ -366,12 +365,13 @@ void fd_input(void)
 					continue;
 				if (readfds & (1L << t->fd)) 
 				{
-					read = Fread(t->fd, (long)READBUFSIZ, buf);
-					if (read > 0)
+					long int read_bytes =
+						Fread(t->fd, (long)READBUFSIZ, buf);
+					if (read_bytes > 0)
 					{
-						write_text(t, buf, read);
+						write_text(t, buf, read_bytes);
 						if (t->fd == con_fd)
-							handle_console(buf, read);
+							handle_console(buf, read_bytes);
 					}
 					else
 						checkdead |= (1L << t->fd);
