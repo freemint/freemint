@@ -11,6 +11,9 @@ COBJS = \
 	timer.c
 
 SOBJS = \
+	sigreturn.S
+
+SPPOBJS = \
 	context.spp \
 	cpu.spp \
 	detect.spp \
@@ -24,4 +27,4 @@ SOBJS = \
 	scsidrv_emu.spp \
 	xhdi_emu.spp
 
-SRCFILES = $(STARTUP) $(COBJS) $(SOBJS)
+SRCFILES = $(STARTUP) $(COBJS) $(SPPOBJS) $(SOBJS)

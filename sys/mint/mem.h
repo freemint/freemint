@@ -36,8 +36,8 @@ struct memregion
 # define M_KER		0x0008	/* region came from kernel map */
 # define M_MAP		0x000f	/* and with this to pick out map */
 
-# define M_SHTEXT	0x0010	/* region is a shared text region */
-# define M_SHTEXT_T	0x0020	/* `sticky bit' for shared text regions */
+// # define M_SHTEXT	0x0010	/* region is a shared text region */
+// # define M_SHTEXT_T	0x0020	/* `sticky bit' for shared text regions */
 # define M_FSAVED	0x0040	/* region is saved memory of a forked process */
 # define M_SHARED	0x0080	/* shared memory region */
 # define M_KEEP		0x0100	/* don't free on process termination */
@@ -48,15 +48,6 @@ struct memregion
 typedef struct vaddr {
 	char dummy;
 } *virtaddr;
-
-/* structure for shared text regions */
-
-typedef struct shtextreg {
-	FILEPTR *f;		/* what file did this come from? */
-	MEMREGION *text;	/* pointer to shared text region */
-	short mtime, mdate;	/* date & time for file */
-	struct shtextreg *next;
-} SHTEXT;
 
 /*
  * Here's the deal with memory bits:
@@ -98,7 +89,7 @@ typedef struct fileheader {
 					 * rather than the biggest free memory
 					 * block */
 # define F_MEMFLAGS	0xf0		/* reserved for future use */
-# define F_SHTEXT	0x800		/* program's text may be shared */
+// # define F_SHTEXT	0x800		/* program's text may be shared */
 
 # define F_MINALT	0xf0000000L	/* used to decide which type of RAM to load in */
 

@@ -517,6 +517,8 @@ garbage_collect(void)
 			if (t->open)
 				goto found_index;
 			for (p = proclist; p; p = p->gl_next) {
+				if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+					continue;
 				fc = p->curdir;
 				gc = p->root;
 				for (j = 0; j < NUM_DRIVES; j++,fc++,gc++) {

@@ -11,17 +11,8 @@
 # define _time_h
 
 # include "mint/mint.h"
+# include "mint/time.h"
 
-
-# define CLOCKS_PER_SEC HZ
-
-struct timezone
-{
-	long	tz_minuteswest;	/* minutes west of Greenwich */
-	long	tz_dsttime;	/* type of dst correction */
-};
-
-# ifdef __KERNEL__
 
 /* Global variables exported into the kernel. */
 extern struct timeval xtime;		/* Current kernel time (UTC). */
@@ -61,10 +52,5 @@ long _cdecl t_settimeofday (struct timeval *tv, struct timezone *tz);
 long _cdecl gettime (void);
 void _cdecl settime (ulong datetime);
 
-# endif
-
-# define ITIMER_REAL 0
-# define ITIMER_VIRTUAL 1
-# define ITIMER_PROF 2
 
 # endif /* _time_h */

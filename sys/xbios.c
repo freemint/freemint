@@ -21,6 +21,8 @@
 # include "mint/arch/mfp.h"
 # include "mint/asm.h"
 # include "mint/falcon.h"
+# include "mint/filedesc.h"
+# include "mint/signal.h"
 
 # include "arch/detect.h"
 # include "arch/mprot.h"
@@ -30,6 +32,7 @@
 # include "bios.h"
 # include "biosfs.h"
 # include "memory.h"
+# include "k_prot.h"
 # include "proc.h"
 # include "signal.h"
 # include "tty.h"
@@ -87,7 +90,7 @@ supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 	 * mode. 
 	 */
 	
-	if ((secure_mode > 1) && (curproc->euid != 0))
+	if ((secure_mode > 1) && !suser (curproc->p_cred->ucr))
 	{
 		DEBUG (("Supexec: user call"));
 		raise (SIGSYS);
@@ -98,13 +101,16 @@ supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 	 * function.
 	 */
 	
+	assert (curproc->p_sigacts);
+	
 	usrcall = funcptr;
 	usrarg1 = arg1;
 	usrarg2 = arg2;
 	usrarg3 = arg3;
 	usrarg4 = arg4;
 	usrarg5 = arg5;
-	curproc->sighandle[0] = (long) do_usrcall;
+	SIGACTION(curproc, 0).sa_handler = (long) do_usrcall;
+//	curproc->sighandle[0] = (long) do_usrcall;
 	
 	savesr = syscall->sr;	/* save old super/user mode flag */
 	syscall->sr |= 0x2000;	/* set supervisor mode */
@@ -127,7 +133,7 @@ midiws (int cnt, const char *buf)
 	FILEPTR *f;
 	long towrite = cnt+1;
 	
-	f = curproc->handle[-5];	/* MIDI output handle */
+	f = curproc->p_fd->midiout;	/* MIDI output handle */
 	if (!f)
 		return EBADF;
 	
@@ -202,10 +208,10 @@ uiorec (int dev)
 		/* get around another BIOS Bug: 
 		 * in (at least) TOS 2.05 Iorec(0) is broken
 		 */
-		if ((unsigned) curproc->bconmap-6 < btty_max)
-			return (long) MAPTAB[curproc->bconmap-6].iorec;
+		if ((unsigned) curproc->p_fd->bconmap - 6 < btty_max)
+			return (long) MAPTAB[curproc->p_fd->bconmap-6].iorec;
 		
-		mapin (curproc->bconmap);
+		mapin (curproc->p_fd->bconmap);
 	}
 	
 	return (long) Iorec (dev);
@@ -223,7 +229,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	
 	if (has_bconmap)
 	{
-		b = curproc->bconmap - 6;
+		b = curproc->p_fd->bconmap - 6;
 		if (b < btty_max)
 			t += b;
 		else
@@ -264,9 +270,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	if (t && baud != -2)
 	{
 		while (t->tty->hup_ospeed)
-		{
 			sleep (IO_Q, (long) &t->tty->state);
-		}
 	}
 	
 	if (has_bconmap && t)
@@ -288,7 +292,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	else
 	{
 		if (has_bconmap)
-			mapin (curproc->bconmap);
+			mapin (curproc->p_fd->bconmap);
 		
 		rsval = Rsconf (baud, flow, uc, rs, ts, sc);
 	}
@@ -335,7 +339,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 long _cdecl
 bconmap (int dev)
 {
-	int old = curproc->bconmap;
+	int old = curproc->p_fd->bconmap;
 	
 	TRACE (("Bconmap(%d)", dev));
 	
@@ -369,7 +373,7 @@ bconmap (int dev)
 			return 0;
 		}
 		
-		curproc->bconmap = dev;
+		curproc->p_fd->bconmap = dev;
 		return old;
 	}
 	
@@ -387,7 +391,7 @@ cursconf (int cmd, int op)
 	FILEPTR *f;
 	long r;
 	
-	f = curproc->handle[-1];
+	f = curproc->p_fd->control;
 	if (!f || !is_terminal(f))
 		return ENOSYS;
 	
@@ -631,18 +635,18 @@ init_bconmap (void)
 	
 	curbconmap = (has_bconmap) ? (int) Bconmap (-1) : 1;
 	
-	oldmap = curproc->bconmap = curbconmap;
+	oldmap = curproc->p_fd->bconmap = curbconmap;
 	for (i = 0; i < btty_max; i++)
 	{
 		int r;
 		if (has_bconmap)
-			curproc->bconmap = i + 6;
+			curproc->p_fd->bconmap = i + 6;
 		
 		r = (int) rsconf (-2, -1, -1, -1, -1, -1);
 		if (r < 0)
 		{
 			if (has_bconmap)
-				mapin (curproc->bconmap);
+				mapin (curproc->p_fd->bconmap);
 			Rsconf ((r = 0), -1, -1, -1, -1, -1);
 		}
 		
@@ -650,5 +654,5 @@ init_bconmap (void)
 	}
 	
 	if (has_bconmap)
-		mapin (curproc->bconmap = oldmap);
+		mapin (curproc->p_fd->bconmap = oldmap);
 }

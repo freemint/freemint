@@ -16,31 +16,16 @@ long sync_time = 5;
 
 # ifdef SYSUPDATE_DAEMON
 
-# include "dosmem.h"
 # include "mint/basepage.h"
 # include "mint/signal.h"
+
+# include "dosmem.h"
+# include "k_exec.h"
 
 # include <mintbind.h>
 
 
 # define UPDATE_STKSIZE		6144
-
-
-INLINE void *
-setstack (register void *sp)
-{
-	register void *osp __asm__("d0") = 0;
-	
-	__asm__ volatile
-	(
-		"movel sp,%0;"
-		"movel %2,sp;"
-		: "=a" (osp)
-		: "0" (osp), "a" (sp)
-	);
-	
-	return osp;
-}
 
 
 static void
@@ -51,20 +36,11 @@ do_sync (long sig)
 	Sync ();
 }
 
-static int
+static void
 update (BASEPAGE *bp)
 {
-	setstack ((char *) bp + UPDATE_STKSIZE);
-	
-	bp->p_tbase = bp->p_parent->p_tbase;
-	bp->p_tlen  = bp->p_parent->p_tlen;
-	bp->p_dbase = bp->p_parent->p_dbase;
-	bp->p_dlen  = bp->p_parent->p_dlen;
-	bp->p_bbase = bp->p_parent->p_bbase;
-	bp->p_blen  = bp->p_parent->p_blen;
-	
-	Pdomain (1);
-	Pnice (-5);
+	(void) Pdomain (1);
+	(void) Pnice (-5);
 	
 	Psignal (SIGALRM, do_sync);
 	Psignal (SIGTERM, do_sync);
@@ -93,7 +69,8 @@ update (BASEPAGE *bp)
 	}
 	
 	Pterm (0);
-	return 0;
+	
+	/* not reached */
 }
 
 # else
@@ -126,13 +103,13 @@ start_sysupdate (void)
 	 */
 	
 	/* create basepage */
-	b = (BASEPAGE *) p_exec (PE_CBASEPAGE, 0L, "", 0L); 
+	b = (BASEPAGE *) sys_pexec (PE_CBASEPAGE, 0L, "", 0L); 
 	r = m_shrink (0, (virtaddr) b, UPDATE_STKSIZE + 256L);
 	assert (r >= 0L);
 	
 	b->p_tbase = (long) update;
 	b->p_hitpa = (long) b + UPDATE_STKSIZE + 256L;
 	
-	p_exec (PE_ASYNC_GO, "update", b, 0L);
+	sys_pexec (PE_ASYNC_GO, "update", b, 0L);
 # endif
 }
