@@ -162,7 +162,7 @@ main(int argc, char **argv)
 	do
 	{
 		r = getdelim(&line, &buf, '\n', fd);
-		if (r > 1 && line[0] != ';' && (ln = strstr(line, "dc.")))
+		if (r >= 0 && line[0] != ';' && (ln = strstr(line, "dc.")))
 		{
 			w = strncmp(ln, "dc.b", 4);
 			ln += 4;
