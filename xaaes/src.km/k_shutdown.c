@@ -30,7 +30,6 @@
 #include "k_main.h"
 #include "c_window.h"
 #include "init.h"
-#include "my_aes.h"
 #include "nkcc.h"
 #include "objects.h"
 #include "taskman.h"
