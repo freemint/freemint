@@ -22,5 +22,3 @@
 
 
 struct kerinfo *KERNEL;
-
-ulong memory = 0;

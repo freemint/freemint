@@ -15,8 +15,6 @@ long driver_init (void);
 struct kerinfo *KERNEL;
 struct netinfo *NETINFO;
 
-ulong memory = 0;
-
 
 long
 init (struct kerinfo *k, struct netinfo *n)
