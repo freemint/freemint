@@ -293,7 +293,7 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 void
 rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 {
-	RECT dr;
+	//RECT dr;
 	short rtx, rty, ww, wh;
 	int frame = wind->frame;
 
@@ -305,7 +305,7 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		frame = 0;
 
 	if (r == NULL)
-		r = &dr;
+		r = &widg->ar; //&dr;
 
 	/* HR: window frame size dynamic
 	 *     thanks to the good design these 2 additions are all there is :-)
@@ -1091,7 +1091,7 @@ DIAG((D_widg, wind->owner, "display_def_widget %d: state %d, global clip: %d:%d,
 				r.x,r.y,r.x+r.w-1,r.y+r.h-1
 				));
 */
-	display_object(lock, &wind->widg_info, i, r.x, r.y, 0);
+	display_object(lock, &wind->widg_info, (const RECT *)&C.global_clip, i, r.x, r.y, 0);
 
 	return true;
 }
@@ -1122,7 +1122,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		def_widgets[WIDG_LOGO].ob_state &= ~OS_SELECTED;
 
 	wind->wt.tree = def_widgets;
-	display_object(lock, wind->wt, WIDG_LOGO, r.x, r.y, 1);
+	display_object(lock, wind->wt, (const RECT *)&C.global_clip, WIDG_LOGO, r.x, r.y, 1);
 
 	/* tiny pixel correction (better spacing) */
 	r.x += cfg.widg_w + 2;
@@ -2814,7 +2814,7 @@ set_toolbar_coords(struct xa_window *wind)
  * This is also used to setup windowed form_do sessions()
  */
 XA_TREE *
-set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obtree, short edobj)
+set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obtree, short edobj, short properties)
 {
 	XA_TREE *wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
@@ -2844,7 +2844,6 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *ow
 	wt->widg = widg;
 	wt->wind = wind;
 	wt->zen  = true;
-
 	/*
 	 * Ozk: if edobj == -2, we want to look for an editable and place the
 	 * cursor there. Used by wdlg_create() atm
@@ -2859,32 +2858,35 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *ow
 #if WDIALOG_WDLG
 	if ((wind->dial & created_for_WDIAL))
 	{
-		wt->exit_form	= NULL;
-		widg->click	= click_wdlg_widget;
-		widg->dclick	= click_wdlg_widget;
-		widg->drag	= click_wdlg_widget;
-		widg->display	= NULL;
+		wt->exit_form		= NULL;
+		widg->click		= click_wdlg_widget;
+		widg->dclick		= click_wdlg_widget;
+		widg->drag		= click_wdlg_widget;
+		widg->properties	= properties;
+		widg->display		= NULL;
 	}
 	else
 	{
 		if (wt->e.obj >= 0 || obtree_has_default(obtree))
 			wind->keypress = Key_form_do;
 
-		wt->exit_form	= Exit_form_do;
-		widg->click	= Click_windowed_form_do;
-		widg->dclick	= Click_windowed_form_do;
-		widg->drag	= Click_windowed_form_do;
-		widg->display	= display_object_widget;
+		wt->exit_form		= Exit_form_do;
+		widg->properties	= properties;
+		widg->click		= Click_windowed_form_do;
+		widg->dclick		= Click_windowed_form_do;
+		widg->drag		= Click_windowed_form_do;
+		widg->display		= display_object_widget;
 	}
 #else
 	if (wt->e.obj >= 0 || obtree_has_default(obtree))
 		wind->keypress = Key_form_do;
 
-	wt->exit_form	= Exit_form_do;
-	widg->click	= Click_windowed_form_do;
-	widg->dclick	= Click_windowed_form_do;
-	widg->drag	= Click_windowed_form_do;
-	widg->display	= display_object_widget;
+	wt->exit_form		= Exit_form_do;
+	widg->properties	= properties;
+	widg->click		= Click_windowed_form_do;
+	widg->dclick		= Click_windowed_form_do;
+	widg->drag		= Click_windowed_form_do;
+	widg->display		= display_object_widget;
 #endif
 
 	widg->destruct	= free_xawidget_resources;
@@ -3060,10 +3062,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, shor
 				}
 			}
 		}
-		//else
-		//	display("masked");
 	}
-	//display("checkif_do_widgets: false");
 	if (ret)
 		*ret = NULL;
 	

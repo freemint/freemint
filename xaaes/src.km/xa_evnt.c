@@ -30,6 +30,7 @@
 #include "app_man.h"
 #include "c_window.h"
 #include "desktop.h"
+#include "draw_obj.h"
 #include "k_keybd.h"
 #include "k_main.h"
 #include "k_mouse.h"
@@ -91,10 +92,7 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 
 		kfree(msg);
 		rtn = 1;
-
-		if (--C.redraws)
-			kick_mousemove_timeout();
-
+		kick_mousemove_timeout();
 	}
 	else if (C.redraws)
 		yield();
@@ -102,6 +100,7 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 	Sema_Dn(clients);
 	return rtn;
 }
+
 
 static int
 pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
@@ -131,6 +130,61 @@ pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
 	Sema_Dn(clients);
 	return rtn;
 }
+
+static int
+pending_iredraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
+{
+	struct xa_aesmsg_list *msg;
+	int rtn = 0;
+
+	Sema_Up(clients);
+
+	msg = client->irdrw_msg;
+	if (msg)
+	{
+		/* dequeue */
+		client->irdrw_msg = msg->next;
+
+		/* write to client */
+		*buf = msg->message;
+
+		DIAG((D_m, NULL, "Got pending WM_REDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
+			msg, buf->m[3], *(RECT *)&buf->m[4], c_owner(client) ));
+
+		kfree(msg);
+		rtn = 1;
+	}
+//	else if (C.redraws)
+//		yield();
+
+	Sema_Dn(clients);
+	return rtn;
+}
+void
+exec_iredraw_queue(enum locks lock, struct xa_client *client)
+{
+	struct xa_window *wind;
+	//struct xa_widget *widg;
+	RECT *r;
+	union msg_buf ibuf;
+
+	while (pending_iredraw_msgs(lock, client, &ibuf))
+	{
+		wind = (struct xa_window *)ibuf.irdrw.ptr; //(((long)ibuf.m[2]) << 16 | ibuf.m[3]);
+		//widg = get_widget(wind, ibuf.irdrw.xaw); //ibuf.m[1]);
+		r = (RECT *)&ibuf.irdrw.x; //(RECT *)(ibuf.m + 4);
+
+		if (!(r->w | r->h))
+			r = NULL;
+		
+		display_window(lock, 0, wind, r);
+		
+		kick_mousemove_timeout();
+	}
+	if (!client->rdrw_msg && C.redraws)
+		yield();
+}
+
 
 #if GENERATE_DIAGS
 
@@ -293,7 +347,7 @@ check_queued_events(struct xa_client *client)
 	if ((wevents & MU_MESAG) && (client->msg || client->rdrw_msg || client->crit_msg))
 	{
 		union msg_buf *cbuf;
-
+		
 		cbuf = (union msg_buf *)pb->addrin[0];
 		if (cbuf)
 		{
@@ -626,9 +680,9 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
 	}
 #endif
-	if (client->status & CS_LAGGING)
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 	{
-		client->status &= ~CS_LAGGING;
+		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
 	}
@@ -715,9 +769,9 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,1)
 
-	if (client->status & CS_LAGGING)
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 	{
-		client->status &= ~CS_LAGGING;
+		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_mesag: %s flagged as lagging! - cleared", client->name));
 	}
@@ -740,9 +794,9 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(3,5,1)
 
-	if (client->status & CS_LAGGING)
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 	{
-		client->status &= ~CS_LAGGING;
+		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_button: %s flagged as lagging! - cleared", client->name));
 	}
@@ -765,9 +819,9 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
-	if (client->status & CS_LAGGING)
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 	{
-		client->status &= ~CS_LAGGING;
+		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_keybd: %s flagged as lagging! - cleared", client->name));
 	}
@@ -787,9 +841,9 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(5,5,0)
 
-	if (client->status & CS_LAGGING)
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 	{
-		client->status &= ~CS_LAGGING;
+		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_mouse: %s flagged as lagging! - cleared", client->name));
 	}

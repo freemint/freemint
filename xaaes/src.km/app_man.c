@@ -271,7 +271,8 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 					else
 						send_ontop(lock);
 				
-					display_window(lock, 110, top, NULL);
+					send_iredraw(lock, top, 0, NULL);
+					//display_window(lock, 110, top, NULL);
 				}
 			}
 		}
@@ -696,18 +697,18 @@ app_in_front(enum locks lock, struct xa_client *client)
 			if (!is_topped(wastop))
 			{
 				send_untop(lock, wastop);
-				display_window(lock, 0, wastop, NULL);
+				send_iredraw(lock, wastop, 0, NULL);
 			}
 			if (wastop != window_list && window_list != root_window && is_topped(window_list))
 			{
 				send_ontop(lock);
-				display_window(lock, 0, window_list, NULL);
+				send_iredraw(lock, window_list, 0, NULL);
 			}
 		}
 		else if (window_list != root_window && is_topped(window_list))
 		{
 			send_ontop(lock);
-			display_window(lock, 0, window_list, NULL);
+			send_iredraw(lock, window_list, 0, NULL);
 		}
 	}
 }

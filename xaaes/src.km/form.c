@@ -161,7 +161,7 @@ Setup_form_do(struct xa_client *client,
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
-		wt = set_toolbar_widget(lock, wind, client, obtree, edobj);
+		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIDG_NOTEXT);
 		wt->zen = false; //true;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h); //wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 	}
@@ -197,7 +197,7 @@ Setup_form_do(struct xa_client *client,
 		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
 		{
 			client->fmd.wind = wind;
-			wt = set_toolbar_widget(lock, wind, client, obtree, edobj);
+			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIDG_NOTEXT);
 			wt->zen = false;
 		}
 		else
@@ -568,7 +568,7 @@ Exit_form_do( struct xa_client *client,
 			if (wind->send_message)
 			{
 				struct xa_widget *widg = wt->widg;
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
 						WM_TOOLBAR, 0, 0, wind->handle,
 						fr->obj, fr->dblmask ? 2 : 1, widg->k, 0);
 			}
@@ -643,7 +643,6 @@ Click_form_do(enum locks lock,
 		{
 			DIAGS(("Click_form_do: topping window"));
 			top_window(lock, true, wind, (void *)-1L, NULL);
-			//after_top(lock, false);
 			return false;
 		}
 		
@@ -808,13 +807,12 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 {
 	if (wt && wt->tree)
 	{
-		RECT dr, sc;
+		RECT dr;
 		struct xa_rect_list *rl;
 
 		if ((rl = wind->rect_start))
 		{
 			hidem();
-			save_clip(&sc);
 			while (rl)
 			{
 				if (xa_rect_clip(&wind->wa, &rl->r, &dr))
@@ -835,7 +833,7 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 				}
 				rl = rl->next;
 			}
-			restore_clip(&sc); //clear_clip();
+			clear_clip();
 			showm();
 		}
 	}
@@ -884,6 +882,7 @@ do_formwind_msg(
 			{
 				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, wind->rect_start, NULL, NULL);
 			}
+			kick_mousemove_timeout();
 			break;
 		}
 		case WM_MOVED:

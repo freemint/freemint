@@ -41,6 +41,13 @@ union msg_buf
 		short msg, src, m2, m3;
 		void *p1, *p2;
 	} s;
+	struct
+	{
+		short msg;
+		short xaw;
+		void *ptr;
+		short x, y, w, h;
+	} irdrw;
 };
 
 const char *pmsg(short m);
@@ -53,12 +60,14 @@ void send_a_message(enum locks lock, struct xa_client *dest_client, short amq, s
 struct xa_window;
 struct xa_client;
 
-#define AMQ_NORM	0
-#define AMQ_REDRAW	1
-#define AMQ_CRITICAL	2
+#define AMQ_NORM	0	/* Normal AES messages queue */
+#define AMQ_REDRAW	1	/* AES redraw messages for client */
+#define AMQ_CRITICAL	2	/* Critical messages, preceedes the above queue types */
+#define AMQ_IREDRAW	3	/* Internal redraw messages */
 
-#define QMF_PREPEND	1
-#define QMF_CHKDUP	2
+#define QMF_NORM	0
+#define QMF_PREPEND	1	/* If set, insert message at start of queue, else add to queue */
+#define QMF_CHKDUP	2	/* If set, check for duplicate messages */
 
 typedef void
 SendMessage(

@@ -39,7 +39,7 @@ void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
 void	display_toolbar(enum locks lock, struct xa_window *wind, short item);
 void	set_toolbar_coords(struct xa_window *wind);
 
-XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, short item);
+XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, short item, short properties);
 
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
 void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r);

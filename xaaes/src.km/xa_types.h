@@ -46,6 +46,11 @@
 
 #define WM_WHEEL  345
 
+#define RDRW_WA		1
+#define RDRW_EXT	2
+#define RDRW_ALL	(RDRW_WA|RDRW_EXT)
+
+
 /* forward declarations */
 struct task_administration_block;
 struct widget_tree;
@@ -59,6 +64,7 @@ struct lbox_slide;
 struct menu_attachements;
 
 struct keyqueue;
+
 
 enum menu_behave
 {
@@ -274,7 +280,7 @@ typedef int WindowKeypress(enum locks lock, struct xa_window *wind,
 			   unsigned short keycode, unsigned short nkcode, struct rawkey key);
 
 /* Object display function type */
-typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt);
+typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt, const RECT *clip);
 
 /* Object handler function type */
 typedef void ObjectHandler(enum locks lock, struct widget_tree *wt);
@@ -516,16 +522,19 @@ struct xa_client
 
 	bool apterm;			/* true if application understands AP_TERM. */
 
-	struct xa_aesmsg_list *msg;	 /* Pending AES messages */
-	struct xa_aesmsg_list *rdrw_msg; /* WM_REDRAW messages */
-	struct xa_aesmsg_list *crit_msg; /* Critical AES messages - these are prioritized */
+	struct xa_aesmsg_list *msg;		/* Pending AES messages */
+	struct xa_aesmsg_list *rdrw_msg;	/* WM_REDRAW messages */
+	struct xa_aesmsg_list *crit_msg;	/* Critical AES messages - these are prioritized */
+	struct xa_aesmsg_list *irdrw_msg;	/* Internal redraw messages */
 
-#define CS_LAGGING		0x0001
-#define CS_CE_REDRAW_SENT 	0x0002
-#define CS_FORM_ALERT		0x0004
-#define CS_FORM_DO		0x0008
-#define CS_WAIT_MENU		0x0100
-#define CS_EXITING		0x8000
+#define CS_LAGGING		0x00000001
+#define CS_CE_REDRAW_SENT 	0x00000002
+#define CS_FORM_ALERT		0x00000004
+#define CS_FORM_DO		0x00000008
+#define CS_WAIT_MENU		0x00000010
+#define CS_FSEL_INPUT		0x00000020
+#define CS_MISS_RDRW		0x00000040
+#define CS_EXITING		0x00000080
 
 	long status;
 
@@ -740,9 +749,12 @@ struct xa_widget
 	WidgetBehaviour *drag;
 	WidgetBehaviour *release;
 
-#define XAWF_ALLOC 1
-#define XAWF_STUFFKMALLOC 2
-	long flags;
+#define XAWF_ALLOC		1
+#define XAWF_STUFFKMALLOC	2
+	short flags;
+#define WIDG_NOTEXT	1
+	short properties;
+
 	void (*destruct)(struct xa_widget *w);
 
 	short state;			/* Current status (selected, etc) */
