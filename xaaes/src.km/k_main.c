@@ -347,18 +347,14 @@ multi_intout(struct xa_client *client, short *o, int evnt)
 {
 	short b, x, y;
 
-	check_mouse(client, &b, &x, &y);
+	check_mouse(client, &o[3], &o[1], &o[2]);
 
-	*o++ = evnt;
-	*o++ = x;
-	*o++ = y;
-	*o++ = b;
-	*o++ = mu_button.ks;
+	o[0] = evnt;
+	vq_key_s(C.vh, &o[4]);
 
 	if (evnt)
 	{
-		*o++ = 0;
-		*o++ = 0;
+		o[5] = o[6] = 0;
 	}
 }
 
