@@ -437,10 +437,6 @@
 # if 1
 
 # if 1
-# define FATFS_ACESS_CHECK_BOOT
-# endif
-
-# if 1
 # define FATFS_ACESS_CHECK_FAT
 # endif
 
@@ -896,7 +892,7 @@ typedef struct
 	ulong	dstart;		/* 1st cluster sector number */
 	ulong	doffset;	/* clusteroffset */
 	ulong	numcl;		/* total number of clusters */
-	ulong	maxcl;		/* highest clnumber + 1 */
+	ulong	maxcl;		/* highest valid clnumber */
 	ulong	entrys;		/* number of dir entrys in a cluster */
 	
 	long	(*getcl)(long, const ushort, ulong);
@@ -1177,6 +1173,7 @@ const	char *	__table;	/* current character table */
 # define CLUSTSIZE(dev)	(BPB (dev)->clsizb)
 # define CLSIZE(dev)	(BPB (dev)->clsiz)
 # define CLUSTER(dev)	(BPB (dev)->numcl)
+# define MINCL(dev)	(2)
 # define MAXCL(dev)	(BPB (dev)->maxcl)
 # define ROOT(dev)	(BPB (dev)->rdstart)
 # define ROOTSIZE(dev)	(BPB (dev)->rdlen)
@@ -1205,121 +1202,170 @@ const	char *	__table;	/* current character table */
 
 
 /*
+ * makros for cluster to sector and sector to cluster calculation
+ */
+
+INLINE ulong
+C2S (register long cluster, ushort dev)
+{
+	return ((cluster * CLSIZE (dev)) + DOFFSET (dev));
+}
+INLINE long
+S2C (register ulong sector, ushort dev)
+{
+	return ((sector - DOFFSET (dev)) / CLSIZE (dev));
+}
+
+
+/*
  * low level access
  * the routines verify the correct position
  */
 
 INLINE UNIT *
-bio_boot_read (DI *di, ulong sector, ulong blocksize)
+bio_boot_read (DI *di)
 {
-# ifdef FATFS_ACESS_CHECK_BOOT
-	if (sector == 0)
-		return bio.read (di, sector, blocksize);
-	
-	FAT_ALERT (("FATFS [%c]: bio_boot_read acess failure, aborted!", 'A'+di->drv));
-	return NULL;
-# else
-	return bio.read (di, sector, blocksize);
-# endif
+	return bio.read (di, 0, di->pssize);
 }
 
 
 INLINE UNIT *
-bio_fat_getunit (const ushort dev, DI *di, ulong sector, ulong blocksize)
+bio_fat_getunit (const ushort dev, ulong sector, ulong blocksize)
 {
 # ifdef FATFS_ACESS_CHECK_FAT
 	if ((sector >= FATSTART (dev)) && (sector <= FATEND (dev)))
-		return bio.getunit (di, sector, blocksize);
+		return bio.getunit (DI (dev), sector, blocksize);
 	
-	FAT_ALERT (("FATFS [%c]: bio_fat_getunit: out of range (%ld, %ld - %ld), aborted", 'A'+dev, sector, FATSTART (dev), FATEND (dev)));
+	FAT_ALERT (("FATFS [%c]: bio_fat_getunit: out of range (%ld [%ld,%ld]), aborted",
+		    'A'+dev, sector, FATSTART (dev), FATEND (dev)));
 	return NULL;
 # else
-	return bio.getunit (di, sector, blocksize);
+	return bio.getunit (DI (dev), sector, blocksize);
 # endif
 }
 
 INLINE UNIT *
-bio_fat_read (const ushort dev, DI *di, ulong sector, ulong blocksize)
+bio_fat_read (const ushort dev, ulong sector, ulong blocksize)
 {
 # ifdef FATFS_ACESS_CHECK_FAT
 	if ((sector >= FATSTART (dev)) && (sector <= FATEND (dev)))
-		return bio.read (di, sector, blocksize);
+		return bio.read (DI (dev), sector, blocksize);
 	
-	FAT_ALERT (("FATFS [%c]: bio_fat_read: out of range (%ld, %ld - %ld), aborted", 'A'+dev, sector, FATSTART (dev), FATEND (dev)));
+	FAT_ALERT (("FATFS [%c]: bio_fat_read: out of range (%ld [%ld,%ld]), aborted",
+		    'A'+dev, sector, FATSTART (dev), FATEND (dev)));
 	return NULL;
 # else
-	return bio.read (di, sector, blocksize);
+	return bio.read (DI (dev), sector, blocksize);
 # endif
 }
 
 INLINE long
-bio_fat_l_read (const ushort dev, DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
+bio_fat_l_read (const ushort dev, ulong sector, ulong blocks, ulong blocksize, void *buf)
 {
 # ifdef FATFS_ACESS_CHECK_FAT
 	if ((sector >= FATSTART (dev)) && (sector + blocks - 1 <= FATEND (dev)))
-		return bio.l_read (di, sector, blocks, blocksize, buf);
+		return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
 	
-	FAT_ALERT (("FATFS [%c]: bio_fat_l_read: out of range (%ld+%ld, %ld - %ld), aborted", 'A'+dev, sector, blocks, FATSTART (dev), FATEND (dev)));
+	FAT_ALERT (("FATFS [%c]: bio_fat_l_read: out of range (%ld+%ld [%ld,%ld]), aborted",
+		    'A'+dev, sector, blocks, FATSTART (dev), FATEND (dev)));
 	return EREAD;
 # else
-	return bio.l_read (di, sector, blocks, blocksize, buf);
+	return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
 # endif
 }
 
 
 INLINE UNIT *
-bio_data_getunit (const ushort dev, DI *di, ulong sector, ulong blocksize)
+bio_root_read (const ushort dev, ulong sector)
 {
-# ifdef FATFS_ACESS_CHECK_DATA
-	if (sector > FATEND (dev))
-		return bio.getunit (di, sector, blocksize);
+	register const ulong blocksize = SECSIZE (dev);
 	
-	FAT_ALERT (("FATFS [%c]: bio_data_getunit: out of range (%ld, %ld), aborted", 'A'+dev, sector, FATEND (dev)));
+# ifdef FATFS_ACESS_CHECK_DATA
+	if (sector > FATEND (dev) && sector < CLFIRST (dev))
+		return bio.read (DI (dev), sector, blocksize);
+	
+	FAT_ALERT (("FATFS [%c]: bio_root_read: out of range (%ld [%ld,%ld]), aborted",
+		    'A'+dev, sector, FATEND (dev), CLFIRST (dev)));
 	return NULL;
 # else
-	return bio.getunit (di, sector, blocksize);
+	return bio.read (DI (dev), sector, blocksize);
+# endif
+}
+
+
+INLINE UNIT *
+bio_data_getunit (const ushort dev, long cluster)
+{
+	register const ulong sector = C2S (cluster, dev);
+	register const ulong blocksize = CLUSTSIZE (dev);
+	
+# ifdef FATFS_ACESS_CHECK_DATA
+	if (cluster >= MINCL (dev) && cluster <= MAXCL (dev)
+	    && sector >= CLFIRST (dev))
+		return bio.getunit (DI (dev), sector, blocksize);
+	
+	FAT_ALERT (("FATFS [%c]: bio_data_getunit: out of range (%ld [%ld] %ld [%ld]), aborted",
+		    'A'+dev, cluster, MAXCL (dev), sector, CLFIRST (dev)));
+	return NULL;
+# else
+	return bio.getunit (DI (dev), sector, blocksize);
 # endif
 }
 
 INLINE UNIT *
-bio_data_read (const ushort dev, DI *di, ulong sector, ulong blocksize)
+bio_data_read (const ushort dev, long cluster)
 {
-# ifdef FATFS_ACESS_CHECK_DATA
-	if (sector > FATEND (dev))
-		return bio.read (di, sector, blocksize);
+	register const ulong sector = C2S (cluster, dev);
+	register const ulong blocksize = CLUSTSIZE (dev);
 	
-	FAT_ALERT (("FATFS [%c]: bio_data_read: out of range (%ld, %ld), aborted", 'A'+dev, sector, FATEND (dev)));
+# ifdef FATFS_ACESS_CHECK_DATA
+	if (cluster >= MINCL (dev) && cluster <= MAXCL (dev)
+	    && sector >= CLFIRST (dev))
+		return bio.read (DI (dev), sector, blocksize);
+	
+	FAT_ALERT (("FATFS [%c]: bio_data_read: out of range (%ld [%ld] %ld [%ld]), aborted",
+		    'A'+dev, cluster, MAXCL (dev), sector, CLFIRST (dev)));
 	return NULL;
 # else
-	return bio.read (di, sector, blocksize);
+	return bio.read (DI (dev), sector, blocksize);
 # endif
 }
 
 INLINE long
-bio_data_l_read (const ushort dev, DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
+bio_data_l_read (const ushort dev, long cluster, ulong blocks, void *buf)
 {
-# ifdef FATFS_ACESS_CHECK_DATA
-	if (sector > FATEND (dev))
-		return bio.l_read (di, sector, blocks, blocksize, buf);
+	register const ulong sector = C2S (cluster, dev);
+	register const ulong blocksize = CLUSTSIZE (dev);
 	
-	FAT_ALERT (("FATFS [%c]: bio_data_l_read: out of range (%ld, %ld), aborted", 'A'+dev, sector, FATEND (dev)));
+# ifdef FATFS_ACESS_CHECK_DATA
+	if (cluster >= MINCL (dev) && cluster+blocks <= MAXCL (dev)
+	    && sector >= CLFIRST (dev))
+		return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
+	
+	FAT_ALERT (("FATFS [%c]: bio_data_l_read: out of range (%ld,%ld [%ld] %ld [%ld]), aborted",
+		    'A'+dev, cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
 	return EREAD;
 # else
-	return bio.l_read (di, sector, blocks, blocksize, buf);
+	return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
 # endif
 }
 
 INLINE long
-bio_data_l_write (const ushort dev, DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
+bio_data_l_write (const ushort dev, long cluster, ulong blocks, void *buf)
 {
-# ifdef FATFS_ACESS_CHECK_DATA
-	if (sector > FATEND (dev))
-		return bio.l_write (di, sector, blocks, blocksize, buf);
+	register const ulong sector = C2S (cluster, dev);
+	register const ulong blocksize = CLUSTSIZE (dev);
 	
-	FAT_ALERT (("FATFS [%c]: bio_data_l_write: out of range (%ld, %ld), aborted", 'A'+dev, sector, FATEND (dev)));
+# ifdef FATFS_ACESS_CHECK_DATA
+	if (cluster >= MINCL (dev) && cluster+blocks <= MAXCL (dev)
+	    && sector >= CLFIRST (dev))
+		return bio.l_write (DI (dev), sector, blocks, blocksize, buf);
+	
+	FAT_ALERT (("FATFS [%c]: bio_data_l_write: out of range (%ld,%ld [%ld] %ld [%ld]), aborted",
+		    'A'+dev, cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
 	return EWRITE;
 # else
-	return bio.l_write (di, sector, blocks, blocksize, buf);
+	return bio.l_write (DI (dev), sector, blocks, blocksize, buf);
 # endif
 }
 
@@ -1377,7 +1423,9 @@ INLINE char *
 fullname (const COOKIE *c, const char *name)
 {
 	register long len = strlen (c->name);
-	register char *full = kmalloc (len + strlen (name) + 2);
+	register char *full;
+	
+	full = kmalloc (len + strlen (name) + 2);
 	if (full)
 	{
 		(void) strcpy (full, c->name);
@@ -1662,27 +1710,12 @@ c_del_cookie (register COOKIE *c)
 /* BEGIN FAT access functions */
 
 /*
- * makros for cluster to sector and sector to cluster calculation
- */
-
-INLINE long
-C2S (register long cluster, ushort dev)
-{
-	return ((cluster * CLSIZE (dev)) + DOFFSET (dev));
-}
-INLINE long
-S2C (register long sector, ushort dev)
-{
-	return ((sector - DOFFSET (dev)) / CLSIZE (dev));
-}
-
-/*
  * makros for FAT validation
  */
 
-# define FAT_VALID12(cl, dev)	(((cl) > 1) && ((cl) < MAXCL (dev)))
-# define FAT_VALID16(cl, dev)	(((cl) > 1) && ((cl) < MAXCL (dev)))
-# define FAT_VALID32(cl, dev)	(((cl) > 1) && ((cl) < MAXCL (dev)))
+# define FAT_VALID12(cl, dev)	(((cl) >= MINCL (dev)) && ((cl) <= MAXCL (dev)))
+# define FAT_VALID16(cl, dev)	(((cl) >= MINCL (dev)) && ((cl) <= MAXCL (dev)))
+# define FAT_VALID32(cl, dev)	(((cl) >= MINCL (dev)) && ((cl) <= MAXCL (dev)))
 
 # define FAT_LAST12(cl)		((cl) > 0x00000ff7L)
 # define FAT_LAST16(cl)		((cl) > 0x0000fff7L)
@@ -1800,7 +1833,7 @@ getcl12 (long cluster, const ushort dev, ulong n)
 	FAT_DEBUG (("getcl12: enter (cluster = %li, n = %li)", cluster, n));
 	
 	/* input validation */
-	if (!FAT_VALID12 (cluster, dev) /* cluster < 2 || cluster >= MAXCL (dev) */)
+	if (!FAT_VALID12 (cluster, dev))
 	{
 		FAT_DEBUG (("getcl12: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -1833,7 +1866,7 @@ getcl12 (long cluster, const ushort dev, ulong n)
 				FAT_DEBUG (("getcl12: start = %li, sectors = %li", sector, sectors));
 				
 				old_sector = sector;
-				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev) * sectors);
+				u = bio_fat_read (dev, sector, SECSIZE (dev) * sectors);
 				if (!u)
 				{
 					FAT_DEBUG (("getcl12: leave failure (can't read the fat)"));
@@ -1888,7 +1921,7 @@ getcl16 (long cluster, const ushort dev, ulong n)
 	FAT_DEBUG (("getcl16: enter (cluster = %li, n = %li)", cluster, n));
 	
 	/* input validation */
-	if (!FAT_VALID16 (cluster, dev) /* cluster < 2 || cluster >= MAXCL (dev) */)
+	if (!FAT_VALID16 (cluster, dev))
 	{
 		FAT_DEBUG (("getcl16: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -1907,7 +1940,7 @@ getcl16 (long cluster, const ushort dev, ulong n)
 			if (sector != old_sector)
 			{
 				old_sector = sector;
-				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+				u = bio_fat_read (dev, sector, SECSIZE (dev));
 				if (!u)
 				{
 					FAT_DEBUG (("getcl16: leave failure (can't read the fat)"));
@@ -1948,7 +1981,7 @@ getcl32 (long cluster, const ushort dev, ulong n)
 	FAT_DEBUG (("getcl32: enter (cluster = %li, n = %li)", cluster, n));
 	
 	/* input validation */
-	if (!FAT_VALID32 (cluster, dev) /* cluster < 2 || cluster >= MAXCL (dev) */)
+	if (!FAT_VALID32 (cluster, dev))
 	{
 		FAT_DEBUG (("getcl32: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -1967,7 +2000,7 @@ getcl32 (long cluster, const ushort dev, ulong n)
 			if (sector != old_sector)
 			{
 				old_sector = sector;
-				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+				u = bio_fat_read (dev, sector, SECSIZE (dev));
 				if (!u)
 				{
 					FAT_DEBUG (("getcl32: leave failure (can't read the fat)"));
@@ -2015,7 +2048,7 @@ fixcl12 (long cluster, const ushort dev, long next)
 	FAT_DEBUG (("fixcl12: enter (cluster = %li, next = %li)", cluster, next));
 	
 	/* input validation */
-	if (!FAT_VALID12 (cluster, dev) /*cluster < 2 || cluster >= MAXCL (dev)*/)
+	if (!FAT_VALID12 (cluster, dev))
 	{
 		FAT_DEBUG (("fixcl12: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -2045,7 +2078,7 @@ fixcl12 (long cluster, const ushort dev, long next)
 		FAT_DEBUG (("fixcl12: (1) start = %li, sectors = %li", sector, sectors));
 		
 		/* update FAT#2 */
-		u = bio_fat_read (dev, DI (dev), sector + FATSIZE (dev), SECSIZE (dev) * sectors);
+		u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev) * sectors);
 		if (u)
 		{
 			register long newcl;
@@ -2076,7 +2109,7 @@ fixcl12 (long cluster, const ushort dev, long next)
 				FAT_DEBUG (("fixcl12: (2) start = %li, sectors = %li", sector + FATSIZE (dev), sectors));
 				
 				/* update FAT#1 */
-				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev) * sectors);
+				u = bio_fat_read (dev, sector, SECSIZE (dev) * sectors);
 				if (u)
 				{
 					/* write the entry to the second FAT */
@@ -2102,7 +2135,7 @@ fixcl16 (long cluster, const ushort dev, long next)
 	FAT_DEBUG (("fixcl16: enter (cluster = %li, next = %li)", cluster, next));
 	
 	/* input validation */
-	if (!FAT_VALID16 (cluster, dev) /*cluster < 2 || cluster >= MAXCL (dev)*/)
+	if (!FAT_VALID16 (cluster, dev))
 	{
 		FAT_DEBUG (("fixcl16: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -2122,7 +2155,7 @@ fixcl16 (long cluster, const ushort dev, long next)
 		UNIT *u;
 		
 		/* update FAT#2 */
-		u = bio_fat_read (dev, DI (dev), sector + FATSIZE (dev), SECSIZE (dev));
+		u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev));
 		if (u)
 		{
 			/* write the entry to the first FAT */
@@ -2133,7 +2166,7 @@ fixcl16 (long cluster, const ushort dev, long next)
 			if (FAT2ON (dev))
 			{
 				/* update FAT#1 */
-				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+				u = bio_fat_read (dev, sector, SECSIZE (dev));
 				if (u)
 				{
 					/* write the entry to the second FAT */
@@ -2158,7 +2191,7 @@ fixcl32 (long cluster, const ushort dev, long next)
 	FAT_DEBUG (("fixcl32: enter (cluster = %li, next = %li)", cluster, next));
 	
 	/* input validation */
-	if (!FAT_VALID32 (cluster, dev) /*cluster < 2 || cluster >= MAXCL (dev)*/)
+	if (!FAT_VALID32 (cluster, dev))
 	{
 		FAT_DEBUG (("fixcl32: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -2177,7 +2210,7 @@ fixcl32 (long cluster, const ushort dev, long next)
 		
 		UNIT *u;
 		
-		u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+		u = bio_fat_read (dev, sector, SECSIZE (dev));
 		if (u)
 		{
 			/* mask in the highest 4 bit (reserved) */
@@ -2198,7 +2231,7 @@ fixcl32 (long cluster, const ushort dev, long next)
 				for (i = FAT2ON (dev); i; i--)
 				{
 					sector += FATSIZE (dev);
-					u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+					u = bio_fat_read (dev, sector, SECSIZE (dev));
 					if (u)
 					{
 						/* write the FAT entry */
@@ -2226,6 +2259,7 @@ fixcl32 (long cluster, const ushort dev, long next)
 static long
 newcl12 (register long cluster, register const ushort dev)
 {
+	register const long min = MINCL (dev);
 	register const long max = MAXCL (dev);
 	register long i;
 	
@@ -2241,7 +2275,7 @@ newcl12 (register long cluster, register const ushort dev)
 	for (i = 2; i < max; i++)
 	{
 		/* out of range? */
-		if (cluster < 2 || cluster >= max)
+		if (cluster < min || cluster > max)
 		{
 			cluster = 2;
 		}
@@ -2289,7 +2323,7 @@ newcl16 (register long cluster, register const ushort dev)
 	do {
 		UNIT *u;
 		
-		u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+		u = bio_fat_read (dev, sector, SECSIZE (dev));
 		if (u)
 		{
 			/* recalc entrys if overflow */
@@ -2358,7 +2392,7 @@ newcl32 (register long cluster, register const ushort dev)
 	do {
 		UNIT *u;
 		
-		u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+		u = bio_fat_read (dev, sector, SECSIZE (dev));
 		if (u)
 		{
 			/* recalc entrys if overflow */
@@ -2433,7 +2467,7 @@ ffree12 (const ushort dev)
 	 */
 	{
 		register long i;
-		for (i = 2; i < MAXCL (dev); i++)
+		for (i = 2; i <= MAXCL (dev); i++)
 			if (!getcl12 (i, dev, 1))
 				count++;
 	}
@@ -2459,7 +2493,7 @@ ffree16 (const ushort dev)
 	 */
 	{
 		register long i;
-		for (i = 2; i < MAXCL (dev); i++)
+		for (i = 2; i <= MAXCL (dev); i++)
 			if (!getcl16 (i, dev, 1))
 				count++;
 	}
@@ -2475,7 +2509,7 @@ ffree16 (const ushort dev)
 		do {
 			UNIT *u;
 			
-			u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+			u = bio_fat_read (dev, sector, SECSIZE (dev));
 			if (u)
 			{
 				/* recalc max if overflow */
@@ -2522,7 +2556,7 @@ ffree32 (const ushort dev)
 	 */
 	{
 		register long i;
-		for (i = 2; i < MAXCL (dev); i++)
+		for (i = 2; i <= MAXCL (dev); i++)
 			if (!getcl32 (i, dev, 1))
 				count++;
 	}
@@ -2540,7 +2574,7 @@ ffree32 (const ushort dev)
 		fat = kmalloc (SECSIZE (dev) * todo);
 		if (fat)
 		{
-			if (bio_fat_l_read (dev, DI (dev), sector, todo, SECSIZE (dev), fat))
+			if (bio_fat_l_read (dev, sector, todo, SECSIZE (dev), fat))
 			{
 				FAT_DEBUG (("fast ffree32: bio_fat_l_read (%i, %lu, %lu, %lu) fail", dev, sector, todo, SECSIZE (dev)));
 				
@@ -2560,7 +2594,7 @@ ffree32 (const ushort dev)
 			
 			FAT_DEBUG (("fast ffree32: work on fat [%ld bytes]", SECSIZE (dev) * todo));
 			
-			for (i = MAXCL (dev); i > 2 ; i--)
+			for (i = MAXCL (dev); i > 2; i--)
 			{
 # if 1
 				/* the highest 4 bits are reserved
@@ -2591,7 +2625,7 @@ ffree32 (const ushort dev)
 			do {
 				UNIT *u;
 				
-				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+				u = bio_fat_read (dev, sector, SECSIZE (dev));
 				if (u)
 				{
 					/* recalc max if overflow */
@@ -2766,7 +2800,7 @@ zero_cl (register long cl, register const ushort dev)
 {
 	UNIT *u;
 	
-	u = bio_data_getunit (dev, DI (dev), C2S (cl, dev), CLUSTSIZE (dev));
+	u = bio_data_getunit (dev, cl);
 	if (u)
 	{
 		quickzero (u->data, CLUSTSIZE (dev) >> 8);
@@ -3411,7 +3445,7 @@ __seekdir (register oDIR *dir, register long index, ushort mode)
 				
 				dir->current = sector;
 				dir->cl = sector;
-				dir->u = bio_data_read (dev, DI (dev), ROOT (dev) + sector, SECSIZE (dev));
+				dir->u = bio_root_read (dev, ROOT (dev) + sector);
 				
 				if (!dir->u)
 				{
@@ -3468,7 +3502,7 @@ __seekdir (register oDIR *dir, register long index, ushort mode)
 			
 			dir->current = current;
 			dir->cl = cluster;
-			dir->u = bio_data_read (dev, DI (dev), C2S (current, dev), CLUSTSIZE (dev));
+			dir->u = bio_data_read (dev, current);
 			
 			if (!dir->u)
 			{
@@ -4578,7 +4612,7 @@ upd_fat32fats (register const ushort dev, long reference)
 	long i;
 	for (i = 0; i < FATSIZE (dev); i++)
 	{
-		UNIT *u = bio_fat_read (dev, DI (dev), reference + i, SECSIZE (dev));
+		UNIT *u = bio_fat_read (dev, reference + i, SECSIZE (dev));
 		if (u)
 		{
 			long j;
@@ -4590,7 +4624,7 @@ upd_fat32fats (register const ushort dev, long reference)
 				long start = FATSTART (dev) + j * FATSIZE (dev);
 				if (start != reference)
 				{
-					UNIT *mirr = bio_fat_getunit (dev, DI (dev), start + i, SECSIZE (dev));
+					UNIT *mirr = bio_fat_getunit (dev, start + i, SECSIZE (dev));
 					if (mirr)
 					{
 						quickmove (mirr->data, u->data, SECSIZE (dev));
@@ -4607,7 +4641,7 @@ upd_fat32fats (register const ushort dev, long reference)
 INLINE void
 upd_fat32boot (register const ushort dev)
 {
-	UNIT *u = bio_boot_read (DI (dev), 0, DI (dev)->pssize);
+	UNIT *u = bio_boot_read (DI (dev));
 	if (u)
 	{
 		_F32_BS *f32bs = (_F32_BS *) u->data;
@@ -4649,7 +4683,7 @@ val_fat32info (register const ushort dev)
 		}
 		
 		/* validation of LASTALLOC */
-		if (LASTALLOC (dev) < FAT32_ROFF || LASTALLOC (dev) >= MAXCL (dev))
+		if (LASTALLOC (dev) < FAT32_ROFF || LASTALLOC (dev) > MAXCL (dev))
 		{
 			/* set to first cluster after reserved
 			 * root dir cluster
@@ -4706,7 +4740,7 @@ clean_flag16 (const ushort dev, ushort action)
 	UNIT *u;
 	
 	/* update FAT#2 */
-	u = bio_fat_read (dev, DI (dev), FATSTART (dev) + FATSIZE (dev), SECSIZE (dev));
+	u = bio_fat_read (dev, FATSTART (dev) + FATSIZE (dev), SECSIZE (dev));
 	if (u)
 	{
 		const int offset = 1; /* FAT entry 1 */
@@ -4739,7 +4773,7 @@ clean_flag16 (const ushort dev, ushort action)
 		if (FAT2ON (dev))
 		{
 			/* update FAT#1 */
-			u = bio_fat_read (dev, DI (dev), FATSTART (dev), SECSIZE (dev));
+			u = bio_fat_read (dev, FATSTART (dev), SECSIZE (dev));
 			if (u)
 			{
 				/* write the entry to the second FAT */
@@ -4759,7 +4793,7 @@ clean_flag32 (const ushort dev, ushort action)
 	ulong sector = FAT32prim (dev);
 	UNIT *u;
 	
-	u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+	u = bio_fat_read (dev, sector, SECSIZE (dev));
 	if (u)
 	{
 		const int offset = 1; /* FAT entry 1 */
@@ -4800,7 +4834,7 @@ clean_flag32 (const ushort dev, ushort action)
 			for (i = FAT2ON (dev); i; i--)
 			{
 				sector += FATSIZE (dev);
-				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+				u = bio_fat_read (dev, sector, SECSIZE (dev));
 				if (u)
 				{
 					/* write the FAT entry */
@@ -4970,7 +5004,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	
 	
 	/* read boot sector */
-	u = bio_boot_read (di, 0, di->pssize);
+	u = bio_boot_read (di);
 	if (!u)
 	{
 		FAT_DEBUG (("get_bpb: bio_boot_read fail, leave EBUSY"));
@@ -5910,7 +5944,7 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 			{
 				UNIT *u;
 				
-				u = bio_data_getunit (c->dev, DI (c->dev), C2S (stcl, c->dev), CLUSTSIZE (c->dev));
+				u = bio_data_getunit (c->dev, stcl);
 				if (u)
 				{
 					register const ushort date = cpu2le16 (datestamp);
@@ -6347,7 +6381,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		{
 			UNIT *u;
 			
-			u = bio_data_read (old->dev, DI (old->dev), C2S (old->stcl, old->dev), CLUSTSIZE (old->dev));
+			u = bio_data_read (old->dev, old->stcl);
 			if (u)
 			{
 				register _DIR *info = (_DIR *) u->data;
@@ -6417,7 +6451,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		{
 			UNIT *u;
 			
-			u = bio_data_read (new->dev, DI (new->dev), C2S (new->stcl, new->dev), CLUSTSIZE (new->dev));
+			u = bio_data_read (new->dev, new->stcl);
 			if (u)
 			{
 				register _DIR *info = (_DIR *) u->data;
@@ -7618,11 +7652,11 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			/* read/write direct */
 			if (mode == READ)
 			{
-				ptr->error = bio_data_l_read (dev, DI (dev), C2S (current, dev), cls, CLUSTSIZE (dev), buf);
+				ptr->error = bio_data_l_read (dev, current, cls, buf);
 			}
 			else
 			{
-				ptr->error = bio_data_l_write (dev, DI (dev), C2S (current, dev), cls, CLUSTSIZE (dev), buf);
+				ptr->error = bio_data_l_write (dev, current, cls, buf);
 			}
 			
 			if (ptr->error)
@@ -7643,7 +7677,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			data = MIN (todo, data);
 			
 			/* read the unit */
-			u = bio_data_read (dev, DI (dev), C2S (ptr->current, dev), CLUSTSIZE (dev));
+			u = bio_data_read (dev, ptr->current);
 			if (!u)
 			{
 				ptr->error = EREAD;
