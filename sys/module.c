@@ -53,6 +53,7 @@
 
 # include "dosdir.h"
 # include "filesys.h"
+# include "init.h"		/* *sysdir */
 # include "k_fds.h"
 # include "kerinfo.h"
 # include "kmemory.h"
@@ -216,13 +217,6 @@ failed:
 	return NULL;
 }
 
-static const char *paths [] =
-{
-	".",
-	"\\MINT",
-	"\\MULTITOS"
-};
-
 static const char *dont_load_list [] =
 {
 	"fnramfs.xfs",
@@ -244,80 +238,74 @@ dont_load (const char *name)
 void
 load_modules (const char *extension, long (*loader)(struct basepage *, const char *))
 {
-	long i;
-	
+	DIR dirh;
+	char buf [128];
+	long len;
+	char *name;
+	long r;
+		
 	DEBUG (("load_modules: enter (%s)", extension));
 	
-	for (i = 0; i < (sizeof (paths) / sizeof (*paths)); i++)
+	strcpy (buf, sysdir);
+	len = strlen (buf);
+# if 0
+	buf [len++] = '\\';
+	buf [len] = '\0';
+# endif
+	name = buf + len;
+	len = sizeof (buf) - len;
+		
+	r = _d_opendir (&dirh, buf);
+	DEBUG (("load_modules: d_opendir (%s) = %li", buf, r));
+		
+	if (r == 0)
 	{
-		DIR dirh;
-		char buf [128];
-		long len;
-		char *name;
-		long r;
-		
-		strcpy (buf, paths [i]);
-		len = strlen (buf);
-		buf [len++] = '\\';
-		buf [len] = '\0';
-		name = buf + len;
-		len = sizeof (buf) - len;
-		
-		r = _d_opendir (&dirh, buf);
-		DEBUG (("load_modules: d_opendir (%s) = %li", buf, r));
-		
-		if (r == 0)
+		r = _d_readdir (&dirh, name, len);
+		DEBUG (("load_modules: d_readdir = %li (%s)", r, name+4));
+			
+		while (r == 0)
 		{
+			r = strlen (name+4) - 4;
+			if ((r > 0) &&
+			    stricmp (name+4 + r, extension) == 0 &&
+			    !dont_load (name+4))
+			{
+				char *ptr1 = name;
+				char *ptr2 = name+4;
+				long len2 = len - 1;
+				struct basepage *b;
+					
+				while (*ptr2)
+				{
+					*ptr1++ = *ptr2++;
+					len2--; assert (len2);
+				}
+					
+				*ptr1 = '\0';
+					
+				b = load_module (buf, &r);
+				if (b)
+				{
+					DEBUG (("load_modules: load \"%s\"", buf));
+					r = loader (b, name);
+					DEBUG (("load_modules: load done \"%s\" (%li)", buf, r));
+						
+					if (r) kfree (b);
+				}
+				else
+					DEBUG (("load_module of \"%s\" failed (%li)", buf, r));
+					
+				/* just to be sure */
+				cpush (NULL, -1);
+			}
+				
 			r = _d_readdir (&dirh, name, len);
 			DEBUG (("load_modules: d_readdir = %li (%s)", r, name+4));
-			
-			while (r == 0)
-			{
-				r = strlen (name+4) - 4;
-				if ((r > 0) &&
-				    stricmp (name+4 + r, extension) == 0 &&
-				    !dont_load (name+4))
-				{
-					char *ptr1 = name;
-					char *ptr2 = name+4;
-					long len2 = len - 1;
-					struct basepage *b;
-					
-					while (*ptr2)
-					{
-						*ptr1++ = *ptr2++;
-						len2--; assert (len2);
-					}
-					
-					*ptr1 = '\0';
-					
-					b = load_module (buf, &r);
-					if (b)
-					{
-						DEBUG (("load_modules: load \"%s\"", buf));
-						r = loader (b, name);
-						DEBUG (("load_modules: load done \"%s\" (%li)", buf, r));
-						
-						if (r) kfree (b);
-					}
-					else
-						DEBUG (("load_module of \"%s\" failed (%li)", buf, r));
-					
-					/* just to be sure */
-					cpush (NULL, -1);
-				}
-				
-				r = _d_readdir (&dirh, name, len);
-				DEBUG (("load_modules: d_readdir = %li (%s)", r, name+4));
-			}
-			
-			_d_closedir (&dirh);
 		}
+			
+		_d_closedir (&dirh);
 	}
-	
-	DEBUG (("load_modules: finished, i = %li", i));
 }
-
 
 static void *
 callout_init (void *initfunction, struct kerinfo *k)
