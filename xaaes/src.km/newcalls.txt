@@ -140,9 +140,10 @@ Add to your header file
 
   This has changed a little compared to the original documentation and
  implementation. When the wheel is on a window whose owner dont know about
- mouse wheels at all, normal WM_ARROWED messages are sent. There is no extra
- info added to these messages in this case, as it were in the original
- implementation.
+ mouse wheels at all, normal WM_ARROWED messages are sent, regardless wether
+ the window has ARROW gadgets or not.
+  There is no extra info added to these messages in this case, as it were in
+ the original implementation.
 
   Currently mouse wheel events are sent to the owner of the window underneath
  the mouse pointer in all cases except when owner of mouse_lock() is waiting
@@ -191,9 +192,8 @@ Add to your header file
            XWHL_AROWWHEEL ( 1 ) This is the default wheel_mode set if the
               value passed is outside the available range. When this mode is
               selected, normal WM_ARROWED messages are sent upon each wheel
-              turn. With this mode, WM_ARROWED messages are send even when
-              the window has no ARROW gadgets. And now the WM_ARROWED messages
-              contain extra info like;
+              turn. With this mode, WM_ARROWED messages contain extra info
+              like;
               
               msg[0] = WM_ARROWED
               ...
