@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -311,20 +311,15 @@ unsigned long
 XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
-	XA_WIDGET *widg;
-	XA_TREE *wt;
-	OBJECT *ob;
-	RECT clip;
-	int wind = pb->intin[0], cmd = pb->intin[1];
-	const ushort *l;
-	char *t;
+	int wind = pb->intin[0];
+	int cmd = pb->intin[1];
 
 	CONTROL(6,1,0)	
 
 	w = get_wind_by_handle(lock, wind);
 
 	DIAG((D_wind, client, "wind_set for %s  w%lx, h%d, %s", c_owner(client),
-		w,w ? w->handle : -1, setget(cmd)));
+		w, w ? w->handle : -1, setget(cmd)));
 
 	/* wind 0 is the root window */
 	if (!w || wind == 0)
@@ -374,6 +369,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_HSLIDE:
 	{
+		XA_WIDGET *widg;
+
 		widg = get_widget(w, XAW_HSLIDE);
 		if (widg->stuff)
 		{
@@ -387,6 +384,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_VSLIDE:
 	{
+		XA_WIDGET *widg;
+
 		widg = get_widget(w, XAW_VSLIDE);
 		if (widg->stuff)
 		{
@@ -400,6 +399,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_HSLSIZE:
 	{
+		XA_WIDGET *widg;
+
 		widg = get_widget(w, XAW_HSLIDE);
 		if (widg->stuff)
 		{
@@ -413,6 +414,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_VSLSIZE:
 	{
+		XA_WIDGET *widg;
+
 		widg = get_widget(w, XAW_VSLIDE);
 		if (widg->stuff)
 		{
@@ -423,91 +426,94 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		break;
 	}
 
-	/* */
+	/* set window name line */
 	case WF_NAME:
 	{
-		int i;
-		char *d = w->wname;
+		const char *src = *(const char **)(pb->intin+2);
+		char *dst = w->wname;
+		XA_WIDGET *widg;
+
+		if (src)
+		{
+			int i;
+
+			for (i = 0; i < (sizeof(w->wname)-1) && (*dst++ = *src++); i++)
+				;
+		}
+		*dst = '\0';
+
 		widg = get_widget(w, XAW_TITLE);
-		t = *(char **)&pb->intin[2];
-		if (t)
-			for (i = 0; i < 200 && (*d++ = *t++); i++){}
-		else
-			*d = 0;
-		*d = 0;
-		
 		widg->stuff = w->wname;
-#if 0
-		l = (const ushort *)(pb->intin);
-		t = (char*)((long)l[2] << 16);
-		t += l[3];
-		if (t == 0)
-			t = "";
-		widg->stuff = t;
-		/* copy_max(widg->stuff, t, sizeof(Path)); */
-#endif
-		DIAG((D_wind, w->owner, "    -   %s", t));
+
+		DIAG((D_wind, w->owner, "    -   %s", w->wname));
+
+		/* redraw if necessary */
 		if ((w->active_widgets & NAME) && w->is_open)
 		{
+			RECT clip;
+
 			rp_2_ap(w, widg, &clip);
 			display_window(lock, 45, w, &clip);
 		}
+
 		break;
 	}
 
-	/* */
+	/* set window info line */
 	case WF_INFO:
 	{
-		int i;
-		char *d = w->winfo;
-		widg = get_widget(w, XAW_INFO);
-		t = *(char **)&pb->intin[2];
-		if (t)
-			for (i = 0; i < 200 && (*d++ = *t++); i++){}
-		else
-			*d = 0;
-		*d = 0;
+		const char *src = *(const char **)(pb->intin+2);
+		char *dst = w->winfo;
+		XA_WIDGET *widg;
 
+		if (src)
+		{
+			int i;
+
+			for (i = 0; i < (sizeof(w->winfo)-1) && (*dst++ = *src++); i++)
+				;
+		}
+		*dst = '\0';
+
+		widg = get_widget(w, XAW_INFO);
 		widg->stuff = w->winfo;
-#if 0
-		l = (const ushort *)(pb->intin);
-		t = (char *)((long)l[2] << 16);
-		t += l[3];
-		if (t == 0)
-			t = "";
-		widg->stuff = t;
-#endif
+
+		DIAG((D_wind, w->owner, "    -   %s", w->winfo));
+
 		if ((w->active_widgets & INFO) && w->is_open)
 		{
+			RECT clip;
+
 			rp_2_ap(w, widg, &clip);
 			display_window(lock, 46, w, &clip);
 		}
+
 		break;
 	}
 
-	/* Move a window, HR: check sizes */
+	/* Move a window, check sizes */
 	case WF_CURRXYWH:
 	{
+		short mw = pb->intin[4];
+		short mh = pb->intin[5];
+
+		if (w->active_widgets & USE_MAX)
 		{
-			short mw = pb->intin[4],
-			    mh = pb->intin[5];
-			if (w->active_widgets & USE_MAX)
-			{
-				if (w->max.w && mw > w->max.w)
-					mw = w->max.w;
-				if (w->max.h && mh > w->max.h)
-					mh = w->max.h;
-			}
-			move_window(lock, w, -1, pb->intin[2], pb->intin[3], mw, mh);
-			yield();
+			if (w->max.w && mw > w->max.w)
+				mw = w->max.w;
+			if (w->max.h && mh > w->max.h)
+				mh = w->max.h;
 		}
+		move_window(lock, w, -1, pb->intin[2], pb->intin[3], mw, mh);
+		yield();
+
 		break;
 	}
 
 	/* */
 	case WF_BEVENT:
 	{
-		if (pb->intin[2]&1)
+		if (pb->intin[2] & 1)
 			w->active_widgets |= NO_TOPPED;
 		else
 			w->active_widgets &= ~NO_TOPPED;
@@ -562,11 +568,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Set a new desktop object tree */
 	case WF_NEWDESK:
 	{
-		l = (const ushort  *)pb->intin;
-		t = (char *)((long)l[2] << 16);
-		t += l[3];
-		ob = (OBJECT *)t;
-			
+		short obptr[2] = { pb->intin[2], pb->intin[3] };
+		OBJECT *ob = *(OBJECT **)&obptr;
+
 		if (ob)
 		{
 			client->desktop.tree = ob;
@@ -595,7 +599,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Iconify a window */
 	case WF_ICONIFY:
 	{
-		RECT in = *((const RECT *)&pb->intin[2]);
+		RECT in = *((const RECT *)(pb->intin+2));
 		if (in.w == -1 && in.h == -1)
 			in = free_icon_pos(lock);
 		w->save_widgets = w->active_widgets;
@@ -615,8 +619,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_TOOLBAR:
 	{
-		OBJECT *have;
 		short obptr[2] = { pb->intin[2], pb->intin[3] };
+		OBJECT *have, *ob;
+		XA_WIDGET *widg;
+		XA_TREE *wt;
 
 		ob = *(OBJECT **)&obptr;
 		widg = get_widget(w, XAW_TOOLBAR);
@@ -662,26 +668,25 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		    && w->handle != 0
 		    && (w->active_widgets & XaMENU) != 0)
 		{
-			OBJECT *have;
-			/* -Wcast-qual in gcc 2.95.x
-			   warns here: ob = *(OBJECT **)&pb->intin[2];
-                         */
 			short obptr[2] = { pb->intin[2], pb->intin[3] };
-			ob = *(OBJECT **)&obptr;
+			OBJECT *have, *ob;
+			XA_WIDGET *widg;
+			XA_TREE *wt;
 
+			ob = *(OBJECT **)&obptr;
 			widg = get_widget(w, XAW_MENU);
 			wt = widg->stuff;
-			have = wt ? wt->tree : 0;
+			have = wt ? wt->tree : NULL;
 
-			if (have == 0 && ob == 0)
+			if (have == NULL && ob == NULL)
 				break;
 
-			if (have && ob == 0)
+			if (have && ob == NULL)
 			{
 				remove_widget(lock, w, XAW_MENU);
 				w->active_widgets &= ~(XaMENU|MENUBAR);
 			}
-			else if (ob && have == 0)
+			else if (ob && have == NULL)
 			{
 				wt = &w->menu_bar;
 				bzero(wt, sizeof(*wt));
@@ -1273,16 +1278,9 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 
 /*
  * Wind_update handling
- *
- **  XA_wind_update runs under the client pid.
- *
  * This handles locking for the update and mctrl flags.
- * !!!!New version - uses semphores for locking...
  *
- * internal function.
- */
-
-/* The fmd.lock may only be updated in the real wind_update,
+ * The fmd.lock may only be updated in the real wind_update,
  * otherwise screen writing AES functions that use the internal
  * lock/unlock_screen functions spoil the state.
  * This repairs zBench dialogues.
@@ -1298,18 +1296,6 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	short op = pb->intin[0];
 	bool try = (op & 0x100) ? true : false; /* Test for check-and-set mode */
 
-	/* XXX
-	 * Ozk: It looks like wind_update, when called on behalf of
-	 * applications, should never block. This is probably not right
-	 * since it means trusting applications to check the return
-	 * value for a successful lock even when a block-on-taken-lock is
-	 * expected. However, without this, some rare situations happened
-	 * where every application were put to sleep.
-	 * This situation happened when right-clicking to 'drag'-scroll 
-	 * contents of a Thing directory window while AtarIrc scrolled.
-	*/
-	//try = true;
-
 	CONTROL(1,1,0)
 
 	DIAG((D_sema, NULL, "XA_wind_update for %s %s (%d)",
@@ -1319,6 +1305,7 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	switch (op & 0xff)
 	{
+
 	/* Grab the update lock */
 	case BEG_UPDATE:
 	{
@@ -1329,6 +1316,7 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		break;
 	}
+	/* Release the update lock */
 	case END_UPDATE:
 	{
 		if (unlock_screen(client, 1))
@@ -1337,6 +1325,7 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_sema, NULL, "'%s' END_UPDATE", client->name));
 		break;
 	}
+
 	/* Grab the mouse lock */
 	case BEG_MCTRL:
 	{
@@ -1347,6 +1336,7 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		break;
 	}
+	/* Release the mouse lock */
 	case END_MCTRL:
 	{
 		
