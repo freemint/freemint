@@ -299,48 +299,6 @@ typedef  struct tpl  {
 extern TPL *tpl;
 
 
-/*
- *   Definitions of transport functions for direct use
- */
-
-#define KRmalloc(x)                      (*tpl->KRmalloc)(x)
-#define KRfree(x)                        (*tpl->KRfree)(x)
-#define KRgetfree(x)                     (*tpl->KRgetfree)(x)
-#define KRrealloc(x,y)                   (*tpl->KRrealloc)(x,y)
-#define get_err_text(x)                  (*tpl->get_err_text)(x)
-#define getvstr(x)                       (*tpl->getvstr)(x)
-#define carrier_detect()                 (*tpl->carrier_detect)()
-#define TCP_open(w,x,y,z)                (*tpl->TCP_open)(w,x,y,z)
-#define TCP_close(x,y)                   (*tpl->TCP_close)(x,y)
-#define TCP_send(x,y,z)                  (*tpl->TCP_send)(x,y,z)
-#define TCP_wait_state(x,y,z)            (*tpl->TCP_wait_state)(x,y,z)
-#define TCP_ack_wait(x,y)                (*tpl->TCP_ack_wait)(x,y)
-#define UDP_open(x,y)                    (*tpl->UDP_open)(x,y)
-#define UDP_close(x)                     (*tpl->UDP_close)(x)
-#define UDP_send(x,y,z)                  (*tpl->UDP_send)(x,y,z)
-#define CNkick(x)                        (*tpl->CNkick)(x)
-#define CNbyte_count(x)                  (*tpl->CNbyte_count)(x)
-#define CNget_char(x)                    (*tpl->CNget_char)(x)
-#define CNget_NDB(x)                     (*tpl->CNget_NDB)(x)
-#define CNget_block(x,y,z)               (*tpl->CNget_block)(x,y,z)
-#define CNgetinfo(x)                     (*tpl->CNgetinfo)(x)
-#define CNgets(w,x,y,z)                  (*tpl->CNgets)(w,x,y,z)
-#define housekeep()                      (*tpl->housekeep)()
-#define resolve(w,x,y,z)                 (*tpl->resolve)(w,x,y,z)
-#define ser_disable()                    (*tpl->ser_disable)()
-#define ser_enable()                     (*tpl->ser_enable)()
-#define set_flag(x)                      (*tpl->set_flag)(x)
-#define clear_flag(x)                    (*tpl->clear_flag)(x)
-#define on_port(x)                       (*tpl->on_port)(x)
-#define off_port(x)                      (*tpl->off_port)(x)
-#define setvstr(x,y)                     (*tpl->setvstr)(x,y)
-#define query_port(x)                    (*tpl->query_port)(x)
-#define ICMP_send(v,w,x,y,z)             (*tpl->ICMP_send)(v,w,x,y,z)
-#define ICMP_handler(x,y)                (*tpl->ICMP_handler)(x,y)
-#define ICMP_discard(x)                  (*tpl->ICMP_discard)(x)
-
-
-
 /*--------------------------------------------------------------------------*/
 
 
