@@ -42,7 +42,7 @@
 # include <stdarg.h>
 
 
-# define str(x)		_stringify (x)
+# define str(x)		_stringify(x)
 # define _stringify(x)	#x
 
 
@@ -50,7 +50,7 @@
  * kernel character classification and conversion
  */
 
-extern uchar _mint_ctype [];
+extern unsigned char _mint_ctype[];
 
 # define _CTc		0x01	/* control character */
 # define _CTd		0x02	/* numeric digit */
@@ -81,7 +81,7 @@ extern uchar _mint_ctype [];
 # define _toupper(c)	((c) ^ 0x20)
 # define _tolower(c)	((c) ^ 0x20)
 # define _toascii(c)	((c) & 0x7f)
-# define _toint(c)	((c) <= '9' ? (c) - '0' : toupper (c) - 'A')
+# define _toint(c)	((c) <= '9' ? (c) - '0' : toupper(c) - 'A')
 
 int	_cdecl _mint_tolower	(int c);
 int	_cdecl _mint_toupper	(int c);
@@ -89,13 +89,13 @@ int	_cdecl _mint_toupper	(int c);
 INLINE int
 _mint_toupper_inline (register int c)
 {
-	return (islower (c) ? _toupper (c) : c);
+	return (islower(c) ? _toupper(c) : c);
 }
 
 INLINE int
 _mint_tolower_inline (register int c)
 {
-	return (isupper (c) ? _tolower (c) : c);
+	return (isupper(c) ? _tolower(c) : c);
 }
 
 # define _ctype			_mint_ctype
@@ -145,8 +145,8 @@ llong	_cdecl _mint_strtoll	(const char *nptr, char **endptr, long base);
 ulong	_cdecl _mint_strtoul	(const char *nptr, char **endptr, long base);
 ullong	_cdecl _mint_strtoull	(const char *nptr, char **endptr, long base);
 
-void *	_cdecl _mint_memchr	(void *s, long search, ulong size);
-long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
+void *	_cdecl _mint_memchr	(void *s, long search, unsigned long size);
+long	_cdecl _mint_memcmp	(const void *s1, const void *s2, unsigned long size);
 
 # define atol			_mint_atol
 # define strlen			_mint_strlen
@@ -180,28 +180,30 @@ int	_cdecl _mint_o_strnicmp	(const char *str1, const char *str2, int len);
  * kernel time help functions
  */
 
-void	_cdecl ms_time		(ulong ms, short *timeptr);
-void	_cdecl unix2calendar	(long tv_sec, ushort *year, ushort *month, ushort *day, \
-					ushort *hour, ushort *minute, ushort *second);
+void	_cdecl ms_time		(unsigned long ms, short *timeptr);
+void	_cdecl unix2calendar	(long tv_sec,
+				 unsigned short *year, unsigned short *month,
+				 unsigned short *day, unsigned short *hour,
+				 unsigned short *minute, unsigned short *second);
 long	_cdecl unix2xbios	(long tv_sec);
 long	_cdecl dostime		(long tv_sec);
-long	_cdecl unixtime		(ushort time, ushort date);
+long	_cdecl unixtime		(unsigned short time, unsigned short date);
 
 
 /*
  * kernel block functions
  */
 
-void	_cdecl _mint_blockcpy	(char *dst, const char *src, ulong nblocks);
-void	_cdecl _mint_quickcpy	(void *dst, const void *src, ulong nbytes);
-void	_cdecl _mint_quickswap	(void *dst, void *src, ulong nbytes);
-void	_cdecl _mint_quickzero	(char *place, ulong size);
+void	_cdecl _mint_blockcpy	(char *dst, const char *src, unsigned long nblocks);
+void	_cdecl _mint_quickcpy	(void *dst, const void *src, unsigned long nbytes);
+void	_cdecl _mint_quickswap	(void *dst, void *src, unsigned long nbytes);
+void	_cdecl _mint_quickzero	(char *place, unsigned long size);
 
-void *	_cdecl memcpy		(void *dst, const void *src, ulong nbytes);
-void *	_cdecl memset		(void *dst, int ucharfill, ulong size);
+void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
+void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
 
-void	_cdecl bcopy		(const void *src, void *dst, ulong nbytes);
-void	_cdecl bzero		(void *dst, ulong size);
+void	_cdecl bcopy		(const void *src, void *dst, unsigned long nbytes);
+void	_cdecl bzero		(void *dst, unsigned long size);
 
 /* old definitions */
 # define quickmovb		memcpy
