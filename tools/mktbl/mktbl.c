@@ -91,10 +91,10 @@ getdelim(char **lineptr, size_t *n, int terminator, FILE *stream)
 			*lineptr = buf;
 		}
 
+		buf[len++] = (char)ch;
+
 		if (ch == terminator)
 			break;
-
-		buf[len++] = (char)ch;
 	}
 
 	if (eof && ch == -1)
