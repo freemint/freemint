@@ -121,7 +121,7 @@ terminate (PROC *curproc, int code, int que)
 	/* make sure that any open files that refer to this process are
 	 * closed
 	 */
-	changedrv (PROC_RDEV_BASE | curproc->pid, __FUNCTION__);
+	changedrv (PROC_RDEV_BASE | curproc->pid);
 
 	/* release any drives locked by Dlock */
 	for (i = 0; i < NUM_DRIVES; i++)

@@ -39,9 +39,10 @@
 # include "mint/basepage.h"
 
 
+# ifndef str
 # define str(x)		_stringify(x)
 # define _stringify(x)	#x
-
+# endif
 
 /*
  * character classification and conversion
