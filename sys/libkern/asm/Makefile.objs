@@ -28,8 +28,7 @@ DEFINITIONS = -DONLY030
 endif
 
 # default definitions
-ASMTRANS = $(top_srcdir)/arch/asmtrans/asmtrans
-OBJS = $(SOBJS:.spp=.o)
+OBJS = $(SOBJS:.S=.o)
 
 VPATH = ..
 
@@ -38,18 +37,3 @@ VPATH = ..
 #
 asm-files: $(OBJS)
 	echo $(OBJS) > $@
-
-#
-# assembler source files
-#
-%.o: %.spp
-	$(ASMTRANS) $(DEFINITIONS) -gas -o $*.s $<
-	$(CRLF) $*.s
-	$(AS) $(ASFLAGS) -c $*.s -o $@
-	$(RM) $*.s	
-
-memset.o:	memset.spp
-peekpoke.o:	peekpoke.spp
-quickzero.o:	quickzero.spp
-quickmove.o:	quickmove.spp
-quickswap.o:	quickswap.spp
