@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -390,20 +390,6 @@ struct xa_client
 };
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
-
-typedef enum
-{
-	LOCKSCREEN = 1,			/* lock/unlock screen around AES function. */
-	NO_SEMA    = 2			/* Call direct for small AES functions
-					 * that do not need the call_direct semaphores. */
-} AES_funcflags;
-
-struct xa_ftab
-{
-	AES_function *f;		/* function pointer */
-	bool d;				/* true id call direct */
-	AES_funcflags p;		/* flags */
-};
 
 struct button_data
 {
