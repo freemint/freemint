@@ -253,11 +253,11 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 	*new_buf_pos++ = c2;
 	*new_buf_pos++ = c3;
 
-	/* c2 == 0 means that this "keypress" was generated
+	/* c1 == 0 means that this "keypress" was generated
 	 * by typing on the numpad while holding Alt down.
 	 * We don't want this to be repeated.
 	 */
-	if (c2)
+	if (c1)
 	{
 		last_key[0] = c0;
 		last_key[1] = c1;
@@ -666,7 +666,7 @@ ikbd_scan (ushort scancode)
 
 		ascii = scan2asc(scancode);
 
-		put_key_into_buf(0, 0, (uchar)scancode, ascii);
+		put_key_into_buf((uchar)shift, (uchar)scancode, 0, ascii);
 	}
 
 	return -1;			/* don't go to TOS, just return */
