@@ -162,8 +162,7 @@ load_config (void)
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 
-	strcpy(cnf_path, sysdir);
-	strcat(cnf_path, "mint.cnf");
+	ksprintf(cnf_path, sizeof(cnf_path), "%smint.cnf", sysdir);
 
 	ret = do_open (&fp, inf.file = cnf_path, O_RDONLY, 0, &xattr);
 

@@ -814,7 +814,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 void
 init_unicode(void)
 {
-	char name[128];
+	char name[32];
 	FILEPTR *fp;
 	XATTR xa;
 	long ret;

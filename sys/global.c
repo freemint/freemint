@@ -105,6 +105,6 @@ long gemdos_version;
 /*
  * The path to the system directory. Added 17.IV.2001.
  */
-char *sysdir = NULL;
+char sysdir[32];
 short sysdrv;
 
