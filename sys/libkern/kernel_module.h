@@ -680,6 +680,9 @@ INLINE long p_getgroups(int gidsetlen, int gidset[])
 INLINE long p_setgroups(int ngroups, int gidset[])
 { return ((long _cdecl (*)(int, int [])) _p_setgroups)(ngroups, gidset); }
 
+INLINE long f_stat64(int flag, const char *name, struct stat *st)
+{ return ((long _cdecl (*)(int, const char *, struct stat *)) _f_stat64)(flag, name, st); }
+
 INLINE long p_setreuid(int rid, int eid)
 { return ((long _cdecl (*)(int, int)) _p_setreuid)(rid, eid); }
 
