@@ -74,9 +74,9 @@ next_entry(SCROLL_ENTRY *this, short flags)
 	
 	if (this)
 	{
-		if (flags & ENT_VISIBLE)//only_opened)
+		if (flags & ENT_VISIBLE)
 		{
-			if (this->down && (this->istate & OS_OPENED))
+			if (this->down && (this->xstate & OS_OPENED))
 				this = this->down;
 			else if (this->next)
 				this = this->next;
@@ -153,7 +153,7 @@ prev_entry(SCROLL_ENTRY *this, short flags)
 	if (this->prev)
 	{
 		this = this->prev;
-		while (this->down && (this->istate & OS_OPENED))
+		while (this->down && (this->xstate & OS_OPENED))
 		{
 			this = this->down;
 			while (this->next)
@@ -190,6 +190,9 @@ static struct se_tab se_tabs[] =
 	{ SETAB_END, {0, 0, 0, 0}},
 };
 
+/*
+ * Work out width/height of each individual string in a SETYPE_TEXT entry
+ */
 static bool
 entry_text_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 {
@@ -271,7 +274,7 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 	r.w = 9;
 	r.h = 9;
 
-	if (this->down || (this->istate & OS_NESTICON))
+	if (this->down || (this->xstate & OS_NESTICON))
 	{
 		f_interior(FIS_SOLID);
 		f_color(G_WHITE);
@@ -289,7 +292,7 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 			pnt[3] = r.y;
 			v_pline(C.vh, 2, pnt);
 		}
-		//if (this->next || (this->istate & OS_OPENED))
+		//if (this->next || (this->xstate & OS_OPENED))
 		{
 			pnt[0] = xy->x + x_center;
 			pnt[1] = r.y + 9;
@@ -306,7 +309,7 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 	
 		v_pline(C.vh, 2, pnt);
 	
-		if (!(this->istate & OS_OPENED))
+		if (!(this->xstate & OS_OPENED))
 		{
 			pnt[0] = r.x + 4;
 			pnt[1] = r.y + 2;
@@ -320,27 +323,26 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 		l_color(G_LBLACK);
 		//if (this->prev || this->up)
 		{
-			pnt[0] = xy->x + x_center; //r.x + 4;
+			pnt[0] = xy->x + x_center;
 			pnt[1] = xy->y;
 			pnt[2] = pnt[0];
-			pnt[3] = xy->y + y_center; //r.y + 4;
+			pnt[3] = xy->y + y_center;
 			v_pline(C.vh, 2, pnt);
 		}
 		//if (this->next)
 		{
-			pnt[0] = xy->x + x_center; //r.x + 4;
-			pnt[1] = xy->y + y_center; //r.y + 5;
+			pnt[0] = xy->x + x_center;
+			pnt[1] = xy->y + y_center;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + xy->h - 1;
 			v_pline(C.vh, 2, pnt);
 		}
 		
-		pnt[0] = xy->x + x_center; //r.x + 4;
-		pnt[1] = xy->y + y_center; //r.y + 4;
-		pnt[2] = xy->x + width; //r.x + 10;
+		pnt[0] = xy->x + x_center;
+		pnt[1] = xy->y + y_center;
+		pnt[2] = xy->x + width;
 		pnt[3] = pnt[1];
 		v_pline(C.vh, 2, pnt);
-
 	}
 
 	if (this->level)
@@ -357,10 +359,7 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 			v_pline(C.vh, 2, pnt);
 		}
 	}
-	
-	
 	return width;
-
 }
 
 static void
@@ -391,9 +390,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 		}
 
 		if (sel)
-			wtxt = &this->c.td.text.fnt->s; //&wtxti->s;
+			wtxt = &this->c.td.text.fnt->s;
 		else
-			wtxt = &this->c.td.text.fnt->n; //&wtxti->n;
+			wtxt = &this->c.td.text.fnt->n;
 
 		f = this->c.td.text.fnt->flags;
 
@@ -435,7 +434,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 				dx = x2 - (w >> 1);
 			}
 
-			dy += ((this->r.h - h) >> 1); //((this->r.h >> 1) - (h >> 1));
+			dy += ((this->r.h - h) >> 1);
 			
 			if (f & WTXT_DRAW3D)
 			{
@@ -652,29 +651,15 @@ sliders(struct scroll_info *list, bool rdrw)
 		}
 	}
 }
-#if 0
-void
-free_scrollist(SCROLL_INFO *list)
-{
-	while (list->start)
-	{
-		SCROLL_ENTRY *next = list->start->next;
-		kfree(list->start);
-		list->start = next;
-	}
-	list->start = NULL;
-	list->cur = NULL;
-	list->top = NULL;
-}
-#endif
 
 static struct scroll_entry *
 get_last_entry(SCROLL_INFO *list)
 {
 	struct scroll_entry *this = list->start;
 
-	while (this && this->next)
-		this = this->next;
+	while (this)
+		this = next_entry(this, 0);
+	
 	return this;
 }
 
@@ -713,7 +698,7 @@ hidden_entry(SCROLL_ENTRY *this)
 	this = this->up;
 	while (this)
 	{
-		if (!(this->istate & OS_OPENED))
+		if (!(this->xstate & OS_OPENED))
 		{
 			hidden =  true;
 			break;
@@ -772,11 +757,11 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 		w = this->r.w;
 		h = this->r.h;
 
-		if ((flags & 1) && this->down && (this->istate & OS_OPENED))
+		if ((flags & 1) && this->down && (this->xstate & OS_OPENED))
 		{
 			struct scroll_entry *stop = this->next;
 
-			while ((this = next_entry(this, ENT_VISIBLE|ENT_ISROOT)) && this != stop)
+			while ((this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT))) && this != stop)
 				w += this->r.w, h += this->r.h;
 		}
 		r->x = x;
@@ -926,8 +911,6 @@ set(SCROLL_INFO *list,
 		}
 		case SESET_SELECTED:
 		{
-		//	struct scroll_entry *s;
-
 			if (!(list->flags & SIF_MULTISELECT))
 			{
 				unselect_all(list, rdrw);
@@ -953,17 +936,17 @@ set(SCROLL_INFO *list,
 		}
 		case SESET_OPEN:
 		{
-			short state = entry->istate;
+			short xstate = entry->xstate;
 			LRECT r;
 			RECT s, d;
 
 			if (arg)
 			{
-				state |= OS_OPENED;
+				xstate |= OS_OPENED;
 
-				if (state != entry->istate)
+				if (xstate != entry->xstate)
 				{
-					entry->istate = state;
+					entry->xstate = xstate;
 		
 					if (entry->down)
 					{
@@ -1007,11 +990,11 @@ set(SCROLL_INFO *list,
 			}
 			else
 			{
-				state &= ~OS_OPENED;
-				if (state != entry->istate)
+				xstate &= ~OS_OPENED;
+				if (xstate != entry->xstate)
 				{
 					get_entry_lrect(list, entry, 1, &r);
-					entry->istate = state;
+					entry->xstate = xstate;
 					if (entry->down)
 					{
 						if ((r.w | r.h))
@@ -1419,7 +1402,8 @@ add_scroll_entry(SCROLL_INFO *list,
 		new->c.data = sc->data;
 		new->c.usr_flags = sc->usr_flags;
 
-		new->istate = sc->istate; //|= OS_OPENED;
+		new->xstate = sc->xstate;
+		new->xflags = sc->xflags;
 
 		if (sc->fnt)
 			alloc_entry_wtxt(new, sc->fnt);
@@ -2286,29 +2270,26 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 		if (this)
 		{
 			LRECT r;
-#if 0
-			if (this->down)
+			
+			list->cur = this;
+			
+			if ((this->xflags & OF_AUTO_OPEN))
 			{
-				if (this->istate & OS_OPENED)
+				if (this->xstate & OS_OPENED)
 					list->set(list, this, SESET_OPEN, 0, NORMREDRAW);
 				else
 					list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
 			}
-			else
-#endif
+			if (list->flags & SIF_AUTOSELECT)
 			{
-				list->cur = this;
 				if (!(list->flags & SIF_MULTISELECT))
 					list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
-				if (list->flags & SIF_AUTOSELECT)
-				{
-					list->set(list, this, SESET_SELECTED, 0, NOREDRAW); //NORMREDRAW);
-					get_entry_lrect(list, this, 0, &r);
-					list->vis(list, this, NORMREDRAW);
-				}
-				if (list->click)			/* Call the new object selected function */
-					(*list->click)(lock, list, form, item);
+				list->set(list, this, SESET_SELECTED, 0, NOREDRAW); //NORMREDRAW);
+				get_entry_lrect(list, this, 0, &r);
+				list->vis(list, this, NORMREDRAW);
 			}
+			if (list->click)			/* Call the new object selected function */
+				(*list->click)(lock, list, form, item);
 		}
 	}
 }

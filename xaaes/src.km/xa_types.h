@@ -1294,6 +1294,7 @@ enum scroll_info_flags
 	SIF_AUTOSLIDERS = 0x0010,
 	SIF_AUTOSELECT  = 0x0020,
 	SIF_TREEVIEW	= 0x0040,
+	SIF_AUTOOPEN	= 0x0080,
 
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
@@ -1330,12 +1331,17 @@ struct se_text
 	char txtstr[0];
 };
 
+/*
+ * Structure used to pass contents of a 'SETYPE_TEXT' scroll entry to the
+ * scroll-list 'add' function
+ */
 struct scroll_content
 {
 	short n_strings;
 	char *text;
 	OBJECT *icon;
-	short istate;
+	short xstate;
+	short xflags;
 	long usr_flags;
 	void *data;
 	struct xa_wtxt_inf *fnt;
@@ -1461,6 +1467,8 @@ struct seget_entrybyarg
 #define OS_OPENED	1
 #define OS_NESTICON	2
 
+#define OF_AUTO_OPEN	1
+
 struct scroll_entry
 {
 	struct scroll_entry *next;	/* Next element */
@@ -1468,7 +1476,8 @@ struct scroll_entry
 	struct scroll_entry *up;	/* level up entry (parent) */
 	struct scroll_entry *down;	/* level down entry (childen) */
 
-	short istate;
+	short xstate;
+	short xflags;
 	short state;
 	short level;
 
