@@ -46,7 +46,7 @@ union msg_buf
 const char *pmsg(short m);
 
 void cancel_aesmsgs(struct xa_aesmsg_list **m);
-void send_a_message(enum locks lock, struct xa_client *dest_client, short amq, union msg_buf *msg);
+void send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
 //void deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 //void queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 
@@ -57,19 +57,22 @@ struct xa_client;
 #define AMQ_REDRAW	1
 #define AMQ_CRITICAL	2
 
+#define QMF_PREPEND	1
+#define QMF_CHKDUP	2
+
 typedef void
 SendMessage(
 	enum locks lock,
 	struct xa_window *wind,
 	struct xa_client *to, /* if different from wind->owner */
-	short amq,
+	short amq, short flags,
 	short mp0, short mp1, short mp2, short mp3,
 	short mp4, short mp5, short mp6, short mp7);
 
 typedef void
 DoWinMesag(struct xa_window *w,
 	   struct xa_client *c,
-	   short amq,
+	   short amq, short flags,
 	   short *msg);
 
 SendMessage do_winmesag;

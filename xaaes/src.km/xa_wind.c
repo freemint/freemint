@@ -237,7 +237,7 @@ bottom_window(enum locks lock, struct xa_window *w)
 			display_window(lock, 44, wl, &clip);
 
 			if (wl->send_message)
-				wl->send_message(lock, wl, NULL, AMQ_REDRAW,
+				wl->send_message(lock, wl, NULL, AMQ_REDRAW, QMF_CHKDUP,
 						 WM_REDRAW, 0, 0, wl->handle,
 						 clip.x, clip.y, clip.w, clip.h);
 		}
@@ -384,7 +384,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				pmsg(msg[0]), w->handle, w->owner->name, client->name,
 				msg[1],msg[2],msg[3],msg[4]));
 				
-			send_app_message(lock, w, NULL, AMQ_NORM, msg[0], client->p->pid, 0, w->handle, msg[1],msg[2],msg[3],msg[4]);
+			send_app_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg[0], client->p->pid, 0, w->handle, msg[1],msg[2],msg[3],msg[4]);
 			pb->intout[0] = 1;
 			return XAC_DONE;
 		}
@@ -709,7 +709,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
 
 			if (msg != -1 && w->send_message)
-				w->send_message(lock, w, NULL, AMQ_NORM, msg, 0, 0, w->handle, 0,0,0,0);
+				w->send_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg, 0, 0, w->handle, 0,0,0,0);
 		}
 
 		if (pb->control[2] >= 5)
@@ -977,7 +977,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			w->handle, status, client->name));
 
 		if (w->send_message)
-			w->send_message(lock, w, NULL, AMQ_CRITICAL,
+			w->send_message(lock, w, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 				msg, 0, 0, w->handle, 0,0,0,0);
 
 		move_window(lock, w, true, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
