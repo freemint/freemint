@@ -68,6 +68,17 @@ static long	init_centr(void);
 static void	print_tail(const char *buf, long nbytes);
 
 
+
+/*
+ * bios emulation - top half
+  */
+  static long _cdecl      lp_instat      (int dev);
+  static long _cdecl      lp_in          (int dev);
+  static long _cdecl      lp_outstat     (int dev);
+  static long _cdecl      lp_out         (int dev, int c);
+  static long _cdecl      lp_rsconf      (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr);  
+
+
 /*
  * Forward declarations of the device driver functions
  */
@@ -82,13 +93,41 @@ static long	_cdecl lp_close		(FILEPTR *f, int pid);
 static long	_cdecl lp_select	(FILEPTR *f, long proc, int mode);
 static void	_cdecl lp_unselect	(FILEPTR *f, long proc, int mode);
 
+
+/*
+ * device driver maps
+ */
+  static BDEVMAP bios_devtab =
+  {
+        lp_instat, lp_in,
+        lp_outstat, lp_out,
+        lp_rsconf
+  };
+
 static DEVDRV lp_device =
 {
 	lp_open, lp_write, lp_read, lp_lseek, lp_ioctl,
 	lp_datime, lp_close, lp_select, lp_unselect
 };
 
-static struct dev_descr devinfo = { &lp_device };
+static struct dev_descr devinfo =
+{
+	&lp_device,
+	0,              /* dinfo -> fc.aux */
+	0,              /* flags */
+	NULL,           /* struct tty * */
+	0,              /* drvsize */
+	S_IFCHR |
+	S_IRUSR |
+	S_IWUSR |
+	S_IRGRP |
+	S_IWGRP |
+	S_IROTH |
+	S_IWOTH,        /* fmode */
+	&bios_devtab,   /* bdevmap */
+	0,              /* bdev */
+	0               /* reserved */
+};
 
 
 /* Initializes the circular buffer
@@ -237,6 +276,44 @@ print_tail (const char *buf, long nbytes)
 	
 	/* To initiate printing */
 	print_head();
+}
+
+
+/****************************************************************************/
+/* BEGIN bios emulation - top half */
+
+static long _cdecl
+lp_instat (int dev)
+{
+	return 0;
+}
+
+static long _cdecl                                                        
+lp_in (int dev)
+{
+	TRACE(("lp: foolish attempt to read"));
+	return 0;
+}
+
+static long _cdecl                                                        
+lp_outstat (int dev)
+{
+        return ( BUFSIZE - buffer_contents > 1 ? -1 : 0);
+}
+
+static long _cdecl                                                        
+lp_out (int dev, int c)
+{
+	char x = c;
+	
+	print_tail(&x, 1);
+	return -1;
+}
+
+static long _cdecl                                                        
+lp_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
+{
+	return 0;
 }
 
 /*
