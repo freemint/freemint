@@ -6,6 +6,17 @@ kernel
 - test and bugfix slip.xif (sld, ppp)
 - bugfix rtl8012 driver
 - BIOS remapping for lp.xdd (like it's done for the serial xdd)
+- libkern struct for XDD/XFS modules (a jumptable to libkern functions
+  linked with the kernel, purpose: prevent libkern functions to be
+  present in memory in many copies (esp. strcpy() and such stuff).
+  Adams idea btw.
+- make kernel TEXT+DATA+BSS supervisor protected
+- make ROM and hardware registers supervisor protected, currently
+  IDE I/O registers are *freely* available in user mode, at least
+  on Falcons :/
+- finish and implement the new syscall stuff.
+- finish the keyboard handler
+- add instruction emulation for 060.
 
 tools
 - release toswin 2.7 or stay with the old version???
