@@ -32,7 +32,6 @@
 
 # include "mint/filedesc.h"
 # include "arch/mprot.h"
-# include "arch/startup.h"	/* _base */
 
 # include "bios.h"
 # include "block_IO.h"
@@ -201,13 +200,9 @@ struct cnfdata
 void
 load_config(void)
 {
-	char cnf_path[128];
 	struct cnfdata mydata;
 	
-	strcpy(cnf_path, sysdir);
-	strcat(cnf_path, "mint.cnf");
-	
-	parse_cnf(cnf_path, parser_tab, &mydata);
+	parse_cnf("mint.cnf", parser_tab, &mydata);
 }
 
 /*============================================================================*/

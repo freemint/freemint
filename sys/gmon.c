@@ -42,13 +42,13 @@
 
 # include "gmon.h"
 
-# include "arch/startup.h"
 # include "mint/file.h"
 # include "mint/proc.h"
 
 # include "libkern/libkern.h"
 # include "sys/gmon_out.h"
 
+# include "global.h"
 # include "k_fds.h"
 # include "kmemory.h"
 # include "profil.h"

@@ -52,8 +52,6 @@
 
 # include "libkern/libkern.h"
 
-# include "arch/startup.h"	/* _base */
-
 # include "mint/errno.h"
 # include "mint/stat.h"		/* struct stat */
 
@@ -63,6 +61,7 @@
 # include "dosdir.h"		/* d_opendir(), d_readdir(), d_closedir(), f_symlink(), f_stat64(), ...*/
 # include "dosfile.h"		/* f_write() */
 # include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
+# include "global.h"
 # include "info.h"		/* national stuff */
 # include "init.h"		/* env_size(), _mint_delenv(), _mint_setenv() */
 # include "k_exec.h"		/* sys_pexec() */
@@ -1406,11 +1405,6 @@ shell(void *arg)
 	/* If there is no $PATH defined, enable internal commands by default
 	 */
 	xcommands = (_mint_getenv(_base, "PATH") == NULL);
-
-	/* If there is no $TERM variable defined, define it
-	 */
-	if (_mint_getenv(_base, "TERM") == NULL)
-		shell_setenv("TERM", "st52");
 
 	shell_fprintf(stdout, "\ee\ev\n");	/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);			/* printout the version number */
