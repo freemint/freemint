@@ -35,9 +35,14 @@
 # include "libkern/libkern.h"
 
 # include "mint/asm.h"
-# include "mint/filedesc.h"
 # include "mint/basepage.h"
+# include "mint/dcntl.h"
+# include "mint/emu_tos.h"
+# include "mint/pathconf.h"
+# include "mint/filedesc.h"
+# include "mint/ioctl.h"
 # include "mint/signal.h"
+# include "mint/stat.h"
 
 # include "arch/cpu.h"		/* cpush */
 # include "arch/mprot.h"

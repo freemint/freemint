@@ -21,6 +21,7 @@
 # include "mint/arch/mfp.h"
 # include "mint/asm.h"
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
 # include "mint/signal.h"
 # include "mint/xbra.h"
 

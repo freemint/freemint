@@ -22,6 +22,7 @@
 # include "mint/asm.h"
 # include "mint/falcon.h"
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
 # include "mint/signal.h"
 
 # include "arch/detect.h"

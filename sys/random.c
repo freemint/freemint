@@ -249,9 +249,10 @@
 
 # include "random.h"
 
+# include "arch/timer.h"
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
-# include "arch/timer.h"
+# include "mint/ioctl.h"
 
 # include "dev-null.h"
 # include "k_prot.h"

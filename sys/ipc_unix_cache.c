@@ -9,7 +9,7 @@
 
 # include "ipc_unix_cache.h"
 
-# include "mint/file.h"
+# include "mint/stat.h"
 
 # include "dosdir.h"
 # include "dosfile.h"

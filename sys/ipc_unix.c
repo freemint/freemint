@@ -15,6 +15,7 @@
 # include "mint/file.h"
 # include "mint/proc.h"
 # include "mint/signal.h"
+# include "mint/stat.h"
 
 # include "dev-null.h"
 # include "dosdir.h"

@@ -15,9 +15,9 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
-
 # include "mint/asm.h"
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
 
 # include "biosfs.h"
 # include "filesys.h"

@@ -50,6 +50,7 @@
 
 # include "arch/intr.h"
 # include "arch/syscall.h"
+# include "mint/ioctl.h"
 
 # include "biosfs.h"
 # include "dev-null.h"
