@@ -64,10 +64,10 @@
 0x009	cconws		(const char *str)
 0x00a	cconrs		(char *buf)
 0x00b	cconis		(void)
-0x00c	NULL
-0x00d	NULL
+0x00c	RESERVED
+0x00d	RESERVED
 0x00e	dsetdrv		(int d)
-0x00f	NULL
+0x00f	RESERVED
 
 0x010	cconos		(void)
 0x011	cprnos		(void)
@@ -77,41 +77,41 @@
 0x015	srealloc	(void)
 0x016	slbopen		(void)				/* 1.15.3, MagiC 5 */
 0x017	slbclose	(void)				/* 1.15.3, MagiC 5 */
-0x018	NULL
+0x018	RESERVED
 0x019	dgetdrv		(void)
 0x01a	fsetdta		(DTABUF *dta)
-0x01b	NULL
-0x01c	NULL
-0x01d	NULL
-0x01e	NULL
-0x01f	NULL
+0x01b	RESERVED
+0x01c	RESERVED
+0x01d	RESERVED
+0x01e	RESERVED
+0x01f	RESERVED
 
 0x020	super		(long new_ssp)
-0x021	NULL
-0x022	NULL
-0x023	NULL
-0x024	NULL
-0x025	NULL
-0x026	NULL
-0x027	NULL
-0x028	NULL
-0x029	NULL
+0x021	RESERVED
+0x022	RESERVED
+0x023	RESERVED
+0x024	RESERVED
+0x025	RESERVED
+0x026	RESERVED
+0x027	RESERVED
+0x028	RESERVED
+0x029	RESERVED
 0x02a	tgetdate	(void)
 0x02b	tsetdate	(ushort date)
 0x02c	tgettime	(void)
 0x02d	tsettime	(ushort date)
-0x02e	NULL
+0x02e	RESERVED
 0x02f	fgetdta		(void)
 
 0x030	sversion	(void)
 0x031	ptermres	(long save, int code)
-0x032	NULL
+0x032	RESERVED
 0x033	RESERVED	/* MagiC: Sconfig() */
-0x034	NULL
-0x035	NULL
+0x034	RESERVED
+0x035	RESERVED
 0x036	dfree		(long *buf, int d)
-0x037	NULL
-0x038	NULL
+0x037	RESERVED
+0x038	RESERVED
 0x039	dcreate		(const char *name, int attrib)
 0x03a	ddelete		(const char *path)
 0x03b	dsetpath	(const char *path)
@@ -133,206 +133,205 @@
 0x04a	mshrink		(int dummy, virtaddr block, long size)
 0x04b	pexec		(int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 0x04c	pterm		(int code)
-0x04d	NULL
+0x04d	RESERVED
 0x04e	fsfirst		(const char *path, int attrib)
 0x04f	fsnext		(void)
 
-0x050	NULL
-0x051	NULL
-0x052	NULL
-0x053	NULL
-0x054	NULL
-0x055	NULL
+0x050	RESERVED
+0x051	RESERVED
+0x052	RESERVED
+0x053	RESERVED
+0x054	RESERVED
+0x055	RESERVED
 0x056	frename		(int junk, const char *old, const char *new)
 0x057	fdatime		(short *timeptr, int fh, int wflag)
-0x058	NULL
-0x059	NULL
-0x05a	NULL
-0x05b	NULL
+0x058	RESERVED
+0x059	RESERVED
+0x05a	RESERVED
+0x05b	RESERVED
 0x05c	flock		(int fh, int mode, long start, long length)
-0x05d	NULL
-0x05e	NULL
-0x05f	NULL
+0x05d	RESERVED
+0x05e	RESERVED
+0x05f	RESERVED
 
-0x060	NULL
-0x061	NULL
-0x062	NULL
-0x063	NULL
-0x064	NULL
-0x065	NULL
-0x066	NULL
-0x067	NULL
-0x068	NULL
-0x069	NULL
-0x06a	NULL
-0x06b	NULL
-0x06c	NULL
-0x06d	NULL
-0x06e	NULL
-0x06f	NULL
+0x060	RESERVED
+0x061	RESERVED
+0x062	RESERVED
+0x063	RESERVED
+0x064	RESERVED
+0x065	RESERVED
+0x066	RESERVED
+0x067	RESERVED
+0x068	RESERVED
+0x069	RESERVED
+0x06a	RESERVED
+0x06b	RESERVED
+0x06c	RESERVED
+0x06d	RESERVED
+0x06e	RESERVED
+0x06f	RESERVED
 
-0x070	NULL
-0x071	NULL
-0x072	NULL
-0x073	NULL
-0x074	NULL
-0x075	NULL
-0x076	NULL
-0x077	NULL
-0x078	NULL
-0x079	NULL
-0x07a	NULL
-0x07b	NULL
-0x07c	NULL
-0x07d	NULL
-0x07e	NULL
-0x07f	NULL
+0x070	RESERVED
+0x071	RESERVED
+0x072	RESERVED
+0x073	RESERVED
+0x074	RESERVED
+0x075	RESERVED
+0x076	RESERVED
+0x077	RESERVED
+0x078	RESERVED
+0x079	RESERVED
+0x07a	RESERVED
+0x07b	RESERVED
+0x07c	RESERVED
+0x07d	RESERVED
+0x07e	RESERVED
+0x07f	RESERVED
 
-0x080	NULL
-0x081	NULL
-0x082	NULL
-0x083	NULL
-0x084	NULL
-0x085	NULL
-0x086	NULL
-0x087	NULL
-0x088	NULL
-0x089	NULL
-0x08a	NULL
-0x08b	NULL
-0x08c	NULL
-0x08d	NULL
-0x08e	NULL
-0x08f	NULL
+0x080	RESERVED
+0x081	RESERVED
+0x082	RESERVED
+0x083	RESERVED
+0x084	RESERVED
+0x085	RESERVED
+0x086	RESERVED
+0x087	RESERVED
+0x088	RESERVED
+0x089	RESERVED
+0x08a	RESERVED
+0x08b	RESERVED
+0x08c	RESERVED
+0x08d	RESERVED
+0x08e	RESERVED
+0x08f	RESERVED
 
-0x090	NULL
-0x091	NULL
-0x092	NULL
-0x093	NULL
-0x094	NULL
-0x095	NULL
-0x096	NULL
-0x097	NULL
-0x098	NULL
-0x099	NULL
-0x09a	NULL
-0x09b	NULL
-0x09c	NULL
-0x09d	NULL
-0x09e	NULL
-0x09f	NULL
+0x090	RESERVED
+0x091	RESERVED
+0x092	RESERVED
+0x093	RESERVED
+0x094	RESERVED
+0x095	RESERVED
+0x096	RESERVED
+0x097	RESERVED
+0x098	RESERVED
+0x099	RESERVED
+0x09a	RESERVED
+0x09b	RESERVED
+0x09c	RESERVED
+0x09d	RESERVED
+0x09e	RESERVED
+0x09f	RESERVED
 
-0x0a0	NULL
-0x0a1	NULL
-0x0a2	NULL
-0x0a3	NULL
-0x0a4	NULL
-0x0a5	NULL
-0x0a6	NULL
-0x0a7	NULL
-0x0a8	NULL
-0x0a9	NULL
-0x0aa	NULL
-0x0ab	NULL
-0x0ac	NULL
-0x0ad	NULL
-0x0ae	NULL
-0x0af	NULL
+0x0a0	RESERVED
+0x0a1	RESERVED
+0x0a2	RESERVED
+0x0a3	RESERVED
+0x0a4	RESERVED
+0x0a5	RESERVED
+0x0a6	RESERVED
+0x0a7	RESERVED
+0x0a8	RESERVED
+0x0a9	RESERVED
+0x0aa	RESERVED
+0x0ab	RESERVED
+0x0ac	RESERVED
+0x0ad	RESERVED
+0x0ae	RESERVED
+0x0af	RESERVED
 
-0x0b0	NULL
-0x0b1	NULL
-0x0b2	NULL
-0x0b3	NULL
-0x0b4	NULL
-0x0b5	NULL
-0x0b6	NULL
-0x0b7	NULL
-0x0b8	NULL
-0x0b9	NULL
-0x0ba	NULL
-0x0bb	NULL
-0x0bc	NULL
-0x0bd	NULL
-0x0be	NULL
-0x0bf	NULL
+0x0b0	RESERVED
+0x0b1	RESERVED
+0x0b2	RESERVED
+0x0b3	RESERVED
+0x0b4	RESERVED
+0x0b5	RESERVED
+0x0b6	RESERVED
+0x0b7	RESERVED
+0x0b8	RESERVED
+0x0b9	RESERVED
+0x0ba	RESERVED
+0x0bb	RESERVED
+0x0bc	RESERVED
+0x0bd	RESERVED
+0x0be	RESERVED
+0x0bf	RESERVED
 
-0x0c0	NULL
-0x0c1	NULL
-0x0c2	NULL
-0x0c3	NULL
-0x0c4	NULL
-0x0c5	NULL
-0x0c6	NULL
-0x0c7	NULL
-0x0c8	NULL
-0x0c9	NULL
-0x0ca	NULL
-0x0cb	NULL
-0x0cc	NULL
-0x0cd	NULL
-0x0ce	NULL
-0x0cf	NULL
+0x0c0	RESERVED
+0x0c1	RESERVED
+0x0c2	RESERVED
+0x0c3	RESERVED
+0x0c4	RESERVED
+0x0c5	RESERVED
+0x0c6	RESERVED
+0x0c7	RESERVED
+0x0c8	RESERVED
+0x0c9	RESERVED
+0x0ca	RESERVED
+0x0cb	RESERVED
+0x0cc	RESERVED
+0x0cd	RESERVED
+0x0ce	RESERVED
+0x0cf	RESERVED
 
-0x0d0	NULL
-0x0d1	NULL
-0x0d2	NULL
-0x0d3	NULL
-0x0d4	NULL
-0x0d5	NULL
-0x0d6	NULL
-0x0d7	NULL
-0x0d8	NULL
-0x0d9	NULL
-0x0da	NULL
-0x0db	NULL
-0x0dc	NULL
-0x0dd	NULL
-0x0de	NULL
-0x0df	NULL
+0x0d0	RESERVED
+0x0d1	RESERVED
+0x0d2	RESERVED
+0x0d3	RESERVED
+0x0d4	RESERVED
+0x0d5	RESERVED
+0x0d6	RESERVED
+0x0d7	RESERVED
+0x0d8	RESERVED
+0x0d9	RESERVED
+0x0da	RESERVED
+0x0db	RESERVED
+0x0dc	RESERVED
+0x0dd	RESERVED
+0x0de	RESERVED
+0x0df	RESERVED
 
-0x0e0	NULL
-0x0e1	NULL
-0x0e2	NULL
-0x0e3	NULL
-0x0e4	NULL
-0x0e5	NULL
-0x0e6	NULL
-0x0e7	NULL
-0x0e8	NULL
-0x0e9	NULL
-0x0ea	NULL
-0x0eb	NULL
-0x0ec	NULL
-0x0ed	NULL
-0x0ee	NULL
-0x0ef	NULL
-
-0x0f0	NULL
-0x0f1	NULL
-0x0f2	NULL
-0x0f3	NULL
-0x0f4	NULL
-0x0f5	NULL
-0x0f6	NULL
-0x0f7	NULL
-0x0f8	NULL
-0x0f9	NULL
-0x0fa	NULL
-0x0fb	NULL
-0x0fc	NULL
-0x0fd	NULL
-0x0fe	NULL
+0x0e0	RESERVED
+0x0e1	RESERVED
+0x0e2	RESERVED
+0x0e3	RESERVED
+0x0e4	RESERVED
+0x0e5	RESERVED
+0x0e6	RESERVED
+0x0e7	RESERVED
+0x0e8	RESERVED
+0x0e9	RESERVED
+0x0ea	RESERVED
+0x0eb	RESERVED
+0x0ec	RESERVED
+0x0ed	RESERVED
+0x0ee	RESERVED
+0x0ef	RESERVED
 
 /*
  * MiNT extensions to GEMDOS
  */
 
+0x0f0	RESERVED
+0x0f1	RESERVED
+0x0f2	RESERVED
+0x0f3	RESERVED
+0x0f4	RESERVED
+0x0f5	RESERVED
+0x0f6	RESERVED
+0x0f7	RESERVED
+0x0f8	RESERVED
+0x0f9	RESERVED
+0x0fa	RESERVED
+0x0fb	RESERVED
+0x0fc	RESERVED
+0x0fd	RESERVED
+0x0fe	RESERVED
 0x0ff	syield		(void)
 
-0x100	fpipe		(short *usrh)
-0x101	ffchown		(int fh, int uid, int gid)		/* 1.15.2 */
-0x102	ffchmod		(int fh, unsigned mode)			/* 1.15.2 */
-0x103	RESERVED	/* fsync (int fh) */
+0x100	fpipe		(int *usrh)
+0x101	ffchown		(int fh, int uid, int gid)			/* 1.15.2  */
+0x102	ffchmod		(int fh, ushort mode)				/* 1.15.2  */
+0x103	fsync		(int fh)					/* 1.15.10 */
 0x104	fcntl		(int fh, long arg, int cmd)
 0x105	finstat		(int fh)
 0x106	foutstat	(int fh)
@@ -407,15 +406,15 @@
 0x147	pgetgroups	(int gidsetlen, int gidset[])
 0x148	psetgroups	(int ngroups, int gidset[])
 0x149	tsetitimer	(int which, long *interval, long *value, long *ointerval, long *ovalue)
-0x14a	dchroot		(const char *dir)			/* 1.15.3 */
-0x14b	fstat64		(int flag, const char *name, STAT *stat)			/* 1.15.4 */
-0x14c	RESERVED	/* fseek64 (llong place, int fh, int how) */
-0x14d	dsetkey		(llong dev, char *key, int cipher)	/* 1.15.4 */
+0x14a	dchroot		(const char *dir)				/* 1.15.3  */
+0x14b	fstat64		(int flag, const char *name, STAT *stat)	/* 1.15.4  */
+0x14c	fseek64		(llong place, int fh, int how, llong *newpos)	/* 1.15.10 */
+0x14d	dsetkey		(llong dev, char *key, int cipher)		/* 1.15.4  */
 0x14e	psetreuid	(int rid, int eid)
 0x14f	psetregid	(int rid, int eid)
 
 0x150	sync		(void)
-0x151	shutdown	(long restart)
+0x151	halt		(long restart)
 0x152	dreadlabel	(const char *path, char *label, int maxlen)
 0x153	dwritelabel	(const char *path, const char *label)
 0x154	ssystem		(int mode, ulong arg1, ulong arg2)
@@ -424,16 +423,52 @@
 0x157	RESERVED	/* tadjtime */
 0x158	pgetpriority	(int which, int who)
 0x159	psetpriority	(int which, int who, int prio)
-0x15a	RESERVED	/* fpoll (POLLFD *fds, ulong nfds, long timeout) */
+0x15a	fpoll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
 0x15b	RESERVED
 0x15c	RESERVED
 0x15d	RESERVED
 0x15e	RESERVED
 0x15f	emulation	(ushort which, ushort op,
 				long a1, long a2, long a3, long a4,
-				long a5, long a6, long a7)	/* 1.15.8 */
+				long a5, long a6, long a7)		/* 1.15.8  */
 
-0x160	MAX
+	/* 1.15.?? - socket extensions */
+
+0x160	socket		(long domain, long type, long protocol)
+0x161	socketpair	(long domain, long type, long protocol, int *rsv)
+0x162	accept		(int fh, struct sockaddr *name, ulong *anamelen)
+0x163	connect		(int fh, const struct sockaddr *name, ulong namelen)
+0x164	bind		(int fh, const struct sockaddr *name, ulong namelen)
+0x165	listen		(int fh, long backlog)
+0x166	recvmsg		(int fh, struct msghdr *msg, long flags)
+0x167	sendmsg		(int fh, const struct msghdr *msg, long flags)
+0x168	recvfrom	(int fh, void *buf, ulong len, long flags, struct sockaddr *from, ulong *fromlenaddr)
+0x169	sendto		(int fh, const void *buf, ulong len, long flags, const struct sockaddr *to, ulong tolen)
+0x16a	setsockopt	(int fh, long level, long name, const void *val, ulong valsize)
+0x16b	getsockopt	(int fh, long level, long name, void *val, ulong *avalsize)
+0x16c	getpeername	(int fh, struct sockaddr *asa, ulong *alen)
+0x16d	getsockname	(int fh, struct sockaddr *asa, ulong *alen)
+0x16e	writev		(int fh, const struct iovec *iovp, long iovcnt)
+0x16f	readv		(int fh, const struct iovec *iovp, long iovcnt)
+
+0x170	shutdown	(int fh, long how)
+0x171	RESERVED
+0x172	RESERVED
+0x173	RESERVED
+0x174	RESERVED
+0x175	RESERVED
+0x176	RESERVED
+0x177	RESERVED
+0x178	RESERVED
+0x179	RESERVED
+0x17a	RESERVED
+0x17b	RESERVED
+0x17c	RESERVED
+0x17d	RESERVED
+0x17e	RESERVED
+0x17f	RESERVED
+
+0x180	MAX
 
 
 [ BIOS ]
