@@ -51,6 +51,8 @@ extern struct global global;
 
 extern BASEPAGE *_base;	/* pointer to kernel's basepage */
 
+extern short gl_kbd;	/* default keyboard layout */
+
 extern long mcpu; /* processor we are running */
 
 /* for proper co-processors we must consider saving their context.
