@@ -312,9 +312,10 @@ static int	verify_user	(void);
 /****************************************************************************/
 /* BEGIN global data definition & access implementation */
 
-static long	check	= NO;	/* Default to no readability checking */
-static long	always	= NO;	/* Default check partition IDs */
-static long	verbose	= YES;	/* Default to verbose mode on */
+static int	check	= NO;	/* Default to no readability checking */
+static int	always	= NO;	/* Default check partition IDs */
+static int	verbose	= YES;	/* Default to verbose mode on */
+static int	only_bs	= NO;	/* Write only the bootsector (dangerous option) */
 static char *	program	= NULL;	/* Name of the program */
 
 static _F32_BS	f32bs;		/* Boot sector data (FAT and FAT32) */
@@ -369,6 +370,7 @@ static long	chunks	= 32;
 # define ALWAYS		always
 # define VERBOSE	verbose
 # define PROGRAM	program
+# define ONLY_BS	only_bs
 
 # define BOOT		f32bs.fbs
 # define BOOT32		f32bs
@@ -1234,6 +1236,13 @@ write_tables (void)
 		r = rwabs_xhdi (1, boot, SECSIZE, actual++);
 		if (r) fatal ("failed whilst writing boot sector");
 		
+		if (ONLY_BS == YES)
+		{
+			FEEDBACKEND;
+			printf("Only bootsector has been written!\n");
+			return;
+		}
+		
 		if (FTYPE == 32)
 		{
 			long max;
@@ -1298,6 +1307,10 @@ usage (void)
 		"  -r <num>      Root directory entries (not applicable to FAT32)\n"
 		"  -s <num>      Sectors per cluster (2, 4, 8, 16, 32, 64, or 128)\n"
 		"  -a            Create filesystem always (disables partition ID checking)\n"
+		"\n"
+		"Expert options:\n"
+		"  -B            Write boot sector only (attention, be sure you know\n"
+		"                what you do!)\n"
 	);
 }
 
@@ -1306,8 +1319,16 @@ verify_user (void)
 {
 	char c;
 	
-	printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", 'A' + DRV);
-	printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+	if (ONLY_BS == YES)
+	{
+		printf ("WARNING: THIS WILL OVERWRITE YOUR BOOTSECTOR ON %c:\n", 'A' + DRV);
+		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+	}
+	else
+	{
+		printf ("WARNING: THIS WILL TOTALLY DESTROY ANY DATA ON %c:\n", 'A' + DRV);
+		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+	}
 	scanf ("%c", &c);
 	printf ("\n");
 	
@@ -1345,7 +1366,7 @@ main (int argc, char **argv)
 	time (&CTIME);
 	VOL_ID = (long) CTIME;
 	
-	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:r:s:av")) != EOF)
+	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:r:s:avB")) != EOF)
 	{
 		/* Scan the command line for options */
 		switch (c)
@@ -1447,6 +1468,12 @@ main (int argc, char **argv)
 			case 'a':
 			{
 				ALWAYS = YES;
+				break;
+			}
+			/* write boot sector only */
+			case 'B':
+			{
+				ONLY_BS = YES;
 				break;
 			}
 			default:
