@@ -51,7 +51,7 @@ long _cdecl sys_psetregid	(int rid, int eid);
 long _cdecl sys_pgetgroups	(int gidsetlen, int gidset[]);
 long _cdecl sys_psetgroups	(int ngroups, int gidset[]);
 
-int ngroupmatch (struct ucred *ucr, ushort group);
+int groupmember (struct ucred *ucr, ushort group);
 
 INLINE int
 suser (struct ucred *cred)
