@@ -24,7 +24,6 @@
 #ifndef _bootup_h
 #define _bootup_h
 
-void handle_XaAES_msgs(LOCK lock, union msg_buf *msg);
 void reopen_moose(void);
 
 #endif /* _bootup_h */
