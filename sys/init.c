@@ -219,7 +219,11 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func) ())
 static long _cdecl
 mint_criticerr (long error) /* high word is error, low is drive */
 {
+# if 1
+	return (error >> 16);		/* just return with error */
+# else
 	return (*curproc->criticerr)(error);
+# endif
 }
 
 /*
@@ -328,7 +332,6 @@ init_intr (void)
 	new_xbra_install (&old_timer, 0x400L, mint_timer);
 	xbra_install (&old_criticerr, 0x404L, mint_criticerr);
 	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
-	new_xbra_install (&old_vbl, 4*0x1cL, mint_vbl);
 	
 	new_xbra_install (&old_resvec, 0x042aL, reset);
 	old_resval = *((long *)0x426L);
@@ -444,7 +447,6 @@ restr_intr (void)
 	*((long *) 0x404L) = (long) old_criticerr.next;
 	*((long *) 0x114L) = old_5ms;
 	*((long *) 0x400L) = old_timer;
-	*((long *) 0x070L) = old_vbl;
 	*((long *) 0x426L) = old_resval;
 	*((long *) 0x42aL) = old_resvec;
 	*((long *) 0x476L) = old_rwabs;
@@ -1029,7 +1031,11 @@ init (void)
 	init_cookies ();
 	DEBUG (("%s, %ld: init_cookies() ok!", __FILE__, (long) __LINE__));
 	
-	
+	/* Init done, now enable/unfreeze all caches.
+	 * Don't touch the write/allocate bits, though.
+	 */
+	ccw_set(0x0000c567L, 0x0000c57fL);
+
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
 	

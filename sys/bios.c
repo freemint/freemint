@@ -260,13 +260,12 @@ setexc (int number, long vector)
 	
 	place = (long *)(((long) number) << 2);
 	
-	if (number == 0x101)
-		/* critical error vector */
-		old = (long) p->criticerr;
-	else if (number == 0x102)
+	/* Note: critical error handler (0x0101) is kernel private now
+	 * and programs cannot really use it.
+	 */
+	if (number == 0x102)
 		/* GEMDOS term vector */
 		old = p->ctxt[SYSCALL].term_vec;
-	
 # ifdef VM_EXTENSION
 	else if (number == 0x02)
 		old = kludge_bus;
@@ -297,7 +296,6 @@ setexc (int number, long vector)
 			long mintcerr;
 			
 			mintcerr = (long) Setexc (0x101, (void (*)()) vector);
-			p->criticerr = (long _cdecl (*)(long)) *place;
 			*place = mintcerr;
 		}
 		else
