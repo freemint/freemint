@@ -1095,59 +1095,28 @@ vt100_esc_std_char (TEXTWIN* tw, unsigned int c)
 		curs_on (tw);
 		return;
 	case 'A':		/* British */
-		/* Not yet implemented */
-		break;
 	case 'B':		/* North American ASCII */
-		tw->term_cattr &= ~CACS;  /* FIXME, correct?  */
-		break;
 	case 'C':		/* Finnish */
-		/* Not yet implemented */
-		break;
 	case 'E':		/* Danish/Norwegian */
-		/* Not yet implemented */
-		break;
 	case 'H':		/* Swedish */
-		/* Not yet implemented */
-		break;
 	case 'K':		/* German */
-		/* Not yet implemented */
-		break;
 	case 'Q':		/* French Canadian */
-		/* Not yet implemented */
-		break;
 	case 'R':		/* Flemish (French/Belgian) */
-		/* Not yet implemented */
-		break;
 	case 'Y':		/* Italian */
-		/* Not yet implemented */
-		break;
 	case 'Z':		/* Spanish */
-		/* Not yet implemented */
+		tw->term_cattr &= ~(CENACS | CACS);
 		break;
 	case '0':		/* Line Drawing */
-		if (tw->term_cattr & CENACS)
-			tw->term_cattr |= CACS;
+		tw->term_cattr |= ~(CENACS | CACS);
 		break;
 	case '1':		/* Alternative Character */
-		/* Not yet implemented */
-		break;
 	case '2':		/* Alternative Line Drawing */
-		/* Not yet implemented */
-		break;
 	case '4':		/* Dutch */
-		/* Not yet implemented */
-		break;
 	case '5':		/* Finnish */
-		/* Not yet implemented */
-		break;
 	case '6':		/* Danish/Norwegian */
-		/* Not yet implemented */
-		break;
 	case '7':		/* Swedish */
-		/* Not yet implemented */
-		break;
 	case '=':		/* Swiss (French or German) */
-		/* Not yet implemented */
+		tw->term_cattr &= ~(CENACS | CACS);
 		break;
 	default:
 #ifdef DEBUG_VT
@@ -1195,59 +1164,24 @@ vt100_esc_alt_char (TEXTWIN* tw, unsigned int c)
 		curs_on (tw);
 		return;
 	case 'A':		/* British */
-		/* Not yet implemented */
-		break;
 	case 'B':		/* North American ASCII */
-		tw->term_cattr &= ~CACS; /* FIXME: Correct?  */
-		break;
 	case 'C':		/* Finnish */
-		/* Not yet implemented */
-		break;
 	case 'E':		/* Danish/Norwegian */
-		/* Not yet implemented */
-		break;
 	case 'H':		/* Swedish */
-		/* Not yet implemented */
-		break;
 	case 'K':		/* German */
-		/* Not yet implemented */
-		break;
 	case 'Q':		/* French Canadian */
-		/* Not yet implemented */
-		break;
 	case 'R':		/* Flemish (French/Belgian) */
-		/* Not yet implemented */
-		break;
 	case 'Y':		/* Italian */
-		/* Not yet implemented */
-		break;
 	case 'Z':		/* Spanish */
-		/* Not yet implemented */
-		break;
 	case '0':		/* Line Drawing */
-		if (tw->term_cattr & CENACS)
-			tw->term_cattr &= ~CACS;
-		break;
 	case '1':		/* Alternative Character */
-		/* Not yet implemented */
-		break;
 	case '2':		/* Alternative Line Drawing */
-		/* Not yet implemented */
-		break;
 	case '4':		/* Dutch */
-		/* Not yet implemented */
-		break;
 	case '5':		/* Finnish */
-		/* Not yet implemented */
-		break;
 	case '6':		/* Danish/Norwegian */
-		/* Not yet implemented */
-		break;
 	case '7':		/* Swedish */
-		/* Not yet implemented */
-		break;
 	case '=':		/* Swiss (French or German) */
-		/* Not yet implemented */
+		tw->term_cattr &= ~(CENACS | CACS);
 		break;
 	default:
 #ifdef DEBUG_VT
@@ -1662,12 +1596,11 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 			break;
 
 		case '\016':	/* ^N - switch to alternate char set */
-			if (tw->term_cattr & CENACS)
-				tw->term_cattr |= CACS;
+			tw->term_cattr |= (CENACS | CACS);
 			break;
 
 		case '\017':	/* ^O - switch to standard char set */
-			tw->term_cattr &= ~CACS;
+			tw->term_cattr &= ~(CENACS | CACS);
 			break;
 
 		case '\033':	/* ESC */
