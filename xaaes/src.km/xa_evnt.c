@@ -362,6 +362,10 @@ check_queued_events(struct xa_client *client)
 			else
 				key = keys.aes;
 
+			DIAGS((" -- kbstate=%x", mbs.ks));
+
+			mbs.ks = keys.raw.conin.state;
+
 			if (multi)
 				events |= wevents & (MU_NORM_KEYBD|MU_KEYBD);
 			else
@@ -432,6 +436,8 @@ check_queued_events(struct xa_client *client)
 				c_owner(client),
 				evtxt,pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1));
 			DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
+			DIAG((D_multi, client, " -- %x, %x, %x, %x, %x, %x, %x",
+				events, mbs.x, mbs.y, mbs.b, mbs.ks, key, mbs.c));
 		}
 #endif
 		if (client->timeout)
