@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * keyboard.h
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
@@ -97,7 +97,7 @@ short ikbd_scan(ushort scancode);
 
 void init_keybd(void);
 void load_keytbl(void);
-void load_keyboard_table(char *filename);
+long load_keyboard_table(char *filename, short flag);
 void bioskeys(void);
 
 extern short gl_kbd;
