@@ -51,6 +51,7 @@
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
+#include "mint/filedesc.h"
 #include "mint/ioctl.h"
 #include "mint/signal.h"
 
@@ -268,9 +269,6 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 }
 
-
-static const char KBD_dev_name[] = "u:\\dev\\console";
-static const char alert_pipe_name[] = "u:\\pipe\\alert";
 
 static vdi_vec *svmotv = NULL;
 static vdi_vec *svbutv = NULL;
@@ -510,6 +508,9 @@ sigchld(void)
 	}
 }
 
+static const char alert_pipe_name[] = "u:\\pipe\\alert";
+static const char KBD_dev_name[] = "u:\\dev\\console";
+
 int aessys_timeout = 0;
 
 /*
@@ -565,6 +566,12 @@ k_main(void *dummy)
 	p_signal(SIGTERM,  (long) sigterm);
 	p_signal(SIGCHLD,  (long) sigchld);
 
+	d_setdrv('u' - 'a');
+ 	d_setpath("/");
+
+	/* join process group of loader */
+	p_setpgrp(0, loader_pgrp);
+
 
 	/*
 	 * register trap#2 handler
@@ -607,31 +614,29 @@ k_main(void *dummy)
 	{
 		display("XaAES ERROR: Can't open '%s' :: %ld",
 			alert_pipe_name, C.alert_pipe);
+
 		goto leave;
 	}
-	DIAGS(("Open '%s' to %ld", alert_pipe_name, C.alert_pipe);
+	DIAGS(("Open '%s' to %ld", alert_pipe_name, C.alert_pipe));
 
 	/* Open the u:/dev/console device to get keyboard input */
-	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY));
+	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY);
 	if (C.KBD_dev < 0)
 	{
 		display("XaAES ERROR: Can't open '%s' :: %ld",
 			KBD_dev_name, C.KBD_dev);
+
 		goto leave;
 	}
 	DIAGS(("Open '%s' to %ld", KBD_dev_name, C.KBD_dev));
-	{
-		long r;
 
-		r = f_cntl(C.KBD_dev, 0, TIOCNOTTY);
-		DEBUG(("f_cntl(%li, 0, TIOCNOTTY) - > %li", C.KBD_dev, r));
-
-		r = p_setpgrp(0, 0);
-		DEBUG(("p_setpgrp(0, 0) - > %li", r));
-
-		r = f_cntl(C.KBD_dev, 0, TIOCSCTTY);
-		DEBUG(("f_cntl(%li, 0, TIOCSCTTY) - > %li", C.KBD_dev, r));
-	}
+	/* forcing to be a pty master
+	 * - pty master ignore job control
+	 * - pty master always read in raw mode
+	 *
+	 * XXX it's just very ugly todo this so
+	 */
+	get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
 
 	/* initialize mouse */
 	if (!init_moose())
@@ -789,28 +794,31 @@ k_exit(void)
 	 * deinstall trap #2 handler
 	 */
 	register_trap2(XA_handler, 1, 0, 0);
+	DIAGS(("unregistered trap handler"));
 
 	/*
 	 * close input devices
 	 */
-	if (C.KBD_dev > 0)
-		f_close(C.KBD_dev);
-
 	if (C.adi_mouse)
 		adi_close(C.adi_mouse);
+
+	if (C.KBD_dev > 0)
+		f_close(C.KBD_dev);
 
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
 
+	DIAGS(("closed all input devices"));
+
 	/* wakeup loader */
 	wake(WAIT_Q, (long)&loader_pid);
-
 
 	if (C.shutdown & HALT_SYSTEM)
 		s_hutdown(0);  /* poweroff or halt if poweroff is not supported */
 	else if (C.shutdown & REBOOT_SYSTEM)
 		s_hutdown(1);  /* warm start */
 
+	DIAGS(("-> kthread_exit"));
 
 	/* XXX todo -> module_exit */
 	kthread_exit(0);
