@@ -44,6 +44,8 @@
 
 # include "syscall_vectors.h"
 
+# include "arch/sig_mach.h"
+
 # include "bios.h"
 # include "console.h"
 # include "crypt_IO.h"

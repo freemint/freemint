@@ -6,6 +6,7 @@ STARTUP = startup.o
 COBJS = \
 	mprot030.c \
 	mprot040.c \
+	sig_mach.c \
 	timer.c
 
 SOBJS = \
