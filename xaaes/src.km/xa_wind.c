@@ -630,8 +630,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				(const RECT *)(pb->intin+2), blit?"yes":"no", ir));
 
-			display("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx for %s",
-				*(const RECT *)(pb->intin+2), blit?"yes":"no", ir, client->name);
+			//display("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx for %s",
+			//	*(const RECT *)(pb->intin+2), blit?"yes":"no", ir, client->name);
 			
 			blit = true;
 		}
@@ -739,7 +739,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (!ir)
 				ir = (RECT *)&w->rc;
 			*(RECT *)(pb->intout + 1) = *ir;
-			display("wind_xset: %d return %d/%d/%d/%d", cmd, *ir);
 		}
 
 		break;
