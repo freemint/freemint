@@ -65,6 +65,36 @@
 
 # define MAXAKP		126	/* maximum _AKP code supported */
 
+/* Extended KBDVECS structure (as of TOS 2.0)
+ */
+typedef struct
+{
+	uchar (*ikbdscan) (ushort scancode);
+	void (*midivec) (uchar data);
+	void (*vkbderr) (uchar data);
+	void (*vmiderr) (uchar data);
+	void (*statvec) (char *packet);
+	void (*mousevec) (char *packet);
+	void (*clockvec) (char *packet);
+	void (*joyvec) (char *packet);
+	void (*midisys) (void);
+	void (*ikbdsys) (void);
+	char ikbdstate;
+} XKBDVECS;
+
+/* Vectors for scancode -> ASCII conversions
+ */
+struct keytab
+{
+	uchar *unshift;		/* every TOS */
+	uchar *shift;		/* every TOS */
+	uchar *caps;		/* every TOS */
+	uchar *alt;		/* TOS 4.0x and above */
+	uchar *altshift;	/* TOS 4.0x and above */
+	uchar *altcaps;		/* TOS 4.0x and above */
+	uchar *altgr;		/* Milan TOS */
+};
+
 /* Struct for the default action on C/A/D
  */
 struct cad_def
@@ -79,19 +109,6 @@ struct cad_def
 		char *cmd;	/* e.g. command line */
 	} aux;
 	char *env;		/* only valid for exec */
-};
-
-/* Vectors for scancode -> ASCII conversions
- */
-struct keytab
-{
-	uchar *unshift;		/* every TOS */
-	uchar *shift;		/* every TOS */
-	uchar *caps;		/* every TOS */
-	uchar *alt;		/* TOS 4.0x and above */
-	uchar *altshift;	/* TOS 4.0x and above */
-	uchar *altcaps;		/* TOS 4.0x and above */
-	uchar *altgr;		/* Milan TOS */
 };
 
 /* Interrupt routines */
