@@ -349,12 +349,12 @@ opcode	class name	args */
 0x10e	p setpgrp	(short pid, short newgrp)
 0x10f	p getuid	(void)
 
-0x110	p setuid	(short id)
+0x110	p setuid	(ushort id)
 0x111	p kill		(short pid, short sig)
 0x112	p signal	(short sig, long handler)
 0x113	p vfork		(void)
 0x114	p getgid	(void)
-0x115	p setgid	(short id)
+0x115	p setgid	(ushort id)
 0x116	p sigblock	(ulong mask)
 0x117	p sigsetmask	(ulong mask)
 0x118	p usrval	(long arg)
@@ -403,19 +403,19 @@ opcode	class name	args */
 0x140	p trace		(short request, short pid, void *addr, long data) /* 1.15.11 */
 0x141	m validate	(short pid, void *addr, long size, long *flags) /* 1.15.11 */
 0x142	d xreaddir	(short len, long handle, char *buf, XATTR *xattr, long *xret)
-0x143	p seteuid	(short id)
-0x144	p setegid	(short id)
+0x143	p seteuid	(ushort id)
+0x144	p setegid	(ushort id)
 0x145	p getauid	(void)
 0x146	p setauid	(short id)
-0x147	p getgroups	(short gidsetlen, short gidset[])
-0x148	p setgroups	(short ngroups, short gidset[])
+0x147	p getgroups	(short gidsetlen, ushort gidset[])
+0x148	p setgroups	(short ngroups, ushort gidset[])
 0x149	t setitimer	(short which, long *interval, long *value, long *ointerval, long *ovalue)
 0x14a	d chroot	(const char *dir)				/* 1.15.3  */
 0x14b	f stat64	(short flag, const char *name, STAT *stat)	/* 1.15.4  */
 0x14c	f seek64	(llong place, short fh, short how, llong *newpos)	/* 1.15.10 */
 0x14d	d setkey	(llong dev, char *key, short cipher)		/* 1.15.4  */
-0x14e	p setreuid	(short rid, short eid)
-0x14f	p setregid	(short rid, short eid)
+0x14e	p setreuid	(ushort rid, ushort eid)
+0x14f	p setregid	(ushort rid, ushort eid)
 
 0x150	s sync		(void)
 0x151	s halt		(long restart)

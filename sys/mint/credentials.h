@@ -42,9 +42,9 @@
 
 struct ucred
 {
-	short		euid;			/* effective user id */
-	short		egid;			/* effective group id */
-	short		groups [NGROUPS_MAX];	/* groups */
+	unsigned short	euid;			/* effective user id */
+	unsigned short	egid;			/* effective group id */
+	unsigned short	groups [NGROUPS_MAX];	/* groups */
 	unsigned short	ngroups;		/* number of groups */
 	
 	short		links;			/* number of references */
@@ -54,10 +54,10 @@ struct ucred
 struct pcred
 {
 	struct ucred	*ucr;			/*  */
-	short		ruid;			/* real user id */
-	short		rgid;			/* real group id */
-	short		suid;			/* saved effective user id */
-	short		sgid;			/* saved effective group id */
+	unsigned short	ruid;			/* real user id */
+	unsigned short	rgid;			/* real group id */
+	unsigned short	suid;			/* saved effective user id */
+	unsigned short	sgid;			/* saved effective group id */
 	
 	short		links;			/* number of references */
 	short		pad;
