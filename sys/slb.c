@@ -170,7 +170,7 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	char *fullpath;
 	BASEPAGE *b;
 	MEMREGION *mr;
-	USER_THINGS *ut;
+	struct user_things *ut;
 
 	/* Construct the full path name of the SLB */
 	fullpath = kmalloc(strlen(path) + strlen(name) + 2);
@@ -286,7 +286,7 @@ slb_error:
 	}
 
 	/* Set the start of the fake code to call init as p_tbase */
-	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+	ut = curproc->p_mem->tp_ptr;
 	b->p_tbase = ut->slb_init_and_exit_p;
 
 	/* Run the shared library, i.e. call its init() routine */
@@ -389,7 +389,7 @@ long _cdecl
 sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 {
 	SHARED_LIB *slb;
-	USER_THINGS *ut;
+	struct user_things *ut;
 	long r, *usp;
 	ulong i;
 	MEMREGION **mr;
@@ -561,7 +561,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	 */
 	mark_users(slb, curproc->pid, 1);
 
-	ut = (USER_THINGS *) curproc->p_mem->tp_ptr;
+	ut = curproc->p_mem->tp_ptr;
 	ut->bp = curproc->base;
 
 	*fn = (SLB_EXEC)ut->slb_exec_p;
@@ -635,7 +635,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_G, curproc->pid);
 	if (has_opened(slb, curproc->pid))
 	{
-		USER_THINGS *ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+		struct user_things *ut = curproc->p_mem->tp_ptr;
 
 		slb->slb_used--;
 		mark_opened(slb, curproc->pid, 0);
@@ -710,7 +710,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 int
 slb_close_on_exit (int terminate)
 {
-	USER_THINGS *ut;
+	struct user_things *ut;
 	SHARED_LIB *slb;
 	MEMREGION **mr;
 	ulong i;
@@ -766,7 +766,7 @@ slb_close_on_exit (int terminate)
 	 * Otherwise, change curproc's context to call slb_close_and_pterm() in
 	 * slb_util.spp upon "returning" from Pterm().
 	 */
-	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+	ut = curproc->p_mem->tp_ptr;
 
 	assert(has_opened(slb, curproc->pid));
 	slb->slb_used--;

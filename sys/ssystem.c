@@ -290,7 +290,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			/* Gluestik kludges, part I */
 			if (isroot && (arg1 == COOKIE_STiK || arg1 == COOKIE_ICIP))
 			{
-				USER_THINGS *ut;
+				struct user_things *ut;
 				PROC *p;
 
 				for (p = proclist; p; p = p->gl_next)
@@ -300,12 +300,12 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 						if (p->p_mem->tp_reg)
 						{
 							attach_region(curproc, p->p_mem->tp_reg);
-							ut = (USER_THINGS *)p->p_mem->tp_ptr;
-							set_cookie((COOKIE *)ut->user_jar_p, arg1, arg2);
+							ut = p->p_mem->tp_ptr;
+							set_cookie(ut->user_jar_p, arg1, arg2);
 							detach_region(curproc, p->p_mem->tp_reg);
 						}
 						else if (p->pid == 0)
-							set_cookie((COOKIE *)kernel_things.user_jar_p, arg1, arg2);
+							set_cookie(kernel_things.user_jar_p, arg1, arg2);
 					}
 				}
 			}
@@ -327,7 +327,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			/* Gluestik kludges, part II */
 			if (isroot && (arg1 == COOKIE_STiK || arg1 == COOKIE_ICIP))
 			{
-				USER_THINGS *ut;
+				struct user_things *ut;
 				PROC *p;
 
 				for (p = proclist; p; p = p->gl_next)
@@ -337,12 +337,12 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 						if (p->p_mem->tp_reg)
 						{
 							attach_region(curproc, p->p_mem->tp_reg);
-							ut = (USER_THINGS *)p->p_mem->tp_ptr;
-							del_cookie((COOKIE *)ut->user_jar_p, arg1);
+							ut = p->p_mem->tp_ptr;
+							del_cookie(ut->user_jar_p, arg1);
 							detach_region(curproc, p->p_mem->tp_reg);
 						}
 						else if (p->pid == 0)
-							del_cookie((COOKIE *)kernel_things.user_jar_p, arg1);
+							del_cookie(kernel_things.user_jar_p, arg1);
 					}
 				}
 			}

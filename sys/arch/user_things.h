@@ -43,7 +43,7 @@
  * (i.e. there is not any pointer in the user space that would point to the struct).
  */
 
-typedef struct
+struct user_things
 {
 	const long	len;		/* number of bytes to copy (this struct and the code) */
 	BASEPAGE	*bp;		/* user basepage ptr (warning: UNDEFINED before Slbopen()! */
@@ -63,12 +63,12 @@ typedef struct
 
 	long user_xhdi_p;		/* call the XHDI interface */
 # ifdef JAR_PRIVATE
-	long user_jar_p;		/* user's copy of the Cookie Jar */
+	struct cookie *user_jar_p;	/* user's copy of the Cookie Jar */
 # endif
 
-} USER_THINGS;
+};
 
-extern USER_THINGS user_things;
-extern USER_THINGS kernel_things;
+extern struct user_things user_things;
+extern struct user_things kernel_things;
 
 # endif /* _m68k_user_things_h */

@@ -204,14 +204,14 @@ long _cdecl
 sys_b_setexc (int number, long vector)
 {
 # ifdef JAR_PRIVATE
-	USER_THINGS *ut;
+	struct user_things *ut;
 # endif
 	PROC *p = curproc;
 	long *place;
 	long old;
 
 # ifdef JAR_PRIVATE
-	ut = (USER_THINGS *)p->p_mem->tp_ptr;
+	ut = p->p_mem->tp_ptr;
 # endif
 	/* If the caller has no root privileges, we'll attempt
 	 * to terminate it. We allow to change the critical error handler

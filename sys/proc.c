@@ -412,7 +412,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 	auto int foo;
 	PROC *p;
 # ifdef JAR_PRIVATE
-	USER_THINGS *ut;
+	struct user_things *ut;
 # endif
 
 	p = curproc;
@@ -449,7 +449,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 	 * Setexc(). We don't like that.
 	 */
 # ifdef JAR_PRIVATE
-	ut = (USER_THINGS *)p->p_mem->tp_ptr;
+	ut = p->p_mem->tp_ptr;
 	if (*(long *)0x05a0L != ut->user_jar_p)
 		*(long *)0x05a0L = ut->user_jar_p;
 # endif
