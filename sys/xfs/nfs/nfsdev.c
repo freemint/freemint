@@ -21,6 +21,8 @@
 
 # include "nfsdev.h"
 
+# include "mint/ioctl.h"
+
 # include "nfssys.h"
 # include "nfsutil.h"
 # include "sock_ipc.h"
