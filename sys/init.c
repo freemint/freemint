@@ -122,7 +122,6 @@ KBDVEC *syskey, oldkey;
 xbra_vec old_criticerr;
 xbra_vec old_execos;
 
-# ifdef EXCEPTION_SIGS
 /* bus error, address error, illegal instruction, etc. vectors 
  */
 xbra_vec old_bus;
@@ -142,7 +141,6 @@ xbra_vec old_spurious;
 xbra_vec old_fpcp[7];
 xbra_vec old_pmmuill;
 xbra_vec old_pmmuacc;
-# endif
 
 long	old_term;
 long	old_resval;	/* old reset validation */
@@ -348,7 +346,6 @@ init_intr (void)
 	
 	/* set up signal handlers */
 	xbra_install (&old_bus, 8L, new_bus);
-# ifdef EXCEPTION_SIGS
 	xbra_install (&old_addr, 12L, new_addr);
 	xbra_install (&old_ill, 16L, new_ill);
 	xbra_install (&old_divzero, 20L, new_divzero);
@@ -369,7 +366,6 @@ init_intr (void)
 	xbra_install (&old_cpv, 52L, new_cpv);
 	xbra_install (&old_uninit, 60L, new_uninit);
 	xbra_install (&old_spurious, 96L, new_spurious);
-# endif
 	
 	/* set up disk vectors */
 	new_xbra_install (&old_mediach, 0x47eL, new_mediach);
@@ -425,7 +421,6 @@ restr_intr (void)
 	
 	*((long *) 0x008L) = (long) old_bus.next;
 	
-# ifdef EXCEPTION_SIGS
 	*((long *) 0x00cL) = (long) old_addr.next;
 	*((long *) 0x010L) = (long) old_ill.next;
 	*((long *) 0x014L) = (long) old_divzero.next;
@@ -448,7 +443,6 @@ restr_intr (void)
 	*((long *) 0x034L) = (long) old_cpv.next;
 	*((long *) 0x03cL) = (long) old_uninit.next;
 	*((long *) 0x060L) = (long) old_spurious.next;
-# endif
 	
 	*((long *) 0x084L) = old_dos;
 	*((long *) 0x0b4L) = old_bios;
