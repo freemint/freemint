@@ -11,7 +11,7 @@
 
 /*
  * begin:	1999-09-27
- * last change: 2000-02-02
+ * last change: 2000-05-29
  * 
  * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * 
@@ -23,6 +23,11 @@
  * cryptographic code (Blowfish) is in blowfish.c.
  * 
  * History:
+ * 2000-05-29: - crypt_block() now gets the physical record number, adapted
+ *               calls to it accordingly (Gryf)
+ *             - rwabs_crypto() didn't properly skip the bootsector (forgot to
+ *               increment the record number, which is used for the feedback in
+ *               CBC mode) (Gryf)
  * 2000-02-02: - Added additional parameter to d_setkey, which selects the
  *               cipher to use. Currently, only a value of zero (Blowfish) is
  *               supported, other values are reserved for future expansions
@@ -144,7 +149,7 @@ byte_copy (char *to, char *from, short bytes)
  * decipher: If non-zero, the block will be decrypted, encrypted otherwise
  * buf: Pointer to the buffer which is to be en/decrypted
  * size: How many bytes are in buf?
- * rec: The (logical!) starting record of buf on the drive
+ * rec: The (physical!) starting record of buf on the drive
  * DI: The diskinfo structure of the drive
  */
 static void
@@ -160,7 +165,7 @@ crypt_block (BF_KEY *bfk, void (*crypt)(BF_KEY *, ulong *, ulong *), char *buf, 
 	
 	/* Initialize local variables, and the CBC feedback register */
 	feedback[0] = 0;
-	feedback[1] = block = rec << di->lshift;
+	feedback[1] = block = rec;
 	count = 0;
 	blocksize = di->pssize;
 	
@@ -224,6 +229,7 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 {
 	void *crypt_buf = buf;
 	ulong crypt_size = size;
+	ulong crypt_rec = rec << di->lshift;
 	long r;
 	
 	/* Record 0 (the bootsector) must not be ciphered, as otherwise
@@ -234,13 +240,14 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	{
 		crypt_buf = (char *) buf + di->pssize;
 		crypt_size -= di->pssize;
+		crypt_rec++;
 		if (crypt_size == 0)
 			return (*di->crypt.rwabs)(di, rw, buf, size, rec);
 	}
 	
 	/* Encipher the data before writing the buffer */
 	if (rw & 1)
-		crypt_block (di->crypt.key, cbc_encipher, crypt_buf, crypt_size, rec, di);
+		crypt_block (di->crypt.key, cbc_encipher, crypt_buf, crypt_size, crypt_rec, di);
 	
 	/* Do the real read/write operation */
 	r = (*di->crypt.rwabs)(di, rw, buf, size, rec);
@@ -249,7 +256,7 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 		/* On success, always decipher the buffer, as we have
 		 * crypted data in it, anyway
 		 */
-		crypt_block (di->crypt.key, cbc_decipher, crypt_buf, crypt_size, rec, di);
+		crypt_block (di->crypt.key, cbc_decipher, crypt_buf, crypt_size, crypt_rec, di);
 	}
 	
 	return r;
