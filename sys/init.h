@@ -18,5 +18,6 @@ void	restr_intr	(void);
 void	init		(void);
 void	install_cookies	(void);
 
+extern char *sysdir;
 
 # endif /* _init_h */
