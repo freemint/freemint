@@ -993,7 +993,7 @@ graf_mouse(int m_shape, MFORM *mf)
  */
 /*
  * Ozk: XA_graf_mkstate() may be called by processes not yet called
- * appl_ini(). So, it must not depend on client being valid!
+ * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
 XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -1010,7 +1010,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (client)
 			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
 		else
-			DIAG((D_f,NULL,"mouse (non AES process (%d)) %s", p_getpid(), m == M_ON ? "on" : "off"));
+			DIAG((D_f,NULL,"mouse (non AES process (pid %ld)) %s", p_getpid(), m == M_ON ? "on" : "off"));
 #endif
 	}
 	/*
@@ -1050,7 +1050,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
 	{
 		graf_mouse(m, (MFORM *)pb->addrin[0]);
-		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %d)", m, p_getpid()));
+		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %ld)", m, p_getpid()));
 	}
 
 	/* Always return no error */
@@ -1061,7 +1061,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 
 /*
  * Ozk: XA_graf_handle() may be called by processes not yet called
- * appl_ini(). So, it must not depend on client being valid!
+ * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
 XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -1088,7 +1088,7 @@ XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
 
 /*
  * Ozk: XA_graf_mkstate() may be called by processes not yet called
- * appl_ini(). So, it must not depend on client being valid!
+ * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
 XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)

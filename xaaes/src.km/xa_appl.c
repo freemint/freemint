@@ -463,8 +463,17 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[0] = client->p->pid;
 
 	/* XXX ??? */
-	if (strnicmp(client->proc_name, "wdialog", 7) == 0)
+	/*
+	 * Ozk: Weirdest thing; imgc4cd and ic4plus calls appl_exit() directly
+	 * after it calls appl_init() and ignoring the appl_exit() make'em work!
+	 */
+	if (	strnicmp(client->proc_name, "wdialog", 7) == 0 ||
+		strnicmp(client->proc_name, "imgc4cd", 7) == 0 ||
+		strnicmp(client->proc_name, "ic4plus", 7) == 0)
+	{
+		DIAG((D_appl, client, "appl_exit ignored for %s", client->name));
 		return XAC_DONE;
+	}
 
 	/* we assume correct termination */
 	exit_client(lock, client, 0);
@@ -813,6 +822,11 @@ static short info_tab[17][4] =
 /*
  * appl_getinfo() handler
  */
+
+/*
+ * Ozk: XA_appl_getinfo() may be called by processes not yet called
+ * appl_ini(). So, it must not depend on client being valid!
+ */
 unsigned long
 XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -820,8 +834,13 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(1,5,0)
 
+#if GENERATE_DIAGS
 	/* Extremely curious to who's asking what. */
-	DIAG((D_appl, client, "appl_getinfo %d for %s", gi_type, c_owner(client)));
+	if (client)
+		DIAG((D_appl, client, "appl_getinfo %d for %s", gi_type, c_owner(client)));
+	else
+		DIAG((D_appl, client, "appl_getinfo %d for non AES process (pid %ld)", gi_type, p_getpid()));
+#endif	
 
 	if (gi_type > 14)
 	{
@@ -860,6 +879,10 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
  *
  * HR: the -1 -2 support wasnt good at all
  */
+/*
+ * Ozk: XA_appl_find() may be called by processes not yet called
+ * appl_init(). So, it must not depend on client being valid!
+ */
 unsigned long
 XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -870,7 +893,12 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(0,1,1)
 
-	DIAG((D_appl, client, "appl_find for %s", c_owner(client)));
+#if GENERATE_DIAGS
+	if (client)
+		DIAG((D_appl, client, "appl_find for %s", c_owner(client)));
+	else
+		DIAG((D_appl, NULL, "appl_find for non AES process (pid %ld)", c_owner(client), p_getpid()));
+#endif
 
 	/* mint id <--> aes_id */
 	if (ex->m == -1 || ex->m == -2)
