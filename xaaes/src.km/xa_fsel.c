@@ -327,7 +327,8 @@ executable(char *nam)
 		    || !stricmp(ext, "acc")));
 }
 
-static void set_file(enum locks lock, const char *fn)
+static void
+set_file(enum locks lock, const char *fn)
 {
 	XA_TREE *wt = get_widget(fs.wind, XAW_TOOLBAR)->stuff;
 
