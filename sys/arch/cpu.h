@@ -7,7 +7,6 @@
 
 # include "mint/mint.h"
 
-
 void _cdecl	init_cache	(void);
 
 long _cdecl	ccw_getdmask	(void);
@@ -22,5 +21,6 @@ void _cdecl	cpush060	(const void *base, long size);
 
 void _cdecl	setstack	(long);
 
+void _cdecl	get_superscalar	(void);
 
 # endif /* _m68k_cpu_h */
