@@ -393,7 +393,11 @@ void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 		{
 			if (!off)
 				off = hide_mouse_if_needed(&t1);
-			set_clipping(vdi_handle, t1.g_x, t1.g_y, t1.g_w, t1.g_h, TRUE);
+			if (memcmp (&t1, &t2, sizeof t1))
+				set_clipping(vdi_handle, t1.g_x, t1.g_y, 
+					     t1.g_w, t1.g_h, TRUE);
+			else
+				set_clipping (vdi_handle, 0, 0, 0, 0, FALSE);
 			(*v->draw)(v, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);

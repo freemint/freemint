@@ -35,6 +35,7 @@ bool gl_done = FALSE;
 static OBJECT	*menu;
 static WDIALOG	*about;
 
+int draw_ticks = MAX_DRAW_TICKS;
 
 /******************************************************************************/
 #include <stdio.h>
@@ -332,6 +333,10 @@ void event_loop(void)
 
 		if (event & MU_TIMER)
 			fd_input();
+		
+		++draw_ticks;
+		if (draw_ticks > MAX_DRAW_TICKS)
+			draw_ticks = 0;
 	}
 	while (!gl_done);
 	delete_menu();
