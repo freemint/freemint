@@ -235,39 +235,47 @@ long
 kern_get_cpuinfo (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
-	ulong len = 256;
-	char *cpu;
-	char *mmu;
-	char *fpuname;
+	ulong len = 256, clkspeed, clkdiv, div = 0;
+	extern ulong bogomips[2];
+	char *cpu, *mmu, *fpuname;
 	
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
-	
-	mmu = "none";
+
+	cpu = "68000";
+	fpuname = mmu = "none";
+
+	/* Average number of cycles per instruction in __delay() */
+	clkdiv = 9;	/* 8/10, 68000 is sloooooow */
 
 	switch (mcpu)
 	{
-		case 00:
-			cpu = "68000";
-			break;
 		case 10:
 			cpu = "68010";
 			break;
 		case 20:
 			cpu = "68020";
+			clkdiv = 4;		/* 2/6 */
 			break;
 		case 30:
 			cpu = mmu = "68030";
+			clkdiv = 4;		/* 2/6 */
 			break;
 		case 40:
 			cpu = mmu = "68040";
+			clkdiv = 2;		/* 2/2 */
 			break;
 		case 60:
 			cpu = mmu = "68060";
+			div = 1;		/* divide, don't multiply */
+			clkdiv = 2;		/* 1/0 (predicted branch) */
 			break;
+
+		/* Add more processors here */
+
 		default:
-			cpu = mmu = "680x0";
+			cpu = "680x0";
 			break;
 	}
 	
@@ -295,19 +303,43 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 				break;
 		}
 	}
-	else
-		fpuname = "none";
 	
+# ifdef ONLY030
+	/* Round the fractional part up to an unit,
+	 * add units, then mul everything by clkdiv */
+	clkspeed = ((bogomips[1] + 50)/100) + bogomips[0];
+
+	/* mc68060 can execute more than 1 instruction in a cycle
+	 * and this is the case. So we must div, not mul.
+	 */
+	if (div)
+		clkspeed /= clkdiv;
+	else
+		clkspeed *= clkdiv;
+# else
+	/* This is:
+	 * bogomips = (clkspeed - ((0.24/2) * 4)) / clkdiv
+	 * The subtracted value is calculated out of the
+	 * correction value on a 16 Mhz 68030 (0.24)
+	 * scaled down according to the clock frequency
+	 * then multiplied as many times as 68000 is
+	 * slower than 68030 :-)
+	 * Notice this stuff has no real meaning on ST, it has
+	 * a visual purpose only.
+	 */
+	clkspeed = 8;
+	bogomips[0] = 0;
+	bogomips[1] = 83;
+# endif
+
 	info->len = ksprintf (info->buf, len,
 				"CPU:\t\t%s\n"
 				"MMU:\t\t%s\n"
 				"FPU:\t\t%s\n"
-				"Clockspeed:\t ? MHz\n"
-				"BogoMips:\t %lu.%02lu\n",
-				cpu, mmu, fpuname,
-				(loops_per_sec + 2500) / 500000,
-				((loops_per_sec + 2500) / 5000) % 100);
-	
+				"Clockspeed:\t %lu MHz\n"
+				"BogoMIPS:\t %lu.%02lu\n",
+				cpu, mmu, fpuname, clkspeed,
+				bogomips[0], bogomips[1]);
 	*buffer = info;
 	return 0;
 }
@@ -386,16 +418,16 @@ kern_get_hz (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
 	ulong len;
-	
-	/* enough for a number */
+
+	/* Enough for a number */
 	len = 16;
 	
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 	
-	ksprintf (info->buf, len, "%s", HZ);
-	info->len = len;
+	ksprintf (info->buf, len, "%lu", HZ);
+	info->len = strlen(info->buf);
 	
 	*buffer = info;
 	return 0;
