@@ -59,7 +59,7 @@ init (struct kerinfo *k)
 	/* check for revision 1 features */
 	if (bio.revision < 1)	
 	{
-		c_conws ("\033pFreeMiNT buffer cache revision to old!\033q\r\n");
+		c_conws ("\033pFreeMiNT buffer cache revision too old!\033q\r\n");
 		c_conws ("\7Minix-FS not installed.\r\n\r\n");
 		
 		return NULL;		
