@@ -621,15 +621,16 @@ s_uptime (ulong *cur_uptime, ulong loadaverage[3])
  * does exactly the same, and we've also removed some redundant code.
  */
 void
-shutdown (void)
+shutdown(void)
 {
-	PROC *p;
+	struct proc *p;
 # if 0
-	short proc_left = 0;
+	int proc_left = 0;
 # endif
-	short i;
+	int i;
 
-	assert (curproc->p_sigacts);
+	DEBUG(("shutdown() entered"));
+	assert(curproc->p_sigacts);
 
 	/* Ignore signals, that could terminate this process */
 	SIGACTION(curproc, SIGCHLD).sa_handler = SIG_IGN;
@@ -638,22 +639,34 @@ shutdown (void)
 	SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGHUP).sa_handler = SIG_IGN;
 
-	for (p = proclist; p; p = p->gl_next)
+	p = proclist;
+	while (p)
 	{
-		if (!p->pid) continue;
-		if (p == curproc) continue;  /* curproc is trapped in this code */
-		if (p->memflags & F_OS_SPECIAL) continue;	/* AES :< */
+		struct proc *next = p->gl_next;
+		int flag = 1;
 
+		if (!p->pid)
+			flag = 0; /* mint thread */
+
+		if (p == curproc)
+			flag = 0; /* curproc is trapped in this code */
+
+		if (p->memflags & F_OS_SPECIAL)
+			flag = 0; /* AES :< */
+
+		if (flag)
 		if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 		{
-			if (p->wait_q != READY_Q)
+			ushort sr = spl7();
+			if (p->wait_q && p->wait_q != READY_Q)
 			{
-				short sr = spl7 ();
-				rm_q (p->wait_q, p);
-				add_q (READY_Q, p);
-				spl (sr);
+				rm_q(p->wait_q, p);
+				add_q(READY_Q, p);
 			}
-			post_sig (p, SIGTERM);
+			spl(sr);
+
+			DEBUG(("SIGTERM -> %s (pid %i)", p->name, p->pid));
+			post_sig(p, SIGTERM);
 
 			for (i = 0; i < 16; i++)	/* sleep */
 				s_yield();
@@ -661,6 +674,11 @@ shutdown (void)
 			proc_left++;
 # endif
 		}
+
+		/* p may be invalidated; so save next ptr before
+		 * and sue it here
+		 */
+		p = next;
 	}
 
 /* Please don't delete this for now
@@ -671,11 +689,11 @@ shutdown (void)
 		/* sleep a little while, to give the other processes
 		 * a chance to shut down
 		 */
-		if (addtimeout (curproc, 1000, shutmedown))
+		if (addtimeout(curproc, 1000, shutmedown))
 		{
 			do {
-				DEBUG (("Sleeping..."));
-				sleep (WAIT_Q, (long) s_hutdown);
+				DEBUG(("Sleeping..."));
+				sleep(WAIT_Q, (long) s_hutdown);
 			}
 			while (curproc->wait_cond == (long) s_hutdown);
 		}
@@ -685,47 +703,47 @@ shutdown (void)
 			if (!p->pid || (p == curproc) || \
 					(p->memflags & F_OS_SPECIAL))
 				continue;
-			post_sig (p, SIGKILL);
+			post_sig(p, SIGKILL);
 		}
 	}
 # endif
 
 	sys_q[READY_Q] = 0;
 
-	DEBUG (("Close open files ..."));
-	close_filesys ();
-	DEBUG (("done"));
+	DEBUG(("Close open files ..."));
+	close_filesys();
+	DEBUG(("done"));
 
-	DEBUG (("Syncing file systems ..."));
-	s_ync ();
-	DEBUG (("done"));
+	DEBUG(("Syncing file systems ..."));
+	s_ync();
+	DEBUG(("done"));
 
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
-		FILESYS *fs = drives [i];
+		FILESYS *fs = drives[i];
 
 		if (fs)
 		{
 			if (fs->fsflags & FS_EXT_1)
 			{
-				DEBUG (("Unmounting %c: ...", 'A'+i));
-				xfs_unmount (fs, i);
+				DEBUG(("Unmounting %c: ...", 'A'+i));
+				xfs_unmount(fs, i);
 			}
 			else
 			{
-				DEBUG (("Invalidate %c: ...", 'A'+i));
-				xfs_dskchng (fs, i, 1);
+				DEBUG(("Invalidate %c: ...", 'A'+i));
+				xfs_dskchng(fs, i, 1);
 			}
 		}
 	}
 
-	DEBUG (("Syncing file systems ..."));
-	s_ync ();
-	DEBUG (("done"));
+	DEBUG(("Syncing file systems ..."));
+	s_ync();
+	DEBUG(("done"));
 }
 
 long _cdecl
-s_hutdown (long restart)
+s_hutdown(long restart)
 {
 	PROC *p = curproc;
 
@@ -739,7 +757,7 @@ s_hutdown (long restart)
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
 	{
-		shutdown ();
+		shutdown();
 
 		/* 0 = halt, 1 = warm start, 2 = cold start
 		 */
@@ -747,8 +765,8 @@ s_hutdown (long restart)
 		{
 			case  0:
 			{
-				DEBUG (("Halting system ..."));
-				halt ();		/* does not return */
+				DEBUG(("Halting system ..."));
+				halt();		/* does not return */
 			}
 			case  2:
 			{
@@ -761,8 +779,8 @@ s_hutdown (long restart)
 			case  1:
 			default:
 			{
-				DEBUG (("Rebooting ..."));
-				reboot ();		/* does not return */
+				DEBUG(("Rebooting ..."));
+				reboot();		/* does not return */
 			}
 		}
 	}
