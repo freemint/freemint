@@ -674,13 +674,20 @@ cd9660_rrip_offset(struct iso_directory_record *isodir, struct iso_super *super)
 		super->rr_skip0 = 15;
 		p = (ISO_RRIP_OFFSET *)((char *)p + 15);
 		if (memcmp(p, "SP\7\1\276\357", 6))
+		{
+			DEBUG(("cd9660_rrip_offset: both memcmp failed -> -1"));
 			return -1;
+		}
 	}
 
 	analyze.super = super;
 	analyze.fields = ISO_SUSP_EXTREF;
 	if (!(cd9660_rrip_loop(isodir, &analyze, rrip_table_extref) & ISO_SUSP_EXTREF))
+	{
+		DEBUG(("cd9660_rrip_offset: cd9660_rrip_loop failed -> -1"));
 		return -1;
+	}
 
+	DEBUG(("cd9660_rrip_offset: ok -> %i", isonum_711(p->skip)));
 	return isonum_711(p->skip);
 }

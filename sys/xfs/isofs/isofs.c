@@ -413,6 +413,18 @@ init_metados(void)
 	return 0;
 }
 
+static void
+exit_metados(void)
+{
+	Metaclose('A');
+
+	if (di)
+	{
+		bio.free_di(di);
+		di = NULL;
+	}
+}
+
 static long
 iso_makemp(struct iso_super *super, UNIT *u, long *ea_len)
 {
@@ -550,7 +562,8 @@ iso_mountfs(void)
 	super = kmalloc(sizeof(*super));
 	bzero(super, sizeof(*super));
 
-	if (iso_makemp(super, u_pri, &ext_attr_length) == -1)
+	r = iso_makemp(super, u_pri, &ext_attr_length);
+	if (r)
 	{
 		r = EINVAL;
 		goto out;
@@ -561,6 +574,7 @@ iso_mountfs(void)
 	bio.rel_resident(u_pri);
 	u_pri = NULL;
 
+#if 1
 	/* Check the Rock Ridge Extension support */
 	{
 		struct iso_directory_record *rootp;
@@ -608,6 +622,7 @@ iso_mountfs(void)
 			super->im_joliet_level = joliet_level;
 		}
 	}
+#endif
 
 	if (u_sup)
 	{
@@ -636,6 +651,7 @@ out:
 	if (super)
 		kfree(super, sizeof(*super));
 
+	exit_metados();
 	return r;
 }
 
