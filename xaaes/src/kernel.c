@@ -878,7 +878,6 @@ cont:
 			/* Call the active function if we need to */
 			if (C.active_timeout.task)
 			{
-//				display(" timeout!\n");
 				if (C.active_timeout.timeout != 0
 				     && (fs_rtn == 0 || (evnt_count & 0xff) == 1))
 					(*C.active_timeout.task)(&C.active_timeout);
@@ -1075,6 +1074,8 @@ setup_k_function_table(void)
 							 * and unlock under kernel PID
 							 * we gotta let the function itself (under kernel PID)
 							 * do the lock_screen() call
+							 * Ozk: But we change it so all screenlocks happen under
+							 * the client PID instead of under kernel PID..
 							*/
 	Ktab[XA_MENU_ATTACH  ].f = XA_menu_attach;
 	Ktab[XA_MENU_ISTART  ].f = XA_menu_istart;

@@ -578,6 +578,7 @@ menu_finish(struct task_administration_block *tab)
 	C.Aes->waiting_for = XAWAIT_MENU; /* ready for next menu choice */
 	C.Aes->em.flags = MU_M1|0;
 
+	/* Ozk: Only unlock screen here if locker is XaAES kernel itself! */
 	if (cfg.menu_locking && S.update_lock == C.Aes->pid)
 	{
 		if (is_bar)
