@@ -54,9 +54,11 @@
 
 long kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p);
 long hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p);
+long proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p);
 
 long _cdecl
-sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
+sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp,
+	      const void *new, ulong newlen)
 {
 	struct proc *p = curproc;
 
@@ -105,6 +107,9 @@ sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp, const void *
 			// fn = debug_sysctl;
 			break;
 # endif
+		case CTL_PROC:
+			fn = proc_sysctl;
+			break;
 		default:
 			return EOPNOTSUPP;
 	}
@@ -129,7 +134,8 @@ long securelevel = 0;
  * kernel related system variables.
  */
 long
-kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p)
+kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
+	     const void *newp, ulong newlen, struct proc *p)
 {
 	long ret;
 
@@ -212,7 +218,8 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *
  * hardware related system variables.
  */
 long
-hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *newp, ulong newlen, struct proc *p)
+hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
+	   const void *newp, ulong newlen, struct proc *p)
 {
 	/* all sysctl names at this level are terminal */
 	if (namelen != 1)
@@ -244,6 +251,69 @@ hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *ne
 	}
 
 	return EOPNOTSUPP;
+}
+
+long
+proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
+	     const void *newp, ulong newlen, struct proc *p)
+{
+	struct proc *ptmp = NULL;
+	
+	if (namelen < 2)
+		return EINVAL;
+	
+	if (name[0] == PROC_CURPROC)
+	{
+		ptmp = p;
+	}
+	else
+	{
+		for (ptmp = proclist; ptmp; ptmp = ptmp->gl_next)
+		{
+			if (ptmp->pid == name[0])
+				break;
+		}
+		
+		if (ptmp == NULL)
+			return ESRCH;
+		
+		if (p->p_cred->ucr->euid != 0)
+		{
+			int i;
+			
+			if (p->p_cred->ruid != ptmp->p_cred->ruid ||
+			    p->p_cred->ruid != ptmp->p_cred->suid)
+				return EPERM;
+			
+			if (ptmp->p_cred->rgid != ptmp->p_cred->sgid)
+				return EPERM; /* sgid proc */
+			
+			for (i = 0; i < p->p_cred->ucr->ngroups; i++)
+			{
+				if (p->p_cred->ucr->groups[i] == ptmp->p_cred->rgid)
+					break;
+			}
+			
+			if (i == p->p_cred->ucr->ngroups)
+				return EPERM;
+		}
+	}
+	
+	if (name[1] == PROC_PID_DEBUG)
+	{
+		long ret;
+		long flag = 0;
+		
+		if (namelen != 2)
+			return EINVAL;
+		
+		ret = sysctl_long (oldp, oldlenp, newp, newlen, &flag);
+		DEBUG(("pid %i: flag is now %li", ptmp->pid, flag));
+		
+		return ret;
+	}
+	
+	return EINVAL;
 }
 
 

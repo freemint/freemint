@@ -91,7 +91,8 @@ struct ctlname
 # define CTL_HW		2		/* generic cpu/io */
 # define CTL_MACHDEP	3		/* machine dependent */
 # define CTL_DEBUG	4		/* debugging parameters */
-# define CTL_MAXID	5		/* number of valid top-level ids */
+# define CTL_PROC	5		/* per-proc attr */
+# define CTL_MAXID	6		/* number of valid top-level ids */
 
 # define CTL_NAMES \
 { \
@@ -100,6 +101,7 @@ struct ctlname
 	{ "hw", CTLTYPE_NODE }, \
 	{ "machdep", CTLTYPE_NODE }, \
 	{ "debug", CTLTYPE_NODE }, \
+	{ "proc", CTLTYPE_NODE }, \
 }
 
 
@@ -176,6 +178,24 @@ struct ctlname
 # define CTL_DEBUG_NAME		0	/* string: variable name */
 # define CTL_DEBUG_VALUE	1	/* int: variable value */
 # define CTL_DEBUG_MAXID	20
+
+
+/*
+ * CTL_PROC subtype. Either a PID, or a magic value for the current proc.
+ */
+
+# define PROC_CURPROC		(~((ulong)1UL << 31))
+
+/*
+ * CTL_PROC definitions
+ */
+# define PROC_PID_DEBUG		1
+# define PROC_PID_MAXID		3
+
+#define	PROC_PID_NAMES { \
+	{ 0, 0 }, \
+	{ "debug", CTLTYPE_INT }, \
+}
 
 
 # ifndef __KERNEL__
