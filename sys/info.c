@@ -101,7 +101,7 @@ const char COMPILER_VERS [] = str (__GNUC__) "." str (__GNUC_MINOR__);
 # ifndef THIRD_PARTY
 
 const char *greet1 =
-	"\r\n"
+	"\ev\r\n"
 	"033p"
 	" MiNT is Now TOS (" __DATE__ ")         \033q\r\n"
 	" MiNT v" VERS_STRING " "
@@ -120,7 +120,7 @@ const char *greet2 =
 # else /* THIRD_PARTY */
 
 const char *greet1 =
-	"\r\n"
+	"\ev\r\n"
 	"\033p"
 	" This is " MINT_NAME " v" VERS_STRING "        "
 ;
@@ -344,6 +344,7 @@ const char *MSG_init_delay_loop = "Calibrating delay loop ... ";
 const char *MSG_init_mp = "Memory protection %s\r\n";
 const char *MSG_init_mp_enabled = "enabled";
 const char *MSG_init_mp_disabled = "disabled";
+const char *MSG_init_kbd_desktop_nationality = "Keyboard nationality code: %d\r\nLanguage preference code: %d\r\n";
 const char *MSG_init_supermode = "Entering supervisor mode ...";
 const char *MSG_init_sysdrv_is = "Booting from '%c'\r\n";
 const char *MSG_init_saving_mmu = "Saving MMU setup ...";
@@ -368,7 +369,7 @@ const char *MSG_init_error = " error %ld.\r\n";
 
 # ifdef VERBOSE_BOOT
 const char *MSG_keytable_loading = "Loading keyboard table `%s' ...";
-const char *MSG_keytable_loaded = " AKP code %d.\r\n";
+const char *MSG_keytable_loaded = " AKP code %ld.\r\n";
 # endif
 
 /* ---------- memory.c ------------- */
