@@ -232,6 +232,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));
 
+#if 0
 //#if GENERATE_DIAGS
 		/* CTRL|ALT|number key is emulate wheel. */
 		if (   nk=='U' || nk=='N'
@@ -267,6 +268,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			return true;
 		}
 //#endif
+#endif
 
 		switch (nk)
 		{
@@ -306,6 +308,12 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 			DIAGS(("shutdown by CtlAlt Q/A"));
 			dispatch_shutdown(0);
+			return true;
+		}
+		case 'H':
+		{
+			DIAGS(("shutdown by CtlAlt H"));
+			dispatch_shutdown(HALT_SYSTEM);
 			return true;
 		}
 		case 'Y':				/* ctrl+alt+Y, hide current app. */
