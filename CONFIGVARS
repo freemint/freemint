@@ -12,7 +12,7 @@ ifeq ($(CROSS),yes)
 CROSSPREFIX=m68k-atari-mint-
 
 NATIVECC = gcc
-NATIVECFLAGS = -O
+NATIVECFLAGS = -O -Wall
 CRLF = echo crlf -s
 
 else
@@ -20,7 +20,7 @@ else
 CROSSPREFIX=
 
 NATIVECC = gcc
-NATIVECFLAGS = -O
+NATIVECFLAGS = -O -Wall
 CRLF  = crlf -s
 
 endif
