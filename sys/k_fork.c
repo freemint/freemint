@@ -108,6 +108,8 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	/* child isn't traced */
 	p2->ptracer = 0;
 	p2->ptraceflags = 0;
+	p2->ctxt[CURRENT].ptrace = 0;
+	p2->ctxt[SYSCALL].ptrace = 0;
 	
 	p2->q_next = NULL;
 	p2->wait_q = 0;
