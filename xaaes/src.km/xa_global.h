@@ -229,6 +229,7 @@ struct config
 	short font_id;			/* Font id to use */
 	short double_click_time;	/* Double click timing */
 	short mouse_packet_timegap;	
+	short redraw_timeout;
 	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
 					   we have a VDI that supports mouse wheels. */
 	short wheel_amount;		/* amount of lines for a wheel click. */

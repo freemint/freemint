@@ -478,6 +478,12 @@ struct c_event
 	struct	moose_data	md;
 };
 
+struct xac_moose_data
+{
+	struct moose_data *next;
+	struct moose_data md;
+};
+
 /* Main client application descriptor */
 struct xa_client
 {
@@ -568,8 +574,16 @@ struct xa_client
 /*
  * This part is for Client event dispatching
 */
-	bool	md_valid;
-	struct moose_data md;
+#define CLIENT_MD_BUFFERS	10
+
+	struct moose_data *md_head;
+	struct moose_data *md_tail;
+	struct moose_data *md_end;
+
+	struct moose_data mdb[CLIENT_MD_BUFFERS+1];
+
+	//bool	md_valid;
+	//struct moose_data md;
 
 #define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
 	int	sleepqueue;

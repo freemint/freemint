@@ -207,6 +207,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 				w->r.x, w->r.y, w->r.w, w->r.h);
 	}
 #endif
+	set_winmouse();
 }
 
 void

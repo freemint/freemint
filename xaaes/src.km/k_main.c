@@ -278,7 +278,7 @@ static vdi_vec *svwhlv = NULL;
  * initialise the mouse device
  */
 #define MIN_MOOSE_VER_MAJOR 0
-#define MIN_MOOSE_VER_MINOR 6
+#define MIN_MOOSE_VER_MINOR 7
 
 static bool
 init_moose(void)
@@ -612,9 +612,6 @@ k_main(void *dummy)
 	/* 
 	 * Initialization I/O
 	 */
-
-	bzero(&pending_button, sizeof(pending_button));
-
 	mu_button.b = 0;
 	mu_button.cb = 0;
 	mu_button.clicks = 0;
