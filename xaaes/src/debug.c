@@ -54,7 +54,7 @@ toggle(void)
 		if (D.bug_line > D.debug_lines)
 		{
 			display("********************************************************\n");
-			display("**** %d %s\n", D.bug_line, D.debug_path);
+			/* display("**** %d %s\n", D.bug_line, D.debug_path); */
 #if 1
 			Fseek(0, 1, 0);				/* reset file pointer. */ 
 #else
