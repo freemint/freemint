@@ -47,21 +47,21 @@ long kern_get_unimplemented	(SIZEBUF **buffer);
 long kern_get_buildinfo		(SIZEBUF **buffer);
 long kern_get_cookiejar		(SIZEBUF **buffer);
 long kern_get_filesystems	(SIZEBUF **buffer);
-long kern_get_hz			(SIZEBUF **buffer);
+long kern_get_hz		(SIZEBUF **buffer);
 long kern_get_loadavg		(SIZEBUF **buffer);
 long kern_get_meminfo		(SIZEBUF **buffer);
 long kern_get_stat              (SIZEBUF **buffer);
-long kern_get_time			(SIZEBUF **buffer);
+long kern_get_time		(SIZEBUF **buffer);
 long kern_get_uptime		(SIZEBUF **buffer);
 long kern_get_version		(SIZEBUF **buffer);
 long kern_get_welcome		(SIZEBUF **buffer);
 
-long kern_procdir_get_cmdline	(SIZEBUF **buffer, const PROC *p);
-long kern_procdir_get_environ	(SIZEBUF **buffer,       PROC *p);
-long kern_procdir_get_fname	(SIZEBUF **buffer, const PROC *p);
-long kern_procdir_get_meminfo	(SIZEBUF **buffer, const PROC *p);
-long kern_procdir_get_stat	(SIZEBUF **buffer,       PROC *p);
-long kern_procdir_get_status	(SIZEBUF **buffer, const PROC *p);
+long kern_procdir_get_cmdline	(SIZEBUF **buffer, const struct proc *p);
+long kern_procdir_get_environ	(SIZEBUF **buffer,       struct proc *p);
+long kern_procdir_get_fname	(SIZEBUF **buffer, const struct proc *p);
+long kern_procdir_get_meminfo	(SIZEBUF **buffer, const struct proc *p);
+long kern_procdir_get_stat	(SIZEBUF **buffer,       struct proc *p);
+long kern_procdir_get_status	(SIZEBUF **buffer, const struct proc *p);
 
 # endif
 
