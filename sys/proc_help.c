@@ -99,13 +99,21 @@ free_page_table_ptr (struct memspace *m)
 	if (!no_mem_prot)
 	{
 # ifdef MMU040
-		MEMREGION *pt = m->pt_mem;
+		MEMREGION *pt;
+		
+		pt = m->pt_mem;
+		m->pt_mem = NULL;
 		
 		pt->links--;
 		if (!pt->links)
-			free_region (pt);
+			free_region(pt);
 # else
-		kfree (m->pt_mem);
+		void *pt;
+		
+		pt = m->pt_mem;
+		m->pt_mem = NULL;
+		
+		kfree(pt);
 # endif
 	}
 }
