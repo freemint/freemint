@@ -285,7 +285,7 @@ static void
 mouse_dclick(PROC *p, long arg)
 {
 	mouse_lclick(p, arg);
-	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_lclick, 0);
+	addroottimeout(MOUSE_TIMEOUT+20, (void _cdecl (*)(PROC *))mouse_lclick, 0);
 }
 
 static short
