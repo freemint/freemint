@@ -54,13 +54,7 @@
 
 
 long
-fd_alloc (struct proc *p, short *fd, short min)
-{
-	return fd_alloc_ (p, fd, min, __FUNCTION__);
-}
-
-long
-fd_alloc_ (struct proc *p, short *fd, short min, const char *func)
+fd_alloc (struct proc *p, short *fd, short min, const char *func)
 {
 	short i;
 	
@@ -94,26 +88,14 @@ fd_alloc_ (struct proc *p, short *fd, short min, const char *func)
 }
 
 void
-fd_remove (struct proc *p, short fd)
-{
-	fd_remove_ (p, fd, __FUNCTION__);
-}
-
-void
-fd_remove_ (struct proc *p, short fd, const char *func)
+fd_remove (struct proc *p, short fd, const char *func)
 {
 	p->p_fd->ofiles[fd] = NULL;
 }
 
 
 long
-fp_alloc (struct proc *p, FILEPTR **resultfp)
-{
-	return fp_alloc_ (p, resultfp, __FUNCTION__);
-}
-
-long
-fp_alloc_ (struct proc *p, FILEPTR **resultfp, const char *func)
+fp_alloc (struct proc *p, FILEPTR **resultfp, const char *func)
 {
 	FILEPTR *fp;
 	
@@ -138,13 +120,7 @@ fp_alloc_ (struct proc *p, FILEPTR **resultfp, const char *func)
 }
 
 void
-fp_done (struct proc *p, FILEPTR *fp, short fd, char fdflags)
-{
-	fp_done_ (p, fp, fd, fdflags, __FUNCTION__);
-}
-
-void
-fp_done_ (struct proc *p, FILEPTR *fp, short fd, char fdflags, const char *func)
+fp_done (struct proc *p, FILEPTR *fp, short fd, char fdflags, const char *func)
 {
 	assert (p->p_fd->ofiles[fd] == (FILEPTR *) 1);
 	
@@ -153,7 +129,7 @@ fp_done_ (struct proc *p, FILEPTR *fp, short fd, char fdflags, const char *func)
 }
 
 void
-fp_free_ (FILEPTR *fp, const char *func)
+fp_free (FILEPTR *fp, const char *func)
 {
 	if (fp->links != 0)
 	{
@@ -649,6 +625,11 @@ do_close (struct proc *p, FILEPTR *f)
 	}
 	
 	f->links--;
+	if (f->links < 0)
+	{
+		ALERT ("do_close on invalid file struct! (links = %i)", f->links);
+//		return 0;
+	}
 	
 	/* TTY manipulation must be done *before* calling the device close routine,
 	 * since afterwards the TTY structure may no longer exist
