@@ -30,6 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
+COMPASS compass(short d, short x, short y, RECT r);
+
 void	fix_default_widgets(void *);
 OBJECT *get_widgets(void);
 void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg);

@@ -174,7 +174,7 @@ cancel_widget_active(struct xa_window *wind, int i)
 	widget_active.cont = false;
 
 	/* Restore the mouse now we've finished the action */
-	graf_mouse(wind->owner->mouse, wind->owner->mouse_form);
+	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, false);
 }
 
 
@@ -1213,7 +1213,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent MOVER when dragging a box */
-			graf_mouse(XACRS_MOVER, NULL);
+			graf_mouse(XACRS_MOVER, NULL, false);
 		}
 
 		/* If right button is used, do a classic outline drag. */
@@ -1541,20 +1541,8 @@ display_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	return true;
 }
 
-static int border_mouse[CDV] =
-{
-	XACRS_SE_SIZER,
-	XACRS_VERTSIZER,
-	XACRS_NE_SIZER,
-	XACRS_HORSIZER,
-	XACRS_SE_SIZER,
-	XACRS_VERTSIZER,
-	XACRS_NE_SIZER,
-	XACRS_HORSIZER
-};
-
-static COMPASS
-compass(int d, short x, short y, RECT r)
+COMPASS
+compass(short d, short x, short y, RECT r)
 {
 	r.x += d;
 	r.y += d;
@@ -1595,10 +1583,10 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 	    || wind->send_message == NULL
 	    || wind->owner->options.nolive)
 	{
-		int xy = sizer ? SE : compass(10, widg->mx, widg->my, r);
+		int xy = sizer ? SE : compass(16, widg->mx, widg->my, r);
 
 		/* Always have a nice consistent SIZER when resizing a window */
-		graf_mouse(border_mouse[xy], NULL);
+		graf_mouse(border_mouse[xy], NULL, false);
 
 		lock_screen(wind->owner, 0, 0, 1234);
 		rubber_box(wind->owner, xy,
@@ -1672,7 +1660,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			{
 				widget_active.cont = true;
 				/* Always have a nice consistent SIZER when resizing a window */
-				graf_mouse(border_mouse[xy], NULL);
+				graf_mouse(border_mouse[xy], NULL, false);
 			}
 
 			/* Has the mouse moved? */
@@ -1818,7 +1806,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 			 */
 			if (mb == md->cstate)
 			{
-				graf_mouse(XACRS_POINTSLIDE, NULL);
+				graf_mouse(XACRS_POINTSLIDE, NULL, false);
 				check_mouse(wind->owner, &mb, 0, 0);
 
 				S.wm_count++;
@@ -2134,7 +2122,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent sizer when dragging a box */
-			graf_mouse(XACRS_VERTSIZER, NULL);
+			graf_mouse(XACRS_VERTSIZER, NULL, false);
 		}
 
 		if (widget_active.widg)
@@ -2195,7 +2183,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent sizer when dragging a box */
-			graf_mouse(XACRS_HORSIZER, NULL);
+			graf_mouse(XACRS_HORSIZER, NULL, false);
 		}
 
 		if (widget_active.widg)

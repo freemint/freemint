@@ -30,27 +30,13 @@
 #include "global.h"
 #include "xa_types.h"
 
-typedef enum
-{
-	NW,
-	N_,
-	NE,
-	E_,
-	SE,
-	S_,
-	SW,
-	W_,
-	CDV			/* compass divisions */
-} COMPASS;
-
-
 /* Avoid a clash with the standard function name */
 #define graf_mouse xaaes_graf_mouse
 
 int watch_object(enum locks lock, XA_TREE *wt,
 		 int ob, int in_state, int out_state);
 
-void graf_mouse(int m_shape, MFORM *mf);
+void graf_mouse(int m_shape, MFORM *mf, bool aesm);
 
 bool rect_changed(const RECT *n, const RECT *o);
 
@@ -58,7 +44,7 @@ void keep_inside(RECT *r, const RECT *o);
 
 const RECT *rect_dist(struct xa_client *client, RECT *r, RECT *d);
 
-RECT widen_rectangle(COMPASS compass,
+RECT widen_rectangle(COMPASS c,
                 short mx, short my,
                 RECT start,
                 const RECT *dist);
@@ -67,7 +53,7 @@ RECT move_rectangle(short mx, short my,
                 RECT r,
                 const RECT *dist);
 
-void rubber_box(struct xa_client *client, COMPASS compass,
+void rubber_box(struct xa_client *client, COMPASS c,
                 RECT start, const RECT *dist,
                 int minw, int minh,
                 int maxw, int maxg,

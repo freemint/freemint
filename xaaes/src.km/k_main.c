@@ -277,6 +277,9 @@ static vdi_vec *svwhlv = NULL;
 /*
  * initialise the mouse device
  */
+#define MIN_MOOSE_VER_MAJOR 0
+#define MIN_MOOSE_VER_MINOR 6
+
 static bool
 init_moose(void)
 {
@@ -293,8 +296,24 @@ init_moose(void)
 		aerr = adi_open(C.adi_mouse);
 		if (!aerr)
 		{
+			long moose_version;
 			struct moose_vecsbuf vecs;
 
+			aerr = adi_ioctl(C.adi_mouse, FS_INFO, (long)&moose_version);
+			if (!aerr)
+			{
+				if (moose_version < (((long)MIN_MOOSE_VER_MAJOR << 16) | MIN_MOOSE_VER_MINOR))
+				{
+					display("init_moose: Your moose.adi is outdated, please update!");
+					return false;
+				}
+			}
+			else
+			{
+				display("init_moose: Could not obtain moose.adi version, please update!");
+				return false;
+			}
+			
 			aerr = adi_ioctl(C.adi_mouse, MOOSE_READVECS, (long)&vecs);
 			if (aerr == 0 && vecs.motv)
 			{
@@ -311,6 +330,9 @@ init_moose(void)
 
 				if (adi_ioctl(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
 					display("Moose set dclick time failed");
+
+				if (adi_ioctl(C.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
+					display("Moose set mouse-packets time-gap failed");
 
 				DIAGS(("Using moose adi"));
 				ret = true;

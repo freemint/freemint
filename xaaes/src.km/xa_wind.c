@@ -188,7 +188,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 	else
 		C.focus = window_list;
 
-	graf_mouse(client->mouse, client->mouse_form);
+	graf_mouse(client->mouse, client->mouse_form, false);
 
 	/* redisplay title */
 	display_window(lock, 40, old_focus, 0); 

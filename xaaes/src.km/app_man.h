@@ -50,6 +50,7 @@ struct xa_client *find_desktop (enum locks lock);
 struct xa_client *focus_owner  (void);
 struct xa_client *find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind);
 
+bool app_is_hidable(struct xa_client *client);
 bool any_hidden(enum locks lock, struct xa_client *client);
 bool taskbar(struct xa_client *client);
 

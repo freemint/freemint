@@ -34,6 +34,18 @@ struct shared S;
 
 struct xa_screen screen; /* The screen descriptor */
 
+short border_mouse[CDV] =
+{
+	XACRS_SE_SIZER,
+	XACRS_VERTSIZER,
+	XACRS_NE_SIZER,
+	XACRS_HORSIZER,
+	XACRS_SE_SIZER,
+	XACRS_VERTSIZER,
+	XACRS_NE_SIZER,
+	XACRS_HORSIZER
+};
+
 XA_PENDING_WIDGET widget_active;
 
 const char mnu_clientlistname[] = "  Clients \3";

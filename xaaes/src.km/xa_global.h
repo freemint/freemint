@@ -168,6 +168,12 @@ struct common
 	Path desk;			/* Remember the desk path for Launch desk. */
 	short mouse;			/* Remember mouse shape */
 	MFORM *mouse_form;		/* Remember mouse form */
+
+	short aesmouse;
+	MFORM *aesmouse_form;
+
+	short realmouse;
+	MFORM *realmouse_form;
 };
 
 /* All areas that are common. */
@@ -222,6 +228,7 @@ struct config
 	short ted_filler;
 	short font_id;			/* Font id to use */
 	short double_click_time;	/* Double click timing */
+	short mouse_packet_timegap;	
 	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
 					   we have a VDI that supports mouse wheels. */
 	short wheel_amount;		/* amount of lines for a wheel click. */
@@ -274,6 +281,9 @@ extern struct options local_options;
 extern XA_PENDING_WIDGET widget_active;
 
 extern struct moose_data mainmd;
+
+extern short border_mouse[];
+
 extern const char mnu_clientlistname[];
 
 extern BUTTON mu_button;
