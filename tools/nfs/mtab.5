@@ -1,0 +1,43 @@
+
+
+
+MTAB(5)                   FILE FORMATS                    MTAB(5)
+
+
+
+NAME
+     mtab - mounted file system table
+
+SYNOPSIS
+     /etc/mtab
+
+     #include <mntent.h>
+
+DESCRIPTION
+     mtab resides in the /etc directory, and contains a table  of
+     filesystems  currently  mounted  by  the  mount(8)  command.
+     umount removes entries from this file.
+
+     The file contains a line of  information  for  each  mounted
+     filesystem,   structurally  identical  to  the  contents  of
+     /etc/fstab, described in fstab(5).  There are  a  number  of
+     lines of the form:
+
+          _f_s_n_a_m_e _d_i_r _t_y_p_e _o_p_t_s _f_r_e_q _p_a_s_s_n_o
+
+     for example:
+
+          /dev/xy0a / 4.2 rw,noquota 1 2
+          samba:/usr/packages /nfs/packages nfs ro 0 0
+
+     For now, this file contains only information about mounted 
+     NFS file systems.
+     The file is accessed by programs using getmntent(3), and  by
+     the system administrator using a text editor.
+
+FILES
+     /etc/mtab
+
+SEE ALSO
+     getmntent(3), fstab(5), mount(8)
+

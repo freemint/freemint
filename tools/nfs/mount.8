@@ -1,0 +1,113 @@
+
+
+
+MOUNT(8)              MAINTENANCE COMMANDS               MOUNT(8)
+
+
+
+NAME
+     mount, umount - mount and unmount file systems
+
+SYNOPSIS
+     /usr/etc/mount [ -fnrv ] [ -t _t_y_p_e ] [ -o _o_p_t_i_o_n_s ] _f_i_l_e_s_y_s_-
+     _t_e_m _d_i_r_e_c_t_o_r_y
+     /usr/etc/umount [ -v ] _f_i_l_e_s_y_s_t_e_m|_d_i_r_e_c_t_o_r_y  ...
+
+DESCRIPTION
+     mount attaches a named _f_i_l_e_s_y_s_t_e_m to the file system hierar-
+     chy  at  the pathname location _d_i_r_e_c_t_o_r_y, which must already
+     exist.  If _d_i_r_e_c_t_o_r_y has any contents  prior  to  the  mount
+     operation,  these remain hidden until the _f_i_l_e_s_y_s_t_e_m is once
+     again   unmounted.    If   _f_i_l_e_s_y_s_t_e_m   is   of   the   form
+     _h_o_s_t:_p_a_t_h_n_a_m_e,  it is assumed to be an NFS file system (type
+     nfs).
+
+     umount unmounts a currently mounted file system,  which  can
+     be specified either as a _d_i_r_e_c_t_o_r_y or a _f_i_l_e_s_y_s_t_e_m.
+
+     mount and umount maintain a table of mounted file systems in
+     /etc/mtab,  described  in  fstab(5).   If invoked without an
+     argument, mount displays the  contents  of  this  table.  
+
+OPTIONS
+  mount
+     -f   Fake an /etc/mtab entry, but do not actually mount  any
+          file systems.
+
+     -n   Mount the  file  system  without  making  an  entry  in
+          /etc/mtab.
+
+     -v   Verbose.  Display a message indicating each file system
+          being mounted.
+
+     -r   Mount the specified file system read-only, even if  the
+          entry  in /etc/fstab specifies that it is to be mounted
+          read-write.
+
+          Physically write-protected and magnetic-tape file  sys-
+          tems  must be mounted read-only. Otherwise errors occur
+          when the system attempts to update access  times,  even
+          if no write operation is attempted.
+
+     -o _o_p_t_i_o_n_s
+          Specify file system _o_p_t_i_o_n_s, a comma-separated list  of
+          words  from the list below.  Some options are valid for
+          all file system types, while others apply to a specific
+          type only.
+
+          _o_p_t_i_o_n_s valid on _a_l_l file systems:
+
+               rw|ro         Read/write or read-only.
+               suid|nosuid   Setuid execution allowed  or  disal-
+                             lowed.
+
+               The default is `rw,suid'.
+
+          _o_p_t_i_o_n_s specific to nfs (NFS) file systems:
+
+               rsize=_n       Set the read buffer size to _n bytes.
+               wsize=_n       Set  the  write  buffer  size  to  _n
+                             bytes.
+               timeo=_n       Set the NFS timeout to _n tenths of a
+                             second.
+               retrans=_n     The number of NFS retransmissions.
+               port=_n        The server IP port number.
+               acregmin=_n    Hold cached attributes for at  least
+                             _n seconds after file modification.
+               acregmax=_n    Hold cached attributes for  no  more
+                             than  _n seconds after file modifica-
+                             tion.
+               acdirmin=_n    Hold cached attributes for at  least
+                             _n seconds after directory update.
+               acdirmax=_n    Hold cached attributes for  no  more
+                             than   _n   seconds  after  directory
+                             update.
+               actimeo=_n     Set _m_i_n and _m_a_x  times  for  regular
+                             files and directories to _n seconds.
+
+               actimeo has no default; it sets  acregmin,  acreg-
+               max, acdirmin and acdirmax
+
+               Defaults for rsize and wsize are set internally by
+               the system kernel.
+
+  umount
+     -v   Verbose.  Display a message indicating each file system
+          being unmounted.
+
+EXAMPLES
+          To mount a remote file system:
+               mount serv:/usr/src /usr/src
+          To mount a remote file system read-only:
+               mount -o ro serv:/usr/src /usr/src
+
+FILES
+     /etc/mtab           table of mounted file systems
+
+SEE ALSO
+     mkdir(2V),  open(2V),  fstab(5),  mtab(5),  automount(8), 
+     mountd(8C), nfsd(8)
+
+BUGS
+     As for now, it is only possible to mount a remote file system in
+     /nfs.
