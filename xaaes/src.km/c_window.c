@@ -795,6 +795,9 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	DIAG((D_wind, wind->owner, "open_window %d for %s exit with 1",
 		wind->handle, c_owner(wind->owner)));
+
+	set_winmouse();
+
 	return 1;
 }
 
@@ -1335,6 +1338,9 @@ close_window(enum locks lock, struct xa_window *wind)
 			}
 		}
 	}
+
+	set_winmouse();
+
 	return true;
 }
 
@@ -1759,8 +1765,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		
 	if (blit && oldrl && newrl)
 	{
-		DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",
-			old, *new));
+		//DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",
+		//	old, *new));
 
 		if (xmove || ymove)
 		{
@@ -1813,6 +1819,7 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					nrl = orl;
 					orl = orl->next;
 					kfree(nrl);
+					DIAGS(("kfree %lx (unused oldrl)", nrl));
 				}
 				else
 				{
@@ -1842,12 +1849,14 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 
 			while (orl)
 			{
-				DIAGS(("Check for common areas (newrl=%d/%d/%d/%d, oldrl=%d/%d/%d/%d)",
-					bs, orl->r));
+				//DIAGS(("Check for common areas (newrl=%d/%d/%d/%d, oldrl=%d/%d/%d/%d)",
+				//	bs, orl->r));
 				if (xa_rect_clip(&bs, &orl->r, &bd))
 				{
 					nrl = kmalloc(sizeof(*nrl));
-					DIAGS(("COMMON brl=%lx, nrl=%lx, brl->nxt=%lx", brl, nrl, brl ? (long)brl->next : 0xFACEDACE));
+					DIAGS(( "kmalloc %lx (%ld bytes) blitrect", nrl, sizeof(*nrl) ));
+					
+					//DIAGS(("COMMON brl=%lx, nrl=%lx, brl->nxt=%lx", brl, nrl, brl ? (long)brl->next : 0xFACEDACE));
 					if (brl)
 					{
 						struct xa_rect_list *n, *p;
@@ -1996,7 +2005,7 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 						brl->next = NULL;
 					}
 					nrl->r = bd;
-					DIAGS(("save blitarea %d/%d/%d/%d", nrl->r));
+					//DIAGS(("save blitarea %d/%d/%d/%d", nrl->r));
 				}
 				orl = orl->next;
 			}
@@ -2009,8 +2018,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		{
 			nrl = oldrl;
 			oldrl = oldrl->next;
-			DIAGS(("freeing oldrl %lx", nrl));
+			//DIAGS(("freeing oldrl %lx", nrl));
 			kfree(nrl);
+			DIAGS(("kfree %lx (rest of oldrl)", nrl));
 		}
 		if (brl)
 		{
@@ -2029,8 +2039,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					bs.h = bd.h;
 					bd.x += old.x;
 					bd.y += old.y;
-					DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
-						bd, bs, brl, (long)brl->next));
+					//DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
+					//	bd, bs, brl, (long)brl->next));
 					form_copy(&bd, &bs);
 					nrl = nrl->next;
 				}
@@ -2042,19 +2052,21 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 			while (newrl)
 			{
 				nrl = kmalloc(sizeof(*nrl));
+				DIAGS(( "kmalloc %lx (%ld bytes)", nrl, sizeof(*nrl) ));
 				nrl->next = NULL;
 				nrl->r.x = newrl->r.x - new->x;
 				nrl->r.y = newrl->r.y - new->y;
 				nrl->r.w = newrl->r.w;
 				nrl->r.h = newrl->r.h;
 				
-				DIAGS(("NEWRECT (%lx) %d/%d/%d/%d (%d/%d/%d/%d)", nrl, nrl->r, newrl->r));
+				//DIAGS(("NEWRECT (%lx) %d/%d/%d/%d (%d/%d/%d/%d)", nrl, nrl->r, newrl->r));
 
 				if (resize)
 				{
 					if (!xa_rect_clip(&wa, &nrl->r, &nrl->r))
 					{
 						kfree(nrl);
+						DIAGS(("kfree %lx", nrl));
 						nrl = NULL;
 					}
 				}
@@ -2066,8 +2078,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					short bx2 = orl->r.x + orl->r.w;
 					short by2 = orl->r.y + orl->r.h;
 
-					DIAGS(("BLITRECT (orl=%lx, nxt=%lx)(nrl=%lx, nxt=%lx) %d/%d/%d/%d, x2/y2=%d/%d",
-						orl, (long)orl->next, nrl, (long)nrl->next, orl->r, bx2, by2));
+					//DIAGS(("BLITRECT (orl=%lx, nxt=%lx)(nrl=%lx, nxt=%lx) %d/%d/%d/%d, x2/y2=%d/%d",
+					//	orl, (long)orl->next, nrl, (long)nrl->next, orl->r, bx2, by2));
 
 					for (rrl = nrl, prev = NULL; rrl; rrl = next)
 					{
@@ -2075,8 +2087,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 						w = orl->r.x - rrl->r.x;
 						h = orl->r.y - rrl->r.y;
 
-						DIAGS(("CLIPPING %d/%d/%d/%d, w/h=%d/%d", our, w, h));
-						DIAGS(("rrl = %lx", rrl));
+						//DIAGS(("CLIPPING %d/%d/%d/%d, w/h=%d/%d", our, w, h));
+						//DIAGS(("rrl = %lx", rrl));
 						
 						next = rrl->next;
 
@@ -2098,8 +2110,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								our.y += h;
 								our.h -= h;
 								flag = 1;
-								DIAGS((" -- 1. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
-									rrl->r, our));
+								//DIAGS((" -- 1. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+								//	rrl->r, our));
 							}
 							if (orl->r.x > our.x)
 							{
@@ -2107,9 +2119,10 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								{
 									prev = rrl;
 									rrl = kmalloc(sizeof(*rrl));
+									DIAGS(( "kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl) ));
 									rrl->next = prev->next;
 									prev->next = rrl;
-									DIAGS((" -- 2. new (%lx)", rrl));
+									//DIAGS((" -- 2. new (%lx)", rrl));
 								}
 								rrl->r.x = our.x;
 								rrl->r.y = our.y;
@@ -2118,8 +2131,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								our.x += w;
 								our.w -= w;
 								flag = 1;
-								DIAGS((" -- 2. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
-									rrl->r, our));
+								//DIAGS((" -- 2. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+								//	rrl->r, our));
 							}
 							if (ny2 > by2)
 							{
@@ -2127,9 +2140,10 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								{
 									prev = rrl;
 									rrl = kmalloc(sizeof(*rrl));
+									DIAGS(( "kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl) ));
 									rrl->next = prev->next;
 									prev->next = rrl;
-									DIAGS((" -- 3. new (%lx)", rrl));
+									//DIAGS((" -- 3. new (%lx)", rrl));
 								}
 								rrl->r.x = our.x;
 								rrl->r.y = by2;
@@ -2137,8 +2151,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								rrl->r.h = ny2 - by2;
 								our.h -= rrl->r.h;
 								flag = 1;
-								DIAGS((" -- 3. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
-									rrl->r, our));
+								//DIAGS((" -- 3. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+								//	rrl->r, our));
 							}
 							if (nx2 > bx2)
 							{
@@ -2146,9 +2160,10 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								{
 									prev = rrl;
 									rrl = kmalloc(sizeof(*rrl));
+									DIAGS(( "kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl) ));
 									rrl->next = prev->next;
 									prev->next = rrl;
-									DIAGS((" -- 4. new (%lx)", rrl));
+									//DIAGS((" -- 4. new (%lx)", rrl));
 								}	
 								rrl->r.x = bx2;
 								rrl->r.y = our.y;
@@ -2156,13 +2171,13 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								rrl->r.h = our.h;
 								our.w -= rrl->r.w;
 								flag = 1;
-								DIAGS((" -- 4. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
-									rrl->r, our));
+								//DIAGS((" -- 4. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+								//	rrl->r, our));
 							}
 							if (!flag)
 							{
-								DIAGS((" ALL BLIT (removed) nrl=%lx, rrl=%lx, prev=%lx, nxt=%lx, %d/%d/%d/%d",
-									nrl, rrl, prev, (long)rrl->next, rrl->r));
+								//DIAGS((" ALL BLIT (removed) nrl=%lx, rrl=%lx, prev=%lx, nxt=%lx, %d/%d/%d/%d",
+								//	nrl, rrl, prev, (long)rrl->next, rrl->r));
 
 								if (nrl == rrl)
 								{
@@ -2177,21 +2192,22 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 									prev->next = next;
 
 								kfree(rrl);
+								DIAGS(("kfree %lx", rrl));
 							}
 							else
 								prev = rrl;
 						}
 						else
 						{
-							DIAGS((" -- ALL REDRAW %d/%d/%d/%d", rrl->r));
+							//DIAGS((" -- ALL REDRAW %d/%d/%d/%d", rrl->r));
 							prev = rrl;
 						}
-						DIAGS((" .. .. .."));
+						//DIAGS((" .. .. .."));
 					} /* for (rrl = nrl; rrl; rrl = next) */
-					DIAGS(("FROM %lx to %lx", orl, (long)orl->next));
+					//DIAGS(("FROM %lx to %lx", orl, (long)orl->next));
 					orl = orl->next;
 				} /* while (orl && nrl) */
-				DIAGS(("DONE CLIPPING"));
+				//DIAGS(("DONE CLIPPING"));
 				/*
 				 * nrl is the first in a list of rectangles that needs
 				 * to be redrawn
@@ -2200,8 +2216,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 				{
 					nrl->r.x += new->x;
 					nrl->r.y += new->y;
-					DIAGS(("redrawing area (%lx) %d/%d/%d/%d",
-						nrl, nrl->r));
+					//DIAGS(("redrawing area (%lx) %d/%d/%d/%d",
+					//	nrl, nrl->r));
 					/*
 					 * we only redraw window borders here if wind moves
 					 */
@@ -2218,8 +2234,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					}
 					orl = nrl;
 					nrl = nrl->next;
-					DIAGS(("Freeing redrawed rect %lx", orl));
+					//DIAGS(("Freeing redrawed rect %lx", orl));
 					kfree(orl);
+					DIAGS(("kfree %lx", orl));
 				}
 				newrl = newrl->next;
 			} /* while (newrl) */
@@ -2230,8 +2247,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 			{
 				nrl = brl;
 				brl = brl->next;
-				DIAGS(("Freeing blitrect %lx", nrl));
+				//DIAGS(("Freeing blitrect %lx", nrl));
 				kfree(nrl);
+				DIAGS(("kfree %lx", nrl));
 			}
 			/*
 			 * If window was resized, redraw all window borders
@@ -2274,6 +2292,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 			orl = oldrl;
 			oldrl = oldrl->next;
 			kfree(orl);
+			DIAGS(("kfree %lx", orl));
 		}
 	}
+	DIAGS(("set_and_update_window: DONE!!!"));
 }

@@ -125,6 +125,12 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	bzero(client, sizeof(*client));
 
+	client->md_head = client->mdb;
+	client->md_tail = client->mdb;
+	client->md_end = client->mdb + CLIENT_MD_BUFFERS;
+
+	client->md_head->clicks = -1;
+
 	client->ut = umalloc(xa_user_things.len);
 	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
 

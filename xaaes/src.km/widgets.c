@@ -3282,6 +3282,19 @@ do_active_widget(enum locks lock, struct xa_client *client)
 	}
 }
 
+void
+set_winmouse(void)
+{
+	short x, y;
+	struct xa_window *wind;
+
+	check_mouse(NULL, NULL, &x, &y);
+
+	wind = find_window(0, x, y);
+
+	wind_mshape(wind, x, y);
+}
+	
 short
 wind_mshape(struct xa_window *wind, short x, short y)
 {
