@@ -65,29 +65,34 @@ static void
 callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, void *user_data, short obj_index, short last_state)
 {
 	struct sigaction oact, act;
-	struct xa_co_lbox *u;
-
+	struct xa_callout_head *u;
+	
 	if (lbox->slct)
 	{
-		u = umalloc(xa_co_lboxselect.len);
+		u = umalloc(xa_callout_user.len + sizeof(struct co_lboxsel_parms));
 		if (u)
 		{
-			struct co_lboxsel_parms *p;
+			struct xa_callout_parms *p;
+			struct co_lboxsel_parms *lp;
 
-			bcopy(&xa_co_lboxselect, u, xa_co_lboxselect.len);
+			bcopy(&xa_callout_user, u, xa_callout_user.len);
+			
 			u->sighand_p	+= (long)u;
-			u->parm_p	+= (long)u;
+			(long)u->parm_p	+= (long)u;
 
-			p = (struct co_lboxsel_parms *)u->parm_p;
+			p 	= u->parm_p;
+			p->func	= (long)lbox->slct;
+			p->plen	= sizeof(struct co_lboxsel_parms) >> 1;
 
-			p->funct	= (long)lbox->slct;
-			p->last_state	= last_state;
-			p->obj_index	= obj_index;
-			p->user_data	= (long)user_data;
-			p->item		= (long)item;
-			p->tree		= (long)tree;
-			p->box		= (long)lbox->lbox_handle;
+			lp	= (struct co_lboxsel_parms *)(&p->parms);
 
+			lp->box		= (long)lbox->lbox_handle;
+			lp->tree	= (long)tree;
+			lp->item	= (long)item;
+			lp->user_data	= (long)user_data;
+			lp->obj_index	= obj_index;
+			lp->last_state	= last_state;
+			
 			cpush(NULL, -1); //(u, xa_co_lboxselect.len);
 
 			act.sa_handler	= u->sighand_p;
@@ -103,7 +108,7 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 
 			ufree(u);
 		}
-	}
+	}	
 }
 
 static short
@@ -116,32 +121,37 @@ callout_set(struct xa_lbox_info *lbox,
 	short first)
 {
 	struct sigaction oact, act;
-	struct xa_co_lbox *u;
+	struct xa_callout_head *u;
 	short ret = 0;
-
+	
 	if (lbox->set)
 	{
-		u = umalloc(xa_co_lboxset.len);
+		u = umalloc(xa_callout_user.len + sizeof(struct co_lboxset_parms));
 		if (u)
 		{
-			struct co_lboxset_parms *p;
+			struct xa_callout_parms *p;
+			struct co_lboxset_parms *lp;
 
-			bcopy(&xa_co_lboxset, u, xa_co_lboxset.len);
+			bcopy(&xa_callout_user, u, xa_callout_user.len);
+			
 			u->sighand_p	+= (long)u;
-			u->parm_p	+= (long)u;
+			(long)u->parm_p	+= (long)u;
 
-			p = (struct co_lboxset_parms *)u->parm_p;
+			p = u->parm_p;
+			p->func = (long)lbox->set;
+			p->plen = sizeof(struct co_lboxset_parms) >> 1;
 
-			p->funct	= (long)lbox->set;
-			p->first	= first;
-			p->rect		= (long)rect;
-			p->user_data	= (long)user_data;
-			p->obj_index	= obj_index;
-			p->item		= (long)item;
-			p->tree		= (long)tree;
-			p->box		= (long)lbox->lbox_handle;
-		
-			cpush(NULL, -1); //(u, xa_co_lboxset.len);
+			lp = (struct co_lboxset_parms *)(&p->parms);
+
+			lp->box		= (long)lbox->lbox_handle;
+			lp->tree	= (long)tree;
+			lp->item	= (long)item;
+			lp->obj_index	= obj_index;
+			lp->user_data	= (long)user_data;
+			lp->rect	= (long)rect;
+			lp->first	= first;
+						
+			cpush(NULL, -1); //(u, xa_co_lboxselect.len);
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
@@ -154,8 +164,8 @@ callout_set(struct xa_lbox_info *lbox,
 			/* restore old handler */
 			p_sigaction(SIGUSR2, &oact, NULL);
 
-			ret = (short)(*(long *)p->ret);
-
+			ret = (short)p->ret;
+			
 			ufree(u);
 		}
 	}

@@ -26,11 +26,7 @@
 	.text
 
 	.globl _xa_user_things
-	.globl _xa_co_wdlgexit
-
-	.globl _xa_co_lboxselect
-	.globl _xa_co_lboxset
-	.globl _xa_co_lboxscroll
+	.globl _xa_callout_user
 
 _xa_user_things:
 	.long xa_user_end	- _xa_user_things	| Size of xa user things
@@ -60,164 +56,42 @@ nofunc:
 _userblk: dc.l 0
 _retcode: dc.l 0
 _parmblk: ds.w 60
-
 xa_user_end:
 
-_xa_co_wdlgexit:
-	.long xa_co_we_end	- _xa_co_wdlgexit	| len
-	.long co_wdlg_exit	- _xa_co_wdlgexit	| sighand_p
-	.long _wdlgexit		- _xa_co_wdlgexit	| wdlg exit function
-	.long _userdata		- _xa_co_wdlgexit
-	.long _mclicks		- _xa_co_wdlgexit
-	.long _nxtobj		- _xa_co_wdlgexit
-	.long _ev		- _xa_co_wdlgexit
-	.long _handle		- _xa_co_wdlgexit
-	.long _wdlgexit_ret	- _xa_co_wdlgexit
-	.long _wdlgexit_fb	- _xa_co_wdlgexit
-
-co_wdlg_exit:
-	movem.l	d1-d7/a0-a6,-(sp)
-	lea	_wdlgexit(pc),a0
-	move.l	(a0)+,d0
-	beq.s	no_wexit
-	move.l	(a0)+,-(sp)
-	move.w	(a0)+,-(sp)
-	move.w	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0),-(sp)
-	move.l	d0,a0
-	jsr	(a0)
-	lea	16(sp),sp
-no_wexit:
-	lea	_wdlgexit_ret(pc),a0
-	move.w	d0,(a0)
-	movem.l (sp)+,d1-d7/a0-a6
-	rts
+_xa_callout_user:
+	.long	_xa_callout_end		- _xa_callout_user
+	.long	callout_user		- _xa_callout_user
+	.long	callout_ret		- _xa_callout_user
 	
-_wdlgexit:	dc.l 0
-_userdata:	dc.l 0
-_mclicks:	dc.w 0
-_nxtobj:	dc.w 0
-_ev:		dc.l 0
-_handle:	dc.l 0
-_wdlgexit_ret:	dc.w 0
-_wdlgexit_fb:	dc.l 4
-
-xa_co_we_end:
-| --------------------------------------------------------------|
-| --------------------  LBOX CALLOUTS --------------------------|
-|---------------------------------------------------------------|
-_xa_co_lboxselect:
-	.long _lboxsel_end	- _xa_co_lboxselect	| len
-	.long co_lboxselect	- _xa_co_lboxselect	| sighand
-	.long _lboxsel_func	- _xa_co_lboxselect	| parms
-
-co_lboxselect:
+callout_user:
 	movem.l	d0-d7/a0-a6,-(sp)
-	lea	_lboxsel_func(pc),a0
+	lea	callout_func(pc),a0
 	move.l	(a0)+,d0
-	beq.s	lboxsel_exit	
-	move.w	(a0)+,-(sp)
-	move.w	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0),-(sp)
+	beq.s	callout_exit
+	moveq	#0,d1
+	move.w	(a0)+,d1
+	beq.s	callout_noparms
+	adda.l	d1,a0
+	adda.l	d1,a0
+	subq.w	#1,d1
+callout_gparms:
+	move.w	-(a0),-(sp)
+	dbra	d1,callout_gparms
+callout_noparms:
 	move.l	d0,a0
 	jsr	(a0)
-	lea	20(sp),sp	
-lboxsel_exit:
-	movem.l	(sp)+,d0-d7/a0-a6
-	rts
-_lboxsel_func:		dc.l 0
-_lboxsel_lstate:	dc.w 0
-_lboxsel_obj_ind:	dc.w 0
-_lboxsel_usrdata:	dc.l 0
-_lboxsel_item:		dc.l 0
-_lboxsel_tree:		dc.l 0
-_lboxsel_box:		dc.l 0
-_lboxsel_end:
-
-| --------- set --------- |
-_xa_co_lboxset:
-	.long _lboxset_end	- _xa_co_lboxset
-	.long co_lboxset	- _xa_co_lboxset
-	.long _lboxset_func	- _xa_co_lboxset
-
-co_lboxset:
-	movem.l d0-d7/a0-a6,-(sp)
-	lea	_lboxset_func(pc),a0
-	move.l	(a0)+,d0
-	beq.s	exit_lboxset
-	move.w	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.w	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0),-(sp)
-	move.l	d0,a0
-	jsr	(a0)
-	lea	24(sp),sp
-exit_lboxset:
-	lea	_lboxset_ret(pc),a0
+	lea	callout_ret(pc),a0
 	move.l	d0,(a0)
+	moveq	#0,d1
+	move.w	8(a0),d1
+	adda.l	d1,sp
+	adda.l	d1,sp
+callout_exit:
 	movem.l	(sp)+,d0-d7/a0-a6
 	rts
-_lboxset_func:		dc.l 0
-_lboxset_first:		dc.w 0
-_lboxset_rect:		dc.l 0
-_lboxset_usrdata:	dc.l 0
-_lboxset_obj_ind:	dc.w 0
-_lboxset_item:		dc.l 0
-_lboxset_tree:		dc.l 0
-_lboxset_box:		dc.l 0
-_lboxset_ret:		dc.l 0
-_lboxset_end:
 
-| ------------------ scroll ---------------- |
-_xa_co_lboxscroll:
-	.long _lboxscrl_end	- _xa_co_lboxscroll
-	.long co_lboxscrl	- _xa_co_lboxscroll
-	.long _lboxscrl_func	- _xa_co_lboxscroll
-co_lboxscrl:
-	movem.l	d0-d7/a0-a6,-(sp)
-	lea	_lboxscrl_func(pc),a0
-	move.l	(a0)+,d0
-	beq.s	exit_lboxscrl
-	move.w	(a0)+,-(sp)
-	move.l	(a0)+,-(sp)
-	move.l	(a0),-(sp)
-	move.l	d0,a0
-	jsr	(a0)
-	lea	10(sp),sp
-exit_lboxscrl:
-	lea	_lboxscrl_ret(pc),a0
-	move.l	d0,(a0)
-	movem.l	(sp)+,d0-d7/a0-a6
-	rts
-_lboxscrl_func:		dc.l 0
-_lboxscrl_n:		dc.w 0
-_lboxscrl_lboxslide:	dc.l 0
-_lboxscrl_box:		dc.l 0
-_lboxscrl_ret:		dc.l 0
-_lboxscrl_end:
-
-|typedef	void  _cdecl lbox_select(LIST_BOX *box,
-|				OBJECT *tree,
-|				struct lbox_item *item,
-|				void *user_data,
-|				short obj_index,
-|				short last_state);
-|typedef	short _cdecl lbox_set	(LIST_BOX *box,
-|				OBJECT *tree,
-|				struct lbox_item *item,
-|				short obj_index,
-|				void *user_data,
-|				GRECT *rect,
-|				short first);
-|
-|typedef bool _cdecl lbox_scroll	(struct xa_lbox_info *lbox,
-|				 struct lbox_slide *s,
-|				 short n);
-|
+callout_ret:	dc.l 0
+callout_func:	dc.l 0
+callout_plen:	dc.w 0
+callout_parm:
+_xa_callout_end:

@@ -29,74 +29,64 @@
 
 #include "global.h"
 
+/*
+ * ATTENTION: DO NOT change structures in this file unless you know
+ *	      what you do!!!!
+ */
 struct xa_user_things
 {
 	const long len;		/* number of bytes to copy (this struct and the code) */
-	long progdef_p;
-	long userblk_pp;
-	long ret_p;
-	long parmblk_p;
-};
-
-struct xa_co_wdlgexit
-{
-	const long len;
-	long	sighand_p;
-	long	exit_p;
-	long	userdata_p;
-	long	mclicks_p;
-	long	nxtobj_p;
-	long	ev_p;
-	long	handle_p;
+	long	progdef_p;
+	long	userblk_pp;
 	long	ret_p;
-	long	feedback_p;
-};
-
-struct xa_co_lbox
-{
-	const long len;
-	long	sighand_p;
-	long	parm_p;
+	long	parmblk_p;
 };
 
 struct co_lboxsel_parms
 {
-	long	funct;
-	short	last_state;
-	short	obj_index;
-	long	user_data;
-	long	item;
-	long	tree;
 	long	box;
+	long	tree;
+	long	item;
+	long	user_data;
+	short	obj_index;
+	short	last_state;
 };
 
 struct co_lboxset_parms
 {
-	long	funct;
-	short	first;
-	long	rect;
-	long	user_data;
-	short	obj_index;
-	long	item;
+	long	box;
 	long	tree;
-	long	box;
-	long	ret;
+	long	item;
+	short	obj_index;
+	long	user_data;
+	long	rect;
+	short	first;
 };
 
-struct co_lboxscrl_parms
+struct co_wdlgexit_parms
 {
-	long	funct;
-	short	n;
-	long	lbox_slide;
-	long	box;
-	long	ret;
+	long	dialog;
+	long	evnt;
+	short	obj;
+	short	clicks;
+	long	data;
 };
 
-extern const struct xa_user_things xa_user_things;
-extern const struct xa_co_wdlgexit xa_co_wdlgexit;
+struct xa_callout_parms
+{
+	long	ret;
+	long	func;
+	short	plen;
+	short	parms;
+};
+struct xa_callout_head
+{
+	const long len;
+	long	sighand_p;
+	struct	xa_callout_parms *parm_p;
+};
 
-extern const struct xa_co_lbox xa_co_lboxselect;
-extern const struct xa_co_lbox xa_co_lboxset;
-extern const struct xa_co_lbox xa_co_lboxscroll;
+extern const struct xa_user_things	xa_user_things;
+extern const struct xa_callout_head	xa_callout_user;
 
 #endif /* _xa_user_things_h */

@@ -68,53 +68,39 @@ static short
 callout_exit(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short nxtobj, short mclicks, void *udata, void *feedback)
 {
 	struct sigaction oact, act;
-	struct xa_co_wdlgexit *u;
+	struct xa_callout_head *u;
 	short ret = 0;
 
 	if (wdlg->exit)
 	{
-		u = umalloc(xa_co_wdlgexit.len);
-	
+		u = umalloc(xa_callout_user.len + sizeof(struct co_wdlgexit_parms) + 16);
 		if (u)
 		{
-			DIAGS(("wdlg=%lx, ev=%lx, wdlg->exit=%lx, nxtob=%d, mclicks=%d, udata=%lx, feedback=%lx",
-				wdlg, ev, (long)wdlg->exit, nxtobj, mclicks, udata, feedback));
+			struct xa_callout_parms *p;
+			struct co_wdlgexit_parms *wp;
 
-			bcopy(&xa_co_wdlgexit, u, xa_co_wdlgexit.len);
-		
+			bcopy(&xa_callout_user, u, xa_callout_user.len);
+			
 			u->sighand_p	+= (long)u;
-			u->exit_p	+= (long)u;
-			u->userdata_p	+= (long)u;
-			u->mclicks_p	+= (long)u;
-			u->nxtobj_p	+= (long)u;
-			u->ev_p		+= (long)u;
-			u->handle_p	+= (long)u;
-			u->ret_p	+= (long)u;
-			u->feedback_p	+= (long)u;
-		
-			DIAGS(("u=%lx, sighand=%lx, exit=%lx, udata=%lx, mclick=%lx, nxtobj=%lx, ev=%lx, hand=%lx, ret=%lx, feedb=%lx",
-				u, u->sighand_p, u->exit_p, u->userdata_p, u->mclicks_p, u->nxtobj_p, u->ev_p, u->handle_p, u->ret_p, u->feedback_p));
-		
-			*(long  *)u->exit_p	= (long)wdlg->exit;
+			(long)u->parm_p	+= (long)u;
 
+			p	= u->parm_p;
+			p->func	= (long)wdlg->exit;
+			p->plen	= sizeof(struct co_wdlgexit_parms) >> 1;
+			
+			wp	= (struct co_wdlgexit_parms *)(&p->parms);
+
+			wp->dialog	= (long)wdlg->handle;
+			wp->evnt	= (long)ev;
+			wp->obj		= nxtobj;
+			wp->clicks	= mclicks;
+			
 			if (feedback)
-			{
-				DIAGS(("callout_exit: feedback needed"));
-				*(long *)u->userdata_p = (long)u->feedback_p;
-			}
+				wp->data	= (long)wp + sizeof(struct co_wdlgexit_parms);
 			else
-				*(long  *)u->userdata_p	= (long)udata;
+				wp->data	= (long)udata;
 
-			*(short *)u->mclicks_p	= mclicks;
-			*(short *)u->nxtobj_p	= nxtobj;
-			*(long  *)u->ev_p	= (long)ev;
-			*(long  *)u->handle_p	= (long)wdlg->handle;
-
-			DIAGS(("u=%lx, sighand=%lx, exit=%lx, udata=%lx, mclick=%d, nxtobj=%d, ev=%lx, hand=%lx, ret=%x",
-				u, u->sighand_p, *(long *)u->exit_p, *(long *)u->userdata_p,
-				*(short *)u->mclicks_p, *(short *)u->nxtobj_p, *(long *)u->ev_p, *(long *)u->handle_p, *(short *)u->ret_p));
-		
-			cpush(NULL, -1); //(u, xa_co_wdlgexit.len);
+			cpush(NULL, -1); //(u, xa_co_lboxselect.len);
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
@@ -123,21 +109,19 @@ callout_exit(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short n
 			p_sigaction(SIGUSR2, &act, &oact);
 			DIAGS(("raise(SIGUSR2)"));
 			raise(SIGUSR2);
-			DIAGS(("handled SIGUSR2 wdlgexit callout"));
+			DIAGS(("handled SIGUSR2 wdialog->exit callout"));
 			/* restore old handler */
 			p_sigaction(SIGUSR2, &oact, NULL);
-		
-			DIAGS(("u=%lx, sighand=%lx, exit=%lx, udata=%lx, mclick=%d, nxtobj=%d, ev=%lx, hand=%lx, ret=%x",
-				u, u->sighand_p, *(long *)u->exit_p, *(long *)u->userdata_p,
-				*(short *)u->mclicks_p, *(short *)u->nxtobj_p, *(long *)u->ev_p, *(long *)u->handle_p, *(short *)u->ret_p));
-		
-			ret = *(short *)u->ret_p;
-		
+
 			if (feedback)
 			{
-				DIAGS((" -- return feedback from %lx into %lx (%d)", u->feedback_p, feedback, *(short *)(u->feedback_p)));
-				*(short *)feedback = *(short *)u->feedback_p;
+				*(short *)feedback = *(short *)((long)wp + sizeof(struct co_wdlgexit_parms));
+				DIAGS(("callout_exit: return %d from %lx(%lx) to feedbackptr %lx",
+					*(short *)((long)wp + sizeof(struct co_wdlgexit_parms)), wp->data, (long)wp + sizeof(struct co_wdlgexit_parms),
+					feedback));
 			}
+			ret = p->ret;
+			
 			ufree(u);
 		}
 	}
