@@ -70,8 +70,11 @@
  *
  */
 
+
+#include <errno.h>
 #include <mint/mintbind.h>
 #include <fcntl.h>
+
 
 #include "xa_types.h"
 #include "xa_global.h"
@@ -342,7 +345,7 @@ XA_appl_yield(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 }
 
-#define	EACCESS	36		/* Access denied */
+/*#define	EACCESS	36*/		/* Access denied */
 
 /*
  * Wind_update handling
@@ -357,8 +360,39 @@ XA_appl_yield(LOCK lock, XA_CLIENT *client, AESPB *pb)
 bool
 lock_screen(XA_CLIENT *client, long time_out, short *ret, int which)
 {
+	long r;
+
 	DIAG((D_sema, NULL, "[%d]lock_screen for %s, state: %d for %d\n",
 		which, c_owner(client), S.update_cnt, S.update_lock));
+
+	r = Psemaphore(2, UPDATE_LOCK, time_out);
+
+	if (r == 0)
+	{
+		S.update_lock = client->pid;
+		S.update_cnt = 1;
+		return true;
+	}
+	if (r == -EACCES)
+	{
+		if (ret)
+			*ret = 0;
+
+		return false;
+	}
+	if (r == -1)
+	{
+		S.update_cnt++;
+		return true;
+	}
+	if (r == -ERANGE)
+	{
+		return false;
+	}
+	return false;
+}
+
+#if 0
 
 	/* Already owning it? */
 	if (S.update_lock == client->pid)
@@ -372,7 +406,7 @@ lock_screen(XA_CLIENT *client, long time_out, short *ret, int which)
 		DIAG((D_sema, NULL,"Sema U up\n"));
 
 		r = Psemaphore(2, UPDATE_LOCK, time_out);
-		if (r == -EACCESS)
+		if (r == -EACCES)
 		{
 			if (ret)
 				/* Screen locked by different process */
@@ -397,6 +431,7 @@ lock_screen(XA_CLIENT *client, long time_out, short *ret, int which)
 
 	return true;
 }
+#endif
 
 /* internal function. */
 long
@@ -414,7 +449,7 @@ unlock_screen(XA_CLIENT *client, int which)
 		{
 			r = Psemaphore(3, UPDATE_LOCK, 0);
 			S.update_lock = 0;
-
+			r = 1;
 			DIAG((D_sema, NULL, "Sema U down\n"));
 		}
 	}
@@ -440,8 +475,8 @@ lock_mouse(XA_CLIENT *client, long time_out, short *ret, int which)
 
 		DIAG((D_sema, NULL, "Sema M up\n"));
 
-		r = Psemaphore(2, MOUSE_LOCK, time_out);
-		if (r == -EACCESS)
+		r = Psemaphore(2, MOUSE_LOCK, 0);
+		if (r == -EACCES)
 		{
 			if (ret)
 				/* Mouse locked by different process */
@@ -462,7 +497,6 @@ lock_mouse(XA_CLIENT *client, long time_out, short *ret, int which)
 			DIAG((D_sema, NULL, "    %ld\n", r));
 		}
 	}
-
 	return true;
 }
 
@@ -471,6 +505,7 @@ long
 unlock_mouse(XA_CLIENT *client, int which)
 {
 	long r = 0;
+
 
 	DIAG((D_sema, NULL, "[%d]unlock_mouse for %s, state: %d for %d\n",
 		which, c_owner(client), S.mouse_cnt, S.mouse_lock));
@@ -482,7 +517,7 @@ unlock_mouse(XA_CLIENT *client, int which)
 		{
 			S.mouse_lock = 0;
 			r = Psemaphore(3, MOUSE_LOCK, 0);
-
+			r = 1;
 			DIAG((D_sema, NULL,"Sema M down\n"));
 		}
 	}
@@ -521,15 +556,16 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		DIAG((D_sema, NULL, ">> Sema U: lock %d, cnt %d\n", S.update_lock, S.update_cnt));
 
-		lock_screen(client, time_out, pb->intout, 1);
-		client->fmd.lock |= SCREEN_UPD;
+		if (lock_screen(client, time_out, pb->intout, 1))
+			client->fmd.lock |= SCREEN_UPD;
 
 		break;
 	}
 	case END_UPDATE:
 	{
-		client->fmd.lock &= ~SCREEN_UPD;
 		r = unlock_screen(client, 1);
+		if (r)
+			client->fmd.lock &= ~SCREEN_UPD;
 
 		DIAG((D_sema, NULL, "<< Sema U: lock %d, cnt %d r:%ld\n", S.update_lock, S.update_cnt, r));
 		break;
@@ -539,19 +575,22 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		DIAG((D_sema, NULL, ">> Sema M: lock %d, cnt %d\n", S.mouse_lock, S.mouse_cnt));
 
-		lock_mouse(client, time_out, pb->intout, 1);
-		client->fmd.lock |= MOUSE_UPD;
+		if (lock_mouse(client, time_out, pb->intout, 1))
+			client->fmd.lock |= MOUSE_UPD;
 
 		break;
 	}
 	case END_MCTRL:
 	{
-		client->fmd.lock &= ~MOUSE_UPD;
+		
 		r = unlock_mouse(client, 1);
+		if (r)
+			client->fmd.lock &= ~MOUSE_UPD;
 
 		DIAG((D_sema, NULL, "<< Sema M: lock %d, cnt %d r:%ld\n", S.mouse_lock, S.mouse_cnt, r));
 		break;
 	}
+
 	default:
 		DIAG((D_sema, NULL, "WARNING! Invalid opcode for wind_update: 0x%04x\n", op));
 	}
@@ -562,10 +601,13 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 static void
 timer_intout(short *o)
 {
-	vq_mouse(C.vh, o+3, o+1, o+2);
-	vq_key_s(C.vh, o+4);
+	if ( !(o[0] & MU_BUTTON) )
+	{
+		vq_mouse(C.vh, o+3, o+1, o+2);
+		vq_key_s(C.vh, o+4);
+	}
 
-	o[0] = MU_TIMER;
+	o[0] |= MU_TIMER;
 	o[5] = 0;
 	o[6] = 0;
 }
@@ -635,9 +677,43 @@ XA_handler(ushort c, AESPB *pb)
 
 	/* default paths are kept per process by MiNT ??
 	 * so we need to get them here when we run under the process id.
+
 	 */
+/*
+..25...51, 258, 3,   0,      1, 753,226, 1, 1, 0 - evnt_multi( ... )
+
+ 106. 835, 178, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_find(x, y)
+ 107,   3, 178, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_mctrl )
+ 24 , 100,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - evnt_timer( 100, 0 )
+ 79 , 100,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mkstate()
+ 107,   2,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( end_mctrl )
+ 107,   3,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_mctrl )
+ 78 ,   4,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mouse( flathand(4), 0)
+
+..79..  4,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mkstate()
+
+ 78,    0,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mouse(ARROW, 0)
+ 107,   2,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( end_mctrl)
+ 107,   1,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_update)
+ 107,   3,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_mctrl)
+ 30 ,  -1,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - menu_bar( MENU_INQUIRE )
+ 105,   4,  10, 4, 444, -14949, 441, 64, 1, 0, 0 - win_set( hand, WF_TOP)
+ 107,   2,  10, 4, 444, -14949, 441, 64, 1, 0, 0 - wind_update( end_mctrl )
+ 107,   0,  10, 4, 444, -14949, 441, 64, 1, 0, 0 - wind_update( end_update )
+
+..25...51, 258, 3,   0,      1, 753,226, 1, 1, 0 - evnt_multi( ... )
+
+*/
 	if (client)
 	{
+
+#if 0
+		if ( /*(!strcmp("  Thing Desktop", client->name)) || */(!strcmp("  AtarIRC ", client->name)) )
+			display("%s opcod %d - %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", client->name, cmd,
+			pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], pb->intin[4],
+			pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], pb->intin[9] );
+#endif
+
 		if (   cmd == XA_RSRC_LOAD
 		    || cmd == XA_SHELL_FIND)
 		{
@@ -800,6 +876,9 @@ XA_handler(ushort c, AESPB *pb)
 			if (c != AESCMD_STD)
 			{
 				DIAGS(("non standard command: %d, client->end %d\n", c, client->client_end));
+				if (Ktab[cmd].p & LOCKSCREEN)
+					unlock_screen(client, 3);
+
 				return client->client_end;
 			}
 

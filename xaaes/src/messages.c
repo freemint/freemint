@@ -332,6 +332,72 @@ send_a_message(LOCK lock, short dest, union msg_buf *msg)
 					ml = ml->next;
 				}
 			}
+			else if (new[0] == WM_MOVED)
+			{
+				while (ml)
+				{
+					short *old = ml->message.m;
+					
+					if (old[0] == WM_MOVED && old[3] == new[3])
+					{
+						old[4] = new[4];
+						old[5] = new[5];
+						old[6] = new[6];
+						old[7] = new[7];
+						msg = NULL;
+						break;
+					}
+				ml = ml->next;
+				}
+			}
+			else if (new[0] == WM_SIZED)
+			{
+				while (ml)
+				{
+					short *old = ml->message.m;
+					
+					if (old[0] == WM_SIZED && old[3] == new[3])
+					{
+						old[4] = new[4];
+						old[5] = new[5];
+						old[6] = new[6];
+						old[7] = new[7];
+						msg = NULL;
+						break;
+					}
+				ml = ml->next;
+				}
+			}
+			else if (new[0] == WM_VSLID)
+			{
+				while (ml)
+				{
+					short *old = ml->message.m;
+					
+					if (old[0] == WM_VSLID && old[3] == new[3])
+					{
+						old[4] = new[4];
+						msg = NULL;
+						break;
+					}
+				ml = ml->next;
+				}
+			}
+			else if (new[0] == WM_HSLID)
+			{
+				while (ml)
+				{
+					short *old = ml->message.m;
+					
+					if (old[0] == WM_HSLID && old[3] == new[3])
+					{
+						old[4] = new[4];
+						msg = NULL;
+						break;
+					}
+				ml = ml->next;
+				}
+			}
 		}
 
 		/* If still there */
