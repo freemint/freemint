@@ -370,5 +370,5 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #setenv AVSERVER DESKTOP
 #setenv FONTSELECT DESKTOP
 #
-#shell = c:\desktop\desktop.app
+#shell = c:\desktop\desktop.prg
 
