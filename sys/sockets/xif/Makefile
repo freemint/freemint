@@ -144,7 +144,7 @@ rtl8012:
 	$(RM) $(RTL8012_OBJS)
 	$(MAKE) rtl8012.xif \
 		"TARGET=rtl8012.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)"
+		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
 		CPU=020-60
 
 rtl8012st:
