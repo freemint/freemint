@@ -132,21 +132,12 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 
 		memcpy (p2->real_cmdline, parent_cmdline, (*parent_cmdline) + 4);
 	}
-	else if (p2->ppid != 0)
+	else if (!(p1->p_flag & P_FLAG_SYS))
 	{
-		if (p2->fname != NULL)
-		{
-			ALERT ("Oops: no command line for %s (pid %d)", p2->fname, p2->pid);
-		}
-		else if (p2->name != NULL)
-		{
-			ALERT ("Oops: no command line for %s (pid %d)", p2->name, p2->pid);
-		}
-		else
-		{
-			ALERT ("Oops: no command line for pid %d (ppid %d)", p2->pid, p2->ppid);
-		}
-
+		/* only warn if parent is not a system process
+		 * XXX better initialize real_cmdline in proc.c???
+		 */
+		ALERT("Oops: no command line for %s (pid %d)", p2->fname, p2->pid);
 		p2->real_cmdline = NULL;
 	}
 
