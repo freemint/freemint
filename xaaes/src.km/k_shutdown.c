@@ -179,6 +179,16 @@ k_shutdown(void)
 	destroy_semaphores(log);
 #endif
 
+#if GENERATE_DIAGS
+	DIAGS(("C.shutdown = 0x%x", C.shutdown));
+
+	if (C.shutdown & HALT_SYSTEM)
+		DIAGS(("HALT_SYSTEM flag is set"));
+
+	if (C.shutdown & REBOOT_SYSTEM)
+		DIAGS(("REBOOT_SYSTEM flag is set"));
+#endif
+
 	DIAGS(("Bye!"));
 	DIAGS((""));
 
