@@ -288,7 +288,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			else	r = set_cookie (NULL, arg1, arg2);
 # else
 			/* Gluestik kludges, part I */
-			if (arg1 == COOKIE_STiK && isroot)
+			if (isroot && (arg1 == COOKIE_STiK || arg1 == COOKIE_ICIP))
 			{
 				USER_THINGS *ut;
 				PROC *p;
@@ -325,7 +325,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			else	r = del_cookie (NULL, arg1);
 # else
 			/* Gluestik kludges, part II */
-			if (arg1 == COOKIE_STiK && isroot)
+			if (isroot && (arg1 == COOKIE_STiK || arg1 == COOKIE_ICIP))
 			{
 				USER_THINGS *ut;
 				PROC *p;
