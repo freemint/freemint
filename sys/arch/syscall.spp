@@ -131,7 +131,7 @@ no_sys_printf:
 	bra	_syscall
 
 %ifndef SYSCALL_REENTRANT		; see above
-rom_gemdos:	move.l	_old_dos,-(sp)
+rom_gemdos:	move.l	_old_dos.w(pc),-(sp)
 	rts
 %endif
 
@@ -214,10 +214,10 @@ sk:	clr.w	-(sp)		; no frame format needed
 ; For Dsp_LodToBinary(), Dsp_LoadProg()
 ; jump directly to the ROM vector -- this avoids all hazards.
 
-LX_rom:	move.l	_old_xbios,a0		; jump to ROM
+LX_rom:	move.l	_old_xbios.w(pc),a0		; jump to ROM
 	jmp	(a0)
 
-rom_bios:	move.l	_old_bios,-(sp)
+rom_bios:	move.l	_old_bios.w(pc),-(sp)
 	rts
 
 ret:	sub.l	a0,a0		; curproc address is our sweet secret
@@ -620,7 +620,7 @@ _do_usrcall:	move.l	_usrarg5,-(sp)
 	move.l	_usrarg2,-(sp)
 	move.l	_usrarg1,-(sp)
 	move.l	_usrcall,-(sp)	; the user expects to see this on the stack
-	pea	ucret(pc)	; so rts puts us back here
+	pea	ucret.w(pc)	; so rts puts us back here
 	move.l	_usrcall,-(sp)	; this copy is for us to use
 	rts		; to jump to (we don't want to use registers)
 ucret:	lea	24(sp),sp	; fix up stack
