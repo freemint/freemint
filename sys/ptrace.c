@@ -292,6 +292,7 @@ sys_p_trace (short request, short pid, void *addr, long data)
 		case PT_KILL:
 		case PT_DETACH:
 		case PT_STEP:
+		case PT_SYSCALL:
 		case PT_GETREGS:
 		case PT_SETREGS:
 		case PT_GETFPREGS:
