@@ -55,5 +55,6 @@ extern short bconbdev;
 long _cdecl bflush (void);
 long _cdecl do_bconin (int dev);
 int checkkeys (void);
+short ikbd_scan(short scancode);
 
 # endif /* _bios_h */

@@ -551,18 +551,26 @@ HALT (void)
 
 
 /* some key definitions */
-# define CTRLALT	0xc
+# define RSHIFT		0x01
+# define CTRLALT	0x0c
 # define DEL		0x53	/* scan code of delete key */
 # define UNDO		0x61	/* scan code of undo key */
+
+extern char *kbshft;	/* in bios.c */
 
 void
 do_func_key (int scan)
 {
+	short shift = *kbshft;
+
 	switch (scan)
 	{
 		case DEL:
 		{
-			s_hutdown(1);
+			if (shift & RSHIFT)
+				s_hutdown(2);
+			else
+				s_hutdown(1);
 			break;
 		}
 		case UNDO:
