@@ -560,19 +560,66 @@ ext2_delete_inode (COOKIE *inode)
 }
 
 
-INLINE long
+static long
 inode_bmap (COOKIE *inode, long nr)
 {
-	return le2cpu32 (inode->in.i_block [nr]);
+	register long tmp;
+	
+	if ((nr < 0) || (nr >= EXT2_N_BLOCKS))
+	{
+		ALERT (("Ext2-FS: inode_bmap: nr (%li) outside range!", nr));
+		return 0;
+	}
+	
+	tmp = le2cpu32 (inode->in.i_block[nr]);
+	if (tmp)
+	{
+		if ((tmp < inode->s->sbi.s_first_data_block) || (tmp >= inode->s->sbi.s_blocks_count))
+		{
+			ALERT (("Ext2-FS: inode_bmap: tmp (%li), illegal value", tmp));
+			return 0;
+		}
+	}
+	
+	return tmp;
 }
 
-INLINE long
-block_bmap (UNIT *u, long nr)
+static long
+block_bmap (COOKIE *inode, long block, long nr)
 {
-	if (!u)
+	register long blocksize = EXT2_BLOCK_SIZE (inode->s);
+	register long tmp;
+	register UNIT *u;
+	
+	if (block == 0)
 		return 0;
 	
-	return le2cpu32 (((ulong *) u->data) [nr]);
+	if ((block < inode->s->sbi.s_first_data_block) || (block >= inode->s->sbi.s_blocks_count))
+	{
+		ALERT (("Ext2-FS: block_getblk: block (%li) outside range!", block));
+		return 0;
+	}
+	
+	if ((nr < 0) || (nr >= (blocksize >> 2)))
+	{
+		ALERT (("Ext2-FS: block_bmap: nr (%li) outside range!", nr));
+		return 0;
+	}
+	
+	u = bio.read (inode->s->di, block, blocksize);
+	if (!u) return 0;
+	
+	tmp = le2cpu32 (((ulong *) u->data)[nr]);
+	if (tmp)
+	{
+		if ((tmp < inode->s->sbi.s_first_data_block) || (tmp >= inode->s->sbi.s_blocks_count))
+		{
+			ALERT (("Ext2-FS: block_bmap: tmp (%li), illegal value", tmp));
+			return 0;
+		}
+	}
+	
+	return tmp;
 }
 
 long
@@ -604,47 +651,37 @@ ext2_bmap (COOKIE *inode, long block)
 		return 0;
 	}
 	
+	/* direct blocks */
+	
 	if (block < EXT2_NDIR_BLOCKS)
 		return inode_bmap (inode, block);
+	
+	/* indirect blocks */
 	
 	block -= EXT2_NDIR_BLOCKS;
 	if (block < addr_per_block)
 	{
 		i = inode_bmap (inode, EXT2_IND_BLOCK);
-		if (!i)
-			return 0;
-		
-		return block_bmap (bio.read (inode->s->di, i, EXT2_BLOCK_SIZE (inode->s)), block);
+		return block_bmap (inode, i, block);
 	}
+	
+	/* double indirect blocks */
 	
 	block -= addr_per_block;
 	if (block < (1UL << (addr_per_block_bits << 1)))
 	{
 		i = inode_bmap (inode, EXT2_DIND_BLOCK);
-		if (!i)
-			return 0;
-		
-		i = block_bmap (bio.read (inode->s->di, i, EXT2_BLOCK_SIZE (inode->s)), block >> addr_per_block_bits);
-		if (!i)
-			return 0;
-		
-		return block_bmap (bio.read (inode->s->di, i, EXT2_BLOCK_SIZE (inode->s)), block & (addr_per_block - 1));
+		i = block_bmap (inode, i, block >> addr_per_block_bits);
+		return block_bmap (inode, i, block & (addr_per_block - 1));
 	}
+	
+	/* triple indirect blocks */
 	
 	block -= (1UL << (addr_per_block_bits << 1));
 	i = inode_bmap (inode, EXT2_TIND_BLOCK);
-	if (!i)
-		return 0;
-	
-	i = block_bmap (bio.read (inode->s->di, i, EXT2_BLOCK_SIZE (inode->s)), block >> (addr_per_block_bits << 1));
-	if (!i)
-		return 0;
-	
-	i = block_bmap (bio.read (inode->s->di, i, EXT2_BLOCK_SIZE (inode->s)), (block >> addr_per_block_bits) & (addr_per_block - 1));
-	if (!i)
-		return 0;
-	
-	return block_bmap (bio.read (inode->s->di, i, EXT2_BLOCK_SIZE (inode->s)), block & (addr_per_block - 1));
+	i = block_bmap (inode, i, block >> (addr_per_block_bits << 1));
+	i = block_bmap (inode, i, (block >> addr_per_block_bits) & (addr_per_block - 1));
+	return block_bmap (inode, i, block & (addr_per_block - 1));
 }
 
 UNIT *
@@ -747,34 +784,49 @@ ext2_alloc_block (COOKIE *inode, ulong goal, long *err)
 static long
 inode_getblk (COOKIE *inode, long nr, long new_block, long *err, ushort clear_flag)
 {
-	long *p = inode->in.i_block + nr;
-	long tmp = *p;
+	ulong *p;
+	long tmp;
 	long goal;
 	
 	DEBUG (("inode_getblk: enter (#%li, nr = %li, new_block = %li)", inode->inode, nr, new_block));
 	
+	if ((nr < 0) || (nr >= EXT2_N_BLOCKS))
+	{
+		ALERT (("Ext2-FS: block_getblk: nr (%li) outside range!", nr));
+		return 0;
+	}
+	
+	p = inode->in.i_block + nr;
+	tmp = *p;
 	if (tmp)
-		return le2cpu32 (tmp);
+	{
+		tmp = le2cpu32 (tmp);
+		
+		if ((tmp < inode->s->sbi.s_first_data_block) || (tmp >= inode->s->sbi.s_blocks_count))
+		{
+			ALERT (("Ext2-FS: inode_getblk: tmp (%li), illegal value", tmp));
+			return 0;
+		}
+		
+		return tmp;
+	}
 	
 	*err = EFBIG;
 	/* Check file limits */
 	{
 	}
 	
+	goal = 0;
 	if (inode->i_next_alloc_block == new_block)
 		goal = inode->i_next_alloc_goal;
-	else
-		goal = 0;
 	
-	DEBUG (("hint = %ld,", goal));
-	
-	if (!goal)
+	if (goal == 0)
 	{
 		for (tmp = nr - 1; tmp >= 0; tmp--)
 		{
-			if (inode->in.i_block [tmp])
+			if (inode->in.i_block[tmp])
 			{
-				goal = le2cpu32 (inode->in.i_block [tmp]);
+				goal = le2cpu32 (inode->in.i_block[tmp]);
 				break;
 			}
 		}
@@ -784,8 +836,6 @@ inode_getblk (COOKIE *inode, long nr, long new_block, long *err, ushort clear_fl
 				inode->s->sbi.s_first_data_block;
 	}
 	
-	DEBUG (("goal = %ld", goal));
-	
 	tmp = ext2_alloc_block (inode, goal, err);
 	if (!tmp)
 	{
@@ -793,7 +843,7 @@ inode_getblk (COOKIE *inode, long nr, long new_block, long *err, ushort clear_fl
 		return 0;
 	}
 	
-	if (tmp < inode->s->sbi.s_first_data_block || tmp >= inode->s->sbi.s_blocks_count)
+	if ((tmp < inode->s->sbi.s_first_data_block) || (tmp >= inode->s->sbi.s_blocks_count))
 	{
 		ALERT (("Ext2-FS: ext2_alloc_block = %li, illegal value", tmp));
 		return 0;
@@ -811,13 +861,16 @@ inode_getblk (COOKIE *inode, long nr, long new_block, long *err, ushort clear_fl
 		UNIT *u;
 		
 		u = bio.getunit (inode->s->di, tmp, EXT2_BLOCK_SIZE (inode->s));
-		if (!u)
+		if (u)
+		{
+			bzero (u->data, EXT2_BLOCK_SIZE (inode->s));
+			bio_MARK_MODIFIED (&bio, u);
+		}
+		else
 		{
 			ALERT (("Ext2-FS: inode_getblk: getunit fail!"));
 			tmp = 0;
 		}
-		else
-			bzero (u->data, EXT2_BLOCK_SIZE (inode->s));
 	}
 	
 	DEBUG (("inode_getblk: leave (tmp = %ld)", tmp));
@@ -825,8 +878,9 @@ inode_getblk (COOKIE *inode, long nr, long new_block, long *err, ushort clear_fl
 }
 
 static long
-block_getblk (COOKIE *inode, long block, long nr, long blocksize, long new_block, long *err, ushort clear_flag)
+block_getblk (COOKIE *inode, long block, long nr, long new_block, long *err, ushort clear_flag)
 {
+	long blocksize = EXT2_BLOCK_SIZE (inode->s);
 	long tmp;
 	long goal;
 	UNIT *u;
@@ -834,9 +888,15 @@ block_getblk (COOKIE *inode, long block, long nr, long blocksize, long new_block
 	DEBUG (("block_getblk: enter (#%li, block = %li, nr = %li)", inode->inode, block, nr));
 	DEBUG (("block_getblk: blocksize = %li, new_block = %li", blocksize, new_block));
 	
-	if (block <= 0)
+	if ((block < inode->s->sbi.s_first_data_block) || (block >= inode->s->sbi.s_blocks_count))
 	{
-		DEBUG (("block_getblk: leave (block [%li] <= 0)", block));
+		ALERT (("Ext2-FS: block_getblk: block (%li) outside range!", block));
+		return 0;
+	}
+	
+	if ((nr < 0) || (nr >= (blocksize >> 2)))
+	{
+		ALERT (("Ext2-FS: block_getblk: nr (%li) outside range!", nr));
 		return 0;
 	}
 	
@@ -847,10 +907,20 @@ block_getblk (COOKIE *inode, long block, long nr, long blocksize, long new_block
 		return 0;
 	}
 	
-	tmp = *((ulong *) u->data + nr);
+	tmp = ((ulong *) u->data)[nr];
+	
+	/* behave like bmap */
 	if (tmp)
 	{
-		return le2cpu32 (tmp);
+		tmp = le2cpu32 (tmp);
+		
+		if ((tmp < inode->s->sbi.s_first_data_block) || (tmp >= inode->s->sbi.s_blocks_count))
+		{
+			ALERT (("Ext2-FS: block_getblk: tmp (%li), illegal value", tmp));
+			return 0;
+		}
+		
+		return tmp;
 	}
 	
 	*err = EFBIG;
@@ -858,18 +928,20 @@ block_getblk (COOKIE *inode, long block, long nr, long blocksize, long new_block
 	{
 	}
 	
+	goal = 0;
 	if (inode->i_next_alloc_block == new_block)
 		goal = inode->i_next_alloc_goal;
-	else
-		goal = 0;
 	
-	if (!goal)
+	if (goal == 0)
 	{
 		for (tmp = nr - 1; tmp >= 0; tmp--)
 		{
-			if (((long *) u->data) [tmp])
+			register ulong i;
+			
+			i = ((ulong *) u->data)[tmp];
+			if (i)
 			{
-				goal = le2cpu32 (((long *) u->data) [tmp]);
+				goal = le2cpu32 (i);
 				break;
 			}
 		}
@@ -879,13 +951,13 @@ block_getblk (COOKIE *inode, long block, long nr, long blocksize, long new_block
 	}
 	
 	tmp = ext2_alloc_block (inode, goal, err);
-	if (!tmp)
+	if (tmp == 0)
 	{
 		DEBUG (("block_getblk: leave (!tmp -> 0)"));
 		return 0;
 	}
 	
-	if (tmp < inode->s->sbi.s_first_data_block || tmp >= inode->s->sbi.s_blocks_count)
+	if ((tmp < inode->s->sbi.s_first_data_block) || (tmp >= inode->s->sbi.s_blocks_count))
 	{
 		ALERT (("Ext2-FS: ext2_alloc_block = %li, illegal value", tmp));
 		return 0;
@@ -898,7 +970,7 @@ block_getblk (COOKIE *inode, long block, long nr, long blocksize, long new_block
 		return 0;
 	}
 	
-	*((long *) u->data + nr) = cpu2le32 (tmp);
+	((long *) u->data)[nr] = cpu2le32 (tmp);
 	bio_MARK_MODIFIED (&bio, u);
 	
 	inode->i_next_alloc_block = new_block;
@@ -913,6 +985,7 @@ block_getblk (COOKIE *inode, long block, long nr, long blocksize, long new_block
 		if (u)
 		{
 			bzero (u->data, EXT2_BLOCK_SIZE (inode->s));
+			bio_MARK_MODIFIED (&bio, u);
 		}
 		else
 		{
@@ -968,11 +1041,15 @@ ext2_getblk (COOKIE *inode, long block, long *err, ushort clear_flag)
 	
 	*err = ENOSPC;
 	
+	/* direct blocks */
+	
 	if (block < EXT2_NDIR_BLOCKS)
 	{
 		DEBUG (("ext2_getblk: leave (return inode_getblk)"));
 		return inode_getblk (inode, block, b, err, clear_flag);
 	}
+	
+	/* indirect blocks */
 	
 	block -= EXT2_NDIR_BLOCKS;
 	if (block < addr_per_block)
@@ -980,26 +1057,30 @@ ext2_getblk (COOKIE *inode, long block, long *err, ushort clear_flag)
 		u = inode_getblk (inode, EXT2_IND_BLOCK, b, err, 1);
 		
 		DEBUG (("ext2_getblk: leave (return block_getblk 1)"));
-		return block_getblk (inode, u, block, EXT2_BLOCK_SIZE (inode->s), b, err, clear_flag);
+		return block_getblk (inode, u, block, b, err, clear_flag);
 	}
+	
+	/* double indirect blocks */
 	
 	block -= addr_per_block;
 	if (block < (1UL << (addr_per_block_bits << 1)))
 	{
 		u = inode_getblk (inode, EXT2_DIND_BLOCK, b, err, 1);
-		u = block_getblk (inode, u, block >> addr_per_block_bits, EXT2_BLOCK_SIZE (inode->s), b, err, 1);
+		u = block_getblk (inode, u, block >> addr_per_block_bits, b, err, 1);
 		
 		DEBUG (("ext2_getblk: leave (return block_getblk 2)"));
-		return block_getblk (inode, u, block & (addr_per_block - 1), EXT2_BLOCK_SIZE (inode->s), b, err, clear_flag);
+		return block_getblk (inode, u, block & (addr_per_block - 1), b, err, clear_flag);
 	}
+	
+	/* triple indirect blocks */
 	
 	block -= (1UL << (addr_per_block_bits << 1));
 	u = inode_getblk (inode, EXT2_TIND_BLOCK, b, err, 1);
-	u = block_getblk (inode, u, block >> (addr_per_block_bits << 1), EXT2_BLOCK_SIZE (inode->s), b, err, 1);
-	u = block_getblk (inode, u, (block >> addr_per_block_bits) & (addr_per_block - 1), EXT2_BLOCK_SIZE (inode->s), b, err, 1);
+	u = block_getblk (inode, u, block >> (addr_per_block_bits << 1), b, err, 1);
+	u = block_getblk (inode, u, (block >> addr_per_block_bits) & (addr_per_block - 1), b, err, 1);
 	
 	DEBUG (("ext2_getblk: leave (return block_getblk 3)"));
-	return block_getblk (inode, u, block & (addr_per_block - 1), EXT2_BLOCK_SIZE (inode->s), b, err, clear_flag);
+	return block_getblk (inode, u, block & (addr_per_block - 1), b, err, clear_flag);
 }
 
 UNIT *
