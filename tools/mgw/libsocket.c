@@ -41,6 +41,7 @@
 # define DEBUG(x) printf x
 # endif
 
+void getfunc_unlock (void);
 
 struct st_gethostbyname_param
 {
@@ -85,6 +86,23 @@ struct st_getservbyport_param
  */
 
 static volatile int lock = 0;
+static volatile int getlock = 0;
+
+static void getfunc_lock(void)
+{
+	while (getlock)
+	{
+		sleep (1);
+	}
+	
+	getlock = 1;
+}
+
+void
+getfunc_unlock (void)
+{
+	getlock = 0;
+}
 
 static void
 libsocket_lock (void)
@@ -108,10 +126,13 @@ libsocket_unlock (void)
  */
 struct st_hostent * _cdecl st_gethostbyname (struct st_gethostbyname_param p);
 struct st_hostent * _cdecl st_gethostbyaddr (struct st_gethostbyaddr_param p);
+struct st_hostent * _cdecl stbl_gethostbyname (struct st_gethostbyname_param p);
+struct st_hostent * _cdecl stbl_gethostbyaddr (struct st_gethostbyaddr_param p);
 short               _cdecl st_gethostname   (struct st_gethostname_param p);
 struct st_servent * _cdecl st_getservbyname (struct st_getservbyname_param p);
 struct st_servent * _cdecl st_getservbyport (struct st_getservbyport_param p);
-
+struct st_servent * _cdecl stbl_getservbyname (struct st_getservbyname_param p);
+struct st_servent * _cdecl stbl_getservbyport (struct st_getservbyport_param p);
 
 /* --------------------
    | Get host by name |
@@ -164,6 +185,16 @@ st_gethostbyname (struct st_gethostbyname_param p)
 	}
 	
 	return NULL;
+}
+
+/* ----------------------------------------
+   | Blocking version of st_gethostbyname |
+   ---------------------------------------- */
+struct st_hostent * _cdecl
+stbl_gethostbyname (struct st_gethostbyname_param p)
+{
+getfunc_lock (); /* Unlock should be done by the application */
+return st_gethostbyname(p);
 }
 
 /* --------------------
@@ -227,6 +258,16 @@ st_gethostbyaddr (struct st_gethostbyaddr_param p)
 	return NULL;
 }
 
+/* ----------------------------------------
+   | Blocking version of st_gethostbyaddr |
+   ---------------------------------------- */
+struct st_hostent * _cdecl
+stbl_gethostbyaddr (struct st_gethostbyaddr_param p)
+{
+getfunc_lock (); /* Unlock should be done by the application */
+return st_gethostbyaddr(p);
+}
+
 /* -----------------------
    | Get local host name |
    ----------------------- */
@@ -264,7 +305,7 @@ st_gethostname (struct st_gethostname_param p)
 	if (!r)
 		DEBUG (("st_gethostname: ok (%s)\n", p.name));
 	else
-		DEBUG (("st_gethostname: fail (%i, errno = %i)\n", r, errno));
+		DEBUG (("st_gethostname: fail (%li, errno = %i)\n", r, errno));
 	
 	return r;
 }
@@ -328,6 +369,17 @@ st_getservbyname (struct st_getservbyname_param p)
 }
 
 /* -----------------------
+   | Get service by name |
+   | (blocking version)  |
+   ----------------------- */
+struct st_servent * _cdecl
+stbl_getservbyname (struct st_getservbyname_param p)
+{
+getfunc_lock (); /* Unlock should be done by the application */
+return st_getservbyname(p);
+}
+
+/* -----------------------
    | Get service by port |
   ----------------------- */
 struct st_servent * _cdecl
@@ -384,4 +436,14 @@ st_getservbyport (struct st_getservbyport_param p)
 	
 	DEBUG (("st_getservbyport: fail\n"));
 	return NULL;
+}
+
+/* -----------------------
+   | Get service by port |
+  ----------------------- */
+struct st_servent * _cdecl
+stbl_getservbyport (struct st_getservbyport_param p)
+{
+getfunc_lock (); /* Unlock should be done by the application */
+return st_getservbyport(p);
 }

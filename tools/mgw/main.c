@@ -32,6 +32,8 @@
  */
 
 # include <signal.h>
+# include <ctype.h>
+# include <arpa/inet.h>
 # include <mint/mintbind.h>
 # include <mint/ssystem.h>
 
@@ -43,7 +45,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	30
+# define VER_MINOR	31
 # define VER_STATUS	b
 
 
@@ -59,7 +61,7 @@
 	"Redirect Daemon\r\n"
 
 # define MSG_GREET	\
-	"½ 1999 Jens Heitmann.\r\n" \
+	"½ " MSG_BUILDDATE " Jens Heitmann.\r\n" \
 	"½ " MSG_BUILDDATE " Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
@@ -71,6 +73,14 @@
 # define MSG_FAILURE	\
 	"\7Sorry, driver NOT installed - initialization failed!\r\n\r\n"
 
+/* Prototypes */
+void getfunc_unlock (void);
+void disable_old_hostbyX(void);		/* located in mgw.c */
+void enable_old_hostbyX(void);		/* located in mgw.c */
+void disable_hostbyX(void);			/* located in mgw.c */
+void enable_hostbyX(void);				/* located in mgw.c */
+
+long compatibility = 0L;					/* 0 = None */
 
 /* ------------------
    | Install cookie |
@@ -142,11 +152,119 @@ end (long sig)
 	exit (0);
 }
 
-int
-main (void)
+/* ----------------------------------------------
+   | Parse cmdline and use it for this instance |
+   ---------------------------------------------- */
+static void 
+parse_cmdline(int argc, char *argv[])
 {
+int i;
+
+for (i = 1; i < argc; i++)
+	{
+	if (!strncmp(argv[i], "--dns", 5) && isdigit(argv[i][5]) && 
+			argv[i][6] == '=')
+		{
+		extern ulong dns1, dns2;
+		int no = argv[i][5] - '0';
+		if (no == 1)
+		  dns1 = inet_addr(argv[i] + 7);
+		else
+		  dns2 = inet_addr(argv[i] + 7);
+		}
+	else if (!strcmp(argv[i], "--disable-old-system-resolve") || !strcmp(argv[i], "-O"))
+		{
+		disable_old_hostbyX();
+		}
+	else if (!strcmp(argv[i], "--disable-system-resolve") || !strcmp(argv[i], "-R"))
+		{
+		disable_hostbyX();
+		}
+	else if (!strcmp(argv[i], "--enable-old-system-resolve") || !strcmp(argv[i], "-o"))
+		{
+		enable_old_hostbyX();
+		}
+	else if (!strcmp(argv[i], "--enable-system-resolve") || !strcmp(argv[i], "-r"))
+		{
+		enable_hostbyX();
+		}
+	else if (!strncmp(argv[i], "--compatibility=", 14) || 
+					 !strncmp(argv[i], "-c=", 3) || 
+					 !strcmp(argv[i], "--compatibility") ||
+					 !strcmp(argv[i], "-c"))
+		{
+		char *ptr;
+		
+		if (argv[i][1] == '-')
+			ptr = argv[i] + 13;
+		else
+		  ptr = argv[i] + 2;
+		  
+		if (*ptr == '=')
+			{
+			ptr++;
+			compatibility = atol(ptr) << 16L;
+			ptr = strchr(ptr, '.');
+			if (ptr)
+				compatibility |= atol(ptr + 1);
+			}
+		else
+			compatibility = 0x00010007;
+		}
+	else if (!strcmp(argv[i], "--nocompatibility") ||
+					 !strcmp(argv[i], "-n"))
+		compatibility = 0;
+	else
+		printf("%s: Unknown option '%s'\n", argv[0], argv[i]);
+	}
+}
+
+/* --------------------------------------------------
+   | Send cmdline to the currently running instance |
+   -------------------------------------------------- */
+static void 
+send_cmdline(int argc, char *argv[])
+{
+PMSG pmsg;
+char **buf;
+int i;
+
+buf = (char **)malloc((argc + 1) * sizeof(char *));
+for (i = 0; i < argc; i++)
+	buf[i] = argv[i];
+buf[argc] = 0L;
+
+pmsg.msg1 = MGW_NEWCMDLINE;
+pmsg.msg2 = (long) buf;
+	
+Pmsg (2, MGW_LIBSOCKETCALL, &pmsg);
+}
+
+int
+main (int argc, char *argv[])
+{
+	long dummy;
+
 	(void) Dsetdrv ('U'-'A');
 	
+	if (argc == 2 && !strcmp(argv[1], "--help"))
+	  	{
+		printf("Usage: %s [--dns1=inet_addr] [--dns2=inet_addr]\n"
+			" [--disable-old-system-resolve|-O] [--disable-system-resolve|-R]\n"
+			" [--enable-old-system-resolve|-o] [--enable-system-resolve|-r]\n"
+			" [-c|--compatibility[=version]] [--nocompatibility|-n]\n", argv[0]);
+		exit(0);
+	  	}
+
+		/* If there are command line parameters and there is a
+			running instance, pass these parameters to it */
+	if (Ssystem (S_GETCOOKIE, TCPCOOKIE, &dummy) == 0 && argc > 1)
+		{
+		send_cmdline(argc, argv);
+		exit(0);
+		}
+
+		/* Try installation */
 	if (fork () == 0)
 	{
 		Cconws (MSG_BOOT);
@@ -158,6 +276,7 @@ main (void)
 			exit (1);
 		}
 		
+		parse_cmdline(argc, argv);		
 		Psignal (SIGALRM, nothing);
 		Psignal (SIGTERM, end);
 		Psignal (SIGQUIT, end);
@@ -227,6 +346,24 @@ main (void)
 					pmsg_out.msg2 = (long) getservbyport (buf[0], (char *) buf[1]);
 					
 					break;
+				}
+				case MGW_GETUNLOCK:
+				{
+				getfunc_unlock();
+				continue;
+				}
+				
+				/* Internal communication */
+				case MGW_NEWCMDLINE:
+				{
+				char **buf = (char **) pmsg_in.msg2;
+				int cnt;
+				
+				cnt = 0;
+				while(buf[cnt]) cnt++;
+				
+				parse_cmdline(cnt, buf);		
+				break;
 				}
 				default:
 					continue;
