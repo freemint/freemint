@@ -99,7 +99,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	3
+#define KENTRY_MIN_VERSION	4
 
 
 /* hardware dependant vector
