@@ -562,8 +562,8 @@ init (void)
 		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
 		DEBUG(("Kernel DATA: 0x%08lx (SIZE: %ld bytes)", _base->p_dbase, _base->p_dlen));
 		DEBUG(("Kernel BSS:  0x%08lx (SIZE: %ld bytes)", _base->p_bbase, _base->p_blen));
-		DEBUG(("Kernel USP:  0x%08lx (SIZE: %ld bytes)", usp, usp - (_base->p_bbase + _base->p_blen)));
-		DEBUG(("Kernel SSP:  0x%08lx (SIZE: %ld bytes)", ssp, ssp - (_base->p_bbase + _base->p_blen)));
+		DEBUG(("Kernel USP:  0x%08lx (FREE: %ld bytes)", usp, usp - (_base->p_bbase + _base->p_blen)));
+		DEBUG(("Kernel SSP:  0x%08lx (FREE: %ld bytes)", ssp, ssp - (_base->p_bbase + _base->p_blen)));
 	}
 # endif
 
@@ -861,22 +861,6 @@ init (void)
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_loading_modules);
-# endif
-
-# ifdef DEBUG_INFO
-	{
-		long usp, ssp;
-
-		usp = get_usp();
-		ssp = get_ssp();
-
-		DEBUG(("Kernel BASE: 0x%08lx", _base));
-		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
-		DEBUG(("Kernel DATA: 0x%08lx (SIZE: %ld bytes)", _base->p_dbase, _base->p_dlen));
-		DEBUG(("Kernel BSS:  0x%08lx (SIZE: %ld bytes)", _base->p_bbase, _base->p_blen));
-		DEBUG(("Kernel USP:  0x%08lx (SIZE: %ld bytes)", usp, usp - (_base->p_bbase + _base->p_blen)));
-		DEBUG(("Kernel SSP:  0x%08lx (SIZE: %ld bytes)", ssp, ssp - (_base->p_bbase + _base->p_blen)));
-	}
 # endif
 
 	/* load the kernel modules */
