@@ -70,11 +70,5 @@ adi_load(void)
 {
 	display("Loading AES Device Drivers:");
 	
-	if (!load_modules)
-	{
-		ALERT(("AESSYS: Loading adi's require an uptodate 1.16 kernel!"));
-		return;
-	}
-	
-	load_modules(".adi", load_adi);
+	load_modules(C.Aes->home_path, ".adi", load_adi);
 }
