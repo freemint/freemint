@@ -519,6 +519,7 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 {
 	register ulong n;
 	register ulong recno;
+	register long r;
 	
 	add_blkdev_randomness (di->drv);
 	
@@ -547,9 +548,8 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	
 	while (n > 65535UL)
 	{
-		register long r;
-		
 		r = XHReadWrite (di->major, di->minor, rw, recno, 65535, buf);
+		BIO_DEBUG(("rwabs_xhdi: XHReadWrite(%i,%i,%i,%lu,65535) -> %li", di->major, di->minor, rw, recno, r));
 		if (r) return r;
 		
 		recno += 65535UL;
@@ -557,7 +557,10 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 		buf = (char *) buf + (65535UL << di->pshift);
 	}
 	
-	return XHReadWrite (di->major, di->minor, rw, recno, n, buf);
+	r = XHReadWrite (di->major, di->minor, rw, recno, n, buf);
+	BIO_DEBUG(("rwabs_xhdi: XHReadWrite(%i,%i,%i,%lu,%lu) -> %li", di->major, di->minor, rw, recno, n, r));
+	
+	return r;
 }
 
 /* END rwabs wrapper */
@@ -1719,16 +1722,19 @@ bio_get_di (ushort drv)
 	/* ok, check for a valid XHDI drive, use it by default */
 	if (XHDI_installed >= 0x110)
 	{
+		char name[128];
 		__BPB dummy;
 		ulong pssize;
 		ulong flags;
 		long r;
 		
 		r = XHInqDev2 (drv, &(di->major), &(di->minor), &(di->start), &dummy, &(di->size), di->id);
+		if (r) BIO_DEBUG (("bio_get_di: XHInqDev2(%c) failed (%li)", 'A'+drv, r));
 		
 		if (r == E_OK)
 		{
-			r = XHInqTarget2 (di->major, di->minor, &pssize, &flags, NULL, 0);
+			r = XHInqTarget2 (di->major, di->minor, &pssize, &flags, name, sizeof(name));
+			if (r) BIO_DEBUG (("bio_get_di: XHInqTarget2(%i,%i) failed (%li)", di->major, di->minor, r));
 		}
 		
 		if ((r == E_OK) && (di->start != 0xffffffffUL))
@@ -1737,6 +1743,7 @@ bio_get_di (ushort drv)
 			BIO_DEBUG (("bio_get_di: major = %u, minor = %u, pssize = %lu", di->major, di->minor, pssize));
 			BIO_DEBUG (("bio_get_di: start = %lu, size = %lu, flags = %lu", di->start, di->size, flags));
 			BIO_DEBUG (("bio_get_di: id = 0x%02x%02x%02x%02x", (int) di->id[0] & 0xff, (int) di->id[1] & 0xff, (int) di->id[2] & 0xff, (int) di->id[3] & 0xff));
+			BIO_DEBUG (("bio_get_di: name \"%s\"", name));
 			
 			*di->rrwabs = rwabs_xhdi;
 			*di->rdskchng = dskchng_xhdi;
