@@ -61,7 +61,14 @@
 # define CAD_TIMEOUT	5*200
 # define ROOT_TIMEOUT	1
 
-/* _AKP codes for the keyboard (the upper byte of the low word)
+/* The _AKP cookie value consists of:
+ *
+ * bits 0-7	keyboard nationality
+ * bits 8-15	desktop nationality
+ *
+ * Actually hardware.txt by Dan Hollis says the opposite, but lies.
+ */
+/* _AKP codes for the keyboard (the low byte of the low word)
  * are as follows:
  *
  * 127 = all nationalities supported (?)
@@ -1286,7 +1293,7 @@ load_keytbl(void)
 {
 	XATTR xattr;
 	FILEPTR *fp;
-	long ret, table_len;
+	long ret, table_len = 387L, akp_val = 0L;
 	char name[32];		/* satis uidetur */
 
 	ret = FP_ALLOC(rootproc, &fp);
@@ -1308,19 +1315,16 @@ load_keytbl(void)
 		FP_FREE(fp);
 	}
 
-	/* Now fix the _AKP code in the Cookie Jar */
+	/* Now fix the _AKP code in the Cookie Jar, if it changes */
 	if (ret)
 	{
-		long akp_val = 0, gl = (long)gl_kbd & 0x000000ffL;
-
 		get_cookie(COOKIE__AKP, &akp_val);
-		akp_val &= 0xffff00ffL;
-		akp_val |= (gl << 8);
+		akp_val &= 0xffffff00L;
+		akp_val |= gl_kbd;
 		set_cookie(COOKIE__AKP, akp_val);
 	}
 
 	/* Alloc the buffer for the `current' keyboard table */
-	table_len = 387L;
 	table_len += strlen(keyboards[gl_kbd].alt);
 	table_len += strlen(keyboards[gl_kbd].altshift);
 	table_len += strlen(keyboards[gl_kbd].altcaps);
