@@ -44,9 +44,36 @@
 long redraws = 0;
 
 static int
+pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	int rtn = 0;
+
+	Sema_Up(clients);
+
+	if (client->rdrw_msg)
+	{
+		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
+		struct xa_aesmsg_list *msg = client->rdrw_msg;
+
+		client->rdrw_msg = msg->next;
+		*buf = msg->message;
+
+		DIAG((D_m, NULL, "Got pending WM_REDRAW for %s", c_owner(client) ));
+
+		redraws--;
+
+		kfree(msg);
+
+		rtn = 1;
+	}
+	Sema_Dn(clients);
+	return rtn;
+}
+
+static int
 pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	int rtn;
+	int rtn = 0;
 
 	/* Is there a widget active (like a scroll arrow)? If so, check with the action first
 	 * as it may result in some messages (just in case we've not got any already)
@@ -58,33 +85,20 @@ pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	Sema_Up(clients);
 
-#if 0
-	if (!client->msg)
-		/* now a function; used in woken_slist as well. */
-		do_active_widget(lock|clients, client);
-
-#endif
-
-	rtn = (client->msg != NULL);
-	/* Are there any messages pending? */
-	if (rtn)
+	if (client->msg)
 	{
 		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
 		struct xa_aesmsg_list *msg = client->msg;
 
 		client->msg = msg->next;
-		/* Copy the message into the clients buffer */
 		*buf = msg->message;
 
 		DIAG((D_m, NULL, "Got pending message %s for %s from %d",
 			pmsg(buf->m[0]), c_owner(client), buf->m[1]));
 
-		if (buf->m[0] == WM_REDRAW)
-			redraws--;
-
-		free(msg);
+		kfree(msg);
+		rtn = 1;
 	}
-
 	Sema_Dn(clients);
 	return rtn;
 }
@@ -273,6 +287,32 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 				evtxt,pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1));
 	}
 #endif
+	/*
+	 * Ozk: We absolutely prioritize WM_REDRAW messages, which are
+	 * queued in a separate message queue.
+	*/
+	if (events & MU_MESAG)
+	{
+		if ( pending_redraw_msgs(lock, client, pb) )
+		{
+			multi_intout(client, pb->intout, 0);
+			pb->intout[0] = MU_MESAG;
+			/*
+			 * Ozk: If this was the last redraw message,
+			 * reenable delivery of mouse-movement events.
+			*/
+			if (!redraws)
+				kick_mousemove_timeout();
+			return XAC_DONE;
+		}
+	}
+
+	/*
+	 * Ozk: If there are still redraw messages (for other clients than "us"),
+	 * we yield() so that redraws are processed as soon as possible.
+	*/
+	if (redraws)
+		yield();
 
 /*
 	Excerpt from nkcc.doc, courtesy Harald Siegmund:
@@ -547,6 +587,20 @@ unsigned long
 XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,1)
+
+	/*
+	 * Ozk: look at XA_evnt_multi() for explanations..
+	*/
+	if (pending_redraw_msgs(lock, client, pb))
+	{
+		pb->intout[0] = 1;
+		if (!redraws)
+			kick_mousemove_timeout();
+
+		return XAC_DONE;
+	}
+	if (redraws)
+		yield();
 
 	if (pending_msgs(lock, client, pb))
 		return pb->intout[0] = 1, XAC_DONE;

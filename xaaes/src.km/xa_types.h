@@ -323,6 +323,13 @@ struct xa_client
 	bool wa_wheel;			/* The client wants WA_HEEL messages. */
 
 	struct xa_aesmsg_list *msg;	/* Pending AES messages */
+	struct xa_aesmsg_list *rdrw_msg;
+
+#define CS_LAGGING	1
+#define CS_CE_REDRAW_SENT 2
+
+	long status;
+
 	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
 	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
 	short *waiting_short;		/* */
@@ -394,10 +401,6 @@ struct xa_client
 	short	cevnt_count;
 	struct	c_event *cevnt_head;
 	struct	c_event *cevnt_tail;
-
-	//int	ce_head;
-	//int	ce_tail;
-	//struct c_event ce[MAX_CEVENTS + 1];
 };
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);

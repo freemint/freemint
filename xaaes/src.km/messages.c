@@ -28,6 +28,7 @@
 
 #include "c_message.h"
 #include "k_main.h"
+#include "k_mouse.h"
 #include "vaproto.h"
 #include "xa_types.h"
 #include "xa_global.h"
@@ -276,191 +277,203 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 				DEBUG(("message sent to '%s'\n", dest_client->name));
 		}
 #endif
-
 		DIAG((D_m, NULL, "Send message %s to %s", pmsg(msg->s.msg), c_owner(dest_client)));
 		/* Write success to client's reply pipe to unblock the process */
 
 		dest_client->usr_evnt = 1;
-
-		if (dest_client->p->pid != p_getpid())
+		cancel_evnt_multi(dest_client, 22);
+		dest_client->status &= ~CS_CE_REDRAW_SENT;
+		if (msg->m[0] == WM_REDRAW)
 		{
-			Unblock(dest_client, XA_OK, 22);
-			//yield();
+			redraws--;
+			if (!redraws)
+				kick_mousemove_timeout();
 		}
-		else
-			cancel_evnt_multi(dest_client, 22);
 	}
-	else /* Create a new entry in the destination client's pending messages list */
+	else
 	{
-		struct xa_aesmsg_list *ml = dest_client->msg;
-		short *new = msg->m;
+		short msgt = msg->m[0];
 
-#if GENERATE_DIAGS
-		if (new[0] == WM_REDRAW)
+		queue_message(lock, dest_client, msg);
+
+		/*
+		 * Ozk: This is a client event message, and such messages are also
+		 * counted. Since queue_message() also counted this message, we "uncount"
+		 * the client event here.
+		*/
+		if (msgt == WM_REDRAW)
+			redraws--;
+	}
+}
+
+/*
+ * Context indipendant.
+ * queue a message for dest_client
+*/
+void
+queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
+{
+
+	struct xa_aesmsg_list *ml;
+	short *new = msg->m;
+
+	if (new[0] == WM_REDRAW)
+	{
+		struct xa_aesmsg_list **next;
+		struct xa_aesmsg_list *new_msg;
+		short *old = ml->message.m;
+
+		DIAG((D_m, NULL, "WM_REDRAW rect %d/%d,%d/%d", new[4], new[5], new[6], new[7]));
+
+		next = &dest_client->rdrw_msg;
+		ml = *next;
+
+		while (ml)
 		{
-			DIAG((D_m, NULL, "WM_REDRAW rect %d/%d,%d/%d", new[4], new[5], new[6], new[7]));
+			old = ml->message.m;
+
+			if ( old[3] == new[3] )
+			{
+				if (is_inside(*((RECT *)&new[4]), *((RECT *)&old[4])))
+					return;
+				if (is_inside(*((RECT *)&old[4]), *((RECT *)&new[4])))
+				{
+					/* old inside new: replace by new. */
+					ml->message.s = msg->s;
+					return;
+				}
+			}
+			next	= &ml->next;
+			ml	= *next;
 		}
-#endif
-		/* There are already some pending messages */
-		if (dest_client->msg)
+		new_msg = kmalloc(sizeof(union msg_buf));
+		if (new_msg)
 		{
-			/* HR 270602: remove engulfed redraw messages. (the simpliest optimization) */
-			if (new[0] == WM_REDRAW)
-			{
-				while (ml)
-				{
-					short *old = ml->message.m;
+			*next			= new_msg;
+			new_msg->message	= *msg;
+			new_msg->next		= NULL;	
+			redraws++;
+		}
+		return;
+	}
+	/* There are already some pending messages */
+	if (dest_client->msg)
+	{
+		ml = dest_client->msg;
 
-					if (   old[0] == WM_REDRAW
-					    && old[3] == new[3])
-					{
-						if (is_inside(*((RECT *)&new[4]), *((RECT *)&old[4])))
-						{
-							/* new rect inside old rect: forget new. */
-							msg = NULL;
-							break;
-						}
-						if (is_inside(*((RECT *)&old[4]), *((RECT *)&new[4])))
-						{
-							/* old inside new: replace by new. */
-							ml->message.s = msg->s;
-							msg = NULL;
-							break;
-						}
-					}
-					ml = ml->next;
-				}
-			}
-			else if (new[0] == WM_MOVED)
+		if (new[0] == WM_MOVED)
+		{
+			while (ml)
 			{
-				while (ml)
+				short *old = ml->message.m;
+
+				if (old[0] == WM_MOVED && old[3] == new[3])
 				{
-					short *old = ml->message.m;
-					
-					if (old[0] == WM_MOVED && old[3] == new[3])
-					{
-						old[4] = new[4];
-						old[5] = new[5];
-						old[6] = new[6];
-						old[7] = new[7];
-						msg = NULL;
-						break;
-					}
-				ml = ml->next;
+					old[4] = new[4];
+					old[5] = new[5];
+					old[6] = new[6];
+					old[7] = new[7];
+					msg = NULL;
+					break;
 				}
-			}
-			else if (new[0] == WM_SIZED)
-			{
-				while (ml)
-				{
-					short *old = ml->message.m;
-					
-					if (old[0] == WM_SIZED && old[3] == new[3])
-					{
-						old[4] = new[4];
-						old[5] = new[5];
-						old[6] = new[6];
-						old[7] = new[7];
-						msg = NULL;
-						break;
-					}
-				ml = ml->next;
-				}
-			}
-			else if (new[0] == WM_VSLID)
-			{
-				while (ml)
-				{
-					short *old = ml->message.m;
-					
-					if (old[0] == WM_VSLID && old[3] == new[3])
-					{
-						old[4] = new[4];
-						msg = NULL;
-						break;
-					}
-				ml = ml->next;
-				}
-			}
-			else if (new[0] == WM_HSLID)
-			{
-				while (ml)
-				{
-					short *old = ml->message.m;
-					
-					if (old[0] == WM_HSLID && old[3] == new[3])
-					{
-						old[4] = new[4];
-						msg = NULL;
-						break;
-					}
-				ml = ml->next;
-				}
-			}
-			else if (new[0] == WM_ARROWED)
-			{
-				while (ml)
-				{
-					short *old = ml->message.m;
-					
-					if (old[0] == WM_ARROWED && old[3] == new[3] && old[4] == new[4])
-					{
-						msg = NULL;
-						break;
-					}
-				ml = ml->next;
-				}
+			ml = ml->next;
 			}
 		}
-
-		/* If still there */
-		if (msg)
+		else if (new[0] == WM_SIZED)
 		{
-			struct xa_aesmsg_list *new_msg;
-
-			new_msg = xmalloc(sizeof(*new_msg),3);
-			if (new_msg)
+			while (ml)
 			{
-				/* Fill in the new pending list entry with the message */
-				new_msg->message = *msg;
-				new_msg->next = NULL;
-
-				if (dest_client->msg)
+				short *old = ml->message.m;
+					
+				if (old[0] == WM_SIZED && old[3] == new[3])
 				{
-					/* There are already some pending messages */
-
-					ml = dest_client->msg;
-					while (ml->next)
-						 ml = ml->next;
-
-					/* Append the new message to the list */
-					ml->next = new_msg;
+					old[4] = new[4];
+					old[5] = new[5];
+					old[6] = new[6];
+					old[7] = new[7];
+					msg = NULL;
+					break;
 				}
-				else
-					/* First entry in the client's pending message list */
-					dest_client->msg = new_msg;
-
-				if (msg->m[0] == WM_REDRAW)
-					redraws++;
-
-				DIAG((D_m, NULL, "Queued message %s for %s", pmsg(msg->s.msg), c_owner(dest_client)));
+			ml = ml->next;
+			}
+		}
+		else if (new[0] == WM_VSLID)
+		{
+			while (ml)
+			{
+				short *old = ml->message.m;
+					
+				if (old[0] == WM_VSLID && old[3] == new[3])
+				{
+					old[4] = new[4];
+					msg = NULL;
+					break;
+				}
+			ml = ml->next;
+			}
+		}
+		else if (new[0] == WM_HSLID)
+		{
+			while (ml)
+			{
+				short *old = ml->message.m;
+					
+				if (old[0] == WM_HSLID && old[3] == new[3])
+				{
+					old[4] = new[4];
+					msg = NULL;
+					break;
+				}
+			ml = ml->next;
+			}
+		}
+		else if (new[0] == WM_ARROWED)
+		{
+			while (ml)
+			{
+				short *old = ml->message.m;
+					
+				if (old[0] == WM_ARROWED && old[3] == new[3] && old[4] == new[4])
+				{
+					msg = NULL;
+					break;
+				}
+			ml = ml->next;
 			}
 		}
 	}
 
-	//Sema_Dn(clients);
+	/* If still there */
+	if (msg)
+	{
+		struct xa_aesmsg_list *new_msg;
+
+		new_msg = kmalloc(sizeof(*new_msg));
+		if (new_msg)
+		{
+			/* Fill in the new pending list entry with the message */
+			new_msg->message = *msg;
+			new_msg->next = NULL;
+
+			if (dest_client->msg)
+			{
+				/* There are already some pending messages */
+
+				ml = dest_client->msg;
+				while (ml->next)
+					 ml = ml->next;
+
+				/* Append the new message to the list */
+				ml->next = new_msg;
+			}
+			else
+				/* First entry in the client's pending message list */
+				dest_client->msg = new_msg;
+
+			DIAG((D_m, NULL, "Queued message %s for %s", pmsg(msg->s.msg), c_owner(dest_client)));
+		}
+	}
 }
-
-static void
-Pdeliver_message(void *_parm)
-{
-	long *parm = _parm;
-
-	deliver_message(0, (struct xa_client *)parm[0], (union msg_buf *)parm[1]);
-	kfree(_parm);
-	kthread_exit(0);
-}
-
 /*
  * Send an AES message to a client application.
  * generalized version, which now can be used by appl_write. :-)
@@ -477,32 +490,24 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		return;
 	}
 
-	/* XaAES has left its main loop, so no point queuing messages. */
-//	if (C.shutdown & QUIT_NOW)
-//		return;	
-
-	if (rc == dest_client) //(!rc || rc == dest_client)
+	if ( 	!dest_client->waiting_for & MU_MESAG ||
+		(msg->m[0] == WM_REDRAW && (dest_client->status & CS_CE_REDRAW_SENT)) )
 	{
+		queue_message(lock, dest_client, msg);
+		return;
+	}
+
+	if (rc == dest_client)
+	{
+		if (msg->m[0] == WM_REDRAW)
+		{
+			dest_client->status |= CS_CE_REDRAW_SENT;
+			redraws++;
+		}
 		deliver_message(lock, dest_client, msg);
 	}
 	else
 	{
-		long *p = (long *)kmalloc(16);
-
-		if (p)
-		{
-			m = (union msg_buf *)kmalloc(sizeof(m));
-			if (m && dest_client)
-			{
-				*m = *msg;
-				p[0] = (long)dest_client;
-				p[1] = (long)m;
-				(void)kthread_create(dest_client->p, Pdeliver_message, p, NULL, "k%s", dest_client->name);
-			}
-			else
-				kfree(p);
-		}
-#if 0
 		m = (union msg_buf *)kmalloc(sizeof(m));
 		
 		if (m)
@@ -510,10 +515,14 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 			if (dest_client)
 			{
 				*m = *msg;
+				if (msg->m[0] == WM_REDRAW)
+				{
+					dest_client->status |= CS_CE_REDRAW_SENT;
+					redraws++;
+				}
 				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
 			}
 		}
-#endif
 	}
 }
 /* AES internal msgs (All standard) */
