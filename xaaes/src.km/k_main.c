@@ -487,7 +487,9 @@ k_main(void *dummy)
 	mu_button.clicks = 0;
 	mu_button.x = 0;
 	mu_button.y = 0;
-	mu_button.got = true;
+	mu_button.newc = 0;
+	mu_button.newr = 0;
+	//mu_button.got = true;
 
 	/* Open the MiNT Salert() pipe to be polite about system errors */
 	C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);
