@@ -408,16 +408,22 @@ put_cookie (COOKIE *c)
 void
 rel_cookie (COOKIE *c)
 {
-	c->links--;
-	
-	if (!c->links)
+	if (c->links)
 	{
-		if (!c->in.i_links_count && !c->open)
+		c->links--;
+		
+		if (!c->links)
 		{
-			DEBUG (("Ext2-FS [%c]: rel_cookie: free deleted inode #%li: %lx", c->dev+'A', c->inode, c));
-			ext2_delete_inode (c);
+			if (!c->in.i_links_count && !c->open)
+			{
+				DEBUG (("Ext2-FS [%c]: rel_cookie: free deleted inode #%li: %lx", c->dev+'A', c->inode, c));
+				ext2_delete_inode (c);
+			}
 		}
 	}
+	else
+		ALERT (("Ext2-FS [%c]: rel_cookie -> links = 0 (#%li)",
+			c->dev+'A', c->inode));
 }
 
 void
@@ -497,7 +503,7 @@ struct cookie
 	ulong	i_prealloc_count;
 };
 # endif
-		ksprintf (tmp, "%3li: [%c] #%06li - %3li - %06lx - %06lx - %s - %s",
+		ksprintf (tmp, "%3li: [%c] #%06li - %3lu - %06lx - %06lx - %s - %s",
 			i,
 			c->dev+'A',
 			c->inode,
