@@ -48,7 +48,7 @@ new_task(Tab *new)
 }
 
 static void
-free_task(Tab *t, int *nester)
+free_task(Tab *t, short *nester)
 {
 	if (t)
 	{

@@ -115,7 +115,7 @@ static struct parser_item parser_tab[] =
 	{ "SMALL_POINT",    PI_R_S,   & cfg.small_font_point    },
 	{ "POPSCROLL",      PI_R_S,   & cfg.popscroll           },
 	{ "DC_TIME",        PI_R_S,   & cfg.double_click_time   },
-	{ "VIDEO",	    PI_R_S,   & cfg.videomode		},
+	{ "VIDEO",	    PI_R_S,   & cfg.videomode		, Range(1, 10) },
 	
 	{ "SHELL",          PI_V_T,   pCB_shell                 },
 	{ "DESK",           PI_V_T,   pCB_shell                 },
