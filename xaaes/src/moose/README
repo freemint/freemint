@@ -1,0 +1,9 @@
+
+Please help!
+
+This should be converted to a more friendly format
+(C or gcc asm) and then moved as device driver
+to the mint device driver section.
+
+Frank Naumann <fnaumann@freemint.de>
+2003-03-15

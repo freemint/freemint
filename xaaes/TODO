@@ -1,0 +1,8 @@
+! fix the TOP/BOTTOM messages during an
+  application start.
+! fsel_* functions optinally binded (to let the
+  freedom work for now).
+
+* remove the window margins to look like e.g. NAES.
+* GEM menu line to be optional (NAES like).
+* taskmanager as an external application
