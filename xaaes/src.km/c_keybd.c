@@ -38,7 +38,8 @@ cXA_fmdkey(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		DIAG((D_keybd, client, "Deliver fmd.keybress to %s", client->name));
 
-		client->fmd.keypress(lock, NULL, &client->wt, key->aes, key->norm, *key);
+		//client->fmd.keypress(lock, NULL, &client->wt, key->aes, key->norm, *key);
+		client->fmd.keypress(lock, client, NULL, &client->wt, key);
 	}
 	kfree(key);
 }
@@ -53,7 +54,8 @@ cXA_keypress(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		DIAG((D_keybd, client, "cXA_keypress for %s", client->name));
 
-		wind->keypress(lock, wind, NULL, key->aes, key->norm, *key);
+		//wind->keypress(lock, wind, NULL, key->aes, key->norm, *key);
+		wind->keypress(lock, client, wind, NULL, key);
 	}
 	kfree(key);
 }

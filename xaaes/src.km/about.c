@@ -30,7 +30,8 @@
 #include "xa_global.h"
 
 #include "c_window.h"
-#include "objects.h"
+#include "form.h"
+#include "obtree.h"
 #include "scrlobjc.h"
 #include "widgets.h"
 #include "xa_form.h"
@@ -68,17 +69,37 @@ about_destructor(enum locks lock, struct xa_window *wind)
 }
 
 static void
-handle_about(enum locks lock, struct widget_tree *wt)
+about_form_exit(struct xa_client *client,
+		struct xa_window *wind,
+		struct widget_tree *wt,
+		struct fmd_result *fr)
 {
+	enum locks lock = 0;
+	wt->current = fr->obj|fr->dblmask;
 	/* The ''form_do'' part */
-	if ((wt->current & 0xff) == ABOUT_OK)
+	if (fr->obj == ABOUT_OK)
 	{
-		deselect(wt->tree, ABOUT_OK);
+		object_deselect(wt->tree + ABOUT_OK);
 		display_toolbar(lock, about_window, ABOUT_OK);
 		close_window(lock, about_window);
 		delete_window(lock, about_window);
 	}
 }
+
+#if 0
+static void
+handle_about(enum locks lock, struct widget_tree *wt)
+{
+	/* The ''form_do'' part */
+	if ((wt->current & 0xff) == ABOUT_OK)
+	{
+		object_deselect(wt->tree + ABOUT_OK);
+		display_toolbar(lock, about_window, ABOUT_OK);
+		close_window(lock, about_window);
+		delete_window(lock, about_window);
+	}
+}
+#endif
 
 void
 open_about(enum locks lock)
@@ -95,7 +116,7 @@ open_about(enum locks lock)
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			center_form(form, ICON_H);
+			form_center(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME, MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork, *(RECT*)&form->ob_x);
@@ -119,8 +140,8 @@ open_about(enum locks lock)
 		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
 
 		wt = set_toolbar_widget(lock, dialog_window, form, -1);
-		wt->exit_form = XA_form_exit;
-		wt->exit_handler = handle_about;
+		wt->exit_form = about_form_exit; //XA_form_exit;
+		//wt->exit_handler = handle_about;
 
 		/* set a scroll list widget */
 		list = set_slist_object(lock, wt, form, ABOUT_LIST, 0, 0, 0, 0, 0, 0, 42);

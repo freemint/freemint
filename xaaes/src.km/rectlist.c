@@ -255,11 +255,11 @@ was_visible(struct xa_window *w)
  * GEM sample application `DEMO' [aka `DOODLE'],  Version 1.1,
  * March 22, 1985)
  */
+#define max(x,y) (((x)>(y))?(x):(y))
+#define min(x,y) (((x)<(y))?(x):(y))
 bool
 xa_rc_intersect(RECT s, RECT *d)
 {
-#define max(x,y) (((x)>(y))?(x):(y))
-#define min(x,y) (((x)<(y))?(x):(y))
 	short w1 = s.x + s.w;
 	short w2 = d->x + d->w;
 	short h1 = s.y + s.h;
@@ -271,4 +271,24 @@ xa_rc_intersect(RECT s, RECT *d)
 	d->h = min(h1, h2) - d->y;
 
 	return (d->w > 0) && (d->h > 0);
+}
+/* Ozk:
+ * This is my (ozk) version of the xa_rc_intersect.
+ * Takes pointers to source, destination and result
+ * rectangle structures.
+ */
+bool
+xa_rect_clip(RECT *s, RECT *d, RECT *r)
+{
+	short w1 = s->x + s->w;
+	short w2 = d->x + d->w;
+	short h1 = s->y + s->h;
+	short h2 = d->y + d->h;
+
+	r->x = max(s->x, d->x);
+	r->y = max(s->y, d->y);
+	r->w = min(w1, w2) - d->x;
+	r->h = min(h1, h2) - d->y;
+
+	return (r->w > 0) && (r->h > 0);
 }

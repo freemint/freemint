@@ -201,7 +201,7 @@ cXA_form_do(enum locks lock, struct c_event *ce, bool cancel)
 		return;
 
 	DIAG((D_mouse, client, "cXA_form_do for %s", client->name));
-	client->fmd.mousepress(lock, client, &ce->md);
+	client->fmd.mousepress(lock, client, NULL, NULL, &ce->md);
 }
 
 void

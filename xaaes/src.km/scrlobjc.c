@@ -28,8 +28,10 @@
 #include "xa_global.h"
 
 #include "scrlobjc.h"
+#include "form.h"
 #include "rectlist.h"
-#include "objects.h"
+#include "draw_obj.h"
+#include "obtree.h"
 #include "widgets.h"
 #include "xa_fsel.h"
 #include "xa_form.h"
@@ -124,7 +126,7 @@ set_scroll(struct xa_client *client, OBJECT *form, int item)
 		return false;
 
 	/* colours are those for windows */
-	set_ob_spec(form, item, (unsigned long)sinfo);
+	object_set_spec(form + item, (unsigned long)sinfo);
 	ob->ob_type = G_SLIST;
 	ob->ob_flags |= OF_TOUCHEXIT;
 	sinfo->tree = form;
@@ -153,7 +155,7 @@ set_slist_object(enum locks lock,
 	RECT r;
 	XA_WIND_ATTR wkind = UPARROW|VSLIDE|DNARROW;
 	OBJECT *ob = form + item;
-	SCROLL_INFO *list = (SCROLL_INFO *)get_ob_spec(ob)->index;
+	SCROLL_INFO *list = (SCROLL_INFO *)object_get_spec(ob)->index;
 
 	list->wt = wt;
 
@@ -167,7 +169,7 @@ set_slist_object(enum locks lock,
 	    so we do a little cheat here. */
 	r.w += SHADOW_OFFSET;
 	r.h += SHADOW_OFFSET;
-	object_offset(form, item, 0, 0, &r.x, &r.y);
+	ob_offset(form, item, &r.x, &r.y);
 	if (title)
 		wkind |= NAME;
 	if (info)
@@ -227,7 +229,7 @@ add_scroll_entry(OBJECT *form, int item,
 	SCROLL_ENTRY *last, *new;
 	OBJECT *ob = form + item;
 
-	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
+	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 
 	new = kmalloc(sizeof(*new));
 	if (!new)
@@ -267,7 +269,7 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 	SCROLL_ENTRY *this, *next, *prior = NULL;
 	OBJECT *ob = form + item;
 	int n = 0;
-	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
+	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 	this = next = list->start;
 	
 	while (this)
@@ -317,7 +319,7 @@ slist_msg_handler(
 	int p,ol;
 
 	ob = wind->winob + wind->winitem;
-	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
+	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 	old = list->top;
 	ol  = list->left;
 
@@ -480,14 +482,14 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 
 /* HR 181201: pass all mouse data to these functions using struct moose_data. */
 void
-click_scroll_list(enum locks lock, OBJECT *form, int item, struct moose_data *md)
+click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
 {
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *this;
 	OBJECT *ob = form + item;
 	short cy = md->y;
 
-	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
+	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 
 	if (!do_widgets(lock, list->wi, 0, md))
 	{
@@ -521,14 +523,14 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, struct moose_data *md
 }
 
 void
-dclick_scroll_list(enum locks lock, OBJECT *form, int item, struct moose_data *md)
+dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
 {
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *this;
 	OBJECT *ob = form + item;
 	short y = screen.c_max_h, cx = md->x, cy = md->y;	
 
-	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
+	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 
 	if (!do_widgets(lock, list->wi, 0, md))		/* HR 161101: mask */
 	{

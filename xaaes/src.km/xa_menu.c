@@ -30,7 +30,7 @@
 #include "app_man.h"
 #include "c_window.h"
 #include "menuwidg.h"
-#include "objects.h"
+#include "obtree.h"
 #include "rectlist.h"
 #include "taskman.h"
 #include "util.h"
@@ -297,7 +297,7 @@ XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(1,1,2)
 
-	strcpy(get_ob_spec(&tree[pb->intin[0]])->free_string, text);
+	strcpy(object_get_spec(&tree[pb->intin[0]])->free_string, text);
 
 	/* If we just changed the main root window's menu, better redraw it */
 	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
@@ -405,7 +405,7 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			tab->lock = lock;
 			ob->ob_x = 0;
 			ob->ob_y = 0;
-			object_offset(ob, mn->mn_menu, 0, 0, &x, &y);
+			ob_offset(ob, mn->mn_menu, &x, &y);
 			tab->wind = NULL;
 			tab->widg = NULL;
 			tab->ty = POP_UP;

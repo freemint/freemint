@@ -32,8 +32,8 @@
 int set_scroll(struct xa_client *client, OBJECT *form, int objc);
 bool add_scroll_entry(OBJECT *form, int objc, OBJECT *icon, void *text, SCROLL_ENTRY_TYPE flag);
 void empty_scroll_list(OBJECT *form, int objc, SCROLL_ENTRY_TYPE flag);
-void click_scroll_list(enum locks lock, OBJECT *form, int objc, struct moose_data *md);
-void dclick_scroll_list(enum locks lock, OBJECT *form, int objc, struct moose_data *md);
+void click_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
+void dclick_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
 SCROLL_INFO *set_slist_object(
 		enum locks lock,
 		XA_TREE *wt,

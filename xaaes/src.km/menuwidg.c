@@ -31,13 +31,14 @@
 #include "c_window.h"
 #include "k_mouse.h"
 #include "menuwidg.h"
-#include "objects.h"
+#include "obtree.h"
+#include "draw_obj.h"
 #include "rectlist.h"
 #include "taskman.h"
 #include "widgets.h"
 
 #include "xa_rsrc.h"
-#include "xa_form.h"
+#include "form.h"
 
 
 static Tab *
@@ -96,9 +97,9 @@ menu_colors(void)
 static void
 menu_spec(OBJECT *root, int item)
 {
-	if (is_spec(root, item))
+	if (object_have_spec(root + item))
 	{
-		set_ob_spec(root, item, 0xff0000L | menu_colors());
+		object_set_spec(root + item, 0xff0000L | menu_colors());
 		root[item].ob_state |= OS_SHADOWED;
 	}
 }
@@ -107,18 +108,35 @@ static void
 change_title(Tab *tab, int state)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	OBJECT *ob = k->root;
+	OBJECT *ob = k->root, *save;
+	XA_TREE *wt;
 	int t = k->clicked_title;
 
 	if (state)
 		state = ob[t].ob_state | OS_SELECTED;
 	else
 		state = ob[t].ob_state & ~OS_SELECTED;
+
 	ob->ob_x = k->rdx;
 	ob->ob_y = k->rdy;
+
+	wt = tab->widg->stuff;
+	save = wt->tree;
+	wt->tree = ob;
+
+	obj_change(wt, //tab->widg->stuff,
+		    t,
+		    state,
+		    ob[t].ob_flags,
+		    true,
+		    NULL);
+
+	wt->tree = save;
+#if 0
 	change_object(	tab->lock,
 			tab->widg->stuff,	/* HR 090501 menu in user window. */
 			ob, t, NULL, state, true);
+#endif
 }
 
 static void
@@ -132,23 +150,39 @@ change_entry(Tab *tab, int state)
 		state = ob[t].ob_state | OS_SELECTED;
 	else
 		state = ob[t].ob_state & ~OS_SELECTED;
+
 	ob->ob_x = k->rdx;
 	ob->ob_y = k->rdy;
+
 	if (k->popw)
 	{
 		XA_TREE *wt = get_widget(k->popw, XAW_MENU)->stuff;
-		RECT wa = k->popw->wa;
+		struct xa_rect_list rl;
 
-		change_object(	tab->lock,
-				wt,		/* HR 090501: menu in user window. 300801: repaired inheritance. */
-				ob, t,
-				&wa,		/* HR 191101: clip the work area */
-				state, true);
+		rl.next = NULL;
+		rl.r = k->popw->wa;
+
+		obj_change(wt,
+			    t,
+			    state,
+			    ob[t].ob_flags,
+			    true,
+			    &rl);
 	}
 	else if (tab->widg)
-		change_object(tab->lock, tab->widg->stuff, ob, t, NULL, state, true);
+	{
+		OBJECT *save = ((XA_TREE *)tab->widg->stuff)->tree;
+
+		((XA_TREE *)tab->widg->stuff)->tree = k->root;
+		obj_change(tab->widg->stuff, t, state, ob[t].ob_flags, true, NULL);
+		((XA_TREE *)tab->widg->stuff)->tree = save;		
+	}
 	else
-		change_object(tab->lock, NULL,             ob, t, NULL, state, true);
+	{
+		DIAGS(("change_entry: NO WT!!"));
+		//obj_change(tab-widg->stuff, t, state, 
+		//change_object(tab->lock, NULL,             ob, t, NULL, state, true);
+	}
 }
 
 static bool
@@ -165,7 +199,7 @@ is_attach(struct xa_client *client, OBJECT *menu, int item, XA_MENU_ATTACHMENT *
 		return false;
 
 	DIAG((D_menu, client, "is_attach: at=%lx,flags=%x,type=%x, spec=%lx",
-	       at, attach_to->ob_flags, attach_to->ob_type, get_ob_spec(attach_to)->index));
+	       at, attach_to->ob_flags, attach_to->ob_type, object_get_spec(attach_to)->index));
 
 	for (i = 0; i < ATTACH_MAX; i++)
 	{
@@ -274,7 +308,7 @@ attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, M
 			at->tree = mn->mn_tree;
 			if ((attach_to->ob_type & 0xff) == G_STRING)
 			{
-				text = get_ob_spec(attach_to)->free_string;
+				text = object_get_spec(attach_to)->free_string;
 				text[strlen(text)-1] = mn == &desk_popup ? '\2' : '>';
 			}
 			ret = 1;
@@ -311,7 +345,7 @@ detach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item)
 		xt->to_item = 0;
 		if ((attach_to->ob_type & 0xff) == G_STRING)
 		{
-			text = get_ob_spec(attach_to)->free_string;
+			text = object_get_spec(attach_to)->free_string;
 			text[strlen(text)-1] = ' ';
 		}
 		ret = 1;
@@ -717,7 +751,8 @@ find_menu_object(Tab *tab, int start)
 	k->root->ob_x = k->rdx;
 	k->root->ob_y = k->rdy;
 
-	return find_object(k->root, start, MAX_DEPTH, k->x, k->y, dx, dy);
+	return ob_find(k->root, start, MAX_DEPTH, k->x, k->y);
+		//find_object(k->root, start, MAX_DEPTH, k->x, k->y, dx, dy);
 }
 
 
@@ -735,7 +770,8 @@ menu_area(RECT *c, Tab *tab, int item)
 		dy = wt->dy;
 	}
 
-	object_area(c, k->root, item, dx, dy);
+	ob_area(k->root, item, c);
+	//object_area(c, k->root, item, dx, dy);
 }
 
 static void
@@ -749,11 +785,12 @@ display_popup(Tab *tab, OBJECT *root, int item, short rdx, short rdy)
 	k->pop_item = item;
 	k->border = 0;
 	k->root = root;
+
 	root->ob_x = rdx; /* This is where we want to draw the popup object. */
 	root->ob_y = rdy;
 
 	DIAG((D_menu, tab->client, "display_popup: rdx/y %d/%d", rdx, rdy));
-	object_rectangle(&r, root, item, 0, 0);
+	ob_rectangle(root, item, &r); //object_rectangle(&r, root, item, 0, 0);
 	r = popup_inside(tab, r);
 	wash = r.h;
 
@@ -789,7 +826,8 @@ display_popup(Tab *tab, OBJECT *root, int item, short rdx, short rdy)
 		}
 		else
 		{
-			object_area(&r, root, item, 0, 0);
+			//object_area(&r, root, item, 0, 0);
+			ob_area(root, item, &r);
 			r = popup_inside(tab, r);
 
 			wind = create_window(	tab->lock,
@@ -832,7 +870,8 @@ display_popup(Tab *tab, OBJECT *root, int item, short rdx, short rdy)
 	{
 		XA_TREE wt = nil_tree;
 		wt.owner = NULL;
-		object_area(&r, root, item, 0, 0);
+		//object_area(&r, root, item, 0, 0);
+		ob_area(root, item, &r);
 		r = popup_inside(tab, r);
 		hidem();
 		form_save(k->border, k->drop, &(k->Mpreserve));
@@ -892,6 +931,7 @@ click_desk_popup(struct task_administration_block *tab)
 	popout(tab);
 
 	client = menu_regcl[m];
+
 	if (client)
 	{
 		DIAG((D_menu, NULL, "got client %s", c_owner(client)));
@@ -957,6 +997,7 @@ popup(struct task_administration_block *tab)
 	m = find_object(k->root, k->pop_item, 2, k->x, k->y);
 */
 	m = find_menu_object(tab, k->pop_item);
+
 	if (m < 0)
 	{
 		k->stage = IN_DESK;		/* There is no specific rectangle to target */
@@ -970,7 +1011,7 @@ popup(struct task_administration_block *tab)
 	}
 	else
 	{
-		bool dis = k->root[m].ob_state&OS_DISABLED;
+		bool dis = k->root[m].ob_state & OS_DISABLED;
 		XA_MENU_ATTACHMENT *at;
 
 		if (m != k->point_at_menu)
@@ -1005,7 +1046,7 @@ popup(struct task_administration_block *tab)
 			ob = at->tree;
 			menu_area(&tra, tab, k->point_at_menu);
 			ob->ob_x = 0, ob->ob_y = 0;
-			object_offset(ob, at->item, 0, 0, &rdx, &rdy);
+			ob_offset(ob, at->item, &rdx, &rdy); //object_offset(ob, at->item, 0, 0, &rdx, &rdy);
 
 			rdx = tra.x - rdx;
 			rdy = tra.y - rdy;
@@ -1122,7 +1163,8 @@ new_title(struct task_administration_block *tab)
 		if (title == k->clicked_title)		/* no change */
 		{
 			k->em.flags = MU_M1|1;		/* fill out rect event data; out of title */
-			object_area(&k->em.m1, k->root, k->clicked_title, 0, 0);
+			//object_area(&k->em.m1, k->root, k->clicked_title, 0, 0);
+			ob_area(k->root, k->clicked_title, &k->em.m1);
 			k->em.t1 = where_are_we;
 		}
 		else
@@ -1295,7 +1337,8 @@ kt_draw_object_tree(void *_parm)
 		/* HR: Use the AES's client structure to register the rectangle for the current menu bar. */
 		titles = root[root[0].ob_head].ob_head;
 		C.Aes->waiting_for = XAWAIT_MENU;
-		object_area(&C.Aes->em.m1, root, titles, 0, 0);
+		ob_area(root, titles, &C.Aes->em.m1);
+		//object_area(&C.Aes->em.m1, root, titles, 0, 0);
 		C.Aes->em.flags = MU_M1;	/* into menu bar */
 	}
 
@@ -1362,7 +1405,8 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 		/* HR: Use the AES's client structure to register the rectangle for the current menu bar. */
 		titles = root[root[0].ob_head].ob_head;
 		C.Aes->waiting_for = XAWAIT_MENU;
-		object_area(&C.Aes->em.m1, root, titles, 0, 0);
+		//object_area(&C.Aes->em.m1, root, titles, 0, 0);
+		ob_area(root, titles, &C.Aes->em.m1);
 		C.Aes->em.flags = MU_M1;	/* into menu bar */
 	}
 	return true;
@@ -1484,7 +1528,8 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 		C.menu_nest = 0;
 		tab->ty = k->ty = (wind == root_window ? ROOT_MENU : MENU_BAR);
 		k->stage = IN_TITLE;
-		object_area(&k->bar, root, k->titles, 0, 0);
+		//object_area(&k->bar, root, k->titles, 0, 0);
+		ob_area(root, k->titles, &k->bar);
 		change_title(tab, 1);
 		root[k->menus].ob_flags &= ~OF_HIDETREE;
 		n = root[k->menus].ob_head;
@@ -1513,7 +1558,8 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 		display_popup(tab, root, item, r.x, r.y);
 
 		k->em.flags = MU_M1|1;		/* fill out rect event data; out of title */
-		object_area(&k->em.m1, root, k->clicked_title, 0, 0);
+		//object_area(&k->em.m1, root, k->clicked_title, 0, 0);
+		ob_area(root, k->clicked_title, &k->em.m1);
 		k->em.t1 = where_are_we;
 		return true;
 	}
@@ -1603,6 +1649,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item)
 	/* handled by other means (Task administration Tab) */
 	widg->click = click_popup_widget;
 #endif
+	widg->r = loc.r;
 	widg->loc = loc;
 	widg->state = OS_NORMAL;
 	widg->stuff = wt;
@@ -1640,7 +1687,7 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 	menus = root[0].ob_tail;
 
 	root->ob_width = root[tbar].ob_width = root[menus].ob_width = screen.r.w;
-	set_ob_spec(root,tbar, menu_colors());
+	object_set_spec(root + tbar, menu_colors());
 
 	/* Hide the actual menus (The big ibox) */
 	root[menus].ob_flags |= OF_HIDETREE;

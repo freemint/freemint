@@ -38,17 +38,17 @@
 #include "xa_global.h"
 
 #include "c_window.h"
+#include "form.h"
 #include "k_main.h"
 #include "matchpat.h"
 #include "menuwidg.h"
 #include "nkcc.h"
-#include "objects.h"
+#include "obtree.h"
 #include "rectlist.h"
 #include "scrlobjc.h"
 #include "util.h"
 #include "widgets.h"
 
-#include "xa_form.h"
 #include "xa_graf.h"
 #include "xa_rsrc.h"
 
@@ -626,7 +626,7 @@ fs_item_action(enum locks lock, OBJECT *form, int objc)
 	DIAG((D_fsel, NULL, "fs_item_action %lx", list->cur));
 	if (list->cur)
 	{
-		if ( (list->cur->flag&FLAG_DIR) == 0)
+		if ( (list->cur->flag & FLAG_DIR) == 0)
 			/* file entry action */
 			strcpy(fs.file, list->cur->text);
 		else
@@ -702,32 +702,63 @@ fs_click(enum locks lock, OBJECT *form, int objc)
 	return true;
 }			
 
-/* HR 300101: double click now also available for internal handlers. */
+/*
+ * FormExit()
+ */
 static void
-handle_fileselector(enum locks lock, struct widget_tree *wt)
+fileselector_form_exit(struct xa_client *client,
+		       struct xa_window *wind,
+		       XA_TREE *wt,
+		       struct fmd_result *fr)
 {
+	enum locks lock = 0;
 #ifdef FS_FILTER
 	OBJECT *ob = odc_p->tree + FS_LIST;
 	SCROLL_INFO *list = ob->ob_spec;
 	TEDINFO *filter = (TEDINFO *)(odc_p->tree + FS_FILTER)->ob_spec;
 #endif
+
 #ifdef FS_UPDIR
 	struct xa_window *wl = list->wi;
 #endif
-
-	/* double click. */
-	wt->current &= 0xff;
-	switch (wt->current)
+	/* Ozk:
+	 * Dont know exactly what 'which' and 'current' does yet...
+	 */
+	wt->which = 0;
+	wt->current = fr->obj;
+	
+	switch (fr->obj)
 	{
+	/*
+	 * 
+	 */
+	case FS_LIST:
+	{
+		short obj = fr->obj;
+		OBJECT *obtree = wt->tree;
+
+		DIAGS(("filesel_form_exit: Moved the shit out of form_do() to here!"));
+		if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+		{
+			if (fr->md->clicks > 1)
+				dclick_scroll_list(lock, obtree, obj, fr->md);
+			else
+				click_scroll_list(lock, obtree, obj, fr->md);
+		}
+		break;
+	}
 #ifdef FS_UPDIR
 	/* Go up a level in the filesystem */
 	case FS_UPDIR:
+	{
 		fs_updir(lock, wl);
 		break;
+	}
 #endif
 	/* Accept current selection - do the same as a double click */
 	case FS_OK:
-		deselect(wt->tree, FS_OK);
+	{
+		object_deselect(wt->tree + FS_OK);
 		display_toolbar(lock, fs.wind, FS_OK);
 #ifdef FS_FILTER
 		if (strcmp(filter->te_ptext, fs_pattern) != 0)
@@ -742,9 +773,11 @@ handle_fileselector(enum locks lock, struct widget_tree *wt)
 			fs_item_action(lock, wt->tree, FS_LIST);
 		}
 		break;
+	}
 	/* Cancel this selector */
 	case FS_CANCEL:
-		deselect(wt->tree, FS_CANCEL);
+	{
+		object_deselect(wt->tree + FS_CANCEL);
 		display_toolbar(lock, fs.wind, FS_CANCEL);
 
 		if (canceled)
@@ -754,7 +787,9 @@ handle_fileselector(enum locks lock, struct widget_tree *wt)
 
 		break;
 	}
+	}
 }
+
 
 static int
 find_drive(int a)
@@ -792,23 +827,31 @@ fs_change(enum locks lock, OBJECT *m, int p, int title, int d, char *t)
 	strcpy(t, m[p].ob_spec.free_string + 2);
 }
 
-static int
-fs_key_handler(enum locks lock, struct xa_window *wind, struct widget_tree *wt,
-	       ushort keycode, ushort nkcode, struct rawkey key)
+/*
+ * FormKeyInput()
+ */
+static bool
+fs_key_form_do(enum locks lock,
+	       struct xa_client *client,
+	       struct xa_window *wind,
+	       XA_TREE *wt,
+	       const struct rawkey *key)
 {
-	OBJECT *form = ResourceTree(C.Aes_rsc, FILE_SELECT);
-	OBJECT *ob = form + FS_LIST;
+	ushort keycode = key->aes;
+	ushort nkcode = key->norm;
+	OBJECT *obtree = ResourceTree(C.Aes_rsc, FILE_SELECT);
+	OBJECT *ob = obtree + FS_LIST;
 	
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 	SCROLL_ENTRY *old_entry = list->cur;
 
 	/* HR 310501: ctrl|alt + letter :: select drive */
-	if ((key.raw.conin.state&(K_CTRL|K_ALT)) != 0)
+	if ((key->raw.conin.state & (K_CTRL|K_ALT)) != 0)
 	{
 		ushort nk;
 
 		if (nkcode == 0)
-			nkcode = nkc_tconv(key.raw.bcon);
+			nkcode = nkc_tconv(key->raw.bcon);
 
 		nk = tolower(nkcode & 0xff);
 		if (   (nk >= 'a' && nk <= 'z')
@@ -844,7 +887,7 @@ fs_key_handler(enum locks lock, struct xa_window *wind, struct widget_tree *wt,
 	/*  If anything in the list and it is a cursor key */
 	if (list->n && scrl_cursor(list, keycode) != -1)
 	{
-		if (!(list->cur->flag&FLAG_DIR))
+		if (!(list->cur->flag & FLAG_DIR))
 		{
 			if (old_entry != list->cur)
 				fs.clear_on_folder_change = 1;
@@ -857,7 +900,8 @@ fs_key_handler(enum locks lock, struct xa_window *wind, struct widget_tree *wt,
 		char old[NAME_MAX+2];
 		strcpy(old, fs.file);
 		/* HR 290501: if !discontinue */
-		if (handle_form_key(lock, wind, NULL, keycode, nkcode, key))
+		//if (handle_form_key(lock, wind, NULL, keycode, nkcode, key))
+		if (Key_form_do(lock, client, wind, wt, key))
 		{
 			/* something typed in there? */
 			if (strcmp(old,fs.file) != 0)
@@ -882,6 +926,7 @@ fs_msg_handler(
 	switch (mp0)
 	{
 	case MN_SELECTED:
+	{
 		if (mp3 == FSEL_FILTER)
 			fs_change(lock, fs.menu.tree, mp4, FSEL_FILTER, FSEL_PATA, fs_pattern);
 		else if (mp3 == FSEL_DRV)
@@ -900,9 +945,12 @@ fs_msg_handler(
 				set_file(lock,"");
 		}
 		refresh_filelist(lock,4);
-	break;
+		break;
+	}
 	case WM_MOVED:
+	{
 		move_window(lock, fs.wind, -1, mp4, mp5, fs.wind->r.w, fs.wind->r.h);
+	}
 	}
 }
 
@@ -913,7 +961,7 @@ fs_destructor(enum locks lock, struct xa_window *wind)
 	OBJECT *sl = form + FS_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)sl->ob_spec.index;
 
-	delete_window(lock, list->wi);
+	delayed_delete_window(lock, list->wi);
 
 	free_scrollist(list);
 
@@ -975,7 +1023,7 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 	/* Work out sizing */
 	if (!remember.w)
 	{
-		center_form(form, 2*ICON_H);
+		form_center(form, 2*ICON_H);
 		remember =
 		calc_window(lock, client, WC_BORDER,
 			    XaMENU|NAME,
@@ -1042,13 +1090,13 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 	wt = set_toolbar_widget(lock, dialog_window, form, FS_FILE);
 	/* This can be of use for drawing. (keep off border & outline :-) */
 	wt->zen = true;
-	wt->exit_form = XA_form_exit;
-	wt->exit_handler = handle_fileselector;
+	wt->exit_form = fileselector_form_exit;
+	//wt->exit_handler = handle_fileselector;
 
 	/* HR: We need to do some specific things with the key's,
 	 *     so we supply our own handler,
 	 */
-	dialog_window->keypress = fs_key_handler;
+	dialog_window->keypress = fs_key_form_do; //fs_key_handler;
 
 	/* HR: set a scroll list object */
 	set_slist_object(lock,
@@ -1078,7 +1126,7 @@ void
 close_fileselector(enum locks lock)
 {
 	close_window(lock, fs.wind);
-	delete_window(lock, fs.wind);
+	delayed_delete_window(lock, fs.wind);
 }
 
 static void

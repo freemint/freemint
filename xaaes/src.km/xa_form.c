@@ -33,12 +33,14 @@
 #include "xa_form.h"
 #include "xa_global.h"
 
+#include "form.h"
 #include "c_window.h"
 #include "k_main.h"
 #include "k_mouse.h"
 #include "k_keybd.h"
 #include "nkcc.h"
-#include "objects.h"
+#include "obtree.h"
+#include "draw_obj.h"
 #include "rectlist.h"
 #include "scrlobjc.h"
 #include "widgets.h"
@@ -48,25 +50,9 @@
 #include "xa_rsrc.h"
 
 
-static int
-key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt,
-		 ushort keycode, ushort nkcode, struct rawkey key);
-static bool
-do_form_button(enum locks lock, XA_TREE *wt,
-	       OBJECT *form, int f, int *item, int dbl,
-	       short click_x, short click_y, int click_s);
-
-
-void
-center_form(OBJECT *form, int barsizes)
-{
-	form->ob_x =  root_window->wa.x
-	           + (root_window->wa.w - form->ob_width) / 2;
-	form->ob_y =  root_window->wa.y
-	           + barsizes
-	           + (root_window->wa.h - form->ob_height) / 2;
-}
-
+bool
+key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
+	    struct widget_tree *wt, const struct rawkey *key);
 /*
  * Create a copy of an object tree
  * - Intended for using the form templates in SYSTEM.RSC (we can't use them
@@ -129,7 +115,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &r);
 
-	f = find_object(alert_form, 0, 10, r.x + widg->x, r.y + widg->y, wt->dx, wt->dy);
+	f = ob_find(alert_form, 0, 10, md->x, md->y); //find_object(alert_form, 0, 10, r.x + widg->x, r.y + widg->y, wt->dx, wt->dy);
 
 	if (   f >= ALERT_BUT1			/* Did we click on a valid button? */
 	    && f <  ALERT_BUT1 + ALERT_BUTTONS
@@ -391,7 +377,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
 
 	alert_form->ob_width = w;
-	center_form(alert_form, ICON_H);
+	form_center(alert_form, ICON_H);
 
 	{	/* HR */
 		int icons[7] = {ALR_IC_SYSTEM, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
@@ -401,8 +387,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		
 		for (f = 0; f < 7; f++)
 		{
-			ICONBLK *ai = get_ob_spec(alert_icons + icons[f]    )->iconblk;
-			ICONBLK *af = get_ob_spec(alert_form  + ALERT_D_ICON)->iconblk;
+			ICONBLK *ai = object_get_spec(alert_icons + icons[f]    )->iconblk;
+			ICONBLK *af = object_get_spec(alert_form  + ALERT_D_ICON)->iconblk;
 			ai->ib_xicon = af->ib_xicon;
 			ai->ib_yicon = af->ib_yicon;
 		}
@@ -527,30 +513,30 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 unsigned long
 XA_form_center(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	OBJECT *ob = (OBJECT*)pb->addrin[0];
+	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	short *o = pb->intout;
 
 	CONTROL(0,5,1)
 
 	DIAG((D_form, client, "XA_form_center for %s ob=%lx o=%lx",
-		c_owner(client), ob, o));
+		c_owner(client), obtree, o));
 
-	if (ob && o)
+	if (obtree && o)
 	{
 		RECT r;
 
-		r.w = ob->ob_width;
-		r.h = ob->ob_height;
+		r.w = obtree->ob_width;
+		r.h = obtree->ob_height;
 
 		/* desktop work area */
 		r.x = (root_window->wa.w - r.w) / 2;
 		r.y = (root_window->wa.h - r.h) / 2;
 
-		ob->ob_x = r.x;
-		ob->ob_y = r.y;
+		obtree->ob_x = r.x;
+		obtree->ob_y = r.y;
 
 
- 		if (ob->ob_state & OS_OUTLINED)
+ 		if (obtree->ob_state & OS_OUTLINED)
 			/* This is what other AES's do */
  			adjust_size(3, &r);
 
@@ -563,273 +549,41 @@ XA_form_center(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-int
-find_flag(OBJECT *ob, int flag)
-{
-	int f = 0;
-
-	do {
-		if (ob[f].ob_flags & flag)
-			return f;
-	}
-	while (!(ob[f++].ob_flags & OF_LASTOB)); /* Check LASTOB before incrementing */
-
-	return -1;
-}
-
-static int
-find_cancel_button(OBJECT *ob)
-{
-	int f = 0;
-
-	do {
-		if (   (ob[f].ob_type & 0xff) == G_BUTTON
-		    && (ob[f].ob_flags & (OF_SELECTABLE|OF_TOUCHEXIT|OF_EXIT)) != 0)
-		{
-			char t[32];
-			char *s = t;
-			char *e;
-			int l;
-
-			e = get_ob_spec(ob+f)->free_string;
-			l = strlen(e);
-			if (l < 32)
-			{
-				strcpy(t, e);
-
-				/* strip surrounding spaces */
-				e = t + l;
-				while (*s == ' ')
-					s++;
-				while (*--e == ' ') 
-					;
-				*++e = '\0';
-
-				if (e - s < CB_L) /* No use comparing longer strings */
-				{
-					int i;
-
-					for (i = 0; cfg.cancel_buttons[i][0]; i++)
-					{
-						if (stricmp(s,cfg.cancel_buttons[i]) == 0)
-							return f;
-					}
-				}
-			}
-		}
-	}
-	while (!(ob[f++].ob_flags & OF_LASTOB));
-
-	return -1;
-}
-
-/*
- * Form Keyboard Handler for toolbars
- */
-
-static int
-form_cursor(enum locks lock, XA_TREE *wt, ushort keycode, int obj)
-{
-	OBJECT *form = wt->tree;
-	int o = obj;
-	int ed = 0;
-	int last_ob = 0;
-
-	/* Find last object & check for editable */
-	while (!(form[last_ob].ob_flags & OF_LASTOB))
-	{
-		ed |= form[last_ob].ob_flags & OF_EDITABLE;
-		last_ob++;	
-	}
-
-	switch(keycode)
-	{			/* The cursor keys are always eaten. */
-	default:
-		o = -1;		/* This is also a safeguard.  */
-		break;
-
-	case 0x0f09:		/* TAB moves to next field */
-	case 0x5000:		/* DOWN ARROW also moves to next field */
-		if (ed)
-			do o = o == last_ob ? 0 : o + 1;	/* loop round */
-			while (!(form[o].ob_flags & OF_EDITABLE));
-		break;
-
-	case 0x4800:		/* UP ARROW moves to previous field */
-		if (ed)
-			do o = o == 0       ? last_ob : o - 1;	/* loop round */
-			while (!(form[o].ob_flags & OF_EDITABLE));
-		break;
-
-	case 0x4737:		/* SHIFT+HOME */
-	case 0x5032:		/* SHIFT+DOWN ARROW moves to last field */
-	case 0x5100:		/* page down key (Milan &| emulators)   */
-		if (ed)
-		{
-			o = last_ob;
-			while (!(form[o].ob_flags & OF_EDITABLE)) o--;	/* Search last */
-		}
-		break;
-
-	case 0x4700:		/* HOME */
-	case 0x4838:		/* SHIFT+UP ARROW moves to first field */
-	case 0x4900:		/* page up key (Milan &| emulators)    */
-		if (ed)
-		{
-			o = 0;
-			while (!(form[o].ob_flags & OF_EDITABLE)) o++;	/* Search first */
-		}
-		break;
-	}
-
-	/* At last this piece of code is on the right spot.
-	 * This is important! Now I know that bug fixes in here are good enough for all cases.
-	 */
-	if (o >= 0 && o != obj)
-	{	
-		/* If edit field has changed, update the screen */
-
-		TEDINFO *ted = get_ob_spec(&form[o])->tedinfo;
-		int last = strlen(ted->te_ptext);
-
-		/* fix corsor position of new field. */
-		if (wt->edit_pos > last)
-			wt->edit_pos = last;
-
-		wt->edit_obj = o;
-
-		redraw_object(lock, wt, obj);
-
-		if (*(ted->te_ptext) == '@')
-			*(ted->te_ptext) =  0;
-
-		redraw_object(lock, wt, o);
-	}
-
-	return o;
-}
-
-static int
-find_shortcut(OBJECT *tree, ushort nk)
-{
-	int i = 0;
-
-	nk &= 0xff;
-	DIAG((D_keybd, NULL, "find_shortcut: %d(0x%x), '%c'", nk, nk, nk));
-
-	do {
-		OBJECT *ob = tree + i;
-		if (ob->ob_state&OS_WHITEBAK)
-		{
-			int ty = ob->ob_type & 0xff;
-			if (ty == G_BUTTON || ty == G_STRING)
-			{
-				int j = (ob->ob_state>>8)&0x7f;
-				if (j < 126)
-				{
-					char *s = get_ob_spec(ob)->free_string;
-					if (s)
-					{
-						DIAG((D_keybd,NULL,"  -  in '%s' find '%c' on %d :: %c",s,nk,j, *(s+j)));
-						if (j < strlen(s) && toupper(*(s+j)) == nk)
-							return i;
-					}
-				}
-			}
-		}
-	} while ( (tree[i++].ob_flags&OF_LASTOB) == 0);
-
-	return -1;
-}
-
 unsigned long
 XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	OBJECT *form = (OBJECT *)pb->addrin[0];
-	XA_TREE *wt = check_widget_tree(lock, client, form);
-	short obj = pb->intin[0];
-	short keycode = pb->intin[1];
-	short *op = pb->intout;
-	int  o;
+	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 
 	CONTROL(3,3,1)
 
 	DIAG((D_keybd, client, "XA_form_keybd for %s %lx: obj:%d, k:%x, nob:%d",
-		c_owner(client), form, obj, keycode, pb->intin[2]));
+		c_owner(client), obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
 
-	/* HR: removed spurious, and wrong check on EDITABLE which caused exit,
-	 *     and assign to a TEDINFO, which after all was not used.
-	 */
-	o = form_cursor(lock, wt, keycode, obj);
-
-	/* A cursor operation. */
-	if (o >= 0)
+	if (obtree)
 	{
-		DIAG((D_keybd, client, "XA_form_keybd: nxt_obj=%d, cursor operation", o));
-		*op++ = 1; /* continue */
-		*op++ = o; /* next obj */
-		*op   = 0; /* pchar */
+		XA_TREE *wt;
+		short ks;
+		struct rawkey key;
+
+		wt = check_widget_tree(lock, client, obtree);
+		vq_key_s(C.vh, &ks);
+		key.norm = normkey(ks, pb->intin[1]);
+		key.aes = pb->intin[1];
+		
+		DIAGS(("XA_form_keybd: wt=%lx, wt->owner=%lx, wt->tree=%lx - %s",
+			wt, wt->owner, wt->tree, wt->owner->name));
+
+		pb->intout[0] = form_keyboard(wt,		/* widget tree	*/
+					      pb->intin[0],	/* obj		*/
+					      &key,		/* rawkey	*/
+					      true,		/* redraw flag	*/
+					      NULL,		/* rect list	*/
+					      &pb->intout[1],	/* nxt obj	*/
+					      NULL,		/* newstate	*/
+					      &pb->intout[2]);	/* nxtkey	*/
 	}
 	else
-	{
-		/* Tried out with TOS 3.06: DEFAULT only, still exits. */
-		if ((keycode == 0x1c0d || keycode == 0x720d))
-			o = find_flag(form, OF_DEFAULT);
-		else if (keycode == 0x6100)		/* UNDO */
-			o = find_cancel_button(form);
-		else
-		{
-			short state;
-
-			vq_key_s(C.vh, &state);
-
-			if ((state & (K_CTRL|K_ALT)) == K_ALT)
-			{
-				ushort nkcode = normkey(state, keycode);
-				o = find_shortcut(form, nkcode);
-				if (o >= 0)
-				{
-					DIAG((D_keybd, client, "XA_form_keybd: nxt_obj=%d, shortcut", o));
-					if (do_form_button(lock, wt, form, o, NULL, 0, 0, 0, 0) == 0)
-					{
-						*op++ = 1,
-						*op++ = obj;
-						*op   = 0;
-						return XAC_DONE;
-					}
-				}
-			}
-		}
-
-		if (o >= 0)
-		{
-			DIAG((D_keybd, client, "XA_form_keybd: nxt_obj=%d, return, cancel, or shortcut", o));
-
-			*op++ = 0; /* exit object. */
-			*op++ = o; /* nxt_obj */
-			*op   = 0; /* pchar */
-
-			return XAC_DONE;
-		}
-		else if ((keycode != 0x1c0d && keycode != 0x720d))
-		{
-			/* just a plain key and not <return> - pass character */
-			DIAG((D_keybd, client, "XA_form_keybd: nxt_obj=%d, passing character back to client", obj));
-
-			*op++ = 1; /* continue */
-			*op++ = obj; /* pnxt_obj */
-			*op   = keycode;/* pchar */
-		}
-		else
-		{
-			/* Return key, but no default button or other edits */
-			DIAG((D_keybd, client, "XA_form_keybd: clear character but leave nextobj unchanged", obj));
-
-			*op++ = 1; /* continue */
-			*op++ = obj; /* pnxt_obj */
-			*op   = 0;/* pchar */
-		}
-	}
+		pb->intout[0] = pb->intout[1] = pb->intout[2] = 0;
 
 	return XAC_DONE;
 }
@@ -953,79 +707,6 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_BLOCK;
 }
 
-int
-has_default(OBJECT *ob)
-{
-	int f = 0;
-
-	do {
-		if (ob[f].ob_flags & OF_DEFAULT)
-			return true;
-	}
-	while (!(ob[f++].ob_flags & OF_LASTOB));
-
-	return false;
-}
-
-/* HR 250602: Better handling of xa_windows. Now also called in XA_objc_draw for root objects. */
-static struct xa_window *
-make_fmd(enum locks lock, struct xa_client *client)
-{
-	struct xa_window *wind;
-	XA_WIND_ATTR kind = client->fmd.kind | TOOLBAR |USE_MAX;
-	RECT r = client->fmd.r;
-
-#if NOTYET
-	/* HR 220401: Dont do it if it wouldnt fit anymore. */
-	if (r.w > root_window->wa.w || r.h > root_window->wa.h)
-		break;
-#endif
-	client->fmd.wind = wind =
-			create_window(lock,
-#if TEST_DIAL_SIZE
-					handle_form_window,
-#else
-					NULL,
-#endif
-					client, false,
-					kind,
-					client->fmd.state ? created_for_FMD_START : created_for_FORM_DO,
-					MG,
-					C.Aes->options.thinframe,
-					C.Aes->options.thinwork,
-					r,
-#if TEST_DIAL_SIZE
-					&r,
-#else
-					NULL,
-#endif
-					NULL);
-
-# if 0
-	if (wind)
-		/* HR 250602: we dont know yet if it is necessary, but it doesnt do harm. */
-		wind->outline_adjust = true;
-# endif
-
-	/* Set the window title to be the clients name to avoid confusion */
-#if GENERATE_DIAGS
-	{
-		char nm[32];
-		strip_name(nm, client->name);
-		sprintf(client->zen_name, sizeof(client->zen_name), "[%c%c]%s (form_dial)",
-			client->fmd.lock ? 'U' : ' ',
-			client == mouse_locked() ? 'M' : ' ', nm);
-		get_widget(wind, XAW_TITLE)->stuff = client->zen_name;
-	}
-#else
-	get_widget(wind, XAW_TITLE)->stuff = client->name;
-#endif
-	open_window(lock, wind, wind->r);
-
-	DIAG((D_form, client, "make_fmd (form_dial/form_do window)"));
-	return wind;
-}
-
 /*
  *  Begin/end form handler
  *  This is important - I hope most programs call this, as XaAES puts its dialogs
@@ -1111,36 +792,6 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-/*
- * Form_do() handlers
- */
-
-void
-XA_form_exit(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
-	     struct widget_tree *wt, int f, int os, int dbl, int which,
-	     struct rawkey *key)
-{
-	if (os != -1)
-	{
-		wt->tree[f].ob_state = os;
-		redraw_object(lock, wt, f);
-	}
-	wt->which = 0;			/* After redraw of object. :-) */
-	wt->current = f|dbl;		/* pass the double click to the internal handlers as well. */
-	wt->exit_handler(lock, wt);	/* XaAES application point of view. */
-}
-
-void
-exit_toolbar(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
-	     struct widget_tree *wt, int f, int os, int dbl, int which,
-	     struct rawkey *key)
-{
-	if (wind->send_message)
-		wind->send_message(lock, wind, NULL,
-				   WM_TOOLBAR, 0, 0, wind->handle,
-				   f, dbl ? 2 : 1, widg->k, 0);
-}
-
 #if WDIALOG_WDLG
 void
 exit_wdial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
@@ -1180,204 +831,6 @@ exit_wdial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 }
 #endif
 
-void
-exit_form_do(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
-	     struct widget_tree *wt, int f, int os, int dbl, int which,
-	     struct rawkey *key)
-{
-	struct xa_client *client = wind->owner;
-
-	/* The sign bit for double click is also a feature of form_do()
-	 * (obno = form_do(x,y)) < 0 ? double_click : single_click;
-	 */
-	client->waiting_pb->intout[0] = f|dbl;
-
-	DIAG((D_form,client,"exit_form_do: obno=%d", f));
-
-	client->fmd.wind = NULL;
-	client->fmd.state = 0;
-
-	client->usr_evnt = 1;
-	//Unblock(client, XA_OK, 8);
-
-	/* invalidate our data structures */
-	close_window(lock, wind);
-	/* delete on the next possible time */
-	delayed_delete_window(lock, wind);
-}
-
-void
-exit_form_dial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
-	       struct widget_tree *wt, int f, int os, int dbl, int which,
-	       struct rawkey *key)
-{
-	struct xa_client *client = wind->owner;
-
-	client->waiting_pb->intout[0] = f|dbl;
-
-	DIAG((D_form,client,"exit_form_dial: obno=%d", f));
-
-	/* Because we are out of the form_do any form_do()
-	 * handlers must be removed!
-	 */
-	remove_widget(lock, wind, XAW_TOOLBAR);
-
-	client->usr_evnt = 1;
-	//Unblock(client, XA_OK, 9);
-}
-
-void
-classic_exit_form_do(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
-		     struct widget_tree *wt, int f, int os, int dbl, int which,
-		     struct rawkey *key)
-{
-	struct xa_client *client = wt->owner;
-
-	client->waiting_pb->intout[0] = f|dbl;
-
-	client->fmd.keypress = NULL;
-	client->fmd.mousepress = NULL;
-
-	/* Write success to clients reply pipe to unblock the process */
-	client->usr_evnt = 1;
-	//Unblock(client, XA_OK, 10);
-}
-
-int
-handle_form_key(enum locks lock, struct xa_window *wind, struct widget_tree *wt,
-		ushort keycode, ushort nkcode, struct rawkey key)
-{
-	IFDIAG(struct xa_client *client = wind ? wind->owner : (wt ? wt->owner : NULL);)
-	XA_WIDGET *widg = NULL;
-	OBJECT *form;
-	TEDINFO *ed_txt;
-	int o, ed_obj;
-
-	if (wind)
-		widg = get_widget(wind, XAW_TOOLBAR);
-
-	if (!wt)
-	{
-		if (widg)
-			wt = widg->stuff;
-		else
-		{
-			DIAGS(("Inconsistent handle_form_key!!!!"));
-			return false;
-		}
-	}
-
-	DIAG((D_form,client,"handle_form_key"));
-
-	form = wt->tree;
-	ed_obj = wt->edit_obj;
-
-	DIAG((D_k,client,"got keypress in form"));
-
-	o = form_cursor(lock, wt, keycode, ed_obj);	/* HR: More duplicate code removed */
-
-	if (o < 0)
-	{
-		/* Return - select default (if any) */
-		/* HR: Enter */
-
-		if (keycode == 0x1c0d || keycode == 0x720d)
-			o = find_flag(form, OF_DEFAULT);
-		else if (keycode == 0x6100)		/* UNDO */
-			o = find_cancel_button(form);
-		else if ((key.raw.conin.state&(K_CTRL|K_ALT)) == K_ALT)
-		{
-			if (nkcode == 0)
-				nkcode = nkc_tconv(key.raw.bcon);
-			o = find_shortcut(form, nkcode);
-			if (o >= 0)
-			{
-				int ns;
-				if (do_form_button(lock, wt, form, o, &ns, 0, 0, 0, 0))
-				{
-					if (wt->exit_form)
-						wt->exit_form(lock, wind, widg, wt, o, ns, 0, MU_KEYBD, &key);
-					DIAG((D_form, client, "on shortcut exited; item %d", o));
-					return false;
-				}
-				return true;
-			}
-		}
-
-		if (o >= 0)
-		{
-			if (wt->exit_form)
-				wt->exit_form(lock, wind, widg, wt, o, -1, 0, MU_KEYBD, &key);
-			DIAG((D_form, client, "handle_form_key exited"));
-			return false;			/* HR 290501: discontinue */
-		}
-		else	/* handle plain key */
-		{
-			/* HR: another massive code duplication,
-					they should be the same,
-					but they were NOT! :-( */
-
-			/* HR: moved to here, where it is needed, and then check if the field IS editable */
-			if (form[ed_obj].ob_flags&OF_EDITABLE)
-			{
-				ed_txt = get_ob_spec(&form[ed_obj])->tedinfo;
-				if (ed_char(wt, ed_txt, keycode))	/* HR pass the widget tree */
-					redraw_object(lock, wt, ed_obj);
-				DIAG((D_form, client, "handle_form_key after ed_char"));
-			}
-		}
-	}
-
-	return true;
-}
-
-void
-init_form_do(enum locks lock, XA_TREE *wt, OBJECT *form, int item, bool draw)
-{
-	/*
-	 * If there is an editable field, we'll need a keypress handler.
-	 *  HR: We need a keypress handler for the default object as well
-	 */
-
-	if (item <= 0)
-		item = find_flag(form, OF_EDITABLE);
-
-	wt->edit_obj = item;
-	
-	if (item >= 0)
-	{
-		TEDINFO *ted = get_ob_spec(&form[item])->tedinfo;
-		if (*(ted->te_ptext) == '@')
-			*(ted->te_ptext) =  0;
-		wt->edit_pos = strlen(ted->te_ptext);
-		if (draw)
-			/* draw the cursor */
-			draw_object_tree(lock, wt, form, item, 0, 124);
-	}
-}
-
-/*
- * HR 250602
- * Attach a classic (blocked) form_do widget tree to a client.
- * put in here because it is closely similar to set_toolbar_widget() below.
- */
-void
-set_form_do(enum locks lock, struct xa_client *client, OBJECT *form, int item)
-{
-	XA_TREE *wt = &client->wt;
-
-	wt->exit_form = classic_exit_form_do;
-	wt->tree = form;
-	wt->owner = client;
-	
-	init_form_do(lock, wt, form, item, true);
-
-	if (has_default(form) || wt->edit_obj >= 0)
-		client->fmd.keypress = handle_form_key;
-
-	client->fmd.mousepress = click_form_do;
-}
-
 /*
  * Non-blocking form_do
  * - Uses an object tree widget in a window to implement the form handler.
@@ -1386,94 +839,62 @@ set_form_do(enum locks lock, struct xa_client *client, OBJECT *form, int item)
 unsigned long
 XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	struct xa_window *wind = NULL;
-	XA_WIND_ATTR kind = NAME;
-	XA_TREE *wt;
-	OBJECT *form = (OBJECT *)pb->addrin[0];
-	int item = pb->intin[0];
-
+	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(1,1,1)
 
-	DIAG((D_form,client,"form_do()"));
-
-	client->waiting_pb = pb;
-
-	if (client->fmd.wind)
+	DIAG((D_form, client, "XA_form_do() for %s. obtree %lx", client->name, obtree));
+	
+	if (obtree)
 	{
-		wind = client->fmd.wind;
-		DIAG((D_form, client, "With fmd %d; set_toolbar_widget", wind->handle));
-		wt = set_toolbar_widget(lock, wind, form, item);
-		/* This can be of use for drawing. (keep off border & outline :-) */
-		wt->zen = true;
-	}
-	else if (client->fmd.lock)
-	{
-		/* HR 250602: classic form_do */
+		struct xa_window *wind;
+		short nextobj;
 
-		set_form_do(lock, client, form, item);		
-		return XAC_BLOCK;
+		client->waiting_pb = pb;
+
+		if (Setup_form_do(client, obtree, pb->intin[0], &wind, &nextobj))
+		{
+			if (wind)
+			{
+				if (!wind->is_open)
+					open_window(lock, wind, wind->r);
+				else if (wind != window_list)
+					top_window(lock, wind, client);
+				else
+					display_window(lock, 4, wind, NULL);
+			}
+			return XAC_BLOCK;
+		}
+		/* XXX - Ozk:
+		 *  If client didnt fetch update lock calling wind_upd(), XaAES uses
+		 *  windowed dialog. If something goes wrong opening a window
+		 *  like no more memory, we need to act upon that here. Lets try
+		 *  to wait for the update_lock and force non-windowed form_do handling
+		 *  later...
+		 */
+		
 	}
 	else
 	{
-		/* Work out sizing */
-		client->fmd.r =
-		calc_window(lock, client, WC_BORDER,
-				kind,
-				MG,
-				C.Aes->options.thinframe,
-				C.Aes->options.thinwork,
-				*(RECT*)&form->ob_x);
-	
-		if (!client->options.xa_nomove)
-			kind |= MOVER;
-		client->fmd.kind = kind;
-	
-		IFDIAG(if (client->fmd.state == 0)
-			DIAG((D_form,client,"Without fmd"));
-		else
-			DIAG((D_form,client,"Postponed fmd"));)
+		/* XXX - Ozk:
+		 * Here we have another situation where the AES app passed a NULL ptr
+		 * to obtree. Dont know if this ever happens, but ....
+		 */
 	}
-
-	/* We create a window owned by the client so it will get button clicks for this area
-	 * (in case it's gonna handle things its own way)
-	 */
-	if (wind == NULL)
-	{
-		wind = make_fmd(lock, client);
-		DIAG((D_form,client,"make_fmd: %d; set_toolbar_widget", wind->handle));
-
-		wt = set_toolbar_widget(lock, wind, form, item);
-		/* This can be of use for drawing. (keep off border & outline :-) */
-		wt->zen = true;
-	}
-
-	if (wind->is_open)
-	{
-		DIAG((D_form,client,"display_toolbar: wind: %d/%d, form: %d/%d",
-			wind->r.x, wind->r.y, form->ob_x, form->ob_y));
-		display_toolbar(lock, wind, 0);
-	}
-	else
-	{
-		DIAG((D_form,client,"open_window: wind: %d/%d, form: %d/%d",
-			wind->r.x, wind->r.y, form->ob_x, form->ob_y));
-		open_window(lock, wind, wind->r);
-	}
-
-	return XAC_BLOCK;
+		return XAC_DONE;
 }
 
 /*
  * Small handler for ENTER/RETURN/UNDO on an alert box
  */
-static int
-key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt,
-		 ushort keycode, ushort nkcode, struct rawkey key)
+bool
+key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
+	    struct widget_tree *wt, const struct rawkey *key)
 {
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 	RECT r;
 	OBJECT *alert_form;
-	int f = 0;
+	short f = 0;
+	ushort keycode = key->aes;
 
 	wt = widg->stuff; /* always NULL */
 
@@ -1485,9 +906,9 @@ key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt
 	rp_2_ap(wind, widg, &r);	/* Convert relative coords and window location to absolute screen location */
 
 	if (keycode == 0x720d || keycode == 0x1c0d)
-		f = find_flag(alert_form, OF_DEFAULT);
+		f = ob_find_flag(alert_form, OF_DEFAULT, 0, OF_LASTOB);
 	else if (keycode == 0x6100)   				/* UNDO */
-		f = find_cancel_button(alert_form);
+		f = ob_find_cancel(alert_form);
 
 	if (   f >= ALERT_BUT1			/* Is f a valid button? */
 	    && f <  ALERT_BUT1 + 3
@@ -1495,7 +916,7 @@ key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt
 	{
 		if (wt->owner != C.Aes)
 		{
-			struct xa_client *client = wt->owner;
+			//struct xa_client *client = wt->owner;
 
 			client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
 			client->usr_evnt = 1;
@@ -1508,443 +929,58 @@ key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt
 		/* delete on the next possible time */
 		delayed_delete_window(lock, wind);
 	}
-
 	/* Always discontinue */
 	return false;
-}
-
-/*
- * Sets one of a group of radio buttons, and clears the rest.
- * Includes patch to allow for pop_icons as radio buttons.
- */
-static void
-Radio_b(enum locks lock, XA_TREE *odc_p, int object)
-{
-	OBJECT *d = odc_p->tree;
-	int parent, o;
-
-	parent = get_parent(d, object);
-	if (parent == -1)
-		/* Only reasonable thing to do */
-		return;
-
-	o = d[parent].ob_head;
-	
-	while (o != parent)
-	{
-		if ((d[o].ob_flags & OF_RBUTTON) && (d[o].ob_state & OS_SELECTED))
-		{
-			d[o].ob_state &= ~OS_SELECTED;
-			redraw_object(lock, odc_p, o);
-		}
-		
-		o = d[o].ob_next;
-	}
-	
-	d[object].ob_state |= OS_SELECTED;
-	redraw_object(lock, odc_p,object);
-}
-
-
-static bool
-do_form_button(enum locks lock, XA_TREE *wt,
-	       OBJECT *form, int f, int *item, int dbl,
-	       short click_x, short click_y, int click_s)
-{
-	int is,os;
-	bool go_exit = false;
-
-	/* find_object can't report click on a OF_HIDETREE object. */
-	/* HR: Unfortunately it could. Fixed that. */
-
-	/* Was click on a valid touchable object? */
-	if (   (form[f].ob_state & OS_DISABLED) == 0
-	    && (form[f].ob_flags & (OF_EDITABLE | OF_SELECTABLE | OF_EXIT | OF_TOUCHEXIT)) != 0)
-	{
-		if ((form[f].ob_type & 0xff) == G_SLIST)
-		{
-			struct moose_data md;
-			md.x = click_x;
-			md.y = click_y;
-			md.clicks = dbl ? 2 : 1;
-			md.state = click_s;
-
-			if (dbl)
-				dclick_scroll_list(lock, form, f, &md);
-			else
-				click_scroll_list(lock, form, f, &md);
-		}
-		else
-		{
-			if ((form[f].ob_flags & OF_EDITABLE) && (f != wt->edit_obj))
-			{	/* Select a new editable text field? */
-				TEDINFO *txt = get_ob_spec(&form[f])->tedinfo;
-				int o = wt->edit_obj;
-				wt->edit_obj = f;
-				if (o >= 0)
-					redraw_object(lock, wt, o);
-				wt->edit_pos = strlen(txt->te_ptext);
-				redraw_object(lock, wt, f);
-			}
-	
-			os = form[f].ob_state;
-			is = os ^ OS_SELECTED;
-	
-		 	if (form[f].ob_flags & OF_TOUCHEXIT)		/* Touch Exit button? */
-		 	{
-				if (form[f].ob_flags & OF_RBUTTON)
-					/* Was click on a radio button? */
-					Radio_b(lock, wt, f);
-				else if (form[f].ob_flags & OF_SELECTABLE)
-				{
-					form[f].ob_state = is;
-					redraw_object(lock, wt, f);
-				}
-				go_exit = true;
-	
-	/*
-	 * How should an EXIT but not SELECTABLE be handled?
-	 */
-			}
-			else if (form[f].ob_flags & OF_SELECTABLE)	/* Selectable object? */
-			{
-	/*
-	 * Should this perhaps be done in watch_object?
-	 */
-	 			form[f].ob_state = is;
-	 			redraw_object(lock, wt, f);
-		
-				if (watch_object(lock, wt, f, is, os))
-				{
-					if (form[f].ob_flags & OF_RBUTTON)		/* Was click on a radio button? */
-						Radio_b(lock, wt, f);
-						
-					if (   (form[f].ob_flags & OF_EXIT)	/* Exit button? */
-					    && (is               & OS_SELECTED))	/* and changed to selected. */
-					{
-						go_exit = true;
-					}
-				}
-			}
-
-			if (item)
-				*item = is;
-		}
-	}
-
-	return go_exit;
 }
 
 unsigned long
 XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	XA_TREE *wt;
-	OBJECT *tree = (OBJECT*)pb->addrin[0], *ob;
-	int f = pb->intin[0], dbl;
+	OBJECT *obtree = (OBJECT*)pb->addrin[0];
+	short obj = pb->intin[0];
+	struct moose_data md;
 	bool retv;
 
 	CONTROL(2,2,1)
 
 	DIAG((D_form, client, "XA_form_button %lx: obj:%d, clks:%d",
-		tree, f, pb->intin[1]));
+		obtree, obj, pb->intin[1]));
 
-	wt = check_widget_tree(lock, client, tree);
-
-	ob = tree + f;
-
-	dbl = ((ob->ob_flags & OF_TOUCHEXIT) && pb->intin[1] == 2)	/* double click */
-		  ? 0x8000 : 0;
-
-	retv = do_form_button(	lock,
-				wt,
-				tree,
-				f,
-				NULL,
-				dbl,
-				0, 0, 0);
-
-	pb->intout[0] = retv ? 0 : 1;
-	pb->intout[1] = f | dbl;
-	/* After any progdef drawing induced by do_form_button */
-
-	/* Only if not EXIT|TOUCHEXIT!!
-	 * I had to find this out, its not described anywhere. */
-	if ( (!(ob->ob_flags & OF_EDITABLE) && !retv)
-	    || (ob->ob_flags & OF_HIDETREE)
-	    || (ob->ob_state & OS_DISABLED))
+	if (obtree)
 	{
-		pb->intout[1] = 0;
-	}
+		short newstate, nextobj, clickmask;
 
-	DIAG((D_form, client, "form_button done: c:%d, f:%d, o:%d, dbl? 0x%x",
-		pb->intout[0], f, pb->intout[1]&0x7fff, pb->intout[1]));
+		wt = check_widget_tree(lock, client, obtree);
+		/*
+		 * Create a moose_data packet...
+		 */
+		check_mouse(client, &md.cstate, &md.x, &md.y);
+		if ((md.clicks = pb->intin[1]))
+			md.state = MBS_RIGHT;
+	
+		/* XXX - Ozk:
+		 * I think we need to look for this obtree to see if we have it in
+		 * a window, in which case we need to use that windows rectangle list
+		 * during updates of the window.
+		 */
+		retv = form_button(wt,		/* widget tree	*/
+				   obj,		/* obj idx	*/
+				   &md,		/* moose data	*/
+				   true,	/* redraw flag	*/
+				   NULL,	/* rect list	*/
+				   /* output */
+				   &newstate,	/* new state	*/
+				   &nextobj,	/* next obj	*/
+				   &clickmask);	/* click mask	*/
+
+		pb->intout[0] = retv;
+		pb->intout[1] = nextobj|clickmask;
+	}
+	else
+		pb->intout[0] = pb->intout[1] = 0;
+
 
 	return XAC_DONE;
-}
 
-/*
- * (xa_)windowed form_do() (double) click handler
- */
-bool
-click_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
-{
-	int f,is, dbl = widg->clicks > 1 ? 0x8000 : 0;
-	XA_TREE *wt = widg->stuff;
-	OBJECT *form;
-	RECT r;
-
-	if (window_list != wind)
-	{
-		C.focus = pull_wind_to_top(lock, wind);
-		after_top(lock, false);
-		display_window(lock, 52, wind, NULL);
-		return false;
-	}
-
-	/* HR: for after moving: adjusts form's x & y */
-	/* Convert relative coords and window location to absolute screen location */
-	form = rp_2_ap(wind, widg, &r);
-
-	f = find_object(form, 0, 10, r.x + widg->x, r.y + widg->y, wt->dx, wt->dy);
-	DIAG((D_button, wind->owner, "%sclick_object %d,%d on %d",
-		dbl ? "dbl_" : "", r.x + widg->x, r.y + widg->y, f));
-
-	if (do_form_button(lock, wt, form, f, &is, dbl, r.x + widg->x, r.y + widg->y, widg->s))
-	{
-		/* is: new state. */
-		if (wt->exit_form)
-			wt->exit_form(lock, wind, widg, wt, f, is, dbl, MU_BUTTON, NULL);
-	}
-	return false;
-}
-
-/*
- * classic (blocked) form_do() (double) click handler
- */
-void
-click_form_do(enum locks lock, struct xa_client *client, const struct moose_data *md)
-{
-	int f,is, dbl = md->clicks > 1 ? 0x8000 : 0;
-	XA_TREE *wt = &client->wt;
-	OBJECT *form = wt->tree;
-
-	/* HR: for after moving: adjusts form's x & y */
-	/* Convert relative coords and window location to absolute screen location */
-
-	f = find_object(form, 0, 10, md->x, md->y, 0, 0);
-	DIAG((D_button,client,"%sclick_form_do %d,%d on %d",
-		dbl ? "dbl_" : "", md->x, md->y, f));
-
-	if (f < 0)
-		ping();
-	else
-	{
-		if (do_form_button(lock, wt, form, f, &is, dbl, md->x, md->y, md->state))
-			if (wt->exit_form)
-				wt->exit_form(lock, NULL, NULL, wt, f, is, dbl, MU_BUTTON, NULL);
-	}
-}
-
-/* big simplification by constructing function do_active_widget()
- * This eliminates redrawing of the sliders when the mouse isnt moved.
- */
-
-struct woken_active_widget_data
-{
-	struct xa_client *client;
-	enum locks lock;
-};
-
-static void
-woken_active_widget(struct proc *p, long arg)
-{
-	struct woken_active_widget_data *data = (struct woken_active_widget_data *)arg;
-
-	do_active_widget(data->lock, data->client);
-	kfree(data);
-}
-
-void
-set_button_timer(enum locks lock, struct xa_window *wind)
-{
-	short exit_mb, x, y;
-
-	check_mouse(wind->owner, &exit_mb, &x, &y);
-
-	/* still down? */
-	if (exit_mb)
-	{
-		struct woken_active_widget_data *data;
-
-		data = kmalloc(sizeof(*data));
-		if (data)
-		{
-			struct timeout *t;
-
-			t = addroottimeout(50, woken_active_widget, 0);
-			if (t)
-			{
-				data->client = wind->owner;
-				data->lock = lock;
-
-				t->arg = (long)data;
-			}
-		}
-	}
-}
-
-/*
- * HR: Direct display of the toolbar widget; HR 260102: over the rectangle list.
- */
-void
-display_toolbar(enum locks lock, struct xa_window *wind, int item)
-{
-	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-	struct xa_rect_list *rl;
-
-	hidem();
-	widg->start = item;
-
-	rl = rect_get_system_first(wind);
-	while (rl)
-	{			
-		set_clip(&rl->r);
-		widg->display(lock, wind, widg);
-		rl = rect_get_system_next(wind);
-	}
-
-	clear_clip();
-	showm();
-	widg->start = wind->winitem;
-}
- 
-void
-handle_form_window(
-	enum locks lock,
-	struct xa_window *wind,
-	struct xa_client *to,			/* if different from wind->owner */
-	short mp0, short mp1, short mp2, short mp3,
-	short mp4, short mp5, short mp6, short mp7)
-{
-	XA_WIDGET *widg = wind->tool;
-	bool draw = false;
-
-	if (widg)
-	{
-		XA_TREE *wt = widg->stuff;
-		OBJECT *ob = wt->tree + widg->start;
-		int   ww = wind->wa.w,			/* window measures */
-		      wh = wind->wa.h,
-		      dx = wt->dx,			/* object displacement */
-		      dy = wt->dy,
-		      ow = ob->ob_width,		/* object measures */
-		      oh = ob->ob_height;
-#if 0
-		int   wd = ow - ww,			/* space ouside workarea */
-		      hd = oh - wh;
-#endif
-		switch (mp0)
-		{
-		case WM_ARROWED:
-			if (mp4 < WA_LFPAGE)
-			{
-				if (wh < oh)
-				{
-					switch (mp4)
-					{
-					case WA_UPLINE:
-						dy -= screen.c_max_h;
-					break;
-					case WA_DNLINE:
-						dy += screen.c_max_h;
-					break;
-					case WA_UPPAGE:
-						dy -= oh - screen.c_max_h;
-					break;
-					case WA_DNPAGE:
-						dy += oh - screen.c_max_h;
-					}
-/* align ( not that object height is always >= work area height) */
-					if (dy < 0)
-						dy = 0;
-					if (dy > oh - wh)		
-						dy = oh - wh;
-				}
-			} else
-			{
-				if (ww < ow)
-				{
-					switch (mp4)
-					{
-					case WA_LFLINE:
-						dx -= screen.c_max_w;
-					break;
-					case WA_RTLINE:
-						dx += screen.c_max_w;
-					break;
-					case WA_LFPAGE:
-						dx -= ow - screen.c_max_w;
-					break;
-					case WA_RTPAGE:
-						dx += ow - screen.c_max_w;
-					}
-					if (dx < 0)
-						dx = 0;
-					if (dx > ow - ww)		/* align */
-						dx = ow - ww;
-				}
-			}
-		break;
-		case WM_VSLID:
-			if (wh < oh)
-				dy = sl_to_pix(oh - wh, mp4);
-		break;
-		case WM_HSLID:
-			if (ww < ow)
-				dx = sl_to_pix(ow - ww, mp4);
-		break;
-#if 0
-		case WM_SIZED:
-			/* if (!wind->nolist && (wind->active_widgets & SIZE)) */
-			{
-				move_window(lock, wind, -1, mp4, mp5, mp6, mp7);
-				ww = wind->wa.w,		/* window measures */
-				wh = wind->wa.h,
-				wd = ow - ww,			/* space ouside workarea */
-				hd = oh - wh;
-				if (dx > ow - ww)		/* align */
-					dx = ow - ww;
-				if (dy > oh - wh)		
-					dy = oh - wh;
-				XA_slider(wind, XAW_HSLIDE, ow, ww, dx);
-				XA_slider(wind, XAW_VSLIDE, oh, wh, dy);
-				draw = true;
-			}
-		break;
-#endif
-		default:
-			return;
-		}
-
-		if (dx != wt->dx)
-		{
-			draw = true;
-			XA_slider(wind, XAW_HSLIDE, ow, ww, dx);
-		}
-
-		if (dy != wt->dy)
-		{
-			draw = true;
-			XA_slider(wind, XAW_VSLIDE, oh, wh, dy);
-		}
-
-		if (draw)
-		{
-			wt->dx = dx;
-			wt->dy = dy;
-			display_window(lock, 120, wind, NULL);
-		}
-
-		set_button_timer(lock, wind);
-	}
 }

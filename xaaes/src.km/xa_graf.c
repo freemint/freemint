@@ -29,7 +29,8 @@
 
 #include "k_main.h"
 #include "k_mouse.h"
-#include "objects.h"
+#include "draw_obj.h"
+#include "obtree.h"
 #include "widgets.h"
 
 #include "xa_evnt.h"
@@ -60,7 +61,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 
 	check_mouse(wt->owner, &mb, &omx, &omy);
 
-	object_offset(dial, ob, wt->dx, wt->dy, &x, &y);
+	ob_offset(dial, ob, &x, &y);
 
 	x--;
 	y--;
@@ -87,7 +88,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 			{
 				omx = mx;
 				omy = my;
-				obf = find_object(dial, ob, 10, mx, my, wt->dx, wt->dy);
+				obf = ob_find(dial, ob, 10, mx, my);
 
 				if (obf == ob)
 					(dial + ob)->ob_state = in_state;
@@ -419,9 +420,9 @@ XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(3,1,1)
 
 	p = *(RECT *)&tree[pi].ob_x;
-	object_offset(tree, pi, 0, 0, &p.x, &p.y);
+	ob_offset(tree, pi, &p.x, &p.y);
 	c = *(RECT *)&tree[ci].ob_x;
-	object_offset(tree, ci, 0, 0, &c.x, &c.y);
+	ob_offset(tree, ci, &c.x, &c.y);
 
 	rect_dist(client, &c, &dist);		/* relative position of mouse in child rectangle */
 
