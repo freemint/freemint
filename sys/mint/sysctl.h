@@ -119,7 +119,8 @@ struct ctlname
 # define KERN_IOV_MAX		11	/* int: max iovec's for readv(2) etc. */
 # define KERN_LOGIN_NAME_MAX	12	/* int: max length login name + NUL */
 # define KERN_BOOTTIME		13	/* struct: time kernel was booted */
-# define KERN_MAXID		14	/* number of valid kern ids */
+# define KERN_INITIALTPA	14	/* int: max TPA size of a process */
+# define KERN_MAXID		15	/* number of valid kern ids */
 
 # define CTL_KERN_NAMES \
 { \
@@ -137,6 +138,7 @@ struct ctlname
 	{ "iov_max", CTLTYPE_INT }, \
 	{ "login_name_max", CTLTYPE_INT }, \
 	{ "boottime", CTLTYPE_STRUCT }, \
+	{ "initialtpa", CTLTYPE_INT }, \
 }
 
 
