@@ -42,7 +42,7 @@
  * - filename completion;
  * - make crunch() expand wildcards;
  * - make possible to execute some sort of init script (shellrc or something);
- * - get rid of static Cconrs();
+ * - get rid of Cconrs();
  * - make `ls -l |more' work.
  *
  */
@@ -342,7 +342,9 @@ get_arg(char *cmd, char **arg, char **next, short *io)
 
 		start = cmd;
 		cmd = endquote;
-		*cmd++ = 0;
+
+		if (*cmd)
+			*cmd++ = 0;
 	}
 	else
 	{
@@ -373,7 +375,7 @@ get_arg(char *cmd, char **arg, char **next, short *io)
 			*cmd++ = 0;
 	}
 
-	while (isspace(*cmd))
+	while (*cmd && isspace(*cmd))
 		cmd++;
 
 	*arg = start;
