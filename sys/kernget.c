@@ -346,7 +346,7 @@ kern_get_loadavg (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
 	ulong len = 64;
-	PROC *p;
+	struct proc *p;
 	short tasks = 0;
 	short running = 0;
 	int last_pid = 0; /* ??? */
@@ -475,7 +475,7 @@ kern_get_stat (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
 	ulong len = 64;
-	PROC *p;
+	struct proc *p;
 	ulong all_systime = 0, all_usrtime = 0, all_nice = 0;
 	
 	info = kmalloc (sizeof (*info) + len);
@@ -652,7 +652,7 @@ kern_get_welcome (SIZEBUF **buffer)
 
 
 long 
-kern_procdir_get_cmdline (SIZEBUF **buffer, const PROC *p)
+kern_procdir_get_cmdline (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong argc;
@@ -698,7 +698,7 @@ kern_procdir_get_cmdline (SIZEBUF **buffer, const PROC *p)
  * return value EOF.
  */
 long 
-kern_procdir_get_environ (SIZEBUF **buffer, PROC *p)
+kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 {
 	SIZEBUF *info = NULL;
 	MEMREGION *baseregion = NULL;
@@ -716,7 +716,7 @@ kern_procdir_get_environ (SIZEBUF **buffer, PROC *p)
 	DEBUG (("get_environ: %lx, %lx, %lx, %lx",
 			proc_addr2region (curproc, (long) p->base),
 			proc_addr2region (p, (long) p->base),
-			addr2mem (curproc, (virtaddr) p->base),
+			addr2mem (curproc, (long) p->base),
 			addr2region ((long) p->base)
 	));
 	
@@ -838,7 +838,7 @@ out:
 }
 
 long 
-kern_procdir_get_fname (SIZEBUF **buffer, const PROC *p)
+kern_procdir_get_fname (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len;
@@ -857,35 +857,38 @@ kern_procdir_get_fname (SIZEBUF **buffer, const PROC *p)
 }
 
 long
-kern_procdir_get_meminfo (SIZEBUF **buffer, const PROC *p)
+kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 {
-	struct memspace *mem = p->p_mem;
 	SIZEBUF *info;
 	char *crs;
 	ulong len;
 	int i;
 	
-	if (!mem || !mem->mem)
+	if (!p->p_mem || !p->p_mem->mem)
 		return EBADARG;
 	
-	len = mem->num_reg * 64;
+	len = p->p_mem->num_reg * 64;
 	
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 	
 	crs = info->buf;
-	for (i = 0; i < mem->num_reg; i++)
+	for (i = 0; i < p->p_mem->num_reg; i++)
 	{
-		MEMREGION *m = mem->mem[i];
+		MEMREGION *m;
+		
+		m = p->p_mem->mem[i];
+		if (!m)
+			continue;
 		
 # define M_SHTEXT	0x0010	/* XXX */
 # define M_SHTEXT_T	0x0020	/* XXX */
 		
 		crs += ksprintf (crs, len - (crs - info->buf),
 				"%08x-%08x %3u %c%c%c%c%c%c %08x %02lu:%02lu %lu\n",
-				(ulong) mem->addr[i],
-				(ulong) mem->addr[i] + m->len + 1,
+				(ulong) p->p_mem->addr[i],
+				(ulong) p->p_mem->addr[i] + m->len + 1,
 				(unsigned) m->links,
 				m->mflags & M_KEEP ? 'k' : '-',
 				m->mflags & M_SHARED ? 's' : '-',
@@ -911,11 +914,11 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const PROC *p)
  * only used once
  */
 INLINE int
-get_session_id (const PROC *p)
+get_session_id (const struct proc *p)
 {
 	while (p && p != rootproc)
 	{
-		PROC *leader = pid2proc (p->pgrp);
+		struct proc *leader = pid2proc (p->pgrp);
 		
 		if (leader != NULL)
 			return leader->pid;
@@ -940,7 +943,7 @@ timersub (struct timeval *a, struct timeval *b, struct timeval *result)
 }
 
 long 
-kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
+kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 {
 	SIZEBUF *info;
 	MEMREGION *baseregion;
@@ -1113,7 +1116,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
 }
 
 long 
-kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
+kern_procdir_get_status (SIZEBUF **buffer, const struct proc *p)
 {
 	SIZEBUF *info;
 	ulong len = 512;
@@ -1130,7 +1133,7 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 	ulong sharedsize = 0;
 	ulong keepsize = 0;
 	ulong kmallocsize = 0;
-	char *state = ". Huh?";
+	char *state;
 	ulong sigign = 0;
 	ulong sigcgt = 0;
 	ulong bit = 1;
@@ -1162,13 +1165,17 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 		case STOP_Q:
 			state = "T (stopped)";
 			break;
+		default:
+			state = "? (unknown)";
+			break;
 	}
 	
 	crs += ksprintf (crs, len - (crs - info->buf), "State:\t%s\n", state);
 	
 	assert (p->p_cred && p->p_cred->ucr);
 	
-	crs += ksprintf (crs, len - (crs - info->buf), "Pid:\t%d\nPPid:\t%d\nUid:\t%d\t%d\t%d\nGid:\t%d\t%d\t%d\n",
+	crs += ksprintf (crs, len - (crs - info->buf),
+			 "Pid:\t%d\nPPid:\t%d\nUid:\t%d\t%d\t%d\nGid:\t%d\t%d\t%d\n",
 		         p->pid, p->ppid,
 		         p->p_cred->ruid, p->p_cred->ucr->euid, p->p_cred->suid,
 		         p->p_cred->rgid, p->p_cred->ucr->egid, p->p_cred->sgid);
@@ -1179,37 +1186,41 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 		
 		for (i = 0; i < regions; i++)
 		{
-			MEMREGION *mem = p->p_mem->mem[i];
+			MEMREGION *m;
 			
-			memsize += mem->len;
-			switch (mem->mflags & M_MAP)
+			m = p->p_mem->mem[i];
+			if (!m)
+				continue;
+			
+			memsize += m->len;
+			switch (m->mflags & M_MAP)
 			{
 				case M_CORE:
-					coresize += mem->len;
+					coresize += m->len;
 					break;
 				case M_ALT:
-					altsize += mem->len;
+					altsize += m->len;
 					break;
 				case M_SWAP:
-					swapsize += mem->len;
+					swapsize += m->len;
 					break;
 				case M_KER:
-					kersize += mem->len;
+					kersize += m->len;
 					break;
 			}
 			
-			if (mem->mflags & M_SHTEXT)
-				shtextsize += mem->len;
-			if (mem->mflags & M_SHTEXT_T)
-				shtexttsize += mem->len;
-			if (mem->mflags & M_FSAVED)
-				fsavedsize += mem->len;
-			if (mem->mflags & M_SHARED)
-				sharedsize += mem->len;
-			if (mem->mflags & M_KEEP)
-				keepsize += mem->len;
-			if (mem->mflags & M_KMALLOC)
-				kmallocsize += mem->len;
+			if (m->mflags & M_SHTEXT)
+				shtextsize += m->len;
+			if (m->mflags & M_SHTEXT_T)
+				shtexttsize += m->len;
+			if (m->mflags & M_FSAVED)
+				fsavedsize += m->len;
+			if (m->mflags & M_SHARED)
+				sharedsize += m->len;
+			if (m->mflags & M_KEEP)
+				keepsize += m->len;
+			if (m->mflags & M_KMALLOC)
+				kmallocsize += m->len;
 		}
 	}
 	
