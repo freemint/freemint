@@ -2682,7 +2682,8 @@ scc_close (FILEPTR *f, int pid)
 	
 	DEBUG (("scc_close [%i]: enter", f->fc.aux));
 	
-	if ((f->flags & O_LOCK) && (iovar->lockpid == pid))
+	if ((f->flags & O_LOCK)
+	    && ((iovar->lockpid == pid) || (f->links <= 0)))
 	{
 		DEBUG (("scc_close: remove lock by %i", pid));
 		
