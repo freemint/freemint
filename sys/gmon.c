@@ -40,7 +40,7 @@
 
 # include "gmon.h"
 
-# include "mint/basepage.h"
+# include "arch/startup.h"
 # include "mint/file.h"
 
 # include "libkern/libkern.h"
