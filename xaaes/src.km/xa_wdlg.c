@@ -351,14 +351,14 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 
 struct toolbar_handlers wdlg_th =
 {
-	(void*)-1L,			/* FormExit		*exitform;	*/
-	(void*)-1L,			/* FormKeyInput		*keypress;	*/
+	(void *)-1L,			/* FormExit		*exitform;	*/
+	(void *)-1L,			/* FormKeyInput		*keypress;	*/
 
-	(void*)-1L,			/* DisplayWidget	*display;	*/
+	(void *)-1L,			/* DisplayWidget	*display;	*/
 	click_wdlg_widget,		/* WidgetBehaviour	*click;		*/
 	click_wdlg_widget,		/* WidgetBehaviour	*dclick;	*/
 	click_wdlg_widget,		/* WidgetBehaviour	*drag;		*/
-	(void*)-1L,			/* WidgetBehaviour	*release;	*/
+	(void *)-1L,			/* WidgetBehaviour	*release;	*/
 	NULL,				/* void (*destruct)(struct xa_widget *w); */
 
 };
