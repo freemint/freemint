@@ -1088,7 +1088,38 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,5,0)
 
-	multi_intout(client, pb->intout, 0);
+	if (client)
+	{
+		short clicks;
+
+		clicks = client->md_head->clicks;
+				
+		if (clicks == -1 && (client->md_head != client->md_tail))
+		{
+			client->md_head++;
+			if (client->md_head > client->md_end)
+				client->md_head = client->mdb;
+			clicks = client->md_head->clicks;
+		}
+		else
+			clicks = 0;
+
+		if (clicks)
+		{
+			pb->intout[3] = client->md_head->state;
+			client->md_head->clicks = 0;
+		}
+		else
+		{
+			pb->intout[3] = client->md_head->cstate;
+			client->md_head->clicks = -1;
+		}
+		vq_key_s(C.vh, &pb->intout[4]);
+		check_mouse(client, NULL, &pb->intout[1], &pb->intout[2]);
+	}
+	else
+		multi_intout(client, pb->intout, 0);
+
 	pb->intout[0] = 1;
 
 #if GENERATE_DIAGS

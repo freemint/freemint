@@ -66,8 +66,6 @@ static short y_mouse;
 struct moose_data mainmd;	// ozk: Have to take the most recent moose packet into global space
 BUTTON mu_button = { NULL };
 
-struct pending_button pending_button = { 0, 0, { {NULL}, {NULL}, {NULL}, {NULL} } };
-
 #define MDBUF_SIZE 32
 
 static int md_head = 0;
@@ -201,6 +199,21 @@ is_bevent(int gotbut, int gotcl, const short *o, int which)
 	return ev;
 }
 
+static bool
+add_client_md(struct xa_client *client, const struct moose_data *md)
+{
+	struct moose_data *mdt = client->md_tail;
+	
+	mdt++;
+	if (mdt > client->md_end)
+		mdt = client->mdb;
+	if (mdt == client->md_head)
+		return false;
+	*mdt = *md;
+	client->md_tail = mdt;
+	return true;
+}
+
 /* HR 050402: WDIAL: split off as a function for use in ExitForm function */
 
 void
@@ -208,7 +221,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 {
 	DIAG((D_button, NULL, "button event for %s", c_owner(client)));
 
-	if (client->waiting_pb)
+	if ((add_client_md(client, md)) && (client->waiting_for & MU_BUTTON) && client->waiting_pb)
 	{
 		short *to = client->waiting_pb->intout;
 
@@ -228,7 +241,8 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = md->kstate;
 				*to++ = 0;
 				*to++ = md->clicks;
-				client->md.clicks = 0;
+				client->md_tail->clicks = 0;
+				//client->md.clicks = 0;
 
 				client->usr_evnt = 1;
 				DIAG((D_button, NULL, " - written"));
@@ -244,50 +258,14 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = md->y;
 				*to++ = md->state;
 				*to   = md->kstate;
-				client->md.clicks = 0;
+				client->md_tail->clicks = 0;
+				//client->md.clicks = 0;
 
 				client->usr_evnt = 1;
 				DIAG((D_button, NULL, " - written"));
 			}
 		}
 	}
-}
-
-static void
-reset_pending_button(void)
-{
-	int i;
-
-	pending_button.tail = 0;
-	pending_button.head = 0;
-
-	for (i = 0; i < 4; i++)
-		pending_button.q[i].client = 0;
-}
-
-/* Ozk: Collect up to 4 pending button events -- do we need more? */
-void
-add_pending_button(enum locks lock, struct xa_client *client)
-{
-	Sema_Up(pending);
-
-	if (!(pending_button.q[pending_button.head].client == client))
-		reset_pending_button();
-
-	DIAG((D_button, client, "added pending button for %s", client->name));
-
-	pending_button.q[pending_button.tail].client	= client;
-	pending_button.q[pending_button.tail].x		= mu_button.x;		/* md->x; */
-	pending_button.q[pending_button.tail].y		= mu_button.y;		/* md->y; */
-	pending_button.q[pending_button.tail].b		= mu_button.b;		/* md->state; */
-	pending_button.q[pending_button.tail].cb	= mu_button.cb;		/* md->cstate; */
-	pending_button.q[pending_button.tail].clicks	= mu_button.clicks;	/* md->clicks; */
-	pending_button.q[pending_button.tail].ks	= mu_button.ks;
-
-	pending_button.tail++;
-	pending_button.tail &= 3;
-
-	Sema_Dn(pending);
 }
 
 /*
@@ -307,11 +285,6 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 	 */
 	if (md->state && md->cstate)
 		C.button_waiter = target;
-
-	/*
-	 * Copy the event into the clients private parts
-	 */
-	target->md = *md;
 
 	if (wind && wind->owner != target)
 	{
@@ -333,7 +306,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
-	if (is_topped(wind)/*wind == window_list*/ || wind->active_widgets & NO_TOPPED)
+	if (is_topped(wind) || wind->active_widgets & NO_TOPPED)
 	{
 		if (checkif_do_widgets(lock, wind, 0, md))
 		{
@@ -343,7 +316,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 		else
 			deliver_button_event(wind, target, md);
 	}
-	else if (!is_topped(wind)/*wind != window_list*/ && checkif_do_widgets(lock, wind, 0, md))
+	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, 0, md))
 	{
 		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
 		post_cevent(target, cXA_do_widgets, wind,0, 0,0, 0,md);
@@ -959,7 +932,7 @@ adi_move(struct adif *a, short x, short y)
 		 * to handle locked/busy clients.
 		*/
 		if (!m_rto)
-			m_rto = addroottimeout(400L, move_rtimeout, 1);
+			m_rto = addroottimeout(cfg.redraw_timeout, move_rtimeout, 1);
 	}
 	else
 	{
@@ -1000,13 +973,20 @@ static void
 button_timeout(struct proc *p, long arg)
 {
 	struct moose_data *md = (struct moose_data *)arg;
+	struct moose_data *new_md;
 
-	DIAGS(("adi_button_event %d/%d", md->state, md->cstate));
-	vq_key_s(C.vh, &md->kstate);
-	mu_button.ks = md->kstate;
-	new_moose_pkt(0, 0, md);
-	/* XXX see below */
-	_kfree(md, FUNCTION);
+	new_md = kmalloc(sizeof(struct moose_data));
+	
+	if (new_md)
+	{
+		*new_md = *md;
+		DIAGS(("adi_button_event %d/%d", md->state, md->cstate));
+
+		vq_key_s(C.vh, &new_md->kstate);
+		mu_button.ks = new_md->kstate;
+		new_moose_pkt(0, 0, new_md);
+		kfree(new_md);
+	}
 	b_to = 0;
 }
 
@@ -1029,7 +1009,7 @@ adi_button(struct adif *a, struct moose_data *md)
 
 	if (C.button_waiter)
 	{
-		C.button_waiter->md = *md;
+		add_client_md(C.button_waiter, md);
 		C.button_waiter = 0;
 	}
 
@@ -1045,11 +1025,6 @@ adi_button(struct adif *a, struct moose_data *md)
 		b_to = t;
 		t->arg = (long)md;
 	}
-	else
-		/* XXX that's not so good, we get allocated memory from adi
-		 * driver and free this ourself
-		 */
-		_kfree(md, FUNCTION);
 }
 
 /* XXX */

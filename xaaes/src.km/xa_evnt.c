@@ -266,24 +266,18 @@ got_evnt:
 unsigned long
 XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	bool mu_butt_p = 0;			/* Ozk 040503: Need to know if MU_BUTTON came from a pending button event
-						 * or checking current button state in mu_button */
 	short events = pb->intin[0];
-	short x, y;
+	short x, y, mx, my;
 	unsigned long ret = XAC_BLOCK;		/* HR: another example of choosing inconvenient default fixed. */
-	int new_waiting_for = 0,
+	short new_waiting_for = 0,
 	    fall_through = 0,
-	    pbi = pending_button.head,
-	    clicks = 0;
+	    clicks = 0, ks, mbutts = 0;
 	
 	CONTROL(16,7,1)
 
 	pb->intout[0] = 0;
 	pb->intout[5] = 0;
 	pb->intout[6] = 0;
-
-	//client->waiting_for = 0;
-	//client->waiting_pb = NULL;
 
 #if GENERATE_DIAGS
 	{
@@ -370,26 +364,11 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	because it contains the last mouse event packet returned from moose.
  */
 
+	check_mouse(client, NULL, &x, &y);
+	vq_key_s(C.vh, &ks);
+
 	if (events & MU_BUTTON)
 	{
-		Sema_Up(pending);
-
-		if (pending_button.q[pbi].client == client && mouse_ok(client))
-		{
-			DIAG((D_button,NULL,"pending_button multi %d", pending_button.q[pbi].b));
-			pending_button.q[pbi].client = NULL;			/* is single shot. */
-			pending_button.head++;
-			pending_button.head &= 3;
-
-			if (is_bevent(pending_button.q[pbi].b, pending_button.q[pbi].clicks, pb->intin + 1, 1))
-			{
-				fall_through |= MU_BUTTON;
-				mu_butt_p = true;		/* pending button used */
-
-				DIAG((D_button, NULL, "fall_through |= MU_BUTTON"));
-			}
-		}
-		else
 		{
 			bool bev = false;
 
@@ -402,33 +381,53 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			//DIAG((D_button, NULL, "evnt_multi: Check if button event"));
 
 			{
-				struct moose_data *md = &client->md;
-				DIAG((D_button, NULL, "evnt_multi: check button evnt on private"));
-				if (md->clicks)
+				clicks = client->md_head->clicks;
+				
+				if (clicks == -1 && (client->md_head != client->md_tail))
 				{
-					bev = is_bevent(md->state, md->clicks, pb->intin + 1, 1);
-					clicks = md->clicks;
-					md->clicks = 0;
+					client->md_head++;
+					if (client->md_head > client->md_end)
+						client->md_head = client->mdb;
+					clicks = client->md_head->clicks;
+				}
+				else
+					clicks = 0;
+
+				if (clicks)
+				{
+					if ((bev = is_bevent(client->md_head->state, clicks, pb->intin + 1, 1)))
+					{
+						mbutts = client->md_head->state;
+						mx = client->md_head->x;
+						my = client->md_head->y;
+						ks = client->md_head->kstate;
+					}
+					client->md_head->clicks = 0;
 				}
 				else
 				{
- 					if ((bev = is_bevent(md->cstate, 0, pb->intin + 1, 1)))
-						clicks = 1;
+					if ((bev = is_bevent(client->md_head->cstate, clicks, pb->intin + 1, 1)))
+					{
+						mbutts = client->md_head->cstate;
+						mx = x, my = y;
+					}
+					client->md_head->clicks = -1;
 				}
 			}
-			if (bev == true)
+			if (bev)
 				fall_through |= MU_BUTTON;
+			else
+			{
+				new_waiting_for |= MU_BUTTON;
+				mx = x, my = y;
+				DIAG((D_b, client, "new_waiting_for |= MU_BUTTON"));
+			}
 		}
-
-		Sema_Dn(pending);
-
-		if ((fall_through & MU_BUTTON) == 0)
-		{
-			new_waiting_for |= MU_BUTTON;		/* Flag the app as waiting for button changes */
-			pb->intout[0] = 0;
-
-			DIAG((D_b, client, "new_waiting_for |= MU_BUTTON"));
-		}
+	}
+	else
+	{
+		mx = x;
+		my = y;
 	}
 
 	if (events & (MU_NORM_KEYBD|MU_KEYBD))		
@@ -448,8 +447,13 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		bzero(&client->em, sizeof(client->em));
 
-		check_mouse(client, NULL, &x, &y);
-
+		/* Ozk:
+		 *   MU_Mx events are delivered if;
+		 *   1. Client is the holder of either update or mouse lock
+		 *   2. The event happens over one of its windows and that window
+		 *      is either ontop or WF_BEVENT'ed.
+		 *
+		 */
 		locker = mouse_locked();
 		if (!locker)
 			locker = update_locked();
@@ -493,52 +497,6 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 			new_waiting_for |= (events & (MU_M1 | MU_M2 | MU_MX));
-#if 0
-		bzero(&client->em, sizeof(client->em));
-		if (events & MU_M1)
-		{
-			/* Mouse rectangle tracking */
-
-			const RECT *r = (const RECT *)&pb->intin[5];
-			client->em.m1 = *r;
-			client->em.flags = pb->intin[4] | MU_M1;
-
-			DIAG((D_multi,client,"    M1 rectangle: %d/%d,%d/%d, flag: 0x%x: %s",
-				r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
-
-			check_mouse(client, NULL, &x, &y);
-
-			if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
-				fall_through    |= MU_M1;
-			else
-				new_waiting_for |= MU_M1;
-		}
-
-		if (events & MU_MX)
-		{
-			/* XaAES extension: any mouse movement. */
-			client->em.flags = pb->intin[4] | MU_MX;
-			DIAG((D_multi,client,"    MX"));
-			new_waiting_for |= MU_MX;
-		}
-
-		if (events & MU_M2)
-		{
-			const RECT *r = (const RECT *)&pb->intin[10];
-			client->em.m2 = *r;
-			client->em.flags |= (pb->intin[9] << 1) | MU_M2;
-
-			DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s",
-				r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
-
-			check_mouse(client, NULL, &x, &y);
-
-			if (mouse_ok(client) && is_rect(x, y, client->em.flags & 2, &client->em.m2))
-				fall_through    |= MU_M2;
-			else
-				new_waiting_for |= MU_M2;
-		}
-#endif
 	}
 
 	/* AES 4.09 */
@@ -576,6 +534,9 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* Is this the cause of loosing the key's at regular intervals? */
 			DIAG((D_i,client, "Done timer for %d", client->p->pid));
 
+			/* If MU_TIMER and no timer (which means, return immediately),
+			 * we yield()
+			 */
 			yield();
 			fall_through |= MU_TIMER;
 			/* HR 190601: to be able to combine fall thru events. */
@@ -585,30 +546,22 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (fall_through)
 	{
-		/* HR: fill out the mouse data */
-		multi_intout(client, pb->intout, 0);
-		if ((fall_through&MU_TIMER) == 0)
+		if (!(fall_through & MU_TIMER))
 			ret = XAC_DONE;
-		if ((fall_through&MU_BUTTON) != 0)
-		{
-			pb->intout[6] = clicks;
-
-			/* HR 190601: Pphooo :-( This solves the Thing desk popup missing clicks. */
-			/* Ozk 040501: And we need to take the data from the correct place. */
-			if (mu_butt_p)
-			{
-				pb->intout[1] = pending_button.q[pbi].x;
-				pb->intout[2] = pending_button.q[pbi].y;
-				pb->intout[3] = pending_button.q[pbi].b;
-				pb->intout[6] = pending_button.q[pbi].clicks;
-			}
-		}
-			
+		
 		pb->intout[0] = fall_through;
+		pb->intout[1] = mx;
+		pb->intout[2] = my;
+		pb->intout[3] = mbutts;
+		pb->intout[4] = ks;
+	     /* pb->intout[5] is AES key if MU_KEYBD/MU_NORM_KEYBD - filled by pending_key_strokes above */
+		pb->intout[6] = clicks;
 		diag_out(pb,client,"fall_thru ");
 	}
 	else if (new_waiting_for)
 	{
+		pb->intout[0] = 0;
+
 		/* If we actually recognised any of the codes, then set the multi flag */
 
 		/* Flag the app as waiting */
@@ -679,8 +632,7 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	int pbi = pending_button.head;
-	int clicks = 0;
+	short clicks, ks, mbutts, mx, my;
 
 	CONTROL(3,5,1)
 
@@ -696,27 +648,6 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	Sema_Up(pending);
 
-	if (pending_button.q[pbi].client == client && mouse_ok(client))
-	{
-		DIAG((D_button,NULL,"pending_button %d", pending_button.q[pbi].b));
-		pending_button.q[pbi].client = NULL;			/* is single shot. */
-		pending_button.head++;
-		pending_button.head &= 3;
-
-		if (is_bevent(pending_button.q[pbi].b, pending_button.q[pbi].clicks, pb->intin, 3))
-		{
-			pb->intout[0] = pending_button.q[pbi].clicks;	/* Ozk 040503: Take correct data */
-			pb->intout[1] = pending_button.q[pbi].x;
-			pb->intout[2] = pending_button.q[pbi].y;
-			pb->intout[3] = pending_button.q[pbi].b;
-			pb->intout[4] = pending_button.q[pbi].ks;
-			pb->intout[5] = 0;
-			pb->intout[6] = 0;
-			Sema_Dn(pending);
-			return XAC_DONE;
-		}
-	}
-	else
 	{
 		bool bev = false;
 
@@ -726,26 +657,44 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 			C.menu_base, widget_active.widg));
 
 		{
-			struct moose_data *md = &client->md;
-			DIAG((D_button, NULL, "evnt_button: check event on private"));
-			if (md->clicks)
+			clicks = client->md_head->clicks;
+				
+			if (clicks == -1 && (client->md_head != client->md_tail))
 			{
-				bev = is_bevent(md->state, md->clicks, pb->intin, 1);
-				clicks = md->clicks;
-				if (md->state && !md->cstate)
-					md->clicks = 0;
+				client->md_head++;
+				if (client->md_head > client->md_end)
+					client->md_head = client->mdb;
+				clicks = client->md_head->clicks;
+			}
+			else
+				clicks = 0;
+
+			if (clicks)
+			{
+				bev = is_bevent(client->md_head->state, clicks, pb->intin, 1);
+				client->md_head->clicks = 0;
+				mbutts = client->md_head->state;
+				mx = client->md_head->x;
+				my = client->md_head->y;
+				ks = client->md_head->kstate;
 			}
 			else
 			{
-				if ((bev = is_bevent(md->cstate, 0, pb->intin, 1)))
-					clicks = 1;
+				bev = is_bevent(client->md_head->cstate, clicks, pb->intin, 1);
+				client->md_head->clicks = -1;
+				mbutts = client->md_head->cstate;
+				check_mouse(client, NULL, &mx, &my);
+				vq_key_s(C.vh, &ks);
 			}
 		}
-		if (bev == true)
+		if (bev)
 		{
 			DIAG((D_button, NULL, "evnt_multi: Check if button event"));
-			multi_intout(client, pb->intout, 0);
-			pb->intout[0] = clicks; //1;
+			pb->intout[0] = clicks;
+			pb->intout[1] = mx;
+			pb->intout[2] = my;
+			pb->intout[3] = mbutts;
+			pb->intout[4] = ks;
 			Sema_Dn(pending);
 			return XAC_DONE;
 		}
