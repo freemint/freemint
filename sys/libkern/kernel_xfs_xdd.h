@@ -1,18 +1,23 @@
 /*
- * Filename:     xfs_xdd_kernel.h
- * Project:      FreeMiNT xfs/xdd skeleton
+ * $Id$
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
  * 
- * Copying:      Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * 
- * This program is free software; you can redistribute it and/or modify
+ * Copyright 1999-2004 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ * 
+ * 
+ * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
  * 
- * This program is distributed in the hope that it will be useful,
+ * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -20,10 +25,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
  */
 
-# ifndef _xfs_xdd_kernel_h
-# define _xfs_xdd_kernel_h
+# ifndef _libkern_kernel_xfs_xdd_h
+# define _libkern_kernel_xfs_xdd_h
 
 # include "mint/kerinfo.h"
 
@@ -662,14 +668,6 @@ INLINE long s_hutdown(long restart)
 INLINE long s_system(int mode, ulong arg1, ulong arg2)
 { return ((long _cdecl (*)(int, ulong, ulong)) _s_system)(mode, arg1, arg2); }
 
-# if 0
-INLINE long t_gettimeofday(struct timeval *tv, struct timezone *tz)
-{ return ((long _cdecl (*)(struct timeval *, struct timezone *)) _t_gettimeofday)(tv, tz); }
-
-INLINE long t_settimeofday(struct timeval *tv, struct timezone *tz)
-{ return ((long _cdecl (*)(struct timeval *, struct timezone *)) _t_settimeofday)(tv, tz); }
-# endif
-
 INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
 { return ((long _cdecl (*)(long *, ulong, void *, ulong *, const void *, ulong)) _p_sysctl)(name, namelen, old, oldlenp, new, newlen); }
 
@@ -749,5 +747,4 @@ INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const
 # define kthread_create		(*KERNEL->kthread_create)
 # define kthread_exit		(*KERNEL->kthread_exit)
 
-
-# endif /* _xfs_xdd_kernel_h */
+# endif /* _libkern_kernel_xfs_xdd_h */

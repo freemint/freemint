@@ -1,10 +1,16 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2000-2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ * 
  * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,26 +26,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * begin:	2000-04-17
- * last change:	2000-04-17
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- * 
  */
 
 # ifndef _libkern_h
 # define _libkern_h
 
+# include <stdarg.h>
+
 # include "mint/kernel.h"
 # include "mint/kcompiler.h"
 # include "mint/ktypes.h"
 # include "mint/basepage.h"
-
-# include <stdarg.h>
 
 
 # define str(x)		_stringify(x)
@@ -47,10 +44,9 @@
 
 
 /*
- * kernel character classification and conversion
+ * character classification and conversion
+ * generic macros
  */
-
-extern unsigned char _mint_ctype[];
 
 # define _CTc		0x01	/* control character */
 # define _CTd		0x02	/* numeric digit */
@@ -60,18 +56,18 @@ extern unsigned char _mint_ctype[];
 # define _CTp		0x20	/* punctuation */
 # define _CTx		0x40	/* hexadecimal */
 
-# define isalnum(c)	(  _mint_ctype[(uchar)(c)] & (_CTu|_CTl|_CTd))
-# define isalpha(c)	(  _mint_ctype[(uchar)(c)] & (_CTu|_CTl))
+# define isalnum(c)	(  _ctype[(unsigned char)(c)] & (_CTu|_CTl|_CTd))
+# define isalpha(c)	(  _ctype[(unsigned char)(c)] & (_CTu|_CTl))
 # define isascii(c)	(!((c) & ~0x7f))
-# define iscntrl(c)	(  _mint_ctype[(uchar)(c)] &  _CTc)
-# define isdigit(c)	(  _mint_ctype[(uchar)(c)] &  _CTd)
-# define isgraph(c)	(!(_mint_ctype[(uchar)(c)] & (_CTc|_CTs)) && (_mint_ctype[(uchar)(c)]))
-# define islower(c)	(  _mint_ctype[(uchar)(c)] &  _CTl)
-# define isprint(c)	(!(_mint_ctype[(uchar)(c)] &  _CTc)       && (_mint_ctype[(uchar)(c)]))
-# define ispunct(c)	(  _mint_ctype[(uchar)(c)] &  _CTp)
-# define isspace(c)	(  _mint_ctype[(uchar)(c)] &  _CTs)
-# define isupper(c)	(  _mint_ctype[(uchar)(c)] &  _CTu)
-# define isxdigit(c)	(  _mint_ctype[(uchar)(c)] &  _CTx)
+# define iscntrl(c)	(  _ctype[(unsigned char)(c)] &  _CTc)
+# define isdigit(c)	(  _ctype[(unsigned char)(c)] &  _CTd)
+# define isgraph(c)	(!(_ctype[(unsigned char)(c)] & (_CTc|_CTs)) && (_ctype[(unsigned char)(c)]))
+# define islower(c)	(  _ctype[(unsigned char)(c)] &  _CTl)
+# define isprint(c)	(!(_ctype[(unsigned char)(c)] &  _CTc)       && (_ctype[(unsigned char)(c)]))
+# define ispunct(c)	(  _ctype[(unsigned char)(c)] &  _CTp)
+# define isspace(c)	(  _ctype[(unsigned char)(c)] &  _CTs)
+# define isupper(c)	(  _ctype[(unsigned char)(c)] &  _CTu)
+# define isxdigit(c)	(  _ctype[(unsigned char)(c)] &  _CTx)
 # define iswhite(c)	(isspace (c))
 
 # define isodigit(c)	((c) >= '0' && (c) <= '7')
@@ -81,28 +77,27 @@ extern unsigned char _mint_ctype[];
 # define _toupper(c)	((c) ^ 0x20)
 # define _tolower(c)	((c) ^ 0x20)
 # define _toascii(c)	((c) & 0x7f)
-# define _toint(c)	((c) <= '9' ? (c) - '0' : toupper(c) - 'A')
+# define _toint(c)	((c) <= '9' ? (c) - '0' : TOUPPER(c) - 'A')
+
+# define TOUPPER(c)	(islower(c) ? _toupper(c) : c)
+# define TOLOWER(c)	(isupper(c) ? _tolower(c) : c)
+
+
+# if __KERNEL__ == 1 || __KERNEL__ == 2
+
+/*
+ * character classification and conversion
+ * kernel specific
+ */
+
+extern unsigned char _mint_ctype[];
 
 int	_cdecl _mint_tolower	(int c);
 int	_cdecl _mint_toupper	(int c);
 
-INLINE int
-_mint_toupper_inline (register int c)
-{
-	return (islower(c) ? _toupper(c) : c);
-}
-
-INLINE int
-_mint_tolower_inline (register int c)
-{
-	return (isupper(c) ? _tolower(c) : c);
-}
-
 # define _ctype			_mint_ctype
 # define toupper		_mint_toupper
 # define tolower		_mint_tolower
-# define TOUPPER		_mint_toupper_inline
-# define TOLOWER		_mint_tolower_inline
 
 
 /*
@@ -211,10 +206,14 @@ void	_cdecl bzero		(void *dst, unsigned long size);
 # define quickswap		_mint_quickswap
 # define quickzero		_mint_quickzero
 
-
-# if __KERNEL__ == 2
-# include "xfs_xdd_kernel.h"
 # endif
 
+# if __KERNEL__ == 2
+# include "kernel_xfs_xdd.h"
+# endif
+
+# if __KERNEL__ == 3
+# include "kernel_module.h"
+# endif
 
 # endif /* _libkern_h */
