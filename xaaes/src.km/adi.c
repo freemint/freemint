@@ -118,7 +118,7 @@ adi_name2adi (char *aname)
 }
 
 long
-adi_ioctl(short cmd, long arg)
+adi_ioctl(char *name, short cmd, long arg)
 {
 	return 0;
 }

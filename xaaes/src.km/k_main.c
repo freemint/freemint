@@ -226,58 +226,102 @@ init_moose(void)
 	long major, minor;
 	struct moose_vecsbuf vecs;
 	unsigned short dclick_time;
+	struct adif *a;
 
-	C.buffer_moose = 0;
-
-	if (!C.MOUSE_dev)
+	C.adi_mouse = 0;
+	a = adi_name2adi("moose");
+	if (a)
 	{
-		C.MOUSE_dev = f_open(moose_name, O_RDWR);
-		if (C.MOUSE_dev < 0)
+		long aerr = 1;
+
+		aerr = adi_open(a);
+
+		if (!aerr)
 		{
-			fdisplay(log, "Can't open %s", moose_name);
-			return false;
-		}
-	}
+			C.adi_mouse = a;
 
-	/* first check the xdd version */
-	if (f_cntl(C.MOUSE_dev, (long)(&info), FS_INFO) != 0)
-	{
-		fdisplay(log, "Fcntl(FS_INFO) failed, please use the right moose.xdd?");
-		return false;
-	}
+			aerr = (*a->ioctl)(a, MOOSE_READVECS, (long)&vecs);
 
-	major = info.version >> 16;
-	minor = info.version & 0xffffL;
-	if (major != 0 || minor < 4)
-	{
-		fdisplay(log, ", do you use the right xdd?");
-		return false;
-	}
+			if (vecs.motv)
+			{
+				vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
+				vex_butv(C.P_handle, vecs.butv, (void **)(&svbutv));
 
-	if (f_cntl(C.MOUSE_dev, (long)(&vecs), MOOSE_READVECS) != 0)
-	{
-		fdisplay(log, "Moose set dclick time failed");
-		return false;
-	}
+				if (vecs.whlv)
+				{
+					vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
+					fdisplay(log, "Wheel support present");
+				}
+				else
+					fdisplay(log, "No wheel support!!");
+			}
+			if ( (*a->ioctl)(a, MOOSE_DCLICK, (long)lcfg.double_click_time) )
+				fdisplay(log, "Moose set dclick time failed");
 
-	if (vecs.motv)
-	{
-		vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
-		vex_butv(C.P_handle, vecs.butv, (void **)(&svbutv));
-
-		if (vecs.whlv)
-		{
-			vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
-			fdisplay(log, "Wheel support present");
+			DIAGS(("Using moose adi"));
 		}
 		else
-			fdisplay(log, "No wheel support!!");
+			DIAGS(("Error opening moose adi %lx", aerr));	
+	}
+	else
+	{
+		DIAGS(("Could not find moose adi"));
+		C.adi_mouse = 0;
 	}
 
-	dclick_time = lcfg.double_click_time;
-	if (f_cntl(C.MOUSE_dev, (long)(&dclick_time), MOOSE_DCLICK) != 0)
-		fdisplay(log, "Moose set dclick time failed");
+	if (!C.adi_mouse)
+	{
+		C.buffer_moose = 0;
 
+		if (!C.MOUSE_dev)
+		{
+			C.MOUSE_dev = f_open(moose_name, O_RDWR);
+			if (C.MOUSE_dev < 0)
+			{
+				fdisplay(log, "Can't open %s", moose_name);
+				return false;
+			}
+		}
+
+		/* first check the xdd version */
+		if (f_cntl(C.MOUSE_dev, (long)(&info), FS_INFO) != 0)
+		{
+			fdisplay(log, "Fcntl(FS_INFO) failed, please use the right moose.xdd?");
+			return false;
+		}
+
+		major = info.version >> 16;
+		minor = info.version & 0xffffL;
+		if (major != 0 || minor < 4)
+		{
+			fdisplay(log, ", do you use the right xdd?");
+			return false;
+		}
+
+		if (f_cntl(C.MOUSE_dev, (long)(&vecs), MOOSE_READVECS) != 0)
+		{
+			fdisplay(log, "Moose set dclick time failed");
+			return false;
+		}
+
+		if (vecs.motv)
+		{
+			vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
+			vex_butv(C.P_handle, vecs.butv, (void **)(&svbutv));
+
+			if (vecs.whlv)
+			{
+				vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
+				fdisplay(log, "Wheel support present");
+			}
+			else
+				fdisplay(log, "No wheel support!!");
+		}
+
+		dclick_time = lcfg.double_click_time;
+		if (f_cntl(C.MOUSE_dev, (long)(&dclick_time), MOOSE_DCLICK) != 0)
+			fdisplay(log, "Moose set dclick time failed");
+	}
 	return true;
 }
 
@@ -473,9 +517,6 @@ k_main(void *dummy)
 		goto leave;
 	}
 
-
-	adi_load();
-
 	/*
 	 * Initialization AES/VDI
 	 */
@@ -522,6 +563,7 @@ k_main(void *dummy)
 	}
 	fdisplay(log, "Open '%s' to %ld", KBD_dev_name, C.KBD_dev);
 
+#if 0
 	/*
 	 * Ozk: Open a fileptr to moose so that every application can read
 	 * indipendant of filedescriptors. I tried to open this in
@@ -538,7 +580,7 @@ k_main(void *dummy)
 			 moose_name);
 		goto leave;
 	}
-
+#endif
 	/* Open /dev/moose (040201: after xa_setup.scl for mouse configuration) */
 	if (!init_moose())
 	{
@@ -548,7 +590,6 @@ k_main(void *dummy)
 
 	DIAGS(("Handles: MOUSE %ld, KBD %ld, ALERT %ld",
 		C.MOUSE_dev, C.KBD_dev, C.alert_pipe));
-
 
 	/*
 	 * Load Accessories
@@ -613,7 +654,12 @@ k_main(void *dummy)
 #endif
 		//preprocess_mouse(lock); 
 
-		input_channels  = 1UL << C.MOUSE_dev;
+			
+		if (!C.adi_mouse)
+			input_channels  = 1UL << C.MOUSE_dev;
+		else
+			input_channels = 0UL;
+
 		input_channels |= 1UL << C.KBD_dev;	/* We are waiting on all these channels */
 		input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 
@@ -747,6 +793,10 @@ k_exit(void)
 
 	if (C.KBD_dev > 0)
 		f_close(C.KBD_dev);
+
+	if (C.adi_mouse)
+		adi_close(C.adi_mouse);
+		
 
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);

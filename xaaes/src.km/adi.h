@@ -30,7 +30,7 @@
 #include "global.h"
 #include "adi/adidefs.h"
 
-long		adi_ioctl	(short cmd, long arg);
+long		adi_ioctl	(char *name, short cmd, long arg);
 struct adif *	adi_name2adi	(char *aname);
 short		adi_getfreeunit	(char *name);
 long		adi_close	(struct adif *a);

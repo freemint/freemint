@@ -29,6 +29,7 @@
 
 #include "init.h"
 #include "xa_global.h"
+#include "adiload.h"
 
 #include "c_window.h"
 #include "cnf_xaaes.h"
@@ -283,6 +284,9 @@ init(struct kentry *k)
 	load_config(cnf_name);
 
 	C.Aes->options = default_options;
+
+	DIAGS(("call load_adi"));
+	adi_load();
 
 	fdisplay(log, "*** End of successfull setup ***");
 
