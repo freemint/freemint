@@ -366,6 +366,8 @@ rm_q (int que, PROC *proc)
 void _cdecl
 preempt (void)
 {
+	assert(!(curproc->p_flag & P_FLAG_SYS));
+
 	if (bconbsiz)
 	{
 		bflush ();
@@ -660,6 +662,9 @@ sleep (int _que, long cond)
 
 	if ((p->ctxt[CURRENT].sr & 0x2000) == 0)	/* user mode? */
 		leave_kernel ();
+
+	if ((p->p_flag & P_FLAG_SYS) && !in_kernel)
+		FATAL("system process without in_kernel set???");
 
 	assert (p->magic == CTXT_MAGIC);
 	change_context (&(p->ctxt[CURRENT]));
