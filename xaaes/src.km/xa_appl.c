@@ -600,8 +600,11 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	 */
 
 	free_attachments(client);
-	free_wtlist(client);
 	free_xa_data_list(&client->xa_data);
+	/*
+	 * Free wt list last
+	 */
+	free_wtlist(client);
 
 	/* free the quart screen buffer */
 	if (client->half_screen_buffer)
