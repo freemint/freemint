@@ -43,9 +43,9 @@ $(kerneltarget): $(compile_dir)
 	done && test -z "$$fail"
 	cd $(compile_dir); $(MAKE) all
 
-$(compile_dir):
-	$(MKDIR) $@
-	$(CP) Makefile.objs $@/Makefile
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
 
 else
 
