@@ -1,0 +1,20 @@
+Version 2.7 - 7 April 2001
+
+* tw52 colors are now fully ansi-compatible 
+
+* terminal capabilities `bold' and `dim' are now represented using
+  light resp. half-bright colors where applicable
+
+* support for alternate character set (pc graphics) in tw52 mode
+
+* TERM is automatically set to `tw52-m' or `tw100-m' if less than
+  8 colors are available
+
+* terminfo source file updated (many bugfixes for tw52), recompile
+  it with tic on the target system
+
+* environment variable COLORTERM is set to 1 if color support available
+
+* The horizontal slider has vanished.  If you want to get it back
+  call me at office hours and keep your credit card at hand.  Please
+  allow six weeks for delivery.
