@@ -140,12 +140,12 @@ static void km_debug (const char *fmt, ...);
 #  endif
 #  endif
 
-#  if 1
+#  ifndef NO_RAMFS
 #  define KM_TRACE
 #  define KM_TRACE_FILE		"u:\\ram\\kmtrace.txt"
 #  endif
 
-#  if 1
+#  ifndef NO_RAMFS
 #  define KM_DEBUG_FILE		"u:\\ram\\kmemdebug.txt"
 #  endif
 
