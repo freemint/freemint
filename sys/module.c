@@ -173,7 +173,7 @@ load_all_modules(unsigned long mask)
 	{
 		/* load external xdd */
 		if (mask & (1L << i))
-			load_modules(_types [i], _loads [i]);
+			load_modules(NULL, _types [i], _loads [i]);
 	}
 }
 
@@ -264,7 +264,13 @@ dont_load(const char *name)
 }
 
 void _cdecl
-load_modules(const char *extension, long (*loader)(struct basepage *, const char *))
+load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *))
+{
+	load_modules(NULL, ext, loader);
+}
+
+void _cdecl
+load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *))
 {
 	struct dirstruct dirh;
 	char buf[128];
@@ -272,9 +278,9 @@ load_modules(const char *extension, long (*loader)(struct basepage *, const char
 	char *name;
 	long r;
 
-	DEBUG(("load_modules: enter (%s)", extension));
+	DEBUG(("load_modules: enter (%s)", ext));
 
-	strcpy(buf, sysdir);
+	strcpy(buf, path ? path : sysdir);
 	len = strlen(buf);
 	name = buf + len;
 	len = sizeof(buf) - len;
@@ -291,7 +297,7 @@ load_modules(const char *extension, long (*loader)(struct basepage *, const char
 		{
 			r = strlen(name+4) - 4;
 			if ((r > 0) &&
-			    stricmp(name+4 + r, extension) == 0 &&
+			    stricmp(name+4 + r, ext) == 0 &&
 			    !dont_load(name+4))
 			{
 				char *ptr1 = name;

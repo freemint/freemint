@@ -46,8 +46,11 @@ long _cdecl kernel_write(struct file *f, const void *buf, long buflen);
 long _cdecl kernel_lseek(FILEPTR *f, long where, int whence);
 void _cdecl kernel_close(struct file *f);
 
+/* load all kernel modules */
 void load_all_modules(unsigned long mask);
-void _cdecl load_modules(const char *extension, long (*loader)(struct basepage *, const char *));
+
+void _cdecl load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *));
+void _cdecl load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *));
 
 long _cdecl register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
 
