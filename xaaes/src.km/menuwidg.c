@@ -1545,7 +1545,7 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 		 * prototype, until umalloced space can be used, as this solution
 		 * is just as bad as it originally was.
 		*/
-		root[t_ob++].ob_spec.free_string = &client->mnu_clientlistname; //"  Clients \3";
+		root[t_ob++].ob_spec.free_string = client->mnu_clientlistname; //"  Clients \3";
 		while (t_ob != s_ob)
 		{
 			root[t_ob].ob_flags |= OF_HIDETREE|OS_DISABLED;
