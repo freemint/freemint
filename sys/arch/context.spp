@@ -55,34 +55,32 @@
 	XREF	_no_mem_prot
 
 	TEXT
-_build_context:
-	move.l	a0,-(sp)	; save a0; we'll use it for scratch
+_build_context:	move.l	a0,-(sp)	; save a0; we'll use it for scratch
 	move.l	8(sp),a0	; get address of save area
+
+	movem.l	d0-d7/a0-a6,(a0)	; save registers D0-D7/A0-A6
 
 	tst.w	_no_mem_prot	; is there memory protection?
 	bne.s	noprot1
 %ifdef MMU040
-	move.l	d0,-(sp)
 	dc.w	$4e7a,$0806	; movec urp,d0
 	move.l	d0,C_CRP(a0)
-	move.l	(sp)+,d0
 %else
 	pmove	crp,C_CRP(a0)	; save CRP from MMU
 	pmove	tc,C_TC(a0)	; save TC from MMU
 %endif
 noprot1:
-	movem.l	d0-d7/a0-a6,(a0)	; save registers D0-D7/A0-A6
 	clr.b	C_PTRACE(a0)	; no pending traces, thanks!
 	lea	12(sp),a1	; start of the interesting stack area
 	move.w	(a1)+,d0	; 68000 fake frame format
 
 %ifndef ONLY030
 	move.w	($59e).w,d7	; get process frame flag
-	bne.s	nojunk		; we have some junk on the stack
+	bne.s	nojunk	; we have some junk on the stack
 	move.w	d0,C_SFMT(a0)	; save fake frame format
-	subq.w	#$8,d0		; if bus error (note: subq is faster than
-	beq.s	group0		; cmp, and we won't need d0 later)
-	subq.w	#$4,d0		; or address error ($C==$8+$4)
+	subq.w	#$8,d0	; if bus error (note: subq is faster than
+	beq.s	group0	; cmp, and we won't need d0 later)
+	subq.w	#$4,d0	; or address error ($C==$8+$4)
 	bne.s	nojunk
 group0:	move.l	(a1)+,C_INTERNAL(a0)	; stash it in the internal area
 	move.l	(a1)+,C_INTERNAL+4(a0)	; if a debugger's interested
@@ -106,42 +104,40 @@ nofpu:
 	lea	C_SFMT(a0),a2
 	move.w	(a1)+,d1	; fetch frame format word
 	move.w	d1,(a2)+	; and stash it away for later
-	lsr.w	#8,d1		; isolate the frame format identifier
+	lsr.w	#8,d1	; isolate the frame format identifier
 	lsr.w	#4,d1
 	lea	_framesizes,a3
 	move.b	0(a3,d1.w),d1
-	beq.s	short1		; if no data to save, skip this
-	subq.w	#1,d1		; correct for first time through loop
+	beq.s	short1	; if no data to save, skip this
+	subq.w	#1,d1	; correct for first time through loop
 bcint:	move.w	(a1)+,(a2)+	; copy CPU internal state
-bcover:	dbf	d1,bcint
+bcover:	dbra	d1,bcint
 short1:
 	move.l	a1,C_SSP(a0)	; a1 now points above the state frame
-	move.l	usp,a1		; save user stack pointer
+	move.l	usp,a1	; save user stack pointer
 	move.l	a1,C_USP(a0)
-	btst	#13,d0		; check for supervisor mode
-	beq.s	L_CONT1		; user mode; we already have stack in a1
+	btst	#13,d0	; check for supervisor mode
+	beq.s	L_CONT1	; user mode; we already have stack in a1
 L_SUPER1:
 ; moving from the save state buffer
 ; means not testing longframe again. (AKP)
 	move.l	C_SSP(a0),a1	; was using super stack pointer before interrupt
-				;
+			;
 L_CONT1:
 	move.l	($408).w,C_TERM(a0) ; save GEMDOS terminate vector
 	move.l	(sp)+,C_A0(a0)	; save old register a0
 	rts
 
-
-_save_context:
-	move.l	a0,-(sp)	; save a0
+_save_context:	move.l	a0,-(sp)	; save a0
 	move.l	8(sp),a0	; get address of context save area
+
+	movem.l	d0-d7/a0-a6,(a0)	; save D0-D7/A0-A6
 
 	tst.w	_no_mem_prot
 	bne.s	noprot2
 %ifdef MMU040
-	move.l	d0,-(sp)
 	dc.w	$4e7a,$0806	; movec urp,d0
 	move.l	d0,C_CRP(a0)
-	move.l	(sp)+,d0
 %else
 	pmove	crp,C_CRP(a0)	; save the CRP from the MMU
 	pmove	tc,C_TC(a0)	; save the TC from the MMU
@@ -149,7 +145,8 @@ _save_context:
 noprot2:
 
 ; if running with a true coprocessor we need to save the FPU state
-	tst.w	_fpu		; is there a true FPU in the system
+
+	tst.w	_fpu	; is there a true FPU in the system
 	beq.s	nofpu2
 	fsave	C_FSTATE(a0)		; save internal state frame
 	tst.b	C_FSTATE(a0)		; if NULL frame then the FPU is not in use
@@ -166,17 +163,16 @@ nofpu2:
 	clr.w	C_SFMT(a0)		; mark as a 4 word stack frame
 	clr.b	C_PTRACE(a0)		; no pending traces, thanks!
 
-	movem.l	d0-d7/a0-a6,(a0)	; save D0-D7/A0-A6
 	lea	8(sp),a1
 	move.l	a1,C_SSP(a0)	; save supervisor stack pointer
-				; note that it should be pointing above the PC
+			; note that it should be pointing above the PC
 	move.l	-4(a1),C_PC(a0)	; save PC
 	move.l	usp,a1
 	move.l	a1,C_USP(a0)	; save user stack pointer
 	move.w	sr,C_SR(a0)	; save status register
 	move.l	($408).w,C_TERM(a0)	; save GEMDOS terminate vector
 	move.l	(sp)+,C_A0(a0)	; save old a0
-	moveq.l	#0,d0		; return 0
+	clr.l	d0	; return 0
 	rts
 
 _restore_context:
@@ -208,12 +204,10 @@ noprot3:
 	tst.w	($59e).w	; test longframe (AKP)
 	beq.s	short3
 %endif
-; was moveq.l #0,d0, but I don't think that's what was desired
-;	moveq.l	#0,d1		; neither d0 nor d1 has to be cleared here (Draco)
 	lea	C_SFMT(a0),a1
 	move.w	(a1)+,d0	; fetch frame format word
-	move.w	d0,d1		; copy it for later
-	lsr.w	#8,d1		; isolate the frame format identifier
+	move.w	d0,d1	; copy it for later
+	lsr.w	#8,d1	; isolate the frame format identifier
 	lsr.w	#4,d1
 	lea	_framesizes,a2
 	move.b	0(a2,d1.w),d1
@@ -221,7 +215,7 @@ noprot3:
 	sub.w	d1,sp
 	sub.w	d1,sp
 	move.l	sp,a2
-	subq.w	#1,d1		; correct for first time through loop
+	subq.w	#1,d1	; correct for first time through loop
 rcint:	move.w	(a1)+,(a2)+
 rcover:	dbf	d1,rcint
 rcovernc:
@@ -243,7 +237,7 @@ short3:
 	beq.s	notrace
 	jmp	_new_trace
 notrace:
-	rte			; jump back to old context
+	rte		; jump back to old context
 
 
 _change_context:
@@ -255,7 +249,7 @@ _change_context:
 ; to there.
 
 	move.l	C_SSP(a0),a1	; get supervisor stack pointer
-	tst.b	(a1)		; touch the page for virtual memory programs
+	tst.b	(a1)	; touch the page for virtual memory programs
 	tst.b	-63(a1)	; make sure stack can grow
 	move.l	a1,sp
 	move.l	C_USP(a0),a1
@@ -267,7 +261,7 @@ _change_context:
 	bne.s	noprot4
 %ifdef MMU040
 	move.l	C_CRP(a0),d0
-	dc.w	$f518		; pflusha
+	dc.w	$f518	; pflusha
 	dc.w	$4e7b,$0806	; movec d0,urp
 	dc.w	$4e7b,$0807	; movec d0,srp
 %else
@@ -280,12 +274,10 @@ noprot4:
 	tst.w	($59e).w	; test longframe (AKP)
 	beq.s	short6
 %endif
-; was moveq.l #0,d0, but I don't think that's what was desired
-;	moveq.l	#0,d1		; see the same in _restore_context (Draco)
 	lea	C_SFMT(a0),a1
 	move.w	(a1)+,d0	; fetch frame format word
-	move.w	d0,d1		; copy it for later
-	lsr.w	#8,d1		; isolate the frame format identifier
+	move.w	d0,d1	; copy it for later
+	lsr.w	#8,d1	; isolate the frame format identifier
 	lsr.w	#4,d1
 	lea	_framesizes,a2
 	move.b	0(a2,d1.w),d1
@@ -293,7 +285,7 @@ noprot4:
 	sub.w	d1,sp
 	sub.w	d1,sp
 	move.l	sp,a2
-	subq.w	#1,d1		; correct for first time through loop
+	subq.w	#1,d1	; correct for first time through loop
 rcint2:	move.w	(a1)+,(a2)+
 rcover2: dbf	d1,rcint2
 rcover2nc:
