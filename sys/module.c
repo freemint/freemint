@@ -73,8 +73,8 @@ load_module (const char *filename, long *err)
 		return NULL;
 	}
 	
-	size = xdd_read (f, (void *) &fh, (long) sizeof (fh));
-	if (fh.fmagic != GEMDOS_MAGIC || size != (long) sizeof (fh))
+	size = xdd_read (f, (void *) &fh, sizeof (fh));
+	if (fh.fmagic != GEMDOS_MAGIC || size != sizeof (fh))
 	{
 		DEBUG (("load_module: file not executable"));
 		
