@@ -181,7 +181,7 @@ cancel_widget_active(struct xa_window *wind, int i)
 void
 remove_widget_active(struct xa_client *client)
 {
-	if (widget_active.wind->owner == client)
+	if (widget_active.widg && widget_active.wind->owner == client)
 	{
 		widget_active.widg = NULL;
 		widget_active.cont = false;
