@@ -519,7 +519,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x17e */		sys_enosys,		/* sys_mmap */
 	/* 0x17f */		sys_enosys,		/* sys_munmap */
 
-	/* 0x180 */		sys_f_chown16,	/* 1.16 */	
+	/* 0x180 */		sys_f_chown16,	/* 1.16 */
 	/* 0x181 */		sys_enosys,		/* reserved */
 	/* 0x182 */		sys_enosys,		/* reserved */
 	/* 0x183 */		sys_enosys,		/* reserved */
@@ -638,7 +638,7 @@ Func xbios_tab [XBIOS_MAX] =
 	/* 0x00e */		sys_b_uiorec,
 	/* 0x00f */		sys_b_ursconf,
 
-	/* 0x010 */		NULL,
+	/* 0x010 */	(Func)	sys_b_keytbl,
 	/* 0x011 */		sys_b_random,
 	/* 0x012 */		NULL,
 	/* 0x013 */		NULL,
