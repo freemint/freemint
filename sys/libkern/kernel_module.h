@@ -583,6 +583,9 @@ INLINE long p_setuid(int id)
 INLINE long p_kill(int pid, int sig)
 { return ((long _cdecl (*)(int, int)) _p_kill)(pid, sig); }
 
+INLINE long p_signal(short sig, long handler)
+{ return ((long _cdecl (*)(short, long)) _p_signal)(sig, handler); }
+
 INLINE long p_getgid(void)
 { return ((long _cdecl (*)(void)) _p_getgid)(); }
 
@@ -639,6 +642,9 @@ INLINE long p_geteuid(void)
 
 INLINE long p_getegid(void)
 { return ((long _cdecl (*)(void)) _p_getegid)(); }
+
+INLINE long d_xreaddir(int len, long handle, char *buf, XATTR *xattr, long *xret)
+{ return ((long _cdecl (*)(int, long, char *, XATTR *, long *)) _d_xreaddir)(len, handle, buf, xattr, xret); }
 
 INLINE long p_seteuid(int id)
 { return ((long _cdecl (*)(int)) _p_seteuid)(id); }
