@@ -15,9 +15,9 @@
 /* Note rom Adamk: This code is EXPERIMENTAL (as for FreeMiNT)
                    So use with CARE!
                    
-                   2 problems remian:
+                   2 problems remain:
                     - writing does not work (it does in EmuTOS so it 
-                      needs cod syncing or bugfixing on our sied - 
+                      needs code syncing or bugfixing on our side - 
                       anyway it will be done
                     - DMA transfers does not work yet, I'll start 
                       fixing it after fixing writing
