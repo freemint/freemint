@@ -81,7 +81,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 			
 			tab = find_pop(md->x, md->y);
 				
-			if (tab && !tab->task_data.menu.entry)// != root_tab)
+			if (tab && !tab->task_data.menu.entry)
 				tab = collapse(root_tab, tab);
 			else if (!tab)
 				tab = root_tab;
@@ -265,10 +265,10 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		if (TAB_LIST_START->client == ce->client && !C.move_block)
 		{
-			Tab *tab = TAB_LIST_START; // = C.menu_base;
-			MENU_TASK *k; // = &C.menu_base->task_data.menu;
-			int x = ce->md.x;
-			int y = ce->md.y;
+			Tab *tab = TAB_LIST_START;
+			MENU_TASK *k;
+			short x = ce->md.x;
+			short y = ce->md.y;
 
 			DIAG((D_mouse, ce->client, "cXA_menu_move for %s", ce->client->name));
 		
@@ -287,7 +287,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 					k->em.flags &= ~MU_MX; //0;
 					k->x = x;
 					k->y = y;
-					k->em.t1(tab);	/* call the function */
+					tab = k->em.t1(tab);	/* call the function */
 					break;
 				}
 				if (k->em.flags & MU_M1)
@@ -297,7 +297,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 						k->em.flags &= ~MU_M1; //0;
 						k->x = x;
 						k->y = y;
-						k->em.t1(tab);	/* call the function */
+						tab = k->em.t1(tab);	/* call the function */
 						break;
 					}
 				}
@@ -308,16 +308,15 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 						k->em.flags &= ~MU_M2;
 						k->x = x;
 						k->y = y;
-						k->em.t2(tab);
+						tab = k->em.t2(tab);
 						break;
 					}
 				}
 				tab = tab->tab_entry.next;
 			}
-
+			
 			if (tab)
 				tab = tab->tab_entry.next;
-		
 			while (tab)
 			{
 				k = &tab->task_data.menu;

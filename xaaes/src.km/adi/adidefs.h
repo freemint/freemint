@@ -34,6 +34,8 @@
 #define ADI_OPEN	1
 #define ADI_NAMSIZ	16
 
+#define ADIC_MOUSE	0
+
 struct adif
 {
 	struct adif	*next;

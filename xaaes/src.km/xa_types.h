@@ -213,7 +213,7 @@ enum waiting_for
 	XAWAIT_MENU	= 0x1000,	/* XaAES private; menu rectangle event */
 };
 
-typedef void TASK(struct task_administration_block *tab);
+typedef struct task_administration_block * TASK(struct task_administration_block *tab);
 
 struct xa_mouse_rect
 {

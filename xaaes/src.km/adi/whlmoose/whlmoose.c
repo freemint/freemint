@@ -127,7 +127,7 @@ static char lname[] = "Moose AES Device interface for XaAES\0";
 static struct adif moose_aif = 
 {
 	0,		/* *next */
-	0,		/* class */
+	ADIC_MOUSE,	/* class */
 	lname,		/* lname */
 	"moose",	/* name */
 	0,		/* unit */
@@ -451,7 +451,7 @@ do_button_packet(void)
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
-	*s++ = *d, *d++ = 0;
+	*s   = *d, *d   = 0;
 	*(long*)&md.dbg1 = time_between;
 	(*ainf->button)(&moose_aif, &md);
 	click_count	= 0;
