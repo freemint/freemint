@@ -571,23 +571,6 @@ reopen_moose(void)
 }
 
 
-void _crtinit(void);
-int xaaes_init(int argc, char **argv, char **env);
-
-void
-_crtinit(void)
-{
-	char *_argv[] = { "XaAES", 0 };
-	char *_env[] = { 0 };
-	int r;
-
-	/* XXX todo */
-	r = xaaes_init(1, _argv, _env);
-
-	Pterm(r);
-	/* not reached */
-}
-
 XA_WINDOW *root_window;
 
 static char aessys_name[32] = "AESSYS";
