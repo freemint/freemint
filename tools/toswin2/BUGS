@@ -1,7 +1,7 @@
 - characters sets GF0, GR1, and GR2 missing
 - function and cursor keys don't always work with tw52
 - resizing the window may crash toswin, be careful.  Will be fixed soon.
-- switching to line drawing mode in tw100 is merely heuristics
 - some redraw errors with resizing and changing scrollback buffer
 - other redraw errors
 - memory violations (happening with changing scrolling region?)
+- line drawing characters should be underlined in underline mode

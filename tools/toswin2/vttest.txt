@@ -25,7 +25,7 @@ Test Of Screen Features
 [x] Origin mode test
 [x] Graphic rendition dark background
 [x] Graphic rendition light background
-[ ] Test of save/restore cursor
+[x] Test of save/restore cursor
 
 Test Of Double-Sized Characters
 ===============================
@@ -112,7 +112,7 @@ Test Of Non-VT100 Features
        [ ] Test Printer Status
        [ ] Test UDK Status
        [ ] Test Locator Status
-   [ ] Test Erase Char (ECH)
+   [x] Test Erase Char (ECH)
    [ ] Test Printer (MC)
        [ ] Assign printer to active session (MC)
        [ ] Start printer-to-host session (MC)
