@@ -9,10 +9,10 @@
 # include <unistd.h>
 # include <time.h>
 # include <stdio.h>
-# include <macros.h>		/* For min(x,y) */
 # include <string.h>
 # include <stdlib.h>
 # include <time.h>
+# include <macros.h>		/* For min(x,y) */
 
 # include "fsck.h"
 # include "common.h"

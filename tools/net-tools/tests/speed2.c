@@ -7,7 +7,7 @@
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/time.h>
+#include <time.h>
 
 # if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
 typedef size_t socklen_t;

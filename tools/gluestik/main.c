@@ -28,7 +28,7 @@
 # include <mint/mintbind.h>
 # include <mint/basepage.h>
 # include <mint/ssystem.h>
-# include <sys/cookie.h>
+# include <mint/cookie.h>
 
 # include <stdio.h>
 # include <signal.h>
