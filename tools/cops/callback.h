@@ -39,7 +39,7 @@ extern struct xcpb xctrl_pb;
 CPX_DESC *find_cpx_by_addr(const long *sp);
 
 short _cdecl save_header(struct cpxlist *header);
-CPX_DESC *cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg);
+void cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg);
 
 /* used by the asm wrapper */
 void    _cdecl rsh_fix(const long *sp);

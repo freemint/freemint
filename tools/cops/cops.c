@@ -35,6 +35,7 @@
  *   interpretiert das COPS als Anweisung kein Fenster zu oeffnen (fuer NPRNCONF)
  */
 
+#include <assert.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -145,7 +146,8 @@ static time_t termtime;
 
 /* internal functions */
 
-static short _cdecl handle_form_cpx(DIALOG *dialog, EVNT *events, short obj, short clicks, void *data);
+struct HNDL_OBJ_args { DIALOG *dialog; EVNT *events; short obj; short clicks; void *data; };
+static short _cdecl handle_form_cpx(struct HNDL_OBJ_args);
 static short cpx_open_window(CPX_DESC *cpx_desc);
 static short cpx_close_window(CPX_DESC *cpx_desc);
 static short top_whdl(void);
@@ -244,31 +246,33 @@ read_file(char *name, void *dest, long offset, long len)
 /*	data:		Zeiger auf zusaetzliche Daten */
 /*----------------------------------------------------------------------------------------*/
 static short _cdecl
-handle_form_cpx(DIALOG *dialog, EVNT *events, short obj, short clicks, void *data)
+handle_form_cpx(struct HNDL_OBJ_args args)
 {
+	DEBUG(("%s: %s\n", __FUNCTION__, ((CPX_DESC *)args.data)->file_name));
+
 	/* Ereignis oder Objektnummer? */
-	if (obj < 0)
+	if (args.obj < 0)
 	{
 		/* Closer betaetigt? */
-		if (obj == HNDL_CLSD)
+		if (args.obj == HNDL_CLSD)
 			/* beenden */
 			return 0;
 	}
 	else
 	{
 		/* ein Objekt ist angewaehlt worden */
-		CPX_DESC *cpx_desc = (CPX_DESC *) data;
+		CPX_DESC *cpx_desc = (CPX_DESC *)args.data;
 
 		/* Doppelklick? */
-		if (clicks == 2)
+		if (args.clicks == 2)
 		{
-			if (is_obj_TOUCHEXIT(cpx_desc->tree, obj))
+			if (is_obj_TOUCHEXIT(cpx_desc->tree, args.obj))
 				/* nur bei Touchexit-Objekten Doppelklick zurueckliefern */
-				obj |= 0x8000;
+				args.obj |= 0x8000;
 		}
 
 		/* Objektnummer zurueckliefern */
-		cpx_desc->button = obj;
+		cpx_desc->button = args.obj;
 	}
 
 	/* alles in Ordnung - weiter so */
@@ -3044,10 +3048,12 @@ close_all_cpx(void)
 				cpx_desc->button = -1; /* signalisiert Message */
 				cpx_desc->msg[0] = AC_CLOSE;
 				wind_update(END_UPDATE);
+
 				/* Kontext umschalten, in anderem Kontext wieder cpx_main_loop() aufrufen */
 				switch_context(cpx_desc);
 			}
 		}
+
 		cpx_desc = cpx_desc->next;
 	}
 
@@ -3058,7 +3064,7 @@ close_all_cpx(void)
 /* CPX-Eventhauptschleife */
 /* Funktionsergebnis:	Zeiger auf CPX_DESC fuer cpx_form_do() */
 /*----------------------------------------------------------------------------------------*/
-CPX_DESC *
+void
 cpx_main_loop(void)
 {
 	EVNT events;
@@ -3123,15 +3129,15 @@ cpx_main_loop(void)
 		if (cpx_desc)
 		{
 			EVNT_multi((MU_KEYBD + MU_BUTTON + MU_MESAG + MU_TIMER) | cpx_desc->mask,
-							258, 3, 0,
-							&cpx_desc->m1, &cpx_desc->m2, cpx_desc->time, &events);
+				   258, 3, 0,
+				   &cpx_desc->m1, &cpx_desc->m2, cpx_desc->time, &events);
 		}
 		else
 		{
 			/* kein CPX oben */
 			EVNT_multi((MU_KEYBD + MU_BUTTON + MU_MESAG + MU_TIMER),
-							258, 3, 0,
-							0L, 0L, 30000L, &events);
+				   258, 3, 0,
+				   0L, 0L, 30000L, &events);
 		}
 
 		if ((events.mwhich & MU_MESAG) && (events.msg[0] == AC_CLOSE))
@@ -3219,8 +3225,8 @@ cpx_main_loop(void)
 							for (i = 0; i < 8; i++)
 								cpx_desc->msg[i] = events.msg[i];
 
-							cpx_desc->button = -1;
 							/* signalisiert Message */
+							cpx_desc->button = -1;
 
 							switch (events.msg[0])
 							{
@@ -3250,6 +3256,7 @@ cpx_main_loop(void)
 					}
 				}
 			}
+
 			cpx_desc = cpx_desc->next;
 		}
 
@@ -3292,7 +3299,11 @@ cpx_main_loop(void)
 		}
 	}
 
-	return NULL;
+	DEBUG(("%s: leave with NULL\n", __FUNCTION__));
+	a_call_return();
+
+	/* never reached */
+	assert(0);
 }	
 
 static short
@@ -3807,6 +3818,7 @@ main(int argc, char *argv[])
 
 					/* Kontext sichern und Hauptschleife aufrufen */
 					a_call_main();
+					DEBUG(("%s: a_call_main returned\n", __FUNCTION__));
 
 					/* Hauptfenster schliessen */
 					close_main_window();

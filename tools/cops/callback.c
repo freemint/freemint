@@ -710,7 +710,7 @@ is_edit_obj_hidden(OBJECT *tree, short obj)
 /*	edit_obj:	Nummer des aktiven Editobjekts oder 0				  */
 /*	msg:		Zeiger auf Message-Buffer fuer ausgewaehlte Ereignisse		  */
 /*----------------------------------------------------------------------------------------*/ 
-CPX_DESC *
+void
 cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 {
 	DIALOG *dialog;
@@ -750,7 +750,7 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 	cpx_desc->button = -1;					/* noch kein Button gedrueckt */
 	cpx_desc->msg = msg;
 
-	return cpx_main_loop();					/* CPX_DESC des neuen Kontexts zurueckliefern */
+	cpx_main_loop();
 }
 
 /*----------------------------------------------------------------------------------------*/ 
