@@ -1651,8 +1651,8 @@ display_object_widget(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	/* Convert relative coords and window location to absolute screen location */
 	root = rp_2_ap(wind, widg, NULL);
 
-	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), is_edit=%d, form: %d/%d\n",
-		wind->handle, wt->edit_obj, root->r.x, root->r.y));
+	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, edit_obj=%d, edit_pos=%d, form: %d/%d\n",
+		wind->handle, wt, wt->edit_obj, wt->edit_pos, root->r.x, root->r.y));
 
 	if (wind->nolist && (wind->dial & created_for_POPUP))
 	{
