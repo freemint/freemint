@@ -1440,7 +1440,61 @@ mem_prot_special(PROC *proc)
     }
 	}
 }
-    
+
+#if 0
+#define SPECIAL_DEBUG
+#endif
+
+#ifdef SPECIAL_DEBUG
+static void
+lookup_addr(long addr, const char *descr)
+{
+	MEMREGION *m;
+	
+	m = addr2region(addr);
+	if (m)
+	{
+		char alertbuf[128];
+		char *aptr;
+		long len;
+		struct proc *p;
+		
+		aptr = alertbuf;
+		len = sizeof(alertbuf);
+		
+		ksprintf(aptr, len, "%s=%lx ->", descr, addr);
+		aptr = alertbuf + strlen(alertbuf);
+		len = sizeof(alertbuf) - strlen(alertbuf);
+		
+		for (p = proclist; p; p = p->gl_next)
+		{
+			if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+				continue;
+			
+			if (p->p_mem && p->p_mem->mem)
+			{
+				MEMREGION **mr;
+				int i;
+				
+				mr = p->p_mem->mem;
+				for (i = 0; i < p->p_mem->num_reg; i++, mr++)
+				{
+					if (*mr == m)
+					{
+						/* match :-) */
+						ksprintf(aptr, len, " pid %i", p->pid);
+						aptr = alertbuf + strlen(alertbuf);
+						len = sizeof(alertbuf) - strlen(alertbuf);
+					}
+				}
+			}
+		}
+		
+		ALERT(alertbuf);
+	}
+}
+#endif
+
 static const char *berr_msg[] = { 
 /*  "........." */
     "private  ",
@@ -1464,9 +1518,7 @@ report_buserr(void)
 	const char *type, *rw;
 	short mode;
 	ulong aa, pc;
-	char alertbuf[5*32+16];	/* enough for an alert */
-	long len;
-	char *aptr;
+	char alertbuf[256];	/* enough for an alert */
 	
 	if (no_mem_prot)
 		return;
@@ -1500,28 +1552,26 @@ report_buserr(void)
 	 * | Addr: ........  BP: ........ |
 	 */
 	
-	/* we play games to get around 128-char max for ksprintf */
-	aptr = alertbuf;
-	len = sizeof (alertbuf);
-	ksprintf (alertbuf, len, "[1][ PROCESS  \"%s\"  KILLED: |", curproc->name);
-	
-	aptr = alertbuf + strlen (alertbuf);
-	len = sizeof (alertbuf) - strlen (alertbuf);
-	ksprintf (aptr, len, " MEMORY VIOLATION.  (PID %03d) | |", curproc->pid);
-	
-	aptr = alertbuf + strlen (alertbuf);
-	len = sizeof (alertbuf) - strlen (alertbuf);
-	ksprintf (aptr, len, " Type: %s PC: %08lx |", type, pc);
-	
-	aptr = alertbuf + strlen (alertbuf);
-	len = sizeof (alertbuf) - strlen (alertbuf);
-	ksprintf (aptr, len, " Addr: %08lx  BP: %08lx ][ OK ]", aa, curproc->base);
+	ksprintf(alertbuf, sizeof(alertbuf),
+		 "[1][ PROCESS  \"%s\"  KILLED: |"
+		 " MEMORY VIOLATION.  (PID %03d) | |"
+		 " Type: %s PC: %08lx |"
+		 " Addr: %08lx  BP: %08lx ][ OK ]",
+		 curproc->name,
+		 curproc->pid,
+		 type, pc,
+		 aa, curproc->base);
 	
 	if (!_ALERT (alertbuf))
 	{
 		/* this will call _alert again, but it will just fail again */
 		ALERT ("MEMORY VIOLATION: type=%s RW=%s AA=%lx PC=%lx BP=%lx",
 			type, rw, aa, pc, curproc->base);
+		
+#ifdef SPECIAL_DEBUG
+		lookup_addr(aa, "AA");
+		lookup_addr(pc, "PC");
+#endif
 	}
 	
 	if (curproc->pid == 0 || curproc->p_mem->memflags & F_OS_SPECIAL)
