@@ -607,11 +607,11 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 void
 parse_cnf(const char *name, struct parser_item *parser_tab, void *data)
 {
+	char cnf_path[128];
 	struct parsinf inf  = { 0ul, NULL, 1, NULL, NULL, data };
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
-	char cnf_path[32]; /* should be plenty */
 
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
@@ -628,5 +628,7 @@ parse_cnf(const char *name, struct parser_item *parser_tab, void *data)
 	{
 		fp->links = 0;
 		FP_FREE(fp);
+
+		ALERT("parse_cnf: can't open %s", cnf_path);
 	}
 }
