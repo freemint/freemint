@@ -48,6 +48,7 @@
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
+#include "mint/ioctl.h"
 #include "mint/signal.h"
 
 
@@ -397,16 +398,19 @@ void
 keyboard_input(enum locks lock)
 {
 	/* Did we get some keyboard input? */
-	struct rawkey key;
+	while (f_instat(C.KBD_dev))
+	{
+		struct rawkey key;
 
-	key.raw.bcon = b_ubconin(2); /* Crawcin(); */
+		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
 
-	/* Translate the BIOS raw data into AES format */
-	key.aes = (key.raw.conin.scan<<8) | key.raw.conin.code;
-	key.norm = 0;
+		/* Translate the BIOS raw data into AES format */
+		key.aes = (key.raw.conin.scan<<8) | key.raw.conin.code;
+		key.norm = 0;
 
-	DIAGS(("Bconin: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
+		DIAGS(("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
 
-	if (!kernel_key(lock, &key))
-		XA_keyboard_event(lock, &key);
+		if (!kernel_key(lock, &key))
+			XA_keyboard_event(lock, &key);
+	}
 }
