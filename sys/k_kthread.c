@@ -31,6 +31,7 @@
 # include "k_kthread.h"
 
 # include "libkern/libkern.h"
+# include "mint/signal.h"
 
 # include "k_exec.h"
 # include "k_exit.h"
@@ -70,7 +71,7 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 
 	DEBUG(("kthread_create for pid %i: 0x%lx", p->pid, func));
 
-	p2 = fork_proc1(p, FORK_SHAREVM|FORK_SHARECWD|FORK_SHAREFILES, &err);
+	p2 = fork_proc1(p, FORK_SHAREVM|FORK_SHARECWD|FORK_SHAREFILES|FORK_SHAREEXT, &err);
 	if (p2)
 	{
 		int i;
@@ -84,6 +85,20 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 		vsprintf(p2->fname, sizeof(p2->fname), fmt, args);
 		vsprintf(p2->cmdlin, sizeof(p2->cmdlin), fmt, args);
 		vsprintf(p2->name, sizeof(p2->name), fmt, args);
+
+		/* initialize signals */
+		p2->p_sigmask = 0;
+		for (i = 0; i < NSIG; i++)
+		{
+			struct sigaction *sigact = &SIGACTION(p2, i);
+
+			if (sigact->sa_handler != SIG_IGN)
+			{
+				sigact->sa_handler = SIG_DFL;
+				sigact->sa_mask = 0;
+				sigact->sa_flags = 0;
+			}
+		}
 
 		/* zero the user registers, and set the FPU in a "clear" state */
 		for (i = 0; i < 15; i++)
