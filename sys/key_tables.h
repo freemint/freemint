@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * Keyboard definition tables (ripped off TOS 4.04, with fixes)
  *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
@@ -102,5 +102,18 @@ static const uchar usa_kbd[] =
 /* Alternate Gr */
 	0x00
 };
+
+static struct keytab sys_keytab =
+{
+	(uchar *)usa_kbd,
+	(uchar *)usa_kbd + 128,
+	(uchar *)usa_kbd + 256,
+	(uchar *)usa_kbd + 384,
+	(uchar *)usa_kbd + 385,
+	(uchar *)usa_kbd + 386,
+	(uchar *)usa_kbd + 387
+};
+
+static struct keytab *tos_keytab = &sys_keytab;
 
 /* EOF */
