@@ -747,8 +747,8 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		*/
 		if (md->ty == MOOSE_BUTTON_PREFIX)
 			new_mu_mouse(md), mu_button.newc = 0;
-		else
-			x_mouse = md->x, y_mouse = md->y;
+		//else
+			//x_mouse = md->x, y_mouse = md->y;
 
 		/*
 		 * Check if a client is actually waiting. If not, buffer the packet.
@@ -810,8 +810,8 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		/* DIAG((D_v, NULL,"mouse move to: %d/%d", mdata.x, mdata.y)); */
 
 		/* Call the mouse movement event handler (doesnt use md->state) */
-		x_mouse = md->x;
-		y_mouse = md->y;
+		//x_mouse = md->x;
+		//y_mouse = md->y;
 		new_active_widget_mouse(md);
 		XA_move_event(lock, md);
 
@@ -838,37 +838,86 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	return true;
 }
 
-static short mto = 0;
+extern long redraws;
+
+static short bto = 0;
+static TIMEOUT *b_to = 0;
+static TIMEOUT *m_to = 0;
+static TIMEOUT *m_rto = 0;
+
+static void move_timeout(struct proc *, long arg);
+
+static void
+move_rtimeout(struct proc *p, long arg)
+{
+	redraws = 0;
+	m_rto = 0;
+	if (!m_to)
+		m_to = addroottimeout(0L, move_timeout, 1);
+}
 
 static void
 move_timeout(struct proc *p, long arg)
 {
 	struct moose_data md;
+	short x, y;
+
+	x = x_mouse;
+	y = y_mouse;
 
 	md = mainmd;
-	md.x = x_mouse;
-	md.y = y_mouse;
+	md.x = x; //x_mouse;
+	md.y = y; //y_mouse;
 	md.ty = MOOSE_MOVEMENT_PREFIX;
 	vq_key_s(C.vh, &md.kstate);
 	new_moose_pkt(0, 0, &md);
-	if (md.x != x_mouse || md.y != y_mouse)
-		addroottimeout(0L, move_timeout, 1);
+
+	if (x != x_mouse || y != y_mouse)
+	{
+		if (redraws)
+		{
+			if (!m_rto)
+				m_rto = addroottimeout(400L, move_rtimeout, 1);
+			m_to = 0;
+		}
+		else
+		{
+			if (m_rto)
+			{
+				cancelroottimeout(m_rto);
+				m_rto = 0;
+			}
+			m_to = addroottimeout(0L, move_timeout, 1);
+		}
+	}
 	else
-		mto = 0;
+		m_to = 0;
 }
 	
 void
 adi_move(struct adif *a, short x, short y)
 {
-	TIMEOUT *t;
+	if (bto)
+		return;
 
 	x_mouse = x;
 	y_mouse = y;
-	if (!mto)
+
+	if (redraws)
 	{
-		mto = 1;
-		t = addroottimeout(0L, move_timeout, 1);
-	}	
+		if (!m_rto)
+			m_rto = addroottimeout(400L, move_rtimeout, 1);
+	}
+	else
+	{
+		if (m_rto)
+		{
+			cancelroottimeout(m_rto);
+			m_rto = 0;
+		}
+		if (!m_to)
+			m_to = addroottimeout(0L, move_timeout, 1);
+	}
 }
 
 static void
@@ -880,6 +929,7 @@ button_timeout(struct proc *p, long arg)
 	vq_key_s(C.vh, &md->kstate);
 	new_moose_pkt(0, 0, md);
 	kfree(md);
+	b_to = 0;
 }
 
 void
@@ -887,9 +937,16 @@ adi_button(struct adif *a, struct moose_data *md)
 {
 	TIMEOUT *t;
 
+	if (m_to)
+	{
+		cancelroottimeout(m_to);
+		m_to = 0;
+	}
+
 	t = addroottimeout(0L, button_timeout, 1);
 	if (t)
 	{
+		b_to = t;
 		t->arg = (long)md;
 	}
 }
@@ -953,6 +1010,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	 * Ozk: Make absolutely sure wether we're the AES kernel or a user
 	 * application.
 	 */
+#if 0
 	if (C.Aes->p == get_curproc())
 	{
 		/* AESSYS internal -> poll mouse */
@@ -991,6 +1049,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		}
 	}
 	else
+#endif
 	{
 		/* wait for input from AESSYS */	
 		DIAGS(("wait_mouse for %s", client->name));
@@ -1053,7 +1112,7 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	/*
 	 * Ozk: Have to yield here
 	*/
-	yield();
+	//yield();
 
 	if (br)
 		*br = mu_button.cb;

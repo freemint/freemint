@@ -297,8 +297,11 @@ struct fmd
 #define CEVNT_BUTTON	2
 #define CEVNT_MENUSTART 4
 
+struct c_event;
+
 struct c_event
 {
+	struct c_event		*next;
 	void			(*funct)(enum locks, struct c_event *);
 	struct xa_client	*client;
 	void			*ptr1;
@@ -387,9 +390,14 @@ struct xa_client
 
 	bool	inblock;
 	int	usr_evnt;
-	int	ce_head;
-	int	ce_tail;
-	struct c_event ce[MAX_CEVENTS + 1];
+
+	short	cevnt_count;
+	struct	c_event *cevnt_head;
+	struct	c_event *cevnt_tail;
+
+	//int	ce_head;
+	//int	ce_tail;
+	//struct c_event ce[MAX_CEVENTS + 1];
 };
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
