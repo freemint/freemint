@@ -144,6 +144,27 @@ k_init(void)
 
 	if (cfg.auto_program)
 	{
+		short mode;
+
+		if (cfg.videomode == -1)
+		{
+			DIAGS(("Default screenmode"));
+			mode = 1;
+		}
+		else
+		{
+			if (cfg.videomode < 1 || cfg.videomode > 10)
+			{
+				DIAGS(("videomode %d invalid, must be between 1 and 10! Forced to 1", cfg.videomode));
+				mode = 1;
+			}
+			else
+			{
+				mode = cfg.videomode;
+				DIAGS(("Screenmode %d", mode));
+			}
+		}
+		work_in[0] = mode;
 #if 0
 		/* Set video mode from command line parameter? */			
 		if (argc > 2)
@@ -196,9 +217,11 @@ k_init(void)
 		}
 		else
 #endif
+#if 0
 		{
 			DIAGS(("Default screenmode."));
 		}
+#endif
 
 		v_opnwk(work_in, &(C.P_handle), work_out);
 		DIAGS(("Physical work station opened: %d", C.P_handle));

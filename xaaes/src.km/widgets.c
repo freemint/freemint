@@ -359,8 +359,15 @@ calc_work_area(struct xa_window *wi)
 
 	wi->wa = r;
 
-	if ((k & V_WIDG) == 0)
+	/*
+	 * Any widgets at all?
+	 */
+	if (!(k & V_WIDG))
 	{
+		/* XXX
+		 * Ozk: Why isn't frame used to calculate worarea here??
+		 * Investigate it later!
+		 */
 		wi->ba = r;
 		if (frame >= 0)
 		{
@@ -398,12 +405,15 @@ calc_work_area(struct xa_window *wi)
 		/* For use by border sizing. */
 		wi->ba = wi->wa;
 
+		/*
+		 * calculate correct width for windows title line
+		 */
 		winside = wi->wa.w + wa_margins;
 		/* hinside = wi->wa.h + wa_margins; */
 
 		if (k & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))	/* top bar */
-			wi->wa.y+= cfg.widg_h + 2,
-			wi->wa.h-= cfg.widg_h + 2;
+			wi->wa.y += cfg.widg_h + 2,
+			wi->wa.h -= cfg.widg_h + 2;
 
 		rt = &get_widget(wi, XAW_TITLE)->loc.r;
 		rt->w = winside;
@@ -444,8 +454,8 @@ calc_work_area(struct xa_window *wi)
 				 * Now I can specify the desktop window w/o dummy name. :-)
 				 * the +1 is for the menu_line
 				 */
-				wi->wa.y+= MENU_H + 1;
-				wi->wa.h-= MENU_H + 1;
+				wi->wa.y += MENU_H + 1;
+				wi->wa.h -= MENU_H + 1;
 			}
 
 			if (k & (UPARROW|DNARROW|VSLIDE))
@@ -457,11 +467,11 @@ calc_work_area(struct xa_window *wi)
 			if (k & (LFARROW|RTARROW|HSLIDE))
 			{
 				/* bottom bar */
-				wi->wa.h-= cfg.widg_h + WASP; /* + spacer */
+				wi->wa.h -= cfg.widg_h + WASP; /* + spacer */
 				bottom = 1;
 			}
 
-			if (right || ((k&SIZER) && !(right || bottom)))
+			if (right || ((k & SIZER) && !(right || bottom)))
 				/* sizer only retain right bar */
 				wi->wa.w-= cfg.widg_w + WASP; /* + spacer */
 
