@@ -22,7 +22,6 @@ long _cdecl f_dup (short fd);
 long _cdecl f_force (short newh, short oldh);
 long _cdecl f_datime (ushort *timeptr, short fd, short wflag);
 long _cdecl f_lock (short fd, short mode, long start, long length);
-long _cdecl f_pipe (short *usrh);
 long _cdecl f_cntl (short fd, long arg, short cmd);
 long _cdecl f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp);
 long _cdecl f_midipipe (short pid, short in, short out);

@@ -42,6 +42,183 @@
 # include "k_fds.h"
 
 
+/* new style pipe */
+
+# if 0
+/* old function */
+
+long _cdecl
+f_pipe (short *usrh)
+{
+	PROC *p = curproc;
+	FILEPTR *in, *out;
+	short infd, outfd;
+	long r;
+	
+	/* MAGIC: 32 >= strlen "u:\pipe\sys$pipe.000\0" */
+	char pipename[32];
+	
+	TRACE (("Fpipe(%lx)", usrh));
+	
+	r = FP_ALLOC (p, &out);
+	if (r) return r;
+	
+	/* BUG: more than 999 open pipes hangs the system
+	 */
+	do {
+		static int pipeno = 0;
+		
+		ksprintf (pipename, sizeof (pipename), "u:\\pipe\\sys$pipe.%03d", pipeno);
+		
+		pipeno++;
+		if (pipeno > 999)
+			pipeno = 0;
+		
+		/* read-only attribute means unidirectional fifo
+		 * hidden attribute means check for broken pipes
+		 * changed attribute means act like Unix fifos
+		 */
+		r = do_open (&out, pipename, O_WRONLY|O_CREAT|O_EXCL, FA_RDONLY|FA_HIDDEN|FA_CHANGED, NULL);
+	}
+	while (r != 0 && r == EACCES);
+	
+	if (r)
+	{
+		out->links--;
+		FP_FREE (out);
+		
+		DEBUG (("Fpipe: error %d", r));
+		return r;
+	}
+	
+	r = FP_ALLOC (p, &in);
+	if (r)
+	{
+		do_close (p, out);
+		return r;
+	}
+	
+	r = do_open (&in, pipename, O_RDONLY, 0, NULL);
+	if (r)
+	{
+		do_close (p, out);
+		in->links--;
+		FP_FREE (in);
+		
+		DEBUG (("Fpipe: in side of pipe not opened (error %d)", r));
+		return r;
+	}
+	
+	r = FD_ALLOC (p, &infd, MIN_OPEN);
+	if (r)
+	{
+		do_close (p, in);
+		do_close (p, out);
+		
+		return r;
+	}
+	
+	r = FD_ALLOC (p, &outfd, infd+1);
+	if (r)
+	{
+		FD_REMOVE (p, infd);
+		
+		do_close (p, in);
+		do_close (p, out);
+		
+		return r;
+	}
+	
+	/* activate the fps; default is to leave pipes open across Pexec */
+	FP_DONE (p, in, infd, 0);
+	FP_DONE (p, out, outfd, 0);
+	
+	usrh[0] = infd;
+	usrh[1] = outfd;
+	
+	TRACE (("Fpipe: returning E_OK: infd %i outfd %i", infd, outfd));
+	return E_OK;
+}
+# endif
+
+/*
+ * sys_pipe(short fds[2]): opens a pipe. if successful, returns 0, and
+ * sets fds[0] to a file descriptor for the read end of the pipe
+ * and fds[1] to one for the write end.
+ */
+long _cdecl
+sys_pipe (short fds[2])
+{
+	struct proc *p = curproc;
+	struct socket *rso = NULL, *wso = NULL;
+	FILEPTR *rf = NULL, *wf = NULL;
+	short rfd = MIN_OPEN - 1, wfd = MIN_OPEN - 1;
+	long ret;
+	
+	
+	ret = so_create (&rso, AF_UNIX, SOCK_STREAM, 0);
+	if (ret) goto error;
+	
+	ret = so_create (&wso, AF_UNIX, SOCK_STREAM, 0);
+	if (ret) goto error;
+	
+	
+	ret = FP_ALLOC (p, &rf);
+	if (ret) goto error;
+	
+	ret = FP_ALLOC (p, &wf);
+	if (ret) goto error;
+	
+	
+	ret = FD_ALLOC (p, &rfd, MIN_OPEN);
+	if (ret) goto error;
+	
+	ret = FD_ALLOC (p, &wfd, rfd+1);
+	if (ret) goto error;
+	
+	
+	rf->flags = O_RDONLY;
+	rf->devinfo = (long) rso;
+	rf->dev = &sockdev;
+	
+	wf->flags = O_WRONLY;
+	wf->devinfo = (long) wso;
+	wf->dev = &sockdev;
+	
+	
+	ret = (*rso->ops->socketpair)(rso, wso);
+	if (!ret)
+	{
+		/* activate the fps
+		 * default is to leave pipes open across exec()
+		 */
+		FP_DONE (p, rf, rfd, 0);
+		FP_DONE (p, wf, wfd, 0);
+		
+		fds[0] = rfd; /* infd */
+		fds[1] = wfd; /* outfd */
+		
+		DEBUG (("sys_pipe: fds[0] = %i, fds[1] = %i", fds[0], fds[1]));
+		return 0;
+	}
+	
+	DEBUG (("sys_pipe: cannot connect the sockets!"));
+	
+error:
+	if (rso) so_free (rso);
+	if (wso) so_free (wso);
+	
+	if (rf) { rf->links--; fp_free (rf); }
+	if (wf) { wf->links--; fp_free (wf); }
+	
+	if (rfd >= MIN_OPEN) fd_remove (p, rfd);
+	if (wfd >= MIN_OPEN) fd_remove (p, wfd);
+	
+	DEBUG (("sys_pipe: failure %li", ret));
+	return ret;
+}
+
+
 /* socket system calls */
 
 long
@@ -134,8 +311,10 @@ sys_socketpair (long domain, long type, long protocol, short fds[2])
 error:
 	if (so1) so_free (so1);
 	if (so2) so_free (so2);
+	
 	if (fp1) { fp1->links--; fp_free (fp1); }
 	if (fp2) { fp2->links--; fp_free (fp2); }
+	
 	if (fd1 >= MIN_OPEN) fd_remove (p, fd1);
 	if (fd2 >= MIN_OPEN) fd_remove (p, fd2);
 	

@@ -382,7 +382,7 @@ Func dos_tab [DOS_MAX] =
 	
 	/* 0x0ff */		s_yield,
 	
-	/* 0x100 */		f_pipe,
+	/* 0x100 */		sys_pipe,
 	/* 0x101 */	(Func)	f_fchown,	/* 1.15.2  */
 	/* 0x102 */	(Func)	f_fchmod,	/* 1.15.2  */
 	/* 0x103 */	(Func)	sys_fsync, 	/* 1.15.10 */
