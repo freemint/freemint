@@ -100,7 +100,9 @@ find_zone (d_inode *rip, long int numr, int drive, int flag)
 	if (numr < NR_DZONE_NUM2)
 	{
 		temp_zone = rip->i_zone[numr];
-		if (temp_zone || !flag) return temp_zone;
+		if (temp_zone || !flag)
+			return temp_zone;
+		
 		temp_zone = (rip->i_zone[numr] = alloc_zone (drive));
 		goto new_zone;
 	}
@@ -113,14 +115,21 @@ find_zone (d_inode *rip, long int numr, int drive, int flag)
 		{
 			tmp = cget_zone (rip->i_zone[7], drive);
 			zptr = &((bufr *) tmp->data)->bind[numr];
-			if (*zptr || !flag) return *zptr;
-			if ((*zptr = alloc_zone (drive))) bio_MARK_MODIFIED (&(bio), tmp);
+			
+			if (*zptr || !flag)
+				return *zptr;
+			
+			if ((*zptr = alloc_zone (drive)))
+				bio_MARK_MODIFIED (&(bio), tmp);
+			
 			temp_zone = *zptr;
 			goto new_zone;
 		}
 		else
 		{
-			if (!flag || !(rip->i_zone[7] = alloc_zone (drive))) return 0;
+			if (!flag || !(rip->i_zone[7] = alloc_zone (drive)))
+				return 0;
+			
 			tmp = cput_zone(rip->i_zone[7], drive);
 			temp_zone = ((bufr *) tmp->data)->bind[numr] = alloc_zone (drive);
 			goto new_zone;
@@ -139,26 +148,36 @@ find_zone (d_inode *rip, long int numr, int drive, int flag)
 			{
 		     		tmp = cget_zone (*zptr2, drive);
 				zptr = &((bufr *) tmp->data)->bind[numr & (NR_INDIRECTS2 - 1)];
-				if (*zptr || !flag) return *zptr;
-				if ((*zptr = alloc_zone (drive))) bio_MARK_MODIFIED (&(bio), tmp);
+				if (*zptr || !flag)
+					return *zptr;
+				
+				if ((*zptr = alloc_zone (drive)))
+					bio_MARK_MODIFIED (&(bio), tmp);
+				
 				temp_zone = *zptr;
 				goto new_zone;
 		  	}
 		  	else 
 		  	{
-		     		if (!flag || !(*zptr2 = alloc_zone (drive))) return 0;
+		     		if (!flag || !(*zptr2 = alloc_zone (drive)))
+					return 0;
+				
 				bio_MARK_MODIFIED (&(bio), tmp2);
+				
 				tmp = cput_zone (*zptr2, drive);
 				zptr = &((bufr *) tmp->data)->bind[numr & (NR_INDIRECTS2 - 1)];
 				temp_zone = *zptr = alloc_zone (drive);
 				goto new_zone;
 		  	}
 		}
-		if (!flag || !(rip->i_zone[8] = alloc_zone (drive))) return 0;
+		
+		if (!flag || !(rip->i_zone[8] = alloc_zone (drive)))
+			return 0;
 	
 		tmp2 = cput_zone (rip->i_zone[8], drive);
 		zptr2 = &((bufr *) tmp2->data)->bind[numr >> LNR_IND2];
-		if (!(*zptr2 = alloc_zone (drive))) return 0;
+		if (!(*zptr2 = alloc_zone (drive)))
+			return 0;
 
 		tmp = cput_zone (*zptr2, drive);
 		zptr = &((bufr *) tmp->data)->bind[numr & (NR_INDIRECTS2 - 1)];
@@ -185,8 +204,10 @@ find_zone (d_inode *rip, long int numr, int drive, int flag)
 					zptr = &((bufr *) tmp->data)->bind[numr & (NR_INDIRECTS2-1)];
 					if (*zptr || !flag)
 						return *zptr;
+					
 					if ((*zptr = alloc_zone (drive)) != 0)
 						bio_MARK_MODIFIED (&(bio), tmp);
+					
 					temp_zone = *zptr;
 					goto new_zone;
 				}
@@ -194,7 +215,9 @@ find_zone (d_inode *rip, long int numr, int drive, int flag)
 				{
 					if (!flag || !(*zptr2 = alloc_zone (drive)))
 						return 0;
+					
 					bio_MARK_MODIFIED (&(bio), tmp2);
+					
 					tmp = cput_zone (*zptr2, drive);
 					zptr = &((bufr *) tmp->data)->bind[numr & (NR_INDIRECTS2 - 1)];
 					temp_zone = *zptr = alloc_zone (drive);
@@ -205,17 +228,21 @@ find_zone (d_inode *rip, long int numr, int drive, int flag)
 			{
 				if (!flag || !(*zptr3 = alloc_zone (drive)))
 					return 0;
+				
 				bio_MARK_MODIFIED (&(bio), tmp3);
+				
 				tmp2 = cput_zone (*zptr3, drive);
 				zptr2 = &((bufr *) tmp2->data)->bind[(numr >> LNR_IND2) & (NR_INDIRECTS2 - 1)];
 				if (!(*zptr2 = alloc_zone (drive)))
 					return 0;
+				
 				tmp = cput_zone (*zptr2, drive);
 				zptr = &((bufr *) tmp->data)->bind[numr & (NR_INDIRECTS2 - 1)];
 				temp_zone = *zptr = alloc_zone (drive);
 				goto new_zone;
 			}
 		}
+		
 		if (!flag || !(rip->i_zone[9] = alloc_zone (drive)))
 			return 0;
 		
@@ -238,9 +265,8 @@ find_zone (d_inode *rip, long int numr, int drive, int flag)
 	
 new_zone:
 	if (temp_zone && flag > 1)
-	{
 	    tmp = cput_zone (temp_zone, drive);
-	}
+	
 	return temp_zone;
 }
 
