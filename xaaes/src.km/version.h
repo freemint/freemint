@@ -27,8 +27,45 @@
 #ifndef _xaaes_version_h
 #define _xaaes_version_h
 
-/* VERSION NUMBER */
-#define ASCII_VERSION		"v0.992"
-#define HEX_VERSION		0x0992
+#define DSMASM 0xff
+
+/* Version numbers */
+#define VER_MAJOR	0
+#define VER_MINOR	992
+#define ARCH_TARGET	AES_ARCH_M68K
+#define DEV_STATUS	(AES_DEVSTATUS_ALPHA|AES_FDEVSTATUS_STABLE)
+
+#define SHORT_NAME		"XaAES"
+#define AES_ID		"   " SHORT_NAME
+
+#define LONG_NAME	"XaAES Ain't the AES, a free MultiTasking AES for FreeMiNT"
+
+#if ((DEV_STATUS & DSMASK) == AES_DEVSTATUS_ALPHA)
+#define ASCII_DEV_STATUS	"Alpha"
+#endif
+
+#if ((DEV_STATUS & DSMASK) == AES_DEVSTATUS_BETA)
+#define ASCII_DEV_STATUS	"Beta"
+#endif
+
+#if ((DEV_STATUS & DSMASK) == AES_DEVSTATUS_RELEASE)
+#define ASCII_DEV_STATUS	"Release"
+#endif
+
+#ifndef ASCII_DEV_STATUS
+#define ASCII_DEV_STATUS	"Undefined"
+#endif
+
+#if (ARCH_TARGET == AES_ARCH_M68K)
+#define ASCII_ARCH_TARGET	"m68k"
+#endif
+#ifndef ASCII_ARCH_TARGET
+#define ASCII_ARCH_TARGET	"Undefined"
+#endif
+
+
+#define BDATE		__DATE__
+#define BTIME		__TIME__
+#define BCOMPILER	"gcc 2.95.3"
 
 #endif /* _xaaes_version_h */

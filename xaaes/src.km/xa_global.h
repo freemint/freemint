@@ -30,6 +30,15 @@
 #include "global.h"
 #include "xa_types.h"
 
+extern char version[16];
+extern char vversion[32];
+
+extern char arch_target[];
+extern char long_name[];
+extern char aes_id[];
+
+extern char info_string[256];
+
 /*
  * GLOBAL VARIABLES AND DATA STRUCTURES
  */

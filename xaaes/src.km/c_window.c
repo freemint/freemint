@@ -565,7 +565,7 @@ create_window(
 		long opts = client->options.wind_opts;
 		
 		if (client->options.naes_ff)
-			opts |= WO_FULLREDRAW;
+			opts |= XAWO_FULLREDRAW;
 		w->opts = opts;
 	}
 

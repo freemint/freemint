@@ -1671,7 +1671,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 
 		if (move || size)
 		{
-			if (move && size && (wind->opts & WO_SENDREPOS))
+			if (move && size && (wind->opts & XAWO_SENDREPOS))
 				send_reposed(lock, wind, AMQ_NORM, &r);
 			else
 			{
@@ -1738,7 +1738,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			
 			if (move || size)
 			{
-				if (move && size && (wind->opts & WO_SENDREPOS))
+				if (move && size && (wind->opts & XAWO_SENDREPOS))
 					send_reposed(lock, wind, AMQ_NORM, &r);
 				else
 				{

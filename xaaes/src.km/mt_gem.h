@@ -89,6 +89,7 @@ __BEGIN_DECLS
 #define AES_MESSAGE			12
 #define AES_OBJECT			13
 #define AES_FORM			14
+#define AES_VERSION			96
 
 /* appl_getinfo return values */
 #define SYSTEM_FONT			0
@@ -100,6 +101,14 @@ __BEGIN_DECLS
 #define AESLANG_SPANISH 	4
 #define AESLANG_ITALIAN 	5
 #define AESLANG_SWEDISH 	6
+/* appl_getinfo(AES_VERSION) return values */
+#define AES_DEVSTATUS_ALPHA	0
+#define AES_DEVSTATUS_BETA	1
+#define AES_DEVSTATUS_RELEASE	2
+#define AES_FDEVSTATUS_STABLE	0x100
+
+#define AES_ARCH_M68K		0
+
 
 /* appl_read modes */
 #define APR_NOWAIT			-1
@@ -522,11 +531,11 @@ typedef  struct
 #define BEVENT_INFO     0x0002    /* MagiC 6  */
 
 /* wind_set(WF_OPTIONS) */
-#define WO_WHEEL	0x00000001
-#define WO_FULLREDRAW	0x00000002
-#define WO_NOBLITW	0x00000004
-#define WO_NOBLITH	0x00000008
-#define WO_SENDREPOS	0x00000010
+#define WO0_WHEEL	0x0001
+#define WO0_FULLREDRAW	0x0002
+#define WO0_NOBLITW	0x0004
+#define WO0_NOBLITH	0x0008
+#define WO0_SENDREPOS	0x0010
 
 /* wind_set(WF_WHEEL) */
 #define WHL_REALWHEEL	0	/* */
