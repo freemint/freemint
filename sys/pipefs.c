@@ -27,6 +27,7 @@
 
 # include "filesys.h"
 # include "memory.h"
+# include "kerinfo.h"
 # include "kmemory.h"
 # include "nullfs.h"
 # include "proc.h"

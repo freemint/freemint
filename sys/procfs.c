@@ -51,6 +51,7 @@
 # include "dev-null.h"
 # include "filesys.h"
 # include "k_prot.h"
+# include "kerinfo.h"
 # include "memory.h"
 # include "nullfs.h"
 # include "proc.h"

@@ -368,6 +368,7 @@
 # include "dev-null.h"
 # include "filesys.h"
 # include "init.h"
+# include "kerinfo.h"
 # include "kmemory.h"
 # include "nullfs.h"
 # include "proc.h"
