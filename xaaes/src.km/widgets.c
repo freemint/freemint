@@ -1594,7 +1594,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		           r,
 			   rect_dist(wind->owner, &r, &d),
 			   6 * cfg.widg_w,
-			   4 * cfg.widg_h,
+			   6 * cfg.widg_h,
 			   use_max ? wind->max.w : root_window->wa.w,
 			   use_max ? wind->max.h : root_window->wa.h,
 			   &r);
@@ -1666,8 +1666,17 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 
 			/* Has the mouse moved? */
 			if (widget_active.m.x != pmx || widget_active.m.y != pmy)
+			{
 				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);	/*(xy, mx, my, r, &d);*/
 
+				check_wh_cp(&r, xy,
+					    6 * cfg.widg_w,
+					    6 * cfg.widg_h,
+					    use_max ? wind->max.w : root_window->wa.w,
+					    use_max ? wind->max.h : root_window->wa.h);
+			}
+
+#if 0
 			if (use_max)
 			{
 				if (r.w > wind->max.w)
@@ -1681,6 +1690,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			if (r.h < 6*cfg.widg_h)
 				r.h = 6*cfg.widg_h;
 
+#endif
 			move = r.x != wind->r.x || r.y != wind->r.y,
 			size = r.w != wind->r.w || r.h != wind->r.h;
 			

@@ -61,6 +61,70 @@ rect_dist(struct xa_client *client, RECT *r, RECT *d)
 	return d;
 }
 
+void
+check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
+{
+	switch (cp)
+	{
+		case NW:
+		{
+			if (c->w < minw)
+			{
+				c->x -= (minw - c->w);
+				c->w = minw;
+			}
+		}
+		case N_:
+		{
+			if (c->h < minh)
+			{
+				c->y -= (minh - c->h);
+				c->h = minh;
+			}
+			break;
+		}
+		case SW:
+		{
+			if (c->h < minh)
+				c->h = minh;
+		}
+		case W_:
+		{
+			if (c->w < minw)
+			{
+				c->x -= (minw - c->w);
+				c->w = minw;
+			}
+			break;
+		}
+		case SE:
+		{
+			if (c->w < minw)
+				c->w = minw;
+		}
+		case S_:
+		{
+			if (c->h < minh)
+				c->h = minh;
+			break;
+		}
+		case NE:
+		{
+			if (c->h < minh)
+			{
+				c->y -= (minh - c->h);
+				c->h = minh;
+			}
+		}
+		case E_:
+		{
+			if (c->w < minw)
+				c->w = minw;
+			break;
+		}
+		default:{};
+	}
+}
 
 static void
 check_wh(RECT *c, int minw, int minh, int maxw, int maxh)
@@ -201,7 +265,7 @@ rubber_box(struct xa_client *client, COMPASS cp,
 		wait_mouse(client, &mb, &x, &y);
 
 		r = widen_rectangle(cp, x, y, r, dist);
-		check_wh(&r, minw, minh, maxw, maxh);
+		check_wh_cp(&r, cp, minw, minh, maxw, maxh);
 		new_box(&r, &old);
 	}
 	while(mb);
