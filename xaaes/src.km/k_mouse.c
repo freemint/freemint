@@ -28,6 +28,7 @@
 #include "xa_global.h"
 #include "c_mouse.h"
 #include "xa_graf.h"
+#include "xa_evnt.h"
 
 #include "app_man.h"
 #include "c_window.h"
