@@ -40,27 +40,34 @@
 #include "rectlist.h"
 #include "widgets.h"
 
-//long redraws = 0;
 
 static int
 pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	struct xa_aesmsg_list *msg;
 	int rtn = 0;
-	struct xa_aesmsg_list *msg = client->rdrw_msg;
 
 	Sema_Up(clients);
 
+	msg = client->rdrw_msg;
 	if (msg)
 	{
 		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
 
+		/* dequeue */
 		client->rdrw_msg = msg->next;
+
+		/* write to client */
 		*buf = msg->message;
+
 		DIAG((D_m, NULL, "Got pending WM_REDRAW for %s", c_owner(client) ));
+
 		kfree(msg);
 		rtn = 1;
+
 		C.redraws--;
 	}
+
 	Sema_Dn(clients);
 	return rtn;
 }
@@ -68,16 +75,20 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 static int
 pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	struct xa_aesmsg_list *msg;
 	int rtn = 0;
-	struct xa_aesmsg_list *msg = client->msg;
 
 	Sema_Up(clients);
 
+	msg = client->msg;
 	if (msg)
 	{
 		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
 
+		/* dequeue */
 		client->msg = msg->next;
+
+		/* write to client */
 		*buf = msg->message;
 
 		DIAG((D_m, NULL, "Got pending message %s for %s from %d",
@@ -86,6 +97,7 @@ pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 		kfree(msg);
 		rtn = 1;
 	}
+
 	Sema_Dn(clients);
 	return rtn;
 }
@@ -102,10 +114,10 @@ pending_key_strokes(enum locks lock, AESPB *pb, struct xa_client *client, int ty
 	if (pending_keys.cur != pending_keys.last)
 	{
 		IFDIAG(struct xa_client *qcl = pending_keys.q[pending_keys.cur].client;)
-		struct xa_client *locked = NULL,
-		          *foc = find_focus(&waiting, &locked);
-
+		struct xa_client *locked = NULL;
+		struct xa_client *foc = find_focus(&waiting, &locked);
 		struct rawkey key;
+
 		DIAG((D_keybd, NULL, "Pending key: cur=%d,end=%d (qcl%d::cl%d::foc%d::lock%d)",
 			pending_keys.cur, pending_keys.last,
 			qcl->p->pid, client->p->pid, foc->p->pid, locked ? locked->p->pid : -1));		
@@ -118,10 +130,6 @@ pending_key_strokes(enum locks lock, AESPB *pb, struct xa_client *client, int ty
 	
 			if (type)
 			{
-
-				// Ozk: Why poll mouse here?
-				//get_mouse(3);
-				//button.ks =  key.raw.conin.state;
 				mu_button.ks = key.raw.conin.state;
 
 				/* XaAES extension: normalized key codes. */
@@ -142,6 +150,7 @@ pending_key_strokes(enum locks lock, AESPB *pb, struct xa_client *client, int ty
 				key.aes, c_owner(client)));
 
 			pending_keys.cur++;
+
 			if (pending_keys.cur == KEQ_L)
 				pending_keys.cur = 0;
 			if (pending_keys.cur == pending_keys.last)
@@ -158,9 +167,13 @@ pending_key_strokes(enum locks lock, AESPB *pb, struct xa_client *client, int ty
 static bool
 mouse_ok(struct xa_client *client)
 {
-	IFDIAG(if (mouse_locked())
+#if GENERATE_DIAGS
+	if (mouse_locked())
+	{
 		DIAG((D_sema,client,"Mouse OK? %d pid = %d",
-			mouse_locked()->p->pid, client->p->pid));)
+			mouse_locked()->p->pid, client->p->pid));
+	}
+#endif
 
 	if (!mouse_locked())
 		return true;
@@ -205,7 +218,7 @@ em_flag(int f)
 bool
 check_queued_events(struct xa_client *client)
 {
-	if ( client->waiting_for & MU_MESAG && (client->msg || client->rdrw_msg))
+	if ((client->waiting_for & MU_MESAG) && (client->msg || client->rdrw_msg))
 	{
 		union msg_buf *cbuf;
 
@@ -214,7 +227,7 @@ check_queued_events(struct xa_client *client)
 			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s", client->name));
 			return false;
 		}
-		
+
 		if (client->waiting_for & XAWAIT_MULTI)
 			multi_intout(client, client->waiting_pb->intout, MU_MESAG);
 		else
@@ -227,9 +240,9 @@ check_queued_events(struct xa_client *client)
 			return false;
 		}
 
-		if ( pending_redraw_msgs(0, client, client->waiting_pb) )
+		if (pending_redraw_msgs(0, client, client->waiting_pb))
 			goto got_evnt;
-		if ( pending_msgs(0, client, client->waiting_pb) )
+		if (pending_msgs(0, client, client->waiting_pb))
 			goto got_evnt;
 	}
 
