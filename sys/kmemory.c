@@ -538,7 +538,7 @@ static struct
 INLINE MEMREGION *
 km_get_region (register MMAP map, register ulong size, register MEMREGION *m)
 {
-	register MEMREGION *new = _get_region (map, size, PROT_S, m);
+	register MEMREGION *new = _get_region (map, size, PROT_S, m, 1);
 	
 	if (new)
 	{
