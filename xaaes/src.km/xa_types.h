@@ -379,6 +379,9 @@ struct xa_client
  * This part is for Client event dispatching
 */
 #define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
+	int	sleepqueue;
+	long	sleeplock;
+
 	bool	inblock;
 	int	usr_evnt;
 	int	ce_head;
