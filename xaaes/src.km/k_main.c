@@ -44,7 +44,6 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 #include "xa_form.h"
 #include "xa_rsrc.h"
@@ -329,7 +328,7 @@ alert_input(enum locks lock)
 		OBJECT *form;
 
 		form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		buf = xmalloc(sizeof(char) * n + 4, 2);
+		buf = kmalloc(sizeof(char) * n + 4);
 		f_read(C.alert_pipe, n, buf);
 
 		/* Pretty up the log entry with a nice

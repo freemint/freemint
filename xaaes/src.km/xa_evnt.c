@@ -39,7 +39,6 @@
 #include "objects.h"
 #include "rectlist.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 //long redraws = 0;
 

@@ -39,7 +39,6 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 #include "xa_evnt.h"
 #include "xa_form.h"

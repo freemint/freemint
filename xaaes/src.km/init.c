@@ -39,7 +39,6 @@
 #include "nkcc.h"
 #include "objects.h"
 #include "semaphores.h"
-#include "xalloc.h"
 #include "xa_shel.h"
 
 #include "version.h"
@@ -196,7 +195,7 @@ init(struct kentry *k)
 	init_objects();
 
 	/* So we can speak to and about ourself. */
-	C.Aes = xmalloc(sizeof(*C.Aes), 110);
+	C.Aes = kmalloc(sizeof(*C.Aes));
 	if (!C.Aes)
 	{
 		fdisplay(log, "XaAES ERROR: Can't allocate memory?");

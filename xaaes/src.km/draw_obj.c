@@ -29,7 +29,6 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
-#include "xalloc.h"
 #include "rectlist.h"
 #include "objects.h"
 #include "c_window.h"
@@ -569,9 +568,9 @@ void form_save(int d, RECT r, void **area)
 
 	/* if something is allocated free it */
 	if (*area)
-		free(*area);
+		kfree(*area);
 
-	*area = xmalloc(calc_back(&r,screen.planes), 210);
+	*area = kmalloc(calc_back(&r,screen.planes));
 	if (*area)
 	{
 		Mpreserve.fd_addr = *area;
@@ -605,7 +604,7 @@ void form_restore(int d, RECT r, void **area)
 		Mpreserve.fd_addr = *area;
 		vro_cpyfm(C.vh, S_ONLY, pnt, &Mpreserve, &Mscreen);
 
-		free(*area);
+		kfree(*area);
 		*area = NULL;
 	}
 }
