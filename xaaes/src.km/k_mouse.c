@@ -221,7 +221,9 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = mu_button.ks;
 				*to++ = 0;
 				*to++ = md->clicks;
-
+				client->md = *md;
+				client->md.clicks = 0;
+				client->md_valid = 1;
 				mu_button.newc = 0;
 
 				client->usr_evnt = 1;
@@ -240,6 +242,9 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = md->y;
 				*to++ = md->state;
 				*to   = mu_button.ks;
+				client->md = *md;
+				client->md.clicks = 0;
+				client->md_valid = 1;
 				mu_button.newc = 0;
 
 				client->usr_evnt = 1;
