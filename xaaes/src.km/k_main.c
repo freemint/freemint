@@ -84,7 +84,7 @@ dispatch_cevent(struct xa_client *client)
 	(*func)(0, ce);
 	return 1;
 }
-		
+
 
 void
 Block(struct xa_client *client, int which)
@@ -101,6 +101,9 @@ Block(struct xa_client *client, int which)
 			return;
 		}
 	}
+
+	if (C.buffer_moose == client)
+		C.buffer_moose = 0;
 	/*
 	 * Getting here if no more client events are in the queue
 	 * Looping around doing client events until a user event
@@ -112,8 +115,16 @@ Block(struct xa_client *client, int which)
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
 		sleep(IO_Q, (long)client);
 		if ((client->waiting_for & MU_TIMER) && !client->timeout)
+		{
+#if 1
+			if (C.buffer_moose == client)
+				C.buffer_moose = 0;
+#endif
 			return;
+		}
 		dispatch_cevent(client);
+		if (C.buffer_moose == client)
+			C.buffer_moose = 0;
 	}
 	cancel_evnt_multi(client, 1);
 }
@@ -153,6 +164,8 @@ init_moose(void)
 	long major, minor;
 	struct moose_vecsbuf vecs;
 	unsigned short dclick_time;
+
+	C.buffer_moose = 0;
 
 	if (!C.MOUSE_dev)
 	{
