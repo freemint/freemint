@@ -20,7 +20,6 @@ struct _wincfg
 	int	font_id, font_pts;
 	int	col, row, scroll;
 	int	xpos, ypos;
-	int	width, height;		/* 'offene' Gr”že */
 	bool	iconified;
 	bool	wrap;
 	bool	autoclose;
