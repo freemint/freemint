@@ -1,0 +1,61 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+
+COBJS = \
+	about.c \
+	bootup.c \
+	config.c \
+	handler.c \
+	kernel.c \
+	app_man.c \
+	util.c \
+	\
+	xa_clnt.c \
+	xa_appl.c \
+	xa_evnt.c \
+	xa_graf.c \
+	xa_wind.c \
+	xa_form.c \
+	xa_menu.c \
+	xa_objc.c \
+	xa_fsel.c \
+	xa_rsrc.c \
+	xa_fork.c \
+	xa_shel.c \
+	xa_scrp.c \
+	xa_wdial.c \
+	\
+	c_window.c \
+	widgets.c \
+	menuwidg.c \
+	desktop.c \
+	display.c \
+	ipff.c \
+	debug.c \
+	messages.c \
+	rectlist.c \
+	scrlobjc.c \
+	signals.c \
+	taskman.c \
+	draw_obj.c \
+	matchpat.c \
+	trnfm.c \
+	ahcm.c \
+	xalloc.c \
+	\
+	get_parent.c \
+	my_aes.c \
+	nkcc.c \
+	nkcc_gem_to_norm.c
+
+SOBJS = \
+	accstart.s \
+	p_handlr.s \
+	nkcc-gc.s
+
+SSOBJS = \
+	startup.S
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
