@@ -63,6 +63,17 @@ focus_owner(void)
 	return find_focus(true, NULL, NULL, NULL);
 }
 
+bool
+wind_has_focus(struct xa_window *wind)
+{
+	struct xa_client *c;
+	struct xa_window *w;
+
+	c = find_focus(true, NULL, NULL, &w);
+
+	return wind == w ? true : false;
+}
+
 /*
  * HR: Generalization of focus determination.
  *     Each step checks MU_KEYBD except the first.
@@ -130,7 +141,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		}
 	}	
 
-	if (is_topped(top))
+	if (is_topped(top)) // && !is_hidden(top))
 	{
 		if (waiting && ((top->owner->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) || top->keypress))
 			*waiting = true;
@@ -154,17 +165,6 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		else if (c == C.Aes)
 			client = c;
 	}
-#if 0
-	else if (get_app_infront()->waiting_for & (MU_KEYBD | MU_NORM_KEYBD))
-	{
-		DIAGS(("-= 5 =-"));
-
-		if (waiting)
-			*waiting = true;
-
-		client = get_app_infront();
-	}
-#endif
 	DIAGS(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
 
 	return client;
@@ -387,7 +387,9 @@ unhide_app(enum locks lock, struct xa_client *client)
 
 		w = w->next;
 	}
-
+	
+	client->name[1] = ' ';
+	
 	app_in_front(lock, client);
 }
 
@@ -417,12 +419,16 @@ void
 hide_app(enum locks lock, struct xa_client *client)
 {
 	bool reify = false;
-	struct xa_client *focus = focus_owner();
+	struct xa_client *focus = focus_owner(), *nxtclient;
 	struct xa_window *w;
 
 	DIAG((D_appl, NULL, "hide_app for %s", c_owner(client) ));
 	DIAG((D_appl, NULL, "   focus is  %s", c_owner(focus) ));
 
+	nxtclient = next_app(lock, true, true);
+	if (client->type == APP_SYSTEM || (!nxtclient || nxtclient == client))
+		return;
+	
 	w = window_list;
 	while (w)
 	{
@@ -437,11 +443,13 @@ hide_app(enum locks lock, struct xa_client *client)
 		}
 		w = w->next;
 	}
-
+	
+	client->name[1] = '*';
+	
 	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
-
+	
 	if (client == focus)
-		app_in_front(lock, next_app(lock, true));
+		app_in_front(lock, nxtclient); //next_app(lock, true, true));
 
 	if (reify && !rpi_to)
 		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
@@ -490,10 +498,8 @@ any_hidden(enum locks lock, struct xa_client *client)
 			ret = true;
 			break;
 		}
-
 		w = w->next;
 	}
-
 	return ret;
 }
 
@@ -557,6 +563,9 @@ next_wind(enum locks lock)
 
 	DIAG((D_appl, NULL, "next_window"));
 	wind = window_list;
+	
+	if (!wind || (wind == root_window || wind->next == root_window))
+		return NULL;
 
 	if (wind)
 		wind = wind->next;
@@ -581,6 +590,7 @@ next_wind(enum locks lock)
 		}
 		wind = wind->prev;
 	}
+
 #if GENERATE_DIAGS
 	if (wind)
 		DIAG((D_appl, NULL, "  --  return %d, owner %s",
@@ -590,7 +600,7 @@ next_wind(enum locks lock)
 #endif
 	return wind;
 }
-
+#if 0
 bool
 app_is_hidable(struct xa_client *client)
 {
@@ -601,14 +611,14 @@ app_is_hidable(struct xa_client *client)
 	else
 		return false;
 }
-
+#endif
 /*
  * wwom true == find a client "with window or menu", else any client
  * will also return clients without window or menu but is listening
  * for kbd input (MU_KEYBD)
  */
 struct xa_client *
-next_app(enum locks lock, bool wwom)
+next_app(enum locks lock, bool wwom, bool no_acc)
 {
 	struct xa_client *client;
 
@@ -625,16 +635,25 @@ next_app(enum locks lock, bool wwom)
 	{
 		while (client)
 		{
-			if (client->std_menu ||
-			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
-			    any_window(lock, client))
-				break;
-
+			if (client->type != APP_SYSTEM || !(no_acc && (client->type == APP_ACCESSORY)))
+			{
+				if (client->std_menu ||
+				    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
+				    any_window(lock, client))
+					break;
+			}
 			client = PREV_APP(client);
 		}
 	}
 	else
-	{	
+	{
+		while (client)
+		{
+			if (!((no_acc && client->type == APP_ACCESSORY) || client->type == APP_SYSTEM))
+				break;
+			client = PREV_APP(client);
+		}
+				
 		if (client == APP_LIST_START)
 			client = NULL;
 	}

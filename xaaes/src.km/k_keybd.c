@@ -274,11 +274,18 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
 		{
-			client = next_app(lock, true);  /* including the AES for its menu bar. */
+			client = next_app(lock, false, false);  /* including the AES for its menu bar. */
 			if (client)
 			{
 				DIAGS(("next_app() :: %s", c_owner(client)));
 				app_in_front(lock, client);
+				if (client->type == APP_ACCESSORY)
+				{
+					send_app_message(lock, NULL, client, AMQ_NORM, QMF_CHKDUP,
+							 AC_OPEN, 0, 0, 0,
+							 client->p->pid, 0, 0, 0);
+				}
+
 			}
 			return true;
 		}

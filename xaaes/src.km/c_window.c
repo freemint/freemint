@@ -297,7 +297,8 @@ get_top(void)
 bool
 is_hidden(struct xa_window *wind)
 {
-	return ( wind->rc.x == (root_window->rc.x + root_window->rc.w + 16) && wind->rc.y == (root_window->rc.y + root_window->rc.h + 16)) ? true : false;
+	return ( wind->rc.x > (root_window->rc.x + root_window->rc.w) && wind->rc.y > (root_window->rc.y + root_window->rc.h)) ? true : false;
+	//return ( wind->rc.x == (root_window->rc.x + root_window->rc.w + 16) && wind->rc.y == (root_window->rc.y + root_window->rc.h + 16)) ? true : false;
 }
 
 void
@@ -360,6 +361,56 @@ set_window_title(struct xa_window *wind, const char *title)
 		display_window(0, 45, wind, &clip);
 	}
 }
+void
+get_window_title(struct xa_window *wind, char *dst)
+{
+	if (dst)
+	{
+		char *src = wind->wname;
+		strcpy(dst, src);
+	}
+}
+
+/*
+ * ONLY call from from correct context
+ */
+void
+set_window_info(struct xa_window *wind, const char *info)
+{
+	char *dst = wind->winfo;
+	XA_WIDGET *widg;
+
+	if (info)
+	{
+		int i;
+
+		for (i = 0; i < (sizeof(wind->winfo)-1) && (*dst++ = *info++); i++)
+			;
+	}
+	*dst = '\0';
+
+	widg = get_widget(wind, XAW_INFO);
+	widg->stuff = wind->winfo;
+
+	DIAG((D_wind, wind->owner, "    -   %s", wind->winfo));
+
+	if ((wind->active_widgets & INFO) && (wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_ICONIFIED|XAWS_HIDDEN)) == XAWS_OPEN)
+	{
+		RECT clip;
+
+		rp_2_ap(wind, widg, &clip);
+		display_window(0, 46, wind, &clip);
+	}
+}
+void
+get_window_info(struct xa_window *wind, char *dst)
+{
+	if (dst)
+	{
+		char *src = wind->winfo;
+		strcpy(dst, src);
+	}
+}
 
 /* SendMessage */
 void
@@ -379,7 +430,7 @@ send_ontop(enum locks lock)
 	struct xa_window *top = window_list;
 	struct xa_client *client = top->owner;
 
-	if (is_topped(top) && top->send_message && !client->fmd.wind)
+	if (top->send_message && !client->fmd.wind)
 		top->send_message(lock, top, NULL, AMQ_NORM, QMF_CHKDUP,
 				  WM_ONTOP, 0, 0, top->handle,
 				  0, 0, 0, 0);
