@@ -34,7 +34,7 @@
 # define MM_CTRL	0x04
 # define MM_ALTERNATE	0x08
 # define MM_CAPS	0x10
-# define MM_CLRHOME	0x20
+# define MM_CLRHOME	0x00
 # define MM_INSERT	0x40
 # define MM_ALTGR	0x80	/* Milan */
 
