@@ -373,7 +373,7 @@ kern_get_loadavg (SIZEBUF **buffer)
 			      LOAD_INT (avenrun[1]), LOAD_FRAC (avenrun[1]),
 			      LOAD_INT (avenrun[2]), LOAD_FRAC (avenrun[2]),
 			      running, tasks, last_pid);
-	
+
 	*buffer = info;
 	return 0;
 }
@@ -459,7 +459,50 @@ kern_get_meminfo (SIZEBUF **buffer)
 	return 0;
 }
 
+/**
+ * /kern/stat
+ * The processor status.
+ *
+ * !! It is a QUICK HACK to  make the procps-2.0.7 confident. !!
+ *
+ * cpu:  user_j  nice_j  sys_j  other_j
+ * The _j-values are the number of jiffies the CPU spent in the user, sys, ... mode.
+ *
+ * Other lines will be introduced as soon as they are needed.
+ */
+long
+kern_get_stat (SIZEBUF **buffer)
+{
+	SIZEBUF *info;
+	ulong len = 64;
+	PROC *p = curproc;
+	ulong all_systime = 0, all_usrtime = 0, all_nice = 1, all_idle = 1;
 
+	info = kmalloc (sizeof (*info) + len);
+	if (!info)
+		return ENOMEM;
+	
+
+	for (curproc = proclist; curproc; curproc = curproc->gl_next)
+	{
+	  all_systime += curproc->systime;
+	  all_usrtime += curproc->usrtime;
+	}
+	curproc = p;	/* restore the real curproc */
+	
+	info->len = ksprintf (info->buf, len, "cpu \t%9lu %9lu %9lu %9lu\n",
+		              all_usrtime,
+			      all_nice,
+			      all_systime,
+			      all_idle);
+	
+	*buffer = info;
+	return 0;
+}
+
+/*
+ *
+ */
 long
 kern_get_time (SIZEBUF **buffer)
 {
