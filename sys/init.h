@@ -25,7 +25,7 @@ void	restr_intr	(void);
 void	init		(void);
 void	install_cookies	(void);
 
-long	env_size	(char *var);
+long	env_size	(const char *var);
 void	_mint_delenv	(BASEPAGE *bp, const char *strng);
 void	_mint_setenv	(BASEPAGE *bp, const char *var, const char *value);
 
