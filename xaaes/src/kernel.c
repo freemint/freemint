@@ -279,7 +279,8 @@ kernel_key(LOCK lock, KEY *key)
 		if (   nk=='U' || nk=='N'
 		    || nk=='H' || nk=='J')
 		{
-			short wheel, click;
+			short  wheel = 0;
+			short  click = 0;
 			struct moose_data md = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 			cfg.wheel_amount = 1;
@@ -945,10 +946,12 @@ setup_k_function_table(void)
 
 	/* File select (fsel_ xxx) */
 #if FILESELECTOR
-	Ktab[XA_FSEL_INPUT  ].f = XA_fsel_input;
-	Ktab[XA_FSEL_INPUT  ].p = LOCKSCREEN;
-	Ktab[XA_FSEL_EXINPUT].f = XA_fsel_exinput;
-	Ktab[XA_FSEL_EXINPUT].p = LOCKSCREEN;
+	if ( !cfg.no_xa_fsel ) {
+		Ktab[XA_FSEL_INPUT  ].f = XA_fsel_input;
+		Ktab[XA_FSEL_INPUT  ].p = LOCKSCREEN;
+		Ktab[XA_FSEL_EXINPUT].f = XA_fsel_exinput;
+		Ktab[XA_FSEL_EXINPUT].p = LOCKSCREEN;
+	}
 #if 0
 	/* HR: semaphore moved to handler (under client pid).
 	 * Now the fsel itself runs in user mode under the AES pid.
