@@ -1318,7 +1318,7 @@ move_window(enum locks lock, struct xa_window *wind, short newstate, short X, sh
 			DIAGS(("move_window: win is shaded"));
 		}
 #endif
-		wind->pr = wind->r;
+		wind->pr = wind->rc;
 	}
 
 	inside_root(&new, &wind->owner->options);
