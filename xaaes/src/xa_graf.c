@@ -1008,17 +1008,17 @@ XA_graf_mouse(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		client->save_mouse_form = client->mouse_form;
 		DIAG((D_f,client,"M_SAVE; mouse_form %d\n", client->mouse));
 	}
-	else if (m == M_LAST)
+	else if (m == M_RESTORE)
 	{
 		graf_mouse(client->save_mouse, client->save_mouse_form);
-		DIAG((D_f,client,"M_LAST; mouse_form from %d to %d\n", client->mouse, client->save_mouse));
+		DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d\n", client->mouse, client->save_mouse));
 		client->mouse       = client->save_mouse;
 		client->mouse_form  = client->save_mouse_form;
 	}
-	else if (m == M_RESTORE)
+	else if (m == M_PREVIOUS)
 	{
 		graf_mouse(C.mouse, C.mouse_form);
-		DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d\n", client->mouse, C.mouse));
+		DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d\n", client->mouse, C.mouse));
 		client->mouse       = C.mouse;
 		client->mouse_form  = C.mouse_form;
 	}
