@@ -389,10 +389,27 @@ get_top(void)
 bool
 is_hidden(struct xa_window *wind)
 {
+	return ( wind->rc.x == (root_window->rc.x + root_window->rc.w + 16) && wind->rc.y == (root_window->rc.y + root_window->rc.h + 16)) ? true : false;
+#if 0
 	RECT d = root_window->rc;
 	return !xa_rc_intersect(wind->rc, &d);
+#endif
 }
 
+void
+hide_window(enum locks lock, struct xa_window *wind)
+{
+	if (!is_hidden(wind))
+	{
+		RECT r = wind->rc;
+		r.x = root_window->rc.x + root_window->rc.w + 16;
+		r.y = root_window->rc.y + root_window->rc.h + 16;
+		wind->hx = wind->rc.x;
+		wind->hy = wind->rc.y;
+		send_moved(lock, wind, AMQ_NORM, &r);
+	}
+}
+#if 0		
 bool
 unhide(struct xa_window *wind, short *x, short *y)
 {
@@ -419,10 +436,22 @@ unhide(struct xa_window *wind, short *x, short *y)
 	*y = r.y;
 	return done;
 }
+#endif
 
 void
 unhide_window(enum locks lock, struct xa_window *wind)
 {
+	if (is_hidden(wind))
+	{
+		RECT r = wind->rc;
+
+		r.x = wind->hx;
+		r.y = wind->hy;
+		send_moved(lock, wind, AMQ_NORM, &r);
+		wind->t = r;
+	}
+}
+#if 0
 	RECT r = wind->rc;
 	if (unhide(wind, &r.x, &r.y))
 	{
@@ -433,7 +462,7 @@ unhide_window(enum locks lock, struct xa_window *wind)
 		wind->t = r;
 	}
 }
-
+#endif
 /* SendMessage */
 void
 send_untop(enum locks lock, struct xa_window *wind)
