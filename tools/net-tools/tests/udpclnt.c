@@ -41,7 +41,7 @@ main (void)
 		return 0;
 	}
 
-	printf ("My socket name is: \n\tport = %u \n\taddr = %lx\n",
+	printf ("My socket name is: \n\tport = %u \n\taddr = %x\n",
 		in.sin_port,
 		in.sin_addr.s_addr);
 

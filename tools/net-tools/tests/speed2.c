@@ -159,7 +159,7 @@ main (int argc, char *argv[])
 		}
 		else
 		{
-			size_t size;
+			socklen_t size;
 			clock_t start;
 			clock_t end;
 			long optval;
