@@ -256,7 +256,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	int i, j, type, numCibs = 0;
 	short vdih = C.vh;
 
-	IFDIAG(OBJECT *tree;)
+//	IFDIAG(OBJECT *tree;)
 
 	if (fname)
 	{
@@ -531,7 +531,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	/* As you see, the objects are NOT in a pointer array!!! */
 	obj = (OBJECT *)(base + hdr.rsh_object);
 
-	IFDIAG (tree = obj;)
+	//IFDIAG (tree = obj;)
 
 	/* fixup all objects' ob_spec pointers */
 	for (i = 0; i < hdr.rsh_nobs; i++, obj++)

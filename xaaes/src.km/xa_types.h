@@ -476,10 +476,11 @@ struct xa_client
 	struct xa_aesmsg_list *msg;	/* Pending AES messages */
 	struct xa_aesmsg_list *rdrw_msg;
 
-#define CS_LAGGING		0x1
-#define CS_CE_REDRAW_SENT	0x2
-#define CS_FORM_ALERT		0x4
-#define CS_WAIT_MENU		0x8
+#define CS_LAGGING		0x0001
+#define CS_CE_REDRAW_SENT 	0x0002
+#define CS_FORM_ALERT		0x0004
+#define CS_FORM_DO		0x0008
+#define CS_WAIT_MENU		0x0100
 
 	long status;
 
@@ -597,6 +598,10 @@ typedef enum
 
 enum xa_widgets
 {
+ /*
+  * These widgets must be processable totally indipendant of
+  * process context.
+  */
 	XAW_TITLE = 0,
 	XAW_CLOSE,
 	XAW_FULL,
@@ -615,14 +620,24 @@ enum xa_widgets
 	XAW_RTPAGE,
 	XAW_ICONIFY,
 	XAW_HIDE,
-	XAW_TOOLBAR,			/* Extended XaAES widget */
 	XAW_BORDER,			/* Extended XaAES widget, used for border sizing. */
+
+ /*
+  * The widget types above this comment MUST be context indipendant.
+  * The widget types blow this comment are considered context-dependant
+  * and must be processed via client events.
+  * Furthermore, remember to change XA_MAX_CF_WIDGETS below if you
+  * put insert a new context dependant widget before XAW_TOOLBAR!
+ */
+	XAW_TOOLBAR,			/* Extended XaAES widget */
 	XAW_MENU,			/* Extended XaAES widget, must be drawn last. */
 
 	/* Number of available XA_WIDGET slots in a the window for default/standard widgets */
 	XA_MAX_WIDGETS
 };
 typedef enum xa_widgets XA_WIDGETS;
+
+#define XA_MAX_CF_WIDGETS	XAW_TOOLBAR
 
 struct xa_widget;
 
