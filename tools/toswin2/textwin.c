@@ -1564,7 +1564,6 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 		t->scroll_top = t->miny;
 		t->scroll_bottom = t->maxy-1;
 		t->tabs = NULL;
-		t->char_set = NORM_CHAR;
 	}
 
 	/* we get font data from the VDI */
@@ -1679,6 +1678,9 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->block_y1 = 0;
 	t->block_y2 = 0;
 	
+	t->savex = t->savey = 0;
+	t->save_cattr = t->term_cattr;
+	
 	return t;
 }
 
@@ -1783,6 +1785,130 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 		open_window(w, FALSE);
 }
 
+/* Software resize of a text window (e. g. switch from 80 to 132
+ * column mode).
+ */
+void 
+soft_resize_textwin (TEXTWIN* tw, short cols, short rows, short scrollback)
+{
+	WINDOW* win = tw->win;
+	int i, j, mincols;
+	int delta;
+	unsigned char** newdata;
+	ulong** newcflag;
+	char* newdirty;
+	short width, height;
+	int reopen = 0;
+	int deltax, deltay;
+	
+	if (tw->maxx == cols && tw->miny == scrollback && 
+	    tw->maxy == rows + scrollback)
+		return;		/* no change */
+		
+	newdata = malloc (sizeof (char*) * (rows + scrollback));
+	newcflag = malloc(sizeof (void*) * (rows + scrollback));
+	newdirty = malloc ((size_t) (rows + scrollback));
+	if (!newdata || !newcflag || !newdirty) {
+		if (newdata)
+			free (newdata);
+		if (newcflag)
+			free (newcflag);
+		if (newdirty)
+			free (newdirty);
+		return;
+	}
+	
+	mincols = (cols < tw->maxx) ? cols : tw->maxx;
+
+	/* First, initialize the new data to spaces.  */
+	for (i = 0; i < rows + scrollback; ++i)	{
+		newdirty[i] = 0;
+		newdata[i] = malloc ((size_t) cols + 1);
+		newcflag[i] = malloc (sizeof (long) * (cols + 1));
+		if (!newcflag[i] || !newdata[i]) {
+			for (j = 0; j < i - 1; ++j) {
+				free (newdata[j]);
+				free (newcflag[j]);
+			}
+			if (newcflag[i])
+				free (newcflag[i]);
+			if (newdata[i])
+				free (newdata[i]);
+			return;
+		}
+		for (j = 0; j < cols; j++) {
+			newdata[i][j] = ' '; 
+			newcflag[i][j] = COLORS (tw->cfg->fg_color, 
+						 tw->cfg->bg_color);
+		}
+	}
+
+	/* Now, copy as much scrollback as possible.  */
+	if (rows + scrollback >= tw->maxy) {
+		delta = rows + scrollback - tw->maxy;
+		for (i = 0; i < tw->maxy; ++i) 
+		{
+			for (j = 0; j < mincols; ++j) 
+			{
+				newdata[i + delta][j] = tw->data[i][j];
+				newcflag[i + delta][j] = tw->cflag[i][j];
+			}
+		}
+	} else {
+		delta = tw->maxy - (rows + scrollback);
+		for (i = 0; i < rows + scrollback; ++i) {
+			for (j = 0; j < mincols; ++j) 
+			{
+				newdata[i][j] = tw->data[i+delta][j];
+				newcflag[i][j] = tw->cflag[i+delta][j];
+			}
+		}
+	}
+
+	/* Finally, free the old data and flags */
+	for(i = 0; i < tw->maxy; ++i) 
+	{
+		free (tw->data[i]);
+		free (tw->cflag[i]);
+	}
+	free (tw->dirty);
+	free (tw->cflag);
+	free (tw->data);
+
+	tw->dirty = newdirty;
+	tw->cflag = newcflag;
+	tw->data = newdata;
+	deltax = cols - NCOLS (tw);
+	deltay = rows - NROWS (tw);
+	tw->maxx = cols;
+	tw->maxy = rows + scrollback;
+	tw->miny = scrollback;
+
+	tw->cx = tw->cy = 0;
+
+	if (tw->offy < scrollback * tw->cheight)
+		tw->offy = scrollback * tw->cheight;
+
+	if (win->handle >= 0) {
+		wind_close (win->handle);
+		wind_delete (win->handle);
+		reopen = 1;
+		--gl_winanz;
+	}
+	win->handle = -1;
+
+	win->work.g_w = win->full.g_w = win->max_w = width = 
+		tw->maxx * tw->cmaxwidth;
+	win->work.g_h = win->full.g_h = win->max_h = height = 
+		rows * tw->cheight;
+
+	/* FIXME: Move window to old position.  */
+	if (reopen)
+		open_window (win, FALSE);
+	
+	clear (tw);
+}
+
 /*
  * make a text window have a new number of rows and columns, and
  * a new amount of scrollback
@@ -1804,9 +1930,16 @@ void resize_textwin(TEXTWIN *t, short cols, short rows, short scrollback)
 	newdata = malloc(sizeof(char *) * (rows+scrollback));
 	newcflag = malloc(sizeof(void *) * (rows+scrollback));
 	newdirty = malloc((size_t)(rows+scrollback));
-	if (!newdata || !newcflag || !newdirty)
+	if (!newdata || !newcflag || !newdirty) {
+		if (newdata)
+			free (newdata);
+		if (newcflag)
+			free (newcflag);
+		if (newdirty)
+			free (newdirty);
 		return;
-
+	}
+	
 	mincols = (cols < t->maxx) ? cols : t->maxx;
 
 	/* first, initialize the new data to blanks */
@@ -1815,8 +1948,17 @@ void resize_textwin(TEXTWIN *t, short cols, short rows, short scrollback)
 		newdirty[i] = 0;
 		newdata[i] = malloc((size_t)cols+1);
 		newcflag[i] = malloc(sizeof(long) * (cols+1));
-		if (!newcflag[i] || !newdata[i])
+		if (!newcflag[i] || !newdata[i]) {
+			for (j = 0; j < i - 1; ++j) {
+				free (newdata[j]);
+				free (newcflag[j]);
+			}
+			if (newcflag[i])
+				free (newcflag[i]);
+			if (newdata[i])
+				free (newdata[i]);
 			return;
+		}
 		for(j = 0; j < cols; j++)
 		{
 			newdata[i][j] = ' '; 
