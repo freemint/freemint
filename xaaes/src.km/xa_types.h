@@ -536,7 +536,8 @@ struct xa_client
 #define CS_WAIT_MENU		0x00000010
 #define CS_FSEL_INPUT		0x00000020
 #define CS_MISS_RDRW		0x00000040
-#define CS_EXITING		0x00000080
+#define CS_MENU_NAV		0x00000080
+#define CS_EXITING		0x00000100
 
 	long status;
 

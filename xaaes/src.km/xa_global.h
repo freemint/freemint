@@ -194,6 +194,8 @@ struct common
 	short prev_clip[4];
 
 	struct xa_client *Aes;		/* */
+	enum waiting_for Aes_waiting_for;
+	
 	short move_block;		/* 0 = movement allowed
 					 * 1 = internal movement cevent sent to client - no move
 					 * 2 = WM_MOVED AES message sent to client - no move
@@ -205,6 +207,7 @@ struct common
 	struct xa_client *button_waiter;/* Client which is getting the next moose_data packet, */
 					/* most probably a button released one */
 	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
+	struct xa_client *ce_menu_move; /* If set, this client has been sent a menu_move client event */
 
 	short shutdown;			/* flags for shutting down xaaes */
 #define QUIT_NOW	0x1		/* - enter shutdown the next possible time */
