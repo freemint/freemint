@@ -3,11 +3,11 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = arch buildinfo gen-syscall libkern
+SUBDIRS = 
 
-srcdir = .
-top_srcdir = .
-subdir = src
+srcdir = ..
+top_srcdir = ..
+subdir = $(compile_dir)
 
 default: all
 
@@ -39,6 +39,8 @@ BUILD = info
 BUILDINFO = $(BUILD).o
 OBJS = $(COBJS:.c=.o)
 
+VPATH = ..
+
 #
 # main target
 #
@@ -46,28 +48,28 @@ build: $(MINT)
 
 $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ \
-		$(shell for file in `cat arch/startup` ; \
-			do echo arch/$$file ; done) \
+		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/startup` ; \
+			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
 		$(OBJS) $(BUILDINFO) \
-		$(shell for file in `cat arch/objs` ; \
-			do echo arch/$$file ; done) \
+		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/objs` ; \
+			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
 		$(LIBS)
 
 $(BUILDINFO): compiler buildheader buildserial
-	$(CC) $(CFLAGS) -o $@ -c $(BUILD).c
+	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/$(BUILD).c
 
 compiler:
-	cd ./buildinfo; \
+	cd $(srcdir)/buildinfo; \
 	CC="$(CC)" \
 	OPTS="$(GENERAL) $(MODEL) $(OPTS)" \
 	DEFS="$(DEFINITIONS)" \
 	sh cdef.sh
 
 buildheader:
-	cd ./buildinfo; ./mkbuild
+	cd $(srcdir)/buildinfo; ./mkbuild
 
-buildserial: buildinfo/version.h
-	cd ./buildinfo; echo 1 >$@
+buildserial: $(srcdir)/buildinfo/version.h
+	cd $(srcdir)/buildinfo; echo 1 >$@
 
 # default dependencies
 # must be included last

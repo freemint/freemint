@@ -1,13 +1,13 @@
 #
-# the m68k arch specific files
+# Makefile for freemint
 #
 
 SHELL = /bin/sh
-SUBDIRS = asmtrans magic
+SUBDIRS = sys tools
 
 srcdir = .
-top_srcdir = ..
-subdir = arch
+top_srcdir = .
+subdir = 
 
 default: all
 
@@ -15,9 +15,8 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: kernel
+all-here: 
 
 # default overwrites
 
 # default definitions
-GENFILES = $(compile_all_dirs)

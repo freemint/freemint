@@ -1,0 +1,61 @@
+# These are some standard rules common to all Makefiles.
+
+include $(srcdir)/BINFILES
+include $(srcdir)/SRCFILES
+include $(srcdir)/EXTRAFILES
+include $(srcdir)/MISCFILES
+
+all: all-recursive all-here
+
+clean: clean-recursive
+	rm -f *.o lib*.a *.tmp
+	rm -f core report nohup.out errlog
+	rm -f foobar foo bar baz junk schrott muell
+
+bakclean: bakclean-recursive
+	rm -f *~ *#
+	rm -f *.orig *.rej
+
+distclean: distclean-recursive
+	rm -f *.o lib*.a *.tmp *~ *# *.orig *.rej
+	rm -f core report nohup.out errlog
+	rm -f foobar foo bar baz junk schrott muell
+	rm -rf .deps $(GENFILES)
+
+install: all-here install-recursive
+
+uninstall: uninstall-recursive
+
+DISTFILES = $(MISCFILES) $(SRCFILES)
+
+distdir = $(top_builddir)/freemint-$(VERSION)/$(subdir)
+
+distdir: $(DISTFILES) distdir-local
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
+	  test -d $$d/$$file \
+	  || test -f $(distdir)/$$file \
+	  || ln $$d/$$file $(distdir)/$$file 2>/dev/null \
+	  || cp -p $$d/$$file $(distdir)/$$file \
+	  || exit 1; \
+	done
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  test -d $(distdir)/$$subdir \
+	  || mkdir $(distdir)/$$subdir \
+	  || exit 1; \
+	  chmod 777 $(distdir)/$$subdir; \
+	  (cd $$subdir && $(MAKE) top_distdir=../$(distdir) distdir=../$(distdir)/$$subdir distdir) \
+	    || exit 1; \
+	done
+
+distdir-local:
+
+all-recursive clean-recursive bakclean-recursive distclean-recursive \
+install-recursive uninstall-recursive dist-recursive:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  target=`echo $@ | sed s/-recursive//`; \
+	  echo "Making $$target in $$subdir"; \
+	  (cd $$subdir && $(MAKE) -r $$target) \
+	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"

@@ -1,6 +1,9 @@
-# These are the phony targets common to all Makefiles.
+#
+# global definitions
+#
+include $(top_srcdir)/../PHONY
 
-.PHONY: clean clean-recursive dist distclean distclean-recursive \
-bakclean bakclean-recursive bin-dist distdir bindistdir default \
-all all-here all-recursive install install-recursive \
-uninstall uninstall-recursive help
+#
+# private definitions
+#
+
