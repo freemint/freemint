@@ -140,6 +140,18 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 
 			/* invalidate our data structures */
 			close_window(lock, wind);
+			if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
+			{
+				kfree(wt->extra);
+				wt->extra = NULL;
+				wt->flags &= ~WTF_XTRA_ALLOC;
+			}
+			if (wt->tree && (wt->flags & WTF_TREE_ALLOC))
+			{
+				kfree(wt->tree);
+				wt->tree = NULL;
+				wt->flags &= ~WTF_TREE_ALLOC;
+			}
 			/* delete on the next possible time */
 			delayed_delete_window(lock, wind);
 		}
