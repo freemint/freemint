@@ -1642,7 +1642,6 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 			fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
 
 			select_edsize(fnts);
-
 		}
 		fnts->fnt_pt = val;
 	
@@ -1659,22 +1658,6 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
-#if 0
-static struct xa_fnts_info *
-create_new_fnts(enum locks lock,
-		struct xa_window *wind,
-		XA_TREE *wt,
-		short vdih,
-		short num_fonts,
-		short font_flags,
-		short dialog_flags,
-		char *sample,
-		char *opt)
-
-		
-static void
-init_fnts(struct xa_fnts_info *fnts)
-#endif
 /*
  * WidgetBehaviour()
  * Return is used by do_widgets() to check if state of obj is
@@ -1683,6 +1666,7 @@ init_fnts(struct xa_fnts_info *fnts)
 static WidgetBehaviour fnts_th_click;
 static FormMouseInput	fntsClick_form_do;
 static FormKeyInput	fntsKeypress;
+static FormExit		fntsFormexit;
 
 static bool
 fntsKeypress(enum locks lock,
@@ -1691,7 +1675,28 @@ fntsKeypress(enum locks lock,
 	    struct widget_tree *wt,
 	    const struct rawkey *key)
 {
-	return false;	
+	bool no_exit;
+
+	if ((no_exit = Key_form_do(lock, client, wind, wt, key)))
+	{
+		struct scroll_info *list;
+		struct xa_fnts_info *fnts;
+		unsigned long val;
+		
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		list = (struct scroll_info *)object_get_spec(wt->tree + FNTS_FNTLIST)->index;
+		fnts = list->data;
+		val = get_edpoint(fnts);
+
+		if (val != fnts->fnt_pt)
+		{
+			fnts->fnt_pt = val;
+			fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
+
+			select_edsize(fnts);
+		}
+	}
+	return no_exit;	
 }
 
 static bool
@@ -1712,6 +1717,7 @@ fnts_th_click(	enum locks lock,
 
 	return false;
 }
+
 static bool
 fntsClick_form_do(enum locks lock,
 	      struct xa_client *client,
@@ -1722,8 +1728,6 @@ fntsClick_form_do(enum locks lock,
 	OBJECT *obtree;
 	RECT r;
 
-	DIAG((D_form, client, "Click_form_do: %s formdo for %s",
-		wind ? "windowed":"classic", client->name));
 	/*
 	 * If window is not NULL, the form_do is a windowed one,
 	 * else it is a classic blocking form_do
@@ -1782,19 +1786,25 @@ fntsClick_form_do(enum locks lock,
 			}
 		}
 	}
-#if GENERATE_DIAGS
-	else
-		DIAGS(("Click_form_do: NO OBTREE!!"));
-#endif
-
-	DIAGS(("Click_form_do: return"));
 	return false;
+}
+
+static void
+fntsFormexit( struct xa_client *client,
+	      struct xa_window *wind,
+	      XA_TREE *wt,
+	      struct fmd_result *fr)
+{
+	struct xa_fnts_info *fnts = (struct xa_fnts_info *)((struct scroll_info *)object_get_spec(wt->tree + FNTS_FNTLIST)->index)->data;
+
+	fnts->exit_button = fr->obj >= 0 ? fr->obj : 0;
+	client->usr_evnt = 1;
 }
 
 static struct toolbar_handlers fnts_th =
 {
-	NULL,			/* FormExit		*exitform;	*/
-	NULL,			/* FormKeyInput		*keypress;	*/
+	fntsFormexit,		/* FormExit		*exitform;	*/
+	fntsKeypress,		/* FormKeyInput		*keypress;	*/
 
 	NULL,			/* DisplayWidget	*display;	*/
 	fnts_th_click,		/* WidgetBehaviour	*click;		*/
@@ -1811,7 +1821,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_fnts_info *fnts;
 	struct xa_window *wind;
 	
-	DIAG((D_fnts, client, "XA_fnts_open"));
+	DIAG((D_fnts, client, "XA_fnts_do"));
 
 	pb->intout[0] = 0;
 
@@ -1850,13 +1860,33 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			
 			fnts->wind = fwind;
 
+			fnts->button_flags = pb->intin[0];
+			update(fnts, fnts->button_flags);
+
+			fnts->fnt_id	= *(const long *)&pb->intin[1];
+			fnts->fnt_pt	= *(const long *)&pb->intin[3];
+			fnts->fnt_ratio	= *(const long *)&pb->intin[5];
+
+			init_fnts(fnts);
+			
 			open_window(lock, fwind, fwind->rc);
 
 			client->status |= CS_FORM_DO;
 			Block(client, 0);
 			client->status &= ~CS_FORM_DO;
+
+			fnts->wind = wind;
+			close_window(lock, fwind);
+			delete_window(lock, fwind);
+		
+			pb->intout[0] = fnts->exit_button;
+			pb->intout[1] = get_cbstatus(fnts->wt->tree);
+			*(long *)&pb->intout[2] = fnts->fnts_selected->f.id;
+			*(long *)&pb->intout[4] = fnts->fnt_pt;
+			*(long *)&pb->intout[6] = fnts->fnt_ratio;
 			
-			pb->intout[0] = 0;
+			DIAGS((D_fnts, client, " --- return %d, cbstat=%x, id=%ld, pt=%ld, ratio=%ld",
+				pb->intout[0], pb->intout[1], *(long *)&pb->intout[2], *(long *)&pb->intout[4], *(long *)&pb->intout[6]));
 		}
 	}
 	return XAC_DONE;
