@@ -203,7 +203,7 @@ menu = leave
 #
 # noleft = <bool>         default: false
 #     Windows can not be moved offscreen to the left.
-
+#
 # thinwork = <bool>       default: false
 #     The "inner" 3d-effect is disabled. This 3d-effect 'frames'
 #     the work-area of windows in a 3d-ish frame.
@@ -217,6 +217,14 @@ menu = leave
 #     It is not recommended to set a value of -1 yet!.
 #     A value of 0 will make windows without any borders.
 #     positive values make window-frames larger.
+#
+# naesff = <bool>         default: false
+#     N.AES Full Fix;
+#     When naesff is set true, XaAES will send full WM_REDRAW
+#     message when all four window coordinates change, which
+#     happens when windows are FULLEd. This will fix redraw
+#     problems with apps like Jinnee.
+#
 #
 # This default setting will make XaAES look closer to n.aes, but
 # will require precision when grabbing the window border for

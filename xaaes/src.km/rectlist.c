@@ -48,7 +48,7 @@ make_rect_list(struct xa_window *wind, bool swap)
 	}
 
 	if (wind->owner->status & CS_EXITING)
-		return;
+		return NULL;
 
 	DIAGS(("make_rect_list for wind %d", wind->handle));
 

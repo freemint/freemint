@@ -787,7 +787,7 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 					C.Aes->options.thinframe,
 					C.Aes->options.thinwork,
 					*(const RECT *)&pb->intin[5]);
-			move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
+			move_window(lock, wind, true, -1, r.x, r.y, r.w, r.h);
 		}
 		else
 		{
