@@ -192,7 +192,7 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 /*	ver_3d:		zusaetzlicher vertikaler beidseitiger Rand fuer 3D-Objekte */
 /*----------------------------------------------------------------------------------------*/
 void
-adapt3d_rsrc(OBJECT *objs, u_short no_objs, short hor_3d, short ver_3d)
+adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, short hor_3d, short ver_3d)
 {
 	while (no_objs > 0)
 	{
@@ -216,7 +216,7 @@ adapt3d_rsrc(OBJECT *objs, u_short no_objs, short hor_3d, short ver_3d)
 /*	ftext_to_fboxtext:	Flag dafuer, dass FTEXT-Objekte in FBOXTEXT umgewandelt werden */
 /*----------------------------------------------------------------------------------------*/
 void
-no3d_rsrc(OBJECT *objs, u_short no_objs, short ftext_to_fboxtext)
+no3d_rsrc(OBJECT *objs, unsigned short no_objs, short ftext_to_fboxtext)
 {
 	radio_bgcol = 0; /* Annahme: Hintergrundfarbe bei 2D ist weiss */
 	
@@ -278,11 +278,11 @@ is_userdef_title(OBJECT *obj)
 /*	rdeslct:	Zeiger auf Image fuer deselektierten Radio-Button */
 /*----------------------------------------------------------------------------------------*/
 void
-substitute_objects(OBJECT *objs, u_short no_objs, short aesflags, OBJECT *rslct, OBJECT *rdeslct)
+substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT *rslct, OBJECT *rdeslct)
 {
 	OBJECT	*obj;
-	u_short	i;
-	u_short	no_subs;
+	unsigned short	i;
+	unsigned short	no_subs;
 	
 	if ((aesflags & GAI_MAGIC) && (magic_version >= 0x0300)) /* MagiC-AES? */
 	{
@@ -338,10 +338,10 @@ substitute_objects(OBJECT *objs, u_short no_objs, short aesflags, OBJECT *rslct,
 			while (i > 0)
 			{
 				short type;
-				u_short state;
+				unsigned short state;
 				
 				type = obj->ob_type & 0x00ff;
-				state = (u_short) obj->ob_state;
+				state = (unsigned short) obj->ob_state;
 				
 				if ((state & WHITEBAK) && (state & 0x8000)) /* MagiC-Objekt? */
 				{
