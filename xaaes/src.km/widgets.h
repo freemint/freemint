@@ -38,6 +38,7 @@ XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obj
 void remove_widget(enum locks lock, struct xa_window *wind, int tool);
 void *rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 void calc_work_area(struct xa_window *wind);
+bool checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
 int do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
 int pix_to_sl(long p, int s);
 int sl_to_pix(long s, int p);

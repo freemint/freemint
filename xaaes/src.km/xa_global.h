@@ -82,7 +82,9 @@ struct common
 
 	struct xa_client *Aes;		/* */
 
-	struct xa_client *buffer_moose;
+	long redraws;			/* Counting WM_REDRAWS being sent and dispatched */
+	struct xa_client *button_waiter; /* Client which is getting the next moose_data packet, */
+					 /* most probably a button released one */
 
 	int shutdown;
 	bool mvalidate;

@@ -41,7 +41,7 @@
 #include "widgets.h"
 #include "xalloc.h"
 
-long redraws = 0;
+//long redraws = 0;
 
 static int
 pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -60,7 +60,7 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_m, NULL, "Got pending WM_REDRAW for %s", c_owner(client) ));
 
-		redraws--;
+		C.redraws--;
 
 		kfree(msg);
 
@@ -184,43 +184,6 @@ mouse_ok(struct xa_client *client)
 	/* mouse locked by another client */
 	return false;
 }
-#if 0
-static bool
-still_button(enum locks lock, struct xa_client *client, const short *o)
-{
-	struct xa_client *owner;
-	struct xa_window *wind;
-	short b, x, y;
-
-	if (C.menu_base || widget_active.widg || !mouse_ok(client))
-		return false;
-
-	check_mouse(client, &b, &x, &y);
-	//vq_key_s(C.vh, &mu_button.ks);
-
-	/*
-	 * Still clicks?
-	*/
-	if (o[0] && !mu_button.newc)
-		return false;
-
-	if (!o[2])
-		return true;
-
-	wind = find_window(lock, x, y); //mu_button.x, mu_button.y);
-	owner = wind == root_window ? get_desktop()-> owner : wind->owner;
-
-	if (owner != client)
-		return false;
-
-	if (m_inside(x, y, &wind->wa) //mu_button.x, mu_button.y, &wind->wa) &&
-	    && !(client->fmd.lock && client->fmd.mousepress))
-		return true;
-
-	return false;
-
-}
-#endif
 
 #if GENERATE_DIAGS
 static char *xev[] = {"KBD","BUT","M1","M2","MSG","TIM","WHL","MX","NKBD","9","10","11","12","13","14","15"};
@@ -233,8 +196,8 @@ evnt_diag_output(void *pb, struct xa_client *client, char *which)
 		short *o = ((AESPB *)pb)->intout;
 		char evx[128];
 		show_bits(o[0], "", xev, evx);
-		DIAG((D_multi, client, "%sevnt_multi return: %s x%d, y%d, b%d, ks%d",
-			which, evx, o[1], o[2], o[3], o[4]));
+		DIAG((D_multi, client, "%sevnt_multi return: %s x%d, y%d, b%d, ks%d, kc%d, mc%d",
+			which, evx, o[1], o[2], o[3], o[4], o[5], o[6]));
 	}
 }
 #define diag_out(x,c,y) evnt_diag_output(x,c,y);
@@ -268,7 +231,8 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	unsigned long ret = XAC_BLOCK;		/* HR: another example of choosing inconvenient default fixed. */
 	int new_waiting_for = 0,
 	    fall_through = 0,
-	    pbi = pending_button.head;
+	    pbi = pending_button.head,
+	    clicks = 0;
 	
 	CONTROL(16,7,1)
 
@@ -301,7 +265,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * Ozk: If this was the last redraw message,
 			 * reenable delivery of mouse-movement events.
 			*/
-			if (!redraws)
+			if (!C.redraws)
 				kick_mousemove_timeout();
 			return XAC_DONE;
 		}
@@ -311,7 +275,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	 * Ozk: If there are still redraw messages (for other clients than "us"),
 	 * we yield() so that redraws are processed as soon as possible.
 	*/
-	if (redraws)
+	if (C.redraws)
 		yield();
 
 /*
@@ -376,40 +340,25 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 				mouse_locked() ? mouse_locked()->p->pid : 0,
 				C.menu_base, widget_active.widg));
 
-			DIAG((D_button, NULL, "evnt_multi: Check if button event"));
+			//DIAG((D_button, NULL, "evnt_multi: Check if button event"));
 
-			if (client->md_valid)
 			{
 				struct moose_data *md = &client->md;
+				DIAG((D_button, NULL, "evnt_multi: check button evnt on private"));
 				if (md->clicks)
 				{
 					bev = is_bevent(md->state, md->clicks, pb->intin + 1, 1);
+					clicks = md->clicks;
 					md->clicks = 0;
 				}
-				else if (md->state && !md->cstate)
-				{
-					bev = is_bevent(md->cstate, 1, pb->intin + 1, 1);
-					client->md_valid = 0;
-				}
 				else
-					client->md_valid = 0;
+				{
+ 					if ((bev = is_bevent(md->cstate, 0, pb->intin + 1, 1)))
+						clicks = 1;
+				}
 			}
-			else if (mu_button.newc)
-			{
-				if ((bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin + 1, 2)))
-					mu_button.newc = 0;
-			}
-			else if (mu_button.newr)
-			{
-				if ((bev = is_bevent(mu_button.cb, 1, pb->intin + 1, 2)))
-					mu_button.newr = 0;
-			}
-			else if (!(pb->intin[1] & 0xff))
-				bev = is_bevent(mu_button.cb, 0, pb->intin + 1, 2);
-
 			if (bev == true)
 				fall_through |= MU_BUTTON;
-
 		}
 
 		Sema_Dn(pending);
@@ -528,6 +477,8 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			ret = XAC_DONE;
 		if ((fall_through&MU_BUTTON) != 0)
 		{
+			pb->intout[6] = clicks;
+
 			/* HR 190601: Pphooo :-( This solves the Thing desk popup missing clicks. */
 			/* Ozk 040501: And we need to take the data from the correct place. */
 			if (mu_butt_p)
@@ -537,15 +488,6 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 				pb->intout[3] = pending_button.q[pbi].b;
 				pb->intout[6] = pending_button.q[pbi].clicks;
 			}
-#if 0
-			else
-			{
-				pb->intout[1] = mu_button.x;
-				pb->intout[2] = mu_button.y;
-				pb->intout[3] = mu_button.cb;
-				pb->intout[6] = mu_button.clicks;
-			}
-#endif
 		}
 			
 		pb->intout[0] = fall_through;
@@ -594,12 +536,12 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (pending_redraw_msgs(lock, client, pb))
 	{
 		pb->intout[0] = 1;
-		if (!redraws)
+		if (!C.redraws)
 			kick_mousemove_timeout();
 
 		return XAC_DONE;
 	}
-	if (redraws)
+	if (C.redraws)
 		yield();
 
 	if (pending_msgs(lock, client, pb))
@@ -618,6 +560,7 @@ unsigned long
 XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	int pbi = pending_button.head;
+	int clicks = 0;
 
 	CONTROL(3,5,1)
 
@@ -655,40 +598,27 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 			mouse_locked() ? mouse_locked()->p->pid : 0,
 			C.menu_base, widget_active.widg));
 
-		if (client->md_valid)
 		{
 			struct moose_data *md = &client->md;
+			DIAG((D_button, NULL, "evnt_button: check event on private"));
 			if (md->clicks)
 			{
 				bev = is_bevent(md->state, md->clicks, pb->intin, 1);
-				md->clicks = 0;
-			}
-			else if (md->state && !md->cstate)
-			{
-				bev = is_bevent(md->cstate, 1, pb->intin, 1);
-				client->md_valid = 0;
+				clicks = md->clicks;
+				if (md->state && !md->cstate)
+					md->clicks = 0;
 			}
 			else
-				client->md_valid = 0;
+			{
+				if ((bev = is_bevent(md->cstate, 0, pb->intin, 1)))
+					clicks = 1;
+			}
 		}
-		else if (mu_button.newc)
-		{
-			if ((bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin, 2)))
-				mu_button.newc = 0;
-		}
-		else if (mu_button.newr)
-		{
-			if ((bev = is_bevent(mu_button.cb, 1, pb->intin, 2)))
-				mu_button.newr = 0;
-		}
-		else if (!(pb->intin[0] & 0xff))
-			bev = is_bevent(mu_button.cb, 0, pb->intin, 2);
-
 		if (bev == true)
 		{
 			DIAG((D_button, NULL, "evnt_multi: Check if button event"));
 			multi_intout(client, pb->intout, 0);
-			pb->intout[0] = 1;
+			pb->intout[0] = clicks; //1;
 			Sema_Dn(pending);
 			return XAC_DONE;
 		}

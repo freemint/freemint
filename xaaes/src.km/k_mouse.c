@@ -49,6 +49,15 @@
 
 
 /*
+ * Ozk: When a mouse button event is delivered to a client, or application,
+ * the whole button event is copied into the clients private moose_data.
+ * This means that if the delivered button event has any of its buttons
+ * pressed, we need to remember which client is to get the button released
+ * data.
+ */
+//static struct xa_client *button_waiter = 0;
+
+/*
  * Ozk: The data in mainmd contains the data from the last button-change
  * and NOT the up-to-date mouse coordinates. Those are in x_mouse and y_mouse
  */
@@ -97,10 +106,17 @@ static struct moose_data md_buff[MDBUF_SIZE];
  * 
  */
 
+/*
+ * Ozk: new_mu_mouse() is now only called by adi_button(). After I
+ * get things cleaned up a bit, the mu_button structure will disappear
+ * and the latest mouse-button event packet will be stored in mainmd.
+ * Then all functions depending on the most uptodate mouse-button event
+ * status (notably check_mouse()) will use mainmd instead of mu_button.
+ */
 static void
 new_mu_mouse(struct moose_data *md)
 {
-	DIAG((D_v, NULL, "new_mu_mouse %d %d,%d/%d", md->state, md->cstate, md->x, md->y));
+	//DIAG((D_v, NULL, "new_mu_mouse %d %d,%d/%d", md->state, md->cstate, md->x, md->y));
 	mu_button.b		= md->state;
 	mu_button.cb		= md->cstate;
 	mu_button.x = x_mouse	= md->x;
@@ -108,6 +124,7 @@ new_mu_mouse(struct moose_data *md)
 	mu_button.clicks 	= md->clicks;
 	mu_button.ks		= md->kstate;
 
+#if 0
 	mu_button.newc		= 1;	/* Indicate new click */
 
 	/*
@@ -118,6 +135,7 @@ new_mu_mouse(struct moose_data *md)
 		mu_button.newr	= 1;	/* Indicate button release */
 	else
 		mu_button.newr = 0;	/* No release */
+#endif
 	/*
 	 * Copy into the global main moose data if necessary
 	 */
@@ -196,6 +214,7 @@ is_bevent(int gotbut, int gotcl, const short *o, int which)
 }
 
 /* HR 050402: WDIAL: split off as a function for use in ExitForm function */
+
 void
 button_event(enum locks lock, struct xa_client *client, const struct moose_data *md)
 {
@@ -218,13 +237,10 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = md->x;
 				*to++ = md->y;
 				*to++ = md->state;
-				*to++ = mu_button.ks;
+				*to++ = md->kstate;
 				*to++ = 0;
 				*to++ = md->clicks;
-				client->md = *md;
 				client->md.clicks = 0;
-				client->md_valid = 1;
-				mu_button.newc = 0;
 
 				client->usr_evnt = 1;
 				DIAG((D_button, NULL, " - written"));
@@ -239,11 +255,8 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = md->x;
 				*to++ = md->y;
 				*to++ = md->state;
-				*to   = mu_button.ks;
-				client->md = *md;
+				*to   = md->kstate;
 				client->md.clicks = 0;
-				client->md_valid = 1;
-				mu_button.newc = 0;
 
 				client->usr_evnt = 1;
 				DIAG((D_button, NULL, " - written"));
@@ -287,6 +300,62 @@ add_pending_button(enum locks lock, struct xa_client *client)
 	pending_button.tail &= 3;
 
 	Sema_Dn(pending);
+}
+
+/*
+ * When a client is delivered a button event, we store the event
+ * in the clients private moose_data structure. This is the _only_
+ * data evnt_multi() and evnt_button() work on, and is only supposed
+ * to change when the event is actually delivered to the client and
+ * not used by the AES for menu or window gadgets.
+*/
+static inline void
+deliver_button_event(struct xa_client *target, const struct moose_data *md)
+{
+	/*
+	 * If this is a click-hold event, moose.adi will send a
+	 * released event later, and this event belongs to the
+	 * receiver of the click-hold.
+	 */
+	if (md->state && md->cstate)
+		C.button_waiter = target;
+
+	/*
+	 * Copy the event into the clients private parts
+	 */
+	target->md = *md;
+	/*
+	 * And post a "deliver this button event" client event
+	 */
+	DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
+	post_cevent(target, cXA_deliver_button_event, 0,0, 0,0, 0,md);
+}
+
+static void
+dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moose_data *md)
+{
+	struct xa_client *target = wind->owner;
+
+	if (wind == window_list || wind->active_widgets & NO_TOPPED)
+	{
+		if (checkif_do_widgets(lock, wind, 0, md))
+		{
+			DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets to %s", target->name));
+			post_cevent(target, cXA_do_widgets, wind, 0, 0,0, 0,md);
+		}
+		else
+			deliver_button_event(target, md);
+	}
+	else if (wind != window_list && checkif_do_widgets(lock, wind, 0, md))
+	{
+		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
+		post_cevent(target, cXA_do_widgets, wind,0, 0,0, 0,md);
+	}			
+	else if (wind->send_message && md->state)
+	{
+		DIAG((D_mouse, target, "XA_button_event: Sending WM_TOPPED to %s", target->name));
+		wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
+	}
 }
 
 /*
@@ -363,13 +432,33 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		 */
 		if (wind->owner != client)
 		{
-			DIAG((D_mouse, client, "post deliver button event (wind) to %s", client->name));
-			post_cevent(client, cXA_deliver_button_event, 0, 0, 0, 0, 0, md);
+			deliver_button_event(client, md);
 		}
 		else
 		{
-			DIAG((D_mouse, client, "post button event (wind) to %s", client->name));
-			post_cevent(client, cXA_button_event, wind, 0, 0, 0, 0, md);
+			dispatch_button_event(lock, wind, md);
+#if 0
+			if (wind == window_list || wind->active_widgets & NO_TOPPED)
+			{
+				if (checkif_do_widgets(lock, wind, 0, md))
+				{
+					DIAG((D_mouse, client, "XA_button_event: Send cXA_do_widgets to %s", client->name));
+					post_cevent(client, cXA_do_widgets, wind, 0, 0,0, 0,md);
+				}
+				else
+					deliver_button_event(client, md);
+			}
+			else if (wind != window_list && checkif_do_widgets(lock, wind, 0, md))
+			{
+				DIAG((D_mouse, client, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", client->name));
+				post_cevent(client, cXA_do_widgets, wind,0, 0,0, 0,md);
+			}			
+			else if (wind->send_message && md->state)
+			{
+				DIAG((D_mouse, client, "XA_button_event: Sending WM_TOPPED to %s", client->name));
+				wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
+			}
+#endif
 		}
 		return;
 	}
@@ -377,13 +466,36 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	{
 		if (wind && wind->owner == locker && (wind->active_widgets & TOOLBAR))
 		{
+			dispatch_button_event(lock, wind, md);
+#if 0
+			if (wind == window_list || wind->active_widgets & NO_TOPPED)
+			{
+				if (checkif_do_widgets(lock, wind, 0, md))
+					post_cevent(locker, cXA_do_widgets, wind, 0, 0,0, 0,md);
+				else
+					deliver_button_event(locker, md);
+			}
+			else if (wind != window_list && checkif_do_widgets(lock, wind, 0, md))
+			{
+				post_cevent(locker, cXA_do_widgets, wind,0, 0,0, 0,md);
+			}			
+			else if (wind->send_message && md->state)
+			{
+				wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
+			}
+#endif
+#if 0
 			DIAG((D_mouse, locker, "post button event to mouselocker %s", locker->name));
 			post_cevent(locker, cXA_button_event, wind,0, 0,0, 0,md);
+#endif
 		}
 		else
 		{
+			deliver_button_event(locker, md);
+#if 0
 			DIAG((D_mouse, locker, "post deliver button event to mouselocker %s", locker->name));
 			post_cevent(locker, cXA_deliver_button_event, 0,0, 0,0, 0,md);
+#endif
 		}
 	}
 }
@@ -719,12 +831,6 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	if (S.wm_count)
 	{
 		/*
-		 * Ozk: We want mu_mouse to always contain the latest mouse state.
-		 */
-		if (md->ty == MOOSE_BUTTON_PREFIX)
-			new_mu_mouse(md), mu_button.newc = 0;
-
-		/*
 		 * Check if a client is actually waiting. If not, buffer the packet.
 		 */
 		if (internal || (S.wait_mouse && (S.wait_mouse->waiting_for & XAWAIT_MOUSE)))
@@ -762,16 +868,8 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		DIAG((D_button, NULL, "Button %d, cstate %d on: %d/%d",
 			md->state, md->cstate, md->x, md->y));
 
-		new_mu_mouse(md);
 		new_active_widget_mouse(md);
 		XA_button_event(lock, md, true);
-
-		/*
-		 * Ozk: mu_button.newc indicates a NEWClick
-		 * and mu_button.newr indicates an unprocessed NEWRelease
-		*/
-		mu_button.newc = 0;
-
 		break;
 	}
 	case MOOSE_MOVEMENT_PREFIX:
@@ -809,7 +907,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 }
 
 /* XXX */
-extern long redraws;
+//extern long redraws;
 
 static short last_x = 0;
 static short last_y = 0;
@@ -830,7 +928,7 @@ static void move_timeout(struct proc *, long arg);
 static void
 move_rtimeout(struct proc *p, long arg)
 {
-	redraws = 0;
+	C.redraws = 0;
 	m_rto = 0;
 
 	/* XXX - Fixme!
@@ -880,7 +978,7 @@ move_timeout(struct proc *p, long arg)
 		*/
 		if (last_x != x_mouse || last_y != y_mouse)
 		{
-			if (redraws)
+			if (C.redraws)
 			{
 				/*
 				 * If redraw messages are still pending,
@@ -925,8 +1023,8 @@ adi_move(struct adif *a, short x, short y)
 	/*
 	 * Don't process move events when button timeout pending
 	*/
-	if (b_to)
-		return;
+	//if (b_to)
+	//	return;
 
 	/*
 	 * Always update these..
@@ -934,7 +1032,7 @@ adi_move(struct adif *a, short x, short y)
 	x_mouse = x;
 	y_mouse = y;
 
-	if (redraws)
+	if (C.redraws)
 	{
 		/*
 		 * If WM_REDRAW messages pending, add timeout
@@ -962,7 +1060,7 @@ adi_move(struct adif *a, short x, short y)
 void
 kick_mousemove_timeout(void)
 {
-	if (!redraws)
+	if (!C.redraws)
 	{
 		if (m_rto)
 		{
@@ -985,6 +1083,7 @@ button_timeout(struct proc *p, long arg)
 
 	DIAGS(("adi_button_event %d/%d", md->state, md->cstate));
 	vq_key_s(C.vh, &md->kstate);
+	mu_button.ks = md->kstate;
 	new_moose_pkt(0, 0, md);
 	kfree(md);
 	b_to = 0;
@@ -998,6 +1097,19 @@ void
 adi_button(struct adif *a, struct moose_data *md)
 {
 	TIMEOUT *t;
+
+	/*
+	 * Ozk: should have obtained the keyboard-shift state here,
+	 * but I dont think it is safe. So we get that in button_timeout()
+	 * instead. Eventually, moose.adi will provide this info...
+	 */
+	new_mu_mouse(md);
+
+	if (C.button_waiter)
+	{
+		C.button_waiter->md = *md;
+		C.button_waiter = 0;
+	}
 
 	if (m_to)
 	{
@@ -1102,7 +1214,6 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			mu_button.cb, x_mouse, y_mouse, p_getpid()));
 	}
 #endif
-
 	if (br)
 		*br = mu_button.cb;
 	if (xr)
