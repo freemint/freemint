@@ -35,7 +35,8 @@
 
 #include "app_man.h"
 #include "k_mouse.h"
-#include "objects.h"
+#include "draw_obj.h"
+#include "obtree.h"
 #include "menuwidg.h"
 #include "widgets.h"
 #include "xa_rsrc.h"
@@ -64,7 +65,7 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 	{
 		int item;
 
-		item = find_object(get_desktop()->tree, 0, 1, md->x, md->y, 0, 0);
+		item = ob_find(get_desktop()->tree, 0, 1, md->x, md->y);
 
 		DIAG((D_button, NULL, "  --  item %d", item));
 
@@ -117,6 +118,8 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	loc.r.w -= MENU_H + 1;
 	loc.n = XAW_TOOLBAR;
 	loc.mask = TOOLBAR;
+
+	wi->r = loc.r;
 
 	wi->display = display_object_widget;
 	wi->click = click_desktop_widget;

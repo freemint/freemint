@@ -36,7 +36,7 @@
 #include "messages.h"
 
 #include "mint/proc.h"
-#include "../../sys/xdd/whlmoose/whlmoose.h"
+#include "../../sys/adi/whlmoose/whlmoose.h"
 
 
 /* forward declarations */
@@ -44,6 +44,7 @@ struct task_administration_block;
 struct widget_tree;
 struct xa_widget;
 struct scroll_entry;
+struct fmd_result;
 
 enum menu_behave
 {
@@ -189,18 +190,39 @@ typedef struct menu_attachments
 
 /* A function of the type used for widget behaviours is a 
    'WidgetBehaviour'. */
-typedef bool WidgetBehaviour(enum locks lock, struct xa_window *wind,
-			     struct xa_widget *widg, const struct moose_data *md);
+typedef bool WidgetBehaviour	(enum locks lock,
+				 struct xa_window *wind,
+				 struct xa_widget *widg,
+				 const struct moose_data *md);
 
 typedef bool DisplayWidget(enum locks lock, struct xa_window *wind,
 			   struct xa_widget *widg);
 
+typedef bool FormKeyInput(enum locks lock,
+			  struct xa_client *client,
+			  struct xa_window *window,
+			  struct widget_tree *wt,
+			  const struct rawkey *key);
+
+typedef bool FormMouseInput(enum locks lock,
+			    struct xa_client *client,
+			    struct xa_window *window,
+			    struct widget_tree *wt,
+			    const struct moose_data *md);
+
+typedef void FormExit(struct xa_client *client,
+		      struct xa_window *wind,
+		      struct widget_tree *wt,
+		      struct fmd_result *fr);
+
+
 typedef int WindowKeypress(enum locks lock, struct xa_window *wind,
 			   struct widget_tree *wt,
 			   unsigned short keycode, unsigned short nkcode, struct rawkey key);
-
+#if 0
 typedef void ClassicClick(enum locks lock, struct xa_client *client,
 			  const struct moose_data *md);
+#endif
 
 /* Object display function type */
 typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt);
@@ -208,12 +230,13 @@ typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt);
 /* Object handler function type */
 typedef void ObjectHandler(enum locks lock, struct widget_tree *wt);
 
+#if 0
 /* Exit form condition handlers */
 typedef void ExitForm(enum locks lock, struct xa_window *wind,
                                  struct xa_widget *widg,
                                  struct widget_tree *wt,
                                  int f, int os, int dbl, int which, struct rawkey *key);
-
+#endif
 
 /* Object Tree based widget descriptor */
 struct wdlg_info
@@ -231,7 +254,7 @@ struct wdlg_info
 struct widget_tree
 {
 	OBJECT *tree;			/* The object tree */
-	int current;			/* current item within above tree. */
+	short current;			/* current item within above tree. */
 	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
 					/* And set a usefull RECT as soon as possible, ready for use in
 					 * all kind of functions. */
@@ -245,10 +268,10 @@ struct widget_tree
 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
 	short parent_y;
 
-	int edit_obj;			/* Index of the current editable text field (if any) */
-	int edit_pos;			/* Cursor position within the text field (if any) */
-	int lastob;			/* Can be used to validate item number */
-	int which;			/* kind of event for use by WDIAL exit handler. */
+	short edit_obj;			/* Index of the current editable text field (if any) */
+	short edit_pos;			/* Cursor position within the text field (if any) */
+	short lastob;			/* Can be used to validate item number */
+	short which;			/* kind of event for use by WDIAL exit handler. */
 
 	bool is_menu;			/* true when the tree is a menu or part of it. */
 	bool menu_line;			/* draw a menu line. */
@@ -257,13 +280,14 @@ struct widget_tree
 	short dx, dy;			/* displacement of root from upper left corner of window
 					 * for operation by sliders. */
 
-	ExitForm *exit_form;		/* Called if exit condition occurs
+	//ExitForm *exit_form;		/* Called if exit condition occurs
+	FormExit *exit_form;		/* Called if exit condition occurs
 					 * while handling a form_do or a toolbar
 					 * or anything the like ;-) */
 
-	ObjectHandler *exit_handler;	/* Handler vec for direct handling of exit
-					 * condition. The 'aaplication' aspect of the
-					 * exit_form */
+	//ObjectHandler *exit_handler;	/* Handler vec for direct handling of exit
+	//				 * condition. The 'aaplication' aspect of the
+	//				 * exit_form */
 
 	void *extra;			/* Extra info if needed (texts for alert) */
 
@@ -282,14 +306,32 @@ struct xa_rscs
 	void *rsc;
 };
 
+/*
+ * Structure used to pass form_do/dial results to FormExit functions()
+ */
+struct fmd_result
+{
+	bool no_exit;
+	short obj;
+	short obj_state;
+	short dblmask;
+	ushort aeskey;
+	ushort normkey;
+	short ks;
+	const struct moose_data *md;
+	const struct rawkey *key;
+};
+
 struct fmd
 {
 	struct xa_window *wind;		/* Pointer to a window that could be about to become a dialog */
 	short state;			/* fmd.r contains a valid rectangle of a form_dial, which is postponed. */
 	short lock;			/* Client has locked the screen. */
 	XA_WIND_ATTR kind;		/* Window attributes to be used. */
-	WindowKeypress *keypress;
-	ClassicClick *mousepress;
+	//WindowKeypress *keypress;
+	//ClassicClick *mousepress;
+	FormKeyInput *keypress;
+	FormMouseInput *mousepress;
 	RECT r;				/* The rectangle for the postponed dialogue window */
 };
 
@@ -467,6 +509,8 @@ enum xa_widgets
 };
 typedef enum xa_widgets XA_WIDGETS;
 
+struct xa_widget;
+
 /* Widget positions are defined as relative locations */
 struct xa_widget_location
 {
@@ -476,6 +520,7 @@ struct xa_widget_location
 	XA_WIND_ATTR mask;		/* disconnect NAME|SMALLER etc from emumerated type XA_WIDGETS */
 	int rsc_index;			/* If a bitmap widget, index in rsc file */
 	bool top;			/* does the widget add to the number widgets at the top of the window. */
+	void (*destruct)(struct xa_widget *widg);
 };
 typedef struct xa_widget_location XA_WIDGET_LOCATION;
 
@@ -483,13 +528,21 @@ typedef struct xa_widget_location XA_WIDGET_LOCATION;
 struct xa_widget
 {
 	struct xa_widget *next;		/* For future use. */
+
 	XA_WIDGET_LOCATION loc;		/* Location of widget relative to window extents */
+	RECT r;
 
 	DisplayWidget *display;		/* Function pointers to the behaviours of the widget */
 	WidgetBehaviour *click;
 	WidgetBehaviour *dclick;
 	WidgetBehaviour *drag;
 	WidgetBehaviour *release;
+
+#define XAWF_STUFFKMALLOC 1
+
+
+	long flags;
+	void (*destruct)(struct xa_widget *w);
 
 	short state;			/* Current status (selected, etc) */
 	XA_WIDGETS type;		/* For convenience, makes it possible to disconnect type from index */
@@ -623,18 +676,23 @@ struct xa_window
 					 *      - 8 = or created on behalf of wdlg_xxx extension. */
 
 	WindowDisplay *redraw;		/* Pointer to the window's auto-redraw function (if any) */
-	WindowKeypress *keypress;	/* Pointer to the window's keyboard handler function (if any) */
+	//WindowKeypress *keypress;	/* Pointer to the window's keyboard handler function (if any) */
+	FormKeyInput *keypress;		/* Pointer to the window's keyboard handler function (if any) */
 	WindowDisplay *destructor;	/* Pointer to the window's destructor function (auto-called on
 					 * window deletion if a fully auto window) */
 
 	/* Pointer to the internal message handler for this window
 	 * (to be handled by the creator) */
+	SendMessage	*send_message;
+
+#if 0
 	void (*send_message)(
 		enum locks lock,
 		struct xa_window *wind,
 		struct xa_client *to,
 		short mp0, short mp1, short mp2, short mp3,
 		short mp4, short mp5, short mp6, short mp7);
+#endif
 
 	OBJECT *winob;			/* Tree and index of a sub window (The parent object of the window) */
 	int winitem;			/* currently used by list boxes */

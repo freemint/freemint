@@ -30,30 +30,33 @@
 #include "global.h"
 #include "xa_types.h"
 
-void fix_default_widgets(void *);
+void	fix_default_widgets(void *);
 OBJECT *get_widgets(void);
-void display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg);
-void standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
-XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obj, int item);
-void remove_widget(enum locks lock, struct xa_window *wind, int tool);
-void *rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
-void calc_work_area(struct xa_window *wind);
-bool checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
-int do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
-int pix_to_sl(long p, int s);
-int sl_to_pix(long s, int p);
-void XA_slider(struct xa_window *w, int which, int total, int visible, int start);
-bool m_inside(short x, short y, RECT *o);
-void redraw_menu(enum locks lock);
-void redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state);
-void done_widget_active(struct xa_window *wind, int i);
-RECT iconify_grid(int i);
+void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg);
+void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
+void	display_toolbar(enum locks lock, struct xa_window *wind, short item);
+void	set_toolbar_coords(struct xa_window *wind);
+XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obj, short item);
+void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
+void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
+XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
+void	calc_work_area(struct xa_window *wind);
+bool	checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
+int	do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
+int	pix_to_sl(long p, int s);
+int	sl_to_pix(long s, int p);
+void	XA_slider(struct xa_window *w, int which, int total, int visible, int start);
+bool	m_inside(short x, short y, RECT *o);
+void	redraw_menu(enum locks lock);
+void	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state);
+void	done_widget_active(struct xa_window *wind, int i);
+RECT	iconify_grid(int i);
 
 DisplayWidget display_vslide; /* For d_g_list, should go! */
 DisplayWidget display_object_widget; /* for desktop */
 
-void do_widget_repeat(void);
-void do_active_widget(enum locks lock, struct xa_client *client);
+void	do_widget_repeat(void);
+void	do_active_widget(enum locks lock, struct xa_client *client);
 
 /*
  * inline some very simple functions

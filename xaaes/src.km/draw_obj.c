@@ -26,65 +26,226 @@
 
 #include WIDGHNAME
 
+
 #include "xa_types.h"
 #include "xa_global.h"
 
+#include "draw_obj.h"
+#include "obtree.h"
+
 #include "rectlist.h"
-#include "objects.h"
+//#include "objects.h"
 #include "c_window.h"
 #include "widgets.h"
 #include "xa_user_things.h"
 
 #include "mint/signal.h"
 
-
 #define done(x) (*wt->state_mask &= ~(x))
 
 
-/*
- * Returns the object number of this object's parent or -1 if it is the root
- */
-int
-get_parent(OBJECT *t, int object)
-{
-	if (object)
-	{
-		int last;
+#if GENERATE_DIAGS
 
-		do {
-			last = object;
-			object = t[object].ob_next;
+static char *pstates[] =
+{
+	"SEL",
+	"CROSS",
+	"\10",
+	"DIS",
+	"OUTL",
+	"SHA",
+	"WBAK",
+	"D3D",
+	"8",
+	"9",
+	"10",
+	"11",
+	"12",
+	"13",
+	"14",
+	"15"
+};
+
+static char *pflags[] =
+{
+	"S",
+	"DEF",
+	"EXIT",
+	"ED",
+	"RBUT",
+	"LAST",
+	"TOUCH",
+	"HID",
+	">>",
+	"INDCT",
+	"BACKGR",
+	"SUBM",
+	"12",
+	"13",
+	"14",
+	"15"
+};
+
+static char *ob_types[] =
+{
+	"box",
+	"text",
+	"boxtext",
+	"image",
+	"progdef",
+	"ibox",
+	"button",
+	"boxchar",
+	"string",
+	"ftext",
+	"fboxtext",
+	"icon",
+	"title",
+	"cicon",
+	"xaaes slist",
+	"popup",
+	"resv",
+	"edit",
+	"shortcut",
+	"39",
+	"40"
+};
+
+static char *
+object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glance */
+{
+    	static char nother[160];
+	int ty = tree[t].ob_type;
+
+	*nother = 0;
+
+	switch (ty & 0xff)
+	{
+		case G_FTEXT:
+		case G_TEXT:
+		case G_BOXTEXT:
+		case G_FBOXTEXT:
+		{
+			TEDINFO *ted = object_get_spec(tree + t)->tedinfo;
+			sprintf(nother, sizeof(nother), " '%s'", ted->te_ptext);
+			break;
 		}
-		while(t[object].ob_tail != last);
-
-		return object;
-	}
-
-	return -1;
+		case G_BUTTON:
+		case G_TITLE:
+		case G_STRING:
+		case G_SHORTCUT:
+			sprintf(nother, sizeof(nother), " '%s'", object_get_spec(tree + t)->free_string);
+			break;
+	}	
+	return nother;
 }
 
-bool
-is_spec(OBJECT *tree, int item)
+static char *
+object_type(OBJECT *tree, short t)
 {
-	switch (tree[item].ob_type & 0xff)
+	static char other[80];
+
+	unsigned int ty = tree[t].ob_type;
+	unsigned int tx;
+
+	if (ty >= G_BOX && ty < G_BOX+sizeof(ob_types)/sizeof(*ob_types))
+		return ob_types[ty-G_BOX];
+
+	tx = ty & 0xff;
+	if (tx >= G_BOX && tx < G_BOX+sizeof(ob_types)/sizeof(*ob_types))
+		sprintf(other, sizeof(other), "ext: 0x%x + %s", ty >> 8, ob_types[tx-G_BOX]);
+	else
+		sprintf(other, sizeof(other), "unknown: 0x%x,%d", ty, ty);
+
+	return other;
+}
+#endif
+
+bool inline d3_any(OBJECT *ob)        { return (ob->ob_flags & OF_FL3DACT) != 0;	}
+bool inline d3_indicator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DIND; }
+bool inline d3_foreground(OBJECT *ob) { return (ob->ob_flags & OF_FL3DIND) != 0; }
+bool inline d3_background(OBJECT *ob) { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DBAK; }
+bool inline d3_activator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DACT; }
+
+static void
+g2d_box(short b, RECT *r, short colour)
+{
+	/* inside runs from 3 to 0 */
+	if (b > 0)
 	{
-		case G_BOX:
-		case G_IBOX:
-		case G_BOXCHAR:
-		return true;
+		if (b >  4) b =  3;
+		else        b--;
+		l_color(colour);
+		while (b >= 0)
+			gbox(-b, r), b--;
 	}
-	return false;
+	/* outside runs from 4 to 1 */
+	else if (b < 0)
+	{
+		if (b < -4) b = -4;
+		l_color(colour);
+		while (b < 0)
+			gbox(-b, r), b++;
+	}
 }
 
-bool d3_any(OBJECT *ob)        { return (ob->ob_flags & OF_FL3DACT) != 0;	}
-bool d3_indicator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DIND; }
-bool d3_foreground(OBJECT *ob) { return (ob->ob_flags & OF_FL3DIND) != 0; }
-bool d3_background(OBJECT *ob) { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DBAK; }
-bool d3_activator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DACT; }
-
-void wr_mode(int m)
+void
+draw_2d_box(short x, short y, short w, short h, short border_thick, short colour)
 {
-	static int mode = -1;
+	RECT r;
+
+	r.x = x;
+	r.y = y;
+	r.w = w;
+	r.h = h;
+
+	g2d_box(border_thick, &r, colour);
+}
+
+
+/*
+ * Set clipping to entire screen
+ */
+void
+clear_clip(void)
+{
+	rtopxy(C.global_clip, &screen.r);
+	vs_clip(C.vh, 1, C.global_clip);
+}
+
+void
+set_clip(const RECT *r)
+{
+	if (r->w <= 0 || r->h <= 0)
+		rtopxy(C.global_clip,&screen.r);
+	else	
+		rtopxy(C.global_clip,r);
+
+	vs_clip(C.vh, 1, C.global_clip);
+}
+
+void
+write_disable(RECT *r, short colour)
+{
+	static short pattern[16] =
+	{
+		0x5555, 0xaaaa, 0x5555, 0xaaaa,
+		0x5555, 0xaaaa, 0x5555, 0xaaaa,
+		0x5555, 0xaaaa, 0x5555, 0xaaaa,
+		0x5555, 0xaaaa, 0x5555, 0xaaaa
+	};
+
+	wr_mode(MD_TRANS);
+	f_color(colour);
+	vsf_udpat(C.vh, pattern, 1);
+	f_interior(FIS_USER);
+	gbar(0, r);
+}
+
+void
+wr_mode(short m)
+{
+	static short mode = -1;
 
 	if (mode != m)
 	{
@@ -93,9 +254,10 @@ void wr_mode(int m)
 	}
 }
 
-void l_color(int m)
+void
+l_color(short m)
 {
-	static int mode = -1;
+	static short mode = -1;
 
 	if (mode != m)
 	{
@@ -104,9 +266,10 @@ void l_color(int m)
 	}
 }
 
-void f_color(int m)
+void
+f_color(short m)
 {
-	static int mode = -1;
+	static short mode = -1;
 
 	if (mode != m)
 	{
@@ -115,9 +278,10 @@ void f_color(int m)
 	}
 }
 
-void t_color(int m)
+void
+t_color(short m)
 {
-	static int mode = -1;
+	static short mode = -1;
 
 	if (mode != m)
 	{
@@ -126,9 +290,9 @@ void t_color(int m)
 	}
 }
 
-void t_effect(int m)
+void t_effect(short m)
 {
-	static int mode = -1;
+	static short mode = -1;
 
 	if (mode != m)
 	{
@@ -137,10 +301,10 @@ void t_effect(int m)
 	}
 }
 
-void t_font(int p, int f)
+void t_font(short p, short f)
 {
-	static int pm = -1;
-	static int fm = -1;
+	static short pm = -1;
+	static short fm = -1;
 	short temp;
 
 	if (pm != p)
@@ -156,9 +320,9 @@ void t_font(int p, int f)
 	}
 }
 
-void f_interior(int m)
+void f_interior(short m)
 {
-	static int mode = -1;
+	static short mode = -1;
 
 	if (mode != m)
 	{
@@ -167,16 +331,11 @@ void f_interior(int m)
 	}
 }
 
-void f_style(int m)
+void f_style(short m)
 {
-	static int mode = -1;
+	static short mode = -1;
 	if (m != mode)
 		vsf_style(C.vh, mode = m);
-}
-
-void deselect(OBJECT *tree, int item)
-{
-	(tree + item)->ob_state &= ~OS_SELECTED;
 }
 
 /* HR: pxy wrapper functions (Beware the (in)famous -1 bug */
@@ -209,7 +368,7 @@ void ritopxy(short *p, short x, short y, short w, short h)
 	*p   = y + h-1;
 }
 
-void line(short x, short y, short x1, short y1, int col)
+void line(short x, short y, short x1, short y1, short col)
 {
 	short pxy[4] = { x, y, x1, y1 };
 
@@ -217,7 +376,7 @@ void line(short x, short y, short x1, short y1, int col)
 	v_pline(C.vh, 2, pxy);
 }
 
-void bar(int d,  short x, short y, short w, short h)
+void bar(short d,  short x, short y, short w, short h)
 {
 	short l[4];
 	x -= d, y -= d, w += d+d, h += d+d;
@@ -228,7 +387,7 @@ void bar(int d,  short x, short y, short w, short h)
 	v_bar(C.vh, l);
 }
 
-void gbar(int d, const RECT *r)		/* for perimeter = 0 */
+void gbar(short d, const RECT *r)		/* for perimeter = 0 */
 {
 	short l[4];
 	l[0] = r->x - d;
@@ -238,7 +397,7 @@ void gbar(int d, const RECT *r)		/* for perimeter = 0 */
 	v_bar(C.vh, l);
 }
 
-void p_bar(int d, short x, short y, short w, short h) /* for perimeter = 1 */
+void p_bar(short d, short x, short y, short w, short h) /* for perimeter = 1 */
 {
 	short l[10];
 	x -= d, y -= d, w += d+d, h += d+d;
@@ -260,7 +419,7 @@ void p_bar(int d, short x, short y, short w, short h) /* for perimeter = 1 */
 	v_pline(C.vh,5,l);
 }
 
-void p_gbar(int d, const RECT *r)	/* for perimeter = 1 */
+void p_gbar(short d, const RECT *r)	/* for perimeter = 1 */
 {
 	short l[10];
 	short x = r->x - d;
@@ -285,7 +444,7 @@ void p_gbar(int d, const RECT *r)	/* for perimeter = 1 */
 	v_pline(C.vh,5,l);
 }
 
-void box(int d, short x, short y, short w, short h)
+void box(short d, short x, short y, short w, short h)
 {
 	short l[10];
 	x -= d, y -= d, w += d+d, h += d+d;
@@ -302,7 +461,7 @@ void box(int d, short x, short y, short w, short h)
 	v_pline(C.vh,5,l);
 }
 
-void gbox(int d, const RECT *r)
+void gbox(short d, const RECT *r)
 {
 	short l[10];
 	short x = r->x - d;
@@ -328,7 +487,7 @@ void gbox(int d, const RECT *r)
 #define PW 0
 #endif
 
-void tl_hook(int d, const RECT *r, int col)
+void tl_hook(short d, const RECT *r, short col)
 {
 	short pnt[6];
 	short x = r->x - d;
@@ -345,7 +504,7 @@ void tl_hook(int d, const RECT *r, int col)
 	v_pline(C.vh, 3, pnt);
 }
 
-void br_hook(int d, const RECT *r, int col)
+void br_hook(short d, const RECT *r, short col)
 {
 	short pnt[6];
 	short x = r->x - d;
@@ -362,7 +521,7 @@ void br_hook(int d, const RECT *r, int col)
 	v_pline(C.vh, 3, pnt);
 }
 
-void adjust_size(int d, RECT *r)
+void adjust_size(short d, RECT *r)
 {
 	r->x -= d;	/* positive value d means enlarge! :-)   as everywhere. */
 	r->y -= d;
@@ -370,7 +529,7 @@ void adjust_size(int d, RECT *r)
 	r->h += d+d;
 }
 
-void chiseled_gbox(int d, const RECT *r)
+void chiseled_gbox(short d, const RECT *r)
 {
 	br_hook(d,   r, screen.dial_colours.lit_col);
 	tl_hook(d,   r, screen.dial_colours.shadow_col);
@@ -391,7 +550,7 @@ void t_extent(const char *t, short *w, short *h)
 				 */
 }
 
-void write_selection(int d, RECT *r)
+void write_selection(short d, RECT *r)
 {
 	wr_mode(MD_XOR);
 	f_color(G_BLACK);
@@ -400,10 +559,10 @@ void write_selection(int d, RECT *r)
 	wr_mode(MD_TRANS);
 }
 
-void d3_pushbutton(int d, RECT *r, BFOBSPEC *col, int state, int thick, int mode)
+void d3_pushbutton(short d, RECT *r, BFOBSPEC *col, short state, short thick, short mode)
 {
 	const unsigned short selected = state & OS_SELECTED;
-	int t, j, outline;
+	short t, j, outline;
 
 	thick = -thick;		/* make thick same direction as d (positive value --> LARGER!) */
 
@@ -481,12 +640,12 @@ void strip_name(char *to, const char *fro)
 }
 
 /* should become c:\s...ng\foo.bar */
-void cramped_name(const void *s, char *t, int w)
+void cramped_name(const void *s, char *t, short w)
 {
 	char tus[256];
 	const char *q = s;
 	char *p = t;
-	int l, d, h;
+	short l, d, h;
 
 	l = strlen(q);
 	d = l - w;
@@ -522,10 +681,10 @@ void cramped_name(const void *s, char *t, int w)
 	}
 }
 
-const char *clipped_name(const void *s, char *t, int w)
+const char *clipped_name(const void *s, char *t, short w)
 {
 	const char *q = s;
-	int l = strlen(q);
+	short l = strlen(q);
 
 	if (l > w)
 	{
@@ -537,14 +696,14 @@ const char *clipped_name(const void *s, char *t, int w)
 }
 
 /* HR: 1 (good) set of routines for screen saving */
-inline long calc_back(const RECT *r, int planes)
+inline long calc_back(const RECT *r, short planes)
 {
 	return 2L * planes
 		  * ((r->w + 15) / 16)
 		  * r->h;
 }
 
-void form_save(int d, RECT r, void **area)
+void form_save(short d, RECT r, void **area)
 {
 	MFDB Mscreen = { 0 };
 	MFDB Mpreserve;
@@ -578,7 +737,7 @@ void form_save(int d, RECT r, void **area)
 	}
 }
 
-void form_restore(int d, RECT r, void **area)
+void form_restore(short d, RECT r, void **area)
 {
 	if (*area)
 	{
@@ -609,7 +768,8 @@ void form_restore(int d, RECT r, void **area)
 	}
 }
 
-void form_copy(const RECT *fr, const RECT *to)
+void
+form_copy(const RECT *fr, const RECT *to)
 {
 	MFDB Mscreen = { 0 };
 	short pnt[8];
@@ -620,15 +780,16 @@ void form_copy(const RECT *fr, const RECT *to)
 	showm();
 }
 
-void shadow_object(int d, int state, RECT *rp, int colour, int thick)
+void
+shadow_object(short d, short state, RECT *rp, short colour, short thick)
 {
 	RECT r = *rp;
-	int offset, increase;
+	short offset, increase;
 
 	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
 	if (thick && (state & OS_SHADOWED))
 	{
-		int i;
+		short i;
 
 		if (thick < -4) thick = -4;
 		else
@@ -650,9 +811,9 @@ void shadow_object(int d, int state, RECT *rp, int colour, int thick)
 	}
 }
 
-static int menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
+static short menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
 {
-	int c = G_BLACK;
+	short c = G_BLACK;
 
 	if (!MONO)
 	{
@@ -686,7 +847,8 @@ static BFOBSPEC button_colours(void)
 	return c;
 }
 
-static void ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, const char *t, int state, int und)
+static void
+ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, const char *t, short state, short und)
 {
 	if (t && *t)
 	{
@@ -729,7 +891,7 @@ static void ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, const char *t, i
 		/* Now underline the shortcut character, if any. */
 		if (und >= 0)
 		{
-			int l = strlen(t);
+			short l = strlen(t);
 			if (und < l)
 			{
 				short x = r->x + und*screen.c_max_w,
@@ -740,7 +902,8 @@ static void ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, const char *t, i
 	}
 }
 
-static void g_text(XA_TREE *wt, RECT r, RECT *o, const char *text, int state)
+static void
+g_text(XA_TREE *wt, RECT r, RECT *o, const char *text, short state)
 {
 	/* only center the text. ;-) */
 	r.y += (r.h-screen.c_max_h) / 2;
@@ -829,14 +992,14 @@ set_colours(OBJECT *ob, BFOBSPEC *colourword)
  * 28 jan 2001
  * OK, edit_pos is not anymore the te_tmplen field.
  */
-static int
-format_dialog_text(char *text_out, const char *template, const char *text_in, int edit_pos)
+static short
+format_dialog_text(char *text_out, const char *template, const char *text_in, short edit_pos)
 {
-	int index = 0, tpos = 0, max = strlen(template);
+	short index = 0, tpos = 0, max = strlen(template);
 	/* HR: In case a template ends with '_' and the text is completely
 	 * filled, edit_index was indeterminate. :-)
 	 */
-	int edit_index = max;
+	short edit_index = max;
 	bool aap = *text_in == '@';
 
 	DIAG((D_o, NULL, "format_dialog_text edit_pos %d", edit_pos));
@@ -891,13 +1054,13 @@ set_text(OBJECT *ob,
 	 RECT *gr,
 	 RECT *cr,
 	 bool formatted,
-	 int edit_pos,
+	 short edit_pos,
 	 char *temp_text,
 	 BFOBSPEC *colours,
-	 int *thick,
+	 short *thick,
 	 RECT r)
 {
-	TEDINFO *ted = get_ob_spec(ob)->tedinfo;
+	TEDINFO *ted = object_get_tedinfo(ob);
 	RECT cur;
 	short w, h, cur_x = 0;
 
@@ -1018,10 +1181,10 @@ d_g_box(enum locks lock, struct widget_tree *wt)
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
 	BFOBSPEC colours;
-	int thick;
+	short thick;
 
-	colours = get_ob_spec(ob)->obspec;
-	thick = thickness(ob);
+	colours = object_get_spec(ob)->obspec;
+	thick = object_thickness(ob);
 	set_colours(ob, &colours);
 
 	/* before borders */
@@ -1067,10 +1230,10 @@ d_g_ibox(enum locks lock, struct widget_tree *wt)
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
 	BFOBSPEC colours;
-	int thick;
+	short thick;
 
-	colours = get_ob_spec(ob)->obspec;
-	thick = thickness(ob);
+	colours = object_get_spec(ob)->obspec;
+	thick = object_thickness(ob);
 	set_colours(ob, &colours);
 
 	/* before borders */
@@ -1119,15 +1282,15 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt)
 	OBJECT *ob = wt->tree + wt->current;
 	BFOBSPEC colours;
 	ushort selected = ob->ob_state & OS_SELECTED;
-	int thick;
+	short thick;
 	char temp_text[2];
 
-	colours = get_ob_spec(ob)->obspec;
+	colours = object_get_spec(ob)->obspec;
 	
-	temp_text[0] = get_ob_spec(ob)->obspec.character;
+	temp_text[0] = object_get_spec(ob)->obspec.character;
 	temp_text[1] = '\0';
 
-	thick = thickness(ob);
+	thick = object_thickness(ob);
 
 	/* leaves MD_REPLACE */
 	set_colours(ob, &colours);
@@ -1174,7 +1337,7 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt)
 void
 d_g_boxtext(enum locks lock, struct widget_tree *wt)
 {
-	int thick = 0;
+	short thick = 0;
 	ushort selected;
 	RECT r = wt->r, gr;
 	OBJECT *ob = wt->tree + wt->current;
@@ -1225,7 +1388,7 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt)
 	BFOBSPEC colours;
 	const bool is_edit = (wt->current == wt->edit_obj);
 	const unsigned short selected = ob->ob_state & OS_SELECTED;
-	int thick;
+	short thick;
 
 	set_text(ob, &gr, &cr, true, is_edit ? wt->edit_pos : -1, temp_text, &colours, &thick, r);
 	set_colours(ob, &colours);
@@ -1277,9 +1440,9 @@ d_g_button(enum locks lock, struct widget_tree *wt)
 	RECT r = wt->r, gr = r;
 	OBJECT *ob = wt->tree + wt->current;
 	BFOBSPEC colours;
-	int thick = thickness(ob); 
+	short thick = object_thickness(ob); 
 	ushort selected = ob->ob_state & OS_SELECTED;
-	char *text = get_ob_spec(ob)->free_string;
+	char *text = object_get_spec(ob)->free_string;
 
 	colours = button_colours();
 
@@ -1375,7 +1538,7 @@ d_g_button(enum locks lock, struct widget_tree *wt)
 }
 
 static void
-icon_characters(ICONBLK *iconblk, int state, short obx, short oby, short icx, short icy)
+icon_characters(ICONBLK *iconblk, short state, short obx, short oby, short icx, short icy)
 {
 	char lc = iconblk->ib_char;
 	short tx,ty,pnt[4];
@@ -1436,7 +1599,7 @@ d_g_image(enum locks lock, struct widget_tree *wt)
 	MFDB Micon;
 	short pxy[8], cols[2], icx, icy;
 
-	bitblk = get_ob_spec(ob)->bitblk;
+	bitblk = object_get_spec(ob)->bitblk;
 
 	icx = wt->r.x;
 	icy = wt->r.y;
@@ -1482,7 +1645,7 @@ d_g_icon(enum locks lock, struct widget_tree *wt)
 	RECT ic;
 	short pxy[8], cols[2], obx, oby, msk_col, icn_col;
 	
-	iconblk = get_ob_spec(ob)->iconblk;
+	iconblk = object_get_spec(ob)->iconblk;
 	obx = wt->r.x;
 	oby = wt->r.y;
 
@@ -1546,7 +1709,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt)
 	RECT ic;
 	short pxy[8], cols[2] = {0,1}, obx, oby, blitmode;
 
-	ciconblk = get_ob_spec(ob)->ciconblk;
+	ciconblk = object_get_spec(ob)->ciconblk;
 	best_cicon = NULL;
 	
 	DIAG((D_o, wt->owner, "cicon ciconblk 0x%lx", ciconblk));
@@ -1579,7 +1742,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt)
 
 	c = best_cicon;
 
-	iconblk = get_ob_spec(ob)->iconblk;
+	iconblk = object_get_spec(ob)->iconblk;
 	obx = wt->r.x;
 	oby = wt->r.y;
 
@@ -1641,7 +1804,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt)
 void
 d_g_text(enum locks lock, struct widget_tree *wt)
 {
-	int thick,thin;
+	short thick,thin;
 	OBJECT *ob = wt->tree + wt->current;
 	RECT r = wt->r, gr;
 	BFOBSPEC colours;
@@ -1664,7 +1827,7 @@ d_g_text(enum locks lock, struct widget_tree *wt)
 void
 d_g_ftext(enum locks lock, struct widget_tree *wt)
 {
-	int thick,thin;
+	short thick,thin;
 	OBJECT *ob = wt->tree + wt->current;
 	RECT r = wt->r, gr, cr;
 	BFOBSPEC colours;
@@ -1693,28 +1856,6 @@ d_g_ftext(enum locks lock, struct widget_tree *wt)
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
 }
-
-#if GENERATE_DIAGS
-static char *pstates[] =
-{
-	"SEL",
-	"CROSS",
-	"\10",
-	"DIS",
-	"OUTL",
-	"SHA",
-	"WBAK",
-	"D3D",
-	"8",
-	"9",
-	"10",
-	"11",
-	"12",
-	"13",
-	"14",
-	"15"
-};
-#endif
 
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
 #define ret(ut)     (     (long *)(ut->ret_p     ))
@@ -1753,7 +1894,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 	p->pb_wc = C.global_clip[2] - C.global_clip[0] + 1;
 	p->pb_hc = C.global_clip[3] - C.global_clip[1] + 1;
 
-	userblk(client->ut) = get_ob_spec(ob)->userblk;
+	userblk(client->ut) = object_get_spec(ob)->userblk;
 	p->pb_parm = userblk(client->ut)->ub_parm;
 
 	wr_mode(MD_TRANS);
@@ -1820,10 +1961,10 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 #undef parmblk
 
 static void
-l_text(short x, short y, char *t, short w, int left)
+l_text(short x, short y, char *t, short w, short left)
 {
 	char ct[256];
-	int l = strlen(t);
+	short l = strlen(t);
 	w /= screen.c_max_w;
 	if (left < l)
 	{
@@ -1834,7 +1975,7 @@ l_text(short x, short y, char *t, short w, int left)
 }
 
 static void
-display_list_element(enum locks lock, struct xa_client *client, SCROLL_ENTRY *this, int left, short x, short y, short w, int sel)
+display_list_element(enum locks lock, struct xa_client *client, SCROLL_ENTRY *this, short left, short x, short y, short w, short sel)
 {
 	XA_TREE tr = nil_tree;
 	short xt = x + ICON_W;
@@ -1884,8 +2025,8 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 	short y, maxy;
 	OBJECT *ob = wt->tree + wt->current;
 
-	/* list = get_ob_spec(ob)->listbox; */
-	list = (SCROLL_INFO*)get_ob_spec(ob)->index;
+	/* list = object_get_spec(ob)->listbox; */
+	list = (SCROLL_INFO*)object_get_spec(ob)->index;
 	w = list->wi;
 
 	w->r.x = r.x;
@@ -1953,7 +2094,7 @@ d_g_string(enum locks lock, struct widget_tree *wt)
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
 	ushort state = ob->ob_state;
-	char *text = get_ob_spec(ob)->free_string;
+	char *text = object_get_spec(ob)->free_string;
 
 	/* most AES's allow null string */
 	if (text)
@@ -2003,7 +2144,7 @@ d_g_title(enum locks lock, struct widget_tree *wt)
 {
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
-	const char *text = get_ob_spec(ob)->free_string;
+	const char *text = object_get_spec(ob)->free_string;
 
 	wr_mode( MD_TRANS);
 
@@ -2020,4 +2161,275 @@ d_g_title(enum locks lock, struct widget_tree *wt)
 		write_selection(-1, &r);
 
 	done(OS_SELECTED);
+}
+
+XA_TREE nil_tree = { 0 };
+static ObjectDisplay *objc_jump_table[G_UNKNOWN];
+
+/*
+ * Initialise the object display jump table
+ */
+void
+init_objects(void)
+{
+	short f;
+
+	for (f = 0; f <= G_UNKNOWN; f++)
+		/* Anything with a NULL pointer won't get called */
+		objc_jump_table[f] = NULL;
+
+	objc_jump_table[G_BOX     ] = d_g_box;
+	objc_jump_table[G_TEXT    ] = d_g_text;
+	objc_jump_table[G_BOXTEXT ] = d_g_boxtext;
+	objc_jump_table[G_IMAGE   ] = d_g_image;
+	objc_jump_table[G_PROGDEF ] = d_g_progdef;
+	objc_jump_table[G_IBOX    ] = d_g_ibox;
+	objc_jump_table[G_BUTTON  ] = d_g_button;
+	objc_jump_table[G_BOXCHAR ] = d_g_boxchar;
+	objc_jump_table[G_STRING  ] = d_g_string;
+	objc_jump_table[G_FTEXT   ] = d_g_ftext;
+	objc_jump_table[G_FBOXTEXT] = d_g_fboxtext;
+	objc_jump_table[G_ICON    ] = d_g_icon;
+	objc_jump_table[G_TITLE   ] = d_g_title;
+	objc_jump_table[G_CICON   ] = d_g_cicon;
+	objc_jump_table[G_SLIST   ] = d_g_slist;
+	objc_jump_table[G_SHORTCUT] = d_g_string;
+}
+
+/*
+ * Display a primitive object
+ */
+void
+display_object(enum locks lock, XA_TREE *wt, short item, short parent_x, short parent_y, short which)
+{
+	RECT r;
+	OBJECT *ob = wt->tree + item;
+	ObjectDisplay *display_routine = NULL;
+
+	/* HR: state_mask is for G_PROGDEF originally.
+	 * But it means that other objects must unflag what they
+	 * can do themselves in the same manner.
+	 * The best thing (no confusion) is to generalize the concept.
+	 * Which I did. :-)
+	 */
+	unsigned short state_mask = (OS_SELECTED|OS_CROSSED|OS_CHECKED|OS_DISABLED|OS_OUTLINED);
+	unsigned short t = ob->ob_type & 0xff;
+
+	r.x = parent_x + ob->ob_x;
+	r.y = parent_y + ob->ob_y;
+	r.w = ob->ob_width; 
+	r.h = ob->ob_height;
+
+	if (   r.x       > C.global_clip[2]	/* x + w */
+	    || r.x+r.w-1 < C.global_clip[0]	/* x     */
+	    || r.y       > C.global_clip[3]	/* y + h */
+	    || r.y+r.h-1 < C.global_clip[1])	/* y     */
+		return;
+
+	if (t <= G_UNKNOWN)
+		/* Get display routine for this type of object from jump table */
+		display_routine = objc_jump_table[t];
+
+	if (display_routine == NULL)
+	{
+		DIAG((D_objc,wt->owner,"no display_routine! ob_type: %d(0x%x)", t, ob->ob_type));
+		/* dont attempt doing what could be indeterminate!!! */
+		return;
+	}
+
+	/* Fill in the object display parameter structure */			
+	wt->current = item;
+	wt->parent_x = parent_x;
+	wt->parent_y = parent_y;
+	/* absolute RECT, ready for use everywhere. */
+	wt->r = r;
+	wt->state_mask = &state_mask;
+
+	/* Better do this before AND after (fail safe) */
+	wr_mode(MD_TRANS);
+
+#if GENERATE_DIAGS
+	if (wt->tree != get_widgets())
+	{
+		char flagstr[128];
+		char statestr[128];
+
+		show_bits(ob->ob_flags, "flg=", pflags, flagstr);
+		show_bits(ob->ob_state, "st=", pstates, statestr);
+
+		DIAG((D_o, wt->owner, "ob=%d, %d/%d,%d/%d [%d: 0x%lx]; %s%s (%x)%s (%x)%s",
+			 item,
+			 r.x, r.y, r.w, r.h,
+			 t, display_routine,
+			 object_type(wt->tree, item),
+			 object_txt(wt->tree, item),
+			 ob->ob_flags,flagstr,
+			 ob->ob_state,statestr));
+	}
+#endif
+
+	/* Call the appropriate display routine */
+	(*display_routine)(lock, wt);
+
+	wr_mode(MD_TRANS);
+
+	/* Handle CHECKED object state: */
+	if ((ob->ob_state & state_mask) & OS_CHECKED)
+	{
+		t_color(G_BLACK);
+		/* ASCII 8 = checkmark */
+		v_gtext(C.vh, r.x + 2, r.y, "\10");
+	}
+
+	/* Handle DISABLED state: */
+	if ((ob->ob_state & state_mask) & OS_DISABLED)
+		write_disable(&r, G_WHITE);
+
+	/* Handle CROSSED object state: */
+	if ((ob->ob_state & state_mask) & OS_CROSSED)
+	{
+		short p[4];
+		l_color(G_BLACK);
+		p[0] = r.x;
+		p[1] = r.y;
+		p[2] = r.x + r.w - 1;
+		p[3] = r.y + r.h - 1;
+		v_pline(C.vh, 2, p);
+		p[0] = r.x + r.w - 1;
+		p[2] = r.x;
+		v_pline(C.vh, 2, p);
+	}
+
+	/* Handle OUTLINED object state: */
+	if ((ob->ob_state & state_mask) & OS_OUTLINED)
+	{
+		/* special handling of root object. */
+		if (!wt->zen || item != 0)
+		{
+			if (!MONO && d3_any(ob))
+			{
+				tl_hook(1, &r, screen.dial_colours.lit_col);
+				br_hook(1, &r, screen.dial_colours.shadow_col);
+				tl_hook(2, &r, screen.dial_colours.lit_col);
+				br_hook(2, &r, screen.dial_colours.shadow_col);
+				gbox(3, &r);
+			}
+			else
+			{
+				l_color(G_WHITE);
+				gbox(1, &r);
+				gbox(2, &r);
+				l_color(G_BLACK);
+				gbox(3, &r);
+			}
+		}
+	}
+
+	if ((ob->ob_state & state_mask) & OS_SELECTED)
+		write_selection(0, &r);
+
+	wr_mode(MD_TRANS);
+}
+
+/*
+ * Walk an object tree, calling display for each object
+ * HR: is_menu is true if a menu.
+ */
+
+/* draw_object_tree */
+short
+draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short depth, short which)
+{
+	XA_TREE this;
+	short next;
+	short current = 0, rel_depth = 1, head;
+	short x, y;
+	bool start_drawing = false;
+
+	IFDIAG(short *cl = C.global_clip;)
+
+	if (wt == NULL)
+	{
+		this = nil_tree;
+
+		wt = &this;
+		wt->edit_obj = -1;
+		wt->owner = C.Aes;
+	}
+
+	if (tree == NULL)
+		tree = wt->tree;
+	else
+		wt->tree = tree;
+
+	if (!wt->owner)
+		wt->owner = C.Aes;
+
+	/* dx,dy are provided by sliders if present. */
+	x = -wt->dx;
+	y = -wt->dy;
+	DIAG((D_objc, wt->owner, "dx = %d, dy = %d", x, y));
+	DIAG((D_objc, wt->owner, "[%d]draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
+		which, t_owner(wt), x + tree->ob_x, y + tree->ob_y,
+		tree->ob_width, tree->ob_height, tree, item, depth));
+	DIAG((D_objc, wt->owner, "  -   (%d)%s%s",
+		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : ""));
+	DIAG((D_objc, wt->owner, "  -   clip: %d.%d/%d.%d    %d/%d,%d/%d",
+		cl[0], cl[1], cl[2], cl[3], cl[0], cl[1], cl[2] - cl[0] + 1, cl[3] - cl[1] + 1));
+
+	depth++;
+
+	do {
+		if (current == item)
+		{
+			start_drawing = true;
+			rel_depth = 0;
+		}
+
+		if (start_drawing && !(tree[current].ob_flags & OF_HIDETREE))
+		{
+			/* Display this object */
+			display_object(lock, wt, current, x, y, 10);
+		}
+
+		head = tree[current].ob_head;
+
+		/* Any non-hidden children? */
+		if (    head != -1
+		    && (tree[current].ob_flags & OF_HIDETREE) == 0
+		    && (start_drawing == 0
+			|| (start_drawing != 0
+			    && rel_depth < depth)))
+		{
+			x += tree[current].ob_x;
+			y += tree[current].ob_y;
+
+			rel_depth++;
+
+			current = head;
+		}
+		else
+		{
+			/* Try for a sibling */
+			next = tree[current].ob_next;
+
+			/* Trace back up tree if no more siblings */
+			while (next != -1 && tree[next].ob_tail == current)
+			{
+				current = next;
+				x -= tree[current].ob_x;
+				y -= tree[current].ob_y;
+				next = tree[current].ob_next;
+				rel_depth--;
+			}
+			current = next;
+		}
+	}
+	while (current != -1 && !(start_drawing && rel_depth < 1));
+
+	wr_mode(MD_TRANS);
+	f_interior(FIS_SOLID);
+
+	DIAGS(("draw_object_tree exit OK!"));
+	return true;
 }

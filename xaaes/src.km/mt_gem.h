@@ -763,6 +763,8 @@ typedef  struct
 #define ED_CRSR			100		/* MagiC only */
 #define ED_DRAW			103		/* MagiC only */
 
+#define ED_PREP			200		/* XaAES only */
+
 /* editable text justification */
 #define TE_LEFT			0
 #define TE_RIGHT		1

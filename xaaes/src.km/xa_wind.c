@@ -33,7 +33,7 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "menuwidg.h"
-#include "objects.h"
+#include "obtree.h"
 #include "rectlist.h"
 #include "version.h"
 #include "widgets.h"
@@ -333,6 +333,60 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		default:
 			DIAGS(("WARNING:wind_set for %s: Invalid window handle %d", c_owner(client), w));
 			pb->intout[0] = 0;	/* Invalid window handle, return error */
+			return XAC_DONE;
+		}
+	}
+	/*
+	 * Ozk: These things one app can do to other processes windows
+	 */
+	else if (w->owner != client && w != root_window)
+	{
+		short msg[5] = { 0 };
+
+		switch(cmd)
+		{
+			case WF_TOP:
+			{
+				msg[0] = WM_TOPPED;
+				break;
+			}
+			case WF_BOTTOM:
+			{
+				msg[0] = WM_BOTTOMED;
+				break;
+			}
+			case WF_CURRXYWH:
+			{
+				short x = pb->intin[2];
+				short y = pb->intin[3];
+				short width = pb->intin[4];
+				short height = pb->intin[5];
+
+				if (w->r.x != x || w->r.y != y)
+					msg[0] = WM_MOVED;
+				else if (w->r.w == width && w->r.h == height)
+				{
+					pb->intout[0] = 1;
+					return XAC_DONE;
+				}
+				else
+					msg[0] = WM_SIZED;
+				
+				msg[1] = x;
+				msg[2] = y;
+				msg[3] = width;
+				msg[4] = height;
+				break;
+			}
+		}
+		if (msg[0])
+		{
+			DIAGS(("wind_set: Send (%s) to wind %d (owner %s) by %s %d,%d,%d,%d",
+				pmsg(msg[0]), w->handle, w->owner->name, client->name,
+				msg[1],msg[2],msg[3],msg[4]));
+				
+			send_app_message(lock, w, NULL, msg[0], client->p->pid, 0, w->handle, msg[1],msg[2],msg[3],msg[4]);
+			pb->intout[0] = 1;
 			return XAC_DONE;
 		}
 	}
@@ -637,7 +691,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		else if (ob && have == 0)
 		{
 			wt = set_toolbar_widget(lock, w, ob, pb->intin[5]);
-			wt->exit_form = exit_toolbar;
+			//wt->exit_form = exit_toolbar;
 			w->dial |= created_for_TOOLBAR;
 		}
 		else if (ob && ob == have)
@@ -1123,7 +1177,7 @@ next:
 			if (i > 0 && (widg[i].ob_type & 0xff) == G_BOXCHAR)
 			{
 				/* c = get_ob_spec(widg + i)->this.colours; */
-				c = get_ob_spec(widg + i)->obspec;
+				c = object_get_spec(widg + i)->obspec;
 			}
 			else
 			{

@@ -39,6 +39,7 @@ void remove_attachments(enum locks lock, struct xa_client *client, OBJECT *menu)
 void set_menu_widget(struct xa_window *wind, struct widget_tree *wit);
 void fix_menu(struct xa_client *client, OBJECT *root, bool);
 
+INLINE struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW_MENU]; }
 INLINE XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
 INLINE struct xa_client *menu_owner(void) { return get_menu()->owner; }
 
