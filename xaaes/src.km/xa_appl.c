@@ -266,6 +266,8 @@ release_client(enum locks lock, struct xa_client *client)
 {
 	Sema_Up(clients);
 
+	DIAGS(("release_client: pid %i, '%s'", client->p->pid, client->name));
+
 	if (!client->killed)
 		remove_attachments(lock|clients, client, client->std_menu.tree);
 
@@ -360,7 +362,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 {
 	struct xa_client *top_owner;
 
-	DIAG((D_appl,NULL,"XA_client_exit: %s %s", c_owner(client), client->killed ? "killed" : ""));
+	DIAG((D_appl, NULL, "XA_client_exit: %s %s", c_owner(client), client->killed ? "killed" : ""));
 
 	/* Because of the window list, these cannot be done in the signal handler. */
 	if (!client->secured)
@@ -437,7 +439,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		struct xa_client *parent = pid2client(client->p->ppid);
 
 		/* is the parent a active AES client? */
-		if (parent)
+		if (parent && parent != C.Aes)
 		{
 			DIAGS(("sending CH_EXIT to %d for %s", client->p->ppid, c_owner(client)));
 
@@ -463,7 +465,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
-	DIAG((D_appl,client,"appl_exit for %d", client->p->pid));
+	DIAG((D_appl, client, "appl_exit for %d", client->p->pid));
 
 	/* Which process are we? It'll be a client pid */
 	pb->intout[0] = client->p->pid;
