@@ -36,6 +36,10 @@
 # include "timeout.h"
 # include "util.h"
 
+# ifdef OLDTOSFS
+# include "tosfs.h"
+# endif
+
 
 long _cdecl
 sys_s_version (void)

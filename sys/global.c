@@ -61,24 +61,7 @@ short falcontos;
  * for system security.
  *
  */
-
 int secure_mode = 0;
-
-/*
- * "screen_boundary+1" tells us how screens must be positioned
- * (to a 256 byte boundary on STs, a 16 byte boundary on other
- * machines; actually, 16 bytes is conservative, 4 is probably
- * OK, but it doesn't hurt to be cautious). The +1 is because
- * we're using this as a mask in the ROUND() macro in mem.h.
- */
-int screen_boundary = 255;
-
-/*
- * variable set if someone has already installed an flk cookie
- */
-# ifdef OLDTOSFS
-int flk = 0;
-# endif
 
 /*
  * variable set to 1 if the _VDO cookie indicates Falcon style video
@@ -95,16 +78,8 @@ short ste_video = 0;
  */
 int gl_lang = -1;
 
-/* version of GEMDOS in ROM.
- * dos.c no longer directly calls Sversion()
- */
-# ifdef OLDTOSFS
-long gemdos_version;
-# endif
-
 /*
- * The path to the system directory. Added 17.IV.2001.
+ * The path to the system directory
  */
 char sysdir[32];
 short sysdrv;
-
