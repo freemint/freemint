@@ -889,18 +889,13 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 /*
  * appl_find()
  *
- * HR: the -1 -2 support wasnt good at all
- *
  * Ozk: appl_find() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
 XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	struct nn { short m, id;};
-	const struct nn *ex = (const struct nn *)pb->addrin;
-	char *name = (char *)pb->addrin[0];
-	short f = ex->id;
+	const char *name = (const char *)pb->addrin[0];
 
 	CONTROL(0,1,1)
 
@@ -911,57 +906,104 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_appl, NULL, "appl_find for non AES process (pid %ld)", c_owner(client), p_getpid()));
 #endif
 
-	/* mint id <--> aes_id */
-	if (ex->m == -1 || ex->m == -2)
+	/* default to error */
+	pb->intout[0] = -1;
+
+	if (name == NULL)
 	{
-		pb->intout[0] = f;
-
-		DIAG((D_appl, client, "   Mode 0xfff? --> %d", pb->intout[0]));
-	}
-	else if (ex->m == 0)
-	{
-		/* Return the pid of current process */
-		pb->intout[0] = client->p->pid;
-
-		DIAG((D_appl, client, "   Mode 0x0000 --> %d", pb->intout[0]));
-	}
-	else
-
-	/* Tell application we understand appl_getinfo()
-	 * (Invented by Martin Osieka for his AES extension WINX;
-	 * used by MagiC 4, too.)
-	 */
-	if (strcmp(name, "?AGI") == 0)
-	{
-		/* OK */
-		pb->intout[0] = 0;
-		DIAG((D_appl, client, "   ?AGI"));
-	}
-	else
-	{
-		struct xa_client *cl;
-
-		DIAG((D_appl, client, "   '%s'", pb->addrin[0]));
-		pb->intout[0] = -1;
-
-		Sema_Up(clients);
-
-		/* use proper loop */
-		cl = S.client_list;
-		while (cl)
+		/* pid of current process */
+		if (client)
 		{
-			if (strnicmp(cl->proc_name, name, 8) == 0)
-			{
-				pb->intout[0] = cl->p->pid;
-				DIAG((D_appl, client, "   --> %d", pb->intout[0]));
-				break;
-			}
-			cl = cl->next;
+			pb->intout[0] = client->p->pid;
+			DIAG((D_appl, client, "   Mode NULL"));
 		}
+	}
+	else
+	{
+		short lo = (short)((unsigned long)name & 0xffff);
+		short hi = (short)((unsigned long)name >> 16);
 
-		Sema_Dn(clients);
+		switch (hi)
+		{
+		/* convert mint id -> aes id */
+		case -1:
+		/* convert aes id -> mint id */
+		case -2:
+		{
+			struct xa_client *cl;
+
+			DIAG((D_appl, client, "   Mode 0xfff%c, convert %i", hi == -1 ? 'f' : 'e', lo));
+
+			Sema_Up(clients);
+
+			cl = S.client_list;
+			while (cl)
+			{
+				if (cl->p->pid == lo)
+				{
+					pb->intout[0] = lo;
+					break;
+				}
+				cl = cl->next;
+			}
+
+			Sema_Dn(clients);
+
+			break;
+		}
+		/* pid of topped application */
+		case -3:
+		{
+			struct xa_client *cl;
+
+			DIAG((D_appl, client, "   Mode 0xfffd"));
+
+			cl = focus_owner();
+			if (cl)
+				pb->intout[0] = cl->p->pid;
+
+			break;
+		}
+		/* search in client list */
+		default:
+		{
+			if (strcmp(name, "?AGI") == 0)
+			{
+				/* Tell application we understand appl_getinfo()
+				 * (Invented by Martin Osieka for his AES extension WINX;
+				 * used by MagiC 4, too.)
+				 */
+
+				pb->intout[0] = 0; /* OK */
+				DIAG((D_appl, client, "   Mode ?AGI"));
+			}
+			else
+			{
+				struct xa_client *cl;
+
+				DIAG((D_appl, client, "   Mode search for '%s'", name));
+
+				Sema_Up(clients);
+
+				cl = S.client_list;
+				while (cl)
+				{
+					if (strnicmp(cl->proc_name, name, 8) == 0)
+					{
+						pb->intout[0] = cl->p->pid;
+						break;
+					}
+					cl = cl->next;
+				}
+
+				Sema_Dn(clients);
+			}
+			break;
+		}
+		}
 	}
 
+	DIAG((D_appl, client, "   --> %d", pb->intout[0]));
 	return XAC_DONE;
 }
 
