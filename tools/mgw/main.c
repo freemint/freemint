@@ -1,16 +1,12 @@
 /*
- * Filename:     
- * Version:      
- * Author:       Frank Naumann
- * Started:      1999-05
- * Last Updated: 2001-04-17
- * Target O/S:   FreeMiNT 1.16
- * Description:  
+ * $Id$
  * 
- * Note:         Please send suggestions, patches or bug reports to me
- *               or the MiNT mailing list <mint@fishpool.com>.
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
  * 
- * Copying:      Copyright 1999, 200, 2001 Frank Naumann <fnaumann@freemint.de>
+ * 
+ * Copyright 1999, 2000, 2001 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 1999 Jens Heitmann
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +21,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * Author: Frank Naumann, Jens Heitmann
+ * Started: 1999-05
+ * 
+ * please send suggestions or bug reports to me or
+ * the MiNT mailing list
  * 
  */
 
