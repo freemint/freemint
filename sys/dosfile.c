@@ -18,6 +18,8 @@
 # include "mint/asm.h"
 # include "mint/filedesc.h"
 # include "mint/ioctl.h"
+# include "mint/iov.h"
+# include "mint/net.h"
 
 # include "biosfs.h"
 # include "filesys.h"
@@ -452,7 +454,7 @@ f_lock (short fd, short mode, long start, long length)
  */
 
 static long
-sys__fstat_1_12 (struct file *f, XATTR *xattr)
+sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 {
 	long ret;
 	
@@ -461,7 +463,7 @@ sys__fstat_1_12 (struct file *f, XATTR *xattr)
 	
 	if (!f->fc.fs)
 	{
-		DEBUG (("sys__fstat_1_12: no xfs!"));
+		DEBUG (("sys__ffstat_1_12: no xfs!"));
 		return ENOSYS;
 	}
 	
@@ -478,14 +480,14 @@ sys__fstat_1_12 (struct file *f, XATTR *xattr)
 }
 
 static long
-sys__fstat_1_16 (struct file *f, struct stat *st)
+sys__ffstat_1_16 (struct file *f, struct stat *st)
 {
 	if (f->dev == &sockdev)
 		return so_fstat (f, st);
 	
 	if (!f->fc.fs)
 	{
-		DEBUG (("sys__fstat_1_16: no xfs"));
+		DEBUG (("sys__ffstat_1_16: no xfs"));
 		return ENOSYS;
 	}
 	
@@ -493,7 +495,7 @@ sys__fstat_1_16 (struct file *f, struct stat *st)
 }
 
 long _cdecl
-sys_fstat (short fd, struct stat *st)
+sys_ffstat (short fd, struct stat *st)
 {
 	struct proc *p = curproc;
 	FILEPTR	*f;
@@ -502,7 +504,7 @@ sys_fstat (short fd, struct stat *st)
 	ret = GETFILEPTR (&p, &fd, &f);
 	if (ret) return ret;
 	
-	return sys__fstat_1_16 (f, st);
+	return sys__ffstat_1_16 (f, st);
 }
 
 /*
@@ -566,12 +568,12 @@ f_cntl (short fd, long arg, short cmd)
 		case FSTAT:
 		{
 			TRACE (("Fcntl FSTAT (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name (&(f->fc)), r));
-			return sys__fstat_1_12 (f, (XATTR *) arg);
+			return sys__ffstat_1_12 (f, (XATTR *) arg);
 		}
 		case FSTAT64:
 		{
 			TRACE (("Fcntl FSTAT64 (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name (&(f->fc)), r));
-			return sys__fstat_1_16 (f, (struct stat *) arg);
+			return sys__ffstat_1_16 (f, (struct stat *) arg);
 		}
 		case FUTIME:
 		{
@@ -1244,4 +1246,132 @@ f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 	}
 	
 	return retval;
+}
+
+long _cdecl
+sys_fwritev (short fd, const struct iovec *iov, long niov)
+{
+	PROC *p = curproc;
+	FILEPTR *f;
+	long r;
+	
+	TRACE (("Fwritev(%i, %lx, %li)", fd, iov, niov));
+	
+	r = GETFILEPTR (&p, &fd, &f);
+	if (r) return r;
+	
+	if ((f->flags & O_RWMODE) == O_RDONLY)
+	{
+		DEBUG (("Fwritev: write on a read-only handle"));
+		return EACCES;
+	}
+	
+	if (f->dev == &sockdev)
+	{
+		struct socket *so = (struct socket *) f->devinfo;
+		
+		return (*so->ops->send)(so, iov, niov, f->flags & O_NDELAY, 0, 0, 0);
+	}
+	
+	{
+		char *p, *_p;
+		long size;
+		int i;
+		
+		size = iov_size (iov, niov);
+		if (size < 0)
+			return EINVAL;
+		
+		/* if (size == 0)
+			return 0; */
+		
+		p = _p = kmalloc (size);
+		if (!p) return ENOMEM;
+		
+		for (i = 0; i < niov; ++i)
+		{
+			memcpy (p, iov[i].iov_base, iov[i].iov_len);
+			p += iov[i].iov_len;
+		}
+		
+		if (is_terminal (f))
+			r = tty_write (f, _p, size);
+		else
+		{
+			if (f->flags & O_APPEND)
+				xdd_lseek (f, 0L, SEEK_END);
+			
+			r = xdd_write (f, _p, size);
+		}
+		
+		kfree (_p);
+		return r;
+	}
+}
+
+long _cdecl
+sys_freadv (short fd, const struct iovec *iov, long niov)
+{
+	PROC *p = curproc;
+	FILEPTR *f;
+	long r;
+	
+	TRACE (("Freadv(%i, %lx, %li)", fd, iov, niov));
+	
+	r = GETFILEPTR (&p, &fd, &f);
+	if (r) return r;
+	
+	if ((f->flags & O_RWMODE) == O_WRONLY)
+	{
+		DEBUG (("Freadv: read on a write-only handle"));
+		return EACCES;
+	}
+	
+	if (f->dev == &sockdev)
+	{
+		struct socket *so = (struct socket *) f->devinfo;
+		
+		return (*so->ops->recv)(so, iov, niov, f->flags & O_NDELAY, 0, 0, 0);
+	}
+	
+	{
+		char *p, *_p;
+		long size;
+		int i;
+		
+		size = iov_size (iov, niov);
+		if (size < 0)
+			return EINVAL;
+		
+		/* if (size == 0)
+			return 0; */
+		
+		p = _p = kmalloc (size);
+		if (!p) return ENOMEM;
+		
+		if (is_terminal (f))
+			r = tty_read (f, p, size);
+		else
+			r = xdd_read (f, p, size);
+		
+		if (r <= 0)
+		{
+			kfree (p);
+			return r;
+		}
+		
+		for (i = 0, size = r; size > 0; ++i)
+		{
+			register long copy;
+			
+			copy = size > iov[i].iov_len ? iov[i].iov_len : size;
+			memcpy (iov[i].iov_base, p, copy);
+			
+			p += copy;
+			size -= copy;
+		}
+		
+		kfree (_p);
+		return r;
+	}
 }

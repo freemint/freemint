@@ -478,9 +478,9 @@ Func dos_tab [DOS_MAX] =
 	/* 0x158 */		sys_pgetpriority,
 	/* 0x159 */		sys_psetpriority,
 	/* 0x15a */		f_poll,		/* 1.15.10 */
-	/* 0x15b */		enosys,		/* sys_writev */
-	/* 0x15c */		enosys,		/* sys_readv */
-	/* 0x15d */	(Func)	sys_fstat,	/* 1.16 */
+	/* 0x15b */	(Func)	sys_fwritev,	/* 1.16 */
+	/* 0x15c */	(Func)	sys_freadv,	/* 1.16 */
+	/* 0x15d */	(Func)	sys_ffstat,	/* 1.16 */
 	/* 0x15e */		enosys,		/* reserved */
 	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
 	
