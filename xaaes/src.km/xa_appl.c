@@ -259,7 +259,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		long tpc;
 
-		tpc = kthread_create(client->p, TP_entry, (void *)client, &client->tp, "kt-%s", client->proc_name);
+		tpc = kthread_create(client->p, TP_entry, client, &client->tp, "kt-%s", client->proc_name);
 		if (tpc < 0)
 			client->tp = NULL;
 	}

@@ -198,8 +198,10 @@ check_cevents(struct xa_client *client)
 #if 0
 
 void
-TP_entry(struct xa_client *client)
+TP_entry(void *_client)
 {
+	struct xa_client *client = _client;
+
 	for (;;)
 	{
 		if (client->tp_term)
@@ -870,7 +872,7 @@ k_main(void *dummy)
 	{
 		long tpc;
 
-		tpc = kthread_create(C.Aes->p, aesthread_entry, (void *)C.Aes, &C.Aes->tp, "kt-%s", aesthread_name);
+		tpc = kthread_create(C.Aes->p, aesthread_entry, C.Aes, &C.Aes->tp, "kt-%s", aesthread_name);
 		if (tpc < 0)
 		{
 			display("XaAES ERROR: start AES thread failed");

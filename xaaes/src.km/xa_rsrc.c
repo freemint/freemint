@@ -662,7 +662,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 	}
 	
-	return (void *)base;
+	return base;
 }
 
 static void
