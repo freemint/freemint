@@ -54,7 +54,15 @@ struct filedesc
 	long		links;		/* reference count */
 	
 	
+	DIR		*searches;	/* open directory searches	*/
+	
 	/* TOS emulation */
+	
+	DTABUF	*dta;			/* current DTA			*/
+# define NUM_SEARCH	10		/* max. number of searches	*/
+	DTABUF *srchdta[NUM_SEARCH];	/* for Fsfirst/next		*/
+	DIR	srchdir[NUM_SEARCH];	/* for Fsfirst/next		*/
+	long	srchtim[NUM_SEARCH];	/* for Fsfirst/next		*/
 	
 	/* XXX total crap
 	 * there are something like this "ofiles[-3]" over the src
