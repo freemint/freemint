@@ -458,7 +458,11 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 {
 	long ret;
 	
-	if (f->dev == &sockdev)
+# ifdef OLDSOCKDEVEMU
+	if (f->dev == &sockdev || f->dev == &sockdevemu)
+# else
+	if (f->dev == &sockdev
+# endif
 		return so_fstat_old (f, xattr);
 	
 	if (!f->fc.fs)
@@ -482,7 +486,11 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 static long
 sys__ffstat_1_16 (struct file *f, struct stat *st)
 {
-	if (f->dev == &sockdev)
+# ifdef OLDSOCKDEVEMU
+	if (f->dev == &sockdev || f->dev == &sockdevemu)
+# else
+	if (f->dev == &sockdev
+# endif
 		return so_fstat (f, st);
 	
 	if (!f->fc.fs)
@@ -1266,7 +1274,11 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 		return EACCES;
 	}
 	
-	if (f->dev == &sockdev)
+# ifdef OLDSOCKDEVEMU
+	if (f->dev == &sockdev || f->dev == &sockdevemu)
+# else
+	if (f->dev == &sockdev
+# endif
 	{
 		struct socket *so = (struct socket *) f->devinfo;
 		
@@ -1327,7 +1339,11 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 		return EACCES;
 	}
 	
-	if (f->dev == &sockdev)
+# ifdef OLDSOCKDEVEMU
+	if (f->dev == &sockdev || f->dev == &sockdevemu)
+# else
+	if (f->dev == &sockdev
+# endif
 	{
 		struct socket *so = (struct socket *) f->devinfo;
 		
