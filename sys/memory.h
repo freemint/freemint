@@ -75,7 +75,7 @@ void	init_swap (void);
 long	change_prot_status (PROC *proc, long start, short newmode);
 long	attach_region (PROC *proc, MEMREGION *reg);
 void	detach_region (PROC *proc, MEMREGION *reg);
-int	detach_region_by_addr (PROC *p, long block);
+long	detach_region_by_addr (PROC *p, long block);
 
 MEMREGION *get_region (MMAP map, ulong size, short mode);
 MEMREGION *_get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *descr, short kernel_flag);

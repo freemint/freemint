@@ -130,7 +130,6 @@ init_proc(void)
 	((long *) curproc->sysstack)[3] = 0;
 
 	curproc->p_fd->dta = &dta;	/* looks ugly */
-	curproc->base = _base;
 	strcpy(curproc->name, "MiNT");
 	strcpy(curproc->fname, "MiNT");
 	strcpy(curproc->cmdlin, "MiNT");
@@ -140,9 +139,10 @@ init_proc(void)
 	curproc->p_mem->num_reg = NUM_REGIONS;
 	curproc->p_mem->mem = kmalloc(curproc->p_mem->num_reg * sizeof(MEMREGION *));
 	curproc->p_mem->addr = kmalloc(curproc->p_mem->num_reg * sizeof(long));
+	curproc->p_mem->base = _base;
 
 	/* make sure kmalloc was successful */
-	assert (curproc->p_mem->mem && curproc->p_mem->addr);
+	assert(curproc->p_mem->mem && curproc->p_mem->addr);
 
 	/* make sure it's filled with zeros */
 	bzero(curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof(MEMREGION *));
@@ -852,8 +852,8 @@ DUMPPROC(void)
 		FORCE("state %s PC: %lx BP: %lx (pgrp %i)",
 			qname(curproc->wait_q),
 			curproc->p_flag & P_FLAG_SYS ?
-			curproc->ctxt[CURRENT].pc : curproc->ctxt[SYSCALL].pc,
-			curproc->base,
+				curproc->ctxt[CURRENT].pc : curproc->ctxt[SYSCALL].pc,
+			curproc->p_mem ? curproc->p_mem->base : NULL,
 			curproc->pgrp);
 	}
 	curproc = p;	/* restore the real curproc */

@@ -599,7 +599,7 @@ do_func_key(int scan)
 		/* F6: always print MiNT basepage */
 		case 0x40:
 		{
-			FORCE("MiNT base %lx (%lx)", rootproc->base, _base);
+			FORCE("MiNT base %lx (%lx)", rootproc->p_mem->base, _base);
 			break;
 		}
 # endif

@@ -531,7 +531,7 @@ bombs (ushort sig)
 			/* uk: give some more information in case of a crash, so that a
 			 *     progam which shared text can be debugged better.
 			 */
-			BASEPAGE *base = curproc->base;
+			BASEPAGE *base = curproc->p_mem->base;
 			long ptext = 0;
 			long pdata = 0;
 			long pbss = 0;

@@ -59,7 +59,7 @@ long		shrink_region	(MEMREGION *reg, ulong newsize);
 
 long		attach_region	(PROC *proc, MEMREGION *reg);
 void		detach_region	(PROC *proc, MEMREGION *reg);
-int		detach_region_by_addr (PROC *p, long block);
+long		detach_region_by_addr (PROC *p, long block);
 
 long		max_rsize	(MMAP map, long needed);
 long		tot_rsize	(MMAP map, short flag);
@@ -670,18 +670,17 @@ detach_region (PROC *p, MEMREGION *reg)
 	DEBUG(("detach_region: region not attached"));
 }
 
-int
-detach_region_by_addr (PROC *p, long block)
+long
+detach_region_by_addr(struct proc *p, long block)
 {
 	struct memspace *mem = p->p_mem;
 	int i;
 
-	TRACELOW(("detach_region_by_addr %lx from pid %d",
-		block, p->pid));
+	TRACELOW(("detach_region_by_addr %lx by pid %i", p->pid));
 
 	if (!mem || !mem->mem)
 	{
-		ALERT ("detach_region_by_addr: invalid proc?");
+		ALERT("detach_region_by_addr: invalid proc?");
 		return EBADARG;
 	}
 
@@ -691,18 +690,18 @@ detach_region_by_addr (PROC *p, long block)
 		{
 			MEMREGION *m = mem->mem[i];
 
-			assert (m != NULL);
-			assert (m->loc == (long) block);
+			assert(m != NULL);
+			assert(m->loc == (long) block);
 
 			mem->mem[i] = 0;
 			mem->addr[i] = 0;
 
 			m->links--;
 			if (m->links == 0)
-				free_region (m);
+				free_region(m);
 			else
 				/* cause curproc's table to be updated */
-				mark_proc_region (p->p_mem, m, PROT_I, p->pid);
+				mark_proc_region(mem, m, PROT_I, p->pid);
 
 			return 0;
 		}
@@ -1402,8 +1401,9 @@ create_env (const char *env, ulong flags)
 	if (!env)
 	{
 		/* duplicate parent's environment */
-		env = curproc->base->p_env;
-		TRACELOW (("create_env: using parents env: %lx", curproc->base->p_env));
+		assert(curproc->p_mem);
+		env = curproc->p_mem->base->p_env;
+		TRACELOW (("create_env: using parents env: %lx", env));
 	}
 
 	size = 2;
@@ -1842,22 +1842,26 @@ memused (PROC *p)
 void
 recalc_maxmem (PROC *p)
 {
-	long siz = 0;
+	long size = 0;
 
-	if (p->base)
-		siz = p->base->p_tlen + p->base->p_dlen + p->base->p_blen;
+	if (p->p_mem && p->p_mem->base)
+	{
+		size = p->p_mem->base->p_tlen;
+		size += p->p_mem->base->p_dlen;
+		size += p->p_mem->base->p_blen;
+	}
 
 	p->maxmem = 0;
 
 	if (p->maxdata)
-		p->maxmem = p->maxdata + siz;
+		p->maxmem = p->maxdata + size;
 
 	if (p->maxcore)
 		if (p->maxmem == 0 || p->maxmem > p->maxcore)
 			p->maxmem = p->maxcore;
 
-	if (p->maxmem && p->maxmem < siz)
-		p->maxmem = siz;
+	if (p->maxmem && p->maxmem < size)
+		p->maxmem = size;
 }
 
 /*

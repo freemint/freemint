@@ -483,7 +483,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 			 * Directory paths may be also separated with commas.
 			 *
 			 */
-			path = _mint_getenv(curproc->base, "SLBPATH");
+			path = _mint_getenv(curproc->p_mem->base, "SLBPATH");
 
 			if (!path)
 				path = "./";
@@ -573,14 +573,14 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	mark_users(slb, curproc->pid, 1);
 
 	ut = curproc->p_mem->tp_ptr;
-	ut->bp = curproc->base;
+	ut->bp = curproc->p_mem->base;
 
 	*fn = (SLB_EXEC)ut->slb_exec_p;
 
 	usp = (long *)curproc->ctxt[SYSCALL].usp;
 	*(--usp) = curproc->ctxt[SYSCALL].pc;
 	*(--usp) = (long)slb;
-	*(--usp) = (long)curproc->base;
+	*(--usp) = (long)curproc->p_mem->base;
 	*(--usp) = (long)slb->slb_head;
 	curproc->ctxt[SYSCALL].pc = ut->slb_open_p;
 	curproc->ctxt[SYSCALL].usp = (long)usp;
@@ -653,7 +653,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 		usp = (long *)curproc->ctxt[SYSCALL].usp;
 		*(--usp) = curproc->ctxt[SYSCALL].pc;
 		*(--usp) = (long)slb;
-		*(--usp) = (long)curproc->base;
+		*(--usp) = (long)curproc->p_mem->base;
 		curproc->ctxt[SYSCALL].pc = ut->slb_close_p;
 		curproc->ctxt[SYSCALL].usp = (long)usp;
 		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
@@ -789,7 +789,7 @@ slb_close_on_exit (int terminate)
 	usp = (long *)curproc->ctxt[SYSCALL].usp;
 	*(--usp) = curproc->ctxt[SYSCALL].pc;
 	*(--usp) = (long)slb;
-	*(--usp) = (long)curproc->base;
+	*(--usp) = (long)curproc->p_mem->base;
 	curproc->ctxt[SYSCALL].pc = ut->slb_close_and_pterm_p;
 	curproc->ctxt[SYSCALL].usp = (long)usp;
 	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
