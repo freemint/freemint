@@ -53,7 +53,7 @@ extern int screen_boundary;
 extern int flk;
 extern int FalconVideo;
 extern short ste_video;
-extern char *sysdir;
+extern char sysdir[];
 extern short sysdrv;
 
 # define MAXLANG 6	/* languages supported */
