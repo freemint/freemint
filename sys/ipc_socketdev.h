@@ -41,6 +41,9 @@
 
 extern struct devdrv sockdev;
 
+long so_fstat_old (FILEPTR *f, XATTR *xattr);
+long so_fstat (FILEPTR *f, struct stat *st);
+
 # ifdef OLDSOCKDEVEMU
 extern struct devdrv sockdevemu;
 # endif

@@ -275,9 +275,8 @@ getxattr (FILESYS *fs, fcookie *fc, XATTR *xattr)
 	return r;
 }
 
-# if 0
 long
-getstat64 (FILESYS *fs, fcookie *fc, STAT *ptr)
+getstat64 (FILESYS *fs, fcookie *fc, STAT *stat)
 {
 	XATTR xattr;
 	long r;
@@ -289,7 +288,7 @@ getstat64 (FILESYS *fs, fcookie *fc, STAT *ptr)
 	{
 		stat->dev	= xattr.dev;
 		stat->ino	= xattr.index;
-		stat->mode	= xattr.mod;
+		stat->mode	= xattr.mode;
 		stat->nlink	= xattr.nlink;
 		stat->uid	= xattr.uid;
 		stat->gid	= xattr.gid;
@@ -315,7 +314,6 @@ getstat64 (FILESYS *fs, fcookie *fc, STAT *ptr)
 	
 	return r;
 }
-# endif
 
 FILESYS *active_fs;
 FILESYS *drives [NUM_DRIVES];
