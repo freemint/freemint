@@ -220,13 +220,21 @@ static void
 pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 {
 	char p[512];
-	
-	strcpy(p, var);
-	strcat(p, "=");
-	strcat(p, arg);
-	
-	put_env(NOLOCKING, 1, 0, p);
-	DIAGS(("pCB_setenv: %s=%s", var, arg));
+	unsigned long len;
+
+	len = strlen(var) + strlen(arg) + 2;
+
+	if (len > sizeof(p))
+	{
+		strcpy(p, var);
+		strcat(p, "=");
+		strcat(p, arg);
+
+		put_env(NOLOCKING, p);
+		DIAGS(("pCB_setenv: %s=%s", var, arg));
+	}
+	else
+		DIAGS(("pCB_setenv: len %lu > sizeof(p) %lu", len, sizeof(p)));
 }
 
 /*----------------------------------------------------------------------------*/

@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -40,7 +40,7 @@
 #include "mint/stat.h"
 
 
-static char *get_env(enum locks lock, const char *name);
+static const char *get_env(enum locks lock, const char *name);
 static int copy_env(char *to, char *s[], const char *without, char **last);
 static long count_env(char *s[], const char *without);
 
@@ -287,11 +287,11 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	long longtail = 0, tailsize = 0;
 	Path save_cmd;
 	char *tail = argvtail;
-	int ret;
+	int ret = 0;
 	int drv = 0;
 	Path path,name;
 	struct proc *p = NULL;
-	int type;
+	int type = 0;
 
 	DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
 		c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
@@ -424,7 +424,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			/* TOS Launch?  */
 			if (wisgr == 0)
 			{
-				char *tosrun;
+				const char *tosrun;
 
 				tosrun = get_env(lock, "TOSRUN=");
 				if (!tosrun)
@@ -542,7 +542,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			memcpy((char *)b + size, accstart, (long)accend - (long)accstart);
 
 			b->p_dbase = b->p_tbase;
-			b->p_tbase = (char *)b + size;
+			b->p_tbase = (long)b + size;
 
 			/* set PC appropriately */
 			p->ctxt[CURRENT].pc = b->p_tbase;
@@ -587,7 +587,7 @@ out:
 	DIAG((D_shel, 0, "Remove ARGV"));
 
 	/* Remove ARGV */
-	put_env(lock, 1, 0, ARGV);
+	put_env(lock, ARGV);
 
 	/* and go out */
 	return ret;
@@ -671,7 +671,36 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* Manipulate AES environment */
 			case 8:
 			{
-				pb->intout[0] = put_env(lock, wisgr, wiscr, cmd);
+				switch (wisgr)
+				{
+					case 0:
+					{
+						long ct = count_env(C.strings, NULL);
+						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 0) -- count = %d", ct));
+						pb->intout[0] = ct;
+						break;
+					}
+					case 1:
+					{
+						DIAGS(("XA_shell_write(wdoex 8, wisgr 1)"));
+						DIAGS(("-> env add '%s'", cmd));
+						pb->intout[0] = put_env(lock, cmd);
+						break;
+					}
+					case 2:
+					{
+						long ct = count_env(C.strings, NULL);
+						long ret;
+
+						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 2) -- copy"));
+						memcpy(cmd, C.strings[0], wiscr > ct ? ct : wiscr);
+						ret = ct > wiscr ? ct - wiscr : 0;
+
+						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 2) -- & left %ld", ret));
+						pb->intout[0] = ret;
+						break;
+					}
+				}
 				break;
 			}
 
@@ -734,13 +763,13 @@ XA_shell_read(enum locks lock, struct xa_client *client, AESPB *pb)
 char *
 shell_find(enum locks lock, struct xa_client *client, char *fn)
 {
-	char cwd[256];
 	static Path path; /* XXX */
+	char cwd[256];
 
 	struct stat st;
 	long r;
 
-	char *kp, *kh;
+	const char *kp, *kh;
 	int f = 0, l, n;
 
 
@@ -817,8 +846,8 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 	if (r == 0 && S_ISREG(st.mode))
 		return fn;
 
-	DIAGS((" - 0"));
-	return 0;
+	DIAGS((" - NULL"));
+	return NULL;
 }
 
 unsigned long
@@ -843,21 +872,23 @@ XA_shell_find(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 /* This version finds XX & XX= */
-static char *
+static const char *
 get_env(enum locks lock, const char *name)
 {
-	int i = 0;
+	int i;
 
 	Sema_Up(envstr);
 
-	while (C.strings[i])
+	for (i = 0; C.strings[i]; i++)
 	{
-		char *f = C.strings[i];
+		const char *f = C.strings[i];
 		const char *n = name;
-		do {
+
+		for (;;)
+		{
 			if (*f != *n)
 			{
-				if (*f == '=' && *n == 0)
+				if (*f == '=' && *n == '\0')
 				{
 					Sema_Dn(envstr);
 					/* if used XX return pointer to '=' */
@@ -880,9 +911,6 @@ get_env(enum locks lock, const char *name)
 			f++;
 			n++;
 		}
-		while (1);
-
-		i++;
 	}
 
 	Sema_Dn(envstr);
@@ -906,7 +934,7 @@ copy_env(char *to, char *s[], const char *without, char **last)
 			break;
 		}
 
-		if (l == 0 || (l != 0 && strncmp(s[i], without, l) != 0) )
+		if (l == 0 || (l != 0 && strncmp(s[i], without, l) != 0))
 		{
 			strcpy(to, s[i]);
 			s[j++] = to;
@@ -949,76 +977,59 @@ count_env(char *s[], const char *without)
 }
 
 long
-put_env(enum locks lock, short wisgr, short wiscr, char *cmd)
+put_env(enum locks lock, const char *cmd)
 {
 	long ret = 0;
 
 	Sema_Up(envstr);
 
-	if (wisgr == 0)
+	if (cmd)
 	{
-		long ct = count_env(C.strings, 0);
-		DIAG((D_shel, 0, " -- count = %d", ct));
-		ret = ct;
-	}
-	else if (wisgr == 1)
-	{
-		if (cmd)
+		long ct;
+		char *newenv;
+
+		DIAG((D_shel, NULL, " -- change; '%s'", cmd ? cmd : "~~"));
+
+		/* count without */
+		ct = count_env(C.strings, cmd);	
+		/* ct is including the extra \0 at the end! */
+
+		/* ends with '=': remove */
+		if (*(cmd + strlen(cmd) - 1) == '=')
 		{
-			long ct;
-			char *newenv;
-
-			DIAG((D_shel, 0, " -- change; '%s'", cmd ? cmd : "~~"));
-
-			/* count without */
-			ct = count_env(C.strings, cmd);	
-			/* ct is including the extra \0 at the end! */
-
-			/* ends with '=': remove */
-			if (*(cmd + strlen(cmd) - 1) == '=')
-			{
-				newenv = xmalloc(ct, 19);
-				if (newenv)
-					/* copy without */
-					copy_env(newenv, C.strings, cmd, 0);
-			}
-			else
-			{
-				int l = strlen(cmd) + 1;
-				newenv = xmalloc(ct + l, 20);
-				if (newenv)
-				{
-					char *last;
-					/* copy without */
-					int j = copy_env(newenv, C.strings, cmd, &last);
-					C.strings[j] = last;
-					/* add new */
-					strcpy(C.strings[j], cmd);
-					*(C.strings[j] + l) = 0;
-					C.strings[j + 1] = 0;
-				}
-			}
-
+			newenv = xmalloc(ct, 19);
+			if (newenv)
+				/* copy without */
+				copy_env(newenv, C.strings, cmd, NULL);
+		}
+		else
+		{
+			int l = strlen(cmd) + 1;
+			newenv = xmalloc(ct + l, 20);
 			if (newenv)
 			{
-#if XXX
-				// XXX raise with initialization in bootup
-				// free(C.env);
-#endif
-				C.env = newenv;
+				char *last;
+				/* copy without */
+				int j = copy_env(newenv, C.strings, cmd, &last);
+				C.strings[j] = last;
+				/* add new */
+				strcpy(C.strings[j], cmd);
+				*(C.strings[j] + l) = '\0';
+				C.strings[j + 1] = NULL;
 			}
-
-			DIAGS(("putenv"));
-			IFDIAG (display_env(C.strings, 0);)
 		}
-	}
-	else if (wisgr == 2)
-	{
-		long ct = count_env(C.strings, 0);
-		DIAG((D_shel, 0, " -- copy"));
-		memcpy(cmd, C.strings[0], wiscr > ct ? ct : wiscr);
-		ret = ct > wiscr ? ct - wiscr : 0;
-		DIAG((D_shel, 0, " -- & left %ld", ret));
+
+		if (newenv)
+		{
+#if XXX
+			// XXX raise with initialization in bootup
+			// free(C.env);
+#endif
+			C.env = newenv;
+		}
+
+		DIAGS(("putenv"));
+		IFDIAG (display_env(C.strings, 0);)
 	}
 
 	Sema_Dn(envstr);
@@ -1039,11 +1050,11 @@ XA_shell_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (p && name)
 	{
-		char *pf = get_env(lock, name);
+		const char *pf = get_env(lock, name);
 
 		*p = NULL;
 
-		DIAGS(("shell_env for %s: '%s' :: '%s'", c_owner(client), name, pf? pf: "~~~"));	
+		DIAGS(("shell_env for %s: '%s' :: '%s'", c_owner(client), name, pf ? pf : "~~~"));	
 		if (pf)
 		{
 			*p = proc_malloc(strlen(pf) + 1);
