@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 1998, 1999 Christian Felsch
+ * All rights reserved.
+ * 
+ * Modified for FreeMiNT CVS by Frank Naumann <fnaumann@freemint.de>
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ */
+
 #include <cflib.h>
 #include <sys/statfs.h>
 #include <mint/dcntl.h>
@@ -48,7 +73,6 @@ static long
 get_nflops (void)
 {
 	return get_sysvar (_nflops);
-	//return (long)(*((short *) 0x4A6));
 }
 
 static bool
