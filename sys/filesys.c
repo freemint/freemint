@@ -553,7 +553,7 @@ load_xfs (const char *path, const char *name)
 	
 	DEBUG (("load_xfs: enter (%s, %s)", path, name));
 	
-	reg = load_region (path, NULL, NULL, &xattr, &dummy, &flags, NULL, &r);
+	reg = load_region (path, NULL, NULL, &xattr, &dummy, &flags, 0, &r);
 	if (reg)
 	{
 		BASEPAGE *b = (BASEPAGE *) reg->loc;
@@ -602,15 +602,14 @@ load_xfs (const char *path, const char *name)
 					
 					DEBUG (("load_xfs: xfs_add (%lx)", fs));
 					xfs_add (fs);
-					DEBUG (("load_xfs: xfs_add done."));
 				}
 			}
 		}
 		else
 		{
+			detach_region (curproc, reg);
+			
 			DEBUG (("load_xfs: %s returned null", path));
-			reg->links--;
-			free_region (reg);
 		}
 	}
 }
@@ -641,7 +640,7 @@ load_xdd (const char *path, const char *name)
 	
 	DEBUG (("load_xdd: enter (%s, %s)", path, name));
 	
-	reg = load_region (path, NULL, NULL, &xattr, &dummy, &flags, NULL, &r);
+	reg = load_region (path, NULL, NULL, &xattr, &dummy, &flags, 0, &r);
 	if (reg)
 	{
 		BASEPAGE *b = (BASEPAGE *) reg->loc;
@@ -685,16 +684,17 @@ load_xdd (const char *path, const char *name)
 				r = d_cntl (DEV_INSTALL, dev_name, (long) &the_dev);
 				if (r <= 0)
 				{
+					detach_region (curproc, reg);
+					
 					DEBUG (("load_xdd: fail, d_cntl(%s) = %li", dev_name, r));
-					free_region (reg);
 				}
 			}
 		}
 		else
 		{
+			detach_region (curproc, reg);
+			
 			DEBUG (("load_xdd: %s returned null", path));
-			reg->links--;
-			free_region (reg);
 		}
 	}
 }
