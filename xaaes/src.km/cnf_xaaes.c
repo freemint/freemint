@@ -208,7 +208,7 @@ get_string(char **line)
 /*
  * Ozk: Very rough implementation -- clean and make this safer later..
  */
-static int
+static short
 get_argument(char *wfarg, short *result)
 {
 	bool negative = false;
@@ -256,7 +256,72 @@ get_argument(char *wfarg, short *result)
 	}
 	return 0;
 }
+static short
+get_boolarg(char *s, bool *result)
+{
+	short ret = 0;
+	char *end;
 
+	DIAGS(("get_boolarg: string = '%s'", s));
+
+	s = skip(s);
+
+	if (*s == '=')
+		s++;
+	else
+	{
+		DIAGS(("get_boolarg: equation expected"));
+		return -1;
+	}
+
+	s = skip(s);
+
+	end = s;
+	if (isdigit(*end))
+	{
+		while (isdigit(*end))
+			end++;
+					
+		if (end == s)
+		{
+			DIAGS(("get_boolarg: no argument!"));
+			ret = -1;
+		}
+		else
+		{
+			char sc = *end;
+			*end = 0;
+			ret = (short)atol(s);
+			*end = sc;
+			if (ret < 0 || ret > 1)
+			{
+				DIAGS(("get_boolarg: Invalid argument value %d", ret));
+				ret = -1;
+			}
+		}
+	}
+	else if (!stricmp(s, "true") ||
+		 !stricmp(s, "on")   ||
+		 !stricmp(s, "yes"))
+	{
+		ret = 1;
+	}
+	else if (!stricmp(s, "false") ||
+		 !stricmp(s, "off")   ||
+		 !stricmp(s, "no"))
+	{
+		ret = 0;
+	}
+
+	if (ret > 0)
+	{
+		if (result)
+			*result = ret ? true : false;
+		ret = 0;
+	}
+	
+	return ret;
+}
 /*============================================================================*/
 /* Now follows the callback definitions in alphabetical order
  */
@@ -409,28 +474,28 @@ pCB_app_options(const char *line)
 		}
 		while ((s = get_commadelim_string(&line)))
 		{
-			if (!stricmp(s, "windowner"))
-				opts->windowner = 1;
-			else if (!stricmp(s, "nohide"))
-				opts->nohide = true;
-			else if (!stricmp(s, "xa_nohide"))
-				opts->xa_nohide = true;
-			else if (!stricmp(s, "xa_nomove"))
-				opts->xa_nomove = true;
-			else if (!stricmp(s, "xa_none"))
-				opts->xa_none = true;
-			else if (!stricmp(s, "noleft"))
-				opts->noleft = true;
-			else if (!stricmp(s, "thinwork"))
-				opts->thinwork = true;
-			else if (!stricmp(s, "nolive"))
-				opts->nolive = true;
-			else if (!stricmp(s, "wheel_reverse"))
-				opts->wheel_reverse = true;
-			else if (!stricmp(s, "naes"))
-				opts->naes = true;
-			else if (!stricmp(s, "naes12"))
-				opts->naes12 = true;
+			if (!strnicmp(s, "windowner", 9))
+				get_boolarg(s + 9, &opts->windowner);
+			else if (!strnicmp(s, "nohide", 6))
+				get_boolarg(s + 6, &opts->nohide);
+			else if (!strnicmp(s, "xa_nohide", 9))
+				get_boolarg(s + 9, &opts->xa_nohide);
+			else if (!strnicmp(s, "xa_nomove", 9))
+				get_boolarg(s + 9, &opts->xa_nomove);
+			else if (!strnicmp(s, "xa_none", 7))
+				get_boolarg(s + 7, &opts->xa_none);
+			else if (!strnicmp(s, "noleft", 6))
+				get_boolarg(s + 6, &opts->noleft);
+			else if (!strnicmp(s, "thinwork", 8))
+				get_boolarg(s + 8, &opts->thinwork);
+			else if (!strnicmp(s, "nolive", 6))
+				get_boolarg(s + 6, &opts->nolive);
+			else if (!strnicmp(s, "wheel_reverse", 13))
+				get_boolarg(s + 13, &opts->wheel_reverse);
+			else if (!strnicmp(s, "naes12", 6))
+				get_boolarg(s + 6, &opts->naes12);
+			else if (!strnicmp(s, "naes", 4))
+				get_boolarg(s + 4, &opts->naes);
 			else if (!strnicmp(s, "winframe", 8))
 				get_argument(s + 8, (short *)&opts->thinframe);
 
@@ -675,6 +740,18 @@ load_config(void)
 		while (op)
 		{
 			DIAGS(("    '%s'", op->name));
+			DIAGS(("        windowner  = %s", op->options.windowner ? "true" : "false"));
+			DIAGS(("        nohide     = %s", op->options.nohide    ? "true" : "false"));
+			DIAGS(("        naes       = %s", op->options.naes      ? "true" : "false"));
+			DIAGS(("        naes12     = %s", op->options.naes12    ? "true" : "false"));
+
+			DIAGS(("        xa_nohide  = %s", op->options.xa_nohide ? "true" : "false"));
+			DIAGS(("        xa_nomove  = %s", op->options.xa_nomove ? "true" : "false"));
+			DIAGS(("        noleft     = %s", op->options.noleft    ? "true" : "false"));
+			DIAGS(("        thinwork   = %s", op->options.thinwork  ? "true" : "false"));
+			DIAGS(("        nolive     = %s", op->options.nolive    ? "true" : "false"));
+			DIAGS(("        winframe   = %d", op->options.thinframe));
+
 			op = op->next;
 		}
 	}

@@ -408,14 +408,17 @@ init(struct kentry *k, const char *path)
 	}
 
 	/* default to live actions */
-	default_options.nolive = false;
 	default_options.xa_nomove = true;
+	default_options.xa_nohide = true;
+	default_options.thinframe = 1;
+
+	C.Aes->options = default_options;
 
 	/* Parse the config file */
 	load_config();
 
-	C.Aes->options = default_options;
-	C.Aes->options.xa_nomove = false;
+	//C.Aes->options = default_options;
+	//C.Aes->options.xa_nomove = false;
 
 	DIAGS(("load adi modules"));
 	adi_load();

@@ -126,7 +126,7 @@ menu = leave
 # and the other is 'aessys'. 'default' is used to set GLOBAL
 # configuration which affects all applications. A 'default'
 # configuration have to be specified first.
-# with appname being 'aessys', you can specify configuration
+# With appname being 'aessys', you can specify configuration
 # for the aessys's windows, like taskmanager, etc.
 # All other appname's are considered to be individual applications,
 # and settings for 'autos401' will only affect that one application
@@ -134,55 +134,69 @@ menu = leave
 # autos401. "autos401" is Autosort v4.1, btw.
 #
 # Here's a quick overview of the currently available configuration
-# options;
+# options, default settings mentioned goes for both aessys and the
+# default values each application will use until changed;
+#
+# A <bool> value can be 'true','false','on','off','yes','no',
+# '1' and '02
+#
+# A <value> must be a decimal value (for now).
 # 
-# windowner
+# windowner = <bool>      default: false
 #     Will make XaAES show the name of the application
 #     owning the window in the window's title.
 #
-# hohide
+# nohide = <bool>         default: false
 #     Windows will not have the HIDE widget, and thus cannot be
 #     hidden.
 #
-# xa_nohide
+# xa_nohide = <bool>      default: true
 #     Windows containing form_do() sessions will not have
 #     the HIDE widget and thus not be hidable.
 #     Autosort is one application that cannot have its
 #     form_do() session hidden (or moved)
 #
-# xa_nomove
+# xa_nomove = <bool>      default: true
 #     Windows containing a form_do() session will not be
 #     moveable. Autosort is one such application.
 #
-# noleft
+# noleft = <bool>         default: false
 #     Windows can not be moved offscreen to the left.
 
-# thinwork
-#     The "inner" 3d-effect is disabled.
+# thinwork = <bool>       default: false
+#     The "inner" 3d-effect is disabled. This 3d-effect 'frames'
+#     the work-area of windows in a 3d-ish frame.
 #
-# nolive
+# nolive = <bool>         default: false
 #     Disable live window move/resize/etc.
 #
-# winframe=<value>
-#     Set the size of window frame. A value of -1 turns
-#     window-frame off (single line window frame) while
+# winframe_size = <value>  default: 1
+#     Set the size of window frame. A value of -1 sets
+#     "overscan windows", which contains no frame or shadowing.
+#     It is not recommended to set a value of -1 yet!.
+#     A value of 0 will make windows without any borders.
 #     positive values make window-frames larger.
 #
 # This default setting will make XaAES look closer to n.aes, but
 # will require precision when grabbing the window border for
 # resizing :)
 #
-#app_options = default,thinwork,winframe=-1
+#app_options = default, thinwork = true, winframe_size = 1
+#
+# This default setting will make XaAES look like it has been
+# looking up to now;
+#
+#app_options = default, thinwork = false, winframe_size = 2
 #
 # This setting for autosort401 will make sure its window cannot be
 # moved.
 #
-#app_options = autos401,xa_nomove
+#app_options = autos401, xa_nomove = true
 #
 # Ataricq looks much better when the "inner" 3d effect is turned off
 # with 'thinwork" and as small a windowframe as possible.
 #
-#app_options = ataricq,thinwork,winfram=-1
+#app_options = ataricq, thinwork = true, winframe_size = 1
 
 #
 # clipboard = <path>   # path to clipboard

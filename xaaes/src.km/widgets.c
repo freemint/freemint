@@ -218,8 +218,8 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	r->x = wind->r.x;
 	r->y = wind->r.y;
 
-	ww = wind->r.w - SHADOW_OFFSET;
-	wh = wind->r.h - SHADOW_OFFSET;
+	ww = wind->frame < 0 ? wind->r.w : wind->r.w - SHADOW_OFFSET;
+	wh = wind->frame < 0 ? wind->r.h : wind->r.h - SHADOW_OFFSET;
 
 	switch (widg->loc.relative_type)
 	{
@@ -312,8 +312,8 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	r->x = wind->r.x;
 	r->y = wind->r.y;
 
-	ww = wind->r.w - SHADOW_OFFSET;
-	wh = wind->r.h - SHADOW_OFFSET;
+	ww = wind->frame < 0 ? wind->r.w : wind->r.w - SHADOW_OFFSET;
+	wh = wind->frame < 0 ? wind->r.h : wind->r.h - SHADOW_OFFSET;
 
 	switch (widg->loc.relative_type)
 	{
@@ -706,10 +706,10 @@ calc_work_area(struct xa_window *wi)
 		wi->ba = r;
 		if (frame >= 0)
 		{
-			wi->wa.x += 1;
-			wi->wa.y += 1;
-			wi->wa.w -= 2 + SHADOW_OFFSET;
-			wi->wa.h -= 2 + SHADOW_OFFSET;
+			wi->wa.x += frame; //1;
+			wi->wa.y += frame; //1;
+			wi->wa.w -= frame + frame + SHADOW_OFFSET; //2 + SHADOW_OFFSET;
+			wi->wa.h -= frame + frame + SHADOW_OFFSET; //2 + SHADOW_OFFSET;
 		}
 	}
 	else
@@ -721,10 +721,12 @@ calc_work_area(struct xa_window *wi)
 		 */
 
 		/* in color aligning is on the top & left light line of tha wa */
-		tl_margin = (MONO || thin) ? 1 : 2;
+		//tl_margin = (MONO || thin) ? 1 : 2;
+		tl_margin = (MONO || thin) ? 0 : 2;
 
 		/* The visual thing :-) */
-		br_margin = (MONO || thin) ? 1 : 3;
+		//br_margin = (MONO || thin) ? 1 : 3;
+		br_margin = (MONO || thin) ? 0 : 3;
 
 		wa_margins = tl_margin + br_margin;
 
@@ -2781,8 +2783,8 @@ set_toolbar_coords(struct xa_window *wind)
 	XA_WIDGET_LOCATION *loc = &widg->loc;
 	OBJECT *form = ((XA_TREE *)widg->stuff)->tree;
 
-	loc->r.x  = wind->wa.x - wind->r.x - wind->frame;
-	loc->r.y  = wind->wa.y - wind->r.y - wind->frame;
+	loc->r.x  = wind->wa.x - wind->r.x - (wind->frame <= 0 ? 0 : wind->frame);
+	loc->r.y  = wind->wa.y - wind->r.y - (wind->frame <= 0 ? 0 : wind->frame);
 	loc->r.w  = form->ob_width;
 	loc->r.h  = form->ob_height;
 	widg->r = loc->r;
