@@ -136,7 +136,8 @@ cXA_button_event(enum locks lock, struct c_event *ce)
 	if (md->state)
 	{
 		DIAG((D_button, client, "cXA_button_event: send click"));
-		wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
+		if (wind->send_message)
+			wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
 		return;
 	}
 }
