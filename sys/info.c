@@ -299,6 +299,7 @@ const char *MSG_cnf_must_be_a_bool = "must be of type boolean (y/n)";
 const char *MSG_cnf_missing_quotation = "missing quotation";
 const char *MSG_cnf_junk = "junk at end of line ignored.";
 const char *MSG_cnf_unknown_tag = "!!! unknown tag type %04x for '%s'!!!\n";
+const char *MSG_cnf_cant_open = "parse_cnf: can't open %s";
 
 /* ---------- debug.c ---------- */
 
@@ -396,6 +397,7 @@ const char *MSG_init_error = " error %ld.\r\n";
 const char *MSG_keytable_loading = "Installing keyboard table `%s' ...";
 const char *MSG_keytable_internal = "Installing BIOS keyboard table ...";
 const char *MSG_keytable_loaded = " AKP code %d.\r\n";
+const char *MSG_keyboard_keytbl_ignored = "Keytbl(%ld, %ld, %ld) ignored!";
 # endif
 # endif
 
@@ -463,6 +465,10 @@ const char *MSG_shell_help = \
 /* ALERTs */
 const char *MSG_slb_couldnt_open = "Could not open shared library `%s'";
 const char *MSG_slb_freeing_used = "Freeing shared library %s, which is still in use!";
+
+/* ------------ umemory.c ----------- */
+/* ALERT */
+const char *MSG_umem_mem_corrupted = "Process corrupted its memory, killing";
 
 /* ---------- unicode.c ---------- */
 
