@@ -30,6 +30,9 @@ NOCFLAGS-mcount.c = -pg
 NOCFLAGS-profil.c = -pg
 NOCFLAGS-update.c = -pg
 
+cflags = $(kernel_cflags)
+nocflags = $(kernel_nocflags)
+
 # default definitions
 GENFILES = $(BUILDINFO) $(MINT)
 BUILD = info

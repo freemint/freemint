@@ -72,14 +72,12 @@ MINT  = invalid
 # optimizations
 # 
 OPTS = -O2 -fomit-frame-pointer
-ifeq ($(MODEL),-m68000)
-OPTS += -fstrength-reduce
-endif
 
 ifeq ($(target),000)
 MINT = ../bin/mint000.prg
 CPU  = 000
 KERNELDEFS = 
+OPTS += -fstrength-reduce
 endif
 
 ifeq ($(target),030)
@@ -109,14 +107,21 @@ endif
 ifeq ($(target),my1)
 MINT = ../bin/mintnp.prg
 CPU  = 020-60
-KERNELDEFS = -DONLY030 -DDEBUG_INFO -DCPU060
+KERNELDEFS = -DDEBUG_INFO -DONLY030 -DMMU040 -DCPU040
 endif
 
 ifeq ($(target),my2)
 MINT = ../bin/mint040.prg
 CPU  = 020-60
 KERNELDEFS = -DONLY030 -DMMU040 -DDEBUG_INFO -DMILAN -DCPU040 -DPROFILING
-OPTS = -O2 -pg
+kernel_cflags = -pg
+kernel_nocflags = -fomit-frame-pointer
+endif
+
+ifeq ($(target),my3)
+MINT = ../bin/mint030.prg
+CPU  = 030
+KERNELDEFS = -DDEBUG_INFO -DONLY030 -DCPU030 -DPROFILING
 endif
 
 #
