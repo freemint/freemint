@@ -24,11 +24,11 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-# include <osbind.h>
-# include <mintbind.h>
-# include <basepage.h>
-# include <sys/cookie.h>
+# include <mint/osbind.h>
+# include <mint/mintbind.h>
+# include <mint/basepage.h>
 # include <mint/ssystem.h>
+# include <sys/cookie.h>
 
 # include <stdio.h>
 # include <signal.h>
