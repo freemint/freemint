@@ -32,6 +32,7 @@
 #define _k_mouse_h
 
 #include "global.h"
+#include "adi.h"
 #include "xa_types.h"
 
 struct pending_button
@@ -60,5 +61,9 @@ int mouse_input(enum locks lock, int internal);
 void wait_mouse(struct xa_client *client, short *br, short *xr, short *yr);
 /* non-blocking, context free */
 void check_mouse(struct xa_client *client, short *br, short *xr, short *yr);
+
+void adi_move(struct adif *a, short x, short y);
+void adi_button(struct adif *a, struct moose_data *md);
+void adi_wheel(struct adif *a, struct moose_data *md);
 
 #endif /* _k_mouse_h */
