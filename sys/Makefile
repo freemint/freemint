@@ -21,7 +21,7 @@ all-here: all-kernels
 # default overwrites
 
 # default definitions
-GENFILES = $(compile_all_dirs)
+GENFILES = $(compile_all_dirs) mint/*~ sys/*~
 
 
 help:

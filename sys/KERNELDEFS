@@ -2,11 +2,11 @@
 # 
 # generic flags
 # 
+# -DSYSCALL_REENTRANT	activate reentrant syscall handler (not for 000 yet)
 # -DVERBOSE_BOOT	include extensive messages
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
 # -DBUILTIN_SHELL	include the built-in minimal shell
-# -DJAR_PRIVATE		make Cookie Jar private for processes
 
 #
 # machine flags
@@ -23,26 +23,26 @@
 # 
 # -DDEBUG_INFO		include debugging information
 # -DPROFILING		include profiling support
+# -DMFP_DEBUG_DIRECT	direct MFP routines to output debug
 
 # 
 # experimental; for developers only
 # 
+# -DJAR_PRIVATE		make Cookie Jar private for processes
 # -DWITHOUT_TOS		exclude TOS dependencies
 # 			warning, experimental and work in progress
 
 
 # mandatory for kernel source now
 KERNELDEFAULTDEFS = -D__KERNEL__
-
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
 
 ifneq ($(kernel),000)
-KERNELDEFAULTDEFS += -DSYSCALL_REENTRANT # XXX fix the traphandler for 000
+KERNELDEFAULTDEFS += -DSYSCALL_REENTRANT
 KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 KERNELDEFAULTDEFS += -DCRYPTO_CODE
 KERNELDEFAULTDEFS += -DSOFT_UNITABLE
 KERNELDEFAULTDEFS += -DBUILTIN_SHELL
-#KERNELDEFAULTDEFS += -DJAR_PRIVATE
 endif
 
 ifeq ($(kernel),000)
@@ -91,7 +91,9 @@ endif
 ifeq ($(kernel),my2)
 MINT = mint040.prg
 CPU  = 020-60
-KERNELDEFS = -DONLY030 -DMMU040 -DDEBUG_INFO -DCPU040 -DMILAN #-DPROFILING
+KERNELDEFS = -DONLY030 -DMMU040 -DDEBUG_INFO -DCPU040 -DMILAN
+KERNELDEFS += -DMFP_DEBUG_DIRECT
+#KERNELDEFS += -DPROFILING
 #kernel_cflags = -pg
 #kernel_nocflags = -fomit-frame-pointer
 endif
