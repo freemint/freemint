@@ -100,9 +100,6 @@
 
 # define LINELEN	254
 
-/* Some help for the optimizer */
-static EXITING shell(void) NORETURN;
-
 /* Global variables */
 static short xcommands;		/* if 1, the extended command set is active */
 
@@ -1167,8 +1164,8 @@ prompt(uchar *buffer, long buflen)
 	return lbuff;
 }
 
-static EXITING
-shell(void)
+static void
+shell(void *arg)
 {
 	uchar linebuf[LINELEN + 2];
 	uchar *lbuff;
@@ -1197,19 +1194,21 @@ shell(void)
 		if (r < 0)
 			shell_fprintf(STDERR, MSG_shell_error, lbuff, r);
 	}
+
+	kthread_exit (0);
+	/* not reached */
 }
 
 long
 startup_shell(void)
 {
-	long r;
 	struct proc *p;
+	long r;
 
-	r = kthread_create((void *)shell, NULL, &p, "shell");
+	r = kthread_create(shell, NULL, &p, "shell");
 	if (r)
 	{
 		DEBUG(("can't create \"shell\" kernel thread"));
-
 		return -1;
 	}
 
@@ -1221,5 +1220,3 @@ startup_shell(void)
 }
 
 # endif /* BUILTIN_SHELL */
-
-/* EOF */

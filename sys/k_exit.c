@@ -162,7 +162,7 @@ terminate (PROC *curproc, int code, int que)
 
 		sr = splhigh ();
 		if (p->wait_q == WAIT_Q
-			&& (p->wait_cond == (long) curproc || p->wait_cond == (long) sys_pwaitpid))
+		    && (p->wait_cond == (long) curproc || p->wait_cond == (long) sys_pwaitpid))
 		{
 			rm_q (WAIT_Q, p);
 			add_q (READY_Q, p);
@@ -422,14 +422,14 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 		for (p = proclist; p; p = p->gl_next)
 		{
 			if ((p->ppid == ourpid || p->ptracer == curproc)
-				&& (pid == -1
-					|| (pid > 0 && pid == p->pid)
+			    && (pid == -1
+				|| (pid > 0 && pid == p->pid)
 # if 0
-					|| (pid == 0 && p->pgrp == ourpid)
+				|| (pid == 0 && p->pgrp == ourpid)
 # else
-					|| (pid == 0 && p->pgrp == ourpgrp)
+				|| (pid == 0 && p->pgrp == ourpgrp)
 # endif
-					|| (pid < -1 && p->pgrp == -pid)))
+				|| (pid < -1 && p->pgrp == -pid)))
 			{
 				found++;
 				if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
@@ -442,9 +442,9 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 				{
 					if ((nohang & 2)
 # if 0
-						|| ((p->wait_cond & 0x1f00) == (SIGTRAP << 8)))
+					    || ((p->wait_cond & 0x1f00) == (SIGTRAP << 8)))
 # else
-						|| p->ptracer)
+					    || p->ptracer)
 # endif
 					{
 						break;

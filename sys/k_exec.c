@@ -546,7 +546,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		newpid = p->pid;
 		for(;;)
 		{
-			r = sys_pwaitpid (curproc->pid ? newpid : -1, 0, (long *)0);
+			r = sys_pwaitpid (curproc->pid ? newpid : -1, 0, NULL);
 			if (r < 0)
 			{
 				ALERT("p_exec: wait error");
