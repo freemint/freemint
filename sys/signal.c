@@ -294,7 +294,7 @@ top:
 			{
 				curproc->sigpending &= ~sigm;
 				if (curproc->ptracer && !deliversig
-					&& (i != SIGCONT) && (i != SIGKILL))
+					&& (i != SIGCONT) /* && (i != SIGKILL) */)
 				{
 					TRACE (("tracer being notified of signal %d", i));
 					stop (i);
@@ -537,7 +537,7 @@ stop (ushort sig)
 	/* notify parent */
 	if (curproc->ptracer)
 	{
-		DEBUG (("stop (%i) SIGCHLD -> ptracer %lx", sig, curproc->ptracer));
+		DEBUG (("stop (%i) SIGCHLD -> tracer pid %i", sig, curproc->ptracer->pid));
 		post_sig (curproc->ptracer, SIGCHLD);
 	}
 	else
