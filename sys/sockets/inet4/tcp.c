@@ -81,10 +81,10 @@ struct in_proto tcp_proto =
 	datas:		NULL
 };
 
+
 void
 tcp_init (void)
 {
-	tcp_siginit ();
 	in_proto_register (IPPROTO_TCP, &tcp_proto);
 }
 
@@ -110,14 +110,10 @@ tcp_attach (struct in_data *data)
 static long
 tcp_abort (struct in_data *data, short ostate)
 {
-	struct socket *so;
-	
 	if (ostate == SS_ISCONNECTING)
 	{
 		DEBUG (("tcp_abort: freeing connecting socket"));
-		so = data->sock;
-		so_release (so);
-		kfree (so);
+		so_free (data->sock);
 	}
 	
 	return 0;
@@ -291,8 +287,12 @@ tcp_accept (struct in_data *data, struct in_data *newdata, short nonblock)
 				goto found;
 			}
 		}
+		
 		if (nonblock)
-			return EWOULDBLOCK;
+		{
+			DEBUG (("tcp_accept: EAGAIN"));
+			return EAGAIN;
+		}
 		
 		if (isleep (IO_Q, (long)data->sock))
 		{
@@ -472,26 +472,39 @@ tcp_send (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 		while ((CONNECTED (tcb) && avail <= 0) || CONNECTING (tcb))
 		{
 			if (nonblock)
+			{
+				if (offset == 0)
+				{
+					DEBUG (("tcp_send: EAGAIN"));
+					offset = EAGAIN;
+				}
+				
 				return offset;
+			}
+			
 			if (isleep (IO_Q, (long)data->sock))
 			{
 				DEBUG (("tcp_send: interrupted"));
 				return offset ? offset : EINTR;
 			}
+			
 			if (data->err)
 			{
 				r = data->err;
 				data->err = 0;
 				return r;
 			}
+			
 			if (data->sock && data->sock->flags & SO_CANTSNDMORE)
 			{
 				DEBUG (("tcp_send: shut down"));
 				p_kill (p_getpid (), SIGPIPE);
 				return EPIPE;
 			}
+			
 			avail = tcp_canwrite (data);
 		}
+		
 		if (!CONNECTED (tcb))
 		{
 			DEBUG (("tcp_send: broken connection"));
@@ -510,8 +523,10 @@ tcp_send (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 				? (tcb->seq_write - seq_write)
 				: r;
 		}
+		
 		offset += avail;
 	}
+	
 	return offset;
 }
 
@@ -590,7 +605,7 @@ tcp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	
 	if (tcb->state <= TCBS_SYNSENT)
 	{
-		DEBUG (("tcp_send: not connected"));
+		DEBUG (("tcp_recv: not connected"));
 		return ENOTCONN;
 	}
 	
@@ -649,16 +664,19 @@ tcp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 		
 		if (urgflag && SEQGT (tcb->rcv_urg, tcb->rcv_nxt))
 		{
-			DEBUG (("tcp_recv: urgent data not yet"));
-			return EWOULDBLOCK;
+			DEBUG (("tcp_recv: urgent data not yet, EAGAIN"));
+			return EAGAIN;
 		}
 		
 		if (nonblock)
-			return 0;
+		{
+			DEBUG (("tcp_recv: EAGAIN"));
+			return EAGAIN;
+		}
 		
 		if (isleep (IO_Q, (long)data->sock))
 		{
-			DEBUG (("tcp_recv: interrupted"));
+			DEBUG (("tcp_recv: interrupted -> %li", EINTR));
 			return EINTR;
 		}
 		
@@ -671,7 +689,7 @@ tcp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 		
 		if (data->sock && data->sock->flags & SO_CANTRCVMORE)
 		{
-			DEBUG (("tcp_send: shut down"));
+			DEBUG (("tcp_recv: shut down"));
 			return 0;
 		}
 	}
@@ -737,13 +755,13 @@ tcp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	
 	if (addr)
 	{
-		struct sockaddr_in sin;
+		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (struct sockaddr_in));
-		sin.sin_family = AF_INET;
-		sin.sin_addr.s_addr = data->dst.addr;
-		sin.sin_port = data->dst.port;
-		memcpy (addr, &sin, *addrlen);
+		*addrlen = MIN (*addrlen, sizeof (in));
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = data->dst.addr;
+		in.sin_port = data->dst.port;
+		memcpy (addr, &in, *addrlen);
 	}
 	
 	return copied;

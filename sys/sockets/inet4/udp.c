@@ -238,7 +238,11 @@ udp_send (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	
 	r = ip_send (data->src.addr, dstaddr, buf, IPPROTO_UDP, ipflags,
 		&data->opts);
-	return (r ? r : copied);
+	
+	if (r == 0)
+		r = copied;
+	
+	return r;
 }
 
 static long
@@ -268,21 +272,30 @@ udp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	
 	while (!data->rcv.qfirst)
 	{
-		if (nonblock || so->flags & SO_CANTRCVMORE)
+		if (nonblock)
 		{
-			DEBUG (("udp_recv: Shut down or nonblocking mode"));
+			DEBUG (("udp_recv: EAGAIN"));
+			return EAGAIN;
+		}
+		
+		if (so->flags & SO_CANTRCVMORE)
+		{
+			DEBUG (("udp_recv: shut down"));
 			return 0;
 		}
+		
 		if (isleep (IO_Q, (long)so))
 		{
 			DEBUG (("udp_recv: interrupted"));
 			return EINTR;
 		}
+		
 		if (so->state != SS_ISUNCONNECTED)
 		{
 			DEBUG (("udp_recv: Socket shut down while sleeping"));
 			return 0;
 		}
+		
 		if (data->err)
 		{
 			copied = data->err;
@@ -290,21 +303,23 @@ udp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 			return copied;
 		}
 	}
+	
 	buf = data->rcv.qfirst;
-	uh = (struct udp_dgram *)IP_DATA (buf);
+	uh = (struct udp_dgram *) IP_DATA (buf);
 	todo = uh->length - sizeof (struct udp_dgram);
 	copied = buf2iov_cpy (uh->data, todo, iov, niov, 0);
 	
 	if (addr)
 	{
-		struct sockaddr_in sin;
+		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (struct sockaddr_in));
-		sin.sin_family = AF_INET;
-		sin.sin_addr.s_addr = IP_SADDR (buf);
-		sin.sin_port = uh->srcport;
-		memcpy (addr, &sin, *addrlen);
+		*addrlen = MIN (*addrlen, sizeof (in));
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = IP_SADDR (buf);
+		in.sin_port = uh->srcport;
+		memcpy (addr, &in, *addrlen);
 	}
+	
 	if (!(flags & MSG_PEEK))
 	{
 		if (!buf->next)
@@ -318,8 +333,10 @@ udp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 			data->rcv.curdatalen -= todo;
 			buf->next->prev = 0;
 		}
+		
 		buf_deref (buf, BUF_NORMAL);
 	}
+	
 	return copied;
 }
 

@@ -731,6 +731,23 @@ static void (*loads [])(const char *, const char *) =
 	load_xfs
 };
 
+static const char *dont_load_list [] =
+{
+	"fnramfs.xfs"
+};
+
+static int
+dont_load (const char *name)
+{
+	int i;
+	
+	for (i = 0; i < (sizeof (dont_load_list) / sizeof (*dont_load_list)); i++)
+		if (stricmp (dont_load_list [i], name) == 0)
+			return 1;
+	
+	return 0;
+}
+
 void
 load_modules (long type)
 {
@@ -770,7 +787,9 @@ load_modules (long type)
 			while (r == 0)
 			{
 				r = strlen (name+4) - 4;
-				if ((r > 0) && !stricmp (name+4 + r, types [type]))
+				if ((r > 0) &&
+				    stricmp (name+4 + r, types [type]) == 0 &&
+				    !dont_load (name+4))
 				{
 					char *ptr1 = name;
 					char *ptr2 = name+4;

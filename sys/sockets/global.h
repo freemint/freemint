@@ -30,9 +30,6 @@
 # include "config.h"
 
 
-# undef EINTR
-# define EINTR		-128
-
 # define isleep		sleep
 
 

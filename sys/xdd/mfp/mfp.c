@@ -2716,7 +2716,8 @@ mfp_close (FILEPTR *f, int pid)
 	
 	DEBUG (("mfp_close [%i]: enter", f->fc.aux));
 	
-	if (iovar->lockpid == pid)
+	if ((f->flags & O_LOCK)
+	    && ((iovar->lockpid == pid) || (f->links <= 0)))
 	{
 		/* wake anyone waiting for this lock */
 		wake (IO_Q, (long) iovar);

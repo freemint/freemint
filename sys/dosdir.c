@@ -1414,6 +1414,8 @@ d_cntl (int cmd, const char *name, long arg)
 				r = xfs_fscntl (dir.fs, &dir, temp1, cmd, (long) t);
 				break;
 			}
+			
+			/* else fallback */
 		}
 		default:
 		{

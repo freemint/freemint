@@ -7,13 +7,14 @@
 
 # include "stream.h"
 
+# include "mint/file.h"
+# include "mint/signal.h"
+
 # include "unix.h"
 
+# include "iov.h"
 # include "sockutil.h"
 # include "util.h"
-
-# include <mint/file.h>
-# include <mint/signal.h>
 
 
 long
@@ -87,14 +88,19 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 	}
 	
 	nbytes = iov_size (iov, niov);
-	if (nbytes < 0) return EINVAL;
-	else if (nbytes == 0) return 0;
+	if (nbytes < 0)
+		return EINVAL;
+	else if (nbytes == 0)
+		return 0;
 	
 	/* Now we know `iov' is valid, since iov_size returns < 0 if not */
 	while (!UN_FREE (undata))
 	{
 		if (nonblock)
-			return 0;
+		{
+			DEBUG (("unix_stream_send: EAGAIN"));
+			return EAGAIN;
+		}
 		
 		if (isleep (IO_Q, (long)so))
 		{
@@ -174,7 +180,7 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 		}
 	}
 	
-	if (nbytes && so->state == SS_ISCONNECTED)
+	if ((nbytes > 0) && (so->state == SS_ISCONNECTED))
 	{
 		so_wakersel (so->conn);
 		wake (IO_Q, (long)so->conn);
@@ -210,15 +216,23 @@ unix_stream_recv (struct socket *so, struct iovec *iov, short niov, short nonblo
 		return 0; /* EOF */
 	
 	nbytes = iov_size (iov, niov);
-	if (nbytes < 0) return EINVAL;
-	else if (nbytes == 0) return 0;
+	if (nbytes < 0)
+		return EINVAL;
+	else if (nbytes == 0)
+		return 0;
 	
 	while (!UN_USED (undata))
 	{
-		if (nonblock || so->state != SS_ISCONNECTED)
+		if (so->state != SS_ISCONNECTED)
 			return 0; /* EOF */
 		
-		if (isleep (IO_Q, (long)so))
+		if (nonblock)
+		{
+			DEBUG (("unix_stream_recv: EAGAIN"));
+			return EAGAIN;
+		}
+		
+		if (isleep (IO_Q, (long) so))
 		{
 			DEBUG (("unix: unix_recv: interrupted"));
 			return EINTR;

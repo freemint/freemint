@@ -1,5 +1,5 @@
 /*  mint/errno.h -- MiNTLib.
-    Copyright (C) 1999 Guido Flohr <gufl0000@stud.uni-sb.de>
+    Copyright (C) 1999 Guido Flohr <guido@freemint.de>
 
     This file is part of the MiNTLib project, and may only be used
     modified and distributed under the terms of the MiNTLib project
@@ -188,7 +188,7 @@ __BEGIN_DECLS
 #define EINSERT		__KERNEL_NEG(18)		/* Insert media.  */
 
 /* MetaDOS error (deprecated).  */
-#define EDRVNRSP	__KERNEL_NET(19)		/* Drive not responding.  */
+#define EDRVNRSP	__KERNEL_NEG(19)		/* Drive not responding.  */
 
 /* No process matches the specified process ID.
 
@@ -295,7 +295,7 @@ __BEGIN_DECLS
    KERNEL: This used to be mixed up with EPERM (operation not permitted).  */
 #define EACCES		__KERNEL_NEG(36)		/* Permission denied.  */
 #ifdef __LOOSE_ERRROR_CODES
-# define EACCESS		EACCESS
+# define EACCESS		EACCES
 #endif
 
 /* Bad file descriptor; for example, I/O on a descriptor that has been
@@ -548,18 +548,17 @@ __BEGIN_DECLS
 					   restarted.  */
 #define ECHRNG		__KERNEL_NEG(127)		/* Channel number out of range.  */
 
-/* Falcon XBIOS errors.  */
-#define ESNDNOTLOCK 	__KERNEL_NEG(128)		/* Sound system is not locked.  */
-#define ESNDLOCKED	__KERNEL_NEG(129)		/* Sound system is already locked.  */
-
 /* Interrupted function call; an asynchronous signal occured and
    prevented completion of the call.  When this happens, you should
    try the call again.
    
    On other systems you can choose to have functions resume after a
-   signal handled, rather than failing with `EINTR'; under MiNT
-   the error code is currently fake.  */
-#define EINTR	        __KERNEL_NEG(130)		/* Interrupted function call.  */
+   signal handled, rather than failing with `EINTR'.  */
+#define EINTR	        __KERNEL_NEG(128)		/* Interrupted function call.  */
+
+/* Falcon XBIOS errors.  */
+#define ESNDLOCKED	__KERNEL_NEG(129)		/* Sound system is already locked.  */
+#define ESNDNOTLOCK 	__KERNEL_NEG(130)		/* Sound system is not locked.  */
 
 #define EL2NSYNC	__KERNEL_NEG(131)		/* Level 2 not synchronized.  */
 #define EL3HLT		__KERNEL_NEG(132)		/* Level 3 halted.  */

@@ -9,27 +9,28 @@ CROSS = no
 # 
 ifeq ($(CROSS),yes)
 
-CC = /scratch_hp/fnaumann/bin/m68k-atari-mint-gcc
-AS = $(CC)
+CROSSPREFIX=m68k-atari-mint-
+
 NATIVECC = gcc
 NATIVECFLAGS = -O
-AR = m68k-atari-mint-ar
-RANLIB = m68k-atari-mint-ranlib
-STRIP = m68k-atari-mint-strip
-FLAGS = m68k-atari-mint-flags
+CRLF = echo crlf -s
 
 else
 
-CC = gcc -pipe
-AS = $(CC)
-NATIVECC = gcc -pipe
+CROSSPREFIX=
+
+NATIVECC = gcc
 NATIVECFLAGS = -O
-AR = ar
-RANLIB = ranlib
-STRIP = strip
-FLAGS = flags
+CRLF  = crlf -s
 
 endif
+
+CC = $(CROSSPREFIX)gcc
+AS = $(CC)
+AR = $(CROSSPREFIX)ar
+RANLIB = $(CROSSPREFIX)ranlib
+STRIP = $(CROSSPREFIX)strip
+FLAGS = $(CROSSPREFIX)flags
 
 # 
 # some tools
@@ -41,9 +42,7 @@ CP    = cp
 RM    = rm -f
 TOUCH = touch
 MKDIR = mkdir
-MAKE  = make
 SED   = sed
-CRLF  = crlf -s
 
 
 #

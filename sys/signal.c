@@ -26,6 +26,7 @@
 
 # include "dosmem.h"
 # include "proc.h"
+# include "update.h"
 # include "util.h"
 
 
@@ -188,6 +189,28 @@ post_sig (PROC *p, ushort sig)
 	/* if the process is already dead, do nothing */
 	if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 		return;
+	
+	/* Init cannot be killed or stopped.  */
+	if (p->pid == 1 && (sig == SIGKILL || sig == SIGSTOP))
+	{
+		/* Ignore! */
+		return;
+	}
+	
+	/* Also avoid killing our update daemon.  What about "sld" started
+	 * by the socket device driver?
+	 */
+	/* Hmm... there can be also other processes which should not
+	 * be killed off, e.g. every SLB. So, a more general solution
+	 * would be necessary perhaps, i.e. a flag in the proc struct?
+	 */
+# ifdef SYSUPDATE_DAEMON
+	if (p->pid == update_pid && (sig == SIGKILL || sig == SIGSTOP))
+	{
+		/* Ignore! */
+		return;
+	}
+# endif
 	
 	/* mark the signal as pending */
 	sigm = (1L << (ulong) sig);

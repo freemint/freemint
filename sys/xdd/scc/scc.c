@@ -30,6 +30,10 @@
  * 
  * changes since last version:
  * 
+ * 2001-01-16:	(v0.26)
+ * 
+ * - fix: bugfix in the file locking code, lockpid was reset to wrong value
+ * 
  * 2000-06-12:	(v0.25)
  * 
  * - new: exact delay routine for SCC register access delay
@@ -125,7 +129,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	25
+# define VER_MINOR	26
 # define VER_STATUS	
 
 
@@ -2682,12 +2686,13 @@ scc_close (FILEPTR *f, int pid)
 	
 	DEBUG (("scc_close [%i]: enter", f->fc.aux));
 	
-	if ((f->flags & O_LOCK) && (iovar->lockpid == pid))
+	if ((f->flags & O_LOCK)
+	    && ((iovar->lockpid == pid) || (f->links <= 0)))
 	{
 		DEBUG (("scc_close: remove lock by %i", pid));
 		
 		f->flags &= ~O_LOCK;
-		iovar->lockpid = -1;
+		iovar->lockpid = 0;
 		
 		/* wake anyone waiting for this lock */
 		wake (IO_Q, (long) iovar);
@@ -3439,7 +3444,10 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 			while (iovar->lockpid && iovar->lockpid != cpid)
 			{
 				if (mode == F_SETLKW && lck->l_type != F_UNLCK)
+				{
+					DEBUG (("scc_ioctl: sleep in SETLKW"));
 					sleep (IO_Q, (long) iovar);
+				}
 				else
 					return ELOCKED;
 			}

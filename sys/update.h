@@ -13,5 +13,9 @@ extern long sync_time;
 
 void start_sysupdate (void);
 
+# ifdef SYSUPDATE_DAEMON
+extern short update_pid;
+# endif
+
 
 # endif /* _update_h */

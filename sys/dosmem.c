@@ -226,40 +226,61 @@ m_xalloc (long size, int mode)
 	/* mask off all but the ST/alternative RAM bits before further use */
 	mode &= 3;
 	
-	switch (mode)
+	if (size == -1)
 	{
-		case 3:
+		switch (mode)
 		{
-			r = _do_malloc (alt, size, protmode);
-			if (r == 0) r = _do_malloc (core, size, protmode);
-			break;
-		}
-		case 2:
-		{
-			r = _do_malloc (core, size, protmode);
-			if (r == 0) r = _do_malloc (alt, size, protmode);
-			break;
-		}
-		case 1:
-		{
-			r = _do_malloc (alt, size, protmode);
-			break;
-		}
-		case 0:
-		{
-			r = _do_malloc (core, size, protmode);
-			break;
-		}
-		case -1:	/* modes 2 and 3 are the same for for size -1 */
-		{
-			long r1;
-			
-			r = _do_malloc (core, -1L, PROT_P);
-			r1 = _do_malloc (alt, -1L, PROT_P);
-			if (r1 > r) r = r1;
-			break;
+			/* modes 2 and 3 are the same for for size -1 */
+			case 3:
+			case 2:
+			{
+				long r1;
+				
+				r = _do_malloc (core, -1L, PROT_P);
+				r1 = _do_malloc (alt, -1L, PROT_P);
+				if (r1 > r) r = r1;
+				break;
+			}
+			case 1:
+			{
+				r = _do_malloc (alt, -1L, PROT_P);
+				break;
+			}
+			case 0:
+			{
+				r = _do_malloc (core, -1L, PROT_P);
+				break;
+			}
 		}
 	}
+	else
+	{
+		switch (mode)
+		{
+			case 3:
+			{
+				r = _do_malloc (alt, size, protmode);
+				if (r == 0) r = _do_malloc (core, size, protmode);
+				break;
+			}
+			case 2:
+			{
+				r = _do_malloc (core, size, protmode);
+				if (r == 0) r = _do_malloc (alt, size, protmode);
+				break;
+			}
+			case 1:
+			{
+				r = _do_malloc (alt, size, protmode);
+				break;
+			}
+			case 0:
+			{
+				r = _do_malloc (core, size, protmode);
+				break;
+			}
+		}
+	}	
 	
 	if (r == 0)
 	{

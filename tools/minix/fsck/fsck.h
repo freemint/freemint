@@ -3,6 +3,7 @@
 # define _fsck_h
 
 # include "global.h"
+# include <time.h>
 
 
 # define NSIZE	16	/* Size of big inode cache in blocks */
@@ -39,13 +40,14 @@ typedef struct zlst
 # define FOUND		0x1
 # define REMOVE		0x2
 # define IGNORE		0x4
-	long	mod;		/* Modified time of zone */
+	time_t	mod;		/* Modified time of zone */
 	struct zlst *next;	/* Pointer to next entry */
 	
 } zlist;
 
 
-void	do_fsck	(void);
-
+void do_fsck1 (void);
+void do_fsck2 (void);
+	
 
 # endif /* _fsck_h */

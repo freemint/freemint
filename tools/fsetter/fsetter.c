@@ -23,6 +23,7 @@
  * 
  */
 
+#include <mintbind.h>
 #include <cflib.h>
 #include <sys/statfs.h>
 #include <mint/dcntl.h>
@@ -31,6 +32,11 @@
 
 #include "fsetter.h"
 #include "xhdi.h"
+
+#if !defined(__CFLIB__)
+#error at least cflib 0.20.0 is required to compile FSetter
+#endif
+
 
 #define UNLIMITED	0x7fffffffL
 extern short _app;
@@ -91,7 +97,7 @@ get_drives (void)
 	j = 0;
 	for (i = 0; i < 32; i++)
 	{
-		set_state (maindial->tree, LW_A + i, DISABLED, TRUE);
+		set_state (maindial->tree, LW_A + i, OS_DISABLED, TRUE);
 		strcpy (drive_list[i], "-");
 		
 		if (drive_bits & (1L<<i))
@@ -101,7 +107,7 @@ get_drives (void)
 			else
 				lw[1] = '1' + i - 26;
 			
-			set_state (maindial->tree, LW_A + i, DISABLED, FALSE);
+			set_state (maindial->tree, LW_A + i, OS_DISABLED, FALSE);
 			strcpy (drive_list[i], lw);
 			j++;
 		}
@@ -121,7 +127,7 @@ send_shwdraw (char lw)
 {
 	if (desktop == -2)
 	{
-		int i, d;
+		short i, d;
 		char name[9], *p;
 		
 		if (appl_xgetinfo (4, &d, &d, &i, &d) && (i == 1))
@@ -212,8 +218,6 @@ run_info (void)
 			 */
 			if (l == 0)
 			{
-				int i;
-				
 				strcpy (name, info.name);
 				strrev (name);
 				i = strlen (name);
@@ -232,8 +236,6 @@ run_info (void)
 			 */
 			if (l == 0)
 			{
-				int i;
-				
 				sprintf (name, "%2li.%02li", info.version >> 16, info.version & 0xff);
 				strrev (name);
 				i = strlen (name);
@@ -274,7 +276,7 @@ run_info (void)
 			else if (l < 0)
 				set_string (driveinfo, I_NLEN, rsc_string (S_UNBK));
 			else
-				set_int (driveinfo, I_NLEN, (int)l);
+				set_long (driveinfo, I_NLEN, l);
 			
 			l = Dpathconf(lw, 2);
 			if (l == -32)
@@ -284,7 +286,7 @@ run_info (void)
 			else if (l < 0)
 				set_string (driveinfo, I_PLEN, rsc_string (S_UNBK));
 			else
-				set_int (driveinfo, I_PLEN, (int)l);
+				set_long (driveinfo, I_PLEN, l);
 			
 			
 			/* filesystem informations
@@ -334,8 +336,8 @@ update_pzip (WDIALOG *wd)
 	if (r == 0)
 		r = strncmp (tmp, name, strlen (name));
 	
-	set_flag  (wd->tree, LW_PZIP, HIDETREE, (r != 0));
-	set_state (wd->tree, LW_PZIP, DISABLED, FALSE);
+	set_flag  (wd->tree, LW_PZIP, OF_HIDETREE, (r != 0));
+	set_state (wd->tree, LW_PZIP, OS_DISABLED, FALSE);
 	
 	redraw_wdobj (wd, LW_PZIP);
 }
@@ -353,24 +355,24 @@ update_special (WDIALOG *wd)
 	l = Dcntl (V_CNTR_MODE, lw, -1);
 	ret = (l < 0);
 	
-	tree_state (special, NAME_BOX, DISABLED, (l < 0));
-	set_state (special, NAME_GEMDOS, SELECTED, (l == 0));
-	set_state (special, NAME_ISO, SELECTED, (l == 1));
-	set_state (special, NAME_MSDOS, SELECTED, (l == 2));
+	tree_state (special, NAME_BOX, OS_DISABLED, (l < 0));
+	set_state (special, NAME_GEMDOS, OS_SELECTED, (l == 0));
+	set_state (special, NAME_ISO, OS_SELECTED, (l == 1));
+	set_state (special, NAME_MSDOS, OS_SELECTED, (l == 2));
 	
 	cf32.mode = 0;
 	l = Dcntl (V_CNTR_FAT32, lw, (long) &cf32);
 	if (ret) ret = (l < 0);
 	
-	tree_state (special, FAT32_BOX, DISABLED, (l < 0));
+	tree_state (special, FAT32_BOX, OS_DISABLED, (l < 0));
 	if (l == 0)
 	{
-		set_state (special, FAT32_KOPIE, SELECTED, (cf32.mirr == 0));
-		set_int (special, FAT32_ANZAHL, cf32.fats);
-		set_int (special, FAT32_AKTIV, cf32.mirr);
+		set_state (special, FAT32_KOPIE, OS_SELECTED, (cf32.mirr == 0));
+		set_long (special, FAT32_ANZAHL, cf32.fats);
+		set_long (special, FAT32_AKTIV, cf32.mirr);
 	}
 	
-	set_state (wd->tree, LW_SPECIAL, DISABLED, ret);
+	set_state (wd->tree, LW_SPECIAL, OS_DISABLED, ret);
 	redraw_wdobj (wd, LW_SPECIAL);
 }
 
@@ -399,10 +401,10 @@ update_xhdibuttons (WDIALOG *wd)
 		}
 	}
 	
-	set_state (wd->tree, LW_LOCK, DISABLED, (lock == 0));
+	set_state (wd->tree, LW_LOCK, OS_DISABLED, (lock == 0));
 	set_string (wd->tree, LW_LOCK, tmp);
 	
-	set_state (wd->tree, LW_EJECT, DISABLED, (eject == 0));
+	set_state (wd->tree, LW_EJECT, OS_DISABLED, (eject == 0));
 	
 	redraw_wdobj (wd, LW_LOCK);
 	redraw_wdobj (wd, LW_EJECT);
@@ -437,28 +439,28 @@ run_special (void)
 		
 		lw[0] = drive_list[active_drv][1];
 		
-		if (get_state (special, NAME_GEMDOS, SELECTED))
+		if (get_state (special, NAME_GEMDOS, OS_SELECTED))
 			Dcntl (V_CNTR_MODE, lw, 0);
-		else if (get_state (special, NAME_ISO, SELECTED))
+		else if (get_state (special, NAME_ISO, OS_SELECTED))
 			Dcntl (V_CNTR_MODE, lw, 1);
-		else if (get_state (special, NAME_MSDOS, SELECTED))
+		else if (get_state (special, NAME_MSDOS, OS_SELECTED))
 			Dcntl (V_CNTR_MODE, lw, 2);
 		
 		cf32.mode = 1;
-		if (get_state (special, FAT32_KOPIE, SELECTED))
+		if (get_state (special, FAT32_KOPIE, OS_SELECTED))
 			cf32.mirr = 0;
 		else
-			cf32.mirr = get_int (special, FAT32_AKTIV);
+			cf32.mirr = get_long (special, FAT32_AKTIV);
 		
 		Dcntl (V_CNTR_FAT32, lw, (long) &cf32);
 		
 		cf32.mode = 0;
 		if (Dcntl (V_CNTR_FAT32, lw, (long) &cf32) == 0)
 		{
-			if (get_state (special, FAT32_KOPIE, SELECTED))
+			if (get_state (special, FAT32_KOPIE, OS_SELECTED))
 				cf32.mirr = 0;
 			else
-				cf32.mirr = get_int (special, FAT32_AKTIV);
+				cf32.mirr = get_long (special, FAT32_AKTIV);
 			
 			cf32.mode = 1;
 			Dcntl (V_CNTR_FAT32, lw, (long) &cf32);
@@ -517,36 +519,36 @@ show_data (WDIALOG *wd)
 		lw[0] = drive_list[active_drv][1];
 		
 		l = Dcntl (VFAT_CNFLN, lw, -1);
-		set_state (wd->tree, A_VFAT, DISABLED, (l < 0));
-		set_state (wd->tree, A_VFAT, SELECTED, (l == 1L));
+		set_state (wd->tree, A_VFAT, OS_DISABLED, (l < 0));
+		set_state (wd->tree, A_VFAT, OS_SELECTED, (l == 1L));
 		
 		l = Dcntl (V_CNTR_SLNK, lw, -1);
-		set_state (wd->tree, A_SLNK, DISABLED, (l < 0));
-		set_state (wd->tree, A_SLNK, SELECTED, (l == 1L));
+		set_state (wd->tree, A_SLNK, OS_DISABLED, (l < 0));
+		set_state (wd->tree, A_SLNK, OS_SELECTED, (l == 1L));
 		
 		l = Dcntl (V_CNTR_WB, lw, -1);
-		set_state (wd->tree, A_CACHE, DISABLED, (l < 0));
-		set_state (wd->tree, A_CACHE, SELECTED, (l == 1L));
+		set_state (wd->tree, A_CACHE, OS_DISABLED, (l < 0));
+		set_state (wd->tree, A_CACHE, OS_SELECTED, (l == 1L));
 		
 		l = Dcntl (V_CNTR_WP, lw, -1);
-		set_state (wd->tree, A_WP, DISABLED, (l < 0));
-		set_state (wd->tree, A_WP, SELECTED, (l == 1L));
+		set_state (wd->tree, A_WP, OS_DISABLED, (l < 0));
+		set_state (wd->tree, A_WP, OS_SELECTED, (l == 1L));
 		
 		redraw_wdobj (wd, A_BOX);
 		
 		/* buttons */
 		
-		set_state (wd->tree, LW_INFO, DISABLED, FALSE);
+		set_state (wd->tree, LW_INFO, OS_DISABLED, FALSE);
 		redraw_wdobj (wd, LW_INFO);
 		
 		update_pzip (wd);
 		update_special (wd);
 		update_xhdibuttons (wd);
 		
-		set_state (wd->tree, SETZEN, DISABLED, FALSE);
+		set_state (wd->tree, SETZEN, OS_DISABLED, FALSE);
 		redraw_wdobj (wd, SETZEN);
 		
-		set_state (wd->tree, SETENDE, DISABLED, FALSE);
+		set_state (wd->tree, SETENDE, OS_DISABLED, FALSE);
 		redraw_wdobj (wd, SETENDE);
 		
 	}
@@ -564,22 +566,22 @@ set_data (WDIALOG *wd)
 		
 		lw[0] = drive_list[active_drv][1];
 		
-		if (get_state (wd->tree, A_VFAT, SELECTED))
+		if (get_state (wd->tree, A_VFAT, OS_SELECTED))
 			Dcntl (VFAT_CNFLN, lw, 1);
 		else
 			Dcntl (VFAT_CNFLN, lw, 0);
 		
-		if (get_state (wd->tree, A_SLNK, SELECTED))
+		if (get_state (wd->tree, A_SLNK, OS_SELECTED))
 			Dcntl (V_CNTR_SLNK, lw, 1);
 		else
 			Dcntl (V_CNTR_SLNK, lw, 0);
 		
-		if (get_state (wd->tree, A_CACHE, SELECTED))
+		if (get_state (wd->tree, A_CACHE, OS_SELECTED))
 			Dcntl (V_CNTR_WB, lw, 1);
 		else
 			Dcntl (V_CNTR_WB, lw, 0);
 		
-		if (get_state (wd->tree, A_WP, SELECTED))
+		if (get_state (wd->tree, A_WP, OS_SELECTED))
 			Dcntl (V_CNTR_WP, lw, 1);
 		else
 			Dcntl (V_CNTR_WP, lw, 0);
@@ -601,31 +603,31 @@ main_open (WDIALOG *wd)
 		sprintf (str, rsc_string (S_VERSION), VERSION);
 		set_string (wd->tree, MB_VERS, str);
 		
-		tree_state (wd->tree, A_BOX, DISABLED, TRUE);
+		tree_state (wd->tree, A_BOX, OS_DISABLED, TRUE);
 		
 		if (_app)
 		{
 			/* aktives Verzeichnis holen und LW selektieren */
 			get_path (str, 0);
 			active_drv = str[0] - 'A';
-			set_state (wd->tree, active_drv + LW_A, SELECTED, TRUE);
+			set_state (wd->tree, active_drv + LW_A, OS_SELECTED, TRUE);
 			show_data (wd);
 		}
 		else
 		{
-			set_flag (wd->tree, LW_PZIP, HIDETREE, TRUE);
-			set_state (wd->tree, LW_INFO, DISABLED, TRUE);
-			set_state (wd->tree, LW_SPECIAL, DISABLED, TRUE);
-			set_state (wd->tree, LW_LOCK, DISABLED, TRUE);
-			set_state (wd->tree, LW_EJECT, DISABLED, TRUE);
-			set_state (wd->tree, SETZEN, DISABLED, TRUE);
-			set_state (wd->tree, SETENDE, DISABLED, TRUE);
+			set_flag (wd->tree, LW_PZIP, OF_HIDETREE, TRUE);
+			set_state (wd->tree, LW_INFO, OS_DISABLED, TRUE);
+			set_state (wd->tree, LW_SPECIAL, OS_DISABLED, TRUE);
+			set_state (wd->tree, LW_LOCK, OS_DISABLED, TRUE);
+			set_state (wd->tree, LW_EJECT, OS_DISABLED, TRUE);
+			set_state (wd->tree, SETZEN, OS_DISABLED, TRUE);
+			set_state (wd->tree, SETENDE, OS_DISABLED, TRUE);
 		}
 	}
 }
 
 static bool
-main_exit (WDIALOG *wd, int obj)
+main_exit (WDIALOG *wd, short obj)
 {
 	bool close = FALSE;
 	
@@ -633,39 +635,39 @@ main_exit (WDIALOG *wd, int obj)
 	{
 		case LW_INFO :
 			run_info ();
-			set_state (wd->tree, obj, SELECTED, FALSE);
+			set_state (wd->tree, obj, OS_SELECTED, FALSE);
 			redraw_wdobj (wd, obj);
 			update_xhdibuttons (wd);
 			break;
 		
 		case LW_PZIP:
 			run_pzip ();
-			set_state (wd->tree, obj, SELECTED, FALSE);
+			set_state (wd->tree, obj, OS_SELECTED, FALSE);
 			update_pzip (wd);
 			break;
 		
 		case LW_SPECIAL:
 			run_special ();
-			set_state (wd->tree, obj, SELECTED, FALSE);
+			set_state (wd->tree, obj, OS_SELECTED, FALSE);
 			update_special (wd);
 			update_xhdibuttons (wd);
 			break;
 		
 		case LW_LOCK:
 			run_lockbutton ();
-			set_state (wd->tree, obj, SELECTED, FALSE);
+			set_state (wd->tree, obj, OS_SELECTED, FALSE);
 			update_xhdibuttons (wd);
 			break;
 		
 		case LW_EJECT:
 			run_ejectbutton ();
-			set_state (wd->tree, obj, SELECTED, FALSE);
+			set_state (wd->tree, obj, OS_SELECTED, FALSE);
 			update_xhdibuttons (wd);
 			break;
 		
 		case SETZEN:
 			set_data (wd);
-			set_state (wd->tree, obj, SELECTED, FALSE);
+			set_state (wd->tree, obj, OS_SELECTED, FALSE);
 			show_data (wd);
 			break;
 		
@@ -700,7 +702,7 @@ main_exit (WDIALOG *wd, int obj)
  * Event-Verarbeitung 
  */
 static void
-handle_msg (int *msgbuff)
+handle_msg (short *msgbuff)
 {
 	if (!message_wdial (msgbuff))
 	{
@@ -711,7 +713,7 @@ handle_msg (int *msgbuff)
 				if (get_drives ())
 				{
 					if (active_drv != -1)
-						set_state (maindial->tree, LW_A + active_drv, SELECTED, TRUE);
+						set_state (maindial->tree, LW_A + active_drv, OS_SELECTED, TRUE);
 					show_data (maindial);
 				}
 				break;
@@ -728,8 +730,8 @@ handle_msg (int *msgbuff)
 static void
 main_loop (void)
 {
-	int evset, event, msx, msy, mbutton, kstate, mbreturn, kreturn;
-	int msgbuff[8];
+	short evset, event, msx, msy, mbutton, kstate, mbreturn, kreturn;
+	short msgbuff[8];
 
 	do {
 		if (maindial->mode == WD_OPEN)

@@ -25,6 +25,7 @@ long sync_time = 5;
 
 # define UPDATE_STKSIZE		6144
 
+short update_pid;
 
 INLINE void *
 setstack (register void *sp)
@@ -133,6 +134,6 @@ start_sysupdate (void)
 	b->p_tbase = (long) update;
 	b->p_hitpa = (long) b + UPDATE_STKSIZE + 256L;
 	
-	p_exec (PE_ASYNC_GO, "update", b, 0L);
+	update_pid = p_exec (PE_ASYNC_GO, "update", b, 0L);
 # endif
 }

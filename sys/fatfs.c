@@ -877,7 +877,7 @@ typedef struct
 	DI	*di;		/* device identifikator for this drive */
 	
 	ushort	rdonly;		/* rdonly flag */
-	ushort	res;		/* reserved */
+	ushort	clean;		/* set if cleanly mounted */
 	
 	ulong	recsiz;		/* bytes per sector */
 	ulong	clsiz;		/* sectors per cluster */
@@ -1166,6 +1166,7 @@ const	char *	__table;	/* current character table */
 # define RCOOKIE(dev)	(&(BPB (dev)->root))
 
 # define RDONLY(dev)	(BPB (dev)->rdonly)
+# define CLEAN(dev)	(BPB (dev)->clean)
 
 # define SECSIZE(dev)	(BPB (dev)->recsiz)
 # define CLUSTSIZE(dev)	(BPB (dev)->clsizb)
@@ -1352,9 +1353,7 @@ DFREE (const fcookie *dir, ulong *buf)
 	const ushort dev = dir->dev;
 	
 	if (FREECL (dev) < 0)
-	{
 		FREECL (dev) = (*(BPB (dev)->ffree))(dev);
-	}
 	
 	*buf++ = FREECL (dev);
 	*buf++ = CLUSTER (dev);
@@ -1680,32 +1679,41 @@ S2C (register long sector, ushort dev)
 # define FAT_VALID16(cl, dev)	(((cl) > 1) && ((cl) < MAXCL (dev)))
 # define FAT_VALID32(cl, dev)	(((cl) > 1) && ((cl) < MAXCL (dev)))
 
-# define FAT_LAST12(cl)		((cl) > 0x0000ff7L)
-# define FAT_LAST16(cl)		((cl) > 0x000fff7L)
-# define FAT_LAST32(cl)		((cl) > 0xffffff7L)
+# define FAT_LAST12(cl)		((cl) > 0x00000ff7L)
+# define FAT_LAST16(cl)		((cl) > 0x0000fff7L)
+# define FAT_LAST32(cl)		((cl) > 0x0ffffff7L)
 
-# define FAT_BAD12(cl)		(((cl) > 0x0000fefL) && ((cl) < 0x0000ff8L))
-# define FAT_BAD16(cl)		(((cl) > 0x000ffefL) && ((cl) < 0x000fff8L))
-# define FAT_BAD32(cl)		(((cl) > 0xfffffefL) && ((cl) < 0xffffff8L))
+# define FAT_BAD12(cl)		(((cl) > 0x00000fefL) && ((cl) < 0x00000ff8L))
+# define FAT_BAD16(cl)		(((cl) > 0x0000ffefL) && ((cl) < 0x0000fff8L))
+# define FAT_BAD32(cl)		(((cl) > 0x0fffffefL) && ((cl) < 0x0ffffff8L))
 
 # define FAT_FREE(cl)		((cl) == 0)
 
 /*
- * makros for fat values
+ * makros for FAT values
  */
 
-# define CLLAST12		(0x0000fffL)
-# define CLLAST16		(0x000ffffL)
-# define CLLAST32		(0xfffffffL)
+# define CLLAST12		(0x00000fffL)
+# define CLLAST16		(0x0000ffffL)
+# define CLLAST32		(0x0fffffffL)
 
-# define CLBAD12		(0x0000ff7L)
-# define CLBAD16		(0x000fff7L)
-# define CLBAD32		(0xffffff7L)
+# define CLBAD12		(0x00000ff7L)
+# define CLBAD16		(0x0000fff7L)
+# define CLBAD32		(0x0ffffff7L)
+
+# define CLEANFLAG16		(0x00008000L)
+# define CLEANFLAG32		(0x08000000L)
+
+
+/*
+ * generic mapped macros
+ */
 
 # define CLFREE			( 0L)
 # define CLLAST			(-1L)
 # define CLBAD			(-2L)
 # define CLILLEGAL		(-3L)
+
 
 /*
  * stlc (start cluster) access 
@@ -1745,6 +1753,7 @@ PUT_STCL (_DIR *dir, ushort dev, long cl)
 		dir->stcl = cpu2le16 ((ushort) cl);
 	}
 }
+
 
 /*
  * getcl??:
@@ -2167,7 +2176,7 @@ fixcl32 (long cluster, const ushort dev, long next)
 		if (u)
 		{
 			/* mask in the highest 4 bit (reserved) */
-			next |= *(((ulong *) u->data) + offset) & 0xf0000000L;
+			next |= le2cpu32 (*(((ulong *) u->data) + offset)) & 0xf0000000L;
 			
 			/* write the entry to the first FAT */
 			*(((ulong *) u->data) + offset) = cpu2le32 ((ulong) next);
@@ -4682,6 +4691,143 @@ upd_fat32info (register const ushort dev)
 	}
 }
 
+# define CLEANFLAG_READ		0
+# define CLEANFLAG_CLEAR	1
+# define CLEANFLAG_SET		2
+
+INLINE int
+clean_flag16 (const ushort dev, ushort action)
+{
+	UNIT *u;
+	
+	/* update FAT#2 */
+	u = bio_fat_read (dev, DI (dev), FATSTART (dev) + FATSIZE (dev), SECSIZE (dev));
+	if (u)
+	{
+		const int offset = 1; /* FAT entry 1 */
+		ushort v;
+		
+		v = le2cpu16 (*(((ushort *) u->data) + offset));
+		
+		switch (action)
+		{
+			case CLEANFLAG_READ:
+				return (v & CLEANFLAG16);
+			
+			case CLEANFLAG_CLEAR:
+				v &= ~CLEANFLAG16;
+				break;
+			
+			case CLEANFLAG_SET:
+				v |= CLEANFLAG16;
+				break;
+			
+			default:
+				return 0;
+		}
+		
+		/* write the entry to the first FAT */
+		*(((ushort *) u->data) + offset) = cpu2le16 (v);
+		
+		bio_MARK_MODIFIED ((&bio), u);
+		
+		if (FAT2ON (dev))
+		{
+			/* update FAT#1 */
+			u = bio_fat_read (dev, DI (dev), FATSTART (dev), SECSIZE (dev));
+			if (u)
+			{
+				/* write the entry to the second FAT */
+				*(((ushort *) u->data) + offset) = cpu2le16 (v);
+				
+				bio_MARK_MODIFIED ((&bio), u);
+			}
+		}
+	}
+	
+	return 0;
+}
+
+INLINE int
+clean_flag32 (const ushort dev, ushort action)
+{
+	ulong sector = FAT32prim (dev);
+	UNIT *u;
+	
+	u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+	if (u)
+	{
+		const int offset = 1; /* FAT entry 1 */
+		ulong v;
+		
+		v = le2cpu32 (*(((ulong *) u->data) + offset));
+				
+		switch (action)
+		{
+			case CLEANFLAG_READ:
+				return (v & CLEANFLAG32);
+			
+			case CLEANFLAG_CLEAR:
+				v &= ~CLEANFLAG32;
+				break;
+			
+			case CLEANFLAG_SET:
+				v |= CLEANFLAG32;
+				break;
+			
+			default:
+				return 0;
+		}
+		
+		/* write the entry to the first FAT */
+		*(((ulong *) u->data) + offset) = cpu2le32 (v);
+		
+		bio_MARK_MODIFIED ((&bio), u);
+		
+		if (FAT32mirr (dev))
+		{
+			/* update all FATs,
+			 * 'sector' is in the first FAT
+			 * in this case
+			 */
+			long i;
+			
+			for (i = FAT2ON (dev); i; i--)
+			{
+				sector += FATSIZE (dev);
+				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+				if (u)
+				{
+					/* write the FAT entry */
+					*(((ulong *) u->data) + offset) = cpu2le32 (v);
+					
+					bio_MARK_MODIFIED ((&bio), u);
+				}
+			}
+		}
+	}
+	
+	return 0;
+}
+
+static int
+clean_flag (const ushort dev, ushort action)
+{
+	if (RDONLY (dev) && (action != CLEANFLAG_READ))
+		return 0;
+	
+	switch (FAT_TYPE (dev))
+	{
+		case FAT_TYPE_16:
+			return clean_flag16 (dev, action);
+		
+		case FAT_TYPE_32:
+			return clean_flag32 (dev, action);
+	}
+	
+	return 0;
+}
+
 /* END special FAT32 extension */
 /****************************************************************************/
 
@@ -5084,7 +5230,7 @@ get_devinfo (const ushort drv, long *err)
 		d->di		= di;
 		
 		d->rdonly	= BIO_WP_CHECK (di);
-		d->res		= 0;
+		d->clean	= 0;
 		
 		d->recsiz	= t->recsiz;
 		d->clsiz	= t->clsiz;
@@ -5215,6 +5361,12 @@ get_devinfo (const ushort drv, long *err)
 		FAT_DEBUG (("fat2on = %d, ftype = %d", d->fat2on, d->ftype));
 		
 		BPBVALID (drv) = VALID;
+		
+		CLEAN (drv) = clean_flag (drv, CLEANFLAG_READ);
+		if (CLEAN (drv))
+			clean_flag (drv, CLEANFLAG_CLEAR);
+		else
+			Debug ("FAT-FS [%c]: WARNING: mounting unchecked fs, running dosfsck is recommended", drv+'A');
 		
 		FAT_DEBUG (("get_devinfo: leave ok"));
 		return d;
@@ -7048,6 +7200,9 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			{
 				if (BIO_WP_CHECK (DI (dir->dev)) && !RDONLY (dir->dev))
 				{
+					if (CLEAN (dir->dev))
+						clean_flag (dir->dev, CLEANFLAG_SET);
+					
 					bio.sync_drv (DI (dir->dev));
 					
 					RDONLY (dir->dev) = 1;
@@ -7055,9 +7210,13 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				}
 				else if (RDONLY (dir->dev))
 				{
+					RDONLY (dir->dev) = 0;
+					
+					if (CLEAN (dir->dev))
+						clean_flag (dir->dev, CLEANFLAG_CLEAR);
+					
 					bio.sync_drv (DI (dir->dev));
 					
-					RDONLY (dir->dev) = 0;
 					FAT_ALERT (("FAT-FS [%c]: remounted read/write!", dir->dev+'A'));
 				}
 			}
@@ -7091,7 +7250,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			r = search_cookie ((COOKIE *) dir->index, &c, name, 0);
 			if (r == E_OK)
 			{
-				r = __FTRUNCATE (c, arg);
+				r = __FTRUNCATE (c, *((long *) arg));
 				rel_cookie (c);
 			}
 			
@@ -7202,6 +7361,9 @@ fatfs_sync (void)
 static long _cdecl
 fatfs_unmount (int drv)
 {
+	if (CLEAN (drv))
+		clean_flag (drv, CLEANFLAG_SET);
+	
 	fatfs_dskchng (drv, 1);
 	
 	return E_OK;
@@ -7769,7 +7931,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				return EACCES;
 			}
 			
-			r = __FTRUNCATE (c, *(long *) buf);
+			r = __FTRUNCATE (c, *((long *) buf));
 			if (r == E_OK)
 			{
 				long pos = f->pos;
@@ -8054,7 +8216,7 @@ fatfs_close (FILEPTR *f, int pid)
 # ifdef FS_DEBUG
 
 # include <stdarg.h>
-# include "dosfile.h"
+# include <dosfile.h>
 
 static void
 fatfs_debug (const char *fmt, ...)
@@ -8063,23 +8225,23 @@ fatfs_debug (const char *fmt, ...)
 	static const long buflen = sizeof (buf);
 	
 	va_list args;
-	FILEPTR *f;
+	FILEPTR *fp;
 	
 	va_start (args, fmt);
-	f = do_open (FS_LOGFILE, (O_WRONLY | O_CREAT | O_APPEND), 0, NULL, NULL);
-	if (f)
+	fp = do_open (FS_LOGFILE, (O_WRONLY | O_CREAT | O_APPEND), 0, NULL, NULL);
+	if (fp)
 	{
-		(void) (*f->dev->lseek)(f, 0, SEEK_END);
+		(*fp->dev->lseek)(fp, 0, SEEK_END);
 		
-		(void) vsprintf (buf, buflen, fmt, args);
-		(*f->dev->write)(f, buf, strlen (buf));
-		(*f->dev->write)(f, "\r\n", 2);
+		vsprintf (buf, buflen, fmt, args);
+		(*fp->dev->write)(fp, buf, strlen (buf));
+		(*fp->dev->write)(fp, "\r\n", 2);
 		
-		do_close (f);
+		do_close (fp);
 	}
 	else
 	{
-		(void) vsprintf (buf, buflen, fmt, args);
+		vsprintf (buf, buflen, fmt, args);
 		DEBUG ((buf));
 	}
 	va_end (args);
@@ -8157,22 +8319,22 @@ fatfs_dump_hashtable (void)
 {
 	static char buf [SPRINTF_MAX];
 	static const long buflen = sizeof (buf);
-	FILEPTR *f;
+	FILEPTR *fp;
 	
 	FAT_FORCE (("fatfs.c: dynamic used memory = %li bytes", fatfs_dynamic_mem));
 	
-	f = do_open (FS_DUMPFILE, (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL, NULL);
-	if (f)
+	fp = do_open (FS_DUMPFILE, (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL, NULL);
+	if (fp)
 	{
 		long i;
 		
-		(void) ksprintf (buf, buflen, "fatfs.c: dynamic used memory = %li bytes\r\n", fatfs_dynamic_mem);
-		(*f->dev->write)(f, buf, strlen (buf));
+		ksprintf (buf, buflen, "fatfs.c: dynamic used memory = %li bytes\r\n", fatfs_dynamic_mem);
+		(*fp->dev->write)(fp, buf, strlen (buf));
 		
-		(*f->dev->write)(f, "BPBs:\r\n", 7);
+		(*fp->dev->write)(fp, "BPBs:\r\n", 7);
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
-			(void) ksprintf (buf, buflen,
+			ksprintf (buf, buflen,
 				"nr: %2li  valid = %1li  drv = %2i"
 				"  c_hits = %6ld  c_miss = %6ld\r\n",
 				i,
@@ -8181,13 +8343,13 @@ fatfs_dump_hashtable (void)
 				C_HIT (i),
 				C_MISS (i)
 			);
-			(*f->dev->write)(f, buf, strlen (buf));
+			(*fp->dev->write)(fp, buf, strlen (buf));
 		}
 		
-		(*f->dev->write)(f, "cookies:\r\n", 10);
+		(*fp->dev->write)(fp, "cookies:\r\n", 10);
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
-			(void) ksprintf (buf, buflen,
+			ksprintf (buf, buflen,
 				"nr: %li\tlinks = %li\tdev = %i\tname = %s %s\r\n",
 				i,
 				cookies[i].links,
@@ -8195,18 +8357,18 @@ fatfs_dump_hashtable (void)
 				cookies[i].name,
 				cookies[i].unlinked ? "[unlinked]" : ""
 			);
-			(*f->dev->write)(f, buf, strlen (buf));
+			(*fp->dev->write)(fp, buf, strlen (buf));
 		}
 		
-		(*f->dev->write)(f, "table:\r\n", 8);
+		(*fp->dev->write)(fp, "table:\r\n", 8);
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
 			COOKIE *temp = ctable [i];
-			(void) ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
-			(*f->dev->write)(f, buf, strlen (buf));
+			ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
+			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (; temp; temp = temp->next)
 			{
-				(void) ksprintf (buf, buflen, "\r\n"
+				ksprintf (buf, buflen, "\r\n"
 					"\tnext = %lx\tlinks = %li"
 					"\tdev = %i\tname = %s\r\n",
 					temp->next,
@@ -8214,12 +8376,12 @@ fatfs_dump_hashtable (void)
 					temp->dev,
 					temp->name
 				);
-				(*f->dev->write)(f, buf, strlen (buf));	
+				(*fp->dev->write)(fp, buf, strlen (buf));	
 			}
-			(*f->dev->write)(f, "\r\n", 2);
+			(*fp->dev->write)(fp, "\r\n", 2);
 		}
 		
-		do_close (f);
+		do_close (fp);
 	}
 }
 

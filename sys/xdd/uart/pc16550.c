@@ -30,6 +30,10 @@
  * 
  * changes since last version:
  * 
+ * 2001-01-16:	(v0.64)
+ * 
+ * - fix: bugfix in the file locking code, lockpid was reset to wrong value
+ * 
  * 2000-05-24:	(v0.63)
  * 
  * - new: hopefully better behaviour on last close()
@@ -183,7 +187,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	63
+# define VER_MINOR	64
 # define VER_STATUS	
 
 
@@ -335,7 +339,7 @@ struct iovar
 	
 	ushort	bdev;		/* BIOS devnumber */
 	ushort	iosleepers;	/* number of precesses that are sleeping in I/O */
-	short	lockpid;	/* file locking */
+	ushort	lockpid;	/* file locking */
 	
 	ushort	clocal;		/* */
 	ushort	brkint;		/* */
@@ -1196,7 +1200,7 @@ init_uart (IOVAR **iovar, ushort base, int intr, long baudbase)
 	(*iovar)->regs = (UART *) (0xC0000000L | base);
 	(*iovar)->baudbase = baudbase;
 	(*iovar)->intr = intr;
-	(*iovar)->lockpid = -1;
+	(*iovar)->lockpid = 0;
 	
 	return 1;
 	
@@ -2799,12 +2803,13 @@ uart_close (FILEPTR *f, int pid)
 	
 	DEBUG (("uart_close [%i]: enter", f->fc.aux));
 	
-	if ((f->flags & O_LOCK) && (iovar->lockpid == pid))
+	if ((f->flags & O_LOCK)
+	    && ((iovar->lockpid == pid) || (f->links <= 0)))
 	{
 		DEBUG (("uart_close: remove lock by %i", pid));
 		
 		f->flags &= ~O_LOCK;
-		iovar->lockpid = -1;
+		iovar->lockpid = 0;
 		
 		/* wake anyone waiting for this lock */
 		wake (IO_Q, (long) iovar);
@@ -3570,7 +3575,7 @@ uart_ioctl (FILEPTR *f, int mode, void *buf)
 			struct flock *lck = (struct flock *) buf;
 			int cpid = p_getpid ();
 			
-			while (iovar->lockpid >= 0 && iovar->lockpid != cpid)
+			while (iovar->lockpid && iovar->lockpid != cpid)
 			{
 				if (mode == F_SETLKW && lck->l_type != F_UNLCK)
 				{
@@ -3592,7 +3597,7 @@ uart_ioctl (FILEPTR *f, int mode, void *buf)
 				if (iovar->lockpid != cpid)
 					return ENSLOCK;
 				
-				iovar->lockpid = -1;
+				iovar->lockpid = 0;
 				f->flags &= ~O_LOCK;
 				
 				/* wake anyone waiting for this lock */
@@ -3610,7 +3615,7 @@ uart_ioctl (FILEPTR *f, int mode, void *buf)
 		{
 			struct flock *lck = (struct flock *) buf;
 			
-			if (iovar->lockpid >= 0)
+			if (iovar->lockpid)
 			{
 				lck->l_type = F_WRLCK;
 				lck->l_start = lck->l_len = 0;
