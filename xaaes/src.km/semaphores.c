@@ -161,27 +161,17 @@ free_mouse_lock(void)
 bool
 lock_screen(struct xa_client *client, bool try, short *ret, int which)
 {
-	int pid;
-	struct xa_client *locker;
 
-	pid = p_getpid();
-	locker = client;
-#if 0
-	if (client != C.Aes && C.Aes->p->pid == pid)
-		locker = C.Aes;
-	else
-		locker = client;
-#endif
-		
-	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s by (%d)%s, state: %d for %d, try: %d",
-		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), update_lock.counter,
-		update_lock.client ? update_lock.client->p->pid : -1, try));
+	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s state: %d for (%d)%s, try: %d",
+		which, client->p->pid, c_owner(client), update_lock.counter,
+		update_lock.client ? update_lock.client->p->pid : -1,
+		update_lock.client ? update_lock.client->name : "", try));
 
-	if (try == true)
+	if (try)
 	{
-		if (ressource_semaphore_try(&mouse_lock, locker))
+		if (ressource_semaphore_try(&mouse_lock, client))
 		{
-			if (ressource_semaphore_try(&update_lock, locker))
+			if (ressource_semaphore_try(&update_lock, client))
 				return true;
 			else
 				ressource_semaphore_free(&mouse_lock);
@@ -193,8 +183,8 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 		return false;
 	}
 
-	ressource_semaphore_lock(&mouse_lock, locker);
-	ressource_semaphore_lock(&update_lock, locker);
+	ressource_semaphore_lock(&mouse_lock, client);
+	ressource_semaphore_lock(&update_lock, client);
 	return true;
 }
 
@@ -202,38 +192,20 @@ bool
 unlock_screen(struct xa_client *client, int which)
 {
 	bool r = false;
-	int pid;
-	struct xa_client *locker;
 
-	pid = p_getpid();
-	locker = client;
-#if 0
-	if (client != C.Aes && C.Aes->p->pid == pid)
-		locker = C.Aes;
-	else
-		locker = client;
-#endif
+	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s state: %d for (%d)%s, try: %d",
+		which, client->p->pid, c_owner(client), update_lock.counter,
+		update_lock.client ? update_lock.client->p->pid : -1,
+		update_lock.client ? update_lock.client->name : "", try));
 
-	
-	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s by (%d)%s, state: %d for %d",
-		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), update_lock.counter,
-		update_lock.client ? update_lock.client->p->pid : -1));
-
-	if (update_lock.client == locker)
+	if (update_lock.client == client)
 	{
-		r = ressource_semaphore_rel(&update_lock, locker);
-		r = ressource_semaphore_rel(&mouse_lock, locker);
+		r = ressource_semaphore_rel(&update_lock, client);
+		r = ressource_semaphore_rel(&mouse_lock, client);
 	}
 	else
 	{
 		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", locker->p->pid));
-		/* Ozk:
-		 * After seeing how things behave, I've come to the conclusion that
-		 * apps looks at update and mouse locks as two indipendant locks..
-		 * So lets try treating them this way...
-		*/
-		//r = ressource_semaphore_rel(&update_lock, locker);
-		//ALERT(("unlock_screen from %d without lock_screen!", locker->p->pid));
 	}
 
 	return r;
@@ -242,25 +214,14 @@ unlock_screen(struct xa_client *client, int which)
 bool
 lock_mouse(struct xa_client *client, bool try, short *ret, int which)
 {
-	int pid;
-	struct xa_client *locker;
+	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s state: %d for (%d)%s, try: %d",
+		which, client->p->pid, c_owner(client), update_lock.counter,
+		mouse_lock.client ? mouse_lock.client->p->pid : -1,
+		mouse_lock.client ? mouse_lock.client->name : "", try));
 
-	pid = p_getpid();
-	locker = client;
-#if 0
-	if (client != C.Aes && C.Aes->p->pid == pid)
-		locker = C.Aes;
-	else
-		locker = client;
-#endif
-
-	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s by (%d)%s, state: %d for %d, try: %d",
-		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), mouse_lock.counter,
-		mouse_lock.client ? mouse_lock.client->p->pid : -1, try));
-
-	if (try == true)
+	if (try)
 	{
-		if (ressource_semaphore_try(&mouse_lock, locker))
+		if (ressource_semaphore_try(&mouse_lock, client))
 			return true;
 
 		if (ret)
@@ -269,7 +230,7 @@ lock_mouse(struct xa_client *client, bool try, short *ret, int which)
 		return false;
 	}
 
-	ressource_semaphore_lock(&mouse_lock, locker);
+	ressource_semaphore_lock(&mouse_lock, client);
 	return true;
 }
 
@@ -277,29 +238,20 @@ bool
 unlock_mouse(struct xa_client *client, int which)
 {
 	bool r = false;
-	int pid;
-	struct xa_client *locker;
 
-	pid = p_getpid();
-	locker = client;
-#if 0
-	if (client != C.Aes && C.Aes->p->pid == pid)
-		locker = C.Aes;
-	else
-		locker = client;
-#endif
+	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s state: %d for (%d)%s, try: %d",
+		which, client->p->pid, c_owner(client), update_lock.counter,
+		mouse_lock.client ? mouse_lock.client->p->pid : -1,
+		mouse_lock.client ? mouse_lock.client->name : "", try));
 
-	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s by (%d)%s, state: %d for %d",
-		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), mouse_lock.counter,
-		mouse_lock.client ? mouse_lock.client->p->pid : -1));
 
-	if (!update_lock.client || update_lock.client == locker)
-		r = ressource_semaphore_rel(&mouse_lock, locker);
+
+	if (!update_lock.client || update_lock.client == client)
+		r = ressource_semaphore_rel(&mouse_lock, client);
 	else
 	{
 		DIAG((D_sema, NULL, "unlock_mouse from %d without lock_screen!", locker->p->pid));
-		r = ressource_semaphore_rel(&mouse_lock, locker);
-		//ALERT(("unlock_mouse from %d without lock_screen!", locker->p->pid));
+		r = ressource_semaphore_rel(&mouse_lock, client);
 	}
 
 	return r;
