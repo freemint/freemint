@@ -591,6 +591,7 @@ norm_trap2:
 #else
 	bne	rom_trap2
 #endif
+#endif
 	bset	#0x07,_in_kernel
 	// The AES/VDI passes parameters in D0/D1, so we do not touch
 	// them registers..
