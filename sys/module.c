@@ -31,8 +31,11 @@
 # include "module.h"
 
 # include "arch/cpu.h"
+# include "arch/init_intr.h"
 # include "arch/syscall.h"
+
 # include "libkern/libkern.h"
+
 # include "mint/basepage.h"
 # include "mint/dcntl.h"
 # include "mint/file.h"

@@ -31,12 +31,12 @@
 # include "dev-mouse.h"
 
 # include "arch/intr.h"
+# include "arch/init_intr.h"
 # include "arch/syscall.h"
 # include "mint/ioctl.h"
 
 # include "biosfs.h"
 # include "dev-null.h"
-# include "init.h"
 # include "proc.h"
 # include "random.h"
 # include "time.h"
