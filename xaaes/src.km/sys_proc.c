@@ -123,7 +123,7 @@ xaaes_on_signal(void *_client, struct proc *p, unsigned short nr)
 }
 
 static void _cdecl
-premature_xaaes_on_exit(void *_client, struct proc *p, unsigned short nr)
+premature_xaaes_on_exit(void *_client, struct proc *p, int nr)
 {
 	DIAGS(("premature_xaaes_on_signal for %u (signal %u)", p->pid, nr));
 	exit_proc(0, p);
