@@ -381,7 +381,7 @@
  */
 
 # define VER_MAJOR	1
-# define VER_MINOR	24
+# define VER_MINOR	25
 # define VER_STATUS
 
 # if VER_MINOR > 9
@@ -6383,46 +6383,63 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 
 	if (old->info.attr & FA_DIR)
 	{
-		COOKIE *traverse;
-
 		/* check if directory move violate the
 		 * directory hierachy
+		 * 
+		 * we need todo this only if the new directory is not
+		 * the root directory (there can't be a violation against
+		 * the root directory :-))
 		 */
-
-		traverse = newd;
-		traverse->links++;
-
-		for (;;)
+		if (newd->dir != 0)
 		{
-			COOKIE *check;
+			COOKIE *traverse;
 
-			if (traverse->stcl == old->stcl)
+			traverse = newd;
+			traverse->links++;
+
+			for (;;)
 			{
+				COOKIE *check;
+
+				FAT_DEBUG (("fatfs_rename: traverse = \"%s\"",
+					    traverse->name));
+				FAT_DEBUG (("fatfs_rename: dir = %li, stcl = %li",
+					    traverse->dir, traverse->stcl));
+
+				if (traverse->stcl == old->stcl)
+				{
+					rel_cookie (traverse);
+					rel_cookie (old);
+
+					FAT_DEBUG (("fatfs_rename: invalid directory move",
+						    traverse->dev+'A'));
+					return EINVAL;
+				}
+
+				/* stcl is 0 if <path>/.. point to the root directory
+				 * root directory is our termination condition for
+				 * no found violation
+				 */
+				if (traverse->stcl == 0)
+				{
+					rel_cookie (traverse);
+					break;
+				}
+
+				r = search_cookie (traverse, &check, "..", 0);
+				if (r)
+				{
+					rel_cookie (traverse);
+					rel_cookie (old);
+
+					FAT_DEBUG (("fatfs_rename: leave failure "
+						    "(not found \"..\" -> %li)", r));
+					return r;
+				}
+
 				rel_cookie (traverse);
-				rel_cookie (old);
-
-				FAT_DEBUG (("fatfs_rename: invalid directory move", traverse->dev+'A'));
-				return EINVAL;
+				traverse = check;
 			}
-
-			if (traverse->dir == 0)
-			{
-				rel_cookie (traverse);
-				break;
-			}
-
-			r = search_cookie (traverse, &check, "..", 0);
-			if (r)
-			{
-				rel_cookie (traverse);
-				rel_cookie (old);
-
-				FAT_DEBUG (("fatfs_rename: leave failure (not found \"..\" -> %li)", r));
-				return r;
-			}
-
-			rel_cookie (traverse);
-			traverse = check;
 		}
 
 		/* clean inode cache on directory move
