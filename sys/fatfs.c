@@ -381,7 +381,7 @@
  */
 
 # define VER_MAJOR	1
-# define VER_MINOR	25
+# define VER_MINOR	26
 # define VER_STATUS
 
 # if VER_MINOR > 9
