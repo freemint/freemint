@@ -349,6 +349,20 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 	return 1;
 }
 
+struct toolbar_handlers wdlg_th =
+{
+	(void*)-1L,			/* FormExit		*exitform;	*/
+	(void*)-1L,			/* FormKeyInput		*keypress;	*/
+
+	(void*)-1L,			/* DisplayWidget	*display;	*/
+	click_wdlg_widget,		/* WidgetBehaviour	*click;		*/
+	click_wdlg_widget,		/* WidgetBehaviour	*dclick;	*/
+	click_wdlg_widget,		/* WidgetBehaviour	*drag;		*/
+	(void*)-1L,			/* WidgetBehaviour	*release;	*/
+	NULL,				/* void (*destruct)(struct xa_widget *w); */
+
+};
+
 unsigned long
 XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -400,8 +414,8 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				wind->wdlg = wdlg;
 
-				wt = set_toolbar_widget(lock, wind, client, obtree, -2, WIDG_NOTEXT);
-				wt->exit_form = NULL; //exit_wdial;
+				wt = set_toolbar_widget(lock, wind, client, obtree, -2, WIDG_NOTEXT, &wdlg_th);
+				//wt->exit_form = NULL; //exit_wdial;
 				
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
 				wdlg->wind = wind;
@@ -433,7 +447,6 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *wind;
 	struct wdlg_info *wdlg;
 	short handle;
-
 
 	CONTROL(4,1,3)
 
@@ -730,7 +743,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					obtree->ob_state &= ~OS_OUTLINED;
 					if (!(wind->window_status & XAWS_ICONIFIED))
 					{
-						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT);
+						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT, NULL);
 						wt->exit_form = NULL;
 						
 						obj_area(wt, 0, &or);
@@ -854,7 +867,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					
 					if (wt != get_widget(wind, XAW_TOOLBAR)->stuff)
 					{
-						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT);
+						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT, NULL);
 						wt->exit_form = NULL;
 					}
 

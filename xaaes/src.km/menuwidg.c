@@ -2025,7 +2025,10 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 		wind->handle, w_owner(wind)));
 
 	if (widg->stuff)
+	{
 		((XA_TREE *)widg->stuff)->widg = NULL;
+		((XA_TREE *)widg->stuff)->links--;
+	}
 
 	if (owner)
 		widg->owner = owner;
@@ -2035,6 +2038,7 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	menu->is_menu   = true;				/* set the flags in the original */
 	menu->menu_line = true; //(wind == root_window);	/* menu in root window.*/
 	menu->widg = widg;
+	menu->links++;
 
 	/* additional fix to fit in window */
 	obtree->ob_width = obtree[obtree->ob_head].ob_width = obtree[obtree->ob_tail].ob_width = wind->wa.w;
@@ -2071,10 +2075,14 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	int frame = wind->frame;
 
 	if ( widg->stuff)
+	{
 		((XA_TREE *)widg->stuff)->widg = NULL;
+		((XA_TREE *)widg->stuff)->links--;
+	}
 
 	wt->is_menu = true;
 	wt->widg = widg;
+	wt->links++;
 
 	if (frame < 0)
 		frame = 0;

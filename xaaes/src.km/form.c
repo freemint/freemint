@@ -161,7 +161,7 @@ Setup_form_do(struct xa_client *client,
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
-		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIDG_NOTEXT);
+		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIDG_NOTEXT, NULL);
 		wt->zen = false; //true;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h); //wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 	}
@@ -197,7 +197,7 @@ Setup_form_do(struct xa_client *client,
 		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
 		{
 			client->fmd.wind = wind;
-			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIDG_NOTEXT);
+			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIDG_NOTEXT, NULL);
 			wt->zen = false;
 		}
 		else

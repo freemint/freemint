@@ -245,6 +245,7 @@ dispatch_cevent(struct xa_client *client)
 static void
 do_block(struct xa_client *client)
 {
+#if 0
 	if ((client->i_xevmask.ev_0 & XMU_FSELECT))
 	{
 		client->fselect.inuse = true;
@@ -253,6 +254,7 @@ do_block(struct xa_client *client)
 		client->fselect.ret = f_select(0L, (long *)&client->fselect.rfds, (long *)&client->fselect.wfds, (long *)&client->fselect.xfds);
 	}
 	else
+#endif
 	{
 		client->blocktype = XABT_SLEEP;
 		client->sleepqueue = IO_Q;
