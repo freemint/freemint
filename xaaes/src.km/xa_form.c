@@ -826,11 +826,11 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_BLOCK;
 }
 
-static char error_alert[100];
-
 unsigned long
 XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	static char error_alert[256]; // XXX
+
 	char *msg;
 	char icon;
 
@@ -886,7 +886,7 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 		break;
 	}
 
-	sprintf(error_alert, sizeof(error_alert), "[%c][ ERROR: | %s ][ Bugger ]", icon, msg);
+	sprintf(error_alert, sizeof(error_alert), "[%c][ ERROR: | %s ][ Ok ]", icon, msg);
 
 	DIAG((D_form, client, "alert_err %s", error_alert));
 	do_form_alert(lock, client, 1, error_alert);
