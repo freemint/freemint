@@ -41,12 +41,6 @@
 
 #define done(x) (*wt->state_mask &= ~(x))
 
-OBSPEC *
-get_ob_spec(OBJECT *ob)
-{
-	return (ob->ob_flags & OF_INDIRECT) ?
-			ob->ob_spec.indirect : &ob->ob_spec;
-}
 
 /*
  * Returns the object number of this object's parent or -1 if it is the root
