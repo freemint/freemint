@@ -1370,17 +1370,28 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 
 /* root function of a menu_bar task */
 /* The task stages are driven by mouse rectangle events completely */
-/* Called by XA_move_event()
+/* Called by client events sent by XA_move_event()
    and by do_widgets() only for the menu_bar itself */
+/* Ozk: As of now, calling this from other than menu_owners context
+ * will return false
+ */
 static bool
 click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	struct xa_client *client;
+	struct xa_client *client, *rc = lookup_extension(NULL, XAAES_MAGIC);
 	//bool l = false;
 
 	DIAG((D_menu, NULL, "click_menu_widget"));
 
 	client = ((XA_TREE *)widg->stuff)->owner;
+
+	/*
+	 * Make sure we're in the right context
+	*/
+	if (!rc)
+		rc = C.Aes;
+	if (client != rc)
+		return false;
 
 #if 1
 	if ( widg->stuff == get_menu())
