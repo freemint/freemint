@@ -196,6 +196,42 @@ const char *MSG_bios_kill =
 	"Please change the protection mode "
 	"to \'Super\' in the program header.";
 
+/* ------------ cnf.c ---------- */
+
+const char *MSG_cnf_bad_drive = "bad drive '%c:' in alias";
+const char *MSG_cnf_tos_error = "TOS error %ld while looking for '%s'";
+const char *MSG_cnf_file_not_found = "file not found";
+const char *MSG_cnf_error_executing = "error while attempting to execute";
+const char *MSG_cnf_cannot_include = "cannot open include file '%s'";
+# ifdef OLDTOSFS
+const char *MSG_cnf_newfatfs = "\033pNEWFATFS active:\033q ";
+# else
+const char *MSG_cnf_newfatfs = "\033pNEWFATFS\033q is \033pdefault\033q filesystem for all drives!\r\n";
+# endif
+const char *MSG_cnf_vfat = "\033pVFAT active:\033q ";
+const char *MSG_cnf_wbcache = "\033pWB CACHE active:\033q ";
+const char *MSG_cnf_invalid_arg = "invalid argument line for 'set', skipped.";
+const char *MSG_cnf_set_option = "option '-%c'";
+const char *MSG_cnf_set_ignored = " ignored.";
+const char *MSG_cnf_parser_skipped = ", skipped.";
+const char *MSG_cnf_empty_file = "[%s] empty file, skipped.";
+const char *MSG_cnf_cant_allocate = "[%s] can't allocate %li bytes, break.";
+const char *MSG_cnf_reading_mintcnf = "\r\nReading '%s' ... ";
+const char *MSG_cnf_not_successful = "not successful, break.\r\n\r\n";
+const char *MSG_cnf_bytes_done = "%li bytes done.\r\n\r\n";
+const char *MSG_cnf_unknown_variable = "unknown variable";
+const char *MSG_cnf_syntax_error = "syntax error";
+const char *MSG_cnf_keyword_not_supported = "keyword '%s' not supported yet";
+const char *MSG_cnf_needs_equation = "variable '%s' needs equation";
+const char *MSG_cnf_argument_for = "argument %i for '%s' ";
+const char *MSG_cnf_missed = "missed";
+const char *MSG_cnf_must_be_a_num = "must be a number";
+const char *MSG_cnf_out_of_range = "out of range";
+const char *MSG_cnf_must_be_a_bool = "must be of type boolean (y/n)";
+const char *MSG_cnf_missing_quotation = "missing quotation";
+const char *MSG_cnf_junk = "junk at end of line ignored.";
+const char *MSG_cnf_unknown_tag = "!!! unknown tag type %04x for '%s'!!!\n";
+
 /* ---------- debug.c ---------- */
 
 const char *MSG_debug_syncing = "Syncing...";
