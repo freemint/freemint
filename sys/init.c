@@ -1188,11 +1188,6 @@ mint_thread(void *arg)
 	_base->p_env[0] = 0;
 	_base->p_env[1] = 0;
 
-	/* load the configuration file */
-	load_config();
-
-	stop_and_ask();
-
 # ifdef OLDTOSFS
 	/*
 	 * Until the old TOSFS is completely removed, we try to trigger a media
@@ -1264,6 +1259,15 @@ mint_thread(void *arg)
 		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
 
+	/* we default to U:\ before loading the cnf  */
+	sys_d_setdrv('u' - 'a');
+ 	sys_d_setpath("/");
+
+	/* load the MINT.CNF configuration file */
+	load_config();
+
+	stop_and_ask();
+
 	/* Load the keyboard table */
 	load_keytbl();
 
@@ -1271,6 +1275,8 @@ mint_thread(void *arg)
 # ifdef SOFT_UNITABLE
 	init_unicode();
 # endif
+
+	stop_and_ask();
 
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
