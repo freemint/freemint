@@ -79,7 +79,7 @@ L_systime:
 	bne.s	L_systime
 	addq.l	#5,P_USRTIME(a0)	// update curproc->usrtime
 	move.l	(sp)+,a0
-	rts				// branch to old vector
+	rts			// branch to old vector
 L_systime:
 	addq.l	#5,P_SYSTIME(a0)	// update curproc->systime
 	move.l	(sp)+,a0
@@ -93,7 +93,7 @@ L_systime:
 	.data
 
 vblcnt:	dc.w	4
-mod5:	dc.w	5			// initial value matters
+mod5:	dc.w	5		// initial value matters
 
 	.text
 
@@ -153,7 +153,7 @@ L_no_uptime:
 	movem.l	(sp)+,d0-d2/a0-a2
 	tst.w	_proc_clock		// has time expired yet?
 	beq.s	L_expired		// yes -- maybe go switch processes
-L_out:	rte				// no -- just return
+L_out:	rte			// no -- just return
 
 L_popnout:	movem.l	(sp)+,d0-d2/a0-a2
 #ifndef ONLY030
@@ -165,14 +165,14 @@ L_popnout:	movem.l	(sp)+,d0-d2/a0-a2
 
 L_expired:
 	btst	#5,(sp) 		// user mode?
-	bne.s	L_out			// no -- switching is not possible
+	bne.s	L_out		// no -- switching is not possible
 	tst.w	(0x043e).w		// test floppy disk lock variable
-	bne.s	L_out			// if locked, can't switch
+	bne.s	L_out		// if locked, can't switch
 	bset	#0x07,_in_kernel	// are we doing a kernel operation?
 	bne.s	L_out
 
 L_switch:
-	clr.w	-(sp)			// no frame format needed
+	clr.w	-(sp)		// no frame format needed
 	move.l	_curproc,-(sp)
 	addq.l	#P_CTXT0,(sp)		// to get &curproc->ctxt[SYSCALL]
 	jsr	_build_context		// build context
@@ -190,7 +190,7 @@ L_switch:
 	eor.w	d0,d7
 	and.w	#0x0700,d7
 	eor.w	d7,d0
-	move.w	d0,sr			// vbl allowed again
+	move.w	d0,sr		// vbl allowed again
 
 	jsr	_preempt		// yield processor
 
@@ -234,7 +234,7 @@ _reset:	move.w	#0x2700,sr		// avoid interruption here
 	jsr	_restr_intr		// restore interrupts
 	movem.l	(sp)+,d0-d2/a0-a2	// restore registers
 	move.l	0x0600.w,sp
-	jmp	(a6)			// reset again
+	jmp	(a6)		// reset again
 
 //
 // routine for mouse packet handling
@@ -336,6 +336,18 @@ _newkeys:	movem.l	d1-d2/a0-a2,-(sp)
 	beq.s	L_bye
 	move.l	_oldkeys.w(pc),-(sp)
 L_bye:	rts
+
+// Calling the keyclick routines. This is a helper for keyboard driver.
+
+	.globl	_kbdclick
+
+_kbdclick:	move.l	(0x05b0).w,d0
+	beq.s	L_nocl
+	move.l	d0,a0
+	clr.l	d0
+	move.w	4(sp),d0	// scancode
+	jmp	(a0)
+L_nocl:	rts
 
 // Generic routines for handling any user-specified interrupts.
 // These only work on a 68020+ (long frame format is needed),
