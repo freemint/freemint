@@ -98,14 +98,14 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 
 	if (withlocks)
 	{
-		if (C.update_lock) //update_locked())
+		if (C.update_lock)
 		{
-			locked = C.update_lock; //update_locked();
+			locked = C.update_lock;
 			DIAGS(("-= 1 =-"));
 		}
-		else if (C.mouse_lock) //mouse_locked())
+		else if (C.mouse_lock)
 		{
-			locked = C.mouse_lock; //mouse_locked();
+			locked = C.mouse_lock;
 			DIAGS(("-= 2 =-"));
 		}
 		if (locked)
@@ -115,8 +115,6 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 				*locked_client = client;
 
 			if (client->fmd.keypress ||				/* classic (blocked) form_do */
-			    //client->alert ||
-			    //client->fmd.wind ||
 			    (nlwind && nlwind->owner == client) ||
 			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
 			    (top->owner == client && top->keypress))		/* Windowed form_do() */
@@ -130,16 +128,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 						*keywind = nlwind;
 					else if (top->owner == client && top->keypress)
 						*keywind = top;
-#if 0
-					if (client->alert)
-						*keywind = client->alert;
-					else if ((client->fmd.lock && client->fmd.keypress) || client->fmd.wind)
-						*keywind = client->fmd.wind;
-					else if (top->owner == client && top->keypress)
-						*keywind = top;
-#endif
 				}
-				
 				DIAGS(("-= 3 =-"));
 				return client;
 			}
@@ -189,7 +178,7 @@ recover(void)
 	{
 		DIAG((D_appl, NULL, "Killing owner of update lock"));
 		free_update_lock();
-		if (C.mouse_lock == client) //(mouse_lock == update_lock)
+		if (C.mouse_lock == client)
 		{
 			free_mouse_lock();
 			C.mouse_lock = NULL;
@@ -299,8 +288,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 	    && new->desktop->tree != get_xa_desktop())
 	{
 		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
-		set_desktop(new->desktop); //set_desktop(&new->desktop);
-		//display_window(lock, 30, root_window, NULL);
+		set_desktop(new->desktop);
 		redraw_menu(lock);
 	}
 	else if (new->std_menu)
@@ -315,7 +303,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 XA_TREE *
 find_menu_bar(enum locks lock)
 {
-	XA_TREE *rtn = C.Aes->std_menu; //&(C.Aes->std_menu); /* default */
+	XA_TREE *rtn = C.Aes->std_menu;  /* default */
 	struct xa_client *last;
 
 	Sema_Up(clients);
@@ -328,7 +316,7 @@ find_menu_bar(enum locks lock)
 	{
 		if (last->std_menu)
 		{
-			rtn = last->std_menu; //&last->std_menu;
+			rtn = last->std_menu;
 			DIAGS(("found std_menu %lx", rtn));
 			break;
 		}
@@ -427,27 +415,10 @@ hide_app(enum locks lock, struct xa_client *client)
 		    && w->owner == client
 		    && !is_hidden(w))
 		{
-#if 0
-			RECT r = w->rc, d = root_window->rc;
-#endif
-
 			if ((w->window_status & XAWS_ICONIFIED))
 				reify = true;
 
 			hide_window(lock, w);
-#if 0
-#if HIDE_TO_HEIGHT
-			r.y += d.h;
-#else
-			if (r.x > 0)
-				while (r.x < d.w)
-					r.x += d.w;
-			else
-				while (r.x + r.w > 0)
-					r.x -= d.w;
-#endif
-			send_moved(lock|winlist, w, AMQ_NORM, &r);
-#endif
 		}
 		w = w->next;
 	}
@@ -705,7 +676,6 @@ app_in_front(enum locks lock, struct xa_client *client)
 					wi_remove(&S.open_windows, wl);
 					wi_put_first(&S.open_windows, wl);
 					topped = wl;
-					//top_window(lock|winlist, wl, NULL);
 				}
 			}
 
@@ -714,7 +684,7 @@ app_in_front(enum locks lock, struct xa_client *client)
 			
 			wl = wp;
 		}
-		
+
 		if (topped)
 		{
 			update_all_windows(lock, window_list);
@@ -738,27 +708,7 @@ app_in_front(enum locks lock, struct xa_client *client)
 		{
 			send_ontop(lock);
 			display_window(lock, 0, window_list, NULL);
-		}			
-#if 0
-		if (wf != window_list)
-		{
-			send_untop(lock, wf);
-			send_ontop(lock);
 		}
-		else
-		{
-			if (!is_topped(wf))
-			{
-				send_untop(lock, wf);
-				//display_window(lock, 0, wf, NULL);
-			}
-			else if (infront != client)
-			{
-				send_ontop(lock);
-				//display_window(lock, 0, wf, NULL);
-			}
-		}
-#endif
 	}
 }
 

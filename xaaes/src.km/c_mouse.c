@@ -119,19 +119,16 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		return;
 	}
 	
-	if ( is_topped(wind)/*wind == window_list*/ || wind == root_window || (!is_topped(wind)/*wind != window_list*/ && wind->active_widgets & NO_TOPPED) )
+	if ( is_topped(wind) || wind == root_window || (!is_topped(wind) && wind->active_widgets & NO_TOPPED) )
 	{
 		DIAG((D_button, client, "cXA_button_event: Topped win"));
 		if (do_widgets(lock, wind, 0, md))
-		{
-			//client->md.clicks = 0;
 			return;
-		}
 		button_event(lock, client, md);
 		return;
 	}
 
-	if (!is_topped(wind)) //wind != window_list)
+	if (!is_topped(wind))
 	{
 		DIAG((D_button, client, "cXA_button_event: wind not on top"));
 		if (do_widgets(lock, wind, 0, md))
@@ -172,7 +169,7 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		if (ce->md.clicks > 1)
 			widg->click(lock, wind, widg, &ce->md);
-		else if (wind->send_message && !is_topped(wind)) //wind != window_list)
+		else if (wind->send_message && !is_topped(wind))
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
 	}
 	else
