@@ -24,41 +24,25 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "init.h"
-
 #include RSCHNAME
 #include WIDGHNAME
 
-#include "xa_types.h"
+#include "init.h"
 #include "xa_global.h"
-
-#include "xa_form.h"
-#include "xa_fsel.h"
-#include "xa_graf.h"
-#include "xa_rsrc.h"
-#include "xa_shel.h"
 
 #include "c_window.h"
 #include "cnf_xaaes.h"
-#include "desktop.h"
 #include "handler.h"
 #include "k_main.h"
 #include "k_shutdown.h"
-#include "menuwidg.h"
 #include "my_aes.h"
 #include "nkcc.h"
 #include "objects.h"
-#include "rectlist.h"
-#include "scrlobjc.h"
 #include "semaphores.h"
-#include "taskman.h"
-#include "widgets.h"
 #include "xalloc.h"
 
 #include "version.h"
 
-#include "mint/proc.h"
-#include "mint/signal.h"
 #include "mint/ssystem.h"
 #include "cookie.h"
 
@@ -152,69 +136,6 @@ bootmessage(unsigned long mint)
 		fdisplay(log, "auto program");
 	}
 }
-
-
-static void
-hook_into_vector(void)
-{
-	/* in p_handlr.s */
-	extern long old_trap2_vector;
-	void handler(void);
-
-	old_trap2_vector = b_setexc(0x22, (long)handler);
-	DIAGS(("hook_into_vector: old = 0x%lx", old_trap2_vector));
-
-	/* We want to do this with task switching disabled in order
-	 * to prevent a possible race condition...
-	 *
-	 * Dummy access to the critical error handler
-	 * (make Selectric, FSELECT and other AES extenders happy...)
-	 */
-	b_setexc(0x101, -1L);
-}
-
-struct xbra
-{
-	long xbra_id;
-	long app_id;
-	long oldvec;
-};
-
-#define XBRA_ID 0x58425241L /* 'XBRA' */
-#define XAPP_ID 0x58614145L /* 'XaAE' */
-
-/*
- * New unhook, pays attention to XBRA unhook procedure
- */
-void
-unhook_from_vector(void)
-{
-	struct xbra *rx;
-	long vecadr, *stepadr;
-
- 	vecadr = b_setexc(0x20 + AES_TRAP, -1L);
- 	rx = (struct xbra *)(vecadr - sizeof(struct xbra));
-
-	if ((rx->xbra_id == XBRA_ID) && (rx->app_id == XAPP_ID))
-	{
-		b_setexc(0x20 + AES_TRAP, rx->oldvec);
-		return;
-	}
-
-	stepadr = (long *)&rx->oldvec;
-	rx = (struct xbra *)((long)rx->oldvec - sizeof(struct xbra));
-	while (rx->xbra_id == XBRA_ID)
-	{
-		if (rx->app_id == XAPP_ID)
-		{
-			*stepadr = (long)rx->oldvec;
-			break;
-		}
-		stepadr = (long *)&rx->oldvec;
-		rx = (struct xbra *)((long)rx->oldvec - sizeof(struct xbra));
-	}
-}
-
 
 struct kentry *kentry;
 
@@ -351,10 +272,6 @@ init(struct kentry *k)
 		s_system(S_SETBVAL, 0x0484, (char)helper);
 	}
 	DIAGS(("set bit 3 in conterm ok!"));
-
-	/* Patch the AES trap vector to use our OS. */
-//	hook_into_vector();
-//	DIAGS(("hook_into_vector ok!"));
 
 #if GENERATE_DIAGS
 	{ short nkc_vers = nkc_init(); DIAGS(("nkc_init: version %x", nkc_vers)); }

@@ -618,14 +618,6 @@ struct xa_window
 	Path name, info;		/* wind_set makes copies. */
 };
 
-/* open and closed windows in separate lists. */
-struct win_base
-{
-	struct xa_window *first;
-	struct xa_window *last;
-};
-typedef struct win_base WIN_BASE;
-
 struct xa_window *get_top(void);
 extern struct xa_window *root_window;
 #define window_list S.open_windows.first

@@ -24,10 +24,12 @@
 |* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 |*
 	.globl	_accstart
+	.globl	_accend
 
 	.text
 
 | Accessory startup code poached from oAESis
+
 _accstart:
 	move.l	4(sp),a0		| pointer to basepage
 	clr.l	36(a0)			| HR: clear pointer to parent basepage
@@ -37,3 +39,4 @@ _accstart:
 	move.l	a1,16(a0)		| --> data seg
 	move.l	8(a0),a1		| start of text segment
 	jmp	(a1)			| jump to text
+_accend:

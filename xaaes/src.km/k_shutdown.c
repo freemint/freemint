@@ -139,8 +139,6 @@ k_shutdown(void)
 	/* dummy, just report leaked memory */
 	free_all();
 
-	unhook_from_vector();
-
 	nkc_exit();
 
 #if 0
