@@ -63,6 +63,7 @@
 # include "k_exit.h"
 # include "kmemory.h"
 # include "memory.h"
+# include "proc.h"		/* proc_clock */
 # include "rendez.h"
 # include "signal.h"
 # include "util.h"
@@ -224,28 +225,13 @@ has_opened (SHARED_LIB *sl, int pid)
 static long
 load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 {
-	int		newpid,
-			prot_cookie;
-	long		r,
-			hitpa,
-			oldsigint,
-			oldsigquit,
-			oldcmdlin;
-	char		*fullpath;
-	BASEPAGE	*b;
-	MEMREGION	*mr;
-	long		*exec_longs;
+	int newpid, prot_cookie;
+	long r, hitpa, oldsigint, oldsigquit, oldcmdlin, *exec_longs;
+	char *fullpath;
+	BASEPAGE *b;
+	MEMREGION *mr;
 
 	/* Construct the full path name of the SLB */
-	/* Treat SLBPATH value as a single pathname pointing to the default
-	 * folder supposed to contain libraries (draco)
-	 */
-	if (!path)
-		path = _mint_getenv(curproc->base, "SLBPATH");
-
-	if (!path)
-		path = "./";
-
 	fullpath = kmalloc(strlen(path) + strlen(name) + 2);
 	if (!fullpath)
 	{
@@ -444,14 +430,11 @@ slb_error:
  *
  * Implementation of Slbopen().
  *
- * BUGS: Must always be called from user mode. Using a NULL-pointer for the
- * path does not cause the library to be searched in all paths given in the
- * environment variable SLBPATH (because IMO, evaluating an environment
- * variable /inside the kernel/ is not a good idea).
+ * BUGS: Must always be called from user mode.
  *
  * Input:
  * name: Filename of the shared library to open/load (without path)
- * path: Path to look for name; if NULL, the current directory is assumed
+ * path: Path to look for name; if NULL, the lib is searched through SLBPATH.
  * min_ver: Minimum version number of the library
  * sl: Pointer to store the library's descriptor in
  * fn: Pointer to store the pointer to the library's execution function in
@@ -463,11 +446,10 @@ slb_error:
 long _cdecl
 s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 {
-	SHARED_LIB	*slb;
-	long		r,
-			*usp;
-	ulong		i;
-	MEMREGION	**mr;
+	SHARED_LIB *slb;
+	long r, *usp;
+	ulong i;
+	MEMREGION **mr;
 
 	/* First, ensure the call came from user mode */
 	if (curproc->ctxt[SYSCALL].sr & 0x2000)
@@ -524,7 +506,73 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 	else
 	{
 		/* Library is not available, try to load it */
-		r = load_and_init_slb(name, path, min_ver, sl);
+
+		if (path)
+			r = load_and_init_slb(name, path, min_ver, sl);
+		else
+		{
+			char *npath, *np;
+
+			/* $SLBPATH contains a list of pathnames where the library
+			 * should be searched for (MagiC-like), if the user hasn't
+			 * supplied an explicit pathname.
+			 *
+			 * The variable must be in MiNT format, i.e.
+			 *
+			 * ./;u:/c/multitos;u:/c/multitos/slb etc.
+			 *
+			 * or
+			 *
+			 * ./;/c/multitos;/usr/lib/slb etc.
+			 *
+			 * MS-Backslash as a path separator will be accepted.
+			 * Directory paths may be also separated with commas.
+			 *
+			 */
+			path = _mint_getenv(curproc->base, "SLBPATH");
+
+			if (!path)
+				path = "./";
+
+			npath = kmalloc(strlen(path) + 3);
+
+			if (!npath)
+			{
+				DEBUG(("Slbopen: Couldn't kmalloc() path"));
+				return ENOMEM;
+			}
+
+			do
+			{
+				/* Searching may take some time. If the system has to
+				 * run smoothly, we must from time to time give the CPU
+				 * up.
+				 */
+				if (!proc_clock)
+					s_yield();
+
+				np = npath;
+
+				if (path[0] == '/' || path[0] == '\\')
+				{
+					*np++ = 'u';
+					*np++ = ':';
+				}
+
+				while (*path && *path != ';' && *path != ',')
+					*np++ = *path++;
+
+				if (*path)
+					path++;		/* skip the separator */
+				*np = 0;
+
+				r = load_and_init_slb(name, npath, min_ver, sl);
+
+			} while (*path && r < 0);
+
+			kfree(npath);
+		}
+
 		if (r < 0L)
 		{
 			ALERT (MSG_slb_couldnt_open, name);
