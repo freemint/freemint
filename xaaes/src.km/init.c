@@ -175,6 +175,7 @@ init(struct kentry *k)
 		 * as we don't support external fileslectors yet
 		 */
 		s_system(S_DELCOOKIE, COOKIE_FSEL, 0);
+		s_system(S_DELCOOKIE, COOKIE_HBFS, 0);
 	}
 
 	/* dynamic window handle allocation. */

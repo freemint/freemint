@@ -68,6 +68,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_FSMC	0x46534d43L
 # define COOKIE_RSVF	0x52535646L
 # define COOKIE_FSEL	0x4653454CL
+# define COOKIE_HBFS	0x48424653L /* BoxKite File Selector */
 
 /* Not that we want to support these below ... */
 # define COOKIE_STiK	0x5354694bL
