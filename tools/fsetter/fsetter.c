@@ -28,7 +28,7 @@
 #include <sys/statfs.h>
 #include <mint/dcntl.h>
 #include <errno.h>
-#include <sysvars.h>
+#include <mint/sysvars.h>
 
 #include "fsetter.h"
 #include "xhdi.h"
