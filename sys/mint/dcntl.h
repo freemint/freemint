@@ -226,6 +226,7 @@ struct mutimbuf
 
 # define FSTAT64	(('F'<< 8) | 6)		/* 1.15.4 extension, optional */
 # define FUTIME_UTC	(('F'<< 8) | 7)		/* 1.15.4 extension, optional */
+# define FIBMAP		(('F'<< 8) | 10)
 
 
 # define FMACOPENRES	(('F'<< 8) | 72)	/* macmint/macfile.h */
