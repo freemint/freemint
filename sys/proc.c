@@ -138,6 +138,8 @@ init_proc (void)
 	curproc->p_fd->dta = &dta;	/* looks ugly */
 	curproc->base = _base;
 	strcpy (curproc->name, "MiNT");
+	strcpy (curproc->fname, "MiNT");
+	strcpy (curproc->cmdlin, "MiNT");
 	
 	/* get some memory */
 	curproc->p_mem->num_reg = NUM_REGIONS;
