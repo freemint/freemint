@@ -35,10 +35,6 @@
 
 # include <stddef.h>
 
-
-/* setting a special character to this value disables it */
-#define UNDEF 0
-
 #define HAS_WRITEB(f)	(((f)->fc.fs != &bios_filesys || \
 			 (((struct bios_file *)(f)->fc.index)->drvsize > \
 				offsetof (DEVDRV, writeb))) && \

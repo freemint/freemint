@@ -39,6 +39,7 @@
 # include "dosdir.h"
 # include "filesys.h"
 # include "info.h"
+# include "keyboard.h"
 # include "k_prot.h"
 # include "memory.h"
 # include "proc.h"
@@ -510,13 +511,6 @@ sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 
 	return rsconf (baud, flow, uc, rs, ts, sc);
 }
-
-#define UNDEF	0	/* should match definition in tty.c */
-
-/* some key definitions */
-#define CTRLALT	0xc
-#define DEL	0x53	/* scan code of delete key */
-#define UNDO	0x61	/* scan code of undo key */
 
 /* BIOS device definitions */
 #define CONSDEV	2
@@ -1507,7 +1501,7 @@ checkkeys (void)
  * ^S/^Q
  * XXX: so what?
  */
-		if ((tty->state & TS_COOKED) || (shift & CTRLALT) == CTRLALT)
+		if ((tty->state & TS_COOKED) || (shift & MM_CTRLALT) == MM_CTRLALT)
 		{
 			ch = (keyrec->bufaddr + keyrec->tail)[3];
 			if (ch == UNDEF)
