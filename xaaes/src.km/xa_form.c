@@ -755,11 +755,13 @@ unsigned long
 XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 {	
 	struct xa_window *wind;
+#if 0
 	XA_WIND_ATTR kind = NAME
 #if TEST_DIAL_SIZE
 			|HSLIDE|LFARROW|VSLIDE|UPARROW|SIZE
 #endif
 			;
+#endif
 
 	CONTROL(9,1,0)
 
@@ -827,7 +829,7 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 			/* This was just a redraw request */
-			update_windows_below(lock, (const RECT *)&pb->intin[5], NULL, window_list);
+			update_windows_below(lock, (const RECT *)(&(pb->intin[5])), NULL, window_list);
 			//display_windows_below(lock, (const RECT *)&pb->intin[5], window_list);
 
 		bzero(&client->fmd, sizeof(client->fmd));
