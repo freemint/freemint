@@ -374,6 +374,8 @@ m_shrink (int dummy, long block, long size)
 	 * BTW., shrinking to 0 is equal to releasing, see shrink_region();
 	 * and releasing the basepage is illegal, see m_free() above.
 	 */
+	/* XXX perhaps this shouldn't be '256L', but rather 'PAGESIZE'?
+	 */
 	if (block == (long)curproc->base && size < 256L)
 		size = 256L;
 
