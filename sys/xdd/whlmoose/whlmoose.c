@@ -74,7 +74,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	3
+# define VER_MINOR	4
 # define VER_STATUS	
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -627,55 +627,10 @@ open (FILEPTR *f)
 static long _cdecl
 write (FILEPTR *f, const char *buf, long bytes)
 {
-	long nwrite = 0;
-
 	if (f->fc.aux == 1)
 		return EACCES;
-	else
-	{
-		short cmd = *(const short *) buf;
 
-		switch (cmd)
-		{
-			case MOOSE_INIT_PREFIX:
-			{
-				struct moose_vecs_com *mb = (struct moose_vecs_com *)&moose_buffer;
-
-				mb->vecs_prefix = MOOSE_VECS_PREFIX;
-				mb->motv = (vdi_vec *) motv;
-				mb->butv = (vdi_vec *) butv;
-				mb->timv = (vdi_vec *) timv;
-#ifdef HAVE_WHEEL
-				mb->whlv = (vdi_vec *) whlv;
-#else
-				mb->whlv = (vdi_vec *) 0;
-#endif
-				mused = sizeof(*mb);
-				nwrite = sizeof(struct moose_init_com);
-				break;
-
-			}
-			case MOOSE_DCLICK_PREFIX:
-			{
-				const struct moose_dclick_com *dc;
-
-				dc = (const struct moose_dclick_com *) buf;
-				if (dc->dclick_time > MAX_DC_TIME)
-					dc_time = MAX_DC_TIME;
-				else
-					dc_time = dc->dclick_time;
-
-				nwrite = sizeof(struct moose_dclick_com);
-				break;
-			}
-			default:
-			{
-				break;
-			}
-		}
-
-	}
-	return nwrite;
+	return 0;
 }
 
 static long _cdecl
@@ -773,6 +728,16 @@ ioctl (FILEPTR *f, int mode, void *buf)
 {
 	switch (mode)
 	{
+		case FS_INFO:
+		{
+			struct fs_info *info = buf;
+			
+			info->version = (((long)VER_MAJOR << 16) | VER_MINOR);
+			strcpy(info->name, "moose.xdd");
+			strcpy(info->type_asc, "moose device for XaAES");
+			
+			break;
+		}
 		case FIONREAD:
 		{
 			if (f->fc.aux == 1)
@@ -793,6 +758,30 @@ ioctl (FILEPTR *f, int mode, void *buf)
 		case FIOEXCEPT:
 		{
 			*((long *) buf) = 0;
+			break;
+		}
+		case MOOSE_READVECS:
+		{
+			struct moose_vecsbuf *vecs = buf;
+			
+			vecs->motv = (vdi_vec *) motv;
+			vecs->butv = (vdi_vec *) butv;
+			vecs->timv = (vdi_vec *) timv;
+#ifdef HAVE_WHEEL
+			vecs->whlv = (vdi_vec *) whlv;
+#else
+			vecs->whlv = (vdi_vec *) 0;
+#endif
+			break;
+		}
+		case MOOSE_DCLICK :
+		{
+			unsigned short dclick_time = *((unsigned short *) buf);
+			
+			if (dclick_time > MAX_DC_TIME)
+				dc_time = MAX_DC_TIME;
+			else
+				dc_time = dclick_time;
 			break;
 		}
 		default:

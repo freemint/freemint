@@ -52,30 +52,22 @@ struct mooses_data
 	short   y;
 };
 
-#define	MOOSE_INIT_PREFIX	0x4d49	/* 'MI' */
-#define	MOOSE_DCLICK_PREFIX	0x4d44	/* 'MD' */
 #define MOOSE_BUTTON_PREFIX	0x5842	/* 'XB' */
 #define MOOSE_MOVEMENT_PREFIX	0x584d	/* 'XM' */
 #define MOOSE_WHEEL_PREFIX	0x5857	/* 'XW' */
-#define MOOSE_VECS_PREFIX	0x4d56	/* 'MV' */
 
-struct moose_init_com
-{
-	unsigned short init_prefix;
-	void *dum;
-};
-
-struct moose_dclick_com
-{
-	unsigned short dclick_prefix;
-	unsigned short dclick_time;
-};
+/*
+ * Fcntl() opcodes
+ * (move to mint/ioctl.h if finished)
+ */
+#define MOOSE_READVECS	(('M'<< 8) | 0)	/* buf is ptr to struct moose_vecsbuf */
+#define MOOSE_DCLICK	(('M'<< 8) | 1)	/* buf is ptr to unsigned short */
 
 typedef short vdi_vec(void *, ...);
 
-struct moose_vecs_com
+/* structure for MOOSE_READVECS */
+struct moose_vecsbuf
 {
-	ushort vecs_prefix;
 	vdi_vec *motv;
 	vdi_vec *butv;
 	vdi_vec *timv;
