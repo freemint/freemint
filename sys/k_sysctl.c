@@ -106,7 +106,7 @@ sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp,
 			// XXX todo
 			// fn = cpu_sysctl;
 			break;
-# ifdef DEBUG
+# ifdef DEBUG_INFO
 		case CTL_DEBUG:
 			return EINVAL;
 			// XXX todo
