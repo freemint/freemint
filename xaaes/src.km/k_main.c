@@ -88,7 +88,7 @@ post_cevent(struct xa_client *client,
 
 	//if (!(client->status & CS_LAGGING))
 	{
-		c = kmalloc(sizeof(struct c_event));
+		c = kmalloc(sizeof(*c));
 		if (c)
 		{
 			c->next		= 0;
@@ -328,7 +328,8 @@ alert_input(enum locks lock)
 		OBJECT *form;
 
 		form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		buf = kmalloc(sizeof(char) * n + 4);
+		buf = kmalloc(n + 4);
+		assert(buf);
 		f_read(C.alert_pipe, n, buf);
 
 		/* Pretty up the log entry with a nice

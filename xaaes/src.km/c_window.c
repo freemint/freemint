@@ -870,20 +870,21 @@ draw_window(enum locks lock, struct xa_window *wind)
 	}
 	else
 	{
-		long r;
-		long *p;
 		struct proc *np;
+		long *p;
 
 		p = kmalloc(16);
+		assert(p);
+
 		p[0] = (long)wind;
 		p[1] = (long)wo;
+
 		DIAG((D_wind, rc, "kthreaded draw_window %d for %s by %s", wind->handle, wo->name, rc->name));
-		r = kthread_create(wo->p, Pdraw_window, p, &np, "k%s", wo->name);
+
+		kthread_create(wo->p, Pdraw_window, p, &np, "k%s", wo->name);
 		sleep(IO_Q, (long)p);
 		if (wo->usr_evnt && wo->sleeplock)
 			Unblock(wo, 1, 9000);
-		
-
 	}
 	DIAGS(("DrawWind - exit OK"));
 }

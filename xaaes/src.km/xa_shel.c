@@ -391,6 +391,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	 *     Dont mix pascal string processing with C string processing! :-)
 	 */
 	save_tail = kmalloc(tailsize + 2); /* was: strlen(tail+1) */
+	assert(save_tail);
 	strncpy(save_tail, tail, tailsize + 1);
 	save_tail[tailsize + 1] = '\0';
 
@@ -483,9 +484,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 				}
 				else
 				{
-					char *new_tail = kmalloc(tailsize + 1 + strlen(cmd) + 1);
+					char *new_tail;
 					long new_tailsize;
 
+					new_tail = kmalloc(tailsize + 1 + strlen(cmd) + 1);
 					if (!new_tail)
 					{
 						ret = ENOMEM;
