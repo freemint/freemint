@@ -27,6 +27,7 @@ LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
+SGENFILES = $(TARGET) mfp_mil.xdd
 OBJS = $(COBJS:.c=.o)
 
 entry:

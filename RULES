@@ -22,6 +22,12 @@ distclean: distclean-recursive
 	rm -f foobar foo bar baz junk schrott muell
 	rm -rf .deps $(GENFILES)
 
+superclean: superclean-recursive
+	rm -f *.o lib*.a *.tmp *~ *# *.orig *.rej
+	rm -f core report nohup.out errlog
+	rm -f foobar foo bar baz junk schrott muell
+	rm -rf .deps $(GENFILES) $(SGENFILES)
+
 strip: strip-recursive
 ifneq "$(TARGET)" ""
 	-$(STRIP) $(TARGET)
@@ -55,7 +61,7 @@ distdir: $(DISTFILES) distdir-local
 
 distdir-local:
 
-all-recursive clean-recursive bakclean-recursive distclean-recursive \
+all-recursive clean-recursive bakclean-recursive distclean-recursive superclean-recursive \
 install-recursive uninstall-recursive dist-recursive strip-recursive:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	list='$(SUBDIRS)'; for subdir in $$list; do \
