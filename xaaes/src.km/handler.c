@@ -164,6 +164,7 @@ XA_handler(void *_pb)
 		AES_function *cmd_routine;
 		unsigned long cmd_rtn;
 
+#if 0
 		if ((cfg.fsel_cookie || cfg.no_xa_fsel)
 		    && (   cmd == XA_FSEL_INPUT
 		        || cmd == XA_FSEL_EXINPUT))
@@ -175,6 +176,7 @@ XA_handler(void *_pb)
 			 */
 			return -1;
 		}
+#endif
 
 		DIAG((D_trap, client, "AES trap: %s[%d] made by %s",
 			op_code_names[cmd], cmd, client->name));
