@@ -235,17 +235,35 @@ pmsg(short m)
 }
 #endif
 
-void
+long
 cancel_aesmsgs(struct xa_aesmsg_list **m)
 {
+	long redraws = 0;
+
 	while (*m)
 	{
 		struct xa_aesmsg_list *nm;
+
+		if ((*m)->message.m[0] == WM_REDRAW)
+			redraws++;
 
 		nm = (*m)->next;
 		kfree(*m);
 		*m = nm;
 	}
+	return redraws;
+}
+
+long
+cancel_app_aesmsgs(struct xa_client *client)
+{
+	long redraws = 0;
+
+	redraws =  cancel_aesmsgs(&client->irdrw_msg);
+	redraws += cancel_aesmsgs(&client->rdrw_msg);
+	redraws += cancel_aesmsgs(&client->msg);
+	redraws += cancel_aesmsgs(&client->crit_msg);
+	return redraws;
 }
 
 /* Ozk:
