@@ -165,19 +165,17 @@ getput_moose_pkt(struct moose_data *new, struct moose_data *ret)
 {
 	if (md_head == md_tail)
 	{
-		if (md_lmvalid && new->ty != MOOSE_BUTTON_PREFIX)
+		if (new->ty == MOOSE_BUTTON_PREFIX)
 		{
-			//DIAGS(("getput: return first pkt in queue"));
-			unbuffer_moose_pkt(ret);
-			buffer_moose_pkt(new);
-		}
-		else
-		{
-			DIAGS(("getput: return buffered button, cancel buffered move"));
 			md_lmvalid = 0;
 			check_and_buffer_if_fake(new);
 			*ret = *new;
-		}	
+		}
+		else
+		{
+			md_lmvalid = 0;
+			*ret = *new;
+		}
 	}
 	else
 	{
@@ -323,7 +321,7 @@ static void
 post_cevent(struct xa_client *client,
 	void (*func)(enum locks, struct c_event *),
 	void *ptr1, void *ptr2,
-	int d1, int d2, RECT *r,
+	int d0, int d1, RECT *r,
 	const struct moose_data *md)
 {
 	int h = client->ce_head;
@@ -332,6 +330,8 @@ post_cevent(struct xa_client *client,
 	client->ce[h].client = client;
 	client->ce[h].ptr1 = ptr1;
 	client->ce[h].ptr2 = ptr2;
+	client->ce[h].d0 = d0;
+	client->ce[h].d1 = d1;
 	if (r)
 		client->ce[h].r = *r;
 	if (md)
@@ -494,17 +494,20 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			if (   (client->em.flags & MU_M1)
 			    && is_rect(x, y, client->em.flags & 1, &client->em.m1))
 			{
+				DIAG((D_mouse, client, "%s have M1 event", client->name));
 				events |= MU_M1;
 			}
 
 			if (   (client->em.flags & MU_M2)		/* M2 in evnt_multi only */
 			    && is_rect(x, y, client->em.flags & 2, &client->em.m2))
 			{
+				DIAG((D_mouse, client, "%s have M2 event", client->name));
 				events |= MU_M2;
 			}
 
 			if (client->em.flags & MU_MX)			/* MX: any movement. */
 			{
+				DIAG((D_mouse, client, "%s have MX event", client->name));
 				events |= MU_MX;
 			}
 

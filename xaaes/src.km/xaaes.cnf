@@ -90,7 +90,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #
 # the shell
 #
-shell = c:\thing\thing.app
+shell = c:\thing\thing\thing.app
 
 #
 # start any other programs with run
