@@ -51,15 +51,13 @@
 
 # include <stdarg.h>
 
-# undef _SHELL_THREAD
+# define _SHELL_THREAD
 
 # include "libkern/libkern.h"
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
 # include "mint/signal.h"	/* SIGCHLD etc. */
 # include "mint/stat.h"		/* struct stat */
-
-# include "arch/cpu.h"		/* setstack() */
 
 # include "cnf.h"		/* init_env */
 # include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
@@ -81,6 +79,7 @@
 # include "proc.h"		/* struct proc */
 # include "time.h"
 # else
+# include "arch/cpu.h"		/* setstack() */
 # include "arch/syscall.h"	/* Pexec(), Cconrs() et cetera */
 # include "mint/mem.h"		/* F_FASTLOAD et contubernales */
 # endif
@@ -115,14 +114,10 @@
 
 /* Some help for the optimizer */
 static EXITING shell(void) NORETURN;
-# ifdef _SHELL_THREAD
-static void shell_start(void);
-# endif
 
 /* Global variables */
 # ifdef _SHELL_THREAD
 static struct proc *p;
-static long stack;
 # endif
 static BASEPAGE *shell_base;
 static short xcommands;		/* if 1, the extended command set is active */
@@ -132,7 +127,11 @@ static short xcommands;		/* if 1, the extended command set is active */
 static void
 shell_fprintf(long handle, const char *fmt, ...)
 {
-	char buf[2048];
+# ifdef _SHELL_THREAD
+	static char buf[SHELL_MAXPATH << 1];
+# else
+	char buf[SHELL_MAXPATH << 1];
+# endif
 	va_list args;
 
 	va_start(args, fmt);
@@ -389,7 +388,12 @@ crunch(char *cmd, char **argv)
 INLINE long
 execvp(char **argv)
 {
-	char *var, *new_env, *new_var, *t, *path, *np, oldcmd[128], npath[2048];
+	char *var, *new_env, *new_var, *t, *path, *np;
+# ifdef _SHELL_THREAD
+	static char oldcmd[128], npath[SHELL_MAXPATH + 256];
+# else
+	char oldcmd[128], npath[SHELL_MAXPATH + 256];
+# endif
 	long count, x, y, r = -1L, blanks = 0;
 
 	/* Calculate the size of the environment */
@@ -576,8 +580,14 @@ sh_ls(long argc, char **argv)
 	short year, month, day, hour, minute;
 	short i, all = 0, full = 0;
 	long x, r, s, handle;
-	char *dir, path[SHELL_MAXPATH], link[SHELL_MAXPATH];
+	char *dir;
+# ifndef _SHELL_THREAD
+	char path[SHELL_MAXPATH], link[SHELL_MAXPATH];
 	char entry[256];
+# else
+	static char path[SHELL_MAXPATH], link[SHELL_MAXPATH];
+	static char entry[256];
+# endif
 
 	dir = ".";
 
@@ -635,32 +645,31 @@ sh_ls(long argc, char **argv)
 		/* Display only names not starting with a dot, unless -a was specified */
 		if (r == 0 && (entry[sizeof(long)] != '.' || all))
 		{
-			s = -1;
-			if (full)
+			strcpy(path, dir);
+			strcat(path, "/");
+			strcat(path, entry + sizeof(long));
+
+			/* `/bin/ls -l' doesn't dereference links, so we don't either */
+# ifdef _SHELL_THREAD
+			s = f_stat64(1, path, &st);
+# else
+			s = Fstat64(1, path, &st);
+# endif
+			if (s == 0)
 			{
-				strcpy(path, dir);
-				strcat(path, "/");
-				strcat(path, entry + sizeof(long));
-
-				/* `/bin/ls -l' doesn't dereference links, so we don't either */
-# ifdef _SHELL_THREAD
-				s = f_stat64(1, path, &st);
-# else
-				s = Fstat64(1, path, &st);
-# endif
-				if (s == 0)
+				if (S_ISLNK(st.mode))
 				{
-					if (S_ISLNK(st.mode))
-					{
 # ifdef _SHELL_THREAD
-						s = f_readlink(sizeof(link), link, path);
+					s = f_readlink(sizeof(link), link, path);
 # else
-						s = Freadlink(sizeof(link), link, path);
+					s = Freadlink(sizeof(link), link, path);
 # endif
-						if (s == 0)
-							dos2unix(link);
-					}
+					if (s == 0)
+						dos2unix(link);
+				}
 
+				if (full)
+				{
 					/* Reuse the path[] space for attributes */
 					strcpy(path, "?---------");
 
@@ -729,15 +738,14 @@ sh_ls(long argc, char **argv)
 					else
 						shell_fprintf(STDOUT, "%02d:%02d ", hour, minute);
 				}
+
+				shell_fprintf(STDOUT, "%s", entry + sizeof(long));
+
+				if (S_ISLNK(st.mode))
+					shell_fprintf(STDOUT, " -> %s\r\n", link);
+				else
+					shell_print("\r\n");
 			}
-
-			shell_fprintf(STDOUT, "%s", entry + sizeof(long));
-
-			if (s == 0 && S_ISLNK(st.mode))
-				shell_fprintf(STDOUT, " -> %s\r\n", link);
-			else
-				shell_print("\r\n");
-
 		}
 	} while (r == 0);
 
@@ -759,7 +767,12 @@ static long
 sh_cd(long argc, char **argv)
 {
 	long r;
-	char *newdir, *pwd, cwd[SHELL_MAXPATH];
+	char *newdir, *pwd;
+# ifdef _SHELL_THREAD
+	static char cwd[SHELL_MAXPATH];
+# else
+	char cwd[SHELL_MAXPATH];
+# endif
 
 	if (argc >= 2)
 	{
@@ -1160,7 +1173,12 @@ static const char *commands[] =
 INLINE long
 execute(char *cmdline)
 {
-	char *argv[SHELL_ARGS], *c;
+# ifdef _SHELL_THREAD
+	static char *argv[SHELL_ARGS];
+# else
+	char *argv[SHELL_ARGS];
+# endif
+	char *c;
 	long cnt, cmdno, argc;
 
 	c = cmdline;
@@ -1218,7 +1236,12 @@ execute(char *cmdline)
 INLINE char *
 prompt(uchar *buffer, long buflen)
 {
-	char *lbuff, cwd[SHELL_MAXPATH];
+	char *lbuff;
+# ifdef _SHELL_THREAD
+	static char cwd[SHELL_MAXPATH];
+# else
+	char cwd[SHELL_MAXPATH];
+# endif
 	short idx;
 
 	buffer[0] = LINELEN;
@@ -1256,7 +1279,12 @@ prompt(uchar *buffer, long buflen)
 static EXITING
 shell(void)
 {
-	uchar linebuf[LINELEN + 2], *lbuff;
+# ifdef _SHELL_THREAD
+	static uchar linebuf[LINELEN + 2];
+# else
+	uchar linebuf[LINELEN + 2];
+# endif
+	uchar *lbuff;
 	long r;
 
 # ifdef _SHELL_THREAD
@@ -1310,27 +1338,10 @@ shell(void)
 # endif
 }
 
+# ifndef _SHELL_THREAD
 /* Notice that we cannot define local variables here due to setstack()
  * which changes the stack pointer value.
  */
-# ifdef _SHELL_THREAD
-
-static void
-shell_start(void)
-{
-	/* we must leave some bytes of `pad' behind the (sp)
-	 * (see arch/syscall.S), this is why it is `-256L'.
-	 */
-	stack = m_xalloc(SHELL_STACK, 3);
-	if (!stack)
-		kthread_exit(0);
-
-	setstack(stack + SHELL_STACK - 256L);
-	shell();				/* this one doesn't return */
-}
-
-# else
-
 static void
 shell_start(BASEPAGE *bp)
 {
@@ -1341,7 +1352,6 @@ shell_start(BASEPAGE *bp)
 	Mshrink((void *)bp, SHELL_STACK);
 	shell();				/* this one doesn't return */
 }
-
 # endif
 
 /* This below is running in kernel context, called from init.c
@@ -1352,10 +1362,10 @@ startup_shell(void)
 	long r;
 
 # ifdef _SHELL_THREAD
-	r = kthread_create((void *)shell_start, NULL, &p, "shell");
+	r = kthread_create((void *)shell, NULL, &p, "shell");
 	if (r)
 	{
-		DEBUG("can't create \"shell\" kernel thread");
+		DEBUG(("can't create \"shell\" kernel thread"));
 
 		return -1;
 	}
