@@ -125,18 +125,8 @@ f_create (const char *name, short attrib)
 # if O_GLOBAL
 	if (attrib & O_GLOBAL)
 	{
-		if (p->p_cred->ucr->euid)
-		{
-			DEBUG (("Fopen(%s): O_GLOBAL denied for non root"));
-			return EPERM;
-		}
-		
-		ALERT ("Creating a global handle (%s)", name);
-		
-		p = rootproc;
-		global = 1;
-		
-		attrib &= ~O_GLOBAL;
+		DEBUG (("Fcreate(%s): O_GLOBAL denied for non root"));
+		return EPERM;
 	}
 # endif
 	
@@ -184,12 +174,6 @@ f_create (const char *name, short attrib)
 	
 	/* activate the fp, default is to close non-standard files on exec */
 	fp_done (p, fp, fd, FD_CLOEXEC);
-	
-# if O_GLOBAL
-	if (global)
-		/* we just opened a global handle */
-		fd += 100;
-# endif
 	
 	TRACE (("Fcreate: returning %d", fd));
 	return fd;
