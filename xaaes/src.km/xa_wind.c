@@ -179,6 +179,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 	old_focus = window_list;
 
 	/* New top window - change the cursor to this client's choice */
+	set_active_client(lock, w->owner);
 	pull_wind_to_top(lock, w);
 
 	if (client != desk_menu_owner)
@@ -187,6 +188,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 		C.focus = window_list;
 
 	graf_mouse(client->mouse, client->mouse_form);
+
 	/* redisplay title */
 	display_window(lock, 40, old_focus, 0); 
 
@@ -194,6 +196,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 		/* Display the window */
 		display_window(lock, 41, w, 0);
 
+#if 0
 	/* Small but effective optimization. */
 	if (w->send_message
 	    && !was_visible(w))
@@ -202,6 +205,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 				WM_REDRAW, 0, 0, w->handle,
 				w->r.x, w->r.y, w->r.w, w->r.h);
 	}
+#endif
 }
 
 void
