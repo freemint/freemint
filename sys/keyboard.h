@@ -81,6 +81,8 @@ struct keytab
 	uchar *altgr;		/* Milan TOS */
 };
 
+struct keytab *get_keytab(void);
+
 /* Struct for the default action on C/A/D
  */
 struct cad_def

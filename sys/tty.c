@@ -27,6 +27,7 @@
 # include "dosfile.h"	/* select_coll */
 # include "k_fds.h"
 # include "k_prot.h"
+# include "keyboard.h"
 # include "kmemory.h"
 # include "proc.h"
 # include "signal.h"
@@ -237,7 +238,7 @@ tty_error:
 		/* T_CBREAK mode doesn't do erase or kill processing */
 		/* also note that setting a special character to UNDEF disables it */
 		
-		if (rdmode & COOKED && !(mode & T_CBREAK) && ch != UNDEF)
+		if ((rdmode & COOKED) && !(mode & T_CBREAK) && (ch != UNDEF))
 		{
 			if ((char) ch == tty->sg.sg_erase)
 			{
@@ -260,8 +261,8 @@ tty_error:
 				}
 				continue;
 			}
-			else if ((char) ch ==tty->ltc.t_rprntc || 
-				 (char) ch == tty->sg.sg_kill)
+			else if ((char)ch == tty->ltc.t_rprntc || 
+				 (char)ch == tty->sg.sg_kill)
 			{
 				if (mode & T_TOS)
 					put (f, '#');
@@ -637,7 +638,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
  *		28-31 are shift+cursor up, down, right, and left
  */
 
-static char vt52xkey[256] =
+static const char vt52xkey[256] =
 {
 	'\033', 'P', 0, 0, 0, 0, 0, 0,
 	'\033', 'Q', 0, 0, 0, 0, 0, 0,
@@ -708,17 +709,7 @@ unxbaud (ulong baud)
 long
 tty_ioctl (FILEPTR *f, int mode, void *arg)
 {
-	struct sgttyb *sg;
-	struct tchars *tc;
-	struct ltchars *ltc;
 	struct tty *tty;
-	struct winsize *sz;
-	struct xkey *xk;
-	char *xktab;
-	int i;
-	long baud;
-	short flags;
-	long outq;
 	
 	if (!is_terminal (f))
 	{
@@ -726,8 +717,8 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		return ENOSYS;
 	}
 	
-	tty = (struct tty *) f->devinfo;
-	assert (tty != 0);
+	tty = (struct tty *)f->devinfo;
+	assert (tty);
 	
 	switch (mode)
 	{
@@ -735,15 +726,15 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		{
 			long r;
 			
-			r = (*f->dev->ioctl)(f, FIONREAD, (void *) arg);
+			r = (*f->dev->ioctl)(f, FIONREAD, (void *)arg);
 			if (r || (f->flags & O_HEAD))
 				return r;
 			
 			if (tty->state & TS_BLIND)
-				*(long *) arg = 0;
+				*(long *)arg = 0;
 			
-			if ((tty->sg.sg_flags & T_XKEY) && (tty->state & TS_ESC) && !*(long *) arg)
-				*(long *) arg = 1;
+			if ((tty->sg.sg_flags & T_XKEY) && (tty->state & TS_ESC) && !*(long *)arg)
+				*(long *)arg = 1;
 			
 			return E_OK;
 		}
@@ -751,19 +742,19 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		{
 			long r;
 			
-			r = (*f->dev->ioctl)(f, FIONWRITE, (void *) arg);
+			r = (*f->dev->ioctl)(f, FIONWRITE, (void *)arg);
 			if (r || (f->flags & O_HEAD))
 				return r;
 			
 			if ((tty->state & (TS_BLIND | TS_HOLD)))
-				*(long *) arg = 0;
+				*(long *)arg = 0;
 			
 			return E_OK;
 		}
 		case TIOCSBRK:
 		{
 			if (!(tty->state & TS_BLIND) || (f->flags & O_HEAD))
-				return (*f->dev->ioctl)(f, TIOCSBRK, (void *) arg);
+				return (*f->dev->ioctl)(f, TIOCSBRK, (void *)arg);
 			
 			return E_OK;
 		}
@@ -771,19 +762,21 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		{
 			long r;
 			
-			r = (*f->dev->ioctl)(f, TIOCFLUSH, (void *) arg);
+			r = (*f->dev->ioctl)(f, TIOCFLUSH, (void *)arg);
 			if (r || (f->flags & O_HEAD))
 				return r;
 			
-			if (!arg || (*(long *) arg & 1))
+			if (!arg || (*(long *)arg & 1))
 				tty->state &= ~TS_ESC;
 			
 			return E_OK;
 		}
 		case TIOCGETP:
 		{
+			struct sgttyb *sg = (struct sgttyb *)arg;
 			ulong bits[2] = { -1, TF_FLAGS };
-			sg = (struct sgttyb *) arg;
+			long baud;
+			short flags;
 			
 			/* get input and output baud rates from the terminal
 			 * device
@@ -815,6 +808,8 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		}
 		case TIOCSETP:
 		{
+			long outq;
+			
 			while (((*f->dev->ioctl)(f, TIOCOUTQ, &outq) == 0) && outq)
 				nap (200);
 			
@@ -822,11 +817,13 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		}
 		case TIOCSETN:
 		{
-			ulong bits[2];
 			static ushort v[] = {1, 0};
+			ulong bits[2];
 			ushort oflags = tty->sg.sg_flags;
+			long baud;
+			short flags;
 			
-			sg = (struct sgttyb *) arg;
+			struct sgttyb *sg = (struct sgttyb *) arg;
 			tty->sg = *sg;
 			
 			/* change tty state */
@@ -881,37 +878,38 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		}
 		case TIOCGETC:
 		{
-			tc = (struct tchars *) arg;
+			struct tchars *tc = (struct tchars *)arg;
 			*tc = tty->tc;
 			return E_OK;
 		}
 		case TIOCSETC:
 		{
-			tc = (struct tchars *) arg;
+			struct tchars *tc = (struct tchars *)arg;
 			tty->tc = *tc;
 			return E_OK;
 		}
 		case TIOCGLTC:
 		{
-			ltc = (struct ltchars *) arg;
+			struct ltchars *ltc = (struct ltchars *)arg;
 			*ltc = tty->ltc;
 			return E_OK;
 		}
 		case TIOCSLTC:
 		{
-			ltc = (struct ltchars *) arg;
+			struct ltchars *ltc = (struct ltchars *)arg;
 			tty->ltc = *ltc;
 			return E_OK;
 		}
 		case TIOCGWINSZ:
 		{
-			sz = (struct winsize *) arg;
+			struct winsize *sz = (struct winsize *)arg;
 			*sz = tty->wsiz;
 			return E_OK;
 		}
 		case TIOCSWINSZ:
 		{
-			sz = (struct winsize *) arg;
+			struct winsize *sz = (struct winsize *)arg;
+			int i;
 			
 			if (sz->ws_row != tty->wsiz.ws_row
 				|| sz->ws_col != tty->wsiz.ws_col
@@ -924,7 +922,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			tty->wsiz = *sz;
 			
 			if (i && tty->pgrp)
-				killgroup (tty->pgrp, SIGWINCH, 1);
+				killgroup(tty->pgrp, SIGWINCH, 1);
 			
 			return E_OK;
 		}
@@ -986,7 +984,9 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		}
 		case TIOCGXKEY:
 		{
-			xk = (struct xkey *)arg;
+			struct xkey *xk = (struct xkey *)arg;
+			const char *xktab;
+			int i;
 			
 			i = xk->xk_num;
 			if (i < 0 || i > 31) return EBADARG;
@@ -1000,7 +1000,9 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		}
 		case TIOCSXKEY:
 		{
-			xk = (struct xkey *) arg;
+			struct xkey *xk = (struct xkey *)arg;
+			char *xktab;
+			int i;
 			
 			xktab = tty->xkey;
 			if (!xktab)
@@ -1032,21 +1034,21 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			 * to touch TS_HPCL or maybe TS_COOKED.
 			 * (TS_HOLD is already handled by TIOCSTART/STOP)
 			 */
-			long mask = ((long *) arg)[1] & ~(TS_HOLD|TS_BLIND);
+			long mask = ((long *)arg)[1] & ~(TS_HOLD|TS_BLIND);
 			
 			if (!(tty->sg.sg_flags & T_XKEY))
 				mask &= ~TS_ESC;
 			
-			if (*(long *) arg != -1)
+			if (*(long *)arg != -1)
 				tty->state = (tty->state & ~mask) | (*((long *)arg) & mask);
 			
-			*(long *) arg = tty->state;
+			*(long *)arg = tty->state;
 			
 			return E_OK;
 		}
 		case TIOCGSTATE:
 		{
-			*(long *) arg = tty->state;
+			*(long *)arg = tty->state;
 			return E_OK;
 		}
 		case TIOCHPCL:
@@ -1061,7 +1063,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		case TIOCNCAR:
 		case TIOCCAR:
 		{
-			ulong bits[2] = {0, TF_CAR};
+			ulong bits[2] = { 0, TF_CAR };
 			
 			if (mode == TIOCCAR)
 				*bits = TF_CAR;
@@ -1082,13 +1084,14 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		 */
 		case TIOCSFLAGSB:
 		{
+			long mask = ((ulong *)arg)[1];
 			long fnew;
-			long mask = ((ulong *) arg)[1];
+			short flags;
 			
-			if (*(long *) arg < 0)
+			if (*(long *)arg < 0)
 			{
 				(*f->dev->ioctl)(f, TIOCGFLAGS, &flags);
-				*((ulong *) arg) = flags;
+				*((ulong *)arg) = flags;
 				
 				return E_OK;
 			}
@@ -1115,14 +1118,14 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		 */
 		case TIOCGVMIN:
 		{
-			((ushort *) arg)[0] = 1;		/* VMIN */
-			((ushort *) arg)[1] = tty->vtime;	/* VTIME */
+			((ushort *)arg)[0] = 1;			/* VMIN */
+			((ushort *)arg)[1] = tty->vtime;	/* VTIME */
 			return E_OK;
 		}
 		case TIOCSVMIN:
 		{
 			tty->vmin = 1;
-			tty->vtime = ((ushort *) arg)[1];
+			tty->vtime = ((ushort *)arg)[1];
 			return E_OK;
 		}
 		
@@ -1141,20 +1144,21 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		case TIOCGFLAGS:
 		case TIOCSFLAGS:
 		{
-			ulong bits[2] = {-1, (ushort) -1};
+			ulong bits[2] = { -1, (ushort) -1 };
 			long r;
 			
 			if (mode == TIOCSFLAGS)
-				bits[0] = *(ushort *) arg;
+				bits[0] = *(ushort *)arg;
 			
 			r = (*f->dev->ioctl)(f, TIOCSFLAGSB, &bits);
 			if (!r && mode == TIOCGFLAGS)
-				*((ushort *) arg) = *bits;
+				*((ushort *)arg) = *bits;
 			
 			return r;
 		}
 		
 		case TIOCNOTTY:
+		{
 			/* Disassociate from controlling tty.  */
 			if (curproc->p_fd->control == NULL)
 				return ENOTTY;
@@ -1183,12 +1187,14 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			curproc->p_fd->control = NULL;
 			
 			return 0;
+		}
 			
 		/* Set controlling tty to file descriptor.  The process
 		 * must be a session leader and not have a controlling
 		 * tty already.  
 		 */
 		case TIOCSCTTY:
+		{
 			if (curproc->pgrp == curproc->pid &&
 			    curproc->pgrp == tty->pgrp)
 				return 0;
@@ -1221,7 +1227,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 					    p->p_fd->control->fc.dev == f->fc.dev)
 					{
 						    if (!suser (curproc->p_cred->ucr) ||
-							(long) arg != 1)
+							(long)arg != 1)
 						    {
 							    do_close (curproc, f);
 							    return EPERM;
@@ -1240,6 +1246,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				(*f->dev->ioctl)(f, TIOCWONLINE, 0);
 			
 			return 0;
+		}
 			
 		/*
 		 * transform mdm0 ioctls, to allow old binaries run on new
@@ -1248,13 +1255,15 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		 */
 		case TIOCGHUPCL:
 		{
-			*(short *) arg = tty->state & TS_HPCL ? 1 : 0;
+			*(short *)arg = tty->state & TS_HPCL ? 1 : 0;
 			return E_OK;
 		}
 		case TIOCSHUPCL:
 		{
-			flags = *(short *) arg;
-			*(short *) arg = tty->state & TS_HPCL ? 1 : 0;
+			short flags;
+			
+			flags = *(short *)arg;
+			*(short *)arg = tty->state & TS_HPCL ? 1 : 0;
 			if (flags)
 				tty->state |= TS_HPCL;
 			else
@@ -1265,6 +1274,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		case TIOCGSOFTCAR:
 		{
 			long bits[2];
+			short flags;
 			
 			flags = 1;
 			bits[0] = -1;
@@ -1273,21 +1283,22 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if ((*f->dev->ioctl)(f, TIOCSFLAGSB, &bits) >= 0)
 				flags = bits[0] & TF_CAR ? 0 : 1;
 			
-			*(short *) arg = flags;
+			*(short *)arg = flags;
 			return E_OK;
 		}
 		case TIOCSSOFTCAR:
 		{
 			long bits[2];
+			short flags;
 			
 			flags = 1;
-			bits[0] = *(short *) arg ? 0 : TF_CAR;
+			bits[0] = *(short *)arg ? 0 : TF_CAR;
 			bits[1] = TF_CAR;
 			
 			if ((*f->dev->ioctl)(f, TIOCSFLAGSB, &bits) >= 0)
 				flags = bits[0] & TF_CAR ? 0 : 1;
 			
-			*(short *) arg = flags;
+			*(short *)arg = flags;
 			return E_OK;
 		}
 		
@@ -1314,7 +1325,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 static int
 escseq (struct tty *tty, int scan)
 {
-	char *tab;
+	const char *tab;
 	int i;
 
 	switch (scan)
@@ -1367,8 +1378,13 @@ escseq (struct tty *tty, int scan)
 		return (scan + '0') | 0x80;
 	}
 	
-	tab = *(((char **) ROM_Keytbl((void *) -1UL, (void *) -1UL, (void *) -1UL)) + 2 );
+# ifdef NO_AKP_KEYBOARD
+	tab = *(((const char **) ROM_Keytbl((void *) -1UL, (void *) -1UL, (void *) -1UL)) + 2 );
+# else
+	tab = get_keytab()->caps;
+# endif
 	scan = tab[scan];
+	
 	if (scan >= 'A' && scan <= 'Z')
 		return scan | 0x80;
 	
@@ -1379,19 +1395,16 @@ long
 tty_getchar (FILEPTR *f, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
-	char c, *tab;
-	long r, ret;
-	int scan;
-	int master = f->flags & O_HEAD;
+	long r; int scan; char c;
 	
 	assert (tty);
 	
 	/* pty masters never worry about job control and always read in
 	 * raw mode
 	 */
-	if (master)
+	if (f->flags & O_HEAD)
 	{
-		ret = (*f->dev->read)(f, (char *)&r, 4L);
+		long ret = (*f->dev->read)(f, (char *)&r, 4L);
 		return (ret != 4L) ? MiNTEOF : r;
 	}
 	
@@ -1424,7 +1437,7 @@ tty_getchar (FILEPTR *f, int mode)
 	scan = (tty->state & TS_ESC);
 	if (scan != 0)
 	{
-		tab = tty->xkey ? tty->xkey : vt52xkey;
+		const char *tab = tty->xkey ? tty->xkey : vt52xkey;
 		r = (uchar) tab[scan++];
 		if (r)
 		{
@@ -1439,6 +1452,8 @@ tty_getchar (FILEPTR *f, int mode)
 	
 	while (c != UNDEF)
 	{
+		long ret;
+		
 		if (tty->state & TS_BLIND)
 		{
 			TRACE (("tty_getchar: offline"));
@@ -1516,16 +1531,14 @@ tty_getchar (FILEPTR *f, int mode)
 long
 tty_putchar (FILEPTR *f, long data, int mode)
 {
-	struct tty *tty;
-	int master;		/* file is pty master side */
+	struct tty *tty = (struct tty *) f->devinfo;
 	char ch;
 	
-	tty = (struct tty *) f->devinfo;
+	assert (tty);
 	
-	master = f->flags & O_HEAD;
-
-	/* pty masters don't need to worry about job control */
-	if (master)
+	/* pty masters never worry about job control
+	 */
+	if (f->flags & O_HEAD)
 	{
 		ch = data & 0xff;
 		
