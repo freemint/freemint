@@ -1,0 +1,107 @@
+This version is mainly a collection of patches for minixfs pl10. Details are
+contained below. Many thanks to all concerned!
+
+The only addition I have made is a -z option to fsck to clear troublesome 
+inodes. See fsck.doc for more details.
+
+**************************************
+
+initial revision
+
+**************************************
+
+makefile fixes
+
+**************************************
+
+increase cache sizes
+
+**************************************
+
+From: inf03@Uni-Trier.de (Sascha Blank)
+Message-Id: <9409051059.AA07720@Uni-Trier.De>
+Subject: Better personae management for MiNT 1.11beta
+
+use effective instead of real uid for access checking
+
+**************************************
+
+From: Andreas Schwab <schwab@issan.informatik.uni-dortmund.de>
+Date: Mon, 17 Oct 94 10:46:00 +0100
+Message-Id: <9410170946.AA02849@issan.informatik.uni-dortmund.de>
+To: mint@atari.archive.umich.edu
+Subject: MinixFS: directory creation und symlinks
+
+There are two other places where MinixFS uses the ruid instead of the
+euid, that is when it creates a directory or a symlink (although for
+the latter it does not matter).  Also, the size of a symlink node is
+set to the length + 1, but Linux (and probably Minix too) expects it
+to be the length without the terminating null.  And neither Linux nor
+Minix knows anything about drive specifiers, but MiNTlib always adds
+U: to an absolute path, making it difficult to, for example, extract
+the Linux root filesystem with its symlinks under MiNT.  I have fixed
+this by always stripping the U: prefix on symlink creation and adding
+it back in readlink.  This isn't fully backward compatible since
+before an absolute link target without drive has been interpreted
+relative to the current drive, but i don't thinks this is much of a
+problem.  Another difference is that the link size reported by
+getxattr may be off by two, but MiNT always uses PATH_MAX when reading
+a link.  If this creates a problem then getxattr will have to check if
+the symlink name starts with a slash and add two to the size in this
+case.
+
+**************************************
+
+From: Ulrich Kuehn <kuehn@GOEDEL.UNI-MUENSTER.DE>
+Message-Id: <9411021016.AA21609@math.uni-muenster.de>
+Subject: Re: Sync() and shutdown() system call
+
+config.h, filesys.h, minixfs.c:
+        use Sync() and Shutdown() system calls
+
+**************************************
+
+From: Juergen Lock <nox@jelal.north.de>
+Subject: Re: MinixFS 0.60 PL10 Patch Collection
+Message-Id: <9411122007.AA00358@jelal.north.de>
+
+. fix bitmaps Kmalloc calculation for larger filesystems
+. a hack for fsck to check for sparse directories
+. clear bitmap dirty bits on `unmounts' (Dlock), you'll get warnings
+about bitmaps not written out after fsck runs sometimes, don't ask
+me why... as long as fsck found no errors you can ignore them
+. make sure symlinks always go in the same cache too
+
+**************************************
+
+From: Ulrich Kuehn <kuehn@GOEDEL.UNI-MUENSTER.DE>
+Message-Id: <9411180940.AA27680@math.uni-muenster.de>
+Subject: Re: sync patch for minixfs pl 10
+
+don't run the update daemon if SYSUPDATE def'd
+
+**************************************
+
+From: scott@telle.dmi.stevens-tech.edu (Scott Kolodzieski)
+Message-Id: <9411250353.AA09142@telle.dmi.stevens-tech.edu>
+Subject: minor diff for minixfs pl10
+
+really don't run the update daemon if MiNT >= 1.12
+
+**************************************
+
+From: woodford@esca.com (Steven Woodford)
+Message-Id: <9411290411.AA05910@flash.esca.com>
+Subject: One more patch for MinixFs PL10
+
+don't delete "." or ".." even if dir increment > 1
+
+**************************************
+
+From: Andreas Schwab <schwab@issan.informatik.uni-dortmund.de>
+Message-Id: <9412160954.AA28843@issan.informatik.uni-dortmund.de>
+Subject: MinixFS: completed support for V2 filesystem
+
+add support for v2 triple indirection blocks
+
+------------------------------------------------------------------------------
