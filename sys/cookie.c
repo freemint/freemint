@@ -339,7 +339,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 		 */
 		if (ret != 0)
 		{
-			DEBUG (("exit get_cookie(): NULL value written to %08x", ret));
+			DEBUG (("exit get_cookie(): NULL value written to %08lx", ret));
 			*ret = cjar->value;
 			return E_OK;
 		}
@@ -432,7 +432,11 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 # else
 	struct cookie *cjar = *CJAR;
 # endif
-
+# ifdef DEBUG_INFO
+	char asc [5];
+	*(long *) asc = tag;
+	asc [4] = '\0';
+# endif
 # ifdef JAR_PRIVATE
 	ut = curproc->p_mem->tp_ptr;
 	cjar = ut->user_jar_p;
@@ -444,13 +448,13 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 	/* 0x0000xxxx feature of GETCOOKIE may be confusing, so
 	 * prevent users from using slotnumber HERE :)
 	 */
-	DEBUG (("entering set_cookie(): tag=%08lx val=%08lx", tag, val));
+	DEBUG (("set_cookie(): tag=%08lx (%s) val=%08lx", tag, asc, val));
 	if (	((tag & 0xff000000UL) == 0) ||
 		((tag & 0x00ff0000UL) == 0) ||
 		((tag & 0x0000ff00UL) == 0) ||
 		((tag & 0x000000ffUL) == 0))
 	{
-		DEBUG (("set_cookie(): invalid tag id %08lx", tag));
+		DEBUG (("set_cookie(): invalid tag id %08lx (%s)", tag, asc));
 		return EINVAL;
 	}
 
@@ -462,7 +466,7 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 		if (cjar->tag == tag)
 		{
 			cjar->value = val;
-			TRACE (("set_cookie(): old entry %08lx updated", tag));
+			TRACE (("set_cookie(): old entry %08lx (%s) updated", tag, asc));
 			return E_OK;
 		}
 		cjar++;
