@@ -141,7 +141,7 @@ init_proc (void)
 	strcpy (curproc->cmdlin, "MiNT");
 
 	/* get some memory */
-	curproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
+	curproc->p_mem->memflags = F_PROT_S | F_OS_SPECIAL; /* default prot mode: super-only */
 	curproc->p_mem->num_reg = NUM_REGIONS;
 	curproc->p_mem->mem = kmalloc (curproc->p_mem->num_reg * sizeof (MEMREGION *));
 	curproc->p_mem->addr = kmalloc (curproc->p_mem->num_reg * sizeof (long));
@@ -662,9 +662,6 @@ sleep (int _que, long cond)
 
 	if ((p->ctxt[CURRENT].sr & 0x2000) == 0)	/* user mode? */
 		leave_kernel ();
-
-	if ((p->p_flag & P_FLAG_SYS) && !in_kernel)
-		FATAL("system process without in_kernel set???");
 
 	assert (p->magic == CTXT_MAGIC);
 	change_context (&(p->ctxt[CURRENT]));

@@ -1609,45 +1609,13 @@ _dmabuf_alloc (ulong size, short cmode, const char *func)
 void * _cdecl
 _umalloc(unsigned long size, const char *func)
 {
-	struct proc *p = curproc;
-	MEMREGION *m;
-	long v;
-
-	m = get_region(alt, size, PROT_P);
-	if (!m) m = get_region(core, size, PROT_P);
-
-	/* out of memory */
-	if (!m) return NULL;
-
-	v = attach_region(p, m);
-	if (!v)
-	{
-errout:
-		m->links = 0;
-		free_region(m);
-		return NULL;
-	}
-
-	v = attach_region(rootproc, m);
-	if (!v)
-	{
-		detach_region(p, m);
-		goto errout;
-	}
-
-	/* adjust link counter */
-	m->links--;
-
-	return (void *)v;
+	return (void *) sys_m_xalloc(size, 3);
 }
 
 void _cdecl
 _ufree(void *place, const char *func)
 {
-	struct proc *p = curproc;
-
-	detach_region_by_addr(p, (long)place);
-	detach_region_by_addr(rootproc, (long)place);
+	sys_m_free((long) place);
 }
 
 /* END kernel memory alloc */
