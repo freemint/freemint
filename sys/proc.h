@@ -12,7 +12,7 @@
 
 extern ushort proc_clock;		/* timeslices */
 extern short time_slice;
-extern PROC *sys_q[NUM_QUEUES];		/* process queues */
+extern struct proc *sys_q[NUM_QUEUES];	/* process queues */
 
 
 /* macro for calculating number of missed time slices, based on a
@@ -37,7 +37,7 @@ extern ushort uptimetick;
 void		init_proc	(void);
 
 void		reset_priorities(void);
-void		run_next	(PROC *p, int slices);
+void		run_next	(struct proc *p, int slices);
 void		fresh_slices	(int slices);
 
 void		add_q		(int que, PROC *proc);
@@ -47,7 +47,7 @@ void	_cdecl	preempt		(void);
 int	_cdecl	sleep		(int que, long cond);
 void	_cdecl	wake		(int que, long cond);
 void	_cdecl	iwake		(int que, long cond, short pid);
-void	_cdecl	wakeselect	(PROC *p);
+void	_cdecl	wakeselect	(struct proc *p);
 
 void		DUMPPROC	(void);
 void		calc_load_average (void);

@@ -123,6 +123,7 @@ init_proc (void)
 	curproc->stack_magic = STACK_MAGIC;
 	
 	curproc->ppid = -1;		/* no parent */
+//	curproc->pgrp = 1;		/* 0 isn't an process group */
 	curproc->domain = DOM_TOS;	/* TOS domain */
 	curproc->sysstack = (long) (curproc->stack + STKSIZE - 12);
 	curproc->magic = CTXT_MAGIC;
@@ -186,15 +187,9 @@ init_proc (void)
 	 * re-activated by a shell that knows about job control, they'll have
 	 * no effect
 	 */
-# if 1
 	SIGACTION(curproc, SIGTTIN).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGTTOU).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGTSTP).sa_handler = SIG_IGN;
-# else
-	curproc->sighandle[SIGTTIN] =
-	curproc->sighandle[SIGTTOU] =
-	curproc->sighandle[SIGTSTP] = SIG_IGN;
-# endif
 	
 	/* set up some more per-process variables */
 	curproc->started = xtime;
@@ -824,10 +819,11 @@ DUMPPROC (void)
 
 	for (curproc = proclist; curproc; curproc = curproc->gl_next)
 	{
-		FORCE ("state %s PC: %lx BP: %lx",
+		FORCE ("state %s PC: %lx BP: %lx (pgrp %i)",
 			qname(curproc->wait_q),
 			curproc->ctxt[SYSCALL].pc,
-			curproc->base);
+			curproc->base,
+			curproc->pgrp);
 	}
 	curproc = p;	/* restore the real curproc */
 # endif

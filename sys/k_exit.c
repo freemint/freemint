@@ -391,11 +391,7 @@ found:
 	 * through to us
 	 */
 	for (i = 0; i < NSIG; i++)
-# if 1
 		SIGACTION(curproc, i).sa_handler = SIG_IGN;
-# else
-		curproc->sighandle[i] = SIG_IGN;
-# endif
 	
 	/* finally, reset the time/date stamp for /proc and /sys.  */
 	procfs_stmp = xtime;
