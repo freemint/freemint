@@ -111,7 +111,7 @@ _DataRegB:	dc.l $FFFF8C87
 _detect_cpu:	
 	move.l	($10).w,a1	; save the illegal instr. exception vector
 	move.l	($f4).w,a2	; save the unimplemented instr. exception vector
-	lea	exit(PC),a0
+	lea	exit.w(pc),a0
 	move.l	a0,($10).w	; set either vector	
 	move.l	a0,($f4).w
 	move.l	sp,a0		; save the ssp
