@@ -1272,6 +1272,8 @@ f_cntl (int fh, long arg, int cmd)
 		{
 			return get_opens (&f->fc, (struct listopens *) arg);
 		}
+# if 0
+/* fn: totally annyoing check, make only trouble */
 		case F_SETLK:
 		case F_SETLKW:
 		{
@@ -1291,6 +1293,7 @@ f_cntl (int fh, long arg, int cmd)
 			
 			break;
 		}
+# endif
 		case FUTIME:
 		{
 			if ((f->fc.fs->fsflags & FS_EXT_3) && arg)
