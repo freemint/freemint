@@ -24,34 +24,35 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*
+ * Task Manager Dialog
+ * Error message dialog
+ * System menu handling
+ */
+
 #include RSCHNAME
 
 #include "xa_types.h"
 #include "xa_global.h"
 
+#include "about.h"
+#include "c_window.h"
+#include "k_main.h"
+#include "objects.h"
+#include "scrlobjc.h"
+#include "taskman.h"
+#include "widgets.h"
+#include "xalloc.h"
 #include "xa_appl.h"
 #include "xa_form.h"
 #include "xa_shel.h"
 #include "xa_rsrc.h"
 #include "xa_fsel.h"
 
-#include "about.h"
-#include "c_window.h"
-#include "objects.h"
-#include "scrlobjc.h"
-#include "taskman.h"
-#include "widgets.h"
-#include "xalloc.h"
-
 #include "mint/signal.h"
 
 
-/*
- * General system dialogs
- * (Error Log and Task Manager)
- */
-
-void
+static void
 refresh_tasklist(enum locks lock)
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
@@ -60,7 +61,6 @@ refresh_tasklist(enum locks lock)
 	OBJECT *tl = form + TM_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)tl->ob_spec.index;
 	char *tx;
-	int counter=0;
 
 	/* Empty the task list */
 	empty_scroll_list(form, TM_LIST, -1);
@@ -89,7 +89,6 @@ refresh_tasklist(enum locks lock)
 		else
 			icon = form + TM_ICN_XAAES;
 
-#if 1
 		tx = xmalloc(128, 11);
 		if (tx)
 		{
@@ -98,25 +97,20 @@ refresh_tasklist(enum locks lock)
 				sprintf(tx, 128, " %d/%ld %s", client->p->pid, prio-20, client->name);
 			else
 				sprintf(tx, 128, " %d/E%ld %s", client->p->pid, prio, client->name);
-				
+
 			add_scroll_entry(form, TM_LIST, icon, tx, FLAG_MAL);
 		}
 		else
-#endif
 			add_scroll_entry(form, TM_LIST, icon, client->name, 0);
 
 		client = client->next;
-		counter++;
 	}
 
 	list->slider(list);
-	if (counter == 1 && C.shutdown)  /* now all programs are quitted */
-		C.shutdown |= QUIT_NOW;
-
 	Sema_Dn(clients);
 }
 
-struct xa_window *task_man_win = NULL;
+static struct xa_window *task_man_win = NULL;
 
 static int
 taskmanager_destructor(enum locks lock, struct xa_window *wind)
@@ -151,54 +145,71 @@ cur_client(SCROLL_INFO *list)
 static void
 send_terminate(enum locks lock, struct xa_client *client)
 {
-	if (is_client(client))
+	if (client->type == APP_ACCESSORY)
 	{
-		if (client->type == APP_ACCESSORY)
-		{
-			/* Due to ambiguities in documentation the pid is filled out in both msg[3] and msg[4] */
-			DIAGS(("   --   AC_CLOSE"));
-			send_app_message(lock, NULL, client,
-					 AC_CLOSE,    0, 0, client->p->pid,
-					 client->p->pid, 0, 0, 0);
-			remove_windows(lock, client);
-		}
-		DIAGS(("   --   AP_TERM"));
+		DIAGS(("send AC_CLOSE to %s", c_owner(client)));
+
+		/* Due to ambiguities in documentation the pid is filled out
+		 * in both msg[3] and msg[4]
+		 */
 		send_app_message(lock, NULL, client,
-				 AP_TERM,     0,       0, client->p->pid,
-				 client->p->pid, AP_TERM, 0, 0);
+				 AC_CLOSE,    0, 0, client->p->pid,
+				 client->p->pid, 0, 0, 0);
+
+		remove_windows(lock, client);
 	}
+
+	/* XXX
+	 * should we only send if client->apterm is true???
+	 */
+	DIAGS(("send AP_TERM to %s", c_owner(client)));
+	send_app_message(lock, NULL, client,
+			 AP_TERM,     0,       0, client->p->pid,
+			 client->p->pid, AP_TERM, 0, 0);
+}
+
+void
+quit_all_apps(enum locks lock, struct xa_client *except)
+{
+	struct xa_client *client;
+
+	Sema_Up(clients);
+	lock |= clients;
+
+	client = S.client_list;
+	while (client)
+	{
+		if (is_client(client) && client != except)
+		{
+			DIAGS(("shutting down %s", c_owner(client)));
+			send_terminate(lock, client);
+		}
+
+		client = client->next;
+	}
+
+	Sema_Dn(clients);
 }
 
 /* double click now also available for internal handlers. */
 static void
 handle_taskmanager(enum locks lock, struct widget_tree *wt)
 {
-	OBJECT *ob = wt->tree + TM_LIST;
-	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
-	struct xa_client *client;
-	
 	wt->current &= 0xff;
 
 	Sema_Up(clients);
-
 	lock |= clients;
 	
-	switch(wt->current)
+	switch (wt->current)
 	{
-		case TM_TERM:
-			client = cur_client(list);
-			DIAGS(("TM_TERM for %s", c_owner(client)));
-			send_terminate(lock, client);
-			deselect(wt->tree, TM_TERM);
-			display_toolbar(lock, task_man_win, TM_TERM);
-			break;
-		case TM_SHUT:
-			DIAGS(("shutdown by taskmanager"));
-			deselect(wt->tree, TM_SHUT);
-			shutdown(lock);
-			break;
 		case TM_KILL:
-			client = cur_client(list);		
+		{
+			OBJECT *ob = wt->tree + TM_LIST;
+			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			struct xa_client *client = cur_client(list);
+
+			DIAGS(("taskmanager: KILL for %s", c_owner(client)));
+
 			if (is_client(client))
 			{
 				ikill(client->p->pid, SIGKILL);
@@ -206,33 +217,111 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 				refresh_tasklist(lock);
 				display_toolbar(lock, task_man_win, TM_LIST);
 			}
+
 			deselect(wt->tree, TM_KILL);
 			display_toolbar(lock, task_man_win, TM_KILL);
 			break;
+		}
+		case TM_TERM:
+		{
+			OBJECT *ob = wt->tree + TM_LIST;
+			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			struct xa_client *client = cur_client(list);
+
+			DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
+
+			if (is_client(client))
+				send_terminate(lock, client);
+
+			deselect(wt->tree, TM_TERM);
+			display_toolbar(lock, task_man_win, TM_TERM);
+			break;
+		}
+		case TM_SLEEP:
+		{
+			OBJECT *ob = wt->tree + TM_LIST;
+			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			struct xa_client *client = cur_client(list);
+
+			DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
+			ALERT(("taskmanager: TM_SLEEP not yet implemented!"));
+			if (is_client(client))
+			{
+			}
+
+			deselect(wt->tree, TM_SLEEP);
+			display_toolbar(lock, task_man_win, TM_SLEEP);
+			break;
+		}
+		case TM_WAKE:
+		{
+			OBJECT *ob = wt->tree + TM_LIST;
+			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			struct xa_client *client = cur_client(list);
+
+			DIAGS(("taskmanager: TM_WAKE for %s", c_owner(client)));
+			ALERT(("taskmanager: TM_WAKE not yet implemented!"));
+			if (is_client(client))
+			{
+			}
+
+			deselect(wt->tree, TM_WAKE);
+			display_toolbar(lock, task_man_win, TM_WAKE);
+			break;
+		}
+
+		/* the bottom action buttons */
+		case TM_QUITAPPS:
+		{
+			DIAGS(("taskmanager: quit all apps"));
+			quit_all_apps(lock, NULL);
+
+			deselect(wt->tree, TM_QUITAPPS);
+			display_toolbar(lock, task_man_win, TM_QUITAPPS);
+			break;
+		}
+		case TM_QUIT:
+		{
+			DIAGS(("taskmanager: quit XaAES"));
+			dispatch_shutdown(0);
+
+			deselect(wt->tree, TM_QUIT);
+			display_toolbar(lock, task_man_win, TM_QUIT);
+			break;
+		}
+		case TM_REBOOT:
+		{
+			DIAGS(("taskmanager: reboot system"));
+			dispatch_shutdown(REBOOT_SYSTEM);
+
+			deselect(wt->tree, TM_REBOOT);
+			display_toolbar(lock, task_man_win, TM_REBOOT);
+			break;
+		}
+		case TM_HALT:
+		{
+			DIAGS(("taskmanager: halt system"));
+			dispatch_shutdown(HALT_SYSTEM);
+
+			deselect(wt->tree, TM_HALT);
+			display_toolbar(lock, task_man_win, TM_HALT);
+			break;
+		}
 		case TM_OK:
+		{
 			deselect(wt->tree, TM_OK);
 			display_toolbar(lock, task_man_win, TM_OK);
+
+			/* and release */
 			close_window(lock, task_man_win);
 			delete_window(lock, task_man_win);
 			break;
-		case TM_QUIT:
-			DIAGS(("QUIT by taskmanager"));
-			deselect(wt->tree, TM_QUIT);
-			shutdown(lock);
-			C.shutdown = QUIT_NOW;  /* quit now */
+		}
+		default:
+		{
+			DIAGS(("taskmanager: unhandled event %i", wt->current));
 			break;
-		case TM_HALT:
-			deselect(wt->tree, TM_HALT);
-			shutdown(lock);
-			C.shutdown |= HALT_SYSTEM;
-			refresh_tasklist(lock);
-			break;
-		case TM_REBOOT:
-			deselect(wt->tree, TM_REBOOT);
-			C.shutdown |= REBOOT_SYSTEM;
-			shutdown(lock);
-			refresh_tasklist(lock);
-			break;
+		}
 	}
 
 	Sema_Dn(clients);
@@ -241,18 +330,12 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 void
 open_taskmanager(enum locks lock)
 {
+	static RECT remember = { 0,0,0,0 };
+
 	struct xa_window *dialog_window;
 	XA_TREE *wt;
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	static RECT remember = { 0,0,0,0 };
 
-
-/*	i don´t see the use for this...
-	if (shutdown) 
-		form[TM_QUIT].ob_flags &= ~HIDETREE;
-	else
-		form[TM_QUIT].ob_flags |=  HIDETREE;
-*/
 
 	if (!task_man_win)
 	{
@@ -360,23 +443,23 @@ handle_systemalerts(enum locks lock, struct widget_tree *wt)
 
 	switch (item)
 	{
-	/* Empty the task list */
-	case SALERT_CLEAR:
-	{
-		empty_scroll_list(form, SYSALERT_LIST, -1);
-		deselect(wt->tree, item);
-		display_toolbar(lock, systemalerts_win, SYSALERT_LIST);
-		display_toolbar(lock, systemalerts_win, item);
-		break;
-	}
-	case SALERT_OK:
-	{
-		deselect(wt->tree, item);
-		display_toolbar(lock, systemalerts_win, item);
-		close_window(lock, systemalerts_win);
-		delayed_delete_window(lock, systemalerts_win);	
-		break;
-	}
+		/* Empty the task list */
+		case SALERT_CLEAR:
+		{
+			empty_scroll_list(form, SYSALERT_LIST, -1);
+			deselect(wt->tree, item);
+			display_toolbar(lock, systemalerts_win, SYSALERT_LIST);
+			display_toolbar(lock, systemalerts_win, item);
+			break;
+		}
+		case SALERT_OK:
+		{
+			deselect(wt->tree, item);
+			display_toolbar(lock, systemalerts_win, item);
+			close_window(lock, systemalerts_win);
+			delayed_delete_window(lock, systemalerts_win);	
+			break;
+		}
 	}
 }
 
@@ -385,6 +468,7 @@ systemalerts_destructor(enum locks lock, struct xa_window *wind)
 {
 	OBJECT *ob = ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+
 	delayed_delete_window(lock, list->wi);
 	systemalerts_win = NULL;
 	return true;
@@ -467,20 +551,25 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 {
 	switch (menu_item)
 	{
+		default:
+			DIAGS(("Unhandled system menu item %i", menu_item));
+			break;
+
 		/* Open the "About XaAES..." dialog */
 		case SYS_MN_ABOUT:
 			open_about(lock);
 			break;
 
-		/* Shutdown the system */
-		case SYS_MN_SHUTDOWN:
-			DIAGS(("shutdown by menu"));
-			shutdown(lock);
+		/* Quit all applications */
+		case SYS_MN_QUITAPP:
+			DIAGS(("Quit all Apps"));
+			quit_all_apps(lock, NULL);
 			break;
 
 		/* Quit XaAES */
 		case SYS_MN_QUIT:
-			C.shutdown = QUIT_NOW;
+			DIAGS(("Quit XaAES"));
+			dispatch_shutdown(0);
 			break;
 
 		/* Open the "Task Manager" window */
@@ -543,29 +632,6 @@ pendig_alerts(OBJECT *form, int item)
 		cur = cur->next;
 	}
 	return NULL;
-}
-
-/* simple but mostly effective shutdown using the taskmanager. */
-void
-shutdown(enum locks lock)
-{
-	struct xa_client *client;
-
-	Sema_Up(clients);
-
-	lock |= clients;
-
-	open_taskmanager(lock);
-
-	client = S.client_list;
-	while (client)
-	{
-		DIAGS(("shutting down %s", c_owner(client)));
-		send_terminate(lock, client);
-		client = client->next;
-	}
-
-	Sema_Dn(clients);
 }
 
 void

@@ -704,7 +704,35 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			case 4:
 			{
 				DIAGS(("shutown by shel_write(4, %d,%d)", wiscr, wisgr));
-				shutdown(lock);
+
+				switch (wiscr)
+				{
+					/* stop shutdown sequence */
+					case 0:
+						/* not possible */
+						break;
+
+					/* partial shutdown */
+					case 1:
+					/*
+					 * the only difference of partial shutdown
+					 * compared to full shutdown is that ACC also
+					 * get AP_TERM
+					 */
+						quit_all_apps(lock, client);
+						break;
+
+					/*
+					 * and we need also to send status informations back
+					 * to the caller
+					 */
+
+					/* full shutdown */
+					case 2:
+						quit_all_apps(lock, client);
+						break;
+				}
+
 				break;
 			}
 

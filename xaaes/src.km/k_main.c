@@ -383,6 +383,13 @@ alert_input(enum locks lock)
 	}
 }
 
+void
+dispatch_shutdown(int flags)
+{
+	C.shutdown = QUIT_NOW | flags;
+	wakeselect(C.Aes->p);
+}
+
 /*
  * signal handlers
  */
@@ -394,7 +401,7 @@ ignore(void)
 static void
 sigterm(void)
 {
-	C.shutdown |= QUIT_NOW;
+	dispatch_shutdown(0);
 }
 static void
 sigchld(void)
@@ -713,6 +720,13 @@ k_exit(void)
 
 	if (loader_pid > 0)
 		ikill(loader_pid, SIGCONT);
+
+
+	if (C.shutdown & HALT_SYSTEM)
+		s_hutdown(0);  /* halt */
+	else if (C.shutdown & REBOOT_SYSTEM)
+		s_hutdown(1);  /* warm start */
+
 
 	/* XXX todo -> module_exit */
 	kthread_exit(0);

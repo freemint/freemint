@@ -29,13 +29,11 @@
 
 #include "global.h"
 
-extern struct xa_window *task_man_win;
+void quit_all_apps(enum locks lock, struct xa_client *except);
 
-void open_taskmanager	(enum locks lock);
-void do_system_menu	(enum locks lock, int clicked_title, int menu_item);
-void refresh_tasklist	(enum locks lock);
-void update_tasklist	(enum locks lock);
-void shutdown		(enum locks lock);
-void *pendig_alerts	(OBJECT *form, int item);
+void open_taskmanager(enum locks lock);
+void do_system_menu(enum locks lock, int clicked_title, int menu_item);
+void update_tasklist(enum locks lock);
+void *pendig_alerts(OBJECT *form, int item);
 
 #endif /* _taskman_h */
