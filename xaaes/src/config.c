@@ -26,6 +26,7 @@
 #include "xa_global.h"
 #include "xa_shel.h"
 
+#include "global.h"
 #include "xalloc.h"
 #include "config.h"
 #include "taskman.h"
