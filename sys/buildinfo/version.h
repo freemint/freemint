@@ -14,8 +14,8 @@
 # define THIRD_PARTY	"FreeMiNT"
 
 # if 1
-# define BETA		"-BETA"
-# define BETA_IDENT	'b'
+# define BETA		"-ALPHA"
+# define BETA_IDENT	'a'
 # else
 # define BETA		""
 # define BETA_IDENT	0
