@@ -12,7 +12,7 @@
 
 
 BUF *
-eth_build_hdr (BUF *buf, struct netif *nif, char *addr, short type)
+eth_build_hdr (BUF *buf, struct netif *nif, const char *addr, short type)
 {
 	struct eth_dgram *ep;
 	BUF *nbuf;

@@ -10,10 +10,10 @@
 
 # include "buf.h"
 
-# include <mint/asm.h>
-# include <mint/file.h>
+# include "mint/asm.h"
+# include "mint/file.h"
+# include "mint/net.h"
 
-# include "net.h"
 # include "util.h"
 
 

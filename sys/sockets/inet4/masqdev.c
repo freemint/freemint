@@ -13,11 +13,10 @@
 # include "route.h"
 
 # include "dummydev.h"
-# include "net.h"
-# include "socket.h"
 # include "util.h"
 
-# include <mint/file.h>
+# include "mint/file.h"
+# include "mint/socket.h"
 
 
 static long masqdev_read  (FILEPTR *, char *, long);
@@ -41,12 +40,10 @@ static struct dev_descr masqdev_descr =
 	driver:		&masqdev
 };
 
-static char masqdev_name[] = "u:\\dev\\masquerade";
-
 long
 masqdev_init (void)
 {
-	return dummydev_init (masqdev_name, &masqdev_descr);
+	return dummydev_init ("u:\\dev\\masquerade", &masqdev_descr);
 }
 
 static int record = 0;

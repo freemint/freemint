@@ -38,7 +38,6 @@
 
 
 void	tcp_sendsig (struct tcb *tcb, short sig);
-void	tcp_siginit (void);
 
 
 # endif /* _tcpsig_h */

@@ -7,13 +7,13 @@
 
 # include "stream.h"
 
+# include "mint/file.h"
+# include "mint/signal.h"
+
 # include "unix.h"
 
-# include "sockutil.h"
+# include "iov.h"
 # include "util.h"
-
-# include <mint/file.h>
-# include <mint/signal.h>
 
 
 long

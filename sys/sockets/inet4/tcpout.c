@@ -7,12 +7,8 @@
 
 # include "tcpout.h"
 
-# include "if.h"
-# include "ip.h"
 # include "tcputil.h"
 
-# include "net.h"
-# include "sockutil.h"
 # include "util.h"
 
 
@@ -49,6 +45,7 @@ void (*tcb_ostate[])(struct tcb *, short) =
 	tcbos_xmit
 };
 
+# ifdef DEV_DEBUG
 static char *ostate_names[] =
 {
 	"IDLE",
@@ -56,6 +53,7 @@ static char *ostate_names[] =
 	"PERSIST",
 	"XMIT"
 };
+# endif
 
 /*
  * Output finite state machine.

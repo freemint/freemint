@@ -6,6 +6,8 @@
 
 # include "udp.h"
 
+# include "mint/net.h"
+
 # include "icmp.h"
 # include "if.h"
 # include "in.h"
@@ -15,7 +17,6 @@
 
 # include "buf.h"
 # include "iov.h"
-# include "sockutil.h"
 # include "util.h"
 
 
@@ -311,13 +312,13 @@ udp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
 	
 	if (addr)
 	{
-		struct sockaddr_in sin;
+		struct sockaddr_in in;
 		
-		*addrlen = MIN (*addrlen, sizeof (struct sockaddr_in));
-		sin.sin_family = AF_INET;
-		sin.sin_addr.s_addr = IP_SADDR (buf);
-		sin.sin_port = uh->srcport;
-		memcpy (addr, &sin, *addrlen);
+		*addrlen = MIN (*addrlen, sizeof (in));
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = IP_SADDR (buf);
+		in.sin_port = uh->srcport;
+		memcpy (addr, &in, *addrlen);
 	}
 	
 	if (!(flags & MSG_PEEK))

@@ -22,7 +22,7 @@ struct netinfo
 	short	(*_in_chksum) (void *, short);
 	short	(*_if_getfreeunit) (char *);
 	
-	BUF *	(*_eth_build_hdr) (BUF *, struct netif *, char *, short);
+	BUF *	(*_eth_build_hdr) (BUF *, struct netif *, const char *, short);
 	short	(*_eth_remove_hdr) (BUF *);
 	
 	char	*fname;

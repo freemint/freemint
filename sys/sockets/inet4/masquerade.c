@@ -83,7 +83,7 @@ masq_ip_input (struct netif *nif, BUF *buf)
 	struct route *rt;
 	ulong localaddr;
 	short addrtype;
-	struct sockaddr_in *sin;
+	struct sockaddr_in *in;
 	
 	if (!(masq.flags & MASQ_ENABLED))
 		return buf;
@@ -101,8 +101,8 @@ masq_ip_input (struct netif *nif, BUF *buf)
 	if (rt)
 	{
 		addrtype = ip_chk_addr (iph->daddr, rt);
-		sin = (struct sockaddr_in *)(&(if_af2ifaddr (rt->nif, AF_INET)->addr));
-		localaddr = sin->sin_addr.s_addr;
+		in = (struct sockaddr_in *)(&(if_af2ifaddr (rt->nif, AF_INET)->addr));
+		localaddr = in->sin_addr.s_addr;
 		route_deref (rt);
 	}
 	else
