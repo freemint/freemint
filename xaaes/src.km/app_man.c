@@ -59,6 +59,8 @@ taskbar(struct xa_client *client)
 struct xa_client *
 focus_owner(void)
 {
+	return find_focus(true, NULL, NULL, NULL);
+#if 0
 	if (C.focus == root_window)
 		return menu_owner();
 
@@ -67,6 +69,168 @@ focus_owner(void)
 
 	DIAGS(("No focus_owner()???"));
 	return NULL;
+#endif
+}
+
+/*
+ * HR: Generalization of focus determination.
+ *     Each step checks MU_KEYBD except the first.
+ *     The top or focus window can have a keypress handler
+ *     instead of the XAWAIT_KEY flag.
+ *
+ *       first:  check focus keypress handler (no MU_KEYBD or update_lock needed)
+ *       second: check update lock
+ *       last:   check top or focus window
+ *
+ *  240401: Interesting bug found and killed:
+ *       If the update lock is set, then the key must go to that client,
+ *          If that client is not yet waiting, the key must be queued,
+ *          the routine MUST pass the client pointer, so there is a pid to be
+ *          checked later.
+ *       In other words: There can always be a client returned. So we must only know
+ *          if that client is already waiting. Hence the ref bool.
+ */
+struct xa_client *
+find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind)
+{
+	struct xa_window *top = window_list;
+	struct xa_client *client = NULL, *locked = NULL;
+
+	if (waiting)
+		*waiting = false;
+
+	if (keywind)
+		*keywind = NULL;
+
+	if (withlocks)
+	{
+		if (update_locked())
+		{
+			locked = update_locked();
+			DIAGS(("-= 1 =-"));
+		}
+		else if (mouse_locked())
+		{
+			locked = mouse_locked();
+			DIAGS(("-= 2 =-"));
+		}
+		if (locked)
+		{
+			client = locked;
+			if (locked_client)
+				*locked_client = client;
+
+			if (client->fmd.keypress ||				/* classic (blocked) form_do */
+			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
+			    (top->owner == client && top->keypress))		/* Windowed form_do() */
+			{
+				if (waiting)
+					*waiting = true;
+
+				if (keywind)
+				{
+					if (client->fmd.lock && client->fmd.keypress)
+						*keywind = client->fmd.wind;
+					else if (top->owner == client && top->keypress)
+						*keywind = top;
+				}
+				
+				DIAGS(("-= 3 =-"));
+				return client;
+			}
+		}
+		else if (locked_client)
+			*locked_client = NULL;
+	}
+	else if (locked_client)
+		*locked_client = NULL;
+	
+
+	if (is_topped(top))
+	{
+		if (waiting && ((top->owner->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) || top->keypress))
+			*waiting = true;
+
+		if (keywind)
+			*keywind = top;
+
+		DIAGS(("-= 4 =-"));
+		client = top->owner;
+	}
+	else if (get_app_infront()->waiting_for & (MU_KEYBD | MU_NORM_KEYBD))
+	{
+		DIAGS(("-= 5 =-"));
+
+		if (waiting)
+			*waiting = true;
+
+		client = get_app_infront();
+	}
+
+	DIAGS(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
+
+	return client;
+
+#if 0
+#if GENERATE_DIAGS
+	if (C.focus == root_window)
+	{
+		DIAGS(("C.focus == root_window"));
+	}
+#endif
+	if (top == C.focus && top->keypress)
+	{
+		/* this is for windowed form_do which doesn't
+		 * set the update lock.
+		 */
+		*waiting = true;
+		DIAGS(("-= 1 =-"));
+		return top->owner;
+	}
+
+	/* special case, no menu bar, possibly no windows either
+	 * but a dialogue on the screen, not governed by form_do. (handled above)
+	 * The client must also be waiting.
+	 */
+	if (update_locked())
+	{
+		locked = update_locked();
+
+		*locked_client = locked;
+		DIAGS(("-= 2 =-"));
+	}
+	else if (mouse_locked())
+	{
+		locked = mouse_locked();
+
+		*locked_client = locked;
+		DIAGS(("-= 3 =-"));
+	}
+
+	if (locked)
+	{
+		client = locked;
+		if (client->fmd.keypress) /* classic (blocked) form_do */
+		{
+			*waiting = true;
+			DIAGS(("-= 4 =-"));
+			return client;
+		}
+
+		if ((client->waiting_for & (MU_KEYBD|MU_NORM_KEYBD)) != 0 || top->keypress != NULL)
+		{
+			*waiting = true;
+			DIAGS(("-= 5 =-"));
+			return client;
+		}
+	}
+
+	client = focus_owner();
+	*waiting = (client->waiting_for & (MU_KEYBD|MU_NORM_KEYBD)) != 0 || top->keypress != NULL;
+
+	DIAGS(("-= 9 =-"));
+	return client;
+#endif
 }
 
 /*
@@ -77,19 +241,40 @@ recover(void)
 {
 	struct xa_client *update_lock = update_locked();
 	struct xa_client *mouse_lock = mouse_locked();
+	struct xa_client *menu_lock = menustruct_locked();
 
 	DIAG((D_appl, NULL, "Attempting to recover control....."));
 
 	if (update_lock && (update_lock != C.Aes))
 	{
 		DIAG((D_appl, NULL, "Killing owner of update lock"));
+		free_update_lock();
+		if (mouse_lock == update_lock)
+		{
+			mouse_lock = NULL;
+			free_mouse_lock();
+		}
+		if (menu_lock == update_lock)
+		{
+			menu_lock = NULL;
+			free_menustruct_lock();
+		}
 		ikill(update_lock->p->pid, SIGKILL);
 	}
-
-	if ((mouse_lock && (mouse_lock != update_lock)) && (mouse_lock != C.Aes))
+	if (mouse_lock && (mouse_lock != C.Aes))
 	{
-		DIAG((D_appl, NULL, "Killing owner of mouse lock"));
+		free_mouse_lock();
+		if (menu_lock == mouse_lock)
+		{
+			menu_lock = NULL;
+			free_menustruct_lock();
+		}
 		ikill(mouse_lock->p->pid, SIGKILL);
+	}
+	if (menu_lock && (menu_lock != C.Aes))
+	{
+		free_menustruct_lock();
+		ikill(menu_lock->p->pid, SIGKILL);
 	}
 
 	forcem();
@@ -424,6 +609,8 @@ next_wind(enum locks lock)
 
 /*
  * wwom true == find a client "with window or menu", else any client
+ * will also return clients without window or menu but is listening
+ * for kbd input (MU_KEYBD)
  */
 struct xa_client *
 next_app(enum locks lock, bool wwom)
@@ -443,7 +630,9 @@ next_app(enum locks lock, bool wwom)
 	{
 		while (client)
 		{
-			if (client->std_menu || any_window(lock, client))
+			if (client->std_menu ||
+			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
+			    any_window(lock, client))
 				break;
 
 			client = PREV_APP(client);
@@ -511,6 +700,11 @@ app_in_front(enum locks lock, struct xa_client *client)
 			send_untop(lock, wf);
 			send_ontop(lock);
 		}
+		else if (!is_topped(wf))
+		{
+			send_untop(lock, wf);
+			display_window(lock, 0, wf, NULL);
+		}
 	}
 }
 
@@ -518,6 +712,12 @@ bool
 is_infront(struct xa_client *client)
 {
 	return (client == APP_LIST_START ? true : false);
+}
+
+struct xa_client *
+get_app_infront(void)
+{
+	return APP_LIST_START;
 }
 
 void

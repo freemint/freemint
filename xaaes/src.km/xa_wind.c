@@ -180,6 +180,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 
 	/* New top window - change the cursor to this client's choice */
 	set_active_client(lock, w->owner);
+
 	pull_wind_to_top(lock, w);
 
 	if (client != desk_menu_owner)
@@ -605,8 +606,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (w->is_open)
 		{
-			if (    w != window_list ||
-			       (w == window_list && w != C.focus))
+			//if (    w != window_list ||
+			//       (w == window_list && w != C.focus))
+			if ( !is_topped(w))
 			{
 				if (is_hidden(w))
 					unhide_window(lock|winlist, w);
@@ -1072,7 +1074,7 @@ next:
 		if (w)
 		{
 			/* HR 100801: Do not report unfocused window as top. */
-			if (C.focus == root_window)
+			if (!is_topped(w)) //C.focus == root_window)
 				w = root_window;
 
 			o[1] = w->handle; /* Return the window handle */

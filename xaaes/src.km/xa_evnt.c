@@ -114,7 +114,7 @@ pending_key_strokes(enum locks lock, AESPB *pb, struct xa_client *client, int ty
 	{
 		IFDIAG(struct xa_client *qcl = pending_keys.q[pending_keys.cur].client;)
 		struct xa_client *locked = NULL;
-		struct xa_client *foc = find_focus(&waiting, &locked);
+		struct xa_client *foc = find_focus(true, &waiting, &locked, NULL);
 		struct rawkey key;
 
 		DIAG((D_keybd, NULL, "Pending key: cur=%d,end=%d (qcl%d::cl%d::foc%d::lock%d)",

@@ -179,6 +179,7 @@ Setup_form_do(struct xa_client *client,
 		}
 		else
 		{
+			client->fmd.wind = NULL;
 		/* XXX - Ozk:
 		 *     Force a classic formdo here if allocating resources for a 
 		 *     window fails... on the todo list
