@@ -1,6 +1,59 @@
 
-#ifndef _tw_window_h_
-#define _tw_window_h_
+#ifndef tw_window_h
+# define tw_window_h 1
+
+#ifndef tw_global_h
+# include "global.h"
+#endif
+
+/* win->flags */
+#define WFULLED		1
+#define WICONIFIED 	2
+#define WSHADED 	4
+#define WISDIAL		8
+
+typedef struct win WINDOW;
+struct win
+{
+	WINDOW	*next;		/* next window in list */
+	int	handle;		/* AES window handle */
+	int	kind;		/* window gadgets */
+	char 	*title;
+	GRECT	work;		/* size of window working area */
+	GRECT	full;
+	GRECT	prev;
+	int	 max_w, max_h;	/* max size of window working area */
+	int	icon_x, icon_y;	/* WINICON Position, da der Objektbaum mehrfach benutzt wird. */
+	int	flags;		/* various window flags */
+	int	old_wkind;	/* old window gadgets before iconification */
+	void	*extra;		/* Pointer to extra data for subclasses */
+
+	void	(*draw) 	(struct win *win, short x, short y, short w, short h);
+	void	(*topped) 	(struct win *win);
+  	void    (*ontopped) 	(struct win *win);
+	void	(*untopped) 	(struct win *win);
+	void	(*bottomed) 	(struct win *win);
+	void	(*closed) 	(struct win *win);
+	void	(*fulled) 	(struct win *win);
+	void	(*sized) 	(struct win *win, short x, short y, short w, short h);
+	void	(*moved) 	(struct win *win, short x, short y, short w, short h);
+	void	(*iconify) 	(struct win *win, short, short, short, short);
+	void	(*uniconify)	(struct win *win, short, short, short, short);
+	void	(*shaded) 	(struct win *win, short on);
+	void	(*arrowed) 	(struct win *win, short msg);
+	void	(*vslid) 	(struct win *win, short vpos);
+	bool	(*keyinp) 	(struct win *win, short keycode, short shft );
+	bool	(*mouseinp)	(struct win *win, short clicks, short x, short y, short shft, short mbuttons);
+	void	(*oldfulled)	(struct win *win);
+	bool	(*oldmouse)	(struct win *win, short clicks, short x, short y, short shft, short mbuttons);
+	void	(*timer) 	(struct win *win, int top);
+};
+
+/* Min/Maximale Fenstergr”že */
+#define MINROWS	1
+#define MINCOLS	10
+#define MAXROWS	128
+#define MAXCOLS	220
 
 extern WINDOW 	*gl_topwin;	/* oberstes Fenster */
 extern WINDOW 	*gl_winlist;	/* LIFO Liste der offenen Fenster */
@@ -31,6 +84,8 @@ void 	cycle_window(void);
 
 void 	title_window(WINDOW *v, char *title);
 void	uniconify_all(void);
+
+void	draw_winicon (WINDOW *win);
 
 /*
  * Eventverarbeitung.
