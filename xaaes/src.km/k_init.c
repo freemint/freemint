@@ -112,6 +112,19 @@ k_init(void)
 	short f;
 	char *resource_name;
 
+	{
+		short *p;
+
+		if (!(s_system(S_GETCOOKIE, COOKIE_NVDI, (unsigned long)&p)))
+		{
+			C.nvdi_version = *p;
+			DIAGS(("nvdi version = %x", C.nvdi_version));
+		}
+#if GENERATE_DIAGS
+		else
+			DIAGS(("could not determine nvdi version"));
+#endif
+	}
 	/*
 	 * setup work_in
 	 */
@@ -123,7 +136,7 @@ k_init(void)
 
 	work_in[10] = 2;
 
-
+	
 	if (cfg.auto_program)
 	{
 		short mode = 1;
@@ -398,16 +411,16 @@ k_init(void)
 	}
 
 	DIAGS(("setting up task manager"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER), TM_LIST);
+	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER), TM_LIST, true);
 
 	DIAGS(("setting up file selector"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, FILE_SELECT), FS_LIST);
+	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, FILE_SELECT), FS_LIST, true);
 
 	DIAGS(("setting up System Alert log"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR), SYSALERT_LIST);
+	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR), SYSALERT_LIST, false);
 
 	DIAGS(("setting up About text list"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES), ABOUT_LIST);
+	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES), ABOUT_LIST, false);
 
 	DIAGS(("display root window"));
 	open_window(NOLOCKING, root_window, screen.r);

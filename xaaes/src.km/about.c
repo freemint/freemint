@@ -171,7 +171,7 @@ open_about(enum locks lock)
 			char **t = about_lines;
 			while (*t)
 			{
-				add_scroll_entry(form, ABOUT_LIST, 0, *t, 0);
+				add_scroll_entry(form, ABOUT_LIST, 0, *t, 0, NULL);
 				t++;
 			}
 		}
