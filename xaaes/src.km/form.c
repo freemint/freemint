@@ -682,7 +682,7 @@ Click_form_do(enum locks lock,
 	{
 		struct fmd_result fr;
 
-		fr.obj = ob_find(obtree, 0, 10, md->x, md->y);
+		fr.obj = obj_find(wt, 0, 10, md->x, md->y);
 		
 		if (fr.obj >= 0 &&
 		    !form_button(wt,
@@ -855,6 +855,46 @@ set_button_timer(enum locks lock, struct xa_window *wind)
 		}
 	}
 }
+static void
+dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
+{
+	if (wt && wt->tree)
+	{
+		RECT dr;
+		struct xa_rect_list *rl;
+
+		if ((rl = wind->rect_start))
+		{
+			if (wind->owner != C.Aes)
+				lock_screen(wind->owner, false, NULL, 1);
+			hidem();
+			while (rl)
+			{
+				if (xa_rect_clip(&wind->wa, &rl->r, &dr))
+				{
+					if (clip)
+					{
+						if (xa_rect_clip(clip, &dr, &dr))
+						{
+							set_clip(&dr);
+							draw_object_tree(0, wt, wt->tree, 0, 10, 1);
+						}
+					}
+					else
+					{
+						set_clip(&dr);
+						draw_object_tree(0, wt, wt->tree, 0, 10, 1);
+					}
+				}
+				rl = rl->next;
+			}
+			clear_clip();
+			showm();
+			if (wind->owner != C.Aes)
+				unlock_screen(wind->owner, 2);
+		}
+	}
+}
 
 /*
  * WinMsgHandler() - This MUST run in the context of the window owner!
@@ -889,6 +929,9 @@ do_formwind_msg(
 		{
 		case WM_REDRAW:
 		{
+			dfwm_redraw(wind, wt, (RECT *)&msg[4]);
+			break;
+#if 0
 			if (wt && wt->tree)
 			{
 				RECT *clip = (RECT *)&msg[4];
@@ -916,6 +959,7 @@ do_formwind_msg(
 				}
 			}
 			break;
+#endif
 		}
 		case WM_MOVED:
 		{
@@ -969,7 +1013,8 @@ do_formwind_msg(
 					if (dy > oh - wh)		
 						dy = oh - wh;
 				}
-			} else
+			}
+			else
 			{
 				if (ww < ow)
 				{
@@ -1057,6 +1102,7 @@ do_formwind_msg(
 			wt->dx = dx;
 			wt->dy = dy;
 			display_window(0, 120, wind, NULL);
+			dfwm_redraw(wind, wt, NULL);
 		}
 		set_button_timer(0, wind);
 	}
