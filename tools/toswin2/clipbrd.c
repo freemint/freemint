@@ -32,14 +32,14 @@ static int CharClass(char ch)
 		return 1000+ch; /* One class per character */
 }
 
-static void selectfrom(TEXTWIN *t, short x1, short y1, short x2, short y2)
+static void 
+selectfrom (TEXTWIN *t, short x1, short y1, short x2, short y2)
 {
 	int	i, j;
 	int	first, last;
 
 	/* first, normalize coordinates */
-	if ((y1 > y2) || (y1 == y2 && x1 > x2)) 
-	{
+	if ((y1 > y2) || (y1 == y2 && x1 > x2)) {
 		x1 ^= x2;
 		x2 ^= x1;
 		x1 ^= x2;
@@ -53,64 +53,55 @@ static void selectfrom(TEXTWIN *t, short x1, short y1, short x2, short y2)
 	t->block_y1 = y1;
 	t->block_y2 = y2;
 
-	for (j = 0; j <= y1; j++) 
-	{
+	for (j = 0; j <= y1; j++) {
 		last = (j == y1) ? x1 : t->maxx;
-		for (i = 0; i < last; i++) 
-		{
-			if (t->cflag[j][i] & CSELECTED) 
-			{
-				t->cflag[j][i] &= ~CSELECTED;
-				t->cflag[j][i] |= CTOUCHED;
+		for (i = 0; i < last; i++) {
+			if (t->cflags[j][i] & CSELECTED)	{
+				t->cflags[j][i] &= ~CSELECTED;
+				t->cflags[j][i] |= CDIRTY;
 				t->dirty[j] |= SOMEDIRTY;
 			}
 		}
 	}
-	for (j = y1; j <= y2; j++) 
-	{
+	for (j = y1; j <= y2; j++) {
 		first = (j == y1) ? x1 : 0;
 		last = (j == y2) ? x2+1 : t->maxx;
-		for (i = first; i < last; i++) 
-		{
-			if (!(t->cflag[j][i] & CSELECTED)) 
-			{
-				t->cflag[j][i] |= (CTOUCHED|CSELECTED);
+		for (i = first; i < last; i++) {
+			if (!(t->cflags[j][i] & CSELECTED)) {
+				t->cflags[j][i] |= (CDIRTY|CSELECTED);
 				t->dirty[j] |= SOMEDIRTY;
 			}
 		}
 	}
-	for (j = y2; j < t->maxy; j++) 
-	{
+	for (j = y2; j < t->maxy; j++) {
 		first = (j == y2) ? x2+1 : 0;
-		for (i = first; i < t->maxx; i++) 
-		{
-			if (t->cflag[j][i] & CSELECTED) 
-			{
-				t->cflag[j][i] &= ~CSELECTED;
-				t->cflag[j][i] |= CTOUCHED;
+		for (i = first; i < t->maxx; i++) {
+			if (t->cflags[j][i] & CSELECTED) {
+				t->cflags[j][i] &= ~CSELECTED;
+				t->cflags[j][i] |= CDIRTY;
 				t->dirty[j] |= SOMEDIRTY;
 			}
 		}
 	}
-	refresh_textwin(t, FALSE);
+	refresh_textwin (t, FALSE);
 }
 
 int select_word(TEXTWIN *t, short curcol, short currow)
 {
-	int	curclass = CharClass(t->data[currow][curcol]);
+	int	curclass = CharClass(t->cdata[currow][curcol]);
 	int	lcol = curcol;
 	int	rcol = curcol;
 
 	refresh_textwin(t, FALSE);
 
-	while (lcol>0 && CharClass(t->data[currow][lcol])==curclass)
+	while (lcol>0 && CharClass(t->cdata[currow][lcol])==curclass)
 		lcol--;
-	if (CharClass(t->data[currow][lcol])!=curclass)
+	if (CharClass(t->cdata[currow][lcol])!=curclass)
 		lcol++;
 
-	while (rcol<t->maxx && CharClass(t->data[currow][rcol])==curclass)
+	while (rcol<t->maxx && CharClass(t->cdata[currow][rcol])==curclass)
 		rcol++;
-	if (CharClass(t->data[currow][rcol])!=curclass)
+	if (CharClass(t->cdata[currow][rcol])!=curclass)
 		rcol--;
 
 	selectfrom(t, lcol, currow, rcol, currow);
@@ -138,7 +129,7 @@ int select_text(TEXTWIN *t, short curcol, short currow, short kshift)
 		for (y = 0; y < t->maxy; y++)
 			for (x = 0; x < t->maxx; x++) 
 			{
-				if (t->cflag[y][x] & CSELECTED) 
+				if (t->cflags[y][x] & CSELECTED) 
 				{
 					anchorrow = y;
 					anchorcol = x;
@@ -164,7 +155,7 @@ foundselect:
 	for(;;) 
 	{
 		if (WIDE)
-			cboxw = WIDE[t->data[currow][curcol]];
+			cboxw = WIDE[t->cdata[currow][curcol]];
 
 		event = evnt_multi(MU_M1 | MU_M2 | MU_BUTTON, 
 									0x101, 0x0003, 0x0001,
@@ -221,10 +212,10 @@ void unselect(TEXTWIN *t)
 	for (i = 0; i < t->maxy; i++)
 		for (j = 0; j < t->maxx; j++) 
 		{
-			if (t->cflag[i][j] & CSELECTED) 
+			if (t->cflags[i][j] & CSELECTED) 
 			{
-				t->cflag[i][j] &= ~CSELECTED;
-				t->cflag[i][j] |= CTOUCHED;
+				t->cflags[i][j] &= ~CSELECTED;
+				t->cflags[i][j] |= CDIRTY;
 				t->dirty[i] |= SOMEDIRTY;
 			}
 		}
@@ -346,7 +337,7 @@ void copy(WINDOW *w, char *dest, int length)
 		linedone = 0;
 		for (j = 0; j < t->maxx; j++) 
 		{
-			if (t->cflag[i][j] & CSELECTED) 
+			if (t->cflags[i][j] & CSELECTED) 
 			{
 				numchars++;
 				if (!linedone) 
@@ -377,13 +368,13 @@ void copy(WINDOW *w, char *dest, int length)
 		linedone = 0;
 		for (j = 0; j < t->maxx; j++) 
 		{
-			if (t->cflag[i][j] & CSELECTED) 
+			if (t->cflags[i][j] & CSELECTED) 
 			{
-				c = t->data[i][j];
+				c = t->cdata[i][j];
 				if (!c) 
 					c = ' ';
 				*s++ = c;
-				if ((c == ' ') && t->data[i][j-1] == ' ')
+				if ((c == ' ') && t->cdata[i][j-1] == ' ')
 					linedone = 1;
 				else
 					linedone = 0;
