@@ -381,7 +381,7 @@
  */
 
 # define VER_MAJOR	1
-# define VER_MINOR	26
+# define VER_MINOR	27
 # define VER_STATUS
 
 # if VER_MINOR > 9
@@ -7707,6 +7707,9 @@ __FTRUNCATE (COOKIE *c, long newlen)
 
 	if (RDONLY (c->dev))
 		return EROFS;
+
+	if ((c->info.attr & FA_DIR) || c->info.attr == FA_SYMLINK)
+		return EACCES;
 
 	/* range check */
 	if (newlen > oldlen) return EBADARG;

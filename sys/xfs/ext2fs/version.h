@@ -27,7 +27,7 @@
 
 
 # define VER_MAJOR	0
-# define VER_MINOR	61
+# define VER_MINOR	62
 
 # if 0
 # define ALPHA
