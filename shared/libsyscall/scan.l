@@ -173,10 +173,10 @@ space		[ \t\n]
 	return _IDENT_UNIMPLEMENTED;
 }
 
-"null"	{
+"passthrough"	{
 	strncpy(yylval.ident, yytext, STRMAX);
 	yylval.ident[STRMAX] = '\0';
-	return _IDENT_NULL;
+	return _IDENT_PASSTHROUGH;
 }
 
 {nonzerodigit}{digit}*	{

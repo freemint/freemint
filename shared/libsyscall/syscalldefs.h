@@ -50,11 +50,9 @@ struct syscall
 #define SYSCALL_REGULAR		0
 #define SYSCALL_UNIMPLEMENTED	1
 #define SYSCALL_UNSUPPORTED	2
-#define SYSCALL_UNDEFINED	3
-#define SYSCALL_NULL		4	/* XXX to be removed */
+#define SYSCALL_PASSTHROUGH	3
+#define SYSCALL_UNDEFINED	4
 };
-#define IS_REGULAR_SYSCALL(call) ((call)->status == SYSCALL_REGULAR)
-#define IS_SYSCALL(call) ((call)->status < SYSCALL_UNDEFINED)
 
 struct arg
 {
