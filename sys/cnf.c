@@ -531,10 +531,16 @@ parser(FILEPTR *f, long f_size,
 				case PI_C_0TT:            (*cb._cc)(0,A0C,A1C             ); break;
 				case PI_V_ATK:            (*cb.ccl)(  A0C,A1C,item->dat   ); break;
 				/* references */
-				case PI_R_S: *(short *)(cb._v) = arg[0].s;  break;
-				case PI_R_L: *(long  *)(cb._v) = arg[0].l;  break;
-				case PI_R_B: *(bool  *)(cb._v) = arg[0].b;  break;
-				case PI_R_T: *(char **)(cb._v) = arg[0].c;  break;
+				case PI_R_S: *(short *)(cb._v) = arg[0].s;                   break;
+				case PI_R_L: *(long  *)(cb._v) = arg[0].l;                   break;
+				case PI_R_B: *(bool  *)(cb._v) = arg[0].b;                   break;
+				/* string buf */
+				case PI_R_T:
+				{
+					if (strlen(arg[0].c) < item->dat)
+						strcpy((char *)(cb._v), arg[0].c); 
+					break;
+				}
 
 				default: ALERT(MSG_cnf_unknown_tag,
 					            (int)item->type, item->key);
