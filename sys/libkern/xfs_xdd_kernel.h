@@ -37,11 +37,11 @@
 
 extern struct kerinfo *KERNEL;
 
-# define MINT_MAJOR	(KERNEL->maj_version)
-# define MINT_MINOR	(KERNEL->min_version)
-# define MINT_KVERSION	(KERNEL->version)
-# define DEFAULT_MODE	(KERNEL->default_perm)
-# define DEFAULT_DMODE	(0777)
+# define MINT_MAJOR		(KERNEL->maj_version)
+# define MINT_MINOR		(KERNEL->min_version)
+# define MINT_KVERSION		(KERNEL->version)
+# define DEFAULT_MODE		(KERNEL->default_perm)
+# define DEFAULT_DMODE		(0777)
 
 /*
  * dos_tab
@@ -629,6 +629,17 @@ INLINE long t_settimeofday (struct timeval *tv, struct timezone *tz)
 
 # define nap			(*KERNEL->nap)
 # define sleep			(*KERNEL->sleep)
+
+/* for sleep */
+# define CURPROC_Q		0
+# define READY_Q		1
+# define WAIT_Q			2
+# define IO_Q			3
+# define ZOMBIE_Q		4
+# define TSR_Q			5
+# define STOP_Q			6
+# define SELECT_Q		7
+
 # define wake			(*KERNEL->wake)
 # define wakeselect		(*KERNEL->wakeselect)
 # define denyshare		(*KERNEL->denyshare)
@@ -644,16 +655,9 @@ INLINE long t_settimeofday (struct timeval *tv, struct timezone *tz)
 # define add_rsvfentry		(*KERNEL->add_rsvfentry)
 # define del_rsvfentry		(*KERNEL->del_rsvfentry)
 # define killgroup		(*KERNEL->killgroup)
-
-/* for sleep */
-# define CURPROC_Q		0
-# define READY_Q		1
-# define WAIT_Q			2
-# define IO_Q			3
-# define ZOMBIE_Q		4
-# define TSR_Q			5
-# define STOP_Q			6
-# define SELECT_Q		7
+# define dma_interface		( KERNEL->dma)
+# define loops_per_sec_ptr	( KERNEL->loops_per_sec)
+# define get_toscookie		(*KERNEL->get_toscookie)
 
 
 # endif /* _xfs_xdd_kernel_h */
