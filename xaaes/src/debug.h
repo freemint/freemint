@@ -100,6 +100,7 @@ char *t_owner(struct widget_tree *t);
 extern struct debugger D;
 
 void DeBug(enum debug_item item, struct xa_client *client, char *t, ...);
+void display_env(char **env, int which);
 
 /* The semaphores are crucial, so have ample debugging features. */
 #if 0
@@ -120,7 +121,7 @@ void DeBug(enum debug_item item, struct xa_client *client, char *t, ...);
 #endif
 
 #if DEBUG_CONTROL
-#define CONTROL(a,b,c) {int *co = pb->contrl; \
+#define CONTROL(a,b,c) {short *co = pb->contrl; \
 			 if (co[1] != a || co[2] != b || co[3] != c) \
 				display(D_cl,a,co[1],b,co[2],c,co[3]); }
 #else
