@@ -431,11 +431,23 @@ extern struct kerinfo *KERNEL;
 INLINE long c_conws (const char *str)
 { return ((long _cdecl (*)(const char *)) _c_conws) (str); }
 
+INLINE long f_setdta (DTABUF *dta)
+{ return ((long _cdecl (*)(DTABUF *)) _f_setdta) (dta); }
+
 INLINE long t_getdate (void)
 { return ((long _cdecl (*)(void)) _t_getdate) (); }
 
 INLINE long _cdecl t_gettime (void)
 { return ((long _cdecl (*)(void)) _t_gettime) (); }
+
+INLINE long f_getdta (void)
+{ return ((long _cdecl (*)(void)) _f_getdta) (); }
+
+INLINE long d_setpath (const char *path)
+{ return ((long _cdecl (*)(const char *)) _d_setpath) (path); }
+
+INLINE long f_create (const char *name, int attrib)
+{ return ((long _cdecl (*)(const char *, int)) _f_create) (name, attrib); }
 
 INLINE long f_open (const char *name, int mode)
 { return ((long _cdecl (*)(const char *, int)) _f_open) (name, mode); }
@@ -443,8 +455,14 @@ INLINE long f_open (const char *name, int mode)
 INLINE long f_close (int fh)
 { return ((long _cdecl (*)(int)) _f_close) (fh); }
 
-INLINE long f_read (int fh, long count, char *buf)
-{ return ((long _cdecl (*)(int, long, char *)) _f_read) (fh, count, buf); }
+INLINE long f_read (int fh, long count, const char *buf)
+{ return ((long _cdecl (*)(int, long, const char *)) _f_read) (fh, count, buf); }
+
+INLINE long f_write (int fh, long count, char *buf)
+{ return ((long _cdecl (*)(int, long, char *)) _f_write) (fh, count, buf); }
+
+INLINE long d_getpath (char *path, int drv)
+{ return ((long _cdecl (*)(char *, int)) _d_getpath) (path, drv); }
 
 INLINE long m_xalloc (long size, int mode)
 { return ((long _cdecl (*)(long, int)) _m_xalloc) (size, mode); }
@@ -454,6 +472,18 @@ INLINE long m_alloc (long size)
 
 INLINE long m_free (void *block)
 { return ((long _cdecl (*)(void *)) _m_free) (block); }
+
+INLINE long m_shrink (int dummy, long block, long size)
+{ return ((long _cdecl (*)(int, long, long)) _m_shrink) (dummy, block, size); }
+
+INLINE long p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
+{ return ((long _cdecl (*)(int, const void *, const void *, const void *)) _p_exec) (mode, ptr1, ptr2, ptr3); }
+
+INLINE long f_sfirst (const char *path, int attrib)
+{ return ((long _cdecl (*)(const char *, int)) _f_sfirst) (path, attrib); }
+
+INLINE long f_snext (void)
+{ return ((long _cdecl (*)(void)) _f_snext) (); }
 
 INLINE long s_yield (void)
 { return ((long _cdecl (*)(void)) _s_yield) (); }
@@ -479,6 +509,9 @@ INLINE long p_getuid (void)
 INLINE long p_setuid (int id)
 { return ((long _cdecl (*)(int)) _p_setuid) (id); }
 
+INLINE long p_kill (int pid, int sig)
+{ return ((long _cdecl (*)(int, int)) _p_kill) (pid, sig); }
+
 INLINE long p_getgid (void)
 { return ((long _cdecl (*)(void)) _p_getgid) (); }
 
@@ -500,8 +533,17 @@ INLINE long d_pathconf (const char *name, int which)
 INLINE long p_msg (int mode, long _cdecl mbid, char *ptr)
 { return ((long _cdecl (*)(int, long _cdecl, char *)) _p_msg) (mode, mbid, ptr); }
 
+INLINE long f_xattr (int flag, const char *name, XATTR *xattr)
+{ return ((long _cdecl (*)(int, const char *, XATTR *)) _f_xattr) (flag, name, xattr); }
+
 INLINE long d_cntl (int cmd, const char *name, long arg)
 { return ((long _cdecl (*)(int, const char *, long)) _d_cntl) (cmd, name, arg); }
+
+INLINE long f_chown (const char *name, int uid, int gid)
+{ return ((long _cdecl (*)(const char *, int, int)) _f_chown) (name, uid, gid); }
+
+INLINE long f_chmod (const char *name, unsigned mode)
+{ return ((long _cdecl (*)(const char *, unsigned)) _f_chmod) (name, mode); }
 
 INLINE long d_lock (int mode, int drv)
 { return ((long _cdecl (*)(int, int)) _d_lock) (mode, drv); }
@@ -554,66 +596,64 @@ INLINE long t_settimeofday (struct timeval *tv, struct timezone *tz)
 # endif
 
 
-# define datestamp	t_getdate ()
-# define timestamp	t_gettime ()
-# define FreeMemory	m_alloc (-1L)
+# define datestamp		t_getdate ()
+# define timestamp		t_gettime ()
+# define FreeMemory		m_alloc (-1L)
 
 
-# define changedrive	(*KERNEL->drvchng)
-# define KERNEL_TRACE	(*KERNEL->trace)
-# define KERNEL_DEBUG	(*KERNEL->debug)
-# define KERNEL_ALERT	(*KERNEL->alert)
-# define FATAL		(*KERNEL->fatal)
+# define changedrive		(*KERNEL->drvchng)
+# define KERNEL_TRACE		(*KERNEL->trace)
+# define KERNEL_DEBUG		(*KERNEL->debug)
+# define KERNEL_ALERT		(*KERNEL->alert)
+# define FATAL			(*KERNEL->fatal)
 
-# define kmalloc	(*KERNEL->kmalloc)
-# define kfree		(*KERNEL->kfree)
-# define umalloc	(*KERNEL->umalloc)
-# define ufree		(*KERNEL->ufree)
+# define kmalloc		(*KERNEL->kmalloc)
+# define kfree			(*KERNEL->kfree)
+# define umalloc		(*KERNEL->umalloc)
+# define ufree			(*KERNEL->ufree)
 
 # undef strnicmp
-# define strnicmp	(*KERNEL->strnicmp)
+# define strnicmp		(*KERNEL->kstrnicmp)
 # undef stricmp
-# define stricmp	(*KERNEL->stricmp)
+# define stricmp		(*KERNEL->kstricmp)
 # undef strlwr
-# define strlwr		(*KERNEL->strlwr)
+# define strlwr			(*KERNEL->kstrlwr)
 # undef strupr
-# define strupr		(*KERNEL->strupr)
+# define strupr			(*KERNEL->kstrupr)
 # undef ksprintf
-# define ksprintf	(*KERNEL->sprintf)
-# undef ms_time
-# define ms_time	(*KERNEL->millis_time)
-# undef unixtime
-# define unixtime	(*KERNEL->unixtime)
-# undef dostime
-# define dostime	(*KERNEL->dostime)
+# define ksprintf		(*KERNEL->ksprintf)
 
-# define nap		(*KERNEL->nap)
-# define sleep		(*KERNEL->sleep)
-# define wake		(*KERNEL->wake)
-# define wakeselect	(*KERNEL->wakeselect)
-# define denyshare	(*KERNEL->denyshare)
-# define denylock	(*KERNEL->denylock)
-# define addtimeout	(*KERNEL->addtimeout)
-# define canceltimeout	(*KERNEL->canceltimeout)
-# define addroottimeout	(*KERNEL->addroottimeout)
-# define canroottimeout	(*KERNEL->cancelroottimeout)
-# define ikill		(*KERNEL->ikill)
-# define iwake		(*KERNEL->iwak)
-# define bio		(*KERNEL->bio)
-# define utc		(*KERNEL->xtime)
-# define add_rsvfentry	(*KERNEL->add_rsvfentry)
-# define del_rsvfentry	(*KERNEL->del_rsvfentry)
-# define killgroup	(*KERNEL->killgroup)
+# define ms_time		(*KERNEL->millis_time)
+# define unixtime		(*KERNEL->unixtime)
+# define dostime		(*KERNEL->dostime)
+
+# define nap			(*KERNEL->nap)
+# define sleep			(*KERNEL->sleep)
+# define wake			(*KERNEL->wake)
+# define wakeselect		(*KERNEL->wakeselect)
+# define denyshare		(*KERNEL->denyshare)
+# define denylock		(*KERNEL->denylock)
+# define addtimeout		(*KERNEL->addtimeout)
+# define canceltimeout		(*KERNEL->canceltimeout)
+# define addroottimeout		(*KERNEL->addroottimeout)
+# define cancelroottimeout	(*KERNEL->cancelroottimeout)
+# define ikill			(*KERNEL->ikill)
+# define iwake			(*KERNEL->iwake)
+# define bio			(*KERNEL->bio)
+# define utc			(*KERNEL->xtime)
+# define add_rsvfentry		(*KERNEL->add_rsvfentry)
+# define del_rsvfentry		(*KERNEL->del_rsvfentry)
+# define killgroup		(*KERNEL->killgroup)
 
 /* for sleep */
-# define CURPROC_Q	0
-# define READY_Q	1
-# define WAIT_Q		2
-# define IO_Q		3
-# define ZOMBIE_Q	4
-# define TSR_Q		5
-# define STOP_Q		6
-# define SELECT_Q	7
+# define CURPROC_Q		0
+# define READY_Q		1
+# define WAIT_Q			2
+# define IO_Q			3
+# define ZOMBIE_Q		4
+# define TSR_Q			5
+# define STOP_Q			6
+# define SELECT_Q		7
 
 
 # endif /* _xfs_xdd_kernel_h */
