@@ -131,7 +131,6 @@ INLINE int ISFREE (const MEMREGION *m) { return (m->links == 0); }
  * init_mem()
  */
 static ulong scrnsize, scrnplace;
-static SCREEN *vscreen;
 
 void
 init_mem (void)
@@ -436,7 +435,6 @@ init_core (void)
 		scrnplace = (*(long *) 0x44eL);
 # endif
 	
-	vscreen = (SCREEN *)((char *)lineA0() - 346);
 	if (FalconVideo)
 	{
 		/* the Falcon can tell us the screen size */
@@ -444,6 +442,10 @@ init_core (void)
 	}
 	else
 	{
+		SCREEN *vscreen;
+		
+		vscreen = (SCREEN *)((char *)lineA0() - 346);
+		
 		/* otherwise, use the line A variables */
 		scrnsize = (vscreen->maxy+1)*(long)vscreen->linelen;
 	}
