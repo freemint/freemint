@@ -667,6 +667,25 @@ free_limits (struct proc *p)
 
 /* p_ext */
 
+struct proc_ext *
+share_ext(struct proc *p)
+{
+	struct proc_ext *p_ext;
+
+	p_ext = p->p_ext;
+	while (p_ext)
+	{
+		p_ext->links++;
+
+		if (p_ext->cb_vector && p_ext->cb_vector->share)
+			(*p_ext->cb_vector->share)(p_ext->data);
+
+		p_ext = p_ext->next;
+	}
+
+	return p->p_ext;
+}
+
 void
 free_ext(struct proc *p)
 {
