@@ -114,7 +114,7 @@ _sld (void)
 					FDSET (sl->fd, wset);
 					FDSET (sl->fd, wready); /* pretend we can write */
 					currsl = sl;
-					SafeSupexec (_send);
+					Supexec (_send);
 					break;
 				}
 			}
@@ -174,7 +174,7 @@ _sld (void)
 			if (sl->ihead != sl->itail)
 			{
 				currsl = sl;
-				SafeSupexec (_recv);
+				Supexec (_recv);
 			}
 			
 			if (!(sl->flags & SL_SENDING))
