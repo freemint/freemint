@@ -35,6 +35,13 @@
 # include "buildinfo/version.h"
 
 
+# ifndef MODULE_NAME
+# error MODULE_NAME not defined!
+# endif
+
+# undef FUNCTION
+# define FUNCTION str(MODULE_NAME)":"__FILE__","str(__LINE__)","__FUNCTION__"()"
+
 # ifndef KENTRY
 # define KENTRY	kentry
 # endif
@@ -772,11 +779,11 @@ INLINE long b_drvmap(void)
  * kentry_mem
  */
 
-# define kmalloc(x)		(*KENTRY->vec_mem.kmalloc)(x, __FUNCTION__)
-# define kfree(x)		(*KENTRY->vec_mem.kfree)(x, __FUNCTION__)
+# define kmalloc(x)		(*KENTRY->vec_mem.kmalloc)(x, FUNCTION)
+# define kfree(x)		(*KENTRY->vec_mem.kfree)(x, FUNCTION)
 
-# define umalloc(x)		(*KENTRY->vec_mem.umalloc)(x, __FUNCTION__)
-# define ufree(x)		(*KENTRY->vec_mem.ufree)(x, __FUNCTION__)
+# define umalloc(x)		(*KENTRY->vec_mem.umalloc)(x, FUNCTION)
+# define ufree(x)		(*KENTRY->vec_mem.ufree)(x, FUNCTION)
 
 
 /*
@@ -786,7 +793,7 @@ INLINE long b_drvmap(void)
 # define DEFAULT_MODE		( KENTRY->vec_fs.default_perm)
 # define DEFAULT_DMODE		( KENTRY->vec_fs.default_dir_perm)
 
-# define changedrive(drv)	(*KENTRY->vec_fs.drvchng)(drv, __FUNCTION__)
+# define changedrv(drv)		(*KENTRY->vec_fs._changedrv)(drv, FUNCTION)
 
 # define denyshare		(*KENTRY->vec_fs.denyshare)
 # define denylock		(*KENTRY->vec_fs.denylock)

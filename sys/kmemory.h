@@ -8,6 +8,10 @@
  * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,13 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 1998-09-10
- * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
  * 
  */
 
@@ -60,14 +57,14 @@ long	km_config		(long mode, long arg);
 # define kmr_get		_kmr_get
 # define kmr_free		_kmr_free
 
-# define kcore(size)		_kcore (size, __FUNCTION__)
-# define kmalloc(size)		_kmalloc (size, __FUNCTION__)
-# define kfree(place)		_kfree (place, __FUNCTION__)
+# define kcore(size)		_kcore (size, FUNCTION)
+# define kmalloc(size)		_kmalloc (size, FUNCTION)
+# define kfree(place)		_kfree (place, FUNCTION)
 
-# define dmabuf_alloc(size,cm)	_dmabuf_alloc (size, cm, __FUNCTION__)
+# define dmabuf_alloc(size,cm)	_dmabuf_alloc (size, cm, FUNCTION)
 
-# define umalloc(size)		_umalloc (size, __FUNCTION__)
-# define ufree(place)		_ufree (place, __FUNCTION__)
+# define umalloc(size)		_umalloc (size, FUNCTION)
+# define ufree(place)		_ufree (place, FUNCTION)
 
 
 # endif /* _kmemory_h */
