@@ -63,13 +63,20 @@
 /* XXX after the code stops changing so quickly, move all the messages to info.c
  */
 
+# define STDIN	0
+# define STDOUT	1
+# define STDERR	2
+
 # define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
+# define SHELL_UMASK	~(S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
 # define SH_VER_MAIOR	0
 # define SH_VER_MINOR	1
 
 # define COPYCOPY	"MiS v.%d.%d, the FreeMiNT internal shell,\r\n" \
 			"(c) 2003 by Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
+
+# define MISSING_ARG	"missing argument: "
 
 # define SHELL_STACK	32768L		/* maximum usage is so far about a half ot this */
 # define SHELL_ARGS	2048L		/* number of pointers in the argument vector table (i.e. 8K) */
@@ -80,6 +87,10 @@
 # define SEC_OF_YEAR	31558275L
 
 # define LINELEN	126
+
+/* Some help for the optimizer */
+static void shell(void) __attribute__((noreturn));
+static void shell_start(long bp) __attribute__((noreturn));
 
 /* Global variables */
 static BASEPAGE *shell_base;
@@ -94,13 +105,7 @@ static const char *months[] =
 /* Utility routines */
 
 static void
-shell_print(char *text)
-{
-	Cconws(text);
-}
-
-static void
-shell_printf(const char *fmt, ...)
+shell_fprintf(long handle, const char *fmt, ...)
 {
 	char buf[1024];
 	va_list args;
@@ -109,7 +114,13 @@ shell_printf(const char *fmt, ...)
 	vsprintf(buf, sizeof (buf), fmt, args);
 	va_end(args);
 
-	shell_print(buf);
+	Fwrite(handle, strlen(buf), buf);
+}
+
+static void
+shell_print(char *text)
+{
+	shell_fprintf(STDOUT, text);
 }
 
 /* Simple conversion of a pathname from the DOS to Unix format */
@@ -224,7 +235,7 @@ sh_getenv(const char *var)
 
 	if (env_str == NULL || *env_str == 0)
 	{
-		shell_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
+		shell_fprintf(STDERR, "mint: %s: no environment string!\r\n", __FUNCTION__);
 
 		return 0;
 	}
@@ -312,7 +323,8 @@ sh_setenv(const char *var, char *value)
  *
  * XXX add 'quoted arguments' handling.
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
- *
+ * XXX also evaluate env variables, if given as arguments
+ * 
  */
 static long
 crunch(char *cmdline, char *argv[])
@@ -446,7 +458,7 @@ execvp(char *oldcmd, char *argv[])
 static void
 xcmdstate(void)
 {
-	shell_printf("Extended commands are %s\r\n", xcommands ? "on" : "off");
+	shell_fprintf(STDOUT, "Extended commands are %s\r\n", xcommands ? "on" : "off");
 }
 
 /* End utilities, begin commands */
@@ -454,7 +466,7 @@ xcmdstate(void)
 static long
 sh_ver(long argc, char **argv)
 {
-	shell_printf(COPYCOPY, SH_VER_MAIOR, SH_VER_MINOR);
+	shell_fprintf(STDOUT, COPYCOPY, SH_VER_MAIOR, SH_VER_MINOR);
 
 	return 0;
 }
@@ -462,7 +474,7 @@ sh_ver(long argc, char **argv)
 static long
 sh_help(long argc, char **argv)
 {
-	shell_printf( \
+	shell_fprintf(STDOUT, \
 	"	MiS is not intended to be a regular system shell, so don't\r\n" \
 	"	expect much. It is only a tool to fix bigger problems that\r\n" \
 	"	prevent the system from booting normally.\r\n" \
@@ -482,15 +494,15 @@ sh_help(long argc, char **argv)
 	"	chown - change file's ownership\r\n" \
 	"	*cp - copy file\r\n" \
 	"	env - display environment\r\n" \
-	"	*ln - create a link\r\n" \
+	"	ln - create a link\r\n" \
 	"	ls - display directory\r\n" \
 	"	*mv - move/rename a file\r\n" \
 	"	*rm - delete a file\r\n" \
 	"\r\n" \
 	"	All other words typed are understood as names of programs\r\n" \
 	"	to execute. In case you'd want to execute something, that\r\n" \
-	"	is named with one of the words displayed above, use 'exec'\r\n" \
-	"	or supply the full pathname." \
+	"	has been named like one of the internal commands, use the\r\n" \
+	"	full pathname." \
 	"\r\n", \
 	xcommands ? "on" : "off");
 
@@ -517,7 +529,7 @@ sh_ls(long argc, char **argv)
 	{
 		if (strcmp(argv[1], "--help") == 0)
 		{
-			shell_printf("%s [dirspec]\r\n", argv[0]);
+			shell_fprintf(STDOUT, "%s [dirspec]\r\n", argv[0]);
 
 			return 0;
 		}
@@ -650,10 +662,10 @@ sh_ls(long argc, char **argv)
 
 				*p = 0;
 
-				shell_printf("%s %s", path, entry + sizeof(long));
+				shell_fprintf(STDOUT, "%s %s", path, entry + sizeof(long));
 
 				if (S_ISLNK(st.mode) && s == 0)
-					shell_printf(" -> %s\r\n", link);
+					shell_fprintf(STDOUT, " -> %s\r\n", link);
 				else
 					shell_print("\r\n");
 			}
@@ -670,12 +682,18 @@ static long
 sh_cd(long argc, char **argv)
 {
 	long r = 0;
-	char *home;
+	char *home, *pwd, cwd[1024];
+
+	pwd = sh_getenv("PWD=");
 
 	if (argc >= 2)
 	{
 		if (strcmp(argv[1], "--help") == 0)
-			shell_printf("%s [newdir]\r\n", argv[0]);
+		{
+			shell_fprintf(STDOUT, "%s [newdir]\r\n", argv[0]);
+
+			return 0;
+		}
 		else
 			r = Dsetpath(argv[1]);
 	}
@@ -684,6 +702,23 @@ sh_cd(long argc, char **argv)
 		home = sh_getenv("HOME=");
 		if (home)
 			r = Dsetpath(home);
+		else
+			r = Dsetpath("/");
+	}
+
+	if (r == 0)
+	{
+		if (pwd)
+			sh_setenv("OLDPWD=", pwd);
+
+		Dgetcwd(cwd, 0, sizeof(cwd));
+
+		if (*cwd == 0)
+			strcpy(cwd, "/");
+		else
+			dos2unix(cwd);
+
+		sh_setenv("PWD=", cwd);
 	}
 
 	return r;
@@ -699,7 +734,7 @@ sh_chgrp(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_printf("%s DEC-GROUP file\r\n", argv[0]);
+		shell_fprintf(STDERR, "%s%s DEC-GROUP file\r\n", MISSING_ARG, argv[0]);
 
 		return 0;
 	}
@@ -727,7 +762,7 @@ sh_chown(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_printf("%s DEC-OWNER[:DEC-GROUP] file\r\n", argv[0]);
+		shell_fprintf(STDERR, "%s%s DEC-OWNER[:DEC-GROUP] file\r\n", MISSING_ARG, argv[0]);
 
 		return 0;
 	}
@@ -773,7 +808,7 @@ sh_chmod(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_printf("%s OCTAL-MODE file\r\n", argv[0]);
+		shell_fprintf(STDERR, "%s%s OCTAL-MODE file\r\n", MISSING_ARG, argv[0]);
 
 		return 0;
 	}
@@ -800,14 +835,14 @@ sh_env(long argc, char **argv)
 
 	if (var == NULL || *var == 0)
 	{
-		shell_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
+		shell_fprintf(STDERR, "mint: %s: no environment string!\r\n", __FUNCTION__);
 
 		return 0;
 	}
 
 	while (*var)
 	{
-		shell_printf("%s\r\n", var);
+		shell_fprintf(STDOUT, "%s\r\n", var);
 		while (*var)
 			var++;
 		var++;
@@ -826,7 +861,7 @@ sh_xcmd(long argc, char **argv)
 		else if (strcmp(argv[1], "off") == 0)
 			xcommands = 0;
 		else if (strcmp(argv[1], "--help") == 0)
-			shell_printf("%s [on|off]\r\n", argv[0]);
+			shell_fprintf(STDOUT, "%s [on|off]\r\n", argv[0]);
 	}
 	xcmdstate();
 
@@ -868,31 +903,37 @@ sh_rm(long argc, char **argv)
 static long
 sh_ln(long argc, char **argv)
 {
-	return -1;
-}
+	char *old, *new;
 
-static long
-sh_exec(long argc, char **argv)
-{
-	return -1;
+	if (argc < 3)
+	{
+		shell_fprintf(STDERR, "%s%s from-file to-link\r\n", MISSING_ARG, argv[0]);
+
+		return 0;
+	}
+
+	old = argv[1];
+	new = argv[2];
+
+	return Fsymlink(old, new);
 }
 
 /* End of the commands, begin control routines */
 
 /* Bitfield of flags for functions (1 = gets switched on/off by xcmd) */
-static const long is_ext = 0x00007fc0L;	/* 0111-1111-1100-0000 */
+static const long is_ext = 0x00003fe0L;		/* 0011-1111-1110-0000 */
 
 typedef long FUNC();
 
 static FUNC *cmd_routs[] =
 {
-	sh_exit, sh_ver, sh_cd, sh_help, sh_exec, sh_xcmd, \
+	sh_exit, sh_ver, sh_cd, sh_help, sh_xcmd, \
 	sh_env, sh_ls, sh_cp, sh_mv, sh_rm, sh_ln, sh_chmod, sh_chown, sh_chgrp
 };
 
 static const char *commands[] =
 {
-	"exit", "ver", "cd", "help", "exec", "xcmd", \
+	"exit", "ver", "cd", "help", "xcmd", \
 	"env", "ls", "cp", "mv", "rm", "ln", "chmod", "chown", "chgrp", NULL
 };
 
@@ -961,14 +1002,33 @@ execute(char *cmdline)
 	return (cmdno == 0) ? execvp(newcmd, argv) : cmd_routs[cnt](argc, argv);
 }
 
-/* XXX because of Cconrs() the command line cannot be longer than 126 bytes.
+/* XXX because of Cconrs() the command line cannot be longer than 254 bytes.
  */
+static void
+prompt(uchar *buffer, long buflen)
+{
+	char cwd[1024];
+
+	buffer[0] = 254;
+	buffer[1] = 0;
+
+	Dgetcwd(cwd, 0, sizeof(cwd));
+
+	if (*cwd == 0)
+		strcpy(cwd, "/");
+	else
+		dos2unix(cwd);
+
+	shell_fprintf(STDOUT, "mint:%s#", cwd);
+	Cconrs(buffer);
+}
+
 static void
 shell(void)
 {
-	char cwd[1024], linebuf[LINELEN+2], *lbuff, *home;
+	uchar linebuf[256], *lbuff;
 	long r;
-	short x;
+	short idx;
 
 	/* XXX enable word wrap for the console, cursor etc. */
 	shell_print("\r\n");
@@ -976,41 +1036,16 @@ shell(void)
 	xcmdstate();
 	shell_print("Type `help' for help\r\n\r\n");
 
-	home = sh_getenv("HOME=");
-	if (home)
-	{
-		r = Dsetpath(home);
-		if (r < 0)
-			shell_printf("mint: %s: can't set home directory, error %ld\r\n\r\n", __FUNCTION__, r);
-	}
+	Dsetdrv('U' - 'A');	/* force current drive to u: */
+
+	sh_cd(1, NULL);		/* this sets $HOME as current dir */
 
 	for (;;)
 	{
-		linebuf[0] = (sizeof(linebuf) - 2);
-		linebuf[1] = 0;
-
-		r = Dgetcwd(cwd, 0, sizeof(cwd));
-
-		if (*cwd == 0)
-			strcpy(cwd, "/");
-		else
-		{
-			for (x = 0;x < sizeof(cwd);x++)
-			{
-				if (cwd[x] == '\\')
-					cwd[x] = '/';
-			}
-		}
-
-		sh_setenv("PWD=", cwd);
-
-		shell_printf("mint:%s#", cwd);
-		Cconrs(linebuf);
+		prompt(linebuf, sizeof(linebuf));
 
 		if (linebuf[1] > 1)
 		{
-			short idx;
-
 			/* "the string is not guaranteed to be NULL terminated"
 			 * (Atari GEMDOS reference manual)
 			 */
@@ -1022,7 +1057,7 @@ shell(void)
 			r = execute(lbuff);
 
 			if (r < 0)
-				shell_printf("mint: %s: error %ld\r\n", lbuff, r);
+				shell_fprintf(STDERR, "mint: %s: error %ld\r\n", lbuff, r);
 		}
 	}
 }
@@ -1040,10 +1075,11 @@ shell_start(long bp)
 
 	Mshrink((void *)bp, SHELL_STACK);
 
-	(void)Pdomain(1);
-	(void)Pumask(0x022);
+	(void)Pdomain(1);			/* switch to MiNT domain */
+	(void)Pumask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
+	(void)Fforce(2, -1);			/* redirect the stderr to console */
 
-	shell();			/* this one should never return */
+	shell();				/* this one doesn't return */
 }
 
 /* This below is running in kernel context, called from init.c
