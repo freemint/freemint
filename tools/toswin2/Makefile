@@ -22,8 +22,9 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES += -I/usr/GEM/include
+CFLAGS += -D_GNU_SOURCE
 #CFLAGS += -DDEBUG
-#CFLAGS += -g
+CFLAGS += -g
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
@@ -31,6 +32,12 @@ LIBS += -L/usr/GEM/lib -lcflib -lgem
 LIBS += -liio
 GENFILES = $(TARGET)
 
+MEMDEBUG = no
+ifeq ($(MEMDEBUG), yes)
+CFLAGS += -DMEMDEBUG=\"/tmp/memdebug.txt\" -O0
+LDFLAGS += -Wl,--wrap -Wl,malloc -Wl,--wrap -Wl,realloc \
+-Wl,--wrap -Wl,calloc -Wl,--wrap -Wl,free
+endif
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
