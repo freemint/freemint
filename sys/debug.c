@@ -307,7 +307,8 @@ VDEBUGOUT (int level, const char *s, va_list args)
 void _cdecl
 Tracelow (const char *s, ...)
 {
-	if (debug_logging || (debug_level >= LOW_LEVEL))
+	if (debug_logging || (debug_level >= LOW_LEVEL)
+			  || (curproc->debug_level >= LOW_LEVEL))
 	{
 		va_list args;
 		
@@ -320,7 +321,8 @@ Tracelow (const char *s, ...)
 void _cdecl
 Trace (const char *s, ...)
 {
-	if (debug_logging || (debug_level >= TRACE_LEVEL))
+	if (debug_logging || (debug_level >= TRACE_LEVEL)
+			  || (curproc->debug_level >= TRACE_LEVEL))
 	{
 		va_list args;
 		
@@ -333,7 +335,8 @@ Trace (const char *s, ...)
 void _cdecl
 Debug (const char *s, ...)
 {
-	if (debug_logging || (debug_level >= DEBUG_LEVEL))
+	if ( debug_logging || (debug_level >= DEBUG_LEVEL)
+			   || (curproc->debug_level >= DEBUG_LEVEL))
 	{
 		va_list args;
 		
@@ -342,7 +345,8 @@ Debug (const char *s, ...)
 		va_end (args);
 	}
 	
-	if (debug_logging && (debug_level >= DEBUG_LEVEL))
+	if (	debug_logging &&
+		(debug_level >= DEBUG_LEVEL) || (curproc->debug_level >= DEBUG_LEVEL))
 		DUMPLOG ();
 }
 

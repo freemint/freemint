@@ -45,8 +45,7 @@
 
 #include "../../sys/mint/sysctl.h"
 #include "fparseln.h"
-
-
+	
 struct ctlname topname[] = CTL_NAMES;
 struct ctlname kernname[] = CTL_KERN_NAMES;
 struct ctlname hwname[] = CTL_HW_NAMES;
