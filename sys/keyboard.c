@@ -128,7 +128,6 @@
  */
 
 short	gl_kbd;			/* default keyboard layout */
-struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
 # ifndef NO_AKP_KEYBOARD
 
@@ -143,6 +142,8 @@ static const ushort mmasks[] =
 	MM_CTRL, MM_RSHIFT, MM_LSHIFT,
 	MM_ALTERNATE, MM_CLRHOME, MM_INSERT
 };
+
+struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock = 1;	/* semaphore to temporarily block the keyboard processing */
@@ -233,18 +234,6 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 {
 	char *new_buf_pos;
 
-	/* c2 == 0 means that this "keypress" was generated
-	 * by typing on the numpad while holding Alt down.
-	 * We don't want this to be repeated.
-	 */
-	if (c2)
-	{
-		last_key[0] = c0;
-		last_key[1] = c1;
-		last_key[2] = c2;
-		last_key[3] = c3;
-	}
-
 	keyrec->tail += 4;
 	if (keyrec->tail >= keyrec->buflen)
 		keyrec->tail = 0;
@@ -257,12 +246,24 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 	*new_buf_pos++ = c2;
 	*new_buf_pos++ = c3;
 
+	/* c2 == 0 means that this "keypress" was generated
+	 * by typing on the numpad while holding Alt down.
+	 * We don't want this to be repeated.
+	 */
 	if (c2)
+	{
+		last_key[0] = c0;
+		last_key[1] = c1;
+		last_key[2] = c2;
+		last_key[3] = c3;
+
 		kbdclick((ushort)c2);
+	}
 
 	kintr = 1;
 }
 
+/* Re-insert last key into the buffer */
 static void
 key_repeat(void)
 {
@@ -280,6 +281,9 @@ key_repeat(void)
 void
 autorepeat_timer(void)
 {
+	if (kbd_lock)
+		return;
+
 	if (key_pressed)
 	{
 		if (kdel)
@@ -584,7 +588,7 @@ ikbd_scan (ushort scancode)
 				if (numidx > 2)		/* buffer full? reset it */
 					numidx = 0;
 
-				chartable = tos_keytab->unshift;
+				chartable = user_keytab->unshift;
 				ascii = chartable[scancode];
 
 				if (ascii)
@@ -721,9 +725,12 @@ sys_b_bioskeys(void)
 
 	/* Reserve one region for both keytable and its vectors */
 	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_PR);
+
 	buf = (char *)attach_region(rootproc, user_keytab_region);
 	pointers = (struct keytab *)buf;
 	tables = buf + sizeof(struct keytab);
+
+	assert(pointers);
 
 	/* Copy the master table over */
 	quickmove(tables, keytab_buffer, keytab_size);
@@ -739,9 +746,21 @@ sys_b_bioskeys(void)
 	pointers->altcaps = tbl_scan_fwd(pointers->altshift);
 	pointers->altgr = tbl_scan_fwd(pointers->altcaps);
 
+# if 1
+	/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
+	 *
+	 * XXX must be changed for -DJAR_PRIVATE (forward to all processes).
+	 */
+	get_cookie(NULL, COOKIE__AKP, &akp_val);
+	akp_val &= 0xffffff00L;
+	akp_val |= (gl_kbd & 0x000000ff);
+	set_cookie(NULL, COOKIE__AKP, akp_val);
+	
+# else
 	/* Reset the TOS BIOS vectors (this is only necessary
 	 * until we replace all BIOS keyboard routines).
 	 */
+
 	tos_keytab->unshift = pointers->unshift;
 	tos_keytab->shift = pointers->shift;
 	tos_keytab->caps = pointers->caps;
@@ -763,6 +782,7 @@ sys_b_bioskeys(void)
 		akp_val |= gl_kbd;
 		set_cookie(NULL, COOKIE__AKP, akp_val);
 	}
+# endif
 
 	user_keytab = pointers;
 
@@ -806,11 +826,19 @@ load_external_table(FILEPTR *fp, char *name, long size)
 	 * plus two bytes magic header, gives 389 bytes minimum.
 	 */
 	if (size < 389L)
+	{
+		DEBUG(("load_external_table(): failure (size %ld)", size));
+
 		return EFTYPE;
+	}
 
 	kbuf = kmalloc(size + 1);	/* Append a zero (if the table is missing the altgr part) */
 	if (!kbuf)
+	{
+		DEBUG(("load_external_table(): out of memory"));
+
 		return ENOMEM;
+	}
 
 	bzero(kbuf, size + 1);
 
@@ -840,6 +868,8 @@ load_external_table(FILEPTR *fp, char *name, long size)
 			}
 			default:
 			{
+				DEBUG(("load_external_table(): unknown format 0x%04x", (ushort *)kbuf));
+
 				ret = EFTYPE;		/* wrong format */
 				break;
 			}
@@ -895,8 +925,7 @@ load_internal_table(void)
 		kbuf = kmalloc(size);
 	}
 
-	if (!kbuf)
-		return ENOMEM;
+	assert(kbuf);
 
 	bzero(kbuf, size);
 
@@ -1006,10 +1035,14 @@ load_keytbl(void)
 	 */
 	ksprintf(name, sizeof(name), "%skeyboard.tbl", sysdir);
 
+	TRACE(("load_keytbl(): path `%s'", name));
+
 	/* After this the keytab_buffer points to the loaded AKP-style
 	 * keyboard table, and keytab_size contains its size.
 	 */
 	keytab_size = load_keyboard_table(name, 0);
+
+	TRACE(("load_keytbl(): keytab_size %ld", keytab_size));
 
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_keytable_loaded, gl_kbd);
@@ -1025,11 +1058,19 @@ load_keytbl(void)
 void
 init_keybd(void)
 {
-	/* call the underlying XBIOS */
+	ushort delayrate;
+
+	/* call the underlying XBIOS to get some defaults*/
 	tos_keytab = TRAP_Keytbl(-1, -1, -1);
 
-	kdel = keydel;
-	krep = krpdel;
+	TRACE(("init_keybd(): BIOS keyboard table at 0x%08lx", tos_keytab));
+
+	delayrate = TRAP_Kbrate(-1, -1);
+
+	keydel = kdel = delayrate >> 8;
+	krpdel = krep = delayrate & 0x00ff;
+
+	TRACE(("init_keybd(): delay 0x%02x, rate 0x%02x", keydel, krpdel));
 }
 
 # endif	/* NO_AKP_KEYBOARD */
