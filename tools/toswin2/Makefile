@@ -22,6 +22,7 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES += -I/usr/GEM/include
+#CFLAGS += -DDEBUG
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
