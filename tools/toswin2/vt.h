@@ -1,6 +1,10 @@
 
-#ifndef tw_vt_h_
-#define tw_vt_h_
+#ifndef tw_vt_h
+# define tw_vt_h 1
+
+#ifndef tw_textwin_h
+# include "textwin.h"
+#endif
 
 void	paint		(TEXTWIN* tw, unsigned int c);
 void	gotoxy		(TEXTWIN* tw, short x, short y);
@@ -32,5 +36,10 @@ void	cuf		(TEXTWIN* tw, short n);
 void	cuf1		(TEXTWIN* tw);
 
 void	original_colors (TEXTWIN* tw);
+void	inverse_video	(TEXTWIN* tw, int flag);
+void	save_cursor	(TEXTWIN* tw);
+void	restore_cursor	(TEXTWIN* tw);
+
+void	vt_reset	(TEXTWIN* tw, bool full, bool saved);
 
 #endif
