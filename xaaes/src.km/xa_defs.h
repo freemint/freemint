@@ -91,7 +91,7 @@
 #define RT_SCROLL_STEP		10	/* Step when doing a real-time scroll (0-1000) */
 
 #define MENU_H	(screen.c_max_h + 2)	/* Standard hight od a menu bar */
-#define MG	2			/* standard frame size for windows */
+#define MG	1 /*2*/			/* standard frame size for windows */
 
 
 /*----------------------------------------------------------------- */

@@ -323,7 +323,7 @@ k_init(void)
 				XaMENU,			/* menu standard widget */
 				created_for_AES,
 				-1,			/* -1, no frame, overscan window */
-				false,false,
+				-1, false, /*false,false,*/
 				screen.r,		/* current size */
 				&screen.r,		/* maximum size (NB default would be rootwindow->wa) */
 				0);			/* need no remembrance */

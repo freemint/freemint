@@ -680,7 +680,7 @@ Click_form_do(enum locks lock,
 				 fr.obj,
 				 md,
 				 true,
-				 wind ? wind->rect_list : NULL,
+				 wind ? wind->rect_start : NULL,
 				 &fr.obj_state,
 				 &fr.obj,
 				 &fr.dblmask))
@@ -719,7 +719,7 @@ Key_form_do(enum locks lock,
 	    const struct rawkey *key)
 {
 	OBJECT *obtree;
-	struct xa_rect_list *rl = wind ? wind->rect_list : NULL;
+	struct xa_rect_list *rl = wind ? wind->rect_start : NULL;
 	struct fmd_result fr;
 	RECT r;
 
