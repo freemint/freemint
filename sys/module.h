@@ -40,7 +40,7 @@ long _cdecl kernel_opendir(struct dirstruct *dirh, const char *name);
 long _cdecl kernel_readdir(struct dirstruct *dirh, char *buf, int len);
 void _cdecl kernel_closedir(struct dirstruct *dirh);
 
-struct file * _cdecl kernel_open(const char *path, int rwmode, long *err);
+struct file * _cdecl kernel_open(const char *path, int rwmode, long *err, XATTR *x);
 long _cdecl kernel_read(struct file *f, void *buf, long buflen);
 long _cdecl kernel_write(struct file *f, const void *buf, long buflen);
 long _cdecl kernel_lseek(FILEPTR *f, long where, int whence);

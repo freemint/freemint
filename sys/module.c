@@ -103,7 +103,7 @@ kernel_closedir(struct dirstruct *dirh)
 }
 
 struct file * _cdecl
-kernel_open(const char *path, int rwmode, long *err)
+kernel_open(const char *path, int rwmode, long *err, XATTR *x)
 {
 	struct file *f;
 	long r;
@@ -115,7 +115,7 @@ kernel_open(const char *path, int rwmode, long *err)
 		goto leave;
 	}
 
-	r = do_open(&f, path, rwmode, 0, NULL);
+	r = do_open(&f, path, rwmode, 0, x);
 	if (r)
 	{
 		f->links--;
@@ -196,7 +196,7 @@ load_module(const char *filename, long *err)
 	FILEHEAD fh;
 	long size;
 
-	f = kernel_open(filename, O_DENYW | O_EXEC, err);
+	f = kernel_open(filename, O_DENYW | O_EXEC, err, NULL);
 	if (!f) return NULL;
 
 	size = kernel_read(f, (void *) &fh, sizeof(fh));
