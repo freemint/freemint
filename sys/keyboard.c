@@ -793,10 +793,12 @@ scan2asc(uchar scancode)
 		{
 			if (shift & MM_CTRL)
 			{
+				vec = NULL;
+
 				if (shift & MM_ESHIFT)
-					vec = user_keytab->shift;
+					asc = user_keytab->shift[scancode];
 				else
-					vec = user_keytab->unshift;
+					asc = user_keytab->unshift[scancode];
 			}
 			else if (shift & MM_ESHIFT)
 				vec = user_keytab->altshift;
@@ -829,7 +831,6 @@ scan2asc(uchar scancode)
 
 		if (vec)
 			asc = vec[scancode];
-		
 	}
 
 	/* We can optionally emulate the PC-like behaviour of Caps/Shift */
