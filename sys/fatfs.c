@@ -8054,7 +8054,7 @@ fatfs_close (FILEPTR *f, int pid)
 # ifdef FS_DEBUG
 
 # include <stdarg.h>
-# include "dosfile.h"
+# include "k_fds.h"
 
 static void
 fatfs_debug (const char *fmt, ...)
@@ -8063,23 +8063,29 @@ fatfs_debug (const char *fmt, ...)
 	static const long buflen = sizeof (buf);
 	
 	va_list args;
-	FILEPTR *f;
+	FILEPTR *fp;
+	long ret;
+	
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
 	
 	va_start (args, fmt);
-	f = do_open (FS_LOGFILE, (O_WRONLY | O_CREAT | O_APPEND), 0, NULL, NULL);
-	if (f)
+	ret = do_open (&fp, FS_LOGFILE, (O_WRONLY | O_CREAT | O_APPEND), 0, NULL);
+	if (!ret)
 	{
-		(void) (*f->dev->lseek)(f, 0, SEEK_END);
+		(*fp->dev->lseek)(fp, 0, SEEK_END);
 		
-		(void) vsprintf (buf, buflen, fmt, args);
-		(*f->dev->write)(f, buf, strlen (buf));
-		(*f->dev->write)(f, "\r\n", 2);
+		vsprintf (buf, buflen, fmt, args);
+		(*fp->dev->write)(fp, buf, strlen (buf));
+		(*fp->dev->write)(fp, "\r\n", 2);
 		
-		do_close (f);
+		do_close (rootproc, fp);
 	}
 	else
 	{
-		(void) vsprintf (buf, buflen, fmt, args);
+		fp_free (fp);
+		
+		vsprintf (buf, buflen, fmt, args);
 		DEBUG ((buf));
 	}
 	va_end (args);
@@ -8157,22 +8163,26 @@ fatfs_dump_hashtable (void)
 {
 	static char buf [SPRINTF_MAX];
 	static const long buflen = sizeof (buf);
-	FILEPTR *f;
+	FILEPTR *fp;
+	long ret;
+	
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
 	
 	FAT_FORCE (("fatfs.c: dynamic used memory = %li bytes", fatfs_dynamic_mem));
 	
-	f = do_open (FS_DUMPFILE, (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL, NULL);
-	if (f)
+	ret = do_open (&fp, FS_DUMPFILE, (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
+	if (!ret)
 	{
 		long i;
 		
-		(void) ksprintf (buf, buflen, "fatfs.c: dynamic used memory = %li bytes\r\n", fatfs_dynamic_mem);
-		(*f->dev->write)(f, buf, strlen (buf));
+		ksprintf (buf, buflen, "fatfs.c: dynamic used memory = %li bytes\r\n", fatfs_dynamic_mem);
+		(*fp->dev->write)(fp, buf, strlen (buf));
 		
-		(*f->dev->write)(f, "BPBs:\r\n", 7);
+		(*fp->dev->write)(fp, "BPBs:\r\n", 7);
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
-			(void) ksprintf (buf, buflen,
+			ksprintf (buf, buflen,
 				"nr: %2li  valid = %1li  drv = %2i"
 				"  c_hits = %6ld  c_miss = %6ld\r\n",
 				i,
@@ -8181,13 +8191,13 @@ fatfs_dump_hashtable (void)
 				C_HIT (i),
 				C_MISS (i)
 			);
-			(*f->dev->write)(f, buf, strlen (buf));
+			(*fp->dev->write)(fp, buf, strlen (buf));
 		}
 		
-		(*f->dev->write)(f, "cookies:\r\n", 10);
+		(*fp->dev->write)(fp, "cookies:\r\n", 10);
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
-			(void) ksprintf (buf, buflen,
+			ksprintf (buf, buflen,
 				"nr: %li\tlinks = %li\tdev = %i\tname = %s %s\r\n",
 				i,
 				cookies[i].links,
@@ -8195,18 +8205,18 @@ fatfs_dump_hashtable (void)
 				cookies[i].name,
 				cookies[i].unlinked ? "[unlinked]" : ""
 			);
-			(*f->dev->write)(f, buf, strlen (buf));
+			(*fp->dev->write)(fp, buf, strlen (buf));
 		}
 		
-		(*f->dev->write)(f, "table:\r\n", 8);
+		(*fp->dev->write)(fp, "table:\r\n", 8);
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
 			COOKIE *temp = ctable [i];
-			(void) ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
-			(*f->dev->write)(f, buf, strlen (buf));
+			ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
+			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (; temp; temp = temp->next)
 			{
-				(void) ksprintf (buf, buflen, "\r\n"
+				ksprintf (buf, buflen, "\r\n"
 					"\tnext = %lx\tlinks = %li"
 					"\tdev = %i\tname = %s\r\n",
 					temp->next,
@@ -8214,13 +8224,15 @@ fatfs_dump_hashtable (void)
 					temp->dev,
 					temp->name
 				);
-				(*f->dev->write)(f, buf, strlen (buf));	
+				(*fp->dev->write)(fp, buf, strlen (buf));	
 			}
-			(*f->dev->write)(f, "\r\n", 2);
+			(*fp->dev->write)(fp, "\r\n", 2);
 		}
 		
-		do_close (f);
+		do_close (rootproc, fp);
 	}
+	else
+		fp_free (fp);
 }
 
 # if FS_DEBUG_COOKIE

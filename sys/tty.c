@@ -20,7 +20,8 @@
 
 # include "bios.h"
 # include "biosfs.h"
-# include "dosfile.h"
+# include "dosfile.h"	/* select_coll */
+# include "k_fds.h"
 # include "k_prot.h"
 # include "kmemory.h"
 # include "proc.h"
@@ -1170,7 +1171,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				
 			}
 			tty->pgrp = 0;
-			do_close(curproc->p_fd->control);
+			do_close (curproc, curproc->p_fd->control);
 			curproc->p_fd->control = NULL;
 			return 0;
 			
@@ -1208,10 +1209,10 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 						    if (!suser (curproc->p_cred->ucr) ||
 							(long) arg != 1)
 						    {
-							    do_close (f);
+							    do_close (curproc, f);
 							    return EPERM;
 						    }
-						    do_close (p->p_fd->control);
+						    do_close (curproc, p->p_fd->control);
 						    p->p_fd->control = NULL;
 					}
 				}
@@ -1431,7 +1432,7 @@ tty_getchar (FILEPTR *f, int mode)
 		ret = (*f->dev->read)(f, (char *) &r, 4L);
 		if (ret != 4L)
 		{
-			DEBUG (("EOF on tty device"));
+			DEBUG (("EOF on tty device (%li)", ret));
 			return MiNTEOF;
 		}
 		

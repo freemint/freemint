@@ -1655,7 +1655,7 @@ km_config (long mode, long arg)
 
 # ifdef KM_STAT
 
-# include "dosfile.h"
+# include "k_fds.h"
 # include "util.h"
 
 static void
@@ -1663,7 +1663,11 @@ km_stat_dump (void)
 {
         static char line [SPRINTF_MAX];
         long i, len;
-        FILEPTR *f;
+        FILEPTR *fp;
+        long ret;
+	
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
 	
 	KM_FORCE ((__FILE__ ": used_mem = %li", used_mem));
 	KM_FORCE ((__FILE__ ": kmr: alloc = %li, free = %li -> %li",
@@ -1677,8 +1681,8 @@ km_stat_dump (void)
 		km_s1_stat.req_alloc - km_s1_stat.req_free
 	));
 	
-        f = do_open (KM_STAT_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL, NULL);
-        if (f)
+        ret = do_open (&fp, KM_STAT_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
+        if (!ret)
         {
 		ksprintf (line, sizeof (line), "/*\r\n * " __FILE__ ": used_mem = %li\r\n *\r\n"
 			"kmr: alloc = %li, free = %li -> %li\r\n",
@@ -1688,7 +1692,7 @@ km_stat_dump (void)
 			kmr_stat.req_alloc - kmr_stat.req_free
 		);
 		len = strlen (line);
-                (*f->dev->write)(f, line, len);
+                (*fp->dev->write)(fp, line, len);
                 
 		ksprintf (line, sizeof (line), "km_s1: alloc = %li, free = %li -> %li\r\n\rn",
 			km_s1_stat.req_alloc,
@@ -1696,11 +1700,11 @@ km_stat_dump (void)
 			km_s1_stat.req_alloc - km_s1_stat.req_free
 		);
 		len = strlen (line);
-		(*f->dev->write)(f, line, len);
+		(*fp->dev->write)(fp, line, len);
 		
 		ksprintf (line, sizeof (line), "size:\talloc:\tfree:\tdifference:\r\n");
 		len = strlen (line);
-		(*f->dev->write)(f, line, len);
+		(*fp->dev->write)(fp, line, len);
 		
 		for (i = 0; i < PAGESIZE; i++)
 		{
@@ -1713,17 +1717,17 @@ km_stat_dump (void)
 					stat [i].req_free,
 					stat [i].req_alloc - stat [i].req_free);
 				len = strlen (line);
-				(*f->dev->write)(f, line, len);
+				(*fp->dev->write)(fp, line, len);
 			}
 		}
 		
 		ksprintf (line, sizeof (line), "\r\n *\r\n */\r\n\r\n");
 		len = strlen (line);
-                (*f->dev->write)(f, line, len);
+                (*fp->dev->write)(fp, line, len);
 		
 		ksprintf (line, sizeof (line), "# include \"kmstat.h\"\r\n\r\nvoid\r\narray_init (void)\r\n{\r\n");
 		len = strlen (line);
-                (*f->dev->write)(f, line, len);
+                (*fp->dev->write)(fp, line, len);
 		
 		for (i = 0; i < PAGESIZE; i++)
 		{
@@ -1737,16 +1741,18 @@ km_stat_dump (void)
 					i,
 					stat [i].req_free);
 				len = strlen (line);
-				(*f->dev->write)(f, line, len);
+				(*fp->dev->write)(fp, line, len);
 			}
 		}
 		
 		ksprintf (line, sizeof (line), "}\r\n\r\n");
 		len = strlen (line);
-		(*f->dev->write)(f, line, len);
+		(*fp->dev->write)(fp, line, len);
 		
-		do_close (f);
+		do_close (rootproc, fp);
 	}
+	else
+		fp_free (fp);
 }
 # else
 
@@ -1777,19 +1783,16 @@ km_stat_dump (void)
 # ifdef KMEMORY_DEBUG
 
 # include <stdarg.h>
-# include "dosfile.h"
-# define out_device 2 /* console */
 
 static void
 km_debug (const char *fmt, ...)
 {
 	static char line [SPRINTF_MAX];
-	int foo;
 	va_list args;
 	
 	va_start (args, fmt);
 	
-	foo = vsprintf (line, sizeof (line), fmt, args);
+	vsprintf (line, sizeof (line), fmt, args);
 	KM_FORCE ((line));
 	
 	va_end (args);

@@ -12,28 +12,23 @@
 
 extern short select_coll;
 
-FILEPTR * do_open (const char *name, int mode, int attr, XATTR *x, long *err);
-long do_pclose (PROC *p, FILEPTR *f);
-long do_close (FILEPTR *f);
-long get_opens (fcookie *object, struct listopens *l);
-long _cdecl f_open (const char *name, int mode);
-long _cdecl f_create (const char *name, int attrib);
-long _cdecl f_close (int fh);
-long _cdecl f_read (int fh, long count, char *buf);
-long _cdecl f_write (int fh, long count, const char *buf);
-long _cdecl f_seek (long place, int fh, int how);
-long _cdecl f_dup (int fh);
-long _cdecl f_force (int newh, int oldh);
-long _cdecl f_datime (ushort *timeptr, int fh, int wflag);
-long _cdecl f_lock (int fh, int mode, long start, long length);
+long _cdecl f_open (const char *name, short mode);
+long _cdecl f_create (const char *name, short attrib);
+long _cdecl f_close (short fd);
+long _cdecl f_read (short fd, long count, char *buf);
+long _cdecl f_write (short fd, long count, const char *buf);
+long _cdecl f_seek (long place, short fd, short how);
+long _cdecl f_dup (short fd);
+long _cdecl f_force (short newh, short oldh);
+long _cdecl f_datime (ushort *timeptr, short fd, short wflag);
+long _cdecl f_lock (short fd, short mode, long start, long length);
 long _cdecl f_pipe (short *usrh);
-long _cdecl f_cntl (int fh, long arg, int cmd);
-long _cdecl f_select (unsigned timeout, long *rfdp, long *wfdp, long *xfdp);
-long _cdecl f_midipipe (int pid, int in, int out);
-
-long _cdecl f_fchown (int fh, int uid, int gid);
-long _cdecl f_fchmod (int fh, unsigned mode);
-long _cdecl f_seek64 (llong place, int fh, int how, llong *newpos);
+long _cdecl f_cntl (short fd, long arg, short cmd);
+long _cdecl f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp);
+long _cdecl f_midipipe (short pid, short in, short out);
+long _cdecl f_fchown (short fd, short uid, short gid);
+long _cdecl f_fchmod (short fd, ushort mode);
+long _cdecl f_seek64 (llong place, short fd, short how, llong *newpos);
 long _cdecl f_poll (POLLFD *fds, ulong nfds, ulong timeout);
 
 
