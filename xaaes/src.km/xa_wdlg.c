@@ -87,7 +87,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		RECT dr;
 
 
-		if (wind->window_status == XAWS_ICONIFIED)
+		if ((wind->window_status & XAWS_ICONIFIED))
 		{
 			short x = 0, y = 0;
 
@@ -221,10 +221,10 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 				return 0;
 
 			r.x = msg[4], r.y = msg[5];
-			r.w = wind->r.w, r.h = wind->r.h;
 
 			if (wind->r.x != r.x || wind->r.y != r.y)
 			{
+				r.w = wind->rc.w, r.h = wind->rc.h;
 				inside_root(&r, &wind->owner->options);
 				move_window(wlock, wind, -1, r.x, r.y, r.w, r.h);
 			}
@@ -515,7 +515,7 @@ XA_wdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (wind && (wdlg = wind->wdlg))
 	{
-		if (wind->is_open)
+		if ((wind->window_status & XAWS_OPEN))
 			close_window(lock, wind);
 
 		kfree(wdlg);
@@ -684,7 +684,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					 */
 					wdlg->std_wt = wt;
 					obtree->ob_state &= ~OS_OUTLINED;
-					if (wind->window_status != XAWS_ICONIFIED)
+					if (!(wind->window_status & XAWS_ICONIFIED))
 					{
 						wt = set_toolbar_widget(lock, wind, obtree, 0);
 						wt->exit_form = NULL;
@@ -715,10 +715,10 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					RECT nr = *r;
 
-					nr.x -= wind->wa.x - wind->r.x;
-					nr.y -= wind->wa.y - wind->r.y;
-					nr.w += wind->r.w - wind->wa.w;
-					nr.h += wind->r.h - wind->wa.h;
+					nr.x -= wind->wa.x - wind->rc.x;
+					nr.y -= wind->wa.y - wind->rc.y;
+					nr.w += wind->rc.w - wind->wa.w;
+					nr.h += wind->rc.h - wind->wa.h;
 
 					move_window(lock, wind, -1, nr.x, nr.y, nr.w, nr.h);
 				}
@@ -727,7 +727,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_iconify */
 			case 3:
 			{
-				if (wind->window_status != XAWS_ICONIFIED)
+				if (!(wind->window_status & XAWS_ICONIFIED))
 				{
 					RECT *nr = (RECT *)pb->addrin[1];
 					char *t = (char *)pb->addrin[2];
@@ -764,13 +764,13 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 					if (!nr || (nr && nr->w == -1 && nr->h == -1))
 					{
-						r = free_icon_pos(lock);
+						r = free_icon_pos(lock, NULL);
 						nr = &r;
 					}
 				
 					wind->redraw = NULL; //wdlg_redraw;
-					wind->save_widgets = wind->active_widgets;
-					standard_widgets(wind, NAME|MOVER|ICONIFIER, true);
+					//wind->save_widgets = wind->active_widgets;
+					//standard_widgets(wind, NAME|MOVER|ICONIFIER, true);
 					move_window(lock, wind, XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
 				}
 				break;
@@ -778,7 +778,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_uniconify */
 			case 4:
 			{
-				if (wind->window_status == XAWS_ICONIFIED)
+				if ((wind->window_status & XAWS_ICONIFIED))
 				{
 					OBJECT *obtree = (OBJECT *)pb->addrin[3];
 					char *t = (char *)pb->addrin[2];
@@ -786,7 +786,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					RECT r;
 
 					wind->redraw = NULL;
-					standard_widgets(wind, wind->save_widgets, true);
+					//standard_widgets(wind, wind->save_widgets, true);
 
 					if (!t)
 						t = wdlg->std_name;
@@ -823,7 +823,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						r.w = obtree->ob_width;
 						r.h = obtree->ob_height;
 					}
-					move_window(lock, wind, XAWS_OPEN, nr->x, nr->y, nr->w, nr->h);
+					move_window(lock, wind, ~XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
 				}
 				pb->intout[0] = 1;
 				break;
@@ -897,7 +897,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 						if ( (obj = obj_find(wt, 0,7, ev->mx, ev->my)) >= 0)
 						{
 							ev->mwhich &= ~MU_BUTTON;
-							if (wind->window_status != XAWS_ICONIFIED)
+							if (!(wind->window_status & XAWS_ICONIFIED))
 							{
 								DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): doing form_do on obj=%d for %s",
 									obj, client->name));
@@ -1004,7 +1004,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 							if (!(events & MU_BUTTON))
 							{
 								check_mouse(client, &md.cstate, &md.x, &md.y);
-								md.state = MBS_RIGHT;
+								md.state = MBS_LEFT;
 							}
 							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): doing form_button on obj=%d for %s",
 								nxtobj, client->name));

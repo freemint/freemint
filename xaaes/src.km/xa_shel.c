@@ -758,7 +758,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				FOREACH_CLIENT(cl)
 				{
 					if (is_client(cl) && cl != client)
-						send_a_message(lock, cl, (union msg_buf *)cmd);
+						send_a_message(lock, cl, AMQ_NORM, (union msg_buf *)cmd);
 				}
 
 				Sema_Dn(clients);

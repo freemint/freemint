@@ -460,7 +460,7 @@ form_keyboard(XA_TREE *wt,
 			struct moose_data md;
 
 			check_mouse(wt->owner, &md.cstate, &md.x, &md.y);
-			md.state = MBS_RIGHT;
+			md.state = MBS_LEFT;
 					
 			fr.no_exit = form_button(wt,
 					         next_obj,
@@ -544,7 +544,7 @@ Exit_form_do( struct xa_client *client,
 			if (wind->send_message)
 			{
 				struct xa_widget *widg = wt->widg;
-				wind->send_message(lock, wind, NULL,
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						WM_TOOLBAR, 0, 0, wind->handle,
 						fr->obj, fr->dblmask ? 2 : 1, widg->k, 0);
 			}
@@ -596,7 +596,7 @@ exit_toolbar(struct xa_client *client,
 	     struct fmd_result *fr)
 {
 	if (wind->send_message)
-		wind->send_message(lock, wind, NULL,
+		wind->send_message(lock, wind, NULL, AMQ_NORM,
 				   WM_TOOLBAR, 0, 0, wind->handle,
 				   f, dbl ? 2 : 1, widg->k, 0);
 }
@@ -866,8 +866,6 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 
 		if ((rl = wind->rect_start))
 		{
-			//if (wind->owner != C.Aes)
-			//	lock_screen(wind->owner, false, NULL, 1);
 			hidem();
 			while (rl)
 			{
@@ -891,8 +889,6 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 			}
 			clear_clip();
 			showm();
-			//if (wind->owner != C.Aes)
-			//	unlock_screen(wind->owner, 2);
 		}
 	}
 }
@@ -904,6 +900,7 @@ void
 do_formwind_msg(
 	struct xa_window *wind,
 	struct xa_client *to,			/* if different from wind->owner */
+	short amq,
 	short *msg)
 {
 	XA_WIDGET *widg = wind->tool;
@@ -932,47 +929,30 @@ do_formwind_msg(
 		{
 			dfwm_redraw(wind, wt, (RECT *)&msg[4]);
 			break;
-#if 0
-			if (wt && wt->tree)
-			{
-				RECT *clip = (RECT *)&msg[4];
-				RECT dr;
-				struct xa_rect_list *rl;
-
-				if ((rl = wind->rect_start))
-				{
-					if (wind->owner != C.Aes)
-						lock_screen(wind->owner, false, NULL, 1);
-					hidem();
-					while (rl)
-					{
-						if (xa_rect_clip(clip, &rl->r, &dr))
-						{
-							set_clip(&dr);
-							draw_object_tree(0, wt, wt->tree, 0, 10, 1);
-						}
-						rl = rl->next;
-					}
-					clear_clip();
-					showm();
-					if (wind->owner != C.Aes)
-						unlock_screen(wind->owner, 2);
-				}
-			}
-			break;
-#endif
 		}
 		case WM_MOVED:
 		{
 			if (wt && wt->tree)
 			{
-				move_window(0, wind, -1, msg[4], msg[5], msg[6], msg[7]);
+				short status = -1;
+
+				if (!msg[7])
+				{
+					if (!(wind->window_status & XAWS_SHADED))
+						status = XAWS_SHADED;
+				}	
+				else if (wind->window_status & XAWS_SHADED)
+				{
+					if (msg[7] != wind->sh)
+						status = ~XAWS_SHADED;
+				}
+				move_window(0, wind, status, msg[4], msg[5], msg[6], msg[7]);
 			}
 			break;
 		}
 		case WM_TOPPED:
 		{
-			if (wind != root_window && wind->is_open && !is_topped(wind))
+			if (wind != root_window && (wind->window_status & XAWS_OPEN) && !is_topped(wind))
 			{
 				if (is_hidden(wind))
 					unhide_window(0, wind);
@@ -984,7 +964,7 @@ do_formwind_msg(
 		}
 		case WM_BOTTOMED:
 		{
-			if (wind != root_window && wind->is_open)
+			if (wind != root_window && (wind->window_status & XAWS_OPEN))
 				bottom_window(0, wind);
 			break;
 		}
