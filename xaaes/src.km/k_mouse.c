@@ -128,7 +128,6 @@ static struct moose_data mdb[MDBUF_SIZE + 1];
 static void
 new_mu_mouse(struct moose_data *md)
 {
-	//DIAG((D_v, NULL, "new_mu_mouse %d %d,%d/%d", md->state, md->cstate, md->x, md->y));
 	/*
 	 * Copy into the global main moose data if necessary
 	 */
@@ -312,11 +311,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 	 * released event later, and this event belongs to the
 	 * receiver of the click-hold.
 	 */
-#if 0
-	if (md->state && md->cstate)
-		C.button_waiter = target;
-#endif
-
+	
 	if (wind && wind->owner != target)
 	{
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_button_event (rootwind) to %s", target->name));
@@ -399,7 +394,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		return;
 	}
 	{
-		if ( (locker = C.mouse_lock) )//mouse_locked()) )
+		if ( (locker = C.mouse_lock) )
 		{
 			DIAG((D_mouse, locker, "XA_button_event - mouse locked by %s", locker->name));
 
@@ -415,7 +410,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				return;
 			}
 		}
-		if ( (locker = C.update_lock) )//update_locked()) )
+		if ( (locker = C.update_lock) )
 		{
 			DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
 
@@ -433,8 +428,8 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 	}
 
-	if (!(locker = C.mouse_lock)) //mouse_locked();
-		locker = C.update_lock; //update_locked();
+	if (!(locker = C.mouse_lock))
+		locker = C.update_lock;
 
 	wind = find_window(lock, md->x, md->y);
 
@@ -475,17 +470,11 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		{
 			dispatch_button_event(lock, wind, md);
 		}
-		else // if (client == NULL)
+		else
 		{
 			button_event(lock, locker, md);
 			Unblock(locker, 1, 1);
 		}
-#if 0
-		else
-		{
-			deliver_button_event(client == locker ? wind : NULL, locker, md);
-		}
-#endif
 	}
 }
 
@@ -562,11 +551,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 	if (!(client = C.mouse_lock))
 		client = C.update_lock;
-#if 0
-	client = mouse_locked();
-	if (!client)
-		client = update_locked();
-#endif	
+	
 	if (client)
 	{
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
@@ -592,7 +577,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	return false;
 }
 
-/* XXX Fixme !! */
 static void
 wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr, short *r, short *r_amnt)
 {
@@ -698,7 +682,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 	XA_WIDGET *widg;
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
-	//display("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y);
 
 	locker = C.mouse_lock;
 	if (!locker)
@@ -1074,12 +1057,6 @@ void
 adi_move(struct adif *a, short x, short y)
 {
 	/*
-	 * Don't process move events when button timeout pending
-	*/
-	//if (b_to)
-	//	return;
-
-	/*
 	 * Always update these..
 	*/
 	x_mouse = x;
@@ -1143,13 +1120,6 @@ button_timeout(struct proc *p, long arg)
 
 		vq_key_s(C.vh, &md.kstate);
 
-#if 0
-		if (C.button_waiter)
-		{
-			add_client_md(C.button_waiter, &md);
-			C.button_waiter = NULL;
-		}
-#endif
 		new_moose_pkt(0, 0, &md);
 
 		if ( pending_md() )
@@ -1171,24 +1141,40 @@ adi_button(struct adif *a, struct moose_data *md)
 	 * but I dont think it is safe. So we get that in button_timeout()
 	 * instead. Eventually, moose.adi will provide this info...
 	 */
+	 
+	/*
+	 * Modify moose_data according to configuration (swap l/r buttons, etc)
+	 */
 	modify_md(md);
+	/*
+	 * Add moose_data to our internal queue
+	 */
 	add_md(md);
+	/*
+	 * Update mainmd, always containing the latest BUTTON moose_data
+	 */
 	new_mu_mouse(md);
+	
 	new_active_widget_mouse(md);
 
+	/*
+	 * If a movement timeout in progress, cancel it.
+	 * Buttons are more important
+	 */
 	if (m_to)
 	{
 		cancelroottimeout(m_to);
 		m_to = NULL;
 	}
-
+	/*
+	 * If no button timeout in progress, add one now
+	 */
 	if (!b_to)
 		b_to = addroottimeout(0L, button_timeout, 1);
 }
 
-/* XXX */
 /*
- * adi_wheel() - Not done!
+ * adi_wheel() - The entry point taken by moose.adi when the mouse wheel turns.
  */
 void
 adi_wheel(struct adif *a, struct moose_data *md)

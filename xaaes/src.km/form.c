@@ -109,7 +109,7 @@ create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WI
 			     nolist,
 			     kind,
 			     dial,
-			     0, //C.Aes->options.thinframe,
+			     0, /* frame size */
 			     C.Aes->options.thinwork,
 			     *r,
 			     NULL,
@@ -240,7 +240,6 @@ form_button(XA_TREE *wt,
 	    short *nxtob,
 	    short *clickmsk)
 {
-	//enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
 	short next_obj = 0;
 	short flags, state;
@@ -404,6 +403,7 @@ form_cursor(XA_TREE *wt,
 
 #if 0
 	/* Big mistake - it is up to the apps themselves to actually move the cursor
+	 * But this could perhaps be used in an extended XaAES mode of some kind?
 	 */
 	if (o >= 0 && o != obj)
 	{	
@@ -494,17 +494,6 @@ form_keyboard(XA_TREE *wt,
 					         &fr.obj_state,
 					         &fr.obj,
 					         &fr.dblmask);
-			/* Ozk:
-			 * If form_button() returned a new object-of-focus,
-			 * return it only if it differs from the one that was
-			 * passed here.
-			 */
-#if 0
-			if (fr.obj > 0)
-				next_obj = fr.obj;
-			else
-				next_obj = obj;
-#endif
 		}
 		else if (keycode != 0x1c0d && keycode != 0x720d)
 			next_key = keycode;
@@ -912,8 +901,6 @@ do_formwind_msg(
 				if (is_hidden(wind))
 					unhide_window(0, wind);
 				top_window(0, true, wind, (void *)-1L, NULL);
-				//swap_menu(0, wind->owner, true, false, 0);
-				//after_top(0, true);
 			}
 			break;
 		}

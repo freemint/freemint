@@ -41,7 +41,7 @@
 
 
 static int
-pending_critical_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf/*AESPB *pb*/)
+pending_critical_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
@@ -51,8 +51,6 @@ pending_critical_msgs(enum locks lock, struct xa_client *client, union msg_buf *
 	msg = client->crit_msg;
 	if (msg)
 	{
-		//union msg_buf *buf = (union msg_buf *)pb->addrin[0];
-
 		/* dequeue */
 		client->crit_msg = msg->next;
 
@@ -72,7 +70,7 @@ pending_critical_msgs(enum locks lock, struct xa_client *client, union msg_buf *
 }
 
 static int
-pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf/*AESPB *pb*/)
+pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
@@ -82,8 +80,6 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 	msg = client->rdrw_msg;
 	if (msg)
 	{
-		//union msg_buf *buf = (union msg_buf *)pb->addrin[0];
-
 		/* dequeue */
 		client->rdrw_msg = msg->next;
 
@@ -108,7 +104,7 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 }
 
 static int
-pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf/*AESPB *pb*/)
+pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
 {
 	struct xa_aesmsg_list *msg;
 	int rtn = 0;
@@ -118,8 +114,6 @@ pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf/*AESP
 	msg = client->msg;
 	if (msg)
 	{
-		//union msg_buf *buf = (union msg_buf *)pb->addrin[0];
-
 		/* dequeue */
 		client->msg = msg->next;
 
@@ -425,7 +419,6 @@ check_queued_events(struct xa_client *client)
 		 * intout[4] and intout[6] is not to be used for the wheel
 		 * I think, as that would rule out normal buttons + wheel events
 		 */
-#if 1
 		if (client->wheel_md)
 		{ 
 			struct moose_data *md = client->wheel_md;
@@ -442,7 +435,6 @@ check_queued_events(struct xa_client *client)
 			}
 			kfree(md);
 		}
-#endif
 	}
 				
 	if (events)

@@ -643,11 +643,6 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		mc = ((XA_TREE *)widg->stuff)->owner;
 		if (ce->client == mc )
 		{
-#if 0
-			if (C.update_lock && C.update_lock != mc)
-				return;
-#endif
-
 			DIAGS(("CE_redraw_menu: for %s", ce->client->name));
 			display_widget(lock, root_window, widg);
 		}
@@ -913,9 +908,6 @@ calc_work_area(struct xa_window *wi)
 		}
 	}
 
-//	if (wi->wa.w < 0 || wi->wa.h < 0)
-//		wi->wa.w = wi->wa.h = 0;
-	
 	/* border displacement */
 	wi->bd.x = wi->rc.x - wi->wa.x;
 	wi->bd.y = wi->rc.y - wi->wa.y;
@@ -1137,7 +1129,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	r.w -= cfg.widg_w + 2;
 #endif
 
-	if MONO
+	if (MONO)
 	{
 		f_color(G_WHITE);
 		t_color(G_BLACK);
@@ -1573,7 +1565,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 				short msg = (md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
 
 				wind->send_message(lock|winlist, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					   msg/*WM_ICONIFY*/, 0, 0, wind->handle,
+					   msg, 0, 0, wind->handle,
 					   ic.x, ic.y, ic.w, ic.h);
 			}
 		}
@@ -1645,8 +1637,6 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 	bool move, size;
 	RECT r = wind->r, d;
 	
-	//bool use_max = (wind->active_widgets&USE_MAX) != 0;
-
 	if (   widg->s == 2
 	    || wind->send_message == NULL
 	    || wind->owner->options.nolive)
@@ -1660,10 +1650,10 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		rubber_box(wind->owner, xy,
 		           r,
 			   rect_dist(wind->owner, &r, &d),
-			   wind->min.w, //6 * cfg.widg_w,
-			   wind->min.h, //6 * cfg.widg_h,
-			   wind->max.w, //use_max ? wind->max.w : root_window->wa.w,
-			   wind->max.h, //use_max ? wind->max.h : root_window->wa.h,
+			   wind->min.w,
+			   wind->min.h,
+			   wind->max.w,
+			   wind->max.h,
 			   &r);
 		unlock_screen(wind->owner, 1234);
 
@@ -1672,7 +1662,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 
 		if (move || size)
 		{
-			if (move && size && (wind->opts & WO_SENDREPOS)) //XAWO_WM_REPOS))
+			if (move && size && (wind->opts & WO_SENDREPOS))
 				send_reposed(lock, wind, AMQ_NORM, &r);
 			else
 			{
@@ -1685,11 +1675,8 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 	}
 	else if (widget_active.m.cstate)
 	{
-		short pmx, pmy /*, mx, my, mb*/;
+		short pmx, pmy;
 		COMPASS xy;
-
-		/* need to do this anyhow, for mb */
-		/* vq_mouse(C.vh, &mb, &pmx, &pmy); */
 
 		if (widget_active.widg)
 		{
@@ -1708,7 +1695,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		}
 
 		/* Drag border */
-		if (widget_active.m.cstate)	/*(mb)*/
+		if (widget_active.m.cstate)
 		{
 			set_widget_active(wind, widg, next, 6);
 
@@ -1728,13 +1715,13 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			/* Has the mouse moved? */
 			if (widget_active.m.x != pmx || widget_active.m.y != pmy)
 			{
-				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);	/*(xy, mx, my, r, &d);*/
+				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);
 
 				check_wh_cp(&r, xy,
-					    wind->min.w, //6 * cfg.widg_w,
-					    wind->min.h, //6 * cfg.widg_h,
-					    wind->max.w, //use_max ? wind->max.w : root_window->wa.w,
-					    wind->max.h); //use_max ? wind->max.h : root_window->wa.h);
+					    wind->min.w,
+					    wind->min.h,
+					    wind->max.w,
+					    wind->max.h);
 			}
 
 			move = r.x != wind->r.x || r.y != wind->r.y,
@@ -1742,7 +1729,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			
 			if (move || size)
 			{
-				if (move && size && (wind->opts & WO_SENDREPOS)) //XAWO_WM_REPOS))
+				if (move && size && (wind->opts & WO_SENDREPOS))
 					send_reposed(lock, wind, AMQ_NORM, &r);
 				else
 				{

@@ -65,7 +65,5 @@ cXA_keybd_event(enum locks lock, struct c_event *ce, bool cancel)
 
 	if (!cancel)
 		queue_key(client, key);
-
-		//keybd_event(lock, client, key);
 	kfree(key);
 }

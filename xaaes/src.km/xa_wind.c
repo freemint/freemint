@@ -56,7 +56,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	XA_WIND_ATTR kind = (unsigned short)pb->intin[0];
 
 	CONTROL(5,1,0)
-	//if (pb->intin[0] < 0 && pb->control[1] >= 6)
+	
 	if (pb->control[N_INTIN] >= 6)
 	{
 		kind |= (long)pb->intin[5] << 16;
@@ -179,7 +179,11 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 		desk_menu_owner = w->owner;
 
 	DIAG((D_wind, client, "top_window %d for %s",  w->handle, c_owner(client)));
-
+	/* Ozk: if -1L passed as old_focus pointer, determine here which is ontop
+	 *	before we top 'w'. Else check if old_focus really is ontop.
+	 *	This is for redrawing the window exterior to indicate now topped
+	 *	is being 'de-topped' :)
+	 */
 	if (old_focus == (void *)-1L)
 		old_focus = is_topped(window_list) ? window_list : NULL;
 	else if (old_focus && !is_topped(old_focus))
@@ -188,23 +192,30 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	if (old_focus == root_window)
 		old_focus = NULL;
 
-	/* New top window - change the cursor to this client's choice */
+	/* Ozk: If owner of window we're about to top is not infront,
+	 *	make it in front and swap to its menu.
+	 */
 	if (!is_infront(w->owner))
 	{
 		set_active_client(lock, w->owner);
 		swap_menu(lock, w->owner, true, false, 0);
 	}
+	/* Ozk: Now pull the new topped window to top of list..
+	 */
 	pull_wind_to_top(lock, w);
-
 	graf_mouse(client->mouse, client->mouse_form, false);
-
-	/* redisplay title */
+	/* Ozk: redisplay title of the window previously on top
+	 *	to indicate its not topped anymore
+	 */
 	if (old_focus && !is_topped(old_focus))
 	{
 		display_window(lock, 40, old_focus, 0);
 		if (domsg) send_untop(lock, old_focus);
 	}
-
+	/* Ozk: Make sure the window we should top is not the same as
+	 *	the window that was ontop entering here, in wich case
+	 *	we dont redraw its exterior (already is ontop)
+	 */
 	if (!old_focus || (old_focus && old_focus != w))
 	{
 		if (is_topped(w) && w != root_window)
@@ -213,7 +224,9 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 			if (domsg) send_ontop(lock);
 		}
 	}
-
+	/* Ozk: Set mousecursor to whatever shape the owner of the
+	 *	window under mousecursor uses...
+	 */
 	set_winmouse();
 }
 
@@ -436,12 +449,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_WHEEL:
 	{
-		long o = 0, om = ~(WO_WHEEL); //XAWO_WHEEL);
+		long o = 0, om = ~(WO_WHEEL);
 		short mode = -1;
 		
 		if (pb->intin[2])
 		{
-			o |= WO_WHEEL; //XAWO_WHEEL;
+			o |= WO_WHEEL;
 			mode = pb->intin[3];
 			if (mode < 0 || mode > MAX_WHLMODE)
 				mode = DEF_WHLMODE;
@@ -586,7 +599,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_wind, w->owner, "    -   %s", w->winfo));
 
-		if ((w->active_widgets & INFO) && (w->window_status & XAWS_OPEN))
+		if ((w->active_widgets & INFO) && (w->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_ICONIFIED|XAWS_HIDDEN)) == XAWS_OPEN)
 		{
 			RECT clip;
 
@@ -637,9 +650,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				(const RECT *)(pb->intin+2), blit?"yes":"no", ir));
 
-			//display("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx for %s",
-			//	*(const RECT *)(pb->intin+2), blit?"yes":"no", ir, client->name);
-			
 			blit = true;
 		}
 
@@ -798,13 +808,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					unhide_window(lock|winlist, w);
 
 				top_window(lock|winlist, true, w, (void *)-1L, NULL);
-
-				/* needed because the changed behaviour in close_window. */
-				//swap_menu(lock|winlist, w->owner, true, 5);
-				//after_top(lock|winlist, true);
 			}
 		}
-
 		break;
 	}
 
@@ -1223,7 +1228,7 @@ next:
 		OBJECT **have = (OBJECT **)&pb->intout[1];
 
 		if (wt)
-			*have = wt->tree; //ob;
+			*have = wt->tree;
 		else
 			*have = NULL;
 
@@ -1636,7 +1641,6 @@ remove_windows(enum locks lock, struct xa_client *client)
 				close_window(lock|winlist, wl);
 			delete_window(lock|winlist, wl);
 		}
-
 		wl = nwl;
 	}
 

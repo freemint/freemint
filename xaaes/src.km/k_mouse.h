@@ -35,16 +35,6 @@
 #include "adi.h"
 #include "xa_types.h"
 
-struct pending_button
-{
-	int head;
-	int tail;
-	BUTTON q[4];
-};
-extern struct pending_button pending_button;
-
-void add_pending_button(enum locks lock, struct xa_client *client);
-
 bool is_bevent(int gotbut, int gotcl, const short *o, int which);
 
 void button_event(enum locks lock, struct xa_client *client, const struct moose_data *md);
