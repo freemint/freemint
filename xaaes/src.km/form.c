@@ -865,8 +865,8 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 
 		if ((rl = wind->rect_start))
 		{
-			if (wind->owner != C.Aes)
-				lock_screen(wind->owner, false, NULL, 1);
+			//if (wind->owner != C.Aes)
+			//	lock_screen(wind->owner, false, NULL, 1);
 			hidem();
 			while (rl)
 			{
@@ -890,8 +890,8 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 			}
 			clear_clip();
 			showm();
-			if (wind->owner != C.Aes)
-				unlock_screen(wind->owner, 2);
+			//if (wind->owner != C.Aes)
+			//	unlock_screen(wind->owner, 2);
 		}
 	}
 }

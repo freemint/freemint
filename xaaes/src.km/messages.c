@@ -259,11 +259,32 @@ CE_do_winmesag(enum locks lock, struct c_event *ce, bool cancel)
 			if (--C.redraws)
 				kick_mousemove_timeout();
 		}
-//		if ((*msg == WM_REDRAW || *msg == WM_MOVED) && !C.redraws)
-//			kick_mousemove_timeout();
 	}
 	kfree(parm);
 }
+
+static void
+KT_do_winmesag(void *_parm)
+{
+	void **parm = _parm;
+
+	struct xa_window *wind = parm[0];
+	struct xa_client *client = parm[1];
+	bool block_move = (bool)parm[2];
+	short *msg = (short *)&parm[3];
+
+	wind->do_message(wind, client, msg);
+
+	if (block_move)
+	{
+		if (--C.redraws)
+			kick_mousemove_timeout();
+	}
+	wake(IO_Q, (long)_parm);
+	kfree(_parm);
+	kthread_exit(0);
+}
+	
 	
 void
 do_winmesag(enum locks lock,
@@ -309,8 +330,26 @@ do_winmesag(enum locks lock,
 		}
 		else
 		{
-			void **p = kmalloc((sizeof(*p) * 2) + 16);
+			void **p;
+			p = kmalloc((sizeof(*p) * 3) + 16);
 
+#if 1
+			if (p)
+			{
+				short i;
+				short *pm = (short *)&p[3];
+				long r;
+
+				p[0] = wind;
+				p[1] = wo;
+				(bool)p[2] = block_move;
+				for (i = 0; i < 8; *pm++ = msg[i], i++)
+					;
+				r = kthread_create(wo->p, KT_do_winmesag, p, NULL, "kt-%s", wo->proc_name);
+				sleep(IO_Q, (long)p);
+			}
+
+#else
 			if (p)
 			{
 				short i;
@@ -328,6 +367,8 @@ do_winmesag(enum locks lock,
 					    NULL,
 					    NULL);
 			}
+#endif
+			
 		}
 	}
 #if GENERATE_DIAGS
