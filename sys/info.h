@@ -180,7 +180,7 @@ extern const char *MSG_shell_name;
 extern const char *MSG_shell_missing_arg;
 extern const char *MSG_shell_error;
 extern const char *MSG_shell_type_help;
-extern const char *MSG_shell_unmatched_quotes;
+extern const char *MSG_shell_syntax_error;
 extern const char *MSG_shell_export_help;
 extern const char *MSG_shell_setenv_help;
 extern const char *MSG_shell_rm_help;
