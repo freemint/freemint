@@ -1,0 +1,115 @@
+Appendix C: The MiNT Configuration File
+
+If MiNT finds a file called MINT.CNF, it will read some configuration
+information from it. MiNT searches for this file first in the
+current directory (the root directory, if MiNT was started from
+the AUTO folder), then in a \MINT directory, and then in \MULTITOS.
+The configuration file is an ordinary ASCII text file; it can be edited
+with any editor that will produce plain ASCII files (if you're using a
+word processor, make sure you save the file as "plain ASCII text").
+
+
+Variables
+
+
+Commands of the form name=value set system parameters of
+some kind.  Here they are, in roughly increasing order of obscurity:
+
+INIT=file
+GEM=file 
+This specifies the command you want MiNT to run at boot up time. "File"
+should be a full path name. The default is for the MultiTOS MiNT kernel
+is "\multitos\gem.sys". Both INIT= and GEM= specify an initial program
+to run, but the way the program is launched is different depending on
+whether you say "GEM=" or "INIT=". With the "GEM=" form, the application
+is launched via the exec_os vector (see the Hitchiker's Guide to the Bios).
+With the "INIT=" form, the application is launched directly via Pexec.
+Only one GEM= or INIT= line is permitted in the configuration file.
+
+MAXMEM=n
+Specifies the maximum amount of memory that may be used by any one
+process. "n" is measured in kilobytes.
+
+CON=file
+This specifies the file or device you want MiNT to use by default for all
+console output, including debugging output. It should be a full path
+name, and is usually a device in U:\DEV. The obvious choice is
+U:\DEV\CONSOLE (the default).
+
+PRN=file 
+Specifies a file that should be used for all printer output. Initially, all
+Bconout() calls to device 0 will refer to this device. Again, a full path
+name, usually in U:\DEV, is expected.  (The default is U:\DEV\CENTR,
+which is the device corresponding to the centronics port.)
+
+BIOSBUF=no or yes
+If BIOSBUF=yes appears in your configuration file, then certain optimizations
+in MiNT concerning BIOS input and output are used. These optimizations
+should normally be transparent to user programs, but can be turned off
+with BIOSBUF=no. The default is "yes" (optimizations on).
+
+SLICES=n
+Controls the number of 20ms time slices to give to processes before
+they will be preempted. The default (2) is usually the best value;
+a higher value (e.g. 3) will cause CPU intensive tasks to receive more
+time, while a lower one (e.g. 1) will favor interactive tasks slightly.
+
+
+Commands
+
+
+The following commands can also be in the mint.cnf file. Spaces
+separate commands from arguments:
+
+# Comment
+A line beginning with a number sign (`#') is a comment. The entire line is
+ignored. Blank lines are also allowed (and ignored).
+
+alias drive path
+Creates a new "drive" which is actually an alias for a path.
+For example, old versions of MiNT used drive X: instead of
+the directory U:\PROC. If you have an old program which
+requires drive X:, you could put:
+
+    alias x: u:\\proc
+
+in your mint.cnf file.
+
+cd dir
+Change the current drive and directory. This isn't terribly
+useful, unless your initial program (see above) expects to run
+in some particular directory.
+
+echo string
+Displays "string" on the screen.
+
+exec program args ...
+Execute a program, with some arguments. The full path name and
+extension (.prg, .tos, .ttp, or whatever) of the program to
+execute must be given.  Initialization of MiNT does not continue until
+this program terminates.
+
+ren oldname newname
+Rename a file or directory.
+
+setenv var value
+Set the environment variable "var" to "value". NOTE: If any
+setenv commands are given in MINT.CNF, an entirely new environment
+is constructed; otherwise, the INIT program MiNT runs will inherit
+the environment that MiNT got.
+
+sln oldfile newlink
+Create a symbolic link called "newlink" for the file (or directory)
+"oldfile". At this time, only drive U: supports symbolic links, so the
+second name must be on drive U:; the first name can be anything. A
+symbolic link is just an alias or nickname for a file. For example,
+if your MINT.CNF file contains this line:
+
+    sln d:\foo\bar u:\baz
+
+then references to u:\baz would automatically be translated by the kernel so
+that they really referred to d:\foo\bar. If d:\foo\bar is actually a
+subdirectory, with the file "frob.txt" in it, then that file can be
+accessed either through the name "d:\foo\bar\frob.txt" or
+"u:\baz\frob.txt."
+

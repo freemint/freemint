@@ -1,0 +1,531 @@
+FreeMiNT's low level buffer cache
+=================================
+
+last update: 2000-10-28
+Author: Frank Naumann <fnaumann@freemint.de>
+notes:
+
+
+I. Introduction
+---------------
+
+FreeMiNT 1.15 has a new global block cache. It's currently 
+used from the NEWFATFS and MinixFS 0.70.
+
+The cache is global and does most things automatically.
+It's very easy to support it and reduces also
+programming overhead. For example, I added new block
+cache support in MinixFS. For this I completely removed
+the existing cache management in MinixFS and replaced
+most of the calls read/write buffered blocks. This
+reduces the binary size from 39 kb to 26 kb. Also the
+cache management is very efficient and speeds up some 
+operations on MinixFS (I made some tests with
+MinixFS 0.60 and MinixFS 0.70).
+
+The cache can be increased at boot time with 
+the configuration keyword "CACHE=<size in kb>" in MiNT 
+configuration file.
+For example: "CACHE=500" sets the cache to a size of
+500 kb (if enough memory is available).
+Default cache size is 100 kb. It's recommended to increase
+the cache if you use many MinixFS 0.70 and NEWFATFS
+partitions. Currently, the cache is first allocated from
+TT-RAM and then from ST-RAM.
+
+The cache is static. But if in the future
+the cache becomes dynamic, all xfs that support the
+new cache management, will remain compatible and actually will 
+support any improvements.
+
+Note for removable medias: the cache automatically locks the
+drive if there are unwritten sectors in cache.
+
+
+II. Definition
+--------------
+
+call conventions:
+- all arguments are on the stack
+- return value is stored in d0
+(cdecl call)
+
+return value conventions:
+- negative return values are ATARI error codes
+- E_OK for succes
+
+type conventions:
+
+char			8 bit signed
+unsigned char	8 bit unsigned
+short			16 bit signed integer
+unsigned short	16 bit unsigned integer
+long			32 bit signed integer
+unsigned long	32 bit unsigned integer
+llong			64 bit signed integer
+ullong		64 bit unsigned integer
+
+with:
+
+typedef struct { long hi; unsigned long low; } llong;
+typedef struct { unsigned long hi; unsigned long low; } ullong;
+
+
+III. interface description
+--------------------------
+
+1. introduction
+===============
+
+For the interface you need include/block_IO.h and some of the updated
+FreeMiNT header files.
+
+The kernel structure that is passed to a loadable XFS is extended
+with a pointer to the block_IO functions.
+
+See in MinixFS 0.70 for an example (kernel.h, main.c). The 
+pointer is valid since FreeMiNT 1.15.0. This must be 
+checked first before a XFS dereferences the pointer.
+
+The block_IO function is a structure that contains various 
+data fields and function pomiter:
+
+struct bio
+{
+	ushort	version;		/* buffer cache version */
+	ushort	revision;		/* buffer cache revision */
+	
+# define BLOCK_IO_VERS	3		/* our existing version - incompatible interface change */
+# define BLOCK_IO_REV	2		/* actual revision - compatible interface change */
+	
+	long	_cdecl (*config)	(const ushort drv, const long config, const long mode);
+	
+/* config: */
+# define BIO_WP		1		/* configuring writeprotect feature */
+# define BIO_WB		2		/* configuring writeback mode */
+# define BIO_MAX_BLOCK	10		/* return maximum cacheable blocksize */
+# define BIO_DEBUGLOG	100		/* only for debugging, kernel internal */
+# define BIO_DEBUG_T	101		/* only for debugging, kernel internal */
+	
+	/* DI management */
+	DI *	_cdecl (*get_di)	(ushort drv);
+	DI *	_cdecl (*res_di)	(ushort drv);
+	void	_cdecl (*free_di)	(DI *di);
+	
+	/* physical/logical mapping setting */
+	void	_cdecl (*set_pshift)	(DI *di, ulong physical);
+	void	_cdecl (*set_lshift)	(DI *di, ulong logical);
+	
+	/* cached block I/O */
+	UNIT *	_cdecl (*lookup)	(DI *di, ulong sector, ulong blocksize);
+	UNIT *	_cdecl (*getunit)	(DI *di, ulong sector, ulong blocksize);
+	UNIT *	_cdecl (*read)		(DI *di, ulong sector, ulong blocksize);
+	long	_cdecl (*write)		(UNIT *u);
+	long	_cdecl (*l_read)	(DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf);
+	long	_cdecl (*l_write)	(DI *di, ulong sector, ulong blocks, ulong blocksize, const void *buf);
+	
+	/* optional feature */
+	void	_cdecl (*pre_read)	(DI *di, ulong *sector, ulong blocks, ulong blocksize);
+	
+	/* synchronization */
+	void	_cdecl (*lock)		(UNIT *u);
+	void	_cdecl (*unlock)	(UNIT *u);
+	
+	/* update functions */
+	void	_cdecl (*mark_modified)	(UNIT *u);
+	void	_cdecl (*sync_drv)	(DI *di);
+	
+	/* cache management */
+	long	_cdecl (*validate)	(DI *di, ulong maxblocksize);
+	void	_cdecl (*invalidate)	(DI *di);
+	
+	/* revision 1 extension: resident block I/O
+	 */
+	UNIT *	_cdecl (*get_resident)	(DI *di, ulong sector, ulong blocksize);
+	void	_cdecl (*rel_resident)	(UNIT *u);
+	
+	/* revision 2 extension: remove explicitly a cache unit without writing
+	 * optional, never fail
+	 */
+	void	_cdecl (*remove)	(UNIT *u);
+	
+	
+	long	res[3];			/* reserved for future */
+};
+
+The first thing is to check the block_IO version number. A different
+version number means incompatible changes! If you recognise at module
+startup a different version number you must terminate your xfs.
+
+The revision number signals several interface compatible enhancements.
+
+
+This description refers to version 3, revision 2 of the block_IO 
+interface.
+--------------------------------------------------------------
+
+The interface is designed to make your life easier. It maps automatically
+all calls through XHDI or BIOS for example. It's also possible to
+cache non BIOS devices. The block_IO maps logical sizes to 
+physical sizes automatically. Simple call set_lshift to 
+specify the logical format.
+
+
+Conditions of use:
+------------------
+
+- the xfs only calls the block_IO functions for data I/O
+- the xfs is fully reentrant
+- the xfs don't modify data structures of the block_IO
+  module
+- logical/physical translation only works for logical >= physical
+
+
+All communications with the block_IO module goes through a so called
+device identificator or DI:
+
+typedef struct di DI;
+
+/* device identificator */
+struct di
+{
+	DI	*next;		/* internal: next in linked list */
+	UNIT	**table;	/* internal: unit hash table */
+	UNIT	*wb_queue;	/* internal: writeback queue */
+	
+	const ushort drv;	/* internal: BIOS device number (unique) */
+	ushort	major;		/* XHDI */
+	ushort	minor;		/* XHDI */
+	ushort	mode;		/* internal: some flags */
+	
+# define BIO_WP_MODE	0x01	/* writeprotect bit (soft/hard) */
+# define BIO_WB_MODE	0x02	/* writeback bit (soft) */
+# define BIO_REMOVABLE	0x04	/* removable media */
+# define BIO_LRECNO	0x10	/* lrecno supported */
+	
+	ulong	start;		/* physical start sector */
+	ulong	size;		/* physical sectors */
+	ulong	pssize;		/* internal: physical sector size */
+	
+	ushort	pshift;		/* internal: size to count calculation */
+	ushort	lshift;		/* internal: logical to physical recno calculation */
+	
+	long	(*rwabs)(DI *di, ushort rw, void *buf, ulong size, ulong lrecno);
+	long	(*dskchng)(DI *di);
+	
+	ushort	valid;		/* internal: DI valid */
+	ushort	lock;		/* internal: DI in use */
+	
+	char	id[4];		/* partition id (GEM, BGM, RAW, \0D6, ...) */
+	ushort	key;		/* XHDI key */
+	
+	char	res[18];	/* reserved for future */
+};
+
+
+
+2. DI handling
+==============
+
+The first thing to do is to get a DI. This is best placed in the root function of the xfs.
+There are three functions for DI handling:
+
+get_di():
+---------
+- 
+
+return: - a valid DI
+        - NULL if this DI is locked or not accessible through XHDI/BIOS
+
+res_di():
+---------
+- reserves the DI, same as the previous function but 
+  doesn't do anything except to lock the DI
+
+- used for non-BIOS devices
+- the xfs *must* fill out some data fields:
+  start, size, pssize, rwabs, dskchng
+- pshift & lshift must also be called for a successful 
+  initialization
+
+return: - valid DI
+        - NULL if this DI is already locked (in use).
+
+free_di():
+----------
+- unlock this DI, after this call the DI becomes invalid 
+  and can't be used anymore
+
+return: nothing
+
+
+NOTE:
+-----
+
+After get/res_di() the DI for this device becomes locked 
+and is never returned by get/res_di() until it is unlocked 
+with free_di()
+
+After get_di() logical to physical mapping is set to 1:1.
+If you work with logical sizes you must call set_lshift to adjust the mapping.
+
+After res_di() pssize is set to 512 and logical = physical.
+
+
+
+3. logical/physical translation
+===============================
+
+set_pshift():
+-------------
+- sets physical sector size and adjusts shift values
+  (shift values are used for fast calculations)
+
+It's not recommended to use this function in combination with get_di()
+because the physical sector size is automatically determined through XHDI.
+It will also create problems with XHDI/BIOS rwabs() wrapper.
+
+set_lshift():
+-------------
+- sets logical sector size and adjusts shift values
+
+If you always work with groups of sectors you can specify 
+this size.
+For example, useful for TOS FAT filesystems that work with 
+logical sector sizes and clusters. Also used by the 
+MinixFS. MinixFS always works with blocks of 1024 bytes.
+
+After this function, all block_IO calls map automatically 
+the given parameter to physical parameter.
+
+
+NOTE:
+-----
+
+pshift/lshift in the DI structure are very sensitive and important values.
+A mistake here will directly cause problems on the 
+corresponding device.
+Bad written sectors for example.
+
+Also start/size/pssize/pshift/lshift in the DI structure are used for
+validation, cache consistency and so on. If you control 
+those variables by yourself (non-BIOS device -> res_di()) 
+those values must be right.
+
+Never set pshift/lshift directly, always use the 
+corresponding functions set_pshift() and set_lshift().
+
+If you call set_pshift/set_lshift with incorrect parameters the
+system is halted. There is no error recovery possible.
+
+
+4. reading and writing
+======================
+
+lookup():
+---------
+- checks if a block is in the cache
+
+return: - a ptr to the UNIT
+        - NULL if the UNIT is not in cache
+
+getunit():
+----------
+- allocates a new cache UNIT for the given startsector
+- useful for write only data
+- checks with lookup() if the UNIT is already in the cache
+
+return: - a ptr to the new UNIT, the data area is not cleared
+        - NULL if no free cache UNIT is found or any other error
+
+read():
+-------
+- same as getunit but read the corresponding block
+  into the UNIT
+- checks with lookup() if the UNIT is already in the cache
+
+return: - a ptr to the new UNIT
+        - NULL for any error (read error, no free UNIT in cache)
+
+write():
+--------
+- mark this UNIT as dirty in writeback mode
+- write this UNIT back in writethrough mode
+
+return: - E_OK or the Rwabs error number
+
+l_read():
+---------
+- large read; reads a block directly to the buffer
+- only useful for large blocks (to reduce I/O overhead)
+- block_IO automatically syncs large transfers with existing
+  cached units (cache consistency)
+
+return: - E_OK or Rwabs error number
+
+l_write():
+----------
+- large write; write a block directly from the buffer
+- mostly useful for large blocks (to reduce I/O overhead)
+- also cache consistence is guranted
+- small blocks will automatically be buffered
+
+return: - E_OK or Rwabs error number
+
+pre_read():
+-----------
+- not implemented at the moment
+
+
+NOTE:
+-----
+
+read/write/l_read/l_write/pre_read can block the active 
+application until the transfer is done (background DMA). 
+That's why your xfs must be reentrant.
+
+A UNIT is valid until the *next* block_IO call. It's possible to lock
+UNITs. It's not allowed that an interrupt handler call the block_IO
+module. A taskswitch never occurs if the we are in kernel mode.
+
+
+
+5. synchronization
+==================
+
+lock():
+-------
+- increments the lock counter for the UNIT
+
+unlock():
+---------
+- decrements the lock counter
+
+
+NOTE:
+-----
+
+A locked UNIT is never invalidated. Useful for open directories and such
+things if pointer references left. But be careful, this 
+slows down the search algorithm. Also the cache run out of 
+free UNITS if there are a lot of locked UNITS. A locked 
+UNIT must be unlocked, otherwise the memory is lost.
+
+
+
+6. update
+=========
+
+mark_modified():
+----------------
+- marks a UNIT as modified; this action inserts the UNIT in 
+the writeback queue but doesn't writeback anything
+- if the UNIT is already marked no action is performed
+
+return: nothing, always successful
+
+sync_drv():
+-----------
+- writes back all dirty UNITS of the specified DI
+
+return: nothing, always successful
+
+
+NOTE:
+-----
+
+It's strongly recommended to first mark all modified UNITS 
+as dirty and then write back all with sync_drv(). There is 
+a write back optimization that will reduce a lot of I/O 
+overhead in this case.
+
+It's also strongly recommended to use the inline function: bio_MARK_MODIFIED()
+instead of bio_mark_modified(). The inline function 
+first checks if the UNIT is already marked and call 
+mark_modified only if the UNIT is clean. This will
+reduce function calls that are not necessary. Useful in write back mode.
+
+Supporting user configurable Writeback mode is very easy. 
+The only thing to do is to use the inline function 
+bio_SYNC_DRV() instead of sync_drv().
+bio_SYNC_DRV() checks if this drive is in WriteThrough 
+mode, if yes it calls sync_drv, otherwise nothing happens 
+(= WriteBack). Also Dcntl(V_CNTR_WB) must be supported.
+Dcntl(V_CNTR_WB) only calls config() to change the 
+writeback bit. Take a look in the MinixFS source for an 
+example.
+
+sync_drv() can also block the active application.
+
+
+
+7. cache management
+===================
+
+validate():
+-----------
+- checks the given block size with the internal maximum
+  block size limit
+
+return: - E_OK if those blocks sizes are supported
+        - ENSMEM if the block size is larger than the internal limit
+
+invalidate():
+-------------
+- invalidates all cache UNITS for the given DI
+
+
+NOTE:
+-----
+
+invalidate() does not free the DI, it only removes all 
+cache UNITS of this DI.
+
+invalidate() also removes all modified UNITS. Those UNITS 
+are never written back by invalidate().
+
+
+8. revision 1 extension: resident block I/O
+===========================================
+
+get_resident():
+---------------
+Instantiate a resident cached UNIT. The memory is *not* taken from
+buffer cache. The UNIT is dynamically allocated through kmalloc().
+Purpose is to cache long time needed blocks like superblock or whatever.
+Implemented through kmalloc() to not pollute the buffer cache due to the
+statically design.
+
+return: - UNIT * on success, buffer cache is automatically synchronized
+
+rel_resident():
+---------------
+Release a previously through get_resident() allocated UNIT. Only use
+this function for UNIT that are allocated with get_resident().
+
+return: - nothing
+          halt the system on invalid UNIT parameter
+          (assumes data corruption inside the xfs driver)
+
+
+9. revision 2 extension
+=======================
+
+remove():
+---------
+Remove the cached UNIT without writing it back. Main purpose is for
+truncate() optimization of modified but released UNITs.
+
+
+9. helper
+=========
+
+config():
+---------
+- internal configuration and information:
+
+return the maximum block size for config = BIO_MAX_BLOCK (10)
+
+change WriteBack mode for the given drv if config = BIO_WB (2)
+to mode (ENABLED/DISABLED)
+

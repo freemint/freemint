@@ -1,0 +1,74 @@
+<html>
+<head>
+	<title> New MiNT system calls: Tsetitimer() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Tsetitimer()</H3>
+
+<P>
+<B>LONG Tsetitimer(<i>which, interval, value, ointerval, ovalue</i>)</B>
+<P>
+<B>WORD <I>which</I>;<br>
+LONG <i>*interval</i>;<br>
+LONG <i>*value</i>;<br>
+LONG <i>*ointerval</i>;<br>
+LONG <i>*ovalue</i>;
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Tsetitimer()</B> schedule an interval timer.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>329 (0x0149)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><b><i>which</i></b> is 
+<b>ITIMER_REAL</b> (0) for <b>SIGALRM</b>, <b>ITIMER_VIRTUAL</b> (1) 
+for <b>SIGVTALRM</b>, or <b>ITIMER_PROF</b> (2) for <b>SIGPROF</b>.
+<p>The rest of the parameters are pointers to millisecond values. 
+<b><i>interval</b></i> is the value to which the timer will be reset. 
+<b><i>value</b></i> is the current timer value. <b><i>ointerval</b></i> 
+and <b><i>ovalue</b></i> are the previous values.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+pea	ovalue
+pea	ointerval
+pea	value
+pea	inteval
+move.w	which,-(sp)
+move.w	#$0149,-(sp)
+trap	#1
+lea	$12(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Tsetitimer()</B> returns 
+<b>E_OK</b> or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>Setting new interval values needs root 
+privileges.
+</td></tr>
+
+</table>
+</body>
+</html>

@@ -1,0 +1,283 @@
+Documentation file for Ssystem(), the new kernel call
+=====================================================
+
+last update: 1998-10-06
+
+
+I. Introduction
+---------------
+
+The Ssystem() call has been designed to make your life easier. Using this
+you can get some closer control on the system and the kernel itself. Via
+this call the kernel now supports e.g. an easy Cookie Jar management and
+provides a safe access to supervisor memory. It's strictly encouraged to
+access GEMDOS variables and system vectors via the Ssystem(), because this
+way is considered safe for multiuser setups.
+
+
+II. Definition
+--------------
+
+C:
+
+long Ssystem(short mode, long arg1, long arg2);
+
+Assembler:
+
+	move.l	#arg2,-(sp)
+	move.l	#arg1,-(sp)
+	move.w	#mode,-(sp)
+	move.w	#$0154,-(sp)
+	trap	#1
+	lea	$0c(sp),sp
+
+
+III. Caveats
+------------
+
+a) Prior to any further Ssystem() usage, your application should first
+check if the kernel supports this call. If it does, the following
+statement:
+
+	Ssystem(-1, 0L, 0L);
+
+should return a zero. You can expect the function to be present if MiNT
+version at least 1.15 is detected.
+
+b) the Ssystem() does _NOT_ depend on the SECURELEVEL.
+
+c) any values returned by the kernel on 'reserved' fields should be
+   considered undocumented and no software should rely on them.
+
+
+IV. Available modes
+-------------------
+
+Notice: the returned value is always LONG, so, if you're a C programmer,
+you may have to cast the result to the type specified in the 'return'
+column.
+
+
+Kernel information
+
+ number	mode		arg1	arg2	return	comment
+ ------	----		----	----	------	-------
+ 0	OSNAME		NULL	NULL	long	0x4d694e54 for MiNT
+ 1	OSXNAME		NULL	NULL	long	0x46726565 = FreeMiNT
+ 2	OSVERSION	NULL	NULL	long	0x010e0662 = 1.14.6 beta
+ 3	TOSHEADER	0L	NULL	short	TOS version number in low word
+ 4	OS_BUILD_DATE	NULL	NULL	long	0x040c07dc = 4.XII.1997.
+ 5	OS_BUILD_TIME	NULL	NULL	long	0x04090a16 = Thu 9:10:22 am
+ 6	COMPILE_TYPE	NULL	NULL	long	the CPU the kernel was compiled for
+ 7	FEATURES	NULL	NULL	long	memory protection/VM state
+
+OSNAME identifies the operating system type. Returned longword contains a
+32-bit number, which interpreted as an ASCII string gives a 4-character
+ID. For MiNT the returned value is 0x4d694e54 ('MiNT').
+
+OSXNAME identifies the subtype of the operating system. If this call
+returns a zero, that means, that no subtype is available. Otherwise the
+returned value, when interpreted as an ASCII string gives a 4-character
+sub-ID. For FreeMiNT, being a derivative of the MiNT, the returned value
+is 0x46726565 ('Free').
+
+OSVERSION identifies the exact operating system version. Returned longword
+contains a 32 bit version number encoded as follows:
+
+	bits	meaning
+	----	-------
+	0-7	some printable character to characterize the
+	        current version eg.
+	        	0x61 ('a') if alpha release,
+	        	0x62 ('b') if beta release.
+	        For `official' FreeMiNT releases you will
+	        always find a value of 0 here.  (Definition of
+	        an `official' FreeMiNT release:  Every
+	        release for which in bits 0-7 a value of 0
+	        is returned...)
+	8-15	patchlevel (0x55 for pl 88)
+	16-23	minor version number (0x0e for x.14)
+	24-31	major version number ($01 for 1.xx)
+
+TOSHEADER allows to access the TOS header in order to get some information
+from.  Current implementation allows to access the first 1024 longwords of
+the header.  The address of the required longword, relative to the
+beginning of the TOS header, has to be specified as arg1. Only even values
+are allowed (bit 0 of the arg1 is masked out by the kernel). Always a
+whole longword is returned.
+
+OS_BUILD_DATE returns a 32 bit value with the build date encoded as
+follows:
+
+	bits	meaning
+	----	-------
+	0-15	binary year ($07dd for 1998)
+	16-23	binary month ($0c for the December)
+	24-31	binary day of the month
+
+OS_BUILD_TIME returns a 32 bit value with the build time encoded as
+follows:
+
+	bits	meaning
+	----	-------
+	0-7	binary seconds
+	8-15	binary minutes
+	16-23	binary hours
+	24-31	day of week (1 for monday, 2 for tuesday ... 7 for sunday)
+
+COMPILE_TYPE returns a 32-bit value specifying the CPU type the kernel has
+been compiled for. Encoding:
+
+	bits	meaning
+	----	-------
+	0-15	binary CPU ID ($001e = 68030)
+	16-31	reserved for FPU ID (currently not implemented)
+
+FEATURES returns a 32-bit value specifying the state of memory management
+features. Encoding:
+
+	bits	meaning
+	----	-------
+	0	memory protection (1 = turned on)
+	1	virtual memory (1 = turned on)
+	2-31	reserved for future usage
+
+
+Cookie Jar management
+
+ number	mode		arg1	arg2	return	comment
+ ------	----		----	----	------	-------
+ 8	GETCOOKIE	tag	ptr	0	get Cookie Jar value for 'tag'
+ 8	GETCOOKIE     	slot	ptr	0	get Cookie Jar tag of number 'slot'
+ 9	SETCOOKIE	tag	value	0	place tag/value in the Cookie Jar
+
+GETCOOKIE fetches required information from the Cookie Jar. If 'arg1' is a
+value bigger than 65535 ($ffff), it is interpreted as a tag id. The cookie
+jar is searched for such a tag, then if the tag is found, the
+corresponding slot value is returned or -1 otherwise. If 'arg1' is a value
+between 1 and 65535, it is interpreted as a slot number, not a tag id.
+Then the corresponding tag id is fetched and returned or a value of -1 if
+the specified slot is free or does not exist at all (a slot number past
+the end of the Cookie Jar was specified). The first slot in the Cookie Jar
+is considered number 1. If 'arg1' is equal to a zero, then the Cookie Jar
+is searched for the NULL cookie, then the corresponding slot value is
+returned.  The place where the value fetched from the Cookie Jar will be
+returned is defined by the 'arg2'. If this is a zero, the call returns its
+values in the GEMDOS return value (d0). If the 'arg2' is not a zero, it is
+interpreted as a pointer, where the slot tag or value should be written
+to. The return value is 0 (E_OK) then, if everything went OK, or -1
+otherwise. This behaviour (where arg2 != NULL) is new in MiNT 1.14.8.
+
+SETCOOKIE places a tag id specified by the 'arg1' with the value of the
+'arg2' in the Cookie Jar. If a slot with the specified tag id already
+exists, it will be replaced with the new value. NULL cookie is reallocated
+automatically and its value is corrected. If there are no more free slots,
+no action is performed and ENSMEM is returned instead. SETCOOKIE requires
+euid root, EACCDN is returned otherwise and no action is performed either.
+SETCOOKIE refuses to place a cookie (a value of -1 is returned) whose tag
+id contains a zero-byte.
+
+
+System variables management
+
+ number	mode		arg1	arg2	return	comment
+ ------	----		----	----	------	-------
+ 10	GET_LVAL	addr	NULL	long	returns lword from specified addr
+ 11	GET_WVAL	addr	NULL	short	returns word from speified addr
+ 12	GET_BVAL	addr	NULL	char	returns byte from specified addr
+ 13	SET_LVAL	addr	value	0	sets a byte at a specified address
+ 14	SET_WVAL	addr	value	0	sets a word at a specified address
+ 15	SET_BVAL	addr	value	0	sets a longword at a specified address
+
+GET_LVAL, GET_WVAL and GET_BVAL fetch and return a longword, a word or a
+byte respectively from the address of supervisor area specified as a
+16-bit, even integer value passed as 'arg1'. Odd numbers get decreased by
+1 for GET_LVAL and GET_WVAL. Addresses from $0008 up to $ffff are allowed,
+the call returns a zero for addresses less than $0008.
+
+SET_LVAL, SET_WVAL and SET_BVAL places a longword, word or byte value
+respectively, specified by 'arg2' at address specified by 'arg1'. Since
+this call is designed for manipulating operating system variables located
+within the supervisor area (first 32k), all SET_xVAL modes are restricted
+for euid root and return EACCDN if called by an unprivileged process.
+
+
+Kernel management
+
+ number	mode		arg1	arg2	return	comment
+ ------	----		----	----	------	-------
+ 16	SYS_SLEVEL	slevel	NULL	0
+ 16	SYS_SLEVEL	-1	NULL	slevel
+ 18	TSLICE		slices	NULL	0	negative on error
+ 18	TSLICE		-1	NULL	slices	current time_slice value
+ 19	FORCEFASTLOAD	0	NULL	0	switch off fastload
+ 19	FORCEFASTLOAD	1	NULL	0	switch on fastload
+ 19	FORCEFASTLOAD	-1	NULL	fastld	return the current state of the fastload
+ 20	SYNC_TIME	seconds	NULL	0	set sync time
+ 20	SYNC_TIME	-1	NULL	seconds	current sync time
+
+SYS_SLEVEL resets the current security level to a value specified by
+'arg1'. Only values of 0, 1 and 2 are accepted, EACCDN is returned
+otherwise. This mode is restricted to euid root. If 'arg1' is equal to a
+-1, the current security level value is returned.
+
+TSLICE allows you to set/interrogate the timeslice value. Values are
+exactly the same as for SLICES keyword in MINT.CNF. 'arg1' equal to -1
+returns the current global timeslice value.
+
+FORCEFASTLOAD allows to change the interpretation of the FASTLOAD bit from
+the program header. On Ssystem(FORCEFASTLOAD, 0, NULL) the program header
+bit will be used as before, this is actually equal to FASTLOAD=NO in
+MINT.CNF. On Ssystem(FORCEFASTLOAD, 1, NULL), the program header bit will
+be ignored and fastload will be forced for all programs. arg1 = -1 allows
+to examinate the current state of this feature. This mode is restricted to
+euid root.
+
+SYNC_TIME allows to change the time between two filesystem syncs. If you use
+a filesystem with write back cache like MinixFS or NEWFATFS the kernel sync
+automatically every filesystem in regular intervals. With SYNC_TIME you can
+change these time. This mode is new in FreeMiNT 1.15.
+
+
+Time management
+
+ number	mode		arg1	arg2	return	comment
+ ------	----		----	----	------	-------
+ 100	CLOCK_UTC	-1	NULL	cmode
+ 100	CLOCK_UTC	cmode	NULL	0
+
+GET_CLOCK_MODE called with an ARG1 of -1 inquires the kernel's notion of
+the hardware system clock.  If the command returns zero, the hardware
+clock is considered to tick in UTC, if it returns a positive non-zero
+value it is considered to tick in local time.  Every other positive value
+sets the current clock mode.  For 0 it is reset to UTC, or to local time
+otherwise.  Although this call will never really change the setting of the
+hardware clock, due to a changed interpretation the clock seems to warp;
+don't play around too much with it.
+
+For further information please see the file minttime.doc.
+
+WARNING: modes 16-18 are new in FreeMiNT 1.14.7. Mode 100 is new in
+FreeMiNT 1.15. If the kernel provides Tgettimeofday and Tsettimeofday you
+can expect them to be supported.
+
+
+Other modes
+
+ number	mode		arg1	arg2	return	comment
+ ------	----		----	----	------	-------
+ 17	RUN_LEVEL	run_lvl	NULL	short	currently not implemented
+ 21752	TIOCMGET	addr	NULL	short	reserved for the MiNT Library
+
+RUN_LEVEL is currently not implemented but reserved for future.
+
+TIOCMGET is reserved for the MiNT Library and shouldn't be used by
+application software.
+
+
+V. Implementations
+------------------
+
+Ssystem(), if supported by the kernel, is used by the MiNT Library as of
+patchlevel 48. The call should be considered officially supported as of
+FreeMiNT version 1.15.

@@ -1,0 +1,317 @@
+The UNIXMODE Extended Filename Standard
+
+
+0. Summary
+
+The UNIXMODE extended filename standard provides a uniform, user-controlled
+way of mapping the user's name for files (which need not conform to the
+GEMDOS restrictions on length and case) to the names by which GEMDOS
+knows them. It is intended to be as compatible as possible, e.g. whenever
+reasonable the GEMDOS name of a file should match the name that GEMDOS would
+have assigned to the name by it's usual conversions. File names with
+multiple extensions are permitted by translating the '.' character to a
+user-specified replacement (e.g. '_'). Long file names, and file names
+with mixed upper and lower case, are represented by entries in a special
+file, ".dir". This file also contains entries for Unix-like symbolic links.
+Programs use the ".dir" files in the appropriate directories to translate
+file names to/from GEMDOS. All translations are controlled by the user
+through the environment variable UNIXMODE.
+
+
+1. Rationale
+
+GEMDOS filenames are limited to an 8 character name plus a 3 character
+extension. The names must be all upper case, and must not contain certain
+characters (such as ' ' and '.'). Many other popular operating systems,
+most notably Unix, have much more flexible naming conventions. Moving files
+from computers running such operating systems to an Atari ST can sometimes
+present problems.
+
+Moreover, short filenames are sometimes not very descriptive at all. Having
+longer filenames, with fewer restrictions, makes remembering what's in the
+files *much* easier.
+
+
+2. The Proposal
+
+We're stuck with GEMDOS's rules, at least for the time being. However, there's
+nothing preventing programs from storing extra information about filenames.
+Thus, a program could know that when the user refers to "govt.letter.april1"
+to actually use the file "GOVTLET.AP1".
+
+The UNIXMODE extended filename standard provides a uniform method of
+associating long filenames with shorter, GEMDOS compatible filenames. 
+"UNIXMODE" is the name of an environment variable. This variable contains
+information about how the user wishes file names to be mapped. File name
+mapping can be turned off completely, or altered to reflect changes in
+the file system. Thus, programs using the UNIXMODE standard will still work
+correctly in future versions of GEMDOS (or GEMDOS emulators) which allow
+longer or otherwise more flexible file names. Also, UNIXMODE standard programs
+do not impose their will on the user; the user controls whether or not,
+and how, extended filename mapping is performed.
+
+Programs that use the UNIXMODE standard can allow file names up to 31
+characters in length. These file names may be mixed upper and lower case,
+with periods and even spaces in them (although the latter is not recommended).
+The only characters *not* permitted in file names are the null, tab,
+newline, and carriage return characters.
+
+The UNIXMODE standard also provides for symbolic links. These are special
+directory entries that "point to" other directory entries. They provide
+an easy way to reference the same file under more than one name. For
+example, if there are several versions of a document under revision
+simultaneously, a symbolic link called, say, "current" could point to
+the most current version. An editor that followed the UNIXMODE standard
+could be invoked by, say, "edit current" and would correctly retrieve the
+current version.
+
+In fact, under the UNIXMODE standard, long or otherwise unusual file names
+are implemented by a special kind of symbolic link, the "automatic"
+symbolic links. These links (also called "aliases") are used in mapping
+long file names to ones that GEMDOS understands. If the user has made
+provisions for allowing automatic links (see below), then every time a
+file is created whose name is not acceptable to GEMDOS, then the file's
+name is modified to be acceptable, and a symbolic link with the user's
+preferred name for the file is created.
+
+
+3 Filename Translations
+
+Programs that follow the UNIXMODE standard will translate file names in
+certain standard ways. These translations may be over-ridden by various
+options in the UNIXMODE environment variable, but in general it is best
+*not* to override them.
+
+When translating from user names to GEMDOS names:
+(a) if a symbolic link is found with the same name as the user name,
+    it is used.
+(b) the character '/' may be converted to '\', depending on user options
+(c) filenames are converted to upper case
+(d) occurrences of the character '.' may be converted to a user-
+    specified character, to prevent conflict with GEMDOS
+    restrictions on extensions
+(e) filenames are truncated to have an (at most) 8 character base and an
+    (at most) 3 character extension.
+
+When translating from GEMDOS names to user names (e.g. printing the name
+of the current directory):
+
+(a) '\' may be converted to '/'
+(b) if an automatic symbolic link exists to the file, then that name
+    is used instead of the file name
+(b) filenames are converted to lower case
+(c) occurrences of the user-specified replacement character for '.'
+    are converted back to '.'.
+
+If the user name is not already a symbolic link, and the conversion from
+user->GEMDOS->user again would change the name, then an automatic symbolic
+link may be created for the file name. This allows the user to refer
+to the file by its full name, and also allows the program to print the
+name by which the user wishes to refer to the file, rather than the name by
+which GEMDOS knows the file.
+
+Examples:
+If all of the above mappings are asked for by the user, and the user
+specifies the character '_' as the replacement for '.', then
+
+user name:		becomes:
+foo.bar			FOO.BAR
+foo.bar.c		FOO_BAR.C
+longname1.extension	LONGNAME.EXT		*
+ReadMe			README			*
+a_file.doc		A_FILE.DOC		*
+
+In the cases marked (*), the user name is not recoverable from the GEMDOS
+name. In these cases, programs should (if the user requests it) create
+automatic symbolic links from the user name to the GEMDOS name; such links
+will allow programs to properly recover the user's desired name for the files
+in directory listings, etc.
+
+3.1 The UNIXMODE Environment Variable
+
+The environment variable UNIXMODE contains the user's preferences for
+file name mapping. Each character in the environment variable string
+represents one of the options below. If the UNIXMODE variable is not
+found in the environment, programs may assume whatever defaults are
+appropriate. It is recommended that symbolic links *not* be active by
+default. The empty string is a reasonable default, providing complete
+GEMDOS compatibility. The GNU C library assumes a default of "/", for
+compatibility with old code.
+
+The characters in the UNIXMODE string have the following meanings:
+(characters inside of angle brackets <> are supplied by the user; thus
+"r<c>" means the letter "r" followed by any other character, which will
+be referred to in the text as "<c>")
+
+/	-- Allow the use of '/' as well as '\' to separate the directories
+	   in a path name. If the "/" option is given, then the name
+	   "foo/bar" refers to the file "BAR" in the directory "FOO".
+	   Otherwise (the default) it refers to the file "FOO/BAR" in the
+	   current directory.
+
+.<c>	-- Translate multiple uses of the '.' character to the
+	   character <c>. Normally, GEMDOS allows only one '.' in a
+	   file name, and it introduces the extension. This option allows
+	   extra extensions. All but one (or perhaps even all) '.' characters
+	   are converted into <c>. At most one '.' will be left; this will be
+	   chosen to minimize the number of characters lost to the 8+3 rule
+	   (unless the "u" option is in force, see below).
+
+	   Example: if "._" is found in the UNIXMODE string, then the
+	   following translations will occur:
+		foo.c.z    becomes  FOO.C_Z
+	        foo.c.bak  becomes  FOO_C.BAK
+		a.b.c.d    becomes  A_B.C_D
+		foo.bar    remains  FOO.BAR
+		.login	   becomes  _LOGIN  (rather than ".LOG")
+
+	   If the "." option is present, programs should convert filenames
+	   back to what the user expected, e.g. in the above, "A_B.C_D"
+	   should be displayed to the user as "a.b.c.d".
+	   Note that if a file name would contain the character <c> used
+	   for mapping '.', and automatic symbolic links are active,
+	   then an automatic link should be made for the name.
+	   Example: if ".@LA" is in the UNIXMODE string, and the
+	   user enters the name "foo@bar.c", then a link from
+	   "foo@bar.c" to "FOO@BAR.C" should be made, so as to
+	   distinguish "foo@bar.c" and "foo.bar.c".
+
+	   The translation character <c> must not be an alphabetic
+	   or numeric character (if it is, this option should be ignored).
+	   It is recommended that users adopt either ',' (comma) or '_'
+	   (underscore) for this character.
+
+-	-- The minus character is guaranteed to have no meaning. Thus,
+	   if the UNIXMODE string consists solely of "-", the effect
+	   is the same as if it were empty. This may seem puzzling,
+	   but is necessary because many programs are incapable of
+	   correctly recognizing empty environment strings.
+
+d	-- Provide a pseudo-device directory. Filenames that begin with
+	   the characters "/dev/" are assumed to refer to devices.
+	   The devices available may vary, but the following devices must
+	   always be present:
+		/dev/console	same as GEMDOS file CON:
+		/dev/tty1	same as GEMDOS file AUX:
+		/dev/lp		same as GEMDOS file PRN:
+
+r<c>	-- Provide a default root drive. If the "r" option is present, then
+	   the search for a file whose name begins with a directory separator
+	   (e.g. '\') and which have no explicit drive letter present will
+	   begin on drive <c>. If the "r" option is not present, then
+	   the search will begin on the current drive (the default). Note
+	   that the actual drive on which the file is found may differ,
+	   if one of the components of the file name is a symbolic link.
+
+	   Example: if "rC" is set in UNIXMODE, and the current directory
+	   is "D:\FOO\BAR", then the filename "\bin\sh" refers to the file
+	   "C:\BIN\SH", not the file "D:\BIN\SH" as it would normally.
+
+L	-- Allow, and recognize, symbolic links. See below for a more
+	   complete description of this option.
+
+A	-- Automatically create links to files whose user names are not
+	   recoverable from the GEMDOS names. Automatic links are much
+	   "tighter" than normal symbolic links; for example, removing
+	   an automatic link will also remove the associated file or
+	   directory, whereas removing a normal link removes the file, only.
+	   Also, automatic links should appear in directory listings in
+	   place of the associated file; normal symbolic links appear in
+	   addition to, but not in place of, the files they are linked to.
+
+	   If an automatic link is created, and then the "A" option is turned
+	   off by the user, the automatic link will behave like a normal
+	   symbolic link until the "A" option is turned back on.
+
+	   The "A" option is meaningful only if the "L" option is also given.
+
+H	-- Hide the ".dir" file that symbolic links are contained in
+	   from directory searches. The file may still be manipulated by,
+	   e.g. "Fdelete", but should never be shown to the user in a
+	   directory listing, file selector, or similar display.
+
+The next two options are provided for compatibility with replacement
+file systems running under GEMDOS, or similar extensions to GEMDOS. They
+should not be used in the normal environment.
+
+c	-- Pretend case is significant in file names. If this flag is
+	   present, then UNIXMODE programs will not translate the case
+	   of file names in any way, and will assume that case is significant
+	   to the underlying operating system.
+	   The "c" flag should *not* be used in present versions of GEMDOS,
+	   since these are case insensitive. It is provided so that programs
+	   will work correctly under GEMDOS extenders or future versions of
+	   the OS.
+
+u	-- Assume file name length is unlimited. Like the "c" option, this
+	   should not normally be used under GEMDOS. If "u" is not present,
+	   it is assumed that the operating system recognizes only the first
+	   8 characters of the filename, and 3 characters of the extension
+	   (if any). If "u" is present, then it is assumed that files may
+	   be of any length, and may contain any number of '.' characters. If
+	   the second assumption is false (e.g. a GEMDOS emulator running on
+	   VAX/VMS) then the "." option must be used to translate extra
+	   occurrences of periods.
+
+
+4 Symbolic Links
+
+Symbolic links are implemented by special GEMDOS files named ".dir". Such
+a file should appear in any directory in which a symbolic link appears.
+If the "L" flag has been given in the UNIXMODE environment variable, then
+programs should look in any ".dir" files anywhere along the path of a
+file being opened. This means that symbolic links to directories are
+permitted, and function as expected.
+
+Example:
+Suppose a program attempts to open the file "c:\foo\ReadMe". If the following
+symbolic links are present:
+
+in directory "c:": "foo" is linked to "d:\sub\dir"
+in directory "d:\sub\dir": "ReadMe" is linked to "..\Important"
+in directory "d:\sub": "Important" is linked to "vital.txt"
+
+and if the "L" option is active, then the name "D:\SUB\VITAL.TXT" is passed
+to GEMDOS for the actual file open operation. The translation proceeds as
+follows:
+
+c:\foo\ReadMe -> d:\sub\dir\ReadMe -> d:\sub\dir\..\Important ->
+	d:\sub\Important -> d:\sub\vital.txt (-> D:\SUB\VITAL.TXT).
+
+[The last step (case translation) may actually be interspersed with the other
+ steps; part of a name may be converted to upper case as soon as it is known
+ that it is not a symbolic link].
+
+4.1 Implementation of Symbolic Links
+
+In every directory that contains a symbolic link, there is a file called
+".dir". Each symbolic link occupies a single record in the file (records
+are separated by a newline character). Each record consists of 2 or 3 fields,
+separated by tab characters. The first field is the user's name for the
+symbolic link, e.g. "ReadMe". The second field is the destination of the link,
+e.g. "d:\sub\dir". This destination need not be a complete path, nor need it
+be in GEMDOS format; i.e. the destination name will be converted just like all
+other user-supplied names. The (optional) third field consists of flags for
+the link. At present, the only character that has meaning in this field
+is the letter 'A', which (if present) indicates that the link is an
+automatic link. However, programs must preserve all characters in the flags
+field when manipulating symbolic links, so that they will work correctly with
+future extensions to the standard.
+
+Carriage return characters are ignored everywhere in the symbolic link
+files. Programs should neither require carriage returns after the line
+feed ending a record, nor forbid them.
+
+
+5 Extensions
+
+There may be future extensions to the standard. Programs should ignore,
+without reporting an error, any characters that they do not recognize in
+the UNIXMODE environment string or in the flags field of symbolic links.
+
+The GNU C compiler library supports the following additional option in
+the UNIXMODE environment string:
+
+b	-- Open all files in binary mode. With this option, new lines in text
+	   files are indicated by a line feed alone, rather than the customary
+	   carriage return/line feed combination.

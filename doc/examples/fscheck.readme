@@ -1,0 +1,30 @@
+
+1. create a 'bin' folder in your Multitos folder
+
+2. copy sh (current bash release recommended) and fscheck.sh
+   to this folder:
+   
+   mint/
+   - mint.cnf
+   - bin/
+     - sh
+     - fscheck.sh
+
+3. install fsck.ext2 (the ext2 filesystem checker) and fsck.minix
+   (minix filesystem checker) in your $PATH so it's found by the
+   script
+
+4. make sure you have grep, test and some other elementar tools
+   in your $PATH
+
+5. remove the filesystem check from your /etc/rc.boot
+   if you have installed something like the KGMD or so
+
+6. add the following lines to your MiNT.CNF:
+
+# default path [fsck.ext2 & fsck.minix & and the other required tools]
+setenv PATH \usr\mint\bin;\usr\mint;\bin;\sbin;\usr\bin;\usr\sbin
+
+# check filesystems if neccessary
+exec u:\c\mint\bin\sh u:\c\mint\bin\fscheck.sh
+echo 

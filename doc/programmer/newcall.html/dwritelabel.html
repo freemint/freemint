@@ -1,0 +1,75 @@
+<html>
+<head>
+	<title> New MiNT system calls: Dwritelabel() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Dwritelabel()</H3>
+
+<P>
+<B>LONG Dwritelabel( <i>name, label</i> )</B>
+<P>
+<B>char <I>*name</I>;<br>
+char <i>*label</i>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Dwritelabel()</B> sets a label for the specified 
+filesystem.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>339 (0x0153)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.12 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><b><I>name</b></I> is a path pointing 
+to the disk to write the label to.
+<p><b><i>label</b></i> is a pointer to a memory buffer containing the 
+new label.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+pea	label
+pea	name
+move.w	#$0153,-(sp)
+trap	#1
+lea	$0a(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Dwritelabel()</B> returns 
+<b>E_OK</b> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Caveats</B></TH><TD>Prior to MiNT version 1.14.5 this call 
+contained a bug that allowed the label to be changed by all users.
+</TD></TR>
+
+<TR><TH><B>Comments</B></TH><TD>Not all filesystems understand the 
+concept of a disk label.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="dreadlabel.html"><b>Dreadlabel()</b></a>
+</tr>
+
+</table>
+</body>
+</html>

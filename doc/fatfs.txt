@@ -1,0 +1,33 @@
+FreeMiNT's real FAT XFS
+=======================
+
+last update: 2001-07-31
+Author: Frank Naumann <fnaumann@freemint.de>
+
+
+FreeMiNT 1.15 has a new FAT filesystem. It is integrated
+in the kernel.
+
+The NEWFATFS has many advantages:
+- very fast
+- mostly configurable also on runtime
+- supports Microsofts VFAT extension
+- supports TOS and DOS partitions of any size
+- supports FAT32 partitions;
+  partitions larger than 2 GB are no longer a problem
+- part of FreeMiNT, available in source for easy support
+
+At the moment the old TOS filesystem is the default
+filesystem. This will change in the future.
+
+To activate the new FAT filesystem (NEWFATFS), there is 
+a new configuration keyword to use in the configuration 
+file (MiNT.CNF).
+With a line like "NEWFATFS=A,D,E,F" the NEWFATFS will be
+active on A:, D:, E: and F: (valid FAT partition only)
+
+VFAT can be configured at boot time in the configuration file
+with "VFAT=<drives>" keyword (same syntax as NEWFATFS).
+
+Write back cache can be activated at boottime with
+"WB_ENABLE=<drives>" keyword (same syntax as NEWFATFS).

@@ -1,0 +1,20 @@
+
+This programs allocates 2 MB of the memory (from the fast ram, if
+present), splits the block to two parts a 1 MB, then copies one to another
+32 times using several different methods.
+
+Since new MiNT functions are used to measure timings and control caches,
+you'd need at least MiNT 1.15.0 (MiNT 1.15.1 and up is recommended).
+
+While the program is running on a Falcon, you can observe a very
+interesting effect how the 68030 data cache degrades (yes, DEGRADES) the
+performance.
+
+But, do not be quick getting conclusions: on a system where data burst is
+operational (on normal Falcon it is not, enabling it has no effect), i.e. 
+for example on a ct2, the data cache enabled suppsedly increases the
+performance. So do not disable the cache in own programs, even if you
+think it is advantageous. Let the user decides (if he has a CPX for that,
+that it).
+
+

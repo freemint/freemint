@@ -1,0 +1,66 @@
+<html>
+<head>
+	<title> New MiNT system calls: Slbclose() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Slbclose()</H3>
+
+<P>
+<B>LONG Slbclose(<i>sl</i>)</B>
+<P>
+<B>LONG <I>sl</I>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Slbclose()</B> close a MagiC-style shared library.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>23 (0x017)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available as of FreeMiNT version 
+1.15.4.</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>sl</I> is the library handle 
+filled out by the previous <b>Slbopen()</b> call.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.l	sl,-(sp)
+move.w	#$0017,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Slbclose()</B> returns 
+<b>E_OK</b> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Caveats</b></th><td>The <b>Slbclose()</b> call must me made 
+from user mode, or <b>SIGSYS</b> will be generated otherwise.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="slbopen.html"><b>Slbopen()</b></a>,
+</td>
+</tr>
+
+</table>
+</body>
+</html>

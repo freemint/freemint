@@ -1,0 +1,98 @@
+<html>
+<head>
+	<title> New MiNT system calls: Psigintr() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Psigintr()</H3>
+
+<P>
+<B>LONG Psigintr( <i>vec</i>, <i>sig</i> )</B>
+<P>
+<B>WORD <I>vec</I>;<br>
+WORD <i>sig</i>;</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Psigintr()</B> assigns a signal to a particular 
+exception vector. When the exception occurs, the kernel will send the 
+signal to the process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>318 (0x013e)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists. As of MiNT version 
+1.15.1 this call is available only on machines equipped with 68020 
+processor or newer.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>vec</I> specifies the 
+exception vector. This is the same value as specified for 
+<b>Setexc()</b> call. <i>sig</i> specifies the signal number that is 
+supposed to be delivered when an exception assigned to the vector 
+<i>vec</i> occurs. When both <i>sig</i> and <i>vec</i> are zero, all 
+handlers installed by your program are removed.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	#sig,-(sp)
+move.w	#vec,-(sp)
+move.w	#$013e,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Psigintr()</B> returns 
+<b>E_OK</b> on success, or a negative GEMDOS error code otherwise: 
+<p><b>EBADARG</b>, a signal or vector number was specified outside the 
+allowed range. Only autovectors ($60-$7c), traps ($80-$bc) and 
+user defined interrupts ($0100-$03fc) are allowed (other interrupts 
+already generate fixed signals).
+<p><b>ENOMEM</b>, the kernel ran out of memory while trying to allocate 
+RAM for internal structures needed by this call.
+<p><b>ENXIO</b>, the interrupt you want to register has no service 
+routine installed.
+<p><b>ENOSYS</b>, the function is not available (wrong architecture).
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+<TR><TH><B>Caveats</B></TH><TD>You should install a signal handler 
+prior to making this call, otherwise your process will most probably 
+get killed by the first occurrance of the interrupt assigned to 
+<i>vec</i> vector.
+<p><b>Also notice that the function is not available on machines 
+equipped with 68000 and 68010 processors.</b>
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>This function has been totally 
+rewritten as of MiNT version 1.15.1. However, the only change visible 
+to programs is that the old value of <i>vec</i> is no longer returned 
+(it had little use anyway). Also, since long stack frames are needed, a 
+68020 or newer processor is required.
+<p>The handler set up by <b>Psigintr()</b> gets removed when your 
+process terminates.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<b>Pause(), Pkill(), Psigsetmask(), Psignal()</b></td>
+</tr>
+
+</table>
+</body>
+</html>

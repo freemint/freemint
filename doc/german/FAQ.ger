@@ -1,0 +1,105 @@
+Hier ein kleines FAQ speyiell zu FreeMiNT 1.15:
+-----------------------------------------------
+
+
+F: Wie kann ich unter FreeMiNT einen zentralen Ordner fÅr SLB's
+   einrichten?
+
+A: Der Default Pfad fÅr einen Ordner der alle SLB Bibliotheken
+   enthÑlt muss im Environment der Anwendung durch die
+   SLBPATH Variable angegeben werden:
+   
+   SLBPATH=u:\usr\local\lib\slb
+   
+   Falls keine solche Environmentvariable vorhanden ist hat man
+   automatisch das alte Verhalten wie in vorhergehenden Releases.
+   
+   EinschrÑnkungen: SLBPATH muss eine GEMDOS konforme Pfadangabe
+                    enthalten:
+                    
+                    SLBPATH=c:\multitos\slb
+                    SLBPATH=u:\c\multitos\slb
+                    SLBPATH=u:\usr\local\lib\slb
+                    
+                    oder
+                    
+                    SLBPATH=u:/usr/local/lib/slb
+                    
+                    sind korrekte Pfadangaben (falls dieser Ordner
+                    auch wirklich vorhanden ist)
+
+
+F: Was ist das NEWFATFS?
+
+A: Das NEWFATFS ist das neue native FAT Filesystem in FreeMiNT.
+   In allen vorhergehenden Versionen wurde auf das FAT Filesystem
+   des TOS (und allen damit verbundenen Nachteilen) zurÅckgegriffen.
+   Im Moment wird noch standardmÑûig das alte TOS Filesystem
+   benutzt. Das NEWFATFS muû man fÅr die gewÅnschten Laufwerke
+   explizit in der MiNT.CNF aktivieren (siehe Konfiguration
+   fÅr mehr Details).
+
+
+F: I brauche kein VFAT. Warum ist das NEWFATFS in den kernel
+   eingebaut?
+
+A: Das NEWFATFS ist ein FAT Filesystem. Die VFAT Extension ist optional
+   und bspw. sinnvoll fÅr den Datenaustausch mit PCs.
+   Das NEWFATFS hat einige wichtige Vorteile gegenÅber dem
+   TOS Filesystem. Es ist im Source verfÅgbar und somit kînnen
+   Fehler leicht beseitigt werden. Desweiteren ist es nicht an
+   irgendwelche Limits und BeschrÑnkungen gebunden. So werden bspw.
+   auch FAT32 Partitionen unterstÅtzt. Nicht zuletzt ist es
+   erheblich schneller als das TOS Filesystem.
+
+
+F: Ich habe gehîrt man muû daû neue MinixFS 0.7x installieren
+   um den 1.15 Kernel einsetzen zu kînnen.
+
+A: Das ist falsch. Man kann jede beliebige MinixFS Version benutzen.
+   Es ist allerdings gewÅnscht auf die aktuelle MinixFS Version
+   zu updaten. Dann profitiert man automatisch von dem neuen
+   globalen (und effizienteren) Filesystemcache in FreeMiNT.
+
+
+F: MinixFS 0.7x erkennt meine Minix Partitionen nicht mehr.
+   Ich benutze AHDI als Harddisktreiber.
+
+A: MinixFS 0.7x benîtigt XHDI fÅr Partitionen grîûer 32 MB.
+   Es ist erwÅnscht einen XHDI fÑhigen Harddikstreiber
+   zu installieren.
+
+
+Q: Beim lîschen/kopieren/verschieben von vielen verschachtelten
+   Ordnern erscheint plîtzlich folgende Fehlermessage:
+   "block_IO.c: bio_unit_get: no free unit in cache, abort".
+
+A: Der Filesystemcache ist zu klein. Der standardmÑûige Cache ist
+   recht klein und es ist sowieso aus PerformancegrÅnden anzuraten
+   den Filesystemcache zu vergîûern. Dazu in der MiNT.CNF einfach
+   die Zeile "CACHE=<Grîûe in kb>" ergÑnzen (mit Grîûe >= 300 kb).
+
+
+Q: Ich habe eine FAT32 partitionierte Festplatte und diese kann nicht
+   unter FreeMiNT 1.15 angesprochen werden.
+
+A: Man benîtigt mindestens HDDriver 7.55 um FAT32 Partitionen
+   benutzen zu kînnen.
+
+
+Q: Warum wird HDDriver 7.55 fÅr FAT32 UnterstÅtzung benîtigt?
+
+A: Andere Harddisktreiber bzw. Ñltere Versionen von HDDriver
+   ignorieren FAT32 Partitionen komplett und ein Zugriff ist somit
+   nicht mîglich.
+
+
+Q: Kann ich den original AHDI von ATARI corp. als Harddisktreiber
+   einsetzen?
+
+A: Ja, das geht. Es ist aber stark empfohlen auf einen modernen
+   Treiber mit XHDI UnterstÅtzung upzudaten.
+   Wenn man DOS Partitionen ansprechen mîchte ist dies sogar
+   gar nicht anders mîglich. AHDI kennt keine DOS Partitionen
+   und kann deshalb auch nicht darauf zugreifen.
+   Desweiteren benîtigt MinixFS 0.7x ebenfalls XHDI.

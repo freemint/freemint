@@ -1,0 +1,224 @@
+Frank Naumann <fnaumann@cs.uni-magdeburg.de>                        1999-11-16
+------------------------------------------------------------------------------
+
+FreeMiNT Guide
+==============
+
+In diesem Dokument will ich meine Erfahrungen und Ratschl„ge zu FreeMiNT
+festhalten. Es betrifft vor allem immer wieder auftauchende Fragen ber
+bestimmte Tools und Installationsprobleme.
+
+Alle Angaben beziehen sich speziell auf die FreeMiNT 1.15 Versionen und k”nnen
+nur bedingt bzw. gar nicht auf „ltere Versionen (insbesondere dem originalen
+MiNT) bezogen werden.
+
+Fr konstruktive Kritik sowie Verbesserungsvorschl„ge, Erg„nzungen und
+Korrekturen bin ich jederzeit sehr dankbar.
+
+Rckmeldungen am besten per e-Mail. Bei allgemeinen Problemen oder
+Fragen zu FreeMiNT ist die MiNT-liste auch eine sehr gute Anlaufstelle.
+Man kann sich unter mint-request@fishpool.com und dem Betreff "subscribe"
+in diese Internet Mailingliste eintragen lassen. ACHTUNG: die ist eine
+internationale Mailingliste, alle Postings sind in Englisch!
+
+Ich m”chte auch insbesondere darauf hinweisen das alle geschilderten
+Erkenntnisse und Erfahrungen ber bestimmte Tools und Programme in keinster
+Weise die Leistungen der betreffenden Programmierer schm„lern und
+die Softwarequalit„t in irgendeiner Art bewerten sollen.
+
+
+FreeMiNT auf ATARI Clones
+-------------------------
+
+Fr Memory Protection wird mindestens die 1.15.1 Version von FreeMiNT
+gebraucht.
+
+Weiterhin gibt es ab dem 1.15.1 Release auch keinerlei Probleme mehr mit
+den Prozessorcaches. Fr FreeMiNT sollten die Caches jederzeit aktiviert
+sein (auch im WriteBack Modus) um die volle Leistung zu erreichen.
+Der Kernel aktiviert beim Booten dementsprechend auch s„mtliche Caches
+falls diese ausgeschaltet sind.
+
+Milan
+- es mu lediglich die spezielle Milan Version installiert werden
+
+Hades 040/060
+- es wird von dem Einsatz von FreeMiNT mit den originalen Hades
+  Tools dringend abgeraten (insbesondere in Verbindung mit dem HADES ACC)
+- stattdessen werden fr FreeMiNT die MMU Tools von Odd Skancke ben”tigt
+  bzw. sollten installiert sein; diese l”sen auch insbesondere
+  einige Probleme der HADES Hardware die inkompatibel zur
+  ATARI Spezifikation sind
+  mit diesen Treibern kann man auch Memory Protection aktivieren
+
+Afterburner 040
+- es wird das Toolkit von Douglas Little ben”tigt (allerletzte Version 5.08)
+- FreeMiNT l„uft damit hervorragend auf dem AB auch mit WriteBack Cache
+
+
+AUTO Ordner Reihenfolge
+-----------------------
+
+Darber gibt es immer wieder widersprchliche Aussagen. Die alte Aussage
+von frher das FreeMiNT das allerletzte AUTO Ordner Program sein mu
+ist berholt.
+
+Vor FreeMiNT sollten grunds„tzlich all diejenigen Programme gestartet werden
+die sich in irgendeiner Art und Weise in das System ber bestimmte Vektoren
+einklinken und resident installieren, dazu z„hlen insbesondere:
+
+- NVDI, NovaVDI
+- HSMODEM
+- BoxKite, Selectric
+- MetaDOS/MetaXBS
+- BIOS/XBIOS Erweiterungen wie bspw. das Milan Soundblaster XBIOS
+- Treiber fr Speichererweiterungen
+
+Unbedingt nach FreeMiNT mssen aber folgende Tools installiert werden:
+
+- FPU Emulationen fr 040/060
+- Wdialog (siehe auch bei Abschnitt: Wdialog)
+
+Und alle anderen normalen Programme. Programme die nach FreeMiNT im AUTO
+Ordner liegen werden „quivalent zu Programmen die in der MiNT.CNF gestartet
+werden behandelt.
+
+
+Memory Protection
+-----------------
+
+Dies ist ein Feature von FreeMiNT das auf Rechnern die ber eine MMU verfgen
+(mindestens 68030 Prozessor oder h”her) die Speicherbereiche der Applikationen
+gegenber unerlaubten Zugriffen schtzt. Bspw. wenn ein Prozess aufgrund
+eines Fehlers im Speicher wild herumschreibt. Memory Protection erh”ht deutlich
+die Systemstabilit„t. Es ist allerdings nicht so ganz einfach das System
+erstmal richtig konfigurieren.
+
+Leider lauern viele Fallstricke darauf das man hineintappt. Zuerst einmal
+gibt es leider einige recht weit verbreitete Protokolle die unter Memory
+Protection ihre Tcken haben:
+
+Das AV-Protokoll
+----------------
+
+Hierbei tauschen die Applikationen gegnseitig bestimmte Informationen aus.
+Dies geschieht aber indem Referenzen auf Speicherbereiche der anderen
+Applikation gesendet werden. Wenn nun die zweite Applikation versucht darauf
+zuzugreifen verletzt sie das Prinzip niemals auf fremde Speicherbreiche
+zuzugreifen. Dank Memory Protection wird dieses fehlerhafte Verhalten erkannt
+und die betreffende Applikaion terminiert. Nur leider provoziert genau
+das AV-Protokoll diesen illegalen Zugriff.
+
+Abhilfe ist hierbei die Speicherbereiche die ausgetauscht werden explizit
+fr andere Applikationen zugreifbar zu machen. Dies ist problemlos m”glich
+und wird von FreeMiNT auch untersttzt. Es gibt aber leider heutzutage
+immer noch Programmierer die dieses seit 1992 dokumentierte Verhalten entweder
+nicht kennen oder ignorieren. Folge ist das diese Programme nicht richtig
+funktionieren. Beispielsweise sind alle Programme von Holger Weets davon
+betroffen.
+
+In diesem Fall kann man nur auf die etwas unsch”ne Methode des Setzens der
+Kompatibilit„tsflags zurckgreifen. Die Kompatibilit„tsflags gibt es speziell
+um auch alte inkompatible Programme benutzen zu k”nnen. Mithilfe von
+Thing kann man diese sehr leicht einstellen.
+
+Das OLGA-Protokoll
+------------------
+
+Die ursprngliche Entwicklung von OLGA hat den Aspekt Memory Protection
+miteinbezogen. Das ist sehr positiv. Nur leider gab es bei der allerletzten
+Erweiterung wohl anscheinend einen Fehler. Die sogenannte "Inplace Drawing"
+Erweiterung ist ganz und gar nicht kompatibel zu Memory Protection. Hierbei
+werden n„mlich Referenzen auf interne Funktionen des Programms ausgetauscht!
+Zu dieser krankhaften Programmierweise will ich jetzt nichts weiter sagen.
+Einzige Abhilfe ist hierbei bei allen beteiligten Applikationen das
+Kompatibilit„tsflag auf `global` zu stellen.
+
+
+An dieser Stelle verweise ich jetzt auf die MP Liste wo alle Applikationen
+aufgefhrt werden die Probleme haben und welches die beste Einstellung fr das
+Kompatibilit„tsflag ist.
+
+Wenn man erstmal alle Holger Weets Programmme auf `readable` gestellt hat
+ist man schonmal den gr”ten Teil seiner Probleme los. Weiterhin sollte man
+am Anfang beim Einrichten der Memory Protection alle unn”tigen Programme
+weglassen (insbesondere Wdialog).
+
+Ich kann auch die (leider noch nicht erh„tliche) Thing Version empfehlen
+die die Fehler von Applikationen im AV-Protokoll abf„ngt und den Verursacher
+anzeigt.
+
+Bei N.AES 2.0 ist diese Thing Version die solche Fehler abf„ngt mit enthalten.
+
+
+Wdialog
+-------
+
+Leider scheint der Einsatz von Wdialog heutzutage unverzichtbar zu sein. Und
+gerade dieses Tool bereitet mit am meisten rger.
+
+Ich empfehle soweit wie es nur irgendwie geht auf den Einsatz von Wdialog
+unter FreeMiNT zu verzichten. Eine deutlich h”here Systemstabilit„t war
+bei mir die Folge.
+
+Begrndung:
+
+- Wdialog l„uft nur sehr eingeschr„nkt unter Memory Protection.
+  Konkret muss man die RAM Flags auf `global` stellen. Auf diese Art und
+  Weise kann Wdialog dann unter Memory Protection wenigstens eine
+  Applikation bedienen. Bei anderen Applikationen verursacht Wdialog
+  im Kontext der Applikation eine Memory Violation so da die
+  betreffende Applikation sofort beendet wird.
+- Wdialog ist meiner pers”nlichen Erfahrung nach ein „uerst unsauberes
+  Tool auch wenn es von B&B geschrieben wurde. Im Prinzip lassen sich alle
+  exestierenden Probleme und alle Probleme der Vergangenheit unter N.AES auf
+  eine „usserst unsaubere und nicht den Standards folgende Programmierung
+  zurckfhren. Die Argumentation das es unter MagiC stabil l„uft greift hier
+  auch nicht da anscheinend implizite Annahmen ber v”llig undokumentiertes
+  Betriebssystemverhalten gemacht wird.
+
+Desweiteren liegt N.AES 2.0 ein eigenes, nachprogrammiertes Wdialog bei.
+Im Gegensatz zum original ist es sauber in das System eingebunden und
+l„uft auch mit Memory Protection ohne Fehler.
+
+
+Freedom
+-------
+
+Freedom ist so unsauber geschrieben das es nicht unter FreeMiNT l„uft.
+Von einem Einsatz unter FreeMiNT mu grunds„tzlich abgeraten werden.
+
+Eine hervorragende Alternative zu Freedom ist BoxKite. Dieses untersttzt bspw.
+auch hervorragend moderne alternative Filesysteme.
+
+
+Sting
+-----
+
+Sting ist ebenfalls so ein Kandidat. Unsauber und instabil unter FreeMiNT.
+Von einem Einsatz m”chte ich abraten, man sollte stattdessen besser
+auf den FreeMiNT eigenen TCP/IP Stack MiNT-Net zurckgreifen. Mithilfe
+von Gluestik kann man s„mtliche STiK/Sting Applikationen auch unter MiNT-Net
+benutzen sowie die extrem groe Zahl von portierten Unix Applikationen.
+
+
+PureC
+-----
+
+- die IDE kann nicht mit langen Namen umgehen und hat insbesondere mit
+  alternativen Filesystemen Probleme
+
+- es wird von dem Einsatz des PureDebuggers unter FreeMiNT grunds„tzlich
+  abgeraten
+  
+  Begrndung:
+  - der PureDebugger l„uft grunds„tzlich nicht mit Memory Protection
+  - er ist ein „uerst unsauberes Programm bezueglich FreeMiNT
+  - er wurde ursprnglich fr Original ATARI Computer unter TOS geschrieben
+    und l„uft nur mit Hilfe spezieller Patchprogramme auf kompatiblen
+    ATARI Systemen und unter FreeMiNT; allerdings kann man mit Hilfe von
+    Patchprogrammen nur kleine Fehler umgehen; das grunds„tzliche Konzept
+    kann man nicht „ndern
+  - eine saubere Alternative die zudem noch st„ndig weiterentwickelt wird
+    ist Paral <Freeware>
+

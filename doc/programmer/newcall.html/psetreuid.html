@@ -1,0 +1,77 @@
+<html>
+<head>
+	<title> New MiNT system calls: Psetreuid() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Psetreuid()</H3>
+
+<P>
+<B>LONG Psetreuid(<i>ruid</i>, <i>euid</i>)</B>
+<P>
+<B>WORD <I>ruid</I>;<br>
+WORD <i>euid</i>;
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Psetreuid()</B> sets the real and/or effective user 
+<i>id</i> for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>334 (0x014e)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.12 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><i>ruid</i> specifies the 
+new real user <i>id</i> and <I>euid</I> specifies the new effective 
+user <i>id</i> for the calling process. If either argument is -1, only 
+the other gets changed.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	euid,-(sp)
+move.w	ruid,-(sp)
+move.w	#$014e,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Psetreuid()</B> returns 
+<b>E_OK</b> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+<TR><TH><B>Caveats</B></TH><TD>Setting user <i>ids</i> needs root 
+privileges.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>This call is often used by daemon 
+processes to <i>downgrade</i> their privileges to user level.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="psetregid.html"><b>Psetregid()</b></a>,
+<a href="pseteuid.html"><b>Pseteuid()</b></a></td>
+</tr>
+
+</table>
+</body>
+</html>

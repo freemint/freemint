@@ -1,0 +1,83 @@
+programmer documentation:
+
+/* interface via kerinfo struct */
+struct dma
+{
+	ulong	_cdecl (*get_channel)	(void);
+	long	_cdecl (*free_channel)	(ulong);
+	void	_cdecl (*dma_start)	(ulong);
+	void	_cdecl (*dma_end)	(ulong);
+	void *	_cdecl (*block)		(ulong, ulong, void _cdecl (*)(PROC *p));
+	void	_cdecl (*deblock)	(ulong, void *);
+};
+
+- every DMA driver first registers with the kernel. The kernel allocates a
+  unique channel descriptor for the driver which is then used for further
+  function calls.
+  
+  for registration the driver must use get_channel; get_channel return then
+  an unique channel number; a return value of 0 indicate that there are no
+  free channel available; any other value indicate a valid channel
+
+- A DMA driver can unregister (if it wants to terminate).
+  
+  for unregistration the driver must use free_channel; free_channel return
+  -1 for a channel that was not allocated; in general, this is mostly
+  a FATAL error and the driver must halt the system after he printed
+  some information message
+
+- When entering the driver, the driver calls dma_start. The kernel
+  automatically sets a semaphore for the driver and blocks here if another
+  process is already using the driver.
+
+- Then the driver can do whatever is necessary to start operation and
+  enable an interrupt. When this is done, the driver calls
+  dma_block(channel) which will block the current process and give up the
+  processor.
+  
+  dma_block can also automatically handle timeout events. For this dma_block
+  get an timeout value. The value specifiy the time in milliseconds.
+  If the timeout expire it will call the function that is the third argument
+  to dma_block or a default timeout function if the third argument is NULL.
+  The default timeout function simply call deblock(channel, -2) to unblock
+  the process. The return value of dma_block is then -2 if the timeout
+  deblock the process.
+  If you doesn't need a timeout simply set all other arguments of dma_block
+  to 0. A value of 0 for the timeout means an infinite timeout that
+  effectivly disable this feature.
+  
+  Note: It's not granted that the timeout happen *exactly* after the
+        specified number of milliseconds.
+
+- Now another process can run; if this process also tries to access the
+  driver, it will automatically be blocked because the semaphore is locked.
+
+- When the device has finished its operation, it causes an interrupt which
+  calls the ISR in the driver. The driver can either restart the device (if
+  further processing is required for the current task, eg. when doing
+  scatter-gather DMA), *or* it can call dma_deblock(channel). In either
+  case, the ISR ends and control returns to the process that was running
+  when the interrupt happened.  A call to dma_deblock(channel) unblocks the
+  driver task. The kernel then switches back to the driver task, which
+  continues by returning from dma_block. The driver may now either restart
+  the device (using operations that take too long to do this in the ISR, or
+  that need kernel calls) and call dma_block again, or it finishes by
+  cleaning up and calling dma_end.
+  
+  Note: After dma_start the interrupt can happen at any time and call
+        dma_deblock. The dma_block/dma_deblock interaction is interrupt
+        safe and dma_block will not block in such case and return
+        immediate.
+  
+  Note: dma_deblock get an additional parameter, called idev, 32bit long;
+        this is simply and internal driver value that is returned unchanged
+        from dma_block as return value
+        if your driver doesn't need an additional value simply set it to 0;
+        dma_block return then 0
+
+- When leaving the driver, the driver calls dma_end. This resets the
+  semaphore and unblocks other processes (one at a time) waiting to enter
+  the driver.
+
+- dma_deblock is the only routine that may be called from within an
+  interrupt service routine.

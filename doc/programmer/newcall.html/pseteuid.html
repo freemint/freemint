@@ -1,0 +1,74 @@
+<html>
+<head>
+	<title> New MiNT system calls: Pseteuid() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Pseteuid()</H3>
+
+<P>
+<B>LONG Pseteuid(<i>euid</i>)</B>
+<P>
+<B>WORD <I>euid</I>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Pseteuid()</B> sets the effective user <i>id</i> 
+for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>323 (0x0143)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>euid</I> specifies the new 
+effective user <i>id</i> for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	euid,-(sp)
+move.w	#$0143,-(sp)
+trap	#1
+addq.l	#4,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Pseteuid()</B> returns 
+new <i>euid</i> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+<TR><TH><B>Caveats</B></TH><TD>Prior to MiNT version 1.12 this 
+call contained a bug affecting its functionality.
+<p>Setting effective user id needs root privileges.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>This call is often used by daemon 
+processes to <i>downgrade</i> their privileges to user level.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="psetegid.html"><b>Psetegid()</b></a>, <b>Psetuid()</b>,
+<a href="psetreuid.html"><b>Psetreuid()</b></td>
+</tr>
+
+</table>
+</body>
+</html>
