@@ -59,10 +59,9 @@
 # ifdef NO_DELAY
 # define udelay(x)	/* on 68000 we don't need to delay */
 # define mdelay(x)	/* on 68000 we don't need to delay */
-# define wait5ms ({ udelay (1000); udelay (1000); udelay (1000); udelay (1000); udelay (1000); })
-# else
-# define wait5ms ({ udelay (1000); udelay (1000); udelay (1000); udelay (1000); udelay (1000); })
 # endif
+
+# define wait5ms	mdelay (5)
 
 
 /* there must be a better place for that */
