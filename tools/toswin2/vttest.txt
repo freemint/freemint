@@ -18,23 +18,26 @@ Test Of Screen Features
 [x] 80 column mode, light background
 [x] 132 column mode, dark background
 [x] 80 column mode, dark background
-[ ] Soft scroll down 1
-[ ] Soft scroll down 2
-[ ] Jump scroll down 1
-[ ] Jump scroll down 2
-[ ] Origin mode test
+[x] Soft scroll down 1
+[x] Soft scroll down 2
+[x] Jump scroll down 1
+[x] Jump scroll down 2
+[x] Origin mode test
 [x] Graphic rendition dark background
-[ ] Graphic rendition light background
+[x] Graphic rendition light background
 [ ] Test of save/restore cursor
 
 Test Of Double-Sized Characters
 ===============================
-[ ] 80 column mode, test 1
-[ ] 80 column mode, test 2
-[ ] 132 column mode, test 1
-[ ] 132 column mode, test 2
-[ ] centered frame
-[ ] bottom frame
+[x] 80 column mode, test 1
+[x] 80 column mode, test 2
+[x] 132 column mode, test 1
+[x] 132 column mode, test 2
+[x] centered frame
+[x] bottom frame
+Remark: Double-sized character are not supported but at
+least the screen does not get messed up (as for example
+in KDE konsole,
 
 Test Of Keyboard
 ================
@@ -51,10 +54,10 @@ Test Of Keyboard
 
 Test Of Terminal Reports
 ========================
-[ ] <ENQ> (AnswerBack Message
+[x] <ENQ> (AnswerBack Message
 [ ] Set/Reset Mode - LineFeed/Newline
 [ ] Device Status Report (DSR)
-[ ] Primary Device Attributes (DA)
+[x] Primary Device Attributes (DA)
 [ ] Secondary Device Attributes (DA)
 [ ] Tertiary Device Attributes (DA)
 [ ] Request Terminal Parameters (DECREQTPARM)
@@ -71,25 +74,25 @@ Test Of VT102 Features
 [ ] AX 80
 [ ] A**B 80
 [ ] Delete character 80
-[x] Staggered 1 80
-[x] Staggered 2 80
-[x] ANSI Insert Character 80
+[ ] Staggered 1 80
+[ ] Staggered 2 80
+[ ] ANSI Insert Character 80
 [ ] Screen accordeon test 132
-[ ] AX 132
+[x] AX 132
 [ ] A**B 132
 [ ] Delete character 132
 [x] Staggered 1 132
 [x] Staggered 2 132
-[x] ANSI Insert Character 132
+[ ] ANSI Insert Character 132
 
 Known Bugs
 ==========
-[x] Bug A: smooth scroll to jump scroll
+[ ] Bug A: smooth scroll to jump scroll
 [x] Bug B: Scrolling region
 [x] Bug C: Wide to narrow screen
 [x] Bug D: Narrow to wide screen
 [x] Bug E: Cursor move from double- to single-wide line
-[ ] Bug F: Column mode escape sequence
+[x] Bug F: Column mode escape sequence
 [x] Wrap around with cursor addressing
 [x] Erase right half of double width lines
 [x] Funny scroll regions
@@ -98,13 +101,13 @@ Test Of Reset And Self-Test
 ===========================
 [x] Reset to initial state (RIS)
 [x] Invoke Terminal Test (DECTST)
-[ ] Soft Terminal Reset (DECSTR)
+[x] Soft Terminal Reset (DECSTR)
 
 Test Of Non-VT100 Features
 ==========================
 1. Test of VT220/VT320 features
    [ ] Test 8-bit controls
-   [ ]Test Device Status Report (DSR)
+   [ ] Test Device Status Report (DSR)
        [ ] Test Keyboard Status
        [ ] Test Printer Status
        [ ] Test UDK Status
