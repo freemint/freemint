@@ -397,7 +397,7 @@ opcode	class name	args */
 0x13b	d getcwd	(char *path, short drv, short size)
 0x13c	s alert		(char *msg)
 0x13d	t malarm	(long x)
-0x13e	p sigintr	(ushort vec, ushort sig)
+0x13e	  RESERVED   /* Psigintr(), cancelled in 1.16 */
 0x13f	s uptime	(ulong *cur_uptim, ulong loadave[3])
 
 0x140	p trace		(short request, short pid, void *addr, long data) /* 1.15.11 */
