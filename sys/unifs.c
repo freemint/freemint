@@ -286,6 +286,9 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 				if (u->dev >= NUM_DRIVES)
 				{
 					fs = u->fs;
+					if ( !fs )
+						return ENOTDIR;
+
 					if (up) *up = u;
 					return xfs_root (fs, u->dev,fc);
 				}
@@ -923,7 +926,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			u->data = 0;
 			u->fs = d->file_system;
 
-			DEBUG (("uni_fscntl(FS_MOUNT, %s, drvmap_dev_no %d:%d)", name, drvmap_dev_no, u->dev));
+			DEBUG (("uni_fscntl(FS_MOUNT, %s, drvmap_dev_no %d, dev_no %d)", name, drvmap_dev_no, u->dev));
 			return (long) u->dev;
 		}
 		case FS_UNMOUNT: /* remove a file system's directory */
@@ -959,15 +962,28 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			if (!fs) return EACCES; /* not installed, so return an error */
 
 			/* The FS_MOUNT can mount to e.g. u:\m. It uses the builtin
-			 * mountpoint structure for that.
-			 *
-			 * It is not possible to unmount the builtin mount entries so far.
-			 * BUG: ? TODO: use some additional flag for this or restructuralize
-			 *              the unifs a bit to be able to do this.
+			 * mountpoint structure for that (u_drvs entry).
+			 * If it is the case then the u->dev is >= UNI_NUM_DRVS (we
+			 * use this to control the workflow).
 			 */
-			if (u >= &u_drvs[0] && u <= &u_drvs[sizeof(u_drvs)/sizeof(*u_drvs) - 1]) {
-				DEBUG (("uni_remove: trying to remove the buildting mountpoint '%s'", name));
-				return EACCES;
+			if (u >= &u_drvs[0] && u <= &u_drvs[sizeof(u_drvs)/sizeof(u_drvs[0]) - 1]) {
+				/* cannot unmount the builtin drive */
+				if (u->dev < UNI_NUM_DRVS || u->dev != d->dev_no) {
+					/* this should never happen, only sanity check */
+					DEBUG (("uni_remove: an attempt to remove builtin mountpoint '%s'", name, u->dev));
+					return ENOTDIR;
+				}
+
+				/* this mountpoint was made with FS_MOUNT g:\[A-Z1-6] */
+				/* set the device back to the builtin number */
+				u->dev = ((long)u - (long)&u_drvs[0])/sizeof(u_drvs[0]);
+				u->fs = 0;
+
+				DEBUG (("uni_remove: removing mountpoint '%s', dev_no = %d", name, u->dev));
+
+				/* update the _drvbits (the value of sys_b_drvmap() result) */
+				*((long *) 0x4c2L) &= ~(1UL << u->dev);
+				return E_OK;
 			}
 
 			/* here comes the difficult part: we have to close all files on that
