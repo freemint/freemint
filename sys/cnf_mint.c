@@ -70,9 +70,9 @@ char init_tail[256];
 
 /*
  * set [+-n] ........... set option on(-) or off(+):
- *                       c - esc interpr. out off quota
- *                       q - silent output
- *                       v - print comand lines
+ *			 c - esc interpr. out off quota
+ *			 q - silent output
+ *			 v - print comand lines
  * alias drive path .... make a fake drive pointing at a path
  * cd dir .............. change directory/drive
  * echo message ........ print message on the screen
@@ -99,7 +99,7 @@ static PCB_TTx	pCB_setenv;		/* setenv name val	*/
  */
 
 
-/*** Now the variable callback deklarations: */
+/*** Now the variable callback declarations: */
 
 /*
  * AUX=file ............ specify initial file/device for handle 2
@@ -129,6 +129,34 @@ static PCB_TTx	pCB_setenv;		/* setenv name val	*/
  * dependant on global compile time switches:
  *
  * HARDSCROLL=n ........ set hard-scroll size to n, range 0-99
+ *
+ * New format:
+ *
+ * GEMDOS_AUX=file .............. specify initial file/device for handle 2
+ * GEMDOS_CON=file .............. specify initial file/device for handles -1, 0, 1
+ * GEMDOS_PRN=file .............. specify initial file for handle 3
+ * FS_CACHE_SIZE=n .............. set buffer cache to size in kb
+ * FS_CACHE_PERCENTAGE=n ........ set max. percentage of cache to fill with linear reads
+ * FS_WB_ENABLE=<drives> ........ enable write back mode for specified drives
+ * FS_WRITEPROTECT=<drives> ..... enable software write protection for specified drives
+ * FS_UPDATE=n .................. set sync time in seconds for the system update daemon
+ * FS_VFAT=<drives> ............. activate VFAT extension for specified drives
+ * FS_VFATLCASE=[yn] ............ force return of FAT names in lower case
+ * FS_NEWFATFS=<drives> ......... activate NEW FAT-FS for specified drives
+ * KERN_BIOSBUF=[yn] ............ turn on/off bios buffer feature
+ * KERN_DEBUG_DEVNO=n ........... set debug device number to (decimal number) n
+ * KERN_DEBUG_LEVEL=n ........... set debug level to (decimal number) n
+ * KERN_MPFLAGS=bitvector ....... set flags for mem protection, bit 0: strict mode on/off
+ * KERN_SECURELEVEL=n ........... enables the appropriate security level, range 0-2
+ * KERN_SLICES=n ................ set multitasking granularity
+ * PROC_MAXMEM=n ................ set memory maximum per process
+ * TPA_FASTLOAD=[yn] ............ force FASTLOAD for all programs, if YES
+ * TPA_INITIALMEM=n ............. set maximum additional TPA size for new processes
+ * FDC_HIDE_B=[yn] .............. really remove drive B
+ *
+ * GEM=file ..................... specify AES driver
+ * INIT=file .................... specify boot program
+ *
  */
 
 static PCB_T	pCB_aux;		/* AUX=file		*/
@@ -156,38 +184,70 @@ static PCB_Dx	pCB_writeprotect;	/* WRITEPROTECT=<drives>*/
 
 static struct parser_item parser_tab[] =
 {
-	{ "SET",         PI_C_A,   pCB_set            },
-	{ "ALIAS",       PI_C_TT,  pCB_alias          },
-	{ "CD",          PI_C_T,   pCB_cd             },
-	{ "ECHO",        PI_C_A,   pCB_echo           },
-	{ "EXEC",        PI_C_TA,  pCB_exec           },
-	{ "INCLUDE",     PI_C_T,   pCB_include        },
-	{ "REN",         PI_C_0TT, sys_f_rename       },
-	{ "SETENV",      PI_C_TT,  pCB_setenv         },
-	{ "SLN",         PI_C_TT,  sys_f_symlink      },
-	{ "AUX",         PI_V_T,   pCB_aux            },
-	{ "BIOSBUF",     PI_V_B,   pCB_biosbuf        },
-	{ "CACHE",       PI_V_L,   bio_set_cache_size },
-	{ "PERCENTAGE",  PI_V_L,   bio_set_percentage },
-	{ "CON",         PI_V_T,   pCB_con            },
-	{ "DEBUG_DEVNO", PI_R_S,   & out_device       , Range(0, 9) },
-	{ "DEBUG_LEVEL", PI_R_S,   & debug_level      , Range(0, 9) },
-	{ "FASTLOAD",    PI_R_B,   & forcefastload    },
-	{ "GEM",         PI_V_ATK, pCB_gem_init       , INIT_IS_GEM  },
-	{ "HIDE_B",      PI_V_B,   pCB_hide_b         },
-	{ "INIT",        PI_V_ATK, pCB_gem_init       , INIT_IS_PRG  },
-	{ "INITIALMEM",  PI_R_L,   & initialmem       },
-	{ "MAXMEM",      PI_V_L,   pCB_maxmem         },
-	{ "MPFLAGS",     PI_R_L,   & mem_prot_flags   },
-	{ "PRN",         PI_V_T,   pCB_prn            },
-	{ "SECURELEVEL", PI_V_L,   pCL_securelevel    , Range(0, 2) },
-	{ "SLICES",      PI_R_S,   & time_slice       },
-	{ "UPDATE",      PI_R_L,   & sync_time        },
-	{ "VFAT",        PI_V_D,   pCB_vfat           },
-	{ "VFATLCASE",   PI_V_B,   pCB_vfatlcase      },
-	{ "WB_ENABLE",   PI_V_D,   pCB_wb_enable      },
-	{ "WRITEPROTECT",PI_V_D,   pCB_writeprotect   },
-	{ "NEWFATFS",    PI_V_D,   pCB_newfatfs       },
+	/* Shell-like commands */
+
+	{ "SET",	PI_C_A,		pCB_set		},
+	{ "ALIAS",	PI_C_TT,	pCB_alias	},
+	{ "CD",		PI_C_T,		pCB_cd		},
+	{ "ECHO",	PI_C_A,		pCB_echo	},
+	{ "EXEC",	PI_C_TA,	pCB_exec	},
+	{ "INCLUDE",	PI_C_T,		pCB_include	},
+	{ "REN",	PI_C_0TT,	sys_f_rename	},
+	{ "SETENV",	PI_C_TT,	pCB_setenv	},
+	{ "SLN",	PI_C_TT,	sys_f_symlink	},
+
+	/* New format */
+
+	{ "GEMDOS_AUX",			PI_V_T,	pCB_aux				},
+	{ "GEMDOS_CON",			PI_V_T,	pCB_con				},
+	{ "GEMDOS_PRN",			PI_V_T,	pCB_prn				},
+	{ "FS_CACHE_SIZE",		PI_V_L,	bio_set_cache_size		},
+	{ "FS_CACHE_PERCENTAGE",	PI_V_L,	bio_set_percentage		},
+	{ "FS_UPDATE",			PI_R_L,	& sync_time			},
+	{ "FS_VFAT",			PI_V_D,	pCB_vfat			},
+	{ "FS_VFAT_LCASE",		PI_V_B,	pCB_vfatlcase			},
+	{ "FS_WB_ENABLE",		PI_V_D,	pCB_wb_enable			},
+	{ "FS_WRITE_PROTECT",		PI_V_D,	pCB_writeprotect		},
+	{ "FS_NEWFATFS",		PI_V_D,	pCB_newfatfs			},
+	{ "KERN_BIOSBUF",		PI_V_B,	pCB_biosbuf			},
+	{ "KERN_DEBUG_DEVNO",		PI_R_S,	& out_device, Range(0, 9) 	},
+	{ "KERN_DEBUG_LEVEL",		PI_R_S,	& debug_level, Range(0, 9) 	},
+	{ "KERN_MPFLAGS",		PI_R_L,	& mem_prot_flags		},
+	{ "KERN_SECURITY_LEVEL",	PI_V_L,	pCL_securelevel, Range(0, 2)	},
+	{ "KERN_SLICES",		PI_R_S,	& time_slice			},
+	{ "PROC_MAXMEM",		PI_V_L,	pCB_maxmem			},
+	{ "TPA_FASTLOAD",		PI_R_B,	& forcefastload			},
+	{ "TPA_INITIALMEM",		PI_R_L,	& initialmem			},
+	{ "FDC_HIDE_B",			PI_V_B,	pCB_hide_b			},
+
+	/* These two remain the same as in the old format */
+
+	{ "GEM",	  PI_V_ATK, pCB_gem_init, INIT_IS_GEM		},
+	{ "INIT",	  PI_V_ATK, pCB_gem_init, INIT_IS_PRG		},
+
+	/* This is the old format */
+
+	{ "AUX",		PI_V_T,   pCB_aux			},
+	{ "BIOSBUF",		PI_V_B,   pCB_biosbuf			},
+	{ "CACHE",		PI_V_L,   bio_set_cache_size		},
+	{ "PERCENTAGE",		PI_V_L,   bio_set_percentage		},
+	{ "CON",		PI_V_T,   pCB_con			},
+	{ "DEBUG_DEVNO",	PI_R_S,   & out_device,	Range(0, 9)	},
+	{ "DEBUG_LEVEL",	PI_R_S,   & debug_level, Range(0, 9)	},
+	{ "FASTLOAD",		PI_R_B,   & forcefastload		},
+	{ "HIDE_B",		PI_V_B,   pCB_hide_b			},
+	{ "INITIALMEM",		PI_R_L,   & initialmem			},
+	{ "MAXMEM",		PI_V_L,   pCB_maxmem			},
+	{ "MPFLAGS",		PI_R_L,   & mem_prot_flags		},
+	{ "PRN",		PI_V_T,   pCB_prn			},
+	{ "SECURELEVEL",	PI_V_L,   pCL_securelevel, Range(0, 2)	},
+	{ "SLICES",		PI_R_S,   & time_slice			},
+	{ "UPDATE",		PI_R_L,   & sync_time			},
+	{ "VFAT",		PI_V_D,   pCB_vfat			},
+	{ "VFATLCASE",		PI_V_B,   pCB_vfatlcase			},
+	{ "WB_ENABLE",		PI_V_D,   pCB_wb_enable			},
+	{ "WRITEPROTECT",	PI_V_D,   pCB_writeprotect		},
+	{ "NEWFATFS",		PI_V_D,   pCB_newfatfs			},
 
 	{ NULL }
 };
@@ -202,10 +262,10 @@ load_config(void)
 {
 	char cnf_path[128];
 	struct cnfdata mydata;
-	
+
 	strcpy(cnf_path, sysdir);
 	strcat(cnf_path, "mint.cnf");
-	
+
 	parse_cnf(cnf_path, parser_tab, &mydata);
 }
 
@@ -296,9 +356,9 @@ static void
 pCB_cd(const char *path)
 {
 	int drv;
-	
+
 	sys_d_setpath(path);
-	
+
 	drv = CHAR2DRV(*path);
 	if (path[1] == ':')
 		sys_d_setdrv(drv);
@@ -350,13 +410,13 @@ pCB_exec(const char *path, const char *line, struct parsinf *inf)
 	cmdline[0] = i;
 	strncpy(cmdline+1, line, i);
 	cmdline[i+1] = 0;
-	
+
 	i = (int) sys_pexec(0, (char*) path, cmdline, _base->p_env);
 	if (i < 0)
 	{
 		parser_msg(inf, NULL);
 		boot_print(i == -33 ? MSG_cnf_file_not_found
-		                    : MSG_cnf_error_executing);
+				      : MSG_cnf_error_executing);
 		boot_printf(" '%s'", path);
 		parser_msg(NULL,NULL);
 	}
@@ -366,8 +426,8 @@ pCB_exec(const char *path, const char *line, struct parsinf *inf)
 static void
 pCB_gem_init(const char *path, const char *line, long val)
 {
-        init_is_gem = val;
-	
+	init_is_gem = val;
+
 	if (stricmp(path,"ROM") == 0)
 	{
 		init_prg = 0;
@@ -377,7 +437,7 @@ pCB_gem_init(const char *path, const char *line, long val)
 		strcpy(init_prg, path);
 		strncpy(init_tail +1, line, 125);
 		init_tail[126] = '\0';
-		init_tail[0]   = strlen(init_tail +1);
+		init_tail[0]	 = strlen(init_tail +1);
 	}
 }
 
@@ -388,7 +448,7 @@ pCB_hide_b(bool onNoff)
 	if (onNoff)
 	{
 		*((long *)0x4c2L) &= ~2;   /* change BIOS map */
-		dosdrvs &= ~2;             /* already initalized here */
+		dosdrvs &= ~2;	     /* already initalized here */
 	}
 }
 
@@ -422,7 +482,7 @@ pCB_newfatfs(unsigned long list, struct parsinf *inf)
 # ifdef OLDTOSFS
 	bool flag = false;
 	int drv = 0;
-	
+
 	while (list)
 	{
 		if (list & 1ul)
@@ -439,7 +499,7 @@ pCB_newfatfs(unsigned long list, struct parsinf *inf)
 			fatfs_config(drv, FATFS_DRV, ENABLE);
 		}
 		list >>= 1;
-		drv   += 1;
+		drv	+= 1;
 	}
 	if (flag)
 		boot_printf("\r\n");
@@ -463,10 +523,10 @@ pCB_prn(const char *path)
 	{
 		do_close(curproc, curproc->p_fd->ofiles[3]);
 		do_close(curproc, curproc->p_fd->prn);
-		
+
 		curproc->p_fd->prn =
 		curproc->p_fd->ofiles[3] = fp;
-		
+
 		fp->links++;
 	}
 }
@@ -485,7 +545,7 @@ pCB_vfat(unsigned long list, struct parsinf *inf)
 {
 	bool flag = false;
 	int drv = 0;
-	
+
 	while (list)
 	{
 		if (list & 1ul)
@@ -508,9 +568,9 @@ pCB_vfat(unsigned long list, struct parsinf *inf)
 			fatfs_config(drv, FATFS_VFAT, ENABLE);
 		}
 		list >>= 1;
-		drv   += 1;
+		drv	+= 1;
 	}
-	
+
 	if (flag)
 		boot_printf("\r\n");
 }
@@ -528,7 +588,7 @@ pCB_wb_enable(unsigned long list, struct parsinf *inf)
 {
 	bool flag = false;
 	int drv = 0;
-	
+
 	while (list)
 	{
 		if (list & 1ul)
@@ -545,9 +605,9 @@ pCB_wb_enable(unsigned long list, struct parsinf *inf)
 			bio.config(drv, BIO_WB, ENABLE);
 		}
 		list >>= 1;
-		drv   += 1;
+		drv	+= 1;
 	}
-	
+
 	if (flag)
 		boot_printf("\r\n");
 }
@@ -558,7 +618,7 @@ pCB_writeprotect(unsigned long list, struct parsinf *inf)
 {
 	bool flag = false;
 	int drv = 0;
-	
+
 	while (list)
 	{
 		if (list & 1ul)
@@ -575,9 +635,9 @@ pCB_writeprotect(unsigned long list, struct parsinf *inf)
 			bio.config(drv, BIO_WP, ENABLE);
 		}
 		list >>= 1;
-		drv   += 1;
+		drv	+= 1;
 	}
-	
+
 	if (flag)
 		boot_printf("\r\n");
 }
@@ -588,7 +648,7 @@ pCB_set(const char *line, struct parsinf *inf)
 {
 	unsigned long opt = 0UL;
 	char  onNoff;
-	
+
 	while ((onNoff = *line))
 	{
 		if (onNoff != '-'  &&  onNoff != '+')
@@ -598,10 +658,10 @@ pCB_set(const char *line, struct parsinf *inf)
 		else
 		{
 			char c = toupper((int)*(++line) & 0xff);
-			
+
 			if (!isalpha(c))
 				break;
-			
+
 			if (c != 'C' && c != 'Q' && c != 'V')
 			{
 				parser_msg(inf, NULL);
@@ -611,15 +671,15 @@ pCB_set(const char *line, struct parsinf *inf)
 			else
 			{
 				if (onNoff == '-') opt |=  SET(c);
-				else               opt &= ~SET(c);
+				else	       opt &= ~SET(c);
 			}
-			
+
 			while (isspace(*(++line)))
 				;
 		}
 	}
-	
-	if (*line  &&  *line != '#')
+
+	if (*line  &&	*line != '#')
 		parser_msg(inf, MSG_cnf_invalid_arg);
 	else
 		inf->opt = opt;
