@@ -1,0 +1,20 @@
+.TH "FSEEK" 2 "3 March 1993" "MiNT docs 0.1" "MiNT SYSTEM CALLS"
+.SH NAME
+Fseek - move read/write file pointer
+.SH SYNOPSIS
+.nf
+#include <osbind.h>
+
+long Fseek(long offset, int handle, int seekmode);
+.fi
+.SH DESCRIPTION
+The file-pointer of the file indicated by handle is set
+according to the seekmode parameter:
+.br
+  0: the pointer is set to offset bytes
+  1: the pointer is set to its current location
+     plus offset
+  2: the pointer is set to the size of the file
+     plus offset
+.SH RETURN VALUES
+The new position of the file pointer is returned.
