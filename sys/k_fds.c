@@ -642,7 +642,7 @@ do_close (struct proc *p, FILEPTR *f)
 	if (f->links < 0)
 	{
 		ALERT ("do_close on invalid file struct! (links = %i)", f->links);
-//		return 0;
+// XXX		return 0;
 	}
 	
 	/* TTY manipulation must be done *before* calling the device close routine,
