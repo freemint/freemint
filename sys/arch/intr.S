@@ -97,6 +97,9 @@ L_systime:
 
 	.data
 
+#ifdef FLOPPY_ROUTINES
+flopc:	dc.w	0
+#endif
 vblcnt:	dc.w	4
 mod5:	dc.w	5		// initial value matters
 
@@ -111,6 +114,9 @@ mod5:	dc.w	5		// initial value matters
 	.globl	_proc_clock
 	.globl	_our_clock
 	.globl	_tlist
+#ifdef FLOPPY_ROUTINES
+	.globl	_flopvbl
+#endif
 
 // timeout things go here (50 times per second at IPL 6)
 
@@ -134,9 +140,24 @@ skip:	move.w	(0x0442).w,d0
 	sub.w	d0,a1
 	move.l	a1,8(a0)
 
+txit:
+
+// floppy stuff
+
+#ifdef FLOPPY_ROUTINES
+	move.w	flopc(pc),d0		// exec each 8th time
+	addq.w	#0x01,d0
+	move.w	d0,flopc
+	and.w	#0x07,d0
+	subq.w	#0x07,d0
+	bne.s	piramida_hejhopsa
+	jsr	_flopvbl
+piramida_hejhopsa:
+#endif
+
 // "VBL" things go here (50 times per second at IPL 3)
 
-txit:	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
+	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
 	bne.s	L_popnout
 	move.w	#0x2300,sr		// lower the current IPL
 	jsr	_checkbttys_vbl
