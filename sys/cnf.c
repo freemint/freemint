@@ -285,7 +285,7 @@ parse_bool(struct parsinf *inf)
 {
 	static const char *tab[] =
 	{
-		"\00","\11",
+		"\0""0","\1""1",
 		"\0N","\1Y",
 		"\0NO","\1YES",
 		"\0OFF","\1ON",
