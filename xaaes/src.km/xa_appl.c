@@ -497,7 +497,9 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	if (	strnicmp(client->proc_name, "wdialog", 7) == 0 ||
 		strnicmp(client->proc_name, "imgc4cd", 7) == 0 ||
-		strnicmp(client->proc_name, "ic4plus", 7) == 0)
+		strnicmp(client->proc_name, "ic4plus", 7) == 0 ||
+		strnicmp(client->proc_name, "troll",   5) == 0
+	   )
 	{
 		DIAG((D_appl, client, "appl_exit ignored for %s", client->name));
 		return XAC_DONE;

@@ -191,6 +191,172 @@ generate_rect_list(enum locks lock, struct xa_window *w, short which)
 	return w->rect_start;
 }
 
+#if 0
+struct xa_rect_list *
+make_rect_list(enum locks lock, struct xa_window *w, short which, struct xa_rect_list **redraw)
+{
+	struct xa_window *wl;
+	struct xa_rect_list *rl, *rlist, *nrl, *cnrl, *rl_next, *rl_old;
+	struct xa_rect_list *free_list;
+	RECT r_ours, r_win;
+	short win_cnt, f;
+
+
+#if 0
+	if (w->rect_start)
+	{
+		w->prev_rect = *w->rect_start;	/* remember the first rectangle before calc */
+		w->rect_prev = &w->prev_rect;	/* This can be used to see if redraw are necessary. */
+		w->prev_rect.next = NULL;
+		kfree(w->rect_start);
+	}
+	else
+		w->rect_prev = NULL;
+#endif
+	rl_old = w->rect_start;
+
+	for (win_cnt = 0, wl = w->prev; wl; win_cnt++, wl = wl->prev)
+		;		
+
+	/* Block allocate the required space (approximately) */	
+	w->rect_start = kmalloc(sizeof(*rlist) * (win_cnt * 6 + 2));
+	assert(w->rect_start);
+
+	rlist = w->rect_start;
+	rlist++;
+	rlist->r = w->r;
+	rlist->next = NULL;
+
+	if (win_cnt)
+	{
+		rl = free_list = rlist + 1;
+		for (f = 0; f < win_cnt * 6; f++)
+			free_list[f].next = &free_list[f + 1];
+		
+		free_list[win_cnt * 6 - 1].next = NULL;
+		
+		wl = w->prev;
+		while(wl)
+		{
+			nrl = NULL;
+			for (rl = rlist; rl; rl = rl_next)
+			{
+				r_win = wl->r;		
+				r_ours = rl->r;				
+				/* If window intersects this rectangle, process */
+				if (xa_rc_intersect(r_ours, &r_win))
+				{
+					/* If window doesn't completely mask this rectangle,
+					 * create new results */
+					if((r_ours.w != r_win.w) || (r_ours.h != r_win.h))
+					{
+						if(r_win.x != r_ours.x)
+						{
+							cnrl = free_list;
+							free_list = free_list->next;
+							cnrl->r.x = r_ours.x;
+							cnrl->r.y = r_ours.y;
+							cnrl->r.w = r_win.x - r_ours.x;
+							cnrl->r.h = r_ours.h;
+							cnrl->next = nrl;
+							nrl = cnrl;
+						}
+						if(r_win.x + r_win.w != r_ours.x + r_ours.w)
+						{
+							cnrl = free_list;
+							free_list = free_list->next;
+							cnrl->r.x = r_win.x + r_win.w;
+							cnrl->r.y = r_ours.y;
+							cnrl->r.w = (r_ours.x + r_ours.w) - (r_win.x + r_win.w);
+							cnrl->r.h = r_ours.h;
+							cnrl->next = nrl;
+							nrl = cnrl;
+						}
+						if(r_win.y != r_ours.y)
+						{
+							cnrl = free_list;
+							free_list = free_list->next;
+							cnrl->r.x = r_win.x;
+							cnrl->r.y = r_ours.y;
+							cnrl->r.w = r_win.w;
+							cnrl->r.h = r_win.y - r_ours.y;
+							cnrl->next = nrl;
+							nrl = cnrl;
+						}
+						if(r_win.y + r_win.h != r_ours.y + r_ours.h)
+						{
+							cnrl = free_list;
+							free_list = free_list->next;
+							cnrl->r.x = r_win.x;
+							cnrl->r.y = r_win.y + r_win.h;
+							cnrl->r.w = r_win.w;
+							cnrl->r.h = (r_ours.y + r_ours.h) - (r_win.y + r_win.h);
+							cnrl->next = nrl;
+							nrl = cnrl;
+						}
+					}
+					else
+					{
+						DIAG((D_r,w->owner,"  Obscured - freeing"));
+					}
+					rl_next = rl->next;	/* Release the original rectangle */
+					rl->next = free_list;	/* Add original rectangle to the free list */
+					free_list = rl;
+				}
+				else
+				{
+					/* Keep the current rectangle, it hasn't been changed */
+					rl_next = rl->next;
+					rl->next = nrl;
+					nrl = rl;
+				}
+			}
+			rlist = nrl;
+			wl = wl->prev;
+		}
+	}
+
+	if (rlist)
+	{
+		w->rect_list = w->rect_user = w->rect_start;
+		*w->rect_start = *rlist;
+
+		if (redraw)
+		{
+			struct xa_rect_list *n, *c, *p;
+			RECT dirty;
+
+			for (n = rl_old, c = w->rect_list; n; n = n->next)
+			{
+				if (xa_rect_diff
+	}
+	else
+	{
+		kfree(w->rect_start);
+		w->rect_list = w->rect_user = w->rect_start = NULL;
+	}	
+
+#if GENERATE_DIAGS
+	if (w->handle)
+	{
+		DIAG((D_r,w->owner,    "[%d]rect_list dump h:%d (%d/%d,%d/%d) for %s:", which, w->handle, w->r, w_owner(w) ));
+		if (w->rect_prev)
+		{
+			DIAG((D_r,w->owner,"rect_prev            (%d/%d,%d/%d)", w->rect_prev->r));
+		}
+		rlist = w->rect_start;
+		while (rlist)
+		{
+			DIAG((D_r,w->owner,"(%d/%d,%d/%d) @%lx, next=%lx", rlist->r, rlist, rlist->next));
+			rlist = rlist->next;
+		}
+	}
+#endif
+
+	return w->rect_start;
+}
+#endif
+
 void
 dispose_rect_list(struct xa_window *w)
 {
@@ -201,6 +367,21 @@ dispose_rect_list(struct xa_window *w)
 	}
 	w->rect_start = w->rect_user = w->rect_list = NULL;
 }
+
+#if 0
+void
+free_rect_list(struct xa_rect_list *first)
+{
+	struct xa_rect_list *next;
+
+	while (first)
+	{
+		next = first->next;
+		kfree(first);
+		first = next;
+	}
+}
+#endif
 
 struct xa_rect_list *
 rect_get_user_first(struct xa_window *w)
@@ -292,3 +473,20 @@ xa_rect_clip(RECT *s, RECT *d, RECT *r)
 
 	return (r->w > 0) && (r->h > 0);
 }
+
+bool
+xa_rect_diff(RECT *old, RECT *new, RECT *r)
+{
+	short w1 = old->x + old->w;
+	short w2 = new->x + new->w;
+	short h1 = old->y + old->h;
+	short h2 = new->y + new->h;
+
+	r->x = old->x > new->x ? old->x : new->x;	//max(s->x, d->x);
+	r->y = old->y > new->y ? old->y : new->y;	//max(s->y, d->y);
+	r->w = (w1 < w2 ? w1 : w2) - r->x; 		//min(w1, w2) - d->x;
+	r->h = (h1 < h2 ? h1 : h2) - r->y;		//min(h1, h2) - d->y;
+
+	return (r->w > 0) && (r->h > 0);
+}
+	
