@@ -167,11 +167,16 @@ Add to your header file
               msg[1] = ID of sender
               msg[2] = ...
               msg[3] = window handle
-              msg[4] = orient
-              msg[5] = wheel ID
-              msg[6] = wheel amount
-              msg[7] = Not used, always 0
+              msg[4] = Mouse X
+              msg[5] = Mouse Y
+              msg[6] = keyboard shift status
+              msg[7] = Wheel info
   
+              'wheel info' consists of the following data;
+              bits 0-7    - Wheel amount
+              bits 8-11   - orient
+              bits 12-15  - Wheel ID
+ 
               'orient' is a bitmask where bit 0 indicates direction, and
               bit 1 indicates orientation;
 
@@ -181,13 +186,20 @@ Add to your header file
                          1 = horizontal (bit 0 indicates LEFT/RIGHT)
 
               'wheel ID' contains the wheel number. 0 is wheel #1, etc..
-	      'wheel amount' holds the number of wheel-turns.
-	      
+              'wheel amount' holds the number of wheel-turns.
+      
            XWHL_AROWWHEEL ( 1 ) This is the default wheel_mode set if the
               value passed is outside the available range. When this mode is
               selected, normal WM_ARROWED messages are sent upon each wheel
               turn. With this mode, WM_ARROWED messages are send even when
-              the window has no ARROW gadgets.
+              the window has no ARROW gadgets. And now the WM_ARROWED messages
+              contain extra info like;
+              
+              msg[0] = WM_ARROWED
+              ...
+              msg[5] = Mouse X
+              msg[6] = Mouse Y
+              msg[7] = keyboard shift status
 
            XWHL_SLDRWHEEL ( 2 )
               When wheel_mode is set to 2 (XHWL_SLDRWHEEL), XaAES converts

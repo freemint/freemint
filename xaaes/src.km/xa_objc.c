@@ -287,7 +287,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 					 pb->intin[0],		/* object	*/
 					 pb->intin[1],		/* key		*/
 					 pb->intin[2],		/* pos		*/
-					 false,			/* redraw flag	*/
+					 true,			/* redraw flag	*/
 					 NULL,			/* rect list	*/
 					 &pb->intout[1],	/* new pos	*/
 					 NULL);			/* new obj	*/

@@ -341,7 +341,7 @@ k_init(void)
 	assert(C.Aes->mnu_clientlistname);
 	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
 	fix_menu(C.Aes, C.Aes->std_menu->tree, true);
-	set_menu_widget(root_window, C.Aes->std_menu);
+	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
 	{
 		char *vs = object_get_spec(C.Aes->std_menu->tree + SYS_DESK)->free_string;
 		strcpy(vs + strlen(vs) - 3, version + 3);

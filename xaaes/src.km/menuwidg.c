@@ -1670,7 +1670,7 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 /* XXX - Fixme: What to do when widget_tree resource fetching fails!
  */
 void
-set_menu_widget(struct xa_window *wind, XA_TREE *menu)
+set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 {
 	XA_WIDGET *widg = get_widget(wind, XAW_MENU);
 	OBJECT *obtree = menu->tree;
@@ -1681,6 +1681,10 @@ set_menu_widget(struct xa_window *wind, XA_TREE *menu)
 	if (widg->stuff)
 		((XA_TREE *)widg->stuff)->widg = NULL;
 
+	if (owner)
+		widg->owner = owner;
+	else
+		widg->owner = wind->owner;
 
 	menu->is_menu   = true;				/* set the flags in the original */
 	menu->menu_line = (wind == root_window);	/* menu in root window.*/
