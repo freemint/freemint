@@ -150,16 +150,6 @@ sfatal (char *str)
 }
 
 
-void
-usage (void)
-{
-	printf ("Usage: fsck device\n");
-	printf ("Filesystem consistency checker. Copyright S.N. Henson 1992,1993,1994.\n");
-	printf ("All Rights Reserved\n");
-	printf ("Version 0.21\n");
-	exit (1);
-}
-
 /* Read in superblock, perform some sanity checks on it, then read in the 
  * bitmaps.
  */

@@ -29,7 +29,7 @@ static void	do_dup		(zone_nr zone);
 static int	is_dup		(zone_nr zone);
 static int	is_rem		(zone_nr zone);
 static void	check_root	(void);
-static void	traverse_dir	(int (*func)());
+static void	traverse_dir	(int (*func)(dir_struct *dir, ushort entry));
 static int	add_dirent	(dir_struct *adir);
 static int	addfunc		(dir_struct *dir, ushort entry);
 static void	show_name	(ilist *inl);
@@ -901,7 +901,7 @@ check_root (void)
  */
 
 static void
-traverse_dir (int (*func)())
+traverse_dir (int (*func)(dir_struct *dir, ushort entry))
 {
 	ushort entry=0;
 	long nentries=rip->i_size/(DSIZE*incr),i;
