@@ -1,6 +1,7 @@
 /*
- * XaAES - XaAES Ain't the AES (c) 1999 - 2003 H.Robbers
- *                                        2003 F.Naumann
+ * $Id$
+ *
+ * XaAES - XaAES Ain't the AES
  *
  * A multitasking AES replacement for MiNT
  *
@@ -21,10 +22,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _bootup_h
-#define _bootup_h
+/*
+ * _setstack - changes the stack pointer
+ *
+ * Prototype:
+ * void _setstack(void *newsp);
+ *
+ * WARNING: after this local variables may no longer be valid!
+ *          destroys a0 and a7 too
+ */
 
-void reopen_moose(void);
-int xaaes_init(int argc, char **argv, char **env);
+	.globl	__setstack
 
-#endif /* _bootup_h */
+	.text
+
+__setstack:
+	movel	sp@+,a0		| save return
+	movel	sp@,sp		| new stack pointer
+	subql	#4,sp		| fixup
+	jmp	a0@		| and jump back
