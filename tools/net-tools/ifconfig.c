@@ -18,6 +18,43 @@
 #include "ifopts.h"
 
 
+static const char *
+which2str(short which)
+{
+	const char *ret = "(unknown)";
+	
+	switch (which)
+	{
+		case SIOCSIFADDR:
+		case SIOCGIFADDR:
+			ret = "ADDRESS";
+			break;
+		case SIOCSIFBRDADDR:
+		case SIOCGIFBRDADDR:
+			ret = "BROADCAST ADDRESS";
+			break;
+		case SIOCSIFDSTADDR:
+		case SIOCGIFDSTADDR:
+			ret = "DESTINATION ADDRESS";
+			break;
+		case SIOCSIFNETMASK:
+		case SIOCGIFNETMASK:
+			ret = "NETMASK";
+			break;
+		case SIOCSIFMETRIC:
+		case SIOCGIFMETRIC:
+			ret = "METRIC";
+			break;
+		case SIOCSIFMTU:
+		case SIOCGIFMTU:
+			ret = "MTU";
+			break;
+	}
+	
+	return ret;
+}
+
+
 int sock;
 
 static void
@@ -41,9 +78,7 @@ get_mtu_metric (char *name, short which)
 	if (ioctl (sock, which, &ifr) < 0)
 	{
 		fprintf (stderr, "%s: cannot get %s: %s\n",
-			name,
-			which == SIOCGIFMETRIC ? "METRIC" : "MTU",
-			strerror (errno));
+			name, which2str(which), strerror (errno));
 		exit (1);
 	}
 
@@ -60,9 +95,7 @@ set_mtu_metric (char *name, short which, long val)
 	if (ioctl (sock, which, &ifr) < 0)
 	{
 		fprintf (stderr, "%s: cannot set %s: %s\n",
-			name,
-			which == SIOCSIFMETRIC ? "METRIC" : "MTU",
-			strerror (errno));
+			name, which2str(which), strerror (errno));
 		exit (1);
 	}
 }
@@ -76,8 +109,7 @@ get_flags (char *name)
 	if (ioctl (sock, SIOCGIFFLAGS, &ifr) < 0)
 	{
 		fprintf (stderr, "%s: cannot get FLAGS: %s\n",
-			name,
-			strerror (errno));
+			name, strerror (errno));
 		exit (1);
 	}
 
@@ -94,8 +126,7 @@ set_flags (char *name, short flags)
 	if (ioctl (sock, SIOCSIFFLAGS, &ifr) < 0)
 	{
 		fprintf (stderr, "%s: cannot set FLAGS: %s\n",
-			name,
-			strerror (errno));
+			name, strerror (errno));
 		if (errno == ENODEV && (flags & (IFF_UP|IFF_RUNNING)) == IFF_UP)
 			fprintf (stderr, "hint: probably the interface is "
 				"not linked to a device. Use iflink!\n");
@@ -151,12 +182,7 @@ set_addr (char *name, short which, unsigned long addr)
 	if (ioctl (sock, which, &ifr) < 0)
 	{
 		fprintf (stderr, "%s: cannot set %s: %s\n",
-			name,
-			which == SIOCSIFMETRIC ? "ADDRESS" :
-			which == SIOCSIFBRDADDR ? "BROADCAST ADDRESS" :
-			which == SIOCSIFDSTADDR ? "DESTINATION ADDRESS" :
-			"NETMASK",
-			strerror (errno));
+			name, which2str(which), strerror (errno));
 		exit (1);
 	}
 }
@@ -171,12 +197,7 @@ get_addr (char *name, short which)
 	if (ioctl (sock, which, &ifr) < 0)
 	{
 		fprintf (stderr, "%s: cannot get %s: %s\n",
-			name,
-			which == SIOCGIFMETRIC ? "ADDRESS" :
-			which == SIOCGIFBRDADDR ? "BROADCAST ADDRESS" :
-			which == SIOCGIFDSTADDR ? "DESTINATION ADDRESS" :
-			"NETMASK",
-			strerror (errno));
+			name, which2str(which), strerror (errno));
 		exit (1);
 	}
 
