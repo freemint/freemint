@@ -39,8 +39,6 @@
 # ifndef _mint_net_h
 # define _mint_net_h
 
-# include "socket.h"
-
 
 /* possible socket states */
 enum so_state
@@ -61,6 +59,12 @@ enum so_state
 # define SO_CLOSING	0x0010		/* socket is close()ing */
 # define SO_DROP	0x0020		/* drop connecting socket when accept()
 					   fails due to lacking file handles */
+
+
+# ifdef __KERNEL__
+
+# include "socket.h"
+
 struct socket
 {
 	enum so_type	type;		/* socket type: SOCK_* */
@@ -123,5 +127,6 @@ struct dom_ops
 			 	char *optval, long *optlen);
 };
 
+# endif /* __KERNEL__ */
 
 # endif /* _mint_net_h */
