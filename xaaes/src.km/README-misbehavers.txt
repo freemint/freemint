@@ -69,4 +69,16 @@ Thomas Binder, you know better than this? ;-)
  updated to reflect the bitmap acutal format.
 
 ------------------------------------------------------------------------------
- Papyrus
+ Papyrus Version 8.23A "Demo version of 28.7.2000"
+
+ shel_read()
+ appl_init()
+------------------------------------------------------------------------------
+
+ MyMail version 1.58-62 6696
+
+ This one does many weird things. The thing I (ozk) noticed when trying to 
+debug it was that it enters the AES with a NULL pb pointer when I click on the 
+mailbox icon to check for new mail. I have no idea why, but it is promptly 
+killed by XaAES because of it.
+

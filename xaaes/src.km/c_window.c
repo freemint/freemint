@@ -609,6 +609,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	{
 		/* Change the window coords */
 		wind->r = r;
+		if (wind != root_window)
+			inside_root(&wind->r, &wind->owner->options);
 
 		wind->window_status = XAWS_OPEN;
 	}
