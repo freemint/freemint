@@ -432,7 +432,7 @@
 				long a1, long a2, long a3, long a4,
 				long a5, long a6, long a7)		/* 1.15.8  */
 
-	/* 1.15.?? - socket extensions */
+	/* 1.16 - socket extensions */
 
 0x160	socket		(long domain, long type, long protocol)
 0x161	socketpair	(long domain, long type, long protocol, int *rsv)
@@ -451,18 +451,20 @@
 0x16e	shutdown	(int fh, long how)
 0x16f	RESERVED
 
-0x170	RESERVED
-0x171	RESERVED
-0x172	RESERVED
-0x173	RESERVED
-0x174	RESERVED
-0x175	RESERVED
-0x176	RESERVED
-0x177	RESERVED
-0x178	RESERVED
-0x179	RESERVED
-0x17a	RESERVED
-0x17b	RESERVED
+	/* 1.16 - svr5 IPC */
+
+0x170	shmget		(long key, long size, long shmflg)
+0x171	shmctl		(long shmid, long cmd, struct shmid_ds *buf)
+0x172	shmat		(long shmid, const void *shmaddr, long shmflg)
+0x173	shmdt		(const void *shmaddr)
+0x174	semget		(long key, long nsems, long semflg)
+0x175	semctl		(long semid, long semnum, long cmd, union __semun *arg)
+0x176	semop		(long semid, struct sembuf *sops, long nsops)
+0x177	semconfig	(long flag)
+0x178	msgget		(long key, long msgflg)
+0x179	msgctl		(long msqid, long cmd, struct msqid_ds *buf)
+0x17a	msgsnd		(long msqid, const void *msgp, long msgsz, long msgflg)
+0x17b	msgrcv		(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
 0x17c	RESERVED
 0x17d	RESERVED
 0x17e	RESERVED	/* mmap */

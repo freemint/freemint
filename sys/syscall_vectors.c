@@ -55,6 +55,7 @@
 # include "dosmem.h"
 # include "dossig.h"
 # include "filesys.h"
+# include "ipc_socket.h"
 # include "k_exec.h"
 # include "k_exit.h"
 # include "k_fork.h"
@@ -67,6 +68,9 @@
 # include "signal.h"
 # include "ssystem.h"
 # include "sys_emu.h"
+# include "sysv_msg.h"
+# include "sysv_sem.h"
+# include "sysv_shm.h"
 # include "time.h"
 # include "timeout.h"
 # include "slb.h"
@@ -96,7 +100,7 @@ enosys (void)
  * - 0x33 reserved for MagiC - LONG Sconfig(WORD subfn, LONG flags);
  */
 
-# define DOS_MAX 0x160
+# define DOS_MAX 0x180
 ushort dos_max = DOS_MAX;
 
 Func dos_tab [DOS_MAX] =
@@ -164,18 +168,18 @@ Func dos_tab [DOS_MAX] =
 	/* 0x039 */		d_create,
 	/* 0x03a */		d_delete,
 	/* 0x03b */		d_setpath,
-	/* 0x03c */		f_create,
-	/* 0x03d */		f_open,
-	/* 0x03e */		f_close,
-	/* 0x03f */		f_read,
+	/* 0x03c */	(Func)	f_create,
+	/* 0x03d */	(Func)	f_open,
+	/* 0x03e */	(Func)	f_close,
+	/* 0x03f */	(Func)	f_read,
 	
-	/* 0x040 */		f_write,
+	/* 0x040 */	(Func)	f_write,
 	/* 0x041 */		f_delete,
-	/* 0x042 */		f_seek,
+	/* 0x042 */	(Func)	f_seek,
 	/* 0x043 */		f_attrib,
 	/* 0x044 */		m_xalloc,
-	/* 0x045 */		f_dup,
-	/* 0x046 */		f_force,
+	/* 0x045 */	(Func)	f_dup,
+	/* 0x046 */	(Func)	f_force,
 	/* 0x047 */		d_getpath,
 	/* 0x048 */		m_alloc,
 	/* 0x049 */		m_free,
@@ -193,12 +197,12 @@ Func dos_tab [DOS_MAX] =
 	/* 0x054 */		NULL,
 	/* 0x055 */		NULL,
 	/* 0x056 */		f_rename,
-	/* 0x057 */		f_datime,
+	/* 0x057 */	(Func)	f_datime,
 	/* 0x058 */		NULL,
 	/* 0x059 */		NULL,
 	/* 0x05a */		NULL,
 	/* 0x05b */		NULL,
-	/* 0x05c */		f_lock,
+	/* 0x05c */	(Func)	f_lock,
 	/* 0x05d */		NULL,
 	/* 0x05e */		NULL,
 	/* 0x05f */		NULL,
@@ -379,10 +383,10 @@ Func dos_tab [DOS_MAX] =
 	/* 0x0ff */		s_yield,
 	
 	/* 0x100 */		f_pipe,
-	/* 0x101 */		f_fchown,	/* 1.15.2  */
-	/* 0x102 */		f_fchmod,	/* 1.15.2  */
+	/* 0x101 */	(Func)	f_fchown,	/* 1.15.2  */
+	/* 0x102 */	(Func)	f_fchmod,	/* 1.15.2  */
 	/* 0x103 */	(Func)	sys_fsync, 	/* 1.15.10 */
-	/* 0x104 */		f_cntl,
+	/* 0x104 */	(Func)	f_cntl,
 	/* 0x105 */		f_instat,
 	/* 0x106 */		f_outstat,
 	/* 0x107 */		f_getchar,
@@ -408,7 +412,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x11a */		sys_psigreturn,
 	/* 0x11b */		sys_pfork,
 	/* 0x11c */		sys_pwait3,
-	/* 0x11d */		f_select,
+	/* 0x11d */	(Func)	f_select,
 	/* 0x11e */		sys_prusage,
 	/* 0x11f */	(Func)	sys_psetlimit,
 	
@@ -418,7 +422,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x123 */		p_sigpending,
 	/* 0x124 */		d_pathconf,
 	/* 0x125 */		p_msg,
-	/* 0x126 */		f_midipipe,
+	/* 0x126 */	(Func)	f_midipipe,
 	/* 0x127 */		sys_prenice,
 	/* 0x128 */		d_opendir,
 	/* 0x129 */		d_readdir,
@@ -458,7 +462,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x149 */	(Func)	t_setitimer,
 	/* 0x14a */		d_chroot,	/* 1.15.3  */
 	/* 0x14b */		f_stat64,	/* 1.15.4  */
-	/* 0x14c */		f_seek64,	/* 1.15.10 */
+	/* 0x14c */	(Func)	f_seek64,	/* 1.15.10 */
 	/* 0x14d */		d_setkey,	/* 1.15.4  */
  	/* 0x14e */	(Func)	sys_psetreuid,
  	/* 0x14f */	(Func)	sys_psetregid,
@@ -474,13 +478,54 @@ Func dos_tab [DOS_MAX] =
 	/* 0x158 */		sys_pgetpriority,
 	/* 0x159 */		sys_psetpriority,
 	/* 0x15a */		f_poll,		/* 1.15.10 */
-	/* 0x15b */		enosys,		/* reserved */
-	/* 0x15c */		enosys,		/* reserved */
+	/* 0x15b */		enosys,		/* sys_writev */
+	/* 0x15c */		enosys,		/* sys_readv */
 	/* 0x15d */		enosys,		/* reserved */
 	/* 0x15e */		enosys,		/* reserved */
-	/* 0x15f */	(Func)	sys_emu		/* 1.15.8, interface emulation */
+	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
 	
-	/* 0x160 */		/* DOS_MAX */
+	/* 0x160 */	(Func)	sys_socket,	/* 1.16 */
+	/* 0x161 */	(Func)	sys_socketpair,	/* 1.16 */
+	/* 0x162 */	(Func)	sys_accept,	/* 1.16 */
+	/* 0x163 */	(Func)	sys_connect,	/* 1.16 */
+	/* 0x164 */	(Func)	sys_bind,	/* 1.16 */
+	/* 0x165 */	(Func)	sys_listen,	/* 1.16 */
+	/* 0x166 */	(Func)	sys_recvmsg,	/* 1.16 */
+	/* 0x167 */	(Func)	sys_sendmsg,	/* 1.16 */
+	/* 0x168 */	(Func)	sys_recvfrom,	/* 1.16 */
+	/* 0x169 */	(Func)	sys_sendto,	/* 1.16 */
+	/* 0x16a */	(Func)	sys_setsockopt,	/* 1.16 */
+	/* 0x16b */	(Func)	sys_getsockopt,	/* 1.16 */
+	/* 0x16c */	(Func)	sys_getpeername,/* 1.16 */
+	/* 0x16d */	(Func)	sys_getsockname,/* 1.16 */
+	/* 0x16e */	(Func)	sys_shutdown,	/* 1.16 */
+	/* 0x16f */		enosys,		/* reserved */
+	
+# if 0
+	/* 0x170 */		sys_shmget,
+	/* 0x171 */		sys_shmctl,
+	/* 0x172 */	(Func)	sys_shmat,
+	/* 0x173 */		sys_shmdt,
+# else
+	/* 0x170 */		enosys,
+	/* 0x171 */		enosys,
+	/* 0x172 */		enosys,
+	/* 0x173 */		enosys,
+# endif
+	/* 0x174 */		enosys,		/* sys_semgt */
+	/* 0x175 */		enosys,		/* sys_semctl */
+	/* 0x176 */		enosys,		/* sys_semop */
+	/* 0x177 */		enosys,		/* sys_semconfig */
+	/* 0x178 */		enosys,		/* sys_msgget */
+	/* 0x179 */		enosys,		/* sys_msgcntl */
+	/* 0x17a */		enosys,		/* sys_msgsnd */
+	/* 0x17b */		enosys,		/* sys_resmsgrcverved */
+	/* 0x17c */		enosys,		/* sys_reserved */
+	/* 0x17d */		enosys,		/* sys_reserved */
+	/* 0x17e */		enosys,		/* sys_mmap */
+	/* 0x17f */		enosys		/* sys_munmap */
+	
+	/* 0x180 */		/* DOS_MAX */
 };
 
 Func sys_mon_tab [1] =
