@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = sys tools
+SUBDIRS = sys tools xaaes
 
 srcdir = .
 top_srcdir = .
