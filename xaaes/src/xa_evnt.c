@@ -1517,12 +1517,14 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 		if (is_bevent(pending_button[pbi].b, pending_button[pbi].clicks, pb->intin, 3))
 		{
-			vq_key_s( C.vh, (short *)&pb->intout);
+			vq_key_s( C.vh, &pb->intout[4]);
 //			multi_intout(pb->intout, 0);
 			pb->intout[0] = pending_button[pbi].clicks;	/* Ozk 040503: Take correct data */
 			pb->intout[1] = pending_button[pbi].x;
 			pb->intout[2] = pending_button[pbi].y;
 			pb->intout[3] = pending_button[pbi].b;
+			pb->intout[5] = 0;
+			pb->intout[6] = 0;
 			Sema_Dn(pending);
 			return XAC_DONE;
 		}
@@ -1539,7 +1541,7 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			{
 				DIAG((D_button,NULL,"    --    implicit button %d\n",button.b));
 				multi_intout(pb->intout, 0);		/* 0 : for evnt_button */
-				pb->intout[0] = 0;
+				pb->intout[0] = 1;
 				button.got = true;
 				Sema_Dn(pending);
 				return XAC_DONE;

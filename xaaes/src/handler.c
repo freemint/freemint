@@ -692,7 +692,7 @@ XA_handler(ushort c, AESPB *pb)
 	{
 
 #if 0
-		if ( /*(!strcmp("  Thing Desktop", client->name)) || */(!strcmp("  FontList 1.11 ", client->name)) )
+		if ( /*(!strcmp("  Thing Desktop", client->name)) || */(!strcmp("  AtarICQ ", client->name)) )
 			display("%s opcod %d - %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", client->name, cmd,
 			pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], pb->intin[4],
 			pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], pb->intin[9] );
@@ -941,6 +941,12 @@ XA_handler(ushort c, AESPB *pb)
 				break;
 			}
 			}
+#if 0
+		if ( cmd == 25 && (!strcmp("  AtarICQ ", client->name)) )
+			display("  return   %d %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+			pb->intout[0], pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4],
+			pb->intout[5], pb->intout[6], pb->intout[7], pb->intout[8], pb->intout[9] );
+#endif
 			return AES_MAGIC;
 		}
 		else
