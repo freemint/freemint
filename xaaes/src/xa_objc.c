@@ -22,6 +22,7 @@
  */
 
 #include <mint/osbind.h>
+#include <fcntl.h>
 
 #include "xa_types.h"
 #include "xa_global.h"
@@ -38,6 +39,12 @@
  * - New version of the object display routine modularises the whole system.
  */
 
+static bool
+ed_scrap_copy(XA_TREE *wt, TEDINFO *ed_txt);
+static bool
+ed_scrap_cut(XA_TREE *wt, TEDINFO *ed_txt);
+static bool
+ed_scrap_paste(XA_TREE *wt, TEDINFO *ed_txt, int *cursor_pos);
 
 /*
  * HR change ob_spec
@@ -674,10 +681,10 @@ check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree)
 			client->fmd.wind->wa.x, client->fmd.wind->wa.y,
 			wt->tree ? wt->tree->ob_x : -1, wt->tree ? wt->tree->ob_y : -1));
 
-		if (!ct)		
+		if (!ct) {
 			tree->ob_x = client->fmd.wind->wa.x,
 			tree->ob_y = client->fmd.wind->wa.y;
-		/* else governed by widget.loc */
+		} /* else governed by widget.loc */
 
 		wt->zen = true;
 	}
@@ -1136,15 +1143,17 @@ ed_char(XA_TREE *wt, TEDINFO *ed_txt, ushort keycode)
 	int cursor_pos = wt->edit_pos, x, key, tmask, n, chg;
 	bool update = false;
 
+	DIAG((D_objc, NULL, "ed_char keycode=0x%04x\n", keycode));
+
 	switch (keycode)
 	{	
-	case 0x011b:		/* ESCAPE clears the field */
+	case 0x011b:	/* ESCAPE clears the field */
 		txt[0] = '\0';
 		cursor_pos = 0;
 		update = true;
 		break;
 
-	case 0x537f:		/* DEL deletes character under cursor */
+	case 0x537f:	/* DEL deletes character under cursor */
 		if (txt[cursor_pos])
 		{
 			for(x = cursor_pos; x < ed_txt->te_txtlen - 1; x++)
@@ -1154,7 +1163,7 @@ ed_char(XA_TREE *wt, TEDINFO *ed_txt, ushort keycode)
 		}
 		break;
 			
-	case 0x0e08:		/* BACKSPACE deletes character left of cursor (if any) */
+	case 0x0e08:	/* BACKSPACE deletes character left of cursor (if any) */
 		if (cursor_pos)
 		{
 			for(x = cursor_pos; x < ed_txt->te_txtlen; x++)
@@ -1201,8 +1210,18 @@ ed_char(XA_TREE *wt, TEDINFO *ed_txt, ushort keycode)
 		}
 		break;
 
-	default:		/* Just a plain key - insert character */
-		chg = 0;		/* Ugly hack! */
+	case 0x2e03:	/* CTRL+C */
+		update = ed_scrap_copy(wt, ed_txt);
+		break;
+	case 0x2d18: 	/* CTRL+X */
+		update = ed_scrap_cut(wt, ed_txt);
+		break;
+	case 0x2f16: 	/* CTRL+V */
+		update = ed_scrap_paste(wt, ed_txt, &cursor_pos);
+		break;
+
+	default:	/* Just a plain key - insert character */
+		chg = 0;/* Ugly hack! */
 		if (cursor_pos == ed_txt->te_txtlen - 1)
 		{
 			cursor_pos--;
@@ -1304,6 +1323,92 @@ ed_char(XA_TREE *wt, TEDINFO *ed_txt, ushort keycode)
 	return update;
 }
 
+
+static char*
+ed_scrap_filename( char *scrp )
+{
+	size_t path_len;
+	strncpy(scrp, cfg.scrap_path, 256);
+	path_len = strlen(scrp);
+	if ( scrp[path_len-1] != '\\' )
+		strcat(scrp+path_len, "\\");
+	strcat(scrp+path_len, "scrap.txt");
+	return scrp;
+}
+
+static bool
+ed_scrap_cut(XA_TREE *wt, TEDINFO *ed_txt)
+{
+	ed_scrap_copy(wt, ed_txt);
+
+	/* clear the edit control */
+	*ed_txt->te_ptext = '\0';
+	wt->edit_pos = 0;
+	return true;
+}
+
+static bool
+ed_scrap_copy(XA_TREE *wt, TEDINFO *ed_txt)
+{
+	int len = strlen( ed_txt->te_ptext );
+	if (len) {
+		char scrp[256];
+		long handle = Fcreate(ed_scrap_filename(scrp), 0);
+		if ( handle >= 0 ) {
+			Fwrite(handle, len, ed_txt->te_ptext);
+			Fclose(handle);
+		}
+	}
+	return false;
+}
+
+static bool
+ed_scrap_paste(XA_TREE *wt, TEDINFO *ed_txt, int *cursor_pos)
+{
+	long handle;
+	char scrp[256];
+
+	handle = Fopen(ed_scrap_filename(scrp), O_RDONLY);
+	if ( handle >= 0 ) {
+		uchar data[128];
+		long cnt = 1;
+
+		while ( cnt ) {
+			int i;
+
+			cnt = Fread(handle, 128, data);
+			if ( !cnt )
+				break;
+
+			for( i=0; i<cnt; i++ ) {
+				/* exclude some chars */
+				switch( data[i] ) {
+				case '\r':
+				case '\n':
+				case '\t':
+					break;
+				default:
+					ed_char(wt, ed_txt, (ushort)data[i]);
+
+					if (wt->edit_pos >= ed_txt->te_txtlen - 1) {
+						cnt = 0;
+						break;
+					}
+				}
+			}
+		}
+
+		Fclose(handle);
+
+		/* move the cursor to the end of the pasted text */
+		*cursor_pos = wt->edit_pos;
+		return true;
+	}
+
+	return false;
+}
+
+
 #if GENERATE_DIAGS
 char *edfunc[] =
 {
@@ -1328,7 +1433,7 @@ edit_object(LOCK lock,
 {
 	TEDINFO *ted;
 	OBJECT *otree = wt->tree;
-	int  last = 0, old = -1;
+	int  last = 0, old_edit_obj = -1;
 	bool update = false;
 
 #if GENERATE_DIAGS
@@ -1348,12 +1453,14 @@ edit_object(LOCK lock,
 		return 0;
 
 	wt = check_widget_tree(lock, client, form);
-	if (otree != form)
+	if (otree == form && wt->edit_obj != ed_obj)
 	{
-		wt->edit_obj = ed_obj;
+		old_edit_obj = wt->edit_obj;
 		update = true;
-		old = wt->edit_obj; /* BUG? old assigment to the new ed_obj? */
 	}
+
+	/* set the object to edit to the widget structure */
+	wt->edit_obj = ed_obj;
 
 	ted = get_ob_spec(&form[ed_obj])->tedinfo;
 
@@ -1361,7 +1468,6 @@ edit_object(LOCK lock,
 	{
 	/* set current edit field */
 	case ED_INIT:
-		wt->edit_obj = ed_obj;
 		if (*(ted->te_ptext) == '@')
 			*(ted->te_ptext) = 0;
 		wt->edit_pos = strlen(ted->te_ptext);
@@ -1370,26 +1476,40 @@ edit_object(LOCK lock,
 
 	/* process a character */
 	case ED_CHAR:
-		wt->edit_obj = ed_obj;
 		update = update || ed_char(wt, ted, keycode);
 		break;
 
 	/* turn off the cursor */
 	case ED_END:
+		wt->edit_obj = -1;
 		update = true;
+		break;
+
+	/* ED_INIT with the edit_position setup for the x coordinate value
+	   (comming in keycode) */
+	case ED_CRSR:
+		/* TODO: x coordinate -> cursor position conversion */
+
+		/* TODO: REMOVE: begin ... ED_INIT like position return */
+		if (*(ted->te_ptext) == '@')
+			wt->edit_pos = 0;
+		else
+			wt->edit_pos = strlen(ted->te_ptext);
+		/* TODO: REMOVE: end */
 		break;
 
 	default:
 		return 1;
 	}
 
+	/* update the cursor position */
 	*newpos = wt->edit_pos;
 
 	if (update)
 	{
-		DIAGS(("newpos wt %lx, old %d, ed_obj %d ed_pos %d\n", wt, old, ed_obj, wt->edit_pos));
-		if (old != -1)
-			redraw_object(lock, wt, old);
+		DIAGS(("newpos wt %lx, old_ed_obj %d, ed_obj %d ed_pos %d\n", wt, old_edit_obj, ed_obj, wt->edit_pos));
+		if (old_edit_obj != -1)
+			redraw_object(lock, wt, old_edit_obj);
 		redraw_object(lock, wt, ed_obj);
 	}
 
