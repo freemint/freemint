@@ -33,9 +33,7 @@ extern short my_global_aes[];
 
 extern char version[];
 extern Path Aes_home_path;
-
 extern long loader_pid;
-extern struct file *log;
 
 void *init(struct kentry *k);
 
