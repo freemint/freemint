@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (c) 1983, 1992, 1993
- *      The Regents of the University of California.  All rights reserved.
+ *	The Regents of the University of California.  All rights reserved.
  *
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
  *
@@ -16,8 +16,8 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *      This product includes software developed by the University of
- *      California, Berkeley and its contributors.
+ *	This product includes software developed by the University of
+ *	California, Berkeley and its contributors.
  * 4. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
@@ -58,7 +58,7 @@
  *    (indicating that the register does not exist).
  *
  * WARNING: the XHDI vector MUST MUST MUST point to the caller's
- *          memory area - i.e. to its trampoline. This is to be
+ *	    memory area - i.e. to its trampoline. This is to be
  *	    done yet.
  */
 
@@ -77,7 +77,6 @@ static const ulong allow_read[] =
 
 	0L		/* address 0 must always cause bus error */
 };
-
 static const ulong allow_write[] = { 0L };
 
 static long
@@ -93,17 +92,53 @@ prove_fault_address(const ulong *access_table, ulong address)
 	return 0;
 }
 
+/* The routine returns 1 if the program caused a "real" bus fault
+ * e.g. it tried to access a nonexistent memory location.
+ * This is only important if the program installed own
+ * bus error handler.
+ */
+static long
+real_fault(ulong address)
+{
+ 	/* If the fault address is in the hw register
+ 	 * area, we pretend that nothing exists there.
+	 */
+	 if ((address >= 0xfff00000L) || \
+	 	((address >= 0x00f00000L) && \
+	 		(address <= 0x00ffffffL)))
+	 {
+	 	return 1L;
+	 }
+
+	/* Non existent ST RAM address */
+	if ((address >= *(long *)0x42eL /* phystop */) && \
+		(address < 0x00e00000L))
+	{
+		return 1L;
+	}
+
+	/* Non existent TT RAM address */
+	if (*(long *)0x05a8L == 0x1357bd13L)	/* ramvalid */
+	{
+		if (address > *(long *)0x05a4L)	/* ramtop */
+			return 1L;
+	}
+
+	return 0L;
+}
+
+# ifndef ONLY030
 static long
 handle_68000_bus_frame(MC68000_BUS_FRAME *frame)
 {
 	return 0;
 }
-
 static long
 handle_68010_bus_frame(MC68010_BUS_FRAME *frame)
 {
 	return 0;
 }
+# endif
 
 static long
 handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
@@ -241,12 +276,7 @@ handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
 		 */
 		 if (curproc->berr && (curproc->p_flag & P_FLAG_BER))
 		 {
-		 	/* If the fault address is in the hw register
-		 	 * area, we pretend that nothing exists there.
-		 	 */
-		 	if ((frame->fault_address >= 0xfff00000L) || \
-		 		((frame->fault_address >= 0x00f00000L) && \
-		 			(frame->fault_address <= 0x00ffffffL)))
+		 	if (real_fault(frame->fault_address))
 		 	{
 		 		/* Emulate the bus error for the user */
 		 		frame->pc = (ushort *)curproc->berr;
@@ -255,32 +285,6 @@ handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
 
 				return -1L;		/* resume */
 		 	}
-
-			/* Non existent ST RAM address */
-			if ((frame->fault_address >= *(long *)0x42eL /* phystop */) && \
-				(frame->fault_address < 0x00e00000L))
-			{
-		 		/* Emulate the bus error for the user */
-		 		frame->pc = (ushort *)curproc->berr;
-
-				frame->ssw.df = 0;	/* do not rerun */
-
-				return -1L;		/* resume */
-			}
-
-			/* Non existent TT RAM address */
-			if (*(long *)0x05a8L == 0x1357bd13L)	/* ramvalid */
-			{
-				if (frame->fault_address > *(long *)0x05a4L)
-				{
-			 		/* Emulate the bus error for the user */
-			 		frame->pc = (ushort *)curproc->berr;
-
-					frame->ssw.df = 0;	/* do not rerun */
-
-					return -1L;		/* resume */
-				}
-			}
 
 			/* Pretend success otherwise (writing nothing) */
 			frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
@@ -373,12 +377,7 @@ handle_68030_long_frame(MC68030_LONG_FRAME *frame)
 			 */
 			 if (curproc->berr && (curproc->p_flag & P_FLAG_BER))
 			 {
-			 	/* If the fault address is in the hw register
-			 	 * area, we pretend that nothing exists there.
-			 	 */
-			 	if ((frame->fault_address >= 0xfff00000L) || \
-			 		((frame->fault_address >= 0x00f00000L) && \
-			 			(frame->fault_address <= 0x00ffffffL)))
+			 	if (real_fault(frame->fault_address))
 			 	{
 			 		/* Emulate the bus error for the user */
 			 		frame->pc = (ushort *)curproc->berr;
@@ -387,32 +386,6 @@ handle_68030_long_frame(MC68030_LONG_FRAME *frame)
 
 					return -1L;		/* resume */
 			 	}
-
-				/* Non existent ST RAM address */
-				if ((frame->fault_address >= *(long *)0x42eL /* phystop */) && \
-					(frame->fault_address < 0x00e00000L))
-				{
-			 		/* Emulate the bus error for the user */
-			 		frame->pc = (ushort *)curproc->berr;
-
-					frame->ssw.df = 0;	/* do not rerun */
-
-					return -1L;		/* resume */
-				}
-
-				/* Non existent TT RAM address */
-				if (*(long *)0x05a8L == 0x1357bd13L)	/* ramvalid */
-				{
-					if (frame->fault_address > *(long *)0x05a4L)
-					{
-				 		/* Emulate the bus error for the user */
-				 		frame->pc = (ushort *)curproc->berr;
-
-						frame->ssw.df = 0;	/* do not rerun */
-
-						return -1L;		/* resume */
-					}
-				}
 			}
 		}
 	}
@@ -432,6 +405,36 @@ handle_68030_long_frame(MC68030_LONG_FRAME *frame)
 static long
 handle_68040_frame(MC68040_BUS_FRAME *frame)
 {
+	/* We don't handle ATC faults */
+	if (frame->ssw.atc)
+		return 0;
+
+	/* We don't handle the read-modify-write operations either */
+	if (frame->ssw.lk)
+		return 0;
+
+	/* We only do "user data access" */
+	if (frame->ssw.tm != 0x1)
+		return 0;
+
+	/* Read is 1, write is 0 */
+	if (frame->ssw.rw)
+	{
+		if (frame->fault_address == 0x00000008L)
+		{
+			/* This is special case, the program wants
+			 * to read the bus error vector. We record
+			 * this fact. See below (in writes).
+			 *
+			 * BUG: tst.l 0x0008.w will deceive us :(
+			 */
+			curproc->p_flag |= P_FLAG_BER;
+		}
+	}
+	else
+	{
+	}
+
 	return 0;
 }
 
@@ -447,6 +450,8 @@ handle_68060_frame(MC68060_BUS_FRAME *frame)
 long
 check_bus(struct frame_zero frame)
 {
+	ushort frame_format = frame.format_word & 0xf000;
+
 	/* All this below only applies, when the program
 	 * has called Super() or Supexec() and thinks that
 	 * it is executing in supervisor mode.
@@ -454,12 +459,11 @@ check_bus(struct frame_zero frame)
 	if ((curproc->p_flag & P_FLAG_SUPER) == 0)
 		return 0;
 
+# ifndef ONLY030
 	if (mcpu == 0)
 		return handle_68000_bus_frame((MC68000_BUS_FRAME *)&frame);
 	else if (mcpu >= 10)
 	{
-		ushort frame_format = frame.format_word & 0xf000;
-
 		if (frame_format == 0x8000)
 			return handle_68010_bus_frame((MC68010_BUS_FRAME *)&frame);
 		else if (frame_format == 0xa000)
@@ -471,7 +475,16 @@ check_bus(struct frame_zero frame)
 		else if (frame_format == 0x4000)
 			return handle_68060_frame((MC68060_BUS_FRAME *)&frame);
 	}
-
+# else
+	if (frame_format == 0xa000)
+		return handle_68030_short_frame((MC68030_SHORT_FRAME *)&frame);
+	else if (frame_format == 0xb000)
+		return handle_68030_long_frame((MC68030_LONG_FRAME *)&frame);
+	else if (frame_format == 0x7000)
+		return handle_68040_frame((MC68040_BUS_FRAME *)&frame);
+	else if (frame_format == 0x4000)
+		return handle_68060_frame((MC68060_BUS_FRAME *)&frame);
+# endif
 	/* For all unknown processors and stack frame formats
 	 * we let it go.
 	 */
@@ -681,10 +694,13 @@ check_priv(struct privilege_violation_stackframe frame)
 		ushort imm, ipl;
 
 		imm = frame.pc[1];
-		if (imm & 0x2000)
+
+		/* We let it go if STOP sets either of the trace bits.
+		 */
+		if ((imm & 0xe000) == 0x2000)
 		{
 			ipl = imm >> 8;
-			ipl &= 3;
+			ipl &= 7;
 			if (ipl > 5)
 				return 0;	/* make privilege violation */
 		}
@@ -855,9 +871,9 @@ check_priv(struct privilege_violation_stackframe frame)
 				{
 					case 0x003:	/* MMU translation control register */
 					case 0x004:	/* Instruction transparent translation register 0 */
-					case 0x005:	/* Instruction transparent translation register 0 */
+					case 0x005:	/* Instruction transparent translation register 1 */
 					case 0x006:	/* Data transparent translation register 0 */
-					case 0x007:	/* Data transparent translation register 0 */
+					case 0x007:	/* Data transparent translation register 1 */
 					case 0x805:	/* MMUSR */
 					case 0x806:	/* URP */
 					case 0x807:	/* SRP */
