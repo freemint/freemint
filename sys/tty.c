@@ -51,7 +51,7 @@ struct tty default_tty =
 	13, 13,			/* input speed == output speed == 9600 baud */
 	CTRL('H'),		/* erase */
 	CTRL('U'),		/* kill */
-	T_ECHO|T_CRMOD|T_TOSTOP|T_XKEY|T_ECHOCTL, /* flags */
+	T_ECHO|T_CRMOD|T_XKEY|T_ECHOCTL, /* flags */
 	},
 	{
 	CTRL('C'),		/* interrupt */
