@@ -1,3 +1,11 @@
+* finish the RSC palette support
+! fsel_ look & feel optimalization (take freedom
+  as a good example when to clean the file edit
+  field and when not - in general no mouse action
+  should clean it)
+* work on OBJC_COLORWORD in gemlib the usage is
+  quite complicated ATM.
+
 ! fix the TOP/BOTTOM messages during an
   application start.
 ! fsel_* functions optinally binded (to let the
