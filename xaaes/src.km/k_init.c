@@ -452,7 +452,7 @@ k_init(void)
 	DIAGS(("setting up file selector"));
 
 	DIAGS(("setting up System Alert log"));
-	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW,
+	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, 255);
@@ -465,6 +465,7 @@ k_init(void)
 		sc.text = a;
 		sc.n_strings = 1;
 		sc.usr_flags = 1;
+		sc.xflags = OF_AUTO_OPEN;
 		DIAGS(("Add Alerts entry..."));
 		list->add(list, NULL, NULL, &sc, 0, FLAG_AMAL, NOREDRAW);
 		sc.text = e;
