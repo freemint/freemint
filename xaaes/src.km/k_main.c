@@ -346,7 +346,7 @@ k_main(void *dummy)
 	 * register trap#2 handler
 	 */
 
-	if (register_trap2(XA_handler, 0, 0))
+	if (register_trap2(XA_handler, 0, 0, 0))
 	{
 		DIAGS(("register_trap2 failed!"));
 		goto leave;
@@ -609,7 +609,7 @@ k_exit(void)
 	/*
 	 * deinstall trap#2 handler
 	 */
-	register_trap2(XA_handler, 1, 0);
+	register_trap2(XA_handler, 1, 0, 0);
 
 	/*
 	 * close input devices

@@ -666,6 +666,17 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				r = load_km((const char *) arg1);
 			break;
 		}
+		/* XXX only for testing */
+		case 3000:
+		{
+			long _cdecl register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
+
+			if (!isroot)
+				r = EPERM;
+			else
+				r = register_trap2( arg1, 0, 1, arg2);
+			break;
+		}
 		default:
 		{
 			DEBUG (("s_system(): invalid mode %d", mode));
