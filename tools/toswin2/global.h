@@ -24,7 +24,6 @@ typedef enum {FALSE, TRUE} bool;
 #define WSHADED 	4
 #define WISDIAL		8
 
-
 typedef struct win WINDOW;
 struct win
 {
@@ -54,7 +53,6 @@ struct win
 	void	(*uniconify)	(struct win *win, short, short, short, short);
 	void	(*shaded) 	(struct win *win, short on);
 	void	(*arrowed) 	(struct win *win, short msg);
-	void	(*hslid) 	(struct win *win, short hpos);
 	void	(*vslid) 	(struct win *win, short vpos);
 	bool	(*keyinp) 	(struct win *win, short keycode, short shft );
 	bool	(*mouseinp)	(struct win *win, short clicks, short x, short y, short shft, short mbuttons);
@@ -113,11 +111,10 @@ struct tablist
 #define MAXCOLS	220
 
 /* text->term_flags */
-#define FWIDE		0x0800  /* enable 80/132 column switching */
 #define FINSERT		0x1000	/* insert characters */
 #define FFLASH		0x2000	/* cursor is currently showing */
 #define FCURS		0x4000	/* cursor enabled */
-#define FWRAP		0x8000	/* wrap at end of line */
+#define FNOAM		0x8000  /* Disable automatic margins  */
 
 /* text->cflag */
 #define CBGCOL		 0x000f	/* background color mask */
@@ -136,7 +133,6 @@ struct tablist
 #define CSELECTED	 0x2000	/* character has been selected by mouse */
 #define CTOUCHED	 0x4000	/* character attributes have changed */
 #define CDIRTY		 0x8000	/* the character itself has changed */
-#define CENACS		0x10000 /* Alternate character set enabled.  */
 #define CACS		0x20000	/* Alternate character set active.  */
 
 
@@ -168,7 +164,7 @@ typedef struct textwin TEXTWIN;
 struct textwin
 {
 	WINDOW	*win;				/* underlying WINDOW struct */
-	int	offx, offy;			/* offset of window (0, 0) position */
+	int	offy;				/* offset of window (0, 0) position */
 	short	maxx;				/* number of characters across */
 	short	miny;				/* first 'real' line (previous lines are scrollback */
 	short	maxy;				/* number of characters down */
@@ -187,6 +183,10 @@ struct textwin
 	unsigned short	escy1;			/* first char. for ESC Y */
 	void	(*output)(struct textwin *t, 
 	                  unsigned int c); 	/* output function */
+	ushort	alloc_width;			/* Max. width that the following buffers can
+						   handle.  */
+	ushort	alloc_height;			/* Max. height that the following buffers can
+						   handle.  */
 	uchar	**data;				/* terminal data */
 	ulong	**cflag;			/* flags for individual characters */
 	char	*dirty;				/* marks whether lines need redrawing */
@@ -220,10 +220,18 @@ struct textwin
 		block_x2,
 		block_y1,
 		block_y2;
-	int	vdi_colors;			/* Non-zero if vdi colors active.  */
 	ulong	fg_effects;			/* Bit vector of text effects.  */
 	ulong	bg_effects;			/* Bit vector with background effects
 						   (only CE_BOLD/CE_LIGHT are used).  */
+	
+	/* Various flags.  */
+	unsigned vdi_colors: 1;			/* Non-zero if vdi colors active.  */
+	unsigned windirty: 1;			/* Non-zero if window size has changed.  */
+	unsigned do_wrap: 1;			/* Non-zero if cursor in last column and 
+						   character just output.  */
+	unsigned deccolm: 1;			/* Non-zero if column (132/80 switch)
+						   enabled.  */
+	unsigned decscnm: 1;			/* Non-zero if in reverse video mode.  */
 };
 
 
@@ -273,5 +281,6 @@ int	alert(int def, int undo, int num);
 void	global_init(void);
 void	global_term(void);
 
+void	memulset (void* dest, unsigned long what, size_t size);
 
 #endif

@@ -7,7 +7,7 @@
 
 #include <string.h>
 #include "global.h"
-
+#include "textwin.h"
 
 #ifndef WM_SHADED
 #define WM_SHADED				0x5758
@@ -234,12 +234,12 @@ WINDOW *create_window(char *title, short kind,
 
 	wind_calc(WC_BORDER, v->kind, v->work.g_x, v->work.g_y, max_w, max_h, &full.g_x, &full.g_y, &full.g_w, &full.g_h);
 	
-	if (full.g_w > gl_desk.g_w)
+	if (full.g_w > gl_desk.g_w || full.g_w < 0)
 		full.g_w = gl_desk.g_w;
-	if (full.g_h > gl_desk.g_h)
+	if (full.g_h > gl_desk.g_h || full.g_h < 0)
 		full.g_h = gl_desk.g_h;
 
-	if (centerwin) 
+	if (0 || centerwin) 
 	{
 		full.g_x = gl_desk.g_x + (gl_desk.g_w - full.g_w) / 2;
 		full.g_y = gl_desk.g_y + (gl_desk.g_h - full.g_h) / 2;
@@ -273,7 +273,6 @@ WINDOW *create_window(char *title, short kind,
 	v->uniconify = uniconify_win;
 	v->shaded = shade_win;
 	v->arrowed = noslid;
-	v->hslid = noslid;
 	v->vslid = noslid;
 	v->keyinp = nokey;
 	v->mouseinp = nomouse;
@@ -381,6 +380,7 @@ void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 	bool off = FALSE;
 	
 /*	wind_update(TRUE);*/
+
 	t2.g_x = xc;
 	t2.g_y = yc;
 	t2.g_w = wc;
@@ -479,9 +479,6 @@ bool window_msg(short *msgbuff)
 			break;
 		case WM_ARROWED:
 			(*v->arrowed)(v, msgbuff[4]);
-			break;
-		case WM_HSLID:
-			(*v->hslid)(v, msgbuff[4]);
 			break;
 		case WM_VSLID:
 			(*v->vslid)(v, msgbuff[4]);

@@ -330,9 +330,8 @@ void event_loop(void)
 			if (!click_wdial(mbreturn, msx, msy, kstate, mbutton))
 				window_click(mbreturn, msx, msy, kstate, mbutton);
 
-		if (event & MU_TIMER) 
+		if (event & MU_TIMER)
 			fd_input();
-
 	}
 	while (!gl_done);
 	delete_menu();
