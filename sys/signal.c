@@ -79,15 +79,10 @@ send_sig (PROC *p, ushort sig, int priv)
 	if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 		return 0;
 	
-# if 1
 	assert (p->p_sigacts);
 	
 	if (SIGACTION(p, sig).sa_handler == SIG_IGN && !p->ptracer && sig != SIGCONT)
 		return 0;
-# else
-	if (p->sighandle[sig] == SIG_IGN && !p->ptracer && sig != SIGCONT)
-		return 0;
-# endif
 	
 	/* Mark the signal as being pending */	
 	post_sig (p, sig);
