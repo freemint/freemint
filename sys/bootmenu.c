@@ -218,7 +218,8 @@ do_debug_level(char *arg)
 
 	if (!isdigit(*arg))
 	{
-		ksprintf(msg, sizeof(msg), "mint.ini: %s requires number as an argument!\r\n", "DEBUG_LEVEL");
+		ksprintf(msg, sizeof(msg), \
+			"mint.ini: %s requires number as an argument!\r\n", "DEBUG_LEVEL");
 		TRAP_Cconws(msg);
 
 		return;
@@ -226,9 +227,11 @@ do_debug_level(char *arg)
 
 	val = atol(arg);
 
-	if (val < 0 || val > 4)
+	if (val < 0 || val > LOW_LEVEL)
 	{
-		ksprintf(msg, sizeof(msg), "mint.ini: %s value %ld is out of range (%d-%d)\r\n", "DEBUG_LEVEL", val, (short)0, (short)4);
+		ksprintf(msg, sizeof(msg), \
+			"mint.ini: %s value %ld is out of range (%d-%d)\r\n", \
+			"DEBUG_LEVEL", val, (short)0, (short)LOW_LEVEL);
 		TRAP_Cconws(msg);
 
 		return;
@@ -255,7 +258,8 @@ do_debug_devno(char *arg)
 
 	if (!isdigit(*arg))
 	{
-		ksprintf(msg, sizeof(msg), "mint.ini: %s requires number as an argument!\r\n", "DEBUG_DEVNO");
+		ksprintf(msg, sizeof(msg), \
+			"mint.ini: %s requires number as an argument!\r\n", "DEBUG_DEVNO");
 		TRAP_Cconws(msg);
 
 		return;
@@ -265,7 +269,9 @@ do_debug_devno(char *arg)
 
 	if (val < 0 || val > 9)
 	{
-		ksprintf(msg, sizeof(msg), "mint.ini: %s value %ld is out of range (%d-%d)\r\n", "DEBUG_DEVNO", val, (short)0, (short)9);
+		ksprintf(msg, sizeof(msg), \
+			 "mint.ini: %s value %ld is out of range (%d-%d)\r\n", \
+			 "DEBUG_DEVNO", val, (short)0, (short)9);
 		TRAP_Cconws(msg);
 
 		return;
@@ -292,7 +298,8 @@ do_boot_delay(char *arg)
 
 	if (!isdigit(*arg))
 	{
-		ksprintf(msg, sizeof(msg), "mint.ini: %s requires number as an argument!\r\n", "BOOT_DELAY");
+		ksprintf(msg, sizeof(msg), \
+			"mint.ini: %s requires number as an argument!\r\n", "BOOT_DELAY");
 		TRAP_Cconws(msg);
 
 		return;
@@ -302,7 +309,9 @@ do_boot_delay(char *arg)
 
 	if (val < 0 || val > 59)
 	{
-		ksprintf(msg, sizeof(msg), "mint.ini: %s value %ld is out of range (%d-%d)\r\n", "BOOT_DELAY", val, (short)0, (short)59);
+		ksprintf(msg, sizeof(msg), \
+			"mint.ini: %s value %ld is out of range (%d-%d)\r\n", \
+			"BOOT_DELAY", val, (short)0, (short)59);
 		TRAP_Cconws(msg);
 
 		return;
@@ -527,12 +536,12 @@ pause_and_ask(void)
 	{
 		boot_printf(MSG_init_askmenu, boot_delay);
 
-		pause = Supexec(get_hz_200);
+		pause = TRAP_Supexec(get_hz_200);
 		pause += (boot_delay * HZ);
 
 		do
 		{
-			newstamp = Supexec(get_hz_200);
+			newstamp = TRAP_Supexec(get_hz_200);
 
 			if ((TRAP_Kbshift(-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
 			{
