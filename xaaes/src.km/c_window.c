@@ -360,6 +360,7 @@ wi_insert(WIN_BASE *b, struct xa_window *w, struct xa_window *after)
 }
 #endif
 
+
 bool
 is_topped(struct xa_window *wind)
 {
@@ -1672,7 +1673,10 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 	while (wl)
 	{
 		if (wl->owner == client)
+		{
+			make_rect_list(wl, true);
 			diswin(lock, wl, NULL);
+		}
 		wl = wl->prev;
 	}
 }
