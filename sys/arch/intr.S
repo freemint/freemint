@@ -438,38 +438,6 @@ _send_packet:
 
 #endif
 
-# if 0
-// Generic routines for handling any user-specified interrupts.
-// These only work on a 68020+ (long frame format is needed),
-// psigintr() code in dossig.c prevents this from being ran on
-// a 68000.
-//
-	.globl	_new_intr
-	.globl	_intr_shadow
-	.globl	_sig_user
-
-	.data
-
-_intr_shadow:	dc.l	0		// pointer to private shadow of exception vectors
-
-	.text
-
-_new_intr:	subq.l	#0x08,sp		// make some room on the stack
-	movem.l	d0-d2/a0-a2,-(sp)	// save regs
-	move.w	38(sp),d0		// get frame word
-	and.w	#0x0fff,d0		// mask out the format code
-	move.w	sr,24(sp)		// stackframe for RTE
-	move.l	_intr_shadow,a0
-	move.l	0(a0,d0.w),26(sp)
-	move.w	d0,30(sp)
-	lsr.w	#0x02,d0		// convert vector offset to vector number
-	move.w	d0,-(sp)		// push vector number
-	jsr	_sig_user		// send signal
-	addq.l	#0x02,sp
-	movem.l	(sp)+,d0-d2/a0-a2
-	rte			// jump to original services
-# endif
-
 //
 // simple signal handlers
 // global variables referenced:
