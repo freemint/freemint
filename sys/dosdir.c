@@ -2031,14 +2031,8 @@ f_stat64 (int flag, const char *name, STAT *stat)
 		return r;
 	}
 	
-	if (fc.fs->fsflags & FS_EXT_3)
-	{
-		r = xfs_stat64 (fc.fs, &fc, stat);
-		if (r)
-			DEBUG (("Fstat64(%s): returning %ld", name, r));
-	}
-	else
-		r = EINVAL;
+	r = xfs_stat64 (fc.fs, &fc, stat);
+	if (r) DEBUG (("Fstat64(%s): returning %ld", name, r));
 	
 	release_cookie (&fc);
 	return r;
