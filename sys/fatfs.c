@@ -362,24 +362,24 @@
  * internal version
  */
 
-# define FATFS_MAJOR	1
-# define FATFS_MINOR	21
-# define FATFS_STATUS	
+# define VER_MAJOR	1
+# define VER_MINOR	21
+# define VER_STATUS	
 
-# if FATFS_MINOR > 9
-# define str_FATFS_MINOR	str (FATFS_MINOR)
+# if VER_MINOR > 9
+# define str_VER_MINOR	str (VER_MINOR)
 # else
-# define str_FATFS_MINOR	"0" str (FATFS_MINOR)
+# define str_VER_MINOR	"0" str (VER_MINOR)
 # endif
 
-# define FATFS_VERSION	str (FATFS_MAJOR) "." str_FATFS_MINOR str (FATFS_STATUS) 
-# define FATFS_DATE	__DATE__
+# define MSG_VERSION	str (VER_MAJOR) "." str_VER_MINOR str (VER_STATUS) 
+# define MSG_BUILDDATE	__DATE__
 
-# define FATFS_BOOT	\
-	"\033pFAT/VFAT/FAT32 filesystem version " FATFS_VERSION "\r\n"
+# define MSG_BOOT	\
+	"\033p FAT/VFAT/FAT32 filesystem version " MSG_VERSION " \033q\r\n"
 
-# define FATFS_GREET	\
-	"\033q½ " FATFS_DATE " by Frank Naumann.\r\n\r\n"
+# define MSG_GREET	\
+	"\275 " MSG_BUILDDATE " by Frank Naumann.\r\n"
 
 
 /*
@@ -4399,8 +4399,9 @@ fatfs_init (void)
 # endif
 	}
 	
-	boot_print (FATFS_BOOT);
-	boot_print (FATFS_GREET);
+	boot_print (MSG_BOOT);
+	boot_print (MSG_GREET);
+	boot_print ("\r\n");
 }
 
 long
@@ -6757,8 +6758,8 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				char *dst = info->type_asc;
 				
 				strcpy (info->name, "vfat-xfs");
-				info->version = (long) FATFS_MAJOR << 16;
-				info->version |= (long) FATFS_MINOR;
+				info->version = (long) VER_MAJOR << 16;
+				info->version |= (long) VER_MINOR;
 				
 				if (VFAT (dir->dev))
 				{
