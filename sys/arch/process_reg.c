@@ -112,7 +112,6 @@ process_getregs (PROC *p, struct reg *reg)
 	reg->regs[15] = p->ctxt[SYSCALL].usp;
 	reg->sr       = p->ctxt[SYSCALL].sr;
 	reg->pc       = p->ctxt[SYSCALL].pc;
-	reg->pc -= ((long) p->base + 256L);
 	
 	return 0;
 }
@@ -138,7 +137,6 @@ process_setregs (PROC *p, struct reg *reg)
 	p->ctxt[SYSCALL].usp      = reg->regs[15];
 	p->ctxt[SYSCALL].sr       = reg->sr; /* XXX user flags only */
 	p->ctxt[SYSCALL].pc       = reg->pc;
-	p->ctxt[SYSCALL].pc       = reg->pc + ((long) p->base + 256L);
 	
 	return 0;
 }
