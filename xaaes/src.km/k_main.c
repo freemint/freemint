@@ -146,11 +146,11 @@ post_cevent(struct xa_client *client,
 		dispatch_cevent(client);
 }
 
-int
+short
 dispatch_cevent(struct xa_client *client)
 {
 	struct c_event *ce;
-	int ret = 0;
+	short ret = 0;
 
 	ce = client->cevnt_head;
 	if (ce)
@@ -175,6 +175,20 @@ dispatch_cevent(struct xa_client *client)
 	return ret;
 }
 
+short
+check_cevents(struct xa_client *client)
+{
+	while (!client->usr_evnt && dispatch_cevent(client))
+		;
+
+	if (client->usr_evnt)
+	{
+		cancel_evnt_multi(client, 1);
+		return 1;
+	}
+	else
+		return 0;
+}
 
 void
 Block(struct xa_client *client, int which)

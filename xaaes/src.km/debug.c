@@ -205,6 +205,8 @@ DeBug(enum debug_item item, struct xa_client *client, char *t, ...)
 		{
 			struct xa_client *update_lock = update_locked();
 			struct xa_client *mouse_lock = mouse_locked();
+			
+			l += sprintf(line+l, sizeof(line)-l, "(Pid %ld)", p_getpid());
 
 			if (mouse_lock)
 				l += sprintf(line+l, sizeof(line)-l, "[M/%d]",

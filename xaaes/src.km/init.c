@@ -37,7 +37,7 @@
 #include "k_main.h"
 #include "k_shutdown.h"
 #include "nkcc.h"
-#include "objects.h"
+#include "draw_obj.h"
 #include "semaphores.h"
 #include "xa_shel.h"
 

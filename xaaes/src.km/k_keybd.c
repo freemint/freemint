@@ -369,7 +369,7 @@ keyboard_input(enum locks lock)
 	key.aes = (key.raw.conin.scan<<8) | key.raw.conin.code;
 	key.norm = 0;
 
-	DIAGS(("Bconin: 0x%08lx", key.raw.bcon));
+	DIAGS(("Bconin: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
 
 	if (!kernel_key(lock, &key))
 		XA_keyboard_event(lock, &key);
