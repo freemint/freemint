@@ -370,6 +370,7 @@ send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 	{
 		if (wind->send_message)
 		{
+			C.move_block = 2;
 			wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 				WM_SIZED, 0,0, wind->handle,
 				r->x, r->y, r->w, r->h);
@@ -381,6 +382,7 @@ send_reposed(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 {
 	if (wind->send_message)
 	{
+		C.move_block = 2;
 		wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 			WM_REPOSED, 0,0, wind->handle,
 			r->x, r->y, r->w, r->h);
@@ -678,7 +680,8 @@ change_window_attribs(enum locks lock,
 	calc_work_area(w);
 
 	free_rect_list(w->rect_start);
-	w->rect_user = w->rect_list = w->rect_start = NULL;
+	free_rect_list(w->rect_opt_start);
+	w->rect_user = w->rect_list = w->rect_start = w->rect_opt = w->rect_opt_start = NULL;
 
 	/* If STORE_BACK extended attribute is used, window preserves its own background */
 	if (!(tp & STORE_BACK))
@@ -765,7 +768,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 		wind->window_status |= XAWS_OPEN;
 		calc_work_area(wind);
-		make_rect_list(wind, true);
+		make_rect_list(wind, true, RECT_SYS);
 
 		if (wind->active_widgets & STORE_BACK)
 		{
@@ -827,7 +830,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	check_menu_desktop(lock|winlist, wl, wind);
 
-	make_rect_list(wind, true);
+	make_rect_list(wind, true, RECT_SYS);
 	
 	/*
 	 * Context dependant widgets must always follow the window
@@ -853,7 +856,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			clip = wl->r;
 
 			if (xa_rc_intersect(our_win, &clip))
-				make_rect_list(wl, 1);
+				make_rect_list(wl, true, RECT_SYS);
 
 			wl = wl->next;
 		}
@@ -1195,7 +1198,7 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 
 	if (w == root_window) /* just a safeguard */
 	{
-		make_rect_list(w, 1);
+		make_rect_list(w, true, RECT_SYS);
 	}
 	else if (!(w->owner->status & CS_EXITING))
 	{
@@ -1218,7 +1221,7 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 				if (xa_rc_intersect(r, &clip))
 				{
 					if (wl != w)
-						make_rect_list(wl, 1);
+						make_rect_list(wl, true, RECT_SYS);
 				}
 				wl = wl->prev;
 			}
@@ -1249,11 +1252,11 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 	{
 		clip = wl->r;
 		if (xa_rc_intersect(r, &clip))
-			make_rect_list(wl, 1);
+			make_rect_list(wl, true, RECT_SYS);
 		wl = wl->next;
 	}
 
-	make_rect_list(w, 1);
+	make_rect_list(w, true, RECT_SYS);
 }
 
 /*
@@ -1414,7 +1417,8 @@ close_window(enum locks lock, struct xa_window *wind)
 			form_restore(0, wind->r, &(wind->background));
 		
 		free_rect_list(wind->rect_start);
-		wind->rect_user = wind->rect_list = wind->rect_start = NULL;
+		free_rect_list(wind->rect_opt_start);
+		wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_opt = wind->rect_opt_start = NULL;
 		wind->window_status &= ~XAWS_OPEN;
 		remove_from_iredraw_queue(lock, wind);
 		return true;
@@ -1429,10 +1433,10 @@ close_window(enum locks lock, struct xa_window *wind)
 	remove_from_iredraw_queue(lock, wind);
 	r = wind->r;
 
-	if (wind->rect_start)
-		free_rect_list(wind->rect_start);
+	free_rect_list(wind->rect_start);
+	free_rect_list(wind->rect_opt_start);
 
-	wind->rect_user = wind->rect_list = wind->rect_start = NULL;
+	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_opt = wind->rect_opt_start = NULL;
 
 	/* Tag window as closed */
 	wind->window_status &= ~(XAWS_OPEN);
@@ -1543,20 +1547,20 @@ delete_window1(enum locks lock, struct xa_window *wind)
 		if (wind->background)
 			kfree(wind->background);
 
-		free_rect_list(wind->rect_start);
-		wind->rect_user = wind->rect_list = wind->rect_start = NULL;
 	}
 	else
 	{
 		DIAGS(("delete_window1: nolist window %d, bgk=%lx", wind->handle, wind->background));
 		free_standard_widgets(wind);
-		free_rect_list(wind->rect_start);
-		wind->rect_user = wind->rect_list = wind->rect_start = NULL;
 		if (wind->background)
 			kfree(wind->background);
 		if (wind->destructor)
 			wind->destructor(lock, wind);
 	}
+
+	free_rect_list(wind->rect_start);
+	free_rect_list(wind->rect_opt_start);
+	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_opt = wind->rect_opt_start = NULL;
 
 	kfree(wind);
 }
@@ -1695,7 +1699,7 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 				struct xa_rect_list *rl;
 				RECT d;
 
-				make_rect_list(wl, true);
+				make_rect_list(wl, true, RECT_SYS);
 
 				rl = wl->rect_start;
 				while (rl)
@@ -1715,7 +1719,7 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 					/* We don't need to send a redraw to
 					 * these windows, we just have to update
 					 * their rect lists */
-					make_rect_list(wl, 1);
+					make_rect_list(wl, true, RECT_SYS);
 				}
 			}
 		}
@@ -1738,7 +1742,7 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 	if (get_desktop()->owner == client)
 	{
 		wl = root_window;
-		make_rect_list(wl, true);
+		make_rect_list(wl, true, RECT_SYS);
 		rl = wl->rect_start;
 		while (rl)
 		{
@@ -1754,7 +1758,7 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 	{
 		if (wl->owner == client && (wl->window_status & XAWS_OPEN))
 		{
-			make_rect_list(wl, true);
+			make_rect_list(wl, true, RECT_SYS);
 
 			{
 				rl = wl->rect_start;
@@ -1894,7 +1898,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 	oldrl = wind->rect_start;
 	wind->rect_start = NULL;
-	newrl = make_rect_list(wind, 0);
+	newrl = make_rect_list(wind, false, RECT_SYS);
 	wind->rect_start = newrl;
 
 	if (wind->nolist)
@@ -1904,7 +1908,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			if (wind->active_widgets & STORE_BACK)
 				form_restore(0, old, &(wind->background));
 		
-			make_rect_list(wind, true);
+			make_rect_list(wind, true, RECT_SYS);
 
 			if (wind->active_widgets & STORE_BACK)
 				form_save(0, wind->r, &(wind->background));
