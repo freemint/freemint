@@ -29,7 +29,6 @@
 
 #include "app_man.h"
 #include "c_window.h"
-#include "k_main.h"
 #include "k_mouse.h"
 #include "menuwidg.h"
 #include "objects.h"
@@ -40,6 +39,32 @@
 #include "xa_rsrc.h"
 #include "xa_form.h"
 
+
+static Tab *
+new_task(Tab *new)
+{
+	bzero(new, sizeof(*new));
+	return new;
+}
+
+static void
+free_task(Tab *t, int *nester)
+{
+	if (t)
+	{
+		if (t->nest && *nester)
+		{
+			nester--;
+			free_task(t->nest, nester);
+		}
+
+		t->nest = 0;
+		t->ty = NO_TASK;
+		t->pr = 0;
+		t->nx = 0;
+		t->task = 0;
+	}
+}
 
 static void popup(struct task_administration_block *tab);
 static void where_are_we(struct task_administration_block *tab);
@@ -136,7 +161,7 @@ is_attach(struct xa_client *client, OBJECT *menu, int item, XA_MENU_ATTACHMENT *
 	if (pat)
 		*pat = NULL;
 
-	if (at == NULL || (attach_to->ob_flags&OF_SUBMENU) == 0)
+	if (at == NULL || (attach_to->ob_flags & OF_SUBMENU) == 0)
 		return false;
 
 	DIAG((D_menu, client, "is_attach: at=%lx,flags=%x,type=%x, spec=%lx",
@@ -149,6 +174,7 @@ is_attach(struct xa_client *client, OBJECT *menu, int item, XA_MENU_ATTACHMENT *
 		{
 			if (pat)
 				*pat = at + i;
+
 			return true;
 		}
 	}
@@ -219,7 +245,7 @@ attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, M
 
 		client->attach = at;
 
-		while(at)
+		while (at)
 		{
 			/* find a free place in the table */
 			if (at->to_tree)
@@ -238,6 +264,7 @@ attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, M
 		if (at < at + ATTACH_MAX)
 		{
 			char *text;
+
 			/* OK now we can attach the menu */
 			menu_spec(mn->mn_tree, mn->mn_menu);
 			attach_to->ob_flags |= OF_SUBMENU;
@@ -301,7 +328,7 @@ remove_attachments(enum locks lock, struct xa_client *client, OBJECT *menu)
 	{
 		int f = 0;
 
-		DIAG((D_menu,NULL, "remove_attachments"));
+		DIAG((D_menu, NULL, "remove_attachments"));
 		do {
 			detach_menu(lock, client, menu, f);
 		}
@@ -594,6 +621,7 @@ menu_finish(struct task_administration_block *tab)
 	C.menu_base = NULL;
 	C.Aes->waiting_for = XAWAIT_MENU; /* ready for next menu choice */
 	C.Aes->em.flags = MU_M1;
+
 	if (menustruct_locked())
 		unlock_menustruct(menustruct_locked());
 }
@@ -1205,6 +1233,7 @@ click_popup_entry(struct task_administration_block *tab)
 	IFDIAG(tab->dbg = 6;)
 	popout(tab);			/* incl. screen unlock */
 
+	assert(pb);
 	pb->intout[0] = md->mn_item < 0 ? 0 : 1;
 
 	tab->client->usr_evnt = 1;
@@ -1227,6 +1256,7 @@ click_form_popup_entry(struct task_administration_block *tab)
 	IFDIAG(tab->dbg = 7;)
 	popout(tab);			/* incl. screen unlock */
 
+	assert(pb);
 	pb->intout[0] = item;
 
 	tab->client->usr_evnt = 1;

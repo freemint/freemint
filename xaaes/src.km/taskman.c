@@ -618,24 +618,3 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			break;
 	}
 }
-
-/* find a pending alert */
-void *
-pendig_alerts(OBJECT *form, int item)
-{
-	OBJECT *ob = form + item;
-	SCROLL_INFO *list = (SCROLL_INFO *)get_ob_spec(ob)->index;
-	SCROLL_ENTRY *cur;
-
-	cur = list->start;
-	while (cur)
-	{
-		if (cur->flag & FLAG_PENDING)
-		{
-			cur->flag &= ~FLAG_PENDING;
-			return cur->text;
-		}
-		cur = cur->next;
-	}
-	return NULL;
-}
