@@ -61,6 +61,12 @@ kill_or_wait(struct xa_client *client)
 	return false;
 }
 
+static void
+CE_at_terminate(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+		ce->client->tp_term = 1;
+}
 /*
  * Cleanup on exit
  */
@@ -147,8 +153,8 @@ k_shutdown(void)
 	DIAGS(("Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
 
-	C.Aes->tp_term = 1;
-	Unblock(C.Aes, 1, 0);
+	post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
+	yield();
 	
 	DIAGS(("Freeing Aes environment"));
 	if (C.env)
