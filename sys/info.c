@@ -396,7 +396,7 @@ const char *MSG_init_error = " error %ld.\r\n";
 # ifdef VERBOSE_BOOT
 const char *MSG_keytable_loading = "Installing keyboard table `%s' ...";
 const char *MSG_keytable_internal = "Installing BIOS keyboard table ...";
-const char *MSG_keytable_loaded = " AKP code %d.\r\n";
+const char *MSG_keytable_loaded = " AKP %d, ISO %ld.\r\n";
 # endif
 const char *MSG_keyboard_keytbl_ignored = "Keytbl(%ld, %ld, %ld) ignored!";
 # endif
