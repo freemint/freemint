@@ -155,7 +155,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #
 # start any other programs with run
 #
-#run = <path>\<application>
+#run <path>\<application>
 
 #
 # system shell
