@@ -30,7 +30,7 @@
 
 #include "c_mouse.h"
 #include "xa_global.h"
-
+#include "xa_evnt.h"
 #include "app_man.h"
 #include "c_window.h"
 #include "cnf_xaaes.h"
@@ -192,14 +192,28 @@ cXA_deliver_rect_event(enum locks lock, struct c_event *ce, bool cancel)
 		return;
 	if (pb)
 	{
+		short *out = pb->intout;
+		struct mbs mbs;
+
+		get_mbstate(client, &mbs);
+
 		if (client->waiting_for & XAWAIT_MULTI)
 		{
-			multi_intout(client, pb->intout, events);
+			*out++ = events;
+			*out++ = mbs.x;
+			*out++ = mbs.y;
+			*out++ = mbs.b;
+			*out++ = mbs.ks;
+			*out++ = 0;
+			*out   = 0;
 		}
 		else
 		{
-			multi_intout(client, pb->intout, 0);
-			pb->intout[0] = 1;
+			*out++ = 1;
+			*out++ = mbs.x;
+			*out++ = mbs.y;
+			*out++ = mbs.b;
+			*out   = mbs.ks;
 		}
 	}
 	client->usr_evnt = 1;

@@ -244,6 +244,11 @@ Block(struct xa_client *client, int which)
 
 		if (client->usr_evnt)
 		{
+			if (client->timeout)
+			{
+				canceltimeout(client->timeout);
+				client->timeout = NULL;
+			}
 			cancel_evnt_multi(client, 1);
 			return;
 		}
@@ -251,9 +256,8 @@ Block(struct xa_client *client, int which)
 		if (check_queued_events(client))
 			return;
 
-		if ((client->waiting_for & MU_TIMER) && !client->timeout)
-			return;
-
+//		if ((client->waiting_for & MU_TIMER) && !client->timeout)
+//			return;
 	}
 	cancel_evnt_multi(client, 1);
 }

@@ -57,6 +57,8 @@ struct lbox_slide;
 
 struct menu_attachements;
 
+struct keyqueue;
+
 enum menu_behave
 {
 	PULL,
@@ -169,6 +171,17 @@ struct rawkey
 	union conkey raw;
 	unsigned short aes;		/* AES keycode */
 	unsigned short norm;		/* mormalized keycode */
+};
+
+/*
+ *
+ */
+struct mbs
+{
+	short b;
+	short c;
+	short x, y;
+	short ks;
 };
 
 /*
@@ -478,10 +491,10 @@ struct c_event
 	struct	moose_data	md;
 };
 
-struct xac_moose_data
+struct keyqueue
 {
-	struct moose_data *next;
-	struct moose_data md;
+	struct keyqueue *next;
+	struct rawkey	key;
 };
 
 /* Main client application descriptor */
@@ -534,11 +547,6 @@ struct xa_client
 	XA_TREE *desktop;
 
 	XA_MENU_ATTACHMENT *attach;	/* submenus */
-#if 0
-	XA_TREE std_menu;		/* The client's standard GEM-style menu-bar widget */
-	XA_TREE desktop;		/* The clients desktop as a standard toolbar widget */
-	XA_TREE wt;			/* Widget tree for everything except form_do(). */
-#endif
 
 	Path home_path;			/* The directory that the client was started in */
 	Path cmd_name;			/* The full filename used when launching the process (if launched by shell_write) */
@@ -575,16 +583,15 @@ struct xa_client
 /*
  * This part is for Client event dispatching
 */
+	struct keyqueue *kq_head;
+	struct keyqueue	*kq_tail;
+
 #define CLIENT_MD_BUFFERS	10
 
 	struct moose_data *md_head;
 	struct moose_data *md_tail;
 	struct moose_data *md_end;
-
 	struct moose_data mdb[CLIENT_MD_BUFFERS+1];
-
-	//bool	md_valid;
-	//struct moose_data md;
 
 #define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
 	int	sleepqueue;

@@ -445,54 +445,10 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 static void
 dispatch_mu_event(struct xa_client *client, const struct moose_data *md, bool is_locker)
 {
-	if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
-	{
-		int events;
+	short events;
 
-		/* combine mouse events. */
-		events = 0;
-
-		if (   (client->em.flags & MU_M1)
-		    && is_rect(md->x, md->y, client->em.flags & 1, &client->em.m1))
-		{
-			DIAG((D_mouse, client, "%s have M1 event", client->name));
-			events |= MU_M1;
-		}
-
-		if (   (client->em.flags & MU_M2)		/* M2 in evnt_multi only */
-		    && is_rect(md->x, md->y, client->em.flags & 2, &client->em.m2))
-		{
-			DIAG((D_mouse, client, "%s have M2 event", client->name));
-			events |= MU_M2;
-		}
-
-		if (client->em.flags & MU_MX)			/* MX: any movement. */
-		{
-			DIAG((D_mouse, client, "%s have MX event", client->name));
-			events |= MU_MX;
-		}
-
-		if (events)
-		{
-			struct xa_window *wind;
-			struct xa_client *wo = NULL;
-			
-			DIAG((D_mouse, client, "Post deliver M1/M2 events %d to %s", events, client->name));
-
-			if (!is_locker)
-			{
-				wind = find_window(0, md->x, md->y);
-			
-				if (wind)
-					wo = wind == root_window ? get_desktop()->owner : wind->owner;
-
-				if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
-					post_cevent(client, cXA_deliver_rect_event, (void *)client->status, NULL, events, 0, NULL,NULL);
-			}
-			else
-				post_cevent(client, cXA_deliver_rect_event, (void *)client->status, NULL, events, 0, NULL,NULL);
-		}
-	}
+	if ((events = checkfor_mumx_evnt(client, is_locker, md->x, md->y)))
+		post_cevent(client, cXA_deliver_rect_event, (void *)client->status, NULL, events, 0, NULL,NULL);
 }
 
 int
@@ -562,7 +518,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	if (client)
 	{
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
-	 		dispatch_mu_event(client, md, true);
+			dispatch_mu_event(client, md, true);
 	}
 	else
 	{

@@ -1963,7 +1963,7 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					//DIAGS(("COMMON brl=%lx, nrl=%lx, brl->nxt=%lx", brl, nrl, brl ? (long)brl->next : 0xFACEDACE));
 					if (brl)
 					{
-						struct xa_rect_list *n, *p;
+						struct xa_rect_list *n, *p, *best;
 						short ox2 = bd.x + bd.w;
 						short oy2 = bd.y + bd.h;
 						
@@ -2069,7 +2069,6 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								p = NULL;
 								while (n)
 								{
-									//if (bd.x > n->r.x || bd.y >= (n->r.y + n->r.h))
 									if ( ( ox2 > (n->r.x + n->r.w) && bd.x >= (n->r.x + n->r.w)) ||
 									     ( bd.y >= (n->r.y + n->r.h) && (n->r.x + n->r.w) > bd.x) )
 									{

@@ -64,6 +64,8 @@ cXA_keybd_event(enum locks lock, struct c_event *ce, bool cancel)
 	struct rawkey *key = ce->ptr1;
 
 	if (!cancel)
-		keybd_event(lock, client, key);
+		queue_key(client, key);
+
+		//keybd_event(lock, client, key);
 	kfree(key);
 }

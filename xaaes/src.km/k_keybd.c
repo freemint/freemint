@@ -55,7 +55,7 @@
 /* Keystrokes must be put in a queue if no apps are waiting yet.
  * There also may be an error in the timer event code.
  */
-struct key_queue pending_keys;
+//struct key_queue pending_keys;
 
 /*
  * Keyboard input handler
@@ -106,51 +106,61 @@ struct key_queue pending_keys;
  *                      no function (NKF?_FUNC not set):
  *                         printable character (0...255!!!)
  */
-
-/* WDIAL: split off as a function for use in ExitForm functions */
-void 
-keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
+void
+cancel_keyqueue(struct xa_client *client)
 {
-	AESPB *pb = client->waiting_pb;
-
-	if (client->waiting_for & XAWAIT_MULTI)
+	while (client->kq_tail)
 	{
-		/* If the client is waiting on a multi, the response is
-		 * slightly different to the evnt_keybd() response.
-		 */
-		check_mouse(client, NULL, NULL, NULL);
-		mainmd.kstate = key->raw.conin.state;
-		//mu_button.ks = key->raw.conin.state;
+		struct keyqueue *kq = client->kq_tail;
+		client->kq_tail = kq->next;
+		kfree(kq);
+	}
+	client->kq_tail = client->kq_head = NULL;
+}
 
-		/* XaAES extension: return normalized keycode for MU_NORM_KEYBD */
-		if (client->waiting_for & MU_NORM_KEYBD)
+void
+queue_key(struct xa_client *client, const struct rawkey *key)
+{
+	struct keyqueue *kq;
+
+	kq = kmalloc(sizeof(*kq));
+
+	if (kq)
+	{
+		kq->next = NULL;
+		kq->key = *key;
+
+		if (client->kq_head)
 		{
-			key->norm = nkc_tconv(key->raw.bcon);
-			multi_intout(client, pb->intout, MU_NORM_KEYBD);
-			pb->intout[5] = key->norm;
-			pb->intout[4] = key->norm; /* for convenience */
-
-			DIAG((D_k, NULL, "evnt_multi normkey to %s: 0x%04x",
-				c_owner(client), key->norm));	
+			client->kq_head->next = kq;
+			client->kq_head = kq;
 		}
 		else
-		{
-			multi_intout(client, pb->intout, MU_KEYBD);
-			pb->intout[5] = key->aes;
-
-			DIAG((D_k, NULL, "evnt_multi key to %s: 0x%04x",
-				c_owner(client), key->aes));	
-		}
+			client->kq_head = client->kq_tail = kq;
 	}
-	else
-	{
-		pb->intout[0] = key->aes;
-		DIAG((D_k, NULL, "evnt_keybd keyto %s: 0x%04x",
-			c_owner(client), key->aes));	
-	}
-	client->usr_evnt = 1;
-	//Unblock(client, XA_OK, 6);
 }
+
+bool
+unqueue_key(struct xa_client *client, struct rawkey *key)
+{
+	bool ret = false;
+	struct keyqueue *kq;
+	
+	if ((kq = client->kq_tail))
+	{
+		*key = kq->key;
+
+		if (client->kq_tail == client->kq_head)
+			client->kq_tail = client->kq_head = NULL;
+		else
+			client->kq_tail = kq->next;
+
+		kfree(kq);
+		ret = true;
+	}
+	return ret;
+}
+		
 
 static void
 XA_keyboard_event(enum locks lock, const struct rawkey *key)
@@ -191,93 +201,16 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 #endif
 			}
 		}
-#if 0
-		struct xa_window *top = window_list;
-		struct xa_client *check = update_locked();
-
-		/* See if a (classic) blocked form_do is active */
-		if (check && check == client)
-		{
-			DIAGS(("Classic: fmd.lock %d, via %lx", client->fmd.lock, client->fmd.keypress));
-
-			if (client->fmd.lock && client->fmd.keypress)
-			{
-				rk = kmalloc(sizeof(*rk));
-				if (rk)
-				{
-					*rk = *key;
-					post_cevent(client, cXA_fmdkey, rk, 0, 0, 0, 0, 0);
-				}
-				return;
-			}
-		}
-
-		if (is_hidden(top))
-		{
-			unhide_window(lock, top);
-			return;
-		}
-
-		/* Does the top & focus window have a keypress handler callback? */
-		if (top->keypress)
-		{
-			rk = kmalloc(sizeof(*rk));
-			if (rk)
-			{
-				*rk = *key;
-				post_cevent(top->owner, cXA_keypress, rk, top, 0, 0, 0, 0);
-			}	
-			return;
-		}
-		else if (!client->waiting_pb)
-		{
-			DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));
-			return;
-		}
-
-		rk = kmalloc(sizeof(*rk));
-		if (rk)
-		{
-			*rk = *key;
-			post_cevent(client, cXA_keybd_event, rk, 0, 0, 0, 0, 0);
-		}
-#if 0
-		Sema_Up(clients);
-		keybd_event(lock, client, key);
-		Sema_Dn(clients);
-#endif
-#endif
 	}
 	else
 	{
-		int c = pending_keys.cur;
-		int e = pending_keys.last;
-
-		Sema_Up(pending);
-
-		DIAG((D_keybd,NULL,"pending key cur=%d", c));
-		/* If there are pending keys and the top window owner has changed, throw them away. */
-
-		/* FIX! must compare with last queued key!!! */
-		if (c != e && client != pending_keys.q[e-1].client)
-		{
-			DIAG((D_keybd, NULL, " -  clear: cl=%s", c_owner(client)));
-			DIAG((D_keybd, NULL, "           qu=%s", c_owner(pending_keys.q[e-1].client)));
-			e = c = 0;
-		}
-
-		if (e == KEQ_L)
-			e = 0;
-
-		DIAG((D_keybd,NULL," -     key %x to queue position %d", key->aes, e));
-		pending_keys.q[e].k   = *key;			/* all of key */
-		pending_keys.q[e].locked = locked_client;
-		pending_keys.q[e].client = client;		/* see find_focus() */
-		e++;
-		pending_keys.last = e;
-		pending_keys.cur = c;
-
-		Sema_Dn(pending);
+		/*
+		 * We dont queue the key when we are sure the client dont want it
+		 */
+		if ( !client->waiting_pb )
+			queue_key(client, key);
+		else
+			cancel_keyqueue(client);
 	}
 }
 
