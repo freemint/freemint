@@ -620,6 +620,18 @@ k_main(void *dummy)
 		goto leave;
 	}
 	DIAGS(("Open '%s' to %ld", KBD_dev_name, C.KBD_dev));
+	{
+		long r;
+
+		r = f_cntl(C.KBD_dev, 0, TIOCNOTTY);
+		DEBUG(("f_cntl(%li, 0, TIOCNOTTY) - > %li", C.KBD_dev, r));
+
+		r = p_setpgrp(0, 0);
+		DEBUG(("p_setpgrp(0, 0) - > %li", r));
+
+		r = f_cntl(C.KBD_dev, 0, TIOCSCTTY);
+		DEBUG(("f_cntl(%li, 0, TIOCSCTTY) - > %li", C.KBD_dev, r));
+	}
 
 	/* initialize mouse */
 	if (!init_moose())
@@ -650,23 +662,27 @@ k_main(void *dummy)
 		Path parms;
 		int i;
 
-		parms[0] = '\0';
-		if ( cfg.cnf_shell_arg )
-			parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
-
-		C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
-		if (C.DSKpid > 0)
-			strcpy(C.desk, cfg.cnf_shell);
-
-		for (i = 0; i < sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]); i++)
+		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
 		{
 			if (cfg.cnf_run[i])
 			{
 				parms[0] = '\0';
-				if ( cfg.cnf_run_arg[i] )
+				if (cfg.cnf_run_arg[i])
 					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
+
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
 			}
+		}
+
+		if (cfg.cnf_shell)
+		{
+			parms[0] = '\0';
+			if (cfg.cnf_shell_arg)
+				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
+
+			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
+			if (C.DSKpid > 0)
+				strcpy(C.desk, cfg.cnf_shell);
 		}
 	}
 	DIAGS(("loading shell and autorun done!"));
