@@ -27,8 +27,6 @@ long sync_time = 5;
 # include "k_kthread.h"
 
 
-static struct proc *p;
-
 static void
 do_sync (long sig)
 {
@@ -92,12 +90,14 @@ start_sysupdate (void)
 	addroottimeout (1000L * sync_time, do_sync, 0);
 
 # else
+	struct proc *p;
 	long r;
 
 	r = kthread_create (update, NULL, &p, "update");
 	if (r != 0)
 		FATAL ("can't create \"update\" kernel thread");
 
-	p->p_flag |= 1;		/* this blocks SIGKILL for the update process */
+	/* this blocks SIGKILL for the update process */
+	p->p_flag |= 1;
 # endif
 }
