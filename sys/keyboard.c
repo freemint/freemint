@@ -387,6 +387,20 @@ scan2asc(ushort scancode)
 	return asc;
 }
 
+# undef SCANCODE_TESTING
+
+# ifdef SCANCODE_TESTING
+static void
+output_scancode(PROC *p, long arg)
+{
+	uchar ascii;
+
+	ascii = scan2asc((ushort)arg);
+	
+	DEBUG(("Scancode: %02lx, ASCII %02x", arg, (short)ascii));
+}
+# endif
+
 short
 ikbd_scan (ushort scancode)
 {
@@ -401,6 +415,16 @@ ikbd_scan (ushort scancode)
 		return -1;
 
 	scancode &= 0x00ff;		/* better safe than sorry */
+
+# ifdef SCANCODE_TESTING
+	{
+		TIMEOUT *t;
+
+		t = addroottimeout (ROOT_TIMEOUT, (void _cdecl (*)(PROC *))output_scancode, 1);
+		if (t)
+			t->arg = scancode;
+	}
+# endif
 
 # ifdef DEV_RANDOM
 	add_keyboard_randomness ((ushort)((scancode << 8) | shift));
@@ -1027,8 +1051,8 @@ load_internal_table(void)
 	sys_b_bioskeys();
 }
 
-/* This routine load the keyboard table into memory.
- * 
+/* This routine loads the keyboard table into memory.
+ *
  * path is the complete path to the keyboard table or NULL.
  * If path is NULL the default path of <sysdir>/keyboard.tbl
  * is used.
@@ -1113,6 +1137,7 @@ init_keybd(void)
 
 	keydel = kdel = delayrate >> 8;
 	krpdel = krep = delayrate & 0x00ff;
+
 	TRACE(("init_keybd(): delay 0x%02x, rate 0x%02x", keydel, krpdel));
 
 	/* initialize internal table */
