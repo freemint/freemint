@@ -144,11 +144,13 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 	struct xa_client *locker;
 
 	pid = p_getpid();
-
+	locker = client;
+#if 0
 	if (client != C.Aes && C.Aes->p->pid == pid)
 		locker = C.Aes;
 	else
 		locker = client;
+#endif
 		
 	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s by (%d)%s, state: %d for %d",
 		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), update_lock.counter,
@@ -178,11 +180,14 @@ unlock_screen(struct xa_client *client, int which)
 	struct xa_client *locker;
 
 	pid = p_getpid();
-
+	locker = client;
+#if 0
 	if (client != C.Aes && C.Aes->p->pid == pid)
 		locker = C.Aes;
 	else
 		locker = client;
+#endif
+
 	
 	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s by (%d)%s, state: %d for %d",
 		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), update_lock.counter,
@@ -204,10 +209,13 @@ lock_mouse(struct xa_client *client, bool try, short *ret, int which)
 	struct xa_client *locker;
 
 	pid = p_getpid();
+	locker = client;
+#if 0
 	if (client != C.Aes && C.Aes->p->pid == pid)
 		locker = C.Aes;
 	else
 		locker = client;
+#endif
 
 	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s by (%d)%s, state: %d for %d",
 		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), mouse_lock.counter,
@@ -236,10 +244,13 @@ unlock_mouse(struct xa_client *client, int which)
 	struct xa_client *locker;
 
 	pid = p_getpid();
+	locker = client;
+#if 0
 	if (client != C.Aes && C.Aes->p->pid == pid)
 		locker = C.Aes;
 	else
 		locker = client;
+#endif
 
 	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s by (%d)%s, state: %d for %d",
 		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), mouse_lock.counter,
