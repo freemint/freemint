@@ -21,6 +21,7 @@
 
 # include "nfsutil.h"
 
+# include "mint/emu_tos.h"
 
 
 INLINE enum ftype

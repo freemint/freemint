@@ -22,6 +22,10 @@
 # include "nfssys.h"
 # include "nfsdev.h"
 
+# include "mint/dcntl.h"
+# include "mint/emu_tos.h"
+# include "mint/pathconf.h"
+
 # include "cache.h"
 # include "index.h"
 # include "nfsutil.h"

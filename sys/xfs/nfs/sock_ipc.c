@@ -22,6 +22,7 @@
 # include "sock_ipc.h"
 
 # include "arch/timer.h"
+# include "mint/ioctl.h"
 # include "mint/net.h"
 
 # include "rpc_xdr.h"
