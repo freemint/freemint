@@ -170,7 +170,6 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	char *fullpath;
 	BASEPAGE *b;
 	MEMREGION *mr;
-	struct user_things *ut;
 
 	/* Construct the full path name of the SLB */
 	fullpath = kmalloc(strlen(path) + strlen(name) + 2);
@@ -285,13 +284,25 @@ slb_error:
 			"no additional user stack possible"));
 	}
 
-	/* Set the start of the fake code to call init as p_tbase */
-	ut = curproc->p_mem->tp_ptr;
-	b->p_tbase = ut->slb_init_and_exit_p;
+	/* Run the shared library, i.e. call its init() routine.
+	 *
+	 * exec_region() called by sys_pexec() recognizes the
+	 * SLB binary and makes proper modifications of the
+	 * b->p_tbase so that slb_init_and_exit() is called
+	 * instead of the "real" text segment.
+	 *
+	 * The curproc->p_flag manipulation is necessary to
+	 * tell the exec_region() that this call comes from
+	 * the inside of the Slbopen(). This prevents the SLB
+	 * to be executed by a program with ordinary Pexec().
+	 */
 
-	/* Run the shared library, i.e. call its init() routine */
 	oldcmdlin = *(long *)b->p_cmdlin;
+
+	curproc->p_flag |= 4;
 	r = sys_pexec(106, name, b, 0L);
+	curproc->p_flag &= ~4;
+
 	if (r < 0L)
 	{
 		DEBUG(("Slbopen: Pexec() returned: %ld", r));
