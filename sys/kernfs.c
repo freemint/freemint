@@ -292,7 +292,7 @@ static KENTRY __procdir [] =
 	{ PROCDIR_MEMINFO,	S_IFREG | 0444,	"meminfo",	kern_procdir_get_meminfo},
 	{ PROCDIR_ROOT,		S_IFLNK | 0700,	"root",		kern_get_unimplemented	},
 	{ PROCDIR_STAT,		S_IFREG | 0444,	"stat",		kern_procdir_get_stat	},
-	{ PROCDIR_STATM,	S_IFREG | 0444,	"statm",	kern_get_unimplemented	},
+	{ PROCDIR_STATM,	S_IFREG | 0444,	"statm",	kern_procdir_get_statm	},
 	{ PROCDIR_STATUS,	S_IFREG | 0444,	"status",	kern_procdir_get_status	}
 };
 
