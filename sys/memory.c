@@ -144,14 +144,6 @@ init_mem (void)
 	/* */
 	init_core();
 	
-# ifdef VM_EXTENSION
-	/* Draco: fix for a bug in TOS 4.04 */
-	if (core_malloc (-1, 1) == 0)
-	{
-		*(long *) 0x000005a8L = 0L;
-	}
-# endif
-	
 	/* initialize swap */
 	init_swap();
 	
@@ -355,13 +347,6 @@ core_free (long where)
 	Mfree((void *)where);
 }
 
-# ifdef VM_EXTENSION
-void	*pagesave;
-void	*st_pagesave;
-long	st_pagesize;
-ulong	tablesize;
-# endif
-
 void
 init_core (void)
 {
@@ -381,33 +366,6 @@ init_core (void)
 	if (!tossave)
 	{
 		FATAL("Not enough memory to run MiNT");
-	}
-# endif
-# ifdef VM_EXTENSION
-	if (vm_in_use)
-	{
-		/* allocate st-ram used for vm*/
-		st_pagesize = core_malloc (-1L, 0) - st_left_after_vm;
-		if (st_pagesize < 0)
-		{
-			st_pagesize = 0;
-		}
-		tablesize = 16+8*16*4+4*2*(64*256/2+8*1024 +
-			(((ulong) core_malloc(-1L, 1)) + st_pagesize)/4096);
-		pagesave = (void *) core_malloc (tablesize + st_pagesize, 0);
-		if (!pagesave)
-		{
-			FATAL ("Not enough memory to run MiNT: could not run VM!");
-			vm_in_use=0;
-		}
-		else
-		{
-			st_pagesave = ((char *) pagesave) + tablesize;
-			if (st_pagesize == 0)
-			{
-				st_pagesave = 0;
-			}
-		}
 	}
 # endif
 	
@@ -501,7 +459,6 @@ init_core (void)
 	}
 	
 	/* initialize alternate RAM */
-# ifndef VM_EXTENSION
  	size = (ulong)core_malloc(-1L, 1);
 	
 # ifdef VERBOSE_BOOT
@@ -518,27 +475,7 @@ init_core (void)
 			FATAL("init_mem: unable to add a region");
 		size = (ulong)core_malloc (-1L, 1);
 	}
-# else /* VM_EXTENSION */
-	if (!vm_in_use)
-	{
-		size = (ulong) core_malloc (-1L, 1);
 
-# ifdef VERBOSE_BOOT
-		if (size)
-			boot_printf ("%lu bytes of Fast RAM found\r\n", size);
-		else
-			boot_print ("no Fast RAM found\r\n");
-# endif /* VERBOSE_BOOT */
-
-	 	while (size > 0)
-		{
-			place = (ulong)core_malloc(size, 1);
-			if (!add_region(alt, place, size, M_ALT))
-				FATAL("init_mem: unable to add a region");
-			size = (ulong)core_malloc(-1L, 1);
-	 	}
-	}
-# endif /* VM_EXTENSION */
 # ifdef OLDTOSFS	
 	(void) Mfree (tossave); /* leave some memory for TOS to use */
 # endif
@@ -551,115 +488,9 @@ init_core (void)
 MEMREGION *_swap_regions = 0;
 MMAP swap = &_swap_regions;
 
-# ifdef VM_EXTENSION
-extern void *Init_the_VM(ulong,ulong,ulong,ulong,ulong);     /* in vm5.spp */
-# endif
-
 void
 init_swap (void)
 {
-# ifdef VM_EXTENSION
-	ulong table_mem; /* ptr to the tablemem */
-	ulong page_mem;  /* ptr to pagemem      */ 
-	ulong page_size; /* length of pagemem   */
-	struct
-	{
-		ulong start;	/* start adr of VM */
-		ulong size;	/* size of VM      */
-		ulong stop;	/* stop of VM      */
-	} *VM_ptr;		/* VMmem struct    */
-	
-	/* allocate some TT-ram for me.. */
-	/* take the largest block and add the rest... */
-	
-	if (vm_in_use)
-	{
-# if 1
-		page_size = (ulong)core_malloc(-1L, 1);
-		if (page_size > 0)
-		{
-			page_mem = (ulong)core_malloc(page_size, 1);
-		}
-		else
-		{
-			page_size=0;
-			page_mem=0;
-		}
-# else
-		page_size=0;
-		page_mem=0;
-# endif
-		
-		if (((page_size+st_pagesize)>0) &&((page_size+st_pagesize)<=0x02000000))
-		{
-			/* add the virtmem if we got the tablemem */
-			if (table_mem=pagesave)
-			{
-				/* everything is ok run VM.. */
-				
-				if (!(VM_ptr=Init_the_VM(table_mem,page_mem,page_size,st_pagesave,st_pagesize)))
-				{
-					FATAL("init_swap: Could not init VM"); /* should never happen... */
-				}
-				else
-				{
-					if (VM_ptr->size<=0)
-					{
-						/* swap partition not found
-						 * free page and table mem
-						 */
-						if (!add_region(core,table_mem,tablesize+st_pagesize,M_CORE))
-							FATAL("init_swap: unable to add a region");    
-						if (!add_region(alt, page_mem, page_size, M_ALT))
-							FATAL("init_swap: unable to add a region");      
-						vm_in_use=0;
-					}
-					else
-					{
-# ifdef VERBOSE_BOOT
-						boot_printf ("%lu bytes of virtual memory.\r\n", VM_ptr->size);
-# endif
-						if (!add_region(alt, VM_ptr->start, VM_ptr->size, M_ALT))
-							FATAL("init_swap: unable to add VM region");    
-					}
-				}
-				/* originally the lowest VM is in mem
-				 * the rest is on the partition
-				 */
-			}
-			else
-			{
-				/* tt-ram too large
-				 * free the alloced mem
-				 * free page and table mem
-				 */
-				if (!add_region(core,table_mem,tablesize+st_pagesize,M_CORE))
-					FATAL("init_swap: unable to add a region");    
-				if (!add_region(alt, page_mem, page_size, M_ALT))
-					FATAL("init_swap: unable to add a region");
-				vm_in_use=0;
-			}
-		}
-		else
-		{
-			vm_in_use=0;
-		}
-		
-		/* add the rest */
-		page_size = (ulong)core_malloc(-1L, 1);
-		while (page_size > 0)
-		{
-   			page_mem = (ulong)core_malloc(page_size, 1);
-			if (!add_region(alt, page_mem, page_size, M_ALT))
-				FATAL("init_mem: unable to add a region");
-			page_size = (ulong)core_malloc(-1L, 1);
-		}
-	}
-# endif
-	
-# ifdef VERBOSE_BOOT
-	boot_print ("\r\n");
-# endif
 }
 
 /*
