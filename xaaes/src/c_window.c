@@ -108,7 +108,7 @@ free_wind_handle(int h)
 void
 clear_wind_handles(void)
 {
-	int f;
+	unsigned int f;
 	
 	for (f = 0; f < words; f++)
 		wind_handle[f] = 0;
