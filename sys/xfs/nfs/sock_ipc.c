@@ -21,15 +21,69 @@
 
 # include "sock_ipc.h"
 
+# include "arch/timer.h"
+# include "mint/net.h"
+
 # include "rpc_xdr.h"
 
 
 static void free_message_body (MESSAGE *);
 
-# define _HZ_200	((volatile long *) 0x4baL)
-# define TICKS_PER_SEC	200
+static struct socket *nfs_so = NULL;
+static short nonblock = 0;
 
-static int gl_fd = -1;
+
+static inline long
+bind (struct socket *so, struct sockaddr *addr, short addrlen)
+{
+	return (*so->ops->bind)(so, addr, addrlen);
+}
+
+static inline long
+setsockopt (struct socket *so, short level, short optname, void *optval, long optlen)
+{
+	return (*so->ops->setsockopt)(so, level, optname, optval, optlen);
+}
+
+static inline long
+so_ioctl (struct socket *so, int cmd, void *buf)
+{
+	return (*so->ops->ioctl)(so, cmd, buf);
+}
+
+static inline long
+so_read (struct socket *so, char *buf, long buflen)
+{
+	struct iovec iov[1] = {{ buf, buflen }};
+	
+	if (so->state == SS_VIRGIN)
+		return EINVAL;
+	
+	return (*so->ops->recv)(so, iov, 1, nonblock, 0, 0, 0);
+}
+
+static inline long
+sendmsg (struct socket *so, struct msghdr *msg, short flags)
+{
+	return (*so->ops->send)(so, msg->msg_iov, msg->msg_iovlen,
+				nonblock, flags,
+				msg->msg_name, msg->msg_namelen);
+}
+
+static inline long
+recvmsg (struct socket *so, struct msghdr *msg, short flags)
+{
+	short namelen = msg->msg_namelen;
+	long ret;
+	
+	ret = (*so->ops->recv)(so, msg->msg_iov, msg->msg_iovlen,
+				nonblock, flags,
+				msg->msg_name, &namelen);
+	
+	msg->msg_namelen = namelen;
+	return ret;
+}
+
 
 /* In order to make this module more usable we provide the possibility
  * to select the number of the remote program and its version at
@@ -415,7 +469,7 @@ alloc_message (MESSAGE *m, char *buf, long buf_len, long data_size)
 /*============================================================*/
 
 static long
-bindresvport (int s)
+bindresvport (struct socket *so)
 {
 	struct sockaddr_in t;
 	short port;
@@ -426,7 +480,7 @@ bindresvport (int s)
 	for (port = IPPORT_RESERVED - 1; port > IPPORT_RESERVED / 2; port--)
 	{
 		t.sin_port = htons (port);
-		r = bind (s, (struct sockaddr *) &t, sizeof (t));
+		r = bind (so, (struct sockaddr *) &t, sizeof (t));
 		if (r == 0)
 			return 0;
 		
@@ -438,48 +492,40 @@ bindresvport (int s)
 }
 
 static long
-open_connection (void)
+open_connection (struct socket **resultso)
 {
-	long res;
-	long arg;
-	int fd;
+	struct socket *so;
+	long arg, ret;
 	
 	/* Open socket. The file handle will be global as it is specified in the
 	 * kernel socket library.
 	 */
-	res = socket (PF_INET, SOCK_DGRAM, 0);
-	if (res < 0)
+	ret = so_create (&so, PF_INET, SOCK_DGRAM, 0);
+	if (ret < 0)
 	{
-		DEBUG(("rpcfs: could not open socket -> %ld", (long)res));
-		return res;
+		DEBUG (("rpcfs: could not open socket -> %ld", ret));
+		return ret;
 	}
-	fd = res;
 	
-	/* This compensates a bug in MiNT's f_open(). When doing an
-	 * Fopen(..., O_GLOBAL) and rootproc == curproc then MiNT
-	 * doesn't add 100 to the handle. Though the handle IS global
-	 * in that it is attached to the MiNT process. MiNT only fails
-	 * to add 100. So we do this here.
+	assert (so);
+	
+	/* Do some settings on the socket so that it becomes usable
 	 */
-	if (fd < 100) fd += 100;
 	
-	/* Do some settings on the socket so that it becomes usable */
 	arg = 10240;
-	res = setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &arg, sizeof (arg));
-	if (res < 0)
+	ret = setsockopt (so, SOL_SOCKET, SO_RCVBUF, &arg, sizeof (arg));
+	if (ret < 0)
 	{
-		DEBUG (("rpcfs: could not set socket options -> %ld", (long) res));
-		f_close (fd);
-		return res;
+		DEBUG (("rpcfs: could not set socket options -> %ld", ret));
+		goto error;
 	}
 	
 	arg = 10240;
-	res = setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &arg, sizeof (arg));
-	if (res < 0)
+	ret = setsockopt (so, SOL_SOCKET, SO_SNDBUF, &arg, sizeof (arg));
+	if (ret < 0)
 	{
-		DEBUG (("rpcfs: could not set socket options -> %ld", (long) res));
-		f_close (fd);
-		return res;
+		DEBUG (("rpcfs: could not set socket options -> %ld", ret));
+		goto error;
 	}
 	
 	/* Now bind the socket to a local address so that we can use it.
@@ -493,24 +539,29 @@ open_connection (void)
 	 * BTW: closing and reopening the socket is pretty useless
 	 * for UDP sockets, because they are stateless.
 	 */
-	res = bindresvport (fd);
-	if (res < 0)
+	ret = bindresvport (so);
+	if (ret < 0)
 	{
-		DEBUG (("rpcfs: could not bind socket to local address -> %ld", (long)res));
-		f_close (fd);
-		return res;
+		DEBUG (("rpcfs: could not bind socket to local address -> %ld", ret));
+		goto error;
 	}
 	
-	DEBUG (("open_connecion: got socket %ld", (long)fd));
-	return fd;
+	DEBUG (("open_connection: got socket %lx", so));
+	
+	*resultso = so;
+	return ret;
+	
+error:
+	so_free (so);
+	return ret;
 }
 
 static void
-scratch_message (int s)
+scratch_message (struct socket *so)
 {
 	char buf[8];
 	
-	f_read (s, 8, buf);
+	so_read (so, buf, 8);
 }
 
 /* This function extracts the xid from the rpc header of a message. For
@@ -529,11 +580,11 @@ get_xid (MESSAGE *m)
  * until the message has been sent successfully.
  */
 static long
-rpc_sendmessage (int s, SERVER_OPT *opt, MESSAGE *mreq)
+rpc_sendmessage (struct socket *so, SERVER_OPT *opt, MESSAGE *mreq)
 {
 	struct iovec iov[2];
 	struct msghdr msg;
-	long res;
+	long ret;
 	
 	/* set up structures for sendmsg() */
 	iov[0].iov_base = mreq->header;
@@ -548,23 +599,23 @@ rpc_sendmessage (int s, SERVER_OPT *opt, MESSAGE *mreq)
 	msg.msg_accrights = NULL;
 	msg.msg_accrightslen = 0;
 	
-	res = sendmsg (s, &msg, 0);
-	if (res < 0)
+	ret = sendmsg (so, &msg, 0);
+	if (ret < 0)
 	{
-		DEBUG (("rpc_sendmessage: error %ld during sending", (long)res));
-		DEBUG (("rpc_sendmessage: handle is %ld", (long)s));
+		DEBUG (("rpc_sendmessage: error %ld during sending", ret));
+		DEBUG (("rpc_sendmessage: handle is %lx", so));
 	}
 	
-	return res;
+	return ret;
 }
 
 /* Receive a message from a socket. The message header must be provided as
  * well as the length of the message to be read.
  */
 static MESSAGE *
-rpc_receivemessage (int s, MESSAGE *mrep, long toread)
+rpc_receivemessage (struct socket *so, MESSAGE *mrep, long toread)
 {
-	long r;
+	long ret;
 	char *buf;
 	struct iovec iov[1];
 	struct msghdr msg;
@@ -577,7 +628,7 @@ rpc_receivemessage (int s, MESSAGE *mrep, long toread)
 	buf = kmalloc (toread);
 	if (!buf)
 	{
-		scratch_message (s);
+		scratch_message (so);
 		DEBUG (("rpc_receivemessage: failed to allocate receive buffer"));
 		return NULL;
 	}
@@ -594,8 +645,8 @@ rpc_receivemessage (int s, MESSAGE *mrep, long toread)
 	
 	/* read message
 	 */
-	r = recvmsg (s, &msg, 0);
-	if (r != toread)
+	ret = recvmsg (so, &msg, 0);
+	if (ret != toread)
 	{
 		DEBUG (("rpc_receivemessage: could not read message body"));
 		kfree (buf);
@@ -693,10 +744,11 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 	 * list if it was waited for. Otherwise silently discard it.
 	 */
 	{
+		struct socket *so = nfs_so;
 		long timeout, stamp, toread;
 		int retry;
-
-		if (-1 == gl_fd)
+		
+		if (!so)
 		{
 			DEBUG (("rpc_req: no open connection"));
 			free_message (mreq);
@@ -705,14 +757,14 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		
 		/* Now send the message and wait for answer */
 		timeout = opt->timeo;
-		stamp = *_HZ_200;
+		stamp = *_hz_200;
 		insert_request (our_xid);
 		/* TL: we have to increase the timeout by opt->timeo instead of just 
                  *     multiplying it by 2
 		 */
 		for (retry = 0; retry < opt->retrans; retry++, timeout += opt->timeo)
 		{
-		    r = rpc_sendmessage (gl_fd, opt, mreq);
+		    r = rpc_sendmessage (so, opt, mreq);
 		    if (r < 0)
 		    {
 			DEBUG (("rpc_request: could not write message -> %ld", (long)r));
@@ -726,13 +778,13 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 		     * to store the message somewhere when it is not for
 		     * us. Also we should look there to see if another
 		     * process has already received it.
-		     * NOTE: the strange 'stamp + timeout - *_HZ_200 > 0'
-		     * is the same as 'stamp + timeout > *_HZ_200' except
-		     * that the first works also when *_HZ_200 wraps around
+		     * NOTE: the strange 'stamp + timeout - *_hz_200 > 0'
+		     * is the same as 'stamp + timeout > *_hz_200' except
+		     * that the first works also when *_hz_200 wraps around
 		     * while the second method waits `forever' when the
 		     * timer wraps around 2^32.
 		     */
-		    while (stamp + timeout - *_HZ_200 > 0)
+		    while (stamp + timeout - *_hz_200 > 0)
 		    {
 			REQUEST *rq;
 			MESSAGE *pm;
@@ -764,11 +816,10 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 			{
 			    TRACE(("rpc_req: checking socket for reply"));
 			    toread = 0;
-			    r = f_cntl (gl_fd, (long) &toread, FIONREAD);
+			    r = so_ioctl (so, FIONREAD, &toread);
 			    if (r < 0)
 			    {
-				DEBUG(("rpc_req: f_cntl(FIONREAD) failed -> %ld",
-					(long)r));
+				DEBUG(("rpc_req: so_ioctl(FIONREAD) failed -> %ld", r));
 
 				free_message(mreq);
 				delete_request(our_xid);
@@ -786,13 +837,13 @@ rpc_request (SERVER_OPT *opt, MESSAGE *mreq, ulong proc, MESSAGE **mrep)
 				
 				free_message (mreq);
 				delete_request (our_xid);
-				return f_read (gl_fd, sizeof(c), &c);
+				return so_read (so, &c, sizeof(c));
 			    }
 
 			    TRACE (("rpc_req: socket has something"));
 
 			    mbuf.flags = 0;
-			    reply = rpc_receivemessage (gl_fd, &mbuf, toread);
+			    reply = rpc_receivemessage (so, &mbuf, toread);
 			    if (!reply) break;
 
 			    /* Here we know that reply points to mbuf which
@@ -919,7 +970,7 @@ have_reply:
 int
 init_ipc (ulong prog, ulong version)
 {
-	long r;
+	long ret;
 	
 	rpc_program = prog;
 	rpc_progversion = version;
@@ -929,14 +980,11 @@ init_ipc (ulong prog, ulong version)
 	else
 		do_auth_init -= 1;
 	
-	r = open_connection ();
-	if (r < 0)
+	ret = open_connection (&nfs_so);
+	if (ret < 0)
 	{
-		DEBUG (("init_ipc: cannot initialize socket -> %ld", r));
-	}
-	else
-	{
-		gl_fd = r;
+		nfs_so = NULL;
+		DEBUG (("init_ipc: cannot initialize socket -> %ld", ret));
 	}
 	
 	return 0;

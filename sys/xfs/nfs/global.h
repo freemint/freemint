@@ -19,14 +19,14 @@
 
 # define __KERNEL_XFS__
 
-# include <mint/mint.h>
-# include <mint/dcntl.h>
-# include <mint/file.h>
-# include <libkern/libkern.h>
+# include "mint/mint.h"
+# include "mint/dcntl.h"
+# include "mint/file.h"
+# include "libkern/libkern.h"
+
+# include "sockets/inet4/in.h"
 
 /* own default header */
-# include "ksocket/ksocket.h"
-# include "ksocket/in.h"
 # include "config.h"
 # include "nfs_xdr.h"
 
