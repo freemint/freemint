@@ -232,7 +232,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));
 
-#if 0
 #if GENERATE_DIAGS
 		/* CTRL|ALT|number key is emulate wheel. */
 		if (   nk=='U' || nk=='N'
@@ -240,8 +239,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 			short  wheel = 0;
 			short  click = 0;
-			struct moose_data md = { 0, 0, 0, 0, 0, 0, 0, 0 };
+			struct moose_data md = mainmd; //{ 0, 0, 0, 0, 0, 0, 0, 0 };
 
+			md.x = md.sx;
+			md.y = md.sy;
 			cfg.wheel_amount = 1;
 
 			switch (nk)
@@ -266,7 +267,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 			XA_wheel_event(lock, &md);
 			return true;
 		}
-#endif
 #endif
 
 		switch (nk)
