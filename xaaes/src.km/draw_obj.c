@@ -126,7 +126,7 @@ object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glanc
 		case G_FBOXTEXT:
 		{
 			TEDINFO *ted = object_get_spec(tree + t)->tedinfo;
-			sprintf(nother, sizeof(nother), " '%s'", ted->te_ptext);
+			sprintf(nother, sizeof(nother), " (%lx)'%s'", (long)ted->te_ptext, ted->te_ptext);
 			break;
 		}
 		case G_BUTTON:
