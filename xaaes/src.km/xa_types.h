@@ -190,10 +190,10 @@ typedef struct menu_attachments
 /* A function of the type used for widget behaviours is a 
    'WidgetBehaviour'. */
 typedef bool WidgetBehaviour(enum locks lock, struct xa_window *wind,
-			     struct xa_widget *widg, struct moose_data *md);
+			     struct xa_widget *widg, const struct moose_data *md);
 
 typedef bool DisplayWidget(enum locks lock, struct xa_window *wind,
-			     struct xa_widget *widg);
+			   struct xa_widget *widg);
 
 typedef int WindowKeypress(enum locks lock, struct xa_window *wind,
 			   struct widget_tree *wt,
@@ -472,7 +472,6 @@ struct xa_widget
 	XA_WIDGET_LOCATION loc;		/* Location of widget relative to window extents */
 
 	DisplayWidget *display;		/* Function pointers to the behaviours of the widget */
-	//WidgetBehaviour *display;	/* Function pointers to the behaviours of the widget */
 	WidgetBehaviour *click;
 	WidgetBehaviour *dclick;
 	WidgetBehaviour *drag;
