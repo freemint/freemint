@@ -94,8 +94,8 @@ void		DUMPMEM		(MMAP map);
 # endif
 
 # ifdef SANITY_CHECKING
-# define SANITY_CHECK(map)	sanity_check (map)
-static void	sanity_check	(MMAP map);
+# define SANITY_CHECK(map)	sanity_check (map, __LINE__)
+static void	sanity_check	(MMAP map, ulong line);
 # else
 # define SANITY_CHECK(map)
 # endif
@@ -711,8 +711,9 @@ attach_region (PROC *p, MEMREGION *reg)
 	virtaddr *newaddr;
 	int i;
 	
-	TRACELOW(("attach_region %lx len %lx to pid %d",
-		reg->loc, reg->len, p->pid));
+	TRACELOW(("attach_region %lx (%s) len %lx to pid %d",
+		reg->loc, ((reg->mflags & M_CORE) ? "core" : "alt"),
+		reg->len, p->pid));
 	
 	if (!reg || !reg->loc)
 	{
@@ -862,7 +863,7 @@ get_region (MMAP map, ulong size, int mode)
 MEMREGION *
 _get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 {
-	MEMREGION *n, *nlast, *nfirstp, *s, *k = NULL;
+	MEMREGION *n, *s, *k = NULL;
 	
 	TRACE (("get_region (%s, %li (%lx), %x)",
 		((map == core) ? "core" : ((map == alt) ? "alt" : "???")),
@@ -885,13 +886,9 @@ _get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 	/* We come back and try again if we found and freed any unattached shared
 	 * text regions.
 	 */
-	nfirstp = NULL;
-# if 1
 retry:
-# endif
 	n = *map;
-retry2:
-	s = nlast = NULL;
+	s = NULL;
 	
 	while (n)
 	{
@@ -941,7 +938,6 @@ retry2:
 					}
 				}
 			}
-			nlast = n;
 		}
 		else
 		{
@@ -953,10 +949,10 @@ retry2:
 				if (!s && n->len >= size)
 				{
 					s = n;
-					nfirstp = nlast;
 				}
 			}
 		}
+		
 		n = n->next;
 	}
 	
@@ -983,8 +979,6 @@ retry2:
 			m->len = size;
 			m->loc = k->loc + k->len;
 			
-			assert (k->loc + k->len == m->loc);
-			
 			n = m;
 			goto win;
 		}
@@ -993,75 +987,12 @@ retry2:
 	/* Looks like we're out of free memory. Try freeing an unattached shared text
 	 * region, and then try again to fill this request.
 	 */
-# if 0
-	if (s && s->len < size)
-	{
-		long lastsize = 0, end = 0;
-
-		n = nlast = nfirstp;
-		if (!n || n->next != s)
-			n = s;
-		for (; n; n = n->next)
-		{
-			if (ISFREE (n))
-			{
-				if (end == n->loc)
-				{
-					lastsize += n->len;
-				}
-				else
-				{
-					s = NULL;
-					nfirstp = nlast;
-					lastsize = n->len;
-				}
-				nlast = n;
-				end = n->loc + n->len;
-				if (lastsize >= size)
-				{
-					break;
-				}
-			}
-			else if (n->links == 0xffff && (n->mflags & M_SHTEXT))
-			{
-				if (end == n->loc)
-				{
-					if (!s)
-						s = n;
-					lastsize += n->len;
-				}
-				else
-				{
-					s = n;
-					nfirstp = nlast;
-					lastsize = n->len;
-				}
-				end = n->loc + n->len;
-				if (lastsize >= size)
-				{
-					break;
-				}
-			}
-		}
-		if (!n)
-			s = NULL;
-	}
-	if (s)
-	{
-		s->links = 0;
-		free_region (s);
-		if (NULL == (n = nfirstp))
-			n = *map;
-		goto retry2;
-	}
-# else
 	if (s)
 	{
 		s->links = 0;
 		free_region (s);
 		goto retry;
 	}
-# endif
 	
 	TRACELOW (("get_region: no memory left in this map"));
 	return NULL;
@@ -1486,10 +1417,10 @@ alloc_region (MMAP map, ulong size, int mode)
 	/* NOTE: get_region returns a region with link count 1; since attach_region
 	 * increments the link count, we restore it after calling attach_region
 	 */
-	m->links = 1;
+	m->links--;
 	if (!v)
 	{
-		m->links = 0;
+		m->links--;
 		free_region(m);
 		TRACE(("alloc_region: attach_region failed"));
 		return 0;
@@ -1593,9 +1524,14 @@ create_env (const char *env, ulong flags)
 	char *new;
 	short protmode;
 	
+	TRACELOW (("create_env: %lx, %lx", env, flags));
+	
 	if (!env)
+	{
 		/* duplicate parent's environment */
 		env = curproc->base->p_env;
+		TRACELOW (("create_env: using parents env: %lx", curproc->base->p_env));
+	}
 	
 	size = 2;
 	old = env;
@@ -1622,7 +1558,7 @@ create_env (const char *env, ulong flags)
 	while (size > 0)
 	{
 		*new++ = *old++;
-		--size;
+		size--;
 	}
 	TRACE(("finished copying environment"));
 	
@@ -3168,7 +3104,7 @@ DUMPMEM (MMAP map)
 
 # ifdef SANITY_CHECKING
 static void
-sanity_check (MMAP map)
+sanity_check (MMAP map, ulong line)
 {
 	MEMREGION *m = *map;
 	while (m)
@@ -3180,29 +3116,29 @@ sanity_check (MMAP map)
 			
 			if (m->loc < next->loc && end > next->loc)
 			{
-				FATAL ("MEMORY CHAIN CORRUPTED");
+				FATAL ("%s, %lu: MEMORY CHAIN CORRUPTED", __FILE__, line);
 			}
 			else if (m->loc == next->loc && m->len > 0
 				&& (m->shadow != next || m->len != next->len))
 			{
-				FATAL ("SHADOW RING CORRUPTED");
+				FATAL ("%s, %lu: SHADOW RING CORRUPTED", __FILE__, line);
 			}
 			else if (end == next->loc && ISFREE (m) && ISFREE (next))
 			{
-				ALERT ("Continguous memory regions not merged!");
+				ALERT ("%s, %lu: Continguous memory regions not merged!", __FILE__, line);
 			}
 			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
 			{
-				ALERT ("Memory region unaligned");
+				ALERT ("%s, %lu: Memory region unaligned", __FILE__, line);
 			}
 			else if (!no_mem_prot && (m->len != ROUND(m->len)))
 			{
-				ALERT ("Memory region length unaligned");
+				ALERT ("%s, %lu: Memory region length unaligned", __FILE__, line);
 			}
 			
 			if (m->save && !(m->mflags & M_FSAVED) && !m->shadow)
 			{
-				FATAL ("SAVE REGION ATTACHED TO A NON-SHADOW REGION!");
+				FATAL ("%s, %lu: SAVE REGION ATTACHED TO A NON-SHADOW REGION!", __FILE__, line);
 			}
 		}
 		m = next;
