@@ -1,0 +1,34 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	adaptrsc.h \
+	callback.h \
+	cops.h \
+	cops_rs.h \
+	cops_rsc.h \
+	cpx.h \
+	cpx_bind.h \
+	fix_rsc.h \
+	global.h \
+	key_map.h \
+	list.h \
+	objmacro.h \
+	phstuff.h \
+	popup.h \
+	vaproto.h \
+	wlib.h \
+	wstruct.h
+
+COBJS = \
+	adaptrsc.c \
+	callback.c \
+	cops.c \
+	cops_rsc.c \
+	fix_rsc.c \
+	list.c \
+	phstuff.c \
+	popup.c \
+	wlib.c
+
+SRCFILES = $(HEADER) $(COBJS)
