@@ -486,7 +486,7 @@ biosfs_init (void)
 			mindev = b->private;
 		}
 
-		_set_xattr (&b->xattr, b->defmode ? b->defmode : S_IFCHR|DEFAULT_MODE,
+		_set_xattr (&b->xattr, b->defmode ? b->defmode : S_IFCHR|0666,
 			    majdev | (mindev & 0x00ff));
 	}
 }
@@ -619,7 +619,7 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 #endif
 			majdev = FAKE_RDEV;
 			mindev = ((int)fc->aux) & 0x00ff;
-			set_xattr (xattr, S_IFCHR | DEFAULT_MODE, majdev|mindev);
+			set_xattr (xattr, S_IFCHR|0666, majdev|mindev);
 #ifndef FOLLOW_XATTR_CHAIN
 			xattr->index = fc->index;
 #else
@@ -640,7 +640,7 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 #endif
 			majdev = FAKE_RDEV;
 			mindev = ((int)b->private) & 0x00ff;
-			set_xattr (xattr, S_IFCHR|DEFAULT_MODE, majdev|mindev);
+			set_xattr (xattr, S_IFCHR|0666, majdev|mindev);
 #ifndef FOLLOW_XATTR_CHAIN
 			xattr->index = fc->index;
 #else
@@ -1083,7 +1083,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			else
 				b->tty = NULL;
 
-			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, UNK_RDEV|devindex);
+			set_xattr (&(b->xattr), S_IFCHR|0666, UNK_RDEV|devindex);
 			if (d->fmode)
 				b->xattr.mode = (short) d->fmode & 0177777;
 
@@ -1136,7 +1136,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			b->flags = O_TTY;
 			*b->tty = default_tty;
 
-			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, BIOS_RDEV|(b->private&0x00ff));
+			set_xattr (&(b->xattr), S_IFCHR|0666, BIOS_RDEV|(b->private & 0x00ff));
 
 			return E_OK;
 		}
@@ -1164,7 +1164,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			b->private = arg;
 			b->flags = 0;
 
-			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, BIOS_RDEV|(b->private&0x00ff));
+			set_xattr (&(b->xattr), S_IFCHR|0666, BIOS_RDEV|(b->private&0x00ff));
 
 			return E_OK;
 		}
