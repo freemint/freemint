@@ -246,6 +246,11 @@ typedef void ExitForm(enum locks lock, struct xa_window *wind,
                                  int f, int os, int dbl, int which, struct rawkey *key);
 #endif
 
+typedef short _cdecl wdlg_exit  (void *dialog,
+				EVNT *evnt,
+				short obj,
+				short clicks,
+				void *data);
 
 /* Object Tree based widget descriptor */
 struct wdlg_info
@@ -257,7 +262,7 @@ struct wdlg_info
 	void *user_data;
 	void *data;
 	EVNT *evnt;
-	HNDL_OBJ exit;
+	wdlg_exit *exit; //HNDL_OBJ exit;
 
 	short ify_obj;
 	struct widget_tree *std_wt;
@@ -286,6 +291,7 @@ struct a_slide
 	short down;
 	short slide_bkg;
 	short slider;
+	RECT  ofs;
 };
 
 struct b_slide
@@ -294,6 +300,7 @@ struct b_slide
 	short right;
 	short slide_bkg;
 	short slider;
+	RECT  ofs;
 };	
 struct xa_lbox_info;
 struct xa_lbox_info

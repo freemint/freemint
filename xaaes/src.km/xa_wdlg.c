@@ -352,7 +352,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				wt = set_toolbar_widget(lock, wind, obtree, 0);
 				wt->exit_form = NULL; //exit_wdial;
 
-				wdlg->handle = (void*)(long)wind->handle;
+				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
 				wdlg->wind = wind;
 				wdlg->code = pb->intin[0];			/* Code */
 				wdlg->flag = pb->intin[1];			/* Flags */
@@ -363,11 +363,11 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				wdlg->ify_wt = wt;
 
 				wdlg->exit      = (void*)pb->addrin[0];
-				rep = wdlg->exit(0, 0, HNDL_INIT, wdlg->code, wdlg->data);
+				rep = wdlg->exit(wdlg->handle/*0*/, 0, HNDL_INIT, wdlg->code, wdlg->data);
 				if (rep == 0)
 					delete_window(lock, wind);
 				else
-					(long)pb->addrout[0] = 0xae000000 + wind->handle;
+					(long)pb->addrout[0] = (long)wdlg->handle; //0xae000000 + wind->handle;
 			}
 			else
 				delete_window(lock, wind);
@@ -387,14 +387,13 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(4,1,3)
 
 	pb->intout[0] = 0;
-
 	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_open, title %lx, data %lx",
-		handle, pb->addrin[1],pb->addrin[2]));
+	DIAG((D_wdlg, client, "(%d)XA_wdlg_open, handle=%lx, title %lx, data %lx",
+		handle, pb->addrin[0], pb->addrin[1],pb->addrin[2]));
 	DIAG((D_wdlg, client, "  --  tp=%x, x=%d, y=%d",
 		pb->intin[0], pb->intin[1], pb->intin[2]));
 
@@ -456,6 +455,7 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		pb->intout[0] = handle;
 	}
+
 	return XAC_DONE;
 }
 
@@ -469,13 +469,12 @@ XA_wdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(0,3,1)
 
 	pb->intout[0] = 0;
-
 	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_close", handle));
+	DIAG((D_wdlg, client, "(%d)XA_wdlg_close, handle=%lx", handle, pb->addrin[0]));
 
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
@@ -506,7 +505,8 @@ XA_wdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	handle = (short)pb->addrin[0];
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_delete", handle));
+	DIAG((D_wdlg, client, "(%d)XA_wdlg_delete, handle=%lx",
+		handle, pb->addrin[0]));
 
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
@@ -536,13 +536,13 @@ XA_wdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(1,0,1)
 
 	pb->intout[0] = 0;
-
 	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_get %d", handle, pb->intin[0]));
+	DIAG((D_wdlg, client, "(%d)XA_wdlg_get %d, handle=%lx",
+		handle, pb->intin[0], pb->addrin[0]));
 
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
@@ -600,6 +600,7 @@ XA_wdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			default:
 			{
 				DIAG((D_wdlg, client, " -- error"));
+				pb->intout[0] = 0;
 			}
 		}
 	}
@@ -622,13 +623,13 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(2,1,1)
 
 	pb->intout[0] = 0;
-
 	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_set %d", handle, pb->intin[0]));
+	DIAG((D_wdlg, client, "(%d)XA_wdlg_set %d, handle=%lx",
+		handle, pb->intin[0], pb->addrin[0]));
 
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
@@ -709,7 +710,16 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				RECT *r = (RECT *)pb->addrin[1];
 
 				if (r)
-					move_window(lock, wind, -1, r->x, r->y, r->w, r->h);
+				{
+					RECT nr = *r;
+
+					nr.x -= wind->wa.x - wind->r.x;
+					nr.y -= wind->wa.y - wind->r.y;
+					nr.w += wind->r.w - wind->wa.w;
+					nr.h += wind->r.h - wind->wa.h;
+
+					move_window(lock, wind, -1, nr.x, nr.y, nr.w, nr.h);
+				}
 				break;
 			}
 			/* wdlg_iconify */
@@ -837,15 +847,15 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(0,1,0)
 
-	pb->intout[0] = 0;
+	pb->intout[0] = 1;
 
 	if (*(const unsigned char *)pb->addrin != 0xae)
 		return XAC_DONE;
 
 	handle = (short)pb->addrin[0];
-	pb->intout[0] = 1;
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_event", handle));
+	DIAG((D_wdlg, client, "(%d)XA_wdlg_event, handle=%lx",
+		handle, pb->addrin[0]));
 
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
@@ -1056,12 +1066,13 @@ XA_wdlg_redraw(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	handle = (short)pb->addrin[0];
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_redraw", handle));
+	DIAG((D_wdlg, client, "(%d)XA_wdlg_redraw, handle=%lx",
+		handle, pb->addrin[0]));
 
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
-
-	wdlg_redraw(lock, wind, pb->intin[0], pb->intin[1], (RECT *)pb->addrin[1]);
+	if (wind)
+		wdlg_redraw(lock, wind, pb->intin[0], pb->intin[1], (RECT *)pb->addrin[1]);
 
 	return XAC_DONE;
 }

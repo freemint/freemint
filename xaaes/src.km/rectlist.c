@@ -49,6 +49,15 @@ make_rect_list(struct xa_window *wind, bool swap)
 
 	DIAGS(("make_rect_list for wind %d", wind->handle));
 
+	if (wind->r.x > (screen.r.x + screen.r.w) ||
+	    wind->r.y > (screen.r.y + screen.r.h) ||
+	   (wind->r.x + wind->r.w) < screen.r.x  ||
+	   (wind->r.y + wind->r.h) < screen.r.y )
+	{
+		DIAGS(("make_rect_list: window is outside screen"));
+		return NULL;
+	}
+	
 	nrl = kmalloc(sizeof(*nrl));
 	assert(nrl);
 	nrl->next = NULL;
@@ -181,7 +190,7 @@ make_rect_list(struct xa_window *wind, bool swap)
 
 						rl->r.x = win_x2;
 						rl->r.y = r_ours.y;
-						rl->r.w = our_x2 - win_x2; //win_x2 - our_x2;
+						rl->r.w = our_x2 - win_x2;
 						rl->r.h = r_ours.h;
 
 						r_ours.w -= rl->r.w;
