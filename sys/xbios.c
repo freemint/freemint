@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * XBIOS replacement routines
- * 
+ *
  */
 
 /* Note: most of security code moved to syscall.spp */
@@ -83,28 +83,28 @@ do_usrcall (void)
 # endif
 
 long _cdecl
-supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
+sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 {
 	CONTEXT *syscall = &curproc->ctxt[SYSCALL];
 	ushort savesr;
-	
+
 	/* For SECURELEVEL > 1 only the Superuser can set the CPU into supervisor
-	 * mode. 
+	 * mode.
 	 */
-	
+
 	if ((secure_mode > 1) && !suser (curproc->p_cred->ucr))
 	{
 		DEBUG (("Supexec: user call"));
 		raise (SIGSYS);
 		return EPERM;
 	}
-	
+
 	/* set things up so that "signal 0" will be handled by calling the user's
 	 * function.
 	 */
-	
+
 	assert (curproc->p_sigacts);
-	
+
 	usrcall = funcptr;
 	usrarg1 = arg1;
 	usrarg2 = arg2;
@@ -112,12 +112,12 @@ supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 	usrarg4 = arg4;
 	usrarg5 = arg5;
 	SIGACTION(curproc, 0).sa_handler = (long) do_usrcall;
-	
+
 	savesr = syscall->sr;	/* save old super/user mode flag */
 	syscall->sr |= 0x2000;	/* set supervisor mode */
 	handle_sig (0);		/* actually call out to the user function */
 	syscall->sr = savesr;
-	
+
 	/* do_usrcall saves the user's return value in usrret */
 	return usrret;
 }
@@ -129,15 +129,15 @@ supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
  */
 
 long _cdecl
-midiws (int cnt, const char *buf)
+sys_b_midiws (int cnt, const char *buf)
 {
 	FILEPTR *f;
 	long towrite = cnt+1;
-	
+
 	f = curproc->p_fd->midiout;	/* MIDI output handle */
 	if (!f)
 		return EBADF;
-	
+
 	if (is_terminal (f))
 	{
 		/* see if we can do fast RAW byte IO thru the device driver... */
@@ -153,16 +153,16 @@ midiws (int cnt, const char *buf)
 			if ((towrite = (*f->dev->writeb)(f, buf, towrite)) != ENODEV)
 				return towrite;
 		}
-		
+
 		while (cnt >= 0)
 		{
 			tty_putchar(f, (long)*buf, RAW);
 			buf++; cnt--;
 		}
-		
+
 		return towrite;
 	}
-	
+
 	return (*f->dev->write)(f, buf, towrite);
 }
 
@@ -185,36 +185,36 @@ mapin (int dev)
 
 	if (dev == curbconmap)
 		return 1;
-	
+
 	r = Bconmap (dev);
 	if (r)
 	{
 		curbconmap = dev;
 		return 1;
 	}
-	
+
 	return 0;
 }
-	
+
 long _cdecl
-uiorec (int dev)
-{	
+sys_b_uiorec (int dev)
+{
 	TRACE (("Iorec(%d)", dev));
-	
+
 	if (dev == 0 && has_bconmap)
 	{
 		// ALERT ("Iorec(%d) -> NULL", dev);
 		return 0;
-		
-		/* get around another BIOS Bug: 
+
+		/* get around another BIOS Bug:
 		 * in (at least) TOS 2.05 Iorec(0) is broken
 		 */
 		if ((unsigned) curproc->p_fd->bconmap - 6 < btty_max)
 			return (long) MAPTAB[curproc->p_fd->bconmap-6].iorec;
-		
+
 		mapin (curproc->p_fd->bconmap);
 	}
-	
+
 	return (long) Iorec (dev);
 }
 
@@ -225,9 +225,9 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	static int oldbaud = -1;
 	unsigned b = 0;
 	struct bios_tty *t = bttys;
-	
+
 	TRACE (("Rsconf(%d,%d,%d,%d,%d,%d)", baud, flow, uc, rs, ts, sc));
-	
+
 	if (has_bconmap)
 	{
 		b = curproc->p_fd->bconmap - 6;
@@ -235,7 +235,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 			t += b;
 		else
 			t = 0;
-		
+
 		/* more bugs...  serial1 is three-wire, requesting hardware
 		 * flowcontrol on it can confuse BIOS
 		 */
@@ -247,7 +247,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 		/*
 		 * If this is an old TOS, try to rearrange things to support
 		 * the following Rsconf() features:
-		 * 
+		 *
 		 * 1. Rsconf(-2, ...) does not return current baud (it crashes)
 		 *    -> keep track of old speed in static variable
 		 * 2. Rsconf(b, ...) sends ASCII DEL to the modem unless b == -1
@@ -267,17 +267,17 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 		else if (baud > -1)
 			oldbaud = baud;
 	}
-	
+
 	if (t && baud != -2)
 	{
 		while (t->tty->hup_ospeed)
 			sleep (IO_Q, (long) &t->tty->state);
 	}
-	
+
 	if (has_bconmap && t)
 	{
 		rsval = MAPTAB[b].rsconf;
-		
+
 		/* bug # x+1:  at least up to TOS 2.05 SCC Rsconf forgets to or #0x700,sr...
 		 * use MAPTAB to call it directly, at ipl7 if it points to ROM
 		 */
@@ -294,20 +294,20 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	{
 		if (has_bconmap)
 			mapin (curproc->p_fd->bconmap);
-		
+
 		rsval = Rsconf (baud, flow, uc, rs, ts, sc);
 	}
-	
+
 	if (!t || baud <= -2)
 		return rsval;
-	
+
 	if (baud >= 0)
 	{
 		t->vticks = 0;
 		t->ospeed = t->ispeed = (unsigned)baud < t->maxbaud ?
 					t->baudmap[baud] : -1;
 	}
-	
+
 # if 1
 	if (b == 1 && flow >= 0)
 	{
@@ -318,12 +318,12 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 		ushort sr;
 		volatile char dummy, *control;
 		unsigned char w3;
-		
+
 		control = (volatile char *) (t->tty == &scca_tty ? ControlRegA : ControlRegB);
 		w3 = ((((uchar *) t->irec)[0x1d] << 1) & 0xc0) |
 			((!t->clocal &&
 			 (((uchar *) t->irec)[0x20] & 2)) ? 0x21 : 0x1);
-		
+
 		sr = spl7();
 		dummy = _mfpregs->gpip;
 		*control = 3;
@@ -338,12 +338,12 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 }
 
 long _cdecl
-bconmap (int dev)
+sys_b_bconmap (int dev)
 {
 	int old = curproc->p_fd->bconmap;
-	
+
 	TRACE (("Bconmap(%d)", dev));
-	
+
 	if (has_bconmap)
 	{
 		if (dev == -2)
@@ -355,29 +355,29 @@ bconmap (int dev)
 			return Bconmap(-2);
 # endif
 		}
-		
+
 		if (dev == -1)
 			return old;
-		
+
 		if (dev == 0)
 			return E_OK;  /* the user's just testing */
-		
+
 		if (mapin (dev) == 0)
 		{
 			DEBUG (("Bconmap: mapin(%d) failed", dev));
 			return 0;
 		}
-		
+
 		if (set_auxhandle (curproc, dev) == 0)
 		{
 			DEBUG (("Bconmap: Couldn't change AUX:"));
 			return 0;
 		}
-		
+
 		curproc->p_fd->bconmap = dev;
 		return old;
 	}
-	
+
 	return ENOSYS;	/* no Bconmap available */
 }
 
@@ -387,35 +387,35 @@ bconmap (int dev)
  */
 
 long _cdecl
-cursconf (int cmd, int op)
+sys_b_cursconf (int cmd, int op)
 {
 	FILEPTR *f;
 	long r;
-	
+
 	f = curproc->p_fd->control;
 	if (!f || !is_terminal(f))
 		return ENOSYS;
-	
+
 	r = (*f->dev->ioctl)(f, TCURSOFF + cmd, &op);
 	if ((cmd == CURS_GETRATE || cmd == 7 /* undocumented! */) && r == E_OK)
 		return op;
-	
+
 	return r;
 }
 
 
 long _cdecl
-dosound (const char *ptr)
+sys_b_dosound (const char *ptr)
 {
 	if (!no_mem_prot && ((long) ptr >= 0))
 	{
 		MEMREGION *r;
-		
+
 		/* check that this process has access to the memory
 		 * (if not, the next line will cause a bus error)
 		 */
 		(void)(*((volatile char *) ptr));
-		
+
 		/* OK, now make sure that interrupt routines will have access,
 		 * too
 		 */
@@ -426,9 +426,9 @@ dosound (const char *ptr)
 			mark_region (r, PROT_S, 0);
 		}
 	}
-	
+
 	Dosound (ptr);
-	
+
 	return E_OK;
 }
 
@@ -442,7 +442,7 @@ static void
 videl_patch (void)
 {
 	ushort s;
-	
+
 	s = *(ushort *) 0xffff8266L;
 	Vsync();
 	*(ushort *) 0xffff8266L = 0;
@@ -475,7 +475,7 @@ vsetmode (int modecode)
 	}
 	else
 		r = VsetMode(modecode);
-	
+
 	return r;
 }
 # endif
@@ -485,25 +485,25 @@ vsetmode (int modecode)
  */
 
 long _cdecl
-vsetscreen (long log, long phys, int rez, int mode)
+sys_b_vsetscreen (long log, long phys, int rez, int mode)
 {
 	/* STE shifter ST-high syncbug workaround */
 	VsetScreen (log, phys, rez, mode);
 	if (ste_video && rez == 2)
 		shifter_patch();
-	
+
 	return E_OK;
 
-}				
+}
 
-/* This random number generator was taken from the xscreensaver 
+/* This random number generator was taken from the xscreensaver
  * distribution and adapted to MiNT by Guido Flohr.  The xscreensaver
  * sources have the following copyright notice (but the original
  * file yarandom.c from xscreensaver does _not_ have this message).
  * Thus, I'm not sure if it applies here or not.  Well, I include
  * it anyway.
  */
-   
+
 /* xscreensaver, Copyright (c) 1997 by Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -511,7 +511,7 @@ vsetscreen (long log, long phys, int rez, int mode)
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
  * documentation.  No representations are made about the suitability of this
- * software for any purpose.  It is provided "as is" without express or 
+ * software for any purpose.  It is provided "as is" without express or
  * implied warranty.
  */
 
@@ -581,14 +581,14 @@ static ulong a[VectorSize] =
 static int i1, i2;
 
 long _cdecl
-random (void)
+sys_b_random (void)
 {
 	register long ret = a[i1] + a[i2];
 	a[i1] = ret;
-	
+
 	if (++i1 >= VectorSize) i1 = 0;
 	if (++i2 >= VectorSize) i2 = 0;
-	
+
 	/* Sigh, we have to return  24-bit random number for compatibility
 	 * reasons.  BTW, is it faster to rightshift by 8 bits or do the
 	 * logical AND? (Guido)
@@ -604,7 +604,7 @@ void
 init_xrandom (void)
 {
 	int i;
-	
+
 	/* Ignore overflow when initializing seed on purpose.  The original
 	 * algorithm also added (1003 * getpid ()) but this will always
 	 * add zero (because that's the kernel's pid.  If there's another
@@ -612,19 +612,19 @@ init_xrandom (void)
 	 * here.
 	 */
 	ulong seed;
-	
+
 	seed  = ( 999 * xtime.tv_sec);
 	seed += (1001 * xtime.tv_usec);
 	seed += (1003 * jiffies);
-	
+
 	a[0] += seed;
-	
+
 	for (i = 1; i < VectorSize; i++)
 	{
 		seed = a[i-1] * 1001 + seed * 999;
 		a[i] += seed;
 	}
-	
+
 	i1 = a[0] % VectorSize;
 	i2 = (i1 + 024) % VectorSize;
 }
@@ -633,16 +633,16 @@ void
 init_bconmap (void)
 {
 	int i, oldmap;
-	
+
 	curbconmap = (has_bconmap) ? (int) Bconmap (-1) : 1;
-	
+
 	oldmap = curproc->p_fd->bconmap = curbconmap;
 	for (i = 0; i < btty_max; i++)
 	{
 		int r;
 		if (has_bconmap)
 			curproc->p_fd->bconmap = i + 6;
-		
+
 		r = (int) rsconf (-2, -1, -1, -1, -1, -1);
 		if (r < 0)
 		{
@@ -650,10 +650,10 @@ init_bconmap (void)
 				mapin (curproc->p_fd->bconmap);
 			Rsconf ((r = 0), -1, -1, -1, -1, -1);
 		}
-		
+
 		rsconf (r, -1, -1, -1, -1, -1);
 	}
-	
+
 	if (has_bconmap)
 		mapin (curproc->p_fd->bconmap = oldmap);
 }

@@ -268,7 +268,7 @@ kernel_pterm (PROC *p, int code)
 		 * handle_sig to do that -- see signal.c.
 		 */
 		p->p_sigmask |= 1L;
-		(void) supexec ((Func) syscall->term_vec, 0L, 0L, 0L, 0L, (long) code);
+		(void) sys_b_supexec ((Func) syscall->term_vec, 0L, 0L, 0L, 0L, (long) code);
 		/*
 		 * if we arrive here, continue with the termination...
 		 */

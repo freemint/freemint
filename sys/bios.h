@@ -42,7 +42,7 @@ long _cdecl sys_b_ubconstat (int dev);
 long _cdecl sys_b_ubconin (int dev);
 long _cdecl sys_b_ubconout (int dev, int c);
 long _cdecl sys_b_ubcostat (int dev);
-long _cdecl ursconf (int baud, int flow, int uc, int rs, int ts, int sc);
+long _cdecl sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc);
 
 long bconstat (int dev);
 long bconin (int dev);
