@@ -5,7 +5,6 @@
 
 #include <gem.h>
 
-#include "global.h"
 #include "ansicol.h"
 
 const int ansi2vdi[8] = { 1, 2, 3, 6, 4, 7, 5, 0 };
@@ -149,32 +148,32 @@ init_ansi_colors (const short* work_out)
 }
 
 void
-set_ansi_fg_color (TEXTWIN* v, int color)
+set_ansi_fg_color (TEXTWIN* tw, int color)
 {
 	color -= 48;
 
 	if (color == 9) {
-		v->term_cattr = (v->term_cattr & ~CFGCOL) |
-			(v->cfg->fg_color << 4);
+		tw->curr_cattr = (tw->curr_cattr & ~CFGCOL) |
+			(tw->cfg->fg_color << 4);
 	} else if (color >= 0 && color < 8) {
-		v->term_cattr = (v->term_cattr & ~CFGCOL) |
+		tw->curr_cattr = (tw->curr_cattr & ~CFGCOL) |
 			(color << 4);
 	} else if (color == 'M') {
-		v->term_cattr = (v->term_cattr & ~CE_ANSI_EFFECTS) |
+		tw->curr_cattr = (tw->curr_cattr & ~CE_ANSI_EFFECTS) |
 			CE_BOLD;
 	} else if (color == 'N') {
-		v->term_cattr = (v->term_cattr & ~CE_ANSI_EFFECTS) |
+		tw->curr_cattr = (tw->curr_cattr & ~CE_ANSI_EFFECTS) |
 			CE_LIGHT;
 	}
 }
 
 void
-set_ansi_bg_color (TEXTWIN* v, int color)
+set_ansi_bg_color (TEXTWIN* tw, int color)
 {
 	color -= 48;
 
 	if (color == 9 || (color >= 0 && color < 8))
-		v->term_cattr = (v->term_cattr & ~CBGCOL) | color;
+		tw->curr_cattr = (tw->curr_cattr & ~CBGCOL) | color;
 }
 
 /* Calculate the difference between two colors.  */
@@ -221,7 +220,7 @@ color_diff (color1, color2)
 }
 
 void
-use_ansi_colors (TEXTWIN* v, unsigned long flag,
+use_ansi_colors (TEXTWIN* tw, unsigned long flag,
 		int* fgcolor, int* bgcolor,
 		int* texteffects)
 {
@@ -229,14 +228,14 @@ use_ansi_colors (TEXTWIN* v, unsigned long flag,
 	*fgcolor = (flag & CFGCOL) >> 4;
 	*texteffects = flag & CEFFECTS;
 
-	if (!v->vdi_colors) {
+	if (!tw->vdi_colors) {
 		*texteffects &= ~CE_ANSI_EFFECTS;
 
 		if (*fgcolor == 9) {
-			*fgcolor = v->cfg->fg_color;
-			if (v->cfg->fg_effects & CE_BOLD)
+			*fgcolor = tw->cfg->fg_color;
+			if (tw->cfg->fg_effects & CE_BOLD)
 				flag |= CE_BOLD;
-			else if (v->cfg->fg_effects & CE_LIGHT)
+			else if (tw->cfg->fg_effects & CE_LIGHT)
 				flag |= CE_LIGHT;
 		}
 
@@ -261,10 +260,10 @@ use_ansi_colors (TEXTWIN* v, unsigned long flag,
 		if (*bgcolor >= 0 && *bgcolor <= 7) {
 			*bgcolor = renderer[*bgcolor].normal;
 		} else if (*bgcolor == 9) {
-			*bgcolor = v->cfg->bg_color & 0x7;
-			if (v->cfg->bg_effects & CE_BOLD)
+			*bgcolor = tw->cfg->bg_color & 0x7;
+			if (tw->cfg->bg_effects & CE_BOLD)
 				*bgcolor = renderer[*bgcolor].bright;
-			else if (v->cfg->bg_effects & CE_LIGHT)
+			else if (tw->cfg->bg_effects & CE_LIGHT)
 				*bgcolor = renderer[*bgcolor].hbright;
 			else
 				*bgcolor = renderer[*bgcolor].normal;

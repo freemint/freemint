@@ -6,6 +6,10 @@
 #ifndef tw_ansicol_h
 # define tw_ansicol_h 1
 
+#ifndef tw_textwin_h
+# include "textwin.h"
+#endif
+
 #define ANSI_BLACK	0
 #define ANSI_RED	1
 #define ANSI_GREEN	2
