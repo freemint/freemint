@@ -650,7 +650,9 @@ k_main(void *dummy)
 		Path parms;
 		int i;
 
-		parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell);
+		parms[0] = '\0';
+		if ( cfg.cnf_shell_arg )
+			parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
 
 		C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
 		if (C.DSKpid > 0)
@@ -660,15 +662,9 @@ k_main(void *dummy)
 		{
 			if (cfg.cnf_run[i])
 			{
-				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run[i]);
-				/*
-				 * fna: this is like in taskman, handle_launcher()
-				 * but I don't understand the behaviour or meaning here
-				 * especially the interaction in launch and all the cmdline
-				 * manipulation
-				 */ 
 				parms[0] = '\0';
-
+				if ( cfg.cnf_run_arg[i] )
+					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
 			}
 		}
