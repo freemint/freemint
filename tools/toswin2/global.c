@@ -6,11 +6,11 @@
 
 #include <ctype.h>
 #include <sys/types.h>
+#include <gem.h>
 
 #include "global.h"
-#include "console.h"
-#include "toswin2.h"
 #include "ansicol.h"
+#include "toswin2.h"
 
 /*
  * Globale Variablen
@@ -149,44 +149,6 @@ int alert(int def, int undo, int num)
 	graf_mouse(ARROW, NULL);
 	return do_walert(def, undo, (char *)alertarray[num], " TosWin2 ");
 }
-
-
-void draw_winicon(WINDOW *win)
-{
-	OBJECT	*icon;
-	GRECT	t1, t2;
-	bool	off = FALSE;		
-
-	if (is_console(win))
-		icon = get_con_icon();
-	else
-		icon = winicon;
-		
-	wind_get_grect(win->handle, WF_WORKXYWH, &t2);
-			
-	icon[0].ob_x = t2.g_x;
-	icon[0].ob_y = t2.g_y;
-	icon[0].ob_width = t2.g_w;
-	icon[0].ob_height = t2.g_h;
-	icon[1].ob_x = (t2.g_w - icon[1].ob_width) / 2;
-	icon[1].ob_y = (t2.g_h - icon[1].ob_height) / 2;
-	
-	rc_intersect(&gl_desk, &t2);
-	wind_get_grect(win->handle, WF_FIRSTXYWH, &t1);
-	while (t1.g_w && t1.g_h) 
-	{
-		if (rc_intersect(&t2, &t1)) 
-		{
-			if (!off)
-				off = hide_mouse_if_needed(&t1);
-			objc_draw(icon, ROOT, MAX_DEPTH, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
-		}
-		wind_get_grect(win->handle, WF_NEXTXYWH, &t1);
-	}
-	if (off)
-		show_mouse();
-}
-
 
 
 void global_init(void)
