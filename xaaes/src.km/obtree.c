@@ -578,7 +578,7 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 
 	do {
 		OBJECT *ob = tree + i;
-		if (ob->ob_state & OS_WHITEBAK)
+		if ((ob->ob_state & OS_WHITEBAK) && ((ob->ob_state & OS_DISABLED) == 0))
 		{
 			int ty = ob->ob_type & 0xff;
 			if (ty == G_BUTTON || ty == G_STRING)
