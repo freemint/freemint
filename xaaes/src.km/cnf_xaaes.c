@@ -154,6 +154,29 @@ get_delim_string(char **line)
 
 	return ret;
 }
+static char *
+get_commadelim_string(char **line)
+{
+	char *s, *ret;
+
+	s = *line = skip(*line);
+
+	while (*s
+		&& *s != '\r'
+		&& *s != '\n'
+		&& *s != ','
+		&& *s != '|') s++;
+
+	if (s == *line)
+		return NULL;
+
+	ret = *line;
+
+	if (*s) *s++ = '\0';
+	*line = s;
+
+	return ret;
+}
 
 static char *
 get_string(char **line)
@@ -181,6 +204,57 @@ get_string(char **line)
 	*line = s;
 
 	return ret;
+}
+/*
+ * Ozk: Very rough implementation -- clean and make this safer later..
+ */
+static int
+get_argument(char *wfarg, short *result)
+{
+	bool negative = false;
+	char *end;
+
+	DIAGS(("get_argument: string = '%s'", wfarg));
+
+	wfarg = skip(wfarg);
+
+	if (*wfarg == '=')
+		wfarg++;
+	else
+	{
+		DIAGS(("get_argument: equation expected"));
+		return -1;
+	}
+
+	wfarg = skip(wfarg);
+
+	if (*wfarg == '-')
+	{
+		negative = true;
+		wfarg++;
+	}
+
+	end = wfarg;
+					
+	while (isdigit(*end))
+		end++;
+
+	if (end == wfarg)
+	{
+		DIAGS(("get_argument: no argument!"));
+		return -1;
+	}
+	else
+	{
+		short r;
+		char sc = *end;
+		*end = 0;
+		r = (short)atol(wfarg);
+		*end = sc;
+		if (result)
+			*result = negative ? -r : r;
+	}
+	return 0;
 }
 
 /*============================================================================*/
@@ -288,22 +362,32 @@ pCB_app_options(const char *line)
 	int i = 0;
 	char *s;
 	struct opt_list *op = S.app_options;
-	struct options *opts;
+	struct options *opts = NULL;
 
 	if ((s = get_string(&line)))
 	{
 		DIAGS(("pCB_app_options for %s", s));
-		op = S.app_options;
-		while (op)
+
+		if (!stricmp(s, "default"))
+			opts = &default_options;
+		else if (!stricmp(s, "aessys"))
+			opts = &C.Aes->options;
+		else
 		{
-			if (!stricmp(s, op->name))
+			op = S.app_options;
+
+			while (op)
 			{
-				DIAGS(("pCB_app_options: already defined"));
-				break;
+				if (!stricmp(s, op->name))
+				{
+					DIAGS(("pCB_app_options: already defined"));
+					opts = &op->options;
+					break;
+				}
+				op = op->next;
 			}
-			op = op->next;
 		}
-		if (!op)
+		if (!opts)
 		{
 			op = kmalloc(sizeof(*op));
 			if (!op)
@@ -318,33 +402,38 @@ pCB_app_options(const char *line)
 				op->next = S.app_options;
 				S.app_options = op;
 				strcpy(op->name, s);
-				op->options = default_options;
+				opts = &op->options;
+				*opts = default_options;
+				
 			}
 		}
-		while ((s = get_string(&line)))
+		while ((s = get_commadelim_string(&line)))
 		{
 			if (!stricmp(s, "windowner"))
-				op->options.windowner = 1;
+				opts->windowner = 1;
 			else if (!stricmp(s, "nohide"))
-				op->options.nohide = true;
+				opts->nohide = true;
 			else if (!stricmp(s, "xa_nohide"))
-				op->options.xa_nohide = true;
+				opts->xa_nohide = true;
 			else if (!stricmp(s, "xa_nomove"))
-				op->options.xa_nomove = true;
+				opts->xa_nomove = true;
 			else if (!stricmp(s, "xa_none"))
-				op->options.xa_none = true;
+				opts->xa_none = true;
 			else if (!stricmp(s, "noleft"))
-				op->options.noleft = true;
+				opts->noleft = true;
 			else if (!stricmp(s, "thinwork"))
-				op->options.thinwork = true;
+				opts->thinwork = true;
 			else if (!stricmp(s, "nolive"))
-				op->options.nolive = true;
+				opts->nolive = true;
 			else if (!stricmp(s, "wheel_reverse"))
-				op->options.wheel_reverse = true;
+				opts->wheel_reverse = true;
 			else if (!stricmp(s, "naes"))
-				op->options.naes = true;
+				opts->naes = true;
 			else if (!stricmp(s, "naes12"))
-				op->options.naes12 = true;
+				opts->naes12 = true;
+			else if (!strnicmp(s, "winframe", 8))
+				get_argument(s + 8, (short *)&opts->thinframe);
+
 #if GENERATE_DIAGS
 			else
 				DIAGS(("pCB_app_options: unknown keyword %s", s));

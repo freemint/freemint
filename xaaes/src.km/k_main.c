@@ -636,7 +636,7 @@ k_main(void *dummy)
 	 *
 	 * XXX it's just very ugly todo this so
 	 */
-	// get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
+	//get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
 
 	/* initialize mouse */
 	if (!init_moose())
