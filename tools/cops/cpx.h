@@ -28,7 +28,11 @@
 
 #include <setjmp.h>
 #include <gemx.h>
+#if __GEMLIB_MAJOR__ != 0 || __GEMLIB_MINOR__ < 43 || __GEMLIB_REVISION__ < 2
+#error COPS require at least gemlib 0.43.2
+#endif
 #include "global.h"
+
 
 #define	PH_MAGIC 0x601a		/* Magic des Programmheaders */
 
@@ -260,15 +264,8 @@ typedef	struct cpx_desc
 	void	*start_of_cpx;	/* Startadresse des CPX im Speicher */
 	void	*end_of_cpx;	/* Endadresse des CPX im Speicher */
 
-#if 0
-	void	*sp_memory;	/* Start des Stackspeichers fuer den CPX-Kontext waehrend cpx_call() */
-
-	void	*context[16];	/* gesicherter Registerkontext */
-	void	*return_addr;	/* temporaere Ruecksprungadresse */
-#else
-	jmp_buf jb;
-	char *stack;
-#endif
+	jmp_buf	jb;		/* longjmp buffer for interrupted Xform_do */
+	char	*stack;		/* temporary malloced() stack */
 
 	CPXINFO	*info;		/* Zeiger auf CPXINFO-Struktur die bei cpx_call() zurueckgeliefert wird */
 
@@ -297,7 +294,7 @@ typedef	struct cpx_desc
 	int	selected;
 	short	flags;
 
-	/* Daten auf die das CPX Zugriff hat bzw. ueber Funktionen ädern kann */
+	/* cpx read/write accessible data */
 
 	GRECT	redraw_area;	/* Bereich den ein CPX nach WM_REDRAW neuzeichnen soll */
 	GRECT	dirty_area;	/* Bereich eines neuzuzeichnenden Rechtecks */
@@ -309,6 +306,7 @@ typedef	struct cpx_desc
 	struct cpxlist old;	/* Beschreibung fuer get_cpx_list */
 	struct xcpb xctrl_pb;	/* Parameterblock fuer das CPX */
 
+	/* cpx name */
 	char	file_name[0];
 
 } CPX_DESC;

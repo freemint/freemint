@@ -31,9 +31,7 @@
 #include "popup.h"
 
 
-typedef	void _cdecl (*XFRMP_INIT)(OBJECT *tree, short scrollpos, short nlines, void *param);
-
-static void _cdecl strs_init(OBJECT *tree, short scroll_pos, short nlines, void *param);
+static void _cdecl strs_init(struct POPUP_INIT_args);
 static short _cdecl draw_arrow(PARMBLK *parmblock);
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -169,7 +167,10 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 		if ((slct < 0) || (slct >= no_strs))
 			slct = 0;
 
-		strs_init(tree, scroll_pos, no_strs, (void *) &popup_par); /* String besetzen */
+		{
+			struct POPUP_INIT_args args = { tree, scroll_pos, no_strs, (void *) &popup_par };
+			strs_init(args); /* String besetzen */
+		}
 
 		tree->ob_y -= (slct - scroll_pos) * phchar; /* Popup nach oben verschieben */
 		slct = xfrm_popup(tree, 0, 0, 1, max_strs, no_strs, strs_init, (void *) &popup_par, &scroll_pos);
@@ -197,17 +198,17 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 /*	param:		Zeiger auf Parameterstruktur */
 /*----------------------------------------------------------------------------------------*/ 
 static void _cdecl
-strs_init(OBJECT *tree, short scroll_pos, short nlines, void *param)
+strs_init(struct POPUP_INIT_args args)
 {
 	OBJECT *obj;
 	PSTRS *popup_par;
 	short max_strs;
 	short i;
 
-	popup_par = (PSTRS *) param; /* Zeiger auf Parameterstruktur */
+	popup_par = (PSTRS *)args.param; /* Zeiger auf Parameterstruktur */
 	max_strs = popup_par->max_strs; /* Anzahl der sichtbaren Eintraege */
 
-	obj = tree + 1; /* erster G_STRING */
+	obj = args.tree + 1; /* erster G_STRING */
 
 	for (i = 1; i <= max_strs; i++) /* Objekte fuer die Strings erzeugen */
 	{
@@ -230,38 +231,38 @@ strs_init(OBJECT *tree, short scroll_pos, short nlines, void *param)
 			obj->ob_flags |= LASTOB;
 
 		obj->ob_state = NORMAL;
-		if ((i + scroll_pos - 1) == popup_par->slct) /* ausgewaehlter Eintrag? */
+		if ((i + args.scrollpos - 1) == popup_par->slct) /* ausgewaehlter Eintrag? */
 			obj->ob_state |= CHECKED;
 
 		obj->ob_spec.free_string = tmp; /* Zeiger auf den String */
 
 		obj->ob_x = 0;
 		obj->ob_y = (i - 1) * phchar;
-		obj->ob_width = tree->ob_width;
+		obj->ob_width = args.tree->ob_width;
 		obj->ob_height = phchar;
 
 		for (j = 0; j < popup_par->spaces; j++) /* Anfang mit Leerzeichen auffuellen */
 			*tmp++ = ' ';
 
-		strcpy(tmp, popup_par->strs[scroll_pos + i - 1]); /* String kopieren */
+		strcpy(tmp, popup_par->strs[args.scrollpos + i - 1]); /* String kopieren */
 
 		obj++;
 	}
 
 	if (popup_par->no_strs > MAX_STRS) /* scrollendes Popup? */
 	{
-		if (scroll_pos < (nlines - MAX_STRS)) /* nicht die letzte Zeile? */
+		if (args.scrollpos < (args.nlines - MAX_STRS)) /* nicht die letzte Zeile? */
 		{
-			obj = tree + MAX_STRS;			/* letzter G_STRING */
+			obj = args.tree + MAX_STRS;			/* letzter G_STRING */
 
 			obj->ob_type = G_USERDEF;		/* durch Userdef ersetzen */
 			obj->ob_state &= ~CHECKED;		/* kein Haeckchen */
 			obj->ob_spec.userblk = &dn_userdef;	/* mit Pfeil nach unten */
 		}
 
-		if (scroll_pos > 0) /* nicht die erste Zeile? */
+		if (args.scrollpos > 0) /* nicht die erste Zeile? */
 		{
-			obj = tree + 1;				/* erster G_STRING */
+			obj = args.tree + 1;				/* erster G_STRING */
 
 			obj->ob_type = G_USERDEF;		/* durch Userdef ersetzen */
 			obj->ob_state &= ~CHECKED;		/* kein Haeckchen */
