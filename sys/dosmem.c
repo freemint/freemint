@@ -51,7 +51,7 @@ sys_m_addalt (long start, long size)
 
 	for (x = 0; x < size; x += 0x2000)
 	{
-		if (test_long_rd((long *)start + x) == 0)
+		if (test_long_rd(start + (x * sizeof(long))) == 0)
 			return EFAULT;
 	}
 

@@ -48,6 +48,7 @@
 # include "cookie.h"
 # include "global.h"
 
+# include "arch/detect.h"
 # include "arch/mprot.h"
 
 # include "buildinfo/version.h"
@@ -110,6 +111,8 @@ init_cookies (void)
 	struct cookie *cookie;
 	unsigned short i = 0;
 	unsigned short ncookies = 0;
+	long mch_present = 0, vdo_present = 0, snd_present = 0;
+	long fdc_present = 0;
 	long ncsize;
 
 	cookie = oldcookie = *CJAR;
@@ -119,8 +122,35 @@ init_cookies (void)
 		{
 # ifdef OLDTOSFS
 			if (cookie->tag == COOKIE__FLK)
+			{
 				flk = 1;
+				TRACE(("_FLK cookie found, value %08lx", cookie->value));
+			}
 # endif
+			if (cookie->tag == COOKIE__MCH)
+			{
+				mch_present = 1;
+				TRACE(("_MCH cookie found, value %08lx", cookie->value));
+			}
+
+			if (cookie->tag == COOKIE__VDO)
+			{
+				vdo_present = 1;
+				TRACE(("_VDO cookie found, value %08lx", cookie->value));
+			}
+
+			if (cookie->tag == COOKIE__SND)
+			{
+				snd_present = 1;
+				TRACE(("_SND cookie found, value %08lx", cookie->value));
+			}
+
+			if (cookie->tag == COOKIE__FDC)
+			{
+				fdc_present = 1;
+				TRACE(("_FDC cookie found, value %08lx", cookie->value));
+			}
+
 			cookie++;
 			ncookies++;
 		}
@@ -165,17 +195,40 @@ init_cookies (void)
 	/* If there was no cookie jar, we install basic
 	 * Atari cookies, assuming we're on an old ST.
 	 */
-	if (!oldcookie)
+	if (!mch_present)
 	{
+		TRACE(("Installing _MCH cookie"));
 		newcookie[i].tag = COOKIE__MCH;
 		newcookie[i].value = 0x00000000L;
 		i++;
-		newcookie[i].tag = COOKIE__VDO;
-		newcookie[i].value = 0x00000000L;
-		i++;
-		newcookie[i].tag = COOKIE__SND;
-		newcookie[i].value = 0x00000000L;
-		i++;
+	}
+
+	if (!vdo_present)
+	{
+		/* Video sync mode on ST shifter */
+		if (test_byte_rd(0xffff820aL))
+		{
+			TRACE(("Installing _VDO cookie"));
+			newcookie[i].tag = COOKIE__VDO;
+			newcookie[i].value = 0x00000000L;
+			i++;
+		}
+	}
+
+	if (!snd_present)
+	{
+		if (test_byte_rd(0xffff8800L))
+		{
+			TRACE(("Installing _SND cookie"));
+			newcookie[i].tag = COOKIE__SND;
+			newcookie[i].value = 0x00000000L;
+			i++;
+		}
+	}
+	
+	if (!fdc_present)
+	{
+		TRACE(("Installing _FDC cookie"));
 		newcookie[i].tag = COOKIE__FDC;
 		newcookie[i].value = 0x00415443L;	/* 720k Atari drive */
 		i++;
@@ -234,12 +287,14 @@ init_cookies (void)
 
 	/* jr: install PMMU cookie if memory protection is used
 	 */
+# ifndef NO_MMU
 	if (!no_mem_prot)
 	{
 		newcookie[i].tag   = COOKIE_PMMU;
 		newcookie[i].value = 0;
 		i++;
 	}
+# endif
 
 	/* the last cookie should have a 0 tag, and a value indicating
 	 * the number of slots, total
