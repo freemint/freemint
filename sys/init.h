@@ -18,6 +18,7 @@ extern short step_by_step;
 
 void	boot_print	(const char *s);
 void	boot_printf	(const char *fmt, ...);
+void	stop_and_ask	(void);
 
 void	new_xbra_install(long *xv, long addr, long _cdecl (*func)());
 

@@ -580,39 +580,10 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 		case S_LOADKBD:
 		{
-			if (isroot == 0)
-				r = EPERM;
+			if (isroot)
+				r = load_keyboard_table((const char *)arg1, 0);
 			else
-			{
-				/* The 'flag' argument is:
-				 * 0x01 - don't load the TOS table on failure
-				 * 0x02 - don't generate any messages
-				 */
-				if (arg1)
-					r = load_keyboard_table((char *)arg1, 2+1);
-				else
-				{
-					/* Passing NULL should reload the power-up table */
-					char kname[32];
-
-					ksprintf(kname, sizeof(kname), "%skeyboard.tbl", sysdir);
-
-					/* Note that if there is no such file, the TOS BIOS
-					 * table will be loaded.
-					 */
-					r = load_keyboard_table(kname, 2);
-				}
-				/* load_keyboard_table() returns positive size of the table,
-				 * or a zero for failure.
-				 */
-				if (r > 0)
-				{
-					sys_b_bioskeys();
-					r = 0;
-				}
-				else
-					r = -1;
-			}
+				r = EPERM;
 			break;
 		}
 # endif
@@ -649,7 +620,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		 */
 		case S_DEBUGLEVEL:
 		{
-			if (isroot == 0)	r = EPERM;
+			if (!isroot)		r = EPERM;
 			else if (arg1 == -1)	r = debug_level;
 			else if (arg1 >= 0)	debug_level = arg1;
 			else			r = EBADARG;
@@ -658,7 +629,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_DEBUGDEVICE:
 		{
-			if (isroot == 0)	r = EPERM;
+			if (!isroot)		r = EPERM;
 			else if (arg1 == -1)	r = out_device;
 			else if (arg1 >= 0 && arg1 <= 9) out_device = arg1;
 			else			r = EBADARG;
