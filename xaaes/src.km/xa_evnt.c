@@ -241,6 +241,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	bool mu_butt_p = 0;			/* Ozk 040503: Need to know if MU_BUTTON came from a pending button event
 						 * or checking current button state in mu_button */
 	short events = pb->intin[0];
+	short x, y;
 	unsigned long ret = XAC_BLOCK;		/* HR: another example of choosing inconvenient default fixed. */
 	int new_waiting_for = 0,
 	    fall_through = 0,
@@ -372,8 +373,8 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->em.m1 = *r;
 			client->em.flags = pb->intin[4] | MU_M1;
 			DIAG((D_multi,client,"    M1 rectangle: %d/%d,%d/%d, flag: 0x%x: %s", r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
-			exclusive_mouse_input(client, 1, 0,0,0); //get_mouse(4);
-			if (mouse_ok(client) && is_rect(mu_button.x, mu_button.y, client->em.flags & 1, &client->em.m1))
+			exclusive_mouse_input(client, 1, 0, &x, &y); //get_mouse(4);
+			if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
 				fall_through    |= MU_M1;
 			else
 				new_waiting_for |= MU_M1;
@@ -392,8 +393,8 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->em.m2 = *r;
 			client->em.flags |= (pb->intin[9] << 1) | MU_M2;
 			DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s", r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
-			exclusive_mouse_input(client, 1, 0,0,0); //get_mouse(5);
-			if (mouse_ok(client) && is_rect(mu_button.x, mu_button.y, client->em.flags & 2, &client->em.m2))
+			exclusive_mouse_input(client, 1, 0, &x, &y); //get_mouse(5);
+			if (mouse_ok(client) && is_rect(x, y, client->em.flags & 2, &client->em.m2))
 				fall_through    |= MU_M2;
 			else
 				new_waiting_for |= MU_M2;
@@ -609,6 +610,7 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	short x, y;
 	CONTROL(5,5,0)
 
 	/* Flag the app as waiting for messages */
@@ -620,8 +622,8 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->em.m1 = *((const RECT *) &pb->intin[1]);
 	client->em.flags = (long)(pb->intin[0]) | MU_M1;
 
-	exclusive_mouse_input(client, 1, 0,0,0); //get_mouse(6);
-	if (mouse_ok(client) && is_rect(mu_button.x, mu_button.y, client->em.flags & 1, &client->em.m1))
+	exclusive_mouse_input(client, 1, 0, &x, &y); //get_mouse(6);
+	if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
 	{
 		multi_intout(client, pb->intout, 0);
 		pb->intout[0] = 1;

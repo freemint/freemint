@@ -752,8 +752,10 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 			bound.w = root_window->r.w*3;
 			bound.h = root_window->r.h*2;
 
+			lock_screen(wind->owner, 0, 0, 1234);
 			drag_box(wind->owner, r, &bound, rect_dist(wind->owner, &r, &d), &r);
-			
+			unlock_screen(wind->owner, 1235);
+
 			if (r.x != wind->r.x || r.y != wind->r.y)
 			{
 				if (wind->send_message)
@@ -1125,6 +1127,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		/* Always have a nice consistent SIZER when resizing a window */
 		graf_mouse(border_mouse[xy], NULL);
 
+		lock_screen(wind->owner, 0, 0, 1234);
 		rubber_box(wind->owner, xy,
 		           r,
 			   rect_dist(wind->owner, &r, &d),
@@ -1133,6 +1136,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			   use_max ? wind->max.w : root_window->wa.w,
 			   use_max ? wind->max.h : root_window->wa.h,
 			   &r);
+		unlock_screen(wind->owner, 1234);
 
 		move = r.x != wind->r.x || r.y != wind->r.y,
 		size = r.w != wind->r.w || r.h != wind->r.h;

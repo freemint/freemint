@@ -175,6 +175,8 @@ extern struct options local_options;
 
 extern XA_PENDING_WIDGET widget_active;
 
+extern short x_mouse;
+extern short y_mouse;
 extern BUTTON button;
 extern BUTTON mu_button;
 

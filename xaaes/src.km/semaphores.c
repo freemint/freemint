@@ -26,7 +26,7 @@
 
 #include "semaphores.h"
 #include "xa_types.h"
-
+#include "xa_global.h"
 #include "debug.h"
 
 
@@ -140,13 +140,23 @@ free_mouse_lock(void)
 bool
 lock_screen(struct xa_client *client, bool try, short *ret, int which)
 {
-	DIAG((D_sema, NULL, "[%d]lock_screen for %s, state: %d for %d",
-		which, c_owner(client), update_lock.counter,
+	int pid;
+	struct xa_client *locker;
+
+	pid = p_getpid();
+
+	if (client != C.Aes && C.Aes->p->pid == pid)
+		locker = C.Aes;
+	else
+		locker = client;
+		
+	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s by (%d)%s, state: %d for %d",
+		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), update_lock.counter,
 		update_lock.client ? update_lock.client->p->pid : -1));
 
 	if (try)
 	{
-		if (ressource_semaphore_try(&update_lock, client))
+		if (ressource_semaphore_try(&update_lock, locker))
 			return true;
 
 		if (ret)
@@ -155,7 +165,8 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 		return false;
 	}
 
-	ressource_semaphore_lock(&update_lock, client);
+	ressource_semaphore_lock(&update_lock, locker);
+
 	return true;
 }
 
@@ -163,15 +174,25 @@ bool
 unlock_screen(struct xa_client *client, int which)
 {
 	bool r = false;
+	int pid;
+	struct xa_client *locker;
 
-	DIAG((D_sema, NULL, "[%d]unlock_screen for %s, state: %d for %d",
-		which, c_owner(client), update_lock.counter,
+	pid = p_getpid();
+
+	if (client != C.Aes && C.Aes->p->pid == pid)
+		locker = C.Aes;
+	else
+		locker = client;
+	
+	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s by (%d)%s, state: %d for %d",
+		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), update_lock.counter,
 		update_lock.client ? update_lock.client->p->pid : -1));
 
-	if (update_lock.client == client)
-		r = ressource_semaphore_rel(&update_lock, client);
+	if (update_lock.client == locker)
+		r = ressource_semaphore_rel(&update_lock, locker);
 	else
-		ALERT(("unlock_screen from %d without lock_screen!", client->p->pid));
+		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", locker->p->pid));
+		//ALERT(("unlock_screen from %d without lock_screen!", locker->p->pid));
 
 	return r;
 }
@@ -179,13 +200,22 @@ unlock_screen(struct xa_client *client, int which)
 bool
 lock_mouse(struct xa_client *client, bool try, short *ret, int which)
 {
-	DIAG((D_sema, NULL, "[%d]lock_mouse for %s, state: %d for %d",
-		which, c_owner(client), mouse_lock.counter,
+	int pid;
+	struct xa_client *locker;
+
+	pid = p_getpid();
+	if (client != C.Aes && C.Aes->p->pid == pid)
+		locker = C.Aes;
+	else
+		locker = client;
+
+	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s by (%d)%s, state: %d for %d",
+		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), mouse_lock.counter,
 		mouse_lock.client ? mouse_lock.client->p->pid : -1));
 
 	if (try)
 	{
-		if (ressource_semaphore_try(&mouse_lock, client))
+		if (ressource_semaphore_try(&mouse_lock, locker))
 			return true;
 
 		if (ret)
@@ -194,7 +224,7 @@ lock_mouse(struct xa_client *client, bool try, short *ret, int which)
 		return false;
 	}
 
-	ressource_semaphore_lock(&mouse_lock, client);
+	ressource_semaphore_lock(&mouse_lock, locker);
 	return true;
 }
 
@@ -202,15 +232,24 @@ bool
 unlock_mouse(struct xa_client *client, int which)
 {
 	bool r = false;
+	int pid;
+	struct xa_client *locker;
 
-	DIAG((D_sema, NULL, "[%d]unlock_mouse for %s, state: %d for %d",
-		which, c_owner(client), mouse_lock.counter,
+	pid = p_getpid();
+	if (client != C.Aes && C.Aes->p->pid == pid)
+		locker = C.Aes;
+	else
+		locker = client;
+
+	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s by (%d)%s, state: %d for %d",
+		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), mouse_lock.counter,
 		mouse_lock.client ? mouse_lock.client->p->pid : -1));
 
-	if (update_lock.client == client)
-		r = ressource_semaphore_rel(&mouse_lock, client);
+	if (!update_lock.client || update_lock.client == locker)
+		r = ressource_semaphore_rel(&mouse_lock, locker);
 	else
-		ALERT(("unlock_mouse from %d without lock_screen!", client->p->pid));
+		DIAG((D_sema, NULL, "unlock_mouse from %d without lock_screen!", locker->p->pid));
+		//ALERT(("unlock_mouse from %d without lock_screen!", locker->p->pid));
 
 	return r;
 }
