@@ -1441,11 +1441,10 @@ ob_border_diff(OBJECT *obtree, short obj1, short obj2, RECT *r)
 	r->h = r1.h - r2.h;
 }
 
-int
+void
 ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 {
 	short type = obtree[obj].ob_type & 0xff;
-	int ret = 1;
 
 	switch (type)
 	{
@@ -1471,13 +1470,49 @@ ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 		}
 		default:
 		{
-			ret = 0;
+			*r = *(RECT *)&(obtree[obj].ob_x);
 			break;
 		}
 	}
-	return ret;
 }
 
+void
+object_spec_wh(OBJECT *ob, short *w, short *h)
+{
+	short type = ob->ob_type & 0xff;
+	switch (type)
+	{
+		case G_IMAGE:
+		{
+			BITBLK *bb = object_get_spec(ob)->bitblk;
+			
+			*w = bb->bi_wb;
+			*h = bb->bi_hl;
+			break;
+		}
+		case G_ICON:
+		{
+			ICONBLK *ib = object_get_spec(ob)->iconblk;
+
+			*w = ib->ib_wicon;
+			*h = ib->ib_hicon;
+			break;
+		}
+		case G_CICON:
+		{
+			CICONBLK *cb = object_get_spec(ob)->ciconblk;
+			*w = cb->monoblk.ib_wicon;
+			*h = cb->monoblk.ib_hicon;
+			break;
+		}
+		default:
+		{
+			*w = ob->ob_width;
+			*h = ob->ob_height;
+			break;
+		}
+	}
+}
 
 /*
  * Find which object is at a given location

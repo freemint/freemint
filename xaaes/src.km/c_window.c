@@ -622,7 +622,7 @@ struct xa_window_colours def_otop_wc =
  { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE,	G_WHITE,	FIS_SOLID,	0,	G_LBLACK,	G_BLACK},	/* Info */
 /* flags	                    fontID	    size	   Effect     forground	       background	*/
 /*								                   col	          col		*/
- { 0,		      		        1,	      9,		0,	G_BLACK,	G_WHITE },		/* Info text info */
+ { 0,		      		        1,	       9,		0,	G_BLACK,	G_WHITE },		/* Info text info */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* closer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* hider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,	G_LWHITE,	FIS_SOLID,	0,	G_WHITE,	G_LBLACK },	/* iconify */
@@ -1090,13 +1090,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	return 1;
 }
 
-static void
-if_bar(short pnt[4])
-{
-	if ((pnt[2] - pnt[0]) >= 0 && (pnt[3] - pnt[1]) >= 0)
-		v_bar(C.vh, pnt);
-}
-
 /* 
  *About to remove this..
  */
@@ -1183,7 +1176,6 @@ draw_window(enum locks lock, struct xa_window *wind, RECT *clip)
 		}
 		else
 		{
-			short pnt[8];
 			RECT tcl;
 
 			f_color(screen.dial_colours.bg_col);
@@ -1192,30 +1184,17 @@ draw_window(enum locks lock, struct xa_window *wind, RECT *clip)
 			tcl = cl;
 			if (wind->frame > 0)
 			{
+				int i;
 				l_color(wind->colours->frame_col);
-				gbox(0, &cl);
-				tcl.x++;
-				tcl.y++;
-				tcl.w -= 2;
-				tcl.h -= 2;
+				for (i = 0; i < wind->frame; i++)
+				{
+					gbox(0, &tcl);
+					tcl.x++;
+					tcl.y++;
+					tcl.w -= 2;
+					tcl.h -= 2;
+				}
 			}
-			
-			pnt[0] = tcl.x;
-			pnt[1] = tcl.y;
-			pnt[2] = tcl.x + tcl.w - 1;
-			pnt[3] = wa.y - 1;
-		//	if_bar(pnt); 			/* top */
-			pnt[1] = wa.y + wa.h;
-			pnt[3] = tcl.y + tcl.h - 1;
-		//	if_bar(pnt);			/* bottom */
-			pnt[0] = tcl.x;
-			pnt[1] = tcl.y;
-			pnt[2] = wa.x - 1;
-		//	if_bar(pnt);			/* left */
-			pnt[0] = wa.x + wa.w;
-			pnt[2] = tcl.x + tcl.w - 1;
-		//	if_bar(pnt);			/* right */
-
 			/* Display the work area */
 
 			if (MONO)

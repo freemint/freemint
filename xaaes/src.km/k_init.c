@@ -275,13 +275,13 @@ k_init(void)
 	 * If we are using anything apart from the system font for windows,
 	 * better check for GDOS and load the fonts.
 	 */
-	if (cfg.font_id != 1)
-	{
+	//if (cfg.font_id != 1)
+	//{
 		if (vq_gdos())	/* Yeah, I know, this is assuming the old-style vq_gdos() binding */
 			vst_load_fonts(C.vh, 0);
 		else
 			cfg.font_id = 1;
-	}
+	//}
 
 	/*
 	 * Set standard AES font
@@ -363,8 +363,7 @@ k_init(void)
 	{
 		RECT c;
 		OBJECT *tree = ResourceTree(widget_resources, 0);
-		if (!ob_spec_xywh(tree, 1, &c))
-			ob_area(tree, 1, &c);
+		ob_spec_xywh(tree, 1, &c);
 		
 		cfg.widg_w = c.w;
 		cfg.widg_h = c.h;
