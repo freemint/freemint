@@ -349,7 +349,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			tmp[1] = ':';
 			if (source[1] == ':')
 			{
-				tmp[0] = toupper(source[0]);
+				tmp[0] = toupper((int)source[0] & 0xff);
 				source += 2;
 			}
 			else

@@ -667,7 +667,7 @@ boot_kernel_p (void)
 	
 	Cconws(MSG_init_askmenu);
 	y = (int) Cconin();
-	if (tolower (y) == MSG_init_menu_no[0])
+	if (tolower (y & 0xff) == MSG_init_menu_no[0])
 		return 1;
 
 	option[0] = 1;			/* Load MiNT or not */
