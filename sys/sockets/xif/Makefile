@@ -55,60 +55,51 @@ entry: $(LIBKERNTARGET) $(DRIVERS)
 # generic driver target
 $(TARGET): $(XOBJS) $(LIBKERNSTMP)
 	$(LD) $(CFLAGS) -o $@ $(XOBJS) $(LIBS)
-	$(FLAGS) $(PRGFLAGS) $@
 	$(STRIP) $@
 
 
 dial:
 	$(MAKE) dial.xif \
 		"TARGET=dial.xif" \
-		"XOBJS=$(COMMON_OBJS) $(DIAL_OBJS)" \
-		"PRGFLAGS=--msuper-memory"
+		"XOBJS=$(COMMON_OBJS) $(DIAL_OBJS)"
 
 slip:
 	$(MAKE) slip.xif \
 		"TARGET=slip.xif" \
-		"XOBJS=$(COMMON_OBJS) $(SLIP_OBJS)" \
-		"PRGFLAGS=--msuper-memory"
+		"XOBJS=$(COMMON_OBJS) $(SLIP_OBJS)"
 
 plip:
 	$(MAKE) plip.xif \
 		"TARGET=plip.xif" \
-		"XOBJS=$(COMMON_OBJS) $(PLIP_OBJS)" \
-		"PRGFLAGS=--msuper-memory"
+		"XOBJS=$(COMMON_OBJS) $(PLIP_OBJS)"
 
 de600:
 	$(MAKE) de600.xif \
 		"TARGET=de600.xif" \
-		"XOBJS=$(COMMON_OBJS) $(DE600_OBJS)" \
-		"PRGFLAGS=--msuper-memory"
+		"XOBJS=$(COMMON_OBJS) $(DE600_OBJS)"
 
 dummy:
 	$(MAKE) dummy.xif \
 		"TARGET=dummy.xif" \
-		"XOBJS=$(COMMON_OBJS) $(DUMMY_OBJS)" \
-		"PRGFLAGS=--msuper-memory"
+		"XOBJS=$(COMMON_OBJS) $(DUMMY_OBJS)"
 
 lance:
 	$(MAKE) lance.xif \
 		"TARGET=lance.xif" \
 		"XOBJS=$(COMMON_OBJS) $(LANCE_OBJS)" \
-		"DEFINITIONS=-DPAMs_INTERN" \
-		"PRGFLAGS=--msuper-memory"
+		"DEFINITIONS=-DPAMs_INTERN"
 
 rieblspc:
 	$(MAKE) rieblspc.xif \
 		"TARGET=rieblspc.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_OBJS)" \
-		"DEFINITIONS=-DSPECIAL -DHACK" \
-		"PRGFLAGS=--msuper-memory"
+		"DEFINITIONS=-DSPECIAL -DHACK"
 
 rieblspc_fast:
 	$(MAKE) rieblspc_fast.xif \
 		"TARGET=rieblspc_fast.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_FAST_OBJS)" \
-		"DEFINITIONS=-DSPECIAL" \
-		"PRGFLAGS=--msuper-memory"
+		"DEFINITIONS=-DSPECIAL"
 
 rieblmst:
 	$(MAKE) rieblmst.xif \
@@ -121,28 +112,24 @@ rieblmst_fast:
 	$(MAKE) rieblmst_fast.xif \
 		"TARGET=rieblmst_fast.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_MST_FAST_OBJS)" \
-		"DEFINITIONS=-DMEGA_ST" \
-		"PRGFLAGS=--msuper-memory"
+		"DEFINITIONS=-DMEGA_ST"
 
 rieblste:
 	$(MAKE) rieblste.xif \
 		"TARGET=rieblste.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_MSTE_OBJS)" \
-		"DEFINITIONS=-DMEGA_STE" \
-		"PRGFLAGS=--msuper-memory"
+		"DEFINITIONS=-DMEGA_STE"
 
 riebltt:
 	$(MAKE) riebltt.xif \
 		"TARGET=riebltt.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_TT_OBJS)" \
-		"DEFINITIONS=-DATARI_TT" \
-		"PRGFLAGS=--msuper-memory"
+		"DEFINITIONS=-DATARI_TT"
 
 pamsdma:
 	$(MAKE) pamsdma.xif \
 		"TARGET=pamsdma.xif" \
-		"XOBJS=$(COMMON_OBJS) $(PAMSDMA_OBJS)" \
-		"PRGFLAGS=--msuper-memory --mno-fastram --mno-fastalloc"
+		"XOBJS=$(COMMON_OBJS) $(PAMSDMA_OBJS)"
 
 #biodma: remove the XCPPFLAGS line if you want to speed up things a little bit.
 #        Please notice that standard mode is more reliable especially on faster
@@ -151,23 +138,20 @@ biodma:
 	$(MAKE) biodma.xif \
 		"TARGET=biodma.xif" \
 		"XOBJS=$(COMMON_OBJS) $(BIODMA_OBJS)" \
-		"DEFINITIONS=-DSTANDARD_SEND_FIRST" \
-		"PRGFLAGS=--msuper-memory --mno-fastram --mno-fastalloc"
+		"DEFINITIONS=-DSTANDARD_SEND_FIRST"
 
 rtl8012:
 	$(RM) $(RTL8012_OBJS)
 	$(MAKE) rtl8012.xif \
 		"TARGET=rtl8012.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
-		"PRGFLAGS=--msuper-memory" \
+		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)"
 		CPU=020-60
 
 rtl8012st:
 	$(RM) $(RTL8012_OBJS)
 	$(MAKE) rtl8012st.xif \
 		"TARGET=rtl8012st.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
-		"PRGFLAGS=--msuper-memory"
+		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)"
 
 
 include $(top_srcdir)/DEPENDENCIES
