@@ -60,7 +60,7 @@ print_long(pid_t pid, long data)
 }
 
 void
-print_pointer(pid_t pid, void *data)
+print_pointer(pid_t pid, const void *data)
 {
 	if (data)
 		printf("%p", data);
@@ -92,7 +92,7 @@ copy_character(char *dst, char *end, int c)
 }
 
 void
-print_string(pid_t pid, char *data)
+print_string(pid_t pid, const char *data)
 {
 	char *buf;
 	size_t buflen;
@@ -133,7 +133,7 @@ print_string(pid_t pid, char *data)
 /* special types */
 
 static void
-copy_bytes(pid_t pid, char *start, unsigned char *buf, size_t len)
+copy_bytes(pid_t pid, const char *start, unsigned char *buf, size_t len)
 {
 	size_t i = 0, ibuf = 0;
 	
@@ -150,31 +150,31 @@ copy_bytes(pid_t pid, char *start, unsigned char *buf, size_t len)
 }
 
 void
-print_struct_dtabuf(pid_t pid, void *data)
+print_struct_dtabuf(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_xattr(pid_t pid, void *data)
+print_struct_xattr(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_stat(pid_t pid, void *data)
+print_struct_stat(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_sigaction(pid_t pid, void *data)
+print_struct_sigaction(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_timeval(pid_t pid, void *data)
+print_struct_timeval(pid_t pid, const void *data)
 {
 	struct timeval tv;
 	
@@ -184,19 +184,19 @@ print_struct_timeval(pid_t pid, void *data)
 }
 
 void
-print_struct_timezone(pid_t pid, void *data)
+print_struct_timezone(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_pollfd(pid_t pid, void *data)
+print_struct_pollfd(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_iovec(pid_t pid, void *data)
+print_struct_iovec(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
@@ -204,7 +204,7 @@ print_struct_iovec(pid_t pid, void *data)
 extern char *inet_ntoa (struct in_addr);
 
 void
-print_struct_sockaddr(pid_t pid, void *data)
+print_struct_sockaddr(pid_t pid, const void *data)
 {
 	struct sockaddr sa;
 	
@@ -245,31 +245,31 @@ print_struct_sockaddr(pid_t pid, void *data)
 
 
 void
-print_struct_msghdr(pid_t pid, void *data)
+print_struct_msghdr(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_shmid_ds(pid_t pid, void *data)
+print_struct_shmid_ds(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_union___semun(pid_t pid, void *data)
+print_union___semun(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_sembuf(pid_t pid, void *data)
+print_struct_sembuf(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
 
 void
-print_struct_msqid_ds(pid_t pid, void *data)
+print_struct_msqid_ds(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }

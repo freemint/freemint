@@ -29,6 +29,8 @@ MASTER = $(top_srcdir)/../sys/syscalls.master
 DEFINITIONS += -D_GNU_SOURCE
 LIBS += -lsocket
 
+NOCFLAGS-print.c = -Wcast-qual
+
 # default definitions
 OBJS = $(COBJS:.c=.o)
 OBJS += sysenttab.o
