@@ -37,19 +37,18 @@
 
 # include "buf.h"
 # include "inet4/init.h"
-# include "unix/unix.h"
 
 # include "version.h"
 
-# include <mint/dcntl.h>
-# include <mint/file.h>
+# include "mint/dcntl.h"
+# include "mint/file.h"
 
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR)
 # define MSG_BUILDDATE	__DATE__
 
 # define MSG_BOOT	\
-	"\033p MiNT-Net " MSG_VERSION " PL " str (VER_PL) ", " VER_STATUS " \033q\r\n"
+	"\033p MiNT-Net TCP/IP " MSG_VERSION " PL " str (VER_PL) ", " VER_STATUS " \033q\r\n"
 
 # define MSG_GREET	\
 	"½ 1993-96 by Kay Roemer.\r\n" \
@@ -71,7 +70,6 @@
 
 static void (*init_func[])(void) =
 {
-	unix_init,
 	inet4_init,
 	NULL
 };
