@@ -158,14 +158,10 @@ post_sig (PROC *p, ushort sig)
 		return;
 	
 	/* Init cannot be killed or stopped.  */
-	/* BUG: there should be a real way to determine whether this
-	 * is AES or not.
-	 */
 	if (p->pid == 1 && (sig == SIGKILL || sig == SIGSTOP))
 	{
-		if (_mint_strcmp ("AESSYS", p->name) != 0)
-			/* Ignore! */
-			return;
+		/* Ignore! */
+		return;
 	}
 	
 	/* Also avoid killing our update daemon.  What about "sld" started
