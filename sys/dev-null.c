@@ -53,22 +53,32 @@
 
 DEVDRV null_device =
 {
-	null_open,
-	null_write, null_read, null_lseek,
-	null_ioctl, null_datime,
-	null_close,
-	null_select, null_unselect,
-	NULL, NULL
+	open:		null_open,
+	write:		null_write,
+	read:		null_read,
+	lseek:		null_lseek,
+	ioctl:		null_ioctl,
+	datime:		null_datime,
+	close:		null_close,
+	select:		null_select,
+	unselect:	null_unselect,
+	writeb:		NULL,
+	readb:		NULL
 };
 
 DEVDRV zero_device =
 {
-	null_open,
-	null_write, zero_read, null_lseek,
-	zero_ioctl, null_datime,
-	null_close,
-	null_select, null_unselect,
-	NULL, NULL
+	open:		null_open,
+	write:		null_write,
+	read:		zero_read,
+	lseek:		null_lseek,
+	ioctl:		zero_ioctl,
+	datime:		null_datime,
+	close:		null_close,
+	select:		null_select,
+	unselect:	null_unselect,
+	writeb:		NULL,
+	readb:		NULL
 };
 
 
