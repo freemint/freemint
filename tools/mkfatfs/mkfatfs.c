@@ -36,6 +36,10 @@
  * 
  * last changes:
  * 
+ * 2000-06-14:	(v0.24)
+ * 
+ * - fix: for DOS partitions use fixed Adaptec mapping
+ * 
  * 2000-06-14:	(v0.23)
  * 
  * - new: replaced old XHDI wrapper with new 32bit clean version
@@ -93,7 +97,7 @@ extern int optind;
 # include "bswap.h"
 
 
-# define VERSION	"0.23"
+# define VERSION	"0.24"
 # define DEBUG(x)	printf x
 # define INLINE		static inline
 
@@ -743,8 +747,8 @@ get_geometry (void)
 	printf ("\n");
 	
 	/* Set up the geometry information */
-	BOOT.secs_track = 0; /* geometry.sectors; */
-	BOOT.heads = 0; /* geometry.heads; */
+	BOOT.secs_track = 63; /* geometry.sectors; */
+	BOOT.heads = 255; /* geometry.heads; */
 	
 	/* Set up the media descriptor for a hard drive */
 	BOOT.media = (char) 0xf8;

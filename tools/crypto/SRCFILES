@@ -1,0 +1,7 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = bf_tab.h blowfish.h crypt.h io.h md5.h
+COBJS = blowfish.c crypt.c io.c main.c md5.c
+
+SRCFILES = $(HEADER) $(COBJS)
