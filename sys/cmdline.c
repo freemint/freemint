@@ -137,60 +137,32 @@ make_real_cmdline (PROC *p)
 # ifdef ONLY030
 			if (*(ushort *)from == 0)
 				break;
-
-# define _CMDL_ARGV	0x41524756L
-
-			if (*(ulong *)from == _CMDL_ARGV \
-				&& from[4] == '=' \
-				&& (from == env || from[-1] == '\0'))
-			{
-				argv = from;
-				break;
-			}
-
 # else
 			if (from[0] == '\0' && from[1] == '\0')
 				break;
-
-			if (from[0] == 'A' && from[1] == 'R'
-				&& from[2] == 'G' && from[3] == 'V'
-				&& from[4] == '='
+# endif
+			if (from[0] == 'A' && from[1] == 'R' && from[2] == 'G' \
+				&& from[3] == 'V' && from[4] == '=' \
 				&& (from == env || from[-1] == '\0'))
 			{
 				argv = from;
 				break;
 			}
-# endif
 			from++;
 		}
 
 		if (argv != NULL)
 		{
 			TRACE (("make_real_cmdline: ARGV found"));
-			from += 5;
+			from += (sizeof("ARGV=") - 1);
 
 			/* Check for null list */
-# ifdef ONLY030
-
-# define _CMDL_NULL	0x4e554c4cL
-
-			if (*(ulong*)from == _CMDL_NULL
-				&& from[4] == ':')
+			if (from[0] == 'N' && from[1] == 'U' \
+				&& from[2] == from[3] == 'L' && from[4] == ':')
 			{
-				from += 5;
+				from += (sizeof("NULL:") - 1);
 				null_list = from;
 			}
-# else
-			if (from[0] == 'N'
-				&& from[1] == 'U'
-				&& from[2] == 'L'
-				&& from[3] == 'L'
-				&& from[4] == ':')
-			{
-				from += 5;
-				null_list = from;
-			}
-# endif
 			while (*from++)
 				;
 
