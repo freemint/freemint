@@ -1709,18 +1709,6 @@ rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
 		else
 			DIAGS((" -- RW: skipping root window"));
 #endif
-#if 0								
-		if (wl != root_window && wl->owner == client)
-		{
-			if (wl->window_status & XAWS_OPEN)
-			{
-				DIAGS(("-- RW: closing %lx", wl));
-				close_window(lock, wl);
-			}
-			DIAGS(("-- RW: deleting %lx", wl));
-			delete_window(lock, wl);
-		}
-#endif
 		wl = nwl;
 	}
 }
@@ -1793,6 +1781,10 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
  * Also changed fmd.lock usage to additive flags.
  */
 
+/*
+ * Ozk: XA_wind_update() may be called by processes not yet called
+ * appl_init(). So, it must not depend on client being valid!
+ */
 
 unsigned long
 XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)

@@ -1112,7 +1112,7 @@ XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 			pb->intout[0] = 0;
 	}
-	else
+	else /* ozk: if no client, we assume everythings OK */
 		pb->intout[0] = 1;
 		
 
