@@ -1816,7 +1816,6 @@ struct km_trace
 static struct km_trace km_trace[KM_TRACE_LEN];
 static long km_trace_used = 0;
 static long km_trace_first_free = 0;
-static long km_trace_last_used = 0;
 
 static void
 km_trace_register(void *ptr, unsigned long size, const char *func)
@@ -1832,9 +1831,6 @@ km_trace_register(void *ptr, unsigned long size, const char *func)
 			km_trace[i].ptr = ptr;
 			km_trace[i].size = size;
 			km_trace[i].func = func;
-
-			if (km_trace_last_used < i)
-				km_trace_last_used = i + 1;
 
 			return;
 		}
@@ -1857,7 +1853,7 @@ km_trace_unregister(void *ptr)
 {
 	long i;
 
-	for (i = 0; i < km_trace_last_used; i++)
+	for (i = 0; i < KM_TRACE_LEN; i++)
 	{
 		if (km_trace[i].ptr == ptr)
 		{
@@ -1868,16 +1864,13 @@ km_trace_unregister(void *ptr)
 			if (km_trace_first_free > i)
 				km_trace_first_free = i;
 
-			if (i == (km_trace_last_used - 1))
-			{
-				while (km_trace[--i].ptr == NULL)
-					;
-
-				km_trace_last_used = i + 1;
-			}
-
 			break;
 		}
+	}
+
+	if (i == KM_TRACE_LEN)
+	{
+		KM_FORCE(("KM_TRACE: unregister failed?!"));
 	}
 }
 
@@ -1943,9 +1936,8 @@ km_trace_lookup(void *ptr, char *buf, unsigned long buflen)
 
 	KM_FORCE(("km_trace_used: %li", km_trace_used));
 	KM_FORCE(("km_trace_first_free: %li", km_trace_first_free));
-	KM_FORCE(("km_trace_last_used: %li", km_trace_last_used));
 
-	for (i = 0; i < km_trace_last_used; i++)
+	for (i = 0; i < KM_TRACE_LEN; i++)
 	{
 		const unsigned long block = (long)km_trace[i].ptr;
 
