@@ -14,28 +14,88 @@
 nulltc:
 	dc.l	0
 
-	.globl	_set_mmu
-
 	.text
 
+	.globl	_set_mmu
+	.globl	_offset_tt_ram
+
 _set_mmu:
-	pflusha
+	tst.l	_offset_tt_ram
+	beq	normal_set
+	movem.l	d0-d2/a0-a2,-(sp)
+        move.l	#end_set_mmu_called_st_ram - set_mmu_called_st_ram,d1
+        clr.w	-(sp)			// ST-ram
+        move.l	d1,-(sp)
+        move.w	#68,-(sp)		// Mxalloc
+        trap	#1
+        addq.l	#8,sp
+	tst.l	d0
+        beq	normal_set		// no ST-ram
+	move.l	d0,a2
+	move.l	28(sp),crp2		// save crp & tc in ST-ram
+	move.l	32(sp),crp2+4
+	move.l	36(sp),tc2
+	lea	set_mmu_called_st_ram,a0
+	move.l	a2,a1
+        lsr.l	#1,d1
+        subq.l	#1,d1
+copy_st_ram:
+	move.w	(a0)+,(a1)+
+	dbf	d1,copy_st_ram
+        move.w	sr,-(sp)
+        or.w	#0x700,sr		// interrupts locked
+        movec	cacr,d0
+        or.w	#0x808,d0		// clear 030 caches
+        movec	d0,cacr
+	jsr	(a2)			// set_mmu called in ST-ram
+	move.w	(sp)+,sr   		// interrupts unlocked
+	pea	(a2)
+	move	#73,-(sp)		// Mfree
+	trap	#1
+	addq.l	#6,sp
+	movem.l	(sp)+,d0-d2/a0-a2
+	rts
+normal_set:
 	pmove	(nulltc).l,tc		// turn off mmu
 	dc.l	0xf0390800,nulltc	// pmove nulltc,tt0
 	dc.l	0xf0390c00,nulltc	// pmove nulltc,tt1
 	pmove	4(sp),crp		// caution: crp is 8 bytes
+	pflusha
 	pmove	0xc(sp),tc
 	rts
+	
+set_mmu_called_st_ram:
+
+	lea	nulltc2(pc),a0
+	pmove	(a0),tc			// turn off mmu
+        pmove	(a0),tt0
+        pmove	(a0),tt1
+	lea	crp2(pc),a0
+	pmove	(a0),crp		// caution: crp is 8 bytes
+	pflusha
+	lea	tc2(pc),a0
+	pmove	(a0),tc
+	rts
+
+nulltc2:
+	dc.l	0
+crp2:
+	dc.l	0,0
+tc2:
+	dc.l	0
+
+end_set_mmu_called_st_ram:
+
 
 //
 // save_mmu, restr_mmu: save and restore the MMU setup that came from ROM
 //
 	.data
-oldcrp:	ds.l	1
-	ds.l	1
-oldtc:	ds.l	1
-oldtt0:	ds.l	1
-oldtt1:	ds.l	1
+oldcrp:	dc.l	0
+	dc.l	0
+oldtc:	dc.l	0
+oldtt0:	dc.l	0
+oldtt1:	dc.l	0
 
 	.text
 
