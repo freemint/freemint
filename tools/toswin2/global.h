@@ -116,18 +116,19 @@ struct tablist
 #define FWRAP		0x8000	/* wrap at end of line */
 
 /* text->cflag */
-#define CBGCOL		0x000f	/* background color mask */
-#define CFGCOL		0x00f0	/* foreground color mask */
-#define COLORS(fg, bg)	(((fg) << 4) | (bg))
-#define CEFFECTS	0x0f00	/* VDI output style mask */
-#define CE_BOLD		0x0100
-#define CE_LIGHT	0x0200
-#define CE_ITALIC	0x0400
-#define CE_UNDERLINE	0x0800
-#define CINVERSE	0x1000	/* character is in inverse video */
-#define CSELECTED	0x2000	/* character has been selected by mouse */
-#define CTOUCHED	0x4000	/* character attributes have changed */
-#define CDIRTY		0x8000	/* the character itself has changed */
+#define CBGCOL		 0x000f	/* background color mask */
+#define CFGCOL		 0x00f0	/* foreground color mask */
+#define COLORS(fg, bg)	 (((fg) << 4) | (bg))
+#define CEFFECTS	 0x0f00	/* VDI output style mask */
+#define CE_BOLD		 0x0100
+#define CE_LIGHT	 0x0200
+#define CE_ITALIC	 0x0400
+#define CE_UNDERLINE	 0x0800
+#define CINVERSE	 0x1000	/* character is in inverse video */
+#define CSELECTED	 0x2000	/* character has been selected by mouse */
+#define CTOUCHED	 0x4000	/* character attributes have changed */
+#define CDIRTY		 0x8000	/* the character itself has changed */
+#define CACS		0x10000  /* Alternate character set enabled.  */
 
 /* text->dirty */
 #define SOMEDIRTY	0x01	/* some of the line needs redrawing */
@@ -168,13 +169,14 @@ struct textwin
 	short	cfont;				/* font for characters */
 	short	cpoints;			/* size of characters in points */
 	short	savex, savey;			/* saved cursor position */
-	short	term_flags;			/* e.g. cursor on/off */
-	short	term_cattr;			/* current character attributes */
-										/* also foreground and background colors */
+	ushort	term_flags;			/* e.g. cursor on/off */
+	ulong	term_cattr;			/* current character attributes including
+						   foreground/background colors and character
+						   set */
 	short	escy1;				/* first char. for ESC Y */
 	void	(*output)(struct textwin *t, int c); /* output function */
 	uchar	**data;				/* terminal data */
-	short	**cflag;			/* flags for individual characters */
+	ulong	**cflag;			/* flags for individual characters */
 	char	*dirty;				/* marks whether lines need redrawing */
 	int	fd;				/* file descriptor for pseudo-tty */
 	char	pty[8];				/* Pseudo-TTY auf U:\pipe\ttyp[0-f] */

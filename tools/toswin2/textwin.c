@@ -29,7 +29,7 @@ static MFDB scr_mfdb;	/* left NULL so it refers to the screen by default */
 /*
  * lokale Prototypen
 */
-static void draw_buf(TEXTWIN *t, char *buf, short x, short y, short flag, short force);
+static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short force);
 static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstline, short lastline, short force);
 static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, short force);
 static void draw_textwin(WINDOW *v, short x, short y, short w, short h);
@@ -106,6 +106,438 @@ void pixel2char(TEXTWIN *t, short x, short y, short *colp, short *rowp)
 	*colp = col;
 }
 
+/* Draw a string in the alternate character set.  */
+static void
+draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
+{
+	char* crs = buf;
+	short max_x = x + t->win->work.g_w; /* FIXME: -1 ? */
+	short cwidth = t->cmaxwidth;
+	short cheight = t->cheight;
+	short pxy[8];
+	unsigned char letter[2] = { '\0', '\0' };
+	
+	while (*crs && x < max_x) {
+		printf ("Should draw character %c at position (%d|%d)\n",
+			*crs, x, y);
+			
+		switch (*crs) {
+			case '}': /* ACS_STERLING */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'\243' : '\234';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case '.': /* ACS_DARROW */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'v' : '\002';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case ',': /* ACS_LARROW */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'<' : '\004';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case '+': /* ACS_RARROW */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'>' : '\003';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case '-': /* ACS_UARROW */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'^' : '\001';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case 'h': /* ACS_BOARD */
+				pxy[0] = x;
+				pxy[1] = y;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = y + cheight - 1;
+				set_fillcolor (textcolor);
+				set_fillstyle (2, 22);
+				vsf_perimeter (vdi_handle, 0);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			case '~': /* ACS_BULLET */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'o' : '\372';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case 'a': /* ACS_CKBOARD */
+				pxy[0] = x;
+				pxy[1] = y;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = y + t->cheight - 1;
+				set_fillcolor (textcolor);
+				set_fillstyle (2, 2);
+				vsf_perimeter (vdi_handle, 0);
+				v_bar (vdi_handle, pxy);
+				break;
+			
+			case 'f': /* ACS_DEGREE */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'\260' : '\370';
+				set_textcolor (textcolor);
+				set_texteffects (0);
+				v_gtext(vdi_handle, x, y + t->cbase, letter);
+				break;
+					
+			case '`': /* ACS_DIAMOND */
+				pxy[0] = x + (cwidth >> 1);
+				pxy[1] = y + (cheight >> 2);
+				pxy[2] = pxy[0] + (cwidth >> 2);
+				pxy[3] = y + (cheight >> 1);
+				pxy[4] = pxy[0];
+				pxy[5] = pxy[1] + (cheight >> 2);
+				pxy[6] = pxy[0] - (cwidth >> 2);
+				pxy[7] = pxy[3];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_fillarea (vdi_handle, 4, pxy);
+				break;
+			
+			case 'z': /* ACS_GEQUAL */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'>' : '\362';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				if (t->cfg->char_tab != TAB_ATARI) {
+					letter[0] = '_';
+					v_gtext (vdi_handle, x, y + t->cbase, letter);
+				}
+				break;
+			
+			case '{': /* ACS_PI */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				if (t->cfg->char_tab != TAB_ATARI) {
+					letter[0] = '\343';
+					set_textcolor (textcolor);
+					v_gtext (vdi_handle, x, y + t->cbase, letter);
+				} else {
+					/* FIXME: Paint greek letter pi.  */
+					letter[0] = '*';
+					set_textcolor (textcolor);
+					v_gtext (vdi_handle, x, y + t->cbase, letter);
+				}
+				break;
+			
+			case 'q': /* ACS_HLINE */
+				pxy[0] = x;
+				pxy[1] = y + (cheight >> 1);
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			case 'i': /* ACS_LANTERN */
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				pxy[0] = x;
+				pxy[1] = y + (cheight >> 1) - 1;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				v_bar (vdi_handle, pxy);
+				
+				pxy[1] = y + (cheight >> 1) + 1;
+				pxy[3] = pxy[1];
+				v_bar (vdi_handle, pxy);
+				
+				pxy[0] = x + (cwidth >> 1) - 1;
+				pxy[1] = y;
+				pxy[2] = pxy[0];
+				pxy[3] = y + (cheight >> 1) - 1;
+				v_bar (vdi_handle, pxy);
+				
+				pxy[0] = x + (cwidth >> 1) + 1;
+				pxy[1] = y;
+				pxy[2] = pxy[0];
+				pxy[3] = y + (cheight >> 1) - 1;
+				v_bar (vdi_handle, pxy);
+				
+				pxy[1] = y + cheight - 1;
+				v_bar (vdi_handle, pxy);
+				
+				pxy[0] = x + (cwidth >> 1) - 1;
+				pxy[2] = pxy[0];
+				v_bar (vdi_handle, pxy);
+				
+				break;
+			
+			case 'n': /* ACS_PLUS */
+				pxy[0] = x;
+				pxy[1] = y + (cheight >> 1);
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				pxy[4] = x + (cwidth >> 1);
+				pxy[5] = y;
+				pxy[6] = pxy[4];
+				pxy[7] = y + cheight - 1;
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				v_bar (vdi_handle, pxy + 4);
+				break;
+				
+			case 'y': /* ACS_LEQUAL */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'y' : '\363';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				if (t->cfg->char_tab != TAB_ATARI) {
+					letter[0] = '_';
+					v_gtext (vdi_handle, x, y + t->cbase, letter);
+				}
+				break;
+			
+			case 'm': /* ACS_LLCORNER */
+				pxy[0] = x + (cwidth >> 1);
+				pxy[1] = y;
+				pxy[2] = pxy[0];
+				pxy[3] = y + (cheight >> 1);
+				pxy[4] = x + cwidth - 1;
+				pxy[5] = pxy[3];
+				vsl_type (vdi_handle, 1);
+				vsl_color (vdi_handle, textcolor);
+				v_pline (vdi_handle, 3, pxy);
+				break;
+				
+			case 'j': /* ACS_LRCORNER */
+				pxy[0] = x + (cwidth >> 1);
+				pxy[1] = y;
+				pxy[2] = pxy[0];
+				pxy[3] = y + (cheight >> 1);
+				pxy[4] = x;
+				pxy[5] = pxy[3];
+				vsl_type (vdi_handle, 1);
+				vsl_color (vdi_handle, textcolor);
+				v_pline (vdi_handle, 3, pxy);
+				break;
+				
+			case '|': /* ACS_NEQUAL */
+				letter[0] = '=';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				letter[0] = '/';
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case 'g': /* ACS_PLMINUS */
+				/* We assume that if the Atari font is 
+			         * selected,
+				 * we have a font that is already in ISO-Latin 1.
+				 */
+				letter[0] = t->cfg->char_tab == TAB_ATARI ?
+					'\261' : '\361';
+				set_textcolor (textcolor);
+				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				break;
+			
+			case 'o': /* ACS_S1 */
+				pxy[0] = x;
+				pxy[1] = y;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = y;
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			case 'p': /* ACS_S3 */
+				pxy[0] = x;
+				pxy[1] = y + cheight / 3;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			case 'r': /* ACS_S7 */
+				pxy[0] = x;
+				pxy[1] = y + cheight - cheight / 3;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			case 's': /* ACS_S9 */
+				pxy[0] = x;
+				pxy[1] = y + cheight - 1;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			case '0': /* ACS_BLOCK */
+				pxy[0] = x;
+				pxy[1] = y;
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = y + cheight - 1;
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				vsf_perimeter (vdi_handle, 0);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			case 'w': /* ACS_TTEE */
+				pxy[0] = x;
+				pxy[1] = y + (cheight >> 1);
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				pxy[4] = x + (cwidth >> 1);
+				pxy[5] = pxy[1];
+				pxy[6] = pxy[4];
+				pxy[7] = y + cheight - 1;
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				v_bar (vdi_handle, pxy + 4);
+				break;
+			
+			case 'u': /* ACS_RTEE */
+				pxy[0] = x + (cwidth >> 1);
+				pxy[1] = y;
+				pxy[2] = pxy[0];
+				pxy[3] = y + cheight - 1;
+				pxy[4] = x;
+				pxy[5] = y + (cheight >> 1);
+				pxy[6] = pxy[0];
+				pxy[7] = pxy[5];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				v_bar (vdi_handle, pxy + 4);
+				break;
+			
+			case 't': /* ACS_LTEE */
+				pxy[0] = x + (cwidth >> 1);
+				pxy[1] = y;
+				pxy[2] = pxy[0];
+				pxy[3] = y + cheight - 1;
+				pxy[4] = pxy[0];
+				pxy[5] = y + (cheight >> 1);
+				pxy[6] = x + cwidth - 1;
+				pxy[7] = pxy[5];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				v_bar (vdi_handle, pxy + 4);
+				break;
+			
+			case 'v': /* ACS_BTEE */
+				pxy[0] = x;
+				pxy[1] = y + (cheight >> 1);
+				pxy[2] = x + cwidth - 1;
+				pxy[3] = pxy[1];
+				pxy[4] = x + (cwidth >> 1);
+				pxy[5] = y;
+				pxy[6] = pxy[4];
+				pxy[7] = pxy[1];
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				v_bar (vdi_handle, pxy + 4);
+				break;
+			
+			case 'l': /* ACS_ULCORNER */
+				pxy[0] = x + (cwidth >> 1);
+				pxy[1] = y + cheight - 1;
+				pxy[2] = pxy[0];
+				pxy[3] = y + (cheight >> 1);
+				pxy[4] = x + cwidth - 1;
+				pxy[5] = pxy[3];
+				vsl_type (vdi_handle, 1);
+				vsl_color (vdi_handle, textcolor);
+				v_pline (vdi_handle, 3, pxy);
+				break;
+							
+			case 'k': /* ACS_URCORNER */
+				pxy[0] = x;
+				pxy[1] = y + (cheight >> 1);
+				pxy[2] = x + (cwidth >> 1);
+				pxy[3] = pxy[1];
+				pxy[4] = pxy[2];
+				pxy[5] = y + cheight - 1;
+				vsl_type (vdi_handle, 1);
+				vsl_color (vdi_handle, textcolor);
+				v_pline (vdi_handle, 3, pxy);
+				break;
+							
+			case 'x': /* ACS_VLINE */
+				pxy[0] = x + (cwidth >> 1);
+				pxy[1] = y;
+				pxy[2] = pxy[0];
+				pxy[3] = y + cheight - 1;
+				set_fillcolor (textcolor);
+				set_fillstyle (1, 1);
+				v_bar (vdi_handle, pxy);
+				break;
+				
+			default:
+				break;
+		}
+		
+		++crs;
+		x += cwidth;
+	}
+}
 
 /*
  * draw a (part of a) line on screen, with certain attributes (e.g.
@@ -116,17 +548,19 @@ void pixel2char(TEXTWIN *t, short x, short y, short *colp, short *rowp)
  * SPECIAL CASE: if buf is an empty string, we clear from "x" to
  * the end of the window.
  */
-static void draw_buf(TEXTWIN *t, char *buf, short x, short y, short flag, short force)
+static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short force)
 {
 	char *s, *lastnonblank;
 	int x2, fillcolor, textcolor;
 	int texteffects;
 	short *WIDE = t->cwidths;
 	short temp[4];
+	int acs = flag & CACS;
 
 	fillcolor = flag & CBGCOL;
 	textcolor = (flag & CFGCOL) >> 4;
 	texteffects = (flag & CEFFECTS) >> 8;
+
 	if (flag & (CINVERSE|CSELECTED)) 
 	{	
 		x2 = fillcolor; 
@@ -178,9 +612,16 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, short flag, short 
 
 	if (*buf) 
 	{
-		set_textcolor(textcolor);
-		set_texteffects(texteffects);
-		v_gtext(vdi_handle, x, y + t->cbase, buf);
+		if (acs)
+		{
+			draw_acs_text(t, textcolor, x, y, buf);
+		}
+		else
+		{
+			set_textcolor(textcolor);
+			set_texteffects(texteffects);
+			v_gtext(vdi_handle, x, y + t->cbase, buf);
+		}
 	}
 }
 
@@ -196,10 +637,11 @@ static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstl
 {
 #define CBUFSIZ 127
 	unsigned char buf[CBUFSIZ+1], c;
-	short px, py, ax, i, cnt, flag, bufwidth;
+	short px, py, ax, i, cnt, bufwidth;
+	ulong flag;
 	short *WIDE = t->cwidths;
 	short lineforce = 0;
-	short curflag;
+	ulong curflag;
 
 #define flushbuf()	\
 	{ 	buf[i] = 0;	\
@@ -250,10 +692,13 @@ static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstl
 				 */
 				if (WIDE && (lineforce == 0) && (t->cflag[firstline][cnt] & CDIRTY))
 					lineforce = 1;
-				/* watch out for characters that can't be drawn in this font */
-				if (c < t->minADE || c > t->maxADE)
-					c = '?';
+
 				curflag = t->cflag[firstline][cnt] & ~(CDIRTY|CTOUCHED);
+
+				/* watch out for characters that can't be drawn in this font */
+				if (!(curflag & CACS) && (c < t->minADE || c > t->maxADE))
+					c = '?';
+
 				if (flag == curflag) 
 				{
 					 buf[i++] = c;
@@ -1134,8 +1579,9 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	set_cwidths(t);
 
 	/* initialize the window data */
+	/* FIXME: What about checking the return values?  */
 	t->data = malloc(sizeof(char *) * t->maxy);
-	t->cflag = malloc(sizeof(short *) * t->maxy);
+	t->cflag = malloc(sizeof(void *) * t->maxy);
 	t->dirty = malloc((size_t)t->maxy);
 
 	if (!t->dirty || !t->cflag || !t->data) 
@@ -1145,7 +1591,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	{
 		t->dirty[i] = 0; /* the window starts off clear */
 		t->data[i] = malloc((size_t)t->maxx+1);
-		t->cflag[i] = malloc(sizeof(short) * (size_t)(t->maxx+1));
+		t->cflag[i] = malloc(sizeof(long) * (size_t)(t->maxx+1));
 		if (!t->cflag[i] || !t->data[i]) 
 			return 0;
 		for (j = 0; j < t->maxx; j++) 
@@ -1208,6 +1654,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 		t->term_flags = FWRAP;
 	else
 		t->term_flags = 0;
+
 	t->fd = t->pgrp = 0;
 	
 	t->pty[0] = '\0';
@@ -1335,7 +1782,7 @@ void resize_textwin(TEXTWIN *t, short cols, short rows, short scrollback)
 	int i, j, mincols;
 	int delta;
 	unsigned char **newdata;
-	short **newcflag;
+	ulong **newcflag;
 	char *newdirty;
 	short width, height, dummy;
 	int reopen = 0;
@@ -1344,7 +1791,7 @@ void resize_textwin(TEXTWIN *t, short cols, short rows, short scrollback)
 		return;		/* no change */
 		
 	newdata = malloc(sizeof(char *) * (rows+scrollback));
-	newcflag = malloc(sizeof(short *) * (rows+scrollback));
+	newcflag = malloc(sizeof(void *) * (rows+scrollback));
 	newdirty = malloc((size_t)(rows+scrollback));
 	if (!newdata || !newcflag || !newdirty)
 		return;
@@ -1356,7 +1803,7 @@ void resize_textwin(TEXTWIN *t, short cols, short rows, short scrollback)
 	{
 		newdirty[i] = 0;
 		newdata[i] = malloc((size_t)cols+1);
-		newcflag[i] = malloc(sizeof(short)*(cols+1));
+		newcflag[i] = malloc(sizeof(long) * (cols+1));
 		if (!newcflag[i] || !newdata[i])
 			return;
 		for(j = 0; j < cols; j++)
