@@ -425,7 +425,9 @@ hide_app(enum locks lock, struct xa_client *client)
 		    && w->owner == client
 		    && !is_hidden(w))
 		{
+#if 0
 			RECT r = w->rc, d = root_window->rc;
+#endif
 
 			if ((w->window_status & XAWS_ICONIFIED))
 				reify = true;

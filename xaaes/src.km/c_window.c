@@ -1992,7 +1992,7 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					//DIAGS(("COMMON brl=%lx, nrl=%lx, brl->nxt=%lx", brl, nrl, brl ? (long)brl->next : 0xFACEDACE));
 					if (brl)
 					{
-						struct xa_rect_list *n, *p, *best;
+						struct xa_rect_list *n, *p;
 						short ox2 = bd.x + bd.w;
 						short oy2 = bd.y + bd.h;
 						
