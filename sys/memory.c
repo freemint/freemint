@@ -1821,9 +1821,9 @@ again1:
 						else
 							m->shadow->save->links = 1;
 					}
-					free_region(m);
 					if (mem_prot_flags & MPF_STRICT)
 						mark_proc_region(execproc, m, PROT_I);
+					free_region(m);
 				}
 			}
 		}
