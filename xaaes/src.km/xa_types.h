@@ -520,7 +520,6 @@ struct xa_pending_widget
 	WidgetBehaviour *action;	/* Function to call */
 	short x, y;
 	struct moose_data m;
-	//short b, cb, clicks, nx, ny;
 	int offs;			/* slider information */
 	RECT d;				/* distance information */
 	int xy;				/* compass when border sizing */
@@ -529,7 +528,6 @@ struct xa_pending_widget
 typedef struct xa_pending_widget XA_PENDING_WIDGET;
 
 /* Extra details for a slider widget */
-
 struct xa_slider_widget
 {
 	int position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
