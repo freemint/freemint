@@ -58,6 +58,8 @@
 # include "random.h"
 # include "time.h"
 
+# include <mint/osbind.h>
+
 
 static long	_cdecl mouse_open	(FILEPTR *f);
 static long	_cdecl mouse_read	(FILEPTR *f, char *buf, long nbytes);
