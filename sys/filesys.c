@@ -289,7 +289,7 @@ sys_s_ync (void)
 {
 	FILESYS *fs;
 
-	TRACE (("Syncing file systems..."));
+	TRACE ((MSG_fsys_syncing));
 
 	/* syncing filesystems */
 	for (fs = active_fs; fs; fs = fs->next)
@@ -301,7 +301,7 @@ sys_s_ync (void)
 	/* always syncing buffercache */
 	bio_sync_all ();
 
-	TRACE (("Syncing done."));
+	TRACE ((MSG_fsys_syncing_done));
 	return 0;
 }
 
