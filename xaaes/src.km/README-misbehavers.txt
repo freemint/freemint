@@ -57,3 +57,5 @@ Thomas Binder, you know better than this? ;-)
  appl_find()
  appl_getinfo()
  appl_init()
+------------------------------------------------------------------------------
+ Papyrus

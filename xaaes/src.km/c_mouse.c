@@ -41,7 +41,9 @@
 #include "k_mouse.h"
 #include "k_shutdown.h"
 #include "nkcc.h"
+#include "menuwidg.h"
 #include "scrlobjc.h"
+#include "semaphores.h"
 #include "taskman.h"
 #include "widgets.h"
 
@@ -183,6 +185,21 @@ cXA_form_do(enum locks lock, struct c_event *ce)
 }
 
 void
+cXA_open_menu(enum locks lock, struct c_event *ce)
+{
+	XA_WIDGET *widg = ce->ptr1;
+	XA_TREE *menu = ce->ptr2;
+
+	DIAG((D_mouse, ce->client, "cXA_open_menu for %s", ce->client->name));
+	if ( menu == get_menu() ) // && lock_menustruct(ce->client, true) )
+		widg->click(lock, root_window, widg, &ce->md);
+#if GENERATE_DIAGS
+	else
+		DIAG((D_mouse, ce->client, "cXA_open_menu skipped for %s - menu changed before cevent.", ce->client->name));
+#endif
+	C.ce_open_menu = NULL;
+}
+void
 cXA_menu_move(enum locks lock, struct c_event *ce)
 {
 	if (C.menu_base->client == ce->client)
@@ -242,9 +259,6 @@ cXA_active_widget(enum locks lock, struct c_event *ce)
 	do_active_widget(lock, ce->client);
 }
 
-/*
- * Also used to open a menu
- */
 void
 cXA_widget_click(enum locks lock, struct c_event *ce)
 {

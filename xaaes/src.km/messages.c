@@ -506,7 +506,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		return;
 	}
 
-	if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT))
+	if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_WAIT_MENU))
 	{
 #if GENERATE_DIAGS
 		if (dest_client->status & CS_FORM_ALERT)
