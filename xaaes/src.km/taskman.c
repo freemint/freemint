@@ -129,7 +129,14 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 	/* Empty the task list */
 	empty_scroll_list(form, TM_LIST, -1);
 
-	delayed_delete_window(lock, list->wi);
+	if (list->wi)
+	{
+		if ((list->wi->window_status & XAWS_OPEN))
+			close_window(lock, list->wi);
+		
+		delayed_delete_window(lock, list->wi);
+		list->wi = NULL;
+	}
 	task_man_win = NULL;
 
 	return true;
@@ -564,7 +571,15 @@ systemalerts_destructor(enum locks lock, struct xa_window *wind)
 	OBJECT *ob = ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 
-	delayed_delete_window(lock, list->wi);
+	if (list->wi)
+	{
+		if ((list->wi->window_status & XAWS_OPEN))
+			close_window(lock, list->wi);
+		
+		delayed_delete_window(lock, list->wi);
+		list->wi = NULL;
+	}
+
 	systemalerts_win = NULL;
 
 	return true;

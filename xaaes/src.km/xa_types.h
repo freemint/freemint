@@ -471,6 +471,8 @@ struct fmd
 	struct xa_window *wind;		/* Pointer to a window that could be about to become a dialog */
 	struct widget_tree *wt;
 	short state;			/* fmd.r contains a valid rectangle of a form_dial, which is postponed. */
+#define SCREEN_UPD	1
+#define MOUSE_UPD	2
 	short lock;			/* Client has locked the screen. */
 	XA_WIND_ATTR kind;		/* Window attributes to be used. */
 	FormKeyInput *keypress;
@@ -825,15 +827,16 @@ struct xa_rect_list
 
 enum window_type
 {
-	created_for_CLIENT    = 0,
+	created_for_CLIENT    = 0x0000,
 /* All of the following flags indicate at least that a windows workarea is compleyely
    occupied by (part of) the dialoge root object. */
-	created_for_FMD_START = 1,
-	created_for_FORM_DO   = 2,
-	created_for_POPUP     = 4,
-	created_for_WDIAL     = 8,
-	created_for_TOOLBAR   = 16,
-	created_for_AES       = 0x100
+	created_for_FMD_START = 0x0001,
+	created_for_FORM_DO   = 0x0002,
+	created_for_POPUP     = 0x0004,
+	created_for_WDIAL     = 0x0008,
+	created_for_TOOLBAR   = 0x0010,
+	created_for_SLIST     = 0x0020,
+	created_for_AES       = 0x0100
 };
 typedef enum window_type WINDOW_TYPE;
 
@@ -937,7 +940,7 @@ struct xa_window
 struct xa_window *get_top(void);
 extern struct xa_window *root_window;
 #define window_list S.open_windows.first
-#define nolist_list S.nolist_windows.first
+#define nolist_list S.open_nlwindows.first
 
 struct scroll_info;
 

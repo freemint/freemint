@@ -95,7 +95,7 @@ create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WI
 
 	DIAGS(("Setup_form_do: create window"));
 
-	if (C.update_lock && C.update_lock == client)
+	if (C.update_lock && C.update_lock == client->p)
 	{
 		kind |= STORE_BACK;
 		nolist = true;
@@ -168,7 +168,7 @@ Setup_form_do(struct xa_client *client,
 	/*
 	 * Should this client do classic blocking form_do's?
 	 */
-	else if (C.update_lock == client)
+	else if (C.update_lock == client->p)
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
 		Set_form_do(client, obtree, edobj);
@@ -499,11 +499,11 @@ form_keyboard(XA_TREE *wt,
 			next_key = keycode;
 	}
 
-	/* Ozk: Looks like we need to return a 0 for next object when 
-	 *	the key as not processed by form_keyboard()...
+	/* Ozk: We return a 'next object' value of -1 when the key was
+	 *	not used by form_keybaord() function
 	 */
 	if (next_obj < 0)
-		next_obj = 0;
+		next_obj = -1;
 	
 	if (nxtobj)
 		*nxtobj = next_obj;
@@ -568,7 +568,7 @@ Exit_form_do( struct xa_client *client,
 			DIAG((D_form, NULL, "Exit_form_do: send WM_TOOLBAR to %s",
 				client->name));
 
-			if (wind->send_message)
+			if (wind->send_message && fr->obj >= 0)
 			{
 				struct xa_widget *widg = wt->widg;
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
@@ -591,7 +591,8 @@ Exit_form_do( struct xa_client *client,
 	}
 
 	if (client->waiting_pb)
-		client->waiting_pb->intout[0] = fr->obj | fr->dblmask;
+		client->waiting_pb->intout[0] = (fr->obj >= 0 ? fr->obj | fr->dblmask : 0);
+
 	client->usr_evnt = 1;
 }
 /*
@@ -783,7 +784,7 @@ Key_form_do(enum locks lock,
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
 					wt->e.obj, wt->e.pos));
 			}
-			else if (fr.obj && wt->e.obj != fr.obj)
+			else if (fr.obj >= 0 && wt->e.obj != fr.obj)
 			{
 				obj_edit(wt, ED_END, 0, 0, 0, true, rl, NULL, NULL);
 				obj_edit(wt, ED_INIT, fr.obj, 0, -1, true, rl, NULL, NULL);

@@ -45,9 +45,11 @@ struct shared
 {
 	struct win_base open_windows;		/* list of all open windows */
 	struct win_base closed_windows;		/* list of all closed windows */
-	struct win_base side_windows;		/* list of other special windows like menus popups etc */
 	struct win_base deleted_windows;	/* list of windows to be deleted (delayed action) */
-	struct win_base nolist_windows;		/* list of open nolist windows - fmd, alerts, etc. */
+	
+	struct win_base open_nlwindows;
+	struct win_base closed_nlwindows;
+	//struct win_base nolist_windows;		/* list of open nolist windows - fmd, alerts, etc. */
 
 	LIST_HEAD(xa_client) client_list;
 	LIST_HEAD(xa_client) app_list;
@@ -208,6 +210,7 @@ struct common
 					/* most probably a button released one */
 	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
 	struct xa_client *ce_menu_move; /* If set, this client has been sent a menu_move client event */
+	struct xa_client *ce_menu_click;
 
 	short shutdown;			/* flags for shutting down xaaes */
 #define QUIT_NOW	0x1		/* - enter shutdown the next possible time */
@@ -233,9 +236,9 @@ struct common
 	struct xa_widget *hover_widg;
 
 	//struct xa_window *focus;	/* Only 1 of 2: the top window(window_list) or root_window. */
-	struct xa_client *update_lock;
-	struct xa_client *mouse_lock;
-	struct xa_client *menu_lock;
+	struct proc *update_lock;
+	struct proc *mouse_lock;
+	struct proc *menu_lock;
 
 	short updatelock_count;
 	short mouselock_count;
@@ -244,12 +247,14 @@ struct common
 	Path desk;			/* Remember the desk path for Launch desk. */
 	short mouse;			/* Remember mouse shape */
 	MFORM *mouse_form;		/* Remember mouse form */
+	struct xa_client *mouse_owner;
 
 	short aesmouse;
 	MFORM *aesmouse_form;
 
 	short realmouse;
 	MFORM *realmouse_form;
+	struct xa_client *realmouse_owner;
 
 	struct xa_client	*do_widget_repeat_client;
 	enum locks		 do_widget_repeat_lock;

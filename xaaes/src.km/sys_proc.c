@@ -122,6 +122,12 @@ xaaes_on_signal(void *_client, struct proc *p, unsigned short nr)
 	DIAGS(("xaaes_on_signal for %u (signal %u)", p->pid, nr));
 }
 
+static void _cdecl
+premature_xaaes_on_exit(void *_client, struct proc *p, unsigned short nr)
+{
+	DIAGS(("premature_xaaes_on_signal for %u (signal %u)", p->pid, nr));
+	exit_proc(0, p);
+}
 
 static void _cdecl xaaes_sh_info_release(void *);
 
@@ -131,7 +137,7 @@ struct module_callback xaaes_cb_vector_sh_info =
 	NULL,			/* share */
 	xaaes_sh_info_release,
 
-	NULL,			/* on_exit */
+	premature_xaaes_on_exit, //NULL,	/* on_exit */
 	NULL,			/* on_exec */
 	NULL,			/* on_fork */
 	NULL,			/* on_stop */

@@ -1256,7 +1256,8 @@ eor_objcursor(struct widget_tree *wt, struct xa_rect_list *rl)
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
 
-		rl_xor(&r, rl);
+		if (!(wt->tree[wt->e.obj].ob_flags & OF_HIDETREE))
+			rl_xor(&r, rl);
 	}
 }
 	
@@ -1269,8 +1270,12 @@ draw_objcursor(struct widget_tree *wt, struct xa_rect_list *rl)
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
-		rl_xor(&r, rl); //write_selection(0, &r);
-		wt->e.c_state |= OB_CURS_DRAWN;
+		
+		if (wt->e.obj >= 0 && !(wt->tree[wt->e.obj].ob_flags & OF_HIDETREE))
+		{
+			rl_xor(&r, rl); //write_selection(0, &r);
+			wt->e.c_state |= OB_CURS_DRAWN;
+		}
 	}
 }
 void
@@ -1282,8 +1287,12 @@ undraw_objcursor(struct widget_tree *wt, struct xa_rect_list *rl)
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
-		rl_xor(&r, rl); //write_selection(0, &r);
-		wt->e.c_state &= ~OB_CURS_DRAWN;
+		
+		if (wt->e.obj >= 0 && !(wt->tree[wt->e.obj].ob_flags & OF_HIDETREE))
+		{
+			rl_xor(&r, rl); //write_selection(0, &r);
+			wt->e.c_state &= ~OB_CURS_DRAWN;
+		}
 	}
 }
 
@@ -2046,6 +2055,9 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 //	KERNEL_DEBUG("ut->ret_p     = 0x%lx", ut->ret_p    );
 //	KERNEL_DEBUG("ut->parmblk_p = 0x%lx", ut->parmblk_p);
 
+	if ((client->status & CS_EXITING))
+		return;
+		
 	p = parmblk(client->ut);
 	p->pb_tree = wt->tree;
 	p->pb_obj = wt->current;

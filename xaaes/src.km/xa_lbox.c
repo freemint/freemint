@@ -188,7 +188,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 		depth++;
 	}
 
-	lock_screen(wt->owner, false, NULL, 0);
+	lock_screen(wt->owner->p, false, NULL, 0);
 
 	if (wind)
 	{
@@ -226,7 +226,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 		draw_object_tree(0, wt, wt->tree, start, depth, 1);
 	}
 	clear_clip();
-	unlock_screen(wt->owner, 0);
+	unlock_screen(wt->owner->p, 0);
 }
 
 /*
@@ -629,12 +629,12 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 
 		if (s->flags & LBOX_VERT)
 		{
-			graf_mouse(XACRS_VERTSIZER, NULL, false);
+			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 			max = obtree[parent].ob_height - (obtree[child].ob_height - s->ofs.h);
 		}
 		else
 		{
-			graf_mouse(XACRS_HORSIZER, NULL, false);
+			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			max = obtree[parent].ob_width - (obtree[child].ob_width - s->ofs.w);
 		}
 
@@ -722,7 +722,7 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 				}
 			} /* if (mb && sx != mx && sy != mx) */
 		} /* while (mb) */
-		graf_mouse(ARROW, NULL, false);
+		graf_mouse(ARROW, NULL, NULL, false);
 	} /* if (mb) */
 }
 static void

@@ -96,6 +96,21 @@ get_app_options(struct xa_client *client)
 	}
 }
 
+static void
+proc_is_now_client(struct xa_client *client)
+{
+	/* Ozk:
+	 * Since processes not yet called appl_init() can call wind_update()
+	 * we need to check and set stuff here... if only programmers
+	 * could follow Atari's documentation!!!!
+	 */
+	if (C.update_lock && C.update_lock == client->p)
+		client->fmd.lock |= SCREEN_UPD;
+	if (C.mouse_lock && C.mouse_lock == client->p)
+		client->fmd.lock |= MOUSE_UPD;
+
+}
+
 /*
  * Application initialise - appl_init()
  */
@@ -265,7 +280,9 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->tp = NULL;
 	}
 #endif
-			
+
+	proc_is_now_client(client);
+	
 	app_in_front(lock, client);
 
 clean_out:
@@ -298,30 +315,31 @@ clean_out:
 
 	return XAC_DONE;
 }
-#if 0
-static void
-remove_wind_refs(struct xa_window *wl, struct xa_client *client)
+/*
+ * Clean up client-indipendant stuff, since XaAES must handle
+ * some things even when the process is not yet (or ever) a
+ * client.
+ */
+void
+exit_proc(enum locks lock, struct proc *p)
 {
-	while (wl)
+	/* Unlock mouse & screen */
+	if (update_locked() == p)
+		free_update_lock();
+	if (C.update_lock == p)
 	{
-		if (wl->owner == client)
-		{
-			/* Ozk:
-			 * Lets make sure window is closed before we remove
-			 * any refs, making sure it is not attempted redrawn
-			 * during remove_windows() later on.
-			 */
-			if ((wl->window_status & XAWS_OPEN))
-				close_window(0, wl);
-
-			remove_widget(0, wl, XAW_TOOLBAR);
-			remove_widget(0, wl, XAW_MENU   );
-			wl->redraw = NULL;
-		}
-		wl = wl->next;
+		C.update_lock = NULL;
+		C.updatelock_count = 0;
+	}
+	if (mouse_locked() == p)
+		free_mouse_lock();
+	if (C.mouse_lock == p)
+	{
+		C.mouse_lock = NULL;
+		C.mouselock_count = 0;
 	}
 }
-#endif
+	
 /*
  * close and free all client resources
  * 
@@ -350,6 +368,20 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 */
 	client->status |= CS_EXITING;
 
+	if (client->timeout)
+	{
+		canceltimeout(client->timeout);
+		client->timeout = NULL;
+		client->timer_val = 0;
+	}
+
+	if (TAB_LIST_START && TAB_LIST_START->client == client)
+	{
+		popout(TAB_LIST_START);
+	}
+
+	exit_proc(lock, client->p);
+
 	if (S.wait_mouse == client)
 	{
 		S.wm_count = 0;
@@ -365,8 +397,13 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	/*
 	 * Check and remove if client set its own mouse-form
 	 */
+	if (C.mouse_owner == client || C.realmouse_owner == client)
+		graf_mouse(ARROW, NULL, NULL, false);
+
+#if 0		
 	if (C.realmouse_form == client->mouse_form)
-		graf_mouse(ARROW, NULL, false);
+		graf_mouse(ARROW, NULL, NULL, false);
+#endif
 
 	remove_widget_active(client);
 
@@ -374,7 +411,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 * Go through and check that all windows belonging to this
 	 * client are closed
 	 */
-	remove_windows(lock, client);
+	remove_all_windows(lock, client);
 
 	redraws = cancel_app_aesmsgs(client);
 	cancel_cevents(client);
@@ -394,25 +431,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		kfree(client->attach);
 		client->attach = NULL;
 	}
-
-
-	/*
-	 * Figure out which client to make active
-	 */
-	if (cfg.next_active == 1)
-	{
-		top_owner = APP_LIST_START;
-
-		if (top_owner == client)
-			top_owner = previous_client(lock);
-	}
-	else if (cfg.next_active == 0)
-		top_owner = window_list->owner;
-	else
-		top_owner = C.Aes;
-
-	app_in_front(lock, top_owner);
-
 
 	client->rsrc = NULL;
 	FreeResources(client, NULL);
@@ -444,11 +462,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		}
 	}
 
-	if (TAB_LIST_START && TAB_LIST_START->client == client)
-	{
-		popout(TAB_LIST_START);
-	}
-
 	/* remove any references */
 	{
 		XA_WIDGET *widg = get_menu_widg();
@@ -474,7 +487,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 			client->std_menu = NULL;
 		}
-		if (menustruct_locked() == client)
+		if (menustruct_locked() == client->p)
 			free_menustruct_lock();
 
 
@@ -488,22 +501,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		}
 	}
 
-	/* Unlock mouse & screen */
-	if (update_locked() == client)
-		free_update_lock();
-	if (C.update_lock == client)
-	{
-		C.update_lock = NULL;
-		C.updatelock_count = 0;
-	}
-	if (mouse_locked() == client)
-		free_mouse_lock();
-	if (C.mouse_lock == client)
-	{
-		C.mouse_lock = NULL;
-		C.mouselock_count = 0;
-	}
-
 	// if (!client->killed)
 	//	remove_attachments(lock|clients, client, client->std_menu);
 
@@ -515,7 +512,24 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	CLIENT_LIST_REMOVE(client);
 	APP_LIST_REMOVE(client);
 
-	
+	/*
+	 * Figure out which client to make active
+	 */
+	if (cfg.next_active == 1)
+	{
+		top_owner = APP_LIST_START;
+
+		if (top_owner == client)
+			top_owner = previous_client(lock);
+	}
+	else if (cfg.next_active == 0)
+		top_owner = window_list->owner;
+	else
+		top_owner = C.Aes;
+
+	app_in_front(lock, top_owner);
+
+		
 	if (redraws)
 	{
 		C.redraws -= redraws - 1;

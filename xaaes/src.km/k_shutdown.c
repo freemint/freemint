@@ -123,7 +123,7 @@ k_shutdown(void)
 		j++;
 	}
 	DIAGS(("all clients have exited"));
-
+#if 0
 	DIAGS(("Freeing open windows"));
 	{
 		struct xa_window *w;
@@ -149,6 +149,16 @@ k_shutdown(void)
 			delete_window(NOLOCKING, w);
 			w = next;
 		}
+	}
+#endif
+	DIAGS(("Removing all remaining windows"));
+	remove_all_windows(NOLOCKING, NULL);
+	DIAGS(("Closing and deleting root window"));
+	if (root_window)
+	{
+		close_window(NOLOCKING, root_window);
+		delete_window(NOLOCKING, root_window);
+		root_window = NULL;
 	}
 
 	DIAGS(("Freeing delayed deleted windows"));

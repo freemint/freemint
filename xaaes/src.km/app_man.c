@@ -98,15 +98,10 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 
 	if (withlocks)
 	{
-		if (C.update_lock)
+		if (!(C.update_lock && (locked = get_update_locker())))
 		{
-			locked = C.update_lock;
-			DIAGS(("-= 1 =-"));
-		}
-		else if (C.mouse_lock)
-		{
-			locked = C.mouse_lock;
-			DIAGS(("-= 2 =-"));
+			if (C.mouse_lock)
+				locked = get_mouse_locker();
 		}
 		if (locked)
 		{
@@ -167,48 +162,48 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 void
 recover(void)
 {
-	struct xa_client *client;
-	struct xa_client *menu_lock = menustruct_locked();
+	struct proc *proc;
+	struct proc *menu_lock = menustruct_locked();
 
 	DIAG((D_appl, NULL, "Attempting to recover control....."));
 
 	swap_menu(0, C.Aes, true, false, 0);
 
-	if ((client = C.update_lock))
+	if ((proc = C.update_lock))
 	{
 		DIAG((D_appl, NULL, "Killing owner of update lock"));
 		free_update_lock();
-		if (C.mouse_lock == client)
+		if (C.mouse_lock == proc)
 		{
 			free_mouse_lock();
 			C.mouse_lock = NULL;
 			C.mouselock_count = 0;
 		}
-		if (menu_lock == client)
+		if (menu_lock == proc)
 		{
 			menu_lock = NULL;
 			free_menustruct_lock();
 		}
 		C.update_lock = NULL;
 		C.updatelock_count = 0;
-		ikill(client->p->pid, SIGKILL);
+		ikill(proc->pid, SIGKILL);
 	}
-	if ((client = C.mouse_lock))
+	if ((proc = C.mouse_lock))
 	{
 		free_mouse_lock();
-		if (menu_lock == client)
+		if (menu_lock == proc)
 		{
 			menu_lock = NULL;
 			free_menustruct_lock();
 		}
 		C.mouse_lock = NULL;
 		C.mouselock_count = 0;
-		ikill(client->p->pid, SIGKILL);
+		ikill(proc->pid, SIGKILL);
 	}
-	if (menu_lock && (menu_lock != C.Aes))
+	if (menu_lock && (menu_lock != C.Aes->p))
 	{
 		free_menustruct_lock();
-		ikill(menu_lock->p->pid, SIGKILL);
+		ikill(menu_lock->pid, SIGKILL);
 	}
 
 	forcem();
@@ -250,7 +245,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 				wastop = is_topped(top) ? true : false;
 			
 			new->status |= CS_WAIT_MENU;
-			lock_menustruct(rc, false);
+			lock_menustruct(rc->p, false);
 			if ((wt = widg->stuff))
 			{
 				wt->widg = NULL;
@@ -260,7 +255,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 			wt->flags |= WTF_STATIC;
 			wt->widg = widg;
 			set_rootmenu_area(new);
-			unlock_menustruct(rc);
+			unlock_menustruct(rc->p);
 			new->status &= ~CS_WAIT_MENU;
 
 			DIAG((D_appl, NULL, "top: %s", w_owner(top)));

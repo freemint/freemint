@@ -31,6 +31,7 @@
 #include "xa_types.h"
 
 bool is_client(struct xa_client *client);
+void exit_proc(enum locks lock, struct proc *proc);
 void exit_client(enum locks lock, struct xa_client *client, int code);
 
 AES_function
