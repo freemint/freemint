@@ -76,7 +76,9 @@ int screen_boundary = 255;
 /*
  * variable set if someone has already installed an flk cookie
  */
+# if OLDTOSFS
 int flk = 0;
+# endif
 
 /*
  * variable set to 1 if the _VDO cookie indicates Falcon style video
