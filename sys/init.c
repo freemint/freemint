@@ -1008,16 +1008,10 @@ run_auto_prgs (void)
  * in the environment.
  */
 
-/* A macro used to calculate the remaining free part of an
- * allocated block of memory (in other words, the difference
- * between the requested/used size and the size actually allocated).
- */
-# define RAM_PAD(x) (QUANTUM - (x % QUANTUM))
-
 /* Measures the size of the environment */
 
 long
-env_size(char *var)
+env_size(const char *var)
 {
 	long count = 1;			/* Trailing NULL */
 
@@ -1052,35 +1046,37 @@ _mint_delenv(BASEPAGE *bp, const char *strng)
 	var -= (strlen(strng) + 1);
 	name = var + strlen(var) + 1;
 
-	do
-	{
+	do {
 		while (*name)
 			*var++ = *name++;
+
 		*var++ = *name++;
+	}
+	while (*name);
 
-	} while (*name);
-
-	*var = 0;
-
-	sys_m_shrink(0, (long)bp->p_env, env_size(bp->p_env));
+	*var = '\0';
 }
 
 void
 _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 {
-	char *env_str = bp->p_env, *new_env, *es, *ne;
+	char *env_str = bp->p_env, *ne;
 	long old_size, var_size;
+	MEMREGION *m;
 
 	/* If it already exists, delete it */
 	_mint_delenv(bp, var);
 
 	old_size = env_size(env_str);
-	var_size = strlen(var) + strlen(value) + 1;	/* '=' */
+	var_size = strlen(var) + strlen(value) + 16;	/* '=', terminating '\0' and some space */
+
+	m = addr2mem(curproc, (long)env_str);
+	if (!m) FATAL("No memory region of environment!");
 
 	/* If there is enough place in the current environment,
 	 * don't reallocate it.
 	 */
-	if (RAM_PAD(old_size) >= var_size)
+	if (m->len > (old_size+var_size))
 	{
 		ne = env_str;
 
@@ -1093,24 +1089,28 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 	}
 	else
 	{
-		new_env = (char *)sys_m_xalloc(old_size + var_size, 3);
+		char *new_env, *es;
 
+		new_env = (char *)sys_m_xalloc(old_size + var_size, 0x0003);
 		if (new_env == NULL)
 			return;
+
+		/* just to be sure */
+		bzero(new_env, old_size + var_size);
 
 		es = env_str;
 		ne = new_env;
 
 		/* Copy old env to new place */
-		while (es && *es)
+		while (*es)
 		{
 			while (*es)
 				*ne++ = *es++;
+
 			*ne++ = *es++;
 		}
 
 		bp->p_env = new_env;
-
 		sys_m_free((long)env_str);
 	}
 
@@ -1121,7 +1121,7 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 
 	/* and place the zero terminating the environment */
 	ne += strlen(ne);
-	*++ne = 0;
+	*++ne = '\0';
 }
 
 /*
@@ -1165,8 +1165,7 @@ mint_thread(void *arg)
 	if (_base->p_env == NULL)
 		FATAL ("Can't allocate environment!");
 
-	_base->p_env[0] = 0;
-	_base->p_env[1] = 0;
+	bzero(_base->p_env, QUANTUM);
 
 	/*
 	 * Set the PATH variable to the root of the current drive
