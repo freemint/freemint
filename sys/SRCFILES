@@ -24,6 +24,7 @@ COBJS = \
 	fasttext.c \
 	fatfs.c \
 	filesys.c \
+	floppy.c \
 	global.c \
 	gmon.c \
 	init.c \
