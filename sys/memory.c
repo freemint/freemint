@@ -1156,8 +1156,10 @@ free_region (MEMREGION *reg)
 	
 	reg->mflags &= M_MAP;
 	
+# if 0
 	/* unhook any vectors pointing into this region */
 	unlink_vectors (reg->loc, reg->loc + reg->len);
+# endif
 	
 	/* BUG(?): should invalidate caches entries - a copyback cache could stuff
 	 * things into freed memory.
@@ -3003,12 +3005,6 @@ realloc_region (MEMREGION *reg, long newsize)
 
 MEMREGION *screen_region = 0;
 
-# define FALCON_PAD	/* Undef this for old behaviour */
-
-# ifndef FALCON_PAD
-# define PAD 256L
-# endif
-
 long _cdecl
 s_realloc (long size)
 {
@@ -3016,60 +3012,31 @@ s_realloc (long size)
 	
 	TRACE (("s_realloc(%ld)", size));
 	
-# ifndef FALCON_PAD
-	if (size != -1L)
-		size += PAD;
-# else
 	if (size != -1L)
 	{
 		size += 0x000000ffUL;
 		size &= 0xffffff00UL;
 	}
-# endif
 	
 	if (!screen_region)
 	{
 		r = realloc_region (screen_region, size);
-# ifdef DEBUG_INFO_
-		assert (r);
-# endif
 		if (size == -1L)	/* inquiry only */
 		{
-# ifndef FALCON_PAD
-			TRACE (("%ld bytes max srealloc", r-PAD));
-			return r - PAD;
-# else
 			TRACE (("%ld bytes max srealloc", r));
 			return r;
-# endif
 		}
 		screen_region = (MEMREGION *) r;
 		if (!screen_region)
 		{
-# ifndef DEBUG_INFO_
 			DEBUG (("s_realloc: no screen region!!"));
 			return 0;
-# else
-			FATAL (("s_realloc: no screen region!!"));
-# endif			
 		}
-# ifdef DEBUG_INFO_
-		assert (screen_region->loc);
-# endif
 		return screen_region->loc;
 	}
 	
 	r = realloc_region (screen_region, size);
-# ifdef DEBUG_INFO_
-	assert (r);
-# endif
 	
-# ifndef FALCON_PAD
-	if (size == -1L)
-	{
-		return r - PAD;
-	}
-# endif
 	return r;
 }
 
