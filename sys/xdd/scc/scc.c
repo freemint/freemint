@@ -206,7 +206,7 @@
 	"\033pMiNT too old!\033q\r\n"
 
 # define MSG_MACHINE	\
-	"\033pThis driver require a MegaSTE/TT/Falcon/Hades!\033q\r\n"
+	"\033pThis driver requires a MegaSTE/TT/Falcon/Hades!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7\r\nSorry, driver NOT installed - initialization failed!\r\n\r\n"
