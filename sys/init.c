@@ -70,6 +70,8 @@
 # include "tosfs.h"	/* tos_filesys */
 # include "xbios.h"	/* has_bconmap, curbconmap */
 
+# include <mint/osbind.h>
+
 
 /* if the user is holding down the magic shift key, we ask before booting */
 # define MAGIC_SHIFT	0x2		/* left shift */
@@ -988,6 +990,12 @@ init (void)
 	init_intr ();
 	DEBUG (("init_intr() ok!"));
 
+	/* after init_intr we are in kernel
+	 * trapping isn't allowed anymore; use direct calls
+	 * from now on
+	 */
+	use_sys = 1;
+
 	/* Enable superscalar dispatch on 68060 */
 	get_superscalar();
 
@@ -1078,9 +1086,6 @@ init (void)
 		((struct tty *) f->devinfo)->aux_cnt = 2;
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
-
-	/* Use internal sys_c_conws() in boot_print() since now */
-	use_sys = 1;
 
 	/* Make the sysdir MiNT-style */
 	{
