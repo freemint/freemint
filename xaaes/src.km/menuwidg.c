@@ -1254,7 +1254,6 @@ CE_do_collapse(enum locks lock, struct c_event *ce, bool cancel)
 static bool
 CE_cb(struct c_event *ce, long arg)
 {
-	cancel_pop_timeouts();
 	//display("CE_cb: --- ");
 	return true;
 }
@@ -1265,6 +1264,7 @@ cancel_CE_do_popup(void)
 	if (S.popin_timeout_ce)
 	{
 		DIAGS((" -- cancel_CE_do_popup: funct=%lx"));
+		//display(" -- cancel_CE_do_popup: funct=%lx");
 		cancel_CE(S.popin_timeout_ce, CE_do_popup, CE_cb, 0);
 		S.popin_timeout_ce = NULL;
 	}
@@ -1275,6 +1275,7 @@ cancel_CE_do_collapse(void)
 	if (S.popout_timeout_ce)
 	{
 		DIAGS((" -- cancel_CE_do_collapse: funct=%lx"));
+		//display(" -- cancel_CE_do_collapse: funct=%lx");
 		cancel_CE(S.popout_timeout_ce, CE_do_collapse, CE_cb, 0);
 		S.popout_timeout_ce = NULL;
 	}
