@@ -145,9 +145,6 @@ decode_flags (unsigned short flags)
 	return strbuf;
 }
 
-#define HEAD "Proto Address    Hardware Address    Ref    Tmout  Flags"
-#define LINE "%-16s %-17s %5d %8s  %s\n"
-
 static void
 show (void)
 {
@@ -155,10 +152,10 @@ show (void)
 
 	setarpent ();
 
-	puts (HEAD);
+	puts ("Proto Address    Hardware Address    Ref    Tmout  Flags");
 	while ((ai = getarpent ()))
 	{
-		printf (LINE,
+		printf ("%-16s %-17s %5d %8s  %s\n",
 			ai->flags & ATF_PRCOM ? decode_pr (&ai->praddr) : "",
 			ai->flags & ATF_COM   ? decode_hw (&ai->hwaddr) : "",
 			ai->links,
