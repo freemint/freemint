@@ -172,6 +172,7 @@ extern const char *MSG_init_mp_disabled;
 # endif
 extern const char *MSG_init_delay_loop;
 extern const char *MSG_init_specify_prg;
+extern const char *MSG_couldnt_run_init;
 
 /* keyboard.c */
 extern const char *MSG_keytable_loaded;
