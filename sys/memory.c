@@ -23,12 +23,12 @@
 # include "arch/syscall.h"	/* lineA0 */
 
 # include "bios.h"
-# include "dosfile.h"
 # include "dosmem.h"
 # include "fasttext.h"	/* for line A stuff */
 # include "filesys.h"
 # include "init.h"	/* __printf(f) */
 # include "k_exec.h"
+# include "k_fds.h"
 # include "kmemory.h"
 # include "util.h"
 
@@ -1850,17 +1850,25 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 	long size, start;
 	FILEHEAD fh;
 	
+	*err = fp_alloc (curproc, &f);
+	if (*err) return NULL;
+	
 	/* bug: this should be O_DENYW mode, not O_DENYNONE
 	 * we must use O_DENYNONE because of the desktop and because of the
 	 * TOS file system brain-damage
 	 */
 # if 0
- 	f = do_open (filename, O_DENYNONE | O_EXEC, 0, xp, err);
+ 	*err = do_open (&f, filename, O_DENYNONE | O_EXEC, 0, xp);
 # else
-	f = do_open (filename, O_DENYW | O_EXEC, 0, xp, err);
+	*err = do_open (&f, filename, O_DENYW | O_EXEC, 0, xp);
 # endif
 	
-	if (!f) return NULL;
+	if (*err)
+	{
+		f->links--;
+		fp_free (f);
+		return NULL;
+	}
 	
 	size = xdd_read (f, (void *) &fh, (long) sizeof (fh));
 	if (fh.fmagic != GEMDOS_MAGIC || size != (long) sizeof (fh))
@@ -1871,7 +1879,7 @@ failed:
 		if (*err == E_OK)
 			*err = ENOEXEC ;
 		
-		do_close (f);
+		do_close (curproc, f);
 		return NULL;
 	}
 	
@@ -1942,7 +1950,7 @@ failed:
 		bzero ((void *) start, size);
 	}
 	
-	do_close (f);
+	do_close (curproc, f);
 	
 	DEBUG (("load_region: return region = %lx", reg));
 	

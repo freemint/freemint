@@ -2535,7 +2535,7 @@ bio_remove (UNIT *u)
 
 # ifdef BLOCK_IO_DEBUG
 
-# include "dosfile.h"
+# include "k_fds.h"
 # define out_device 2 /* console */
 
 static void
@@ -2547,24 +2547,29 @@ bio_debug (const char *fmt, ...)
 	if (debug_mode)
 	{
 		va_list args;
-		int foo;
-		FILEPTR *f;
+		FILEPTR *fp;
+		long ret;
+		
+		ret = fp_alloc (rootproc, &fp);
+		if (ret) return;
 		
 		va_start (args, fmt);
-		f = do_open (BIO_LOGFILE, (O_WRONLY|O_CREAT|O_APPEND), 0, NULL, NULL);
-		if (f)
+		ret = do_open (&fp, BIO_LOGFILE, (O_WRONLY|O_CREAT|O_APPEND), 0, NULL);
+		if (!ret)
 		{
-			(void) (*f->dev->lseek)(f, 0, 2);
+			(*fp->dev->lseek)(fp, 0, 2);
 			
-			foo = vsprintf (buf, buflen, fmt, args);
-			(*f->dev->write)(f, buf, strlen (buf));
-			(*f->dev->write)(f, "\r\n", 2);
+			vsprintf (buf, buflen, fmt, args);
+			(*fp->dev->write)(fp, buf, strlen (buf));
+			(*fp->dev->write)(fp, "\r\n", 2);
 			
-			do_close (f);
+			do_close (rootproc, fp);
 		}
 		else
 		{
-			foo = vsprintf (buf, buflen, fmt, args);
+			fp_free (fp);
+			
+			vsprintf (buf, buflen, fmt, args);
 			BIO_FORCE ((buf));
 		}
 		va_end (args);
@@ -2576,10 +2581,14 @@ bio_dump_cache (void)
 {
 	static char buf [SPRINTF_MAX];
 	static const long buflen = sizeof (buf);
-	FILEPTR *f;
+	FILEPTR *fp;
+	long ret;
 	
-	f = do_open (BIO_DUMPFILE, (O_WRONLY|O_CREAT|O_TRUNC), 0, NULL, NULL);
-	if (f)
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
+	
+	ret = do_open (&fp, BIO_DUMPFILE, (O_WRONLY|O_CREAT|O_TRUNC), 0, NULL);
+	if (!ret)
 	{
 		CBL *b = cache.blocks;
 		long i;
@@ -2592,40 +2601,42 @@ bio_dump_cache (void)
 			if (table)
 			{
 		
-				(*f->dev->write)(f, "table:\r\n", 8);
+				(*fp->dev->write)(fp, "table:\r\n", 8);
 				for (j = 0; j < HASHSIZE; j++)
 				{
 					UNIT *t = table [j];
-					(void) ksprintf (buf, buflen, "nr: %li\tptr = %lx", j, t);
-					(*f->dev->write)(f, buf, strlen (buf));
+					ksprintf (buf, buflen, "nr: %li\tptr = %lx", j, t);
+					(*fp->dev->write)(fp, buf, strlen (buf));
 					for (; t; t = t->next)
 					{
-						(void) ksprintf (buf, buflen, "\r\n\thnext = %lx\tlock = %i\tdirty = %i"
-								"\tsector = %li\tdev = %i\r\n",
-								t->next, t->lock, t->dirty, t->sector, t->di->drv
+						ksprintf (buf, buflen, "\r\n\thnext = %lx\tlock = %i\tdirty = %i"
+							"\tsector = %li\tdev = %i\r\n",
+							t->next, t->lock, t->dirty, t->sector, t->di->drv
 						);
-						(*f->dev->write)(f, buf, strlen (buf));
+						(*fp->dev->write)(fp, buf, strlen (buf));
 					}
-					(*f->dev->write)(f, "\r\n", 2);
+					(*fp->dev->write)(fp, "\r\n", 2);
 				}
 			}
 		}
-		(void) ksprintf (buf, buflen, "blocks:\t(max_size = %li)\r\n", cache.max_size);
-		(*f->dev->write)(f, buf, strlen (buf));
+		ksprintf (buf, buflen, "blocks:\t(max_size = %li)\r\n", cache.max_size);
+		(*fp->dev->write)(fp, buf, strlen (buf));
 		for (i = 0; i < cache.count; i++)
 		{
 			long j;
-			(void) ksprintf (buf, buflen, "buffer = %lx, buffer->stat = %lu, lock = %u, free = %u\r\n", b[i].data, b[i].stat, b[i].lock, b[i].free);
-			(*f->dev->write)(f, buf, strlen (buf));
+			ksprintf (buf, buflen, "buffer = %lx, buffer->stat = %lu, lock = %u, free = %u\r\n", b[i].data, b[i].stat, b[i].lock, b[i].free);
+			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (j = 0; j < cache.chunks; j++)
 			{
-				(void) ksprintf (buf, buflen, "\tused = %u\tstat = %li\tactive = %lx\r\n", b[i].used[j], b[i].active[j] ? b[i].active[j]->stat : -1, b[i].active[j]);
-				(*f->dev->write)(f, buf, strlen (buf));
+				ksprintf (buf, buflen, "\tused = %u\tstat = %li\tactive = %lx\r\n", b[i].used[j], b[i].active[j] ? b[i].active[j]->stat : -1, b[i].active[j]);
+				(*fp->dev->write)(fp, buf, strlen (buf));
 			}
-			(*f->dev->write)(f, "\r\n", 2);
+			(*fp->dev->write)(fp, "\r\n", 2);
 		}
-		do_close (f);
+		do_close (rootproc, fp);
 	}
+	else
+		fp_free (fp);
 }
 # endif
 

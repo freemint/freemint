@@ -28,9 +28,9 @@
 # include "dev-mouse.h"
 # include "dev-null.h"
 # include "cookie.h"
-# include "dosfile.h"
 # include "fasttext.h"
-# include "filesys.h"
+# include "ipc_socketdev.h"
+# include "k_fds.h"
 # include "k_prot.h"
 # include "kmemory.h"
 # include "nullfs.h"
@@ -155,6 +155,9 @@ static struct bios_file BDEV [] =
 # ifdef DEV_RANDOM
 	{ "random",	&random_device,	 0, 0, 0, 0},
 	{ "urandom",	&urandom_device, 0, 0, 0, 0},
+# endif
+# ifdef OLDSOCKDEVEMU
+	{ "socket",	&sockdevemu,	 0, 0, 0, 0},
 # endif
 	
 # ifdef FASTTEXT
@@ -442,9 +445,10 @@ biosfs_init (void)
 	midi_btty.clocal = 1;
 	midi_btty.tosfd = ENODEV;
 	midi_btty.bdev = 3;
-
-	defaultaux = new_fileptr();
-	assert (defaultaux);
+	
+	if (fp_alloc (rootproc, &defaultaux))
+		FATAL ("Can't allocate defaultaux FILEPTR!");
+	
 	defaultaux->links = 1;		/* so it never gets freed */
 	defaultaux->flags = O_RDWR;
 	defaultaux->pos = 0;
@@ -2533,10 +2537,11 @@ int
 set_auxhandle (PROC *p, int dev)
 {
 	FILEPTR *f;
+	long ret;
 	struct bios_file *b;
-
-	f = new_fileptr ();
-	if (f)
+	
+	ret = fp_alloc (p, &f);
+	if (!ret)
 	{
 		struct tty *tty;
 		
@@ -2565,7 +2570,7 @@ set_auxhandle (PROC *p, int dev)
 				    p->p_fd->aux->fc.index == f->fc.index)
 				{
 					f->links = 0;
-					dispose_fileptr(f);
+					fp_free (f);
 					return 1;
 				}
 # endif
@@ -2579,7 +2584,7 @@ found_device:
 		if ((*f->dev->open)(f) < E_OK)
 		{
 			f->links = 0;
-			dispose_fileptr(f);
+			fp_free (f);
 			return 0;
 		}
 		
@@ -2616,7 +2621,7 @@ found_device:
 	}
 	
 	if (p->p_fd->aux)
-		(void) do_pclose (p, p->p_fd->aux);
+		do_close (p, p->p_fd->aux);
 	
 	p->p_fd->aux = f;
 
