@@ -997,6 +997,14 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (m == M_RESTORE)
 		{
+			/*
+			 * Ozk: Not sure if M_RESTORE should set the previous mouse
+			 * cursor ... but we do it until someone complains, incase
+			 * it is correct
+			 */
+			client->prev_mouse = client->save_mouse;
+			client->prev_mouse_form = client->save_mouse_form;
+			
 			graf_mouse(client->save_mouse, client->save_mouse_form, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			client->mouse       = client->save_mouse;
@@ -1004,13 +1012,28 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (m == M_PREVIOUS)
 		{
-			graf_mouse(C.mouse, C.mouse_form, false);
+			short pm;
+			MFORM *pmf;
+
+			/*
+			 * Ozk: Not sure about this either, but methinks that as we set to the previous
+			 * mouse cursor, the current becomes new previous. Consecutive M_PREVIOUS calls
+			 * will then toggle between the two last used mouse shapes.
+			 */
+			graf_mouse(client->prev_mouse, client->prev_mouse_form, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
-			client->mouse       = C.mouse;
-			client->mouse_form  = C.mouse_form;
+			pm			= client->mouse;
+			pmf			= client->mouse_form;
+			client->mouse		= client->prev_mouse;
+			client->mouse_form	= client->prev_mouse_form;
+			client->prev_mouse	= pm;
+			client->prev_mouse_form	= pmf;
 		}
 		else
 		{
+			client->prev_mouse = client->mouse;
+			client->prev_mouse_form = client->mouse_form;
+
 			graf_mouse(m, (MFORM*)pb->addrin[0], false);
 			client->mouse = m;
 			client->mouse_form = (MFORM*)pb->addrin[0];	

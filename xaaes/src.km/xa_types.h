@@ -505,10 +505,12 @@ struct xa_client
 	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
 	short *waiting_short;		/* */
 
-	int mouse;			/* The cursor to use when this is top application */
-	int save_mouse;
+	short mouse;			/* The cursor to use when this is top application */
+	short save_mouse;		/* The cursor saved by M_SAVE */
+	short prev_mouse;		/* The cursor previous to any change - used by M_LAST/M_PREVIOUS */
 	MFORM *mouse_form;
 	MFORM *save_mouse_form;
+	MFORM *prev_mouse_form;
 
 	struct aes_global *globl_ptr;	/* Pointer to the client's globl array (so we can fill in the resource
 					 * address field later). */
