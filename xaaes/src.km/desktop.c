@@ -193,7 +193,6 @@ CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)
 			newdesk, newdesk->tree, newdesk->owner->name, ce->client->name));
 
 		Set_desktop(newdesk);
-		//display_window(lock, 1, root_window, NULL);
 	}
 }
 void
@@ -210,7 +209,6 @@ set_desktop(XA_TREE *new_desktop)
 			rc->name, new_desktop->owner->name));
 
 		Set_desktop(new_desktop);
-		//display_window(0, 2, root_window, NULL);
 	}
 	else
 	{

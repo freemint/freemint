@@ -205,16 +205,7 @@ post_cevent(struct xa_client *client,
 		{
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
 		}
-#if 0
-		if (client != C.Aes)
-			Unblock(client, 1, 5000);
-		else
-		{
-			dispatch_cevent(client);
-		}
-#else
 		Unblock(client, 1, 0);
-#endif
 	}
 }
 
@@ -683,12 +674,7 @@ aesthread_entry(void *c)
 
 			dispatch_cevent(client);
 		}
-#if 0		
-		while (client->irdrw_msg)
-			exec_iredraw_queue(0, client);
 		
-		//if (!dispatch_tpcevent(client))
-#endif
 		if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 		{
 			client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
@@ -882,7 +868,6 @@ k_main(void *dummy)
 		goto leave;
 	}
 
-
 	/*
 	 * Initialization AES/VDI
 	 */
@@ -891,7 +876,6 @@ k_main(void *dummy)
 		DIAGS(("k_init failed!"));
 		goto leave;
 	}
-
 
 	/* 
 	 * Initialization I/O
@@ -1210,12 +1194,6 @@ k_exit(void)
 	
 	/* wakeup loader */
 	wake(WAIT_Q, (long)&loader_pid);
-#if 0
-	if (C.shutdown & HALT_SYSTEM)
-		s_hutdown(0);  /* poweroff or halt if poweroff is not supported */
-	else if (C.shutdown & REBOOT_SYSTEM)
-		s_hutdown(1);  /* warm start */
-#endif
 		
 	DIAGS(("-> kthread_exit"));
 

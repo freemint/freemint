@@ -41,15 +41,6 @@
 #include "xa_form.h"
 #include "c_window.h"
 
-#if 0
-static void
-slist_msg_handler(
-	enum locks lock,
-	struct xa_window *wind,
-	struct xa_client *to,
-	short mp0, short mp1, short mp2, short mp3,
-	short mp4, short mp5, short mp6, short mp7);
-#endif
 static void
 slist_msg_handler(struct xa_window *wind, struct xa_client *to, short amq, short qmf, short *msg);
 
@@ -574,7 +565,7 @@ unset_G_SLIST(struct scroll_info *list)
 	DIAG((D_objc, NULL, "unset_G_SLIST: list=%lx, obtree=%lx, index=%d",
 		list, list->tree, list->item));
 	
-	list->empty(list, -1); //empty_scroll_list(form, item, -1);
+	list->empty(list, -1);
 
 	if (list->wi)
 	{
@@ -585,62 +576,15 @@ unset_G_SLIST(struct scroll_info *list)
 
 	if (list->wt)
 	{
-		list->wt->links--;
-		//display("unset_G_SLIST: links-- on %lx (links=%d)", list->wt, list->wt->links);
 		list->wt = NULL;
 	}
 
 	*ob = list->prev_ob;
-	if (list->flags & SIF_KMALLOC)// == C.Aes)
+	if (list->flags & SIF_KMALLOC)
 		kfree(list);
 	else
 		ufree(list);
 }
-
-/*
- * Setup a scrolling list structure for an object
- * - I've provided this as I don't expect any resource editor to support
- * XaAES' extensions to the object types...
- */
-#if 0
-/* title set by set_slist_object() */
-int
-set_scroll(struct xa_client *client, OBJECT *form, int item, bool selectable)
-{
-	OBJECT *ob = form + item;
-	SCROLL_INFO *sinfo;
-
-	if (client == C.Aes)
-		sinfo = kmalloc(sizeof(*sinfo));
-	else
-		sinfo = umalloc(sizeof(*sinfo));
-
-	if (!sinfo)
-		return false;
-
-	bzero(sinfo, sizeof(*sinfo));
-	
-	if (client == C.Aes)
-		sinfo->flags |= SIF_KMALLOC;
-
-	/* colours are those for windows */
-	sinfo->prev_ob = *ob;
-	
-	object_set_spec(form + item, (unsigned long)sinfo);
-	ob->ob_type = G_SLIST;
-	ob->ob_flags |= OF_TOUCHEXIT;
-	
-	if (selectable)
-		ob->ob_flags |= OF_SELECTABLE;
-	else
-		ob->ob_flags &= ~OF_SELECTABLE;
-
-	sinfo->tree = form;
-	sinfo->item = item;
-
-	return true;
-}
-#endif
 
 /* preparations for windowed list box widget;
  * most important is to get the drawing smooth and simple.
@@ -649,7 +593,6 @@ set_scroll(struct xa_client *client, OBJECT *form, int item, bool selectable)
 SCROLL_INFO *
 set_slist_object(enum locks lock,
 		 XA_TREE *wt,
-		// OBJECT *form,
 		 struct xa_window *parentwind,
 		 short item,
 		 short flags,
@@ -701,8 +644,6 @@ set_slist_object(enum locks lock,
 	list->pw = parentwind;
 	
 	list->wt = wt;
-	wt->links++;
-	//display("set_slist_obj: links++ on %lx (links=%d)", wt, wt->links);
 
 	list->data = data;
 
@@ -750,8 +691,6 @@ set_slist_object(enum locks lock,
 		get_widget(list->wi, XAW_VSLIDE)->drag = drag_vslide;
 		get_widget(list->wi, XAW_HSLIDE)->drag = drag_hslide;
 
-		//list->wi->data = list;
-		
 		list->wi->winob	= wt->tree;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;
 		r = list->wi->wa;
@@ -825,43 +764,21 @@ slist_msg_handler(
 					scroll_down(list, 1);
 					break;
 				}
-			#if 0
-					if (list->top->prev)
-						list->state = SCRLSTAT_UP,
-						list->top = list->top->prev;
-				break;
-			#endif
 				case WA_DNLINE:
 				{
 					scroll_up(list, 1);
 					break;
 				}
-			#if 0
-					if (list->bot->next)
-						list->state = SCRLSTAT_DOWN,
-						list->top = list->top->next;
-				break;
-			#endif
 				case WA_UPPAGE:
 				{
 					scroll_down(list, list->s - 1);
 					break;
 				}
-			#if 0
-					while (--p && list->top->prev) 
-						list->top = list->top->prev;
-				break;
-			#endif
 				case WA_DNPAGE:
 				{
 					scroll_up(list, list->s - 1);
 					break;
 				}
-			#if 0
-					while (--p && list->bot->next)
-						list->bot = list->bot->next,
-						list->top = list->top->next;
-			#endif
 				}
 			}
 		}
@@ -904,19 +821,6 @@ slist_msg_handler(
 				scroll_down(list, -new);
 			else
 				scroll_up(list, new);
-		#if 0
-			if (list->top->n > new) /* go up */
-			{
-				while (list->top->n > new && list->top->prev)
-					list->top = list->top->prev;
-			}
-			else /* go down */
-			{
-				while (list->top->n < new && list->bot->next)
-					list->bot = list->bot->next,
-					list->top = list->top->next;
-			}
-		#endif
 		}
 		break;
 	}
