@@ -37,6 +37,7 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "menuwidg.h"
+#include "messages.h"
 #include "widgets.h"
 
 #include "mint/signal.h"
@@ -448,9 +449,44 @@ unhide_app(enum locks lock, struct xa_client *client)
 	app_in_front(lock, client);
 }
 
+static TIMEOUT *rpi_to = NULL;
+
+static void
+repos_iconified(struct proc *p, long arg)
+{
+	enum locks lock = (enum locks)arg;
+	struct xa_window *w = window_list;
+	RECT r;
+
+	while (w)
+	{
+		if ((w->window_status & XAWS_ICONIFIED) && !is_hidden(w))
+		{
+			r = free_icon_pos(lock, w);
+			send_moved(lock, w, AMQ_NORM, &r);
+			w->t = r;
+#if 0
+			if ((w->window_status & XAWS_SHADED))
+				r.w = wind->sw, r.h = wind->sh;
+
+			if (w->send_message)
+				w->send_message(lock, w, NULL, AMQ_NORM,
+						   WM_MOVED, 0, 0, w->handle,
+						   r.x, r.y, r.w, r.h);
+			else
+				move_window(lock, w, -1, r.x, r.y, r.w, r.h);
+			w->t = r;
+#endif
+		}
+		w = w->next;
+	}
+	rpi_to = NULL;
+}
+
 void
 hide_app(enum locks lock, struct xa_client *client)
 {
+	bool reify = false;
 	struct xa_client *focus = focus_owner();
 	struct xa_window *w;
 
@@ -464,7 +500,10 @@ hide_app(enum locks lock, struct xa_client *client)
 		    && w->owner == client
 		    && !is_hidden(w))
 		{
-			RECT r = w->r, d = root_window->r;
+			RECT r = w->rc, d = root_window->rc;
+
+			if ((w->window_status & XAWS_ICONIFIED))
+				reify = true;
 #if HIDE_TO_HEIGHT
 			r.y += d.h;
 #else
@@ -475,12 +514,7 @@ hide_app(enum locks lock, struct xa_client *client)
 				while (r.x + r.w > 0)
 					r.x -= d.w;
 #endif
-			if (w->send_message)
-				w->send_message(lock|winlist, w, NULL,
-						WM_MOVED, 0, 0, w->handle,
-						r.x, r.y, r.w, r.h);
-			else
-				move_window(lock|winlist, w, -1, r.x, r.y, r.w, r.h);
+			send_moved(lock|winlist, w, AMQ_NORM, &r);
 		}
 		w = w->next;
 	}
@@ -489,6 +523,9 @@ hide_app(enum locks lock, struct xa_client *client)
 
 	if (client == focus)
 		app_in_front(lock, next_app(lock, true));
+
+	if (reify && !rpi_to)
+		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
 }
 
 void
@@ -551,7 +588,7 @@ any_window(enum locks lock, struct xa_client *client)
 	while (w)
 	{
 		if (   w != root_window
-		    && w->is_open
+		    && (w->window_status & XAWS_OPEN)
 		    && w->r.w
 		    && w->r.h
 		    && w->owner == client)
@@ -587,7 +624,7 @@ next_wind(enum locks lock)
 	while (wind)
 	{
 		if ( wind != root_window
-		  && wind->is_open
+		  && (wind->window_status & XAWS_OPEN)
 		  && !is_hidden(wind)
 		  && wind->r.w
 		  && wind->r.h )
@@ -692,7 +729,7 @@ app_in_front(enum locks lock, struct xa_client *client)
 
 			if (wl->owner == client && wl != root_window)
 			{
-				if (wl->is_open)
+				if ((wl->window_status & XAWS_OPEN))
 				{
 					if (is_hidden(wl))
 						unhide_window(lock|winlist, wl);

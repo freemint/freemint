@@ -33,8 +33,8 @@
 #ifndef _moose_h
 #define _moose_h
 
-#define MBS_RIGHT 1
-#define MBS_LEFT 2
+#define MBS_LEFT	1
+#define MBS_RIGHT	2
 
 struct moose_data
 {

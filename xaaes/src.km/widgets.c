@@ -290,7 +290,7 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
  * Used by AESSYS, checkif_do_widgets(), when determining
  * which widget is under the mouse.
  */
-static void
+void
 rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 {
 	RECT dr;
@@ -596,10 +596,10 @@ void
 display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 {
 	/* if removed or lost */
-	if (widg->display)
+	if (!(wind->window_status & widg->loc.statusmask) && widg->display)
 	{
 		/* Some programs do this! */
-		if (!(   wind->window_status == XAWS_ICONIFIED
+		if (!((wind->window_status & XAWS_ICONIFIED)
 		      && widg->type != XAW_TITLE
 		      && widg->type != XAW_ICONIFY))
 		{
@@ -703,7 +703,7 @@ redraw_menu(enum locks lock)
 void
 calc_work_area(struct xa_window *wi)
 {
-	RECT r = wi->r, *rt;
+	RECT r = wi->rc, *rt;
 	XA_SLIDER_WIDGET *sl;
 	XA_WIDGET *widg;
 	XA_WIND_ATTR k = wi->active_widgets;
@@ -797,7 +797,7 @@ calc_work_area(struct xa_window *wi)
 				rt->w -= cfg.widg_w;
 		}
 
-		if (wi->window_status != XAWS_ICONIFIED)
+		if (!(wi->window_status & XAWS_ICONIFIED))
 		{
 			/* fatter topbar */
 			if (k & INFO)
@@ -885,11 +885,14 @@ calc_work_area(struct xa_window *wi)
 		}
 	}
 
+	if (wi->wa.w < 0 || wi->wa.h < 0)
+		wi->wa.w = wi->wa.h = 0;
+	
 	/* border displacement */
-	wi->bd.x = wi->r.x - wi->wa.x;
-	wi->bd.y = wi->r.y - wi->wa.y;
-	wi->bd.w = wi->r.w - wi->wa.w;
-	wi->bd.h = wi->r.h - wi->wa.h;
+	wi->bd.x = wi->rc.x - wi->wa.x;
+	wi->bd.y = wi->rc.y - wi->wa.y;
+	wi->bd.w = wi->rc.w - wi->wa.w;
+	wi->bd.h = wi->rc.h - wi->wa.h;
 
 	/* Add bd to toolbar->r to get window rectangle for create_window
 	 * Anyhow, always convenient, especially when snapping the workarea.
@@ -952,28 +955,29 @@ free_xawidget_resources(struct xa_widget *widg)
 /* eliminated both margin and shadow sizes from this table */
 /* put some extra data there as well. */
 static XA_WIDGET_LOCATION
-/*             defaults              index        mask     rsc             top     destruct */
-stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSER,    WIDG_CLOSER,  false, free_xawidget_resources },
-stdl_full    = {RT, { 0, 0, 1, 1 },  XAW_FULL,    FULLER,    WIDG_FULL,    false, free_xawidget_resources },
-stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, WIDG_ICONIFY, false, free_xawidget_resources },
-stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     WIDG_HIDE,    false, free_xawidget_resources },
-stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,            false, free_xawidget_resources },
-stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   0,         0,            false, free_xawidget_resources },
-stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     WIDG_SIZE,    false, free_xawidget_resources },
-stdl_uscroll = {RT, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   WIDG_UP,      false, free_xawidget_resources },
-stdl_upage   = {RT, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   0,            false, free_xawidget_resources },
-stdl_vslide  = {RT, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    0,            false, free_xawidget_resources },
-stdl_dpage   = {RT, { 0, 1, 1, 1 },  XAW_DNPAGE,  DNARROW,   0,            false, free_xawidget_resources },
-stdl_dscroll = {RB, { 0, 1, 1, 1 },  XAW_DNLN,    DNARROW,   WIDG_DOWN,    false, free_xawidget_resources },
-stdl_lscroll = {LB, { 0, 0, 1, 1 },  XAW_LFLN,    LFARROW,   WIDG_LEFT,    false, free_xawidget_resources },
-stdl_lpage   = {LB, { 1, 0, 1, 1 },  XAW_LFPAGE,  LFARROW,   0,            false, free_xawidget_resources },
-stdl_hslide  = {LB, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    0,            false, free_xawidget_resources },
-stdl_rpage   = {LB, { 1, 0, 1, 1 },  XAW_RTPAGE,  RTARROW,   0,            false, free_xawidget_resources },
-stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW,   WIDG_RIGHT,   false, free_xawidget_resources },
-stdl_info    = {LT, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      0,            false, free_xawidget_resources },
-stdl_menu    = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    0,            false, free_xawidget_resources },
-stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     0,            false, free_xawidget_resources },
-stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         0,            false, free_xawidget_resources }
+/*             defaults              index        mask	     status			rsc           top     destruct */
+/*							      mask					 */
+stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSER,    XAWS_ICONIFIED,				WIDG_CLOSER,  false, free_xawidget_resources },
+stdl_full    = {RT, { 0, 0, 1, 1 },  XAW_FULL,    FULLER,    XAWS_ICONIFIED,				WIDG_FULL,    false, free_xawidget_resources },
+stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, 0,				WIDG_ICONIFY, false, free_xawidget_resources },
+stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     XAWS_ICONIFIED,				WIDG_HIDE,    false, free_xawidget_resources },
+stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,				0,            false, free_xawidget_resources },
+stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   0,         0,				0,            false, free_xawidget_resources },
+stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,		WIDG_SIZE,    false, free_xawidget_resources },
+stdl_uscroll = {RT, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,		WIDG_UP,      false, free_xawidget_resources },
+stdl_upage   = {RT, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_vslide  = {RT, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_dpage   = {RT, { 0, 1, 1, 1 },  XAW_DNPAGE,  DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_dscroll = {RB, { 0, 1, 1, 1 },  XAW_DNLN,    DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,		WIDG_DOWN,    false, free_xawidget_resources },
+stdl_lscroll = {LB, { 0, 0, 1, 1 },  XAW_LFLN,    LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,		WIDG_LEFT,    false, free_xawidget_resources },
+stdl_lpage   = {LB, { 1, 0, 1, 1 },  XAW_LFPAGE,  LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_hslide  = {LB, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_rpage   = {LB, { 1, 0, 1, 1 },  XAW_RTPAGE,  RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,		WIDG_RIGHT,   false, free_xawidget_resources },
+stdl_info    = {LT, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_menu    = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
+stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources }
 ;
 
 static void
@@ -1234,15 +1238,10 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			drag_box(wind->owner, r, &bound, rect_dist(wind->owner, &r, &d), &r);
 			unlock_screen(wind->owner, 1235);
 
-			if (r.x != wind->r.x || r.y != wind->r.y)
+			if (r.x != wind->rc.x || r.y != wind->rc.y)
 			{
-				if (wind->send_message)
-					wind->send_message(lock, wind, NULL,
-								WM_MOVED, 0,.0,  wind->handle,
-								r.x, r.y, r.w, r.h);
-				else
-					/* Just move these windows, they can handle it... */
-					move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
+				r.h = wind->rc.h;
+				send_moved(lock, wind, AMQ_NORM, &r);
 			}
 		}
 		else if (widget_active.m.cstate)
@@ -1291,9 +1290,10 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 					r.y = root_window->wa.y;
 
 				if (r.x != wind->r.x || r.y != wind->r.y)
-					wind->send_message(lock, wind, NULL,
-								WM_MOVED, 0, 0, wind->handle,
-								r.x, r.y, r.w, r.h);
+				{
+					r.h = wind->rc.h;
+					send_moved(lock, wind, AMQ_NORM, &r);
+				}
 
 				/* We return false here so the widget display
 				 * status stays selected whilst it repeats
@@ -1313,55 +1313,82 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 static bool
 click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	//short b;
-
-	//vq_key_s(C.vh, &b);
-
 	/* Ozk: If either shifts pressed, unconditionally send the window to bottom */
-	if ((widg->k & 3) && (!((wind->active_widgets & STORE_BACK) !=0 ) || !((wind->active_widgets & BACKDROP) == 0)))
+	if (md->state == MBS_LEFT)
 	{
-		if (wind->send_message)
-			wind->send_message(lock, wind, NULL, WM_BOTTOMED, 0, 0, wind->handle, 0, 0, 0, 0);
-		else
-			bottom_window(lock, wind);
-	}
-	else
-	{
-		/* if not on top or on top and not focus */
-		//if ( wind != window_list ||
-		//    (wind == window_list && wind != C.focus))
-		if (!is_topped(wind))
+		if ((widg->k & 3) && (!((wind->active_widgets & STORE_BACK) !=0 ) || !((wind->active_widgets & BACKDROP) == 0)))
 		{
 			if (wind->send_message)
-				wind->send_message(lock, wind, NULL,
-						   WM_TOPPED, 0, 0, wind->handle,
-						   0, 0, 0, 0);
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
+						   WM_BOTTOMED, 0, 0, wind->handle, 0, 0, 0, 0);
 			else
-				/* Just top these windows, they can handle it... */
-				/* Top the window */
-				top_window(lock, wind, NULL);
+				bottom_window(lock, wind);
 		}
-		/* If window is already top, then send it to the back */
-
-		/* Ozk: Always bottom iconified windows... */
-		else if (wind->window_status == XAWS_ICONIFIED)
+		else
 		{
-			if (wind->send_message)
-				wind->send_message(lock, wind, NULL, WM_BOTTOMED, 0, 0, wind->handle, 0,0,0,0);
-		}
-		else if (!((wind->active_widgets & STORE_BACK) != 0		/* Don't bottom STORE_BACK windows */
-			    || (wind->active_widgets & BACKDROP) == 0) )	/* Don/t bottom NO BACKDROP windows */
-		{
+			/* if not on top or on top and not focus */
+			//if ( wind != window_list ||
+			//    (wind == window_list && wind != C.focus))
+			if (!is_topped(wind))
+			{
 				if (wind->send_message)
-					wind->send_message(lock, wind, NULL,
-							   WM_BOTTOMED, 0, 0, wind->handle,
+					wind->send_message(lock, wind, NULL, AMQ_NORM,
+							   WM_TOPPED, 0, 0, wind->handle,
 							   0, 0, 0, 0);
 				else
-					/* Just bottom these windows, they can handle it... */
-					bottom_window(lock, wind);
+					/* Just top these windows, they can handle it... */
+					/* Top the window */
+					top_window(lock, wind, NULL);
+			}
+			/* If window is already top, then send it to the back */
+
+			/* Ozk: Always bottom iconified windows... */
+			else if ((wind->window_status & XAWS_ICONIFIED))
+			{
+				if (wind->send_message)
+					wind->send_message(lock, wind, NULL, AMQ_NORM, WM_BOTTOMED, 0, 0, wind->handle, 0,0,0,0);
+			}
+			else if (!((wind->active_widgets & STORE_BACK) != 0		/* Don't bottom STORE_BACK windows */
+				    || (wind->active_widgets & BACKDROP) == 0) )	/* Don/t bottom NO BACKDROP windows */
+			{
+					if (wind->send_message)
+						wind->send_message(lock, wind, NULL, AMQ_NORM,
+								   WM_BOTTOMED, 0, 0, wind->handle,
+								   0, 0, 0, 0);
+					else
+						/* Just bottom these windows, they can handle it... */
+						bottom_window(lock, wind);
+			}
 		}
 	}
+	else if (md->state == MBS_RIGHT)
+	{
+		if ((wind->window_status & XAWS_SHADED))
+		{
+			if (wind->send_message)
+			{
+				DIAGS(("Click_title: unshading window %d for %s",
+					wind->handle, wind->owner->name));
 
+				wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
+					WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
+
+				move_window(lock, wind, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+			}
+		}
+		else
+		{
+			if (wind->send_message)
+			{
+				DIAGS(("Click_title: shading window %d for %s",
+					wind->handle, wind->owner->name));
+
+				move_window(lock, wind, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+				wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
+					WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
+			}
+		}
+	}
 	return true;
 }
 
@@ -1375,9 +1402,9 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 	{
 		/* If window is iconified - send request to restore it */
 
-		if (wind->window_status == XAWS_ICONIFIED)
+		if ((wind->window_status & XAWS_ICONIFIED))
 		{
-			wind->send_message(lock, wind, NULL,
+			wind->send_message(lock, wind, NULL, AMQ_NORM,
 					   WM_UNICONIFY, 0, 0, wind->handle,
 					   wind->pr.x, wind->pr.y, wind->pr.w, wind->pr.h);
 		}
@@ -1385,7 +1412,7 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 		{
 			/* Ozk 100503: Double click on title now sends WM_FULLED,
 			 * as N.AES does it */
-			wind->send_message(lock, wind, NULL,
+			wind->send_message(lock, wind, NULL, AMQ_NORM,
 					   WM_FULLED, 0, 0, wind->handle,
 					   0, 0, 0, 0);
 		}
@@ -1434,7 +1461,7 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 {
 	if (wind->send_message)
 	{
-		wind->send_message(lock, wind, NULL,
+		wind->send_message(lock, wind, NULL, AMQ_NORM,
 				   WM_CLOSED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
 
@@ -1462,7 +1489,7 @@ static bool
 click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	if (wind->send_message)
-		wind->send_message(lock, wind, NULL,
+		wind->send_message(lock, wind, NULL, AMQ_NORM,
 				   WM_FULLED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
 	return true;
@@ -1479,38 +1506,38 @@ click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 static bool
 click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
+	DIAGS(("click_iconify:"));
+	
 	if (wind->send_message == NULL)
 		return false;
 
-	switch (wind->window_status)
+	if ((wind->window_status & XAWS_OPEN))
 	{
-		case XAWS_OPEN:
+		if ((wind->window_status & XAWS_ICONIFIED))
+		{
+			/* Window is already iconified - send request to restore it */
+
+			wind->send_message(lock, wind, NULL, AMQ_NORM,
+					   WM_UNICONIFY, 0, 0, wind->handle,
+					   wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
+		}
+		else
 		{
 			/* Window is open - send request to iconify it */
 
-			RECT ic = free_icon_pos(lock|winlist);
+			RECT ic = free_icon_pos(lock|winlist, NULL);
 
 			/* Could the whole screen be covered by iconified
 			 * windows? That would be an achievement, wont it?
 			 */
 			if (ic.y > root_window->wa.y)
-				wind->send_message(lock|winlist, wind, NULL,
-						   WM_ICONIFY, 0, 0, wind->handle,
-						   ic.x, ic.y, ic.w, ic.h);
-
-			break;	
-		}
-		case XAWS_ICONIFIED:
-		{
-			/* Window is already iconified - send request to restore it */
-
-			wind->send_message(lock, wind, NULL,
-					   WM_UNICONIFY, 0, 0, wind->handle,
-					   wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
-			break;
+			{
+				wind->send_message(lock|winlist, wind, NULL, AMQ_NORM,
+					   WM_ICONIFY, 0, 0, wind->handle,
+					   ic.x, ic.y, ic.w, ic.h);
+			}
 		}
 	}
-
 	/* Redisplay.... */
 	return true;
 }
@@ -1606,20 +1633,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		if (move || size)
 		{
 			if (move)
-			{
-				if (wind->send_message)
-					wind->send_message(lock, wind, NULL,
-							   WM_MOVED, 0, 0, wind->handle,
-							   r.x, r.y, r.w, r.h);
-				else
-					/* Just move these windows, they can handle it... */
-					move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
-			}
-
-			if (size && wind->send_message)
-				wind->send_message(lock, wind, NULL,
-						   WM_SIZED, 0, 0, wind->handle,
-						   r.x, r.y, r.w, r.h);
+				send_moved(lock, wind, AMQ_NORM, &r);
+			if (size)
+				send_sized(lock, wind, AMQ_NORM, &r);
 		}
 	}
 	else if (widget_active.m.cstate)
@@ -1676,41 +1692,16 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 					    use_max ? wind->max.h : root_window->wa.h);
 			}
 
-#if 0
-			if (use_max)
-			{
-				if (r.w > wind->max.w)
-					r.w = wind->max.w;
-				if (r.h > wind->max.h)
-					r.h = wind->max.h;
-			}
-
-			if (r.w < 6*cfg.widg_w)
-				r.w = 6*cfg.widg_w;
-			if (r.h < 6*cfg.widg_h)
-				r.h = 6*cfg.widg_h;
-
-#endif
 			move = r.x != wind->r.x || r.y != wind->r.y,
 			size = r.w != wind->r.w || r.h != wind->r.h;
 			
 			if (move || size)
 			{
 				if (move)
-					wind->send_message(lock, wind, NULL,
-							   WM_MOVED, 0, 0, wind->handle,
-							   r.x, r.y, r.w, r.h);
+					send_moved(lock, wind, AMQ_NORM, &r);
 				if (size)
-					wind->send_message(lock, wind, NULL,
-							   WM_SIZED, 0, 0, wind->handle,
-							   r.x, r.y, r.w, r.h);
+					send_sized(lock, wind, AMQ_NORM, &r);
 			}
-#if 0
-			else
-				/* Send a dummy message. */
-				wind->send_message(lock, wind, NULL, 0, 0, 0, 0, 0, 0, 0, 0);
-
-#endif
 			/* We return false here so the widget display status
 			 * stays selected whilst it repeats */
 			return false;
@@ -1853,7 +1844,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 								  slider->r.w - ssl->r.w));
 
 				if (wind->send_message)
-					wind->send_message(lock, wind, NULL,
+					wind->send_message(lock, wind, NULL, AMQ_NORM,
 							   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
 							   0, 0, wind->handle, offs, 0, 0, 0);
 			}
@@ -1866,20 +1857,20 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 		{
 			if (reverse)
 			{
-				wind->send_message(lock, wind, NULL,
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
 						   0, 0, wind->handle, widg->xlimit, 0, 0, 0);
 			}
 			else
 			{
-				wind->send_message(lock, wind, NULL,
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID, 
 						   0, 0, wind->handle, widg->limit, 0, 0, 0);
 			}
 		}
 		else
 		{
-			wind->send_message(lock, wind, NULL,
+			wind->send_message(lock, wind, NULL, AMQ_NORM,
 					   WM_ARROWED, 0, 0, wind->handle,
 					   reverse ? widg->xarrow : widg->arrowx, 0, 0, 0);
 
@@ -2162,7 +2153,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			widget_active.offs = offs;
 
 			if (wind->send_message)
-				wind->send_message(lock, wind, NULL,
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						   WM_VSLID, 0, 0, wind->handle,
 						   offs,     0, 0, 0);
 
@@ -2223,7 +2214,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			widget_active.offs = offs;
 
 			if (wind->send_message)
-				wind->send_message(lock, wind, NULL,
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						   WM_HSLID, 0, 0, wind->handle,
 						   offs, 0, 0, 0);
 
@@ -3016,6 +3007,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 {
 	XA_WIDGET *widg;
 	int f, clicks;
+	short winstatus = w->window_status;
 	bool inside = false;
 
 	clicks = md->clicks;
@@ -3032,7 +3024,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 
 		widg = w->widgets + f;
 
-		if (widg->display)					/* Is the widget in use? */
+		if (!(winstatus & widg->loc.statusmask) && widg->display)					/* Is the widget in use? */
 		{
 			if (    widg->loc.mask         == 0		/* not maskable */
 			    || (widg->loc.mask & mask) == 0)		/* masked */
@@ -3063,6 +3055,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 {
 	XA_WIDGET *widg;
 	int f, clicks;
+	short winstatus = w->window_status;
 
 	clicks = md->clicks;
 	if (clicks > 2)
@@ -3079,7 +3072,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 		widg = w->widgets + f;
 
-		if (widg->display)					/* Is the widget in use? */
+		if (!(winstatus & widg->loc.statusmask) && widg->display)					/* Is the widget in use? */
 		{
 			if (    widg->loc.mask         == 0		/* not maskable */
 			    || (widg->loc.mask & mask) == 0)		/* masked */
@@ -3309,6 +3302,7 @@ short
 wind_mshape(struct xa_window *wind, short x, short y)
 {
 	short shape = -1;
+	short status = wind->window_status;
 	struct xa_client *wo = wind == root_window ? get_desktop()->owner : wind->owner;
 	XA_WIDGET *widg;
 	RECT r;
@@ -3318,17 +3312,19 @@ wind_mshape(struct xa_window *wind, short x, short y)
 		if (wind->active_widgets & SIZER)
 		{
 			widg = wind->widgets + XAW_RESIZE;
-
-			if (wind->frame > 0 && (!m_inside(x, y, &wind->ba)))
+			if (wind->frame > 0 && !(wind->widgets[XAW_BORDER].loc.statusmask & status) && (!m_inside(x, y, &wind->ba)))
 			{
 				r = wind->r;
 				shape = border_mouse[compass(16, x, y, r)];
 			}
 			else
 			{
-				rp_2_ap_cs(wind, widg, &r);
-				if (m_inside(x, y, &r))
-					shape = border_mouse[SE];
+				if (!(widg->loc.statusmask & status))
+				{
+					rp_2_ap_cs(wind, widg, &r);
+					if (m_inside(x, y, &r))
+						shape = border_mouse[SE];
+				}
 			}
 		}
 		if (shape != -1)

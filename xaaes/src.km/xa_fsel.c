@@ -859,7 +859,7 @@ fs_key_form_do(enum locks lock,
 		{
 			int drive_object_index = find_drive(nk);
 			if (drive_object_index >= FSEL_DRVA)
-				wind->send_message(lock, wind, NULL,
+				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						   MN_SELECTED, 0, 0, FSEL_DRV,
 						   drive_object_index, 0, 0, 0);
 		}
@@ -919,6 +919,7 @@ static void
 fs_msg_handler(
 	struct xa_window *wind,
 	struct xa_client *to,
+	short amq,
 	short *msg)
 {
 	enum locks lock = 0;
@@ -953,7 +954,7 @@ fs_msg_handler(
 	}
 	default:
 	{
-		do_formwind_msg(wind, to, msg);
+		do_formwind_msg(wind, to, amq, msg);
 	}
 	}
 }

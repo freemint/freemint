@@ -192,7 +192,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 
 	if (wind)
 	{
-		if (wind->is_open)
+		if ((wind->window_status & XAWS_OPEN))
 		{
 			struct xa_rect_list *rl;
 			RECT dr;
