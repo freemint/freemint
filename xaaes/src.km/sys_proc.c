@@ -76,7 +76,7 @@ xaaes_on_exit(void *_client, struct proc *p, int code)
 {
 	enum locks lock = NOLOCKS;
 
-	DEBUG(("xaaes_on_exit event for %u (%i)", p->pid, code));
+	DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
 	exit_client(lock, _client, code);
 }
 

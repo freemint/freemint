@@ -509,7 +509,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 						p_renice(p->pid, -4);
 
 					DIAG((D_appl, 0, "Alloc client; APP %d", p->pid));
+
 					type = APP_APPLICATION;
+					ret = p->pid;
 				}
 			}
 
@@ -543,10 +545,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			b->p_dbase = b->p_tbase;
 			b->p_tbase = (char *)b + size;
 
-			ret = p->pid;
-
 			p_renice(p->pid, -4);
+
 			type = APP_ACCESSORY;
+			ret = p->pid;
 
 			break;
 		}
@@ -600,17 +602,10 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(3,1,2)
 
-	DIAG((D_shel, NULL, "shel_write(0x%x,%d,%d) for %s",
-		pb->intin[0], wisgr, wiscr, client->name));
+	DIAG((D_shel, NULL, "shel_write(0x%d,%d,%d) for %s",
+		wdoex, wisgr, wiscr, client->name));
 
-	/* Ozk: I had loads of problems with small applications freezing
-	 *	my Hades. Reason turned out to be that small apps might
-	 *	terminate before the the parent code after Pvfork() call
-	 *	ran, which means the parent accessed a struct xa_client already
-	 *	freed by the SigCHLD handler. So we just block SIGCHLD here
-	 *	and wait with releasing it until we've done our work on it.
-	*/
-	if (wdoex < 4)
+	if ((wdoex & 0xff) < 4)
 	{
 		Sema_Up(envstr);
 
@@ -618,9 +613,9 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				       pb->intin[0],
 				       wisgr,
 				       wiscr,
-				       (char*)pb->addrin[0],
-				       (char*)pb->addrin[1],
-				        client);
+				       (char *)pb->addrin[0],
+				       (char *)pb->addrin[1],
+				       client);
 
 		// XXX wait until appl_init from new child???
 
@@ -631,7 +626,7 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		char *cmd = (char*)pb->addrin[0];
 
 		DIAG((D_shel, NULL, " -- 0x%x, wisgr %d, wiscr %d",
-			pb->intin[0], pb->intin[1], pb->intin[2]));
+			wdoex, wisgr, wiscr));
 
 		pb->intout[0] = 0;
 
