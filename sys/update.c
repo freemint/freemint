@@ -87,14 +87,10 @@ start_sysupdate (void)
 	addroottimeout (1000L * sync_time, do_sync, 0);
 
 # else
-	struct proc *p;
 	long r;
 
-	r = kthread_create (update, NULL, &p, "update");
+	r = kthread_create (NULL, update, NULL, NULL, "update");
 	if (r != 0)
 		FATAL ("can't create \"update\" kernel thread");
-
-	/* this blocks SIGKILL for the update process */
-	p->p_flag |= P_FLAG_SYS;
 # endif
 }
