@@ -33,7 +33,9 @@ struct buf
 	char	data[0];
 };
 
+
 long	buf_init (void);
+
 BUF *	buf_alloc (ulong, ulong, short);
 void	buf_free (BUF *, short);
 BUF *	buf_reserve (BUF *, long, short);
