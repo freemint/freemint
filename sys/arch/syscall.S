@@ -447,9 +447,7 @@ L_noflush:
 	move.l	d0,a0
 	jsr	(a0)			// go do the call
 
-out:	moveq	#0,d2			// Flag - if clear, check if we should preemtp
-out_select:				// enter here with preempt selection in D2
-	move.l	_curproc,a0
+out:	move.l	_curproc,a0
 	move.l	d0,P_SYSCTXT+C_D0(a0)	// set d0 in the saved context
 	move.w	P_SYSCTXT+C_SR(a0),d0	// get saved status register
 
@@ -588,11 +586,10 @@ norm_trap2:
 // kernel itself anymore)
 
 	tst.w	_in_kernel
-#ifdef ONLY030
+#ifdef	ONLY030
 	bne.s	rom_trap2
 #else
 	bne	rom_trap2
-#endif
 #endif
 	bset	#0x07,_in_kernel
 	// The AES/VDI passes parameters in D0/D1, so we do not touch
@@ -623,10 +620,8 @@ norm_trap2:
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 trap2_out:
-	moveq	#1,d2			// Dont preempt -- some things are messed up if we do
-	bra	out_select		// after calling old vectors. Gotta experiment much more
-					// with this. The Cursor in Toswin2 didnt appear when
-					// preempting ...
+	bra	out
+
 	// Call the VDI
 	// long VDI_dispach( VDIpb *pb );
 enter_vdi:
@@ -665,15 +660,8 @@ trap2_vdihandler:
 
 	// Call old trap 2, when no function registered
 old_trap2:
-	clr.w	-(sp)
-	move.l	#trap2_out,-(sp)
-	move.w	sr,-(sp)
-#ifdef	ONLY030
-	jmp	([_old_trap2])
-#else
-	move.l	_old_trap2,-(sp)
-	rts
-#endif
+	bsr	_trap_2_emu
+	bra.s	trap2_out
 
 rom_trap2:
 	move.l	_old_trap2,-(sp)
@@ -719,10 +707,15 @@ _trap_2_emu:
 	tst.w	(0x059e).w
 	beq.s	TE_AV
 #endif
-	move.l	(sp)+,-6(sp)		// return address
-	clr.w	-(sp)			// frame format word
-	subq.w	#4,sp			// already got return address here
+	move.l	(sp)+,a0
+	clr.w	-(sp)
+	move.l	a0,-(sp)
 TE_AV:	move.w	sr,-(sp)
+//	Ozk: Can someone tell me why this code doesnt work???
+//	move.l	(sp)+,-6(sp)
+//	clr.w	-(sp)
+//	subq.w	#4,sp
+//TE_AV:	move.w	sr,-(sp)
 #ifdef	ONLY030
 	jmp	([_old_trap2])
 #else
