@@ -78,7 +78,7 @@ long		memused		(PROC *p);
 void		recalc_maxmem	(PROC *p);
 
 int		valid_address	(long addr);
-MEMREGION *	addr2mem	(virtaddr a);
+MEMREGION *	addr2mem	(PROC *p, virtaddr a);
 MEMREGION *	addr2region	(long addr);
 MEMREGION *	proc_addr2region(PROC *p, long addr);
 
@@ -879,7 +879,13 @@ _get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 	SANITY_CHECK (map);
 	
 	if (kernel_flag)
+	{
 		assert (m);
+		
+		/* for ST-RAM don't follow special kernel alloc strategy */
+		if (map == core)
+			kernel_flag = 0;
+	}
 	
 	/* precautionary measures */
 	if (!size)
@@ -1559,7 +1565,7 @@ create_env (const char *env, ulong flags)
 		DEBUG(("create_env: alloc_region failed"));
 		return NULL;
 	}
-	m = addr2mem(v);
+	m = addr2mem(curproc, v);
 
 	/* copy the old environment into the new */
 	new = (char *) m->loc;
@@ -1714,7 +1720,7 @@ again1:
 				ismax = -1;
 				goto again1;
 			}
-			if (NULL != (s->text = addr2mem(alloc_region(map, fh->ftext, PROT_P))))
+			if (NULL != (s->text = addr2mem(curproc, alloc_region(map, fh->ftext, PROT_P))))
 			{
 				goto again2;
 			}
@@ -1819,12 +1825,12 @@ again1:
 	{
 		if (!s->text)
 		{
-			m = addr2mem(alloc_region(map, len + fh->ftext + KERNEL_MEM, protmode));
+			m = addr2mem(curproc, alloc_region(map, len + fh->ftext + KERNEL_MEM, protmode));
 			if (!m ||
 			    (((len > minalt &&
 				((flags & F_MINALT) < F_MINALT) &&
 				max_rsize (map, -1) < fh->ftext) ||
-			      0 == (s->text = addr2mem(alloc_region(map, fh->ftext, PROT_P))) ||
+			      0 == (s->text = addr2mem(curproc, alloc_region(map, fh->ftext, PROT_P))) ||
 			      (m->next == s->text &&
 				!(detach_region (curproc, s->text), s->text = 0))) &&
 			     shrink_region(m, fh->ftext)))
@@ -1854,7 +1860,7 @@ again1:
 	}
 	
 	if (!m)
-		m = addr2mem (alloc_region (map, len, protmode));
+		m = addr2mem (curproc, alloc_region (map, len, protmode));
 	
 	if (!m)
 	{
@@ -2278,10 +2284,10 @@ get_text_seg (FILEPTR *f, FILEHEAD *fh, XATTR *xp, SHTEXT *s, int noalloc, long 
 		 * the text segment is going in there). But better safe than sorry.
 		 */
 		if (fh->flag & F_ALTLOAD)
-			m = addr2mem (alloc_region (alt, fh->ftext, PROT_P));
+			m = addr2mem (curproc, alloc_region (alt, fh->ftext, PROT_P));
 		
 		if (!m)
-			m = addr2mem (alloc_region (core, fh->ftext, PROT_P));
+			m = addr2mem (curproc, alloc_region (core, fh->ftext, PROT_P));
 	}
 	
 	if (!m)
@@ -2665,13 +2671,13 @@ valid_address (long addr)
  */
 
 MEMREGION *
-addr2mem (virtaddr a)
+addr2mem (PROC *p, virtaddr a)
 {
 	register int i;
 	
-	for (i = 0; i < curproc->num_reg; i++)
-		if (a == curproc->addr[i])
-			return curproc->mem[i];
+	for (i = 0; i < p->num_reg; i++)
+		if (a == p->addr[i])
+			return p->mem[i];
 	
 	return NULL;
 }
