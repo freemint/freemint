@@ -148,7 +148,7 @@ struct options
 	int wheel_page;			/* how many wheel clicks for a page */
 
 	long half_screen;
-	IFDIAG(enum debug_item point[D_max]);
+	IFDIAG(enum debug_item point[D_max];)
 };
 
 struct opt_list

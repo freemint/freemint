@@ -281,8 +281,10 @@ cleanup(void)
 		vex_motv(C.P_handle, svmotv, &m);
 		vex_butv(C.P_handle, svbutv, &b);
 
+#if XXX
 		//if (svwhlv)
 		//	vex_whlv(C.P_handle, svwhlv, &h);
+#endif
 	}
 
 	Psignal(SIGCHLD, 0L);
@@ -541,12 +543,14 @@ init_moose(void)
 		vex_motv(C.P_handle, vecs_com.motv, &svmotv);
 		vex_butv(C.P_handle, vecs_com.butv, &svbutv);
 
+#if XXX
 		//if (vecs_com.whlv)
 		//{
 		//	vex_whlv(C.P_handle, vecs_com.whlv, &svwhlv);
 		//	fdisplay(loghandle, true, "Wheel support present\n");
 		//}
 		//else
+#endif
 			fdisplay(loghandle, true, "No wheel support!!\n");
 	}
 
@@ -755,7 +759,7 @@ BTRACE(18);
 BTRACE(19);
 		}
 		else
-			; // XXX warn at least about that
+			; /* XXX warn at least about that */
 	}
 #endif
 
