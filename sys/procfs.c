@@ -1012,12 +1012,11 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			if ((newflags & F_OS_SPECIAL)
 				&& (!(p->memflags & F_OS_SPECIAL)))
 			{
-				/* It is secure_mode > 1 to keep compatibility
-				 * with the AES wanting to run as user shell.
-				 * If you ask me, that concept is broken, but well...
+				/* Restrict F_OS_SPECIAL to root. Some
+				 * day this flag will go away, I hope.
 				 */
 
-				if ((secure_mode > 1) && (curproc->p_cred->ucr->euid))
+				if ((secure_mode) && (curproc->p_cred->ucr->euid))
 					return EPERM;
 				/* you're making the process OS_SPECIAL */
 				TRACE (("Fcntl OS_SPECIAL pid %d",p->pid));
