@@ -195,9 +195,9 @@ find_menu_bar(enum locks lock)
 
 	Sema_Up(clients);
 
-	last = S.client_list;
-	while (last->next)
-		last = last->next;
+	last = APP_LIST_START;
+	while (NEXT_APP(last))
+		last = NEXT_APP(last);
 
 	while (last)
 	{
@@ -208,7 +208,7 @@ find_menu_bar(enum locks lock)
 			break;
 		}
 
-		last = last->prior;
+		last = PREV_APP(last);
 	}
 
 	Sema_Dn(clients);
@@ -223,9 +223,9 @@ find_desktop(enum locks lock)
 
 	Sema_Up(clients);
 
-	last = S.client_list;
-	while (last->next)
-		last = last->next;
+	last = APP_LIST_START;
+	while (NEXT_APP(last))
+		last = NEXT_APP(last);
 
 	while (last)
 	{
@@ -235,7 +235,8 @@ find_desktop(enum locks lock)
 			DIAGS(("found desktop %lx", rtn));
 			break;
 		}
-		last = last->prior;
+
+		last = PREV_APP(last);
 	}
 
 	Sema_Dn(clients);
@@ -308,30 +309,27 @@ hide_app(enum locks lock, struct xa_client *client)
 void
 hide_other(enum locks lock, struct xa_client *client)
 {
-	struct xa_client *list;
+	struct xa_client *cl;
 
-	list = S.client_list;
-	while (list)
+	FOREACH_CLIENT(cl)
 	{
-		if (list != client)
-			hide_app(lock, list);
-
-		list = list->next;
+		if (cl != client)
+			hide_app(lock, cl);
 	}
+
 	app_in_front(lock, client);
 }
 
 void
 unhide_all(enum locks lock, struct xa_client *client)
 {
-	struct xa_client *list;
+	struct xa_client *cl;
 
-	list = S.client_list;
-	while (list)
+	FOREACH_CLIENT(cl)
 	{
-		unhide_app(lock, list);
-		list = list->next;
+		unhide_app(lock, cl);
 	}
+
 	app_in_front(lock, client);
 }
 
@@ -432,10 +430,12 @@ next_app(enum locks lock, bool wwom)
 {
 	struct xa_client *client;
 
-	client = S.client_list;
-
-	while (client->next)
-		client = client->next;
+	client = APP_LIST_START;
+	if (client)
+	{
+		while (NEXT_APP(client))
+			client = NEXT_APP(client);
+	}
 
 	if (wwom)
 	{
@@ -444,21 +444,27 @@ next_app(enum locks lock, bool wwom)
 			if (client->std_menu || any_window(lock, client))
 				break;
 
-			client = client->prior;
+			client = PREV_APP(client);
 		}
 	}
 	else
 	{	
-		if (client == S.client_list)
+		if (client == APP_LIST_START)
 			client = NULL;
 	}
+
 	return client;
 }
 
 struct xa_client *
 previous_client(enum locks lock)
 {
-	return S.client_list->next;
+	struct xa_client *client = APP_LIST_START;
+
+	if (client)
+		client = NEXT_APP(client);
+
+	return client;
 }
 
 void
@@ -508,23 +514,9 @@ app_in_front(enum locks lock, struct xa_client *client)
 void
 set_active_client(enum locks lock, struct xa_client *client)
 {
-	if (client != S.client_list)
+	if (client != APP_LIST_START)
 	{
-		if (client->prior)
-			client->prior->next = client->next;
-		if (client->next)
-			client->next->prior = client->prior;
-		if (S.client_list)
-		{
-			S.client_list->prior = client;
-			client->next = S.client_list;
-			client->prior = NULL;
-			S.client_list = client;
-		}
-		else
-		{
-			S.client_list = client;
-			client->next = client->prior = NULL;
-		}
+		APP_LIST_REMOVE(client);
+		APP_LIST_INSERT_START(client);
 	}
 }

@@ -437,8 +437,7 @@ built_desk_popup(enum locks lock, short x, short y)
 
 	Sema_Up(clients);
 
-	client = S.client_list;
-	while (client)
+	FOREACH_CLIENT(client)
 	{
 		if (client->type == APP_ACCESSORY || client == C.Aes)
 		{
@@ -453,7 +452,6 @@ built_desk_popup(enum locks lock, short x, short y)
 					: client->proc_name);
 			n++;
 		}
-		client = client->next;
 	}
 
 	menu_regcl[n] = NULL;
@@ -462,8 +460,7 @@ built_desk_popup(enum locks lock, short x, short y)
 
 	DIAGS(("built_ fetch APP names.."));
 
-	client = S.client_list;
-	while (client)
+	FOREACH_CLIENT(client)
 	{
 		if (client->type != APP_ACCESSORY && client != C.Aes)
 		{
@@ -477,7 +474,6 @@ built_desk_popup(enum locks lock, short x, short y)
 					: client->proc_name);
 			n++;
 		}
-		client = client->next;
 	}
 
 	if (split == n-1)		/* dont want to see split when last */

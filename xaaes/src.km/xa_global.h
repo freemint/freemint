@@ -48,7 +48,9 @@ struct shared
 	struct win_base side_windows;	/* list of other special windows like menus popups etc */
 	struct win_base deleted_windows;/* list of windows to be deleted (delayed action) */
 
-	struct xa_client *client_list;	/* The clients database */
+	LIST_HEAD(xa_client) client_list;
+	LIST_HEAD(xa_client) app_list;
+
 	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
 	struct opt_list *app_options;	/* individual option settings. */
 
@@ -57,6 +59,61 @@ struct shared
 
 /* Area's shared between server and client, subject to locking. */
 extern struct shared S;
+
+
+/* CLIENT list operations */
+
+#define CLIENT_LIST_INIT() \
+	LIST_INIT(&(S.client_list))
+
+#define CLIENT_LIST_START \
+	LIST_START(&(S.client_list))
+
+#define NEXT_CLIENT(client) \
+	LIST_NEXT(client,client_entry)
+
+#define PREV_CLIENT(client) \
+	LIST_PREV(client,client_entry)
+
+#define CLIENT_LIST_INSERT_START(client) \
+	LIST_INSERT_START(&(S.client_list), client, client_entry);
+
+#define CLIENT_LIST_INSERT_END(client) \
+	LIST_INSERT_END(&(S.client_list), client, client_entry, xa_client);
+
+#define CLIENT_LIST_REMOVE(client) \
+	LIST_REMOVE(&(S.client_list), client, client_entry)
+
+#define FOREACH_CLIENT(client) \
+	LIST_FOREACH(&(S.client_list), client, client_entry)
+
+
+/* APP list operations */
+
+#define APP_LIST_INIT() \
+	LIST_INIT(&(S.app_list))
+
+#define APP_LIST_START \
+	LIST_START(&(S.app_list))
+
+#define NEXT_APP(client) \
+	LIST_NEXT(client,app_entry)
+
+#define PREV_APP(client) \
+	LIST_PREV(client,app_entry)
+
+#define APP_LIST_INSERT_START(client) \
+	LIST_INSERT_START(&(S.app_list), client, app_entry);
+
+#define APP_LIST_INSERT_END(client) \
+	LIST_INSERT_END(&(S.app_list), client, app_entry, xa_client);
+
+#define APP_LIST_REMOVE(client) \
+	LIST_REMOVE(&(S.app_list), client, app_entry)
+
+#define FOREACH_APP(client) \
+	LIST_FOREACH(&(S.app_list), client, app_entry)
+
 
 struct shel_info
 {

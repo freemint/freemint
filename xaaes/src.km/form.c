@@ -28,6 +28,7 @@
 #include "xa_global.h"
 
 #include "form.h"
+#include "app_man.h"
 #include "draw_obj.h"
 #include "obtree.h"
 #include "rectlist.h"
