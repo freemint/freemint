@@ -12,6 +12,8 @@ TEXTWIN *create_textwin (char *title, WINCFG *cfg);
 void 	destroy_textwin (TEXTWIN *t);
 
 void 	resize_textwin (TEXTWIN *t, short cols, short rows, short scrollback);
+void	soft_resize_textwin (TEXTWIN *t, short cols, short rows,
+			     short scrollback);
 void	textwin_setfont (TEXTWIN *t, short font, short points);
 void	reconfig_textwin (TEXTWIN *t, WINCFG *cfg);
 
