@@ -156,6 +156,7 @@ get_delim_string(char **line)
 
 	return ret;
 }
+
 static char *
 get_commadelim_string(char **line)
 {
@@ -207,6 +208,7 @@ get_string(char **line)
 
 	return ret;
 }
+
 /*
  * Ozk: Very rough implementation -- clean and make this safer later..
  */
@@ -258,6 +260,7 @@ get_argument(char *wfarg, short *result)
 	}
 	return 0;
 }
+
 static short
 get_boolarg(char *s, bool *result)
 {
@@ -324,6 +327,7 @@ get_boolarg(char *s, bool *result)
 	
 	return ret;
 }
+
 /*============================================================================*/
 /* Now follows the callback definitions in alphabetical order
  */
@@ -352,7 +356,7 @@ pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_toppage(const char *str)
+pCB_toppage(char *str)
 {
 	if (stricmp(str, "bold") == 0)
 	{
@@ -374,7 +378,7 @@ pCB_toppage(const char *str)
 }
 
 static void
-pCB_next_active(const char *str)
+pCB_next_active(char *str)
 {
 	if (stricmp(str, "client") == 0)
 	{
@@ -393,7 +397,7 @@ pCB_next_active(const char *str)
 }
 
 static void
-pCB_close_lastwind(const char *str)
+pCB_close_lastwind(char *str)
 {
 	if (stricmp(str, "client") == 0)
 	{
@@ -423,7 +427,7 @@ pCB_point_to_type(const char *str)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_cancel(const char *line)
+pCB_cancel(char *line)
 {
 	int i = 0;
 
@@ -444,12 +448,11 @@ pCB_cancel(const char *line)
 }
 
 static void
-pCB_app_options(const char *line)
+pCB_app_options(char *line)
 {
-	int i = 0;
-	char *s;
 	struct opt_list *op = S.app_options;
 	struct options *opts = NULL;
+	char *s;
 
 	if ((s = get_string(&line)))
 	{
@@ -474,6 +477,7 @@ pCB_app_options(const char *line)
 				op = op->next;
 			}
 		}
+
 		if (!opts)
 		{
 			op = kmalloc(sizeof(*op));
@@ -494,6 +498,7 @@ pCB_app_options(const char *line)
 				
 			}
 		}
+
 		DIAGS(("opts = %lx (aesys=%lx, default=%lx)",
 			opts, (long)&C.Aes->options, (long)&default_options));
 
@@ -524,7 +529,7 @@ pCB_app_options(const char *line)
 			else if (!strnicmp(s, "naes", 4))
 				get_boolarg(s + 4, &opts->naes);
 			else if (!strnicmp(s, "winframe_size", 13))
-				get_argument(s + 13, (short *)&opts->thinframe);
+				get_argument(s + 13, &opts->thinframe);
 
 #if GENERATE_DIAGS
 			else
@@ -535,7 +540,7 @@ pCB_app_options(const char *line)
 }
 /*----------------------------------------------------------------------------*/
 static void
-pCB_filters(const char *line)
+pCB_filters(char *line)
 {
 	const int max = sizeof(cfg.Filters)/sizeof(cfg.Filters[0]);
 	int i = 0;
@@ -563,7 +568,7 @@ pCB_filters(const char *line)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_menu(const char *line)
+pCB_menu(char *line)
 {
 	for (;;)
 	{
@@ -590,7 +595,7 @@ pCB_menu(const char *line)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_helpserver(const char *line)
+pCB_helpserver(char *line)
 {
 	struct helpserver *hs;
 	char *ext, *name, *path;
