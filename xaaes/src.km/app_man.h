@@ -30,7 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
-struct xa_client *next_app(enum locks lock);
+struct xa_window * next_wind(enum locks lock);
+struct xa_client * next_app(enum locks lock);
 void swap_menu(enum locks lock, struct xa_client *, bool, int);
 void app_in_front(enum locks lock, struct xa_client *client);
 void hide_app(enum locks lock, struct xa_client *client);

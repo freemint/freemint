@@ -307,6 +307,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
+		{
 			client = next_app(lock); 	 /* including the AES for its menu bar. */
 			if (client)
 			{
@@ -314,42 +315,77 @@ kernel_key(enum locks lock, struct rawkey *key)
 				app_in_front(lock, client);
 			}
 			return true;
+		}
 		case 'R':				/* attempt to recover a hung system */
+		{
 			recover();
 			return true;
+		}
 		case 'L':				/* open the task manager */
 		case NK_ESC:
+		{
 			open_taskmanager(lock);
 			return true;
+		}
 		case 'T':				/* ctrl+alt+T    Tidy screen */
 		case NK_HOME:				/*     "    Home       "     */
+		{
 			display_windows_below(lock, &screen.r, window_list);
+		}
 		case 'M':				/* ctrl+alt+M  recover mouse */
+		{
 			forcem();
 			return true;
+		}
 		case 'Q':
 		case 'A':
+		{
 			DIAGS(("shutdown by CtlAlt Q/A"));
 			dispatch_shutdown(0);
 			return true;
+		}
 		case 'Y':				/* ctrl+alt+Y, hide current app. */
+		{
 			hide_app(lock, focus_owner());
 			return true;
+		}
 		case 'X':				/* ctrl+alt+X, hide all other apps. */
+		{
 			hide_other(lock, focus_owner());
 			return true;
+		}
 		case 'V':				/* ctrl+alt+V, unhide all. */
+		{
 			unhide_all(lock, focus_owner());
 			return true;
+		}
+		case 'W':
+		{
+			struct xa_window *wind;
+			wind = next_wind(lock);
+			if (wind)
+			{
+				top_window(lock, wind, 0);
+				swap_menu(lock, wind->owner, true, 60);
+				after_top(lock, true);
+			}
+			return true;
+		}
+
+			
 	#if GENERATE_DIAGS
 		case 'D':				/* ctrl+alt+D, turn on debugging output */
+		{
 			D.debug_level = 4;
 			return true;
+		}
 	#endif
 #if GENERATE_DIAGS
 		case 'O':
+		{
 			cfg.menu_locking ^= true;
 			return true;
+		}
 #endif
 		}
 	}
