@@ -45,7 +45,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	32
+# define VER_MINOR	33
 # define VER_STATUS	b
 
 
@@ -235,10 +235,35 @@ main (int argc, char *argv[])
 	
 	if (argc == 2 && !strcmp(argv[1], "--help"))
 	  	{
-		printf("Usage: %s [--dns1=inet_addr] [--dns2=inet_addr]\n"
-			" [--disable-old-system-resolve|-O] [--disable-system-resolve|-R]\n"
-			" [--enable-old-system-resolve|-o] [--enable-system-resolve|-r]\n"
-			" [-c|--compatibility[=version]] [--nocompatibility|-n]\n", argv[0]);
+		printf("Usage: %s (requires Kernel >=1.16)\n\n"
+			" [--dns1=inet_addr]\n"
+			"\tSet the ip address of the primary name server\n"
+			" [--dns2=inet_addr]\n"
+			"\tSet the ip address of the secondary name server\n"
+			"\t(Both of the above options are only useful,\n"
+			"\t if system-resolve is switched off. It may be\n"
+			"\t set for dial-up connections in /etc/ppp/ip-up\n"
+			" [--disable-old-system-resolve|-O]\n"
+		        "\tDisable MiNT function calls for DRACONIS \n"
+			"\tapplications <v1.8, bypass MiNT DNS calls.\n"
+			" [--disable-system-resolve|-R]\n"
+		        "\tDisable MiNT function calls for DRACONIS \n"
+			"\tapplications >=v1.8, bypass MiNT DNS calls.\n"
+			" [--enable-old-system-resolve|-o]\n"
+		        "\tEnable MiNT function calls for DNS query,\n"
+			"\tfor DRACONIS application <v1.8\n"
+			" [--enable-system-resolve|-r]\n"
+		        "\tEnable MiNT function calls for DNS query,\n"
+			"\tfor DRACONIS application >=v1.8\n"
+			" [-c|--compatibility[=version]]\n"
+			"\tSets the compatibility mode. If no version\n"
+		        "\tis specified, v1.7 is assumed\n"
+		        " [--nocompatibility|-n]\n"
+			"\tDisable compatibility mode\n"
+			"\nFor changing parameters simply restart mgw.prg\n"
+			"with the new parameters. The parameters are\n"
+		        "automatically passed to the running application\n",
+	  		argv[0]);
 		exit(0);
 	  	}
 
@@ -285,7 +310,7 @@ main (int argc, char *argv[])
 				/* printf ("Pmsg wait fail!\n"); */
 				continue;
 			}
-			
+		
 			switch (pmsg_in.msg1)
 			{
 				case MGW_GETHOSTBYNAME:
@@ -294,7 +319,6 @@ main (int argc, char *argv[])
 					
 					pmsg_out.msg1 = MGW_GETHOSTBYNAME;
 					pmsg_out.msg2 = (long) gethostbyname (s);
-					
 					break;
 				}
 				case MGW_GETHOSTBYADDR:
