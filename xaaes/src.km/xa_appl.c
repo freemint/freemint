@@ -31,6 +31,7 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "k_main.h"
+#include "k_keybd.h"
 #include "messages.h"
 #include "menuwidg.h"
 #include "sys_proc.h"
@@ -153,7 +154,8 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	 * add to app list
 	 */
 	CLIENT_LIST_INSERT_END(client);
-	APP_LIST_INSERT_START(client);
+	//APP_LIST_INSERT_START(client);
+	APP_LIST_INSERT_END(client);
 
 	/* remember process descriptor */
 	client->p = p;
@@ -252,6 +254,8 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_appl, client, "[2]Client %d home path = '%s'",
 			client->p->pid, client->home_path));
 	}
+
+	app_in_front(lock, client);
 
 clean_out:
 	/* Reset the AES messages pending list for our new application */
