@@ -47,11 +47,15 @@ long	_cdecl	new_chk		(void);
 long	_cdecl	new_trapv	(void);
 long	_cdecl	new_fpcp	(void);
 long	_cdecl	new_mmu		(void);
+long	_cdecl	new_mmuconf	(void);
 long	_cdecl	new_format	(void);
 long	_cdecl	new_cpv		(void);
 long	_cdecl	new_uninit	(void);
 long	_cdecl	new_spurious	(void);
 long	_cdecl	new_pmmuacc	(void);
+
+long	_cdecl	new_criticerr	(long error);
+void	_cdecl	new_exec_os (register long basepage);
 
 extern long gdos_version;
 extern long _cdecl (*aes_handler)(void *);
