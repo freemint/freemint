@@ -410,7 +410,8 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			tab->widg = NULL;
 			tab->ty = POP_UP;
 			tab->scroll = mn->mn_scroll != 0;
-			bzero(&tab->task_data.menu, sizeof(MENU_TASK));
+
+			bzero(&(tab->task_data.menu), sizeof(tab->task_data.menu));
 
 			do_popup(tab, ob, mn->mn_menu,
 				 click_popup_entry,
@@ -472,7 +473,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 
-			bzero(&(tab->task_data.menu), sizeof(MENU_TASK));
+			bzero(&(tab->task_data.menu), sizeof(tab->task_data.menu));
 
 			do_popup(tab, ob, 0,
 				 click_form_popup_entry,

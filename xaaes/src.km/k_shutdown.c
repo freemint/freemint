@@ -118,12 +118,23 @@ k_shutdown(void)
 
 	DIAGS(("Freeing Aes environment"));
 	if (C.env)
+	{
 		kfree(C.env);
+		C.env = NULL;
+	}
 
 	DIAGS(("Freeing Aes resources"));
 	/* To demonstrate the working on multiple resources. */
 	FreeResources(C.Aes, 0);/* first:  widgets */
 	FreeResources(C.Aes, 0);/* then:   big resource */
+
+	if (C.Aes->attach)
+		kfree(C.Aes->attach);
+
+	kfree(C.Aes->mnu_clientlistname);
+	kfree(C.Aes);
+
+	C.Aes = NULL;
 
 	DIAGS(("Freeing Options"));
 	{

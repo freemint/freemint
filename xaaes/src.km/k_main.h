@@ -46,7 +46,4 @@ void cancel_evnt_multi(struct xa_client *client, int which);
 void dispatch_shutdown(int flags);
 void k_main(void *);
 
-Tab *new_task(Tab *new);
-void free_task(Tab *, int *);
-
 #endif /* _k_main_h */

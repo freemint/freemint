@@ -122,12 +122,16 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 	
 	l = count_env(strings, 0);
 	DIAG((D_shel, NULL, "count_env: %ld", l));
+
 	argtail = kmalloc(l + 1 + tailsize + 1 + i + 1 + argvl + 1);
 	if (argtail)
 	{
-		int j; char *last;
+		char *last;
+		int j;
+
 		j = copy_env(argtail, strings, 0, &last);
 		DIAG((D_shel, NULL, "copy_env: %d, last-start: %ld", j, last - strings[0]));
+
 		strcpy(last, ARGV);
 		strcpy(last + argvl + 1, command);
 		parse_tail(last + argvl + 1 + i + 1, p_tail + 1);

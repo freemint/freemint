@@ -32,7 +32,7 @@ void
 cXA_fmdkey(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_client *client = ce->client;
-	struct rawkey *key = (struct rawkey *)ce->ptr1;
+	struct rawkey *key = ce->ptr1;
 
 	if (!cancel)
 	{
@@ -46,8 +46,8 @@ void
 cXA_keypress(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_client *client = ce->client;
-	struct rawkey *key = (struct rawkey *)ce->ptr1;
-	struct xa_window *wind = (struct xa_window *)ce->ptr2;
+	struct rawkey *key = ce->ptr1;
+	struct xa_window *wind = ce->ptr2;
 
 	if (!cancel)
 	{
@@ -61,7 +61,7 @@ void
 cXA_keybd_event(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_client *client = ce->client;
-	struct rawkey *key = (struct rawkey *)ce->ptr1;
+	struct rawkey *key = ce->ptr1;
 
 	if (!cancel)
 		keybd_event(lock, client, key);

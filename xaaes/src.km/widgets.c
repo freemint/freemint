@@ -1325,31 +1325,49 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
  *            double click on an arrow sends WM_xSLIDE with the apropriate limit.
  */
 
-static void
-do_widget_repeat(struct task_administration_block *tab)
+struct do_widget_repeat_data
 {
-	do_active_widget(tab->lock, tab->client);
+	struct xa_client *client;
+	enum locks lock;
+};
+
+static void
+do_widget_repeat(struct proc *p, long arg)
+{
+	struct do_widget_repeat_data *data = (struct do_widget_repeat_data *)arg;
+	struct timeout *t = NULL;
+
+	do_active_widget(data->lock, data->client);
 
 	if (widget_active.m.cstate)
-		tab->timeout = 1;
+		/* repeat */
+		t = addroottimeout(1, do_widget_repeat, 0);
+
+	if (t)
+		t->arg = (long)data;
 	else
-	{
-		tab->timeout = 0;
-		tab->task = 0;
-	}
+		kfree(data);
 }
 
 static void
 set_widget_repeat(enum locks lock, struct xa_window *wind)
 {
-	Tab *t = &C.active_timeout;
+	struct do_widget_repeat_data *data;
 
-	t->timeout = 1;
-	t->wind = wind;
-	t->client = wind->owner;
-	t->task = do_widget_repeat;
-	t->lock = lock;
-	wakeselect(C.Aes->p);
+	data = kmalloc(sizeof(*data));
+	if (data)
+	{
+		struct timeout *t;
+
+		t = addroottimeout(1, do_widget_repeat, 0);
+		if (t)
+		{
+			data->client = wind->owner;
+			data->lock = lock;
+
+			t->arg = (long)data;
+		}
+	}
 }
 
 static bool

@@ -67,17 +67,22 @@
 void
 cancel_cevents(struct xa_client *client)
 {
-	struct c_event *ce, *nxt;
+	struct c_event *ce;
 
 	ce = client->cevnt_head;
 	while (ce)
 	{
-		nxt = ce->next;
+		struct c_event *nxt = ce->next;
 
 		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",
 			ce, nxt, client->name));
+
+		/* callout as cancel event
+		 * handler can cleanup and free allocated ressources
+		 */
 		(*ce->funct)(0, ce, true);
 		kfree(ce);
+
 		ce = nxt;
 	}
 
@@ -141,13 +146,13 @@ post_cevent(struct xa_client *client,
 int
 dispatch_cevent(struct xa_client *client)
 {
-	struct c_event *ce, *nxt;
+	struct c_event *ce;
 	int ret = 0;
 
 	ce = client->cevnt_head;
 	if (ce)
 	{
-		nxt = ce->next;
+		struct c_event *nxt = ce->next;
 
 		if (!nxt)
 			client->cevnt_tail = nxt;
@@ -157,10 +162,13 @@ dispatch_cevent(struct xa_client *client)
 
 		DIAG((D_kern, client, "Dispatch evnt %lx (head %lx, tail %lx, count %d) for %s",
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
+
 		(*ce->funct)(0, ce, false);
 		kfree(ce);
+
 		ret = 1;
 	}
+
 	return ret;
 }
 
@@ -318,31 +326,75 @@ multi_intout(struct xa_client *client, short *o, int evnt)
 	}
 }
 
-static int alert_pending = 0;
+struct display_alert_data
+{
+	char *buf;
+	enum locks lock;
+};
+
+static void
+display_alert(struct proc *p, long arg)
+{
+	if (update_locked())
+	{
+		/* we need to delay */
+		struct timeout *t;
+
+		t = addroottimeout(100, display_alert, 0);
+		if (t)
+			t->arg = arg;
+	}
+	else
+	{
+		struct display_alert_data *data = (struct display_alert_data *)arg;
+
+		/* if an app left the mouse off */
+		forcem();
+
+		/* Bring up an alert */
+		do_form_alert(data->lock, C.Aes, 1, data->buf);
+
+		kfree(data);
+	}
+}
 
 static void
 alert_input(enum locks lock)
 {
 	/* System alert? Alert and add it to the log */
-	OBJECT *icon;
-	char *buf, c;
 	long n;
 
 	n = f_instat(C.alert_pipe);
 	if (n > 0)
 	{
-		SCROLL_ENTRY_TYPE flag = FLAG_MAL;
-		OBJECT *form;
+		struct display_alert_data *data;
+		OBJECT *form, *icon;
+		char c;
 
-		form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		buf = kmalloc(n + 4);
-		assert(buf);
-		f_read(C.alert_pipe, n, buf);
+		data = kmalloc(sizeof(*data));
+		if (!data)
+		{
+			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*data)));
+			return;
+		}
+
+		data->lock = lock;
+		data->buf = kmalloc(n+4);
+		if (!data->buf)
+		{
+			kfree(data);
+
+			DIAGS(("kmalloc(%i) failed, out of memory?", n+4));
+			return;
+		}
+
+		f_read(C.alert_pipe, n, data->buf);
 
 		/* Pretty up the log entry with a nice
 		 * icon to match the one in the alert
 		 */
-		c = buf[1];
+		form = ResourceTree(C.Aes_rsc, SYS_ERROR);
+		c = data->buf[1];
 		switch(c)
 		{
 		case '1':
@@ -362,27 +414,13 @@ alert_input(enum locks lock)
 			break;
 		}
 
-		if (update_locked())
-			flag |= FLAG_PENDING;
-
-		/* HR! not buf+4; you cant free that! */
 		/* Add the log entry */
-		add_scroll_entry(form, SYSALERT_LIST, icon, buf, flag);
+		add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL);
 
-		 /* HR: Now you can always lookup the error in the log. */
-		DIAGS(("ALERT PIPE: '%s' %s",buf, update_locked() ? "pending" : "displayed"));
-		if (flag & FLAG_PENDING)
-		{
-			ping();
-			alert_pending |= 1;
-		}
-		else
-		{
-			/* if a app left the mouse off */
-			forcem();
-			/* Bring up an alert */
-			do_form_alert(lock, C.Aes, 1, buf);
-		}
+		 /* Now you can always lookup the error in the log. */
+		DIAGS(("ALERT PIPE: '%s' %s", data->buf, update_locked() ? "pending" : "displayed"));
+
+		display_alert(NULL, (long)data);
 	}
 	else
 	{
@@ -436,10 +474,6 @@ static void k_exit(void);
 void
 k_main(void *dummy)
 {
-	unsigned long input_channels;
-	int fs_rtn, evnt_count = 0;
-
-
 	/*
 	 * setup kernel thread
 	 */
@@ -593,82 +627,33 @@ k_main(void *dummy)
 	         * semaphores are not needed and are effectively skipped.
 		 */
 		enum locks lock = winlist|envstr|pending;
+		unsigned long input_channels;
+		long fs_rtn;
 
 		input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
 		input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 
-		/* DIAG((D_kern, NULL, "Fselect mask: 0x%08lx", input_channels)); */
-
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard and alerts.
 		 */
-		fs_rtn = f_select(C.active_timeout.timeout, (long *) &input_channels, 0L, 0L);	
+		fs_rtn = f_select(0, (long *) &input_channels, 0L, 0L);	
 
-		DIAG((D_kern, NULL,">>Fselect(t%d) :: %d, channels: 0x%08lx, update_lock %d, mouse_lock %d",
-			C.active_timeout.timeout, fs_rtn, input_channels,
+		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d, mouse_lock %d",
+			fs_rtn,
+			input_channels,
 			update_locked() ? update_locked()->p->pid : 0,
 			mouse_locked() ? mouse_locked()->p->pid : 0));
 
 		if (C.shutdown & QUIT_NOW)
 			break;
 
-		if (evnt_count == 5000)
-		{
-			/* Housekeeping */
-			evnt_count = 0;
-		}
-
 		if (fs_rtn > 0)
 		{
-			/* HR Fselect returns no of bits set in input_channels */
-			evnt_count++;
-
-			if (input_channels & (1UL << C.alert_pipe))
-			{
-				alert_input(lock);
-			}
-			else
-			{
-				if (!update_locked() == 0 && alert_pending)
-				{
-					OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-					char *buf;
-
-					do {
-						buf = pendig_alerts(form, SYSALERT_LIST);
-						if (buf)
-						{
-							/* if a app left the mouse off */
-							forcem();
-							/* Bring up an alert */
-							do_form_alert(lock, C.Aes, 1, buf);
-						}
-					}
-					while (buf);
-
-					alert_pending = 0;
-				}
-			}
-
 			if (input_channels & (1UL << C.KBD_dev))
 				keyboard_input(lock);
 
-		}
-#if GENERATE_DIAGS
-		else if (fs_rtn < 0)
-		{
-			DIAG((D_kern, NULL, ">>Fselect :: %d",fs_rtn));
-		}
-#endif
-		else
-		{
-			/* Call the active function if we need to */
-			if (C.active_timeout.task)
-			{
-				if (C.active_timeout.timeout != 0
-				     && (fs_rtn == 0 || (evnt_count & 0xff) == 1))
-					(*C.active_timeout.task)(&C.active_timeout);
-			}
+			if (input_channels & (1UL << C.alert_pipe))
+				alert_input(lock);
 		}
 
 		/* execute delayed delete_window */
@@ -737,37 +722,4 @@ k_exit(void)
 
 	/* XXX todo -> module_exit */
 	kthread_exit(0);
-}
-
-/* 
- * Set the "active" function  
- */
-/* HR: extended & generalized */
-/* preliminary versions (only 1 such task at a time),
-   but it is easy expandable. */
-Tab *
-new_task(Tab *new)
-{
-	bzero(new, sizeof(*new));
-	return new;
-}
-
-void
-free_task(Tab *t, int *nester)
-{
-	if (t)
-	{
-		if (t->nest && *nester)
-		{
-			nester--;
-			free_task(t->nest, nester);
-		}
-
-		t->nest = 0;
-		t->ty = NO_TASK;
-		t->pr = 0;
-		t->nx = 0;
-		t->task = 0;
-		t->timeout = 0;
-	}
 }
