@@ -86,9 +86,14 @@
 static COOKIE *oldcookie = NULL;
 static COOKIE *newcookie;
 
+# ifdef JAR_PRIVATE
+# define MASTERCOOKIES	128
+static COOKIE master_jar[MASTERCOOKIES];
+# else
 /* memory region that hold the cookie jar
  */
 static MEMREGION *newjar_region;
+# endif
 
 /* cookies to skip on MINT cookie jar
  */
@@ -132,26 +137,30 @@ init_cookies (void)
 		}
 	}
 
+# ifdef JAR_PRIVATE
+	/* Processes use own copies of the cookie jar located in their
+	 * memory. Jar is no more global, thus the master copy of it
+	 * can be located in kernel's BSS.
+	 */
+	ncsize = MASTERCOOKIES * sizeof(COOKIE);
+	if (ncookies > MASTERCOOKIES)
+		ncookies = MASTERCOOKIES;
+	newcookie = master_jar;
+# else
 	ncsize = MIN (cookie->value, 240);	/* avoid too big tag values */
 	if (ncookies > ncsize)
 		ncsize = ncookies;
 
-	/* We allocate the cookie jar in *private* memory so nobody ;-) can read
+	/* We allocate the cookie jar in global memory so anybody can read
 	 * it or write it. This code allocates at least 16 more cookies,
 	 * then rounds up to a QUANTUM boundary (that's what ROUND does).
 	 * Probably, nobody will have to allocate another cookie jar :-)
-	 *
-	 * Processes use own copies of the cookie jar located in their
-	 * memory. Jar is no more global.
 	 */
 	ncsize = (ncsize + 16) * sizeof (COOKIE);
 	ncsize = ROUND (ncsize);
-# ifdef JAR_PRIVATE
-	newjar_region = get_region (core, ncsize, PROT_P);
-# else
 	newjar_region = get_region (core, ncsize, PROT_G);
-# endif
 	newcookie = (COOKIE *) attach_region (rootproc, newjar_region);
+# endif
 
 	/* set the hardware detected CPU and FPU rather
 	 * than trust the TOS
@@ -426,13 +435,13 @@ get_cookie (COOKIE *cj, ulong tag, ulong *ret)
 long
 set_cookie (COOKIE *cj, ulong tag, ulong val)
 {
+	ushort n = 0;
 # ifdef JAR_PRIVATE
 	USER_THINGS *ut;
 	COOKIE *cjar;
 # else
 	COOKIE *cjar = *CJAR;
 # endif
-	long n = 0;
 
 # ifdef JAR_PRIVATE
 	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
