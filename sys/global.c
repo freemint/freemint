@@ -37,7 +37,8 @@
 # include "libkern/libkern.h"
 
 # include "block_IO.h"		/* bio */
-# include "cookie.h"		/* add_rsvfentry, del_rsvfentry */
+# include "cookie.h"		/* add_rsvfentry, del_rsvfentry, get_toscookie */
+# include "delay.h"		/* loops_per_sec */
 # include "dma.h"		/* dma */
 # include "filesys.h"		/* changedrv, denyshare, denylock */
 # include "kmemory.h"		/* kmalloc, kfree, umalloc, ufree */
@@ -89,10 +90,12 @@ struct kerinfo kernelinfo =
 	del_rsvfentry,
 	killgroup,
 	&dma,
+	&loops_per_sec,
+	get_toscookie,
 	
 	{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0
+		0, 0, 0, 0, 0, 0
 	}
 };
 
