@@ -465,6 +465,12 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 		
 		cdesc = (desc & 0xff);
 		
+		if (!p->p_fd)
+		{
+			DEBUG (("kern_fddir_lookup: pid %d, no fd table", pid));
+			return ENOENT;
+		}
+		
 		if (cdesc < -5 || cdesc >= p->p_fd->nfiles
 			|| p->p_fd->ofiles[(int) (cdesc)] == NULL)
 		{
@@ -663,6 +669,12 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 		
 		if ((file->index & 0x0000ff00) != 0x100)
 			return ENOENT;
+		
+		if (!p->p_fd)
+		{
+			DEBUG (("kern_fddir_stat64: pid %d, no fd table", pid));
+			return ENOENT;
+		}
 		
 		if (desc < -5 || desc >= p->p_fd->nfiles)
 			return ENOENT;
@@ -925,6 +937,12 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		}
 		default:
 		{
+			if (!p->p_fd)
+			{
+				DEBUG (("kern_fddir_readdir: pid %d, no fd table", pid));
+				return ENMFILES;
+			}
+			
 			while (dirh->index < p->p_fd->nfiles + 7)
 			{
 				long desc = ((long) (dirh->index)) - 7;
@@ -1250,6 +1268,11 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 	}
 	
 	fd = p->p_fd;
+	if (!fd)
+	{
+		DEBUG (("kern_fddir_readlink: pid %d, no fd table", pid));
+		return ENOENT;
+	}	
 	
 	if (follow_link_denied (p, __FUNCTION__))
 		return EACCES;
@@ -1641,6 +1664,9 @@ kern_follow_link (fcookie *fc, int depth)
 	
 	fd = p->p_fd;
 	cwd = p->p_cwd;
+	
+	if (!fd || !cwd)
+		return ENOENT;
 	
 	if ((fc->index & 0xff00) == 0x100)
 	{
