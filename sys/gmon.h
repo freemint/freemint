@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-04-18
- * last change:	2000-04-18
+ * begin:	2000-07-14
+ * last change:	2000-07-14
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,13 +31,25 @@
  * 
  */
 
-# ifndef _m68k_asm_h
-# define _m68k_asm_h
+# ifndef _gmon_h
+# define _gmon_h
+
+# include "mint/mint.h"
+# include "sys/gmon.h"
 
 
-# include "asm_atomic.h"
-# include "asm_misc.h"
-# include "asm_spl.h"
+# ifdef PROFILING
+
+extern struct gmonparam _gmonparam;
+
+void moncontrol (long mode);
+void monstartup (ulong lowpc, ulong highpc);
+void mcleanup (void);
+
+void write_profiling (void);
+void toogle_profiling (void);
+
+# endif /* PROFILING */
 
 
-# endif /* _m68k_asm_h */
+# endif /* _gmon_h */
