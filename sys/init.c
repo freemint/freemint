@@ -87,20 +87,23 @@ static int	boot_kernel_p (void);
 
 void mint_thread(void *arg);
 
-
-/* print a additional boot message
+/* print an additional boot message
  */
+static short use_sys;
 
 void
 boot_print (const char *s)
 {
-	Cconws (s);
+	if (use_sys)
+		sys_c_conws(s);
+	else
+		Cconws (s);
 }
 
 void
 boot_printf (const char *fmt, ...)
 {
-	char buf [SPRINTF_MAX];
+	char buf [512];
 	va_list args;
 
 	va_start (args, fmt);
@@ -108,6 +111,22 @@ boot_printf (const char *fmt, ...)
 	va_end (args);
 
 	boot_print(buf);
+}
+
+/* Stop and ask the user for conformation to continue */
+static short step_by_step;
+
+static void
+stop_and_ask(void)
+{
+	if (step_by_step)
+	{
+		boot_print(MSG_init_hitanykey);
+		if (use_sys)
+			sys_c_conin();
+		else
+			Cconin();
+	}
 }
 
 /* structures for keyboard/MIDI interrupt vectors */
@@ -479,16 +498,20 @@ get_my_name (void)
 
 /* Boot menu routines. Quite lame I admit. Added 19.X.2000. */
 
+# define MENU_OPTIONS	7
+
 static short load_xfs_f;
 static short load_xdd_f;
 static short load_auto;
 static short save_ini;
+
 static const char *ini_keywords[] =
 {
 	"XFS_LOAD",
 	"XDD_LOAD",
 	"EXE_AUTO",
 	"MEM_PROT",
+	"INI_STEP",
 	"INI_SAVE"
 };
 
@@ -510,22 +533,14 @@ find_ini (char *outp)
 static char *
 find_char (char *s, char c)
 {
-	short f = 0;
-
-	while (*s)
+	while (*s && *s != '\n' && *s != '\r')
 	{
-		if ((*s == '\n') || (*s == '\r'))
-			break;
 		if (*s == c)
-		{
-			f = 1;
-			break;
-		}
+			return s;
 		s++;
 	}
-	if (!f)
-		return 0;
-	return s;
+
+	return NULL;
 }
 
 static short
@@ -546,7 +561,7 @@ read_ini (void)
 	DTABUF *dta;
 	char *buf, *s, ini_file[32];
 	long r, x, len;
-	short inihandle, options[5] = { 1, 1, 1, 1, 1 };
+	short inihandle, options[MENU_OPTIONS-1] = { 1, 1, 1, 1, 0, 1 };
 
 	if (!find_ini(ini_file))
 		goto initialize;
@@ -571,7 +586,7 @@ read_ini (void)
 	if (r < 0) goto close;
 
 	strupr (buf);
-	for (x = 0; x < 5; x++)
+	for (x = 0; x < MENU_OPTIONS-1; x++)
 	{
 		s = strstr (buf, ini_keywords[x]);
 		if (s)
@@ -588,7 +603,8 @@ initialize:
 	load_xdd_f = options[1];
 	load_auto = options[2];
 	no_mem_prot = !options[3];
-	save_ini = options[4];
+	step_by_step = options[4];
+	save_ini = options[5];
 }
 
 static void
@@ -614,9 +630,9 @@ write_ini (short *options)
 		goto close;
 	}
 
-	for (x = 0; x < 5; x++)
+	for (x = 0; x < MENU_OPTIONS-1; x++)
 	{
-		ksprintf (buf, sizeof (buf), "%s=%s\n",
+		ksprintf (buf, sizeof (buf), "%s=%s\n", \
 			ini_keywords[x], options[x] ? "YES" : "NO");
 		l = strlen (buf);
 		r = Fwrite (inihandle, l, buf);
@@ -636,33 +652,27 @@ close:
 static int
 boot_kernel_p (void)
 {
-	char menu[512];
-	short option[6];
+	short option[MENU_OPTIONS];
 	long c = 0;
-	int y;
-
-	Cconws(MSG_init_askmenu);
-	y = (int) Cconin();
-	if (tolower (y & 0xff) == MSG_init_menu_no[0])
-		return 1;
 
 	option[0] = 1;			/* Load MiNT or not */
 	option[1] = load_xfs_f;		/* Load XFS or not */
 	option[2] = load_xdd_f;		/* Load XDD or not */
 	option[3] = load_auto;		/* Load AUTO or not */
 	option[4] = !no_mem_prot;	/* Use memprot or not */
-	option[5] = save_ini;
+	option[5] = step_by_step;	/* Enter stepper mode */
+	option[6] = save_ini;
 
 	for (;;)
 	{
-		ksprintf(menu, sizeof(menu), MSG_init_bootmenu, \
+		boot_printf(MSG_init_bootmenu, \
 			option[0] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
 			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
 			option[2] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
 			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
 			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
-			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
-		Cconws(menu);
+			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
+			option[6] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
 wait:
 		c = Crawcin();
 		c &= 0x7f;
@@ -676,32 +686,22 @@ wait:
 				load_xdd_f = option[2];
 				load_auto = option[3];
 				no_mem_prot = !option[4];
-				save_ini = option[5];
+				step_by_step = option[5];
+				save_ini = option[6];
 				if (save_ini)
 					write_ini(option);
 				return (int)option[0];
 			case '0':
-				option[5] = option[5] ? 0 : 1;
+				option[6] = option[6] ? 0 : 1;
 				break;
-			case '1':
-				option[0] = option[0] ? 0 : 1;
-				break;
-			case '2':
-				option[1] = option[1] ? 0 : 1;
-				break;
-			case '3':
-				option[2] = option[2] ? 0 : 1;
-				break;
-			case '4':
-				option[3] = option[3] ? 0 : 1;
-				break;
-			case '5':
-				option[4] = option[4] ? 0 : 1;
+			case '1' ... '6':
+				option[(c - 1) & 0x0f] = option[(c - 1) & 0x0f] ? 0 : 1;
 				break;
 			default:
 				goto wait;
 		}
 	}
+
 	return 1;	/* not reached */
 }
 
@@ -711,25 +711,16 @@ long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 void
 init (void)
 {
-	/* XXX: why `static' ?? */
-	static char curpath[128];
-
-	long *sysbase;
-	long r;
+	long newstamp, pause, r, *sysbase;
 	FILEPTR *f;
+	char curpath[128];
 
 	/* Initialize sysdir */
-	strcpy(curpath, "\\multitos\\mint.cnf");
-
 	sysdir = "\\";
-	if (Fsfirst(curpath, 0) == 0)
+	if (Fsfirst("\\multitos\\mint.cnf", 0) == 0)
 		sysdir = "\\multitos\\";
-	else
-	{
-		strcpy(curpath, "\\mint\\mint.cnf");
-		if (Fsfirst(curpath, 0) == 0)
-			sysdir = "\\mint\\";
-	}
+	else if (Fsfirst("\\mint\\mint.cnf", 0) == 0)
+		sysdir = "\\mint\\";
 
 	read_ini();	/* Read user defined defaults */
 
@@ -761,13 +752,27 @@ init (void)
 	}
 
 	/* Ask the user if s/he wants to boot MiNT */
-	if ((Kbshift (-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
+	boot_print(MSG_init_askmenu);
+
+	pause = (Tgettime() & 0x1fL) + 2;		/* 4 second pause */
+	if (pause > 29)
+		pause -= 29;
+
+	do
 	{
-		long yn = boot_kernel_p ();
-		boot_print ("\r\n");
-		if (!yn)
-			Pterm0 ();
+		newstamp = Tgettime() & 0x1fL;
+
+		if ((Kbshift (-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
+		{
+			long yn = boot_kernel_p ();
+			if (!yn)
+				Pterm0 ();
+			newstamp = pause;
+		}
 	}
+	while (newstamp != pause);
+
+	boot_print("\r\n");
 
 # ifdef OLDTOSFS
 	/* Get GEMDOS version from ROM for later use by our own Sversion() */
@@ -1012,15 +1017,18 @@ init (void)
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
 
+	/* Use internal sys_c_conws() in boot_print() since now */
+	use_sys = 1;
+
 	/* print the warning message if MP is turned off */
 	if (no_mem_prot && mcpu > 20)
-		sys_c_conws(memprot_warning);
+		boot_print(memprot_warning);
 
 	/* initialize delay */
 	{
 		char buf[128];
 
-		sys_c_conws(MSG_init_delay_loop);
+		boot_print(MSG_init_delay_loop);
 
 		calibrate_delay();
 
@@ -1029,16 +1037,24 @@ init (void)
 			(loops_per_sec + 2500) / 500000,
 			((loops_per_sec + 2500) / 5000) % 100);
 
-		sys_c_conws(buf);
+		boot_print(buf);
 	}
 
 	/* initialize internal xdd */
 # ifdef DEV_RANDOM
-	sys_c_conws(random_greet);
+	boot_print(random_greet);
 # endif
 
 	/* initialize built-in domain ops */
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_domaininit);
+# endif
+
 	domaininit();
+
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_done);
+# endif
 
 	/* Load the keyboard table */
 	load_keytbl();
@@ -1048,14 +1064,22 @@ init (void)
 	init_unicode();
 # endif
 
-	/* Make newline before external modules print out own messages */
-	sys_c_conws("\r\n");
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_loading_modules);
+# endif
 
 	/* load the kernel modules */
 	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
 
 	/* start system update daemon */
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_starting_sysupdate);
+# endif
 	start_sysupdate();
+
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_done);
+# endif
 
 	/* load the configuration file */
 	load_config();
@@ -1121,9 +1145,7 @@ init (void)
 	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
 # endif
 
-# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_pid_0);
-# endif
 
 	/* zero the user registers, and set the FPU in a "clear" state */
 	for (r = 0; r < 15; r++)
@@ -1186,10 +1208,8 @@ run_auto_prgs (void)
 {
 	DTABUF *dta;
 	long r;
-	static char pathspec[32] = "\\auto\\";
-	short runthem = 0;	/* set to 1 after we find MINT.PRG */
-	char curpath[PATH_MAX];
- 	int curdriv;
+ 	short curdriv, runthem = 0;		/* set to 1 after we find MINT.PRG */
+	char pathspec[32], curpath[PATH_MAX];
 
 	/* OK, now let's run through \\AUTO looking for
 	 * programs...
@@ -1198,10 +1218,10 @@ run_auto_prgs (void)
 	curdriv = sys_d_getdrv();
 
 	sys_d_setdrv(sysdrv);	/* set above, right after Super() */
-	sys_d_setpath("\\");
+	sys_d_setpath("/");
 
 	dta = (DTABUF *) sys_f_getdta();
-	r = sys_f_sfirst("\\auto\\*.prg", 0);
+	r = sys_f_sfirst("/auto/*.prg", 0);
 	while (r >= 0)
 	{
 		if (strcmp(dta->dta_name, my_name) == 0)
@@ -1210,7 +1230,7 @@ run_auto_prgs (void)
 		}
 		else if (runthem)
 		{
-			strcpy(pathspec+6, dta->dta_name);
+			ksprintf(pathspec, sizeof(pathspec), "/auto/%s", dta->dta_name);
 			sys_pexec(0, pathspec, (char *)"", init_env);
 		}
 		r = sys_f_snext();
@@ -1226,9 +1246,7 @@ mint_thread(void *arg)
 	int pid;
 	long r;
 
-# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
-# endif
 
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
@@ -1252,7 +1270,7 @@ mint_thread(void *arg)
 	{
 # ifdef VERBOSE_BOOT
 		boot_printf(MSG_init_launching_init, init_is_gem ? "GEM" : "init", init_prg);
-# endif 
+# endif
 		if (!init_is_gem)
 		{
 # if 1

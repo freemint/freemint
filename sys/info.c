@@ -311,9 +311,11 @@ const char *MSG_init_getname = "[MiNT is named \\AUTO\\%s]\r\n";
 /* In German this is "BootmenÅ anzeigen? (j)a (n)ein "
  * In French "Afficher le menu de dÇmarrage? (o)ui (n)on "
  */
-const char *MSG_init_askmenu = "Display the boot menu? (y)es (n)o ";
+const char *MSG_init_askmenu = "Hold down the SHIFT key to enter menu or wait 4 s.\r\n";
 const char *MSG_init_menu_yes = "y";
+# if 0
 const char *MSG_init_menu_no = "n";
+# endif
 const char *MSG_init_menu_yesrn = "yes\r\n";
 const char *MSG_init_menu_norn = "no\r\n";
 
@@ -325,6 +327,7 @@ const char *MSG_init_bootmenu =
 	"<3> Load external XDD: %s"
 	"<4> Execute AUTO PRGs: %s"
 	"<5> Memory protection: %s"
+	"<6> Init step by step: %s"
 	"<0> Remember settings: %s\r\n"
 	"[Return] accept,\r\n"
 	"[Ctrl-C] cancel.\r\n"
@@ -346,6 +349,9 @@ const char *MSG_init_sysdrv_is = "Booting from '%c'\r\n";
 const char *MSG_init_saving_mmu = "Saving MMU setup ...";
 const char *MSG_init_tosver_kbshft = "Resident TOS version %d.%02d%s\r\nKbshft 0x%08lx.\r\n";
 const char *MSG_init_bconmap = "BIOS Bconmap() %s.\r\n";
+const char *MSG_init_domaininit = "Initializing built-in domain ops ...";
+const char *MSG_init_loading_modules = "Loading external modules ...\r\n\r\n";
+const char *MSG_init_starting_sysupdate = "Starting up the update daemon ...";
 const char *MSG_init_pid_0 = "Starting up the idle process (pid 0) ...";
 const char *MSG_init_launching_init = "Launching %s: %s ...";
 const char *MSG_init_no_init_specified = "No init program specified to be started.\r\n";
@@ -423,7 +429,7 @@ const char *MSG_slb_freeing_used = "Freeing shared library %s, which is still in
 /* ---------- unicode.c ---------- */
 
 const char *MSG_unitable_loaded = "Loaded unicode table %s\r\n";
-const char *MSG_unicode_cannot_below_128 = "Unicode: cannot change codes lower then 128\r\n";
+const char *MSG_unicode_cannot_below_128 = "Unicode: cannot change codes lower than 128\r\n";
 
 /* ---------- unifs.c --------- */
 
