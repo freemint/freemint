@@ -606,7 +606,7 @@ sys_b_random (void)
 }
 
 
-void
+static void
 init_xrandom (void)
 {
 	int i;
@@ -635,7 +635,7 @@ init_xrandom (void)
 	i2 = (i1 + 024) % VectorSize;
 }
 
-void
+static void
 init_bconmap (void)
 {
 	int i, oldmap;
@@ -662,4 +662,14 @@ init_bconmap (void)
 
 	if (has_bconmap)
 		mapin (curproc->p_fd->bconmap = oldmap);
+}
+
+void
+init_xbios(void)
+{
+	/* init XBIOS Random() function */
+	init_xrandom();
+	
+	/* init bconmap stuff */
+	init_bconmap();
 }

@@ -108,27 +108,27 @@
  */
 
 long _cdecl 
-sys_pgetpriority (int which, int who) 
+sys_pgetpriority(short which, short who) 
 { 
-	TRACE (("Pgetpriority: which = %d, who = %d", (int) which, (int) who));
+	TRACE(("Pgetpriority: which = %d, who = %d", which, who));
 	
 	switch (which)
 	{
 		case PRIO_PROCESS:
 		{
-			PROC* p;
+			struct proc *p;
 			if (who < 0)
 			{
-				DEBUG (("Pgetpriority: negative process id %d", (int) who));
+				DEBUG(("Pgetpriority: negative process id %d", who));
 				return EINVAL;
 			}
 			else if (who == 0)
 				who = curproc->pid;
 			
-			p = pid2proc (who);
+			p = pid2proc(who);
 			if (p == NULL)
 			{
-				DEBUG (("Pgetpriority: no such process %d", (int) who));
+				DEBUG(("Pgetpriority: no such process %d", who));
 				return ESRCH;
 			}
 			
@@ -137,13 +137,13 @@ sys_pgetpriority (int which, int who)
 
 		case PRIO_PGRP:
 		{
-			PROC* p;
+			struct proc *p;
 			short max_priority = PRIO_MIN;
 			ulong hits = 0;
 			
 			if (who < 0)
 			{
-				DEBUG (("Pgetpriority: negative process group id %d", (int) who));
+				DEBUG(("Pgetpriority: negative process group id %d", who));
 				return EINVAL;
 			}
 			else if (who == 0)
@@ -165,20 +165,20 @@ sys_pgetpriority (int which, int who)
 			}
 			else
 			{
-				DEBUG (("Pgetpriority: no process found for user id %d", (int) who));
+				DEBUG(("Pgetpriority: no process found for user id %d", who));
 				return ESRCH;
 			}
 		}
 		
 		case PRIO_USER:
 		{
-			PROC* p;
+			struct proc *p;
 			short max_priority = PRIO_MIN;
 			ulong hits = 0;
 			
 			if (who < 0)
 			{
-				DEBUG (("Pgetpriority: negative user id %d", (int) who));
+				DEBUG(("Pgetpriority: negative user id %d", who));
 				return EINVAL;
 			}
 			else if (who == 0)
@@ -200,13 +200,13 @@ sys_pgetpriority (int which, int who)
 			}
 			else
 			{
-				DEBUG (("Pgetpriority: no process found for user id %d", (int) who));
+				DEBUG(("Pgetpriority: no process found for user id %d", who));
 				return ESRCH;
 			}
 		}
 	}
 	
-	DEBUG (("Pgetpriority: invalid opcode %d", (int) which));
+	DEBUG(("Pgetpriority: invalid opcode %d", which));
 	return EINVAL;
 }
 
@@ -240,18 +240,18 @@ sys_pgetpriority (int which, int who)
  */
  
 long _cdecl 
-sys_psetpriority (int which, int who, int pri)
+sys_psetpriority(short which, short who, short pri)
 { 
-	TRACE (("Psetpriority: which = %d, who = %d, pri = %d", (int) which, (int) who, (int) pri));
+	TRACE(("Psetpriority: which = %d, who = %d, pri = %d", which, who, pri));
 
 	if (pri < PRIO_MIN)
 		pri = PRIO_MIN;
 	else if (pri > PRIO_MAX)
 		pri = PRIO_MAX;
   
-	if (pri < 0 && !suser (curproc->p_cred->ucr))
+	if (pri < 0 && !suser(curproc->p_cred->ucr))
 	{
-		DEBUG (("Psetpriority: attempt to assign negative priority by non-root"));
+		DEBUG(("Psetpriority: attempt to assign negative priority by non-root"));
 		return EPERM;
 	}
 	
@@ -259,26 +259,26 @@ sys_psetpriority (int which, int who, int pri)
 	{
 		case PRIO_PROCESS:
 		{
-			PROC* p;
+			struct proc *p;
 			
 			if (who < 0)
 			{
-				DEBUG (("Psetpriority: negative process id %d", (int) who));
+				DEBUG(("Psetpriority: negative process id %d", who));
 				return EINVAL;
 			}
 			else if (who == 0)
 				who = curproc->pid;
 			
-			p = pid2proc (who);
+			p = pid2proc(who);
 			if (p == NULL)
 			{
-				DEBUG (("Psetpriority: no such process %d", (int) who));
+				DEBUG(("Psetpriority: no such process %d", who));
 				return ESRCH;
 			}
 			if (curproc->p_cred->ucr->euid
 				&& curproc->p_cred->ucr->euid != p->p_cred->ucr->euid)
 			{
-				DEBUG (("Psetpriority: not owner"));
+				DEBUG(("Psetpriority: not owner"));
 				return EACCES;
 			}
 			p->pri = p->curpri = -pri;
@@ -287,13 +287,13 @@ sys_psetpriority (int which, int who, int pri)
 		
 		case PRIO_PGRP:
 		{
-			PROC* p;
+			struct proc *p;
 			ulong hits = 0;
 			ulong retval = 0;
 			
 			if (who < 0)
 			{
-				DEBUG (("Psetpriority: negative process group id %d", (int) who));
+				DEBUG(("Psetpriority: negative process group id %d", who));
 				return EINVAL;
 			}
 			else if (who == 0)
@@ -318,7 +318,7 @@ sys_psetpriority (int which, int who, int pri)
 			
 			if (hits == 0)
 			{
-				DEBUG (("Psetpriority: no process found for user id %d", (int) who));
+				DEBUG(("Psetpriority: no process found for user id %d", who));
 				return ESRCH;
 			}
 			
@@ -327,13 +327,13 @@ sys_psetpriority (int which, int who, int pri)
 		
 		case PRIO_USER:
 		{
-			PROC* p;
+			struct proc *p;
 			ulong hits = 0;
 			ulong retval = 0;
 			
 			if (who < 0)
 			{
-				DEBUG (("Psetpriority: negative user id %d", (int) who));
+				DEBUG(("Psetpriority: negative user id %d", who));
 				return EINVAL;
 			}
 			else if (who == 0)
@@ -343,7 +343,7 @@ sys_psetpriority (int which, int who, int pri)
 			
 			if (who != curproc->p_cred->ucr->euid)
 			{
-				DEBUG (("Psetpriority: not owner"));
+				DEBUG(("Psetpriority: not owner"));
 				retval = EACCES;
 			}
 			
@@ -358,7 +358,7 @@ sys_psetpriority (int which, int who, int pri)
 			
 			if (hits == 0)
 			{
-				DEBUG (("Psetpriority: no process found for user id %d", (int) who));
+				DEBUG(("Psetpriority: no process found for user id %d", who));
 				return ESRCH;
 			}
 			
@@ -366,7 +366,7 @@ sys_psetpriority (int which, int who, int pri)
 		}
 	}
 	
-	DEBUG (("Psetpriority: invalid opcode %d", (int) which));
+	DEBUG(("Psetpriority: invalid opcode %d", which));
 	return EINVAL;
 }
 
@@ -391,14 +391,14 @@ sys_psetpriority (int which, int who, int pri)
  */
 
 long _cdecl
-sys_prenice (int pid, int delta)
+sys_prenice(short pid, short delta)
 {
 	long pri;
 	
 	if (pid < 0)
 		return ESRCH;
 	
-	pri = sys_pgetpriority (PRIO_PROCESS, pid);
+	pri = sys_pgetpriority(PRIO_PROCESS, pid);
 	
 	if (pri < 0)
 		return pri;
@@ -411,7 +411,7 @@ sys_prenice (int pid, int delta)
 		
 		pri += delta;
 		
-		r = sys_psetpriority (PRIO_PROCESS, pid, (int) pri);
+		r = sys_psetpriority(PRIO_PROCESS, pid, pri);
 		if (r < E_OK)
 			return r;
 	}
@@ -428,9 +428,9 @@ sys_prenice (int pid, int delta)
 }
 
 long _cdecl
-sys_pnice (int delta)
+sys_pnice(short delta)
 {
-	return sys_prenice (curproc->pid, delta);
+	return sys_prenice(curproc->pid, delta);
 }
 
 /*
@@ -443,9 +443,9 @@ sys_pnice (int delta)
  *     r[5] - r[7]: reserved for future use
  */
 long _cdecl
-sys_prusage (long *r)
+sys_prusage(long *r)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	
 	r[0] = p->systime;
 	r[1] = p->usrtime;
@@ -470,7 +470,7 @@ sys_prusage (long *r)
  * Attention: recalc_maxmem() only work correctly for curproc!
  */
 long _cdecl
-sys_psetlimit (int i, long v)
+sys_psetlimit(short i, long v)
 {
 	struct proc *p = curproc;
 	long oldlimit;
@@ -505,11 +505,11 @@ sys_psetlimit (int i, long v)
 		}
 		default:
 		{
-			DEBUG (("Psetlimit: invalid mode %d", i));
+			DEBUG(("Psetlimit: invalid mode %d", i));
 			return ENOSYS;
 		}
 	}
 	
-	TRACE (("p_setlimit(%d, %ld): oldlimit = %ld", i, v, oldlimit));
+	TRACE(("p_setlimit(%d, %ld): oldlimit = %ld", i, v, oldlimit));
 	return oldlimit;
 }

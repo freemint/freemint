@@ -37,41 +37,41 @@
 
 
 long _cdecl
-sys_pgetuid (void)
+sys_pgetuid(void)
 {
 	return curproc->p_cred->ruid;
 }
 
 long _cdecl
-sys_pgetgid (void)
+sys_pgetgid(void)
 {
 	return curproc->p_cred->rgid;
 }
 
 long _cdecl
-sys_pgeteuid (void)
+sys_pgeteuid(void)
 {
 	return curproc->p_cred->ucr->euid;
 }
 
 long _cdecl
-sys_pgetegid (void)
+sys_pgetegid(void)
 {
 	return curproc->p_cred->ucr->egid;
 }
 
 long _cdecl
-proc_setuid (struct proc *p, unsigned int uid)
+proc_setuid(struct proc *p, unsigned short uid)
 {
 	struct pcred *cred = p->p_cred;
 	
-	if (cred->ruid != uid && !suser (cred->ucr))
+	if (cred->ruid != uid && !suser(cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
 	if (cred->ruid == uid && cred->suid == uid && cred->ucr->euid == uid)
 		return uid;
 	
-	cred->ucr = copy_cred (cred->ucr);
+	cred->ucr = copy_cred(cred->ucr);
 	cred->ucr->euid = uid;
 	cred->ruid = uid;
 	cred->suid = uid;
@@ -80,24 +80,24 @@ proc_setuid (struct proc *p, unsigned int uid)
 }
 
 long _cdecl
-sys_psetuid (unsigned int uid)
+sys_psetuid(unsigned short uid)
 {
-	TRACE (("Psetuid(%i)", uid));
+	TRACE(("Psetuid(%i)", uid));
 	return proc_setuid(curproc, uid);
 }
 
 long _cdecl
-proc_setgid (struct proc *p, unsigned int gid)
+proc_setgid(struct proc *p, unsigned short gid)
 {
 	struct pcred *cred = p->p_cred;
 	
-	if (cred->rgid != gid && !suser (cred->ucr))
+	if (cred->rgid != gid && !suser(cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
 	if (cred->rgid == gid && cred->ucr->egid == gid && cred->sgid == gid)
 		return gid;
 	
-	cred->ucr = copy_cred (cred->ucr);
+	cred->ucr = copy_cred(cred->ucr);
 	cred->ucr->egid = gid;
 	cred->rgid = gid;
 	cred->sgid = gid;
@@ -106,34 +106,34 @@ proc_setgid (struct proc *p, unsigned int gid)
 }
 
 long _cdecl
-sys_psetgid (unsigned int gid)
+sys_psetgid(unsigned short gid)
 {
-	TRACE (("Psetgid(%i)", gid));
+	TRACE(("Psetgid(%i)", gid));
 	return proc_setgid(curproc, gid);
 }
 
 /* uk, blank: set effective uid/gid but leave the real uid/gid unchanged. */
 long _cdecl
-sys_psetreuid (unsigned int ruid, unsigned int euid)
+sys_psetreuid(unsigned short ruid, unsigned short euid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
-	TRACE (("Psetreuid(%i, %i)", ruid, euid));
+	TRACE(("Psetreuid(%i, %i)", ruid, euid));
 	
 	if (ruid != -1 &&
 	    ruid != cred->ruid && ruid != cred->ucr->euid &&
-	    !suser (cred->ucr))
+	    !suser(cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
 	if (euid != -1 &&
 	    euid != cred->ruid && euid != cred->ucr->euid &&
 	    euid != cred->suid &&
-	    !suser (cred->ucr))
+	    !suser(cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
 	if (euid != -1 && euid != cred->ucr->euid)
 	{
-		cred->ucr = copy_cred (cred->ucr);
+		cred->ucr = copy_cred(cred->ucr);
 		cred->ucr->euid = euid;
 	}
 	
@@ -147,26 +147,26 @@ sys_psetreuid (unsigned int ruid, unsigned int euid)
 }
 	
 long _cdecl
-sys_psetregid (unsigned int rgid, unsigned int egid)
+sys_psetregid(unsigned short rgid, unsigned short egid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
-	TRACE (("Psetregid(%i, %i)", rgid, egid));
+	TRACE(("Psetregid(%i, %i)", rgid, egid));
 	
 	if (rgid != -1 &&
 	    rgid != cred->rgid && rgid != cred->ucr->egid &&
-	    !suser (cred->ucr))
+	    !suser(cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
 	if (egid != -1 &&
 	    egid != cred->rgid && egid != cred->ucr->egid &&
 	    egid != cred->sgid &&
-	    !suser (cred->ucr))
+	    !suser(cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
 	if (egid != -1 && cred->ucr->egid != egid)
 	{
-		cred->ucr = copy_cred (cred->ucr);
+		cred->ucr = copy_cred(cred->ucr);
 		cred->ucr->egid = egid;
 	}
 	
@@ -181,18 +181,18 @@ sys_psetregid (unsigned int rgid, unsigned int egid)
 }
 
 long _cdecl
-sys_pseteuid (unsigned int euid)
+sys_pseteuid(unsigned short euid)
 {
-	if (sys_psetreuid (-1, euid) == 0)
+	if (sys_psetreuid(-1, euid) == 0)
 		return euid;
 
 	return EACCES; /* XXX EPERM */
 }
 	
 long _cdecl
-sys_psetegid (unsigned int egid)
+sys_psetegid(unsigned short egid)
 {
-	if (sys_psetregid (-1, egid) == 0)
+	if (sys_psetregid(-1, egid) == 0)
 		return egid;
 
 	return EACCES; /* XXX EPERM */
@@ -201,12 +201,12 @@ sys_psetegid (unsigned int egid)
 /* tesche: get/set supplemantary group id's.
  */
 long _cdecl
-sys_pgetgroups (int gidsetlen, unsigned int gidset[])
+sys_pgetgroups(short gidsetlen, unsigned short gidset[])
 {
 	struct ucred *cred = curproc->p_cred->ucr;
 	int i;
 	
-	TRACE (("Pgetgroups(%i, ...)", gidsetlen));
+	TRACE(("Pgetgroups(%i, ...)", gidsetlen));
 	
 	if (gidsetlen == 0)
 		return cred->ngroups;
@@ -221,28 +221,28 @@ sys_pgetgroups (int gidsetlen, unsigned int gidset[])
 }
 
 long _cdecl
-sys_psetgroups (int ngroups, unsigned int gidset[])
+sys_psetgroups(short ngroups, unsigned short gidset[])
 {
 	struct pcred *cred = curproc->p_cred;
 	ushort grsize;
 	
-	TRACE (("Psetgroups(%i, ...)", ngroups));
+	TRACE(("Psetgroups(%i, ...)", ngroups));
 	
-	if (!suser (cred->ucr))
+	if (!suser(cred->ucr))
 		return EACCES; /* XXX EPERM */
 	
 	if (ngroups < 0 || ngroups > NGROUPS)
 		return EBADARG;
 	
-	grsize = ngroups * sizeof (gidset[0]);
+	grsize = ngroups * sizeof(gidset[0]);
 	if (cred->ucr->ngroups == ngroups &&
-	    memcmp (gidset, cred->ucr->groups, grsize) == 0)
+	    memcmp(gidset, cred->ucr->groups, grsize) == 0)
 		return ngroups;
 	
-	cred->ucr = copy_cred (cred->ucr);
+	cred->ucr = copy_cred(cred->ucr);
 	
 	cred->ucr->ngroups = ngroups;
-	memcpy (cred->ucr->groups, gidset, grsize);
+	memcpy(cred->ucr->groups, gidset, grsize);
 	
 	return ngroups;
 }
@@ -266,17 +266,17 @@ groupmember (struct ucred *cred, ushort group)
 /* p_cred */
 
 struct ucred *
-copy_cred (struct ucred *ucr)
+copy_cred(struct ucred *ucr)
 {
 	struct ucred *n;
 	
-	TRACE (("copy_cred: %lx links %li", ucr, ucr->links));
-	assert (ucr->links > 0);
+	TRACE(("copy_cred: %lx links %li", ucr, ucr->links));
+	assert(ucr->links > 0);
 	
 	if (ucr->links == 1)
 		return ucr;
 	
-	n = kmalloc (sizeof (*n));
+	n = kmalloc(sizeof(*n));
 	if (n)
 	{
 		/* copy */
@@ -293,10 +293,10 @@ copy_cred (struct ucred *ucr)
 }
 
 void
-free_cred (struct ucred *ucr)
+free_cred(struct ucred *ucr)
 {
-	assert (ucr->links > 0);
+	assert(ucr->links > 0);
 	
 	if (--ucr->links == 0)
-		kfree (ucr);
+		kfree(ucr);
 }

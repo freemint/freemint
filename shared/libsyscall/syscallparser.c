@@ -87,6 +87,9 @@ generate_args(FILE *out, struct arg *l, const char *pre, int flag, const char *p
 {
 	while (l)
 	{
+		if (l->flags & FLAG_CONST)
+			fprintf(out, "const ");
+		
 		fprintf(out, "%s%s ", pre, l->types);
 		
 		if (l->flags & FLAG_POINTER)
