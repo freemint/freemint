@@ -201,12 +201,14 @@ evnt_diag_output(void *pb, struct xa_client *client, char *which)
 }
 #define diag_out(x,c,y) evnt_diag_output(x,c,y);
 
+#if 0
 static char *
 em_flag(int f)
 {
 	static char *mo[6] = { "into", "outof", "into", "outof" };
 	return mo[f & 3];
 }
+#endif
 
 #else /* GENERATE_DIAGS */
 

@@ -154,7 +154,6 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 static void
 XA_keyboard_event(enum locks lock, const struct rawkey *key)
 {
-	struct xa_window *top = window_list;
 	struct xa_window *keywind;
 	struct xa_client *locked_client;
 	struct xa_client *client;
@@ -192,6 +191,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			}
 		}
 #if 0
+		struct xa_window *top = window_list;
 		struct xa_client *check = update_locked();
 
 		/* See if a (classic) blocked form_do is active */
