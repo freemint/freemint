@@ -8,79 +8,10 @@
 #ifndef _FALCON_H
 #define _FALCON_H
 
-#ifndef _OSBIND_H
-#include <osbind.h>
-#endif
+#include <mint/osbind.h>
 
-#ifdef __LATTICE__
-
-#define __F_TRAP {register d2,a2; "4e4e";}
-
-void _vfv(int);
-char _bfv(int);
-short _sfv(int);
-long _lfv(int);
-
-void _vfs(int, int);
-short _sfs(int, int);
-long _lfs(int, int);
-
-void _vfss(int, int, int);
-long _lfss(int, int, int);
-void _vfll(int, long, long);
-void _vflp(int, long, void *);
-
-void _vfssr(int, int, int, long *);
-void _vfssR(int, int, int, const long *);
-void _vfpls(int, void *, long, int);
-short _sflsp(int, long, int, void *);
-short _sfpls(int, void *, long, int);
-long _lfspp(int, int, void *, void *);
-
-void _vfppss(int, void *, void *, int, int);
-void _vfllpp(int, long, long, void *, void *);
-void _vfplll(int, void *, long, long, long);
-void _vfplpl(int, void *, long, void *, long);
-
-long _lfsssss(int, int, int, int, int, int);
-
-void _vfppllll(int, void *, void *, long, long, long, long);
-
-
-#pragma inline _vfv((short))	__F_TRAP
-#pragma inline d0=_bfv((short))	__F_TRAP
-#pragma inline d0=_sfv((short))	__F_TRAP
-#pragma inline d0=_lfv((short))	__F_TRAP
-
-#pragma inline _vfs((short),(short))	__F_TRAP
-#pragma inline d0=_sfs((short),(short))	__F_TRAP
-#pragma inline d0=_lfs((short),(short))	__F_TRAP
-
-#pragma inline _vfss((short),(short),(short))	__F_TRAP
-#pragma inline d0=_lfss((short),(short),(short))	__F_TRAP
-#pragma inline _vfll((short),,)	__F_TRAP
-#pragma inline _vflp((short),,)	__F_TRAP
-
-#pragma inline _vfssr((short),(short),(short),)	__F_TRAP
-#pragma inline _vfssR((short),(short),(short),)	__F_TRAP
-#pragma inline _vfpls((short),,,(short))	__F_TRAP
-#pragma inline d0=_sfpls((short),,,(short))	__F_TRAP
-#pragma inline d0=_sflsp((short),,(short),)	__F_TRAP
-#pragma inline d0=_lfspp((short),(short),,)	__F_TRAP
-
-#pragma inline _vfppss((short),,,(short),(short))	__F_TRAP
-#pragma inline _vfllpp((short),,,,)	__F_TRAP
-#pragma inline _vfplll((short),,,,)	__F_TRAP
-#pragma inline _vfplpl((short),,,,)	__F_TRAP
-
-#pragma inline d0=_lfsssss((short),(short),(short),(short),(short),(short))	__F_TRAP
-
-#pragma inline _vfppllll((short),,,,,)	__F_TRAP
-
-#else /* !__LATTICE__ */
 
 #ifndef trap_14_wwwwww
-#if __GNUC__ > 1
 #define trap_14_wwwwww(n,a,b,c,d,e)					\
 __extension__								\
 ({									\
@@ -106,36 +37,6 @@ __extension__								\
 	: "d0", "d1", "d2", "a0", "a1", "a2", "memory");		\
 	retvalue;							\
 })
-#else
-#define trap_14_wwwwww(n,a,b,c,d,e)					\
-({									\
-	register long retvalue __asm__("d0");				\
-	short _a = (short)(a);						\
-	short _b = (short)(b);						\
-	short _c = (short)(c);						\
-	short _d = (short)(d);						\
-	short _e = (short)(e);						\
-									\
-	__asm__ volatile						\
-	("\
-		movw	%4,sp@-; \
-		movw	%3,sp@-; \
-		movw	%2,sp@-; \
-		movw	%1,sp@-; \
-		movw	%0,sp@- "					\
-	:: "r"(_a), "r"(_b), "r"(_c), "r"(_d), "r"(_e));		\
-									\
-	__asm__ volatile						\
-	("\
-		movw	%1,sp@-; \
-		trap	#14; \
-		lea	sp@(12),sp"					\
-	: "=r"(retvalue)						\
-	: "g"(n)							\
-	: "d0", "d1", "d2", "a0", "a1", "a2");				\
-	retvalue;							\
-})
-#endif
 #endif
 
 #ifndef trap_14_wllll
@@ -240,7 +141,6 @@ __extension__								\
 })
 #endif
 
-#endif /* __LATTICE__ */
 
 /*
  * Video
@@ -270,20 +170,6 @@ enum montypes {STmono=0, STcolor, VGAcolor, TVcolor};
 #define	VID_VSYNC	2
 #define	VID_HSYNC	4
 
-#ifdef __LATTICE__
-
-#define VsetScreen(a, b, c, d) _vfppss(5, a, b, c, d)
-#define VsetMode(a) _sfs(88, a)
-#define VgetMonitor() _sfv(89)
-#define VsetSync(a) _vfs(90, a)
-#define VgetSize(a) _lfs(91, a)
-#define VsetRGB(a, b, c) _vfssR(93, a, b, c)
-#define VgetRGB(a, b, c) _vfssr(94, a, b, c)
-#define ValidMode(a) _sfs(95, a)
-#define VsetMask(a, b) _vfss(150, a, b)
-
-#else /* !__LATTICE__ */
-
 #define VsetScreen(lscrn,pscrn,rez,mode)					\
 	(void)trap_14_wllww((short)5,(long)(lscrn),(long)(pscrn),	\
 		(short)(rez),(short)(mode))
@@ -306,7 +192,6 @@ enum montypes {STmono=0, STcolor, VGAcolor, TVcolor};
 #define VsetMask(andmask,ormask)					\
 	(short)trap_14_www((short)150,(short)(andmask),(short)(ormask))
 
-#endif /* __LATTICE__ */
 
 /*
  * Sound
@@ -463,27 +348,6 @@ typedef struct SndBufPtr {
 	long reserve2;
 } SndBufPtr;
 
-#ifdef __LATTICE__
-
-long _lfS(int, SndBufPtr *);
-#pragma inline d0=_lfS((short),)	__F_TRAP
-
-#define Locksnd() _lfv(128)
-#define Unlocksnd() _lfv(129)
-#define Soundcmd(a, b) _lfss(130, a, b)
-#define Setbuffer(a, b, c) _lfspp(131, a, b, c)
-#define Setmode(a) _lfs(132, a)
-#define Settracks(a, b) _lfss(133, a, b)
-#define Setmontracks(a) _lfs(134, a)
-#define Setinterrupt(a, b) _lfss(135, a, b)
-#define Buffoper(a) _lfs(136, a)
-#define Dsptristate(a, b) _lfss(137, a, b)
-#define Gpio(a, b) _lfss(138, a, b)
-#define Devconnect(a, b, c, d, e) _lfsssss(139, a, b, c, d, e)
-#define Sndstatus(a) _lfs(140, a)
-#define Buffptr(a) _lfS(141, a)
-
-#else /* !__LATTICE__ */
 
 #define Locksnd()							\
 	(long)trap_14_w((short)128)
@@ -517,50 +381,12 @@ long _lfS(int, SndBufPtr *);
 #define Buffptr(ptr)							\
 	(long)trap_14_wl((short)141,(long)(ptr))
 
-#endif /* __LATTICE__ */
 
 /*
  * DSP functions
  *
  * Don't even *think* of trying to use these without the manual!
  */
-
-#ifdef __LATTICE__
-
-#define Dsp_DoBlock(a, b, c, d) _vfplpl(96, a, b, c, d)
-#define Dsp_BlkHandShake(a, b, c, d) _vfplpl(97, a, b, c, d)
-#define Dsp_BlkUnpacked(a, b, c, d) _vfplpl(98, a, b, c, d)
-#define Dsp_InStream(a, b, c, d) _vfplll(99, a, b, c, d)
-#define Dsp_OutStream(a, b, c, d) _vfplll(100, a, b, c, d)
-#define Dsp_IOStream(a, b, c, d, e, f) _vfppllll(101, a, b, c, d, e, f)
-#define Dsp_RemoveInterrupt(a) _vfs(102, a)
-#define Dsp_GetWordSize() _sfv(103)
-#define Dsp_Lock() _sfv(104)
-#define Dsp_Unlock() _vfv(105)
-#define Dsp_Available(a, b) _vfll(106, a, b)
-#define Dsp_Reserve(a, b) _vfll(107, a, b)
-#define Dsp_LoadProg(a, b, c) _sflsp(108, a, b, c)
-#define Dsp_ExecProg(a, b, c) _vfpls(109, a, b, c)
-#define Dsp_ExecBoot(a, b, c) _vfpls(110, a, b, c)
-#define Dsp_LodToBinary(a, b) _vflp(111, a, b)
-#define Dsp_TriggerHC(a) _vfs(112, a)
-#define Dsp_RequestUniqueAbility() _sfv(113)
-#define Dsp_GetProgAbility() _sfv(114)
-#define Dsp_FlushSubroutines() _sfv(115)
-#define Dsp_LoadSubroutine(a, b, c) _sfpls(116, a, b, c)
-#define Dsp_InqSubrAbility(a) _sfs(117, a)
-#define Dsp_RunSubroutine(a) _sfs(118, a)
-#define Dsp_Hf0(a) _sfs(119, a)
-#define Dsp_Hf1(a) _sfs(120, a)
-#define Dsp_Hf2() _sfv(121)
-#define Dsp_Hf3() _sfv(122)
-#define Dsp_BlkWords(a, b, c, d) _vfplpl(123, a, b, c, d)
-#define Dsp_BlkBytes(a, b, c, d) _vfplpl(124, a, b, c, d)
-#define Dsp_Hstat() _bfv(125)
-#define Dsp_SetVectors(a, b) _vfll(126, a, b)
-#define Dsp_MultBlocks(a, b, c, d) _vfllpp(127, a, b, c, d)
-
-#else /* !__LATTICE__ */
 
 #define	Dsp_DoBlock(data_in,size_in,data_out,size_out)			\
 	(void)trap_14_wllll((short)96,(long)(data_in),(long)(size_in),	\
@@ -632,6 +458,5 @@ long _lfS(int, SndBufPtr *);
 #define	Dsp_Hf3()		(short)trap_14_w((short)122)
 #define	Dsp_HStat()		(char)trap_14_w((short)125)
 
-#endif /* __LATTICE__ */
 
 #endif /* _FALCON_H */
