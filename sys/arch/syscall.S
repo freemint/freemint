@@ -470,8 +470,6 @@ TE_X:	move.w	sr,-(sp)
 // Notice any programs those take these traps should now be loaded
 // *after* MiNT. init_intr() decides which traps to take, see there.
 
-#ifdef TRAPS_PRIVATE
-
 	.globl	_unused_trap
 
 	dc.l	0x58425241		// XBRA
@@ -486,8 +484,6 @@ _unused_trap:	move.w	#0x010b,-(sp)		// getpid
 	trap	#1
 	addq.l	#0x08,sp
 v_rte:	rte				// and return :-)
-
-#endif
 
 //
 // bconout special code: on entry, a1 points to the stack the user
