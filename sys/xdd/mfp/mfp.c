@@ -150,10 +150,10 @@
 
 # ifdef MILAN
 # define MSG_MACHINE	\
-	"\033pThis driver require a Milan!\033q\r\n"
+	"\033pThis driver requires a Milan!\033q\r\n"
 # else
 # define MSG_MACHINE	\
-	"\033pThis driver require a ST/TT compatible MFP!\033q\r\n"
+	"\033pThis driver requires a ST/TT compatible MFP!\033q\r\n"
 # endif
 
 # define MSG_FAILURE	\
