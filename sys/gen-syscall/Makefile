@@ -16,25 +16,31 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET)
+all-here: libsyscall $(TARGET)
 
 # default overwrites
+NATIVECFLAGS += -D_GNU_SOURCE
+NATIVECFLAGS += -I$(top_srcdir)/../shared
+NATIVE_LIBS_DEP += $(top_srcdir)/../shared/libsyscall/libsyscall.a
+NATIVE_LIBS += -L$(top_srcdir)/../shared/libsyscall -lsyscall
+NATIVE_LIBS += -lfl
+
+MASTER = $(top_srcdir)/../sys/syscalls.master
+
 CC = $(NATIVECC)
 CFLAGS = $(NATIVECFLAGS)
-LIBS = -lfl
+LIBS = $(NATIVE_LIBS)
+LIBS_DEP = $(NATIVE_LIBS_DEP)
 
 # default definitions
-OBJS = check.o generate.o list.o main.o pars.o scan.o
-GENFILES = pars.h pars.c scan.c $(TARGET)
+OBJS = gentables.o
+GENFILES = $(TARGET)
 
-$(TARGET): $(OBJS)
+libsyscall:
+	cd $(top_srcdir)/../shared/libsyscall; $(MAKE)
+
+$(TARGET): $(OBJS) $(LIBS_DEP)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
-
-pars.c pars.h: pars.y
-	$(YACC) --output=pars.c pars.y
-
-scan.c: scan.l pars.y
-	$(LEX) -oscan.c scan.l
 
 # default dependencies
 # must be included last

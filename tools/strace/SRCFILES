@@ -1,0 +1,6 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+COBJS = print.c strace.c
+
+SRCFILES = $(HEADER) $(COBJS)
