@@ -166,12 +166,12 @@ static	ushort kdel, krep;	/* actual counters */
 # ifdef WITHOUT_TOS
 static struct keytab *tos_keytab = &sys_keytab;		/* see key_tables.h */
 # else
-static struct keytab *tos_keytab;			/* see init_keybd() */
+static struct keytab *tos_keytab = NULL;		/* see init_keybd() */
 # endif
-static struct keytab *user_keytab;
-static char *keytab_buffer;
-static long keytab_size;
-static MEMREGION *user_keytab_region;
+static struct keytab *user_keytab = NULL;
+static char *keytab_buffer = NULL;
+static long keytab_size = 0;
+static MEMREGION *user_keytab_region = NULL;
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -827,7 +827,7 @@ sys_b_bioskeys(void)
 
 /* Returns status */
 static long
-load_external_table(FILEPTR *fp, char *name, long size)
+load_external_table(FILEPTR *fp, const char *name, long size)
 {
 	uchar *kbuf;
 	long ret = 0;
@@ -839,23 +839,21 @@ load_external_table(FILEPTR *fp, char *name, long size)
 	if (size < 389L)
 	{
 		DEBUG(("load_external_table(): failure (size %ld)", size));
-
 		return EFTYPE;
 	}
 
-	kbuf = kmalloc(size + 1);	/* Append a zero (if the table is missing the altgr part) */
+	kbuf = kmalloc(size+1); /* Append a zero (if the table is missing the altgr part) */
 	if (!kbuf)
 	{
 		DEBUG(("load_external_table(): out of memory"));
-
 		return ENOMEM;
 	}
 
-	bzero(kbuf, size + 1);
+	bzero(kbuf, size+1);
 
 	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
-		switch (*(ushort *) kbuf)
+		switch (*(ushort *)kbuf)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
@@ -869,7 +867,7 @@ load_external_table(FILEPTR *fp, char *name, long size)
 				 * contains the AKP code for the keyboard table
 				 * loaded.
 				 */
-				ushort *sbuf = (ushort *) kbuf;
+				ushort *sbuf = (ushort *)kbuf;
 
 				if (sbuf[1] <= MAXAKP)
 					gl_kbd = sbuf[1];
@@ -881,7 +879,7 @@ load_external_table(FILEPTR *fp, char *name, long size)
 			{
 				DEBUG(("load_external_table(): unknown format 0x%04x", (ushort *)kbuf));
 
-				ret = EFTYPE;		/* wrong format */
+				ret = EFTYPE;	/* wrong format */
 				break;
 			}
 		}
@@ -893,18 +891,23 @@ load_external_table(FILEPTR *fp, char *name, long size)
 		return ret;
 	}
 
-	/* Release old buffer. This can only happen when the keytable
-	 * is loaded at runtime via Ssystem() call.
+	/* Release old buffer.
 	 */
 	if (keytab_buffer)
 		kfree(keytab_buffer);
+
 	keytab_buffer = kbuf;
+	keytab_size = size+1;
+
+	TRACE(("load_external_table(): keytab_size %ld", keytab_size));
+
+	/* Install */
+	sys_b_bioskeys();
 
 	return 0;
 }
 
-/* Returns size */
-static long
+static void
 load_internal_table(void)
 {
 	uchar *kbuf, *p;
@@ -925,7 +928,7 @@ load_internal_table(void)
 			size += 2;
 	}
 	else
-		size += 16;	/* a byte for each missing part plus a NUL plus some space */
+		size += 16; /* a byte for each missing part plus a NUL plus some space */
 # else
 	/* Our default keyboard table (see key_table.h) is always
 	 * a complete one.
@@ -935,22 +938,27 @@ load_internal_table(void)
 	size += strlen(tos_keytab->altcaps) + 1;
 	size += strlen(tos_keytab->altgr) + 1;
 
-	size += 8;	/* add some space */
+	size += 8; /* add some space */
 # endif
 
 	/* If a buffer was allocated previously, we can perhaps reuse it.
 	 */
 	if (keytab_buffer && (keytab_size >= size))
+	{
 		kbuf = keytab_buffer;
+	}
 	else
 	{
 		if (keytab_buffer)
+		{
 			kfree(keytab_buffer);
+			keytab_buffer = NULL;
+		}
+
 		kbuf = kmalloc(size);
 	}
 
 	assert(kbuf);
-
 	bzero(kbuf, size);
 
 	p = kbuf;
@@ -1011,46 +1019,60 @@ load_internal_table(void)
 # endif
 
 	keytab_buffer = kbuf;
+	keytab_size = size;
 
-	return size;
+	TRACE(("load_internal_table(): keytab_size %ld", keytab_size));
+
+	/* Install */
+	sys_b_bioskeys();
 }
 
-/* This routine has to load the keyboard table into memory.
- * First the loading from the disk is attempted, and when
- * this fails, the TOS table is used.
+/* This routine load the keyboard table into memory.
+ * 
+ * path is the complete path to the keyboard table or NULL.
+ * If path is NULL the default path of <sysdir>/keyboard.tbl
+ * is used.
  *
- * Flag:
- * 0x01 - don't load TOS BIOS table on failure
- * 0x02 - don't generate any messages
+ * flag: 0x1 - print messages
  */
 long
-load_keyboard_table(char *name, short flag)
+load_keyboard_table(const char *path, short flag)
 {
-	XATTR xattr;
+	char buf[64];
+	const char *name;
 	FILEPTR *fp;
-	long ret, size = 0;
+	long ret;
+
+	if (!path)
+	{
+		/* `keybd.tbl' is already used by gem.sys, we can't conflict
+		 */
+		ksprintf(buf, sizeof(buf), "%skeyboard.tbl", sysdir);
+		name = buf;
+	}
+	else
+		name = path;
+
+	TRACE(("load_keyboard_table(): path `%s'", name));
 
 	ret = FP_ALLOC(rootproc, &fp);
-
 	if (ret == 0)
 	{
+		XATTR xattr;
+
 		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
-		if (!ret)
+		if (ret == 0)
 		{
-			ret = load_external_table(fp, name, xattr.size);
-			do_close(rootproc, fp);
-			if (ret == 0)
-			{
-				/* don't add 1, the size is already bigger 2 or 4 bytes
-				 * than it is needed to keep the table.
-				 */
-				size = xattr.size;
 # ifdef VERBOSE_BOOT
-				/* During startup generate a message */
-				if ((flag & 0x02) == 0)
-					boot_printf(MSG_keytable_loading, name);
+			if (flag & 0x1)
+				boot_printf(MSG_keytable_loading, name);
 # endif
-			}
+			ret = load_external_table(fp, name, xattr.size);
+# ifdef VERBOSE_BOOT
+			if (ret == 0 && (flag & 0x1))
+				boot_printf(MSG_keytable_loaded, gl_kbd);
+# endif
+			do_close(rootproc, fp);
 		}
 		else
 		{
@@ -1059,46 +1081,7 @@ load_keyboard_table(char *name, short flag)
 		}
 	}
 
-	/* Not "else if" */
-	if (((flag & 0x01) == 0) && (ret < 0 || size == 0))
-	{
-		size = load_internal_table();
-# ifdef VERBOSE_BOOT
-		/* During startup generate a message */
-		if ((flag & 0x02) == 0)
-			boot_printf(MSG_keytable_internal);
-# endif
-	}
-
-	return size;
-}
-
-/* This is called from init.c at startup
- */
-void
-load_keytbl(void)
-{
-	char name[32];
-
-	/* `keybd.tbl' is already used by gem.sys, we can't conflict
-	 */
-	ksprintf(name, sizeof(name), "%skeyboard.tbl", sysdir);
-
-	TRACE(("load_keytbl(): path `%s'", name));
-
-	/* After this the keytab_buffer points to the loaded AKP-style
-	 * keyboard table, and keytab_size contains its size.
-	 */
-	keytab_size = load_keyboard_table(name, 0);
-
-	TRACE(("load_keytbl(): keytab_size %ld", keytab_size));
-
-# ifdef VERBOSE_BOOT
-	boot_printf(MSG_keytable_loaded, gl_kbd);
-# endif
-
-	/* Install */
-	sys_b_bioskeys();
+	return ret;
 }
 
 /* Pre-initialize the built-in keyboard tables.
@@ -1130,8 +1113,16 @@ init_keybd(void)
 
 	keydel = kdel = delayrate >> 8;
 	krpdel = krep = delayrate & 0x00ff;
-
 	TRACE(("init_keybd(): delay 0x%02x, rate 0x%02x", keydel, krpdel));
+
+	/* initialize internal table */
+# ifdef VERBOSE_BOOT
+	boot_printf(MSG_keytable_internal);
+# endif
+	load_internal_table(); /* either from BIOS or builtin */
+# ifdef VERBOSE_BOOT
+	boot_printf(MSG_keytable_loaded, gl_kbd);
+# endif
 }
 
 # endif	/* NO_AKP_KEYBOARD */
