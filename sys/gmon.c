@@ -42,11 +42,12 @@
 
 # include "arch/startup.h"
 # include "mint/file.h"
+# include "mint/proc.h"
 
 # include "libkern/libkern.h"
 # include "sys/gmon_out.h"
 
-# include "dosfile.h"
+# include "k_fds.h"
 # include "kmemory.h"
 # include "profil.h"
 
@@ -339,9 +340,17 @@ static void
 write_gmon (void)
 {
 	FILEPTR *f;
+	long ret;
 	
-	f = do_open ("u:\\ram\\gmon.out", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL, NULL);
-	if (f)
+	ret = FP_ALLOC (rootproc, &f);
+	if (ret)
+	{
+		ALERT ("write_gmon: failed to alloc a FILEPTR");
+		return;
+	}
+	
+	ret = do_open (&f, "u:\\ram\\gmon.out", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
+	if (ret == 0)
 	{
 		struct gmon_hdr ghdr __attribute__ ((aligned (__alignof__ (long))));
 		
@@ -360,10 +369,13 @@ write_gmon (void)
 		/* write basic-block execution counts: */
 		write_bb_counts (f);
 		
-		do_close (f);
+		do_close (rootproc, f);
 	}
 	else
+	{
+		FP_FREE (f);
 		ALERT ("write_gmon: failed to open gmon.out");
+	}
 }
 
 void
