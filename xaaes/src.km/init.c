@@ -244,6 +244,7 @@ init(struct kentry *k, const char *path)
 	cfg.ted_filler = '_';
 	cfg.menu_locking = true;
 	cfg.backname = FAINT;
+	cfg.next_active = 0;
 	cfg.widg_w = ICON_W;
 	cfg.widg_h = ICON_H;
 

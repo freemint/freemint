@@ -332,7 +332,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
-	if (wind == window_list || wind->active_widgets & NO_TOPPED)
+	if (is_topped(wind)/*wind == window_list*/ || wind->active_widgets & NO_TOPPED)
 	{
 		if (checkif_do_widgets(lock, wind, 0, md))
 		{
@@ -342,7 +342,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 		else
 			deliver_button_event(wind, target, md);
 	}
-	else if (wind != window_list && checkif_do_widgets(lock, wind, 0, md))
+	else if (!is_topped(wind)/*wind != window_list*/ && checkif_do_widgets(lock, wind, 0, md))
 	{
 		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
 		post_cevent(target, cXA_do_widgets, wind,0, 0,0, 0,md);

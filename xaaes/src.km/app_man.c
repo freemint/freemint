@@ -476,6 +476,12 @@ next_app(enum locks lock)
 	return NULL;
 }
 
+struct xa_client *
+previous_client(enum locks lock)
+{
+	return S.client_list->next;
+}
+
 void
 app_in_front(enum locks lock, struct xa_client *client)
 {
@@ -485,6 +491,27 @@ app_in_front(enum locks lock, struct xa_client *client)
 	{
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
 
+		if (client != S.client_list)
+		{
+			if (client->prior)
+				client->prior->next = client->next;
+			if (client->next)
+				client->next->prior = client->prior;
+
+			if (S.client_list)
+			{
+				S.client_list->prior = client;
+				client->next = S.client_list;
+				client->prior = NULL;
+				S.client_list = client;
+			}
+			else
+			{
+				S.client_list = client;
+				client->next = client->prior = NULL;
+			}
+		}
+			
 		swap_menu(lock, client, true, 1);
 
 		wl = window_list;
@@ -507,33 +534,4 @@ app_in_front(enum locks lock, struct xa_client *client)
 		if (wf)
 			top_window(lock|winlist, wf, client);
 	}
-#if 0
-		wf = root_window->prev;
-		while (wf)
-		{
-			if (wf->owner == client)
-				break;
-			else
-				wf = wf->prev;
-		}
-
-		if (wf)
-		{
-			wl = wf;
-			while (wl)
-			{
-				pr = wl->prev;
-				if (wl->owner == client)
-				{
-					if (is_hidden(wl))
-						unhide_window(lock|winlist, wl);
-					top_window(lock|winlist, wl, client);
-				}
-				wl = pr;
-				if (wl == wf)
-					break;
-			}
-		}
-	}
-#endif
 }
