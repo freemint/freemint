@@ -82,7 +82,7 @@ xaaes_on_exit(void *_client, struct proc *p, int code)
 		exit_client(lock, _client, code);
 	}
 	else
-		DIAGS(("xaaes_on_exit - tread terminate"));
+		DIAGS(("xaaes_on_exit - thread terminate"));
 }
 
 /*

@@ -23,7 +23,6 @@ typedef struct memregion MEMREGION;
 /** @struct memregion
  * Description of a memory region.
  */
-
 struct memregion
 {
         long	loc;		///< Base of memory region.
@@ -39,18 +38,18 @@ struct memregion
 # define M_ALT		0x0002	///< Region came from alt map.
 # define M_SWAP		0x0004	///< Region came from swap map.
 # define M_KER		0x0008	///< Region came from kernel map.
-# define M_MAP		0x000f	///< AND with this to pick out map */
+# define M_MAP		0x000f	///< AND with this to pick out map
 /* obsolete M_SHTEXT	0x0010	 * region is a shared text region */
 /* obsolete M_SHTEXT_T	0x0020	 * `sticky bit' for shared text regions */
-# define M_FSAVED	0x0040	/* region is saved memory of a forked process */
-# define M_SHARED	0x0080	/* shared memory region */
-# define M_KEEP		0x0100	/* don't free on process termination */
+# define M_FSAVED	0x0040	///< Region is saved memory of a forked process
+# define M_SHARED	0x0080	///< Region is shared memory region
+# define M_KEEP		0x0100	///< don't free region on process termination
                      /* 0x0200  unused */
                      /* 0x0400  unused */
                      /* 0x0800  unused */
-                     /* 0x1000  unused */
-# define M_KMALLOC	0x4000	/* used by kmalloc */
-# define M_SEEN		0x8000	/* for memused() to find links */
+# define M_UMALLOC	0x1000	///< Region used by umalloc
+# define M_KMALLOC	0x4000	///< Region used by kmalloc
+# define M_SEEN		0x8000	///< flag for memused() to find links
 
 /*
  * Here's the deal with memory bits:
@@ -68,9 +67,8 @@ struct memregion
  * mflags.
  */
 
-/**
+/** @struct fileheader
  * Structure of exectuable program headers.
- *
  */
 struct fileheader
 {
