@@ -210,18 +210,18 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 		}
 
 		{
-			struct xa_client *update_lock = update_locked();
-			struct xa_client *mouse_lock = mouse_locked();
+			struct proc *update_lock = update_locked();
+			struct proc *mouse_lock = mouse_locked();
 			
 			l += sprintf(line+l, sizeof(line)-l, "(Pid %ld)", p_getpid());
 
 			if (mouse_lock)
 				l += sprintf(line+l, sizeof(line)-l, "[M/%d]",
-						mouse_lock->p->pid);
+						mouse_lock->pid);
 
 			if (update_lock)
 				l += sprintf(line+l, sizeof(line)-l, "[U%d/%d]",
-						update_lock->p->pid);
+						update_lock->pid);
 		}
 
 		if (client == NULL)

@@ -854,12 +854,16 @@ static MFORM M_POINTSLIDE_MOUSE =
 };
 
 static void
-set_mouse_shape(short m_shape, MFORM *m_form, bool aesm)
+set_mouse_shape(short m_shape, MFORM *m_form, struct xa_client *client, bool aesm)
 {
 	bool chg = false;
 
 	if (aesm)
 	{
+		/* If the shape to set is -1, we want to turn off the AES-mouse, whish
+		 * is used to indicate possible actions underneath it, like showing that
+		 * a widget can be used to resize a window.
+		 */
 		if (m_shape == -1)
 		{
 			chg = C.realmouse != C.mouse ? true : false;
@@ -867,7 +871,11 @@ set_mouse_shape(short m_shape, MFORM *m_form, bool aesm)
 			C.aesmouse_form = NULL;
 			C.realmouse = C.mouse;
 			C.realmouse_form = C.mouse_form;
+			C.realmouse_owner = C.mouse_owner;
 		}
+		/* If a valid shape, we want to turn on AES-mouse, it overrides current
+		 * application settings to show possible actions..
+		 */
 		else if (C.realmouse != m_shape)
 		{
 			C.aesmouse = m_shape;
@@ -878,22 +886,34 @@ set_mouse_shape(short m_shape, MFORM *m_form, bool aesm)
 				C.realmouse = m_shape;
 				C.realmouse_form = m_form;
 			}
+			C.realmouse_owner = NULL;
 		}
 	}
 	else
 	{
+		/* If aesmouse shape == -1, the AES have not overridded the current
+		 * mouseshape (which is does to indicate that a widget can be used
+		 * to resize, for example). So we do the actual mouse-shape change...
+		 */
 		if (C.aesmouse == -1)
 		{
 			chg = C.realmouse != m_shape ? true : false;
 			C.realmouse = m_shape;
 			C.realmouse_form = m_form;
+			C.realmouse_owner = client;
 			C.mouse = m_shape;
 			C.mouse_form = m_form;
+			C.mouse_owner = client;
 		}
+		/* If the AES is currently indicating a possible action using mouse
+		 * shape, we store this applications mouse-shape setting for later
+		 * use
+		 */
 		else if (m_shape != C.mouse)
 		{
 			C.mouse = m_shape;
 			C.mouse_form = m_form;
+			C.mouse_owner = client;
 		}
 	}
 	if (chg)
@@ -910,11 +930,11 @@ set_mouse_shape(short m_shape, MFORM *m_form, bool aesm)
  * (Data Uncertain logo, mover & sizers)
  */
 void
-graf_mouse(int m_shape, MFORM *mf, bool aesm)
+graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
 {
 	if (m_shape == -1 && aesm)
 	{
-		set_mouse_shape(m_shape, NULL, aesm);
+		set_mouse_shape(m_shape, NULL, client, aesm);
 		return;
 	}
 
@@ -927,28 +947,28 @@ graf_mouse(int m_shape, MFORM *mf, bool aesm)
 		hidem();
 		return;
 	case ARROW:
-		set_mouse_shape(m_shape, &M_ARROW_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_ARROW_MOUSE, client, aesm);
 		break;
 	case TEXT_CRSR:
-		set_mouse_shape(m_shape, &M_TXT_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_TXT_MOUSE, client, aesm);
 		break;
 	case HOURGLASS:
-		set_mouse_shape(m_shape, &M_BEE_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_BEE_MOUSE, client, aesm);
 		break;
 	case POINT_HAND:
-		set_mouse_shape(m_shape, &M_POINT_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_POINT_MOUSE, client, aesm);
 		break;
 	case FLAT_HAND:
-		set_mouse_shape(m_shape, &M_HAND_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_HAND_MOUSE, client, aesm);
 		break;
 	case THIN_CROSS:
-		set_mouse_shape(m_shape, &M_TCRS_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_TCRS_MOUSE, client, aesm);
 		break;
 	case THICK_CROSS:
-		set_mouse_shape(m_shape, &M_THKCRS_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_THKCRS_MOUSE, client, aesm);
 		break;
 	case OUTLN_CROSS:
-		set_mouse_shape(m_shape, &M_OCRS_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_OCRS_MOUSE, client, aesm);
 		break;
 	case M_SAVE:
 		return;
@@ -957,28 +977,28 @@ graf_mouse(int m_shape, MFORM *mf, bool aesm)
 	case M_LAST:
 		return;
 	case USER_DEF:
-		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, aesm);
+		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, client, aesm);
 		break;
 	case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
-		set_mouse_shape(m_shape, &M_BUBD_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_BUBD_MOUSE, client, aesm);
 		break;
 	case XACRS_RESIZER:			/* The 'resize window' cursor */
-		set_mouse_shape(m_shape, &M_SE_SIZER_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_SE_SIZER_MOUSE, client, aesm);
 		break;
 	case XACRS_NE_SIZER:
-		set_mouse_shape(m_shape, &M_NE_SIZER_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_NE_SIZER_MOUSE, client, aesm);
 		break;
 	case XACRS_MOVER:			/* The 'move window' cursor */
-		set_mouse_shape(m_shape, &M_MOVER_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_MOVER_MOUSE, client, aesm);
 		break;
 	case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
-		set_mouse_shape(m_shape, &M_VERTSIZER_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_VERTSIZER_MOUSE, client, aesm);
 		break;
 	case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
-		set_mouse_shape(m_shape, &M_HORSIZER_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_HORSIZER_MOUSE, client, aesm);
 		break;
 	case XACRS_POINTSLIDE:
-		set_mouse_shape(m_shape, &M_POINTSLIDE_MOUSE, aesm);
+		set_mouse_shape(m_shape, &M_POINTSLIDE_MOUSE, client, aesm);
 		break;
 	}
 }
@@ -1002,7 +1022,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (m == M_OFF || m == M_ON)
 	{
 		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
-		graf_mouse(m, NULL, false);
+		graf_mouse(m, NULL, NULL, false);
 #if GENERATE_DIAGS
 		if (client)
 			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
@@ -1032,7 +1052,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->prev_mouse = client->save_mouse;
 			client->prev_mouse_form = client->save_mouse_form;
 			
-			graf_mouse(client->save_mouse, client->save_mouse_form, false);
+			graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			client->mouse       = client->save_mouse;
 			client->mouse_form  = client->save_mouse_form;
@@ -1047,7 +1067,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * mouse cursor, the current becomes new previous. Consecutive M_PREVIOUS calls
 			 * will then toggle between the two last used mouse shapes.
 			 */
-			graf_mouse(client->prev_mouse, client->prev_mouse_form, false);
+			graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
 			pm			= client->mouse;
 			pmf			= client->mouse_form;
@@ -1061,7 +1081,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->prev_mouse = client->mouse;
 			client->prev_mouse_form = client->mouse_form;
 
-			graf_mouse(m, (MFORM*)pb->addrin[0], false);
+			graf_mouse(m, (MFORM*)pb->addrin[0], client, false);
 			client->mouse = m;
 			client->mouse_form = (MFORM*)pb->addrin[0];	
 			DIAG((D_f,client,"mouse_form to %d", m));
@@ -1069,7 +1089,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
 	{
-		graf_mouse(m, (MFORM *)pb->addrin[0], false);
+		graf_mouse(m, (MFORM *)pb->addrin[0], client, false);
 		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %ld)", m, p_getpid()));
 	}
 

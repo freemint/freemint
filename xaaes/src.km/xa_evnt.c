@@ -381,7 +381,7 @@ check_queued_events(struct xa_client *client)
 		DIAG((D_button, NULL, "still_button multi?? o[0,2] "
 			"%x,%x, lock %d, Mbase %lx, active.widg %lx",
 			pb->intin[1], pb->intin[3],
-			mouse_locked() ? mouse_locked()->p->pid : 0,
+			mouse_locked() ? mouse_locked()->pid : 0,
 			TAB_LIST_START, widget_active.widg));
 
 		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
@@ -432,7 +432,7 @@ check_queued_events(struct xa_client *client)
 	}
 	{
 		short ev;
-		bool is_locker = (client == mouse_locked() || client == update_locked()) ? true : false;
+		bool is_locker = (client->p == mouse_locked() || client->p == update_locked()) ? true : false;
 		
 		if ((ev = checkfor_mumx_evnt(client, is_locker, mbs.x, mbs.y)))
 		{
@@ -645,7 +645,7 @@ XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		if (mode == 0)
 		{
-			if (!(check_cevents(client) || check_queued_events(client)))
+			//if (!(check_cevents(client) || check_queued_events(client)))
 				Block(client, 1);
 		}
 	}
@@ -740,10 +740,10 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	client->waiting_for = events | XAWAIT_MULTI;
 	client->waiting_pb = pb;
-	
+#if 0
 	if (check_cevents(client) || check_queued_events(client))
 		return XAC_DONE;
-
+#endif
 	Block(client, 1);
 	return XAC_DONE;
 }

@@ -120,7 +120,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		#endif
 		}
 
-		lock_screen(wind->owner, false, NULL, 0);
+		lock_screen(wind->owner->p, false, NULL, 0);
 		hidem();
 				
 		if (wt->e.obj != -1)
@@ -153,7 +153,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		
 		showm();
 		clear_clip();
-		unlock_screen(wind->owner, 0);
+		unlock_screen(wind->owner->p, 0);
 	}
 	return 0;
 }

@@ -469,7 +469,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		bool nolist = false;
 		RECT r;
 
-		if (C.update_lock && C.update_lock == client)
+		if (C.update_lock && C.update_lock == client->p)
 		{
 			kind |= STORE_BACK;
 			nolist = true;
@@ -617,6 +617,11 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 					      &pb->intout[1],	/* nxt obj	*/
 					      NULL,		/* newstate	*/
 					      &pb->intout[2]);	/* nxtkey	*/
+		if (pb->intout[1] == -1)
+		{
+			pb->intout[1] = pb->intin[2];
+			pb->intout[2] = pb->intin[1];
+		}
 	}
 	else
 		pb->intout[0] = pb->intout[1] = pb->intout[2] = 0;
