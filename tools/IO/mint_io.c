@@ -148,7 +148,7 @@ init(void)
 	for (i = 0; i < DEVS; i++)
 		init_device (&devs[i]);
 	
-	init_XHD();
+	init_XHDI();
 	
 	/* we are now initialized */
 	done = 1;
@@ -297,12 +297,15 @@ open(const char *filename, int iomode, ...)
 		{
 			char *xhdi_id = mydev->xhdi_id;
 			
-			if (       ((xhdi_id[0] == 'G') && (xhdi_id[1] == 'E') && (xhdi_id[2] == 'M')) /* GEM */
+			if (       0
+#ifndef E2FSPROGS_WRAPPER
+			        || ((xhdi_id[0] == 'G') && (xhdi_id[1] == 'E') && (xhdi_id[2] == 'M')) /* GEM */
 				|| ((xhdi_id[0] == 'B') && (xhdi_id[1] == 'G') && (xhdi_id[2] == 'M')) /* BGM */
 				|| ((xhdi_id[0] == 'F') && (xhdi_id[1] == '3') && (xhdi_id[2] == '2')) /* F32 */
+				|| ((xhdi_id[0] == 'M') && (xhdi_id[1] == 'I') && (xhdi_id[2] == 'X')) /* MIX */
+#endif
 				|| ((xhdi_id[0] == 'R') && (xhdi_id[1] == 'A') && (xhdi_id[2] == 'W')) /* RAW */
 				|| ((xhdi_id[0] == 'L') && (xhdi_id[1] == 'N') && (xhdi_id[2] == 'X')) /* LNX */
-				|| ((xhdi_id[0] == 'M') && (xhdi_id[1] == 'I') && (xhdi_id[2] == 'X')) /* MIX */
 				|| ((xhdi_id[0] == '\0') && (xhdi_id[1] == 'D')))                  /* any DOS */
 			{
 				DEBUG(("Partition ok and accepted!\n"));
