@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = src
+SUBDIRS = src src.km
 
 srcdir = .
 top_srcdir = ..
