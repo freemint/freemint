@@ -34,9 +34,9 @@ struct cookie
 void	init_cookies	(void);
 long	get_toscookie	(ulong tag, ulong *val);
 long	set_toscookie	(ulong tag, ulong val);
-long	get_cookie	(ulong tag, ulong *ret);
-long	set_cookie	(ulong tag, ulong val);
-long	del_cookie	(ulong tag);
+long	get_cookie	(COOKIE *cj, ulong tag, ulong *ret);
+long	set_cookie	(COOKIE *cj, ulong tag, ulong val);
+long	del_cookie	(COOKIE *cj, ulong tag);
 long	add_rsvfentry	(char *name, char portflags, char bdev);
 long	del_rsvfentry	(char *name);
 

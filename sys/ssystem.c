@@ -28,7 +28,10 @@
 
 # include "arch/cpu.h"
 # include "arch/mprot.h"
+# include "arch/user_things.h"
 
+# include "mint/file.h"
+# include "mint/filedesc.h"
 # include "mint/signal.h"
 
 # include "bios.h"
@@ -270,7 +273,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		 */
 		case S_GETCOOKIE:
 		{
-			r = get_cookie (arg1, (long *) arg2);
+			r = get_cookie (NULL, arg1, (long *) arg2);
 
 			break;
 		}
@@ -282,9 +285,30 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				DEBUG (("SET_COOKIE: access denied"));
 				r = EPERM;
 			}
-			else	r = set_cookie (arg1, arg2);
+			else	r = set_cookie (NULL, arg1, arg2);
 # else
-			r = set_cookie(arg1, arg2);
+			if (arg1 == 0x5354694BL && isroot)
+			{
+				USER_THINGS *ut;
+				PROC *p;
+
+				for (p = proclist; p; p = p->gl_next)
+				{
+					/* Skip MiNT itself */
+					if (p->pid && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
+					{
+						if (p->p_mem->tp_reg)
+						{
+							attach_region(curproc, p->p_mem->tp_reg);
+							ut = (USER_THINGS *)p->p_mem->tp_ptr;
+							set_cookie((COOKIE *)ut->user_jar_p, arg1, arg2);
+							detach_region(curproc, p->p_mem->tp_reg);
+						}
+					}
+				}
+			}
+			else
+				r = set_cookie(NULL, arg1, arg2);
 # endif
 			break;
 		}
@@ -296,11 +320,31 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				DEBUG (("DEL_COOKIE: access denied"));
 				r = EPERM;
 			}
-			else	r = del_cookie (arg1);
+			else	r = del_cookie (NULL, arg1);
 # else
-			r = del_cookie(arg1);
-# endif
+			if (arg1 == 0x5354694BL && isroot)
+			{
+				USER_THINGS *ut;
+				PROC *p;
 
+				for (p = proclist; p; p = p->gl_next)
+				{
+					/* Skip MiNT itself */
+					if (p->pid && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
+					{
+						if (p->p_mem->tp_reg)
+						{
+							attach_region(curproc, p->p_mem->tp_reg);
+							ut = (USER_THINGS *)p->p_mem->tp_ptr;
+							del_cookie((COOKIE *)ut->user_jar_p, arg1);
+							detach_region(curproc, p->p_mem->tp_reg);
+						}
+					}
+				}
+			}
+			else
+				r = del_cookie(NULL, arg1);
+# endif
 			break;
 		}
 

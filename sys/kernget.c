@@ -180,7 +180,7 @@ kern_get_cookiejar (SIZEBUF **buffer)
 	ulong *tagid = (ulong *) name;
 	ulong value;
 
-	if (get_cookie (0, &slots))
+	if (get_cookie (NULL, 0, &slots))
 	{
 		DEBUG (("kern_get_cmdline: get_cookie(0) failed!"));
 		return ENOMEM;
@@ -188,7 +188,7 @@ kern_get_cookiejar (SIZEBUF **buffer)
 
 	for (i = 1; i < slots; i++)
 	{
-		if (get_cookie (i, &value) || (value == 0UL))
+		if (get_cookie (NULL, i, &value) || (value == 0UL))
 			break;
 
 		used++;
@@ -210,7 +210,7 @@ kern_get_cookiejar (SIZEBUF **buffer)
 		uchar *to;
 		int j;
 
-		get_cookie (i, (ulong *) name);
+		get_cookie (NULL, i, (ulong *) name);
 
 		to = pretty_print_name;
 		for (j = 0; j < 4; j++)
@@ -229,7 +229,7 @@ kern_get_cookiejar (SIZEBUF **buffer)
 		*to++ = '\0';
 
 		/* Now calculate the value of the cookie */
-		get_cookie (*tagid, &value);
+		get_cookie (NULL, *tagid, &value);
 
 		crs += ksprintf (crs, len - (crs - info->buf),
 				"0x%08lx (%s): 0x%08lx\n",
