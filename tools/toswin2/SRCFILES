@@ -11,6 +11,7 @@ HEADER = \
 	environ.h \
 	event.h \
 	global.h \
+	isotost.h \
 	proc.h \
 	share.h \
 	textwin.h \
@@ -29,6 +30,7 @@ COBJS = \
 	environ.c \
 	event.c \
 	global.c \
+	isotost.c \
 	main.c \
 	proc.c \
 	share.c \

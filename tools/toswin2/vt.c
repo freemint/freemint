@@ -6,6 +6,7 @@
  */
 
 #include "vt.h"
+#include "isotost.h"
 
 /*
  * paint(v, c): put character 'c' at the current (x, y) coordinates
