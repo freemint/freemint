@@ -59,6 +59,7 @@ static PROC *	name2proc		(const char *name);
 static long	_cdecl proc_root	(int drv, fcookie *fc);
 static long	_cdecl proc_lookup	(fcookie *dir, const char *name, fcookie *fc);
 static long	_cdecl proc_getxattr	(fcookie *fc, XATTR *xattr);
+static long _cdecl proc_chown (fcookie *fc, int uid, int gid);
 static long	_cdecl proc_stat64	(fcookie *fc, STAT *ptr);
 static long	_cdecl proc_remove	(fcookie *dir, const char *name);
 static long	_cdecl proc_getname	(fcookie *root, fcookie *dir, char *pathname, int size);
@@ -115,7 +116,7 @@ FILESYS proc_filesys =
 	
 	proc_root,
 	proc_lookup, null_creat, proc_getdev, proc_getxattr,
-	null_chattr, null_chown, null_chmode,
+	null_chattr, proc_chown, null_chmode,
 	null_mkdir, null_rmdir, proc_remove, proc_getname, proc_rename,
 	null_opendir, proc_readdir, null_rewinddir, null_closedir,
 	proc_pathconf, proc_dfree, null_writelabel, proc_readlabel,
@@ -283,6 +284,20 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 	
 	xattr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 	xattr->attr = p_attr[p->wait_q];
+	
+	return E_OK;
+}
+
+static long _cdecl 
+proc_chown (fcookie *fc, int uid, int gid)
+{
+	PROC *p = (PROC *) fc->index;
+	
+	if (!p)
+		return EACCES;
+	
+	if (uid != -1) p->p_cred->ruid = p->p_cred->ucr->euid = uid;
+	if (gid != -1) p->p_cred->rgid = p->p_cred->ucr->egid = gid;
 	
 	return E_OK;
 }
