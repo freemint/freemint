@@ -588,7 +588,7 @@ static void reportxy(TEXTWIN* tw, int x, int y)
 static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy, count, ei;
-	unsigned long param1, param2;
+	unsigned long param1, param2, param3;
 
 	cx = tw->cx;
 	cy = tw->cy;
@@ -1026,6 +1026,59 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			gotoxy (tw, 0, 0);
 		}
 		break;
+	case 't':		/* window modification */
+		param1 = popescbuf (tw, tw->escbuf);
+		param2 = popescbuf (tw, tw->escbuf);
+		param3 = popescbuf (tw, tw->escbuf);
+debug ("window modification: %lu %lu %lu\n", param1, param2, param3);
+
+		switch (param1) {
+			case 1:  /* De-Iconify.  */
+				(*(tw->win)).uniconify (tw->win,
+						         tw->win->prev.g_x,
+						         tw->win->prev.g_y,
+						         tw->win->prev.g_w,
+						         tw->win->prev.g_h);
+				break;
+			case 2:  /* Iconify.  */
+				(*(tw->win)).iconify (tw->win, 
+						       -1, -1, -1, -1);
+				break;
+			case 3:  /* Position.  */
+				break;
+			case 5:  /* Raise window.  */
+				break; /* Not yet implemented.  */
+			case 6:  /* Lower window.  */
+				break; /* Not yet implemented.  */
+			case 4:  /* Size in pixels.  */
+				/*
+				 * If we have too small but non-zero values
+				 * for width or height, round them up to
+				 * one character.
+				 */
+				if (param2 > 0 && param2 < tw->cheight)
+					param2 = tw->cheight;
+				if (param3 > 0 && param3 < tw->cmaxwidth)
+					param3 = tw->cmaxwidth;
+				param2 /= tw->cheight;
+				param3 /= tw->cmaxwidth;
+				/* FALLTHRU */
+			case 8:  /* Size in characters.  */
+				if (param2 == 0 || param2 > 768) {
+					param2 = tw->win->full_work.g_h;
+					param2 /= tw->cheight;
+				}
+				if (param3 == 0 || param3 > 1024) {
+					param3 = tw->win->full_work.g_w;
+					param3 /= tw->cmaxwidth;
+				}
+debug ("resize to %d x %d (%d)\n", param3, param2, SCROLLBACK (tw));
+				resize_textwin (tw, param3, param2, 
+						SCROLLBACK (tw));
+				refresh_textwin (tw, 1);
+				break;
+		}
+		break;
 	case 'q':		/* keyboard light controls */
 		/* Not yet implemented */
 		break;
@@ -1038,6 +1091,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	default:
 #ifdef DEBUG_VT
 		printf("vt100_esc_attr: unknown %c\n", c);
+		debug ("vt100_esc_attr: unknown %c\n", c);
 #endif
 		break;
 	}
