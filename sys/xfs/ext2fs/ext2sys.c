@@ -2001,13 +2001,13 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			}
 			
 			if (IS_IMMUTABLE (c)
-				|| le2cpu32 (c->in.i_size) < arg)
+				|| le2cpu32 (c->in.i_size) < *((long *) arg))
 			{
 				e_release (&fc);
 				return EACCES;
 			}
 			
-			c->in.i_size = cpu2le32 (arg);
+			c->in.i_size = cpu2le32 (*((long *) arg));
 			mark_inode_dirty (c);
 			
 			ext2_truncate (c);
