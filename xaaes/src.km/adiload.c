@@ -69,7 +69,7 @@ module_init(void *initfunc, struct kentry *k, struct adiinfo *a)
 static long
 load_adi(struct basepage *b, const char *name)
 {
-	void *initfunc = b->p_tbase;
+	void *initfunc = (void *)b->p_tbase;
 	long r;
 	
 	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));

@@ -74,3 +74,9 @@ pid2client(short pid)
 
 	return client;
 }
+
+struct xa_client *
+proc2client(struct proc *p)
+{
+	return lookup_extension(p, XAAES_MAGIC);
+}

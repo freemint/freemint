@@ -2128,7 +2128,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	 * Ozk: Since it is possible that taskswitches happens during the callout of
 	 *	progdef's, we need to restore the clip-rect used by this 'thread'
 	 */
-	vs_clip(C.vh, 1, (const short *)clip);	
+	vs_clip(C.vh, 1, (short *)clip);
 	
 	if (*wt->state_mask & OS_DISABLED)
 	{
