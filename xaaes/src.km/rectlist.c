@@ -63,6 +63,33 @@ make_rect_list(struct xa_window *wind, bool swap)
 	nrl->next = NULL;
 	nrl->r = wind->r;
 
+	{
+		short wx2, wy2, sx2, sy2;
+
+		wx2 = nrl->r.x + nrl->r.w;
+		wy2 = nrl->r.y + nrl->r.h;
+		sx2 = screen.r.x + screen.r.w;
+		sy2 = screen.r.y + screen.r.h;
+
+		if (nrl->r.x < screen.r.x)
+		{
+			nrl->r.w -= screen.r.x - nrl->r.x;
+			nrl->r.x = screen.r.x;
+		}
+		if (wx2 > sx2)
+			nrl->r.w -= wx2 - sx2;
+		if (nrl->r.y < screen.r.y)
+		{
+			nrl->r.h -= screen.r.y - nrl->r.y;
+			nrl->r.y = screen.r.y;
+		}
+		if (wy2 > sy2)
+			nrl->r.h -= wy2 - sy2;
+	}
+	
+	DIAGS(("make_rect_list: wind=(%d/%d/%d/%d), nrl=(%d/%d/%d/%d)",
+		wind->r, nrl->r));
+
 	if (nrl && wind->prev)
 	{
 		short flag, win_x2, win_y2, our_x2, our_y2;
@@ -80,14 +107,14 @@ make_rect_list(struct xa_window *wind, bool swap)
 #endif
 			rl_prev = NULL;
 
+			r_win = wl->r;		
+			win_x2 = r_win.x + r_win.w;
+			win_y2 = r_win.y + r_win.h;
+
 			for (rl = nrl; rl; rl = rl_next)
 			{
 
-				r_win = wl->r;		
 				r_ours = rl->r;
-
-				win_x2 = r_win.x + r_win.w;
-				win_y2 = r_win.y + r_win.h;
 
 				flag = 0;
 
@@ -109,22 +136,21 @@ make_rect_list(struct xa_window *wind, bool swap)
 					our_x2 = r_ours.x + r_ours.w;
 					our_y2 = r_ours.y + r_ours.h;
 
-					if (r_win.y > r_ours.y)
+					if (r_win.x > r_ours.x)
 					{
 						rl->r.x = r_ours.x;
 						rl->r.y = r_ours.y;
-						rl->r.w = r_ours.w;
-						rl->r.h = h;
+						rl->r.h = r_ours.h;
+						rl->r.w = w;
 
-						r_ours.y += h;
-						r_ours.h -= h;
-						
-						flag |= 1;
-						DIAGS((" -- 1. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						r_ours.x += w;
+						r_ours.w -= w;
+						flag = 1;
+						DIAGS((" -- 2. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
-					if (r_win.x > r_ours.x)
+					if (r_win.y > r_ours.y)
 					{
-						if (flag & 1)
+						if (flag)
 						{
 							rl_prev = rl;
 							rl = kmalloc(sizeof(*rl));
@@ -139,41 +165,18 @@ make_rect_list(struct xa_window *wind, bool swap)
 #endif
 						rl->r.x = r_ours.x;
 						rl->r.y = r_ours.y;
-						rl->r.w = w;
-						rl->r.h = r_ours.h;
-
-						r_ours.x += w;
-						r_ours.w -= w;
-						flag |= 2;
-						DIAGS((" -- 2. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
-					}
-					if (our_y2 > win_y2)
-					{
-						if (flag & 3)
-						{
-							rl_prev = rl;
-							rl = kmalloc(sizeof(*rl));
-							assert(rl);
-							rl->next = rl_prev->next;
-							rl_prev->next = rl;
-							DIAGS((" -- 3. alloc new=%lx", rl));
-						}
-#if GENERATE_DIAGS
-						else
-							DIAGS((" -- 3. using orig=%lx", rl));
-#endif
-						rl->r.x = r_ours.x;
-						rl->r.y = win_y2;
 						rl->r.w = r_ours.w;
-						rl->r.h = our_y2 - win_y2;
+						rl->r.h = h;
 
-						r_ours.h -= rl->r.h;
-						flag |= 4;
-						DIAGS((" -- 3. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						r_ours.y += h;
+						r_ours.h -= h;
+						
+						flag = 1;
+						DIAGS((" -- 1. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
 					if (our_x2 > win_x2)
 					{
-						if (flag & 7)
+						if (flag)
 						{
 							rl_prev = rl;
 							rl = kmalloc(sizeof(*rl));
@@ -193,13 +196,37 @@ make_rect_list(struct xa_window *wind, bool swap)
 						rl->r.h = r_ours.h;
 
 						r_ours.w -= rl->r.w;
-						flag |= 8;
+						flag = 1;
 						DIAGS((" -- 4. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+					}
+					if (our_y2 > win_y2)
+					{
+						if (flag)
+						{
+							rl_prev = rl;
+							rl = kmalloc(sizeof(*rl));
+							assert(rl);
+							rl->next = rl_prev->next;
+							rl_prev->next = rl;
+							DIAGS((" -- 3. alloc new=%lx", rl));
+						}
+#if GENERATE_DIAGS
+						else
+							DIAGS((" -- 3. using orig=%lx", rl));
+#endif
+						rl->r.x = r_ours.x;
+						rl->r.y = win_y2;
+						rl->r.w = r_ours.w;
+						rl->r.h = our_y2 - win_y2;
+
+						r_ours.h -= rl->r.h;
+						flag = 1;
+						DIAGS((" -- 3. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
 				}
 				else
 				{
-					flag |= 1;
+					flag = 1;
 					DIAGS((" -- 1. whole=(%d/%d/%d/%d)", rl->r));
 				}
 
