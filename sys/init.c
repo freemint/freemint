@@ -331,10 +331,12 @@ init_intr (void)
 	xbra_install (&old_criticerr, 0x404L, mint_criticerr);
 	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
 
+#if 0 // this should really not be necessary ... rincewind
 	new_xbra_install (&old_resvec, 0x042aL, reset);
 	old_resval = *((long *)0x426L);
 	*((long *) 0x426L) = RES_MAGIC;
-
+#endif
+	
 	spl (savesr);
 
 	/* set up signal handlers */
@@ -351,7 +353,7 @@ init_intr (void)
 
 	for (i = (int)(sizeof (old_fpcp) / sizeof (old_fpcp[0])); i--; )
 		xbra_install (&old_fpcp[i], 192L + i * 4, new_fpcp);
-
+	
 	xbra_install (&old_mmuconf, 224L, new_mmu);
 	xbra_install (&old_pmmuill, 228L, new_mmu);
 	xbra_install (&old_pmmuacc, 232L, new_pmmuacc);
@@ -441,8 +443,10 @@ restr_intr (void)
 	*((long *) 0x408L) = old_term;
 	*((long *) 0x404L) = (long) old_criticerr.next;
 	*((long *) 0x114L) = old_5ms;
+#if 0	//
 	*((long *) 0x426L) = old_resval;
 	*((long *) 0x42aL) = old_resvec;
+#endif	
 	*((long *) 0x476L) = old_rwabs;
 	*((long *) 0x47eL) = old_mediach;
 	*((long *) 0x472L) = old_getbpb;
@@ -1173,7 +1177,7 @@ init (void)
 	 * is in fact GEM, take the exec_os() vector. (We know that INIT
 	 * is GEM if the user told us so by using GEM= instead of INIT=.)
 	 */
-	if (init_is_gem)
+	if (init_is_gem && init_prg)
 	{
 		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
@@ -1345,7 +1349,31 @@ mint_thread(void *arg)
 # endif
 	}
 	else
-	{
+	{ /* "GEM=ROM" sets init_prg == 0 and init_is_gem == 1 -> run rom AES */
+	  if (init_is_gem)
+	  {
+	    BASEPAGE *bp;
+	    int pid;
+	    long entry;
+	    
+	    boot_print(MSG_init_rom_AES);
+	  
+	    entry = *((long *) EXEC_OS);
+	  
+	    bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
+	    bp->p_tbase = entry;
+	  
+	    r = sys_pexec(106, (char *) "GEM", bp, 0L);
+	    pid = (int) r;
+	    if (pid > 0)
+	    {
+	      do {
+		r = sys_pwaitpid(-1, 0, NULL);
+	      }
+	      while (pid != ((r & 0xffff0000L) >> 16));
+	      r &= 0x0000ffff;
+	    }
+	  }
 # ifdef VERBOSE_BOOT
 		boot_print(MSG_init_no_init_specified);
 # endif
