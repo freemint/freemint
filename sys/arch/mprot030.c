@@ -211,9 +211,9 @@ init_tables(void)
         mint_top_tt = 0;
     else
     {
+        int ct2 = 0;
         mint_top_tt = phys_top_tt;
         cookie = *CJAR;
-        int ct2 = 0;
         
         if (cookie)
         {
