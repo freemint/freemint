@@ -822,14 +822,7 @@ BTRACE(21);
 
 					if (lcfg.falcon == 0x00030000L)
 					{
-#if __PUREC__
 						work_out[45] = lcfg.modecode;
-#else
-						/* FIX_ME: Those who know how to reach ptsout for other
-						   compilers libraries, please come forward. :-)
-						 */
-						work_out[45] = lcfg.modecode;
-#endif
 						/* Ronald Andersson: This should be the mehod for falcon. */
 						work_in[0] = 5;
 						DIAGS(("Falcon: mode %d(%x)\n", lcfg.modecode, lcfg.modecode));
