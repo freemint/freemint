@@ -101,7 +101,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	10
+#define KENTRY_MIN_VERSION	11
 
 
 /* hardware dependant vector
@@ -470,7 +470,16 @@ struct kentry_sockets
  */
 struct kentry_module
 {
-	void _cdecl (*load_modules)(const char *extension,
+	/* Load modules with filename extension specified with 'ext' argument
+	 * from path.
+	 *
+	 * 'path' can be NULL, in this case <sysdir> is used to search for the
+	 * modules.
+	 *
+	 * 'ext' need to include the '.' that begin the filename extension.
+	 */
+	void _cdecl (*load_modules)(const char *path,
+				    const char *ext,
 				    long _cdecl (*loader)(struct basepage *, const char *));
 
 	/* register VDI or AES trap handler

@@ -133,7 +133,7 @@ struct kerinfo kernelinfo =
 	so_dup,
 	so_free,
 
-	load_modules,
+	load_modules_old,
 	old_kthread_create,
 	kthread_exit,
 
