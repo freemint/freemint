@@ -195,17 +195,9 @@ init_cookies (void)
 	}
 	
 	/* jr: install PMMU cookie if memory protection is used
-	 * Draco: also do the same if VM is active; memory protection
-	 * and VM exclude each other, but some day we can get both
-	 * working simultaneously, who knows...
 	 */
-# ifdef	VM_EXTENSION
-	if (!no_mem_prot || vm_in_use)
-	{
-# else
 	if (!no_mem_prot)
 	{
-# endif
 		newcookie[i].tag   = COOKIE_PMMU;
 		newcookie[i].value = 0;
 		i++;
