@@ -316,13 +316,12 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 }
 
 /*
- * Context indipendant.
+ * Context independant.
  * queue a message for dest_client
-*/
+ */
 void
 queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
 {
-
 	struct xa_aesmsg_list *ml;
 	short *new = msg->m;
 
@@ -341,7 +340,7 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 		{
 			old = ml->message.m;
 
-			if ( old[3] == new[3] )
+			if (old[3] == new[3])
 			{
 				if (is_inside(*((RECT *)&new[4]), *((RECT *)&old[4])))
 					return;
@@ -355,14 +354,16 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 			next	= &ml->next;
 			ml	= *next;
 		}
-		new_msg = kmalloc(sizeof(union msg_buf));
+
+		new_msg = kmalloc(sizeof(*new_msg));
 		if (new_msg)
 		{
-			*next			= new_msg;
-			new_msg->message	= *msg;
-			new_msg->next		= NULL;	
+			*next = new_msg;
+			new_msg->message = *msg;
+			new_msg->next = NULL;	
 			C.redraws++;
 		}
+
 		return;
 	}
 	/* There are already some pending messages */
@@ -385,7 +386,8 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 					msg = NULL;
 					break;
 				}
-			ml = ml->next;
+
+				ml = ml->next;
 			}
 		}
 		else if (new[0] == WM_SIZED)
@@ -403,7 +405,8 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 					msg = NULL;
 					break;
 				}
-			ml = ml->next;
+
+				ml = ml->next;
 			}
 		}
 		else if (new[0] == WM_VSLID)
@@ -418,7 +421,8 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 					msg = NULL;
 					break;
 				}
-			ml = ml->next;
+
+				ml = ml->next;
 			}
 		}
 		else if (new[0] == WM_HSLID)
@@ -433,7 +437,8 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 					msg = NULL;
 					break;
 				}
-			ml = ml->next;
+
+				ml = ml->next;
 			}
 		}
 		else if (new[0] == WM_ARROWED)
@@ -447,7 +452,8 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 					msg = NULL;
 					break;
 				}
-			ml = ml->next;
+
+				ml = ml->next;
 			}
 		}
 	}
@@ -483,6 +489,7 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 		}
 	}
 }
+
 /*
  * Send an AES message to a client application.
  * generalized version, which now can be used by appl_write. :-)
@@ -510,8 +517,8 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		return;
 	}
 
-	if ( 	!dest_client->waiting_for & MU_MESAG ||
-		(msg->m[0] == WM_REDRAW && (dest_client->status & CS_CE_REDRAW_SENT)) )
+	if (!dest_client->waiting_for & MU_MESAG
+	    || (msg->m[0] == WM_REDRAW && (dest_client->status & CS_CE_REDRAW_SENT)))
 	{
 		queue_message(lock, dest_client, msg);
 		return;
@@ -528,8 +535,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	}
 	else
 	{
-		m = (union msg_buf *)kmalloc(sizeof(m));
-		
+		m = kmalloc(sizeof(*m));
 		if (m)
 		{
 			if (dest_client)
@@ -545,8 +551,10 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		}
 	}
 }
-/* AES internal msgs (All standard) */
 
+/*
+ * AES internal msgs
+ */
 void
 send_app_message(
 	enum locks lock,

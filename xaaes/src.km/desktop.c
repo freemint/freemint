@@ -91,11 +91,13 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 void
 set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 {
-	XA_TREE *nt = kmalloc(sizeof(XA_TREE));
 	XA_WIDGET *wi = get_widget(wind, XAW_TOOLBAR);
 	XA_WIDGET_LOCATION loc;
+	XA_TREE *nt;
 
-	DIAG((D_widg, NULL, "set_desktop_widget(wind=%d):new@%lx",
+	nt = kmalloc(sizeof(*nt));
+
+	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx",
 		wind->handle, nt));
 
 	if (!nt)

@@ -94,7 +94,7 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 
 	if (planes < screen.planes)
 	{
-		DIAG((D_x, client, "XA_calloc 3 %ld", new_len));
+		DIAG((D_x, client, "alloc of %ld bytes", new_len));
 
 		if (client == C.Aes)
 			new_data = kmalloc(new_len);
@@ -118,7 +118,7 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 	dst.fd_addr = new_data;
 	dst.fd_stand = 0;
 
-	DIAG((D_x, client, "XA_calloc %d*%ld", 1, new_len));
+	DIAG((D_x, client, "alloc of %ld bytes", new_len));
 	tmp = kmalloc(new_len);
 	if (tmp)
 	{
