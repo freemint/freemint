@@ -119,6 +119,15 @@ struct common
 /* All areas that are common. */
 extern struct common C;
 
+struct helpserver
+{
+	struct helpserver *next;
+
+	char *ext;
+	char *name;
+	char *path; /* optional */
+};
+
 struct config
 {
 	Path launch_path;		/* Initial path for launcher */
@@ -163,6 +172,8 @@ struct config
 	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
 
 	short videomode;		/* ID of screen device opened by v_opnwk() */
+
+	struct helpserver *helpservers;	/* configured helpservers */
 
 	/* postponed cnf things */
 	Path cnf_shell;			/* SHELL= */
