@@ -85,8 +85,8 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 						DIAG((D_button, client, "cXA_button_event: Wrong client %s, should be %s", wind->owner->name, client->name));
 						return;
 					}
-					if (   (wind->dial&created_for_POPUP) != 0
-					    && (wind->active_widgets&V_WIDG) != 0
+					if (   (wind->dial & created_for_POPUP) != 0
+					    && (wind->active_widgets & V_WIDG) != 0
 					   )
 					{
 						if (do_widgets(lock, wind, XaMENU, md))
@@ -153,6 +153,7 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		return;
 
 	DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s", ce->client->name));
+
 	if (ce->client->waiting_for & MU_BUTTON)
 		button_event(lock, ce->client, &ce->md);
 	else
@@ -213,6 +214,7 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 	}
 	C.ce_open_menu = NULL;
 }
+
 void
 cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 {

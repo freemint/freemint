@@ -369,7 +369,7 @@ k_init(void)
 	C.Aes->std_menu.owner = C.Aes;
 	C.Aes->mnu_clientlistname = kmalloc(20);
 	assert(C.Aes->mnu_clientlistname);
-	strncpy(C.Aes->mnu_clientlistname, "  Clients \3", 14);
+	strcpy(C.Aes->mnu_clientlistname, "  Clients \3");
 	fix_menu(C.Aes, C.Aes->std_menu.tree, true);
 	set_menu_widget(root_window, &C.Aes->std_menu);
 	{

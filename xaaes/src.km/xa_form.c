@@ -323,20 +323,31 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	struct xa_window *alert_window;
 	XA_WIDGET *widg;
 	XA_TREE *wt;
-	OBJECT *alert_form,
-	       *alert_icons;
+	OBJECT *alert_form;
+	OBJECT *alert_icons;
 	ALERTXT *alertxt;
 	short x, w;
-	int  n_lines, n_buttons, icon = 0, m_butt_w,
-	      retv = 1, b, f;
+	int n_lines, n_buttons, icon = 0, m_butt_w;
+	int retv = 1, b, f;
 
 	DIAG((D_form, client, "called do_form_alert(%s)", alert));
 
 	/* Create a copy of the alert box templates */
 	alert_form = CloneForm(ResourceTree(C.Aes_rsc, ALERT_BOX));
-	alertxt = kmalloc(sizeof(*alertxt));
-	if (!alert_form || !alertxt)
+	if (!alert_form)
+	{
+		DIAGS(("CloneForm failed, out of memory?"));
 		return 0;
+	}
+
+	alertxt = kmalloc(sizeof(*alertxt));
+	if (!alertxt)
+	{
+		kfree(alert_form);
+
+		DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*alertxt)));
+		return 0;
+	}
 
 	for (f = 0; f < ALERT_LINES; f++)
 		alertxt->text[f][0] = '\0';
@@ -390,8 +401,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		
 		for (f = 0; f < 7; f++)
 		{
-			ICONBLK *ai = get_ob_spec(alert_icons + icons[f]    )->iconblk,
-			        *af = get_ob_spec(alert_form  + ALERT_D_ICON)->iconblk;
+			ICONBLK *ai = get_ob_spec(alert_icons + icons[f]    )->iconblk;
+			ICONBLK *af = get_ob_spec(alert_form  + ALERT_D_ICON)->iconblk;
 			ai->ib_xicon = af->ib_xicon;
 			ai->ib_yicon = af->ib_yicon;
 		}
@@ -475,25 +486,34 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 					     C.Aes->options.thinwork,
 					     r, NULL, NULL);
 	}
+
 	widg = get_widget(alert_window, XAW_TOOLBAR);
+
 	wt = set_toolbar_widget(lock, alert_window, alert_form, -1);
 	wt->extra = alertxt;
-	
-/* Change the click & drag behaviours for the alert box widget, because alerts return a number */
-/* 1 to 3, not an object index. */
-/* HR: we also need a keypress handler for the default button (if there) */
+
+	/* Change the click & drag behaviours for the alert box widget,
+	 * because alerts return a number
+	 * 1 to 3, not an object index.
+	 * we also need a keypress handler for the default button (if there)
+	 */
 	alert_window->keypress = key_alert_widget;
 	widg->click = click_alert_widget;
 	widg->drag  = click_alert_widget;
-	
-	/* HR: We won't get any redraw messages
-	       - The widget handler will take care of it.
-	       - (the message handler vector id NULL!!!) */
-/* Set the window title to be the client's name to avoid confusion */
+
+	/* We won't get any redraw messages
+	 * - The widget handler will take care of it.
+	 * - the message handler vector id NULL!!!
+	 * 
+	 * Set the window title to be the client's name to avoid confusion
+	 */
 	get_widget(alert_window, XAW_TITLE)->stuff = client->name;
 	alert_window->destructor = alert_destructor;
 	open_window(lock, alert_window, alert_window->r);
-	forcem();		/* For if the app has hidden the mouse */
+
+	/* For if the app has hidden the mouse */
+	forcem();
+
 	return retv;
 }
 
@@ -1725,32 +1745,51 @@ click_form_do(enum locks lock, struct xa_client *client, const struct moose_data
 	}
 }
 
-/* HR 230601: big simplification by constructing function do_active_widget()
- *            This eliminates redrawing of the sliders when the mouse isnt moved.
+/* big simplification by constructing function do_active_widget()
+ * This eliminates redrawing of the sliders when the mouse isnt moved.
  */
-static void
-woken_active_widget(struct task_administration_block *tab)
+
+struct woken_active_widget_data
 {
-	C.active_timeout.timeout = 0;
-	do_active_widget(tab->lock, tab->client); /* HR 230601 see also pending_msgs */
+	struct xa_client *client;
+	enum locks lock;
+};
+
+static void
+woken_active_widget(struct proc *p, long arg)
+{
+	struct woken_active_widget_data *data = (struct woken_active_widget_data *)arg;
+
+	do_active_widget(data->lock, data->client);
+	kfree(data);
 }
 
 void
 set_button_timer(enum locks lock, struct xa_window *wind)
 {
-	Tab *t = &C.active_timeout;
-	MENU_TASK *k = &t->task_data.menu;
+	short exit_mb, x, y;
 
-	check_mouse(wind->owner, &k->exit_mb, &k->x, &k->y);
-	
+	check_mouse(wind->owner, &exit_mb, &x, &y);
+
 	/* still down? */
-	if (k->exit_mb)
+	if (exit_mb)
 	{
-		t->timeout = 50;
-		t->wind = wind;
-		t->client = wind->owner;
-		t->task = woken_active_widget;
-		t->lock = lock;
+		struct woken_active_widget_data *data;
+
+		data = kmalloc(sizeof(*data));
+		if (data)
+		{
+			struct timeout *t;
+
+			t = addroottimeout(50, woken_active_widget, 0);
+			if (t)
+			{
+				data->client = wind->owner;
+				data->lock = lock;
+
+				t->arg = (long)data;
+			}
+		}
 	}
 }
 
