@@ -8,8 +8,8 @@
 
 
 # define MAJ_VERSION	1
-# define MIN_VERSION	15
-# define PATCH_LEVEL	10
+# define MIN_VERSION	16
+# define PATCH_LEVEL	0
 
 # define THIRD_PARTY	"FreeMiNT"
 
