@@ -1239,12 +1239,12 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	 */
 	if (path[1] == ':' && !curproc->root_dir)
 	{
-		char c = path[0];
+		char c = tolower (path[0]);
 		
 		if (c >= 'a' && c <= 'z')
 			drv = c - 'a';
-		else if (c >= 'A' && c <= 'Z')
-			drv = c - 'A';
+		else if (c >= '1' && c <= '6')
+			drv = 26 + (c - '1');
 		else
 			goto nodrive;
 		
