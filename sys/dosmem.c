@@ -292,28 +292,35 @@ sys_m_alloc (long size)
 long _cdecl
 sys_m_free (long block)
 {
-	struct memspace *mem;
-	long r;
+	struct proc *p = curproc;
+	struct memspace *mem = p->p_mem;
 	int i;
 
 	TRACE(("Mfree(%lx)", block));
 
 	if (!block)
 	{
-		DEBUG(("Mfree: null pointer"));
+		DEBUG(("Mfree: null pointer from pid %i", p->pid));
 		return EFAULT;
 	}
 
-	/* Releasing own basepage cannot be legal */
-	if (block == (long)curproc->base)
+	if (mem && mem->mem)
 	{
-		DEBUG(("Mfree: cannot free bp!"));
-		return EINVAL;
-	}
+		long r;
 
-	r = detach_region_by_addr (curproc, block);
-	if (r == 0)
-		return r;
+		/* Releasing own basepage cannot be legal */
+		if (block == (long)mem->base)
+		{
+			DEBUG(("Mfree: cannot free bp!"));
+			return EINVAL;
+		}
+
+		r = detach_region_by_addr(p, block);
+		if (r == 0)
+			return r;
+	}
+	else
+		DEBUG(("Mfree: no memory context for pid %i", p->pid));
 
 	mem = rootproc->p_mem;
 
@@ -336,8 +343,8 @@ sys_m_free (long block)
 		{
 			MEMREGION *m = mem->mem[i];
 
-			assert (m != NULL);
-			assert (m->loc == (long) block);
+			assert(m != NULL);
+			assert(m->loc == (long) block);
 
 			if (!(m->mflags & M_KEEP))
 				continue;
@@ -383,7 +390,7 @@ sys_m_shrink (int dummy, long block, long size)
 	 */
 	/* XXX perhaps this shouldn't be '256L', but rather 'PAGESIZE'?
 	 */
-	if (block == (long)curproc->base && size < 256L)
+	if (block == (long)mem->base && size < 256L)
 		size = 256L;
 
 	for (i = 0; i < mem->num_reg; i++)

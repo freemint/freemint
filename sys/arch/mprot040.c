@@ -1560,13 +1560,13 @@ report_buserr(void)
 		 curproc->name,
 		 curproc->pid,
 		 type, pc,
-		 aa, curproc->base);
+		 aa, curproc->p_mem->base);
 	
 	if (!_ALERT (alertbuf))
 	{
 		/* this will call _alert again, but it will just fail again */
 		ALERT ("MEMORY VIOLATION: type=%s RW=%s AA=%lx PC=%lx BP=%lx",
-			type, rw, aa, pc, curproc->base);
+			type, rw, aa, pc, curproc->p_mem->base);
 		
 #ifdef SPECIAL_DEBUG
 		lookup_addr(aa, "AA");
