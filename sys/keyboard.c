@@ -24,15 +24,6 @@
  *
  */
 
-/* PROGRAMS WHICH HAVE TO BE TESTED WHETHER THERE IS COMPATIBILITY PROBLEM:
- *
- * a) Apex Media
- * b) JML Snap
- * c) Midnight Commander (!)
- * d) something else I forgot
- *
- */
-
 # ifndef NO_AKP_KEYBOARD
 
 # include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
@@ -127,21 +118,22 @@ static const uchar mmasks[] =
 	MM_ALTGR
 };
 
+/* Exported variables */
 short	pc_style = 0;		/* PC-style vs. Atari-style for Caps operation */
-
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
+/* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;		/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;		/* place for saving the hz_200 timer value */
 
+/* Alt/numpad */
 static	uchar numin[8];		/* buffer for storing ASCII code typed in via numpad */
 static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 
 /* Variables that deal with keyboard autorepeat */
 static	uchar last_key[4];	/* last pressed key */
 static	short key_pressed;	/* flag for keys pressed/released (0 = no key is pressed) */
-static  short keep_sending;	/* flag for mouse packets auto-repetition */
 static	ushort keydel;		/* keybard delay rate and keyboard repeat rate, respectively */
 static	ushort krpdel;
 static	ushort kdel, krep;	/* actual counters */
@@ -171,8 +163,10 @@ static MEMREGION *user_keytab_region = NULL;
 
 # define MOUSE_TIMEOUT	40
 
-static char mouse_packet[3];
+static short keep_sending;		/* flag for mouse packets auto-repetition */
+static char mouse_packet[6];
 
+/* Mouse movements in four directions */
 static void
 mouse_up(PROC *p, long pixels)
 {
@@ -182,7 +176,7 @@ mouse_up(PROC *p, long pixels)
 	mouse_packet[1] = 0;		/* X axis */
 	mouse_packet[2] = -pixels;	/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -200,7 +194,7 @@ mouse_down(PROC *p, long pixels)
 	mouse_packet[1] = 0;		/* X axis */
 	mouse_packet[2] = pixels;	/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -218,7 +212,7 @@ mouse_left(PROC *p, long pixels)
 	mouse_packet[1] = -pixels;	/* X axis */
 	mouse_packet[2] = 0;		/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -236,7 +230,7 @@ mouse_right(PROC *p, long pixels)
 	mouse_packet[1] = pixels;	/* X axis */
 	mouse_packet[2] = 0;		/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
 	{
@@ -245,6 +239,7 @@ mouse_right(PROC *p, long pixels)
 	}
 }
 
+/* Generate "no button" packet, simulating the mouse key release */
 static void
 mouse_noclick(PROC *p, long arg)
 {
@@ -252,22 +247,14 @@ mouse_noclick(PROC *p, long arg)
 	mouse_packet[1] = 0;		/* X axis */
 	mouse_packet[2] = 0;		/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 }
 
-static void
-mouse_lclick(PROC *p, long arg)
-{
-	mouse_packet[0] = 0xfa;		/* header */
-	mouse_packet[1] = 0;		/* X axis */
-	mouse_packet[2] = 0;		/* Y axis */
-
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
-
-	/* Generate "release" packet */
-	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_noclick, 0);
-}
-
+/* Generate right click */
+/* Note: Atari Compendium is wrong (as usual), when states that right
+ * click generates packet 0xfa, and left - 0xf9. This is exactly the
+ * other way around.
+ */
 static void
 mouse_rclick(PROC *p, long arg)
 {
@@ -275,12 +262,31 @@ mouse_rclick(PROC *p, long arg)
 	mouse_packet[1] = 0;		/* X axis */
 	mouse_packet[2] = 0;		/* Y axis */
 
-	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+	*kbshft &= ~MM_ALTERNATE;
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	/* Generate "release" packet */
 	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_noclick, 0);
 }
 
+/* Generate left click */
+static void
+mouse_lclick(PROC *p, long arg)
+{
+	mouse_packet[0] = 0xfa;		/* header */
+	mouse_packet[1] = 0;		/* X axis */
+	mouse_packet[2] = 0;		/* Y axis */
+
+	*kbshft &= ~MM_ALTERNATE;
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
+
+	/* Generate "release" packet */
+	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_noclick, 0);
+}
+
+/* Generate double left click */
 static void
 mouse_dclick(PROC *p, long arg)
 {
@@ -288,16 +294,11 @@ mouse_dclick(PROC *p, long arg)
 	addroottimeout(MOUSE_TIMEOUT+20, (void _cdecl (*)(PROC *))mouse_lclick, 0);
 }
 
-static short
-generate_mouse_event(uchar shift, ushort scan, uchar make)
+INLINE short
+generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
+	char delta = (shift & MM_ESHIFT) ? 1 : 8;
 	TIMEOUT *t;
-	char delta;
-
-	if (shift & MM_ESHIFT)
-		delta = 1;
-	else
-		delta = 8;
 
 	switch (scan)
 	{
