@@ -58,6 +58,7 @@
 # include "syscall_vectors.h"
 # include "time.h"	/* */
 # include "timeout.h"	/* */
+# include "unicode.h"	/* init_unicode() */
 # include "update.h"	/* start_sysupdate */
 # include "util.h"	/* */
 # include "fatfs.h"	/* fatfs_config() */
@@ -492,7 +493,7 @@ get_my_name (void)
 			my_name = p ;
 # if 0
 			/* DEBUGGING: */
-			boot_printf ("[MiNT is named \\AUTO\\%s]\r\n", p);
+			boot_printf (MSG_init_getname, p);
 # endif
 		}
 	}
@@ -500,8 +501,8 @@ get_my_name (void)
 
 /* Boot menu routines. Quite lame I admit. Added 19.X.2000. */
 
-static short load_xfs;
-static short load_xdd;
+static short load_xfs_f;
+static short load_xdd_f;
 static short load_auto;
 static short save_ini;
 static const char *ini_keywords[] =
@@ -513,25 +514,7 @@ static const char *ini_keywords[] =
 	"INI_SAVE"
 };
 
-static const char *startmenu =
-	"\033E\r\n\033p"
-	"    FreeMiNT boot menu    \033q\r\n\r\n"
-	"<1> Start up FreeMiNT: %s"
-	"<2> Load external XFS: %s"
-	"<3> Load external XDD: %s"
-	"<4> Continue the AUTO: %s"
-	"<5> Memory protection: %s"
-	"<0> Save default-file: %s\r\n"
-	"[Return] accept,\r\n"
-	"[Ctrl-C] cancel.\r\n"
-;
-
-static const char *ini_warn =
-	"# This file is automatically created,\n"
-	"# do not edit.\n\n"
-;
-
-/* we assume that the new mint.ini file, containing the boot
+/* we assume that the mint.ini file, containing the boot
  * menu defaults, is located at same place as mint.cnf is
  */
 
@@ -624,8 +607,8 @@ exit:
 	Mfree ((long) buf);
 
 initialize:
-	load_xfs = options[0];
-	load_xdd = options[1];
+	load_xfs_f = options[0];
+	load_xdd_f = options[1];
 	load_auto = options[2];
 	no_mem_prot = !options[3];
 	save_ini = options[4];
@@ -647,8 +630,8 @@ write_ini (short *options)
 
 	options++;		/* Ignore the first one :-) */
 
-	l = strlen (ini_warn);
-	r = Fwrite (inihandle, l, ini_warn);
+	l = strlen (MSG_init_menuwarn);
+	r = Fwrite (inihandle, l, MSG_init_menuwarn);
 	if ((r < 0) || (r != l))
 	{
 		r = -1;
@@ -680,49 +663,29 @@ boot_kernel_p (void)
 	char menu[512];
 	short option[6];
 	long c = 0;
-	static struct yn_message
-	{
-		const char *message;	/* message to print */
-		char	yes_let;	/* letter to hit for yes */
-		char	no_let;		/* letter to hit for no */
-	}
-	/* Please change English messages to appropriate languages */
-	boot_it [MAXLANG] =
-	{
-		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* English */
-		{ "Bootmen anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
-		{ "Afficher le menu de d‚marrage? (o)ui (n)on ", 'o', 'n' },	/* French */
-		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* British */
-		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* Spanish, upside down ? is 168 dec. */
-		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' }	/* Italian */
-	};
-	
-	struct yn_message *msg = &boot_it [gl_lang];
 	int y;
 	
-	Cconws (msg->message);
-	y = (int) Cconin ();
-	if (tolower (y) == msg->no_let)
+	Cconws(MSG_init_askmenu);
+	y = (int) Cconin();
+	if (tolower (y) == MSG_init_menu_no[0])
 		return 1;
 
-	/* English only from here, sorry */
-
 	option[0] = 1;			/* Load MiNT or not */
-	option[1] = load_xfs;		/* Load XFS or not */
-	option[2] = load_xdd;		/* Load XDD or not */
+	option[1] = load_xfs_f;		/* Load XFS or not */
+	option[2] = load_xdd_f;		/* Load XDD or not */
 	option[3] = load_auto;		/* Load AUTO or not */
 	option[4] = !no_mem_prot;	/* Use memprot or not */
 	option[5] = save_ini;
 
 	for (;;)
 	{
-		ksprintf(menu, 512, startmenu, \
-			option[0] ? "yes\r\n" : "no\r\n", \
-			option[1] ? "yes\r\n" : "no\r\n", \
-			option[2] ? "yes\r\n" : "no\r\n", \
-			option[3] ? "yes\r\n" : "no\r\n", \
-			option[4] ? "yes\r\n" : "no\r\n", \
-			option[5] ? "yes\r\n" : "no\r\n" );
+		ksprintf(menu, sizeof(menu), MSG_init_bootmenu, \
+			option[0] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
+			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
+			option[2] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
+			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
+			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
+			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
 		Cconws(menu);
 wait:
 		c = Crawcin();
@@ -733,8 +696,8 @@ wait:
 				return 1;
 			case 0x0a:
 			case 0x0d:
-				load_xfs = option[1];
-				load_xdd = option[2];
+				load_xfs_f = option[1];
+				load_xdd_f = option[2];
 				load_auto = option[3];
 				no_mem_prot = !option[4];
 				save_ini = option[5];
@@ -781,6 +744,7 @@ char *sysdir = NULL;
 void
 init (void)
 {
+	/* XXX: why `static' ?? */
 	static char curpath[128];
 	
 	long *sysbase;
@@ -788,11 +752,19 @@ init (void)
 	FILEPTR *f;
 	
 	/* Initialize sysdir */
+	strcpy(curpath, "\\multitos\\");
+	strcat(curpath, "mint.cnf");
+
 	sysdir = "\\";
-	if (Fsfirst("\\multitos\\mint.cnf", 0) == 0)
+	if (Fsfirst(curpath, 0) == 0)
 		sysdir = "\\multitos\\";
-	else if (Fsfirst("\\mint\\mint.cnf", 0) == 0)
-		sysdir = "\\mint\\";
+	else
+	{
+		strcpy(curpath, "\\mint\\");
+		strcat(curpath, "mint.cnf");
+		if (Fsfirst(curpath, 0) == 0)
+			sysdir = "\\mint\\";
+	}
 
 	read_ini();	/* Read user defined defaults */
 	
@@ -809,9 +781,9 @@ init (void)
 	 */
 	if (getmch ())
 	{
-		boot_print ("Hit any key to continue.\r\n");
-		(void) Cconin ();
-		Pterm0 ();
+		boot_print(MSG_init_hitanykey);
+		(void) Cconin();
+		Pterm0();
 	}
 	
 	/* Ask the user if s/he wants to boot MiNT */
@@ -851,11 +823,11 @@ init (void)
 		get_my_name();
 
 # ifdef VERBOSE_BOOT
-	boot_print ("Memory protection ");
+	boot_print(MSG_init_mp);
 	if (no_mem_prot)
-		boot_print ("disabled\r\n");
+		boot_print(MSG_init_mp_disabled);
 	else
-		boot_print ("enabled\r\n");
+		boot_print(MSG_init_mp_enabled);
 # endif
 	
 	/* get the current directory, so that we can switch back to it after
@@ -967,12 +939,12 @@ init (void)
 	init_xbios ();
 	DEBUG (("init_xbios() ok!"));
 	
-	/* Disable all CPU caches */
-	ccw_set(0x00000000L, 0x0000c57fL);
-	
 	/* initialize basic keyboard stuff */
 	init_keybd();
 
+	/* Disable all CPU caches */
+	ccw_set(0x00000000L, 0x0000c57fL);
+	
 	/* initialize interrupt vectors */
 	init_intr ();
 	DEBUG (("init_intr() ok!"));
@@ -1076,9 +1048,9 @@ init (void)
 	{
 		char buf[128];
 		
-		c_conws ("Calibrating delay loop... ");
+		c_conws(MSG_init_delay_loop);
 		
-		calibrate_delay ();
+		calibrate_delay();
 		
 		/* Round the value and print it */
 		ksprintf (buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
@@ -1093,14 +1065,20 @@ init (void)
 	c_conws (random_greet);
 # endif
 	
-	/* Load the keyboard table */
-	load_keytbl();
-	
 	/* initialize built-in domain ops */
 	domaininit ();
 	
+	/* Load the keyboard table */
+	load_keytbl();
+	
+	/* Load the unicode table */
+	init_unicode();
+
+	/* Make newline before external modules print out own messages */
+	boot_print("\r\n");
+
 	/* load the kernel modules */
-	load_all_modules (curpath, (load_xdd | (load_xfs << 1)));
+	load_all_modules (curpath, (load_xdd_f | (load_xfs_f << 1)));
 	
 	/* start system update daemon */
 	start_sysupdate ();
@@ -1214,8 +1192,7 @@ init (void)
 	}
 	else
 	{
-		boot_print ("If MiNT is run after GEM starts, you must specify a program\r\n");
-		boot_print ("to run initially in MINT.CNF, with an INIT= line\r\n");
+		boot_print (MSG_init_specify_prg);
 		r = 0;
 	}
 	
@@ -1277,7 +1254,7 @@ run_auto_prgs (void)
 {
 	DTABUF *dta;
 	long r;
-	static char pathspec[32] = "\\AUTO\\";
+	static char pathspec[32] = "\\auto\\";
 	short runthem = 0;	/* set to 1 after we find MINT.PRG */
 	char curpath[PATH_MAX];
  	int curdriv, bootdriv;
@@ -1298,15 +1275,10 @@ run_auto_prgs (void)
 	d_setpath ("\\");
 	
 	dta = (DTABUF *) f_getdta ();
-	r = f_sfirst ("\\AUTO\\*.PRG", 0);
+	r = f_sfirst ("\\auto\\*.prg", 0);
 	while (r >= 0)
 	{
-# ifdef AUTO_FIX
 		if (strcmp (dta->dta_name, my_name) == 0)
-# else
-		if (!strcmp (dta->dta_name, "MINT.PRG")
-			|| !strcmp (dta->dta_name, "MINTNP.PRG" ))
-# endif
 		{
 			runthem = 1;
 		}
@@ -1321,3 +1293,5 @@ run_auto_prgs (void)
  	d_setdrv (curdriv);
  	d_setpath (curpath);
 }
+
+/* EOF */
