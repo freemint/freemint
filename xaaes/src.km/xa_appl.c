@@ -37,8 +37,8 @@
 #include "util.h"
 #include "widgets.h"
 #include "xalloc.h"
-
 #include "xa_evnt.h"
+#include "xa_user_things.h"
 
 #include "mint/fcntl.h"
 
@@ -82,82 +82,14 @@ get_app_options(struct xa_client *client)
 		if (   stricmp(proc_name,        op->name) == 0
 		    || stricmp(client->name + 2, op->name) == 0)
 		{
-			client->options = op->options;
 			DIAGS(("Found '%s'", op->name));
+			client->options = op->options;
 			break;
 		}
 
 		op = op->next;
 	}
 	client->options.live = true;
-}
-
-static void
-new_client(enum locks lock, struct xa_client *client)
-{
-	long f;
-
-	DIAG((D_appl, NULL, "XA_new_client for %d", client->p->pid));
-
-	/* Ozk: About the fix_menu() thing; This is just as bad as it
-	 * originally was, the client should have an attachment with
-	 * umalloced space for such things as this. Did it like this
-	 * temporarily...
-	 * When changing this, also change it in k_init.c for the AESSYS
-	*/
-	strncpy(client->mnu_clientlistname, "  Clients \3", 14);
-
-	strncpy(client->proc_name, client->p->name, 8);
-
-	f = strlen(client->proc_name);
-	while (f < 8)
-	{
-		client->proc_name[f] = ' ';
-		f++;
-	}
-
-	client->proc_name[8] = '\0';
-	strnupr(client->proc_name, 8);
-
-	/* Individual option settings. */
-	get_app_options(client);
-	DIAGS(("proc_name for %d: '%s'", client->p->pid, client->proc_name));
-
-	/* awaiting menu_register */
-	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
-	update_tasklist(lock);
-
-	DIAG((D_appl, NULL, "Init client '%s' pid=%d",
-		client->proc_name, client->p->pid));
-
-	client->cevnt_head = 0;
-	client->cevnt_tail = 0;
-	client->cevnt_count = 0;
-	client->rdrw_msg = 0;
-
-	DIAGS(("new_client: checking shel info (pid %i)", client->p->pid));
-	{
-		struct shel_info *info;
-
-		info = lookup_extension(client->p, XAAES_MAGIC_SH);
-		if (info)
-		{
-			DIAGS(("new_client: shel_write started"));
-			DIAGS(("new_client: type %i", info->type));
-			DIAGS(("new_client: cmd_name '%s'", info->cmd_name));
-			DIAGS(("new_client: home_path '%s'", info->home_path));
-
-			client->type = info->type;
-
-			client->cmd_tail = info->cmd_tail;
-			client->tail_is_heap = info->tail_is_heap;
-
-			strcpy(client->cmd_name, info->cmd_name);
-			strcpy(client->home_path, info->home_path);
-
-			detach_extension(client->p, XAAES_MAGIC_SH);
-		}
-	}
 }
 
 /*
@@ -168,8 +100,11 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct aes_global *globl = (struct aes_global *)pb->global;
 	struct proc *p = get_curproc();
+	long f;
 
 	CONTROL(0,1,0);
+
+	DIAG((D_appl, client, "appl_init for %d", p->pid));
 
 	if (client)
 	{
@@ -177,6 +112,9 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		goto clean_out;
 	}
 
+	/* if attach_extension succeed it returns a pointer
+	 * to kmalloc'ed and *clean* memory area of the given size
+	 */
 	client = attach_extension(NULL, XAAES_MAGIC, sizeof(*client), &xaaes_cb_vector);
 	if (!client)
 	{
@@ -184,15 +122,22 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		return XAC_DONE;
 	}
 
-	client->mnu_clientlistname = (char *)umalloc(20);
-	if (!client->mnu_clientlistname)
+	client->ut = umalloc(xa_user_things.len);
+	client->mnu_clientlistname = umalloc(20);
+
+	if (!client->ut || !client->mnu_clientlistname)
 	{
 		ALERT(("umalloc for %u failed, out of memory?", p->pid));
+
+		if (client->ut)
+			ufree(client->ut);
+
+		if (client->mnu_clientlistname)
+			ufree(client->mnu_clientlistname);
+
 		detach_extension(NULL, XAAES_MAGIC);
 		return XAC_DONE;
 	}
-
-	DIAG((D_appl, client, "appl_init for %d", p->pid));
 
 	/* add to client list */
 	{
@@ -210,13 +155,76 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 	client->p = p;
-	client->globl_ptr = globl;		/* Preserve the pointer to the globl array */
-						/* so we can fill in the resource address later */
+
+	/* initialize trampoline
+	 */
+	bcopy(&xa_user_things, client->ut, xa_user_things.len);
+	/* relocate relative addresses */
+	client->ut->progdef_p  += (long)client->ut;
+	client->ut->userblk_pp += (long)client->ut;
+	client->ut->ret_p      += (long)client->ut;
+	client->ut->parmblk_p  += (long)client->ut;
+	/* make sure data cache is flushed */
+	cpush(client->ut, xa_user_things.len);
+
+	/* Preserve the pointer to the globl array
+	 * so we can fill in the resource address later
+	 */
+	client->globl_ptr = globl;
+
 	client->cmd_tail = "\0";
 	client->wt.edit_obj = -1;
 	client->options = default_options;
 
-	new_client(lock, client);
+	/* Ozk: About the fix_menu() thing; This is just as bad as it
+	 * originally was, the client should have an attachment with
+	 * umalloced space for such things as this. Did it like this
+	 * temporarily...
+	 * When changing this, also change it in k_init.c for the AESSYS
+	 */
+	strncpy(client->mnu_clientlistname, "  Clients \3", 14);
+
+	strncpy(client->proc_name, client->p->name, 8);
+	f = strlen(client->proc_name);
+	while (f < 8)
+	{
+		client->proc_name[f] = ' ';
+		f++;
+	}
+	client->proc_name[8] = '\0';
+	strnupr(client->proc_name, 8);
+	DIAGS(("proc_name for %d: '%s'", client->p->pid, client->proc_name));
+
+	/* Individual option settings. */
+	get_app_options(client);
+
+	/* awaiting menu_register */
+	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
+	update_tasklist(lock);
+
+	DIAGS(("appl_init: checking shel info (pid %i)", client->p->pid));
+	{
+		struct shel_info *info;
+
+		info = lookup_extension(client->p, XAAES_MAGIC_SH);
+		if (info)
+		{
+			DIAGS(("appl_init: shel_write started"));
+			DIAGS(("appl_init: type %i", info->type));
+			DIAGS(("appl_init: cmd_name '%s'", info->cmd_name));
+			DIAGS(("appl_init: home_path '%s'", info->home_path));
+
+			client->type = info->type;
+
+			client->cmd_tail = info->cmd_tail;
+			client->tail_is_heap = info->tail_is_heap;
+
+			strcpy(client->cmd_name, info->cmd_name);
+			strcpy(client->home_path, info->home_path);
+
+			detach_extension(client->p, XAAES_MAGIC_SH);
+		}
+	}
 
 	/* Get the client's home directory (where it was started)
 	 * - we use this later to load resource files, etc
@@ -442,10 +450,13 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	/* free the quart screen buffer */
 	if (client->half_screen_buffer)
-	{
 		proc_free(client->half_screen_buffer);
-		client->half_screen_buffer = NULL;
-	}
+
+	if (client->ut)
+		ufree(client->ut);
+
+	if (client->mnu_clientlistname)
+		ufree(client->mnu_clientlistname);
 
 	/* zero out */
 	bzero(client, sizeof(*client));
