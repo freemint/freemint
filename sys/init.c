@@ -43,6 +43,7 @@
 # include "filesys.h"	/* init_filesys, s_ync, load_*, close_filesys */
 # include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
+# include "ipc_socketutil.h" /* domaininit() */
 # include "k_exec.h"	/* sys_pexec */
 # include "k_exit.h"	/* sys_pwaitpid */
 # include "k_fds.h"	/* do_open/do_pclose */
@@ -1089,6 +1090,9 @@ init (void)
 	
 	/* Load the keyboard table */
 	load_keytbl();
+
+	/* initialize built-in domain ops */
+	domaininit ();
 
 	/* load external modules
 	 * 
