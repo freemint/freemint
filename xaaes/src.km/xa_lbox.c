@@ -672,8 +672,8 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			last_state = obtree[obj].ob_state;
 			hidem();
 
-			if (   lbox->flags & LBOX_SNGL
-			    || ((lbox->flags & LBOX_SHFT) && !(ks & (K_RSHIFT | K_LSHIFT))) )
+			if (   lbox->flags & LBOX_SNGL  ||
+			     ((lbox->flags & LBOX_SHFT) && !(ks & (K_RSHIFT | K_LSHIFT))) )
 			{
 				clear_all_selected(lbox, obj, &r);
 			}
@@ -935,6 +935,22 @@ XA_lbox_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			case 0: /* set_slider		*/
 			{
+				short num = pb->intin[0] - lbox->first_a;
+
+				if (num)
+				{
+					if (num < 0)
+					{
+						num = -num;
+						scroll_down(lbox, num);
+					}
+					else if (num > 0)
+					{
+						scroll_up(lbox, num);
+					}
+					if (pb->addrin[1])
+						redraw_lbox(lbox, lbox->aslid.slide_bkg, 2, (RECT *)pb->addrin[1]);
+				}
 				break;
 			}
 			case 1:	/* set items		*/
@@ -956,6 +972,24 @@ XA_lbox_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case 4: /* scroll to		*/
 			{
+				short num = pb->intin[0] - lbox->first_a;
+
+				if (num)
+				{
+					if (num < 0)
+					{
+						num = -num;
+						scroll_down(lbox, num);
+					}
+					else if (num > 0)
+					{
+						scroll_up(lbox, num);
+					}
+					if (pb->addrin[1])
+						redraw_lbox(lbox, lbox->aslid.parent, 2, (RECT *)pb->addrin[1]);
+					if (pb->addrin[2])
+						redraw_lbox(lbox, lbox->aslid.slide_bkg, 2, (RECT *)pb->addrin[2]);
+				}
 				break;
 			}
 			case 5:	/* set slider B		*/
