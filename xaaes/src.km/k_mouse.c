@@ -238,7 +238,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				mu_button.got = true;
 
 				client->usr_evnt = 1;
-				Unblock(client, XA_OK, 3);
+				//Unblock(client, XA_OK, 3);
 				
 				DIAG((D_button, NULL, " - written"));
 			}
@@ -256,7 +256,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				mu_button.got = true;
 
 				client->usr_evnt = 1;
-				Unblock(client, XA_OK, 4);
+				//Unblock(client, XA_OK, 4);
 				DIAG((D_button, NULL, " - written"));
 			}
 		}
@@ -326,6 +326,26 @@ post_cevent(struct xa_client *client,
 {
 	int h = client->ce_head;
 
+	/*
+	 * Ozk: Some different tests I did before re-learning
+	 * about screen/mouse lock (see semaphore.c).
+	 * Things here needs going-over, dont have time right now.
+	*/
+	if (client != C.Aes)
+	{
+		if (!client->inblock)
+		{
+			DIAGS(("Client %s not in AES", client->name));
+			return;
+		}
+		if ( ((h + 1) & MAX_CEVENTS) == client->ce_tail)
+		{
+			DIAGS(("CLIENT (%s) EVENT MESSAGE QUEUE FULL!!", client->name));
+			Unblock(client, 1, 5001);
+			return;
+		}
+	}
+
 	client->ce[h].funct = func;
 	client->ce[h].client = client;
 	client->ce[h].ptr1 = ptr1;
@@ -343,7 +363,7 @@ post_cevent(struct xa_client *client,
 
 	if (client != C.Aes)
 	{
-		if (!C.buffer_moose)
+		if (!C.buffer_moose && client->inblock)
 			C.buffer_moose = client;
 		Unblock(client, 1, 5000);
 	}
