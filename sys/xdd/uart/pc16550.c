@@ -283,7 +283,7 @@
 	"\033pMiNT too old!\033q\r\n"
 
 # define MSG_MILAN	\
-	"\033pThis driver require a Milan!\033q\r\n"
+	"\033pThis driver requires a Milan!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7\r\nSorry, driver NOT installed - initialization failed!\r\n\r\n"
