@@ -821,7 +821,7 @@ ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 	{
 		case G_IMAGE:
 		{
-			BITBLK *bb = object_get_spec(obtree + obj)->bitblk; //obtree[obj].ob_spec.bitblk;
+			BITBLK *bb = object_get_spec(obtree + obj)->bitblk;
 			
 			r->x = bb->bi_x;
 			r->y = bb->bi_y;
@@ -831,12 +831,12 @@ ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 		}
 		case G_ICON:
 		{
-			*r = *(RECT *)&(object_get_spec(obtree + obj))->iconblk->ib_xicon; //&obtree[obj].ob_spec.iconblk->ib_xicon;
+			*r = *(RECT *)&(object_get_spec(obtree + obj))->iconblk->ib_xicon;
 			break;
 		}
 		case G_CICON:
 		{
-			*r = *(RECT *)&(object_get_spec(obtree + obj))->ciconblk->monoblk.ib_xicon; //obtree[obj].ob_spec.ciconblk->monoblk.ib_xicon;
+			*r = *(RECT *)&(object_get_spec(obtree + obj))->ciconblk->monoblk.ib_xicon;
 			break;
 		}
 		default:
