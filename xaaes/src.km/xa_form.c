@@ -96,7 +96,6 @@ CloneForm(OBJECT *form)
 
 /*
  * Free up a copy of a form template
- * HR 210501: and extra info 
  */
 static int
 alert_destructor(enum locks lock, struct xa_window *wind)
@@ -127,7 +126,8 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 
 	alert_form = wt->tree;
 
-	rp_2_ap(wind, widg, &r);	/* Convert relative coords and window location to absolute screen location */
+	/* Convert relative coords and window location to absolute screen location */
+	rp_2_ap(wind, widg, &r);
 
 	f = find_object(alert_form, 0, 10, r.x + widg->x, r.y + widg->y, wt->dx, wt->dy);
 
@@ -307,13 +307,13 @@ max_w(int m, char to[][MAX_X+1], int *tot)
 	return x * screen.c_max_w;
 }
 
-/* HR: changed thus, that a alert is always displayed, whether format error or not.
- *     otherwise the app is suspended and the screen & keyb are locked,
- *     and you can do nothing but a reset. :-(
+/* changed thus, that a alert is always displayed, whether format error or not.
+ * otherwise the app is suspended and the screen & keyb are locked,
+ * and you can do nothing but a reset. :-(
  * 
- * HR 250602: reactivated the STORE_BACK facility for form_alert only.
- *            If a application has locked the screen, there might be something
- *            under the alert that is not a window.
+ * reactivated the STORE_BACK facility for form_alert only.
+ * If a application has locked the screen, there might be something
+ * under the alert that is not a window.
  */
 int
 do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert)
@@ -550,7 +550,7 @@ find_flag(OBJECT *ob, int flag)
 		if (ob[f].ob_flags & flag)
 			return f;
 	}
-	while (!(ob[f++].ob_flags & OF_LASTOB));	/* HR: Check LASTOB before incrementing */
+	while (!(ob[f++].ob_flags & OF_LASTOB)); /* Check LASTOB before incrementing */
 
 	return -1;
 }
@@ -559,29 +559,39 @@ static int
 find_cancel_button(OBJECT *ob)
 {
 	int f = 0;
+
 	do {
 		if (   (ob[f].ob_type & 0xff) == G_BUTTON
-		    && (ob[f].ob_flags & (OF_SELECTABLE|OF_TOUCHEXIT|OF_EXIT)) != 0 )
+		    && (ob[f].ob_flags & (OF_SELECTABLE|OF_TOUCHEXIT|OF_EXIT)) != 0)
 		{
+			char t[32];
+			char *s = t;
+			char *e;
 			int l;
-			char t[32]; char *s = t,*e;
+
 			e = get_ob_spec(ob+f)->free_string;
 			l = strlen(e);
 			if (l < 32)
 			{
-				strcpy(t,e);
+				strcpy(t, e);
+
 				/* strip surrounding spaces */
 				e = t + l;
-				while (*s == ' ') s++;
-				while (*--e == ' ')  ;
-				*++e = 0;
-				if (e-s < CB_L)	/* No use comparing longer strings */
+				while (*s == ' ')
+					s++;
+				while (*--e == ' ') 
+					;
+				*++e = '\0';
+
+				if (e - s < CB_L) /* No use comparing longer strings */
 				{
-					int i = 0;
-					while (cfg.cancel_buttons[i][0])
+					int i;
+
+					for (i = 0; cfg.cancel_buttons[i][0]; i++)
+					{
 						if (stricmp(s,cfg.cancel_buttons[i]) == 0)
 							return f;
-						else i++;
+					}
 				}
 			}
 		}
@@ -595,27 +605,25 @@ find_cancel_button(OBJECT *ob)
  * Form Keyboard Handler for toolbars
  */
 
-
-/* HR: more code duplication removed. */
-/* Reduction of clumsyness.
-   (clumsyness mainly caused by pathological use of for statement) */
-/* N.B.  A form can be a single editable boxtext!            */
 static int
 form_cursor(enum locks lock, XA_TREE *wt, ushort keycode, int obj)
 {
 	OBJECT *form = wt->tree;
-	int o = obj, ed = 0,
-	      last_ob = 0;
-	while (!(form[last_ob].ob_flags & OF_LASTOB))	/* Find last object & check for editable */
+	int o = obj;
+	int ed = 0;
+	int last_ob = 0;
+
+	/* Find last object & check for editable */
+	while (!(form[last_ob].ob_flags & OF_LASTOB))
 	{
 		ed |= form[last_ob].ob_flags & OF_EDITABLE;
 		last_ob++;	
 	}
 
 	switch(keycode)
-	{			/* 	The cursor keys are always eaten. */
+	{			/* The cursor keys are always eaten. */
 	default:
-		o = -1;			/* This is also a safeguard.  */
+		o = -1;		/* This is also a safeguard.  */
 		break;
 
 	case 0x0f09:		/* TAB moves to next field */
@@ -652,22 +660,29 @@ form_cursor(enum locks lock, XA_TREE *wt, ushort keycode, int obj)
 		break;
 	}
 
-	/* HR 040201: At last this piece of code is on the right spot.
-		This is important! Now I know that bug fixes in here are good enough for all cases. */
-	if (o >= 0)
-		if (o != obj)	/* If edit field has changed, update the screen */
-		{	
-			TEDINFO *ted = get_ob_spec(&form[o])->tedinfo;
-			int last = strlen(ted->te_ptext);
-			/* fix corsor position of new field. */
-			if (wt->edit_pos > last)
-				wt->edit_pos = last;
-			wt->edit_obj = o;
-			redraw_object(lock, wt, obj);
-			if (*(ted->te_ptext) == '@')
-				*(ted->te_ptext) =  0;
-			redraw_object(lock, wt, o);
-		}
+	/* At last this piece of code is on the right spot.
+	 * This is important! Now I know that bug fixes in here are good enough for all cases.
+	 */
+	if (o >= 0 && o != obj)
+	{	
+		/* If edit field has changed, update the screen */
+
+		TEDINFO *ted = get_ob_spec(&form[o])->tedinfo;
+		int last = strlen(ted->te_ptext);
+
+		/* fix corsor position of new field. */
+		if (wt->edit_pos > last)
+			wt->edit_pos = last;
+
+		wt->edit_obj = o;
+
+		redraw_object(lock, wt, obj);
+
+		if (*(ted->te_ptext) == '@')
+			*(ted->te_ptext) =  0;
+
+		redraw_object(lock, wt, o);
+	}
 
 	return o;
 }
@@ -708,16 +723,15 @@ find_shortcut(OBJECT *tree, ushort nk)
 unsigned long
 XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	XA_TREE *wt;
-	OBJECT *form = (OBJECT*)pb->addrin[0];
-	short obj = pb->intin[0],
-	      keycode = pb->intin[1],
-	      *op = pb->intout;
+	OBJECT *form = (OBJECT *)pb->addrin[0];
+	XA_TREE *wt = check_widget_tree(lock, client, form);
+	short obj = pb->intin[0];
+	short keycode = pb->intin[1];
+	short *op = pb->intout;
 	int  o;
 
 	CONTROL(3,3,1)
 
-	wt = check_widget_tree(lock, client, form);
 	DIAG((D_keybd, client, "XA_form_keybd for %s %lx: obj:%d, k:%x, nob:%d",
 		c_owner(client), form, obj, keycode, pb->intin[2]));
 
@@ -744,8 +758,10 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			short state;
+
 			vq_key_s(C.vh, &state);
-			if ((state&(K_CTRL|K_ALT)) == K_ALT)
+
+			if ((state & (K_CTRL|K_ALT)) == K_ALT)
 			{
 				ushort nkcode = normkey(state, keycode);
 				o = find_shortcut(form, nkcode);
