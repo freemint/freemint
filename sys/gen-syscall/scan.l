@@ -80,103 +80,103 @@ space		[ \t\n]
 "DOS"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _DOS;
+	return _IDENT_DOS;
 }
 
 "BIOS"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _BIOS;
+	return _IDENT_BIOS;
 }
 
 "XBIOS"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _XBIOS;
+	return _IDENT_XBIOS;
 }
 
 "NULL"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _NULL;
+	return _IDENT_NULL;
 }
 
 "RESERVED"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _RESERVED;
+	return _IDENT_RESERVED;
 }
 
 "MAX"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _MAX;
+	return _IDENT_MAX;
 }
 
 "void"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _VOID;
+	return _IDENT_VOID;
 }
 
 "const"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _CONST;
+	return _IDENT_CONST;
 }
 
 "struct"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _STRUCT;
+	return _IDENT_STRUCT;
 }
 
 "union"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _UNION;
+	return _IDENT_UNION;
 }
 
 "char"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _CHAR;
+	return _IDENT_CHAR;
 }
 
 "short"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _SHORT;
+	return _IDENT_SHORT;
 }
 
 "long"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _LONG;
+	return _IDENT_LONG;
 }
 
 "unsigned"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _UNSIGNED;
+	return _IDENT_UNSIGNED;
 }
 
 "uchar"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _UCHAR;
+	return _IDENT_UCHAR;
 }
 
 "ushort"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _USHORT;
+	return _IDENT_USHORT;
 }
 
 "ulong"	{
 	strncpy (yylval.ident, yytext, STRMAX);
 	yylval.ident [STRMAX] = '\0';
-	return _ULONG;
+	return _IDENT_ULONG;
 }
 
 {nonzerodigit}{digit}*	{
