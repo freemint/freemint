@@ -198,7 +198,6 @@ init_tables(void)
 	
 {
     COOKIE *cookie;
-    int falcon,ct2;
     int n_megabytes;
     long global_mode_table_size;
 
@@ -206,7 +205,6 @@ init_tables(void)
 
 #define phys_top_tt (*(ulong *)0x5a4L)
     
-    falcon = ct2 = 0;
     offset_tt_ram = 0;
     
     if (phys_top_tt == 0x01000000L)
@@ -215,26 +213,23 @@ init_tables(void)
     {
         mint_top_tt = phys_top_tt;
         cookie = *CJAR;
+        int ct2 = 0;
         
         if (cookie)
         {
             while (cookie->tag)
             {
-                if ((cookie->tag == COOKIE__MCH) && ((cookie->value>>16) == 3)) /* Falcon */
-                    falcon=1;
                 if (cookie->tag == 0x5f435432)	/* _CT2 */
                     ct2=1;
                 cookie++;
            }
        }
        
-       if (falcon && ct2)
+       if ((mch == FALCON) && ct2)
        {
             offset_tt_ram = 0x03000000L;
             DEBUG (("init_tables: Falcon CT2 -> offset 0x%lx", offset_tt_ram));
        }
-       else
-            ct2=0;
     }
     
 #define phys_top_st (*(ulong *)0x42eL)

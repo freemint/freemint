@@ -43,42 +43,50 @@
 # include "libkern/libkern.h"
 
 
+/* definitions for the kernel
+ */
+
+const char ostype    [] = THIRD_PARTY;
+const char osrelease [] = VERS_STRING;
+const char version   [] = THIRD_PARTY " " VERS_STRING;
+
+
 /* definitions in automatically created build.h
  */
 
-ulong MiNT_version =
+const ulong MiNT_version =
 	  ((ulong) MAJ_VERSION << 24)
 	| ((ulong) MIN_VERSION << 16)
 	| ((ulong) PATCH_LEVEL << 8)
 	| ((ulong) BETA_IDENT);
 
-ulong MiNT_date =
+const ulong MiNT_date =
 	  ((ulong) BUILD_DAY << 24)
 	| ((ulong) BUILD_MONTH << 16)
 	| ((ulong) BUILD_YEAR);
 
-ulong MiNT_time =
+const ulong MiNT_time =
 	  ((ulong) BUILD_DAY_OF_WEEK << 24)
 	| ((ulong) BUILD_HOUR << 16)
 	| ((ulong) BUILD_MIN << 8)
 	| ((ulong) BUILD_SEC);
 
-char  build_user    [] = BUILD_USER;
-char  build_host    [] = BUILD_HOST;
-char  build_domain  [] = BUILD_DOMAIN;
-char  build_ctime   [] = BUILD_CTIME;
-ulong build_serial     = BUILD_SERIAL;
+const char  build_user    [] = BUILD_USER;
+const char  build_host    [] = BUILD_HOST;
+const char  build_domain  [] = BUILD_DOMAIN;
+const char  build_ctime   [] = BUILD_CTIME;
+const ulong build_serial     = BUILD_SERIAL;
 
 
 /* definitions in automatically created cdef.h
  */
 
-char  COMPILER_NAME [] = str (_COMPILER_NAME);
-char  COMPILER_OPTS [] = str (_COMPILER_OPTS);
-char  COMPILER_DEFS [] = str (_COMPILER_DEFS);
+const char COMPILER_NAME [] = str (_COMPILER_NAME);
+const char COMPILER_OPTS [] = str (_COMPILER_OPTS);
+const char COMPILER_DEFS [] = str (_COMPILER_DEFS);
 
 # ifdef __GNUC__
-char  COMPILER_VERS [] = str (__GNUC__) "." str (__GNUC_MINOR__);
+const char COMPILER_VERS [] = str (__GNUC__) "." str (__GNUC_MINOR__);
 # else
 # error Unknown compiler
 # endif
