@@ -263,7 +263,7 @@ inq_xfs(char *p, char *dsep)
 {
 	long c, t;
 
-	c = fs.fcase  = Dpathconf(p,DP_CASE);
+	c = fs.fcase = Dpathconf(p,DP_CASE);
 	t = fs.trunc = Dpathconf(p,DP_TRUNC);
 
 	DIAG((D_fsel, NULL, "inq_xfs '%s': case = %ld, trunc = %ld\n", p, c, t));
@@ -298,6 +298,34 @@ executable(char *nam)
 		    || !stricmp(ext, "sh")  || !stricmp(ext, "bat")
 		    || !stricmp(ext, "gtp") || !stricmp(ext, "app")
 		    || !stricmp(ext, "acc")));
+}
+
+static void set_file(LOCK lock, const char *fn)
+{
+	XA_TREE *wt = get_widget(fs.wind, XAW_TOOLBAR)->stuff;
+
+	DIAG((D_fsel, NULL, "set_file: fs.file='%s', wh=%d\n", fn, fs.wind->handle));
+
+	/* fixup the cursor edit position */
+#if 0
+	/* FIXME: the edit_object() doesn't work in case the client
+	 * didn't call the form_do().
+	 *
+	 * We should call something like the below instead
+	 * of direct edit_pos adjustments.
+	 */
+	{
+		short newpos;
+		edit_object(lock, wt->owner, ED_END, wt, wt->tree, FS_FILE, 0, &newpos);
+		strcpy(fs.file, fn); /* set the edit field text */
+		edit_object(lock, wt->owner, ED_INIT, wt, wt->tree, FS_FILE, 0, &newpos);
+	}
+#else
+	strcpy(fs.file, fn); /* set the edit field text */
+	wt->edit_pos = strlen(fn);
+#endif
+	/* redraw the toolbar file object */
+	display_toolbar(lock, fs.wind, FS_FILE);
 }
 
 /*
@@ -341,7 +369,7 @@ refresh_filelist(LOCK lock, int which)
 	graf_mouse(HOURGLASS, NULL);
 
 	i = Dopendir(fs.path,0);
-	DIAGS(("Dopendir -> %lx\n", i));
+	DIAG((D_fsel, NULL, "Dopendir -> %lx\n", i));
 	if (i > 0)
 	{
 		struct xattr xat;
@@ -513,7 +541,7 @@ fsel_filters(OBJECT *m, char *pattern)
 /* HR: a little bit more exact. */
 /* Dont need form as long as everything is global 8-} */
 static void
-fs_updir(XA_WINDOW *w)
+fs_updir(LOCK lock, XA_WINDOW *w)
 {
 	int drv;
 
@@ -542,13 +570,14 @@ fs_updir(XA_WINDOW *w)
 	if ((drv = get_drv(fs.path)) >= 0)
 		strcpy(fs_paths[drv], fs.path);
 
+	set_file(lock,"");
 	refresh_filelist(fsel,1);
 }
 
 static void
 fs_closer(struct scroll_info *list)
 {
-	fs_updir(list->wi);
+	fs_updir(list->lock, list->wi);
 }
 
 /* HR: flag now in SCROLL_ENTRY as well.
@@ -571,7 +600,7 @@ fs_dclick(LOCK lock, OBJECT *form, int objc)
 			if (strcmp(list->cur->text, "..") == 0)
 			{
 				/* cur on double dot line */
-				fs_updir(wl);
+				fs_updir(lock, wl);
 				return true;
 			}
 
@@ -582,6 +611,7 @@ fs_dclick(LOCK lock, OBJECT *form, int objc)
 				strcat(fs.path, list->cur->text);
 				if ((drv = get_drv(fs.path)) >= 0)
 					strcpy(fs_paths[drv], fs.path);
+				set_file(lock, "");
 				refresh_filelist(fsel,2);
 				return true;
 			}
@@ -607,16 +637,16 @@ fs_click(LOCK lock, OBJECT *form, int objc)
 	{
 		if ( ! (list->cur->flag&FLAG_DIR))
 		{
-			strcpy(fs.file, list->cur->text);
-			display_toolbar(lock, fs.wind, FS_FILE);
+			set_file(lock, list->cur->text);
 		}
 		else if (strcmp(list->cur->text, ".") == 0)
 		{
-			*fs.file = 0;
-			display_toolbar(lock, fs.wind, FS_FILE);
+			set_file(lock, "");
 		}
-		else
+		else {
+			set_file(lock, "");
 			fs_dclick(lock, form, objc);
+		}
 	}
 
 	return true;
@@ -642,7 +672,7 @@ handle_fileselector(LOCK lock, struct widget_tree *wt)
 #ifdef FS_UPDIR
 	/* Go up a level in the filesystem */
 	case FS_UPDIR:
-		fs_updir(wl);
+		fs_updir(lock, wl);
 		break;
 #endif
 	/* Accept current selection - do the same as a double click */
@@ -690,7 +720,7 @@ find_drive(int a)
 	}
 	while (m[d++].ob_next != FSEL_DRVA-1);
 
-	/* ping */
+	/* ping (bell sound) */
 	Bconout(2,7);
 
 	return -1;
@@ -710,17 +740,22 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 		ushort nk;
 
 		if (nkcode == 0)
-			nkcode = tolower(nkc_tconv(key.raw.bcon));
+			nkcode = nkc_tconv(key.raw.bcon);
 
-		nk = nkcode & 0xff;
+		nk = tolower(nkcode & 0xff);
 		if (   (nk >= 'a' && nk <= 'z')
 		    || (nk >= '0' && nk <= '9'))
 		{
-			nk = find_drive(nk);
-			if (nk >= FSEL_DRVA)
+			int drive_object_index = find_drive(nk);
+			if (drive_object_index >= FSEL_DRVA)
 				wind->send_message(lock, wind, NULL,
 						   MN_SELECTED, 0, 0, FSEL_DRV,
-						   nk, 0, 0, 0);
+						   drive_object_index, 0, 0, 0);
+		}
+
+		/* ctrl + backspace :: fs_updir() */
+		if ( (nkcode & NKF_CTRL) && nk == NK_BS ) {
+			fs_updir(lock, wind);
 		}
 	}
 	else
@@ -729,8 +764,7 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 	{
 		if (!(list->cur->flag&FLAG_DIR))
 		{
-			strcpy(fs.file, list->cur->text);
-			display_toolbar(lock, fs.wind, FS_FILE);
+			set_file(lock, list->cur->text);
 		}
 	}
 	else
@@ -788,6 +822,8 @@ fs_msg_handler(
 				strcpy(fs.path, fs_paths[drv]);
 			else
 				strcpy(fs_paths[drv], fs.path);
+			/* remove the name from the edit field on drive change */
+			set_file(lock,"");
 		}
 		refresh_filelist(lock,4);
 	break;
@@ -890,8 +926,7 @@ open_fileselector(LOCK lock, XA_CLIENT *client, char *path, char *file, char *ti
 
 	DIAG((D_fsel,NULL," -- fs.file '%s'\n", fs.file));
 
-	(form + FS_FILE)->ob_spec.tedinfo->te_ptext = fs.file;
-
+	form[FS_FILE ].ob_spec.tedinfo->te_ptext = fs.file;
 	form[FS_ICONS].ob_flags |= HIDETREE;
 
 	dh = root_window->wa.h - 7*screen.c_max_h - form->r.h;
@@ -937,30 +972,25 @@ open_fileselector(LOCK lock, XA_CLIENT *client, char *path, char *file, char *ti
 
 	fs.menu.owner = C.Aes;
 	fs.menu.tree = ResourceTree(C.Aes_rsc, FSEL_MENU);
-	fs.drives =
-	fsel_drives(fs.menu.tree,
-				*(fs.path+1) == ':'
-			  ? tolower(*fs.path) - 'a'
-			  : Dgetdrv()
-			  );
+	fs.drives = fsel_drives(fs.menu.tree,
+				*(fs.path+1) == ':' ? tolower(*fs.path) - 'a' : Dgetdrv());
 	fsel_filters(fs.menu.tree, fs_pattern);
 
-	/* fs.file[0] = '\0';  HR 060202  not anymore */
+	strcpy(fs.file, file); /* fill in the file edit field */
 
 	/* Create the window */
-	dialog_window = create_window
-	                   (lock,
-	                    fs_msg_handler,
-						client,
-						false,
-						XaMENU|NAME|TOOLBAR|hide_move(&client->options),
-						created_for_AES,
-						MG,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
-						remember,
-						NULL,
-						&remember);
+	dialog_window = create_window(  lock,
+					fs_msg_handler,
+					client,
+					false,
+					XaMENU|NAME|TOOLBAR|hide_move(&client->options),
+					created_for_AES,
+					MG,
+					C.Aes->options.thinframe,
+					C.Aes->options.thinwork,
+					remember,
+					NULL,
+					&remember);
 
 	/* Set the window title */
 	get_widget(dialog_window, XAW_TITLE)->stuff = title;
@@ -970,7 +1000,8 @@ open_fileselector(LOCK lock, XA_CLIENT *client, char *path, char *file, char *ti
 	set_menu_widget(dialog_window, &fs.menu);
 
 	wt = set_toolbar_widget(lock, dialog_window, form, FS_FILE);
-	wt->zen = true;		/* This can be of use for drawing. (keep off border & outline :-) */
+	/* This can be of use for drawing. (keep off border & outline :-) */
+	wt->zen = true;
 	wt->exit_form = XA_form_exit;
 	wt->exit_handler = handle_fileselector;
 
