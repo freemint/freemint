@@ -151,6 +151,7 @@ struct proc
  */
 	ushort	p_flag;			/* */
 	ushort	p_stat;			/* */
+	ushort	debug_level;		/* debug-level of the process	*/
 	
 	
 	/* sharable substructures */
