@@ -48,7 +48,7 @@ struct module_callback
 	long (*share)(void *);
 	void (*release)(void *);
 
-	void (*on_exit  )(void *, struct proc *);
+	void (*on_exit  )(void *, struct proc *, int);
 	void (*on_exec  )(void *, struct proc *);
 	void (*on_fork  )(void *, struct proc *, long, struct proc *);
 	void (*on_stop  )(void *, struct proc *, unsigned short);

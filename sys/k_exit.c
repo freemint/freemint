@@ -78,7 +78,7 @@ terminate (PROC *curproc, int code, int que)
 
 
 	/* notify proc extensions */
-	proc_ext_on_exit(curproc);
+	proc_ext_on_exit(curproc, code);
 
 	if (bconbsiz)
 		(void) bflush();
