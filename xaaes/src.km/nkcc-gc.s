@@ -167,7 +167,8 @@ exit1:
 |***************************************************************************
 
 _nkc_tos2n:
-	movel	sp@(4), d0		| Parameter Åber Stack!
+	movel	sp@(4), d0		| Parameter via Stack!
+	movem.l	d2-d4,sp@- 		| store registers
 
 |------------- separate TOS key code
 
@@ -404,6 +405,7 @@ scan12:
 
 exit2:
 	tstw	d0			| set CCR
+	movem.l	sp@+,d2-d4 		| restore registers
 	rts				| bye
 
 |------------- special handling for key codes created by TOS' 3.06 ASCII input
@@ -411,6 +413,7 @@ exit2:
 tos306:
 	andw	#NKFf_CAPS,d2		| isolate CapsLock flag
 	orw	d2,d0			| merge with ASCII code
+	movem.l	sp@+,d2-d4 		| restore registers
 	rts				| bye
 
 |***************************************************************************
@@ -631,7 +634,7 @@ exit3:
 |***************************************************************************
 
 _nkc_toupper:
-	movel	sp@(4),d1		| Parameter ueber Stack!
+	movel	sp@(4),d1		| Parameter via Stack!
 	lea	toupper,a0		| ^upper case translation table
 	andw	#0xff,d1		| high byte = 0 for word operation
 	moveb	a0@(d1:l),d0		| convert
@@ -644,7 +647,7 @@ _nkc_toupper:
 |***************************************************************************
 
 _nkc_tolower:
-	movel	sp@(4),d1		| Parameter ueber Stack!
+	movel	sp@(4),d1		| Parameter via Stack!
 	lea	tolower,a0		| ^lower case translation table
 	andw	#0xff,d1		| high byte = 0 for word operation
 	moveb	a0@(d1:l),d0		| convert
