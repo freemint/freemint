@@ -57,7 +57,7 @@ void remove_wt(XA_TREE *wt);
 //XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
 
 void	calc_work_area(struct xa_window *wind);
-bool	checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
+bool	checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, short x, short y, XA_WIDGET **ret);
 int	do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
 int	pix_to_sl(long p, int s);
 int	sl_to_pix(long s, int p);
