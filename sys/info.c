@@ -176,4 +176,87 @@ const char *crypto_greet =
 ;
 # endif
 
+/* ---------- bios.c ---------- */
+/* Notice that this is an ALERT(), so compose the message so that
+ * it could be formatted nicely
+ */
+const char *MSG_bios_kill =
+	"KILLED. INVALID PROTECTION MODE. "
+	"Please change the protection mode "
+	"to \'Super\' in the program header.";
+
+/* ---------- debug.c ---------- */
+
+const char *MSG_debug_syncing = "Syncing...";
+const char *MSG_debug_syncdone = "done.\r\n";
+/* The one below is in...
+ * German: "FATALER FEHLER. Das System muû neu gestartet werden.\r\n"
+ * French: "ERREUR FATALE. Vous devez redÇmarrer le systäme.\r\n"
+ */
+const char *MSG_fatal_reboot = "FATAL ERROR. You must reboot the system.\r\n";
+/* German: "System angehalten.\r\n"
+ * French: "Arràt du systäme.\r\n"
+ */
+const char *MSG_system_halted = "System halted.\r\n";
+
+/* ---------- init.c ---------- */
+
+# if 0
+const char *MSG_init_getname = "[MiNT is named \\AUTO\\%s]\r\n";
+# endif
+
+/* In German this is "BootmenÅ anzeigen? (j)a (n)ein "
+ * In French "Afficher le menu de dÇmarrage? (o)ui (n)on "
+ */
+const char *MSG_init_askmenu = "Display the boot menu? (y)es (n)o ";
+const char *MSG_init_menu_yes = "y";
+const char *MSG_init_menu_no = "n";
+const char *MSG_init_menu_yesrn = "yes\r\n";
+const char *MSG_init_menu_norn = "no\r\n";
+
+const char *MSG_init_bootmenu =
+	"\033E\r\n\033p"
+	"    FreeMiNT boot menu    \033q\r\n\r\n"
+	"<1> Start up FreeMiNT: %s"
+	"<2> Load external XFS: %s"
+	"<3> Load external XDD: %s"
+	"<4> Execute AUTO PRGs: %s"
+	"<5> Memory protection: %s"
+	"<0> Remember settings: %s\r\n"
+	"[Return] accept,\r\n"
+	"[Ctrl-C] cancel.\r\n"
+;
+
+const char *MSG_init_menuwarn =
+	"# This file is automatically created,\n"
+	"# do not edit.\n\n"
+;
+
+const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
+# ifdef VERBOSE_BOOT
+const char *MSG_init_mp = "Memory protection ";
+const char *MSG_init_mp_enabled = "enabled\r\n";
+const char *MSG_init_mp_disabled = "disabled\r\n";
+# endif
+const char *MSG_init_delay_loop = "Calibrating delay loop... ";
+const char *MSG_init_specify_prg =
+	"If MiNT is run after GEM starts, you must specify a program\r\n"
+	"to run initially in mint.cnf, with an INIT= line\r\n";
+
+/* ---------- keyboard.c ---------- */
+
+const char *MSG_keytable_loaded = "Loaded keyboard table for AKP code %d\r\n";
+const char *MSG_keytable_faulty = "Keyboard table is BAD!\r\n";
+
+/* ---------- unicode.c ---------- */
+
+const char *MSG_unitable_loaded = "Loaded unicode table %s\r\n";
+
+/* ---------- xhdi.c ---------- */
+
+const char *MSG_xhdi_present = "This system features XHDI level %x.%x (kerinfo %s)\r\n\r\n";
+const char *MSG_kerinfo_accepted = "accepted";
+const char *MSG_kerinfo_rejected = "rejected";
+const char *MSG_xhdi_absent = "This system does not feature XHDI.\r\n\r\n";
+
 /* EOF */
