@@ -215,15 +215,15 @@ static struct xa_ftab aes_tab[220] =
 	/* 118 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 119 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 120 */ { XA_shell_read,             NOCLIENT, DESCR("shell_read")      },
-	/* 121 */ { XA_shell_write,            0,        DESCR("shell_write")     },
-	/* 122 */ { NULL,                      0,        DESCR("shell_get")       }, // unimplemented
-	/* 123 */ { NULL,                      0,        DESCR("shell_put")       }, // unimplemented
-	/* 124 */ { XA_shell_find,             0,        DESCR("shell_find")      },
-	/* 125 */ { XA_shell_envrn,            0,        DESCR("shell_envrn")     },
-	/* 126 */ { NULL,                      0,        DESCR("shell_rdef")      }, // unimplemented
-	/* 127 */ { NULL,                      0,        DESCR("shell_wdef")      }, // unimplemented
-	/* 128 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 120 */ { XA_shel_read,              NOCLIENT, DESCR("shel_read")       },
+	/* 121 */ { XA_shel_write,             0,        DESCR("shel_write")      },
+	/* 122 */ { NULL,                      0,        DESCR("shel_get")        }, // not supported
+	/* 123 */ { NULL,                      0,        DESCR("shel_put")        }, // not supported
+	/* 124 */ { XA_shel_find,              0,        DESCR("shel_find")       },
+	/* 125 */ { XA_shel_envrn,             0,        DESCR("shel_envrn")      },
+	/* 126 */ { NULL,                      0,        DESCR("shel_rdef")       }, // unimplemented
+	/* 127 */ { NULL,                      0,        DESCR("shel_wdef")       }, // unimplemented
+	/* 128 */ { NULL,                      0,        DESCR("shel_help")       }, // unimplemented
 	/* 129 */ { XA_appl_control,           0,        DESCR("appl_control")    },
 
 	/* 130 */ { XA_appl_getinfo,           NOCLIENT, DESCR("appl_getinfo")    },
