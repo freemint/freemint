@@ -39,6 +39,14 @@ static void dump(char c)
 }
 #endif
 
+#if 0
+#define DEBUG_VT
+#ifdef debug
+# undef debug
+#endif
+#define debug printf
+#endif
+
 /* Move cursor in textwin TW from position (X|Y)
 * to next tab position.  */
 static void gototab(TEXTWIN* tw, int x, int y)
@@ -50,13 +58,13 @@ static void gototab(TEXTWIN* tw, int x, int y)
 		     tab = tab->nexttab);
 		if (tab != NULL && tab->tabpos > x)
 			x = tab->tabpos;
-		gotoxy(tw, x, y);
+		gotoxy (tw, x, y - RELOFFSET (tw));
 	}
 	return;
 }
 
 /* Insert a space at position (X|Y).  Scroll rest of the line
- * to the right.  Discard characters pushed out of the screen.  */
+ * to the right.  Discard characters pushed out of the screen.	*/
 static void insert_char(TEXTWIN* tw, int x, int y)
 {
 	int i;
@@ -65,7 +73,7 @@ static void insert_char(TEXTWIN* tw, int x, int y)
 
 	if (x < 1 || (NCOLS (tw) - x < 1))
 		return;
-	
+
 	memmove (twdata + x, twdata + x - 1, NCOLS (tw) - x);
 	for (i = NCOLS (tw) - 1; i > x; --i) {
 		twcflag[i] = twcflag[i - 1] | CDIRTY;
@@ -76,11 +84,11 @@ static void insert_char(TEXTWIN* tw, int x, int y)
 	tw->do_wrap = 0;
 }
 
-/* Store character C in the internal capture buffer. If 
+/* Store character C in the internal capture buffer. If
  * C is a carriage return, the buffer is closed and passed
- * to the callback function.   
+ * to the callback function.
  */
-static void 
+static void
 capture (TEXTWIN* tw, unsigned int c)
 {
 	int i = tw->captsiz;
@@ -100,7 +108,7 @@ capture (TEXTWIN* tw, unsigned int c)
 
 /* Set special effects.  FIXME: A separate function is waste
  * of time for this.  */
-static void 
+static void
 seffect_putch (TEXTWIN* tw, unsigned int c)
 {
 	tw->term_cattr |= ((c & 0x1f) << 8);
@@ -108,7 +116,7 @@ seffect_putch (TEXTWIN* tw, unsigned int c)
 }
 
 /* clear special effects */
-static void 
+static void
 ceffect_putch(TEXTWIN* tw, unsigned int c)
 {
 	tw->term_cattr &= ~((c & 0x1f) << 8);
@@ -119,7 +127,7 @@ ceffect_putch(TEXTWIN* tw, unsigned int c)
  * if we have an escape sequence > 127 characters, character 127 will be
  * overwritten with each character in turn
  */
-static void 
+static void
 pushescbuf (unsigned char* escbuf, unsigned int c)
 {
 	int i = 0;
@@ -141,10 +149,10 @@ static void
 fill_window (TEXTWIN* tw, unsigned int c)
 {
 	int row;
-	unsigned long new_attribute = tw->term_cattr & 
+	unsigned long new_attribute = tw->term_cattr &
 		(CBGCOL | CFGCOL);
 	int cols = NCOLS (tw);
-	
+
 	for (row = tw->miny; row < tw->maxy; ++row) {
 		memset (tw->data[row], c, cols);
 		memulset (tw->cflag[row], new_attribute, cols);
@@ -155,7 +163,7 @@ fill_window (TEXTWIN* tw, unsigned int c)
 /* Return int (n) from [?n, #n, }n or (n esc sequence:
  * Removes first n; from buf (to handle multiple n;n;...;n)
  */
-static int 
+static int
 popescbuf (TEXTWIN* tw, unsigned char* escbuf)
 {
 	int n = 0;
@@ -178,7 +186,7 @@ popescbuf (TEXTWIN* tw, unsigned char* escbuf)
 }
 
 /* Discard all keys but l.  */
-static void 
+static void
 keylockedl (TEXTWIN* tw, unsigned int c)
 {
 	switch (c) {
@@ -189,7 +197,7 @@ keylockedl (TEXTWIN* tw, unsigned int c)
 }
 
 /* Discard all characters but '2l'.  */
-static void 
+static void
 keylocked2 (TEXTWIN* tw, unsigned int c)
 {
 	switch (c) {
@@ -200,7 +208,7 @@ keylocked2 (TEXTWIN* tw, unsigned int c)
 }
 
 /* Discard all characters but ESC2l.  */
-static void 
+static void
 keylocked (TEXTWIN* tw, unsigned int c)
 {
 	switch (c) {
@@ -211,7 +219,7 @@ keylocked (TEXTWIN* tw, unsigned int c)
 }
 
 /* Turn inverse video on/off.  */
-static void 
+static void
 decscnm (TEXTWIN* tw, int flag)
 {
 	if (flag && tw->decscnm)
@@ -225,14 +233,14 @@ decscnm (TEXTWIN* tw, int flag)
 	tw->cfg->bg_effects ^= tw->cfg->fg_effects;
 	tw->cfg->fg_effects ^= tw->cfg->bg_effects;
 	tw->cfg->bg_effects ^= tw->cfg->fg_effects;
-	
+
 	tw->decscnm = !tw->decscnm;
 
 	memset (tw->dirty + tw->miny, ALLDIRTY, NROWS (tw));
 	refresh_textwin (tw, 0);
 }
 
-/* Handle control sequence ESC [?...n.  */
+/* Handle control sequence ESC [?...n.	*/
 static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy, count, ei;
@@ -248,22 +256,22 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		gotoxy(tw, cx - 1, cy);
+		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy + 1);
+		cud1 (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy - 2);
+		cuu (tw, 2);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		gotoxy(tw, cx + 1, cy);
+		cuf1 (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
 		return;
-	case 'c':		/* Extended private modes.  */
+	case 'c':		/* Extended private modes.	*/
 		count = 0;
 		do {
 			ei = popescbuf (tw, tw->escbuf);
@@ -307,7 +315,8 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				decscnm (tw, 1);
 				break;
 			case 6:	/* origin mode */
-				/* Not yet implemented */
+				tw->origin = 1;
+				gotoxy (tw, 0, 0);
 				break;
 			case 7:	/* wrap on */
 				tw->term_flags &= ~FNOAM;
@@ -351,7 +360,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 2:	/* VT52 mode */
 				tw->vt_mode = MODE_VT52;
 				tw->scroll_top = tw->miny;
-				tw->scroll_bottom = tw->maxy - 1;
+				tw->scroll_bottom = tw->maxy;
 				break;
 			case 3:	/* DECCOLM - 80 column mode.  The original VT100
 				   also did a clear/home on that.  */
@@ -369,7 +378,8 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				decscnm (tw, 0);
 				break;
 			case 6:	/* relative mode */
-				/* Not yet implemented */
+				tw->origin = 0;
+				gotoxy (tw, 0, 0);
 				break;
 			case 7:	/* wrap off */
 				tw->term_flags |= FNOAM;
@@ -483,7 +493,7 @@ static void settab(TEXTWIN* tw, int x)
  * Clear all tabs and reset them at 8 character intervals.
  * Also referenced from textwin.c:create_textwin.
  */
-void 
+void
 reset_tabs (TEXTWIN* tw)
 {
 	int x = 0;
@@ -500,7 +510,7 @@ clearalltabs (TEXTWIN* tw)
 {
 	TABLIST* tab;
 	TABLIST* oldtab;
-	
+
 	oldtab = tab = tw->tabs;
 	while (tab != NULL) {
 		oldtab = tab;
@@ -533,6 +543,7 @@ static void reportxy(TEXTWIN* tw, int x, int y)
 static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy, count, ei;
+	unsigned long param1, param2;
 
 	cx = tw->cx;
 	cy = tw->cy;
@@ -545,16 +556,16 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		gotoxy (tw, cx - 1, cy);
+		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		gotoxy (tw, cx, cy + 1);
+		cud1 (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		gotoxy (tw, cx, cy - 2);
+		cuu (tw, 2);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		gotoxy (tw, cx + 1, cy);
+		cuf1 (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -577,51 +588,51 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		tw->output = vt100_esc_mode;
 		return;
 	case '@':		/* insert N characters */
-		count = popescbuf(tw, tw->escbuf);
+		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		while (count) {
 			/* FIXME: Make insert_char take a fourth parameter
-			   with the number of characters to insert.  */
-			insert_char(tw, cx, cy);
+			   with the number of characters to insert.	*/
+			insert_char (tw, cx, cy);
 			--count;
 		}
 		break;
 	case 'A':		/* cursor up N */
-		count = popescbuf(tw, tw->escbuf);
+		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
-		gotoxy(tw, cx, cy - count);
+		cuu (tw, count);
 		break;
 	case 'B':		/* cursor down N */
-		count = popescbuf(tw, tw->escbuf);
+		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
-		gotoxy(tw, cx, cy + count);
+		cud (tw, count);
 		break;
 	case 'C':		/* cursor right N */
-		count = popescbuf(tw, tw->escbuf);
+		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
-		gotoxy(tw, cx + count, cy);
+		cuf (tw, count);
 		break;
 	case 'D':		/* cursor left N */
-		count = popescbuf(tw, tw->escbuf);
+		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
-		gotoxy(tw, cx - count, cy);
+		cub (tw, count);
 		break;
 	case 'H':		/* cursor to y,x */
-		cy = popescbuf(tw, tw->escbuf);
+		cy = popescbuf (tw, tw->escbuf);
 		if (cy < 1)
 			cy = 1;
 		cx = popescbuf(tw, tw->escbuf);
 		if (cx < 1)
 			cx = 1;
-		gotoxy(tw, cx - 1, tw->miny + cy - 1);
+		gotoxy (tw, cx - 1, tw->miny + cy - 1);
 		break;
 	case 'J':		/* clear screen parts */
-		count = popescbuf(tw, tw->escbuf);
+		count = popescbuf (tw, tw->escbuf);
 		if (count < 0)
 			count = 0;
 
@@ -633,24 +644,24 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			clrfrom (tw, 0, tw->miny, cx, cy);
 			break;
 		case 2:	/* clear all but do no move */
-			clrfrom (tw, 0, tw->miny, 
+			clrfrom (tw, 0, tw->miny,
 				 tw->maxx - 1, tw->maxy - 1);
 			break;
 		}
 		break;
 	case 'K':		/* clear line parts */
-		count = popescbuf(tw, tw->escbuf);
+		count = popescbuf (tw, tw->escbuf);
 		if (count < 0)
 			count = 0;
 		switch (count) {
 		case 0:	/* clear to end */
-			clrfrom(tw, cx, cy, tw->maxx - 1, cy);
+			clrfrom (tw, cx, cy, tw->maxx - 1, cy);
 			break;
 		case 1:	/* clear from beginning */
-			clrfrom(tw, 0, cy, cx, cy);
+			clrfrom (tw, 0, cy, cx, cy);
 			break;
-		case 2:	/* clear all but do no move */
-			clrfrom(tw, 0, cy, tw->maxx - 1, cy);
+		case 2:	/* clear all but do not move */
+			clrfrom (tw, 0, cy, tw->maxx - 1, cy);
 			break;
 		}
 		break;
@@ -658,21 +669,20 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
-		while (count) {
-			insert_line(tw, cy, tw->scroll_bottom);
-			count--;
+		while (count > 0) {
+			insert_line (tw);
+			--count;
 		}
-		gotoxy(tw, 0, cy);
+		tw->do_wrap = 0;
 		break;
 	case 'M':		/* delete N lines */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
-		while (count) {
-			delete_line(tw, cy, tw->scroll_bottom - 1);
-			count--;
+		while (count > 0) {
+			delete_line (tw);
+			--count;
 		}
-		gotoxy(tw, 0, cy);
 		break;
 	case 'P':		/* delete N characters at cursor position */
 		count = popescbuf(tw, tw->escbuf);
@@ -765,11 +775,10 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				ei = 0;
 			switch (ei) {
 			case 0:	/* All attributes off */
-				tw->term_cattr &= 
-					~(CE_BOLD | CE_LIGHT | CE_ITALIC | 
+				tw->term_cattr &=
+					~(CE_BOLD | CE_LIGHT | CE_ITALIC |
 					  CE_UNDERLINE | CINVERSE);
-				set_ansi_fg_color (tw, ANSI_DEFAULT + 48);
-				set_ansi_bg_color (tw, ANSI_DEFAULT + 48);
+				original_colors (tw);
 				break;
 			case 1:		/* bold on (x) */
 				set_ansi_fg_color (tw, 'M' + 48);
@@ -787,11 +796,11 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				tw->term_cattr |= CINVERSE;
 				break;
 			case 8: /* Concealed on.  */
-				tw->term_cattr = 
+				tw->term_cattr =
 					((tw->term_cattr & CBGCOL) << 4) |
-					 (tw->term_cattr & 
-					  ~(CE_ANSI_EFFECTS | 
-					    CFGCOL));
+					 (tw->term_cattr &
+					  ~(CE_ANSI_EFFECTS |
+						 CFGCOL));
 				break;
 			case 21:	/* bold off */
 				tw->term_cattr &= ~CE_BOLD;
@@ -886,14 +895,18 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			soft_reset (tw);
 		break;
 	case 'r':		/* set size of scrolling region */
-		ei = popescbuf(tw, tw->escbuf);
-		if (ei < 1)	/* If not supplied ... */
-			ei = 1;
-		tw->scroll_top = tw->miny + ei - 1;
-		ei = popescbuf(tw, tw->escbuf);
-		if (ei < 1)	/* If not supplied ... */
-			ei = NROWS (tw); /* ... set to size of screen */
-		tw->scroll_bottom = tw->miny + ei - 1;
+		param1 = popescbuf (tw, tw->escbuf);
+		param2 = popescbuf (tw, tw->escbuf);
+
+		if (param1 < 1)
+			param1 = 1;
+		if (param2 == -1 || param2 > NROWS (tw) || param2 == 0)
+			param2 = NROWS (tw);
+		if (param2 > param1) {
+			tw->scroll_top = tw->miny + param1 - 1;
+			tw->scroll_bottom = tw->miny + param2;
+			gotoxy (tw, 0, 0);
+		}
 		break;
 	case 'q':		/* keyboard light controls */
 		/* Not yet implemented */
@@ -916,7 +929,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 /*
 * vt100_esc_char_size (tw, c): handle the control sequence ESC #n
  */
-static void 
+static void
 vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
@@ -932,16 +945,16 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		gotoxy(tw, cx - 1, cy);
+		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy + 1);
+		cud1 (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy - 2);
+		cuu (tw, 2);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		gotoxy(tw, cx + 1, cy);
+		cuf1 (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -981,7 +994,7 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 /*
 * vt100_esc_tests (tw, c): handle the control sequence ESC }n
  */
-static void 
+static void
 vt100_esc_tests (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
@@ -997,16 +1010,16 @@ vt100_esc_tests (TEXTWIN* tw, unsigned int c)
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		gotoxy(tw, cx - 1, cy);
+		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy + 1);
+		cud1 (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy - 2);
+		cuu (tw, 2);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		gotoxy(tw, cx + 1, cy);
+		cuf1 (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1033,7 +1046,7 @@ vt100_esc_tests (TEXTWIN* tw, unsigned int c)
 /* Handle the control sequence ESC (n
  * Used to change G0 (standard) character set - should use appropriate font
  */
-static void 
+static void
 vt100_esc_std_char (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
@@ -1049,16 +1062,16 @@ vt100_esc_std_char (TEXTWIN* tw, unsigned int c)
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		gotoxy(tw, cx - 1, cy);
+		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy + 1);
+		cud1 (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy - 2);
+		cuu (tw, 2);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		gotoxy(tw, cx + 1, cy);
+		cuf1 (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1100,7 +1113,7 @@ vt100_esc_std_char (TEXTWIN* tw, unsigned int c)
 /* Handle the control sequence ESC )n
  * Used to change G1 (alternate) character set - should use appropriate font
  */
-static void 
+static void
 vt100_esc_alt_char (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
@@ -1116,16 +1129,16 @@ vt100_esc_alt_char (TEXTWIN* tw, unsigned int c)
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		gotoxy(tw, cx - 1, cy);
+		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy + 1);
+		cud1 (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy - 2);
+		cuu (tw, 2);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		gotoxy(tw, cx + 1, cy);
+		cuf1 (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1166,58 +1179,64 @@ vt100_esc_alt_char (TEXTWIN* tw, unsigned int c)
 static void soft_reset(TEXTWIN* tw)
 {
 	tw->escbuf[0] = '\0';	/* ESC <        - terminal into vt100 mode */
-	vt100_putesc(tw, '<');	/* ESC [20l     - <return> sends lf */
+	vt100_putesc(tw, '<');	/* ESC [20l	- <return> sends lf */
 	tw->escbuf[0] = '2';
 	tw->escbuf[1] = '0';
 	tw->escbuf[2] = '\0';
-	vt100_esc_attr(tw, 'l');	/* ESC [?1l     - cursor key to cursor mode */
-	/* ESC [?6l     - absolute/origin mode */
-	/* ESC [?9l     - interface off */
+	vt100_esc_attr(tw, 'l');	/* ESC [?1l	  - cursor key to cursor mode */
+	/* ESC [?6l	 - absolute/origin mode */
+	/* ESC [?9l	 - interface off */
 	tw->escbuf[0] = '1';
 	tw->escbuf[1] = ';';
 	tw->escbuf[2] = '6';
 	tw->escbuf[3] = ';';
 	tw->escbuf[4] = '9';
 	tw->escbuf[5] = '\0';
-	vt100_esc_mode(tw, 'l');	/* ESC [r       - scrolling region to whole screen */
+	vt100_esc_mode(tw, 'l');	/* ESC [r	  - scrolling region to whole screen */
 	tw->escbuf[0] = '\0';
-	vt100_esc_attr(tw, 'r');	/* ESC q        - inverse video off */
-	vt100_putesc(tw, 'q');	/* ESC (B       - standard character set is US ASCII */
-	vt100_esc_std_char(tw, 'B');	/* ^O           - switch to standard character set */
-	vt100_putch(tw, '\017');	/* ESC )0       - alternate character set is special/linedraw */
-	vt100_esc_alt_char(tw, '0');	/* ESC >        - keypad in application mode */
+	vt100_esc_attr(tw, 'r');	/* ESC q	  - inverse video off */
+	vt100_putesc(tw, 'q');	/* ESC (B	- standard character set is US ASCII */
+	vt100_esc_std_char(tw, 'B');	/* ^O	      - switch to standard character set */
+	vt100_putch(tw, '\017');	/* ESC )0	  - alternate character set is special/linedraw */
+	vt100_esc_alt_char(tw, '0');	/* ESC >	      - keypad in application mode */
 	vt100_putesc(tw, '>');
 }
 
-static void 
+static void
 full_reset (TEXTWIN* tw)
 {
-	soft_reset (tw);	
+	soft_reset (tw);
 
-	clearalltabs (tw);	
+	clearalltabs (tw);
 
-	set_ansi_fg_color (tw, ANSI_DEFAULT + 48);
-	set_ansi_bg_color (tw, ANSI_DEFAULT + 48);
-	
+	original_colors (tw);
+
 	tw->curs_on = 1;
-	tw->curs_vvis = 0;	
+	tw->curs_vvis = 0;
 
 	tw->term_cattr &= ~CE_BOLD;
 	tw->term_cattr &= ~CE_LIGHT;
 	tw->term_cattr &= ~CE_ITALIC;
 	tw->term_cattr &= ~CE_UNDERLINE;
+
+	tw->origin = 0;
+	tw->deccolm = 0;
+	tw->do_wrap = 1;
+	tw->curs_on = 1;
+	tw->curs_vvis = 0;
+
 	clear (tw);
-	gotoxy (tw, 0, tw->miny);
+	gotoxy (tw, 0, 0);
 }
 
 /* Handle the control sequence ESC c
  * additions JC - handle extended escapes,
  * 		e.g. ESC[24;1H is cursor to x1, y24
  *
- * FIXME: Everything not supported by the original vt100 
+ * FIXME: Everything not supported by the original vt100
  * should vanish from here.
  */
-static void 
+static void
 vt100_putesc (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
@@ -1233,16 +1252,16 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		gotoxy(tw, cx - 1, cy);
+		cub1 (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy + 1);
+		cud1 (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		gotoxy(tw, cx, cy - 2);
+		cuu (tw, 2);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		gotoxy(tw, cx + 1, cy);
+		cuf1 (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
@@ -1265,29 +1284,32 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case '7':		/* save cursor position */
 		tw->savex = tw->cx;
 		tw->savey = tw->cy;
+		/* FIXME: Save attributes, origin mode,
+		   wrap mode and protected mode.  */
 		tw->save_cattr = tw->term_cattr & (CATTRIBUTES | CACS);
 		break;
 	case '8':		/* restore cursor position */
-		gotoxy(tw, tw->savex, tw->savey);
+		/* FIXME: restore origin mode first!!! */
+		gotoxy (tw, tw->savex, tw->savey);
 		tw->term_cattr = (tw->term_cattr & ~(CATTRIBUTES | CACS)) |
 			tw->save_cattr;
 		break;
 	case 'A':		/* cursor up */
-		gotoxy(tw, cx, cy - 1);
+		cuu1 (tw);
 		break;
 	case 'B':		/* cursor down */
-		gotoxy(tw, cx, cy + 1);
+		cud1 (tw);
 		break;
 	case 'C':		/* cursor right */
-		gotoxy(tw, cx + 1, cy);
+		cuf1 (tw);
 		break;
 	case 'D':
 		switch (tw->vt_mode) {
 		case MODE_VT52:	/* cursor left */
-			gotoxy(tw, cx - 1, cy);
+			cub1 (tw);
 			break;
 		case MODE_VT100:	/* cr */
-			gotoxy(tw, cx, cy + 1);
+			cud1 (tw);
 			break;
 		}
 		break;
@@ -1295,17 +1317,17 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		switch (tw->vt_mode) {
 		case MODE_VT52:	/* clear home */
 			clear (tw);
-			gotoxy (tw, 0, tw->miny);
+			gotoxy (tw, 0, 0);
 			break;
 		case MODE_VT100:	/* crlf */
-			gotoxy (tw, 0, cy + 1);
+			gotoxy (tw, 0, cy + 1 + RELOFFSET (tw));
 			break;
 		}
 		break;
 	case 'H':
 		switch (tw->vt_mode) {
 		case MODE_VT52:	/* cursor home */
-			gotoxy(tw, 0, tw->miny);
+			gotoxy (tw, 0, 0);
 			break;
 		case MODE_VT100:	/* set tab at cursor position */
 			settab(tw, cx);
@@ -1313,10 +1335,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		}
 		break;
 	case 'I':		/* cursor up, insert line */
-		if (cy == tw->miny)
-			insert_line(tw, tw->miny, tw->maxy);
-		else
-			gotoxy(tw, cx, cy - 1);
+		reverse_cr (tw);
 		break;
 	case 'J':		/* clear below cursor */
 		clrfrom(tw, cx, cy, tw->maxx - 1, tw->maxy - 1);
@@ -1325,21 +1344,15 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		clrfrom(tw, cx, cy, tw->maxx - 1, cy);
 		break;
 	case 'L':		/* insert a line */
-		insert_line(tw, cy, tw->maxy);
-		gotoxy(tw, 0, cy);
+		insert_line (tw);
 		break;
 	case 'M':
 		switch (tw->vt_mode) {
 		case MODE_VT52:	/* delete line */
-			delete_line(tw, cy, tw->maxy - 1);
-			gotoxy(tw, 0, cy);
+			delete_line (tw);
 			break;
 		case MODE_VT100:	/* reverse cr */
-			if (cy == tw->scroll_top) {
-				insert_line(tw, tw->scroll_top,
-					    tw->scroll_bottom);
-			} else
-				gotoxy(tw, cx, cy - 1);
+			reverse_cr (tw);
 			break;
 		}
 		break;
@@ -1404,11 +1417,15 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		tw->savey = tw->cy;
 		break;
 	case 'k':		/* restore saved position */
-		gotoxy(tw, tw->savex, tw->savey);
+		/* FIXME: Obey origin mode!!! */
+		gotoxy (tw, tw->savex, tw->savey);
 		break;
-	case 'l':		/* clear line */
-		clrline(tw, cy);
-		gotoxy(tw, 0, cy);
+	case 'l':		/* HP memory lock.	*/
+		if (tw->scroll_bottom > tw->cy)
+			tw->scroll_top = tw->cy;
+		break;
+	case 'm':		/* HP memory unlock.  */
+		tw->scroll_top = tw->miny;
 		break;
 	case 'o':		/* clear from start of line to cursor */
 		clrfrom(tw, 0, cy, cx, cy);
@@ -1473,7 +1490,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 }
 
 /* Save character after ESC Y + char.  */
-static void 
+static void
 escy1_putch (TEXTWIN* tw, unsigned int c)
 {
 #ifdef DEBUG_VT
@@ -1482,12 +1499,13 @@ escy1_putch (TEXTWIN* tw, unsigned int c)
 #ifdef DUMP
 	dump (c);
 #endif
-	gotoxy(tw, c - ' ', tw->miny + tw->escy1 - ' ');
+	/* FIXME: Origin mode!!! */
+	gotoxy (tw, c - ' ', tw->miny + tw->escy1 - ' ');
 	tw->output = vt100_putch;
 }
 
-/* Save character after ESC Y.  */
-static void 
+/* Save character after ESC Y.	*/
+static void
 escy_putch (TEXTWIN* tw, unsigned int c)
 {
 	tw->escy1 = c;
@@ -1497,7 +1515,7 @@ escy_putch (TEXTWIN* tw, unsigned int c)
 /* Put character C on screen V. This is the default
  * for when no escape, etc. is active.
  */
-void 
+void
 vt100_putch (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
@@ -1516,29 +1534,21 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 		switch (c) {
 		/* FIXME: Handle newline mode!  */
 		case '\r':	/* carriage return */
-			gotoxy (tw, 0, cy);
+			gotoxy (tw, 0, cy - RELOFFSET (tw));
 			break;
 
 		case '\n':	/* new line */
-			if (cy == tw->scroll_bottom) {
-				delete_line (tw, tw->scroll_top,
-					     tw->scroll_bottom);
-			} else {
-				if (tw->cx >= tw->maxx)
-					gotoxy (tw, 0, cy + 1);
-				else
-					gotoxy (tw, cx, cy + 1);
-			}
+			new_line (tw);
 			break;
 
 		case '\b':	/* backspace */
-			gotoxy (tw, cx - 1, cy);
+			cub1 (tw);
 			break;
 
 		case '\007':	/* bell */
 			if (con_fd) {
-				/* xconout2: Bconout would result in 
-				 * deadlock. 
+				/* xconout2: Bconout would result in
+				 * deadlock.
 				 */
 				char ch = 7;
 				Fwrite (con_fd, 1, &ch);

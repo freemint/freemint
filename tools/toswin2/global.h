@@ -34,7 +34,7 @@ struct win
 	GRECT	work;		/* size of window working area */
 	GRECT	full;
 	GRECT	prev;
-	int     max_w, max_h;	/* max size of window working area */
+	int	 max_w, max_h;	/* max size of window working area */
 	int	icon_x, icon_y;	/* WINICON Position, da der Objektbaum mehrfach benutzt wird. */
 	int	flags;		/* various window flags */
 	int	old_wkind;	/* old window gadgets before iconification */
@@ -43,8 +43,8 @@ struct win
 	void	(*draw) 	(struct win *win, short x, short y, short w, short h);
 	void	(*topped) 	(struct win *win);
   	void    (*ontopped) 	(struct win *win);
-	void    (*untopped) 	(struct win *win);
-	void    (*bottomed) 	(struct win *win);
+	void	 (*untopped) 	(struct win *win);
+	void	 (*bottomed) 	(struct win *win);
 	void	(*closed) 	(struct win *win);
 	void	(*fulled) 	(struct win *win);
 	void	(*sized) 	(struct win *win, short x, short y, short w, short h);
@@ -93,7 +93,7 @@ struct _wincfg
 
 /* Tab positions */
 typedef struct tablist TABLIST;
-struct tablist 
+struct tablist
 {
 	short	tabpos;		/* character position of tab */
   	TABLIST	*nexttab;	/* pointer to next tab position */
@@ -104,6 +104,9 @@ struct tablist
 #define SCROLLBACK(t)	((t)->miny)
 #define NROWS(t) 	((t)->maxy - (t)->miny)
 #define NCOLS(t) 	((t)->maxx)
+
+/* Relative offset for origin mode.  */
+#define RELOFFSET(t)	((t)->scroll_top - (t)->miny)
 
 /* Min/Maximale Fenstergr”že */
 #define MINROWS	1
@@ -127,7 +130,7 @@ struct tablist
 #define CE_UNDERLINE	 0x0800
 #define CINVERSE	 0x1000	/* character is in inverse video */
 
-#define CATTRIBUTES	 0x1fff /* Attribute mask.  */
+#define CATTRIBUTES	 0x1fff /* Attribute mask.	*/
 
 #define CSELECTED	 0x2000	/* character has been selected by mouse */
 #define CTOUCHED	 0x4000	/* character attributes have changed */
@@ -177,15 +180,15 @@ struct textwin
 	ulong	save_cattr;			/* saved attributes */
 	ushort	term_flags;			/* e.g. cursor on/off */
 	ulong	term_cattr;			/* current character attributes including
-						   foreground/background colors and character
-						   set */
+							 foreground/background colors and character
+							 set */
 	unsigned short	escy1;			/* first char. for ESC Y */
-	void	(*output)(struct textwin *t, 
-	                  unsigned int c); 	/* output function */
+	void	(*output)(struct textwin *t,
+			   unsigned int c); 	/* output function */
 	ushort	alloc_width;			/* Max. width that the following buffers can
-						   handle.  */
+							 handle.  */
 	ushort	alloc_height;			/* Max. height that the following buffers can
-						   handle.  */
+							 handle.  */
 	uchar	**data;				/* terminal data */
 	ulong	**cflag;			/* flags for individual characters */
 	char	*dirty;				/* marks whether lines need redrawing */
@@ -205,9 +208,9 @@ struct textwin
 	short	*cwidths;			/* table of font widths */
 
 	unsigned char escbuf[ESCBUFSIZE];	/* Buffer for multiple char escapes */
-	short   vt_mode;			/* Terminal emulator mode */
-	short   scroll_top;	  		/* Top line for scrolling region */
-	short   scroll_bottom;  		/* Bottom line for scrolling region */
+	short	 vt_mode;			/* Terminal emulator mode */
+	short	 scroll_top;	  		/* Top line for scrolling region */
+	short	 scroll_bottom;  		/* Bottom line for scrolling region */
 	TABLIST *tabs;			  	/* List of tab positions */
 	short 	curs_mode;			/* Mode for cursor keys */
 
@@ -221,26 +224,27 @@ struct textwin
 		block_y2;
 	ulong	fg_effects;			/* Bit vector of text effects.  */
 	ulong	bg_effects;			/* Bit vector with background effects
-						   (only CE_BOLD/CE_LIGHT are used).  */
-	
+							 (only CE_BOLD/CE_LIGHT are used).  */
+
 	int	curs_height;			/* Height of the cursor block.  */
 	int	curs_offy;			/* Distance from bottom of cursor to bottom
-						   of line.  */
+							 of line.  */
 	short	last_cx, last_cy;		/* Last position of cursor.  */
-						   
+
 	/* Various flags.  */
-	unsigned curs_on: 1;			/* 0 - invisible, 1 - visible.  */
+	unsigned curs_on: 1;			/* 0 - invisible, 1 - visible.	*/
 	unsigned curs_vvis: 1;			/* 0 - normal, 1 - very visible.  */
 	unsigned curs_drawn: 1;			/* 1 - cursor needs to be updated.  */
 	unsigned wintop: 1;			/* 1 - if active window.  */
-	
+
 	unsigned vdi_colors: 1;			/* Non-zero if vdi colors active.  */
 	unsigned windirty: 1;			/* Non-zero if window size has changed.  */
-	unsigned do_wrap: 1;			/* Non-zero if cursor in last column and 
-						   character just output.  */
+	unsigned do_wrap: 1;			/* Non-zero if cursor in last column and
+							 character just output.  */
 	unsigned deccolm: 1;			/* Non-zero if column (132/80 switch)
-						   enabled.  */
+							 enabled.  */
 	unsigned decscnm: 1;			/* Non-zero if in reverse video mode.  */
+	unsigned origin: 1;			/* Non-zero if in origin mode.  */
 };
 
 
