@@ -18,14 +18,23 @@
 # include <sys/types.h>
 # endif
 
-
+/**
+ * This is the representation of a time value.
+ * The syscalls expect and deliver timevalues in this representation.
+ * 
+ */
 struct timeval
 {
-	long	tv_sec;		/* seconds */
-	long	tv_usec;	/* microseconds */
+	long	tv_sec;		/**< seconds */
+	long	tv_usec;	/**< microseconds */
 };
 
+
 typedef struct time TIME;
+
+/**
+ * DONT KNOW YET. PLEASE FILLOUT.
+ */
 struct time
 {
 	long	high_time;
@@ -36,13 +45,13 @@ struct time
 
 # ifdef __KERNEL__
 
-/*
+/**
  * Structure defined by POSIX.1b to be like a timeval.
  */
 struct timespec
 {
-	long	tv_sec;		/* seconds */
-	long	tv_nsec;	/* and nanoseconds */
+	long	tv_sec;		/**< seconds */
+	long	tv_nsec;	/**< and nanoseconds */
 };
 
 # define TIMEVAL_TO_TIMESPEC(tv, ts)		\
@@ -59,30 +68,36 @@ struct timespec
 
 # define CLOCKS_PER_SEC HZ
 
+/**
+ * 
+ */
 struct timezone
 {
-	long	tz_minuteswest;	/* minutes west of Greenwich */
-	long	tz_dsttime;	/* type of dst correction */
+	long	tz_minuteswest;	/**< Minutes west of Greenwich */
+	long	tz_dsttime;		/**< Type of dst correction */
 };
 
 
-/*
- * Timeout events are stored in a list; the "when" field in the event
- * specifies the number of milliseconds *after* the last entry in the
- * list that the timeout should occur, so routines that manipulate
- * the list only need to check the first entry.
- */
-
 typedef void _cdecl to_func (PROC *);
-
+/**
+ * Representation of an timeout event.
+ * The timeout events are stored in a callout list (single linked).
+ * The events are sorted in the order of their occurence. Therefor
+ * the time for searching the list is saved. The insertion of he event takes
+ * longer, but does't happend too often, compared with the searching, which
+ * happens at every clock tick. The time when to trigger the event is given
+ * relative to the event in the list before this event. So decreasing the
+ * counter for the first event in the list decereses the counter for the other
+ * events too.
+ */
 struct timeout
 {
-	TIMEOUT	*next;
-	PROC	*proc;
-	long	when;
-	to_func	*func;	/* function to call at timeout */
+	TIMEOUT	*next;		/**< link to next event in the list.				*/
+	PROC	*proc;		/**< This process registerd this timeout event.		*/
+	long	when;		/**< Difference to the event before this in the list.*/
+	to_func	*func;		/**< Function to call at timeout					*/
 	ushort	flags;
-	long	arg;
+	long	arg;		/**< Argument to the function which gets called.	*/
 };
 
 
@@ -90,6 +105,9 @@ struct timeout
 # define ITIMER_VIRTUAL	1
 # define ITIMER_PROF	2
 
+/**
+ * DONT KNOW YET. PLEASE FILLOUT.
+ */
 struct itimervalue
 {
 	TIMEOUT	*timeout;

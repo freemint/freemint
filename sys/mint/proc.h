@@ -107,6 +107,9 @@ struct limits;
 /*
  * from now it's private; at all, forever
  */
+/**
+ * The process structure.
+ */
 struct proc
 {
 	long	sysstack;		/* must be first		*/
@@ -122,15 +125,15 @@ struct proc
 	short	_egid;			/* unused */
 
 	ushort	_memflags;		/* unused */
-	short	pri;			/* base process priority 	*/
-	short	wait_q;			/* current process queue	*/
+	short	pri;			/**< base process priority 	*/
+	short	wait_q;			/**< current process queue	*/
 
 	/* note: wait_cond should be unique for each kind of condition
 	 * we might want to wait for. Put a define below, or use an
 	 * address in the kernel as the wait condition to ensure
 	 * uniqueness.
 	 */
-	long	wait_cond;		/* condition we're waiting on	*/
+	long	wait_cond;		/**< condition we're waiting on	*/
 					/* (also return code from wait) */
 
 # define WAIT_MB	0x3a140001L	/* wait_cond for p_msg call	*/
@@ -146,9 +149,9 @@ struct proc
 	ulong	maxcore;		/* XXX max. core memory for process */
 	ulong	maxcpu;			/* XXX max. cpu time to use 	*/
 
-	short	domain;			/* process domain (TOS or UNIX)	*/
+	short	domain;			/**< process domain (TOS or UNIX)	*/
 
-	short	curpri;			/* current process priority	*/
+	short	curpri;			/**< current process priority	*/
 	short	_suid, _sgid;		/* XXX unused */
 # define MIN_NICE -20
 # define MAX_NICE  20
@@ -170,24 +173,24 @@ struct proc
 	ushort	pad;
 
 	/* sharable substructures */
-	struct memspace	*p_mem;		/* address space */
-	struct pcred	*p_cred;	/* owner identity */
-	struct filedesc	*p_fd;		/* open files */
-	struct cwd	*p_cwd;		/* path stuff */
-	struct sigacts	*p_sigacts;	/* signal stuff */
-	struct plimit	*p_limits;	/* process limits */
-	struct p_ext	*p_ext;		/* process extensions */
+	struct memspace	*p_mem;		/**< address space */
+	struct pcred	*p_cred;	/**< owner identity */
+	struct filedesc	*p_fd;		/**< open files */
+	struct cwd	*p_cwd;		/**< path stuff */
+	struct sigacts	*p_sigacts;	/**< signal stuff */
+	struct plimit	*p_limits;	/**< process limits */
+	struct p_ext	*p_ext;		/**< process extensions */
 
 	/* statistics */
-	struct timeval started;		/* start time in UTC		*/
+	struct timeval started;		/**< start time in UTC		*/
 
 	/* XXX all times are in milliseconds
 	 * XXX usrtime must always follow systime
 	 */
-	ulong	_systime;		/* time spent in kernel		*/
-	ulong	_usrtime;		/* time spent out of kernel	*/
-	ulong	_chldstime;		/* children's kernel time 	*/
-	ulong	_chldutime;		/* children's user time		*/
+	ulong	_systime;		/**< time spent in kernel		*/
+	ulong	_usrtime;		/**< time spent out of kernel	*/
+	ulong	_chldstime;		/**< children's kernel time 	*/
+	ulong	_chldutime;		/**< children's user time		*/
 # if 0
 	/* For a future improvement of getrusage() */
 	long	ru_majflt;		/* Number of page faults	*/
@@ -199,30 +202,30 @@ struct proc
 
 
 	/* jr: two fields to hold information passed to Pexec */
-	char	fname[PATH_MAX];	/* name of binary		*/
-	char	cmdlin[128];		/* original command line	*/
+	char	fname[PATH_MAX];	/**< name of binary		*/
+	char	cmdlin[128];		/**< original command line	*/
 
-	char	*real_cmdline;		/* Saved command line		*/
-	fcookie exe;			/* File cookie for binary	*/
+	char	*real_cmdline;		/**< Saved command line		*/
+	fcookie exe;			/**< File cookie for binary	*/
 
-	char	name[PNAMSIZ+1];	/* process name			*/
-	short	slices;			/* number of time slices before	*
+	char	name[PNAMSIZ+1];	/**< process name			*/
+	short	slices;			/**< number of time slices before	*
 					 * this process gets to run	*
 					 * again			*/
 
-	struct procwakeup *wakeupthings;/* things todo on the next wake */
+	struct procwakeup *wakeupthings;/**< things todo on the next wake */
 
-	TIMEOUT	*alarmtim;		/* alarm() event		*/
-	struct	itimervalue itimer[3];	/* interval timers */
+	TIMEOUT	*alarmtim;		/**< alarm() event		*/
+	struct	itimervalue itimer[3];	/**< interval timers */
 
 	struct pgrp *p_pgrp;		/* XXX process group		*/
 	void	*p_ctxlink;		/* XXX uc_link {get,set}context */
 
 
-	ulong	sigpending;		/* pending signals		*/
-	ulong	nsigs;			/* number of signals delivered 	*/
+	ulong	sigpending;		/**< pending signals		*/
+	ulong	nsigs;			/**< number of signals delivered */
 
-	ulong	p_sigmask;		/* current signal mask		*/
+	ulong	p_sigmask;		/**< current signal mask		*/
 //	ulong	p_sigignore;		/* signals being ignored	*/
 //	ulong	p_sigcatch;		/* signals being caught by user	*/
 
@@ -233,14 +236,14 @@ struct proc
 					/* critical error handler	*/
 	void	*logbase;		/* XXX logical screen base	*/
 
-	PROC	*ptracer;		/* process which is tracing this one */
-	short	ptraceflags;		/* flags for process tracing	*/
+	PROC	*ptracer;		/**< process which is tracing this one */
+	short	ptraceflags;		/**< flags for process tracing	*/
 
-	short	in_dos;			/* flag: 1 = process is executing a GEMDOS call */
-	short	fork_flag;		/* flag: set to 1 if process has called Pfork() */
+	short	in_dos;			/**< flag: 1 = process is executing a GEMDOS call */
+	short	fork_flag;		/**< flag: set to 1 if process has called Pfork() */
 	short	auid;			/* XXX tesche: audit user id */
 
-	short	last_sig;		/* Last signal received by the process	*/
+	short	last_sig;		/**< Last signal received by the process	*/
 	short	signaled;		/* Non-zero if process was killed by	*
 					 * a fatal signal			*/
 
