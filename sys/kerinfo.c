@@ -53,7 +53,7 @@
 
 
 # undef DEFAULT_MODE
-# define DEFAULT_MODE	(0666)
+# define DEFAULT_MODE	(0644)
 
 /* wrapper for the kerinterface */
 

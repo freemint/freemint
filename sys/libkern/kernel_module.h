@@ -672,6 +672,29 @@ INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const
 
 
 /*
+ * vec_bios
+ */
+
+# define _b_ubconstat		(*KENTRY->vec_bios[0x001])
+# define _b_ubconin		(*KENTRY->vec_bios[0x002])
+# define _b_ubconout		(*KENTRY->vec_bios[0x003])
+# define _b_rwabs		(*KENTRY->vec_bios[0x004])
+# define _b_setexc		(*KENTRY->vec_bios[0x005])
+# define _b_tickcal		(*KENTRY->vec_bios[0x006])
+# define _b_getbpb		(*KENTRY->vec_bios[0x007])
+# define _b_ubcostat		(*KENTRY->vec_bios[0x008])
+# define _b_mediach		(*KENTRY->vec_bios[0x009])
+# define _b_drvmap		(*KENTRY->vec_bios[0x00a])
+# define _b_kbshift		(*KENTRY->vec_bios[0x00b])
+
+INLINE long b_ubconout(short dev, short c)
+{ return ((long _cdecl (*)(short, short)) _b_ubconout)(dev, c); }
+
+INLINE long b_drvmap(void)
+{ return ((long _cdecl (*)(void)) _b_drvmap)(); }
+
+
+/*
  * kentry_proc
  */
 
@@ -702,6 +725,8 @@ INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const
 # define STOP_Q			6
 # define SELECT_Q		7
 
+# define yield()		sleep(READY_Q, 0L)
+
 
 /*
  * kentry_mem
@@ -719,7 +744,7 @@ INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const
  */
 
 # define DEFAULT_MODE		( KENTRY->vec_fs.default_perm)
-# define DEFAULT_DMODE		( 0777)
+# define DEFAULT_DMODE		( KENTRY->vec_fs.default_dir_perm)
 
 # define changedrive(drv)	(*KENTRY->vec_fs.drvchng)(drv, __FUNCTION__)
 
@@ -728,6 +753,15 @@ INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const
 
 # define bio			( KENTRY->vec_fs.bio)
 # define utc			(*KENTRY->vec_fs.xtime)
+
+# define kernel_opendir		(*KENTRY->vec_fs.kernel_opendir)
+# define kernel_readdir		(*KENTRY->vec_fs.kernel_readdir)
+# define kernel_closedir	(*KENTRY->vec_fs.kernel_closedir)
+
+# define kernel_open		(*KENTRY->vec_fs.kernel_open)
+# define kernel_read		(*KENTRY->vec_fs.kernel_read)
+# define kernel_write		(*KENTRY->vec_fs.kernel_write)
+# define kernel_close		(*KENTRY->vec_fs.kernel_close)
 
 
 /*

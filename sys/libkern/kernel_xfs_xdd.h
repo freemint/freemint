@@ -47,7 +47,7 @@ extern struct kerinfo *KERNEL;
 # define MINT_MINOR		(KERNEL->min_version)
 # define MINT_KVERSION		(KERNEL->version)
 # define DEFAULT_MODE		(KERNEL->default_perm)
-# define DEFAULT_DMODE		(0777)
+# define DEFAULT_DMODE		(0755)
 
 /*
  * dos_tab
