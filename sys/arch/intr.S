@@ -17,7 +17,6 @@
 
 	.globl	_build_context
 	.globl	_restore_context
-	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_curproc
 	.globl	_enter_bios		// see kernel.spp
 	.globl	_leave_kernel
@@ -111,7 +110,7 @@ mod5:	dc.w	5		// initial value matters
 	.globl	_c20ms
 	.globl	_keyrec
 	.globl	_kintr
-	.globl	_proc_clock
+	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_our_clock
 	.globl	_tlist
 #ifdef FLOPPY_ROUTINES
@@ -135,10 +134,13 @@ skip:	move.w	(0x0442).w,d0
 	sub.w	d0,_our_clock
 	move.l	_tlist,d1
 	beq.s	txit
+
+// update the `when' field of the first TIMEOUT on the list
+
 	move.l	d1,a0
-	move.l	8(a0),a1
+	move.l	TM_WHEN(a0),a1
 	sub.w	d0,a1
-	move.l	a1,8(a0)
+	move.l	a1,TM_WHEN(a0)
 
 // "VBL" things go here (50 times per second at IPL 3)
 
