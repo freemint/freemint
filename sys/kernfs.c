@@ -47,6 +47,7 @@
 # include "mint/stat.h"
 
 # include "arch/mprot.h"
+# include "arch/kernfs_mach.h"
 
 # include "dev-null.h"
 # include "filesys.h"

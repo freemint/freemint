@@ -4,6 +4,7 @@
 STARTUP = startup.o
 
 COBJS = \
+	kernfs_mach.c \
 	mprot030.c \
 	mprot040.c \
 	process_reg.c \
@@ -22,9 +23,7 @@ SOBJS = \
 	sigreturn.S \
 	slb_util.S \
 	syscall.S \
+	vm5.S \
 	xhdi_emu.S
 
-SPPOBJS = \
-	vm5.spp \
-
-SRCFILES = $(STARTUP) $(COBJS) $(SPPOBJS) $(SOBJS)
+SRCFILES = $(STARTUP) $(COBJS) $(SOBJS)
