@@ -59,6 +59,7 @@ static PCB_TTx	pCB_setenv;		/* setenv name val	*/
 
 static PCB_T	pCB_toppage;
 static PCB_T	pCB_next_active;
+static PCB_A	pCB_app_options;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
 static PCB_T    pCB_menu;
@@ -97,6 +98,7 @@ static struct parser_item parser_tab[] =
 	{ "TOPPAGE",        PI_V_T,   pCB_toppage               },
 	{ "NEXT_ACTIVE",    PI_V_T,   pCB_next_active           },
 	{ "FOCUS",          PI_V_T,   pCB_point_to_type         },
+	{ "APP_OPTIONS",    PI_V_A,   pCB_app_options		},
 	{ "CANCEL",         PI_V_A,   pCB_cancel                },
 	{ "FILTERS",        PI_V_A,   pCB_filters               },
 	{ "MENU",           PI_V_T,   pCB_menu                  },
@@ -280,6 +282,76 @@ pCB_cancel(const char *line)
 	}
 }
 
+static void
+pCB_app_options(const char *line)
+{
+	int i = 0;
+	char *s;
+	struct opt_list *op = S.app_options;
+	struct options *opts;
+
+	if ((s = get_string(&line)))
+	{
+		DIAGS(("pCB_app_options for %s", s));
+		op = S.app_options;
+		while (op)
+		{
+			if (!stricmp(s, op->name))
+			{
+				DIAGS(("pCB_app_options: already defined"));
+				break;
+			}
+			op = op->next;
+		}
+		if (!op)
+		{
+			op = kmalloc(sizeof(*op));
+			if (!op)
+			{
+				DIAGS(("pCB_app_options: Could not allocate memory for app_options - out of memory?"));
+				return;
+			}
+			else
+			{
+				DIAGS(("pCB_app_options: new entry %s", s));
+				bzero(op, sizeof(*op));
+				op->next = S.app_options;
+				S.app_options = op;
+				strcpy(op->name, s);
+				op->options = default_options;
+			}
+		}
+		while ((s = get_string(&line)))
+		{
+			if (!stricmp(s, "windowner"))
+				op->options.windowner = 1;
+			else if (!stricmp(s, "nohide"))
+				op->options.nohide = true;
+			else if (!stricmp(s, "xa_nohide"))
+				op->options.xa_nohide = true;
+			else if (!stricmp(s, "xa_nomove"))
+				op->options.xa_nomove = true;
+			else if (!stricmp(s, "xa_none"))
+				op->options.xa_none = true;
+			else if (!stricmp(s, "noleft"))
+				op->options.noleft = true;
+			else if (!stricmp(s, "thinwork"))
+				op->options.thinwork = true;
+			else if (!stricmp(s, "nolive"))
+				op->options.nolive = true;
+			else if (!stricmp(s, "wheel_reverse"))
+				op->options.wheel_reverse = true;
+			else if (!stricmp(s, "naes"))
+				op->options.naes = true;
+			else if (!stricmp(s, "naes12"))
+				op->options.naes12 = true;
+#if GENERATE_DIAGS
+			else
+				DIAGS(("pCB_app_options: unknown keyword %s", s));
+#endif
+		}
+	}
+}
 /*----------------------------------------------------------------------------*/
 static void
 pCB_filters(const char *line)

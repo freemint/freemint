@@ -96,7 +96,7 @@ struct options
 	bool xa_none;			/* No xa_windows at all; classic dialogue handling. */
 	bool noleft;			/* Dont move window out left side of screen. */
 	bool thinwork;			/* workarea frame a single line. */
-	bool live;			/* Live moving and sizing of windows. */
+	bool nolive;			/* Live moving and sizing of windows. */
 	bool wheel_reverse;		/* Do you want move the slider in the wheel direction,
 					 * or rather the window content? */
 	bool naes;			/* N.Aes 3d compatability */
