@@ -538,12 +538,12 @@ init_moose(void)
 
 	if (vecs_com.motv)
 	{
-		vex_motv(C.P_handle, vecs_com.motv, &svmotv);
-		vex_butv(C.P_handle, vecs_com.butv, &svbutv);
+		vex_motv(C.P_handle, vecs_com.motv, (void **)(&svmotv));
+		vex_butv(C.P_handle, vecs_com.butv, (void **)(&svbutv));
 
 		if (vecs_com.whlv)
 		{
-			vex_wheelv(C.P_handle, vecs_com.whlv, &svwhlv);
+			vex_wheelv(C.P_handle, vecs_com.whlv, (void **)(&svwhlv));
 			fdisplay(loghandle, true, "Wheel support present\n");
 		}
 		else
