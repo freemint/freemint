@@ -40,7 +40,7 @@
 # include "delay.h"	/* calibrate_delay */
 # include "dos.h"	
 # include "dosdir.h"	
-# include "filesys.h"	/* init_filesys, s_ync, load_*, close_filesys */
+# include "filesys.h"	/* init_filesys, s_ync, close_filesys */
 # include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
 # include "ipc_socketutil.h" /* domaininit() */
@@ -50,6 +50,7 @@
 # include "keyboard.h"	/* load_keytbl() */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
+# include "module.h"	/* load_all_modules */
 # include "proc.h"	/* init_proc, add_q, rm_q */
 # include "signal.h"	/* post_sig */
 # include "syscall_vectors.h"
@@ -507,8 +508,8 @@ get_my_name (void)
 
 /* Boot menu routines. Quite lame I admit. Added 19.X.2000. */
 
-static short load_xfs;
-static short load_xdd;
+static short load_xfs_modules;
+static short load_xdd_modules;
 static short load_auto;
 static short save_ini;
 static const char *ini_keywords[] =
@@ -639,8 +640,8 @@ exit:
 	Mfree ((long) buf);
 
 initialize:
-	load_xfs = options[0];
-	load_xdd = options[1];
+	load_xfs_modules = options[0];
+	load_xdd_modules = options[1];
 	load_auto = options[2];
 	no_mem_prot = !options[3];
 	save_ini = options[4];
@@ -723,8 +724,8 @@ boot_kernel_p (void)
 	/* English only from here, sorry */
 
 	option[0] = 1;			/* Load MiNT or not */
-	option[1] = load_xfs;		/* Load XFS or not */
-	option[2] = load_xdd;		/* Load XDD or not */
+	option[1] = load_xfs_modules;	/* Load XFS or not */
+	option[2] = load_xdd_modules;	/* Load XDD or not */
 	option[3] = load_auto;		/* Load AUTO or not */
 	option[4] = !no_mem_prot;	/* Use memprot or not */
 	option[5] = save_ini;
@@ -748,8 +749,8 @@ wait:
 				return 1;
 			case 0x0a:
 			case 0x0d:
-				load_xfs = option[1];
-				load_xdd = option[2];
+				load_xfs_modules = option[1];
+				load_xdd_modules = option[2];
 				load_auto = option[3];
 				no_mem_prot = !option[4];
 				save_ini = option[5];
@@ -941,58 +942,66 @@ init (void)
 	
 	/* initialize cache */
 	init_cache ();
-	DEBUG (("%s, %ld: init_cache() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_cache() ok!"));
 	
 	/* initialize memory */
 	init_mem ();
-	DEBUG (("%s, %ld: init_mem() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_mem() ok!"));
 	
 	/* Initialize high-resolution calendar time */
 	init_time ();
-	DEBUG (("%s, %ld: init_time() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_time() ok!"));
 	
 	/* initialize buffered block I/O */
 	init_block_IO ();
-	DEBUG (("%s, %ld: init_block_IO() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_block_IO() ok!"));
 	
 	/* initialize crypto I/O layer */
 	init_crypt_IO ();
-	DEBUG (("%s, %ld: init_crypt_IO() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_crypt_IO() ok!"));
 	
 	/* initialize the basic file systems */
 	init_filesys ();
-	DEBUG (("%s, %ld: init_filesys() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_filesys() ok!"));
 	
 	/* initialize processes */
 	init_proc();
-	DEBUG (("%s, %ld: init_proc() ok! (base = %lx)", __FILE__, (long) __LINE__, _base));
+	DEBUG (("init_proc() ok! (base = %lx)", _base));
 	
 	/* initialize system calls */
 	init_dos ();
-	DEBUG (("%s, %ld: init_dos() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_dos() ok!"));
 	init_bios ();
-	DEBUG (("%s, %ld: init_bios() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_bios() ok!"));
 	init_xbios ();
-	DEBUG (("%s, %ld: init_xbios() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_xbios() ok!"));
 	
 	/* Disable all CPU caches */
 	ccw_set(0x00000000L, 0x0000c57fL);
-
+	
 	/* initialize interrupt vectors */
 	init_intr ();
-	DEBUG (("%s, %ld: init_intr() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_intr() ok!"));
 	
 	/* Enable superscalar dispatch on 68060 */
 	get_superscalar();
-
+	
 	/* Init done, now enable/unfreeze all caches.
 	 * Don't touch the write/allocate bits, though.
 	 */
 	ccw_set(0x0000c567L, 0x0000c57fL);
-
+	
+# ifdef _xx_KMEMDEBUG
+	/* XXX */
+	{
+		extern int kmemdebug_can_init;
+		kmemdebug_can_init = 1;
+	}
+# endif
+	
 	/* set up cookie jar */
 	init_cookies ();
-	DEBUG (("%s, %ld: init_cookies() ok!", __FILE__, (long) __LINE__));
+	DEBUG (("init_cookies() ok!"));
 	
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
@@ -1090,30 +1099,12 @@ init (void)
 	
 	/* Load the keyboard table */
 	load_keytbl();
-
+	
 	/* initialize built-in domain ops */
 	domaininit ();
-
-	/* load external modules
-	 * 
-	 * set path first to make sure that MiNT's directory matches
-	 * GEMDOS's
-	 */
-	d_setpath (curpath);
 	
-	/* load external xdd */
-	if (load_xdd)
-		load_modules (0);
-	
-	/* reset curpath just to be sure */
-	d_setpath (curpath);
-	
-	/* load external xfs */
-	if (load_xfs)
-		load_modules (1);
-	
-	/* reset curpath just to be sure */
-	d_setpath (curpath);
+	/* load the kernel modules */
+	load_all_modules (curpath, (load_xdd_modules | (load_xfs_modules << 1)));
 	
 	/* start system update daemon */
 	start_sysupdate ();

@@ -39,7 +39,6 @@ void clobber_cookie (fcookie *fc);
 void init_filesys (void);
 char *xfs_name (fcookie *fc);
 void xfs_add (FILESYS *fs);
-void load_modules (long type);
 void close_filesys (void);
 long _s_ync (void);
 long _cdecl s_ync (void);
