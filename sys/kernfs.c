@@ -241,7 +241,7 @@ static KENTRY __rootdir [] =
 	{ ROOTDIR_FILESYSTEMS,	S_IFREG | 0444,	"filesystems",	kern_get_filesystems	},
 	{ ROOTDIR_HZ,		S_IFREG | 0444,	"hz",		kern_get_hz		},
 	{ ROOTDIR_LOADAVG,	S_IFREG | 0444,	"loadavg",	kern_get_loadavg	},
-	{ ROOTDIR_MEMINFO,	S_IFREG | 0444,	"meminfo",	kern_get_unimplemented	},
+	{ ROOTDIR_MEMINFO,	S_IFREG | 0444,	"meminfo",	kern_get_meminfo	},
 	{ ROOTDIR_SELF,		S_IFLNK | 0777,	"self",		kern_get_unimplemented	},
 	{ ROOTDIR_TIME,		S_IFREG | 0444,	"time",		kern_get_time		},
 	{ ROOTDIR_UPTIME,	S_IFREG | 0444,	"uptime",	kern_get_uptime		},
