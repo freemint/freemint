@@ -693,7 +693,7 @@ wtxt_output(struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, sh
 	if (f & WTXT_NOCLIP)
 		strncpy(t, txt, sizeof(t));
 	else
-		prop_clipped_name(txt, t, r->w - (xoff << 1));
+		prop_clipped_name(txt, t, r->w - (xoff << 1), &x, &y);
 	
 	t_extent(t, &x, &y);
 	y = yoff + r->y + ((r->h - y) >> 1);
@@ -868,7 +868,7 @@ const char *clipped_name(const void *s, char *t, short w)
 }
 
 const char *
-prop_clipped_name(const char *s, char *d, int w)
+prop_clipped_name(const char *s, char *d, int w, short *ret_w, short *ret_h)
 {
 	int swidth = 0;
 	short cw, tmp;
@@ -893,6 +893,10 @@ prop_clipped_name(const char *s, char *d, int w)
 		for (i = 3; i > 0 && dst != d; i--)
 			*--dst = '.';
 	}
+	
+	if (ret_w && ret_h)
+		t_extent(d, ret_w, ret_h);
+
 	return d;	
 }
 
