@@ -768,7 +768,7 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 		}
 		else
 		{
-			short pmx, pmy, mx, my, mb;
+			short pmx, pmy, /*mx, my,*/ mb;
 
 			/* need to do this anyhow, for mb */
 			/* vq_mouse(C.vh, &mb, &pmx, &pmy);*/
@@ -785,11 +785,11 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 			{
 				pmx	= widget_active.nx;
 				pmy	= widget_active.ny;
-				mb	= widget_active.b;
+				mb	= widget_active.cb;
 				rect_dist(&r, &d);
 			}
 
-			if (widget_active.b)	/*(mb)*/
+			if (widget_active.cb)	/*(mb)*/
 			{
 				/* Drag title */
 
@@ -807,12 +807,6 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 				if (widget_active.x != pmx || widget_active.y != pmy)
 					r = move_rectangle(widget_active.x, widget_active.y, r, &d);
 
-#if 0
-				if (mx != pmx || my != pmy)
-					/* Has the mouse moved? */
-					r = move_rectangle(mx, my, r, &d);
-#endif 
-
 				if (wind->owner->options.noleft)
 					if (r.x < 0)
 						r.x = 0;
@@ -824,11 +818,7 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 					wind->send_message(lock, wind, NULL,
 								WM_MOVED, 0, 0, wind->handle,
 								r.x, r.y, r.w, r.h);
-#if 0
-				else
-					/* Send a dummy message. */
-					wind->send_message(lock, wind, NULL, 0, 0, 0, 0, 0, 0, 0, 0);
-#endif
+
 				/* We return false here so the widget display
 				 * status stays selected whilst it repeats
 				 */
@@ -1149,7 +1139,7 @@ size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehav
 	}
 	else
 	{
-		short pmx, pmy, mx, my, mb;
+		short pmx, pmy /*, mx, my, mb*/;
 
 		/* need to do this anyhow, for mb */
 //		vq_mouse(C.vh, &mb, &pmx, &pmy);
@@ -1171,7 +1161,7 @@ size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehav
 		}
 
 		/* Drag border */
-		if (widget_active.b)	/*(mb)*/
+		if (widget_active.cb)	/*(mb)*/
 		{
 //			vq_mouse(C.vh, &mb, &mx, &my);
 			set_widget_active(wind, widg, next, 6);
@@ -1525,11 +1515,12 @@ static bool
 drag_vslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	short pmx, pmy, mx, my, mb;
+	short ny;
 	int offs;
 
 	/* need to do this anyhow, for mb */
-//	vq_mouse(C.vh, &mb, &pmx, &pmy);
+	/* Ozk: No, we dont! */
+	/* vq_mouse(C.vh, &mb, &pmx, &pmy);*/
 
 	if (!widget_active.cont)
 	{
@@ -1542,27 +1533,24 @@ drag_vslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	{
 		/* pending widget: take that */
 
-		pmy = widget_active.y;
+		ny = widget_active.y;
 		offs = widget_active.offs;
 	}
 	else
 	{
 		offs = sl->position;
-		pmy = widget_active.ny;
+		ny = widget_active.ny;
 	}
 
-	if (widget_active.b)	/*(mb)*/
+	if (widget_active.cb)	/*(mb)*/
 	{
 		/* Drag slider */
 
-//		vq_mouse(C.vh, &mb, &mx, &my);
-
-		if (widget_active.ny != pmy)	/*(my != pmy)*/
+		if (widget_active.ny != ny)
 			/* Has the mouse moved? */
-			offs = bound_sl(offs + pix_to_sl(widget_active.ny - pmy, widg->loc.r.h - sl->r.h) );	/*(my - pmy, widg->loc.r.h - sl->r.h) );*/
+			offs = bound_sl(offs + pix_to_sl(widget_active.ny - ny, widg->loc.r.h - sl->r.h) );
 
 		set_widget_active(wind, widg, drag_vslide,3);
-//		widget_active.y = my;
 		widget_active.y = widget_active.ny;
 		widget_active.offs = offs;
 
@@ -1585,11 +1573,12 @@ static bool
 drag_hslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	short pmx, pmy, mx, my, mb;
+	short nx;
 	int offs;
 
 	/* need to do this anyhow, for mb */
-	vq_mouse(C.vh, &mb, &pmx, &pmy);
+	/* Ozk: No, we dont now either */
+	/* vq_mouse(C.vh, &mb, &pmx, &pmy); */
 
 	if (!widget_active.cont)
 	{
@@ -1602,27 +1591,25 @@ drag_hslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	{
 		/* pending widget: take that */
 
-		pmx = widget_active.x;
+		nx = widget_active.x;
 		offs = widget_active.offs;
 	}
 	else
 	{
-		pmx = widget_active.nx;
+		nx = widget_active.nx;
 		offs = sl->position;
 	}
 
-	if (widget_active.b)	/*(mb)*/
+	if (widget_active.cb)	/*(mb)*/
 	{
 		/* Drag slider */
 
-//		vq_mouse(C.vh, &mb, &mx, &my);
-
 		/* Has the mouse moved? */
-		if (widget_active.nx != pmx)	/*(mx != pmx)*/
-			offs = bound_sl(offs + pix_to_sl(widget_active.nx - pmx, widg->loc.r.w - sl->r.w) );	/*(mx - pmx, widg->loc.r.w - sl->r.w) );*/
+		if (widget_active.nx != nx)
+			offs = bound_sl(offs + pix_to_sl(widget_active.nx - nx, widg->loc.r.w - sl->r.w) );
 
 		set_widget_active(wind, widg, drag_hslide,4);
-		widget_active.x = widget_active.nx; /*mx;*/
+		widget_active.x = widget_active.nx;
 		widget_active.offs = offs;
 
 		if (wind->send_message)
@@ -2202,29 +2189,30 @@ do_widgets(LOCK lock, XA_WINDOW *w, XA_WIND_ATTR mask, struct moose_data *md)
 		
 						vq_mouse(C.vh, &b, &rx, &ry);
 
-						widget_active.nx	= md->x;
-						widget_active.ny	= md->y;
-						widget_active.b		= md->cstate;
+					//	widget_active.nx	= md->x;
+					//	widget_active.ny	= md->y;
+					//	widget_active.b		= md->cstate;
 
-						if ((b) && widg->drag) 	/* If the mouse button is still down do a drag (if the widget has a drag behaviour) */
+						if ((widget_active.cb) && widg->drag) 	/* If the mouse button is still down do a drag (if the widget has a drag behaviour) */
 							rtn = widg->drag(lock, w, widg);
 			
 						else				/*  otherwise, process as a mouse click(s) */
 						{
 							while (b)				/* Wait for the mouse to be released */
 								vq_mouse(C.vh, &b, &rx, &ry);
-						
+
+
 							if (m_inside(rx, ry, &r))
 							{
 				/* Ozk 100503: added check for number of clicks and call the dclick function if apropriate */
-								if (clicks == 1)
+								if (widget_active.clicks == 1)
 								{
 									if (widg->click)
 										rtn = widg->click(lock, w, widg);
 									else
 										rtn = true;
 								}
-								else if (clicks == 2)
+								else if (widget_active.clicks == 2)
 								{
 									if (widg->dclick)
 										rtn = widg->dclick(lock, w, widg);
