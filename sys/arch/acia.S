@@ -53,7 +53,9 @@ again:	move.l	_syskey,a3
 	beq.s	again
 	move.b	#0xbf,(0xfa11).w
 	movem.l	(sp)+,d0-d3/a0-a3
+#ifndef ONLY030
 	nop				// see intr.S and syscall.S
+#endif
 	rte
 
 // TOS passes the following data to the routines pointed by
@@ -90,7 +92,6 @@ skip:	btst	#0x05,d1		// Receiver overrun
 	move.b	(0xfc02).w,d0		// ACIA data
 	move.l	VKBDERR(a3),a1
 	jmp	(a1)			// error
-return:	rts
 
 no_error:
 	move.b	(0xfc02).w,d0		// ACIA data
@@ -104,6 +105,10 @@ no_error:
 not_keyboard:
 	sub.b	#0xf6,d0
 	and.w	#0x00ff,d0
+
+// unlike some documentation states, syskey->ikbdstate contains
+// the type of the packet, and not the number of bytes transmitted.
+
 	lea	type,a1
 	move.b	(a1,d0.w),IKBDSTATE(a3)	
 	lea	todo,a1
@@ -114,7 +119,7 @@ not_keyboard:
 	cmp.b	#0xfb,d0
 	bgt.s	joy
 	move.b	d0,mouse_2_buf
-	rts
+return:	rts
 
 joy:	cmp.b	#0xfd,d0
 	blt.s	ret
@@ -141,11 +146,15 @@ nostk:	lea	buffers,a2
 	move.b	IKBDSTATE(a3),d2
 
 	subq.w	#1,d2
-	move.w	d2,d3
 
+#ifdef ONLY030
+	mulu.w	#12,d2
+#else
+	move.w	d2,d3
 	lsl.w	#3,d2			// multiply by 8
 	lsl.w	#2,d3			// multiply by 4
 	add.w	d3,d2			// multiply by 12
+#endif
 
 	move.l	(a2,d2.w),a0		// get buffer address for packet
 	move.l	4(a2,d2.w),a1		// get buffer end for packet
