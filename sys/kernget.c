@@ -390,6 +390,69 @@ kern_get_loadavg (SIZEBUF **buffer)
 	return 0;
 }
 
+
+/*
+  /kern/meminfo
+  It is NOT FULLY implemented !
+  Uses the "tot_rsize( MMAP, flag)"-function.
+  Layout-idea taken from LiNUX.
+  Flames, Critics, ... to pralle@informatik.uni-hannover.de
+*/
+long 
+kern_get_meminfo (SIZEBUF **buffer)
+{
+	SIZEBUF *info;
+	ulong len = 512;
+	char *crs;
+
+	ulong core_total = tot_rsize( core, 1);
+	ulong core_free  = tot_rsize( core, 0);
+	ulong alt_total  = tot_rsize( alt, 1);
+	ulong alt_free   = tot_rsize( alt, 0);
+	ulong mem_total  = core_total + alt_total;
+	ulong mem_free   = core_free + alt_free;
+
+	info = kmalloc (sizeof (*info) + len);
+	if (!info)
+		return ENOMEM;
+	
+	crs = info->buf;
+	crs += ksprintf( crs, len,
+			 "\t  total:  \t  used:   \t  free:\n");
+	crs += ksprintf( crs, len,
+			 "Mem:\t%10lu\t%10lu\t%10lu\n",
+			 core_total + alt_total,
+			 mem_total - mem_free,
+			 mem_free);
+	crs += ksprintf( crs, len,
+			 "Swap:\t%10lu\t%10lu\t%10lu\n",
+			 0, 0, 0);
+	crs += ksprintf( crs, len,
+			 "\nMemTotal:\t%7lu kB\n",
+			 mem_total / ONE_K);
+	crs += ksprintf( crs, len,
+			 "MemFree:\t%7lu kB\n",
+			 mem_free / ONE_K);
+	crs += ksprintf( crs, len,
+			 "FastTotal:\t%7lu kB\n",
+			 alt_total / ONE_K);
+	crs += ksprintf( crs, len,
+			 "FastFree:\t%7lu kB\n",
+			 alt_free);
+	crs += ksprintf( crs, len,
+			 "CoreTotal:\t%7lu kB\n",
+			 core_total / ONE_K);
+	crs += ksprintf( crs, len,
+			 "CoreFree:\t%7lu kB\n",
+			 core_free / ONE_K);
+
+	info->len = crs - info->buf;
+	
+	*buffer = info;
+	return 0;
+}
+
+
 long
 kern_get_time (SIZEBUF **buffer)
 {
