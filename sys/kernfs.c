@@ -39,8 +39,12 @@
 # include "libkern/libkern.h"
 
 # include "mint/credentials.h"
+# include "mint/dcntl.h"
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
 # include "mint/proc.h"
+# include "mint/stat.h"
 
 # include "arch/mprot.h"
 

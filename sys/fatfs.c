@@ -358,7 +358,11 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
+# include "mint/dcntl.h"
 # include "mint/endian.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
+# include "mint/stat.h"
 
 # include "block_IO.h"
 # include "dev-null.h"

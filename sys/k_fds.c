@@ -37,6 +37,7 @@
 # include "libkern/libkern.h"
 # include "mint/credentials.h"
 # include "mint/filedesc.h"
+# include "mint/ioctl.h"
 # include "mint/proc.h"
 
 # include "biosfs.h"

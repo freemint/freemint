@@ -39,8 +39,9 @@
 # include "mint/basepage.h"
 # include "mint/credentials.h"
 # include "mint/filedesc.h"
-# include "mint/signal.h"
 # include "mint/proc.h"
+# include "mint/signal.h"
+# include "mint/stat.h"
 
 # include "arch/cpu.h"		/* cpush */
 # include "arch/context.h"

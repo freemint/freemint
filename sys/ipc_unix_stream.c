@@ -9,7 +9,9 @@
 
 # include "libkern/libkern.h"
 # include "mint/file.h"
+# include "mint/ioctl.h"
 # include "mint/iov.h"
+# include "mint/pathconf.h"
 # include "mint/signal.h"
 
 # include "ipc_socketutil.h"

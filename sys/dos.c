@@ -14,12 +14,13 @@
 # include "dos.h"
 # include "global.h"
 
+# include "arch/intr.h"
 # include "libkern/libkern.h"
-
 # include "mint/asm.h"
 # include "mint/filedesc.h"
+# include "mint/pathconf.h"
 # include "mint/signal.h"
-# include "arch/intr.h"
+# include "mint/stat.h"
 
 # include "console.h"
 # include "dosfile.h"

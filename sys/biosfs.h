@@ -7,7 +7,9 @@
 # define _biosfs_h
 
 # include "mint/mint.h"
+# include "mint/emu_tos.h"
 # include "mint/file.h"
+# include "mint/stat.h"
 
 
 extern DEVDRV bios_tdevice;
