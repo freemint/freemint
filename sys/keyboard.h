@@ -115,13 +115,13 @@ struct cad_def
 short ikbd_scan(ushort scancode);
 void autorepeat_timer(void);
 
-void init_keybd(void);
-void load_keytbl(void);
-long load_keyboard_table(char *filename, short flag);
 struct keytab *sys_b_keytbl(char *unshift, char *shift, char *caps);
 void sys_b_bioskeys(void);
 ushort sys_b_kbrate(ushort del, ushort rep);
 
 extern struct cad_def cad[3];
+
+long load_keyboard_table(const char *path, short flag);
+void init_keybd(void);
 
 # endif /* _keyboard_h */
