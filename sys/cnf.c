@@ -217,7 +217,7 @@ typedef void	(PCB_ATK) (const char *, const char *, long        );
 # define _NOT_SUPPORTED_  NULL
 
 
-/*** First the comand callback deklarations: */
+/*** First the command callback declarations: */
 
 /*
  * set [+-n] ........... set option on(-) or off(+):
