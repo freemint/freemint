@@ -24,6 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "desktop.h"
 #include "xa_types.h"
 #include "xa_global.h"
 
@@ -835,8 +836,8 @@ Pdraw_window( void *_parm)
 	struct xa_client *c = (struct xa_client *)parm[1];
 
 	Ddraw_window(0, (struct xa_window *)parm[0]);
-	kfree(parm);
 	wake(IO_Q, (long)parm);
+	kfree(parm);
 	//if (c->usr_evnt && c->sleeplock)
 	//	Unblock(c, 1, 9000);
 	kthread_exit(0);
@@ -846,8 +847,11 @@ void
 draw_window(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+	struct xa_client *wo;
 
-	if (!rc || rc == wind->owner || wind->owner == C.Aes)
+	wo = wind == root_window ? get_desktop()->owner : wind->owner;
+		
+	if (!rc || rc == wo || wo == C.Aes)
 	{
 		DIAG((D_wind, rc, "draw_window %d, for %s", wind->handle, rc->name));
 		Ddraw_window(lock, wind);
@@ -860,13 +864,13 @@ draw_window(enum locks lock, struct xa_window *wind)
 
 		p = (long *)kmalloc(16);
 		p[0] = (long)wind;
-		p[1] = (long)wind->owner;
-		DIAG((D_wind, rc, "kthreaded draw_window %d for %s by %s", wind->handle, wind->owner->name, rc->name));
-		r = kthread_create(wind->owner->p, Pdraw_window, p, &np, "k%s", wind->owner->name);
+		p[1] = (long)wo;
+		DIAG((D_wind, rc, "kthreaded draw_window %d for %s by %s", wind->handle, wo->name, rc->name));
+		r = kthread_create(wo->p, Pdraw_window, p, &np, "k%s", wo->name);
 		//p_waitpid(np->pid, 0, NULL);
 		sleep(IO_Q, (long)p);
-		if (wind->owner->usr_evnt && wind->owner->sleeplock)
-			Unblock(wind->owner, 1, 9000);
+		if (wo->usr_evnt && wo->sleeplock)
+			Unblock(wo, 1, 9000);
 		
 
 	}

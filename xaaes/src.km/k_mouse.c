@@ -1060,7 +1060,7 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	}
 
 	DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
-		mu_button.b, x_mouse, y_mouse, client->name));
+		mu_button.cb, x_mouse, y_mouse, client->name));
 
 	if (br)
 		*br = mu_button.cb;

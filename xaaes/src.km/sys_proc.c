@@ -73,9 +73,15 @@ static void _cdecl
 xaaes_on_exit(void *_client, struct proc *p, int code)
 {
 	enum locks lock = NOLOCKS;
+	struct xa_client *client = _client;
 
-	DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
-	exit_client(lock, _client, code);
+	if (client->p->pid != p->pid)
+		DIAGS(("xaaes_on_exit - tread terminate"));
+	else
+	{
+		DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
+		exit_client(lock, _client, code);
+	}
 }
 
 /*
