@@ -1,0 +1,73 @@
+Some notes on the DE600 driver.
+
+Hardware
+--------
+
+You need the TUW hardware (HPGL layout and hardware description available
+from fortec.tuwien.ac.at by anonymous ftp) to connect the DE600 to the
+cartridge port.
+
+The driver is interrupt driven and does *not* poll for input packets during
+the VBL interrupt (like the original tuw-tcp driver), so you MUST MUST MUST
+connect the interrupt wire to pin 11 (BUSY) of your centronics port. Other-
+wise it will not work!
+
+
+Usage
+-----
+
+Setting up the driver is rather simple: MintNet must be installed and copy
+de600.xif to c:/mint/ or c:/multitos/ and reboot. Then issue the following
+two commands:
+
+	ifconfig en0 addr 141.2.1.99
+	route add 141.2.1.0 en0
+
+and all should work fine. Of course 141.2.1.99 must be replaced with your
+local IP address, 141.2.1.0 with the network address of your local IP address
+(ie host portion set to zero) and en0 with the interface name the DE600 driver
+shows in its startup message at boot time.
+
+
+Performance
+-----------
+
+First some speed rates on a 16MHz ST (on an otherwise idle network):
+
+ftp send:  ~88 k/sec (ncftp 1.7.5 -> wu-ftpd 2.0)
+ftp recv:  ~85 k/sec (ncftp 1.7.5 <- wu-ftpd 2.0)
+tcp send:  ~90 k/sec (tcpcl -> tcpsv)
+tcp recv:  ~90 k/sec (tcpsv <- tcpcl)
+nfs read:  ~50 k/sec (nfs 0.51: rsize=1200, wsize=2048)
+nfs write: ~45 k/sec (nfs 0.51: rsize=1200, wsize=2048)
+
+Receiving data on a DE600 is very critical because it has only two receive
+buffers and reading a packet from the adapter is slower than packets arrive
+from the net.
+
+So to achieve any receive performace the number of packets that are sent
+to the de600 in fast succession must be limited in some way. For TCP this
+is easy, the adapter tells the TCP to limit its receive window to 1500
+bytes. But the trouble starts if you have multiple TCP connections over
+the de600 in which case limiting the receive window doesn't work...
+
+Problems occur for applications using UDP (like NFS). They often receive
+packets larger than the interface MTU (1500 bytes), so they get fragmented
+by IP into many packets and flood de600's receive buffers. When you mount a
+filesystem you must therefor tell NFS to limit the receive packet size to
+MTU - 300 bytes (the 300 bytes are used for NFS protcol headers...), ie you
+would say:
+
+	mount -o rsize=1200 remote:/dir /nfs/dir
+
+Extra notes
+-----------
+
+The driver was written and tested on a 16MHz ST, so if you run it on
+substantially faster machines, there may occure timing problems.
+
+Please contact me if you have trouble or success running the driver on TT's
+or Falcons (I'm interested in hearing of performance on these machines, too).
+
+
+Kay.

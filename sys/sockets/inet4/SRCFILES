@@ -1,0 +1,43 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	arp.h \
+	bpf.h \
+	icmp.h \
+	if.h \
+	inet.h \
+	ip.h \
+	port.h \
+	route.h \
+	tcp.h \
+	udp.h
+
+COBJS = \
+	arp.c \
+	arpdev.c \
+	bpf.c \
+	bpf_filter.c \
+	icmp.c \
+	if.c \
+	ifeth.c \
+	ifload.c \
+	inet.c \
+	inetdev.c \
+	inetutil.c \
+	ip.c \
+	loopback.c \
+	masqdev.c \
+	masquerade.c \
+	port.c \
+	rawip.c \
+	route.c \
+	routedev.c \
+	tcp.c \
+	tcpin.c \
+	tcpout.c \
+	tcpsig.c \
+	tcputil.c \
+	udp.c
+
+SRCFILES = $(HEADER) $(COBJS)

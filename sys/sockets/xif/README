@@ -1,0 +1,6 @@
+This directory contains the new loadable MintNet interfaces. They are
+called *.xif. sockdev.xdd loads them from /mint/ and /multitos/ of your
+boot drive. So put the interfaces you wanna use into /mint/ or /multitos/
+of your boot drive.
+
+The loopback interface is not loadable -- it is a "builtin".

@@ -1,0 +1,137 @@
+Here are some notes on the new SLIP driver, slip.xif.
+
+Slip.xif is a new, hardware independent SLIP driver for MintNet. It
+uses Mint devices to write/read data to/from serial ports.
+
+Note that you can use only devices that support Fselect()! Modm0dev
+by T. Bousch does this, Mint pty's work too. All the Mint builtin
+serial devices support this in Mint versions >= 1.11.
+
+If you are going to use the Mint builtin devices, ie /dev/modem[12]
+or /dev/serial[12], note the following:
+The Mint builtin serial devices use the BIOS Bcon* functions. They are
+rather slow and buggy. So if you want to do SLIP at 19200 baud or
+higher you WILL NEED to get a replacement for them.
+
+I use hsmodem4 by Harun Scheutzow, a set of programs that replace
+the TOS serial routines with bugfree and faster ones on ST, STe, TT,
+Falcon. You can get hsmodem4.lzh from most ftp sites and mailboxes
+that archive Atari software.
+
+Harun writes in one of the README's in hsmodem4.lzh that the drivers
+have to be run AFTER mint.prg. This is wrong -- you MUST MUST MUST first
+run the serial drivers and then Mint!
+
+Without such a replacement you will get endless receiver overruns at
+speeds > 9600 baud on 8MHz ST(e)s!
+
+
+Establishing a SLIP connection (dialout)
+----------------------------------------
+
+You must have the loopback interface -- lo0 -- set up and running first.
+Do this with the command
+
+/etc/ifconfig lo0 addr 127.0.0.1 up
+
+Then connect (dial in) to the remote machine using for example /dev/modem1
+-- much like with the old SLIP driver. Then suspend your comms program
+without hanging up the line.
+
+MintNet provides a utility called slattach to setup a SLIP connection.
+This command does all the dirty work for you, eg set the tty into raw
+mode, choose a free SLIP interface, attach the tty device to the SLIP
+interface, setup the SLIP interface, make routing table entries.
+
+After having done this slattach usually waits until it receives one
+of the following signals: SIGINT, SIGQUIT, SIGTERM, SIGHUP.
+Then it shuts down the SLIP interface, resets the tty modes, deletes
+routing table entries and hangs up the line (dropping DTR works ONLY
+with /dem/modem1 and modm0dev, so be careful!) and exits.
+
+So usually you issue the following command to attach eg /dev/modem1
+to a SLIP interface when the remote host's IP address is 149.10.1.1
+and the local IP address is 149.10.1.2:
+
+/etc/slattach -t /dev/modem1 -r 149.10.1.1 -l 149.10.1.2 &
+
+If the -t option is missing, slattach tries to use stdin as the device,
+so
+
+/dev/slattach -r 149.10.1.1 -l 149.10.1.2 < /dev/modem1 &
+
+does the same job.
+
+Note that slattach calls /etc/route and /etc/ifconfig, so you must copy
+or link them there (note that ifconfig and route need to be run as root).
+
+If you are done with the connection, send slattach one of the above signals
+or simply bring it to the foreground and press Control-C.
+
+Slattach uses about 40 kB of memory when waiting in the background. If you
+need this memory for other things, you can give slattach the option -e
+telling it to exit after having set up the connection. Note that you have
+then to shut down the interface, reset tty modes and hangup the line yourself
+when finished with the connection!
+
+The -t option instructs slattach to NOT hang up the line when exiting.
+
+The -p {slip,ppp,cslip} option specifies the protocol type that should be used.
+Default is slip.
+
+Give slattach the -d option to tell it NOT to install a default routing
+entry.
+
+The -s <speed> sets the line speed to <speed>.
+
+You may also use the program "dip" to establish slip connections, which is
+not contained in this archive. Dip uses a simple script language to automate
+the login process. Look for the file dip-337u-01.tgz.
+
+Dialin SLIP
+-----------
+
+You can use slattach for dialin purposes, too. I have a line
+
+slip:abcdefg:1010:100:SLIP account:/tmp:/etc/slip
+
+in my /etc/passwd. /etc/slip is a shell script which asks the user
+for its hosts name and then runs slattach on the login tty:
+
+-8<---------------------------------
+#!/bin/sh /etc/slip
+export SHELL=/bin/sh
+echo "Your hostname: "
+read RHOST
+exec /etc/slattach -p cslip -r $RHOST -l 149.10.1.2
+-8<---------------------------------
+
+This may look a bit wired to experienced shell programmers :), but that's
+because of some oddities with the MintLib and the login program.
+
+1) /usr/bin/login doesn't allow to give parameters to the login program
+in /etc/passwd, so something like
+slip:abc:1010:1000:SLIP account:/tmp/:/bin/sh /etc/slip
+does not work. -> Must use shell bang (ie shell script starting with #!).
+
+2) Earlier versions of the MintLibs shell bang emulation code call the
+interpreter (/bin/sh) with argv[0] as the file to emulate -- which is
+"-slip" because of /usr/bin/login. (Cured in PL 44). -> Must use
+#!/bin/sh /etc/slip
+instead of
+#!/bin/sh
+
+3) /usr/bin/login sets SHELL to the login program, ie /etc/slip. popen
+uses $SHELL as the interpreter, ie /etc/slip. Thus we need to set SHELL
+to /bin/sh and export it to make popen() (used in slattach) use /bin/sh.
+
+
+For this script to work you must set UNIXMODE in /etc/rc* or mint.cnf to
+something containing 's'. This tells the MintLibs to elmulate shell scripts.
+Second, /etc/slattach must be setuid root (chmod u+s /etc/slattach).
+
+So I can log in as 'slip' over modem. Then I will be asked for the hostname
+and slattach will be run putting the tty line into SLIP mode.
+
+When I hang up my modem, slattach will receive a HUP signal (only if you
+use modm0dev) and exit.
