@@ -679,7 +679,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Extension, send window to the bottom */
 	case WF_BOTTOM:
 	{
-		if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN) //&& !is_hidden(w))
+		if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
 			bottom_window(lock, w);
 		break;
 	}
@@ -702,7 +702,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));
 			}
 		}
-		else if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN) // && !is_hidden(w))
+		else if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
 		{
 			if ( !is_topped(w))
 			{
@@ -745,7 +745,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					set_desktop(new->desktop);
 					client->desktop = NULL;
 				}
-				//send_iredraw(lock, root_window, 0, NULL); //display_window(lock, 47, root_window, 0);
 			}
 		}
 		else
@@ -758,7 +757,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				new = find_desktop(lock);
 				set_desktop(new->desktop);
 				DIAGS(("  desktop for %s removed", c_owner(client)));
-				//send_iredraw(lock, root_window, 0, NULL); //display_window(lock, 48, root_window, 0);
 			}
 		}
 		break;
@@ -856,18 +854,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		if ((w->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN)
 		{
-			//struct xa_rect_list *rl = w->rect_start;
-			
 			DIAGS(("  --- send WM_REDRAW"));
 			generate_redraws(lock, w, &w->r, RDRW_EXT);
-#if 0
-			while (rl)
-			{
-				generate_redraws(lock, w, &rl->r);
-				rl = rl->next;
-			}
-#endif
-			//send_redraw(lock, w, &w->wa);
 		}
 		DIAGS(("  wind_set(WF_TOOLBAR) done"));
 		break;
@@ -1246,7 +1234,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	case WF_BEVENT:
 	{
-		o[1] = ((w->active_widgets&NO_TOPPED) != 0)&1;
+		o[1] = ((w->active_widgets & NO_TOPPED) != 0) & 1;
 		o[2] = o[3] = o[4] = 0;
 		break;
 	}
@@ -1296,34 +1284,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 				else
 					o[3] = -1, o[4] = 0;
 			}
-#if 0
-	
-			/* HR 100801: Do not report unfocused window as top. */
-			if (!is_topped(w))
-				w = root_window;
-
-			o[1] = w->handle; /* Return the window handle */
-			o[2] = w->owner->p->pid; /* AES4 specifies that you return the AESid of the owner here as well */
-			DIAG((D_wind, client, "top window is %d of %s [%d]", o[1], w_owner(w), o[2]));
-			/* Is there a window below?  */
-			if (w->next)
-			{
-				/* If there is, then AES4 says return its handle here */
-				o[3] = w->next->handle;
-				/* XaAES extention
-				 * - return the AESid of the app that owns the
-				 *   window below
-				 */
-				o[4] = w->next->owner->p->pid;
-				DIAG((D_wind, client, "   --   window below is %d of %s",
-					o[3], w_owner(w->next)));
-			}
-			else
-			{
-				o[3] = 0;
-				o[4] = 0;
-			}
-#endif
 		}
 		else
 		{
@@ -1361,7 +1321,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_VSLIDE:
 	{
-		if (w->active_widgets&VSLIDE)
+		if (w->active_widgets & VSLIDE)
 		{
 			slw = get_widget(w, XAW_VSLIDE)->stuff;
 			o[1] = slw->position;
@@ -1374,7 +1334,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}	
 	case WF_HSLIDE:
 	{
-		if (w->active_widgets&HSLIDE)
+		if (w->active_widgets & HSLIDE)
 		{
 			slw = get_widget(w, XAW_HSLIDE)->stuff;
 			o[1] = slw->position;
