@@ -190,6 +190,9 @@ typedef struct menu_attachments
 /* A function of the type used for widget behaviours is a 
    'WidgetBehaviour'. */
 typedef bool WidgetBehaviour(enum locks lock, struct xa_window *wind,
+			     struct xa_widget *widg, struct moose_data *md);
+
+typedef bool DisplayWidget(enum locks lock, struct xa_window *wind,
 			     struct xa_widget *widg);
 
 typedef int WindowKeypress(enum locks lock, struct xa_window *wind,
@@ -475,7 +478,8 @@ struct xa_widget
 	struct xa_widget *next;		/* For future use. */
 	XA_WIDGET_LOCATION loc;		/* Location of widget relative to window extents */
 
-	WidgetBehaviour *display;	/* Function pointers to the behaviours of the widget */
+	DisplayWidget *display;		/* Function pointers to the behaviours of the widget */
+	//WidgetBehaviour *display;	/* Function pointers to the behaviours of the widget */
 	WidgetBehaviour *click;
 	WidgetBehaviour *dclick;
 	WidgetBehaviour *drag;
@@ -487,6 +491,7 @@ struct xa_widget
 					 * relative location of the click (click_object_widget)*/
 	short mx, my;			/* absolute mouse location. */
 	short s;			/* we must be able to use the original button and state. */
+	short cs;
 	short k;
 	short clicks;			/* Pass the number of clicks, might be usefull */
 	short arrowx;			/* WM_ARROWED msg type */
@@ -508,7 +513,8 @@ struct xa_pending_widget
 	struct xa_window *wind;		/* Window to which the widget is connected */
 	WidgetBehaviour *action;	/* Function to call */
 	short x, y;
-	short b, cb, clicks, nx, ny;
+	struct moose_data m;
+	//short b, cb, clicks, nx, ny;
 	int offs;			/* slider information */
 	RECT d;				/* distance information */
 	int xy;				/* compass when border sizing */
@@ -639,7 +645,9 @@ struct xa_window
 	XA_TREE menu_bar;		/*   "         "              "      for a menu bar. */
 	XA_TREE toolbar;		/*   "         "              "      for a tool bar. */
 
-	Path name, info;		/* wind_set makes copies. */
+	char wname[200];
+	char winfo[200];
+	//Path name, info;		/* wind_set makes copies. */
 };
 
 struct xa_window *get_top(void);

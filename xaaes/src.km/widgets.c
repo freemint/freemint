@@ -511,7 +511,7 @@ stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         0            }
 
 static XA_WIDGET *
 make_widget(struct xa_window *wind, XA_WIDGET_LOCATION *loc,
-	    WidgetBehaviour *disp, WidgetBehaviour *click, WidgetBehaviour *drag)
+	    DisplayWidget *disp, WidgetBehaviour *click, WidgetBehaviour *drag)
 {
 	XA_WIDGET *widg = get_widget(wind, loc->n);
 
@@ -708,7 +708,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * Click & drag on the title bar - does a move window
  */
 static bool
-drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	/* You can only move a window if its MOVE attribute is set */
 	if (wind->active_widgets & MOVER)
@@ -767,7 +767,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 					move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
 			}
 		}
-		else
+		else if (widget_active.m.cstate)
 		{
 			short pmx, pmy, /*mx, my,*/ mb;
 
@@ -784,24 +784,21 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 			}
 			else
 			{
-				pmx = widget_active.nx;
-				pmy = widget_active.ny;
-				mb  = widget_active.cb;
+				pmx = widget_active.m.x;
+				pmy = widget_active.m.y;
+				mb  = widget_active.m.cstate;
 				rect_dist(wind->owner, &r, &d);
 			}
 
-			if (widget_active.cb)	/*(mb)*/
+			//if (widget_active.m.cstate)	/*(mb)*/
 			{
 				/* Drag title */
 
-				/* vq_mouse(C.vh, &mb, &mx, &my); */
 				set_widget_active(wind, widg, drag_title,1);
 
-				widget_active.x = widget_active.nx;
-				widget_active.y = widget_active.ny;
+				widget_active.x = widget_active.m.x;
+				widget_active.y = widget_active.m.y;
 
-				/* widget_active.x = mx; */
-				/* widget_active.y = my; */
 				widget_active.d.x = d.x;
 				widget_active.d.y = d.y;
 
@@ -836,7 +833,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * Single click title bar sends window to the back
  */
 static bool
-click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	//short b;
 
@@ -893,7 +890,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * Double click title bar of iconified window - sends a restore message
  */
 static bool
-dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	if (wind->send_message)
 	{
@@ -956,7 +953,7 @@ display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * owns the window.
  */
 static bool
-click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	if (wind->send_message)
 	{
@@ -985,7 +982,7 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 /* Default full widget behaviour - Just send a WM_FULLED message to the client that */
 /* owns the window. */
 static bool
-click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	if (wind->send_message)
 		wind->send_message(lock, wind, NULL,
@@ -1003,7 +1000,7 @@ click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * click the iconify widget
  */
 static bool
-click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	if (wind->send_message == NULL)
 		return false;
@@ -1050,7 +1047,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * click the hider widget
  */
 static bool
-click_hide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_hide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	hide_app(lock, wind->owner);
 
@@ -1160,7 +1157,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 						   r.x, r.y, r.w, r.h);
 		}
 	}
-	else
+	else if (widget_active.m.cstate)
 	{
 		short pmx, pmy /*, mx, my, mb*/;
 		COMPASS xy;
@@ -1178,22 +1175,19 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		}
 		else
 		{
-			pmx = widget_active.nx;
-			pmy = widget_active.ny;
+			pmx = widget_active.m.x;
+			pmy = widget_active.m.y;
 			xy  = sizer ? SE : compass(10, pmx, pmy, r);
 			rect_dist(wind->owner, &r, &d);
 		}
 
 		/* Drag border */
-		if (widget_active.cb)	/*(mb)*/
+		if (widget_active.m.cstate)	/*(mb)*/
 		{
-			/* vq_mouse(C.vh, &mb, &mx, &my); */
 			set_widget_active(wind, widg, next, 6);
 
-			/* widget_active.x = mx; */
-			/* widget_active.y = my; */
-			widget_active.x = widget_active.nx;
-			widget_active.y = widget_active.ny;
+			widget_active.x = widget_active.m.x;
+			widget_active.y = widget_active.m.y;
 
 			widget_active.d = d;
 			widget_active.xy = xy;
@@ -1206,8 +1200,8 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			}
 
 			/* Has the mouse moved? */
-			if (widget_active.nx != pmx || widget_active.ny != pmy) /*(mx != pmx || my != pmy)*/
-				r = widen_rectangle(xy, widget_active.nx, widget_active.ny, r, &d);	/*(xy, mx, my, r, &d);*/
+			if (widget_active.m.x != pmx || widget_active.m.y != pmy)
+				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);	/*(xy, mx, my, r, &d);*/
 
 			if (use_max)
 			{
@@ -1262,12 +1256,12 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 /* HR 150202: make rubber_box omnidirectional. */
 
 static inline bool
-drag_resize(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+drag_resize(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	return size_window(lock, wind, widg, true, drag_resize);
 }
 static inline bool
-drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	return size_window(lock, wind, widg, false, drag_border);
 }
@@ -1291,7 +1285,7 @@ do_widget_repeat(struct task_administration_block *tab)
 {
 	do_active_widget(tab->lock, tab->client);
 
-	if (widget_active.cb)
+	if (widget_active.m.cstate)
 		tab->timeout = 1;
 	else
 	{
@@ -1313,10 +1307,10 @@ set_widget_repeat(enum locks lock, struct xa_window *wind)
 }
 
 static bool
-click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	bool reverse = widg->s == 2;
-	short mx, my, mb;
+	short mx = md->x, my = md->y, mb = md->state;
 	XA_WIDGET *slider = &wind->widgets[widg->slider_type];
 
 	if (!(   widget_active.widg
@@ -1324,7 +1318,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	      && slider->stuff
 	      && ((XA_SLIDER_WIDGET *)slider->stuff)->position == (reverse ? widg->xlimit : widg->limit)))
 	{
-		if (widg->k & 3)
+		if (md->kstate & 3)
 		{
 			int inside;
 			RECT r;
@@ -1333,10 +1327,14 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 			 * Center sliders at the clicked position.
 			 * Wait for mousebutton release
 			 */
-			graf_mouse(XACRS_POINTSLIDE, NULL);
-			mb = widg->s;
-			while (mb == widg->s)
-				wait_mouse(wind->owner, &mb, &mx, &my);
+			if (mb == md->cstate)
+			{
+				graf_mouse(XACRS_POINTSLIDE, NULL);
+				check_mouse(wind->owner, &mb, 0, 0);
+
+				while (mb == md->state)
+					wait_mouse(wind->owner, &mb, &mx, &my);
+			}
 
 			/* Convert relative coords and window location to absolute screen location */
 			rp_2_ap(wind, slider, &r);
@@ -1353,8 +1351,8 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 				widg->y = my - r.y;
 				widg->mx = mx;
 				widg->my = my;
-				widg->s = mb;
-				vq_key_s(C.vh, &widg->k);
+				widg->cs = mb;
+				widg->k = md->kstate;
 				widg->clicks = 0;
 
 				if (widg->slider_type == XAW_VSLIDE)
@@ -1371,7 +1369,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 			return true;
 		}
 
-		if (widg->clicks > 1)
+		if (md->clicks > 1)
 		{
 			if (reverse)
 			{
@@ -1392,19 +1390,22 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 					   WM_ARROWED, 0, 0, wind->handle,
 					   reverse ? widg->xarrow : widg->arrowx, 0, 0, 0);
 
-			check_mouse(wind->owner, &mb, &mx, &my);
-
-			if (mb)
+			if (md->cstate)
 			{
-				/* If the button has been held down, set a
-				 * pending/active widget for the client */
+				check_mouse(wind->owner, &mb, &mx, &my);
 
-				set_widget_active(wind, widg, widg->drag, 2);
-				set_widget_repeat(lock, wind);
+				if (mb)
+				{
+					/* If the button has been held down, set a
+					 * pending/active widget for the client */
 
-				/* We return false here so the widget display
-				 * status stays selected whilst it repeats */
-				return false;
+					set_widget_active(wind, widg, widg->drag, 2);
+					set_widget_repeat(lock, wind);
+
+					/* We return false here so the widget display
+					 * status stays selected whilst it repeats */
+					return false;
+				}
 			}
 		}
 	}
@@ -1608,7 +1609,7 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  */
 
 static bool
-drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	short ny;
@@ -1618,7 +1619,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	/* Ozk: No, we dont! */
 	/* vq_mouse(C.vh, &mb, &pmx, &pmy);*/
 
-	if (widg->s & 1)
+	if (widget_active.m.cstate) //if (widg->s & 1)
 	{
 		if (!widget_active.cont)
 		{
@@ -1637,19 +1638,19 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		else
 		{
 			offs = sl->position;
-			ny = widget_active.ny;
+			ny = widget_active.m.y;
 		}
 
-		if (widget_active.cb)	/*(mb)*/
+		//if (widget_active.m.cstate)
 		{
 			/* Drag slider */
 
-			if (widget_active.ny != ny)
+			if (widget_active.m.y != ny)
 				/* Has the mouse moved? */
-				offs = bound_sl(offs + pix_to_sl(widget_active.ny - ny, widg->loc.r.h - sl->r.h) );
+				offs = bound_sl(offs + pix_to_sl(widget_active.m.y - ny, widg->loc.r.h - sl->r.h) );
 
 			set_widget_active(wind, widg, drag_vslide,3);
-			widget_active.y = widget_active.ny;
+			widget_active.y = widget_active.m.y;
 			widget_active.offs = offs;
 
 			if (wind->send_message)
@@ -1669,7 +1670,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 }
 
 static bool
-drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	short nx;
@@ -1679,47 +1680,50 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	/* Ozk: No, we dont now either */
 	/* vq_mouse(C.vh, &mb, &pmx, &pmy); */
 
-	if (!widget_active.cont)
+	if (widget_active.m.cstate)
 	{
-		widget_active.cont = true;
-		/* Always have a nice consistent sizer when dragging a box */
-		graf_mouse(XACRS_HORSIZER, NULL);
-	}
+		if (!widget_active.cont)
+		{
+			widget_active.cont = true;
+			/* Always have a nice consistent sizer when dragging a box */
+			graf_mouse(XACRS_HORSIZER, NULL);
+		}
 
-	if (widget_active.widg)
-	{
-		/* pending widget: take that */
+		if (widget_active.widg)
+		{
+			/* pending widget: take that */
 
-		nx = widget_active.x;
-		offs = widget_active.offs;
-	}
-	else
-	{
-		nx = widget_active.nx;
-		offs = sl->position;
-	}
+			nx = widget_active.x;
+			offs = widget_active.offs;
+		}
+		else
+		{
+			nx = widget_active.m.x;
+			offs = sl->position;
+		}
 
-	if (widget_active.cb)	/*(mb)*/
-	{
-		/* Drag slider */
+		//if (widget_active.m.cstate)
+		{
+			/* Drag slider */
 
-		/* Has the mouse moved? */
-		if (widget_active.nx != nx)
-			offs = bound_sl(offs + pix_to_sl(widget_active.nx - nx, widg->loc.r.w - sl->r.w) );
+			/* Has the mouse moved? */
+			if (widget_active.m.x != nx)
+				offs = bound_sl(offs + pix_to_sl(widget_active.m.x - nx, widg->loc.r.w - sl->r.w) );
 
-		set_widget_active(wind, widg, drag_hslide,4);
-		widget_active.x = widget_active.nx;
-		widget_active.offs = offs;
+			set_widget_active(wind, widg, drag_hslide,4);
+			widget_active.x = widget_active.m.x;
+			widget_active.offs = offs;
 
-		if (wind->send_message)
-			wind->send_message(lock, wind, NULL,
-					   WM_HSLID, 0, 0, wind->handle,
-					   offs, 0, 0, 0);
+			if (wind->send_message)
+				wind->send_message(lock, wind, NULL,
+						   WM_HSLID, 0, 0, wind->handle,
+						   offs, 0, 0, 0);
 
-		/* We return false here so the widget display status stays
-		 * selected whilst it repeats
-		 */
-		return false;
+			/* We return false here so the widget display status stays
+			 * selected whilst it repeats
+			 */
+			return false;
+		}
 	}
 
 	cancel_widget_active(wind, 4);
@@ -2249,7 +2253,8 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 					widg->mx = md->x;
 					widg->my = md->y;
 					widg->s = md->state;		/* HR 280801: we need the state also some time (desktop widget) */
-					vq_key_s(C.vh, &widg->k);
+					widg->cs = md->cstate;
+					widg->k = md->kstate;
 					widg->clicks = clicks;
 
 	/* In this version page arrows are separate widgets,
@@ -2273,71 +2278,85 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						widg->mx = md->x;
 						widg->my = md->y;
 						widg->s = md->state;			/* HR 280801: we need the state also some time (desktop widget) */
-						vq_key_s(C.vh, &widg->k);		/* HR 190202: for convenience. */
+						widg->cs = md->cstate;
+						widg->k = md->kstate;
 						widg->clicks = clicks;
-						rtn = widg->drag(lock, w, widg);	/* we know there is only 1 behaviour for these arrows */
+						rtn = widg->drag(lock, w, widg, md);	/* we know there is only 1 behaviour for these arrows */
 					}
 					else /* normal widget */
 					{
-						short b, rx, ry;
+						short b = md->cstate, rx = md->x, ry = md->y;
 	
 						/* We don't auto select & pre-display for a menu or toolbar widget */
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
 							redisplay_widget(lock, w, widg, OS_SELECTED);
 		
-						check_mouse( w->owner, &b, &rx, &ry);
+						//check_mouse( w->owner, &b, &rx, &ry);
 
-						if ((widget_active.cb) && widg->drag) 
+						/*
+						 * Check if the widget has a dragger function if button still pressed
+						*/
+						if (b && widg->drag) //(widget_active.cb) && widg->drag) 
+						{
 							/* If the mouse button is still down
 							 * do a drag (if the widget has a drag
 							 * behaviour) */
-							rtn = widg->drag(lock, w, widg);
-			
+							rtn = widg->drag(lock, w, widg, md);
+						}
 						else
 						{
-							/*  otherwise, process as a mouse click(s) */
-
-							short tx = widget_active.nx, ty = widget_active.ny;
-							bool ins = 1;
-							while (b)
+						/*
+						 * otherwise, process as a mouse click(s)
+						*/
+							if (b)
 							{
-								/* Wait for the mouse to be released */
-								wait_mouse(w->owner, &b, &rx, &ry);
-
-								if (tx != rx || ty != ry)
+								/*
+								 * If button is still being held down, hang around
+								 * waiting for button release. Animate the widget clicked as mouse
+								 * moves on/off...
+								*/
+								short tx = rx, ty = ry; //tx = widget_active.nx, ty = widget_active.ny;
+								bool ins = 1;
+								check_mouse(w->owner, &b, 0, 0);
+								while (b)
 								{
-									if (m_inside(rx, ry, &r))
-									{
-										if (!ins)
-										{
-											redisplay_widget(lock, w, widg, OS_SELECTED);
-											ins = 1;
-										}
-									}
-									else if (ins)
-									{
-											redisplay_widget(lock, w, widg, OS_NORMAL);
-										ins = 0;
-									}
-									tx = rx;
-									ty = ry;
-								}
+									/* Wait for the mouse to be released */
+									wait_mouse(w->owner, &b, &rx, &ry);
 
+									if (tx != rx || ty != ry)
+									{
+										if (m_inside(rx, ry, &r))
+										{
+											if (!ins)
+											{
+												redisplay_widget(lock, w, widg, OS_SELECTED);
+												ins = 1;
+											}
+										}
+										else if (ins)
+										{
+												redisplay_widget(lock, w, widg, OS_NORMAL);
+											ins = 0;
+										}
+										tx = rx;
+										ty = ry;
+									}
+								}
 							}
 							if (m_inside(rx, ry, &r))
 							{
-				/* Ozk: added check for number of clicks and call the dclick function if apropriate */
-								if (widget_active.clicks == 1)
+								/* Ozk: added check for number of clicks and call the dclick function if apropriate */
+								if (md->clicks == 1) //widget_active.clicks == 1)
 								{
 									if (widg->click)
-										rtn = widg->click(lock, w, widg);
+										rtn = widg->click(lock, w, widg, md);
 									else
 										rtn = true;
 								}
-								else if (widget_active.clicks == 2)
+								else if (md->clicks == 2) //widget_active.clicks == 2)
 								{
 									if (widg->dclick)
-										rtn = widg->dclick(lock, w, widg);
+										rtn = widg->dclick(lock, w, widg, md);
 									else
 										rtn = true;
 								}
@@ -2401,7 +2420,7 @@ do_active_widget(enum locks lock, struct xa_client *client)
 			int rtn;
 
 			/* Call the pending action */
-			rtn = (*widget_active.action)(lock, wind, widg);
+			rtn = (*widget_active.action)(lock, wind, widg, &widget_active.m);
 
 			/* HR: 050601: if the pending widget is canceled, its state is undefined!!!!!! */
 			/* If the widget click/drag function returned true we reset the state of the widget */

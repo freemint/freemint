@@ -27,6 +27,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
+#include "k_main.h"
 #include "xalloc.h"
 #include "c_window.h"
 #include "rectlist.h"
@@ -662,12 +663,13 @@ if_bar(short pnt[4])
 		v_bar(C.vh, pnt);
 }
 
-/*
- * Display a window
- */
+//static void
+//cXA_draw_window(enum locks lock, struct c_event *ce)
 void
 draw_window(enum locks lock, struct xa_window *wind)
 {
+	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
+
 	DIAG((D_wind, wind->owner, "draw_window %d for %s to %d/%d,%d/%d",
 		wind->handle, w_owner(wind),
 		wind->r.x, wind->r.y, wind->r.w, wind->r.h));
@@ -826,6 +828,17 @@ draw_window(enum locks lock, struct xa_window *wind)
 	DIAG((D_wind, wind->owner, "draw_window %d for %s exit ok",
 		wind->handle, w_owner(wind)));
 }
+
+#if 0
+/*
+ * Display a window
+ */
+void
+draw_window(enum locks lock, struct xa_window *wind)
+{
+	post_cevent(wind->owner, cXA_draw_window, wind, 0, 0, 0, 0, 0);
+}
+#endif
 
 struct xa_window *
 find_window(enum locks lock, int x, int y)

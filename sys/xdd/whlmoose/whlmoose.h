@@ -36,11 +36,20 @@ struct moose_data
 {
 	unsigned short l;	/* record length */
 	unsigned short ty;	/* button & movement */
-	short x;
-	short y;
-	short state;
-	short cstate;
-	short clicks;
+	short x;		/* X when button pushed */
+	short y;		/* Y when button pushed */
+	short sx;		/* X when packet sent */
+	short sy;		/* Y when packet sent */
+	short state;		/* Mask of buttons pused during this packets time span */
+	short cstate;		/* Mask of buttons pused at the time packet timed out */
+	short clicks;		/* Number of total clicks */
+	short kstate;		/* Keyboard state UNUSED BY MOOSE AT THIS TIME */
+	/* Ozk: iclicks is a char array, each indicating the number of clicks for
+	 * each indipendant button (max 16 mouse buttons supported).
+	 * iclicks[0] represents the number of clicks that happened for button
+	 * at bit 0 in state (left) and so on ...
+	*/
+	char iclicks[16];	/* Indipendant clicks */
 	short dbg1;
 	short dbg2;
 };

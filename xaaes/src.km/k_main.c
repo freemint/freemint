@@ -63,6 +63,61 @@
  * 	
  * We also get keyboard & mouse input data here.
  */
+void
+post_cevent(struct xa_client *client,
+	void (*func)(enum locks, struct c_event *),
+	void *ptr1, void *ptr2,
+	int d0, int d1, RECT *r,
+	const struct moose_data *md)
+{
+	int h = client->ce_head;
+
+	/*
+	 * Ozk: Some different tests I did before re-learning
+	 * about screen/mouse lock (see semaphore.c).
+	 * Things here needs going-over, dont have time right now.
+	*/
+	if (client != C.Aes)
+	{
+#if 0
+		if (!client->inblock)
+		{
+			DIAGS(("Client %s not in AES", client->name));
+			return;
+		}
+#endif
+		if ( ((h + 1) & MAX_CEVENTS) == client->ce_tail)
+		{
+			DIAGS(("CLIENT (%s) EVENT MESSAGE QUEUE FULL!!", client->name));
+			Unblock(client, 1, 5001);
+			return;
+		}
+	}
+
+	client->ce[h].funct = func;
+	client->ce[h].client = client;
+	client->ce[h].ptr1 = ptr1;
+	client->ce[h].ptr2 = ptr2;
+	client->ce[h].d0 = d0;
+	client->ce[h].d1 = d1;
+	if (r)
+		client->ce[h].r = *r;
+	if (md)
+		client->ce[h].md = *md;
+
+	h++;
+	DIAG((D_mouse, client, "added cevnt at %d, nxt %d (tail %d) for %s", client->ce_head, h, client->ce_tail, client->name));
+	client->ce_head = h & MAX_CEVENTS;
+
+	if (client != C.Aes)
+	{
+		if (!C.buffer_moose && client->inblock)
+			C.buffer_moose = client;
+		Unblock(client, 1, 5000);
+	}
+	else
+		dispatch_cevent(client);
+}
 
 int
 dispatch_cevent(struct xa_client *client)
@@ -125,7 +180,8 @@ Block(struct xa_client *client, int which)
 #endif
 			return;
 		}
-		dispatch_cevent(client);
+		while (!client->usr_evnt && dispatch_cevent(client) ){}
+
 		if (C.buffer_moose == client)
 			C.buffer_moose = 0;
 	}

@@ -426,7 +426,18 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_NAME:
 	{
+		int i;
+		char *d = w->wname;
 		widg = get_widget(w, XAW_TITLE);
+		t = *(char **)&pb->intin[2];
+		if (t)
+			for (i = 0; i < 200 && (*d++ = *t++); i++){}
+		else
+			*d = 0;
+		*d = 0;
+		
+		widg->stuff = w->wname;
+#if 0
 		l = (const ushort *)(pb->intin);
 		t = (char*)((long)l[2] << 16);
 		t += l[3];
@@ -434,6 +445,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			t = "";
 		widg->stuff = t;
 		/* copy_max(widg->stuff, t, sizeof(Path)); */
+#endif
 		DIAG((D_wind, w->owner, "    -   %s", t));
 		if ((w->active_widgets & NAME) && w->is_open)
 		{
@@ -446,14 +458,25 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_INFO:
 	{
+		int i;
+		char *d = w->winfo;
 		widg = get_widget(w, XAW_INFO);
+		t = *(char **)&pb->intin[2];
+		if (t)
+			for (i = 0; i < 200 && (*d++ = *t++); i++){}
+		else
+			*d = 0;
+		*d = 0;
+
+		widg->stuff = w->winfo;
+#if 0
 		l = (const ushort *)(pb->intin);
 		t = (char *)((long)l[2] << 16);
 		t += l[3];
 		if (t == 0)
 			t = "";
 		widg->stuff = t;
-
+#endif
 		if ((w->active_widgets & INFO) && w->is_open)
 		{
 			rp_2_ap(w, widg, &clip);

@@ -176,7 +176,6 @@ cXA_form_do(enum locks lock, struct c_event *ce)
 	struct xa_client *client = ce->client;
 
 	DIAG((D_mouse, client, "cXA_form_do for %s", client->name));
-
 	client->fmd.mousepress(lock, client, &ce->md);
 }
 
@@ -242,5 +241,5 @@ cXA_widget_click(enum locks lock, struct c_event *ce)
 	XA_WIDGET *widg = ce->ptr1;
 
 	DIAG((D_mouse, ce->client, "cXA_widget_click for %s", ce->client->name));
-	widg->click(lock, root_window, widg);
+	widg->click(lock, root_window, widg, &ce->md);
 }

@@ -6,6 +6,8 @@ HEADER = \
 	accstart.h \
 	app_man.h \
 	cnf_xaaes.h \
+	c_message.h \
+	c_mouse.h \
 	c_window.h \
 	debug.h \
 	desktop.h \
@@ -48,6 +50,7 @@ COBJS = \
 	about.c \
 	app_man.c \
 	cnf_xaaes.c \
+	c_message.c \
 	c_mouse.c \
 	c_window.c \
 	debug.c \

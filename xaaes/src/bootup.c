@@ -479,7 +479,7 @@ init_moose(void)
 
 	major = info.version >> 16;
 	minor = info.version & 0xffffL;
-	if (major != 0 || minor < 4)
+	if (major != 0 || minor < 5)
 	{
 		err = fdisplay(loghandle, true, ", do you use the right xdd?\n");
 		return false;
