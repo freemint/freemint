@@ -320,6 +320,7 @@ struct config
 	bool fsel_cookie;
 	bool usehome;			/* use $HOME in shell_find */
 	bool naes_cookie;		/* If true, install fake nAES cookie */
+	bool menupop_pids;		/* If true, add PIDs to clients listed in menupop clientlist */
 	bool menu_locking;		/* menus run in a window.
 	                                 * See lines.app run underneath the pulldown menu. :-) */
 	bool opentaskman;		/* open taskmanager at boot. */

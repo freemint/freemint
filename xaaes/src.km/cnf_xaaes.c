@@ -88,6 +88,7 @@ static struct parser_item parser_tab[] =
 	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , sizeof(cfg.rsc_name)   },
 	{ "USEHOME",               PI_R_B,   & cfg.usehome		},
 	{ "NAES_COOKIE",           PI_R_B,   & cfg.naes_cookie		},
+	{ "MENUPOP_PIDS",          PI_R_B,   & cfg.menupop_pids		},
 	{ "LRMB_SWAP",	           PI_R_B,   & cfg.lrmb_swap		},
 	{ "WIDGET_AUTO_HIGHLIGHT", PI_R_B,   & cfg.widg_auto_highlight	},
 	{ "FONT_ID",               PI_R_S,   & cfg.font_id		},
