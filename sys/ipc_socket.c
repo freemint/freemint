@@ -243,7 +243,7 @@ getsock (struct proc *p, short fd, struct file **fp)
 
 /* socket system calls */
 
-long
+long _cdecl
 sys_socket (long domain, long type, long protocol)
 {
 	PROC *p = curproc;
@@ -281,7 +281,7 @@ error:
 	return ret;
 }
 
-long
+long _cdecl
 sys_socketpair (long domain, long type, long protocol, short fds[2])
 {
 	PROC *p = curproc;
@@ -344,7 +344,7 @@ error:
 	return ret;
 }
 
-long
+long _cdecl
 sys_bind (short fd, struct sockaddr *addr, long addrlen)
 {
 	PROC *p = curproc;
@@ -364,7 +364,7 @@ sys_bind (short fd, struct sockaddr *addr, long addrlen)
 	return (*so->ops->bind)(so, addr, addrlen);
 }
 
-long
+long _cdecl
 sys_listen (short fd, long backlog)
 {
 	PROC *p = curproc;
@@ -395,7 +395,7 @@ sys_listen (short fd, long backlog)
 	return 0;
 }
 
-long
+long _cdecl
 sys_accept (short fd, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
@@ -467,7 +467,7 @@ error1:
 	return ret;
 }
 
-long
+long _cdecl
 sys_connect (short fd, struct sockaddr *addr, long addrlen)
 {
 	PROC *p = curproc;
@@ -521,7 +521,7 @@ sys_connect (short fd, struct sockaddr *addr, long addrlen)
 	return EINTERNAL;
 }
 
-long
+long _cdecl
 sys_getsockname (short fd, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
@@ -550,7 +550,7 @@ sys_getsockname (short fd, struct sockaddr *addr, long *addrlen)
 	return r;
 }
 
-long
+long _cdecl
 sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
@@ -579,7 +579,7 @@ sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 	return r;
 }
 
-long
+long _cdecl
 sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long addrlen)
 {
 	PROC *p = curproc;
@@ -600,7 +600,7 @@ sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr,
 	return (*so->ops->send)(so, iov, 1, fp->flags & O_NDELAY, flags, addr, addrlen);
 }
 
-long
+long _cdecl
 sys_sendmsg (short fd, struct msghdr *msg, long flags)
 {
 	PROC *p = curproc;
@@ -626,7 +626,7 @@ sys_sendmsg (short fd, struct msghdr *msg, long flags)
 				msg->msg_name, msg->msg_namelen);
 }
 
-long
+long _cdecl
 sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
@@ -656,7 +656,7 @@ sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *add
 	return r;
 }
 
-long
+long _cdecl
 sys_recvmsg (short fd, struct msghdr *msg, long flags)
 {
 	PROC *p = curproc;
@@ -684,7 +684,7 @@ sys_recvmsg (short fd, struct msghdr *msg, long flags)
 	return r;
 }
 
-long
+long _cdecl
 sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 {
 	PROC *p = curproc;
@@ -722,7 +722,7 @@ sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 	return (*so->ops->setsockopt)(so, level, optname, optval, optlen);
 }
 
-long
+long _cdecl
 sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 {
 	PROC *p = curproc;
@@ -761,7 +761,7 @@ sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 	return (*so->ops->getsockopt)(so, level, optname, optval, optlen);
 }
 
-long
+long _cdecl
 sys_shutdown (short fd, long how)
 {
 	PROC *p = curproc;
