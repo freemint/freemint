@@ -1276,7 +1276,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 					if (m_inside(nx, ny, &r))
 					{
-						nobj = obj_find(wt, lbox->parent, 1, nx, ny);
+						nobj = obj_find(wt, lbox->parent, 1, nx, ny, NULL);
 
 						if (nobj == obj)
 							nobj = -1;

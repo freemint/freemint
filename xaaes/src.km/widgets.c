@@ -89,7 +89,7 @@ pix_to_sl(long p, int s)
 inline int
 sl_to_pix(long s, int p)
 {
-	return (s * p) / SL_RANGE;
+	return ((s * p) + (SL_RANGE >> 2)) / SL_RANGE;
 }
 
 void
@@ -872,7 +872,7 @@ calc_work_area(struct xa_window *wi)
 				widg = get_widget(wi, XAW_HSLIDE);
 				sl = widg->stuff;
 				/* initializes slider draw */
-				sl->r.w = 0;
+				//sl->r.w = 0;
 
 				rt = &widg->r;
 				rt->w = wi->wa.w + wa_margins;
@@ -891,7 +891,7 @@ calc_work_area(struct xa_window *wi)
 				widg = get_widget(wi, XAW_VSLIDE);
 				sl = widg->stuff;
 				/* initializes slider draw */
-				sl->r.h = 0;
+				//sl->r.h = 0;
 
 				rt = &widg->r;
 				rt->h = wi->wa.h + wa_margins;
@@ -1919,26 +1919,6 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 				 * status stays selected whilst it repeats */
 				return false;
 			}
-#if 0
-
-			if (md->cstate)
-			{
-				check_mouse(wind->owner, &mb, &mx, &my);
-
-				if (mb)
-				{
-					/* If the button has been held down, set a
-					 * pending/active widget for the client */
-
-					set_widget_active(wind, widg, widg->drag, 2);
-					set_widget_repeat(lock, wind);
-
-					/* We return false here so the widget display
-					 * status stays selected whilst it repeats */
-					return false;
-				}
-			}
-#endif
 		}
 	}
 
@@ -1980,50 +1960,57 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	int len, offs;
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	RECT r, cl;
+	RECT cl;
 
 	/* Convert relative coords and window location to absolute screen location */
-	rp_2_ap(wind, widg, &r);
+	rp_2_ap(wind, widg, &widg->ar);
 
 	if (sl->length >= SL_RANGE)
 	{
-		sl->r = r;
-		slider_back(&r);
+		sl->r.x = sl->r.y = 0;
+		sl->r.w = widg->ar.w;
+		sl->r.h = widg->ar.h;
+		slider_back(&widg->ar);
 		return true;
 	}
 
 	wr_mode(MD_REPLACE);
 
-	len = sl_to_pix(r.h, sl->length);
+	len = sl_to_pix(widg->ar.h, sl->length);
 	if (len < cfg.widg_h - 3)
 		/* not too small please */
 		len = cfg.widg_h - 3;
 
-	offs = r.y + sl_to_pix(r.h - len, sl->position);
+	offs = widg->ar.y + sl_to_pix(widg->ar.h - len, sl->position);
 
-	if (offs < r.y)
-		offs = r.y;
-	if (offs + len > r.y + r.h)
-		len = r.y + r.h - offs;
+	if (offs < widg->ar.y)
+		offs = widg->ar.y;
+	if (offs + len > widg->ar.y + widg->ar.h)
+		len = widg->ar.y + widg->ar.h - offs;
 
-	if (   sl->r.h == 0		/* if initial, or after sizing or off top */
-	    || wind != window_list)
+	if (   sl->r.h == 0 || !is_topped(wind))
 	{
-		sl->r = r;
-		slider_back(&r);	/* whole background */
+		sl->r.x = sl->r.y = 0;
+		sl->r.w = widg->ar.w;
+		sl->r.h = widg->ar.h;
+		slider_back(&widg->ar);	/* whole background */
 	}
 	else
 	{				/* should really use xa_rc_intersect */
-		cl = sl->r;		/* remove old slider or parts */
+		cl.x = sl->r.x + widg->ar.x;
+		cl.y = sl->r.y + widg->ar.y;
+		cl.w = sl->r.w;
+		cl.h = sl->r.h;
 		if (   sl->r.h == len	/* parts work only when physical length didnt change */
-		    && !(offs + len < sl->r.y || offs > sl->r.y + sl->r.h)) /* if overlap */ 		
+		    && !(offs + len < sl->r.y + widg->ar.y ||
+		         offs > sl->r.y + sl->r.h + widg->ar.y)) /* if overlap */ 		
 		{
-			if (sl->r.y < offs)		/* down */
-				cl.h = offs - sl->r.y;
+			if (sl->r.y + widg->ar.y < offs)		/* down */
+				cl.h = offs - (widg->ar.y + sl->r.y);
 			else				/* up */
 			{
 				cl.y = offs + len;
-				cl.h = sl->r.y - offs;
+				cl.h = (sl->r.y + widg->ar.y) - offs;
 			}
 		}
 		if (cl.h)
@@ -2031,7 +2018,7 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	}
 
 	/* this rectangle to be used for click detection and drawing */
-	sl->r.y = offs;
+	sl->r.y = offs - widg->ar.y;
 	sl->r.h = len;
 
 	/* HR: there are so much nice functions, use them!!! :-) */
@@ -2042,12 +2029,19 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	 */
 	{
 		int thick = 1, mode = 3;
+		RECT r;
+
 		if (MONO)
 			mode = 1;
-		else if (wind != window_list)
+		else if (!is_topped(wind))
 			thick = 0;
 
-		d3_pushbutton(-2, &sl->r, NULL, widg->state, thick, mode);
+		r.x = sl->r.x + widg->ar.x;
+		r.y = sl->r.y + widg->ar.y;
+		r.w = sl->r.w;
+		r.h = sl->r.h;
+
+		d3_pushbutton(-2, &r, NULL, widg->state, thick, mode);
 	}
 
 	wr_mode(MD_TRANS);
@@ -2062,67 +2056,84 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	RECT r; int len, offs;
+	int len, offs;
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	RECT cl;
 
-	rp_2_ap(wind, widg, &r);
+	rp_2_ap(wind, widg, &widg->ar);
 
 	if (sl->length >= SL_RANGE)
 	{
-		sl->r = r;
-		slider_back(&r);
+		sl->r.x = sl->r.y = 0;
+		sl->r.w = widg->ar.w;
+		sl->r.h = widg->ar.h;
+		slider_back(&widg->ar);
 		return true;
 	}
 
 	wr_mode(MD_REPLACE);
 
-	len = sl_to_pix(r.w, sl->length);
+	len = sl_to_pix(widg->ar.w, sl->length);
 	if (len < cfg.widg_w-3)
 		len = cfg.widg_w-3;
-	offs = r.x + sl_to_pix(r.w - len, sl->position);
 
-	if (offs < r.x)
-		offs = r.x;
-	if (offs + len > r.x + r.w)
-		len = r.x + r.w - offs;
+	offs = widg->ar.x + sl_to_pix(widg->ar.w - len, sl->position);
 
-	if (sl->r.w == 0 || wind != window_list)
+	if (offs < widg->ar.x)
+		offs = widg->ar.x;
+	if (offs + len > widg->ar.x + widg->ar.w)
+		len = widg->ar.x + widg->ar.w - offs;
+
+	if (sl->r.w == 0 || !is_topped(wind))
 	{
-		sl->r = r;
-		slider_back(&r);
+		sl->r.x = sl->r.y = 0;
+		sl->r.w = widg->ar.w;
+		sl->r.h = widg->ar.h;
+		slider_back(&widg->ar);
 	}
 	else
 	{
-		cl = sl->r;
+		cl.x = sl->r.x + widg->ar.x;
+		cl.y = sl->r.y + widg->ar.y;
+		cl.w = sl->r.w;
+		cl.h = sl->r.h;
+
 		if (sl->r.w == len
-		    && !(offs + len < sl->r.x || offs > sl->r.x + sl->r.w))
+		    && !(offs + len < sl->r.x + widg->ar.x ||
+		         offs > sl->r.x + sl->r.w + widg->ar.x))
 		{
-			if (sl->r.x < offs)
+			if (sl->r.x + widg->ar.x < offs)
 			{
-				cl.w = offs - sl->r.x;
+				cl.w = offs - (sl->r.x + widg->ar.x);
 			}
 			else
 			{
 				cl.x = offs + len;
-				cl.w = sl->r.x - offs;
+				cl.w = (sl->r.x + widg->ar.x) - offs;
 			}
 		}
 		if (cl.w)
 			slider_back(&cl);
 	}
 
-	sl->r.x = offs;
+	sl->r.x = offs - widg->ar.x;
 	sl->r.w = len;
 
 	{
 		int thick = 1, mode = 3;
+		RECT r;
+
 		if (MONO)
 			mode = 1;
-		else if (wind != window_list)
+		else if (!is_topped(wind))
 			thick = 0;
 
-		d3_pushbutton(-2, &sl->r, NULL, widg->state, thick, mode);
+		r.x = sl->r.x + widg->ar.x;
+		r.y = sl->r.y + widg->ar.y;
+		r.w = sl->r.w;
+		r.h = sl->r.h;
+
+		d3_pushbutton(-2, &r, NULL, widg->state, thick, mode);
 	}
 
 	wr_mode(MD_TRANS);
@@ -2144,59 +2155,35 @@ static bool
 drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	short ny;
-	int offs;
 
-	/* need to do this anyhow, for mb */
-	/* Ozk: No, we dont! */
-	/* vq_mouse(C.vh, &mb, &pmx, &pmy);*/
-
-	if (widget_active.m.cstate) //if (widg->s & 1)
+	if (widget_active.m.cstate)
 	{
 		if (!widget_active.cont)
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent sizer when dragging a box */
 			graf_mouse(XACRS_VERTSIZER, NULL, false);
+			rp_2_ap(wind, widg, &widg->ar);
+			widget_active.offs = md->y - (widg->ar.y + sl->r.y);
+			widget_active.y = md->y;
 		}
-
-		if (widget_active.widg)
+		else if (widget_active.y != md->y)
 		{
-			/* pending widget: take that */
+			short offs;
 
-			ny = widget_active.y;
-			offs = widget_active.offs;
-		}
-		else
-		{
-			offs = sl->position;
-			ny = widget_active.m.y;
-		}
-
-		//if (widget_active.m.cstate)
-		{
-			/* Drag slider */
-
-			if (widget_active.m.y != ny)
-				/* Has the mouse moved? */
-				offs = bound_sl(offs + pix_to_sl(widget_active.m.y - ny, widg->r.h - sl->r.h) );
-
-			set_widget_active(wind, widg, drag_vslide, 3);
-			widget_active.y = widget_active.m.y;
-			widget_active.offs = offs;
-
-			if (wind->send_message)
+			offs = bound_sl(pix_to_sl((md->y - widget_active.offs) - widg->ar.y, widg->r.h - sl->r.h));
+		
+			if (offs != sl->position && wind->send_message)
+			{
 				wind->send_message(lock, wind, NULL, AMQ_NORM,
-						   WM_VSLID, 0, 0, wind->handle,
-						   offs,     0, 0, 0);
-
-			/* We return false here so the widget display status stays
-			 * selected whilst it repeats
-			 */
-			return false;
+						   WM_VSLID, 0,0, wind->handle,
+						   offs, 0,0,0);
+			}
+			widget_active.y = md->y;
 		}
+		set_widget_active(wind, widg, drag_vslide, 3);
+		return false;
 	}
-
 	cancel_widget_active(wind, 3);
 	return true;
 }
@@ -2205,12 +2192,6 @@ static bool
 drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	short nx;
-	int offs;
-
-	/* need to do this anyhow, for mb */
-	/* Ozk: No, we dont now either */
-	/* vq_mouse(C.vh, &mb, &pmx, &pmy); */
 
 	if (widget_active.m.cstate)
 	{
@@ -2219,43 +2200,26 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			widget_active.cont = true;
 			/* Always have a nice consistent sizer when dragging a box */
 			graf_mouse(XACRS_HORSIZER, NULL, false);
+			rp_2_ap(wind, widg, &widg->ar);
+			widget_active.offs = md->x - (widg->ar.x + sl->r.x);
+			widget_active.x = md->x;
 		}
-
-		if (widget_active.widg)
+		else if (widget_active.x != md->x)
 		{
-			/* pending widget: take that */
-
-			nx = widget_active.x;
-			offs = widget_active.offs;
-		}
-		else
-		{
-			nx = widget_active.m.x;
-			offs = sl->position;
-		}
-
-		//if (widget_active.m.cstate)
-		{
-			/* Drag slider */
-
-			/* Has the mouse moved? */
-			if (widget_active.m.x != nx)
-				offs = bound_sl(offs + pix_to_sl(widget_active.m.x - nx, widg->r.w - sl->r.w) );
-
-			set_widget_active(wind, widg, drag_hslide, 4);
-			widget_active.x = widget_active.m.x;
-			widget_active.offs = offs;
-
-			if (wind->send_message)
+			short offs;
+			
+			offs = bound_sl(pix_to_sl((md->x - widget_active.offs) - widg->ar.x, widg->r.w - sl->r.w));
+		
+			if (offs != sl->position && wind->send_message)
+			{
 				wind->send_message(lock, wind, NULL, AMQ_NORM,
-						   WM_HSLID, 0, 0, wind->handle,
-						   offs, 0, 0, 0);
-
-			/* We return false here so the widget display status stays
-			 * selected whilst it repeats
-			 */
-			return false;
+						   WM_HSLID, 0,0, wind->handle,
+						   offs, 0,0,0);
+			}
+			widget_active.x = md->x;
 		}
+		set_widget_active(wind, widg, drag_hslide, 4);
+		return false;
 	}
 
 	cancel_widget_active(wind, 4);
@@ -2973,8 +2937,10 @@ is_H_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 {
 	/* but are we in the slider itself, the slidable one :-) */
 	XA_SLIDER_WIDGET *sl = widg->stuff;
+	short x  = widg->ar.x + sl->r.x;
+	short x2 = x + sl->r.w;
 
-	if (click > sl->r.x && click < sl->r.x + sl->r.w)
+	if (click > x && click < x2)
 		return 0;
 
 	/* outside slider, arrows must be defined */
@@ -2983,12 +2949,12 @@ is_H_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 		/* outside has 2 sides :-) */
 
 		/* up arrow */
-		if (sl->position > 0 && click < sl->r.x)
+		if (sl->position > 0 && click < x)
 			/* add to slider index */
 			return 1;
 
 		/* dn arrow */
-		if (sl->position < SL_RANGE && click > sl->r.x + sl->r.w)
+		if (sl->position < SL_RANGE && click > x2)
 			return 2;
 	}
 
@@ -3003,16 +2969,18 @@ static inline int
 is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
+	short y  = widg->ar.y + sl->r.y;
+	short y2 = y + sl->r.h;
 
-	if (click > sl->r.y && click < sl->r.y + sl->r.h)
+	if (click > y && click < y2)
 		return 0;
 
  	if (w->active_widgets & UPARROW)
 	{
-		if (sl->position > 0 && click < sl->r.y)	
+		if (sl->position > 0 && click < y)
 			return 1;
 
-		if (sl->position < SL_RANGE && click > sl->r.y + sl->r.h)
+		if (sl->position < SL_RANGE && click > y2)
 			return 2;
 	}
 
@@ -3132,6 +3100,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 				if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
 				{					/* Normal widgets */
 					rp_2_ap(w, widg, &r);		/* Convert relative coords and window location to absolute screen location */
+					widg->ar = r;
 					inside = m_inside(md->x, md->y, &r);
 				}
 				else

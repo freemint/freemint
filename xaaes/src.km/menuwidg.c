@@ -149,8 +149,8 @@ change_entry(Tab *tab, int state)
 	else
 		state = obtree[t].ob_state & ~OS_SELECTED;
 
-	obtree->ob_x = k->rdx;
-	obtree->ob_y = k->rdy;
+	obtree->ob_x = k->pdx; //k->rdx;
+	obtree->ob_y = k->pdy; //k->rdy;
 
 	if (k->popw)
 	{
@@ -625,6 +625,25 @@ menu_pop(Tab *tab)
 	OBJECT *obtree = k->wt->tree;
 
 	DIAG((D_menu, NULL, "menu_pop"));
+
+	k->wt->dx = k->wt->dy = 0;
+
+	change_entry(tab, 0);
+
+	w = k->popw;
+	if (w)		/* Windowed popup's */
+	{	
+		close_window(tab->lock, w);
+		delete_window(tab->lock, w);
+		k->popw = NULL;
+	}
+	else
+	{
+		hidem();
+		form_restore(k->border, k->drop, &(k->Mpreserve));
+		showm();
+	}
+
 	if (barred(tab))
 	{
 		if (!tab->nest)
@@ -638,31 +657,10 @@ menu_pop(Tab *tab)
 			detach_menu(tab->lock, C.Aes, k->wt, k->about + 2);
 	}
 	
-	change_entry(tab, 0);
+	//change_entry(tab, 0);
 
-	w = k->popw;
-	if (w)		/* Windowed popup's */
-	{	
-		close_window(tab->lock, w);
-#if 0
-		if (cfg.menu_locking)
-		{
-			hidem();
-			form_restore(k->border, k->drop, &(k->Mpreserve));
-			showm();
-		}
-#endif
-		delete_window(tab->lock, w);
-		k->popw = NULL;
-	}
-	else
-	{
-		hidem();
-		form_restore(k->border, k->drop, &(k->Mpreserve));
-		showm();
-	}
 
-	k->wt->dx = k->wt->dy = 0;
+	//k->wt->dx = k->wt->dy = 0;
 
 	if (tab->nest)
 	{
@@ -792,8 +790,10 @@ popup_inside(Tab *tab, RECT r)
 		}
 	}
 
-	k->rdx = k->wt->tree->ob_x - (r.x - rc.x);
-	k->rdy = k->wt->tree->ob_y - (r.y - rc.y);
+	//k->rdx = k->wt->tree->ob_x - (r.x - rc.x);
+	//k->rdy = k->wt->tree->ob_y - (r.y - rc.y);
+	k->pdx = /*k->rdx +*/ (k->wt->tree->ob_x - (r.x - rc.x));
+	k->pdy = /*k->rdy +*/ (k->wt->tree->ob_y - (r.y - rc.y));
 
 	k->drop = rc;
 
@@ -801,33 +801,40 @@ popup_inside(Tab *tab, RECT r)
 }
 
 static int
-find_menu_object(Tab *tab, int start)
+find_menu_object(Tab *tab, int start, short dx, short dy, RECT *c)
 {
 	MENU_TASK *k = &tab->task_data.menu;
 	OBJECT *obtree = k->wt->tree;
 
-	obtree->ob_x = k->rdx;
-	obtree->ob_y = k->rdy;
+	obtree->ob_x = dx; //k->rdx;
+	obtree->ob_y = dy; //k->rdy;
 
-	return obj_find(k->wt, start, MAX_DEPTH, k->x, k->y);
+	return obj_find(k->wt, start, MAX_DEPTH, k->x, k->y, c);
 }
 
 
 static void
-menu_area(RECT *c, Tab *tab, int item)
+menu_area(RECT *c, Tab *tab, int item, short dx, short dy)
 {
 	MENU_TASK *k = &tab->task_data.menu;
 	XA_TREE *wt = k->wt;
-	short dx = 0;
-	short dy = 0;
+	short sx, sy;
 
+#if 0
 	if (k->popw)
 	{
 		dx = wt->dx;
 		dy = wt->dy;
 	}
-
+#endif
+	
+	sx = wt->tree->ob_x;
+	sy = wt->tree->ob_y;
+	wt->tree->ob_x = dx;
+	wt->tree->ob_y = dy;
 	obj_area(wt, item, c);
+	wt->tree->ob_x = sx;
+	wt->tree->ob_y = sy;
 }
 
 static void
@@ -846,16 +853,16 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	wt->dx = 0;
 	wt->dy = 0;
 
-	obtree->ob_x = rdx; /* This is where we want to draw the popup object. */
-	obtree->ob_y = rdy;
+	obtree->ob_x = k->rdx = rdx; /* This is where we want to draw the popup object. */
+	obtree->ob_y = k->rdy = rdy;
 
 	obj_rectangle(wt, item, &r);
 	//obj_area(wt, item, &r);
 	DIAG((D_menu, tab->client, "display_popup: %d/%d/%d/%d", r));
 	r = popup_inside(tab, r);
 	wash = r.h;
-	obtree->ob_x = k->rdx;
-	obtree->ob_y = k->rdy;
+	obtree->ob_x = k->pdx;
+	obtree->ob_y = k->pdy;
 
 	DIAG((D_menu, tab->client, "display_popup: rdx/y %d/%d (%d/%d/%d/%d)",
 		rdx, rdy, r));
@@ -866,6 +873,12 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	if (tab->scroll && r.h > 8 * screen.c_max_h)
 		r.h = 8 * screen.c_max_h;
 #endif
+	if (r.y < root_window->wa.y)
+	{
+		r.y = root_window->wa.y;
+		if (r.h > root_window->wa.h - screen.c_max_h)
+			r.h = root_window->wa.h - screen.c_max_h;
+	}
 
 	if (r.y + r.h > root_window->wa.y + root_window->wa.h)
 		r.h = root_window->wa.h - r.y; 
@@ -882,7 +895,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 
 			tab->scroll = true;
 
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, 0, 1, 0, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, 1, 0, r);
 
 			wind = create_window(	tab->lock,
 						do_winmesag, //handle_form_window,
@@ -891,7 +904,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 						cfg.menu_locking,	/* yields nolist if locking. */
 						tp,
 						created_for_AES|created_for_POPUP,
-						0,1,0,
+						1,0,
 						r,
 						&r, NULL);
 		}
@@ -900,7 +913,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 			int mg = MONO ? 2 : 1;
 			XA_WIND_ATTR tp = TOOLBAR|STORE_BACK;
 
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, 1, 1, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, 1, r);
 
 			wind = create_window(	tab->lock,
 						do_winmesag, //NULL,
@@ -909,8 +922,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 						cfg.menu_locking,	/* yields nolist if locking. */
 						TOOLBAR|STORE_BACK,
 						created_for_AES|created_for_POPUP,
-						0,			/* no margin and no widgets: completely invisible. */
-						1,1,
+						mg,1,
 						r,
 						NULL, NULL);
 		}
@@ -921,7 +933,9 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	if (wind)
 	{
 		k->popw = wind;
-		k->drop = r;
+		//k->drop = r;
+		k->drop = wind->wa;
+		k->drop.w = r.w;
 		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r));
 		set_popup_widget(tab, wind, item);
 		if (!cfg.menu_locking)
@@ -954,8 +968,8 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		form_save(k->border, k->drop, &(k->Mpreserve));
 		DIAG((D_menu, tab->client, "pop draw %lx + %d", obtree, item));
 		wr_mode(MD_TRANS);
-		obtree->ob_x = k->rdx;
-		obtree->ob_y = k->rdy;
+		obtree->ob_x = k->pdx;
+		obtree->ob_y = k->pdy;
 		wt->is_menu = true;
 		draw_object_tree(tab->lock, wt, obtree, item, 1, 5);
 		showm();
@@ -982,9 +996,9 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 		Tab *nx = tab->nest;
 		MENU_TASK *kx = &nx->task_data.menu;
 		
-		kx->wt->tree->ob_x = kx->rdx;
-		kx->wt->tree->ob_y = kx->rdy;
-		menu_area(&k->em.m1, nx, kx->point_at_menu);
+		//kx->wt->tree->ob_x = kx->rdx;
+		//kx->wt->tree->ob_y = kx->rdy;
+		menu_area(&k->em.m1, nx, kx->point_at_menu, kx->pdx, kx->pdy);
 		k->em.flags |= MU_M1|1;	   		/* out of entry */
 		k->em.t1 = where_are_we;
 	}
@@ -1014,7 +1028,7 @@ click_desk_popup(struct task_administration_block *tab)
 	struct xa_client *client;
 	int m;
 
-	m = find_menu_object(tab, k->pop_item) - 1;
+	m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop) - 1;
 
 	IFDIAG(tab->dbg = 1;)
 	popout(tab);
@@ -1090,7 +1104,7 @@ popup(struct task_administration_block *tab)
 
 	m = find_object(k->wt, k->pop_item, 2, k->x, k->y);
 */
-	m = find_menu_object(tab, k->pop_item);
+	m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
 
 	if (m < 0)
 	{
@@ -1155,7 +1169,7 @@ popup(struct task_administration_block *tab)
 
 			new_wt = at->wt;
 			ob = new_wt->tree;
-			menu_area(&tra, tab, k->point_at_menu);
+			menu_area(&tra, tab, k->point_at_menu, k->pdx, k->pdy);
 
 			DIAG((D_menu, NULL, "popup: attach=%lx, wt=%lx, obtree=%lx",
 				at, new_wt, ob));
@@ -1176,9 +1190,18 @@ popup(struct task_administration_block *tab)
 		}
 		else
 		{
+			RECT r;
+
+			//obj_area(k->wt, m, &r);
+			menu_area(&k->em.m1, tab, m, k->pdx, k->pdy);
+			xa_rect_clip(&k->drop, &r, &k->em.m1);
+			k->em.flags = MU_M1|1;
+			k->em.t1 = where_are_we;
+#if 0
 			menu_area(&k->em.m1, tab, m);
 			k->em.flags = MU_M1|1;			/* out of entry */
 			k->em.t1 = where_are_we;
+#endif
 		}
 	}
 }
@@ -1287,14 +1310,20 @@ new_title(struct task_administration_block *tab)
 	{
 		MENU_TASK *k = &tab->task_data.menu;
 		int title;
+		short dx, dy;
 	
 		k->stage = IN_TITLE;	
 
-		title = find_menu_object(tab, k->titles);
+		dx = k->wt->dx, dy = k->wt->dy;
+		k->wt->dx = k->wt->dy = 0;
+
+		title = find_menu_object(tab, k->titles, k->rdx, k->rdy, &k->bar);
+
 		if (title == k->clicked_title)		/* no change */
 		{
 			k->em.flags = MU_M1|1;		/* fill out rect event data; out of title */
 			obj_area(k->wt, k->clicked_title, &k->em.m1);
+			k->wt->dx = dx, k->wt->dy = dy;
 			k->em.t1 = where_are_we;
 		}
 		else
@@ -1329,7 +1358,12 @@ click_menu_entry(struct task_administration_block *tab)
 		int m, d, titles;
 		int about, kc, ks;
 
-		m = find_menu_object(tab, 0);
+		m = find_menu_object(tab, 0, k->rdx, k->rdy, &k->drop);
+#if 0
+		if (m < 0)
+			m = find_menu_object(tab, 0, &k->bar);
+#endif
+
 		d = obtree[m].ob_state & OS_DISABLED;
 
 		DIAG((D_menu, NULL, "[4]collapse"));
@@ -1396,7 +1430,7 @@ click_popup_entry(struct task_administration_block *tab)
 	md->mn_scroll = 0;
 	vq_key_s(C.vh, &md->mn_keystate);
 
-	md->mn_item = find_menu_object(tab, k->pop_item);
+	md->mn_item = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
 	if (md->mn_item >= 0 && (k->wt->tree[md->mn_item].ob_state & OS_DISABLED) != 0)
 		md->mn_item = -1;
 	
@@ -1418,7 +1452,7 @@ click_form_popup_entry(struct task_administration_block *tab)
 	AESPB *pb = tab->pb;
 	int item;
 
-	item = find_menu_object(tab, k->pop_item);
+	item = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
 	if (item >= 0 && (k->wt->tree[item].ob_state & OS_DISABLED) != 0)
 		item = -1;
 
@@ -1585,7 +1619,7 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 
 	k->rdx = r.x;
 	k->rdy = r.y;
-	k->clicked_title = find_menu_object(tab, k->titles);
+	k->clicked_title = find_menu_object(tab, k->titles, k->rdx, k->rdy, NULL);
 	k->point_at_menu = -1;
 
 	if (   k->clicked_title > -1
@@ -1594,6 +1628,7 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 	{
 		C.menu_base = tab;			/* OK, can do */
 		C.menu_nest = 0;
+		wt->dx = wt->dy = 0;
 		tab->ty = k->ty = (wind == root_window ? ROOT_MENU : MENU_BAR);
 		k->stage = IN_TITLE;
 		obj_area(wt, k->titles, &k->bar);
@@ -1627,7 +1662,7 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 			
 			attach_menu(tab->lock, C.Aes, wt, k->about + 2, &desk_popup);
 		}
-		display_popup(tab, wt, item, r.x, r.y);
+	 	display_popup(tab, wt, item, r.x, r.y);
 
 		k->em.flags = MU_M1|1;		/* fill out rect event data; out of title */
 		obj_area(wt, k->clicked_title, &k->em.m1);

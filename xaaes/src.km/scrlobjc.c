@@ -192,7 +192,7 @@ set_slist_object(enum locks lock,
 				 true, 					/* nolist */
 				 wkind,
 				 created_for_AES,
-				 0, false, false,r,NULL,NULL);
+				 0, false,r,NULL,NULL);
 	if (list->wi)
 	{
 		int dh;
@@ -433,13 +433,6 @@ slist_msg_handler(
 		draw_object_tree(lock, list->wt, list->wi->winob, list->wi->winitem, 2, 200);
 		showm();
 	}
-
-	/* Because we are not really sending something, but just immediately act,
-	 * we wont be woken up after this. So instead we set up a small timer for
-	 * the kernel to wake us up;
-	 * This is immensely better then the original Fselect in it's own loop.
-	 */
-	//set_button_timer(lock, wind);
 }
 int
 scrl_cursor(SCROLL_INFO *list, ushort keycode)
