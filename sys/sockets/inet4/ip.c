@@ -14,7 +14,6 @@
 # include "masquerade.h"
 
 # include "timer.h"
-# include "util.h"
 
 
 static BUF *	ip_brdcst_copy	(BUF *, struct netif *, struct route *, short);

@@ -18,8 +18,6 @@
 # include "tcpsig.h"
 # include "tcputil.h"
 
-# include "util.h"
-
 
 # define TH(b)		((struct tcp_dgram *)(b)->dstart)
 # define SEGLEN(b)	(TH(b)->urgptr)
@@ -331,7 +329,7 @@ tcp_ioctl (struct in_data *data, short cmd, void *buf)
 		
 		case FIONREAD:
 			if (data->err || so->flags & SO_CANTRCVMORE)
-				space = NO_LIMIT;
+				space = UNLIMITED;
 			else if (tcb->state == TCBS_LISTEN)
 			{
 				*(long *)buf = tcp_canaccept (data);
@@ -341,14 +339,14 @@ tcp_ioctl (struct in_data *data, short cmd, void *buf)
 			{
 				space = tcp_canread (data);
 				if (space <= 0 && tcb->state != TCBS_ESTABLISHED)
-					space = NO_LIMIT;
+					space = UNLIMITED;
 			}
 			*(long *) buf = space;
 			return 0;
 		
 		case FIONWRITE:
 			if (data->err || so->flags & SO_CANTSNDMORE)
-				space = NO_LIMIT;
+				space = UNLIMITED;
 			else switch (tcb->state)
 			{
 				case TCBS_LISTEN:
@@ -361,7 +359,7 @@ tcp_ioctl (struct in_data *data, short cmd, void *buf)
 					break;
 				
 				default:
-					space = NO_LIMIT;
+					space = UNLIMITED;
 					break;
 			}
 			*(long *)buf = space;

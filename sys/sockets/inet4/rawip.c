@@ -16,7 +16,6 @@
 
 # include "buf.h"
 # include "iov.h"
-# include "util.h"
 
 
 # define RIP_RESERVE	100
@@ -121,7 +120,7 @@ rip_ioctl (struct in_data *data, short cmd, void *buf)
 		{
 			if (data->sock->flags & SO_CANTRCVMORE || data->err)
 			{
-				*(long *) buf = NO_LIMIT;
+				*(long *) buf = UNLIMITED;
 				return 0;
 			}
 			
@@ -138,7 +137,7 @@ rip_ioctl (struct in_data *data, short cmd, void *buf)
 		}
 		case FIONWRITE:
 		{
-			*(long *) buf = NO_LIMIT;
+			*(long *) buf = UNLIMITED;
 			return 0;
 		}
 	}
