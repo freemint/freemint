@@ -1,0 +1,119 @@
+Kernel hacker's guide to FreeMiNT
+=================================
+
+Everybody is welcome to improve the MiNT kernel and contribute
+source code for bugfixes and enhancements.  Please help to keep
+the source tree as clean as possible and avoid confusion by
+adhering to the following rules:
+
+ 1. Current FreeMiNT development use the CVS version control
+    system for source code integrity. The CVS server allows
+    anonymous CVS read access. So everybody can easily get the
+    current source. You just need CVS and internet access.
+    
+    CVS is a powerful but easy to use tool. Look at the CVS
+    information page for more details.
+    
+    It's strictly recommended that you use CVS if you want to
+    develop on the FreeMiNT project. If you like to contribute
+    bugfixes and/or major enhancements you get write access
+    to the CVS server and are then capable to add directly your
+    changes to the FreeMiNT CVS master tree. For that please
+    contact the current FreeMiNT coordinator. See the file `README'
+    in this directory for the e-mail address of the current 
+    coordinator.
+
+ 2. FreeMiNT is a eUnuchs clone; please use eUnuchs newline 
+    conventions for your source files (i.e. linefeed only and
+    not carriage return/linefeed).
+
+ 3. The source tree currently requires 16-bit integers to build
+    correctly.  However, future versions of MiNT should really
+    compile with both 16- and 32-bit integers.  Please keep
+    that goal in mind:
+    
+      - Avoid `int' for members of structures that are visible
+        to the end user.  Use explicitely `short int' or 
+        `long int' instead.
+      - Avoid `int' for variables that are referenced by pointers
+        visible to the end user.
+     
+ 4. `If it was hard to write it doesn't have to be hard to read.'
+    Harddisk space is cheap these days, do not worry about that
+    when commenting your sources.  NEVER make changes to existing
+    sources without giving the reason for your modification in
+    a brief comment.
+
+ 6. If you commit changes into the CVS master tree please follow
+    this guidelines:
+    
+    - don't checkin independant changes at once, instead checkin
+      changes for the same bugfix/enhancemant at once
+    - write clear and understandable logmessages; describe the
+      reason/background for the change
+    - you can format your logmessages with spaces as you like
+      but make sure that your lines are not longer than 75 characters
+
+ 6. The idea of bootstrapping is fine but the additional effort
+    is inacceptable.  The same applies to support for different
+    development environments. Feel free to expect a minimum 
+    configuration as follows:
+   
+      - The latest version of FreeMiNT in binary form.
+      - Case-sensitive file system that supports long filenames
+        (at least 32 characters).
+      - GNU C compiler 2.95.2 or higher, GNU assembler, archiver
+        and linker 2.9.1 or higher, mintbin tools 0.3 or higher,
+        MiNTLib 0.55 or higher.
+      - A POSIX compliant shell in u:\bin\sh (like the Bourne
+        Again Shell `bash' by the Free Software Foundation).
+      - GNU make 3.70 or higher.
+      - Standard eUnuchs tools, utilities and commands available
+        in path or as builtin shell commands:
+     
+          :, ., [, alias, awk, cat, cd, chmod, chgrp, chown, cmp, 
+          compress (or gzip), cp, cut, date, diff, echo, ed, egrep 
+          (resp. grep -E), env, ex, expr, false, fgrep (resp. grep -F), 
+          find, grep, groups, head, hostname, id, install 
+          (BSD-compliant), join, kill, lex (resp. flex), logname, ls, 
+          mkdir, more, mv, nice, nm, nohup, od, patch, ps,  pwd, rm, rmdir, 
+          rtfm, sed, sleep, sort, split, strip, su, tail, tar, tee, 
+          test, time, touch, tr, true, umask, uname, uncompress 
+          (or gunzip), uniq, uudecode, uuencode, vi, w, wait, wc, 
+          which, who, whoami (or who am i), xargs, yacc (or bison), 
+          zcat (or gunzip -c) ... (to be continued)
+       
+    You may expect these things to be present on other developers'
+    machines and you may make references to these things when
+    writing documentation.
+   
+    All tools are available for free download via anonymous ftp
+    from various ftp servers all over the world.  Feel free to
+    contact one of the MiNT people if you have difficulties
+    to obtain them.
+
+ 7. Help to restructure the source tree.  Do not add anything to
+    the current `monster source files', e.g. `dos.c', `proto.h'.
+    Follow a modular approach instead, document all variables
+    exported into the kernel in header files, do not pollute the
+    kernel namespace but use static variables wherever possible.
+    All global data should be properly commented including
+    but not restricted to information about functionality,
+    other dependencies, read/write access, and so on.
+
+ 8. When adding new system calls never rely on a fixed opcode!
+    Avoid proprietary solutions, use standard calls wherever
+    possible.  Try to provide a header file that may be inserted
+    into the user's <include/sys> path with only minor changes.  You
+    may embed kernel-specific stuff into conditional compilation
+    by using the `__KERNEL__' macro which is guaranteed to be
+    defined when building the MiNT kernel.
+
+ 9. Send diffs suitable for use with the `patch' command.  Read
+    the documentation for the GNU diff utilities for information
+    about how to do that.
+ 
+10. Don't take the above rules to seriously.  Consider them as
+    a guideline that makes the development of the FreeMiNT
+    system more efficient and avoids frustration for your
+    colleague developers.
