@@ -1185,6 +1185,9 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				
 			if (curproc->pgrp != curproc->pid || !curproc->control)
 				return EPERM;
+
+			f->links++;
+			tty->use_cnt++;
 			
 			/* If the tty is already the controlling tty of
 			 * another session than the behavior depends on
@@ -1199,28 +1202,21 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 					    p->control->fc.dev == f->fc.dev) {
 						    if (curproc->euid != 0 ||
 							(long) arg != 1)
+						    {
+							    do_close (f);
 							    return EPERM;
+						    }
 						    do_close (p->control);
 						    p->control = NULL;
 					}
 				}
 			}
 			
-			if (curproc->control != NULL)
-			{
-				if (curproc->control != f)
-				{
-					do_close (curproc->control);
-					f->links++;
-				}
-			}
-			else
-				f->links++;
 			curproc->control = f;
 			tty->pgrp = curproc->pgrp;
 			if (!(f->flags & O_NDELAY) && (tty->state & TS_BLIND))
 				(*f->dev->ioctl)(f, TIOCWONLINE, 0);
-			
+				
 			return 0;
 			
 		/*

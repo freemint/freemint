@@ -432,7 +432,7 @@ pCB_aux (const char *path)
 		do_close (curproc->handle[2]);
 		do_close (curproc->aux);
 		curproc->aux = curproc->handle[2] = f;
-		f->links = 2;
+		f->links++;
 		if (is_terminal (f) && f->fc.fs == &bios_filesys &&
 		    f->dev == &bios_tdevice &&
 		    (has_bconmap ? (f->fc.aux>=6) : (f->fc.aux==1)))
@@ -625,7 +625,7 @@ pCB_prn (const char *path)
 		do_close(curproc->handle[3]);
 		do_close(curproc->prn);
 		curproc->prn = curproc->handle[3] = f;
-		f->links = 2;
+		f->links++;
 	}
 	return;
 }
