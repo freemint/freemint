@@ -46,10 +46,10 @@ _mint_5ms:
 	tst.w	_profil_on
 	beq.s	L_no_profile
 	movem.l d0-d2/a0-a2,-(sp)	; save C registers
-	move.l	30(sp),d0		; try to get interrupted PC
+	move.l	26(sp),d0		; try to get interrupted PC
 	move.l	d0,-(sp)
 	jsr	_profil_counter		; call profiler
-	lea	4(sp),sp
+	addq.l	#4,sp
 	movem.l (sp)+,d0-d2/a0-a2	; restore C registers
 L_no_profile:
 %endif
@@ -58,7 +58,7 @@ L_no_profile:
 	beq.s	L_short_1
 %endif
 	clr.w	-(sp)			; set up a jump to VBL emulation
-L_short_1:	pea	_mint_vbl(pc)
+L_short_1:	pea	_mint_vbl.w(pc)
 	move.w	sr,-(sp)
 %ifdef ONLY030
 	subq.w	#1,_uptimetick
@@ -70,7 +70,7 @@ L_systime:
 	addq.l	#5,([_curproc],P_SYSTIME)
 	jmp	([_old_5ms],0)
 %else
-	move.l	_old_5ms(pc),-(sp)	; push old vector & save a bit of memory
+	move.l	_old_5ms.w(pc),-(sp)	; push old vector & save a bit of memory
 	move.l	a0,-(sp)
 	subq.w	#1,_uptimetick
 	move.l	_curproc,a0
@@ -122,7 +122,7 @@ skip:	move.w	($0442).w,d0
 	move.l	8(a0),a1
 	sub.w	d0,a1
 	move.l	a1,8(a0)
-txit:	move.l	_old_timer(pc),a0	; jump to GEMDOS time vector
+txit:	move.l	_old_timer.w(pc),a0	; jump to GEMDOS time vector
 	jmp	(a0)
 
 ; Our VBL handler.
@@ -143,7 +143,9 @@ mod5:	dc.w	5			; initial value matters
 _mint_vbl:	subq.w	#$01,vblcnt		; each fourth jump here makes a "VBL"
 	bne.s	L_out
 	move.w	#$0004,vblcnt
-	move.w	#$2300,sr
+	btst	#2,(sp)			; check the IPL
+	bne.s	L_out
+	move.w	#$2400,sr
 	movem.l	d0-d2/a0-a2,-(sp)	; save C registers
 	jsr	_checkbttys_vbl
 	lea	_uptimetick,a0
@@ -313,7 +315,7 @@ _old_ikbd:
 	dc.l	0
 _new_ikbd:
 	move.w	#1,_kintr
-	move.l	_old_ikbd(pc),-(sp)
+	move.l	_old_ikbd.w(pc),-(sp)
 	rts			; jump to system interrupt routine
 
 ; Generic routines for handling any user-specified interrupts.
@@ -645,7 +647,7 @@ noalias0:
 	cmp.w	#$14,d0 	; drive U:?
 	beq.s	nobpb		; yes, no BPB available
 
-	move.l	_old_getbpb(pc),a0	; not our drive
+	move.l	_old_getbpb.w(pc),a0	; not our drive
 	jmp	(a0)		; call the old vector for it
 nobpb:
 	clr.l	d0		; 0 means "no BPB read"
@@ -671,7 +673,7 @@ _new_mediach:
 noalias1:
 	cmp.w	#$14,d0 	; drive U:?
 	beq.s	nochng		; yes, no change
-	move.l	_old_mediach(pc),a0	; not our drive
+	move.l	_old_mediach.w(pc),a0	; not our drive
 	jmp	(a0)		; call the old vector for it
 nochng:
 	clr.l	d0		; 0 means "definitely no change"
@@ -698,7 +700,7 @@ noalias2:
 	cmp.w	#$14,d0 	; drive U:?
 	beq.s	rwdone		; yes, fake it
 
-	move.l	_old_rwabs(pc),a0	; not our drive
+	move.l	_old_rwabs.w(pc),a0	; not our drive
 	jmp	(a0)		; call the old vector for it
 rwdone:
 	clr.l	d0		; 0 means "successful operation"
