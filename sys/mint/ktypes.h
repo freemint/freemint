@@ -54,6 +54,11 @@ typedef unsigned long long		__u64;
 
 typedef long _cdecl (*Func)();
 
+/* forward declarations: sockets
+ */
+struct socket;
+struct dom_ops;
+
 /* forward declarations: file.h
  */
 typedef struct fcookie		fcookie;
