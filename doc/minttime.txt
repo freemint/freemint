@@ -1,0 +1,247 @@
+MiNT time management
+====================
+
+Beginning with kernel version 1.14.8 the time related functions of
+MiNT have drastically changed.  Don't worry if you have missed to
+read this documentation until now; if you don't use the new facilities
+you can't mess up anything.  The new stuff is 100 % compatible
+with the old time interface of the kernel.
+
+
+1. Standard TOS time
+--------------------
+
+Earlier versions of MiNT have inherited the standard TOS time
+setting (and retrieval) functions.  The only difference was that
+changing the system time required super-user privileges.
+
+The TOS time functions had one major short-coming.  The internal
+representation of a calendar time caused a maximum resolution of
+two seconds for the system time.  Furthermore, timezones were
+completely ignored;  evaluating user-supplied timezone information
+was left to software.
+
+2. New MiNT features
+--------------------
+
+As a default the MiNT kernel clock now ticks in UTC (Universal
+Time Coordinated, GMT or Greenwich Mean Time is more or less
+a synonyme for that).  You can also tell the kernel about the
+timezone that you're living in.  Programs that request
+local times from the kernel will get values corrected according
+to the timezone settings you have supplied.
+
+No, again, don't worry.  As long as you haven't set the timezone
+explicitely, no correction will take place, no mess, the kernel
+will believe that you live in London/UK and that there is no
+such thing as daylight savings time.
+
+3. How to use them?
+-------------------
+
+The user-level (resp. system-administrator-level) interface to
+the new time facilities is the `tzinit' program.  You should
+add the following lines to your MiNT configuration file mint.cnf:
+
+	# Make the time zone known to the kernel.
+	exec u:\usr\sbin\tzinit
+
+or
+
+	# Make the time zone known to the kernel.
+	exec u:\usr\sbin\tzinit -u
+
+if your hardware clock run in UTC (see paragraph 4).
+
+As you might have guessed, you should install the tzinit
+program as /usr/sbin/tzinit but any other place will do.
+
+The `tzinit' program will do two things:  
+First, it evaluates the current setting of the TZ variable 
+and sets the kernel timezone accordingly.  
+It will then check the variable `MINT_CLOCKMODE'.  
+If it doesn't exist, is empty or contains the strings 
+`UTC' or `GMT' it will do nothing.  Every other
+value will cause it to tell the kernel that the time that
+comes from the hardware-clock is actually a local time (see
+the discussion in the next section).
+
+Because the `tzinit' program changes kernel time information
+it needs super-user privileges to run (don't worry about
+that if you run it from mint.cnf or from one of the /etc/rc
+files).  Insufficient privileges are actually the only possible
+reasons for `tzinit' to fail.
+
+The `tzinit' program has one major bug:  It should actually
+be a daemon that waits and changes the kernel time information
+if daylight savings time (DST) for your timezone starts or end
+while your machine is running.  Thus, when your local time
+changes from DST to standard time or standard time to DST
+during your machine is running you should reboot.  In case 
+your kernel clock ticks in local time you also have to change
+the hardware clock by hand.
+
+4. UTC vs. Local Time
+---------------------
+
+You have the choice if you want the kernel clock to tick in UTC
+or in local time.  Both alternatives have pros and cons:
+
+	- UTC
+	  This is the standard for `real' Eunuchs machines. A
+	  major advantage is that you never have to change the
+	  hardware clock whether or not DST applies or not.
+	  If you sometimes run Linux or NetBSD on your machine
+	  you will also welcome this possibility because
+	  these operating systems feel much more comfortable with a 
+	  hardware clock ticking in UTC.
+	
+	- local time
+	  Deprecated, but probably better if you run other non-
+	  Eunuchs-like operatings systems, too.  If your hardware
+	  clock is actually fed by some radio time signal or
+	  other source that provides the time in local representation
+	  you also may need this setting.
+	  The major disadvantage:  You have to ensure that you
+	  change the hardware clock whenever DST starts or ends
+	  (when running UTC it is sufficient to reboot).
+
+5. The TZ Environment Variable
+------------------------------
+
+The TZ environment variable is superseeded by the MiNTLib timezone
+database. It's strictly recommended to remove any TZ environment
+variable and to install the timezone database.
+
+6. Other user-visible changes
+-----------------------------
+
+The kernel time now has an accuracy of approximately 26 microseconds
+and a resolution of 1 microsecond (the old interface provided a maximum 
+accuracy of 2 seconds).  Provided that your software gets adapted to 
+the new MiNT features you will see that the accuracy is increased.
+
+If you are not a programmer or not particularly interested in the
+internals you can skip the rest of this file.
+
+7. Obsoleted system calls
+-------------------------
+
+TOS provides four time related system calls:
+
+	- Tgettime
+	  Get the time of the day.
+	- Tgetdate
+	  Get the current date.
+	- Tsettime
+	  Set the time of the day.  Under MiNT this call is
+	  reserved to the super-user.
+	- Tsetdate
+	  Set the current date.  This is of course also reserved
+	  to the super-use under MiNT.
+
+It was common understanding among software developers that these
+facilities return the time and date in local time representation
+and that time and date values passed to the time setting functions
+also expect the time in local representation.
+
+These facilities are still supported by the MiNT kernel for
+compatibility reasons but their use is deprecated now.  Yet, software
+that still uses these calls can rely on the old behavior, i.e.
+Tsettime and Tsetdate still expect local times, and Tgettime
+and Tgetdate still return local times.
+
+8. New system calls
+-------------------
+
+With MiNT 1.14.8 two new system calls are introduced in the kernel:
+
+	long Tgettimeofday (long tv, long tzp);
+	long Tsettimeofday (long tv, long tzp);
+
+The opcode for Tgettimeofday is 0x155, the opcode for Tsettimeofday
+is 0x156.  Please change your library binding if you want to
+use them.
+
+The argument TV is actually a pointer to the following structure:
+
+	struct timeval {
+	  long int tv_sec;
+	  long int tv_usec;
+	};
+
+The argument TZP is a pointer to the structure
+
+	struct timezone {
+	  long int tz_minuteswest;
+	  long int tz_dsttime; 
+	};
+
+The member TV_SEC of the TV argument holds the number of seconds 
+elapsed since the epoch.  The epoch is "Thu, Jan 1 1970 00:00:00 UTC".
+The member TV_USEC of TV holds the fractional part of TV_SEC measured
+in microseconds.
+
+The member TZ_MINUTESWEST of TZ holds the offset to UTC in second.
+Timezones east of the zero-meridian (e.g. Eastern Europe) have a 
+negative value, timezones west of the zero-meridian (e.g. America)
+have a positive value.  The member TZ_DSTTIME is non-zero if daylight
+savings time applies during some part of the year.
+
+Implementors of library bindings should be aware that the definition
+of `struct timezone' is non-standard.  The members are actually `int'
+and not `long int' (this applies only to struct timezone; the members
+of `struct timeval' are always longs).  16-bit libraries will have
+to copy the contents of the structure that TZP points to.
+
+You may safely pass NULL for either arguments.  This isn't considered
+an error.
+
+Both functions return zero for success or a negative error value
+for failure (in fact Tgettimeofday can never fail).  The following error 
+conditions are defined:
+
+	EACCDN - An attempt was made by a user without super-user
+	         privileges to change the system time or system
+	         timezone.
+	
+	ERANGE - One of the arguments is out of range.  Note that
+	         the kernel time cannot be set to dates before
+	         Jan 1 1980 00:00:00 and after some day in 2038
+	         (yep, MAX_LONG seconds since the epoch).
+	         Timezone offsets must be in the range of 
+	         +/- 720 minutes.
+
+The TZ_DSTTIME member of TZP is stored but not evaluated within
+the kernel.  Beware not to misunderstand its meaning:  If non-zero
+it simply signifies that daylight savings time apply during some
+part of the year, not necessarily now.  In other words:  If it
+is non-zero someday it should be non-zero during the entire year.
+
+The Ssystem call has a new command `CLOCK_MODE' (see the file
+`ssystem.doc' for details).  This command allows to retrieve
+or set the kernel clock mode, i.e. to specify whether the
+hardware clock is meant to run in UTC or in local time.
+
+9. Future enhancements
+----------------------
+
+It is planned to make MiNT compliant with the kernel time keeping
+model described in RFC1305.  This model is already successfully
+implemented in operating systems such as SunOS, Ultrix, OSF/1, HP-UX
+and Linux.  Please expect the internal realization to change in
+the future.
+
+10. Bugs
+--------
+
+Many, many time-keeping variables inside the kernel use the old
+TOS format (which is more or less derived from MS-DOS).  This
+was probably short-sighted and it causes difficulties now:  You
+can really confuse the system if you keep on changing the system
+timezone or the kernel clock mode too often.  Timestamps can
+get corrupted and processes that rely on precise timing can
+get confused.  Thus, you are strongly discouraged to change
+the system timezone or the kernel clock mode from somewhere else
+than `mint.cnf'.  In mint.cnf you should call the `tzinit'
+program as soon as possible.

@@ -1,0 +1,66 @@
+
+ *
+ * This is a list of theoretical and practical tested limits of
+ * the FreeMiNT filesystem drivers.
+ * 
+ * 
+ * begin:       1999-06-06
+ * last change: 1999-06-06
+ * 
+ * Author: Frank Naumann - <fnaumann@freemint.de>
+ * 
+ * Please send your results or oppinions to me or
+ * the MiNT mailing list.
+ *
+
+
+TOS-FS
+------
+(default filesystem, map all calls to the underlying GEMDOS)
+
+- same restrictions as the underlying GEMDOS
+
+
+NEWFATFS
+--------
+(completly new written FAT filesystemdriver, support FAT/VFAT/FAT32;
+TOS, DOS and Windows compatible)
+
+maximum partition size
+                 FAT16 : 2 GB               tested:  2 GB
+                 FAT32 : > 16 TB            tested: 10 GB
+maximum file size      : 2 GB               tested:  2 GB
+block size             : 512 byte - 32 kb   tested: 512 byte - 32 kb
+
+physical blocksize must be smaller or
+equal to logical blocksize                : yes
+
+tested with physical blocksize > 512 byte : not yet tested
+
+
+MinixFS
+-------
+(Unix filesystem; Minix compatible)
+
+maximum partition size : 2 GB               tested:  2 GB
+maximum file size      : 2 GB               tested:  1 GB
+block size             : 1 kb               tested:  1 kb
+
+physical blocksize must be smaller or
+equal to logical blocksize                : yes
+
+tested with physical blocksize > 512 byte : not supported
+
+
+Ext2FS
+------
+(Unix Filesystem; Linux ext2 compatible)
+
+maximum partition size : > 16 TB            tested: 10 GB
+maximum file size      : 2 GB               tested:  2 GB
+block size             : 1, 2, 4 kb         tested: 1, 2, 4 kb
+
+physical blocksize must be smaller or
+equal to logical blocksize                : yes
+
+tested with physical blocksize > 512 byte : not yet tested

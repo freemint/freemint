@@ -1,0 +1,66 @@
+Einige Informationen zur Konfiguration:
+=======================================
+
+------------------------------------------------------------------------------
+
+Um in den Genuû der Vorteile des neuen FAT Filesystems (im folgenden NEWFATFS
+genannt) muû man folgende Zeilen in der MiNT.CNF ergÑnzen:
+
+NEWFATFS=<Laufwerkliste>
+
+Damit werden die in der <Laufwerkliste> bezeichneten Laufwerke von dem
+NEWFATFS angesprochen wenn auf diesen Partitionen ein gÅltiges FAT
+Filesystem vorhanden ist. Man braucht somit keine Angst vor Falsch-
+eingaben zu haben. Es wird vor dem Zugriff immer der Bootsektor verifiziert.
+
+------------------------------------------------------------------------------
+
+Die VFAT Erweiterung kann ebenso leicht aktiviert werden:
+
+VFAT=<Laufwerksliste>
+
+------------------------------------------------------------------------------
+
+Es ist sehr empfehlenswert den Write Back Cache zu aktivieren:
+
+WB_ENABLE=<Laufwerksliste>
+
+Diese Anweisung hat nur Auswirkung auf Filesysteme die das unterstÅtzen wie
+das NEWFATFS, MinixFS 0.7x und Ext2-FS. Desweiteren kann man im Gegensatz
+zu dem WriteBack DÑmon von MagiC die WriteBack Option fÅr jedes
+Laufwerk einzeln aktivieren.
+
+Die Aktivierung der WriteBack Option beschleunigt extrem sÑmtliche
+Schreibzugriffe.
+
+------------------------------------------------------------------------------
+
+Die VFAT Erweiterung sowie die WriteBack Option lassen sich zur Laufzeit
+dynamsich konfigurieren. Dazu einfach das Tool FSetter starten oder
+als ACC installieren. Die Bedienung ist selbsterklÑrend.
+
+------------------------------------------------------------------------------
+
+Die neuen Filesysteme NEWFATFS, MinixFS 0.7x und Ext2-FS benutzen gemeinsam
+einen globalen Filesystemcache. Es ist sehr empfehlenswert den Filesystemcache
+zu vergrîûern da dieser unmittelbar die Performance beeinflusst. Der
+standardmÑûige Cache ist recht klein. Geht ganz einfach mittels:
+
+CACHE=<kb>
+
+Die Grîûenangabe ist in kilobyte. Man sollte ca. 5% - 10% vom Hauptspeicher
+fÅr den Cache nutzen. Im Gegenzug sollte man alle GEMDOS Puffer auf den
+Minimalwert stellen. Die GEMDOS Puffer haben keine Relevanz mehr unter
+den neuen Filesystemen und sind somit reine Speicherverschwendung.
+
+------------------------------------------------------------------------------
+
+Desweiteren gibt es noch die Option:
+
+WRITEPROTECT=<Laufwerkliste>
+
+womit ein softwaremÑûiger Schreibschutz auf Filesystemebene realisiert werden
+kann. Ebenfalls mittels FSetter zur Laufzeit konfigurierbar.
+
+------------------------------------------------------------------------------
+

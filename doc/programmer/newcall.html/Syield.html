@@ -1,0 +1,123 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.73 [en] (X11; U; SunOS 5.6 sun4u) [Netscape]">
+   <title> New MiNT system calls: Dreadlabel() </title>
+<nextid = 1>
+</head>
+<body bgcolor="#FFFFFF">
+
+<h3>
+Syield()</h3>
+<b>VOID Syield( VOID )</b>
+<br>&nbsp;
+<br><b></b>&nbsp;
+<table BORDER >
+<tr>
+<th></th>
+
+<td><b>Syield </b>surrenders the remainder of the callers' current process
+timeslice.&nbsp;</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Opcode</b></th>
+
+<td>255 (0x00ff)</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Availability</b></th>
+
+<td>If the MiNT cookie is present.</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Parameters</b></th>
+
+<td>none.</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Binding</b></th>
+
+<td>
+<pre>move.w&nbsp; #$00ff,-(sp)
+trap&nbsp;&nbsp;&nbsp; #1
+addq.l&nbsp; #2,sp</pre>
+</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>Return Value</b></th>
+
+<td>none.</td>
+</tr>
+
+<tr>
+<th><b>Comments</b></th>
+
+<td>This functions is for gentle processes which don't want to hog the
+CPU. FreeMiNT give time slices to each running process (that's basics of
+preemptive multitasking). A process may not need all the CPU time it is
+allocated. For instance, imagine that a process is waiting for a condition
+to become true. To detect when the condition comes true, it keeps polling
+it (performing a test in a loop). But as a test doesn't take too much CPU
+time, there will be a lot of loops in a time slice.&nbsp;
+<br>If the response time is not critical, the process may afford to do
+one test per time slice (a time slice is typically 10 or 20ms), and if
+the condition has still not changed, yield the rest of its time slice to
+other processes so that they can use it to do more useful things than polling
+a variable. It does that by calling <b>Syield</b>.&nbsp;
+<br>A kind process that calls <b>Syield</b> is rewarded (it keeps the same
+priority for the next time slice) wheras a process polling like mad will
+be punished (lower priority) so it's worth being nice.
+<br>&nbsp;</td>
+</tr>
+
+<tr>
+<th></th>
+
+<td></td>
+</tr>
+
+<tr>
+<th><b>See Also</b></th>
+
+<td><b><a href="Supexec.html">Supexec()</a></b></td>
+</tr>
+</table>
+
+</body>
+</html>

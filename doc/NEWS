@@ -1,0 +1,409 @@
+New in FreeMiNT 1.15.12 (short list):
+
+- enhancements for the memory management, avoid fragmentation
+- enhancements for the kernel module interface
+- rewritten module loading, save some memory
+- more internal consistency checks
+- new system calls:
+  - Pvalidate()/Maccess()
+  - Ptrace()
+  - Psysctl()
+  - Fpoll()/Fseek64()
+  - emulation()
+- finalized new cvs development, integrated xdd/xfs/sockets
+  into the main source tree
+- updates and bugfixes for the kernel modules
+  (see in the right ChangheLog for more details)
+- and lot of bugfixes and other improvements
+
+
+New in FreeMiNT 1.15.5 (short list):
+
+- optional native UTC mode for filesystems
+- better shutdown, FreeMiNT never returns to TOS now
+- new INITIALMEM configuration option (config file/run time)
+  INITIALMEM=<kb>
+  # set the the initial size of the TPA that a process get
+- support MagiC style shared libraries
+- support program header flag F_SMALLTPA (introduced by MagiC)
+- new system calls:
+  - Slbopen()/Slbclose()
+  - Ffchown()/Ffchmod()
+  - Dchroot()
+  - Dsetkey()
+  - Fstat64()
+- and lot of bugfixes and other improvements
+
+
+New in FreeMiNT 1.15.1 (short list):
+
+- 040/060 MMU (memory protection) support
+- fix bug in 030 memory protection code (working now)
+- complete new and much faster kernel internal memory management
+- new Ssystem information and configuration options
+- new Dcntl supported (DP_VOLNAMEMAX)
+- fixes and improvements in the NEWFATFS
+- fixes and improvements in the buffer cache:
+- rewritten syscall entry strategie
+- lot of speed optimizations in periodically tasks
+- complete new enhanced CNF parser
+- rewritten Psigintr(), working now much better
+- own processor detection
+- automatic cpush adaption
+- updates for the TOSFS
+- fix 14 partition problem
+- fix for CENTEK II users (TOS version detection)
+- better Milan support
+- and lot of other minor fixes and cleanups
+
+
+New in FreeMiNT 1.15.0 (short list):
+
+- integrated FAT/VFAT/FAT32 filesystem
+  - read TOS & DOS partitions of any size;
+    support FAT32 partitions larger than 2 GB
+  - very fast
+  - support the VFAT extension for easy data exchange
+  - mostly configurable at runtime
+- integrated block cache
+  - efficient memory optimising LRU algorithm
+  - supported from MinixFS 0.70 and NEWFATFS
+  - features write back mode with drive granularity
+    and runtime configuration
+- high resolution timer
+  - 26 microseconds granularity
+  - timezone support
+- improved Ssystem (see Ssystem documentation)
+  (timezone support, sync time and a lot of other things)
+- improved SecureLevel support
+  (XBIOS is now protected from user calls)
+- Milan patches (extra kernel)
+- ESCC patches (extra kernel)
+- complete 060 patches
+- internal speed optimizations
+- many minor patches
+
+- new configuration keywords for MiNT.CNF:
+
+NEWFATFS=<comma separated drive list>
+# enable NEWFATFS for specified drives
+
+VFAT=<comma separated drive list>
+# enable VFAT extension
+# used by NEWFATFS
+
+WB_ENABLE=<comma separated drive list>
+# enable write back cache for specified drives
+# used by NEWFATFS and MinixFS 0.70
+
+CACHE=<size in kb>
+# increase filesystem cache
+# used by NEWFATFS and MinixFS 0.70
+
+HIDE_B=
+# remove drive B: from drive list
+
+- completly resorted source
+- global headerfiles
+- a lot of new header files for better programmer support
+
+Take a look on Changes.MH for a detailed technical description
+of all changes.
+
+Refer to ssystem.doc, block_IO.doc, fatfs.doc, the included examples
+and the source distribution for details and exact descriptions.
+
+Changes were contributed by the following people (alphabetical order):
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Katherine L. Ellis <kellis@primenet.com>
+  - Christian Felsch <felsch@tu-harburg.de>
+  - Guido Flohr <gufl0000@stud.uni-sb.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Mikko Larjava <mitala@nic.funet.fi>, 68060 cache patch (once more)
+  - Daniel Petersson <tam@dataphone.se>
+  - Julian F. Reschke <fjr010@email.mot.com>
+  - Rainer Seitel <Rainer_Seitel@ka.maus.de>
+
+Frank Naumann <fnaumann@cs.uni-magdeburg.de>
+Magdeburg, den 8.10.1998
+
+======================================================================
+======================================================================
+======================================================================
+
+Differences between 1.14.6 and 1.14.7:
+
+- pipefs.c fix for bidirectional IPC.
+- now it is possible to chdir to a directory that is set as unreadable
+  (--x--x--x).
+- Videl patch for sync errors on Falcons has been applied. Now vcons1d doesn't
+  produce broken display after switching to a virtual console.
+- TOS 4 bug referring to the FastRAM has been worked around. NOTTRAM.PRG is no
+  longer needed in the AUTO folder.
+- cache handling has been patched for 68060. Now the 060 is considered a '040-alike',
+  not '030-alike', as it was before.
+- single mode (no multitasking) has been added. The scheduler can be stopped so that
+  the calling process is not preempted until it unlocks the scheduler back to normal
+  operation.
+- "live" timeslice control has been added. You can change the number of slices without
+  a reboot (its actually the same value as that set by the SLICES keyword in the MINT.CNF).
+
+Refer to changes.mh, ssystem.doc, included examples and the source distribution for
+details.
+
+Several more TOS calls have been restricted to euid root at security level 1, as follows:
+
+Call		Reaction on a call from an unprivileged process
+----		-----------------------------------------------
+Midiws()	EACCDN
+Iorec()		termination
+Rsconf()	termination
+Bconmap()	EINVFN
+Dosound()	EINVFN
+Vsetmode()	EINVFN
+Vsetscreen()	EINVFN
+Setscreen()	EINVFN
+
+Generally, protected calls return an error code wherever it is possible. If the function
+operates such a way, that calling programs don't check the returned value for an error
+condition, or the function is intended to return a memory pointer the further program
+execution may rely on, the caller is terminated.
+
+Changes were contributed by the following people (alphabetical order):
+
+- Bernd Ebert
+- Katherine Ellis
+- Guido Flohr
+- Maurits van de Kamp
+- Konrad Kokoszkiewicz (me)
+- Torsten Lang
+- Kristoffer Lawson
+- Martin-Eric Racine
+
+I apologize for lack of patches referring to more general problems, like still
+broken virtual memory manager or memory fragmentation.
+
+No warranty, use at your own risk.
+Draco
+
+Warszawa, March 1998.
+
+----------------------------------------------------------------------
+Notes for FreeMiNT 1.14.6 beta:
+
+Differences between 1.14.6 and the previous 1.14.5:
+
+- security levels introduced (actually 0, 1 and 2)
+- kernel functions Setexc(), Rwabs() and Dwritelabel() are restricted 
+  for euid root at level 1.
+- kernel functions Supexec() and Super() are restricted for euid root 
+  at level 2.
+- the keyword "SECURITY=YES|NO" in MINT.CNF has been replaced with
+  more flexible SECURELEVEL=n (where n is a value of 0, 1 or 2).
+- new system call, Ssystem() has been introduced to the kernel.
+
+Kernel protection is still unfinished, particularly no XBIOS function 
+is protected except Supexec(). Functions restricted for euid root, 
+when called by an unprivileged user while the appropriate security 
+level is set, behave two different ways:
+
+- calls like Rwabs() and Dwritelabel() will return status EACCDN 
+  ("Access denied").
+- calls like Setexc(), Supexec() and Super(), those don't use any 
+  status code normally (i.e. there's no way to signalize an error),
+  will terminate (kill) the calling process.
+
+Actually you can safely use security level 1 in any configuration. 
+Level 2 however (which restricts Super() and Supexec() for root 
+processes) can't be currently used on multiuser setups because of the 
+way the MiNT Library (which is actually linked to 99.9% Unix programs 
+ported to MiNT) works. That means that to take advantage of full 
+kernel protection, the MiNTLib must be fixed and the whole Unix stuff 
+has to be recompiled. That's a lot of work and it will take some time.
+
+However, the kernel now makes it possible. MiNTLibs use supervisor 
+mode to access Cookie Jar and some GEMDOS variables located in the 
+first 32k of address space. The kernel now supports such operations, 
+so there's no more need for user processes to switch to supervisor 
+mode. That was the reason to introduce the Ssystem() call. Its 
+purposes:
+
+- read GEMDOS variables from the first 32k of memory
+- set GEMDOS variables (root only)
+- get existing Cookie Jar entries
+- place new Cookie Jar entries (root only)
+- get some kernel information
+
+See system2.c from the source distribution and included examples for 
+details and use.
+
+The original code for Ssystem() has been developed by Jerry Geiger. 
+The idea has been redesigned by me. No warranty as ever, use at your 
+own risk.
+
+Enjoy,
+Draco
+draco@mi.com.pl
+
+Warszawa, 7.XII.1997.
+
+----------------------------------------------------------------------
+
+Notes for FreeMiNT 1.14.5 beta:
+
+Since FreeMiNT 1.14 has been released, it turned over, that Profesore's VM
+extension doesn't work stable on many TT computers and doesn't work at all
+on Falcons. From that time, VM extension has got some dedicated patches
+and fixes and it started really working. However, before the VM has been
+gotten to work, I decided to split the 030 kernel into two versions. This
+left until now, as somebody may prefer non-VM kernel (which is actually
+more stable than the other with VM enabled). There are three supplied
+binaries:
+
+mint.prg - 68000 version
+mint030.prg - 68030 version
+mintvmx.prg - 68030 version with VM extension
+
+That last may be used for some experiments which (I hope) would finally
+lead to fix the VM completely. If you have suggestions, please contact me
+directly (draco@mi.com.pl) or via MiNT mailing list.
+
+Notice: even if you use the VM kernel version, but name it MINTNM.PRG in
+your AUTO folder, the VM extension will be disabled.
+
+OK, here are main differences between 1.14.5 and original 1.14:
+
+- VM is fixed so that it can (hopefully) initialize & start on any
+  030-based computer with any drive and any hard disk driver. Tested on a
+  Falcon030, 14 MB ST RAM, HDD Conner CFS 1621A (IDE) and HDDRIVER
+  (NOTICE: it seems to work *much* better than before, but still isn't
+  100% stable)
+- PMMU cookie will be set in the Cookie Jar when VM is active.
+- the Cookie Jar has been increased and has now 8 free entries more.
+- serial patch is applied so that data transfers up to 230000 baud via 
+  RS-232 seem to be possible.
+- pexec() patch is applied to avoid possible crashes on 040-based machines
+  while loading filesystems (XFS).
+- unaligned block memory moves (quickmov.spp) should be now faster on 030.
+- new command, SECURITY, is introduced to the MINT.CNF. Default is
+  SECURITY=NO. If set to YES, Rwabs() and Dwritelabel() are available
+  for superuser (root) only.
+- a bug in procfs.c is fixed (function proc_remove()), so that regular
+  users are no longer able to remove processes those aren't their own
+  (it was known as "ftpd /proc bug").
+
+Security oriented stuff has been experimentally introduced as a result of
+long and sometimes hot discuss on the MiNT mailing list. It is intended to
+prevent regular users, who don't have root privileges in multiuser
+configurations, from doing ugly things to the system. For now, only
+Rwabs() has been protected so that any user but root has no possibility to
+reformat the drive. Also Dwritelabel() will be denied for user processes. 
+Please test these new features carefully and report any found problems to
+either MiNT mailing list (mint@atari.archive.umich.edu) or directly to me
+(draco@mi.com.pl). 
+
+Note it is planned for the future to fix Super() and all XBIOS functions
+so that they would be superuser-only, when the SECURITY option is enabled.
+However, it needs additional kernel functions, those are currently under
+development. Super() and XBIOS will work traditional way until new
+MiNTLibs and the complete new MiNT distribution would be prepared.
+
+If you run MultiTOS or any other non-multiuser setup, please set
+SECURITY=NO.
+
+Serial patch has been done by Torsten Lang (Torsten.Lang@jung.de). Pexec
+patch has been done by Harry Eaton (haceaton@aplcomm.jhuapl.edu). The
+responsibility for all other changes (see changes.mh) and this kernel
+version is taken by me (draco@mi.com.pl). No warranty as ever, use it at
+your own risk.
+
+Enjoy,
+
+Draco,
+Warszawa, 13.IX.1997.
+
+PS. Binaries are compiled with gcc 2.7.2
+
+****************************************************************************
+
+This is FreeMiNT 1.14 BETA:
+
+FreeMiNT 1.14 has virtual memory which use a dedicated 
+swappartition. The swappartition is created by the doswap
+utility included in the distribution.
+
+MiNT now also have a new recognised "nameparameter". If you rename
+mint.prg into mntnm.prg or mintnm.prg and run it from the autofolder
+then both memory protection and virtual memory will be disabled.
+Virtual memory is only enabled if memory protection is disabled,
+you have a swappartion installed,you have enough memory in your 
+computer and have a true 68030 in your computer.
+Memory protection is turned off by for example renaming mint.prg
+into mintnp.prg and running it from the autofolder.
+
+VM will not work with 040,060 or 020 with 68851 coprocessor. It
+will only work with a true 030 with mmu. It will not work with a
+68EC030 or similar processor.
+
+WARNING: The specific type of 030 is not tested. The VM will try
+to run and will crash on a EC030. If you have such a processor
+you should always run MiNT with both memory protection and VM
+turned off!
+
+I strongly suggest you to make a backup of your harddisk before
+experimenting with VM. Bevare that this version is a beta and is
+not tested on all systems. It is tested on a plain 8 MHz 2.5 meg
+520ST and a TT clocked at 32 MHz with 4 meg ST-ram and 4 meg TT-ram
+using a Quantum 850 meg Trailblazer scsi harddisc fitted to the internal
+TT scsibus and using AHDI V5.00 as harddisc driver. It is not tested on
+any other machine and may perhaps not run on other machines. Although
+that is highly unlikely.
+
+VM larger than 64 meg is not supported and doswap will complain
+if you try to install a larger swappartition than 64 meg.
+
+By default all TT-ram and all ST-ram but 4 meg is used as page
+memory ie only 4 meg ST-ram will be left. This can be changed
+if the symbol ST_LEFT_AFTER_VM in mem.h are changed to the amount
+of ST-ram needed. On a TT you can set this as low as 1 or 2 megs if
+the program flags on your applications are properly set. On a Falcon
+you might want to have more ST-ram free.
+
+
+Version 1.14 (ie VM extension) was made by Sven 'il Profesore' Karlsson.
+Patches from 1.12.5 to MiNT 1.12.6 were collected by Charles 
+Briscoe-Smith <cpb4@ukc.ac.uk>.  Versions of FreeMiNT up to and 
+including 1.12.5 were collected by Michael Hohmuth 
+<hohmuth@inf.tu-dresden.de>
+
+21th of September 1996
+
+
+/*
+ * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
+ * distribution.
+ */
+
+This is an attempt in helping to re-synchronize the MiNT source tree
+between the MiNT Mailing List folks.  This effort has previously been
+known as "MH-MiNT".
+
+Please note that FreeMiNT is unsupported.  There is no warranty.  See
+the file COPYING for details.
+
+Please report bugs to the MiNT mailing list <mint@atari.archive.umich.edu>
+
+The supplied binary is compiled with gcc 2.3.3.
+
+WARNING: This is only a beta. There is a binary version in this distribution
+but it is only meant for people who are willing to risc their harddisc in the
+quest to find all bugs. The VM extension took 3 days to write. It has been
+tested only on the machines listed above during 2 weeks. There are probably
+configurations that will lead to problems. You should backup all your vital
+data before trying this piece of software. It is stable on my TT but I do not
+take any responsibility for any lost data or damaged media or hardware.
+
+NOTE: The reltime clock in my TT has stopped working. Since I have not fixed
+it yet a lot of files have strange timestamps.
+
+Regards Sven Karlsson, Istari Software

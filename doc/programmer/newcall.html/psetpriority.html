@@ -1,0 +1,100 @@
+<html>
+<head>
+	<title> New MiNT system calls: Psetpriority() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Psetpriority()</H3>
+
+<P>
+<B>LONG Psetpriority(<i>which</i>, <i>who</i>, <i>pri</i>)</B>
+<P>
+<B>WORD <I>which</I>;<br>
+WORD <i>who</i>;<br>
+WORD <i>pri</i>;
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Psetpriority()</B> sets the current priority value 
+for a process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>345 (0x0159)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a <B>MiNT</B> 
+kernel of a version at least 1.15.0 <i>release</i> is detected.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD>
+<b>Pgetpriority()</b> sets the priority <b><i>pri</i></b> (not an 
+increment but an absolute value) for the processes specified by 
+<b><i>which</i></b> and <b><i>who</i></b>. The interpretation of 
+parameter <b><i>who</i></b> depends on <b><i>which</b></i>:
+<p><b>PRIO_PROCESS</b> (0) sets the priority of process with process 
+<i>id <b>which</i></b>. A <b><i>who</i></b> of 0 implies the process 
+<i>id</i> of the calling process.</p>
+<p><b>PRIO_PGRP</b> (1) sets the priority of the process group with 
+process group <i>id <b>who</i></b>. A <b><i>who</b></i> of 0 implies 
+the process group <i>id</i> of the calling process.</p>
+<p><b>PRIO_USER</b> (2) sets the priority of the process of the user 
+with user <i>id <b>who</b></i>. A <b><i>who</i></b> of 0 implies the user 
+<i>id</i> of the calling process.
+<p>The <b><i>pri</b></i> argument is silently changed to the maximum 
+(resp. minimum) possible value if it is not in the range between 
+<b>PRIO_MIN</b> (-20) and <b>PRIO_MAX</b> (+20).
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	pri,-(sp)
+move.w	who,-(sp)
+move.w	which,-(sp)
+move.w	#$0159,-(sp)
+trap	#1
+addq.l	#8,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD>The function returns <b>E_OK</b> 
+on success or a negative error code otherwise. The following error 
+conditions are defined:
+<p><b>EINVAL</b>, invalid argument for <b><i>who</b></i>, 
+<b><i>which</b></i> or <b><i>pri</i></b>.
+<p><b>EACCES</b>, the calling process is not an owner of one or more of 
+the selected processes. The other selected processes are still affected.
+<p><b>EPERM</b>, the calling process does not have privileges to change 
+the priority of one or more of the selected processes. This can only 
+happen if an attempt was made to change the priority of a process to a 
+positive value.
+<p><b>ESRCH</b>, the combination of <b><i>which</i></b> and 
+<b><i>who</b></i> does not match any existing process.</p>
+<p>The error condition reported is the last error condition encountered 
+(in other words if both <b>EACCES</b> and <b>EPERM</b> occur the return 
+value is arbitrary).
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>This call makes calls <b>Pnice()</b> 
+and <b>Prenice()</b> obsolete.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="pgetpriority.html"><b>Pgetpriority()</b></a></td>
+</tr>
+
+</table>
+</body>
+</html>

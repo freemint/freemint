@@ -1,0 +1,73 @@
+<html>
+<head>
+	<title> New MiNT system calls: Psetauid() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Psetauid()</H3>
+
+<P>
+<B>LONG Psetauid(<i>auid</i>)</B>
+<P>
+<B>WORD <I>auid</I>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Psetauid()</B> sets the audit user <i>id</i> for 
+the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>326 (0x0146)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>auid</I> specifies the new 
+audit user id for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	auid,-(sp)
+move.w	#$0146,-(sp)
+trap	#1
+addq.l	#4,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Psetauid()</B> returns new 
+<i>auid</i> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>Audit <i>id</i> never changes once set 
+to != 0 (because <b>Psetauid()</b> only allows to change the <i>id</i> 
+when it is equal to 0) and can therefore be used to determine what 
+<i>id</i> was originally attributed to the user at the begin of the 
+current session.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="pseteuid.html"><b>Pseteuid()</b></a>,
+<a href="pgetauid.html"><b>Pgetauid()</b></a>,
+<b>Psetuid(),
+<a href="psetreuid.html"><b>Psetreuid()</b></td>
+</tr>
+
+</table>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<html>
+<head>
+	<title> New MiNT system calls: Dxreaddir() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Dxreaddir()</H3>
+
+<P>
+<B>LONG Dxreaddir( <i>len, handle, buf, xattr, xret</i> )</B>
+<P>
+<B>WORD <I>len</I>;<br>
+LONG <i>handle</i>;<br>
+char <i>*buf</i>;<br>
+XATTR <i>*xattr</i>;<br>
+LONG <i>*xret</i>;
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Dxreaddir()</B> is the same as <b>Dreaddir()</b> 
+except that it also returns (extended) attributes for a particular 
+directory entry.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>322 (0x0142)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><b><I>len</b></I>, 
+<b><i>handle</b></i> and <b><i>buf</b></i> arguments are identical to 
+<b>Dreaddir()</b> call. <b><i>xattr</b></i> is a pointer to a structure 
+containing extended attributes identical as for <b>Fxattr()</b>. 
+<i><b>xret</b></i> is a pointer to a memory location which will be 
+filled with an additional return value.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+pea	xret
+pea	xattr
+pea	buf
+move.l	handle,-(sp)
+move.w	len,-(sp)
+move.w	#$0142,-(sp)
+trap	#1
+lea	$12(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Dxreaddir()</B> returns the same 
+error codes as <b>Dreaddir()</b> or <b>E_OK</b> on success.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>In fact, the <b>Dxreaddir()</b> just 
+combines two separate <b>XFS</b> functions into one system call. Thus, 
+because two separate functions are performed, two separate return 
+values are returned. The one from <b>Dreaddir()</b> stage is returned 
+in the GEMDOS return value, the other, from the <b>Fxattr()</b> stage, 
+is returned at <b><i>*xret</b></i>. If the <b>Dreaddir()</b> fails, the 
+call returns immediately, so the <b><i>*xret</b></i> is worth 
+examinating only, if the GEMDOS return value is equal to <b>E_OK</b>.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<b>Dreaddir(), Fxattr()</b></td>
+</tr>
+
+</table>
+</body>
+</html>

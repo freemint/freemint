@@ -1,0 +1,102 @@
+  <html>
+    <head>
+      <title>
+	FreeMiNT system calls: Pgetppid()
+      </title>
+    </head>
+    
+    <body bgcolor="#FFFFFF">
+      
+      <h3>
+	Pgetppid()
+      </h3>
+
+      <b>
+	WORD Pgetppid( VOID )
+      </b>
+
+      <table>
+
+	<tr>
+	  <th>
+	  </th>
+	  <td>
+	    <b>Pgetppid()</b> returns the PID of parent of the calling process.
+	  </td>
+	</tr>
+
+	<p>
+	</p>
+	
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Opcode</b>
+	  </th>
+	  <td>
+	    268 (0x010c)
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Availability</b>
+	  </th>
+	  <td>
+	    If the MiNT cookie is present.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Parameters</b>
+	  </th>
+	  <td>
+	    none.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Binding</b>
+	  </th>
+	  <td>
+	    <pre>move.w&nbsp; #$010c,-(sp)
+trap&nbsp;&nbsp;&nbsp; #1
+addq.l&nbsp; #6,sp</pre>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Return Value</b>
+	  </th>
+	  <td>
+	    The <b>WORD</b> returned contains the Process IDentifier (pid) of the calling processes' parent.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Comments</b>
+	  </th>
+	  <td>
+	    <p>
+	      In the FreeMiNT kernel, processes are represented as a tree. The root of the tree is the kernel itself (PID 0). At boot time, the kernel launches another process (which can be 'init' in case of a Unix-like setup, or an AES, a shell or whatever) specified by the <b>INIT</b> or <b>GEM</b> keyword in the mint.cnf file. This process will launch other processes (daemons, accessories, programs etc) that are its so-called children.
+	    </p>
+	    <p>
+	      Therefore, every process (but the kernel, obviously) is created by its so-called parent. The <b>Pgetppid()</b> (get parent's PID) call allows to determine the PID of the parent of the calling process. To have a good illustration of this, you can use the 'ps' command in your shell. You will see that all accessories's parent is the AES, and that the daemons are started by the 'init' program.
+	    </p>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>See Also</b>
+	  </th>
+	  <td>
+	    <a href="Pgetpid.html"><b>Pgetpid()</b></a>
+	  </td>
+	</tr>
+      </table>
+    </body>
+  </html>
