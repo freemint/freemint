@@ -183,7 +183,7 @@ generate_strace_printer(FILE *out, struct systab *tab, const char *name)
 	{
 		struct syscall *call = tab->table[i];
 		
-		if (call && strcmp(call->name, "RESERVED"))
+		if (call && IS_SYSCALL(call))
 		{
 			char *tmp;
 			
@@ -227,7 +227,7 @@ generate_strace_tab(FILE *out, struct systab *tab, const char *name)
 		
 		fprintf(out, "/* 0x%03x */ { ", i);
 		
-		if (call && strcmp(call->name, "RESERVED"))
+		if (call && IS_SYSCALL(call))
 		{
 			fprintf(out, "%2i, ", arg_size(call->args));
 			fprintf(out, "\"%c%s\", ", toupper(call->class), call->name);
@@ -371,7 +371,7 @@ determine_types(struct systab *tab)
 	{
 		struct syscall *call = tab->table[i];
 
-		if (call && strcmp(call->name, "RESERVED"))
+		if (call && IS_SYSCALL(call))
 		{
 			if (call->args)
 			{
