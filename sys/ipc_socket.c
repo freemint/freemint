@@ -463,7 +463,7 @@ error:
 	so_drop (so, fp->flags & O_NDELAY);
 error1:
 	if (newso) so_free (newso);
-	if (newfp) FP_FREE (newfp);
+	if (newfp) { newfp->links--; FP_FREE (newfp); }
 	if (newfd >= MIN_OPEN) FD_REMOVE (p, newfd);
 	
 	return ret;
