@@ -342,6 +342,7 @@ const char *MSG_init_delay_loop = "Calibrating delay loop... ";
 const char *MSG_init_specify_prg =
 	"If MiNT is run after GEM starts, you must specify a program\r\n"
 	"to run initially in mint.cnf, with an INIT= line\r\n";
+const char *MSG_couldnt_run_init = "Couldn't run `%s', error %ld!\r\n";
 
 /* ---------- keyboard.c ---------- */
 
