@@ -44,6 +44,7 @@
 
 # include "arch/mprot.h"
 # include "arch/timer.h"
+# include "arch/cpu.h"
 
 # include "biosfs.h"
 # include "cookie.h"
@@ -271,8 +272,13 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 			break;
 		case 60:
 			cpu = mmu = "68060";
-			div = 1;		/* divide, don't multiply */
-			clkdiv = 2;		/* 1/0 (predicted branch) */
+			if (is_superscalar())
+			{
+				div = 1;		/* divide, don't multiply */
+				clkdiv = 2;		/* 1/0 (predicted branch) */
+			}
+			else
+				clkdiv = 1;
 			break;
 
 		/* Add more processors here */
