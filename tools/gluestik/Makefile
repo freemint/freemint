@@ -1,14 +1,14 @@
 #
-# Makefile for mgw, a draconis TCP/IP emulator for mintnet
+# Makefile for gluestik, a stik emulator for mintnet
 #
-TARGET = mgw.prg
+TARGET = gluestik.prg
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ..
-subdir = mgw
+subdir = gluestik
 
 default: all
 
