@@ -155,7 +155,8 @@ typedef enum
 	XACRS_NE_SIZER,
 	XACRS_MOVER,		/* The 'move window' cursor */
 	XACRS_VERTSIZER,	/* The 'resize vertically' cursor */
-	XACRS_HORSIZER		/* The 'resize horizontally' cursor */
+	XACRS_HORSIZER,		/* The 'resize horizontally' cursor */
+	XACRS_POINTSLIDE	/* ozk: The 'two-arrows pointing inwards' cursor to pinpoint slider position */
 } XA_MOUSE;
 
 #define	CGd		0x01	/* Numeric digit */

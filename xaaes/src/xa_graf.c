@@ -37,8 +37,7 @@
  * 	moose, since this will hold pending data these functions already acted
  *	upon. Dont know if this made sense to anyone, tho....
 */
-void
-update_mu_button(void);
+void update_mu_button(void);
 
 void
 update_mu_button(void)
@@ -876,6 +875,21 @@ static MFORM M_MOVER_MOUSE =
 	0x0220, 0x0140, 0x0080, 0x0000 }
 };
 
+static MFORM M_POINTSLIDE_MOUSE =
+{
+	0x0008, 0x0007, 0x0001, 0x0000, 0x0001,
+	{ /* Mask data */
+	0x03C0, 0x03C0, 0x3FFC, 0x3FFC, 
+	0x1FF8, 0x0FF0, 0x07E0, 0x03C0, 
+	0x03C0, 0x07E0, 0x0FF0, 0x1FF8, 
+	0x3FFC, 0x3FFC, 0x03C0, 0x03C0 },
+	{ /* Cursor data */
+	0x0000, 0x0180, 0x0180, 0x1FF8, 
+	0x0FF0, 0x07E0, 0x03C0, 0x0180, 
+	0x0180, 0x03C0, 0x07E0, 0x0FF0, 
+	0x1FF8, 0x0180, 0x0180, 0x0000 }
+};
+
 /*
  * AES graf_mouse() routines
  * Small extension to give a couple of extra cursor shapes
@@ -975,6 +989,11 @@ graf_mouse(int m_shape, MFORM *mf)
 	case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
 		hidem();
 		vsc_form(C.vh, (short *)&M_HORSIZER_MOUSE);
+		showm();
+		break;
+	case XACRS_POINTSLIDE:
+		hidem();
+		vsc_form(C.vh, (short *)&M_POINTSLIDE_MOUSE);
 		showm();
 		break;
 	}
