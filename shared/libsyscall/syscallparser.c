@@ -119,6 +119,42 @@ arg_length(struct arg *l)
 }
 
 int
+arg_size_bytes(struct arg *l)
+{
+	int size = 0;
+	
+	while (l)
+	{
+		if (l->flags & (FLAG_POINTER|FLAG_ARRAY))
+		{
+			size += 4;
+		}
+		else switch (l->type)
+		{
+			default:
+				assert(0); break;
+			case TYPE_IDENT:
+			case TYPE_VOID:
+				assert(0); break;
+			case TYPE_INT:
+			case TYPE_CHAR: 
+			case TYPE_SHORT:
+			case TYPE_UNSIGNED:
+			case TYPE_UCHAR:
+			case TYPE_USHORT:
+				size += 2; break;
+			case TYPE_LONG:
+			case TYPE_ULONG:
+				size += 4; break;
+		}
+		
+		l = l->next;
+	}
+	
+	return size;
+}
+
+int
 is_regular_syscall(struct syscall *call)
 {
 	return (call->status == SYSCALL_REGULAR);
