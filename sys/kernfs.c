@@ -221,13 +221,14 @@ struct ktab
 # define ROOTDIR_DEVICES	0x08
 # define ROOTDIR_DMA		0x09
 # define ROOTDIR_FILESYSTEMS	0x0a
-# define ROOTDIR_MEMINFO	0x0b
-# define ROOTDIR_VERSION	0x0c
-# define ROOTDIR_COOKIEJAR	0x0d
-# define ROOTDIR_HZ		0x0e
-# define ROOTDIR_TIME		0x0f
-# define ROOTDIR_WELCOME	0x10
-# define ROOTDIR_BUILDINFO	0x11
+# define ROOTDIR_MEMDEBUG	0x0b
+# define ROOTDIR_MEMINFO	0x0c
+# define ROOTDIR_VERSION	0x0d
+# define ROOTDIR_COOKIEJAR	0x0e
+# define ROOTDIR_HZ		0x0f
+# define ROOTDIR_TIME		0x10
+# define ROOTDIR_WELCOME	0x11
+# define ROOTDIR_BUILDINFO	0x12
 
 static KENTRY __rootdir [] =
 {
@@ -241,6 +242,9 @@ static KENTRY __rootdir [] =
 	{ ROOTDIR_FILESYSTEMS,	S_IFREG | 0444,	"filesystems",	kern_get_filesystems	},
 	{ ROOTDIR_HZ,		S_IFREG | 0444,	"hz",		kern_get_hz		},
 	{ ROOTDIR_LOADAVG,	S_IFREG | 0444,	"loadavg",	kern_get_loadavg	},
+# ifdef DEBUG_INFO
+	{ ROOTDIR_MEMDEBUG,	S_IFREG | 0444,	"memdebug",	kern_get_memdebug	},
+# endif
 	{ ROOTDIR_MEMINFO,	S_IFREG | 0444,	"meminfo",	kern_get_meminfo	},
 	{ ROOTDIR_SELF,		S_IFLNK | 0777,	"self",		kern_get_unimplemented	},
 	{ ROOTDIR_TIME,		S_IFREG | 0444,	"time",		kern_get_time		},
