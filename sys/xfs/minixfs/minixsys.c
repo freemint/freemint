@@ -435,9 +435,17 @@ m_stat64 (fcookie *fc, STAT *ptr)
 	/* measured in 512 byte blocks */
 	ptr->blocks = nblocks << (L_BS - 9);
 	
-	ptr->mtime.time = rip.i_mtime;
-	ptr->atime.time = rip.i_atime;
-	ptr->ctime.time = rip.i_ctime;
+	ptr->atime.high_time	= 0;
+	ptr->atime.time		= rip.i_atime;
+	ptr->atime.nanoseconds	= 0;
+	
+	ptr->mtime.high_time	= 0;
+	ptr->mtime.time		= rip.i_mtime;
+	ptr->mtime.nanoseconds	= 0;
+	
+	ptr->ctime.high_time	= 0;
+	ptr->ctime.time		= rip.i_ctime;
+	ptr->ctime.nanoseconds	= 0;
 	
 	ptr->flags = 0;
 	ptr->gen = 0;

@@ -200,9 +200,19 @@ shm_stat64 (fcookie *fc, STAT *ptr)
 		ptr->dev = ptr->rdev = SHM_DRV;
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		ptr->nlink = 1;
+		
+		ptr->atime.high_time = 0;
 		ptr->atime.time	= xtime.tv_sec;
+		ptr->atime.nanoseconds = 0;
+		
+		ptr->mtime.high_time = 0;
 		ptr->mtime.time	= shmfs_stmp.tv_sec;
+		ptr->mtime.nanoseconds = 0;
+		
+		ptr->ctime.high_time = 0;
 		ptr->ctime.time	= rootproc->started.tv_sec;
+		ptr->ctime.nanoseconds = 0;
+		
 		ptr->blocks = 1;
 		ptr->blksize = 1;
 		
@@ -215,9 +225,18 @@ shm_stat64 (fcookie *fc, STAT *ptr)
 	ptr->uid = s->uid;
 	ptr->gid = s->gid;
 	ptr->rdev = PROC_RDEV_BASE | 0;
+	
+	ptr->atime.high_time = 0;
 	ptr->atime.time	= xtime.tv_sec;
+	ptr->atime.nanoseconds = 0;
+	
+	ptr->mtime.high_time = 0;
 	ptr->mtime.time	= s->mtime.tv_sec;
+	ptr->mtime.nanoseconds = 0;
+	
+	ptr->ctime.high_time = 0;
 	ptr->ctime.time	= s->ctime.tv_sec;
+	ptr->ctime.nanoseconds = 0;
 	
 	if (s->reg)
 	{
