@@ -298,7 +298,6 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (events & MU_BUTTON)
 	{
-
 		Sema_Up(pending);
 
 		if (pending_button.q[pbi].client == client && mouse_ok(client))
