@@ -16,6 +16,7 @@
 # include "global.h"
 
 # include "arch/mprot.h"
+# include "arch/startup.h"	/* _base */
 # include "libkern/libkern.h"
 # include "mint/signal.h"
 
@@ -653,6 +654,13 @@ do_func_key (int scan)
 		case 0x41:
 		{
 			debug_logging ^= 1;
+			break;
+		}
+# else
+		/* F6: always print MiNT basepage */
+		case 0x40:
+		{
+			FORCE ("MiNT base %lx (%lx)", rootproc->base, _base);
 			break;
 		}
 # endif
