@@ -11,3 +11,7 @@ lib*.a
 *.app
 *.prg
 __target.*
+gen-syscall
+pars.c
+pars.h
+scan.c
