@@ -740,7 +740,7 @@ static const char *dont_load_list [] =
 	"fnramfs.xfs"
 };
 
-int
+static int
 dont_load (const char *name)
 {
 	int i;
