@@ -200,16 +200,15 @@ f_close (short fd)
 	
 	r = do_close (p, f);
 	
-	/* XXX do this before do_close?
-	 * remove fd */
-	FD_REMOVE (curproc, fd);
+	/* XXX do this before do_close? */
+	FD_REMOVE (p, fd);
 	
+# if 0
 	/* standard handles should be restored to default values
 	 * in TOS domain!
 	 * 
 	 * XXX: why?
 	 */
-# if 0
 	if (p->domain == DOM_TOS)
 	{
 		f = NULL;
