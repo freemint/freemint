@@ -432,7 +432,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 			newfp->flags = O_RDWR;
 			newfp->dev = &sockdevemu;
 			
-			if (cmd == SOCKETPAIR_CMD)
+			if (((struct generic_cmd *) buf)->cmd == SOCKETPAIR_CMD)
 			{
 				struct socketpair_cmd *c = buf;
 				struct socket *so1 = NULL, *so2 = NULL;
