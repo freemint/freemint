@@ -176,9 +176,4 @@ const char *crypto_greet =
 ;
 # endif
 
-
-/* Paths used by init.c and cnf.c to find out where the cnf file is */
-
-const char *cnf_path_1 = "\\mint.cnf";
-const char *cnf_path_2 = "\\multitos\\mint.cnf";
-const char *cnf_path_3 = "\\mint\\mint.cnf";
+/* EOF */
