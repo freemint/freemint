@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	}
 	
 	global_init();
-	if (!__mint || gl_ap_version <= 0x400)
+	if (!gl_mint || gl_gem <= 0x400)
 	{
 		if (alert(1, 0, NOAES41) == 2)
 			term_tw(1);
