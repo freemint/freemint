@@ -50,7 +50,7 @@ PROC *exec_region (PROC *p, MEMREGION *mem, int thread);
 long memused (PROC *p);
 void recalc_maxmem (PROC *p);
 int valid_address (long addr);
-MEMREGION *addr2mem (virtaddr a);
+MEMREGION *addr2mem (PROC *p, virtaddr a);
 MEMREGION *addr2region (long addr);
 MEMREGION *proc_addr2region (PROC *p, long addr);
 

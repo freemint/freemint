@@ -617,9 +617,9 @@ p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	{
 		/* mode == 4, 6, 104, 106, 204, or 206 -- just go */
 		
-		base = addr2mem((virtaddr)ptr2);
+		base = addr2mem(curproc, (virtaddr)ptr2);
 		if (base)
-			env = addr2mem(*(void **)(base->loc + 0x2c));
+			env = addr2mem(curproc, *(void **)(base->loc + 0x2c));
 		else
 			env = NULL;
 		if (!env)
