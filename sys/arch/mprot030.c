@@ -198,7 +198,7 @@ init_tables(void)
 	}
 	
 {
-    COOKIE *cookie;
+    struct cookie *cookie;
     int n_megabytes;
     long global_mode_table_size;
 
