@@ -33,6 +33,7 @@
 # include "arch/mprot.h"	/* */
 # include "arch/startup.h"	/* _base */
 # include "arch/syscall.h"	/* call_aes */
+# include "arch/tosbind.h"
 
 # include "bios.h"	/* */
 # include "block_IO.h"	/* init_block_IO */
@@ -70,8 +71,6 @@
 # include "tosfs.h"	/* tos_filesys */
 # include "xbios.h"	/* has_bconmap, curbconmap */
 
-# include <mint/osbind.h>
-
 
 /* if the user is holding down the magic shift key, we ask before booting */
 # define MAGIC_SHIFT	0x2		/* left shift */
@@ -89,15 +88,15 @@ void mint_thread(void *arg);
 
 /* print an additional boot message
  */
-static short use_sys = 0;
+short intr_done = 0;
 
 void
 boot_print (const char *s)
 {
-	if (use_sys)
+	if (intr_done)
 		sys_c_conws(s);
 	else
-		Cconws (s);
+		TRAP_Cconws (s);
 }
 
 void
@@ -122,10 +121,10 @@ stop_and_ask(void)
 	if (step_by_step)
 	{
 		boot_print(MSG_init_hitanykey);
-		if (use_sys)
+		if (intr_done)
 			sys_c_conin();
 		else
-			Cconin();
+			TRAP_Cconin();
 	}
 }
 
@@ -259,9 +258,9 @@ do_exec_os (long basepage)
 	 * otherwise we would bus error right after the Mshrink call!
 	 */
 	setstack(basepage + QUANTUM - 40L);
-	Mshrink((void *)basepage, QUANTUM);
-	r = Pexec(200, init_prg, init_tail, init_env);
-	Pterm ((int)r);
+	TRAP_Mshrink((void *)basepage, QUANTUM);
+	r = TRAP_Pexec(200, init_prg, init_tail, init_env);
+	TRAP_Pterm ((int)r);
 }
 
 
@@ -279,7 +278,7 @@ init_intr (void)
 	int i;
 	long *syskey_aux;
 
-	syskey = (KBDVEC *) Kbdvbase ();
+	syskey = (KBDVEC *) TRAP_Kbdvbase ();
 	oldkey = *syskey;
 
 	syskey_aux = (long *)syskey;
@@ -288,9 +287,9 @@ init_intr (void)
 	if (*syskey_aux && tosvers >= 0x0200)
 		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
 
-	old_term = (long) Setexc (0x102, -1UL);
+	old_term = (long) TRAP_Setexc (0x102, -1UL);
 
-	savesr = spl7();
+	savesr = splhigh();
 
 	/* Take all traps; notice, that the "old" address for any trap
 	 * except #1, #13 and #14 (GEMDOS, BIOS, XBIOS) is lost.
@@ -404,7 +403,7 @@ restr_intr (void)
 	int i;
 	long *syskey_aux;
 
-	savesr = spl7 ();
+	savesr = splhigh();
 
 	*syskey = oldkey;	/* restore keyboard vectors */
 
@@ -529,7 +528,7 @@ find_ini (char *outp, long outsize)
 {
 	ksprintf(outp, outsize, "%smint.ini", sysdir);
 
-	if (Fsfirst(outp, 0) == 0)
+	if (TRAP_Fsfirst(outp, 0) == 0)
 		return 1;
 
 	return 0;
@@ -572,22 +571,22 @@ read_ini (void)
 		goto initialize;
 
 	/* Figure out the file's length. Wish I had Fstat() here :-( */
-	dta = (DTABUF *) Fgetdta();
-	r = Fsfirst(ini_file, 0);
+	dta = (DTABUF *) TRAP_Fgetdta();
+	r = TRAP_Fsfirst(ini_file, 0);
 	if (r < 0) goto initialize;	/* No such file, probably */
 	len = dta->dta_size;
 	if (len < 10) goto initialize;	/* proper mint.ini can't be so short */
 	len++;
 
-	buf = (char *) Mxalloc (len, 0x0003);
+	buf = (char *) TRAP_Mxalloc (len, 0x0003);
 	if ((long)buf < 0)
-		buf = (char *) Malloc (len);	/* No Mxalloc()? */
+		buf = (char *) TRAP_Malloc (len);	/* No Mxalloc()? */
 	if ((long)buf <= 0) goto initialize;	/* Out of memory or such */
 	bzero (buf, len);
 
-	inihandle = Fopen (ini_file, 0);
+	inihandle = TRAP_Fopen (ini_file, 0);
 	if (inihandle < 0) goto exit;
-	r = Fread (inihandle, len, buf);
+	r = TRAP_Fread (inihandle, len, buf);
 	if (r < 0) goto close;
 
 	strupr (buf);
@@ -599,9 +598,9 @@ read_ini (void)
 	}
 
 close:
-	Fclose (inihandle);
+	TRAP_Fclose (inihandle);
 exit:
-	Mfree ((long) buf);
+	TRAP_Mfree ((long) buf);
 
 initialize:
 	load_xfs_f = options[0];
@@ -621,14 +620,14 @@ write_ini (short *options)
 
 	ksprintf(ini_file, sizeof(ini_file), "%smint.ini", sysdir);
 
-	inihandle = Fcreate (ini_file, 0);
+	inihandle = TRAP_Fcreate (ini_file, 0);
 	if (inihandle < 0)
 		return;
 
 	options++;		/* Ignore the first one :-) */
 
 	l = strlen (MSG_init_menuwarn);
-	r = Fwrite (inihandle, l, MSG_init_menuwarn);
+	r = TRAP_Fwrite (inihandle, l, MSG_init_menuwarn);
 	if ((r < 0) || (r != l))
 	{
 		r = -1;
@@ -640,7 +639,7 @@ write_ini (short *options)
 		ksprintf (buf, sizeof (buf), "%s=%s\n", \
 			ini_keywords[x], options[x] ? "YES" : "NO");
 		l = strlen (buf);
-		r = Fwrite (inihandle, l, buf);
+		r = TRAP_Fwrite (inihandle, l, buf);
 		if ((r < 0) || (r != l))
 		{
 			r = -1;
@@ -648,10 +647,10 @@ write_ini (short *options)
 		}
 	}
 close:
-	Fclose (inihandle);
+	TRAP_Fclose (inihandle);
 
 	if (r < 0)
-		Fdelete (ini_file);
+		TRAP_Fdelete (ini_file);
 }
 
 static int
@@ -679,7 +678,7 @@ boot_kernel_p (void)
 			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
 			option[6] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
 wait:
-		c = Crawcin();
+		c = TRAP_Crawcin();
 		c &= 0x7f;
 		switch(c)
 		{
@@ -745,9 +744,9 @@ init (void)
 
 	/* Initialize sysdir (TOS style) */
 	strcpy(sysdir, "\\");
-	if (Fsfirst("\\multitos\\mint.cnf", 0) == 0)
+	if (TRAP_Fsfirst("\\multitos\\mint.cnf", 0) == 0)
 		strcpy(sysdir, "\\multitos\\");
-	else if (Fsfirst("\\mint\\mint.cnf", 0) == 0)
+	else if (TRAP_Fsfirst("\\mint\\mint.cnf", 0) == 0)
 		strcpy(sysdir, "\\mint\\");
 
 	read_ini();	/* Read user defined defaults */
@@ -763,8 +762,8 @@ init (void)
 	{
 		boot_print(MSG_must_be_auto);
 		boot_print(MSG_init_hitanykey);
-		(void) Cconin();
-		Pterm0();
+		(void) TRAP_Cconin();
+		TRAP_Pterm0();
 	}
 
 	/* figure out what kind of machine we're running on:
@@ -775,26 +774,26 @@ init (void)
 	if (getmch ())
 	{
 		boot_print(MSG_init_hitanykey);
-		(void) Cconin();
-		Pterm0();
+		(void) TRAP_Cconin();
+		TRAP_Pterm0();
 	}
 
 	/* Ask the user if s/he wants to boot MiNT */
 	boot_print(MSG_init_askmenu);
 
-	pause = (Tgettime() & 0x1fL) + 2;		/* 4 second pause */
+	pause = (TRAP_Tgettime() & 0x1fL) + 2;		/* 4 second pause */
 	if (pause > 29)
 		pause -= 29;
 
 	do
 	{
-		newstamp = Tgettime() & 0x1fL;
+		newstamp = TRAP_Tgettime() & 0x1fL;
 
-		if ((Kbshift (-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
+		if ((TRAP_Kbshift (-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
 		{
 			long yn = boot_kernel_p ();
 			if (!yn)
-				Pterm0 ();
+				TRAP_Pterm0 ();
 			newstamp = pause;
 		}
 	}
@@ -804,7 +803,7 @@ init (void)
 
 # ifdef OLDTOSFS
 	/* Get GEMDOS version from ROM for later use by our own Sversion() */
-	gemdos_version = Sversion ();
+	gemdos_version = TRAP_Sversion ();
 # endif
 
 	get_my_name();
@@ -822,7 +821,7 @@ init (void)
 	 *
 	 * set the current directory for the current process
 	 */
-	Dgetpath (curpath, 0);
+	TRAP_Dgetpath (curpath, 0);
 	if (!*curpath)
 	{
 		curpath[0] = '\\';
@@ -833,7 +832,7 @@ init (void)
 	boot_print(MSG_init_supermode);
 # endif
 
-	(void) Super (0L);
+	(void) TRAP_Super (0L);
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
@@ -899,7 +898,7 @@ init (void)
 
 	if (falcontos)
 	{
-		bconmap2 = (BCONMAP2_T *) Bconmap (-2);
+		bconmap2 = (BCONMAP2_T *) TRAP_Bconmap (-2);
 		if (bconmap2->maptabsize == 1)
 		{
 			/* Falcon BIOS Bconmap is busted */
@@ -912,7 +911,7 @@ init (void)
 		/* The TT TOS release notes are wrong;
 		 * this is the real way to test for Bconmap ability
 		 */
-		has_bconmap = (Bconmap (0) == 0);
+		has_bconmap = (TRAP_Bconmap (0) == 0);
 
 		/* kludge for PAK'ed ST/STE's
 		 * they have a patched TOS 3.06 and say they have Bconmap(),
@@ -925,7 +924,7 @@ init (void)
 		}
 
 		if (has_bconmap)
-			bconmap2 = (BCONMAP2_T *) Bconmap (-2);
+			bconmap2 = (BCONMAP2_T *) TRAP_Bconmap (-2);
 	}
 
 # ifdef VERBOSE_BOOT
@@ -994,7 +993,7 @@ init (void)
 	 * trapping isn't allowed anymore; use direct calls
 	 * from now on
 	 */
-	use_sys = 1;
+	intr_done = 1;
 
 	/* Enable superscalar dispatch on 68060 */
 	get_superscalar();

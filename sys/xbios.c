@@ -21,7 +21,6 @@
 
 # include "mint/arch/mfp.h"
 # include "mint/asm.h"
-# include "mint/falcon.h"
 # include "mint/filedesc.h"
 # include "mint/ioctl.h"
 # include "mint/signal.h"
@@ -30,18 +29,19 @@
 # include "arch/mprot.h"
 # include "arch/syscall.h"
 # include "arch/timer.h"
+# include "arch/tosbind.h"
 
 # include "bios.h"
 # include "biosfs.h"
-# include "memory.h"
+# include "init.h"
 # include "k_prot.h"
+# include "memory.h"
 # include "proc.h"
 # include "signal.h"
-# include "tty.h"
 # include "time.h"	/* xtime */
+# include "tty.h"
 
-# include <osbind.h>
-# include <stddef.h>
+# include <stddef.h>	/* offsetof */
 
 
 /* NOTE: has_bconmap is initialized in main.c */
@@ -186,7 +186,10 @@ mapin (int dev)
 	if (dev == curbconmap)
 		return 1;
 
-	r = Bconmap (dev);
+	if (intr_done)
+		r = ROM_Bconmap (dev);
+	else
+		r = TRAP_Bconmap (dev);
 	if (r)
 	{
 		curbconmap = dev;
@@ -215,7 +218,7 @@ sys_b_uiorec (int dev)
 		mapin (curproc->p_fd->bconmap);
 	}
 
-	return (long) Iorec (dev);
+	return (long) ROM_Iorec (dev);
 }
 
 long _cdecl
@@ -295,7 +298,10 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 		if (has_bconmap)
 			mapin (curproc->p_fd->bconmap);
 
-		rsval = Rsconf (baud, flow, uc, rs, ts, sc);
+		if (intr_done)
+			rsval = ROM_Rsconf (baud, flow, uc, rs, ts, sc);
+		else
+			rsval = TRAP_Rsconf (baud, flow, uc, rs, ts, sc);
 	}
 
 	if (!t || baud <= -2)
@@ -352,7 +358,7 @@ sys_b_bconmap (int dev)
 			ALERT ("Bconmap(%d)", dev);
 			return 0;
 # else
-			return Bconmap(-2);
+			return ROM_Bconmap(-2);
 # endif
 		}
 
@@ -427,7 +433,7 @@ sys_b_dosound (const char *ptr)
 		}
 	}
 
-	Dosound (ptr);
+	ROM_Dosound (ptr);
 
 	return E_OK;
 }
@@ -444,9 +450,9 @@ videl_patch (void)
 	ushort s;
 
 	s = *(ushort *) 0xffff8266L;
-	Vsync();
+	ROM_Vsync();
 	*(ushort *) 0xffff8266L = 0;
-	Vsync();
+	ROM_Vsync();
 	*(ushort *) 0xffff8266L = s;
 }
 # endif
@@ -457,7 +463,7 @@ static void
 shifter_patch(void)
 {
 	*(ushort *) 0xffff8264L = 0;
-	Vsync();
+	ROM_Vsync();
 	*(ushort *) 0xffff8264L = 0;
 }
 
@@ -469,12 +475,12 @@ vsetmode (int modecode)
 
 	if (FalconVideo && (modecode != -1) && ((modecode & 0x0007) == 0))
 	{
-		Vsync();
-		r = VsetMode(modecode);
+		ROM_Vsync();
+		r = ROM_VsetMode(modecode);
 		videl_patch();
 	}
 	else
-		r = VsetMode(modecode);
+		r = ROM_VsetMode(modecode);
 
 	return r;
 }
@@ -488,7 +494,7 @@ long _cdecl
 sys_b_vsetscreen (long log, long phys, int rez, int mode)
 {
 	/* STE shifter ST-high syncbug workaround */
-	VsetScreen (log, phys, rez, mode);
+	ROM_VsetScreen (log, phys, rez, mode);
 	if (ste_video && rez == 2)
 		shifter_patch();
 
@@ -634,7 +640,7 @@ init_bconmap (void)
 {
 	int i, oldmap;
 
-	curbconmap = (has_bconmap) ? (int) Bconmap (-1) : 1;
+	curbconmap = (has_bconmap) ? (int) TRAP_Bconmap (-1) : 1;
 
 	oldmap = curproc->p_fd->bconmap = curbconmap;
 	for (i = 0; i < btty_max; i++)
@@ -648,7 +654,7 @@ init_bconmap (void)
 		{
 			if (has_bconmap)
 				mapin (curproc->p_fd->bconmap);
-			Rsconf ((r = 0), -1, -1, -1, -1, -1);
+			TRAP_Rsconf ((r = 0), -1, -1, -1, -1, -1);
 		}
 
 		rsconf (r, -1, -1, -1, -1, -1);

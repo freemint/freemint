@@ -34,19 +34,19 @@
 
 # include "init_mach.h"
 
+# include "libkern/libkern.h"
+
 # include "arch/aranym.h"
 # include "arch/detect.h"
 # include "arch/info_mach.h"
 # include "arch/mprot.h"
-# include "libkern/libkern.h"
+# include "arch/tosbind.h"
 
 # include "cookie.h"
 # include "global.h"
 # include "init.h"
 # include "keyboard.h"
 # include "kerinfo.h"
-
-# include <mint/osbind.h>
 
 
 /*
@@ -71,7 +71,7 @@ static void identify (enum special_hw);
 long
 getmch (void)
 {
-	return Supexec(_getmch);
+	return TRAP_Supexec(_getmch);
 }
 
 

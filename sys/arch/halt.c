@@ -38,14 +38,14 @@
 # include "mint/asm.h"
 # include "mint/proc.h"
 
+# include "arch/tosbind.h"
+
 # include "cookie.h"
 # include "info.h"	/* MSG_* */
 # include "init.h"	/* restore_intr */
 # include "intr.h"	/* reboot */
 # include "proc.h"
 # include "filesys.h"
-
-# include <osbind.h>
 
 
 void
@@ -112,7 +112,7 @@ hw_halt(void)
 		else
 			cpu_stop();
 
-		key = Bconin(out_device);
+		key = TRAP_Bconin(out_device);
 		
 		if ((key & 0x0c000000L) == 0x0c000000L)
 		{
@@ -132,7 +132,7 @@ hw_halt(void)
 		else
 			cpu_stop();
 
-		r = Bconin(2);
+		r = TRAP_Bconin(2);
 		if ((r & 0x0ff) == 'x')
 		{
 		}
@@ -160,7 +160,7 @@ HALT (void)
 		else
 			cpu_stop();
 
-		key = Bconin(2);
+		key = TRAP_Bconin(2);
 		
 		if ((key & 0x0c000000L) == 0x0c000000L)
 		{
@@ -180,7 +180,7 @@ HALT (void)
 		else
 			cpu_stop();
 
-		r = Bconin(2);
+		r = TRAP_Bconin(2);
 		
 		if (((r & 0x0ff) == 'x') || ((r & 0xff) == 's'))
 		{
