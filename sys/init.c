@@ -114,7 +114,7 @@ boot_printf (const char *fmt, ...)
 /* Stop and ask the user for conformation to continue */
 short step_by_step;
 
-static void
+void
 stop_and_ask(void)
 {
 	if (step_by_step == -1)
@@ -1174,6 +1174,18 @@ mint_thread(void *arg)
 	_mint_setenv(_base, "UNIXMODE", "/brUs");
 	_mint_setenv(_base, "PCONVERT", "PATH,HOME,SHELL");
 
+# ifndef NO_AKP_KEYBOARD
+	/* Load the keyboard table */
+	load_keyboard_table(NULL, 0x1);
+# endif
+
+	/* Load the unicode table */
+# ifdef SOFT_UNITABLE
+	init_unicode();
+# endif
+
+	stop_and_ask();
+
 	/* we default to U:\ before loading the cnf  */
 	sys_d_setdrv('u' - 'a');
  	sys_d_setpath("/");
@@ -1229,21 +1241,12 @@ mint_thread(void *arg)
 		new_xbra_install(&old_exec_os, EXEC_OS, (long _cdecl (*)())new_exec_os);
 	}
 
-# ifndef NO_AKP_KEYBOARD
-	/* Load the keyboard table */
-	load_keytbl();
-# endif
-
-	/* Load the unicode table */
-# ifdef SOFT_UNITABLE
-	init_unicode();
-# endif
-
-	stop_and_ask();
-
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
+	{
 		run_auto_prgs();
+		stop_and_ask();
+	}
 
 	/* we default to U:\ before starting init */
 	sys_d_setdrv('u' - 'a');
