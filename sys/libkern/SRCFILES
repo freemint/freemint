@@ -11,6 +11,7 @@ COBJS = \
 	bzero.c \
 	ctype.c \
 	dostime.c \
+	getenv.c \
 	ksprintf.c \
 	ksprintf_old.c \
 	memchr.c \
