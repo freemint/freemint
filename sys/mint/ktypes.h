@@ -96,6 +96,24 @@ typedef struct pollfd		POLLFD;
 typedef struct sizebuf		SIZEBUF;	/* sized buffer */
 
 
+/* global data */
+struct global
+{
+	long  mch;		/* machine we are are running */
+	long  fputype;		/* fpu type, value for cookie jar */
+
+	short tosvers;		/* the underlying TOS version */
+
+	short gl_lang;		/* language preference */
+# define MAXLANG 6		/* languages supported */
+	short reserved;
+
+	/* The path to the system directory
+	 */
+	short sysdrv;
+	char  sysdir[32];
+};
+
 /* BIOS device map */
 struct bdevmap
 {
@@ -124,6 +142,5 @@ struct sizebuf
 	ulong	len;
 	char	buf [0];
 };
-
 
 # endif /* _mint_ktypes_h */
