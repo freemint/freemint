@@ -381,7 +381,10 @@ L_bye:	rts
 
 	.globl	_kbdclick
 
-_kbdclick:	move.l	(0x05b0).w,d0
+_kbdclick:
+	btst	#0,(0x0484).w	// conterm
+	beq.s	L_nocl
+	move.l	(0x05b0).w,d0	// vector to the keyclick routine
 	beq.s	L_nocl
 	move.l	d0,a0
 	clr.l	d0
