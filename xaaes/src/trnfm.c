@@ -127,8 +127,6 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 		/* foreach src image line */
 		for (y = 0; y < msrc.fd_h; y++)
 		{
-			DIAGS(("line=%d\n", y));
-
 			pxy[4] = pxy[0] = 0;
 			pxy[5] = pxy[1] = 0;
 			pxy[6] = pxy[2] = tmp.fd_w - 1;
