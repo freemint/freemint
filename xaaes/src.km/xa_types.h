@@ -374,7 +374,7 @@ struct xa_client
 	Path xpath;
 	struct options options;		/* Individual AES options. */
 
-	char	mnu_clientlistname[16];	/* This holds the text of the menu-entry for client-list */
+	char	*mnu_clientlistname;	/* This holds the text of the menu-entry for client-list */
 /*
  * This part is for Client event dispatching
 */

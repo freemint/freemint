@@ -181,6 +181,14 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		return XAC_DONE;
 	}
 
+	client->mnu_clientlistname = (char *)umalloc(20);
+	if (!client->mnu_clientlistname)
+	{
+		ALERT(("umalloc for %u failed, out of memory?", p->pid));
+		detach_extension(NULL, XAAES_MAGIC);
+		return XAC_DONE;
+	}
+
 	DIAG((D_appl, client, "appl_init for %d", p->pid));
 
 	/* add to client list */
