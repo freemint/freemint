@@ -768,7 +768,7 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 		firstline++;
 	}
 	t->curs_drawn = 0;
-	if (!t->win->redraw && (t->curr_tflags & TCURS_ON))
+	if (t->curr_tflags & TCURS_ON)
 		update_cursor (t->win, -1);
 }
 
@@ -784,7 +784,10 @@ update_cursor (WINDOW* win, int top)
 	bool off = FALSE;
 	unsigned long old_flag = 0;
 	unsigned long new_flag = 0;
-
+	
+	if (win->redraw)
+		return;
+	
 	if (top == 1)
 		tw->wintop = 1;
 	else if (top == 0) {
@@ -859,7 +862,10 @@ update_cursor (WINDOW* win, int top)
 
 	tw->dirty[tw->cy] |= SOMEDIRTY;
 	tw->cflags[tw->cy][tw->cx] |= CDIRTY;
-
+	
+	if (win->redraw)
+		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
+	win->redraw = 1;
 	wind_update(TRUE);
 	wind_get_grect (win->handle, WF_FIRSTXYWH, &curr);
 
@@ -930,6 +936,7 @@ update_cursor (WINDOW* win, int top)
 		show_mouse();
 
 	wind_update(FALSE);
+	win->redraw = 0;
 
 	tw->last_cx = tw->cx;
 	tw->last_cy = tw->cy;
@@ -1076,7 +1083,10 @@ void refresh_textwin(TEXTWIN *t, short force)
 
 	t2 = v->work;
 	rc_intersect(&gl_desk, &t2);
-
+	
+	if (v->redraw)
+		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
+	v->redraw = 1;
 	wind_update(TRUE);
 	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
 	while (t1.g_w && t1.g_h) {
@@ -1095,6 +1105,7 @@ void refresh_textwin(TEXTWIN *t, short force)
 		show_mouse();
 	mark_clean(t);
 	wind_update(FALSE);
+	v->redraw = 0;
 }
 
 /*
@@ -1218,7 +1229,12 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 
 	t2 = v->work;
 	rc_intersect(&gl_desk, &t2);
+	
+	if (v->redraw)
+		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
+	v->redraw = 1;
 	wind_update(TRUE);
+	
 	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
 	while (t1.g_w && t1.g_h) {
 		if (rc_intersect(&t2, &t1)) {
@@ -1264,6 +1280,7 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 	if (m_off)
 		show_mouse();
 	wind_update(FALSE);
+	v->redraw = 0;
 }
 
 static void arrow_textwin(WINDOW *v, short msg)
@@ -1598,11 +1615,11 @@ static bool text_click(WINDOW *w, short clicks, short x, short y, short kshift, 
 			}
 			else
 			{
-				if (t->cflags[y1][x1] & CSELECTED)	/* clicked on selected text */
+				if (t->cflags[y1][x1] & CSELECTED)		/* clicked on selected text */
 				{
-					char	sel[80];
+					char sel[84];
 
-					copy(w, sel, 80);
+					copy(w, sel, sizeof (sel) - 4);
 					send_to("STRNGSRV", sel);		/* send it to StringServer */
 				}
 				else
