@@ -473,6 +473,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0);
+
 				if (ret == 0)
 				{
 					assert(p);
@@ -627,6 +628,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			ikill(p->pid, SIGKILL);
 			ret = ENOMEM;
 		}
+		//cpush(NULL, -1);
 	}
 
 out:
