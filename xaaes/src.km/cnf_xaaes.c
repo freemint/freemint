@@ -496,8 +496,8 @@ pCB_app_options(const char *line)
 				get_boolarg(s + 6, &opts->naes12);
 			else if (!strnicmp(s, "naes", 4))
 				get_boolarg(s + 4, &opts->naes);
-			else if (!strnicmp(s, "winframe", 8))
-				get_argument(s + 8, (short *)&opts->thinframe);
+			else if (!strnicmp(s, "winframe_size", 13))
+				get_argument(s + 13, (short *)&opts->thinframe);
 
 #if GENERATE_DIAGS
 			else
