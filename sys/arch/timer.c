@@ -33,5 +33,22 @@
 
 # include "timer.h"
 
-
 volatile long *hz_200 = _hz_200;
+
+unsigned long
+get_hz_200(void)
+{
+	return *(volatile unsigned long *)0x04baL;
+}
+
+void
+delay_seconds(unsigned short seconds)
+{
+	unsigned long ticks, secs = (unsigned long)seconds;
+	
+	ticks = get_hz_200();
+	ticks += (secs * HZ);
+
+	while (ticks < get_hz_200())
+		;
+}
