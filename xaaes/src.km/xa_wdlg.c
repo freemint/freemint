@@ -193,8 +193,8 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 				return -1;
 			if (is_hidden(wind))
 				unhide_window(wlock, wind);
-			top_window(wlock, wind, 0);
-			after_top(0, true);
+			top_window(wlock, true, wind, (void *)-1L, NULL);
+			//after_top(0, true);
 			break;
 		}
 		case WM_CLOSED:
@@ -967,9 +967,9 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 
 						if (is_hidden(wind))
 							unhide_window(wlock, wind);
-						top_window(wlock, wind, 0);
-						swap_menu(wlock, wind->owner, true, 10);
-						after_top(wlock, true);
+						top_window(wlock, true, wind, (void *)-1L, NULL);
+						//swap_menu(wlock, wind->owner, true, 10);
+						//after_top(wlock, true);
 						ret = 1;
 						cont = 0;
 					}

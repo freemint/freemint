@@ -175,8 +175,6 @@ open_about(enum locks lock)
 	}
 	else if (about_window != window_list)
 	{
-		C.focus = pull_wind_to_top(lock, about_window);
-		after_top(lock, true);
-		display_window(lock, 3, about_window, NULL);
+		top_window(lock, true, about_window, (void *)-1L, NULL);
 	}
 }

@@ -35,6 +35,7 @@ void get_mbstate(struct xa_client *client, struct mbs *mbs);
 bool check_queued_events(struct xa_client *client);
 
 AES_function
+	XA_xevnt_multi,
 	XA_evnt_button,
 	XA_evnt_keybd,
 	XA_evnt_mesag,

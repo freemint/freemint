@@ -571,19 +571,19 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		/*
 		 * post x_mode handling
 		 */
-
+#if 0
 		if (x_mode & SW_PSETLIMIT)
 		{
 			DIAGS((" -- addonprocwakeup(post_x_mode_psetlimit)"));
 			addonprocwakeup(p, post_x_mode_psetlimit, (void *)x_shell.psetlimit);
 		}
-
+#endif
 		if (x_mode & SW_PRENICE)
 		{
 			DIAGS((" -- p_renice"));
 			p_renice(p->pid, x_shell.prenice);
 		}
-
+#if 0
 		if (x_mode & SW_DEFDIR)
 		{
 			char *defdir = kmalloc(strlen(x_shell.defdir) + 1);
@@ -600,7 +600,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				DIAGS(("    -- out of memory"));
 				
 		}
-
+#endif
 		if (x_mode & SW_UID)
 		{
 			DIAGS((" -- proc_setuid"));
@@ -667,6 +667,9 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(3,1,2)
 
+//	if (client)
+//		display("shel_write(0x%d,%d,%d) for %s",
+//			wdoex, wisgr, wiscr, client->name);
 #if GENERATE_DIAGS
 	if (client)
 	{

@@ -1258,8 +1258,11 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			case APC_HIDE:
 			{
+				struct xa_window *wind;
 				hide_app(lock, cl);
-
+				wind = get_topwind(lock, cl, true, window_list);
+				if (wind && !is_infront(wind->owner))
+					app_in_front(lock, wind->owner);
 				break;
 			}
 			case APC_SHOW:

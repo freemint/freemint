@@ -696,7 +696,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 	struct xa_window *wind;
 	struct xa_client *client = NULL, *locker = NULL;
 	XA_WIDGET *widg;
-	//int n,c;
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 	//display("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y);
@@ -823,63 +822,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			}
 		}
 	}
-#if 0
-	client = mouse_locked();
-
-	if (   ( client && widg && wind->send_message && wind->owner == client)
-	    || (!client && widg && wind->send_message))
-	{
-		DIAGS(("found widget %d", widg->type));
-		client = wind->owner;
-		if (client->wa_wheel || wind->wa_wheel)
-		{
-			DIAGS(("clwa %d, wiwa %d", client->wa_wheel, wind->wa_wheel));
-			wind->send_message(lock, wind, NULL, AMQ_NORM,
-					WM_ARROWED, 0, 0, wind->handle,
-					WA_WHEEL,
-					0, md->state, md->clicks);
-		}
-		else
-		{
-			n = c = abs(md->clicks);
-			while (c)
-			{
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
-						WM_ARROWED, 0, 0, wind->handle,
-						client->options.wheel_reverse ? widg->xarrow : widg->arrowx,
-						/* 'MW' and 'Mw' */
-						c == n ? 0x4d57 : 0x4d77, 0, c);
-				c--;
-			}
-		}
-	}
-	else if (client)
-	{
-		DIAGS(("wheel event for %s, waiting %d",
-				c_owner(client),client->waiting_for));
-
-#if 0
-		if (client->fmd)
-			 /* Might be a model dialogue; implement at this point . */
-		else
-#endif
-
-		if (client->waiting_for & MU_WHEEL)
-		{
-			AESPB *pb = client->waiting_pb;
-
-			if (pb)
-			{
-				multi_intout(client, pb->intout, MU_WHEEL);
-				pb->intout[4] = md->state;
-				pb->intout[6] = md->clicks;
-
-				Unblock(client, XA_OK, 3);
-				DIAGS((" - written"));
-			}
-		}
-	}
-#endif
 }
 static bool
 chk_button_waiter(struct moose_data *md)

@@ -104,48 +104,51 @@ post_cevent(struct xa_client *client,
 {
 	struct c_event *c;
 
-	c = kmalloc(sizeof(*c));
-	if (c)
+	if (!(client->status & CS_EXITING))
 	{
-		c->next		= NULL;
-		c->funct	= func;
-		c->client	= client;
-		c->ptr1		= ptr1;
-		c->ptr2		= ptr2;
-		c->d0		= d0;
-		c->d1		= d1;
-
-		if (r)
-			c->r = *r;
-		if (md)
-			c->md = *md;
-
-		if (!client->cevnt_head)
+		c = kmalloc(sizeof(*c));
+		if (c)
 		{
-			client->cevnt_head = c;
-			client->cevnt_tail = c;
+			c->next		= NULL;
+			c->funct	= func;
+			c->client	= client;
+			c->ptr1		= ptr1;
+			c->ptr2		= ptr2;
+			c->d0		= d0;
+			c->d1		= d1;
+
+			if (r)
+				c->r = *r;
+			if (md)
+				c->md = *md;
+
+			if (!client->cevnt_head)
+			{
+				client->cevnt_head = c;
+				client->cevnt_tail = c;
+			}
+			else
+			{
+				client->cevnt_tail->next = c;
+				client->cevnt_tail = c;
+			}
+			client->cevnt_count++;
+
+			DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
+				c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
+				client->name));
 		}
 		else
 		{
-			client->cevnt_tail->next = c;
-			client->cevnt_tail = c;
+			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
 		}
-		client->cevnt_count++;
 
-		DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
-			c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
-			client->name));
-	}
-	else
-	{
-		DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
-	}
-
-	if (client != C.Aes)
-		Unblock(client, 1, 5000);
-	else
-	{
-		dispatch_cevent(client);
+		if (client != C.Aes)
+			Unblock(client, 1, 5000);
+		else
+		{
+			dispatch_cevent(client);
+		}
 	}
 }
 
@@ -352,15 +355,22 @@ Block(struct xa_client *client, int which)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
 
-		client->inblock = true;
-		client->sleeplock = (long)client;
-		client->sleepqueue = IO_Q;
-
-		sleep(IO_Q, (long)client);
-
-		client->inblock = false;
+		if ((client->i_xevmask.ev_0 & XMU_FSELECT))
+		{
+			client->fselect.inuse = true;
+			client->blocktype = XABT_SELECT;
+			client->sleepqueue = SELECT_Q;
+			client->fselect.ret = f_select(0L, (long *)&client->fselect.rfds, (long *)&client->fselect.wfds, (long *)&client->fselect.xfds);
+		}
+		else
+		{
+			client->blocktype = XABT_SLEEP;
+			client->sleepqueue = IO_Q;
+			client->sleeplock = (long)client;
+			sleep(IO_Q, (long)client);
+		}
+		client->blocktype = XABT_NONE;
 		client->sleeplock = 0;
-
 
 		/*
 		 * Ozk: This is gonna be the new style of delivering events;
@@ -402,7 +412,11 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	if (value == XA_OK)
 		cancel_evnt_multi(client,1);
 
-	wake(IO_Q, (long)client);
+	if (client->blocktype == XABT_SELECT)
+		wakeselect(client->p);
+	else if (client->blocktype == XABT_SLEEP)
+		wake(IO_Q, (long)client);
+
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 }
 

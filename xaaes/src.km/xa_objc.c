@@ -76,23 +76,6 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		assert(wt);
 
-#if 0
-		if (client->fmd.state && !client->fmd.wind)
-		{
-			short nextobj;
-			struct xa_window *wind;
-			if (Setup_form_do(client, obtree, -2, &wind, &nextobj))
-			{
-				if (!(wind->window_status & XAWS_OPEN))
-					open_window(lock, wind, wind->r);
-				else if (!wind->nolist && !is_topped(wind))
-					top_window(lock, wind, client);
-				else
-					display_window(lock, 4, wind, NULL);
-			}
-		}
-		else
-#endif
 		{
 			hidem();
 			set_clip(r);		/* HR 110601: checks for special case? w <= 0 or h <= 0 */

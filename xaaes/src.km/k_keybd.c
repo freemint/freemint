@@ -330,9 +330,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 			wind = next_wind(lock);
 			if (wind)
 			{
-				top_window(lock, wind, 0);
-				swap_menu(lock, wind->owner, true, 60);
-				after_top(lock, true);
+				top_window(lock, true, wind, (void *)-1L, NULL);
+				//swap_menu(lock, wind->owner, true, 60);
+				//after_top(lock, true);
 			}
 			return true;
 		}
