@@ -333,7 +333,10 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 	
 	FOREACH_CLIENT(client)
 	{
-		if (is_client(client) && client != except_cl && !isin_namelist(except_nl, client->proc_name, 8, NULL, NULL))
+		if (is_client(client) &&
+		    client != except_cl &&
+		    client != dsk &&
+		    !isin_namelist(except_nl, client->proc_name, 8, NULL, NULL))
 		{
 			DIAGS(("Shutting down %s", c_owner(client)));
 			send_terminate(lock, client);
