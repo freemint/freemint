@@ -3165,11 +3165,14 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 */
 
 	register const char *table = DEFAULT_T (dir->dev);
-	register const uchar *s = src;
-	register char *d = dst;
+	register const char *s;
+	register char *d;
 	register long i;
 
 	/* step 1 - 4 */
+
+	s = src;
+	d = dst;
 
 	/* remove leading '.' and ' ' */
 	while (*s == '.' || *s == ' ')
@@ -3178,14 +3181,25 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	i = 8;
 	while (i-- && *s && *s != '.')
 	{
-		register int upper = TOUPPER((int)*s & 0xff);
+		register int c = (int)*s & 0xff;
+		register int upper = TOUPPER(c);
 
 		*d++ = table[upper] ? upper : '_';
 		s++;
 	}
 
-	s = src + len; s--;
-	while (*s && *s != '.') s--;
+	/* search first occurrence of '.' from the end of the
+	 * remaining filename
+	 */
+	{
+		register const char *s1;
+
+		s1 = src + len; s1--;
+		while (s1 > s && *s1 != '.')
+			s1--;
+
+		s = s1;
+	}
 
 	/* copy over extension
 	 * but only if there is really something after the '.'
@@ -3194,16 +3208,21 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 */
 	if (*s == '.' && *(s+1))
 	{
-		*d++ = '.';
-		s++;
-		for (i = 1; i < 4 && *s; i++)
+		*d++ = *s++;
+
+		i = 3;
+		while (i-- && *s)
 		{
-			register int upper = TOUPPER((int)*s & 0xff);
+			register int c = (int)*s & 0xff;
+			register int upper = TOUPPER(c);
 
 			*d++ = table[upper] ? upper : '_';
 			s++;
 		}
 	}
+
+	/* terminate string */
+	*d = '\0';
 
 	/* step 5 */
 	i = search_cookie (dir, NULL, dst, TOS_SEARCH);
@@ -3243,26 +3262,29 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 */
 
 	char ext[4] = { '\0', '\0', '\0', '\0' };
-	register const uchar *s = src;
-	register char *d = dst;
+	register const char *s;
+	register char *d;
 	register char *bak;
 	register long i;
 
-	/* first zero the dst */
-	for (i = 13; i; i--)
+	/* first zero the dst [must be FAT_NAMEMAX big] */
+	for (d = dst, i = 0; i < FAT_NAMEMAX; i++)
 		*d++ = '\0';
 
 	/* step 1 - 4 */
+
+	s = src;
+	d = dst;
 
 	/* remove leading '.' and ' ' */
 	while (*s == '.' || *s == ' ')
 		s++;
 
-	d = dst;
 	i = 8;
 	while (i-- && *s && *s != '.')
 	{
-		register int upper = TOUPPER((int)*s & 0xff);
+		register int c = (int)*s & 0xff;
+		register int upper = TOUPPER(c);
 
 		*d++ = MSDOS_TABLE[upper] ? upper : '_';
 		s++;
@@ -3270,8 +3292,18 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 
 	bak = d - 1;
 
-	s = src + len; s--;
-	while (*s && *s != '.') s--;
+	/* search first occurrence of '.' from the end of the
+	 * remaining filename
+	 */
+	{
+		register const char *s1;
+
+		s1 = src + len; s1--;
+		while (s1 > s && *s1 != '.')
+			s1--;
+
+		s = s1;
+	}
 
 	/* copy over extension
 	 * but only if there is really something after the '.'
@@ -3280,11 +3312,12 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 */
 	if (*s == '.' && *(s+1))
 	{
-		ext[0] = *d++ = '.';
-		s++;
+		ext[0] = *d++ = *s++;
+
 		for (i = 1; i < 4 && *s; i++)
 		{
-			register int upper = TOUPPER((int)*s & 0xff);
+			register int c = (int)*s & 0xff;
+			register int upper = TOUPPER(c);
 
 			ext[i] = *d++ = MSDOS_TABLE[upper] ? upper : '_';
 			s++;
