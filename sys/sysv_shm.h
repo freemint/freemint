@@ -38,7 +38,7 @@
 # include "mint/shm.h"
 
 
-void *	sys_p_shmat  (long shmid, const void *shmaddr, long shmflg);
+long	sys_p_shmat  (long shmid, const void *shmaddr, long shmflg);
 long	sys_p_shmctl (long shmid, long cmd, struct shmid_ds *buf);
 long	sys_p_shmdt  (const void *shmaddr);
 long	sys_p_shmget (long key, long size, long shmflg);
