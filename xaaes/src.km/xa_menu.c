@@ -264,6 +264,9 @@ XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
 	short i = pb->intin[0];
 	
 	CONTROL(2,1,1)
+	
+	DIAG((D_menu, client, "menu_tnormal: tree=%lx, obj=%d, state=%d",
+		tree, i, pb->intin[1]));
 
 	/* Change the highlight / normal status of a menu title */
 	if (pb->intin[1])
