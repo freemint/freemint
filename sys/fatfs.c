@@ -477,13 +477,13 @@
 
 static ulong fatfs_dynamic_mem = 0;
 
-INLINE void *
-fatfs_kmalloc (long size)
+static void *
+fatfs_kmalloc (long size, const char *func)
 {
 	register ulong *place;
 	
 	size += sizeof (*place);
-	place = kmalloc (size);
+	place = _kmalloc (size, func);
 	
 	if (place)
 	{
@@ -494,22 +494,22 @@ fatfs_kmalloc (long size)
 	return place;
 }
 
-INLINE void
-fatfs_kfree (void *ptr)
+static void
+fatfs_kfree (void *ptr, const char *func)
 {
 	register ulong *place = ptr;
 	
 	place--;
 	fatfs_dynamic_mem -= *place;
 	
-	kfree (place);
+	_kfree (place, func);
 }
 
 # undef kmalloc
 # undef kfree
 
-# define kmalloc	fatfs_kmalloc
-# define kfree		fatfs_kfree
+# define kmalloc(size)	fatfs_kmalloc (size, __FUNCTION__)
+# define kfree(place)	fatfs_kfree (place, __FUNCTION__)
 
 # endif
 
