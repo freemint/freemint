@@ -925,7 +925,7 @@ struct common
 					/* a client didnt call appl_exit, so signal handler
 					   wants to remove the client from the AES. */
 
-	bool shutdown;
+	int shutdown;
 	bool mvalidate;
 
 	long AES_in_pipe;		/* The AES instruction input pipe handle */
