@@ -122,35 +122,6 @@ typedef struct
 
 
 
-# if 0
-/* bindresvport() copied from nfs-050/xfs/sock_ipc.c  --cpbs */
-
-long
-my_bindresvport (int s)
-{
-	struct sockaddr_in sin;
-	short port;
-	long r;
-	
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl (INADDR_ANY);
-	
-	for (port = IPPORT_RESERVED - 1; port > IPPORT_RESERVED/2; --port)
-	{
-		sin.sin_port = htons(port);
-		r = bind(s, (struct sockaddr *) &sin, sizeof (sin));
-		if (r == 0)
-			return 0;
-
-		if (r < 0 && errno != EADDRINUSE)
-			return r;
-	}
-	
-	return EADDRINUSE;
-}
-# endif
-
-
 static int
 make_socket (long maxmsgsize)
 {
@@ -164,15 +135,6 @@ make_socket (long maxmsgsize)
 		fprintf (stderr, "open_connection: socket() failed with %d\n", errno);
 		return fd;
 	}
-	
-#if 0
-	res = setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &maxmsgsize, sizeof (long));
-	if (res < 0)
-	{
-		fprintf (stderr, "open_connection: setsockopt() failed with %d\n", errno);
-		return res;
-	}
-#endif
 	
 	in.sin_family = AF_INET;
 	in.sin_addr.s_addr = htonl (INADDR_ANY);
@@ -188,7 +150,7 @@ make_socket (long maxmsgsize)
 }
 
 long
-do_nfs_mount (char *remote, char *localdir)
+do_nfs_mount (const char *remote, const char *localdir)
 {
 	long r;
 	NFS_MOUNT_INFO info;
@@ -311,7 +273,7 @@ do_nfs_mount (char *remote, char *localdir)
 }
 
 long
-do_nfs_unmount (char *remote, char *local)
+do_nfs_unmount (const char *remote, const char *local)
 {
 	long r;
 	char mountname[MNTPATHLEN+1];
