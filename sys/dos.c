@@ -700,7 +700,6 @@ shutdown (void)
 	}
 	
 	sys_q[READY_Q] = 0;
-	splhigh();
 	
 	DEBUG (("Close open files ..."));
 	close_filesys ();
