@@ -140,12 +140,30 @@ s_system (int mode, ulong arg1, ulong arg2)
 # endif
 			break;			/* generic 68000 */
 		}
+
+/* A bitfield specifying the built-in system features.
+ * Each '1' means that the feature is present:
+ * ---
+ * 0 - memory protection support (1 = enabled)
+ * 1 - virtual memory support (1 = enabled)
+ * 2 - storage encryption (1 = supported)
+ * 3-31 reserved bits
+ * ---
+ */
 		case S_OSFEATURES:
 		{
 # ifdef VM_EXTENSION
+#  ifdef CRYPTO_CODE
+			r =  ((!no_mem_prot) & 0x01) | ((vm_in_use << 1) & 0x02) | 0x04;
+#  else
 			r =  ((!no_mem_prot) & 0x01) | ((vm_in_use << 1) & 0x02);
+#  endif
 # else
-			r =  (!no_mem_prot) & 0x01;
+#  ifdef CRYPTO_CODE
+			r =  ((!no_mem_prot) & 0x01) | 0x04;
+#  else
+			r = (!no_mem_prot) & 0x01);
+#  endif
 # endif 
 			break;
 		}
