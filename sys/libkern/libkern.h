@@ -176,6 +176,8 @@ int	_cdecl _mint_o_strnicmp	(const char *str1, const char *str2, int len);
  */
 
 void	_cdecl ms_time		(ulong ms, short *timeptr);
+void	_cdecl unix2calendar	(long tv_sec, ushort *year, ushort *month, ushort *day, \
+					ushort *hour, ushort *minute, ushort *second);
 long	_cdecl unix2xbios	(long tv_sec);
 long	_cdecl dostime		(long tv_sec);
 long	_cdecl unixtime		(ushort time, ushort date);
