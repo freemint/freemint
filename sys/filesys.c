@@ -358,7 +358,7 @@ close_filesys (void)
  */
 
 void _cdecl
-changedrv (ushort d, const char *function)
+_changedrv (ushort d, const char *function)
 {
 	PROC *p;
 	int i;
@@ -561,7 +561,7 @@ disk_changed (ushort d)
 	if (!fs)
 	{
 		TRACE (("drive %c not yet initialized", d+'A'));
-		changedrv (d, __FUNCTION__);
+		changedrv (d);
 		return 0;
 	}
 
@@ -577,7 +577,7 @@ disk_changed (ushort d)
 		if (i)
 		{
 			drives[d] = 0;
-			changedrv (d, __FUNCTION__);
+			changedrv (d);
 		}
 
 		return i;
@@ -636,7 +636,7 @@ disk_changed (ushort d)
 		if (xfs_dskchng (fs, d, 0))
 		{
 			drives[d] = 0;
-			changedrv (d, __FUNCTION__); /* yes -- do the change */
+			changedrv (d); /* yes -- do the change */
 			return 1;
 		}
 	}
@@ -804,7 +804,7 @@ nodrive:
 
 	if (!dir.fs && !cwd->root_dir)
 	{
-		changedrv (dir.dev, __FUNCTION__);
+		changedrv (dir.dev);
 		dup_cookie (&dir, &cwd->root[drv]);
 	}
 

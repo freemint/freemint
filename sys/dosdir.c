@@ -449,7 +449,7 @@ sys_d_getcwd (char *path, int drv, int size)
 	if (!root->fs)
 	{
 		/* maybe not initialized yet? */
-		changedrv (drv, __FUNCTION__);
+		changedrv (drv);
 
 		root = &cwd->root[drv];
 		if (!root->fs)
@@ -1774,7 +1774,7 @@ sys_d_lock (int mode, int _dev)
 		if (dlockproc[dev] == curproc)
 		{
 			dlockproc[dev] = NULL;
-			/* changedrv (dev, __FUNCTION__); */
+			/* changedrv (dev); */
 			return E_OK;
 		}
 		DEBUG (("Dlock: no such lock"));

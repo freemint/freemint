@@ -302,7 +302,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 				{
 					/* drive changed? */
 					if (!changed)
-						changedrv (tmp->dev, __FUNCTION__);
+						changedrv (tmp->dev);
 
 					tmp = &cwd->root[u->dev];
 					if (!tmp->fs)
@@ -993,7 +993,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			 *
 			 * Kludge: mark the directory as a link, so uni_remove will remove it.
 			 */
-			changedrv (u->dev, __FUNCTION__);
+			changedrv (u->dev);
 			u->mode &= ~S_IFMT;
 			u->mode |= S_IFLNK;
 			return uni_remove (dir, name);

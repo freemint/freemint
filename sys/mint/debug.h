@@ -39,6 +39,8 @@ extern int debug_logging;
 # define TRACE(x)
 # define DEBUG(x)
 
+# define FUNCTION __FUNCTION__
+
 # else
 
 # define TRACELOW(s)	\
@@ -64,6 +66,13 @@ extern int debug_logging;
 		    || debug_logging) \
 			Debug s ; \
 	} while (0)
+
+# ifndef str
+# define str(x)		_stringify(x)
+# define _stringify(x)	#x
+# endif
+
+# define FUNCTION __FILE__","str(__LINE__)","__FUNCTION__"()"
 
 # endif /* DEBUG_INFO */
 
