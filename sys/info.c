@@ -154,6 +154,7 @@ const char *greet2 =
 
 # ifdef LANG_ENGLISH
 
+# ifndef ONLY68000
 const char *memprot_warning =
 	"\007\033p"
 	"             *** WARNING ***              \033q\r\n"
@@ -162,6 +163,7 @@ const char *memprot_warning =
 	"supported in the future.\r\n"
 	"\r\n"
 ;
+# endif
 
 # ifdef DEV_RANDOM
 const char *random_greet =
@@ -204,10 +206,13 @@ const char *months_abbr_3[] =
 /* Notice that this is an ALERT(), so compose the message so that
  * it could be formatted nicely
  */
+# ifndef NO_MMU
 const char *MSG_bios_kill =
 	"KILLED. INVALID PROTECTION MODE. "
 	"Please change the protection mode "
-	"to \'Super\' in the program header.";
+	"to \'Super\' in the program header."
+;
+# endif
 
 /* ----------- biosfs.c --------- */
 
@@ -216,6 +221,46 @@ const char *ERR_biosfs_aux_fptr = "Can't allocate default aux FILEPTR!";
 /* ---------- block_IO.c ---------- */
 
 const char *ERR_bio_cant_init_cache = "init_block_IO: can't initialize default cache!";
+
+/* ---------- bootmenu.c ----------- */
+
+/* In German this is "BootmenÅ anzeigen? (j)a (n)ein "
+ * In French "Afficher le menu de dÇmarrage? (o)ui (n)on "
+ */
+const char *MSG_init_askmenu = "Hold down the SHIFT key to enter menu or wait %d s.\r\n";
+const char *MSG_init_menu_yes = "y";
+# if 0
+const char *MSG_init_menu_no = "n";
+# endif
+const char *MSG_init_menu_yesrn = "yes\r\n";
+const char *MSG_init_menu_norn = "no\r\n";
+
+const char *MSG_init_bootmenu =
+	"\033E\r\n\033p"
+	"    FreeMiNT boot menu    \033q\r\n\r\n"
+	"<1> Start up FreeMiNT: %s"
+	"<2> Load external XFS: %s"
+	"<3> Load external XDD: %s"
+	"<4> Execute AUTO PRGs: %s"
+# ifndef NO_MMU
+	"<5> Memory protection: %s"
+# endif
+	"<6> Init step by step: %s"
+	"<0> Remember settings: %s\r\n"
+	"[Return] accept,\r\n"
+	"[Ctrl-C] cancel.\r\n"
+;
+
+const char *MSG_init_menuwarn =
+	"# This file is automatically created,\n"
+	"# do not edit.\n\n"
+;
+
+const char *MSG_init_unknown_cmd = "mint.ini: unknown command '%s'\r\n";
+const char *MSG_init_no_value = "mint.ini: '%s' lacks value\r\n";
+const char *MSG_init_write_error = "Error %ld writing %s\r\n";
+const char *MSG_init_value_out_of_range = "mint.ini: %s value %ld is out of range (%d-%d)\r\n";
+const char *MSG_init_syntax_error = "mint.ini: %s syntax error\r\n";
 
 /* ------------ cnf.c ---------- */
 
@@ -308,47 +353,20 @@ const char *MSG_gmon_enable_error = "Profiling enable error";
 const char *MSG_init_getname = "[MiNT is named \\AUTO\\%s]\r\n";
 # endif
 
-/* In German this is "BootmenÅ anzeigen? (j)a (n)ein "
- * In French "Afficher le menu de dÇmarrage? (o)ui (n)on "
- */
-const char *MSG_init_askmenu = "Hold down the SHIFT key to enter menu or wait %d s.\r\n";
-const char *MSG_init_menu_yes = "y";
-# if 0
-const char *MSG_init_menu_no = "n";
-# endif
-const char *MSG_init_menu_yesrn = "yes\r\n";
-const char *MSG_init_menu_norn = "no\r\n";
-
-const char *MSG_init_bootmenu =
-	"\033E\r\n\033p"
-	"    FreeMiNT boot menu    \033q\r\n\r\n"
-	"<1> Start up FreeMiNT: %s"
-	"<2> Load external XFS: %s"
-	"<3> Load external XDD: %s"
-	"<4> Execute AUTO PRGs: %s"
-	"<5> Memory protection: %s"
-	"<6> Init step by step: %s"
-	"<0> Remember settings: %s\r\n"
-	"[Return] accept,\r\n"
-	"[Ctrl-C] cancel.\r\n"
-;
-
-const char *MSG_init_menuwarn =
-	"# This file is automatically created,\n"
-	"# do not edit.\n\n"
-;
 const char *MSG_init_must_be_auto = "MiNT MUST be executed from the AUTO folder!\r\n";
 const char *MSG_init_no_mint_folder = "No <boot>/mint or <boot>/mint/%s folder found!\r\n";
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
 const char *MSG_init_delay_loop = "Calibrating delay loop ... ";
 # ifdef VERBOSE_BOOT
+# ifndef NO_MMU
 const char *MSG_init_mp = "Memory protection %s\r\n";
 const char *MSG_init_mp_enabled = "enabled";
 const char *MSG_init_mp_disabled = "disabled";
+const char *MSG_init_saving_mmu = "Saving MMU setup ...";
+# endif
 const char *MSG_init_kbd_desktop_nationality = "Keyboard nationality code: %d\r\nLanguage preference code: %d\r\n";
 const char *MSG_init_supermode = "Entering supervisor mode ...";
 const char *MSG_init_sysdrv_is = "Booting from '%c'\r\n";
-const char *MSG_init_saving_mmu = "Saving MMU setup ...";
 const char *MSG_init_tosver_kbshft = "Resident TOS version %d.%02d%s\r\nKbshft 0x%08lx.\r\n";
 const char *MSG_init_bconmap = "BIOS Bconmap() %s.\r\n";
 const char *MSG_init_system = "Initializing system components:\r\n";
@@ -360,7 +378,9 @@ const char *MSG_init_launching_init = "Launching %s: %s ...";
 const char *MSG_init_no_init_specified = "No init program specified to be started.\r\n";
 const char *MSG_init_rom_AES = "No init, launching ROM AES.\r\n";
 const char *MSG_init_starting_shell = "Starting up `%s' ...";
+# ifdef BUILTIN_SHELL
 const char *MSG_init_starting_internal_shell = "Giving up, reverting to internal shell.\r\n";
+# endif
 const char *MSG_init_done = " done!\r\n";
 const char *MSG_init_present = "present";
 const char *MSG_init_not_present = "not present";
