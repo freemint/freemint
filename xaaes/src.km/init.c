@@ -137,12 +137,88 @@ init(struct kentry *k)
 	if (check_kentry_version())
 		return NULL;
 
+	/* remember loader */
 	loader_pid = p_getpid();
 
 	/* open the log
 	 * if failed nothing is written; fdisplay is failsafe
 	 */
 	log = kernel_open("xa_setup.log", O_WRONLY|O_CREAT|O_TRUNC, NULL);
+
+	/* do some sanity checks of the installation
+	 * that are a common source of user problems
+	 */
+	{
+		struct file *check;
+		char *buf;
+		bool flag;
+
+		/* look if there is a moose.xdd
+		 * terminate if yes
+		 */
+
+		flag = false;
+
+		check = kernel_open("u:\\dev\\moose", O_RDONLY, NULL);
+		if (check)
+		{
+			kernel_close(check);
+			flag = true;
+		}
+
+		buf = kmalloc(strlen(sysdir)+16);
+		if (buf)
+		{
+			strcpy(buf, sysdir);
+			strcat(buf, "\\moose.xdd");
+
+			check = kernel_open(buf, O_RDONLY, NULL);
+			if (check)
+			{
+				kernel_close(check);
+				flag = true;
+			}
+
+			kfree(buf);
+		}
+
+		if (flag)
+		{
+			fdisplay(log, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir.");
+			fdisplay(log, "       Please remove it before starting the XaAES kernel module!");
+			return NULL;
+		}
+
+
+		/* look is there is an moose.adi
+		 * terminate if not
+		 */
+
+		flag = true;
+
+		buf = kmalloc(strlen(sysdir)+16);
+		if (buf)
+		{
+			strcpy(buf, sysdir);
+			strcat(buf, "\\moose.adi");
+
+			check = kernel_open(buf, O_RDONLY, NULL);
+			if (check)
+			{
+				kernel_close(check);
+				flag = false;
+			}
+
+			kfree(buf);
+		}
+
+		if (flag)
+		{
+			fdisplay(log, "ERROR: There is no moose.adi in your FreeMiNT sysdir.");
+			fdisplay(log, "       Please install it before starting the XaAES kernel module!");
+			return NULL;
+		}
+	}
 
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
@@ -316,7 +392,15 @@ init(struct kentry *k)
 
 	}
 
-	return ((void *) -1L);
+	if (loader_pid > 0)
+	{
+		while (!(C.shutdown & QUIT_NOW))
+			sleep(WAIT_Q, (long)&loader_pid);
+
+		return NULL;
+	}
+
+	return (void *)1L;
 
 error:
 	if (log)
