@@ -235,14 +235,10 @@ __next (FILEPTR *f, d_inode *rip, long chunk, short mode)
 	register long znew = 0;
 	
 	if (mode == READ && ((chunk >= fch->fzone) && (chunk < fch->lzone)))
-	{
 		znew = fch->zones[chunk - fch->fzone];
-	}
 	
 	if (!znew)
-	{
 		znew = find_zone (rip, chunk, f->fc.dev, mode);
-	}
 	
 	return znew;
 }
@@ -323,9 +319,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 	
 	/* At or past EOF */
 	if (todo <= 0)
-	{
 		return 0;
-	}
 	
 	chunk = f->pos >> L_BS;
 	
@@ -334,9 +328,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 	{
 		long i;
 		for (i = 0; i < PRE_READ; i++)
-		{
 			fch->zones[i] = find_zone (&rip, i + chunk, f->fc.dev, 0);
-		}
 		
 		bio.pre_read (super_ptr[f->fc.dev]->di, fch->zones, PRE_READ, BLOCK_SIZE);
 		
@@ -728,6 +720,23 @@ m_ioctl (FILEPTR *f, int mode, void *buf)
 			itruncate (f->fc.index, f->fc.dev, *((long *) buf));
 			
 			sync (f->fc.dev);
+			return E_OK;
+		}
+		case FIBMAP:
+		{
+			d_inode rip;
+			long block;
+			
+			DEBUG (("MinixFS: m_ioctl (FIBMAP)"));
+			
+			if (!buf)
+				return EINVAL;
+			
+			read_inode (f->fc.index, &rip, f->fc.dev);
+			
+			block = *(long *) buf;
+			*(long *) buf = find_zone (&rip, block, f->fc.dev, 0);
+			
 			return E_OK;
 		}
 	}

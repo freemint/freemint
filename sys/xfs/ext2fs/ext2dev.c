@@ -672,6 +672,21 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			bio_SYNC_DRV ((&bio), c->s->di);
 			return E_OK;
 		}
+		case FIBMAP:
+		{
+			COOKIE *c = (COOKIE *) f->fc.index;
+			long block;
+			
+			DEBUG (("Ext2-FS: e_ioctl (FIBMAP)"));
+			
+			if (!arg)
+				return EINVAL;
+			
+			block = *(long *) arg;
+			*(long *) arg = ext2_bmap (c, block);
+			
+			return E_OK;
+		}
 		case F_SETLK:
 		case F_SETLKW:
 		case F_GETLK:
