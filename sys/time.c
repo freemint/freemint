@@ -1,38 +1,38 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1998 Guido Flohr <guido@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Guido Flohr <guido@freemint.de>
  * Started: 1998-03-30
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Kernel time functions.
- * 
- */  
+ *
+ */
 
 # include "time.h"
 
@@ -88,7 +88,7 @@ static void quick_synch (void);
 
 # if 0
 /* Time of day in representation of the IKBD-Chip.  If somebody can
- * fix the routine that reads the values of the IKBD-clock we 
+ * fix the routine that reads the values of the IKBD-clock we
  * will be able to retrieve the system time with an accuracy of
  * one second at system start-up.
  */
@@ -112,46 +112,46 @@ volatile short packet_came = 0;		/* volatile, f**k */
  * get/set time and date original functions.  Their use is deprecated
  * now.  Use Tgettimeofday () and Tsettimeofday () instead.
  */
-long _cdecl 
-t_getdate (void) 
-{ 
-	TRACE (("Tgetdate ()"));
-	return datestamp; 
-}
-
-long _cdecl 
-t_gettime (void) 
+long _cdecl
+sys_t_getdate (void)
 {
-	TRACE (("Tgettime ()"));
-	return timestamp; 
+	TRACE (("Tgetdate ()"));
+	return datestamp;
 }
 
 long _cdecl
-t_setdate (ushort date)
+sys_t_gettime (void)
+{
+	TRACE (("Tgettime ()"));
+	return timestamp;
+}
+
+long _cdecl
+sys_t_setdate (ushort date)
 {
 	struct timeval tv = { 0, 0 };
-	
+
 	if (!suser (curproc->p_cred->ucr))
 	{
 		DEBUG (("Tsetdate: attempt to change time by unprivileged user"));
 		return EPERM;
 	}
-	
+
 	tv.tv_sec = unixtime (timestamp, date) + timezone;
 	return do_settimeofday (&tv);
 }
 
 long _cdecl
-t_settime (ushort time)
+sys_t_settime (ushort time)
 {
 	struct timeval tv = { 0, 0 };
-	
+
 	if (!suser (curproc->p_cred->ucr))
 	{
 		DEBUG (("Tsettime: attempt to change time by unprivileged user"));
 		return EPERM;
 	}
-	
+
 	tv.tv_sec = unixtime (time, datestamp) + timezone;
 	return do_settimeofday (&tv);
 }
@@ -171,7 +171,7 @@ t_settime (ushort time)
  * for a little amount of time.  We keep track of the last timeval
  * reported plus the additional microseconds we added to the
  * calculated timevals.  In case the last timeval and the current
- * timeval are equal we add MICRO_ADJUSTMENT microseconds and 
+ * timeval are equal we add MICRO_ADJUSTMENT microseconds and
  * increment this value.  This gives us time for about 26 us.
  * If this isn't enough we have to tell the truth however.
  */
@@ -182,11 +182,11 @@ long _cdecl
 do_gettimeofday (struct timeval* tv)
 {
 	quick_synch ();
-	
+
 	*tv = xtime;
-	
+
 	tv->tv_usec += (192L - timerc) * MICROSECONDS_PER_CLOCK / 192L;
-	
+
 	if (last_tv.tv_sec == tv->tv_sec && last_tv.tv_usec == tv->tv_usec)
 	{
 		if (micro_adjustment < 25)
@@ -196,31 +196,31 @@ do_gettimeofday (struct timeval* tv)
 	{
 		micro_adjustment = 0;
 	}
-	
+
 	last_tv = *tv;
-	
+
 	tv->tv_usec += micro_adjustment;
-	
+
 	if (tv->tv_usec >= 1000000L)
 	{
 		tv->tv_usec -= 1000000L;
 		tv->tv_sec++;
 	}
-	
+
 	return E_OK;
 }
 
 long _cdecl
-t_gettimeofday (struct timeval *tv, struct timezone *tz)
+sys_t_gettimeofday (struct timeval *tv, struct timezone *tz)
 {
 	TRACE (("Tgettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
-	
+
 	if (tz != NULL)
 		memcpy (tz, &sys_tz, sizeof (sys_tz));
-	
+
 	if (tv != NULL)
 		return do_gettimeofday (tv);
-	
+
 	return E_OK;
 }
 
@@ -231,9 +231,9 @@ long _cdecl
 do_settimeofday (struct timeval* tv)
 {
 	ulong tos_combined;
-	
+
 	TRACE (("do_settimeofday %ld.%ld s", tv->tv_sec, 1000000L * tv->tv_usec));
-	
+
 	/* We don't allow dates before Jan 2nd, 1980.  This avoids all
 	 * headaches about timezones.
 	 */
@@ -243,40 +243,40 @@ do_settimeofday (struct timeval* tv)
 		DEBUG (("do_settimeofday: attempt to rewind time to before 1980"));
 		return EBADARG;
 	}
-	
+
 	/* The timeval we got is always in UTC */
 	memcpy (&xtime, tv, sizeof (xtime));
-	
+
 	/* Now calculate timestamp and datestamp from that */
 	tos_combined = unix2xbios (xtime.tv_sec - timezone);
 	datestamp = (tos_combined >> 16) & 0xffff;
 	timestamp = tos_combined & 0xffff;
-	
+
 	hardtime = unix2xbios (xtime.tv_sec + sys2tos);
-	
+
 	Settime (hardtime);
-	
+
 	return E_OK;
 }
 
 long _cdecl
-t_settimeofday (struct timeval *tv, struct timezone *tz)
+sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 {
 	TRACE (("Tsettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
-	
+
 	if (!suser (curproc->p_cred->ucr))
 	{
 		DEBUG (("t_settimeofday: attempt to change time by unprivileged user"));
 		return EPERM;
 	}
-	
+
 	if (tz != NULL)
 	{
 		long old_timezone = timezone;
-		
+
 		memcpy (&sys_tz, tz, sizeof (sys_tz));
 		timezone = sys_tz.tz_minuteswest * 60L;
-		
+
 		/* We have to distinguish now if the clock is ticking in UTC
 		 * or local time.
 		 */
@@ -288,7 +288,7 @@ t_settimeofday (struct timeval *tv, struct timezone *tz)
 		else
 		{
 			sys2tos = -timezone;
-			
+
 			/* If the timezone has really changed we have to
 			 * correct the kernel's UTC time.  If the user has
 			 * supplied a time this will be overwritten in an
@@ -297,11 +297,11 @@ t_settimeofday (struct timeval *tv, struct timezone *tz)
 			 */
 			xtime.tv_sec += (old_timezone + timezone);
 		}
-		
+
 		/* Update timestamp and datestamp */
 		synch_timers ();
 	}
-	
+
 	if (tv != NULL)
 	{
 		long retval = do_settimeofday (tv);
@@ -309,25 +309,25 @@ t_settimeofday (struct timeval *tv, struct timezone *tz)
 		if (retval < 0)
 			return retval;
 	}
-	
+
 	return E_OK;
 }
 
 /* Most programs assume that the values returned by Tgettime()
  * and Tgetdate() are in local time.  We won't disappoint them.
  * However it is favorable to have at least the high-resolution
- * kernel time running in UTC instead.  
- * 
+ * kernel time running in UTC instead.
+ *
  * This means that Tgettime(), Tsettime(), Tgetdate() and
  * Tsetdate() keep on handling local times.  All other time-
  * related new system calls (Tgettimeofday, Tsettimeofday
  * and Tadjtimex) handle UTC instead.
  */
-void 
+void
 init_time (void)
 {
 	long value = _mfpregs->tbdr;
-	
+
 # if 0
 	/* See, a piece of code is a function, not just a long integer */
 	extern long _cdecl newcvec();  /* In intr.spp */
@@ -336,24 +336,24 @@ init_time (void)
 	uchar ikbd_clock_get = 0x1c;
 	register short count;
 # endif
-	
+
 	/* Check if we are already initialized.  */
 	if (xtime.tv_sec != 0)
 		return;
-	
+
 	/* Interpolate. */
 	value &= 0x000000ffL;
 	value -= 192L;
 	if (value < 0)
 		value = 0;
-	
+
 # if 0
 	/* Get the current setting of the hardware clock. Since we only bend
 	 * the vector once we don't bother about xbra stuff. We can't go
 	 * the fine MiNT way (using syskey, cf. mint.h) because this routine
 	 * is called before the interrupts are initialized.
 	 */
-	
+
 	/* Draco's explanation on why this doesn't work:
 	 *
 	 * 1. because of a bug - this caused bombs on startup (fixed).
@@ -368,37 +368,37 @@ init_time (void)
 	 *
 	 * Notice: even if it worked as (previously) exspected, kernel's
 	 * time package might work incorrectly when no keyboard is present.
-	 * 
+	 *
 	 */
 
 	do {
 		kvecs = (KBDVEC *) Kbdvbase ();
 	}
 	while (kvecs->drvstat);
-	
+
 	oldcvec = kvecs->clockvec;
 	kvecs->clockvec = (long) &newcvec;
 	Ikbdws (1, &ikbd_clock_get);
 	for (count = 0; count < 9999 && packet_came == 0; count++);
 	kvecs->clockvec = oldcvec;
 # endif
-	
+
 	/* initialize datestamp & timestamp */
 	{
 		ulong tostime;
-		
+
 		tostime = Gettime ();
-		
+
 		datestamp = (tostime >> 16) & 0xffff;
 		timestamp = tostime & 0xffff;
 	}
-	
+
 	sys_lastticks = *hz_200;
-	
+
 	xtime.tv_sec = unixtime (timestamp, datestamp);
 	xtime.tv_usec = (sys_lastticks % CLOCKS_PER_SEC) * MICROSECONDS_PER_CLOCK
 		+ value * MICROSECONDS_PER_CLOCK / 192L;
-	
+
 	/* set booting time */
 	boottime = xtime;
 }
@@ -407,34 +407,34 @@ static void
 quick_synch (void)
 {
 	ulong current_ticks;
-	long elapsed;	/* Microseconds elapsed since last quick_synch.  
-			 * Because this routine is guaranteed to be 
-			 * called at least once per second we don't have 
+	long elapsed;	/* Microseconds elapsed since last quick_synch.
+			 * Because this routine is guaranteed to be
+			 * called at least once per second we don't have
 			 * to care to much about overflows.
 			 */
-	
+
 	timerc = _mfpregs->tbdr;
 	current_ticks = *hz_200;
-	
+
 	/* Make sure that the clock runs monotonic.  */
 	timerc &= 0x000000ffL;
 	if (timerc > 192)
 		timerc = 192;
-	
+
 	if (current_ticks <= sys_lastticks)
 	{
 		if (timerc > last_timerc)
 			timerc = last_timerc;
 	}
-	
+
 	last_timerc = timerc;
-	
+
 	if (current_ticks < sys_lastticks)
 	{
 		/* We had an overflow in _hz_200. */
 		ulong uelapsed = 0xffffffffL - sys_lastticks;
 		uelapsed += current_ticks;
-		
+
 		elapsed = uelapsed * MICROSECONDS_PER_CLOCK;
 		TRACE (("quick_synch: 200-Hz-Timer overflow"));
 	}
@@ -442,9 +442,9 @@ quick_synch (void)
 	{
 		elapsed = (current_ticks - sys_lastticks) * MICROSECONDS_PER_CLOCK;
 	}
-	
+
 	sys_lastticks = current_ticks;
-	
+
 	xtime.tv_usec += elapsed;
 	if (xtime.tv_usec >= 1000000L)
 	{
@@ -458,14 +458,14 @@ void _cdecl
 synch_timers ()
 {
 	ulong tos_combined;
-	
+
 	quick_synch ();
-	
+
 	/* Now adjust timestamp and datestamp to be in local time.  */
 	tos_combined = unix2xbios (xtime.tv_sec - timezone);
 	datestamp = (tos_combined >> 16) & 0xffff;
 	timestamp = tos_combined & 0xffff;
-	
+
 	if (hardtime && curproc->pid == 0)
 	{
 		/* Hm, if Tsetdate or Tsettime was called by the user our
@@ -486,10 +486,10 @@ void _cdecl
 warp_clock (int mode)
 {
 	long diff;
-	
+
 	if ((mode == 0 && clock_mode == 0) || (mode != 0 && clock_mode != 0))
 		return;
-	
+
 	if (clock_mode == 0)
 	{
 		/* Change it from UTC to local time.  */
@@ -506,34 +506,34 @@ warp_clock (int mode)
 		sys2tos = 0;
 		clock_mode = 0;
 	}
-	
+
 	if (diff != 0)
 	{
 		PROC *p;
 		struct fifo *fifo;
 		struct shmfile *shm;
-		
+
 		procfs_stmp.tv_sec += diff;
 		for (p = proclist; p != NULL; p = p->gl_next)
 			p->started.tv_sec += diff;
-		
+
 		pipestamp.tv_sec += diff;
 		for (fifo = piperoot; fifo != NULL; fifo = fifo->next)
 		{
 			fifo->mtime.tv_sec += diff;
 			fifo->ctime.tv_sec += diff;
 		}
-		
+
 		shmfs_stmp.tv_sec += diff;
 		for (shm = shmroot; shm != NULL; shm = shm->next)
 		{
 			shm->mtime.tv_sec += diff;
 			shm->ctime.tv_sec += diff;
 		}
-		
-		/* The timestamps of the bios devices are a mess anyway.  */	
+
+		/* The timestamps of the bios devices are a mess anyway.  */
 	}
-	
+
 	/* Set timestamp and datestamp correctly. */
 	synch_timers ();
 }
@@ -542,13 +542,13 @@ long _cdecl
 gettime ()
 {
 	TRACE (("gettime ()"));
-	
+
 	if (!xtime.tv_sec)
 	{
 		/* We're not initialized */
 		init_time ();
 	}
-	
+
 	return (((long) datestamp << 16) | (timestamp & 0xffff));
 }
 
@@ -558,7 +558,7 @@ settime (ulong datetime)
 	if (hardtime)
 	{
 		TRACE (("settime (%li) -> Settime (%li)", datetime, hardtime));
-		
+
 		/* Called from the kernel.  */
 		Settime (hardtime);
 	}
@@ -566,20 +566,20 @@ settime (ulong datetime)
 	{
 		struct timeval tv = { 0, 0 };
 		ushort time, date;
-		
+
 		TRACE (("settime (%li) -> do_settimeofday", datetime));
-		
+
 		if (!suser (curproc->p_cred->ucr))
 		{
 			DEBUG (("Settime: attempt to change time by unprivileged user"));
 			return;
 		}
-		
+
 		time = datetime & 0xffff;
 		date = (datetime >> 16) & 0xffff;
-		
+
 		tv.tv_sec = unixtime (time, date) + timezone;
-		
+
 		do_settimeofday (&tv);
 	}
 }

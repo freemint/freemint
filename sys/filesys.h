@@ -43,7 +43,7 @@ char *xfs_name (fcookie *fc);
 void xfs_add (FILESYS *fs);
 void close_filesys (void);
 long _s_ync (void);
-long _cdecl s_ync (void);
+long _cdecl sys_s_ync (void);
 long _cdecl sys_fsync (short fh);
 void changedrv (ushort drv, const char *function);
 long disk_changed (ushort drv);

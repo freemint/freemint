@@ -25,7 +25,6 @@
 
 # include "arch/sig_mach.h"	/* sendsig */
 
-# include "dosmem.h"
 # include "k_exit.h"
 # include "k_prot.h"
 # include "proc.h"

@@ -1,11 +1,11 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
- * set_mmu(crp,tc): called once, the first time a page table is built, to 
- * switch away from the MMU setup that came from the ROM and into the setup 
+ * set_mmu(crp,tc): called once, the first time a page table is built, to
+ * switch away from the MMU setup that came from the ROM and into the setup
  * that we just built.  The CRP is actually on the stack, and it's 8 bytes.
  * The TC is four bytes at sp@(0xc).  "Nulls" is here because we need to
  * shove zeros into a few places.
@@ -22,12 +22,12 @@ nulltc:
 
 	.globl	_set_mmu
 	.globl	_offset_tt_ram
-	.globl	_m_xalloc
-	.globl	_m_free
+	.globl	_sys_m_xalloc
+	.globl	_sys_m_free
 
 _set_mmu:
 	tst.l	_offset_tt_ram
-	beq	normal_set
+	beq.s	normal_set
 	movem.l	d0-d2/a0-a2,-(sp)
 	move.l	#end_set_mmu_called_st_ram - set_mmu_called_st_ram,d1
 	clr.w	-(sp)			// ST-ram
@@ -35,15 +35,15 @@ _set_mmu:
 //	move.w	#68,-(sp)		// Mxalloc
 //	trap	#1
 //	addq.l	#8,sp
-	jsr	_m_xalloc
+	jsr	_sys_m_xalloc
  	addq.l	#6,sp
 	tst.l	d0
-	beq	normal_set		// no ST-ram
+	beq.s	normal_set		// no ST-ram
 	move.l	d0,a2
 	move.l	28(sp),crp2		// save crp & tc in ST-ram
 	move.l	32(sp),crp2+4
 	move.l	36(sp),tc2
-	lea	set_mmu_called_st_ram,a0
+	lea	set_mmu_called_st_ram.w(pc),a0
 	move.l	a2,a1
 	lsr.l	#1,d1
 	subq.l	#1,d1
@@ -61,7 +61,7 @@ copy_st_ram:
 //	move	#73,-(sp)		// Mfree
 //	trap	#1
 //	addq.l	#6,sp
-	jsr	_m_free
+	jsr	_sys_m_free
 	addq.l	#4,sp
 	movem.l	(sp)+,d0-d2/a0-a2
 	rts
@@ -73,7 +73,7 @@ normal_set:
 	pflusha
 	pmove	0xc(sp),tc
 	rts
-	
+
 set_mmu_called_st_ram:
 
 	lea	nulltc2(pc),a0

@@ -1,16 +1,16 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1991, 1992 Eric R. Smith
  * Copyright 1992 Atari Corporation.
  * All rights reserved.
- * 
- * 
- * The rendezvous: 
+ *
+ *
+ * The rendezvous:
  * a little bit of message passing with a lot of synchronization.
  *
  * Pmsg(mode,mboxid,msgptr);
@@ -25,7 +25,7 @@
  *
  *   8000	OR with this bit to make the operation non-blocking.
  *
- * The messages are five words long: two longs and a short, in that order. 
+ * The messages are five words long: two longs and a short, in that order.
  * The values  of the first two longs are totally up to the processes in
  * question.  The value of the short is the PID of the sender.  On return
  * from writes, the short is the PID of the process that read your message.
@@ -125,7 +125,7 @@ dosleep:
 
 
 long _cdecl
-p_msg(int mode, long mbid, char *ptr)
+sys_p_msg(int mode, long mbid, char *ptr)
 {
     int noblock;
     PROC *p;
@@ -228,7 +228,7 @@ got_rendezvous:
  * already waiting at the other end.
  */
 
-dosleep: 
+dosleep:
 	if (noblock) {
 	    return -1L;
 	}
@@ -325,7 +325,7 @@ unsemame (PROC *p)
 }
 
 long _cdecl
-p_semaphore(int mode, long id, long timeout)
+sys_p_semaphore(int mode, long id, long timeout)
 {
 	SEMA *s, **q;
 	TIMEOUT *timeout_ptr = NULL;
@@ -344,17 +344,17 @@ p_semaphore(int mode, long id, long timeout)
 					return EACCES;
 				}
 			}
-			
+
 			/* get a new one */
 			s = kmalloc (sizeof (*s));
 			if (!s)
 				return ENOMEM;
-			
+
 			s->id = id;
 			s->owner = curproc->pid;
 			s->next = semalist;
 			semalist = s;
-			
+
 			return E_OK;
 		}
 		case 2:	/* get */
@@ -370,7 +370,7 @@ loop:
 						DEBUG(("Psemaphore(%d,%lx): curproc already owns it!", mode, id));
 						return EERROR;
 					}
-					
+
 					if (s->owner == -1)
 					{
 						/* it's free; you get it */
@@ -393,7 +393,7 @@ loop:
 								/* schedule a timeout */
 								timeout_ptr = addtimeout (curproc, timeout, unsemame);
 							}
-							
+
 							/* block until it's released, then try again */
 							sleep (WAIT_Q, WAIT_SEMA);
 							if (curproc->wait_cond != WAIT_SEMA)
@@ -406,7 +406,7 @@ loop:
 					}
 				}
 			}
-			
+
 			/* no such semaphore (possibly deleted while we were waiting) */
 			if (timeout_ptr) canceltimeout(timeout_ptr);
 			DEBUG(("Psemaphore(%d,%lx): no such semaphore", mode, id));
@@ -444,21 +444,21 @@ loop:
 							*q = s->next;		/* delete from list */
 							kfree(s);		/* and free it */
 						}
-						
+
 						/* wake up anybody who's waiting for a semaphore */
 						wake (WAIT_Q, WAIT_SEMA);
-						
+
 						return E_OK;
 					}
 				}
 			}
-			
+
 			/* no such semaphore */
 			DEBUG(("Psemaphore(%d,%lx): no such semaphore",mode,id));
 			return EBADARG;
 		}
 	}
-	
+
 	DEBUG(("Psemaphore(%d,%lx): invalid mode", mode, id));
 	return ENOSYS;
 }

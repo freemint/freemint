@@ -80,15 +80,15 @@ un_cache_lookup (char *name, long *index)
 	/* No matching entry found. We drop dirty_entry or some other entry
 	 * in a round robin manner if no dirty entry is left.
 	 */
-	fd = f_open (name, O_RDWR);
+	fd = sys_f_open (name, O_RDWR);
 	if (fd < 0)
 	{
 		DEBUG (("unix: un_cache_lookup: Fopen(%s) -> %ld", name, fd));
 		return fd;
 	}
 
-	r = f_read (fd, sizeof (*index), (char *) index);
-	f_close (fd);
+	r = sys_f_read (fd, sizeof (*index), (char *) index);
+	sys_f_close (fd);
 
 	if (r >= 0 && r != sizeof (*index))
 		r = EACCES;

@@ -539,8 +539,8 @@ init_std_data (struct random_bucket *r)
 	 * similar information from here and there instead
 	 */
 	for (i = 0; i < 8; i += 2)
-		add_entropy_words (r, s_system (S_OSHEADER, i, 2), 
-					s_system (S_OSHEADER, i + 1, 2));
+		add_entropy_words (r, sys_s_system (S_OSHEADER, i, 2), 
+					sys_s_system (S_OSHEADER, i + 1, 2));
 	
 	add_entropy_words (r, *_vbclock, jiffies);
 }

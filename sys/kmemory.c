@@ -1,82 +1,82 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1998-09-10
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * changes since last version:
- * 
+ *
  * 1998-10-22:	(v1)
- * 
+ *
  * - initial revision
- * 
+ *
  * known bugs:
- * 
+ *
  * -
- * 
+ *
  * todo:
- * 
- * 
+ *
+ *
  * optimizations to do:
- * 
- * 
+ *
+ *
  * implementation aspects:
  * =======================
- * 
+ *
  * kmr_get/kmr_free:
  * - low answer latency
  * - avoid cyclic recursion problems with MEMREGION descriptors
- * 
+ *
  * kmalloc/kfree:
  * - low answer latency
  * - strict 16 byte alignment
- * 
+ *
  * -> small blocks (size <= S1_SIZE) are handled in O(1)
- * 
- * 
+ *
+ *
  * I analysed a little bit kmalloc/kfree requests:
  * -----------------------------------------------
- * 
+ *
  * - 2/3 of all requests are smaller than 32 byte (without TIMEOUT kmallocs!)
  *   - there are 1000 TIMEOUT kmallocs per minute (22 byte)
  *   - all these requests are temporary and freed short time later!
- * 
+ *
  * --> special small block handler for blocks <= S1_SIZE
  *     works in O(1) (that means all requests are answered in constant time)
- * 
- * 
+ *
+ *
  * - the other requests are greater and mostly temporary
  *   there are also a number of kmallocs that are resident
- * 
+ *
  * -> special small block handler for blocks > S1_SIZE and <= PAGESIZE
  *    fast answer (reduce searching overhead)
- * 
+ *
  */
 
 # include "kmemory.h"
@@ -128,7 +128,7 @@
 #  define KM_ALERT(x)	ALERT x
 #  define KM_DEBUG(x)
 #  define KM_ASSERT(x)
-#  define KM_ALIGN(x,s)	
+#  define KM_ALIGN(x,s)
 
 # else
 
@@ -207,7 +207,7 @@ struct km_p
 	ushort		size;	/* size in 16 byte blocks */
 /*5*/	ushort		magic;	/* magic number */
 # define PS_HEAD	(5 * 4)	/* page small head size */
-	
+
 	union
 	{
 		struct
@@ -216,14 +216,14 @@ struct km_p
 			ulong	pos;
 			ushort	used;
 		} mr;
-		
+
 		struct
 		{
 			KM_S1	*free;
 			ulong	pos;
 			ushort	used;
 		} s1;
-		
+
 		struct
 		{
 # ifdef S2_DEBUG
@@ -404,10 +404,10 @@ km_hash (const void *ptr)
 {
 # if 0
 	register ulong hash;
-		
+
 	hash = (ulong) ptr;
 	hash = hash + (hash >> HASHBITS) + (hash >> (HASHBITS << 1));
-	
+
 	return hash & HASHMASK;
 # else
 	return (ulong) ptr & HASHMASK;
@@ -418,9 +418,9 @@ INLINE KM_P *
 km_hash_lookup (const void *ptr)
 {
 	register KM_P *n;
-	
+
 	KM_ASSERT ((ptr));
-	
+
 	for (n = table [km_hash (ptr)]; n; n = n->hnext)
 	{
 		if (ptr == (void *) n->self->loc)
@@ -428,7 +428,7 @@ km_hash_lookup (const void *ptr)
 			break;
 		}
 	}
-	
+
 	return n;
 }
 
@@ -436,7 +436,7 @@ INLINE void
 km_hash_insert (KM_P *item)
 {
 	register KM_P **n = &(table [km_hash ((void *) item->self->loc)]);
-	
+
 	item->hnext = *n;
 	*n = item;
 }
@@ -445,14 +445,14 @@ INLINE void
 km_hash_remove (KM_P *item)
 {
 	register KM_P **n = &(table [km_hash ((void *) item->self->loc)]);
-	
+
 	while (*n)
 	{
 		if (item == *n)
 		{
 			/* remove from table */
 			*n = (*n)->hnext;
-			
+
 			return;
 		}
 		n = &((*n)->hnext);
@@ -464,15 +464,15 @@ void
 km_hash_dump (void)
 {
 	int i;
-	
+
 	printf ("----------------------------------------\n");
-	
+
 	for (i = 0; i < HASHSIZE; i++)
 	{
 		KM_P *n;
-		
+
 		printf ("slot %i -> %lx\n\n", i, table [i]);
-		
+
 		for (n = table [i]; n; n = n->hnext)
 		{
 			printf ("\tn = %lx\n", n);			fflush (stdout);
@@ -482,16 +482,16 @@ km_hash_dump (void)
 			printf ("\t\tn->self = %lx\n", n->self);	fflush (stdout);
 			printf ("\t\tn->size = %li\n", n->size);	fflush (stdout);
 			printf ("\t\tn->magic = %lx\n", n->magic);	fflush (stdout);
-			
+
 			printf ("\n");
-			
+
 			KM_ASSERT ((n->self));
 			KM_ASSERT ((n->self->loc));
 		}
-		
+
 		printf ("\n");
 	}
-	
+
 	printf ("----------------------------------------\n");
 	fflush (stdout);
 }
@@ -512,21 +512,21 @@ static struct
 {
 	ulong	req_alloc;
 	ulong	req_free;
-	
+
 } stat [PAGESIZE];
 
 static struct
 {
 	ulong	req_alloc;
 	ulong	req_free;
-	
+
 } kmr_stat;
 
 static struct
 {
 	ulong	req_alloc;
 	ulong	req_free;
-	
+
 } km_s1_stat;
 # endif
 
@@ -544,13 +544,13 @@ INLINE MEMREGION *
 km_get_region (MMAP map, ulong size, MEMREGION *m, short cmode)
 {
 	register MEMREGION *new = _get_region (map, size, PROT_S, cmode, m, 1);
-	
+
 	if (new)
 	{
 		new->mflags |= M_KMALLOC;
 # ifdef KM_USAGE
 		used_mem += new->len;
-		
+
 		KM_ALIGN (new->loc, "km_get_region");
 # endif
 	}
@@ -566,7 +566,7 @@ km_free_region (MEMREGION *m)
 # ifdef KM_USAGE
 	used_mem -= m->len;
 # endif
-	
+
 	m->links--;
 	free_region (m);
 }
@@ -579,21 +579,21 @@ INLINE KM_P *
 km_malloc (ulong size, MEMREGION *descr, KM_P *page)
 {
 	MEMREGION *m;
-	
+
 	/* try first TT-RAM */
 	m = km_get_region (alt, size, descr, 0);
-	
+
 	if (!m)
 	{
 		/* fall back to ST-RAM */
 		m = km_get_region (core, size, descr, 0);
 	}
-	
+
 	if (m)
 	{
 		if (!page)
 			page = (KM_P *) m->loc;
-		
+
 		page->self = m;
 		page->size = size >> 4;
 	}
@@ -601,7 +601,7 @@ km_malloc (ulong size, MEMREGION *descr, KM_P *page)
 	{
 		page = NULL;
 	}
-	
+
 	return page;
 }
 
@@ -640,10 +640,10 @@ km_list_insert (LIST *list, KM_P *item)
 		KM_ASSERT ((!list->head));
 		list->head = item;
 	}
-	
+
 	item->prev = list->tail;
 	item->next = NULL;
-	
+
 	list->tail = item;
 }
 
@@ -656,7 +656,7 @@ km_list_remove (LIST *list, KM_P *item)
 	else
 		/* correct head ptr */
 		list->head = item->next;
-	
+
 	if (item->next)
 		/* not last element */
 		item->next->prev = item->prev;
@@ -685,30 +685,30 @@ static void
 km_mr_setup (KM_P *page)
 {
 	register char *ptr = (char *) page + P__HEAD;
-	
+
 	km_mr_list_insert (page);
-	
+
 	page->magic = MR_MAGIC;
 	page->s.mr.free = (KM_MR *) ptr;
 	page->s.mr.pos = page->prev ? page->prev->s.mr.pos + 1 : 0;
 	page->s.mr.used = 0;
-	
+
 	mr_free = page;
-	
+
 	{
 		register KM_MR *temp;
 		register long i;
-		
+
 		for (i = (PAGESIZE - P__HEAD) / MR_SIZE; i; i--)
 		{
 			temp = (KM_MR *) ptr;
 			temp->s.page = page;
-			
+
 			ptr += MR_SIZE;
-			
+
 			temp->next = (KM_MR *) ptr;
 		}
-		
+
 		temp->next = NULL;
 	}
 }
@@ -718,20 +718,20 @@ _kmr_get (void)
 {
 	register MEMREGION *m;
 	register KM_MR *new;
-	
+
 retry:
 	new = mr_free->s.mr.free;
 	mr_free->s.mr.free = mr_free->s.mr.free->next;
 	mr_free->s.mr.used++;
-	
+
 	KM_ASSERT ((new->s.page == mr_free));
-	
+
 # ifdef KM_STAT
 	kmr_stat.req_alloc++;
 # endif
-	
+
 	m = (MEMREGION *) ((char *) new + MR_HEAD);
-	
+
 	m->loc		= 0;
 	m->len		= 0;
 	m->links	= 0;
@@ -739,38 +739,38 @@ retry:
 	m->save		= NULL;
 	m->shadow	= NULL;
 	m->next		= NULL;
-	
+
 	if (!mr_free->s.mr.free)
 	{
 		while (mr_free && !mr_free->s.mr.free)
 		{
 			mr_free = mr_free->next;
 		}
-		
+
 		if (!mr_free)
 		{
 			register KM_P *new_page = km_malloc (PAGESIZE, m, NULL);
-			
+
 			if (new_page)
 			{
 				km_mr_setup (new_page);
 				goto retry;
 			}
-			
+
 			new->next = mr_free->s.mr.free;
 			mr_free->s.mr.free = new;
 			mr_free->s.mr.used--;
-			
+
 			KM_ALERT ((__FILE__ ": kmr_get fail, out of memory?"));
-			
+
 # ifdef KM_STAT
 			kmr_stat.req_alloc--;
 # endif
-			
+
 			return NULL;
 		}
 	}
-	
+
 	return m;
 }
 
@@ -779,26 +779,26 @@ _kmr_free (MEMREGION *place)
 {
 	register KM_MR *ptr = (KM_MR *) ((char *) place - MR_HEAD);
 	register KM_P *page = ptr->s.page;
-	
+
 # ifdef KMEMORY_DEBUG
 	KM_ASSERT ((place->links != 65000));
 	place->links = 65000;
 # endif
-	
+
 	KM_ASSERT ((page && page->magic == MR_MAGIC));
-	
+
 # ifdef KM_STAT
 	kmr_stat.req_free++;
 # endif
-	
+
 	ptr->next = page->s.mr.free;
 	page->s.mr.free = ptr;
 	page->s.mr.used--;
-	
+
 	if (page->s.mr.used == 0 && page->self && mr_free != page)
 	{
 		km_mr_list_remove (page);
-		
+
 		/* free page */
 		km_free (page->self);
 	}
@@ -841,30 +841,30 @@ static void
 km_s1_setup (KM_P *page)
 {
 	register char *ptr = (char *) page + P__HEAD;
-	
+
 	km_s1_list_insert (page);
-	
+
 	page->magic = S1_MAGIC;
 	page->s.s1.free = (KM_S1 *) ptr;
 	page->s.s1.pos = page->prev ? page->prev->s.s1.pos + 1 : 0;
 	page->s.s1.used = 0;
-	
+
 	s1_free = page;
-	
+
 	{
 		register KM_S1 *temp;
 		register long i;
-		
+
 		for (i = (PAGESIZE - P__HEAD) / S1_SIZE; i; i--)
 		{
 			temp = (KM_S1 *) ptr;
 			temp->s.page = page;
-			
+
 			ptr += S1_SIZE;
-			
+
 			temp->next = (KM_S1 *) ptr;
 		}
-		
+
 		temp->next = NULL;
 	}
 }
@@ -873,57 +873,57 @@ INLINE void *
 km_s1_malloc (void)
 {
 	register KM_S1 *new;
-	
+
 retry:
 	new = s1_free->s.s1.free;
-	
+
 	KM_ALIGN (new, "s1");
-	
+
 	s1_free->s.s1.free = s1_free->s.s1.free->next;
 	s1_free->s.s1.used++;
-	
+
 	KM_ASSERT ((new->s.page == s1_free));
-	
+
 # ifdef KM_STAT
 	km_s1_stat.req_alloc++;
 # endif
-	
+
 	if (!s1_free->s.s1.free)
 	{
 		while (s1_free && !s1_free->s.s1.free)
 		{
 			s1_free = s1_free->next;
 		}
-		
+
 		if (!s1_free)
 		{
 			register MEMREGION *m = kmr_get ();
-			
+
 			if (m)
 			{
 				register KM_P *new_page = km_malloc (PAGESIZE, m, NULL);
-				
+
 				if (new_page)
 				{
 					km_s1_setup (new_page);
 					goto retry;
 				}
-				
+
 				kmr_free (m);
 			}
-			
+
 			new->next = s1_free->s.s1.free;
 			s1_free->s.s1.free = new;
 			s1_free->s.s1.used--;
-			
+
 # ifdef KM_STAT
 			km_s1_stat.req_alloc--;
 # endif
-			
+
 			return NULL;
 		}
 	}
-	
+
 	return ((char *) new + S1_HEAD);
 }
 
@@ -933,21 +933,21 @@ km_s1_free (KM_S1 *ptr, KM_P *page)
 # ifdef KM_STAT
 	km_s1_stat.req_free++;
 # endif
-	
+
 	KM_ASSERT ((page && page->magic == S1_MAGIC));
-	
+
 	ptr->next = page->s.s1.free;
 	page->s.s1.free = ptr;
 	page->s.s1.used--;
-	
+
 # ifdef KMEMORY_DEBUG
 	bzero ((char *) ptr + S1_HEAD, S1_SIZE - S1_HEAD);
 # endif
-	
+
 	if (page->s.s1.used == 0 && page->self && s1_free != page)
 	{
 		km_s1_list_remove (page);
-		
+
 		/* free page */
 		km_free (page->self);
 	}
@@ -987,7 +987,7 @@ static LIST s2_list = { NULL, NULL };
 
 /*
  * insert KM_S2 block in free list
- * 
+ *
  * - set free flag to FREE
  * - update double linked list
  */
@@ -1005,17 +1005,17 @@ km_s2_flist_ins (KM_S2 *item)
 		KM_ASSERT ((!s2_free_head));
 		s2_free_head = item;
 	}
-	
+
 	item->free = FREE;
 	item->fprev = s2_free_tail;
 	item->fnext = NULL;
-	
+
 	s2_free_tail = item;
 }
 
 /*
  * remove KM_S2 block from free list
- * 
+ *
  * - simple list operation (double linked list)
  */
 
@@ -1023,12 +1023,12 @@ INLINE void
 km_s2_flist_rem (KM_S2 *item)
 {
 	item->free = USED;
-	
+
 	if (item->fnext)
 		item->fnext->fprev = item->fprev;
 	else
 		s2_free_tail = item->fprev;
-	
+
 	if (item->fprev)
 		item->fprev->fnext = item->fnext;
 	else
@@ -1038,12 +1038,12 @@ km_s2_flist_rem (KM_S2 *item)
 
 /*
  * split a KM_S2 block
- * 
+ *
  * - new block is positionated at the end of KM_S2 block
  * - double linked list is updated
  * - free is initialized as USED
  * - return pointer to new KM_S2 block
- * 
+ *
  * conditions:
  * - size include system area
  * - block must be large enough
@@ -1054,32 +1054,32 @@ INLINE KM_S2 *
 km_s2_split (KM_S2 *item, ushort size)
 {
 	register KM_S2 *new;
-	
+
 	item->size -= size;
-	
+
 	new = (KM_S2 *) ((char *) item + item->size);
-	
+
 	KM_ALIGN (new, "s2");
-	
+
 	new->magic = S2_MAGIC;
 	new->size = size;
 	new->free = USED;
-	
+
 	new->next = item->next;
 	new->prev = item;
-	
+
 	if (item->next)
 		item->next->prev = new;
 	item->next = new;
-	
+
 	new->s.page = item->s.page;
-	
+
 	return new;
 }
 
 /*
  * concat 2 KM_S2 blocks
- * 
+ *
  * - item2 must be next element after item1
  */
 
@@ -1087,9 +1087,9 @@ INLINE void
 km_s2_concat (KM_S2 *item1, KM_S2 *item2)
 {
 	item1->size += item2->size;
-	
+
 	item1->next = item2->next;
-	
+
 	if (item2->next)
 		item2->next->prev = item1;
 }
@@ -1098,23 +1098,23 @@ static KM_S2 *
 km_s2_setup (KM_P *page)
 {
 	register KM_S2 *temp = (KM_S2 *) ((char *) page + P__HEAD);
-	
+
 	page->magic = S2_MAGIC;
-	
+
 # ifdef S2_DEBUG
 	page->s.s2.list = temp;
 	km_s2_list_insert (page);
 # endif
-	
+
 	temp->magic = S2_MAGIC;
 	temp->size = PAGESIZE - P__HEAD;
 	temp->free = USED;
 	temp->next = NULL;
 	temp->prev = NULL;
 	temp->s.page = page;
-	
+
 	km_s2_flist_ins (temp);
-	
+
 	return temp;
 }
 
@@ -1123,32 +1123,32 @@ km_s2_malloc (ushort size)
 {
 	register KM_S2 *new = s2_free_head;
 	register void *ptr = NULL;
-	
+
 	size += S2_HEAD;
 	size = (size + 15) & ~15;
-	
+
 	while (new)
 	{
 		if (size <= new->size)
 		{
 			break;
 		}
-		
+
 		new = new->fnext;
 	}
-	
+
 	if (!new)
 	{
 		register MEMREGION *m = kmr_get ();
-		
+
 		if (m)
 		{
 			register KM_P *page = km_malloc (PAGESIZE, m, NULL);
-			
+
 			if (page)
 			{
 				new = km_s2_setup (page);
-				
+
 				KM_ALIGN (new, "s2");
 			}
 			else
@@ -1161,7 +1161,7 @@ km_s2_malloc (ushort size)
 	{
 		KM_ALIGN (new, "s2");
 	}
-	
+
 	if (new)
 	{
 		if ((new->size - size) > S2_SPLIT_SIZE)
@@ -1172,12 +1172,12 @@ km_s2_malloc (ushort size)
 		{
 			km_s2_flist_rem (new);
 		}
-		
+
 		ptr = (char *) new + S2_HEAD;
-		
+
 		KM_ALIGN (new, "s2");
 	}
-	
+
 	return ptr;
 }
 
@@ -1186,31 +1186,31 @@ km_s2_free (KM_S2 *ptr, KM_P *page)
 {
 	register KM_S2 *next = ptr->next;
 	register KM_S2 *prev = ptr->prev;
-	
+
 	KM_ASSERT ((ptr->magic == S2_MAGIC));
-	
+
 	if (next && next->free == FREE)
 	{
 		km_s2_flist_rem (next);
-		
+
 		/* concat ptr and next */
 		km_s2_concat (ptr, next);
 	}
-	
+
 	if (prev && prev->free == FREE)
 	{
 		km_s2_flist_rem (prev);
-		
+
 		/* concat prev and ptr */
 		km_s2_concat (prev, ptr);
-		
+
 		ptr = prev;
 	}
-	
+
 # ifdef KMEMORY_DEBUG
 	bzero ((char *) ptr + S2_HEAD, ptr->size - S2_HEAD);
 # endif
-	
+
 	if (ptr->size == PAGESIZE - P__HEAD)
 	{
 # ifdef S2_DEBUG
@@ -1229,18 +1229,18 @@ km_s2_dump (void)
 	KM_P *page = s2_list.head;
 	KM_S2 *t;
 	long i = 0;
-	
+
 	while (page)
 	{
 		printf ("page: %li\n", i++);
 		printf ("page = %lx\n", (ulong) page);
 		printf ("page->next = %lx\n", (ulong) page->next);
 		printf ("page->prev = %lx\n", (ulong) page->prev);
-		
+
 		KM_ASSERT ((page->magic == S2_MAGIC));
-		
+
 		printf ("Blockliste:\n");
-		
+
 		t = page->s.s2.list;
 		while (t)
 		{
@@ -1249,19 +1249,19 @@ km_s2_dump (void)
 			printf ("\tnext = %lx\n", (ulong) t->next);
 			printf ("\tfree = %i\n", t->free);
 			printf ("\tsize = %i\n", t->size);
-			
+
 			KM_ASSERT ((t->magic == S2_MAGIC));
-			
+
 			t = t->next;
 		}
-		
+
 		printf ("\n");
-		
+
 		page = page->next;
 	}
-	
+
 	printf ("Freeliste:\n");
-		
+
 	t = s2_free;
 	while (t)
 	{
@@ -1272,12 +1272,12 @@ km_s2_dump (void)
 		printf ("free = %i\n", t->free);
 		printf ("size = %i\n", t->size);
 		printf ("\n");
-		
+
 		KM_ASSERT ((t->magic == S2_MAGIC));
-		
+
 		t = t->fnext;
 	}
-	
+
 	printf ("--------------------------------------------------------\n");
 }
 
@@ -1307,18 +1307,18 @@ km_lb_malloc (ulong size)
 {
 	MEMREGION *m = kmr_get ();
 	KM_P *kmp = (KM_P *) kmr_get ();
-	
+
 	if (m && kmp)
 	{
 		KM_P *new;
-		
+
 		if (size < PAGESIZE)
 			size = PAGESIZE;
 		else
 			size = (size + 15) & ~15;
-		
+
 		new = km_malloc (size, m, kmp);
-		
+
 		if (new)
 		{
 			new->magic = LB_MAGIC;
@@ -1326,14 +1326,14 @@ km_lb_malloc (ulong size)
 			km_lb_insert (new);
 # endif
 			km_hash_insert (new);
-			
+
 			return (void *) new->self->loc;
 		}
 	}
-	
+
 	if (m) kmr_free (m);
 	if (kmp) kmr_free ((void *) kmp);
-	
+
 	return NULL;
 }
 
@@ -1341,13 +1341,13 @@ INLINE void
 km_lb_free (KM_P *kmp)
 {
 	KM_ASSERT ((kmp->magic == LB_MAGIC));
-	
+
 # ifdef LB_DEBUG
 	km_lb_remove (kmp);
 # endif
-	
+
 	km_hash_remove (kmp);
-	
+
 	km_free (kmp->self);
 	kmr_free ((void *) kmp);
 }
@@ -1378,50 +1378,50 @@ _kcore (ulong size, const char *func)
 {
 	MEMREGION *m = kmr_get ();
 	char *ptr = NULL;
-	
+
 	KM_DEBUG (("%s: kcore (%li)!", func, size));
-	
+
 	if (m)
 	{
 		register MEMREGION *new;
-		
+
 # ifdef KM_STAT
 		size += KM_STAT_OFFSET;
 # endif
 		size += P__HEAD + S__HEAD;
 		size = (size + 15) & ~15;
-		
+
 		new = km_get_region (core, size, m, 0);
 		if (new)
 		{
 			register KM_P *page = (KM_P *) new->loc;
-			
+
 			if (new->links != 1)
 				FATAL ("%s: kcore: new-links != 1", func);
-			
+
 			page->self = new;
 			page->size = size >> 4;
 			page->magic = ST_MAGIC;
-			
+
 			{
 				register KM_S *head;
-				
+
 				head = (KM_S *) ((char *) page + P__HEAD);
 				head->page = page;
 			}
-			
+
 			ptr = (char *) page;
 			ptr += P__HEAD + S__HEAD;
 # ifdef KM_STAT
 			{
 				register ushort *p = (ushort *) ptr;
-				
+
 # if KM_STAT_OFFSET != 4
 # error KM_STAT_OFFSET != 4
 # endif
 				*p++ = size >> 4;
 				*p = KM_STAT_LMAGIC;
-				
+
 				ptr += KM_STAT_OFFSET;
 			}
 # endif
@@ -1431,7 +1431,7 @@ _kcore (ulong size, const char *func)
 			KM_ALERT (("%s: kcore (%li) fail, out of memory?", func, size));
 		}
 	}
-	
+
 	return ptr;
 }
 # endif
@@ -1440,20 +1440,20 @@ void * _cdecl
 _kmalloc (ulong size, const char *func)
 {
 	register char *ptr = NULL;
-	
+
 # ifdef KM_STAT
 	register long flag = 1;
 	size += KM_STAT_OFFSET;
 # endif
-	
+
 	if (size <= 0)
 		FATAL ("%s: kmalloc (%li) - invalid size request", func, size);
-	
+
 	if (size < (S1_SIZE - S1_HEAD))
 	{
 		ptr = km_s1_malloc ();
 	}
-	
+
 	if (!ptr)
 	{
 		if (size < (PAGESIZE - P__HEAD - S2_HEAD))
@@ -1469,7 +1469,7 @@ _kmalloc (ulong size, const char *func)
 			ptr = km_lb_malloc (size);
 		}
 	}
-	
+
 	if (!ptr)
 	{
 		KM_ALERT (("%s: kmalloc (%li) fail, out of memory?", func, size));
@@ -1478,17 +1478,17 @@ _kmalloc (ulong size, const char *func)
 	else if (flag)
 	{
 		register ushort *p = (ushort *) ptr;
-		
+
 # if KM_STAT_OFFSET != 4
 # error KM_STAT_OFFSET != 4
 # endif
 		size -= KM_STAT_OFFSET;
-		
+
 		stat [size].req_alloc++;
-		
+
 		*p++ = size;
 		*p = KM_STAT_SMAGIC;
-		
+
 		ptr += KM_STAT_OFFSET;
 	}
 # endif
@@ -1500,13 +1500,13 @@ void _cdecl
 _kfree (void *place, const char *func)
 {
 	KM_P *page;
-	
+
 	if (!place)
 	{
 		KM_ALERT (("%s: kfree on NULL ptr!", func));
 		return;
 	}
-	
+
 	page = km_hash_lookup (place);
 	if (page)
 	{
@@ -1516,15 +1516,15 @@ _kfree (void *place, const char *func)
 	{
 # ifdef KM_STAT
 		register ushort *p = place;
-		
+
 		p--;
 		if (*p == KM_STAT_SMAGIC)
 		{
 			register ushort size;
-			
+
 			p--;
 			size = *p;
-			
+
 			if (size < PAGESIZE)
 				stat [size].req_free++;
 		}
@@ -1535,14 +1535,14 @@ _kfree (void *place, const char *func)
 		{
 			FATAL ("%s: kfree on 0x%lx, invalid STAT_MAGIC!", func, (ulong) place);
 		}
-		
+
 		place = (char *) place - KM_STAT_OFFSET;
 # endif
 		page = *(KM_P **) ((KM_S *) place - 1);
-		
+
 		/* not maskable */
 		assert (page);
-		
+
 		switch (page->magic)
 		{
 			case S1_MAGIC:
@@ -1569,34 +1569,34 @@ _kfree (void *place, const char *func)
 }
 
 /* extended kmalloc
- * 
+ *
  */
 void * _cdecl
 _dmabuf_alloc (ulong size, short cmode, const char *func)
 {
 	MEMREGION *m;
-	
+
 	/* we can't support cmode if memory protection is disabled */
 	if (cmode && no_mem_prot)
 		return NULL;
-	
+
 	m = kmr_get ();
 	if (m)
 	{
 		MEMREGION *new;
-		
+
 		if (size < PAGESIZE)
 			size = PAGESIZE;
 		else
 			size = (size + 15) & ~15;
-		
+
 		new = km_get_region(core, size, m, cmode);
 		if (new)
 			return (void *) new->loc;
-		
-		kmr_free (m);		
+
+		kmr_free (m);
 	}
-	
+
 	return NULL;
 }
 
@@ -1606,16 +1606,16 @@ _dmabuf_alloc (ulong size, short cmode, const char *func)
  * (and freed automatically when the process exits)
  */
 
-void * _cdecl 
+void * _cdecl
 _umalloc (ulong size, const char *func)
 {
-	return (void *) m_xalloc (size, 3);
+	return (void *) sys_m_xalloc (size, 3);
 }
 
-void _cdecl 
+void _cdecl
 _ufree (void *place, const char *func)
 {
-	(void) m_free ((long) place);
+	(void) sys_m_free ((long) place);
 }
 
 /* END kernel memory alloc */
@@ -1636,29 +1636,29 @@ init_kmemory (void)
 {
 	void *_mr_initial = (void *) (((long) mr_initial + 15) & ~15);
 	void *_s1_initial = (void *) (((long) s1_initial + 15) & ~15);
-	
+
 	if (PS_HEAD > sizeof (MEMREGION))
 	{
 		FATAL (__FILE__ ", %ld: sizeof (KM_P) > sizeof (MEMREGION) "
 			"-> internal failure", (long) __LINE__);
 	}
-	
+
 	km_mr_setup (_mr_initial);
 	km_s1_setup (_s1_initial);
-	
+
 # ifdef KM_STAT
 	{
 		long i;
-		
+
 		for (i = 0; i < PAGESIZE; i++)
 		{
 			stat [i].req_alloc = 0;
 			stat [i].req_free = 0;
 		}
-		
+
 		kmr_stat.req_alloc = 0;
 		kmr_stat.req_free = 0;
-		
+
 		km_s1_stat.req_alloc = 0;
 		km_s1_stat.req_free = 0;
 	}
@@ -1678,7 +1678,7 @@ km_config (long mode, long arg)
 		}
 # endif
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -1700,10 +1700,10 @@ km_stat_dump (void)
 	long i, len;
 	FILEPTR *fp;
 	long ret;
-	
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	KM_FORCE ((__FILE__ ": used_mem = %li", used_mem));
 	KM_FORCE ((__FILE__ ": kmr: alloc = %li, free = %li -> %li",
 		kmr_stat.req_alloc,
@@ -1715,7 +1715,7 @@ km_stat_dump (void)
 		km_s1_stat.req_free,
 		km_s1_stat.req_alloc - km_s1_stat.req_free
 	));
-	
+
         ret = do_open (&fp, KM_STAT_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
         if (!ret)
         {
@@ -1728,7 +1728,7 @@ km_stat_dump (void)
 		);
 		len = strlen (line);
                 (*fp->dev->write)(fp, line, len);
-                
+
 		ksprintf (line, sizeof (line), "km_s1: alloc = %li, free = %li -> %li\r\n\rn",
 			km_s1_stat.req_alloc,
 			km_s1_stat.req_free,
@@ -1736,11 +1736,11 @@ km_stat_dump (void)
 		);
 		len = strlen (line);
 		(*fp->dev->write)(fp, line, len);
-		
+
 		ksprintf (line, sizeof (line), "size:\talloc:\tfree:\tdifference:\r\n");
 		len = strlen (line);
 		(*fp->dev->write)(fp, line, len);
-		
+
 		for (i = 0; i < PAGESIZE; i++)
 		{
 			if (stat [i].req_alloc)
@@ -1755,15 +1755,15 @@ km_stat_dump (void)
 				(*fp->dev->write)(fp, line, len);
 			}
 		}
-		
+
 		ksprintf (line, sizeof (line), "\r\n *\r\n */\r\n\r\n");
 		len = strlen (line);
                 (*fp->dev->write)(fp, line, len);
-		
+
 		ksprintf (line, sizeof (line), "# include \"kmstat.h\"\r\n\r\nvoid\r\narray_init (void)\r\n{\r\n");
 		len = strlen (line);
                 (*fp->dev->write)(fp, line, len);
-		
+
 		for (i = 0; i < PAGESIZE; i++)
 		{
 			if (stat [i].req_alloc)
@@ -1779,11 +1779,11 @@ km_stat_dump (void)
 				(*fp->dev->write)(fp, line, len);
 			}
 		}
-		
+
 		ksprintf (line, sizeof (line), "}\r\n\r\n");
 		len = strlen (line);
 		(*fp->dev->write)(fp, line, len);
-		
+
 		do_close (rootproc, fp);
 	}
 	else
@@ -1831,12 +1831,12 @@ init_kmemdebug (void)
 	{
 		FILEPTR *fp;
 		long ret;
-		
+
 		kmemdebug_initialized = 1;
-		
+
 		ret = FP_ALLOC (rootproc, &fp);
 		if (ret) return;
-		
+
 		ret = do_open (&fp, KM_DEBUG_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
 		if (ret)
 		{
@@ -1855,13 +1855,13 @@ print_hex (ulong hex)
 	static char outbuf[10];
 	char *cursor = outbuf + 2;
 	int shift;
-	
+
 	outbuf[0] = '0';
 	outbuf[1] = 'x';
-	
+
 	for (shift = 28; shift >= 0; shift -= 4)
 		*cursor++ = hex_digits[0xf & (hex >> shift)];
-	
+
 	(*kmemdebug_fp->dev->write)(kmemdebug_fp, outbuf, 10);
 }
 
@@ -1888,16 +1888,16 @@ void * _cdecl
 __wrap__kcore (ulong size)
 {
 	void *retval;
-	
+
 	lock++;
-	
+
 	retval = __real__kcore (size);
-	
+
 	if (lock == 1)
 	{
 		if (!kmemdebug_initialized)
 			init_kmemdebug ();
-		
+
 		if (kmemdebug_fp)
 		{
 			FPUTS ("kcore: ");
@@ -1909,7 +1909,7 @@ __wrap__kcore (ulong size)
 			FPUTS ("\n");
 		}
 	}
-	
+
 	lock--;
 	return retval;
 }
@@ -1918,16 +1918,16 @@ void * _cdecl
 __wrap__kmalloc (ulong size)
 {
 	void *retval;
-	
+
 	lock++;
-	
+
 	retval = __real__kmalloc (size);
-	
+
 	if (lock == 1)
 	{
 		if (!kmemdebug_initialized)
 			init_kmemdebug ();
-		
+
 		if (kmemdebug_fp)
 		{
 			FPUTS ("kmalloc: ");
@@ -1939,7 +1939,7 @@ __wrap__kmalloc (ulong size)
 			FPUTS ("\n");
 		}
 	}
-	
+
 	lock--;
 	return retval;
 }
@@ -1948,12 +1948,12 @@ void _cdecl
 __wrap__kfree (void *place)
 {
 	lock++;
-	
+
 	if (lock == 1)
 	{
 		if (!kmemdebug_initialized)
 			init_kmemdebug ();
-		
+
 		if (kmemdebug_fp)
 		{
 			FPUTS ("kfree: ");
@@ -1964,9 +1964,9 @@ __wrap__kfree (void *place)
 			FPUTS ("\n");
 		}
 	}
-	
+
 	__real__kfree (place);
-	
+
 	lock--;
 }
 
@@ -1974,16 +1974,16 @@ void * _cdecl
 __wrap__umalloc (ulong size)
 {
 	void *retval;
-	
+
 	lock++;
-	
+
 	retval = __real__umalloc (size);
-	
+
 	if (lock == 1)
 	{
 		if (!kmemdebug_initialized)
 			init_kmemdebug ();
-		
+
 		if (kmemdebug_fp)
 		{
 			FPUTS ("umalloc: ");
@@ -1995,21 +1995,21 @@ __wrap__umalloc (ulong size)
 			FPUTS ("\n");
 		}
 	}
-	
+
 	lock--;
 	return retval;
 }
 
-void _cdecl 
+void _cdecl
 __wrap__ufree (void *place)
 {
 	lock++;
-	
+
 	if (lock == 1)
 	{
 		if (!kmemdebug_initialized)
 			init_kmemdebug ();
-		
+
 		if (kmemdebug_fp)
 		{
 			FPUTS ("ufree: ");
@@ -2020,9 +2020,9 @@ __wrap__ufree (void *place)
 			FPUTS ("\n");
 		}
 	}
-	
+
 	__real__ufree (place);
-	
+
 	lock--;
 }
 
@@ -2037,12 +2037,12 @@ km_debug (const char *fmt, ...)
 {
 	static char line [SPRINTF_MAX];
 	va_list args;
-	
+
 	va_start (args, fmt);
-	
+
 	vsprintf (line, sizeof (line), fmt, args);
 	KM_FORCE ((line));
-	
+
 	va_end (args);
 }
 # endif

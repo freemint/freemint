@@ -11,8 +11,8 @@
 # include "mint/mint.h"
 
 
-long _cdecl p_msg (int mode, long mbid, char *ptr);
-long _cdecl p_semaphore (int mode, long id, long timeout);
+long _cdecl sys_p_msg (int mode, long mbid, char *ptr);
+long _cdecl sys_p_semaphore (int mode, long id, long timeout);
 void free_semaphores (int pid);
 
 

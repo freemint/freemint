@@ -187,7 +187,7 @@ sys_c_conws (const char *str)
 	while (*p++)
 		cnt++;
 
-	return f_write (1, cnt, str);
+	return sys_f_write (1, cnt, str);
 }
 
 long _cdecl
@@ -201,7 +201,7 @@ sys_c_conrs (char *buf)
 		/* TB: When reading from a terminal, f_read is used which
 		 * automatically breaks at the first newline
 		 */
-		r = f_read (0, size, buf + 2);
+		r = sys_f_read (0, size, buf + 2);
 		if (r < E_OK)
 			buf [1] = 0;
 		else
@@ -256,7 +256,7 @@ sys_c_conrs (char *buf)
 			 * ending with CR only, but I have not seen many yet.
 			 */
 			 if (dummy == '\r')
-			 	return f_read (0, 1L, &dummy);
+			 	return sys_f_read (0, 1L, &dummy);
 			 else
 				return E_OK;
 		}

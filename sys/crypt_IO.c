@@ -295,7 +295,7 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
  * else: Ciphering enabled on dev
  */
 long _cdecl
-d_setkey (llong dev, char *key, int cipher)
+sys_d_setkey (llong dev, char *key, int cipher)
 {
 # ifdef CRYPTO_CODE
 	DI *di;
