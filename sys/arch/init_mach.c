@@ -45,7 +45,6 @@
 # include "cookie.h"
 # include "global.h"
 # include "init.h"
-# include "keyboard.h"
 # include "kerinfo.h"
 
 
