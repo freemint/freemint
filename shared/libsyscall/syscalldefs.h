@@ -1,10 +1,16 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2000-2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
  * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,30 +26,53 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * begin:	2000-01-01
- * last change:	2000-03-07
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
- * 
- * changes since last version:
- * 
- * known bugs:
- * 
- * todo:
- * 
- * optimizations:
- * 
  */
 
-# ifndef _check_h
-# define _check_h
+#ifndef _list_h
+#define _list_h
 
-# include "list.h"
+#define STRMAX 255
 
+struct systab
+{
+	struct syscall **table;
+	int size;
+	int max;
+	int maxused;
+};
 
-# endif /* _check_h */
+struct syscall
+{
+	char name[STRMAX];
+	char class;
+	struct arg *args;
+};
+
+struct arg
+{
+	struct arg *next;
+	
+	int type;
+#define TYPE_VOID	0
+#define TYPE_INT	1
+#define TYPE_CHAR	2
+#define TYPE_SHORT	3
+#define TYPE_LONG	4
+#define TYPE_UNSIGNED	5
+#define TYPE_UCHAR	6
+#define TYPE_USHORT	7
+#define TYPE_ULONG	8
+#define TYPE_IDENT	9
+	int flags;
+#define FLAG_CONST	0x01
+#define FLAG_STRUCT	0x02
+#define FLAG_UNION	0x04
+#define FLAG_POINTER	0x08
+#define FLAG_ARRAY	0x10
+	int ar_size;
+	
+	char types[STRMAX];
+	char name[STRMAX];
+};
+
+#endif /* _list_h */
