@@ -37,6 +37,7 @@
 # include "bios.h"
 # include "dosdir.h"
 # include "dosmem.h"
+# include "info.h"
 # include "ipc_socketdev.h"
 # include "k_fds.h"
 # include "k_prot.h"
@@ -461,7 +462,7 @@ _s_ync (void)
 {
 	FILESYS *fs;
 	
-	ALERT ("Syncing file systems...");
+	ALERT (MSG_fsys_syncing);
 	
 	/* syncing filesystems */
 	for (fs = active_fs; fs; fs = fs->next)
@@ -473,7 +474,8 @@ _s_ync (void)
 	/* always syncing buffercache */
 	bio_sync_all ();
 	
-	ALERT ("Syncing done.");
+	ALERT (MSG_fsys_syncing_done);
+
 	return 0;
 }
 # endif
@@ -592,7 +594,7 @@ changedrv (ushort d, const char *function)
 			continue;
 		
 		if (!fd || !cwd)
-			FATAL ("In changedrv called from %s, invalid fd/cwd", function);
+			FATAL (ERR_fsys_inv_fdcwd, function);
 		
 		/* invalidate all open files on this device */
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
@@ -618,7 +620,7 @@ changedrv (ushort d, const char *function)
 			
 			if (!warned)
 			{
-				ALERT ("Files were open on a changed drive (0x%x, %s)!", d, p->name);
+				ALERT (MSG_fsys_files_were_open, d, p->name);
 				warned++;
 			}
 

@@ -25,6 +25,7 @@
 
 # include "biosfs.h"
 # include "filesys.h"
+# include "info.h"
 # include "ipc_socketdev.h"
 # include "k_fds.h"
 # include "k_prot.h"
@@ -66,11 +67,11 @@ f_open (const char *name, short mode)
 		/* from now the sockets are clean */
 		if (!stricmp (name, "u:\\dev\\socket"))
 		{
-			ALERT ("O_GLOBAL for sockets denied; update your network tools");
+			ALERT (MSG_oglobal_denied);
 			return EINVAL;
 		}
 		
-		ALERT ("Opening a global handle (%s)", name);
+		ALERT (MSG_global_handle, name);
 		
 		p = rootproc;
 		global = 1;
