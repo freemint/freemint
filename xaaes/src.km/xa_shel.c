@@ -285,14 +285,12 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	const char *pcmd;
 	char *save_tail = NULL, *ext = NULL;
 	long longtail = 0, tailsize = 0;
-	struct xa_client *new = NULL;
 	Path save_cmd;
 	char *tail = argvtail;
 	int ret;
 	int drv = 0;
 	Path path,name;
-
-	long fl;
+	struct shel_write_info *info = NULL;
 
 	DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
 		c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
@@ -337,7 +335,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		if (longtail)
 		{
 			tailsize = longtail;
-			tail = xmalloc(tailsize + 2,1012);
+			tail = xmalloc(tailsize + 2, 1012);
 			if (!tail)
 				return 0;
 			strcpy(tail + 1, p_tail + 1);
@@ -347,7 +345,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		else
 		{
 			tailsize = p_tail[0];
-			tail = xmalloc(tailsize + 2,12);
+			tail = xmalloc(tailsize + 2, 12);
 			if (!tail)
 				return 0;
 			strncpy(tail, p_tail, tailsize + 1);
@@ -355,6 +353,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			DIAG((D_shel, NULL, "int tailsize: %ld", tailsize));
 		}
 	}
+
+	info = xmalloc(sizeof(*info), 1013);
+	if (!info)
+		goto out;
 
 	DIAG((D_shel, NULL, "Launch(0x%x): wisgr:%d, wiscr:%d\r\n cmd='%s'\r\n tail=%d'%s'",
 		mode, wisgr, wiscr, pcmd, *tail, tail+1));
@@ -510,7 +512,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 						p_renice(ret, -4);
 
 					DIAG((D_appl, 0, "Alloc client; APP %d", ret));
-					// XXX new->type = APP_APPLICATION;
+					info->type = APP_APPLICATION;
 				}
 
 				Sema_Dn(clients);
@@ -522,9 +524,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		{
 			struct basepage *b;
 			long p_rtn;
-			long shrink, shrinked;
 			long size;
-			int child = 0;
 
 			drv = drive_and_path(save_cmd, path, name, true, true);
 
@@ -539,11 +539,16 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 			b = (struct basepage *)p_rtn;
 
-			size = 256 + b->p_tlen + b->p_dlen + b->p_blen; /* accsize */
-			shrink = size + 512; /* plus a little bit stack, or? */
-			shrinked = m_shrink(0, (long)b, shrink);
+			/* accsize */
+			size = 256 + b->p_tlen + b->p_dlen + b->p_blen;
+			{
+				long shrink, shrinked;
 
-			DIAGS(("Shrinked accessory@0x%lx to %ld: %d", b, shrink, shrinked));
+				shrink = size + 512; /* plus a little bit stack, or? */
+				shrinked = m_shrink(0, (long)b, shrink);
+
+				DIAGS(("Shrinked accessory@0x%lx to %ld: %d", b, shrink, shrinked));
+			}
 
 			DIAGS(("Copy accstart to 0x%lx, size %lu", (char *)b + size, (long)accend - (long)accstart));
 			memcpy((char *)b + size, accstart, (long)accend - (long)accstart);
@@ -553,43 +558,59 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 			Sema_Up(clients);
 
-			DIAG((D_shel, 0, "Pexec(106) '%s'",cmd));
-			child = p_exec(106, cmd, b, *C.strings);
-			if (child < 0)
-				; /* XXX failure */
-			DIAG((D_shel, 0, "child = %d", child));
+			DIAG((D_shel, 0, "Pexec(106) '%s'", cmd));
 
-			p_renice(child, -4);
-			ret = child;
+			ret = p_exec(106, cmd, b, *C.strings);
+			if (ret > 0)
+			{
+				DIAG((D_shel, 0, "child = %d", ret));
+
+				p_renice(ret, -4);
+				info->type = APP_ACCESSORY;
+			}
+			else
+				/* XXX failure, shouldn't happen */
+				assert(0);
 
 			Sema_Dn(clients);
 			break;
 		}
 	}
 
-#if 0
-	if (new)
+	if (ret > 0)
 	{
-		strcpy(new->cmd_name, save_cmd);
+		info->pid = ret;
+		info->ppid = caller->p->pid;
 
-		new->cmd_tail = save_tail;
-		new->tail_is_heap = true;
-		new->parent = Pgetpid();
+		info->cmd_tail = save_tail;
+		info->tail_is_heap = true;
+
+		strcpy(info->cmd_name, save_cmd);
 
 		/* As we now unambiguously know the path from which the client is loaded,
 		 * why not fill it out here? :-)
 		 */
-		* new->home_path = drv + 'a';
-		*(new->home_path + 1) = ':';
-		strcpy(new->home_path+2, path);
+		*(info->home_path) = drv + 'a';
+		*(info->home_path + 1) = ':';
+		strcpy(info->home_path+2, path);
 
-		update_tasklist(lock);
+		/* add to info list */
+		{
+			struct shel_write_info **list = &(C.info);
+
+			while (*list)
+				list = &((*list)->next);
+
+			*list = info;
+		}
 	}
-#endif
 
 out:
 	if (tail != argvtail)
 		free(tail);
+
+	if (ret <= 0)
+		free(info);
 
 	DIAG((D_shel, 0, "Launch for %s returns child %d", c_owner(caller), ret));
 	DIAG((D_shel, 0, "Remove ARGV"));
