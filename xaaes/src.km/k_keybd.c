@@ -293,10 +293,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 		case 'R':				/* attempt to recover a hung system */
 		{
-			OBJECT *form = ResourceTree(C.Aes_rsc, FILE_SELECT);
-			form = duplicate_obtree(C.Aes, form, 0);
-			free_object_tree(C.Aes, form);
-			//recover();
+			recover();
 			return true;
 		}
 		case 'L':				/* open the task manager */
