@@ -16,30 +16,25 @@
 	.globl	_init
 	.globl	__base
 
-#define STACKSIZE 0x00002000
-
 	.bss
-__base:
-	ds.l	1
-__stk:
-	ds.b	STACKSIZE
+__base:	ds.l	1
 
 	.text
-
-_main:
-	move.l	0x04(sp),a0		// basepage address
+_main:	move.l	0x04(sp),a0		// basepage address
 	move.l	a0,__base
 
-	lea	__stk+STACKSIZE,sp
-
-	move.l	0x18(a0),d0		// base of the BSS segment
-	add.l	0x1c(a0),d0		// size of the BSS segment
-	sub.l	a0,d0
+	move.l	0x000c(a0),d0		// size of the TEXT segment
+	add.l	0x0014(a0),d0		// size of the DATA segment
+	add.l	0x001c(a0),d0		// size of the BSS segment
+	add.l	#0x00003101,d0		// stack size + basepage size + 1
+	bclr	#0,d0			// round
+	lea	-40(a0,d0.l),sp		// new stack pointer
 
 	move.l	d0,-(sp)		// new size
 	move.l	a0,-(sp)		// start address
-	pea	(0x004a0000).l		// Mshrink()
+	clr.w	-(sp)
+	move.w	#0x004a,-(sp)
 	trap	#1
-	lea	0x0c(sp),sp
+	lea	12(sp),sp
 
 	jmp	_init
