@@ -95,8 +95,7 @@ char *w_owner(struct xa_window *w);
 char *c_owner(struct xa_client *c);
 char *t_owner(struct widget_tree *t);
 
-#define File_Line display(D_fl,__FILE__,__LINE__)
-#define DIAGS(x) if (D.debug_level) File_Line,display x
+#define DIAGS(x) if (D.debug_level) display x
 #define DIAG(x) DeBug x
 #define IFDIAG(x) x
 
