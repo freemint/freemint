@@ -193,6 +193,8 @@ extern struct options local_options;
 
 extern XA_PENDING_WIDGET widget_active;
 
+extern const char mnu_clientlistname[];
+
 extern BUTTON mu_button;
 
 extern XA_TREE nil_tree;

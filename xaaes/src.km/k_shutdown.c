@@ -24,6 +24,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include RSCHNAME
+
 #include "k_shutdown.h"
 #include "xa_global.h"
 
@@ -32,6 +34,7 @@
 #include "init.h"
 #include "nkcc.h"
 #include "objects.h"
+#include "scrlobjc.h"
 #include "taskman.h"
 #include "xa_rsrc.h"
 
@@ -116,6 +119,9 @@ k_shutdown(void)
 		}
 	}
 
+	DIAGS(("Freeing delayed deleted windows"));
+	do_delayed_delete_window(NOLOCKING);
+
 	DIAGS(("Freeing Aes environment"));
 	if (C.env)
 	{
@@ -124,9 +130,24 @@ k_shutdown(void)
 	}
 
 	DIAGS(("Freeing Aes resources"));
+
+	/* empty alert scrollbar */
+	{
+		OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
+		empty_scroll_list(form, SYSALERT_LIST, -1);
+	}
+
 	/* To demonstrate the working on multiple resources. */
 	FreeResources(C.Aes, 0);/* first:  widgets */
 	FreeResources(C.Aes, 0);/* then:   big resource */
+
+	/* just to be sure */
+	if (C.button_waiter == C.Aes)
+		C.button_waiter = NULL;
+
+	cancel_aesmsgs(&(C.Aes->rdrw_msg));
+	cancel_aesmsgs(&(C.Aes->msg));
+	cancel_cevents(C.Aes);
 
 	if (C.Aes->attach)
 		kfree(C.Aes->attach);
@@ -186,7 +207,7 @@ k_shutdown(void)
 		v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 		v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
 
-		// display("\033e\033H");		/* Cursor enable, cursor home */
+		display("\033e\033H");		/* Cursor enable, cursor home */
 	}
 	else
 	{

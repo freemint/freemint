@@ -1653,21 +1653,12 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 		t_ob = root[s_ob ].ob_head;
 		root[s_ob].ob_height = root[t_ob+3].ob_y - root[s_ob].ob_y;
 		t_ob += 2;
-		/*
-		 * this looks wrong; we put here an xaaes private pointer
-		 * into the OBJECT; this is called from XA_menu_bar
-		 * with client OBJECTs too
-		 */
-		/*
-		 * Ozk: Yes, this is not right. It will seldom created problems tho,
-		 * becuase very few, if any, GEM apps handle menus by themselves.
-		 * However, I did something temporarily just to change the function
-		 * prototype, until umalloced space can be used, as this solution
-		 * is just as bad as it originally was.
-		*/
 
-		root[t_ob++].ob_spec.free_string = client->mnu_clientlistname; //"  Clients \3";
-		DIAG((D_menu, NULL, "Wrong menufix for %s - adding object at %lx", client->name, client->mnu_clientlistname));
+		/* client->mnu_clientlistname is umalloced area */
+		root[t_ob++].ob_spec.free_string = client->mnu_clientlistname;
+		DIAG((D_menu, NULL, "Wrong menufix for %s - adding object at %lx",
+			client->name, client->mnu_clientlistname));
+
 		while (t_ob != s_ob)
 		{
 			root[t_ob].ob_flags |= OF_HIDETREE|OS_DISABLED;
