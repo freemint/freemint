@@ -13,8 +13,9 @@
 /*
  * paint(v, c): put character 'c' at the current (x, y) coordinates
  * of window v. If insert mode is on, this involves moving all the
- * other characters one space to the left, first.
+ * other characters one space to the right, first.
  */
+int force_refresh = 0;
 void paint(TEXTWIN *v, unsigned int c)
 {
 	int i;
@@ -48,9 +49,10 @@ void paint(TEXTWIN *v, unsigned int c)
 
 	if (v->term_flags & FINSERT) 
 	{
+		memmove (v->data[line] + v->cx - 1, v->data[line] + v->cx,
+			 NCOLS (v) - v->cx);
 		for (i = v->maxx-1; i > v->cx; --i) 
 		{
-			v->data[line][i] = v->data[line][i-1];
 			v->cflag[line][i] = v->cflag[line][i-1] | CDIRTY;
 		}
 	}
@@ -62,6 +64,8 @@ void paint(TEXTWIN *v, unsigned int c)
 	else
 		v->cflag[line][v->cx] = (CTOUCHED | use_attribute);
 	v->dirty[line] |= SOMEDIRTY;
+	if (force_refresh)
+		refresh_textwin (v, 0);
 }
 
 /* Unconditionally display character C even if it is a 
