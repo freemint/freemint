@@ -328,7 +328,8 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	wind = find_window(lock, md->x, md->y);
 	if (wind)
 	{
-		client = wind->owner;
+		// the following line dont work because root_window is not owned by the desktop owner :(
+		//client = wind == root_window ? get_desktop()->owner : wind->owner;
 		DIAG((D_mouse, client, "post button event (wind) to %s", client->name));
 		post_cevent(client, cXA_button_event, wind, 0, 0, 0, 0, md);
 		return;
