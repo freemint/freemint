@@ -1,38 +1,38 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * Started: 1999-09-27
- * 
+ *
  * please send suggestions or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Routines to de/encrypt blocks read/written in block_IO.c. The actual
  * cryptographic code (Blowfish) is in blowfish.c.
- * 
+ *
  * History:
  * 2000-05-29: - crypt_block() now gets the physical record number, adapted
  *               calls to it accordingly (Gryf)
@@ -75,7 +75,7 @@ init_crypt_IO (void)
 # ifdef CRYPTO_CODE
 	boot_print (crypto_greet);
 # endif
-}	
+}
 
 # ifdef CRYPTO_CODE
 
@@ -133,7 +133,7 @@ byte_copy (char *to, char *from, short bytes)
 {
 	/* This should produce dbra loop
 	 */
-	
+
 	do {
 		*to++ = *from++;
 	}
@@ -164,34 +164,34 @@ crypt_block (BF_KEY *bfk, void (*crypt)(BF_KEY *, ulong *, ulong *), char *buf, 
 	ulong count;
 	ulong block;
 	ulong blocksize;
-	
+
 	/* Paranoia */
 	assert (((size % 8) == 0));
-	
+
 	/* Initialize local variables, and the CBC feedback register */
 	feedback[0] = 0;
 	feedback[1] = block = rec;
 	count = 0;
 	blocksize = di->pssize;
-	
+
 # ifndef ONLY030	/* No, bez jaj... */
 	if (((ulong) buf & 1L) && (mcpu < 20))
 	{
 		/* Unfortunately, the block isn't word aligned ...
 		 */
 		register ulong i;
-		
+
 		for (i = 0; i < size; i += 8)
 		{
 			ulong lr[2];
-			
+
 			byte_copy ((char *) lr, (char *) buf, 7);
 			(*crypt)(bfk, lr, feedback);
 			byte_copy ((char *) buf, (char *) lr, 7);
-			
+
 			buf += 8;
 			count += 8;
-			
+
 			/* After each physical diskblock, re-initialize the
 			 * feedback register
 			 */
@@ -210,13 +210,13 @@ crypt_block (BF_KEY *bfk, void (*crypt)(BF_KEY *, ulong *, ulong *), char *buf, 
 		 */
 		register ulong *left = (ulong *) buf;
 		register ulong i;
-		
+
 		for (i = 0; i < size; i += 8)
 		{
 			(*crypt)(bfk, left, feedback);
 			left += 2;
 			count += 8;
-			
+
 			/* After each physical diskblock, re-initialize the
 			 * feedback register
 			 */
@@ -236,7 +236,7 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	ulong crypt_size = size;
 	ulong crypt_rec = rec << di->lshift;
 	long r;
-	
+
 	/* Record 0 (the bootsector) must not be ciphered, as otherwise
 	 * Getbpb() will fail/return nonsense, making it impossible to
 	 * use a crypted drive not under control of XHDI (e.g. disks)
@@ -249,11 +249,11 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 		if (crypt_size == 0)
 			return (*di->crypt.rwabs)(di, rw, buf, size, rec);
 	}
-	
+
 	/* Encipher the data before writing the buffer */
 	if (rw & 1)
 		crypt_block (di->crypt.key, cbc_encipher, crypt_buf, crypt_size, crypt_rec, di);
-	
+
 	/* Do the real read/write operation */
 	r = (*di->crypt.rwabs)(di, rw, buf, size, rec);
 	if (r == 0)
@@ -263,7 +263,7 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 		 */
 		crypt_block (di->crypt.key, cbc_decipher, crypt_buf, crypt_size, crypt_rec, di);
 	}
-	
+
 	return r;
 }
 
@@ -271,11 +271,11 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 
 /*
  * d_setkey
- * 
+ *
  * GEMDOS call to set the key/passphrase for a drive. As changing the key
  * directly influences data access, the drive is Dlock()ed during this process
  * to prevent data loss.
- * 
+ *
  * Input:
  * dev: Drive (will be dereferenced, if it is an alias)
  * key: Pointer to the new passphrase; if this is an empty string, ciphering
@@ -283,7 +283,7 @@ rwabs_crypto (DI *di, ushort rw, void *buf, ulong size, ulong rec)
  *      ciphering mode
  * cipher: Cipher type to use. Currently, only zero (Blowfish) is supported.
  *         Other values are reserved for future expansion.
- * 
+ *
  * Returns:
  * (for key != NULL)
  *  E_OK: All right
@@ -300,12 +300,12 @@ d_setkey (llong dev, char *key, int cipher)
 # ifdef CRYPTO_CODE
 	DI *di;
 	long r;
-	
+
 	DEBUG (("Dsetkey(%li, %d)", (long) dev, cipher));
-	
+
 	if (!suser (curproc->p_cred->ucr))
 		return EPERM;
-	
+
 	switch (cipher)
 	{
 	    case 0:
@@ -315,55 +315,55 @@ d_setkey (llong dev, char *key, int cipher)
 		return EINVAL;
 	}
 
-	if ((r = d_lock (1, dev)) != E_OK)
+	if ((r = sys_d_lock (1, dev)) != E_OK)
 		return r;
-	
+
 	di = bio.res_di (dev);
 	if (!di)
 	{
-		(void) d_lock (0, dev);
+		(void) sys_d_lock (0, dev);
 		return ENXIO;
 	}
-	
+
 	/* return whether encryption is enabled or not */
 	if (!key)
 	{
 		r = di->mode & BIO_ENCRYPTED;
-		
+
 		bio.free_di (di);
-		(void) d_lock (0, dev);
-		
+		(void) sys_d_lock (0, dev);
+
 		return r;
 	}
-	
+
 	if (*key)
 	{
 		struct MD5Context md5sum;
 		char hash [16];
-		
+
 		MD5Init (&md5sum);
 		MD5Update (&md5sum, key, strlen (key));
 		MD5Final (hash, &md5sum);
-		
+
 		if (!(di->mode & BIO_ENCRYPTED))
 		{
 			di->crypt.key = kmalloc (sizeof (*(di->crypt.key)));
 			if (!di->crypt.key)
 			{
 				bio.free_di (di);
-				(void) d_lock (0, dev);
-				
+				(void) sys_d_lock (0, dev);
+
 				return ENOMEM;
 			}
-			
+
 			di->rrwabs = &di->crypt.rwabs;
-			
+
 			di->crypt.rwabs = di->rwabs;
 			di->rwabs = rwabs_crypto;
-			
+
 			di->mode |= BIO_ENCRYPTED;
 		}
-		
+
 		InitializeBlowfish (di->crypt.key, hash, 16);
 	}
 	else
@@ -373,14 +373,14 @@ d_setkey (llong dev, char *key, int cipher)
 			di->mode &= ~BIO_ENCRYPTED;
 			di->rwabs = di->crypt.rwabs;
 			di->rrwabs = &di->rwabs;
-			
+
 			bzero (di->crypt.key, sizeof(*(di->crypt.key)));
 			kfree (di->crypt.key);
 		}
 	}
-	
+
 	bio.free_di (di);
-	return d_lock (0, dev);
+	return sys_d_lock (0, dev);
 # else
 	return ENOSYS;
 # endif
