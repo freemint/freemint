@@ -97,3 +97,14 @@
 #define KORW_WAIT        3   /* BUTTON in Baum KILL_OR_WAIT */
 #define KORW_KILL        4   /* BUTTON in Baum KILL_OR_WAIT */
 #define KORW_APPNAME     5   /* STRING in Baum KILL_OR_WAIT */
+
+#define WDLG_FNTS        10  /* Formular/Dialog */
+#define FNTS_XCANCEL     1   /* BUTTON in Baum WDLG_FNTS */
+#define FNTS_XOK         2   /* BUTTON in Baum WDLG_FNTS */
+#define FNTS_XSET        3   /* BUTTON in Baum WDLG_FNTS */
+#define FNTS_XMARK       4   /* BUTTON in Baum WDLG_FNTS */
+#define FNTS_XUDEF       5   /* BUTTON in Baum WDLG_FNTS */
+#define FNTS_SHOW        6   /* BOX in Baum WDLG_FNTS */
+#define FNTS_FNTLIST     7   /* BOX in Baum WDLG_FNTS */
+#define FNTS_TYPE        8   /* BOX in Baum WDLG_FNTS */
+#define FNTS_POINTS      9   /* BOX in Baum WDLG_FNTS */

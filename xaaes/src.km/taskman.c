@@ -656,6 +656,7 @@ open_launcher(enum locks lock)
 				  cfg.launch_path,
 				  NULL, "Launch Program",
 				  handle_launcher, NULL);
+		kfree(fs);
 	}
 }
 #endif

@@ -789,8 +789,7 @@ find_drive(int a, struct fsel_data *fs)
 			break;
 		if (x == a)
 			return d;
-	}
-	while (m[d++].ob_next != FSEL_DRVA-1);
+	} while (m[d++].ob_next != FSEL_DRVA - 1);
 
 	ping();
 
@@ -825,14 +824,19 @@ fs_key_form_do(enum locks lock,
 	       XA_TREE *wt,
 	       const struct rawkey *key)
 {
-	ushort keycode = key->aes;
-	ushort nkcode = key->norm;
-	OBJECT *obtree = ResourceTree(C.Aes_rsc, FILE_SELECT);
-	OBJECT *ob = obtree + FS_LIST;
-	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
-	SCROLL_ENTRY *old_entry = list->cur;
+	unsigned short keycode = key->aes;
+	unsigned short nkcode = key->norm;
+	struct scroll_info *list = (struct scroll_info *)((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree[FS_LIST].ob_spec.index;
 	struct fsel_data *fs = list->data;
+	SCROLL_ENTRY *old_entry = list->cur;
 
+	//struct scroll_info *list = (struct scroll_info *)((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree[FS_LIST].ob_spec.index;
+	//struct fsel_data *fs = list->data;
+	//OBJECT *obtree = ResourceTree(C.Aes_rsc, FILE_SELECT);
+	//OBJECT *ob = obtree + FS_LIST;
+	//SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+	//SCROLL_ENTRY *old_entry = list->cur;
+	
 	/* HR 310501: ctrl|alt + letter :: select drive */
 	if ((key->raw.conin.state & (K_CTRL|K_ALT)) != 0)
 	{
@@ -1180,6 +1184,7 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 	delayed_delete_window(lock, fs->wind);
 	fs->wind = NULL;
 	fs->menu = NULL;
+	fs->form = NULL;
 	fs->selected = NULL;
 	fs->canceled = NULL;
 }
