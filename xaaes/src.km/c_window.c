@@ -1115,7 +1115,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 	IFDIAG(struct xa_client *client = wind->owner;)
 	struct xa_window *wl;
 	RECT old, new, clip; //, oldw, pr;
-	bool blit = true, move;
+	bool blit = true;
 
 	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d",
 	      wind->is_open ? "open" : "closed",
@@ -1149,16 +1149,6 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 
 		if (wind->is_open)
 		{
-			XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-			XA_TREE *wt = widg->stuff;
-
-			/* Temporary hack 070702 */
-			if (wt && wt->tree)
-			{
-				wt->tree->ob_x = wind->wa.x;
-				wt->tree->ob_y = wind->wa.y;
-			}
-
 			wl = wind->next;
 
 			/* For some reason the open window had got behind
@@ -1587,8 +1577,8 @@ CE_display_windows_below(enum locks lock, struct c_event *ce, bool cancel)
 	struct xa_client *wo;
 	struct xa_rect_list *rl;
 	RECT *r;
-	short *p;
-	union msg_buf m;
+	//short *p;
+	//union msg_buf m;
 	RECT clip;
 
 	wl = ce->ptr1;
@@ -1610,8 +1600,17 @@ CE_display_windows_below(enum locks lock, struct c_event *ce, bool cancel)
 
 					draw_window(lock, wl);
 				
-					if (wl->send_message)
+					if (wl->send_message && xa_rect_clip(&wl->wa, &clip, &clip))
 					{
+						wl->send_message(lock, wl, NULL,
+							WM_REDRAW, 0, 0, wl->handle,
+							clip.x,
+							clip.y,
+							clip.w,
+							clip.h);
+
+					#if 0
+
 						p = m.m;
 						*p++ = WM_REDRAW;
 						*p++ = C.AESpid;
@@ -1620,6 +1619,7 @@ CE_display_windows_below(enum locks lock, struct c_event *ce, bool cancel)
 						*(RECT *)p = clip;
 					
 						queue_message(lock, wo, &m);
+					#endif
 					}
 				}
 				rl = rl->next;
@@ -1763,6 +1763,23 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 	resize	= new->w != old.w || new->h != old.h ? 1 : 0;
 	move	= new->x != old.x || new->y != old.y ? 1 : 0;
 				
+	if (move)
+	{
+		/* XXX - This makes set_and_update_window() context dependant
+		 *	 when moving windows!!
+		 */
+
+		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
+		XA_TREE *wt = widg->stuff;
+
+		/* Temporary hack 070702 */
+		if (wt && wt->tree)
+		{
+			wt->tree->ob_x = wind->wa.x;
+			wt->tree->ob_y = wind->wa.y;
+		}
+	}
+		
 	if (blit && oldrl && newrl)
 	{
 		DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",
