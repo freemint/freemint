@@ -63,6 +63,8 @@
 			"Ver. %d.%d, (c) 2003 by Konrad M.Kokoszkiewicz (draco@atari.org)\r\n" \
 			"Type help for help.\r\n"
 
+# define SHELL_STACK	32768L
+# define SHELL_ARGS	2048L
 # define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
 
 # define LINELEN	126
@@ -189,7 +191,6 @@ sh_getenv(const char *var)
 
 			return es;
 		}
-
 		while (*env_str)
 			env_str++;
 		env_str++;
@@ -198,6 +199,7 @@ sh_getenv(const char *var)
 	return 0;
 }
 
+# if 0
 static void
 sh_setenv(const char *var, char *value)
 {
@@ -254,6 +256,7 @@ sh_setenv(const char *var, char *value)
 
 	Mfree(env_str);
 }
+# endif
 
 static void
 env(char *envie)
@@ -285,7 +288,7 @@ env(char *envie)
  * into args[].
  *
  * XXX add 'quoted arguments' handling.
- * XXX add wildcard expansion (at least the `*')
+ * XXX add wildcard expansion (at least the `*'), see fnmatch().
  *
  */
 static void
@@ -334,30 +337,11 @@ crunch(char *cmdline, char *args[])
 	args[idx] = 0;
 }
 
-/* Return a zero if the string given is not an internal command,
- * or the number of the internal command other wise (the number is
- * just their index in the commands[] table, plus one).
- */
-static long
-identify_command(char *cmd)
-{
-	long cnt = 0;
-
-	while (commands[cnt])
-	{
-		if (strcmp(cmd, commands[cnt]) == 0)
-			return (cnt + 1);
-		cnt++;
-	}
-
-	return 0;
-}
-
 /* Execute an external program */
 static long
 execv(char *oldcmd, char *args[])
 {
-	char *oc, *var, *new_env, *new_var, *t, *path, *npath = 0, *np;
+	char *var, *new_env, *new_var, *t, *path, *np, npath[2048];
 	long count = 0, x, r = -1L;
 
 	var = shell_base->p_env;
@@ -405,15 +389,7 @@ execv(char *oldcmd, char *args[])
 	}
 	*new_var = 0;
 
-	/* The name of the program still begins the command line,
-	 * skip it now.
-	 */
-	oc = oldcmd;
-	while(*oc && *oc == 0x20)
-		oc++;
-	while(*oc && *oc != 0x20)
-		oc++;
-	*oc = 0x7f;
+	*oldcmd = 0x7f;
 
 	/* $PATH searching. Don't do it, if the user seems to
 	 * have specified the explicit pathname.
@@ -425,33 +401,26 @@ execv(char *oldcmd, char *args[])
 
 		if (path)
 		{
-			npath = (char *)Mxalloc(2048L, 3);
-
-			if (npath)
+			do
 			{
-				do
-				{
-					np = npath;
+				np = npath;
 
-					while (*path && *path != ';' && *path != ',')
-						*np++ = *path++;
-					if (*path)
-						path++;			/* skip the separator */
+				while (*path && *path != ';' && *path != ',')
+					*np++ = *path++;
+				if (*path)
+					path++;			/* skip the separator */
 
-					*np = 0;
-					strcat(npath, "/");
-					strcat(npath, args[0]);
+				*np = 0;
+				strcat(npath, "/");
+				strcat(npath, args[0]);
 
-					r = Pexec(0, npath, oc, new_env);
+				r = Pexec(0, npath, oldcmd, new_env);
 
-				} while (*path && r < 0);
-
-				Mfree(npath);
-			}
+			} while (*path && r < 0);
 		}
 	}
 	else
-		r = Pexec(0, args[0], oc, new_env);
+		r = Pexec(0, args[0], oldcmd, new_env);
 
 	Mfree(new_env);
 
@@ -462,11 +431,12 @@ static long
 execute(char *cmdline, char *args[])
 {
 	char newcmd[128], *c, *home;
-	long r;
+	long r, cnt, cmdno;
 	short y;
 
 	c = cmdline;
 
+	/* Convert possible CR/LF characters to spaces */
 	while (*c)
 	{
 		if (*c == '\r')
@@ -476,16 +446,40 @@ execute(char *cmdline, char *args[])
 		c++;
 	}
 
-	strncpy(newcmd, cmdline, 127);		/* crunch() destroys the `cmdline', so we need to copy it */
+	c = cmdline;
+
+	/* Skip the first word (command) */
+	while (*c && *c == 0x20)
+		c++;
+	while (*c && *c != 0x20)
+		c++;
+
+	bzero(newcmd, sizeof(newcmd));
+
+	strncpy(newcmd, c, 127);		/* crunch() destroys the `cmdline', so we need to copy it */
 
 	crunch(cmdline, args);
 
 	if (!args[0])
 		return 0;			/* empty command line */
 
-	r = identify_command(args[0]);
+	/* Result a zero if the string given is not an internal command,
+	 * or the number of the internal command otherwise (the number is
+	 * just their index in the commands[] table, plus one).
+	 */
+	cmdno = cnt = r = 0;
 
-	switch (r)
+	while (commands[cnt])
+	{
+		if (strcmp(args[0], commands[cnt]) == 0)
+		{
+			cmdno = cnt + 1;
+			break;
+		}
+		cnt++;
+	}
+
+	switch (cmdno)
 	{
 		case	SHCMD_EXIT:
 		{
@@ -493,19 +487,16 @@ execute(char *cmdline, char *args[])
 			y = (short)Cconin();
 			if (tolower (y & 0xff) == *MSG_init_menu_yes)
 				Pterm(0);
-			r = 0;
 			boot_print("\r\n");
 			break;
 		}
 		case	SHCMD_VER:
 		{
 			ver();
-			r = 0;
 			break;
 		}
 		case	SHCMD_CD:
 		{
-			r = 0;
 			if (args[1])
 				r = Dsetpath(args[1]);
 			else
@@ -519,13 +510,11 @@ execute(char *cmdline, char *args[])
 		case	SHCMD_HELP:
 		{
 			help();
-			r = 0;
 			break;
 		}
 		case	SHCMD_ENV:
 		{
 			env(0);
-			r = 0;
 			break;
 		}
 		default:
@@ -543,7 +532,8 @@ execute(char *cmdline, char *args[])
 static void
 shell(void)
 {
-	char **args, cwd[128], linebuf[LINELEN+2], *lb, *home;
+	char *args[SHELL_ARGS];
+	char cwd[1024], linebuf[LINELEN+2], *lb, *home;
 	long r;
 	short x;
 
@@ -559,11 +549,10 @@ shell(void)
 			boot_printf("mint: %s: can't set home directory, error %ld\r\n\r\n", __FUNCTION__, r);
 	}
 
-	args = (char **)Mxalloc(8192L, 3);	/* XXX */
-
 	for (;;)
 	{
-		bzero(args, 8192L);
+		bzero(args, sizeof(args));
+		bzero(linebuf, sizeof(linebuf));
 
 		linebuf[0] = (sizeof(linebuf) - 2);
 		linebuf[1] = 0;
@@ -578,7 +567,9 @@ shell(void)
 				cwd[x] = '/';
 		}
 
+# if 0
 		sh_setenv("PWD=", cwd);
+# endif
 
 		boot_printf("mint:%s#", cwd);
 		Cconrs(linebuf);
@@ -607,25 +598,15 @@ shell(void)
 /* Notice that we cannot define local variables here due to setstack()
  * which changes the stack pointer value.
  */
-
 static void
 shell_start(long bp)
 {
 	/* we must leave some bytes of `pad' behind the (sp)
-	 * (see arch/syscall.S), this is why it is 7936.
+	 * (see arch/syscall.S), this is why it is `-256L'.
 	 */
-	setstack(bp + 7936L);
+	setstack(bp + SHELL_STACK - 256L);
 
-	shell_base->p_hitpa = _base->p_hitpa;
-	shell_base->p_tbase = _base->p_tbase;
-	shell_base->p_tlen = _base->p_tlen;
-	shell_base->p_dbase = _base->p_dbase;
-	shell_base->p_dlen = _base->p_dlen;
-	shell_base->p_bbase = _base->p_bbase;
-	shell_base->p_blen = _base->p_blen;
-	shell_base->p_parent = _base;
-
-	Mshrink((void *)bp, 8192L);
+	Mshrink((void *)bp, SHELL_STACK);
 
 	(void)Pdomain(1);
 	(void)Pumask(0x022);
@@ -638,12 +619,18 @@ shell_start(long bp)
 long
 startup_shell(void)
 {
+	long r;
+
 	shell_base = (BASEPAGE *)sys_pexec(7, (char *)SHELL_FLAGS, "\0", init_env);
 
 	/* Start address */
 	shell_base->p_tbase = (long)shell_start;
 
-	return sys_pexec(106, (char *)"shell", shell_base, 0L);
+	r = sys_pexec(104, (char *)"shell", shell_base, 0L);
+
+	Mfree(shell_base);
+
+	return r;
 }
 
 /* EOF */
