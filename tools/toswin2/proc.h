@@ -9,8 +9,10 @@
 # include "config.h"
 #endif
 
+struct passwd;
+
 TEXTWIN	*new_proc(char *progname, char *arg, char *env, char *progdir,
-		  WINCFG *cfg, int talkID);
+		  WINCFG *cfg, int talkID, struct passwd *pw);
 
 void	term_proc(TEXTWIN *t);
 
