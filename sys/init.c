@@ -1034,6 +1034,12 @@ init (void)
 	/* load the configuration file */
 	load_config();
 
+	/* time_slice must be at least 1, the cnf parser doesn't
+	 * allow to check the range.
+	 */
+	if (time_slice < 1)
+		time_slice = 1;
+
 # ifdef OLDTOSFS
 	/*
 	 * Until the old TOSFS is completely removed, we try to trigger a media
