@@ -41,6 +41,7 @@
 #include "widgets.h"
 #include "xalloc.h"
 
+long redraws = 0;
 
 static int
 pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -77,6 +78,9 @@ pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_m, NULL, "Got pending message %s for %s from %d",
 			pmsg(buf->m[0]), c_owner(client), buf->m[1]));
+
+		if (buf->m[0] == WM_REDRAW)
+			redraws--;
 
 		free(msg);
 	}
