@@ -182,7 +182,7 @@ button_event(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 				*to++ = md->y;
 				*to++ = md->state;
 				*to++ = button.ks;
-				*to++ = 0;				/* HR: ?? */
+				*to++ = 0;
 				*to++ = md->clicks;
 			/* Write success to clients reply pipe to unblock the process */
 				Unblock(client, XA_OK, 3);
@@ -277,10 +277,10 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 
 	/* See if a (classic) blocked form_do is active */
 	if (S.mouse_lock)
-		if (do_fmd(lock, S.mouse_lock, md))				/* HR 121102 */
+		if (do_fmd(lock, S.mouse_lock, md))
 			return;
 	if (S.update_lock)
-		if (do_fmd(lock, S.update_lock, md))			/* HR 121102 */
+		if (do_fmd(lock, S.update_lock, md))
 			return;
 
 	wind = find_window(lock, md->x, md->y);				/* Try for a window */
@@ -298,7 +298,7 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 		if (md->state && widgets)
 		{
 			DIAG((D_button,NULL,"calling do_widgets\n"));
-			if (do_widgets(lock, wind, 0, md))			/* HR 161101: mask */
+			if (do_widgets(lock, wind, 0, md))
 				return;			/* Window widgets prrocessed. */
 		}
 
@@ -430,7 +430,7 @@ XA_move_event(LOCK lock, struct moose_data *md)
 			k->y = y;
 			k->em.t1(C.menu_base);	/* call the function */
 		}
-		else  if (k->em.flags & MU_M1)
+		else if (k->em.flags & MU_M1)
 		{
 			if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
 			{
@@ -1118,9 +1118,8 @@ XA_evnt_multi(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	pb->intout[5] = 0;
 	pb->intout[6] = 0;
 	client->waiting_for = 0;
-	client->waiting_pb = NULL;		/* HR 011201 */
+	client->waiting_pb = NULL;
 
-/* HR */
 #if GENERATE_DIAGS
 	{
 		char evtxt[128];
@@ -1160,7 +1159,7 @@ XA_evnt_multi(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		Sema_Up(pending);
 
-		if (pending_button.client == client && mouse_ok(client))			/* HR 161201 (mouse_ok) */
+		if (pending_button.client == client && mouse_ok(client))
 		{
 			DIAG((D_button,NULL,"pending_button multi %d\n", pending_button.b));
 			pending_button.client = NULL;			/* is single shot. */
@@ -1174,7 +1173,7 @@ DIAG((D_button,NULL,"fall_through |= MU_BUTTON\n"));
 		{
 DIAG((D_button,NULL,"still_button multi?? o[0,2] %x,%x button.got %d, lock %d, Mbase %lx, active.widg %lx\n",
                                    pb->intin[1], pb->intin[3], button.got, S.mouse_lock, C.menu_base, widget_active.widg));
-			if (still_button(lock, client, pb->intin + 1))		/* HR 121102 */
+			if (still_button(lock, client, pb->intin + 1))
 			{
 DIAG((D_button,NULL,"still_button multi %d,%d/%d\n", button.b, button.x, button.y));
 
@@ -1331,8 +1330,6 @@ cancel_evnt_multi(XA_CLIENT *client, int which)
 unsigned long
 XA_evnt_mesag(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	/* HR: static pid array */
-
 	CONTROL(0,1,1)
 
 	if (pending_msgs(lock, client, pb))
@@ -1357,7 +1354,7 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	Sema_Up(pending);
 
-	if (pending_button.client == client && mouse_ok(client))	/* HR 131102: mouse_ok */
+	if (pending_button.client == client && mouse_ok(client))
 	{
 		DIAG((D_button,NULL,"pending_button %d\n", pending_button.b));
 		pending_button.client = NULL;			/* is single shot. */
@@ -1389,11 +1386,10 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		}
 	}
 
-
-	/* HR static pid array */
-
-	client->waiting_for = MU_BUTTON;	/* Flag the app as waiting for messages */
-	client->waiting_pb = pb;		/* Store a pointer to the AESPB to fill when the event occurs */
+	/* Flag the app as waiting for messages */
+	client->waiting_for = MU_BUTTON;
+	/* Store a pointer to the AESPB to fill when the event occurs */
+	client->waiting_pb = pb;
 
 	Sema_Dn(pending);
 
@@ -1412,9 +1408,10 @@ XA_evnt_keybd(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	if (pending_key_strokes(lock, pb, client, 0))
 		return XAC_DONE;
 
-	client->waiting_for = MU_KEYBD;	/* Flag the app as waiting for messages */
-	client->waiting_pb = pb;	/* Store a pointer to the AESPB to fill when the event */
-					/*  finally arrives. */
+	/* Flag the app as waiting for messages */
+	client->waiting_for = MU_KEYBD;
+	/* Store a pointer to the AESPB to fill when the event occurs */
+	client->waiting_pb = pb;
 
 	/* Returning false blocks the client app to wait for the event */
 	return XAC_BLOCK;
@@ -1428,9 +1425,11 @@ XA_evnt_mouse(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	CONTROL(5,5,0)
 
-	client->waiting_for = MU_M1;	/* Flag the app as waiting for mouse events */
-	client->waiting_pb = pb;	/* Store a pointer to the AESPB to fill when the event */
-					/*  finally arrives. */
+	/* Flag the app as waiting for messages */
+	client->waiting_for = MU_M1;
+	/* Store a pointer to the AESPB to fill when the event occurs */
+	client->waiting_pb = pb;
+
 	bzero(&client->em, sizeof(XA_MOUSE_RECT));
 	client->em.m1 = *((RECT *) &pb->intin[1]);
 	client->em.flags = (long)(pb->intin[0]) | MU_M1;
@@ -1450,19 +1449,17 @@ XA_evnt_mouse(LOCK lock, XA_CLIENT *client, AESPB *pb)
 /*
  * Evnt_timer()
  */
-
-/* HR 051201: Unclumsify the timer value passing. */
-
 unsigned long
 XA_evnt_timer(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-
 	CONTROL(2,1,0)
 
 	client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0];
 
-	client->waiting_pb = pb;	/* Store a pointer to the AESPB to fill when the event */
-	client->waiting_for = MU_TIMER;	/* Flag the app as waiting for a timer */
-					/* finally arrives. */
+	/* Flag the app as waiting for messages */
+	client->waiting_pb = pb;
+	/* Store a pointer to the AESPB to fill when the event occurs */
+	client->waiting_for = MU_TIMER;
+
 	return XAC_TIMER;
 }
