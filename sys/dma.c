@@ -308,7 +308,9 @@ dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p))
 	
 	if (timeout)
 	{
-		c->t = addroottimeout (timeout, func ? func : dma_timeout, 0);
+		c->t = addroottimeout (timeout,
+				func ? func
+				: (void _cdecl (*)(PROC *)) dma_timeout, 0);
 		if (!c->t)
 			FATAL ("dma_block: addroottimeout failed!");
 		
