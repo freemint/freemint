@@ -297,9 +297,8 @@ init_moose(void)
 		{
 			struct moose_vecsbuf vecs;
 
-			aerr = (*C.adi_mouse->ioctl)(C.adi_mouse, MOOSE_READVECS, (long)&vecs);
-
-			if (vecs.motv)
+			aerr = adi_ioctl(C.adi_mouse, MOOSE_READVECS, (long)&vecs);
+			if (aerr == 0 && vecs.motv)
 			{
 				vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
 				vex_butv(C.P_handle, vecs.butv, (void **)(&svbutv));
@@ -310,18 +309,20 @@ init_moose(void)
 					fdisplay(log, "Wheel support present");
 				}
 				else
-					fdisplay(log, "No wheel support!!");
+					fdisplay(log, "No wheel support");
+
+				if (adi_ioctl(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
+					fdisplay(log, "Moose set dclick time failed");
+
+				DIAGS(("Using moose adi"));
+				ret = true;
 			}
-
-			if ((*C.adi_mouse->ioctl)(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
-				fdisplay(log, "Moose set dclick time failed");
-
-			DIAGS(("Using moose adi"));
-			ret = true;
+			else
+				fdisplay(log, "init_moose: MOOSE_READVECS failed (%lx)", aerr);
 		}
 		else
 		{
-			fdisplay(log, "Error opening moose adi %lx", aerr);	
+			fdisplay(log, "init_moose: opening moose adi failed (%lx)", aerr);	
 			C.adi_mouse = NULL;
 		}
 	}
@@ -780,7 +781,7 @@ k_exit(void)
 		f_close(C.alert_pipe);
 
 	if (loader_pid > 0)
-		ikill(loader_pid, SIGCONT);
+		wake(WAIT_Q, (long)&loader_pid);
 
 
 	if (C.shutdown & HALT_SYSTEM)

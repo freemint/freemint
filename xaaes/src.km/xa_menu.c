@@ -455,7 +455,6 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	short x, y;
 	OBJECT *ob = (OBJECT*)pb->addrin[0];
 	CONTROL(2,1,1)
 
@@ -470,6 +469,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (tab->ty == NO_TASK)		/* else already locked */
 		{
 			XA_TREE *wt;
+			short x, y;
 
 			wt = obtree_to_wt(client, ob);
 			if (!wt)
