@@ -16,6 +16,7 @@
 
 # include "mint/file.h"
 # include "mint/socket.h"
+# include "mint/stat.h"
 
 
 /*
@@ -44,7 +45,8 @@ static DEVDRV routedev =
 
 static struct dev_descr routedev_descr =
 {
-	driver:		&routedev
+	driver:		&routedev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 
