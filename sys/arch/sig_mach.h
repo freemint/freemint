@@ -36,17 +36,10 @@
 
 # include "mint/mint.h"
 
-
 int		sendsig		(ushort sig);
 long	_cdecl	sys_psigreturn	(void);
-# if 0
-long	_cdecl	sys_psigintr	(ushort vec, ushort sig);
-void		sig_user	(ushort vec);
-void		cancelsigintrs	(void);
-# endif
 
 void		bombs		(ushort sig);
-void		exception	(ushort sig);
 
 void		sigbus		(void);
 void		sigaddr		(void);
@@ -56,6 +49,5 @@ void		sigfpe		(void);
 void		sigtrap		(void);
 void		haltformat	(void);
 void		haltcpv		(void);
-
 
 # endif /* _m68k_sig_mach_h */
