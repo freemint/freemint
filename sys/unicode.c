@@ -46,8 +46,10 @@
 # include "proc.h"		/* rootproc */
 # include "unicode.h"
 
+# define CP_SIZE 256
+
 static uchar
-cp00[256] =
+cp00[CP_SIZE] =
 {
   /* U+0000 - U+0007 */
      0,  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -116,7 +118,7 @@ cp00[256] =
 };
 
 static uchar
-cp01[256] =
+cp01[CP_SIZE] =
 {
   /* U+0100 - U+0107 */
    '?',  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -185,7 +187,7 @@ cp01[256] =
 };
 
 static uchar
-cp03[256] =
+cp03[CP_SIZE] =
 {
   /* U+0300 - U+0307 */
    '?',  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -254,7 +256,7 @@ cp03[256] =
 };
 
 static uchar
-cp05[256] =
+cp05[CP_SIZE] =
 {
   /* U+0500 - U+0507 */
    '?',  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -323,7 +325,7 @@ cp05[256] =
 };
 
 static uchar
-cp20[256] =
+cp20[CP_SIZE] =
 {
   /* U+2000 - U+2007 */
    '?',  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -392,7 +394,7 @@ cp20[256] =
 };
 
 static uchar
-cp21[256] =
+cp21[CP_SIZE] =
 {
   /* U+2100 - U+2107 */
    '?',  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -461,7 +463,7 @@ cp21[256] =
 };
 
 static uchar
-cp22[256] =
+cp22[CP_SIZE] =
 {
   /* U+2200 - U+2207 */
    '?',  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -530,7 +532,7 @@ cp22[256] =
 };
 
 static uchar
-cp23[256] =
+cp23[CP_SIZE] =
 {
   /* U+2300 - U+2307 */
    '?',  '?',  '?',  '?',  '?',  '?',  '?',  '?',
@@ -599,7 +601,7 @@ cp23[256] =
 };
 
 uchar *
-t_uni2atari[256] =
+t_uni2atari[CP_SIZE] =
 {
   /* U+0000 - U+07FF */
   cp00, cp01, NULL, cp03, NULL, cp05, NULL, NULL,
@@ -668,7 +670,7 @@ t_uni2atari[256] =
 };
 
 uchar
-t_atari2uni[256] =
+t_atari2uni[CP_SIZE] =
 {
 	/* 0x80 - 0x83 */
 	0x00, 0xc7, 0x00, 0xfc, 0x00, 0xe9, 0x00, 0xe2,
@@ -738,22 +740,21 @@ t_atari2uni[256] =
 
 # ifdef SOFT_UNITABLE
 
-# define CP_SIZE 256
-
 static long
-load_unicode_table(FILEPTR *fp, char *name, long len)
+load_unicode_table(FILEPTR *fp, const char *name, long len)
 {
-	uchar *buf, *s;
-	char msg[64];
+	uchar *buf;
 
 	if (len % 3) return 0;		/* file length other than n*3 */
 
-	buf = (uchar *)kmalloc(len);
-	if (!buf) return 0;		/* Out of memory */
+	buf = kmalloc(len);
+	if (!buf)
+		return ENOMEM;
 
 	if ((*fp->dev->read)(fp, buf, len) == len)
 	{
-		ushort a;
+		uchar *s = buf;
+		int a;
 
 		/* *s points to entries loaded from the disk.
 		 * s[0] is the elder byte of the unicode entry,
@@ -762,53 +763,63 @@ load_unicode_table(FILEPTR *fp, char *name, long len)
 		 * s[2] is the ASCII code for the character to put into
 		 */
 
-		s = buf;
 		for (a = 0; a < (len/3); a++)
 		{
-			uchar *codepage = t_uni2atari[s[0]];
+			uchar *codepage;
 			ushort offset;
 
+			codepage = t_uni2atari[s[0]];
 			if (codepage == NULL)
 			{
-				ushort b;
+				int b;
 
-				codepage = (uchar *)kmalloc(CP_SIZE);
-
+				codepage = kmalloc(CP_SIZE);
 				if (!codepage)
 				{
 					kfree(buf);
-					return 0;	/* Out of memory */
+					return ENOMEM;
 				}
-
-				t_uni2atari[s[0]] = codepage;
 
 				for (b = 0; b < CP_SIZE; b++)
 					codepage[b] = '?';
+
+				t_uni2atari[s[0]] = codepage;
 			}
+
 			offset = s[2];
 			codepage[s[1]] = offset;
+
 			offset <<= 1;
+			assert(offset+1 < CP_SIZE);
+
 			t_atari2uni[offset] = s[0];
 			t_atari2uni[offset+1] = s[1];
 
 			s += 3;		/* moving to the next entry */
+
+			assert((buf + len) > s);
 		}
 	}
 	kfree(buf);
 
-	ksprintf(msg, sizeof(msg), MSG_unitable_loaded, name);
-	c_conws(msg);
+	/* print success message */
+	{
+		char msg[128];
 
-	return 1;
+		ksprintf(msg, sizeof(msg), MSG_unitable_loaded, name);
+		c_conws(msg);
+	}
+
+	return 0;
 }
 
 void
 init_unicode(void)
 {
+	char name[128];
 	FILEPTR *fp;
 	XATTR xa;
 	long ret;
-	char name[32];
 
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return;
@@ -816,7 +827,8 @@ init_unicode(void)
 	strcpy(name, sysdir);
 	strcat(name, "unicode.tbl");
 
-	if(!do_open(&fp, name, O_RDONLY, 0, &xa))
+	ret = do_open(&fp, name, O_RDONLY, 0, &xa);
+	if (!ret)
 	{
 		ret = load_unicode_table(fp, name, xa.size);
 		do_close(rootproc, fp);
@@ -829,5 +841,3 @@ init_unicode(void)
 }
 
 # endif
-
-/* EOF */
