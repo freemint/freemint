@@ -12,7 +12,11 @@
 # ifndef _mint_time_h
 # define _mint_time_h
 
+# ifdef __KERNEL__
 # include "ktypes.h"
+# else
+# include <sys/types.h>
+# endif
 
 
 struct timeval
@@ -28,6 +32,9 @@ struct time
 	long	time;		/* This has to be signed!  */
 	ulong	nanoseconds;
 };
+
+
+# ifdef __KERNEL__
 
 /*
  * Structure defined by POSIX.1b to be like a timeval.
@@ -92,5 +99,6 @@ struct itimervalue
 	long	startusrtime;
 };
 
+# endif /* __KERNEL__ */
 
 # endif /* _mint_time_h */

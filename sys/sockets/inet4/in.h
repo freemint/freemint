@@ -2,7 +2,11 @@
 # ifndef _in_h
 # define _in_h
 
+#ifdef __KERNEL__
 # include <mint/ktypes.h>
+#else
+# include <sys/types.h>
+#endif
 
 
 /* well-defined IP protocols */
