@@ -722,6 +722,16 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 #endif
 				break;
 			}
+			case G_EXTBOX:
+			{
+				struct extbox_parms *p;
+				p = (struct extbox_parm *)object_get_spec(ob)->index;
+				object_set_spec(ob, p->obspec);
+				ob->ob_type = p->type;
+				DIAG((D_rsrc, client, "Free extbox parameter bloc %lx", p));
+				kfree(p);
+				break;
+			}
 			default:
 			{
 				DIAG((D_rsrc, client, "Unknown object type %d", type));
@@ -2005,6 +2015,9 @@ obj_ed_char(XA_TREE *wt,
 
 		switch(ed_txt->te_pvalid[n])
 		{
+		case '0':
+			tmask &= CGd|CGdt;
+			break;
 		case '9':
 			tmask &= CGd;
 			break;

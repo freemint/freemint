@@ -96,10 +96,10 @@ refresh_tasklist(enum locks lock)
 			else
 				sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
 
-			add_scroll_entry(form, TM_LIST, icon, tx, FLAG_MAL);
+			add_scroll_entry(form, TM_LIST, icon, tx, FLAG_MAL, NULL);
 		}
 		else
-			add_scroll_entry(form, TM_LIST, icon, client->name, 0);
+			add_scroll_entry(form, TM_LIST, icon, client->name, 0, NULL);
 	}
 
 	list->slider(list);
@@ -847,7 +847,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			empty_scroll_list(form, SYSALERT_LIST, FLAG_ENV);
 
 			for (i = 0; strings[i]; i++)
-				add_scroll_entry(form, SYSALERT_LIST, NULL, strings[i], FLAG_ENV);
+				add_scroll_entry(form, SYSALERT_LIST, NULL, strings[i], FLAG_ENV, NULL);
 
 			open_systemalerts(lock);
 			break;

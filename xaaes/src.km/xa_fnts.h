@@ -31,6 +31,7 @@
 #include "xa_types.h"
 
 #if WDIALOG_FNTS
+
 AES_function
 	XA_fnts_create,
 	XA_fnts_delete,

@@ -297,7 +297,9 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 			clicks = client->md_head->clicks;
 		}
 		else
+		{
 			clicks = 0;
+		}
 	}
 
 	if (clicks)
@@ -307,6 +309,8 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 		x = client->md_head->x;
 		y = client->md_head->y;
 		ks = client->md_head->kstate;
+		if (d)
+			d->empty = false;
 	}
 	else
 	{
@@ -314,6 +318,8 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 		client->md_head->clicks = -1;
 		check_mouse(client, NULL, &x, &y);
 		vq_key_s(C.vh, &ks);
+		if (d)
+			d->empty = true;
 	}
 
 	if (d)

@@ -29,9 +29,9 @@
 
 #include "global.h"
 
-int set_scroll(struct xa_client *client, OBJECT *form, int objc);
+int set_scroll(struct xa_client *client, OBJECT *form, int objc, bool selectable);
 void unset_G_SLIST(struct xa_client *client, OBJECT *form, short item);
-bool add_scroll_entry(OBJECT *form, int objc, OBJECT *icon, void *text, SCROLL_ENTRY_TYPE flag);
+bool add_scroll_entry(OBJECT *form, int objc, OBJECT *icon, void *text, SCROLL_ENTRY_TYPE flag, void *data);
 void empty_scroll_list(OBJECT *form, int objc, SCROLL_ENTRY_TYPE flag);
 void click_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
 void dclick_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
