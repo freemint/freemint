@@ -2275,12 +2275,18 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	if (list->state == 0)
 	{
 		get_widget(w, XAW_TITLE)->stuff = list->title;
+#if 0
 		if (MONO)
+		{
 			l_color(screen.dial_colours.border_col),
 			gbox(2,&r);
+		}
 		else
-			br_hook(2,&r,screen.dial_colours.shadow_col),
+		{
+			br_hook(2,&r,screen.dial_colours.shadow_col);
 			tl_hook(2,&r,screen.dial_colours.lit_col);
+		}
+#endif
 		draw_window(list->lock, w);
 		for (; y <= maxy; y += screen.c_max_h)
 		{
@@ -2582,7 +2588,7 @@ display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short item, short
 
 /* draw_object_tree */
 short
-draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short depth, short which)
+draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short depth, short *xy) //short which)
 {
 	XA_TREE this;
 	short next;
@@ -2615,8 +2621,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	x = -wt->dx;
 	y = -wt->dy;
 	DIAG((D_objc, wt->owner, "dx = %d, dy = %d", x, y));
-	DIAG((D_objc, wt->owner, "[%d]draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
-		which, t_owner(wt), x + tree->ob_x, y + tree->ob_y,
+	DIAG((D_objc, wt->owner, "draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
+		t_owner(wt), x + tree->ob_x, y + tree->ob_y,
 		tree->ob_width, tree->ob_height, tree, item, depth));
 	DIAG((D_objc, wt->owner, "  -   (%d)%s%s",
 		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : ""));

@@ -85,7 +85,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 							 obtree,
 							 item,
 							 pb->intin[1],		/* depth */
-							 0);
+							 NULL);
 			clear_clip();
 			showm();
 		}
@@ -185,6 +185,7 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 			    pb->intin[6],
 			    obtree[obj].ob_flags,
 			    pb->intin[7],
+			    NULL,
 			    &rl);
 
 		pb->intout[0] = 1;
@@ -276,6 +277,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 					 pb->intin[1],		/* key		*/
 					 pb->intin[2],		/* pos		*/
 					 true,			/* redraw flag	*/
+					 NULL,			/* Clip rect	*/
 					 NULL,			/* rect list	*/
 					 &pb->intout[1],	/* new pos	*/
 					 NULL);			/* new obj	*/

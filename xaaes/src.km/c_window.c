@@ -118,6 +118,15 @@ clear_wind_handles(void)
 		wind_handle[f] = 0;
 }
 
+void
+clear_wind_rectlist(struct xa_window *wind)
+{
+	free_rect_list(wind->rect_start);
+	free_rect_list(wind->rect_opt_start);
+	free_rect_list(wind->rect_wastart);
+	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_wastart = wind->rect_opt = wind->rect_opt_start = NULL;
+}
+
 /*
  * Find first free position for iconification.
  * Uses the RECT at wind->t.
@@ -795,9 +804,7 @@ change_window_attribs(enum locks lock,
 
 	calc_work_area(w);
 
-	free_rect_list(w->rect_start);
-	free_rect_list(w->rect_opt_start);
-	w->rect_user = w->rect_list = w->rect_start = w->rect_opt = w->rect_opt_start = NULL;
+	clear_wind_rectlist(w);
 
 	/* If STORE_BACK extended attribute is used, window preserves its own background */
 	if (!(tp & STORE_BACK))
@@ -880,11 +887,13 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 		wind->rc = wind->r = r;
 
+		calc_work_area(wind);
+		
 		if ((wind->window_status & XAWS_SHADED))
 			wind->r.h = wind->sh;
 
 		wind->window_status |= XAWS_OPEN;
-		calc_work_area(wind);
+		
 		make_rect_list(wind, true, RECT_SYS);
 
 		if (wind->active_widgets & STORE_BACK)
@@ -892,17 +901,36 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			form_save(0, wind->r, &(wind->background));
 		}
 		
+		if (!(wind->dial & created_for_POPUP))
+			move_ctxdep_widgets(wind);
+		
 		if (!(wind->dial & created_for_SLIST))
 		{
 			wi_remove(&S.closed_nlwindows, wind);
 			wi_put_first(&S.open_nlwindows, wind);
-		}
-		move_ctxdep_widgets(wind);
-		//draw_window(lock|winlist, wind);
+		
+			our_win = wind->r;
 
-		if (!(wind->dial & created_for_SLIST))
+			wl = wind->next;
+			if (!wl)
+				wl = window_list;
+
+			while (wl)
+			{
+				clip = wl->r;
+
+				if (xa_rc_intersect(our_win, &clip))
+					make_rect_list(wl, true, RECT_SYS);
+
+				if (!wl->next && wl->nolist)
+					wl = window_list;
+				else
+					wl = wl->next;
+			}
+
 			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
-		//send_redraw(lock|winlist, wind, &wind->wa);
+		}
+
 		/* dont open unlisted windows */
 		return 1;
 	}
@@ -1534,18 +1562,31 @@ close_window(enum locks lock, struct xa_window *wind)
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
 			wind->handle, wind->background));
 
+		cancel_do_winmesag(lock, wind);
+
 		if (!(wind->dial & created_for_SLIST))
 		{
+			if (!wind->next && wind->nolist)
+			{
+				wl = window_list;
+			}
+			else
+			{
+				wl = wind->next;
+			}
+		
 			wi_remove(&S.open_nlwindows, wind);
 			wi_put_first(&S.closed_nlwindows, wind);
+			
+			r = wind->r;
+
+			update_windows_below(lock, &r, NULL, wl, NULL);
 		}
 
 		if (wind->active_widgets & STORE_BACK)
 			form_restore(0, wind->r, &(wind->background));
 		
-		free_rect_list(wind->rect_start);
-		free_rect_list(wind->rect_opt_start);
-		wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_opt = wind->rect_opt_start = NULL;
+		clear_wind_rectlist(wind);
 		wind->window_status &= ~XAWS_OPEN;
 		remove_from_iredraw_queue(lock, wind);
 		return true;
@@ -1560,10 +1601,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	remove_from_iredraw_queue(lock, wind);
 	r = wind->r;
 
-	free_rect_list(wind->rect_start);
-	free_rect_list(wind->rect_opt_start);
-
-	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_opt = wind->rect_opt_start = NULL;
+	clear_wind_rectlist(wind);
 
 	/* Tag window as closed */
 	wind->window_status &= ~(XAWS_OPEN);
@@ -1695,9 +1733,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 			kfree(wind->background);
 	}
 
-	free_rect_list(wind->rect_start);
-	free_rect_list(wind->rect_opt_start);
-	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_opt = wind->rect_opt_start = NULL;
+	clear_wind_rectlist(wind);
 
 	kfree(wind);
 }
@@ -1865,7 +1901,10 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 				}
 			}
 		}
-		wl = wl->next;
+		if (!wl->next && wl->nolist)
+			wl = window_list;
+		else
+			wl = wl->next;
 	}
 }
 
@@ -2043,6 +2082,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 	newrl = make_rect_list(wind, false, RECT_SYS);
 	wind->rect_start = newrl;
 
+#if 0
 	if (wind->nolist)
 	{
 		if (xmove || ymove || resize)
@@ -2059,7 +2099,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		}
 		return;
 	}
-
+#endif
 
 	if (blit && oldrl && newrl)
 	{

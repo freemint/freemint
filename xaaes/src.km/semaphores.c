@@ -305,17 +305,17 @@ lock_menustruct(struct proc *proc, bool try)
 
 	if (try)
 	{
-		if (lock_screen(proc, true, NULL, 1))
-		{
+		//if (lock_screen(proc, true, NULL, 1))
+		//{
 			if (ressource_semaphore_try(&ms_lock, proc))
 				return true;
-			else
-				unlock_screen(proc, 1);
-		}
+		//	else
+		//		unlock_screen(proc, 1);
+		//}
 		return false;
 	}
 
-	lock_screen(proc, false, NULL, 2);
+	//lock_screen(proc, false, NULL, 2);
 	ressource_semaphore_lock(&ms_lock, proc);
 	return true;
 }
