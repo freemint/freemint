@@ -1656,7 +1656,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item)
 	widg->loc = loc;
 	widg->state = OS_NORMAL;
 	widg->stuff = wt;
-	widg->stuff = STUFF_IS_WT;
+	widg->stufftype = STUFF_IS_WT;
 	widg->start = item;
 	if (tab->nest)
 		/* HR testing: Use the window borders. */

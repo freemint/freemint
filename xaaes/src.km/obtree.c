@@ -1240,34 +1240,34 @@ obj_ED_INIT(struct widget_tree *wt,
 	 * XXX - see how continuing setup with the lookedup object affects
 	 *       applications.
 	 */
-	if ( !chk_edobj(obtree, obj, last) || !(ted = object_get_tedinfo(obtree + obj)) )
-	{
-		old_ed_obj = ei->obj; //wt->e.obj;
-		ei->obj = -1; //wt->e.obj = -1;
-		ret = 0;
-	}
-	else
+	if ( chk_edobj(obtree, obj, last) && (ted = object_get_tedinfo(obtree + obj)) )
 	{
 		/* Ozk: 
 		 * do things here to end edit of current obj...
 		 */
 		/* --- */
-		old_ed_obj = ei->obj; //wt->e.obj;
+		old_ed_obj = ei->obj;
 		/* Ozk:
 		 * Init the object.
 		 * If new posititon == -1, we place the cursor at the very end
 		 * of the text to edit.
 		 */
-		ei->obj = obj; //wt->e.obj = obj;
+		ei->obj = obj;
 		if (*(ted->te_ptext) == '@')
 			*(ted->te_ptext) = 0;
 
 		p = strlen(ted->te_ptext);
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
-		ei->pos = pos; //wt->e.pos = pos;
-		DIAGS(("ED_INIT: te_ptext='%s'", ted->te_ptext));
+		ei->pos = pos;
+		DIAGS(("ED_INIT: te_ptext='%s', %lx", ted->te_ptext, (long)ted->te_ptext));
 		ret = 1;
+	}
+	else
+	{
+		old_ed_obj = ei->obj;
+		ei->obj = -1;
+		ret = 0;
 	}
 
 	DIAGS(("ED_INIT: return ted=%lx, old_ed=%d",
