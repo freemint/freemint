@@ -986,6 +986,8 @@ do_rootwind_msg(
 void
 draw_window(enum locks lock, struct xa_window *wind)
 {
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+	
 	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
 
 #if 0
@@ -996,6 +998,8 @@ draw_window(enum locks lock, struct xa_window *wind)
 		return;
 	}
 #endif
+	if (wind == root_window)
+		return;
 
 	DIAG((D_wind, wind->owner, "draw_window %d for %s to %d/%d,%d/%d",
 		wind->handle, w_owner(wind),
@@ -1167,6 +1171,16 @@ draw_window(enum locks lock, struct xa_window *wind)
 				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
 					wind->handle, f, widg->display));
 				widg->display(lock, wind, widg);
+			}
+		}
+		for (f = XA_MAX_CF_WIDGETS; f < XA_MAX_WIDGETS; f++)
+		{
+			widg = get_widget(wind, f);
+
+			if ( !(status & widg->loc.statusmask) && widg->display)
+			{
+				if (!widg->owner || (widg->owner && widg->owner == rc))
+					widg->display(lock, wind, widg);
 			}
 		}
 	}

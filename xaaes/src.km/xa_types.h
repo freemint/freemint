@@ -719,7 +719,9 @@ typedef struct xa_widget_location XA_WIDGET_LOCATION;
 struct xa_widget
 {
 	struct xa_widget *next;		/* For future use. */
-
+	
+	struct xa_client *owner;
+	
 	XA_WIDGET_LOCATION loc;		/* Location of widget relative to window extents */
 	RECT r;
 	RECT ar;			/**/
