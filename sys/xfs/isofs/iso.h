@@ -200,8 +200,6 @@ isonum_712(char *p)
 	return *p;
 }
 
-#define UNALIGNED_ACCESS /* XXX -> mint header, #undef for 68000 */
-
 /* 7.2.3: unsigned both-endian (little, then big) 16-bit value */
 static inline u_int16_t
 isonum_723(uchar *p)
