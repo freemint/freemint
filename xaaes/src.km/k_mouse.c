@@ -568,9 +568,10 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	if (!client)
 		client = update_locked();
 	
-	if (client && client->waiting_for & (MU_M1|MU_M2|MU_MX))
+	if (client)
 	{
-		dispatch_mu_event(client, md);
+		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
+	 		dispatch_mu_event(client, md);
 	}
 	else
 	{
