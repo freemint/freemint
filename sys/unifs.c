@@ -337,8 +337,16 @@ uni_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->attr = 0;
 	}
 	
-	xattr->mtime = xattr->atime = xattr->ctime = u->ctime;
-	xattr->mdate = xattr->adate = xattr->cdate = u->cdate;
+	if (u)
+	{
+		xattr->mtime = xattr->atime = xattr->ctime = u->ctime;
+		xattr->mdate = xattr->adate = xattr->cdate = u->cdate;
+	}
+	else
+	{
+		xattr->mtime = xattr->atime = xattr->ctime = timestamp;
+		xattr->mdate = xattr->adate = xattr->cdate = datestamp;
+	}
 	
 	return E_OK;
 }
@@ -976,8 +984,11 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 				{
 					UNIFILE *u = (UNIFILE *) fc.index;
 					
-					u->ctime = timestamp;
-					u->cdate = datestamp;
+					if (u)
+					{
+						u->ctime = timestamp;
+						u->cdate = datestamp;
+					}
 					
 					release_cookie (&fc);
 					return E_OK;
