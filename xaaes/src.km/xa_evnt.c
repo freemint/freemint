@@ -425,10 +425,23 @@ check_queued_events(struct xa_client *client)
 		 * intout[4] and intout[6] is not to be used for the wheel
 		 * I think, as that would rule out normal buttons + wheel events
 		 */
-#if 0
-		DIAG((D_i,client,"    MU_WHEEL"));
-		if (multi)
-			events |= MU_WHEEL;
+#if 1
+		if (client->wheel_md)
+		{ 
+			struct moose_data *md = client->wheel_md;
+			
+			DIAG((D_i,client,"    MU_WHEEL"));
+			
+			client->wheel_md = NULL;
+
+			if (multi)
+			{
+				events |= MU_WHEEL;
+				mbs.ks	= md->state;
+				mbs.c	= md->clicks;
+			}
+			kfree(md);
+		}
 #endif
 	}
 				
