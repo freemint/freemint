@@ -19,6 +19,7 @@
 # include "global.h"
 
 # include "mint/asm.h"
+# include "arch/timer.h"
 
 # include "arch/detect.h"
 # include "arch/mprot.h"
@@ -81,8 +82,8 @@ do_usrcall (void)
 long _cdecl
 supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 {
-	short savesr;
 	CONTEXT *syscall = &curproc->ctxt[SYSCALL];
+	ushort savesr;
 	
 	/* For SECURELEVEL > 1 only the Superuser can set the CPU into supervisor
 	 * mode. 

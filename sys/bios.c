@@ -24,6 +24,7 @@
 # include "arch/intr.h"
 # include "arch/mprot.h"
 # include "arch/syscall.h"
+# include "arch/timer.h"
 
 # include "biosfs.h"
 # include "console.h"
@@ -741,8 +742,6 @@ btty_ionread (struct bios_tty *b)
 	return ionread (b->irec);
 }
 
-# define _hz_200	(*((long *) 0x4baL))
-
 static void
 checkbtty (struct bios_tty *b, int sig)
 {
@@ -754,7 +753,7 @@ checkbtty (struct bios_tty *b, int sig)
 	if (!b->clocal && !isonline (b))
 	{
 		b->vticks = 0;
-		b->bticks = _hz_200 + 0x80000000L;
+		b->bticks = jiffies + 0x80000000L;
 		if (!(b->tty->state & TS_BLIND))
 		{
 			/* just lost carrier...  set TS_BLIND,
@@ -796,13 +795,13 @@ checkbtty (struct bios_tty *b, int sig)
 				 * ispeed (then its probably not line noise...)
 				 */
 				if ((ulong) b->ispeed <= 2400)
-					b->bticks = _hz_200 + 40L;
+					b->bticks = jiffies + 40L;
 				else
-					b->bticks = _hz_200 + (480L * 200L / (ulong) b->ispeed);
+					b->bticks = jiffies + (480L * 200L / (ulong) b->ispeed);
 				if (!b->bticks)
 					b->bticks = 1;
 			}
-			else if (_hz_200 - b->bticks > 0)
+			else if (jiffies - b->bticks > 0)
 			{
 				/* every break only one interrupt please
 				 */
@@ -818,7 +817,7 @@ checkbtty (struct bios_tty *b, int sig)
 			b->bticks = 0;
 	}
 	
-	if (!b->vticks || _hz_200 - b->vticks > 0)
+	if (!b->vticks || jiffies - b->vticks > 0)
 	{
 		long r;
 		
@@ -832,7 +831,7 @@ checkbtty (struct bios_tty *b, int sig)
 		}
 		else if ((--r, r *= 2000L) > (ulong) b->ispeed)
 		{
-			b->vticks = _hz_200 + (r / (ulong) b->ispeed);
+			b->vticks = jiffies + (r / (ulong) b->ispeed);
 			if (!b->vticks)
 				b->vticks = 1;
 		}
@@ -867,7 +866,7 @@ checkbttys (void)
 		checkbtty (b, 1);
 	
 	b = &midi_btty;
-	if (!b->vticks || _hz_200 - b->vticks > 0)
+	if (!b->vticks || jiffies - b->vticks > 0)
 	{
 		long r;
 		void **l;
@@ -882,7 +881,7 @@ checkbttys (void)
 		}
 		else if ((--r, r *= 2000L) > 31250UL)
 		{
-			b->vticks = _hz_200 + (r / 31250UL);
+			b->vticks = jiffies + (r / 31250UL);
 			if (!b->vticks)
 				b->vticks = 1;
 		}
@@ -1068,7 +1067,7 @@ again:
 		{
 			ulong tick;
 			
-			tick = _hz_200;
+			tick = jiffies;
 			while (!BCONSTAT (dev))
 			{
 				/* make blocking (for longer) reads eat
@@ -1077,7 +1076,7 @@ again:
 				 * if yield()ed > 2 seconds and still no
 				 * data continue with nap
 				 */
-				if ((_hz_200 - tick) > 400)
+				if ((jiffies - tick) > 400)
 					nap (60);
 				else
 					yield ();
@@ -1170,7 +1169,7 @@ bconout (int dev, int c)
 		}
 		else
 		{
-			long endtime = _hz_200 + 10 * 200L;
+			long endtime = jiffies + 10 * 200L;
 			do {
 # if 1
 				/* Speedo GDOS isn't re-entrant,
@@ -1179,9 +1178,9 @@ bconout (int dev, int c)
 				yield ();
 # endif
 			}
-			while (!BCOSTAT (statdev) && _hz_200 < endtime);
+			while (!BCOSTAT (statdev) && jiffies < endtime);
 			
-			if (_hz_200 >= endtime)
+			if (jiffies >= endtime)
 				return 0;
 		}
 	}
