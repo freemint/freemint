@@ -1,0 +1,56 @@
+This is a proposal for an extension of Atari's ARGV argument passing scheme
+standard.  It has been discussed on the MiNT mailing list.  Please note
+that this proposal should not yet be regarded as an "official" Atari
+standard; however, according to Atari's Eric Smith, it's unlikely that
+Atari's new standard will differ a lot from the one proposed here.
+
+                                  *
+
+This ARGV standard extension adds the possibility of passing blank (i.e.,
+zero length) arguments via the command line when calling another program.
+
+The ARGV extended argument passing scheme standard should be extented by
+the following clauses:
+
+	If the command line does _not_ contain blank arguments, the old ARGV 
+	standard applies; there are no additions.  This is for maximal 
+	backwards compatibility with old (unaware) applications.
+
+	_If_ (and only if) there are blank arguments, they're substituted by 
+	single spaces in the argv[] representation in the environment and
+	by the string "''" (two single quotes) in the basepage's command 
+	line representation.  Their position in argv[] is signaled thru the 
+	value of the "ARGV=" environment variable (which was reserved by 
+	Atari's earlier standard for future usage).  This value consists of 
+	the string "NULL:", followed by a comma-separated list of decimal-
+	encoded indexes to the positions of the blank arguments in the 
+	argv[] vector.
+
+Example:  The following command:
+	foo bar '' '' blah '' frob
+results in the following being appended to the child's environment:
+	"ARGV=NULL:2,3,5\0foo\0bar\0 \0 \0blah\0 \0frob\0\0"
+The basepage contains the following string at offset 0x80:
+	"\177bar '' '' blah '' frob\0"
+
+A program which is aware of the new standard will notice the magic word 
+"NULL" in ARGV's value and will decode the argv[] indexes it signals.
+
+A program which is not aware of the new standard, but which is aware
+of Atari's old ARGV standard will see spaces in place of blank
+arguments.  The spaces have been introduced to guarantee that
+the parameters stay on their positions.
+
+Non-ARGV-aware programs (those which read their command line from their
+basepage) should see the parameters in the right place too..  Of course,
+a space can't be inserted in place of an blank argument because spaces
+separate words in the basepage's command line, which is why the single
+quotes have been introduced.
+
+Those programs that use the value of ARGV= for other purposes (Mark
+Williams C compiled programs) will conform/work as long as they're not
+passed blank args.  If someone tries to pass blank args to them from an
+aware shell, these programs will lose.  However, these programs would
+also lose in this case if the (new) standard wouldn't exist (because
+blank arguments are impossible resp. truncate the ARGV parameters in the
+environment), so this is not really a problem.
