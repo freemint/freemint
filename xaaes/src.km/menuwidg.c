@@ -1295,7 +1295,8 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 
 	if (wt->owner != C.Aes && rc && rc != wt->owner)
 	{
-		long *p = (long *)kmalloc(16);
+		long *p = kmalloc(16);
+		assert(p);
 
 		p[0] = (long)widg;
 		p[1] = (long)wt;
@@ -1304,6 +1305,7 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 		else
 			p[2] = 0;
 		p[3] = (long)root;
+
 		DIAG((D_menu, wt->owner, "threaded display_menu_widget for %s by %s", wt->owner->name, rc->name));
 		kthread_create(wt->owner->p, kt_draw_object_tree, p, NULL, "k%s", wt->owner->name);
 		sleep(IO_Q, (long)p);

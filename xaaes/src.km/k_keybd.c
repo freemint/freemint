@@ -119,6 +119,7 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 		 */
 		check_mouse(client, NULL, NULL, NULL);
 		mu_button.ks = key->raw.conin.state;
+
 		/* XaAES extension: return normalized keycode for MU_NORM_KEYBD */
 		if (client->waiting_for & MU_NORM_KEYBD)
 		{
@@ -149,8 +150,8 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 	//Unblock(client, XA_OK, 6);
 }
 
-void
-XA_keyboard_event(enum locks lock, struct rawkey *key)
+static void
+XA_keyboard_event(enum locks lock, const struct rawkey *key)
 {
 	struct xa_window *top = window_list;
 	struct xa_client *locked_client;
@@ -176,13 +177,12 @@ XA_keyboard_event(enum locks lock, struct rawkey *key)
 
 			if (client->fmd.lock && client->fmd.keypress)
 			{
-				rk = kmalloc(sizeof(struct rawkey));
+				rk = kmalloc(sizeof(*rk));
 				if (rk)
 				{
 					*rk = *key;
 					post_cevent(client, cXA_fmdkey, rk, 0, 0, 0, 0, 0);
 				}
-				//client->fmd.keypress(lock, NULL, &client->wt, key->aes, key->norm, *key);
 				return;
 			}
 		}
@@ -196,13 +196,12 @@ XA_keyboard_event(enum locks lock, struct rawkey *key)
 		/* Does the top & focus window have a keypress handler callback? */
 		if (top->keypress)
 		{
-			rk = kmalloc(sizeof(struct rawkey));
+			rk = kmalloc(sizeof(*rk));
 			if (rk)
 			{
 				*rk = *key;
 				post_cevent(top->owner, cXA_keypress, rk, top, 0, 0, 0, 0);
 			}	
-			//top->keypress(lock, top, NULL, key->aes, key->norm, *key);
 			return;
 		}
 		else if (!client->waiting_pb)
@@ -211,7 +210,7 @@ XA_keyboard_event(enum locks lock, struct rawkey *key)
 			return;
 		}
 
-		rk = kmalloc(sizeof(struct rawkey));
+		rk = kmalloc(sizeof(*rk));
 		if (rk)
 		{
 			*rk = *key;
@@ -266,7 +265,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 		short nk;
 
 		key->norm = nkc_tconv(key->raw.bcon);
-
 		nk = key->norm & 0xff;
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));

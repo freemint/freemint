@@ -311,7 +311,7 @@ redraw_menu(enum locks lock)
 
 		DIAGS(("Display MENU (other client %s) for %s", mc->name, rc->name));
 
-		p = (long *)kmalloc(16);
+		p = kmalloc(16);
 		if (p)
 		{
 			p[0] = (long)root_window;
@@ -2021,6 +2021,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!keep_stuff)
 		{
 			XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
+			assert(sl);
 			widg->stuff = sl;
 			sl->length = SL_RANGE;
 		}
@@ -2032,6 +2033,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (!keep_stuff)
 		{
 			XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
+			assert(sl);
 			widg->stuff = sl;
 			sl->length = SL_RANGE;
 		}

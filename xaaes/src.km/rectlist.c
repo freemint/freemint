@@ -63,7 +63,10 @@ generate_rect_list(enum locks lock, struct xa_window *w, short which)
 		win_cnt++;		
 
 	/* Block allocate the required space (approximately) */	
-	w->rect_start = rlist = kmalloc(sizeof(*rlist) * (win_cnt * 6 + 2));
+	w->rect_start = kmalloc(sizeof(*rlist) * (win_cnt * 6 + 2));
+	assert(w->rect_start);
+
+	rlist = w->rect_start;
 	rlist++;
 	rlist->r = w->r;
 	rlist->next = NULL;

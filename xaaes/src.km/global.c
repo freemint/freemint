@@ -25,6 +25,7 @@
  */
 
 #include "global.h"
+#include "debug.h"
 
 
 /*
@@ -69,7 +70,8 @@ xaaes_kfree(void *addr, const char *func)
 void
 xaaes_kmalloc_leaks(void)
 {
-	DEBUG(("XaAES memory leaks: %lu bytes", memory));
+	DIAGS(("XaAES memory leaks: %lu bytes", memory));
+	KERNEL_DEBUG("XaAES memory leaks: %lu bytes", memory);
 }
 
 
