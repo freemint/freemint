@@ -30,7 +30,7 @@ cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
 # default definitions
-OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.S=%.o) $(SPPOBJS:%.spp=%.o)
+OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.s=%.o) $(SPPOBJS:%.spp=%.o)
 ASMTRANS = $(srcdir)/asmtrans/asmtrans
 MAGICS = $(srcdir)/magic/magic.i
 
