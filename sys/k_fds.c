@@ -53,6 +53,12 @@
 long
 fd_alloc (struct proc *p, short *fd, short min)
 {
+	return fd_alloc_ (p, fd, min, __FUNCTION__);
+}
+
+long
+fd_alloc_ (struct proc *p, short *fd, short min, const char *func)
+{
 	short i;
 	
 	for (i = min; i < p->p_fd->nfiles; i++)
@@ -64,28 +70,45 @@ fd_alloc (struct proc *p, short *fd, short min)
 			
 			*fd = i;
 			
-			TRACE (("fd_alloc: %i", i));
+			TRACE (("%s: fd_alloc -> %i", func, i));
 			return 0;
 		}
 	}
 	
-	DEBUG (("Fopen: process out of handles"));
+	DEBUG (("%s: process out of handles", func));
 	return EMFILE;
 }
 
 void
 fd_remove (struct proc *p, short fd)
 {
+	fd_remove_ (p, fd, __FUNCTION__);
+}
+
+void
+fd_remove_ (struct proc *p, short fd, const char *func)
+{
 	p->p_fd->ofiles[fd] = NULL;
 }
+
 
 long
 fp_alloc (struct proc *p, FILEPTR **resultfp)
 {
+	return fp_alloc_ (p, resultfp, __FUNCTION__);
+}
+
+long
+fp_alloc_ (struct proc *p, FILEPTR **resultfp, const char *func)
+{
 	FILEPTR *fp;
 	
 	fp = kmalloc (sizeof (*fp));
-	if (!fp) return ENOMEM;
+	if (!fp)
+	{
+		DEBUG (("%s: out of memory for FP_ALLOC", func));
+		return ENOMEM;
+	}
 	
 	bzero (fp, sizeof (*fp));
 	
@@ -102,6 +125,12 @@ fp_alloc (struct proc *p, FILEPTR **resultfp)
 
 void
 fp_done (struct proc *p, FILEPTR *fp, short fd, char fdflags)
+{
+	fp_done_ (p, fp, fd, fdflags, __FUNCTION__);
+}
+
+void
+fp_done_ (struct proc *p, FILEPTR *fp, short fd, char fdflags, const char *func)
 {
 	assert (p->p_fd->ofiles[fd] == (FILEPTR *) 1);
 	
@@ -182,23 +211,17 @@ do_dup (short fd, short min)
 	
 	assert (p->p_fd && p->p_cwd);
 	
-	ret = fd_alloc (p, &newfd, min);
+	ret = FD_ALLOC (curproc, &newfd, min);
 	if (ret) return ret;
 	
 	ret = GETFILEPTR (&p, &fd, &fp);
 	if (ret)
 	{
-		fd_remove (p, newfd);
+		FD_REMOVE (curproc, newfd);
 		return ret;
 	}
 	
-	curproc->p_fd->ofiles[newfd] = fp;
-	
-	/* set default file descriptor flags */
-	if (newfd >= MIN_OPEN)
-		curproc->p_fd->ofileflags[newfd] = FD_CLOEXEC;
-	else if (newfd >= 0)
-		curproc->p_fd->ofileflags[newfd] = 0;
+	FP_DONE (curproc, fp, newfd, ((newfd >= MIN_OPEN) ? FD_CLOEXEC : 0));
 	
 	fp->links++;
 	return newfd;
@@ -439,7 +462,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			return EBADF;
 		
 		(*f)->links--;
-		fp_free (*f);
+		FP_FREE (*f);
 		*f = fp;
 		
 		fp->links++;
@@ -547,7 +570,7 @@ hangup_done (struct proc *p, FILEPTR *f)
 	if (f->links <= 0)
 	{
 		release_cookie (&f->fc);
-		fp_free (f);
+		FP_FREE (f);
 	}
 }
 
@@ -663,7 +686,7 @@ do_close (struct proc *p, FILEPTR *f)
 	if (f->links <= 0)
 	{
 		release_cookie (&f->fc);
-		fp_free (f);
+		FP_FREE (f);
 	}
 	
 	return  r;
