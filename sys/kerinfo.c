@@ -55,6 +55,12 @@
 # undef DEFAULT_MODE
 # define DEFAULT_MODE	(0666)
 
+/* wrapper for the kerinterface */
+static void * _cdecl m_kmalloc (ulong size)  { return kmalloc (size); }
+static void   _cdecl m_kfree   (void *place) { kfree (place); }
+static void * _cdecl m_umalloc (ulong size)  { return umalloc (size); }
+static void   _cdecl m_ufree   (void *place) { ufree (place); }
+
 /*
  * kernel info that is passed to loaded file systems and device drivers
  */
@@ -67,10 +73,10 @@ struct kerinfo kernelinfo =
 	bios_tab, dos_tab,
 	changedrv,
 	Trace, Debug, ALERT, FATAL,
-	_kmalloc,
-	_kfree,
-	_umalloc,
-	_ufree,
+	m_kmalloc,
+	m_kfree,
+	m_umalloc,
+	m_ufree,
 	_mint_o_strnicmp,
 	_mint_o_stricmp,
 	_mint_strlwr,

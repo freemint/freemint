@@ -156,6 +156,10 @@ static void km_debug (const char *fmt, ...);
 #  endif
 #  endif
 
+#  if 1
+#  define KM_DEBUG_FILE		"u:\\ram\\kmemdebug.txt"
+#  endif
+
 #  if 0
 #  define MR_DEBUG
 #  endif
@@ -1367,12 +1371,12 @@ km_lb_dump (void)
 /* BEGIN kernel memory alloc */
 
 void *
-_kcore (ulong size)
+_kcore (ulong size, const char *func)
 {
 	MEMREGION *m = kmr_get ();
 	char *ptr = NULL;
 	
-	KM_DEBUG (("%s, %ld: _kcore called (%li)!", __FILE__, (long) __LINE__, size));
+	KM_DEBUG (("%s: kcore (%li)!", func, size));
 	
 	if (m)
 	{
@@ -1389,7 +1393,8 @@ _kcore (ulong size)
 		{
 			register KM_P *page = (KM_P *) new->loc;
 			
-			KM_ASSERT ((new->links == 1));
+			if (new->links != 1)
+				FATAL ("%s: kcore: new-links != 1", func);
 			
 			page->self = new;
 			page->size = size >> 4;
@@ -1420,7 +1425,7 @@ _kcore (ulong size)
 		}
 		else
 		{
-			KM_ALERT (("%s, %ld: kcore (%li) fail, out of memory?", __FILE__, (long) __LINE__, size));
+			KM_ALERT (("%s: kcore (%li) fail, out of memory?", func, size));
 		}
 	}
 	
@@ -1428,7 +1433,7 @@ _kcore (ulong size)
 }
 
 void * _cdecl
-_kmalloc (ulong size)
+_kmalloc (ulong size, const char *func)
 {
 	register char *ptr = NULL;
 	
@@ -1437,7 +1442,8 @@ _kmalloc (ulong size)
 	size += KM_STAT_OFFSET;
 # endif
 	
-	KM_ASSERT ((size > 0));
+	if (size <= 0)
+		FATAL ("%s: kmalloc (%li) - invalid size request", func, size);
 	
 	if (size < (S1_SIZE - S1_HEAD))
 	{
@@ -1462,7 +1468,7 @@ _kmalloc (ulong size)
 	
 	if (!ptr)
 	{
-		KM_ALERT (("%s, %ld: kmalloc (%li) fail, out of memory?", __FILE__, (long) __LINE__, size));
+		KM_ALERT (("%s: kmalloc (%li) fail, out of memory?", func, size));
 	}
 # ifdef KM_STAT
 	else if (flag)
@@ -1487,13 +1493,13 @@ _kmalloc (ulong size)
 }
 
 void _cdecl
-_kfree (void *place)
+_kfree (void *place, const char *func)
 {
 	KM_P *page;
 	
 	if (!place)
 	{
-		KM_ALERT (("%s, %li: _kfree on NULL ptr!", __FILE__, (long) __LINE__));
+		KM_ALERT (("%s: kfree on NULL ptr!", func));
 		return;
 	}
 	
@@ -1523,7 +1529,7 @@ _kfree (void *place)
 		}
 		else
 		{
-			FATAL ("%s, %ld: kfree on %lx: internal failure!", __FILE__, (long) __LINE__, (ulong) place);
+			FATAL ("%s: kfree on 0x%lx, invalid STAT_MAGIC!", func, (ulong) place);
 		}
 		
 		place = (char *) place - KM_STAT_OFFSET;
@@ -1552,7 +1558,7 @@ _kfree (void *place)
 			}
 			default:
 			{
-				FATAL ("%s, %ld: kfree on %lx: internal failure!", __FILE__, (long) __LINE__, (ulong) place);
+				FATAL ("%s: kfree on 0x%lx: invalid S?_MAGIC!", func, (ulong) place);
 			}
 		}
 	}
@@ -1572,13 +1578,13 @@ _kfree (void *place)
  */
 
 void * _cdecl 
-_umalloc (ulong size)
+_umalloc (ulong size, const char *func)
 {
 	return (void *) m_xalloc (size, 3);
 }
 
 void _cdecl 
-_ufree (void *place)
+_ufree (void *place, const char *func)
 {
 	(void) m_free ((virtaddr) place);
 }
@@ -1661,12 +1667,12 @@ km_config (long mode, long arg)
 static void
 km_stat_dump (void)
 {
-        static char line [SPRINTF_MAX];
-        long i, len;
-        FILEPTR *fp;
-        long ret;
+	static char line [SPRINTF_MAX];
+	long i, len;
+	FILEPTR *fp;
+	long ret;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
 	KM_FORCE ((__FILE__ ": used_mem = %li", used_mem));
@@ -1752,7 +1758,7 @@ km_stat_dump (void)
 		do_close (rootproc, fp);
 	}
 	else
-		fp_free (fp);
+		FP_FREE (fp);
 }
 # else
 
@@ -1779,6 +1785,219 @@ km_stat_dump (void)
 
 /****************************************************************************/
 /* BEGIN debug infos */
+
+# ifdef KMEMDEBUG
+
+# include "arch/startup.h"
+
+static FILEPTR *kmemdebug_fp = NULL;
+static int kmemdebug_initialized = 0;
+
+int kmemdebug_can_init = 0;
+
+static void
+init_kmemdebug (void)
+{
+	if (kmemdebug_can_init)
+	{
+		FILEPTR *fp;
+		long ret;
+		
+		kmemdebug_initialized = 1;
+		
+		ret = FP_ALLOC (rootproc, &fp);
+		if (ret) return;
+		
+		ret = do_open (&fp, KM_DEBUG_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
+		if (ret)
+		{
+			kmemdebug_initialized = 0;
+			FP_FREE (fp);
+		}
+		else
+			kmemdebug_fp = fp;
+	}
+}
+
+static void
+print_hex (ulong hex)
+{
+	static char *hex_digits = "0123456789ABCDEF";
+	static char outbuf[10];
+	char *cursor = outbuf + 2;
+	int shift;
+	
+	outbuf[0] = '0';
+	outbuf[1] = 'x';
+	
+	for (shift = 28; shift >= 0; shift -= 4)
+		*cursor++ = hex_digits[0xf & (hex >> shift)];
+	
+	(*kmemdebug_fp->dev->write)(kmemdebug_fp, outbuf, 10);
+}
+
+# define FPUTS(s)	((*kmemdebug_fp->dev->write)(kmemdebug_fp, (s), strlen (s)))
+# define PRINT_HEX(n)	(print_hex ((ulong) n))
+# define PRINT_CALLER	(PRINT_HEX ((ulong) __builtin_return_address (0) - \
+				((ulong) _base + 0x100UL)))
+
+void *	_cdecl	__real__kcore	(ulong size);
+void *	_cdecl	__real__kmalloc	(ulong size);
+void	_cdecl	__real__kfree	(void *place);
+void *	_cdecl	__real__umalloc	(ulong size);
+void	_cdecl	__real__ufree	(void *place);
+
+void *	_cdecl	__wrap__kcore	(ulong size);
+void *	_cdecl	__wrap__kmalloc	(ulong size);
+void	_cdecl	__wrap__kfree	(void *place);
+void *	_cdecl	__wrap__umalloc	(ulong size);
+void	_cdecl	__wrap__ufree	(void *place);
+
+static int lock = 0;
+
+void * _cdecl
+__wrap__kcore (ulong size)
+{
+	void *retval;
+	
+	lock++;
+	
+	retval = __real__kcore (size);
+	
+	if (lock == 1)
+	{
+		if (!kmemdebug_initialized)
+			init_kmemdebug ();
+		
+		if (kmemdebug_fp)
+		{
+			FPUTS ("kcore: ");
+			PRINT_CALLER;
+			FPUTS (": ");
+			PRINT_HEX (size);
+			FPUTS (" bytes at ");
+			PRINT_HEX (retval);
+			FPUTS ("\n");
+		}
+	}
+	
+	lock--;
+	return retval;
+}
+
+void * _cdecl
+__wrap__kmalloc (ulong size)
+{
+	void *retval;
+	
+	lock++;
+	
+	retval = __real__kmalloc (size);
+	
+	if (lock == 1)
+	{
+		if (!kmemdebug_initialized)
+			init_kmemdebug ();
+		
+		if (kmemdebug_fp)
+		{
+			FPUTS ("kmalloc: ");
+			PRINT_CALLER;
+			FPUTS (": ");
+			PRINT_HEX (size);
+			FPUTS (" bytes at ");
+			PRINT_HEX (retval);
+			FPUTS ("\n");
+		}
+	}
+	
+	lock--;
+	return retval;
+}
+
+void _cdecl
+__wrap__kfree (void *place)
+{
+	lock++;
+	
+	if (lock == 1)
+	{
+		if (!kmemdebug_initialized)
+			init_kmemdebug ();
+		
+		if (kmemdebug_fp)
+		{
+			FPUTS ("kfree: ");
+			PRINT_CALLER;
+			FPUTS (": ");
+			FPUTS ("at ");
+			PRINT_HEX (place);
+			FPUTS ("\n");
+		}
+	}
+	
+	__real__kfree (place);
+	
+	lock--;
+}
+
+void * _cdecl
+__wrap__umalloc (ulong size)
+{
+	void *retval;
+	
+	lock++;
+	
+	retval = __real__umalloc (size);
+	
+	if (lock == 1)
+	{
+		if (!kmemdebug_initialized)
+			init_kmemdebug ();
+		
+		if (kmemdebug_fp)
+		{
+			FPUTS ("umalloc: ");
+			PRINT_CALLER;
+			FPUTS (": ");
+			PRINT_HEX (size);
+			FPUTS (" bytes at ");
+			PRINT_HEX (retval);
+			FPUTS ("\n");
+		}
+	}
+	
+	lock--;
+	return retval;
+}
+
+void _cdecl 
+__wrap__ufree (void *place)
+{
+	lock++;
+	
+	if (lock == 1)
+	{
+		if (!kmemdebug_initialized)
+			init_kmemdebug ();
+		
+		if (kmemdebug_fp)
+		{
+			FPUTS ("ufree: ");
+			PRINT_CALLER;
+			FPUTS (": ");
+			FPUTS ("at ");
+			PRINT_HEX (place);
+			FPUTS ("\n");
+		}
+	}
+	
+	__real__ufree (place);
+	
+	lock--;
+}
+
+# endif
 
 # ifdef KMEMORY_DEBUG
 
