@@ -163,7 +163,7 @@ open_about(enum locks lock)
 		wt->exit_form = about_form_exit;
 
 		/* set a scroll list widget */
-		list = set_slist_object(lock, wt, form, ABOUT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, 42);
+		list = set_slist_object(lock, wt, form, dialog_window, ABOUT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 42);
 
 		/* fill the list if already list */
 		if (!list->start)

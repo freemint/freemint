@@ -700,7 +700,8 @@ create_window(
 
 	if (nolist)
 	{
-		wi_put_first(&S.closed_nlwindows, w);
+		if (!(w->dial & created_for_SLIST))
+			wi_put_first(&S.closed_nlwindows, w);
 		/* Attach the appropriate widgets to the window */
 		DIAGS((" -- nolist window"));
 		standard_widgets(w, tp, false);
@@ -890,8 +891,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		{
 			form_save(0, wind->r, &(wind->background));
 		}
-		wi_remove(&S.closed_nlwindows, wind);
-		wi_put_first(&S.open_nlwindows, wind);
+		
+		if (!(wind->dial & created_for_SLIST))
+		{
+			wi_remove(&S.closed_nlwindows, wind);
+			wi_put_first(&S.open_nlwindows, wind);
+		}
 		move_ctxdep_widgets(wind);
 		//draw_window(lock|winlist, wind);
 
@@ -1529,8 +1534,11 @@ close_window(enum locks lock, struct xa_window *wind)
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
 			wind->handle, wind->background));
 
-		wi_remove(&S.open_nlwindows, wind);
-		wi_put_first(&S.closed_nlwindows, wind);
+		if (!(wind->dial & created_for_SLIST))
+		{
+			wi_remove(&S.open_nlwindows, wind);
+			wi_put_first(&S.closed_nlwindows, wind);
+		}
 
 		if (wind->active_widgets & STORE_BACK)
 			form_restore(0, wind->r, &(wind->background));
@@ -1663,13 +1671,12 @@ delete_window1(enum locks lock, struct xa_window *wind)
 			(wind->window_status & XAWS_OPEN) ? "yes" : "no"));
 
 		assert(!(wind->window_status & XAWS_OPEN));
-
-		free_standard_widgets(wind);
-
+		
 		/* Call the window destructor if any */
 		if (wind->destructor)
 			wind->destructor(lock|winlist, wind);
 
+		free_standard_widgets(wind);
 		free_wind_handle(wind->handle);
 
 		if (wind->background)
@@ -1679,11 +1686,13 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	else
 	{
 		DIAGS(("delete_window1: nolist window %d, bgk=%lx", wind->handle, wind->background));
-		free_standard_widgets(wind);
-		if (wind->background)
-			kfree(wind->background);
 		if (wind->destructor)
 			wind->destructor(lock, wind);
+		
+		free_standard_widgets(wind);
+		
+		if (wind->background)
+			kfree(wind->background);
 	}
 
 	free_rect_list(wind->rect_start);
@@ -1704,7 +1713,10 @@ delete_window(enum locks lock, struct xa_window *wind)
 		return;
 	}
 	if (wind->nolist)
-		wi_remove(&S.closed_nlwindows, wind);
+	{
+		if (!(wind->dial & created_for_SLIST))
+			wi_remove(&S.closed_nlwindows, wind);
+	}
 	else
 		wi_remove(&S.closed_windows, wind);
 	
@@ -1727,7 +1739,10 @@ delayed_delete_window(enum locks lock, struct xa_window *wind)
 		return;
 	}
 	if (wind->nolist)
-		wi_remove(&S.closed_nlwindows, wind);
+	{
+		if (!(wind->dial & created_for_SLIST))
+			wi_remove(&S.closed_nlwindows, wind);
+	}
 	else
 		wi_remove(&S.closed_windows, wind);
 

@@ -26,6 +26,7 @@
 
 #include "draw_obj.h"
 #include "obtree.h"
+#include "scrlobjc.h"
 #include "rectlist.h"
 #include "xa_global.h"
 #include "k_mouse.h"
@@ -136,16 +137,614 @@ object_is_transparent(OBJECT *ob)
 	return ret;
 }
 
-#if 0
-OBJECT *
-duplicate_object(OBJECT *obtree, short start)
+CICON *
+getbest_cicon(CICONBLK *ciconblk)
+{
+	CICON	*c, *best_cicon = NULL;
+
+	c = ciconblk->mainlist;
+	while (c)
+	{
+		/* Jinnee v<2.5 has misunderstood the next_res NULL rule :( */
+		if ( c == (CICON*)-1 ) break;
+
+		if (c->num_planes <= screen.planes
+		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
+		{
+			best_cicon = c;
+		}
+		c = c->next_res;	
+	}
+	/* No matching icon, so use the mono one instead */
+	return best_cicon;
+}
+
+#if 1
+
+static long
+sizeof_tedinfo(TEDINFO *ted)
+{
+	long size = sizeof(TEDINFO);
+	size += strlen(ted->te_ptext) + 1;
+	size += strlen(ted->te_ptmplt) + 1;
+	size += strlen(ted->te_pvalid) + 1;
+	DIAGS(("sizeof_tedinfo: %ld", size));
+	return size;
+}
+static long
+sizeof_bitblk(BITBLK *bb)
+{
+	long size = sizeof(BITBLK);
+	size += 2L * bb->bi_wb * bb->bi_hl;
+	DIAGS(("sizeof_bitblk: %ld", size));
+	return size;
+}
+static long
+sizeof_iconblk(ICONBLK *ib)
+{
+	long size = 3L * calc_back((RECT *)&ib->ib_xicon, 1);
+	size += sizeof(ICONBLK);
+	if (ib->ib_ptext)
+		size += strlen(ib->ib_ptext) + 1;
+	
+	DIAGS(("sizeof_iconblk: %ld", size));
+	return size;
+}
+static long
+sizeof_cicon(ICONBLK *ib, CICON *i)
+{
+	long size, len, plen;
+
+	len = calc_back((RECT *)&ib->ib_xicon, 1);
+
+	size = sizeof_iconblk(ib);
+	plen = len * i->num_planes;
+	
+	if (i->col_data)
+		size += plen;
+	if (i->col_mask)
+		size += plen;
+	if (i->sel_data)
+		size += plen;
+	if (i->sel_mask)
+		size += plen;
+
+	size += sizeof(CICONBLK) + sizeof(CICON);
+
+	DIAGS(("sizeof_cicon: (planes %d, len %ld, plen %ld), %ld", i->num_planes, len, plen, size));
+	return size;
+}
+
+static long
+obtree_len(OBJECT *obtree, short start, short *num_objs)
 {
 	long size;
-	short curr = start;
+	short parent, curr = start, objs = 0;
 
-	while (obtree[start].ob_head
+	parent = ob_get_parent(obtree, start);
+	
+	DIAGS(("obtree_len: tree = %lx, start = %d, parent = %d", obtree, start, parent));
+
+	size = 0;
+	do
+	{
+		OBJECT *ob = obtree + curr;
+		short type = ob->ob_type & 0x00ff;
+
+		DIAGS((" -- ob %d, type = %d", curr, type));
+		size += sizeof(OBJECT);
+		objs++;
+
+		switch (type)
+		{
+			case G_BOX:
+			case G_IBOX:
+			case G_BOXCHAR:
+			{
+				break;
+			}
+			case G_TEXT:
+			case G_BOXTEXT:
+			case G_FTEXT:
+			case G_FBOXTEXT:
+			{
+				size += sizeof_tedinfo(object_get_tedinfo(ob));
+				break;
+			}
+			case G_IMAGE:
+			{
+				size += sizeof_bitblk(object_get_spec(ob)->bitblk);
+				break;
+			}
+			case G_PROGDEF:
+			{
+				size += sizeof(USERBLK) + sizeof(PARMBLK);
+				break;
+			}
+			case G_BUTTON:
+			case G_STRING:
+			case G_TITLE:
+			{
+				size += strlen(object_get_spec(ob)->free_string) + 1;
+				break;
+			}
+			case G_ICON:
+			{
+				size += sizeof_iconblk(object_get_spec(ob)->iconblk);
+				break;
+			}
+			case G_CICON:
+			{
+				CICONBLK *cb;
+				ICONBLK *ib;
+				CICON *i;
+
+				cb = object_get_spec(ob)->ciconblk;
+				ib = (ICONBLK *)&cb->monoblk;
+				i  = NULL; //getbest_cicon(cb);
+				
+				if (i)
+				{
+					size += sizeof_cicon(ib, i);
+				}
+				else
+				{
+					i = cb->mainlist;
+					while (i && i != (void *)-1L)
+					{					
+						size += sizeof_cicon(ib, i);
+						i = i->next_res;
+					}
+				}
+				break;
+			}
+			case G_SLIST:
+			{
+				break;
+			}
+			default:
+			{
+				DIAGS(("Unknown object type %d", ob->ob_type));
+				break;
+			}
+		}
+		if (ob->ob_head != -1)
+		{
+			short no;
+			size += obtree_len(obtree, ob->ob_head, &no);
+			objs += no;
+		}
+	
+	} while ((curr = obtree[curr].ob_next) != parent);
+
+	DIAGS(("return obtreelen = %ld, objs = %d", size, objs));
+	
+	if (num_objs)
+		*num_objs = objs;
+	
+	return size;
+}
+static void *
+copy_tedinfo(TEDINFO *src, TEDINFO *dst)
+{
+	char *s = (char *)((long)dst + sizeof(TEDINFO));
+
+ 	DIAGS(("copy_tedinfo: copy from %lx, to %lx", src, dst));
+	
+	*dst = *src;
+
+	dst->te_ptext = s;
+	strcpy(s, src->te_ptext);
+	s += strlen(src->te_ptext) + 1;
+
+	dst->te_ptmplt = s;
+	strcpy(s, src->te_ptmplt);
+	s += strlen(src->te_ptmplt) + 1;
+
+	dst->te_pvalid = s;
+	strcpy(s, src->te_pvalid);
+	s += strlen(src->te_pvalid) + 1;
+	
+ 	DIAGS((" --- return %lx", ((long)s + 1) & 0xfffffffe));
+	
+	return (void *)(((long)s + 1) & 0xfffffffe);
+}
+static void *
+copy_bitblk(BITBLK *src, BITBLK *dst)
+{
+	int i;
+	short *s, *d;
+
+	DIAGS(("copy_bitblk: from %lx, to %lx", src, dst));
+	
+	*dst = *src;
+	
+	s = src->bi_pdata;
+ 	d = (short *)((long)dst + sizeof(BITBLK));
+	dst->bi_pdata = d;
+	for (i = 0; i < (src->bi_wb * src->bi_hl); i ++)
+		*d++ = *s++;
+
+	DIAGS((" --- return %lx", d));
+
+	return (void *)d;
+}
+static void *
+copy_iconblk(ICONBLK *src, ICONBLK *dst)
+{
+	char *d;
+	int words, i;
+
+	DIAGS(("copy_iconblk: copy from %lx to %lx", src, dst));
+
+	*dst = *src;
+
+	d = (char *)((long)dst + sizeof(ICONBLK));
+	words = ((src->ib_wicon + 15) >> 4) * src->ib_hicon;
+	{
+		short *fr;
+		
+		fr = src->ib_pmask;
+		dst->ib_pmask = (short *)d;
+		for (i = 0; i < words; i++)
+			*(short *)d++ = *fr++;
+
+		fr = src->ib_pdata;
+		dst->ib_pdata = (short *)d;
+		for (i = 0; i < words; i++)
+			*(short *)d++ = *fr++;
+	}
+	
+	dst->ib_ptext = d;
+	for (i = 0; i < 12; i++)
+	{
+		if (!(*d++ = src->ib_ptext[i]))
+			break;
+	}
+	
+	DIAGS((" --- return %lx", ((long)d + 1) & 0xfffffffe));
+
+	return (void *)(((long)d + 1) & 0xfffffffe);	
+}
+
+static void *
+copy_cicon(CICON *src, CICON *dst, long words)
+{
+	short *fr, *d = (short *)((long)dst + sizeof(CICON));
+	long w;
+
+	DIAGS(("copy_cicon: from %lx to %lx(%lx), words %ld, planes %d", src, dst, d, words, src->num_planes));
+
+	dst->num_planes	= src->num_planes;
+	words *= src->num_planes;
+
+	if (src->col_data)
+	{
+		fr = src->col_data;
+		dst->col_data = d;
+		for (w = 0; w < words; w++)
+			*d++ = *fr++;
+	}
+	else
+		dst->col_data = NULL;
+
+	if (src->col_mask)
+	{
+		fr = src->col_mask;
+		dst->col_mask = d;
+		for (w = 0; w < words; w++)
+			*d++ = *fr++;
+	}
+	else
+		dst->col_mask = NULL;
+
+	if (src->sel_data)
+	{
+		fr = src->sel_data;
+		dst->sel_data = d;
+		for (w = 0; w < words; w++)
+			*d++ = *fr++;
+	}
+	else
+		dst->sel_data = NULL;
+
+	if (src->sel_mask)
+	{
+		fr = src->sel_mask;
+		dst->sel_mask = d;
+		for (w = 0; w < words; w++)
+			*d++ = *fr++;
+	}
+	else
+		dst->sel_mask = NULL;
+
+	dst->next_res = NULL;
+	
+	DIAGS(("copy_cicon: return %lx", d));
+	
+	return (void *)d;
+}
+
+static void *
+copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
+{
+	char *d;
+	int words, i;
+
+	DIAGS(("copy_ciconblk: from %lx to %lx - cicon=%lx", dst, src, cicon));
+
+	*dst = *src;
+
+	d = (char *)((long)dst + sizeof(CICONBLK));
+	
+	words = ((src->monoblk.ib_wicon + 15) >> 4) * src->monoblk.ib_hicon;
+	{
+		short *fr;
+		
+		fr = src->monoblk.ib_pmask;
+		dst->monoblk.ib_pmask = (short *)d;
+		for (i = 0; i < words; i++)
+			*(short *)d++ = *fr++;
+
+		fr = src->monoblk.ib_pdata;
+		dst->monoblk.ib_pdata = (short *)d;
+		for (i = 0; i < words; i++)
+			*(short *)d++ = *fr++;
+
+	}
+	dst->monoblk.ib_ptext = d;
+	for (i = 0; i < 12; i++)
+	{
+		if (!(*d++ = src->monoblk.ib_ptext[i]))
+			break;
+	}
+
+	(long)d = ((long)d + 1) & 0xfffffffe;
+	
+	/*
+	 * If a cicon is passed to us, we only take that one into the copy,
+	 * ignoring the others in the source.
+	 * If no cicon is passed here, however, we copy the whole thing.
+	 */
+	if (cicon)
+	{
+		dst->mainlist = (CICON *)d;
+		d = copy_cicon(cicon, (CICON *)d, words);
+	}
+	else
+	{
+		CICON *dst_ci;
+		CICON **nxt_sci = &src->mainlist;
+		CICON **nxt_dci = &dst->mainlist;
+
+		while (*nxt_sci && *nxt_sci != (void *)-1L)
+		{
+			dst_ci = (CICON *)d;
+			d = copy_cicon(*nxt_sci, dst_ci, words);
+			*nxt_dci = dst_ci;
+			
+			nxt_sci = &((*nxt_sci)->next_res);
+			nxt_dci = &((*nxt_dci)->next_res);
+		}
+	}
+	
+	DIAGS((" --- return %lx", d));
+
+	return (void *)d;	
+}
+	
+static void
+copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
+{
+	short parent, curr = start;
+
+	parent = ob_get_parent(obtree, start);
+
+	DIAGS(("copy_obtree: tree = %lx, start = %d, parent = %d, data=%lx/%lx", obtree, start, parent, data, *data));
+
+	do
+	{
+		OBJECT *ob = obtree + curr;
+		OBJECT *on = dst + curr;
+
+		short type = ob->ob_type & 0x00ff;
+
+		DIAGS((" -- ob %d, type = %d, old=%lx, new=%lx", curr, type, ob, on));
+		*on = *ob;
+		switch (type)
+		{
+			case G_BOX:
+			case G_IBOX:
+			case G_BOXCHAR:
+			{
+				break;
+			}
+			case G_TEXT:
+			case G_BOXTEXT:
+			case G_FTEXT:
+			case G_FBOXTEXT:
+			{
+				on->ob_spec.tedinfo = *data;
+				*data = copy_tedinfo(object_get_tedinfo(ob), *data);
+				break;
+			}
+			case G_IMAGE:
+			{
+				on->ob_spec.bitblk = *data;
+				*data = copy_bitblk(object_get_spec(ob)->bitblk, *data);
+				break;
+			}
+			case G_PROGDEF:
+			{
+				on->ob_spec.userblk = *data;
+				(USERBLK *)*data = (USERBLK *)object_get_spec(ob)->userblk;
+				(long)*data += sizeof(USERBLK);
+				break;
+			}
+			case G_BUTTON:
+			case G_STRING:
+			case G_TITLE:
+			{
+				char *s = object_get_spec(ob)->free_string;
+				char *d = (char *)*data;
+				on->ob_spec.free_string = d;
+				strcpy(d, s);
+				d += strlen(s) + 1;				
+				*data = (void *)(((long)d + 1) & 0xfffffffe);
+				break;
+			}
+			case G_ICON:
+			{
+				on->ob_spec.iconblk = (ICONBLK *)*data;
+				*data = copy_iconblk(object_get_spec(ob)->iconblk, *data);
+				break;
+			}
+			case G_CICON:
+			{
+				CICON *i;
+
+				i = NULL; //getbest_cicon(object_get_spec(ob)->ciconblk);
+				
+				on->ob_spec.ciconblk = *data;
+				*data = copy_ciconblk(object_get_spec(ob)->ciconblk, *data, i);
+
+				break;
+			}
+			case G_SLIST:
+			{
+				*on = *ob;
+				on->ob_type = G_BOX;
+				*(BFOBSPEC *)&on->ob_spec.obspec = (BFOBSPEC){0,1,1,1,1,0,0};
+				break;
+			}
+			default:
+			{
+				DIAGS(("Unknown object type %d", ob->ob_type));
+				break;
+			}
+		}
+		if (ob->ob_head != -1)
+		{
+			copy_obtree(obtree, ob->ob_head, dst, data);
+		}
+	
+	} while ((curr = obtree[curr].ob_next) != parent);
+
+	//display("return obtreelen = %ld, objs = %d", size, objs);
 	
 }
+
+OBJECT *
+duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
+{
+	long size;
+	short objs;
+	OBJECT *new;
+	void *data;
+	
+	size = obtree_len(obtree, start, &objs);
+	DIAGS(("final obtreelen with %d objs is %ld\n", objs, size));
+
+	if (client == C.Aes)
+		new = kmalloc(size + 1024);
+	else
+		new = umalloc(size + 1024);
+	if (new)
+	{
+		bzero(new, size);
+
+		(long)data = (long)new + ((long)objs * sizeof(OBJECT));
+
+		copy_obtree(obtree, 0, new, &data);
+	}
+	return new;
+}
+
+void
+free_obtree_resources(struct xa_client *client, OBJECT *obtree)
+{
+	int j = 0;
+	short type;
+	
+	do
+	{
+		OBJECT *ob = obtree + j;
+
+		type = ob->ob_type & 0x00ff;
+		
+		switch (type)
+		{
+			case G_TEXT:
+			case G_BOXTEXT:
+			case G_IMAGE:
+			case G_BUTTON:
+			case G_STRING:
+			case G_SHORTCUT:
+			case G_FTEXT:
+			case G_FBOXTEXT:
+			case G_TITLE:
+			case G_ICON:
+			{
+				break;
+			}
+			case G_CICON:
+			{
+				break;
+			}
+			case G_PROGDEF:
+			{
+				break;
+			}
+			case G_IBOX:
+			case G_BOX:
+			case G_BOXCHAR:
+			{
+				break;
+			}
+			case G_SLIST:
+			{
+				unset_G_SLIST(client, obtree, j);
+#if 0
+				if (client == C.Aes)
+				{
+					DIAG((D_objc, client, "free_obtree_resources: kfree scroll list info %lx",
+						(long)ob->ob_spec.index));
+					kfree((SCROLL_INFO*)ob->ob_spec.index);
+				}
+				else
+				{
+					DIAG((D_objc, client, "free_obtree_resources: ufree scroll list info %lx",
+						(long)ob->ob_spec.index));
+					ufree((SCROLL_INFO*)ob->ob_spec.index);
+				}
+				ob->ob_type = G_BOX;
+				*(BFOBSPEC *)&ob->ob_spec.obspec = (BFOBSPEC){0,1,1,1,1,0,0};
+#endif
+				break;
+			}
+			default:
+			{
+				DIAG((D_rsrc, client, "Unknown object type %d", type));
+				break;
+			}
+		}
+	} while (!(obtree[j++].ob_flags & OF_LASTOB));
+}
+
+void
+free_object_tree(struct xa_client *client, OBJECT *obtree)
+{
+	if (obtree)
+	{
+		DIAG((D_objc, client, "free_object_tree: %lx for %s", obtree, client->name));
+		free_obtree_resources(client, obtree);
+		if (client == C.Aes)
+			kfree(obtree);
+		else
+			ufree(obtree);
+	}
+}
+
 #endif
 
 short
@@ -236,11 +835,11 @@ ob_get_parent(OBJECT *obtree, short obj)
 	{
 		short last;
 
-		do {
+		do
+		{
 			last = obj;
 			obj = obtree[obj].ob_next;
-		}
-		while(obtree[obj].ob_tail != last);
+		} while (obtree[obj].ob_tail != last);
 
 		return obj;
 	}
