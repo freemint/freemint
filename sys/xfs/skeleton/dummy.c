@@ -103,7 +103,7 @@
 	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
 
 # define MSG_OLDMINT	\
-	"\033pMiNT to old, this xfs requires at least a FreeMiNT 1.15!\033q\r\n"
+	"\033pMiNT too old, this xfs requires at least a FreeMiNT 1.15!\033q\r\n"
 
 # define MSG_BIOVERSION	\
 	"\033pIncompatible FreeMiNT buffer cache version!\033q\r\n"
