@@ -20,7 +20,7 @@
 /*
  * Default and max. maximum segment size.
  */
-# define TCP_MSS	536
+# define TCP_MSS	1460	/* was 536 */
 # define TCP_MAXMSS	2000
 # define TCP_MINMSS	100
 

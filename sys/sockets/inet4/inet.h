@@ -21,10 +21,10 @@ struct in_dataq
 {
 	long		maxdatalen;	/* upper limit of bytes in this q */
 	long		curdatalen;	/* current # of bytes in this q */
-# define IN_DEFAULT_RSPACE	8192
-# define IN_DEFAULT_WSPACE	8192
-# define IN_MAX_RSPACE		(2*8192)
-# define IN_MAX_WSPACE		(2*8192)
+# define IN_DEFAULT_RSPACE	(64240)
+# define IN_DEFAULT_WSPACE	(64240)
+# define IN_MAX_RSPACE		(65535)
+# define IN_MAX_WSPACE		(65535)
 # define IN_MIN_RSPACE		(8192/2)
 # define IN_MIN_WSPACE		(8192/2)
 	long		lowat;		/* low watermark */
