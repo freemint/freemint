@@ -974,8 +974,7 @@ init (void)
 	DEBUG (("%s, %ld: init_intr() ok!", __FILE__, (long) __LINE__));
 	
 	/* Enable the FPU and superscalar dispatch on 68060 */
-	if (mcpu >= 60)
-		get_superscalar();
+	get_superscalar();
 
 	/* Init done, now enable/unfreeze all caches.
 	 * Don't touch the write/allocate bits, though.
