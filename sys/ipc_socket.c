@@ -690,14 +690,51 @@ sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
-	struct socket *so;
 	
 	DEBUG (("sys_setsockopt(%i, %li, %li, %lx, %li)", fd, level, optname, optval, optlen));
 	
 	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
-	so = (struct socket *) fp->devinfo;
+	return so_setsockopt ((struct socket *) fp->devinfo, level, optname, optval, optlen);
+}
+
+long _cdecl
+sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
+{
+	PROC *p = curproc;
+	FILEPTR *fp;
+	long r;
+	
+	DEBUG (("sys_getsockopt(%i, %li, %li, %lx, %lx)", fd, level, optname, optval, optlen));
+	
+	r = getsock (p, fd, &fp);
+	if (r) return r;
+	
+	return so_getsockopt ((struct socket *) fp->devinfo, level, optname, optval, optlen);
+}
+
+long _cdecl
+sys_shutdown (short fd, long how)
+{
+	PROC *p = curproc;
+	FILEPTR *fp;
+	long r;
+	
+	DEBUG (("sys_shutdown(%i, %li)", fd, how));
+	
+	r = getsock (p, fd, &fp);
+	if (r) return r;
+	
+	return so_shutdown ((struct socket *) fp->devinfo, how);
+}
+
+
+/* internal socket functions */
+
+long
+so_setsockopt (struct socket *so, long level, long optname, void *optval, long optlen)
+{
 	if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
 		return EINVAL;
 	
@@ -722,23 +759,12 @@ sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 	return (*so->ops->setsockopt)(so, level, optname, optval, optlen);
 }
 
-long _cdecl
-sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
+long
+so_getsockopt (struct socket *so, long level, long optname, void *optval, long *optlen)
 {
-	PROC *p = curproc;
-	FILEPTR *fp;
-	long r;
-	struct socket *so;
-	
-	DEBUG (("sys_getsockopt(%i, %li, %li, %lx, %lx)", fd, level, optname, optval, optlen));
-	
-	r = getsock (p, fd, &fp);
-	if (r) return r;
-	
-	so = (struct socket *) fp->devinfo;
 	if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
 	{
-		DEBUG (("sys_getsockopt: virgin state -> EINVAL"));
+		DEBUG (("so_getsockopt: virgin state -> EINVAL"));
 		return EINVAL;
 	}
 	
@@ -761,20 +787,9 @@ sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 	return (*so->ops->getsockopt)(so, level, optname, optval, optlen);
 }
 
-long _cdecl
-sys_shutdown (short fd, long how)
+long
+so_shutdown (struct socket *so, long how)
 {
-	PROC *p = curproc;
-	FILEPTR *fp;
-	long r;
-	struct socket *so;
-	
-	DEBUG (("sys_shutdown(%i, %li)", fd, how));
-	
-	r = getsock (p, fd, &fp);
-	if (r) return r;
-	
-	so = (struct socket *) fp->devinfo;
 	if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
 		return EINVAL;
 	
@@ -789,6 +804,8 @@ sys_shutdown (short fd, long how)
 		case 2:
 			so->flags |= (SO_CANTRCVMORE|SO_CANTSNDMORE);
 			break;
+		default:
+			return EINVAL;
 	}
 	
 	return (*so->ops->shutdown)(so, how);
