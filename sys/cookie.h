@@ -1,12 +1,12 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * header file for dealing with the cookie jar
- * 
+ *
  */
 
 # ifndef _cookie_h
@@ -32,7 +32,6 @@ struct cookie
 /* exported functions
  */
 void	init_cookies	(void);
-void	restr_cookies	(void);
 long	get_toscookie	(ulong tag, ulong *val);
 long	set_toscookie	(ulong tag, ulong val);
 long	get_cookie	(ulong tag, ulong *ret);

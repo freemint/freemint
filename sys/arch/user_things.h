@@ -60,8 +60,9 @@ typedef struct
 	long slb_close_and_pterm_p;	/* a pointer to a call to slb_close_and_pterm() */
 	long slb_exec_p;		/* exec an SLB function */
 	long user_xhdi_p;		/* call the XHDI interface */
+# ifdef JAR_PRIVATE
 	long user_jar_p;		/* user's copy of the Cookie Jar (not yet implemented) */
-
+# endif
 } USER_THINGS;
 
 extern USER_THINGS user_things;
