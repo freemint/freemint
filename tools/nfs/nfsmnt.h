@@ -12,15 +12,9 @@
  *        common declarations
  */
 
-#ifndef COMMON_H
-#define COMMON_H
+# ifndef _nfsmnt_h
+# define _nfsmnt_h
 
-
-/* option indicators */
-extern int verbose;
-extern int readonly;
-extern int nosuid;
-extern int grpid;
 
 extern long retrycnt;
 
@@ -43,4 +37,4 @@ long do_nfs_unmount(char *remote, char *local);
 
 char *commandname;
 
-#endif
+# endif
