@@ -355,16 +355,16 @@ void rtopxy(short *p, const RECT *r)
 {
 	*p++ = r->x;
 	*p++ = r->y;
-	*p++ = r->x + r->w-1; 
-	*p   = r->y + r->h-1;
+	*p++ = r->x + r->w - 1; 
+	*p   = r->y + r->h - 1;
 }
 
 void ritopxy(short *p, short x, short y, short w, short h)
 {
 	*p++ = x;
 	*p++ = y;
-	*p++ = x + w-1; 
-	*p   = y + h-1;
+	*p++ = x + w - 1; 
+	*p   = y + h - 1;
 }
 
 void line(short x, short y, short x1, short y1, short col)
