@@ -1032,6 +1032,12 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			FILEPTR *pf;
 			int pfd;
 			
+			if (!fd)
+			{
+				DEBUG (("ioctl(PFSTAT): no filedesc struct"));
+				return EBADF;
+			}
+			
 			pfd = (*(ushort *) buf);
 			if ((pfd < MIN_HANDLE) || (pfd >= fd->nfiles)
 				|| ((pf = fd->ofiles[pfd]) == 0))
@@ -1213,6 +1219,12 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			struct memspace *mem = p->p_mem;
 			struct pmeminfo *mi = buf;
 			int i;
+			
+			if (!mem)
+			{
+				DEBUG (("ioctl(PMEMINFO): no memspace struct"));
+				return EBADARG;
+			}
 			
 			for (i = 0; i < mem->num_reg; i++)
 			{
