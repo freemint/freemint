@@ -69,6 +69,7 @@ CloneForm(OBJECT *form)
 		;
 
 	new_form = kmalloc(sizeof(OBJECT) * num_objs);
+	DIAGS(("CloneForm: new obtree at %lx", new_form));
 	if (new_form)
 	{
 		int o;
@@ -477,6 +478,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 	wt = set_toolbar_widget(lock, alert_window, alert_form, -1);
 	wt->extra = alertxt;
+	wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
 
 	/* Change the click & drag behaviours for the alert box widget,
 	 * because alerts return a number

@@ -256,15 +256,21 @@ struct wdlg_info
 
 struct objc_edit_info
 {
-	short obj;
-	short pos;
-	short c_state;
-	RECT cr;
+	short obj;	/* Index of editable object */
+	short pos;	/* Cursor (char) position */
+	short c_state;	/* Cursor state */
+	RECT cr;	/* Cursor coordinates, relative */
 };
 
 struct widget_tree
 {
 	struct widget_tree *next;	/* Next widget tree */
+
+#define WTF_ALLOC 1
+#define WTF_XTRA_ALLOC 2
+#define WTF_TREE_ALLOC 4
+
+	ulong	flags;
 
 	struct xa_window *wind;		/* Not of any specific use just yet...*/
 	struct xa_client *owner;	/* The tree widget would be owned by a different app to
@@ -285,10 +291,6 @@ struct widget_tree
 
 	struct objc_edit_info e;
 
-	//short edit_obj;			/* Index of the current editable text field (if any) */
-	//short edit_pos;			/* Cursor position within the text field (if any) */
-	//short cr_state;			/* Cursor state */
-	//RECT cr;			/* Cursor coordinates, relative to 'r' */
 
 	short lastob;			/* Can be used to validate item number */
 	short which;			/* kind of event for use by WDIAL exit handler. */
@@ -300,14 +302,9 @@ struct widget_tree
 	short dx, dy;			/* displacement of root from upper left corner of window
 					 * for operation by sliders. */
 
-	//ExitForm *exit_form;		/* Called if exit condition occurs
 	FormExit *exit_form;		/* Called if exit condition occurs
 					 * while handling a form_do or a toolbar
 					 * or anything the like ;-) */
-
-	//ObjectHandler *exit_handler;	/* Handler vec for direct handling of exit
-	//				 * condition. The 'aaplication' aspect of the
-	//				 * exit_form */
 
 	void *extra;			/* Extra info if needed (texts for alert) */
 
@@ -560,8 +557,8 @@ struct xa_widget
 	WidgetBehaviour *drag;
 	WidgetBehaviour *release;
 
-#define XAWF_STUFFKMALLOC 1
-
+#define XAWF_ALLOC 1
+#define XAWF_STUFFKMALLOC 2
 	long flags;
 	void (*destruct)(struct xa_widget *w);
 
@@ -580,6 +577,9 @@ struct xa_widget
 	short xlimit;			/* for reverse action */
 	short slider_type;		/* which slider should move for scroll widget */
 
+#define STUFF_IS_WT 1
+
+	short stufftype;		/* type of widget dependant pointer */
 	void *stuff;			/* Pointer to widget dependant context data, if any */
 
 	int  start;			/* If stuff is a OBJECT tree, we want start drawing here */
