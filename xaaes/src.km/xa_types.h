@@ -901,7 +901,6 @@ enum xa_widgets
 	XAW_RTPAGE,
 	XAW_ICONIFY,
 	XAW_HIDE,
-	
 
  /*
   * The widget types above this comment MUST be context indipendant.
@@ -912,7 +911,6 @@ enum xa_widgets
  */
 	XAW_TOOLBAR,			/* Extended XaAES widget */
 	XAW_MENU,			/* Extended XaAES widget, must be drawn last. */
-
 	/* Number of available XA_WIDGET slots in a the window for default/standard widgets */
 	XA_MAX_WIDGETS
 };
@@ -937,7 +935,6 @@ struct xa_widget_location
 					 * corresponding part of window exterior and clicks on it is ignored
 					 */
 	short properties;
-	//bool top;			/* does the widget add to the number widgets at the top of the window. */
 	void (*destruct)(struct xa_widget *widg);
 };
 typedef struct xa_widget_location XA_WIDGET_LOCATION;
@@ -983,8 +980,6 @@ struct xa_widget
 #define XAWF_ALLOC		1
 #define XAWF_STUFFKMALLOC	2
 	short flags;
-
-	//short properties;
 
 	void (*destruct)(struct xa_widget *w);
 
@@ -1121,6 +1116,11 @@ struct xa_window
 					 * let the window draw the 3 pixel space that emanates from construction. */
 	bool dial_followed;		/* false immediate after opening a dial window.
 	                        	 * true after first objc_draw. */
+#define WAB_LEFT	1
+#define WAB_RIGHT	2
+#define WAB_TOP		4
+#define WAB_BOTTOM	8
+	short wa_borders;
 
 	RECT max;			/* Creator dimension's, maximum for sizing */
 	RECT min;
