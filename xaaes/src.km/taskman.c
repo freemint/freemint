@@ -124,7 +124,7 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 	OBJECT *ob = ResourceTree(C.Aes_rsc, TASK_MANAGER) + TM_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 
-	delete_window(lock, list->wi);
+	delayed_delete_window(lock, list->wi);
 	task_man_win = NULL;
 
 	return true;
@@ -169,7 +169,7 @@ send_terminate(enum locks lock, struct xa_client *client)
 	}
 }
 
-/* HR 300101: double click now also available for internal handlers. */
+/* double click now also available for internal handlers. */
 static void
 handle_taskmanager(enum locks lock, struct widget_tree *wt)
 {
@@ -351,7 +351,7 @@ open_launcher(enum locks lock)
 
 static struct xa_window *systemalerts_win = NULL;
 
-/* HR 300101: double click now also available for internal handlers. */
+/* double click now also available for internal handlers. */
 static void
 handle_systemalerts(enum locks lock, struct widget_tree *wt)
 {
@@ -362,16 +362,21 @@ handle_systemalerts(enum locks lock, struct widget_tree *wt)
 	{
 	/* Empty the task list */
 	case SALERT_CLEAR:
+	{
 		empty_scroll_list(form, SYSALERT_LIST, -1);
 		deselect(wt->tree, item);
 		display_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 		display_toolbar(lock, systemalerts_win, item);
 		break;
+	}
 	case SALERT_OK:
+	{
 		deselect(wt->tree, item);
 		display_toolbar(lock, systemalerts_win, item);
 		close_window(lock, systemalerts_win);
-		delete_window(lock, systemalerts_win);	
+		delayed_delete_window(lock, systemalerts_win);	
+		break;
+	}
 	}
 }
 
@@ -380,7 +385,7 @@ systemalerts_destructor(enum locks lock, struct xa_window *wind)
 {
 	OBJECT *ob = ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
-	delete_window(lock, list->wi);
+	delayed_delete_window(lock, list->wi);
 	systemalerts_win = NULL;
 	return true;
 }
