@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _m68k_asm_h
-# define _m68k_asm_h
+# ifndef _mint_m68k_asm_h
+# define _mint_m68k_asm_h
 
 
 # include "asm_atomic.h"
@@ -40,4 +40,4 @@
 # include "asm_spl.h"
 
 
-# endif /* _m68k_asm_h */
+# endif /* _mint_m68k_asm_h */

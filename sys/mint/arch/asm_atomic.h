@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _m68k_asm_atomic_h
-# define _m68k_asm_atomic_h
+# ifndef _mint_m68k_asm_atomic_h
+# define _mint_m68k_asm_atomic_h
 
 
 // TAS
@@ -56,4 +56,4 @@ compare_and_swap (volatile long *p, long old, long new)
 }
 
 
-# endif /* _m68k_asm_atomic_h */
+# endif /* _mint_m68k_asm_atomic_h */

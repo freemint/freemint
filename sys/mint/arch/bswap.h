@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _m68k_bswap_h
-# define _m68k_bswap_h
+# ifndef _mint_m68k_bswap_h
+# define _mint_m68k_bswap_h
 
 
 static inline __u16
@@ -91,4 +91,4 @@ __asm_bswap64 (register __u64 x)
 # endif
 
 
-# endif /* _m68k_bswap_h */
+# endif /* _mint_m68k_bswap_h */
