@@ -3,7 +3,7 @@
  * Version:      
  * Author:       Frank Naumann
  * Started:      1999-05
- * Last Updated: 1999-08-22
+ * Last Updated: 2001-06-08
  * Target O/S:   MiNT
  * Description:  
  * 
@@ -41,7 +41,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	23
+# define VER_MINOR	24
 # define VER_STATUS	b
 
 

@@ -26,10 +26,26 @@ OBJS = $(COBJS:.c=.o)
 LIBS += -lsocket16
 GENFILES = $(TARGET)
 
+# Uncomment the following line, if you want to
+# create a debug version. The debug version dumbs
+# everything interesting to stdout.
+# If you comment/uncomment this line build the
+# version with
+# 
+#	make clean; make
+#
+#CFLAGS += -DSHOWDEBUG
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
 	$(STRIP) $@
 	$(FLAGS) --mglobal-memory $@
 
+boot:
+	$(CP) $(TARGET) /c/multitos
+
+mintboot:
+	$(CP) $(TARGET) /c/mint
 
 include $(top_srcdir)/DEPENDENCIES
+

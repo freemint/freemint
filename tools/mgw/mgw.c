@@ -3,7 +3,7 @@
  * Version:
  * Author:       Frank Naumann, Jens Heitmann
  * Started:      1999-05
- * Last Updated: 1999-12-02
+ * Last Updated: 2001-06-09
  * Target O/S:	 MiNT
  * Description:  
  * 
@@ -33,10 +33,10 @@
 # include "options.h"
 
 
-# if 1
-# define DEBUG(x)
-# else
+# ifdef SHOWDEBUG
 # define DEBUG(x) printf x
+# else
+# define DEBUG(x)
 # endif
 
 
@@ -887,7 +887,7 @@ check_exception (fd_set *mint_fds, st_fd_set *st_fds)
    | Map FDSET file handles |
    -------------------------- */
 static inline int
-remap_fdset (fd_set *mint_fds, st_fd_set *st_fds, char *type)
+remap_fdset (fd_set *mint_fds, st_fd_set *st_fds, char *type, int is_read)
 {
 	int i, m;
 	
@@ -900,24 +900,32 @@ remap_fdset (fd_set *mint_fds, st_fd_set *st_fds, char *type)
 	{
 		if (FD_ISSET (i, mint_fds))
 		{
-			struct recv_cmd cmd;
-			int r;
-			char c;
-			
-			cmd.cmd 	= RECV_CMD;
-			cmd.buflen	= 1;
-			cmd.flags 	= MSG_PEEK /* MSG_PEEK = 2 -> nicht warten */;
-			cmd.buf 	= &c;
-			
-			r = Fcntl (i, (long) &cmd, SOCKETCALL);
-			DEBUG (("[Fcntl = %i] ", r));
-			
-			if (r != 0)
+			if (is_read)
 			{
-				DEBUG (("# %i -> %i ", i, i));
+				struct recv_cmd cmd;
+				int r;
+				char c;
 			
-				ST_FD_SET (i, st_fds);
-				m = i;
+				cmd.cmd 	= RECV_CMD;
+				cmd.buflen	= 1;
+				cmd.flags 	= MSG_PEEK /* MSG_PEEK = 2 -> nicht warten */;
+				cmd.buf 	= &c;
+			
+				r = Fcntl (i, (long) &cmd, SOCKETCALL);
+				DEBUG (("[Fcntl = %i] ", r));
+			
+				if (r != 0)
+				{
+					DEBUG (("# %i -> %i ", i, i));
+			
+					ST_FD_SET (i, st_fds);
+					m = i;
+				}
+			}
+			else
+			{
+			ST_FD_SET (i, st_fds);
+			m = i;
 			}
 		}
 	}
@@ -998,17 +1006,28 @@ st_socket_select (long fnc, int nfds, st_fd_set *readfds, st_fd_set *writefds, s
 	
 	DEBUG (("select returned %i\n", r));
 	
+	if (!r)
+	{
+	/* if 0 is returned the structures are not cleared.
+	   This will make us problems, during remapping it. 
+	   So we clear it before... */
+	FD_ZERO (&rfds);
+	FD_ZERO (&wfds);
+	}
+
 	r = 0;
 	if (rptr)
 	{
-		j = remap_fdset (rptr, readfds, "readfds");
+		/* Remap read bits */
+		j = remap_fdset (rptr, readfds, "readfds", 1);
 		if (j > r)
 			r = j;
 	}
 	
 	if (wptr)
 	{
-		j = remap_fdset (wptr, writefds, "writefds");
+		/* Remap write bits */
+		j = remap_fdset (wptr, writefds, "writefds", 0);
 		if (j > r)
 			r = j;
 	}
