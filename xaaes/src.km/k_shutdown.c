@@ -37,33 +37,28 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
+#include "xa_form.h"
 #include "xa_rsrc.h"
 
 #include "mint/signal.h"
 
-static char stillrun[] = " is still running.|Wait again or Kill?][Wait|Kill]";
+static const char stillrun[] = " is still running.|Wait again or Kill?][Wait|Kill]";
 
-static bool kill_or_wait(struct xa_client *client)
+static bool
+kill_or_wait(struct xa_client *client)
 {
-	char *sr = stillrun;
-	char *cn = &client->name;
-	char *a;
 	char atxt[80] = {"[1]["};
-
-	a = atxt + 4;
+	const char *cn = client->name;
 
 	while (*cn == 0x20)
 		cn++;
 
-	while (*cn)
-		*a++ = *cn++;
+	strcat(atxt, cn);
+	strcat(atxt, stillrun);
 
-	while (*sr)
-		*a++ = *sr++;
+	do_form_alert(0, C.Aes, 1, atxt);
 
-	*a = 0;
-
-	do_form_alert(0, C.Aes, 1, &atxt);
+	return false;
 }
 
 /*
