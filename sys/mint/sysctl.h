@@ -151,7 +151,8 @@ struct ctlname
 # define HW_NCPU	 	4	/* int: number of cpus */
 # define HW_BYTEORDER	 	5	/* int: machine byte order */
 # define HW_PAGESIZE	 	6	/* int: software page size */
-# define HW_MAXID		7	/* number of valid hw ids */
+# define HW_FREEPHYSMEM		7	/* int: free physical memory */
+# define HW_MAXID		8	/* number of valid hw ids */
 
 # define CTL_HW_NAMES \
 { \
@@ -162,6 +163,7 @@ struct ctlname
 	{ "ncpu", CTLTYPE_INT }, \
 	{ "byteorder", CTLTYPE_INT }, \
 	{ "pagesize", CTLTYPE_INT }, \
+	{ "freephysmem", CTLTYPE_INT }, \
 }
 
 
