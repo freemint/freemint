@@ -1,3 +1,27 @@
+2001-07-31 Tuesday 23:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/buildinfo/version.h:
+
+	Bumped version to 1.15.12 release version.
+	
+2001-07-31 Tuesday 23:39  Frank Naumann <fnaumann@freemint.de>
+
+	* ChangeLog.#1.15.12:
+
+	file ChangeLog.#1.15.12 was initially added on branch branch-1_15.
+	
+2001-07-31 Tuesday 23:39  Frank Naumann <fnaumann@freemint.de>
+
+	* ChangeLog.#1.15.11, ChangeLog.#1.15.12:
+
+	[no log message]
+	
+2001-07-31 Tuesday 23:39  Frank Naumann <fnaumann@freemint.de>
+
+	* ChangeLog.#1.15.11:
+
+	file ChangeLog.#1.15.11 was initially added on branch branch-1_15.
+	
 2001-07-31 Tuesday 22:43  Frank Naumann <fnaumann@freemint.de>
 
 	* sys/arch/magic/genmagic.pl:
