@@ -172,6 +172,7 @@ extern const char *MSG_init_sysdrv_is;
 extern const char *MSG_init_saving_mmu;
 extern const char *MSG_init_tosver_kbshft;
 extern const char *MSG_init_bconmap;
+extern const char *MSG_init_system;
 extern const char *MSG_init_domaininit;
 extern const char *MSG_init_loading_modules;
 extern const char *MSG_init_starting_sysupdate;
@@ -188,7 +189,13 @@ extern const char *MSG_init_error;
 
 /* keyboard.c */
 extern const char *MSG_keytable_loaded;
-extern const char *MSG_keytable_faulty;
+extern const char *MSG_keytable_loading;
+
+/* memory.c */
+extern const char *MSG_mem_core;
+extern const char *MSG_mem_lost;
+extern const char *MSG_mem_alt;
+extern const char *MSG_mem_noalt;
 
 /* mis.c */
 # ifdef BUILTIN_SHELL
@@ -217,8 +224,7 @@ extern const char *MSG_slb_couldnt_open;
 extern const char *MSG_slb_freeing_used;
 
 /* unicode.c */
-extern const char *MSG_unitable_loaded;
-extern const char *MSG_unicode_cannot_below_128;
+extern const char *MSG_unitable_loading;
 
 /* unifs.c */
 extern const char *MSG_unifs_wrong_getxattr;
