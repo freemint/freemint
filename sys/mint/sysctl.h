@@ -122,7 +122,8 @@ struct ctlname
 # define KERN_LOGIN_NAME_MAX	12	/* int: max length login name + NUL */
 # define KERN_BOOTTIME		13	/* struct: time kernel was booted */
 # define KERN_INITIALTPA	14	/* int: max TPA size of a process */
-# define KERN_MAXID		15	/* number of valid kern ids */
+# define KERN_SYSDIR		15	/* the system directory */
+# define KERN_MAXID		16	/* number of valid kern ids */
 
 # define CTL_KERN_NAMES \
 { \
@@ -141,6 +142,7 @@ struct ctlname
 	{ "login_name_max", CTLTYPE_INT }, \
 	{ "boottime", CTLTYPE_STRUCT }, \
 	{ "initialtpa", CTLTYPE_INT }, \
+	{ "sysdir", CTLTYPE_STRING }, \
 }
 
 
