@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -44,20 +44,13 @@ struct lconfig lcfg =
 	RSCNAME,
 
 	0,
-	0,
 
 	0,
-	DOUBLE_CLICK_TIME,
-	0,
-
-	false,
-	false,
-	false
+	DOUBLE_CLICK_TIME
 };
 
 struct cnfdata
 {
-	enum locks lock;
 };
 
 /*** First the command callback declarations: */
@@ -226,14 +219,14 @@ get_string(char **line)
 static void
 pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 {
-	struct cnfdata *mydata = inf->data;
 	char p[512];
 	
 	strcpy(p, var);
 	strcat(p, "=");
 	strcat(p, arg);
 	
-	put_env(mydata->lock, 1, 0, p);
+	put_env(NOLOCKING, 1, 0, p);
+	DIAGS(("pCB_setenv: %s=%s", var, arg));
 }
 
 /*----------------------------------------------------------------------------*/
@@ -250,6 +243,8 @@ pCB_toppage(const char *str)
 		cfg.topname = 0;
 		cfg.backname = FAINT;
 	}
+	DIAGS(("pCB_toppage: %s (topname %i, backname %i)",
+		str, cfg.topname, cfg.backname));
 }
 
 /*----------------------------------------------------------------------------*/
@@ -258,6 +253,7 @@ static void
 pCB_point_to_type(const char *str)
 {
 	cfg.point_to_type = (stricmp(str, "point") == 0);
+	DIAGS(("pCB_point_to_type = %s", cfg.point_to_type ? "true" : "false"));
 }
 #endif
 
@@ -276,7 +272,10 @@ pCB_cancel(const char *line)
 			break;
 		
 		if (strlen(s) < CB_L)
+		{
 			strcpy(cfg.cancel_buttons[i++], s);
+			DIAGS(("pCB_cancel[%i]: %s", i-1, s));
+		}
 	}
 }
 
@@ -299,7 +298,10 @@ pCB_filters(const char *line)
 			break;
 		
 		if (strlen(s) < 16)
+		{
 			strcpy(cfg.Filters[i++], s);
+			DIAGS(("pCB_filters[%i]: %s", i-1, s));
+		}
 	}
 }
 
@@ -323,6 +325,8 @@ pCB_menu(const char *line)
 			cfg.menu_behave = LEAVE;
 		else if (stricmp(s, "nolocking") == 0)
 			cfg.menu_locking = false;
+
+		DIAGS(("pCB_menu: %s (menu_locking %i)", s, cfg.menu_locking));
 	}
 }
 
@@ -332,16 +336,7 @@ pCB_shell(const char *path, struct parsinf *inf)
 {
 	/* remember */
 	strcpy(cfg.cnf_shell, path);
-#if 0
-	struct cnfdata *mydata = inf->data;
-	Path parms;
-	
-	parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", path);
-	
-	C.DSKpid = launch(mydata->lock, 0, 0, 0, path, parms, C.Aes);
-	if (C.DSKpid > 0)
-		strcpy(C.desk, path);
-#endif
+	DIAGS(("pCB_shell -> %s", path));
 }
 
 /*----------------------------------------------------------------------------*/
@@ -356,90 +351,17 @@ pCB_run(const char *path, struct parsinf *inf)
 		{
 			cfg.cnf_run[i] = xmalloc(strlen(path)+1, 23);
 			if (cfg.cnf_run[i])
+			{
 				strcpy(cfg.cnf_run[i], path);
+				DIAGS(("pCB_run[%i]: %s", i, path));
+			}
 		}
 	}
-#if 0
-	struct cnfdata *mydata = inf->data;
-	Path parms;
-	
-	parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", path);
-	
-	launch(mydata->lock, 0, 0, 0, path, parms, C.Aes);
-#endif
 }
 
 /*============================================================================*/
 /* find cnf file
  */
-
-/*
- * find a xaaes file. When the cd command to XaAES load directory is
- * missing in mint.cnf (which is likely for inexperienced mint users. ;-) 
- * XaAES wont fail completely.
- */
-static char **aes_path;
-static char *dirs[] =
-{
-	"",					/* plain name only */
-	Aes_home_path,				/* Dont forget to fill. */
-	"c:\\gemsys\\",
-	"c:\\gemsys\\xaaes\\",
-	"c:\\aes\\",
-	"c:\\aes\\xaaes\\",
-	"c:\\mint\\",
-	"c:\\mint\\xaaes\\",
-	"c:\\multitos\\",
-	"c:\\multitos\\xaaes\\",
-	"c:\\",
-	"c:\\xaaes\\",
-	NULL
-};
-
-/* last resort if shell_find fails. */
-char *
-xa_find(char *fn)
-{
-	static char p[128];
-	char *f;
-
-	DIAGS(("xa_find '%s'", fn ? fn : "~"));
-
-	/* combined shell_find & xa_find permanently. */
-	f = shell_find(NOLOCKING, C.Aes, fn);
-	if (f) return f;
-
-	aes_path = dirs;
-	while (*aes_path)
-	{
-		char *pad = *aes_path;
-		struct file *fp;
-
-		sprintf(p, sizeof(p), "%s%s", pad, fn);
-
-#if GENERATE_DIAGS
-		if (lcfg.booting)
-		{
-			DIAGS(("try open '%s'", p));
-		}
-		else
-		{
-			DIAGS(("%s", p));
-		}
-#endif
-
-		fp = kernel_open(p, O_RDONLY, NULL);
-		if (fp)
-		{
-			kernel_close(fp);
-			return p;
-		}
-		aes_path++;
-	}
-
-	DIAGS((" - NULL"));
-	return NULL;
-}
 
 /*
  * Read & parse the '.scl' files.
@@ -448,34 +370,19 @@ xa_find(char *fn)
 #define debugp(d,s) curopt->point[d] = s
 #endif
 
-/* since xa_scl, SCL needs lock */
 void
-SCL(enum locks lock, int co, char *name, char *full, char *txt)
+SCL(const char *name)
 {
-	struct cnfdata mydata = { lock };
+	struct cnfdata mydata;
 //	struct options *curopt = &default_options;	/* specify some options for some programs. */
 //	bool have_brace = false, have_opt = false;
 //	char *cnf = NULL;
 
-	if (lcfg.booting)
-	{
-		fdisplay(log, "");
-		fdisplay(log, "**** Executing SCL phase %d from '%s' ****", co, name ? name : "string");
-		fdisplay(log, "");
-	}
-
 	if (name)
 	{
-		if (!full)
-			full = xa_find(name);
-
-		if (full)
-			parse_cnf(full, parser_tab, &mydata);
-		else
-			ALERT(("SCL file '%s' absent\n", name));
+		DIAGS(("Loading config %s", name));
+		parse_cnf(name, parser_tab, &mydata);
 	}
-	else if (txt)
-		ALERT(("XA_M_EXEC not supported yet!\n"));
 	else
 		ALERT(("no config filename?\n"));
 
