@@ -227,12 +227,12 @@ p_trace (short request, short pid, void *addr, long data)
 	/* consistency checks */
 	switch (request)
 	{
-		case  PT_TRACE_ME:
+		case PT_TRACE_ME:
 		{
 			/* tracing itself is always legal */
 			break;
 		}
-		case  PT_ATTACH:
+		case PT_ATTACH:
 		{
 			/*
 			 * You can't attach to a process if:
@@ -284,18 +284,19 @@ p_trace (short request, short pid, void *addr, long data)
 			
 			break;
 		}
-		case  PT_READ_I:
-		case  PT_READ_D:
-		case  PT_WRITE_I:
-		case  PT_WRITE_D:
-		case  PT_CONTINUE:
-		case  PT_KILL:
-		case  PT_DETACH:
-		case  PT_STEP:
-		case  PT_GETREGS:
-		case  PT_SETREGS:
-		case  PT_GETFPREGS:
-		case  PT_SETFPREGS:
+		case PT_READ_I:
+		case PT_READ_D:
+		case PT_WRITE_I:
+		case PT_WRITE_D:
+		case PT_CONTINUE:
+		case PT_KILL:
+		case PT_DETACH:
+		case PT_STEP:
+		case PT_GETREGS:
+		case PT_SETREGS:
+		case PT_GETFPREGS:
+		case PT_SETFPREGS:
+		case PT_BASEPAGE:
 		{
 			/*
 			 * You can't do what you want to the process if:
@@ -360,12 +361,14 @@ p_trace (short request, short pid, void *addr, long data)
 			
 			_addr = (long) addr;
 			
+#if 0
 			m = proc_addr2region (t, (long) t->base);
 			if (m)
 			{
 				if (_addr < m->len)
 					_addr += (long) t->base + 256L;
 			}
+#endif
 			
 			m = proc_addr2region (t, (long) _addr);
 			if (m)
@@ -511,6 +514,12 @@ p_trace (short request, short pid, void *addr, long data)
 				ret = process_getfpregs (t, addr);
 			
 			return ret;
+		}
+		
+		case PT_BASEPAGE:
+		{
+			*(long *) data = (long) t->base;
+			return 0;
 		}
 	}
 	
