@@ -67,8 +67,8 @@ _xhdi_mon_dispatcher:
 	move	8(a6),d2	// function number
 	cmp	#20,d2		// correct function number?
 	bcc.s	out		// no
-	mulu	#8,d2
-	lea	_xhdi_mon_dispatcher_table(pc),a1
+	lsl.l	#3,d2		// not `mulu #8,d2' :-)
+	lea	_xhdi_mon_dispatcher_table,a1
 	moveq	#-1,d0		// #ERROR
 	move.l	4(a1,d2),d0
 	move.l	d0,-4(a6)
