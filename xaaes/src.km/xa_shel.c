@@ -54,10 +54,10 @@ static const char ARGV[] = "ARGV=";
 static const int argvl = 5;
 
 #if 0
-static char *appex[16] = { ".prg", ".app", ".gtp", ".ovl", ".sys", 0 };
+static char *appex[16] = { ".prg", ".app", ".gtp", ".ovl", ".sys", NULL };
 #endif
-static char *tosex[ 8] = { ".tos", ".ttp", 0 };
-static char *accex[ 8] = { ".acc", 0 };
+static char *tosex[ 8] = { ".tos", ".ttp", NULL };
+static char *accex[ 8] = { ".acc", NULL };
 
 static bool
 is_ext(char *s, char **app)
@@ -709,7 +709,7 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				break;
 			}
 
-			/* currently: tell AES app understands AP_TERM */
+			/* notify that app understands AP_TERM */
 			case 9:
 			{
 				client->apterm = (wisgr & 1) != 0;
@@ -718,17 +718,32 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			/* Send a msg to the AES  */
 			case 10:
+			{
+				break;
+			}
 
 			/* create new thread */
 			case 20:
+			{
+			#if 0
+			#endif
+				break;
+			}
 
 			/* thread exit */
 			case 21:
+			{
+				break;
+			}
 
 			/* terminate thread */
 			case 22:
+			{
+				break;
+			}
 
 			default:
+				DIAGS(("shel_write: unknown wdoex %i", wdoex));
 				break;
 		}
 	}
@@ -1074,8 +1089,8 @@ put_env(enum locks lock, const char *cmd)
 unsigned long
 XA_shell_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	char **p = (char**)pb->addrin[0];
-	char *name = (char *)pb->addrin[1];
+	char **p = (char **)pb->addrin[0];
+	const char *name = (const char *)pb->addrin[1];
 
 	CONTROL(0,1,2)
 

@@ -4,10 +4,11 @@ XAAESDEFS += -DWIDGNAME="\"xaaeswdg.rsc\""
 XAAESDEFS += -DRSCHNAME="\"xaaes.h\""
 XAAESDEFS += -DWIDGHNAME="\"xaaeswdg.h\""
 
-XAAESDEFS += -DWDIAL=0	# implementation of wdlg_xxx 
-XAAESDEFS += -DLBOX=0	# implementation of lbox_xxx
-XAAESDEFS += -DFNTS=0	# implementation of fnts_xxx
-XAAESDEFS += -DFSLX=0	# implementation of fslx_xxx
+XAAESDEFS += -DWDIALOG_WDLG=0	# wdlg_xx() extensions
+XAAESDEFS += -DWDIALOG_LBOX=0	# lbox_xx() extensions
+XAAESDEFS += -DWDIALOG_FNTS=0	# fnts_xx() extensions
+XAAESDEFS += -DWDIALOG_FSLX=0	# fslx_xx() extensions
+XAAESDEFS += -DWDIALOG_PDLG=0	# pdlg_xx() extensions
 
 
 ifeq ($(xaaes),deb)
