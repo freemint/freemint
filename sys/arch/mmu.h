@@ -9,6 +9,7 @@
 # define _m68k_mmu_h
 
 # include "mint/mint.h"
+# include "mint/arch/mmu.h"
 
 
 #ifndef MMU040
