@@ -35,7 +35,8 @@
 # define _info_h
 
 # include "mint/mint.h"
-
+# include "mint/fcntl.h"
+# include "mint/config.h"
 
 extern const char ostype    [];
 extern const char osrelease [];
@@ -124,6 +125,35 @@ extern const char *ERR_dma_end_on_unlocked_handle;
 extern const char *ERR_dma_block_on_inv_handle;
 extern const char *ERR_dma_deblock_on_inv_handle;
 extern const char *ERR_dma_addroottimeout;
+
+/* dosfile.c */
+# if O_GLOBAL
+extern const char *MSG_oglobal_denied;
+extern const char *MSG_global_handle;
+# endif
+
+/* fasttext.c */
+# ifdef FASTTEXT
+extern const char *ERR_ftxt_insuff_mem_for_table;
+extern const char *MSG_ftxt_insuff_mem_for_scroll;
+# endif
+
+/* filesys.c */
+extern const char *ERR_fsys_inv_fdcwd;
+extern const char *MSG_fsys_files_were_open;
+extern const char *MSG_fsys_syncing;
+extern const char *MSG_fsys_syncing_done;
+
+/* gmon.c */
+# ifdef PROFILING
+extern const char *MSG_gmon_out_of_mem;
+extern const char *MSG_gmon_fptr_fail;
+extern const char *MSG_gmon_out_fail;
+extern const char *MSG_gmon_out_written;
+extern const char *MSG_gmon_profiler_on;
+extern const char *MSG_gmon_profiler_off;
+extern const char *MSG_gmon_enable_error;
+# endif
 
 /* init.c */
 extern const char *MSG_init_getname;

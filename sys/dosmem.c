@@ -320,6 +320,11 @@ m_free (long block)
 	 * XXX I don't understand that
 	 *     in my eyes the process can't access this region as this region
 	 *     isn't mapped to the process address space (page_table)
+	 *
+	 *     Right, this code seems to allow anyone to release memory
+	 *     reserved for TSR programs, which had called Ptermres().
+	 *     Provided the caller knows the address. Am I wrong?
+	 *
 	 */
 	for (i = mem->num_reg - 1; i >= 0; i--)
 	{
