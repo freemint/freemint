@@ -1,9 +1,5 @@
 /* GEM Resource C Source */
 
-#include <portab.h>
-#include <aes.h>
-#include "COPS_RS.H"
-
 #if !defined(WHITEBAK)
 #define WHITEBAK    0x0040
 #endif
@@ -32,7 +28,7 @@ TEDINFO rs_tedinfo[] =
   "\0",
   "\0",
   SMALL, 0, TE_LEFT , 0x1100, 0, -1, 39, 1,
-  "Control Panel Server \372 Version 1.08",
+  "Control Panel Server \372 Version 1.09",
   "\0",
   "\0",
   SMALL, 0, TE_LEFT , 0x1100, 0, -1, 36, 1,

@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr COPS_RS */
+/* Resource Datei Indizes fuer COPS_RS */
 
 #define GNL_POPUP        0   /* Formular/Dialog */
 #define PG_ABOUT         1   /* STRING in Baum GNL_POPUP */
