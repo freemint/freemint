@@ -130,11 +130,10 @@ new_client(enum locks lock, struct xa_client *client)
 	DIAG((D_appl, NULL, "Init client '%s' pid=%d",
 		client->proc_name, client->p->pid));
 
-	//client->ce_head = 0;
-	//client->ce_tail = 0;
 	client->cevnt_head = 0;
 	client->cevnt_tail = 0;
 	client->cevnt_count = 0;
+	client->rdrw_msg = 0;
 
 	DIAGS(("new_client: checking shel info (pid %i)", client->p->pid));
 	{
@@ -298,17 +297,40 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	remove_wind_refs(window_list, client);
 	remove_wind_refs(S.closed_windows.first, client);
 
-	/* Go through and check that all windows belonging to this client are closed */
+	/*
+	 * Go through and check that all windows belonging to this
+	 * client are closed
+	*/
 	remove_windows(lock, client);
 
 	top_owner = window_list->owner;
 
-	/* Dispose of any pending messages for the client */
+	/*
+	 * Dispose of any pending messages for the client
+	*/
 	while (client->msg)
 	{
 		struct xa_aesmsg_list *nm = client->msg->next;
-		free(client->msg);
+		kfree(client->msg);
 		client->msg = nm;
+	}
+	/*
+	 * WM_REDRAW messages is separate from other messages
+	*/
+	while (client->rdrw_msg)
+	{
+		struct xa_aesmsg_list *nm = client->rdrw_msg->next;
+		kfree(client->rdrw_msg);
+		client->rdrw_msg = nm;
+	}
+	/*
+	 * Dispose of any pending client events
+	*/
+	while (client->cevnt_head)
+	{
+		struct c_event *a = client->cevnt_head->next;
+		kfree(client->cevnt_head);
+		client->cevnt_head = a;
 	}
 
 	if (client->attach)
@@ -328,7 +350,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	app_in_front(lock, top_owner);
 
-	/* If the client forgot to free its resources, we do it for him. */
+	/*
+	 * If the client forgot to free its resources, we do it for him.
+	*/
 	DIAG((D_appl, NULL, "Freeing client xmalloc base"));
 
 	/* free all blocks allocated on behalf of the client. */
