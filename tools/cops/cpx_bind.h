@@ -46,6 +46,7 @@ void cpx_close(CPX_DESC *cpx_desc, short flag);
 
 /* the cpx context magics (rewritten in C from the asm parts) */
 void a_call_main(void);
+void a_call_return(void);
 short new_context(CPX_DESC *cpx_desc);
 void switch_context(CPX_DESC *cpx_desc);
 

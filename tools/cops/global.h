@@ -45,7 +45,7 @@
 #define between(x,a,b)	((x >= a) && (x <= b))
 #define	ABS(a)		((a) < 0 ? -(a) : (a))
 
-#if 1
+#if 0
 #define DEBUG(x) printf x, fflush(stdout)
 #else
 #define DEBUG(x)
