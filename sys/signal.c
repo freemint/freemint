@@ -347,7 +347,7 @@ top:
 /*
  * raise: cause a signal to be raised in the current process
  */
-void
+void _cdecl
 raise (ushort sig)
 {
 	post_sig (curproc, sig);
