@@ -174,6 +174,8 @@ static char *keytab_buffer = NULL;
 static long keytab_size = 0;
 static MEMREGION *user_keytab_region = NULL;
 
+struct keytab *get_keytab(void) { return user_keytab; }
+
 /* Routine called after the user hit Ctrl/Alt/Del
  */
 static void
