@@ -667,6 +667,32 @@ free_limits (struct proc *p)
 
 /* p_ext */
 
+void
+free_ext(struct proc *p)
+{
+	struct proc_ext *p_ext;
+
+	p_ext = p->p_ext;
+	p->p_ext = NULL;
+
+	while (p_ext)
+	{
+		struct proc_ext *next = p_ext->next;
+
+		if (--p_ext->links <= 0)
+		{
+			/* call release callback */
+			if (p_ext->cb_vector && p_ext->cb_vector->release)
+				(*p_ext->cb_vector->release)(p_ext->data);
+
+			kfree(p_ext->data);
+			kfree(p_ext);
+		}
+
+		p_ext = next;
+	}
+}
+
 void * _cdecl
 proc_lookup_extension(struct proc *p, long ident)
 {
@@ -771,7 +797,6 @@ proc_detach_extension(struct proc *p, long ident)
 		p_ext = &(check->next);
 	}
 }
-
 
 void
 proc_ext_on_exit(struct proc *p, int code)

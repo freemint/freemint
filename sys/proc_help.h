@@ -96,6 +96,8 @@ void free_limits (struct proc *p);
 
 /* P_ext */
 
+void free_ext(struct proc *p);
+
 void *_cdecl proc_lookup_extension(struct proc *, long ident);
 void *_cdecl proc_attach_extension(struct proc *, long ident, unsigned long size, struct module_callback *);
 void  _cdecl proc_detach_extension(struct proc *, long ident);
