@@ -814,7 +814,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 void
 init_unicode(void)
 {
-	char name[32];
+	char name[64];
 	FILEPTR *fp;
 	XATTR xa;
 	long ret;
@@ -824,29 +824,28 @@ init_unicode(void)
 
 	ksprintf(name, sizeof(name), "%sunicode.tbl", sysdir);
 
+	ret = do_open(&fp, name, O_RDONLY, 0, &xa);
+	if (ret == 0)
+	{
 # ifdef VERBOSE_BOOT
-	boot_printf(MSG_unitable_loading, name);
+		boot_printf(MSG_unitable_loading, name);
 # endif
 
-	ret = do_open(&fp, name, O_RDONLY, 0, &xa);
-	if (!ret)
-	{
 		ret = load_unicode_table(fp, name, xa.size);
 		do_close(rootproc, fp);
 
 		/* print success message */
 # ifdef VERBOSE_BOOT
-		boot_printf(MSG_init_done);
+		if (ret == 0)
+			boot_printf(MSG_init_done);
+		else
+			boot_printf(MSG_init_error, ret);
 # endif
 	}
 	else
 	{
 		fp->links = 0;		/* suppress complaints */
 		FP_FREE(fp);
-
-# ifdef VERBOSE_BOOT
-		boot_printf(MSG_init_error, ret);
-# endif
 	}
 }
 
