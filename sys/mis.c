@@ -1396,7 +1396,7 @@ execute(char *cmdline)
 	}
 
 	/* Construct the proper ARGV stuff now */
-	argv = (char **)m_xalloc(argc * sizeof(long), 3);
+	argv = (char **)m_xalloc(argc * sizeof(void *), 3);
 	if (!argv)
 		return ENOMEM;
 
