@@ -182,8 +182,9 @@ static short click_y;
 static short click_state;
 static short click_cstate;
 static short click_count;
-static short l_clicks;
-static short r_clicks;
+static char  clicks[16];
+//static short l_clicks;
+//static short r_clicks;
 
 static short timeout;
 static short dc_time;
@@ -279,7 +280,7 @@ cbutv(void)
 	pak_tail->len		= sizeof(struct mouse_pak);
 	pak_tail->ty		= BUT_PAK;
 	pak_tail->t.but.state	= (unsigned char)sample_butt;
-	pak_tail->t.but.time	= (short)t; //*(short *)(SYSTIMER+2);
+	pak_tail->t.but.time	= (short)t;
 	pak_tail->x		= sample_x;
 	pak_tail->y		= sample_y;
 	pak_tail->dbg		= t1; //0;
@@ -308,22 +309,6 @@ cwhlv(void)
 	md.dbg1		= 0;
 	md.dbg2		= 0;
 	(*ainf->wheel)(&moose_aif, &md);
-#if 0
-	pak_tail->len		= sizeof(struct mouse_pak);
-	pak_tail->ty		= WHL_PAK;
-	pak_tail->t.whl.wheel	= (unsigned char)sample_wheel;
-	pak_tail->t.whl.clicks	= sample_wclicks;
-	pak_tail->x		= sample_x;
-	pak_tail->y		= sample_y;
-	pak_tail->dbg		= 0;
-
-	pak_tail++;
-
-	if (pak_tail > pak_end)
-		pak_tail = (struct mouse_pak *)&pak_buffer;
-
-	inbuf += sizeof(struct mouse_pak);
-#endif
 }
 
 void
@@ -351,7 +336,6 @@ timer_handler(void)
 {
 	if (moose_inuse)
 	{
-		
 		if (eval_timegap)
 			eval_timegap--;
 
@@ -365,29 +349,31 @@ timer_handler(void)
 			{
 				if (pak_head->ty == BUT_PAK)
 				{	
-					short tm = pak_head->t.but.time;
-					short s = (unsigned char)pak_head->t.but.state;
-
+					register short tm = pak_head->t.but.time;
+					register unsigned short s = (unsigned char)pak_head->t.but.state;
 					time_between = pak_head->dbg;
 
 					if (s != last_state) /* We skip identical button state events */
 					{
-						last_state = s;
+						register short i;
+						register char *c = clicks;
 
 						if (timeout)
 						{
+							register unsigned short ls = last_state;
 						/* Add clicks to a not-yet-timed-out button packet */
+							last_state = s;
 							click_state |= s;
 							click_cstate = s;
-							if (s & 1)
+							for (i = 0; i < 16; i++)
 							{
-								l_clicks++;
-								click_count++;
-							}
-							if (s & 2)
-							{
-								r_clicks++;
-								click_count++;
+								if ((s & 1) && !(ls & 1))
+								{
+									c[i]++;
+									click_count++;
+								}
+								s  >>= 1;
+								ls >>= 1;
 							}
 							if (click_count > 1)
 								timeout += 10;	/* extend timeout, so a triple-click becomes easier */
@@ -399,6 +385,7 @@ timer_handler(void)
 						/* NEW PACKET */
 							click_state	= s;
 							click_cstate	= s;
+							last_state	= s;
 							click_x		= pak_head->x;
 							click_y		= pak_head->y;
 
@@ -408,15 +395,15 @@ timer_handler(void)
 								last_time	= tm;
 								timeout		= dc_time;
 
-								if (s & 1)
+								for (i = 0; i < 16; i++)
 								{
-									l_clicks = 1;
-									click_count++;
-								}
-								if (s & 2)
-								{
-									r_clicks = 1;
-									click_count++;
+									if (s & 1)
+									{
+										c[i]++;
+										click_count++;
+									}
+								
+									s >>= 1;
 								}
 							}
 							else
@@ -447,6 +434,7 @@ static void
 do_button_packet(void)
 {
 	struct moose_data md;
+	register unsigned long *s, *d;
 
 	md.l		= sizeof(struct moose_data);
 	md.ty		= MOOSE_BUTTON_PREFIX;
@@ -458,14 +446,14 @@ do_button_packet(void)
 	md.cstate	= click_cstate;
 	md.clicks	= click_count;
 	md.kstate	= 0;		/* Not set here -- will change*/
-	md.iclicks[0]	= l_clicks;
-	md.iclicks[1]	= r_clicks;
+	s = (unsigned long *)md.iclicks;
+	d = (unsigned long *)clicks;
+	*s++ = *d, *d++ = 0;
+	*s++ = *d, *d++ = 0;
+	*s++ = *d, *d++ = 0;
+	*s++ = *d, *d++ = 0;
 	*(long*)&md.dbg1 = time_between;
-
 	(*ainf->button)(&moose_aif, &md);
-
-	l_clicks	= 0;
-	r_clicks	= 0;
 	click_count	= 0;
 	timeout		= 0;
 }
@@ -519,8 +507,8 @@ moose_open (struct adif *a)
 	dc_time		= 50;
 	pkt_timegap	= 3;
 	click_count	= 0;
-	l_clicks	= 0;
-	r_clicks	= 0;
+	for (i = 0; i < 16; i++) clicks[i] = 0;
+
 	timeout		= 0;
 
 	VBI_entry = (long *) *(long *)SYSVBI;
