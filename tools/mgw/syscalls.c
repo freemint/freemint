@@ -145,7 +145,7 @@ struct st_sendto_param
 	short sfd;
 	void *buf;
 	size_t buflen;
-	unsigned flags;
+	unsigned short flags;
 	struct sockaddr *addr;
 	short addrlen;
 };
@@ -690,13 +690,30 @@ short _cdecl
 st_connect (struct st_connect_param p)
 {
 	long r;
+	extern long compatibility;
 	
 	DEBUG (("st_connect [%i, %i]: addr %p addrlen %i\n", p.sfd, map_sfd (p.sfd), p.addr, p.addrlen));
 	
 	r = Fconnect (map_sfd (p.sfd), p.addr, p.addrlen);
-	
+
 	DEBUG (("st_connect [%i, %i]: -> %li (%i)\n", p.sfd, map_sfd (p.sfd), r, r_map (r)));
-	return r_map (r);
+
+	if (compatibility)
+	{
+		r = r_map(r);
+		if (compatibility <= 0x00010007)
+		{
+			if (r == -ST_EISCONN)
+				r = 0;
+			else
+				if (r == -ST_EALREADY)
+					r = -ST_EINPROGRESS;
+		}
+		
+		return r;
+	}
+	else	
+		return r_map (r);
 }
 
 /* --------------------
@@ -859,7 +876,7 @@ check_exception (fd_set *mint_fds, st_fd_set *st_fds)
    | Map FDSET file handles |
    -------------------------- */
 static short
-remap_fdset (fd_set *mint_fds, st_fd_set *st_fds, char *type)
+remap_fdset (fd_set *mint_fds, st_fd_set *st_fds, char *type, int is_read)
 {
 	short i, m;
 	
@@ -872,18 +889,26 @@ remap_fdset (fd_set *mint_fds, st_fd_set *st_fds, char *type)
 	{
 		if (FD_ISSET (i, mint_fds))
 		{
-			long r;
-			char c;
-			
-			r = Frecvfrom (i, &c, 1, MSG_PEEK, 0, 0);
-			DEBUG (("[Frecvfrom = %li] ", r));
-			
-			if (r != 0)
+			if (is_read)
 			{
-				DEBUG (("# %i -> %i ", i, i));
-			
-				ST_FD_SET (i, st_fds);
-				m = i;
+				long r;
+				char c;
+				
+				r = Frecvfrom (i, &c, 1, MSG_PEEK, 0, 0);
+				DEBUG (("[Frecvfrom = %li] ", r));
+				
+				if (r != 0)
+				{
+					DEBUG (("# %i -> %i ", i, i));
+				
+					ST_FD_SET (i, st_fds);
+					m = i;
+				}
+			}
+			else
+			{
+			ST_FD_SET (i, st_fds);
+			m = i;
 			}
 		}
 	}
@@ -965,17 +990,26 @@ st_select (struct st_select_param p)
 	
 	DEBUG (("select returned %li\n", r));
 	
+	if (!r)
+	{
+	/* if 0 is returned the structures are not cleared.
+	   This will make us problems, during remapping it. 
+	   So we clear it before... */
+	FD_ZERO (&rfds);
+	FD_ZERO (&wfds);
+	}
+
 	r = 0;
 	if (rptr)
 	{
-		j = remap_fdset (rptr, p.readfds, "readfds");
+		j = remap_fdset (rptr, p.readfds, "readfds", 1);
 		if (j > r)
 			r = j;
 	}
 	
 	if (wptr)
 	{
-		j = remap_fdset (wptr, p.writefds, "writefds");
+		j = remap_fdset (wptr, p.writefds, "writefds", 0);
 		if (j > r)
 			r = j;
 	}

@@ -76,7 +76,8 @@ typedef struct
 # define MGW_GETHOSTNAME	3
 # define MGW_GETSERVBYNAME	4
 # define MGW_GETSERVBYPORT	5
-
+# define MGW_GETUNLOCK 		6
+# define MGW_NEWCMDLINE		7
 
 /*
  * Adapted part of STSOCKET.H
