@@ -448,7 +448,10 @@ L_noflush:
 	move.l	d0,a0
 	jsr	(a0)			// go do the call
 
-out:	move.l	_curproc,a0
+out:	moveq	#0,d2
+out_select:
+
+	move.l	_curproc,a0
 	move.l	d0,P_SYSCTXT+C_D0(a0)	// set d0 in the saved context
 	move.w	P_SYSCTXT+C_SR(a0),d0	// get saved status register
 
@@ -622,7 +625,8 @@ norm_trap2:
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 trap2_out:
-	bra	out
+	moveq	#1,d2
+	bra	out_select
 
 	// Call the VDI
 	// long VDI_dispach( VDIpb *pb );
