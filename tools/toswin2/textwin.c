@@ -1,4 +1,20 @@
-
+/* This is the mother of all bastard code.  It mixes character (cell)
+ * calculations with pixel shuffling and the result makes every sane
+ * human being copiously vomit!
+ *
+ * A much better organization would split this monster up into three
+ * different classes:  A character grid that exposes a vertically
+ * scrollable region, keeps track of the cursor position and so on.
+ * Another class that transforms this grid into the interiors of the
+ * window, always relative to the window origin.  And finally the
+ * class that transforms the relative data for the workspace to actual
+ * screen coordinates, takes window decorations into account and
+ * interacts with the window system.
+ *
+ * This would probably even be faster, because it would be a lot easier
+ * to stuff multiple update operations into one single call to the
+ * 
+ */
 #include <mintbind.h>
 #include <signal.h>
 #include <sys/ioctl.h>
