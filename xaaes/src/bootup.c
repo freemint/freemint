@@ -281,10 +281,8 @@ cleanup(void)
 		vex_motv(C.P_handle, svmotv, &m);
 		vex_butv(C.P_handle, svbutv, &b);
 
-#if XXX
-		//if (svwhlv)
-		//	vex_whlv(C.P_handle, svwhlv, &h);
-#endif
+		if (svwhlv)
+			vex_wheelv(C.P_handle, svwhlv, &h);
 	}
 
 	Psignal(SIGCHLD, 0L);
@@ -543,14 +541,12 @@ init_moose(void)
 		vex_motv(C.P_handle, vecs_com.motv, &svmotv);
 		vex_butv(C.P_handle, vecs_com.butv, &svbutv);
 
-#if XXX
-		//if (vecs_com.whlv)
-		//{
-		//	vex_whlv(C.P_handle, vecs_com.whlv, &svwhlv);
-		//	fdisplay(loghandle, true, "Wheel support present\n");
-		//}
-		//else
-#endif
+		if (vecs_com.whlv)
+		{
+			vex_wheelv(C.P_handle, vecs_com.whlv, &svwhlv);
+			fdisplay(loghandle, true, "Wheel support present\n");
+		}
+		else
 			fdisplay(loghandle, true, "No wheel support!!\n");
 	}
 
@@ -915,10 +911,8 @@ BTRACE(23);
 	Psemaphore(0, ENV_SEMA, 0);
 	Psemaphore(0, PENDING_SEMA, 0);
 
-	/* Print a text boot message */
-
 BTRACE(24);
-	lcfg.mint = Ssystem(S_OSVERSION,0,0);
+	lcfg.mint = Ssystem(S_OSVERSION, 0, 0);
 
 BTRACE(124);
 #if MEMORY_PROTECTION
@@ -928,6 +922,7 @@ BTRACE(124);
 #endif
 
 BTRACE(224);
+	/* Print a text boot message */
 	bootmessage(lcfg.mint);
 BTRACE(25);
 
