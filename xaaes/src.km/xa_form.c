@@ -148,6 +148,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 
 				client = wt->owner;
 				client->waiting_pb->intout[0] = f - ALERT_BUT1 +1;
+				client->usr_evnt = 1;
 				Unblock(client, XA_OK, 7);
 			}
 
@@ -1118,6 +1119,7 @@ exit_form_do(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 	delete_window(lock, wind);
 
 	/* Write success to clients reply pipe to unblock the process */
+	client->usr_evnt = 1;
 	Unblock(client, XA_OK, 8);
 }
 
@@ -1138,6 +1140,7 @@ exit_form_dial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 	remove_widget(lock, wind, XAW_TOOLBAR);
 
 	/* Write success to clients reply pipe to unblock the process */
+	client->usr_evnt = 1;
 	Unblock(client, XA_OK, 9);
 }
 
@@ -1154,6 +1157,7 @@ classic_exit_form_do(enum locks lock, struct xa_window *wind, struct xa_widget *
 	client->fmd.mousepress = NULL;
 
 	/* Write success to clients reply pipe to unblock the process */
+	client->usr_evnt = 1;
 	Unblock(client, XA_OK, 10);
 }
 
@@ -1418,6 +1422,7 @@ key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt
 			struct xa_client *client = wt->owner;
 			client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
 			/* Write success to clients reply pipe to unblock the process */
+			client->usr_evnt = 1;
 			Unblock(client, XA_OK, 11);
 		}
 	}

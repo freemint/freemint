@@ -63,11 +63,58 @@
  * We also get keyboard & mouse input data here.
  */
 
+int
+dispatch_cevent(struct xa_client *client)
+{
+	void (*func)(enum locks, struct c_event *);
+	struct c_event *ce;
+	int t;
+
+	t = client->ce_tail;
+	if (t == client->ce_head)
+		return 0;
+	
+	func = client->ce[t].funct;
+	ce = &client->ce[t];
+	t++;
+	t &= MAX_CEVENTS;
+	DIAG((D_kern, client, "Dispatch evnt %d, nxt %d (head %d) for %s", client->ce_tail, t, client->ce_head, client->name));
+	client->ce_tail = t;
+	(*func)(0, ce);
+	return 1;
+}
+		
+
 void
 Block(struct xa_client *client, int which)
 {
-        DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
-	sleep(IO_Q, (long)client);
+
+	/*
+	 * Get rid of any event queue
+	*/
+	while (dispatch_cevent(client))
+	{
+		if (client->usr_evnt)
+		{
+			cancel_evnt_multi(client, 1);
+			return;
+		}
+	}
+	/*
+	 * Getting here if no more client events are in the queue
+	 * Looping around doing client events until a user event
+	 * happens.. that is, we've got something to pass back to
+	 * the application.
+	*/
+	while (!client->usr_evnt)
+	{
+		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+		sleep(IO_Q, (long)client);
+		if ((client->waiting_for & MU_TIMER) && !client->timeout)
+			return;
+		dispatch_cevent(client);
+	}
+	cancel_evnt_multi(client, 1);
 }
 
 void
@@ -84,6 +131,10 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 		cancel_evnt_multi(client,1);
 	}
 }
+
+		
+		
+
 
 static const char alert_pipe_name[] = "u:\\pipe\\alert";
 static const char KBD_dev_name[] = "u:\\dev\\console";

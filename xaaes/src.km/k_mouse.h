@@ -42,6 +42,8 @@ struct pending_button
 };
 extern struct pending_button pending_button;
 
+void add_pending_button(enum locks lock, struct xa_client *client);
+
 struct xa_client *find_focus(bool *waiting, struct xa_client **locked_client);
 bool is_bevent(int gotbut, int gotcl, const short *o, int which);
 

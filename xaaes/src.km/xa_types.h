@@ -290,6 +290,22 @@ struct fmd
 	RECT r;				/* The rectangle for the postponed dialogue window */
 };
 
+#define CEVNT_MOVEMENT	1
+#define CEVNT_BUTTON	2
+#define CEVNT_MENUSTART 4
+
+struct c_event
+{
+	void			(*funct)(enum locks, struct c_event *);
+	struct xa_client	*client;
+	void			*ptr1;
+	void			*ptr2;
+	int			d0;
+	int			d1;
+	RECT			r;
+	struct	moose_data	md;
+};
+
 /* Main client application descriptor */
 struct xa_client
 {
@@ -354,6 +370,12 @@ struct xa_client
 	int xdrive;
 	Path xpath;
 	struct options options;		/* Individual AES options. */
+
+#define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
+	int	usr_evnt;
+	int	ce_head;
+	int	ce_tail;
+	struct c_event ce[MAX_CEVENTS + 1];
 };
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);

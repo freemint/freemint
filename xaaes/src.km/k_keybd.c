@@ -146,7 +146,7 @@ keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key)
 		DIAG((D_k, NULL, "evnt_keybd keyto %s: 0x%04x",
 			c_owner(client), key->aes));	
 	}
-
+	client->usr_evnt = 1;
 	Unblock(client, XA_OK, 6);
 }
 
