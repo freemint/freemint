@@ -8,11 +8,12 @@
 #                                                                              
 $f = 'genmagic.o';
 $firstsym = 'B_LOWTPA';
-$val = 'A28 N';
+$val = 'Z28N';
 #       const char name[28];
 #       long value;                                                            
 
-open(M, $f) || die "open failed";
+sysopen(M, $f, O_RDONLY) || die "open failed";
+binmode(M,':raw');
 $offset = 0;
 while (sysread(M, $d, length(pack( $val, 0)))) {
     ($name, $valx) = unpack( $val, $d );
@@ -23,8 +24,8 @@ while (sysread(M, $d, length(pack( $val, 0)))) {
 
 $name =~ /^$firstsym$/s || die "symbols not found";
 sysseek(M, $offset, 0) || die "can't seek";
-while (sysread(M, $d, length(pack( "A28 N", 0)))) {
-    ($name, $valx) = unpack( "A28 N", $d);
+while (sysread(M, $d, length(pack( $val, 0)))) {
+    ($name, $valx) = unpack( $val, $d);
     last if !$name;
     print "#define $name $valx\n";
 }
