@@ -238,8 +238,8 @@ make_real_cmdline (PROC *p)
 	raw_argv = kmalloc ((argc + 1) * sizeof (char *));
 	if (raw_argv == NULL)
 	{
-		DEBUG (("make_real_cmdline: fatal: out of memory"));
 		kfree (cmdline);
+		DEBUG (("make_real_cmdline: fatal: out of memory"));
 		return ENOMEM;
 	}
 	
@@ -392,8 +392,9 @@ make_real_cmdline (PROC *p)
 				TRACE (("make_real_cmdline: zero out argv[%lu] (%s)", opt, raw_argv[opt]));
 				if (from1 == NULL)
 				{
-					    from1 = raw_argv[opt];
-					    while (*from1) from1++;
+					from1 = raw_argv[opt];
+					while (*from1)
+						from1++;
 					from1 += 2;
 				}
 				
@@ -438,6 +439,7 @@ make_real_cmdline (PROC *p)
 		kfree (cmdline);
 		
 		DEBUG (("make_real_cmdline: fatal: out of memory"));
+		return ENOMEM;
 	}
 	
 	buffer_length = real_length + sizeof argc + (argc + 1) * sizeof raw_argv[0];
