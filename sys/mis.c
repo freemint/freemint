@@ -15,7 +15,7 @@
  *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -51,24 +51,39 @@
 
 # include <stdarg.h>
 
+# undef _SHELL_THREAD
+
 # include "libkern/libkern.h"
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
-# include "mint/mem.h"		/* F_FASTLOAD et contubernales */
-# ifdef DEBUG_INFO
-# include "mint/proc.h"		/* curproc (for DEBUG) */
-# endif
 # include "mint/signal.h"	/* SIGCHLD etc. */
 # include "mint/stat.h"		/* struct stat */
 
 # include "arch/cpu.h"		/* setstack() */
-# include "arch/startup.h"	/* _base */
-# include "arch/syscall.h"	/* Pexec(), Cconrs() et cetera */
 
 # include "cnf.h"		/* init_env */
-# include "dosmem.h"		/* m_free() */
+# include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
 # include "info.h"		/* national stuff */
 # include "k_exec.h"		/* sys_pexec() */
+
+# ifdef DEBUG_INFO
+# include "mint/proc.h"		/* curproc (for DEBUG) */
+# endif
+
+# ifdef _SHELL_THREAD
+# include "arch/startup.h"	/* _base */
+# include "console.h"		/* c_conin(), c_conrs() */
+# include "dos.h"		/* p_umask(), p_domain() */
+# include "dosdir.h"		/* d_opendir(), d_readdir(), d_closedir(), f_symlink(), f_stat64(), ...*/
+# include "dosfile.h"		/* f_write() */
+# include "dossig.h"		/* p_kill() */
+# include "k_kthread.h"		/* kthread_create(), kthread_exit() */
+# include "proc.h"		/* struct proc */
+# include "time.h"
+# else
+# include "arch/syscall.h"	/* Pexec(), Cconrs() et cetera */
+# include "mint/mem.h"		/* F_FASTLOAD et contubernales */
+# endif
 
 # include "mis.h"
 
@@ -76,15 +91,15 @@
 # define STDOUT		1
 # define STDERR		2
 
+# ifndef _SHELL_THREAD
 # define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
+# endif
 # define SHELL_UMASK	~(S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
 # define SH_VER_MAIOR	1
 # define SH_VER_MINOR	0
 
 # define COPYCOPY	"(c) 2003 Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
-
-# define MISSING_ARG	MSG_shell_missing_arg
 
 # define SHELL_ARGS	1024L		/* number of pointers in the argument vector table (i.e. 4K) */
 # define SHELL_MAXPATH	1024L		/* max length of a pathname */
@@ -99,9 +114,16 @@
 # define LINELEN	254
 
 /* Some help for the optimizer */
-static void shell(void) __attribute__((noreturn));
+static EXITING shell(void) NORETURN;
+# ifdef _SHELL_THREAD
+static void shell_start(void);
+# endif
 
 /* Global variables */
+# ifdef _SHELL_THREAD
+static struct proc *p;
+static long stack;
+# endif
 static BASEPAGE *shell_base;
 static short xcommands;		/* if 1, the extended command set is active */
 
@@ -117,7 +139,11 @@ shell_fprintf(long handle, const char *fmt, ...)
 	vsprintf(buf, sizeof (buf), fmt, args);
 	va_end(args);
 
+# ifdef _SHELL_THREAD
+	f_write(handle, strlen(buf), buf);
+# else
 	Fwrite(handle, strlen(buf), buf);
+# endif
 }
 
 INLINE void
@@ -211,7 +237,11 @@ shell_delenv(const char *strng)
 
 	*var = 0;
 
+# ifdef _SHELL_THREAD
+	m_shrink(0, (long)shell_base->p_env, env_size(shell_base->p_env));
+# else
 	Mshrink((void *)shell_base->p_env, env_size(shell_base->p_env));
+# endif
 }
 
 /* XXX try to avoid reallocation whenever possible */
@@ -220,22 +250,21 @@ shell_setenv(const char *var, char *value)
 {
 	char *env_str = shell_base->p_env;
 	char *new_env, *old_var, *es, *ne;
-	long new_size, varlen;
+	long new_size;
 
-	varlen = strlen(var);
-	new_size = env_size(env_str);
-	new_size += strlen(value);
-
+	new_size = env_size(env_str) + strlen(value) + 2;	/* '=' and trailing zero */
 	old_var = _mint_getenv(shell_base, var);
 
 	if (old_var)
 		new_size -= strlen(old_var);	/* this is the VALUE of the var */
 	else
-		new_size += varlen;		/* this is its NAME */
+		new_size += strlen(var);	/* this is its NAME */
 
-	new_size += 2;				/* '=' and trailing zero */
-
+# ifdef _SHELL_THREAD
+	new_env = (char *)m_xalloc(new_size, 3);
+# else
 	new_env = (char *)Mxalloc(new_size, 3);
+# endif
 	if (new_env == NULL)
 		return;
 
@@ -262,7 +291,11 @@ shell_setenv(const char *var, char *value)
 
 	shell_base->p_env = new_env;
 
+# ifdef _SHELL_THREAD
+	m_free((long)env_str);
+# else
 	Mfree(env_str);
+# endif
 }
 
 /* Split command line into separate strings, put their pointers
@@ -362,8 +395,7 @@ execvp(char **argv)
 	/* Calculate the size of the environment */
 	var = shell_base->p_env;
 
-	count = env_size(var);
-	count += sizeof("ARGV=NULL:");		/* this is 11 bytes */
+	count = env_size(var) + sizeof("ARGV=NULL:");
 
 	/* Add space for the ARGV strings.
 	 */
@@ -372,7 +404,11 @@ execvp(char **argv)
 
 	count <<= 1;				/* make this twice as big (will be shrunk later) */
 
+# ifdef _SHELL_THREAD
+	new_env = (char *)m_xalloc(count, 3);
+# else
 	new_env = (char *)Mxalloc(count, 3);
+# endif
 
 	if (!new_env)
 		return -40;
@@ -433,7 +469,11 @@ execvp(char **argv)
 
 	*new_var = 0;
 
+# ifdef _SHELL_THREAD
+	(void)m_shrink(0, (long)new_env, env_size(new_env));
+# else
 	(void)Mshrink((void *)new_env, env_size(new_env));
+# endif
 
 	/* Since crunch() evaluates some arguments, we have now to
 	 * re-create the old GEMDOS style command line string.
@@ -485,11 +525,19 @@ execvp(char **argv)
 			strcat(npath, "/");
 		strcat(npath, argv[0]);
 
+# ifdef _SHELL_THREAD
+		r = sys_pexec(0, npath, oldcmd, new_env);
+# else
 		r = Pexec(0, npath, oldcmd, new_env);
+# endif
 
 	} while (*path && r < 0);
 
+# ifdef _SHELL_THREAD
+	m_free((long)new_env);
+# else
 	Mfree(new_env);
+# endif
 
 	return r;
 }
@@ -552,15 +600,27 @@ sh_ls(long argc, char **argv)
 		}
 	}
 
+# ifdef _SHELL_THREAD
+	handle = d_opendir(dir, 0);
+# else
 	handle = Dopendir(dir, 0);
+# endif
 	if (handle < 0)
 		return handle;
 
+# ifdef _SHELL_THREAD
+	t_gettimeofday(&tv, NULL);
+# else
 	Tgettimeofday(&tv, NULL);
+# endif
 
 	do
 	{
+# ifdef _SHELL_THREAD
+		r = d_readdir(sizeof(entry), handle, entry);
+# else
 		r = Dreaddir(sizeof(entry), handle, entry);
+# endif
 
 		if (r == 0)
 		{
@@ -569,13 +629,20 @@ sh_ls(long argc, char **argv)
 			strcat(path, entry + sizeof(long));
 
 			/* `/bin/ls -l' doesn't dereference links, so we don't either */
+# ifdef _SHELL_THREAD
+			s = f_stat64(1, path, &st);
+# else
 			s = Fstat64(1, path, &st);
-
+# endif
 			if (s == 0)
 			{
 				if (S_ISLNK(st.mode))
 				{
+# ifdef _SHELL_THREAD
+					s = f_readlink(sizeof(link), link, path);
+# else
 					s = Freadlink(sizeof(link), link, path);
+# endif
 					if (s == 0)
 						dos2unix(link);
 				}
@@ -658,7 +725,11 @@ sh_ls(long argc, char **argv)
 		}
 	} while (r == 0);
 
+# ifdef _SHELL_THREAD
+	d_closedir(handle);
+# else
 	Dclosedir(handle);
+# endif
 
 	return 0;
 }
@@ -692,11 +763,19 @@ sh_cd(long argc, char **argv)
 			newdir = "/";
 	}
 
+# ifdef _SHELL_THREAD
+	r = d_setpath(newdir);
+# else
 	r = Dsetpath(newdir);
+# endif
 
 	if (r == 0)
 	{
+# ifdef _SHELL_THREAD
+		d_getcwd(cwd, 0, sizeof(cwd));
+# else
 		Dgetcwd(cwd, 0, sizeof(cwd));
+# endif
 
 		if (*cwd == 0)
 			strcpy(cwd, "/");
@@ -724,14 +803,18 @@ sh_chgrp(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MISSING_ARG);
+		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
 
 	fname = argv[2];
 
+# ifdef _SHELL_THREAD
+	r = f_stat64(0, fname, &st);
+# else
 	r = Fstat64(0, fname, &st);
+# endif
 	if (r < 0)
 		return r;
 
@@ -740,7 +823,11 @@ sh_chgrp(long argc, char **argv)
 	if (gid == st.gid)
 		return 0;			/* no change */
 
+# ifdef _SHELL_THREAD
+	return f_chown(fname, st.uid, gid);
+# else
 	return Fchown(fname, st.uid, gid);
+# endif
 }
 
 static long
@@ -752,7 +839,7 @@ sh_chown(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MISSING_ARG);
+		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -760,7 +847,11 @@ sh_chown(long argc, char **argv)
 	own = argv[1];
 	fname = argv[2];
 
+# ifdef _SHELL_THREAD
+	r = f_stat64(0, fname, &st);
+# else
 	r = Fstat64(0, fname, &st);
+# endif
 	if (r < 0)
 		return r;
 
@@ -786,7 +877,11 @@ sh_chown(long argc, char **argv)
 	if (uid == st.uid && gid == st.gid)
 		return 0;			/* no change */
 
+# ifdef _SHELL_THREAD
+	return f_chown(fname, uid, gid);
+# else
 	return Fchown(fname, uid, gid);
+# endif
 }
 
 static long
@@ -798,7 +893,7 @@ sh_chmod(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MISSING_ARG);
+		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -813,7 +908,11 @@ sh_chmod(long argc, char **argv)
 
 	d &= S_IALLUGO;
 
+# ifdef _SHELL_THREAD
+	return f_chmod(argv[2], d);
+# else
 	return Fchmod(argv[2], d);
+# endif
 }
 
 static long
@@ -839,14 +938,22 @@ sh_exit(long argc, char **argv)
 	short y;
 
 	shell_print(MSG_shell_exit_q);
+
+# ifdef _SHELL_THREAD
+	y = (short)c_conin();
+# else
 	y = (short)Cconin();
+# endif
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
 	{
+# ifndef _SHELL_THREAD
 		/* Tell the parent to exit */
 		(void)Pkill(Pgetppid(), SIGTERM);
-
 		Pterm(0);
+# else
+		kthread_exit(0);
+# endif
 	}
 	shell_print("\r\n");
 
@@ -882,7 +989,7 @@ sh_rm(long argc, char **argv)
 
 	if (argc < 2)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MISSING_ARG);
+		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -906,7 +1013,11 @@ sh_rm(long argc, char **argv)
 
 	while (argv[x])
 	{
+# ifdef _SHELL_THREAD
+		r = f_delete(argv[x++]);
+# else
 		r = Fdelete(argv[x++]);
+# endif
 		if (!force && r < 0)
 			return r;
 	}
@@ -921,7 +1032,7 @@ sh_ln(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MISSING_ARG);
+		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -929,7 +1040,11 @@ sh_ln(long argc, char **argv)
 	old = argv[1];
 	new = argv[2];
 
+# ifdef _SHELL_THREAD
+	return f_symlink(old, new);
+# else
 	return Fsymlink(old, new);
+# endif
 }
 
 static long
@@ -1096,7 +1211,11 @@ prompt(uchar *buffer, long buflen)
 	buffer[0] = LINELEN;
 	buffer[1] = 0;
 
+# ifdef _SHELL_THREAD
+	d_getcwd(cwd, 0, sizeof(cwd));
+# else
 	Dgetcwd(cwd, 0, sizeof(cwd));
+# endif
 
 	if (*cwd == 0)
 		strcpy(cwd, "/");
@@ -1104,7 +1223,12 @@ prompt(uchar *buffer, long buflen)
 		dos2unix(cwd);
 
 	shell_fprintf(STDOUT, "mint:%s#", cwd);
+
+# ifdef _SHELL_THREAD
+	c_conrs(buffer);
+# else
 	Cconrs(buffer);
+# endif
 
 	/* "the string is not guaranteed to be NULL terminated"
 	 * (Atari GEMDOS reference manual)
@@ -1116,33 +1240,46 @@ prompt(uchar *buffer, long buflen)
 	return lbuff;
 }
 
-static void
+static EXITING
 shell(void)
 {
 	uchar linebuf[LINELEN + 2], *lbuff;
-	long r, s;
+	long r;
+
+# ifdef _SHELL_THREAD
+	(void)p_domain(1);			/* switch to MiNT domain */
+	(void)f_force(2, -1);			/* redirect the stderr to console */
+	(void)p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
+# else
+	long s;
 
 	(void)Pdomain(1);			/* switch to MiNT domain */
 	(void)Fforce(2, -1);			/* redirect the stderr to console */
 	(void)Pumask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
-
+# endif
 	shell_print("\ee\ev\r\n");		/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);
 	xcmdstate();
 	shell_print(MSG_shell_type_help);
 
+# ifdef _SHELL_THREAD
+	d_setdrv('U' - 'A');
+# else
 	Dsetdrv('U' - 'A');			/* force current drive to u: */
+# endif
 
 	sh_cd(1, NULL);				/* this sets $HOME as current dir */
 
 	/* This loop restarts the shell when it dies cause of a bus error etc.
 	 */
+# ifndef _SHELL_THREAD
 	for (;;)
 	{
 		s = Pvfork();
 
 		if (s == 0)	/* Child here */
 		{
+# endif
 			for (;;)
 			{
 				lbuff = prompt(linebuf, sizeof(linebuf));
@@ -1152,15 +1289,35 @@ shell(void)
 				if (r < 0)
 					shell_fprintf(STDERR, MSG_shell_error, lbuff, r);
 			}
+# ifndef _SHELL_THREAD
 		}
 		else		/* Parent here */
 			Pwaitpid(s, 0, NULL);
 	}
+# endif
 }
 
 /* Notice that we cannot define local variables here due to setstack()
  * which changes the stack pointer value.
  */
+# ifdef _SHELL_THREAD
+
+static void
+shell_start(void)
+{
+	/* we must leave some bytes of `pad' behind the (sp)
+	 * (see arch/syscall.S), this is why it is `-256L'.
+	 */
+	stack = m_xalloc(SHELL_STACK, 3);
+	if (!stack)
+		kthread_exit(0);
+
+	setstack(stack + SHELL_STACK - 256L);
+	shell();				/* this one doesn't return */
+}
+
+# else
+
 static void
 shell_start(BASEPAGE *bp)
 {
@@ -1168,11 +1325,11 @@ shell_start(BASEPAGE *bp)
 	 * (see arch/syscall.S), this is why it is `-256L'.
 	 */
 	setstack((long)bp + SHELL_STACK - 256L);
-
 	Mshrink((void *)bp, SHELL_STACK);
-
 	shell();				/* this one doesn't return */
 }
+
+# endif
 
 /* This below is running in kernel context, called from init.c
  */
@@ -1181,6 +1338,20 @@ startup_shell(void)
 {
 	long r;
 
+# ifdef _SHELL_THREAD
+	r = kthread_create((void *)shell_start, NULL, &p, "shell");
+	if (r)
+	{
+		DEBUG("can't create \"shell\" kernel thread");
+
+		return r;
+	}
+
+	shell_base = _base;
+	shell_base->p_env = init_env;
+
+	return p->pid;
+# else
 	shell_base = (BASEPAGE *)sys_pexec(7, (char *)SHELL_FLAGS, "\0", init_env);
 
 	/* Hope this never happens */
@@ -1199,6 +1370,7 @@ startup_shell(void)
 	m_free((long)shell_base);
 
 	return r;
+# endif
 }
 
 # endif /* BUILTIN_SHELL */
