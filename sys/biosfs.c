@@ -438,7 +438,8 @@ biosfs_init (void)
 	midi_btty.tosfd = ENODEV;
 	midi_btty.bdev = 3;
 
-	defaultaux = new_fileptr();
+	defaultaux = new_fileptr ();
+	assert (defaultaux);
 	defaultaux->links = 1;		/* so it never gets freed */
 	defaultaux->flags = O_RDWR;
 	defaultaux->pos = 0;

@@ -1647,10 +1647,8 @@ new_fileptr (void)
 	FILEPTR *f;
 	
 	f = kmalloc (sizeof (*f));
-	if (!f)
-		FATAL ("new_fileptr: out of memory");
+	if (f) bzero (f, sizeof (*f));
 	
-	f->next = 0;
 	return f;
 }
 
