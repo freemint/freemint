@@ -460,12 +460,11 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	{
 		/* Library is not available, try to load it */
 
+		r = -1;
 		if (path)
 			r = load_and_init_slb(name, path, min_ver, sl);
-		else
-			r = load_and_init_slb(name, sysdir, min_ver, sl);
 
-		if (r < 0)
+		if (!path || (r < 0))
 		{
 			char *npath, *np;
 
@@ -527,6 +526,9 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 			} while (*path && r < 0);
 
 			kfree(npath);
+
+			if (r < 0)
+				r = load_and_init_slb(name, sysdir, min_ver, sl);
 		}
 
 		if (r < 0L)
