@@ -1448,7 +1448,7 @@ do_bconin(int dev)
 int
 checkkeys (void)
 {
-	char scan, ch;
+	char ch;
 	short shift;
 	int sig, ret;
 	struct tty *tty = &con_tty;
@@ -1456,8 +1456,8 @@ checkkeys (void)
 	static short oldktail = 0;
 
 	ret = 0;
-	mshift = kbshift(-1);
-	while (oldktail != keyrec->tail) {
+	while (oldktail != keyrec->tail)
+	{
 
 /* BUG: we really should check the shift status _at the time the key was
  * pressed_, not now!
@@ -1468,31 +1468,13 @@ checkkeys (void)
 		if (oldktail >= keyrec->buflen)
 			oldktail = 0;
 
-		scan = (keyrec->bufaddr + oldktail)[1];
-# ifdef DEV_RANDOM
-		ch = (keyrec->bufaddr + oldktail)[3];
-		add_keyboard_randomness ((unsigned short) ((scan << 8) | ch));
-# endif
-/* function key?? */
-		if ( (scan >= 0x3b && scan <= 0x44) ||
-		     (scan >= 0x54 && scan <= 0x5d) ||
-		     scan == DEL || scan == UNDO) {
-			if ( (shift & CTRLALT) == CTRLALT ) {
-				oldktail = keyrec->head = keyrec->tail;
-				do_func_key(scan);
-				/* do_func_key may have read some keys */
-				oldktail = keyrec->head;
-				mshift = kbshift (-1);
-				ret = 1;
-				continue;
-			}
-		}
-
 /* check for special control keys, etc. */
 /* BUG: this doesn't exactly match TOS' behavior, particularly for
  * ^S/^Q
+ * XXX: so what?
  */
-		if ((tty->state & TS_COOKED) || (shift & CTRLALT) == CTRLALT) {
+		if ((tty->state & TS_COOKED) || (shift & CTRLALT) == CTRLALT)
+		{
 			ch = (keyrec->bufaddr + keyrec->tail)[3];
 			if (ch == UNDEF)
 				;	/* do nothing */
@@ -1502,26 +1484,30 @@ checkkeys (void)
 				sig = SIGQUIT;
 			else if (ch == tty->ltc.t_suspc)
 				sig = SIGTSTP;
-			else if (ch == tty->tc.t_stopc) {
+			else if (ch == tty->tc.t_stopc)
+			{
 				tty->state |= TS_HOLD;
 				ret = 1;
 				keyrec->head = oldktail;
 				continue;
 			}
-			else if (ch == tty->tc.t_startc) {
+			else if (ch == tty->tc.t_startc)
+			{
 				tty->state &= ~TS_HOLD;
 				ret = 1;
 				keyrec->head = oldktail;
 				continue;
 			}
-			if (sig) {
+			if (sig)
+			{
 				tty->state &= ~TS_HOLD;
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 				    oldktail = keyrec->head = keyrec->tail;
 				killgroup(tty->pgrp, sig, 1);
 				ret = 1;
 			}
-			else if (tty->state & TS_HOLD) {
+			else if (tty->state & TS_HOLD)
+			{
 				keyrec->head = oldktail;
 				ret = 1;
 			}
@@ -1529,7 +1515,10 @@ checkkeys (void)
 
 	}
 
-	if (keyrec->head != keyrec->tail) {
+	/* XXX: move this later to ikbd_scan()
+	 */
+	if (keyrec->head != keyrec->tail)
+	{
 	/* wake up any processes waiting in bconin() */
 		wake(IO_Q, (long)&console_in);
 	/* wake anyone that did a select() on the keyboard */
@@ -1539,3 +1528,117 @@ checkkeys (void)
 
 	return ret;
 }
+
+/* Keyboard scancode interrupt routine.
+ *
+ * TOS goes through here with the freshly baked and
+ * warm key scancode in hands. If there are any keys or
+ * key combinations we want to handle (e.g. Ctrl/Alt/Del)
+ * then we intercept it now.
+ *
+ * At the end, you need to return the original scancode for
+ * TOS to process it. If you change the value, TOS will buy
+ * this as well. If you want to omit the TOS routines at all,
+ * return -1 (see code in intr.spp).
+ *
+ * Developing this code will probably allow us to get rid of
+ * checkkeys() above, have processes waiting for keyboard
+ * awaken immediately, load own scancode->ASCII keyboard tables
+ * and do other such nifty things (draco).
+ *
+ */
+
+short
+ikbd_scan(short scancode)
+{
+	extern char mshift;		/* for mouse -- see biosfs.c */
+	ushort mod = 0, shift = *kbshft;
+
+	scancode &= 0x00ff;		/* better safe than sorry */
+
+# ifdef DEV_RANDOM
+	add_keyboard_randomness((ushort)((scancode << 8) | shift));
+# endif
+
+	/* The Ctrl/Alt/Fx, Ctrl/Alt/Del and Ctrl/Alt/Undo
+	 * we do internally and don't pass away to TOS
+	 */
+	if ((scancode >= 0x003b && scancode <= 0x0044) || \
+		(scancode >= 0x0054 && scancode <= 0x005d) || \
+			scancode == DEL || scancode == UNDO)
+	{
+		if ((shift & CTRLALT) == CTRLALT)
+		{
+			do_func_key(scancode);
+
+			return -1;	/* processed internally */
+		}
+	}
+
+	/* Also we handle modifiers here
+	 */
+	switch(scancode)
+	{
+		case	0x001d:		/* Control */
+		{
+			shift |= 0x04;
+			mod++;
+			break;
+		}
+		case	0x002a:		/* Left shift */
+		{
+			shift |= 0x02;
+			mod++;
+			break;
+		}
+		case	0x0036:		/* Right shift */
+		{
+			shift |= 0x01;
+			mod++;
+			break;
+		}
+		case	0x0038:		/* Alternate */
+		{
+			shift |= 0x08;
+			mod++;
+			break;
+		}
+		case	0x009d:		/* Control (release) */
+		{
+			shift &= ~0x04;
+			mod++;
+			break;
+		}
+		case	0x00aa:		/* Left shift (release) */
+		{
+			shift &= ~0x02;
+			mod++;
+			break;
+		}
+		case	0x00B6:		/* Right shift (release) */
+		{
+			shift &= ~0x01;
+			mod++;
+			break;
+		}
+		case	0x00B8:		/* Alternate (release) */
+		{
+			shift &= ~0x08;
+			mod++;
+			break;
+		}
+	}
+	if (mod)
+	{					
+		mshift = shift;
+		*kbshft = (char)shift;
+	
+		return -1;
+	}
+
+	kintr = 1;		/* keyboard event occurred */
+	
+	return scancode;	/* give the scancode away to TOS */
+}
+
+/* EOF */
