@@ -39,15 +39,18 @@
 # include "kmemory.h"
 # include "proc.h"
 
+# ifdef MFP_DEBUG_DIRECT
+# include "xdd/mfp/kgdb_mfp.c"
+# endif
 
 static void VDEBUGOUT(const char *, va_list, int);
 
 
 int debug_level = 1;	/* how much debugging info should we print? */
-# if 1
-int out_device = 2;	/* BIOS device to write errors to */
+# if MFP_DEBUG_DIRECT
+int out_device = 0;
 # else
-int out_device = 6;
+int out_device = 2;	/* BIOS device to write errors to */
 # endif
 
 /*
@@ -91,6 +94,10 @@ int logptr = 0;
 static void
 safe_Bconout(short dev, int c)
 {
+#ifdef MFP_DEBUG_DIRECT
+	if (dev == 0)
+		mfp_kgdb_putc(c);
+#endif
 	if (intr_done)
 		ROM_Bconout(dev, c);
 	else
@@ -100,6 +107,13 @@ safe_Bconout(short dev, int c)
 static short
 safe_Bconstat(short dev)
 {
+#ifdef MFP_DEBUG_DIRECT
+	if (dev == 0)
+		return mfp_kgdb_instat();
+#else
+	if (dev == 0)
+		return 0;
+#endif
 	if (intr_done)
 		return ROM_Bconstat(dev);
 
@@ -109,6 +123,10 @@ safe_Bconstat(short dev)
 static long
 safe_Bconin(short dev)
 {
+#ifdef MFP_DEBUG_DIRECT
+	if (dev == 0)
+		return mfp_kgdb_getc();
+#endif
 	if (intr_done)
 		return ROM_Bconin(dev);
 
@@ -158,7 +176,7 @@ debug_ws(const char *s)
 	{
 		safe_Bconout(out_device, *s);
 		
-		while (*s == '\n' && out_device != 0 && safe_Bconstat(out_device))
+		while (*s == '\n' && safe_Bconstat(out_device))
 		{
 			stopped = 0;
 			while (1)
@@ -181,7 +199,7 @@ debug_ws(const char *s)
 				}
 				else
 				{
-					key = ROM_Bconin(out_device);
+					key = safe_Bconin(out_device);
 					if (key < '0' || key > '9')
 					{
 ptoggle:
