@@ -52,7 +52,9 @@
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 # include "mint/signal.h"
+# include "mint/ssystem.h"
 # include "mint/stat.h"
+# include "cookie.h"
 
 # include "libkern/libkern.h"
 
@@ -256,11 +258,8 @@ init (struct kerinfo *k)
 	}
 	
 # if 0
-// require a Milan or any other special hardware?
-# define SSYS_GETCOOKIE	8
-# define COOKIE__MCH	0x5f4d4348L
-# define MILAN_C	0x00040000L
-	if ((s_system (SSYS_GETCOOKIE, COOKIE__MCH, (long) &mch) != 0)
+	// require a Milan or any other special hardware?
+	if ((s_system (S_GETCOOKIE, COOKIE__MCH, (long) &mch) != 0)
 		|| (mch != MILAN_C))
 	{
 		c_conws (MSG_MILAN);
