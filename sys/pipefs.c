@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * simple pipefs.c
- * 
+ *
  */
 
 # include "pipefs.h"
@@ -72,7 +72,7 @@ static void	_cdecl pipe_unselect	(FILEPTR *f, long p, int mode);
 FILESYS pipe_filesys =
 {
 	NULL,
-	
+
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -93,7 +93,7 @@ FILESYS pipe_filesys =
 	FS_REENTRANT_L2		|
 	FS_EXT_2		|
 	FS_EXT_3		,
-	
+
 	pipe_root,
 	pipe_lookup, pipe_creat, pipe_getdev, pipe_getxattr,
 	null_chattr, pipe_chown, pipe_chmode,
@@ -103,16 +103,16 @@ FILESYS pipe_filesys =
 	null_symlink, null_readlink, null_hardlink, pipe_fscntl, null_dskchng,
 	NULL, NULL,
 	NULL,
-	
+
 	/* FS_EXT_1 */
 	NULL, NULL,
-	
+
 	/* FS_EXT_2
 	 */
-	
+
 	/* FS_EXT_3 */
 	pipe_stat64,
-	
+
 	0, 0, 0, 0, 0,
 	NULL, NULL
 };
@@ -126,7 +126,7 @@ DEVDRV pty_device =
 	pipe_select, pipe_unselect,
 	pty_writeb, pty_readb
 };
- 
+
 DEVDRV pipe_device =
 {
 	pipe_open,
@@ -161,7 +161,7 @@ struct pipe
 struct fifo* piperoot;
 struct timeval pipestamp;
 
-static long _cdecl 
+static long _cdecl
 pipe_root (int drv, fcookie *fc)
 {
 	if (drv == PIPEDRV)
@@ -171,24 +171,24 @@ pipe_root (int drv, fcookie *fc)
 		fc->index = 0L;
 		return E_OK;
 	}
-	
+
 	fc->fs = 0;
 	return EINTERNAL;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	struct fifo *b;
-	
+
 	TRACE (("pipe_lookup(%s)", name));
-	
+
 	if (dir->index != 0)
 	{
 		DEBUG (("pipe_lookup(%s): bad directory", name));
 		return ENOTDIR;
 	}
-	
+
 	/* special case: an empty name in a directory means that directory
 	 * so does "."
 	 */
@@ -197,7 +197,7 @@ pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 		*fc = *dir;
 		return E_OK;
 	}
-	
+
 	/* another special case: ".." could be a mount point
 	 */
 	if (!strcmp (name, ".."))
@@ -205,7 +205,7 @@ pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 		*fc = *dir;
 		return EMOUNT;
 	}
-	
+
 	for (b = piperoot; b; b = b->next)
 	{
 		if (!strnicmp (b->name, name, NAME_MAX))
@@ -216,12 +216,12 @@ pipe_lookup (fcookie *dir, const char *name, fcookie *fc)
 			return E_OK;
 		}
 	}
-	
+
 	DEBUG (("pipe_lookup: name `%s' not found", name));
 	return ENOENT;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_getxattr (fcookie *fc, XATTR *xattr)
 {
 	xattr->index = fc->index;
@@ -229,17 +229,17 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->rdev = fc->dev;
 	xattr->nlink = 1;
 	xattr->blksize = 1024L;
-	
+
 	if (fc->index == 0)
 	{
 		/* root directory */
-		
+
 		xattr->uid = xattr->gid = 0;
-		
+
 		*(long *) &xattr->mtime = pipestamp.tv_sec;
 		*(long *) &xattr->atime = xtime.tv_sec;
 		*(long *) &xattr->ctime = rootproc->started.tv_sec;
-		
+
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		xattr->attr = FA_DIR;
 		xattr->size = xattr->nblocks = 0;
@@ -247,23 +247,23 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 	else
 	{
 		struct fifo *this = (struct fifo *) fc->index;
-		
+
 		*(long *) &xattr->mtime = this->mtime.tv_sec;
 		*(long *) &xattr->atime = xtime.tv_sec;
 		*(long *) &xattr->ctime = this->ctime.tv_sec;
-		
+
 		xattr->uid = this->uid;
 		xattr->gid = this->gid;
 		xattr->mode = this->mode;
 		xattr->attr = this->dosflags;
-		
+
 		/* note: fifo's that haven't been opened yet can be written to
 		 */
 		if (this->flags & O_HEAD)
 		{
 			xattr->attr &= ~FA_RDONLY;
 		}
-		
+
 		if (this->dosflags & FA_SYSTEM)
 		{
 			/* pseudo-tty */
@@ -275,10 +275,10 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 			xattr->size = PIPESIZ;
 			xattr->rdev = PIPE_RDEV | 0;
 		}
-		
+
 		xattr->nblocks = xattr->size / 1024L;
 	}
-	
+
 	return E_OK;
 }
 
@@ -286,58 +286,58 @@ static long _cdecl
 pipe_stat64 (fcookie *fc, STAT *ptr)
 {
 	bzero (ptr, sizeof (*ptr));
-	
+
 	ptr->dev = fc->dev;
 	ptr->ino = fc->index;
 	ptr->rdev = fc->dev;
 	ptr->nlink = 1;
 	ptr->blksize = 1024L;
-	
+
 	if (fc->index == 0)
 	{
 		/* root directory */
-		
+
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
-		
+
 		ptr->atime.high_time = 0;
 		ptr->atime.time = xtime.tv_sec;
-		ptr->atime.nanoseconds = 0;	
-		
+		ptr->atime.nanoseconds = 0;
+
 		ptr->mtime.high_time = 0;
 		ptr->mtime.time = pipestamp.tv_sec;
-		ptr->mtime.nanoseconds = 0;	
-		
+		ptr->mtime.nanoseconds = 0;
+
 		ptr->ctime.high_time = 0;
 		ptr->ctime.time = rootproc->started.tv_sec;
-		ptr->ctime.nanoseconds = 0;	
+		ptr->ctime.nanoseconds = 0;
 	}
 	else
 	{
 		struct fifo *this = (struct fifo *) fc->index;
-		
+
 		ptr->uid = this->uid;
 		ptr->gid = this->gid;
 		ptr->mode = this->mode;
-		
+
 		ptr->atime.high_time = 0;
 		ptr->atime.time = xtime.tv_sec;
-		ptr->atime.nanoseconds = 0;	
-		
+		ptr->atime.nanoseconds = 0;
+
 		ptr->mtime.high_time = 0;
 		ptr->mtime.time = this->mtime.tv_sec;
-		ptr->mtime.nanoseconds = 0;	
-		
+		ptr->mtime.nanoseconds = 0;
+
 		ptr->ctime.high_time = 0;
 		ptr->ctime.time = this->ctime.tv_sec;
-		ptr->ctime.nanoseconds = 0;	
-		
+		ptr->ctime.nanoseconds = 0;
+
 		/* note: fifo's that haven't been opened yet can be written to
 		 */
 		if (this->flags & O_HEAD)
 		{
 			ptr->mode &= ~S_IWUGO;
 		}
-		
+
 		if (this->dosflags & FA_SYSTEM)
 		{
 			/* pseudo-tty */
@@ -349,43 +349,43 @@ pipe_stat64 (fcookie *fc, STAT *ptr)
 			ptr->size = PIPESIZ;
 			ptr->rdev = PIPE_RDEV | 0;
 		}
-		
+
 		ptr->blocks = ptr->size / 1024L;
-		
+
 		/* adjust to 512 byte block base size */
 		ptr->blocks <<= 2;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_chown (fcookie *fc, int uid, int gid)
 {
 	struct fifo *this = (struct fifo *) fc->index;
-	
+
 	if (!this)
 		return EACCES;
-	
+
 	if (uid != -1) this->uid = uid;
 	if (gid != -1) this->gid = gid;
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_chmode (fcookie *fc, unsigned int mode)
 {
 	struct fifo *this = (struct fifo *) fc->index;
-	
+
 	if (!this)
 		return EACCES;
-	
+
 	this->mode = (this->mode & S_IFMT) | (mode & ~S_IFMT);
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 {
 	char *pipe_name;
@@ -404,67 +404,67 @@ pipe_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 		else
 			return EBADARG;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_opendir (DIR *dirh, int flags)
 {
 	UNUSED (flags);
-	
+
 	if (dirh->fc.index != 0)
 	{
 		DEBUG (("pipe_opendir: bad directory"));
 		return ENOTDIR;
 	}
-	
+
 	dirh->index = 0;
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	struct fifo *this = piperoot;
 	int i = dirh->index++;
-	
+
 	while (i && this)
 	{
 		i--;
 		this = this->next;
 	}
-	
+
 	if (!this)
 		return ENMFILES;
-	
+
 	fc->fs = &pipe_filesys;
 	fc->index = (long) this;
 	fc->dev = dirh->fc.dev;
-	
+
 	if (dirh->flags == 0)
 	{
 		namelen -= 4;
 		if (namelen <= 0)
 			return EBADARG;
-		
+
 		*((long *) name) = (long) this;
 		name += 4;
 	}
-	
+
 	if (strlen (this->name) < namelen)
 		strcpy (name, this->name);
 	else
 		return EBADARG;
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_pathconf (fcookie *dir, int which)
 {
 	UNUSED (dir);
-	
+
 	switch (which)
 	{
 		case DP_INQUIRE:
@@ -493,28 +493,28 @@ pipe_pathconf (fcookie *dir, int which)
 	}
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_dfree (fcookie *dir, long *buf)
 {
 	int i;
 	struct fifo *b;
 	long freemem;
-	
+
 	UNUSED (dir);
-	
+
 	/* the "sector" size is the number of bytes per pipe
 	 * so we get the total number of sectors used by counting pipes
 	 */
-	
+
 	i = 0;
 	for (b = piperoot; b; b = b->next)
 	{
 		if (b->inp) i++;
 		if (b->outp) i++;
 	}
-	
+
 	freemem = tot_rsize (core, 0) + tot_rsize (alt, 0);
-	
+
 	/* note: the "free clusters" isn't quite accurate, since there's
 	 * overhead in the fifo structure; but we're not looking for
 	 * 100% accuracy here
@@ -523,7 +523,7 @@ pipe_dfree (fcookie *dir, long *buf)
 	buf[1] = buf[0]+i;		/* total number of clusters */
 	buf[2] = PIPESIZ;		/* sector size (bytes) */
 	buf[3] = 1;			/* cluster size (sectors) */
-	
+
 	return E_OK;
 }
 
@@ -532,25 +532,25 @@ pipe_dfree (fcookie *dir, long *buf)
  * so we know that the new pipe creation is OK
  */
 
-static long _cdecl 
+static long _cdecl
 pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcookie *fc)
 {
 	struct pipe *inp, *outp;
 	struct tty *tty;
 	struct fifo *b;
-	
+
 	/* selfread == 1 if we want reads to wait even if no other processes
 	 * have currently opened the file, and writes to succeed in the same
 	 * event. This is useful for servers who want to wait for requests.
 	 * Pipes should always have selfread == 0.
 	 */
 	int selfread = (attrib & FA_HIDDEN) ? 0 : 1;
-	
+
 	/* create the new pipe */
 	inp = kmalloc (sizeof (*inp));
 	if (!inp)
 		return ENOMEM;
-	
+
 	if (attrib & FA_RDONLY)
 	{
 		/* read only FIFOs are unidirectional */
@@ -565,7 +565,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 			return ENOMEM;
 		}
 	}
-	
+
 	b = kmalloc (sizeof (*b));
 	if (!b)
 	{
@@ -573,11 +573,11 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 		kfree (inp);
 		return ENOMEM;
 	}
-	
+
 	if (attrib & FA_SYSTEM)
 	{
 		/* pseudo-tty */
-		
+
 		tty = kmalloc (sizeof (*tty));
 		if (!tty)
 		{
@@ -586,14 +586,14 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 			kfree(inp);
 			return ENOMEM;
 		}
-		
+
 		tty->use_cnt = 0;
 		tty->rsel = tty->wsel = 0;
 		   /* do_open does the rest of tty initialization */
 	}
 	else
 		tty = 0;
-	
+
 	/* set up the pipes appropriately */
 	inp->start = inp->len = 0;
 	inp->readers = selfread ? 1 : VIRGIN_PIPE; inp->writers = 1;
@@ -611,7 +611,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	b->mode = ((attrib & FA_SYSTEM) ? S_IFCHR : S_IFIFO) | (mode & ~S_IFMT);
 	b->uid = curproc->p_cred->ucr->euid;
 	b->gid = curproc->p_cred->ucr->egid;
-	
+
 	/* the O_HEAD flag indicates that the file hasn't actually been opened
 	 * yet; the next open gets to be the pty master. pipe_open will
 	 * clear the flag when this happens.
@@ -619,37 +619,37 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	b->flags = ((attrib & FA_SYSTEM) ? O_TTY : 0) | O_HEAD;
 	b->lockpid = b->cursrate = 0;
 	b->inp = inp; b->outp = outp; b->tty = tty;
-	
+
 	b->next = piperoot;
 	b->open = (FILEPTR *)0;
 	piperoot = b;
-	
+
 	/* we have to return a file cookie as well */
 	fc->fs = &pipe_filesys;
 	fc->index = (long)b;
 	fc->dev = dir->dev;
-	
+
 	/* update time/date stamps for u:\pipe */
 	pipestamp = xtime;
-	
+
 	return E_OK;
 }
 
-static DEVDRV * _cdecl 
+static DEVDRV * _cdecl
 pipe_getdev (fcookie *fc, long *devsp)
 {
 	struct fifo *b = (struct fifo *)fc->index;
-	
+
 	UNUSED (devsp);
 	return (b->flags & O_TTY) ? &pty_device : &pipe_device;
 }
 
 static long _cdecl
 pipe_fscntl (fcookie *dir, const char *name, int cmd, long arg)
-{	
+{
 	UNUSED (dir);
 	UNUSED (name);
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -658,7 +658,7 @@ pipe_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			return E_OK;
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -666,15 +666,15 @@ pipe_fscntl (fcookie *dir, const char *name, int cmd, long arg)
  * PIPE device driver
  */
 
-static long _cdecl 
+static long _cdecl
 pipe_open (FILEPTR *f)
 {
 	struct fifo *p;
 	int rwmode = f->flags & O_RWMODE;
-	
+
 	p = (struct fifo *) f->fc.index;
 	f->flags |= p->flags;
-	
+
 	/* if this is the first open for this file, then the O_HEAD flag is
 	 * set in p->flags. If not, and someone was trying to create the file,
 	 * return an error
@@ -698,7 +698,7 @@ pipe_open (FILEPTR *f)
 		}
 # endif
 	}
-	
+
 	/* check for file sharing compatibility. note that O_COMPAT gets
 	 * mutated into O_DENYNONE, because any old programs that know about
 	 * pipes will already handle multitasking correctly
@@ -707,13 +707,13 @@ pipe_open (FILEPTR *f)
 	{
 		f->flags = (f->flags & ~O_SHMODE) | O_DENYNONE;
 	}
-	
+
 	if (denyshare (p->open, f))
 		return EACCES;
-	
+
 	f->next = p->open;		/* add this open fileptr to the list */
 	p->open = f;
-	
+
 	/* add readers/writers to the list
 	 */
 	if (!(f->flags & O_HEAD))
@@ -725,7 +725,7 @@ pipe_open (FILEPTR *f)
 			else
 				p->inp->readers++;
 		}
-		
+
 		if ((rwmode == O_WRONLY || rwmode == O_RDWR) && p->outp)
 		{
 			if (p->outp->writers == VIRGIN_PIPE)
@@ -734,12 +734,12 @@ pipe_open (FILEPTR *f)
 				p->outp->writers++;
 		}
 	}
-	
+
 	/* TTY devices need a tty structure in f->devinfo */
 	f->devinfo = (long) p->tty;
-	
+
 	p->mtime = xtime;
-	
+
 	return E_OK;
 }
 
@@ -751,7 +751,7 @@ pipe_wake_readers (struct pipe* pipe)
 {
 	if (pipe->rsel && pipe->len > 0)
 		wakeselect ((PROC *) pipe->rsel);
-	
+
 	if (pipe->len > 0)
 		wake (IO_Q, (long) pipe);
 }
@@ -761,12 +761,12 @@ pipe_wake_writers (struct pipe* pipe)
 {
 	if (pipe->wsel && pipe->len < PIPESIZ)
 		wakeselect ((PROC *) pipe->wsel);
-	
+
 	if (pipe->len < PIPESIZ)
 		wake (IO_Q, (long) pipe);
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_write (FILEPTR *f, const char *buf, long nbytes)
 {
 	int plen, j;
@@ -775,7 +775,7 @@ pipe_write (FILEPTR *f, const char *buf, long nbytes)
 	struct fifo *this;
 	long bytes_written = 0;
 	long r;
-	
+
 	this = (struct fifo *)f->fc.index;
 	p = (f->flags & O_HEAD) ? this->inp : this->outp;
 	if (!p)
@@ -783,14 +783,14 @@ pipe_write (FILEPTR *f, const char *buf, long nbytes)
 		DEBUG(("pipe_write: write on wrong end of pipe"));
 		return EACCES;
 	}
-	
+
 	if (nbytes > 0 && nbytes <= PIPE_BUF)
 	{
 		/* We promised that if the user wants to write less than
 		 * PIPE_BUF bytes these write would be atomic.  We have
 		 * to wait until at least this number of bytes can be
 		 * written to the buffer.
-		 */ 
+		 */
 check_atomicity:
 		if (is_terminal(f) && !(f->flags & O_HEAD)
 			&& (this->tty->state & TS_HOLD))
@@ -800,7 +800,7 @@ check_atomicity:
 			sleep (IO_Q, (long) &this->tty->state);
 			goto check_atomicity;
 		}
-		
+
 		/* r is the number of bytes we can write */
 		r = PIPESIZ - p->len;
 		if (r < nbytes)
@@ -813,7 +813,7 @@ check_atomicity:
 				raise(SIGPIPE);
 				return EPIPE;
 			}
-			
+
 			/* Now wake up possible readers. */
 			pipe_wake_readers (p);
 			if (PIPESIZ - p->len < nbytes)
@@ -826,7 +826,7 @@ check_atomicity:
 			/* else do write now. */
 		}
 	}
-	
+
 	while (nbytes > 0)
 	{
 		plen = p->len;
@@ -863,7 +863,7 @@ check_atomicity:
 		else
 		{
 			/* pipe full */
-			
+
 			if (p->readers == 0 || p->readers == VIRGIN_PIPE)
 			{
 				/* maybe some other signal is waiting for us? */
@@ -872,10 +872,10 @@ check_atomicity:
 				raise(SIGPIPE);
 				return EPIPE;
 			}
-			
+
 			if (f->flags & O_NDELAY)
 				break;
-			
+
 			/* is someone select()ing the other end of the pipe
 			 * for reading?
 			 */
@@ -888,15 +888,15 @@ check_atomicity:
 			}
 		}
 	}
-	
+
 	this->mtime = xtime;
 	if (p->len > 0)
 		pipe_wake_readers (p);
-	
+
 	return bytes_written;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_read (FILEPTR *f, char *buf, long nbytes)
 {
 	int plen, j;
@@ -912,7 +912,7 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 		DEBUG(("pipe_read: read on the wrong end of a pipe"));
 		return EACCES;
 	}
-	
+
 	while (nbytes > 0)
 	{
 		plen = p->len;
@@ -957,48 +957,48 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 			}
 		}
 	}
-	
+
 	if (p->len < PIPESIZ)
 		pipe_wake_writers (p);
 
 	return bytes_read;
 }
 
-static long _cdecl 
+static long _cdecl
 pty_write (FILEPTR *f, const char *buf, long nbytes)
 {
 	long bytes_written = 0;
-	
+
 	if (!nbytes)
 		return 0;
-	
+
 	if (f->flags & O_HEAD)
 		return pipe_write (f, buf, nbytes);
-	
+
 	if (nbytes != 4)
 		ALERT ("pty_write: slave nbytes != 4");
-	
+
 	bytes_written = pipe_write (f, buf+3, 1);
 	if (bytes_written == 1)
 		bytes_written = 4;
-	
+
 	return bytes_written;
 }
 
-static long _cdecl 
+static long _cdecl
 pty_read (FILEPTR *f, char *buf, long nbytes)
 {
 	long bytes_read = 0;
-	
+
 	if (!nbytes)
 		return 0;
-	
+
 	if (!(f->flags & O_HEAD))
 		return pipe_read (f, buf, nbytes);
-	
+
 	if (nbytes != 4)
 		ALERT ("pty_read: master nbytes != 4");
-	
+
 	bytes_read = pipe_read (f, buf+3, 1);
 	if (bytes_read == 1)
 	{
@@ -1007,34 +1007,34 @@ pty_read (FILEPTR *f, char *buf, long nbytes)
 		*buf++ = 0;
 		*buf++ = 0;
 	}
-	
+
 	return bytes_read;
 }
 
-static long _cdecl 
+static long _cdecl
 pty_writeb (FILEPTR *f, const char *buf, long nbytes)
 {
 	if (!nbytes)
 		return 0;
-	
+
 	if (f->flags & O_HEAD)
 		return ENODEV;
-	
+
 	return pipe_write (f, buf, nbytes);
 }
 
-static long _cdecl 
+static long _cdecl
 pty_readb (FILEPTR *f, char *buf, long nbytes)
 {
 	struct fifo *this = (struct fifo *) f->fc.index;
 
 	if (!nbytes)
 		return 0;
-	
+
 	if (!(f->flags & O_HEAD))
 	{
 		struct tty *tty = this->tty;
-		
+
 		/* we don't do pty slave reads yet (they need long -> byte
 		 * conversion for every char) but we still want to support
 		 * VMIN > 1...  so sleep first and then return ENODEV,
@@ -1047,10 +1047,10 @@ pty_readb (FILEPTR *f, char *buf, long nbytes)
 		    this->inp->len < tty->vmin*4 && this->inp->writers > 0 &&
 		    this->inp->writers != VIRGIN_PIPE)
 			sleep (IO_Q, (long)this->inp);
-		
+
 		return ENODEV;
 	}
-	
+
 	/* pty master reads are always RAW
 	 */
 	if (nbytes > 1 && nbytes > this->outp->len)
@@ -1059,38 +1059,38 @@ pty_readb (FILEPTR *f, char *buf, long nbytes)
 		    !this->outp->len && this->outp->writers > 0 &&
 		    this->outp->writers != VIRGIN_PIPE)
 			sleep (IO_Q, (long)this->outp);
-		
+
 		if (nbytes > this->outp->len)
 			nbytes = this->outp->len;
 	}
-	
+
 	return pipe_read (f, buf, nbytes);
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_ioctl (FILEPTR *f, int mode, void *buf)
 {
 	struct fifo *this = (struct fifo *) f->fc.index;
-	
+
 	long r;
-	
+
 	switch (mode)
 	{
 		case FIONREAD:
 		{
 			struct pipe *p;
-			
+
 			p = (f->flags & O_HEAD) ? this->outp : this->inp;
 			if (p == 0)
 				return ENOSYS;
-			
+
 			r = p->len;
 			if (r == 0)
 			{
 				if (p->writers <= 0 || p->writers == VIRGIN_PIPE)
 				{
 					DEBUG (("pipe FIONREAD: no writers"));
-					
+
 					/* arguably, we should return 0 for EOF,
 					 * but this would break MINIWIN and
 					 * perhaps some other MultiTOS programs
@@ -1105,18 +1105,18 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 				else if (this->tty->state & TS_HOLD)
 					r = 0;
 			}
-			
+
 			*((long *) buf) = r;
 			break;
 		}
 		case FIONWRITE:
 		{
 			struct pipe *p;
-			
+
 			p = (f->flags & O_HEAD) ? this->inp : this->outp;
 			if (p == 0)
 				return ENOSYS;
-			
+
 			if (p->readers <= 0)
 			{
 				/* see compatibility comment under FIONREAD */
@@ -1133,7 +1133,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 						r = 0;
 				}
 			}
-			
+
 			*((long *) buf) = r;
 			break;
 		}
@@ -1146,7 +1146,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 		case F_SETLKW:
 		{
 			struct flock *lck = (struct flock *) buf;
-			
+
 			while (this->flags & O_LOCK)
 			{
 				if (this->lockpid != curproc->pid)
@@ -1162,7 +1162,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 				} else
 					break;
 			}
-			
+
 			if (lck->l_type == F_UNLCK)
 			{
 				if (!(f->flags & O_LOCK))
@@ -1170,13 +1170,13 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 					DEBUG(("pipe_ioctl: wrong file descriptor for UNLCK"));
 					return ENSLOCK;
 				}
-				
+
 				this->flags &= ~O_LOCK;
 				this->lockpid = 0;
 				f->flags &= ~O_LOCK;
-				
+
 				/* wake up anyone waiting on the lock */
-				wake (IO_Q, (long) this);	
+				wake (IO_Q, (long) this);
 			}
 			else
 			{
@@ -1184,13 +1184,13 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 				this->lockpid = curproc->pid;
 				f->flags |= O_LOCK;
 			}
-			
+
 			break;
 		}
 		case F_GETLK:
 		{
 			struct flock *lck = (struct flock *) buf;
-			
+
 			if (this->flags & O_LOCK)
 			{
 				lck->l_type = F_WRLCK;
@@ -1199,7 +1199,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 			}
 			else
 				lck->l_type = F_UNLCK;
-			
+
 			break;
 		}
 		/* ptys have no DTR line :)  ignore hang up on close...  */
@@ -1207,16 +1207,16 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 		{
 			long mask = ((long *) buf)[1] & ~(TS_HOLD|TS_BLIND|TS_HPCL);
 			struct tty *tty = this->tty;
-			
+
 			if (!is_terminal (f) || !tty)
 				return ENOSYS;
-			
+
 			if (!(tty->sg.sg_flags & T_XKEY))
 				mask &= ~TS_ESC;
-			
+
 			if (*(long *) buf != -1)
 				tty->state = (tty->state & ~mask) | (*((long *) buf) & mask);
-			
+
 			*(long *) buf = tty->state;
 			break;
 		}
@@ -1229,10 +1229,10 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 		{
 			ushort *v = buf;
 			struct tty *tty = this->tty;
-			
+
 			if (!is_terminal (f) || !tty)
 				return ENOSYS;
-			
+
 			if (mode == TIOCGVMIN)
 			{
 				v[0] = tty->vmin;
@@ -1245,13 +1245,13 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 				tty->vmin = v[0];
 				tty->vtime = v[1];
 			}
-			
+
 			break;
 		}
 		case TIOCSTART:
 		{
 			struct pipe *p;
-			
+
 			if (is_terminal (f) && !(f->flags & O_HEAD) &&
 # if 0
 		    		NULL != (p = this->outp) && p->rsel && p->tail != p->head)
@@ -1259,26 +1259,26 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 		    		NULL != (p = this->outp) && p->rsel && p->len > 0)
 # endif
 			wakeselect ((PROC *) p->rsel);
-			
+
 			break;
 		}
 		case TIOCFLUSH:
 		{
 			long flushtype;
 			long *which;
-			
+
 			which = (long *)buf;
 			if (!which || !(*which & 3))
 				flushtype = 3;
 			else
 				flushtype = *which;
-			
+
 			if ((flushtype & 1) && this->inp)
 			{
 				this->inp->start = this->inp->len = 0;
 				wake (IO_Q, (long) this->inp);
 			}
-			
+
 			if ((flushtype & 2) && this->outp)
 			{
 				this->outp->start = this->outp->len = 0;
@@ -1290,17 +1290,17 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 						wakeselect ((PROC *) this->outp->wsel);
 				}
 			}
-			
+
 			break;
 		}
 		case TIOCOUTQ:
 		{
 			struct pipe *p;
-			
+
 			p = (f->flags & O_HEAD) ? this->inp : this->outp;
 			if (!p)
 				return EBADF;
-			
+
 			if (p->readers <= 0)
 			{
 				r = -1;
@@ -1311,7 +1311,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 				if (is_terminal (f) && (f->flags & O_HEAD))
 					r = r >> 2;	/* r /= 4 */
 			}
-			
+
 			*((long *) buf) = r;
 			break;
 		}
@@ -1364,7 +1364,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 					break;
 				}
 			}
-			
+
 			break;
 		}
 		case TCURSGRATE:
@@ -1381,25 +1381,25 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 			return ENOSYS;
 		}
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_lseek (FILEPTR *f, long where, int whence)
 {
 	UNUSED (f);
 	UNUSED (where);
 	UNUSED (whence);
-	
+
 	return ESPIPE;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_datime (FILEPTR *f, ushort *timeptr, int flag)
 {
 	struct fifo *this = (struct fifo *)f->fc.index;
-	
+
 	switch (flag)
 	{
 		case 0:
@@ -1415,11 +1415,11 @@ pipe_datime (FILEPTR *f, ushort *timeptr, int flag)
 		default:
 			return EBADARG;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_close (FILEPTR *f, int pid)
 {
 	struct fifo *this = (struct fifo *) f->fc.index;
@@ -1427,17 +1427,17 @@ pipe_close (FILEPTR *f, int pid)
 	struct pipe *p;
 	int rwmode;
 	FILEPTR **old_x, *x;
-	
+
 	if (f->links <= 0)
 	{
 		/* wake any processes waiting on this pipe */
-		
+
 		wake (IO_Q, (long) this->inp);
 		if (this->inp->rsel)
 			wakeselect ((PROC *) this->inp->rsel);
 		if (this->inp->wsel)
 			wakeselect ((PROC *) this->inp->wsel);
-		
+
 		if (this->outp)
 		{
 			wake (IO_Q, (long) this->outp);
@@ -1446,7 +1446,7 @@ pipe_close (FILEPTR *f, int pid)
 			if (this->outp->rsel)
 				wakeselect ((PROC *) this->outp->rsel);
 		}
-		
+
 		/* remove the file pointer from the list of open file
 		 * pointers of this pipe
 		 */
@@ -1457,7 +1457,7 @@ pipe_close (FILEPTR *f, int pid)
 		        old_x = &x->next;
 		        x = x->next;
 		}
-# if 1
+# if 0
 		/* Temp. workaround for the famous shutdown assert.
 		 * Something is screwed somewhere, but this at least
 		 * allows to finish shutdown. The alert reminds that
@@ -1472,13 +1472,13 @@ pipe_close (FILEPTR *f, int pid)
 		 * consortes is not freed. But this is shutdown anyways.
 		 * The f->links = 0 allows to kfree() the fileptr
 		 * flawlessly. See dispose_fileptr().
-		 * (draco) 
-		 */ 
+		 * (draco)
+		 */
 		if (!x)
 		{
 			ALERT ("f->links == %d on /pipe/%s ignored",
 				f->links,this->name);
-			
+
 			f->links = 0;
 			return EINTERNAL;
 		}
@@ -1487,19 +1487,19 @@ pipe_close (FILEPTR *f, int pid)
 # endif
 		*old_x = f->next;
 		/* f->next = 0; */
-		
+
 		rwmode = f->flags & O_RWMODE;
 		if (rwmode == O_RDONLY || rwmode == O_RDWR)
 		{
 			p = (f->flags & O_HEAD) ? this->outp : this->inp;
-			
+
 			/* note that this can never be a virgin pipe, since we had a handle
 			 * on it!
 			 */
 			if (p)
 				p->readers--;
 		}
-		
+
 		if (rwmode == O_WRONLY || rwmode == O_RDWR)
 		{
 			p = (f->flags & O_HEAD) ? this->inp : this->outp;
@@ -1514,11 +1514,11 @@ pipe_close (FILEPTR *f, int pid)
 # endif
 			}
 		}
-		
+
 		/* correct for the "selfread" flag (see pipe_creat) */
 		if ((f->flags & O_HEAD) && !(this->dosflags & 0x02))
 			this->inp->readers--;
-		
+
 		/* check for locks */
 		if ((f->flags & O_LOCK) && (this->lockpid == pid))
 		{
@@ -1527,17 +1527,17 @@ pipe_close (FILEPTR *f, int pid)
 			wake (IO_Q, (long) this);
 		}
 	}
-	
+
 	/* see if we're finished with the pipe */
 	if (this->inp->readers == VIRGIN_PIPE)
 		this->inp->readers = 0;
 	if (this->inp->writers == VIRGIN_PIPE)
 		this->inp->writers = 0;
-	
+
 	if (this->inp->readers <= 0 && this->inp->writers <= 0)
 	{
 		TRACE (("disposing of closed fifo"));
-		
+
 		/* unlink from list of FIFOs */
 		if (piperoot == this)
 			piperoot = this->next;
@@ -1551,31 +1551,31 @@ pipe_close (FILEPTR *f, int pid)
 					return EINTERNAL;
 				}
 			}
-			
+
 			old->next = this->next;
 		}
-		
+
 		kfree (this->inp);
-		
+
 		if (this->outp)
 			kfree (this->outp);
 		if (this->tty)
 			kfree (this->tty);
-		
+
 		kfree (this);
-		
+
 		pipestamp = xtime;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 pipe_select (FILEPTR *f, long proc, int mode)
 {
 	struct fifo *this = (struct fifo *) f->fc.index;
 	struct pipe *p;
-	
+
 	if (mode == O_RDONLY)
 	{
 		p = (f->flags & O_HEAD) ? this->outp : this->inp;
@@ -1584,7 +1584,7 @@ pipe_select (FILEPTR *f, long proc, int mode)
 			DEBUG(("read select on wrong end of pipe"));
 			return 0;
 		}
-		
+
 		/* NOTE: if p->writers <= 0 then reads won't block
 		 * (they'll fail)
 		 */
@@ -1596,14 +1596,14 @@ pipe_select (FILEPTR *f, long proc, int mode)
 		{
 			return 1;
 		}
-		
+
 		if (p->rsel)
 			return 2;	/* collision */
-		
+
 		p->rsel = proc;
 		if (is_terminal (f) && !(f->flags & O_HEAD))
 			this->tty->rsel = proc;
-		
+
 		return 0;
 	}
 	else if (mode == O_WRONLY)
@@ -1614,7 +1614,7 @@ pipe_select (FILEPTR *f, long proc, int mode)
 			DEBUG(("write select on wrong end of pipe"));
 			return 0;
 		}
-		
+
 		if ((p->len < PIPESIZ &&
 			(!is_terminal(f) || (f->flags & O_HEAD) ||
 			 !(this->tty->state & TS_HOLD))) ||
@@ -1622,32 +1622,32 @@ pipe_select (FILEPTR *f, long proc, int mode)
 		{
 			return 1;	/* data may be written */
 		}
-		
+
 		if (p->wsel)
 			return 2;	/* collision */
-		
+
 		p->wsel = proc;
 		if (is_terminal(f) && !(f->flags & O_HEAD))
 			this->tty->wsel = proc;
-		
+
 		return 0;
 	}
-	
+
 	return 0;
 }
 
-static void _cdecl 
+static void _cdecl
 pipe_unselect (FILEPTR *f, long proc, int mode)
 {
 	struct fifo *this = (struct fifo *)f->fc.index;
 	struct pipe *p;
-	
+
 	if (mode == O_RDONLY)
 	{
 		p = (f->flags & O_HEAD) ? this->outp : this->inp;
 		if (!p)
 			return;
-		
+
 		if (p->rsel == proc)
 		{
 			p->rsel = 0;
@@ -1660,7 +1660,7 @@ pipe_unselect (FILEPTR *f, long proc, int mode)
 		p = (f->flags & O_HEAD) ? this->inp : this->outp;
 		if (!p)
 			return;
-		
+
 		if (p->wsel == proc)
 		{
 			p->wsel = 0;
