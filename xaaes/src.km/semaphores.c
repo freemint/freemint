@@ -60,8 +60,25 @@ ressource_semaphore_lock(struct ressource_semaphore *s, struct xa_client *client
 static int
 ressource_semaphore_rel(struct ressource_semaphore *s, struct xa_client *client)
 {
+	/*
+	 * Ozk: It seems that applications sometimes call wind_update() with
+	 * END_UPDATE and/or END_MOUSE one or two times more than necessary
+	 * just to be sure locks are released. This means that AES should permit
+	 * and report success with calls to unlock mouse and screen as long as
+	 * they are not owned by another process. A free lock dont belong anywhere, so...
+	*/
 	/* check for correct usage */
-	assert(s->client && s->client == client);
+	//assert(s->client && s->client == client);
+	if (!s->client)
+	{
+		DIAG((D_sema, client, "Releasing unused lock %s", client->name));
+		return 1;
+	}
+	if (s->client && s->client != client)
+	{
+		DIAG((D_sema, client, "%s try releasing lock owned by %s", client->name, s->client->name));
+		return 1;
+	}
 
 	/* decrement semaphore */
 	s->counter--;
@@ -196,8 +213,16 @@ unlock_screen(struct xa_client *client, int which)
 	if (update_lock.client == locker)
 		r = ressource_semaphore_rel(&update_lock, locker);
 	else
+	{
 		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", locker->p->pid));
+		/* Ozk:
+		 * After seeing how things behave, I've come to the conclusion that
+		 * apps looks at update and mouse locks as two indipendant locks..
+		 * So lets try treating them this way...
+		*/
+		r = ressource_semaphore_rel(&update_lock, locker);
 		//ALERT(("unlock_screen from %d without lock_screen!", locker->p->pid));
+	}
 
 	return r;
 }
@@ -259,8 +284,11 @@ unlock_mouse(struct xa_client *client, int which)
 	if (!update_lock.client || update_lock.client == locker)
 		r = ressource_semaphore_rel(&mouse_lock, locker);
 	else
+	{
 		DIAG((D_sema, NULL, "unlock_mouse from %d without lock_screen!", locker->p->pid));
+		r = ressource_semaphore_rel(&mouse_lock, locker);
 		//ALERT(("unlock_mouse from %d without lock_screen!", locker->p->pid));
+	}
 
 	return r;
 }

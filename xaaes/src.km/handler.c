@@ -199,7 +199,7 @@ XA_handler(void *_pb)
 			//vq_key_s(C.vh, &button.ks);
 
 			if (aes_tab[cmd].p & LOCKSCREEN)
-				lock_screen(client, -1, NULL, 2);
+				lock_screen(client, 0/*-1*/, NULL, 2);
 
 			/* callout the AES function */
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
@@ -289,7 +289,15 @@ XA_handler(void *_pb)
 					}
 				}
 			}
-
+#if GENERATE_DIAGS
+			if (client)
+			{
+				if (mouse_locked() == client)
+					DIAG((D_kern, client, "Leaving AES with mouselock %s", client->name));
+				if (update_locked() == client)
+					DIAG((D_kern, client, "Leaving AES with screenlock %s", client->name));
+			}
+#endif
 			return 0;
 		}
 		else

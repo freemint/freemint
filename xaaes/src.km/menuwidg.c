@@ -1197,7 +1197,7 @@ click_popup_entry(struct task_administration_block *tab)
 	pb->intout[0] = md->mn_item < 0 ? 0 : 1;
 
 	tab->client->usr_evnt = 1;
-	Unblock(tab->client, XA_OK, 102);
+	//Unblock(tab->client, XA_OK, 102);
 }
 
 void
@@ -1219,7 +1219,7 @@ click_form_popup_entry(struct task_administration_block *tab)
 	pb->intout[0] = item;
 
 	tab->client->usr_evnt = 1;
-	Unblock(tab->client, XA_OK, 2);
+	//Unblock(tab->client, XA_OK, 2);
 }
 
 /*

@@ -114,7 +114,9 @@ Block(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+		client->inblock = true;
 		sleep(IO_Q, (long)client);
+		client->inblock = false;
 		if ((client->waiting_for & MU_TIMER) && !client->timeout)
 		{
 #if 1
