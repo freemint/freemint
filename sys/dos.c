@@ -701,7 +701,7 @@ shutdown(void)
 	DEBUG(("done"));
 
 	/* Wait for the disks to flush their write cache */
-	delay_seconds(1);
+	delay_seconds(2);
 }
 
 /*
