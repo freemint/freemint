@@ -292,10 +292,10 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 
 		dest_client->usr_evnt = 1;
 		cancel_evnt_multi(dest_client, 22);
-		dest_client->status &= ~CS_CE_REDRAW_SENT;
 		if (msg->m[0] == WM_REDRAW)
 		{
 			C.redraws--;
+			dest_client->status &= ~CS_CE_REDRAW_SENT;
 			if (!C.redraws)
 				kick_mousemove_timeout();
 		}
@@ -309,7 +309,10 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 		 * the client event here.
 		 */
 		if (msg->m[0] == WM_REDRAW)
+		{
 			C.redraws--;
+			dest_client->status &= ~CS_CE_REDRAW_SENT;
+		}
 	}
 }
 
