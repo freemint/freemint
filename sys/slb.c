@@ -236,7 +236,7 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 		path = getslbpath(curproc->base);
 # endif		
 	if (path == 0L)
-		path = ".\\";
+		path = "./";
 
 	fullpath = kmalloc(strlen(path) + strlen(name) + 2);
 	if (fullpath == 0L)
@@ -244,11 +244,9 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 		DEBUG(("Slbopen: Couldn't kmalloc() full pathname"));
 		return(ENOMEM);
 	}
-	strcpy(fullpath + 1, path);	/* leave 1 byte for commandline length */
-	strcat(fullpath, "\\");
+	strcpy(fullpath, path);
+	strcat(fullpath, "/");
 	strcat(fullpath, name);
-	
-	fullpath[0] = 0x70;		/* say this much... (must be below $7f) */
 	
 	/* Create the new shared library structure */
 	mr = get_region(alt, sizeof(SHARED_LIB) + strlen(name), PROT_PR);
@@ -269,7 +267,7 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	(*sl)->slb_region = mr;
 
 	/* Load, but don't run the SLB */
-	r = p_exec(3, fullpath + 1, fullpath, 0L);
+	r = p_exec(3, fullpath, fullpath, 0L);
 	kfree(fullpath);
 	if (r <= 0L)
 	{
