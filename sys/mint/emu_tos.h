@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,15 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
- * begin:	2000-11-09
- * last change:	2001-03-01
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  * 
  */
 
@@ -60,7 +55,7 @@ struct dtabuf
 	ushort	dta_time;
 	ushort	dta_date;
 	ulong	dta_size;
-	char	dta_name [TOS_NAMELEN+1];
+	char	dta_name[TOS_NAMELEN+1];
 };
 
 /* defines for TOS attribute bytes */
@@ -112,5 +107,19 @@ typedef struct
 	
 } BCONMAP2_T;
 
+struct kbdvbase
+{
+	long	midivec;
+	long	vkbderr;
+	long	vmiderr;
+	long	statvec;
+	long	mousevec;
+	long	clockvec;
+	long	joyvec;
+	long	midisys;
+	long	ikbdsys;
+	short	drvstat;	/* Non-zero if a packet is currently transmitted. */
+};
+typedef struct kbdvbase KBDVEC;
 
 # endif /* _mint_emu_tos_h */

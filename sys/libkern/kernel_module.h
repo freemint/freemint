@@ -767,15 +767,17 @@ check_kentry_version(void)
  * kentry_mch
  */
 
-// define cpu			(*KENTRY->vec_mch.cpu)
-// define fpu			(*KENTRY->vec_mch.fpu)
-// define vdo			(*KENTRY->vec_mch.vdo)
-// define mch			(*KENTRY->vec_mch.mch)
-// define lang			(*KENTRY->vec_mch.lang)
-// define c20ms			(*KENTRY->vec_mch.c20ms)
-// define mfpbase		(*KENTRY->vec_mch.mfpbase)
-
+# define mch			( KENTRY->vec_mch.mch)
+# define fputype		( KENTRY->vec_mch.fputype)
+# define tosvers		( KENTRY->vec_mch.tosvers)
+# define gl_lang		( KENTRY->vec_mch.gl_lang)
+# define sysdrv			( KENTRY->vec_mch.sysdrv)
+# define sysdir			( KENTRY->vec_mch.sysdir)
+# define loops_per_sec_ptr	( KENTRY->vec_mch.loops_per_sec)
+# define c20ms_ptr		( KENTRY->vec_mch.c20ms)
+# define mfpregs		( KENTRY->vec_mch.mfpregs)
 # define cpush			(*KENTRY->vec_mch.cpush)
+# define nf_ops			( KENTRY->vec_mch.nf_ops)
 
 
 /*
@@ -902,7 +904,6 @@ check_kentry_version(void)
  */
 
 # define dma_interface		( KENTRY->vec_misc.dma)
-# define loops_per_sec_ptr	( KENTRY->vec_misc.loops_per_sec)
 # define get_toscookie		(*KENTRY->vec_misc.get_toscookie)
 # define add_rsvfentry		(*KENTRY->vec_misc.add_rsvfentry)
 # define del_rsvfentry		(*KENTRY->vec_misc.del_rsvfentry)

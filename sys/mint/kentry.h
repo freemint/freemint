@@ -46,6 +46,7 @@ struct bio;
 struct dirstruct;
 struct dma;
 struct file;
+struct global;
 struct ilock;
 struct mfp;
 struct module_callback;
@@ -99,47 +100,39 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	4
+#define KENTRY_MIN_VERSION	5
 
 
 /* hardware dependant vector
  */
 struct kentry_mch
 {
-	long		cpu;	/* our actual cpu type */
-	short		fpu;	/* our actual fpu type */
-	short		vdo;	/* video system */
-	long		mch;	/* the machine we running */
+	/* global values/flags */
+	const struct global * const global;
 
-	short		lang;	/* language preference */
-	short		res;	/* reserved */
+	/* for udelay timing loop */
+	const unsigned long *loops_per_sec;
 
-	unsigned long	c20ms;	/* linear 20 ms counter */
+	/* address of the linear 20ms counter */
+	const unsigned long *c20ms;
 
-	/* the (important) MFP base address */
-	struct mfp	*_mfpbase;
-
-	/* interrupt vector */
-	/* Func	intr [256]; */
+	/* mfp base register */
+	struct mfp *mfpregs;
 
 	/* CPU dependant functions */
-	void	_cdecl	(*cpush)(const void *base, long size);
+	void _cdecl (*cpush)(const void *base, long size);
+
+	/* nf operation vector if available on this machine; NULL otherwise */
+	struct nf_ops *nf_ops;
 };
 #define DEFAULTS_kentry_mch \
 { \
-	0, \
-	0, \
-	0, \
-	0, \
-	\
-	0, \
-	0, \
-	\
-	/* c20ms */ 0, \
-	\
-	/* _mfpbase */ NULL, \
-	\
+	&global, \
+	&loops_per_sec, \
+	&c20ms, \
+	_mfpregs, \
 	cpush, \
+	NULL, \
 }
 
 
@@ -330,14 +323,14 @@ struct kentry_mem
 	 *
 	 */
 
-	void *	_cdecl (*kcore)(unsigned long size, const char *func);
-	void *	_cdecl (*kmalloc)(unsigned long size, const char *func);
-	void	_cdecl (*kfree)(void *place, const char *func);
+	void *_cdecl (*kcore)(unsigned long size, const char *func);
+	void *_cdecl (*kmalloc)(unsigned long size, const char *func);
+	void  _cdecl (*kfree)(void *place, const char *func);
 	
-	void *	_cdecl (*dmabuf_alloc)(unsigned long size, short cmode, const char *func);
+	void *_cdecl (*dmabuf_alloc)(unsigned long size, short cmode, const char *func);
 
-	void *	_cdecl (*umalloc)(unsigned long size, const char *func);
-	void	_cdecl (*ufree)(void *place, const char *func);
+	void *_cdecl (*umalloc)(unsigned long size, const char *func);
+	void  _cdecl (*ufree)(void *place, const char *func);
 };
 #define DEFAULTS_kentry_mem \
 { \
@@ -392,7 +385,7 @@ struct kentry_fs
 	LOCK *_cdecl (*denylock)(struct ilock *, struct ilock *);
 
 	struct bio *bio; /* buffered block I/O */
-	struct timeval *xtime; /* pointer to current kernel time - UTC */
+	const struct timeval *xtime; /* pointer to current kernel time - UTC */
 
 	long _cdecl (*kernel_opendir)(struct dirstruct *dirh, const char *name);
 	long _cdecl (*kernel_readdir)(struct dirstruct *dirh, char *buf, int len);
@@ -433,15 +426,15 @@ struct kentry_fs
  */
 struct kentry_sockets
 {
-	void	_cdecl (*so_register)(short, struct dom_ops *);
-	void	_cdecl (*so_unregister)(short);
-	long	_cdecl (*so_release)(struct socket *);
-	void	_cdecl (*so_sockpair)(struct socket *, struct socket *);
-	long	_cdecl (*so_connect)(struct socket *, struct socket *, short, short, short);
-	long	_cdecl (*so_accept)(struct socket *, struct socket *, short);
-	long	_cdecl (*so_create)(struct socket **, short, short, short);
-	long	_cdecl (*so_dup)(struct socket **, struct socket *);
-	void	_cdecl (*so_free)(struct socket *);
+	void _cdecl (*so_register)(short, struct dom_ops *);
+	void _cdecl (*so_unregister)(short);
+	long _cdecl (*so_release)(struct socket *);
+	void _cdecl (*so_sockpair)(struct socket *, struct socket *);
+	long _cdecl (*so_connect)(struct socket *, struct socket *, short, short, short);
+	long _cdecl (*so_accept)(struct socket *, struct socket *, short);
+	long _cdecl (*so_create)(struct socket **, short, short, short);
+	long _cdecl (*so_dup)(struct socket **, struct socket *);
+	void _cdecl (*so_free)(struct socket *);
 };
 #define DEFAULTS_kentry_sockets \
 { \
@@ -461,8 +454,8 @@ struct kentry_sockets
  */
 struct kentry_module
 {
-	void	_cdecl (*load_modules)(const char *extension,
-				       long _cdecl (*loader)(struct basepage *, const char *));
+	void _cdecl (*load_modules)(const char *extension,
+				    long _cdecl (*loader)(struct basepage *, const char *));
 
 	/* register VDI or AES trap handler
 	 * 
@@ -475,7 +468,7 @@ struct kentry_module
 	 * return 0 on success
 	 * or error number for a failure 
 	 */
-	long	_cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
+	long _cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
 };
 #define DEFAULTS_kentry_module \
 { \
@@ -488,9 +481,9 @@ struct kentry_module
  */
 struct kentry_cnf
 {
-	void	_cdecl (*parse_cnf)(const char *name, struct parser_item *, void *);
-	void	_cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
-	void	_cdecl (*parser_msg)(struct parsinf *, const char *msg);
+	void _cdecl (*parse_cnf)(const char *name, struct parser_item *, void *);
+	void _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
+	void _cdecl (*parser_msg)(struct parsinf *, const char *msg);
 };
 #define DEFAULTS_kentry_cnf \
 { \
@@ -507,30 +500,19 @@ struct kentry_misc
 	/* easy to use DMA interface, see dma.c for more details */
 	struct dma *dma;
 
-	/* for udelay timing loop */
-	unsigned long *loops_per_sec;
-
 	/* lookup cookies in original TOS cookiejar */
-	long	_cdecl (*get_toscookie)(unsigned long tag, unsigned long *val);
+	long _cdecl (*get_toscookie)(unsigned long tag, unsigned long *val);
 
-	long	_cdecl (*add_rsvfentry)(char *, char, char);
-	long	_cdecl (*del_rsvfentry)(char *);
+	long _cdecl (*add_rsvfentry)(char *, char, char);
+	long _cdecl (*del_rsvfentry)(char *);
 
 	/* return the number of milliseconds remaining to preemption time.
 	 */
-	ulong	_cdecl (*remaining_proc_time)(void);
-
-	/* nf operation vector if available
-	 * on this machine; NULL otherwise
-	 * 
-	 * XXX -> kentry_arch or something like this
-	 */
-	struct nf_ops *nf_ops;
+	unsigned long _cdecl (*remaining_proc_time)(void);
 };
 #define DEFAULTS_kentry_misc \
 { \
 	&dma, \
-	&loops_per_sec, \
 	\
 	get_toscookie, \
 	\
@@ -538,8 +520,6 @@ struct kentry_misc
 	del_rsvfentry, \
 	\
 	remaining_proc_time, \
-	\
-	NULL, \
 }
 
 
