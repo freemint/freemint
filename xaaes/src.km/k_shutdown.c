@@ -45,43 +45,32 @@ void
 k_shutdown(void)
 {
 	int count = 0;
+
 	DIAGS(("Cleaning up ready to exit...."));
 
-#if 0
-	DIAGS(("Cleaning up clients"));
+	/* wait until the clients are gone */
+	DIAGS(("Wait for all clients to exit ..."));
+	for (;;)
 	{
 		struct xa_client *client;
+		int flag = 1;
 
 		client = S.client_list;
 		while (client)
 		{
 			if (client != C.Aes)
-				ikill(client->p->pid, SIGKILL);
-
-			client = client->next;
-		}
-	}
-#endif
-	/* wait until the clients are gone */
-	DIAGS(("Wait for all clients to exit ..."));
-	for (;;)
-	{
-		struct xa_client *client = S.client_list;
-		int flag = 0;
-
-		while (client)
-		{
-			if (client != C.Aes)
 			{
-				flag = 1;
+				flag = 0;
 				DIAGS(("client '%s' still running", client->name));
 			}
 
 			client = client->next;
 		}
-		if (!flag)
+
+		if (flag)
 			break;
-		else if (count >= 1000)
+
+		if (count >= 1000)
 		{
 			DIAGS(("Cleaning up clients"));
 			{
@@ -89,15 +78,8 @@ k_shutdown(void)
 				while (client)
 				{
 					if (client != C.Aes)
-					{
-						if (client == S.client_list)
-							S.client_list = client->next;
-						if (client->prior)
-							client->prior->next = client->next;
-						if (client->next)
-							client->next->prior = client->prior;
 						ikill(client->p->pid, SIGKILL);
-					}
+
 					client = client->next;
 				}
 			}
