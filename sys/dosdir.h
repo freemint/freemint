@@ -11,6 +11,7 @@
 # include "mint/mint.h"
 # include "mint/file.h"
 
+struct proc;
 
 /* table of processes holding locks on drives */
 extern struct proc *dlockproc[NUM_DRIVES];
@@ -21,6 +22,7 @@ long _cdecl sys_d_getdrv	(void);
 long _cdecl sys_d_free		(long *buf, int d);
 long _cdecl sys_d_create	(const char *path);
 long _cdecl sys_d_delete	(const char *path);
+long        sys_d_setpath0	(struct proc *p, const char *path);
 long _cdecl sys_d_setpath	(const char *path);
 long _cdecl sys_d_getpath	(char *path, int drv);
 long _cdecl sys_d_getcwd	(char *path, int drv, int size);

@@ -106,7 +106,6 @@
  * functions should first check for an error condition and then
  * decrement the returned value by 20.
  */
-
 long _cdecl 
 sys_pgetpriority(short which, short who) 
 { 
@@ -237,8 +236,7 @@ sys_pgetpriority(short which, short who)
  * The error condition reported is the last error condition 
  * encountered (in other words if both EACCES and EPERM occur
  * the return value is arbitrary).
- */
- 
+ */ 
 long _cdecl 
 sys_psetpriority(short which, short who, short pri)
 { 
@@ -389,7 +387,6 @@ sys_psetpriority(short which, short who, short pri)
  * Anyway, the use of Pnice and Prenice is deprecated now.  Use Pgetpriority
  * or Psetpriority instead.
  */
-
 long _cdecl
 sys_prenice(short pid, short delta)
 {
@@ -399,11 +396,10 @@ sys_prenice(short pid, short delta)
 		return ESRCH;
 	
 	pri = sys_pgetpriority(PRIO_PROCESS, pid);
-	
 	if (pri < 0)
 		return pri;
 	
-	pri -= PRIO_MAX;  /* Mask out error code.  */
+	pri -= PRIO_MAX;
 	
 	if (delta != 0)
 	{
@@ -466,8 +462,6 @@ sys_prusage(long *r)
  *    1:  max. cpu time	(milliseconds)
  *    2:  max. core memory allowed
  *    3:  max. amount of malloc'd memory allowed
- *
- * Attention: recalc_maxmem() only work correctly for curproc!
  */
 long _cdecl
 sys_psetlimit(short i, long v)
@@ -480,7 +474,8 @@ sys_psetlimit(short i, long v)
 		case 1:
 		{
 			oldlimit = p->maxcpu;
-			if (v >= 0) p->maxcpu = v;
+			if (v >= 0)
+				p->maxcpu = v;
 			break;
 		}
 		case 2:
@@ -488,8 +483,10 @@ sys_psetlimit(short i, long v)
 			oldlimit = p->maxcore;
 			if (v >= 0)
 			{
+				BASEPAGE *b = p->p_mem->base;
+
 				p->maxcore = v;
-				recalc_maxmem (p);
+				recalc_maxmem(p, b->p_tlen + b->p_dlen + b->p_blen);
 			}
 			break;
 		}
@@ -498,8 +495,10 @@ sys_psetlimit(short i, long v)
 			oldlimit = p->maxdata;
 			if (v >= 0)
 			{
+				BASEPAGE *b = p->p_mem->base;
+
 				p->maxdata = v;
-				recalc_maxmem (p);
+				recalc_maxmem(p, b->p_tlen + b->p_dlen + b->p_blen);
 			}
 			break;
 		}
