@@ -566,13 +566,20 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->gid = p->p_cred->rgid;
 	stat->size = 0;
 	stat->blksize = 1;
-	stat->blocks = 0;	
-	stat->mtime.time = p->started.tv_sec;
-	stat->mtime.nanoseconds = p->started.tv_usec;
+	stat->blocks = 0;
+	
+	stat->atime.high_time = 0;	
 	stat->atime.time = xtime.tv_sec;
 	stat->atime.nanoseconds = xtime.tv_usec;
+	
+	stat->mtime.high_time = 0;	
+	stat->mtime.time = p->started.tv_sec;
+	stat->mtime.nanoseconds = p->started.tv_usec;
+	
+	stat->ctime.high_time = 0;	
 	stat->ctime.time = p->started.tv_sec;
 	stat->ctime.nanoseconds = p->started.tv_usec;
+	
 	stat->flags = 0;
 	stat->gen = 0;
 	
