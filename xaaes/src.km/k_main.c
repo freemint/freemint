@@ -51,6 +51,7 @@
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
+#include "mint/ioctl.h"
 #include "mint/signal.h"
 
 
@@ -131,9 +132,6 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 		cancel_evnt_multi(client,1);
 	}
 }
-
-		
-		
 
 
 static const char alert_pipe_name[] = "u:\\pipe\\alert";
