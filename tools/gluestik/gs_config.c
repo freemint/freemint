@@ -30,6 +30,29 @@
 # include <mintbind.h>
 # include <sys/stat.h>
 
+typedef struct xattr		XATTR;
+
+/* structure for Fxattr */
+struct xattr
+{
+	ushort	mode;
+	long	index;
+	ushort	dev;
+	ushort	rdev;		/* "real" device */
+	ushort	nlink;
+	ushort	uid;
+	ushort	gid;
+	long	size;
+	long	blksize;
+	long	nblocks;
+	ushort	mtime, mdate;
+	ushort	atime, adate;
+	ushort	ctime, cdate;
+	short	attr;
+	short	reserved2;
+	long	reserved3[2];
+};
+
 # include "gs_config.h"
 
 
@@ -77,48 +100,46 @@ static char stikdir_dat[] = "A:\\STIK_DIR.DAT";
  * GrowBuf |G|, reallocating the buffer if necessary
  */
 static int
-growbuf (GrowBuf *G, int new_slots)
+growbuf (GrowBuf *buf, int new_slots)
 {
-	if (!G->mem)
+	if (!buf->mem)
 	{
-		G->mem = malloc (G->size * new_slots);
-		if (!G->mem)
+		buf->mem = malloc (buf->size * new_slots);
+		if (!buf->mem)
 			return 0;
 		
-		G->n_slots = new_slots;
-		G->n_entries = 0;
+		buf->n_slots = new_slots;
+		buf->n_entries = 0;
 		
 		return 1;
 	}
 	
-	if (G->n_entries + new_slots <= G->n_slots)
-	{
+	if (buf->n_entries + new_slots <= buf->n_slots)
 		return 1;
-	}
 	
 	{
-		int n = G->n_slots;
+		int n = buf->n_slots;
 		void *v;
 		
-		while (n < G->n_entries + new_slots)
+		while (n < buf->n_entries + new_slots)
 			n *= 2;
 		
-		v = malloc (G->size * n);
+		v = malloc (buf->size * n);
 		if (!v)
 			return 0;
 		
-		memcpy (v, G->mem, G->size * G->n_entries);
-		free (G->mem);
+		memcpy (v, buf->mem, buf->size * buf->n_entries);
+		free (buf->mem);
 		
-		G->mem = v;
-		G->n_slots = n;
+		buf->mem = v;
+		buf->n_slots = n;
 		
 		return 1;
 	}
 }
 
-# define GROWBUF(G, slots, var) \
-	(growbuf (&(G), slots) ? (((var) = (G).mem), 1) : 0)
+# define GROWBUF(buf, slots, var) \
+	(growbuf (&(buf), slots) ? (((var) = (buf).mem), 1) : 0)
 
 /* set_var() -- add variable |name| with value |value| (or change value
  * if variable is already present).  Returns 1 on success, 0 on failure.
@@ -199,7 +220,7 @@ find_config_file (void)
 	fd = l;
 	if ((n = Fread (fd, sizeof (cfg_filename), cfg_filename)) < 0)
 	{
-		Fclose(fd);
+		Fclose (fd);
 		Cconws ("Error reading STIK_DIR.DAT; using default path\r\n");
 		return 1;
 	}
@@ -228,24 +249,22 @@ find_config_file (void)
 	return 1;
 }
 
-# define NEXT_LINE()	{ while (*s) s++; while (!*s) s++; }
-
 int
 load_config_file (void)
 {
+	XATTR xattr;
 	char *file_data;
-	register char *s, *t;
 	ulong filesize;
 	long l;
 	int n, fd;
-	struct stat S;
+	register char *s, *t;
 	
 	if (!GROWBUF (gvars, 100, vars) || !GROWBUF (gdata, 5000, data))
 	{
 		Cconws ("Cannot get memory for STiK vars\r\n");
 		return 0;
 	}
-
+	
 	if (!find_config_file ())
 	{
 		/* Okay, so I'm paranoid... ;)
@@ -254,7 +273,7 @@ load_config_file (void)
 		return 0;
 	}
 	
-	if (Fxattr (0, cfg_filename, &S))
+	if (Fxattr (0, cfg_filename, &xattr))
 	{
 		Cconws ("Config file ");
 		Cconws (cfg_filename);
@@ -268,11 +287,11 @@ load_config_file (void)
 		return 1;
 	}
 	
-	filesize = S.st_size;
+	filesize = xattr.size;
 	Cconws ("Reading config file ");
 	Cconws (cfg_filename);
 	Cconws ("...\r\n");
-
+	
 	file_data = malloc (filesize + 2);
 	if (!file_data)
 	{
@@ -305,7 +324,7 @@ load_config_file (void)
 	
 	Fclose (fd);
 	*s = 0;
-
+	
 	/* Split off all lines */
 	for (s = file_data; s < file_data + filesize; s++)
 	{
@@ -316,15 +335,25 @@ load_config_file (void)
 	s = file_data;
 	while (s < file_data + filesize)
 	{
-		/* Skip blank lines and comments
+		/* skip blanks
 		 */
-		while (*s && isspace (*s)) s++;
-		if (!*s || *s == '#')
+		while (*s && isspace (*s))
+			s++;
+		
+		if (!*s)
 		{
-			NEXT_LINE ();
+			s++;
 			continue;
 		}
-
+		
+		/* skip comments
+		 */
+		if (*s == '#')
+		{
+			while (*s) s++;
+			continue;
+		}
+		
 		/* If no '=', variable is "true"
 		 */
 		t = strchr(s, '=');
@@ -352,7 +381,7 @@ load_config_file (void)
 setit:
 		if (set_var (s, t))
 		{
-			NEXT_LINE ();
+			while (*s) s++;
 			continue;
 		}
 		
