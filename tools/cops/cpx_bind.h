@@ -29,10 +29,6 @@
 #include "global.h"
 #include "cpx.h"
 
-void a_call_main(void);
-void new_context(CPX_DESC *cpx_desc);
-void switch_context(CPX_DESC *cpx_desc);
-
 void cpx_userdef(void (*cpx_userdef)(void));
 
 /* cpx callbacks */
@@ -47,5 +43,12 @@ short cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets);
 short cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets);
 short cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, short *nclicks);
 void cpx_close(CPX_DESC *cpx_desc, short flag);
+
+/* the cpx context magics (rewritten in C from the asm parts) */
+void a_call_main(void);
+short new_context(CPX_DESC *cpx_desc);
+void switch_context(CPX_DESC *cpx_desc);
+
+short _cdecl Xform_do(struct Xform_do_args);
 
 #endif /* _cpx_bind_h */

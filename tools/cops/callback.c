@@ -55,7 +55,6 @@ static void    _cdecl Sl_y(struct Sl_xy_args);
 static void    _cdecl Sl_arrow(struct Sl_arrow_args);
 static void    _cdecl Sl_dragx(struct Sl_dragxy_args);
 static void    _cdecl Sl_dragy(struct Sl_dragxy_args);
-static short   _cdecl Xform_do(struct Xform_do_args);
 static GRECT * _cdecl GetFirstRect(GRECT *prect);
 static GRECT * _cdecl GetNextRect(void);
 static void    _cdecl Set_Evnt_Mask(struct Set_Evnt_Mask_args);
@@ -110,8 +109,8 @@ struct xcpb xctrl_pb =
 /*
  * search cpx
  */
-static CPX_DESC *
-find_cpx(const void *addr)
+CPX_DESC *
+find_cpx_by_addr(const void *addr)
 {
 	CPX_DESC *cpx;
 
@@ -221,7 +220,7 @@ rsh_fix(struct rsh_fix_args args)
 	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx(addr);
+	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		cpx_rsh_fix(cpx, &args);
 }
@@ -288,7 +287,7 @@ rsh_obfix(struct rsh_obfix_args args)
 	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx(addr);
+	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		cpx_rsh_obfix(cpx, args.tree, args.ob);
 }
@@ -687,7 +686,7 @@ is_edit_obj_hidden(OBJECT *tree, short obj)
 /*	edit_obj:	Nummer des aktiven Editobjekts oder 0				  */
 /*	msg:		Zeiger auf Message-Buffer fuer ausgewaehlte Ereignisse		  */
 /*----------------------------------------------------------------------------------------*/ 
-static CPX_DESC *
+CPX_DESC *
 cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 {
 	DIALOG *dialog;
@@ -776,7 +775,7 @@ GetFirstRect(GRECT *prect)
 	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx(addr);
+	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		return cpx_get_first_rect(cpx, prect);
 
@@ -820,7 +819,7 @@ GetNextRect(void)
 	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx(addr);
+	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		return cpx_get_next_rect(cpx);
 
@@ -865,7 +864,7 @@ Set_Evnt_Mask(struct Set_Evnt_Mask_args args)
 	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx(addr);
+	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		cpx_set_evnt_mask(cpx, args.mask, args.m1, args.m2, args.evtime);
 }
@@ -953,7 +952,7 @@ CPX_Save(void *ptr, long bytes)
 	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx(addr);
+	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		return cpx_save_data(cpx, ptr, bytes);
 
@@ -973,7 +972,7 @@ Get_Buffer(void)
 
 	DEBUG(("Get_Buffer\n"));
 
-	cpx = find_cpx(addr);
+	cpx = find_cpx_by_addr(addr);
 	if (cpx)
 		return cpx->old.header.buffer;
 

@@ -35,6 +35,10 @@
 
 extern struct xcpb xctrl_pb;
 
+/* lookup cpx descriptor with addr */
+CPX_DESC *find_cpx_by_addr(const void *addr);
+
 short _cdecl save_header(struct cpxlist *header);
+CPX_DESC *cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg);
 
 #endif /* _callback_h */

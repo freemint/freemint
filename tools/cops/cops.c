@@ -1571,6 +1571,8 @@ open_cpx_context(CPX_DESC *cpx_desc)
 	/* ist das CPX resident? */
 	if (cpx_desc->start_of_cpx)
 	{
+		DEBUG(("open_cpx_context: resident cpx\n"));
+
 		cpx_desc->info = cpx_init(cpx_desc, &cpx_desc->xctrl_pb);
 
 		/* soll kein Fenster geoeffnet werden? */
@@ -1604,6 +1606,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 	else
 	{
 		/* CPX neu laden */
+		DEBUG(("open_cpx_context: load cpx new\n"));
 
 		/* Resource noch nicht angepasst */
 		cpx_desc->xctrl_pb.SkipRshFix = 0;
@@ -1687,6 +1690,8 @@ open_cpx_context(CPX_DESC *cpx_desc)
 	/* Fehler beim Oeffnen? */
 	if (err)
 		form_alert(1, fstring_addr[CPXLOAD_ALERT]);
+
+	DEBUG(("open_cpx_context: done (err = %d)\n", err));
 }
 
 /*----------------------------------------------------------------------------------------*/
