@@ -1111,8 +1111,8 @@ setenv SLBPATH u:/c/multitos,u:/c/multitos/slb
 #exec u:/c/mint/bin/sh u:/c/mint/bin/fscheck.sh
 #echo
 
-# Set up time stuff. Below are the default settings that the
-# kernel uses. The tzinit program is provided in the util/tzinit
+# Set up time stuff.
+# The tzinit program is provided in the util/tzinit
 # subdirectory. For information about the exec keyword see the
 # paragraph above.
 
@@ -1155,7 +1155,9 @@ setenv SLBPATH u:/c/multitos,u:/c/multitos/slb
 INIT=u:/boot/mint/init.prg
 
 # If you leave both commands above commented out, the MiNT will
-# attempt to execute the internal minimum shell.
+# attempt to execute a shell called `sh.tos' found in the system
+# directory (the same as mint.cnf is). If this fails too, the
+# internal minimum shell will be launched.
 
 # Before the MiNT executes the rest of the operating system, it is
 # usually the best to change the current directory to the top
