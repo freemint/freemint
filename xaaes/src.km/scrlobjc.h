@@ -29,8 +29,9 @@
 
 #include "global.h"
 
-void click_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
-void dclick_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
+void	click_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
+void	dclick_scroll_list(enum locks lock, OBJECT *form, int objc, const struct moose_data *md);
+void	draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip);
 
 SCROLL_INFO *set_slist_object(
 		enum locks lock,
@@ -47,7 +48,7 @@ SCROLL_INFO *set_slist_object(
 		scrl_add	*add,
 		scrl_del	*del,
 		scrl_empty	*empty,
-		scrl_widget	*destroy,
+		scrl_list	*destroy,
 		
 		char *title, char *info,
 		void *data,

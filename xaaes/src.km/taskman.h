@@ -41,6 +41,8 @@ void free_namelist(struct cfg_name_list **list);
 void open_taskmanager(enum locks lock);
 void update_tasklist(enum locks lock);
 
+void open_imgload(enum locks lock);
+
 void do_system_menu(enum locks lock, int clicked_title, int menu_item);
 
 #endif /* _taskman_h */

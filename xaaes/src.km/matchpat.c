@@ -48,11 +48,24 @@
 #include "global.h"
 #include "matchpat.h"
 
-
 int
-match_pattern(char *t, char *pat)
+match_pattern(char *t, char *pat, bool auto_wc)
 {
 	int valid = 1;
+	int len = 0;
+	char *p = pat;
+
+	if (auto_wc)
+	{
+		len = strlen(p);
+		if (p[len - 1] != '*')
+		{
+			p[len] = '*';
+			p[len + 1] = '\0';
+		}
+		else
+			auto_wc = false;
+	}
 
 	while (valid && ((*t && *pat) || (!*t && *pat == '*')))
 	{
@@ -76,7 +89,7 @@ match_pattern(char *t, char *pat)
 			/* !X means any character but X */
 			case '!':
 			{
-				if (toupper(*t) != toupper(pat[1]))
+				if (pat[1] && toupper(*t) != toupper(pat[1]))
 				{
 					t++;
 					pat += 2;
@@ -88,13 +101,18 @@ match_pattern(char *t, char *pat)
 			/* [<chars>] means any one of <chars> */
 			case '[':
 			{
-				while ((*(++pat) != ']') && (toupper(*t) != toupper(*pat)))
+				while (*++pat && (*(pat) != ']') && (toupper(*t) != toupper(*pat)))
 					;
-				if (*pat == ']')
+
+				if (!*pat || *pat == ']')
 					valid = 0;
 				else
-					while (*++pat != ']')
+				{
+					while (*++pat && *pat != ']')
 						;
+					if (!*pat)
+						valid = 0;
+				}
 				pat++;
 				t++;
 				break;
@@ -107,6 +125,10 @@ match_pattern(char *t, char *pat)
 			}
 		}
 	}
-
-	return (valid && (toupper(*t) == toupper(*pat)));
+	valid = (valid && (toupper(*t) == toupper(*pat)));
+	
+	if (auto_wc)
+		p[len] = '\0';
+	
+	return valid;
 }

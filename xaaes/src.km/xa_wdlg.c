@@ -470,7 +470,7 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		XA_WIND_ATTR tp = (unsigned short)pb->intin[0];
 		char *s;
 
-		tp &= CLOSER|MOVER|NAME;
+		tp &= ~STD_WIDGETS; //CLOSER|MOVER|NAME;
 		tp |= MOVER|NAME;
 
 		/* The following if is a result of the clumsiness of the

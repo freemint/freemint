@@ -44,6 +44,7 @@
 
 #include "mint/signal.h"
 
+#if 0
 static const char stillrun[] = " is still running.|Wait again or Kill?][Wait|Kill]";
 
 static bool
@@ -62,6 +63,7 @@ kill_or_wait(struct xa_client *client)
 
 	return false;
 }
+#endif
 
 static void
 CE_at_terminate(enum locks lock, struct c_event *ce, bool cancel)
@@ -154,6 +156,8 @@ k_shutdown(void)
 #endif
 	DIAGS(("Removing all remaining windows"));
 	remove_all_windows(NOLOCKING, NULL);
+	DIAGS(("Freeing delayed deleted windows"));
+	do_delayed_delete_window(NOLOCKING);
 	DIAGS(("Closing and deleting root window"));
 	if (root_window)
 	{
@@ -161,9 +165,6 @@ k_shutdown(void)
 		delete_window(NOLOCKING, root_window);
 		root_window = NULL;
 	}
-
-	DIAGS(("Freeing delayed deleted windows"));
-	do_delayed_delete_window(NOLOCKING);
 
 	post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
 	yield();
@@ -176,7 +177,7 @@ k_shutdown(void)
 	}
 
 	DIAGS(("Freeing Aes resources"));
-	
+
 	/* To demonstrate the working on multiple resources. */
 	FreeResources(C.Aes, 0);/* first: widgets */
 	FreeResources(C.Aes, 0);/* then: big resource */

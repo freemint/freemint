@@ -760,22 +760,33 @@ select_edsize(struct xa_fnts_info *fnts)
 	struct scroll_info *list;
 	struct scroll_entry *ent;
 	OBJECT *obtree = fnts->wt->tree;
+	short redraw;
 
 	list = object_get_slist(obtree + FNTS_POINTS);
-	ent = list->search(list, NULL, object_get_tedinfo(obtree + FNTS_EDSIZE)->te_ptext, SEFM_BYTEXT);
+	ent = list->search(list, NULL, SEFM_BYTEXT, object_get_tedinfo(obtree + FNTS_EDSIZE)->te_ptext);
 	
+	if (list->cur)
+	{
+		list->set(list, list->cur, SESET_UNSELECTED, 0, true);
+		redraw = NORMREDRAW;
+	}
+	else
+		redraw = FULLREDRAW;
+
 	if (ent)
 	{
 		list->cur = ent;
-		list->vis(list, ent, false);
+		list->set(list, ent, SESET_SELECTED, 0, NOREDRAW);
+		list->vis(list, ent, redraw);
 	}
 	else
 	{
 		list->cur = NULL;
-		list->slider(list);
+		list->slider(list, true);
+		list->redraw(list, NULL);
 	}
 
-	fnts_redraw(0, fnts->wind, FNTS_POINTS, 1, NULL);
+	//fnts_redraw(0, fnts->wind, FNTS_POINTS, 1, NULL);
 }
 
 static void
@@ -785,23 +796,28 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 	OBJECT *obtree = fnts->wt->tree;
 	struct scroll_info *list = object_get_slist(obtree + FNTS_POINTS);
 	char b[8];
+	struct scroll_content sc = { 0 };
 
-	list->empty(list, -1);
+	list->empty(list, NULL, -1);
 
 	if (f)
 	{
+		sc.n_strings = 1;
 		for (i = 0; i < f->f.npts; i++)
 		{
+			sc.text = b;
+			sc.data = f;
 			sprintf(b, sizeof(b), "%d", f->f.pts[i]);
 			DIAGS(("set_point_list: add '%s'", b));
-			list->add(list, NULL, b, FLAG_AMAL, f);
+			list->add(list, NULL, NULL, &sc, false, FLAG_AMAL, false);
 		}
 	}
-
+	
 	fnts->fnts_selected = f;
-	
 	select_edsize(fnts);
-	
+
+	//list->redraw(list, NULL);
+
 	fnts_redraw(0, fnts->wind, FNTS_SHOW, 1, NULL);
 }
 
@@ -812,17 +828,27 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 	OBJECT *obtree = fnts->wt->tree;
 	SCROLL_INFO *list = object_get_slist(obtree + FNTS_FNTLIST);
 	SCROLL_INFO *list_type = object_get_slist(obtree + FNTS_TYPE);
+	struct scroll_content sc = { 0 };
+	struct xa_wtxt_inf wtxt;
 
-	list_type->empty(list_type, -1);
+	list_type->empty(list_type, NULL, -1);
 
 	if (list->cur)
 	{
-		f = list->cur->data;
+		list_type->get(list_type, NULL, SEGET_WTXT, &wtxt);
+		if (fnts->dialog_flags & FNTS_DISPLAY)
+			sc.fnt = &wtxt;
+		
+		f = list->cur->c.data;
 		if (*f->f.style_name != '\0')
 		{
+			sc.n_strings = 1;
 			while (f)
 			{
-				list_type->add(list_type, NULL, f->f.style_name, 0, f);
+				wtxt.n.f = wtxt.s.f = wtxt.h.f = f->f.id;
+				sc.text = f->f.style_name;
+				sc.data = f;
+				list_type->add(list_type, NULL, NULL, &sc, false, 0, false);
 				f = f->nxt_kin;
 			}
 		}
@@ -833,31 +859,38 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 		list_type->cur = NULL;
 		if (selstyle)
 		{
-			SCROLL_ENTRY *s = list_type->search(list_type, NULL, selstyle, SEFM_BYDATA);
+			SCROLL_ENTRY *s = list_type->search(list_type, NULL, SEFM_BYDATA, selstyle);
 			
 			if (s)
 			{
-				list_type->vis(list_type, s, false);
+				list_type->set(list_type, s, SESET_SELECTED, 0, false);
+				list_type->vis(list_type, s, NORMREDRAW);
 				list_type->cur = s;
 			}
-			else
-				list_type->slider(list_type);
+//			else
+//				list_type->slider(list_type, true);
 		}
 		if (!list_type->cur)
 			list_type->cur = list_type->top;
 
-		f = list_type->cur->data;
+		f = list_type->cur->c.data;
 	}
 	else if (list->cur)
-		f = list->cur->data;
+		f = list->cur->c.data;
 	else
 		f = NULL;
 
 	set_points_list(list->data, f);
 
-	list_type->slider(list_type);
-	fnts_redraw(0, fnts->wind, FNTS_TYPE, 1, NULL);
+	list_type->slider(list_type, true);
+	list_type->redraw(list_type, NULL);	
+	//fnts_redraw(0, fnts->wind, FNTS_TYPE, 1, NULL);
 }	
+static bool
+sort_names(struct scroll_entry *new, struct scroll_entry *this)
+{
+	return (stricmp(new->c.td.text.text->text, this->c.td.text.text->text) > 0) ? true : false;
+}
 
 static void
 update_slists(struct xa_fnts_info *fnts)
@@ -865,12 +898,15 @@ update_slists(struct xa_fnts_info *fnts)
 	OBJECT *obtree = fnts->wt->tree;
 	struct xa_fnts_item *f;
 	SCROLL_INFO *list_name, *list_style;
-	
+	struct scroll_content sc = { 0 };
+	struct xa_wtxt_inf wtxt;
+
 	list_name  = object_get_slist(obtree + FNTS_FNTLIST);
 	list_style = object_get_slist(obtree + FNTS_TYPE);
 
-	list_name->empty(list_name, -1);
-	list_style->empty(list_style, -1);
+	list_name->empty(list_name, NULL, -1);
+	list_style->empty(list_style, NULL, -1);
+	list_name->redraw(list_name, NULL);
 
 	/*
 	 * Rebuild font item list according to flags
@@ -883,20 +919,36 @@ update_slists(struct xa_fnts_info *fnts)
 		f = f->link;
 	}
 
+	list_name->get(list_name, NULL, SEGET_WTXT, &wtxt);
+
 	f = fnts->fnts_list;
+	if (fnts->dialog_flags & FNTS_DISPLAY)
+		sc.fnt = &wtxt;
+
+	sc.n_strings = 1;
 	while (f)
 	{
-		list_name->add(list_name, NULL, *f->f.family_name != '\0' ? f->f.family_name : f->f.full_name, 0, f);
+		wtxt.n.f = wtxt.s.f = wtxt.h.f = f->f.id;
+		
+		sc.text = *f->f.family_name != '\0' ? f->f.family_name : f->f.full_name;
+		sc.data = f;
+		list_name->add(list_name, NULL, sort_names, &sc, false, 0, NORMREDRAW);
 		f = f->nxt_family;
 	}
-	
+#if 0
 	if (list_name->top)
+	{
 		list_name->cur = list_name->top;
-	list_name->slider(list_name);
+		list_name->set(list_name, list_name->cur, SESET_SELECTED, 0, true);
+	}
+#endif
+
+	list_name->slider(list_name, true);
+	list_name->redraw(list_name, NULL);
 
 	set_name_list(fnts, NULL);
 
-	fnts_redraw(0, ((struct xa_fnts_info *)list_name->data)->wind, FNTS_FNTLIST, 1, NULL);
+	//fnts_redraw(0, ((struct xa_fnts_info *)list_name->data)->wind, FNTS_FNTLIST, 1, NULL);
 }
 
 /*
@@ -915,7 +967,7 @@ click_style(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
 	struct xa_fnts_item *f;
 
 	if (list->cur)
-		f = list->cur->data;
+		f = list->cur->c.data;
 	else
 		f = NULL;
 
@@ -940,7 +992,7 @@ click_size(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
 		struct xa_fnts_info *fnts = list->data;
 
 		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
-		strcpy(ted->te_ptext, list->cur->text);
+		strcpy(ted->te_ptext, list->cur->c.td.text.text->text);
 		obj_edit(fnts->wt,
 			 ED_INIT,
 			 FNTS_EDSIZE,
@@ -952,6 +1004,7 @@ click_size(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
 			 NULL, NULL);
 
 		fnts->fnt_pt = get_edpoint(fnts);
+		
 		fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
 		fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_SHOW, 1, NULL);
 	}
@@ -1039,7 +1092,7 @@ create_new_fnts(enum locks lock,
 				 wt,
 				 wind,
 				 FNTS_FNTLIST,
-				 SIF_SELECTABLE,
+				 SIF_SELECTABLE|SIF_AUTOSELECT,
 				 NULL, NULL,		/* scrl_widget closer, fuller*/
 				 NULL, click_name,	/* scrl_click dclick, click */
 				 NULL, NULL, NULL, NULL,
@@ -1049,7 +1102,7 @@ create_new_fnts(enum locks lock,
 				 wt,
 				 wind,
 				 FNTS_TYPE,
-				 SIF_SELECTABLE,
+				 SIF_SELECTABLE|SIF_AUTOSELECT,
 				 NULL, NULL,
 				 NULL, click_style,
 				 NULL, NULL, NULL, NULL,
@@ -1059,7 +1112,7 @@ create_new_fnts(enum locks lock,
 				 wt,
 				 wind,
 				 FNTS_POINTS,
-				 SIF_SELECTABLE,
+				 SIF_SELECTABLE|SIF_AUTOSELECT,
 				 NULL, NULL,
 				 NULL, click_size,
 				 NULL, NULL, NULL, NULL,
@@ -1175,7 +1228,7 @@ XA_fnts_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (wind->window_status & XAWS_OPEN)
 			close_window(lock, wind);
 
-		delete_window(lock, wind);
+		delayed_delete_window(lock, wind);
 		delete_xa_data(&client->xa_data, fnts);
 
 		pb->intout[0] = 1;
@@ -1313,17 +1366,17 @@ init_fnts(struct xa_fnts_info *fnts)
 		if (family)
 		{
 			list = object_get_slist(obtree + FNTS_FNTLIST);	
-			ent = list->search(list, NULL, family, SEFM_BYDATA);
+			ent = list->search(list, NULL, SEFM_BYDATA, family);
 			DIAG((D_fnts, NULL, " --- search found family entry %lx", ent));
 			if (ent)
 			{
 				list->cur = ent;
+				list->set(list, ent, SESET_SELECTED, 0, NOREDRAW);
 				set_name_list(fnts, style);
-				list->vis(list, ent, false);
+				list->vis(list, ent, FULLREDRAW);
 			}
 		}
 	}
-
 	select_edsize(fnts);
 }
 
@@ -1340,11 +1393,16 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	fnts = (struct xa_fnts_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (fnts && (wind = get_fnts_wind(client, fnts)))
 	{
+		
+		
 		if (!(wind->window_status & XAWS_OPEN))
 		{
 			struct widget_tree *wt = fnts->wt;
 			RECT r = wind->wa;
+			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 		
+			set_toolbar_handlers(&wdlg_th, wind, get_widget(wind, XAW_TOOLBAR), get_widget(wind, XAW_TOOLBAR)->stuff);
+			
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)
 			{
 				r.x = (root_window->wa.w - r.w) / 2;
@@ -1361,7 +1419,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 				obj_area(wt, 0, &or);
 				or.x = r.x;
 				or.y = r.y;
-				change_window_attribs(lock, client, wind, wind->active_widgets, true, or, NULL);
+				change_window_attribs(lock, client, wind, tp, true, or, NULL);
 			}
 
 			fnts->button_flags = pb->intin[0];
@@ -1582,6 +1640,34 @@ XA_fnts_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+static int
+check_internal_objects(struct xa_fnts_info *fnts, short obj)
+{
+	OBJECT *obtree = fnts->wt->tree;
+	long id;
+	int ret = 0;
+
+	if (obj == FNTS_XDISPLAY)
+	{
+		//fnts->dialog_flags ^= FNTS_DISPLAY;
+		
+		if (obtree[obj].ob_state & OS_SELECTED)
+			fnts->dialog_flags |= FNTS_DISPLAY;
+		else
+			fnts->dialog_flags &= ~FNTS_DISPLAY;
+		
+		id = fnts->fnts_selected ? fnts->fnts_selected->f.id : 0;
+		update_slists(fnts);
+		if (id)
+		{
+			fnts->fnt_id = id;
+			init_fnts(fnts);
+		}
+		ret = 1;
+	}
+	return ret;
+}
+
 static short
 get_cbstatus(OBJECT *obtree)
 {
@@ -1624,25 +1710,32 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		wep.obj		= 0;
 
 		ret = wdialog_event(lock, client, &wep);
-
-		if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
-			obj_change(fnts->wt, wep.obj, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_start);
-
-		val = get_edpoint(fnts);
-		if (val != fnts->fnt_pt)
+		
+		if (check_internal_objects(fnts, wep.obj))
 		{
-			fnts->fnt_pt = val;
-			fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
-
-			select_edsize(fnts);
+			wep.obj = 0;
+			ret = 1;
 		}
-		fnts->fnt_pt = val;
-	
+		else
+		{
+			if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
+				obj_change(fnts->wt, wep.obj, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_start);
+		
+			val = get_edpoint(fnts);
+			if (val != fnts->fnt_pt)
+			{
+				fnts->fnt_pt = val;
+				fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
+				select_edsize(fnts);
+			}
+			fnts->fnt_pt = val;
+		
+			*(long *)&pb->intout[3] = fnts->fnts_selected->f.id;
+			*(long *)&pb->intout[5] = fnts->fnt_pt;
+			*(long *)&pb->intout[7] = fnts->fnt_ratio;
+		}
 		pb->intout[1] = wep.obj;
 		pb->intout[2] = get_cbstatus(wep.wt->tree);
-		*(long *)&pb->intout[3] = fnts->fnts_selected->f.id;
-		*(long *)&pb->intout[5] = fnts->fnt_pt;
-		*(long *)&pb->intout[7] = fnts->fnt_ratio;
 	}
 	pb->intout[0] = ret;
 
@@ -1789,9 +1882,12 @@ fntsFormexit( struct xa_client *client,
 	      struct fmd_result *fr)
 {
 	struct xa_fnts_info *fnts = (struct xa_fnts_info *)(object_get_slist(wt->tree + FNTS_FNTLIST))->data;
-
-	fnts->exit_button = fr->obj >= 0 ? fr->obj : 0;
-	client->usr_evnt = 1;
+	
+	if (!check_internal_objects(fnts, fr->obj))
+	{
+		fnts->exit_button = fr->obj >= 0 ? fr->obj : 0;
+		client->usr_evnt = 1;
+	}
 }
 
 static struct toolbar_handlers fnts_th =
@@ -1805,7 +1901,6 @@ static struct toolbar_handlers fnts_th =
 	fnts_th_click,		/* WidgetBehaviour	*drag;		*/
 	NULL,			/* WidgetBehaviour	*release;	*/
 	NULL,			/* void (*destruct)(struct xa_widget *w); */
-
 };
 
 unsigned long
@@ -1823,13 +1918,40 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		XA_TREE *wt = fnts->wt;
 		OBJECT *obtree = wt->tree;
-		struct xa_window *fwind;
-		RECT r, or;
-		XA_WIND_ATTR tp = 0;
+		RECT or;
+		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 
 		form_center(obtree, ICON_H);
 		
 		ob_area(obtree, 0, &or);
+
+		change_window_attribs(lock, client, wind, tp, true, or, NULL);
+		
+		set_toolbar_handlers(&fnts_th, wind, get_widget(wind, XAW_TOOLBAR), get_widget(wind, XAW_TOOLBAR)->stuff);
+		
+		fnts->button_flags = pb->intin[0];
+		update(fnts, fnts->button_flags);
+
+		fnts->fnt_id	= *(const long *)&pb->intin[1];
+		fnts->fnt_pt	= *(const long *)&pb->intin[3];
+		fnts->fnt_ratio	= *(const long *)&pb->intin[5];
+
+		init_fnts(fnts);
+			
+		open_window(lock, wind, wind->rc);
+
+		client->status |= CS_FORM_DO;
+		Block(client, 0);
+		client->status &= ~CS_FORM_DO;
+		close_window(lock, wind);
+		
+		pb->intout[0] = fnts->exit_button;
+		pb->intout[1] = get_cbstatus(fnts->wt->tree);
+		*(long *)&pb->intout[2] = fnts->fnts_selected->f.id;
+		*(long *)&pb->intout[4] = fnts->fnt_pt;
+		*(long *)&pb->intout[6] = fnts->fnt_ratio;
+
+#if 0
 		
 		r = calc_window(lock, client, WC_BORDER,
 				tp,
@@ -1881,6 +2003,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_fnts, client, " --- return %d, cbstat=%x, id=%ld, pt=%ld, ratio=%ld",
 				pb->intout[0], pb->intout[1], *(long *)&pb->intout[2], *(long *)&pb->intout[4], *(long *)&pb->intout[6]));
 		}
+#endif
 	}
 	return XAC_DONE;
 }

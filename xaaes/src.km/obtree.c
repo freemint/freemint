@@ -117,6 +117,7 @@ object_is_transparent(OBJECT *ob)
 		case G_SHORTCUT:
 		case G_IBOX:
 		case G_TITLE:
+		case G_PROGDEF:
 		{
 			ret = true;
 			break;

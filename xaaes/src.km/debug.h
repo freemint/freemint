@@ -30,6 +30,8 @@
 #include "global.h"
 
 void display(const char *fmt, ...);
+void ndisplay(const char *fmt, ...);
+
 
 #if GENERATE_DIAGS
 
