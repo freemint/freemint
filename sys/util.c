@@ -15,16 +15,17 @@
  */
 
 # include "util.h"
+# include "mint/proc.h"
 
 
 /*
  * given a pid, return the corresponding process
  */
 
-PROC *
+struct proc *
 pid2proc (int pid)
 {
-	PROC *p;
+	struct proc *p;
 	
 	for (p = proclist; p; p = p->gl_next)
 		if (p->pid == pid)
