@@ -825,9 +825,8 @@ XA_shell_read(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	char *name = (char *)pb->addrin[0];
 	char *tail = (char *)pb->addrin[1];
-	char *myname, *mytail;
-	struct shel_info *info = 0;
-	int f;
+	char *myname = NULL;
+	char *mytail = NULL;
 
 	CONTROL(0,1,2)
 
@@ -838,6 +837,8 @@ XA_shell_read(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 	{
+		struct shel_info *info = NULL;
+
 		info = lookup_extension(NULL, XAAES_MAGIC_SH);
 		if (info)
 		{
@@ -845,20 +846,23 @@ XA_shell_read(enum locks lock, struct xa_client *client, AESPB *pb)
 			mytail = info->cmd_tail;
 		}
 	}
-	if (!client && !info)
+
+	if (mytail)
 	{
-		pb->intout[0] = 0;
-	}
-	else
-	{
+		int f;
+
 		strcpy(name, *myname ? myname : "\\");
-		
+
 		for (f = 0; f < mytail[0] + 1; f++)
 			tail[f] = mytail[f];
-		tail[f] = 0;
+
+		tail[f] = '\0';
 
 		pb->intout[0] = 1;
 	}
+	else
+		pb->intout[0] = 0;
+
 	DIAG((D_shel, client, "shel_read: n='%s', t=%d'%s'",
 		pb->addrin[0], *(char *)pb->addrin[1], (char *)pb->addrin[1]+1));
 
