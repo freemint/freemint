@@ -191,15 +191,29 @@ Add to your header file
       
            XWHL_AROWWHEEL ( 1 ) This is the default wheel_mode set if the
               value passed is outside the available range. When this mode is
-              selected, normal WM_ARROWED messages are sent upon each wheel
-              turn. With this mode, WM_ARROWED messages contain extra info
-              like;
+              selected, extended WM_ARROWED messages are sent upon each wheel
+              turn. With this mode, only one WM_ARROWED message is send if
+              configured to scroll more than one line per wheel turn. This
+              means the application must check, and scroll the appropriate
+              number of lines indicated by bits 8-15 in msg[4];
               
               msg[0] = WM_ARROWED
               ...
+              msg[4] = Extended, see below.
               msg[5] = Mouse X
               msg[6] = Mouse Y
               msg[7] = keyboard shift status
+
+              There is extended info in msg[4] with this mode, layed out as
+              follows;
+                       bits 0-2 -  WA_xxx (same as in the original WM_ARROWED
+                                   messages, a value between 0 and 7)
+                                   bits 3-7 -  unused.
+                       bits 8-15 - Number of lines to scroll (unsigned byte)
+     
+                     This makes it possible for wheel aware applications to
+                     scroll the required amount instantly, wihtout receiveing
+                     more than this one extended WM_ARROWED.
 
            XWHL_SLDRWHEEL ( 2 )
               When wheel_mode is set to 2 (XHWL_SLDRWHEEL), XaAES converts

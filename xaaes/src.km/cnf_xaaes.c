@@ -109,7 +109,13 @@ static struct parser_item parser_tab[] =
 	{ "FILTERS",               PI_V_A,   pCB_filters		},
 	{ "MENU",                  PI_V_T,   pCB_menu			},
 	{ "HELPSERVER",            PI_V_A,   pCB_helpserver		},
-
+	
+	/* Mouse wheel settings */
+	{ "VERTICAL_WHEEL_ID",       PI_R_S,   & cfg.ver_wheel_id         },
+	{ "HORIZONTAL_WHEEL_ID",     PI_R_S,   & cfg.hor_wheel_id         },
+	{ "VERTICAL_WHEEL_AMOUNT",   PI_R_S,   & cfg.ver_wheel_amount, Range(1, 20) },
+	{ "HORIZONTAL_WHEEL_AMOUNT", PI_R_S,   & cfg.hor_wheel_amount, Range(1, 20) },
+	
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
 	{ "RUN",                   PI_C_TA,  pCB_run			},

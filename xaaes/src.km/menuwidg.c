@@ -1045,7 +1045,7 @@ click_desk_popup(struct task_administration_block *tab)
 				/* found the reason some acc's wouldnt wake up: msgbuf[4] must receive
 				 * the meu_register reply, which in our case is the pid.
 				 */
-				send_app_message(tab->lock, tab->wind, client, AMQ_NORM,
+				send_app_message(tab->lock, tab->wind, client, AMQ_NORM, QMF_CHKDUP,
 							AC_OPEN,        0, 0, 0,
 							client->p->pid, 0, 0, 0);
 				break;
@@ -1370,7 +1370,7 @@ click_menu_entry(struct task_administration_block *tab)
 			{
 				OBJECT *rs = obtree;
 				DIAG((D_menu, NULL, "indirect call"));
-				tab->wind->send_message(tab->lock, tab->wind, wt->owner, AMQ_NORM,
+				tab->wind->send_message(tab->lock, tab->wind, wt->owner, AMQ_NORM, QMF_CHKDUP,
 							MN_SELECTED, 0, 0, kc,
 							m, (long)rs >> 16, (long)rs, ks);
 			}
@@ -1385,7 +1385,7 @@ click_menu_entry(struct task_administration_block *tab)
 					DIAG((D_menu, NULL, "to %s,title=%d,point_at=%d", t_owner(wt), kc, m));
 
 					/* Note the AES4.0 extended message format...... */
-					send_app_message(tab->lock, tab->wind, wt->owner, AMQ_NORM,
+					send_app_message(tab->lock, tab->wind, wt->owner, AMQ_NORM, QMF_CHKDUP,
 							 MN_SELECTED, 0, 0, kc,
 							 m, (long)rs >> 16, (long)rs, ks);
 				}

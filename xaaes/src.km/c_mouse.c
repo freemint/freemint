@@ -143,7 +143,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		DIAG((D_button, client, "cXA_button_event: send click"));
 		if (wind->send_message)
 		{
-			wind->send_message(lock, wind, NULL, AMQ_NORM,  WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
 		}
 		return;
 	}
@@ -173,7 +173,7 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		if (ce->md.clicks > 1)
 			widg->click(lock, wind, widg, &ce->md);
 		else if (wind->send_message && !is_topped(wind)) //wind != window_list)
-			wind->send_message(lock, wind, NULL, AMQ_NORM, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
 	}
 	else
 	{
