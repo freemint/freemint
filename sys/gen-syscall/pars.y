@@ -100,8 +100,8 @@ SYSTAB *tab = NULL;
 %token	<ident>	_VOID
 %token	<ident>	_CONST
 %token	<ident>	_STRUCT
+%token	<ident>	_UNION
 
-%token	<ident>	_INT
 %token	<ident>	_CHAR
 %token	<ident>	_SHORT
 %token	<ident>	_LONG
@@ -203,12 +203,12 @@ definition_list
 ;
 
 definition
-:	Integer Identifier '(' parameter_list ')'
+:	Integer Identifier Identifier '(' parameter_list ')'
 	{
 		if (tab->max && $1 >= tab->max)
 		{ yyerror ("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab (tab, $1, $2, $4))
+		if (add_tab (tab, $1, $2, $3, $5))
 		{ yyerror ("out of memory"); YYERROR; }
 	}
 |	Integer _NULL
@@ -216,7 +216,7 @@ definition
 		if (tab->max && $1 >= tab->max)
 		{ yyerror ("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab (tab, $1, NULL, NULL))
+		if (add_tab (tab, $1, NULL, NULL, NULL))
 		{ yyerror ("out of memory"); YYERROR; }
 	}
 |	Integer _RESERVED
@@ -224,7 +224,7 @@ definition
 		if (tab->max && $1 >= tab->max)
 		{ yyerror ("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab (tab, $1, $2, NULL))
+		if (add_tab (tab, $1, NULL, $2, NULL))
 		{ yyerror ("out of memory"); YYERROR; }
 	}
 |	Integer _MAX
@@ -241,6 +241,11 @@ definition
 		{ yyerror ("out of memory"); YYERROR; }
 	}
 ;
+
+/* class
+:	Identifier
+|
+; */
 
 parameter_list
 :	_VOID
@@ -345,19 +350,19 @@ simple_type
 		
 		$$ = l;
 	}
-;
-
-type
-:	_INT
+|	_UNION type
 	{
-		LIST *l;
+		LIST *l = $2;
 		
-		l = make_list (TYPE_INT, $1);
-		OUT_OF_MEM (l);
+		l->flags |= FLAG_UNION;
+		insert_string (l->types, $1);
 		
 		$$ = l;
 	}
-|	_CHAR
+;
+
+type
+:	_CHAR
 	{
 		LIST *l;
 		

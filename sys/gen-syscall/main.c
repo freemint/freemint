@@ -198,7 +198,6 @@ main (int argc, char **argv)
 		fprintf (f, "# include \"mint/mem.h\"\n");
 		fprintf (f, "\n");
 		fprintf (f, "\n");
-		fprintf (f, "typedef struct systab SYSTAB;\n");
 		fprintf (f, "struct systab\n");
 		fprintf (f, "{\n");
 		fprintf (f, "\tlong _cdecl (*call)();\n");
@@ -207,9 +206,9 @@ main (int argc, char **argv)
 		fprintf (f, "};\n");
 		fprintf (f, "\n");
 		fprintf (f, "\n");
-		fprintf (f, "extern SYSTAB dos_tab [];\n");
-		fprintf (f, "extern SYSTAB bios_tab [];\n");
-		fprintf (f, "extern SYSTAB xbios_tab [];\n");
+		fprintf (f, "extern struct systab dos_tab [];\n");
+		fprintf (f, "extern struct systab bios_tab [];\n");
+		fprintf (f, "extern struct systab xbios_tab [];\n");
 		fprintf (f, "\n");
 		fprintf (f, "extern Func dos_tab_old [];\n");
 		fprintf (f, "extern Func bios_tab_old [];\n");
@@ -254,7 +253,7 @@ main (int argc, char **argv)
 		
 		fprintf (f, "\n");
 		fprintf (f, "static long\n");
-		fprintf (f, "sys_enosys (PROC *p, void *v)\n");
+		fprintf (f, "sys_enosys (struct proc *p, void *v)\n");
 		fprintf (f, "{\n");
 		fprintf (f, "\treturn ENOSYS;\n");
 		fprintf (f, "}\n");
