@@ -293,7 +293,7 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 
 	DIAG((D_form, NULL, "rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
 		t_widg[widg->type], widg, widg->stuff,
-		widg->type == XAW_TOOLBAR ? ((XA_TREE *)widg->stuff)->tree : -1 ));
+		widg->type == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1));
 
 	if (frame < 0)
 		frame = 0;
