@@ -1003,12 +1003,18 @@ get_selected(struct xa_lbox_info *lbox, short start, short *ret_obj, short *ret_
 	item = get_first_visible_item(lbox);
 	objs = lbox->objs;
 	
+	DIAG((D_lbox, NULL, "get_selected: entries=%d, start=%d, obtree=%lx, item=%lx, objs=%lx",
+		lbox->entries, start, obtree, item, objs));
+
 	for (i = 0; i < lbox->entries && item; i++)
 	{
 		if (i >= start)
 		{
 			o = objs[i];
-			if (obtree[o].ob_state & OS_SELECTED)
+			DIAGS((" -- -- item=%lx, item->next=%lx, i=%d, o=%d", item, item->next, i, o));
+			if (o <= 0)
+				break;
+			else if (o && obtree[o].ob_state & OS_SELECTED)
 			{
 				obj = o;
 				break;
@@ -1022,6 +1028,9 @@ get_selected(struct xa_lbox_info *lbox, short start, short *ret_obj, short *ret_
 		item = NULL;
 		i = -1;
 	}
+
+	DIAG((D_lbox, NULL, "get_selected: return obj=%d, entry=%d, item=%lx",
+		obj, i, item));
 
 	if (ret_obj)
 		*ret_obj = obj;
@@ -1038,7 +1047,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(1,0,1)
 
-	DIAG((D_lbox, client, "XA_lbox_get"));
+	DIAG((D_lbox, client, "XA_lbox_get %d", pb->intin[0]));
 
 	if (pb->intin[0] == 9)
 	{
