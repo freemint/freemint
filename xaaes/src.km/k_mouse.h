@@ -57,6 +57,8 @@ void XA_wheel_event   (enum locks lock, const struct moose_data *md);
 void preprocess_mouse(enum locks lock);
 int mouse_input(enum locks lock, int internal);
 
+void kick_mousemove_timeout(void);
+
 /* block until mouse data are available */
 void wait_mouse(struct xa_client *client, short *br, short *xr, short *yr);
 /* non-blocking, context free */

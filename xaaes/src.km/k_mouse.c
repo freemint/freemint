@@ -840,6 +840,8 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 
 extern long redraws;
 
+static short last_x = 0;
+static short last_y = 0;
 static short bto = 0;
 static TIMEOUT *b_to = 0;
 static TIMEOUT *m_to = 0;
@@ -852,6 +854,13 @@ move_rtimeout(struct proc *p, long arg)
 {
 	redraws = 0;
 	m_rto = 0;
+
+	/* XXX - Fixme!
+	 * Ozk: Figure out, and flag, the client(s)
+	 * that does not answer WM_REDRAW messages.
+	 * Such a flag should prevent AES from sending it message
+	 * until it wakes up (enters evnt_multi again)
+	*/
 	if (!m_to)
 		m_to = addroottimeout(0L, move_timeout, 1);
 }
@@ -860,44 +869,48 @@ static void
 move_timeout(struct proc *p, long arg)
 {
 	struct moose_data md;
-	short x, y;
 
-	x = x_mouse;
-	y = y_mouse;
-
-	md = mainmd;
-	md.x = x; //x_mouse;
-	md.y = y; //y_mouse;
-	md.ty = MOOSE_MOVEMENT_PREFIX;
-	vq_key_s(C.vh, &md.kstate);
-	new_moose_pkt(0, 0, &md);
-
-	if (x != x_mouse || y != y_mouse)
+	if (last_x != x_mouse || last_y != y_mouse)
 	{
-		if (redraws)
+		last_x = x_mouse;
+		last_y = y_mouse;
+
+		md = mainmd;
+		md.x = last_x;
+		md.y = last_y;
+		md.ty = MOOSE_MOVEMENT_PREFIX;
+		vq_key_s(C.vh, &md.kstate);
+		new_moose_pkt(0, 0, &md);
+
+		if (last_x != x_mouse || last_y != y_mouse)
 		{
-			if (!m_rto)
-				m_rto = addroottimeout(400L, move_rtimeout, 1);
-			m_to = 0;
+			if (redraws)
+			{
+				if (!m_rto)
+					m_rto = addroottimeout(400L, move_rtimeout, 1);
+				m_to = 0;
+			}
+			else
+			{
+				if (m_rto)
+				{
+					cancelroottimeout(m_rto);
+					m_rto = 0;
+				}
+				m_to = addroottimeout(0L, move_timeout, 1);
+			}
 		}
 		else
-		{
-			if (m_rto)
-			{
-				cancelroottimeout(m_rto);
-				m_rto = 0;
-			}
-			m_to = addroottimeout(0L, move_timeout, 1);
-		}
+			m_to = 0;
 	}
 	else
 		m_to = 0;
 }
-	
+
 void
 adi_move(struct adif *a, short x, short y)
 {
-	if (bto)
+	if (b_to)
 		return;
 
 	x_mouse = x;
@@ -917,6 +930,21 @@ adi_move(struct adif *a, short x, short y)
 		}
 		if (!m_to)
 			m_to = addroottimeout(0L, move_timeout, 1);
+	}
+}
+
+void
+kick_mousemove_timeout(void)
+{
+	if (!redraws)
+	{
+		if (m_rto)
+		{
+			cancelroottimeout(m_rto);
+			m_rto = 0;
+			if (!m_to)
+				m_to = addroottimeout(0L, move_timeout, 0);
+		}
 	}
 }
 
@@ -949,6 +977,8 @@ adi_button(struct adif *a, struct moose_data *md)
 		b_to = t;
 		t->arg = (long)md;
 	}
+	else
+		kfree(md);
 }
 
 void
