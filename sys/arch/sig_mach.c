@@ -529,14 +529,14 @@ bombs (ushort sig)
 				ALERT ("%s: User PC=%lx, Address: %lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc, curproc->exception_addr,
-					curproc->base, ptext, pdata, pbss);
+					base, ptext, pdata, pbss);
 			}
 			else
 			{
 				ALERT ("%s: User PC=%lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc,
-					curproc->base, ptext, pdata, pbss);
+					base, ptext, pdata, pbss);
 			}
 		}
 		
