@@ -28,6 +28,7 @@
 # include "fasttext.h"	/* for line A stuff */
 # include "filesys.h"
 # include "init.h"	/* __printf(f) */
+# include "k_exec.h"
 # include "kmemory.h"
 # include "util.h"
 
@@ -56,6 +57,7 @@ long		shrink_region	(MEMREGION *reg, ulong newsize);
 
 virtaddr	attach_region	(PROC *proc, MEMREGION *reg);
 void		detach_region	(PROC *proc, MEMREGION *reg);
+int		detach_region_by_addr (PROC *p, virtaddr block);
 
 long		max_rsize	(MMAP map, long needed);
 long		tot_rsize	(MMAP map, int flag);
@@ -65,15 +67,11 @@ virtaddr	alloc_region	(MMAP map, ulong size, int mode);
 MEMREGION *	fork_region	(MEMREGION *reg, long txtsize);
 MEMREGION *	create_env	(const char *env, ulong flags);
 MEMREGION *	create_base	(const char *cmd, MEMREGION *env, ulong flags, ulong prgsize,
-				 PROC *execproc, SHTEXT *s, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
+				 PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
 MEMREGION *	load_region	(const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
-				 MEMREGION **text, long *fp, int isexec, long *err);
-SHTEXT *	get_text_seg	(FILEPTR *f, FILEHEAD *fh, XATTR *xp, SHTEXT *s, int noalloc, long *err);
-MEMREGION *	find_text_seg	(FILEPTR *f);
+				 long *fp, int isexec, long *err);
 long		load_and_reloc	(FILEPTR *f, FILEHEAD *fh, char *where, long start,
 				 long nbytes, BASEPAGE *base);
-void		rts		(void);
-PROC *		exec_region	(PROC *p, MEMREGION *mem, int thread);
 long		memused		(PROC *p);
 void		recalc_maxmem	(PROC *p);
 
@@ -94,10 +92,13 @@ void		DUMPMEM		(MMAP map);
 # endif
 
 # ifdef SANITY_CHECKING
+# define SANITY_CHECK_MAPS()	sanity_check_maps (__LINE__)
 # define SANITY_CHECK(map)	sanity_check (map, __LINE__)
-static void	sanity_check	(MMAP map, ulong line);
+static void sanity_check_maps	(ulong line);
+static void sanity_check	(MMAP map, ulong line);
 # else
-# define SANITY_CHECK(map)
+# define SANITY_CHECK_MAPS()	
+# define SANITY_CHECK(map)	
 # endif
 
 long		change_prot_status (PROC *proc, long start, int newmode);
@@ -116,21 +117,15 @@ ulong initialmem = 4096;	/* dito */
  */
 
 /* macro for testing whether a memory region is free */
+# if 0
 # define ISFREE(m) ((m)->links == 0)
-
-/*
- * list of shared text regions currently being executed
- */
-SHTEXT *text_reg = 0;
+# else
+INLINE int ISFREE (const MEMREGION *m) { return (m->links == 0); }
+# endif
 
 /*
  * initialize memory routines
  */
-
-/* variable for debugging purposes; number of times we've needed
- * to get new regions
- */
-int num_reg_requests = 0;
 
 /* these variables are set in init_core(), and used in
  * init_mem()
@@ -218,6 +213,8 @@ init_mem (void)
 		Setscreen((void *)newbase, (void *)newbase, -1);
 		boot_print ("\r\n"); 
 	}
+	
+	SANITY_CHECK_MAPS ();
 }
 
 /* The function below is not used anywhere anymore */
@@ -714,6 +711,7 @@ found:
 virtaddr
 attach_region (PROC *p, MEMREGION *reg)
 {
+	struct memspace *mem = p->p_mem;
 	MEMREGION **newmem;
 	virtaddr *newaddr;
 	int i;
@@ -729,25 +727,25 @@ attach_region (PROC *p, MEMREGION *reg)
 	}
 	
 again:
-	for (i = 0; i < p->num_reg; i++)
+	for (i = 0; i < mem->num_reg; i++)
 	{
-		if (!p->mem[i])
+		if (!mem->mem[i])
 		{
-			assert (p->addr[i] == 0);
+			assert (mem->addr[i] == 0);
 			
-			p->mem[i] = reg;
-			p->addr[i] = (virtaddr) reg->loc;
+			mem->mem[i] = reg;
+			mem->addr[i] = (virtaddr) reg->loc;
 			
 			reg->links++;
 			mark_proc_region (p, reg, PROT_P);
 			
-			return p->addr[i];
+			return mem->addr[i];
 		}
 	}
 	
 	/* Hmmm, OK, we have to expand the process' memory table */
 	TRACELOW(("Expanding process memory table"));
-	i = p->num_reg + NUM_REGIONS;
+	i = mem->num_reg + NUM_REGIONS;
 	
 	newmem = kmalloc (i * sizeof (MEMREGION *));
 	newaddr = kmalloc (i * sizeof (virtaddr));
@@ -762,35 +760,35 @@ again:
 		void *pmem, *paddr;
 		
 		/* copy over the old address mapping */
-		for (i = 0; i < p->num_reg; i++)
+		for (i = 0; i < mem->num_reg; i++)
 		{
-			newmem[i] = p->mem[i];
-			newaddr[i] = p->addr[i];
+			newmem[i] = mem->mem[i];
+			newaddr[i] = mem->addr[i];
 			
 			if (newmem[i] == 0)
 				assert (newaddr[i] == 0);
 		}
 		
 		/* initialize the rest of the tables */
-		for(; i < p->num_reg + NUM_REGIONS; i++)
+		for(; i < mem->num_reg + NUM_REGIONS; i++)
 		{
 			newmem[i] = 0;
 			newaddr[i] = 0;
 		}
 		
 		/* free the old tables (carefully! for memory protection) */
-		pmem = p->mem;
-		paddr = p->addr;
+		pmem = mem->mem;
+		paddr = mem->addr;
 		
-		p->mem = NULL;
-		p->addr = NULL;
+//		mem->mem = NULL;
+//		mem->addr = NULL;
+		
+		mem->mem = newmem;
+		mem->addr = newaddr;
+		mem->num_reg += NUM_REGIONS;
 		
 		kfree (pmem);
 		kfree (paddr);
-		
-		p->mem = newmem;
-		p->addr = newaddr;
-		p->num_reg += NUM_REGIONS;
 		
 		/* this time we will succeed */
 		goto again;
@@ -813,6 +811,7 @@ again:
 void
 detach_region (PROC *p, MEMREGION *reg)
 {
+	struct memspace *mem = p->p_mem;
 	int i;
 	
 	TRACELOW(("detach_region %lx len %lx from pid %d",
@@ -824,12 +823,12 @@ detach_region (PROC *p, MEMREGION *reg)
 		return;
 	}
 	
-	for (i = p->num_reg - 1; i >= 0; i--)
+	for (i = mem->num_reg - 1; i >= 0; i--)
 	{
-		if (p->mem[i] == reg)
+		if (mem->mem[i] == reg)
 		{
-			p->mem[i] = 0;
-			p->addr[i] = 0;
+			mem->mem[i] = 0;
+			mem->addr[i] = 0;
 			
 			reg->links--;
 			if (reg->links == 0)
@@ -843,6 +842,42 @@ detach_region (PROC *p, MEMREGION *reg)
 	}
 	
 	DEBUG(("detach_region: region not attached"));
+}
+
+int
+detach_region_by_addr (PROC *p, virtaddr block)
+{
+	struct memspace *mem = p->p_mem;
+	int i;
+	
+	TRACELOW(("detach_region_by_addr %lx from pid %d",
+		block, p->pid));
+	
+	for (i = mem->num_reg - 1; i >= 0; i--)
+	{
+		if (mem->addr[i] == block)
+		{
+			MEMREGION *m = mem->mem[i];
+			
+			assert (m != NULL);
+			assert (m->loc == (long) block);
+			
+			mem->mem[i] = 0;
+			mem->addr[i] = 0;
+			
+			m->links--;
+			if (m->links == 0)
+				free_region (m);
+			else
+				/* cause curproc's table to be updated */
+				mark_proc_region (p, m, PROT_I);
+			
+			return 0;
+		}
+	}
+	
+	DEBUG(("detach_region_by_addr: region not found"));
+	return EBADARG;
 }
 
 /*
@@ -870,7 +905,7 @@ get_region (MMAP map, ulong size, int mode)
 MEMREGION *
 _get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 {
-	MEMREGION *n, *s, *k = NULL;
+	MEMREGION *n, *k = NULL;
 	
 	TRACE (("get_region (%s, %li (%lx), %x)",
 		((map == core) ? "core" : ((map == alt) ? "alt" : "???")),
@@ -896,13 +931,7 @@ _get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 	
 	size = ROUND (size);
 	
-	/* We come back and try again if we found and freed any unattached shared
-	 * text regions.
-	 */
-retry:
 	n = *map;
-	s = NULL;
-	
 	while (n)
 	{
 		if (ISFREE (n))
@@ -947,21 +976,8 @@ retry:
 					else
 					{
 						DEBUG (("get_region: no regions left"));
-						return NULL;
+						goto fail;
 					}
-				}
-			}
-		}
-		else
-		{
-			/* If this is an unattached shared text region,
-			 * leave it as a last resort
-			 */
-			if (n->links == 0xffff && (n->mflags & M_SHTEXT))
-			{
-				if (!s && n->len >= size)
-				{
-					s = n;
 				}
 			}
 		}
@@ -997,17 +1013,10 @@ retry:
 		}
 	}
 	
-	/* Looks like we're out of free memory. Try freeing an unattached shared text
-	 * region, and then try again to fill this request.
-	 */
-	if (s)
-	{
-		s->links = 0;
-		free_region (s);
-		goto retry;
-	}
-	
 	TRACELOW (("get_region: no memory left in this map"));
+	
+fail:
+	SANITY_CHECK (map);
 	return NULL;
 	
 win:
@@ -1017,6 +1026,7 @@ win:
 	if (mode & M_KEEP)
 		n->mflags |= M_KEEP;
 	
+	SANITY_CHECK (map);
 	return n;
 }
 
@@ -1027,8 +1037,6 @@ win:
  * really should be freed, i.e. that reg->links == 0.
  *
  * special things to do:
- * if the region is a shared text region, we must close the
- * associated file descriptor
  * if the region has shadow regions, we delete the descriptor
  * and free one of the save regions
  */
@@ -1038,7 +1046,6 @@ free_region (MEMREGION *reg)
 {
 	MMAP map;
 	MEMREGION *m, *shdw, *save;
-	SHTEXT *s, **old;
 	long txtsize;
 	int prot_hold;
 	
@@ -1129,30 +1136,6 @@ free_region (MEMREGION *reg)
 		reg = save;
 	}
 	
-	if (reg->mflags & M_SHTEXT)
-	{
-		TRACE(("freeing shared text region"));
-		old = &text_reg;
-		for(;;)
-		{
-			s = *old;
-			if (!s) break;
-			if (s->text == reg)
-			{
-				if (s->f)
-					do_close(s->f);
-				*old = s->next;
-				kfree(s);
-				break;
-			}
-			old = &s->next;
-		}
-		if (!s)
-		{
-			 DEBUG (("No shared text entry for M_SHTEXT region??"));
-		}
-	}
-	
 	if (reg->mflags & M_CORE)
 		map = core;
 	else if (reg->mflags & M_ALT)
@@ -1179,7 +1162,19 @@ free_region (MEMREGION *reg)
 		mark_region (reg, PROT_I);
 	
 	if (m == reg)
+	{
+		if (reg->len == 0)
+		{
+			*map = reg->next;
+			
+			reg->next = NULL;
+			kmr_free (reg);
+			
+			goto end; 
+		}
+		
 		goto merge_after;
+	}
 	
 	/* merge previous region if it's free and contiguous with 'reg' */
 	
@@ -1190,6 +1185,22 @@ free_region (MEMREGION *reg)
 	if (m == NULL)
 		FATAL ("couldn't find region %lx: loc: %lx len: %ld",
 			reg, reg->loc, reg->len);
+	
+	if (reg->len == 0)
+	{
+		m->next = reg->next;
+		
+		reg->next = NULL;
+		kmr_free (reg);
+		
+		if (ISFREE (m))
+		{
+			reg = m;
+			goto merge_after;
+		}
+		
+		goto end;
+	}
 	
 	if (ISFREE (m) && ((m->loc + m->len) == reg->loc))
 	{
@@ -1212,7 +1223,8 @@ merge_after:
 		kmr_free (m);
 	}
 	
-	SANITY_CHECK (map);
+end:
+	SANITY_CHECK_MAPS ();
 }
 
 /*
@@ -1227,36 +1239,39 @@ shrink_region (MEMREGION *reg, ulong newsize)
 {
 	MEMREGION *n;
 	ulong diff;
-
-
+	long ret;
+	
+	
+	SANITY_CHECK_MAPS ();
+	
 	newsize = ROUND(newsize);
-
-	assert(reg->links > 0);
-
+	assert (reg->links > 0);
+	
 	if (!(reg->mflags & (M_CORE | M_ALT | M_KER)))
-	{
-		FATAL("shrink_region: bad region flags (%x)", reg->mflags);
-	}
-
+		FATAL ("shrink_region: bad region flags (%x)", reg->mflags);
+	
 	/* shrinking to 0 is the same as freeing */
 	if (newsize == 0)
 	{
-		detach_region(curproc, reg);
-		return E_OK;
+		detach_region (curproc, reg);
+		ret = 0;
+		goto leave;
 	}
-
+	
 	/* if new size is the same as old size, don't do anything */
 	if (newsize == reg->len)
 	{
 		/* nothing to do */
-		return E_OK;
+		ret = 0;
+		goto leave;
 	}
-
+	
 	if (newsize > reg->len)
 	{
 		/* growth failure */
 		DEBUG(("shrink_region: request to make region bigger"));
-		return ESBLOCK;
+		ret = ESBLOCK;
+		goto leave;
 	}
 	
 	/* if there are any shadows on the region we cannot shrink the region, as
@@ -1265,7 +1280,8 @@ shrink_region (MEMREGION *reg, ulong newsize)
 	if (reg->shadow)
 	{
 		DEBUG(("shrink_region: region has shadows"));
-		return EACCES;
+		ret = EACCES;
+		goto leave;
 	}
 	
 	/* OK, we're going to free (reg->len - newsize) bytes at the end of
@@ -1283,9 +1299,7 @@ shrink_region (MEMREGION *reg, ulong newsize)
 		/* MEMPROT: invalidate the second half
 		 * (part of it is already invalid; that's OK)
 		 */
-		mark_region(n,PROT_I);
-
-		return E_OK;
+		mark_region (n, PROT_I);
 	}
 	else
 	{
@@ -1303,10 +1317,14 @@ shrink_region (MEMREGION *reg, ulong newsize)
 		reg->next = n;
 		
 		/* MEMPROT: invalidate the new, free region */
-		mark_region(n,PROT_I);
+		mark_region (n, PROT_I);
 	}
 	
-	return E_OK;
+	ret = 0;
+	
+leave:
+	SANITY_CHECK_MAPS ();
+	return ret;
 }
 
 /*
@@ -1319,14 +1337,14 @@ shrink_region (MEMREGION *reg, ulong newsize)
 long
 max_rsize (MMAP map, long needed)
 {
-	MEMREGION *m;
+	const MEMREGION *m;
 	long size = 0, lastsize = 0, end = 0;
 
 	if (needed)
 	{
 		for (m = *map; m; m = m->next)
 		{
-			if (ISFREE(m) || (m->links == 0xfffe && !(m->mflags & M_SHTEXT) && !m->shadow))
+			if (ISFREE(m) || (m->links == 0xfffe && !m->shadow))
 			{
 				if (end == m->loc)
 				{
@@ -1350,7 +1368,7 @@ max_rsize (MMAP map, long needed)
 	}
 	for (m = *map; m; m = m->next)
 	{
-		if (ISFREE(m) || (m->links == 0xfffe && !m->shadow) || (m->links == 0xffff && (m->mflags & M_SHTEXT)))
+		if (ISFREE(m) || (m->links == 0xfffe && !m->shadow) || (m->links == 0xffff))
 		{
 			if (end == m->loc)
 			{
@@ -1387,10 +1405,8 @@ tot_rsize (MMAP map, int flag)
 	
 	for (m = *map; m; m = m->next)
 	{
-		if (flag || ISFREE(m) || (m->links == 0xffff && (m->mflags & M_SHTEXT)))
-		{
+		if (flag || ISFREE(m) || (m->links == 0xffff))
 			size += m->len;
-		}
 	}
 	
 	return size;
@@ -1463,7 +1479,7 @@ fork_region (MEMREGION *reg, long txtsize)
 	long len;
 	MEMREGION *shdw, *save;
 	
-	assert(reg != 0);
+	assert (reg != 0);
 	len = reg->len;
 	if (txtsize)
 	{
@@ -1519,6 +1535,7 @@ fork_region (MEMREGION *reg, long txtsize)
 	save->mflags |= M_FSAVED;
 	shdw->save = save;
 	
+	SANITY_CHECK_MAPS ();
 	return shdw;
 }
 
@@ -1587,7 +1604,7 @@ terminateme (int code)
 }
 
 MEMREGION *
-create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *execproc, SHTEXT *s, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err)
+create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err)
 {
 	long len = 0, minalt = 0, coresize, altsize;
 	MMAP map;
@@ -1603,9 +1620,9 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 	 */
 	if (execproc)
 	{
-		for (i = 0; i < execproc->num_reg; i++)
+		for (i = 0; i < execproc->p_mem->num_reg; i++)
 		{
-			m = execproc->mem[i];
+			m = execproc->p_mem->mem[i];
 			if (m && m->links == 1)
 			{
 				m->links = 0xfffe;
@@ -1629,8 +1646,7 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 	 * load there; otherwise, if more than (minalt+1)*128K alt ram available
 	 * for heap space, load in alt ram ("minalt" is the high byte of flags)
 	 */
-again2:
-	if (flags & (F_ALTLOAD|F_SHTEXT))
+	if (flags & F_ALTLOAD)
 	{
 		minalt = (flags & F_MINALT) >> 28L;
 		minalt = len = (minalt+1)*128*1024L + prgsize + 256;
@@ -1639,7 +1655,7 @@ again2:
 		else
 			ismax = 0;
 	}
-again1:
+	
 	if (flags & F_ALTLOAD)
 	{
 		coresize = max_rsize (core, len);
@@ -1693,41 +1709,6 @@ again1:
 			len = curproc->maxmem + fh->ftext;
 	}
 	
-	/*
-	 * TeSche: the third part of this comparison can cause problems when
-	 * alternate memory is getting low, in this case `len' is already set
-	 * to coresize but won't get decremented here. when actually allocating
-	 * the memory later fh->ftext and KERNEL_MEM are added again resulting
-	 * in a request bigger than coresize -> error... :(
-	 */
-# if 1
-	if (s && !s->text)
-	{
-# else
-	if (s && !s->text && (!(flags & F_ALTLOAD) || map == alt || altsize < fh->ftext))
-	{
-# endif
-		if (len > fh->ftext + KERNEL_MEM)
-			len -= fh->ftext + KERNEL_MEM;
-		else
-			len = 0;
-# if 1
-		if (prgsize && len < prgsize + 0x400)
-		{
-			if (!ismax)
-			{
-				len = minalt + fh->ftext;
-				ismax = -1;
-				goto again1;
-			}
-			if (NULL != (s->text = addr2mem(curproc, alloc_region(map, fh->ftext, PROT_P))))
-			{
-				goto again2;
-			}
-		}
-# endif
-	}
-
 	if (prgsize && len < prgsize + 0x400)
 	{
 		/* can't possibly load this file in its eligible regions */
@@ -1736,9 +1717,9 @@ again1:
 		if (execproc)
 		{
 			/* error, undo the above */
-			for (i = 0; i < execproc->num_reg; i++)
+			for (i = 0; i < execproc->p_mem->num_reg; i++)
 			{
-				m = execproc->mem[i];
+				m = execproc->p_mem->mem[i];
 				if (m)
 				{
 					if (m->links == 0xfffe)
@@ -1755,9 +1736,6 @@ again1:
 				}
 			}
 		}
-		
-		if (s && !s->text)
-			kfree (s);
 		
 		*err = ENOMEM;
 		return NULL;
@@ -1787,87 +1765,41 @@ again1:
 		{
 			bparent = parent->base;
 		}
-		for (i = 0; i < execproc->num_reg; i++)
+		
+		for (i = 0; i < execproc->p_mem->num_reg; i++)
 		{
-			m = execproc->mem[i];
+			m = execproc->p_mem->mem[i];
 			if (m && m->links == 0xfffe)
 			{
-				execproc->mem[i] = 0;
-				execproc->addr[i] = 0;
-				if (m->mflags & M_SHTEXT_T)
+				execproc->p_mem->mem[i] = 0;
+				execproc->p_mem->addr[i] = 0;
+				
+				m->links = 0;
+				if (m->shadow)
 				{
-					TRACE (("create_base: keeping sticky text segment (%lx, len %lx)",
-						m->loc, m->len));
-					m->links = 0xffff;
+					if (m->save)
+						m->save->links = 1;
+					else
+						m->shadow->save->links = 1;
 				}
-				else
-				{
-					m->links = 0;
-					if (m->shadow)
-					{
-						if (m->save)
-							m->save->links = 1;
-						else
-							m->shadow->save->links = 1;
-					}
-					if (mem_prot_flags & MPF_STRICT)
-						mark_proc_region(execproc, m, PROT_I);
-					free_region(m);
-				}
+				
+				if (mem_prot_flags & MPF_STRICT)
+					mark_proc_region (execproc, m, PROT_I);
+				
+				free_region(m);
 			}
 		}
 	}
 	
 	protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
-
-	m = 0;
-	if (s && !s->f)
-	{
-		if (!s->text)
-		{
-			m = addr2mem(curproc, alloc_region(map, len + fh->ftext + KERNEL_MEM, protmode));
-			if (!m ||
-			    (((len > minalt &&
-				((flags & F_MINALT) < F_MINALT) &&
-				max_rsize (map, -1) < fh->ftext) ||
-			      0 == (s->text = addr2mem(curproc, alloc_region(map, fh->ftext, PROT_P))) ||
-			      (m->next == s->text &&
-				!(detach_region (curproc, s->text), s->text = 0))) &&
-			     shrink_region(m, fh->ftext)))
-			{
-				if (m)
-					detach_region(curproc, m);
-				kfree (s);
-				*err = ENOMEM;
-				return NULL;
-			}
-			if (!s->text)
-			{
-				s->text = m;
-				if (protmode != PROT_P)
-					mark_region(m, PROT_P);
-				m = 0;
-			}
-		}
-		s = get_text_seg(f, fh, xp, s, 0, err);
-		if (!s)
-		{
-			if (m) detach_region(curproc, m);
-			
-			DEBUG (("create_base: unable to load shared text segment"));
-			return NULL;
-		}
-	}
 	
-	if (!m)
-		m = addr2mem (curproc, alloc_region (map, len, protmode));
-	
+	m = addr2mem (curproc, alloc_region (map, len, protmode));
 	if (!m)
 	{
 		*err = ENOMEM;
 		
 		DEBUG (("create_base: alloc_region failed"));
-		return NULL;
+		goto leave;
 	}
 	
 	b = (BASEPAGE *)(m->loc);
@@ -1887,6 +1819,8 @@ again1:
 	if (cmd)
 		strncpy (b->p_cmdlin, cmd, 127);
 	
+leave:
+	SANITY_CHECK (map);
 	return m;
 }
 
@@ -1897,35 +1831,31 @@ again1:
  * "env" points to an already set up environment region, as returned
  * by create_env. On success, "xp" points to the file attributes, which
  * Pexec has already determined, and "fp" points to the programs
- * prgflags. "text" is a pointer to a MEMREGION
- * pointer, which will be set to the region occupied by the shared
- * text segment of this program (if applicable).
+ * prgflags.
  *
  * xp:     attributes for the file just loaded
- * text:   set to point to shared text region, if any
  * fp:     prgflags for this file
  * isexec: this is an exec*() (overlay)
  * err:    error code is stored here
  */
 
 MEMREGION *
-load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, MEMREGION **text, long *fp, int isexec, long *err)
+load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, long *fp, int isexec, long *err)
 {
 	FILEPTR *f;
-	MEMREGION *reg, *shtext;
+	MEMREGION *reg;
 	BASEPAGE *b;
 	long size, start;
 	FILEHEAD fh;
-	SHTEXT *s;
 	
 	/* bug: this should be O_DENYW mode, not O_DENYNONE
 	 * we must use O_DENYNONE because of the desktop and because of the
 	 * TOS file system brain-damage
 	 */
 # if 0
- 	f = do_open(filename, O_DENYNONE | O_EXEC, 0, xp, err);
+ 	f = do_open (filename, O_DENYNONE | O_EXEC, 0, xp, err);
 # else
-	f = do_open(filename, O_DENYW | O_EXEC, 0, xp, err);
+	f = do_open (filename, O_DENYW | O_EXEC, 0, xp, err);
 # endif
 	
 	if (!f) return NULL;
@@ -1949,69 +1879,15 @@ failed:
 		fh.flag = (fh.flag & ~F_PROTMODE) | F_PROT_P;
 	}
 	
-	*fp = fh.flag;
+	if (fp) *fp = fh.flag;
 	
-	if (fh.flag & F_SHTEXT)
-	{
-		TRACE (("loading shared text segment"));
-		s = get_text_seg (f, &fh, xp, 0L, isexec, err);
-		if (!s)
-		{
-			DEBUG(("load_region: unable to get shared text segment"));
-			goto failed;
-		}
-		size = fh.fdata + fh.fbss;
-		shtext = s->text;
-	}
-	else
-	{
-		size = fh.ftext + fh.fdata + fh.fbss;
-		shtext = 0;
-		s = 0;
-	}
+	size = fh.ftext + fh.fdata + fh.fbss;
 	
 	if (env) env->links++;
-	
-	if (s && !shtext)
-	{
-		reg = create_base (cmdlin, env, fh.flag, size, isexec ? curproc : 0L, s, f, &fh, xp, err);
-		shtext = s->text;
-	}
-	else
-	{
-		if (shtext)
-			shtext->links++;
-		
-		reg = create_base (cmdlin, env, fh.flag, size, isexec ? curproc : 0L, 0L, 0L, 0L, 0L, err);
-		
-		if (shtext)
-		{
-			shtext->links--;
-# if 1
-			/* if create_base failed maybe the (sticky) text segment itself is
-			 * fragmenting memory... force it reloaded and have a second try
-			 */
-			if (!reg && shtext->links == 1 && isexec)
-			{
-				s->f = 0;
-				f->links--;
-				detach_region (curproc, shtext);
-				s = get_text_seg(f, &fh, xp, 0L, isexec, err);
-				if (!s)
-				{
-					DEBUG (("load_region: unable to get shared text segment"));
-					goto failed;
-				}
-				reg = create_base (cmdlin, env, fh.flag, size, curproc, s, f, &fh, xp, err);
-				shtext = s->text;
-			}
-# endif
-		}
-	}
-	
+	reg = create_base (cmdlin, env, fh.flag, size, isexec ? curproc : 0L, 0L, 0L, 0L, err);
 	if (env) env->links--;
 	
-	if (reg && size+1024L > reg->len)
+	if (reg && ((size + 1024L) > reg->len))
 	{
 		DEBUG (("load_region: insufficient memory to load"));
 		detach_region (curproc, reg);
@@ -2020,54 +1896,27 @@ failed:
 	}
 	
 	if (reg == NULL)
-	{
-		if (shtext)
-			detach_region (curproc, shtext);
-		
 		goto failed;
-	}
 
 	b = (BASEPAGE *) reg->loc;
 	b->p_flags = fh.flag;
-	if (shtext)
-	{
-		b->p_tbase = shtext->loc;
-		b->p_tlen = 0;
-		b->p_dbase = b->p_lowtpa + 256;
-	}
-	else
-	{
-		b->p_tbase = b->p_lowtpa + 256;
-		b->p_tlen = fh.ftext;
-		b->p_dbase = b->p_tbase + b->p_tlen;
-	}
+	b->p_tbase = b->p_lowtpa + 256;
+	b->p_tlen = fh.ftext;
+	b->p_dbase = b->p_tbase + b->p_tlen;
 	b->p_dlen = fh.fdata;
 	b->p_bbase = b->p_dbase + b->p_dlen;
 	b->p_blen = fh.fbss;
 	
-	/* if shared text, then we start loading at the end of the
-	 * text region, since that is already set up
-	 */
-	if (shtext)
-	{
-		/* skip over text info */
-		size = fh.fdata;
-		start = fh.ftext;
-	}
-	else
-	{
-		size = fh.ftext + fh.fdata;
-		start = 0;
-	}
+	size = fh.ftext + fh.fdata;
+	start = 0;
 	
 	*err = load_and_reloc (f, &fh, (char *) b + 256, start, size, b);
 	if (*err)
 	{
 		detach_region (curproc, reg);
-		if (shtext) detach_region (curproc, shtext);
 		goto failed;
 	}
-
+	
 	/* Draco: if the user has set FASTLOAD=YES in the CNF file, the actual
 	 * program flag will be ignored and we behave like it was set. This is
 	 * to avoid clearing all the virtual memory (on the disk) by the system
@@ -2092,9 +1941,10 @@ failed:
 	}
 	
 	do_close (f);
-	*text = shtext;
 	
 	DEBUG (("load_region: return region = %lx", reg));
+	
+	SANITY_CHECK_MAPS ();
 	return reg;
 }
 
@@ -2212,404 +2062,39 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 }
 
 /*
- * function to check for existence of a shared text region
- * corresponding to file "f", and if none is found, to create one
- * the memory region being returned is attached to the current
- * process
- */
-
-SHTEXT *
-get_text_seg (FILEPTR *f, FILEHEAD *fh, XATTR *xp, SHTEXT *s, int noalloc, long *err)
-{
-	MEMREGION *m;
-	BASEPAGE b;
-
-	if (s)
-	{
-		m = s->text;
-	}
-	else
-	{
-		s = text_reg;
-		
-		while(s)
-		{
-			if (s->f && samefile (&f->fc, &s->f->fc) &&
-			    xp->mtime == s->mtime &&
-			    xp->mdate == s->mdate)
-			{
-				m = s->text;
-				
-				/* Kludge for unattached shared region */
-				if (m->links == 0xffff)
-					m->links = 0;
-				
-				if (attach_region(curproc, m))
-				{
-					TRACE (("re-using shared text region %lx", m));
-					return s;
-				}
-				else
-				{
-					*err = ENOMEM;
-					return NULL;
-				}
-			}
-			
-			s = s->next;
-		}
-		
-		/* hmmm, not found; OK, we'll have to create a new text region */
-		s = kmalloc (sizeof (*s));
-		if (!s)
-		{
-			*err = ENOMEM;
-			return NULL;
-		}
-		
-		if (noalloc)
-		{
-			s->f = 0;
-			s->text = 0;
-			return s;
-		}
-		
-		m = 0;
-	}
-	
-	if (!m)
-	{
-		/* actually, I can't see why loading in TT RAM is ever undesireable,
-		 * since shared text programs should be very clean (and since only
-		 * the text segment is going in there). But better safe than sorry.
-		 */
-		if (fh->flag & F_ALTLOAD)
-			m = addr2mem (curproc, alloc_region (alt, fh->ftext, PROT_P));
-		
-		if (!m)
-			m = addr2mem (curproc, alloc_region (core, fh->ftext, PROT_P));
-	}
-	
-	if (!m)
-	{
-		kfree (s);
-		*err = ENOMEM;
-		return NULL;
-	}
-	
-	/* set up a fake "basepage" for load_and_reloc
-	 * note: the 0 values should make load_and_reloc
-	 * barf on any attempts at data relocation, since we have
-	 * no data segment
-	 */
-	TRACE (("attempting to create shared text region"));
-	
-	b.p_tbase = m->loc;
-	b.p_tlen = fh->ftext;
-	b.p_dbase = 0;
-	b.p_dlen = 0;
-	b.p_bbase = b.p_blen = 0;
-	
-	*err = load_and_reloc (f, fh, (char *)m->loc, 0, fh->ftext, &b);
-	if (*err)
-	{
-		detach_region (curproc, m);
-		kfree (s);
-		return NULL;
-	}
-	
-	/* region has valid shared text data */
-	m->mflags |= M_SHTEXT;
-# if 0
-	/* gryf: today no longer neccessary */
-	if (xp->mode & 01000)
-# endif
-	/* make it sticky (this should depend on the files mode!?) */
-	m->mflags |= M_SHTEXT_T;
-	
-	/*
-	 * KLUDGE: to make sure we always have up to date shared text
-	 * info, even across a network, we leave the file passed
-	 * to us open with DENYWRITE mode, so that nobody will
-	 * modify it.
-	 */
-	f->links++;	/* keep the file open longer */
-	
-	/* BUG: what if someone already has the file open for
-	 * writing? Then we could get screwed...
-	 */
-	f->flags = (f->flags & ~O_SHMODE) | O_DENYW;
-	s->f = f;
-	s->text = m;
-	s->next = text_reg;
-	s->mtime = xp->mtime;
-	s->mdate = xp->mdate;
-	text_reg = s;
-	
-	TRACE (("shared text region %lx created", m));
-	return s;
-}
-
-/*
- * function to just check for existence of a shared text region
- * corresponding to file "f"
- */
-
-MEMREGION *
-find_text_seg (FILEPTR *f)
-{
-	SHTEXT *s;
-	
-	for (s = text_reg; s; s = s->next)
-	{
-		if (s->f && samefile (&f->fc, &s->f->fc))
-			return s->text;
-	}
-	
-	return NULL;
-}
-
-/*
- * exec_region(p, mem, thread): create a child process out of a mem region
- * "p" is the process structure set up by the parent; it may be "curproc",
- * if we're overlaying. "mem" is the loaded memory region returned by
- * "load region". Any open files (other than the standard handles) owned
- * by "p" are closed, and if thread !=0 all memory is released; the caller
- * must explicitly attach the environment and base region. The caller must
- * also put "p" on the appropriate queue (most likely READY_Q).
- */
-
-void rts (void) {}		/* dummy termination routine */
-
-PROC *
-exec_region (PROC *p, MEMREGION *mem, int thread)
-{
-	BASEPAGE *b;
-	FILEPTR *f;
-	int i;
-	MEMREGION *m;
-	
-	TRACE (("exec_region"));
-	
-	b = (BASEPAGE *) mem->loc;
-	
-	cpush ((void *) b->p_tbase, b->p_tlen);	/* flush cached versions of the text */
-	
-	/* set some (undocumented) variables in the basepage */
-	b->p_defdrv = p->curdrv;
-	for (i = 0; i < 6; i++)
-		b->p_devx[i] = i;
-	
-	p->dta = (DTABUF *)(b->p_dta = &b->p_cmdlin[0]);
-	p->base = b;
-	
-	/* close extra open files */
-	for (i = MIN_OPEN; i < MAX_OPEN; i++)
-	{
-		if ((f = p->handle[i]) != 0 && (p->fdflags[i] & FD_CLOEXEC))
-		{
-			do_pclose (p, f);
-			p->handle[i] = 0;
-		}
-	}
-	
-	/* initialize memory */
-	recalc_maxmem (p);
-	if (p->maxmem)
-	{
-		shrink_region (mem, p->maxmem);
-		b->p_hitpa = b->p_lowtpa + mem->len;
-	}
-	
-	p->memflags = b->p_flags;
-	
-	if (!thread)
-	{
-		for (i = 0; i < p->num_reg; i++)
-		{
-			m = p->mem[i];
-			if (m)
-			{
-				m->links--;
-# if 1
-				if (m->links <= 0)
-				{
-					if (!m->links)
-					{
-						if (m->mflags & M_SHTEXT_T)
-						{
-							TRACE (("exec_region: keeping sticky text segment (%lx, len %lx)",
-								m->loc, m->len));
-							m->links = 0xffff;
-						}
-						else
-							free_region (m);
-					}
-					else
-						ALERT ("exec_region: region %lx bogus link count %d, not freed (len %lx)",
-							m->loc, m->links, m->len);
-				}
-				else
-				{
-					/* Update curproc's mmu table, but not
-					 * for basepage and environment */
-					if ((m->loc != (long)b) &&
-					    (m->loc != (long)b->p_env) &&
-					    (mem_prot_flags & MPF_STRICT))
-					{
-						mark_proc_region(p, m, PROT_I);
-					}
-				}
-# else
-				if (m->links <= 0)
-					free_region (m);
-				else
-				{
-					if ((m->loc != (long)b) &&
-					    (m->loc != (long)b->p_env) &&
-					    (mem_prot_flags & MPF_STRICT))
-					{
-						mark_proc_region(p, m, PROT_I);
-					}
-				}
-# endif
-			}
-		}
-		if (p->num_reg > NUM_REGIONS)
-		{
-			/*
-			 * If the proc struct has a larger mem array than
-			 * the default, then free it and allocate a
-			 * default-sized one.
-			 */
-
-			/*
-			 * hoo ha! Memory protection problem here. Use
-			 * temps and pre-clear p->mem so memprot doesn't try
-			 * to walk these structures as we're freeing and
-			 * reallocating them!  (Calling kmalloc can cause
-			 * a table walk if the alloc results in calling
-			 * get_region.)
-			 */
-			void *pmem, *paddr;
-
-			pmem = p->mem;
-			paddr = p->addr;
-			p->mem = NULL; p->addr = NULL;
-			kfree (pmem); kfree (paddr);
-			
-			pmem = kmalloc (NUM_REGIONS * sizeof (MEMREGION *));
-			paddr = kmalloc (NUM_REGIONS * sizeof (virtaddr));
-			assert (pmem && paddr);
-			p->mem = pmem;
-			p->addr = paddr;
-			p->num_reg = NUM_REGIONS;
-		}
-		
-		bzero (p->mem, (p->num_reg) * sizeof (MEMREGION *));
-		bzero (p->addr, (p->num_reg) * sizeof (virtaddr));
-	}
-	
-	/* initialize signals */
-	p->sigmask = 0;
-	for (i = 0; i < NSIG; i++)
-	{
-		if (p->sighandle[i] != SIG_IGN)
-		{
-			p->sighandle[i] = SIG_DFL;
-			p->sigflags[i] = 0;
-			p->sigextra[i] = 0;
-		}
-	}
-	
-	/* zero the user registers, and set the FPU in a "clear" state */
-	for (i = 0; i < 15; i++)
-		p->ctxt[CURRENT].regs[i] = 0;
-	p->ctxt[CURRENT].sr = 0;
-	p->ctxt[CURRENT].fstate[0] = 0;
-	
-	/* set PC, stack registers, etc. appropriately */
-	p->ctxt[CURRENT].pc = b->p_tbase;
-	
-	/* The "-0x28" is to make sure that syscall.s won't run past the end
-	 * of memory when the user makes a system call and doesn't push very
-	 * many parameters -- syscall always tries to copy the maximum
-	 * possible number of parms.
-	 *
-	 * NOTE: there's a sanity check here in case programs Mshrink a
-	 * basepage without fixing the p_hitpa field in the basepage; this is
-	 * to ensure compatibility with older versions of MiNT, which ignore
-	 * p_hitpa.
-	 */
-	if (valid_address (b->p_hitpa - 0x28))
-		p->ctxt[CURRENT].usp = b->p_hitpa - 0x28;
-	else
-		p->ctxt[CURRENT].usp = mem->loc + mem->len - 0x28;
-	
-	p->ctxt[CURRENT].ssp = (long)(p->stack + ISTKSIZE);
-	p->ctxt[CURRENT].term_vec = (long)rts;
-	
-	/* set up stack for process */
-	*((long *)(p->ctxt[CURRENT].usp + 4)) = (long) b;
-	
-	/* check for a valid text region. some compilers (e.g. Lattice 3) just
-	 * throw everything into the text region, including data; fork() must
-	 * be careful to save the whole region, then. We assume that if the
-	 * compiler (or assembler, or whatever) goes to the trouble of making
-	 * separate text, data, and bss regions, then the text region is code
-	 * and isn't modified and fork doesn't have to save it.
-	 */
-	if (b->p_blen != 0 || b->p_dlen != 0)
-		p->txtsize = b->p_tlen;
-	else
-		p->txtsize = 0;
-	
-	/* An ugly hack: dLibs tries to poke around in the parent's address
-	 * space to find stuff. For now, we'll allow this by faking a pointer
-	 * into the parent's address space in the place in the basepage where
-	 * dLibs is expecting it. This ugly hack only works correctly if the
-	 * Pexec'ing program (i.e. curproc) is in user mode.
-	 */
-	if (curproc != rootproc)
-		curproc->base->p_usp = curproc->ctxt[SYSCALL].usp - 0x32;
-	
-	return p;
-}
-
-/*
  * misc. utility routines
  */
 
 /*
  * long memused(p): return total memory allocated to process p
  */
-
 long
 memused (PROC *p)
 {
-	int i;
+	struct memspace *mem = p->p_mem;
 	long size;
+	int i;
 	
 	/* a ZOMBIE owns no memory and its mem array ptr is zero */
-	if (p->mem == NULL) return 0;
+	if (mem->mem == NULL) return 0;
 	
 	size = 0;
-	for (i = 0; i < p->num_reg; i++)
+	for (i = 0; i < mem->num_reg; i++)
 	{
-		if (p->mem[i])
+		if (mem->mem[i])
 		{
-			if (p->mem[i]->mflags & M_SEEN)
+			if (mem->mem[i]->mflags & M_SEEN)
 				continue;	/* count links only once */
 			
-			p->mem[i]->mflags |= M_SEEN;
-			size += p->mem[i]->len;
+			mem->mem[i]->mflags |= M_SEEN;
+			size += mem->mem[i]->len;
 		}
 	}
 	
-	for (i = 0; i < p->num_reg; i++)
+	for (i = 0; i < mem->num_reg; i++)
 	{
-		if (p->mem[i])
-			p->mem[i]->mflags &= ~M_SEEN;
+		if (mem->mem[i])
+			mem->mem[i]->mflags &= ~M_SEEN;
 	}
 	
 	return size;
@@ -2622,7 +2107,6 @@ memused (PROC *p)
  * that the process is executing. whenever any of these things
  * change (through p_exec or p_setlimit) this routine must be called
  */
-
 void
 recalc_maxmem (PROC *p)
 {
@@ -2648,18 +2132,19 @@ recalc_maxmem (PROC *p)
  * valid_address: checks to see if the indicated address falls within
  * memory attached to the current process
  */
-
 int
 valid_address (long addr)
 {
+	PROC *p = curproc;
+	struct memspace *mem = p->p_mem;
 	int i;
 	
-	for (i = 0; i < curproc->num_reg; i++)
+	for (i = 0; i < mem->num_reg; i++)
 	{
-		MEMREGION *m = curproc->mem[i];
+		MEMREGION *m = mem->mem[i];
 		
 		if (m && addr >= m->loc && addr <= m->loc + m->len)
-				return 1;
+			return 1;
 	}
 	
 	return 0;
@@ -2669,15 +2154,15 @@ valid_address (long addr)
  * given an address, find the corresponding memory region in this program's
  * memory map
  */
-
 MEMREGION *
 addr2mem (PROC *p, virtaddr a)
 {
+	struct memspace *mem = p->p_mem;
 	register int i;
 	
-	for (i = 0; i < p->num_reg; i++)
-		if (a == p->addr[i])
-			return p->mem[i];
+	for (i = 0; i < mem->num_reg; i++)
+		if (a == mem->addr[i])
+			return mem->mem[i];
 	
 	return NULL;
 }
@@ -2687,7 +2172,6 @@ addr2mem (PROC *p, virtaddr a)
  * the ST RAM and TT RAM maps, and will fail for memory that
  * MiNT doesn't own or which is virtualized
  */
-
 MEMREGION *
 addr2region (long addr)
 {
@@ -2722,16 +2206,17 @@ addr2region (long addr)
 /*
  * convert an address to the memory region attached to a process
  */
-
 MEMREGION *
 proc_addr2region (PROC *p, long addr)
 {
+	struct memspace *mem = p->p_mem;
 	int i;
-	MEMREGION *m;
 	
-	for (i = 0; i < p->num_reg; i++)
+	for (i = 0; i < mem->num_reg; i++)
 	{
-		m = p->mem[i];
+		MEMREGION *m;
+		
+		m = mem->mem[i];
 		if (m && m->loc <= addr && addr < m->loc + m->len)
 			return m;
 	}
@@ -2760,13 +2245,14 @@ proc_addr2region (PROC *p, long addr)
  * This call works ONLY in the "core" memory region (aka ST RAM)
  * and only on non-shared text regions.
  */
-
 long
 realloc_region (MEMREGION *reg, long newsize)
 {
 	MMAP map = core;
 	MEMREGION *m, *prevptr;
 	long oldsize, trysize;
+	
+	SANITY_CHECK (map);
 	
 	if (!((reg == 0) || (reg->mflags & M_CORE)))
 		return 0;
@@ -2830,6 +2316,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		lastfit->next = newm;
 		mark_region (newm, PROT_G);
 		
+		SANITY_CHECK (map);
 		return (long) newm;
 	}
 	
@@ -2869,6 +2356,7 @@ realloc_region (MEMREGION *reg, long newsize)
 			mark_region (prevptr, PROT_I);
 			mark_region (reg, PROT_G);
 			
+			SANITY_CHECK (map);
 			return reg->loc;
 		}
 		
@@ -2880,6 +2368,7 @@ realloc_region (MEMREGION *reg, long newsize)
 			 * punt and pretend we succeeded; after all,
 			 * we have enough memory!
 			 */
+			SANITY_CHECK (map);
 			return reg->loc;
 		}
 
@@ -2903,6 +2392,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		mark_region (m, PROT_I);
 		mark_region (reg, PROT_G);
 		
+		SANITY_CHECK (map);
 		return reg->loc;
 	}
 	
@@ -2924,11 +2414,16 @@ realloc_region (MEMREGION *reg, long newsize)
 	if (trysize < newsize)
 	{
 		FORCE ("realloc_region: need %ld bytes, only have %ld", newsize, trysize);
+		
+		SANITY_CHECK (map);
 		return 0;	/* not enough room */
 	}
 	
 	if (newsize == -1L)	/* size inquiry only?? */
+	{
+		SANITY_CHECK (map);
 		return trysize;
+	}
 	
 	/* BUG: we can be a bit too aggressive at sweeping up
 	 * memory regions coming after our region; on the other
@@ -2978,6 +2473,8 @@ realloc_region (MEMREGION *reg, long newsize)
 		}
 		mark_region (reg, PROT_G);
 	}
+	
+	SANITY_CHECK (map);
 	
 	/* finally! we return the new starting address of "our" region */
 	return reg->loc;
@@ -3057,7 +2554,6 @@ DUMP_ALL_MEM (void)
 {
 	DUMPMEM (core);
 	DUMPMEM (alt);
-	FORCE ("new memory region descriptor pages: %d", num_reg_requests);
 }
 
 void
@@ -3084,6 +2580,13 @@ DUMPMEM (MMAP map)
 
 # ifdef SANITY_CHECKING
 static void
+sanity_check_maps (ulong line)
+{
+	sanity_check (core, line);
+	sanity_check (alt, line);
+}
+
+static void
 sanity_check (MMAP map, ulong line)
 {
 	MEMREGION *m = *map;
@@ -3103,22 +2606,27 @@ sanity_check (MMAP map, ulong line)
 			{
 				FATAL ("%s, %lu: SHADOW RING CORRUPTED", __FILE__, line);
 			}
+			else if (m->len == 0)
+			{
+				ALERT ("%s, %lu: memory region with len 0!", __FILE__, line);
+			}
 			else if (end == next->loc && ISFREE (m) && ISFREE (next))
 			{
-				ALERT ("%s, %lu: Continguous memory regions not merged!", __FILE__, line);
+				ALERT ("%lu: Continguous memory regions not merged!", line);
+				ALERT ("  m %lx, loc %lx, len %lx, links %u, next %lx", m, m->loc, m->len, m->links, m->next);
 			}
 			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
 			{
-				ALERT ("%s, %lu: Memory region unaligned", __FILE__, line);
+				ALERT ("%lu: Memory region unaligned", line);
 			}
 			else if (!no_mem_prot && (m->len != ROUND(m->len)))
 			{
-				ALERT ("%s, %lu: Memory region length unaligned", __FILE__, line);
+				ALERT ("%lu: Memory region length unaligned", line);
 			}
 			
 			if (m->save && !(m->mflags & M_FSAVED) && !m->shadow)
 			{
-				FATAL ("%s, %lu: SAVE REGION ATTACHED TO A NON-SHADOW REGION!", __FILE__, line);
+				FATAL ("%lu: SAVE REGION ATTACHED TO A NON-SHADOW REGION!", line);
 			}
 		}
 		m = next;

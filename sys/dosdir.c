@@ -16,9 +16,12 @@
 
 # include "libkern/libkern.h"
 
+# include "mint/filedesc.h"
+
 # include "bios.h"
 # include "dosfile.h"
 # include "filesys.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "proc.h"
 # include "time.h"
@@ -30,20 +33,23 @@
 long _cdecl
 d_setdrv (int d)
 {
+	PROC *p = curproc;
 	long r;
 	
 	r = drvmap() | dosdrvs;
 	
 	TRACELOW (("Dsetdrv(%d)", d));
+	assert (p->p_fd && p->p_cwd);
+	
 	if (d < 0 || d >= NUM_DRIVES
 		|| (r & (1L << d)) == 0
-		|| curproc->root_dir)
+		|| p->p_cwd->root_dir)
 	{
 		DEBUG (("Dsetdrv: invalid drive %d", d));
 		return r;
 	}
 	
-	curproc->base->p_defdrv = curproc->curdrv = d;
+	p->base->p_defdrv = p->p_cwd->curdrv = d;
 	return r;
 }
 
@@ -51,33 +57,40 @@ d_setdrv (int d)
 long _cdecl
 d_getdrv (void)
 {
+	PROC *p = curproc;
+	
 	TRACELOW (("Dgetdrv"));
-	return curproc->curdrv;
+	assert (p->p_fd && p->p_cwd);
+	
+	return p->p_cwd->curdrv;
 }
 
 long _cdecl
-d_free(long *buf, int d)
+d_free (long *buf, int d)
 {
+	PROC *p = curproc;
 	fcookie *dir = 0;
 	FILESYS *fs;
 	fcookie root;
 	long r;
 
 	TRACE(("Dfree(%d)", d));
-
-/* drive 0 means current drive, otherwise it's d-1 */
+	assert (p->p_fd && p->p_cwd);
+	
+	/* drive 0 means current drive, otherwise it's d-1 */
 	if (d)
-		d = d-1;
+		d = d - 1;
 	else
-		d = curproc->curdrv;
+		d = p->p_cwd->curdrv;
 
-/* If it's not a standard drive or an alias of one, get the pointer to
- * the filesystem structure and use the root directory of the
- * drive.
- */
+	/* If it's not a standard drive or an alias of one, get the pointer to
+	 * the filesystem structure and use the root directory of the
+	 * drive.
+	 */
 	if (d < 0 || d >= NUM_DRIVES)
 	{
 		int i;
+		
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if (aliasdrv[i] == d)
@@ -86,30 +99,34 @@ d_free(long *buf, int d)
 				goto aliased;
 			}
 		}
+		
 		fs = get_filesys (d);
 		if (!fs)
-		  return ENXIO;
+			return ENXIO;
+		
 		r = xfs_root (fs, d, &root);
 		if (r < E_OK)
-		  return r;
+			return r;
+		
 		r = xfs_dfree (fs, &root, buf);
 		release_cookie (&root);
 		return r;
 	}
 
-/* check for a media change -- we don't care much either way, but it
- * does keep the results more accurate
- */
+	/* check for a media change -- we don't care much either way, but it
+	 * does keep the results more accurate
+	 */
 	(void)disk_changed(d);
 
 aliased:
 
-/* use current directory, not root, since it's more likely that
- * programs are interested in the latter (this makes U: work much
- * better)
- */
-	dir = &curproc->curdir[d];
-	if (!dir->fs) {
+	/* use current directory, not root, since it's more likely that
+	 * programs are interested in the latter (this makes U: work much
+	 * better)
+	 */
+	dir = &p->p_cwd->curdir[d];
+	if (!dir->fs)
+	{
 		DEBUG(("Dfree: bad drive"));
 		return ENXIO;
 	}
@@ -120,22 +137,25 @@ aliased:
 long _cdecl
 d_create (const char *path)
 {
+	PROC *p = curproc;
 	fcookie dir;
 	long r;
 	char temp1[PATH_MAX];
-	short cur_gid, cur_egid;
 	XATTR xattr;
-	unsigned mode;
+	ushort mode;
 
 	TRACE(("Dcreate(%s)", path));
-
+	assert (p->p_fd && p->p_cwd);
+	
 	r = path2cookie(path, temp1, &dir);
-	if (r) {
+	if (r)
+	{
 		DEBUG(("Dcreate(%s): returning %ld", path, r));
-		return r;	/* an error occured */
+		return r;
 	}
 	
-	if (temp1[0] == '\0') {
+	if (temp1[0] == '\0')
+	{
 		DEBUG(("Dcreate(%s): creating a NULL dir?", path));
 		release_cookie(&dir);
 		return EBADARG;
@@ -143,141 +163,184 @@ d_create (const char *path)
 	
 	/* check for write permission on the directory */
 	r = dir_access(&dir, S_IWOTH, &mode);
-	if (r) {
+	if (r)
+	{
 		DEBUG(("Dcreate(%s): write access to directory denied",path));
 		release_cookie(&dir);
 		return r;
 	}
 	
-	if (mode & S_ISGID) {
+	if (mode & S_ISGID)
+	{
 		r = xfs_getxattr (dir.fs, &dir, &xattr);
-		if (r) {
+		if (r)
+		{
 			DEBUG(("Dcreate(%s): file system returned %ld", path, r));
-		} else {
-			cur_gid = curproc->rgid;
-			cur_egid = curproc->egid;
-			curproc->rgid = curproc->egid = xattr.gid;
-			r = xfs_mkdir (dir.fs, &dir, temp1,
-					     (DEFAULT_DIRMODE & ~curproc->umask)
-					     | S_ISGID);
-			curproc->rgid = cur_gid;
-			curproc->egid = cur_egid;
 		}
-	} else
+		else
+		{
+			ushort cur_gid = p->p_cred->rgid;
+			ushort cur_egid = p->p_cred->ucr->egid;
+			p->p_cred->rgid = p->p_cred->ucr->egid = xattr.gid;
+			r = xfs_mkdir (dir.fs, &dir, temp1,
+					     (DEFAULT_DIRMODE & ~p->p_cwd->cmask)
+					     | S_ISGID);
+			p->p_cred->rgid = cur_gid;
+			p->p_cred->ucr->egid = cur_egid;
+		}
+	}
+	else
 		r = xfs_mkdir (dir.fs, &dir, temp1,
-				     DEFAULT_DIRMODE & ~curproc->umask);
+				     DEFAULT_DIRMODE & ~p->p_cwd->cmask);
 	release_cookie(&dir);
 	return r;
 }
 
 long _cdecl
-d_delete(const char *path)
+d_delete (const char *path)
 {
+	struct ucred *cred = curproc->p_cred->ucr;
+	
 	fcookie parentdir, targdir;
 	long r;
 	PROC *p;
 	int i;
 	XATTR xattr;
 	char temp1[PATH_MAX];
-	unsigned mode;
-
+	ushort mode;
+	
+	
 	TRACE(("Ddelete(%s)", path));
-
-	r = path2cookie(path, temp1, &parentdir);
-
-	if (r) {
+	
+	r = path2cookie (path, temp1, &parentdir);
+	if (r)
+	{
 		DEBUG(("Ddelete(%s): error %lx", path, r));
 		release_cookie(&parentdir);
 		return r;
 	}
-/* check for write permission on the directory which the target
- * is located
- */
-	if ((r = dir_access(&parentdir, S_IWOTH, &mode)) != E_OK) {
+	
+	/* check for write permission on the directory which the target
+	 * is located
+	 */
+	r = dir_access (&parentdir, S_IWOTH, &mode);
+	if (r)
+	{
 		DEBUG(("Ddelete(%s): access to directory denied", path));
-		release_cookie(&parentdir);
+		release_cookie (&parentdir);
 		return r;
 	}
 
-/* now get the info on the file itself */
-
-	r = relpath2cookie(&parentdir, temp1, NULL, &targdir, 0);
-	if (r) {
+	/* now get the info on the file itself */
+	r = relpath2cookie (&parentdir, temp1, NULL, &targdir, 0);
+	if (r)
+	{
 bailout:
-		release_cookie(&parentdir);
+		release_cookie (&parentdir);
 		DEBUG(("Ddelete: error %ld on %s", r, path));
 		return r;
 	}
-	if ((r = xfs_getxattr (targdir.fs, &targdir, &xattr)) != E_OK) {
-		release_cookie(&targdir);
+	
+	r = xfs_getxattr (targdir.fs, &targdir, &xattr);
+	if (r)
+	{
+		release_cookie (&targdir);
 		goto bailout;
 	}
 
-/* check effective uid if sticky bit is set in parent */
-	if ((mode & S_ISVTX) && curproc->euid
-	    && curproc->euid != xattr.uid) {
-		release_cookie(&targdir);
-		release_cookie(&parentdir);
+	/* check effective uid if sticky bit is set in parent */
+	if ((mode & S_ISVTX) && cred->euid
+	    && cred->euid != xattr.uid)
+	{
+		release_cookie (&targdir);
+		release_cookie (&parentdir);
 		DEBUG(("Ddelete: sticky bit set and not owner"));
 		return EACCES;
 	}
 
-/* if the "directory" is a symbolic link, really unlink it */
-	if ( (xattr.mode & S_IFMT) == S_IFLNK ) {
-		release_cookie(&targdir);
+	/* if the "directory" is a symbolic link, really unlink it */
+	if ((xattr.mode & S_IFMT) == S_IFLNK)
+	{
+		release_cookie (&targdir);
 		r = xfs_remove (parentdir.fs, &parentdir, temp1);
-	} else if ( (xattr.mode & S_IFMT) != S_IFDIR ) {
+	}
+	else if ((xattr.mode & S_IFMT) != S_IFDIR)
+	{
 		DEBUG(("Ddelete: %s is not a directory", path));
 		r = ENOTDIR;
-	} else {
-
-/* don't delete anyone else's root or current directory */
-	    for (p = proclist; p; p = p->gl_next) {
-		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
-			continue;
-		for (i = 0; i < NUM_DRIVES; i++) {
-			if (samefile(&targdir, &p->root[i])) {
-				DEBUG(("Ddelete: directory %s is a root directory",
-					path));
-				release_cookie(&targdir);
-				release_cookie(&parentdir);
-				return EACCES;
-			} else if (i == p->curdrv && p != curproc &&
-				   samefile(&targdir, &p->curdir[i])) {
-				DEBUG(("Ddelete: directory %s is in use", path));
-				release_cookie(&targdir);
-				release_cookie(&parentdir);
-				return EACCES;
-			}
-		}
-	    }
-	    /* Wait with this until everything has been verified */
-	    for (p = proclist; p; p = p->gl_next) {
-		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
-			continue;
-		for (i = 0; i < NUM_DRIVES; i++) {
-			if (samefile(&targdir, &p->curdir[i])) {
-				release_cookie(&p->curdir[i]);
-				dup_cookie(&p->curdir[i], &p->root[i]);
-			}
-		}
-	    }
-	    release_cookie(&targdir);
-	    r = xfs_rmdir (parentdir.fs, &parentdir, temp1);
 	}
-	release_cookie(&parentdir);
+	else
+	{
+		/* don't delete anyone else's root or current directory */
+		for (p = proclist; p; p = p->gl_next)
+		{
+			struct cwd *cwd = p->p_cwd;
+			
+			if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+				continue;
+			
+			assert (cwd);
+			
+			for (i = 0; i < NUM_DRIVES; i++)
+			{
+				if (samefile (&targdir, &cwd->root[i]))
+				{
+					DEBUG(("Ddelete: directory %s is a root directory", path));
+					release_cookie (&targdir);
+					release_cookie (&parentdir);
+					return EACCES;
+				}
+				else if (i == cwd->curdrv && p != curproc && samefile (&targdir, &cwd->curdir[i]))
+				{
+					DEBUG(("Ddelete: directory %s is in use", path));
+					release_cookie (&targdir);
+					release_cookie (&parentdir);
+					return EACCES;
+				}
+			}
+		}
+		
+		/* Wait with this until everything has been verified */
+		for (p = proclist; p; p = p->gl_next)
+		{
+			struct cwd *cwd = p->p_cwd;
+			
+			if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+				continue;
+			
+			assert (cwd);
+			
+			for (i = 0; i < NUM_DRIVES; i++)
+			{
+				if (samefile (&targdir, &cwd->curdir[i]))
+				{
+					release_cookie (&cwd->curdir[i]);
+					dup_cookie (&cwd->curdir[i], &cwd->root[i]);
+				}
+			}
+		}
+		
+		release_cookie (&targdir);
+		r = xfs_rmdir (parentdir.fs, &parentdir, temp1);
+	}
+	
+	release_cookie (&parentdir);
 	return r;
 }
 
 long _cdecl
-d_setpath(const char *path)
+d_setpath (const char *path)
 {
+	PROC *p = curproc;
+	struct cwd *cwd = p->p_cwd;
+	
 	XATTR xattr;
 	fcookie dir;
-	int drv = curproc->curdrv;
+	int drv;
 	long r;
 	
 	TRACE (("Dsetpath(%s)", path));
+	assert (cwd);
 	
 	r = path2cookie (path, follow_links, &dir);
 	if (r)
@@ -323,17 +386,18 @@ d_setpath(const char *path)
 	/* watch out for symbolic links; if c:\foo is a link to d:\bar, then
 	 * "cd c:\foo" should also change the drive to d:
 	 */
-	if (drv != UNIDRV && dir.dev != curproc->root[drv].dev)
+	drv = cwd->curdrv;
+	if (drv != UNIDRV && dir.dev != cwd->root[drv].dev)
 	{
 		int i;
 		
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
-			if (curproc->root[i].dev == dir.dev
-				&& curproc->root[i].fs == dir.fs)
+			if (cwd->root[i].dev == dir.dev
+				&& cwd->root[i].fs == dir.fs)
 			{
-				if (curproc->curdrv == drv)
-					curproc->curdrv = i;
+				if (cwd->curdrv == drv)
+					cwd->curdrv = i;
 				
 				drv = i;
 				break;
@@ -341,8 +405,8 @@ d_setpath(const char *path)
 		}
 	}
 	
-	release_cookie (&curproc->curdir[drv]);
-	curproc->curdir[drv] = dir;
+	release_cookie (&cwd->curdir[drv]);
+	cwd->curdir[drv] = dir;
 	
 	return E_OK;
 }
@@ -360,30 +424,35 @@ d_setpath(const char *path)
 long _cdecl
 d_getcwd (char *path, int drv, int size)
 {
+	PROC *p = curproc;
+	struct cwd *cwd = p->p_cwd;
+	
 	FILESYS *fs;
 	fcookie *dir, *root;
 	long r;
 	
+	
 	TRACE (("Dgetcwd(%c, %d)", drv + '@', size));
+	assert (cwd);
 	
 	if (drv < 0 || drv > NUM_DRIVES)
 		return ENXIO;
 	
-	drv = (drv == 0) ? curproc->curdrv : drv - 1;
+	drv = (drv == 0) ? cwd->curdrv : drv - 1;
 	
-	root = &curproc->root[drv];
+	root = &cwd->root[drv];
 	if (!root->fs)
 	{
 		/* maybe not initialized yet? */
 		changedrv (drv);
 		
-		root = &curproc->root[drv];
+		root = &cwd->root[drv];
 		if (!root->fs)
 			return ENXIO;
 	}
 	
 	fs = root->fs;
-	dir = &curproc->curdir[drv];
+	dir = &cwd->curdir[drv];
 	
 	if (!(fs->fsflags & FS_LONGPATH))
 	{
@@ -402,27 +471,25 @@ d_getcwd (char *path, int drv, int size)
 	else
 		r = xfs_getname (fs, root, dir, path, size);
 	
-	if (!r && curproc->root_dir)
+	if (!r && cwd->root_dir)
 	{
-		if (curproc->curdrv != drv)
+		if (cwd->curdrv != drv)
 		{
 			r = ENXIO;
 		}
 		else
 		{
-			int len = strlen (curproc->root_dir);
+			int len = strlen (cwd->root_dir);
 			
-			DEBUG (("root_dir detected = %i, (%s), %s", len, path, curproc->root_dir));
-			DEBUG (("strncmp = %i", (long) strncmp (curproc->root_dir, path, len)));
+			DEBUG (("root_dir detected = %i, (%s), %s", len, path, cwd->root_dir));
+			DEBUG (("strncmp = %i", (long) strncmp (cwd->root_dir, path, len)));
 			
-			if (!strncmp (curproc->root_dir, path, len))
+			if (!strncmp (cwd->root_dir, path, len))
 			{
 				int i = 0;
 				
 				while (path [len])
-				{
 					path [i++] = path [len++];
-				}
 				
 				path [i] = '\0';
 			}
@@ -433,27 +500,32 @@ d_getcwd (char *path, int drv, int size)
 }
 
 long _cdecl
-d_getpath(char *path, int drv)
+d_getpath (char *path, int drv)
 {
 	TRACE(("Dgetpath(%c)", drv + '@'));
-	return d_getcwd(path, drv, PATH_MAX);
+	return d_getcwd (path, drv, PATH_MAX);
 }
 
 long _cdecl
-f_setdta(DTABUF *dta)
+f_setdta (DTABUF *dta)
 {
+	PROC *p = curproc;
+	
 	TRACE(("Fsetdta: %lx", dta));
-	curproc->dta = dta;
-	curproc->base->p_dta = (char *)dta;
+	p->dta = dta;
+	p->base->p_dta = (char *) dta;
+	
 	return E_OK;
 }
 
 long _cdecl
-f_getdta(void)
+f_getdta (void)
 {
+	PROC *p = curproc;
 	long r;
 
-	r = (long)curproc->dta;
+	r = (long) p->dta;
+	
 	TRACE(("Fgetdta: returning %lx", r));
 	return r;
 }
@@ -463,8 +535,10 @@ f_getdta(void)
  */
 
 long _cdecl
-f_sfirst(const char *path, int attrib)
+f_sfirst (const char *path, int attrib)
 {
+	PROC *p = curproc;
+	
 	char *s, *slash;
 	FILESYS *fs;
 	fcookie dir, newdir;
@@ -474,13 +548,14 @@ f_sfirst(const char *path, int attrib)
 	long r;
 	int i, havelabel;
 	char temp1[PATH_MAX];
-	unsigned mode;
+	ushort mode;
+	
 	
 	TRACE(("Fsfirst(%s, %x)", path, attrib));
 	
-	r = path2cookie(path, temp1, &dir);
-	
-	if (r) {
+	r = path2cookie (path, temp1, &dir);
+	if (r)
+	{
 		DEBUG(("Fsfirst(%s): path2cookie returned %ld", path, r));
 		return r;
 	}
@@ -490,34 +565,38 @@ f_sfirst(const char *path, int attrib)
 	 */
 	slash = 0;
 	s = temp1;
-	while (*s) {
+	while (*s)
+	{
 		if (*s == '\\')
 			slash = s;
 		s++;
 	}
 	
-	if (slash) {
+	if (slash)
+	{
 		*slash++ = 0;	/* slash now points to a name or pattern */
-		r = relpath2cookie(&dir, temp1, follow_links, &newdir, 0);
-		release_cookie(&dir);
-		if (r) {
+		r = relpath2cookie (&dir, temp1, follow_links, &newdir, 0);
+		release_cookie (&dir);
+		if (r)
+		{
 			DEBUG(("Fsfirst(%s): lookup returned %ld", path, r));
 			return r;
 		}
 		dir = newdir;
-	} else {
-		slash = temp1;
 	}
+	else
+		slash = temp1;
 	
 	/* BUG? what if there really is an empty file name?
 	 */
-	if (!*slash) {
+	if (!*slash)
+	{
 		DEBUG(("Fsfirst: empty pattern"));
 		return ENOENT;
 	}
 
 	fs = dir.fs;
-	dta = curproc->dta;
+	dta = p->dta;
 	
 	/* Now, see if we can find a DIR slot for the search. We use the
 	 * following heuristics to try to avoid destroying a slot:
@@ -527,15 +606,18 @@ f_sfirst(const char *path, int attrib)
 	 *     corresponding search is terminated.
 	 */
 	
-	for (i = 0; i < NUM_SEARCH; i++) {
-		if (curproc->srchdta[i] == dta) {
-			dirh = &curproc->srchdir[i];
-			if (dirh->fc.fs) {
+	for (i = 0; i < NUM_SEARCH; i++)
+	{
+		if (p->srchdta[i] == dta)
+		{
+			dirh = &p->srchdir[i];
+			if (dirh->fc.fs)
+			{
 				xfs_closedir (dirh->fc.fs, dirh);
 				release_cookie(&dirh->fc);
 				dirh->fc.fs = 0;
 			}
-			curproc->srchdta[i] = 0; /* slot is now free */
+			p->srchdta[i] = 0; /* slot is now free */
 		}
 	}
 	
@@ -543,7 +625,7 @@ f_sfirst(const char *path, int attrib)
 	 * remember that "slash" now points at the pattern
 	 * (it follows the last, if any)
 	 */
-	copy8_3(dta->dta_pat, slash);
+	copy8_3 (dta->dta_pat, slash);
 	
 	/* if (attrib & FA_LABEL), read the volume label
 	 * 
@@ -551,13 +633,14 @@ f_sfirst(const char *path, int attrib)
 	 * The Desktop set also date and time to 0 when formatting a floppy disk.
 	 */
 	havelabel = 0;
-	if (attrib & FA_LABEL) {
+	if (attrib & FA_LABEL)
+	{
 		r = xfs_readlabel (fs, &dir, dta->dta_name, TOS_NAMELEN+1);
 		dta->dta_attrib = FA_LABEL;
 		dta->dta_time = dta->dta_date = 0;
 		dta->dta_size = 0;
 		dta->magic = EVALID;
-		if (r == E_OK && !pat_match(dta->dta_name, dta->dta_pat))
+		if (r == E_OK && !pat_match (dta->dta_name, dta->dta_pat))
 			r = ENOENT;
 		if ((attrib & (FA_DIR|FA_LABEL)) == FA_LABEL)
 			return r;
@@ -565,17 +648,22 @@ f_sfirst(const char *path, int attrib)
 			havelabel = 1;
 	}
 	
-	if (!havelabel && has_wild(slash) == 0) { /* no wild cards in pattern */
-		r = relpath2cookie(&dir, slash, follow_links, &newdir, 0);
-		if (r == E_OK) {
+	if (!havelabel && has_wild (slash) == 0)
+	{
+		/* no wild cards in pattern */
+		r = relpath2cookie (&dir, slash, follow_links, &newdir, 0);
+		if (r == E_OK)
+		{
 			r = xfs_getxattr (newdir.fs, &newdir, &xattr);
-			release_cookie(&newdir);
+			release_cookie (&newdir);
 		}
-		release_cookie(&dir);
-		if (r) {
+		release_cookie (&dir);
+		if (r)
+		{
 			DEBUG(("Fsfirst(%s): couldn't get file attributes",path));
 			return r;
 		}
+		
 		dta->magic = EVALID;
 		dta->dta_attrib = xattr.attr;
 		dta->dta_size = xattr.size;
@@ -593,7 +681,7 @@ f_sfirst(const char *path, int attrib)
 		
 		strncpy (dta->dta_name, slash, TOS_NAMELEN-1);
 		dta->dta_name[TOS_NAMELEN-1] = 0;
-		if (curproc->domain == DOM_TOS && !(fs->fsflags & FS_CASESENSITIVE))
+		if (p->domain == DOM_TOS && !(fs->fsflags & FS_CASESENSITIVE))
 			strupr (dta->dta_name);
 		
 		return E_OK;
@@ -603,58 +691,68 @@ f_sfirst(const char *path, int attrib)
 	 * search. NOTE: we also come here if we were asked to search for
 	 * volume labels and found one.
 	 */
-	for (i = 0; i < NUM_SEARCH; i++) {
-		if (curproc->srchdta[i] == 0)
+	for (i = 0; i < NUM_SEARCH; i++)
+	{
+		if (p->srchdta[i] == 0)
 			break;
 	}
-	if (i == NUM_SEARCH) {
+	
+	if (i == NUM_SEARCH)
+	{
 		int oldest = 0; long oldtime = curproc->srchtim[0];
 
-		DEBUG(("Fsfirst(%s): having to re-use a directory slot!",path));
-		for (i = 1; i < NUM_SEARCH; i++) {
-			if (curproc->srchtim[i] < oldtime) {
+		DEBUG(("Fsfirst(%s): having to re-use a directory slot!", path));
+		for (i = 1; i < NUM_SEARCH; i++)
+		{
+			if (p->srchtim[i] < oldtime)
+			{
 				oldest = i;
-				oldtime = curproc->srchtim[i];
+				oldtime = p->srchtim[i];
 			}
 		}
+		
 		/* OK, close this directory for re-use */
 		i = oldest;
-		dirh = &curproc->srchdir[i];
-		if (dirh->fc.fs) {
+		dirh = &p->srchdir[i];
+		if (dirh->fc.fs)
+		{
 			xfs_closedir (dirh->fc.fs, dirh);
 			release_cookie(&dirh->fc);
 			dirh->fc.fs = 0;
 		}
+		
 		/* invalidate re-used DTA */
-		curproc->srchdta[i]->magic = EVALID;
-		curproc->srchdta[i] = 0;
+		p->srchdta[i]->magic = EVALID;
+		p->srchdta[i] = 0;
 	}
 	
 	/* check to see if we have read permission on the directory (and make
 	 * sure that it really is a directory!)
 	 */
 	r = dir_access(&dir, S_IROTH, &mode);
-	if (r) {
+	if (r)
+	{
 		DEBUG(("Fsfirst(%s): access to directory denied (error code %ld)", path, r));
 		release_cookie(&dir);
 		return r;
 	}
 	
 	/* set up the directory for a search */
-	dirh = &curproc->srchdir[i];
+	dirh = &p->srchdir[i];
 	dirh->fc = dir;
 	dirh->index = 0;
 	dirh->flags = TOS_SEARCH;
+	
 	r = xfs_opendir (dir.fs, dirh, dirh->flags);
-	if (r != E_OK) {
-		DEBUG(("Fsfirst(%s): couldn't open directory (error %ld)",
-			path, r));
+	if (r != E_OK)
+	{
+		DEBUG(("Fsfirst(%s): couldn't open directory (error %ld)", path, r));
 		release_cookie(&dir);
 		return r;
 	}
 	
 	/* mark the slot as in-use */
-	curproc->srchdta[i] = dta;
+	p->srchdta[i] = dta;
 	
 	/* set up the DTA for Fsnext */
 	dta->index = i;
@@ -692,8 +790,10 @@ long searchtime;
 long _cdecl
 f_snext (void)
 {
+	PROC *p = curproc;
+	
 	char buf[TOS_NAMELEN+1];
-	DTABUF *dta = curproc->dta;
+	DTABUF *dta = p->dta;
 	FILESYS *fs;
 	fcookie fc;
 	ushort i;
@@ -723,8 +823,8 @@ f_snext (void)
 		return EBADARG;
 	}
 	
-	dirh = &curproc->srchdir[i];
-	curproc->srchtim[i] = searchtime;
+	dirh = &p->srchdir[i];
+	p->srchtim[i] = searchtime;
 	
 	fs = dirh->fc.fs;
 	if (!fs)
@@ -736,64 +836,75 @@ f_snext (void)
 	
 	/* BUG: f_snext and readdir should check for disk media changes
 	 */
-	for(;;) {
+	for(;;)
+	{
 		r = xfs_readdir (fs, dirh, buf, TOS_NAMELEN+1, &fc);
 
-		if (r == EBADARG) {
+		if (r == EBADARG)
+		{
 			DEBUG(("Fsnext: name too long"));
 			continue;	/* TOS programs never see these names */
 		}
-		if (r != E_OK) {
+		
+		if (r != E_OK)
+		{
 baderror:
 			if (dirh->fc.fs)
 				(void) xfs_closedir (fs, dirh);
 			release_cookie(&dirh->fc);
 			dirh->fc.fs = 0;
-			curproc->srchdta[i] = 0;
+			p->srchdta[i] = 0;
 			dta->magic = EVALID;
 			if (r != ENMFILES)
 				DEBUG(("Fsnext: returning %ld", r));
 			return r;
 		}
 		
-		if (!pat_match(buf, dta->dta_pat))
+		if (!pat_match (buf, dta->dta_pat))
 		{
-			release_cookie(&fc);
+			release_cookie (&fc);
 			continue;	/* different patterns */
 		}
 		
 		/* check for search attributes */
 		r = xfs_getxattr (fc.fs, &fc, &xattr);
-		if (r) {
+		if (r)
+		{
 			DEBUG(("Fsnext: couldn't get file attributes"));
-			release_cookie(&fc);
+			release_cookie (&fc);
 			goto baderror;
 		}
+		
 		/* if the file is a symbolic link, try to find what it's linked to */
-		if ( (xattr.mode & S_IFMT) == S_IFLNK ) {
+		if ((xattr.mode & S_IFMT) == S_IFLNK)
+		{
 			char linkedto[PATH_MAX];
 			r = xfs_readlink (fc.fs, &fc, linkedto, PATH_MAX);
-			release_cookie(&fc);
-			if (r == E_OK) {
-			/* the "1" tells relpath2cookie that we read a link */
-			    r = relpath2cookie(&dirh->fc, linkedto,
+			release_cookie (&fc);
+			if (r == E_OK)
+			{
+				/* the "1" tells relpath2cookie that we read a link */
+				r = relpath2cookie (&dirh->fc, linkedto,
 					follow_links, &fc, 1);
-			    if (r == E_OK) {
-				r = xfs_getxattr (fc.fs, &fc, &xattr);
-				release_cookie(&fc);
-			    }
+				if (r == E_OK)
+				{
+					r = xfs_getxattr (fc.fs, &fc, &xattr);
+					release_cookie (&fc);
+				}
 			}
-			if (r) {
-				DEBUG(("Fsnext: couldn't follow link: error %ld",
-					r));
-			}
-		} else {
-			release_cookie(&fc);
+			if (r)
+				DEBUG(("Fsnext: couldn't follow link: error %ld", r));
 		}
+		else
+			release_cookie (&fc);
 		
 		/* silly TOS rules for matching attributes */
-		if (xattr.attr == 0) break;
-		if (xattr.attr & (FA_CHANGED|FA_RDONLY)) break;
+		if (xattr.attr == 0)
+			break;
+		
+		if (xattr.attr & (FA_CHANGED|FA_RDONLY))
+			break;
+		
 		if (dta->dta_sattrib & xattr.attr)
 			break;
 	}
@@ -816,204 +927,253 @@ baderror:
 	dta->dta_size = xattr.size;
 	strcpy (dta->dta_name, buf);
 	
-	if (curproc->domain == DOM_TOS && !(fs->fsflags & FS_CASESENSITIVE))
+	if (p->domain == DOM_TOS && !(fs->fsflags & FS_CASESENSITIVE))
 		strupr (dta->dta_name);
 	
 	return E_OK;
 }
 
 long _cdecl
-f_attrib(const char *name, int rwflag, int attr)
+f_attrib (const char *name, int rwflag, int attr)
 {
+	PROC *p = curproc;
+	struct ucred *cred = p->p_cred->ucr;
+	
 	fcookie fc;
 	XATTR xattr;
 	long r;
-
+	
+	
 	DEBUG(("Fattrib(%s, %d)", name, attr));
 
-	r = path2cookie(name, follow_links, &fc);
-
-	if (r) {
+	r = path2cookie (name, follow_links, &fc);
+	if (r)
+	{
 		DEBUG(("Fattrib(%s): error %ld", name, r));
 		return r;
 	}
 
 	r = xfs_getxattr (fc.fs, &fc, &xattr);
-
-	if (r) {
+	if (r)
+	{
 		DEBUG(("Fattrib(%s): getxattr returned %ld", name, r));
-		release_cookie(&fc);
+		release_cookie (&fc);
 		return r;
 	}
 
-	if (rwflag) {
+	if (rwflag)
+	{
 		if (attr & ~(FA_CHANGED|FA_DIR|FA_SYSTEM|FA_HIDDEN|FA_RDONLY)
-		    || (attr & FA_DIR) != (xattr.attr & FA_DIR)) {
+		    || (attr & FA_DIR) != (xattr.attr & FA_DIR))
+		{
 			DEBUG(("Fattrib(%s): illegal attributes specified",name));
 			r = EACCES;
-		} else if (curproc->euid && curproc->euid != xattr.uid) {
+		}
+		else if (cred->euid && cred->euid != xattr.uid)
+		{
 			DEBUG(("Fattrib(%s): not the file's owner",name));
 			r = EACCES;
-		} else if (xattr.attr & FA_LABEL) {
+		}
+		else if (xattr.attr & FA_LABEL)
+		{
 			DEBUG(("Fattrib(%s): file is a volume label", name));
 			r = EACCES;
-		} else {
-			r = xfs_chattr (fc.fs, &fc, attr);
 		}
-		release_cookie(&fc);
+		else
+			r = xfs_chattr (fc.fs, &fc, attr);
+		
+		release_cookie (&fc);
 		return r;
-	} else {
-		release_cookie(&fc);
+	}
+	else
+	{
+		release_cookie (&fc);
 		return xattr.attr;
 	}
 }
 
 long _cdecl
-f_delete(const char *name)
+f_delete (const char *name)
 {
+	PROC *p = curproc;
+	struct ucred *cred = p->p_cred->ucr;
+	
 	fcookie dir, fc;
-	XATTR	xattr;
+	XATTR xattr;
 	long r;
 	char temp1[PATH_MAX];
-	unsigned mode;
-
+	ushort mode;
+	
+	
 	TRACE(("Fdelete(%s)", name));
 
-/* get a cookie for the directory the file is in */
-	if (( r = path2cookie(name, temp1, &dir)) != E_OK)
+	/* get a cookie for the directory the file is in */
+	r = path2cookie (name, temp1, &dir);
+	if (r)
 	{
 		DEBUG(("Fdelete: couldn't get directory cookie: error %ld", r));
 		return r;
 	}
 
-/* check for write permission on directory */
-	r = dir_access(&dir, S_IWOTH, &mode);
-	if (r) {
+	/* check for write permission on directory */
+	r = dir_access (&dir, S_IWOTH, &mode);
+	if (r)
+	{
 		DEBUG(("Fdelete(%s): write access to directory denied",name));
-		release_cookie(&dir);
+		release_cookie (&dir);
 		return EACCES;
 	}
 
-/* now get the file attributes */
-	if ((r = xfs_lookup (dir.fs, &dir, temp1, &fc)) != E_OK) {
+	/* now get the file attributes */
+	r = xfs_lookup (dir.fs, &dir, temp1, &fc);
+	if (r)
+	{
 		DEBUG(("Fdelete: error %ld while looking for %s", r, temp1));
-		release_cookie(&dir);
+		release_cookie (&dir);
 		return r;
 	}
 
-	if (( r = xfs_getxattr (fc.fs, &fc, &xattr)) < E_OK)
+	r = xfs_getxattr (fc.fs, &fc, &xattr);
+	if (r < E_OK)
 	{
-		release_cookie(&dir);
-		release_cookie(&fc);
+		release_cookie (&dir);
+		release_cookie (&fc);
+		
 		DEBUG(("Fdelete: couldn't get file attributes: error %ld", r));
 		return r;
 	}
 
-/* do not allow directories to be deleted */
+	/* do not allow directories to be deleted */
 	if ((xattr.mode & S_IFMT) == S_IFDIR)
 	{
-		release_cookie(&dir);
-		release_cookie(&fc);
+		release_cookie (&dir);
+		release_cookie (&fc);
+		
 		DEBUG(("Fdelete: %s is a directory", name));
 		return EISDIR;
 	}
 
-/* check effective uid if directories sticky bit is set */
-	if ((mode & S_ISVTX) && curproc->euid
-	    && curproc->euid != xattr.uid) {
-		release_cookie(&dir);
-		release_cookie(&fc);
+	/* check effective uid if directories sticky bit is set */
+	if ((mode & S_ISVTX) && cred->euid
+		&& cred->euid != xattr.uid)
+	{
+		release_cookie (&dir);
+		release_cookie (&fc);
+		
 		DEBUG(("Fdelete: sticky bit set and not owner"));
 		return EACCES;
 	}
 
-/* TOS domain processes can only delete files if they have write permission
- * for them
- */
-	if (curproc->domain == DOM_TOS) {
-	/* see if we're allowed to kill it */
-		if (denyaccess(&xattr, S_IWOTH)) {
-			release_cookie(&dir);
-			release_cookie(&fc);
+	/* TOS domain processes can only delete files if they have write permission
+	 * for them
+	 */
+	if (p->domain == DOM_TOS)
+	{
+		/* see if we're allowed to kill it */
+		if (denyaccess (&xattr, S_IWOTH))
+		{
+			release_cookie (&dir);
+			release_cookie (&fc);
+			
 			DEBUG(("Fdelete: file access denied"));
 			return EACCES;
 		}
 	}
-	release_cookie(&fc);
+	
+	release_cookie (&fc);
 	r = xfs_remove (dir.fs, &dir,temp1);
-
-	release_cookie(&dir);
+	release_cookie (&dir);
+	
 	return r;
 }
 
 long _cdecl
-f_rename(int junk, const char *old, const char *new)
+f_rename (int junk, const char *old, const char *new)
 {
+	PROC *p = curproc;
+	struct ucred *cred = p->p_cred->ucr;
+	
 	fcookie olddir, newdir, oldfil;
 	XATTR xattr;
 	char temp1[PATH_MAX], temp2[PATH_MAX];
 	long r;
-	unsigned mode;
-
-	UNUSED(junk);  /* ignored, for TOS compatibility */
-
+	ushort mode;
+	
+	/* ignored, for TOS compatibility */
+	UNUSED(junk);
+	
+	
 	TRACE(("Frename(%s, %s)", old, new));
-
-	r = path2cookie(old, temp2, &olddir);
-	if (r) {
+	
+	r = path2cookie (old, temp2, &olddir);
+	if (r)
+	{
 		DEBUG(("Frename(%s,%s): error parsing old name",old,new));
 		return r;
 	}
-/* check for permissions on the old file
- * GEMDOS doesn't allow rename if the file is FA_RDONLY
- * we enforce this restriction only on regular files; processes,
- * directories, and character special files can be renamed at will
- */
-	r = relpath2cookie(&olddir, temp2, (char *)0, &oldfil, 0);
-	if (r) {
+	
+	/* check for permissions on the old file
+	 * GEMDOS doesn't allow rename if the file is FA_RDONLY
+	 * we enforce this restriction only on regular files; processes,
+	 * directories, and character special files can be renamed at will
+	 */
+	r = relpath2cookie (&olddir, temp2, (char *)0, &oldfil, 0);
+	if (r)
+	{
 		DEBUG(("Frename(%s,%s): old file not found",old,new));
-		release_cookie(&olddir);
+		release_cookie (&olddir);
 		return r;
 	}
+	
 	r = xfs_getxattr (oldfil.fs, &oldfil, &xattr);
-	release_cookie(&oldfil);
-	if (r ||
-	    ((xattr.mode & S_IFMT) == S_IFREG &&
-	     ((xattr.attr & FA_RDONLY)&&curproc->euid&&(curproc->euid!=xattr.uid)) ))
-	       /* Only SuperUser and the owner of the file are allowed to rename
-		  readonly files */
+	release_cookie (&oldfil);
+	if (r || ((xattr.mode & S_IFMT) == S_IFREG
+			&& ((xattr.attr & FA_RDONLY)
+				&& cred->euid
+				&& (cred->euid != xattr.uid))))
 	{
+	       /* Only SuperUser and the owner of the file are allowed to rename
+		* readonly files
+		*/
 		DEBUG(("Frename(%s,%s): access to old file not granted",old,new));
-		release_cookie(&olddir);
+		release_cookie (&olddir);
 		return EACCES;
 	}
+	
 	r = path2cookie(new, temp1, &newdir);
-	if (r) {
+	if (r)
+	{
 		DEBUG(("Frename(%s,%s): error parsing new name",old,new));
-		release_cookie(&olddir);
+		release_cookie (&olddir);
 		return r;
 	}
-
-	if (newdir.fs != olddir.fs) {
+	
+	if (newdir.fs != olddir.fs)
+	{
 		DEBUG(("Frename(%s,%s): different file systems",old,new));
-		release_cookie(&olddir);
-		release_cookie(&newdir);
-		return EXDEV;	/* cross device rename */
+		release_cookie (&olddir);
+		release_cookie (&newdir);
+		
+		/* cross device rename */
+		return EXDEV;
 	}
-
-/* check for write permission on both directories */
-	r = dir_access(&olddir, S_IWOTH, &mode);
-	if (!r && (mode & S_ISVTX) && curproc->euid
-	    && curproc->euid != xattr.uid)
+	
+	/* check for write permission on both directories */
+	r = dir_access (&olddir, S_IWOTH, &mode);
+	if (!r && (mode & S_ISVTX) && cred->euid
+	    && cred->euid != xattr.uid)
 		r = EACCES;
-	if (!r) r = dir_access(&newdir, S_IWOTH, &mode);
-	if (r) {
+	
+	if (!r) r = dir_access (&newdir, S_IWOTH, &mode);
+	
+	if (r)
 		DEBUG(("Frename(%s,%s): access to a directory denied",old,new));
-	} else {
+	else
 		r = xfs_rename (newdir.fs, &olddir, temp2, &newdir, temp1);
-	}
-	release_cookie(&olddir);
-	release_cookie(&newdir);
+	
+	release_cookie (&olddir);
+	release_cookie (&newdir);
+	
 	return r;
 }
 
@@ -1036,25 +1196,28 @@ f_rename(int junk, const char *old, const char *new)
  *
  * see also Sysconf() in dos.c
  */
-
 long _cdecl
-d_pathconf(const char *name, int which)
+d_pathconf (const char *name, int which)
 {
 	fcookie dir;
 	long r;
 
-	r = path2cookie(name, (char *)0, &dir);
-	if (r) {
+	r = path2cookie (name, NULL, &dir);
+	if (r)
+	{
 		DEBUG(("Dpathconf(%s): bad path",name));
 		return r;
 	}
+	
 	r = xfs_pathconf (dir.fs, &dir, which);
-	if (which == DP_CASE && r == ENOSYS) {
-	/* backward compatibility with old .XFS files */
+	if (which == DP_CASE && r == ENOSYS)
+	{
+		/* backward compatibility with old .XFS files */
 		r = (dir.fs->fsflags & FS_CASESENSITIVE) ? DP_CASESENS :
 				DP_CASEINSENS;
 	}
-	release_cookie(&dir);
+	
+	release_cookie (&dir);
 	return r;
 }
 
@@ -1064,30 +1227,35 @@ d_pathconf(const char *name, int which)
  * offer a new, POSIX-like alternative to Fsfirst/Fsnext,
  * and as a bonus allow for arbitrary length file names
  */
-
 long _cdecl
-d_opendir(const char *name, int flag)
+d_opendir (const char *name, int flag)
 {
+	PROC *p = curproc;
+	
 	DIR *dirh;
 	fcookie dir;
 	long r;
-	unsigned mode;
+	ushort mode;
 
-	r = path2cookie(name, follow_links, &dir);
-	if (r) {
+	r = path2cookie (name, follow_links, &dir);
+	if (r)
+	{
 		DEBUG(("Dopendir(%s): error %ld", name, r));
 		return r;
 	}
-	r = dir_access(&dir, S_IROTH, &mode);
-	if (r) {
+	
+	r = dir_access (&dir, S_IROTH, &mode);
+	if (r)
+	{
 		DEBUG(("Dopendir(%s): read permission denied", name));
-		release_cookie(&dir);
+		release_cookie (&dir);
 		return r;
 	}
 	
 	dirh = kmalloc (sizeof (*dirh));
-	if (!dirh) {
-		release_cookie(&dir);
+	if (!dirh)
+	{
+		release_cookie (&dir);
 		return ENOMEM;
 	}
 
@@ -1095,34 +1263,37 @@ d_opendir(const char *name, int flag)
 	dirh->index = 0;
 	dirh->flags = flag;
 	r = xfs_opendir (dir.fs, dirh, flag);
-	if (r) {
+	if (r)
+	{
 		DEBUG(("d_opendir(%s): opendir returned %ld", name, r));
-		release_cookie(&dir);
-		kfree(dirh);
+		release_cookie (&dir);
+		kfree (dirh);
 		return r;
 	}
 
-/* we keep a chain of open directories so that if a process
- * terminates without closing them all, we can clean up
- */
-	dirh->next = curproc->searches;
-	curproc->searches = dirh;
+	/* we keep a chain of open directories so that if a process
+	 * terminates without closing them all, we can clean up
+	 */
+	dirh->next = p->searches;
+	p->searches = dirh;
 
-	return (long)dirh;
+	return (long) dirh;
 }
 
 long _cdecl
-d_readdir(int len, long handle, char *buf)
+d_readdir (int len, long handle, char *buf)
 {
-	DIR *dirh = (DIR *)handle;
+	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
-
+	
 	if (!dirh->fc.fs)
 		return EBADF;
+	
 	r = xfs_readdir (dirh->fc.fs, dirh, buf, len, &fc);
 	if (r == E_OK)
-		release_cookie(&fc);
+		release_cookie (&fc);
+	
 	return r;
 }
 
@@ -1131,11 +1302,10 @@ d_readdir(int len, long handle, char *buf)
  * result of the Dreaddir operation, the result of the Fxattr
  * operation is stored in long *xret
  */
-
 long _cdecl
-d_xreaddir(int len, long handle, char *buf, XATTR *xattr, long *xret)
+d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 {
-	DIR *dirh = (DIR *)handle;
+	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
 	
@@ -1161,12 +1331,13 @@ d_xreaddir(int len, long handle, char *buf, XATTR *xattr, long *xret)
 
 
 long _cdecl
-d_rewind(long handle)
+d_rewind (long handle)
 {
-	DIR *dirh = (DIR *)handle;
-
+	DIR *dirh = (DIR *) handle;
+	
 	if (!dirh->fc.fs)
 		return EBADF;
+	
 	return xfs_rewinddir (dirh->fc.fs, dirh);
 }
 
@@ -1176,37 +1347,39 @@ d_rewind(long handle)
  * If you change d_closedir(), you may also need to change
  * terminate().
  */
-
 long _cdecl
-d_closedir(long handle)
+d_closedir (long handle)
 {
-	long r;
+	PROC *p = curproc;
 	DIR *dirh = (DIR *)handle;
 	DIR **where;
-
-	where = &curproc->searches;
-	while (*where && *where != dirh) {
+	long r;
+	
+	where = &p->searches;
+	while (*where && *where != dirh)
 		where = &((*where)->next);
-	}
-	if (!*where) {
+	
+	if (!*where)
+	{
 		DEBUG(("Dclosedir: not an open directory"));
 		return EBADF;
 	}
-
-/* unlink the directory from the chain */
+	
+	/* unlink the directory from the chain */
 	*where = dirh->next;
-
-	if (dirh->fc.fs) {
+	
+	if (dirh->fc.fs)
+	{
 		r = xfs_closedir (dirh->fc.fs, dirh);
-		release_cookie(&dirh->fc);
-	} else {
+		release_cookie (&dirh->fc);
+	}
+	else
 		r = E_OK;
-	}
 
-	if (r) {
+	if (r)
 		DEBUG(("Dclosedir: error %ld", r));
-	}
-	kfree(dirh);
+	
+	kfree (dirh);
 	return r;
 }
 
@@ -1217,7 +1390,6 @@ d_closedir(long handle)
  * flag is 0 if symbolic links are to be followed (like stat),
  * flag is 1 if not (like lstat).
  */
-
 long _cdecl
 f_xattr (int flag, const char *name, XATTR *xattr)
 {
@@ -1255,42 +1427,45 @@ f_xattr (int flag, const char *name, XATTR *xattr)
  * 
  * creates a hard link named "new" to the file "old".
  */
-
 long _cdecl
-f_link(const char *old, const char *new)
+f_link (const char *old, const char *new)
 {
 	fcookie olddir, newdir;
 	char temp1[PATH_MAX], temp2[PATH_MAX];
 	long r;
-	unsigned mode;
-
+	ushort mode;
+	
 	TRACE(("Flink(%s, %s)", old, new));
-
-	r = path2cookie(old, temp2, &olddir);
-	if (r) {
+	
+	r = path2cookie (old, temp2, &olddir);
+	if (r)
+	{
 		DEBUG(("Flink(%s,%s): error parsing old name",old,new));
 		return r;
 	}
-	r = path2cookie(new, temp1, &newdir);
-	if (r) {
+	
+	r = path2cookie (new, temp1, &newdir);
+	if (r)
+	{
 		DEBUG(("Flink(%s,%s): error parsing new name",old,new));
 		release_cookie(&olddir);
 		return r;
 	}
-
-	if (newdir.fs != olddir.fs) {
+	
+	if (newdir.fs != olddir.fs)
+	{
 		DEBUG(("Flink(%s,%s): different file systems",old,new));
-		release_cookie(&olddir);
-		release_cookie(&newdir);
+		release_cookie (&olddir);
+		release_cookie (&newdir);
 		return EXDEV;	/* cross device link */
 	}
 	
 	/* check for write permission on the destination directory
 	 */
-	r = dir_access(&newdir, S_IWOTH, &mode);
-	if (r) {
+	r = dir_access (&newdir, S_IWOTH, &mode);
+	if (r)
 		DEBUG(("Flink(%s,%s): access to directory denied",old,new));
-	} else
+	else
 		r = xfs_hardlink (newdir.fs, &olddir, temp2, &newdir, temp1);
 	
 	release_cookie (&olddir);
@@ -1304,28 +1479,30 @@ f_link(const char *old, const char *new)
  * 
  * create a symbolic link named "new" that contains the path "old"
  */
-
 long _cdecl
-f_symlink(const char *old, const char *new)
+f_symlink (const char *old, const char *new)
 {
 	fcookie newdir;
 	long r;
 	char temp1[PATH_MAX];
-	unsigned mode;
+	ushort mode;
 
 	TRACE(("Fsymlink(%s, %s)", old, new));
 
 	r = path2cookie(new, temp1, &newdir);
-	if (r) {
+	if (r)
+	{
 		DEBUG(("Fsymlink(%s,%s): error parsing %s", old,new,new));
 		return r;
 	}
-	r = dir_access(&newdir, S_IWOTH, &mode);
-	if (r) {
+	
+	r = dir_access (&newdir, S_IWOTH, &mode);
+	if (r)
 		DEBUG(("Fsymlink(%s,%s): access to directory denied",old,new));
-	} else
+	else
 		r = xfs_symlink (newdir.fs, &newdir, temp1, old);
-	release_cookie(&newdir);
+	
+	release_cookie (&newdir);
 	return r;
 }
 
@@ -1335,9 +1512,8 @@ f_symlink(const char *old, const char *new)
  * read the contents of the symbolic link "linkfile" into the buffer
  * "buf", which has length "buflen".
  */
-
 long _cdecl
-f_readlink(int buflen, char *buf, const char *linkfile)
+f_readlink (int buflen, char *buf, const char *linkfile)
 {
 	fcookie file;
 	long r;
@@ -1345,21 +1521,25 @@ f_readlink(int buflen, char *buf, const char *linkfile)
 
 	TRACE(("Freadlink(%s)", linkfile));
 
-	r = path2cookie(linkfile, (char *)0, &file);
-	if (r) {
+	r = path2cookie (linkfile, (char *)0, &file);
+	if (r)
+	{
 		DEBUG(("Freadlink: unable to find %s", linkfile));
 		return r;
 	}
+	
 	r = xfs_getxattr (file.fs, &file, &xattr);
-	if (r) {
+	if (r)
 		DEBUG(("Freadlink: unable to get attributes for %s", linkfile));
-	} else if ( (xattr.mode & S_IFMT) == S_IFLNK )
+	else if ((xattr.mode & S_IFMT) == S_IFLNK)
 		r = xfs_readlink (file.fs, &file, buf, buflen);
-	else {
+	else
+	{
 		DEBUG(("Freadlink: %s is not a link", linkfile));
 		r = EACCES;
 	}
-	release_cookie(&file);
+	
+	release_cookie (&file);
 	return r;
 }
 
@@ -1368,7 +1548,6 @@ f_readlink(int buflen, char *buf, const char *linkfile)
  * 
  * do file system specific functions
  */
-
 long _cdecl
 d_cntl (int cmd, const char *name, long arg)
 {
@@ -1414,6 +1593,8 @@ d_cntl (int cmd, const char *name, long arg)
 				r = xfs_fscntl (dir.fs, &dir, temp1, cmd, (long) t);
 				break;
 			}
+			
+			/* else fallback */
 		}
 		default:
 		{
@@ -1432,65 +1613,75 @@ d_cntl (int cmd, const char *name, long arg)
  * changes the user and group ownerships of a file to "uid" and "gid"
  * respectively
  */
-
 long _cdecl
-f_chown(const char *name, int uid, int gid)
+f_chown (const char *name, int uid, int gid)
 {
+	PROC *p = curproc;
+	struct ucred *cred = p->p_cred->ucr;
+	
 	fcookie fc;
 	XATTR xattr;
 	long r;
-
+	
+	
 	TRACE(("Fchown(%s, %d, %d)", name, uid, gid));
-
-	r = path2cookie(name, NULL, &fc);
-	if (r) {
+	
+	r = path2cookie (name, NULL, &fc);
+	if (r)
+	{
 		DEBUG(("Fchown(%s): error %ld", name, r));
 		return r;
 	}
-
-/* MiNT acts like _POSIX_CHOWN_RESTRICTED: a non-privileged process can
- * only change the ownership of a file that is owned by this user, to
- * the effective group id of the process or one of its supplementary groups
- */
-	if (curproc->euid) {
-		if (curproc->egid != gid && !ngroupmatch(gid))
+	
+	/* MiNT acts like _POSIX_CHOWN_RESTRICTED: a non-privileged process can
+	 * only change the ownership of a file that is owned by this user, to
+	 * the effective group id of the process or one of its supplementary groups
+	 */
+	if (cred->euid)
+	{
+		if (cred->egid != gid && !ngroupmatch (cred, gid))
 			r = EACCES;
 		else
 			r = xfs_getxattr (fc.fs, &fc, &xattr);
-		if (r) {
+		
+		if (r)
+		{
 			DEBUG(("Fchown(%s): unable to get file attributes",name));
-			release_cookie(&fc);
+			release_cookie (&fc);
 			return r;
 		}
-		if (xattr.uid != curproc->euid || xattr.uid != uid) {
+		
+		if (xattr.uid != cred->euid || xattr.uid != uid)
+		{
 			DEBUG(("Fchown(%s): not the file's owner",name));
-			release_cookie(&fc);
+			release_cookie (&fc);
 			return EACCES;
 		}
+		
 		r = xfs_chown (fc.fs, &fc, uid, gid);
-
-	/* POSIX 5.6.5.2: if name refers to a regular file the set-user-ID and
-	 * set-group-ID bits of the file mode shall be cleared upon successful
-	 * return from the call to chown, unless the call is made by a process
-	 * with the appropriate privileges.
-	 * Note that POSIX leaves the behaviour unspecified for all other file
-	 * types. At least for directories with BSD-like setgid semantics,
-	 * these bits should be left unchanged.
-	 */
+		
+		/* POSIX 5.6.5.2: if name refers to a regular file the set-user-ID and
+		 * set-group-ID bits of the file mode shall be cleared upon successful
+		 * return from the call to chown, unless the call is made by a process
+		 * with the appropriate privileges.
+		 * Note that POSIX leaves the behaviour unspecified for all other file
+		 * types. At least for directories with BSD-like setgid semantics,
+		 * these bits should be left unchanged.
+		 */
 		if (!r && (xattr.mode & S_IFMT) != S_IFDIR
-		    && (xattr.mode & (S_ISUID | S_ISGID))) {
+		    && (xattr.mode & (S_ISUID | S_ISGID)))
+		{
 			long s;
-
+			
 			s = xfs_chmode (fc.fs, &fc, xattr.mode & ~(S_ISUID | S_ISGID));
 			if (!s)
-				DEBUG(("Fchown: chmode returned %ld (ignored)",
-				       s));
+				DEBUG(("Fchown: chmode returned %ld (ignored)", s));
 		}
 	}
 	else
 		r = xfs_chown (fc.fs, &fc, uid, gid);
-
-	release_cookie(&fc);
+	
+	release_cookie (&fc);
 	return r;
 }
 
@@ -1499,13 +1690,16 @@ f_chown(const char *name, int uid, int gid)
  * 
  * changes a file's access permissions.
  */
-
 long _cdecl
 f_chmod (const char *name, unsigned int mode)
 {
+	PROC *p = curproc;
+	struct ucred *cred = p->p_cred->ucr;
+	
 	fcookie fc;
 	long r;
 	XATTR xattr;
+	
 	
 	TRACE (("Fchmod(%s, %o)", name, mode));
 	r = path2cookie (name, follow_links, &fc);
@@ -1514,12 +1708,13 @@ f_chmod (const char *name, unsigned int mode)
 		DEBUG (("Fchmod(%s): error %ld", name, r));
 		return r;
 	}
+	
 	r = xfs_getxattr (fc.fs, &fc, &xattr);
 	if (r)
 	{
 		DEBUG (("Fchmod(%s): couldn't get file attributes",name));
 	}
-	else if (curproc->euid && curproc->euid != xattr.uid)
+	else if (cred->euid && cred->euid != xattr.uid)
 	{
 		DEBUG (("Fchmod(%s): not the file's owner",name));
 		r = EACCES;
@@ -1575,7 +1770,7 @@ d_lock (int mode, int _dev)
 	{
 		if (dlockproc[dev] == curproc)
 		{
-			dlockproc[dev] = 0;
+			dlockproc[dev] = NULL;
 			/* changedrv (dev); */
 			return E_OK;
 		}
@@ -1600,17 +1795,21 @@ d_lock (int mode, int _dev)
 	/* see if the drive is in use */
 	for (p = proclist; p; p = p->gl_next)
 	{
+		struct filedesc *fd = p->p_fd;
+		struct cwd *cwd = p->p_cwd;
+		
 		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 			continue;
 		
-		if (p->root_dir && p->root_fc.dev == dev)
+		assert (fd && cwd);
+		
+		if (cwd->root_dir && cwd->rootdir.dev == dev)
 			return EACCES;
 		
-		for (i = MIN_HANDLE; i < MAX_OPEN; i++)
+		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
-			if (((f = p->handle[i]) != 0)
-				&& (f != (FILEPTR *) 1)
-				&& (f->fc.dev == dev))
+			f = fd->ofiles[i];
+			if (f && (f != (FILEPTR *) 1) && (f->fc.dev == dev))
 			{
 				DEBUG (("Dlock: process %d (%s) has an open handle on the drive", p->pid, p->name));
 				
@@ -1630,17 +1829,24 @@ d_lock (int mode, int _dev)
 	
 	for (p = proclist; p; p = p->gl_next)
 	{
+		struct cwd *cwd = p->p_cwd;
+		
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
+		assert (cwd);
+		
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
-			if (p->root[i].dev == dev)
+			if (cwd->root[i].dev == dev)
 			{
-				release_cookie (&p->root[i]);
-				p->root[i].fs = 0;
+				release_cookie (&cwd->root[i]);
+				cwd->root[i].fs = 0;
 			}
-			if (p->curdir[i].dev == dev)
+			if (cwd->curdir[i].dev == dev)
 			{
-				release_cookie (&p->curdir[i]);
-				p->curdir[i].fs = 0;
+				release_cookie (&cwd->curdir[i]);
+				cwd->curdir[i].fs = 0;
 			}
 		}
 	}
@@ -1677,7 +1883,6 @@ d_lock (int mode, int _dev)
  * 
  * original written by jr
  */
-
 long _cdecl
 d_readlabel (const char *name, char *buf, int buflen)
 {
@@ -1702,16 +1907,18 @@ d_readlabel (const char *name, char *buf, int buflen)
  * 
  * original written by jr
  */
-
 long _cdecl
 d_writelabel (const char *name, const char *label)
 {
+	PROC *p = curproc;
+	struct ucred *cred = p->p_cred->ucr;
+	
 	fcookie dir;
 	long r;
 	
 	/* Draco: in secure mode only superuser can write labels
 	 */
-	if (secure_mode && (curproc->euid))
+	if (secure_mode && (cred->euid))
 	{
 		DEBUG (("Dwritelabel(%s): access denied", name));
 		return EACCES;
@@ -1735,17 +1942,22 @@ d_writelabel (const char *name, const char *label)
  * 
  * original written by fn
  */
-
 long _cdecl
 d_chroot (const char *path)
 {
+	PROC *p = curproc;
+	struct ucred *cred = p->p_cred->ucr;
+	struct cwd *cwd = p->p_cwd;
+	
 	XATTR xattr;
 	fcookie dir;
 	long r;
 	
-	DEBUG (("Dchroot(%s): enter", path));
 	
-	if (curproc->euid)
+	DEBUG (("Dchroot(%s): enter", path));
+	assert (cwd);
+	
+	if (cred->euid || !p->domain)
 	{
 		DEBUG (("Dchroot(%s): access denied", path));
 		return EPERM;
@@ -1775,36 +1987,29 @@ d_chroot (const char *path)
 	{
 		char buf[PATH_MAX];
 		
-		r = xfs_getname (dir.fs, &curproc->root[dir.dev], &dir, buf, PATH_MAX);
+		r = xfs_getname (dir.fs, &cwd->root[dir.dev], &dir, buf, PATH_MAX);
 		if (r)
 		{
 			DEBUG( ("Dchroot(%s): getname fail!", path));
 			goto error;
 		}
 		
-		curproc->root_dir = kmalloc (strlen (buf) + 1);
-		if (!curproc->root_dir)
+		cwd->root_dir = kmalloc (strlen (buf) + 1);
+		if (!cwd->root_dir)
 		{
 			DEBUG (("Dchroot(%s): kmalloc fail!", buf));
 			r = ENOMEM;
 			goto error;
 		}
 		
-		strcpy (curproc->root_dir, buf);
+		strcpy (cwd->root_dir, buf);
 	}
 	
-	curproc->root_fc = dir;
+	cwd->rootdir = dir;
 	
-	/*
-	curproc->curdrv = dir.dev;
-	
-	release_cookie(&curproc->curdir[curproc->curdrv]);
-	dup_cookie(&curproc->curdir[curproc->curdrv],&curproc->root_fc);
-	*/
-	
-	DEBUG (("Dchroot(%s): ok [%lx,%i]", curproc->root_dir, dir.index, dir.dev));
-	DEBUG (("Dchroot: [%lx,%lx]", curproc->curdir[dir.dev].index, curproc->curdir[dir.dev].fs));
-	DEBUG (("Dchroot: [%lx,%lx]", curproc->root[dir.dev].index, curproc->root[dir.dev].fs));
+	DEBUG (("Dchroot(%s): ok [%lx,%i]", cwd->root_dir, dir.index, dir.dev));
+	DEBUG (("Dchroot: [%lx,%lx]", cwd->curdir[dir.dev].index, cwd->curdir[dir.dev].fs));
+	DEBUG (("Dchroot: [%lx,%lx]", cwd->root[dir.dev].index, cwd->root[dir.dev].fs));
 	return E_OK;
 	
 error:
@@ -1819,7 +2024,6 @@ error:
  * flag is 0 if symbolic links are to be followed (like stat),
  * flag is 1 if not (like lstat).
  */
-
 long _cdecl
 f_stat64 (int flag, const char *name, STAT *stat)
 {

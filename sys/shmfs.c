@@ -16,6 +16,8 @@
 
 # include "libkern/libkern.h"
 
+# include "mint/credentials.h"
+
 # include "dev-null.h"
 # include "kmemory.h"
 # include "memory.h"
@@ -498,8 +500,8 @@ shm_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcooki
 	s->inuse = 0;
 	strncpy (s->filename, name, SHMNAME_MAX);
 	s->filename[SHMNAME_MAX] = 0;
-	s->uid = curproc->euid;
-	s->gid = curproc->egid;
+	s->uid = curproc->p_cred->ucr->euid;
+	s->gid = curproc->p_cred->ucr->egid;
 	s->mode = mode;
 	s->next = shmroot;
 	s->reg = 0;

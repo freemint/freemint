@@ -35,9 +35,14 @@
 
 # if WITH_KERNFS
 
-# include "arch/mprot.h"
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
+
+# include "mint/credentials.h"
+# include "mint/filedesc.h"
+# include "mint/proc.h"
+
+# include "arch/mprot.h"
 
 # include "dev-null.h"
 # include "filesys.h"
@@ -332,11 +337,11 @@ search_name (KTAB *k, const char *name)
 static int
 follow_link_denied (PROC *p, char *function)
 {
-	int deny = curproc->euid
-			&& (curproc->euid ^ p->suid)
-			&& (curproc->euid ^ p->ruid)
-			&& (curproc->ruid ^ p->suid)
-			&& (curproc->ruid ^ p->ruid);
+	int deny = curproc->p_cred->ucr->euid
+			&& (curproc->p_cred->ucr->euid ^ p->p_cred->suid)
+			&& (curproc->p_cred->ucr->euid ^ p->p_cred->ruid)
+			&& (curproc->p_cred->ruid ^ p->p_cred->suid)
+			&& (curproc->p_cred->ruid ^ p->p_cred->ruid);
 	
 	if (deny)
 		DEBUG (("%s: can't follow links for pid %d: Access denied", function, p->pid));
@@ -438,8 +443,8 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 		
 		cdesc = (desc & 0xff);
 		
-		if (cdesc < -5 || cdesc >= MAX_OPEN 
-			|| p->handle[(int) (cdesc)] == NULL)
+		if (cdesc < -5 || cdesc >= p->p_fd->nfiles
+			|| p->p_fd->ofiles[(int) (cdesc)] == NULL)
 		{
 			DEBUG (("kern_fddir_lookup: pid %d, invalid descriptor: %d", pid, (int) cdesc));
 			return ENOENT;
@@ -553,8 +558,8 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->mode = t->mode;
 	stat->rdev = KERNDRV;
 	stat->nlink = 1;
-	stat->uid = p->ruid;
-	stat->gid = p->rgid;
+	stat->uid = p->p_cred->ruid;
+	stat->gid = p->p_cred->rgid;
 	stat->size = 0;
 	stat->blksize = 1;
 	stat->blocks = 0;	
@@ -603,8 +608,8 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->mode = S_IFLNK | 0500;
 	stat->rdev = KERNDRV;
 	stat->nlink = 1;
-	stat->uid = p->ruid;
-	stat->gid = p->rgid;
+	stat->uid = p->p_cred->ruid;
+	stat->gid = p->p_cred->rgid;
 	stat->size = 0;
 	stat->blksize = 1;
 	stat->blocks = 0;	
@@ -630,10 +635,10 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 		if ((file->index & 0x0000ff00) != 0x100)
 			return ENOENT;
 		
-		if (desc < -5 || desc >= MAX_OPEN)
+		if (desc < -5 || desc >= p->p_fd->nfiles)
 			return ENOENT;
 		
-		if (*(p->handle + desc) == NULL)
+		if (*(p->p_fd->ofiles + desc) == NULL)
 			return ENOENT;
 	}
 	
@@ -691,8 +696,8 @@ kern_stat64 (fcookie *file, STAT *stat)
 		}
 		case ROOTDIR_SELF:
 		{
-			stat->uid = curproc->ruid;
-			stat->gid = curproc->rgid;
+			stat->uid = curproc->p_cred->ruid;
+			stat->gid = curproc->p_cred->rgid;
 			
 			break;
 		}
@@ -891,10 +896,10 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		}
 		default:
 		{
-			while (dirh->index < MAX_OPEN + 7)
+			while (dirh->index < p->p_fd->nfiles + 7)
 			{
 				long desc = ((long) (dirh->index)) - 7;
-				if (p->handle[desc] != NULL)
+				if (p->p_fd->ofiles[desc] != NULL)
 				{
 					ksprintf (buf, sizeof (buf), "%lu", (ulong) (desc & 0xff));
 					fc->index = 
@@ -906,7 +911,7 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 				dirh->index++;
 			}
 			
-			if (dirh->index >= MAX_OPEN + 7)
+			if (dirh->index >= p->p_fd->nfiles + 7)
 				return ENMFILES;
 			
 			break;
@@ -1133,6 +1138,7 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 {
 	short pid = dir->index >> 16;
 	PROC *p;
+	struct cwd *cwd;
 	char buf[64];
 	ulong len;
 	
@@ -1145,6 +1151,8 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 		return ENOENT;
 	}
 	
+	cwd = p->p_cwd;
+	
 	switch (dir->index & 0x0000ffff)
 	{
 		case PROCDIR_CWD:
@@ -1152,8 +1160,8 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 			if (follow_link_denied (p, __FUNCTION__))
 				return EACCES;
 			ksprintf (buf, sizeof (buf), "[%04u]:%lu", 
-				p->curdir[p->curdrv].dev,
-				(ulong) p->curdir[p->curdrv].index);
+				cwd->curdir[cwd->curdrv].dev,
+				(ulong) cwd->curdir[cwd->curdrv].index);
 			break;
 		}
 		case PROCDIR_EXE:
@@ -1169,8 +1177,8 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 		{
 			if (follow_link_denied (p, __FUNCTION__))
 				return EACCES;
-			ksprintf (buf, sizeof (buf), "[%04u]:%lu", p->root_fc.dev, 
-				(ulong) p->root_fc.index);
+			ksprintf (buf, sizeof (buf), "[%04u]:%lu", cwd->rootdir.dev, 
+				(ulong) cwd->rootdir.index);
 			break;
 		}
 		default:
@@ -1198,6 +1206,7 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 {
 	short pid = file->index >> 16;
 	PROC *p;
+	struct filedesc *fd;
 	char buf[64];
 	ulong len;
 	long desc;
@@ -1211,21 +1220,23 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 		return ENOENT;
 	}
 	
+	fd = p->p_fd;
+	
 	if (follow_link_denied (p, __FUNCTION__))
 		return EACCES;
 	
 	/* This cast will preserve the sign */
 	desc = (char) file->index;
 	
-	if (desc < -5 || desc >= MAX_OPEN || (*(p->handle + desc)) == NULL)
+	if (desc < -5 || desc >= fd->nfiles || (*(fd->ofiles + desc)) == NULL)
 	{
 		DEBUG (("kern_fddir_readlink: /sys/%d/fd/%d: Invalid descriptor", pid, (int) desc));
 		return ENOENT;
 	}
 	
 	ksprintf (buf, sizeof (buf), "[%04u]:%lu", 
-			(unsigned) p->handle[desc]->fc.dev,
-			(ulong) p->handle[desc]->fc.index);
+			(unsigned) fd->ofiles[desc]->fc.dev,
+			(ulong) fd->ofiles[desc]->fc.index);
 	
 	_mint_strncpy_f (name, buf, namelen);
 	
@@ -1591,6 +1602,8 @@ kern_follow_link (fcookie *fc, int depth)
 	long pid;		/* PID associated with the descriptor */
 	PROC *p;		/* Associated proc structure */
 	fcookie *src = NULL;	/* The cookie we have to duplicate */
+	struct filedesc *fd;
+	struct cwd *cwd;
 	
 	TRACE (("kern_follow_link ([%u:%ld]), depth %d", fc->dev, fc->index, depth));
 	
@@ -1614,21 +1627,24 @@ kern_follow_link (fcookie *fc, int depth)
 		return ENOENT;
 	}
 	
+	fd = p->p_fd;
+	cwd = p->p_cwd;
+	
 	if ((fc->index & 0xff00) == 0x100)
 	{
 		char desc = fc->index & 0xff;
 		
-		if (desc < -5 || desc >= MAX_OPEN || *(p->handle + desc) == NULL)
+		if (desc < -5 || desc >= fd->nfiles || *(fd->ofiles + desc) == NULL)
 		{
 		    	DEBUG (("kern_follow_link: pid %ld has closed descriptor %d", pid, (int) desc));
 			return ENOENT;
 		}
 		
-		src = &(*(p->handle + desc))->fc;
+		src = &(*(fd->ofiles + desc))->fc;
 	}
 	else if ((fc->index & 0xffff) == PROCDIR_CWD)
 	{
-		src = p->curdir + p->curdrv;
+		src = cwd->curdir + cwd->curdrv;
 	}
 	else if ((fc->index & 0xffff) == PROCDIR_EXE)
 	{
@@ -1636,7 +1652,7 @@ kern_follow_link (fcookie *fc, int depth)
 	}
 	else if ((fc->index & 0xffff) == PROCDIR_ROOT)
 	{
-		src = &p->root_fc;
+		src = &cwd->rootdir;
 	}
 	
 	if (src == NULL)
@@ -1650,7 +1666,7 @@ kern_follow_link (fcookie *fc, int depth)
 	
 	/* This happens with "root" very often */
 	if (src->dev == 0 && src->index == 0)
-		src = &p->root[UNIDRV];
+		src = &cwd->root[UNIDRV];
 	
 	release_cookie (fc);
 	dup_cookie (fc, src);

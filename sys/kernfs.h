@@ -34,7 +34,7 @@
 
 extern FILESYS kern_filesys;
 
-int kern_follow_link (fcookie* fc, int depth);
+int kern_follow_link (fcookie *fc, int depth);
 
 # endif
 

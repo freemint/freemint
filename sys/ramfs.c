@@ -144,9 +144,9 @@
 # include "libkern/libkern.h"
 
 # include "dev-null.h"
-# include "dos.h"
 # include "filesys.h"
 # include "init.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "memory.h"
 # include "proc.h"
@@ -224,14 +224,14 @@
 # define IS_APPEND(c)		((c)->flags & S_APPEND)
 # define IS_IMMUTABLE(c)	((c)->flags & S_IMMUTABLE)
 
-static ulong memory = 0;
+static long memory = 0;
 
 INLINE void *
 ram_kmalloc (register long size)
 {
 	register void *tmp;
 	
-	DEBUG  (("fnramfs: kmalloc called: %li", size));
+	DEBUG  (("fnramfs: kmalloc called: %li (used mem %li)", size, memory));
 	
 	tmp = kmalloc (size);
 	if (tmp) memory += size;
@@ -817,8 +817,8 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 		s->ino		= (long) *new;
 		s->mode		= mode;
 		s->nlink	= 1;
-		s->uid		= IS_SETUID (d) ? d->stat.uid : p_getuid ();
-		s->gid		= IS_SETGID (d) ? d->stat.gid : p_getgid ();
+		s->uid		= IS_SETUID (d) ? d->stat.uid : sys_pgetuid ();
+		s->gid		= IS_SETGID (d) ? d->stat.gid : sys_pgetgid ();
 		s->rdev		= d->stat.rdev;
 		s->atime.time	= CURRENT_TIME;
 		s->mtime.time	= CURRENT_TIME;
@@ -1817,7 +1817,7 @@ ram_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			
 			/* only the owner or super-user can touch
 			 */
-			uid = p_geteuid ();
+			uid = sys_pgeteuid ();
 			if ((uid && uid != c->stat.uid)
 				|| IS_IMMUTABLE (c))
 			{
@@ -1921,8 +1921,8 @@ check_mode (COOKIE *rc, int euid, int egid, int access)
 static long
 __FUTIME (COOKIE *rc, ulong *timeptr)
 {	
-	int uid = p_geteuid ();
-	int gid = p_getegid ();
+	int uid = sys_pgeteuid ();
+	int gid = sys_pgetegid ();
 	
 	/*
 	 * The owner or super-user can always touch,

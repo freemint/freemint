@@ -15,6 +15,7 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
+
 # include "mint/asm.h"
 # include "mint/basepage.h"
 # include "mint/signal.h"
@@ -22,6 +23,8 @@
 # include "arch/sig_mach.h"	/* sendsig */
 
 # include "dosmem.h"
+# include "k_exit.h"
+# include "k_prot.h"
 # include "proc.h"
 # include "util.h"
 
@@ -39,16 +42,16 @@
  * post_sig() can then move in here.
  */
 static long
-send_sig (PROC* p, ushort sig, int priv)
+send_sig (PROC *p, ushort sig, int priv)
 {
-	if (curproc->euid == 0)
+	if (suser (curproc->p_cred->ucr))
 	{
 		priv = 1;
 	}
-	else if (curproc->euid == p->suid
-		|| curproc->euid == p->ruid
-		|| curproc->ruid == p->suid
-		|| curproc->ruid == p->ruid)
+	else if (  curproc->p_cred->ucr->euid == p->p_cred->suid
+		|| curproc->p_cred->ucr->euid == p->p_cred->ruid
+		|| curproc->p_cred->ruid      == p->p_cred->suid
+		|| curproc->p_cred->ruid      == p->p_cred->ruid)
 	{
 		priv = 1;
 	}
@@ -68,12 +71,19 @@ send_sig (PROC* p, ushort sig, int priv)
 	if (sig == 0)
 		return 0;	/* Ignore */
 	
-	if (p->sighandle[sig] == SIG_IGN && !p->ptracer && sig != SIGCONT)
-		return 0;
-	
 	/* R. I. P. */
 	if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 		return 0;
+	
+# if 1
+	assert (p->p_sigacts);
+	
+	if (SIGACTION(p, sig).sa_handler == SIG_IGN && !p->ptracer && sig != SIGCONT)
+		return 0;
+# else
+	if (p->sighandle[sig] == SIG_IGN && !p->ptracer && sig != SIGCONT)
+		return 0;
+# endif
 	
 	/* Init cannot be killed or stopped.  */
 	if (p->pid == 1 && (sig == SIGKILL || sig == SIGSTOP))
@@ -124,6 +134,9 @@ killgroup (int pgrp, ushort sig, int priv)
 	
 	for (p = proclist; p; p = p->gl_next)
 	{
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
 		if (p->pgrp == pgrp)
 		{
 			long last_error;
@@ -156,6 +169,12 @@ post_sig (PROC *p, ushort sig)
 	/* just to be sure */
 	assert (sig < NSIG);
 	
+	/* if the process is already dead, do nothing */
+	if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+		return;
+	
+	assert (p->p_sigacts);
+	
 	/* if process is ignoring this signal, do nothing
 	 * also: signal 0 is SIGNULL, and should never be delivered through
 	 * the normal channels (indeed, it's filtered out in dossig.c,
@@ -166,16 +185,13 @@ post_sig (PROC *p, ushort sig)
 	
 	/* If the process is traced, the tracer should always be notified */
 	if (sig == 0
-		|| (p->sighandle[sig] == SIG_IGN
+		|| (SIGACTION(p, sig).sa_handler == SIG_IGN
+//		|| (p->sighandle[sig] == SIG_IGN
 			&& !p->ptracer
 			&& sig != SIGCONT))
 	{
 		return;
 	}
-	
-	/* if the process is already dead, do nothing */
-	if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
-		return;
 	
 	/* mark the signal as pending */
 	sigm = (1L << (ulong) sig);
@@ -184,10 +200,10 @@ post_sig (PROC *p, ushort sig)
 	/* if the signal is masked, do nothing further
 	 * 
 	 * note: some signals can't be masked, and we handle those elsewhere so
-	 * that p->sigmask is always valid. SIGCONT is among the unmaskable
+	 * that p->p_sigmask is always valid. SIGCONT is among the unmaskable
 	 * signals
 	 */
-	if ((p->sigmask & sigm) != 0)
+	if ((p->p_sigmask & sigm) != 0)
 		return;
 	
 	/* otherwise, make sure the process is awake */
@@ -253,11 +269,12 @@ check_sigs (void)
 	if (curproc->pid == 0)
 		return;
 top:
+	assert (curproc->p_sigacts);
 	sigs = curproc->sigpending;
 	
 	/* Always notify the tracer about signals sent */
 	if (!curproc->ptracer || curproc->sigpending & 1L)
-		sigs &= ~(curproc->sigmask);
+		sigs &= ~(curproc->p_sigmask);
 	
 	if (sigs)
 	{
@@ -291,12 +308,13 @@ top:
 				{
 					ulong omask;
 					
-					omask = curproc->sigmask;
+					omask = curproc->p_sigmask;
 					
 					/* sigextra gives which extra signals
 					 * should also be masked
 					 */
-					curproc->sigmask |= curproc->sigextra[i] | sigm;
+					curproc->p_sigmask |= SIGACTION(curproc, i).sa_mask | sigm;
+//					curproc->p_sigmask |= curproc->sigextra[i] | sigm;
 					handle_sig(i);
 					
 /*
@@ -310,7 +328,7 @@ top:
  * one signal per kernel entry, so this shouldn't really be a problem.
  */
 					/* unmask signals */
-					curproc->sigmask = omask;
+					curproc->p_sigmask = omask;
 				}
 			}
 			
@@ -337,12 +355,15 @@ handle_sig (ushort sig)
 {
 	/* just to be sure */
 	assert (sig < NSIG);
+	assert (curproc->p_sigacts);
 	
 	curproc->last_sig = sig;
-	if (curproc->sighandle[sig] == SIG_IGN)
+	if (SIGACTION(curproc, sig).sa_handler == SIG_IGN)
+//	if (curproc->sighandle[sig] == SIG_IGN)
 		return;
 	
-	if (curproc->sighandle[sig] == SIG_DFL)
+	if (SIGACTION(curproc, sig).sa_handler == SIG_DFL)
+//	if (curproc->sighandle[sig] == SIG_DFL)
 	{
 _default:
 		switch (sig)
@@ -402,11 +423,11 @@ _default:
 			/* tell the user what happened */
 			bombs (sig);
 # endif
-			/* the "sigmask" check is in case a bus error happens
+			/* the "p_sigmask" check is in case a bus error happens
 			 * in the user's term_vec code; we don't want to get
 			 * stuck in an infinite loop!
 			 */
-			if ((curproc->sigmask & 1L) || sig == SIGKILL)
+			if ((curproc->p_sigmask & 1L) || sig == SIGKILL)
 				terminate (curproc, sig << 8, ZOMBIE_Q);
 			else
 				kernel_pterm (curproc, sig << 8);
@@ -522,14 +543,16 @@ stop (ushort sig)
 	else
 	{
 		PROC *p = pid2proc (curproc->ppid);
-		if (p && !(p->sigflags[SIGCHLD] & SA_NOCLDSTOP))
+		if (p) assert (p->p_sigacts);
+		if (p && !(SIGACTION(p, SIGCHLD).sa_flags & SA_NOCLDSTOP))
+//		if (p && !(p->sigflags[SIGCHLD] & SA_NOCLDSTOP))
 		{
 			ushort sr;
 			
 			post_sig (p, SIGCHLD);
 			
 			sr = splhigh ();
-			if (p->wait_q == WAIT_Q && p->wait_cond == (long) p_waitpid)
+			if (p->wait_q == WAIT_Q && p->wait_cond == (long) sys_pwaitpid)
 			{
 				rm_q (WAIT_Q, p);
 				add_q (READY_Q, p);
@@ -538,21 +561,21 @@ stop (ushort sig)
 		}
 	}
 	
-	oldmask = curproc->sigmask;
+	oldmask = curproc->p_sigmask;
 	
 	if (!curproc->ptracer)
 	{
 		assert ((1L << sig) & STOPSIGS);
 		
 		/* mask out most signals */
-		curproc->sigmask |= ~(UNMASKABLE | SIGTERM);
+		curproc->p_sigmask |= ~(UNMASKABLE | SIGTERM);
 	}
 	
 	/* sleep until someone signals us awake */
 	sleep (STOP_Q, (long) code | 0177);
 	
 	/* when we wake up, restore the signal mask */
-	curproc->sigmask = oldmask;
+	curproc->p_sigmask = oldmask;
 	
 	/* and discard any signals that would cause us to stop again */
 	curproc->sigpending &= ~STOPSIGS;
