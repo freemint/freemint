@@ -4,6 +4,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+typedef size_t socklen_t;
+# endif
+
 int
 main (void)
 {
