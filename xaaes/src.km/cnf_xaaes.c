@@ -36,17 +36,6 @@
 #include "cnf.h"
 
 
-struct lconfig lcfg =
-{
-	WIDGNAME,
-	RSCNAME,
-
-	0,
-
-	0,
-	DOUBLE_CLICK_TIME
-};
-
 struct cnfdata
 {
 };
@@ -111,6 +100,8 @@ static struct parser_item parser_tab[] =
 	{ "LAUNCHER",       PI_R_T,     cfg.launch_path         , sizeof(cfg.launch_path) },
 	{ "CLIPBOARD",      PI_R_T,     cfg.scrap_path          , sizeof(cfg.scrap_path)  },
 	{ "ACCPATH",        PI_R_T,     cfg.acc_path            , sizeof(cfg.acc_path)    },
+	{ "WIDGETS",        PI_R_T,     cfg.widg_name           , sizeof(cfg.widg_name)  },
+	{ "RESOURCE",       PI_R_T,     cfg.rsc_name            , sizeof(cfg.rsc_name)   },
 	{ "TOPPAGE",        PI_V_T,   pCB_toppage               },
 	{ "NOFSEL",         PI_R_B,   & cfg.no_xa_fsel          },
 	{ "FOCUS",          PI_V_T,   pCB_point_to_type         },
@@ -123,11 +114,7 @@ static struct parser_item parser_tab[] =
 	{ "MEDIUM_POINT",   PI_R_S,   & cfg.medium_font_point   },
 	{ "SMALL_POINT",    PI_R_S,   & cfg.small_font_point    },
 	{ "POPSCROLL",      PI_R_S,   & cfg.popscroll           },
-	
-	/* bootup config */
-	{ "WIDGETS",        PI_R_T,     lcfg.widg_name          , sizeof(lcfg.widg_name)  },
-	{ "RESOURCE",       PI_R_T,     lcfg.rsc_name           , sizeof(lcfg.rsc_name)   },
-	{ "DC_TIME",        PI_R_S,   & lcfg.double_click_time  },
+	{ "DC_TIME",        PI_R_S,   & cfg.double_click_time   },
 	
 	{ "SHELL",          PI_V_T,   pCB_shell                 },
 	{ "DESK",           PI_V_T,   pCB_shell                 },

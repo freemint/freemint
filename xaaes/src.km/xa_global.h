@@ -123,6 +123,9 @@ struct config
 	Path scrap_path;		/* Path to the scrap directory */
 	Path acc_path;			/* Path to desk accessory directory */
 
+	Path widg_name;			/* Path to XaAES widget rsc */
+	Path rsc_name;			/* Path to XaAES rsc */
+
 	/* display modes of window title */
 	int topname;
 	int backname;
@@ -148,6 +151,7 @@ struct config
 
 	int ted_filler;
 	int font_id;			/* Font id to use */
+	int double_click_time;		/* Double click timing */
 	int have_wheel_vector;		/* If vex_whlv changed its save_ptr,
 					   we have a VDI that supports mouse wheels. */
 	int wheel_amount;		/* amount of lines for a wheel click. */

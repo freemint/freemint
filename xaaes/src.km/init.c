@@ -117,9 +117,6 @@ bootmessage(void)
 	if (cfg.fsel_cookie)
 		fdisplay(log, " - FSEL cookie found");
 
-	if (lcfg.falcon == 0x0030000L)
-		fdisplay(log, " - Falcon video handled");
-
 	if (cfg.auto_program)
 		fdisplay(log, "auto program");
 }
@@ -147,6 +144,7 @@ init(struct kentry *k)
 	 */
 	log = kernel_open("xa_setup.log", O_WRONLY|O_CREAT|O_TRUNC, NULL);
 
+	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
@@ -163,7 +161,17 @@ init(struct kentry *k)
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES %s", version);
 #endif
 
+	/*
+	 * default configuration
+	 */
+
+	strcpy(cfg.scrap_path, "c:\\clipbrd\\");
+	strcpy(cfg.acc_path, "c:\\");
+	strcpy(cfg.widg_name, WIDGNAME);
+	strcpy(cfg.rsc_name, RSCNAME);
+
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
+	cfg.double_click_time = DOUBLE_CLICK_TIME;
 	cfg.standard_font_point = STANDARD_FONT_POINT;	/* Size for normal text */
 	cfg.medium_font_point = MEDIUM_FONT_POINT;	/* The same, but for low resolution screens */
 	cfg.small_font_point = SMALL_FONT_POINT;	/* Size for small text */
@@ -207,8 +215,7 @@ init(struct kentry *k)
 
 	C.Aes->cmd_tail = "\0";
 	C.Aes->wt.edit_obj = -1;
-	C.Aes->options = default_options;
-	
+
 	strcpy(C.Aes->cmd_name, "XaAES");
 	strcpy(C.Aes->name, Aes_display_name);
 	strcpy(C.Aes->proc_name,"AESSYS  ");
@@ -266,12 +273,6 @@ init(struct kentry *k)
 #endif
 	DIAGS(("nkc_init ok!"));
 
-	/* Set the default clipboard */
-	strcpy(cfg.scrap_path, "c:\\clipbrd\\");
-
-	/* Set the default accessory path */
-	strcpy(cfg.acc_path, "c:\\");
-
 	/* copy over environment from loader */
 	{
 		struct proc *p = get_curproc();
@@ -290,6 +291,9 @@ init(struct kentry *k)
 			}
 		}
 	}
+
+	/* default to live actions */
+	default_options.live = true;
 
 	/* Parse the config file */
 	load_config(cnf_name);

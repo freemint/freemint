@@ -198,10 +198,12 @@ XA_WIND_ATTR
 hide_move(struct options *o)
 {
 	XA_WIND_ATTR kind = 0;
+
 	if (!o->xa_nohide)
 		kind |= HIDE;
 	if (!o->xa_nomove)
 		kind |= MOVER;
+
 	return kind;
 }
 
@@ -210,6 +212,7 @@ inside_root(RECT *r, struct options *o)
 {
 	if (r->y < root_window->wa.y)
 		r->y = root_window->wa.y;
+
 	if (o->noleft)
 		if (r->x < root_window->wa.x)
 			r->x = root_window->wa.x;
@@ -459,7 +462,7 @@ create_window(
 	const RECT *max,
 	RECT *remember)
 {
-	struct xa_window *new;
+	struct xa_window *w;
 
 #if GENERATE_DIAGS
 	if (max)
@@ -474,8 +477,8 @@ create_window(
 	}
 #endif
 
-	new = kmalloc(sizeof(*new));
-	if (!new)
+	w = kmalloc(sizeof(*w));
+	if (!w)
 		/* Unable to allocate memory for window? */
 		return NULL;
 
@@ -492,10 +495,10 @@ create_window(
 		tp |= XaMENU;
 
 	/* implement maximum rectangle (needed for at least TosWin2) */
-	new->max = max ? *max : root_window->wa;
+	w->max = max ? *max : root_window->wa;
 		
-	new->r  = r;
-	new->pr = new->r;
+	w->r  = r;
+	w->pr = w->r;
 
 	if (!MONO && frame > 0)
 	{
@@ -511,53 +514,53 @@ create_window(
 			/* see how well it performs. */
 			frame += thinframe;
 
-	new->frame = frame;
-	new->thinwork = thinwork;
-	new->owner = client;
-	new->rect_user = new->rect_list = new->rect_start = NULL;
-	new->handle = -1;
-	new->window_status = XAWS_CLOSED;
-	new->remember = remember;
-	new->nolist = nolist;
-	new->dial = dial;
-	new->send_message = message_handler;
-	get_widget(new, XAW_TITLE)->stuff = client->name;
+	w->frame = frame;
+	w->thinwork = thinwork;
+	w->owner = client;
+	w->rect_user = w->rect_list = w->rect_start = NULL;
+	w->handle = -1;
+	w->window_status = XAWS_CLOSED;
+	w->remember = remember;
+	w->nolist = nolist;
+	w->dial = dial;
+	w->send_message = message_handler;
+	get_widget(w, XAW_TITLE)->stuff = client->name;
 
 	if (nolist)
 	{
 		/* Dont put in the windowlist */
 
 		/* Attach the appropriate widgets to the window */
-		standard_widgets(new, tp, false);
+		standard_widgets(w, tp, false);
 	}
 	else
 	{
-		new->handle = new_wind_handle();
-		DIAG((D_wind,client," allocated handle = %d", new->handle));
+		w->handle = new_wind_handle();
+		DIAG((D_wind, client, " allocated handle = %d", w->handle));
 
-		wi_put_first(&S.closed_windows, new);
+		wi_put_first(&S.closed_windows, w);
 		DIAG((D_wind,client," inserted in closed_windows list"));
 
 		/* Attach the appropriate widgets to the window */
-		standard_widgets(new, tp, false);
+		standard_widgets(w, tp, false);
 
 		/* If STORE_BACK extended attribute is used, window preserves its own background */
 		if (tp & STORE_BACK)
 		{
 			DIAG((D_wind,client," allocating background storage buffer"));
-			new->background = kmalloc(calc_back(&r, screen.planes));
+			w->background = kmalloc(calc_back(&r, screen.planes));
 		}
 		else
-			new->background = NULL;
+			w->background = NULL;
 
 	}
 
-	calc_work_area(new);
+	calc_work_area(w);
 
 	if (remember)
-		*remember = new->r;
+		*remember = w->r;
 
-	return new;
+	return w;
 }
 
 int
