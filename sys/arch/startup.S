@@ -25,7 +25,7 @@ _main:	move.l	0x04(sp),a0		// basepage address
 	add.l	0x001c(a0),d0		// size of the BSS segment
 	add.l	#0x00003101,d0		// stack size + basepage size + 1
 	bclr	#0,d0			// round
-	lea	-40(a0,d0.l),sp		// new stack pointer
+	lea	(a0,d0.l),sp		// new stack pointer
 
 	move.l	d0,-(sp)		// new size
 	move.l	a0,-(sp)		// start address
