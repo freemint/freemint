@@ -42,6 +42,7 @@ bool rect_changed(const RECT *n, const RECT *o);
 void keep_inside(RECT *r, const RECT *o);
 
 const RECT *rect_dist(struct xa_client *client, RECT *r, RECT *d);
+const RECT *rect_dist_xy(struct xa_client *client, short x, short y, RECT *r, RECT *d);
 
 RECT widen_rectangle(COMPASS c,
                 short mx, short my,

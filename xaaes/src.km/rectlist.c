@@ -255,7 +255,8 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 
 	DIAGS(("make_rect_list for wind %d", wind->handle));
 
-	if (wind->r.x > (screen.r.x + screen.r.w) ||
+	if ((wind->window_status & XAWS_HIDDEN) ||
+	    wind->r.x > (screen.r.x + screen.r.w) ||
 	    wind->r.y > (screen.r.y + screen.r.h) ||
 	   (wind->r.x + wind->r.w) < screen.r.x  ||
 	   (wind->r.y + wind->r.h) < screen.r.y )
@@ -274,7 +275,7 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 			nrl = build_rect_list(&p);
 			if (nrl && swap)
 				wind->rect_list = wind->rect_user = wind->rect_start = nrl;
-				
+
 			break;
 		}
 		case RECT_OPT:

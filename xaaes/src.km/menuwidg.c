@@ -354,37 +354,6 @@ detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item)
 	return ret;
 }
 
-static void
-cancel_CE(struct xa_client *client, void *f)
-{
-	struct c_event *ce = client->cevnt_head, *p = NULL;
-
-	DIAG((D_menu, client, "cancel_CE: remove function %lx", f));
-
-	while (ce)
-	{
-		if (ce->funct == f)
-			break;
-		p = ce;
-		ce = ce->next;
-	}
-
-	if (ce)
-	{
-		if (p)
-			p->next = ce->next;
-		else
-			client->cevnt_head = ce->next;
-
-		if (!ce->next)
-			client->cevnt_tail = p;
-			
-		client->cevnt_count--;
-		DIAGS(("---------- freeing CE %lx with function %lx", ce, f));
-		kfree(ce);
-	}
-}
-
 void
 free_attachments(struct xa_client *client)
 {
@@ -1215,10 +1184,9 @@ static void cancel_popout_timeout(void);
 static void
 do_timeout_popup(Tab *tab)
 {
-
 	MENU_TASK *k = &tab->task_data.menu;
 	RECT tra;
-	short rdx,rdy;
+	short rdx, rdy;
 	TASK *click;
 	OBJECT *ob;
 	Tab *new;
@@ -1286,7 +1254,6 @@ CE_do_popup(enum locks lock, struct c_event *ce, bool cancel)
 	}
 	else
 		cancel_pop_timeouts();
-
 }
 static void
 CE_do_collapse(enum locks lock, struct c_event *ce, bool cancel)
@@ -1300,13 +1267,19 @@ CE_do_collapse(enum locks lock, struct c_event *ce, bool cancel)
 		cancel_pop_timeouts();
 }
 
+static bool
+CE_cb(struct c_event *ce, long arg)
+{
+	return true;
+}
+
 static void
 cancel_CE_do_popup(void)
 {
 	if (S.popin_timeout_ce)
 	{
 		DIAGS((" -- cancel_CE_do_popup: funct=%lx"));
-		cancel_CE(S.popin_timeout_ce, CE_do_popup);
+		cancel_CE(S.popin_timeout_ce, CE_do_popup, CE_cb, 0);
 		S.popin_timeout_ce = NULL;
 	}
 }
@@ -1316,7 +1289,7 @@ cancel_CE_do_collapse(void)
 	if (S.popout_timeout_ce)
 	{
 		DIAGS((" -- cancel_CE_do_collapse: funct=%lx"));
-		cancel_CE(S.popout_timeout_ce, CE_do_collapse);
+		cancel_CE(S.popout_timeout_ce, CE_do_collapse, CE_cb, 0);
 		S.popout_timeout_ce = NULL;
 	}
 }
@@ -1440,30 +1413,6 @@ click_desk_popup(struct task_administration_block *tab)
 				DIAG((D_menu, NULL, "is a real GEM client"));
 				app_in_front(lock, client);
 			}
-#if 0			
-			switch (client->type)
-			{
-			/* Accessory - send AC_OPEN */
-			case APP_ACCESSORY:
-			{
-				DIAG((D_menu, NULL, "is an accessory"));
-				/* found the reason some acc's wouldnt wake up: msgbuf[4] must receive
-				 * the meu_register reply, which in our case is the pid.
-				 */
-				send_app_message(lock, wind, client, AMQ_NORM, QMF_CHKDUP,
-							AC_OPEN,        0, 0, 0,
-							client->p->pid, 0, 0, 0);
-				break;
-			}
-			/* Application, swap topped app */
-			case APP_APPLICATION:
-			{
-				DIAG((D_menu, NULL, "is a real GEM client"));
-				app_in_front(lock, client);
-				break;
-			}
-			}
-#endif
 		}
 	}
 }
@@ -1701,7 +1650,7 @@ click_menu_entry(struct task_administration_block *tab)
 		int about, kc, ks;
 		bool a = false;
 
-		if ((m = find_menu_object(tab, k->pop_item/*0*/, k->rdx, k->rdy, &k->drop)) < 0)
+		if ((m = find_menu_object(tab, k->pop_item, k->rdx, k->rdy, &k->drop)) < 0)
 		{
 			popout(TAB_LIST_START);
 			return;
@@ -1968,7 +1917,6 @@ static bool
 menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, int locker)
 {
 	RECT r;
-	//Tab *tab;
 	MENU_TASK *k;
 	XA_TREE *wt;
 	OBJECT *obtree;
@@ -2070,7 +2018,6 @@ menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, i
 	else
 	{
 		menu_finish(tab);
-		//free_menutask(tab);
 		return false;
 	}
 }

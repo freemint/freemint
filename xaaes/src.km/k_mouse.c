@@ -523,7 +523,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 			DIAG((D_mouse, client, "post menumove to %s", client->name));
 			post_cevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
-			//post_tpcevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
 		}
 		return false;
 	}

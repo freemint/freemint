@@ -691,8 +691,8 @@ XA_appl_yield(enum locks lock, struct xa_client *client, AESPB *pb)
 	yield();
 
 	pb->intout[0] = 1; /* OK */
+	
 	return XAC_DONE;
-
 }
 
 /*
@@ -773,12 +773,6 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 			o[1] = APP_APPLICATION | APP_SHELL;
 		else
 			o[1] = next->type;
-#if 0
-		else if (next->type & APP_ACCESSORY)
-			o[1] = APP_ACCESSORY;
-		else
-			o[1] = next->type; //APP_APPLICATION;
-#endif
 
 		/* XaAES extensions. */
 		if (spec)
