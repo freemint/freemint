@@ -1115,7 +1115,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->clear_on_folder_change = 0;
 		strcpy(fs->file, file); /* fill in the file edit field */
 
-		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, WIDG_NOTEXT);
+		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, WIDG_NOTEXT, NULL);
 		/* This can be of use for drawing. (keep off border & outline :-) */
 		wt->zen = true;
 		wt->exit_form = fileselector_form_exit;
@@ -1125,7 +1125,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		 */
 		dialog_window->keypress = fs_key_form_do; //fs_key_handler;
 
-		dialog_window->data = fs;
+		//dialog_window->data = fs;
 
 		set_scroll(C.Aes, form, FS_LIST, true);
 		
@@ -1162,14 +1162,14 @@ memerr:
 		{
 			if (fs->form)
 			{
-				remove_wt(fs->form);
+				remove_wt(fs->form, true);
 				fs->form = NULL;
 			}
 			else if (form)
 				free_object_tree(client, form);
 			if (fs->menu)
 			{
-				remove_wt(fs->menu);
+				remove_wt(fs->menu, true);
 				fs->menu = NULL;
 			}
 			else if (menu)

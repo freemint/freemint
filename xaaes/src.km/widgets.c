@@ -573,6 +573,12 @@ free_wt(XA_TREE *wt)
 {
 
 	DIAGS(("free_wt: wt=%lx", wt));
+	
+	if (wt->links)
+	{
+		display("free_wt: links not NULL!!!!!");
+		display("free_wt: wt=%lx, links=%d, flags=%lx, owner=%s", wt, wt->links, wt->flags, wt->owner->name);
+	}
 
 	if (wt->flags & WTF_STATIC)
 	{
@@ -629,14 +635,24 @@ free_wt(XA_TREE *wt)
 }
 
 bool
-remove_wt(XA_TREE *wt)
+remove_wt(XA_TREE *wt, bool force)
 {
-	if ((wt->flags & (WTF_STATIC|WTF_AUTOFREE)) == WTF_AUTOFREE)
+	if (force || (wt->flags & (WTF_STATIC|WTF_AUTOFREE)) == WTF_AUTOFREE)
 	{
-		remove_from_wtlist(wt);
-		free_wt(wt);
-		return true;
+		if (!wt->links)
+		{
+			//display("remove_wt: removing %lx", wt);
+			remove_from_wtlist(wt);
+			free_wt(wt);
+			return true;
+		}
+		//else
+		//	display("remove_wt: links = %d", wt->links);
+
 	}
+	//else
+	//	display("remove_wt: flags =%lx, links = %d", wt->flags, wt->links);
+
 	return false;
 }
 
@@ -977,7 +993,11 @@ free_xawidget_resources(struct xa_widget *widg)
 				XA_TREE *wt = widg->stuff;
 				DIAGS(("  --- stuff is wt=%lx in widg=%lx",
 					wt, widg));
-				if (!remove_wt(wt))
+			//	display(" free_xawidget_re: stuff is wt=%lx in widg=%lx",
+			//		wt, widg);
+
+				wt->links--;
+				if (!remove_wt(wt, false))
 				{
 					wt->widg = NULL;
 					wt->wind = NULL;
@@ -2923,12 +2943,117 @@ set_toolbar_coords(struct xa_window *wind)
 	widg->r = loc->r;
 }
 
+static void
+set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt)
+{
+	if (widg)
+	{
+		if (th && th->click)
+		{
+			if ((long)th->click == -1L)
+				widg->click	= NULL;
+			else
+				widg->click	= th->click;
+		}
+		else
+			widg->click	= Click_windowed_form_do;
+
+		if (th && th->dclick)
+		{
+			if ((long)th->dclick == -1L)
+				widg->dclick	= NULL;
+			else
+				widg->dclick	= th->dclick;
+		}
+		else
+			widg->dclick	= Click_windowed_form_do;
+
+		if (th && th->drag)
+		{
+			if ((long)th->drag == -1L)
+				widg->drag	= NULL;
+			else
+				widg->drag	= th->drag;
+		}
+		else
+			widg->drag	= Click_windowed_form_do;
+		
+		if (th && th->display)
+		{
+			if ((long)th->display == -1L)
+				widg->display	= NULL;
+			else
+				widg->display	= th->display;
+		}
+		else
+			widg->display	= display_object_widget;
+		
+		if (th && th->destruct)
+		{
+			if ((long)th->destruct == -1L)
+				widg->destruct = NULL;
+			else
+				widg->destruct	= th->destruct;
+		}
+		else
+			widg->destruct	= free_xawidget_resources;
+		
+		if (th && th->release)
+		{
+			if ((long)th->release == -1L)
+				widg->release = NULL;
+			else
+				widg->release	= th->release;
+		}
+		else
+			widg->release	= NULL;
+	}
+
+	if (wind)
+	{
+		if (wt && (wt->e.obj >= 0 || obtree_has_default(wt->tree)))
+		{
+			if (th && th->keypress)
+			{
+				if ((long)th->keypress == -1L)
+					wind->keypress = NULL;
+				else
+					wind->keypress = th->keypress;
+			}
+			else
+				wind->keypress = Key_form_do;
+		}
+		else
+			wind->keypress = NULL;
+	}
+	
+	if (wt)
+	{
+		if (th && th->exitform)
+		{
+			if ((long)th->exitform == -1L)
+				wt->exit_form = NULL;
+			else
+				wt->exit_form = th->exitform;
+		}
+		else
+			wt->exit_form = Exit_form_do;
+	}
+}
+	
 /*
  * Attach a toolbar to a window...probably let this be accessed via wind_set one day
  * This is also used to setup windowed form_do sessions()
  */
+
 XA_TREE *
-set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obtree, short edobj, short properties)
+set_toolbar_widget(enum locks lock,
+		struct xa_window *wind,
+		struct xa_client *owner,
+		OBJECT *obtree,
+		short edobj,
+		short properties,
+		const struct toolbar_handlers *th)
 {
 	XA_TREE *wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
@@ -2939,9 +3064,11 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *ow
 
 	if (widg->stuff)
 	{
+		set_toolbar_handlers(NULL, NULL, NULL, (XA_TREE *)widg->stuff);
 		((XA_TREE *)widg->stuff)->widg = NULL;
 		((XA_TREE *)widg->stuff)->wind = NULL;
 		((XA_TREE *)widg->stuff)->zen  = false;
+		((XA_TREE *)widg->stuff)->links--;
 	}
 
 	if (owner)
@@ -2958,6 +3085,8 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *ow
 	wt->widg = widg;
 	wt->wind = wind;
 	wt->zen  = true;
+	wt->links++;
+
 	/*
 	 * Ozk: if edobj == -2, we want to look for an editable and place the
 	 * cursor there. Used by wdlg_create() atm
@@ -2968,7 +3097,10 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *ow
 	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &edobj))
 		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL);
 
-		
+	set_toolbar_handlers(th, wind, widg, wt);
+	widg->properties = properties;
+
+#if 0
 #if WDIALOG_WDLG
 	if ((wind->dial & created_for_WDIAL))
 	{
@@ -3002,8 +3134,8 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *ow
 	widg->drag		= Click_windowed_form_do;
 	widg->display		= display_object_widget;
 #endif
-
 	widg->destruct	= free_xawidget_resources;
+#endif
 	
 	/* HR 280801: clicks are now put in the widget struct.
 	      NB! use this property only when there is very little difference between the 2 */

@@ -704,28 +704,12 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 			case G_SLIST:
 			{
 				unset_G_SLIST(client, obtree, j);
-#if 0
-				if (client == C.Aes)
-				{
-					DIAG((D_objc, client, "free_obtree_resources: kfree scroll list info %lx",
-						(long)ob->ob_spec.index));
-					kfree((SCROLL_INFO*)ob->ob_spec.index);
-				}
-				else
-				{
-					DIAG((D_objc, client, "free_obtree_resources: ufree scroll list info %lx",
-						(long)ob->ob_spec.index));
-					ufree((SCROLL_INFO*)ob->ob_spec.index);
-				}
-				ob->ob_type = G_BOX;
-				*(BFOBSPEC *)&ob->ob_spec.obspec = (BFOBSPEC){0,1,1,1,1,0,0};
-#endif
 				break;
 			}
 			case G_EXTBOX:
 			{
 				struct extbox_parms *p;
-				p = (struct extbox_parm *)object_get_spec(ob)->index;
+				p = (struct extbox_parms *)object_get_spec(ob)->index;
 				object_set_spec(ob, p->obspec);
 				ob->ob_type = p->type;
 				DIAG((D_rsrc, client, "Free extbox parameter bloc %lx", p));

@@ -537,7 +537,7 @@ open_taskmanager(enum locks lock)
 		/* Set the window title */
 		get_widget(dialog_window, XAW_TITLE)->stuff = " Task Manager";
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, form, -1, WIDG_NOTEXT);
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, form, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = taskmanager_form_exit;
 
 		/* set a scroll list widget */
@@ -778,7 +778,7 @@ open_systemalerts(enum locks lock)
 
 		/* Set the window title */
 		get_widget(dialog_window, XAW_TITLE)->stuff = " System window & Alerts Log";
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, form, -1, WIDG_NOTEXT);
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, form, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = sysalerts_form_exit;
 
 		/* HR: set a scroll list widget */

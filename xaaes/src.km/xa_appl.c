@@ -601,6 +601,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 
 	free_attachments(client);
 	free_wtlist(client);
+	free_xa_data_list(&client->xa_data);
 
 	/* free the quart screen buffer */
 	if (client->half_screen_buffer)
@@ -612,8 +613,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	if (client->mnu_clientlistname)
 		ufree(client->mnu_clientlistname);
 
-	/* zero out; just to be sure */
-	bzero(client, sizeof(*client));
 
 	client->cmd_tail = "\0";
 	//client->wt.e.obj = -1;
@@ -627,6 +626,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	{
 		struct proc *p = client->p;
 		
+		
 		DIAG((D_appl, NULL, "Process terminating - detaching extensions..."));
 		client->pexit = true;
 		/* Ozk:
@@ -636,6 +636,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 		 */
 		remove_shel_info(p);
 	}
+	
+	/* zero out; just to be sure */
+	bzero(client, sizeof(*client));
 
 	remove_client_crossrefs(client);
 	
