@@ -1,0 +1,39 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	av.h \
+	clipbrd.h \
+	config.h \
+	console.h \
+	drag.h \
+	environ.h \
+	event.h \
+	global.h \
+	proc.h \
+	share.h \
+	textwin.h \
+	toswin2.h \
+	version.h \
+	vt.h \
+	window.h
+
+COBJS = \
+	av.c \
+	clipbrd.c \
+	config.c \
+	console.c \
+	drag.c \
+	environ.c \
+	event.c \
+	global.c \
+	main.c \
+	proc.c \
+	share.c \
+	textwin.c \
+	vt.c \
+	vt100.c \
+	vt52.c \
+	window.c
+
+SRCFILES = $(HEADER) $(COBJS)
