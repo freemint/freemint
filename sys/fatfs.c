@@ -2949,12 +2949,12 @@ static const char msdos_table[256] =
 /* 111 o */ 1,	/* 112 p */ 1,	/* 113 q */ 1,	/* 114 r */ 1,	/* 115 s */ 1,
 /* 116 t */ 1,	/* 117 u */ 1,	/* 118 v */ 1,	/* 119 w */ 1,	/* 120 x */ 1,
 /* 121 y */ 1,	/* 122 z */ 1,	/* 123 { */ 1,	/* 124 | */ 0,	/* 125 } */ 1,
-/* 126 ~ */ 1,	/* 127   */ 0,	/* 128   */ 0,	/* 129  */ 0,	/* 130   */ 0,
-/* 131   */ 0,	/* 132 „ */ 0,	/* 133   */ 0,	/* 134   */ 0,	/* 135   */ 0,
+/* 126 ~ */ 1,	/* 127   */ 0,	/* 128   */ 0,	/* 129  */ 0,	/* 130   */ 0,
+/* 131   */ 0,	/* 132  */ 0,	/* 133   */ 0,	/* 134   */ 0,	/* 135   */ 0,
 /* 136   */ 0,	/* 137   */ 0,	/* 138   */ 0,	/* 139   */ 0,	/* 140   */ 0,
-/* 141   */ 0,	/* 142 Ž */ 1,	/* 143   */ 0,	/* 144   */ 0,	/* 145   */ 0,
-/* 146   */ 0,	/* 147   */ 0,	/* 148 ” */ 0,	/* 149   */ 0,	/* 150   */ 0,
-/* 151   */ 0,	/* 152   */ 0,	/* 153 ™ */ 1,	/* 154 š */ 1,	/* 155   */ 0,
+/* 141   */ 0,	/* 142  */ 1,	/* 143   */ 0,	/* 144   */ 0,	/* 145   */ 0,
+/* 146   */ 0,	/* 147   */ 0,	/* 148  */ 0,	/* 149   */ 0,	/* 150   */ 0,
+/* 151   */ 0,	/* 152   */ 0,	/* 153  */ 1,	/* 154  */ 1,	/* 155   */ 0,
 /* 156   */ 0,	/* 157   */ 0,	/* 158   */ 0,	/* 159   */ 0,	/* 160   */ 0,
 /* 161   */ 0,	/* 162   */ 0,	/* 163   */ 0,	/* 164   */ 0,	/* 165   */ 0,
 /* 166   */ 0,	/* 167   */ 0,	/* 168   */ 0,	/* 169   */ 0,	/* 170   */ 0,
@@ -3001,12 +3001,12 @@ static const char gemdos_table[256] =
 /* 111 o */ 1,	/* 112 p */ 1,	/* 113 q */ 1,	/* 114 r */ 1,	/* 115 s */ 1,
 /* 116 t */ 1,	/* 117 u */ 1,	/* 118 v */ 1,	/* 119 w */ 1,	/* 120 x */ 1,
 /* 121 y */ 1,	/* 122 z */ 1,	/* 123 { */ 1,	/* 124 | */ 1,	/* 125 } */ 1,
-/* 126 ~ */ 1,	/* 127   */ 0,	/* 128   */ 0,	/* 129  */ 0,	/* 130   */ 0,
-/* 131   */ 0,	/* 132 „ */ 0,	/* 133   */ 0,	/* 134   */ 0,	/* 135   */ 0,
+/* 126 ~ */ 1,	/* 127   */ 0,	/* 128   */ 0,	/* 129  */ 0,	/* 130   */ 0,
+/* 131   */ 0,	/* 132  */ 0,	/* 133   */ 0,	/* 134   */ 0,	/* 135   */ 0,
 /* 136   */ 0,	/* 137   */ 0,	/* 138   */ 0,	/* 139   */ 0,	/* 140   */ 0,
-/* 141   */ 0,	/* 142 Ž */ 1,	/* 143   */ 0,	/* 144   */ 0,	/* 145   */ 0,
-/* 146   */ 0,	/* 147   */ 0,	/* 148 ” */ 0,	/* 149   */ 0,	/* 150   */ 0,
-/* 151   */ 0,	/* 152   */ 0,	/* 153 ™ */ 1,	/* 154 š */ 1,	/* 155   */ 0,
+/* 141   */ 0,	/* 142  */ 1,	/* 143   */ 0,	/* 144   */ 0,	/* 145   */ 0,
+/* 146   */ 0,	/* 147   */ 0,	/* 148  */ 0,	/* 149   */ 0,	/* 150   */ 0,
+/* 151   */ 0,	/* 152   */ 0,	/* 153  */ 1,	/* 154  */ 1,	/* 155   */ 0,
 /* 156   */ 0,	/* 157   */ 0,	/* 158   */ 0,	/* 159   */ 0,	/* 160   */ 0,
 /* 161   */ 0,	/* 162   */ 0,	/* 163   */ 0,	/* 164   */ 0,	/* 165   */ 0,
 /* 166   */ 0,	/* 167   */ 0,	/* 168   */ 0,	/* 169   */ 0,	/* 170   */ 0,
@@ -3052,12 +3052,12 @@ static const char iso_table[256] =
 /* 111 o */ 1,	/* 112 p */ 1,	/* 113 q */ 1,	/* 114 r */ 1,	/* 115 s */ 1,
 /* 116 t */ 1,	/* 117 u */ 1,	/* 118 v */ 1,	/* 119 w */ 1,	/* 120 x */ 1,
 /* 121 y */ 1,	/* 122 z */ 1,	/* 123 { */ 0,	/* 124 | */ 0,	/* 125 } */ 0,
-/* 126 ~ */ 0,	/* 127   */ 0,	/* 128   */ 0,	/* 129  */ 0,	/* 130   */ 0,
-/* 131   */ 0,	/* 132 „ */ 0,	/* 133   */ 0,	/* 134   */ 0,	/* 135   */ 0,
+/* 126 ~ */ 0,	/* 127   */ 0,	/* 128   */ 0,	/* 129  */ 0,	/* 130   */ 0,
+/* 131   */ 0,	/* 132  */ 0,	/* 133   */ 0,	/* 134   */ 0,	/* 135   */ 0,
 /* 136   */ 0,	/* 137   */ 0,	/* 138   */ 0,	/* 139   */ 0,	/* 140   */ 0,
-/* 141   */ 0,	/* 142 Ž */ 0,	/* 143   */ 0,	/* 144   */ 0,	/* 145   */ 0,
-/* 146   */ 0,	/* 147   */ 0,	/* 148 ” */ 0,	/* 149   */ 0,	/* 150   */ 0,
-/* 151   */ 0,	/* 152   */ 0,	/* 153 ™ */ 0,	/* 154 š */ 0,	/* 155   */ 0,
+/* 141   */ 0,	/* 142  */ 0,	/* 143   */ 0,	/* 144   */ 0,	/* 145   */ 0,
+/* 146   */ 0,	/* 147   */ 0,	/* 148  */ 0,	/* 149   */ 0,	/* 150   */ 0,
+/* 151   */ 0,	/* 152   */ 0,	/* 153  */ 0,	/* 154  */ 0,	/* 155   */ 0,
 /* 156   */ 0,	/* 157   */ 0,	/* 158   */ 0,	/* 159   */ 0,	/* 160   */ 0,
 /* 161   */ 0,	/* 162   */ 0,	/* 163   */ 0,	/* 164   */ 0,	/* 165   */ 0,
 /* 166   */ 0,	/* 167   */ 0,	/* 168   */ 0,	/* 169   */ 0,	/* 170   */ 0,
@@ -3120,7 +3120,6 @@ is_short (register const char *src, register const char *table)
 				FAT_DEBUG (("is_short: leave islong 3 (src = %s)", src));
 				return 0;
 			}
-
 			src++;
 		}
 	}
@@ -3136,8 +3135,8 @@ is_short (register const char *src, register const char *table)
 	return TOS_SEARCH; /* shortname */
 }
 
-INLINE long
-fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
+INLINE void
+ftrunc(register char *dst, const char *src, register long len, COOKIE *dir)
 {
 	/* truncate name to 8+3 and verify that the name
 	 * doesn't exist in this dir
@@ -3152,7 +3151,6 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 * 4: convert to underscore any character
 	 *    that are illegal
 	 *
-	 * 5: check for existing filename
 	 */
 
 	register const char *table = DEFAULT_T (dir->dev);
@@ -3214,6 +3212,31 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 
 	/* terminate string */
 	*d = '\0';
+}
+
+INLINE long
+fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
+{
+	/* truncate name to 8+3 and verify that the name
+	 * doesn't exist in this dir
+	 *
+	 * Steps 1 - 4 in ftrunc()
+	 *
+	 * 1: select the first eight characters
+	 *
+	 * 2: if there is an extension, select its first three
+	 *    characters
+	 *
+	 * 3: convert letters to uppercase.
+	 *
+	 * 4: convert to underscore any character
+	 *    that are illegal
+	 *
+	 * 5: check for existing filename
+	 */
+	register long i;
+	
+	ftrunc(dst, src, len, dir);
 
 	/* step 5 */
 	i = search_cookie (dir, NULL, dst, TOS_SEARCH);
@@ -3856,6 +3879,34 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 		FAT_DEBUG (("search_cookie: looking for: %s", temp));
 
 		search = c_hash_lookup (temp, dir->dev); kfree (temp);
+		
+		if (!search)
+		{
+			/*
+			 * Ozk: If the above failed, name is not a 8+3 and partition is FAT,
+			 *	attempt to trunc name to 8+3 and search again.
+			 *	We do this because this is done when creating,
+			 *	and to keep consistent behavour, we need to do
+			 *	the same all over the place.
+			 */
+			short mode = is_short(name, VFAT(dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
+			
+			if (!mode && !VFAT(dir->dev))
+			{
+				char fat_name[FAT_NAMEMAX];
+				
+				ftrunc(fat_name, name, strlen(name), dir);
+				temp = fullname (dir, fat_name);
+				if (!temp)
+				{
+					FAT_DEBUG(("search_cookie: leave_failure(FAT), out of memory"));
+					return ENOMEM;
+				}
+				FAT_DEBUG (("search_cookie: (FAT)looking for: %s", temp));
+				search = c_hash_lookup (temp, dir->dev); kfree (temp);
+			}
+		}
+		
 		if (search)
 		{
 			if (found)
@@ -3892,13 +3943,32 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 		return r;
 	}
 
-	if (mode == TOS_SEARCH)
+	/*
+	 * Ozk: lets do a FAT search if name is a longname and we're on a FAT too
+	 */
+	if (mode == TOS_SEARCH || (!mode && !VFAT(dir->dev)))
 	{
 		/* FAT search on FAT or VFAT */
-
 		char fat_name[FAT_NAMEMAX];
+		
+		if (!mode)
+		{
+			/*
+			 * Ozk: If name is not a 8+3 and partition is FAT,
+			 *	attempt to trunc name to 8+3 before search.
+			 *	We do this because this is done when creating,
+			 *	and to keep consistent behavour, we need to do
+			 *	the same all over the place.
+			 */
+			char fatnam[FAT_NAMEMAX];
 
-		str2dir (name, fat_name);
+			ftrunc(fatnam, name, strlen(name), dir);
+			str2dir(fatnam, fat_name);
+			FAT_DEBUG(("search_cookie: forced FAT disk search, name=%s, fat_name=%s (%s)", name, fat_name, fatnam));
+		}
+		else
+			str2dir (name, fat_name);
+
 		while ((r = __nextdir (&odir, NULL, 0)) >= 0)
 		{
 			if (strnicmp (odir.info->name, fat_name, 11) == 0)
@@ -4347,8 +4417,15 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 	if (r == E_OK)
 		r = search_free (&odir, &pos, vfat ? vfat + 1 : 1);
 
-	/* create fullname, so it can't fail later if written to disc */
-	full = fullname (dir, name);
+	if (vfat)
+	{
+		/* create fullname, so it can't fail later if written to disc */
+		full = fullname (dir, name);
+	}
+	else
+	{
+		full = fullname (dir, shortname);
+	}
 
 	if (rename)
 		/* backup cookie */
