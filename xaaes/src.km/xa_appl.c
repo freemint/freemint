@@ -535,7 +535,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 
 	client->rsrc = NULL;
 	FreeResources(client, NULL);
-	//client->resources = NULL;
 
 	/* Free name *only if* it is malloced: */
 	if (client->tail_is_heap)
@@ -552,31 +551,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	/*
 	 * remove any references
 	 */
-#if 0
-	{
-		XA_WIDGET *widg = get_menu_widg();
-
-		DIAGS(("remove_refs for %s wt=%lx, mtree=%lx",
-			c_owner(client), client->std_menu, client->std_menu ? (long)client->std_menu->tree : 0));
-
-		root_window->owner = C.Aes;
-
-		/* Ozk:
-		 * The wt's used by apps std_menu and desktop will
-		 * be freed by free_wtlist() later.
-		 */
-		if (client->std_menu)
-		{
-			if (client->std_menu == widg->stuff)
-			{
-				widg->stuff = C.Aes->std_menu;
-			}
-			client->std_menu = NULL;
-		}
-		if (menustruct_locked() == client->p)
-			free_menustruct_lock();
-	}
-#endif
 	
 	if (client->desktop)
 	{
@@ -628,7 +602,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	/*
 	 * Free wt list last
 	 */
-	//display("exit_client...");
 	free_wtlist(client);
 
 	/* free the quart screen buffer */
@@ -643,7 +616,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 
 
 	client->cmd_tail = "\0";
-	//client->wt.e.obj = -1;
 
 	/* Ozk:
 	 * If we are called to really terminate the process, we detach
@@ -1446,7 +1418,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (pid == -1)
 	{
-		if (!(cl = find_focus(true, NULL, NULL, NULL))) //get_app_infront(); //focus_owner();
+		if (!(cl = find_focus(true, NULL, NULL, NULL)))
 			cl = get_app_infront();
 	}
 	else

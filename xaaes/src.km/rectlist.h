@@ -40,7 +40,6 @@ struct build_rl_parms
 	RECT	*next_r;
 	
 	void *ptr1;
-	//void *ptr2;
 };
 
 bool was_visible(struct xa_window *w);

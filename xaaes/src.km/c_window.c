@@ -307,7 +307,6 @@ inline bool
 is_hidden(struct xa_window *wind)
 {
 	return (wind->window_status & XAWS_HIDDEN);
-	//return ( wind->rc.x > (root_window->rc.x + root_window->rc.w) && wind->rc.y > (root_window->rc.y + root_window->rc.h)) ? true : false;
 }
 
 /*
@@ -990,7 +989,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	{
 		form_save(0, wind->r, &(wind->background));
 		/* This is enough, it is only for TOOLBAR windows. */
-		//redraw_menu(lock);
 		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 	}
 	else
@@ -1012,7 +1010,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		after_top(lock|winlist, true);
 
 		/* Display the window using clipping rectangles from the rectangle list */
-		//redraw_menu(lock);
 		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 	}
 
@@ -1209,25 +1206,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 	if (wind->redraw) /* && !wind->owner->killed */
 		wind->redraw(lock, wind);
 
-#if 0
-	/* Go through and display the window widgets using their display behaviour */
-	if ((wind->window_status & XAWS_ICONIFIED))
-	{
-		XA_WIDGET *widg;
-
-			
-		widg = get_widget(wind, XAW_TITLE);
-		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
-			wind->handle, XAW_TITLE, widg->display));
-		widg->display(lock, wind, widg);
-
-		widg = get_widget(wind, XAW_ICONIFY);
-		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
-			wind->handle, XAW_ICONIFY, widg->display));
-		widg->display(lock, wind, widg);
-	}
-	else
-#endif
 	{
 		int f;
 		short status = wind->window_status;
@@ -1247,18 +1225,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 				widg->display(lock, wind, widg);
 			}
 		}
-#if 0
-		for (f = XA_MAX_CF_WIDGETS; f < XA_MAX_WIDGETS; f++)
-		{
-			widg = get_widget(wind, f);
-
-			if ( !(status & widg->loc.statusmask) && widg->display)
-			{
-				if (!widg->owner || (widg->owner && widg->owner == rc))
-					widg->display(lock, wind, widg);
-			}
-		}
-#endif
 	}
 
 	showm();
@@ -1677,7 +1643,6 @@ static void
 free_standard_widgets(struct xa_window *wind)
 {
 	int i;
-	//struct xa_widget *widg;
 	
 	DIAGS(("free_standard_widgets for window %d, owner %s", wind->handle, wind->owner->name));
 	for (i = 0; i < XA_MAX_WIDGETS; i++)

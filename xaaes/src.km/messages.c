@@ -408,7 +408,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 					if (is_inside((RECT *)&(old[4]), (RECT *)&(new[4])))
 					{
 						/* old inside new: replace by new. */
-						(*next)->message.s = msg->s; //ml->message.s = msg->s;
+						(*next)->message.s = msg->s;
 						msg = NULL;
 						break;
 					}

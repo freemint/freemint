@@ -343,41 +343,10 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	DIAG((D_appl, NULL, "exit ok"));
 }
 
-#if 0
-XA_TREE *
-find_menu_bar(enum locks lock)
-{
-	XA_TREE *rtn = C.Aes->std_menu;  /* default */
-	struct xa_client *last;
-
-	Sema_Up(clients);
-
-	last = APP_LIST_START;
-	while (NEXT_APP(last))
-		last = NEXT_APP(last);
-
-	while (last)
-	{
-		if (last->std_menu || last->nxt_menu)
-		{
-			rtn = last->std_menu;
-			DIAGS(("found std_menu %lx", rtn));
-			break;
-		}
-
-		last = PREV_APP(last);
-	}
-
-	Sema_Dn(clients);
-
-	return rtn;
-}
-#endif
-
 struct xa_client *
 find_desktop(enum locks lock)
 {
-	struct xa_client *last, *rtn = C.Aes; /* default */
+	struct xa_client *last, *rtn = C.Aes;
 
 	Sema_Up(clients);
 
@@ -483,7 +452,7 @@ hide_app(enum locks lock, struct xa_client *client)
 	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
 	
 	if (client == focus)
-		app_in_front(lock, nxtclient); //next_app(lock, true, true));
+		app_in_front(lock, nxtclient);
 
 	if (reify && !rpi_to)
 		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
@@ -578,7 +547,7 @@ get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw,
 	while (w)
 	{
 		if (w != root_window &&
-		    (w->window_status & wsmsk) == wschk) // && !is_hidden(w))
+		    (w->window_status & wsmsk) == wschk)
 		{
 			if (client)
 			{
@@ -624,7 +593,6 @@ next_wind(enum locks lock)
 	{
 		if ( wind != root_window
 		  && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
-		  /*&& !is_hidden(wind)*/
 		  && wind->r.w
 		  && wind->r.h )
 		{
@@ -642,18 +610,6 @@ next_wind(enum locks lock)
 #endif
 	return wind;
 }
-#if 0
-bool
-app_is_hidable(struct xa_client *client)
-{
-	if (client->std_menu ||
-	    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
-	    any_window(winlist, client))
-	    	return true;
-	else
-		return false;
-}
-#endif
 /*
  * wwom true == find a client "with window or menu", else any client
  * will also return clients without window or menu but is listening
