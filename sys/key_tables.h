@@ -97,6 +97,9 @@ static const uchar usa_kbd[] =
 	0x00,
 
 /* Alternate Caps */
+	0x00,
+
+/* Alternate Gr */
 	0x00
 };
 
