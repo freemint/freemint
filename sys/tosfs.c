@@ -28,6 +28,7 @@
 # include "dev-null.h"
 # include "filesys.h"
 # include "global.h"
+# include "kerinfo.h"
 # include "kmemory.h"
 # include "nullfs.h"
 # include "proc.h"
