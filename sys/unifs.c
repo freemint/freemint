@@ -1,15 +1,18 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ * 
+ * 
  * Copyright 1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
+ * 
+ * 
+ * a simple unified file system
+ * 
  */
-
-/* a simple unified file system */
 
 # include "unifs.h"
 # include "global.h"
@@ -287,12 +290,11 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 				{
 					/* drive changed? */
 					if (!changed)
-						changedrv (tmp->dev);
+						changedrv (tmp->dev, __FUNCTION__);
+					
 					tmp = &cwd->root[u->dev];
 					if (!tmp->fs)
-					{
 						return ENOTDIR;
-					}
 				}
 				dup_cookie (fc, tmp);
 			}
@@ -922,7 +924,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			 *
 			 * Kludge: mark the directory as a link, so uni_remove will remove it.
 			 */
-			changedrv(u->dev);
+			changedrv (u->dev, __FUNCTION__);
 			u->mode &= ~S_IFMT;
 			u->mode |= S_IFLNK;
 			return uni_remove (dir, name);

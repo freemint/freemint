@@ -1,11 +1,13 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ * 
+ * 
  * Copyright 1990,1991,1992,1994 Eric R. Smith.
  * All rights reserved.
+ * 
  */
 
 /* dossig.c:: dos signal handling routines */

@@ -1,11 +1,16 @@
-//
-// FreeMiNT startup module
-//
-// This file belongs to FreeMiNT,
-// it is not a part of the original MiNT distribution
-//
-// 8.II.2000, draco@atari.org
-//
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
+ * distribution.  See the file Changes.MH for a detailed log of changes.
+ * 
+ * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
+ * Started: 2000-02-08
+ * 
+ * 
+ * FreeMiNT startup module
+ *
+ */
 
 	.globl	_main
 	.globl	_init

@@ -1,26 +1,46 @@
-// This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
-// distribution.  See the file Changes.MH for a detailed log of changes.
-//
-// This file is dedicated to the FreeMiNT project.
-// It's not allowed to use this file for other projects without my
-// explicit permission.
-//
-// mmu040.spp as of 99/04/14
-//
-// Author:
-// Thomas Binder
-// (gryf@hrzpub.tu-darmstadt.de)
-//
-// Purpose:
-// Contains code to deal with the MMU found in the MC68040 and MC68060. Most
-// of it is in dc.w-notation, as some assemblers don't know the new calls/
-// registers. Note that pflush on the 040 is a different opcode than on the 030!
-//
-// History:
-// 99/03/21-
-// 99/03/23: - Creation (Gryf)
-// 99/04/14: - Added read_phys, a function to access a long at a given physical
-//             address (Gryf)
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
+ * distribution.  See the file Changes.MH for a detailed log of changes.
+ *
+ * 
+ * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * Started: 1999-03-21
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
+ * Purpose:
+ * Contains code to deal with the MMU found in the MC68040 and MC68060. Most
+ * of it is in dc.w-notation, as some assemblers don't know the new calls/
+ * registers. Note that pflush on the 040 is a different opcode than on the 030!
+ *
+ * History:
+ * 99/04/14: - Added read_phys, a function to access a long at a given physical
+ *             address (Gryf)
+ * 99/03/23: - Creation (Gryf)
+ * 
+ */
 
 #ifdef MMU040
 

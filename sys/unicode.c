@@ -1,15 +1,12 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
- * unicode.c
  * 
- * begin:	1998-01-29
- * last change:	1998-07-16
  * 
  * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * Started: 1998-01-29
  * 
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list

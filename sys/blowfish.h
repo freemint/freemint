@@ -1,13 +1,15 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
+ * 
+ * 
  * blowfish.h dated 99/09/26
- *
+ * 
  * Constants and prototypes for the Blowfish cipher algorithm. Original file
  * from Bruce Schneier, with modifications to handle multiple keys at a time.
+ * 
  */
 
 # ifndef _blowfish_h

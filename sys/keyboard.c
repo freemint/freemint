@@ -1,28 +1,40 @@
-/* Keyboard handling stuff
- *
- * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
- * distribution.
- *
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * 
+ * Copyright 2001 Konrad M. Kokoszkiewicz <draco@atari.org>
+ * All rights reserved.
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- *
+ * 
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
+ * 
+ * 
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
- *
+ * Started: 2001-03-01
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
+ * Keyboard handling stuff
+ * 
  */
 
 # include "arch/detect.h"	/* verify_access() */
-# include "mint/mint.h"
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "bios.h"		/* kbshft, kintr, ...  */

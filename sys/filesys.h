@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -43,7 +45,7 @@ void close_filesys (void);
 long _s_ync (void);
 long _cdecl s_ync (void);
 long _cdecl sys_fsync (short fh);
-void _cdecl changedrv (ushort drv);
+void changedrv (ushort drv, const char *function);
 long disk_changed (ushort drv);
 long relpath2cookie (fcookie *dir, const char *path, char *lastnm, fcookie *res, int depth);
 long path2cookie (const char *path, char *lastname, fcookie *res);

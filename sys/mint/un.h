@@ -1,7 +1,12 @@
 /*
- *	Definitions for the UNIX communication domain.
- *
- *	09/26/93, kay roemer.
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * Definitions for the UNIX communication domain.
+ * 
+ * 09/26/93, kay roemer.
  */
 
 # ifndef _un_h

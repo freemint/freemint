@@ -1,17 +1,20 @@
-//
-// kernel.spp,
-// created 1998-09-05
-// by Konrad Kokoszkiewicz, draco@atari.org.pl
-// 
-// This file belongs to FreeMiNT.
-// It is not a part of the original MiNT distribution.
-//
-// This replaces enter_kernel() and leave_kernel()
-// previously defined in main.c. Purpose: speed optimization.
-//
-//
-// NOTICE: these routines are mainly responsible for the fact that
-// the kernel is not reentrant. Some day we will have to fix it.
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
+ * Started: 1998-09-05
+ * 
+ * 
+ * This replaces enter_kernel() and leave_kernel()
+ * previously defined in main.c. Purpose: speed optimization.
+ *
+ * NOTICE: these routines are mainly responsible for the fact that
+ * the kernel is not reentrant. Some day we will have to fix it.
+ * 
+ */
 
 #include "magic/magic.i"
 

@@ -1,25 +1,28 @@
-// This file belongs to FreeMiNT. It is not a part of the original MiNT distribution.
-// 
-// Hardware detection for MiNT.
-// 
-// This code _must_ be compiled as -m68030
-// 
-// begin 11/98
-// last change 1999-06-11
-// 
-// Author: J”rg Westheide - <joerg_westheide@su.maus.de>
-// 
-// please send suggestions or bug reports to me or
-// the MiNT mailing list
-// 
-// Detection of Harun Scheutzows ST-ESCC (Joerg)
-// Detection of CPU and FPU model (Draco)
-//
-
-// Verify access to the memory pointed to by the ptr
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * 
+ * Author: J”rg Westheide <joerg_westheide@su.maus.de>
+ * Started: 1999-06-11
+ * 
+ * please send suggestions or bug reports to me or
+ * the MiNT mailing list
+ * 
+ * 
+ * Hardware detection for MiNT.
+ * This code _must_ be compiled as -m68030
+ * 
+ * Detection of Harun Scheutzows ST-ESCC (Joerg)
+ * Detection of CPU and FPU model (Draco)
+ * 
+ */
 
 	.globl	_verify_access
 
+// Verify access to the memory pointed to by the ptr
 _verify_access:
 	move.l	sp,a0
 	move.l	(8).w,a1
