@@ -978,6 +978,7 @@ graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
 		return;
 	case USER_DEF:
 		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, client, aesm);
+		//set_mouse_shape(m_shape, &M_BUBD_MOUSE, client, aesm);
 		break;
 	case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
 		set_mouse_shape(m_shape, &M_BUBD_MOUSE, client, aesm);
@@ -1078,12 +1079,20 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
+			MFORM *ud = (MFORM *)pb->addrin[0];
+			
+			if (ud && m == USER_DEF)
+			{
+				client->user_def = *ud;
+				ud = &client->user_def;
+			}
+			
 			client->prev_mouse = client->mouse;
 			client->prev_mouse_form = client->mouse_form;
 
-			graf_mouse(m, (MFORM*)pb->addrin[0], client, false);
+			graf_mouse(m, ud/*(MFORM*)pb->addrin[0]*/, client, false);
 			client->mouse = m;
-			client->mouse_form = (MFORM*)pb->addrin[0];	
+			client->mouse_form = ud; //(MFORM*)pb->addrin[0];	
 			DIAG((D_f,client,"mouse_form to %d", m));
 		}
 	}
