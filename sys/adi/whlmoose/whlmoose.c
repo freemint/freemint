@@ -623,7 +623,7 @@ moose_open (struct adif *a)
 	}
 
 	moose_inuse	= -1;
-	dc_time		= 0;
+	dc_time		= 50;
 
 	return E_OK;
 }
