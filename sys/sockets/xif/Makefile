@@ -50,7 +50,7 @@ RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
 RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir rtl8012st.c rtl8012_vblint.s)))
 
 # entry point
-entry: $(LIBKERNTARGET) $(DRIVERS)
+entry: $(DRIVERS)
 
 
 # generic driver target
