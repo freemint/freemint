@@ -428,7 +428,7 @@ load_xdd (struct basepage *b, const char *name)
 			i = strlen (dev_name);
 			
 			while (*name && *name != '.')
-				dev_name [i++] = tolower (*name++);
+				dev_name [i++] = tolower ((int)*name++ & 0xff);
 			
 			dev_name [i] = '\0';
 			

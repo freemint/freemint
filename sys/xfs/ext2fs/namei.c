@@ -57,7 +57,7 @@ d_hash_hash (register const char *s)
 	
 	while (*s)
 	{
-		hash = ((hash << 5) - hash) + TOUPPER (*s);
+		hash = ((hash << 5) - hash) + TOUPPER ((int)*s & 0xff);
 		s++;
 	}
 	

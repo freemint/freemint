@@ -940,7 +940,7 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	 */
 	if (path[1] == ':' && !cwd->root_dir)
 	{
-		char c = tolower (path[0]);
+		char c = tolower ((int)path[0] & 0xff);
 		
 		if (c >= 'a' && c <= 'z')
 			drv = c - 'a';
@@ -1661,7 +1661,7 @@ copy8_3 (char *dest, const char *src)
 		if (c == '*')
 			fill = c = '?';
 		
-		*dest++ = toupper(c);
+		*dest++ = toupper((int)c & 0xff);
 	}
 	
 	while (i++ < 8)
@@ -1685,7 +1685,7 @@ copy8_3 (char *dest, const char *src)
 			if (c == '*')
 				c = fill = '?';
 			
-			*dest++ = toupper(c);
+			*dest++ = toupper((int)c & 0xff);
 		}
 	}
 	

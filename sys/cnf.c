@@ -148,7 +148,7 @@ typedef struct {
 #define SET(opt)     (1ul << ((opt) -'A'))
 
 static const char *drv_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
-#define CHAR2DRV(c) ((int)(strrchr(drv_list, toupper(c)) - drv_list))
+#define CHAR2DRV(c) ((int)(strrchr(drv_list, toupper((int)c & 0xff)) - drv_list))
 
 static void parser	(FILEPTR *f, PARSINF *inf, long f_size);
 static void parser_msg	(PARSINF *inf, const char *msg);
@@ -791,7 +791,7 @@ pCB_set (const char *line, PARSINF *inf)
 		if (onNoff != '-'  &&  onNoff != '+') {
 			break;
 		} else {
-			char c = toupper(*(++line));
+			char c = toupper((int)*(++line) & 0xff);
 			if (!isalpha(c)) break;
 			if (c != 'C' && c != 'Q' && c != 'V') {
 				parser_msg  (inf, NULL);
@@ -892,7 +892,7 @@ parse_token (PARSINF *inf, bool upcase)
 			c = NUL;
 		
 		} else if (upcase) {
-			c = toupper(c);
+			c = toupper((int)c & 0xff);
 		}
 		*(dst++) = c;
 	
@@ -941,7 +941,7 @@ parse_drvlst (PARSINF *inf)
 	GENARG ret;ret.u = 0;
 	
 	while (*(inf->src)) {
-		long drv = strchr (drv_list, toupper(*(inf->src))) - drv_list;
+		long drv = strchr (drv_list, toupper((int)*(inf->src) & 0xff)) - drv_list;
 		if (drv < 0) break;
 		if (drv >= NUM_DRIVES ) {
 			ret._err = ARG_RANG;
@@ -971,8 +971,8 @@ parse_long (PARSINF *inf, RANGE *range)
 	}
 	while (isdigit(*src)) ret.l = (ret.l * 10) + (*(src++) - '0');
 	if (src > inf->src) {
-		if      (toupper(*src) == 'K') { ret.l *= 1024l;      src++; }
-		else if (toupper(*src) == 'M') { ret.l *= 1024l*1024; src++; }
+		if      (toupper((int)*src & 0xff) == 'K') { ret.l *= 1024l;      src++; }
+		else if (toupper((int)*src & 0xff) == 'M') { ret.l *= 1024l*1024; src++; }
 	}
 	*(inf->dst++) = '\0'; /* not really necessary */
 	
@@ -1100,7 +1100,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 			
 			/*--- (1.2) now read the keyword */
 			inf->dst = buf;
-			while ((c = toupper(*(inf->src))) && c != '='  && !isspace(c)) {
+			while ((c = toupper((int)*(inf->src) & 0xff)) && c != '='  && !isspace(c)) {
 				*(inf->dst++) = c;
 				inf->src++;
 			}
