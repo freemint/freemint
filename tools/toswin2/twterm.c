@@ -1,6 +1,6 @@
 /* Emulator for DEC VT100 series terminal for MiNT.
-* Copyright (C) 2001, Guido Flohr <guido@freemint.de>,
-* all rights reserved.
+ * Copyright (C) 2001, Guido Flohr <guido@freemint.de>,
+ * all rights reserved.
  */
 
 #undef DEBUG_VT
@@ -10,20 +10,17 @@
 #include <support.h>
 #include <string.h>
 
-#include "global.h"
-#include "console.h"
 #include "textwin.h"
 #include "vt.h"
 #include "window.h"
 #include "ansicol.h"
+#include "console.h"
 
 /* Local prototypes.  */
 static void escy_putch (TEXTWIN* tw, unsigned int c);
-static void soft_reset (TEXTWIN* tw);
 static void vt100_putesc (TEXTWIN* tw, unsigned int c);
 static void clearalltabs (TEXTWIN* tw);
 static void fill_window (TEXTWIN* tw, unsigned int c);
-static void decscnm (TEXTWIN* tw, int flag);
 
 #ifdef DUMP
 static int dump_pos = 1;
@@ -68,8 +65,8 @@ static void gototab(TEXTWIN* tw, int x, int y)
 static void insert_char(TEXTWIN* tw, int x, int y)
 {
 	int i;
-	unsigned char *twdata = tw->data[y];
-	unsigned long *twcflag = tw->cflag[y];
+	unsigned char *twdata = tw->cdata[y];
+	unsigned long *twcflag = tw->cflags[y];
 
 	if (x < 1 || (NCOLS (tw) - x < 1))
 		return;
@@ -79,7 +76,7 @@ static void insert_char(TEXTWIN* tw, int x, int y)
 		twcflag[i] = twcflag[i - 1] | CDIRTY;
 	}
 	twdata[x] = ' ';
-	twcflag[x] = CDIRTY | (tw->term_cattr & (CBGCOL | CFGCOL));
+	twcflag[x] = CDIRTY | (tw->curr_cattr & (CBGCOL | CFGCOL));
 	tw->dirty[y] |= SOMEDIRTY;
 	tw->do_wrap = 0;
 }
@@ -111,7 +108,7 @@ capture (TEXTWIN* tw, unsigned int c)
 static void
 seffect_putch (TEXTWIN* tw, unsigned int c)
 {
-	tw->term_cattr |= ((c & 0x1f) << 8);
+	tw->curr_cattr |= ((c & 0x1f) << 8);
 	tw->output = vt100_putch;
 }
 
@@ -119,7 +116,7 @@ seffect_putch (TEXTWIN* tw, unsigned int c)
 static void
 ceffect_putch(TEXTWIN* tw, unsigned int c)
 {
-	tw->term_cattr &= ~((c & 0x1f) << 8);
+	tw->curr_cattr &= ~((c & 0x1f) << 8);
 	tw->output = vt100_putch;
 }
 
@@ -149,13 +146,13 @@ static void
 fill_window (TEXTWIN* tw, unsigned int c)
 {
 	int row;
-	unsigned long new_attribute = tw->term_cattr &
+	unsigned long new_attribute = tw->curr_cattr &
 		(CBGCOL | CFGCOL);
 	int cols = NCOLS (tw);
 
 	for (row = tw->miny; row < tw->maxy; ++row) {
-		memset (tw->data[row], c, cols);
-		memulset (tw->cflag[row], new_attribute, cols);
+		memset (tw->cdata[row], c, cols);
+		memulset (tw->cflags[row], new_attribute, cols);
 	}
 	memset (tw->dirty + tw->miny, ALLDIRTY, NROWS (tw));
 }
@@ -218,28 +215,6 @@ keylocked (TEXTWIN* tw, unsigned int c)
 	}
 }
 
-/* Turn inverse video on/off.  */
-static void
-decscnm (TEXTWIN* tw, int flag)
-{
-	if (flag && tw->decscnm)
-		return;
-	if (!flag && !tw->decscnm)
-		return;
-
-	tw->cfg->bg_color ^= tw->cfg->fg_color;
-	tw->cfg->fg_color ^= tw->cfg->bg_color;
-	tw->cfg->bg_color ^= tw->cfg->fg_color;
-	tw->cfg->bg_effects ^= tw->cfg->fg_effects;
-	tw->cfg->fg_effects ^= tw->cfg->bg_effects;
-	tw->cfg->bg_effects ^= tw->cfg->fg_effects;
-
-	tw->decscnm = !tw->decscnm;
-
-	memset (tw->dirty + tw->miny, ALLDIRTY, NROWS (tw));
-	refresh_textwin (tw, 0);
-}
-
 /* Handle control sequence ESC [?...n.	*/
 static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 {
@@ -271,6 +246,15 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
 		return;
+	case 'J':		/* Erase in Display (DECSED).  */
+	case 'K':		/* Erase in Line (DECSEL).  */
+		/* Not yet implemented.  */
+		count = 0;
+		do {
+			ei = popescbuf (tw, tw->escbuf);
+			++count;
+		} while (ei >= 0);
+		break;
 	case 'c':		/* Extended private modes.	*/
 		count = 0;
 		do {
@@ -279,11 +263,10 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				ei = 0;
 			switch (ei) {
 			case 0:
-				tw->curs_vvis = 0;
+				tw->curr_tflags &= ~TCURS_VVIS;
 				break;
 			case 8:
-				tw->curs_vvis = 1;
-				tw->curs_on = 1;
+				tw->curr_tflags |= (TCURS_ON | TCURS_VVIS);
 				break;
 			}
 			++count;
@@ -296,52 +279,109 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			if (count == 0 && ei == -1)
 				ei = 0;
 			switch (ei) {
-			case 1:	/* Cursor keys in application/keypad transmit mode */
+			case 1:	/* Application Cursor Keys (DECCKM).  */
 				tw->curs_mode = CURSOR_TRANSMIT;
 				break;
-			case 3:	/* DECCOLM - 132 column mode.  The original VT100
+			case 2: /* Designate USASCII for character 
+				   sets G0-G3 (DECANM), and set VT100
+				   mode.  */
+				tw->curr_tflags &= ~(TCSG|TCSGS);
+				tw->curr_cattr |= ~CLINEDRAW;
+				break;
+			case 3:	/* 132 column mode (DECCOLM).  */
+				/* The original VT100
 				   also did a clear/home on that.  */
-				if (tw->deccolm) {
-					resize_textwin (tw, 132, NROWS (tw),
+				if (tw->curr_tflags & TDECCOLM) {
+					resize_textwin (tw, 132, 
+							NROWS (tw),
 							SCROLLBACK (tw));
 					clear (tw);
 					gotoxy (tw, 0, 0);
 				}
 				break;
-			case 4:	/* smooth scroll */
-				/* Not supported since version 2.0 */
+			case 4:	/* Smooth (slow) scroll (DECSCLM).  */
+				/* Not supported since version 2.0.  */
 				break;
-			case 5:	/* DECSCNM: inverse video on */
-				decscnm (tw, 1);
+			case 5:	/* Reverse Video (DECSCNM).  */
+				inverse_video (tw, 1);
 				break;
-			case 6:	/* origin mode */
-				tw->origin = 1;
+			case 6:	/* Origin Mode (DECOM).  */
+				tw->curr_tflags |= TORIGIN;
 				gotoxy (tw, 0, 0);
 				break;
-			case 7:	/* wrap on */
-				tw->term_flags &= ~FNOAM;
+			case 7:	/* Wraparound Mode (DECAWM).  */
+				tw->curr_tflags |= TWRAPAROUND;
 				break;
-			case 8:	/* autorepeat on */
+			case 8:	/* Auto-repeat Keys (DECARM).  */
 				/* Not yet implemented */
 				break;
-			case 9:	/* interface on */
+			case 9:	/* Send Mouse X & Y on button press.  */
 				/* Not yet implemented */
 				break;
-			case 14:	/* immediate operation of ENTER */
+			case 18: /* Print Form Feed (DECPFF).  */
+				/* Not yet implemented */
+				break;				
+			case 19: /* Set print extent to full screen 
+				    (DECPEX).  */
+				/* Not yet implemented */
+				break;				
+			case 25: /* Show Cursor (DECTCEM).  */
+				tw->curr_tflags |= TCURS_ON;
+				break;
+			case 35: /* Enable font-shifting functions
+				    (rxvt).  */
 				/* Not yet implemented */
 				break;
-			case 16:	/* edit selection immediate */
-				/* Not yet implemented */
+			case 38: /* Enter Tektronix Mode (DECTEK).  */
+				/* Beurk! :-(  */
 				break;
-			case 25:	/* cursor on */
-				tw->curs_on = 1;
+			case 40: /* Allow 80 -> 132 Mode (xterm?).  */
+				tw->curr_tflags |= TDECCOLM;
 				break;
-			case 40:	/* Set column mode.  */
-				tw->deccolm = 1;
+			case 41: /* more(1) fix (xterm?).  */
+				/* Dunno.  */
 				break;
-			case 75:	/* screen display on */
-				/* Not yet implemented */
+			case 42: /* Enable Nation Replacement Character
+				    sets (DECNRCM).  */
+				/* Dunno.  */
 				break;
+			case 44: /* Turn On Margin Bell.  */
+				/* Would be funny ...  */
+				break;
+			case 45: /* Reverse-wraparound Mode (xterm?).  */
+				/* Dunno.  */
+				break;
+			case 47: /* Use Alternate Screen Buffer.  */
+				/* Not yet implemented.  */
+				break;
+			case 66: /* Application Keypad (DECNKM).  */
+			case 67: /* Backarrow key sends delete 
+				    (DECBKM).  */
+				/* Not yet implemented.  */
+			case 1001: /* Use Hilite Mouse Tracking.  */
+			case 1002: /* Use Cell Motion Mouse Tracking.  */
+			case 1003: /* Use All Motion Mouse Tracking.  */
+			case 1010: /* Scroll to bottom on tty output
+				      (rxvt).  */
+			case 1011: /* Scroll to bottom on key press
+				      (rxvt).  */
+			case 1035: /* Enable special modifiers for Alt
+				      and NumLock keys.  */
+			case 1036: /* Send ESC when Meta modifies a
+				      key.  */
+			case 1037: /* Send DEL from the editing-keypad
+				      Delete key.  */
+			case 1047: /* Use Alternate Screen Buffer.  */
+			case 1048: /* Save cursor as in DECSC.  */
+			case 1049: /* Save cursor as in DECSC and
+				      use Alternate Screen Buffer, 
+				      clearing it first.  */
+			case 1051: /* Set Sun function-key mode.  */
+			case 1052: /* Set HP function-key mode.  */
+			case 1060: /* Set legacy keyboard emulation 
+				      (X11R6).  */
+			case 1061: /* Set Sun/PC keyboard emulation of 
+				      VT220 keyboard.  */
 			}
 			count++;
 		}
@@ -364,7 +404,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				break;
 			case 3:	/* DECCOLM - 80 column mode.  The original VT100
 				   also did a clear/home on that.  */
-				if (tw->deccolm) {
+				if (tw->curr_tflags & TDECCOLM) {
 					resize_textwin (tw, 80, NROWS (tw),
 							SCROLLBACK (tw));
 					clear (tw);
@@ -375,14 +415,14 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				/* Not supported since version 2.0 */
 				break;
 			case 5:	/* DECSCNM: inverse video off.  */
-				decscnm (tw, 0);
+				inverse_video (tw, 0);
 				break;
 			case 6:	/* relative mode */
-				tw->origin = 0;
+				tw->curr_tflags &= ~TORIGIN;
 				gotoxy (tw, 0, 0);
 				break;
 			case 7:	/* wrap off */
-				tw->term_flags |= FNOAM;
+				tw->curr_tflags &= ~TWRAPAROUND;
 				break;
 			case 8:	/* autorepeat off */
 				/* Not yet implemented */
@@ -397,14 +437,12 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				/* Not yet implemented */
 				break;
 			case 25:	/* cursor off */
-				tw->curs_on = 0;
+				tw->curr_tflags &= ~TCURS_ON;
 				break;
 			case 40:	/* Reset column mode.  */
-				tw->deccolm = 0;
+				tw->curr_tflags &= ~TDECCOLM;
 				break;
-			case 75:	/* screen display off */
-				/* Not yet implemented */
-				break;
+			/* FIXME: Insert set modes as implemented.  */
 			}
 			count++;
 		}
@@ -520,6 +558,13 @@ clearalltabs (TEXTWIN* tw)
 	tw->tabs = NULL;
 }
 
+/* Answer back.  Send the answer back string.  */
+static
+void answerback (TEXTWIN* tw)
+{
+	sendstr (tw, tw100_env);
+}
+
 /*
  * reportxy (tw): Report cursor position as ESCy;xR
  */
@@ -571,6 +616,10 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
 		return;
+	case '!':		/* Maybe Soft terminal reset (DECSTR)
+				   if followed by p.  */
+		pushescbuf (tw->escbuf, c);
+		return;
 	case '0':
 	case '1':
 	case '2':
@@ -582,12 +631,13 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	case '8':
 	case '9':
 	case ';':		/* parameters for extended escape */
-		pushescbuf(tw->escbuf, c);
+		pushescbuf (tw->escbuf, c);
 		return;
-	case '?':		/* start of screen/keyboard mode command */
+	case '?':		/* DEC Private Mode Set (DECSET).  */
 		tw->output = vt100_esc_mode;
 		return;
-	case '@':		/* insert N characters */
+	case '@':		/* Insert Ps (Blank) Character(s)
+				   (default = 1) (ICH).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -598,31 +648,36 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			--count;
 		}
 		break;
-	case 'A':		/* cursor up N */
+	case 'A':		/* Cursor Up Ps Times (default = 1)
+				   (CUU).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cuu (tw, count);
 		break;
-	case 'B':		/* cursor down N */
+	case 'B':		/* Cursor Down Ps Times (default = 1)
+				   (CUD).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cud (tw, count);
 		break;
-	case 'C':		/* cursor right N */
+	case 'C':		/* Cursor Forward Ps Times (default = 1)
+				   (CUF).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cuf (tw, count);
 		break;
-	case 'D':		/* cursor left N */
+	case 'D':		/* Cursor Backward Ps Times (default = 1)
+				   (CUD).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
 		cub (tw, count);
 		break;
-	case 'H':		/* cursor to y,x */
+	case 'H':		/* Cursor Position [row;column]
+				   (default = [1,1]) (CUP).  */
 		cy = popescbuf (tw, tw->escbuf);
 		if (cy < 1)
 			cy = 1;
@@ -631,41 +686,45 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			cx = 1;
 		gotoxy (tw, cx - 1, tw->miny + cy - 1);
 		break;
-	case 'J':		/* clear screen parts */
+	case 'J':		/* Erase in Display (ED).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 0)
 			count = 0;
 
 		switch (count) {
-		case 0:	/* clear to end */
+		case 0:	/* Erase Below (default).  */
 			clrfrom (tw, cx, cy, tw->maxx - 1, tw->maxy - 1);
 			break;
-		case 1:	/* clear from beginning */
+		case 1:	/* Erase Above.  */
 			clrfrom (tw, 0, tw->miny, cx, cy);
 			break;
-		case 2:	/* clear all but do no move */
+		case 2:	/* Erase All.  */
 			clrfrom (tw, 0, tw->miny,
 				 tw->maxx - 1, tw->maxy - 1);
 			break;
+		case 3: /* Erase Saved Lines (xterm).  */
+			clrfrom (tw, 0, 0, tw->miny, tw->maxx - 1);
+			break;
 		}
 		break;
-	case 'K':		/* clear line parts */
+	case 'K':		/* Erase in Line (EL).  */
 		count = popescbuf (tw, tw->escbuf);
 		if (count < 0)
 			count = 0;
 		switch (count) {
-		case 0:	/* clear to end */
+		case 0:	/* Erase to Right (default).  */
 			clrfrom (tw, cx, cy, tw->maxx - 1, cy);
 			break;
-		case 1:	/* clear from beginning */
+		case 1:	/* Erase to Left.  */
 			clrfrom (tw, 0, cy, cx, cy);
 			break;
-		case 2:	/* clear all but do not move */
+		case 2:	/* Erase All.  */
 			clrfrom (tw, 0, cy, tw->maxx - 1, cy);
 			break;
 		}
 		break;
-	case 'L':		/* insert N lines */
+	case 'L':		/* Insert Ps line(s) (default = 1)
+				   (IL).  */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -675,7 +734,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		}
 		tw->do_wrap = 0;
 		break;
-	case 'M':		/* delete N lines */
+	case 'M':		/* Delete Ps line(s) (default = 1)
+				   (DL).  */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -684,7 +744,8 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			--count;
 		}
 		break;
-	case 'P':		/* delete N characters at cursor position */
+	case 'P':		/* Delete Ps Character(s) (default = 1)
+				   (DCH).  */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 1)
 			count = 1;
@@ -693,27 +754,80 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			count--;
 		}
 		break;
-	case 'R':		/* Cursor position response */
+	case 'R':		/* ??? Cursor position response */
 		break;
-	case 'c':		/* device attributes (0c is same) */
-		ei = popescbuf(tw, tw->escbuf);
+	case 'S':		/* Scroll up Ps (line(s) (default = 1)
+				   (SU).  */
+	case 'T':		/* Scroll down Ps (line(s) (default = 1)
+				   (SD).  */
+		/* Not yet implemented.  */
+		/* If CSI Ps ; Ps ; Ps ; Ps ; Ps T then mouse 
+		   tracking is requested.  */
+		count = 0;
+		do {
+			ei = popescbuf (tw, tw->escbuf);
+			++count;
+		} while (ei >= 0);
+		break;
+	case 'X':		/* Erase Ps character(s) (default = 1)
+				   (ECH).  */
+	case 'Z':		/* Cursor Backward Tabulation Ps tab 
+				   stops (default = 1) (CBT).  */
+		/* Not yet implemented.  */
+		count = 0;
+		do {
+			ei = popescbuf (tw, tw->escbuf);
+			++count;
+		} while (ei >= 0);
+		break;
+	case '`':		/* Character Position Absolute [column]
+				   (default = [row,1]) (HPA).  */
+		count = popescbuf (tw, tw->escbuf);
+		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
+		break;
+	case 'b':		/* Repeat the preceding graphic character
+				   Ps times (REP).  */
+		/* Not yet implemented.  */
+		count = popescbuf (tw, tw->escbuf);
+		do {
+			ei = popescbuf (tw, tw->escbuf);
+			++count;
+		} while (ei >= 0);
+		break;
+	case 'c':		/* Send Device Attributes 
+				   (Primary DA).  */
+		ei = popescbuf (tw, tw->escbuf);
 		if (ei < 1) {
-			/* 2 = base vt100 with advanced video option (AVO) */
-			sendstr(tw, "\033[?1;2c");
+			/* 2 = base vt100 with advanced video 
+			   option (AVO) */
+			sendstr (tw, "\033[?1;2c");
+			/* FIXME: Should be configurable.  */
 		}
+		/* FIXME: CSI > Ps c requests Secondary DA.  Insert
+		   into caller ... */
 		break;
-	case 'f':		/* cursor to y,x  same as H */
-		vt100_esc_attr(tw, 'H');
+	case 'd':		/* Line Position Absolute [row]
+				   (default = [1,column]) (VPA).  */
+		/* FIXME: Obey origin mode or not?  */
+		count = popescbuf (tw, tw->escbuf);
+		if (count < 1)
+			count = 1;
+		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
 		break;
-	case 'g':		/* clear tabs */
+	case 'f':		/* Horizontal and Vertical Position
+				   [row;column] (default = [1,1]) 
+				   (HVP).  */
+		vt100_esc_attr (tw, 'H');
+		break;
+	case 'g':		/* Tab Clear (TBC).  */
 		count = popescbuf(tw, tw->escbuf);
 		if (count < 0)
 			count = 0;
 		switch (count) {
-		case 0:	/* clear tab at cursor position */
+		case 0:	/* Clear Current Column (default).  */
 			cleartab(tw, cx);
 			break;
-		case 3:	/* clear all tabs */
+		case 3:	/* Clear All.  */
 			clearalltabs(tw);
 			break;
 		}
@@ -729,13 +843,13 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				tw->output = keylocked;
 				break;
 			case 4:	/* insert mode */
-				tw->term_flags |= FINSERT;
+				tw->curr_tflags |= TINSERT;
 				break;
 			case 20:	/* <return> sends crlf */
 				/* Not yet implemented */
 				break;
 			case 34:
-				tw->curs_vvis = 0;
+				tw->curr_tflags &= ~TCURS_VVIS;
 				break;
 			}
 			count++;
@@ -753,14 +867,13 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				/* Unlock handled by keylockd() */
 				break;
 			case 4:	/* replace/overwrite mode */
-				tw->term_flags &= ~FINSERT;
+				tw->curr_tflags &= ~TINSERT;
 				break;
 			case 20:	/* <return> sends lf */
 				/* Not yet implemented */
 				break;
 			case 34:
-				tw->curs_vvis = 1;
-				tw->curs_on = 1;
+				tw->curr_tflags |= (TCURS_ON | TCURS_VVIS);
 				break;
 			}
 			count++;
@@ -774,10 +887,13 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			if (ei == -1 && count == 0)
 				ei = 0;
 			switch (ei) {
-			case 0:	/* All attributes off */
-				tw->term_cattr &=
-					~(CE_BOLD | CE_LIGHT | CE_ITALIC |
-					  CE_UNDERLINE | CINVERSE);
+			case 0:	/* All attributes off.  
+				   FIXME: Is this too much?  */
+				tw->curr_cattr &=
+					~(CE_BOLD | CE_LIGHT | 
+					  CE_ITALIC | CE_UNDERLINE | 
+					  CINVERSE | CPROTECTED |
+					  CINVISIBLE);
 				original_colors (tw);
 				break;
 			case 1:		/* bold on (x) */
@@ -787,35 +903,35 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				set_ansi_fg_color (tw, 'N' + 48);
 				break;
 			case 4:	/* underline on */
-				tw->term_cattr |= CE_UNDERLINE;
+				tw->curr_cattr |= CE_UNDERLINE;
 				break;
 			case 5:	/* blink on - uses italics */
-				tw->term_cattr |= CE_ITALIC;
+				tw->curr_cattr |= CE_ITALIC;
 				break;
 			case 7:	/* reverse video (standout) on */
-				tw->term_cattr |= CINVERSE;
+				tw->curr_cattr |= CINVERSE;
 				break;
 			case 8: /* Concealed on.  */
-				tw->term_cattr =
-					((tw->term_cattr & CBGCOL) << 4) |
-					 (tw->term_cattr &
+				tw->curr_cattr =
+					((tw->curr_cattr & CBGCOL) << 4) |
+					 (tw->curr_cattr &
 					  ~(CE_ANSI_EFFECTS |
 						 CFGCOL));
 				break;
 			case 21:	/* bold off */
-				tw->term_cattr &= ~CE_BOLD;
+				tw->curr_cattr &= ~CE_BOLD;
 				break;
 			case 22:	/* TW addition - light off */
-				tw->term_cattr &= ~CE_LIGHT;
+				tw->curr_cattr &= ~CE_LIGHT;
 				break;
 			case 24:	/* underline off */
-				tw->term_cattr &= ~CE_UNDERLINE;
+				tw->curr_cattr &= ~CE_UNDERLINE;
 				break;
 			case 25:	/* blink off - uses italics */
-				tw->term_cattr &= ~CE_ITALIC;
+				tw->curr_cattr &= ~CE_ITALIC;
 				break;
 			case 27:	/* reverse video (standout) off */
-				tw->term_cattr &= ~CINVERSE;
+				tw->curr_cattr &= ~CINVERSE;
 				break;
 			case 30:	/* white foreground (x) */
 				set_ansi_fg_color (tw,  ANSI_BLACK + 48);
@@ -891,8 +1007,11 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		}
 		break;
 	case 'p':
-		if (tw->escbuf[0] == '!')
-			soft_reset (tw);
+		ei = popescbuf (tw, tw->escbuf);
+		if (tw->escbuf[0] == '!')		/* Soft terminal reset (DECSTR).  */
+			vt_reset (tw, FALSE, FALSE);
+		else if (tw->escbuf[0] == '\000')	/* Full terminal reset (RSI).  */
+			vt_reset (tw, TRUE, TRUE);
 		break;
 	case 'r':		/* set size of scrolling region */
 		param1 = popescbuf (tw, tw->escbuf);
@@ -926,8 +1045,46 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	tw->output = vt100_putch;
 }
 
+/* vt100_esc_ansi (tw, c): handle control sequence ESC ' ' (SP).  */
+static void
+vt100_esc_ansi (TEXTWIN* tw, unsigned int c)
+{
+#ifdef DEBUG_VT
+	debug ("vt100_esc_ansi: %c (%d)\n", c, c);
+#endif
+#ifdef DUMP
+	dump (c);
+#endif
+	switch (c) {
+	case 'F':		/* 7-bit controls (S7C1T).  */
+		/* Not yet implemented.  */
+		break;
+	case 'G':		/* 8-bit controls (S8CIT).  */
+		/* Not yet implemented.  */
+		break;
+	case 'L':		/* Set ANSI conformance level 1 
+				   (vt100, 7-bit controls).  */
+		/* Not yet implemented.  */
+		break;
+	case 'M':		/* Set ANSI conformance level 2 
+				   (vt200).  */
+		/* Not yet implemented.  */
+		break;
+	case 'N':		/* Set ANSI conformance level 3 
+				   (vt300).  */
+		/* Not yet implemented.  */
+		break;
+	default:
+#ifdef DEBUG_VT
+		debug ("vt100_esc_ansi: unknown %c\n", c);
+#endif
+		break;
+	}
+	tw->output = vt100_putch;
+}
+
 /*
-* vt100_esc_char_size (tw, c): handle the control sequence ESC #n
+ * vt100_esc_char_size (tw, c): handle the control sequence ESC #n
  */
 static void
 vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
@@ -961,25 +1118,26 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 		tw->escbuf[0] = '\0';
 		return;
 	case '1':		/* double height, single width top half chars */
-		/* Not yet implemented */
+		/* ??? Not yet implemented */
 		break;
 	case '2':		/* double height, single width bottom half chars */
+		/* ??? Not yet implemented */
+		break;
+	case '3':		/* DEC double-height line, top half
+				   (DECDHL).  */
 		/* Not yet implemented */
 		break;
-	case '3':		/* double height, double width top half chars */
+	case '4':		/* DEC double-height line, bottom half
+				   (DECDHL).  */
 		/* Not yet implemented */
 		break;
-	case '4':		/* double height, double width bottom half chars */
+	case '5':		/* DEC single-width line (DECSWL).  */
 		/* Not yet implemented */
 		break;
-	case '5':		/* single height, single width */
+	case '6':		/* DEC single-width line (DECSWL).  */
 		/* Not yet implemented */
 		break;
-	case '6':		/* single height, double width */
-		/* Not yet implemented */
-		break;
-	/* DECALN */
-	case '8':		/* Fill screen with uppercase E.  */
+	case '8':		/* DEC Screen Alignment Test (DECALN).  */
 		fill_window (tw, 'E');
 		break;
 	default:
@@ -991,22 +1149,49 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 	tw->output = vt100_putch;
 }
 
-/*
-* vt100_esc_tests (tw, c): handle the control sequence ESC }n
- */
+/* vt100_esc_codeset (tw, c): handle control sequence ESC '%' (SP).  */
 static void
-vt100_esc_tests (TEXTWIN* tw, unsigned int c)
+vt100_esc_codeset (TEXTWIN* tw, unsigned int c)
 {
-	int cx, cy;
-
-	cx = tw->cx;
-	cy = tw->cy;
-
 #ifdef DEBUG_VT
-	debug("vt100_esc_tests: %c (%d)\n", c, c);
+	debug ("vt100_esc_codeset: %c (%d)\n", c, c);
 #endif
 #ifdef DUMP
-	dump(c);
+	dump (c);
+#endif
+	switch (c) {
+	case '@':		/* Select default character set,
+				   ISO-8859-1 (ISO 2022).  */
+		tw->cfg->char_tab = TAB_ISO;
+		break;
+	case 'G':		/* Select UTF-8 character set
+				   (ISO 2022).  */
+		tw->cfg->char_tab = TAB_ISO;  /* Better than Atari.  */
+		break;
+	default:
+#ifdef DEBUG_VT
+		debug ("vt100_esc_codeset: unknown %c\n", c);
+#endif
+		break;
+	}
+	tw->output = vt100_putch;
+}
+
+/* vt100_esc_charset (tw, c): handle control sequences ESC '(',
+   ESC ')', ESC '*', or ESC '+'.  
+   
+   We only treat character set G1 with opcode '0' special
+   (enable line drawing mode).  */
+static void
+vt100_esc_charset (TEXTWIN* tw, unsigned int c)
+{
+	int g;
+	
+#ifdef DEBUG_VT
+	debug ("vt100_esc_codeset: %c (%d)\n", c, c);
+#endif
+#ifdef DUMP
+	dump (c);
 #endif
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
@@ -1025,215 +1210,54 @@ vt100_esc_tests (TEXTWIN* tw, unsigned int c)
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
 		return;
-	case '1':		/* fill screen with following character */
-		/* Not yet implemented */
+	case '0':		/* DEC Special Character and Line
+				   Drawing Set.  */
+		tw->curr_tflags |= TCSGS;
 		break;
-	case '2':		/* video attribute test */
-		/* Not yet implemented */
-		break;
-	case '3':		/* character set test */
-		/* Not yet implemented */
-		break;
-	default:
-#ifdef DEBUG
-		debug("vt100_esc_tests: unknown %c\n", c);
-#endif
-		break;
-	}
-	tw->output = vt100_putch;
-}
-
-/* Handle the control sequence ESC (n
- * Used to change G0 (standard) character set - should use appropriate font
- */
-static void
-vt100_esc_std_char (TEXTWIN* tw, unsigned int c)
-{
-	int cx, cy;
-
-	cx = tw->cx;
-	cy = tw->cy;
-
-#ifdef DEBUG_VT
-	debug("vt100_esc_std_char: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
-	dump(c);
-#endif
-	switch (c) {
-	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		cub1 (tw);
-		return;
-	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		cud1 (tw);
-		return;
-	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		cuu (tw, 2);
-		return;
-	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		cuf1 (tw);
-		return;
-	case '\033':		/* ESC - restart sequence */
-		tw->output = vt100_putesc;
-		tw->escbuf[0] = '\0';
-		return;
-	case 'A':		/* British */
-	case 'B':		/* North American ASCII */
-	case 'C':		/* Finnish */
-	case 'E':		/* Danish/Norwegian */
-	case 'H':		/* Swedish */
-	case 'K':		/* German */
-	case 'Q':		/* French Canadian */
-	case 'R':		/* Flemish (French/Belgian) */
-	case 'Y':		/* Italian */
-	case 'Z':		/* Spanish */
-		tw->term_cattr &= ~CACS;
-		break;
-	case '0':		/* Line Drawing */
-		tw->term_cattr |= CACS;
-		break;
-	case '1':		/* Alternative Character */
-	case '2':		/* Alternative Line Drawing */
-	case '4':		/* Dutch */
-	case '5':		/* Finnish */
-	case '6':		/* Danish/Norwegian */
-	case '7':		/* Swedish */
-	case '=':		/* Swiss (French or German) */
-		tw->term_cattr &= ~CACS;
+	case 'A':		/* United Kingdom (UK).  */
+	case 'B':		/* United States (USASCII).  */
+	case '4':		/* Dutch.  */
+	case 'C':		/* Finnish.  */
+	case '5':		/* Finnish.  */
+	case 'R':		/* French.  */
+	case 'Q':		/* French Canadian.  */
+	case 'K':		/* German.  */
+	case 'Y':		/* Italian.  */
+	case 'E':		/* Norwegian/Danish.  */
+	case '6':		/* Norwegian/Danish.  */
+	case 'Z':		/* Spanish.  */
+	case 'H':		/* Swedish.  */
+	case '7':		/* Swedish.  */
+	case '=':		/* Swiss.  */
+		tw->curr_tflags &= ~TCSGS;
 		break;
 	default:
 #ifdef DEBUG_VT
-		debug("vt100_esc_std_char: unknown %c\n", c);
+		debug ("vt100_esc_codeset: unknown %c\n", c);
 #endif
 		break;
 	}
+
+	/* Get first designator.  */
+	g = popescbuf (tw, tw->escbuf);	
+	if (g == ')')
+		tw->curr_tflags |= TCSG;
+	else
+		tw->curr_tflags &= ~TCSG;
+	
+	if ((tw->curr_tflags & TCSG) && (tw->curr_tflags & TCSGS))
+		tw->curr_cattr |= CLINEDRAW;
+	else
+		tw->curr_cattr &= ~CLINEDRAW;
+		
 	tw->output = vt100_putch;
-}
-
-/* Handle the control sequence ESC )n
- * Used to change G1 (alternate) character set - should use appropriate font
- */
-static void
-vt100_esc_alt_char (TEXTWIN* tw, unsigned int c)
-{
-	int cx, cy;
-
-	cx = tw->cx;
-	cy = tw->cy;
-
-#ifdef DEBUG_VT
-	debug("vt100_esc_alt_char: %c (%d)\n", c, c);
-#endif
-#ifdef DUMP
-	dump(c);
-#endif
-	switch (c) {
-	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
-		cub1 (tw);
-		return;
-	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
-		cud1 (tw);
-		return;
-	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
-		cuu (tw, 2);
-		return;
-	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
-		cuf1 (tw);
-		return;
-	case '\033':		/* ESC - restart sequence */
-		tw->output = vt100_putesc;
-		tw->escbuf[0] = '\0';
-		return;
-	case 'A':		/* British */
-	case 'B':		/* North American ASCII */
-	case 'C':		/* Finnish */
-	case 'E':		/* Danish/Norwegian */
-	case 'H':		/* Swedish */
-	case 'K':		/* German */
-	case 'Q':		/* French Canadian */
-	case 'R':		/* Flemish (French/Belgian) */
-	case 'Y':		/* Italian */
-	case 'Z':		/* Spanish */
-	case '0':		/* Line Drawing */
-	case '1':		/* Alternative Character */
-	case '2':		/* Alternative Line Drawing */
-	case '4':		/* Dutch */
-	case '5':		/* Finnish */
-	case '6':		/* Danish/Norwegian */
-	case '7':		/* Swedish */
-	case '=':		/* Swiss (French or German) */
-		tw->term_cattr &= ~CACS;
-		break;
-	default:
-#ifdef DEBUG_VT
-		debug("vt100_esc_alt_char: unknown %c\n", c);
-#endif
-		break;
-	}
-	tw->output = vt100_putch;
-}
-
-/*
-* soft_reset (tw): do a soft reset
- */
-static void soft_reset(TEXTWIN* tw)
-{
-	tw->escbuf[0] = '\0';	/* ESC <        - terminal into vt100 mode */
-	vt100_putesc(tw, '<');	/* ESC [20l	- <return> sends lf */
-	tw->escbuf[0] = '2';
-	tw->escbuf[1] = '0';
-	tw->escbuf[2] = '\0';
-	vt100_esc_attr(tw, 'l');	/* ESC [?1l	  - cursor key to cursor mode */
-	/* ESC [?6l	 - absolute/origin mode */
-	/* ESC [?9l	 - interface off */
-	tw->escbuf[0] = '1';
-	tw->escbuf[1] = ';';
-	tw->escbuf[2] = '6';
-	tw->escbuf[3] = ';';
-	tw->escbuf[4] = '9';
-	tw->escbuf[5] = '\0';
-	vt100_esc_mode(tw, 'l');	/* ESC [r	  - scrolling region to whole screen */
-	tw->escbuf[0] = '\0';
-	vt100_esc_attr(tw, 'r');	/* ESC q	  - inverse video off */
-	vt100_putesc(tw, 'q');	/* ESC (B	- standard character set is US ASCII */
-	vt100_esc_std_char(tw, 'B');	/* ^O	      - switch to standard character set */
-	vt100_putch(tw, '\017');	/* ESC )0	  - alternate character set is special/linedraw */
-	vt100_esc_alt_char(tw, '0');	/* ESC >	      - keypad in application mode */
-	vt100_putesc(tw, '>');
-}
-
-static void
-full_reset (TEXTWIN* tw)
-{
-	soft_reset (tw);
-
-	clearalltabs (tw);
-
-	original_colors (tw);
-
-	tw->curs_on = 1;
-	tw->curs_vvis = 0;
-
-	tw->term_cattr &= ~CE_BOLD;
-	tw->term_cattr &= ~CE_LIGHT;
-	tw->term_cattr &= ~CE_ITALIC;
-	tw->term_cattr &= ~CE_UNDERLINE;
-
-	tw->origin = 0;
-	tw->deccolm = 0;
-	tw->do_wrap = 1;
-	tw->curs_on = 1;
-	tw->curs_vvis = 0;
-
-	clear (tw);
-	gotoxy (tw, 0, 0);
 }
 
 /* Handle the control sequence ESC c
  * additions JC - handle extended escapes,
  * 		e.g. ESC[24;1H is cursor to x1, y24
  *
- * FIXME: Everything not supported by the original vt100
+ * FIXME: Everything not supported by xterm and friends
  * should vanish from here.
  */
 static void
@@ -1251,23 +1275,26 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	dump(c);
 #endif
 	switch (c) {
-	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
+	case '\010':	/* ANSI spec - ^H in middle of ESC (yuck!) */
 		cub1 (tw);
 		return;
-	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
+	case '\012':	/* ANSI spec - ^J in middle of ESC (yuck!) */
 		cud1 (tw);
 		return;
-	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
+	case '\013':	/* ANSI spec - ^K in middle of ESC (yuck!) */
 		cuu (tw, 2);
 		return;
-	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
+	case '\014':	/* ANSI spec - ^L in middle of ESC (yuck!) */
 		cuf1 (tw);
 		return;
-	case '\033':		/* ESC - restart sequence */
+	case '\033':	/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
 		return;
-	case '<':		/* switch to vt100 mode */
+	case ' ':	/* Set ANSI levels.  */
+		tw->output = vt100_esc_ansi;
+		return;
+	case '<':	/* switch to vt100 mode ??? */
 		switch (tw->vt_mode) {
 		case MODE_VT52:	/* switch to vt100 mode */
 			tw->vt_mode = MODE_VT100;
@@ -1276,23 +1303,35 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 			break;
 		}
 		break;
-	case '=':		/* keypad in "keypad transmit" mode */
-		/* Not yet implemented */
+	case '#':		/* DEC character sizes.  */
+		tw->output = vt100_esc_char_size;
+		return;
+	case '%':		/* ISO codeset selection.  */
+		tw->output = vt100_esc_codeset;
+		return;
+	case '(': 		/* Designate G0 Character 
+				   Set (ISO 2022).  */
+	case ')': 		/* Designate G0 Character 
+				   Set (ISO 2022).  */
+	case '*': 		/* Designate G0 Character 
+				   Set (ISO 2022).  */
+	case '+': 		/* Designate G0 Character 
+				   Set (ISO 2022).  */
+		tw->escbuf[0] = '\000';
+		pushescbuf (tw->escbuf, c);
+		tw->output = vt100_esc_charset;
+		return;
+	case '7':		/* Save Cursor (DECSC).  */
+		save_cursor (tw);
 		break;
-	case '>':		/* keypad out of "keypad transmit" mode */
+	case '8':		/* Restore Cursor (DECRC).  */
+		restore_cursor (tw);
 		break;
-	case '7':		/* save cursor position */
-		tw->savex = tw->cx;
-		tw->savey = tw->cy;
-		/* FIXME: Save attributes, origin mode,
-		   wrap mode and protected mode.  */
-		tw->save_cattr = tw->term_cattr & (CATTRIBUTES | CACS);
+	case '=':		/* Application Keypad (DECPAM).  */
+		/* Not yet implemented.  */
 		break;
-	case '8':		/* restore cursor position */
-		/* FIXME: restore origin mode first!!! */
-		gotoxy (tw, tw->savex, tw->savey);
-		tw->term_cattr = (tw->term_cattr & ~(CATTRIBUTES | CACS)) |
-			tw->save_cattr;
+	case '>':		/* Normal Keypad (DECPNM).  */
+		/* Not yet implemented.  */
 		break;
 	case 'A':		/* cursor up */
 		cuu1 (tw);
@@ -1308,7 +1347,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		case MODE_VT52:	/* cursor left */
 			cub1 (tw);
 			break;
-		case MODE_VT100:	/* cr */
+		case MODE_VT100:	/* Index (IND: 0x84).  */
 			cud1 (tw);
 			break;
 		}
@@ -1319,17 +1358,23 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 			clear (tw);
 			gotoxy (tw, 0, 0);
 			break;
-		case MODE_VT100:	/* crlf */
+		case MODE_VT100:	/* Next Line (NEL: 0x85).  */
 			gotoxy (tw, 0, cy + 1 + RELOFFSET (tw));
 			break;
 		}
+		break;
+	case 'F':			/* Cursor to lower left corner
+					   of the screen (for buggy
+					   HP applications).  FIXME:
+					   Should be configurable.  */
+		gotoxy (tw, 0, tw->maxy - 1);
 		break;
 	case 'H':
 		switch (tw->vt_mode) {
 		case MODE_VT52:	/* cursor home */
 			gotoxy (tw, 0, 0);
 			break;
-		case MODE_VT100:	/* set tab at cursor position */
+		case MODE_VT100:	/* Tab Set (HTS: 0x88).  */
 			settab(tw, cx);
 			break;
 		}
@@ -1351,11 +1396,28 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		case MODE_VT52:	/* delete line */
 			delete_line (tw);
 			break;
-		case MODE_VT100:	/* reverse cr */
+		case MODE_VT100:	/* Reverse Index (RI: 0x8d).  */
 			reverse_cr (tw);
 			break;
 		}
 		break;
+	case 'N':			/* Single Shift Select of G2
+					   Character Set (SS2: 0x8e):
+					   affects next character
+					   only.  */
+		/* Not yet implemented.  */
+		break;
+	case 'O':			/* Single Shift Select of G3
+					   Character Set (SS3: 0x8f):
+					   affects next character
+					   only.  */
+		/* Not yet implemented.  */
+		break;
+	case 'P':			/* Device Control String
+					   (DCS: 0x90).  */
+		/* Not yet implemented.  */
+		/* FIXME: Eat following characters until ST.  */
+		break;		
 	case 'R':		/* TW extension: set window size */
 		tw->captsiz = 0;
 		tw->output = capture;
@@ -1366,83 +1428,74 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		tw->output = capture;
 		tw->callback = set_title;
 		return;
-	case 'Y':		/* Cursor motion follows */
+	case 'V':			/* Start of Guarded Area
+					   (SPA: 0x96).  */
+		/* Not yet implemented.  */
+		break;
+	case 'W':			/* END of Guarded Area
+					   (EPA: 0x97).  */
+		/* Not yet implemented.  */
+		break;					  
+	case 'X':			/* Start of String
+					   (SOS: 0x98).  */
+		/* Not yet implemented.  */
+		break;
+	case 'Y':		/* cursor motion follows */
 		tw->output = escy_putch;
 		return;
-	case 'Z':		/* return terminal id */
+	case 'Z':		/* Return Terminal ID (DECID: 0x91a).
+				   Obsolete form of CSI c (DA).  */
 		tw->escbuf[0] = '\0';
 		vt100_esc_attr(tw, 'c');
 		break;
 	case 'a':		/* MW extension: delete character */
 		delete_char(tw, cx, cy);
 		break;
-	case 'b':		/* set foreground color */
-#if 0
-		tw->output = fgcol_putch;
-		return;		/* `return' to avoid resetting tw->output */
-#else
-		break;
-#endif
-	case 'c':
-		switch (tw->vt_mode) {
-		case MODE_VT52:	/* set background color */
-#if 0
-			tw->output = bgcol_putch;
-			return;
-#else
-			break;
-#endif
-		case MODE_VT100:	/* reset */
-			full_reset (tw);
-			break;
-		}
+	case 'c':		/* Full Reset (RIS).  */
+		vt_reset (tw, TRUE, TRUE);
 		break;
 	case 'd':		/* clear to cursor position */
 		clrfrom(tw, 0, tw->miny, cx, cy);
 		break;
 	case 'e':		/* enable cursor */
-		tw->curs_on = 1;
+		tw->curr_tflags |= TCURS_ON;
 		break;
 	case 'f':		/* cursor off */
-		tw->curs_on = 0;
-		break;
-	case 'h':		/* MW extension: enter insert mode */
-		tw->term_flags |= FINSERT;
-		break;
-	case 'i':		/* MW extension: leave insert mode */
-		tw->term_flags &= ~FINSERT;
+		tw->curr_tflags &= ~TCURS_ON;
 		break;
 	case 'j':		/* save cursor position */
-		tw->savex = tw->cx;
-		tw->savey = tw->cy;
+		tw->saved_x = tw->cx;
+		tw->saved_y = tw->cy;
 		break;
 	case 'k':		/* restore saved position */
 		/* FIXME: Obey origin mode!!! */
-		gotoxy (tw, tw->savex, tw->savey);
+		gotoxy (tw, tw->saved_x, tw->saved_y);
 		break;
-	case 'l':		/* HP memory lock.	*/
+	case 'l':		/* HP memory lock.  */
 		if (tw->scroll_bottom > tw->cy)
 			tw->scroll_top = tw->cy;
 		break;
 	case 'm':		/* HP memory unlock.  */
 		tw->scroll_top = tw->miny;
 		break;
-	case 'o':		/* clear from start of line to cursor */
-		clrfrom(tw, 0, cy, cx, cy);
+	case 'n':		/* Invoke the G2 Character Set (LS2).  */
+	case 'o':		/* Invoke the G3 Character Set (LS3).  */
+		tw->curr_tflags &= ~TCSG;
+		tw->curr_cattr &= ~CLINEDRAW;
 		break;
 	case 'p':		/* reverse video on */
-		tw->term_cattr |= CINVERSE;
+		tw->curr_cattr |= CINVERSE;
 		break;
 	case 'q':		/* reverse video off */
-		tw->term_cattr &= ~CINVERSE;
+		tw->curr_cattr &= ~CINVERSE;
 		break;
 	case 't':		/* backward compatibility for TW 1.x: set cursor timer */
 		return;
 	case 'v':		/* wrap on */
-		tw->term_flags &= ~FNOAM;
+		tw->curr_tflags |= TWRAPAROUND;
 		break;
 	case 'w':		/* wrap off */
-		tw->term_flags |= FNOAM;
+		tw->curr_tflags &= TWRAPAROUND;
 		break;
 	case 'y':		/* TW extension: set special effects */
 		tw->output = seffect_putch;
@@ -1450,34 +1503,36 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'z':		/* TW extension: clear special effects */
 		tw->output = ceffect_putch;
 		return;
-	case '[':		/* extended escape [ - various attributes */
+	case '[':		/* Control Sequence Introducer
+				   (CSI: 0x9b).  */
 		tw->output = vt100_esc_attr;
 		return;
-	case '#':		/* extended escape # - ANSI character sizes */
-		tw->output = vt100_esc_char_size;
-		return;
-	case '}':		/* extended escape } - tests */
-		tw->output = vt100_esc_tests;
-		return;
-	case '(' /* extended escape ( - set G0 character set */ :
-		tw->output = vt100_esc_std_char;
-		return;
-	case ')':		/* extended escape ( - set G1 character set */
-		tw->output = vt100_esc_alt_char;
-		return;
-	case '*':		/* extended escape ( - set G2 character set */
-		/* Not yet implemented */
-		return;
-	case '+':		/* extended escape ( - set G3 character set */
-		/* Not yet implemented */
-		return;
-	case '!':		/* program a progammable key (local) */
-		/* Not yet implemented */
+	case '\\':		/* String Terminator (ST: 0x9c).  */
+		/* Not yet implemented.  */
+		break;
+	case ']':		/* Operating System Command 
+				   (OSC: 0x9d).  */
+		/* Not yet implemented.  */
+		break;
+	case '^':		/* Privacy Message (PM: 0x9e).  */
+		/* Not yet implemented.  */
+		break;
+	case '_':		/* Application Program Command 
+				   (APC: 0x9f).  */
+		/* Not yet implemented.  */
+		/* FIXME: Eat following characters until ST.  */
+		break;
+	case '|':		/* Invoke the G3 Character Set as GR
+				   (LS3R).  Has no visible effect
+				   in xterm, we follow happily.  */
+	case '}':		/* Invoke the G2 Character Set as GR
+				   (LS2R).  Has no visible effect
+				   in xterm, we follow happily.  */
+	case '~':		/* Invoke the G1 Character Set as GR
+				   (LS1R).  Has no visible effect
+				   in xterm, we follow happily.  */
 		break;
 	case '@':		/* program a progammable key (on-line) */
-		/* Not yet implemented */
-		break;
-	case '%':		/* transmit progammable key contents */
 		/* Not yet implemented */
 		break;
 	default:
@@ -1532,20 +1587,15 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 	/* control characters */
 	if (c < ' ') {
 		switch (c) {
-		/* FIXME: Handle newline mode!  */
-		case '\r':	/* carriage return */
-			gotoxy (tw, 0, cy - RELOFFSET (tw));
+		case '\005':	/* ENQ - Return Terminal Status 
+				   (Ctrl-E).  Default response is
+				   the terminal name, e. g., 
+				   "tw100".  Should later be
+				   possible to be overridden by
+				   the answerback string.  */
+			answerback (tw);
 			break;
-
-		case '\n':	/* new line */
-			new_line (tw);
-			break;
-
-		case '\b':	/* backspace */
-			cub1 (tw);
-			break;
-
-		case '\007':	/* bell */
+		case '\007':	/* BEL - Bell (Ctrl-G).  */
 			if (con_fd) {
 				/* xconout2: Bconout would result in
 				 * deadlock.
@@ -1556,21 +1606,47 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 				Bconout (2, 7);
 			break;
 
-		case '\016':	/* ^N - switch to alternate char set */
-			tw->term_cattr |= CACS;
+		case '\010':	/* Backspace - BS (Ctrl-H).  */
+			cub1 (tw);
 			break;
 
-		case '\017':	/* ^O - switch to standard char set */
-			tw->term_cattr &= ~CACS;
+		case '\011':	/* Horizontal Tab (HT) (Ctrl-I).  */
+			gototab (tw, tw->cx, tw->cy);
+			break;
+
+		case '\012':	/* Line Feed or New Line (NL) (Ctrl-J).  */
+		case '\013':	/* Vertical Tab (VT) (Ctrl-K)
+				   same as LF.  */
+		case '\014':	/* Form Feed or New Page (NP) (Ctrl-L)
+				   same as LF.  */
+			new_line (tw);
+			break;
+			
+		/* FIXME: Handle newline mode!  */
+		case '\015':	/* Carriage Return - CR (Ctrl-M).  */
+			gotoxy (tw, 0, cy - RELOFFSET (tw));
+			break;
+			
+		case '\016':	/* Shift Out (SO) (Ctrl-N) -> Switch 
+				   to Alternate Character Set.  
+				   Invokes the G1 character set.  */
+			tw->curr_tflags |= TCSG;
+			if (tw->curr_tflags & TCSGS)
+				tw->curr_cattr |= CLINEDRAW;
+			else
+				tw->curr_cattr &= ~CLINEDRAW;
+			break;
+
+		case '\017':	/* Shift In (SI) (Ctrl-O) -> Switch 
+				   to Standard Character Set.  
+				   Invokes the G0 character set.  */
+			tw->curr_tflags &= ~TCSG;
+			tw->curr_cattr &= ~CLINEDRAW;
 			break;
 
 		case '\033':	/* ESC */
 			tw->output = vt100_putesc;
 			tw->escbuf[0] = '\0';
-			break;
-
-		case '\t':	/* tab */
-			gototab(tw, tw->cx, tw->cy);
 			break;
 
 		default:
