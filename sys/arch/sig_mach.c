@@ -605,7 +605,7 @@ exception (ushort sig)
 	assert (sig < NSIG);
 	assert (curproc->p_sigacts);
 	
-	DEBUG (("exception #%d raised [pc %lx, proc pc %lx]", sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
+	DEBUG (("exception #%d raised [pc 0x%lx, proc pc 0x%lx]", sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
 	SIGACTION(curproc, sig).sa_flags |= SA_RESET;
 	raise (sig);
@@ -617,7 +617,7 @@ sigbus (void)
 	assert (curproc->stack_magic == STACK_MAGIC);
 	assert (curproc->p_sigacts);
 	
-	DEBUG (("sigbus [pc %lx, proc pc %lx]", curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
+	DEBUG (("sigbus [pc 0x%lx, proc pc 0x%lx]", curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
 	if (SIGACTION(curproc, SIGBUS).sa_handler == SIG_DFL)
 		report_buserr ();
