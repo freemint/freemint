@@ -643,38 +643,30 @@ shutdown(void)
 	while (p)
 	{
 		struct proc *next = p->gl_next;
-		int flag = 1;
 
-		if (!p->pid)
-			flag = 0; /* mint thread */
-
-		if (p == curproc)
-			flag = 0; /* curproc is trapped in this code */
-
-		if (p->memflags & F_OS_SPECIAL)
-			flag = 0; /* AES :< */
-
-		if (flag)
-		if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
+		/* Skip MiNT, curproc and AES */
+		if (p->pid && (p != curproc) && ((p->memflags & F_OS_SPECIAL) == 0))
 		{
-			ushort sr = spl7();
-			if (p->wait_q && p->wait_q != READY_Q)
+			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
-				rm_q(p->wait_q, p);
-				add_q(READY_Q, p);
-			}
-			spl(sr);
+				if (p->wait_q && p->wait_q != READY_Q)
+				{
+					ushort sr = spl7();
+					rm_q(p->wait_q, p);
+					add_q(READY_Q, p);
+					spl(sr);
+				}
 
-			DEBUG(("SIGTERM -> %s (pid %i)", p->name, p->pid));
-			post_sig(p, SIGTERM);
+				DEBUG(("SIGTERM -> %s (pid %i)", p->name, p->pid));
+				post_sig(p, SIGTERM);
 
-			for (i = 0; i < 16; i++)	/* sleep */
-				s_yield();
+				for (i = 0; i < 16; i++)	/* sleep */
+					s_yield();
 # if 0
-			proc_left++;
+				proc_left++;
 # endif
+			}
 		}
-
 		/* p may be invalidated; so save next ptr before
 		 * and sue it here
 		 */
