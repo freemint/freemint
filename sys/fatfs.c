@@ -381,7 +381,7 @@
  */
 
 # define VER_MAJOR	1
-# define VER_MINOR	21
+# define VER_MINOR	22
 # define VER_STATUS	
 
 # if VER_MINOR > 9
@@ -422,7 +422,7 @@
 # define FATFS_DEFAULT_MODE	FATFS_SECURE_1
 # endif
 
-# if 0
+# if 1
 # define EXTENSIVE_GETXATTR
 # endif
 
@@ -1134,7 +1134,7 @@ const	char *	__table;	/* current character table */
 	ulong	__c_miss;	/* cookie cache miss */
 # endif
 	
-} devinfo [NUM_DRIVES];
+} devinfo[NUM_DRIVES];
 
 /*
  * makros for easy access
@@ -1458,8 +1458,8 @@ INDEX (const COOKIE *c)
 # define COOKIE_CACHE		(1UL << COOKIE_HASHBITS)
 # define COOKIE_HASHMASK	(COOKIE_CACHE - 1)
 
-static COOKIE cookies [COOKIE_CACHE];
-static COOKIE *ctable [COOKIE_CACHE];
+static COOKIE cookies[COOKIE_CACHE];
+static COOKIE *ctable[COOKIE_CACHE];
 
 # ifdef FS_DEBUG
 # define COOKIE_CACHE_HIT(dev)	{ C_HIT (dev)++; }
@@ -1490,7 +1490,7 @@ c_hash_hash (register const char *s)
 	
 	while (*s)
 	{
-		hash = ((hash << 5) - hash) + TOUPPER (*s);
+		hash = ((hash << 5) - hash) + TOUPPER ((int)*s & 0xff);
 		s++;
 	}
 	
@@ -1499,7 +1499,7 @@ c_hash_hash (register const char *s)
 	return hash & COOKIE_HASHMASK;
 }
 # else
-static ushort crcTable [] = /* 16 12 5 0 */
+static ushort crcTable[] = /* 16 12 5 0 */
 {
 	0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
 	0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7,
@@ -1542,7 +1542,7 @@ c_hash_hash (register const char *s)
 	
 	while (*s)
 	{
-		result = (crcTable [(((ulong) TOUPPER (*s)) ^ result) & 0xff]) ^ (result >> 8);
+		result = (crcTable[(((ulong) TOUPPER ((int)*s & 0xff)) ^ result) & 0xff]) ^ (result >> 8);
 		s++;
 	}
 	
@@ -1558,7 +1558,7 @@ c_hash_lookup (register const char *s, register ushort dev)
 	
 	FAT_DEBUG (("c_hash_lookup: s = %s, c_hash (s) = %li", s, hashval));
 	
-	for (c = ctable [hashval]; c != NULL; c = c->next)
+	for (c = ctable[hashval]; c != NULL; c = c->next)
 	{
 		if ((dev == c->dev) && (stricmp (c->name, s) == 0))
 		{
@@ -1583,8 +1583,8 @@ c_hash_install (register COOKIE *c)
 	
 	FAT_DEBUG (("c_hash_lookup: c->name = %s, c_hash (c->name) = %li", c->name, c_hash_hash (c->name)));
 	
-	c->next = ctable [hashval];
-	ctable [hashval] = c;
+	c->next = ctable[hashval];
+	ctable[hashval] = c;
 	
 # ifdef LRU_COOKIE_CACHE
 	c_stat_update (c);
@@ -1595,7 +1595,7 @@ INLINE void
 c_hash_remove  (register COOKIE *c)
 {
 	register const ulong hashval = c_hash_hash (c->name);
-	register COOKIE **temp = & ctable [hashval];
+	register COOKIE **temp = & ctable[hashval];
 	
 	while (*temp)
 	{
@@ -1618,7 +1618,7 @@ c_get_cookie (register char *s)
 	
 	for (i = 0; i < COOKIE_CACHE; i++)
 	{
-		register COOKIE *c = &(cookies [i]);
+		register COOKIE *c = &(cookies[i]);
 		if (c->links == 0)
 		{
 			register ulong stat = c->stat;
@@ -1660,7 +1660,7 @@ c_get_cookie (register char *s)
 	{
 		count++; if (count == COOKIE_CACHE) count = 0;
 		{
-			register COOKIE *c = &(cookies [count]);
+			register COOKIE *c = &(cookies[count]);
 			if (c->links == 0)
 			{
 				if (c->name)
@@ -2881,12 +2881,12 @@ is_exec (register const char *src)
 	union
 	{
 		ulong value;
-		char buf [3];
+		char buf[3];
 	} data;
 	
-	data.buf [0] = *src++;
-	data.buf [1] = *src++;
-	data.buf [2] = *src;
+	data.buf[0] = *src++;
+	data.buf[1] = *src++;
+	data.buf[2] = *src;
 	
 	i = data.value;
 # else
@@ -2910,9 +2910,8 @@ is_exec (register const char *src)
  * What about the French and Skandinavian local characters???
  */
 
-# define MSDOS_VALID(c)		(msdos_table [(long) (c)])
 # define MSDOS_TABLE		(msdos_table)
-static const char msdos_table [256] =
+static const char msdos_table[256] =
 {
 /* 000   */ 0,
 /* 001   */ 0,	/* 002   */ 0,	/* 003   */ 0,	/* 004   */ 0,	/* 005   */ 0,
@@ -2963,9 +2962,8 @@ static const char msdos_table [256] =
  * What about the French and Skandinavian local characters???
  */
 
-# define GEMDOS_VALID(c)	(gemdos_table [(long) (c)])
 # define GEMDOS_TABLE		(gemdos_table)
-static const char gemdos_table [256] =
+static const char gemdos_table[256] =
 {
 /* 000   */ 0,
 /* 001   */ 0,	/* 002   */ 0,	/* 003   */ 0,	/* 004   */ 0,	/* 005   */ 0,
@@ -3015,9 +3013,8 @@ static const char gemdos_table [256] =
  * ISO: A..Z0..9_
  */
 
-# define ISO_VALID(c)		(iso_table [(long) (c)])
 # define ISO_TABLE		(iso_table)
-static const char iso_table [256] =
+static const char iso_table[256] =
 {
 /* 000   */ 0,
 /* 001   */ 0,	/* 002   */ 0,	/* 003   */ 0,	/* 004   */ 0,	/* 005   */ 0,
@@ -3070,10 +3067,10 @@ is_short (register const char *src, register const char *table)
 	
 	FAT_DEBUG (("is_short: enter (src = %s, len = %li)", src, i));
 	
-	/* verify length and beginning point */
-	if (i > 12 || *src == '.')
+	/* verify length and leading point/space */
+	if (i > 12 || *src == '.' || *src == ' ')
 	{
-		FAT_DEBUG (("is_short: leave check 0 (src = %s)", src));
+		FAT_DEBUG (("is_short: leave islong 0 (src = %s)", src));
 		return 0;
 	}
 	
@@ -3081,15 +3078,15 @@ is_short (register const char *src, register const char *table)
 	i = 8;
 	while (i-- && *src && *src != '.')
 	{
-		if (table [(long) *src])
+		register uchar index = *src;
+		
+		if (!table[index])
 		{
-			src++;
-		}
-		else
-		{
-			FAT_DEBUG (("is_short: leave check 1 (src = %s)", src));
+			FAT_DEBUG (("is_short: leave islong 1 (src = %s)", src));
 			return 0;
 		}
+		
+		src++;
 	}
 	
 	/* verify extension */
@@ -3099,15 +3096,15 @@ is_short (register const char *src, register const char *table)
 		i = 3;
 		while (i-- && *src && *src != '.')
 		{
-			if (table [(long) *src])
+			register uchar index = *src;
+			
+			if (!table[index])
 			{
-				src++;
-			}
-			else
-			{
-				FAT_DEBUG (("is_short: leave check 2 (src = %s)", src));
+				FAT_DEBUG (("is_short: leave islong 2 (src = %s)", src));
 				return 0;
 			}
+			
+			src++;
 		}
 	}
 	
@@ -3118,7 +3115,7 @@ is_short (register const char *src, register const char *table)
 		return 0;
 	}
 	
-	FAT_DEBUG (("is_short: leave ok (return = 1)"));
+	FAT_DEBUG (("is_short: leave ishort"));
 	return TOS_SEARCH; /* shortname */
 }
 
@@ -3142,17 +3139,22 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 */
 	
 	register const char *table = DEFAULT_T (dir->dev);
-	register const char *s = src;
+	register const uchar *s = src;
 	register char *d = dst;
 	register long i;
 	
 	/* step 1 - 4 */
 	
-	if (*s == '.') s++;
+	/* remove leading '.' and ' ' */
+	while (*s == '.' || *s == ' ')
+		s++;
+	
 	i = 8;
 	while (i-- && *s && *s != '.')
 	{
-		*d++ = table [(long) *s] ? TOUPPER (*s) : '_';
+		register int upper = TOUPPER((int)*s & 0xff);
+		
+		*d++ = table[upper] ? upper : '_';
 		s++;
 	}
 	
@@ -3165,7 +3167,9 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 		s++;
 		for (i = 1; i < 4 && *s; i++)
 		{
-			*d++ = table [(long) *s] ? TOUPPER (*s) : '_';
+			register int upper = TOUPPER((int)*s & 0xff);
+			
+			*d++ = table[upper] ? upper : '_';
 			s++;
 		}
 	}
@@ -3207,8 +3211,8 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 *    has embedded spaces or illegal characters.)
 	 */
 	
-	char ext [4] = { '\0', '\0', '\0', '\0' };
-	register const char *s = src;
+	char ext[4] = { '\0', '\0', '\0', '\0' };
+	register const uchar *s = src;
 	register char *d = dst;
 	register char *bak;
 	register long i;
@@ -3219,12 +3223,17 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	
 	/* step 1 - 4 */
 	
-	if (*s == '.') s++;
+	/* remove leading '.' and ' ' */
+	while (*s == '.' || *s == ' ')
+		s++;
+	
 	d = dst;
 	i = 8;
 	while (i-- && *s && *s != '.')
 	{
-		*d++ = MSDOS_VALID (*s) ? TOUPPER (*s) : '_';
+		register int upper = TOUPPER((int)*s & 0xff);
+		
+		*d++ = MSDOS_TABLE[upper] ? upper : '_';
 		s++;
 	}
 	
@@ -3235,11 +3244,13 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	
 	if (*s == '.')
 	{
-		ext [0] = *d++ = '.';
+		ext[0] = *d++ = '.';
 		s++;
 		for (i = 1; i < 4 && *s; i++)
 		{
-			ext [i] = *d++ = MSDOS_VALID (*s) ? TOUPPER (*s) : '_';
+			register int upper = TOUPPER((int)*s & 0xff);
+			
+			ext[i] = *d++ = MSDOS_TABLE[upper] ? upper : '_';
 			s++;
 		}
 	}
@@ -3308,10 +3319,10 @@ make_shortname (COOKIE *dir, const char *src, char *dst)
 	{
 		/* copy the name (it's in correct 8+3 format) */
 		
-		register const char *s = src;
+		register const uchar *s = src;
 		while (*s)
 		{
-			*dst++ = TOUPPER (*s);
+			*dst++ = TOUPPER ((int)*s & 0xff);
 			s++;
 		}
 		*dst ='\0';
@@ -3551,15 +3562,15 @@ ldir2unicode (long slot, uchar *name, LDIR *ldir)
 	register long i;
 	
 	for (i = 0; i < 10; i++)
-		name [offset+i] = ldir->name0_4   [i];
+		name[offset+i] = ldir->name0_4[i];
 	
 	offset += 10;
 	for (i = 0; i < 12; i++)
-		name [offset+i] = ldir->name5_10  [i];
+		name[offset+i] = ldir->name5_10[i];
 	
 	offset += 12;
 	for (i = 0; i < 4; i++)
-		name [offset+i] = ldir->name11_12 [i];
+		name[offset+i] = ldir->name11_12[i];
 }
 
 INLINE long
@@ -3571,7 +3582,7 @@ __readvfat (register oDIR *dir, char *lname, long size)
 	
 	if (ldir->head & 0x40)
 	{
-		uchar name [VFAT_NAMEMAX * 2];
+		uchar name[VFAT_NAMEMAX * 2];
 		long r = 0;
 		long is_long = 1;
 		
@@ -3624,7 +3635,7 @@ __readvfat (register oDIR *dir, char *lname, long size)
 				for (sum = i = 0; i < 11; i++)
 				{
 					sum = (((sum & 1) << 7) | ((sum & 0xfe) >> 1))
-						+ dir->info->name [i];
+						+ dir->info->name[i];
 				}
 			}
 			
@@ -3642,7 +3653,7 @@ __readvfat (register oDIR *dir, char *lname, long size)
 						i <<= 1;
 						for (; i; i -= 2)
 						{
-							if (name [i] == '\0' && name [i+1] == '\0')
+							if (name[i] == '\0' && name[i+1] == '\0')
 							{
 								i >>= 1;
 								break;
@@ -3656,11 +3667,11 @@ __readvfat (register oDIR *dir, char *lname, long size)
 					}
 					
 					/* copy */
-					lname [i] = '\0';
+					lname[i] = '\0';
 					while (i--)
 					{
 						register const long j = i << 1;
-						lname [i] = UNI2ATARI ((name [j]), (name [j+1]));
+						lname[i] = UNI2ATARI ((name[j]), (name[j+1]));
 					}
 					
 					FAT_DEBUG (("__readvfat: (lname = %s)", lname));
@@ -3773,7 +3784,9 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 	 */
 	{
 		COOKIE *search;
-		char *temp = fullname (dir, name);
+		char *temp;
+		
+		temp = fullname (dir, name);
 		if (!temp)
 		{
 			FAT_DEBUG (("search_cookie: leave failure, out of memory"));
@@ -3823,7 +3836,7 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 	{
 		/* FAT search on FAT or VFAT */
 		
-		char fat_name [FAT_NAMEMAX];
+		char fat_name[FAT_NAMEMAX];
 		
 		str2dir (name, fat_name);
 		while ((r = __nextdir (&odir, NULL, 0)) >= 0)
@@ -3833,7 +3846,7 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 				if (found)
 				{
 					char *temp;
-					char buf [VFAT_NAMEMAX];
+					char buf[VFAT_NAMEMAX];
 					
 					if (r)
 					{
@@ -3910,7 +3923,7 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 	{
 		/* VFAT search */
 		
-		char buf [VFAT_NAMEMAX];
+		char buf[VFAT_NAMEMAX];
 		
 		while ((r = __nextdir (&odir, buf, VFAT_NAMEMAX)) >= 0)
 		{
@@ -4151,11 +4164,11 @@ copy_to_vfat (LDIR *ldir, register const char *name)
 	}
 	
 	for (i = 0; i < 10; i++)
-		ldir->name0_4   [i] = unicode [i];
+		ldir->name0_4[i] = unicode[i];
 	for (i = 0; i < 12; i++)
-		ldir->name5_10  [i] = unicode [i+10];
+		ldir->name5_10[i] = unicode[i+10];
 	for (i = 0; i < 4; i++)
-		ldir->name11_12 [i] = unicode [i+22];
+		ldir->name11_12[i] = unicode[i+22];
 	
 	FAT_DEBUG (("copy_to_vfat: leave ok"));
 }
@@ -5043,8 +5056,8 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 * step 1: check for GEM/BGM partition
 	 */
 	
-	if ((di->id [0] == 'B' && di->id [1] == 'G' && di->id [2] == 'M')
-		|| (di->id [0] == 'G' && di->id [1] == 'E' && di->id [2] == 'M'))
+	if ((di->id[0] == 'B' && di->id[1] == 'G' && di->id[2] == 'M')
+		|| (di->id[0] == 'G' && di->id[1] == 'E' && di->id[2] == 'M'))
 	{
 		FAT_DEBUG (("get_bpb: GEM/BGM detected"));
 		
@@ -5057,7 +5070,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 * step 2: check for F32 partition
 	 */
 	
-	if (di->id [0] == 'F' && di->id [1] == '3' && di->id [2] == '2')
+	if (di->id[0] == 'F' && di->id[1] == '3' && di->id[2] == '2')
 	{
 		FAT_DEBUG (("get_bpb: F32 detected"));
 		
@@ -5070,11 +5083,11 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 * step 3: check for dos medium (supported signs: 0x04, 0x06, 0x0b, 0x0c, 0x0e)
 	 */
 	
-	if (di->id [0] == '\0' && di->id [1] == 'D')
+	if (di->id[0] == '\0' && di->id[1] == 'D')
 	{		
-		FAT_DEBUG (("get_bpb: DOS medium detected (%x)", (int) (di->id [2])));
+		FAT_DEBUG (("get_bpb: DOS medium detected (%x)", (int) (di->id[2])));
 		
-		switch (di->id [2])
+		switch (di->id[2])
 		{
 			case 0x04:
 			case 0x06:
@@ -5093,7 +5106,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 			}
 			default:
 			{
-				FAT_DEBUG (("get_bpb: unknown DOS partition type (%x)", (int) (di->id [2])));
+				FAT_DEBUG (("get_bpb: unknown DOS partition type (%x)", (int) (di->id[2])));
 				return EMEDIUMTYPE;
 			}
 		}
@@ -5101,7 +5114,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		/* check media descriptor (must be 0xf8 on harddisks) */
 		if (fbs->media != 0xf8)
 		{
-			FAT_ALERT (("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)", (int) fbs->media, 'A'+di->drv, (int) (di->id [2])));
+			FAT_ALERT (("fatfs.c: get_bpb: unknown media descriptor (%x) on %c (ID = %x)", (int) fbs->media, 'A'+di->drv, (int) (di->id[2])));
 		}
 	}
 	else
@@ -5110,7 +5123,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	 * step 4: check for NULL partition (A, B or other BIOS device)
 	 */
 	
-	if (di->id [0] == '\0' && di->id [1] == '\0' && di->id [2] == '\0')
+	if (di->id[0] == '\0' && di->id[1] == '\0' && di->id[2] == '\0')
 	{
 		FAT_DEBUG (("get_bpb: \\0\\0\\0 detected"));
 		
@@ -5533,7 +5546,7 @@ fatfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 			i--;
 			while (i--)
 			{
-				if (c->name [i] == '\\')
+				if (c->name[i] == '\\')
 				{
 					temp = kmalloc (i + 1);
 					if (!temp)
@@ -5605,7 +5618,7 @@ fatfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 				r = __opendir (&odir, stcl, c->dev);
 				if (r == E_OK)
 				{
-					char buf [VFAT_NAMEMAX];
+					char buf[VFAT_NAMEMAX];
 					
 					while ((r = __nextdir (&odir, buf, VFAT_NAMEMAX)) >= 0)
 					{
@@ -6040,7 +6053,7 @@ fatfs_rmdir (fcookie *dir, const char *name)
 		}
 		
 		{
-			char buf [VFAT_NAMEMAX];
+			char buf[VFAT_NAMEMAX];
 			fcookie file;
 			long count = 0;
 			
@@ -6237,10 +6250,10 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	if (newd->dir == 0)
 	{
 		/* newdir is root directory */
-		if (newname [0] == '.')
+		if (newname[0] == '.')
 		{
-			if (newname [1] == '\0'
-				|| (newname [1] == '.' && newname [2] == '\0'))
+			if (newname[1] == '\0'
+				|| (newname[1] == '.' && newname[2] == '\0'))
 			{
 				FAT_DEBUG (("fatfs_rename: leave failure, rename to '.' or '..'"));
 				return EACCES;
@@ -6271,7 +6284,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
-			COOKIE *c = &(cookies [i]);
+			COOKIE *c = &(cookies[i]);
 			
 			if (c->name)
 			{
@@ -6510,8 +6523,8 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 	COOKIE *new;
 	char *name;
 	char *read_nm;
-	char buf [VFAT_NAMEMAX];
-	char shortbuf [FAT_NAMEMAX];
+	char buf[VFAT_NAMEMAX];
+	char shortbuf[FAT_NAMEMAX];
 	register long r;
 	
 	FAT_DEBUG (("fatfs_readdir [%s]: enter", c->name));
@@ -6736,16 +6749,19 @@ fatfs_writelabel (fcookie *dir, const char *name)
 	if (r == E_OK)
 	{
 		register const char *table = DEFAULT_T (dir->dev);
-		register const char *src = name;
+		register const uchar *src = name;
 		register char *dst = odir.info->name;
 		register long i;
 		
 		for (i = 0; i < 11 && *src; i++)
 		{
-			if (*src == ' ')
-				*dst++ = ' ';
+			register int upper = TOUPPER ((int)*src & 0xff);
+			
+			if (!table[upper])
+				*dst++ = (*src == ' ') ? ' ' : '_';
 			else
-				*dst++ = table [(long) *src] ? TOUPPER (*src) : '_';
+				*dst++ = upper;
+			
 			src++;
 		}
 		
@@ -7041,15 +7057,15 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			usage = (struct fs_usage *) arg;
 			if (usage)
 			{
-				ulong buf [4];
+				ulong buf[4];
 				long r;
 				
 				r = fatfs_dfree (dir, buf);
 				if (r) return r;
 				
-				usage->blocksize = buf [2] * buf [3];
-				usage->blocks = buf [1];
-				usage->free_blocks = buf [0];
+				usage->blocksize = buf[2] * buf[3];
+				usage->blocks = buf[1];
+				usage->free_blocks = buf[0];
 				usage->inodes = FS_UNLIMITED;
 				usage->free_inodes = FS_UNLIMITED;
 			}
@@ -8278,7 +8294,7 @@ fatfs_close (FILEPTR *f, int pid)
 static void
 fatfs_debug (const char *fmt, ...)
 {
-	static char buf [SPRINTF_MAX];
+	static char buf[SPRINTF_MAX];
 	static const long buflen = sizeof (buf);
 	
 	va_list args;
@@ -8318,7 +8334,7 @@ fatfs_print_dir (const _DIR *d, ushort dev)
 	char sdate[20];
 	long i = 0;
 	
-	attr [0] = '\0';
+	attr[0] = '\0';
 	
 	if (d->attr & FA_RDONLY)
 	{
@@ -8380,7 +8396,7 @@ fatfs_print_dir (const _DIR *d, ushort dev)
 static void
 fatfs_dump_hashtable (void)
 {
-	static char buf [SPRINTF_MAX];
+	static char buf[SPRINTF_MAX];
 	static const long buflen = sizeof (buf);
 	FILEPTR *fp;
 	long ret;
@@ -8430,7 +8446,7 @@ fatfs_dump_hashtable (void)
 		(*fp->dev->write)(fp, "table:\r\n", 8);
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
-			COOKIE *temp = ctable [i];
+			COOKIE *temp = ctable[i];
 			ksprintf (buf, buflen, "nr: %li\tptr = %lx", i, temp);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (; temp; temp = temp->next)
