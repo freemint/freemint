@@ -84,6 +84,8 @@
  * 
  */
 
+# ifndef NO_MMU
+
 # include "mprot.h"
 # include "global.h"
 
@@ -1329,3 +1331,5 @@ win_and_mark:
 }
 
 #endif /* !MMU040 */
+
+# endif /* ONLY68000 */
