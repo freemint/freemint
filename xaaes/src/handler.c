@@ -290,12 +290,14 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 unsigned long
 XA_appl_exit(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
+
 	CONTROL(0,1,0)
 
 	DIAG((D_appl,client,"appl_exit for %d client_end %d\n", client->pid, client->client_end));
 
 	/* Which process are we? It'll be a client pid */
 	pb->intout[0] = client->pid;
+
 
 	if (strnicmp(client->proc_name, "wdialog", 7) == 0)
 		return XAC_DONE;
@@ -735,6 +737,7 @@ XA_handler(ushort c, AESPB *pb)
 			/* If opcode was implemented, call it */
 			if (cmd_routine)
 			{
+
 				/* This is now done only once per AES call */
 
 				/* HR: The root of all locking under client pid. */

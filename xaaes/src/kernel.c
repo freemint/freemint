@@ -182,12 +182,19 @@ have_mouse(struct moose_data *md)
 static void
 new_mu_mouse(struct moose_data *md)
 {
+	widget_active.b		= md->state;
+	widget_active.cb	= md->cstate;
+	widget_active.nx	= md->x;
+	widget_active.ny	= md->y;
+	widget_active.clicks	= md->clicks;
+
 	mu_button.b	= md->state;
 	mu_button.cb	= md->cstate;
 	mu_button.x	= md->x;
 	mu_button.y	= md->y;
 	mu_button.clicks = md->clicks;
 	vq_key_s(C.vh, &mu_button.ks);
+	
 }
 
 void
@@ -438,7 +445,6 @@ XaAES(void)
 		C.MOUSE_dev, C.KBD_dev, C.AES_in_pipe, C.Salert_pipe));
 
 //	display(" mdev %d, kbd %d, aesin %d, alrt %d", C.MOUSE_dev, C.KBD_dev, C.AES_in_pipe, C.Salert_pipe);
-	display(" int is %d, short is %d", sizeof(int), sizeof(short));
 
 	pending_button[0].client = 0;
 	pending_button[1].client = 0;
