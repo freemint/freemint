@@ -42,7 +42,6 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
-#include "xalloc.h"
 #include "xa_appl.h"
 #include "xa_form.h"
 #include "xa_shel.h"
@@ -90,7 +89,7 @@ refresh_tasklist(enum locks lock)
 		else
 			icon = form + TM_ICN_XAAES;
 
-		tx = xmalloc(128, 11);
+		tx = kmalloc(128);
 		if (tx)
 		{
 			long prio = p_getpriority(0, client->p->pid);

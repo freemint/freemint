@@ -28,7 +28,7 @@
 #define _c_window_h
 
 #include "global.h"
-
+#include "xa_types.h"
 
 struct xa_window *create_window(enum locks lock, SendMessage *message_handler,
 				struct xa_client *client, bool nolist, XA_WIND_ATTR tp,

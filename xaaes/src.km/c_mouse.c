@@ -44,7 +44,6 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"

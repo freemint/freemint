@@ -47,7 +47,6 @@
 #include "scrlobjc.h"
 #include "util.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 #include "xa_form.h"
 #include "xa_graf.h"
@@ -440,7 +439,7 @@ refresh_filelist(enum locks lock, int which)
 			{
 				OBJECT *icon = NULL;
 
-				entry = xcalloc(1, sizeof(SCROLL_ENTRY) + strlen(nam) + 2, 106);
+				entry = kmalloc(sizeof(*entry) + strlen(nam) + 2);
 				entry->text = entry->the_text;
 				strcpy(entry->text, nam);
 

@@ -37,7 +37,6 @@
 #include "rectlist.h"
 #include "version.h"
 #include "widgets.h"
-#include "xalloc.h"
 
 #include "xa_form.h"
 #include "xa_graf.h"
@@ -1086,11 +1085,9 @@ next:
 			else
 				client->half_screen_size = sc;
 
-			client->half_screen_buffer = proc_malloc(client->half_screen_size);
-			DIAGS(("half_screen_buffer for %s: mode:%x, %ld(%lx) size %ld use %ld",
+			client->half_screen_buffer = umalloc(client->half_screen_size);
+			DIAGS(("half_screen_buffer for %s: 0x%lx size %ld use %ld",
 				c_owner(client),
-				(short)(MX_GLOBAL | MX_PREFTTRAM),
-				client->half_screen_buffer,
 				client->half_screen_buffer,
 				client->half_screen_size,
 				client->options.half_screen));

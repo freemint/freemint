@@ -24,6 +24,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*
+ * Desktop Handling Routines
+ */
+
 #include RSCHNAME
 
 #include "desktop.h"
@@ -35,11 +39,7 @@
 #include "menuwidg.h"
 #include "widgets.h"
 #include "xa_rsrc.h"
-#include "xalloc.h"
 
-/*
- * Desktop Handling Routines
- */
 
 XA_TREE *
 get_desktop(void)
@@ -91,7 +91,7 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 void
 set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 {
-	XA_TREE *nt = xcalloc(1, sizeof(XA_TREE), 103);
+	XA_TREE *nt = kmalloc(sizeof(XA_TREE));
 	XA_WIDGET *wi = get_widget(wind, XAW_TOOLBAR);
 	XA_WIDGET_LOCATION loc;
 

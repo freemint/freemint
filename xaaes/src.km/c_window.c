@@ -24,20 +24,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "desktop.h"
-#include "xa_types.h"
+#include "c_window.h"
 #include "xa_global.h"
 
+#include "app_man.h"
+#include "desktop.h"
 #include "k_main.h"
-#include "xalloc.h"
-#include "c_window.h"
-#include "rectlist.h"
+#include "menuwidg.h"
 #include "objects.h"
+#include "rectlist.h"
 #include "scrlobjc.h"
 #include "widgets.h"
-#include "app_man.h"
 #include "xa_graf.h"
-#include "menuwidg.h"
 
 #include "mint/signal.h"
 
@@ -476,7 +474,7 @@ create_window(
 	}
 #endif
 
-	new = xcalloc(1, sizeof(*new), 104);
+	new = kmalloc(sizeof(*new));
 	if (!new)
 		/* Unable to allocate memory for window? */
 		return NULL;
@@ -547,7 +545,7 @@ create_window(
 		if (tp & STORE_BACK)
 		{
 			DIAG((D_wind,client," allocating background storage buffer"));
-			new->background = xmalloc(calc_back(&r, screen.planes),6);
+			new->background = kmalloc(calc_back(&r, screen.planes));
 		}
 		else
 			new->background = NULL;
@@ -876,7 +874,7 @@ draw_window(enum locks lock, struct xa_window *wind)
 		long *p;
 		struct proc *np;
 
-		p = (long *)kmalloc(16);
+		p = kmalloc(16);
 		p[0] = (long)wind;
 		p[1] = (long)wo;
 		DIAG((D_wind, rc, "kthreaded draw_window %d for %s by %s", wind->handle, wo->name, rc->name));
@@ -1249,7 +1247,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	r = wind->r;
 
 	if (wind->rect_start)
-		free(wind->rect_start);
+		kfree(wind->rect_start);
 
 	wind->rect_user = wind->rect_list = wind->rect_start = NULL;
 
@@ -1352,7 +1350,7 @@ free_widg(struct xa_window *wind, int n)
 	widg = get_widget(wind, n);
 	if (widg->stuff)
 	{
-		free(widg->stuff);
+		kfree(widg->stuff);
 		widg->stuff = NULL;
 	}
 }
@@ -1383,10 +1381,10 @@ delete_window1(enum locks lock, struct xa_window *wind)
 		free_wind_handle(wind->handle);
 
 		if (wind->background)
-			free(wind->background);
+			kfree(wind->background);
 
 		if (wind->rect_start)
-			free(wind->rect_start);
+			kfree(wind->rect_start);
 	}
 	else
 	{
@@ -1396,7 +1394,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 			wind->destructor(lock, wind);
 	}
 
-	free(wind);
+	kfree(wind);
 }
 
 void
