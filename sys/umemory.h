@@ -5,7 +5,7 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
  * Please send suggestions, patches or bug reports to me or
@@ -28,37 +28,15 @@
  * 
  */
 
-# ifndef _kmemory_h
-# define _kmemory_h
+# ifndef _umemory_h
+# define _umemory_h
 
 # include "mint/mint.h"
-# include "mint/mem.h"
 
+void *	_cdecl	_umalloc(unsigned long size, const char *func);/* user space alloc */
+void	_cdecl	_ufree	(void *place, const char *func);/* user space free */
 
-MEMREGION *	_kmr_get	(void);
-void		_kmr_free	(MEMREGION *ptr);
+# define umalloc(size)	_umalloc(size, FUNCTION)
+# define ufree(place)	_ufree(place, FUNCTION)
 
-void *	_cdecl	_kcore		(unsigned long size, const char *func);	/* ST-RAM alloc */
-void *	_cdecl	_kmalloc	(unsigned long size, const char *func);	/* TT-RAM alloc */
-void	_cdecl	_kfree		(void *place, const char *func);
-
-void *	_cdecl	_dmabuf_alloc	(unsigned long size, short cmode, const char *func);
-
-# define kmr_get		_kmr_get
-# define kmr_free		_kmr_free
-
-# define kcore(size)		_kcore(size, FUNCTION)
-# define kmalloc(size)		_kmalloc(size, FUNCTION)
-# define kfree(place)		_kfree(place, FUNCTION)
-
-# define dmabuf_alloc(size,cm)	_dmabuf_alloc(size, cm, FUNCTION)
-
-void		init_kmemory	(void); /* initalize km allocator */
-long		km_config	(long mode, long arg);
-
-# define KM_STAT_DUMP	1
-# define KM_TRACE_DUMP	2
-
-long		km_trace_lookup	(void *ptr, char *buf, unsigned long buflen);
-
-# endif /* _kmemory_h */
+# endif /* _umemory_h */
