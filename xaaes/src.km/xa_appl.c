@@ -89,6 +89,7 @@ get_app_options(struct xa_client *client)
 
 		op = op->next;
 	}
+	client->options.live = true;
 }
 
 static void

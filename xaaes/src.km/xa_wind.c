@@ -1297,10 +1297,22 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	short op = pb->intin[0];
 	bool try = (op & 0x100) ? true : false; /* Test for check-and-set mode */
 
+	/* XXX
+	 * Ozk: It looks like wind_update, when called on behalf of
+	 * applications, should never block. This is probably not right
+	 * since it means trusting applications to check the return
+	 * value for a successful lock even when a block-on-taken-lock is
+	 * expected. However, without this, some rare situations happened
+	 * where every application were put to sleep.
+	 * This situation happened when right-clicking to 'drag'-scroll 
+	 * contents of a Thing directory window while AtarIrc scrolled.
+	*/
+	try = true;
+
 	CONTROL(1,1,0)
 
-	DIAG((D_sema, NULL, "XA_wind_update for %s %s",
-		c_owner(client), try ? "" : "RESPONSE"));
+	DIAG((D_sema, NULL, "XA_wind_update for %s %s (%d)",
+		c_owner(client), try == true ? "" : "RESPONSE", pb->intin[0]));
 
 	pb->intout[0] = 1;
 
