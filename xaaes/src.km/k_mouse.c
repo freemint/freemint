@@ -838,19 +838,62 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	return true;
 }
 
+static short mto = 0;
+
+static void
+move_timeout(struct proc *p, long arg)
+{
+	struct moose_data md;
+
+	md = mainmd;
+	md.x = x_mouse;
+	md.y = y_mouse;
+	md.ty = MOOSE_MOVEMENT_PREFIX;
+	vq_key_s(C.vh, &md.kstate);
+	new_moose_pkt(0, 0, &md);
+	if (md.x != x_mouse || md.y != y_mouse)
+		addroottimeout(0L, move_timeout, 1);
+	else
+		mto = 0;
+}
+	
 void
 adi_move(struct adif *a, short x, short y)
 {
+	TIMEOUT *t;
+
 	x_mouse = x;
 	y_mouse = y;
+	if (!mto)
+	{
+		mto = 1;
+		t = addroottimeout(0L, move_timeout, 1);
+	}	
 }
-void
-adi_button(struct adif *a, struct moose_data *md)
+
+static void
+button_timeout(struct proc *p, long arg)
 {
+	struct moose_data *md = (struct moose_data *)arg;
+
+	DIAGS(("adi_button_event %d/%d", md->state, md->cstate));
 	vq_key_s(C.vh, &md->kstate);
 	new_moose_pkt(0, 0, md);
 	kfree(md);
 }
+
+void
+adi_button(struct adif *a, struct moose_data *md)
+{
+	TIMEOUT *t;
+
+	t = addroottimeout(0L, button_timeout, 1);
+	if (t)
+	{
+		t->arg = (long)md;
+	}
+}
+
 void
 adi_wheel(struct adif *a, struct moose_data *md)
 {

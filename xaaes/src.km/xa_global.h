@@ -91,7 +91,8 @@ struct common
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
 	long MOUSE_dev;			/* AESSYS: The /dev/mouse file handle */
 	struct file *kmoose;		/* internal, context mouse handle */
-
+	struct adif *adi_mouse;
+	
 	/* exteneded & generalized (was GeneralCallback & stuff) */
 	Tab active_menu[CASCADE];
 	Tab active_timeout;
