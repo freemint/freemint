@@ -12,7 +12,6 @@ tools
   2.7 have some advantages but also some bugs; and nobody
   seems to fix it in the near future
 - build and check fsetter, toswin against new gemlib
-- fsetter -> english rsc out of sync
 
 - would be very nice if the gem tools from draco can be integrated
   (I have the source, but all these things require his gemma slb
