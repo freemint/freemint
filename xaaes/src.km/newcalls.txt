@@ -95,7 +95,8 @@ Add to your header file
       The application is sent a WM_SHADED. On the next
       wind_set(handle, WF_CURRXYWH,...) where the h coordinate is not equal
       to the window's shaded height, the window is unshaded. While the
-      window is shaded via this method
+      window is shaded via this method, shift-clicks on the window title to 
+      shade a window is ignored.
 
    Placing a value of 5 in control[2]:
    1. XaAES returns the CURRXYWH of the new position the window was moved to,
