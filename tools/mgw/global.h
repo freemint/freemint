@@ -48,6 +48,9 @@
 # include <mintbind.h>
 # include "mintsock.h"
 
+# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+typedef size_t socklen_t;
+# endif
 
 # ifndef _cdecl
 # define _cdecl		__CDECL

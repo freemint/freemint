@@ -8,6 +8,11 @@
 #include <sys/un.h>
 #include <sys/time.h>
 
+
+# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+typedef size_t socklen_t;
+# endif
+
 #define SERVER	"/tmp/fort"
 #define OFFSET	((short)((struct sockaddr_un *) 0)->sun_path)
 

@@ -44,6 +44,9 @@
 # define DEBUG(x)	{ printf x; printf ("\n"); fflush (stdout); }
 # endif
 
+# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+typedef size_t socklen_t;
+# endif
 
 typedef unsigned char	uchar;
 
