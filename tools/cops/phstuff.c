@@ -56,6 +56,8 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 	{
 		long relo_len;
 
+		DEBUG(("%s: malloc(%lu) -> %p\n", __FUNCTION__, TDB_len, addr));
+
 		cpx_desc->segm.text_seg = addr;
 		cpx_desc->segm.len_text = phead->ph_tlen;
 		cpx_desc->segm.data_seg = (unsigned char *)addr + phead->ph_dlen;
@@ -124,7 +126,7 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 					}
 
 					/* Speicher fuer Relokationsdaten freigeben */
-					free(relo_mem);	
+					free(relo_mem);
 				}
 				else
 				{
@@ -196,5 +198,7 @@ short
 unload_cpx(void *addr)
 {
 	free(addr);
+	DEBUG(("%s: free(%p)\n", __FUNCTION__, addr));
+
 	return 1;
 }

@@ -49,6 +49,6 @@ void a_call_main(void);
 short new_context(CPX_DESC *cpx_desc);
 void switch_context(CPX_DESC *cpx_desc);
 
-short _cdecl Xform_do(struct Xform_do_args);
+short _cdecl Xform_do(const long *sp);
 
 #endif /* _cpx_bind_h */

@@ -23,8 +23,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "cops.h"
@@ -141,6 +143,8 @@ create_window(short kind, GRECT *border, short *handle, char *name, char *iconif
 			size = sizeof(WINDOW);
 			
 		new = malloc(size);
+		assert(new);
+
 		new->handle = *handle;		/* Fensterhandle */
 		new->kind = kind;		/* Fensterattribute */
 		new->border = *border; 		/* Fensteraussenflaeche */
