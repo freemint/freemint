@@ -36,13 +36,13 @@
 static unsigned long memory;
 
 void *
-xmalloc(size_t size, int key)
+_xmalloc(size_t size, int key, const char *func)
 {
 	register unsigned long *tmp;
 
 	size += sizeof(*tmp);
 
-	tmp = kmalloc(size);
+	tmp = _kmalloc(size, func);
 	if (tmp)
 	{
 		bzero(tmp, size);
@@ -55,20 +55,20 @@ xmalloc(size_t size, int key)
 }
 
 void *
-xcalloc(size_t items, size_t size, int key)
+_xcalloc(size_t items, size_t size, int key, const char *func)
 {
-	return xmalloc(items * size, key);
+	return _xmalloc(items * size, key, func);
 }
 
 void
-free(void *addr)
+_xfree(void *addr, const char *func)
 {
 	register unsigned long *tmp = addr;
 
 	tmp--;
 	memory -= *tmp;
 
-	kfree(tmp);
+	_kfree(tmp, func);
 }
 
 void
@@ -82,7 +82,7 @@ free_all(void)
  */
 
 void *
-proc_malloc(size_t size)
+_proc_malloc(size_t size, const char *func)
 {
 	/* XXX todo
 	 * very inefficient
@@ -90,7 +90,7 @@ proc_malloc(size_t size)
 	 */
 	register void *ptr;
 
-	ptr = umalloc(size);
+	ptr = _umalloc(size, func);
 	if (ptr)
 		bzero(ptr, size);
 
@@ -98,9 +98,9 @@ proc_malloc(size_t size)
 }
 
 void
-proc_free(void *addr)
+_proc_free(void *addr, const char *func)
 {
-	ufree(addr);
+	_ufree(addr, func);
 }
 
 void

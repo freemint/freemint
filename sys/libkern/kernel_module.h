@@ -826,11 +826,15 @@ check_kentry_version(void)
  * kentry_mem
  */
 
-# define kmalloc(x)		(*KENTRY->vec_mem.kmalloc)(x, FUNCTION)
-# define kfree(x)		(*KENTRY->vec_mem.kfree)(x, FUNCTION)
+# define _kmalloc		(*KENTRY->vec_mem.kmalloc)
+# define _kfree			(*KENTRY->vec_mem.kfree)
+# define _umalloc		(*KENTRY->vec_mem.umalloc)
+# define _ufree			(*KENTRY->vec_mem.ufree)
 
-# define umalloc(x)		(*KENTRY->vec_mem.umalloc)(x, FUNCTION)
-# define ufree(x)		(*KENTRY->vec_mem.ufree)(x, FUNCTION)
+# define kmalloc(x)		_kmalloc(x, FUNCTION)
+# define kfree(x)		_kfree(x, FUNCTION)
+# define umalloc(x)		_umalloc(x, FUNCTION)
+# define ufree(x)		_ufree(x, FUNCTION)
 
 
 /*
