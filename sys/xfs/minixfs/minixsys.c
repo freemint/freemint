@@ -99,27 +99,51 @@ FILESYS minix_filesys =
 	FS_EXT_2		|
 	FS_EXT_3		,
 	
-	m_root,
-	m_lookup, m_creat, m_getdev, m_getxattr,
-	m_chattr, m_chown, m_chmode,
-	m_mkdir, m_rmdir, m_remove, m_getname, m_rename,
-	m_opendir, m_readdir, m_rewinddir, m_closedir,
-	m_pathconf, m_dfree, m_wlabel, m_rlabel,
-	m_symlink, m_readlink, m_hardlink, m_fscntl, m_dskchng,
-	m_release, m_dupcookie,
-	m_sync,
+	root:			m_root,
+	lookup:			m_lookup,
+	creat:			m_creat,
+	getdev:			m_getdev,
+	getxattr:		m_getxattr,
+	chattr:			m_chattr,
+	chown:			m_chown,
+	chmode:			m_chmode,
+	mkdir:			m_mkdir,
+	rmdir:			m_rmdir,
+	remove:			m_remove,
+	getname:		m_getname,
+	rename:			m_rename,
+	opendir:		m_opendir,
+	readdir:		m_readdir,
+	rewinddir:		m_rewinddir,
+	closedir:		m_closedir,
+	pathconf:		m_pathconf,
+	dfree:			m_dfree,
+	writelabel:		m_wlabel,
+	readlabel:		m_rlabel,
+	symlink:		m_symlink,
+	readlink:		m_readlink,
+	hardlink:		m_hardlink,
+	fscntl:			m_fscntl,
+	dskchng:		m_dskchng,
+	release:		m_release,
+	dupcookie:		m_dupcookie,
+	sync:			m_sync,
 	
 	/* FS_EXT_1 */
-	m_mknod, m_unmount,
+	mknod:			m_mknod,
+	unmount:		m_unmount,
 	
 	/* FS_EXT_2
 	 */
 	
 	/* FS_EXT_3 */
-	m_stat64,
+	stat64:			m_stat64,
+	res1:			0, 
+	res2:			0,
+	res3:			0,
 	
-	0, 0, 0, 0, 0,
-	NULL, NULL
+	lock: 0, sleepers: 0,
+	block: NULL, deblock: NULL
 };
 
 static short restore_dev = -1;
@@ -559,7 +583,7 @@ m_mkdir (fcookie *dir, const char *name, unsigned int mode)
 		return EACCES;
 
 	/* Set up inode */
-	bzero (&ripnew, sizeof (d_inode));
+	bzero (&ripnew, sizeof (ripnew));
 	ripnew.i_mode = I_DIRECTORY | (mode & 0777);
 	ripnew.i_uid = p_geteuid();
 	ripnew.i_gid = p_getegid();
@@ -1405,7 +1429,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				 * others only if timeptr == 0 and write
 				 * permission.
 				 */
-				if (uid && uid != rip.i_uid && (arg || check_mode (uid, gid, &rip, S_IWUSR)))
+				if (uid && uid != rip.i_uid /* && (arg || check_mode (uid, gid, &rip, S_IWUSR)) */)
 					return EACCES;
 				
 				rip.i_ctime = CURRENT_TIME;
@@ -1421,15 +1445,16 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 					}
 					else
 					{
-						ushort *timeptr = (ushort *) arg;
+						MUTIMBUF *buf = (MUTIMBUF *) arg;
 						
-						rip.i_atime = unixtime (timeptr[0], timeptr[1]);
-						rip.i_mtime = unixtime (timeptr[2], timeptr[3]);
+						rip.i_atime = unixtime (buf->actime, buf->acdate);
+						rip.i_mtime = unixtime (buf->modtime, buf->moddate);
 					}
 				}
 				else
 				{
-					rip.i_atime = rip.i_mtime = rip.i_ctime;
+					rip.i_atime =
+					rip.i_mtime = rip.i_ctime;
 				}
 				
 				write_inode (fc.index, &rip, fc.dev);
@@ -1438,7 +1463,8 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				return E_OK;
 			}
 
-			if (!IS_REG (rip)) return EACCES;
+			if (!IS_REG (rip))
+				return EACCES;
 			
 			/* Need write access as well */
 			if (check_mode (uid, gid, &rip, S_IWUSR))
