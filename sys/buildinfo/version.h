@@ -23,15 +23,15 @@
  */
 #define MINT_MAJ_VERSION	1
 #define MINT_MIN_VERSION	16
-#define MINT_PATCH_LEVEL	0
+#define MINT_PATCH_LEVEL	1
 
 /*
  * source status
  * 
  * NOTE: only one of these defines must be nonzero
  */
-#define MINT_STATUS_CVS		0
-#define MINT_STATUS_BETA	1
+#define MINT_STATUS_CVS		1
+#define MINT_STATUS_BETA	0
 #define MINT_STATUS_RELEASE	0
 
 #if (MINT_STATUS_CVS + MINT_STATUS_BETA + MINT_STATUS_RELEASE) > 1
