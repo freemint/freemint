@@ -109,33 +109,52 @@ struct xa_colour_scheme
 	int highlight_col;		/* Colour used for highlighting */
 };
 
+struct xa_wcol
+{
+	short	c;	/* color */
+	short	i;	/* Interior style */
+	short	f;	/* Fill Style */
+	short	box_c;  /* box color if boxed */
+	short	box_th; /* box thickness */
+	short	tlc;	/* Top-Left color for 3-d effect */
+	short	brc;	/* Bottom-Right color for 3-d effect */
+};
+
 struct xa_wcol_inf
 {
 
 #define WCOL_ACT3D	1
 #define WCOL_DRAW3D	2
 #define WCOL_DRAWBKG	4
+#define WCOL_BOXED	8
 
 	short	flags;	/* */
 	short	wrm;	/* wrmode */
-	short	c;	/* color */
-	short	i;	/* Interior style */
-	short	f;	/* Fill Style */
-	short	tlc;	/* Top-Left color for 3-d effect */
-	short	brc;	/* Bottom-Right color for 3-d effect */
+	struct xa_wcol n; /* normal */
+	struct xa_wcol s; /* Selected */
+	struct xa_wcol h; /* Highlighted */
 };
 
-struct xa_wtxt_inf
+struct xa_wtxt
 {
-#define WTXT_ACT3D	1
-#define WTXT_DRAW3D	2
-
-	short	flags;	/* Flags */
 	short	f;	/* Font ID */
 	short	p;	/* Point size */
 	short	e;	/* Effects */
 	short	fgc;	/* Foreground colour */
 	short	bgc;	/* Background colour (used to obtain 3-d effect) */
+};
+	
+struct xa_wtxt_inf
+{
+
+#define WTXT_ACT3D	1
+#define WTXT_DRAW3D	2
+#define WTXT_CENTER	4
+
+	short	flags;	/* Flags */
+	struct xa_wtxt n;
+	struct xa_wtxt s;
+	struct xa_wtxt h;
 };
 	
 struct xa_window_colours
@@ -148,10 +167,8 @@ struct xa_window_colours
 	struct xa_wcol_inf	slide;
 
 	struct xa_wcol_inf	title;
-	struct xa_wtxt_inf	title_txt;
 
 	struct xa_wcol_inf	info;
-	struct xa_wtxt_inf	info_txt;
 
 	struct xa_wcol_inf	closer;
 	struct xa_wcol_inf	hider;
@@ -162,6 +179,9 @@ struct xa_window_colours
 	struct xa_wcol_inf	dnarrow;
 	struct xa_wcol_inf	lfarrow;
 	struct xa_wcol_inf	rtarrow;
+
+	struct xa_wtxt_inf	title_txt;
+	struct xa_wtxt_inf	info_txt;
 
 };
 
@@ -841,7 +861,8 @@ enum xa_widgets
   * These widgets must be processable totally indipendant of
   * process context.
   */
-	XAW_TITLE = 0,
+	XAW_BORDER = 0,			/* Extended XaAES widget, used for border sizing. */
+	XAW_TITLE,
 	XAW_CLOSE,
 	XAW_FULL,
 	XAW_MOVER,			/* Not actually used like the others */
@@ -859,7 +880,7 @@ enum xa_widgets
 	XAW_RTPAGE,
 	XAW_ICONIFY,
 	XAW_HIDE,
-	XAW_BORDER,			/* Extended XaAES widget, used for border sizing. */
+	
 
  /*
   * The widget types above this comment MUST be context indipendant.

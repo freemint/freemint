@@ -95,7 +95,7 @@ about_form_exit(struct xa_client *client,
 			object_deselect(obtree + ABOUT_OK);
 			redraw_toolbar(lock, about_window, ABOUT_OK);
 			close_window(lock, about_window);
-			delete_window(lock, about_window);
+			delayed_delete_window(lock, about_window);
 			break;
 		}
 		case ABOUT_LIST:
@@ -146,7 +146,7 @@ open_about(enum locks lock)
 						CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 						created_for_AES,
 						C.Aes->options.thinframe,C.Aes->options.thinwork,
-						remember, 0, &remember);
+						remember, 0, NULL); //&remember);
 
 		/* Set the window title */
 		set_window_title(dialog_window, "  About  ", true);
