@@ -57,6 +57,7 @@ refresh_tasklist(LOCK lock)
 	OBJECT *tl = form + TM_LIST;
 	SCROLL_INFO *list = tl->ob_spec.listbox;
 	char *tx;
+	int counter=0;
 
 	/* Empty the task list */
 	empty_scroll_list(form, TM_LIST, -1);
@@ -101,9 +102,12 @@ refresh_tasklist(LOCK lock)
 #endif
 			add_scroll_entry(form, TM_LIST, icon, client->name, 0);
 		client = client->next;
+		counter++;
 	}
 
 	list->slider(list);
+	if (counter==1 && C.shutdown) 
+		C.shutdown|=4;
 
 	Sema_Dn(clients);
 }
@@ -206,7 +210,20 @@ handle_taskmanager(LOCK lock, struct widget_tree *wt)
 			delete_window(lock, task_man_win);
 			break;
 		case TM_QUIT:
-			C.shutdown = true;
+			deselect(wt->tree, TM_QUIT);
+			C.shutdown = 4;  /* quit now */
+			break;
+		case TM_HALT:
+			deselect(wt->tree, TM_HALT);
+			shutdown(lock);
+			C.shutdown |= 8;
+			refresh_tasklist(lock);
+			break;
+		case TM_REBOOT:
+			deselect(wt->tree, TM_REBOOT);
+			C.shutdown |= 16;
+			shutdown(lock);
+			refresh_tasklist(lock);
 			break;
 	}
 
@@ -214,17 +231,18 @@ handle_taskmanager(LOCK lock, struct widget_tree *wt)
 }
 
 void
-open_taskmanager(LOCK lock, bool shutdown)
+open_taskmanager(LOCK lock, int shutdown)
 {
 	XA_WINDOW *dialog_window;
 	XA_TREE *wt;
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	static RECT remember = { 0,0,0,0 };
 
-	if (shutdown)
+/*	if (shutdown) */
 		form[TM_QUIT].ob_flags &= ~HIDETREE;
-	else
+/*	else
 		form[TM_QUIT].ob_flags |=  HIDETREE;
+*/
 
 	if (!task_man_win)
 	{
@@ -432,43 +450,48 @@ do_system_menu(LOCK lock, int clicked_title, int menu_item)
 {
 	switch(menu_item)
 	{
-	case SYS_MN_ABOUT: /* Open the "About XaAES..." dialog */
-		open_about(lock);
-	break;
-	case SYS_MN_SHUTDOWN: /* Shutdown the system */
-		DIAGS(("shutdown by menu\n"));
-		shutdown(lock);
-	break;
-	case SYS_MN_TASKMNG: /* Open the "Task Manager" window */
-		open_taskmanager(lock, false);
-	break;
-	case SYS_MN_SALERT: /* Open system alerts log window */
-		open_systemalerts(lock);
-	break;
+		case SYS_MN_ABOUT: /* Open the "About XaAES..." dialog */
+			open_about(lock);
+			break;
+	
+		case SYS_MN_SHUTDOWN: /* Shutdown the system */
+			DIAGS(("shutdown by menu\n"));
+			shutdown(lock);
+			break;
+		case SYS_MN_QUIT: /* Quit XaAES */
+			C.shutdown = 4;
+			break;
+		
+		case SYS_MN_TASKMNG: /* Open the "Task Manager" window */
+			open_taskmanager(lock, false);
+			break;
+		case SYS_MN_SALERT: /* Open system alerts log window */
+			open_systemalerts(lock);
+			break;
 #if MN_ENV
-	case SYS_MN_ENV:
-	{
-		OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		int i;
+		case SYS_MN_ENV:
+		{
+			OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
+			int i;
 
-		empty_scroll_list(form, SYSALERT_LIST, FLAG_ENV);
+			empty_scroll_list(form, SYSALERT_LIST, FLAG_ENV);
 
-		for (i = 0; C.strings[i]; i++)
-			add_scroll_entry(form, SYSALERT_LIST, NULL, C.strings[i], FLAG_ENV);
+			for (i = 0; C.strings[i]; i++)
+				add_scroll_entry(form, SYSALERT_LIST, NULL, C.strings[i], FLAG_ENV);
 
-		open_systemalerts(lock);
-	}
-	break;
+			open_systemalerts(lock);
+		}
+		break;
 #endif
 #if FILESELECTOR
-	case SYS_MN_LAUNCH: /* Launch a new app */
-		open_launcher(lock);
-	break;
+		case SYS_MN_LAUNCH: /* Launch a new app */
+			open_launcher(lock);
+			break;
 #endif
-	case SYS_MN_DESK: /* Launch desktop. */
-		if (*C.desk)
-			C.DSKpid = launch(lock, 0, 0, 0, C.desk, "\0", C.Aes);
-	break;
+		case SYS_MN_DESK: /* Launch desktop. */
+			if (*C.desk)
+				C.DSKpid = launch(lock, 0, 0, 0, C.desk, "\0", C.Aes);
+			break;
 	}
 }
 

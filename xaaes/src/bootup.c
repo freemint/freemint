@@ -1329,7 +1329,19 @@ BTRACE(53);
 	/* Closedown & exit */
 	cleanup();
 
-	return 0;
+
+	if (C.shutdown & 8)
+	{
+		Shutdown(0);  /* halt */
+	}
+	else if (C.shutdown & 16)
+	{
+		Shutdown(1);  /* warm start */
+	}
+	
+	
+	return 0;	
+	
 }
 
 #if GENERATE_DIAGS
