@@ -1167,6 +1167,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				
 			}
 			tty->pgrp = 0;
+			do_close(curproc->control);
 			curproc->control = NULL;
 			return 0;
 			
@@ -1196,22 +1197,25 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 					    p->pgrp == p->pid &&
 					    p->control->fc.index == f->fc.index &&
 					    p->control->fc.dev == f->fc.dev) {
-					    	PROC* p2;
-					    	
-						if (curproc->euid != 0 ||
-						    (long) arg != 1)
-							return EPERM;
-						
-						for (p2 = proclist; p; p = p->gl_next) {
-							if (p2->control &&
-							    p2->control->fc.index == f->fc.index &&
-							    p2->control->fc.dev == f->fc.dev)
-								p2->control = NULL;
-						}
+						    if (curproc->euid != 0 ||
+							(long) arg != 1)
+							    return EPERM;
+						    do_close (p->control);
+						    p->control = NULL;
 					}
 				}
 			}
 			
+			if (curproc->control != NULL)
+			{
+				if (curproc->control != f)
+				{
+					do_close (curproc->control);
+					f->links++;
+				}
+			}
+			else
+				f->links++;
 			curproc->control = f;
 			tty->pgrp = curproc->pgrp;
 			if (!(f->flags & O_NDELAY) && (tty->state & TS_BLIND))
