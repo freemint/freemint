@@ -101,7 +101,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	8
+#define KENTRY_MIN_VERSION	9
 
 
 /* hardware dependant vector
@@ -272,7 +272,6 @@ struct kentry_proc
 	/* internal setuid/setgid/setlimit */
 	long _cdecl (*proc_setuid)(struct proc *p, unsigned int uid);
 	long _cdecl (*proc_setgid)(struct proc *p, unsigned int gid);
-	long _cdecl (*proc_setlimit)(struct proc *p, int i, long v);
 };
 #define DEFAULTS_kentry_proc \
 { \
@@ -307,7 +306,6 @@ struct kentry_proc
 	\
 	proc_setuid, \
 	proc_setgid, \
-	proc_setlimit, \
 }
 
 

@@ -50,8 +50,6 @@ long _cdecl sys_prenice (int pid, int increment);
 long _cdecl sys_pnice (int increment);
 
 long _cdecl sys_prusage (long *r);
-
-long _cdecl proc_setlimit (struct proc *p, int i, long v);
 long _cdecl sys_psetlimit (int i, long v);
 
 # endif	/* _k_resource_h  */
