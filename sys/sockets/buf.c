@@ -3,18 +3,16 @@
  *	done using a so called `buddy system'. It allows allocating
  *	different sized memory chunks with minimal overhead.
  *
- *	NOTE: debug output at spl7 hangs the system !!!
+ *	NOTE: debug output at splhigh hangs the system !!!
  *
  *	01/12/93, kay roemer.
  */
 
 # include "buf.h"
 
-# include <mint/asm.h>
-# include <mint/file.h>
-
+# include "mint/asm.h"
+# include "mint/file.h"
 # include "net.h"
-# include "util.h"
 
 
 # define BUF_BLOCK_SIZE		(1024 * 32L)
@@ -33,10 +31,10 @@ static void	addmem		(long);
 static short	buf_add_block	(void);
 static short	buf_free_block	(void);
 
-static BUF	pool[BUF_NSPLIT+1];
-static long	failed_allocs;
-static long	mem_used;
-static TIMEOUT	*tmout = NULL;
+static long failed_allocs = 0;
+static long mem_used = 0;
+static BUF pool[BUF_NSPLIT+1];
+static TIMEOUT *tmout = NULL;
 
 
 static void
@@ -76,9 +74,10 @@ buf_add_block (void)
 	
 	new->buflen = BUF_BLOCK_SIZE;
 	new->links  = 0;
-	new->_n     = new->_p = 0;
+	new->_n     = 
+	new->_p	    = NULL;
 	
-	sr = spl7 ();
+	sr = splhigh();
 	new->_nfree = pool[0]._nfree;
 	new->_pfree = &pool[0];
 	new->_nfree->_pfree = new;
@@ -101,7 +100,7 @@ buf_free_block (void)
 	BUF *buf;
 	ushort sr;
 	
-	sr = spl7 ();
+	sr = splhigh();
 	buf = pool[0]._nfree;
 	if (buf == &pool[0] || buf->_nfree == &pool[0])
 	{
@@ -123,15 +122,19 @@ buf_init (void)
 {
 	int i;
 	
-	failed_allocs = 0;
-	mem_used = 0;
 	for (i = 0; i <= BUF_NSPLIT; ++i)
 	{
-		pool[i]._n = pool[i]._p = 0;
-		pool[i]._nfree = pool[i]._pfree = &pool[i];
-		pool[i].next = pool[i].prev = 0;
 		pool[i].buflen = 0;
+		
+		pool[i].next = NULL;
+		pool[i].prev = NULL;
+		
 		pool[i].links = 1000;
+		
+		pool[i]._n = NULL;
+		pool[i]._p = NULL;
+		pool[i]._nfree = &pool[i];
+		pool[i]._pfree = &pool[i];
 	}
 	
 	if (buf_add_block ())
@@ -170,11 +173,48 @@ buf_check (void)
 }
 # endif
 
+# ifdef BUF_DEBUG
+static void
+sanity_check (BUF *buf)
+{
+	int correct = 1;
+	
+	
+	if (buf->dend < buf->dstart)
+		correct = 0;
+	
+	
+	if (buf->dstart < buf->data)
+		correct = 0;
+	
+	if (buf->dstart > ((char *) buf + buf->buflen))
+		correct = 0;
+	
+	
+	if (buf->dend < buf->data)
+		correct = 0;
+	
+	if (buf->dend > ((char *) buf + buf->buflen))
+		correct = 0;
+	
+	
+	if (buf->buflen > BUF_BLOCK_SIZE)
+		correct = 0;
+	
+	
+	if (!correct)
+		ALERT (("sanity check -> invalid buf"));
+}
+# define SANITY_CHECK(b) sanity_check(b)
+# else
+# define SANITY_CHECK(b)
+# endif
+
 BUF *
 buf_reserve (BUF *buf, long reserve, short mode)
 {
 	BUF *nbuf;
-	long nspace, ospace, used;
+	ulong nspace, ospace, used;
 	
 	reserve = (reserve + 1) & ~1;
 	
@@ -186,47 +226,45 @@ buf_reserve (BUF *buf, long reserve, short mode)
 			ospace = buf->buflen - sizeof (BUF);
 			if (nspace <= ospace)
 				return buf;
-			else
-			{
-				DEBUG (("buf_reserve: allocating new buf"));
-				used = (long) buf->dend - (long) buf->dstart;
-				nbuf = buf_alloc (nspace, reserve, BUF_NORMAL);
-				if (!nbuf)
-					return 0;
-				
-				memcpy (nbuf->dstart, buf->dstart, used);
-				nbuf->dend = nbuf->dstart + used;
-				nbuf->info = buf->info;
-				buf_deref (buf, BUF_NORMAL);
-				
-				return nbuf;
-			}
+			
+			DEBUG (("buf_reserve: allocating new buf"));
+			
+			used = (long) buf->dend - (long) buf->dstart;
+			nbuf = buf_alloc (nspace, reserve, BUF_NORMAL);
+			if (!nbuf)
+				return 0;
+			
+			memcpy (nbuf->dstart, buf->dstart, used);
+			nbuf->dend = nbuf->dstart + used;
+			nbuf->info = buf->info;
+			buf_deref (buf, BUF_NORMAL);
+			
+			return nbuf;
 		}
 		case BUF_RESERVE_END:
 		{
-			nspace = (long) buf->dend - (long) buf->data + reserve;
+			nspace = (ulong) buf->dend - (ulong) buf->data + reserve;
 			ospace = buf->buflen - sizeof (BUF);
 			if (nspace <= ospace)
 				return buf;
-			else
-			{
-				DEBUG (("buf_reserve: allocating new buf"));
-				used = (long) buf->dend - (long) buf->dstart;
-				nbuf = buf_alloc (nspace, (long) buf->dstart -
-					(long) buf->data, BUF_NORMAL);
-				if (!nbuf)
-					return 0;
-				
-				memcpy (nbuf->dstart, buf->dstart, used);
-				nbuf->dend = nbuf->dstart + used;
-				nbuf->info = buf->info;
-				buf_deref (buf, BUF_NORMAL);
-				
-				return nbuf;
-			}
+			
+			DEBUG (("buf_reserve: allocating new buf"));
+			SANITY_CHECK(buf);
+			
+			used = (ulong) buf->dend - (ulong) buf->dstart;
+			nbuf = buf_alloc (nspace, (ulong) buf->dstart - (ulong) buf->data, BUF_NORMAL);
+			if (!nbuf)
+				return 0;
+			
+			SANITY_CHECK(nbuf);
+			
+			memcpy (nbuf->dstart, buf->dstart, used);
+			nbuf->dend = nbuf->dstart + used;
+			nbuf->info = buf->info;
+			buf_deref (buf, BUF_NORMAL);
+			
+			return nbuf;
 		}
-		default:
-			break;
 	}
 	
 	FATAL ("buf_reserve: invalid mode");
@@ -252,7 +290,7 @@ buf_alloc (ulong size, ulong reserve, short mode)
 	if (size < BUF_SIZE (BUF_NSPLIT))
 		size = BUF_SIZE (BUF_NSPLIT);
 	
-	for (index = BUF_NSPLIT; index >= 0; --index)
+	for (index = BUF_NSPLIT; index >= 0; index--)
 		if (size <= BUF_SIZE (index))
 			break;
 	
@@ -266,8 +304,8 @@ buf_alloc (ulong size, ulong reserve, short mode)
 	}
 	
 try_again:
-	sr = spl7 ();
-	for (i = index; i >= 0 && BUF_EMPTY (i); --i)
+	sr = splhigh();
+	for (i = index; i >= 0 && BUF_EMPTY (i); i--)
 		;
 	
 	if (i < 0)
@@ -297,6 +335,7 @@ try_again:
 	newbuf = pool[i]._nfree;
 	newbuf->_nfree->_pfree = newbuf->_pfree;
 	newbuf->_pfree->_nfree = newbuf->_nfree;
+	
 	if (newbuf->buflen - size >= BUF_SIZE (BUF_NSPLIT))
 	{
 		BUF *nxtbuf;
@@ -316,45 +355,60 @@ try_again:
 		while (nxtbuf->buflen < BUF_SIZE (i))
 			i++;
 		
+		if (i > BUF_NSPLIT)
+		{
+			spl (sr);
+			FATAL("%i > BUF_NSPLIT, buflen = %lu", i, nxtbuf->buflen);
+		}
+		
 		nxtbuf->_nfree = pool[i]._nfree;
 		nxtbuf->_pfree = &pool[i];
 		nxtbuf->_nfree->_pfree = nxtbuf;
 		nxtbuf->_pfree->_nfree = nxtbuf;
 	}
-	newbuf->_nfree = newbuf->_pfree = 0;
+	
 	newbuf->links = 1;
+	newbuf->_nfree = NULL;
+	newbuf->_pfree = NULL;
+	
 	spl (sr);
 	
 	newbuf->dstart = newbuf->data + reserve;
 	newbuf->dend = newbuf->dstart;
 	
+	DEBUG (("newbuf->buflen = %lu", newbuf->buflen));
+	if (newbuf->buflen > BUF_BLOCK_SIZE)
+		ALERT (("newbuf->buflen = %lu", newbuf->buflen));
+	
 	return newbuf;
 }
 
-void
-buf_free (BUF *buf, short mode)
+static void
+_buf_free (BUF *buf, ushort sr)
 {
-	short i;
-	ushort sr;
 	BUF *b;
+	short i;
 	
-	sr = spl7 ();
-	if ((b = buf->_p) && !b->links)
+	b = buf->_p;
+	if (b && !b->links)
 	{
 		b->_nfree->_pfree = b->_pfree;
 		b->_pfree->_nfree = b->_nfree;
-		if (buf->_n) {
+		
+		if (buf->_n)
 			buf->_n->_p = b;
-		}
+		
 		b->_n = buf->_n;
 		b->buflen += buf->buflen;
 		buf = b;
 	}
 	
-	if ((b = buf->_n) && !b->links)
+	b = buf->_n;
+	if (b && !b->links)
 	{
 		b->_nfree->_pfree = b->_pfree;
 		b->_pfree->_nfree = b->_nfree;
+		
 		if (b->_n)
 			b->_n->_p = buf;
 		
@@ -362,14 +416,14 @@ buf_free (BUF *buf, short mode)
 		buf->buflen += b->buflen;
 	}
 	
-	for (i = 0; i <= BUF_NSPLIT; ++i)
+	for (i = 0; i <= BUF_NSPLIT; i++)
 		if (buf->buflen >= BUF_SIZE (i))
 			break;
 	
 	if (buf->buflen > BUF_BLOCK_SIZE || i > BUF_NSPLIT)
 	{
 		spl (sr);
-		FATAL ("buf_free: invalid buf size: %ld", buf->buflen);
+		FATAL ("buf_free: invalid buf size: %ld (%i)", buf->buflen, i);
 	}
 	
 	buf->links = 0;
@@ -382,12 +436,28 @@ buf_free (BUF *buf, short mode)
 }
 
 void
+buf_free (BUF *buf, short mode)
+{
+	FORCE ("Warning, buf_free called directly, update your xif!");
+	
+	_buf_free(buf, splhigh());
+}
+
+void
 buf_deref (BUF *buf, short mode)
 {
+	ushort sr = splhigh();
+	
 	buf->links--;
 	
-	if (buf->links <= 0)
-		buf_free (buf, mode);
+	if (buf->links < 0)
+	{
+		spl(sr);
+		FATAL("buf_deref: links < 0 (%i)", buf->links);
+	}
+	
+	if (buf->links) spl(sr);
+	else _buf_free (buf, sr);
 }
 
 BUF *
