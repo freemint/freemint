@@ -7,7 +7,7 @@
 ; Copyright 1992,1993,1994 Atari Corporation
 ; All rights reserved.
 
-%include "magic/magic.i"
+%include "../magic/magic.i"
 ;
 ; syscall: interface for system calls. The following entry points are
 ;    defined:
