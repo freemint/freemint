@@ -1205,8 +1205,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
 	{
-		RECT *clp;
-		
 		if (pb->control[N_INTIN] >= 6 && (pb->intin[4] | pb->intin[5]))
 		{
 			struct xa_rect_list *rl;
@@ -1222,7 +1220,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
-			clp = &w->wa;
 			w->use_rlc = false;
 
 			if (!get_rect(w, &w->wa, true, ro))
