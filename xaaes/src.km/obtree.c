@@ -663,19 +663,31 @@ ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 void
 ob_rectangle(OBJECT *obtree, short obj, RECT *c)
 {
-	OBJECT *b = obtree + obj;
+	OBJECT *b;
 
-	ob_offset(obtree, obj, &c->x, &c->y);
+	if (!ob_offset(obtree, obj, &c->x, &c->y))
+	{
+		obj = 0;
+		ob_offset(obtree, obj, &c->x, &c->y);
+	}
+	b = obtree + obj;
 	c->w = b->ob_width;
 	c->h = b->ob_height;
 }
 void
 ob_area(OBJECT *obtree, short obj, RECT *c)
 {
-	OBJECT *b = obtree + obj;
+	OBJECT *b;
 	RECT r;
 	
-	ob_rectangle(obtree, obj, c);
+	if (!ob_offset(obtree, obj, &c->x, &c->y))
+	{
+		obj = 0;
+		ob_offset(obtree, obj, &c->x, &c->y);
+	}
+	b = obtree + obj;
+	c->w = b->ob_width;
+	c->h = b->ob_height;
 	object_offsets(b, &r);
 	c->x += r.x;
 	c->y += r.y;

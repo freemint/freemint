@@ -175,7 +175,7 @@ change_entry(Tab *tab, int state)
 	}
 }
 
-static bool
+bool
 is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat)
 {
 	XA_MENU_ATTACHMENT *at = client->attach;
@@ -777,10 +777,15 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	obtree->ob_x = rdx; /* This is where we want to draw the popup object. */
 	obtree->ob_y = rdy;
 
-	DIAG((D_menu, tab->client, "display_popup: rdx/y %d/%d", rdx, rdy));
 	ob_rectangle(obtree, item, &r);
+	DIAG((D_menu, tab->client, "display_popup: %d/%d/%d/%d", r));
 	r = popup_inside(tab, r);
 	wash = r.h;
+
+	DIAG((D_menu, tab->client, "display_popup: rdx/y %d/%d (%d/%d/%d/%d)",
+		rdx, rdy, r));
+	DIAG((D_menu, tab->client, " -- scroll=%d, menu_locking=%d",
+		tab->scroll, cfg.menu_locking));
 
 	if (tab->scroll && r.h > 8 * screen.c_max_h)
 		r.h = 8 * screen.c_max_h;
@@ -788,8 +793,8 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	if (r.y + r.h > root_window->wa.y + root_window->wa.h)
 		r.h = root_window->wa.h - r.y; 
 
-	if (cfg.popscroll && r.h > cfg.popscroll*screen.c_max_h)
-		r.h = cfg.popscroll*screen.c_max_h;
+	if (cfg.popscroll && r.h > cfg.popscroll * screen.c_max_h)
+		r.h = cfg.popscroll * screen.c_max_h;
 
 	if (!cfg.menu_locking || r.h < wash)
 	{
@@ -806,10 +811,10 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 						do_winmesag, //handle_form_window,
 						do_formwind_msg,
 						tab->client,
-						cfg.menu_locking,	/* yields nolist if locking. */
+						0, //cfg.menu_locking,	/* yields nolist if locking. */
 						tp,
 						created_for_AES|created_for_POPUP,
-						mg,1,1,
+						0,1,1,
 						r,
 						&r, NULL);
 		}
@@ -825,7 +830,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 						cfg.menu_locking,	/* yields nolist if locking. */
 						TOOLBAR,
 						created_for_AES|created_for_POPUP,
-						-1,			/* no margin and no widgets: completely invisible. */
+						0,			/* no margin and no widgets: completely invisible. */
 						0,0,
 						r,
 						NULL, NULL);
@@ -857,8 +862,19 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	}
 	else
 	{
+		DIAGS(("display_popup: wt=%lx, obtree=%lx, item=%d", wt, wt->tree, item));
+
 		ob_area(obtree, item, &r);
 		r = popup_inside(tab, r);
+#if GENERATE_DIAGS
+		if (!strnicmp(wt->owner->proc_name, "start", 5))
+		{
+			yield();
+			yield();
+			yield();
+			yield();
+		}
+#endif
 		hidem();
 		form_save(k->border, k->drop, &(k->Mpreserve));
 		DIAG((D_menu, tab->client, "pop draw %lx + %d", obtree, item));

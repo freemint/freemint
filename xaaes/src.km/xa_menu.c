@@ -27,6 +27,7 @@
 #include "xa_menu.h"
 #include "xa_global.h"
 
+#include "k_main.h"
 #include "app_man.h"
 #include "c_window.h"
 #include "menuwidg.h"
@@ -443,7 +444,9 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 				 pb->intin[0] - x,
 				 pb->intin[1] - y);
 
-			return XAC_BLOCK;
+			Block(client, 1);
+			//return XAC_BLOCK;
+			return XAC_DONE;
 		}
 	}
  	return XAC_DONE;
@@ -515,7 +518,9 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 				 x,
 				 y);
 
-			return XAC_BLOCK;
+			Block(client, 1);
+			//return XAC_BLOCK;
+			return XAC_DONE;
 		}
 	}
 	return XAC_DONE;
@@ -550,19 +555,25 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			mn = (MENU *)pb->addrin[1];
 
-			xamn.wt = obtree_to_wt(client, mn->mn_tree);
-			if (!xamn.wt)
-				xamn.wt = new_widget_tree(client, mn->mn_tree);
+			if (is_attach(client, wt, pb->intin[1], NULL))
+				detach_menu(lock, client, wt, pb->intin[1]);
 
-			assert(xamn.wt);
+			if (mn)
+			{
+				xamn.wt = obtree_to_wt(client, mn->mn_tree);
+				if (!xamn.wt)
+					xamn.wt = new_widget_tree(client, mn->mn_tree);
 
-			xamn.menu = *mn;
+				assert(xamn.wt);
 
-			pb->intout[0] = attach_menu(lock,
-						    client,
-						    wt,
-						    pb->intin[1],
-						    &xamn);
+				xamn.menu = *mn;
+
+				pb->intout[0] = attach_menu(lock,
+							    client,
+							    wt,
+							    pb->intin[1],
+							    &xamn);
+			}
 			break;
 		}
 		case ME_REMOVE:
