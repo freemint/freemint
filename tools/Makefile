@@ -3,8 +3,18 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = IO crypto fdisk fsetter gluestik mgw \
-		minix mkfatfs nfs toswin2
+SUBDIRS = \
+	IO \
+	crypto \
+	fdisk \
+	fsetter \
+	gluestik \
+	mgw \
+	minix \
+	mkfatfs \
+	net-tools \
+	nfs \
+	toswin2
 
 srcdir = .
 top_srcdir = .
