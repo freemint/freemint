@@ -3,8 +3,12 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2003 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ * 
  * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +23,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
  */
 
 # ifndef _semaphores_h
@@ -26,36 +31,22 @@
 
 # include "mint/mint.h"
 
-# ifdef DEBUG_INFO
-# define SEMAPHOREDEBUG
-# endif
-
 struct semaphore
 {
 	volatile short lock;
 	short count;
 };
 
-void	__semaphore_init(struct semaphore *s);
-void	__semaphore_p	(struct semaphore *s);
-void	__semaphore_v	(struct semaphore *s);
+# if __KERNEL__ == 1
 
-# ifdef SEMAPHOREDEBUG
+void _semaphore_init(struct semaphore *s, const char *);
+void _semaphore_lock(struct semaphore *s, const char *);
+void _semaphore_rel (struct semaphore *s, const char *);
 
-void	_semaphore_init	(struct semaphore *s, const char *, long);
-void	_semaphore_p	(struct semaphore *s, const char *, long);
-void	_semaphore_v	(struct semaphore *s, const char *, long);
+# define semaphore_init(s)	_semaphore_init(s, FUNCTION)
+# define semaphore_lock(s)	_semaphore_lock(s, FUNCTION)
+# define semaphore_rel(s)	_semaphore_rel (s, FUNCTION)
 
-# define semaphore_init(s)	_semaphore_init(s, __FILE__, __LINE__)
-# define semaphore_p(s)		_semaphore_p(s, __FILE__, __LINE__)
-# define semaphore_v(s)		_semaphore_v(s, __FILE__, __LINE__)
-
-# else /* !SEMAPHOREDEBUG */
-
-# define semaphore_init(s)	__semaphore_init(s)
-# define semaphore_p(s)		__semaphore_p(s)
-# define semaphore_v(s)		__semaphore_v(s)
-
-# endif /* SEMAPHOREDEBUG */
+# endif
 
 # endif /* _semaphores_h */
