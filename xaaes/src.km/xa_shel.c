@@ -45,7 +45,9 @@ static char *strings[STRINGS];
 
 char * const * const get_raw_env(void) { return strings; }
 
+#if GENERATE_DIAGS
 static void display_env(char **env, int which);
+#endif
 static const char *get_env(enum locks lock, const char *name);
 static int copy_env(char *to, char *s[], const char *without, char **last);
 static long count_env(char *s[], const char *without);
@@ -523,6 +525,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		}
 		case 3:
 		{
+			struct proc *curproc = get_curproc();
+			struct memregion *m;
 			struct basepage *b;
 			long size, p_rtn;
 
@@ -537,8 +541,25 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 				ret = p_rtn;
 				break;
 			}
+			assert(p);
 
+			DIAGS(("create_process ok, fixing ACC basepage"));
 			b = p->p_mem->base;
+			m = addr2mem(p, (long)p->p_mem->base);
+			assert(m);
+
+			/* map basepage into cuproc */
+			b = (void *)attach_region(curproc, m);
+			if (!b)
+			{
+				/* cannot access basepage of the child
+				 * -> terminate child
+				 */
+				ikill(p->pid, SIGKILL);
+				p = NULL;
+				ret = ENOMEM;
+				break;
+			}
 
 			/* accsize */
 			size = 256 + b->p_tlen + b->p_dlen + b->p_blen;
@@ -551,6 +572,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 			/* set PC appropriately */
 			p->ctxt[CURRENT].pc = b->p_tbase;
+
+			/* remove mapping */
+			detach_region(curproc, m);
 
 			p_renice(p->pid, -4);
 
@@ -580,7 +604,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			strcpy(info->home_path+2, path);
 		}
 		else
+		{
 			ikill(SIGKILL, p->pid);
+			ret = ENOMEM;
+		}
 	}
 
 out:
