@@ -215,6 +215,113 @@ reset_tabs(SCROLL_INFO *list)
 	}
 }
 
+static short
+draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
+{
+	int i;
+	RECT r;
+	short x_center, y_center, width = 16;
+	short pnt[4];
+
+	x_center = /*xy->x + */(width >> 1);
+	y_center = /*xy->y + */(xy->h >> 1);
+
+	r.x = xy->x + x_center - 4; //(16 >> 1) - 4;
+	r.y = xy->y + y_center - 4; //(xy->h >> 1) - 4;
+	r.w = 9; //width;
+	r.h = 9; //xy->h;
+
+	if (this->down)
+	{
+		f_interior(FIS_SOLID);
+		f_color(G_WHITE);
+		gbar(0, &r);
+
+		l_color(G_BLACK);
+		gbox(0, &r);
+
+		//if (this->prev || this->up)
+		{
+			l_color(G_LBLACK);
+			pnt[0] = xy->x + x_center;
+			pnt[1] = xy->y;
+			pnt[2] = pnt[0];
+			pnt[3] = r.y;
+			v_pline(C.vh, 2, pnt);
+		}
+		//if (this->next || (this->istate & OS_OPENED))
+		{
+			pnt[0] = xy->x + x_center;
+			pnt[1] = r.y + 9;
+			pnt[2] = pnt[0];
+			pnt[3] = xy->y + xy->h - 1;
+			v_pline(C.vh, 2, pnt);
+		}
+
+		pnt[0] = r.x + 2;
+		pnt[1] = r.y + 4;
+		pnt[2] = pnt[0] + 4;
+		pnt[3] = pnt[1];
+	
+		v_pline(C.vh, 2, pnt);
+	
+		if (!(this->istate & OS_OPENED))
+		{
+			pnt[0] = r.x + 4;
+			pnt[1] = r.y + 2;
+			pnt[2] = pnt[0];
+			pnt[3] = r.y + 6;
+			v_pline(C.vh, 2, pnt);
+		}
+	}
+	else
+	{
+		l_color(G_LBLACK);
+		//if (this->prev || this->up)
+		{
+			pnt[0] = xy->x + x_center; //r.x + 4;
+			pnt[1] = xy->y;
+			pnt[2] = pnt[0];
+			pnt[3] = xy->y + y_center; //r.y + 4;
+			v_pline(C.vh, 2, pnt);
+		}
+		//if (this->next)
+		{
+			pnt[0] = xy->x + x_center; //r.x + 4;
+			pnt[1] = xy->y + y_center; //r.y + 5;
+			pnt[2] = pnt[0];
+			pnt[3] = xy->y + xy->h - 1;
+			v_pline(C.vh, 2, pnt);
+		}
+		
+		pnt[0] = xy->x + x_center; //r.x + 4;
+		pnt[1] = xy->y + y_center; //r.y + 4;
+		pnt[2] = xy->x + width; //r.x + 10;
+		pnt[3] = pnt[1];
+		v_pline(C.vh, 2, pnt);
+
+	}
+
+	if (this->level)
+	{
+		short x = xy->x;
+		l_color(G_LBLACK);
+		for (i = 0; i < this->level; i++)
+		{
+			x -= width;
+			pnt[0] = x + x_center;
+			pnt[1] = xy->y;
+			pnt[2] = pnt[0];
+			pnt[3] = xy->y + xy->h - 1;
+			v_pline(C.vh, 2, pnt);
+		}
+	}
+	
+	
+	return width;
+
+}
+
 static void
 display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, RECT *xy, const RECT *clip)
 {
@@ -234,6 +341,10 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 		bar(0, xy->x, xy->y, xy->w, this->r.h);
 		
 		xy->x += indent;
+
+		x = draw_nesticon(xy, this);
+		xy->x += x;
+		indent += x;
 
 		if (sel)
 			wtxt = &this->c.td.text.fnt->s; //&wtxti->s;
@@ -269,12 +380,16 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 			x = x2;
 			y = y2;
 			
-			prop_clipped_name(tetext->text, t, tabs->r.w);
+			prop_clipped_name(tetext->text, t, tabs->r.w, &w, &h);
 			
 			if (tabs->flags & SETAB_RJUST)
 			{
-				t_extent(t, &w, &h);
+				//t_extent(t, &w, &h);
 				dx = x2 - w;
+			}
+			else if (tabs->flags & SETAB_CJUST)
+			{
+				dx = x2 - (w >> 1);
 			}
 				
 			if (f & WTXT_DRAW3D)
@@ -908,6 +1023,7 @@ set(SCROLL_INFO *list,
 					}
 				}
 			}
+			list->redraw(list, entry);
 			break;
 		}
 		case SESET_TEXTTAB:
