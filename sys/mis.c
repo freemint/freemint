@@ -1508,6 +1508,11 @@ shell(void *arg)
 	 */
 	xcommands = (_mint_getenv(_base, "PATH") == NULL);
 
+	/* If there is no $TERM variable defined, define it
+	 */
+	if (_mint_getenv(_base, "TERM") == NULL)
+		shell_setenv("TERM", "st52");
+
 	shell_fprintf(stdout, "\ee\ev\n");	/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);			/* printout the version number */
 	xcmdstate();				/* print 'Extended commands are ...' */
