@@ -1,0 +1,31 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	balloc.h \
+	bitmap.h \
+	ext2.h \
+	ext2dev.h \
+	ext2sys.h \
+	global.h \
+	ialloc.h \
+	inode.h \
+	namei.h \
+	super.h \
+	truncate.h \
+	version.h
+
+COBJS = \
+	balloc.c \
+	bitmap.c \
+	ext2dev.c \
+	ext2sys.c \
+	global.c \
+	ialloc.c \
+	inode.c \
+	main.c \
+	namei.c \
+	super.c \
+	truncate.c
+
+SRCFILES = $(HEADER) $(COBJS)
