@@ -1355,7 +1355,7 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 					   WM_UNICONIFY, 0, 0, wind->handle,
 					   wind->pr.x, wind->pr.y, wind->pr.w, wind->pr.h);
 		}
-		else
+		else if (wind->active_widgets & FULLER)
 		{
 			/* Ozk 100503: Double click on title now sends WM_FULLED,
 			 * as N.AES does it */
@@ -1363,10 +1363,8 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 					   WM_FULLED, 0, 0, wind->handle,
 					   0, 0, 0, 0);
 		}
-
 		return true;
 	}
-
 	return false;
 }
 
