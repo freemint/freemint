@@ -7947,6 +7947,23 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 			
 			return r;
 		}
+		case FIBMAP:
+		{
+			long block;
+			
+			DEBUG (("FAT-FS: fatfs_ioctl (FIBMAP)"));
+			
+			if (!buf)
+				return EINVAL;
+			
+			block = *(long *) buf;
+			block = GETCL (c->stcl, c->dev, block);
+			if (block < 0)
+				block = 0;
+			
+			*(long *) buf = block;
+			return E_OK;
+		}
 		case F_SETLK:
 		case F_SETLKW:
 		case F_GETLK:
