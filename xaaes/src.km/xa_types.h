@@ -370,14 +370,14 @@ struct xa_fnts_info
 {
 	void	*handle;
 	struct	xa_window *wind;
-
+	struct	widget_tree *wt;
+	
 	short	vdi_handle;
 	short	num_fonts;
 	short	font_flags;
 	short	dialog_flags;
 	char	*sample_text;
 	char	*opt_button;
-
 };
 
 #define OB_CURS_ENABLED	1

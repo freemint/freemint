@@ -54,10 +54,10 @@ typedef struct
 /** TODO */
 typedef struct
 {
-	SCANX		*unsh;		/**< Tabellen fr UnShift-Kombinationen */
-	SCANX		*shift;		/**< Tabellen fr Shift-Kombinationen */
-	SCANX		*ctrl;		/**< Tabellen fr Control-Kombinationen */
-	SCANX		*alt; 		/**< Tabellen fr Alternate-Kombinationen */
+	SCANX		*unsh;		/**< Tabellen fr UnShift-Kombinationen */
+	SCANX		*shift;		/**< Tabellen fr Shift-Kombinationen */
+	SCANX		*ctrl;		/**< Tabellen fr Control-Kombinationen */
+	SCANX		*alt; 		/**< Tabellen fr Alternate-Kombinationen */
 	void		*resvd;		/**< reserviert */
 } XDO_INF;
 
@@ -133,9 +133,9 @@ struct _fnts_item
 #define FNTS_SRATIO		0x08		/**< Select checkbox for width/height ratio */
 
 #define FNTS_CHNAME		0x0100		/**< Display checkbox for names */
-#define FNTS_CHSTYLE 	0x0200		/**< Display checkbox for style */
+#define FNTS_CHSTYLE 		0x0200		/**< Display checkbox for style */
 #define FNTS_CHSIZE		0x0400		/**< Display checkbox for height */
-#define FNTS_CHRATIO 	0x0800		/**< Display checkbox for width/height ratio */
+#define FNTS_CHRATIO 		0x0800		/**< Display checkbox for width/height ratio */
 #define FNTS_RATIO		0x1000		/**< Width/height ratio adjustable */
 #define FNTS_BSET 		0x2000		/**< Button "Set" selectable */
 #define FNTS_BMARK		0x4000		/**< Button "Mark" selectable */
@@ -148,15 +148,15 @@ struct _fnts_item
 #define FNTS_OPT		5			/**< TODO */
 #define FNTS_OPTION		FNTS_OPT	/**< see FNTS_OPT */
 
-short		mt_fnts_add			(FNT_DIALOG *fnt_dialog, FNTS_ITEM *user_fonts, short *global);
+short		mt_fnts_add		(FNT_DIALOG *fnt_dialog, FNTS_ITEM *user_fonts, short *global);
 short		mt_fnts_close		(FNT_DIALOG *fnt_dialog, short *x, short *y, short *global);
-FNT_DIALOG *mt_fnts_create		(short vdi_handle, short no_fonts, short font_flags, short dialog_flags, char *sample, char *opt_button, short *global);
+FNT_DIALOG *	mt_fnts_create		(short vdi_handle, short no_fonts, short font_flags, short dialog_flags, char *sample, char *opt_button, short *global);
 short		mt_fnts_delete		(FNT_DIALOG *fnt_dialog, short vdi_handle, short *global);
-short		mt_fnts_do			(FNT_DIALOG *fnt_dialog, short button_flags, long id_in, long pt_in, long ratio_in, short *check_boxes, long *id, long *pt, long *ratio, short *global);
+short		mt_fnts_do		(FNT_DIALOG *fnt_dialog, short button_flags, long id_in, long pt_in, long ratio_in, short *check_boxes, long *id, long *pt, long *ratio, short *global);
 short		mt_fnts_evnt		(FNT_DIALOG *fnt_dialog, EVNT *events, short *button, short *check_boxes, long *id, long *pt, long *ratio, short *global);
 short		mt_fnts_get_info	(FNT_DIALOG *fnt_dialog, long id, short *mono, short *outline, short *global);
 short		mt_fnts_get_name	(FNT_DIALOG *fnt_dialog, long id, char *full_name, char *family_name, char *style_name, short *global);
-short		mt_fnts_get_no_styles (FNT_DIALOG *fnt_dialog, long id, short *global);
+short		mt_fnts_get_no_styles	(FNT_DIALOG *fnt_dialog, long id, short *global);
 long		mt_fnts_get_style	(FNT_DIALOG *fnt_dialog, long id, short __index, short *global);
 short		mt_fnts_open		(FNT_DIALOG *fnt_dialog, short button_flags, short x, short y, long id, long pt, long ratio, short *global);
 void		mt_fnts_remove		(FNT_DIALOG *fnt_dialog, short *global);
@@ -193,7 +193,7 @@ typedef short __CDECL (*XFSL_FILTER)(char *path, char *name, GEMLIB_XATTR *xattr
 #define SORTBYNONE		4			/**< TODO */
 #define SORTDEFAULT		-1			/**< TODO */
 
-/* Flags fr Dateiauswahl */
+/* Flags fr Dateiauswahl */
 #define DOSMODE			1			/**< TODO */
 #define NFOLLOWSLKS		2			/**< TODO */
 #define GETMULTI		8			/**< TODO */
@@ -272,9 +272,9 @@ struct _prn_mode
 };
 
 /* sub_flags */
-#define	PRN_STD_SUBS	0x0001			/**< Standard-Unterdialoge fr NVDI-Drucker */
-#define	PRN_FSM_SUBS	0x0002			/**< Standard-Unterdialoge fr FSM-Drucker */
-#define	PRN_QD_SUBS 	0x0004			/**< Standard-Unterdialoge fr QuickDraw-Drucker */
+#define	PRN_STD_SUBS	0x0001			/**< Standard-Unterdialoge fr NVDI-Drucker */
+#define	PRN_FSM_SUBS	0x0002			/**< Standard-Unterdialoge fr FSM-Drucker */
+#define	PRN_QD_SUBS 	0x0004			/**< Standard-Unterdialoge fr QuickDraw-Drucker */
 
 /** old_printer can also be 0L */
 typedef long __CDECL (*PRN_SWITCH)(DRV_ENTRY *drivers, PRN_SETTINGS *settings, PRN_ENTRY *old_printer, PRN_ENTRY *new_printer);
@@ -404,14 +404,14 @@ struct _pdlg_sub
 /*----------------------------------------------------------------------------------------*/ 
 /* einstellbare Farbmodi eines Druckermodus																*/
 /*----------------------------------------------------------------------------------------*/ 
-#define	CC_MONO			0x0001		/**< 2 Graut”ne */
-#define	CC_4_GREY		0x0002		/**< 4 Graut”ne */
-#define	CC_8_GREY		0x0004		/**< 8 Graut”ne */
-#define	CC_16_GREY		0x0008		/**< 16 Graut”ne */
-#define	CC_256_GREY 	0x0010		/**< 256 Graut”ne */
-#define	CC_32K_GREY 	0x0020		/**< 32768 Farben in Graut”ne wandeln */
-#define	CC_65K_GREY 	0x0040		/**< 65536 Farben in Graut”ne wandeln */
-#define	CC_16M_GREY 	0x0080		/**< 16777216 Farben in Graut”ne wandeln */
+#define	CC_MONO			0x0001		/**< 2 Grautne */
+#define	CC_4_GREY		0x0002		/**< 4 Grautne */
+#define	CC_8_GREY		0x0004		/**< 8 Grautne */
+#define	CC_16_GREY		0x0008		/**< 16 Grautne */
+#define	CC_256_GREY 	0x0010		/**< 256 Grautne */
+#define	CC_32K_GREY 	0x0020		/**< 32768 Farben in Grautne wandeln */
+#define	CC_65K_GREY 	0x0040		/**< 65536 Farben in Grautne wandeln */
+#define	CC_16M_GREY 	0x0080		/**< 16777216 Farben in Grautne wandeln */
 
 #define	CC_2_COLOR		0x0100		/**< 2 Farben */
 #define	CC_4_COLOR		0x0200		/**< 4 Farben */
@@ -434,7 +434,7 @@ struct _pdlg_sub
 /*----------------------------------------------------------------------------------------*/ 
 /* Druckereigenschaften 																						*/
 /*----------------------------------------------------------------------------------------*/ 
-#define	PC_FILE			0x0001		/**< Drucker kann ber GEMDOS-Dateien angesprochen werden */
+#define	PC_FILE			0x0001		/**< Drucker kann ber GEMDOS-Dateien angesprochen werden */
 #define	PC_SERIAL		0x0002		/**< Drucker kann auf der seriellen Schnittstelle angesteuert werden */
 #define	PC_PARALLEL 	0x0004		/**< Drucker kann auf der parallelen Schnittstelle angesteuert werden */
 #define	PC_ACSI			0x0008		/**< Drucker kann auf der ACSI-Schnittstelle ausgeben */
@@ -455,7 +455,7 @@ struct _pdlg_sub
 #define	MC_ORIENTATION	0x000f		/**< TODO */
 
 #define	MC_SLCT_CMYK	0x0400		/**< Treiber kann bestimmte Farbebenen ausgeben */
-#define	MC_CTRST_BRGHT	0x0800		/**< Treiber kann Kontrast und Helligkeit ver„ndern */
+#define	MC_CTRST_BRGHT	0x0800		/**< Treiber kann Kontrast und Helligkeit verndern */
 
 /*----------------------------------------------------------------------------------------*/ 
 /* plane_flags 																									*/
@@ -467,7 +467,7 @@ struct _pdlg_sub
 
 
 /* <driver_mode> */
-#define	DM_BG_PRINTING	0x0001		/**< Flag fr Hintergrunddruck */
+#define	DM_BG_PRINTING	0x0001		/**< Flag fr Hintergrunddruck */
 
 /*----------------------------------------------------------------------------------------*/ 
 
@@ -576,8 +576,8 @@ struct _prn_settings
 #define PDLG_EVENODD        0x0100  /**< Offer option for even and odd pages */
 
 /* <button> for mt_pdlg_evnt()/mt_pdlg_do() */
-#define	PDLG_CANCEL 1				/**< "Abbruch" wurde angew„hlt */
-#define	PDLG_OK		2				/**< "OK" wurde gedrckt */
+#define	PDLG_CANCEL 1				/**< "Abbruch" wurde angewhlt */
+#define	PDLG_OK		2				/**< "OK" wurde gedrckt */
 
 short		   mt_pdlg_add_printers 		(PRN_DIALOG *prn_dialog, DRV_INFO *drv_info, short *global);
 short		   mt_pdlg_add_sub_dialogs		(PRN_DIALOG *prn_dialog, PDLG_SUB *sub_dialogs, short *global);
@@ -956,7 +956,7 @@ short vst_map_mode   (short handle, short mode);
  * The following functions requires NVDI version 5.x or higher
  */
 /*----------------------------------------------------------------------------------------*/
-/* Konstanten fr Pixelformate																				*/
+/* Konstanten fr Pixelformate																				*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_1COMP		0x01000000L										/* Pixel besteht aus einer benutzten Komponente: Farbindex */
 #define	PX_3COMP		0x03000000L										/* Pixel besteht aus drei benutzten Komponenten, z.B. RGB */
@@ -992,14 +992,14 @@ short vst_map_mode   (short handle, short mode);
 #define	PX_32BIT		0x00000020L										/* Pixel besteht aus 32 Bit */
 #define	PX_48BIT		0x00000030L										/* Pixel besteht aus 48 Bit */
 
-#define	PX_CMPNTS	0x0f000000L										/* Maske fr Anzahl der Pixelkomponenten */
-#define	PX_FLAGS		0x00f00000L										/* Maske fr diverse Flags */
-#define	PX_PACKING	0x00030000L										/* Maske fr Pixelformat */
-#define	PX_USED		0x00003f00L										/* Maske fr Anzahl der benutzten Bits */
-#define	PX_BITS		0x0000003fL										/* Maske fr Anzahl der Bits pro Pixel */
+#define	PX_CMPNTS	0x0f000000L										/* Maske fr Anzahl der Pixelkomponenten */
+#define	PX_FLAGS		0x00f00000L										/* Maske fr diverse Flags */
+#define	PX_PACKING	0x00030000L										/* Maske fr Pixelformat */
+#define	PX_USED		0x00003f00L										/* Maske fr Anzahl der benutzten Bits */
+#define	PX_BITS		0x0000003fL										/* Maske fr Anzahl der Bits pro Pixel */
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fr ATARI-Grafik																				*/
+/* Pixelformate fr ATARI-Grafik																				*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_ATARI1	( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_ATARI2	( PX_IPLANES + PX_1COMP + PX_USES2 + PX_2BIT )
@@ -1008,7 +1008,7 @@ short vst_map_mode   (short handle, short mode);
 #define	PX_FALCON15	( PX_PACKED + PX_3COMP + PX_USES16 + PX_16BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fr Macintosh																					*/
+/* Pixelformate fr Macintosh																					*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_MAC1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_MAC4		( PX_PACKED + PX_1COMP + PX_USES4 + PX_4BIT )
@@ -1017,7 +1017,7 @@ short vst_map_mode   (short handle, short mode);
 #define	PX_MAC32		( PX_xFIRST + PX_PACKED + PX_3COMP + PX_USES24 + PX_32BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fr Grafikkarten																				*/
+/* Pixelformate fr Grafikkarten																				*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_VGA1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_VGA4		( PX_PLANES + PX_1COMP + PX_USES4 + PX_4BIT )
@@ -1032,14 +1032,14 @@ short vst_map_mode   (short handle, short mode);
 #define	PX_NOVA32	( PX_PACKED + PX_3COMP + PX_USES24 + PX_32BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fr Drucker																					*/
+/* Pixelformate fr Drucker																					*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_PRN1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_PRN8		( PX_PACKED + PX_1COMP + PX_USES8 + PX_8BIT )
 #define	PX_PRN32		( PX_xFIRST + PX_PACKED + PX_3COMP + PX_USES24 + PX_32BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* bevorzugte (schnelle) Pixelformate fr Bitmaps 														*/
+/* bevorzugte (schnelle) Pixelformate fr Bitmaps 														*/
 /*----------------------------------------------------------------------------------------*/
 
 #define	PX_PREF1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
@@ -1157,17 +1157,17 @@ struct _gcbitmap
 };
 
 /*----------------------------------------------------------------------------------------*/
-/* Transfermodi fr Bitmaps																					*/
+/* Transfermodi fr Bitmaps																					*/
 /*----------------------------------------------------------------------------------------*/
 
 /* Moduskonstanten */
-#define	T_NOT				4	/**< Konstante fr Invertierung bei logischen Transfermodi */
-#define	T_COLORIZE			16	/**< Konstante fr Einf„rbung */
+#define	T_NOT				4	/**< Konstante fr Invertierung bei logischen Transfermodi */
+#define	T_COLORIZE			16	/**< Konstante fr Einfrbung */
 
 #define	T_LOGIC_MODE		0
 #define	T_DRAW_MODE			32
-#define	T_ARITH_MODE		64	/**< Konstante fr Arithmetische Transfermodi */
-#define	T_DITHER_MODE		128	/**< Konstante frs Dithern */
+#define	T_ARITH_MODE		64	/**< Konstante fr Arithmetische Transfermodi */
+#define	T_DITHER_MODE		128	/**< Konstante frs Dithern */
 
 /* logische Transfermodi */
 #define	T_LOGIC_COPY		T_LOGIC_MODE+0
@@ -1195,7 +1195,7 @@ struct _gcbitmap
 #define	T_MIN					T_ARITH_MODE+7
 
 /** TODO */
-typedef struct			/* Rechteck fr 16-Bit-Koordinaten */
+typedef struct			/* Rechteck fr 16-Bit-Koordinaten */
 {
 	short	x1;			/**< TODO */
 	short	y1;			/**< TODO */
@@ -1204,7 +1204,7 @@ typedef struct			/* Rechteck fr 16-Bit-Koordinaten */
 } RECT16;
 
 /** TODO */
-typedef struct			/* Rechteck fr 32-Bit-Koordinaten */
+typedef struct			/* Rechteck fr 32-Bit-Koordinaten */
 {
 	long	x1;			/**< TODO */
 	long	y1;			/**< TODO */
