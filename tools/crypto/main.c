@@ -19,21 +19,20 @@
  * 
  * Started:      2000-05-02
  * 
- * Changes:
- * 
- * 2000-05-02:
- * 
- * - inital version
- * 
  */
+
+# define _GNU_SOURCE
 
 # include <ctype.h>
 # include <fcntl.h>
 # include <getopt.h>
+# include <limits.h>
+# include <signal.h>
 # include <stdarg.h>
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
+# include <time.h>
 # include <unistd.h>
 
 # include <mintbind.h>
@@ -46,8 +45,15 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	10
+# define VER_MINOR	20
 # define VER_STATUS	
+
+
+/*
+ * config values
+ */
+# define SAVEFILE	"crypto.sav"
+# define LOGFILE	"crypto.log"
 
 
 /*
@@ -65,62 +71,19 @@
 	MSG_VERSION
 
 # define MSG_GREET	\
-	"Copyright (c) " __DATE__ " by Frank Naumann.\n" \
-	"All rights reserved."
-
-
-static void
-version (void)
-{
-	puts (MSG_PROGRAM);
-	puts (MSG_GREET);
-}
-
-static void
-help (void)
-{
-	puts (MSG_PROGRAM);
-	puts (MSG_GREET);
-	puts ("");
-	
-	
-}
-
-static void
-safe_exit (char *msg, ...)
-{
-	va_list args;
-	
-	va_start (args, msg);
-	vprintf (msg, args);
-	va_end (args);
-	
-	exit (1);
-}
-
-static void
-emergency_exit (char *msg, ...)
-{
-	va_list args;
-	
-	va_start (args, msg);
-	vprintf (msg, args);
-	va_end (args);
-	
-	exit (1);
-}
+	"Copyright (c) " __DATE__ " by Frank Naumann.\n"
 
 
 static char *modes[] =
 {
+	"fast",
 	"safe",
 	"robust",
-	"fast",
 	NULL
 };
-# define SAFE		0
-# define ROBUST		1
-# define FAST		2
+# define FAST		0
+# define SAFE		1
+# define ROBUST		2
 
 static char *actions[] =
 {
@@ -163,10 +126,58 @@ static char *buf = NULL;
 static int32_t bufsize = 1024L * 128;
 
 static FILE *log = NULL;
-static int save_file = 0;
+static int save_file = -1;
+static int fh = -1;
 
 static int64_t start_pos = 0;
 static int64_t end_pos = 0;
+
+
+
+static void
+safe_exit (char *msg, ...)
+{
+	va_list args;
+	
+	va_start (args, msg);
+	vprintf (msg, args);
+	va_end (args);
+	
+	exit (1);
+}
+
+static void
+emergency_exit (char *msg, ...)
+{
+	va_list args;
+	
+	if ((mode == ROBUST) && (save_file >= 0))
+		close (save_file);
+	
+	if ((mode >= SAFE) && log)
+	{
+		fflush (log);
+		
+		fprintf (log, "emergency exit\n");
+		fflush (log);
+		
+		fclose (log);
+	}
+	
+	if (fh >= 0)
+		io_close (fh);
+	
+	va_start (args, msg);
+	vprintf (msg, args);
+	va_end (args);
+	
+	fputs ("\n", stdout);
+	fputs ("WARNING: Filesystem is likely to be in an inconsistent state!\n", stdout);
+	fputs ("You must first repair your filesystem.\n", stdout);
+	
+	exit (1);
+}
+
 
 
 static void
@@ -184,8 +195,8 @@ verify_encrypt_key (void)
 	printf ("\n");
 	printf ("Please enter the passphrase for encryption.\n");
 restart:
-	strcpy (buf1, getpass("passphrase [8 chars minimum]: "));
-	strcpy (buf2, getpass("passphrase verification: "));
+	strcpy (buf1, getpass ("passphrase [8 chars minimum]: "));
+	strcpy (buf2, getpass ("passphrase verification: "));
 	printf ("\n");
 	
 	if (strcmp (buf1, buf2))
@@ -204,14 +215,12 @@ restart:
 	
 	passphrase = malloc (strlen (buf1) + 1);
 	if (!passphrase)
-		safe_exit ("out of memory, abort.");
+		safe_exit ("out of memory, abort.\n");
 	
 	strcpy (passphrase, buf1);
-	
 	return;
 	
 	printf ("--`%s'--`%s'--\n", buf1, buf2);
-	
 	fflush (stdout);
 	
 	if (c == 'y' || c == 'Y')
@@ -235,8 +244,8 @@ verify_decrypt_key (void)
 	printf ("\n");
 	printf ("Please enter the passphrase for decryption.\n");
 restart:
-	strcpy (buf1, getpass("passphrase [8 chars minimum]: "));
-	strcpy (buf2, getpass("passphrase verification: "));
+	strcpy (buf1, getpass ("passphrase [8 chars minimum]: "));
+	strcpy (buf2, getpass ("passphrase verification: "));
 	printf ("\n");
 	
 	if (strcmp (buf1, buf2))
@@ -255,10 +264,9 @@ restart:
 	
 	passphrase = malloc (strlen (buf1) + 1);
 	if (!passphrase)
-		safe_exit ("out of memory, abort.");
+		safe_exit ("out of memory, abort.\n");
 	
 	strcpy (passphrase, buf1);
-	
 	return;
 }
 
@@ -270,12 +278,70 @@ verify_change_key (void)
 }
 
 
+
+static void
+version (void)
+{
+	puts (MSG_PROGRAM);
+	puts (MSG_GREET);
+}
+
+static void
+usage (void)
+{
+	puts (MSG_PROGRAM);
+	puts (MSG_GREET);
+	
+	printf (
+"Usage:
+	%s [options] device ...
+device: something like d: or L:
+useful options:
+    -a# [or --action #]:  select action (encipher, decipher, changekey)
+                          default is encipher
+    -b# [or --buffer #]:  specify buffer size in kb
+                          default is %ikb
+    -c# [or --cipher #]:  select cipher algorithm (blowfish)
+                          default is blowfish
+    -m# [or --mode #]:    select mode (safe, robust, fast)
+                          default is safe
+    -h  [or --help]:      print this message
+    -q  [or --quiet]:     be quiet
+    -t  [or --simulate]:  testing mode, simulate action without any write
+    -v  [or --version]:   print version
+dangerous options,
+for repair of interrupted sessions:
+    -e# [or --end #]:     set end position for action
+                          default is partition end
+    -s# [or --start #]:   set start position for action
+                          default is partition start (512)
+    -r# [or --restore #]: restore image data from robust mode after an
+                          emergency exit
+", basename (myname), bufsize / 1024);
+	
+	fflush (stdout);
+}
+
+
+static void default_sig_handler (int signum);
+static void sigint_handler (int signum);
 static void doit (void);
+static void restore_save_file (char *name);
+
 
 int
 main (int argc, char **argv)
 {
 	myname = argv [0];
+	
+	
+	/*
+	 * initialize IO module
+	 */
+	
+	if (io_init ())
+		safe_exit ("initialization failed, abort.\n");
+	
 	
 	/*
 	 * parse arguments
@@ -293,6 +359,9 @@ main (int argc, char **argv)
 			{ "mode",	1, 0, 'm'	},
 			{ "action",	1, 0, 'a'	},
 			{ "cipher",	1, 0, 'c'	},
+			{ "start",	1, 0, 's'	},
+			{ "end",	1, 0, 'e'	},
+			{ "restore",	1, 0, 'r'	},
 			{ 0,		0, 0, 0		}
 		};
 		
@@ -300,7 +369,7 @@ main (int argc, char **argv)
 		int c;
 		
 		
-		c = getopt_long (argc, argv, "vhqtb:m:a:c:", long_options, &option_index);
+		c = getopt_long (argc, argv, "vhqtb:m:a:c:s:e:r:", long_options, &option_index);
 		
 		/* end of the options */
 		if (c == -1)
@@ -314,7 +383,7 @@ main (int argc, char **argv)
 				if (long_options[option_index].flag != 0)
 					break;
 				
-				help ();
+				usage ();
 				exit (1);
 				
 				printf ("option %s", long_options[option_index].name);
@@ -330,7 +399,7 @@ main (int argc, char **argv)
 			}
 			case 'h':
 			{
-				help ();
+				usage ();
 				exit (0);
 			}
 			case 'q':
@@ -345,9 +414,10 @@ main (int argc, char **argv)
 			}
 			case 'b':
 			{
-				int32_t r = strtol (optarg, NULL, 0);
+				char *check;
+				int32_t r = strtol (optarg, &check, 0);
 				
-				if (r < 16)
+				if ((optarg == check) || (r < 16))
 					printf ("incorrect buffersize, using default value.\n");
 				else
 					bufsize = 1024L * r;
@@ -394,16 +464,44 @@ main (int argc, char **argv)
 				if (flag)
 				{
 					printf ("unknown %s `%s'\n\n", option, optarg);
-					help ();
+					usage ();
 					exit (1);
 				}
 				
 				break;
 			}
+			case 's':
+			case 'e':
+			{
+				char *check;
+				int64_t r = strtoll (optarg, &check, 0);
+				
+				if ((optarg == check)
+					|| (r == LONG_LONG_MAX)
+					|| (r == LONG_LONG_MIN))
+				{
+					safe_exit ("can't parse start/end position, abort.\n");
+				}
+				else
+				{
+					if (c == 's')
+						start_pos = r;
+					else
+						end_pos = r;
+				}
+				
+				break;
+			}
+			case 'r':
+			{
+				restore_save_file (optarg);
+				break;
+			}
 			case '?':
 				printf ("unknown option `%s'\n", optarg);
+			
 			default:
-				help ();
+				usage ();
 				exit (1);
 		}
 	}
@@ -422,15 +520,11 @@ main (int argc, char **argv)
 	
 	/* verify it */
 	if (drv == -1)
-		safe_exit ("invalid or missing drive specification, abort.\n");
-	
-	
-	/*
-	 * initialize IO module
-	 */
-	
-	if (io_init ())
-		safe_exit ("initialization failed, abort.\n");
+	{
+		printf ("invalid or missing drive specification, abort.\n");
+		usage ();
+		exit (1);
+	}
 	
 	
 	/*
@@ -463,7 +557,72 @@ main (int argc, char **argv)
 	 * run the main routine
 	 */
 	
-	doit ();
+	{
+		__sighandler_t sigint;
+		__sighandler_t s1, s2, s3, s4, s5, s6, s7, s8, s9,
+				s10, s11, s12, s13, s14, s15, s16, s17, s18, s19;
+		sigset_t newmask, oldmask;
+		
+		/* special handler */
+		sigint = signal (SIGINT, sigint_handler);
+		
+		/* default handler */
+		s1 = signal (SIGHUP, default_sig_handler);
+		s2 = signal (SIGQUIT, default_sig_handler);
+		s3 = signal (SIGILL, default_sig_handler);
+		s4 = signal (SIGTRAP, default_sig_handler);
+		s5 = signal (SIGABRT, default_sig_handler);
+		s6 = signal (SIGPRIV, default_sig_handler);
+		s7 = signal (SIGFPE, default_sig_handler);
+		s8 = signal (SIGBUS, default_sig_handler);
+		s9 = signal (SIGSEGV, default_sig_handler);
+		s10 = signal (SIGSYS, default_sig_handler);
+		s11 = signal (SIGPIPE, default_sig_handler);
+		s12 = signal (SIGALRM, default_sig_handler);
+		s13 = signal (SIGTERM, default_sig_handler);
+		s14 = signal (SIGXCPU, default_sig_handler);
+		s15 = signal (SIGXFSZ, default_sig_handler);
+		s16 = signal (SIGVTALRM, default_sig_handler);
+		s17 = signal (SIGPROF, default_sig_handler);
+		s18 = signal (SIGUSR1, default_sig_handler);
+		s19 = signal (SIGUSR2, default_sig_handler);
+		
+		newmask = 
+			sigmask (SIGTSTP) |
+			sigmask (SIGTTIN) |
+			sigmask (SIGTTOU);
+		
+		/* set new signal mask */
+		sigprocmask (SIG_SETMASK, &newmask, &oldmask);
+		
+		doit ();
+		
+		/* restore signal mask */
+		sigprocmask (SIG_SETMASK, &oldmask, NULL);
+		
+		/* restore handler */
+		signal (SIGINT, sigint);
+		
+		signal (SIGHUP, s1);
+		signal (SIGQUIT, s2);
+		signal (SIGILL, s3);
+		signal (SIGTRAP, s4);
+		signal (SIGABRT, s5);
+		signal (SIGPRIV, s6);
+		signal (SIGFPE, s7);
+		signal (SIGBUS, s8);
+		signal (SIGSEGV, s9);
+		signal (SIGSYS, s10);
+		signal (SIGPIPE, s11);
+		signal (SIGALRM, s12);
+		signal (SIGTERM, s13);
+		signal (SIGXCPU, s14);
+		signal (SIGXFSZ, s15);
+		signal (SIGVTALRM, s16);
+		signal (SIGPROF, s17);
+		signal (SIGUSR1, s18);
+		signal (SIGUSR2, s19);
+	}
 	
 	
 	if (auto_passphrase_set)
@@ -483,6 +642,42 @@ main (int argc, char **argv)
 		printf ("Leave ok.\n");
 	
 	exit (0);
+}
+
+static void
+default_sig_handler (int signum)
+{
+	if ((mode >= SAFE) && log)
+	{
+		fflush (log);
+		
+		fprintf (log, "got signal %i\n", signum);
+		fflush (log);
+		
+		fclose (log);
+	}
+	
+	emergency_exit ("got fatal signal %i, terminating.\n", signum);
+}
+
+static void
+sigint_handler (int signum)
+{
+	char c;
+	
+	printf ("\nAre you sure to interrupt this session (y/n)? ");
+	scanf ("%c", &c);
+	
+	if (c == 'y' || c == 'Y')
+		default_sig_handler (signum);
+}
+
+static void
+logfile_writeheader (FILE *out)
+{
+	time_t t = time (NULL);
+	
+	fprintf (out, "# \n# %s, %s# \n", basename (myname), ctime (&t));
 }
 
 # ifndef min
@@ -507,16 +702,22 @@ do_cipher (int32_t recno, int32_t p_secsize)
 	}	
 }
 
+static char *magic_str = "crypto1";
+
 static void
 doit (void)
 {
+	char *action_pre = ((action == ENCIPHER) ? "en" : ((action == DECIPHER) ? "de" : "re"));
+	
 	int32_t p_secsize;
+	int32_t p_start;
+	int32_t p_size;
 	int64_t size;
 	int64_t todo;
 	
 	int32_t ret;
+	int64_t ret64;
 	
-	int fh;
 	int oldperc = -1;
 	
 	
@@ -531,6 +732,16 @@ doit (void)
 	ret = io_ioctrl (fh, 1, &p_secsize);
 	if (ret < 0)
 		safe_exit ("failed to determine physical sector size, abort.\n");
+	
+	/* get partition start sector */
+	ret = io_ioctrl (fh, 3, &p_start);
+	if (ret < 0)
+		safe_exit ("failed to determine start sector, abort.\n");
+	
+	/* get partition size */
+	ret = io_ioctrl (fh, 2, &p_size);
+	if (ret < 0)
+		safe_exit ("failed to determine partition size, abort.\n");
 	
 	/* get size of the partition */
 	size = io_seek (fh, SEEK_END, 0);
@@ -562,21 +773,46 @@ doit (void)
 		end_pos = size;
 	
 	/* seek to start position */
-	ret = io_seek (fh, SEEK_SET, start_pos);
-	if (ret < 0)
+	ret64 = io_seek (fh, SEEK_SET, start_pos);
+	if ((ret64 < 0) || (ret64 != start_pos))
 		safe_exit ("io_seek failed, abort.\n");
 	
 	if (mode == ROBUST)
 	{
 		/* open error recovery file */
-		ret = open ("crypto.rec", O_CREAT|O_WRONLY|O_TRUNC, 0600);
+		ret = open (SAVEFILE, O_CREAT|O_WRONLY|O_TRUNC, 0600);
 		if (ret < 0)
 		{
-			perror ("open (\"crypto.rec\")");
+			perror ("open (\"" SAVEFILE "\")");
 			safe_exit ("abort.\n");
 		}
 		
 		save_file = ret;
+	}
+	
+	if (mode >= SAFE)
+	{
+		/* open logfile */
+		log = fopen (LOGFILE, "w");
+		if (!log)
+		{
+			perror ("fopen (\"" LOGFILE "\")");
+			safe_exit ("abort.\n");
+		}
+		
+		logfile_writeheader (log);
+		
+		fprintf (log, "# %scrypting drive %c: [%i]\n", action_pre, 'A'+drv, drv);
+		fprintf (log, "# using cipher %s\n", ciphers[cipher]);
+		fprintf (log, "# \n");
+		fprintf (log, "# -- partition info --\n");
+		fprintf (log, "# sectorsize: %i\n", p_secsize);
+		fprintf (log, "# startsector: %i\n", p_start);
+		fprintf (log, "# sectors: %i\n", p_size);
+		fprintf (log, "# \n");
+		fprintf (log, "# run from offset %qi to %qi\n", start_pos, end_pos);
+		fprintf (log, "# \n\n");
+		fflush (log);
 	}
 	
 	/* transformation loop */
@@ -593,37 +829,72 @@ doit (void)
 		if (pos < 0)
 			emergency_exit ("io_seek failed, abort.\n");
 		
+		if (mode >= SAFE)
+		{
+			fprintf (log, "off %10qi  size %7i  - reading ", pos, left);
+			fflush (log);
+		}
+		
 		ret = io_read (fh, buf, left);
 		if (ret < 0)
 			emergency_exit ("io_read failed, abort.\n");
-
+		
 		if (mode == ROBUST)
 		{
 			lseek (save_file, 0, SEEK_SET);
+			write (save_file, magic_str, sizeof (magic_str));
+			write (save_file, &drv, sizeof (drv));
+			write (save_file, &pos, sizeof (pos));
+			write (save_file, &left, sizeof (left));
 			write (save_file, buf, left);
 			fsync (save_file);
 		}
 		
+		if (mode >= SAFE)
+		{
+			fputs ("ok - ", log);
+			fputs (action_pre, log);
+			fputs ("cipher ", log);
+		}
+		
 		do_cipher (recno, p_secsize);
-	    
+		
+		if (mode >= SAFE)
+			fputs ("ok", log);
+		
 		if (!simulate)
 		{
-			ret = io_seek (fh, SEEK_CUR, -left);
-			if (ret < 0)
+			ret64 = io_seek (fh, SEEK_CUR, -left);
+			if (ret64 < 0)
 				emergency_exit ("io_seek failed, abort.\n");
+			
+			if (mode >= SAFE)
+			{
+				fputs (" - write ", log);
+				fflush (log);
+			}
 			
 			ret = io_write (fh, buf, left);
 			if (ret < 0)
 				emergency_exit ("io_write failed, abort.\n");
+			
+			if (mode >= SAFE)
+			{
+				fputs ("ok", log);
+				fflush (log);
+			}
 		}
+		
+		if (mode >= SAFE)
+			fputs ("\n", log);
 		
 		todo -= left;
 		
 		/* feedback */
 		if (!quiet)
 		{
-			int64_t mb_size = size / 1024 / 1024;
-			int64_t mb_done = (size - todo) / 1024 / 1024;
+			int64_t mb_size = end_pos / 1024 / 1024;
+			int64_t mb_done = (end_pos - todo) / 1024 / 1024;
 			int perc = mb_done * 100 / mb_size;
 			
 			if (perc != oldperc)
@@ -636,8 +907,112 @@ doit (void)
 		}
 	}
 	
+	if (mode >= SAFE)
+	{
+		fputs ("\n", log);
+		fclose (log);
+	}
+	
 	if (mode == ROBUST)
+	{
 		close (save_file);
+		unlink (SAVEFILE);
+	}
 	
 	io_close (fh);
+}
+
+static void
+restore_save_file (char *name)
+{
+	char magic[sizeof (magic_str)];
+	int ret;
+	
+	int64_t pos, ret64;
+	int32_t left;
+	
+	ret = open (name, O_RDONLY);
+	if (ret < 0)
+	{
+		perror ("open (...)");
+		safe_exit ("abort.\n");
+	}
+	
+	save_file = ret;
+	
+	ret = read (save_file, magic, sizeof (magic_str));
+	if (ret != sizeof (magic))
+	{
+		perror ("read (magic)");
+		safe_exit ("abort.\n");
+	}
+	
+	if (strncmp (magic_str, magic,  sizeof (magic_str)))
+		safe_exit ("magic id mismatch, abort.\n");
+	
+	ret = read (save_file, &drv, sizeof (drv));
+	if (ret != sizeof (drv))
+	{
+		perror ("read (drv)");
+		safe_exit ("abort.\n");
+	}
+	
+	ret = read (save_file, &pos, sizeof (pos));
+	if (ret != sizeof (pos))
+	{
+		perror ("read (pos)");
+		safe_exit ("abort.\n");
+	}
+	
+	ret = read (save_file, &left, sizeof (left));
+	if (ret != sizeof (left))
+	{
+		perror ("read (left)");
+		safe_exit ("abort.\n");
+	}
+	
+	buf = malloc (left);
+	if (!buf)
+	{
+		perror ("malloc");
+		safe_exit ("abort.\n");
+	}
+	
+	ret = read (save_file, buf, left);
+	if (ret != left)
+	{
+		perror ("read (buf)");
+		safe_exit ("abort.\n");
+	}
+	
+	close (save_file);
+	
+	
+	/* now write it back to the filesystem */
+	
+	{
+		char c;
+		
+		printf ("Restore %i bytes at %qi on %c: [%i]\n", left, pos, 'A'+drv, drv);
+		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+		scanf ("%c", &c);
+		
+		if (c != 'y' && c != 'Y')
+			safe_exit ("user abort.\n");
+	}
+	
+	fh = io_open (drv);
+	if (fh < 0)
+		safe_exit ("failed to open device, abort.\n");
+	
+	ret64 = io_seek (fh, SEEK_SET, pos);
+	if (ret64 < 0 || ret64 != pos)
+		safe_exit ("io_seek failed, abort.\n");
+	
+	ret = io_write (fh, buf, left);
+	if (ret < 0 || ret != left)
+		emergency_exit ("io_write failed, abort.\n");
+	
+	io_close (fh);
+	exit (0);
 }
