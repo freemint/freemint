@@ -39,7 +39,7 @@ _whlv:
 
 _timv:		rts
 
-_th_wrapper:	movem.l	d0-d6/a0-a6,-(sp)
+_th_wrapper:	movem.l	d0-d7/a0-a6,-(sp)
 		jsr	_timer_handler
-		movem.l	(sp)+,d0-d6/a0-a6
+		movem.l	(sp)+,d0-d7/a0-a6
 		rts
