@@ -1174,6 +1174,7 @@ mint_thread(void *arg)
 {
 	int pid;
 	long r;
+	char path_env[] = "c:/";
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
@@ -1188,8 +1189,35 @@ mint_thread(void *arg)
 	_base->p_env[0] = 0;
 	_base->p_env[1] = 0;
 
-# ifdef OLDTOSFS
 	/*
+	 * Set the PATH variable to the root of the current drive
+	 */
+	path_env[0] = rootproc->p_cwd->curdrv + 'a';	/* this actually means drive u: */
+	_mint_setenv(_base, "PATH", path_env);
+
+	/* Export the sysdir to the environment */
+	_mint_setenv(_base, "SYSDIR", sysdir);
+
+	/* Setup some common variables */
+	_mint_setenv(_base, "TERM", "st52");
+	_mint_setenv(_base, "SLBPATH", sysdir);
+
+	/* These two are for the MiNTLib */
+	_mint_setenv(_base, "UNIXMODE", "/brUs");
+	_mint_setenv(_base, "PCONVERT", "PATH,HOME,SHELL");
+
+	/* we default to U:\ before loading the cnf  */
+	sys_d_setdrv('u' - 'a');
+ 	sys_d_setpath("/");
+
+	/* load the MINT.CNF configuration file */
+	load_config();
+
+	stop_and_ask();
+
+# ifdef OLDTOSFS
+	/* This must go after load_config().
+	 *
 	 * Until the old TOSFS is completely removed, we try to trigger a media
 	 * change on each drive that has NEWFATFS enabled, but is already in
 	 * control of TOSFS. This is done with d_lock() and will silently fail
@@ -1222,35 +1250,9 @@ mint_thread(void *arg)
 	}
 # endif
 
-	/*
-	 * Set the PATH variable to the root of the current drive
-	 */
-	if (_mint_getenv(_base, "PATH") == NULL)
-	{
-		static char path_env[] = "c:/";
-
-		path_env[0] = rootproc->p_cwd->curdrv + 'a';	/* this actually means drive u: */
-		_mint_setenv(_base, "PATH", path_env);
-	}
-
-	/* Export the sysdir to the environment */
-	_mint_setenv(_base, "SYSDIR", sysdir);
-
-	/* Setup some common variables, if not set by the user */
-	if (_mint_getenv(_base, "TERM") == NULL)
-		_mint_setenv(_base, "TERM", "st52");
-
-	if (_mint_getenv(_base, "SLBPATH") == NULL)
-		_mint_setenv(_base, "SLBPATH", sysdir);
-
-	/* These two are for the MiNTLib */
-	if (_mint_getenv(_base, "UNIXMODE") == NULL)
-		_mint_setenv(_base, "UNIXMODE", "/brUs");
-
-	if (_mint_getenv(_base, "PCONVERT") == NULL)
-		_mint_setenv(_base, "PCONVERT", "PATH,HOME,SHELL");
-
-	/* if we are MultiTOS, we're running in the AUTO folder, and our INIT
+	/* This must go after load_config().
+	 *
+	 * if we are MultiTOS, we're running in the AUTO folder, and our INIT
 	 * is in fact GEM, take the exec_os() vector. (We know that INIT
 	 * is GEM if the user told us so by using GEM= instead of INIT=.)
 	 */
@@ -1258,15 +1260,6 @@ mint_thread(void *arg)
 	{
 		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
-
-	/* we default to U:\ before loading the cnf  */
-	sys_d_setdrv('u' - 'a');
- 	sys_d_setpath("/");
-
-	/* load the MINT.CNF configuration file */
-	load_config();
-
-	stop_and_ask();
 
 	/* Load the keyboard table */
 	load_keytbl();
