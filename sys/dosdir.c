@@ -1606,6 +1606,21 @@ sys_d_cntl (int cmd, const char *name, long arg)
 long _cdecl
 sys_f_chown (const char *name, int uid, int gid)
 {
+	/* The standard chown does _not_ follow symlinks which is
+	 * different to the libc function chown()!
+	 */
+	return sys_f_chown16( name, uid, gid, 0 );
+}
+
+/*
+ * GEMDOS extension: Fchown16(name, uid, gid, follow_symlinks)
+ *
+ * @param follow_symlinks set to 1 to follow or 0 to not to follow
+ *                        (the other values are reserved)
+ */
+long _cdecl
+sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
+{
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 
@@ -1614,9 +1629,9 @@ sys_f_chown (const char *name, int uid, int gid)
 	long r;
 
 
-	TRACE(("Fchown(%s, %d, %d)", name, uid, gid));
+	TRACE(("Fchown16(%s, %d, %d, %s)", name, uid, gid, follow_symlinks != 0 ? "follow_links" : "nofollow"));
 
-	r = path2cookie (name, NULL, &fc);
+	r = path2cookie (name, follow_symlinks == 1 ? follow_links : NULL, &fc);
 	if (r)
 	{
 		DEBUG(("Fchown(%s): error %ld", name, r));

@@ -474,7 +474,7 @@ opcode	class name	args */
 0x17e	  RESERVED	/* mmap */
 0x17f	  RESERVED	/* munmap */
 
-0x180	  RESERVED
+0x180	f chown16	(const char *name, short uid, short gid, short follow)	/* 1.16 */
 0x181	  RESERVED
 0x182	  RESERVED
 0x183	  RESERVED

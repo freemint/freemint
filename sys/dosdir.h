@@ -43,6 +43,7 @@ long _cdecl sys_f_symlink	(const char *old, const char *new);
 long _cdecl sys_f_readlink	(int buflen, char *buf, const char *linkfile);
 long _cdecl sys_d_cntl		(int cmd, const char *name, long arg);
 long _cdecl sys_f_chown		(const char *name, int uid, int gid);
+long _cdecl sys_f_chown16	(const char *name, int uid, int gid, int follow_symlinks);
 long _cdecl sys_f_chmod		(const char *name, unsigned mode);
 long _cdecl sys_d_lock		(int mode, int drv);
 long _cdecl sys_d_readlabel	(const char *path, char *label, int maxlen);

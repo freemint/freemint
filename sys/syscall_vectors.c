@@ -102,7 +102,7 @@ sys_enosys (void)
  * - 0x33 reserved for MagiC - LONG Sconfig(WORD subfn, LONG flags);
  */
 
-# define DOS_MAX 0x180
+# define DOS_MAX 0x190
 ushort dos_max = DOS_MAX;
 
 Func dos_tab [DOS_MAX] =
@@ -519,7 +519,24 @@ Func dos_tab [DOS_MAX] =
 	/* 0x17e */		sys_enosys,		/* sys_mmap */
 	/* 0x17f */		sys_enosys,		/* sys_munmap */
 
-	/* 0x180 */		/* DOS_MAX */
+	/* 0x180 */		sys_f_chown16,	/* 1.16 */	
+	/* 0x181 */		sys_enosys,		/* reserved */
+	/* 0x182 */		sys_enosys,		/* reserved */
+	/* 0x183 */		sys_enosys,		/* reserved */
+	/* 0x184 */		sys_enosys,		/* reserved */
+	/* 0x185 */		sys_enosys,		/* reserved */
+	/* 0x186 */		sys_enosys,		/* reserved */
+	/* 0x187 */		sys_enosys,		/* reserved */
+	/* 0x188 */		sys_enosys,		/* reserved */
+	/* 0x189 */		sys_enosys,		/* reserved */
+	/* 0x18a */		sys_enosys,		/* reserved */
+	/* 0x18b */		sys_enosys,		/* reserved */
+	/* 0x18c */		sys_enosys,		/* reserved */
+	/* 0x18d */		sys_enosys,		/* reserved */
+	/* 0x18e */		sys_enosys,		/* reserved */
+	/* 0x18f */		sys_enosys,		/* reserved */
+
+	/* 0x190 */		/* DOS_MAX */
 };
 
 Func sys_mon_tab [1] =
