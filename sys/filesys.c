@@ -1185,6 +1185,9 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	if (!path)
 		return ENOTDIR;
 	
+	if (*path == '\0')
+		return ENOENT;
+		
 	if (!lastname)
 	{
 		dolast = 1;
