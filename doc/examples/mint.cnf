@@ -13,7 +13,7 @@
 #
 
 # set current working directory to u: respective /
-cd u:\
+cd u:/
 
 # SECURELEVEL= enables the appropriate security level:
 # 0 - recommended for single user setups, like MultiTOS (default).
@@ -118,7 +118,7 @@ SLICES=2
 # cd path       -- changes MiNT's default directory
 # echo message  -- print something on the screen
 # exec program  -- runs a program; you must give the complete path
-#                  and file extensions (e.g. c:\bin\echo.prg)
+#                  and file extensions (e.g. c:/bin/echo.prg)
 # include file  -- include another portion of the MINT.CNF file.
 # sln path link -- make a symbolic link named "link" pointing to "path"
 #                  "link" must be on drive U: for this to work
@@ -130,30 +130,30 @@ SLICES=2
 #
 # You could use "alias" to provide a quick way of getting at
 # nested directories, e.g. if you do
-# alias r: u:\c\some\long\path
-# then clicking on drive r: puts you into the folder c:\some\long\path
+# alias r: u:/c/some/long/path
+# then clicking on drive r: puts you into the folder c:/some/long/path
 
 # The "sln" command may be used to create "links" on drive U:. If
-# u:\foo is a link to c:\bar, then u:\foo\foo.txt is another way
-# of saying c:\bar\foo.txt. Judicious use of links can make
+# u:/foo is a link to c:/bar, then u:/foo/foo.txt is another way
+# of saying c:/bar/foo.txt. Judicious use of links can make
 # re-arranging hard disks and directories painless (if you always
 # use the names on drive u:, it doesn't matter where you put
 # the actual directories).
 
 # Setting up the root filesystem for UNIX environment
 
-#sln g:\bin      u:\bin
-#sln g:\boot     u:\boot
-#sln g:\etc      u:\etc
-#sln g:\home     u:\home
-#sln g:\lib      u:\lib
-#sln g:\mnt      u:\mnt
-#sln g:\opt      u:\opt
-#sln g:\root     u:\root
-#sln g:\sbin     u:\sbin
-#sln g:\tmp      u:\tmp
-#sln g:\usr      u:\usr
-#sln g:\var      u:\var
+#sln g:/bin      u:/bin
+#sln g:/boot     u:/boot
+#sln g:/etc      u:/etc
+#sln g:/home     u:/home
+#sln g:/lib      u:/lib
+#sln g:/mnt      u:/mnt
+#sln g:/opt      u:/opt
+#sln g:/root     u:/root
+#sln g:/sbin     u:/sbin
+#sln g:/tmp      u:/tmp
+#sln g:/usr      u:/usr
+#sln g:/var      u:/var
 
 
 # Setting default things
@@ -162,11 +162,15 @@ setenv PCONVERT PATH,HOME,SHELL
 setenv UNIXMODE /brUs
 
 # default path
-setenv PATH \boot\mint\bin;\sbin;\bin;\usr\sbin;\usr\bin
+setenv PATH /boot/mint/bin;/sbin;/bin;/usr/sbin;/usr/bin
+
+# Default path to search the SLBs (MagiC style 'shared
+# libraries').
+setenv SLBPATH ./;/c/mint
 
 # checking filesystem if necassar
 # Note: you need a correct /etc/fstab
-#exec u:\c\mint\bin\sh u:\c\mint\bin\fscheck.sh
+#exec u:/c/mint/bin/sh u:/c/mint/bin/fscheck.sh
 #echo
 
 # MiNT Setter can catch ALERT messages
@@ -178,18 +182,18 @@ setenv PATH \boot\mint\bin;\sbin;\bin;\usr\sbin;\usr\bin
 # paragraph above and for general information about MiNT kernel
 # time functions see doc/minttime.doc and doc/timezone.doc.
 
-#exec u:\usr\sbin\tzinit
+#exec u:/usr/sbin/tzinit
 
 # The "exec" command is used to launch programs. Note that programs
 # so launched are started before GEM is, so they must be TOS/TTP
 # programs. Most commonly used for starting device drivers.
 
 # start Draconis to MiNT-Net gateway
-#exec u:\boot\mint\mgw.prg
+#exec u:/boot/mint/mgw.prg
 #echo 
 
 # start Gluestik
-#exec u:\boot\mint\gluestik.prg
+#exec u:/boot/mint/gluestik.prg
 #echo 
 
 # Default login variables. Leave them commented out, if you use
@@ -204,8 +208,8 @@ setenv PATH \boot\mint\bin;\sbin;\bin;\usr\sbin;\usr\bin
 # These lines (with proper pathnames) are obligatory, if you're
 # going to use N.AES and Thing Desktop, respectively.
 
-setenv AESDIR   u:\boot\mint\aes\
-setenv THINGDIR u:\boot\mint\aes\desktop
+setenv AESDIR   u:/boot/mint/aes/
+setenv THINGDIR u:/boot/mint/aes/desktop
 
 # The best option is to have INIT= command here, after all pathnames
 # are already set up by commands above.
@@ -213,21 +217,23 @@ setenv THINGDIR u:\boot\mint\aes\desktop
 # If the MiNT is supposed to execute GEM, you should specify the full
 # path and filename like that:
 
-#GEM=u:\boot\mint\aes\n_aes.sys
+#GEM=u:/boot/mint/aes/xaaes.prg
 
 # Otherwise, if your init program is not GEM, you should use INIT= as
 # follows:
 
-INIT=u:\boot\mint\init.prg
+INIT=u:/boot/mint/init.prg
 
 # If you leave both commands above commented out, the MiNT will 
-# attempt to execute the GEM version in ROM (the single AES).
+# attempt to execute a file called `sh.tos' found in the system
+# directory (the same where the mint.cnf resides), and if this
+# fails, the internal minimum shell will be executed.
 
 # Before the MiNT executes the rest of the operating system, it is 
 # usually the best to change the current directory to the top 
 # directory of all filesystems.
  
-cd u:\
+cd u:/
 
 #
 # The "echo" command is really straightforward.
