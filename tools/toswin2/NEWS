@@ -24,3 +24,10 @@ Version 2.7 - 7 April 2001
   last column caused a line-break.  Now both tw52 and tw100 have
   proper automatic margins and there is no more need for such a
   user-definable feature.
+
+* Ultra-smart srcolling. ;-)
+  Displaying large amounts of data is now 3-9 times faster.
+
+* The block cursor is hyper-ugly.  It is therefore often left behind.  The
+  more often you have to see it in all its uglyness, the happier you will
+  be when it is replaced by a new version beaucoup plus en vogue soon.
