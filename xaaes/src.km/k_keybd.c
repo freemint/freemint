@@ -333,8 +333,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'Q':
 		case 'A':
 			DIAGS(("shutdown by CtlAlt Q/A"));
-			shutdown(lock);
-			C.shutdown = QUIT_XAAES;
+			dispatch_shutdown(0);
 			return true;
 		case 'Y':				/* ctrl+alt+Y, hide current app. */
 			hide_app(lock, focus_owner());
