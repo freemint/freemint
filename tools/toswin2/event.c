@@ -258,7 +258,7 @@ static void handle_msg(short *msgbuff)
 					if (gl_debug)
 					{
 						char str[12];
-						short d, i, id;
+						short i, id;
 			
 						i = appl_search(0, str, &d, &id);
 						while (i != 0)

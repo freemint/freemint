@@ -247,7 +247,7 @@ void	set_textcolor(int col);
 void	set_texteffects(int effects);
 void	set_wrmode(int mode);
 void	set_font(int font, int height);
-void 	set_fillstyle(int style, int index);
+void 	set_fillstyle(int style, int /* index */);
 
 void	draw_winicon(WINDOW *win);
 
