@@ -13,6 +13,12 @@
 # include "minixdev.h"
 # include "version.h"
 
+# include "mint/dcntl.h"
+# include "mint/emu_tos.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
+# include "mint/stat.h"
+
 # include "bitmap.h"
 # include "dir.h"
 # include "inode.h"

@@ -22,6 +22,8 @@
 
 # include "index.h"
 
+# include "mint/emu_tos.h"
+
 
 INDEX_CLUSTER *cluster[MAX_CLUSTER];
 

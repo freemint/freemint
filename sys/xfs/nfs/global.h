@@ -20,9 +20,11 @@
 # define __KERNEL_XFS__
 
 # include "mint/mint.h"
-# include "mint/dcntl.h"
-# include "mint/file.h"
+
 # include "libkern/libkern.h"
+# include "mint/file.h"
+# include "mint/time.h"
+# include "mint/stat.h"
 
 # include "sockets/inet4/in.h"
 
