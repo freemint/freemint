@@ -44,18 +44,15 @@
 # define DEBUG(x) printf x
 # endif
 
-
-# if 0
-# define TCP_VERSION	0x00010007L
-# else
-# define TCP_VERSION	0x00010000L
-# endif
+# define TCP_VERSION	0x00010008L
 
 /*
  * Comments:
  * 
- * get/set_dns		- not implemented, but normally unimportant, because in MiNTnet the
- * 			  standard calls for name server resolvement are used.
+ * get/set_dns	- because it is now possible to disable direct
+ *               use of the MiNTnet host functions these functions
+ *               are necessary to give the draconis socket library
+ *               the possibility to check hostname directly
  * 
  * get_loginparams	- not implemented. It's only interesting to determine the current user,
  * 			  but it may only be useful to provide more comfort to the user, i.e. a
@@ -119,10 +116,22 @@ struct st_get_connected_param
 	char *fnc;
 };
 
+struct st_get_etcdir_param
+{
+	char *fnc;
+};
+
 struct st_get_dns_param
 {
 	char *fnc;
 	short no;
+};
+
+struct st_set_dns_param
+{
+	char *fnc;
+	short no;
+	ulong new_ip;
 };
 
 struct st_get_loginparams_param
@@ -172,13 +181,18 @@ struct st_sethostip_param
 	long new_ip;
 };
 
-
 /*
  * prototypes
  */
+void disable_old_hostbyX(void);
+void enable_old_hostbyX(void);
+void disable_hostbyX(void);
+void enable_hostbyX(void);
 static ulong		_cdecl st_get_dns 		(struct st_get_dns_param p);
+static void			_cdecl st_set_dns 		(struct st_set_dns_param p);
 static void 		_cdecl st_get_loginparams	(struct st_get_loginparams_param p);
 static short		_cdecl st_get_connected 	(struct st_get_connected_param p);
+static char *		_cdecl st_get_etcdir 		(struct st_get_etcdir_param p);
 static CFG_OPT *	_cdecl st_get_options 		(struct st_get_options_param p);
 static long 		_cdecl st_gethostid 		(struct st_gethostid_param p);
 static long 		_cdecl st_gethostip 		(struct st_gethostip_param p);
@@ -222,7 +236,7 @@ long tcp_cookie [] =
 	(long) st_recvfrom,
 	(long) st_recvmsg,
 	0L,
-	0L,
+	(long) st_get_etcdir,
 	(long) st_gethostid,		/* 30 */
 	(long) st_sethostid,
 	(long) st_getsockname,
@@ -265,7 +279,7 @@ long tcp_cookie [] =
 	0L,
 	0L, 				/* 70 */
 	(long) st_get_dns,
-	0L,
+	(long) st_set_dns,
 	0L,
 	0L,
 	(long) st_gethostbyname,	/* 75 */
@@ -279,9 +293,58 @@ long tcp_cookie [] =
 	(long) 0L,
 	(long) st_fcntl,				/* 1.7 */
 	(long) TCP_VERSION, 		/* 85 */
+	(long) stbl_gethostbyname,
+	(long) stbl_gethostbyaddr,
+	(long) stbl_getservbyname,
+	(long) stbl_getservbyport,
 	0L
 };
 
+/* ---------------------------------
+   | Disable old hostbyX functions |
+   --------------------------------- */ 
+void disable_old_hostbyX(void)
+{
+tcp_cookie[75] = 
+tcp_cookie[76] = 0L;
+}
+
+/* --------------------------------
+   | Enable old hostbyX functions |
+   -------------------------------- */ 
+void enable_old_hostbyX(void)
+{
+tcp_cookie[75] = (long) st_gethostbyname;
+tcp_cookie[76] = (long) st_gethostbyaddr;
+}
+
+/* -----------------------------
+   | Disable hostbyX functions |
+   ----------------------------- */ 
+void disable_hostbyX(void)
+{
+tcp_cookie[86] = 
+tcp_cookie[87] = 0L;
+}
+
+/* ----------------------------
+   | Enable hostbyX functions |
+   ---------------------------- */ 
+void enable_hostbyX(void)
+{
+tcp_cookie[86] = (long) stbl_gethostbyname;
+tcp_cookie[87] = (long) stbl_gethostbyaddr;
+}
+
+/* -------------------------
+   | Get the etc directory |
+   | Always: u:/etc/       |
+   ------------------------- */
+static char *_cdecl
+st_get_etcdir(struct st_get_etcdir_param p)
+{
+return "u:/etc/";
+}
 
 /* --------------------------
    | Connection available ? |
@@ -300,21 +363,47 @@ st_get_connected (struct st_get_connected_param p)
 	return 2;
 }
 
+ulong dns1 = 0L;	/* First DNS IP */
+ulong dns2 = 0L;	/* Second DNS IP */
+
 /* ----------------------------------
    | Get domain name server address |
    ---------------------------------- */
 static ulong _cdecl
 st_get_dns (struct st_get_dns_param p)
 {
-	DEBUG (("st_get_dns: -> 0\n"));
+	DEBUG (("st_get_dns: %i -> %lx\n", p.no, p.no == 2 ? dns2 : dns1));
 	
 	/* no = 1: DNS-address 1
-	 * no = 2: DNS-address 2
-	 *
-	 * return dns-ipaddr;
-	 * return 0; (= Undefined)
-	 */
-	return 0;
+	 * no = 2: DNS-address 2 */
+
+	if (p.no == 2)
+		return dns2;
+	else
+		return dns1;
+}
+
+/* ----------------------------------
+   | Set domain name server address |
+   ---------------------------------- */
+static void _cdecl
+st_set_dns (struct st_set_dns_param p)
+{
+	DEBUG (("st_set_dns: -> %i %lx\n", p.no, p.new_ip));
+	
+	/* no = 1: DNS-address 1
+	 * no = 2: DNS-address 2 */
+	switch(p.no)
+		{
+		case 1:
+			dns1 = p.new_ip;
+			break;
+		case 2:
+			dns2 = p.new_ip;
+			break;
+		default:
+			/* Ignore */
+		}
 }
 
 /* ---------------------------

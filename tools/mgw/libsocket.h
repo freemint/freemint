@@ -38,10 +38,15 @@
  * raw prototypes
  */
 
+void getfunc_unlock (void);
 struct hostent * _cdecl st_gethostbyname ();
 struct hostent * _cdecl st_gethostbyaddr ();
+struct hostent * _cdecl stbl_gethostbyname ();
+struct hostent * _cdecl stbl_gethostbyaddr ();
 short            _cdecl st_gethostname	 ();
 struct servent * _cdecl st_getservbyname ();
 struct servent * _cdecl st_getservbyport ();
+struct servent * _cdecl stbl_getservbyname ();
+struct servent * _cdecl stbl_getservbyport ();
 
 # endif /* _libsocket_h */
