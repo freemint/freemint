@@ -194,11 +194,13 @@ const char *crypto_greet =
 /* These must have not more than 3 characters each
  * (ls in mis.c relies on it formatting its output)
  */
+# ifdef BUILTIN_SHELL
 const char *months_abbr_3[] =
 {
 	"Jan", "Feb", "Mar", "Apr", "May", "Jun", \
 	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
+# endif
 
 /* ---------- bios.c ---------- */
 /* Notice that this is an ALERT(), so compose the message so that
