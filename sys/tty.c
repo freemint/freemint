@@ -944,6 +944,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			else
 				tty->pgrp = (*((long *) arg) & 0x00007fffL);
 			
+			DEBUG (("TIOCSPGRP: assigned tty->pgrp = %i", tty->pgrp));
 			return E_OK;
 		}
 		case TIOCSTART:
@@ -1171,9 +1172,13 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				}
 				
 			}
+			
 			tty->pgrp = 0;
+			DEBUG (("TIOCNOTTY: assigned tty->pgrp = 0"));
+			
 			do_close (curproc, curproc->p_fd->control);
 			curproc->p_fd->control = NULL;
+			
 			return 0;
 			
 		/* Set controlling tty to file descriptor.  The process
@@ -1221,9 +1226,11 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			
 			curproc->p_fd->control = f;
 			tty->pgrp = curproc->pgrp;
+			DEBUG (("TIOCSCTTY: assigned tty->pgrp = %i", tty->pgrp));
+			
 			if (!(f->flags & O_NDELAY) && (tty->state & TS_BLIND))
 				(*f->dev->ioctl)(f, TIOCWONLINE, 0);
-				
+			
 			return 0;
 			
 		/*
@@ -1461,16 +1468,19 @@ tty_getchar (FILEPTR *f, int mode)
 				;	/* do nothing */
 			else if (c == tty->ltc.t_dsuspc)
 			{
+				DEBUG (("tty_getchar: killgroup (%i, SIGTSTP, 1)", curproc->pgrp));
 				killgroup (curproc->pgrp, SIGTSTP, 1);
 				check_sigs ();
 			}
 			else if (c == tty->tc.t_intrc)
 			{
+				DEBUG (("tty_getchar: killgroup (%i, SIGINT, 1)", curproc->pgrp));
 				killgroup (curproc->pgrp, SIGINT, 1);
 				check_sigs ();
 			}
 			else if (c == tty->tc.t_quitc)
 			{
+				DEBUG (("tty_getchar: killgroup (%i, SIGQUIT, 1)", curproc->pgrp));
 				killgroup (curproc->pgrp, SIGQUIT, 1);
 				check_sigs ();
 			}
@@ -1520,6 +1530,7 @@ tty_putchar (FILEPTR *f, long data, int mode)
 			 */
 			if (ch == tty->tc.t_intrc)
 			{
+				DEBUG (("tty_putchar: killgroup (%i, SIGINT, 1)", tty->pgrp));
 				killgroup (tty->pgrp, SIGINT, 1);
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 					tty_ioctl (f, TIOCFLUSH, &r);
@@ -1528,6 +1539,7 @@ tty_putchar (FILEPTR *f, long data, int mode)
 			}
 			else if (ch == tty->tc.t_quitc)
 			{
+				DEBUG (("tty_putchar: killgroup (%i, SIGQUIT, 1)", tty->pgrp));
 				killgroup (tty->pgrp, SIGQUIT, 1);
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 					tty_ioctl (f, TIOCFLUSH, &r);
@@ -1536,6 +1548,7 @@ tty_putchar (FILEPTR *f, long data, int mode)
 			}
 			else if (ch == tty->ltc.t_suspc)
 			{
+				DEBUG (("tty_putchar: killgroup (%i, SIGTSTP, 1)", tty->pgrp));
 				killgroup (tty->pgrp, SIGTSTP, 1);
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 					tty_ioctl (f, TIOCFLUSH, &r);
@@ -1596,12 +1609,15 @@ tty_putchar (FILEPTR *f, long data, int mode)
 					;	/* do nothing */
 				else if (c == tty->ltc.t_suspc) {
 					tty_ioctl(f, TIOCSTART, 0);
+					DEBUG (("tty_putchar1: killgroup (%i, SIGTSTP, 1)", tty->pgrp));
 					killgroup(tty->pgrp, SIGTSTP, 1);
 				} else if (c == tty->tc.t_intrc) {
 					tty_ioctl(f, TIOCSTART, 0);
+					DEBUG (("tty_putchar1: killgroup (%i, SIGINT, 1)", tty->pgrp));
 					killgroup(tty->pgrp, SIGINT, 1);
 				} else if (c == tty->tc.t_quitc) {
 					tty_ioctl(f, TIOCSTART, 0);
+					DEBUG (("tty_putchar1: killgroup (%i, SIGQUIT, 1)", tty->pgrp));
 					killgroup(tty->pgrp, SIGQUIT, 1);
 				} else if (c == tty->tc.t_startc)
 					tty_ioctl(f, TIOCSTART, 0);
