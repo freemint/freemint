@@ -1012,6 +1012,8 @@ mem_prot_special(PROC *proc)
 }
 }
 
+#include "mprot.x"
+
 /*----------------------------------------------------------------------------
  * DEBUGGING SECTION
  *--------------------------------------------------------------------------*/
@@ -1091,90 +1093,6 @@ QUICKDUMP(void)
 	    }
 	    FORCE("%08lx: %s",i*8192L,outstr);
 	}
-    }
-}
-
-static const char *berr_msg[] = { 
-/*  "........." */
-    "private  ",
-    "global   ",    /* turned into "hardware" for violation reports */
-    "super    ",
-    "readable ",
-    "free     ",
-    "hardware "	    /* used when the memory is not controlled by us */
-};
-
-static const char *rw_msg[] = {
-    "??",
-    "w ",
-    "r ",
-    "rw"
-};
-
-void
-report_buserr(void)
-{
-    const char *type, *rw;
-    short mode;
-    ulong aa, pc;
-    long len;
-    char alertbuf[5*32+16];	/* enough for an alert */
-    char *aptr;
-
-    if (no_mem_prot) return;
-
-    aa = curproc->exception_addr;
-    pc = curproc->exception_pc;
-    if ((mint_top_tt && aa < mint_top_tt) || (aa < mint_top_st)) {
-	mode = global_mode_table[(curproc->exception_addr >> 13)];
-	if (mode == PROT_G) {
-	    /* page is global: obviously a hardware bus error */
-	    mode = 5;
-	}
-    }
-    else {
-	/* (addr is > mint_top_tt) set mode = 5 so we don't look for owners */
-    	mode = 5;
-    }
-    type = berr_msg[mode];
-    rw = rw_msg[curproc->exception_access];
-
-    /* construct an AES alert box for this error:
-	| PROCESS  "buserrxx"  KILLED: |
-	| MEMORY VIOLATION.  (PID 000) |
-	|                              |
-	| Type: ......... PC: pc...... |
-	| Addr: ........  BP: ........ |
-    */
-
-    /* we play games to get around 128-char max for ksprintf */
-    aptr = alertbuf;
-    len = sizeof (alertbuf);
-    ksprintf (alertbuf, len, "[1][ PROCESS  \"%s\"  KILLED: |", curproc->name);
-
-    aptr = alertbuf + strlen (alertbuf);
-    len = sizeof (alertbuf) - strlen (alertbuf);
-    ksprintf (aptr, len, " MEMORY VIOLATION.  (PID %03d) | |", curproc->pid);
-	
-    aptr = alertbuf + strlen (alertbuf);
-    len = sizeof (alertbuf) - strlen (alertbuf);
-    ksprintf (aptr, len, " Type: %s PC: %08lx |", type, pc);
-
-    aptr = alertbuf + strlen (alertbuf);
-    len = sizeof (alertbuf) - strlen (alertbuf);
-    ksprintf (aptr, len, " Addr: %08lx  BP: %08lx ][ OK ]", aa, curproc->p_mem->base);
-
-    if (!_ALERT(alertbuf)) {
-    	/* this will call _alert again, but it will just fail again */
-    	ALERT("MEMORY VIOLATION: type=%s RW=%s AA=%lx PC=%lx BP=%lx",
-    		type, rw, aa, pc, curproc->p_mem->base);
-    }
-    	
-    if (curproc->pid == 0 || curproc->p_mem->memflags & F_OS_SPECIAL) {
-    /* the system is so thoroughly hosed that anything we try will
-     * likely cause another bus error; so let's just hang up
-     */
-	FATAL("Operating system killed");
     }
 }
 
