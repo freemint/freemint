@@ -138,7 +138,7 @@ small_main (void)
 	
 	for (i = 0; *magics[i].name; i++)
 	{
-		ksprintf (buf, sizeof (buf), "%%define %s %ld\n", magics[i].name, magics[i].value);
+		ksprintf (buf, sizeof (buf), "#define %s %ld\n", magics[i].name, magics[i].value);
 		Fwrite (fd, strlen (buf), buf);
 	}
 	
