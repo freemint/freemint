@@ -387,6 +387,10 @@ struct widget_tree
 	short dx, dy;			/* displacement of root from upper left corner of window
 					 * for operation by sliders. */
 
+	short ox, oy;			/* Root offset from upper left corner of window
+					 * caused by root-object borders
+					 */
+
 	FormExit *exit_form;		/* Called if exit condition occurs
 					 * while handling a form_do or a toolbar
 					 * or anything the like ;-) */

@@ -271,6 +271,11 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		{
 			form->ob_x = r->x;
 			form->ob_y = r->y;
+			if (!wt->zen)
+			{
+				form->ob_x += wt->ox;
+				form->ob_y += wt->oy;
+			}
 		}
 
 		/* If want to get informed */
@@ -409,14 +414,30 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 
 	if (new)
 	{
+		short sx, sy;
+		RECT r;
+
 		bzero(new, sizeof(*new));
 		new->flags |= WTF_ALLOC;
 		new->tree = obtree;
 		new->owner = client;
 		new->e.obj = -1;
 
+		sx = obtree->ob_x;
+		sy = obtree->ob_y;
+		obtree->ob_x = 100;
+		obtree->ob_y = 100;
+		
+		ob_area(obtree, 0, &r);
+		new->ox = obtree->ob_x - r.x;
+		new->oy = obtree->ob_y - r.x;
+
+		obtree->ob_x = sx;
+		obtree->ob_y = sy;
+
 		new->next = client->wtlist;
 		client->wtlist = new;
+		
 	}
 	DIAGS((" return new wt=%lx", new));
 	return new;

@@ -1690,8 +1690,14 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		/* Temporary hack 070702 */
 		if (wt && wt->tree)
 		{
+			
 			wt->tree->ob_x = wind->wa.x;
 			wt->tree->ob_y = wind->wa.y;
+			if (!wt->zen)
+			{
+				wt->tree->ob_x += wt->ox;
+				wt->tree->ob_y += wt->oy;
+			}
 		}
 	}
 		

@@ -109,7 +109,7 @@ Setup_form_do(struct xa_client *client,
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
 		wt = set_toolbar_widget(lock, wind, obtree, edobj);
-		wt->zen = true;
+		wt->zen = false; //true;
 	}
 	/*
 	 * Should this client do classic blocking form_do's?
@@ -126,15 +126,18 @@ Setup_form_do(struct xa_client *client,
 	 */
 	else
 	{
+		RECT r;
+
 		DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
+		ob_area(obtree, 0, &r);
 		client->fmd.r = calc_window(lock,
 					    client,
 					    WC_BORDER,
 					    kind,
 					    MG,
-					    C.Aes->options.thinframe,
+					    0, //C.Aes->options.thinframe,
 					    C.Aes->options.thinwork,
-					    *(RECT *)&obtree->ob_x);
+					    r); //*(RECT *)&obtree->ob_x);
 		if (!client->options.xa_nomove)
 			kind |= MOVER;
 		client->fmd.kind = kind;
@@ -159,7 +162,7 @@ Setup_form_do(struct xa_client *client,
 				     kind,
 				     client->fmd.state ? created_for_FMD_START : created_for_FORM_DO,
 				     MG,
-				     C.Aes->options.thinframe,
+				     0, //C.Aes->options.thinframe,
 				     C.Aes->options.thinwork,
 				     r,
 				     NULL,
@@ -168,6 +171,7 @@ Setup_form_do(struct xa_client *client,
 		{
 			client->fmd.wind = wind;
 			wt = set_toolbar_widget(lock, wind, obtree, edobj);
+			wt->zen = false;
 		}
 		else
 		{
