@@ -66,9 +66,6 @@
 # include "signal.h"		/* killgroup() */
 # include "timeout.h"		/* addroottimeout() */
 
-# define CAD_TIMEOUT	5*200
-# define ROOT_TIMEOUT	1
-
 /* The _AKP cookie value consists of:
  *
  * bits 0-7	keyboard nationality
@@ -144,7 +141,6 @@ static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 /* Variables that deal with keyboard autorepeat */
 static	uchar last_key[4];	/* last pressed key */
 static	short key_pressed;	/* flag for keys pressed/released (0 = no key is pressed) */
-static  char last_packet[3];
 static  short keep_sending;	/* flag for mouse packets auto-repetition */
 static	ushort keydel;		/* keybard delay rate and keyboard repeat rate, respectively */
 static	ushort krpdel;
@@ -161,13 +157,10 @@ static char *keytab_buffer = NULL;
 static long keytab_size = 0;
 static MEMREGION *user_keytab_region = NULL;
 
-/* 0xf8 - no button
- * 0xf9 - left button
- * 0xfa - right button
- * 0xfb - both buttons
- * + two bytes (X and Y) of position change relative
- * to the current position
- */
+# define ROOT_TIMEOUT	1
+# define CAD_TIMEOUT	5*200
+
+/* Mouse event timeouts */
 
 # define MOUSE_UP	0
 # define MOUSE_DOWN	1
@@ -176,69 +169,223 @@ static MEMREGION *user_keytab_region = NULL;
 # define MOUSE_LCLICK	5
 # define MOUSE_RCLICK	6
 
+# define MOUSE_TIMEOUT	40
+
+static char mouse_packet[3];
+
 static void
-move_mouse(short dir, char pixels)
+mouse_up(PROC *p, long pixels)
 {
-	char mouse_packet[3];
+	TIMEOUT *t;
 
-	switch (dir)
+	mouse_packet[0] = 0xf8;		/* header */
+	mouse_packet[1] = 0;		/* X axis */
+	mouse_packet[2] = -pixels;	/* Y axis */
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+
+	if (keep_sending)
 	{
-		case MOUSE_UP:
-		{
-			mouse_packet[0] = 0xf8;		/* header */
-			mouse_packet[1] = 0;		/* X axis */
-			mouse_packet[2] = -pixels;	/* Y axis */
-			break;
-		}
-		case MOUSE_DOWN:
-		{
-			mouse_packet[0] = 0xf8;
-			mouse_packet[1] = 0;
-			mouse_packet[2] = pixels;
-			break;
-		}
-		case MOUSE_RIGHT:
-		{
-			mouse_packet[0] = 0xf8;
-			mouse_packet[1] = pixels;
-			mouse_packet[2] = 0;
-			break;
-		}
-		case MOUSE_LEFT:
-		{
-			mouse_packet[0] = 0xf8;
-			mouse_packet[1] = -pixels;
-			mouse_packet[2] = 0;
-			break;
-		}
-		case MOUSE_LCLICK:
-		{
-			mouse_packet[0] = 0xf9;
-			mouse_packet[1] = 0;
-			mouse_packet[2] = 0;
-			break;
-		}
-		case MOUSE_RCLICK:
-		{
-			mouse_packet[0] = 0xfa;
-			mouse_packet[1] = 0;
-			mouse_packet[2] = 0;
-			break;
-		}
-		default:
-		{
-			return;
-		}
+		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_up, 0);
+		if (t) t->arg = pixels;
 	}
+}
 
-	last_packet[0] = mouse_packet[0];
-	last_packet[1] = mouse_packet[1];
-	last_packet[2] = mouse_packet[2];
+static void
+mouse_down(PROC *p, long pixels)
+{
+	TIMEOUT *t;
+
+	mouse_packet[0] = 0xf8;		/* header */
+	mouse_packet[1] = 0;		/* X axis */
+	mouse_packet[2] = pixels;	/* Y axis */
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+
+	if (keep_sending)
+	{
+		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_down, 0);
+		if (t) t->arg = pixels;
+	}
+}
+
+static void
+mouse_left(PROC *p, long pixels)
+{
+	TIMEOUT *t;
+
+	mouse_packet[0] = 0xf8;		/* header */
+	mouse_packet[1] = -pixels;	/* X axis */
+	mouse_packet[2] = 0;		/* Y axis */
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+
+	if (keep_sending)
+	{
+		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_left, 0);
+		if (t) t->arg = pixels;
+	}
+}
+
+static void
+mouse_right(PROC *p, long pixels)
+{
+	TIMEOUT *t;
+
+	mouse_packet[0] = 0xf8;		/* header */
+	mouse_packet[1] = pixels;	/* X axis */
+	mouse_packet[2] = 0;		/* Y axis */
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+
+	if (keep_sending)
+	{
+		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_right, 0);
+		if (t) t->arg = pixels;
+	}
+}
+
+static void
+mouse_noclick(PROC *p, long arg)
+{
+	mouse_packet[0] = 0xf8;		/* header */
+	mouse_packet[1] = 0;		/* X axis */
+	mouse_packet[2] = 0;		/* Y axis */
 
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
 }
 
-struct keytab *get_keytab(void) { return user_keytab; }
+static void
+mouse_lclick(PROC *p, long arg)
+{
+	mouse_packet[0] = 0xfa;		/* header */
+	mouse_packet[1] = 0;		/* X axis */
+	mouse_packet[2] = 0;		/* Y axis */
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+
+	/* Generate "release" packet */
+	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_noclick, 0);
+}
+
+static void
+mouse_rclick(PROC *p, long arg)
+{
+	mouse_packet[0] = 0xf9;		/* header */
+	mouse_packet[1] = 0;		/* X axis */
+	mouse_packet[2] = 0;		/* Y axis */
+
+	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 4);
+
+	/* Generate "release" packet */
+	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_noclick, 0);
+}
+
+static void
+mouse_dclick(PROC *p, long arg)
+{
+	mouse_lclick(p, arg);
+	addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_lclick, 0);
+}
+
+static short
+generate_mouse_event(uchar shift, ushort scan, uchar make)
+{
+	TIMEOUT *t;
+	char delta;
+
+	if (shift & MM_ESHIFT)
+		delta = 1;
+	else
+		delta = 8;
+
+	switch (scan)
+	{
+		case UP_ARROW:
+		{
+			if (make)
+			{
+				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_up, 1);
+				if (t) t->arg = delta;
+
+				kbdclick(scan);
+			}
+
+			keep_sending = make;
+
+			return -1;
+		}
+		case DOWN_ARROW:
+		{
+			if (make)
+			{
+				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_down, 1);
+				if (t) t->arg = delta;
+
+				kbdclick(scan);
+			}
+
+			keep_sending = make;
+
+			return -1;
+		}
+		case RIGHT_ARROW:
+		{
+			if (make)
+			{
+				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_right, 1);
+				if (t) t->arg = delta;
+
+				kbdclick(scan);
+			}
+
+			keep_sending = make;
+
+			return -1;
+		}
+		case LEFT_ARROW:
+		{
+			if (make)
+			{
+				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_left, 1);
+				if (t) t->arg = delta;
+
+				kbdclick(scan);
+			}
+
+			keep_sending = make;
+
+			return -1;
+		}
+		case INSERT:
+		{
+			if (make)
+			{
+				if (shift & MM_ESHIFT)
+					addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_dclick, 1);
+				else
+					addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_lclick, 1);
+
+				kbdclick(scan);
+			}
+
+			return -1;
+		}
+		case CLRHOME:
+		{
+			if (make)
+			{
+				addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_rclick, 1);
+
+				kbdclick(scan);
+			}
+
+			return -1;
+		}
+	}
+
+	return 0;
+}
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -363,13 +510,6 @@ autorepeat_timer(void)
 	/* conterm */
 	if ((*(char *)0x0484L & 0x02) == 0)
 		return;
-
-	if (keep_sending)
-	{
-		send_packet(syskey->mousevec, last_packet, last_packet + 4);
-
-		return;
-	}
 
 	if (key_pressed)
 	{
@@ -496,9 +636,6 @@ output_scancode(PROC *p, long arg)
  * The scancode is passed from newkeys(), which in turn is called
  * by BIOS.
  *
- * BUG: Alt/arrow doesn't move the mouse cursor, this has to
- * be done yet.
- *
  */
 
 /* `scancode' is short, but only low byte matters. The high byte
@@ -618,6 +755,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	 * Ctrl/Alt/Shift/Fx	-> debug information
 	 *
 	 */
+# if 0
 	if ((shift == MM_CTRLALT) && (scan == UNDO))
 	{
 		if (make)
@@ -628,6 +766,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 
 		return -1;
 	}
+# endif
 
 	if ((shift & MM_CTRLALT) == MM_CTRLALT)
 	{
@@ -706,78 +845,8 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	/* Alt/arrow, alt/insert and alt/clrhome emulate the mouse events */
 	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
 	{
-		char delta;
-
-		if (shift & MM_ESHIFT)
-			delta = 1;
-		else
-			delta = 8;
-
-		keep_sending = make;
-
-		switch (scan)
-		{
-			case UP_ARROW:
-			{
-				if (make)
-				{
-					move_mouse(MOUSE_UP, delta);
-					kbdclick(scan);
-				}
-
-				return -1;
-			}
-			case DOWN_ARROW:
-			{
-				if (make)
-				{
-					move_mouse(MOUSE_DOWN, delta);
-					kbdclick(scan);
-				}
-
-				return -1;
-			}
-			case RIGHT_ARROW:
-			{
-				if (make)
-				{
-					move_mouse(MOUSE_RIGHT, delta);
-					kbdclick(scan);
-				}
-
-				return -1;
-			}
-			case LEFT_ARROW:
-			{
-				if (make)
-				{
-					move_mouse(MOUSE_LEFT, delta);
-					kbdclick(scan);
-				}
-
-				return -1;
-			}
-			case INSERT:
-			{
-				if (make)
-				{
-					move_mouse(MOUSE_LCLICK, 0);
-					kbdclick(scan);
-				}
-
-				return -1;
-			}
-			case CLRHOME:
-			{
-				if (make)
-				{
-					move_mouse(MOUSE_RCLICK, 0);
-					kbdclick(scan);
-				}
-
-				return -1;
-			}
-		}
+		if (generate_mouse_event(shift, scan, make) == -1)
+			return -1;
 	}
 
 	if (shift == MM_ALTERNATE)
@@ -872,6 +941,8 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
  * as the translation table is PROT_PR, so it can be read, but
  * cannot be written to).
  */
+
+struct keytab *get_keytab(void) { return user_keytab; }
 
 struct keytab *
 sys_b_keytbl(char *unshifted, char *shifted, char *caps)
