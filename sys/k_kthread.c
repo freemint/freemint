@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,13 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2001-04-24
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  *
  */
 
@@ -48,25 +45,42 @@ kthread_fatal(void *arg)
 	FATAL("restoring SYSCALL context from kernel thread???");
 }
 
+long _cdecl
+kthread_create(struct proc *p, void _cdecl (*func)(void *), void *arg,
+	       struct proc **np, const char *fmt, ...)
+{
+	va_list args;
+	long r;
+
+	va_start(args, fmt);
+	r = kthread_create_v(p, func, arg, np, fmt, args);
+	va_end(args);
+
+	return r;
+}
+
 long
-kthread_create(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...)
+kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
+		 struct proc **np, const char *fmt, va_list args)
 {
 	struct proc *p2;
 	long err;
 
-	DEBUG(("kthread_create: 0x%lx", func));
+	if (!p) p = rootproc;
 
-	p2 = fork_proc1(rootproc, FORK_SHAREVM|FORK_SHARECWD|FORK_SHAREFILES, &err);
+	DEBUG(("kthread_create for pid %i: 0x%lx", p->pid, func));
+
+	p2 = fork_proc1(p, FORK_SHAREVM|FORK_SHARECWD|FORK_SHAREFILES, &err);
 	if (p2)
 	{
-		va_list args;
 		int i;
 
-		va_start(args, fmt);
+		/* this blocks SIGKILL for the update process */
+		p2->p_flag |= P_FLAG_SYS;
+
 		vsprintf(p2->fname, sizeof(p2->fname), fmt, args);
 		vsprintf(p2->cmdlin, sizeof(p2->cmdlin), fmt, args);
 		vsprintf(p2->name, sizeof(p2->name), fmt, args);
-		va_end(args);
 
 		/* kernel threads don't have a basepage */
 		p2->base = NULL;
@@ -99,7 +113,6 @@ kthread_create(void (*func)(void *), void *arg, struct proc **np, const char *fm
 			*np = p2;
 
 		run_next(p2, 3);
-
 		return 0;
 	}
 
@@ -111,7 +124,7 @@ kthread_create(void (*func)(void *), void *arg, struct proc **np, const char *fm
  * Cause a kernel thread to exit.  Assumes the exiting thread is the
  * current context.
  */
-void
+void _cdecl
 kthread_exit(short code)
 {
 	struct proc *p = curproc;
@@ -123,5 +136,5 @@ kthread_exit(short code)
 	terminate(p, code, ZOMBIE_Q);
 
 	/* not reached */
-	for (;;) ;
+	FATAL("terminate returned???");
 }

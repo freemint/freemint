@@ -8,6 +8,10 @@
  * Copyright 2003 Konrad M.Kokoszkiewicz <draco@atari.org>
  * All rights reserved.
  *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,13 +26,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- *
- * Author:  Konrad M.Kokoszkiewicz
- * Started: 15-01-2003
- *
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- *
+ */
+
+/*
  * Note:
  *
  * 1) the shell is running as separate process, but in kernel context;
@@ -1554,7 +1554,7 @@ startup_shell(void)
 	struct proc *p;
 	long r;
 
-	r = kthread_create(shell, NULL, &p, "shell");
+	r = kthread_create(NULL, shell, NULL, &p, "shell");
 	if (r)
 	{
 		DEBUG(("can't create \"shell\" kernel thread"));
