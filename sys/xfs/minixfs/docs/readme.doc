@@ -1,0 +1,44 @@
+Welcome to Minixfs! If you are attemting to use Minixfs for the first time
+then I would advise you read all the docs in this directory (except
+syscall.doc). Otherwise you can just read latest.doc for features added to
+the latest version and any bugfixes etc. (for more detailed info read the
+'changes' file in the source distribution).
+
+Here is a summary of the contents of the document files:
+
+copying		Conditions of use.
+
+address.doc	Contact addresses.
+
+mfsdoc.doc	introduction to Minixfs and why you may or may not want to
+		use it.
+
+minit.doc	How to use 'minit' to create a Minixfs partition.
+
+minixfs.doc	How to install Minixfs and about filename translation.
+
+flist.doc	Description of flist utility.
+
+csize.doc	Cache resizing utility.
+
+fsck.doc	How to use fsck to fix filesystems and a bit of backround
+		as to their structure.
+
+mfsconf.doc	How to use mfsconf to set the filesystem translation modes.
+
+mount.doc	How to use the mount program.
+
+bugs.doc	How to submit a bug report.
+
+syscall.doc	Minixfs specific system calls and special features of standard
+		system calls. Only really of interest to programmers.
+
+latest.doc	Bugfixes and/or features of this version.
+
+NB Read the file bugs.doc before submitting a bug report. I don't have access
+to your system so all I know about it is what you tell me, this file tells you
+the kind of information I need to have a reasonable chance of fixing a problem.
+I waste a great deal of time and money simply asking people to give me the
+proper information after an initial report saying "Minixfs doesn't work" or
+a nasty post to Usenet. In future I'll ingnore such reports, if you can't be
+bothered to read the docs then I can't be bothered to help.

@@ -1,0 +1,31 @@
+;
+; FreeMiNT startup module
+;
+; This file belongs to FreeMiNT,
+; it is not a part of the original MiNT distribution
+;
+; 8.II.2000, draco@atari.org
+;
+
+	XDEF	_main
+	XDEF	_init
+	XDEF	__base
+
+	BSS
+__base	ds.l	1
+
+	TEXT
+_main	move.l	$04(sp),a2		; basepage address
+	move.l	a2,__base
+	move.l	$0c(a2),d0		; size of the TEXT segment
+	add.l	$14(a2),d0		; size of the DATA segment
+	add.l	$1c(a2),d0		; size of the BSS segment
+	add.l	#$00001100,d0		; size of the basepage and stack
+	lea	0(a2,d0.l),sp		; new stack pointer
+	
+	move.l	d0,-(sp)		; new size
+	move.l	a2,-(sp)		; start address
+	pea	($004a0000).l		; Mshrink()
+	trap	#1
+	lea	$0c(sp),sp
+	jmp	_init

@@ -1,0 +1,20 @@
+--- main.c	Wed May  5 19:43:22 1999
++++ /usr/src/mint/current/src/main.c	Sun May  9 09:24:08 1999
+@@ -491,9 +491,15 @@
+ 	new_xbra_install(&old_5ms, 0x114L, mint_5ms);
+ 	new_xbra_install(&old_vbl, 4*0x1cL, mint_vbl);
+ 	
+-	new_xbra_install(&old_resvec, 0x042aL, reset);
+ 	old_resval = *((long *)0x426L);
+-	*((long *)0x426L) = RES_MAGIC;
++	/* install MiNT's resvector only if the cookie jar pointer was NULL */
++	if (*CJAR == NULL) {
++		new_xbra_install(&old_resvec, 0x042aL, reset);
++		*((long *)0x426L) = RES_MAGIC;
++	}
++	else {
++		old_resvec = *((long *)0x42aL);
++	}
+ 	
+ 	spl(savesr);
+ 

@@ -1,0 +1,7 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = pc16550.h
+COBJS = pc16550.c
+
+SRCFILES = $(HEADER) $(COBJS)

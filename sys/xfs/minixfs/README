@@ -1,0 +1,160 @@
+
+MinixFS 0.74
+============
+
+
+Note: Only run with FreeMiNT 1.15.1 and above!
+      
+      It's recommended to use this version with at least FreeMiNT 1.15.5
+      for best performance!
+
+
+What's new?
+-----------
+
+Two bugfixes.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 01.04.2000
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+
+MinixFS 0.72
+============
+
+
+Note: Only run with FreeMiNT 1.15.1 and above!
+
+
+What's new?
+-----------
+
+Added filesystem clean flag. Updated also fsck & minit for this.
+If you use the new fsck please also use the new xfs driver!
+
+Added native UTC mode to the xfs driver.
+Updates and some bugfixes.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 10.10.1999
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+MinixFS 0.71
+============
+
+
+Note: Only run with FreeMiNT 1.15.0 and above!
+
+
+What's new?
+-----------
+
+Support for (configurable) write-protection on filesystem level.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 13.04.1999
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+MinixFS 0.70 pl8
+================
+
+
+Note: Only run with FreeMiNT 1.15.0 and above!
+
+
+What's new?
+-----------
+
+An updated fsck is included here. Requires XHDI and access all
+partitions in a clean and safe way. It's also a little bit faster.
+Also updates and bugfixes for MinixFS and minit.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 05.03.1999
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+MinixFS 0.70 pl7
+================
+
+
+Note: Only run with FreeMiNT 1.15.0 and above!
+
+      fsck sources are not included here
+
+
+What's new?
+-----------
+
+A totally rewritten minit (MinixFS initializer) is included here.
+Also updates and bugfixes for MinixFS.
+
+Note: New minit requires XHDI and can't create MinixFS filesystems
+      on floppys at the moment (update follow).
+      Also minit create always MinixFS V2 now.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 22.12.1998
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+MinixFS 0.70 pl6
+================
+
+
+Note: Only run with FreeMiNT 1.15.0 and above!
+
+      This is an update archive and include only the source from MinixFS and a
+      minix.xfs ready to install. All other tools (minit, fsck, ...) are not
+      included here.
+
+
+What's new?
+-----------
+
+First, a more detailed list of changes you found in Changes.
+
+I removed completly the cache management and low level I/O interface. This is
+integrated in the new kernel. This reduce also the code size (now 26 kb,
+MinixFS 0.60 ~40 kb). For technical reasons I must remove (buggy) Mount/Unmount
+Support.
+
+I also added some new Dcntl's that are used by FSetter for example.
+
+Please note that the old MinixFS use 120 kB as default cache. The default cache
+of the new buffer cache management in FreeMiNT 1.15 is 100 kB. And the new global
+buffer cache is also used by the new fat-fs and other xfs in the future.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 10.10.1998

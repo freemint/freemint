@@ -1,0 +1,18 @@
+The utility mfsconf is a very simple utility to set the filename translation
+modes for a given device, or to inquire what they are.
+
+To determine the file translation modes for a given drive (X: say) type: 
+mfsconf X:
+The output is self explanatory.
+
+To set the modes the options -d -s -x or -c are used for directory search
+execute or creation translation. The letter is followed by one of the
+letters n, a, t or m for neither, all TOS or MiNT scopes respectively finally
+the drive is specified.
+
+E.g.
+
+mfsconf -d n -s a X:
+sets directory translation to none and search translation to all on drive X:
+All other modes remain the same.
+

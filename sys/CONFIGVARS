@@ -1,0 +1,129 @@
+# 
+# 
+# cross compiling
+#CROSS = yes
+CROSS = no
+
+#
+# target and host compiler
+# 
+ifeq ($(CROSS),yes)
+
+CC = /scratch_hp/fnaumann/bin/m68k-atari-mint-gcc
+AS = $(CC)
+NATIVECC = gcc
+NATIVECFLAGS = -O
+RANLIB = m68k-atari-mint-ranlib
+STRIP = m68k-atari-mint-strip
+
+else
+
+CC = gcc -pipe
+AS = $(CC)
+NATIVECC = gcc -pipe
+NATIVECFLAGS = -O
+RANLIB = ranlib
+STRIP = strip
+
+endif
+
+# 
+# some tools
+# 
+YACC  = bison -dk
+LEX   = flex
+MV    = mv
+CP    = cp
+RM    = rm -f
+TOUCH = touch
+MKDIR = mkdir
+MAKE  = make
+SED   = sed
+CRLF  = crlf -s
+
+
+#
+# MiNT must be compiled with 16 bit integers (-mshort)
+#
+GENERAL = -mshort
+
+#
+# add -DMULTITOS for a MultiTOS kernel
+# add -DDEBUG_INFO for debugging information
+# add -DFASTTEXT for the u:\dev\fasttext fast console driver
+# add -DCRYPTO_CODE for including the cryptographic filesystem stuff
+#
+KERNELDEFAULTDEFS = \
+	-DMULTITOS \
+	-DVERBOSE_BOOT \
+	-DTRAPS_PRIVATE \
+	-DCRYPTO_CODE
+
+#
+# target definitions
+#
+MINT  = invalid
+
+-include $(top_srcdir)/__target.*
+
+ifeq ($(target),000)
+MINT = ../bin/mint000.prg
+KERNELDEFS = 
+CPU  = 000
+endif
+
+ifeq ($(target),030)
+MINT = ../bin/mint030.prg
+KERNELDEFS = -DONLY030 -DCPU030
+CPU  = 030
+endif
+
+ifeq ($(target),040)
+MINT = ../bin/mint040.prg
+KERNELDEFS = -DONLY030 -DMMU040 -DCPU040
+CPU  = 020-60
+endif
+
+ifeq ($(target),deb)
+MINT = ../bin/mintnp.prg
+KERNELDEFS = -DDEBUG_INFO -DONLY030 -DCPU030
+CPU  = 030
+endif
+
+ifeq ($(target),mil)
+MINT = ../bin/mintmil.prg
+KERNELDEFS = -DONLY030 -DMMU040 -DMILAN -DCPU040
+CPU  = 020-60
+endif
+
+ifeq ($(target),my1)
+MINT = ../bin/mintnp.prg
+KERNELDEFS = -DONLY030 -DDEBUG_INFO -DCPU060
+CPU  = 020-60
+endif
+
+ifeq ($(target),my2)
+MINT = ../bin/mint040.prg
+KERNELDEFS = -DONLY030 -DMMU040 -DDEBUG_INFO -DMILAN -DCPU040
+CPU  = 020-60
+endif
+
+#
+# optimizations
+# 
+OPTS = -fomit-frame-pointer -O2
+ifeq ($(MODEL),-m68000)
+OPTS += -fstrength-reduce
+endif
+
+#
+# warning options
+#
+WARN = \
+	-Wall \
+	-Wmissing-prototypes \
+	-Winline \
+	-Wshadow \
+	-Wpointer-arith \
+	-Wcast-qual \
+	-Waggregate-return

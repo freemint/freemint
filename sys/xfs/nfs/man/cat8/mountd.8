@@ -1,0 +1,30 @@
+
+
+
+MOUNTD(8C)            MAINTENANCE COMMANDS             MOUNTD(8C)
+
+
+
+NAME
+     mountd, rpc.mountd - NFS mount request server
+
+SYNOPSIS
+     /usr/etc/rpc.mountd 
+
+DESCRIPTION
+     mountd is an RPC  server  that  answers  file  system  mount
+     requests.    It  reads  the  file  /etc/xtab,  described  in
+     exports(5), to determine which file  systems  are  available
+     for  mounting  by which machines.  It also provides informa-
+     tion as to what file systems are mounted by  which  clients.
+     This  information can be printed using the showmount(8) com-
+     mand.
+
+     The mountd daemon is normally invoked by rc(8).
+
+FILES
+     /etc/xtab
+
+SEE ALSO
+     exports(5), rc(8), showmount(8)
+

@@ -1,0 +1,78 @@
+;
+; kernel.spp,
+; created 1998-09-05
+; by Konrad Kokoszkiewicz, draco@atari.org.pl
+; 
+; This file belongs to FreeMiNT.
+; It is not a part of the original MiNT distribution.
+
+; This replaces enter_kernel() and leave_kernel()
+; previously defined in main.c. Purpose: speed optimization.
+;
+
+; NOTICE: these routines are mainly responsible for the fact that
+; the kernel is not reentrant. Some day we will have to fix it.
+
+%include "magic/magic.i"
+
+	XDEF	_enter_gemdos
+	XDEF	_enter_bios
+	XDEF	_leave_kernel
+
+	XREF	_curproc
+	XREF	_in_kernel
+	XREF	_tosbp,__base
+
+; Formerly, the enter_kernel() was called with an argument, that was
+; copied to the curproc->in_dos. We are compatible with this behaviour
+; splitting the function to enter_gemdos() and enter_bios() called
+; when necessary. Notice we aren't playing with trap vectors anymore,
+; calls get redirected to ROM by the MiNT trap handlers according to the
+; in_kernel state.
+; Also, the in_kernel flag is now responsible for preventing any two
+; (or more) routines from entering the kernel at the same time. As the
+; flag is locked in one continuous read-modify-write cycle by
+; trap handlers and the VBL routine, there's no need to manipulate the
+; IPL before entering and leaving the kernel.
+; Checking the flag introduces some additional CPU cycles into trap
+; handlers, but this is balanced by removal of approx. 10 instructions
+; (incl. 9 memory-to-memory long moves) from each enter/leave sequence.
+
+	DATA
+_in_kernel:
+	dc.w	0
+
+	TEXT
+
+_enter_bios:
+	bset	#$07,_in_kernel
+	beq.s	bp
+	rts
+
+_enter_gemdos:
+	bset	#$07,_in_kernel
+	bne.s	exit
+	move.l	_curproc,a0
+	move.w	#$0001,P_INDOS(a0)
+bp:	move.l	_tosbp,a0
+	move.l	__base,(a0)
+exit:	rts
+
+;
+; leave_kernel: called before leaving the kernel, either back to
+; user mode or when calling a signal handler or the GEMDOS
+; terminate vector.
+;
+; Notice: the rest of assembler modules rely on the fact, that
+; this function loads the _curproc address to the register a0,
+; and additionally doesn't change the d0. See syscall.spp.
+
+_leave_kernel:
+	move.l	_tosbp,a1
+	move.l	_curproc,a0
+	move.l	P_BASE(a0),(a1)
+	clr.w	P_INDOS(a0)
+	clr.w	_in_kernel
+	rts
+
+	END

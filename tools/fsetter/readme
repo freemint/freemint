@@ -1,0 +1,76 @@
+
+Here is a new tool to control a lot of things
+of the new FAT/VFAT/FAT32 filesystem in
+FreeMiNT 1.15.
+
+It can run as programm or acc.
+
+You can change a lot of options on the fly.
+A english/german hypertext follows.
+
+
+Christian Felsch 
+felsch@tu-harburg.de
+
+
+short description:
+==================
+
+1. select a drive
+
+2. all non supported options are disabled
+
+3. General options:
+
+VFAT
+	- enable/disable VFAT extension on this drive
+	- supported from NEWFATFS
+	
+MagiC sym-links
+	- enable/disable MagiC style symlinks on this drive;
+	- WinNT doesn't like MagiC style symlinks for example,
+	  that's why exist this option
+	- supported from NEWFATFS
+	
+Write-Back Cache
+	- enable/disable Write-Back mode on this drive
+	  Write-Back means that write access is buffered; this will
+	  extremly speedup a lot of operations
+	  It's not recommended to disable this option on MinixFS
+	- always safe (also if operations are performed at the moment
+	  on this drive)
+	- supported from MinixFS and NEWFATFS
+
+4. Name mode:
+
+- supported from NEWFATFS
+- only available for if VFAT extension is disabled
+- restrict allowed characters for new file names
+  - GEMDOS - all GEMDOS characters, default
+  - ISO - characters after ISO (characters, digits, underscore)
+  - MSDOS - all MSDOS chracters are allowed
+
+5. FAT32:
+
+- supported from NEWFATFS
+- only available on FAT32 partitions
+- FAT Mirroring enable/disable FAT Mirroring
+  that means all FAT or only the specified FAT is updated
+  if you disable FAT Mirroring, you must first specify the active
+  FAT, active FAT can be 1 to 'Number of FATs'
+
+6. Info:
+
+- print some information about this drive and the description
+  of the filesystem running
+
+7. Change - apply the actual settings
+   Quit - leave this dialog without any change
+   Change + Quit - set actual settings and leave dialog
+
+
+Have fun.
+If there is any question ask me or Christian Felsch.
+
+Frank Naumann <fnaumann@cs.uni-magdeburg.de>
+Magdeburg, der 08.10.1998

@@ -1,0 +1,24 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+STARTUP = startup.o
+
+COBJS = \
+	mprot030.c \
+	mprot040.c
+
+SOBJS = \
+	context.spp \
+	cpu.spp \
+	detect.spp \
+	intr.spp \
+	kernel.spp \
+	mmu030.spp \
+	mmu040.spp \
+	slb_util.spp \
+	syscall.spp \
+	vm5.spp \
+	scsidrv_emu.spp \
+	xhdi_emu.spp
+
+SRCFILES = $(STARTUP) $(COBJS) $(SOBJS)

@@ -1,0 +1,59 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+COBJS = \
+	bios.c \
+	biosfs.c \
+	block_IO.c \
+	blowfish.c \
+	cnf.c \
+	cmdline.c \
+	console.c \
+	cookie.c \
+	crypt_IO.c \
+	debug.c \
+	dev-mouse.c \
+	dev-null.c \
+	dma.c \
+	dos.c \
+	dosdir.c \
+	dosfile.c \
+	dosmem.c \
+	dossig.c \
+	fasttext.c \
+	fatfs.c \
+	filesys.c \
+	global.c \
+	init.c \
+	kernfs.c \
+	kernget.c \
+	kmemory.c \
+	md5.c \
+	memory.c \
+	nullfs.c \
+	pipefs.c \
+	proc.c \
+	procfs.c \
+	pun.c \
+	random.c \
+	rendez.c \
+	resource.c \
+	scsidrv.c \
+	shmfs.c \
+	signal.c \
+	slb.c \
+	ssystem.c \
+	sys_emu.c \
+	syscall_vectors.c \
+	time.c \
+	timeout.c \
+	tosfs.c \
+	tty.c \
+	unicode.c \
+	unifs.c \
+	update.c \
+	util.c \
+	xbios.c \
+	xhdi.c
+
+SRCFILES = $(COBJS)

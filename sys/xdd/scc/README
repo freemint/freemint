@@ -1,0 +1,117 @@
+SCC serial driver for FreeMiNT
+==============================
+
+Feedback, bugreports, suggestions and any other constructive comment
+is strongly recommended. Please send it as e-mail to me or the
+MiNT mailinglist <mint@fishpool.com>.
+
+
+ * 2000-05-24:	(v0.23)
+ * 
+ * - new: hopefully better behaviour on last close()
+ *        (flush buffers, go back to carrier detection & update TS_BLIND)
+ * 
+ * 2000-05-16:	(v0.22)
+ * 
+ * - fix: removed unnecessary debug messages that are printed
+ * 
+ * 2000-05-14:	(v0.21)
+ * 
+ * - fix: corrected TS_BLIND <-> clocal handling; now hopefully correct
+ * - new: bios emulation doesn't poll now, use sleep/wake mechanism
+ *        like the read/write functions
+ * 
+ * 2000-05-12:	(v0.20)
+ * 
+ * - new: reworked the complete high level I/O routines;
+ *        support now (hopefully) true tty functionality
+ *        this include carrier handling, vmin/vtime handling,
+ *        clocal settings and so on
+ * - new: seperate read/write routines for HSMODEM devices;
+ *        they never block
+ * - fix: scc_close doesn't removed device locks
+ * 
+
+
+Features:
+---------
+- native driverrotuines for FreeMiNT, completly interrupt controlled
+- minimal systemlast
+- stable and constant data rates at 115200 Baud in background
+- installs RSVF compatible and MiNT tty devices
+- supports all filesharing and -locking mechanism
+- completly supported by FreeMiNT
+- no longer is HSMODEM, HSMINST or other stuff required
+
+
+Installation:
+-------------
+
+1. deinstallation of HSMODEM (if installed)
+   - remove/rename of all HSMODEM AUTO folder programms
+   - remove/rename of hsminst.xdd/drvinmnt.xdd
+   - remove/outcomment of the HSMODEM configuration (in your MiNT.CNF)
+     like the following lines:
+     --- cut ---
+     # hsmodem config
+     sln u:\dev\hsmodem2 u:\dev\modem2
+     sln u:\dev\hsserial2 u:\dev\serial2
+     --- cut ---
+
+2. Remove/outcomment of all MiNT.CNF entries for your tty devices
+   (if installed)
+   like the following lines:
+   --- cut ---
+   ren u:\dev\modem2  u:\dev\ttyb
+   ren u:\dev\serial1 u:\dev\ttyc
+   ren u:\dev\serial2 u:\dev\ttyd
+   
+   sln u:\dev\ttyb u:\dev\modem2
+   sln u:\dev\ttyc u:\dev\serial1
+   sln u:\dev\ttyd u:\dev\serial2
+   --- cut ---
+
+3. Copy the xdd to your MultiTOS or MiNT folder on your boot device
+
+4. Verify that you have at least FreeMiNT 1.15.6 installed
+   if not the driver simply don't work
+
+5. Reboot
+
+
+Bugs:
+-----
+- missing ESCC support, missing ST-ESCC support
+- only run on 68020-68060 at the moment
+
+
+Thanks:
+-------
+- to Rainer Mannigel for the source he originally developed for his
+  own BIOS and the permission to develop a serial driver
+
+
+Copying:
+--------
+Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+Portions copyright 1998, 1999 Rainer Mannigel.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+Magdeburg, 24.05.2000

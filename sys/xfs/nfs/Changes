@@ -1,0 +1,371 @@
+# @(#) CHANGES  for the networking filesystem by Ulrich Kuehn
+
+VERSION 0.53
+
+xfs/config.h:
+	++ Bernd Ebert
+	Bigger values for some buffers etc., set default rsize+wsize to
+	1024 (there seems to be a bug concerning packet fragmentation somewhere.
+
+VERSION 0.52
+
+daemon/nfssvc.c
+	++ T. Lang
+	Changed the handling of the writeargs due to the behaviour of some
+	braindamaged nfs drivers (e. g. Pathway NFS for Macintosh).
+	Changed the behaviour when position behind the end of a file for writing
+        (which is allowed on Un*x fs).
+
+
+VERSION 0.51
+
+daemon/fh.c:
+	Added a check that accesses to .. in a directory are handled explicitly
+	by removing a path component.
+lib/xdr.c:
+	Improved the code for xdr_string/xdr_opaque.
+xfs/netfs.c:    ++Kay Roemer
+xfs/netutil.c:
+daemon/auth_mnt.c
+	Applied Kay's buf fixes.
+xfs/netfs.c:
+	When changing the mode of the root directory, just copy the mode bits.
+lib/svc_auth.c:
+	Fixed a bug which resulted in wrong credentials (machine name, uid, gid).
+daemon/auth_nfs.c:
+daemon/nfssvc.c:
+	Implemented access checking based on the nfs handle supplied by each call
+	(needs probably some efficiency trimming).
+daemon/fh.c:
+daemon/nfssvc.c:
+	Rereading the config file left the indices with dangling pointers etc.
+	Fixed.
+daemon/mountd.c:
+daemon/auth_mnt.c:
+daemon/auth.c:
+	Completely rewrote auth.c, added support for access checking at mount time.
+daemon/mountd.c:
+daemon/nfsd.c:
+daemon/nfssvc.c:
+	Implemented support for system logger. Logging of several rpc actions 
+	can be enabled at debug level > 0 (start daemon with -d), logging priority
+	is LOG_INFO in domain LOG_AUTH.
+daemon/nfssvc.c:
+	Fixed an #ifdef, which remained from the compile time dynamic rpc support.
+daemon/fh.c:
+	Added support for mounting subdirectories of exported things.
+daemon/mountd.c:
+	Look up name of unmounting host and remove the entry from the list of
+	mounted directories.
+
+
+VERSION 0.5
+
+COPYING:
+	Made the copying permissions a bit more strict.
+Makefiles:
+	Placed all variables into Makevar, some cleanup in the makefiles
+xfs/netdev.c:
+	When opening an existing file with mode O_TRUNC, let the server
+	truncate the file first.
+daemon/nfssvc.c:
+	If the file truncation dcntl fails, try the old method (Fcreate/Fclose),
+	when truncating to 0 length. This way this works also on a TOSFS.
+xfs/cache.c:
+xfs/netfs.c:
+	When removing a file or directory, delete it also from the cache. Also
+	fixed a bug, that left index counts for indices that had been deleted
+	from the cache.
+daemon/mountd.c:
+daemon/nfsd.c:
+	Replaced the compile time option DYNAMIC_RPC by a run-time check 
+	for stdin being a	socket. So one version fits all needs again :)
+daemon/mountd.c:
+daemon/nfsd.c:
+daemon/nfssvc.c:
+daemon/fh.c:  ++Kay Roemer
+	Applied Kay's bug fixes and patches. There is a compile time option
+	DYNAMIC_RPC to enable support for inetd.
+xfs/netfs.c:
+	When doing nfs_lookup for a program in TOS domain, convert the name
+	to lower case (this is configurable).
+xfs/sockipc.c:
+	Added support for supplementary group ids.
+daemon/nfssvc.c:
+	Set the supplied user and group id to enable access checks by the
+	kernel of the server machine.
+lib/svc_main.c:
+lib/svc_auth.c:
+	Added support for unix style authentification.
+daemon/nfssvc.c:
+	When getting attributes for exported files, follow symlinks.
+daemon/fh.c:
+	For exported files, resolve symlinks first, because they dont mean
+	anything to the client.
+mount/nfsmnt.c:
+	Added a check for the result of the mount operation. The rpc call could
+	succeed, but the mount op still could fail.
+
+
+VERSION 0.4 PL 2
+
+various places: ++Kay Roemer
+	Applied Kay's bug fixes.
+xfs/index.c:
+	Added validation check for the mount options, as they could be negative.
+xfs/sock_ipc.c:
+	Added a sanity check for the size of the incoming data, as there can be
+	infinitly many bytes be read if an error occurs on the socket.
+mount/mount.c:
+	Implemented a lot of further nfs options.
+
+
+VERSION 0.4 PL 1
+
+daemon/fh.c:
+	Fixed a problem when reading more from a directory than requested. The
+	next entry was the same as the first at all in the directory.
+	Also removed a problem which released the wrong malloced string.
+daemon/fh.c:
+	Fixed a bug that caused a crash when the inode number of a file was 
+	negative (long <-> u_long). This could only happen on a TOSFS with
+	Julian's crc inode patch applied.
+daemon/mountd.c:
+	Implemented MOUNTPROC_DUMP. But MOUNTPROC_EXPORT is still not there.
+mount/mount.c:
+	Implemented some more options.
+xfs/sock_ipc.c:
+	Changed the authentification initialization to use a retry count, if the
+	\etc\hostname file could not be read at boot time.
+daemon/util.c:
+xfs/nfsutil.c:
+	Implemented a better scheme of converting between nfs and mint file 
+	attributes and types.
+daemon/nfssvc.c:
+daemon/mountd.c:
+daemon/auth.c:
+	Changed the behavior when receiving signal 1 (SIGHUP) to reread the
+	configuration files.
+xfs/config.h:
+	Reduced the default packet size to a value that will result in IP packet
+	sizes < 4kb.
+xfs/index.c:
+	Mount slots are now allocated dynamically, because if we get an auto 
+	mounter, there can be a lot of mounts at the same time.
+lib/svc.c:
+lib/rpc.c:
+	Fixed a bug that caused a crash when something other than auth_null was
+	used.
+xfs/sock_ipc.c:
+	Implemented the use of unix authentification. But the nfsd still does not
+	use it, as mint is not capable of setting the euid/egid via system call.
+daemon/mountd.c:
+mount/nfsmnt.c:
+	Try to get a known port number, so if the port mapper is not running, 
+	mounts might still work.
+
+
+VERSION 0.4
+
+xfs/netfs.h:
+xfs/index.c:
+mount/nfsmnt.c:
+	Cleaned up the mount structure a bit and added support for a hostname. So
+	there can be error messages containing a server name.
+lib/clnt.c:
+lib/svc_main.c:
+	Implemented use of the port mapper service.
+xfs/netfs.c:
+	When deleting a file, the corresponding cookie is no longer removed.
+daemon/nfssvc.c:  ++Kay Roemer
+	Fixed a bug that caused some functions to overwrite memory because some 
+	buffers were used in a braindead way....
+lib/thread.c:
+	Changed the name of the function to avoid confusion with a function of the
+	same name in the mintlib. Increased the stack size to 8 KB.
+
+
+VERSION 0.3 PL 3
+
+xfs/netdir.c:
+	Fixed a bug that caused mounted directories to appear twice after an
+	unmount.
+xfs/netdir.c:
+	Made the cache coherent before unmounts.
+xfs/sock_ipc.c:
+	The nfs socket is no longer opened at boot time. Instead, it is opened
+	when the first access occurs. This was necessary because MiNT gave us 
+	a non-global handle regardless the fact that the kernel socket lib
+	opens it with O_GLOBAL. Strange!
+everywhere:
+	Replaced the use of unix domain sockets with udp sockets.
+mount/mount.c:
+	The mtab file is only updated if the unmount operation was successful.
+	Return values should now be positive.
+
+
+VERSION 0.3 PL 2
+
+mount/mount.c:
+	Added code to convert the local pathname into MiNTs native format, so 
+	now paths like /d/foo are handled correctly.
+daemon/fh.c:
+	Rewrote a major part of the cache index handling code. Now recreating
+	a file's name from the nfs handle works, but only on a file system that
+	has real inodes (not on the TOSFS).
+daemon/fh.c:
+	Reduced the amount of necessary stat() calls by giving fh_new another
+	argument, so that the result of the stat call can be reused.
+	Began to change the way the file indices are handled to support inode
+	inode numbers. That way it will be possible to start up the nfsd after
+	a crash without problems (but not on MiNT's TOSFS!)
+mount/mntent.c:  ++Kay Roemer
+	Fixed a bug in the file lock handling.
+
+
+VERSION 0.3 PL 1
+
+xfs/sock_ipc.c:
+	If there occurs some error while doing the send/receive stuff, the socket
+	is closed, so that the next access will open it again. That way we can
+	kill the nfs daemon, and restart it later and the nfs is still working.
+	Maybe we should try to reopen the connection at once without failing
+	the current request.
+xfs/netdir.c:
+	Fixed a bug that caused a cut-off of names in the \nfs dir if the chain
+	of mounted things contained unused entries.
+daemon/nfssvc.c:
+	Replaced the dynamic argument allocation with use of static buffers.
+daemon/*
+	Major changes in the interface to the RPC functions.
+daemon/mntsvc.c:
+	Added support for the rmtab file which preserves information about remote
+	mounts across crashes.
+daemon/nfssvc.c:
+	Fixed the symlink and the hardlink function (wrong order of args).
+mount/mount.c:
+mount/nfsmnt.c:
+	Implemented unmount.
+
+
+VERSION 0.3
+
+mount/mount.c:
+	Reorganized the code and added the possibility to give some options like 
+	read-only, nosuid etc.
+xfs/netfs.c:
+xfs/netdev.c:
+	Implemented support for read-only mounts, no set uid and setting different
+	timeouts for the attribute cache.
+mount/ipc.c:
+	Now a retry count > 1 is used. Therefore we make the socket name a little
+	bit random to prevent the mountd to write the wrong answer into it.
+daemon/fh.c:
+daemon/nfssvc.c:
+xfs/index.c:
+xfs/netfs.c:
+	If a file or directory is removed, it might still have an index. This
+	is removed now, too.
+mount/mount.c:
+xfs/*.c:
+	Changed the way several options were handled. These have now default values
+	in config.h, but can be modified at mount time. There are still things to
+	do on this.
+mount/mount.c:
+	Changed the order of arguments, server name is now stripped off the 
+	remote path name. Also the file \etc\mtab is updated with each mount.
+xfs/sock_ipc.c:
+	Fixed a bug that caused some strange behavior when doing concurrent
+	nfs operations from different processes with max_retry = 1.
+xfs/netfs.c:
+	Fixed a bug in nfs_chattr, that caused removing write protection not to
+	work.
+xfs/netdir.c:
+	When the process is in TOS domain, return filenames as upper case.
+xfs/netdev.c:
+	Added the possibility to seek after the end of the file.
+daemon/util.c:
+daemon/fh.c:
+daemon/export.c:
+	Pathnames are now made relative to u:\, so it makes no difference if one
+	mounts u:/e/foo or e:\foo. But anyway, don't use the ':' as it will be used
+	to separate the server name from the exported directory.
+daemon/nfsd.c:
+dameon/mountd.c:
+	The current drive and directory of the daemon processes is now u:\
+xfs/sock_ipc.c: ++Kay Roemer
+	Added some missing free_message_header() calls.
+daemon/fh.c: ++Kay Roemer
+	Fixed the previous fix to protect export roots.
+xfs/index.c: ++Kay Roemer
+	Fixed a cluster numbering problem when freeing clusters.
+xfs/cache.c:
+xfs/netfs.c:
+xfs/netdir.c:
+	Implemented use of a cache for nfs_lookup().
+xfs/netdir.c:
+	The buffer for the decoded directory entries has to be bigger than the
+	requested size, as the xdr representation might expand a bit.
+
+
+VERSION 0.20a
+
+xfs/sock_ipc.c:  ++Kay Roemer
+	Added a sanity check when freeing mesages.
+daemon/fh.c:  ++Kay Roemer
+	Fixed a bug which caused export roots to be overwitten.
+daemon/nfssvc.c:
+	Changing file time is possible now.
+daemon/fh.c:
+daemon/nfsdvc.c:
+	If a file is just created, we give it a file decriptor right then.
+xfs/sock_ipc.c:
+	Messages nobody waits for are discarded now, messages are read out of the
+	socket until the awaited is there or nothing is there to read anymore.
+xfs/netdir.c:
+	If the name buffer is too short, the current entry is skipped.
+daemon/nfssvc.c:
+	Implemented write_svc().
+xfs/netdev.c:
+	Implemented nfs_write(). Good Luck!
+daemon/svc_ipc.c:
+	Added the possibility to install a timeout handler.
+daemon/fh.c:
+	Some fixes for fh_update().
+xfs/netdev.c:  ++Kay Roemer
+	Fixed the return value of nfs_ioctl for FIONWRITE.
+daemon/nfsd.c:
+	A timeout handler is now installed to clean up the handle cache.
+daemon/svc_ipc.c:
+	Fixed the receiving code to return correctly the address of the sender.
+xfs/sock_ipc.c:
+	Fixed nfs_receivemsg to receive also the senders address.
+
+
+VERSION 0.15a
+
+xfs/config.h:
+	increased the message size when reading to 8KB.
+daemon/nfssvc.c:
+	when reading the current postion of the file is used to avoid seeking.
+xfs/index.c:
+	Fixed a bug that caused a lost index structure each time it was freed.
+xfs/netfs.c:
+xfs/netdir.c:
+xfs/netdev.c:
+	All functions doing communication have now a small buffer on the stack, so 
+	we do not have to bother MiNT's memory management so often.
+all communication functions:
+	Now sockets are used instead of pipes.
+daemon/svc_ipc:   ++Kay Roemer
+	Fixed a bug that caused the daemons to lose track of the allocated memory 
+	for a message.
+xfs/netdev.c:    ++Kay Roemer
+	Fixed bug in the seek function.
+
+
+VERSION 0.10a
+
+	First release to some alpha testers. This version is not very stable.
+	It lacks also the possibility of writing files through NFS, it is
+	simply too dangerous.

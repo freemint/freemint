@@ -1,0 +1,186 @@
+From version 0.70 all changes by Frank Naumann
+<fnaumann@freemint.de>
+
+--------------- 0.74
+		- fixed wrong blocks/nblocks value in getxattr/stat
+		- fixed wrong error code ENAMETOOLONG to EBADARG in m_readdir
+
+--------------- 0.73
+		- fixed new bug in do_trans related to new kernel header,
+		  p_domain not called
+		- fixed and enhanced minix_sanity (main.c)
+		  there are possible corruption problems
+		- fixed dskchng (minixsys.c)
+
+--------------- 0.72
+		- fix missing readonly check in Fread() (updating atime)
+		- updated to latest kernel header
+		- changed to new FILESYS struct
+		- changed to new error codes (errno.h)
+		- added new kernel.h
+		- added new stat call; support now UTC kernel mode
+		  -> changed getxattr, FUTIME, datetime
+		- added new FUTIME_UTC calls (ioctl & cntl)
+		- added filesystem clean flag, updated fsck & minit
+
+--------------- 0.71
+		- patch in __fio for negative offsets
+		- optimization in getxattr
+		- added readonly stuff & checks
+
+-------------- 0.70
+	pl 9	- fix bug in m_seek
+		- changed all fixed name arrays to automatic arrays
+		  (reduce stack size; arrays now depend on real file name len)
+		- removed all stuff for fixed name size
+
+	pl 8	- added _cdecl keyword for interface functions
+		- m_seek rewritten
+		- some other bugfixes
+	
+	pl 7	- added some more Debugmessages
+		- changed all ALERTs, DEBUGs, TRACEs to a unique form
+		- added Dpathconf (DP_MODEATTR)
+		- added Dpathconf (DP_XATTRFIELDS)
+		- added Dpathconf (DP_VOLNAMEMAX)
+	
+	pl 6	- added Dcntl(FS_INFO)
+		- added Dcntl(FS_USAGE)
+		- removed overkill sync in m_write
+
+	pl 5	- replaced static 1kb scratch by local buffers
+		- adapt for MiNT buffer management revision 3
+		- main.c: check buffer management revision now
+		          some cleanup in minix_sanity
+		- trans.c: (tosify) replaced static name buffer by
+		           local buffers (dir.c, readdir)
+		- readdir: flag & TOS_SEARCH
+		- add bc.pre_read call
+		- add writeback configuration, restruct internal
+		  cache control
+
+	pl 4	- fix little bug (wrong toupper linked)
+	
+	pl 3	- re-add linear read/write optimization
+		- new low level I/O routine
+		- better buffer cache support
+		- safe error handling
+		
+	pl 2	changes to work with new buffer management from kernel
+		- removed completly cache.*, check.*
+		- adapt all functions to use new buffer cache
+		- removed a lot of no longer used functions
+		- I must remove linaer read/write optimizations for now
+		- I must remove pre-read for now
+		- removed all cache data structures and definitions
+		
+	pl 1	changes to work with new HD I/O interface from kernel
+		- remove completly hdio.*, io.*, xhdi.*
+		- main.c -> minix_sanity adapt to use new kernel interface
+		- dskchng, invalidate, etc.
+		- replace crwabs all over the place
+		
+	pl 0	complete code reorganisation:
+		- remove sysupdate stuff
+		- remove ICD fixes etc.
+		- every c-file get its own header
+		- remove proto.h
+		- rewritten Makefile
+		- uses actual header from MiNT kernel
+		- remove no longer used files
+		- remove completly V1 support
+		- new file global.c with global datas
+		- new file minix.h -> toplevel definitions
+
+--------------
+-------------- old history
+--------------
+'Minixfs' Copyright S.N.Henson. See 'copying' file for more info.
+Version 0.60.
+Revision history .....
+	0.0   Single-partition read-only version with no filename conversion.
+	0.1   Added multi-partition support and filename conversion for TOS
+	      domain ... added cache.
+	0.2   Added write support 90% of TOS functions emulated. No write
+	      cache yet ... and no access checking.
+	0.25  Fixed m_seek bug.
+	0.3   Added write cache and remaining tos functions fixed some bugs
+	      when long files were read/written. Made search_dir more tos-like.
+	0.31  Fixed some bugs . Made it permissible to delete an open file
+	      (just like unix). Added full-disk error checks and minor code
+	      tidy up.
+
+--------------------First Release with MiNT 0.7----------------------------
+
+	0.32  Added 'zlast' to speed up free zone searches. Also added
+	      consecutive zone read/write to speed up i/o . Fixed bugs
+	      all over the place with curdir .
+	0.33  Fixed code for > 512 byte sectors. Merged add_zone and
+	      find_zone, new code should support sparse files .
+	0.34  Tentative support for floppies and removeable media . Tidied up
+	      and removed redundant code (like minix_init() ) .
+	0.35  Added access checking to all relevant functions.
+	0.40  Added some un*x like inode related functions , fixed up m_rename
+	      to be more robust (and related things in find_path). Fixed up
+	      m_creat and merged zap_inode() with new function trunc_inode().
+	      Not to mention fixing the occasional bug (or two).
+
+--------------------Second Release with MiNT 0.8---------------------------
+
+	0.41  Cleared up a few bugs, separated system and user caches.
+	0.50  Changed stuff all over the place for new fs code in 0.9 and
+	      addition of file sharing code, hard and symbolic links (yeah!).
+	      converted to loadable filesystem.
+===================All Subsequent Versions Are releases====================
+	0.51  New compilation option TOS_LWR and tosify filenames from readdir
+	      only if in compatability mode (and all domains).
+	0.511 Nasty bug fixed in find_zone which screwed files bigger than 1Mb.
+	0.52  Added V2 filesystem support. Extended RWABS now used, as required.
+	      Code changed all over the place, new alerts added if some problems
+	      are noticed in the filesystem.
+	0.53  Added code to handle large directory entries.
+	0.54  Overhaul of tosify code, translation now selectable by fscntl.
+	0.541 Fixed bug which crashed v2 filesystems.
+	0.55  Added ROBUST compilation option and file locking.
+
+	0.60  Major code reorganisation, split up into separate files, fixed
+	      bugs relating to large partitions (crwabs with 1K sectors and
+	      unsigned types in read/write_zones instead of longs and dfree).
+	      Introduced some enhancements for faster I/O, such as cache
+	      guessing, pre-reading, and flushing consecutive cache entries.
+	      Tosify now also drive dependent.
+	pl1   Fixes to keep gcc 2.3.3 happy.
+	pl2   Support for new calls/parameters in updated fs format.
+	pl3   Support for larger partitions: pun_info/XHDI.
+	pl4   Bugfixes for larger partitions and 0xffff inodes.
+	pl5   Asynchronous update daemon, physical partition suport, dummy fses,
+	      still more bugfixes for large partitions and larger pun's.
+	pl6   Bugfixes: inode search (fsck) and stop compiler warnings.
+	      FUTIMES/FTRUNCATE support added (untested).
+	      Following are all courtesy of Andreas Schwab (thanks!):
+	      Multiple opens with O_TRUNC locked up, unlinking of open files was
+	      handled incorrectly, FILEPTR structures should be freed up on a
+	      disk change. Various other fixes and code tidy.
+	pl7   Fixes to FUTIMES/FTRUNCATE and sparse file handling (thanks again
+	      Andreas!). Kludge to get ICD software working in physical mode
+	      with cache on (thanks to Egbert Jan den Bussche for helping with
+	      this).
+	pl8   Arrgh!! ICD software uses something odd for physical mode Rwabs:
+	      fixed. Fixed up FUTIME again (thanks again Andreas!). Minit fixes
+	      all over the place for XHDI info (thanks Julian), foul up when
+	      partition is a certain size (thanks Juergen). New protection
+	      method introduced, and patches for fsck to tolerate it.
+	pl9   Really add sparse file fix this time :-) Minor patches to make
+	      disk I/O work with older XHDI (and print out the right info).
+	      Patched up FUTIME yet again (thanks Andreas). Very tentative
+	      support added for mount() and umount().
+	pl10  Juergen's patch to improve sparse file efficiency and cache bug.
+	      Patches from Andreas for F_SETLKW and FIONREAD. Fixed bug in fsck
+	      which crashed when lots of zones out of range. Extra error info 
+	      added and comparison check to minit, also tosfs recreate option.
+	      Code to use addroottimeout if possible. Make fsck more tolerant
+	      of Dlock and other failures. MFS_LOPEN and MFS_MKNOD added and
+	      a small amount of support. Changes made to make filesystem more
+	      Linux compatible. Docs rewritten.
+	pl11  See docs\latest.doc
+	pl12  fix: triple indirect block bug in truncate by Torsten Lang

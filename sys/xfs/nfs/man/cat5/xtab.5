@@ -1,0 +1,117 @@
+
+
+
+EXPORTS(5)                FILE FORMATS                 EXPORTS(5)
+
+
+
+NAME
+     exports, xtab - directories to export to NFS clients
+
+SYNOPSIS
+     /etc/exports
+
+     /etc/xtab
+
+DESCRIPTION
+     The /etc/exports file contains entries for directories  that
+     can be exported to NFS clients.  This file is read automati-
+     cally by the exportfs(8) command.  If you change this  file,
+     you  must  run  exportfs(8)  for  the  changes to affect the
+     daemon's operation.
+
+     Only when this  file  is  present  at  boot  time  does  the
+     rc.local  script execute exportfs(8) and start the NFS file-
+     system daemon, nfsd(8).
+
+     The /etc/xtab file contains entries for directories that are
+     _c_u_r_r_e_n_t_l_y  exported.   This  file should only be accessed by
+     programs using getexportent() (see exportent(3)).   Use  the
+     -u option of exportfs to remove entries from this file.
+
+     An entry for a directory consists of a line of the following
+     form:
+
+          _d_i_r_e_c_t_o_r_y   -_o_p_t_i_o_n[,_o_p_t_i_o_n ]...
+
+     _d_i_r_e_c_t_o_r_y      is the pathname of a directory (or file).
+
+     _o_p_t_i_o_n         is one of the following:
+
+                    ro   Export the directory read-only.  If  not
+                         specified,  the  directory  is  exported
+                         read-write.
+
+                    rw=_h_o_s_t_n_a_m_e_s[:_h_o_s_t_n_a_m_e]...
+                         Export   the   directory    read-mostly.
+                         Read-mostly   means  read-only  to  most
+                         machines, but read-write to those speci-
+                         fied.   If  not specified, the directory
+                         is exported read-write to all.
+
+                    anon=_u_i_d
+                         If a request comes from an unknown user,
+                         use  _u_i_d as the effective user ID. Note:
+                         root users (uid 0) are always considered
+                         "unknown" by the NFS server, unless they
+                         are included in the "root" option below.
+                         The default value for this option is the
+                         UID of the user "nobody".  If  the  user
+                         "nobody"  does  not exist then the value
+                         65534 is used.   Setting  the  value  of
+                         "anon"   to   65535  disables  anonymous
+                         access.  Note:  by  default  secure  NFS
+                         accepts  insecure requests as anonymous,
+                         and those wishing for extra security can
+                         disable  this  feature by setting "anon"
+                         to 65534.
+
+                    root=_h_o_s_t_n_a_m_e_s[:_h_o_s_t_n_a_m_e]...
+                         Give root access only to the root  users
+                         from  a specified _h_o_s_t_n_a_m_e.  The default
+                         is for  no  hosts  to  be  granted  root
+                         access.
+
+                    access=_c_l_i_e_n_t[:_c_l_i_e_n_t]...
+                         Give mount access to each _c_l_i_e_n_t listed.
+                         A  _c_l_i_e_n_t can either be a hostname, or a
+                         netgroup (see netgroup(5)).  Each _c_l_i_e_n_t
+                         in  the list is first checked for in the
+                         /etc/hosts  database,   and   then   the
+                         /etc/netgroups  database.   The  default
+                         value allows any machine  to  mount  the
+                         given directory.
+
+                    secure
+                         Require clients to  use  a  more  secure
+                         protocol when accessing the directory.
+
+     A `#' (pound-sign) anywhere in the file indicates a  comment
+     that extends to the end of the line.
+
+EXAMPLE
+     /usr      -access=clients     # export to my clients
+     /usr/local                    # export to the world
+     /usr2     -access=hermes:zip:tutorial# export to only these machines
+     /usr/sun  -root=hermes:zip    # give root access only to these
+     /usr/new  -anon=0             # give all machines root access
+     /usr/bin  -ro                 # export read-only to everyone
+     /usr/stuff                    -access=zip,anon=-3,ro# several options on one line
+
+FILES
+     /etc/exports
+     /etc/xtab
+     /etc/hosts
+     /etc/netgroup
+     rc.local
+
+SEE ALSO
+     exportent(3), hosts(5), netgroup(5), exportfs(8), nfsd(8)
+
+WARNINGS
+     You cannot export either a parent directory or  a  subdirec-
+     tory  of  an  exported  directory  that  is  _w_i_t_h_i_n _t_h_e _s_a_m_e
+     _f_i_l_e_s_y_s_t_e_m.  It would be illegal, for  instance,  to  export
+     both  /usr and /usr/local if both directories resided on the
+     same disk partition.
+

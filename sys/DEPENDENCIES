@@ -1,0 +1,29 @@
+# These are some standard dependencies rules common to all Makefiles.
+
+#
+# libkern target
+#
+$(LIBKERNTARGET):
+	cd $(top_srcdir)/libkern; $(MAKE) CPU="$(CPU)" libkern$(CPU).a
+
+#
+# compile rule
+#
+%.o: %.c
+	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
+	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
+
+#
+# dependencies
+#
+DEP_FILES = $(addprefix ./.deps/, $(patsubst %.o,%.P,$(OBJS)))
+
+# These are automatically remade, no need for make to worry about
+# them.
+.PHONY : $(DEP_FILES)
+
+DEPS_MAGIC := $(shell mkdir ./.deps > /dev/null 2>&1 || :)
+
+.SECONDARY : $(DEP_FILES)
+
+-include $(DEP_FILES) /dev/null

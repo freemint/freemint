@@ -1,0 +1,89 @@
+
+This is the modernized version of the floppy device driver.
+It lock now the drive with Dlock.
+
+
+Frank Naumann
+<fnaumann@cs.uni-magdeburg.de>
+
+Magdeburg, 06.05.1999
+
+==============================================================================
+==============================================================================
+==============================================================================
+
+Here is the original readme file from dave Gymer
+------------------------------------------------------------------------------
+This is Dave Gymer's raw MiNT floppy device hacked up to work as a .XDD
+driver and to handle multiple devices.
+
+To build it you need the PureC compiler v1.1, I haven't tested with an
+another compiler... Send me a note if you succeed in compiling with an other
+C compiler!
+
+The compiled devices got fd0 (ex-ps0.. fd0 seems more logical to me), fh0
+for HD 1.44meg and fx0, a fat HD format (1.6meg = 20 sectors/track).
+If you wish to add others devices (other drive, different density..), you
+just have to put their description in the array "drivers", and recompile!
+Then you got a ready-to-work nice XDD driver! 
+
+How to add a device in "driver[]":
+{device_name, drive, tracks/side, sides, sectors/track, bytes/sector}
+
+device_name:   ex: "fd0", "fh0", "ps0"...
+               Note that all the devices will be in /dev
+drive:         0 for drive A:, 1 for drive B: (no harddisk!)
+tracks/side:   80 is the standard
+sides:         1 (single-sided) or 2 (double-sided)
+sectors/track: 9 is for DD MS-DOS disks, 18 for HD MS-DOS disks, 36 for ED disks.
+               Of course don't surestimate your drive... If you put a greater
+               value than standard it might be unreliable and slower!
+bytes/sector:  512 is the standard
+
+adviced values for sectors/track (values between braces are standard values)
+DD 3'5 : [9] 10 11
+HD 5'25: [15] 16 17
+HD 3'25: [18] 19 20 21 22
+ED     : [36] 37 38 39 40
+beware of higher values!
+
+-- Stephane Boisson (Nucleus)
+boisso_s@epita.fr
+
+Here is the original readme file from dave Gymer
+------------------------------------------------------------------------------
+ps0 - a simple raw floppy device driver
+Written by Dave Gymer and placed in the public domain.
+
+Basically, what this program does is to install a character special
+device called /dev/ps0 (the name is adjustable) which can be manipulated
+almost like a normal file, but whose contents reflect the contents of the
+floppy disk in drive A: (also adjustable).
+
+There are a few things you can't do with /dev/ps0 that you can with a real
+file:
+	- delete it (well, you can, but then the device driver is lost and
+	must be reloaded)
+	- alter it's length (this is fixed at the length of the disk; attempts
+	to seek further will silently fail)
+	- stat it (again, you can, but you don't get anything useful out)
+
+By default, it read double sided, 9 sector/track, 80 track disks in drive A:,
+but you can alter all these things in the source and recompile.
+
+I wrote this program after buying a 386 PC to run Linux on; the easiest way
+to transfer files is via /dev/ps0 on the PC, but there was no MiNT equivalent.
+At first I used a program called STraw (ST rawrite) which I knocked up in a
+night, but I stupidly went and deleted the source, so I wrote this instead.
+Good, huh?
+
+You should add a line to your mint.cnf file to install it, along the lines of
+	exec c:\mintboot\ps0.tos
+
+Quick hint: if you use the GNU fileutils under MiNT, do _not_ use cp to
+write files to /dev/ps0, cos it does them a byte at a time! Instead, use
+`cat file >/dev/ps0'. Maybe one day Eric Smith will add proper block-special
+devices to MiNT. But what do I care? :-) I run Eunuchs! 8^}
+
+-- Dave Gymer
+dpg@Cs.Nott.AC.UK

@@ -1,0 +1,29 @@
+
+Here is a new RAMDISK filesystem for MiNT.
+==========================================
+version 0.70
+============
+
+It has some advantages:
+
+- support hardlink/readlabel/writelabel
+- support FUTIME, FTRUNCATE
+- works block orientated, files are stored in small blocks
+  (-> better large file handling, less memory fragmentation)
+  -> all block orientated tools work a lot faster :-)
+- return correct values in Dpathconf ()
+- advisotory file locking (like MinixFS and FAT-FS)
+- support of the new Dcntls FS_INFO/FS_USAGE
+- it's published under the terms of the GNU public license
+  (see the file COPYING for more details)
+
+Please send me suggestions and bug reports.
+
+The list of changes are found at the head of fnramfs.c.
+Take a look!
+
+
+Frank Naumann,
+<fnaumann@freemint.de>
+
+Magdeburg, 16.03.2000

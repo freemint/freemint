@@ -1,0 +1,82 @@
+GlueSTiK - STiK to MiNT-Net gateway
+===================================
+
+Feedback, Fehlermeldungen, VorschlÑge und sonstige konstruktive
+Kommentare sind sehr erwÅnscht. Entweder per e-Mail direkt an mich
+oder an die MiNT Mailingliste <mint@fishpool.com>.
+
+
+Version 0.13
+------------
+- Fehler in resolve behoben; fÅhrte zu AbstÅrzen
+  Thanks to Erik Hall who pointed it out
+
+Version 0.12
+------------
+- kompletter rewrite des alten GlueSTiK
+
+
+Features:
+---------
+- erlaubt die Nutzung von STiK Clients unter MiNT-Net
+
+
+Installation:
+-------------
+
+1. Deinstallation des alten GlueSTiK (soweit vorhanden)
+   - entfernen des gluestik.xdd
+   - entfernen von gsresolv.prg und dem zugehîrigen MiNT.CNF Eintrag
+     der gsresolv.prg automatisch gestartet hat
+
+2. kopieren von gluestik.prg in den MultiTOS/MiNT Ordner und
+   hinzufÅgen von "exec c:\multitos\gluestik.prg" in die MiNT.CNF
+   um das Gateway automatisch zu starten
+   
+   HINWEIS: Das Gateway kan ebensogut jederzeit nachtrÑglich vom Desktop
+            gestartet werden. Es ist nicht notwendig es aus der MiNT.CNF zu
+            starten.
+            
+            GlueSTiK lÑsst sich ebenso wieder problemlos beenden. Einfach
+            ein SIGTERM or SIGQUIT schicken. Der Cookie wird ebenfalls
+            entfernt. Man sollte in diesem Fall darauf achten das niemand
+            mehr GlueSTiK benutzt.
+
+3. Reboot
+
+
+Bugs:
+-----
+- mir wurde berichtet das der LISTEN Mode nicht korrekt funktioniert
+
+
+Dank:
+-----
+- an Scott Bigham fÅr die vorherigen GlueSTiK Versionen und die Erlaubnis
+  fÅr diesen Rewrite unter der GPL Lizenz
+
+
+Copying:
+--------
+Copyright 2000 Frank Naumann <fnaumann@cs.uni-magdeburg.de>
+Portions copyright 1998, 1999 Scott Bigham <dsb@cs.duke.edu>.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+
+Frank Naumann
+<fnaumann@cs.uni-magdeburg.de>
+
+Magdeburg, 23.02.2000

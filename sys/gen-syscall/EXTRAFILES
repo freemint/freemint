@@ -1,0 +1,6 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+SRCFILES += BINFILES EXTRAFILES Makefile MISCFILES SRCFILES \
+check.c check.h generate.c generate.h list.c list.h main.c \
+pars.y scan.l
