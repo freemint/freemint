@@ -406,11 +406,11 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 	int found;
 
 
-	TRACE(("Pwaitpid(%d, %d, %lx)", pid, nohang, rusage));
-
-
 	ourpid = curproc->pid;
 	ourpgrp = curproc->pgrp;
+
+	if (ourpid)
+		TRACE(("Pwaitpid(%d, %d, %lx)", pid, nohang, rusage));
 
 	/* if there are terminated children, clean up and return their info;
 	 * if there are children, but still running, wait for them;
@@ -459,7 +459,9 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 			{
 				if (nohang & 1)
 				{
-					TRACE(("Pwaitpid(%d, %d) -> 0 [nohang & 1]", pid, nohang));
+					if (ourpid)
+						TRACE(("Pwaitpid(%d, %d) -> 0 [nohang & 1]", pid, nohang));
+
 					return 0;
 				}
 
