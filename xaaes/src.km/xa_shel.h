@@ -44,6 +44,7 @@ AES_function
 	XA_shel_write,
 	XA_shel_read,
 	XA_shel_find,
-	XA_shel_envrn;
+	XA_shel_envrn,
+	XA_shel_help;
 
 #endif /* _xa_shel_h */
