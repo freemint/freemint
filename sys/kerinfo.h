@@ -3,7 +3,7 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2001 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
  * This file is free software; you can redistribute it and/or modify
@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	1998-07
- * last change: 1998-07-02
+ * begin:	2001-04-24
+ * last change: 2001-04-24
  * 
  * Author: Frank Naumann - <fnaumann@freemint.de>
  * 
@@ -31,52 +31,22 @@
  *  
  */
 
-# ifndef _global_h
-# define _global_h
+# ifndef _kerinfo_h
+# define _kerinfo_h
 
 # include "mint/mint.h"
+# include "mint/kerinfo.h"
 
 
-/* global exported variables
- */
+# define DEFAULT_DIRMODE	(0777)
 
-extern ulong c20ms;
-
-extern long mch;		/* machine */
-extern long mcpu;		/* cpu type */
-extern long fputype;		/* fpu type */
-extern short fpu;		/* flag if fpu is present */
-extern int tosvers;		/* the underlying TOS version */
-extern short falcontos;
-extern int secure_mode;
-extern int screen_boundary;
-extern int flk;
-extern int FalconVideo;
-extern short ste_video;
-
-# define MAXLANG 6	/* languages supported */
-extern int gl_lang;
-
-# ifdef OLDTOSFS
-extern long gemdos_version;
+# if 0
+# define DEFAULT_MODE		(0666)
+# else
+# define DEFAULT_MODE		(kernelinfo.default_perm)
 # endif
 
-typedef struct kbdvbase KBDVEC;
-struct kbdvbase
-{
-	long	midivec;
-	long	vkbderr;
-	long	vmiderr;
-	long	statvec;
-	long	mousevec;
-	long	clockvec;
-	long	joyvec;
-	long	midisys;
-	long	ikbdsys;
-	short	drvstat;	/* Non-zero if a packet is currently transmitted. */
-};
-
-extern KBDVEC *syskey;
+extern struct kerinfo kernelinfo;
 
 
 # endif /* _global_h */
