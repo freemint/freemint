@@ -34,6 +34,7 @@
 # include "arch/timer.h"	/* get_hz_200() */
 # include "arch/tosbind.h"	/* TOS calls */
 
+# include "bootmenu.h"
 # include "debug.h"		/* out_device, debug_level */
 # include "global.h"		/* sysdir */
 # include "info.h"		/* info strings */
@@ -47,19 +48,16 @@
 /* if the user is holding down the magic shift key, we ask before booting */
 # define MAGIC_SHIFT	0x2		/* left shift */
 
-# define MENU_OPTIONS	9
 # define MAX_CMD_LEN	32
 
 short load_xfs_f = 1;		/* Flag: load XFS modules (if 1) */
 short load_xdd_f = 1;		/* Flag: load XDD modules (if 1) */
 short load_auto = 1;		/* Flag: load AUTO programs appearing after us (if 1) */
-short save_ini = 1;		/* Flag: write new ini file while exiting bootmenu (if 1) */
 
+static short save_ini = 1;	/* Flag: write new ini file while exiting bootmenu (if 1) */
 static short boot_delay = 4;	/* boot delay in seconds */
+static const char *mint_ini = "mint.ini";
 
-int boot_kernel_p(void);
-void read_ini(void);
-void pause_and_ask(void);
 
 /* Helper function for getdelim() below */
 INLINE int
@@ -220,7 +218,7 @@ do_ini_step(char *arg)
 		else if (strncmp(arg, "NO", 2) == 0)
 			step_by_step = 0;
 		else
-			boot_printf(MSG_init_syntax_error, "INI_STEP");
+			boot_printf(MSG_init_syntax_error, mint_ini, "INI_STEP");
 	}
 	else
 	{
@@ -230,7 +228,7 @@ do_ini_step(char *arg)
 
 		if (val < 0 || val > 10)
 		{
-			boot_printf(MSG_init_value_out_of_range, \
+			boot_printf(MSG_init_value_out_of_range, mint_ini,
 					"INI_STEP", val, (short)0, (short)10);
 
 			return;
@@ -278,7 +276,7 @@ do_debug_level(char *arg)
 
 	if (!isdigit(*arg))
 	{
-		boot_printf(MSG_init_syntax_error, "DEBUG_LEVEL");
+		boot_printf(MSG_init_syntax_error, mint_ini, "DEBUG_LEVEL");
 
 		return;
 	}
@@ -287,7 +285,7 @@ do_debug_level(char *arg)
 
 	if (val < 0 || val > LOW_LEVEL)
 	{
-		boot_printf(MSG_init_value_out_of_range, \
+		boot_printf(MSG_init_value_out_of_range, mint_ini,
 				"DEBUG_LEVEL", val, (short)0, (short)LOW_LEVEL);
 
 		return;
@@ -313,7 +311,7 @@ do_debug_devno(char *arg)
 
 	if (!isdigit(*arg))
 	{
-		boot_printf(MSG_init_syntax_error, "DEBUG_DEVNO");
+		boot_printf(MSG_init_syntax_error, mint_ini, "DEBUG_DEVNO");
 
 		return;
 	}
@@ -322,7 +320,7 @@ do_debug_devno(char *arg)
 
 	if (val < 0 || val > 9)
 	{
-		boot_printf(MSG_init_value_out_of_range, \
+		boot_printf(MSG_init_value_out_of_range, mint_ini,
 			 	"DEBUG_DEVNO", val, (short)0, (short)9);
 
 		return;
@@ -348,7 +346,7 @@ do_boot_delay(char *arg)
 
 	if (!isdigit(*arg))
 	{
-		boot_printf(MSG_init_syntax_error, "BOOT_DELAY");
+		boot_printf(MSG_init_syntax_error, mint_ini, "BOOT_DELAY");
 
 		return;
 	}
@@ -357,7 +355,7 @@ do_boot_delay(char *arg)
 
 	if (val < 0 || val > 59)
 	{
-		boot_printf(MSG_init_value_out_of_range, \
+		boot_printf(MSG_init_value_out_of_range, mint_ini,
 				"BOOT_DELAY", val, (short)0, (short)59);
 
 		return;
@@ -404,77 +402,88 @@ static typeof(emit_xfs_load) *emit_func[] =
  * menu defaults, is located at same place as mint.cnf is
  */
 
-INLINE short
-find_ini (char *outp, long outsize)
-{
-	ksprintf(outp, outsize, "%s%s", sysdir, "mint.ini");
-
-	if (TRAP_Fsfirst(outp, 0) == 0)
-		return 1;
-
-	return 0;
-}
-
 static void
 write_ini (void)
 {
-	short inihandle;
-	char ini_file[32];
-	long r, x, l;
+	char ini_file[128];
+	long r;
 
-	ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, "mint.ini");
+	ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, mint_ini);
+	boot_printf(MSG_init_write, ini_file);
 
-	inihandle = TRAP_Fcreate(ini_file, 0);
+	/* try to delete it */
+	TRAP_Fdelete(ini_file);
 
-	if (inihandle < 0)
-		return;
-
-	l = strlen(MSG_init_menuwarn);
-	r = TRAP_Fwrite(inihandle, l, MSG_init_menuwarn);
-	if ((r < 0) || (r != l))
+	/* and create a new one */
+	r = TRAP_Fcreate(ini_file, 0);
+	if (r >= 0)
 	{
-		r = -1;
-		goto close;
+		short inihandle = r;
+		int l;
+
+		l = strlen(MSG_init_menuwarn);
+		r = TRAP_Fwrite(inihandle, l, MSG_init_menuwarn);
+		if (r >= 0)
+		{
+			if (r == l)
+			{
+				int x = 0;
+				while (ini_keywords[x] && r > 0)
+				{
+					r = emit_func[x](inihandle);
+					x++;
+				}
+			}
+			else
+				r = -1;
+		}
+
+		TRAP_Fclose(inihandle);
 	}
-
-	x = 0;
-	while (ini_keywords[x] && r > 0)
-	{
-		r = emit_func[x](inihandle);
-		x++;
-	}
-
-close:
-
-	TRAP_Fclose(inihandle);
 
 	if (r < 0)
-	{
-		boot_printf(MSG_init_write_error, r, "mint.ini");
-		TRAP_Fdelete(ini_file);
+		goto error;
 
-		stop_and_ask();
-	}
+	boot_printf(MSG_init_rw_done);
+	return;
+
+error:
+	boot_printf(MSG_init_rw_error, r);
+
+	/* try to delete it */
+	TRAP_Fdelete(ini_file);
+
+	stop_and_ask();
 }
 
 void
 read_ini (void)
 {
-	char *s, ini_file[32], line[MAX_CMD_LEN];
-	long x;
-	short inihandle;
+	char ini_file[128];
+	long r;
 
-	if (!find_ini(ini_file, sizeof(ini_file)))
-		return;
+	ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, mint_ini);
+	boot_printf(MSG_init_read, ini_file);
 
-	inihandle = TRAP_Fopen(ini_file, 0);
-
-	if (inihandle >= 0)
+	r = TRAP_Fopen(ini_file, 0);
+	if (r < 0)
 	{
+		boot_printf(MSG_init_rw_error, r);
+
+		/* if it doesn't exist, try to create */
+		write_ini();
+	}
+	else
+	{
+		char *s, line[MAX_CMD_LEN];
+		short inihandle = r;
+
 		while (getdelim(line, sizeof(line), '\n', inihandle) != -1)
 		{
 			if (line[0] && (line[0] != '#') && strchr(line, '='))
 			{
+				int x;
+
 				strupr(line);
 				x = 0;
 				while (ini_keywords[x])
@@ -490,25 +499,27 @@ read_ini (void)
 							break;
 						}
 						else
-							boot_printf(MSG_init_no_value, line);
+							boot_printf(MSG_init_no_value, mint_ini, line);
 					}
 					x++;
 				}
 
 				if (ini_keywords[x] == NULL)
-					boot_printf(MSG_init_unknown_cmd, line);
+					boot_printf(MSG_init_unknown_cmd, mint_ini, line);
 			}
 		}
+
+		boot_printf(MSG_init_rw_done);
 	}
-	else
-		write_ini();	/* if it doesn't exist, try to create */
+
+	boot_printf("\r\n");
 }
 
 int
 boot_kernel_p (void)
 {
-	long off, opt, option[MENU_OPTIONS];
-	int c;
+	int option[9];
+	int modified;
 
 	option[0] = 1;			/* Load MiNT or not */
 	option[1] = load_xfs_f;		/* Load XFS or not */
@@ -518,10 +529,14 @@ boot_kernel_p (void)
 	option[5] = step_by_step;	/* Enter stepper mode */
 	option[6] = debug_level;
 	option[7] = out_device;
-	option[MENU_OPTIONS-1] = save_ini;
+	option[8] = save_ini;
+
+	modified = 0;
 
 	for (;;)
 	{
+		int c;
+
 		boot_printf(MSG_init_bootmenu, \
 			option[0] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
@@ -533,72 +548,94 @@ boot_kernel_p (void)
 			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[6], debug_levels[option[6]],
 			option[7], debug_devices[option[7]],
-			option[MENU_OPTIONS-1] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
+			option[8] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
+
 wait:
 		c = TRAP_Crawcin();
 		c &= 0x7f;
 
-		switch ((char)c)
+		switch (c)
 		{
 			case 0x03:
 			{
 				return 1;
 			}
-			case 0x0d:
+			case 0x0d: /* return */
 			{
-				load_xfs_f = option[1];
-				load_xdd_f = option[2];
-				load_auto = option[3];
-				no_mem_prot = !option[4];
-				step_by_step = option[5];
-				debug_level = option[6];
-				out_device = option[7];
-				save_ini = option[MENU_OPTIONS-1];
-				if (save_ini)
-					write_ini();
-				return (int)option[0];
+				if (modified)
+				{
+					load_xfs_f   =  option[1];
+					load_xdd_f   =  option[2];
+					load_auto    =  option[3];
+					no_mem_prot  = !option[4];
+					step_by_step =  option[5];
+					debug_level  =  option[6];
+					out_device   =  option[7];
+					save_ini     =  option[8];
+
+					if (save_ini)
+						write_ini();
+				}
+
+				return option[0];
 			}
 			case '0':
 			{
-				option[MENU_OPTIONS-1] = option[MENU_OPTIONS-1] ? 0 : 1;
+				option[8] = option[8] ? 0 : 1;
+
+				modified = 1;
 				break;
 			}
 			case '1' ... '5':
 			{
+				int off;
+
 				off = ((c & 0x0f) - 1);
 				option[off] = option[off] ? 0 : 1;
 
+				modified = 1;
 				break;
 			}
 			case '6':
 			{
+				int off;
+
 				off = ((c & 0x0f) - 1);
 				option[off] = option[off] ? 0 : -1;
 
+				modified = 1;
 				break;
 			}
 			case '7':
 			{
+				int off, opt;
+
 				off = ((c & 0x0f) - 1);
 				opt = option[off];
 
 				opt++;
 				if (opt > LOW_LEVEL)
 					opt = 0;
+
 				option[off] = opt;
 
+				modified = 1;
 				break;
 			}
 			case '8':
 			{
+				int off, opt;
+
 				off = ((c & 0x0f) - 1);
 				opt = option[off];
 
 				opt++;
 				if (opt > 9)
 					opt = 0;
+
 				option[off] = opt;
 
+				modified = 1;
 				break;
 			}
 			default:
@@ -606,7 +643,8 @@ wait:
 		}
 	}
 
-	return 1;	/* not reached */
+	/* not reached */
+	return 1;
 }
 
 void
@@ -621,8 +659,7 @@ pause_and_ask(void)
 		pause = TRAP_Supexec(get_hz_200);
 		pause += (boot_delay * HZ);
 
-		do
-		{
+		do {
 			newstamp = TRAP_Supexec(get_hz_200);
 
 			if ((TRAP_Kbshift(-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
@@ -636,5 +673,3 @@ pause_and_ask(void)
 		while (newstamp < pause);
 	}
 }
-
-/* EOF */

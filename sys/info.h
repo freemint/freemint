@@ -94,7 +94,10 @@ extern const char *MSG_init_bootmenu;
 extern const char *MSG_init_menuwarn;
 extern const char *MSG_init_unknown_cmd;
 extern const char *MSG_init_no_value;
-extern const char *MSG_init_write_error;
+extern const char *MSG_init_read;
+extern const char *MSG_init_write;
+extern const char *MSG_init_rw_done;
+extern const char *MSG_init_rw_error;
 extern const char *MSG_init_value_out_of_range;
 extern const char *MSG_init_syntax_error;
 
