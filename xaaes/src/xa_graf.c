@@ -38,6 +38,9 @@
  *	upon. Dont know if this made sense to anyone, tho....
 */
 void
+update_mu_button(void);
+
+void
 update_mu_button(void)
 {
 	struct moose_data md;
@@ -87,7 +90,7 @@ watch_object(LOCK lock, XA_TREE *wt, int ob, int in_state, int out_state)
 
 		(dial + ob)->ob_state = in_state;
 		hidem();
-		display_object(lock, wt, ob,x - the_object->r.x + 1, y - the_object->r.y + 1, 3);
+		display_object(lock, wt, ob,x - the_object->ob_x + 1, y - the_object->ob_y + 1, 3);
 		showm();
 	}
 	else
@@ -117,7 +120,7 @@ watch_object(LOCK lock, XA_TREE *wt, int ob, int in_state, int out_state)
 				{
 					pobf = obf;
 					hidem();		
-					display_object(lock, wt, ob, x - the_object->r.x + 1, y - the_object->r.y + 1, 4);
+					display_object(lock, wt, ob, x - the_object->ob_x + 1, y - the_object->ob_y + 1, 4);
 					showm();
 				}
 			}
@@ -144,7 +147,7 @@ watch_object(LOCK lock, XA_TREE *wt, int ob, int in_state, int out_state)
 
 /* HR 150202: make rubber_box omnidirectional; helper functions. */
 
-RECT *rect_dist(RECT *r, RECT *d)
+const RECT *rect_dist(RECT *r, RECT *d)
 {
 	short mb, x, y;
 
@@ -172,7 +175,7 @@ void check_wh(RECT *c, int minw, int minh, int maxw, int maxh)
 		c->h = maxh;
 }
 
-void keep_inside(RECT *r, RECT *b)		/* fit rectangle r in bounding rectangle b */
+void keep_inside(RECT *r, const RECT *b)		/* fit rectangle r in bounding rectangle b */
 {
 	if (r->x < b->x)
 		r->x = b->x;
@@ -187,7 +190,7 @@ void keep_inside(RECT *r, RECT *b)		/* fit rectangle r in bounding rectangle b *
 		r->y = b->y + b->h - r->h;
 }
 
-RECT widen_rectangle(COMPASS xy, short mx, short my, RECT start, RECT *d)
+RECT widen_rectangle(COMPASS xy, short mx, short my, RECT start, const RECT *d)
 {
 	RECT r = start;
 
@@ -217,12 +220,13 @@ RECT widen_rectangle(COMPASS xy, short mx, short my, RECT start, RECT *d)
 	case E_:
 		r.w = mx - r.x + d->w;
 		break;
+	default:;
 	}
 	return r;
 }
 
 RECT
-move_rectangle(short mx, short my, RECT r, RECT *d)
+move_rectangle(short mx, short my, RECT r, const RECT *d)
 {
 	r.x = mx + d->x;
 	r.y = my + d->y;
@@ -231,7 +235,7 @@ move_rectangle(short mx, short my, RECT r, RECT *d)
 
 
 bool
-rect_changed(RECT *n, RECT *o)
+rect_changed(const RECT *n, const RECT *o)
 {
 	return	   n->x != o->x
 		|| n->y != o->y
@@ -240,7 +244,7 @@ rect_changed(RECT *n, RECT *o)
 }
 
 static void
-new_box(RECT *r, RECT *o)
+new_box(const RECT *r, RECT *o)
 {
 	if (o && !rect_changed(r, o))
 		return;
@@ -276,7 +280,7 @@ new_box(RECT *r, RECT *o)
 void
 rubber_box(COMPASS cp,
 	   RECT r,
-	   RECT *dist,
+	   const RECT *dist,
 	   int minw, int minh,
 	   int maxw, int maxh,
 	   RECT *last)
@@ -284,7 +288,7 @@ rubber_box(COMPASS cp,
 	short x, y, mb;
 	RECT old = r;
 	
-	l_color(BLACK);
+	l_color(G_BLACK);
 
 	wr_mode(MD_XOR);
 	new_box(&r, NULL);
@@ -309,14 +313,14 @@ rubber_box(COMPASS cp,
 
 void
 drag_box(RECT r,
-	 RECT *bound,
-	 RECT *dist,
+	 const RECT *bound,
+	 const RECT *dist,
 	 RECT *last)
 {
 	short mb, x, y;
 	RECT old = r;
 	
-	l_color(BLACK);
+	l_color(G_BLACK);
 
 	wr_mode(MD_XOR);
 	new_box(&r, NULL);
@@ -356,7 +360,7 @@ XA_graf_dragbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	r.w = pb->intin[0];
 	r.h = pb->intin[1];
 
-	drag_box(r, (RECT *)&pb->intin[4], rect_dist(&r,&dist), &last);
+	drag_box(r, (const RECT *)&pb->intin[4], rect_dist(&r,&dist), &last);
 
 	pb->intout[0] = 1;
 	pb->intout[1] = last.x;
@@ -403,7 +407,7 @@ XA_graf_watchbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	CONTROL(4,1,1)
 
-	wt = check_widget_tree(lock, client, pb->addrin[0]);
+	wt = check_widget_tree(lock, client, (OBJECT*)pb->addrin[0]);
 
 	pb->intout[0] = watch_object(	lock,
 					wt,
@@ -424,15 +428,15 @@ XA_graf_slidebox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	short d;
 	RECT p, c,				/* parent/child rectangles. */
 	     dist, last;			/* mouse distance, result. */
-	OBJECT *tree = pb->addrin[0];
+	OBJECT *tree = (OBJECT*)pb->addrin[0];
 	int   pi = pb->intin[0],
 	      ci = pb->intin[1];
 
 	CONTROL(3,1,1)
 
-	p = tree[pi].r;
+	p = *(RECT*)&tree[pi].ob_x;
 	object_offset(tree, pi, 0, 0, &p.x, &p.y);
-	c = tree[ci].r;
+	c = *(RECT*)&tree[ci].ob_x;
 	object_offset(tree, ci, 0, 0, &c.x, &c.y);
 
 	rect_dist(&c,&dist);			/* HR 070702: relative position of mouse in child rectangle */
@@ -484,7 +488,7 @@ XA_graf_growbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	for (f = 0; f < GRAF_STEPS; f++)
 	{
-		draw_2d_box(x, y, w, h, 1, BLACK);	/* Draw initial growing outline */
+		draw_2d_box(x, y, w, h, 1, G_BLACK);	/* Draw initial growing outline */
 		x += dx;
 		y += dy;
 		w += dw;
@@ -502,7 +506,7 @@ XA_graf_growbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	for (f = 0; f < GRAF_STEPS; f++)	/* Erase growing outline */
 	{
-		draw_2d_box(x, y, w, h, 1, BLACK);
+		draw_2d_box(x, y, w, h, 1, G_BLACK);
 		x += dx;
 		y += dy;
 		w += dw;
@@ -548,7 +552,7 @@ XA_graf_movebox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	for (f = 0; f < GRAF_STEPS; f++)	/* Draw initial images */
 	{
-		draw_2d_box(x, y, w, h, 1, BLACK);
+		draw_2d_box(x, y, w, h, 1, G_BLACK);
 		x += dx;
 		y += dy;
 #if 0
@@ -562,7 +566,7 @@ XA_graf_movebox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	for (f = 0; f < GRAF_STEPS; f++)	/* Erase them again */
 	{
-		draw_2d_box(x, y, w, h, 1, BLACK);
+		draw_2d_box(x, y, w, h, 1, G_BLACK);
 		x += dx;
 		y += dy;
 #if 0
@@ -891,42 +895,42 @@ graf_mouse(int m_shape, MFORM *mf)
 		return;
 	case ARROW:
 		hidem();
-		vsc_form(C.vh, &M_ARROW_MOUSE);
+		vsc_form(C.vh, (short *)&M_ARROW_MOUSE);
 		showm();
 		break;
 	case TEXT_CRSR:
 		hidem();
-		vsc_form(C.vh, &M_TXT_MOUSE);
+		vsc_form(C.vh, (short *)&M_TXT_MOUSE);
 		showm();
 		break;
 	case HOURGLASS:
 		hidem();
-		vsc_form(C.vh, &M_BEE_MOUSE);
+		vsc_form(C.vh, (short *)&M_BEE_MOUSE);
 		showm();
 		break;
 	case POINT_HAND:
 		hidem();
-		vsc_form(C.vh, &M_POINT_MOUSE);
+		vsc_form(C.vh, (short *)&M_POINT_MOUSE);
 		showm();
 		break;
 	case FLAT_HAND:
 		hidem();
-		vsc_form(C.vh, &M_HAND_MOUSE);
+		vsc_form(C.vh, (short *)&M_HAND_MOUSE);
 		showm();
 		break;
 	case THIN_CROSS:
 		hidem();
-		vsc_form(C.vh, &M_TCRS_MOUSE);
+		vsc_form(C.vh, (short *)&M_TCRS_MOUSE);
 		showm();
 		break;
 	case THICK_CROSS:
 		hidem();
-		vsc_form(C.vh, &M_THKCRS_MOUSE);
+		vsc_form(C.vh, (short *)&M_THKCRS_MOUSE);
 		showm();
 		break;
 	case OUTLN_CROSS:
 		hidem();
-		vsc_form(C.vh, &M_OCRS_MOUSE);
+		vsc_form(C.vh, (short *)&M_OCRS_MOUSE);
 		showm();
 		break;
 	case M_SAVE:
@@ -940,37 +944,37 @@ graf_mouse(int m_shape, MFORM *mf)
 			mf = &M_BUBD_MOUSE;	/* HR: Scare people ;-) */
 		C.mouse_form = mf;
 		hidem();
-		vsc_form(C.vh, mf);
+		vsc_form(C.vh, (short *)mf);
 		showm();
 		break;
 	case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
 		hidem();
-		vsc_form(C.vh, &M_BUBD_MOUSE);
+		vsc_form(C.vh, (short *)&M_BUBD_MOUSE);
 		showm();
 		break;
 	case XACRS_RESIZER:			/* The 'resize window' cursor */
 		hidem();
-		vsc_form(C.vh, &M_SE_SIZER_MOUSE);
+		vsc_form(C.vh, (short *)&M_SE_SIZER_MOUSE);
 		showm();
 		break;
 	case XACRS_NE_SIZER:
 		hidem();
-		vsc_form(C.vh, &M_NE_SIZER_MOUSE);
+		vsc_form(C.vh, (short *)&M_NE_SIZER_MOUSE);
 		showm();
 		break;
 	case XACRS_MOVER:			/* The 'move window' cursor */
 		hidem();
-		vsc_form(C.vh, &M_MOVER_MOUSE);
+		vsc_form(C.vh, (short *)&M_MOVER_MOUSE);
 		showm();
 		break;
 	case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
 		hidem();
-		vsc_form(C.vh, &M_VERTSIZER_MOUSE);
+		vsc_form(C.vh, (short *)&M_VERTSIZER_MOUSE);
 		showm();
 		break;
 	case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
 		hidem();
-		vsc_form(C.vh, &M_HORSIZER_MOUSE);
+		vsc_form(C.vh, (short *)&M_HORSIZER_MOUSE);
 		showm();
 		break;
 	}
@@ -1020,9 +1024,9 @@ XA_graf_mouse(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	}
 	else
 	{
-		graf_mouse(m, pb->addrin[0]);
+		graf_mouse(m, (MFORM*)pb->addrin[0]);
 		client->mouse = m;
-		client->mouse_form = pb->addrin[0];	
+		client->mouse_form = (MFORM*)pb->addrin[0];	
 		DIAG((D_f,client,"mouse_form to %d\n", m));
 	}
 

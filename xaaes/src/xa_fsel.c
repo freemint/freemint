@@ -71,6 +71,7 @@ struct fsel_data
 	char file  [NAME_MAX + 2];		/* Is the tedindo->te_ptext of FS_FILE */
 	long fcase,trunc;
 	int drives;
+	int clear_on_folder_change;
 	
 };
 static struct fsel_data fs;
@@ -324,6 +325,7 @@ static void set_file(LOCK lock, const char *fn)
 	strcpy(fs.file, fn); /* set the edit field text */
 	wt->edit_pos = strlen(fn);
 #endif
+
 	/* redraw the toolbar file object */
 	display_toolbar(lock, fs.wind, FS_FILE);
 }
@@ -346,7 +348,7 @@ refresh_filelist(LOCK lock, int which)
 	bool csens;
 
 	sl = form + FS_LIST;
-	list = sl->ob_spec.listbox;
+	list = (SCROLL_INFO *)sl->ob_spec.index;
 	add_slash(fs.path);
 	csens = inq_xfs(fs.path, fs.fslash);
 
@@ -423,7 +425,7 @@ refresh_filelist(LOCK lock, int which)
 					icon = form + FS_ICN_EXE;
 
 				if (icon)
-					icon->r.x = icon->r.y = 0;
+					icon->ob_x = icon->ob_y = 0;
 
 				entry->icon = icon;
 				sort_entry(list, entry, dirflag_name);
@@ -461,12 +463,12 @@ fsel_drives(OBJECT *m, int drive)
 	{
 		if (dmap & 1)
 		{
-			m[d].ob_state&=~CHECKED;
+			m[d].ob_state&=~OS_CHECKED;
 
 			if (drv == drive)
-				m[d].ob_state |= CHECKED;
+				m[d].ob_state |= OS_CHECKED;
 
-			sdisplay(m[d++].ob_spec.string,"  %c:", DRIVELETTER(drv));
+			sdisplay(m[d++].ob_spec.free_string,"  %c:", DRIVELETTER(drv));
 			drvs++;
 		}
 		dmap >>= 1;
@@ -474,18 +476,18 @@ fsel_drives(OBJECT *m, int drive)
 	}
 
 	if (drvs & 1)
-		m[d-1].r.w = m[FSEL_DRVBOX].r.w;
+		m[d-1].ob_width = m[FSEL_DRVBOX].ob_width;
 
 	do {
-		m[d].ob_flags|=HIDETREE;
+		m[d].ob_flags|=OF_HIDETREE;
 		/* HR 310501: prevent finding those. */
-		*(m[d].ob_spec.string + 2) = '~';
+		*(m[d].ob_spec.free_string + 2) = '~';
 	}
 	while (m[d++].ob_next != FSEL_DRVBOX);
 
-	m[FSEL_DRVBOX].r.h = ((drvs + 1) / 2) * screen.c_max_h;
+	m[FSEL_DRVBOX].ob_height = ((drvs + 1) / 2) * screen.c_max_h;
 
-	sdisplay(m[FSEL_DRV].ob_spec.string," %c:", DRIVELETTER(drive));
+	sdisplay(m[FSEL_DRV].ob_spec.free_string," %c:", DRIVELETTER(drive));
 	return drvs;
 }
 
@@ -501,24 +503,24 @@ fsel_filters(OBJECT *m, char *pattern)
 		while (i < 23 && cfg.Filters[i][0])
 		{
 			cfg.Filters[i][15] = 0;
-			m[d].ob_state&=~CHECKED;
+			m[d].ob_state&=~OS_CHECKED;
 			if (stricmp(pattern,cfg.Filters[i]) == 0)
-				m[d].ob_state|=CHECKED;
-			sdisplay(m[d++].ob_spec.string,"  %s",cfg.Filters[i++]);
+				m[d].ob_state|=OS_CHECKED;
+			sdisplay(m[d++].ob_spec.free_string,"  %s",cfg.Filters[i++]);
 		}
 	
 		do {
-			m[d].ob_flags|=HIDETREE;
+			m[d].ob_flags|=OF_HIDETREE;
 		}
 		while (m[d++].ob_next != FSEL_PATBOX);
 
-		m[FSEL_PATBOX].r.h = i * screen.c_max_h;
+		m[FSEL_PATBOX].ob_height = i * screen.c_max_h;
 	}
 	else
 	{
 		while (i < 23)
 		{
-			char *s = m[d].ob_spec.string;
+			char *s = m[d].ob_spec.free_string;
 			if (strstr(s+2,"**") == s+2)	/* check for place holder entry */
 				*(s+3) = 0;		/* Keep the 1 '*' */
 			else
@@ -527,15 +529,15 @@ fsel_filters(OBJECT *m, char *pattern)
 				while (*(s+ --j) == ' ')
 					*(s+j) = 0;
 			}
-			m[d].ob_state&=~CHECKED;
+			m[d].ob_state&=~OS_CHECKED;
 			if (stricmp(pattern,s) == 0)
-				m[d].ob_state|=CHECKED;
+				m[d].ob_state|=OS_CHECKED;
 			d++, i++;
 		}
 	}
 	strncpy(p,pattern,15);
 	p[15] = 0;
-	sdisplay(m[FSEL_FILTER].ob_spec.string," %s", p);
+	sdisplay(m[FSEL_FILTER].ob_spec.free_string," %s", p);
 }
 
 /* HR: a little bit more exact. */
@@ -570,7 +572,9 @@ fs_updir(LOCK lock, XA_WINDOW *w)
 	if ((drv = get_drv(fs.path)) >= 0)
 		strcpy(fs_paths[drv], fs.path);
 
-	set_file(lock,"");
+	if ( fs.clear_on_folder_change )
+		set_file(lock,"");
+
 	refresh_filelist(fsel,1);
 }
 
@@ -587,16 +591,19 @@ static int
 fs_dclick(LOCK lock, OBJECT *form, int objc)
 {
 	OBJECT *ob = form + objc;
-	SCROLL_INFO *list = ob->ob_spec.listbox;
+	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 	XA_WINDOW *wl = list->wi;
 
 	DIAG((D_fsel, NULL, "fs_dclick %lx\n", list->cur));
 	if (list->cur)
 	{
 		if ( (list->cur->flag&FLAG_DIR) == 0)
+			/* file double click */
 			strcpy(fs.file, list->cur->text);
 		else
 		{			
+			/* folder double click */
+
 			if (strcmp(list->cur->text, "..") == 0)
 			{
 				/* cur on double dot line */
@@ -606,12 +613,15 @@ fs_dclick(LOCK lock, OBJECT *form, int objc)
 
 			if (strcmp(list->cur->text, ".") != 0)
 			{
+				/* cur on NON dot line */
 				int drv;
 				add_slash(fs.path);
 				strcat(fs.path, list->cur->text);
 				if ((drv = get_drv(fs.path)) >= 0)
 					strcpy(fs_paths[drv], fs.path);
-				set_file(lock, "");
+				if ( fs.clear_on_folder_change )
+				/*FIXME??? list->cur && !strcmp(list->cur->text,fs.file) )*/
+					set_file(lock, "");
 				refresh_filelist(fsel,2);
 				return true;
 			}
@@ -628,11 +638,12 @@ fs_dclick(LOCK lock, OBJECT *form, int objc)
 static int
 fs_click(LOCK lock, OBJECT *form, int objc)
 {
-	SCROLL_INFO *list;
 	OBJECT *ob = form + objc;
-		
-	list = ob->ob_spec.listbox;
-	
+	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+
+	/* on mouse click we should clear the file field */
+	fs.clear_on_folder_change = 0;
+
 	if (list->cur)
 	{
 		if ( ! (list->cur->flag&FLAG_DIR))
@@ -644,7 +655,6 @@ fs_click(LOCK lock, OBJECT *form, int objc)
 			set_file(lock, "");
 		}
 		else {
-			set_file(lock, "");
 			fs_dclick(lock, form, objc);
 		}
 	}
@@ -688,7 +698,11 @@ handle_fileselector(LOCK lock, struct widget_tree *wt)
 		}
 		else
 #endif
+		{
+			/* on return keypress we should clear the file field */
+			fs.clear_on_folder_change = 1;
 			fs_dclick(lock, wt->tree, FS_LIST);
+		}
 		break;
 	/* Cancel this selector */
 	case FS_CANCEL:
@@ -712,7 +726,7 @@ find_drive(int a)
 	int d = FSEL_DRVA;
 
 	do {
-		int x = tolower(*(m[d].ob_spec.string + 2));
+		int x = tolower(*(m[d].ob_spec.free_string + 2));
 		if (x == '~')
 			break;
 		if (x == a)
@@ -732,13 +746,13 @@ fs_change(LOCK lock, OBJECT *m, int p, int title, int d, char *t)
 	XA_WIDGET *widg = get_widget(fs.wind, XAW_MENU);
 	int bx = d-1;
 	do
-		m[d].ob_state&=~CHECKED;
+		m[d].ob_state&=~OS_CHECKED;
 	while (m[d++].ob_next != bx);
-	m[p].ob_state|=CHECKED;
-	sdisplay(m[title].ob_spec.string," %s", m[p].ob_spec.string + 2);
+	m[p].ob_state|=OS_CHECKED;
+	sdisplay(m[title].ob_spec.free_string," %s", m[p].ob_spec.free_string + 2);
 	widg->start = 0;
 	display_widget(lock, fs.wind, widg);
-	strcpy(t, m[p].ob_spec.string + 2);
+	strcpy(t, m[p].ob_spec.free_string + 2);
 }
 
 static int
@@ -747,7 +761,8 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, FILE_SELECT);
 	OBJECT *ob = form + FS_LIST;
-	SCROLL_INFO *list = ob->ob_spec.listbox;
+	
+	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 
 	/* HR 310501: ctrl|alt + letter :: select drive */
 	if ((key.raw.conin.state&(K_CTRL|K_ALT)) != 0)
@@ -786,6 +801,9 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 	/*  If anything in the list and it is a cursor key */
 	if (list->n && scrl_cursor(list, keycode) != -1)
 	{
+		/* FIXME: we should clear when traversing only probably:
+		fs.clear_on_folder_change = 1;
+		*/
 		if (!(list->cur->flag&FLAG_DIR))
 		{
 			set_file(lock, list->cur->text);
@@ -797,9 +815,13 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 		strcpy(old, fs.file);
 		/* HR 290501: if !discontinue */
 		if (handle_form_key(lock, wind, NULL, keycode, nkcode, key))
+		{
 			/* something typed in there? */
 			if (strcmp(old,fs.file) != 0)
+			{
 				fs_prompt(list);
+			}
+		}
 	}
 	return true;
 }
@@ -832,7 +854,8 @@ fs_msg_handler(
 			else
 				strcpy(fs_paths[drv], fs.path);
 			/* remove the name from the edit field on drive change */
-			set_file(lock,"");
+			if ( fs.clear_on_folder_change )
+				set_file(lock,"");
 		}
 		refresh_filelist(lock,4);
 	break;
@@ -845,11 +868,8 @@ static int
 fs_destructor(LOCK lock, struct xa_window *wind)
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, FILE_SELECT);
-	OBJECT *sl;
-	SCROLL_INFO *list;
-
-	sl = form + FS_LIST;
-	list = sl->ob_spec.listbox;
+	OBJECT *sl = form + FS_LIST;
+	SCROLL_INFO *list = (SCROLL_INFO *)sl->ob_spec.index;
 
 	delete_window(lock, list->wi);
 
@@ -936,12 +956,12 @@ open_fileselector(LOCK lock, XA_CLIENT *client, char *path, char *file, char *ti
 	DIAG((D_fsel,NULL," -- fs.file '%s'\n", fs.file));
 
 	form[FS_FILE ].ob_spec.tedinfo->te_ptext = fs.file;
-	form[FS_ICONS].ob_flags |= HIDETREE;
+	form[FS_ICONS].ob_flags |= OF_HIDETREE;
 
-	dh = root_window->wa.h - 7*screen.c_max_h - form->r.h;
-	form->r.h += dh;
-	form[FS_LIST ].r.h += dh;
-	form[FS_UNDER].r.y += dh;
+	dh = root_window->wa.h - 7*screen.c_max_h - form->ob_height;
+	form->ob_height += dh;
+	form[FS_LIST ].ob_height += dh;
+	form[FS_UNDER].ob_y += dh;
 
 	/* Work out sizing */
 	if (!remember.w)
@@ -953,7 +973,7 @@ open_fileselector(LOCK lock, XA_CLIENT *client, char *path, char *file, char *ti
 			    MG,
 			    C.Aes->options.thinframe,
 			    C.Aes->options.thinwork,
-			    form->r);
+			    *(RECT*)&form->ob_x);
 	}
 
 	strcpy(fs.path, path);
@@ -985,6 +1005,7 @@ open_fileselector(LOCK lock, XA_CLIENT *client, char *path, char *file, char *ti
 				*(fs.path+1) == ':' ? tolower(*fs.path) - 'a' : Dgetdrv());
 	fsel_filters(fs.menu.tree, fs_pattern);
 
+	fs.clear_on_folder_change = 0;
 	strcpy(fs.file, file); /* fill in the file edit field */
 
 	/* Create the window */
@@ -1053,7 +1074,7 @@ close_fileselector(LOCK lock)
 static void
 handle_fsel(LOCK lock, char *path, char *file)
 {
-	strcpy(fs.pb->addrin[0], path);
+	strcpy((char *)fs.pb->addrin[0], path);
 	strcpy((char *)fs.pb->addrin[1], file);
 
 	DIAG((D_fsel,NULL,"fsel OK:path=%s,file=%s\n", (char *)fs.pb->addrin[0], file));
@@ -1088,7 +1109,7 @@ do_fsel_exinput(LOCK lock, XA_CLIENT *client, AESPB *pb, char *text)
 	fs.owner = client;
 	fs.pb = pb;
 
-	open_fileselector(lock|fsel, client, pb->addrin[0], pb->addrin[1], text, handle_fsel, cancel_fsel);
+	open_fileselector(lock|fsel, client, (char*)pb->addrin[0], (char*)pb->addrin[1], text, handle_fsel, cancel_fsel);
 }
 
 unsigned long
@@ -1108,7 +1129,7 @@ XA_fsel_exinput(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	CONTROL(0,2,3)
 
-	if (pb->contrl[3] <= 2 || t == NULL)
+	if (pb->control[3] <= 2 || t == NULL)
 		t = "";
 
 	do_fsel_exinput(lock, client, pb, t);

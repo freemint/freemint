@@ -528,8 +528,8 @@ XA_shell_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
 				  pb->intin[0],
 				  wisgr,
 				  wiscr,
-				  pb->addrin[0],
-				  pb->addrin[1],
+				  (char*)pb->addrin[0],
+				  (char*)pb->addrin[1],
 				  client);
 
 		pb->intout[0] = child_id;
@@ -560,7 +560,7 @@ XA_shell_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	}
 	else
 	{
-		char *cmd = pb->addrin[0];
+		char *cmd = (char*)pb->addrin[0];
 
 		DIAG((D_shel, NULL, " -- 0x%x, wisgr %d, wiscr %d\n",
 			pb->intin[0], pb->intin[1], pb->intin[2]));
@@ -762,12 +762,12 @@ shell_find(LOCK lock, XA_CLIENT *client, char *fn)
 unsigned long
 XA_shell_find(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	char *fn = pb->addrin[0],
+	char *fn = (char*)pb->addrin[0],
 	     *path;
 
 	CONTROL(0,1,1)
 
-	path = shell_find(lock, client, pb->addrin[0]);
+	path = shell_find(lock, client, (char*)pb->addrin[0]);
 	if (path)
 	{
 		strcpy(fn, path);
@@ -969,7 +969,7 @@ put_env(LOCK lock, short wisgr, short wiscr, char *cmd)
 unsigned long
 XA_shell_envrn(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	char **p = pb->addrin[0], *pf;
+	char **p = (char**)pb->addrin[0], *pf;
 	char *name = (char *)pb->addrin[1];
 
 	CONTROL(0,1,2)

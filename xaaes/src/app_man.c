@@ -142,7 +142,7 @@ recover(void)
  * See also click_menu_widget() for APP's
  */
 void
-swap_menu(LOCK lock, XA_CLIENT *new, bool desk, int which)
+swap_menu(LOCK lock, XA_CLIENT *new, bool do_desk, int which)
 {
 	XA_WINDOW *top;
 	XA_TREE *menu_bar = get_menu();
@@ -190,7 +190,7 @@ swap_menu(LOCK lock, XA_CLIENT *new, bool desk, int which)
 	}
 
 	/* Change desktops? HR 270801: now widget tree. */
-	if (   desk
+	if (   do_desk
 	    && new->desktop.tree
 	    && new->desktop.tree != get_desktop()->tree
 	    && new->desktop.tree != get_xa_desktop())
@@ -299,7 +299,7 @@ hide_app(LOCK lock, XA_CLIENT *client)
 		if (   w != root_window
 		    && w->owner == client
 		    && !is_hidden(w)
-		    && (w->active_widgets&MOVE) != 0	/* fail save */
+		    && (w->active_widgets&MOVER) != 0	/* fail save */
 		    && (w->active_widgets&HIDE) != 0)	/* fail save */
 		{
 			RECT r = w->r, d = root_window->r;

@@ -55,7 +55,7 @@ refresh_tasklist(LOCK lock)
 	XA_CLIENT *client;
 	OBJECT *icon;
 	OBJECT *tl = form + TM_LIST;
-	SCROLL_INFO *list = tl->ob_spec.listbox;
+	SCROLL_INFO *list = (SCROLL_INFO *)tl->ob_spec.index;
 	char *tx;
 	int counter=0;
 
@@ -118,7 +118,7 @@ static int
 taskmanager_destructor(LOCK lock, struct xa_window *wind)
 {
 	OBJECT *ob = ResourceTree(C.Aes_rsc, TASK_MANAGER) + TM_LIST;
-	SCROLL_INFO *list = ob->ob_spec.listbox;
+	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 
 	delete_window(lock, list->wi);
 	task_man_win = NULL;
@@ -165,11 +165,9 @@ send_terminate(LOCK lock, XA_CLIENT *client)
 static void
 handle_taskmanager(LOCK lock, struct widget_tree *wt)
 {
-	SCROLL_INFO *list;
 	OBJECT *ob = wt->tree + TM_LIST;
+	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 	XA_CLIENT *client;
-
-	list = ob->ob_spec.listbox;
 	
 	wt->current &= 0xff;
 
@@ -248,25 +246,25 @@ open_taskmanager(LOCK lock)
 
 	if (!task_man_win)
 	{
-		form[TM_ICONS].ob_flags |= HIDETREE;
+		form[TM_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
 			center_form(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSE|NAME,
+						CLOSER|NAME,
 						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						form->r);
+						*(RECT*)&form->ob_x);
 		}
 
 		/* Create the window */
 		dialog_window = create_window(lock, NULL,
 						C.Aes,
 						false,
-						CLOSE|NAME|TOOLBAR|hide_move(&default_options),
+						CLOSER|NAME|TOOLBAR|hide_move(&default_options),
 						created_for_AES,
 						MG,
 						C.Aes->options.thinframe,
@@ -369,7 +367,7 @@ static int
 systemalerts_destructor(LOCK lock, struct xa_window *wind)
 {
 	OBJECT *ob = ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST;
-	SCROLL_INFO *list = ob->ob_spec.listbox;
+	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 	delete_window(lock, list->wi);
 	systemalerts_win = NULL;
 	return true;
@@ -379,7 +377,7 @@ static void
 refresh_systemalerts(OBJECT *form)
 {
 	OBJECT *sl = form + SYSALERT_LIST;
-	SCROLL_INFO *list = sl->ob_spec.listbox;
+	SCROLL_INFO *list = (SCROLL_INFO *)sl->ob_spec.index;
 
 	list->slider(list);
 }
@@ -394,25 +392,25 @@ open_systemalerts(LOCK lock)
 	
 	if (!systemalerts_win)
 	{
-		form[SALERT_ICONS].ob_flags |= HIDETREE;
+		form[SALERT_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
 			center_form(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSE|NAME,
+						CLOSER|NAME,
 						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						form->r);
+						*(RECT*)&form->ob_x);
 		}
 
 		/* Create the window */
 		dialog_window = create_window(lock, NULL,
 						C.Aes,
 						false,
-						CLOSE|NAME|TOOLBAR|hide_move(&default_options),
+						CLOSER|NAME|TOOLBAR|hide_move(&default_options),
 						created_for_AES,
 						MG,
 						C.Aes->options.thinframe,
@@ -501,11 +499,10 @@ do_system_menu(LOCK lock, int clicked_title, int menu_item)
 void *
 pendig_alerts(OBJECT *form, int item)
 {
-	SCROLL_INFO *list;
 	OBJECT *ob = form + item;
+	SCROLL_INFO *list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 	SCROLL_ENTRY *cur;
 
-	list = get_ob_spec(ob)->listbox;
 	cur = list->start;
 	while (cur)
 	{

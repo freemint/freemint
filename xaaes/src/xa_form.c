@@ -58,11 +58,11 @@ do_form_button(LOCK lock, XA_TREE *wt,
 void
 center_form(OBJECT *form, int barsizes)
 {
-	form->r.x =  root_window->wa.x
-	           + (root_window->wa.w - form->r.w) / 2;
-	form->r.y =  root_window->wa.y
+	form->ob_x =  root_window->wa.x
+	           + (root_window->wa.w - form->ob_width) / 2;
+	form->ob_y =  root_window->wa.y
 	           + barsizes
-	           + (root_window->wa.h - form->r.h) / 2;
+	           + (root_window->wa.h - form->ob_height) / 2;
 }
 
 /*
@@ -77,7 +77,7 @@ CloneForm(OBJECT *form)
 	int num_objs = 0;
 	OBJECT *new_form;
 
-	while ((form[num_objs++].ob_flags & LASTOB) == 0)
+	while ((form[num_objs++].ob_flags & OF_LASTOB) == 0)
 		;
 
 	new_form = xmalloc(sizeof(OBJECT) * num_objs, 9);
@@ -131,9 +131,9 @@ click_alert_widget(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 
 	if (   f >= ALERT_BUT1			/* Did we click on a valid button? */
 	    && f <  ALERT_BUT1 + ALERT_BUTTONS
-	    && !(alert_form[f].ob_flags & HIDETREE))
+	    && !(alert_form[f].ob_flags & OF_HIDETREE))
 	{
-		b = watch_object(lock, wt, f, SELECTED, 0);
+		b = watch_object(lock, wt, f, OS_SELECTED, 0);
 
 		if (b)
 			sel_b = f + 1 - ALERT_BUT1;
@@ -284,7 +284,7 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 
 	alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
 
-	alert_form->r.w = w;
+	alert_form->ob_width = w;
 	center_form(alert_form, ICON_H);
 
 	{	/* HR */
@@ -297,8 +297,8 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 		{
 			ICONBLK *ai = get_ob_spec(alert_icons + icons[f]    )->iconblk,
 			        *af = get_ob_spec(alert_form  + ALERT_D_ICON)->iconblk;
-			ai->ic.x = af->ic.x;
-			ai->ic.y = af->ic.y;
+			ai->ib_xicon = af->ib_xicon;
+			ai->ib_yicon = af->ib_yicon;
 		}
 
 		(alert_form + ALERT_D_ICON)->ob_spec = (alert_icons + icons[icon])->ob_spec;
@@ -307,11 +307,11 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 	/* Fill in texts */
 	for (f = 0; f < ALERT_LINES; f++)
 	{
-		alert_form[ALERT_T1 + f].ob_spec.string = alertxt->text[f];
+		alert_form[ALERT_T1 + f].ob_spec.free_string = alertxt->text[f];
 		if (*alertxt->text[f] == 0)
-			alert_form[ALERT_T1 + f].ob_flags |= HIDETREE;
+			alert_form[ALERT_T1 + f].ob_flags |= OF_HIDETREE;
 		else
-			alert_form[ALERT_T1 + f].ob_flags &= ~HIDETREE;
+			alert_form[ALERT_T1 + f].ob_flags &= ~OF_HIDETREE;
 	}
 
 	/* Space the buttons evenly */
@@ -324,10 +324,10 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 	{
 		int width = strlen(alertxt->button[f])+3;
 		width *= screen.c_max_w;
-		alert_form[ALERT_BUT1 + f].ob_spec.string = alertxt->button[f];
-		alert_form[ALERT_BUT1 + f].r.w = width;
-		alert_form[ALERT_BUT1 + f].r.x = x;
-		alert_form[ALERT_BUT1 + f].ob_flags &= ~(HIDETREE|DEFAULT);
+		alert_form[ALERT_BUT1 + f].ob_spec.free_string = alertxt->button[f];
+		alert_form[ALERT_BUT1 + f].ob_width = width;
+		alert_form[ALERT_BUT1 + f].ob_x = x;
+		alert_form[ALERT_BUT1 + f].ob_flags &= ~(OF_HIDETREE|OF_DEFAULT);
 		alert_form[ALERT_BUT1 + f].ob_state = 0;
 		x += width + b;
 	}
@@ -338,21 +338,21 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 		if (n_lines < 2)
 			nl = 2;
 		dh = (ALERT_LINES - nl)*screen.c_max_h;
-		alert_form[0].r.h -= dh;
-		alert_form[ALERT_BUT1].r.y -= dh;
-		alert_form[ALERT_BUT2].r.y -= dh;
-		alert_form[ALERT_BUT3].r.y -= dh;
+		alert_form[0].ob_height -= dh;
+		alert_form[ALERT_BUT1].ob_y -= dh;
+		alert_form[ALERT_BUT2].ob_y -= dh;
+		alert_form[ALERT_BUT3].ob_y -= dh;
 	}
 
 	if (default_button > 0)				/* Set the default button if it was specified HR: check > 0 */
 	{
 		if (default_button > n_buttons)		/* HR: please check your input! */
 			default_button = n_buttons;
-		alert_form[ALERT_BUT1 + default_button - 1].ob_flags |= DEFAULT;
+		alert_form[ALERT_BUT1 + default_button - 1].ob_flags |= OF_DEFAULT;
 	}
 
 	for (f = n_buttons; f < ALERT_BUTTONS; f++)		/* Hide unused buttons */
-		alert_form[ALERT_BUT1 + f].ob_flags |= HIDETREE;
+		alert_form[ALERT_BUT1 + f].ob_flags |= OF_HIDETREE;
 	{
 		RECT r;
 
@@ -366,7 +366,7 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 				MG,
 				C.Aes->options.thinframe,
 				C.Aes->options.thinwork,
-				alert_form->r);
+				*(RECT*)&alert_form->ob_x);
 
 		alert_window = create_window(lock, NULL, client, false,
 					     kind,
@@ -408,7 +408,7 @@ do_form_alert(LOCK lock, XA_CLIENT *client, int default_button, char *alert)
 unsigned long
 XA_form_center(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	OBJECT *ob = pb->addrin[0];
+	OBJECT *ob = (OBJECT*)pb->addrin[0];
 	short *o = pb->intout;
 
 	CONTROL(0,5,1)
@@ -420,18 +420,18 @@ XA_form_center(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		RECT r;
 
-		r.w = ob->r.w;
-		r.h = ob->r.h;
+		r.w = ob->ob_width;
+		r.h = ob->ob_height;
 
 		/* desktop work area */
 		r.x = (root_window->wa.w - r.w) / 2;
 		r.y = (root_window->wa.h - r.h) / 2;
 
-		ob->r.x = r.x;
-		ob->r.y = r.y;
+		ob->ob_x = r.x;
+		ob->ob_y = r.y;
 
 
- 		if (ob->ob_state & OUTLINED)
+ 		if (ob->ob_state & OS_OUTLINED)
 			/* This is what other AES's do */
  			adjust_size(3, &r);
 
@@ -453,7 +453,7 @@ find_flag(OBJECT *ob, int flag)
 		if (ob[f].ob_flags & flag)
 			return f;
 	}
-	while (!(ob[f++].ob_flags & LASTOB));	/* HR: Check LASTOB before incrementing */
+	while (!(ob[f++].ob_flags & OF_LASTOB));	/* HR: Check LASTOB before incrementing */
 
 	return -1;
 }
@@ -464,11 +464,11 @@ find_cancel_button(OBJECT *ob)
 	int f = 0;
 	do {
 		if (   (ob[f].ob_type & 0xff) == G_BUTTON
-		    && (ob[f].ob_flags & (SELECTABLE|TOUCHEXIT|EXIT)) != 0 )
+		    && (ob[f].ob_flags & (OF_SELECTABLE|OF_TOUCHEXIT|OF_EXIT)) != 0 )
 		{
 			int l;
 			char t[32]; char *s = t,*e;
-			e = get_ob_spec(ob+f)->string;
+			e = get_ob_spec(ob+f)->free_string;
 			l = strlen(e);
 			if (l < 32)
 			{
@@ -489,7 +489,7 @@ find_cancel_button(OBJECT *ob)
 			}
 		}
 	}
-	while (!(ob[f++].ob_flags & LASTOB));
+	while (!(ob[f++].ob_flags & OF_LASTOB));
 
 	return -1;
 }
@@ -509,9 +509,9 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 	OBJECT *form = wt->tree;
 	int o = obj, ed = 0,
 	      last_ob = 0;
-	while (!(form[last_ob].ob_flags & LASTOB))	/* Find last object & check for editable */
+	while (!(form[last_ob].ob_flags & OF_LASTOB))	/* Find last object & check for editable */
 	{
-		ed |= form[last_ob].ob_flags & EDITABLE;
+		ed |= form[last_ob].ob_flags & OF_EDITABLE;
 		last_ob++;	
 	}
 
@@ -525,13 +525,13 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 	case 0x5000:		/* DOWN ARROW also moves to next field */
 		if (ed)
 			do o = o == last_ob ? 0 : o + 1;	/* loop round */
-			while (!(form[o].ob_flags & EDITABLE));
+			while (!(form[o].ob_flags & OF_EDITABLE));
 		break;
 
 	case 0x4800:		/* UP ARROW moves to previous field */
 		if (ed)
 			do o = o == 0       ? last_ob : o - 1;	/* loop round */
-			while (!(form[o].ob_flags & EDITABLE));
+			while (!(form[o].ob_flags & OF_EDITABLE));
 		break;
 
 	case 0x4737:		/* SHIFT+HOME */
@@ -540,7 +540,7 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 		if (ed)
 		{
 			o = last_ob;
-			while (!(form[o].ob_flags & EDITABLE)) o--;	/* Search last */
+			while (!(form[o].ob_flags & OF_EDITABLE)) o--;	/* Search last */
 		}
 		break;
 
@@ -550,7 +550,7 @@ form_cursor(LOCK lock, XA_TREE *wt, ushort keycode, int obj)
 		if (ed)
 		{
 			o = 0;
-			while (!(form[o].ob_flags & EDITABLE)) o++;	/* Search first */
+			while (!(form[o].ob_flags & OF_EDITABLE)) o++;	/* Search first */
 		}
 		break;
 	}
@@ -585,7 +585,7 @@ find_shortcut(OBJECT *tree, ushort nk)
 
 	do {
 		OBJECT *ob = tree + i;
-		if (ob->ob_state&WHITEBAK)
+		if (ob->ob_state&OS_WHITEBAK)
 		{
 			int ty = ob->ob_type & 0xff;
 			if (ty == G_BUTTON || ty == G_STRING)
@@ -593,7 +593,7 @@ find_shortcut(OBJECT *tree, ushort nk)
 				int j = (ob->ob_state>>8)&0x7f;
 				if (j < 126)
 				{
-					char *s = get_ob_spec(ob)->string;
+					char *s = get_ob_spec(ob)->free_string;
 					if (s)
 					{
 						DIAG((D_keybd,NULL,"  -  in '%s' find '%c' on %d :: %c\n",s,nk,j, *(s+j)));
@@ -603,7 +603,7 @@ find_shortcut(OBJECT *tree, ushort nk)
 				}
 			}
 		}
-	} while ( (tree[i++].ob_flags&LASTOB) == 0);
+	} while ( (tree[i++].ob_flags&OF_LASTOB) == 0);
 
 	return -1;
 }
@@ -612,7 +612,7 @@ unsigned long
 XA_form_keybd(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	XA_TREE *wt;
-	OBJECT *form = pb->addrin[0];
+	OBJECT *form = (OBJECT*)pb->addrin[0];
 	short obj = pb->intin[0],
 	      keycode = pb->intin[1],
 	      *op = pb->intout;
@@ -641,7 +641,7 @@ XA_form_keybd(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		/* Tried out with TOS 3.06: DEFAULT only, still exits. */
 		if ((keycode == 0x1c0d || keycode == 0x720d))
-			o = find_flag(form, DEFAULT);
+			o = find_flag(form, OF_DEFAULT);
 		else if (keycode == 0x6100)		/* UNDO */
 			o = find_cancel_button(form);
 		else
@@ -786,10 +786,10 @@ has_default(OBJECT *ob)
 	int f = 0;
 
 	do {
-		if (ob[f].ob_flags & DEFAULT)
+		if (ob[f].ob_flags & OF_DEFAULT)
 			return true;
 	}
-	while (!(ob[f++].ob_flags & LASTOB));
+	while (!(ob[f++].ob_flags & OF_LASTOB));
 
 	return false;
 }
@@ -891,7 +891,7 @@ XA_form_dial(LOCK lock, XA_CLIENT *client, AESPB *pb)
 					MG,
 					C.Aes->options.thinframe,
 					C.Aes->options.thinwork,
-					*(RECT *)&pb->intin[5]);
+					*(const RECT *)&pb->intin[5]);
 			move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
 		}
 		else
@@ -921,7 +921,7 @@ XA_form_dial(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			close_window(lock, wind);
 			delete_window(lock, wind);
 		} else	/* This was just a redraw request */
-			display_windows_below(lock, (RECT *)&pb->intin[5], window_list);
+			display_windows_below(lock, (const RECT *)&pb->intin[5], window_list);
 
 		bzero(&client->fmd, sizeof(client->fmd));
 		break;
@@ -969,10 +969,11 @@ exit_wdial(LOCK lock, struct xa_window *wind, struct xa_widget *widg,
 	   KEY *key)
 {
 	XA_CLIENT *client = wt->owner;
+	OBJECT *form = wt->tree;
 	struct moose_data md;
 
-	md.x = form->r.x + widg->x;
-	md.y = form->r.y + widg->y;
+	md.x = form->ob_x + widg->x;
+	md.y = form->ob_y + widg->y;
 	md.state = widg->s;
 	md.clicks = dbl ? 2 : 1;
 
@@ -1099,7 +1100,7 @@ handle_form_key(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 		/* HR: Enter */
 
 		if (keycode == 0x1c0d || keycode == 0x720d)
-			o = find_flag(form, DEFAULT);
+			o = find_flag(form, OF_DEFAULT);
 		else if (keycode == 0x6100)		/* UNDO */
 			o = find_cancel_button(form);
 		else if ((key.raw.conin.state&(K_CTRL|K_ALT)) == K_ALT)
@@ -1133,7 +1134,7 @@ handle_form_key(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 					but they were NOT! :-( */
 
 			/* HR: moved to here, where it is needed, and then check if the field IS editable */
-			if (form[ed_obj].ob_flags&EDITABLE)
+			if (form[ed_obj].ob_flags&OF_EDITABLE)
 			{
 				ed_txt = get_ob_spec(&form[ed_obj])->tedinfo;
 				if (ed_char(wt, ed_txt, keycode))	/* HR pass the widget tree */
@@ -1155,7 +1156,7 @@ init_form_do(LOCK lock, XA_TREE *wt, OBJECT *form, int item, bool draw)
 	 */
 
 	if (item <= 0)
-		item = find_flag(form, EDITABLE);
+		item = find_flag(form, OF_EDITABLE);
 
 	wt->edit_obj = item;
 	
@@ -1237,10 +1238,10 @@ XA_form_do(LOCK lock, XA_CLIENT *client, AESPB *pb)
 				MG,
 				C.Aes->options.thinframe,
 				C.Aes->options.thinwork,
-				form->r);
+				*(RECT*)&form->ob_x);
 	
 		if (!client->options.xa_nomove)
-			kind |= MOVE;
+			kind |= MOVER;
 		client->fmd.kind = kind;
 	
 		IFDIAG(if (client->fmd.state == 0)
@@ -1265,13 +1266,13 @@ XA_form_do(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	if (wind->is_open)
 	{
 		DIAG((D_form,client,"display_toolbar: wind: %d/%d, form: %d/%d\n",
-			wind->r.x, wind->r.y, form->r.x, form->r.y));
+			wind->r.x, wind->r.y, form->ob_x, form->ob_y));
 		display_toolbar(lock, wind, 0);
 	}
 	else
 	{
 		DIAG((D_form,client,"open_window: wind: %d/%d, form: %d/%d\n",
-			wind->r.x, wind->r.y, form->r.x, form->r.y));
+			wind->r.x, wind->r.y, form->ob_x, form->ob_y));
 		open_window(lock, wind, wind->r);
 	}
 
@@ -1301,13 +1302,13 @@ key_alert_widget(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 	rp_2_ap(wind, widg, &r);	/* Convert relative coords and window location to absolute screen location */
 
 	if (keycode == 0x720d || keycode == 0x1c0d)
-		f = find_flag(alert_form, DEFAULT);
+		f = find_flag(alert_form, OF_DEFAULT);
 	else if (keycode == 0x6100)   				/* UNDO */
 		f = find_cancel_button(alert_form);
 
 	if (   f >= ALERT_BUT1			/* Is f a valid button? */
 	    && f <  ALERT_BUT1 + 3
-	    && !(alert_form[f].ob_flags & HIDETREE))
+	    && !(alert_form[f].ob_flags & OF_HIDETREE))
 	{
 		/* HR 210501: Really must do this BEFORE unblocking!!! */
 		close_window(lock, wind);
@@ -1346,16 +1347,16 @@ Radio_b(LOCK lock, XA_TREE *odc_p, int object)
 	
 	while (o != parent)
 	{
-		if ((d[o].ob_flags & RBUTTON) && (d[o].ob_state & SELECTED))
+		if ((d[o].ob_flags & OF_RBUTTON) && (d[o].ob_state & OS_SELECTED))
 		{
-			d[o].ob_state &= ~SELECTED;
+			d[o].ob_state &= ~OS_SELECTED;
 			redraw_object(lock, odc_p, o);
 		}
 		
 		o = d[o].ob_next;
 	}
 	
-	d[object].ob_state |= SELECTED;
+	d[object].ob_state |= OS_SELECTED;
 	redraw_object(lock, odc_p,object);
 }
 
@@ -1368,12 +1369,12 @@ do_form_button(LOCK lock, XA_TREE *wt,
 	int is,os;
 	bool go_exit = false;
 
-	/* find_object can't report click on a HIDETREE object. */
+	/* find_object can't report click on a OF_HIDETREE object. */
 	/* HR: Unfortunately it could. Fixed that. */
 
 	/* Was click on a valid touchable object? */
-	if (   (form[f].ob_state & DISABLED) == 0
-	    && (form[f].ob_flags & (EDITABLE | SELECTABLE | EXIT | TOUCHEXIT)) != 0)
+	if (   (form[f].ob_state & OS_DISABLED) == 0
+	    && (form[f].ob_flags & (OF_EDITABLE | OF_SELECTABLE | OF_EXIT | OF_TOUCHEXIT)) != 0)
 	{
 		if ((form[f].ob_type & 0xff) == G_SLIST)
 		{
@@ -1390,7 +1391,7 @@ do_form_button(LOCK lock, XA_TREE *wt,
 		}
 		else
 		{
-			if ((form[f].ob_flags & EDITABLE) && (f != wt->edit_obj))
+			if ((form[f].ob_flags & OF_EDITABLE) && (f != wt->edit_obj))
 			{	/* Select a new editable text field? */
 				TEDINFO *txt = get_ob_spec(&form[f])->tedinfo;
 				int o = wt->edit_obj;
@@ -1402,14 +1403,14 @@ do_form_button(LOCK lock, XA_TREE *wt,
 			}
 	
 			os = form[f].ob_state;
-			is = os ^ SELECTED;
+			is = os ^ OS_SELECTED;
 	
-		 	if (form[f].ob_flags & TOUCHEXIT)		/* Touch Exit button? */
+		 	if (form[f].ob_flags & OF_TOUCHEXIT)		/* Touch Exit button? */
 		 	{
-				if (form[f].ob_flags & RBUTTON)
+				if (form[f].ob_flags & OF_RBUTTON)
 					/* Was click on a radio button? */
 					Radio_b(lock, wt, f);
-				else if (form[f].ob_flags & SELECTABLE)
+				else if (form[f].ob_flags & OF_SELECTABLE)
 				{
 					form[f].ob_state = is;
 					redraw_object(lock, wt, f);
@@ -1420,7 +1421,7 @@ do_form_button(LOCK lock, XA_TREE *wt,
 	 * How should an EXIT but not SELECTABLE be handled?
 	 */
 			}
-			else if (form[f].ob_flags & SELECTABLE)	/* Selectable object? */
+			else if (form[f].ob_flags & OF_SELECTABLE)	/* Selectable object? */
 			{
 	/*
 	 * Should this perhaps be done in watch_object?
@@ -1430,11 +1431,11 @@ do_form_button(LOCK lock, XA_TREE *wt,
 		
 				if (watch_object(lock, wt, f, is, os))
 				{
-					if (form[f].ob_flags & RBUTTON)		/* Was click on a radio button? */
+					if (form[f].ob_flags & OF_RBUTTON)		/* Was click on a radio button? */
 						Radio_b(lock, wt, f);
 						
-					if (   (form[f].ob_flags & EXIT)	/* Exit button? */
-					    && (is               & SELECTED))	/* and changed to selected. */
+					if (   (form[f].ob_flags & OF_EXIT)	/* Exit button? */
+					    && (is               & OS_SELECTED))	/* and changed to selected. */
 					{
 						go_exit = true;
 					}
@@ -1455,7 +1456,7 @@ unsigned long
 XA_form_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	XA_TREE *wt;
-	OBJECT *tree = pb->addrin[0], *ob;
+	OBJECT *tree = (OBJECT*)pb->addrin[0], *ob;
 	int f = pb->intin[0], dbl;
 	bool retv;
 
@@ -1468,7 +1469,7 @@ XA_form_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	ob = tree + f;
 
-	dbl = ((ob->ob_flags & TOUCHEXIT) && pb->intin[1] == 2)	/* double click */
+	dbl = ((ob->ob_flags & OF_TOUCHEXIT) && pb->intin[1] == 2)	/* double click */
 		  ? 0x8000 : 0;
 
 	retv = do_form_button(	lock,
@@ -1485,9 +1486,9 @@ XA_form_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	/* Only if not EXIT|TOUCHEXIT!!
 	 * I had to find this out, its not described anywhere. */
-	if ( (!(ob->ob_flags & EDITABLE) && !retv)
-	    || (ob->ob_flags & HIDETREE)
-	    || (ob->ob_state & DISABLED))
+	if ( (!(ob->ob_flags & OF_EDITABLE) && !retv)
+	    || (ob->ob_flags & OF_HIDETREE)
+	    || (ob->ob_state & OS_DISABLED))
 	{
 		pb->intout[1] = 0;
 	}
@@ -1631,8 +1632,8 @@ handle_form_window(
 		      wh = wind->wa.h,
 		      dx = wt->dx,			/* object displacement */
 		      dy = wt->dy,
-		      ow = ob->r.w,			/* object measures */
-		      oh = ob->r.h;
+		      ow = ob->ob_width,			/* object measures */
+		      oh = ob->ob_height;
 #if 0
 		int   wd = ow - ww,			/* space ouside workarea */
 		      hd = oh - wh;
