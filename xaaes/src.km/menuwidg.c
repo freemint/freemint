@@ -51,8 +51,6 @@ static MENU desk_popup;
 static bool menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker);
 static XA_TREE *set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item);
 
-static bool click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg);
-
 
 static bool
 barred(Tab *tab)
@@ -1077,7 +1075,6 @@ new_title(struct task_administration_block *tab)
 		else
 		{
 			tab = menu_pop(tab);
-			/* click_menu_widget */
 			if (!menu_title(tab->lock, tab->wind, tab->widg, tab->locker))
 			{
 				/* No popup has been drawn. */

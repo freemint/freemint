@@ -34,11 +34,19 @@
  * GLOBAL VARIABLES AND DATA STRUCTURES
  */
 
+/* open and closed windows in separate lists. */
+struct win_base
+{
+	struct xa_window *first;
+	struct xa_window *last;
+};
+
 struct shared
 {
-	WIN_BASE open_windows;		/* list of all open windows */
-	WIN_BASE closed_windows;	/* list of all closed windows */
-	WIN_BASE side_windows;		/* list of other special windows like menus popups etc */
+	struct win_base open_windows;	/* list of all open windows */
+	struct win_base closed_windows;	/* list of all closed windows */
+	struct win_base side_windows;	/* list of other special windows like menus popups etc */
+	struct win_base deleted_windows;/* list of windows to be deleted (delayed action) */
 
 	struct xa_client *client_list;	/* The clients database */
 	struct xa_client *excl_mouse_input;	/* This client need mouse events exclusivly */

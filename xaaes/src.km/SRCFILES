@@ -91,8 +91,7 @@ COBJS = \
 
 SOBJS = \
 	accstart.s \
-	nkcc-gc.s \
-	p_handlr.s
+	nkcc-gc.s
 
 SSOBJS = 
 
