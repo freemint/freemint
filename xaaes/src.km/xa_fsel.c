@@ -801,7 +801,7 @@ static void
 fs_change(enum locks lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
 {
 	XA_WIDGET *widg = get_widget(fs->wind, XAW_MENU);
-	int bx = d-1;
+	int bx = d - 1;
 	
 	do
 		m[d].ob_state &= ~OS_CHECKED;
@@ -810,6 +810,7 @@ fs_change(enum locks lock, struct fsel_data *fs, OBJECT *m, int p, int title, in
 	m[p].ob_state |= OS_CHECKED;
 	sprintf(m[title].ob_spec.free_string, 128, " %s", m[p].ob_spec.free_string + 2);
 	widg->start = 0;
+	m[title].ob_state &= ~OS_SELECTED;
 	display_widget(lock, fs->wind, widg);
 	strcpy(t, m[p].ob_spec.free_string + 2);
 }
