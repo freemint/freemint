@@ -1085,7 +1085,11 @@ mark_region(MEMREGION *region, short int mode)
     	goto finished;
 
     for (proc = proclist; proc; proc = proc->gl_next) {
-	assert(proc->page_table);
+	if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
+		continue;	
+	if (!proc->p_mem)
+		continue;
+	assert(proc->p_mem->page_table);
 	if (!shortcut && (mode == PROT_I || mode == PROT_G)) {
 	    /* everybody gets the same flags */
 	    goto notowner;
@@ -1095,8 +1099,8 @@ mark_region(MEMREGION *region, short int mode)
 	    MP_DEBUG(("mark_region: pid %d is an OS special!",proc->pid));
 	    goto owner;
 	}
-	if ((mr = proc->mem) != 0) {
-	    for (i = 0; i < proc->num_reg; i++, mr++) {
+	if ((mr = proc->p_mem->mem) != 0) {
+	    for (i = 0; i < proc->p_mem->num_reg; i++, mr++) {
 		if (*mr == region) {
 		    MP_DEBUG(("mark_region: pid %d is an owner",proc->pid));
 owner:
@@ -1124,7 +1128,7 @@ notowner:
 	setmode = mode;
 
 gotvals:
-	mark_pages(proc->page_table, start, len, setmode, 0);
+	mark_pages(proc->p_mem->page_table, start, len, setmode, 0);
     }
 finished:
     flush_mmu();
@@ -1150,7 +1154,7 @@ mark_proc_region(PROC *proc, MEMREGION *region, short int mode)
 
     global_mode = global_mode_table[(start >> 13)];
 
-    assert(proc->page_table);
+    assert(proc->p_mem && proc->p_mem->page_table);
     if (global_mode == PROT_I || global_mode == PROT_G)
       mode = global_mode;
     else {
@@ -1185,7 +1189,7 @@ owner:
     MP_DEBUG(("mark_proc_region: pid %d gets non-owner modes",proc->pid));
 
 gotvals:
-    mark_pages(proc->page_table, start, len, mode, FLUSH_BOTH);
+    mark_pages(proc->p_mem->page_table, start, len, mode, FLUSH_BOTH);
 	}
 }
 
@@ -1222,18 +1226,19 @@ prot_temp(ulong loc, ulong len, int mode)
 
     if (mode == 0 || mode == 1) return 0;	/* do nothing */
     if (mode == -1) {
-	cookie = get_page_cookie(curproc->page_table, loc, len);
+	assert (curproc->p_mem && curproc->p_mem->page_table);
+	cookie = get_page_cookie(curproc->p_mem->page_table, loc, len);
 
 	/* if not all controlled, return status */
 	if (cookie == 0 || cookie == 1) return cookie;
 
 	/* Otherwise, mark the pages as global */
-	mark_pages(curproc->page_table, loc, len, PROT_G, FLUSH_BOTH);
+	mark_pages(curproc->p_mem->page_table, loc, len, PROT_G, FLUSH_BOTH);
 
 	return cookie;
     }
     else {
-	mark_pages(curproc->page_table, loc, len, mode, FLUSH_BOTH);
+	mark_pages(curproc->p_mem->page_table, loc, len, mode, FLUSH_BOTH);
 	return 0;
     }
 	}
@@ -1252,7 +1257,7 @@ prot_temp(ulong loc, ulong len, int mode)
 static short mmu_is_set_up = 0;
 
 void
-init_page_table(PROC *proc)
+init_page_table (PROC *proc, struct memspace *p_mem)
 {
 	if (no_mem_prot)
 		return;
@@ -1262,12 +1267,11 @@ init_page_table(PROC *proc)
     ulong i;
     MEMREGION **mr;
 
-    assert(proc && proc->page_table && !((ulong)proc->page_table & 0x1ffUL));
+    assert (p_mem->page_table && !((ulong) p_mem->page_table & 0x1ffUL));
 
-    if (proc->pid)
-        MP_DEBUG(("init_page_table(proc=%lx, pid %d)",proc,proc->pid));
+    MP_DEBUG(("init_page_table (p_mem = %lx)", p_mem));
 
-    table = proc->page_table;
+    table = p_mem->page_table;
     /*
      * Pitfall: The rootpointer registers and the pointers inside the table
      * must be physical addresses, not logical
@@ -1295,11 +1299,11 @@ init_page_table(PROC *proc)
      * page.  Now for each region it IS an owner of, mark with owner
      * modes.
      */
-    mr = proc->mem;
-    for (i = 0; i < proc->num_reg; i++, mr++)
+    mr = p_mem->mem;
+    for (i = 0; i < p_mem->num_reg; i++, mr++)
     {
 	if (*mr)
-	    mark_pages(proc->page_table, (*mr)->loc, (*mr)->len, PROT_G, 0);
+	    mark_pages(p_mem->page_table, (*mr)->loc, (*mr)->len, PROT_G, 0);
     }
 
     /*
@@ -1347,19 +1351,20 @@ mem_prot_special(PROC *proc)
 
 
     TRACE(("mem_prot_special(pid %d)",proc->pid));
-
+    assert (proc->p_mem && proc->p_mem->page_table);
+    
     /*
      * This marks ALL memory, allocated or not, as accessible. When memory
      * is freed even F_OS_SPECIAL processes lose access to it. So one or
      * the other of these is a bug, depending on how you want it to work.
      */
-    mark_pages(proc->page_table,
+    mark_pages(proc->p_mem->page_table,
     	membot & ~8191,
     	mint_top_st - (membot & ~8191),
     	PROT_G,
     	0);
     if (mint_top_tt) {
-	mark_pages(proc->page_table,
+	mark_pages(proc->p_mem->page_table,
 		    0x01000000L,
 		    mint_top_tt - 0x01000000UL,
 		    PROT_G,
@@ -1373,9 +1378,9 @@ mem_prot_special(PROC *proc)
      * access the "special" process' memory when in super mode.
      */
 
-    mr = proc->mem;
+    mr = proc->p_mem->mem;
 
-    for (i=0; i < proc->num_reg; i++, mr++) {
+    for (i=0; i < proc->p_mem->num_reg; i++, mr++) {
 	if (*mr) {
 	    mode = global_mode_table[((*mr)->loc >> 13)];
 	    if (mode == PROT_P)
@@ -1501,26 +1506,31 @@ mem_access_for(PROC *p, ulong start, long nbytes)
 {
 	MEMREGION **mr;
 	int i;
-
-	if (no_mem_prot) return -1;
+	
+	if (no_mem_prot)
+		return -1;
+	
 	if (start >= (ulong)p && start+nbytes <= (ulong)(p+1))
 		return -1;
+	
 	if (p == rootproc)
 		goto win_and_mark;
-
-	mr = p->mem;
-	if (mr) {
-	    for (i = 0; i < p->num_reg; i++, mr++) {
-		if (*mr) {
-		    if (((*mr)->loc <= start) &&
-			((*mr)->loc + (*mr)->len >= start + nbytes))
-			    goto win_and_mark;
+	
+	if (p->p_mem) {
+	    mr = p->p_mem->mem;
+	    if (mr) {
+		for (i = 0; i < p->p_mem->num_reg; i++, mr++) {
+		    if (*mr) {
+			if (((*mr)->loc <= start) &&
+			    ((*mr)->loc + (*mr)->len >= start + nbytes))
+				goto win_and_mark;
+		    }
 		}
 	    }
 	}
-
+	
 	return 0;	/* we don't own this memory */
-
+	
 win_and_mark:
 	return prot_temp(start, nbytes, -1);
 }
@@ -1726,10 +1736,12 @@ BIG_MEM_DUMP (int bigone, PROC *proc)
 					
 					for (p = proclist; p; p = p->gl_next)
 					{
-						if (p->mem)
+						if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+							continue;
+						if (p->p_mem && p->p_mem->mem)
 						{
-							mr = p->mem;
-							for (i = 0; i < p->num_reg; i++, mr++)
+							mr = p->p_mem->mem;
+							for (i = 0; i < p->p_mem->num_reg; i++, mr++)
 							{
 								if (*mr == mp)
 								{
@@ -1759,9 +1771,9 @@ gotowner:
 		FORCE (buf);
 	}
 	
-	if (bigone)
+	if (bigone && proc->p_mem)
 	{
-		ulong *table = proc->page_table;
+		ulong *table = proc->p_mem->page_table;
 		
 		FORCE ("MMU tree for PID %d, logical address: %08lx", proc->pid, table);
 		FORCE ("\rST-RAM:                                  ");

@@ -407,7 +407,7 @@ get_page_cookie(long_desc *base_tbl,ulong start,ulong len)
 
 static void
 mark_pages(long_desc *base_tbl,ulong start,ulong len,
-	    ushort dt_val, ushort s_val, ushort wp_val, PROC *proc)
+	    ushort dt_val, ushort s_val, ushort wp_val)
 {
 	if (no_mem_prot)
 		return;
@@ -415,8 +415,6 @@ mark_pages(long_desc *base_tbl,ulong start,ulong len,
     int b_index, c_index, d_index;
     long_desc *tbl, *tbl_b, *tbl_c;
     ulong oldlen;
-
-    UNUSED(proc);
 
 
     oldlen = len;
@@ -547,7 +545,11 @@ mark_region(MEMREGION *region, short int mode)
     memset(&global_mode_table[start >> 13],mode,(len >> 13));
 
     for (proc = proclist; proc; proc = proc->gl_next) {
-	assert(proc->page_table);
+	if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
+		continue;
+	if (!proc->p_mem)
+		continue;
+	assert(proc->p_mem->page_table);
 	if (mode == PROT_I || mode == PROT_G) {
 	    /* everybody gets the same flags */
 	    goto notowner;
@@ -557,8 +559,8 @@ mark_region(MEMREGION *region, short int mode)
 	    MP_DEBUG(("mark_region: pid %d is an OS special!",proc->pid));
 	    goto owner;
 	}
-	if ((mr = proc->mem) != 0) {
-	    for (i = 0; i < proc->num_reg; i++, mr++) {
+	if ((mr = proc->p_mem->mem) != 0) {
+	    for (i = 0; i < proc->p_mem->num_reg; i++, mr++) {
 		if (*mr == region) {
 		    MP_DEBUG(("mark_region: pid %d is an owner",proc->pid));
 owner:
@@ -580,7 +582,7 @@ notowner:
 	wp_val = other_wp[mode];
 
 gotvals:
-	mark_pages(proc->page_table,start,len,dt_val,s_val,wp_val,proc);
+	mark_pages(proc->p_mem->page_table,start,len,dt_val,s_val,wp_val);
     }
 	}
 }
@@ -604,7 +606,7 @@ mark_proc_region(PROC *proc, MEMREGION *region, short int mode)
 
     global_mode = global_mode_table[(start >> 13)];
 
-    assert(proc->page_table);
+    assert(proc->p_mem && proc->p_mem->page_table);
     if (global_mode == PROT_I || global_mode == PROT_G)
       mode = global_mode;
     else {
@@ -645,7 +647,7 @@ owner:
     wp_val = other_wp[mode];
 
 gotvals:
-    mark_pages(proc->page_table,start,len,dt_val,s_val,wp_val,proc);
+    mark_pages(proc->p_mem->page_table,start,len,dt_val,s_val,wp_val);
 	}
 }
 
@@ -682,18 +684,19 @@ prot_temp(ulong loc, ulong len, int mode)
 
     if (mode == 0 || mode == 1) return 0;	/* do nothing */
     if (mode == -1) {
-	cookie = get_page_cookie(curproc->page_table,loc,len);
+	assert (curproc->p_mem && curproc->p_mem->page_table);
+	cookie = get_page_cookie(curproc->p_mem->page_table,loc,len);
 
 	/* if not all controlled, return status */
 	if (cookie == 0 || cookie == 1) return cookie;
 
-	mark_pages(curproc->page_table,loc,len,1,0,0,curproc);
+	mark_pages(curproc->p_mem->page_table,loc,len,1,0,0);
 
 	return cookie;
     }
     else {
-	mark_pages(curproc->page_table,loc,len,
-		    mode&3,(mode&4)>>2,(mode&8)>>3,curproc);
+	mark_pages(curproc->p_mem->page_table,loc,len,
+		    mode&3,(mode&4)>>2,(mode&8)>>3);
 	return 0;
     }
 	}
@@ -713,7 +716,7 @@ prot_temp(ulong loc, ulong len, int mode)
 static short mmu_is_set_up = 0;
 
 void
-init_page_table(PROC *proc)
+init_page_table (PROC *proc, MEMSPACE *p_mem)
 {
 	if (no_mem_prot)
 		return;
@@ -729,12 +732,11 @@ init_page_table(PROC *proc)
     MEMREGION **mr;
 
 
-    assert(proc && proc->page_table);
+    assert (p_mem->page_table);
 
-    if (proc->pid)
-        TRACELOW(("init_page_table(proc=%lx, pid %d)",proc,proc->pid));
+    TRACELOW(("init_page_table (p_mem = %lx)", p_mem));
 
-    tptr = proc->page_table;
+    tptr = p_mem->page_table;
     tbl_a = tptr;
     tptr += TBL_SIZE;
     tbl_b0 = tptr;
@@ -882,10 +884,10 @@ init_page_table(PROC *proc)
      * modes.
      */
 
-    mr = proc->mem;
-    for (i=0; i < proc->num_reg; i++, mr++) {
+    mr = p_mem->mem;
+    for (i = 0; i < p_mem->num_reg; i++, mr++) {
 	if (*mr) {
-    	    mark_pages(proc->page_table,(*mr)->loc,(*mr)->len,1,0,0,proc);
+    	    mark_pages (p_mem->page_table,(*mr)->loc,(*mr)->len,1,0,0);
     	}
     }
 
@@ -919,19 +921,19 @@ mem_prot_special(PROC *proc)
 
 
     TRACE(("mem_prot_special(pid %d)",proc->pid));
+    assert (proc->p_mem && proc->p_mem->page_table);
 
     /*
      * This marks ALL memory, allocated or not, as accessible. When memory
      * is freed even F_OS_SPECIAL processes lose access to it. So one or
      * the other of these is a bug, depending on how you want it to work.
      */
-    mark_pages(proc->page_table,0,mint_top_st,1,0,0,proc);
+    mark_pages(proc->p_mem->page_table,0,mint_top_st,1,0,0);
     if (mint_top_tt) {
-	mark_pages(proc->page_table,
+	mark_pages(proc->p_mem->page_table,
 		    0x01000000L,
 		    mint_top_tt - 0x01000000L,
-		    1,0,0,
-		    proc);
+		    1,0,0);
     }
 
     /*
@@ -941,9 +943,9 @@ mem_prot_special(PROC *proc)
      * access the "special" process' memory when in super mode.
      */
 
-    mr = proc->mem;
+    mr = proc->p_mem->mem;
 
-    for (i=0; i < proc->num_reg; i++, mr++) {
+    for (i=0; i < proc->p_mem->num_reg; i++, mr++) {
 	if (*mr) {
 	    mode = global_mode_table[((*mr)->loc >> 13)];
 	    if (mode == PROT_P)
@@ -1178,9 +1180,11 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
 		*lp++ = modesym[global_mode_table[loc / EIGHT_K]];
 
 		for (p = proclist; p; p = p->gl_next) {
-		    if (p->mem) {
-			mr = p->mem;
-			for (i=0; i < p->num_reg; i++, mr++) {
+		    if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		    if (p->p_mem && p->p_mem->mem) {
+			mr = p->p_mem->mem;
+			for (i=0; i < p->p_mem->num_reg; i++, mr++) {
 			    if (*mr == mp) {
 				owner = p->pid;
 				goto gotowner;
@@ -1248,13 +1252,15 @@ mem_access_for(PROC *p, ulong start, long nbytes)
 	if (p == rootproc)
 		goto win_and_mark;
 
-	mr = p->mem;
-	if (mr) {
-	    for (i = 0; i < p->num_reg; i++, mr++) {
-		if (*mr) {
-		    if (((*mr)->loc <= start) &&
-			((*mr)->loc + (*mr)->len >= start + nbytes))
-			    goto win_and_mark;
+	if (p->p_mem) {
+	    mr = p->p_mem->mem;
+	    if (mr) {
+		for (i = 0; i < p->p_mem->num_reg; i++, mr++) {
+		    if (*mr) {
+			if (((*mr)->loc <= start) &&
+			    ((*mr)->loc + (*mr)->len >= start + nbytes))
+				goto win_and_mark;
+		    }
 		}
 	    }
 	}

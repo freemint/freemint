@@ -396,7 +396,7 @@
 0x13e	psigintr	(ushort vec, ushort sig)
 0x13f	suptime		(ulong *cur_uptim, ulong loadave[3])
 
-0x140	RESERVED
+0x140	ptrace		(short request, short pid, void *addr, long data) /* 1.15.10 */
 0x141	RESERVED
 0x142	dxreaddir	(int len, long handle, char *buf, XATTR *xattr, long *xret)
 0x143	pseteuid	(int id)
@@ -424,8 +424,8 @@
 0x158	pgetpriority	(int which, int who)
 0x159	psetpriority	(int which, int who, int prio)
 0x15a	fpoll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
-0x15b	RESERVED
-0x15c	RESERVED
+0x15b	writev		(int fh, const struct iovec *iovp, long iovcnt)
+0x15c	readv		(int fh, const struct iovec *iovp, long iovcnt)
 0x15d	RESERVED
 0x15e	RESERVED
 0x15f	emulation	(ushort which, ushort op,
@@ -448,10 +448,10 @@
 0x16b	getsockopt	(int fh, long level, long name, void *val, ulong *avalsize)
 0x16c	getpeername	(int fh, struct sockaddr *asa, ulong *alen)
 0x16d	getsockname	(int fh, struct sockaddr *asa, ulong *alen)
-0x16e	writev		(int fh, const struct iovec *iovp, long iovcnt)
-0x16f	readv		(int fh, const struct iovec *iovp, long iovcnt)
+0x16e	shutdown	(int fh, long how)
+0x16f	RESERVED
 
-0x170	shutdown	(int fh, long how)
+0x170	RESERVED
 0x171	RESERVED
 0x172	RESERVED
 0x173	RESERVED
@@ -465,8 +465,8 @@
 0x17b	RESERVED
 0x17c	RESERVED
 0x17d	RESERVED
-0x17e	RESERVED
-0x17f	RESERVED
+0x17e	RESERVED	/* mmap */
+0x17f	RESERVED	/* munmap */
 
 0x180	MAX
 
