@@ -1104,7 +1104,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 	IFDIAG(struct xa_client *client = wind->owner;)
 	struct xa_window *wl;
 	RECT old, new, clip, oldw, pr;
-	bool blit_mode;
+	bool blit = true;
 
 	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d",
 	      wind->is_open ? "open" : "closed",
@@ -1123,6 +1123,8 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 			wind->window_status = newstate;
 			if (newstate == XAWS_ICONIFIED)
 				wind->ro = wind->r;
+
+			blit = false;
 		}
 		else
 			/* Save windows previous coords */
@@ -1140,18 +1142,6 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 		inside_root(&wind->r, &wind->owner->options);
 
 		new = wind->r;
-
-		blit_mode = (    wind == window_list
-			     //&& (wind->active_widgets & TOOLBAR) == 0	/* temporary slist workarea hack */
-			     && (pr.x != new.x || pr.y != new.y)
-			     && pr.w == new.w
-			     && pr.h == new.h
-			     && pr.x >= 0
-			     && pr.y >= 0
-			     && pr.x + pr.w < screen.r.w
-			     && pr.y + pr.h < screen.r.h
-			     && new.x + new.w < screen.r.w
-			     && new.y + new.h < screen.r.h);
 
 		/* Recalculate the work area (as well as moving,
 		 * it might have changed size).
@@ -1172,9 +1162,8 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 			}
 
 /*
- * Change this to '#if 0' to disable rectangle gymnastics.
+ * Now there's no return....
  */
-#if 1
 			{
 				short dir, resize, move;
 				struct xa_rect_list *oldrl, *orl, *newrl, *brl, *prev, *next, *rrl, *nrl;
@@ -1188,7 +1177,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 				resize	= new.w != old.w || new.h != old.h ? 1 : 0;
 				move	= new.x != old.x || new.y != old.y ? 1 : 0;
 				
-				if (oldrl && newrl)
+				if (blit && oldrl && newrl)
 				{
 					DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",
 						old, new));
@@ -1685,53 +1674,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 					}
 				}
 			}
-#else
-			/* Update the window's rectangle list, it will be out of date now */
-			make_rect_list(wind, 1);
 
-			/* If window is being blit mode transferred, do the blit instead of redrawing */
-			if (blit_mode)
-			{
-				DIAG((D_wind, client, "blit"));
-				form_copy(&pr, &new);
-			}
-			else
-			{
-				display_window(wlock, 12, wind, NULL);
-				/* Does this window's application want messages? If so send it a redraw */
-				if (wind->send_message)
-				{
-					/* moved? */
-					if (new.x != pr.x || new.y != pr.y)
-					{
-						DIAG((D_wind, client, "moved"));
-						wind->send_message(wlock, wind, NULL,
-								   WM_REDRAW, 0, 0, wind->handle,
-								   wind->wa.x, wind->wa.y, wind->wa.w, wind->wa.h);
-					}
-					else	/* sized */
-					{
-						DIAG((D_wind, client, "sized"));
-						if (wind->wa.w > oldw.w)
-						{
-							DIAG((D_wind,client, "wider"));
-							wind->send_message(wlock, wind, NULL,
-									   WM_REDRAW, 0, 0, wind->handle,
-									   wind->wa.x + oldw.w, wind->wa.y,
-									   wind->wa.w - oldw.w, MIN(oldw.h, wind->wa.h));
-						}
-						if (wind->wa.h > oldw.h)
-						{
-							DIAG((D_wind, client, "higher"));
-							wind->send_message(wlock, wind, NULL,
-									   WM_REDRAW, 0, 0, wind->handle,
-									   wind->wa.x, wind->wa.y + oldw.h,
-									   wind->wa.w, wind->wa.h - oldw.h);
-						}
-					}
-				}
-			}
-#endif
 			wl = wind->next;
 
 			/* For some reason the open window had got behind
