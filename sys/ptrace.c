@@ -357,20 +357,8 @@ p_trace (short request, short pid, void *addr, long data)
 			/* write is 0 */
 		{
 			MEMREGION *m;
-			long _addr;
 			
-			_addr = (long) addr;
-			
-#if 0
-			m = proc_addr2region (t, (long) t->base);
-			if (m)
-			{
-				if (_addr < m->len)
-					_addr += (long) t->base + 256L;
-			}
-#endif
-			
-			m = proc_addr2region (t, (long) _addr);
+			m = proc_addr2region (t, (long) addr);
 			if (m)
 			{
 				int prot_hold;
@@ -386,10 +374,11 @@ p_trace (short request, short pid, void *addr, long data)
 				prot_hold = prot_temp (m->loc, m->len, -1);
 				assert (prot_hold < 0);
 				
+				/* XXX - what about forked regions? */
 				if (write)
-					*(long *) _addr = data;
+					*(long *) addr = data;
 				else
-					*(long *) data = *(long *) _addr;
+					*(long *) data = *(long *) addr;
 				
 				//detach_region (p, m);
 				if (prot_hold != -1)
@@ -448,7 +437,7 @@ p_trace (short request, short pid, void *addr, long data)
 				t->ptraceflags |= PF_TRACESYS;
 			else
 				t->ptraceflags &= ~PF_TRACESYS;
-				
+			
 			/* Discard the saved frame */
 			t->ctxt[SYSCALL].sfmt = 0;
 			t->sigpending = 0;
