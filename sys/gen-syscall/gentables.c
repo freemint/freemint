@@ -42,26 +42,22 @@ long _stksize = 64 * 1024;
 #endif
 
 
-static void
-generate_struct(FILE *out, struct systab *tab)
+static char *
+lowercase(const char *src)
 {
-	int i;
+	char *d, *dst;
 	
-	for (i = 0; i < tab->size; i++)
+	d = dst = strdup(src);
+	assert(dst);
+	
+	while (*d)
 	{
-		struct syscall *call = tab->table[i];
-		
-		if (call && call->args)
-		{
-			fprintf(out, "struct sys_%c_%s_args\n", call->class, call->name);
-			fprintf(out, "{\n");
-			
-			generate_args(out, call->args, "\t", 1, ";\n");
-			
-			fprintf(out, "};\n");
-			fprintf(out, "\n");
-		}
+		if (isupper(*d))
+			*d = tolower(*d);
+		d++;
 	}
+	
+	return dst;
 }
 
 static void
@@ -75,17 +71,24 @@ generate_proto(FILE *out, struct systab *tab)
 		
 		if (call && is_regular_syscall(call))
 		{
-			fprintf(out, "long _cdecl sys_%c_%s\t", call->class, call->name);
+			char *name = lowercase(call->name);
 			
-			if ((1 + strlen(call->name)) < (7))
+			fprintf(out, "/*0x%03x*/ ", i);
+			fprintf(out, "long _cdecl sys_%s\t", name);
+			
+			if (strlen(name) < 6)
 				fprintf(out, "\t");
 			
-			fprintf(out, "(struct proc *");
+			fprintf(out, "(");
 			
 			if (call->args)
-				fprintf(out, ", struct sys_%c_%s_args", call->class, call->name);
+				generate_args(out, call->args, "", 0, ", ");
+			else
+				fprintf(out, "void");
 			
 			fprintf(out, ");\n");
+			
+			free(name);
 		}
 	}
 }
@@ -95,111 +98,35 @@ generate_tab(FILE *out, struct systab *tab, const char *prefix)
 {
 	int i, j;
 	
-	fprintf(out, "ushort %s_max = 0x%x;\n", prefix, tab->max);
+	fprintf(out, "ushort %s_tab_max = 0x%x;\n", prefix, tab->max);
 	fprintf(out, "\n");
-	fprintf(out, "struct systab %s_tab[ 0x%x ] =\n", prefix, tab->max);
+	fprintf(out, "Func %s_tab[ 0x%x ] =\n", prefix, tab->max);
 	fprintf(out, "{\n");
 	
 	for (i = 0, j = 1; i < tab->size; i++, j++)
 	{
 		struct syscall *call = tab->table[i];
 		
-		fprintf(out, "/* 0x%03x */\t{ ", i);
+		fprintf(out, "/*0x%03x*/\t", i);
 		
 		if (call)
 		{
-			int nr_args = arg_length(call->args);
-			
 			if (is_regular_syscall(call))
 			{
-				fprintf(out, "sys_%c_%s, ", call->class, call->name);
-				fprintf(out, "%i, ", nr_args);
+				char *name = lowercase(call->name);
 				
-				if (call->args)
-					fprintf(out, "sizeof(struct sys_%c_%s_args)",
-						call->class, call->name);
-				else
-					fprintf(out, "0");
+				fprintf(out, "sys_%s", name);
+				
+				free(name);
 			}
-			else if (is_passthrough_syscall(call))
-				fprintf(out, "NULL, 0, 0");
-			else
-				fprintf(out, "sys_enosys, 0, 0");
-		}
-		else
-			/* unspecified -> ENOSYS */
-			fprintf(out, "sys_enosys, 0, 0");
-		
-		fprintf(out, " },\n");
-		
-		if (j == 0x10)
-		{
-			j = 0;
-			fprintf(out, "\n");
-		}
-	}
-	
-	fprintf(out, "/* 0x%03x */\t/* MAX */\n", tab->max);
-	fprintf(out, "};\n");
-}
-
-static void
-generate_wrapper(FILE *out, struct systab *tab, const char *prefix)
-{
-	int i, j;
-	
-	for (i = 0; i < tab->size; i++)
-	{
-		struct syscall *call = tab->table[i];
-		
-		if (call && is_regular_syscall(call))
-		{
-			fprintf(out, "static long\n");
-			fprintf(out, "old_%c_%s(", call->class, call->name);
-			
-			if (call->args)
-				fprintf(out, "struct sys_%c_%s_args args", call->class, call->name);
-			else
-				fprintf(out, "void");
-			
-			fprintf(out, ")\n");
-			
-			/* body */
-			fprintf(out, "{\n");
-			
-			fprintf(out, "\treturn sys_%c_%s(curproc", call->class, call->name);
-			if (call->args)
-				fprintf(out, ", args");
-			fprintf(out, ");\n");
-			
-			fprintf(out, "}\n");
-			fprintf(out, "\n");
-		}
-	}
-	
-	fprintf(out, "\n");
-	
-	fprintf(out, "Func %s_tab_old [ 0x%x ] =\n", prefix, tab->max);
-	fprintf(out, "{\n");
-	
-	for (i = 0, j = 1; i < tab->size; i++, j++)
-	{
-		struct syscall *call = tab->table[i];
-		
-		fprintf(out, "\t/* 0x%03x */\t", i);
-		
-		if (call)
-		{
-			if (is_regular_syscall(call))
-				fprintf(out, "old_%c_%s", call->class, call->name);
 			else if (is_passthrough_syscall(call))
 				fprintf(out, "NULL");
 			else
-				fprintf(out, "old_enosys");
+				fprintf(out, "sys_enosys");
 		}
 		else
 			/* unspecified -> ENOSYS */
-			fprintf(out, "old_enosys");
+			fprintf(out, "sys_enosys");
 		
 		fprintf(out, ",\n");
 		
@@ -210,7 +137,34 @@ generate_wrapper(FILE *out, struct systab *tab, const char *prefix)
 		}
 	}
 	
-	fprintf(out, "\t/* 0x%03x */\t/* MAX */\n", tab->max);
+	fprintf(out, "/* 0x%03x */\t/* MAX */\n", tab->max);
+	fprintf(out, "};\n");
+	fprintf(out, "\n");
+	
+	fprintf(out, "ushort %s_tab_argsize[ 0x%x ] =\n", prefix, tab->max);
+	fprintf(out, "{\n");
+	
+	for (i = 0, j = 1; i < tab->size; i++, j++)
+	{
+		struct syscall *call = tab->table[i];
+		
+		fprintf(out, "/*0x%03x*/\t", i);
+		
+		if (call && is_regular_syscall(call))
+			fprintf(out, "%i", arg_size_bytes(call->args) / 2);
+		else
+			fprintf(out, "0");
+		
+		fprintf(out, ",\n");
+		
+		if (j == 0x10)
+		{
+			j = 0;
+			fprintf(out, "\n");
+		}
+	}
+	
+	fprintf(out, "/* 0x%03x */\t/* MAX */\n", tab->max);
 	fprintf(out, "};\n");
 }
 
@@ -256,40 +210,24 @@ main(int argc, char **argv)
 		}
 		
 		print_head(f, myname);
-		fprintf(f, "# ifndef _syscalls_h\n# define _syscalls_h\n\n");
+		fprintf(f, "# ifndef _syscalls_h\n");
+		fprintf(f, "# define _syscalls_h\n\n");
 		fprintf(f, "# include \"mint/mint.h\"\n");
 		fprintf(f, "# include \"mint/mem.h\"\n");
 		fprintf(f, "\n");
 		fprintf(f, "\n");
-		fprintf(f, "struct systab\n");
-		fprintf(f, "{\n");
-		fprintf(f, "\tlong _cdecl (*call)();\n");
-		fprintf(f, "\tushort nr_of_args;\n");
-		fprintf(f, "\tushort size_of_args;\n");
-		fprintf(f, "};\n");
+		fprintf(f, "extern Func dos_tab[];\n");
+		fprintf(f, "extern Func bios_tab[];\n");
+		fprintf(f, "extern Func xbios_tab[];\n");
 		fprintf(f, "\n");
+		fprintf(f, "extern ushort dos_tab_argsize[];\n");
+		fprintf(f, "extern ushort bios_tab_argsize[];\n");
+		fprintf(f, "extern ushort xbios_tab_argsize[];\n");
 		fprintf(f, "\n");
-		fprintf(f, "extern struct systab dos_tab[];\n");
-		fprintf(f, "extern struct systab bios_tab[];\n");
-		fprintf(f, "extern struct systab xbios_tab[];\n");
+		fprintf(f, "extern ushort dos_tab_max;\n");
+		fprintf(f, "extern ushort bios_tab_max;\n");
+		fprintf(f, "extern ushort xbios_tab_max;\n");
 		fprintf(f, "\n");
-		fprintf(f, "extern Func dos_tab_old[];\n");
-		fprintf(f, "extern Func bios_tab_old[];\n");
-		fprintf(f, "extern Func xbios_tab_old[];\n");
-		fprintf(f, "\n");
-		fprintf(f, "extern ushort dos_max;\n");
-		fprintf(f, "extern ushort bios_max;\n");
-		fprintf(f, "extern ushort xbios_max;\n");
-		fprintf(f, "\n");
-		
-		fprintf(f, "\n/*\n * DOS syscalls argument structs\n */\n");
-		generate_struct(f, gemdos_table());
-		
-		fprintf(f, "\n/*\n * BIOS syscalls argument structs\n */\n");
-		generate_struct(f, bios_table());
-		
-		fprintf(f, "\n/*\n * XBIOS syscalls argument structs\n */\n");
-		generate_struct(f, xbios_table());
 		
 		fprintf(f, "\n/*\n * DOS syscalls prototypes\n */\n");
 		generate_proto(f, gemdos_table());
@@ -316,7 +254,7 @@ main(int argc, char **argv)
 		
 		fprintf(f, "\n");
 		fprintf(f, "static long\n");
-		fprintf(f, "sys_enosys(struct proc *p, void *v)\n");
+		fprintf(f, "sys_enosys(void)\n");
 		fprintf(f, "{\n");
 		fprintf(f, "\treturn ENOSYS;\n");
 		fprintf(f, "}\n");
@@ -330,39 +268,6 @@ main(int argc, char **argv)
 		
 		fprintf(f, "\n/*\n * XBIOS syscall table\n */\n");
 		generate_tab(f, xbios_table(), "xbios");
-		
-		fclose(f);
-		
-		
-		f = fopen("syscalls_old.c", "w");
-		if (!f)
-		{
-			perror("syscalls_old.c");
-			exit(1);
-		}
-		
-		print_head(f, myname);
-		fprintf(f, "# include \"syscalls.h\"\n");
-		fprintf(f, "\n");
-		fprintf(f, "# include \"mint/proc.h\"\n");
-		fprintf(f, "\n");
-		fprintf(f, "\n");
-		fprintf(f, "static long\n");
-		fprintf(f, "old_enosys(void)\n");
-		fprintf(f, "{\n");
-		fprintf(f, "\treturn ENOSYS;\n");
-		fprintf(f, "}\n");
-		fprintf(f, "\n");
-		
-		fprintf(f, "\n/*\n * DOS old syscall wrapper & table\n */\n");
-		generate_wrapper(f, gemdos_table(), "dos");
-		
-		fprintf(f, "\n/*\n * BIOS old syscall wrapper & table\n */\n");
-		generate_wrapper(f, bios_table(), "bios");
-		
-		//not used
-		//fprintf(f, "\n/*\n * XBIOS old syscall wrapper & table\n */\n");
-		//generate_wrapper(f, xbios_table(), "xbios");
 		
 		fclose(f);
 	}

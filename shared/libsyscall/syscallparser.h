@@ -39,7 +39,9 @@ struct systab *xbios_table(void);
 
 void print_head(FILE *out, const char *myname);
 void generate_args(FILE *out, struct arg *l, const char *pre, int flag, const char *post);
+
 int arg_length(struct arg *l);
+int arg_size_bytes(struct arg *l);
 
 int is_regular_syscall(struct syscall *call);
 int is_passthrough_syscall(struct syscall *call);

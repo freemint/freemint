@@ -69,7 +69,7 @@ static void yyerror(char *s);
 static void insert_string(char *dst, const char *src);
 
 static int resize_tab(struct systab *tab, int newsize);
-static int add_tab(struct systab *tab, int nr, const char class, const char *name, struct arg *p, int status);
+static int add_tab(struct systab *tab, int nr, const char *name, struct arg *p, int status);
 
 static void add_arg(struct arg **head, struct arg *t);
 static struct arg *make_arg(int type, const char *s);
@@ -210,12 +210,12 @@ definition_list
 ;
 
 definition
-:	Integer Identifier Identifier '(' parameter_list ')' status
+:	Integer Identifier '(' parameter_list ')' status
 	{
 		if (systab->max && $1 >= systab->max)
 		{ yyerror("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab(systab, $1, $2[0], $3, $5, $7))
+		if (add_tab(systab, $1, $2, $4, $6))
 		{ yyerror("out of memory"); YYERROR; }
 	}
 |	Integer _IDENT_UNDEFINED
@@ -223,7 +223,7 @@ definition
 		if (systab->max && $1 >= systab->max)
 		{ yyerror("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab(systab, $1, 0, $2, NULL, SYSCALL_UNDEFINED))
+		if (add_tab(systab, $1, $2, NULL, SYSCALL_UNDEFINED))
 		{ yyerror("out of memory"); YYERROR; }
 	}
 |	Integer _IDENT_PASSTHROUGH
@@ -231,7 +231,7 @@ definition
 		if (systab->max && $1 >= systab->max)
 		{ yyerror("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab(systab, $1, 0, $2, NULL, SYSCALL_PASSTHROUGH))
+		if (add_tab(systab, $1, $2, NULL, SYSCALL_PASSTHROUGH))
 		{ yyerror("out of memory"); YYERROR; }
 	}
 |	Integer _IDENT_MAX
@@ -525,7 +525,7 @@ resize_tab(struct systab *tab, int newsize)
 }
 
 static int
-add_tab(struct systab *tab, int nr, const char class, const char *name, struct arg *p, int status)
+add_tab(struct systab *tab, int nr, const char *name, struct arg *p, int status)
 {
 	struct syscall *call = NULL;
 	
@@ -542,7 +542,6 @@ add_tab(struct systab *tab, int nr, const char class, const char *name, struct a
 		bzero(call, sizeof(*call));
 		
 		strcpy(call->name, name);
-		call->class = class;
 		call->args = p;
 		call->status = status;
 	}

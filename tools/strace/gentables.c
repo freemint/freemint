@@ -44,42 +44,6 @@ long _stksize = 64 * 1024;
 #endif
 
 
-static int
-arg_size(struct arg *args)
-{
-	int size = 0;
-	
-	while (args)
-	{
-		if (args->flags & (FLAG_POINTER|FLAG_ARRAY))
-		{
-			size += 4;
-		}
-		else switch (args->type)
-		{
-			default:
-				assert(0); break;
-			case TYPE_IDENT:
-			case TYPE_VOID:
-				assert(0); break;
-			case TYPE_INT:
-			case TYPE_CHAR: 
-			case TYPE_SHORT:
-			case TYPE_UNSIGNED:
-			case TYPE_UCHAR:
-			case TYPE_USHORT:
-				size += 2; break;
-			case TYPE_LONG:
-			case TYPE_ULONG:
-				size += 4; break;
-		}
-		
-		args = args->next;
-	}
-	
-	return size;
-}
-
 void
 generate_struct(FILE *out, struct syscall *call, const char *pre, const char *name)
 {
@@ -87,7 +51,7 @@ generate_struct(FILE *out, struct syscall *call, const char *pre, const char *na
 	{
 		char buf[strlen(pre)];
 		
-		fprintf(out, "%sstruct %s_%c_%s_args\n", pre, name, call->class, call->name);
+		fprintf(out, "%sstruct %s_%s_args\n", pre, name, call->name);
 		fprintf(out, "%s{\n", pre);
 		
 		strcpy(buf, pre);
@@ -191,24 +155,24 @@ generate_strace_printer(FILE *out, struct systab *tab, const char *name)
 			assert(tmp);
 			strupr(tmp);
 			
-			fprintf(out, "#ifndef %s_%c_%s\n", tmp, call->class, call->name);
+			fprintf(out, "#ifndef %s_%s\n", tmp, call->name);
 			fprintf(out, "static void\n");
-			fprintf(out, "print_%s_%c_%s(pid_t pid, long *argbuf)\n", name, call->class, call->name);
+			fprintf(out, "print_%s_%s(pid_t pid, long *argbuf)\n", name, call->name);
 			fprintf(out, "{\n");
 			
 			if (call->args)
 			{
 				generate_struct(out, call, "\t", name);
-				fprintf(out, "\tstruct %s_%c_%s_args *args = ", name, call->class, call->name);
-				fprintf(out, "(struct %s_%c_%s_args *)argbuf;\n", name, call->class, call->name);
+				fprintf(out, "\tstruct %s_%s_args *args = ", name, call->name);
+				fprintf(out, "(struct %s_%s_args *)argbuf;\n", name, call->name);
 				fprintf(out, "\n");
-				fprintf(out, "\tprintf(\"%c%s(\");\n", toupper(call->class), call->name);
+				fprintf(out, "\tprintf(\"%s(\");\n", call->name);
 				generate_printer_impl(out, call, "\t");
 				fprintf(out, "\tprintf(\")\\n\");\n");
 			}
 			
 			fprintf(out, "}\n");
-			fprintf(out, "#endif /* %s_%c_%s */\n", tmp, call->class, call->name);
+			fprintf(out, "#endif /* %s_%s */\n", tmp, call->name);
 			fprintf(out, "\n");
 			
 			free(tmp);
@@ -229,9 +193,9 @@ generate_strace_tab(FILE *out, struct systab *tab, const char *name)
 		
 		if (call && is_syscall(call))
 		{
-			fprintf(out, "%2i, ", arg_size(call->args));
-			fprintf(out, "\"%c%s\", ", toupper(call->class), call->name);
-			fprintf(out, "print_%s_%c_%s", name, call->class, call->name);
+			fprintf(out, "%2i, ", arg_size_bytes(call->args));
+			fprintf(out, "\"%s\", ", call->name);
+			fprintf(out, "print_%s_%s", name, call->name);
 		}
 		else
 			fprintf(out, " 0, \"unknown opcode 0x%03x\", NULL", i);
@@ -279,7 +243,7 @@ simplify_type(int type)
 	return type;
 }
 
-static struct arg *args[256]; 
+static struct arg *args[512]; 
 static int args_size = sizeof(args) / sizeof(args[0]);
 
 static int
@@ -475,8 +439,10 @@ main(int argc, char **argv)
 			perror("sysenttab.c");
 			exit(1);
 		}
-
-		printf("syscall types: %i\n", determine_types(gemdos_table()));
+		
+		printf("GEMDOS syscall types: %i\n", determine_types(gemdos_table()));
+		printf("BIOS syscall types: %i\n", determine_types(bios_table()));
+		printf("XBIOS syscall types: %i\n", determine_types(xbios_table()));
 	}
 	
 	return error;
