@@ -1184,7 +1184,7 @@ retry:
 			goto retry;
 		}
 		
-		BIO_ALERT (("block_IO.c: abort, no free unit in cache! (cache to small?)"));
+		BIO_ALERT (("block_IO.c: abort, no free unit in cache! (cache too small?)"));
 		return NULL;
 	}
 	
@@ -1385,7 +1385,7 @@ bio_set_cache_size (long size)
 	count = (size * 1024L) / cache.max_size;
 	if (!count)
 	{
-		BIO_ALERT (("%s, %ld: Specified cache size to small (%li).", __FILE__, __LINE__, size));
+		BIO_ALERT (("%s, %ld: Specified cache size too small (%li).", __FILE__, __LINE__, size));
 		return EBADARG;
 	}
 	
