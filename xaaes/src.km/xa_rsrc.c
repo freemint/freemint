@@ -29,6 +29,7 @@
 
 #include "draw_obj.h"
 #include "trnfm.h"
+#include "obtree.h"
 #include "xa_appl.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
@@ -775,20 +776,22 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				/* free the entry for the freed rsc. */
 				RSHDR *hdr = cur->rsc;
 				char *base = cur->rsc;
-				OBJECT **trees, *obtree;
-				short i, j, type;
+				OBJECT **trees; //, *obtree;
+				short i; //, j, type;
 
 
 				/* Free the memory allocated for scroll list objects. */
 				(unsigned long)trees = (unsigned long)(base + hdr->rsh_trindex);
 				for (i = 0; i < hdr->rsh_ntree; i++)
 				{
-
+					free_obtree_resources(client, trees[i]);
+					
 /* ------------------------------------- */
 /* Ozk: I dont know if this was really necessary ... only time will tell.
  * It makes it easy to add cleanup-code to individual objects loaded
  * by LoadResources..
  */
+ #if 0
 					obtree = trees[i];
 					j = 0;
 					do
@@ -846,6 +849,7 @@ FreeResources(struct xa_client *client, AESPB *pb)
 							}
 						}
 					} while (!(obtree[j++].ob_flags & OF_LASTOB));
+#endif
 				}
 /* ------------------------------------- */
 /* Old stuff - -- it will be removed if noone have objections

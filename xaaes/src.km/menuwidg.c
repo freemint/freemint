@@ -818,13 +818,23 @@ menu_finish(struct task_administration_block *tab)
 		DIAG((D_menu, NULL, "[0]menu_finish"));
 		client = C.Aes;
 	}
+
 	C.Aes->waiting_for = XAWAIT_MENU; /* ready for next menu choice */
 	C.Aes->em.flags = MU_M1;
 	C.Aes->status &= ~CS_MENU_NAV;
 
 	if ((proc = menustruct_locked()))
+	{
+		/* If someone wants its menu ontop, it is indicated
+		 * by C.next_menu (set in swap_menu, app_man.c)
+		 */
+		if (C.next_menu)
+		{
+			set_next_menu(C.next_menu, true);
+			C.next_menu = NULL;
+		}
 		unlock_menustruct(proc);
-
+	}
 }
 
 Tab *
@@ -948,7 +958,7 @@ menu_area(RECT *c, Tab *tab, int item, short dx, short dy)
 	wt->tree->ob_x = sx;
 	wt->tree->ob_y = sy;
 }
-
+#if 0
 static int
 nextdrop_rect(struct build_rl_parms *p)
 {
@@ -983,20 +993,8 @@ make_drop_rectlist(Tab *tab)
 		p.ptr1		= PREV_TAB(tab);
 		wind->rect_wastart = build_rect_list(&p);
 	}
-
-#if 0	
-	if (k->rl_drop)
-	{
-		free_rect_list(k->rl_drop);
-		k->rl_drop = NULL;
-	}
-
-	p.getnxtrect = nextdrop_rect;
-	p.area = &tab->task_data.menu.drop;
-	p.ptr1 = PREV_TAB(tab);
-	k->rl_drop = build_rect_list(&p);
-#endif
 }
+#endif
 
 static void
 display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
@@ -1428,7 +1426,7 @@ click_desk_popup(struct task_administration_block *tab)
 				/* found the reason some acc's wouldnt wake up: msgbuf[4] must receive
 				 * the meu_register reply, which in our case is the pid.
 				 */
-				send_app_message(lock, wind, client, AMQ_NORM, QMF_CHKDUP,
+				send_app_message(lock, wind, client, AMQ_NORM | AMQ_ANYCASE, QMF_CHKDUP,
 							AC_OPEN,        0, 0, 0,
 							client->p->pid, 0, 0, 0);
 			}
@@ -1720,7 +1718,7 @@ click_menu_entry(struct task_administration_block *tab)
 					OBJECT *rs = obtree;
 					
 					DIAG((D_menu, NULL, "indirect call"));
-					wind->send_message(lock, wind, wt->owner, AMQ_NORM, QMF_CHKDUP,
+					wind->send_message(lock, wind, wt->owner, AMQ_NORM | AMQ_ANYCASE, QMF_CHKDUP,
 							   MN_SELECTED, 0, 0, kc,
 							   m, (long)rs >> 16, (long)rs, ks);
 				}
@@ -1736,7 +1734,7 @@ click_menu_entry(struct task_administration_block *tab)
 						DIAG((D_menu, NULL, "to %s,title=%d,point_at=%d", t_owner(wt), kc, m));
 
 						/* Note the AES4.0 extended message format...... */
-						send_app_message(lock, wind, wt->owner, AMQ_NORM, QMF_CHKDUP,
+						send_app_message(lock, wind, wt->owner, AMQ_NORM | AMQ_ANYCASE, QMF_CHKDUP,
 								 MN_SELECTED, 0, 0, kc,
 								 m, (long)rs >> 16, (long)rs, ks);
 					}
@@ -1920,8 +1918,8 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 static bool
 click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	struct xa_client *client, *rc = lookup_extension(NULL, XAAES_MAGIC);
-
+	struct xa_client *client; //, *rc = lookup_extension(NULL, XAAES_MAGIC);
+	struct proc *p = get_curproc();
 	DIAG((D_menu, NULL, "click_menu_widget"));
 
 	client = ((XA_TREE *)widg->stuff)->owner;
@@ -1930,15 +1928,24 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	 * Make sure we're in the right context
 	*/
 #if 1
+#if 0
 	if (!rc)
 		rc = C.Aes;
 
 	if (client != rc)
 		return false;
+#endif
+	if (client == C.Aes)
+	{
+		if (client->tp != p)
+			return false;
+	}
+	else if (client->p != p)
+		return false;
 
 	if ( widg->stuff == get_menu())
 	{
-		if ( !lock_menustruct(client->p, false) )
+		if ( !lock_menustruct(client->p, true) )
 			return false;
 	}
 #endif

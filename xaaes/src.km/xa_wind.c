@@ -198,7 +198,7 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	if (!is_infront(w->owner))
 	{
 		set_active_client(lock, w->owner);
-		swap_menu(lock, w->owner, true, false, 0);
+		swap_menu(lock, w->owner, NULL, true, false, 0);
 	}
 	/* Ozk: Now pull the new topped window to top of list..
 	 */
@@ -264,7 +264,7 @@ bottom_window(enum locks lock, struct xa_window *w)
 		if (!is_infront(window_list->owner))
 		{
 			set_active_client(lock, window_list->owner);
-			swap_menu(lock, window_list->owner, true, false, 0);
+			swap_menu(lock, window_list->owner, NULL, true, false, 0);
 		}
 		if (is_topped(window_list))
 		{
@@ -501,14 +501,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* set window name line */
 	case WF_NAME:
 	{
-		set_window_title(w, *(const char **)(pb->intin+2));
+		set_window_title(w, *(const char **)(pb->intin+2), true);
 		break;
 	}
 
 	/* set window info line */
 	case WF_INFO:
 	{
-		set_window_info(w, *(const char **)(pb->intin+2));
+		set_window_info(w, *(const char **)(pb->intin+2), true);
 		break;
 	}
 	/* Move a window, check sizes */

@@ -232,7 +232,11 @@ checkfor_mumx_evnt(struct xa_client *client, bool is_locker, short x, short y)
 {
 	short events = 0;
 
-	if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
+	/*
+	 * Check for activity in Tab list, indicating menu-navigation
+	 * in which case we do not report mousemovement events
+	 */
+	if (!TAB_LIST_START && client->waiting_for & (MU_M1|MU_M2|MU_MX))
 	{
 		if (   (client->em.flags & MU_M1)
 		    && is_rect(x, y, client->em.flags & 1, &client->em.m1))

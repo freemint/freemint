@@ -84,6 +84,12 @@ object_get_tedinfo(OBJECT *ob)
 	return object_get_spec(ob)->tedinfo;
 }
 
+inline struct scroll_info *
+object_get_slist(OBJECT *ob)
+{
+	return (struct scroll_info *)object_get_spec(ob)->index;
+}
+
 inline void
 object_deselect(OBJECT *ob)
 {
@@ -703,7 +709,8 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 			}
 			case G_SLIST:
 			{
-				unset_G_SLIST(client, obtree, j);
+				struct scroll_info *list = object_get_slist(ob);
+				list->destroy(list); //unset_G_SLIST(client, obtree, j);
 				break;
 			}
 			case G_EXTBOX:

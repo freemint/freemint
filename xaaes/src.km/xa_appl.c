@@ -472,8 +472,31 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	client->status |= CS_EXITING;
 
 	cancel_mutimeout(client);
+	/*
+	 * Figure out which client to make active
+	 */
+	top_owner = C.Aes;
+	if (cfg.next_active == 1)
+	{
+		top_owner = APP_LIST_START;
+
+		if (top_owner == client)
+			top_owner = previous_client(lock);
+	}
+	else if (cfg.next_active == 0)
+	{
+		struct xa_window *tw = get_topwind(lock, client, window_list, true, XAWS_OPEN|XAWS_HIDDEN, XAWS_OPEN);
+		if (!tw)
+			tw = get_topwind(lock, client, window_list, true, XAWS_OPEN, XAWS_OPEN);
+		if (tw)
+			top_owner = tw->owner;
+	}
+
+	if (!C.next_menu || (C.next_menu && C.next_menu == client))
+		C.next_menu = top_owner;
 	
-	if (TAB_LIST_START && TAB_LIST_START->client == client)
+	if ((client->p == menustruct_locked()) ||
+	    (TAB_LIST_START && (TAB_LIST_START)->client == client))
 	{
 		popout(TAB_LIST_START);
 	}
@@ -529,6 +552,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	/*
 	 * remove any references
 	 */
+#if 0
 	{
 		XA_WIDGET *widg = get_menu_widg();
 
@@ -551,31 +575,31 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 		}
 		if (menustruct_locked() == client->p)
 			free_menustruct_lock();
-
-		if (client->desktop)
-		{
-			if (get_desktop() == client->desktop)
-			{
-				set_desktop(C.Aes->desktop);
-			}
-			client->desktop = NULL;
-		}
 	}
-
-	/*
-	 * Figure out which client to make active
-	 */
-	if (cfg.next_active == 1)
+#endif
+	
+	if (client->desktop)
 	{
-		top_owner = APP_LIST_START;
-
-		if (top_owner == client)
-			top_owner = previous_client(lock);
+		struct xa_client *newdt;
+		if (get_desktop() == client->desktop)
+		{
+			if (top_owner->desktop && !(top_owner->status & CS_EXITING))
+			{
+				newdt = top_owner;
+			}
+			else
+			{
+				newdt = pid2client(C.DSKpid);
+				if (!(newdt && newdt != client && !(newdt->status & CS_EXITING) && newdt->desktop))
+					newdt = NULL;
+			}
+			if (!newdt)
+				newdt = C.Aes;
+			
+			set_desktop(newdt->desktop);
+		}
+		client->desktop = NULL;
 	}
-	else if (cfg.next_active == 0)
-		top_owner = window_list->owner;
-	else
-		top_owner = C.Aes;
 
 	app_in_front(lock, top_owner);
 
@@ -604,6 +628,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	/*
 	 * Free wt list last
 	 */
+	//display("exit_client...");
 	free_wtlist(client);
 
 	/* free the quart screen buffer */

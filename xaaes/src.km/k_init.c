@@ -411,16 +411,29 @@ k_init(void)
 	}
 
 	DIAGS(("setting up task manager"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER), TM_LIST, true);
+	//set_scroll(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER), TM_LIST, true);
+	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE,
+			 NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, NULL,
+			 "Client Applications", NULL, NULL, 255);
+
 
 	DIAGS(("setting up file selector"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, FILE_SELECT), FS_LIST, true);
+	//set_scroll(C.Aes, ResourceTree(C.Aes_rsc, FILE_SELECT), FS_LIST, true);
 
 	DIAGS(("setting up System Alert log"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR), SYSALERT_LIST, false);
+	//set_scroll(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR), SYSALERT_LIST, false);
+	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, 0,
+			 NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, 255);
 
 	DIAGS(("setting up About text list"));
-	set_scroll(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES), ABOUT_LIST, false);
+	//set_scroll(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES), ABOUT_LIST, false);
+	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES)), NULL, ABOUT_LIST, 0,
+			 NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, 255);
 
 	DIAGS(("display root window"));
 	open_window(NOLOCKING, root_window, screen.r);

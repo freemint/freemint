@@ -894,7 +894,7 @@ do_formwind_msg(
 #if 0
 		short wd = ow - ww,			/* space ouside workarea */
 		      hd = oh - wh;
-#endif
+#endif		
 		switch (msg[0])
 		{
 		case WM_REDRAW:

@@ -30,17 +30,18 @@
 #include "xa_types.h"
 #include "mt_gem.h"
 
-bool		object_have_spec(OBJECT *ob);
-OBSPEC *	object_get_spec(OBJECT *ob);
-void		object_set_spec(OBJECT *ob, unsigned long cl);
-bool		object_is_editable(OBJECT *ob);
-TEDINFO *	object_get_tedinfo(OBJECT *ob);
-void		object_deselect(OBJECT *ob);
-bool		object_is_transparent(OBJECT *ob);
-short		object_thickness(OBJECT *ob);
-void		object_offsets(OBJECT *ob, RECT *r);
+bool			object_have_spec(OBJECT *ob);
+OBSPEC *		object_get_spec(OBJECT *ob);
+void			object_set_spec(OBJECT *ob, unsigned long cl);
+bool			object_is_editable(OBJECT *ob);
+TEDINFO *		object_get_tedinfo(OBJECT *ob);
+struct scroll_info *	object_get_slist(OBJECT *ob);
+void			object_deselect(OBJECT *ob);
+bool			object_is_transparent(OBJECT *ob);
+short			object_thickness(OBJECT *ob);
+void			object_offsets(OBJECT *ob, RECT *r);
 
-CICON *		getbest_cicon(CICONBLK *ciconblk);
+CICON *			getbest_cicon(CICONBLK *ciconblk);
 
 OBJECT *	duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start);
 void		free_obtree_resources(struct xa_client *client, OBJECT *obtree);
