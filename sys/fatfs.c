@@ -1855,9 +1855,7 @@ getcl12 (long cluster, const ushort dev, ulong n)
 		do {
 			register const ulong sector = FATSTART (dev) + FATSIZE (dev) + ((cluster / entrys) * 3);
 			register const ulong offset = ((cluster % entrys) * 12) / 8;
-# if 1
 			register long newcl;
-# endif
 			long prevcluster = cluster;
 
 			if (sector != old_sector)
@@ -1882,7 +1880,6 @@ getcl12 (long cluster, const ushort dev, ulong n)
 				}
 			}
 
-# if 1
 			/* copy the entry */
 			newcl = WPEEK_INTEL (u->data + offset);
 
@@ -1893,9 +1890,6 @@ getcl12 (long cluster, const ushort dev, ulong n)
 				cluster = newcl >> 4;
 			else
 				cluster = newcl & 0x0fff;
-# else
-			cluster = fat12_peek (u->data, offset);
-# endif
 
 			FAT_DEBUG (("getcl12: cluster = %li", cluster));
 
@@ -2090,7 +2084,7 @@ fixcl12 (long cluster, const ushort dev, long next)
 		if (u)
 		{
 			register long newcl;
-# if 1
+
 			/* read the FAT entry */
 			newcl = WPEEK_INTEL (u->data + offset);
 
@@ -2106,9 +2100,6 @@ fixcl12 (long cluster, const ushort dev, long next)
 
 			/* write the entry to the first FAT */
 			WPOKE_INTEL (u->data + offset, newcl);
-# else
-			newcl = fat12_poke (u->data, offset, next);
-# endif
 
 			bio_MARK_MODIFIED ((&bio), u);
 
