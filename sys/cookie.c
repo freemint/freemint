@@ -127,7 +127,7 @@ init_cookies (void)
 		}
 	}
 	
-	ncsize = MIN (cookie->value, 240);	/* avoid to big tag values */
+	ncsize = MIN (cookie->value, 240);	/* avoid too big tag values */
 	if (ncookies > ncsize)
 		ncsize = ncookies;
 	
