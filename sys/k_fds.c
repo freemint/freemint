@@ -43,6 +43,8 @@
 # include "biosfs.h"
 # include "dosfile.h"
 # include "filesys.h"
+# include "k_prot.h"
+# include "kerinfo.h"
 # include "kmemory.h"
 # include "pipefs.h"
 # include "proc.h"
@@ -194,7 +196,7 @@ fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 long
 fp_get1 (struct proc *p, short fd, FILEPTR **fp, const char *func)
 {
-	assert (p->p_fd);
+	assert (p && p->p_fd);
 	
 	if ((fd < MIN_HANDLE)
 	    || (fd >= p->p_fd->nfiles)
@@ -263,7 +265,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	short cur_gid, cur_egid;
 	
 	TRACE (("do_open(%s)", name));
-	assert (p->p_fd && p->p_cwd && f);
+	assert (p->p_cred && p->p_fd && p->p_cwd && f);
 	
 	
 	/*
@@ -309,8 +311,6 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	 */
 	if (r == ENOENT && (rwmode & O_CREAT))
 	{
-		struct pcred *cred = p->p_cred;
-		
 		/* check first for write permission in the directory */
 		r = xfs_getxattr (dir.fs, &dir, &xattr);
 		if (r == 0)
@@ -328,17 +328,22 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 		}
 		
 		/* fake gid if directories setgid bit set */
-		cur_gid = cred->rgid;
-		cur_egid = cred->ucr->egid;
+		cur_gid = p->p_cred->rgid;
+		cur_egid = p->p_cred->ucr->egid;
 		
 		if (xattr.mode & S_ISGID)
-			cred->rgid = cred->ucr->egid = xattr.gid;
+		{
+			p->p_cred->rgid = xattr.gid;
+			
+			p->p_cred->ucr = copy_cred (p->p_cred->ucr);
+			p->p_cred->ucr->egid = xattr.gid;
+		}
 		
 		r = xfs_creat (dir.fs, &dir, temp1,
 			(S_IFREG|DEFAULT_MODE) & (~p->p_cwd->cmask), attr, &fc);
 		
-		cred->rgid = cur_gid;
-		cred->ucr->egid = cur_egid;
+		p->p_cred->rgid = cur_gid;
+		p->p_cred->ucr->egid = cur_egid;
 		
 		if (r)
 		{
