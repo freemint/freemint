@@ -1,0 +1,399 @@
+# RSCTRAN conversion file
+"  Console konfigurieren...  "
+"  Config console...  "
+
+"  Console îffnen "
+"  Open console "
+
+"  Desk Accessory 1 "
+"  Desk Accessory 1 "
+
+"  Desk Accessory 2 "
+"  Desk Accessory 2 "
+
+"  Desk Accessory 3 "
+"  Desk Accessory 3 "
+
+"  Desk Accessory 4 "
+"  Desk Accessory 4 "
+
+"  Desk Accessory 5 "
+"  Desk Accessory 5 "
+
+"  Desk Accessory 6 "
+"  Desk Accessory 6 "
+
+"  Einstellungen sichern  S "
+"  Save options     S "
+
+"  Ende                    Q "
+"  Quit                    Q "
+
+"  Fenster konfigurieren...  "
+"  Config window...  "
+
+"  Fensterwechsel global     "
+"  AV-Server cycle windows   "
+
+"  Immer Loginshell          "
+"  Always login shell        "
+
+"  MenÅ-Shortcuts benutzen   "
+"  Use menu shortcuts        "
+
+"  Schlieûen   U "
+"  Close   U "
+
+"  Shell starten              "
+"  Start shell          "
+
+"  TOS-Programm starten... O "
+"  Start TOS program...  O"
+
+"  Wechseln    W "
+"  Cycle       W "
+
+"  öber TosWin2...  "
+"  About TosWin2... "
+
+" Atari"
+" Atari"
+
+" Blau"
+" Blue"
+
+" D-Blau"
+" D blue"
+
+" D-Gelb"
+" D yellow"
+
+" D-Grau"
+" D grey"
+
+" D-GrÅn"
+" D green"
+
+" D-Magenta"
+" D magenta"
+
+" D-Rot"
+" D red"
+
+" D-Zyan"
+" D cyan"
+
+" Datei"
+" File"
+
+" Elemente "
+" Gadgets "
+
+" Fenster"
+" Window"
+
+" Fenster-Konfiguration "
+" Window configuration "
+
+" Gelb"
+" Yellow"
+
+" GrÅn"
+" Green"
+
+" Grîûe "
+" Size "
+
+" Hellgrau"
+" L grey"
+
+" ISO 8859-1"
+" ISO 8859-1"
+
+" Konfiguration der Console "
+" Console configuration "
+
+" Log-Datei "
+" Log file "
+
+" Magenta"
+" Magenta"
+
+" Optionen"
+" Options"
+
+" Rot"
+" Red"
+
+" Schwarz"
+" Black"
+
+" Sonstiges "
+" Misc "
+
+" Terminal "
+" Terminal "
+
+" TosWin2"
+" TosWin2"
+
+" VTXXX"
+" VTXXX"
+
+" Verhalten "
+" Behavior "
+
+" Weiû"
+" White"
+
+" Zeichensatz "
+" Font "
+
+" Zyan"
+" Cyan"
+
+" tw100"
+" tw100"
+
+" tw52"
+" tw52"
+
+" xxxxxxxx11"
+" xxxxxxxx11"
+
+" xxxxxxxxx"
+" xxxxxxxxx"
+
+" öber TosWin2 "
+" About TosWin2 "
+
+"-----------------"
+"-----------------"
+
+"-------------------"
+"-------------------"
+
+"----------------------------"
+"----------------------------"
+
+"-----------------------------"
+"-----------------------------"
+
+"---------11"
+"---------11"
+
+"2.5"
+"2.5"
+
+"9.9 "
+"9.9 "
+
+"999"
+"999"
+
+"Abbruch"
+"Cancel"
+
+"Basiert auf Version 1.4 von Eric Smith."
+"Based on version 1.4 by Eric Smith."
+
+"Bei Ausgaben îffnen"
+"Open on output"
+
+"Beim Start anlegen"
+"Open on start"
+
+"CF-Lib:"
+"CF-Lib:"
+
+"Datei"
+"File"
+
+"Einige Erweiterungen von Warwick Allison."
+"Some extensions by Warwick Allison."
+
+"Emulation:"
+"Emulation:"
+
+"GEM-Lib:"
+"GEM-Lib:"
+
+"Grîûe:"
+"Size:"
+
+"GxxxC"
+"GxxxC"
+
+"HILFE"
+"HELP"
+
+"Hintergrund:"
+"Background:"
+
+"Log-Datei wÑhlen"
+"Choose log file"
+
+"MiNT-Lib:"
+"MiNT-Lib:"
+
+"Mitschrift aktiv"
+"Log output to file"
+
+"OK"
+"OK"
+
+"Parameter fÅr "
+"Parameter for "
+
+"Puffer:"
+"Buffer:"
+
+"RSC-"
+"RSC-"
+
+"Spalten"
+"Columns"
+
+"Standard-Fenster"
+"default window"
+
+"TOS-Programm starten"
+"Start TOS programm"
+
+"Tabelle:"
+"Table:"
+
+"Titel"
+"Title"
+
+"Titel:"
+"Title:"
+
+"TosWin2"
+"TosWin2"
+
+"VT100-Emulator von Julian Coleman."
+"VT100 emulator by Julian Coleman."
+
+"Version ____"
+"Version ____"
+
+"Version:"
+"Version:"
+
+"Vordergrund:"
+"Foreground:"
+
+"XXXX"
+"XXXX"
+
+"XXXXXXXXXXXXXXXXXXXXX25"
+"XXXXXXXXXXXXXXXXXXXXX25"
+
+"XXXXXXXXXXXXXXXXXXXXXX24"
+"XXXXXXXXXXXXXXXXXXXXXX24"
+
+"XXXXXXXXXXXXXXXXXXXXXXX"
+"XXXXXXXXXXXXXXXXXXXXXXX"
+
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+"Zeichensatz wÑhlen"
+"Choose font"
+
+"Zeilen"
+"Lines"
+
+"Zeilen umbrechen"
+"Wrap lines"
+
+"[1][Fehler bei fork().][Abbruch]"
+"[1][Cannot fork().][Cancel]"
+
+"[1][Fehler beim Lesen der|Parameterdatei.][Abbruch]"
+"[1][Error whilst reading|parameter.][Cancel]"
+
+"[1][Fehler beim Schreiben|auf Klemmbrett.][Abbruch]"
+"[1][Error whilst writing|to clipboard.][Cancel]"
+
+"[1][Fehler beim Schreiben|der Parameterdatei.][Abbruch]"
+"[1][Error whilst writing|parameter.][Cancel]"
+
+"[1][Fehler beim îffnen des|Xconout2-Device.][Abbruch]"
+"[1][Cannot open xconout2.][Cancel]"
+
+"[1][Kein PTY mehr frei.][Abbruch]"
+"[1][No more PTYs.][Cancel]"
+
+"[1][Kein Speicher fÅr|Fenster frei.][Abbruch]"
+"[1][No memory for new|window.][Cancel]"
+
+"[1][Kein Speicher fÅr|Klemmbrett.][Abbruch]"
+"[1][No memory for clipboard.][Cancel]"
+
+"[1][Keine Fontauswahl|installiert!][Abbruch]"
+"[1][No font selector installed!][Cancel]"
+
+"[1][Keine bzw. fehlerhafte|Userdaten in /etc/passwd.][Abbruch]"
+"[1][Invalid user data in|/etc/passwd.][Cancel]"
+
+"[1][Klemmbrett ist leer.][OK]"
+"[1][Clipboard is empty.][OK]"
+
+"[1][Klemmbrettpfad nicht|gesetzt.][Abbruch]"
+"[1][Path for clipboard not set.][Cancel]"
+
+"[1][Parameterdatei ungÅltig.|(Falsche ID)][Abbruch]"
+"[3][Error in parameter file.|(Wrong ID)][Cancel]"
+
+"[1][ST-Guide ist nicht|installiert!][OK]"
+"[1][ST-Guide is not|running!][OK]"
+
+"[3][Das System kennt WF_OWNER|nicht, Drag&Drap daher nicht|mîglich!][schade]"
+"[3][WF_OWNER not supported by this|system, drag&drap disabled!][OK]"
+
+"[3][TosWin2 lÑuft nur unter|MiNT und AES 4.1!][Testen|Abbruch]"
+"[3][TosWin2 requires MiNT|and AES 4.1!][Try it|Cancel]"
+
+"___"
+"___"
+
+"_______________________"
+"_______________________"
+
+"__________________________________________________"
+"__________________________________________________"
+
+"autom. schlieûen"
+"Auto-close window"
+
+"fÅr: %s"
+"for: %s"
+
+"von Christian Felsch"
+"by Christian Felsch"
+
+"wÑhlen"
+"choose"
+
+"x"
+"x"
+
+"xxxxxxxxxxxxxxxxx19"
+"xxxxxxxxxxxxxxxxx19"
+
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxx30"
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxx30"
+
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx40"
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx40"
+
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx50"
+"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx50"
+
+"öbersetzt mit      und"
+"Compiled with      and"
+
+
+# The following entrys were not found during the last conversion run:
