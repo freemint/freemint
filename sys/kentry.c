@@ -50,6 +50,7 @@
 # include "module.h"		/* load_modules */
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "proc_help.h"		/* proc_extensions */
+# include "proc_wakeup.h"	/* addprocwakeup */
 # include "semaphores.h"	/* semaphore_* */
 # include "signal.h"		/* ikill */
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
