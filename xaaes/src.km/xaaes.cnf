@@ -96,6 +96,25 @@ usehome = yes
 #dc_time = 50
 
 #
+# naes_cookie = <bool>          (default is 'no')
+#
+# Some applications need to think they are running under N.AES, and
+# don't use appl_getinfo() to check for function availability. This
+# is terrible programming, and to all programmers feeling targeted;
+# Fix your apps! XaAES can now provide a fake nAES cookie, so that
+# more applicaitons will run correctly on XaAES, but there is also
+# another terrible danger; Some N.AES calls return pointers to
+# internal AES structures, which is kinda putting your testicles
+# into the hand of a stranger and hope he is a friend. Such apps will
+# definately crash when run on XaAES while thinking its on N.AES.
+# Older versions of Taskbar work much better with naes_cookie = yes.
+#
+# See more info about this in newcalls.txt, it is possible to detect
+# that the cookie is a fake one (and thus really the AES is XaAES).
+#
+#naes_cookie = yes
+
+#
 # Mouse packet time-gap. This is the time (in 200hz timer ticks) that
 # must pass after a button-release event before a new button-press
 # event is accepted by moose.adi. Because of unstable mouse-buttons,
