@@ -38,11 +38,12 @@
 
 
 /* flags for internal fork */
-# define FORK_PPWAIT		0x01	/* block parent until child exit */
-# define FORK_SHAREVM		0x02	/* share vmspace with parent */
-# define FORK_SHARECWD		0x04	/* share cdir/rdir/cmask */
-# define FORK_SHAREFILES	0x08	/* share file descriptors */
-# define FORK_SHARESIGS		0x10	/* share signal actions */
+# define FORK_SHAREVM		0x01	/* share vmspace with parent */
+# define FORK_SHARECWD		0x02	/* share cdir/rdir/cmask */
+# define FORK_SHAREFILES	0x04	/* share file descriptors */
+# define FORK_SHARESIGS		0x08	/* share signal actions */
+# define FORK_SHARELIMITS	0x10	/* share process limits */
+# define FORK_SHAREEXT		0x20	/* share proc extensions */
 
 struct proc *	fork_proc1	(struct proc *p1, long flags, long *err);
 struct proc *	fork_proc	(long flags, long *err);
