@@ -83,6 +83,7 @@ COBJS = \
 	timeout.c \
 	tosfs.c \
 	tty.c \
+	umemory.c \
 	unicode.c \
 	unifs.c \
 	update.c \

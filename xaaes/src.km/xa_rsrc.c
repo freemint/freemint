@@ -97,7 +97,11 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 	{
 		DIAG((D_x, client, "XA_calloc 3 %ld", new_len));
 
-		new_data = proc_malloc(new_len);
+		if (client == C.Aes)
+			new_data = xmalloc(new_len, 3);
+		else
+			new_data = proc_malloc(new_len);
+
 		if (!new_data)
 			return map;
 
@@ -184,7 +188,11 @@ list_resource(struct xa_client *client, void *resource)
 
 	DIAG((D_x, client, "XA_alloc 2 %ld", sizeof(*new)));
 
-	new = proc_malloc(sizeof(*new));
+	if (client == C.Aes)
+		new = xmalloc(sizeof(*new), 2);
+	else
+		new = proc_malloc(sizeof(*new));
+
 	if (new)
 	{
 		DIAG((D_rsrc, client, "list_resource %ld(%lx) for %s rsc:%ld(%lx) rscs %lx",
@@ -257,7 +265,11 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		DIAG((D_x, client, "XA_alloc 1 %ld", size));
 
-		base = proc_malloc(size);
+		if (client == C.Aes)
+			base = xmalloc(size, 1);
+		else
+			base = proc_malloc(size);
+
 		if (!base)
 		{
 			DIAG((D_rsrc, client, "Can't allocate space for resource file"));
@@ -637,21 +649,21 @@ FreeResources(struct xa_client *client, AESPB *pb)
 		/* Put older rsrc back, and the pointer in global */
 		while (cur)
 		{
-			bool have = rsc && rsc == cur->rsc;
+			bool have = rsc && (rsc == cur->rsc);
 			struct xa_rscs *nx = cur->next;
-			DIAG((D_rsrc,client,"Free: test cur %lx", (long)cur));
-			DIAG((D_rsrc,client,"Free: test cur handle %d", cur->handle));
 
-			if (   have
-			    || (!rsc && cur->handle == client->rsct))	/* free the entry for the freed rsc. */
+			DIAG((D_rsrc, client, "Free: test cur %lx", (long)cur));
+			DIAG((D_rsrc, client, "Free: test cur handle %d", cur->handle));
+
+			if (have || (!rsc && cur->handle == client->rsct))
 			{
-				int i;
+				/* free the entry for the freed rsc. */
 				RSHDR *hdr = cur->rsc;
 				char *base = cur->rsc;
-				OBJECT **trees,*obj;
+				OBJECT **trees, *obj;
+				int i;
 
 				/* Free the memory allocated for scroll list objects. */
-
 				(unsigned long)trees = (unsigned long)(base + hdr->rsh_trindex);
 				for (i = 0; i < hdr->rsh_ntree; i++)
 				{
@@ -659,12 +671,15 @@ FreeResources(struct xa_client *client, AESPB *pb)
 					obj = trees[i];
 					do {
 						if ((obj[f].ob_type & 255) == G_SLIST)
-							proc_free((SCROLL_INFO*)obj[f].ob_spec.index);
+						{
+							if (client == C.Aes)
+								free((SCROLL_INFO*)obj[f].ob_spec.index);
+							else
+								proc_free((SCROLL_INFO*)obj[f].ob_spec.index);
+						}
 					}
 					while (!(obj[f++].ob_flags & OF_LASTOB));
 				}
-
-				proc_free_all();
 
 				/* unhook the entry from the chain */
 				if (cur->prior)
@@ -674,8 +689,16 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				if (!cur->prior)
 					client->resources = cur->next;
 
-				DIAG((D_rsrc,client,"Free: cur %lx", cur));
-				proc_free(cur);
+				if (client == C.Aes)
+				{
+					DIAG((D_rsrc, client, "Free: cur %lx for AESSYS", cur));
+					free(cur);
+				}
+				else
+				{
+					DIAG((D_rsrc, client, "Free: cur %lx", cur));
+					proc_free(cur);
+				}
 			}
 			else if (cur->handle == client->rsct - 1)
 			{

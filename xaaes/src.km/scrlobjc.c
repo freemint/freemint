@@ -109,19 +109,22 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s)
  * XaAES' extensions to the object types...
  */
 
-/* HR: title set by set_slist_object() */
+/* title set by set_slist_object() */
 int
 set_scroll(struct xa_client *client, OBJECT *form, int item)
 {
 	OBJECT *ob = form + item;
 	SCROLL_INFO *sinfo;
 
-	/* XXX sinfo = XA_calloc(&client->base, 1, sizeof(*sinfo), 105, 0); */
-	sinfo = proc_malloc(sizeof(*sinfo));
+	if (client == C.Aes)
+		sinfo = xmalloc(sizeof(*sinfo), 105);
+	else
+		sinfo = proc_malloc(sizeof(*sinfo));
+
 	if (!sinfo)
 		return false;
 
-	/* HR: colours are those for windows */
+	/* colours are those for windows */
 	set_ob_spec(form, item, (unsigned long)sinfo);
 	ob->ob_type = G_SLIST;
 	ob->ob_flags |= OF_TOUCHEXIT;
@@ -131,9 +134,9 @@ set_scroll(struct xa_client *client, OBJECT *form, int item)
 	return true;
 }
 
-/* HR: preparations for windowed list box widget;
- *     most important is to get the drawing smooth and simple.
- *     get rid of all those small (confolded) constant value's.
+/* preparations for windowed list box widget;
+ * most important is to get the drawing smooth and simple.
+ * get rid of all those small (confolded) constant value's.
  */
 SCROLL_INFO *
 set_slist_object(enum locks lock,

@@ -68,7 +68,6 @@
 # include "arch/mprot.h" /* no_mem_prot */
 
 # include "memory.h"
-# include "dosmem.h"
 
 
 # define KMEMORY_VERS	1		/* internal version */
@@ -1611,24 +1610,6 @@ _dmabuf_alloc(ulong size, short cmode, const char *func)
 	return NULL;
 }
 
-/*
- * "user" memory allocation routines; the kernel can use these to
- * allocate/free memory that will be attached in some way to a process
- * (and freed automatically when the process exits)
- */
-
-void * _cdecl
-_umalloc(unsigned long size, const char *func)
-{
-	return (void *) sys_m_xalloc(size, 3);
-}
-
-void _cdecl
-_ufree(void *place, const char *func)
-{
-	sys_m_free((long) place);
-}
-
 /* END kernel memory alloc */
 /****************************************************************************/
 
@@ -1831,7 +1812,7 @@ struct km_trace
 	const char *func;
 };
 
-#define KM_TRACE_LEN 10000
+#define KM_TRACE_LEN 30000
 static struct km_trace km_trace[KM_TRACE_LEN];
 static long km_trace_used = 0;
 static long km_trace_first_free = 0;
@@ -1863,8 +1844,11 @@ km_trace_register(void *ptr, unsigned long size, const char *func)
 	{
 		static int reported = 10;
 
-		if (--reported)
+		if (reported)
+		{
+			reported--;
 			KM_FORCE(("KM_TRACE buffer to small (or memory leaks?!)"));
+		}
 	}
 }
 
