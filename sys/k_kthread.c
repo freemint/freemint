@@ -78,6 +78,7 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 
 		/* XXX */
 		p2->ppid = 0;
+		p2->pgrp = 0;
 
 		/* this blocks SIGKILL for the update process */
 		p2->p_flag |= P_FLAG_SYS;

@@ -158,19 +158,22 @@ sys_p_setpgrp (int pid, int newgrp)
 	}
 
 	if (p->p_cred->ucr->euid
-		&& (t->p_cred->ruid != p->p_cred->ruid)
-		&& (t->ppid != p->pid))
+	    && (t->p_cred->ruid != p->p_cred->ruid)
+	    && (t->ppid != p->pid))
 	{
 		return EACCES;
 	}
 
-	if (newgrp < 0)
-		return t->pgrp;
+	if (newgrp >= 0)
+	{
+		if (newgrp == 0)
+			newgrp = t->pid;
 
-	if (newgrp == 0)
-		newgrp = t->pid;
+		t->pgrp = newgrp;
+		DEBUG(("sys_p_setpgrp: assigned t->pgrp = %i", t->pgrp));
+	}
 
-	return (t->pgrp = newgrp);
+	return t->pgrp;
 }
 
 /* tesche: audit user id functions, these id's never change once set to != 0

@@ -119,7 +119,6 @@ init_proc(void)
 	curproc->stack_magic = STACK_MAGIC;
 
 	curproc->ppid = -1;		/* no parent */
-//	curproc->pgrp = 1;		/* 0 isn't an process group */
 	curproc->p_flag = P_FLAG_SYS;
 	curproc->domain = DOM_TOS;	/* TOS domain */
 	curproc->sysstack = (long)(curproc->stack + STKSIZE - 12);

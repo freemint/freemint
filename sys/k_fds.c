@@ -471,8 +471,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 
 		(*f)->links--;
 		FP_FREE (*f);
-		*f = fp;
 
+		*f = fp;
 		fp->links++;
 
 		release_cookie (&dir);
@@ -563,7 +563,10 @@ hangup_done (struct proc *p, FILEPTR *f)
 	if (--f->links <= 0)
 	{
 		if (--tty->use_cnt-tty->aux_cnt <= 0)
+		{
 			tty->pgrp = 0;
+			DEBUG(("hangup_done: assigned tty->pgrp = %i", tty->pgrp));
+		}
 
 		if (tty->use_cnt <= 0 && tty->xkey)
 		{
@@ -680,7 +683,10 @@ do_close (struct proc *p, FILEPTR *f)
 				}
 			}
 			else
+			{
 				tty->pgrp = 0;
+				DEBUG(("do_close: assigned tty->pgrp = %i", tty->pgrp));
+			}
 		}
 
 		tty->use_cnt--;

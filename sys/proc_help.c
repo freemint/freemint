@@ -520,6 +520,7 @@ free_fd (struct proc *p)
 				}
 			}
 			tty->pgrp = 0;
+			DEBUG(("free_fd: assigned tty->pgrp = %i", tty->pgrp));
 		}
 found:
 		;
