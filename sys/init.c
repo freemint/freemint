@@ -258,8 +258,8 @@ do_exec_os (long basepage)
 	/* we have to set a7 to point to lower in our TPA;
 	 * otherwise we would bus error right after the Mshrink call!
 	 */
-	setstack(basepage + 500L);
-	Mshrink((void *)basepage, 512L);
+	setstack(basepage + QUANTUM - 40L);
+	Mshrink((void *)basepage, QUANTUM);
 	r = Pexec(200, init_prg, init_tail, init_env);
 	Pterm ((int)r);
 }
@@ -285,7 +285,7 @@ init_intr (void)
 	syskey_aux = (long *)syskey;
 	syskey_aux--;
 
-	if (*syskey_aux)
+	if (*syskey_aux && tosvers >= 0x0200)
 		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
 
 	old_term = (long) Setexc (0x102, -1UL);
@@ -336,7 +336,7 @@ init_intr (void)
 	old_resval = *((long *)0x426L);
 	*((long *) 0x426L) = RES_MAGIC;
 #endif
-	
+
 	spl (savesr);
 
 	/* set up signal handlers */
@@ -353,7 +353,7 @@ init_intr (void)
 
 	for (i = (int)(sizeof (old_fpcp) / sizeof (old_fpcp[0])); i--; )
 		xbra_install (&old_fpcp[i], 192L + i * 4, new_fpcp);
-	
+
 	xbra_install (&old_mmuconf, 224L, new_mmu);
 	xbra_install (&old_pmmuill, 228L, new_mmu);
 	xbra_install (&old_pmmuacc, 232L, new_pmmuacc);
@@ -408,9 +408,12 @@ restr_intr (void)
 
 	*syskey = oldkey;	/* restore keyboard vectors */
 
-	syskey_aux = (long *)syskey;
-	syskey_aux--;
-	*syskey_aux = (long) oldkeys;
+	if (tosvers >= 0x0200)
+	{
+		syskey_aux = (long *)syskey;
+		syskey_aux--;
+		*syskey_aux = (long) oldkeys;
+	}
 
 	*((long *) 0x008L) = (long) old_bus.next;
 
@@ -446,7 +449,7 @@ restr_intr (void)
 #if 0	//
 	*((long *) 0x426L) = old_resval;
 	*((long *) 0x42aL) = old_resvec;
-#endif	
+#endif
 	*((long *) 0x476L) = old_rwabs;
 	*((long *) 0x47eL) = old_mediach;
 	*((long *) 0x472L) = old_getbpb;
@@ -1088,6 +1091,18 @@ init (void)
 
 	stop_and_ask();
 
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_loading_modules);
+# endif
+
+	/* load the kernel modules */
+	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
+
+	/* Make newline */
+	boot_print("\r\n");
+
+	stop_and_ask();
+
 	/* Load the keyboard table */
 	load_keytbl();
 
@@ -1097,15 +1112,6 @@ init (void)
 # ifdef SOFT_UNITABLE
 	init_unicode();
 # endif
-
-	stop_and_ask();
-
-# ifdef VERBOSE_BOOT
-	boot_print(MSG_init_loading_modules);
-# endif
-
-	/* load the kernel modules */
-	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
 
 	stop_and_ask();
 
@@ -1349,37 +1355,27 @@ mint_thread(void *arg)
 # endif
 	}
 	else
-	{ /* "GEM=ROM" sets init_prg == 0 and init_is_gem == 1 -> run rom AES */
-	  if (init_is_gem)
-	  {
-	    BASEPAGE *bp;
-	    int pid;
-	    long entry;
-	    
+	{	/* "GEM=ROM" sets init_prg == 0 and init_is_gem == 1 -> run rom AES */
+	  	if (init_is_gem)
+	  	{
+	  		BASEPAGE *bp;
+			long entry;
 # ifdef VERBOSE_BOOT
-	    boot_print(MSG_init_rom_AES);
+			boot_print(MSG_init_rom_AES);
 # endif
-	  
-	    entry = *((long *) EXEC_OS);
-	  
-	    bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
-	    bp->p_tbase = entry;
-	  
-	    r = sys_pexec(106, (char *) "GEM", bp, 0L);
-	    pid = (int) r;
-	    if (pid > 0)
-	    {
-	      do {
-		r = sys_pwaitpid(-1, 0, NULL);
-	      }
-	      while (pid != ((r & 0xffff0000L) >> 16));
-	      r &= 0x0000ffff;
-	    }
-	  }
+			entry = *((long *) EXEC_OS);
+			bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
+			bp->p_tbase = entry;
+
+			r = sys_pexec(106, (char *) "GEM", bp, 0L);
+	  	}
+	  	else
+	  	{
 # ifdef VERBOSE_BOOT
-		boot_print(MSG_init_no_init_specified);
+			boot_print(MSG_init_no_init_specified);
 # endif
-		r = 0;
+			r = 0;
+		}
 	}
 
 	/* r < 0 means an error during sys_pexec() execution (e.g. file not found);
