@@ -16,7 +16,28 @@
 ; Detection of CPU and FPU model (Draco)
 ;
 
-	XREF _detect_hardware
+; Verify access to the memory pointed to by the ptr
+
+	XREF	_verify_access
+
+_verify_access:	move.l	sp,a0
+	move.l	(8).w,a1
+	lea	berr.w(pc),a2
+	move.l	a2,(8).w
+	nop
+
+	clr.l	d0
+	move.l	4(sp),a2
+	tst.b	(a2)
+
+	moveq	#$01,d0	; passed
+
+berr:	move.l	a1,(8).w
+	move.l	a0,sp
+	nop
+	rts
+
+	XREF	_detect_hardware
 
 	TEXT
 
@@ -108,46 +129,45 @@ _DataRegB:	dc.l $FFFF8C87
 
 	XDEF	_detect_cpu
 
-_detect_cpu:	
-	move.l	($10).w,a1	; save the illegal instr. exception vector
+_detect_cpu:	move.l	($10).w,a1	; save the illegal instr. exception vector
 	move.l	($f4).w,a2	; save the unimplemented instr. exception vector
-	lea	exit.w(pc),a0
+	lea	exit.w(PC),a0
 	move.l	a0,($10).w	; set either vector	
 	move.l	a0,($f4).w
-	move.l	sp,a0		; save the ssp
-	nop			; eventually flush pipelines
+	move.l	sp,a0	; save the ssp
+	nop		; eventually flush pipelines
 
 ; on 68000 we try out a `move from CCR'.
 
-	clr.l   d0              ; assume 68000
-	move.w	ccr,d0		; legal on 68010+
+	clr.l	d0              ; assume 68000
+	move.w	ccr,d0	; legal on 68010+
 	moveq	#$0a,d0
 
 ; CACR is present only in 68020+
 
-	movec	cacr,d1		; get cache control register
-	move.l	d1,d2		; hold a copy for later
+	movec	cacr,d1	; get cache control register
+	move.l	d1,d2	; hold a copy for later
 	ori.w	#$8100,d1	; enable '030 data and '040 instruction caches
-	movec	d1,cacr		; set new cache controls
-	movec	cacr,d1		; read it back to check the effects
-	movec	d2,cacr		; restore original CACR settings
-	tst.w	d1		; if 15th bit was set, this is a 68040+
+	movec	d1,cacr	; set new cache controls
+	movec	cacr,d1	; read it back to check the effects
+	movec	d2,cacr	; restore original CACR settings
+	tst.w	d1	; if 15th bit was set, this is a 68040+
 	bmi.s	x040
-	moveq	#$14,d0		; assume 68020
-	btst	#$08,d1		; check if 68030 data cache was enabled
-	beq.s	exit		; a zero here means no data cache, i.e. 68020
-	moveq	#$1e,d0		; data cache enabled means 68030
+	moveq	#$14,d0	; assume 68020
+	btst	#$08,d1	; check if 68030 data cache was enabled
+	beq.s	exit	; a zero here means no data cache, i.e. 68020
+	moveq	#$1e,d0	; data cache enabled means 68030
 	bra.s	exit
 
 ; 68040 or 68060. Quad word mulu test.
 
-x040:	moveq	#$3c,d0		; assume 68060
+x040:	moveq	#$3c,d0	; assume 68060
 	dc.l	$4c102401	; mulu.l (a0),d1-d2
-	moveq	#$28,d0		; no fault -> this is 68040
+	moveq	#$28,d0	; no fault -> this is 68040
 exit:	move.l	a2,($f4).w	; restore stuff and exit
 	move.l	a1,($10).w
 	move.l	a0,sp
-	nop			; flush pipelines
+	nop		; flush pipelines
 	rts
 
 ; FPU type detection, experimental (draco@atari.org).
@@ -183,21 +203,20 @@ exit:	move.l	a2,($f4).w	; restore stuff and exit
 	XDEF	_detect_fpu
 	XREF	_mcpu
 
-_detect_fpu:
-	move.l	sp,a0		; save the ssp
-	clr.l	d0		; assume no FPU
+_detect_fpu:	move.l	sp,a0	; save the ssp
+	clr.l	d0	; assume no FPU
 	move.l	($2c).w,a1	; save the Line-F vector
 	move.l	($08).w,a2
 	move.l	#fexit,d1
 	move.l	d1,($2c).w	; install temporary Line-F
 	move.l	d1,($08).w
-	nop			; flush pipelines
+	nop		; flush pipelines
 
 	move.l	_mcpu,d1	; check if 68000 or 68010
 	cmpi.w	#20,d1
 	bmi.s	sfp
 	
-	cmpi.w	#60,d1		; enable FPU on 68060 before the check
+	cmpi.w	#60,d1	; enable FPU on 68060 before the check
 	bmi.s	no60
 
 	dc.l	$4e7a0808	; movec pcr,d0
@@ -209,31 +228,31 @@ _detect_fpu:
 	dc.l	$4e7b0808	; movec d0,pcr
 
 no60:	fnop
-	clr.l	-(sp)		; push NULL frame
-	clr.l	-(sp)		; extra longs for 68060
+	clr.l	-(sp)	; push NULL frame
+	clr.l	-(sp)	; extra longs for 68060
 	clr.l	-(sp)
-	frestore (sp)+		; reset the FPU into NULL state
-	fnop			; force it into IDLE state
-	fsave	-(sp)		; save the IDLE frame
+	frestore	(sp)+	; reset the FPU into NULL state
+	fnop		; force it into IDLE state
+	fsave	-(sp)	; save the IDLE frame
 
-	moveq	#$10,d0		; assume 68060 FPU (cookie $00100000)
-	cmpi.w	#60,d1		; d1 is loaded above the FPU code
+	moveq	#$10,d0	; assume 68060 FPU (cookie $00100000)
+	cmpi.w	#60,d1	; d1 is loaded above the FPU code
 	beq.s	fexit
-	moveq	#$08,d0		; if not 060, maybe a 040 (cookie $00080000)
+	moveq	#$08,d0	; if not 060, maybe a 040 (cookie $00080000)
 	cmpi.w	#40,d1
 	beq.s	fexit
-	moveq	#$06,d0		; if neither, so maybe a 68882 (cookie $00060000)
+	moveq	#$06,d0	; if neither, so maybe a 68882 (cookie $00060000)
 	move.b	(sp)+,d1		
 	cmpi.b	#$1f,d1
 	beq.s	fexit
-	moveq	#$04,d0		; must be 68881
+	moveq	#$04,d0	; must be 68881
 	bra.s	fexit
 sfp:	tst.w	($fa40).w	; CIR
-	moveq	#$01,d0		; memory mapped FPU
+	moveq	#$01,d0	; memory mapped FPU
 fexit:	move.l	a1,($2c).w	; restore Line-F
 	move.l	a2,($08).w
 	move.l	a0,sp
-	nop			; flush pipelines
+	nop		; flush pipelines
 	swap	d0
 	rts
 
