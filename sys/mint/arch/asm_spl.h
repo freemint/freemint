@@ -34,7 +34,7 @@
 # ifndef _mint_m68k_asm_spl_h
 # define _mint_m68k_asm_spl_h
 
-/* Called inside sleep() in proc.c */
+/* Used inside init.c near the end of init() */
 
 static inline void
 low_power_stop (void)
