@@ -69,7 +69,7 @@ static void yyerror(char *s);
 static void insert_string(char *dst, const char *src);
 
 static int resize_tab(struct systab *tab, int newsize);
-static int add_tab(struct systab *tab, int nr, const char class, const char *name, struct arg *p);
+static int add_tab(struct systab *tab, int nr, const char class, const char *name, struct arg *p, int status);
 
 static void add_arg(struct arg **head, struct arg *t);
 static struct arg *make_arg(int type, const char *s);
@@ -96,8 +96,6 @@ static struct arg *make_arg(int type, const char *s);
 %token	<ident>	_IDENT_GEMDOS
 %token	<ident>	_IDENT_BIOS
 %token	<ident>	_IDENT_XBIOS
-%token	<ident>	_IDENT_RESERVED
-%token	<ident>	_IDENT_NULL
 %token	<ident>	_IDENT_MAX
 
 %token	<ident>	_IDENT_VOID
@@ -113,6 +111,11 @@ static struct arg *make_arg(int type, const char *s);
 %token	<ident>	_IDENT_USHORT
 %token	<ident>	_IDENT_ULONG
 
+%token	<ident>	_IDENT_UNDEFINED
+%token	<ident>	_IDENT_UNSUPPORTED
+%token	<ident>	_IDENT_UNIMPLEMENTED
+%token	<ident>	_IDENT_NULL
+
 %token	<ident>	Identifier
 %token	<value>	Integer
 
@@ -126,6 +129,7 @@ static struct arg *make_arg(int type, const char *s);
 %type	<list>	simple_parameter
 %type	<list>	simple_type
 %type	<list>	type
+%type	<value>	status
 
 
 %start syscalls
@@ -206,12 +210,20 @@ definition_list
 ;
 
 definition
-:	Integer Identifier Identifier '(' parameter_list ')'
+:	Integer Identifier Identifier '(' parameter_list ')' status
 	{
 		if (systab->max && $1 >= systab->max)
 		{ yyerror("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab(systab, $1, $2[0], $3, $5))
+		if (add_tab(systab, $1, $2[0], $3, $5, $7))
+		{ yyerror("out of memory"); YYERROR; }
+	}
+|	Integer _IDENT_UNDEFINED
+	{
+		if (systab->max && $1 >= systab->max)
+		{ yyerror("entry greater than MAX"); YYERROR; }
+		
+		if (add_tab(systab, $1, 0, $2, NULL, SYSCALL_UNDEFINED))
 		{ yyerror("out of memory"); YYERROR; }
 	}
 |	Integer _IDENT_NULL
@@ -219,15 +231,7 @@ definition
 		if (systab->max && $1 >= systab->max)
 		{ yyerror("entry greater than MAX"); YYERROR; }
 		
-		if (add_tab(systab, $1, 0, NULL, NULL))
-		{ yyerror("out of memory"); YYERROR; }
-	}
-|	Integer _IDENT_RESERVED
-	{
-		if (systab->max && $1 >= systab->max)
-		{ yyerror("entry greater than MAX"); YYERROR; }
-		
-		if (add_tab(systab, $1, 0, $2, NULL))
+		if (add_tab(systab, $1, 0, NULL, NULL, SYSCALL_NULL))
 		{ yyerror("out of memory"); YYERROR; }
 	}
 |	Integer _IDENT_MAX
@@ -444,6 +448,21 @@ type
 	}
 ;
 
+status
+:	/* regular */
+	{
+		$$ = SYSCALL_REGULAR;
+	}
+|	_IDENT_UNSUPPORTED
+	{
+		$$ = SYSCALL_UNSUPPORTED;
+	}
+|	_IDENT_UNIMPLEMENTED
+	{
+		$$ = SYSCALL_UNIMPLEMENTED;
+	}
+;
+
 %%
 
 void
@@ -502,7 +521,7 @@ resize_tab(struct systab *tab, int newsize)
 }
 
 static int
-add_tab(struct systab *tab, int nr, const char class, const char *name, struct arg *p)
+add_tab(struct systab *tab, int nr, const char class, const char *name, struct arg *p, int status)
 {
 	struct syscall *call = NULL;
 	
@@ -521,6 +540,7 @@ add_tab(struct systab *tab, int nr, const char class, const char *name, struct a
 		strcpy(call->name, name);
 		call->class = class;
 		call->args = p;
+		call->status = status;
 	}
 	
 	tab->table[nr] = call;
