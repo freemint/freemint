@@ -638,12 +638,6 @@ shutdown (void)
 	PROC *p;
 	short proc_left = 0;
 	short i;
-	char msg[256];
-	
-	ksprintf(msg, sizeof(msg), \
-		"Shutting processes down (the caller is pid %d)\r\n", \
-			curproc->pid);
-	c_conws(msg);
 	
 	assert (curproc->p_sigacts);
 	
@@ -669,9 +663,6 @@ shutdown (void)
 				add_q (READY_Q, p);
 				spl (sr);
 			}
-			ksprintf(msg, sizeof(msg), \
-				"Posting SIGTERM for pid %d\r\n", p->pid);
-			c_conws(msg);
 			post_sig (p, SIGTERM);
 			proc_left++;
 		}
@@ -679,18 +670,15 @@ shutdown (void)
 	
 	if (proc_left)
 	{
+# if 1
 		long yields = proc_left << 4;	/* 16 turns for everyone */
 
 		/* sleep a little while, to give the other processes
 		 * a chance to shut down
 		 */
-# if 1
-		c_conws("Sleeping... ");
 
 		for (i = 0; i < yields; i++)
 			s_yield();
-
-		c_conws("done!\r\n");
 # else
 		if (addtimeout (curproc, 1000, shutmedown))
 		{
@@ -701,6 +689,7 @@ shutdown (void)
 			while (curproc->wait_cond == (long) s_hutdown);
 		}
 # endif
+# if 0
 		for (p = proclist; p; p = p->gl_next)
 		{
 			if (!p->pid || (p == curproc) || \
@@ -708,6 +697,7 @@ shutdown (void)
 				continue;
 			post_sig (p, SIGKILL);
 		}
+# endif
 	}
 	
 	sys_q[READY_Q] = 0;
