@@ -82,6 +82,7 @@
 # include "kmemory.h"
 
 # include "libkern/libkern.h"
+# include "arch/mprot.h" /* no_mem_prot */
 
 # include "memory.h"
 # include "dosmem.h"
@@ -321,31 +322,31 @@ struct km_s2
 
 /* large block hash table functions */
 
-INLINE ulong	km_hash		(register const void *ptr);
-INLINE KM_P *	km_hash_lookup	(register const void *ptr);
-INLINE void	km_hash_insert	(register KM_P *item);
-INLINE void	km_hash_remove	(register KM_P *item);
+INLINE ulong	km_hash		(const void *ptr);
+INLINE KM_P *	km_hash_lookup	(const void *ptr);
+INLINE void	km_hash_insert	(KM_P *item);
+INLINE void	km_hash_remove	(KM_P *item);
 
 
 /* help functions */
 
-INLINE MEMREGION *km_get_region	(register MMAP map, register ulong size, register MEMREGION *m);
-INLINE void	km_free_region	(register MEMREGION *m);
-INLINE KM_P *	km_malloc	(register ulong size, register MEMREGION *descr, register KM_P *page);
-INLINE void	km_free		(register MEMREGION *m);
+INLINE MEMREGION *km_get_region	(MMAP map, ulong size, MEMREGION *m, short cmode);
+INLINE void	km_free_region	(MEMREGION *m);
+INLINE KM_P *	km_malloc	(ulong size, MEMREGION *descr, KM_P *page);
+INLINE void	km_free		(MEMREGION *m);
 
 
 /* double linked list functions */
 
-INLINE void	km_list_init	(register LIST *list);
-INLINE long	km_list_empty	(register LIST *list);
-INLINE void	km_list_insert	(register LIST *list, register KM_P *item);
-INLINE void	km_list_remove	(register LIST *list, register KM_P *item);
+INLINE void	km_list_init	(LIST *list);
+INLINE long	km_list_empty	(LIST *list);
+INLINE void	km_list_insert	(LIST *list, KM_P *item);
+INLINE void	km_list_remove	(LIST *list, KM_P *item);
 
 
 /* MEMREGION alloc */
 
-static void	km_mr_setup	(register KM_P *page);
+static void	km_mr_setup	(KM_P *page);
 # ifdef MR_DEBUG
 static void	km_mr_dump	(void);
 # endif
@@ -353,9 +354,9 @@ static void	km_mr_dump	(void);
 
 /* small 1 alloc */
 
-static void	km_s1_setup	(register KM_P *page);
+static void	km_s1_setup	(KM_P *page);
 INLINE void *	km_s1_malloc	(void);
-INLINE void	km_s1_free	(register KM_S1 *ptr, register KM_P *page);
+INLINE void	km_s1_free	(KM_S1 *ptr, KM_P *page);
 # ifdef S1_DEBUG
 static void	km_s1_dump	(void);
 # endif
@@ -363,13 +364,13 @@ static void	km_s1_dump	(void);
 
 /* small 2 alloc */
 
-INLINE void	km_s2_flist_ins	(register KM_S2 *item);
-INLINE void	km_s2_flist_rem	(register KM_S2 *item);
-INLINE KM_S2 *	km_s2_split	(register KM_S2 *item, register ushort size);
-INLINE void	km_s2_concat	(register KM_S2 *item1, register KM_S2 *item2);
-static KM_S2 *	km_s2_setup	(register KM_P *page);
-INLINE void *	km_s2_malloc	(register ushort size);
-INLINE void	km_s2_free	(register KM_S2 *ptr, KM_P *page);
+INLINE void	km_s2_flist_ins	(KM_S2 *item);
+INLINE void	km_s2_flist_rem	(KM_S2 *item);
+INLINE KM_S2 *	km_s2_split	(KM_S2 *item, ushort size);
+INLINE void	km_s2_concat	(KM_S2 *item1, KM_S2 *item2);
+static KM_S2 *	km_s2_setup	(KM_P *page);
+INLINE void *	km_s2_malloc	(ushort size);
+INLINE void	km_s2_free	(KM_S2 *ptr, KM_P *page);
 # ifdef S2_DEBUG
 static void	km_s2_dump	(void);
 # endif
@@ -399,7 +400,7 @@ static void	km_stat_dump	(void);
 static KM_P *table [HASHSIZE];
 
 INLINE ulong
-km_hash (register const void *ptr)
+km_hash (const void *ptr)
 {
 # if 0
 	register ulong hash;
@@ -414,7 +415,7 @@ km_hash (register const void *ptr)
 }
 
 INLINE KM_P *
-km_hash_lookup (register const void *ptr)
+km_hash_lookup (const void *ptr)
 {
 	register KM_P *n;
 	
@@ -432,7 +433,7 @@ km_hash_lookup (register const void *ptr)
 }
 
 INLINE void
-km_hash_insert (register KM_P *item)
+km_hash_insert (KM_P *item)
 {
 	register KM_P **n = &(table [km_hash ((void *) item->self->loc)]);
 	
@@ -441,7 +442,7 @@ km_hash_insert (register KM_P *item)
 }
 
 INLINE void
-km_hash_remove (register KM_P *item)
+km_hash_remove (KM_P *item)
 {
 	register KM_P **n = &(table [km_hash ((void *) item->self->loc)]);
 	
@@ -540,9 +541,9 @@ static struct
  */
 
 INLINE MEMREGION *
-km_get_region (register MMAP map, register ulong size, register MEMREGION *m)
+km_get_region (MMAP map, ulong size, MEMREGION *m, short cmode)
 {
-	register MEMREGION *new = _get_region (map, size, PROT_S, m, 1);
+	register MEMREGION *new = _get_region (map, size, PROT_S, cmode, m, 1);
 	
 	if (new)
 	{
@@ -557,7 +558,7 @@ km_get_region (register MMAP map, register ulong size, register MEMREGION *m)
 }
 
 INLINE void
-km_free_region (register MEMREGION *m)
+km_free_region (MEMREGION *m)
 {
 # ifdef KMEMORY_DEBUG
 	bzero ((void *) m->loc, m->len);
@@ -575,17 +576,17 @@ km_free_region (register MEMREGION *m)
  */
 
 INLINE KM_P *
-km_malloc (register ulong size, register MEMREGION *descr, register KM_P *page)
+km_malloc (ulong size, MEMREGION *descr, KM_P *page)
 {
 	MEMREGION *m;
 	
 	/* try first TT-RAM */
-	m = km_get_region (alt, size, descr);
+	m = km_get_region (alt, size, descr, 0);
 	
 	if (!m)
 	{
 		/* fall back to ST-RAM */
-		m = km_get_region (core, size, descr);
+		m = km_get_region (core, size, descr, 0);
 	}
 	
 	if (m)
@@ -605,7 +606,7 @@ km_malloc (register ulong size, register MEMREGION *descr, register KM_P *page)
 }
 
 INLINE void
-km_free (register MEMREGION *m)
+km_free (MEMREGION *m)
 {
 	km_free_region (m);
 }
@@ -617,20 +618,20 @@ km_free (register MEMREGION *m)
 /* BEGIN double linked list functions */
 
 INLINE void
-km_list_init (register LIST *list)
+km_list_init (LIST *list)
 {
 	list->head = NULL;
 	list->tail = NULL;
 }
 
 INLINE long
-km_list_empty (register LIST *list)
+km_list_empty (LIST *list)
 {
 	return (list->head == NULL);
 }
 
 INLINE void
-km_list_insert (register LIST *list, register KM_P *item)
+km_list_insert (LIST *list, KM_P *item)
 {
 	if (list->tail)
 		list->tail->next = item;
@@ -647,7 +648,7 @@ km_list_insert (register LIST *list, register KM_P *item)
 }
 
 INLINE void
-km_list_remove (register LIST *list, register KM_P *item)
+km_list_remove (LIST *list, KM_P *item)
 {
 	if (item->prev)
 		/* not first element */
@@ -681,7 +682,7 @@ static KM_P *mr_free;
 # define km_mr_list_remove(n)	km_list_remove	(&mr_list, n)
 
 static void
-km_mr_setup (register KM_P *page)
+km_mr_setup (KM_P *page)
 {
 	register char *ptr = (char *) page + P__HEAD;
 	
@@ -774,7 +775,7 @@ retry:
 }
 
 void
-_kmr_free (register MEMREGION *place)
+_kmr_free (MEMREGION *place)
 {
 	register KM_MR *ptr = (KM_MR *) ((char *) place - MR_HEAD);
 	register KM_P *page = ptr->s.page;
@@ -837,7 +838,7 @@ static KM_P *s1_free;
 # define km_s1_list_remove(n)	km_list_remove	(&s1_list, n)
 
 static void
-km_s1_setup (register KM_P *page)
+km_s1_setup (KM_P *page)
 {
 	register char *ptr = (char *) page + P__HEAD;
 	
@@ -927,7 +928,7 @@ retry:
 }
 
 INLINE void
-km_s1_free (register KM_S1 *ptr, register KM_P *page)
+km_s1_free (KM_S1 *ptr, KM_P *page)
 {
 # ifdef KM_STAT
 	km_s1_stat.req_free++;
@@ -995,7 +996,7 @@ static KM_S2 *s2_free_head = NULL;
 static KM_S2 *s2_free_tail = NULL;
 
 INLINE void
-km_s2_flist_ins (register KM_S2 *item)
+km_s2_flist_ins (KM_S2 *item)
 {
 	if (s2_free_tail)
 		s2_free_tail->fnext = item;
@@ -1019,7 +1020,7 @@ km_s2_flist_ins (register KM_S2 *item)
  */
 
 INLINE void
-km_s2_flist_rem (register KM_S2 *item)
+km_s2_flist_rem (KM_S2 *item)
 {
 	item->free = USED;
 	
@@ -1050,7 +1051,7 @@ km_s2_flist_rem (register KM_S2 *item)
  */
 
 INLINE KM_S2 *
-km_s2_split (register KM_S2 *item, register ushort size)
+km_s2_split (KM_S2 *item, ushort size)
 {
 	register KM_S2 *new;
 	
@@ -1083,7 +1084,7 @@ km_s2_split (register KM_S2 *item, register ushort size)
  */
 
 INLINE void
-km_s2_concat (register KM_S2 *item1, register KM_S2 *item2)
+km_s2_concat (KM_S2 *item1, KM_S2 *item2)
 {
 	item1->size += item2->size;
 	
@@ -1094,7 +1095,7 @@ km_s2_concat (register KM_S2 *item1, register KM_S2 *item2)
 }
 
 static KM_S2 *
-km_s2_setup (register KM_P *page)
+km_s2_setup (KM_P *page)
 {
 	register KM_S2 *temp = (KM_S2 *) ((char *) page + P__HEAD);
 	
@@ -1118,7 +1119,7 @@ km_s2_setup (register KM_P *page)
 }
 
 INLINE void *
-km_s2_malloc (register ushort size)
+km_s2_malloc (ushort size)
 {
 	register KM_S2 *new = s2_free_head;
 	register void *ptr = NULL;
@@ -1181,7 +1182,7 @@ km_s2_malloc (register ushort size)
 }
 
 INLINE void
-km_s2_free (register KM_S2 *ptr, KM_P *page)
+km_s2_free (KM_S2 *ptr, KM_P *page)
 {
 	register KM_S2 *next = ptr->next;
 	register KM_S2 *prev = ptr->prev;
@@ -1370,6 +1371,8 @@ km_lb_dump (void)
 /****************************************************************************/
 /* BEGIN kernel memory alloc */
 
+# if 0
+/* this don't work */
 void *
 _kcore (ulong size, const char *func)
 {
@@ -1388,7 +1391,7 @@ _kcore (ulong size, const char *func)
 		size += P__HEAD + S__HEAD;
 		size = (size + 15) & ~15;
 		
-		new = km_get_region (core, size, m);
+		new = km_get_region (core, size, m, 0);
 		if (new)
 		{
 			register KM_P *page = (KM_P *) new->loc;
@@ -1431,6 +1434,7 @@ _kcore (ulong size, const char *func)
 	
 	return ptr;
 }
+# endif
 
 void * _cdecl
 _kmalloc (ulong size, const char *func)
@@ -1564,12 +1568,37 @@ _kfree (void *place, const char *func)
 	}
 }
 
-# if 0
 /* extended kmalloc
  * 
  */
-
-# endif
+void * _cdecl
+_dmabuf_alloc (ulong size, short cmode, const char *func)
+{
+	MEMREGION *m;
+	
+	/* we can't support cmode if memory protection is disabled */
+	if (cmode && no_mem_prot)
+		return NULL;
+	
+	m = kmr_get ();
+	if (m)
+	{
+		MEMREGION *new;
+		
+		if (size < PAGESIZE)
+			size = PAGESIZE;
+		else
+			size = (size + 15) & ~15;
+		
+		new = km_get_region(core, size, m, cmode);
+		if (new)
+			return (void *) new->loc;
+		
+		kmr_free (m);		
+	}
+	
+	return NULL;
+}
 
 /*
  * "user" memory allocation routines; the kernel can use these to

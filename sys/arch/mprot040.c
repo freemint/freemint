@@ -134,7 +134,7 @@
 
 #ifdef MMU040
 
-#if 0
+#if 1
 #define MP_DEBUG(x) DEBUG(x)
 #else
 #define MP_DEBUG(x)
@@ -211,20 +211,32 @@ static unsigned char *global_mode_table = 0L;
 /* The values to clear/set in a page descriptor for the protection types */
 #define SUPERBIT	0x80UL
 #define CACHEMODEBITS	0x60UL
-#define NOCACHE		0x60UL
+#define  WRITETHROUGH	0x00UL
+#define  COPYBACK	0x20UL
+#define  SERIALIZED	0x40UL
+#define  NOCACHE	0x60UL
 #define READONLYBIT	0x04UL
 #define PAGETYPEBITS	0x03UL
 #define INVALID		0x00UL
 #define RESIDENT	0x01UL
 #define PROTECTIONBITS	(SUPERBIT | READONLYBIT | PAGETYPEBITS)
 
-ulong mode_descriptors[] =
+ulong mode_descriptors[PROT_MAX_MODE+1] =
 	{
 		INVALID,		/* private */
 		RESIDENT,		/* global */
 		RESIDENT | SUPERBIT,	/* super */
 		RESIDENT | READONLYBIT,	/* readonly */
 		INVALID			/* invalid/free */
+	};
+
+ulong cmode_descriptors[CM_MAX_MODE+1] =
+	{
+		0,
+		NOCACHE,
+		SERIALIZED,
+		WRITETHROUGH,
+		COPYBACK
 	};
 
 #define FLUSH_PMMU	0x1
@@ -918,12 +930,13 @@ The idea is this:
  *        flush the caches
  */
 INLINE void
-mark_pages(ulong *table, ulong start, ulong len, short int mode, short flush)
+mark_pages(ulong *table, ulong start, ulong len, short mode, short flush, short cmode)
 {
-	ulong	*desc,
-		*templ_desc,
-		origlen,
-		setmode;
+	ulong	*desc;
+	ulong	*templ_desc;
+	ulong	origlen;
+	ulong	setmode;
+	ulong	setcmode = 0;
 	int	no_templates = 0;
 
 	if (mode & 0x4000)
@@ -938,7 +951,13 @@ mark_pages(ulong *table, ulong start, ulong len, short int mode, short flush)
 		/* Otherwise, convert to descriptor protection mode bits */
 		setmode = mode_descriptors[mode];
 	}
-
+	
+	if (cmode)
+	{
+		setcmode = cmode_descriptors[cmode];
+		no_templates = 1;
+	}
+	
 	origlen = len = (len + 8191UL) & ~8191UL;
 	if (use_templates && !no_templates)
 	{
@@ -961,11 +980,23 @@ mark_pages(ulong *table, ulong start, ulong len, short int mode, short flush)
 			*desc &= ~PROTECTIONBITS;
 			/* And set the new ones */
 			*desc |= setmode;
+			
+			/* modify caching mode if requested */
+			if (cmode)
+			{
+				/* Clear the cache mode bits */
+				*desc &= ~CACHEMODEBITS;
+				/* And set the new ones */
+				*desc |= setcmode;
+			}
+			
 			len -= pagesize;
 		}
 	}
+	
 	if (flush & FLUSH_PMMU)
 		flush_mmu();
+	
 	if (flush & FLUSH_CACHE)
 	{
 		cpush((void *)start, origlen);
@@ -1039,7 +1070,7 @@ get_prot_mode(MEMREGION *r)
 }
 
 void
-mark_region(MEMREGION *region, short int mode)
+mark_region(MEMREGION *region, short mode, short cmode)
 {
 	if (no_mem_prot)
 		return;
@@ -1054,7 +1085,7 @@ mark_region(MEMREGION *region, short int mode)
     int shortcut;
     unsigned char *tbl_ptr, *tbl_end;
 
-    MP_DEBUG(("mark_region %lx len %lx mode %d",start,len,mode));
+    MP_DEBUG(("mark_region %lx len %lx mode %d cmode %d",start,len,mode,cmode));
 
     /* Don't do anything if init_tables() has not yet finished */
     if ((global_table == 0L) || (global_mode_table == 0L))
@@ -1083,13 +1114,14 @@ mark_region(MEMREGION *region, short int mode)
 	    break;
 	tbl_ptr++;
     }
-    if (tbl_ptr == tbl_end)
+    /* don't shortcut if cmode request is set */
+    if (tbl_ptr == tbl_end && !cmode)
 	shortcut = 1;
 
     /* mark the global page table */
     memset(&global_mode_table[start >> 13], mode, (len >> 13));
     /* mark the global template tree */
-    mark_pages(global_table, start, len, mode, 0);
+    mark_pages(global_table, start, len, mode, 0, cmode);
 
     /*
      * OK, if shortcut is set and mode is PROT_G, nothing has to be done,
@@ -1143,7 +1175,7 @@ notowner:
 	setmode = mode;
 
 gotvals:
-	mark_pages(proc->p_mem->page_table, start, len, setmode, 0);
+	mark_pages(proc->p_mem->page_table, start, len, setmode, 0, cmode);
     }
 finished:
     flush_mmu();
@@ -1154,7 +1186,7 @@ finished:
 /* special version of mark_region, used for attaching (mode == PROT_P)
    and detaching (mode == PROT_I) a memory region to/from a process. */
 void
-mark_proc_region(PROC *proc, MEMREGION *region, short int mode)
+mark_proc_region(PROC *proc, MEMREGION *region, short mode)
 {
 	if (no_mem_prot)
 		return;
@@ -1204,7 +1236,7 @@ owner:
     MP_DEBUG(("mark_proc_region: pid %d gets non-owner modes",proc->pid));
 
 gotvals:
-    mark_pages(proc->p_mem->page_table, start, len, mode, FLUSH_BOTH);
+    mark_pages(proc->p_mem->page_table, start, len, mode, FLUSH_BOTH, 0);
 	}
 }
 
@@ -1227,7 +1259,7 @@ gotvals:
  */
 
 int
-prot_temp(ulong loc, ulong len, int mode)
+prot_temp(ulong loc, ulong len, short mode)
 {
 	if (no_mem_prot)
 		return -1;
@@ -1248,12 +1280,12 @@ prot_temp(ulong loc, ulong len, int mode)
 	if (cookie == 0 || cookie == 1) return cookie;
 
 	/* Otherwise, mark the pages as global */
-	mark_pages(curproc->p_mem->page_table, loc, len, PROT_G, FLUSH_BOTH);
+	mark_pages(curproc->p_mem->page_table, loc, len, PROT_G, FLUSH_BOTH, 0);
 
 	return cookie;
     }
     else {
-	mark_pages(curproc->p_mem->page_table, loc, len, mode, FLUSH_BOTH);
+	mark_pages(curproc->p_mem->page_table, loc, len, mode, FLUSH_BOTH, 0);
 	return 0;
     }
 	}
@@ -1318,7 +1350,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
     for (i = 0; i < p_mem->num_reg; i++, mr++)
     {
 	if (*mr)
-	    mark_pages(p_mem->page_table, (*mr)->loc, (*mr)->len, PROT_G, 0);
+	    mark_pages(p_mem->page_table, (*mr)->loc, (*mr)->len, PROT_G, 0, 0);
     }
 
     /*
@@ -1376,14 +1408,13 @@ mem_prot_special(PROC *proc)
     mark_pages(proc->p_mem->page_table,
     	membot & ~8191,
     	mint_top_st - (membot & ~8191),
-    	PROT_G,
-    	0);
+    	PROT_G, 0, 0);
+    
     if (mint_top_tt) {
 	mark_pages(proc->p_mem->page_table,
 		    0x01000000L,
 		    mint_top_tt - 0x01000000UL,
-		    PROT_G,
-		    0);
+		    PROT_G, 0, 0);
     }
 
     /*
@@ -1399,7 +1430,7 @@ mem_prot_special(PROC *proc)
 	if (*mr) {
 	    mode = global_mode_table[((*mr)->loc >> 13)];
 	    if (mode == PROT_P)
-		mark_region(*mr, PROT_S);
+		mark_region(*mr, PROT_S, 0);
 	    else
 	    {
 		MP_DEBUG(("mem_prot_special: Not marking region %lx - %lx as super", (*mr)->loc, (*mr)->loc + (*mr)->len - 1L));
