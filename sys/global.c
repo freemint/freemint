@@ -46,6 +46,8 @@ unsigned long c20ms = 0;
 
 BASEPAGE *_base;
 
+short	gl_kbd;			/* default keyboard layout */
+
 /*
  * special flags for workarounds
  */

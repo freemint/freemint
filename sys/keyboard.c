@@ -33,6 +33,8 @@
  *
  */
 
+# ifndef NO_AKP_KEYBOARD
+
 # include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
 
 # include "mint/errno.h"
@@ -127,10 +129,6 @@
  *
  */
 
-short	gl_kbd;			/* default keyboard layout */
-
-# ifndef NO_AKP_KEYBOARD
-
 static const ushort modifiers[] =
 {
 	CONTROL, RSHIFT, LSHIFT,
@@ -155,8 +153,8 @@ static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 /* Variables that deal with keyboard autorepeat */
 static	uchar last_key[4];	/* last pressed key */
 static	short key_pressed;	/* flag for keys pressed/released (0 = no key is pressed) */
-static	ushort keydel = 23;	/* keybard delay rate and keyboard repeat rate, respectively */
-static	ushort krpdel = 2;
+static	ushort keydel;		/* keybard delay rate and keyboard repeat rate, respectively */
+static	ushort krpdel;
 static	ushort kdel, krep;	/* actual counters */
 
 /* keyboard table pointers */
@@ -282,6 +280,10 @@ void
 autorepeat_timer(void)
 {
 	if (kbd_lock)
+		return;
+
+	/* conterm */
+	if ((*(char *)0x0484L & 0x02) == 0)
 		return;
 
 	if (key_pressed)
@@ -1060,12 +1062,23 @@ init_keybd(void)
 {
 	ushort delayrate;
 
-	/* call the underlying XBIOS to get some defaults*/
+	/* Call the underlying XBIOS to get some defaults.
+	 * On WITHOUT_TOS, the tos_keytab is defined as
+	 * static pointer to an initialized struct in
+	 * key_tables.h
+	 */
+
+# ifndef WITHOUT_TOS
 	tos_keytab = TRAP_Keytbl(-1, -1, -1);
+# endif
 
 	TRACE(("init_keybd(): BIOS keyboard table at 0x%08lx", tos_keytab));
 
+# ifndef WITHOUT_TOS
 	delayrate = TRAP_Kbrate(-1, -1);
+# else
+	delayrate = 0x0f02;	/* this is what TRAP_Kbrate() normally returns */
+# endif
 
 	keydel = kdel = delayrate >> 8;
 	krpdel = krep = delayrate & 0x00ff;
