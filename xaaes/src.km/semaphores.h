@@ -1,0 +1,122 @@
+/*
+ * $Id$
+ *
+ * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
+ *                                 1999 - 2003 H.Robbers
+ *                                        2004 F.Naumann
+ *
+ * A multitasking AES replacement for FreeMiNT
+ *
+ * This file is part of XaAES.
+ *
+ * XaAES is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * XaAES is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with XaAES; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#ifndef _xaaes_semaphores_h
+#define _xaaes_semaphores_h
+
+#include "global.h"
+
+struct xa_client;
+
+struct xa_client *update_locked(void);
+struct xa_client *mouse_locked(void);
+
+void free_update_lock(void);
+void free_mouse_lock(void);
+
+bool   lock_screen(struct xa_client *client, bool try, short *r, int which);
+bool unlock_screen(struct xa_client *client, int which);
+bool   lock_mouse(struct xa_client *client, bool try, short *r, int which);
+bool unlock_mouse(struct xa_client *client, int which);
+
+
+/*-----------------------------------------------------------------
+ * Lock control
+ *-----------------------------------------------------------------*/
+enum locks
+{
+	NOLOCKS   = 0x000,
+	appl      = 0x001,
+	winlist   = 0x008,
+	desk      = 0x010,
+	clients   = 0x020,
+	fsel      = 0x040,
+	lck_update  = 0x080,
+	mouse     = 0x100,
+	envstr    = 0x200,
+	pending   = 0x400,
+	NOLOCKING = -1
+};
+
+#if 1
+
+#define Sema_Up(id)
+#define Sema_Dn(id)
+
+#else
+
+/*----------------------------------------------------------------- */
+/* Define the semaphores used in various places... */
+
+#define APPL_INIT_SEMA	0x58410001 /* 'XA:I' Semaphore id for appl_init() routine access */
+#define WIN_LIST_SEMA	0x58410004 /* 'XA:W' Semaphore for order modify / entry delete access to the window list */
+#define ROOT_SEMA	0x58410008 /* 'XA:R' Semaphore for access to the root window */
+#define CLIENTS_SEMA	0x58410010 /* 'XA:C' Semaphore for access to the clients structure */
+#define FSELECT_SEMA	0x58410020 /* 'XA:F' Semaphore for access to the file selector */
+#define ENV_SEMA	0x58410040 /* 'XA:E' Semaphore for access to the environment strings */
+
+#define UPDATE_LOCK	0x58510080 /* 'XA:U' Semaphore id for BEG_UPDATE */
+#define MOUSE_LOCK	0x58410100 /* 'XA:M' Semaphore id for BEG_MCTRL */
+
+#define PENDING_SEMA	0x58410200 /* 'XA:P' Semaphore id to guard pending button&keybd events */
+
+
+#define appl_SEMA	APPL_INIT_SEMA
+#define winlist_SEMA	WIN_LIST_SEMA
+#define desk_SEMA	ROOT_SEMA
+#define clients_SEMA	CLIENTS_SEMA
+#define fsel_SEMA	FSELECT_SEMA
+#define envstr_SEMA	ENV_SEMA
+
+#define lck_update_SEMA	UPDATE_LOCK
+#define mouse_SEMA	MOUSE_LOCK
+
+#define pending_SEMA	PENDING_SEMA
+
+
+#if GENERATE_DIAGS && DEBUG_SEMA
+
+/* The semaphores are crucial, so have ample debugging features. */
+#define Sema_Up(id) if (!(lock&id))\
+			 { long r; DIAGS((D_su,(short)id)); \
+			     r = p_semaphore(2,id ## _SEMA,-1); \
+			     if (r < 0) DIAGS((D_sr,r));}
+#define Sema_Dn(id) if (!(lock&id)){long r = p_semaphore(3,id ## _SEMA,0); DIAGS((D_sd,(short)id,r));}
+#else
+
+#define Sema_Up(id) if (!(lock & id)) p_semaphore(2, id ## _SEMA, -1)
+#define Sema_Dn(id) if (!(lock & id)) p_semaphore(3, id ## _SEMA,  0)
+
+#endif
+
+#define unlocked(a) (!(lock & a))
+
+int create_semaphores(struct file *);
+void destroy_semaphores(struct file *);
+
+#endif
+
+#endif /* _xaaes_semaphores_h */

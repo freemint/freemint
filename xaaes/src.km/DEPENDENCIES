@@ -1,0 +1,15 @@
+#
+# global definitions
+#
+include $(top_srcdir)/../../DEPENDENCIES
+
+#
+# private definitions
+#
+
+#
+# libkern target
+#
+$(LIBKERNTARGET) $(LIBKERNSTMP):
+	cd $(top_srcdir)/../../sys/libkern; \
+		$(MAKE) CPU="$(CPU)" libkern$(CPU).a

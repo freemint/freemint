@@ -1,0 +1,58 @@
+/*
+ * $Id$
+ *
+ * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
+ *                                 1999 - 2003 H.Robbers
+ *                                        2004 F.Naumann
+ *
+ * A multitasking AES replacement for MiNT
+ *
+ * This file is part of XaAES.
+ *
+ * XaAES is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * XaAES is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with XaAES; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+/*
+ * Kernal Message Handler
+ */
+
+#ifndef _k_mouse_h 
+#define _k_mouse_h
+
+#include "global.h"
+#include "xa_types.h"
+
+struct pending_button
+{
+	int head;
+	int tail;
+	BUTTON q[4];
+};
+extern struct pending_button pending_button;
+
+struct xa_client *find_focus(bool *waiting, struct xa_client **locked_client);
+bool is_bevent(int gotbut, int gotcl, const short *o, int which);
+
+void button_event(enum locks lock, struct xa_client *client, const struct moose_data *md);
+
+void XA_button_event  (enum locks lock, const struct moose_data *md, bool widgets);
+int  XA_move_event    (enum locks lock, const struct moose_data *md);
+void XA_wheel_event   (enum locks lock, const struct moose_data *md);
+
+void preprocess_mouse(enum locks lock);
+int mouse_input(enum locks lock, int internal);
+void exclusive_mouse_input(struct xa_client *client, int poll, short *pstatus, short *x, short *y);
+
+#endif /* _k_mouse_h */

@@ -1,0 +1,98 @@
+#
+# the new mint style configuration for xaaes
+# it reuse the mint cnf parser
+#
+# upper/lowercase don't matter for all keywords
+# bool values can be expressed as 1/0, y/n, yes/no, true/false
+# 
+
+#
+# setenv name val ..... set up environment
+#
+#setenv 
+
+#
+# process priority of the xaaes task
+# 20 lowest, -20 highest priority
+#
+#priority = 0
+
+#
+# use $HOME in shell_find
+#
+usehome = yes
+
+#
+# disable XaAES builtin fileselector
+#
+#nofsel = no
+
+#
+# double click time (ms)
+#
+#dc_time = 50
+
+#
+# menu = pull or push or leave + optional nolocking
+# default is 
+#
+menu = leave
+
+#
+# popscroll - number of lines of a popup above which it will be made scrollable
+#
+#popscroll = 0
+
+#
+# toppage = bold or faint
+#
+#toppage = faint
+
+#
+# clipboard = <path>
+# accpath   = <path>
+# launcher  = <path>
+#
+clipboard = c:\clipbrd\
+accpath   = c:\
+launcher  = u:\opt\toswin2\tw-call.prg
+
+#
+# widgets  = <file>
+# resource = <file>
+#
+#widgets  = adam.rsc
+#resource = xa_mono.rsc
+
+#
+# cancel = string,string
+#
+cancel = cancel,abbruch,annuler,avbryt,anuluj,afbryd,undo
+
+#
+# filters = mask, mask, ...
+#
+filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
+
+#
+# font_id        - Standard GDOS fontid for windows & stuff
+# standard_point - Size of the 'standard' AES font (for window titles, etc)
+# medium_point   - The same, but for low resolution screens
+# small_point    - Size of the 'small' AES font
+#
+# defaults:
+#
+#font_id=1
+#standard_point=10
+#medium_point=9
+#small_point=8
+
+#
+# the shell
+#
+shell = c:\thing\thing.app
+
+#
+# start any other programs with run
+#
+#run = <path>\<application>
