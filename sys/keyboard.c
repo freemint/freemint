@@ -186,7 +186,6 @@ static char mouse_packet[6];
 static void
 mouse_up(PROC *p, long pixels)
 {
-	//TIMEOUT *t;
 	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
@@ -215,7 +214,6 @@ mouse_up(PROC *p, long pixels)
 static void
 mouse_down(PROC *p, long pixels)
 {
-	//TIMEOUT *t;
 	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
@@ -244,7 +242,6 @@ mouse_down(PROC *p, long pixels)
 static void
 mouse_left(PROC *p, long pixels)
 {
-	//TIMEOUT *t;
 	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
@@ -274,7 +271,6 @@ mouse_left(PROC *p, long pixels)
 static void
 mouse_right(PROC *p, long pixels)
 {
-	//TIMEOUT *t;
 	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
@@ -379,7 +375,6 @@ INLINE short
 generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
 	short delta = (shift & MM_ESHIFT) ? kbd_mpixels_fine : kbd_mpixels;
-	//TIMEOUT *t;
 
 	switch (scan)
 	{
@@ -388,18 +383,6 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_up, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
-#if 0
-			if (make)
-			{
-				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_up, 1);
-				if (t) t->arg = delta;
-
-				kbdclick(scan);
-			}
-
-			keep_sending = make;
-#endif
-
 			return -1;
 		}
 		case DOWN_ARROW:
@@ -407,17 +390,6 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_down, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
-#if 0
-			if (make)
-			{
-				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_down, 1);
-				if (t) t->arg = delta;
-
-				kbdclick(scan);
-			}
-
-			keep_sending = make;
-#endif
 			return -1;
 		}
 		case RIGHT_ARROW:
@@ -425,17 +397,6 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_right, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
-#if 0
-			if (make)
-			{
-				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_right, 1);
-				if (t) t->arg = delta;
-
-				kbdclick(scan);
-			}
-
-			keep_sending = make;
-#endif
 			return -1;
 		}
 		case LEFT_ARROW:
@@ -443,17 +404,6 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_left, make, delta, ROOT_TIMEOUT);
 			if ((keep_sending = make))
 				kbdclick(scan);
-#if 0
-			if (make)
-			{
-				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_left, 1);
-				if (t) t->arg = delta;
-
-				kbdclick(scan);
-			}
-
-			keep_sending = make;
-#endif
 			return -1;
 		}
 		case INSERT:
@@ -881,29 +831,6 @@ scan2asc(uchar scancode)
 			asc = vec[scancode];
 		
 	}
-#if 0
-	/* Hmmm, not sure if this should operate so.
-	 * If the AKP translation results 0, we
-	 * continue as if the Alt key was not depressed.
-	 * Otherwise we ignore the "old" (not AKP)
-	 * tables.
-	 * N.AES Alt/Ctrl/key combos work with this.
-	 */
-	if (asc == 0)
-	{
-		/* Shift/1 should give "!" regardless of the Caps state
-		 */
-		if (shift & MM_ESHIFT)
-			vec = user_keytab->shift;
-		else if (shift & MM_CAPS)
-			vec = user_keytab->caps;
-		else
-			vec = user_keytab->unshift;
-
-		if (vec)
-			asc = vec[scancode];
-	}
-#endif
 
 	/* We can optionally emulate the PC-like behaviour of Caps/Shift */
 	if (kbd_pc_style_caps)
@@ -1041,13 +968,15 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	{
 		*kbshft = mshift = shift;
 
-		/* CapsLock, ClrHome, Insert make keyclick,
+		/*
+		 * CapsLock, ClrHome, Insert make keyclick,
 		 * Alt, AltGr, Control and Shift don't.
 		 */
 		if (clk && make)
 			kbdclick(scan);
 
-		/* CapsLock key cannot be auto-repeated (unlike on original TOS).
+		/*
+		 * CapsLock key cannot be auto-repeated (unlike on original TOS).
 		 * ClrHome and Insert must be handled as other keys.
 		 */
 		if ((scan != CLRHOME) && (scan != INSERT))
@@ -1154,11 +1083,22 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 		}
 	}
 
-	/* Alt/arrow, alt/insert and alt/clrhome emulate the mouse events */
-	if (!(shift & MM_CTRL) && (shift & MM_ALTERNATE) == MM_ALTERNATE)
+	/*
+	 * Alt/arrow, alt/insert and alt/clrhome emulate the mouse events
+	 */
+	if ((shift & MM_ALTERNATE) && !(shift & (MM_CTRL|MM_ALTGR)))
 	{
 		if (generate_mouse_event(shift, scan, make) == -1)
 			return;
+	}
+
+	/*
+	 * Emulate F11-F20 keys
+	 */
+	if (shift & MM_ESHIFT)
+	{
+		if (scan >= 0x003b && scan <= 0x0044)
+			scan += 0x0019;
 	}
 
 	if (shift == MM_ALTERNATE)
