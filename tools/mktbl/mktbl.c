@@ -74,8 +74,9 @@ int
 main(int argc, char **argv)
 {
 	char *line, *ln, *outname, *o;
-	long buf, r, n = 1, num, flen;
+	long r, n = 1, num, flen;
 	short w, warn = 0;
+	size_t buf;
 	FILE *fd, *out;
 
 	if (argc <= 2)
@@ -106,7 +107,8 @@ main(int argc, char **argv)
 	else
 		outname = argv[2];
 
-	line = malloc(1024);	/* should be plenty */
+	buf = 1024;
+	line = malloc(buf);	/* should be plenty */
 	if (!line)
 		return 2;
 
@@ -117,8 +119,6 @@ main(int argc, char **argv)
 	out = fopen(outname, "w");
 	if (!fd)
 		return 4;
-
-	buf = 1024;
 
 	do
 	{
