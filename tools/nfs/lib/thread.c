@@ -15,8 +15,8 @@
  * modified by Ulrich KÅhn for use under MiNT only, 27-Jul-92
  */
 
-#include <osbind.h>
-#include <basepage.h>
+#include <mint/osbind.h>
+#include <mint/basepage.h>
 
 #define SIZE 8192L
 

@@ -17,7 +17,7 @@
 # define cdecl		__CDECL
 # endif
 
-# include <basepage.h>
+# include <mint/basepage.h>
 typedef BASEPAGE BASPAG;
 
 /*
