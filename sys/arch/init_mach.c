@@ -44,6 +44,7 @@
 # include "global.h"
 # include "init.h"
 # include "keyboard.h"
+# include "kerinfo.h"
 
 # include <mint/osbind.h>
 
@@ -164,7 +165,7 @@ _getmch (void)
 # ifdef ARANYM
 				case COOKIE_NF:
 				{
-					nf_init();
+					kernelinfo.nf_ops = nf_init();
 					
 					add_info = aranym;
 					break;

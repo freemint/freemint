@@ -2,7 +2,7 @@
  * $Id$
  * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
- * distribution.
+ * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
  * Copyright 2003 Frank Naumann <fnaumann@freemint.de>
@@ -24,31 +24,21 @@
  * 
  * 
  * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2003-12-13
+ * Started: 2003-12-14
  * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
  * 
  */
 
-/*
- * Aranym hardware support (experimental)
- */
+# ifndef _mint_m68k_nf_ops_h
+# define _mint_m68k_nf_ops_h
 
-# ifndef _m68k_aranym_h
-# define _m68k_aranym_h
+struct nf_ops
+{
+	long (*get_id)(const char *);
+	long (*call)(long id, ...);
+	long res[3];
+};
 
-# include "mint/mint.h"
-# include "mint/arch/nf_ops.h"
-
-# ifdef ARANYM
-
-struct nf_ops *nf_init(void);
-
-const char *nf_name(void);
-int  nf_debug(const char *msg);
-void nf_shutdown(void);
-
-# endif
-
-# endif /* _m68k_aranym_h */
+# endif /* _mint_m68k_nf_ops_h */
