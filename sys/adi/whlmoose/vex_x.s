@@ -17,7 +17,9 @@
 |** These are exchanged VDI change vectors ****************************************************
 _motv:		move.w	d0,_sample_x
 		move.w	d1,_sample_y
+		movem.l	d0-d2/a0-a2,-(sp)
 		jsr	_cmotv
+		movem.l	(sp)+,d0-d2/a0-a2
 		rts
 
 _butv:
