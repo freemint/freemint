@@ -64,7 +64,7 @@ sys_pgetegid (void)
 }
 
 long _cdecl
-sys_psetuid (int uid)
+sys_psetuid (unsigned int uid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
@@ -85,7 +85,7 @@ sys_psetuid (int uid)
 }
 
 long _cdecl
-sys_psetgid (int gid)
+sys_psetgid (unsigned int gid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
@@ -107,7 +107,7 @@ sys_psetgid (int gid)
 
 /* uk, blank: set effective uid/gid but leave the real uid/gid unchanged. */
 long _cdecl
-sys_psetreuid (int ruid, int euid)
+sys_psetreuid (unsigned int ruid, unsigned int euid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
@@ -140,7 +140,7 @@ sys_psetreuid (int ruid, int euid)
 }
 	
 long _cdecl
-sys_psetregid (int rgid, int egid)
+sys_psetregid (unsigned int rgid, unsigned int egid)
 {
 	struct pcred *cred = curproc->p_cred;
 	
@@ -174,7 +174,7 @@ sys_psetregid (int rgid, int egid)
 }
 
 long _cdecl
-sys_pseteuid (int euid)
+sys_pseteuid (unsigned int euid)
 {
 	if (sys_psetreuid (-1, euid) == 0)
 		return euid;
@@ -183,7 +183,7 @@ sys_pseteuid (int euid)
 }
 	
 long _cdecl
-sys_psetegid (int egid)
+sys_psetegid (unsigned int egid)
 {
 	if (sys_psetregid (-1, egid) == 0)
 		return egid;
@@ -194,7 +194,7 @@ sys_psetegid (int egid)
 /* tesche: get/set supplemantary group id's.
  */
 long _cdecl
-sys_pgetgroups (int gidsetlen, int gidset[])
+sys_pgetgroups (int gidsetlen, unsigned int gidset[])
 {
 	struct ucred *cred = curproc->p_cred->ucr;
 	int i;
@@ -214,7 +214,7 @@ sys_pgetgroups (int gidsetlen, int gidset[])
 }
 
 long _cdecl
-sys_psetgroups (int ngroups, int gidset[])
+sys_psetgroups (int ngroups, unsigned int gidset[])
 {
 	struct pcred *cred = curproc->p_cred;
 	ushort grsize;

@@ -42,14 +42,14 @@ long _cdecl sys_pgetuid		(void);
 long _cdecl sys_pgetgid		(void);
 long _cdecl sys_pgeteuid	(void);
 long _cdecl sys_pgetegid	(void);
-long _cdecl sys_psetuid		(int id);
-long _cdecl sys_psetgid		(int id);
-long _cdecl sys_pseteuid	(int id);
-long _cdecl sys_psetegid	(int id);
-long _cdecl sys_psetreuid	(int rid, int eid);
-long _cdecl sys_psetregid	(int rid, int eid);
-long _cdecl sys_pgetgroups	(int gidsetlen, int gidset[]);
-long _cdecl sys_psetgroups	(int ngroups, int gidset[]);
+long _cdecl sys_psetuid		(unsigned int id);
+long _cdecl sys_psetgid		(unsigned int id);
+long _cdecl sys_pseteuid	(unsigned int id);
+long _cdecl sys_psetegid	(unsigned int id);
+long _cdecl sys_psetreuid	(unsigned int rid, unsigned int eid);
+long _cdecl sys_psetregid	(unsigned int rid, unsigned int eid);
+long _cdecl sys_pgetgroups	(int gidsetlen, unsigned int gidset[]);
+long _cdecl sys_psetgroups	(int ngroups, unsigned int gidset[]);
 
 int groupmember (struct ucred *ucr, ushort group);
 
