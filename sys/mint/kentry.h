@@ -391,9 +391,7 @@ struct kentry_libkern
 	char *	_cdecl (*strstr)(const char *s, const char *w);
 
 	long	_cdecl (*strtol)(const char *nptr, char **endptr, long base);
-	llong	_cdecl (*strtoll)(const char *nptr, char **endptr, long base);
 	ulong	_cdecl (*strtoul)(const char *nptr, char **endptr, long base);
-	ullong	_cdecl (*strtoull)(const char *nptr, char **endptr, long base);
 
 	void *	_cdecl (*memchr)(void *s, long search, unsigned long size);
 	long	_cdecl (*memcmp)(const void *s1, const void *s2, unsigned long size);
@@ -452,9 +450,7 @@ struct kentry_libkern
 	_mint_strrev, \
 	_mint_strstr, \
 	_mint_strtol, \
-	_mint_strtoll, \
 	_mint_strtoul, \
-	_mint_strtoull, \
 	_mint_memchr, \
 	_mint_memcmp, \
 	\
