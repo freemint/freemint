@@ -158,7 +158,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x02f */		sys_f_getdta,
 
 	/* 0x030 */		sys_s_version,
-	/* 0x031 */		sys_ptermres,
+	/* 0x031 */	(Func)	sys_ptermres,
 	/* 0x032 */		NULL,
 	/* 0x033 */		sys_enosys,		/* MagiC: Sconfig() */
 	/* 0x034 */		NULL,
@@ -185,8 +185,8 @@ Func dos_tab [DOS_MAX] =
 	/* 0x048 */		sys_m_alloc,
 	/* 0x049 */		sys_m_free,
 	/* 0x04a */		sys_m_shrink,
-	/* 0x04b */		sys_pexec,
-	/* 0x04c */		sys_pterm,
+	/* 0x04b */	(Func)	sys_pexec,
+	/* 0x04c */	(Func)	sys_pterm,
 	/* 0x04d */		NULL,
 	/* 0x04e */		sys_f_sfirst,
 	/* 0x04f */		sys_f_snext,
@@ -392,7 +392,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x107 */		sys_f_getchar,
 	/* 0x108 */		sys_f_putchar,
 	/* 0x109 */		sys_pwait,
-	/* 0x10a */		sys_pnice,
+	/* 0x10a */	(Func)	sys_pnice,
 	/* 0x10b */		sys_p_getpid,
 	/* 0x10c */		sys_p_getppid,
 	/* 0x10d */		sys_p_getpgrp,
@@ -411,7 +411,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x119 */	(Func)	sys_p_domain,
 	/* 0x11a */		sys_psigreturn,
 	/* 0x11b */		sys_pfork,
-	/* 0x11c */		sys_pwait3,
+	/* 0x11c */	(Func)	sys_pwait3,
 	/* 0x11d */	(Func)	sys_f_select,
 	/* 0x11e */		sys_prusage,
 	/* 0x11f */	(Func)	sys_psetlimit,
@@ -423,7 +423,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x124 */		sys_d_pathconf,
 	/* 0x125 */		sys_p_msg,
 	/* 0x126 */	(Func)	sys_f_midipipe,
-	/* 0x127 */		sys_prenice,
+	/* 0x127 */	(Func)	sys_prenice,
 	/* 0x128 */		sys_d_opendir,
 	/* 0x129 */		sys_d_readdir,
 	/* 0x12a */		sys_d_rewind,
@@ -443,7 +443,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x137 */	(Func)	sys_p_sigaction,
 	/* 0x138 */		sys_pgeteuid,
 	/* 0x139 */		sys_pgetegid,
-	/* 0x13a */		sys_pwaitpid,
+	/* 0x13a */	(Func)	sys_pwaitpid,
 	/* 0x13b */		sys_d_getcwd,
 	/* 0x13c */		sys_s_alert,
 	/* 0x13d */		sys_t_malarm,
@@ -475,8 +475,8 @@ Func dos_tab [DOS_MAX] =
 	/* 0x155 */		sys_t_gettimeofday,
 	/* 0x156 */		sys_t_settimeofday,
 	/* 0x157 */		sys_t_adjtime,		/* 1.16 */
-	/* 0x158 */		sys_pgetpriority,
-	/* 0x159 */		sys_psetpriority,
+	/* 0x158 */	(Func)	sys_pgetpriority,
+	/* 0x159 */	(Func)	sys_psetpriority,
 	/* 0x15a */		sys_f_poll,		/* 1.15.10 */
 	/* 0x15b */	(Func)	sys_fwritev,	/* 1.16 */
 	/* 0x15c */	(Func)	sys_freadv,	/* 1.16 */
@@ -543,12 +543,6 @@ Func sys_mon_tab [1] =
 	/* 0x1069 */	(Func)	Debug
 };
 
-void
-init_dos (void)
-{
-	/* miscellaneous initialization goes here */
-}
-
 /* END DOS initialization */
 /****************************************************************************/
 
@@ -596,18 +590,6 @@ Func bios_tab [BIOS_MAX] =
 
 	/* 0x020 */		/* BIOS_MAX */
 };
-
-/* BIOS initialization routine: gets keyboard buffer pointers, for the
- * interrupt routine below
- */
-
-void
-init_bios (void)
-{
-	keyrec = (IOREC_T *) TRAP_Iorec (1);
-
-	init_bdevmap ();
-}
 
 /* END BIOS initialization */
 /****************************************************************************/
@@ -771,16 +753,6 @@ Func xbios_tab [XBIOS_MAX] =
 
 	/* 0x080 */		/* XBIOS_MAX */
 };
-
-void
-init_xbios (void)
-{
-	/* init XBIOS Random() function */
-	init_xrandom ();
-
-	/* init bconmap stuff */
-	init_bconmap ();
-}
 
 /* END XBIOS initialization */
 /****************************************************************************/

@@ -167,7 +167,7 @@ make_fname(struct proc *p, const char *source)
 }
 
 long _cdecl
-sys_pexec(int mode, const void *ptr1, const void *ptr2, const void *ptr3)
+sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 {
 	MEMREGION *base;
 	MEMREGION *env = NULL;	/* assignment suppresses spurious warning */

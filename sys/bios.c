@@ -31,6 +31,7 @@
 # include "arch/mprot.h"
 # include "arch/syscall.h"
 # include "arch/timer.h"
+# include "arch/tosbind.h"
 # include "arch/user_things.h"
 
 # include "biosfs.h"
@@ -370,14 +371,19 @@ static long _cdecl	_ubcostat (int dev);
 static long _cdecl	_ubconout (int dev, int c);
 static long _cdecl	_ubconin (int dev);
 
+/* BIOS initialization routine: gets keyboard buffer pointers, for the
+ * interrupt routine below
+ */
 void
-init_bdevmap (void)
+init_bios(void)
 {
 	int i;
-
+	
+	keyrec = (IOREC_T *)TRAP_Iorec(1);
+	
 	for (i = 0; i < BDEVMAP_MAX; i++)
 	{
-		BDEVMAP *map = &(bdevmap [i]);
+		BDEVMAP *map = &(bdevmap[i]);
 
 		map->instat	= _ubconstat;
 		map->in		= _ubconin;

@@ -10,7 +10,6 @@
 
 # include "mint/mint.h"
 
-
 extern int has_bconmap;
 extern int curbconmap;
 
@@ -25,8 +24,6 @@ long _cdecl sys_b_dosound (const char *ptr);
 long _cdecl sys_b_vsetscreen (long log, long phys, int rez, int mode);
 long _cdecl sys_b_random (void);
 
-void init_xrandom (void);
-void init_bconmap (void);
-
+void init_xbios (void);
 
 # endif /* _xbios_h */

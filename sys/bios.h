@@ -35,7 +35,7 @@ void checkbtty_nsig (struct bios_tty *b);
 void checkbttys (void);
 void checkbttys_vbl (void);
 
-void	init_bdevmap (void);
+void	init_bios (void);
 long	overlay_bdevmap (int dev, BDEVMAP *newmap);
 
 long _cdecl sys_b_ubconstat (int dev);

@@ -435,8 +435,6 @@ init (void)
 	DEBUG (("init_proc() ok! (base = %lx)", _base));
 
 	/* initialize system calls */
-	init_dos ();
-	DEBUG (("init_dos() ok!"));
 	init_bios ();
 	DEBUG (("init_bios() ok!"));
 	init_xbios ();
@@ -1119,8 +1117,7 @@ mint_thread(void *arg)
 	pid = (int) r;
 	if (pid > 0)
 	{
-		do
-		{
+		do {
 # if 1
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (r == 0)
@@ -1136,7 +1133,8 @@ mint_thread(void *arg)
 			r = sys_pwaitpid(-1, 0, NULL);
 			TRACE(("%s(): sys_pwaitpid() done -> %li (%li)", __FUNCTION__, r, ((r & 0xffff0000L) >> 16)));
 # endif
-		} while (pid != ((r & 0xffff0000L) >> 16));
+		}
+		while (pid != ((r & 0xffff0000L) >> 16));
 	}
 # ifndef DEBUG_INFO
 	else
