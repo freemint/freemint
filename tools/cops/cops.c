@@ -32,7 +32,7 @@
  *   Modula-Kompilaten zu vermeiden.
  * - 28.12.97 (COPS 1.08):
  *   Wenn beim cpx_init() innerhalb von open_cpx_context() eine 1 zurueckgeliefert wird,
- *   interpretiert das COPS als Anweisung, kein Fenster zu oeffnen (fuer NPRNCONF)
+ *   interpretiert das COPS als Anweisung kein Fenster zu oeffnen (fuer NPRNCONF)
  */
 
 #include <fcntl.h>
@@ -56,123 +56,96 @@
 #include "vaproto.h"
 #include "wlib.h"
 
+#define	DEBUG 0
+
 /* XXX from mintlib */
 extern short _app;
 
-#define	DEBUG	0
-#define MAINWINDOWSTYLE	NAME|CLOSER|FULLER|MOVER|SIZER|VSLIDE|HSLIDE|UPARROW|DNARROW|LFARROW|RTARROW|SMALLER
+/* magic mt_aes -> gemlib wrapper */
+typedef struct { short x; short y; short bstate; short kstate; } EVNTDATA;
+#define graf_mkstate_evntdata(evntdata) \
+	graf_mkstate(&(evntdata)->x,&(evntdata)->y,&(evntdata)->bstate,&(evntdata)->kstate)
 
+/* default window style */
+#define MAINWINDOWSTYLE	\
+		NAME|CLOSER|FULLER|MOVER|SIZER|VSLIDE|HSLIDE|UPARROW|DNARROW|LFARROW|RTARROW|SMALLER
 
-typedef struct
+/*----------------------------------------------------------------------------------------*/
+
+/* Fileversion 7 */
+struct old_alphaheader
 {
 	long	magic;
 	short	version;
 	GRECT	mw;
 	short	whslide;
 	short	wvslide;
-	short	booticon;		/* Hauptfenster beim Start ”ffnen und ikonifizieren */
-	short	clickact;		/* inaktive CPXe werden durch Doppelklick umbenannt und ge”ffnet */
+	short	booticon;	/* Hauptfenster beim Start oeffnen und ikonifizieren */
+	short	clickact;	/* inaktive CPXe werden durch Doppelklick umbenannt und geoeffnet */
 	short	term;
 	short	after;
 	short	count;
 	char	cpx_path[128];
-} OLD_ALPHAHEADER;			/* Fileversion 7 */
+};
 
 typedef struct
 {
 	long	id;
-	short	icon_x;			/* Position des Icons */
+	short	icon_x;		/* Position des Icons */
 	short	icon_y;
-	short	window_x;		/* Position des CPX-Fenster */
+	short	window_x;	/* Position des CPX-Fenster */
 	short	window_y;
 	short	autostart;
 } ALPHACPX;
 
-typedef struct _auto_start
+struct auto_start
 {
-	struct _auto_start *next;
+	struct auto_start *next;
 	CPX_DESC *cpx_desc;
-} AUTO_START;
-
-typedef struct
-{
-	short x;
-	short y;
-	short bstate;
-	short kstate;
-} EVNTDATA;
-
-#define graf_mkstate_eventdata(evntdata) graf_mkstate(&(evntdata)->x,&(evntdata)->y,&(evntdata)->bstate,&(evntdata)->kstate)
-
-static long
-read_file(char *name, void *dest, long offset, long len)
-{
-	long read = 0;
-	long fh;
-
-	fh = Fopen(name, O_RDONLY);
-	if (fh >= 0)
-	{
-		if (offset)
-			read = Fseek(offset, fh, SEEK_SET);
-
-		if (read == offset)
-		{
-			read = Fread(fh, len, dest);
-			if (read < 0)
-				read = 0;
-		}
-		else
-			/* failure */
-			read = 0;
-
-		Fclose(fh);
-	}
-
-	return read;
-}
-
+};
 
 /*----------------------------------------------------------------------------------------*/
 
-_KEYTAB *kt = NULL;
-AESPB aespb;
-
 short app_id;
+short vdi_handle;
 short aes_handle;
+short aes_flags;
+short aes_font;
+short aes_height;
 short pwchar;
 short phchar;
 short pwbox;
 short phbox;
 
-GRECT desk;
-WINDOW *main_window = NULL;
-
 short menu_id;
 short quit;
-short aes_flags;
-short aes_font;
-short aes_height;
 
-short vdi_handle;
+GRECT desk_grect;
+WINDOW *main_window = NULL;
 
 char help_buf[128];
 char home[128];
 char inf_name[128];
 
-ALPHAHEADER settings;
+struct alphaheader settings;
 
 CPX_LIST *cpxlist = NULL;
 CPX_DESC *cpx_desc_list = NULL;
 
 static CPX_DESC *g_open_cpx = NULL;
-static AUTO_START *auto_start_list = NULL;
+static struct auto_start *auto_start_list = NULL;
+
+/*----------------------------------------------------------------------------------------*/
+
+static _KEYTAB *kt = NULL;
 
 static short no_open_cpx;
 static short do_reload;
 static short do_close;
 static short must_read_inf = 0;
 static time_t termtime;
+
+/* internal functions */
 
 static short _cdecl handle_form_cpx(DIALOG *dialog, EVNT *events, short obj, short clicks, void *data);
 static short cpx_open_window(CPX_DESC *cpx_desc);
@@ -232,6 +205,36 @@ static void std_settings(void);
 static void init_rsrc(void);
 static void _cdecl sig_handler(long sig);
 static int init_vwork(void);
+
+/*----------------------------------------------------------------------------------------*/
+
+static long
+read_file(char *name, void *dest, long offset, long len)
+{
+	long read = 0;
+	long fh;
+
+	fh = Fopen(name, O_RDONLY);
+	if (fh >= 0)
+	{
+		if (offset)
+			read = Fseek(offset, fh, SEEK_SET);
+
+		if (read == offset)
+		{
+			read = Fread(fh, len, dest);
+			if (read < 0)
+				read = 0;
+		}
+		else
+			/* failure */
+			read = 0;
+
+		Fclose(fh);
+	}
+
+	return read;
+}
 
 /*----------------------------------------------------------------------------------------*/
 /* Service-Routine fuer CPX-Fensterdialog */
@@ -891,7 +894,7 @@ tidy_up_icons(void)
 static void
 read_inf(void)
 {
-	long offset;
+	long offset, result;
 	short version;
 	GRECT out;
 	int y,i,ww;
@@ -901,16 +904,20 @@ read_inf(void)
 	wind_calc_grect(WC_WORK, MAINWINDOWSTYLE, &settings.mw, &out);
 	ww = out.g_w;
 
-	if (read_file(inf_name, &version, offsetof(ALPHAHEADER, version), sizeof(short)) == sizeof(short))
+	result = read_file(inf_name, &version,
+			   offsetof(struct alphaheader, version),
+			   sizeof(short));
+
+	if (result == sizeof(short))
 	{
 		/* Neue Eintraege seit Fileversion 8 */
 		if (version >= 8)
-			offset = sizeof(ALPHAHEADER);
+			offset = sizeof(struct alphaheader);
 		else
-			offset = sizeof(OLD_ALPHAHEADER);
+			offset = sizeof(struct old_alphaheader);
 	}
 	else
-		offset = sizeof(ALPHAHEADER);
+		offset = sizeof(struct alphaheader);
 
 	y = 0;
 
@@ -936,15 +943,15 @@ read_inf(void)
 				}
 
 				/* Fensterposition ausserhalb des sichtbaren Bereichs? */
-				if (cpx_desc->window_x < desk.g_x)
+				if (cpx_desc->window_x < desk_grect.g_x)
 					cpx_desc->window_x = -1;
-				if (cpx_desc->window_y < desk.g_y)
+				if (cpx_desc->window_y < desk_grect.g_y)
 					cpx_desc->window_y = -1;
 
 				/* Fensterposition ausserhalb des sichtbaren Bereichs? */
-				if (cpx_desc->window_x >= (desk.g_x + desk.g_w))
+				if (cpx_desc->window_x >= (desk_grect.g_x + desk_grect.g_w))
 					cpx_desc->window_x = -1;
-				if (cpx_desc->window_y >= (desk.g_y + desk.g_h))
+				if (cpx_desc->window_y >= (desk_grect.g_y + desk_grect.g_h))
 					cpx_desc->window_y = -1;
 
 				if (cpxpos.icon_y > y)
@@ -953,17 +960,17 @@ read_inf(void)
 				/* automatisch starten? */
 				if (cpxpos.autostart && (cpx_desc->dialog == 0L))
 				{
-					AUTO_START *auto_start;
-					
+					struct auto_start *auto_start;
+
 					cpx_desc->flags |= CPXD_AUTOSTART;
-					auto_start = malloc(sizeof(AUTO_START));
-					
+
+					auto_start = malloc(sizeof(*auto_start));
 					if (auto_start)
 					{
 						auto_start->next = 0L;
 						auto_start->cpx_desc = cpx_desc;
 						list_append((void **) &auto_start_list, (void *)auto_start,
-								offsetof(AUTO_START, next));
+								offsetof(struct auto_start, next));
 					}
 				}
 				/* CPX-Icon in den Vordergrund (ans Ende der Liste) */
@@ -982,9 +989,6 @@ static void
 save_inf(void)
 {
 	long ret;
-	short handle;
-	CPX_DESC *cpx_desc;
-	ALPHACPX cpxpos;
 
 	ret = Fcreate(inf_name, 0);
 	if (ret < 0L)
@@ -992,7 +996,7 @@ save_inf(void)
 		strcpy(inf_name, home);
 		strcat(inf_name, "COPS.inf");		
 		ret = Fcreate(inf_name, 0);
-		
+
 		if (ret < 0L)
 		{
 			strcpy(inf_name, "COPS.inf");		
@@ -1002,15 +1006,20 @@ save_inf(void)
 
 	if (ret > 0L)
 	{
-		handle = (short) ret;
-		
+		short handle = (short)ret;
+
 		settings.count = list_count(cpx_desc_list, offsetof(CPX_DESC, next));
-				
-		if (Fwrite(handle, sizeof(ALPHAHEADER), &settings) == sizeof(ALPHAHEADER))
+
+		ret = Fwrite(handle, sizeof(settings), &settings);
+		if (ret == sizeof(settings))
 		{
+			CPX_DESC *cpx_desc;
+
 			cpx_desc = cpx_desc_list;
 			while (cpx_desc)
 			{
+				ALPHACPX cpxpos;
+
 				cpxpos.id = cpx_desc->old.header.cpx_id;
 				cpxpos.icon_x = cpx_desc->icon_x;
 				cpxpos.icon_y = cpx_desc->icon_y;
@@ -1020,13 +1029,15 @@ save_inf(void)
 					cpxpos.autostart = 1;
 				else
 					cpxpos.autostart = 0;
-				
-				if (Fwrite(handle, sizeof(ALPHACPX),&cpxpos) != sizeof(ALPHACPX))
+
+				ret = Fwrite(handle, sizeof(cpxpos), &cpxpos);
+				if (ret != sizeof(cpxpos))
 					break;
-			
+
 				cpx_desc = cpx_desc->next;
 			}
 		}
+
 		Fclose(handle);
 	}
 }
@@ -1311,7 +1322,7 @@ static void
 full_redraw_main_window(void)
 {
 	if (main_window)
-		redraw_window(main_window->handle, &desk);
+		redraw_window(main_window->handle, &desk_grect);
 }
 
 static void
@@ -1476,10 +1487,10 @@ draw_cpx_frames(int xof, int yof)
 
 	graf_mouse(M_OFF, 0L);
 
-	xy[0] = desk.g_x;
-	xy[1] = desk.g_y;
-	xy[2] = xy[0] + desk.g_w - 1;
-	xy[3] = xy[1] + desk.g_h - 1;
+	xy[0] = desk_grect.g_x;
+	xy[1] = desk_grect.g_y;
+	xy[2] = xy[0] + desk_grect.g_w - 1;
+	xy[3] = xy[1] + desk_grect.g_h - 1;
 
 	vs_clip(vdi_handle, 1, xy);
 
@@ -1575,7 +1586,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 		cpx_desc->info = cpx_init(cpx_desc, &cpx_desc->xctrl_pb);
 
 		/* soll kein Fenster geoeffnet werden? */
-		if ((ulong) cpx_desc->info == 1)
+		if ((unsigned long) cpx_desc->info == 1)
 			err = 0;
 		else if (cpx_desc->info) /* alles in Ordnung? */
 		{
@@ -1585,7 +1596,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 			if (cpx_open_window(cpx_desc))
 			{
 				err = 0; /* soweit hat alles geklappt */
-				cpx_desc->size.g_y += desk.g_h; /* CPX-Rechteck ausserhalb des Schirms */
+				cpx_desc->size.g_y += desk_grect.g_h; /* CPX-Rechteck ausserhalb des Schirms */
 
 				/* Form-CPX? */
 				if (cpx_call(cpx_desc, &cpx_desc->size) == 0)
@@ -1658,7 +1669,7 @@ open_cpx_context(CPX_DESC *cpx_desc)
 				if (cpx_open_window(cpx_desc))
 				{
 					err = 0; /* soweit hat alles geklappt */
-					cpx_desc->size.g_y += desk.g_h; /* CPX-Rechteck ausserhalb des Schirms */
+					cpx_desc->size.g_y += desk_grect.g_h; /* CPX-Rechteck ausserhalb des Schirms */
 
 					/* Form-CPX? */
 					if (cpx_call(cpx_desc, &cpx_desc->size) == 0)
@@ -1916,7 +1927,7 @@ do_dialog(OBJECT *tree)
 	wind_update(BEG_UPDATE);
 	wind_update(BEG_MCTRL);
 
-	graf_mkstate_eventdata(&mouse);
+	graf_mkstate_evntdata(&mouse);
 	start.g_x = mouse.x - 8;
 	start.g_y = mouse.y - 8;
 	start.g_w = 16;
@@ -2333,7 +2344,7 @@ drag_icons(void)
 
 	wind_update(BEG_UPDATE);
 	wind_update(BEG_MCTRL);
-	graf_mkstate_eventdata(&m);
+	graf_mkstate_evntdata(&m);
 
 	/* Maustaste immer noch gedrueckt? */
 	if (m.bstate == 1)
@@ -2364,7 +2375,7 @@ drag_icons(void)
 			y = n.y;
 
 			do {
-				graf_mkstate_eventdata(&n);
+				graf_mkstate_evntdata(&n);
 			}
 			while ((n.x == x) && (n.y == y) && (n.bstate == 1));
 
@@ -2479,7 +2490,7 @@ select_icons(void)
 	evnt_timer(10);
 
 	wind_update(BEG_MCTRL);
-	graf_mkstate_eventdata(&mevnt);
+	graf_mkstate_evntdata(&mevnt);
 
 	/* Maustaste noch immer gedrueckt? */
 	if (mevnt.bstate == 1)
@@ -3059,7 +3070,7 @@ cpx_main_loop(void)
 		/* sollen CPXe automatisch gestartet werden? */
 		if (auto_start_list)
 		{
-			AUTO_START *tmp = auto_start_list;
+			struct auto_start *tmp = auto_start_list;
 
 			/* aus der Autostartliste entfernen */
 			auto_start_list = tmp->next;
@@ -3501,7 +3512,7 @@ std_settings(void)
 	if (aes_flags & GAI_APTERM)
 		shel_write(SHW_INFRECGN, 1, 0, 0L, 0L); /* Programm versteht AP_TERM */
 
-	wind_get(0, WF_WORKXYWH, &desk.g_x, &desk.g_y, &desk.g_w, &desk.g_h);
+	wind_get(0, WF_WORKXYWH, &desk_grect.g_x, &desk_grect.g_y, &desk_grect.g_w, &desk_grect.g_h);
 
 	cpx_desc_list = 0L;
 	auto_start_list = 0L;	/* CPXe nicht automatisch starten */
@@ -3536,19 +3547,19 @@ std_settings(void)
 	strcpy(inf_name, home);
 	strcat(inf_name, "COPS.inf");
 
-	header_size = read_file(inf_name, &settings, 0L, sizeof(ALPHAHEADER));
-	if (header_size != sizeof(ALPHAHEADER))
+	header_size = read_file(inf_name, &settings, 0L, sizeof(struct alphaheader));
+	if (header_size != sizeof(struct alphaheader))
 	{
 		/* war auch keine alte INF-Datei ohne CPX-Eintraege... */
-		if (header_size != sizeof(OLD_ALPHAHEADER))
+		if (header_size != sizeof(struct old_alphaheader))
 		{
 			strcpy(inf_name, home);
 			strcat(inf_name, "defaults\\COPS.inf");
-			header_size =  read_file(inf_name, &settings, 0L, sizeof(ALPHAHEADER));
+			header_size =  read_file(inf_name, &settings, 0L, sizeof(struct alphaheader));
 			
-			if (header_size != sizeof(ALPHAHEADER))
+			if (header_size != sizeof(struct alphaheader))
 			{
-				if (header_size != sizeof(OLD_ALPHAHEADER))
+				if (header_size != sizeof(struct old_alphaheader))
 					settings.magic = 0L;
 			}
 		}
@@ -3558,20 +3569,20 @@ std_settings(void)
 	if ((settings.magic == 0x434f5053L) && (settings.version >= 7))
 	{
 		/* Fensterposition ausserhalb des sichtbaren Bereichs? */
-		if (settings.mw.g_x < desk.g_x)
-			settings.mw.g_x = desk.g_x;
-		if (settings.mw.g_y < desk.g_y)
-			settings.mw.g_y = desk.g_y;
-		if (settings.mw.g_x >= (desk.g_x + desk.g_w))
-			settings.mw.g_x = (desk.g_x + (desk.g_w >> 2));
-		if (settings.mw.g_y >= (desk.g_y + desk.g_h))
-			settings.mw.g_y = (desk.g_y + (desk.g_h >> 2));
+		if (settings.mw.g_x < desk_grect.g_x)
+			settings.mw.g_x = desk_grect.g_x;
+		if (settings.mw.g_y < desk_grect.g_y)
+			settings.mw.g_y = desk_grect.g_y;
+		if (settings.mw.g_x >= (desk_grect.g_x + desk_grect.g_w))
+			settings.mw.g_x = (desk_grect.g_x + (desk_grect.g_w >> 2));
+		if (settings.mw.g_y >= (desk_grect.g_y + desk_grect.g_h))
+			settings.mw.g_y = (desk_grect.g_y + (desk_grect.g_h >> 2));
 
 		/* Fenster zu breit, so dass Fuller und Size nicht erreichbar? */
-		if (settings.mw.g_w > desk.g_w)
-			settings.mw.g_w = desk.g_w;
-		if (settings.mw.g_h > desk.g_h)
-			settings.mw.g_h = desk.g_h;
+		if (settings.mw.g_w > desk_grect.g_w)
+			settings.mw.g_w = desk_grect.g_w;
+		if (settings.mw.g_h > desk_grect.g_h)
+			settings.mw.g_h = desk_grect.g_h;
 
 		if (settings.after < 1)
 			settings.after = 1;
@@ -3595,10 +3606,10 @@ std_settings(void)
 	settings.magic = 0x434f5053L; /* 'COPS' */
 	settings.version = ALPHAFILEVERSION;
 	settings.count = 0;
-	settings.mw.g_x = desk.g_w >> 2;
-	settings.mw.g_y = desk.g_h >> 2;
-	settings.mw.g_w = desk.g_w >> 1;
-	settings.mw.g_h = desk.g_h >> 1;
+	settings.mw.g_x = desk_grect.g_w >> 2;
+	settings.mw.g_y = desk_grect.g_h >> 2;
+	settings.mw.g_w = desk_grect.g_w >> 1;
+	settings.mw.g_h = desk_grect.g_h >> 1;
 	settings.booticon = 0;
 	settings.clickact = 0;
 	settings.sortmode = 1;
@@ -3768,17 +3779,22 @@ main(int argc, char *argv[])
 						{
 							CPX_DESC *cpx_desc;
 							
-							cpx_desc = list_search(cpx_desc_list, (long) path, offsetof(CPX_DESC, next), search_cpx_name);
+							cpx_desc = list_search(cpx_desc_list,
+									       (long)path,
+									       offsetof(CPX_DESC, next), search_cpx_name);
 							if (cpx_desc)
 							{
-								AUTO_START *auto_start;
+								struct auto_start *auto_start;
 								
-								auto_start = malloc(sizeof(AUTO_START));
+								auto_start = malloc(sizeof(*auto_start));
 								if (auto_start)
 								{
-									auto_start->next = 0L;
+									auto_start->next = NULL;
 									auto_start->cpx_desc = cpx_desc;
-									list_append((void **) &auto_start_list, (void *) auto_start, offsetof(AUTO_START, next));
+
+									list_append((void **) &auto_start_list,
+										    (void *)auto_start,
+										    offsetof(struct auto_start, next));
 								}
 							}
 						}

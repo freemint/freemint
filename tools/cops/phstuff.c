@@ -28,6 +28,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <mint/ssystem.h>
+
 #include "phstuff.h"
 
 
@@ -35,6 +37,119 @@
 /* CPX-Datei laden und relozieren */
 /* Funktionsresultat:	Zeiger auf den Programmstart oder 0 */
 /*----------------------------------------------------------------------------------------*/ 
+
+static void *
+load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, PH *phead, long *cmplt_size)
+{
+	void *addr = NULL;
+	long TD_len, TDB_len;
+
+	/* Laenge von Text- und Data-Segment */
+	TD_len = phead->ph_tlen + phead->ph_dlen;
+	/* Laenge von Text-, Data- und BSS-Segment */
+	TDB_len = TD_len + phead->ph_blen;
+	*cmplt_size = TDB_len;
+
+	/* Speicher fuer Text-, Data- und BSS-Segment anfordern */
+	addr = malloc(TDB_len);	
+	if (addr)
+	{
+		long relo_len;
+
+		cpx_desc->segm.text_seg = addr;
+		cpx_desc->segm.len_text = phead->ph_tlen;
+		cpx_desc->segm.data_seg = (unsigned char *)addr + phead->ph_dlen;
+		cpx_desc->segm.len_data = phead->ph_dlen;
+		cpx_desc->segm.bss_seg = (unsigned char *)addr + phead->ph_dlen + phead->ph_blen;
+		cpx_desc->segm.len_bss = phead->ph_blen;
+
+		/* Laenge der Relokationsdaten */
+		relo_len = fsize - sizeof(PH) - TD_len - phead->ph_slen;
+
+		/* Text- und Data-Segment laden */
+		if (Fread((short)handle, TD_len, addr) == TD_len)
+		{
+			/* Symboltabelle ueberspringen */
+			Fseek(phead->ph_slen, (short)handle, 1);
+
+			/* BSS-Segment loeschen */
+			memset((char *)addr + TD_len, 0, phead->ph_blen);
+
+			/* Datei relozieren */
+			if ((phead->ph_absflag == 0) && relo_len)
+			{
+				void *relo_mem;
+
+				/* Speicher fuer Relokationsdaten anfordern */
+				relo_mem = malloc(relo_len);
+				if (relo_mem)
+				{
+					if (Fread((short)handle, relo_len, relo_mem) == relo_len)
+					{
+						unsigned char *relo;
+						long relo_offset;
+
+						/* Zeiger auf die Relokationsdaten */
+						relo = (unsigned char *)relo_mem;
+						/* Startoffset fuer Relokationsdaten */
+						relo_offset = *(long *)relo;
+						relo += 4;
+
+						/* Relokationsdaten vorhanden? */
+						if (relo_offset)
+						{
+							unsigned char *code_ptr;
+							unsigned char relo_val;
+
+							/* erstes zu relozierendes Langwort */
+							code_ptr = ((unsigned char *)addr) + relo_offset;
+							*(unsigned long *)code_ptr += (unsigned long)addr;
+							
+							while ((relo_val = *relo++) != 0)
+							{
+								if (relo_val == 1)	
+									code_ptr += 254;
+								else
+								{
+									(unsigned char *)code_ptr += relo_val;
+									*(unsigned long *)code_ptr += (unsigned long)addr;
+								}
+							}
+						}
+					}
+					else
+					{
+						free(addr);
+						addr = NULL;
+					}
+
+					/* Speicher fuer Relokationsdaten freigeben */
+					free(relo_mem);	
+				}
+				else
+				{
+					free(addr);
+					addr = NULL;
+				}
+			}
+		}
+		else
+		{
+			free(addr);
+			addr = NULL;
+		}	
+	}
+
+	/* Programm geladen? */
+	if (addr)
+	{
+		/* flush cpu caches */
+		Ssystem(S_FLUSHCACHE, addr, TDB_len);
+	}
+
+	return addr;
+}
+
 void *
 load_cpx(CPX_DESC *cpx_desc, char *cpx_path, long *cmplt_size, short load_header)
 {
@@ -53,128 +168,26 @@ load_cpx(CPX_DESC *cpx_desc, char *cpx_path, long *cmplt_size, short load_header
 		if (handle > 0)
 		{
 			PH phead;
-			
+
 			if (load_header)
 				/* load CPX header */
-				Fread((short) handle, sizeof(CPXHEAD), &cpx_desc->old.header);
+				Fread((short)handle, sizeof(CPXHEAD), &cpx_desc->old.header);
 			else
-				Fseek(sizeof(CPXHEAD), (short) handle, 0);
+				Fseek(sizeof(CPXHEAD), (short)handle, 0);
 
 			xattr.size -= sizeof(CPXHEAD);
 
 			/* load program header */
-			if (Fread((short) handle, sizeof(PH), &phead) == sizeof(PH))
+			if (Fread((short)handle, sizeof(PH), &phead) == sizeof(PH))
 			{
 				/* bra.s am Anfang? */
 				if (phead.ph_branch == PH_MAGIC)
-				{
-					long TD_len;
-					long TDB_len;
-
-					/* Laenge von Text- und Data-Segment */
-					TD_len = phead.ph_tlen + phead.ph_dlen;
-					/* Laenge von Text-, Data- und BSS-Segment */
-					TDB_len = TD_len + phead.ph_blen;
-					*cmplt_size = TDB_len;
-
-					/* Speicher fuer Text-, Data- und BSS-Segment anfordern */
-					addr = malloc(TDB_len);	
-					if (addr)
-					{
-						void *relo_mem;
-						long relo_len;
-						
-						cpx_desc->segm.text_seg = addr;
-						cpx_desc->segm.len_text = phead.ph_tlen;
-						cpx_desc->segm.data_seg = (unsigned char *)addr + phead.ph_dlen;
-						cpx_desc->segm.len_data = phead.ph_dlen;
-						cpx_desc->segm.bss_seg = (unsigned char *)addr + phead.ph_dlen + phead.ph_blen;
-						cpx_desc->segm.len_bss = phead.ph_blen;
-
-						/* Laenge der Relokationsdaten */
-						relo_len = xattr.size - sizeof(PH) - TD_len - phead.ph_slen;
-
-						/* Text- und Data-Segment laden */
-						if (Fread((short)handle, TD_len, addr) == TD_len)
-						{
-							/* Symboltabelle ueberspringen */
-							Fseek(phead.ph_slen, (short)handle, 1);
-	
-							/* BSS-Segment loeschen */
-							memset((char *)addr + TD_len, 0, phead.ph_blen);
-
-							/* Datei relozieren */
-							if ((phead.ph_absflag == 0) && relo_len)
-							{	
-								/* Speicher fuer Relokationsdaten anfordern */
-								relo_mem = malloc(relo_len);
-
-								if (relo_mem)
-								{
-									if (Fread((short)handle, relo_len, relo_mem) == relo_len)
-									{
-										unsigned char *relo;
-										long relo_offset;
-
-										/* Zeiger auf die Relokationsdaten */
-										relo = (unsigned char *)relo_mem;
-										/* Startoffset fuer Relokationsdaten */
-										relo_offset = *(long *)relo;
-										relo += 4;
-
-										/* Relokationsdaten vorhanden? */
-										if (relo_offset)
-										{
-											unsigned char *code_ptr;
-											unsigned char relo_val;
-		
-											/* erstes zu relozierendes Langwort */
-											code_ptr = ((unsigned char *)addr) + relo_offset;
-											*(unsigned long *)code_ptr += (unsigned long) addr;
-											
-											while ((relo_val = *relo++) != 0)
-											{
-												if (relo_val == 1)	
-													code_ptr += 254;
-												else
-												{
-													(unsigned char *)code_ptr += relo_val;
-													*(unsigned long *)code_ptr += (unsigned long) addr;
-												}
-											}
-										}
-									}
-									else
-									{
-										free(addr);
-										addr = 0L;
-									}
-									/* Speicher fuer Relokationsdaten freigeben */
-									free(relo_mem);	
-								}
-								else
-								{
-									free(addr);
-									addr = 0L;
-								}
-							}
-						}
-						else
-						{
-							free(addr);
-							addr = 0L;
-						}	
-					}
-				}
+					/* load and relocate */
+					addr = load_and_reloc(cpx_desc, handle, xattr.size, &phead, cmplt_size);
 			}
 			Fclose((short)handle);
 		}
 	}
-
-	/* Programm geladen? */
-	if (addr)
-		/* XXX Caches loeschen */
-		; /* Supexec(clear_cpu_caches); */
 
 	return addr;
 }

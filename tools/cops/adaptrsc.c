@@ -273,18 +273,18 @@ is_userdef_title(OBJECT *obj)
 /* Funktionsergebnis:	- */
 /* objs:		Zeiger auf die Objekte */
 /*	no_objs:	Anzahl der Objekte */
-/*	aes_flags:	Informationen ueber das AES */
+/*	aesflags:	Informationen ueber das AES */
 /*	rslct:		Zeiger auf Image fuer selektierten Radio-Button */
 /*	rdeslct:	Zeiger auf Image fuer deselektierten Radio-Button */
 /*----------------------------------------------------------------------------------------*/
 void
-substitute_objects(OBJECT *objs, u_short no_objs, short aes_flags, OBJECT *rslct, OBJECT *rdeslct)
+substitute_objects(OBJECT *objs, u_short no_objs, short aesflags, OBJECT *rslct, OBJECT *rdeslct)
 {
 	OBJECT	*obj;
 	u_short	i;
 	u_short	no_subs;
 	
-	if ((aes_flags & GAI_MAGIC) && (magic_version >= 0x0300)) /* MagiC-AES? */
+	if ((aesflags & GAI_MAGIC) && (magic_version >= 0x0300)) /* MagiC-AES? */
 	{
 		substitute_ublks = 0L;
 		return;	
@@ -347,7 +347,7 @@ substitute_objects(OBJECT *objs, u_short no_objs, short aes_flags, OBJECT *rslct
 				{
 					state &= 0xff00; /* nur das obere Byte ist interessant */
 
-					if (aes_flags & GAI_MAGIC) /* altes MagiC-AES? */
+					if (aesflags & GAI_MAGIC) /* altes MagiC-AES? */
 					{
 						if ((type == G_BUTTON) && (state == 0xfe00)) /* Gruppenrahmen? */
 						{
