@@ -35,6 +35,7 @@
 
 #include "app_man.h"
 #include "c_window.h"
+#include "rectlist.h"
 #include "k_main.h"
 #include "k_mouse.h"
 #include "draw_obj.h"
@@ -170,6 +171,26 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->stuff = new_desktop;
 	wi->stufftype = STUFF_IS_WT;
 	wi->destruct = free_xawidget_resources;
+
+	{
+		struct xa_window *wl = root_window;
+		struct xa_rect_list *rl;
+
+		make_rect_list(wl, true);
+		rl = wl->rect_start;
+		while (rl)
+		{
+			set_clip(&rl->r);
+			draw_window(0, wl);
+			if (wl->send_message)
+			{
+				wl->send_message(0, wl, NULL,
+					WM_REDRAW, 0, 0, wl->handle,
+					rl->r.x, rl->r.y, rl->r.w, rl->r.h);
+			}
+			rl = rl->next;
+		}
+	}
 }
 static void
 CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)

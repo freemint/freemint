@@ -111,6 +111,7 @@ menu = leave
 #
 #toppage = faint
 
+#
 # next_active = 'client' or 'window' (default is 'window')
 # Selects wether the previous active application or
 # the owner of the previous topped (or only) window
