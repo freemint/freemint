@@ -535,13 +535,8 @@ close_filesys (void)
 			FILEPTR *f;
 			
 			f = p->p_fd->ofiles [i];
-			if (f)
-			{
-				if (p->wait_q == TSR_Q || p->wait_q == ZOMBIE_Q)
-					ALERT ("Open file for dead process?");
-				
-				do_close (p, f);
-			}
+			p->p_fd->ofiles [i] = NULL;
+			if (f) do_close (p, f);
 		}
 	}
 }
@@ -621,14 +616,14 @@ changedrv (ushort d)
 			    
 			    fd->ofiles[i] = (FILEPTR *) 1;
 			    
-			    r = fp_alloc (p, &f);
+			    r = FP_ALLOC (p, &f);
 			    if (!r)
 			    {
 			    	r = do_open (&f, "U:\\DEV\\NULL", O_RDWR, 0, NULL);
 			    	if (r)
 			    	{
 			    		fd->ofiles[i] = NULL;
-			    		fp_free (f);
+			    		FP_FREE (f);
 			    	}
 			    	else
 			    		fd->ofiles[i] = f;
@@ -641,17 +636,17 @@ changedrv (ushort d)
 		/* terminate any active directory searches on the drive */
 		for (i = 0; i < NUM_SEARCH; i++)
 		{
-			dirh = &p->srchdir[i];
-			if (p->srchdta[i] && dirh->fc.fs && dirh->fc.dev == d)
+			dirh = &fd->srchdir[i];
+			if (fd->srchdta[i] && dirh->fc.fs && dirh->fc.dev == d)
 			{
 				TRACE (("closing search for process %d", p->pid));
 				release_cookie (&dirh->fc);
 				dirh->fc.fs = 0;
-				p->srchdta[i] = 0;
+				fd->srchdta[i] = 0;
 			}
 		}
 
-		for (dirh = p->searches; dirh; dirh = dirh->next)
+		for (dirh = fd->searches; dirh; dirh = dirh->next)
 		{
 			/* If this search is on the changed drive, release
 			 * the cookie, but do *not* free it, since the

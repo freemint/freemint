@@ -166,6 +166,8 @@ free_mem (struct proc *p)
 	if (--p_mem->links > 0)
 		return;
 	
+	DEBUG (("freeing p_mem for %s", p->name));
+	
 	/* free all memory
 	 * if mflags & M_KEEP then attach it to process 0
 	 */
@@ -281,6 +283,11 @@ copy_fd (struct proc *p)
 		}
 	}
 	
+	/* clear directory search info */
+	bzero (fd->srchdta, NUM_SEARCH * sizeof (DTABUF *));
+	bzero (fd->srchdir, sizeof (fd->srchdir));
+	fd->searches = NULL;
+	
 	TRACE (("copy_fd: ok (%lx)", fd));
 	return fd;
 }
@@ -297,6 +304,8 @@ free_fd (struct proc *p)
 	
 	if (--p_fd->links > 0)
 		return;
+	
+	DEBUG (("freeing p_fd for %s", p->name));
 	
 	/* release the controlling terminal,
 	 * if we're the last member of this pgroup
@@ -359,6 +368,37 @@ found:
 		{
 			p_fd->ofiles[i] = NULL;
 			do_close (p, f);
+		}
+	}
+	
+	/* close any unresolved Fsfirst/Fsnext directory searches */
+	for (i = 0; i < NUM_SEARCH; i++)
+	{
+		if (p_fd->srchdta[i])
+		{
+			DIR *dirh = &p_fd->srchdir[i];
+			xfs_closedir (dirh->fc.fs, dirh);
+			release_cookie (&dirh->fc);
+			dirh->fc.fs = 0;
+		}
+	}
+	
+	/* close pending opendir/readdir searches */
+	{
+		register DIR *dirh = p_fd->searches;
+		
+		while (dirh)
+		{
+			register DIR *nexth = dirh->next;
+			
+			if (dirh->fc.fs)
+			{
+				xfs_closedir (dirh->fc.fs, dirh);
+				release_cookie (&dirh->fc);
+			}
+			
+			kfree (dirh);
+			dirh = nexth;
 		}
 	}
 	
@@ -430,6 +470,8 @@ free_cwd (struct proc *p)
 	if (--p_cwd->links > 0)
 		return;
 	
+	DEBUG (("freeing p_cwd for %s", p->name));
+	
 	/* release the directory cookies held by the process */
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
@@ -486,6 +528,8 @@ free_sigacts (struct proc *p)
 	
 	if (--p_sigacts->links > 0)
 		return;
+	
+	DEBUG (("freeing p_sigacts for %s", p->name));
 	
 	kfree (p_sigacts);
 }
