@@ -586,8 +586,19 @@ free_wt(XA_TREE *wt)
 #endif
 	if (wt->tree && (wt->flags & WTF_TREE_ALLOC))
 	{
-		DIAGS(("  --- freed obtree %lx", wt->tree));
-		kfree(wt->tree);
+		if (wt->flags & WTF_TREE_CALLOC)
+		{
+			DIAGS(("  --- kfreed obtree %lx", wt->tree));
+		
+			free_object_tree(wt->owner, wt->tree);
+		}
+		else
+		{
+			DIAGS(("  --- ufreed obtree %lx", wt->tree));
+		
+			free_object_tree(C.Aes, wt->tree);
+		}
+		wt->tree = NULL;
 	}
 #if GENERATE_DIAGS
 	else
@@ -612,13 +623,17 @@ free_wt(XA_TREE *wt)
 	}
 }
 
-void
+bool
 remove_wt(XA_TREE *wt)
 {
-	remove_from_wtlist(wt);
-	free_wt(wt);
+	if ((wt->flags & (WTF_STATIC|WTF_AUTOFREE)) == WTF_AUTOFREE)
+	{
+		remove_from_wtlist(wt);
+		free_wt(wt);
+		return true;
+	}
+	return false;
 }
-
 
 void
 display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
@@ -957,9 +972,11 @@ free_xawidget_resources(struct xa_widget *widg)
 				XA_TREE *wt = widg->stuff;
 				DIAGS(("  --- stuff is wt=%lx in widg=%lx",
 					wt, widg));
-				//remove_wt(wt);
-				wt->widg = NULL;
-				wt->wind = NULL;
+				if (!remove_wt(wt))
+				{
+					wt->widg = NULL;
+					wt->wind = NULL;
+				}
 				break;
 			}
 			default:

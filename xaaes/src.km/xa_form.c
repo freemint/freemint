@@ -152,7 +152,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 			{
 				kfree(wt->tree);
 				wt->tree = NULL;
-				wt->flags &= ~WTF_TREE_ALLOC;
+				wt->flags &= ~(WTF_TREE_ALLOC|WTF_TREE_CALLOC);
 			}
 			/* delete on the next possible time */
 			delayed_delete_window(lock, wind);

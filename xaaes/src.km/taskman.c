@@ -541,7 +541,7 @@ open_taskmanager(enum locks lock)
 		wt->exit_form = taskmanager_form_exit;
 
 		/* set a scroll list widget */
-		set_slist_object(lock, wt, form, TM_LIST, NULL, NULL, NULL, NULL, "Client Applications", NULL, NICE_NAME);
+		set_slist_object(lock, wt, form, dialog_window, TM_LIST, NULL, NULL, NULL, NULL, "Client Applications", NULL, NULL, NICE_NAME);
 
 		/* Set the window destructor */
 		dialog_window->destructor = taskmanager_destructor;
@@ -614,9 +614,9 @@ open_kill_or_wait(enum locks lock, struct xa_client *client)
 #endif
 
 static void
-handle_launcher(enum locks lock, const char *path, const char *file)
+handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
-	extern char fs_pattern[];
+	//extern char fs_pattern[];
 	char parms[200], *t;
 	
 	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
@@ -628,10 +628,10 @@ handle_launcher(enum locks lock, const char *path, const char *file)
 			*t = '\\';
 	}		
 
-	close_fileselector(lock);
+	close_fileselector(lock, fs);
 
 	DIAGS(("launch: \"%s\"", parms+1));
-	sprintf(cfg.launch_path, sizeof(cfg.launch_path), "%s%s", path, fs_pattern);
+	sprintf(cfg.launch_path, sizeof(cfg.launch_path), "%s%s", path, fs->fs_pattern);
 	launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
 }
 
@@ -639,6 +639,8 @@ handle_launcher(enum locks lock, const char *path, const char *file)
 static void
 open_launcher(enum locks lock)
 {
+	struct fsel_data *fs;
+
 	if (!*cfg.launch_path)
 	{
 		cfg.launch_path[0] = d_getdrv() + 'a';
@@ -647,11 +649,14 @@ open_launcher(enum locks lock)
 		cfg.launch_path[3] = '*';
 		cfg.launch_path[4] = 0;
 	}
-
-	open_fileselector(lock, C.Aes,
-			  cfg.launch_path,
-			  NULL, "Launch Program",
-			  handle_launcher, NULL);
+	fs = kmalloc(sizeof(*fs));
+	if (fs)
+	{
+		open_fileselector(lock, C.Aes, fs,
+				  cfg.launch_path,
+				  NULL, "Launch Program",
+				  handle_launcher, NULL);
+	}
 }
 #endif
 
@@ -666,7 +671,7 @@ sysalerts_form_exit(struct xa_client *Client,
 {
 	enum locks lock = 0;
 	OBJECT *form = wt->tree;
-	short item = fr->obj; //wt->current & 0xff;
+	short item = fr->obj;
 
 	switch (item)
 	{
@@ -776,7 +781,7 @@ open_systemalerts(enum locks lock)
 		wt->exit_form = sysalerts_form_exit;
 
 		/* HR: set a scroll list widget */
-		set_slist_object(lock, wt, form, SYSALERT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, 256);
+		set_slist_object(lock, wt, form, dialog_window, SYSALERT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 256);
 
 		/* Set the window destructor */
 		dialog_window->destructor = systemalerts_destructor;
