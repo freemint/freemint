@@ -652,7 +652,7 @@ out:
 }
 
 unsigned long
-XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	short wdoex = pb->intin[0];
 	short wisgr = pb->intin[1];
@@ -821,7 +821,7 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
  * given, NOT that of the parent.
  */
 unsigned long
-XA_shell_read(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_read(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	char *name = (char *)pb->addrin[0];
 	char *tail = (char *)pb->addrin[1];
@@ -960,7 +960,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 }
 
 unsigned long
-XA_shell_find(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	char *fn = (char *)(pb->addrin[0]);
 	char *path;
@@ -1176,7 +1176,7 @@ put_env(enum locks lock, const char *cmd)
  *     it is necessary to make a permanent copy of the variable.
  */
 unsigned long
-XA_shell_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	char **p = (char **)pb->addrin[0];
 	const char *name = (const char *)pb->addrin[1];
