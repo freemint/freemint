@@ -616,6 +616,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			info->cmd_tail = save_tail;
 			info->tail_is_heap = true;
+			save_tail = NULL;
 
 			strcpy(info->cmd_name, save_cmd);
 
@@ -628,12 +629,14 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			ikill(p->pid, SIGKILL);
 			ret = ENOMEM;
 		}
-		//cpush(NULL, -1);
 	}
 
 out:
 	if (tail != argvtail)
 		kfree(tail);
+
+	if (save_tail)
+		kfree(save_tail);
 
 	DIAG((D_shel, 0, "Launch for %s returns child %d (bp 0x%lx)",
 		c_owner(caller), ret, p ? p->p_mem->base : NULL));
