@@ -187,10 +187,40 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->cmd_tail = "\0";
 	client->wt.edit_obj = -1;
 	client->options = default_options;
-	client->type = APP_APPLICATION;
+
+	/*
+	 * Have to find out if this is an acc or not,
+	 * but this does not work yet..
+	*/
+	{
+		int i, j;
+		char ext[6];
+
+		i = strlen(client->p->fname) - 4;
+		if (i > 0)
+		{
+			for (j = 0; j < 5; j++)
+				ext[j] = toupper(client->p->fname[i++]);
+			
+			if ( !strcmp(".ACC", ext ) )
+			{
+				DIAG((D_appl, client, "appl_init: ACCESSORY (%s)", ext));
+				client->type = APP_ACCESSORY;
+			}
+			else
+			{
+				DIAG((D_appl, client, "appl_init: APPLICATION (%s)", ext));
+				client->type = APP_APPLICATION;
+			}
+		}
+		else
+		{
+				DIAG((D_appl, client, "appl_init: Gottabe APP"));
+				client->type = APP_APPLICATION;
+		}
+	}
 
 	new_client(lock, client);
-	client->blockcnt = 0;
 
 	/* Get the client's home directory (where it was started)
 	 * - we use this later to load resource files, etc

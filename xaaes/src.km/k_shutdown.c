@@ -33,7 +33,6 @@
 #include "nkcc.h"
 #include "objects.h"
 #include "xalloc.h"
-
 #include "xa_rsrc.h"
 
 #include "mint/signal.h"
