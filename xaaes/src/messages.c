@@ -261,11 +261,11 @@ send_a_message(LOCK lock, short dest, union msg_buf *msg)
 	{
 		union msg_buf *clnt_buf;
 #if GENERATE_DIAGS
-	    if (dest_client->waiting_pb == NULL)
-	    {
-	    	DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s\n", c_owner(dest_client)));
-	    	return;
-	    }
+		if (dest_client->waiting_pb == NULL)
+		{
+			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s\n", c_owner(dest_client)));
+			return;
+		}
 #endif
 		/* If the client is waiting on a multi, the response is  */
 		if (dest_client->waiting_for & XAWAIT_MULTI)
@@ -285,6 +285,14 @@ send_a_message(LOCK lock, short dest, union msg_buf *msg)
 
 		/* Fill in the client's message buffer */
 		*clnt_buf = *msg;
+
+#if 0
+		{
+			short *c = msg;
+			if ( c[0] == 0x4711 && (!strcmp("  CAB", dest_client->name) || !strcmp("  CAB ", dest_client->name)) )
+				display("message sent to '%s'\n", dest_client->name);
+		}
+#endif
 
 		DIAG((D_m, NULL, "Send message %s to %s\n", pmsg(msg->s.msg), c_owner(dest_client)));
 		/* Write success to client's reply pipe to unblock the process */
