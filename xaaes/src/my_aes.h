@@ -2,11 +2,11 @@
 #ifndef _my_aes_h
 #define _my_aes_h
 
-extern short my_gl_apid;
-extern short my_gl_ap_version;
+extern short my_global_aes[];
 
-short my_appl_init(void);
-short my_appl_exit(void);
-short my_graf_handle(short *Wchar, short *Hchar, short *Wbox, short *Hbox);
+/* gemlib */
+extern short	mt_appl_init    (short *global_aes);
+extern short	mt_appl_exit    (short *global_aes);
+extern short	mt_graf_handle	(short *Wchar, short *Hchar, short *Wbox, short *Hbox, short *global_aes);
 
 #endif /* _my_aes_h */
