@@ -55,7 +55,5 @@ extern short bconbdev;
 long _cdecl bflush (void);
 long _cdecl do_bconin (int dev);
 int checkkeys (void);
-void init_vectors (void);
-void unlink_vectors  (long start, long end);
 
 # endif /* _bios_h */
