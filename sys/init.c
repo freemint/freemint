@@ -1072,7 +1072,9 @@ init (void)
 	load_keytbl();
 	
 	/* Load the unicode table */
+# ifdef SOFT_UNITABLE
 	init_unicode();
+# endif
 
 	/* Make newline before external modules print out own messages */
 	boot_print("\r\n");
