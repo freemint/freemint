@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
 		do_debug = 1;
 #endif
-/*		debug_init("ntw", Datei, "i:\\ntw.log");*/
-		debug_init("ntw", Con, NULL);
+		debug_init("ntw", Datei, "/tmp/toswin2.log");
+		/* debug_init("ntw", Con, NULL); */
 	}
 
 	(void)Pdomain(1);

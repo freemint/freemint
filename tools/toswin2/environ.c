@@ -4,7 +4,7 @@
 
 #include "global.h"
 #include "environ.h"
-
+#include "ansicol.h"
 
 static char TERMprefix[] = "TERM";
 static char LINESprefix[] = "LINES";
@@ -12,6 +12,7 @@ static char COLSprefix[] = "COLUMNS";
 static char HOMEprefix[] = "HOME";
 static char SHELLprefix[] = "SHELL";
 static char ARGVprefix[] = "ARGV";
+static char COLORTERMprefix[] = "COLORTERM";
 
 /*
  * Aktuelles AES-Environment auslesen.
@@ -141,10 +142,11 @@ char *normal_env(int cols, int rows, int term)
 
 	/* Eigene Vars eintragen */
 	if (term == MODE_VT100)
-		put_env(new, TERMprefix, "tw100");
+		put_env(new, TERMprefix, tw100_env);
 	else
-		put_env(new, TERMprefix, "tw52");
-
+		put_env(new, TERMprefix, tw52_env);
+	put_env (new, COLORTERMprefix, colorterm_env);
+	
 	_ltoa(rows, str, 10);
 	put_env(new, LINESprefix, str);
 
@@ -175,9 +177,10 @@ char *shell_env(int cols, int rows, int term, char *homedir, char *shell, bool l
 
 	/* Eigene Vars eintragen */
 	if (term == MODE_VT100)
-		put_env(new, TERMprefix, "tw100");
+		put_env(new, TERMprefix, tw100_env);
 	else
-		put_env(new, TERMprefix, "tw52");
+		put_env(new, TERMprefix, tw52_env);
+	put_env (new, COLORTERMprefix, colorterm_env);
 
 	_ltoa(rows, str, 10);
 	put_env(new, LINESprefix, str);
@@ -229,9 +232,10 @@ char *share_env(int cols, int rows, int term, char *prgname, char *arg, char *en
 	
 	/* Eigene Vars eintragen */
 	if (term == MODE_VT100)
-		put_env(new, TERMprefix, "tw100");
+		put_env(new, TERMprefix, tw100_env);
 	else
-		put_env(new, TERMprefix, "tw52");
+		put_env(new, TERMprefix, tw52_env);
+	put_env (new, COLORTERMprefix, colorterm_env);
 
 	_ltoa(rows, str, 10);
 	put_env(new, LINESprefix, str);

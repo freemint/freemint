@@ -20,7 +20,12 @@ struct renderer {
 	int bright;
 	int hbright;
 	unsigned long bright_effects;
+	unsigned long hbright_effects;
 } renderer[8];
+
+char* tw52_env = "tw52";
+char* tw100_env = "tw100";
+char* colorterm_env = "1";
 
 static struct rgb ansi_colors[8 * 3] = {
 		{    0,    0,    0 },	/* Bright black.  */
@@ -82,6 +87,12 @@ init_ansi_colors (const short* work_out)
 	if (ncolors > 256)
 		ncolors = 256;
 	
+	if (ncolors < 8) {
+		tw52_env = "tw52-m";
+		tw100_env = "tw100-m";
+		colorterm_env = "0";
+	}
+	
 	for (i = 0; i < ncolors; ++i) {
 		struct rgb rgb;
 		int ansi_color;
@@ -102,13 +113,39 @@ init_ansi_colors (const short* work_out)
 	}
 	
 	/* Now fill up our renderer.  */
-	for (i = 0; i < 8; ++i) {
+	for (i = 0; i < 8 && i < ncolors; ++i) {
 		renderer[i].bright = diffs[3 * i].index;
 		renderer[i].normal = diffs[3 * i + 1].index;
+		if (renderer[i].bright == renderer[i].normal)
+			renderer[i].bright_effects = CE_BOLD;
+		else 
+			renderer[i].bright_effects = 0;
 		renderer[i].hbright = diffs[3 * i + 2].index;
-		renderer[i].bright_effects = 0;
+		if (renderer[i].hbright == renderer[i].normal)
+			renderer[i].hbright_effects = CE_LIGHT;
+		else 
+			renderer[i].hbright_effects = 0;
 	}
-	renderer[ANSI_BLACK].bright_effects = CE_BOLD;
+
+	for (i = 0; i < 8; ++i) {
+		struct rgb rgb;
+		int normal, bright, hbright;
+		
+		normal = renderer[i].normal;
+		bright = renderer[i].bright;
+		hbright = renderer[i].hbright;
+		
+		debug ("ANSI color #%d:\n", i);
+		vq_color (vdi_handle, renderer[i].bright, 1, (short*) &rgb);
+		debug ("  Bright:      (%04d|%04d|%04d), effects: 0x%08x\n",
+		       rgb.red, rgb.green, rgb.blue, renderer[i].bright_effects);
+		vq_color (vdi_handle, renderer[i].normal, 1, (short*) &rgb);
+		debug ("  Normal:      (%04d|%04d|%04d), effects: 0x%08x\n",
+		       rgb.red, rgb.green, rgb.blue, 0);
+		vq_color (vdi_handle, renderer[i].hbright, 1, (short*) &rgb);
+		debug ("  Half-bright: (%04d|%04d|%04d), effects: 0x%08x\n",
+		       rgb.red, rgb.green, rgb.blue, renderer[i].hbright_effects);
+	}
 }
 
 void
@@ -127,7 +164,7 @@ set_ansi_fg_color (TEXTWIN* v, int color)
 			CE_BOLD;
 	} else if (color == 'N') {
 		v->term_cattr = (v->term_cattr & ~CE_ANSI_EFFECTS) |
-			~CE_LIGHT;
+			CE_LIGHT;
 	}
 }
 
@@ -211,6 +248,8 @@ use_ansi_colors (TEXTWIN* v, unsigned long flag,
 					renderer[*fgcolor].bright_effects;
 				*fgcolor = renderer[*fgcolor].bright;
 			} else if (flag & CE_LIGHT) {
+				*texteffects |= 
+					renderer[*fgcolor].hbright_effects;
 				*fgcolor = renderer[*fgcolor].hbright;
 			} else {
 				*fgcolor = renderer[*fgcolor].normal;
