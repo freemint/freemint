@@ -213,8 +213,8 @@ when necessary. Basically you must remember that in FreeMiNT,
 unlike in TOS, the letter casing you use to reference files and
 folders, @{0B}does@{0} matter.
 
-Respecting that, we won't use pathnames like C:\MULTITOS\MINT.CNF
-preferring the form c:\multitos\mint.cnf instead. This is different
+Respecting that, we won't use pathnames like C:\MINT\MINT.CNF
+preferring the form c:\mint\mint.cnf instead. This is different
 from what the TOS (and even MultiTOS) documentation says,
 eventhough it is called @{0B}compatibility convention@{0} of storing
 file- and pathnames. Such a form of a pathname is accepted by all
@@ -224,7 +224,7 @@ Apart from that there are yet some more, equally valid conventions.
 One of them is similar to the convention discussed above, all the
 difference is that files are dereferenced by pathnames relative to
 the drive u:. So the above example may be also expressed as
-u:\c\multitos\mint.cnf. This is accepted by all MiNT derivatives,
+u:\c\mint\mint.cnf. This is accepted by all MiNT derivatives,
 including (for instance) MagiC.
 
 The FreeMiNT, being an Un*x like OS, also accepts the slash
@@ -232,13 +232,13 @@ character ('/') as a separator in pathnames - where TOS only
 accepted the backslash ('\'). The slash separator is automatically
 forwarded by the FreeMiNT core to the actual filesystem drivers and
 is considered identical to the backslash. The above example may be
-expressed either as c:/multitos/mint.cnf or u:/c/multitos/mint.cnf.
+expressed either as c:/mint/mint.cnf or u:/c/mint/mint.cnf.
 This is (so far) only understood by FreeMiNT.
 
 Finally, the so called Un*x convention is in use, which looks
 similar to the one discussed above, with notable except it does not
 use drive letters. Our example looks then like this:
-/c/multitos/mint.cnf. In this case the u: drive is automatically
+/c/mint/mint.cnf. In this case the u: drive is automatically
 assumed as the top directory referenced. However, and this is the
 most important difference between this convention and those three
 discussed above, this 'assumption' is made not by the FreeMiNT
@@ -253,8 +253,8 @@ particular case.
 
 In configuration files for system components like the AES or the
 kernel itself, you should use the second convention (i.e. the
-'u:\c\multitos\mint.cnf' thing). The Un*x convention
-('/c/multitos/mint.cnf') should be only used with software ported
+'u:\c\mint\mint.cnf' thing). The Un*x convention
+('/c/mint/mint.cnf') should be only used with software ported
 from Unices.
 
 
@@ -339,8 +339,10 @@ With one notable exception: you @{0B}must@{0} rename the executable
 to mintnp.prg or mntnp.prg (both forms are valid), if you want to
 switch off the hardware memory protection mechanism (this changed
 as of FreeMiNT 1.16.0, see the section The mint.ini file
-somewhere within this document). See the chapter Understanding the
-memory protection mechanism for further details.
+somewhere within this document).
+
+See the chapter
+Understanding the memory protection mechanism for further details.
 
 You may want to do so, if you're heavily using TOS software, that
 is not compatible with the memory protected mode. However, we
@@ -357,23 +359,21 @@ After the FreeMiNT is loaded, it performs a search for its
 configuration file (mint.cnf) and other modules like extended
 filesystem drivers (XFS) or extended device drivers (XDD).
 
-These files are searched and can be put in one of three places:
-
-1) root directory of your boot drive (usually c:\)
-
-2) MultiTOS folder on your boot drive (usually c:\multitos\). This
-   is what most users do keeping the Atari MultiTOS tradition.
-
-3) MiNT folder on your boot drive (usually c:\mint\).
-
-@{0B}Any@{0} of these places to put the FreeMiNT associated files is
-perfectly legal, only remember, that you must act consequently. If
-the mint.cnf file is put into c:\ and XDD/XFS modules into
-c:\multitos\, the result may be far from the desired one.
+All these system files have to be located in the subdirectory
+/mint/ located on the boot drive (e.g. c:/mint/). This is the only 
+place where the FreeMiNT 1.16 will search for its configuration files 
+and modules.
 
 You may remember as a practical rule, that the kernel loads all its
 modules and configuration files from the same directory, where it has
 found the mint.cnf file.
+
+Optionally, you can put configuration files and modules also to the 
+subdirectory, that is named after the FreeMiNT kernel version number. 
+For example, the kernel version 1.16.0 accepts /mint/1-16-0/ as a 
+folder, where you can store the appropriate filesand modules. This 
+allows to keep configuration files and modules for different kernel 
+versions on the disk separately without a risk to mix them up.
 
 Also, unlike it is with the auto folder stuff, the execution
 sequence of the XDD and XFS modules does not matter - they can be
@@ -502,6 +502,8 @@ cd u:\
 
 just before starting the init program.
 
+FreeMiNT 1.16.0 does this automatically.
+
 @endnode
 
 
@@ -536,7 +538,7 @@ Be sure you do not create nested aliases!
 With this one another text file can be included
 as a portion of the mint.cnf script:
 
-include u:/c/multitos/config.cnf
+include u:/c/mint/config.cnf
 
 @endnode
 
@@ -609,7 +611,7 @@ of binary data. A typical environment variable looks like this:
 @{0B}@{0}
 or
 @{0B}
-@{0B}PATH=u:/c/multitos;u:/d/programs
+@{0B}PATH=u:/c/mint;u:/d/programs
 @{0B}@{0}
 The environment variables usually control application software
 (including shells), but do not control the system itself, which
@@ -641,16 +643,11 @@ with a value of 'value', you do the following:
 
 Neither one is 'better' or 'worse', exactly like neither type of
 the shell mentioned above is really superior over the other, though
-of course there always are some @{"user preferences and habits" LINK "user preferences and habits"}.
+of course there always are some user preferences and habits.
 
+See also:
 
-@endnode
-
-
-@pnode "user preferences and habits"
-
-Most people prefer bash, but it does not apply
-to the author of this manual, for example. :-)
+Environment variables set by the kernel
 
 @endnode
 
@@ -660,7 +657,7 @@ to the author of this manual, for example. :-)
 determines the device for printing
 the FreeMiNT kernel's debug messages.
 
-default is /dev/console.
+default is 2 (/dev/console).
 
 @endnode
 
@@ -670,7 +667,7 @@ default is /dev/console.
 controls verbosity of the FreeMiNT
 kernel debug messages.
 
-default is 0.
+default is 1.
 
 Notice the distribution kernels
 support only basic debug information.
@@ -829,10 +826,15 @@ executed. If this fails as well - the shell is optional, so it
 can be omitted while compiling the kernel - the system will halt.
 
 In such a situation old MINT kernels executed the GEM in ROM.
-This possibility has been removed mainly because the ROM GEM
-cannot be shutdown, and forces to switch the power off without
-flushing the filesystem caches, thus endangering the consistency
-of the data on your harddisk.
+This possibility has been retained: if you want to execute
+the ROM AES, you have to put
+
+GEM=ROM
+
+in your mint.cnf file. However, remember, that you do it at your
+own risk: ROM AES cannot be shutdown, and forces to switch the power 
+off without flushing the filesystem caches, thus endangering the 
+consistency of the data on your harddisk.
 
 @endnode
 
@@ -843,13 +845,25 @@ of the data on your harddisk.
 @{0B}INITIALMEM=x@{0}
 This specifies the maximum amount of memory allocated for program's
 TPA (i.e. this is everything over the size of the binary plus the
-size of the BSS segment). Unlike the MAXMEM, the INITIALMEM does
-not limit the amount of memory available for processes by explicit
-allocation. The 'x' is measured in kilobytes.
+size of the BSS segment).
+
+Unlike the MAXMEM, the INITIALMEM does not limit the amount of memory 
+available for processes by explicit allocation. The 'x' is measured 
+in kilobytes.
 @{0B}
 @{0B}MAXMEM=x@{0}
 Specifies the maximum amount of memory that may be used by a
 process. The 'x' is measured in kilobytes.
+
+WARNING: many users tend to understand this option wrong. They set 
+MAXMEM=1024, and then complain that the system does not "see" more 
+than 1 MB of the memory. The system obviously does, just the program 
+the user uses to interrogate the total amount of memory doesn't, 
+because such a program is a process, and is limited by thuis keyword 
+to 1 MB.
+
+Generally, don't use MAXMEM. If you want to limit the initial TPA 
+size, use INITIALMEM keyword.
 
 @endnode
 
@@ -896,7 +910,7 @@ compiler). The default is 'yes' (optimizations on).
 @toc "The mint.cnf file"
 @{0B}
 @{0B}SLICES=x@{0}
-Controls the number of 5ms time slices to give to processes before
+Controls the number of 20ms time slices to give to processes before
 they will be preempted. The default (2) is usually the best value;
 a higher value (e.g. 3) will cause CPU intensive tasks to receive
 more time, while a lower one (e.g. 1) will favour interactive tasks
@@ -1085,21 +1099,25 @@ sln u:/pipe/pty.K u:/dev/pty.K
 # Setting defaults for programs linked with MiNT C Library.
 # These are not only GNU programs, but also a lot of GEM
 # applications, like TosWin, QED etc.
+#
+# FreeMiNT 1.16.0 sets these two variables automatically.
 
-setenv PCONVERT PATH,HOME,SHELL
-setenv UNIXMODE /brUs
+#setenv PCONVERT PATH,HOME,SHELL
+#setenv UNIXMODE /brUs
 
 # Default path
 
 setenv PATH /boot/mint/bin;/sbin;/bin;/usr/sbin;/usr/bin
 
 # Default path for SLBs (MagiC-style "shared libraries")
+#
+# FreeMiNT 1.16 sets this by default to $SYSDIR (see:
+# Environment variables set by the kernel). Note that
+# kernel versions prior to 1.16.0 won't treat this variable as
+# containing multiple paths. Formerly only single path was
+# allowed here.
 
-setenv SLBPATH u:/c/multitos,u:/c/multitos/slb
-
-# MiNT Setter can catch ALERT messages
-
-#setenv ALERT YES
+setenv SLBPATH u:/c/mint,u:/c/mint/slb
 
 # The "exec" command is used to launch programs. Note that programs
 # so launched are started before GEM is, so they must be TOS/TTP
@@ -1163,6 +1181,8 @@ INIT=u:/boot/mint/init.prg
 # usually the best to change the current directory to the top
 # directory of all filesystems.
 
+# FreeMiNT 1.16 does this automatically.
+
 cd u:/
 
 #
@@ -1177,6 +1197,31 @@ echo
 
 @endnode
 
+@node "Environment variables set by the kernel"
+
+The FreeMiNT kernel 1.16.0, unlike previous versions, exports few 
+environment variables on its own during startup. These are:
+
+PATH
+This is initially set to u:/
+
+SYSDIR
+Contains the full path to the system directory.
+
+TERM
+The kernel sets this to "st52" (the terminal type of the Atari ST 
+console).
+
+SLBPATH
+This is set to the same value as $SYSDIR by default.
+
+UNIXMODE
+This is set to "/brUs".
+
+PCONVERT
+This is set to "PATH,HOME,SHELL"
+
+@endnode
 
 @node "The mint.ini file"
 
@@ -1223,6 +1268,19 @@ menu itself as well.
 'YES' means, that the kernel will stop in certain points while
 initialization and ask the user for confirmation.
 
+There are also three variables which have numeric values:
+
+@{B}DEBUG_DEVNO@{b} and @{B}DEBUG_LEVEL@{b}
+Identical to the keyword for the mint.cnf file. These have been 
+defined also here, for the debug facilities to be easier enabled 
+before mint.cnf is interpreted.
+
+@{B}BOOT_DELAY@{b}
+Defines the time (measured in seconds) the kernel will wait for you 
+to press SHIFT to enter the boot menu. After the time is passed, the 
+kernel will continue booting. You can set this to 0, the boot menu 
+will be disabled then (you wont' be able to enter it during bootup).
+
 Notice that the mint.ini is a plain text file and being that can
 obviously be edited with a text editor. The discouraging comment
 you can see there ("do not edit") is mainly added to prevent users
@@ -1231,7 +1289,6 @@ will go away once the mint.ini file is rewritten by the system.
 This is so, because the mint.ini parser is not complicated, thus
 everything that does not look like a known command, is ignored and
 not preserved between read and writeout.
-
 
 @endnode
 
@@ -1302,7 +1359,7 @@ distribution floppies separately.
 To start the 'init' program, you must specify its full pathname in
 the INIT= keyword of the mint.cnf file. For example,
 
-INIT=u:/c/multitos/init.prg
+INIT=u:/c/mint/init.prg
 
 Alternatively, if your init program is GEM (as said above), you can
 use the GEM= keyword, which is an instance of the aforementioned
@@ -1415,15 +1472,15 @@ locally via the Network File System (nfs).
 
 In other words, all files accessible by the GEMDOS can be
 referenced from the unifs. For example, a file like
-@{0B}mint.cnf@{0} present in the @{0B}multitos@{0} directory of the
+@{0B}mint.cnf@{0} present in the @{0B}mint@{0} directory of the
 drive c:, what is 'normally' referenced as
 
-@{0B}c:\multitos\mint.cnf@{0}
+@{0B}c:\mint\mint.cnf@{0}
 
 can be also accessed via the unifs as
 
-@{0B}u:\c\multitos\mint.cnf@{0} or
-@{0B}/c/multitos/mint.cnf@{0}
+@{0B}u:\c\mint\mint.cnf@{0} or
+@{0B}/c/mint/mint.cnf@{0}
 
 because the drive c: is 'mounted' on the unified filesystem as a
 folder.
@@ -1638,6 +1695,10 @@ to the total number of processes, e.g. 4/25 means, that four
 processes are running, out of 25 total. This is continuously
 changing as processes are scheduled. The last number currently
 always equals 0.
+
+@{B}/kern/sysdir@{b}
+This is the pathname to the FreeMiNT system directory, usually 
+u:/c/mint.
 
 @{0B}/kern/time@{0}
 Here is the information about the kernel time, i.e. the number of
@@ -2619,7 +2680,7 @@ line to your mint.cnf file:
 
 setenv MODEMDEV u:/dev/modem2
 
-or alternatively, when you renamed the device to be u:/dev/ttyS1,
+or alternatively, when you installed the proper serial driver,
 you supply:
 
 setenv MODEMDEV u:/dev/ttyS1
