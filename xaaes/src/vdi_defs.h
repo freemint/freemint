@@ -373,6 +373,7 @@ void  v_show_c     (VdiHdl , short reset);
 void  vex_butv     (VdiHdl , void *pusrcode, void **psavcode);
 void  vex_curv     (VdiHdl , void *pusrcode, void **psavcode);
 void  vex_motv     (VdiHdl , void *pusrcode, void **psavcode);
+void  vex_wheelv   (VdiHdl , void *pusrcode, void **psavcode);
 void  vex_timv     (VdiHdl , void *time_addr,
                              void **otime_addr, short *time_conv);
 void  vq_key_s     (VdiHdl , short *state);
