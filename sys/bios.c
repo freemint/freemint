@@ -465,7 +465,7 @@ sys_b_ubconout (int dev, int c)
 }
 
 long _cdecl
-ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
+sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 {
 	if (has_bconmap)
 	{

@@ -500,7 +500,7 @@ key_done:
 /* The XBIOS' Bioskeys() function
  */
 void
-bioskeys(void)
+sys_b_bioskeys(void)
 {
 	long akp_val = 0;
 	struct keytab *syskeytab;
@@ -785,7 +785,7 @@ load_keyboard_table(char *name, short flag)
 
 	/* Install the tables in the system */
 	if (!ret)
-		bioskeys();
+		sys_b_bioskeys();
 
 	return ret;
 }
