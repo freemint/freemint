@@ -26,6 +26,7 @@
  * SH_XXX	offset of XXX in struct SLB_HEAD
  * KER_XXX	offset of XXX in struct kerninfo
  * DMA_XXX	offset of XXX in struct DMA
+ * TM_XXX	offset of XXX in struct TIMEOUT
  */
 struct magics
 {
@@ -125,6 +126,13 @@ magics [] =
 	{ "DMA_BLOCK",		offsetof (DMA, block)			},
 	{ "DMA_DEBLOCK",	offsetof (DMA, deblock)			},
 
+	{ "TM_NEXT",		offsetof (TIMEOUT, next)		},
+	{ "TM_PROC",		offsetof (TIMEOUT, proc)		},
+	{ "TM_WHEN",		offsetof (TIMEOUT, when)		},
+	{ "TM_FUNC",		offsetof (TIMEOUT, func)		},
+	{ "TM_FLAGS",		offsetof (TIMEOUT, flags)		},
+	{ "TM_ARG",		offsetof (TIMEOUT, arg)			},
+ 
 	{ "",			0					}
 };
 
