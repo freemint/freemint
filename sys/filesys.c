@@ -27,6 +27,7 @@
 # include "kernfs.h"
 # include "pipefs.h"
 # include "procfs.h"
+# include "ramfs.h"
 # include "shmfs.h"
 # include "tosfs.h"
 # include "unifs.h"
@@ -397,6 +398,7 @@ init_filesys (void)
 	xfs_add (&bios_filesys);
 	xfs_add (&pipe_filesys);
 	xfs_add (&proc_filesys);
+	xfs_add (&ramfs_filesys);
 	xfs_add (&shm_filesys);
 # ifdef WITH_KERNFS
 	xfs_add (&kern_filesys);
@@ -409,6 +411,9 @@ init_filesys (void)
 	
 	/* initialize the proc file system */
 	procfs_init ();
+	
+	/* initialize the ramdisk file system */
+	ramfs_init ();
 	
 	/* initialize the shared memory file system */
 	shmfs_init ();
