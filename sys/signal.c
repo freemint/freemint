@@ -108,7 +108,9 @@ killgroup (int pgrp, ushort sig, int priv)
 	int found = 0;
 	long ret = ENOENT;
 	
-	if (pgrp < 0)
+	DEBUG (("killgroup(%i, %i, %i)", pgrp, sig, priv));
+	
+	if (pgrp <= 0)
 		return EINTERNAL;
 	
 	if (sig >= NSIG)
@@ -122,6 +124,8 @@ killgroup (int pgrp, ushort sig, int priv)
 		if (p->pgrp == pgrp)
 		{
 			long last_error;
+			
+			DEBUG (("killgroup: send %i to PID %i (pgrp %i)", sig, p->pid, p->pgrp));
 			
 			last_error = send_sig (p, sig, priv);
 			if (last_error)
