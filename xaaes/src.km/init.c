@@ -275,9 +275,15 @@ init(struct kentry *k, const char *path)
 		display("XaAES ERROR: Can't allocate memory?");
 		goto error;
 	}
+
 	/* zero out */
 	bzero(C.Aes, sizeof(*C.Aes));
-	S.client_list = C.Aes;
+
+	CLIENT_LIST_INIT();
+	CLIENT_LIST_INSERT_START(C.Aes);
+
+	APP_LIST_INIT();
+	APP_LIST_INSERT_START(C.Aes);
 
 	C.Aes->cmd_tail = "\0";
 	//C.Aes->wt.e.obj = -1;
