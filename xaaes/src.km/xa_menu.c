@@ -179,6 +179,8 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				pb->intout[0] = 1;
 				DIAG((D_menu, NULL, "done display, lastob = %d", mwt->lastob));
 			}
+			else if (mwt)
+				swap_menu(lock|winlist, client, false, 7);
 		}
 		break;
 	}

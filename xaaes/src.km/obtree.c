@@ -46,7 +46,6 @@ object_get_spec(OBJECT *ob)
 	}
 }
 
-//is_spec(OBJECT *tree, int item)
 bool
 object_have_spec(OBJECT *ob)
 {
@@ -63,7 +62,6 @@ object_have_spec(OBJECT *ob)
 /*
  * HR change ob_spec
  */
-//set_ob_spec(OBJECT *root, int s_ob, unsigned long cl)
 inline void
 object_set_spec(OBJECT *ob, unsigned long cl)
 {
@@ -91,6 +89,7 @@ object_deselect(OBJECT *ob)
 	ob->ob_state &= ~OS_SELECTED;
 }
 
+/* A quick hack to catch *most* of the problems with transparent objects */
 bool
 object_is_transparent(OBJECT *ob)
 {
@@ -150,7 +149,6 @@ object_thickness(OBJECT *ob)
 /*
  * Returns the object number of this object's parent or -1 if it is the root
  */
-//get_parent(OBJECT *t, int object)
 short
 ob_get_parent(OBJECT *obtree, short obj)
 {
@@ -274,8 +272,6 @@ ob_order(OBJECT *root, short object, ushort pos)
 	}
 }
 
-/* A quick hack to catch *most* of the problems with transparent objects */
-//transparent(OBJECT *root, int i)
 /*
  * Find object whose flags is set to 'f', state set to 's' and
  * have none of 'mf' flags set and status is none of 'ms'.
@@ -569,7 +565,6 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 /*
  * Get the true screen coords of an object
  */
-//object_offset(OBJECT *tree, int object, short dx, short dy, short *mx, short *my)
 short
 ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 {
@@ -623,7 +618,6 @@ ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 	return 0;
 }
 
-//object_rectangle(RECT *c, OBJECT *ob, int i, short transx, short transy)
 void
 ob_rectangle(OBJECT *obtree, short obj, RECT *c)
 {
@@ -634,7 +628,6 @@ ob_rectangle(OBJECT *obtree, short obj, RECT *c)
 	c->h = b->ob_height;
 }
 
-//object_area(RECT *c, OBJECT *ob, int i, short transx,  short transy)
 void
 ob_area(OBJECT *obtree, short obj, RECT *c)
 {
@@ -682,7 +675,6 @@ ob_area(OBJECT *obtree, short obj, RECT *c)
  * Find which object is at a given location
  *
  */
-//find_object(OBJECT *tree, int object, int depth, short mx, short my, short dx, short dy)
 short
 ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 {
@@ -999,7 +991,6 @@ static const unsigned char character_type[] =
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-//ed_char(XA_TREE *wt, TEDINFO *ed_txt, ushort keycode)
 static bool
 obj_ed_char(XA_TREE *wt,
 	    struct objc_edit_info *ei,
@@ -1343,10 +1334,12 @@ obj_edit(XA_TREE *wt,
 		{
 			/* Ozk: Just turn off cursor :)
 			 */
+			if (wt->e.obj > 0)
+				pos = wt->e.pos;
+
 			hidem();
 			disable_objcursor(wt);
 			showm();
-			pos = wt->e.pos;
 			break;
 		}
 		case ED_CHAR:
@@ -1521,9 +1514,9 @@ obj_watch(XA_TREE *wt,
 				obf = ob_find(wt->tree, obj, 10, mx, my);
 
 				if (obf == obj)
-					s = in_state; //(dial + ob)->ob_state = in_state;
+					s = in_state;
 				else
-					s = out_state; //(dial + ob)->ob_state = out_state;
+					s = out_state;
 
 				if (pobf != obf)
 				{
