@@ -502,11 +502,11 @@ key_repeat(void)
  * parts of the keyboard translation tables, and moreover returns a
  * pointer to the global keytab structure so that programs can directly
  * manipulate that. This may severely affect system stability, if a
- * program that changed the translation table and redirected one of the
+ * program changes the translation table and redirected one of the
  * vectors to own memory (even supervisor protected), and then suddenly
  * dies.
  *
- * The soultion would be to fake the keyboard translation table and
+ * The solution would be to fake the keyboard translation table and
  * the vectors inside program's memory space and allowing manipulate that.
  * Such manipulations of course would have no effect, but would be safe
  * for the system and more programs would continue to operate, even if
@@ -541,7 +541,8 @@ void
 sys_b_bioskeys(void)
 {
 	long akp_val = 0;
-	char *buf;
+	char *buf, *tables;
+	struct keytab *vectors;
 
 	/* First block the keyboard processing code */
 	kbd_lock = 1;
@@ -558,26 +559,39 @@ sys_b_bioskeys(void)
 	}
 
 	/* Reserve one region for both keytable and its vectors */
-	user_keytab = get_region(core, keytab_size, PROT_PR);
+	user_keytab = get_region(core, keytab_size + sizeof(struct keytab), PROT_PR);
 	buf = (char *)attach_region(rootproc, user_keytab);
+	vectors = (struct keytab *)buf;
+	tables = buf + sizeof(struct keytab);
 
 	/* Copy the master table over */
-	quickmove(buf, keytab_buffer, keytab_size);
+	quickmove(tables, keytab_buffer, keytab_size);
 
-	/* Reset the BIOS vectors
-	 * (only necessary until we replace all BIOS keyboard routines)
+	/* Setup the standard vectors */
+	vectors->unshift = tables;
+	vectors->shift = tables + 128;
+	vectors->caps = tables + 128 + 128;
+
+	/* and the AKP vectors */
+	vectors->alt = tables + 128 + 128 + 128;
+	vectors->altshift = tbl_scan_fwd(vectors->alt);
+	vectors->altcaps = tbl_scan_fwd(vectors->altshift);
+	vectors->altgr = tbl_scan_fwd(vectors->altcaps);
+
+	/* Reset the TOS BIOS vectors (this is only necessary
+	 * until we replace all BIOS keyboard routines).
 	 */
-	toskeytab->unshift = buf;
-	toskeytab->shift = buf + 128;
-	toskeytab->caps = buf + 128 + 128;
+	toskeytab->unshift = vectors->unshift;
+	toskeytab->shift = vectors->shift;
+	toskeytab->caps = vectors->caps;
 
 	if (tosvers >= 0x0400)
 	{
-		toskeytab->alt = buf + 128 + 128 + 128;
-		toskeytab->altshift = tbl_scan_fwd(toskeytab->alt);
-		toskeytab->altcaps = tbl_scan_fwd(toskeytab->altshift);
+		toskeytab->alt = vectors->alt;
+		toskeytab->altshift = vectors->altshift;
+		toskeytab->altcaps = vectors->altcaps;
 		if (mch == MILAN_C)
-			toskeytab->altgr = tbl_scan_fwd(toskeytab->altcaps);
+			toskeytab->altgr = vectors->altgr;
 
 		/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
 		 *
@@ -711,7 +725,7 @@ load_internal_table(void)
 	else
 		size += 8;	/* two bytes for each missing part */
 
-	/* If a buffer was allocated previously, we can reuse it.
+	/* If a buffer was allocated previously, we can perhaps reuse it.
 	 */
 	if (keytab_buffer && (keytab_size >= size))
 		kbuf = keytab_buffer;
