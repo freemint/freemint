@@ -13,7 +13,6 @@ HEADER = \
 	debug.h \
 	desktop.h \
 	display.h \
-	get_parent.h \
 	global.h \
 	handler.h \
 	ipff.h \
@@ -62,7 +61,6 @@ COBJS = \
 	desktop.c \
 	display.c \
 	draw_obj.c \
-	get_parent.c \
 	handler.c \
 	ipff.c \
 	kernel.c \
@@ -71,7 +69,6 @@ COBJS = \
 	messages.c \
 	my_aes.c \
 	nkcc.c \
-	nkcc_gem_to_norm.c \
 	rectlist.c \
 	scrlobjc.c \
 	signals.c \
