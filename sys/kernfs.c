@@ -1327,42 +1327,10 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 
 /* Main device driver */
 
-INLINE long
-kern_proc_open (FILEPTR *f)
-{
-	short pid = f->fc.index >> 16;
-	PROC *p;
-	long ret = E_OK;
-	
-	TRACE (("kern_proc_open: inode: %lu, flags: 0x%04x", f->fc.index & 0xffff, f->flags));
-	
-	p = pid2proc (pid);
-	if (!p)
-	{
-		DEBUG (("kern_proc_open: pid %d: No such process", pid));
-		return ENOENT;
-	}
-	
-	if (f->links <= 1)
-	{
-		KENTRY *t;
-		
-		t = search_inode (procdir, f->fc.index & 0xffff);
-		if (t && (t->mode & S_IFREG))
-		{
-			f->devinfo = (long) t;
-		}
-		else
-			ret = EACCES;
-	}
-	
-	return ret;
-}
-
 static long _cdecl
 kern_open (FILEPTR *f)
 {
-	long ret = E_OK;
+	PROC *p = NULL;
 	
 	TRACE (("kern_open: inode: %lu, flags: 0x%04x", f->fc.index, f->flags));
 	
@@ -1373,22 +1341,33 @@ kern_open (FILEPTR *f)
 	}
 	
 	if (f->fc.index & 0xffff0000)
-		return kern_proc_open (f);
+	{
+		short pid = f->fc.index >> 16;
+		
+		TRACE (("kern_open (proc): inode: %lu, flags: 0x%04x", f->fc.index & 0xffff, f->flags));
+		
+		p = pid2proc (pid);
+		if (!p)
+		{
+			DEBUG (("kern_open (proc): pid %d: No such process", pid));
+			return ENOENT;
+		}
+	}
 	
 	if (f->links <= 1)
 	{
 		KENTRY *t;
 		
-		t = search_inode (rootdir, f->fc.index);
-		if (t && (t->mode & S_IFREG))
-		{
-			f->devinfo = (long) t;
-		}
-		else
-			ret = EACCES;
+		if (p)	t = search_inode (procdir, f->fc.index & 0xffff);
+		else	t = search_inode (rootdir, f->fc.index);
+		
+		if (!t || !(t->mode & S_IFREG))
+			return EACCES;
+		
+		f->devinfo = (long) t;
 	}
 	
-	return ret;
+	return E_OK;
 }
 
 static long _cdecl
@@ -1407,6 +1386,7 @@ kern_close (FILEPTR *f, int pid)
 static long _cdecl 
 kern_read (FILEPTR *f, char *buf, long bytes)
 {
+	PROC *p = NULL;
 	KENTRY *t = (KENTRY *) f->devinfo;
 	SIZEBUF *info = NULL;
 	long bytes_read = 0;
@@ -1427,8 +1407,26 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 		return 0;
 	}
 	
+	if (f->fc.index & 0xffff0000)
+	{
+		short pid = f->fc.index >> 16;
+		
+		TRACE (("kern_read (proc): inode: %lu, flags: 0x%04x", f->fc.index & 0xffff, f->flags));
+		
+		p = pid2proc (pid);
+		if (!p)
+		{
+			DEBUG (("kern_read (proc): pid %d: No such process", pid));
+			
+			/* XXX - any better error code? */
+			return ENOENT;
+		}
+	}
+	
 	/* fill the buffer */
-	ret = (*t->get)(&info);
+	if (p)	ret = (*t->get)(&info, p);
+	else	ret = (*t->get)(&info);
+	
 	if (ret || !info)
 		return ret;
 	
@@ -1481,7 +1479,6 @@ kern_ioctl (FILEPTR *f, int mode, void *buf)
 static long _cdecl
 kern_lseek (FILEPTR *f, long where, int whence)
 {
-	long maxpos = 0;
 	long newpos;
 	
 	DEBUG (("kern_lseek: inode: %lu, where: %ld, whence: %d", 
@@ -1496,14 +1493,14 @@ kern_lseek (FILEPTR *f, long where, int whence)
 			newpos = f->pos + where;
 			break;
 		case SEEK_END:
-			newpos = maxpos + where;
+			newpos = 0 + where;
 			break;
 		default:
 			DEBUG (("kern_lseek: inode: %lu, invalid whence argument: %d", f->fc.index, whence));
 			return EINVAL;
 	}
 	
-	if (newpos < 0 || newpos > maxpos)
+	if (newpos < 0)
 	{
 		DEBUG (("kern_lseek: inode: %lu, invalid position %ld for whence %d", f->fc.index, where, whence));
 		return EINVAL; 
