@@ -203,10 +203,8 @@ L_switch:	clr.w	-(sp)		; no frame format needed
 ;
 	XDEF	_reset
 	XDEF	_old_resvec
-	XREF	_init_tail		; see main.c
 	XREF	_restr_intr
 	XDEF	_reboot
-	XDEF	_rst_xbra
 
 _reboot:	move.l	(0).w,sp		; get sp after reboot
 	move.l	(4).w,a6		; get new reboot address
@@ -215,18 +213,19 @@ _reboot:	move.l	(0).w,sp		; get sp after reboot
 ; reset routine -- called on a warm boot. Note that TOS sends the
 ; address to which we should return in register a6. Also note that
 ; the stack pointer is in an unknown state, so we set up our own.
+; There is a free page at $0600-$06ff.
 
-_rst_xbra:	dc.l	$58425241		; XBRA
+	dc.l	$58425241		; XBRA
 	dc.l	$4d694e54		; MiNT
 _old_resvec:	dc.l	0
 
 _reset:	move.w	#$2700,sr		; avoid interruption here
-	move.l	sp,_init_tail		; save A7
-	lea	_init_tail+256,sp	; set up temporary stack
+	move.l	sp,$0600.w		; save A7
+	lea	$06fe.w,sp		; set up temporary stack
 	movem.l	d0-d2/a0-a2,-(sp)	; save C registers
 	jsr	_restr_intr		; restore interrupts
 	movem.l	(sp)+,d0-d2/a0-a2	; restore registers
-	move.l	_init_tail,sp
+	move.l	$0600.w,sp
 	jmp	(a6)		; reset again
 
 ;
@@ -322,13 +321,11 @@ _newkeys:	movem.l	d1-d2/a0-a2,-(sp)
 	move.w	d0,-(sp)
 	jsr	_ikbd_scan
 	addq.l	#$02,sp
+	movem.l	(sp)+,d1-d2/a0-a2
 	cmp.w	#$ffff,d0
 	beq.s	L_bye
-	movem.l	(sp)+,d1-d2/a0-a2
 	move.l	_oldkeys.w(pc),-(sp)
-	rts
-L_bye:	movem.l	(sp)+,d1-d2/a0-a2
-	rts
+L_bye:	rts
 
 ; Generic routines for handling any user-specified interrupts.
 ; These only work on a 68020+ (long frame format is needed),

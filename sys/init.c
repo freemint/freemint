@@ -46,6 +46,7 @@
 # include "k_exec.h"	/* sys_pexec */
 # include "k_exit.h"	/* sys_pwaitpid */
 # include "k_fds.h"	/* do_open/do_pclose */
+# include "keyboard.h"	/* load_keytbl() */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
 # include "proc.h"	/* init_proc, add_q, rm_q */
@@ -1086,6 +1087,9 @@ init (void)
 	c_conws (random_greet);
 # endif
 	
+	/* Load the keyboard table */
+	load_keytbl();
+
 	/* load external modules
 	 * 
 	 * set path first to make sure that MiNT's directory matches
@@ -1262,6 +1266,7 @@ static long
 getmch (void)
 {
 	COOKIE *jar = *CJAR;
+	extern short gl_kbd;
 	
 	/* own CPU test */
 	mcpu = detect_cpu ();
@@ -1319,6 +1324,7 @@ getmch (void)
 			else if (jar->tag == COOKIE__AKP)
 			{
 				gl_lang = (int) ((jar->value >> 8) & 0x00ff);
+				gl_kbd = (short)(jar->value & 0x00ffL);
 			}
 			else if (jar->tag == COOKIE_PMMU)
 			{
