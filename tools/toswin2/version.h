@@ -1,7 +1,7 @@
 
-#ifndef _tw_version_h_
-#define _tw_version_h_
+#ifndef tw_version_h
+# define tw_version_h 1
 
-#define	TWVERSION	"2.7 "			/* -> RSC!! */
+# define	TWVERSION	"2.7 "			/* -> RSC!! */
 
 #endif
