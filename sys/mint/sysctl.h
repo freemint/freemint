@@ -174,4 +174,14 @@ struct ctlname
 # define CTL_DEBUG_MAXID	20
 
 
+# ifndef __KERNEL__
+
+int __sysctl (int *name, unsigned long namelen, void *old, unsigned long *oldlenp,
+              const void *new, unsigned long newlen);
+int sysctl (int *name, unsigned long namelen, void *old, unsigned long *oldlenp,
+            const void *new, unsigned long newlen);
+
+# endif
+
+
 # endif /* _mint_sysctl_h */

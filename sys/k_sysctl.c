@@ -80,9 +80,8 @@ sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp, const void *
 # endif
 	)
 	{
-		ret = suser (p->p_cred->ucr);
-		if (ret)
-			return ret;
+		if (!suser (p->p_cred->ucr))
+			return EPERM;
 	}
 
 	switch (name[0])
