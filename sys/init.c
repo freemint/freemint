@@ -1171,20 +1171,26 @@ init (void)
 	boot_print(MSG_init_pid_0);
 # endif
 
+	save_context(&(rootproc->ctxt[CURRENT]));
+	save_context(&(rootproc->ctxt[SYSCALL]));
+
 	/* zero the user registers, and set the FPU in a "clear" state */
 	for (r = 0; r < 15; r++)
+	{
 		rootproc->ctxt[CURRENT].regs[r] = 0;
+		rootproc->ctxt[SYSCALL].regs[r] = 0;
+	}
 
-	rootproc->ctxt[CURRENT].sr = 0x2000;	/* kernel threads work in super mode */
 	rootproc->ctxt[CURRENT].fstate[0] = 0;
 	rootproc->ctxt[CURRENT].pc = (long) mint_thread;
 	rootproc->ctxt[CURRENT].usp = rootproc->sysstack;
+	rootproc->ctxt[CURRENT].ssp = rootproc->sysstack;
 	rootproc->ctxt[CURRENT].term_vec = (long) rts;
 
-	rootproc->ctxt[SYSCALL].sr = 0x2000;	/* kernel threads work in super mode */
 	rootproc->ctxt[SYSCALL].fstate[0] = 0;
 	rootproc->ctxt[SYSCALL].pc = (long) mint_thread;
 	rootproc->ctxt[SYSCALL].usp = rootproc->sysstack;
+	rootproc->ctxt[SYSCALL].ssp = rootproc->sysstack;
 	rootproc->ctxt[SYSCALL].term_vec = (long) rts;
 
 	*((long *)(rootproc->ctxt[CURRENT].usp + 4)) = 0;
