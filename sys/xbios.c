@@ -197,7 +197,7 @@ uiorec (int dev)
 	
 	if (dev == 0 && has_bconmap)
 	{
-		ALERT ("Iorec(%d) -> NULL", dev);
+		// ALERT ("Iorec(%d) -> NULL", dev);
 		return 0;
 		
 		/* get around another BIOS Bug: 
