@@ -4,9 +4,7 @@
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
- *
- * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
- * All rights reserved.
+ * Boot menu and mint.ini routines.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,7 +78,7 @@ get_a_char(int fd)
  *
  * Does not place the delimiter into the buffer.
  */
-static int
+INLINE int
 getdelim(char *buf, long n, int terminator, int fd)
 {
 	int ch;
@@ -334,7 +332,7 @@ emit_boot_delay(short fd)
 static const char *ini_keywords[] =
 {
 	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=", "MEM_PROT=", "INI_STEP=",
-	"DEBUG_LEVEL=", "DEBUG_DEVNO=", "BOOT_DELAY=", 
+	"DEBUG_LEVEL=", "DEBUG_DEVNO=", "BOOT_DELAY=",
 	"INI_SAVE=", NULL
 };
 
@@ -359,7 +357,7 @@ static typeof(emit_xfs_load) *emit_func[] =
 INLINE short
 find_ini (char *outp, long outsize)
 {
-	ksprintf(outp, outsize, "%smint.ini", sysdir);
+	ksprintf(outp, outsize, "%s%s", sysdir, "mint.ini");
 
 	if (TRAP_Fsfirst(outp, 0) == 0)
 		return 1;
@@ -407,7 +405,7 @@ read_ini (void)
 				{
 					char msg[80];
 
-					ksprintf(msg, sizeof(msg), "mint.ini: unknown command '%s'\r\n", line); 
+					ksprintf(msg, sizeof(msg), "mint.ini: unknown command '%s'\r\n", line);
 					TRAP_Cconws(msg);
 				}
 			}
@@ -422,7 +420,7 @@ write_ini (short *options)
 	char ini_file[32], line[64];
 	long r, x, l;
 
-	ksprintf(ini_file, sizeof(ini_file), "%smint.ini", sysdir);
+	ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, "mint.ini");
 
 	inihandle = TRAP_Fcreate(ini_file, 0);
 
@@ -447,11 +445,12 @@ write_ini (short *options)
 	}
 
 close:
+
 	TRAP_Fclose(inihandle);
 
 	if (r < 0)
 	{
-		ksprintf(line, sizeof(line), "Error %ld writing mint.ini\r\n", r);
+		ksprintf(line, sizeof(line), "Error %ld writing %s\r\n", r, "mint.ini");
 
 		TRAP_Cconws(line);
 		TRAP_Fdelete(ini_file);
@@ -470,7 +469,7 @@ boot_kernel_p (void)
 	option[3] = load_auto;		/* Load AUTO or not */
 	option[4] = !no_mem_prot;	/* Use memprot or not */
 	option[5] = step_by_step;	/* Enter stepper mode */
-	option[6] = save_ini;
+	option[MENU_OPTIONS-1] = save_ini;
 
 	for (;;)
 	{
@@ -481,7 +480,7 @@ boot_kernel_p (void)
 			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
 			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
 			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
-			option[6] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
+			option[MENU_OPTIONS-1] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
 wait:
 		c = TRAP_Crawcin();
 		c &= 0x7f;
@@ -499,7 +498,7 @@ wait:
 				load_auto = option[3];
 				no_mem_prot = !option[4];
 				step_by_step = option[5];
-				save_ini = option[6];
+				save_ini = option[MENU_OPTIONS-1];
 				if (save_ini)
 					write_ini(option);
 				return (int)option[0];
@@ -531,7 +530,7 @@ _get_hz_200(void)
 static long
 get_hz_200(void)
 {
-	return Supexec(_get_hz_200);
+	return TRAP_Supexec(_get_hz_200);
 }
 
 void
