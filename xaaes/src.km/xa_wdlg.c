@@ -744,7 +744,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					obtree->ob_state &= ~OS_OUTLINED;
 					if (!(wind->window_status & XAWS_ICONIFIED))
 					{
-						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT, NULL);
+						wt = set_toolbar_widget(lock, wind, client, obtree, 0, WIDG_NOTEXT, &wdlg_th);
 						wt->exit_form = NULL;
 						
 						obj_area(wt, 0, &or);

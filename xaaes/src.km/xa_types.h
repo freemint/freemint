@@ -970,7 +970,6 @@ struct xa_window
 	struct xa_window *next;		/* Window list stuff - next is the window below */
 	struct xa_window *prev;		/*		     - prev is the window above (both NULL terminated) */
 	
-	//struct xa_window_draw *wdraw;
 	short vdi_handle;
 
 	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
@@ -1054,9 +1053,6 @@ struct xa_window
 
 	struct wdlg_info *wdlg;
 
-	//void xa_data_hdr *data;			/* All structures attached here are headed with 'struct xa_data_hdr' */
-//	void		*data;
-//	void		(*data_destruct)(struct xa_window *wind);
 };
 
 struct xa_window *get_top(void);
@@ -1217,7 +1213,6 @@ struct menu_task
 	short omx, omy;
 	short clicks, x, y;
 	RECT bar, drop;
-	//void	(*outof)(struct task_administration_block *tab);
 	struct xa_rect_list *rl_bar;
 	struct xa_rect_list *rl_drop;
 	
@@ -1227,7 +1222,6 @@ struct menu_task
 	TASK *entry;
 	TASK *select;
 	
-	//OBJECT *root;
 	XA_TREE *wt;
 	/* root displacements */
 	short rdx, rdy;
@@ -1240,12 +1234,6 @@ struct task_administration_block
 {
 	LIST_ENTRY(task_administration_block) tab_entry;
 
-	//struct task_administration_block *nxt;
-	//struct task_administration_block *prv;	/* different concurrent tasks */
-	
-	//struct task_administration_block *nest;	/* stages of a recursive task (like sub menu's) */ 
-	//struct task_administration_block *next;
-	//struct task_administration_block *prev;
 	TASK_TY ty;	/* NO_TASK, ROOT_MENU, MENU_BAR, POP_UP... */
 
 	enum locks lock;
