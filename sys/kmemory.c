@@ -1950,8 +1950,8 @@ km_trace_dump(void)
 
 # endif
 
-const char *
-km_trace_lookup(void *ptr, unsigned long *size)
+long
+km_trace_lookup(void *ptr, char *buf, unsigned long buflen)
 {
 # ifdef KM_TRACE
 	const unsigned long loc = (long)ptr;
@@ -1967,15 +1967,20 @@ km_trace_lookup(void *ptr, unsigned long *size)
 
 		if (loc >= block && loc < (block + km_trace[i].size))
 		{
-			if (size)
-				*size = km_trace[i].size;
+			ksprintf(buf, buflen,
+				 "[%4li]: %6lu bytes at 0x%08lx from %s",
+				 i,
+				 km_trace[i].size,
+				 km_trace[i].ptr,
+				 km_trace[i].func);
 
-			return km_trace[i].func;
+			return 0;
 		}
 	}
 # endif
 
-	return NULL;
+	*buf = '\0';
+	return ENOENT;
 }
 
 /* END allocation tracer part */
