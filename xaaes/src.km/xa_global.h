@@ -51,7 +51,9 @@ struct shared
 
 	LIST_HEAD(xa_client) client_list;
 	LIST_HEAD(xa_client) app_list;
-
+	
+	LIST_HEAD(task_administration_block) menu_base;
+	
 	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
 	struct opt_list *app_options;	/* individual option settings. */
 
@@ -127,6 +129,42 @@ client_list_size(void)
 #define FOREACH_APP(client) \
 	LIST_FOREACH(&(S.app_list), client, app_entry)
 
+/* task administration block list */
+#define TAB_LIST_INIT() \
+	LIST_INIT(&(S.menu_base))
+
+#define TAB_LIST_START \
+	LIST_START(&(S.menu_base))
+
+#define NEXT_TAB(tab) \
+	LIST_NEXT(tab,tab_entry)
+
+#define PREV_TAB(tab) \
+	LIST_PREV(tab,tab_entry)
+
+#define TAB_LIST_INSERT_START(tab) \
+	LIST_INSERT_START(&(S.menu_base), tab, tab_entry);
+
+#define TAB_LIST_INSERT_END(tab) \
+	LIST_INSERT_END(&(S.menu_base), tab, tab_entry, task_administration_block);
+
+#define TAB_LIST_REMOVE(tab) \
+	LIST_REMOVE(&(S.menu_base), tab, tab_entry)
+
+#define FOREACH_TAB(tab) \
+	LIST_FOREACH(&(S.menu_base), tab, tab_entry)
+
+static inline size_t
+tab_list_size(void)
+{
+	struct task_administration_block *tab;
+	size_t length = 0;
+
+	FOREACH_TAB(tab)
+		length++;
+
+	return length;
+}
 
 struct shel_info
 {
@@ -175,10 +213,10 @@ struct common
 	struct adif *adi_mouse;
 
 	/* exteneded & generalized (was GeneralCallback & stuff) */
-	Tab active_menu[CASCADE];
-	Tab *menu_base;
+	//Tab active_menu[CASCADE];
+	//Tab *menu_base;
 
-	short menu_nest;			/* current depth of submenus */
+	//short menu_nest;			/* current depth of submenus */
 	RECT iconify;			/* Positioning information for iconifying windows */
 	void *Aes_rsc;			/* Pointer to the XaAES resources */
 	char *env;			/* new environment */

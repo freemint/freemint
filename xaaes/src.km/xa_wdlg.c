@@ -713,8 +713,8 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						r.x = wind->r.x;
 						r.y = wind->r.y;
 						move_window(lock, wind, true, -1, r.x, r.y, r.w, r.h);
-						//obtree->ob_x = wind->wa.x;
-						//obtree->ob_y = wind->wa.y;
+						obtree->ob_x = wind->wa.x;
+						obtree->ob_y = wind->wa.y;
 					}
 				}
 				else
