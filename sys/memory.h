@@ -16,7 +16,7 @@
 extern MMAP core, alt, swap;
 
 extern short forcefastload;
-extern ulong initialmem;
+extern unsigned long initialmem;
 
 
 void	init_mem (void);
@@ -26,8 +26,8 @@ void	init_core (void);
 void	init_swap (void);
 
 long	change_prot_status (PROC *proc, long start, short newmode);
-long	attach_region (PROC *proc, MEMREGION *reg);
-void	detach_region (PROC *proc, MEMREGION *reg);
+long	_cdecl attach_region (PROC *proc, MEMREGION *reg);
+void	_cdecl detach_region (PROC *proc, MEMREGION *reg);
 long	detach_region_by_addr (PROC *p, long block);
 
 MEMREGION *get_region (MMAP map, ulong size, short mode);
@@ -50,7 +50,7 @@ long	load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start,
 long	memused (PROC *p);
 void	recalc_maxmem (PROC *p);
 int	valid_address (long addr);
-MEMREGION *addr2mem (PROC *p, long addr);
+MEMREGION *_cdecl addr2mem (PROC *p, long addr);
 MEMREGION *addr2region (long addr);
 MEMREGION *proc_addr2region (PROC *p, long addr);
 

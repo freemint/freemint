@@ -78,58 +78,10 @@ struct screen
 	short	planesiz;	/* length of a screen scan line */
 };
 
-/*
- * all functions in this module (!!)
- */
+static unsigned long dp_all = 0;
 
-void		init_mem	(void);
-void		init_core	(void);
-void		init_swap	(void);
-int		add_region	(MMAP map, ulong place, ulong size, ushort mflags);
-
-ulong dp_all = 0;
-
-static long	core_malloc	(long, short);
-static void	core_free	(long);
-
-# if 0
-void		restr_screen	(void);
-# endif
-
-MEMREGION *	get_region	(MMAP map, ulong size, short mode);
-MEMREGION *	_get_region	(MMAP map, ulong size, short mode, short cmode, MEMREGION *descr, short kernel_flag);
-void		free_region	(MEMREGION *reg);
-long		shrink_region	(MEMREGION *reg, ulong newsize);
-
-long		attach_region	(PROC *proc, MEMREGION *reg);
-void		detach_region	(PROC *proc, MEMREGION *reg);
-long		detach_region_by_addr (PROC *p, long block);
-
-long		max_rsize	(MMAP map, long needed);
-long		tot_rsize	(MMAP map, short flag);
-
-long		alloc_region	(MMAP map, ulong size, short mode);
-
-MEMREGION *	fork_region	(MEMREGION *reg, long txtsize);
-MEMREGION *	create_env	(const char *env, ulong flags);
-MEMREGION *	create_base	(const char *cmd, MEMREGION *env,
-				 unsigned long flags, unsigned long prgsize, long *err);
-MEMREGION *	load_region	(const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
-				 long *fp, long *err);
-long		load_and_reloc	(FILEPTR *f, FILEHEAD *fh, char *where, long start,
-				 long nbytes, BASEPAGE *base);
-long		memused		(PROC *p);
-void		recalc_maxmem	(PROC *p);
-
-int		valid_address	(long addr);
-MEMREGION *	addr2mem	(PROC *p, long addr);
-MEMREGION *	addr2region	(long addr);
-MEMREGION *	proc_addr2region(PROC *p, long addr);
-
-# ifdef DEBUG_INFO
-void		DUMP_ALL_MEM	(void);
-void		DUMPMEM		(MMAP map);
-# endif
+static long core_malloc(long, short);
+static void core_free(long);
 
 # if 1
 # ifdef DEBUG_INFO
@@ -147,27 +99,16 @@ static void sanity_check	(MMAP map, ulong line);
 # define SANITY_CHECK(map)
 # endif
 
-long		change_prot_status (PROC *proc, long start, short newmode);
-
-/* from realloc.c
- */
-long		realloc_region	(MEMREGION *, long);
-long		_cdecl sys_s_realloc(long);
-
-
 short forcefastload = 0;	/* for MINT.CNF keyword */
-ulong initialmem = 4096;	/* ditto */
+unsigned long initialmem = 4096;/* ditto */
 
 /*
  * memory.c:: routines for managing memory regions
  */
 
 /* macro for testing whether a memory region is free */
-# if 0
 # define ISFREE(m) ((m)->links == 0)
-# else
-INLINE int ISFREE (const MEMREGION *m) { return (m->links == 0); }
-# endif
+
 
 /**
  * Initialize memory routines.
@@ -176,7 +117,7 @@ INLINE int ISFREE (const MEMREGION *m) { return (m->links == 0); }
 /* these variables are set in init_core(), and used in
  * init_mem()
  */
-static ulong scrnsize, scrnplace;
+static unsigned long scrnsize, scrnplace;
 
 void
 init_mem (void)
@@ -566,7 +507,7 @@ found:
  * the attachment is successful.
  */
 
-long
+long _cdecl
 attach_region (PROC *p, MEMREGION *reg)
 {
 	struct memspace *mem = p->p_mem;
@@ -622,7 +563,7 @@ retry:
  * attachment of memory gets detached!
  */
 
-void
+void _cdecl
 detach_region (PROC *p, MEMREGION *reg)
 {
 	struct memspace *mem = p->p_mem;
@@ -1888,7 +1829,7 @@ error:
  * given an address, find the corresponding memory region in this program's
  * memory map
  */
-MEMREGION *
+MEMREGION * _cdecl
 addr2mem (PROC *p, long addr)
 {
 	struct memspace *mem = p->p_mem;
