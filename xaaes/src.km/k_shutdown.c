@@ -62,6 +62,7 @@ k_shutdown(void)
 	}
 
 	/* wait until the clients are gone */
+	DIAGS(("Wait for all clients to exit ..."));
 	for (;;)
 	{
 		struct xa_client *client = S.client_list;
@@ -80,6 +81,7 @@ k_shutdown(void)
 
 		yield();
 	}
+	DIAGS(("all clients have exited"));
 
 	DIAGS(("Freeing open windows"));
 	{
