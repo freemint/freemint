@@ -45,6 +45,9 @@
 /* WARNING: all this is executed on TOS, before MiNT initialization.
  */
 
+/* if the user is holding down the magic shift key, we ask before booting */
+# define MAGIC_SHIFT	0x2		/* left shift */
+
 # define MENU_OPTIONS	7
 # define MAX_CMD_LEN	32
 
@@ -53,10 +56,11 @@ short load_xdd_f = 1;		/* Flag: load XDD modules (if 1) */
 short load_auto = 1;		/* Flag: load AUTO programs appearing after us (if 1) */
 short save_ini = 1;		/* Flag: write new ini file while exiting bootmenu (if 1) */
 
-short boot_delay;
+static short boot_delay = 4;	/* boot delay in milliseconds */
 
 int boot_kernel_p(void);
 void read_ini(void);
+void pause_and_ask(void);
 
 /* Helper function for getdelim() below */
 INLINE int
@@ -379,7 +383,7 @@ read_ini (void)
 	{
 		while (getdelim(line, sizeof(line), '\n', inihandle) != -1)
 		{
-			if (line[0] && (line[0] != '#'))
+			if (line[0] && (line[0] != '#') && strchr(line, '='))
 			{
 				strupr(line);
 				x = 0;
@@ -516,6 +520,46 @@ wait:
 	}
 
 	return 1;	/* not reached */
+}
+
+static long
+_get_hz_200(void)
+{
+	return *(long *)0x4baL;
+}
+
+static long
+get_hz_200(void)
+{
+	return Supexec(_get_hz_200);
+}
+
+void
+pause_and_ask(void)
+{
+	long pause, newstamp;
+
+	if (boot_delay)
+	{
+		boot_printf(MSG_init_askmenu, boot_delay);
+
+		pause = get_hz_200();
+		pause += (boot_delay * 200);
+
+		do
+		{
+			newstamp = get_hz_200();
+
+			if ((TRAP_Kbshift(-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
+			{
+				long yn = boot_kernel_p ();
+				if (!yn)
+					TRAP_Pterm0 ();
+				newstamp = pause;
+			}
+		}
+		while (newstamp < pause);
+	}
 }
 
 /* EOF */

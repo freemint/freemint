@@ -40,6 +40,7 @@ extern short save_ini;
 
 int boot_kernel_p(void);
 void read_ini(void);
+void pause_and_ask(void);
 
 # endif
 
