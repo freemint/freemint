@@ -246,6 +246,8 @@ const char *MSG_init_bootmenu =
 	"<5> Memory protection: %s"
 # endif
 	"<6> Init step by step: %s"
+	"<7> Debug/trace level: %ld %s\r\n"
+	"<8> Debug output dev.: %ld %s\r\n"
 	"<0> Remember settings: %s\r\n"
 	"[Return] accept,\r\n"
 	"[Ctrl-C] cancel.\r\n"
