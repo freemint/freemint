@@ -50,15 +50,24 @@
 
 _slb_init_and_exit:
 
-	pea	0x01190001.l		// Pdomain(1)
+	move.l	4(sp),a0		// basepage pointer
+	move.l	B_ENV(a0),d0		// bp->p_env
+	beq.s	noenv
+
+	clr.l	B_ENV(a0)		// clear the pointer
+
+	move.l	d0,-(sp)		// free the env variables
+	move.w	#0x0049,-(sp)
+	trap	#1
+	addq.l	#6,sp
+
+noenv:	pea	0x01190001.l		// Pdomain(1)
 	trap	#1
 
 	move.w	#0x0004,d7
-
 loop:	move.w	d7,-(sp)		// Fclose(x)
 	move.w	#0x003e,-(sp)
 	trap	#1
-
 	dbra.w	d7,loop
 
 	clr.l	-(sp)			// Psetpgrp(0,0)
@@ -82,14 +91,14 @@ oldfmt:	move.l	a0,-(sp)
 	beq.s	exec
 
 	move.l	38(sp),a0
-	move.l	#-1,128(a0)		// put -1 on the bp->p_cmdlin
+	move.l	#-1,B_CMDLIN(a0)	// put -1 on the bp->p_cmdlin
 	bra.s	halt
 
-exec:	move.l	16(a0),a0
+exec:	move.l	SH_INIT(a0),a0
 	jsr	(a0)
 
 	move.l	38(sp),a0
-	move.l	d0,128(a0)		// return value
+	move.l	d0,B_CMDLIN(a0)		// return value
 
 halt:	move.w	#0x0011,-(sp)
 	clr.w	-(sp)
@@ -98,7 +107,7 @@ halt:	move.w	#0x0011,-(sp)
 	addq.l	#6,sp
 
 	move.l	(sp)+,a0		// header address
-	move.l	20(a0),a0
+	move.l	SH_EXIT(a0),a0
 	jsr	(a0)
 
 	clr.w	-(sp)
