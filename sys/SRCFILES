@@ -21,7 +21,6 @@ COBJS = \
 	dosfile.c \
 	dosmem.c \
 	dossig.c \
-	fasttext.c \
 	fatfs.c \
 	filesys.c \
 	floppy.c \

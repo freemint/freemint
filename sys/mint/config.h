@@ -69,14 +69,6 @@
 # define DEV_RANDOM
 
 /*
- * other options best set in the makefile
- */
-# if 0
-# define MULTITOS	/* make a MultiTOS kernel */
-# define ONLY030	/* make a 68030 only version */
-# endif
-
-/*
  * Ensure that MMU040 is always set together with ONLY030. This must be an
  * #error, as we can't influence the defines passed to asmtrans from here.
  */
@@ -84,10 +76,6 @@
 # ifndef ONLY030
 # error MMU040 requires ONLY030
 # endif
-# endif
-
-# ifndef MULTITOS
-# define FASTTEXT	/* include the u:\dev\fasttext device */
 # endif
 
 /*

@@ -1,71 +1,71 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999 Ralph Lowinski <ralph@aquaplan.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Ralph Lowinski <ralph@aquaplan.de>
  * Started: 1998-12-22
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * changes since last version:
- * 
+ *
  * 1999-06-09:
- * 
+ *
  * - fix: bug in include mechanism; freed pointer is accessed
- * 
+ *
  * 1999-04-13:
- * 
+ *
  * Frank:
  * - new keyword: WRITEPROTECT for software write protection
  *   on filesystem level
- * 
+ *
  * 1999-03-11:
- * 
+ *
  * Frank:
  * - NEWFATS keyword is always known; if not supported the user
  *   get a message that the NEWFATFS is the default filesystem
  * - VFAT implies NEWFATFS for the specified drive
- * 
+ *
  * 1998-12-28:
- * 
+ *
  * Frank:
  * - new: optimzed messages/correct some words
  * - fix: open/read/close mechanism
- * 
+ *
  * 1998-12-22:
- * 
+ *
  * - initial revision
- * 
+ *
  * known bugs:
- * 
+ *
  * -
- * 
+ *
  * todo:
- * 
- * 
+ *
+ *
  */
 
 # include "cnf.h"
@@ -82,7 +82,6 @@
 # include "dosdir.h"
 # include "dosfile.h"
 # include "dosmem.h"
-# include "fasttext.h"
 # include "fatfs.h"
 # include "filesys.h"
 # include "info.h"		/* messages */
@@ -100,11 +99,7 @@
 /* program to run at startup */
 #define INIT_IS_GEM   1
 #define INIT_IS_PRG   0
-# ifdef MULTITOS
 int init_is_gem = INIT_IS_GEM;	/* set to 1 if init_prg is GEM */
-# else
-int init_is_gem = INIT_IS_PRG;	/* set to 1 if init_prg is GEM */
-# endif
 
 char *init_prg = NULL;
 char *init_env = NULL;
@@ -166,12 +161,12 @@ load_config (void)
 
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	strcpy(cnf_path, sysdir);
 	strcat(cnf_path, "mint.cnf");
 
 	ret = do_open (&fp, inf.file = cnf_path, O_RDONLY, 0, &xattr);
-	
+
 	if (!ret)
 	{
 		parser (fp, &inf, xattr.size);
@@ -282,9 +277,9 @@ static PCB_TTx	pCB_setenv;		/* setenv name val	*/
  * VFATLCASE=[yn] ...... force return of FAT names in lower case
  * WB_ENABLE=<drives> .. enable write back mode for specified drives
  * WRITEPROTECT=<drives> enable software write protection for specified drives
- * 
+ *
  * dependant on global compile time switches:
- * 
+ *
  * HARDSCROLL=n ........ set hard-scroll size to n, range 0-99
  */
 
@@ -308,10 +303,6 @@ static PCB_Dx	pCB_vfat;		/* VFAT=<drives>	*/
 static PCB_B	pCB_vfatlcase;		/* VFATLCASE=[yn]	*/
 static PCB_Dx	pCB_wb_enable;		/* WB_ENABLE=<drives>	*/
 static PCB_Dx	pCB_writeprotect;	/* WRITEPROTECT=<drives>*/
-
-# ifdef FASTTEXT
-/*     short	hardscroll;		 * HARDSCROLL=n		*/
-# endif
 
 # if 0
 /*     short	disallow_single;	 * SINGLEMODE=[yn]	*/
@@ -390,15 +381,10 @@ struct parser_item { char *key; PITYPE type; void *cb; long dat;
 	{ "VFATLCASE",   PI_V_B,   pCB_vfatlcase      },
 	{ "WB_ENABLE",   PI_V_D,   pCB_wb_enable      },
 	{ "WRITEPROTECT",PI_V_D,   pCB_writeprotect   },
-	
-# ifdef FASTTEXT
-	{ "HARDSCROLL",  PI_R_S,   & hardscroll     , Range (-1, 99) },
-# else
 	{ "HARDSCROLL",  PI_R_S,   _NOT_SUPPORTED_    },
-# endif
 	{ "NEWFATFS",    PI_V_D,   pCB_newfatfs       },
 	{ "SINGLEMODE",  PI_R_B,   DISALLOW_SINGLE    },
-	
+
 	{ NULL }
 };
 
@@ -412,7 +398,7 @@ static void
 pCB_alias (const char *drive, const char *path, PARSINF *inf)
 {
 	ushort drv = CHAR2DRV (*drive);
-	
+
 	if (drv >= NUM_DRIVES)
 	{
 		parser_msg  (inf, NULL);
@@ -447,10 +433,10 @@ pCB_aux (const char *path)
 {
 	FILEPTR *fp;
 	long ret;
-	
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
@@ -478,7 +464,7 @@ pCB_biosbuf (bool onNoff)
 	{
 		if (bconbsiz)
 			bflush();
-		
+
 		bconbdev = -1;
 	}
 }
@@ -499,10 +485,10 @@ pCB_con (const char *path)
 {
 	FILEPTR *fp;
 	long ret;
-	
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
@@ -513,7 +499,7 @@ pCB_con (const char *path)
 			curproc->p_fd->ofiles[i] = fp;
 			fp->links++;
 		}
-		
+
 		/* correct for overdoing it */
 		fp->links--;
 	}
@@ -532,7 +518,7 @@ pCB_exec (const char *path, const char *line, PARSINF *inf)
 {
 	char cmdline[128];
 	int i;
-	
+
 	i = strlen(line);
 	if (i > 126) i = 126;
 	cmdline[0] = i;
@@ -589,10 +575,10 @@ pCB_include (const char *path, PARSINF *inf)
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
-	
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	ret = do_open (&fp, path, O_RDONLY, 0, &xattr);
 	if (!ret)
 	{
@@ -606,7 +592,7 @@ pCB_include (const char *path, PARSINF *inf)
 			inf->env_ptr,
 			inf->env_len
 		};
-		
+
 		parser (fp, &include, xattr.size);
 		inf->env_ptr = include.env_ptr;
 		inf->env_len = include.env_len;
@@ -661,10 +647,10 @@ pCB_prn (const char *path)
 {
 	FILEPTR *fp;
 	long ret;
-	
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	ret = do_open (&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
@@ -683,7 +669,7 @@ pCB_setenv (const char *var, const char *arg, PARSINF *inf)
 	long var_len  = strlen(var);
 	long arg_len  = strlen(arg)       +1;   /* + '\0' */
 	long env_plus = var_len + arg_len +1;   /* + '='  */
-	
+
 	if (env_used + env_plus + 1 > inf->env_len) {
 		char *new_env = (char *)m_xalloc (inf->env_len += 1024, 0x13);
 		if (init_env) {
@@ -699,7 +685,7 @@ pCB_setenv (const char *var, const char *arg, PARSINF *inf)
 	         inf->env_ptr[env_plus] = '\0';
 	inf->env_ptr += env_plus;
 }
-	
+
 /*----------------------------------------------------------------------------*/
 static void
 pCB_vfat (ulong list, PARSINF *inf)
@@ -831,7 +817,7 @@ p_REFF (PITYPE type, void *reff, GENARG arg)
 #define DBL '"'
 #define EOL '\n'
 #define ESC '\\'   /* not 0x1B !!! */
-	
+
 enum { ARG_MISS, ARG_NUMB, ARG_RANG, ARG_BOOL, ARG_QUOT };
 
 
@@ -855,7 +841,7 @@ static void
 parse_spaces (PARSINF *inf)
 {
 	char c;
-	
+
 	while (isspace (c = *(inf->src)) && c != '\n') inf->src++;
 }
 
@@ -867,38 +853,38 @@ parse_token (PARSINF *inf, bool upcase)
 	char   delim = NUL;
 	char   c;
 	GENARG ret;ret.c = inf->dst;
-	
+
 	do {
 		if ((c = *(src++)) == NUL) {
 			--src; /* correct overread zero */
-		
+
 		} else if (c == SGL || c == DBL) {
 			if      (delim == NUL) { delim  = c;   continue; }
 			else if (delim == c)   { delim  = NUL; continue; }
-		
+
 		} else if (c == ESC  && ( delim == DBL  ||
 		                         (delim == NUL  && (inf->opt & SET('C'))) )) {
 			if (!*src || *src == EOL || (*src == '\r' && *(src+1) == EOL)) {
 				c = NUL;   /* leading backslash honestly ignored :-) */
-			
+
 			} else if (delim != SGL) switch ( (c = *(src++)) ) {
 				case 't': c = '\t';   break;
 				case 'n': c = '\n';   break;
 				case 'r': c = '\r';   break;
 				case 'e': c = '\x1B'; break; /* special: for nicer output */
 			}
-		
+
 		} else if (c == EOL  || (isspace(c) && delim == NUL)) {
 			if (c == EOL) --src; /* correct overread eol */
 			c = NUL;
-		
+
 		} else if (upcase) {
 			c = toupper((int)c & 0xff);
 		}
 		*(dst++) = c;
-	
+
 	} while (c);
-	
+
 	if (src == inf->src) {
 		dst     = NULL; /* ARG_MISS */
 	} else if (delim != NUL) {
@@ -907,7 +893,7 @@ parse_token (PARSINF *inf, bool upcase)
 	}
 	inf->dst = dst;
 	inf->src = src;
-	
+
 	return ret;
 }
 
@@ -916,7 +902,7 @@ static GENARG
 parse_line (PARSINF *inf)
 {
 	GENARG ret;ret.c = inf->dst;
-	
+
 	while (*(inf->src) && *(inf->src) != EOL) {
 		parse_token  (inf, false);
 		parse_spaces (inf);
@@ -924,7 +910,7 @@ parse_line (PARSINF *inf)
 	}
 	if (inf->dst == ret.c) inf->dst = ret.c +1;
 	 *(inf->dst -1) = NUL;
-	
+
 	return ret;
 }
 
@@ -940,7 +926,7 @@ static GENARG
 parse_drvlst (PARSINF *inf)
 {
 	GENARG ret;ret.u = 0;
-	
+
 	while (*(inf->src)) {
 		long drv = strchr (drv_list, toupper((int)*(inf->src) & 0xff)) - drv_list;
 		if (drv < 0) break;
@@ -965,7 +951,7 @@ parse_long (PARSINF *inf, RANGE *range)
 	char   *src      = inf->src;
 	int    sign      = 1;
 	GENARG ret;ret.l = 0;
-	
+
 	if (*src == '-') {
 		sign = -1;
 		src++;
@@ -976,7 +962,7 @@ parse_long (PARSINF *inf, RANGE *range)
 		else if (toupper((int)*src & 0xff) == 'M') { ret.l *= 1024l*1024; src++; }
 	}
 	*(inf->dst++) = '\0'; /* not really necessary */
-	
+
 	if (src == inf->src  || (*src && !isspace(*src))) {
 		ret._err = ARG_NUMB;
 		inf->dst = NULL;
@@ -987,7 +973,7 @@ parse_long (PARSINF *inf, RANGE *range)
 		ret.l *= sign;
 	}
 	inf->src = src;
-	
+
 	return ret;
 }
 
@@ -998,7 +984,7 @@ parse_short (PARSINF *inf, RANGE *range)
 	RANGE  s_rng = {0x8000,0x7FFF};
 	GENARG ret   = parse_long (inf, (range ? range : &s_rng));
 	if (inf->dst) ret.s = (short)ret.l;
-	
+
 	return ret;
 }
 
@@ -1010,7 +996,7 @@ parse_bool (PARSINF *inf)
 	                     "\0OFF","\1ON", "\0FALSE","\1TRUE", NULL };
 	char *token      = (parse_token (inf, true)).c;
 	GENARG ret;ret.b = false;
-	
+
 	if (!inf->dst) {
 		ret._err = ((GENARG)token)._err;
 	} else {
@@ -1023,7 +1009,7 @@ parse_bool (PARSINF *inf)
 			ret.b    = ((*p)[0] != '\0');
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -1034,7 +1020,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 	long b_len = f_size + 2;
 	int  state = 1;	/* 0: skip, 1: key, 2: arg(s), 3: call */
 	char *buf;
-	
+
 	if (f_size == 0)
 	{
 		if (!(inf->opt & SET ('Q')))
@@ -1043,21 +1029,21 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 		}
 		return;
 	}
-	
+
 	buf = kmalloc (b_len);
 	if (!buf)
 	{
 		boot_printf (MSG_cnf_cant_allocate, inf->file, b_len);
 		return;
 	}
-	
+
 	inf->src = buf + b_len - f_size - 1;
-	
+
 	if (!(inf->opt & SET ('Q')))
 	{
 		boot_printf (MSG_cnf_reading_mintcnf, inf->file);
 	}
-	
+
 	if ((*f->dev->read)(f, inf->src, f_size) != f_size)
 	{
 		boot_print (MSG_cnf_not_successful);
@@ -1068,19 +1054,19 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 	{
 		boot_printf (MSG_cnf_bytes_done, f_size);
 	}
-	
+
 	inf->src [f_size] = '\0';
-	
+
 	while (*(inf->src))
 	{
 		const struct parser_item *item    = NULL;
 		GENARG                   arg[2]   = { {0}, {0} };
 		int                      arg_type = 0;
 		int                      arg_num  = 0;
-		
+
 		if (state == (1)) {   /*---------- process keyword */
 			char c;
-			
+
 			/*--- (1.1) skip leading spaces and empty or comment lines */
 			while ( (c = *(inf->src)) ) {
 				if      (c == '#')    while ((c = *(++inf->src)) && c != EOL);
@@ -1089,7 +1075,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				inf->src++;
 			}
 			if (*(inf->src) == NUL) break;   /* <eof> */
-			
+
 			if (inf->opt & SET('V')) {
 				char save, *end = inf->src;
 				while (*end && *end != '\r' && *end != '\n') end++;
@@ -1098,7 +1084,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				boot_printf ("%s\r\n", inf->src);
 				*end = save;
 			}
-			
+
 			/*--- (1.2) now read the keyword */
 			inf->dst = buf;
 			while ((c = toupper((int)*(inf->src) & 0xff)) && c != '='  && !isspace(c)) {
@@ -1106,11 +1092,11 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				inf->src++;
 			}
 			*(inf->dst++) = '\0';
-			
+
 			/*--- (1.3) find item */
 			item = parser_tab;
 			while (item->key && strcmp (buf, item->key)) item++;
-			
+
 			if (!item->key) {   /*--- (1.3.1) keyword not found */
 				parse_spaces (inf);   /* skip to next character */
 				parser_msg (inf, NULL);
@@ -1118,13 +1104,13 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				boot_printf(" '%s'", buf);
 				parser_msg (NULL,NULL);
 				state = 0;
-			
+
 			} else if (!item->cb) {   /*--- (1.3.2) found, but not supported */
 				parser_msg (inf, NULL);
 				boot_printf(MSG_cnf_keyword_not_supported, item->key);
 				parser_msg (NULL,NULL);
 				state = 0;
-			
+
 			} else if (item->type & PI_V__) {   /*--- (1.3.3) check equation */
 				parse_spaces (inf);   /* skip to '=' */
 				if (*(inf->src) != '=') {
@@ -1142,14 +1128,14 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				state    = 2;
 			}
 		}
-		
+
 		while (state == (2)) {   /*---------- process arg */
-		
+
 			RANGE *range = (item->dat ? (RANGE*)&item->dat : NULL);
 			char  *start;
-			
+
 			parse_spaces (inf);   /*--- (2.1) skip leading spaces */
-			
+
 			start = inf->src;   /*--- (2.2) read argument */
 			switch (arg_type & 0x0F) {
 				case 0x01: arg[arg_num] = parse_short  (inf, range); break;
@@ -1172,20 +1158,20 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				boot_print (msg);
 				parser_msg (NULL,NULL);
 				state = 0;
-			
+
 			} else {   /*----- (2.4) success */
 				arg_num++;
 				state = ((arg_type >>= 4) & 0x0F ? 2 : 3);
 			}
 		}
-		
+
 		if (state == (3)) {   /*---------- handle the callback */
-		
+
 			union { void *_v; PCB_Lx *l; PCB_Bx *b; PCB_Dx *u; PCB_Tx *c;
 			        PCB_TTx *cc; PCB_0TT *_cc; PCB_ATK *ccl;
 			} cb;
 			cb._v = item->cb;
-			
+
 			/*--- (3.1) check for following characters */
 
 			parse_spaces (inf);   /* skip following spaces */
@@ -1214,7 +1200,7 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				case PI_V_ATK:            (*cb.ccl)(  A0C,A1C,item->dat   ); break;
 				case PI_R_S: case PI_R_L: case PI_R_B:
 				                           p_REFF (item->type,cb._v,arg[0]); break;
-				
+
 				default: ALERT(MSG_cnf_unknown_tag,
 					            (int)item->type, item->key);
 			}
@@ -1222,9 +1208,9 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 				state = 1;
 			}
 		}
-		
+
 		if (state == (0)) {   /*---------- skip to end of line */
-		
+
 			while (*inf->src) {
 				if (*(inf->src++) == '\n') {
 					inf->line++;
@@ -1232,8 +1218,8 @@ parser (FILEPTR *f, PARSINF *inf, long f_size)
 					break;
 				}
 			}
-		}		
+		}
 	} /* end while */
-	
+
 	kfree (buf);
 }

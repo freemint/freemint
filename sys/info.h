@@ -132,12 +132,6 @@ extern const char *MSG_oglobal_denied;
 extern const char *MSG_global_handle;
 # endif
 
-/* fasttext.c */
-# ifdef FASTTEXT
-extern const char *ERR_ftxt_insuff_mem_for_table;
-extern const char *MSG_ftxt_insuff_mem_for_scroll;
-# endif
-
 /* filesys.c */
 extern const char *ERR_fsys_inv_fdcwd;
 extern const char *MSG_fsys_files_were_open;
