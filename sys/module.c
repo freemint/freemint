@@ -535,17 +535,24 @@ load_km(const char *path)
 }
 
 long _cdecl
-register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
+register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 {
 	long _cdecl (**handler)(void *) = NULL;
+	long *x;
 	long ret = EINVAL;
 
 	DEBUG(("register_trap2(0x%lx, %i, %i)", dispatch, mode, flag));
 
 	if (flag == 0)
+	{
 		handler = &aes_handler;
+		x = 0;
+	}
 	else if (flag == 1)
+	{
 		handler = &vdi_handler;
+		x = &gdos_version;
+	}
 
 	if (mode == 0)
 	{
@@ -556,6 +563,8 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
 			DEBUG(("register_trap2: installing handler at 0x%lx", dispatch));
 
 			*handler = dispatch;
+			if (x)
+				*x = extra;
 			ret = 0;
 		}
 	}
@@ -568,6 +577,8 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
 			DEBUG(("register_trap2: removing handler at 0x%lx", dispatch));
 
 			*handler = NULL;
+			if (x)
+				*x = 0;
 			ret = 0;
 		}
 	}
