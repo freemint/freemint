@@ -64,6 +64,9 @@ long floppy_mediach(unsigned short drv);
 /* lowlevel floppy_rwabs */
 //signed long floppy_rw(signed short rw, signed long buf, signed short cnt, signed long recnr, signed short spt, signed short sides, signed short dev);
 
+/* floppy vbl routine */
+void flopvbl(void);
+
 #endif /* _floppy_h */
 
 #endif /* FLOPPY_ROUTINES */
