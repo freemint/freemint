@@ -1182,6 +1182,12 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 						wl->send_message(wlock, wl, NULL,
 							WM_REDRAW, 0, 0, wl->handle,
 							clip.x, clip.y, clip.w, clip.h);
+
+					if (wl->owner->p->pid != p_getpid() && wl->owner->p->pid != C.AESpid)
+					{
+						Unblock(wl->owner, 1, 343);
+						yield();
+					}
 				}
 				else
 				{
