@@ -34,7 +34,6 @@
 # include "kmemory.h"
 # include "util.h"
 
-
 /*
  * all functions in this module (!!)
  */
@@ -43,6 +42,9 @@ void		init_mem	(void);
 void		init_core	(void);
 void		init_swap	(void);
 int		add_region	(MMAP map, ulong place, ulong size, unsigned mflags);
+
+ulong dp_all = 0;
+ulong dp = 0;
 
 static long	core_malloc	(long, int);
 static void	core_free	(long);
@@ -125,8 +127,8 @@ ulong initialmem = 4096;	/* dito */
 INLINE int ISFREE (const MEMREGION *m) { return (m->links == 0); }
 # endif
 
-/*
- * initialize memory routines
+/**
+ * Initialize memory routines.
  */
 
 /* these variables are set in init_core(), and used in
@@ -256,19 +258,24 @@ static MEMREGION *_alt_regions	= NULL;
 MMAP core = &_core_regions;
 MMAP alt  = &_alt_regions;
 
-/* note: add_region must adjust both the size and starting
+/**
+ * Helper-function for "init_mem()" to create the core/ alt-region-maps.
+ *
+ * note: add_region must adjust both the size and starting
  * address of the region being added so that memory is
  * always properly aligned
  * 
  * mflags - initial flags for region
  */
-
 int
 add_region (MMAP map, ulong place, ulong size, unsigned mflags)
 {
   	MEMREGION *m;
 	ulong trimsize;
 	
+	// Just for testing the lose of Memory
+	ulong dp_diff = size;
+
 	TRACELOW(("add_region(map=%lx,place=%lx,size=%lx,flags=%x)",
 		map,place,size,mflags));
 	
@@ -296,6 +303,8 @@ add_region (MMAP map, ulong place, ulong size, unsigned mflags)
 	/* only add if there's anything left */
 	if (size)
 	{
+	  dp_diff -= size;
+	  dp_all += dp_diff;
 		m->len = size;
 		m->loc = place;
 		m->next = *map;
@@ -349,6 +358,12 @@ core_free (long where)
 	Mfree((void *)where);
 }
 
+/**
+ * Initilize the Core-Memory.
+ *  - Locate the screenmemory-position, if it isn't a gfx-card.
+ *  - Create the core-region-map with "add_region()".
+ *  - Create the alt-region-map with "add_region()".
+ */
 void
 init_core (void)
 {
@@ -460,6 +475,10 @@ init_core (void)
 		(void) add_region (core, scrnplace, scrnsize, M_CORE);
 	}
 	
+	boot_printf ("%lu bytes LOSE of ST RAM, ", dp_all);
+	for (dp = 0; dp < (80*20); dp++)
+	  boot_printf( ".");
+
 	/* initialize alternate RAM */
  	size = (ulong)core_malloc(-1L, 1);
 	
@@ -733,15 +752,16 @@ detach_region_by_addr (PROC *p, virtaddr block)
 	return EBADARG;
 }
 
-/*
- * get_region(MMAP map, ulong size, int mode) -- allocate a new region of the
- * given size in the given memory map. if no region big enough is available,
- * return NULL, otherwise return a pointer to the region.
- * "mode" tells us about memory protection modes
- * 
- * the "links" field in the region is set to 1
+/**
+ * Allocate a new region of the given size in the given memory map.
+ * The "links" field in the region is set to 1.
+ * @param map  The memory map to query.
+ * @param size Needed size of region.
+ * @param mode The protection mode to activate.
+ * @return @retval NULL No region big enough is available.
+ *
+ *         Otherwise a pointer to the region.
  */
-
 MEMREGION *
 get_region (MMAP map, ulong size, int mode)
 {
@@ -883,17 +903,18 @@ win:
 	return n;
 }
 
-/*
- * free_region (MEMREGION *reg): free the indicated region. The map
- * in which the region is contained is given by reg->mflags.
- * the caller is responsible for making sure that the region
+/**
+ * Free a memory region.
+ * @param reg This region should be freed.
+ *
+ * The map which contains the region is given by reg->mflags.
+ * The caller is responsible for making sure that the region
  * really should be freed, i.e. that reg->links == 0.
  *
- * special things to do:
- * if the region has shadow regions, we delete the descriptor
- * and free one of the save regions
+ * Special things to do:
+ * If the region has shadow regions, we delete the descriptor
+ * and free one of the save regions.
  */
-
 void
 free_region (MEMREGION *reg)
 {
@@ -1080,13 +1101,14 @@ end:
 	SANITY_CHECK_MAPS ();
 }
 
-/*
- * shrink_region (MEMREGION *reg, ulong newsize):
- *   shrink region 'reg', so that it is now 'newsize' bytes long.
- *   if 'newsize' is bigger than the region's current size, return ESBLOCK;
- *   otherwise return E_OK.
- */
+/**
+ * Shrink a memory region.
+ * @param reg     This region should be shrinked.
+ * @param newsize New size for the region in bytes.
 
+ * @return @retval ESBLOCK New size is bigger than current size.
+ *         @retval E_OK    Resize succeded.
+ */
 long
 shrink_region (MEMREGION *reg, ulong newsize)
 {
@@ -1180,17 +1202,16 @@ leave:
 	return ret;
 }
 
-/*
- * max_rsize(map, needed): return the length of the biggest free region
- * in the given memory map, or 0 if no regions remain.
- * needed is minimun amount needed, if != 0 try to keep unattached
+/**
+ * @param needed is minimun amount needed, if != 0 try to keep unattached
  * shared text regions, else count them all as free.
+ * @return The length of the biggest free region in the given memory map,
+ * or 0 if no regions remain.
  */
-
 long
 max_rsize (MMAP map, long needed)
 {
-	const MEMREGION *m;
+        const MEMREGION *m;
 	long size = 0, lastsize = 0, end = 0;
 
 	if (needed)
@@ -1244,12 +1265,10 @@ max_rsize (MMAP map, long needed)
 	return size;
 }
 
-/*
- * tot_rsize(map, flag): if flag == 1, return the total number of bytes in
- * the given memory map; if flag == 0, return only the number of free
- * bytes
+/**
+ * @param flag 1: return the total number of bytes in the given memory map;
+ *             0: return only the number of free bytes
  */
-
 long
 tot_rsize (MMAP map, int flag)
 {
@@ -1276,13 +1295,11 @@ freephysmem (void)
 	return size;
 }
 
-/*
- * alloc_region(MMAP map, ulong size, int mode): allocate a new region and
- * attach it to the current process; returns the address at which the region
- * was attached, or NULL. The mode argument is the memory protection mode to
- * give to get_region, and in turn to mark_region.
+/**
+ * Allocate a new region and attach it to the current process.
+ * @param mode The memory protection mode to pass get_region(), and in turn to mark_region().
+ * @return the address at which the region was attached, or NULL.
  */
-
 virtaddr
 alloc_region (MMAP map, ulong size, int mode)
 {
@@ -1690,8 +1707,8 @@ leave:
 	return m;
 }
 
-/*
- * load_region(): loads the program with the given file name
+/**
+ * Loads the program with the given file name
  * into a new region, and returns a pointer to that region. On
  * an error, returns 0 and leaves the error number in err.
  * "env" points to an already set up environment region, as returned
@@ -1699,12 +1716,14 @@ leave:
  * Pexec has already determined, and "fp" points to the programs
  * prgflags.
  *
- * xp:     attributes for the file just loaded
- * fp:     prgflags for this file
- * isexec: this is an exec*() (overlay)
- * err:    error code is stored here
+ * @param filename The name of the file to load.
+ * @param env
+ * @param cmdlin
+ * @param xp       Attributes for the file just loaded.
+ * @param fp       Prgflags for this file.
+ * @param isexec   This is an exec*() (overlay).
+ * @param err      Error code is stored here.
  */
-
 MEMREGION *
 load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp, long *fp, int isexec, long *err)
 {
