@@ -114,3 +114,8 @@
 #define FNTS_CBSTYLES    15  /* BOX in Baum WDLG_FNTS */
 #define FNTS_CBSIZES     16  /* BOX in Baum WDLG_FNTS */
 #define FNTS_CBRATIO     17  /* BOX in Baum WDLG_FNTS */
+#define FNTS_XDISPLAY    18  /* BUTTON in Baum WDLG_FNTS */
+
+#define RSC_CONTROL      11  /* Formular/Dialog */
+#define CTRL_SLIST       1   /* BOX in Baum RSC_CONTROL */
+#define CTRL_CTRLITEM    2   /* IBOX in Baum RSC_CONTROL */

@@ -447,7 +447,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			slw->position = bound_sl(pb->intin[2]);
 			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
 				slw->rpos = bound_sl(pb->intin[3]);
-			display_widget(lock, w, widg);
+			display_widget(lock, w, widg, NULL);
 		}
 		break;
 	}
@@ -464,7 +464,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			slw->position = bound_sl(pb->intin[2]);
 			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
 				slw->rpos = bound_sl(pb->intin[3]);
-			display_widget(lock, w, widg);
+			display_widget(lock, w, widg, NULL);
 		}
 		break;
 	}
@@ -479,7 +479,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			XA_SLIDER_WIDGET *slw = widg->stuff;
 			slw->length = bound_sl(pb->intin[2]);
-			display_widget(lock, w, widg);
+			display_widget(lock, w, widg, NULL);
 		}
 		break;
 	}
@@ -494,7 +494,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			XA_SLIDER_WIDGET *slw = widg->stuff;
 			slw->length = bound_sl(pb->intin[2]);
-			display_widget(lock, w, widg);
+			display_widget(lock, w, widg, NULL);
 		}
 		break;
 	}

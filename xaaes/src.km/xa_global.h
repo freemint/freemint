@@ -323,6 +323,8 @@ struct config
 
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
+	bool remap_cicons;
+	bool set_rscpalette;
 	bool no_xa_fsel;
 	bool auto_program;
 	bool point_to_type;
@@ -399,6 +401,8 @@ struct xa_screen
 
 	short c_max_w, c_max_h;		/* Maximum character dimensions in pixels */
 	short c_min_w, c_min_h;		/* Minimum (small font) character dimensions in pixels */
+
+	struct rgb_1000 palette[256];
 };
 
 /* The screen descriptor */

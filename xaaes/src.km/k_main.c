@@ -587,7 +587,15 @@ alert_input(enum locks lock)
 		/* Add the log entry */
 		{
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			list->add(list, icon, data->buf, FLAG_MAL, NULL); //add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL, NULL);
+			struct seget_entrybyarg p = { 0 };
+			struct scroll_content sc = { 0 };
+			
+			sc.icon = icon;
+			sc.text = data->buf;
+			sc.n_strings = 1;
+			p.arg.txt = "Alerts";
+			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, FLAG_MAL, true); //add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL, NULL);
 		}
 
 		 /* Now you can always lookup the error in the log. */

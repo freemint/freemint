@@ -27,6 +27,6 @@
 #ifndef _matchpat_h
 #define _matchpat_h
 
-int match_pattern(char *t, char *pat);
+int match_pattern(char *t, char *pat, bool auto_wc);
 
 #endif /* _matchpat_h */

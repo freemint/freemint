@@ -49,6 +49,7 @@
 #include "xa_shel.h"
 #include "xa_rsrc.h"
 #include "xa_fsel.h"
+#include "trnfm.h"
 
 #include "mint/signal.h"
 
@@ -62,7 +63,7 @@ refresh_tasklist(enum locks lock)
 	struct xa_client *client;
 
 	/* Empty the task list */
-	list->empty(list, -1);
+	list->empty(list, NULL, -1);
 
 	Sema_Up(clients);
 
@@ -72,6 +73,7 @@ refresh_tasklist(enum locks lock)
 		const size_t tx_len = 128;
 		OBJECT *icon;
 		char *tx;
+		struct scroll_content sc = { 0 };
 
 		/* default icon */
 		icon = form + TM_ICN_XAAES;
@@ -96,13 +98,21 @@ refresh_tasklist(enum locks lock)
 			else
 				sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
 
-			list->add(list, icon, tx, FLAG_MAL, NULL);
+			sc.icon = icon;
+			sc.text = tx;
+			sc.n_strings = 1;
+			list->add(list, NULL, NULL, &sc, false, FLAG_MAL, true);
 		}
 		else
-			list->add(list, icon, client->name, 0, NULL);
+		{
+			sc.icon = icon;
+			sc.text = client->name;
+			sc.n_strings = 1;
+			list->add(list, NULL, NULL, &sc, false, 0, true);
+		}
 	}
 
-	list->slider(list);
+	list->slider(list, true);
 	Sema_Dn(clients);
 }
 
@@ -232,7 +242,8 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 	OBJECT *ob = form + TM_LIST;
 	SCROLL_INFO *list = object_get_slist(ob); //(SCROLL_INFO *)ob->ob_spec.index;
 
-	list->empty(list, -1);
+	list->empty(list, NULL, -1);
+	
 	task_man_win = NULL;
 
 	return true;
@@ -564,7 +575,6 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 	launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
 }
 
-
 #if FILESELECTOR
 
 static struct fsel_data aes_fsel_data;
@@ -590,6 +600,117 @@ open_launcher(enum locks lock)
 			  handle_launcher, NULL);
 }
 #endif
+
+static struct xa_wtexture test_texture =
+{
+	0, 0, NULL,
+};
+static MFDB tmfdb;
+
+static char imgpath[200] = { 0 };
+extern struct xa_window_colours def_otop_wc;
+
+#define TESTMASK (WCOL_DRAWBKG|WCOL_BOXED)
+
+static void
+handle_imgload(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
+{
+	char parms[200], *t;
+	
+	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
+	parms[0] = '\0';
+
+	for(t = parms + 1; *t; t++)
+	{
+		if (*t == '/')
+			*t = '\\';
+	}		
+
+	close_fileselector(lock, fs);
+
+	DIAGS(("launch: \"%s\"", parms+1));
+	sprintf(imgpath, sizeof(imgpath), "%s%s", path, fs->fs_pattern);
+	display("selected imgfile = '%s' in '%s'", file, path);
+	
+	load_image(parms+1, &tmfdb);
+	
+	if (tmfdb.fd_addr)
+	{
+		test_texture.mfdb = &tmfdb;
+		def_otop_wc.title.n.texture = &test_texture;
+		def_otop_wc.title.s.texture = &test_texture;
+		def_otop_wc.title.flags &= ~TESTMASK;
+
+		def_otop_wc.closer.n.texture = &test_texture;
+		def_otop_wc.closer.s.texture = &test_texture;
+		def_otop_wc.closer.flags &= ~TESTMASK;
+		
+		def_otop_wc.hider.n.texture = &test_texture;
+		def_otop_wc.hider.s.texture = &test_texture;
+		def_otop_wc.hider.flags &= ~TESTMASK;
+		
+		def_otop_wc.iconifier.n.texture = &test_texture;
+		def_otop_wc.iconifier.s.texture = &test_texture;
+		def_otop_wc.iconifier.flags &= ~TESTMASK;
+		
+		def_otop_wc.fuller.n.texture = &test_texture;
+		def_otop_wc.fuller.s.texture = &test_texture;
+		def_otop_wc.fuller.flags &= ~TESTMASK;
+		
+		def_otop_wc.sizer.n.texture = &test_texture;
+		def_otop_wc.sizer.s.texture = &test_texture;
+		def_otop_wc.sizer.flags &= ~TESTMASK;
+		
+		def_otop_wc.slider.n.texture = &test_texture;
+		def_otop_wc.slider.s.texture = &test_texture;
+		def_otop_wc.slider.flags &= ~(WCOL_DRAWBKG|WCOL_BOXED);
+	
+	}
+	else
+	{
+		def_otop_wc.title.n.texture = NULL;
+		def_otop_wc.title.s.texture = NULL;
+		def_otop_wc.closer.n.texture = NULL;
+		def_otop_wc.closer.s.texture = NULL;
+		def_otop_wc.hider.n.texture = NULL;
+		def_otop_wc.hider.s.texture = NULL;
+		def_otop_wc.iconifier.n.texture = NULL;
+		def_otop_wc.iconifier.s.texture = NULL;
+		def_otop_wc.fuller.n.texture = NULL;
+		def_otop_wc.fuller.s.texture = NULL;
+		def_otop_wc.sizer.n.texture = NULL;
+		def_otop_wc.sizer.s.texture = NULL;
+	
+		def_otop_wc.slider.n.texture = NULL;
+		def_otop_wc.slider.s.texture = NULL;
+	}
+}
+
+void
+open_imgload(enum locks lock)
+{
+	struct fsel_data *fs;
+	char *path = imgpath;
+
+	display("open path '%s'", path);
+	
+	if (!*path)
+	{
+		path[0] = 'u'; //d_getdrv() + 'a';
+		path[1] = ':'; //':';
+		path[2] = '\\';
+		path[3] = '*';
+		path[4] = 0;
+	}
+
+	fs = &aes_fsel_data;
+	open_fileselector(lock, C.Aes, fs,
+			  path,
+			  NULL, "Select image",
+			  handle_imgload, NULL);
+	
+}
+
 
 static struct xa_window *systemalerts_win = NULL;
 
@@ -625,7 +746,7 @@ sysalerts_form_exit(struct xa_client *Client,
 		case SALERT_CLEAR:
 		{
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			list->empty(list, -1);
+			list->empty(list, NULL, -1);
 			object_deselect(wt->tree + item);
 			redraw_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 			redraw_toolbar(lock, systemalerts_win, item);
@@ -655,7 +776,7 @@ refresh_systemalerts(OBJECT *form)
 	OBJECT *sl = form + SYSALERT_LIST;
 	SCROLL_INFO *list = object_get_slist(sl);
 
-	list->slider(list);
+	list->slider(list, true);
 }
 
 static void
@@ -715,6 +836,7 @@ open_systemalerts(enum locks lock)
 	}
 }
 
+
 /*
  * Handle clicks on the system default menu
  */
@@ -759,13 +881,21 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		{
 			OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
+			struct scroll_entry *this;
 			char * const * const strings = get_raw_env();
 			int i;
+			struct seget_entrybyarg p = { 0 };
+			struct scroll_content sc = { 0 };
 
-			list->empty(list, FLAG_ENV);
-
+			p.arg.txt = "Environment";
+			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+			list->empty(list, p.e, 0);
+			this = p.e;
+			sc.n_strings = 1;
 			for (i = 0; strings[i]; i++)
-				list->add(list, NULL, strings[i], FLAG_ENV, NULL);
+			{	sc.text = strings[i];
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, FLAG_AMAL, true);
+			}
 
 			open_systemalerts(lock);
 			break;

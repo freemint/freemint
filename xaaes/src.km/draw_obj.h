@@ -48,6 +48,9 @@ void	t_font(short p, short f);
 void	f_interior(short m);
 void	f_style(short m);
 
+void	text_extent(const char *t, struct xa_fnt_info *f, short *w, short *h);
+void	wtxt_output(struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, short xoff, short yoff);
+
 bool d3_any(OBJECT *ob);
 bool d3_indicator(OBJECT *ob);
 bool d3_foreground(OBJECT *ob);
@@ -85,7 +88,9 @@ void tl_hook(short d, const RECT *r, short col);
 void br_hook(short d, const RECT *r, short col);
 void chiseled_gbox(short d, const RECT *r);
 void t_extent(const char *t, short *w, short *h);
+void r2pxy(short *p, short d, const RECT *r);
 void rtopxy(short *p, const RECT *r);
+void ri2pxy(short *p, short d, short x, short y, short w, short h);
 void ritopxy(short *p, short x, short y, short w, short h);
 void form_save(short d, RECT r, void **area);
 void form_restore(short d, RECT r, void **area);

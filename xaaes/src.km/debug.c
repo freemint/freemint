@@ -64,6 +64,36 @@ display(const char *fmt, ...)
 	c_conws(buf);
 }
 
+void
+ndisplay(const char *fmt, ...)
+{
+	char buf[512];
+	va_list args;
+	long l;
+
+	va_start(args, fmt);
+	l = vsprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+	DEBUG((buf));
+
+#if GENERATE_DIAGS
+	if (D.debug_file)
+	{
+		kernel_write(D.debug_file, buf, l);
+	}
+#endif
+#if BOOTLOG
+	if (C.bootlog_file)
+	{
+		kernel_write(C.bootlog_file, buf, l);
+	}
+#endif
+
+	buf[l] = '\0';
+	c_conws(buf);
+}
+
 #if GENERATE_DIAGS
 
 /* debugging catagories & data */
