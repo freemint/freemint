@@ -56,12 +56,13 @@ long kern_get_uptime		(SIZEBUF **buffer);
 long kern_get_version		(SIZEBUF **buffer);
 long kern_get_welcome		(SIZEBUF **buffer);
 
-long kern_procdir_get_cmdline	(SIZEBUF **buffer, const struct proc *p);
-long kern_procdir_get_environ	(SIZEBUF **buffer,       struct proc *p);
-long kern_procdir_get_fname	(SIZEBUF **buffer, const struct proc *p);
-long kern_procdir_get_meminfo	(SIZEBUF **buffer, const struct proc *p);
-long kern_procdir_get_stat	(SIZEBUF **buffer,       struct proc *p);
-long kern_procdir_get_status	(SIZEBUF **buffer, const struct proc *p);
+long kern_procdir_get_cmdline	(SIZEBUF **buffer, const PROC *p);
+long kern_procdir_get_environ	(SIZEBUF **buffer,       PROC *p);
+long kern_procdir_get_fname	(SIZEBUF **buffer, const PROC *p);
+long kern_procdir_get_meminfo	(SIZEBUF **buffer, const PROC *p);
+long kern_procdir_get_stat	(SIZEBUF **buffer,       PROC *p);
+long kern_procdir_get_statm     (SIZEBUF **buffer,	 PROC *p);
+long kern_procdir_get_status	(SIZEBUF **buffer, const PROC *p);
 
 # endif
 

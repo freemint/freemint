@@ -57,21 +57,21 @@ struct pgrp
 	short	pg_id;			/* Pgrp id. */
 };
 
+/** @struct memspace
+ * Description of the memory used by a process.
+ * There is a structure for each process. To walk throuh the memregions use:
+ * 	mem[i], where i in [0, num_reg)   OR   0<= i < num_reg
+ */
 struct memspace
 {
 	long	links;
 	
-	ushort	num_reg;		/* number of allocated memory	*
-					 * regions			*/
-	MEMREGION **mem;		/* allocated memory regions	*/
-	long	*addr;			/* addresses of regions		*/
-	
-	void	*page_table;		/* rounded page table pointer	*/
-	void	*pt_mem;		/* original kmalloc'd block for	*
-					 * above			*/
-	
-	long	txtsize;		/* size of text region		*
-					 * (for fork())			*/
+	ushort	num_reg;		///< Nnumber of allocated memoryregions.
+	MEMREGION **mem;		///< Array of ptrs to allocated regions.
+	long	*addr;			///< Array of addresses of regions.
+	void	*page_table;	///< rounded page table pointer.
+	void	*pt_mem;		///< original kmalloc'd block for above.
+	long	txtsize;		///< size of text region (for fork()).
 };
 
 

@@ -39,7 +39,7 @@
 static void VDEBUGOUT (int, const char *, va_list);
 
 
-int debug_level = 1;	/* how much debugging info should we print? */
+int debug_level = 0;	/* how much debugging info should we print? */
 # if 1
 int out_device = 2;	/* BIOS device to write errors to */
 # else

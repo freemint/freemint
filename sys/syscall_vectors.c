@@ -748,7 +748,7 @@ init_xbios (void)
 {
 	/* init XBIOS Random() function */
 	init_xrandom ();
-	
+
 	/* init bconmap stuff */
 	init_bconmap ();
 }
