@@ -1,11 +1,11 @@
 /*
  * $Id$
- * 
+ *
  * This file implements some sort of filename -> un_index conversion
  * cache. Speeds up for real FS's (where the inode numbers are NOT
  * junk) and slows down for the silly FS's where the inode numbers
  * are junk.
- * 
+ *
  * 12/12/93, kay roemer.
  */
 
@@ -42,14 +42,14 @@ un_cache_lookup (char *name, long *index)
 	short dirty_idx, i;
 	long r, stamp, fd;
 	static short last_deleted = 0;
-	
-	r = f_xattr (1, name, &attr);
+
+	r = sys_f_xattr (1, name, &attr);
 	if (r)
 	{
 		DEBUG (("unix: un_cache_lookup: Fxattr(%s) -> %ld", name, r));
 		return r;
 	}
-	
+
 	dirty_idx = -1;
 	stamp = MK_STAMP (attr.mtime, attr.mdate);
 	for (i = 0; i < CACHE_ENTRIES; i++)
@@ -59,7 +59,7 @@ un_cache_lookup (char *name, long *index)
 			dirty_idx = i;
 			continue;
 		}
-		
+
 		if (f_cache[i].inode == attr.index
 			&& f_cache[i].dev == attr.dev)
 		{
@@ -76,7 +76,7 @@ un_cache_lookup (char *name, long *index)
 			}
 		}
 	}
-	
+
 	/* No matching entry found. We drop dirty_entry or some other entry
 	 * in a round robin manner if no dirty entry is left.
 	 */
@@ -86,32 +86,32 @@ un_cache_lookup (char *name, long *index)
 		DEBUG (("unix: un_cache_lookup: Fopen(%s) -> %ld", name, fd));
 		return fd;
 	}
-	
+
 	r = f_read (fd, sizeof (*index), (char *) index);
 	f_close (fd);
-	
+
 	if (r >= 0 && r != sizeof (*index))
 		r = EACCES;
-	
+
 	if (r < 0)
 	{
 		DEBUG (("unix: un_namei: Could not read idx from %s", name));
 		return r;
 	}
-	
+
 	if (dirty_idx == -1)
 	{
 		dirty_idx = last_deleted++;
 		if (last_deleted >= CACHE_ENTRIES)
 			last_deleted = 0;
 	}
-	
+
 	f_cache[dirty_idx].dev = attr.dev;
 	f_cache[dirty_idx].inode = attr.index;
 	f_cache[dirty_idx].stamp = stamp;
 	f_cache[dirty_idx].un_index = *index;
 	f_cache[dirty_idx].valid = CACHE_VALID;
-	
+
 	return 0;
 }
 
@@ -121,10 +121,10 @@ un_cache_remove (char *name)
 	XATTR attr;
 	long r;
 	short i;
-	
-	r = f_xattr (1, name, &attr);
+
+	r = sys_f_xattr (1, name, &attr);
 	if (r) return;
-	
+
 	for (i = 0; i < CACHE_ENTRIES; i++)
 	{
 		if (f_cache[i].valid == CACHE_VALID

@@ -36,7 +36,7 @@
 /* change to a new drive: should always return a map of valid drives
  */
 long _cdecl
-d_setdrv (int d)
+sys_d_setdrv (int d)
 {
 	PROC *p = curproc;
 	long r;
@@ -60,7 +60,7 @@ d_setdrv (int d)
 
 
 long _cdecl
-d_getdrv (void)
+sys_d_getdrv (void)
 {
 	PROC *p = curproc;
 
@@ -71,7 +71,7 @@ d_getdrv (void)
 }
 
 long _cdecl
-d_free (long *buf, int d)
+sys_d_free (long *buf, int d)
 {
 	PROC *p = curproc;
 	fcookie *dir = 0;
@@ -140,7 +140,7 @@ aliased:
 }
 
 long _cdecl
-d_create (const char *path)
+sys_d_create (const char *path)
 {
 	PROC *p = curproc;
 	fcookie dir;
@@ -202,7 +202,7 @@ d_create (const char *path)
 }
 
 long _cdecl
-d_delete (const char *path)
+sys_d_delete (const char *path)
 {
 	struct ucred *cred = curproc->p_cred->ucr;
 
@@ -334,7 +334,7 @@ bailout:
 }
 
 long _cdecl
-d_setpath (const char *path)
+sys_d_setpath (const char *path)
 {
 	PROC *p = curproc;
 	struct cwd *cwd = p->p_cwd;
@@ -427,7 +427,7 @@ d_setpath (const char *path)
  */
 
 long _cdecl
-d_getcwd (char *path, int drv, int size)
+sys_d_getcwd (char *path, int drv, int size)
 {
 	PROC *p = curproc;
 	struct cwd *cwd = p->p_cwd;
@@ -503,14 +503,14 @@ d_getcwd (char *path, int drv, int size)
 }
 
 long _cdecl
-d_getpath (char *path, int drv)
+sys_d_getpath (char *path, int drv)
 {
 	TRACE(("Dgetpath(%c)", drv + '@'));
-	return d_getcwd (path, drv, PATH_MAX);
+	return sys_d_getcwd (path, drv, PATH_MAX);
 }
 
 long _cdecl
-f_setdta (DTABUF *dta)
+sys_f_setdta (DTABUF *dta)
 {
 	PROC *p = curproc;
 
@@ -522,7 +522,7 @@ f_setdta (DTABUF *dta)
 }
 
 long _cdecl
-f_getdta (void)
+sys_f_getdta (void)
 {
 	PROC *p = curproc;
 	long r;
@@ -538,7 +538,7 @@ f_getdta (void)
  */
 
 long _cdecl
-f_sfirst (const char *path, int attrib)
+sys_f_sfirst (const char *path, int attrib)
 {
 	PROC *p = curproc;
 
@@ -771,7 +771,7 @@ f_sfirst (const char *path, int attrib)
 	if (havelabel)
 		return E_OK;
 
-	r = f_snext();
+	r = sys_f_snext();
 	if (r == ENMFILES) r = ENOENT;
 	if (r)
 		TRACE(("Fsfirst: returning %ld", r));
@@ -792,7 +792,7 @@ f_sfirst (const char *path, int attrib)
 long searchtime;
 
 long _cdecl
-f_snext (void)
+sys_f_snext (void)
 {
 	PROC *p = curproc;
 
@@ -938,7 +938,7 @@ baderror:
 }
 
 long _cdecl
-f_attrib (const char *name, int rwflag, int attr)
+sys_f_attrib (const char *name, int rwflag, int attr)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
@@ -997,7 +997,7 @@ f_attrib (const char *name, int rwflag, int attr)
 }
 
 long _cdecl
-f_delete (const char *name)
+sys_f_delete (const char *name)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
@@ -1092,7 +1092,7 @@ f_delete (const char *name)
 }
 
 long _cdecl
-f_rename (int junk, const char *old, const char *new)
+sys_f_rename (int junk, const char *old, const char *new)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
@@ -1201,7 +1201,7 @@ f_rename (int junk, const char *old, const char *new)
  * see also Sysconf() in dos.c
  */
 long _cdecl
-d_pathconf (const char *name, int which)
+sys_d_pathconf (const char *name, int which)
 {
 	fcookie dir;
 	long r;
@@ -1232,7 +1232,7 @@ d_pathconf (const char *name, int which)
  * and as a bonus allow for arbitrary length file names
  */
 long _cdecl
-d_opendir (const char *name, int flag)
+sys_d_opendir (const char *name, int flag)
 {
 	PROC *p = curproc;
 
@@ -1285,7 +1285,7 @@ d_opendir (const char *name, int flag)
 }
 
 long _cdecl
-d_readdir (int len, long handle, char *buf)
+sys_d_readdir (int len, long handle, char *buf)
 {
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
@@ -1307,7 +1307,7 @@ d_readdir (int len, long handle, char *buf)
  * operation is stored in long *xret
  */
 long _cdecl
-d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
+sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 {
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
@@ -1335,7 +1335,7 @@ d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 
 
 long _cdecl
-d_rewind (long handle)
+sys_d_rewind (long handle)
 {
 	DIR *dirh = (DIR *) handle;
 
@@ -1352,7 +1352,7 @@ d_rewind (long handle)
  * terminate().
  */
 long _cdecl
-d_closedir (long handle)
+sys_d_closedir (long handle)
 {
 	PROC *p = curproc;
 	DIR *dirh = (DIR *)handle;
@@ -1395,7 +1395,7 @@ d_closedir (long handle)
  * flag is 1 if not (like lstat).
  */
 long _cdecl
-f_xattr (int flag, const char *name, XATTR *xattr)
+sys_f_xattr (int flag, const char *name, XATTR *xattr)
 {
 	fcookie fc;
 	long r;
@@ -1432,7 +1432,7 @@ f_xattr (int flag, const char *name, XATTR *xattr)
  * creates a hard link named "new" to the file "old".
  */
 long _cdecl
-f_link (const char *old, const char *new)
+sys_f_link (const char *old, const char *new)
 {
 	fcookie olddir, newdir;
 	char temp1[PATH_MAX], temp2[PATH_MAX];
@@ -1484,7 +1484,7 @@ f_link (const char *old, const char *new)
  * create a symbolic link named "new" that contains the path "old"
  */
 long _cdecl
-f_symlink (const char *old, const char *new)
+sys_f_symlink (const char *old, const char *new)
 {
 	fcookie newdir;
 	long r;
@@ -1517,7 +1517,7 @@ f_symlink (const char *old, const char *new)
  * "buf", which has length "buflen".
  */
 long _cdecl
-f_readlink (int buflen, char *buf, const char *linkfile)
+sys_f_readlink (int buflen, char *buf, const char *linkfile)
 {
 	fcookie file;
 	long r;
@@ -1553,7 +1553,7 @@ f_readlink (int buflen, char *buf, const char *linkfile)
  * do file system specific functions
  */
 long _cdecl
-d_cntl (int cmd, const char *name, long arg)
+sys_d_cntl (int cmd, const char *name, long arg)
 {
 	fcookie dir;
 	long r;
@@ -1604,7 +1604,7 @@ d_cntl (int cmd, const char *name, long arg)
  * respectively
  */
 long _cdecl
-f_chown (const char *name, int uid, int gid)
+sys_f_chown (const char *name, int uid, int gid)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
@@ -1681,7 +1681,7 @@ f_chown (const char *name, int uid, int gid)
  * changes a file's access permissions.
  */
 long _cdecl
-f_chmod (const char *name, unsigned int mode)
+sys_f_chmod (const char *name, unsigned int mode)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
@@ -1739,7 +1739,7 @@ f_chmod (const char *name, unsigned int mode)
 PROC *dlockproc [NUM_DRIVES];
 
 long _cdecl
-d_lock (int mode, int _dev)
+sys_d_lock (int mode, int _dev)
 {
 	PROC *p;
 	FILEPTR *f;
@@ -1874,7 +1874,7 @@ d_lock (int mode, int _dev)
  * original written by jr
  */
 long _cdecl
-d_readlabel (const char *name, char *buf, int buflen)
+sys_d_readlabel (const char *name, char *buf, int buflen)
 {
 	fcookie dir;
 	long r;
@@ -1898,7 +1898,7 @@ d_readlabel (const char *name, char *buf, int buflen)
  * original written by jr
  */
 long _cdecl
-d_writelabel (const char *name, const char *label)
+sys_d_writelabel (const char *name, const char *label)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
@@ -1933,7 +1933,7 @@ d_writelabel (const char *name, const char *label)
  * original written by fn
  */
 long _cdecl
-d_chroot (const char *path)
+sys_d_chroot (const char *path)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
@@ -2015,7 +2015,7 @@ error:
  * flag is 1 if not (like lstat).
  */
 long _cdecl
-f_stat64 (int flag, const char *name, STAT *stat)
+sys_f_stat64 (int flag, const char *name, STAT *stat)
 {
 	fcookie fc;
 	long r;

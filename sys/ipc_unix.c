@@ -1,13 +1,13 @@
 /*
  * $Id$
- * 
+ *
  * This file implements the UNIX communication domain.
  * Neither MSG_OOB nor MSG_PEEK flags for send/recv
  * work on UNIX sockets. The getsockname/getpeername calls
  * are not implemented (the wouldn't make sense, because
  * filenames can be relative to the process' current
  * directory).
- * 
+ *
  * 10/09/93, kay roemer.
  */
 
@@ -56,7 +56,7 @@ struct dom_ops unix_ops =
 {
 	domain:		AF_UNIX,
 	next:		NULL,
-	
+
 	attach:		unix_attach,
 	dup:		unix_dup,
 	abort:		unix_abort,
@@ -81,32 +81,32 @@ unix_attach (struct socket *so, short protocol)
 {
 	static long un_index = 0;
 	struct un_data *undata;
-	
+
 	if (so->data)
 	{
 		DEBUG (("unix: unix_attach: so->data != NULL"));
 		return EINTERNAL;
 	}
-	
+
 	if (protocol != 0)
 	{
 		DEBUG (("unix: unix_attach: invalid protocol %d", protocol));
 		return EPROTONOSUPPORT;
 	}
-	
+
 	if (so->type != SOCK_STREAM && so->type != SOCK_DGRAM)
 	{
 		DEBUG (("unix: unix_attach: unsupp. socket type %d", so->type));
 		return EPROTOTYPE;
 	}
-	
+
 	undata = kmalloc (sizeof (struct un_data));
 	if (!undata)
 	{
 		DEBUG (("unix: unix_attach: out of memory"));
 		return ENOMEM;
 	}
-	
+
 	undata->buf = kmalloc (UN_MINBUF);
 	if (!undata->buf)
 	{
@@ -114,7 +114,7 @@ unix_attach (struct socket *so, short protocol)
 		kfree (undata);
 		return ENOMEM;
 	}
-	
+
 	undata->proto =   protocol;
 	undata->sock =    so;
 	undata->flags =   0;
@@ -126,11 +126,11 @@ unix_attach (struct socket *so, short protocol)
 	undata->backlog = 0;
 	undata->next =    0;
 	undata->addrlen = 0;
-	
+
 	so->data = undata;
 	un_put (undata);
-	
-	return 0;	
+
+	return 0;
 }
 
 static long
@@ -148,7 +148,7 @@ unix_abort (struct socket *so, enum so_state ostate)
 	so_wakersel (so);
 	so_wakewsel (so);
 	so_wakexsel (so);
-	
+
 	return 0;
 }
 
@@ -156,18 +156,18 @@ static long
 unix_detach (struct socket *so)
 {
 	struct un_data *undata = so->data;
-	
+
 	if (!undata)
 	{
 		DEBUG (("unix: unix_detach: no data attached to socket"));
 		return 0;
 	}
-	
+
 	un_remove (undata);
 	so->data = 0;
 	kfree (undata->buf);
 	kfree (undata);
-	
+
 	return 0;
 }
 
@@ -177,37 +177,37 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	struct un_data *undata = so->data;
 	XATTR attrib;
 	long r, fd, index;
-	
+
 	if (!addr)
 		return EDESTADDRREQ;
-	
+
 	if (addrlen <= UN_PATH_OFFSET || addrlen >= UN_ADDR_SIZE)
 	{
 		DEBUG (("unix: unix_bind: invalid addrlen %d", addrlen));
 		return EINVAL;
 	}
-	
+
 	if (undata->flags & UN_ISBOUND)
 	{
 		DEBUG (("unix: unix_bind: already bound"));
-		return EINVAL;		
+		return EINVAL;
 	}
 	memcpy (&undata->addr, addr, addrlen);
 	undata->addr.sun_path[addrlen - UN_PATH_OFFSET] = '\0';
-	
+
 	if (undata->addr.sun_family != AF_UNIX)
 	{
 		DEBUG (("unix: unix_bind: domain not AF_UNIX"));
 		return EAFNOSUPPORT;
 	}
-	
+
 	/* Lets first see, if the file exists. */
-	r = f_xattr (0, undata->addr.sun_path, &attrib);
+	r = sys_f_xattr (0, undata->addr.sun_path, &attrib);
 	if (!r) return EADDRINUSE;
-	
+
 	/* Invalidate cache entries referring to the same file. */
 	un_cache_remove (undata->addr.sun_path);
-	
+
 	/* To do the creat(), the user must have write access for the
 	 * directory containing the file.
 	 */
@@ -218,40 +218,40 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 			undata->addr.sun_path));
 		return fd;
 	}
-	
+
 	/* We write the index of the socket to the socket file, because
 	 * Fxattr() is broken on Tosfs (the index field is junk).
 	 */
 	index = UN_INDEX (undata);
 	r = f_write (fd, sizeof (index), (char *) &index);
-	f_close (fd);	
-	
+	f_close (fd);
+
 	if (r >= 0 && r != sizeof (index))
 		r = EACCES;
-	
+
 	if (r < 0)
 	{
 		DEBUG (("unix: unix_bind: could not write idx to file %s",
 			undata->addr.sun_path));
 		return r;
 	}
-	
+
 	/* If the filesystem cannot change mode to 0777, the bits that cannot
 	 * be changed are silently ignored. Note that there is no S_IFSOCK and
 	 * the like, the sockets file type is S_IFREG.
 	 */
-	r = f_chmod (undata->addr.sun_path, 0777);
+	r = sys_f_chmod (undata->addr.sun_path, 0777);
 	if (r < 0)
 	{
 		DEBUG (("unix: unix_bind: could not chmod %s to 0777",
 			undata->addr.sun_path));
 		return r;
 	}
-	
+
 	undata->addrlen = addrlen;
 	undata->flags |= UN_ISBOUND;
-	
-	return 0;	
+
+	return 0;
 }
 
 static long
@@ -261,14 +261,14 @@ unix_connect (struct socket *so, struct sockaddr *addr, short addrlen, short non
 	{
 		case SOCK_STREAM:
 			return unix_stream_connect (so, addr, addrlen, nonblock);
-		
+
 		case SOCK_DGRAM:
 			return unix_dgram_connect (so, addr, addrlen, nonblock);
-		
+
 		default:
 			break;
 	}
-	
+
 	return EINTERNAL;
 }
 
@@ -279,14 +279,14 @@ unix_socketpair (struct socket *so1, struct socket *so2)
 	{
 		case SOCK_STREAM:
 			return unix_stream_socketpair (so1, so2);
-		
+
 		case SOCK_DGRAM:
 			return unix_dgram_socketpair (so1, so2);
-		
+
 		default:
 			break;
 	}
-	
+
 	return EINTERNAL;
 }
 
@@ -294,21 +294,21 @@ static long
 unix_accept (struct socket *server, struct socket *newso, short nonblock)
 {
 	long r;
-	
+
 	/* BSD seems to allow accept() on DGRAM sockets ... */
 	if (server->type != SOCK_STREAM)
 	{
 		DEBUG (("unix: unix_accept: connectionless socket"));
 		return EOPNOTSUPP;
 	}
-	
+
 	r = so_accept (server, newso, nonblock);
 	if (r < 0)
 	{
 		DEBUG (("unix: unix_accept: no client accepted"));
 		return r;
 	}
-	
+
 	return 0;
 }
 
@@ -319,14 +319,14 @@ unix_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short pe
 	{
 		case SOCK_STREAM:
 			return unix_stream_getname (so, addr, addrlen, peer);
-		
+
 		case SOCK_DGRAM:
 			return unix_dgram_getname (so, addr, addrlen, peer);
-		
+
 		default:
 			break;
 	}
-	
+
 	return EOPNOTSUPP;
 }
 
@@ -337,14 +337,14 @@ unix_select (struct socket *so, short how, long proc)
 	{
 		case SOCK_STREAM:
 			return unix_stream_select (so, how, proc);
-		
+
 		case SOCK_DGRAM:
 			return unix_dgram_select (so, how, proc);
-		
+
 		default:
 			break;
 	}
-	
+
 	return 1;
 }
 
@@ -355,14 +355,14 @@ unix_ioctl (struct socket *so, short cmd, void *buf)
 	{
 		case SOCK_STREAM:
 			return unix_stream_ioctl (so, cmd, buf);
-		
+
 		case SOCK_DGRAM:
 			return unix_dgram_ioctl (so, cmd, buf);
-		
+
 		default:
 			break;
 	}
-	
+
 	return EINTERNAL;
 }
 
@@ -370,20 +370,20 @@ static long
 unix_listen (struct socket *so, short backlog)
 {
 	struct un_data *undata = so->data;
-	
+
 	/* BSD seems to allow listen() on DGRAM sockets ... */
 	if (so->type != SOCK_STREAM)
 	{
 		DEBUG (("unix: unix_listen: connectionless socket"));
 		return 0;
 	}
-	
+
 	if (!(undata->flags & UN_ISBOUND))
 	{
 		DEBUG (("unix: unix_listen: listening socket is not bound"));
 		return EDESTADDRREQ;
 	}
-	
+
 	undata->backlog = backlog;
 	return 0;
 }
@@ -397,21 +397,21 @@ unix_send (struct socket *so, const struct iovec *iov, short niov, short nonbloc
 		DEBUG (("unix: unix_send: flags not zero"));
 		return EOPNOTSUPP;
 	}
-	
+
 	switch (so->type)
 	{
 		case SOCK_STREAM:
 			return unix_stream_send (so, iov, niov, nonblock, flags,
 					addr, addrlen);
-		
+
 		case SOCK_DGRAM:
 			return unix_dgram_send (so, iov, niov, nonblock, flags,
 					addr, addrlen);
-		
+
 		default:
 			break;
 	}
-	
+
 	return EINTERNAL;
 }
 
@@ -424,21 +424,21 @@ unix_recv (struct socket *so, const struct iovec *iov, short niov, short nonbloc
 		DEBUG (("unix: unix_recv: flags not zero"));
 		return EOPNOTSUPP;
 	}
-	
+
 	switch (so->type)
 	{
 		case SOCK_STREAM:
 			return unix_stream_recv (so, iov, niov, nonblock, flags,
 				     addr, addrlen);
-		
+
 		case SOCK_DGRAM:
 			return unix_dgram_recv (so, iov, niov, nonblock, flags,
 				    addr, addrlen);
-		
+
 		default:
 			break;
-	}	
-	
+	}
+
 	return EINTERNAL;
 }
 
@@ -446,7 +446,7 @@ static long
 unix_shutdown (struct socket *so, short how)
 {
 # define SO_CANTDOMORE	(SO_CANTSNDMORE|SO_CANTRCVMORE)
-	
+
 	/* Note that sock_shutdown() has already set so->flags for us. */
 	if ((so->flags & SO_CANTDOMORE) == SO_CANTDOMORE)
 	{
@@ -454,7 +454,7 @@ unix_shutdown (struct socket *so, short how)
 		so_release (so);
 		return 0;
 	}
-	
+
 	switch (how)
 	{
 		case 0:
@@ -496,10 +496,10 @@ unix_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 {
 	struct un_data *undata;
 	long newsize;
-	
+
 	if (level != SOL_SOCKET)
 		return ENOPROTOOPT;
-		
+
 	switch (optname)
 	{
 		case SO_SNDBUF:
@@ -507,33 +507,33 @@ unix_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 			if (!optval || optlen < sizeof (long) ||
 			    so->state != SS_ISCONNECTED)
 				return EINVAL;
-			
+
 			undata = so->conn->data;
 			newsize = *(long *) optval;
-			
+
 			if (newsize < UN_MINBUF) newsize = UN_MINBUF;
 			else if (newsize > UN_MAXBUF) newsize = UN_MAXBUF;
-			
+
 			return un_resize (undata, newsize);
 		}
 		case SO_RCVBUF:
 		{
 			if (!optval || optlen < sizeof (long))
 				return EINVAL;
-			
+
 			undata = so->data;
 			newsize = *(long *) optval;
-			
+
 			if (newsize < UN_MINBUF) newsize = UN_MINBUF;
 			else if (newsize > UN_MAXBUF) newsize = UN_MAXBUF;
-			
+
 			return un_resize (undata, newsize);
 		}
 		case SO_DEBUG:
 		default:
 			break;
 	}
-	
+
 	return EOPNOTSUPP;
 }
 
@@ -541,23 +541,23 @@ static long
 unix_getsockopt (struct socket *so, short level, short optname, char *optval, long *optlen)
 {
 	long ret = 0;
-	
+
 	if (level != SOL_SOCKET)
 		return EOPNOTSUPP;
-	
+
 	switch (optname)
 	{
 		case SO_DEBUG:
 			return ENOPROTOOPT;
-		
+
 		case SO_ERROR:
 			ret = 0;
-			break;	
-		
+			break;
+
 		case SO_TYPE:
 			ret = so->type;
 			break;
-		
+
 		case SO_SNDBUF:
 			if (so->state != SS_ISCONNECTED)
 			{
@@ -566,31 +566,31 @@ unix_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 			}
 			ret = ((struct un_data *) so->conn->data)->buflen;
 			break;
-		
+
 		case SO_RCVBUF:
 			ret = ((struct un_data *) so->data)->buflen;
 			break;
-		
+
 		default:
 			return EOPNOTSUPP;
 	}
-	
+
 	if (!optval || !optlen || *optlen < sizeof (long))
 	{
 		DEBUG (("unix: unix_getsockopt: invalid optval or optlen"));
 		return EINVAL;
 	}
-	
+
 	*(long *) optval = ret;
 	*optlen = sizeof (long);
-	
+
 	return 0;
 }
 
 /* unix utility functions
- * 
+ *
  * Find the un_data which has type `type' that is bound to the file
- * given by `index'. 
+ * given by `index'.
  * Returns a pointer to the un_data of the socket if the search is
  * successful, else 0.
  */
@@ -601,7 +601,7 @@ struct un_data *
 un_lookup (long index, enum so_type type)
 {
 	struct un_data *undata;
-	
+
 	for (undata = allundatas[UN_HASH (index)]; undata; undata = undata->next)
 	{
 		if (undata->sock
@@ -611,7 +611,7 @@ un_lookup (long index, enum so_type type)
 			break;
 		}
 	}
-	
+
 	return undata;
 }
 
@@ -619,7 +619,7 @@ void
 un_put (struct un_data *undata)
 {
 	short idx;
-	
+
 	idx = UN_HASH (UN_INDEX (undata));
 	undata->next = allundatas[idx];
 	allundatas[idx] = undata;
@@ -630,7 +630,7 @@ un_remove (struct un_data *undata)
 {
 	ushort idx;
 	struct un_data *prev;
-	
+
 	idx = UN_HASH (UN_INDEX (undata));
 	prev = allundatas[idx];
 	if (prev == undata)
@@ -654,21 +654,21 @@ un_resize (struct un_data *un, long newsize)
 {
 	short head = un->head, tail = un->tail;
 	char *newbuf;
-	
+
 	newsize = (((newsize) + 1) & ~1);
 	if (newsize < UN_USED (un))
 		return EINVAL;
-		
+
 	if (newsize == un->buflen)
 		return 0;
-		
+
 	newbuf = kmalloc (newsize);
 	if (!newbuf)
 	{
 		DEBUG (("unix: un_resize: out of mem"));
 		return ENOMEM;
 	}
-	
+
 	if (tail >= head)
 	{
 		memcpy (newbuf, &un->buf[head], tail - head);
@@ -683,44 +683,44 @@ un_resize (struct un_data *un, long newsize)
 		un->head = 0;
 		un->tail = done + tail;
 	}
-	
+
 	if (newsize > un->buflen)
 	{
 		wake (IO_Q, (long)un->sock);
 		so_wakewsel (un->sock);
 	}
-	
+
 	kfree (un->buf);
 	un->buf = newbuf;
 	un->buflen = newsize;
-	
-	return 0;	
-}	
+
+	return 0;
+}
 
 /* Convert a file name to a index. */
 long
 un_namei (struct sockaddr *addr, short addrlen, long *index)
 {
 	struct sockaddr_un un;
-	
+
 	if (!addr)
 		return EDESTADDRREQ;
-	
+
 	if (addrlen <= UN_PATH_OFFSET || addrlen >= UN_ADDR_SIZE)
 	{
 		DEBUG (("unix: un_namei: invalid addrlen %d", addrlen));
 		return EINVAL;
 	}
-	
+
 	memcpy (&un, addr, addrlen);
 	un.sun_path[addrlen - UN_PATH_OFFSET] = '\0';
-	
+
 	if (un.sun_family != AF_UNIX)
 	{
 		DEBUG (("unix: un_namei: domain not AF_UNIX"));
 		return EINVAL;
 	}
-	
+
 	return un_cache_lookup (un.sun_path, index);
 }
 
@@ -751,44 +751,44 @@ unixdev_read (FILEPTR *fp, char *buf, long nbytes)
 	struct un_data *unp = 0;
 	struct unix_info info, *infop = (struct unix_info *) buf;
 	long space;
-	
+
 	for (space = nbytes; space >= sizeof (info); ++fp->pos)
 	{
 		int i, j;
-		
+
 		for (i = fp->pos, j = 0; j < UN_HASH_SIZE && i >= 0; ++j)
 		{
 			unp = allundatas[j];
 			for (; unp && --i >= 0; unp = unp->next)
 				;
 		}
-		
+
 		if (j >= UN_HASH_SIZE)
 			break;
-		
+
 		info.proto	= unp->proto;
 		info.flags	= unp->sock->flags;
 		info.type	= unp->sock->type;
 		info.state	= unp->sock->state;
 		info.addrlen	= unp->addrlen;
 		info.addr	= unp->addr;
-		
+
 		if (info.type == SOCK_DGRAM)
 		{
 			struct dgram_hdr header = { 0, 0 };
-			
+
 			if (UN_USED (unp))
 				un_read_header (unp, &header, 0);
-			
+
 			info.qlen = header.nbytes;
 		}
 		else
 			info.qlen = UN_USED (unp);
-		
+
 		*infop++ = info;
 		space -= sizeof (info);
 	}
-	
+
 	return (nbytes - space);
 }
 
