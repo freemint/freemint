@@ -435,6 +435,7 @@ cleanup(void)
 /* HR 130302: v_clswk bombs with NOVA VDI 2.67 & Memory Protection.
               so I moved this to the end of the cleanup, AFTER closing the debugfile. */
 
+		v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 		v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
 
 		display("\033e\033H");			/* HR 100302: Cursor enable, cursor home */
@@ -839,6 +840,8 @@ BTRACE(21);
 			if (helper) Super(old_sp);
 
 			fdisplay(loghandle, true, "\033HPhysical work station opened: %d\n",C.P_handle);
+
+			v_exit_cur(C.P_handle);		/* Ozk: We need to get rid of the cursor */
 		}
 	}
 	else
