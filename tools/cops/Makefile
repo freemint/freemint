@@ -20,7 +20,6 @@ all-here: $(TARGET)
 
 # default overwrites
 DEFINITIONS += -D__GEMLIB_OLDNAMES
-OPTS += -g
 
 NOCFLAGS-cops_rsc.c = -Wall
 
@@ -31,6 +30,7 @@ GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
+	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES
