@@ -134,7 +134,7 @@
 
 #ifdef MMU040
 
-#if 1
+#if 0
 #define MP_DEBUG(x) DEBUG(x)
 #else
 #define MP_DEBUG(x)
