@@ -697,7 +697,7 @@ struct xa_window_colours def_otop_wc =
 
 struct xa_window_colours def_utop_wc =
 {
- G_BLACK,	/* window frame color */
+ G_LBLACK,	/* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  /* Window color (when unused window exterior is drawn) */
@@ -1315,19 +1315,19 @@ draw_window(enum locks lock, struct xa_window *wind, RECT *clip)
 			{
 				if (wind->thinwork)
 				{
-					//left_line(1, &wa, wind->colours->frame_col);
-					//right_line(1, &wa, G_BLACK);
-					//tl_hook(1, &wa, G_LBLACK);
-					//br_hook(1, &wa, G_BLACK);
-					
-					//l_color(G_LBLACK);
-					//gbox(1, &wa);
+				
+					if (wind->wa_borders & WAB_LEFT)
+						left_line(1, &wa, wind->colours->frame_col);
+					if (wind->wa_borders & WAB_RIGHT)
+						right_line(1, &wa, wind->colours->frame_col);
+					if (wind->wa_borders & WAB_TOP)
+						top_line(1, &wa, wind->colours->frame_col);
+					if (wind->wa_borders & WAB_BOTTOM)
+						bottom_line(1, &wa, wind->colours->frame_col);
 				}
 				else
 				{
 					RECT nw = wa;
-					//nw.w++;
-					//nw.h++;
 					br_hook(2, &nw, screen.dial_colours.shadow_col);
 					tl_hook(2, &nw, screen.dial_colours.lit_col);
 					br_hook(1, &nw, screen.dial_colours.lit_col);
