@@ -39,15 +39,15 @@ do_sync (long sig)
 static void
 update (void *arg)
 {
-	p_signal (SIGALRM, do_sync);
-	p_signal (SIGTERM, do_sync);
-	p_signal (SIGQUIT, do_sync);
-	p_signal (SIGHUP,  do_sync);
-	p_signal (SIGTSTP, do_sync);
-	p_signal (SIGINT,  do_sync);
-	p_signal (SIGABRT, do_sync);
-	p_signal (SIGUSR1, do_sync);
-	p_signal (SIGUSR2, do_sync);
+	p_signal (SIGALRM, (long) do_sync);
+	p_signal (SIGTERM, (long) do_sync);
+	p_signal (SIGQUIT, (long) do_sync);
+	p_signal (SIGHUP,  (long) do_sync);
+	p_signal (SIGTSTP, (long) do_sync);
+	p_signal (SIGINT,  (long) do_sync);
+	p_signal (SIGABRT, (long) do_sync);
+	p_signal (SIGUSR1, (long) do_sync);
+	p_signal (SIGUSR2, (long) do_sync);
 	
 	for (;;)
 	{
