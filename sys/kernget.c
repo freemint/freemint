@@ -307,32 +307,39 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 		}
 	}
 	
-# ifdef ONLY030
-	/* Round the fractional part up to an unit,
-	 * add units, then mul everything by clkdiv */
-	clkspeed = ((bogomips[1] + 50)/100) + bogomips[0];
+# ifndef ONLY030
+	if (mcpu > 10)
+	{
+# endif
+		/* Round the fractional part up to an unit,
+		 * add units, then mul everything by clkdiv */
+		clkspeed = ((bogomips[1] + 50)/100) + bogomips[0];
 
-	/* mc68060 can execute more than 1 instruction in a cycle
-	 * and this is the case. So we must div, not mul.
-	 */
-	if (div)
-		clkspeed /= clkdiv;
+		/* mc68060 can execute more than 1 instruction in a cycle
+		 * and this is the case. So we must div, not mul.
+		 */
+		if (div)
+			clkspeed /= clkdiv;
+		else
+			clkspeed *= clkdiv;
+# ifndef ONLY030
+	}
 	else
-		clkspeed *= clkdiv;
-# else
-	/* This is:
-	 * bogomips = (clkspeed - ((0.24/2) * 4)) / clkdiv
-	 * The subtracted value is calculated out of the
-	 * correction value on a 16 Mhz 68030 (0.24)
-	 * scaled down according to the clock frequency
-	 * then multiplied as many times as 68000 is
-	 * slower than 68030 :-)
-	 * Notice this stuff has no real meaning on ST, it has
-	 * a visual purpose only.
-	 */
-	clkspeed = 8;
-	bogomips[0] = 0;
-	bogomips[1] = 83;
+	{
+		/* This is:
+		 * bogomips = (clkspeed - ((0.24/2) * 4)) / clkdiv
+		 * The subtracted value is calculated out of the
+		 * correction value on a 16 Mhz 68030 (0.24)
+		 * scaled down according to the clock frequency
+		 * then multiplied as many times as 68000 is
+		 * slower than 68030 :-)
+		 * Notice this stuff has no real meaning on ST, it has
+		 * a visual purpose only.
+		 */
+		clkspeed = 8;
+		bogomips[0] = 0;
+		bogomips[1] = 83;
+	}
 # endif
 
 	info->len = ksprintf (info->buf, len,
