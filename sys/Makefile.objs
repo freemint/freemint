@@ -22,8 +22,20 @@ DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 WARN =	-Wall \
 	-Wmissing-prototypes \
 	-Winline
-LDFLAGS = -nostdlib -Wl,--entry -Wl,_main
+LDFLAGS = -nostdlib
+LDFLAGS += -Wl,-Map -Wl,map.txt
+# XXX should be come from arch/
+LDFLAGS += -Wl,--entry -Wl,_main
 LIBS = $(LIBKERN) -lgcc
+
+ifeq ($(KMEMDEBUG),yes)
+LDFLAGS += \
+	-Wl,--wrap -Wl,_kcore \
+	-Wl,--wrap -Wl,_kmalloc \
+	-Wl,--wrap -Wl,_kfree \
+	-Wl,--wrap -Wl,_umalloc \
+	-Wl,--wrap -Wl,_ufree
+endif
 
 NOCFLAGS-gmon.c = -pg
 NOCFLAGS-mcount.c = -pg
