@@ -25,49 +25,26 @@
  * for more details.
  */
 
-# ifndef __MINT__
-
-#  include <linux/module.h>
-#  include <linux/version.h>
-#  include <linux/malloc.h>	/* for kmalloc() and kfree() */
-#  include <linux/sched.h>	/* for struct wait_queue etc */
-#  include <linux/major.h>
-#  include <linux/types.h>
-#  include <linux/errno.h>
-#  include <linux/delay.h>	/* guess what */
-#  include <linux/fs.h>
-#  include <linux/mm.h>
-#  include <linux/init.h>
-
-#  include <asm/segment.h>
-#  include <asm/atarihw.h>
-#  include <asm/traps.h>
-#  include <asm/uaccess.h>	/* For put_user and get_user */
-#  include <asm/dsp56k.h>
-
-# else /* __MINT__ */
-
 #define __KERNEL_XDD__
 
 # include "mint/mint.h"
 # include "libkern/libkern.h"
 # include "mint/asm.h"
 # include "mint/dcntl.h"
+# include "mint/falcon.h"
 # include "mint/file.h"
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 # include "mint/signal.h"
 # include "mint/stat.h"
 
+# include "ssystem.h"
 
-#  include <errno.h>
-#  include <ssystem.h>
-#  include <mint/falcon.h>
+# include <errno.h>
 
-#  include "dsp56k.h"
-#  include "atarihw.h"
+# include "dsp56k.h"
+# include "atarihw.h"
 
-# endif /* __MINT__ */
 
 /* minor devices */
 #define DSP56K_DEV_56001	0    /* The only device so far */
@@ -87,9 +64,8 @@
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
-/* MiNT definitions */
 
-# ifdef __MINT__
+/* MiNT definitions */
 
 # define BOOT_MSG	"\033p Motorola DSP 56001 device version " __DATE__ " \033q\r\n" \
 			" ½ 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson\r\n\r\n"
@@ -100,20 +76,18 @@
 # define ALERT(x,y)	KERNEL_ALERT (x,y)
 # define TRACE(x)
 
-//# define NULL		0L
-# define u_char		uchar
 
 /* MiNT device driver structure */
 
 static long _cdecl dsp56k_open		(FILEPTR *f);
 static long _cdecl dsp56k_write		(FILEPTR *f, const char *buf, long bytes);
 static long _cdecl dsp56k_read		(FILEPTR *f, char *buf, long count);
-static long _cdecl dsp56k_lseek		(FILEPTR *f, long where, short whence);
-static long _cdecl dsp56k_ioctl		(FILEPTR *f, short cmd, unsigned long arg);
-static long _cdecl dsp56k_datime	(FILEPTR *f, ushort *timeptr, short wrflag);
-static long _cdecl dsp56k_close		(FILEPTR *f, short pid);
-static long _cdecl dsp56k_select	(FILEPTR *f, long proc, short mode);
-static void _cdecl dsp56k_unselect	(FILEPTR *f, long proc, short mode);
+static long _cdecl dsp56k_lseek		(FILEPTR *f, long where, int whence);
+static long _cdecl dsp56k_ioctl		(FILEPTR *f, int cmd, void *arg);
+static long _cdecl dsp56k_datime	(FILEPTR *f, ushort *timeptr, int wrflag);
+static long _cdecl dsp56k_close		(FILEPTR *f, int pid);
+static long _cdecl dsp56k_select	(FILEPTR *f, long proc, int mode);
+static void _cdecl dsp56k_unselect	(FILEPTR *f, long proc, int mode);
 
 static DEVDRV devtab =
 {
@@ -136,14 +110,14 @@ static struct dev_descr dev_descriptor =
 	NULL,
 	0,
 	S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH,
-	{ 0, 0 }
+	NULL,
+	0,
+	0
 };
 
 char name[]="u:\\dev\\dsp56k";
 
 /* Define some replacement for Linux things */
-
-# define printk(x,y)	ALERT(x,y)
 
 # define _HZ_200	0x4baL
 
@@ -176,17 +150,8 @@ dsp_unlock(void)
 	Dsp_Unlock();
 }
 
-# endif /* __MINT__ */
 
-# ifdef __MINT__
-#  define wait_some(n)	nap(n)
-# else
-#  define wait_some(n) \
-{ \
-	current->state = TASK_INTERRUPTIBLE; \
-	schedule_timeout(n); \
-}
-# endif
+# define wait_some(n)	nap(n)
 
 #define handshake(count, maxio, timeout, ENABLE, f) \
 { \
@@ -196,7 +161,7 @@ dsp_unlock(void)
 		for (i = 0; i < m; i++) { \
 			for (t = 0; t < timeout && !ENABLE; t++) \
 				wait_some(2); \
-			if(!ENABLE) \
+			if (!ENABLE) \
 				return -EIO; \
 			f; \
 		} \
@@ -208,9 +173,9 @@ dsp_unlock(void)
 #define tx_wait(n) \
 { \
 	short t; \
-	for(t = 0; t < n && !DSP56K_TRANSMIT; t++) \
+	for (t = 0; t < n && !DSP56K_TRANSMIT; t++) \
 		wait_some(1); \
-	if(!DSP56K_TRANSMIT) { \
+	if (!DSP56K_TRANSMIT) { \
 		return -EIO; \
 	} \
 }
@@ -218,15 +183,16 @@ dsp_unlock(void)
 #define rx_wait(n) \
 { \
 	short t; \
-	for(t = 0; t < n && !DSP56K_RECEIVE; t++) \
+	for (t = 0; t < n && !DSP56K_RECEIVE; t++) \
 		wait_some(1); \
-	if(!DSP56K_RECEIVE) { \
+	if (!DSP56K_RECEIVE) { \
 		return -EIO; \
 	} \
 }
 
 /* DSP56001 bootstrap code */
-static char bootstrap[] = {
+static char bootstrap[] =
+{
 	0x0c, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -264,18 +230,22 @@ static char bootstrap[] = {
 	0xa9, 0x80, 0x00, 0x7e, 0xcb, 0x08, 0x58, 0xab, 0x0a, 0xf0,
 	0x80, 0x00, 0x7e, 0xad, 0x06, 0xc6, 0x00, 0x00, 0x7e, 0xd4,
 	0x0a, 0xa9, 0x80, 0x00, 0x7e, 0xd2, 0x08, 0x58, 0xeb, 0x0a,
-	0xf0, 0x80, 0x00, 0x7e, 0xad};
+	0xf0, 0x80, 0x00, 0x7e, 0xad
+};
 static short sizeof_bootstrap = 375;
 
-static struct dsp56k_device {
+struct dsp56k_device
+{
 	short in_use;
 	long maxio, timeout;
 	short tx_wsize, rx_wsize;
-} dsp56k;
+};
+static struct dsp56k_device dsp56k;
 
-static long dsp56k_reset(void)
+static long
+dsp56k_reset(void)
 {
-	u_char status;
+	uchar status;
 
 	/* Power down the DSP */
 	sound_ym.rd_data_reg_sel = 14;
@@ -292,38 +262,36 @@ static long dsp56k_reset(void)
 	return 0;
 }
 
-static long dsp56k_upload(u_char *bin, long len)
+static long
+dsp56k_upload(uchar *bin, long len)
 {
 	long i;
-	u_char *p;
+	uchar *p;
 
 	dsp56k_reset();
 
 	p = bootstrap;
-	for (i = 0; i < sizeof_bootstrap/3; i++) {
+	for (i = 0; i < sizeof_bootstrap/3; i++)
+	{
 		/* tx_wait(10); */
 		dsp56k_host_interface.data.b[1] = *p++;
 		dsp56k_host_interface.data.b[2] = *p++;
 		dsp56k_host_interface.data.b[3] = *p++;
 	}
-	for (; i < 512; i++) {
+	for (; i < 512; i++)
+	{
 		/* tx_wait(10); */
 		dsp56k_host_interface.data.b[1] = 0;
 		dsp56k_host_interface.data.b[2] = 0;
 		dsp56k_host_interface.data.b[3] = 0;
 	}
 
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < len; i++)
+	{
 		tx_wait(10);
-# ifndef __MINT__
-		get_user(dsp56k_host_interface.data.b[1], bin++);
-		get_user(dsp56k_host_interface.data.b[2], bin++);
-		get_user(dsp56k_host_interface.data.b[3], bin++);
-# else
 		dsp56k_host_interface.data.b[1] = *bin++;
 		dsp56k_host_interface.data.b[2] = *bin++;
 		dsp56k_host_interface.data.b[3] = *bin++;
-# endif
 	}
 
 	tx_wait(10);
@@ -332,17 +300,11 @@ static long dsp56k_upload(u_char *bin, long len)
 	return 0;
 }
 
-# ifndef __MINT__
-static ssize_t dsp56k_read(struct file *file, char *buf, size_t count,
-			   loff_t *ppos)
-{
-	struct inode *inode = file->f_dentry->d_inode;
-	int dev = MINOR(inode->i_rdev) & 0x0f;
-# else
-static long _cdecl dsp56k_read(FILEPTR *f, char *buf, long count)
+static long _cdecl
+dsp56k_read(FILEPTR *f, char *buf, long count)
 {
 	short dev = f->fc.aux;
-# endif
+	
 	switch(dev)
 	{
 	case DSP56K_DEV_56001:
@@ -354,16 +316,12 @@ static long _cdecl dsp56k_read(FILEPTR *f, char *buf, long count)
 		if (!count) return 0;
 
 		n = 0;
-		switch (dsp56k.rx_wsize) {
+		switch (dsp56k.rx_wsize)
+		{
 		case 1:  /* 8 bit */
 		{
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
-				  put_user(dsp56k_host_interface.data.b[3], buf+n++));
-# else
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
 				buf[n++] = dsp56k_host_interface.data.b[3]);
-# endif
 			return n;
 		}
 		case 2:  /* 16 bit */
@@ -372,29 +330,17 @@ static long _cdecl dsp56k_read(FILEPTR *f, char *buf, long count)
 
 			count /= 2;
 			data = (short*) buf;
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
-				  put_user(dsp56k_host_interface.data.w[1], data+n++));
-# else
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
 				data[n++] = dsp56k_host_interface.data.w[1]);
-# endif
 			return 2*n;
 		}
 		case 3:  /* 24 bit */
 		{
 			count /= 3;
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
-				  put_user(dsp56k_host_interface.data.b[1], buf+n++);
-				  put_user(dsp56k_host_interface.data.b[2], buf+n++);
-				  put_user(dsp56k_host_interface.data.b[3], buf+n++));
-# else
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
 				buf[n++] = dsp56k_host_interface.data.b[1];
 				buf[n++] = dsp56k_host_interface.data.b[2];
 				buf[n++] = dsp56k_host_interface.data.b[3]);
-# endif
 			return 3*n;
 		}
 		case 4:  /* 32 bit */
@@ -403,13 +349,8 @@ static long _cdecl dsp56k_read(FILEPTR *f, char *buf, long count)
 
 			count /= 4;
 			data = (long*) buf;
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
-				  put_user(dsp56k_host_interface.data.l, data+n++));
-# else
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_RECEIVE,
 				data[n++] = dsp56k_host_interface.data.l);
-# endif
 			return 4*n;
 		}
 		}
@@ -417,22 +358,15 @@ static long _cdecl dsp56k_read(FILEPTR *f, char *buf, long count)
 	}
 
 	default:
-		printk("DSP56k driver: Unknown minor device: %d\n", dev);
+		ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
 		return -ENXIO;
 	}
 }
 
-# ifndef __MINT__
-static ssize_t dsp56k_write(struct file *file, const char *buf, size_t count,
-			    loff_t *ppos)
-{
-	struct inode *inode = file->f_dentry->d_inode;
-	int dev = MINOR(inode->i_rdev) & 0x0f;
-# else
-static long _cdecl dsp56k_write(FILEPTR *f, const char *buf, long count)
+static long _cdecl
+dsp56k_write(FILEPTR *f, const char *buf, long count)
 {
 	short dev = f->fc.aux;
-# endif
 
 	switch(dev)
 	{
@@ -444,16 +378,12 @@ static long _cdecl dsp56k_write(FILEPTR *f, const char *buf, long count)
 		if (!count) return 0;
 
 		n = 0;
-		switch (dsp56k.tx_wsize) {
+		switch (dsp56k.tx_wsize)
+		{
 		case 1:  /* 8 bit */
 		{
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
-				  get_user(dsp56k_host_interface.data.b[3], buf+n++));
-# else
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
 				dsp56k_host_interface.data.b[3] = buf[n++]);
-# endif
 			return n;
 		}
 		case 2:  /* 16 bit */
@@ -461,30 +391,18 @@ static long _cdecl dsp56k_write(FILEPTR *f, const char *buf, long count)
 			short *data;
 
 			count /= 2;
-			data = (short*) buf;
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
-				  get_user(dsp56k_host_interface.data.w[1], data+n++));
-# else
+			data = (short *) buf;
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
 				dsp56k_host_interface.data.w[1] = data[n++]);
-# endif
 			return 2*n;
 		}
 		case 3:  /* 24 bit */
 		{
 			count /= 3;
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
-				  get_user(dsp56k_host_interface.data.b[1], buf+n++);
-				  get_user(dsp56k_host_interface.data.b[2], buf+n++);
-				  get_user(dsp56k_host_interface.data.b[3], buf+n++));
-# else
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
 				dsp56k_host_interface.data.b[1] = buf[n++];
 				dsp56k_host_interface.data.b[2] = buf[n++];
 				dsp56k_host_interface.data.b[3] = buf[n++]);
-# endif
 			return 3*n;
 		}
 		case 4:  /* 32 bit */
@@ -492,14 +410,9 @@ static long _cdecl dsp56k_write(FILEPTR *f, const char *buf, long count)
 			long *data;
 
 			count /= 4;
-			data = (long*) buf;
-# ifndef __MINT__
-			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
-				  get_user(dsp56k_host_interface.data.l, data+n++));
-# else
+			data = (long *) buf;
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
 				dsp56k_host_interface.data.l = data[n++]);
-# endif
 			return 4*n;
 		}
 		}
@@ -507,29 +420,23 @@ static long _cdecl dsp56k_write(FILEPTR *f, const char *buf, long count)
 		return -EFAULT;
 	}
 	default:
-		printk("DSP56k driver: Unknown minor device: %d\n",dev);
+		ALERT("DSP56k driver: Unknown minor device: %d\n",dev);
 		return -ENXIO;
 	}
 }
 
-# ifndef __MINT__
-static int dsp56k_ioctl(struct inode *inode, struct file *file,
-			unsigned int cmd, unsigned long arg)
+static long _cdecl
+dsp56k_ioctl(FILEPTR *f, int cmd, void *buf)
 {
-	int dev = MINOR(inode->i_rdev) & 0x0f;
-# else
-
-static long _cdecl dsp56k_ioctl(FILEPTR *f, short cmd, unsigned long arg)
-{
+	unsigned long arg = (unsigned long) buf;
 	short dev = f->fc.aux;
-# endif
 
-	switch(dev)
+	switch (dev)
 	{
 	case DSP56K_DEV_56001:
 
-		switch(cmd) {
-# ifdef __MINT__
+		switch(cmd)
+		{
 		case FIONREAD:
 		case FIONWRITE:
 		case FIOEXCEPT:
@@ -537,34 +444,26 @@ static long _cdecl dsp56k_ioctl(FILEPTR *f, short cmd, unsigned long arg)
 			*(long *)arg = 0;
 			break;
 		}
-# endif
 		case DSP56K_UPLOAD:
 		{
 			char *bin;
 			long r, len;
 
-			struct dsp56k_upload *binary = (struct dsp56k_upload *) arg;
+			struct dsp56k_upload *binary = buf;
 
-# ifndef __MINT__
-			if(get_user(len, &binary->len) < 0)
-				return -EFAULT;
-			if(get_user(bin, &binary->bin) < 0)
-				return -EFAULT;
-# else
 			len = binary->len;
 			bin = binary->bin;
-# endif
-			if (len == 0) {
+			if (len == 0)
 				return -EINVAL;	 /* nothing to upload?!? */
-			}
-			if (len > DSP56K_MAX_BINARY_LENGTH) {
+			
+			if (len > DSP56K_MAX_BINARY_LENGTH)
 				return -EINVAL;
-			}
+			
 
 			r = dsp56k_upload(bin, len);
-			if (r < 0) {
+			if (r < 0)
 				return r;
-			}
+			
 			break;
 		}
 		case DSP56K_SET_TX_WSIZE:
@@ -580,17 +479,10 @@ static long _cdecl dsp56k_ioctl(FILEPTR *f, short cmd, unsigned long arg)
 		case DSP56K_HOST_FLAGS:
 		{
 			ushort dir, out, status;
-			struct dsp56k_host_flags *hf = (struct dsp56k_host_flags*) arg;
+			struct dsp56k_host_flags *hf = buf;
 
-# ifndef __MINT__
-			if(get_user(dir, &hf->dir) < 0)
-				return -EFAULT;
-			if(get_user(out, &hf->out) < 0)
-				return -EFAULT;
-# else
 			dir = hf->dir;
 			out = hf->out;
-# endif
 
 			if ((dir & 0x1) && (out & 0x1))
 				dsp56k_host_interface.icr |= DSP56K_ICR_HF0;
@@ -606,17 +498,13 @@ static long _cdecl dsp56k_ioctl(FILEPTR *f, short cmd, unsigned long arg)
 			if (dsp56k_host_interface.icr & DSP56K_ICR_HF1) status |= 0x2;
 			if (dsp56k_host_interface.isr & DSP56K_ISR_HF2) status |= 0x4;
 			if (dsp56k_host_interface.isr & DSP56K_ISR_HF3) status |= 0x8;
-# ifndef __MINT__
-			return put_user(status, &hf->status);
-# else
 			hf->status = status;
 			return 0;
-# endif
 		}
 		case DSP56K_HOST_CMD:
 			if (arg > 31 || arg < 0)
 				return -EINVAL;
-			dsp56k_host_interface.cvr = (u_char)((arg & DSP56K_CVR_HV_MASK) |
+			dsp56k_host_interface.cvr = (uchar)((arg & DSP56K_CVR_HV_MASK) |
 							     DSP56K_CVR_HC);
 			break;
 		default:
@@ -625,55 +513,26 @@ static long _cdecl dsp56k_ioctl(FILEPTR *f, short cmd, unsigned long arg)
 		return 0;
 
 	default:
-		printk("DSP56k driver: Unknown minor device: %d\n", dev);
+		ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
 		return -ENXIO;
 	}
 }
 
-# ifndef __MINT__
-/* As of (Linux) 2.1.26 this should be dsp56k_poll,
- * but how do I then check device minor number?
- * Do I need this function at all???
- */
-#if 0
-static unsigned int dsp56k_poll(struct file *file, poll_table *wait)
-{
-	int dev = MINOR(file->f_dentry->d_inode->i_rdev) & 0x0f;
-
-	switch(dev)
-	{
-	case DSP56K_DEV_56001:
-		/* poll_wait(file, ???, wait); */
-		return POLLIN | POLLRDNORM | POLLOUT;
-
-	default:
-		printk("DSP56k driver: Unknown minor device: %d\n", dev);
-		return 0;
-	}
-}
-#endif
-
-# endif /* __MINT__ */
-
-# ifndef __MINT__
-static int dsp56k_open(struct inode *inode, struct file *file)
-{
-	int dev = MINOR(inode->i_rdev) & 0x0f;
-# else
-static long _cdecl dsp56k_open(FILEPTR *f)
+static long _cdecl
+dsp56k_open(FILEPTR *f)
 {
 	short dev = f->fc.aux;
-# endif
+	
 	switch(dev)
 	{
 	case DSP56K_DEV_56001:
 
 		if (dsp56k.in_use)
 			return -EBUSY;
-# ifdef __MINT__
+		
 		if (dsp_lock())
 			return -EBUSY;
-# endif
+		
 		dsp56k.in_use = 1;
 		dsp56k.timeout = TIMEOUT;
 		dsp56k.maxio = MAXIO;
@@ -689,87 +548,78 @@ static long _cdecl dsp56k_open(FILEPTR *f)
 		break;
 
 	default:
-		printk("DSP56k driver: Unknown minor device: %d\n", dev);
+		ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
 		return -ENXIO;
 	}
-
-#ifdef MODULE
-	MOD_INC_USE_COUNT;
-#endif /* MODULE */
 
 	return 0;
 }
 
-# ifndef __MINT__
-static long dsp56k_release(struct inode *inode, struct file *file)
-{
-	int dev = MINOR(inode->i_rdev) & 0x0f;
-# else
-static long _cdecl dsp56k_close(FILEPTR *f, short pid)
+static long _cdecl
+dsp56k_close(FILEPTR *f, int pid)
 {
 	short dev = f->fc.aux;
-# endif
-	switch(dev)
+
+	switch (dev)
 	{
 		case DSP56K_DEV_56001:
 		{
-# ifdef __MINT__
-			if (pid != p_getpid()) {
+			if (pid != p_getpid())
 				/* kernel cleaning up after a dead person */
 				dsp56k_reset();
-			}
+
 			dsp_unlock();
-# endif
 			dsp56k.in_use = 0;
 			break;
 		}
 		default:
 		{
-		printk("DSP56k driver: Unknown minor device: %d\n", dev);
-		return -ENXIO;
+			ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
+			return -ENXIO;
 		}
 	}
 
-#ifdef MODULE
-	MOD_DEC_USE_COUNT;
-#endif
 	return 0;
 }
 
-# ifdef	__MINT__
-
 static long _cdecl
-dsp56k_lseek(FILEPTR *f, long where, short whence)
+dsp56k_lseek(FILEPTR *f, long where, int whence)
 {
 	return 0;
 }
 
 static long _cdecl
-dsp56k_datime(FILEPTR *f, ushort *timeptr, short wrflag)
+dsp56k_datime(FILEPTR *f, ushort *timeptr, int wrflag)
 {
-	if (!wrflag) {
+	if (!wrflag)
+	{
 		*timeptr++ = time;
 		*timeptr = date;
+
 		return 0;
 	}
-	return -EINVAL;		/* rather than ENOSYS */
+
+	/* rather than ENOSYS */
+	return -EINVAL;
 }
 
 static long _cdecl
-dsp56k_select(FILEPTR *f, long proc, short mode)
+dsp56k_select(FILEPTR *f, long proc, int mode)
 {
-	return 1;		/* for now only this */
+	/* for now only this */
+	return 1;
 }
 
 static void _cdecl
-dsp56k_unselect(FILEPTR *f, long proc, short mode)
+dsp56k_unselect(FILEPTR *f, long proc, int mode)
 {
 }
+
 
 # define COOKIE__SND	0x5f534e44UL
 
 DEVDRV * _cdecl
-init (struct kerinfo *k)
+init(struct kerinfo *k)
 {
 	long r;
 	long snd = 0;
@@ -778,82 +628,32 @@ init (struct kerinfo *k)
 
 	c_conws (BOOT_MSG);
 
-	r = s_system(S_GETCOOKIE, COOKIE__SND, (long)&snd);
-
-	if (r < 0) {
+	r = s_system(S_GETCOOKIE, COOKIE__SND, (long) &snd);
+	if (r < 0)
+	{
 		/* MiNT below 1.15.0 or not MiNT at all -> don't bother */
 		c_conws("Not installed, too old MiNT version\r\n");
-		return (DEVDRV *)0L;
+		return NULL;
 	}
 
-	if (!(snd & 0x08L)) {
+	if (!(snd & 0x08L))
+	{
 		c_conws("Not installed, no DSP chip present\r\n");
-		return (DEVDRV *)0L;
+		return NULL;
 	}
 
 	r = d_cntl (DEV_INSTALL, name, (long) &dev_descriptor);
-
 	r = (r >= 0) ? 1L : 0L;
-
-	if (r) {
+	if (r)
+	{
 		date = datestamp;
 		time = timestamp;
 		dsp56k.in_use = 0;
-	} else
+	}
+	else
 		c_conws(MSG_FAILURE);
 
 	c_conws("\r\n");
 
 	return (DEVDRV *) r;
 }
-
-# else /* !__MINT__ */
-
-static struct file_operations dsp56k_fops = {
-	NULL,	  /* no special dsp56k_lseek */
-	dsp56k_read,
-	dsp56k_write,
-	NULL,	  /* no special dsp56k_readdir */
-	NULL,	  /* dsp56k_poll? */
-	dsp56k_ioctl,
-	NULL,	  /* no special dsp56k_mmap */
-	dsp56k_open,
-	NULL,	/* flush */
-	dsp56k_release,
-	NULL,	  /* no special dsp56k_fsync */
-	NULL,	  /* no special dsp56k_fasync */
-	NULL,	  /* no special dsp56k_check_media_change */
-	NULL	  /* no special dsp56k_revalidate */
-};
-
-/****** Init and module functions ******/
-
-__initfunc(int dsp56k_init(void))
-{
-	if(!MACH_IS_ATARI || !ATARIHW_PRESENT(DSP56K)) {
-		printk("DSP56k driver: Hardware not present\n");
-		return -ENODEV;
-	}
-
-	if(register_chrdev(DSP56K_MAJOR, "dsp56k", &dsp56k_fops)) {
-		printk("DSP56k driver: Unable to register driver\n");
-		return -ENODEV;
-	}
-
-	dsp56k.in_use = 0;
-
-	printk("DSP56k driver installed\n");
-}
-
-#ifdef MODULE
-int init_module(void)
-{
-	return dsp56k_init();
-}
-
-void cleanup_module(void)
-{
-	unregister_chrdev(DSP56K_MAJOR, "dsp56k");
-}
-#endif /* MODULE */
-#endif /* __MINT__ */
