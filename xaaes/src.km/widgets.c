@@ -681,8 +681,6 @@ redraw_menu(enum locks lock)
 	struct xa_client *rc, *mc;
 	struct xa_widget *widg;
 
-	DIAGS(("redraw_menu: yeehaa"));
-
 	rc = lookup_extension(NULL, XAAES_MAGIC);
 	if (!rc)
 		rc = C.Aes;

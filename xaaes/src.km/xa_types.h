@@ -843,6 +843,8 @@ typedef enum window_type WINDOW_TYPE;
 /* Callback for a window's auto-redraw function */
 typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 
+typedef void DrawWinElement(struct xa_window *wind);
+
 #define XAWS_OPEN	0x0001
 #define XAWS_ICONIFIED	0x0002
 #define XAWS_SHADED	0x0004
@@ -857,7 +859,8 @@ struct xa_window
 	struct xa_window *prev;		/*		     - prev is the window above (both NULL terminated) */
 	
 	//struct xa_window_draw *wdraw;
-	
+	short vdi_handle;
+
 	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
 	XA_WIND_ATTR save_widgets;	/* Remember active_widgets if iconified */
 
