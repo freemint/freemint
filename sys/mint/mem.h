@@ -38,11 +38,15 @@ struct memregion
 # define M_KER		0x0008	/* region came from kernel map */
 # define M_MAP		0x000f	/* and with this to pick out map */
 
-// # define M_SHTEXT	0x0010	/* region is a shared text region */
-// # define M_SHTEXT_T	0x0020	/* `sticky bit' for shared text regions */
+/* obsolete M_SHTEXT	0x0010	 * region is a shared text region */
+/* obsolete M_SHTEXT_T	0x0020	 * `sticky bit' for shared text regions */
 # define M_FSAVED	0x0040	/* region is saved memory of a forked process */
 # define M_SHARED	0x0080	/* shared memory region */
 # define M_KEEP		0x0100	/* don't free on process termination */
+                     /* 0x0200  unused */
+                     /* 0x0400  unused */
+                     /* 0x0800  unused */
+                     /* 0x1000  unused */
 # define M_KMALLOC	0x4000	/* used by kmalloc */
 # define M_SEEN		0x8000	/* for memused() to find links */
 

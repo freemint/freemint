@@ -19,7 +19,7 @@
 # include "mint/proc.h"
 # include "mint/stat.h"
 
-# include <osbind.h>
+# include <mint/osbind.h>
 
 
 /*
