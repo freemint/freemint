@@ -57,6 +57,7 @@
 # include "filesys.h"
 # include "memory.h"
 # include "proc.h"
+# include "ptrace.h"
 # include "rendez.h"
 # include "resource.h"
 # include "signal.h"
@@ -441,7 +442,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x13e */	(Func)	p_sigintr,
 	/* 0x13f */		s_uptime,
 	
-	/* 0x140 */		enosys,		/* reserved */
+	/* 0x140 */	(Func)	p_trace,	/* 1.16.0 */
 	/* 0x141 */		enosys,		/* reserved */
 	/* 0x142 */		d_xreaddir,
 	/* 0x143 */		p_seteuid,

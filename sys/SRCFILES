@@ -39,6 +39,7 @@ COBJS = \
 	proc.c \
 	procfs.c \
 	profil.c \
+	ptrace.c \
 	pun.c \
 	ramfs.c \
 	random.c \
