@@ -272,6 +272,16 @@ accpath   = c:\
 #resource = xa_mono.rsc
 
 #
+# widget_auto_highlight = <bool> default: no
+#
+# When widget_auto_highlight is set true, standard window widget are
+# automatically highlighted when mouse hovers over them. This is still
+# very experimental, and widgets are not actually highlighted, they
+# are just animated - that is redrawn in SELECTED status.
+#
+#widget_auto_highlight = yes
+
+#
 # helpserver (like N.AES config, first is the default)
 #
 #helpserver = HYP,ST-GUIDE,d:\help\st-guide.prg

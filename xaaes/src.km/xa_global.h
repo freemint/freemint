@@ -231,6 +231,7 @@ struct config
 					/* 1 = Keep client whose last window was closed infront. */
 
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
+	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
 	bool no_xa_fsel;
 	bool auto_program;
 	bool point_to_type;
