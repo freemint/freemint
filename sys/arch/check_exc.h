@@ -1,9 +1,9 @@
 /*
- * $Id$ 
- * 
+ * $Id$
+ *
  * Copyright (c) 1983, 1992, 1993
  *      The Regents of the University of California.  All rights reserved.
- * 
+ *
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -21,7 +21,7 @@
  * 4. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -33,7 +33,7 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- * 
+ *
  */
 
 # ifndef _check_exc_h
@@ -196,7 +196,7 @@ struct mc68030_bus_frame_short
 		uchar byte[4];
 		ushort word[2];
 		ulong one_long;
-	} data_ouput_buffer;
+	} data_output_buffer;
 
 	ushort int_4;
 	ushort int_5;
@@ -291,6 +291,5 @@ struct mc68060_bus_frame
 
 long check_bus(struct frame_zero frame);
 long check_priv(struct privilege_violation_stackframe frame);
-
 
 # endif /* _check_exc_h */
