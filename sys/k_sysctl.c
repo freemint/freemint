@@ -301,7 +301,7 @@ proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	
 	if (name[1] == PROC_PID_DEBUG)
 	{
-		long flag = 0;
+		long flag = ptmp->debug_level;
 		long ret;
 		
 		if (namelen != 2)
@@ -311,8 +311,9 @@ proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 		if (ret)
 			return ret;
 		
-		DEBUG(("pid %i: flag will be set now to %li", ptmp->pid, flag));
-		ptmp->debug_level = flag;
+		ptmp->debug_level = (ushort) flag;
+		DEBUG(("pid %i: debug_level now %i",
+		      ptmp->pid, ptmp->debug_level));
 		
 		return 0;
 	}
