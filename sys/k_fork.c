@@ -181,19 +181,15 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	
 	/* Duplicate cookie for the executable file */
 	dup_cookie (&p2->exe, &p1->exe);
-	
-	/* clear directory search info */
-	bzero (p2->srchdta, NUM_SEARCH * sizeof (DTABUF *));
-	bzero (p2->srchdir, sizeof (p2->srchdir));
-	p2->searches = NULL;
-	
+		
 	p2->started = xtime;
 	
 	/* now that memory ownership is copied, fill in page table
 	 * WARNING: this must be done AFTER all memory allocations
 	 *          (especially kmalloc)
 	 */
-	init_page_table (p2, p2->p_mem);
+	if (!(flags & FORK_SHAREVM))
+		init_page_table (p2, p2->p_mem);
 	
 	/* hook into the process list */
 	p2->gl_next = proclist;
