@@ -778,18 +778,12 @@ get_region (MMAP map, ulong size, int mode)
 MEMREGION *
 _get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 {
-	static ulong calls = 0, free_checks = 0, size_checks = 0;
-
 	MEMREGION *n, *k = NULL;
 	
 	TRACE (("get_region (%s, %li (%lx), %x)",
 		((map == core) ? "core" : ((map == alt) ? "alt" : "???")),
 		size, size, mode));
 	
-
-	DEBUG (("_get_region(): Till now: %6lu Calls, %8lu Freechecks, %6lu Sizechecks.",
-		calls, free_checks, size_checks));
-
 	SANITY_CHECK (map);
 	
 	if (kernel_flag)
@@ -810,17 +804,11 @@ _get_region (MMAP map, ulong size, int mode, MEMREGION *m, int kernel_flag)
 	
 	size = ROUND (size);
 	
-	calls++;
-
 	n = *map;
 	while (n)
 	{
-		free_checks++;
-
 		if (ISFREE (n))
 		{
-			size_checks++;
-
 			if (n->len == size)
 			{
 				if (kernel_flag)
@@ -930,8 +918,6 @@ win:
 void
 free_region (MEMREGION *reg)
 {
-	static calls = 0;
-
 	MMAP map;
 	MEMREGION *m, *shdw, *save;
 	long txtsize;
@@ -949,8 +935,6 @@ free_region (MEMREGION *reg)
 	 */
 	assert (!(reg->mflags & M_FSAVED));
 	
-	DEBUG (("free_region(): %6lu Calls.", ++calls));
-
 	shdw = reg->shadow;
 	if (shdw)
 	{
