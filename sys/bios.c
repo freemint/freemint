@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * BIOS replacement routines
- * 
+ *
  */
 
 # include "bios.h"
@@ -79,7 +79,7 @@ drvmap (void)
 }
 
 /* kbshift: return (and possibly change) keyboard shift key status
- * 
+ *
  * WARNING: syscall.spp assumes that kbshift never blocks, and never
  * calls any underlying TOS functions
  */
@@ -90,11 +90,11 @@ long _cdecl
 kbshift (int mode)
 {
 	int oldshft;
-	
+
 	oldshft = *((uchar *) kbshft);
 	if (mode >= 0)
 		*kbshft = mode;
-	
+
 	return oldshft;
 }
 
@@ -104,7 +104,7 @@ long _cdecl
 mediach (int dev)
 {
 	long r;
-	
+
 	r = callout1 (MEDIACH, dev);
 	return r;
 }
@@ -115,12 +115,12 @@ long _cdecl
 getbpb (int dev)
 {
 	long r;
-	
+
 	/* we can't trust the Getbpb routine to accurately save all registers,
 	 * so we do it ourselves
 	 */
 	r = callout1 (GETBPB, dev);
-	
+
 	/* There is a bug in the TOS disk handling routines (well, several
 	 * actually). If the directory size of Getbpb() is returned as zero
 	 * then the drive 'dies' and won't read any new disks even with the
@@ -133,7 +133,7 @@ getbpb (int dev)
 	{
 		if (((short *) r)[3] == 0)	/* 0 directory size? */
 			((short *) r)[3] = 1;
-		
+
 # ifdef OLDTOSFS
 		/* jr: save cluster size in area */
 		if (dev >= 0 && dev < NUM_DRIVES)
@@ -141,7 +141,7 @@ getbpb (int dev)
 			clsizb[dev] = (long)(((ushort *) r)[0]) * (long)(((ushort *) r)[1]);
 # endif
 	}
-	
+
 	return r;
 }
 
@@ -152,21 +152,21 @@ rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 {
 	PROC *p = curproc;
 	long r;
-	
+
 	/* jr: inspect bit 3 of rwflag!!!
 	 */
 	if (!(rwflag & 8) && dev >= 0 && dev < NUM_DRIVES)
 	{
 		if (aliasdrv [dev])
 			dev = aliasdrv [dev] - 1;
-		
+
 		if (dlockproc [dev] && dlockproc [dev] != p)
 		{
 			DEBUG (("Rwabs: device %c is locked", dev+'A'));
 			return ELOCKED;
 		}
 	}
-	
+
 	/* only the superuser can make Rwabs calls directly
 	 */
 	if (secure_mode)
@@ -194,7 +194,7 @@ rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 		r = callout (RWABS, rwflag, buffer, number, recno, dev, lrecno);
 		TRACE (("returning from RWABS"));
 	}
-	
+
 	return r;
 }
 
@@ -206,7 +206,7 @@ setexc (int number, long vector)
 	PROC *p = curproc;
 	long *place;
 	long old;
-	
+
 	/* If the caller has no root privileges, we'll attempt
 	 * to terminate it. We allow to change the critical error handler
 	 * and the GEMDOS terminate vector, because these are private
@@ -227,7 +227,7 @@ setexc (int number, long vector)
 			 * exception vector, if its memory is F_PROT_G or
 			 * F_PROT_S? Perhaps it could save us a crash, or
 			 * even two... (draco)
-			 * 
+			 *
 			 * Unfortunately some programs go Super() then change
 			 * vectors directly. Common practice in games/demos :(
 	 		 */
@@ -247,9 +247,9 @@ setexc (int number, long vector)
 			}
 		}
 	}
-	
+
 	place = (long *)(((long) number) << 2);
-	
+
 	/* Note: critical error handler (0x0101) is kernel private now
 	 * and programs cannot really use it.
 	 */
@@ -258,7 +258,7 @@ setexc (int number, long vector)
 		old = p->ctxt[SYSCALL].term_vec;
 	else
 		old = *place;
-	
+
 	if (vector > 0)
 	{
 		/* validate vector; this will cause a bus error if mem
@@ -267,7 +267,7 @@ setexc (int number, long vector)
 		 */
 		if (*((long *) vector) == 0xDEADBEEFL)
 			return old;
-		
+
 		if (number == 0x102)
 		{
 			p->ctxt[SYSCALL].term_vec = vector;
@@ -280,7 +280,7 @@ setexc (int number, long vector)
 			 * to pass it along.
 			 */
 			long mintcerr;
-			
+
 			mintcerr = (long) Setexc (0x101, (void (*)()) vector);
 			*place = mintcerr;
 		}
@@ -303,7 +303,7 @@ setexc (int number, long vector)
 				 * global memory
 				 */
 				MEMREGION *r;
-				
+
 				r = addr2region (vector);
 				if (r && get_prot_mode (r) == PROT_P)
 				{
@@ -312,23 +312,24 @@ setexc (int number, long vector)
 				}
 			}
 # endif
-			
+
 			/* We would do just *place = vector except that
 			 * someone else might be intercepting Setexc looking
 			 * for something in particular...
-			 * 
+			 *
 			 * psigintr() exception shadow area.
 			 * if curproc->in_dos varies from a zero,
 			 * it may be a call from psigintr() and shadow
 			 * must not be updated that time.
 			 */
-			
+# if 0
 			if (intr_shadow && number < 0x0100 && p->in_dos == 0)
 				intr_shadow[number] = vector;
+# endif
 			old = (long) Setexc (number, (void (*)()) vector);
 		}
 	}
-	
+
 	TRACE (("Setexc %d, %lx -> %lx", number, vector, old));
 	return old;
 }
@@ -345,11 +346,11 @@ void
 init_bdevmap (void)
 {
 	int i;
-	
+
 	for (i = 0; i < BDEVMAP_MAX; i++)
 	{
 		BDEVMAP *map = &(bdevmap [i]);
-		
+
 		map->instat	= _ubconstat;
 		map->in		= _ubconin;
 		map->outstat	= _ubcostat;
@@ -362,36 +363,36 @@ long
 overlay_bdevmap (int dev, BDEVMAP *newmap)
 {
 	DEBUG (("overlay_bdevmap: %i", dev));
-	
+
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
 		int i;
-		
+
 		if ((long) newmap->instat == 1)
 			bdevmap [dev].instat = NULL;
 		else if (newmap->instat)
 			bdevmap [dev].instat = newmap->instat;
-		
+
 		if ((long) newmap->in == 1)
 			bdevmap [dev].in = NULL;
 		else if (newmap->in)
 			bdevmap [dev].in = newmap->in;
-		
+
 		if ((long) newmap->outstat == 1)
 			bdevmap [dev].outstat = NULL;
 		else if (newmap->outstat)
 			bdevmap [dev].outstat = newmap->outstat;
-		
+
 		if ((long) newmap->out == 1)
 			bdevmap [dev].out = NULL;
 		else if (newmap->out)
 			bdevmap [dev].out = newmap->out;
-		
+
 		if ((long) newmap->rsconf == 1)
 			bdevmap [dev].rsconf = NULL;
 		else if (newmap->rsconf)
 			bdevmap [dev].rsconf = newmap->rsconf;
-		
+
 # if 1
 		/* and, at last, disable original bttys :-) */
 		for (i = 0; i < btty_max; i++)
@@ -399,20 +400,20 @@ overlay_bdevmap (int dev, BDEVMAP *newmap)
 			if (bttys[i].bdev == dev)
 			{
 				int j;
-				
+
 				for (j = i + 1; j < btty_max; j++, i++)
 					bttys[i] = bttys[j];
-				
+
 				btty_max = i;
-				
+
 				break;
 			}
 		}
 # endif
-		
+
 		return E_OK;
 	}
-	
+
 	return EINVAL;
 }
 
@@ -424,7 +425,7 @@ ubconstat (int dev)
 		if (bdevmap [dev].instat)
 			return (*bdevmap [dev].instat)(dev);
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -436,7 +437,7 @@ ubconin (int dev)
 		if (bdevmap [dev].in)
 			return (*bdevmap [dev].in)(dev);
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -448,7 +449,7 @@ ubcostat (int dev)
 		if (bdevmap [dev].outstat)
 			return (*bdevmap [dev].outstat)(dev);
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -460,7 +461,7 @@ ubconout (int dev, int c)
 		if (bdevmap [dev].out)
 			return (*bdevmap [dev].out)(dev, c);
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -470,16 +471,16 @@ ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	if (has_bconmap)
 	{
 		ushort dev = curproc->p_fd->bconmap;
-		
+
 		if ((ushort) dev < BDEVMAP_MAX)
 		{
 			DEBUG (("rsconf: %i -> %lx", dev, bdevmap [dev].rsconf));
-			
+
 			if (bdevmap [dev].rsconf)
 				return (*bdevmap [dev].rsconf)(dev, baud, flow, uc, rs, ts, sc);
 		}
 	}
-	
+
 	return rsconf (baud, flow, uc, rs, ts, sc);
 }
 
@@ -505,7 +506,7 @@ const short boutput[MAX_BHANDLE] = { -3, -2, -1, -5 };
 
 /* these are supposed to be tables holding the addresses of the
  * first 8 BconXXX functions, but in fact only the first 5 are
- * placed here (and device 5 only has Bconout implemented; 
+ * placed here (and device 5 only has Bconout implemented;
  * we don't use that device (raw console) anyway).
  */
 
@@ -552,12 +553,12 @@ INLINE int
 bcxstat (IOREC_T *wrec)
 {
 	long s;
-	
+
 	s = wrec->head;
 	s -= wrec->tail;
 	if (s <= 0)
 		s += wrec->buflen;
-	
+
 	return s < 3 ? 0 : -1;
 }
 
@@ -567,22 +568,22 @@ isonline (struct bios_tty *b)
 	if (b->tty == &aux_tty)
 	{
 		/* modem1 */
-		
+
 		/* CD is !bit 1 on the 68901 GPIP port */
 		return (1 << 1) & ~(_mfpregs->gpip);
 	}
 	else if (b->tty == &sccb_tty)
 	{
 		/* modem2 */
-		
+
 		short sr = spl7 ();
 		register uchar r;
-		
+
 # ifndef MILAN
 		volatile uchar dummy;
 		dummy = _mfpregs->gpip;
 		UNUSED (dummy);
-		
+
 		/* CD is bit 3 of read register 0 on SCC port B */
 		r = (1 << 3) & *((volatile char *) ControlRegB);
 # else
@@ -595,15 +596,15 @@ isonline (struct bios_tty *b)
 	else if (b->tty == &scca_tty)
 	{
 		/* serial2 */
-		
+
 		short sr = spl7 ();
 		register uchar r;
-		
+
 # ifndef MILAN
 		volatile uchar dummy;
 		dummy = _mfpregs->gpip;
 		UNUSED (dummy);
-		
+
 		/* CD is bit 3 of read register 0 on SCC port A */
 		r = (1 << 3) & *((volatile char *) ControlRegA);
 # else
@@ -613,7 +614,7 @@ isonline (struct bios_tty *b)
 		spl (sr);
 		return r;
 	}
-	
+
 	/* unknown port, assume CD always on. */
 	return 1;
 }
@@ -624,22 +625,22 @@ isbrk (struct bios_tty *b)
 	if (b->tty == &aux_tty)
 	{
 		/* modem1 */
-		
+
 		/* break is bit 3 in the 68901 RSR */
 		return (1 << 3) & _mfpregs->rsr;
 	}
 	else if (b->tty == &sccb_tty)
 	{
 		/* modem2 */
-		
+
 		/* break is bit 7 of read register 0 on SCC port B */
 		short sr = spl7();
 		register uchar r;
-		
+
 		volatile uchar dummy;
 		dummy = _mfpregs->gpip;
 		UNUSED (dummy);
-		
+
 # ifndef MILAN
 		r = (1 << 7) & *((volatile char *) ControlRegB);
 # else
@@ -652,15 +653,15 @@ isbrk (struct bios_tty *b)
 	else if (b->tty == &scca_tty)
 	{
 		/* serial2 */
-		
+
 		/* like modem2, only port A */
 		short sr = spl7();
 		register uchar r;
-		
+
 		volatile uchar dummy;
 		dummy = _mfpregs->gpip;
 		UNUSED (dummy);
-		
+
 # ifndef MILAN
 		r = (1 << 7) & *((volatile char *) ControlRegA);
 # else
@@ -677,7 +678,7 @@ isbrk (struct bios_tty *b)
  		return ((1 << 3) & _ttmfpregs->rsr);
 # endif
 	}
-	
+
 	/* unknown port, cannot detect breaks... */
 	return 0;
 }
@@ -686,15 +687,15 @@ ushort
 ionwrite (IOREC_T *wrec)
 {
 	ushort s;
-	
+
 	s = wrec->head;
 	s -= wrec->tail;
 	if ((int)s <= 0)
 		s += wrec->buflen;
-	
+
 	if ((int)(s -= 2) < 0)
 		s = 0;
-	
+
 	return s;
 }
 
@@ -702,12 +703,12 @@ ushort
 ionread (IOREC_T *irec)
 {
 	ushort r;
-	
+
 	r = irec->tail;
 	r -= irec->head;
 	if ((int) r < 0)
 		r += irec->buflen;
-	
+
 	return r;
 }
 
@@ -721,10 +722,10 @@ static void
 checkbtty (struct bios_tty *b, int sig)
 {
 	void **l;
-	
+
 	if (!b->irec)
 		return;
-	
+
 	if (!b->clocal && !isonline (b))
 	{
 		b->vticks = 0;
@@ -781,12 +782,12 @@ checkbtty (struct bios_tty *b, int sig)
 				/* every break only one interrupt please
 				 */
 				b->bticks += 0x80000000L;
-				
+
 				DEBUG (("checkbtty: bdev %d break(int)", b->bdev));
-				
+
 				if (!(b->tty->sg.sg_flags & T_NOFLSH))
 					iread (b->bdev, (char *) NULL, 0, 1, 0);
-				
+
 				if (b->tty->pgrp)
 				{
 					DEBUG (("checkbtty: killgroup (%i, SIGINT)", b->tty->pgrp));
@@ -797,11 +798,11 @@ checkbtty (struct bios_tty *b, int sig)
 		else
 			b->bticks = 0;
 	}
-	
+
 	if (!b->vticks || jiffies - b->vticks > 0)
 	{
 		long r;
-		
+
 		if ((r = (long) b->tty->vmin - btty_ionread (b)) <= 0)
 		{
 			b->vticks = 0;
@@ -819,20 +820,20 @@ checkbtty (struct bios_tty *b, int sig)
 		else
 			b->vticks = 0;
 	}
-	
+
 	if (b->tty->state & TS_HOLD)
 		return;
-	
+
 	l = (void **) b->wsel;
 	if (*l)
 	{
 		long i;
-		
+
 		i = b->orec->tail;
 		i -= b->orec->head;
 		if (i < 0)
 			i += b->orec->buflen;
-		
+
 		if (i < b->orec->hi_water)
 			wakeselect (*l);
 	}
@@ -842,16 +843,16 @@ void
 checkbttys (void)
 {
 	struct bios_tty *b;
-	
+
 	for (b = bttys; b < bttys + btty_max; b++)
 		checkbtty (b, 1);
-	
+
 	b = &midi_btty;
 	if (!b->vticks || jiffies - b->vticks > 0)
 	{
 		long r;
 		void **l;
-		
+
 		if ((r = (long) b->tty->vmin - ionread (b->irec)) <= 0)
 		{
 			b->vticks = 0;
@@ -875,7 +876,7 @@ void
 checkbttys_vbl (void)
 {
 	struct bios_tty *b;
-	
+
 	for (b = bttys; b < bttys + btty_max; b++)
 	{
 		if (!b->clocal && b->orec->tail != b->orec->head && !isonline (b))
@@ -940,7 +941,7 @@ reset:
 punish:
 			if (curproc->curpri > MIN_NICE)
 				curproc->curpri -= 1;
-			
+
 			return 0;
 		}
 	}
@@ -953,18 +954,18 @@ bconstat (int dev)
 	{
 		if (checkkeys ())
 			return 0;
-		
+
 		return (keyrec->head != keyrec->tail) ? -1 : 0;
 	}
-	
+
 	if (dev == AUXDEV && has_bconmap)
 		dev = curproc->p_fd->bconmap;
-	
+
 	return BCONSTAT (dev);
 }
 
 /* bconin: input a character
- * 
+ *
  * WARNING: syscall.spp assumes that ubconin never
  * blocks if ubconstat returns non-zero.
  */
@@ -974,7 +975,7 @@ _ubconin (int dev)
 	if (dev < MAX_BHANDLE)
 	{
 		FILEPTR *f = curproc->p_fd->ofiles [binput [dev]];
-		
+
 		return file_getchar (f, RAW);
 	}
 	else
@@ -989,28 +990,28 @@ long
 bconin (int dev)
 {
 	short h;
-	
+
 	if (dev == CONSDEV)
 	{
 		IOREC_T *k = keyrec;
 		long r;
-		
+
 again:
 		while (k->tail == k->head)
 		{
 			sleep (IO_Q, (long) &console_in);
 		}
-		
+
 		if (checkkeys ())
 			goto again;
-		
+
 		h = k->head + 4;
 		if (h >= k->buflen)
 			h = 0;
-		
+
 		r = *((long *) (k->bufaddr + h));
 		k->head = h;
-		
+
 		return r;
 	}
 	else
@@ -1027,33 +1028,33 @@ again:
 		}
 		else
 			h = dev - SERDEV;
-		
+
 		if ((unsigned) h < btty_max || dev == 3)
 		{
 			if (has_bconmap && dev != 3)
 			{
 				/* help the compiler... :) */
 				long *statc;
-				
+
 				while (!callout1 (*(statc = &MAPTAB [dev - SERDEV].bconstat), dev))
 					sleep (IO_Q, (long) &bttys [h]);
-				
+
 				return callout1 (statc[1], dev);
 			}
-			
+
 			while (!BCONSTAT (dev))
 				sleep (IO_Q, (long) (dev == 3 ? &midi_btty : &bttys[h]));
 		}
 		else if (dev > 0)
 		{
 			ulong tick;
-			
+
 			tick = jiffies;
 			while (!BCONSTAT (dev))
 			{
 				/* make blocking (for longer) reads eat
 				 * less CPU...
-				 * 
+				 *
 				 * if yield()ed > 2 seconds and still no
 				 * data continue with nap
 				 */
@@ -1064,12 +1065,12 @@ again:
 			}
 		}
 	}
-	
+
 	return BCONIN (dev);
 }
 
 /* bconout: output a character.
- * 
+ *
  * returns 0 for failure, nonzero for success
  */
 
@@ -1078,16 +1079,16 @@ _ubconout (int dev, int c)
 {
 	FILEPTR *f;
 	char outp;
-	
+
 	if (dev < MAX_BHANDLE)
 	{
 		f = curproc->p_fd->ofiles [boutput [dev]];
 		if (!f)
 			return 0;
-		
+
 		if (is_terminal (f))
 			return tty_putchar (f, ((long) c) & 0x00ff, RAW);
-		
+
 		outp = c;
 		return (*f->dev->write)(f, &outp, 1L);
 	}
@@ -1097,7 +1098,7 @@ _ubconout (int dev, int c)
 		f = curproc->p_fd->control;
 		if (!f)
 			return 0;
-		
+
 		if (is_terminal (f))
 		{
 			if (c < ' ')
@@ -1106,10 +1107,10 @@ _ubconout (int dev, int c)
 				tty_putchar (f, (long) '\033', RAW);
 				tty_putchar (f, (long) 'Q', RAW);
 			}
-			
+
 			return tty_putchar (f, ((long) c) & 0x00ff, RAW);
 		}
-		
+
 		/* note: we're assuming sizeof(int) == 2 here!
 		 */
 		outp = c;
@@ -1123,16 +1124,16 @@ long
 bconout (int dev, int c)
 {
 	int statdev;
-	
+
 	if (dev == AUXDEV && has_bconmap)
 		dev = curproc->p_fd->bconmap;
-	
+
 	/* compensate for a known BIOS bug: MIDI and IKBD are switched
 	 */
 	     if (dev == 3)	statdev = 4;
 	else if (dev == 4)	statdev = 3;
 	else			statdev = dev;
-	
+
 	/* provide a 10 second time out for the printer
 	 */
 	if (!BCOSTAT (statdev))
@@ -1160,12 +1161,12 @@ bconout (int dev, int c)
 # endif
 			}
 			while (!BCOSTAT (statdev) && jiffies < endtime);
-			
+
 			if (jiffies >= endtime)
 				return 0;
 		}
 	}
-	
+
 	/* special case: many text accelerators return a bad value from
 	 * Bconout, so we ignore the returned value for the console
 	 * Sigh. serptch2 and hsmodem1 also screw this up, so for now let's
@@ -1173,7 +1174,7 @@ bconout (int dev, int c)
 	 */
 	{
 		long r = BCONOUT (dev, c);
-		
+
 		if (dev == PRNDEV)
 			return r;
 		else
@@ -1182,14 +1183,14 @@ bconout (int dev, int c)
 }
 
 /* bcostat: return output device status
- * 
+ *
  * WARNING: syscall.spp assumes that ubcostat never blocks.
  */
 static long _cdecl
 _ubcostat (int dev)
 {
 	FILEPTR *f;
-	
+
 	/* the BIOS switches MIDI (3) and IKBD (4)
 	 * (a bug, but it can't be corrected)
 	 */
@@ -1199,10 +1200,10 @@ _ubcostat (int dev)
 		f = curproc->p_fd->ofiles [boutput [3]];
 		return file_outstat (f) ? -1 : 0;
 	}
-	
+
 	if (dev == 3)
 		return BCOSTAT (dev);
-	
+
 	if (dev < MAX_BHANDLE)
 	{
 		f = curproc->p_fd->ofiles [boutput [dev]];
@@ -1229,13 +1230,13 @@ bcostat(int dev)
 	 */
 	else if (dev == 3) dev = 4;
 	else if (dev == 4) dev = 3;
-	
+
 	return BCOSTAT (dev);
 }
 
 
 /* special Bconout buffering code:
- * 
+ *
  * Because system call overhead is so high, programs that do output
  * with Bconout suffer in performance. To compensate for this,
  * Bconout is special-cased in syscall.s, and if possible characters
@@ -1261,16 +1262,16 @@ bflush (void)
 	short dev;
 	short statdev;
 	long lbconbuf[256];
-	
+
 	if ((dev = bconbdev) < 0)
 		return 0;
-	
+
 	/*
 	 * Here we lock the BIOS buffering mechanism by setting bconbdev to -1
 	 * This is necessary because if two or more programs try to do
 	 * buffered BIOS output at the same time, they can get seriously
 	 * mixed up. We unlock by setting bconbdev to 0.
-	 * 
+	 *
 	 * NOTE: some code (e.g. in sleep()) checks for bconbsiz != 0 in
 	 * order to see if we need to do a bflush; if one is already in
 	 * progress, it's pointless to do this, so we save a bit of
@@ -1281,7 +1282,7 @@ bflush (void)
 	if (bsiz == 0)
 		return 0;
 	bconbsiz = 0;
-	
+
 	/* BIOS handles 0..MAX_BHANDLE-1 are aliases for special GEMDOS files
 	 */
 	if (dev < MAX_BHANDLE || dev == 5)
@@ -1290,22 +1291,22 @@ bflush (void)
 			f = curproc->p_fd->ofiles [-1];
 		else
 			f = curproc->p_fd->ofiles [boutput [dev]];
-		
+
 		if (!f)
 		{
 			bconbdev = 0;
 			return 0;
 		}
-		
+
 		if (is_terminal (f))
 		{
 			int oldflags = f->flags;
-			
+
 			s = bconbuf;
-			
+
 			/* turn off NDELAY for this write... */
 			f->flags &= ~O_NDELAY;
-			
+
 			if (dev == 5)
 			{
 				while (bsiz-- > 0)
@@ -1323,7 +1324,7 @@ bflush (void)
 			{
 				long *where, nbytes;
 # if 1
-				
+
 				/* see if we can do fast RAW byte IO thru the device driver... */
 			    if ((f->fc.fs != &bios_filesys ||
 				    (bsiz > 1 &&
@@ -1358,7 +1359,7 @@ bflush (void)
 		bconbdev = 0;
 		return ret;
 	}
-	
+
 	/* Otherwise, we have a real BIOS device
 	 */
 	if (dev == AUXDEV && has_bconmap)
@@ -1366,7 +1367,7 @@ bflush (void)
 		dev = curproc->p_fd->bconmap;
 		statdev = dev;
 	}
-	
+
 	if ((ret = iwrite (dev, bconbuf, bsiz, 0, 0)) != ENODEV)
 	{
 		bconbdev = 0;
@@ -1385,17 +1386,17 @@ bflush (void)
 	}
 	else
 		statdev = dev;
-	
+
 	s = bconbuf;
 	while (bsiz-- > 0)
 	{
 		while (!BCOSTAT (statdev))
 			yield();
-		
+
 		(void) BCONOUT (dev,*s);
 		s++;
 	}
-	
+
 	bconbdev = 0;
 	return 1L;
 }
@@ -1442,7 +1443,7 @@ do_bconin(int dev)
 		else
 			r = bconin(dev);
 	}
-	
+
 	return r;
 }
 
