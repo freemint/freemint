@@ -518,7 +518,11 @@ sys_p_trace (short request, short pid, void *addr, long data)
 
 		case PT_BASEPAGE:
 		{
-			*(long *) data = (long) t->base;
+			if (t->p_mem)
+				*(long *) data = (long) t->p_mem->base;
+			else
+				*(long *) data = 0;
+
 			return 0;
 		}
 	}

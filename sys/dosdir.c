@@ -54,7 +54,7 @@ sys_d_setdrv (int d)
 		return r;
 	}
 
-	p->base->p_defdrv = p->p_cwd->curdrv = d;
+	p->p_mem->base->p_defdrv = p->p_cwd->curdrv = d;
 	return r;
 }
 
@@ -516,7 +516,7 @@ sys_f_setdta (DTABUF *dta)
 
 	TRACE(("Fsetdta: %lx", dta));
 	p->p_fd->dta = dta;
-	p->base->p_dta = (char *) dta;
+	p->p_mem->base->p_dta = (char *) dta;
 
 	return E_OK;
 }

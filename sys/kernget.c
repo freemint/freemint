@@ -720,6 +720,7 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 	SIZEBUF *info = NULL;
 	MEMREGION *baseregion = NULL;
 	MEMREGION *envregion = NULL;
+	long pbase, penv;
 	ulong len;
 	char *to;
 	enum { var = 0, equal = 1, value = 2 } state = var;
@@ -728,25 +729,33 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 	long ret = 0;
 
 
+	if (!p->p_mem)
+	{
+		DEBUG (("kern_procdir_get_environ: pid %d: no p_mem???", p->pid));
+		goto out;
+	}
+
+	pbase = (long)p->p_mem->base;
+
 	DEBUG (("get_environ: curproc = %lx, p = %lx", curproc, p));
-	DEBUG (("get_environ: curproc->base = %lx, p->base = %lx", curproc->base, p->base));
+	DEBUG (("get_environ: curproc->base = %lx, p->base = %lx", curproc->p_mem->base, pbase));
 	DEBUG (("get_environ: %lx, %lx, %lx, %lx",
-			proc_addr2region (curproc, (long) p->base),
-			proc_addr2region (p, (long) p->base),
-			addr2mem (curproc, (long) p->base),
-			addr2region ((long) p->base)
+			proc_addr2region (curproc, pbase),
+			proc_addr2region (p, pbase),
+			addr2mem (curproc, pbase),
+			addr2region (pbase)
 	));
 
-	if (!p->base)
+	if (!pbase)
 	{
 		DEBUG (("kern_procdir_get_environ: pid %d: no environment", p->pid));
 		goto out;
 	}
 
-	baseregion = proc_addr2region (curproc, (long) p->base);
+	baseregion = proc_addr2region (curproc, pbase);
 	if (!baseregion)
 	{
-		baseregion = addr2region ((long) p->base);
+		baseregion = addr2region (pbase);
 
 		if (baseregion)
 			attach_region (curproc, baseregion);
@@ -757,16 +766,17 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 		/* already attached, don't detach */
 		baseregion = NULL;
 
-	if (!p->base->p_env)
+	penv = (long)p->p_mem->base->p_env;
+	if (!penv)
 	{
 		DEBUG (("kern_procdir_get_environ: pid %d: no environment", p->pid));
 		goto out;
 	}
 
-	envregion = proc_addr2region (curproc, (long) p->base->p_env);
+	envregion = proc_addr2region (curproc, penv);
 	if (!envregion)
 	{
-		envregion = addr2region ((long) p->base->p_env);
+		envregion = addr2region (penv);
 		assert (envregion);
 
 		attach_region (curproc, envregion);
@@ -775,7 +785,7 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 		/* already attached, don't detach */
 		envregion = NULL;
 
-	from = env = p->base->p_env;
+	from = env = (char *)penv;
 
 	/* Walk the array and find out the maximum length */
   	for (;;)
@@ -974,11 +984,12 @@ long
 kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 {
 	SIZEBUF *info;
-	MEMREGION *baseregion;
+	long base;
 	ulong len = 512;
 	char state = '.';
 	int ttypgrp = 0;
 	struct timeval starttime;
+	ulong startcode = 0;
 	ulong endcode = 0xffffffffUL;
 	ulong i;
 	ulong sigign = 0;
@@ -987,6 +998,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 	TIMEOUT *t;
 	TIMEOUT *first = NULL;
 	long timeout = 0UL;
+	unsigned short memflags = 0;
 
 	DEBUG (("kern_procdir_get_stat: enter"));
 
@@ -1045,21 +1057,48 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 
 	if (p->p_mem && p->p_mem->mem)
 	{
+		MEMREGION *baseregion;
+
+		base = (long)p->p_mem->base;
+		memflags = p->p_mem->memflags;
+
 		for (i = 0; i < p->p_mem->num_reg; i++)
 		{
-			if ((void *) p->p_mem->addr[i] == (void *) p->base)
+			if (p->p_mem->addr[i] == base)
 			{
 				MEMREGION *m = p->p_mem->mem[i];
 
-				if (m == NULL || m->loc != (long) p->base)
-					break;
+				assert(m && m->loc == base);
 
-				endcode = ((ulong) (p->base) + m->len);
+				endcode = ((unsigned long)base + m->len);
+				break;
 			}
 		}
+
+		baseregion = proc_addr2region (curproc, base);
+		if (!baseregion)
+		{
+			baseregion = addr2region (base);
+
+			if (baseregion)
+				attach_region (curproc, baseregion);
+			else
+				DEBUG (("kern_procdir_get_stat: no baseregion found, pid %i", p->pid));
+		}
+		else
+			/* already attached, don't detach */
+			baseregion = NULL;
+
+		startcode = endcode - (ulong)p->p_mem->base->p_bbase - (ulong)p->p_mem->base->p_blen;
+
+		if (baseregion)
+			detach_region (curproc, baseregion);
 	}
 	else
+	{
+		base = 0;
 		endcode = 0;
+	}
 
 	if (p->p_sigacts)
 	{
@@ -1083,20 +1122,6 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 
 	DEBUG (("kern_procdir_get_stat: do ksprintf"));
 
-	baseregion = proc_addr2region (curproc, (long) p->base);
-	if (!baseregion)
-	{
-		baseregion = addr2region ((long) p->base);
-
-		if (baseregion)
-			attach_region (curproc, baseregion);
-		else
-			DEBUG (("kern_procdir_get_stat: no baseregion found, pid %i", p->pid));
-	}
-	else
-		/* already attached, don't detach */
-		baseregion = NULL;
-
 	info->len = ksprintf (info->buf, len,
 				"%d (%s) %c %d %d %d %d %u "
 				"%lu %lu %lu %lu %lu %lu %ld %ld %d %d "
@@ -1110,7 +1135,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 				p->pgrp,
 				get_session_id (p),
 				ttypgrp,
-				p->p_mem->memflags,
+				memflags,
 
 				0UL, 0UL, 0UL, 0UL, /* Page faults */
 				p->systime, p->usrtime, p->chldstime, p->chldutime,
@@ -1124,9 +1149,9 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 				(ulong) memused (p),
 				(ulong) memused (p),	/* rss */
 				0x7fffffffUL,		/* rlim */
-				(ulong) (p->base) + 256UL,
+				base + 256UL,
 				endcode,
-				endcode ? endcode - (ulong) p->base->p_bbase - (ulong) p->base->p_blen : 0,
+				startcode,
 
 				0UL, 0UL,
 				(ulong) (p->sigpending >> 1),
@@ -1135,9 +1160,6 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 				(ulong) sigcgt,
 				(ulong) p->wait_q
 	);
-
-	if (baseregion)
-		detach_region (curproc, baseregion);
 
 	*buffer = info;
 	return 0;

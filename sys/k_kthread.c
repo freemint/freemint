@@ -75,16 +75,15 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 	{
 		int i;
 
+		/* XXX */
+		p2->ppid = 0;
+
 		/* this blocks SIGKILL for the update process */
 		p2->p_flag |= P_FLAG_SYS;
 
 		vsprintf(p2->fname, sizeof(p2->fname), fmt, args);
 		vsprintf(p2->cmdlin, sizeof(p2->cmdlin), fmt, args);
 		vsprintf(p2->name, sizeof(p2->name), fmt, args);
-
-		/* kernel threads don't have a basepage */
-		p2->base = NULL;
-		p2->ppid = 0;
 
 		/* zero the user registers, and set the FPU in a "clear" state */
 		for (i = 0; i < 15; i++)

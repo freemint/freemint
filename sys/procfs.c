@@ -984,10 +984,10 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case PBASEADDR:
 		{
-			if (p == rootproc)
-				*((long *) buf) = (long) _base;
+			if (p->p_mem)
+				*((long *) buf) = (long) p->p_mem->base;
 			else
-				*((long *) buf) = (long) p->base;
+				*((long *) buf) = 0;
 			
 			return E_OK;
 		}
