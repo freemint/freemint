@@ -7,10 +7,8 @@
 # define _fasttext_h
 
 # include "mint/mint.h"
+# include "mint/file.h"
 
-
-extern DEVDRV screen_device;
-extern short hardscroll;
 
 #define ALT_1 0x780000L
 #define ALT_2 0x790000L
@@ -29,11 +27,11 @@ struct screen
 	long	msaveaddr;
 	short	msavestat;
 	long	msavearea[64];
-	long	user_tim,
-		next_tim;	/* time vector stuff */
-	long	user_but,
-		user_cur,
-		user_mot;	/* more user vectors */
+	long	user_tim;
+	long	next_tim;	/* time vector stuff */
+	long	user_but;
+	long	user_cur;
+	long	user_mot;	/* more user vectors */
 	short	cheight;	/* character height */
 	short	maxx;		/* number of characters across - 1 */
 	short	maxy;		/* number of characters high - 1 */
@@ -70,5 +68,11 @@ struct screen
 # define FINVERSE	0x10		/* invert text */
 # define CURS_UPD	0x40		/* cursor update flag */
 
+# ifdef FASTTEXT
+
+extern DEVDRV screen_device;
+extern short hardscroll;
+
+# endif /* FASTTEXT */
 
 # endif /* _fasttext_h */
