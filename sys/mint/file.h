@@ -383,11 +383,11 @@ struct kerinfo
 	 * Also this sprintf will put at most SPRINTF_MAX characters into
 	 * the output string.
 	 */
-	int	_cdecl (*strnicmp)(const char *, const char *, int);
-	int	_cdecl (*stricmp)(const char *, const char *);
-	char *	_cdecl (*strlwr)(char *);
-	char *	_cdecl (*strupr)(char *);
-	int	_cdecl (*sprintf)(char *, const char *, ...);
+	int	_cdecl (*kstrnicmp)(const char *, const char *, int);
+	int	_cdecl (*kstricmp)(const char *, const char *);
+	char *	_cdecl (*kstrlwr)(char *);
+	char *	_cdecl (*kstrupr)(char *);
+	int	_cdecl (*ksprintf)(char *, const char *, ...);
 	
 	
 	/* utility functions for manipulating time

@@ -23,14 +23,13 @@ typedef unsigned char			uchar;
 typedef unsigned short			ushort;
 typedef unsigned long 			ulong;
 
+/* 64 bit support */
 # ifndef LLONG
 # define LLONG
-# ifdef __GNUC__
 typedef long long			llong;
-# else
-typedef struct { long hi; ulong lo; }	llong;
+typedef unsigned long long		ullong;
 # endif
-# endif
+
 
 /* signed basic types */
 typedef signed char			__s8;
