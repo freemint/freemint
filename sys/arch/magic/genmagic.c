@@ -6,11 +6,12 @@
 # include <stdio.h>
 # include <stdlib.h>
 # include <stddef.h>
+
 # include "mint/mint.h"
 # include "mint/ktypes.h"
+# include "mint/kerinfo.h"
 # include "mint/mem.h"
 # include "mint/proc.h"
-# include "mint/file.h"
 # include "mint/slb.h"
 
 

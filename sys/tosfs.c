@@ -19,6 +19,8 @@
 
 # include "arch/syscall.h"
 # include "libkern/libkern.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
 
 # include "bios.h"
 # include "dev-null.h"

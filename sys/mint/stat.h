@@ -9,8 +9,10 @@
 # ifdef __KERNEL__
 # include "kcompiler.h"
 # include "ktypes.h"
+# include "time.h"
 # else
 # include <sys/types.h>
+# include <sys/time.h>
 # endif
 
 
