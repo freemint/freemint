@@ -52,6 +52,8 @@ struct xa_widget;
 struct scroll_entry;
 struct fmd_result;
 
+struct xa_lbox_info;
+struct lbox_slide;
 
 enum menu_behave
 {
@@ -289,47 +291,40 @@ typedef	short _cdecl lbox_set	(LIST_BOX *box,
 				void *user_data,
 				GRECT *rect,
 				short first);
-struct a_slide
-{
-	short up;
-	short down;
-	short slide_bkg;
-	short slider;
-	RECT  ofs;
-};
 
-struct b_slide
+typedef bool _cdecl lbox_scroll	(struct xa_lbox_info *lbox,
+				 struct lbox_slide *s,
+				 short n);
+
+struct lbox_slide
 {
-	short left;
-	short right;
-	short slide_bkg;
-	short slider;
-	RECT  ofs;
-};	
-struct xa_lbox_info;
+	short ul;
+	short dr;
+	short bkg;
+	short sld;
+
+	short num_visible;
+	short first_visible;
+	short entries;
+	short pause;
+	short flags;
+	RECT ofs;
+
+	lbox_scroll *dr_scroll;
+	lbox_scroll *ul_scroll;
+};
+	
 struct xa_lbox_info
 {
 	struct xa_lbox_info *next;	/* Next lbox attached to this widget tree */
 	void  *wdlg_handle;		/* wdlg handle */
 	void  *lbox_handle;		/* lbox handle */
-
+	short flags;			/* Flags */
 	short parent;			/* LBOX parent object */
-	short entries;			/* Total number of entries */
 	struct lbox_item *items;	/* Pointer to first item */
 	short *objs;			/* Pointer to array of objects making up elements in LBOX */
-	struct a_slide aslid;		/* Slider A object indexes + info */
-	struct b_slide bslid;		/* Slider B object indexes + info */
-
-	short visible_a;		/* Number of visible items */
-	short first_a;			/* Numbef of first visible item */
-	short flags;			/* Flags */
-	short pause_a;			/* Autoscroll speed */
-
-	short visible_b;		/* Visible this and that for slider B */
-	short first_b;			/* First this and that for slider B */
-	short entries_b;		/* Number of visible this and that for slider B */
-	short pause_b;			/* Autscroll speed for slider B */
-
+	struct lbox_slide aslide;	/* Slider A object indexes + info */
+	struct lbox_slide bslide;	/* Slider B object indexes + info */
 	struct widget_tree *wt;		/* Pointer to the widget tree this LBOX is attached to */
 	void *user_data;		/* User data */
 	lbox_select	*slct;		/* Select callback function */

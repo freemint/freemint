@@ -314,6 +314,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
+	if (S.wait_mouse == client)
+		S.wait_mouse = NULL;
+	
 	/*
 	 * It is no longer interested in button released packet
 	 */
