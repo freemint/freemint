@@ -26,24 +26,24 @@
  * -----------------------------
  * This module replaces the AES trap 2 vector to provide an interface to the
  * XaAES pipe based client/server AES, for normal GEM applications.
- * 
+ *
  * It works by first creating a pair of XaAES reply pipes for the application
  * in response to the appl_init() call, then using these to communicate with the
  * AES server kernal. When an AES trap occurs, the handler drops the pointer to the
  * parameter block into the XaAES.cmd pipe.
- * 
+ *
  * There are then 3 modes that the AES could have been called in.
- * 
+ *
  * If standard GEM emulation mode the handler then drops back into user mode and
  * blocks whilst reading on the current process's reply pipe. This allows other
  * processes to execute whilst XaAES is performing AES functions (the XaAES server
  * runs wholely in user mode so it's more MiNT-friendly than MultiTOS). The server
  * writes back to the clients reply pipe with the reply when it has serviced
  * the command - this unblocks the client which then returns from the exception.
- * 
+ *
  * If NOREPLY mode is used, the AES doesn't block the calling process to wait
  * for a reply - and indeed, won't generate one.
- * 
+ *
  * If NOBLOCK mode is used, the AES doesn't block the calling process - but does
  * place the results in the client's reply pipe. The client is then expected to
  * handle it's own reply pipe. This allows multiple AES calls to be made without
@@ -51,23 +51,23 @@
  * at one go, then go on to do it's internal initialisation before coming back
  * to see if the AES has serviced it's requests (less blocking in the client,
  * and better multitasking).
- * 
+ *
  * [13/2/96]
  * Included Martin Koehling's patches - this nicely does away with the 'far' data
  * kludges & register patches I had in before.....
- * 
+ *
  * [18/2/96]
  * New timeout stuff to replace the SIGALRM stuff.
- * 
+ *
  * [18/12/00]
  * HR: The 4 functions that must always be called direct, and hence run under
  *     the client pid are moved to this file. This way it is easier to detect any
  *     data area's that are shared between the server and the client processes.
  *     These functions are: appl_init, appl_exit, appl_yield and wind_update.
- * 
+ *
  * [05/12/01]
  * Unclumsified the timeout value passing.
- * 
+ *
  */
 
 #include <mint/mintbind.h>
@@ -281,7 +281,7 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
  * Application Exit
  * This also executes under the CLIENT pid.
  * This closes the clients end of the reply pipe, and sends a message to the kernal
- * to tell it to close its end as well - the client tidy-up is done at the server 
+ * to tell it to close its end as well - the client tidy-up is done at the server
  * end when the XA_CLIENT_EXIT op-code is recieved, not here.
  */
 unsigned long
@@ -295,7 +295,7 @@ XA_appl_exit(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	pb->intout[0] = client->pid;
 
 	if (strnicmp(client->proc_name, "wdialog", 7) == 0)
-		return XAC_DONE;	
+		return XAC_DONE;
 
 	/* Build a 'client is exiting' packet and send it to the kernal
 	 * - The kernal will respond by closing its end of the clients reply pipe.
@@ -346,12 +346,12 @@ XA_appl_yield(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 /*
  * Wind_update handling
- * 
+ *
  **  XA_wind_update runs under the client pid.
- * 
+ *
  * This handles locking for the update and mctrl flags.
  * !!!!New version - uses semphores for locking...
- * 
+ *
  * internal function.
  */
 bool
@@ -498,7 +498,7 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	long time_out = (op & 0x100) ? 0L : -1L; /* Test for check-and-set mode */
 	long r;
 
-	CONTROL(1,1,0)	
+	CONTROL(1,1,0)
 
 	DIAG((D_sema, NULL, "XA_wind_update for %s %s\n",
 		c_owner(client), time_out ? "" : "RESPONSE"));
@@ -718,7 +718,7 @@ XA_handler(ushort c, AESPB *pb)
 #if USE_CALL_DIRECT
 				case XAC_TIMER:
 					reply_s = 1L << client->client_end;
-					
+
 					if (!client->timer_val)
 						/* Immediate timeout */
 						cmd_rtn = 0;
@@ -744,7 +744,7 @@ XA_handler(ushort c, AESPB *pb)
 					break;
 #endif
 				}
-				
+
 				return AES_MAGIC;
 			}
 			/* else pb->intout[0] = 0;  HR: proceed to error exit */
@@ -758,7 +758,7 @@ XA_handler(ushort c, AESPB *pb)
 
 			if (isfsel)
 				Sema_Up(fsel);	/* Wait for access to the fileselector */
-			
+
 			if (Ktab[cmd].p & LOCKSCREEN)
 				lock_screen(client, -1, NULL, 3);
 
@@ -828,7 +828,7 @@ XA_handler(ushort c, AESPB *pb)
 					DIAGS(("For %d:\n", clnt_pid));
 				#endif
 				Sema_Up(CLIENTS_SEMA);
-*/	
+*/
 				if (!cmd_rtn)
 				{
 					/* Timed out */
@@ -855,7 +855,7 @@ XA_handler(ushort c, AESPB *pb)
 					DIAGS(("For %d:\n", clnt_pid));
 				#endif
 				Sema_Dn(CLIENTS_SEMA);
-*/	
+*/
 				break;
 			}
 			}
@@ -877,20 +877,20 @@ XA_handler(ushort c, AESPB *pb)
 }
 
 
-typedef void (*ExchangeVec)(void);
+typedef void (ExchangeVec)(void);
 
 void
 hook_into_vector(void)
 {
 	extern long old_trap2_vector;
-	long handler(void);
+	void handler(void);
 
 	old_trap2_vector = (long) Setexc(0x22, handler);
 	DIAGS(("hook_into_vector: old = %lx\n", old_trap2_vector));
 
 	/* We want to do this with task switching disabled in order
 	 * to prevent a possible race condition...
-	 * 
+	 *
 	 * Dummy access to the critical error handler
 	 * (make Selectric, FSELECT and other AES extenders happy...)
 	 */
@@ -919,7 +919,7 @@ unhook_from_vector(void)
 	struct xbra *rx;
 	long vecadr, *stepadr;
 
- 	vecadr = (long) Setexc(0x20 + AES_TRAP, (ExchangeVec *)-1L); 	
+ 	vecadr = (long) Setexc(0x20 + AES_TRAP, (ExchangeVec *)-1L);
  	rx = (XBRA *)(vecadr - sizeof(XBRA));
 
 	old_ssp = Super(0);
