@@ -1468,11 +1468,12 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	if (cfg->vt_mode == MODE_VT100)
 	{
 		t->curs_mode = CURSOR_NORMAL;
-		t->scroll_top = t->miny;
-		t->scroll_bottom = t->maxy-1;
 		t->tabs = NULL;
 	}
 
+	t->scroll_top = t->miny;
+	t->scroll_bottom = t->maxy-1;
+	
 	/* we get font data from the VDI */
 	set_font(cfg->font_id, cfg->font_pts);
 	vqt_fontinfo(vdi_handle, &firstchar, &lastchar, distances, &maxwidth, effects);
