@@ -18,6 +18,7 @@ COBJS = \
 	memcmp.c \
 	ms_time.c \
 	strcat.c \
+	strchr.c \
 	strcmp.c \
 	strcpy.c \
 	stricmp.c \
