@@ -56,7 +56,7 @@ main (void)
 	}
 	else
 	{
-		size_t size;
+		socklen_t size;
 		char buf[31];
 		struct msghdr msg;
 		struct iovec iov[3];
