@@ -262,6 +262,11 @@ init_moose(void)
 XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
 
 /* Now use the global (once) set values in the button structure */
+
+/*
+ * Ozk: multi_intout() may be called by processes not yet called
+ * appl_ini(). So, it must not depend on client being valid!
+*/
 void
 multi_intout(struct xa_client *client, short *o, int evnt)
 {
