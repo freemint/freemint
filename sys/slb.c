@@ -753,6 +753,10 @@ slb_close_on_exit (int terminate)
 			slb->slb_used--;
 		mark_opened(slb, curproc->pid, 0);
 		assert (slb->slb_proc->p_mem);
+
+		/* Unblock the signal deliveries */
+		slb->slb_proc->p_flag &= ~3;
+
 		mr = slb->slb_proc->p_mem->mem;
 		if (mr)
 		{
