@@ -2,7 +2,7 @@
 # Makefile for 
 #
 TARGET = 
-DRIVERS = dial slip plip dummy de600 lance pamsdma biodma \
+DRIVERS = rtl8012 rtl8012st dial slip plip dummy de600 lance pamsdma biodma \
 	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt
 
 SHELL = /bin/sh
@@ -46,7 +46,7 @@ RIEBL_MSTE_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_MSTE_SRCS))))
 RIEBL_TT_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_TT_SRCS))))
 PAMSDMA_OBJS = $(addsuffix .o, $(basename $(notdir $(PAMSDMA_SRCS))))
 BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
-
+RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
 
 # entry point
 entry: $(LIBKERNTARGET) $(DRIVERS)
@@ -153,6 +153,21 @@ biodma:
 		"XOBJS=$(COMMON_OBJS) $(BIODMA_OBJS)" \
 		"DEFINITIONS=-DSTANDARD_SEND_FIRST" \
 		"PRGFLAGS=--msuper-memory --mno-fastram --mno-fastalloc"
+
+rtl8012:
+	$(RM) $(RTL8012_OBJS)
+	$(MAKE) rtl8012.xif \
+		"TARGET=rtl8012.xif" \
+		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
+		"PRGFLAGS=--msuper-memory" \
+		CPU=020-60
+
+rtl8012st:
+	$(RM) $(RTL8012_OBJS)
+	$(MAKE) rtl8012st.xif \
+		"TARGET=rtl8012st.xif" \
+		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
+		"PRGFLAGS=--msuper-memory"
 
 
 include $(top_srcdir)/DEPENDENCIES
