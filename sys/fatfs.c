@@ -2908,6 +2908,7 @@ is_exec (register const char *src)
 
 	/* 0x544f5300L = TOS, 0x54545000L = TTP, 0x50524700L = PRG
 	 * 0x41505000L = APP, 0x47545000L = GTP, 0x41434300L = ACC
+	 * 0x534c4200L = SLB
 	 */
 
 	return (i == 0x544f5300L || i == 0x54545000L || i == 0x50524700L ||
