@@ -469,6 +469,14 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 {
 	char *new_buf_pos;
 
+# if 0
+	/* bit 2 of conterm variable decides, whether we
+	 * put the shift status to the buffer or not.
+	 */
+	if ((*(uchar *)0x0484L & 0x04) == 0)
+		c0 = 0;
+# endif
+
 	keyrec->tail += 4;
 	if (keyrec->tail >= keyrec->buflen)
 		keyrec->tail = 0;
@@ -603,7 +611,7 @@ scan2asc(uchar scancode)
 	/* We can optionally emulate the PC-like behaviour of Caps/Shift */
 	if (kbd_pc_style_caps)
 	{
-		if (((shift & MM_ALTGR) == 0) && (shift & MM_CAPS) && (shift & MM_ESHIFT) && isupper(asc))
+		if (((shift & MM_ALTGR) == 0) && (shift & MM_CAPS) && (shift & MM_ESHIFT))
 			asc = tolower(asc);
 	}
 
