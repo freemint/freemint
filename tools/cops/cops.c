@@ -104,39 +104,6 @@ typedef struct
 
 #define graf_mkstate_eventdata(evntdata) graf_mkstate(&(evntdata)->x,&(evntdata)->y,&(evntdata)->bstate,&(evntdata)->kstate)
 
-static void
-EVNT_multi(short events, short bclicks, short bmask, short bstate,
-	   MOBLK *m1, MOBLK *m2, unsigned long interval, EVNT *evnt)
-{
-	short m1_out = 0, m1_x = 0, m1_y = 0, m1_w = 0, m1_h = 0;
-	short m2_out = 0, m2_x = 0, m2_y = 0, m2_w = 0, m2_h = 0;
-	
-	if (m1)
-	{
-		m1_out = m1->m_out;
-		m1_x = m1->m_x;
-		m1_y = m1->m_y;
-		m1_w = m1->m_w;
-		m1_h = m1->m_h;
-	}
-	
-	if (m2)
-	{
-		m2_out = m2->m_out;
-		m2_x = m2->m_x;
-		m2_y = m2->m_y;
-		m2_w = m2->m_w;
-		m2_h = m2->m_h;
-	}
-	
-	evnt->mwhich = evnt_multi(events, bclicks, bmask, bstate,
-				  m1_out, m1_x, m1_y, m1_w, m1_h,
-				  m2_out, m2_x, m2_y, m2_w, m2_h,
-				  evnt->msg, interval,
-				  &(evnt->mx), &(evnt->my), &(evnt->mbutton),
-				  &(evnt->kstate), &(evnt->key), &(evnt->mclicks));
-}
-
 static long
 read_file(char *name, void *dest, long offset, long len)
 {

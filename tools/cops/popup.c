@@ -172,12 +172,7 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 		strs_init(tree, scroll_pos, no_strs, (void *) &popup_par); /* String besetzen */
 
 		tree->ob_y -= (slct - scroll_pos) * phchar; /* Popup nach oben verschieben */
-#if 0
-XXX binding is missing in gemlib
 		slct = xfrm_popup(tree, 0, 0, 1, max_strs, no_strs, strs_init, (void *) &popup_par, &scroll_pos);
-#else
-		slct = form_popup(tree, 0, 0);
-#endif
 
 		if (slct > 0)
 		{
