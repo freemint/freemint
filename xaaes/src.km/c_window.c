@@ -171,30 +171,6 @@ check_menu_desktop(enum locks lock, struct xa_window *old_top, struct xa_window 
 	}
 }
 
-#if 0
-/* not used??? */
-
-static RECT
-wa_to_curr(struct xa_window *wi, int d, RECT r)
-{
-	r.x += wi->bd.x - d;
-	r.y += wi->bd.y - d;
-	r.w += wi->bd.w + d+d;
-	r.h += wi->bd.h + d+d;
-	return r;
-}
-
-static RECT
-bound_inside(RECT r, RECT o)
-{
-	if (r.x       < o.x      ) r.x  = o.x;
-	if (r.y       < o.y      ) r.y  = o.y;
-	if (r.x + r.w > o.x + o.w) r.w -= (r.x + r.w) - (o.x + o.w);
-	if (r.y + r.h > o.y + o.h) r.h -= (r.y + r.h) - (o.y + o.h);
-	return r;
-}
-#endif
-
 XA_WIND_ATTR
 hide_move(struct options *o)
 {
@@ -248,44 +224,7 @@ wi_put_first(struct win_base *b, struct xa_window *w)
 		w->next = w->prev = NULL;
 	}
 	b->first = w;
-#if 0
-	w = b->first;
-	while (w)
-	{
-		DIAGS(("pf: %d pr:%d", w->handle, w->prev ? w->prev->handle : -1));
-		w = w->next;
-	}
-#endif
 }
-
-#if 0
-/* not used??? */
-
-static void
-wi_put_last(WIN_BASE *b, struct xa_window *w)
-{
-	if (b->last)
-	{
-		w->prev = b->last;
-		b->last->next = w;
-		b->last = w;
-		w->next = NULL;
-	}
-	else
-	{
-		b->first = b->last = w;
-		w->next = w->prev = NULL;
-	}
-#if 0
-	w = b->first;
-	while (w)
-	{
-		DIAGS(("pl: %d pr:%d", w->handle, w->prev ? w->prev->handle : -1));
-		w = w->next;
-	}
-#endif
-}
-#endif
 
 /* This a special version of put last; it puts w just befor last. */
 static void
@@ -305,14 +244,6 @@ wi_put_blast(struct win_base *b, struct xa_window *w)
 		b->first = b->last = w;
 		w->next = w->prev = NULL;
 	}
-#if 0
-	w = b->first;
-	while (w)
-	{
-		DIAGS(("pl: %d pr:%d", w->handle, w->prev ? w->prev->handle : -1));
-		w = w->next;
-	}
-#endif
 }
 
 void
@@ -328,50 +259,7 @@ wi_remove(struct win_base *b, struct xa_window *w)
 		b->last = w->prev;
 	w->next = NULL;
 	w->prev = NULL;
-#if 0
-	w = b->first;
-	while (w)
-	{
-		DIAGS(("rem: %d pr:%d", w->handle, w->prev ? w->prev->handle : -1));
-		w = w->next;
-	}
-#endif
 }
-
-#if 0
-/* not used??? */
-
-static void
-wi_insert(WIN_BASE *b, struct xa_window *w, struct xa_window *after)
-{
-	if (after)
-	{
-		if (after != b->last)
-		{
-			w->next = after->next;
-			w->prev = after;
-			if (after->next)
-			{
-				if (after->next == b->last)
-					b->last = w;
-				after->next->prev = w;
-			}
-			after->next = w;
-		}
-	}
-	else
-		wi_put_first(b, w);
-#if 0
-	w = b->first;
-	while (w)
-	{
-		DIAGS(("rem: %d pr:%d", w->handle, w->prev ? w->prev->handle : -1)i);
-		w = w->next;
-	}
-#endif
-}
-#endif
-
 
 bool
 is_topped(struct xa_window *wind)
@@ -399,10 +287,6 @@ bool
 is_hidden(struct xa_window *wind)
 {
 	return ( wind->rc.x == (root_window->rc.x + root_window->rc.w + 16) && wind->rc.y == (root_window->rc.y + root_window->rc.h + 16)) ? true : false;
-#if 0
-	RECT d = root_window->rc;
-	return !xa_rc_intersect(wind->rc, &d);
-#endif
 }
 
 void
@@ -418,34 +302,6 @@ hide_window(enum locks lock, struct xa_window *wind)
 		send_moved(lock, wind, AMQ_NORM, &r);
 	}
 }
-#if 0		
-bool
-unhide(struct xa_window *wind, short *x, short *y)
-{
-	RECT r = wind->rc;
-	bool done = false;
-
-	if (is_hidden(wind))
-	{
-		RECT d = root_window->rc;
-
-		while (r.x + r.w < d.x)
-			r.x += d.w;
-		while (r.y + r.h < d.y)
-			r.y += d.h;
-		if (r.y < root_window->wa.y)
-			r.y = root_window->wa.y;	/* make shure the mover becomes visible. */
-		while (r.x > d.x + d.w)
-			r.x -= d.w;
-		while (r.y > d.y + d.h)
-			r.y -= d.h;
-		done = true;
-	}
-	*x = r.x;
-	*y = r.y;
-	return done;
-}
-#endif
 
 void
 unhide_window(enum locks lock, struct xa_window *wind)
@@ -460,18 +316,7 @@ unhide_window(enum locks lock, struct xa_window *wind)
 		wind->t = r;
 	}
 }
-#if 0
-	RECT r = wind->rc;
-	if (unhide(wind, &r.x, &r.y))
-	{
-		if ((wind->window_status & XAWS_ICONIFIED))
-			r = free_icon_pos(lock, wind);
 
-		send_moved(lock, wind, AMQ_NORM, &r);
-		wind->t = r;
-	}
-}
-#endif
 /* SendMessage */
 void
 send_untop(enum locks lock, struct xa_window *wind)
@@ -635,39 +480,14 @@ create_window(
 	}
 	else
 		w->min.w = w->min.h = 0;
-		
-
-#if 0
-	if (root_window)
-	{
-		inside_root(&r, &client->options);
-	}
-#endif
 
 	w->rc = w->r = w->pr = r;
-#if 0
-	if (!MONO && frame > 0)
-	{
-		if (thinframe < 0)
-			frame = 1;
-	}
-#endif
-
-#if 0
-	/* implement border sizing. */
-	if ((tp & (SIZE|MOVE)) == (SIZE|MOVE))
-#endif
-#if 0
-		if (frame > 0 && thinframe > 0)
-			/* see how well it performs. */
-			frame += thinframe;
-#endif
 
 	{
 		long opts = client->options.wind_opts;
 		
 		if (client->options.naes_ff)
-			opts |= WO_FULLREDRAW; //XAWO_NAES_FF;
+			opts |= WO_FULLREDRAW;
 		w->opts = opts;
 	}
 	
@@ -782,9 +602,6 @@ change_window_attribs(enum locks lock,
 	free_rect_list(w->rect_start);
 	w->rect_user = w->rect_list = w->rect_start = NULL;
 
-	/* Attach the appropriate widgets to the window */
-	//standard_widgets(w, tp, false);
-
 	/* If STORE_BACK extended attribute is used, window preserves its own background */
 	if (!(tp & STORE_BACK))
 	{
@@ -802,8 +619,6 @@ change_window_attribs(enum locks lock,
 		w->background = kmalloc(calc_back(&r, screen.planes));
 		assert(w->background);
 	}
-
-	//calc_work_area(w);
 
 	if (tp & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
@@ -846,11 +661,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	if (C.redraws)
 		yield();
-
-#if 0
-	if (r.w <= 0) r.w = 6 * cfg.widg_w;
-	if (r.h <= 0) r.h = 6 * cfg.widg_h;
-#endif
 
 	if ((wind->window_status & XAWS_OPEN))
 	{
@@ -984,7 +794,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 static void
 if_bar(short pnt[4])
 {
-	//if ((pnt[2] - pnt[0]) !=0 && (pnt[3] - pnt[1]) != 0)
 	if ((pnt[2] - pnt[0]) >= 0 && (pnt[3] - pnt[1]) >= 0)
 		v_bar(C.vh, pnt);
 }
@@ -1023,16 +832,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	
-	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
-
-#if 0
-	if (C.update_lock && C.update_lock != wind->owner)
-	{
-		DIAG((D_wind, wind->owner, "draw_window %d for %s, updatelock (%d for %s)",
-			wind->handle, wind->owner->name, C.updatelock_count, C.update_lock->name));
-		return;
-	}
-#endif
 	if (wind == root_window)
 		return;
 
@@ -1298,13 +1097,10 @@ after_top(enum locks lock, bool untop)
 struct xa_window *
 pull_wind_to_top(enum locks lock, struct xa_window *w)
 {
-	//enum locks wlock = lock|winlist;
 	struct xa_window *wl;
 	RECT clip, r;
 
 	DIAG((D_wind, w->owner, "pull_wind_to_top %d for %s", w->handle, w_owner(w)));
-
-	//check_menu_desktop(wlock, window_list, w);
 
 	if (w == root_window) /* just a safeguard */
 	{
@@ -1345,7 +1141,6 @@ void
 send_wind_to_bottom(enum locks lock, struct xa_window *w)
 {
 	struct xa_window *wl;
-	//struct xa_window *old_top = window_list;
 	RECT r, clip;
 
 	if (   w->next == root_window	/* Can't send to the bottom a window that's already there */
@@ -1368,8 +1163,6 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 	}
 
 	make_rect_list(w, 1);
-
-	//check_menu_desktop(lock|winlist, old_top, window_list);
 }
 
 /*
@@ -1380,7 +1173,6 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 {
 	IFDIAG(struct xa_client *client = wind->owner;)
 	RECT old, new;
-	//bool blit = true;
 
 	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d",
 	      (wind->window_status & XAWS_OPEN) ? "open" : "closed",
@@ -1597,10 +1389,7 @@ close_window(enum locks lock, struct xa_window *wind)
 			{
 				if (!(window_list->owner->status & CS_EXITING) && window_list != root_window)
 				{
-					//set_active_client(lock, window_list->owner);
-					//swap_menu(lock, window_list->owner, true, false, 0);
 					top_window(lock, true, window_list, NULL, NULL);
-					//send_ontop(lock);
 				}
 				break;
 			}
@@ -1773,19 +1562,7 @@ update_all_windows(enum locks lock, struct xa_window *wl)
 	{
 		if (wl != root_window && !(wl->owner->status & CS_EXITING) && (wl->window_status & XAWS_OPEN))
 		{
-			//make_rect_list(wl, true);
 			set_and_update_window(wl, true, false, NULL);
-#if 0			
-			rl = wl->rect_start;
-			while (rl)
-			{
-				set_clip(&rl->r);
-				draw_window(0, wl);
-				if (xa_rect_clip(&rl->r, &wl->wa, &d))
-					send_redraw(0, wl, &d);
-				rl = rl->next;
-			}
-#endif
 		}
 		wl = wl->next;
 	}
@@ -1975,7 +1752,6 @@ calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, in
 		{
 			/* We have to work out the border size ourselves here */
 			Xpolate(&o, &w_temp->r, &w_temp->wa);
-			//inside_root(&o, &client->options);
 			break;
 		}
 		case WC_WORK:

@@ -396,9 +396,6 @@ Block(struct xa_client *client, int which)
 
 		if (check_queued_events(client))
 			return;
-
-//		if ((client->waiting_for & MU_TIMER) && !client->timeout)
-//			return;
 	}
 	cancel_evnt_multi(client, 1);
 }
