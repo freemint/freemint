@@ -66,6 +66,58 @@ struct menu_attachements;
 struct keyqueue;
 
 
+#define XIMG      0x58494D47
+struct img_header
+{
+  short version;  /* Img file format version (1) */
+  short length;   /* Header length in words  (8) */
+  short planes;   /* Number of bit-planes    (1) */
+  short pat_len;  /* length of Patterns      (2) */
+  short pix_w;    /* Pixel width in 1/1000 mmm  (372)    */
+  short pix_h;    /* Pixel height in 1/1000 mmm (372)    */
+  short img_w;    /* Pixels per line (=(x+7)/8 Bytes)    */
+  short img_h;    /* Total number of lines               */
+};
+typedef struct img_header IMG_header;
+
+/* Header of GEM Image Files   */
+struct ximg_header
+{
+  short version;  /* Img file format version (1) */
+  short length;   /* Header length in words  (8) */
+  short planes;   /* Number of bit-planes    (1) */
+  short pat_len;  /* length of Patterns      (2) */
+  short pix_w;    /* Pixel width in 1/1000 mmm  (372)    */
+  short pix_h;    /* Pixel height in 1/1000 mmm (372)    */
+  short img_w;    /* Pixels per line (=(x+7)/8 Bytes)    */
+  short img_h;    /* Total number of lines               */
+  long  magic;    /* Contains "XIMG" if standard color   */
+  short paltype;  /* palette type (0=RGB (short each)) */
+};
+typedef struct ximg_header XIMG_header;
+
+struct xa_ximg_head
+{
+  struct ximg_header ximg;
+  short *palette;	/* palette etc.                        */
+  char *addr;     /* Address for the depacked bit-planes */
+};
+typedef struct xa_ximg_head XA_XIMG_HEAD;
+
+struct xa_rsc_rgb
+{
+	short red;
+	short green;
+	short blue;
+	short pen;
+};
+
+struct lrect
+{
+	long x, y, w, h;
+};
+typedef struct lrect LRECT;
+
 enum menu_behave
 {
 	PULL,
@@ -109,6 +161,13 @@ struct xa_colour_scheme
 	int highlight_col;		/* Colour used for highlighting */
 };
 
+struct xa_wtexture
+{
+	short anchor;
+	short flags;
+	MFDB	*mfdb;
+};
+	
 struct xa_wcol
 {
 	short	c;	/* color */
@@ -118,6 +177,7 @@ struct xa_wcol
 	short	box_th; /* box thickness */
 	short	tlc;	/* Top-Left color for 3-d effect */
 	short	brc;	/* Bottom-Right color for 3-d effect */
+	struct	xa_wtexture *texture;
 };
 
 struct xa_wcol_inf
@@ -135,9 +195,9 @@ struct xa_wcol_inf
 	struct xa_wcol h; /* Highlighted */
 };
 
-struct xa_wtxt
+struct xa_fnt_info
 {
-	short	f;	/* Font ID */
+	long	f;	/* Font ID */
 	short	p;	/* Point size */
 	short	e;	/* Effects */
 	short	fgc;	/* Foreground colour */
@@ -150,11 +210,12 @@ struct xa_wtxt_inf
 #define WTXT_ACT3D	1
 #define WTXT_DRAW3D	2
 #define WTXT_CENTER	4
+#define WTXT_NOCLIP	8
 
 	short	flags;	/* Flags */
-	struct xa_wtxt n;
-	struct xa_wtxt s;
-	struct xa_wtxt h;
+	struct xa_fnt_info n;
+	struct xa_fnt_info s;
+	struct xa_fnt_info h;
 };
 	
 struct xa_window_colours
@@ -477,6 +538,8 @@ struct xa_fnts_item
 	char	sizes[64];
 };
 
+#define XAFNTS_DISPLAY	1
+
 struct xa_fnts_info
 {
 	struct xa_data_hdr h;
@@ -603,13 +666,14 @@ struct remember_alloc
 	
 struct xa_rscs
 {
-	struct xa_rscs *next, *prior;
-	short id;
-	short handle;
-	short flags;
+	struct xa_rscs	*next, *prior;
+	short 		id;
+	short 		handle;
+	short 		flags;
 	struct aes_global *globl;	/* Need a global per resource, otherwise rsrc_gaddr would be ambiguous. */
 	struct remember_alloc *ra;
-	void *rsc;
+	void		*rsc;
+	struct rgb_1000	*palette;
 };
 
 /*
@@ -1038,8 +1102,10 @@ struct xa_pending_widget
 typedef struct xa_pending_widget XA_PENDING_WIDGET;
 
 /* Extra details for a slider widget */
+#define SLIDER_UPDATE	1
 struct xa_slider_widget
 {
+	short flags;
 	short position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
 	short length;			/* Length (0-1000(SL_RANGE)) */
 	short rpos;
@@ -1212,44 +1278,189 @@ enum scroll_entry_type
 };
 typedef enum scroll_entry_type SCROLL_ENTRY_TYPE;
 
+enum scroll_entry_flags
+{
+	SEF_WTXTALLOC = 0x0001,
+	SEF_WCOLALLOC = 0x0002,
+};
+typedef enum scroll_entry_flags SCROLL_ENTRY_FLAGS;
+
 enum scroll_info_flags
 {
 	SIF_KMALLOC	= 0x0001,
 	SIF_SELECTABLE	= 0x0002,
+	SIF_ICONINDENT	= 0x0004,
+	SIF_MULTISELECT = 0x0008,
+	SIF_AUTOSLIDERS = 0x0010,
+	SIF_AUTOSELECT  = 0x0020,
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
 
-typedef int scrl_click		(enum locks lock, struct scroll_info *list, OBJECT *form, int objc);
-typedef void scrl_widget	(struct scroll_info *list);
-typedef void scrl_empty		(struct scroll_info *list, SCROLL_ENTRY_TYPE flags);
-typedef int scrl_add		(struct scroll_info *list, OBJECT *icon, void *text, SCROLL_ENTRY_TYPE flags, void *data);
-typedef int scrl_del		(struct scroll_info *list, struct scroll_entry *s);
-typedef void scrl_vis		(struct scroll_info *list, struct scroll_entry *s, bool redraw);
-typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scroll_entry *start, void *data, short mode);
+#define SETAB_REL		0x0001
+#define SETAB_RJUST		0x0002
+#define SETAB_RORIG		0x0004
+#define SETAB_END		0x8000
+struct se_tab
+{
+	short flags;
+	RECT r;
+};
+
+struct se_text_tabulator
+{
+	short flags;
+	RECT r;
+	short widest;
+	short highest;
+};
+
+#define SETEXT_TXTSTR	1
+#define SETEXT_ALLOC	2
+struct se_text;
+struct se_text
+{
+	struct se_text *next;
+	short flags;
+	char *text;
+	short w;
+	short h;
+	char txtstr[0];
+};
+
+struct scroll_content
+{
+	short n_strings;
+	char *text;
+	OBJECT *icon;
+	long usr_flags;
+	void *data;
+	struct xa_wtxt_inf *fnt;
+	struct xa_wcol_inf *col;
+};
+
+struct scroll_content_text
+{
+	short n_strings;
+	struct se_text *text;
+	struct xa_wtxt_inf *fnt;
+};
+
+#define SETYPE_TEXT	0
+struct scroll_entry_content
+{
+	short type;
+	long usr_flags;
+	void *data;
+	OBJECT *icon;
+	struct xa_wcol_inf *col;
+	union
+	{
+		struct scroll_content_text text;
+	}td;	
+};
+
+typedef	bool	scrl_compare	(struct scroll_entry *new_ent, struct scroll_entry *cur_ent);
+typedef int 	scrl_click	(enum locks lock, struct scroll_info *list, OBJECT *form, int objc);
+typedef void	scrl_list	(struct scroll_info *list);
+typedef void	scrl_widget	(struct scroll_info *list, bool rdrw);
+typedef void	scrl_empty	(struct scroll_info *list, struct scroll_entry *s, SCROLL_ENTRY_TYPE flags);
+typedef int	scrl_add	(struct scroll_info *list, struct scroll_entry *parent, scrl_compare *sort, struct scroll_content *sc, short where, SCROLL_ENTRY_TYPE flags, short redraw);
+typedef struct scroll_entry *	scrl_del	(struct scroll_info *list, struct scroll_entry *s, short redraw);
+typedef void	scrl_vis	(struct scroll_info *list, struct scroll_entry *s, short redraw);
+typedef int	scrl_set	(struct scroll_info *list, struct scroll_entry *s, short what, unsigned long data, short rdrw);
+typedef int	scrl_get	(struct scroll_info *list, struct scroll_entry *s, short what, void *arg);
+typedef void	scrl_redraw	(struct scroll_info *list, struct scroll_entry *s);
+typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scroll_entry *start, short mode, void *data);
 
 /* HR: The FS_LIST box is the place holder and the
  *     entrypoint via its TOUCHEXIT flag.
  *     The list box itself is turned into a full fledged window.
  */
+#define SEADD_PRIOR		1
+#define SEADD_CHILD		2
 
+#define NOREDRAW	0
+#define NORMREDRAW	1
+#define FULLREDRAW	2
 
+/* scrl_search modes */
 #define SEFM_BYDATA	0
 #define SEFM_BYTEXT	1
+#define SEFM_LAST	2
+
+/* scrl_set modes */
+#define SESET_STATE		0
+#define SESET_NFNT		1
+#define SESET_SFNT		2
+#define SESET_HFNT		3
+#define SESET_WTXT		4
+#define SESET_SELECTED		5
+#define SESET_UNSELECTED	6
+#define SESET_MULTISEL		7
+#define SESET_OPEN		8
+#define SESET_TEXTTAB		9
+
+/* SESET_UNSELECTED arguments */
+#define UNSELECT_ONE	0
+#define UNSELECT_ALL	1
+
+struct seset_txttab
+{
+	short index;
+	short flags;
+	RECT r;
+};
+
+/* scrl_get modes */
+#define SEGET_STATE		 0
+#define SEGET_NFNT		 1
+#define SEGET_SFNT		 2
+#define SEGET_HFNT		 3
+#define SEGET_WTXT		 4
+#define SEGET_SELECTED		 5
+#define SEGET_ENTRYBYIDX	 7
+#define SEGET_ENTRYBYTEXT	 8
+#define SEGET_ENTRYBYDATA	 9
+#define SEGET_ENTRYBYUSRFLG	10
+#define SEGET_LISTXYWH		11
+#define SEGET_TEXTTAB		12
+
+/*
+ * structure used to pass parameters with get(SEGET_ENTRYBYIDX
+ */
+struct seget_entrybyarg
+{
+	int idx;
+	struct scroll_entry *e;
+	union
+	{
+		char *txt;
+		void *data;
+		long usr_flag;
+	} arg;		
+};
+
+#define OS_OPENED	1
 
 struct scroll_entry
 {
-	char *text;			/* Text to display */
-	OBJECT *icon;			/* Icon/object to display to the left of text (if any) */
 	struct scroll_entry *next;	/* Next element */
 	struct scroll_entry *prev;	/* Previous element */
-	void *data;			/* Content specific */
+	struct scroll_entry *up;	/* level up entry (parent) */
+	struct scroll_entry *down;	/* level down entry (childen) */
+
+	short istate;
+	short state;
+	short level;
+
+	short indent;
+	short icon_w, icon_h;
+	RECT r;
+	SCROLL_ENTRY_TYPE  type; 	/* type flags */
+	SCROLL_ENTRY_FLAGS iflags;	/* internal flags */
+
+	struct scroll_entry_content c;
 	
-	SCROLL_ENTRY_TYPE flag;
-
-	/* This simple number makes everything so easy
-	 */
-	short n;			/* element number in the list */
-
 	char the_text[0];		/* if text included in malloc it is here.
 					 * Let entry->text point to here.
 					 * FLAG_MAL is off */
@@ -1265,26 +1476,28 @@ struct scroll_info
 					 * otherwise we couldnt move that window (rp_2_ap). */
 	SCROLL_INFO_FLAGS flags;
 	XA_TREE *wt;
-
-	OBJECT *tree;			/* originating object */
 	short item;
-
-	OBJECT prev_ob;
+	OBJECT prev_ob;			/* Original object contents */
+	struct se_tab *se_tabs;
+	struct se_text_tabulator *tabs;
+	short rel_x, rel_y;
 
 	SCROLL_ENTRY *start;		/* Pointer to first element */
 	SCROLL_ENTRY *cur;		/*            current selected element */
 	SCROLL_ENTRY *top;		/*            top-most displayed element */
-	SCROLL_ENTRY *bot;		/*            bottom_most displayed element */
-	SCROLL_ENTRY *last;		/*            last element */
+	
 	char *title;			/* Title of the list */
 
-	/* The following simple numbers make everything so easy
-	 */
-	short n;			/* Number of elements in the list */
-	short s;			/* Number of elements that fits in the box */
-	short v;			/* number of characters that fit the width of the box */
-	short left;			/* Portion of the line that is left of the visible part */
-	short max;			/* Maximum length of line allowed */
+	short indent;
+	short icon_w, icon_h;
+	short widest, highest;		/* Width and hight of the widgest and highest element; */
+	long start_x;
+	long off_x;
+	long start_y;
+	long off_y;
+	long total_w;
+	long total_h;
+
 	short state;			/* Extended status info for scroll list */
 
 	scrl_click *dclick;		/* Callback function for double click behaviour */
@@ -1294,15 +1507,19 @@ struct scroll_info
 	scrl_widget *closer;		/* closer function */
 	scrl_widget *fuller;		/* fuller function */
 
+	scrl_redraw	*redraw;
 	scrl_vis	*vis;			/* check visibility */
 	scrl_search	*search;
+	scrl_set	*set;
+	scrl_get	*get;
 	scrl_add	*add;
 	scrl_del	*del;
 	scrl_empty	*empty;
-	scrl_widget	*destroy;
+	scrl_list	*destroy;
 
 	
 	void	*data;
+
 };
 typedef struct scroll_info SCROLL_INFO;
 

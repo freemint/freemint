@@ -28,7 +28,18 @@
 #define _trnfm_h
 
 #include "global.h"
+#include "xa_types.h"
+
+void depack_img(char *name, XA_XIMG_HEAD *pic);
+void load_image(char *name, MFDB *mimg);
+
+void remap_bitmap_colindexes(MFDB *map, unsigned char *cref);
+void build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsigned char *cref, int pens);
 
 bool transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int dst_planes);
+bool transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal);
+void fix_rsc_palette(struct xa_rsc_rgb *palette);
+void set_syspalette(short vdih, struct rgb_1000 *palette);
+void get_syspalette(short vdih, struct rgb_1000 *palette);
 
 #endif /* _trnfm_h */

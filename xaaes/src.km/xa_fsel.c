@@ -58,6 +58,33 @@
 
 
 static char fs_paths[DRV_MAX][NAME_MAX+2];
+static char fs_patterns[23][16];
+
+
+static void
+add_pattern(char *pattern)
+{
+	int i;
+	if (pattern && *pattern)
+	{
+		for (i = 0; i < 23; i++)
+		{
+			if (fs_patterns[i][0])
+			{
+				if (!stricmp(pattern, fs_patterns[i]))
+				{
+					break;
+				}
+			}
+			else
+			{
+				strncpy(fs_patterns[i], pattern, 16);
+				fs_patterns[i][15] = '\0';
+				break;
+			}
+		}
+	}
+}
 
 void
 init_fsel(void)
@@ -65,6 +92,17 @@ init_fsel(void)
 	int i;
 	for (i = 0; i < DRV_MAX; i++)
 		fs_paths[i][0] = 0;
+
+	for (i = 0; i < 23; i++)
+		fs_patterns[i][0] = '\0';
+
+	add_pattern("*");
+
+	for (i = 0; i < 23; i++)
+	{
+		if (cfg.Filters[i])
+			add_pattern(cfg.Filters[i]);
+	}
 }
 
 static char *
@@ -86,7 +124,7 @@ getsuf(char *f)
 /*
  *  find typed characters in the list
  */
-
+#if 0
 /* This one didnt exist.
    It doesnt reinvent the wheel. :-)	*/
 static char *
@@ -111,12 +149,14 @@ stristr(char *in, char *s)
 
 	return x;
 }
+#endif
 
 static bool
 fs_prompt(SCROLL_INFO *list)
 {
 	struct fsel_data *fs = list->data;
 	SCROLL_ENTRY *s;
+	bool ret = false;
 
 	s = list->start;
 
@@ -126,33 +166,40 @@ fs_prompt(SCROLL_INFO *list)
 		SCROLL_ENTRY *old = list->cur;
 
 		list->cur = NULL;	/* s1 < s2   ==>   -1 */
-		while (s->next && stricmp(s->text, fs->file) < 0)
+		while (s && !(match_pattern(s->c.td.text.text->text, fs->file, true)))
 			s = s->next;
-
-		/* is the text completely at the beginning of a entry ? */
-		if (stristr(s->text, fs->file) == s->text)
+		
+		if (s)
 		{
 			list->cur = s;
+			list->set(list, NULL, SESET_MULTISEL, 0, NOREDRAW);
+			list->set(list, s, SESET_SELECTED, 0, NORMREDRAW);
+			list->vis(list, s, NORMREDRAW);
+			ret = true;
 		}
-		else if (s->flag & FLAG_DIR)
+		else
 		{
-			while(s->next && (s->flag & FLAG_DIR))
-				s = s->next;
-			while (s->next && stricmp(s->text, fs->file) < 0)
-				s = s->next;
-			if (stristr(s->text, fs->file) == s->text)
-				list->cur = s;
+			list->get(list, NULL, SEGET_SELECTED, &s);
+			if (s)
+			{
+				list->set(list, s, SESET_UNSELECTED, 0, NORMREDRAW);
+				ret = true;
+			}
 		}
-
-		list->vis(list, s, true);
-
 		/* prompt changed the selection... */
 		fs->clear_on_folder_change |= old == list->cur;
-
-		return true;
 	}
-
-	return false;
+	else
+	{
+		list->get(list, NULL, SEGET_SELECTED, &s);
+		if (s)
+		{
+			display("unselect");
+			list->set(list, s, SESET_UNSELECTED, 0, NORMREDRAW);
+			ret = true;
+		}
+	}
+	return ret;
 }
 
 static bool
@@ -167,92 +214,26 @@ fs_prompt_refresh(SCROLL_INFO *list)
 
 typedef bool sort_compare(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2);
 
+/*
+ * This is called by the slist functions
+ */
 static bool
 dirflag_name(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2)
 {
-	unsigned short f1 = s1->flag & FLAG_DIR;
-	unsigned short f2 = s2->flag & FLAG_DIR;
+	unsigned short f1 = s1->type & FLAG_DIR;
+	unsigned short f2 = s2->type & FLAG_DIR;
 
 	if (f1 < f2)
+	{
 		/* folders in front */
 		return true;
-
-	if (f1 == f2 && stricmp(s1->text, s2->text) > 0)
-		return true;
-
-	return false;
-}
-
-static void
-sort_entry(SCROLL_INFO *list, SCROLL_ENTRY *new, sort_compare *greater)
-{
-	/* temporary use of ->cur for sorting */
-	if (list->start)
-	{
-		SCROLL_ENTRY *c = list->cur;
-
-		/* new > c */
-		if (greater(new, c))
-		{
-			c = c->next;
-			while (c)
-			{
-				/* while new < c */
-				if (greater(new, c))
-				{
-					c = c->next;
-				}
-				else /* new < c */
-				{
-					/* insert before c */
-					new->next = c;
-					new->prev = c->prev;
-					c->prev->next = new;
-					c->prev = new;
-					break;
-				}
-			}
-			if (!c)
-			{
-				/* put at end */
-				list->last->next = new;
-				new->prev = list->last;
-				list->last = new;
-			}
-		}
-		else /* new < c */
-		{
-			c = c->prev;
-			while (c)
-			{
-				/* while new < c */
-				if (greater(c, new))
-				{
-					c = c->prev;
-				}
-				else /* new > c */
-				{
-					/* insert after c */
-					new->next = c->next;
-					new->prev =c;
-					c->next->prev = new;
-					c->next = new;
-					break;
-				}
-			}
-			if (!c)
-			{
-				/* put in front */
-				list->start->prev = new;
-				new->next = list->start;
-				list->start = new;
-			}
-		}
 	}
-	else
-		list->start = list->last = new;
 
-	list->cur = new;
+	if (f1 == f2 && stricmp(s1->c.td.text.text->text, s2->c.td.text.text->text) > 0)
+	{
+		return true;
+	}
+	return false;
 }
 
 /* yields true if case sensitive */
@@ -335,14 +316,18 @@ set_file(enum locks lock, struct fsel_data *fs, const char *fn)
        and 2 quicksorts + the moving around of all that.
        Also no need for the Mintlib. (Mintbind only).
  */
+#define FSIZE_MAX 20
+
 static void
 refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 {
 	OBJECT *form = fs->form->tree;
 	OBJECT *sl;
 	SCROLL_INFO *list;
-	char nm[NAME_MAX+2];
+	char nm[NAME_MAX+2 + FSIZE_MAX+2];
+#if GENERATE_DIAGS
 	int n = 0;
+#endif
 	long i, rep;
 	bool csens;
 
@@ -371,16 +356,25 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 		which, fs->path, fs->fs_pattern));
 
 	/* Clear out current file list contents */
-	free_scrollist(list);
+	//free_scrollist(list);
+	while (list->start)
+	{
+		//if (!list->start->next)
+		//	_c_conin();
+		list->start = list->del(list, list->start, false);
+	}
+	list->redraw(list, NULL);
+	
+	display_widget(lock, list->wi, get_widget(list->wi, XAW_TITLE), list->pw ? list->pw->rect_start : NULL);
+	
+	//list->empty(list, -1);
 
 	graf_mouse(HOURGLASS, NULL, NULL, false);
-
 	i = d_opendir(fs->path, 0);
 	DIAG((D_fsel, NULL, "Dopendir -> %lx", i));
 	if (i > 0)
 	{
 		struct xattr xat;
-		SCROLL_ENTRY *entry;
 
 		while (d_xreaddir(NAME_MAX, i, nm, &xat, &rep) == 0)
 		{
@@ -389,6 +383,9 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 			bool sln = S_ISLNK(xat.mode);
 			bool match = true;
 
+#if GENERATE_DIAGS
+			n++;
+#endif
 			if (!csens)
 				strupr(nam);
 
@@ -407,57 +404,67 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 			}
 
 			if (!dir)
-				match = match_pattern(nam, fs->fs_pattern);
+				match = match_pattern(nam, fs->fs_pattern, false);
 
 			if (match)
 			{
+				short type = FLAG_AMAL;
 				OBJECT *icon = NULL;
-
-				entry = kmalloc(sizeof(*entry) + strlen(nam) + 2);
-				assert(entry);
-
-				entry->text = entry->the_text;
-				strcpy(entry->text, nam);
-
-				if (sln)
-					entry->flag |= FLAG_LINK;
-
+				struct scroll_content sc = { 0 };
+				char *s = nam + strlen(nam) + 1;
+				
+				sc.text = nam;
 				if (dir)
 				{
+					type |= FLAG_DIR;
 					icon = form + FS_ICN_DIR;
-					/* text part of the entry, so FLAG_MAL is off */
-					entry->flag |= FLAG_DIR;
 				}
 				else if (executable(nam))
 					icon = form + FS_ICN_EXE;
+				
+				if (!dir)
+				{
+					if (xat.size < (1024UL * 1024) )
+						sprintf(s, 20, "%ld", xat.size);
+					else if (xat.size < (1024UL * 1024 * 10))
+						sprintf(s, 20, "%ld KB", xat.size >> 10);
+					else
+						sprintf(s, 20, "%ld MB", xat.size >> 20);
+				}
+				else
+					sprintf(s, 20, "<dir>");
 
-				if (icon)
-					icon->ob_x = icon->ob_y = 0;
-
-				entry->icon = icon;
-				sort_entry(list, entry, dirflag_name);
+				sc.icon = icon;
+				sc.n_strings = 2;
+				list->add(list, NULL, dirflag_name, &sc, SEADD_PRIOR, type, true);
 			}
 		}
 		d_closedir(i);
-		list->cur = NULL;
-		entry = list->start;
-		while (entry)
-		{
-			entry->n = ++n;
-			if (entry->n == list->s)
-				list->bot = entry;
-			entry = entry->next;
-		}
 	}
 
 	DIAG((D_fsel, NULL, "%d entries have been read", n));
 	
-	list->top = list->cur = list->start;
-	list->n = n;
 	graf_mouse(ARROW, NULL, NULL, false);
-	list->slider(list);
+
+#if 0	
 	if (!fs_prompt_refresh(list))
-		redraw_toolbar(lock, fs->wind, FS_LIST);
+	{
+		list->redraw(list, NULL);
+		list->slider(list, true);
+	}
+#else
+	fs_prompt_refresh(list);
+#endif
+
+}
+
+static void
+CE_refresh_filelist(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		refresh_filelist(lock, ce->ptr1, 0);
+	}
 }
 
 #define DRIVELETTER(i)	(i + ((i < 26) ? 'A' : '1' - 26))
@@ -499,7 +506,7 @@ fsel_drives(OBJECT *m, int drive)
 	sprintf(m[FSEL_DRV].ob_spec.free_string, 32, " %c:", DRIVELETTER(drive));
 	return drvs;
 }
-
+			
 static void
 fsel_filters(OBJECT *m, char *pattern)
 {
@@ -507,19 +514,71 @@ fsel_filters(OBJECT *m, char *pattern)
 	int d = FSEL_PATA;
 	int i = 0;
 
+	add_pattern(pattern);
+
+	if (pattern && *pattern && fs_patterns[0][0])
+	{
+		while (i < 23 && fs_patterns[i][0])
+		{
+			//fs_patterns[i][15] = 0;
+			m[d].ob_state &= ~OS_CHECKED;
+			if (stricmp(pattern, fs_patterns[i]) == 0)
+			{
+				m[d].ob_state |= OS_CHECKED;
+			}
+			sprintf(m[d++].ob_spec.free_string, 128, "  %s", fs_patterns[i++]);
+		}
+	
+		do
+		{
+			m[d].ob_flags |= OF_HIDETREE;
+		}
+		while (m[d++].ob_next != FSEL_PATBOX);
+
+		m[FSEL_PATBOX].ob_height = i * screen.c_max_h;
+	}
+	strncpy(p, pattern, 15);
+	p[15] = 0;
+	sprintf(m[FSEL_FILTER].ob_spec.free_string, 128, " %s", p);
+#if 0
+	else
+	{
+		while (i < 23)
+		{
+			char *s = m[d].ob_spec.free_string;
+			if (strstr(s + 2, "**") == s + 2)	/* check for place holder entry */
+				*(s + 3) = 0;		/* Keep the 1 '*' */
+			else
+			{
+				int j = strlen(s);
+				while (*(s + --j) == ' ')
+					*(s + j) = 0;
+			}
+			m[d].ob_state &= ~OS_CHECKED;
+			if (stricmp(pattern, s) == 0)
+				m[d].ob_state |= OS_CHECKED;
+			d++, i++;
+		}
+	}
+	strncpy(p, pattern, 15);
+	p[15] = 0;
+	sprintf(m[FSEL_FILTER].ob_spec.free_string, 128, " %s", p);
+#endif
+#if 0	
 	if (cfg.Filters[0][0])
 	{
 		while (i < 23 && cfg.Filters[i][0])
 		{
 			cfg.Filters[i][15] = 0;
 			m[d].ob_state &= ~OS_CHECKED;
-			if (stricmp(pattern,cfg.Filters[i]) == 0)
-				m[d].ob_state|=OS_CHECKED;
+			if (stricmp(pattern, cfg.Filters[i]) == 0)
+				m[d].ob_state |= OS_CHECKED;
 			
 			sprintf(m[d++].ob_spec.free_string, 128, "  %s",cfg.Filters[i++]);
 		}
 	
-		do {
+		do
+		{
 			m[d].ob_flags |= OF_HIDETREE;
 		}
 		while (m[d++].ob_next != FSEL_PATBOX);
@@ -531,23 +590,24 @@ fsel_filters(OBJECT *m, char *pattern)
 		while (i < 23)
 		{
 			char *s = m[d].ob_spec.free_string;
-			if (strstr(s+2,"**") == s+2)	/* check for place holder entry */
-				*(s+3) = 0;		/* Keep the 1 '*' */
+			if (strstr(s + 2, "**") == s + 2)	/* check for place holder entry */
+				*(s + 3) = 0;		/* Keep the 1 '*' */
 			else
 			{
 				int j = strlen(s);
-				while (*(s+ --j) == ' ')
-					*(s+j) = 0;
+				while (*(s + --j) == ' ')
+					*(s + j) = 0;
 			}
-			m[d].ob_state&=~OS_CHECKED;
-			if (stricmp(pattern,s) == 0)
-				m[d].ob_state|=OS_CHECKED;
+			m[d].ob_state &= ~OS_CHECKED;
+			if (stricmp(pattern, s) == 0)
+				m[d].ob_state |= OS_CHECKED;
 			d++, i++;
 		}
 	}
-	strncpy(p,pattern,15);
+	strncpy(p, pattern, 15);
 	p[15] = 0;
 	sprintf(m[FSEL_FILTER].ob_spec.free_string, 128, " %s", p);
+#endif
 }
 
 /* HR: a little bit more exact. */
@@ -586,7 +646,7 @@ fs_updir(enum locks lock, struct fsel_data *fs)
 }
 
 static void
-fs_closer(struct scroll_info *list)
+fs_closer(struct scroll_info *list, bool rdrw)
 {
 	struct fsel_data *fs = list->data;
 
@@ -604,18 +664,18 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 	DIAG((D_fsel, NULL, "fs_item_action %lx, fs=%lx", list->cur, fs));
 	if (list->cur)
 	{
-		if ( (list->cur->flag & FLAG_DIR) == 0)
+		if ( (list->cur->type & FLAG_DIR) == 0)
 		{
-			DIAG((D_fsel, NULL, " --- nodir '%s'", list->cur->text));
+			DIAG((D_fsel, NULL, " --- nodir '%s'", list->cur->c.td.text.text->text));
 			/* file entry action */
-			strcpy(fs->file, list->cur->text);
+			strcpy(fs->file, list->cur->c.td.text.text->text);
 		}
 		else
 		{			
 			/* folder entry action */
-			DIAG((D_fsel, NULL, " --- folder '%s'", list->cur->text));
+			DIAG((D_fsel, NULL, " --- folder '%s'", list->cur->c.td.text.text->text));
 			
-			if (strcmp(list->cur->text, "..") == 0)
+			if (strcmp(list->cur->c.td.text.text->text, "..") == 0)
 			{
 				if ( fs->clear_on_folder_change )
 					set_file(lock, fs, "");
@@ -625,12 +685,12 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 				return true;
 			}
 
-			if (strcmp(list->cur->text, ".") != 0)
+			if (strcmp(list->cur->c.td.text.text->text, ".") != 0)
 			{
 				/* cur on common folder line (NON dot) */
 				int drv;
 				add_slash(fs->path, fs->fslash);
-				strcat(fs->path, list->cur->text);
+				strcat(fs->path, list->cur->c.td.text.text->text);
 				if ((drv = get_drv(fs->path)) >= 0)
 					strcpy(fs_paths[drv], fs->path);
 				if ( fs->clear_on_folder_change )
@@ -669,11 +729,11 @@ fs_click(enum locks lock, struct scroll_info *list, OBJECT *form, int objc)
 
 	if (list->cur)
 	{
-		if ( ! (list->cur->flag & FLAG_DIR))
+		if ( ! (list->cur->type & FLAG_DIR))
 		{
-			set_file(lock, fs, list->cur->text);
+			set_file(lock, fs, list->cur->c.td.text.text->text);
 		}
-		else if (strcmp(list->cur->text, ".") == 0)
+		else if (strcmp(list->cur->c.td.text.text->text, ".") == 0)
 		{
 			set_file(lock, fs, "");
 		}
@@ -809,7 +869,7 @@ fs_change(enum locks lock, struct fsel_data *fs, OBJECT *m, int p, int title, in
 	sprintf(m[title].ob_spec.free_string, 128, " %s", m[p].ob_spec.free_string + 2);
 	widg->start = 0;
 	m[title].ob_state &= ~OS_SELECTED;
-	display_widget(lock, fs->wind, widg);
+	display_widget(lock, fs->wind, widg, NULL);
 	strcpy(t, m[p].ob_spec.free_string + 2);
 }
 
@@ -869,14 +929,14 @@ fs_key_form_do(enum locks lock,
 	}
 	else
 	/*  If anything in the list and it is a cursor key */
-	if (list->n && scrl_cursor(list, keycode) != -1)
+	if (/*list->n &&*/ scrl_cursor(list, keycode) != -1)
 	{
-		if (!(list->cur->flag & FLAG_DIR))
+		if (!(list->cur->type & FLAG_DIR))
 		{
 			if (old_entry != list->cur)
 				fs->clear_on_folder_change = 1;
 
-			set_file(lock, fs, list->cur->text);
+			set_file(lock, fs, list->cur->c.td.text.text->text);
 		}
 	}
 	else
@@ -964,11 +1024,14 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	struct xa_window *dialog_window = NULL;
 	XA_TREE *wt;
 	char *pat,*pbt;
+	struct scroll_info *list;
 	RECT remember = {0,0,0,0};
 
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
 			c_owner(client), path, file, title, s, c));
 
+	display("open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
+			client->name, path, file, title, s, c);
 	if (fs)
 	{
 		bzero(fs, sizeof(*fs));
@@ -1083,6 +1146,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		fs->drives = fsel_drives(fs->menu->tree,
 					*(fs->path+1) == ':' ? tolower(*fs->path) - 'a' : d_getdrv());
+		
 		fsel_filters(fs->menu->tree, fs->fs_pattern);
 
 		fs->clear_on_folder_change = 0;
@@ -1099,16 +1163,36 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		dialog_window->keypress = fs_key_form_do; //fs_key_handler;
 
 		/* HR: set a scroll list object */
-		set_slist_object(lock,
+		list = set_slist_object(lock,
 				 wt,
 				 dialog_window,
 				 FS_LIST,
-				 SIF_SELECTABLE,
+				 SIF_SELECTABLE|SIF_ICONINDENT|SIF_AUTOSELECT,
 				 fs_closer, NULL,
 				 fs_dclick, fs_click,
-				 NULL, NULL, NULL, free_scrollist,
+				 NULL, NULL, NULL, NULL/*free_scrollist*/,
 				 fs->path, NULL, fs, 30);
 
+		{
+			struct seset_txttab tab;
+			RECT r;
+			short w;
+			
+			list->get(list, NULL, SEGET_LISTXYWH, &r);
+
+			w = r.w >> 2;
+			
+			tab.index = 0;
+			list->get(list, NULL, SEGET_TEXTTAB, &tab);
+			tab.r.w = w * 3;
+			list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
+			
+			tab.index = 1;
+			list->get(list, NULL, SEGET_TEXTTAB, &tab);
+			tab.r.w = w;
+			tab.flags |= SETAB_RJUST;
+			list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
+		}
 		/* HR: after set_menu_widget (fs_destructor must cover what is in menu_destructor())
 		 *     Set the window destructor
 		 */
@@ -1119,7 +1203,9 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		open_window(lock, dialog_window, dialog_window->r);
 
 		/* HR: after set_slist_object() & opwn_window */
-		refresh_filelist(lock, fs, 5);
+		//refresh_filelist(lock, fs, 5);
+		/* we post this as a client event, so it does not happend before the fsel is drawn... */
+		post_cevent(client, CE_refresh_filelist, fs, NULL, 0, 0, NULL, NULL);
 
 		DIAG((D_fsel,NULL,"done."));
 
@@ -1229,6 +1315,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 			pb->intout[0] = 1;
 			pb->intout[1] = fs->ok;
 			strcpy(path, fs->path);
+			strcat(path, fs->fs_pattern);
 			strcpy(file, fs->file);
 		}
 		kfree(fs);

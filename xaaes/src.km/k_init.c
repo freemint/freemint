@@ -54,6 +54,7 @@
 #include "draw_obj.h"
 #include "menuwidg.h"
 #include "xa_graf.h"
+#include "trnfm.h"
 
 /* kernel header */
 #include "mint/ssystem.h"
@@ -325,6 +326,8 @@ k_init(void)
 	DIAGS(("Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, C.vh));
 	DIAGS((" size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
+	get_syspalette(C.vh, screen.palette);
+
 	/* Load the system resource files */
 	resource_name = xaaes_sysfile(cfg.rsc_name);
 	if (resource_name)
@@ -333,7 +336,8 @@ k_init(void)
 					  resource_name,
 					  NULL,
 					  screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-					  screen.c_max_h); // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+					  screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+					  true);
 		DIAGS(("system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
 	}	
 	if (!resource_name || !C.Aes_rsc)
@@ -350,7 +354,8 @@ k_init(void)
 						 resource_name,
 						 NULL,
 						 screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-						 screen.c_max_h); //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+						 screen.c_max_h, //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+						 false);
 		DIAGS(("widget_resources = %lx (%s)", widget_resources, cfg.widg_name));
 	}
 	if (!resource_name || !widget_resources)
@@ -438,7 +443,7 @@ k_init(void)
 	}
 
 	DIAGS(("setting up task manager"));
-	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE,
+	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 "Client Applications", NULL, NULL, 255);
@@ -447,10 +452,25 @@ k_init(void)
 	DIAGS(("setting up file selector"));
 
 	DIAGS(("setting up System Alert log"));
-	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, 0,
+	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, 255);
+	{
+		struct scroll_info *list = object_get_slist(ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST);
+		struct scroll_content sc = { 0 };
+		char a[] = "Alerts";
+		char e[] = "Environment";
+
+		sc.text = a;
+		sc.n_strings = 1;
+		sc.usr_flags = 1;
+		DIAGS(("Add Alerts entry..."));
+		list->add(list, NULL, NULL, &sc, 0, FLAG_AMAL, NOREDRAW);
+		sc.text = e;
+		DIAGS(("Add Environment entry..."));
+		list->add(list, NULL, NULL, &sc, 0, FLAG_AMAL, NOREDRAW);
+	}
 
 	DIAGS(("setting up About text list"));
 	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES)), NULL, ABOUT_LIST, 0,

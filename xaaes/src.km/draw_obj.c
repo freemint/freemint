@@ -36,6 +36,7 @@
 #include "rectlist.h"
 #include "c_window.h"
 #include "widgets.h"
+#include "scrlobjc.h"
 #include "xa_user_things.h"
 
 #include "mint/signal.h"
@@ -378,6 +379,15 @@ void write_menu_line(RECT *cl)
 #endif
 }
 
+void
+r2pxy(short *p, short d, const RECT *r)
+{
+	*p++ = r->x - d;
+	*p++ = r->y - d;
+	*p++ = r->x + r->w + d - 1;
+	*p   = r->y + r->h + d - 1;
+}
+
 void rtopxy(short *p, const RECT *r)
 {
 	*p++ = r->x;
@@ -386,6 +396,15 @@ void rtopxy(short *p, const RECT *r)
 	*p   = r->y + r->h - 1;
 }
 
+void
+ri2pxy(short *p, short d, short x, short y, short w, short h)
+{
+	*p++ = x - d;
+	*p++ = y - d;
+	*p++ = x + w + d - 1;
+	*p   = y + h + d - 1;
+} 
+	
 void ritopxy(short *p, short x, short y, short w, short h)
 {
 	*p++ = x;
@@ -644,6 +663,65 @@ void t_extent(const char *t, short *w, short *h)
 				 */
 }
 
+void
+text_extent(const char *t, struct xa_fnt_info *f, short *w, short *h)
+{
+	t_font(f->p, f->f);
+	vst_effects(C.vh, f->e);
+	t_extent(t, w, h);
+	vst_effects(C.vh, 0);
+}
+
+void
+wtxt_output(struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, short xoff, short yoff)
+{
+	struct xa_fnt_info *wtxt;
+	bool sel = state & OS_SELECTED;
+	short x, y, f = wtxti->flags;
+	char t[200];
+
+	if (sel)
+		wtxt = &wtxti->s;
+	else
+		wtxt = &wtxti->n;
+
+	wr_mode(MD_TRANS);
+	t_font(wtxt->p, wtxt->f);
+
+	vst_effects(C.vh, wtxt->e);
+
+	if (f & WTXT_NOCLIP)
+		strncpy(t, txt, sizeof(t));
+	else
+		prop_clipped_name(txt, t, r->w - (xoff << 1));
+	
+	t_extent(t, &x, &y);
+	y = yoff + r->y + ((r->h - y) >> 1);
+	
+	if (f & WTXT_CENTER)
+		x = xoff + r->x + ((r->w - x) >> 1);
+	else
+		x = xoff + r->x;
+
+	if (f & WTXT_DRAW3D)
+	{
+		if (sel && (f & WTXT_ACT3D))
+			x++, y++;
+	
+		t_color(wtxt->bgc);
+		x++;
+		y++;
+		v_gtext(C.vh, x, y, t);
+		x--;
+		y--;
+	}
+	t_color(wtxt->fgc);
+	v_gtext(C.vh, x, y, t);
+
+	/* normal */
+	vst_effects(C.vh, 0);
+}
+	
 void write_selection(short d, RECT *r)
 {
 	wr_mode(MD_XOR);
@@ -809,6 +887,12 @@ prop_clipped_name(const char *s, char *d, int w)
 		}
 	}
 	*dst = '\0';
+	if (*s)
+	{
+		int i;
+		for (i = 3; i > 0 && dst != d; i--)
+			*--dst = '.';
+	}
 	return d;	
 }
 
@@ -944,9 +1028,7 @@ form_copy(const RECT *fr, const RECT *to)
 	short pnt[8];
 	rtopxy(pnt,fr);
 	rtopxy(pnt+4,to);
-	hidem();
 	vro_cpyfm(C.vh, S_ONLY, pnt, &Mscreen, &Mscreen);
-	showm();
 }
 
 void
@@ -2330,6 +2412,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 #undef ret
 #undef parmblk
 
+#if 0
 static void
 l_text(short x, short y, char *t, short w, short left)
 {
@@ -2343,53 +2426,7 @@ l_text(short x, short y, char *t, short w, short left)
 		v_gtext(C.vh, x, y, ct);
 	}
 }
-
-static void
-display_list_element(enum locks lock, struct xa_client *client, const RECT *clip, SCROLL_ENTRY *this, short left, short x, short y, short w, short sel)
-{
-	XA_TREE tr = nil_tree;
-	short xt = x + ICON_W;
-
-	t_font(screen.standard_font_point, screen.standard_font_id);
-	
-	if (this)
-	{
-		f_color(sel ? G_BLACK : G_WHITE);
-		bar(0, xt, y, w - ICON_W, screen.c_max_h);
-		if (sel)
-		{
-			t_color(G_WHITE);
-			l_text(xt, y, this->text, w - ICON_W, left);
-			t_color(G_BLACK);
-		}
-		else
-		{
-			t_color(G_BLACK);
-			l_text(xt, y, this->text, w - ICON_W, left);
-		}
-
-		f_color(G_WHITE);
-		bar(0, x, y, ICON_W, screen.c_max_h);
-
-		if (this->icon)
-		{
-			if (sel)
-				this->icon->ob_state |= OS_SELECTED;
-			else
-				this->icon->ob_state &= ~OS_SELECTED;
-
-			tr.tree = this->icon;
-			tr.owner = client;
-			display_object(lock, &tr, clip, 0, x, y, 12);
-			t_font(screen.standard_font_point, screen.standard_font_id);
-		}
-	}
-	else /* filler line */
-	{
-		f_color(G_WHITE);
-		bar(0, x, y, w, screen.c_max_h);
-	}
-}
+#endif
 
 void
 d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
@@ -2398,7 +2435,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *this;
 	struct xa_window *w;
-	short y, maxy;
+	//short y, maxy;
 	OBJECT *ob = wt->tree + wt->current;
 
 	/* list = object_get_spec(ob)->listbox; */
@@ -2412,8 +2449,8 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	calc_work_area(w);
 
 	wa = w->wa;
-	y = wa.y;
-	maxy = y + wa.h - screen.c_max_h;
+	//y = wa.y;
+	//maxy = y + wa.h - screen.c_max_h;
 	this = list->top;
 
 	t_color(G_BLACK);
@@ -2421,56 +2458,8 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	if (list->state == 0)
 	{
 		get_widget(w, XAW_TITLE)->stuff = list->title;
-#if 0
-		if (MONO)
-		{
-			l_color(screen.dial_colours.border_col),
-			gbox(2,&r);
-		}
-		else
-		{
-			br_hook(2,&r,screen.dial_colours.shadow_col);
-			tl_hook(2,&r,screen.dial_colours.lit_col);
-		}
-#endif
 		draw_window(list->lock, w, clip);
-
-		wr_mode(MD_TRANS);
-		
-		for (; y <= maxy; y += screen.c_max_h)
-		{
-		/* can handle nil this */
-			display_list_element(lock, wt->owner, clip, this, list->left, wa.x, y, wa.w, this == list->cur);
-			if (this)
-			{
-				list->bot = this;
-				this = this->next;
-			}
-		}
-	}
-	else /* arrives only here if there are more elements than fit the window */
-	{
-		RECT fr = wa, to;
-		fr.h -= screen.c_max_h;
-		to = fr;
-		if (list->state == SCRLSTAT_UP)
-		{
-			to.y += screen.c_max_h;
-			form_copy(&fr,&to);
-			list->bot = list->bot->prev;
-		}
-		else if (list->state == SCRLSTAT_DOWN)
-		{				
-			fr.y += screen.c_max_h;
-			form_copy(&fr,&to);
-			for (; this && y < maxy; this = this->next, y += screen.c_max_h);
-			list->bot = this;
-		}
-		/* scroll list windows are not on top, but are visible! */
-		display_vslide(list->lock, w, get_widget(w, XAW_VSLIDE));
-		wr_mode(MD_TRANS);
-		display_list_element(lock, wt->owner, clip, this, list->left, wa.x, y, wa.w, this == list->cur);
-		list->state = 0;
+		draw_slist(lock, list, NULL, clip);
 	}
 	done(OS_SELECTED);
 }
@@ -2649,7 +2638,7 @@ display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short item, short
 	/* Better do this before AND after (fail safe) */
 	wr_mode(MD_TRANS);
 
-#if 0
+#if 1
 #if GENERATE_DIAGS
 	if (wt->tree != get_widgets())
 	{
@@ -2753,7 +2742,6 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	bool start_drawing = false;
 	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
 	RECT clip = *(RECT *)&C.global_clip;
-
 	IFDIAG(short *cl = C.global_clip;)
 
 	clip.w -= (clip.x - 1);
@@ -2856,3 +2844,9 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	DIAGS(("draw_object_tree exit OK!"));
 	return true;
 }
+
+
+#if 1
+
+
+#endif

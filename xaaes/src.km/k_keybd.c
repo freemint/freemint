@@ -47,6 +47,7 @@
 #include "xa_form.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
+#include "trnfm.h"
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
@@ -361,8 +362,22 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			return true;
 		}
-
-			
+	
+	#if 0
+		case 'P':
+		{
+			display("set_syspalette");
+			set_syspalette(C.vh, screen.palette);
+			return true;
+		}
+		case 'I':
+		{
+			display("Select image");
+			open_imgload(lock);
+			return true;
+		}
+	#endif	
+	
 	#if GENERATE_DIAGS
 		case 'D':				/* ctrl+alt+D, turn on debugging output */
 		{

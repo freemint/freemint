@@ -34,11 +34,12 @@ COMPASS compass(short d, short x, short y, RECT r);
 
 void	fix_default_widgets(void *);
 OBJECT *get_widgets(void);
-void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg);
+void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
 void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
 void	redraw_toolbar(enum locks lock, struct xa_window *wind, short item);
 void	set_toolbar_coords(struct xa_window *wind);
 
+void	set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
 XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, short item, short properties, const struct toolbar_handlers *th);
 
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
@@ -59,9 +60,9 @@ bool remove_wt(XA_TREE *wt, bool force);
 void	calc_work_area(struct xa_window *wind);
 bool	checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, short x, short y, XA_WIDGET **ret);
 int	do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
-int	pix_to_sl(long p, int s);
-int	sl_to_pix(long s, int p);
-void	XA_slider(struct xa_window *w, int which, int total, int visible, int start);
+long	pix_to_sl(long p, long s);
+long	sl_to_pix(long s, long p);
+int	XA_slider(struct xa_window *w, int which, long total, long visible, long start);
 bool	m_inside(short x, short y, RECT *o);
 void	redraw_menu(enum locks lock);
 void	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state);

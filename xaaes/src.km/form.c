@@ -300,8 +300,7 @@ form_button(XA_TREE *wt,
 				obj_change(wt, obj, state^OS_SELECTED, flags, redraw, clip, rl);
 			}
 		}
-		state = obtree[obj].ob_state;
-		
+		state = obtree[obj].ob_state;	
 	}
 
 	DIAGS(("form_button: state %x, flags %x",

@@ -30,7 +30,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-void *LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight);
+void *LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
 void FreeResources(struct xa_client *client, AESPB *pb);
 OBJECT *ResourceTree(RSHDR *base, int num);
 void obfix(OBJECT *tree, int object);

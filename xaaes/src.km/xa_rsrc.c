@@ -76,6 +76,7 @@ obfix(OBJECT *tree, int object)
 	o->ob_height = fixup(o->ob_height, screen.c_max_h);
 }
 
+	
 /*
  * Code in this module is based on the resource loader from
  * Steve Sowerby's AGiLE library. Thanks to Steve for allowing
@@ -84,6 +85,8 @@ obfix(OBJECT *tree, int object)
 
 /* new function to make the code orthogonal.
  */
+extern short disp;
+
 static short *
 transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *icon, short *map, long len, int planes, short vdih)
 {
@@ -140,6 +143,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 
 	dst.fd_addr = new_data;
 	dst.fd_stand = 0;
+	dst.fd_nplanes = screen.planes;
 
 	DIAG((D_x, client, "alloc of %ld bytes", new_len));
 	tmp = kmalloc(new_len);
@@ -147,7 +151,8 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	{
 		memcpy(tmp, new_data, new_len);
 		src.fd_addr = tmp;
-		transform_gem_bitmap_data(vdih, src, dst, planes, screen.planes);
+		//transform_gem_bitmap_data(vdih, src, dst, planes, screen.planes);
+		transform_gem_bitmap(vdih, src, dst, cfg.remap_cicons ? rscs->palette : NULL, screen.palette);
 		kfree(tmp);
 	}
 	return new_data;
@@ -228,6 +233,8 @@ list_resource(struct xa_client *client, void *resource, short flags)
 		client->resources = new;
 
 		/* set defaults up */
+		new->palette = NULL;
+
 		new->id = 2;
 		new->handle = client->rsct;
 		new->flags = flags;
@@ -584,7 +591,7 @@ fix_trees(void *b, OBJECT **trees, unsigned long n, short designWidth, short des
  * Return = base pointer of resources or NULL on failure
  */
 void *
-LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight)
+LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal)
 {
 #define resWidth (screen.c_max_w)
 #define resHeight (screen.c_max_h)
@@ -699,11 +706,35 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
 			short work_out[58];
+			struct xa_rsc_rgb *p;
+			int i;
+			bool pal = false;
 
 			vdih = C.P_handle;
 			v_opnvwk(work_in, &vdih, work_out);
 
 			DIAG((D_rsrc, client, "Color palette present"));
+			(long)p = (long)(*earray + (long)base);
+			p += 16;
+			for (i = 16; i < 256; i++, p++)
+			{
+				if ((p->red | p->green | p->blue))
+				{
+					pal = true;
+					break;
+				}
+			}
+			if (pal)
+			{
+				DIAG((D_rsrc, client, "%s got palette", fname ? fname : "noname"));
+				(long)rscs->palette = (long)(*earray + (long)base);
+				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
+				if (set_pal && cfg.set_rscpalette)
+				{
+					set_syspalette(C.vh, rscs->palette);
+					get_syspalette(C.vh, screen.palette);
+				}
+			}
 		}
 #if 0
 		/* ozk: Enable this when (if) more extensions are added ... */
@@ -722,7 +753,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		v_clsvwk(vdih);
 
 	fix_trees(base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
-	
 	return base;
 }
 
@@ -819,6 +849,7 @@ FreeResources(struct xa_client *client, AESPB *pb)
 						kfree(cur->rsc);
 					}
 					DIAG((D_rsrc, client, "kFree: cur %lx", cur));
+					
 					kfree(cur);
 				}
 				else
@@ -839,6 +870,7 @@ FreeResources(struct xa_client *client, AESPB *pb)
 						ufree(cur->rsc);
 					}
 					DIAG((D_rsrc, client, "uFree: cur %lx", cur));
+					
 					ufree(cur);
 				}
 			}
@@ -1035,7 +1067,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 			RSHDR *rsc;
 			DIAG((D_rsrc, client, "rsrc_load('%s')", path));
 	
-			rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV);
+			rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
 			if (rsc)
 			{
 				OBJECT **o;
@@ -1280,7 +1312,7 @@ XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (client->globl_ptr)
 	{
-		rsc = LoadResources(client, NULL, (RSHDR*)pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV);
+		rsc = LoadResources(client, NULL, (RSHDR*)pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV, false);
 		if (rsc)
 		{
 			client->rsrc = rsc;
