@@ -18,6 +18,7 @@
 #include "global.h"
 #include "av.h"
 #include "window.h"
+#include "ansicol.h"
 
 WINDOW	*gl_topwin;		/* oberstes Fenster */
 WINDOW	*gl_winlist;		/* LIFO Liste der offenen Fenster */
@@ -48,7 +49,6 @@ static void clear_win(WINDOW *v, short x, short y, short w, short h)
 	temp[2] = x + w - 1;
 	temp[3] = y + h - 1;
 	v_bar(vdi_handle, temp);
-	vsf_color(vdi_handle, 1);
 }
 
 static WINDOW *get_top(void)
