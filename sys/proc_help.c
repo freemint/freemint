@@ -298,18 +298,6 @@ free_fd (struct proc *p)
 	if (--p_fd->links > 0)
 		return;
 	
-# if 0
-	/* release the controlling terminal,
-	 * if we're a process group leader
-	 */
-	f = p_fd->control;
-	if (f && is_terminal (f) && p->pgrp == p->pid)
-	{
-		struct tty *tty = (struct tty *) f->devinfo;
-		if (p->pgrp == tty->pgrp)
-			tty->pgrp = 0;
-	}
-# else
 	/* release the controlling terminal,
 	 * if we're the last member of this pgroup
 	 */
@@ -361,8 +349,8 @@ free_fd (struct proc *p)
 found:
 		;
 	}
-# endif
 	
+	/* close all files */
 	for (i = MIN_HANDLE; i < p_fd->nfiles; i++)
 	{
 		f = p_fd->ofiles[i];
