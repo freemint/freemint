@@ -453,10 +453,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		}
 	}
 
-	if (C.menu_base && C.menu_base->client == client)
+	if (TAB_LIST_START && TAB_LIST_START->client == client)
 	{
-		popout(C.menu_base);
-		C.menu_base = NULL;
+		popout(TAB_LIST_START);
 	}
 
 	/* remove any references */
@@ -476,7 +475,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		{
 			if (client->std_menu == widg->stuff)
 			{
-				C.menu_base = NULL;
+				//C.menu_base = NULL;
 				widg->stuff = C.Aes->std_menu;
 			}
 		//	else

@@ -217,6 +217,8 @@ typedef void TASK(struct task_administration_block *tab);
 struct xa_mouse_rect
 {
 	short flags;
+	short m1_flag;
+	short m2_flag;
 	RECT m1, m2;
 	TASK *t1, *t2;	/* used by tasking */
 };
@@ -1051,11 +1053,21 @@ struct menu_task
 	short clicked_title;
 	short pop_item;
 	short point_at_menu;
+	
+	short parent_entry;	/* Index of entry inside parent popup that caused 'us' to exist */
+
+	XA_TREE *attach_wt;	/* attached widget tree */
+	short attach_item;	/* Index in attach_wt of popup attached */
+	short attached_to;	/* Index of entry inside current popup that brough up attach_wt */
+		
 	short clients;
 	short exit_mb;
 	short omx, omy;
 	short x, y;
 	RECT bar, drop;
+	struct xa_rect_list *rl_bar;
+	struct xa_rect_list *rl_drop;
+	
 	struct xa_mouse_rect em;
 	void *Mpreserve;
 	TASK *entry;
@@ -1070,10 +1082,14 @@ typedef struct menu_task MENU_TASK;
 
 struct task_administration_block
 {
-	struct task_administration_block *nx;
-	struct task_administration_block *pr;	/* different concurrent tasks */
-	struct task_administration_block *nest;	/* stages of a recursive task (like sub menu's) */ 
+	LIST_ENTRY(task_administration_block) tab_entry;
 
+	//struct task_administration_block *nxt;
+	//struct task_administration_block *prv;	/* different concurrent tasks */
+	
+	//struct task_administration_block *nest;	/* stages of a recursive task (like sub menu's) */ 
+	//struct task_administration_block *next;
+	//struct task_administration_block *prev;
 	TASK_TY ty;	/* NO_TASK, ROOT_MENU, MENU_BAR, POP_UP... */
 
 	enum locks lock;

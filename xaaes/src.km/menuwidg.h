@@ -30,7 +30,9 @@
 #include "global.h"
 #include "xa_types.h"
 
+
 TASK click_form_popup_entry, click_popup_entry, do_scroll_menu;
+Tab *	nest_menutask(Tab *tab);
 void	popout(Tab *tab);
 void	do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy);
 bool	is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat);
@@ -43,7 +45,7 @@ void	set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *m
 void	fix_menu(struct xa_client *client, OBJECT *root, bool);
 
 Tab *	collapse(Tab *from, Tab *upto);
-Tab *	find_pop(Tab *start, short x, short y);
+Tab *	find_pop(short x, short y);
 
 
 INLINE	struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW_MENU]; }

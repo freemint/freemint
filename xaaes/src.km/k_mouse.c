@@ -373,9 +373,9 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
 	 */
-	if (C.menu_base && md->state)
+	if (TAB_LIST_START && md->state)
 	{
-		client = C.menu_base->client;
+		client = TAB_LIST_START->client;
 		DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
 		post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
 		//post_tpcevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
@@ -507,9 +507,9 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		return false;
 	}
 
-	if (C.menu_base)
+	if (TAB_LIST_START)
 	{
-		client = C.menu_base->client;
+		client = TAB_LIST_START->client;
 		DIAG((D_mouse, client, "post menumove to %s", client->name));
 		post_cevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
 		//post_tpcevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);

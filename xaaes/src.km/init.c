@@ -296,6 +296,8 @@ init(struct kentry *k, const char *path)
 	APP_LIST_INIT();
 	APP_LIST_INSERT_START(C.Aes);
 
+	TAB_LIST_INIT();
+
 	C.Aes->cmd_tail = "\0";
 	//C.Aes->wt.e.obj = -1;
 
