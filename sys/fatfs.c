@@ -1691,10 +1691,10 @@ c_del_cookie (register COOKIE *c)
 	c_hash_remove (c);
 
 	if (c->open)
-		FAT_ALERT (("FATFS [%c]: open FILEPTR detected in: c_del_cookie (%s)", c->name, c->dev));
+		FAT_ALERT (("FATFS [%c]: open FILEPTR detected in: c_del_cookie (%s)", c->dev, c->name));
 
 	if (c->locks)
-		FAT_ALERT (("FATFS [%c]: open LOCKS detected in: c_del_cookie (%s)", c->name, c->dev));
+		FAT_ALERT (("FATFS [%c]: open LOCKS detected in: c_del_cookie (%s)", c->dev, c->name));
 
 	if (c->lastlookup)
 		kfree (c->lastlookup);
