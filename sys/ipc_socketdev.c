@@ -35,6 +35,7 @@
 # include "ipc_socketdev.h"
 
 # include "libkern/libkern.h"
+# include "mint/credentials.h"
 # include "mint/net.h"
 # include "mint/proc.h"
 # include "sockets/mintsock.h"
@@ -327,6 +328,67 @@ sock_unselect (FILEPTR *f, long proc, int mode)
 			break;
 		}
 	}
+}
+
+
+long
+so_fstat_old (FILEPTR *f, XATTR *xattr)
+{
+	struct socket *so = (struct socket *) f->devinfo;
+	struct ucred *ucr = curproc->p_cred->ucr;
+	
+	xattr->mode	= S_IFSOCK;
+	xattr->index	= f->devinfo;
+	xattr->dev	= 0;
+	xattr->rdev	= 0;
+	xattr->nlink	= 1;
+	xattr->uid	= ucr->euid;
+	xattr->gid	= ucr->egid;
+	xattr->size	= 0;
+	xattr->blksize	= 1024;
+	xattr->nblocks	= 0;
+	xattr->mtime	= so->time;
+	xattr->mdate	= so->date;
+	xattr->atime	= timestamp;
+	xattr->adate	= datestamp;
+	xattr->ctime	= so->time;
+	xattr->cdate	= so->date;
+	xattr->attr	= 0;
+	
+	xattr->reserved2 = 0;
+	xattr->reserved3[0] = 0;
+	xattr->reserved3[1] = 0;
+	
+	return 0;
+}
+
+long
+so_fstat (FILEPTR *f, struct stat *st)
+{
+	struct socket *so = (struct socket *) f->devinfo;
+	struct ucred *ucr = curproc->p_cred->ucr;
+	
+	st->dev		= 0;		/* inode's device */
+	st->ino		= f->devinfo;	/* inode's number */
+	st->mode	= S_IFSOCK;	/* inode protection mode */
+	st->nlink	= 1;		/* number of hard links */
+	st->uid		= ucr->euid;	/* user ID of the file's owner */
+	st->gid		= ucr->egid;	/* group ID of the file's group */
+	st->rdev	= 0;		/* device type */
+	
+	st->atime.time	= xtime.tv_sec;
+	st->mtime.time	= unixtime (so->time, so->date) + timezone;;
+	st->ctime.time	= st->mtime.time;
+	
+	st->size	= 0;		/* file size, in bytes */
+	st->blocks	= 0;		/* blocks allocated for file */
+	st->blksize	= 1024;		/* optimal blocksize for I/O */
+	st->flags	= 0;		/* user defined flags for file */
+	st->gen		= 0;		/* file generation number */
+	
+	bzero (st->res, sizeof (st->res));
+	
+	return 0;
 }
 
 

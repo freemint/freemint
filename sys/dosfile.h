@@ -30,5 +30,7 @@ long _cdecl f_fchmod (short fd, ushort mode);
 long _cdecl f_seek64 (llong place, short fd, short how, llong *newpos);
 long _cdecl f_poll (POLLFD *fds, ulong nfds, ulong timeout);
 
+long _cdecl sys_fstat (short fd, struct stat *st);
+
 
 # endif /* _dosfile_h */
