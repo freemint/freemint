@@ -103,10 +103,15 @@
 # define FASTTEXT	/* include the u:\dev\fasttext device */
 # endif
 
-/* MAXPID is the maxium PID MiNT will generate */
+/*
+ * MAXPID is the maxium PID MiNT will generate
+ * 
+ * ATTENTION: Do not change at the moment!
+ */
 # define MAXPID 1000
 
-/* PATH_MAX is the maximum path allowed. The kernel uses this in lots of
+/*
+ * PATH_MAX is the maximum path allowed. The kernel uses this in lots of
  * places, so there isn't much point in file systems allowing longer
  * paths (they can restrict paths to being shorter if they want).
  * (This is slowly changing, actually... fewer and fewer places use
@@ -114,15 +119,10 @@
  */
 # define PATH_MAX 128
 
-/* maximum length of a string passed to ksprintf_old
+/*
+ * maximum length of a string passed to ksprintf_old
  */
 # define SPRINTF_MAX 128
-
-/* NOTE: NAME_MAX is a "suggested" maximum name length only. Individual
- * file systems may choose a longer or shorter NAME_MAX, so do _not_
- * use this in the kernel for anything!
- */
-# define NAME_MAX 14
 
 
 # endif /* _mint_config_h */

@@ -18,6 +18,7 @@ struct tty;
 
 struct fifo
 {
+# define NAME_MAX 14
 	char	name[NAME_MAX+1]; /* FIFO's name */
 	struct timeval mtime;	/* mtime */
 	struct timeval ctime;	/* ctime */
