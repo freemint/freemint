@@ -146,7 +146,6 @@ static time_t termtime;
 
 /* internal functions */
 
-struct HNDL_OBJ_args { DIALOG *dialog; EVNT *events; short obj; short clicks; void *data; };
 static short _cdecl handle_form_cpx(struct HNDL_OBJ_args);
 static short cpx_open_window(CPX_DESC *cpx_desc);
 static short cpx_close_window(CPX_DESC *cpx_desc);
