@@ -642,11 +642,11 @@ wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr,
 		{
 			switch (which)
 			{
-			case XAW_UPLN: which = XAW_UPPAGE; break;
-			case XAW_DNLN: which = XAW_DNPAGE; break;
-			case XAW_LFLN: which = XAW_LFPAGE; break;
-			case XAW_RTLN: which = XAW_RTPAGE; break;
-			default: /* make gcc happy */ break;
+				case XAW_UPLN: which = XAW_UPPAGE; break;
+				case XAW_DNLN: which = XAW_DNPAGE; break;
+				case XAW_LFLN: which = XAW_LFPAGE; break;
+				case XAW_RTLN: which = XAW_RTPAGE; break;
+				default: /* make gcc happy */ break;
 			}
 		}
 
@@ -731,8 +731,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 								   md->x, md->y,
 								   md->kstate,
 								   ((md->state && 0xf) << 12)|((orient & 0xf) << 8)|(md->clicks & 0xff));
-								   
-								   //orient, md->state, md->clicks, 0);
 						break;
 					}
 					case XWHL_AROWWHEEL:
@@ -788,16 +786,13 @@ arrow:						wind->send_message(lock, wind, NULL, AMQ_NORM,
 			}
 			else
 			{
-				if (widg)
+				n = c = abs(md->clicks);
+				while (c)
 				{
-					n = c = abs(md->clicks);
-					while (c)
-					{
-						wind->send_message(lock, wind, NULL, AMQ_NORM,
-								   WM_ARROWED, 0,0, wind->handle,
-								   WA, 0,0,0);
-						c--;
-					}
+					wind->send_message(lock, wind, NULL, AMQ_NORM,
+							   WM_ARROWED, 0,0, wind->handle,
+							   WA, 0,0,0);
+					c--;
 				}
 			}
 		}
