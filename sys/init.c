@@ -502,8 +502,7 @@ static const char *ini_keywords[] =
 static short
 find_ini (char *outp)
 {
-	strcpy(outp, sysdir);
-	strcat(outp, "mint.ini");
+	ksprintf(outp, 32, "%smint.ini", sysdir);
 
 	if (Fsfirst(outp, 0) == 0)
 		return 1;
@@ -602,8 +601,7 @@ write_ini (short *options)
 	char ini_file[32], buf[256];
 	long r, x, l;
 
-	strcpy(ini_file, sysdir);
-	strcat(ini_file, "mint.ini");
+	ksprintf(ini_file, sizeof(ini_file), "%smint.ini", sysdir);
 
 	inihandle = Fcreate (ini_file, 0);
 	if (inihandle < 0)
@@ -725,16 +723,14 @@ init (void)
 	FILEPTR *f;
 
 	/* Initialize sysdir */
-	strcpy(curpath, "\\multitos\\");
-	strcat(curpath, "mint.cnf");
+	strcpy(curpath, "\\multitos\\mint.cnf");
 
 	sysdir = "\\";
 	if (Fsfirst(curpath, 0) == 0)
 		sysdir = "\\multitos\\";
 	else
 	{
-		strcpy(curpath, "\\mint\\");
-		strcat(curpath, "mint.cnf");
+		strcpy(curpath, "\\mint\\mint.cnf");
 		if (Fsfirst(curpath, 0) == 0)
 			sysdir = "\\mint\\";
 	}
@@ -1170,12 +1166,9 @@ init (void)
 		 * For that, the absolute path must be used, because the user
 		 * could have changed the current drive/dir inside mint.cnf file.
 		 */
+		ksprintf(shellpath, sizeof(shellpath), "u:\\a%sshell.tos", sysdir);
 
-		strcpy(shellpath, "u:\\a");
-		strcat(shellpath, sysdir);
-		strcat(shellpath, "shell.tos");
-
-		shellpath[3] = (char)sysdrv + 'A';	/* the boot drive */
+		shellpath[3] = (char)sysdrv + 'a';	/* the boot drive */
 
 		r = sys_pexec(100, (char *)shellpath, init_tail, init_env);
 
@@ -1186,10 +1179,6 @@ init (void)
 		if (r <= 0)
 			r = startup_shell();	/* r is the shell's pid */
 # endif
-
-		/* Everything failed. Halt. */
-		if (r <= 0)
-			s_hutdown(0);		/* never returns */
 	}
 
 	/* Here we have the code for the process 0 (MiNT itself).
@@ -1217,11 +1206,11 @@ init (void)
 					cpu_stop();	/* stop and wait for an interrupt */
 			}
 		} while (pid != ((r & 0xffff0000L) >> 16));
-
-		r &= 0x0000ffff;
 	}
-
 # ifndef DEBUG_INFO
+	else
+		s_hutdown(0);		/* Everything failed. Halt. */
+
 	/* If init program exited, reboot the system.
 	 * Never go back to TOS.
 	 */
