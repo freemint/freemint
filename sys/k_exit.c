@@ -130,6 +130,8 @@ terminate (PROC *curproc, int code, int que)
 			dlockproc[i] = NULL;
 	}
 
+	free_ext (curproc);
+
 	free_fd (curproc);
 
 	free_cwd (curproc);
