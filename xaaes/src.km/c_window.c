@@ -811,9 +811,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 			XA_WIDGET *widg;
 
 			widg = get_widget(wind, f);
-			if (widg->stuff && wind->owner->killed)
-				continue;
-
 			if (widg->display)
 			{
 				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d",

@@ -297,9 +297,6 @@ struct xa_client
 
 	struct proc *p;			/* context back ptr */
 
-	bool init;			/* true between appl_init & appl_exit */
-	bool killed;			/* true if the clients memory is destroyed. */
-	bool secured;			/* true if secure remove_refs applied. */
 	bool apterm;			/* true if application understands AP_TERM. */
 	bool wa_wheel;			/* The client wants WA_HEEL messages. */
 
