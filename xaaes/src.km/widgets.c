@@ -1550,8 +1550,10 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 			 */
 			if (ic.y > root_window->wa.y)
 			{
+				short msg = (md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
+
 				wind->send_message(lock|winlist, wind, NULL, AMQ_NORM,
-					   WM_ICONIFY, 0, 0, wind->handle,
+					   msg/*WM_ICONIFY*/, 0, 0, wind->handle,
 					   ic.x, ic.y, ic.w, ic.h);
 			}
 		}
