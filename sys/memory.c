@@ -44,7 +44,6 @@ void		init_swap	(void);
 int		add_region	(MMAP map, ulong place, ulong size, unsigned mflags);
 
 ulong dp_all = 0;
-ulong dp = 0;
 
 static long	core_malloc	(long, int);
 static void	core_free	(long);
@@ -475,9 +474,9 @@ init_core (void)
 		(void) add_region (core, scrnplace, scrnsize, M_CORE);
 	}
 	
-	boot_printf ("%lu bytes LOSE of ST RAM, ", dp_all);
-	for (dp = 0; dp < (80*20); dp++)
-	  boot_printf( ".");
+# ifdef VERBOSE_BOOT
+	boot_printf ("%lu bytes LOSE of ST RAM\r\n", dp_all);
+# endif
 
 	/* initialize alternate RAM */
  	size = (ulong)core_malloc(-1L, 1);
