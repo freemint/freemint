@@ -757,21 +757,22 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
   	for (;;)
   	{
 # ifdef ONLY030
-			if (*(ushort *)from == 0)
-				break;
-
-# define _CMDL_ARGV	0x41524756L
-
-			if (*(ulong *)from == _CMDL_ARGV && from[4] == '=')
-				break;
-
+		if (*(ushort *)from == 0)
+			break;
 # else
     		if (from[0] == '\0' && from[1] == '\0')
       			break;
+# endif
 
-    		if (from[0] == 'A' && from[1] == 'R' && from[2] == 'G' &&
-        	    from[3] == 'V' && from[4] == '=')
-      			break;
+# ifdef ONLY030
+
+# define ___ARGV	0x41524756L
+
+		if (*(ulong *)from == ___ARGV && from[4] == '=')
+			break;
+# else
+		if (strncmp(from, "ARGV=", sizeof("ARGV=") - 1) == 0)
+			break;
 # endif
     		from++;
   	}
