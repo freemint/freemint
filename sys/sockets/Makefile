@@ -1,10 +1,10 @@
 #
 # Makefile for 
 #
-TARGET = sockdev.xdd
+TARGET = inet4.xdd
 
 SHELL = /bin/sh
-SUBDIRS = inet4 unix xif
+SUBDIRS = inet4 xif
 
 srcdir = .
 top_srcdir = ..
@@ -23,7 +23,7 @@ INCLUDES = -I. -I$(top_srcdir)
 DEFINITIONS = 
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
-LIBS = -Linet4 -Lunix -linet4 -lunix $(LIBKERN) -lgcc
+LIBS = -Linet4 -linet4 $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
