@@ -440,6 +440,8 @@ refresh_filelist(enum locks lock, int which)
 				OBJECT *icon = NULL;
 
 				entry = kmalloc(sizeof(*entry) + strlen(nam) + 2);
+				assert(entry);
+
 				entry->text = entry->the_text;
 				strcpy(entry->text, nam);
 
