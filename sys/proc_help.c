@@ -33,14 +33,12 @@
 
 # include "proc_help.h"
 
+# include "arch/mprot.h"
 # include "libkern/libkern.h"
-
 # include "mint/file.h"
 
-# include "arch/mprot.h"
-
-# include "dosfile.h"
 # include "filesys.h"
+# include "k_fds.h"
 # include "kmemory.h"
 # include "memory.h"
 
@@ -372,7 +370,7 @@ found:
 		if (f)
 		{
 			p_fd->ofiles[i] = NULL;
-			do_pclose (p, f);
+			do_close (p, f);
 		}
 	}
 	

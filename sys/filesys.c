@@ -37,8 +37,8 @@
 
 # include "bios.h"
 # include "dosdir.h"
-# include "dosfile.h"
 # include "dosmem.h"
+# include "k_fds.h"
 # include "k_prot.h"
 # include "kmemory.h"
 # include "memory.h"
@@ -830,7 +830,7 @@ close_filesys (void)
 				if (p->wait_q == TSR_Q || p->wait_q == ZOMBIE_Q)
 					ALERT ("Open file for dead process?");
 				
-				do_pclose (p, f);
+				do_close (p, f);
 			}
 		}
 	}
@@ -900,14 +900,29 @@ changedrv (ushort d)
  * calls to the device driver since the file has gone away
  */
 			    f->dev = NULL;
-			    do_pclose(p, f);
+			    do_close (p, f);
 /* we could just zero the handle, but this could lead to confusion if
  * a process doesn't realize that there's been a media change, Fopens
  * a new file, and gets the same handle back. So, we force the
  * handle to point to /dev/null.
  */
-			    fd->ofiles[i] =
-				do_open("U:\\DEV\\NULL", O_RDWR, 0, NULL, NULL);
+			    
+			    fd->ofiles[i] = (FILEPTR *) 1;
+			    
+			    r = fp_alloc (p, &f);
+			    if (!r)
+			    {
+			    	r = do_open (&f, "U:\\DEV\\NULL", O_RDWR, 0, NULL);
+			    	if (r)
+			    	{
+			    		fd->ofiles[i] = NULL;
+			    		fp_free (f);
+			    	}
+			    	else
+			    		fd->ofiles[i] = f;
+			    }
+			    else
+			    	fd->ofiles[i] = NULL;	
 			}
 		}
 		
@@ -1390,7 +1405,8 @@ restart_mount:
 		{
 			DEBUG (("search permission in directory denied"));
 			release_cookie (&dir);
-			r = ENOTDIR;
+			/* r = ENOTDIR; */
+			r = EACCES;
 			break;
 		}
 		
@@ -1624,32 +1640,6 @@ dup_cookie (fcookie *newc, fcookie *oldc)
 		xfs_dupcookie (fs, newc, oldc);
 	else
 		*newc = *oldc;
-}
-
-/*
- * new_fileptr, dispose_fileptr: allocate (deallocate) a file pointer
- */
-
-FILEPTR *
-new_fileptr (void)
-{
-	FILEPTR *f;
-	
-	f = kmalloc (sizeof (*f));
-	if (f) bzero (f, sizeof (*f));
-	
-	TRACE (("new_fileptr: kmalloc %lx", f));
-	return f;
-}
-
-void
-dispose_fileptr (FILEPTR *f)
-{
-	if (f->links != 0)
-		FATAL ("dispose_fileptr: f->links == %d", f->links);
-	
-	TRACE (("dispose_fileptr: kfree %lx", f));
-	kfree (f);
 }
 
 /*

@@ -40,12 +40,12 @@
 # include "delay.h"	/* calibrate_delay */
 # include "dos.h"	
 # include "dosdir.h"	
-# include "dosfile.h"	
 # include "filesys.h"	/* init_filesys, s_ync, load_*, close_filesys */
 # include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
 # include "k_exec.h"	/* sys_pexec */
 # include "k_exit.h"	/* sys_pwaitpid */
+# include "k_fds.h"	/* do_open/do_pclose */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
 # include "proc.h"	/* init_proc, add_q, rm_q */
@@ -1055,16 +1055,23 @@ init (void)
 	 * do this here, *after* init_intr has set the Rwabs vector,
 	 * so that AHDI doesn't get upset by references to drive U:
 	 */
-	f = do_open ("U:\\DEV\\CONSOLE", O_RDWR, 0, NULL, NULL);
-	if (!f)
+	
+	r = fp_alloc (rootproc, &f);
+	if (r) FATAL ("Can't allocate fp!");
+	
+	r = do_open (&f, "U:\\DEV\\CONSOLE", O_RDWR, 0, NULL);
+	if (r)
 		FATAL ("unable to open CONSOLE device");
 	
 	curproc->p_fd->control = f;
 	curproc->p_fd->ofiles[0] = f; f->links++;
 	curproc->p_fd->ofiles[1] = f; f->links++;
 	
-	f = do_open ("U:\\DEV\\MODEM1", O_RDWR, 0, NULL, NULL);
-	if (!f)
+	r = fp_alloc (rootproc, &f);
+	if (r) FATAL ("Can't allocate fp!");
+	
+	r = do_open (&f, "U:\\DEV\\MODEM1", O_RDWR, 0, NULL);
+	if (r)
 		FATAL ("unable to open MODEM1 device");
 	
 	curproc->p_fd->aux = f;
@@ -1086,16 +1093,22 @@ init (void)
 		f->links++;
 	}
 	
-	f = do_open ("U:\\DEV\\CENTR", O_RDWR, 0, NULL, NULL);
-	if (f)
+	r = fp_alloc (rootproc, &f);
+	if (r) FATAL ("Can't allocate fp!");
+	
+	r = do_open (&f, "U:\\DEV\\CENTR", O_RDWR, 0, NULL);
+	if (!r)
 	{
 		curproc->p_fd->ofiles[3] = f;
 		curproc->p_fd->prn = f;
 		f->links++;
 	}
 	
-	f = do_open ("U:\\DEV\\MIDI", O_RDWR, 0, NULL, NULL);
-	if (f)
+	r = fp_alloc (rootproc, &f);
+	if (r) FATAL ("Can't allocate fp!");
+	
+	r = do_open (&f, "U:\\DEV\\MIDI", O_RDWR, 0, NULL);
+	if (!r)
 	{
 		curproc->p_fd->midiin = f;
 		curproc->p_fd->midiout = f;

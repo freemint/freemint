@@ -49,9 +49,9 @@
 
 # include "cmdline.h"
 # include "dosdir.h"
-# include "dosfile.h"
 # include "filesys.h"
 # include "k_exit.h"
+# include "k_fds.h"
 # include "k_fork.h"
 # include "k_prot.h"
 # include "kmemory.h"
@@ -692,8 +692,8 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		
 		if (f && (fd->ofileflags[i] & FD_CLOEXEC))
 		{
-			do_pclose (p, f);
-			fd->ofiles[i] = NULL;
+			fd_remove (p, i);
+			do_close (p, f);
 		}
 	}
 	
