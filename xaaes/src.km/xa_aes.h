@@ -67,6 +67,11 @@ struct xshelw
 #define SL_RANGE	1000
 
 
+#define N_INTIN 1
+#define N_INTOUT 2
+#define N_ADDRIN 3
+#define N_ADDROUT 4
+
 /* AES 4.1 extended te_font types */
 enum te_defs
 {
@@ -108,7 +113,7 @@ enum wind_xattr
 #define HIDER		HIDE
 
 /* visible widgets */
-#define V_WIDG  (CLOSER|NAME|MOVER|ICONIFIER|FULLER|XaMENU|HIDE|INFO|SIZER|UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE)
+#define V_WIDG  (CLOSER|NAME|MOVER|ICONIFIER|FULLER|XaMENU|HIDE|INFO|SIZER|UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE|BORDER)
 
 /* At last give in to the fact that it is a struct, NOT an array */
 struct aes_global

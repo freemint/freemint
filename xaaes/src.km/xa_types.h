@@ -857,14 +857,15 @@ typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 #define XAWS_FULLED	0x0020
 
 /* Window options */
-#define XAWO_NAES_FF	0x00000001	/**/
-#define XAWO_WHEEL	0x00000002	/* Windows want WHEEL messages */
+//#define XAWO_NAES_FF	0x00000001	/**/
+//#define XAWO_WHEEL	0x00000002	/* Windows want WHEEL messages */
+//#define XAWO_WM_REPOS	0x00000004	/* Window interpretes all coords in WM_MOVED messages */
 
-#define XWHL_REALWHEEL	0	/* */
-#define XWHL_AROWWHEEL  1
-#define XWHL_SLDRWHEEL  2
-#define MAX_XWHLMODE	2
-#define DEF_XWHLMODE	XWHL_AROWWHEEL
+//#define WHL_REALWHEEL	0	/* */
+//#define WHL_AROWWHEEL	1
+//#define WHL_SLDRWHEEL	2
+//#define MAX_WHLMODE	2
+//#define DEF_WHLMODE	WHL_AROWWHEEL
 
 /* Window Descriptor */
 struct xa_window
