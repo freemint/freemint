@@ -1864,6 +1864,7 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	{
 		obtree->ob_x = widg->ar.x; //wt->rdx;
 		obtree->ob_y = widg->ar.y; //wt->rdy;
+		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
 		draw_object_tree(0, wt, NULL, 0, MAX_DEPTH, NULL);
 		write_menu_line((RECT*)&obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}
@@ -2211,7 +2212,7 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 	int titles, menus, tbar, s_ob, t_ob;
 
 	DIAG((D_menu, NULL, "fixing menu 0x%lx", root));
-
+	
 	tbar = root[0].ob_head;
 	titles = root[tbar].ob_head;
 	menus = root[0].ob_tail;

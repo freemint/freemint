@@ -208,8 +208,9 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	 */
 	if (old_focus && !is_topped(old_focus))
 	{
+		if (domsg)	send_untop(lock, old_focus);
+		else		old_focus->colours = old_focus->untop_cols;
 		send_iredraw(lock, old_focus, 0, NULL);
-		if (domsg) send_untop(lock, old_focus);
 	}
 	/* Ozk: Make sure the window we should top is not the same as
 	 *	the window that was ontop entering here, in wich case
@@ -219,8 +220,9 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	{
 		if (is_topped(w) && w != root_window)
 		{
-			send_iredraw(lock, w, 0, NULL);
 			if (domsg) send_ontop(lock);
+			else w->colours = w->ontop_cols;
+			send_iredraw(lock, w, 0, NULL);
 		}
 	}
 	/* Ozk: Set mousecursor to whatever shape the owner of the
@@ -248,16 +250,16 @@ bottom_window(enum locks lock, struct xa_window *w)
 		t_owner(get_menu()), w_owner(window_list)));
 
 	/* Redisplay titles */
-	if (was_top)
-		send_iredraw(lock, w, 0, NULL);
+//	if (was_top)
+//		send_iredraw(lock, w, 0, NULL);
 	
 	/* Our window is now right above root_window */
-	update_windows_below(lock, &w->r, NULL, wl, w);
 
 	if (was_top)
 	{
 		/*  send WM_ONTOP to just topped window. */
 		send_untop(lock, w);
+		send_iredraw(lock, w, 0, NULL);
 		if (!is_infront(window_list->owner))
 		{
 			set_active_client(lock, window_list->owner);
@@ -265,10 +267,12 @@ bottom_window(enum locks lock, struct xa_window *w)
 		}
 		if (is_topped(window_list))
 		{
-			send_iredraw(lock, window_list, 0, NULL);
 			send_ontop(lock);
+			send_iredraw(lock, window_list, 0, NULL);
 		}
 	}
+	
+	update_windows_below(lock, &w->r, NULL, wl, w);
 }
 
 #if GENERATE_DIAGS
@@ -817,11 +821,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (wt && wt == widg->stuff)
 			{
 				DIAGS((" --- Same toolbar installed"));
-				if ((w->window_status & XAWS_OPEN))
+				if ((w->window_status & (XAWS_OPEN|XAWS_HIDDEN|XAWS_SHADED)) == XAWS_OPEN)
 				{
 					widg->start = pb->intin[4];
 					wt->e.obj = pb->intin[5];
-					display_widget(lock, w, widg);
+					redraw_toolbar(lock, w, pb->intin[4]); //widg); //display_widget(lock, w, widg);
 					widg->start = 0;
 				}
 			}
@@ -848,6 +852,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			DIAGS(("  --- Remove toolbar"));
 			remove_widget(lock, w, XAW_TOOLBAR);
+			w->active_widgets &= ~TOOLBAR;
 		}
 		if ((w->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN)
 		{
@@ -1199,8 +1204,19 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_WORKXYWH:
 	{
 		*ro = w->wa;
+		if (w->dial & created_for_TOOLBAR)
+		{
+			struct xa_widget *widg = get_widget(w, XAW_TOOLBAR);
+			rp_2_ap(w, widg, &widg->ar);
+			ro->y += widg->ar.h;
+			ro->h -= widg->ar.h;
+			if (ro->h <= 0)
+				ro->w = ro->h = 0;
+		}
+		
 		if (w == root_window && !taskbar(client))
 			ro->h -= 24;
+		
 		DIAG((D_w, w->owner, "get work for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;

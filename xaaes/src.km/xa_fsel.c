@@ -326,7 +326,7 @@ set_file(enum locks lock, struct fsel_data *fs, const char *fn)
 #endif
 
 	/* redraw the toolbar file object */
-	display_toolbar(lock, fs->wind, FS_FILE);
+	redraw_toolbar(lock, fs->wind, FS_FILE);
 }
 
 /*
@@ -363,7 +363,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 		tx = ob_spec(form + FS_TRUNC);
 		sprintf(tx->te_ptext, 32, "%ld", fs->trunc);
 
-		display_toolbar(lock, fs->wind, FS_DBAR);
+		redraw_toolbar(lock, fs->wind, FS_DBAR);
 	}
 #endif
 
@@ -457,7 +457,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 	graf_mouse(ARROW, NULL, NULL, false);
 	list->slider(list);
 	if (!fs_prompt_refresh(list))
-		display_toolbar(lock, fs->wind, FS_LIST);
+		redraw_toolbar(lock, fs->wind, FS_LIST);
 }
 
 #define DRIVELETTER(i)	(i + ((i < 26) ? 'A' : '1' - 26))
@@ -745,7 +745,7 @@ fileselector_form_exit(struct xa_client *client,
 	case FS_OK:
 	{
 		object_deselect(wt->tree + FS_OK);
-		display_toolbar(lock, wind, FS_OK);
+		redraw_toolbar(lock, wind, FS_OK);
 #ifdef FS_FILTER
 		if (strcmp(filter->te_ptext, fs->fs_pattern) != 0)
 		{
@@ -764,7 +764,7 @@ fileselector_form_exit(struct xa_client *client,
 	case FS_CANCEL:
 	{
 		object_deselect(wt->tree + FS_CANCEL);
-		display_toolbar(lock, wind, FS_CANCEL);
+		redraw_toolbar(lock, wind, FS_CANCEL);
 		if (fs->canceled)
 	 		fs->canceled(lock, fs, fs->path, "");
 		else
@@ -1088,7 +1088,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->clear_on_folder_change = 0;
 		strcpy(fs->file, file); /* fill in the file edit field */
 
-		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, WIDG_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, WIP_NOTEXT, NULL);
 		/* This can be of use for drawing. (keep off border & outline :-) */
 		wt->zen = true;
 		wt->exit_form = fileselector_form_exit;

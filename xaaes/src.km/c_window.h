@@ -69,7 +69,7 @@ void	display_window(enum locks lock, int which, struct xa_window *w, RECT *clip)
 
 DoWinMesag	do_rootwind_msg;
 
-void	draw_window(enum locks lock, struct xa_window *wind);
+void	draw_window(enum locks lock, struct xa_window *wind, RECT *clip);
 void	update_all_windows(enum locks lock, struct xa_window *wl);
 void	update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_window *wl, struct xa_window *wend);
 void	redraw_client_windows(enum locks lock, struct xa_client *client);

@@ -311,22 +311,30 @@ void t_effect(short m)
 	}
 }
 
-void t_font(short p, short f)
+void
+t_font(short p, short f)
 {
 	static short pm = -1;
 	static short fm = -1;
 	short temp;
 
-	if (pm != p)
-	{
-		pm = p;
-		vst_point(C.vh, pm, &temp, &temp, &temp, &temp);
-	}
 
 	if (fm != f)
 	{
 		fm = f;
-		vst_font(C.vh, fm);
+		vst_font(C.vh, f);
+		f = 0;
+	}
+	else
+		f = 1;
+
+	/*
+	 * Ozk: Hmm... have to reset point size when changing fonts!!??
+	 */
+	if (!f || pm != p)
+	{
+		pm = p;
+		vst_point(C.vh, p, &temp, &temp, &temp, &temp);
 	}
 }
 
@@ -676,7 +684,7 @@ void cramped_name(const void *s, char *t, short w)
 	{
 		if (w < 12)		/* 8.3 */
 		{
-			strcpy(t, q+d); /* only the last ch's */
+			strcpy(t, q + d); /* only the last ch's */
 		}
 		else
 		{
@@ -705,6 +713,48 @@ const char *clipped_name(const void *s, char *t, short w)
 	return s;
 }
 
+const char *
+prop_clipped_name(const char *s, char *d, int w)
+{
+	int swidth = 0;
+	short cw, tmp;
+	char *dst = d;
+
+	while (*s)
+	{
+		vqt_width(C.vh, *s, &cw, &tmp, &tmp);
+		if (cw != -1)
+		{
+			swidth += cw;
+
+			if (swidth >= w)
+				break;
+			*dst++ = *s++;
+		}
+	}
+	*dst = '\0';
+	return d;	
+}
+
+const char *
+gdprop_clipped_name(const char *s, char *d, int width)
+{
+	long w = (long)width << 16;
+	long ax, ay, swidth = 0;
+	char *dst = d;
+
+	while (*s)
+	{
+		vqt_advance32(C.vh, *s, &ax, &ay);
+		swidth += ax;
+		if (swidth > w)
+			break;
+		*dst++ = *s++;
+	}
+	*dst = '\0';
+	return d;
+}
+		
 /* HR: 1 (good) set of routines for screen saving */
 inline long calc_back(const RECT *r, short planes)
 {
@@ -1130,6 +1180,7 @@ set_text(OBJECT *ob,
 	}
 	case TE_STANDARD:		/* Use the standard system font (probably 10 point) */
 	{
+		t_font(10, 1);
 		cur.w = screen.c_max_w;
 		cur.h = screen.c_max_h;
 		break;
@@ -1320,7 +1371,7 @@ set_objcursor(struct widget_tree *wt)
 	wt->e.cr.x -= wt->tree->ob_x;
 	wt->e.cr.y -= wt->tree->ob_y;
 
-	t_font(screen.standard_font_point, screen.standard_font_id);
+	//t_font(screen.standard_font_point, screen.standard_font_id);
 }
 
 #if SELECT_COLOR
@@ -1407,12 +1458,13 @@ d_g_box(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		p->wt		= wt;
 		p->index	= wt->current;
 		p->r		= wt->r;
-		
+		p->clip		= *clip;
+	#if 0
 		p->clip.x	= clip->x;
 		p->clip.y	= clip->y;
 		p->clip.w	= clip->w - clip->x + 1;
 		p->clip.h	= clip->h - clip->y + 1;
-		
+	#endif
 		if (xa_rect_clip(&wt->r, &p->clip, &p->clip))
 		{
 			p->clip.w = p->clip.x + p->clip.w - 1;
@@ -1516,11 +1568,13 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			gr.y += PUSH3D_DISTANCE;
 		}
 		wr_mode(colours.textmode ? MD_REPLACE : MD_TRANS);
+		t_font(10, 1);
 		ob_text(wt, &gr, &r, NULL, temp_text, 0, -1);
 	}
 	else
 	{
 		gbar(0, &r);
+		t_font(10, 1);
 		ob_text(wt, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
 		if (selected)
@@ -1565,9 +1619,11 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			gr.y += PUSH3D_DISTANCE;
 		}
 		ob_text(wt, &gr, &r, &colours, temp_text, 0, -1);
-	} else
+	}
+	else
 	{
 		gbar(0, &r);
+		//t_font(10, 1);
 		ob_text(wt, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
 		if (selected)
@@ -1581,7 +1637,7 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		}
 	}
 
-	t_font(screen.standard_font_point, screen.standard_font_id);
+	//t_font(screen.standard_font_point, screen.standard_font_id);
 	done(OS_SELECTED);
 }
 void
@@ -1607,12 +1663,13 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			gr.x += PUSH3D_DISTANCE;
 			gr.y += PUSH3D_DISTANCE;
 		}
-
+		//t_font(10, 1);
 		ob_text(wt, &gr, &r, &colours, temp_text, 0, -1);
 	}
 	else
 	{
-		gbar(0, &r);				
+		gbar(0, &r);
+		//t_font(10, 1);			
 		ob_text(wt, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
 		if (selected)
@@ -1640,7 +1697,7 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	}
 #endif
 
-	t_font(screen.standard_font_point, screen.standard_font_id);
+	//t_font(screen.standard_font_point, screen.standard_font_id);
 	done(OS_SELECTED);
 }
 
@@ -1680,12 +1737,14 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 				chiseled_gbox(0, &rr);
 			gr.x = r.x + screen.c_max_w;
 			gr.y = r.y;
+			t_font(10, 1);
 			t_extent(text, &gr.w, &gr.h);
 			ob_text(wt, &gr, NULL, &colours, text, 0, -1);
 		}
 		else
 		{
 			XA_TREE b;
+
 			b.owner = wt->owner; //C.Aes;
 			b.tree = get_widgets();
 			display_object(	lock, &b, clip,
@@ -1696,6 +1755,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			gr.x += ICON_W;
 			gr.x += screen.c_max_w;
 			wr_mode(MD_TRANS);
+			t_font(10, 1);
 			ob_text(wt, &gr, &r, NULL, text, 0, und & 0x7f);
 		}
 	}
@@ -1709,7 +1769,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		 * real values that can be used for other stuff (like shortcut
 		 * underlines :-)
 		 */
-
+		t_font(10, 1);
 		t_extent(text, &tw, &th);
 		gr.y += (r.h - th) / 2;
 		gr.x += (r.w - tw) / 2;
@@ -1795,7 +1855,7 @@ icon_characters(ICONBLK *iconblk, short state, short obx, short oby, short icx, 
 	if (state & OS_SELECTED)
 		f_color(G_WHITE);
 
-	t_font(screen.standard_font_point, screen.standard_font_id);
+	//t_font(screen.standard_font_point, screen.standard_font_id);
 	t_effect(0);
 	wr_mode( MD_TRANS);
 }
@@ -2036,9 +2096,10 @@ d_g_text(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		done(OS_SELECTED);
 	}
 
+	//t_font(10, 1);
 	ob_text(wt, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
-	t_font(screen.standard_font_point, screen.standard_font_id);
+	//t_font(screen.standard_font_point, screen.standard_font_id);
 }
 void
 d_g_ftext(enum locks lock, struct widget_tree *wt, const RECT *clip)
@@ -2074,7 +2135,7 @@ d_g_ftext(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	}
 #endif
 
-	t_font(screen.standard_font_point, screen.standard_font_id);
+	//t_font(screen.standard_font_point, screen.standard_font_id);
 }
 
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
@@ -2087,6 +2148,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
 	OBJECT *ob = wt->tree + wt->current;
 	PARMBLK *p;
+	short r[4];
 
 #if GENERATE_DIAGS
 	struct proc *curproc = get_curproc();
@@ -2112,11 +2174,13 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 
 	*(RECT *)&(p->pb_x) = wt->r;
 
+	*(RECT *)&(p->pb_xc) = *clip;
+#if 0
 	p->pb_xc = clip->x; //C.global_clip[0];
 	p->pb_yc = clip->y; //C.global_clip[1];
 	p->pb_wc = clip->w - clip->x + 1; //C.global_clip[2] - C.global_clip[0] + 1;
 	p->pb_hc = clip->h - clip->y + 1; //C.global_clip[3] - C.global_clip[1] + 1;
-
+#endif
 	userblk(client->ut) = object_get_spec(ob)->userblk;
 	p->pb_parm = userblk(client->ut)->ub_parm;
 
@@ -2174,7 +2238,10 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	 * Ozk: Since it is possible that taskswitches happens during the callout of
 	 *	progdef's, we need to restore the clip-rect used by this 'thread'
 	 */
-	vs_clip(C.vh, 1, (short *)clip);
+	*(RECT *)&r = *clip;
+	r[2] += (r[0] - 1);
+	r[3] += (r[1] - 1);
+	vs_clip(C.vh, 1, (short *)&r);
 	
 	if (*wt->state_mask & OS_DISABLED)
 	{
@@ -2207,6 +2274,8 @@ display_list_element(enum locks lock, struct xa_client *client, const RECT *clip
 	XA_TREE tr = nil_tree;
 	short xt = x + ICON_W;
 
+	t_font(10, 1);
+	
 	if (this)
 	{
 		f_color(sel ? G_BLACK : G_WHITE);
@@ -2234,8 +2303,9 @@ display_list_element(enum locks lock, struct xa_client *client, const RECT *clip
 				this->icon->ob_state &= ~OS_SELECTED;
 
 			tr.tree = this->icon;
-			tr.owner = client; //C.Aes;
+			tr.owner = client;
 			display_object(lock, &tr, clip, 0, x, y, 12);
+			t_font(10, 1);
 		}
 	}
 	else /* filler line */
@@ -2271,7 +2341,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	this = list->top;
 
 	t_color(G_BLACK);
-
+	
 	if (list->state == 0)
 	{
 		get_widget(w, XAW_TITLE)->stuff = list->title;
@@ -2287,7 +2357,11 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			tl_hook(2,&r,screen.dial_colours.lit_col);
 		}
 #endif
-		draw_window(list->lock, w);
+		draw_window(list->lock, w, clip);
+
+		wr_mode(MD_TRANS);
+		
+		t_font(10, 1);
 		for (; y <= maxy; y += screen.c_max_h)
 		{
 			/* can handle nil this */
@@ -2319,6 +2393,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		}
 		/* scroll list windows are not on top, but are visible! */
 		display_vslide(list->lock, w, get_widget(w, XAW_VSLIDE));
+		wr_mode(MD_TRANS);
 		display_list_element(lock, wt->owner, clip, this, list->left, wa.x, y, wa.w, this == list->cur);
 		list->state = 0;
 	}
@@ -2369,7 +2444,10 @@ d_g_string(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			done(OS_DISABLED);
 		}
 		else
+		{
+			t_font(10, 1);
 			g_text(wt, r, &wt->r, text, ob->ob_state);
+		}
 
 		if (tit)
 			line(r.x, r.y + r.h, r.x + r.w -1, r.y + r.h, G_BLACK);
@@ -2391,7 +2469,10 @@ d_g_title(enum locks lock, struct widget_tree *wt, const RECT *clip)
 
 	/* most AES's allow null string */
 	if (text)
+	{
+		t_font(10, 1);
 		g_text(wt, r, &wt->r, text, ob->ob_state);
+	}
 
 	if (ob->ob_state & OS_SELECTED && wt->menu_line)
 		/* very special!!! */
@@ -2465,9 +2546,9 @@ display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short item, short
 	o.w = r.w - o.w;
 	o.h = r.h - o.h;
 	
-	if (   o.x		> clip->w //C.global_clip[2]	/* x + w */
+	if (   o.x		> (clip->x + clip->w - 1) //C.global_clip[2]	/* x + w */
 	    || o.x + o.w - 1	< clip->x //C.global_clip[0]	/* x     */
-	    || o.y		> clip->h //C.global_clip[3]	/* y + h */
+	    || o.y		> (clip->y + clip->h - 1) //C.global_clip[3]	/* y + h */
 	    || o.y + o.h - 1	< clip->y) //C.global_clip[1])	/* y     */
 		return;
 
@@ -2598,6 +2679,9 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
 	RECT clip = *(RECT *)&C.global_clip;
 
+	clip.w -= (clip.x - 1);
+	clip.h -= (clip.y - 1);
+	
 	IFDIAG(short *cl = C.global_clip;)
 
 	if (wt == NULL)

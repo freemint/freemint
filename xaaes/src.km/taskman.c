@@ -221,7 +221,7 @@ update_tasklist(enum locks lock)
 	{
 		DIAGS(("update_tasklist"));
 		refresh_tasklist(lock);
-		display_toolbar(lock, task_man_win, TM_LIST);
+		redraw_toolbar(lock, task_man_win, TM_LIST);
 	}
 }
 
@@ -377,7 +377,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				ikill(client->p->pid, SIGKILL);
 
 			object_deselect(wt->tree + TM_KILL);
-			display_toolbar(lock, task_man_win, TM_KILL);
+			redraw_toolbar(lock, task_man_win, TM_KILL);
 			break;
 		}
 		case TM_TERM:
@@ -392,7 +392,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				send_terminate(lock, client);
 
 			object_deselect(wt->tree + TM_TERM);
-			display_toolbar(lock, task_man_win, TM_TERM);
+			redraw_toolbar(lock, task_man_win, TM_TERM);
 			break;
 		}
 		case TM_SLEEP:
@@ -408,7 +408,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			}
 
 			object_deselect(wt->tree + TM_SLEEP);
-			display_toolbar(lock, task_man_win, TM_SLEEP);
+			redraw_toolbar(lock, task_man_win, TM_SLEEP);
 			break;
 		}
 		case TM_WAKE:
@@ -424,7 +424,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			}
 
 			object_deselect(wt->tree + TM_WAKE);
-			display_toolbar(lock, task_man_win, TM_WAKE);
+			redraw_toolbar(lock, task_man_win, TM_WAKE);
 			break;
 		}
 
@@ -435,7 +435,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			quit_all_apps(lock, NULL);
 
 			object_deselect(wt->tree + TM_QUITAPPS);
-			display_toolbar(lock, task_man_win, TM_QUITAPPS);
+			redraw_toolbar(lock, task_man_win, TM_QUITAPPS);
 			break;
 		}
 		case TM_QUIT:
@@ -444,7 +444,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			dispatch_shutdown(0);
 
 			object_deselect(wt->tree + TM_QUIT);
-			display_toolbar(lock, task_man_win, TM_QUIT);
+			redraw_toolbar(lock, task_man_win, TM_QUIT);
 			break;
 		}
 		case TM_REBOOT:
@@ -453,7 +453,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			dispatch_shutdown(REBOOT_SYSTEM);
 
 			object_deselect(wt->tree + TM_REBOOT);
-			display_toolbar(lock, task_man_win, TM_REBOOT);
+			redraw_toolbar(lock, task_man_win, TM_REBOOT);
 			break;
 		}
 		case TM_HALT:
@@ -462,13 +462,13 @@ taskmanager_form_exit(struct xa_client *Client,
 			dispatch_shutdown(HALT_SYSTEM);
 
 			object_deselect(wt->tree + TM_HALT);
-			display_toolbar(lock, task_man_win, TM_HALT);
+			redraw_toolbar(lock, task_man_win, TM_HALT);
 			break;
 		}
 		case TM_OK:
 		{
 			object_deselect(wt->tree + TM_OK);
-			display_toolbar(lock, task_man_win, TM_OK);
+			redraw_toolbar(lock, task_man_win, TM_OK);
 
 			/* and release */
 			close_window(lock, task_man_win);
@@ -525,7 +525,7 @@ open_taskmanager(enum locks lock)
 		/* Set the window title */
 		set_window_title(dialog_window, " Task Manager ", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIDG_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIP_NOTEXT, NULL);
 		wt->exit_form = taskmanager_form_exit;
 
 
@@ -627,14 +627,14 @@ sysalerts_form_exit(struct xa_client *Client,
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 			list->empty(list, -1);
 			object_deselect(wt->tree + item);
-			display_toolbar(lock, systemalerts_win, SYSALERT_LIST);
-			display_toolbar(lock, systemalerts_win, item);
+			redraw_toolbar(lock, systemalerts_win, SYSALERT_LIST);
+			redraw_toolbar(lock, systemalerts_win, item);
 			break;
 		}
 		case SALERT_OK:
 		{
 			object_deselect(wt->tree + item);
-			display_toolbar(lock, systemalerts_win, item);
+			redraw_toolbar(lock, systemalerts_win, item);
 			close_window(lock, systemalerts_win);
 			delayed_delete_window(lock, systemalerts_win);	
 			break;
@@ -699,7 +699,7 @@ open_systemalerts(enum locks lock)
 		/* Set the window title */
 		set_window_title(dialog_window, " System window & Alerts log", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIDG_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIP_NOTEXT, NULL);
 		wt->exit_form = sysalerts_form_exit;
 		/* Set the window destructor */
 		dialog_window->destructor = systemalerts_destructor;
