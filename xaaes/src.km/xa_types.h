@@ -610,7 +610,8 @@ struct xa_client
 	struct	c_event *cevnt_head;
 	struct	c_event *cevnt_tail;
 
-	short	tp_cevnt_count;
+	short	tp_term;
+	short	tpcevnt_count;
 	struct	c_event *tpcevnt_head;
 	struct	c_event *tpcevnt_tail;
 };

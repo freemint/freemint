@@ -2073,7 +2073,6 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 		write_disable(&wt->r, screen.dial_colours.bg_col);
 		done(OS_DISABLED);
 	}
-
 	wr_mode(MD_REPLACE);
 }
 #undef userblk

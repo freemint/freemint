@@ -1528,8 +1528,10 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	/*
 	 * Make sure we're in the right context
 	*/
+#if 0
 	if (!rc)
 		rc = C.Aes;
+
 	if (client != rc)
 		return false;
 
@@ -1538,7 +1540,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 		if ( !lock_menustruct(client, false) )
 			return false;
 	}
-
+#endif
 	if (!menu_title(lock, wind, widg, client->p->pid))
 	{
 		menu_finish(NULL);

@@ -364,6 +364,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 			client = C.menu_base->client;
 			DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
 			post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+			//post_tpcevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
 			return;
 		}
 
@@ -497,6 +498,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		client = C.menu_base->client;
 		DIAG((D_mouse, client, "post menumove to %s", client->name));
 		post_cevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
+		//post_tpcevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
 		return false;
 	}
 
@@ -528,6 +530,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 				DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
 				C.ce_open_menu = client;
 				post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
+				//post_tpcevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
 				return false;
 			}
 		}
