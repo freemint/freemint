@@ -713,9 +713,11 @@ kern_procdir_get_environ (SIZEBUF **buffer, PROC *p)
 	if (!baseregion)
 	{
 		baseregion = addr2region ((long) p->base);
-		assert (baseregion);
 		
-		attach_region (curproc, baseregion);
+		if (baseregion)
+			attach_region (curproc, baseregion);
+		else
+			DEBUG (("kern_procdir_get_environ: no baseregion found, pid %i", p->pid));
 	}
 	else
 		/* already attached, don't detach */
@@ -1022,9 +1024,11 @@ kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
 	if (!baseregion)
 	{
 		baseregion = addr2region ((long) p->base);
-		assert (baseregion);
 		
-		attach_region (curproc, baseregion);
+		if (baseregion)
+			attach_region (curproc, baseregion);
+		else
+			DEBUG (("kern_procdir_get_stat: no baseregion found, pid %i", p->pid));
 	}
 	else
 		/* already attached, don't detach */
