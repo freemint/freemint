@@ -211,6 +211,7 @@ WINDOW *create_window(char *title, short kind,
 {
 	WINDOW *v;
 	GRECT full;
+	GRECT full_work;
 	int centerwin = 0;
 
 	title = strdup(title);
@@ -242,6 +243,10 @@ WINDOW *create_window(char *title, short kind,
 		full.g_w = gl_desk.g_w;
 	if (full.g_h > gl_desk.g_h || full.g_h < 0)
 		full.g_h = gl_desk.g_h;
+	wind_calc (WC_WORK, v->kind, 0, 0, full.g_w, full.g_h, 
+		   &full_work.g_x, &full_work.g_y, 
+		   &full_work.g_w, &full_work.g_h);
+	v->full_work = full_work;
 
 	if (0 || centerwin) 
 	{
