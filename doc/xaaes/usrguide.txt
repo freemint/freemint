@@ -49,15 +49,13 @@ XaAES User´s Manual
 
       You can specify others in the xa_setup.scl.
       If you dont care about colourfull widgets and have not that big a computer
-      but onky a colour monitor, you can specify the mono rsc's in the cnf
+      but only a colour monitor, you can specify the mono rsc's in the cnf
       and spare 170Kb compared to 256 colours, and much much more compared
       to higher colours.
 
 	ii) Copy the mouse device driver 'moose.xdd' to one of:
 		c:\multitos
 		c:\mint
-		c:\
-		Your auto folder
 
 	iii) If you want a console shell (the xa_setup.scl file is set up to
 	     give you one), you should edit the xa_setup.scl file so it runs
