@@ -737,7 +737,8 @@ static void (*loads [])(const char *, const char *) =
 
 static const char *dont_load_list [] =
 {
-	"fnramfs.xfs"
+	"fnramfs.xfs",
+	"sockdev.xdd"
 };
 
 static int
