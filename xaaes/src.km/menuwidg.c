@@ -43,15 +43,23 @@
 
 static void cancel_pop_timeouts(void);
 
-static void menuclick(Tab *tab);
+static TASK menuclick;
+static TASK outofpop;
+static TASK popup;
+static TASK click_desk_popup;
+static TASK click_menu_entry;
+static TASK menu_bar;
+
+
+//static void menuclick(Tab *tab);
 static void CE_do_popup(enum locks lock, struct c_event *ce, bool cancel);
 static void cancel_CE_do_popup(void);
-static void outofpop(Tab *tab);
+//static void outofpop(Tab *tab);
 
-static void click_desk_popup(struct task_administration_block *tab);
-static void popup(struct task_administration_block *tab);
+//static void click_desk_popup(struct task_administration_block *tab);
+//static void popup(struct task_administration_block *tab);
 //static void where_are_we(struct task_administration_block *tab);
-static void click_menu_entry(struct task_administration_block *tab);
+//static void click_menu_entry(struct task_administration_block *tab);
 //static void new_title(struct task_administration_block *tab);
 
 static XAMENU desk_popup;
@@ -390,6 +398,7 @@ new_menutask(void)
 	new = kmalloc(sizeof(*new));
 	if (new)
 		bzero(new, sizeof(*new));
+	
 	return new;
 }
 
@@ -1142,7 +1151,7 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 		k->em.flags |= MU_M2;
 		k->em.m2_flag = 0;			/* into popup */
 		k->em.t2 = popup;
-		k->outof = outofpop;
+		k->outof = NULL;
 
 		check_mouse(wt->owner, NULL, &x, &y);
 		if (m_inside(x, y, &k->drop))		//is_rect(x, y, k->em.flags & 1, &k->em.m1))
@@ -1325,7 +1334,7 @@ cancel_popout_timeout(void)
 	{
 		DIAGS((" -- cancelling popout timeout %lx", S.popout_timeout));
 
-		canceltimeout(S.popout_timeout);
+		cancelroottimeout(S.popout_timeout);
 		S.popout_timeout = NULL;
 	}
 	cancel_CE_do_collapse();
@@ -1339,7 +1348,7 @@ set_popout_timeout(Tab *tab)
 	{
 		if (cfg.popout_timeout)
 		{
-			t = addtimeout(cfg.popout_timeout, do_popout_timeout);
+			t = addroottimeout(cfg.popout_timeout, do_popout_timeout, 0);
 			if ((S.popout_timeout = t))
 				t->arg = (long)tab;
 		}
@@ -1353,7 +1362,7 @@ cancel_popin_timeout(void)
 {
 	if (S.popin_timeout)
 	{
-		canceltimeout(S.popin_timeout);
+		cancelroottimeout(S.popin_timeout);
 		S.popin_timeout = NULL;
 	}
 	cancel_CE_do_popup();
@@ -1366,7 +1375,7 @@ cancel_pop_timeouts(void)
 	cancel_popout_timeout();
 }
 			
-static void
+static Tab *
 click_desk_popup(struct task_administration_block *tab)
 {
 	enum locks lock = tab->lock;
@@ -1415,10 +1424,11 @@ click_desk_popup(struct task_administration_block *tab)
 			}
 		}
 	}
+	return NULL;
 }
 
 
-static void
+static Tab *
 menu_bar(struct task_administration_block *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
@@ -1454,11 +1464,15 @@ menu_bar(struct task_administration_block *tab)
 		tab = menu_pop(tab);
 		title_tnormal(tab);
 		if (!menu_title(tab->lock, tab, tab->wind, tab->widg, tab->locker))
+		{
 			menu_finish(tab);
+			tab = NULL;
+		}
 	}
+	return tab;
 }
 
-static void
+static Tab *
 outofpop(Tab *tab)
 {
 	OBJECT *obtree;
@@ -1487,10 +1501,13 @@ outofpop(Tab *tab)
 	k->em.flags |= MU_M2;
 	k->em.m2_flag = 0;			/* into popup */
 	k->em.t2 = popup;
-}
+	k->outof = NULL;
 	
+	return tab;
+}
+
 /* This is called by popup menu's as well */
-static void
+static Tab *
 popup(struct task_administration_block *tab)
 {
 	OBJECT *obtree;
@@ -1522,11 +1539,12 @@ popup(struct task_administration_block *tab)
 
 		if (m < 0)
 		{
-			
+
 			k->em.m2 = k->drop;
 			k->em.flags |= MU_M2;
 			k->em.m2_flag = 0;			/* into popup */
 			k->em.t2 = popup;
+			k->outof = NULL;
 		}
 		else
 		{
@@ -1537,6 +1555,7 @@ popup(struct task_administration_block *tab)
 			k->em.flags |= MU_M2;
 			k->em.m2_flag = 1;
 			k->em.t2 = popup;
+			k->outof = outofpop;
 		}
 	}
 	else
@@ -1574,7 +1593,7 @@ popup(struct task_administration_block *tab)
 					{
 						TIMEOUT *t;
 					
-						t = addtimeout(cfg.popup_timeout, do_popup_to);
+						t = addroottimeout(cfg.popup_timeout, do_popup_to, 0);
 						if (t)
 						{
 							t->arg = (long)tab;
@@ -1605,8 +1624,10 @@ popup(struct task_administration_block *tab)
 			k->em.flags |= MU_M2;
 			k->em.m2_flag = 1;
 			k->em.t2 = popup;
+			k->outof = outofpop;
 		}
 	}
+	return tab;
 }
 
 Tab *
@@ -1624,7 +1645,7 @@ find_pop(short x, short y)
 	return tab;
 }
 
-static void
+static Tab *
 click_menu_entry(struct task_administration_block *tab)
 {
 	MENU_TASK *k= &tab->task_data.menu;
@@ -1638,6 +1659,7 @@ click_menu_entry(struct task_administration_block *tab)
 		tab = collapse(TAB_LIST_START, NULL);
 		title_tnormal(tab);
 		menu_finish(tab);
+		tab = NULL;
 	}
 	else
 	{
@@ -1653,7 +1675,7 @@ click_menu_entry(struct task_administration_block *tab)
 		if ((m = find_menu_object(tab, k->pop_item, k->rdx, k->rdy, &k->drop)) < 0)
 		{
 			popout(TAB_LIST_START);
-			return;
+			return NULL;
 		}
 		
 		d = obtree[m].ob_state & OS_DISABLED;
@@ -1722,6 +1744,7 @@ click_menu_entry(struct task_administration_block *tab)
 			}
 
 			menu_finish(tab);
+			tab = NULL;
 		}
 		else
 		{
@@ -1735,9 +1758,10 @@ click_menu_entry(struct task_administration_block *tab)
 		}
 	}
 	IFDIAG(tab->dbg2 = 2;)
+	return tab;
 }
 
-void
+Tab *
 click_popup_entry(struct task_administration_block *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
@@ -1766,9 +1790,11 @@ click_popup_entry(struct task_administration_block *tab)
 	pb->intout[0] = md->mn_item < 0 ? 0 : 1;
 
 	client->usr_evnt = 1;
+
+	return NULL;
 }
 
-void
+Tab *
 click_form_popup_entry(struct task_administration_block *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
@@ -1789,7 +1815,7 @@ click_form_popup_entry(struct task_administration_block *tab)
 	assert(pb);
 	pb->intout[0] = m;
 	client->usr_evnt = 1;
-
+	return NULL;
 }
 
 /*
@@ -2011,7 +2037,7 @@ menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, i
 		k->em.flags |= MU_M2;
 		k->em.m2_flag = 0;			/* into popup */
 		k->em.t2 = popup;
-		k->outof = outofpop;
+		k->outof = NULL;
 
 		return true;
 	}
@@ -2200,7 +2226,7 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
  	DIAG((D_menu, NULL, "done fix_menu()"));
 }
 
-static void
+static Tab *
 menuclick(Tab *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
@@ -2212,8 +2238,10 @@ menuclick(Tab *tab)
 	if (m > 0 && k->clicks < 2 && is_attach(menu_client(tab), k->wt, m, NULL))
 	{
 		if (!PREV_TAB(tab) || k->attached_to != m)
-			do_timeout_popup(tab);
+			do_timeout_popup(tab);			
 	}
 	else if (k->select)
-		k->select(tab);
+		tab = k->select(tab);
+	
+	return tab;
 }
