@@ -117,7 +117,7 @@ struct textwin
 	
 	char	*dirty;				/* marks whether lines need redrawing */
 	int	fd;				/* file descriptor for pseudo-tty */
-	char	pty[8];				/* Pseudo-TTY auf U:\pipe\ttyp[0-f] */
+	char	pty[8];				/* Pseudo-TTY on U:\pipe\ttyp[0-f] */
 	int	pgrp;				/* process group for terminal */
 	long	scrolled;			/* number of lines to scroll before re-draw */
 	long	nbytes;				/* number of bytes written to window since last refresh */
@@ -138,11 +138,13 @@ struct textwin
 	TABLIST *tabs;			  	/* List of tab positions */
 	short 	curs_mode;			/* Mode for cursor keys */
 
-	short	talkID;				/* ID vom aufrufenden TalkTW */
-	int	shell;				/* Typ der Shell */
+	short	talkID;				/* ID of calling TalkTW */
+	int	shell;				/* Type of shell */
 
-	WINCFG	*cfg;				/* Zeiger auf die Konfig (NULL = Default) */
-	int	block_x1,			/* enth„lt Block-Daten (im Zeichenmaž!) */
+	WINCFG	*cfg;				/* Pointer to window config
+						 * (NULL = default)
+						 */
+	int	block_x1,			/* Block data (measured in characters!) */
 		block_x2,
 		block_y1,
 		block_y2;
