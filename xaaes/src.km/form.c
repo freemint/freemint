@@ -30,6 +30,7 @@
 #include "form.h"
 #include "draw_obj.h"
 #include "obtree.h"
+#include "rectlist.h"
 #include "scrlobjc.h"
 #include "widgets.h"
 #include "c_window.h"
@@ -641,9 +642,8 @@ Click_form_do(enum locks lock,
 		if (wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
-			C.focus = pull_wind_to_top(lock, wind);
+			top_window(lock, wind, 0);
 			after_top(lock, false);
-			display_window(lock, 52, wind, NULL);
 			return false;
 		}
 
@@ -873,6 +873,41 @@ do_formwind_msg(
 #endif
 		switch (msg[0])
 		{
+		case WM_REDRAW:
+		{
+			if (wt && wt->tree)
+			{
+				RECT *clip = (RECT *)&msg[4];
+				RECT dr;
+				struct xa_rect_list *rl;
+
+				rl = wind->rect_start;
+				if (rl)
+				{
+					hidem();
+					while (rl)
+					{
+						if (xa_rect_clip(clip, &rl->r, &dr))
+						{
+							set_clip(&dr);
+							draw_object_tree(0, wt, wt->tree, 0, 10, 1);
+						}
+						rl = rl->next;
+					}
+					clear_clip();
+					showm();
+				}
+			}
+			break;
+		}
+		case WM_MOVED:
+		{
+			if (wt && wt->tree)
+			{
+				move_window(0, wind, -1, msg[4], msg[5], msg[6], msg[7]);
+			}
+			break;
+		}
 		case WM_ARROWED:
 		{
 			if (msg[4] < WA_LFPAGE)
@@ -985,59 +1020,3 @@ do_formwind_msg(
 		set_button_timer(0, wind);
 	}
 }
-#if 0
-static void
-Phfw(void *_parm)
-{
-	long *parms = _parm;
-	
-	Handle_Form_Window( 0,
-			   (struct xa_window *)parms[0],
-			   (struct xa_client *)parms[1],
-			   (short *)parms[2]);
-
-	wake(IO_Q, (long)_parm);
-	kfree(_parm);
-	kthread_exit(0);
-}
-
-void
-handle_form_window(
-	enum locks lock,
-	struct xa_window *wind,
-	struct xa_client *to,			/* if different from wind->owner */
-	short mp0, short mp1, short mp2, short mp3,
-	short mp4, short mp5, short mp6, short mp7)
-{
-	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-	short msg[8] = { mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7 };
-
-	if (!rc)
-		rc = C.Aes;
-
-	if (wind->owner == rc)
-	{
-		DIAGS((" --==-- Doing direct handle_form_wind"));
-		Handle_Form_Window(lock, wind, to, msg);
-	}
-	else
-	{
-		long *p = kmalloc(16);
-
-		if (p)
-		{
-			p[0] = (long)wind;
-			p[1] = (long)to;
-			p[2] = (long)msg;
-
-			DIAGS((" --==-- Doing kthread handle_form_wind"));
-
-			kthread_create(wind->owner->p,
-					Phfw,
-					p,
-					NULL, "k%s", wind->owner->name);
-			sleep(IO_Q, (long)p);
-		}
-	}
-}
-#endif

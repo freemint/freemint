@@ -859,8 +859,10 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	switch(cmd)
 	{
 	case WF_KIND:		/* new since N.Aes */
+	{
 		o[1] = w->active_widgets;
 		break;
+	}
 	case WF_NAME:		/* new since N.Aes */
 	{
 		/* -Wcast-qual doesn't work as expected in gcc 2.95.x
@@ -874,6 +876,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		break;
 	}
 	case WF_INFO:		/* new since N.Aes */
+	{
 		if (w->active_widgets&INFO)
 		{
 			/* -Wcast-qual: char * const s = *(char * const *)&pb->intin[2]; */
@@ -885,9 +888,10 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 			o[0] = 0;
 		break;
-
+	}
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
+	{
 		rl = rect_get_user_first(w);
 		/* HR: Oh, Oh  Leaving a intersect unchecked!! And forcing me to use a goto :-( */
 		if (rl)
@@ -908,10 +912,11 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		DIAG((D_wind, client, "first for %s %d/%d,%d/%d", client->name, o[1], o[2], o[3], o[4]));
 		break;
-			
+	}
 	case WF_NTOOLBAR:		/* suboptimal, but for the moment it is more
 					   important that it van be used. */
 	case WF_NEXTXYWH:		/* Get next entry from a rectangle list */
+	{
 next:
 		do {
 			rl = rect_get_user_next(w);
@@ -939,30 +944,30 @@ next:
 		DIAG((D_wind, client, "next for %s %d/%d,%d/%d",
 			client->name, o[1], o[2], o[3], o[4]));
 		break;
-
+	}
 	case WF_TOOLBAR:
-		{
-			XA_TREE *wt = get_widget(w, XAW_TOOLBAR)->stuff;
-			OBJECT **have = (OBJECT **)&pb->intout[1];
+	{
+		XA_TREE *wt = get_widget(w, XAW_TOOLBAR)->stuff;
+		OBJECT **have = (OBJECT **)&pb->intout[1];
 
-			if (wt)
-				*have = wt->tree; //ob;
-			else
-				*have = NULL;
-		}
+		if (wt)
+			*have = wt->tree; //ob;
+		else
+			*have = NULL;
+
 		break;
+	}
 	case WF_MENU:
-		{
-			XA_TREE *wt = get_widget(w, XAW_MENU)->stuff;
-			OBJECT **have = (OBJECT **)&pb->intout[1];
+	{
+		XA_TREE *wt = get_widget(w, XAW_MENU)->stuff;
+		OBJECT **have = (OBJECT **)&pb->intout[1];
 
-			if (wt)
-				*have = wt->tree;
-			else
-				*have = NULL;
-		}
+		if (wt)
+			*have = wt->tree;
+		else
+			*have = NULL;
 		break;
-
+	}
 	/*
 	 * The info given by these function is very important to app's
          * hence the DIAG's
@@ -972,35 +977,39 @@ next:
 	 * Get the current coords of the window
 	 */
 	case WF_CURRXYWH:
+	{
 		*ro = w->r;
 		DIAG((D_w, w->owner, "get curr for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;
-
+	}
 	/*
 	 * Get the current coords of the window's user work area
 	 */
 	case WF_WORKXYWH:
+	{
 		*ro = w->wa;
 		if (w == root_window && !taskbar(client))
 			ro->h -= 24;
 		DIAG((D_w, w->owner, "get work for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;
-
+	}
 	/*
 	 * Get previous window position
 	 */
 	case WF_PREVXYWH:
+	{
 		*ro = w->pr;
 		DIAG((D_w, w->owner, "get prev for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;			
-
+	}
 	/*
 	 * Get maximum window dimensions specified in wind_create() call
 	 */
 	case WF_FULLXYWH:
+	{
 		/* This is the way TosWin2 uses the feature.
 		 * Get the info and behave accordingly.
 		 * Not directly under AES control.
@@ -1024,16 +1033,19 @@ next:
 				wind ,ro->x,ro->y,ro->w,ro->h));
 		}
 		break;
-
+	}
 	/*
 	 * Return supported window features.
 	 */
 	case WF_BEVENT:
+	{
 		o[1] = ((w->active_widgets&NO_TOPPED) != 0)&1;
 		o[2] = o[3] = o[4] = 0;
 		break;
+	}
 	/* Extension, gets the bottom window */
 	case WF_BOTTOM:
+	{
 #if 0
 		for (w = window_list; w->next; w = w->next)
 			;
@@ -1045,8 +1057,9 @@ next:
 		o[1] = w->handle; /* Return the window handle of the bottom window */
 		o[2] = w->owner->p->pid; /* Return the owner of the bottom window */
 		break;
-			
+	}
 	case WF_TOP:
+	{
 		w = window_list;
 
 		while (is_hidden(w))
@@ -1087,9 +1100,10 @@ next:
 			o[0] = 0;
 		}
 		break;
-
+	}
 	/* AES4 compatible stuff */
 	case WF_OWNER:
+	{
 		if (wind == 0)
 			/* If it is the root window, things arent that easy. */
 			o[1] = get_desktop()->owner->p->pid;
@@ -1115,8 +1129,9 @@ next:
 
 		DIAG((D_wind, client, "  --  owner: %d(%d), above: %d, below: %d", o[1], o[2], o[3], o[4]));
 		break;
-
+	}
 	case WF_VSLIDE:
+	{
 		if (w->active_widgets&VSLIDE)
 		{
 			slw = get_widget(w, XAW_VSLIDE)->stuff;
@@ -1125,8 +1140,9 @@ next:
 		else
 			o[0] = o[1] = 0;
 		break;
-			
+	}	
 	case WF_HSLIDE:
+	{
 		if (w->active_widgets&HSLIDE)
 		{
 			slw = get_widget(w, XAW_HSLIDE)->stuff;
@@ -1135,8 +1151,9 @@ next:
 		else
 			o[0] = o[1] = 0;
 		break;
-			
+	}
 	case WF_HSLSIZE:
+	{
 		if (w->active_widgets&HSLIDE)
 		{
 			slw = get_widget(w, XAW_HSLIDE)->stuff;
@@ -1145,8 +1162,9 @@ next:
 		else
 			o[0] = o[1] = 0;
 		break;
-			
+	}
 	case WF_VSLSIZE:
+	{
 		if (w->active_widgets & VSLIDE)
 		{
 			slw = get_widget(w, XAW_VSLIDE)->stuff;
@@ -1155,8 +1173,9 @@ next:
 		else
 			o[0] = o[1] = 0;
 		break;
-
+	}
 	case WF_SCREEN:
+	{
 		/* HR return a very small area :-) hope app's      */
 		/*    then decide to allocate a buffer themselves. */
 		/*    This worked for SELECTRIC.  */
@@ -1189,11 +1208,14 @@ next:
 		*(char  **)&o[1] = client->half_screen_buffer;
 		*(size_t *)&o[3] = client->half_screen_size;
 		break;
-
+	}
 	case WF_DCOLOR:
+	{
 		DIAGS(("WF_DCOLOR %d for %s, %d,%d", o[1], c_owner(client),o[2],o[3]));
 		goto oeps;
+	}
 	case WF_COLOR:
+	{
 		DIAGS(("WF_COLOR %d for %s", o[1], c_owner(client)));
 	oeps:
 		if (o[1] <= W_BOTTOMER /*valid widget id*/)
@@ -1229,33 +1251,40 @@ next:
 		o[4] = 0xf0f; 	/* HR 010402 mask and flags 3d */
 		DIAGS(("   --   %04x", o[2]));
 		break;
+	}
 	case WF_NEWDESK:
+	{
 		Sema_Up(desk);
 
 		*(OBJECT **)&o[1] = get_desktop()->tree;
 
 		Sema_Dn(desk);
 		break;
-	
+	}
 	case WF_ICONIFY:
+	{
 		o[1] = w->window_status == XAWS_ICONIFIED ? 1 : 0;
 		o[2] = C.iconify.w;
 		o[3] = C.iconify.h;
 		break;
-
+	}
 	case WF_UNICONIFY:
+	{
 		*ro = w->window_status == XAWS_ICONIFIED ? w->ro : w->r;
 		break;
-
+	}
 	case WF_XAAES: /* 'XA' */
+	{
 		o[0] = WF_XAAES;
 		o[1] = HEX_VERSION;
 		DIAGS(("hex_version = %04x",o[1]));
 		break;
-
+	}
 	default:
+	{
 		DIAG((D_wind,client,"wind_get: %d",cmd));
 		o[0] = 0;
+	}
 	}
 
 	return XAC_DONE;

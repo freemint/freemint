@@ -385,7 +385,8 @@ open_taskmanager(enum locks lock)
 		}
 
 		/* Create the window */
-		dialog_window = create_window(lock, NULL, NULL,
+		dialog_window = create_window(lock,
+						do_winmesag, do_formwind_msg, //NULL, NULL,
 						C.Aes,
 						false,
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
@@ -544,7 +545,9 @@ open_systemalerts(enum locks lock)
 		}
 
 		/* Create the window */
-		dialog_window = create_window(lock, NULL, NULL,
+		dialog_window = create_window(lock,
+						do_winmesag, //NULL,
+						do_formwind_msg, //NULL,
 						C.Aes,
 						false,
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),

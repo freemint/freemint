@@ -237,23 +237,24 @@ cancel_aesmsgs(struct xa_aesmsg_list **m)
  * in wind->send_message(). This is because direct handling of window
  * messages requires the handler to run in the context of windows
  * owner.
- * xxx - not dealing with cases where to is different from wind->owner!
+ * XXX - not dealing with cases where to is different from wind->owner!
  */
 static void
-Phfw(void *_parm)
+CE_do_winmesag(enum locks lock, struct c_event *ce, bool cancel)
 {
-	long *parms = _parm;
-	struct xa_window *w = (struct xa_window *)parms[0];
-	
-	w->do_message(w,
-			 (struct xa_client *)parms[1],
-			 (short *)parms[2]);
+	void **parm = ce->ptr1;
 
-	wake(IO_Q, (long)_parm);
-	kfree(_parm);
-	kthread_exit(0);
+	if (!cancel)
+	{
+		struct xa_window *wind = parm[0];
+		struct xa_client *to = parm[1];
+		short *msg = (short *)&parm[2];
+
+		wind->do_message(wind, to, msg);
+	}
+	kfree(parm);
 }
-
+	
 void
 do_winmesag(enum locks lock,
 	struct xa_window *wind,
@@ -273,24 +274,28 @@ do_winmesag(enum locks lock,
 		{
 			DIAGS((" --==-- do_winmesag: Doing direct handle_form_wind"));
 			wind->do_message(wind, to, msg);
+			
 		}
 		else
 		{
-			long *p = kmalloc(16);
+			void **p = kmalloc((sizeof(*p) * 2) + 16);
 
 			if (p)
 			{
-				p[0] = (long)wind;
-				p[1] = (long)to;
-				p[2] = (long)msg;
+				short i;
+				short *pm = (short *)&p[2];
 
-				DIAGS((" --==-- do_winmesag: Doing kthread handle_form_wind"));
-
-				kthread_create(wind->owner->p,
-						Phfw,
-						p,
-						NULL, "k%s", wind->owner->name);
-				sleep(IO_Q, (long)p);
+				p[0] = wind;
+				p[1] = to;
+				for (i = 0; i < 8; *pm++ = msg[i], i++)
+					;
+				post_cevent(wind->owner,
+					    CE_do_winmesag,
+					    p,
+					    NULL,
+					    0, 0,
+					    NULL,
+					    NULL);
 			}
 		}
 	}
@@ -429,7 +434,6 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 			new_msg->next = NULL;	
 			C.redraws++;
 		}
-
 		return;
 	}
 

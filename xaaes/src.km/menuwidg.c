@@ -29,6 +29,7 @@
 
 #include "app_man.h"
 #include "c_window.h"
+#include "k_main.h"
 #include "k_mouse.h"
 #include "menuwidg.h"
 #include "obtree.h"
@@ -1335,17 +1336,12 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 }
 
 static void
-kt_draw_object_tree(void *_parm)
+CE_display_menu_widg(enum locks lock, struct c_event *ce, bool cancel)
 {
-	long *parm = _parm;
-
-	Display_menu_widg(0, (struct xa_window *)parm[0], (struct xa_widget *)parm[1]);
-
-	wake(IO_Q, (long)parm);
-	kfree(parm);
-	kthread_exit(0);
+	if (!cancel)
+		Display_menu_widg(lock, ce->ptr1, ce->ptr2);
 }
-
+	
 static bool
 display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
@@ -1366,14 +1362,14 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 	}
 	else
 	{
-		long *p = kmalloc(16);
-		assert(p);
-
-		p[0] = (long)wind;
-		p[1] = (long)widg;
-		DIAG((D_menu, wt->owner, "threaded display_menu_widget for %s by %s", wt->owner->name, rc->name));
-		kthread_create(wt->owner->p, kt_draw_object_tree, p, NULL, "k%s", wt->owner->name);
-		sleep(IO_Q, (long)p);
+		DIAG((D_menu, wt->owner, "posted display_menu_widget for %s by %s", wt->owner->name, rc->name));
+		post_cevent(wt->owner,
+			    CE_display_menu_widg,
+			    wind,
+			    widg,
+			    0, 0,
+			    NULL,
+			    NULL);
 	}
 	return true;
 }
