@@ -14,9 +14,9 @@
  *
  * The following entry points are defined:
  *
- * _mint_bios:	entry point for the BIOS calls (trap #13)
- * _mint_xbios: entry point for XBIOS calls (trap #14)
  * _mint_dos:	entry point for GEMDOS calls (trap #1)
+ * _mint_bios:	entry point for BIOS calls (trap #13)
+ * _mint_xbios: entry point for XBIOS calls (trap #14)
  * _lineA0:	calls the line A initialize routine
  * _call_aes:	calls the GEM AES
  * _do_usrcall: calls a user supplied function (e.g. for Supexec), with
@@ -87,24 +87,38 @@ _old_dos:
 	dc.l	0
 _mint_dos:
 
+// NOTICE: MiNT *no longer ever* traps to ROM GEMDOS, because even
+//         the TOSFS *jumps* (not traps) there. So these two lines
+//         below only waste space and CPU time. And btw I really hate
+//         doing same changes twice! (draco)
+
+#ifdef SYSCALL_REENTRANT
+
+// Reentrant syscall handler
+//
+// Reentrant means here that we can enter the kernel again through
+// the trap handler from inside kernel space.
+// This is not neccessary for the kernel itself but rather if you want
+// to use other subsystems which use the trap#1 to enter the kernel again.
+// You can, for example,use the TOS-VDI subsystem safely and the VDI can
+// reenter the kernel through the trap handler.
+
 	tst.w	_in_kernel
 	beq	norm_gemdos
 
-	| New code to handle traps from kernel space
 	movea.l	sp,a0
 	move.w	(a0),d0		| sr before the trap
 	addq.w	#2+4+2,a0	| A0 now points past the stackfram, where the params are
-	
-	| This should never happen. Since _in_kernel is set, this is
-	| a trap done from kernel context, which always runs in supervisor
-	|
-	|btst	#13,d0
-	|bne.s	mg_in_super
 
-	|move.l	usp,sp
+// This should never happen. Since _in_kernel is set, this is
+// a trap done from kernel context, which always runs in supervisor
+//
+//	btst	#13,d0
+//	bne.s	mg_in_super
+//	move.l	usp,sp
 
 mg_in_super:
-	| Do some simple saving of registers...
+// Do some simple saving of registers...
 	movem.l	d2-d7/a2-a6,-(sp)
 	tst.w	_fpu
 	beq.s	mg_fpu_saved
@@ -125,8 +139,8 @@ mg_save_fpu:
 mg_fpu_notused:
 	clr.w	-(sp)
 mg_fpu_saved:
-	
-	| Copy parameters
+
+// Copy parameters
 	lea	32(a0),a0
 	move.l	-(a0),-(sp)
 	move.l	-(a0),-(sp)
@@ -145,6 +159,8 @@ mg_fpu_saved:
 	bhi.s	mg_enosys
 
 #ifdef NEW_SYSCALL
+#error not fully implemented here!
+#error adjust parameter copying etc.
 	move.l	(a5,d0.w*8),d0
 #else
 	move.l	(a5,d0.w*4),d0
@@ -172,18 +188,21 @@ mg_enosys:
 	moveq	#-32,d0
 	bra.s	mg_out
 
-| ------ END new stuff to handle traps from kernel context ----
-
-// NOTICE: MiNT *no longer ever* traps to ROM GEMDOS, because even
-//         the TOSFS *jumps* (not traps) there. So these two lines
-//         below only waste space and CPU time. And btw I really hate
-//         doing same changes twice! (draco)
-
 norm_gemdos:
-#ifndef SYSCALL_REENTRANT
+
+#else /* SYSCALL_REENTRANT */
+
+// Non-reentrant syscall handler
+//
+// if we are in kernel we simply jump to the old vector
+// this allow direct trapping from kernel (not done from the
+// kernel itself anymore)
+
 	tst.w	_in_kernel
 	bne.s	rom_gemdos
+
 #endif
+
 	clr.w	-(sp)			// no frame format needed
 // NOTE: FOR NOW, WE PRESERVE A0 ACROSS GEMDOS CALLS. THIS WILL CHANGE
 // SOMEDAY, DON'T RELY ON IT!!!
@@ -331,13 +350,13 @@ ret:	sub.l	a0,a0			// curproc address is our sweet secret
 _old_bios:	dc.l	0
 _mint_bios:
 //
-// Entering the kernel can be very expensive// so, we take a short-cut
+// Entering the kernel can be very expensive so, we take a short-cut
 // if possible -- we try some BIOS functions out, and if they
-// succeed without blocking then we're done// otherwise, we go
+// succeed without blocking then we're done otherwise, we go
 // through the long procedure for entering the kernel
 //
 // These shortcuts aren't done when we're called in supervisor mode,
-// because TOS uses very tiny stacks (smaller than we want)// the
+// because TOS uses very tiny stacks (smaller than we want) the
 // shortcuts operate on the user-supplied ssp, whereas the "full"
 // BIOS code works on our (private) system stack
 //
@@ -459,7 +478,7 @@ out:
 	move.w	P_SYSCTXT+C_SR(a0),d0	// get saved status register
 
 	tst.l	P_PTRACER(a0)		// check curproc->ptracer, if not set
-	beq.s	notrace 		// then no pending trace// this ensures
+	beq.s	notrace 		// then no pending trace this ensures
 	move.w	d0,d1			// we work with non-MiNT debuggers
 	and.w	#0xc000,d1		// are either of the trace bits set
 	sne	P_SYSCTXT+C_PTRACE(a0)	// mark as trace pending/not
@@ -517,10 +536,8 @@ enosys:	moveq	#-32,d0	// ENOSYS
 #ifdef SYSCALL_REENTRANT
 
 	.globl	_trap_1_emu
-#ifdef NOT_YET
 	.globl	_trap_13_emu
 	.globl	_trap_14_emu
-#endif
 
 	.text
 
@@ -536,7 +553,6 @@ TE_D:	move.w	sr,-(sp)
 	move.l	_old_dos.w(pc),-(sp)
 	rts
 
-#ifdef NOT_YET
 _trap_13_emu:
 #ifndef ONLY030
 	tst.w	(0x059e).w		// test longframe
@@ -561,7 +577,6 @@ TE_X:	move.w	sr,-(sp)
 	move.l	_old_xbios.w(pc),-(sp)
 	rts
 #endif
-#endif					// SYSCALL_REENTRANT
 
 // Default routine for "unused" traps. Without this, any user (even
 // on remote) can draw bombs on the console freely. So this is sorta
@@ -575,7 +590,8 @@ TE_X:	move.w	sr,-(sp)
 	dc.l	0x4d694e54		// MiNT
 	dc.l	v_rte
 
-_unused_trap:	move.w	#0x010b,-(sp)		// getpid
+_unused_trap:
+	move.w	#0x010b,-(sp)		// getpid
 	trap	#1
 	move.w	#0x000c,-(sp)		// SIGSYS
 	move.w	d0,-(sp)		// himself
