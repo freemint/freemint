@@ -55,6 +55,8 @@ struct fmd_result;
 struct xa_lbox_info;
 struct lbox_slide;
 
+struct menu_attachements;
+
 enum menu_behave
 {
 	PULL,
@@ -184,6 +186,9 @@ struct xa_mouse_rect
 
 typedef struct menu_attachments
 {
+	struct menu_attachments *prev;
+	struct menu_attachments *next;
+
 	struct widget_tree *wt;
 	int item;
 	struct widget_tree *to;
