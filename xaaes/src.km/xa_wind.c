@@ -505,8 +505,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				mh = w->max.h;
 		}
 		move_window(lock, w, -1, pb->intin[2], pb->intin[3], mw, mh);
-		//yield();
-
 		break;
 	}
 
@@ -883,18 +881,23 @@ next:
 		}
 		break;
 
-	/* The info given by these function is very important to app's
+	/*
+	 * The info given by these function is very important to app's
          * hence the DIAG's
 	 */
 
-	/* Get the current coords of the window */		
+	/*
+	 * Get the current coords of the window
+	 */
 	case WF_CURRXYWH:
 		*ro = w->r;
 		DIAG((D_w, w->owner, "get curr for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;
 
-	/* Get the current coords of the window's user work area */
+	/*
+	 * Get the current coords of the window's user work area
+	 */
 	case WF_WORKXYWH:
 		*ro = w->wa;
 		if (w == root_window && !taskbar(client))
@@ -903,14 +906,18 @@ next:
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;
 
-	/* Get previous window position */
+	/*
+	 * Get previous window position
+	 */
 	case WF_PREVXYWH:
 		*ro = w->pr;
 		DIAG((D_w, w->owner, "get prev for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;			
 
-	/* Get maximum window dimensions */
+	/*
+	 * Get maximum window dimensions specified in wind_create() call
+	 */
 	case WF_FULLXYWH:
 		/* This is the way TosWin2 uses the feature.
 		 * Get the info and behave accordingly.
@@ -936,10 +943,13 @@ next:
 		}
 		break;
 
+	/*
+	 * Return supported window features.
+	 */
 	case WF_BEVENT:
 		o[1] = ((w->active_widgets&NO_TOPPED) != 0)&1;
-		break;	
-
+		o[2] = o[3] = o[4] = 0;
+		break;
 	/* Extension, gets the bottom window */
 	case WF_BOTTOM:
 #if 0
