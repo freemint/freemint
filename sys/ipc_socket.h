@@ -39,6 +39,10 @@
 # include "mint/net.h"
 
 
+/* new style pipe */
+
+long _cdecl sys_pipe (short fds[2]);
+
 /* socket system calls */
 
 long _cdecl sys_socket (long domain, long type, long protocol);
