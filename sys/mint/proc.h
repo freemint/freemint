@@ -171,6 +171,7 @@ struct proc
 	struct cwd	*p_cwd;		/* path stuff */
 	struct sigacts	*p_sigacts;	/* signal stuff */
 	struct plimit	*p_limits;	/* process limits */
+	struct proc_ext	*p_ext;		/* process extensions */
 
 	/* statistics */
 	struct timeval started;		/* start time in UTC		*/

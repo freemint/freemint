@@ -8,6 +8,10 @@
  * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,10 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
  * 
  */
 
@@ -48,9 +48,11 @@ struct dma;
 struct file;
 struct ilock;
 struct mfp;
+struct module_callback;
 struct nf_ops;
 struct parser_item;
 struct parsinf;
+struct semaphore;
 struct timeout;
 struct timeval;
 
@@ -180,6 +182,7 @@ struct kentry_proc
 	 */
 	long	_cdecl	(*ikill)(int, unsigned short);
 	void	_cdecl	(*iwake)(int que, long cond, short pid);
+
 	long	_cdecl	(*killgroup)(int, unsigned short, int);
 
 	/* functions for adding/cancelling timeouts
@@ -230,8 +233,21 @@ struct kentry_proc
 	void _cdecl (*cancelroottimeout)(struct timeout *);
 
 	/* fork/leave a kernel thread */
-	long	_cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
-	void	_cdecl (*kthread_exit)(short code);
+	long _cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
+	void _cdecl (*kthread_exit)(short code);
+
+	/* simple kernel semaphore */
+	void _cdecl (*_semaphore_init)(struct semaphore *s, const char *);
+	void _cdecl (*_semaphore_lock)(struct semaphore *s, const char *);
+	void _cdecl (*_semaphore_rel )(struct semaphore *s, const char *);
+
+	/* return current process context descriptor */
+	const struct proc *_cdecl (*get_curproc)(void);
+
+	/* */
+	void *_cdecl (*lookup_extension)(struct proc *p, long ident);
+	void *_cdecl (*attach_extension)(struct proc *p, long ident, unsigned long size, struct module_callback *);
+	void  _cdecl (*detach_extension)(struct proc *p, long ident);
 };
 #define DEFAULTS_kentry_proc \
 { \
@@ -251,6 +267,16 @@ struct kentry_proc
 	\
 	kthread_create, \
 	kthread_exit, \
+	\
+	_semaphore_init, \
+	_semaphore_lock, \
+	_semaphore_rel, \
+	\
+	get_curproc, \
+	\
+	proc_lookup_extension, \
+	proc_attach_extension, \
+	proc_detach_extension, \
 }
 
 
@@ -651,13 +677,16 @@ struct kentry_libkern
  */
 struct kentry
 {
-	unsigned short	major;		/* FreeMiNT major version */
-	unsigned short	minor;		/* FreeMiNT minor version */
-	unsigned short	patchlevel;	/* FreeMiNT patchlevel */
+	unsigned char	major;		/* FreeMiNT major version */
+	unsigned char	minor;		/* FreeMiNT minor version */
+	unsigned char	patchlevel;	/* FreeMiNT patchlevel */
+	unsigned char	beta;		/* FreeMiNT beta ident */
+	
 	unsigned char	version_major;	/* kentry major version */
 	unsigned char	version_minor;	/* kentry minor version */
+	unsigned short	status;		/* FreeMiNT status */
+	
 	unsigned long	dos_version;	/* running GEMDOS version */
-	unsigned long	status;		/* FreeMiNT status */
 
 	/* OS functions */
 	Func *vec_dos;			/* DOS entry points */
@@ -676,6 +705,33 @@ struct kentry
 	struct kentry_debug vec_debug;
 	struct kentry_libkern vec_libkern;
 };
-
+# define DEFAULTS_kentry \
+{ \
+	MINT_MAJ_VERSION, \
+	MINT_MIN_VERSION, \
+	MINT_PATCH_LEVEL, \
+	MINT_BETA_IDENT, \
+	\
+	KENTRY_MAJ_VERSION, \
+	KENTRY_MIN_VERSION, \
+	0, \
+	\
+	0x00000040, \
+	\
+	dos_tab, \
+	bios_tab, \
+	xbios_tab, \
+	\
+	DEFAULTS_kentry_mch, \
+	DEFAULTS_kentry_proc, \
+	DEFAULTS_kentry_mem, \
+	DEFAULTS_kentry_fs, \
+	DEFAULTS_kentry_sockets, \
+	DEFAULTS_kentry_module, \
+	DEFAULTS_kentry_cnf, \
+	DEFAULTS_kentry_misc, \
+	DEFAULTS_kentry_debug, \
+	DEFAULTS_kentry_libkern \
+}
 
 # endif /* _mint_kentry_h */

@@ -3,8 +3,8 @@
  * the file Changes.MH for details and dates.
  */
 
-# ifndef _version_h
-# define _version_h
+# ifndef _mint_version_h
+# define _mint_version_h
 
 
 # define MINT_MAJ_VERSION	1
@@ -37,4 +37,4 @@
 # endif
 
 
-# endif /* _version_h */
+# endif /* _mint_version_h */
