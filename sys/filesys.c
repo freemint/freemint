@@ -593,6 +593,8 @@ changedrv (ushort d)
 		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 			continue;
 		
+		assert (fd && cwd);
+		
 		/* invalidate all open files on this device */
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
