@@ -40,7 +40,7 @@ sys_p_shmdt (const void *shmaddr)
 	return ENOSYS;
 }
 
-void *
+long
 sys_p_shmat (long shmid, const void *shmaddr, long shmflg)
 {
 	return ENOSYS;
