@@ -9,6 +9,8 @@
  * All rights reserved.
  */
 
+# include <stdarg.h>
+
 # include "init.h"
 # include "global.h"
 
@@ -85,8 +87,6 @@ boot_print (const char *s)
 {
 	Cconws (s);	
 }
-
-# include <stdarg.h>
 
 void
 boot_printf (const char *fmt, ...)
@@ -523,7 +523,7 @@ static const char *ini_keywords[] =
 
 static const char *startmenu =
 	"\033E\r\n\033p"
-	"     FreeMiNT boot menu     \033q\r\n\r\n"
+	"    FreeMiNT boot menu    \033q\r\n\r\n"
 	"<1> Start up FreeMiNT: %s"
 	"<2> Load external XFS: %s"
 	"<3> Load external XDD: %s"
@@ -549,7 +549,7 @@ find_ini (void)
 	extern char *cnf_path_1, *cnf_path_2, *cnf_path_3;
 
 	if (Fsfirst (cnf_path_1, 0) == 0)
-		return "mint.ini";
+		return "\\mint.ini";
 	if (Fsfirst (cnf_path_2, 0) == 0)
 		return "\\multitos\\mint.ini";
 	if (Fsfirst (cnf_path_3, 0) == 0)
@@ -583,10 +583,10 @@ static short
 whether_yes (char *s)
 {
 	s = find_char(s, '=');
-	if ((long)s == 0)
+	if (!s)
 		return 0;
 	s = find_char(s, 'Y');	/* don't add 'y' here, see below */
-	if ((long)s == 0)
+	if (!s)
 		return 0;
 	return 1;
 }
@@ -599,12 +599,12 @@ read_ini (void)
 	long r, x, len;
 	short inihandle, options[5] = { 1, 1, 1, 1, 1 };
 
-	if ((long) ini_file == 0)
+	if (!ini_file)
 		goto initialize;
 
 	/* Figure out the file's length. Wish I had Fstat() here :-( */
-	dta = (DTABUF *) Fgetdta ();
-	r = Fsfirst (ini_file, 0);
+	dta = (DTABUF *) Fgetdta();
+	r = Fsfirst(ini_file, 0);
 	if (r < 0)
 		goto initialize;	/* No such file, probably */
 	len = dta->dta_size;
@@ -613,9 +613,9 @@ read_ini (void)
 	len++;
 
 	buf = (char *) Mxalloc (len, 0x0003);
-	if ((long) buf == -32L)	
+	if ((long)buf < 0)	
 		buf = (char *) Malloc (len);	/* No Mxalloc()? */
-	if ((long) buf == 0)
+	if ((long)buf <= 0)
 		goto initialize;	/* Out of memory or such */
 	bzero (buf, len);
 
@@ -630,7 +630,7 @@ read_ini (void)
 	for (x = 0; x < 5; x++)
 	{
 		s = strstr (buf, ini_keywords[x]);
-		if ((long) s)
+		if (s)
 			options[x] = whether_yes (s);
 	}
 
@@ -654,7 +654,7 @@ write_ini (short *options)
 	char *ini_file = find_ini (), buf[256];
 	long r, x, l;
 
-	if ((long) ini_file == 0)
+	if (!ini_file)
 		return;
  
 	inihandle = Fcreate (ini_file, 0);
@@ -708,7 +708,7 @@ boot_kernel_p (void)
 		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* English */
 		{ "Das Bootmenu anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
 		{ "Display the boot menu? (o)ui (n)on ", 'o', 'n' },	/* French */
-		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* reserved */
+		{ "Menu initiale an fiat? (f)iat (n)on ",  'f', 'n' },	/* Latin */
 		{ "¨Display the boot menu? (s)i (n)o ",  's', 'n' },	/* Spanish, upside down ? is 168 dec. */
 		{ "Display the boot menu? (s)i (n)o ",   's', 'n' }	/* Italian */
 	};
@@ -730,7 +730,8 @@ boot_kernel_p (void)
 	option[4] = !no_mem_prot;	/* Use memprot or not */
 	option[5] = save_ini;
 
-	for (;;) {
+	for (;;)
+	{
 		ksprintf(menu, 512, startmenu, \
 			option[0] ? "yes\r\n" : "no\r\n", \
 			option[1] ? "yes\r\n" : "no\r\n", \
