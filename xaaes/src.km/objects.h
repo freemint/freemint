@@ -48,7 +48,6 @@ int edit_object(enum locks lock,
 
 int get_parent(OBJECT *ob, int item);
 void set_ob_spec(OBJECT *root, int s_ob, unsigned long cl);
-OBSPEC *get_ob_spec(OBJECT *ob);
 void redraw_object(enum locks lock, XA_TREE *wt, int );
 void wr_mode(int);
 void l_color(int m);
@@ -65,6 +64,13 @@ bool d3_background(OBJECT *ob);
 bool d3_activator(OBJECT *ob);
 void d3_pushbutton(int d, RECT *r, BFOBSPEC *col, int state, int thick, int mode);
 
+static inline OBSPEC *
+get_ob_spec(OBJECT *ob)
+{
+	return (ob->ob_flags & OF_INDIRECT) ?
+			ob->ob_spec.indirect : &ob->ob_spec;
+}
+
 /* Clipping stuff */
 void set_clip(const RECT *r);
 void clear_clip(void);
@@ -74,20 +80,20 @@ void shadow_object(int d, int state, RECT *r, int colour, int border_thick);
 void draw_2d_box(short x, short y, short w, short h, int border_thick, int colour);
 void g2d_box(int b, RECT *r, int colour);
 void object_rectangle(RECT *c, OBJECT *ob, int i, short dx, short dy);
-void object_area     (RECT *c, OBJECT *ob, int i, short dx, short dy);
+void object_area(RECT *c, OBJECT *ob, int i, short dx, short dy);
 void write_menu_line(RECT *cl);
 void write_selection(int d, RECT *r);
 long calc_back(const RECT *r, int planes);
 
-/* HR: intermediate level draw functions & misc. */
+/* intermediate level draw functions & misc. */
 void adjust_size(int d, RECT *r);
 void p_gbar(int d, const RECT *r);
 void bar(int d,  short x, short y, short w, short h);
 void p_bar(int d, short x, short y, short w, short h);	/* for perimeter = 1 */
-void gbar (int d, const RECT *r);
+void gbar(int d, const RECT *r);
 void gbox(int d, const RECT *r);
-void box  (int d, short x, short y, short w, short h);
-void line (short x, short y, short x1,short y1, int col);
+void box(int d, short x, short y, short w, short h);
+void line(short x, short y, short x1,short y1, int col);
 void tl_hook(int d, const RECT *r, int col);
 void br_hook(int d, const RECT *r, int col);
 void chiseled_gbox(int d, const RECT *r);
