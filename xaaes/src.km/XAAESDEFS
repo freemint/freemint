@@ -29,8 +29,13 @@ CPU = 020-60
 XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0
 endif
 
+ifeq ($(xaaes),040)
+TARGET = ../xaaes040.km
+CPU = 040
+XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0
+endif
 
 #
 # all default targets
 #
-xaaestargets = deb 000 030
+xaaestargets = deb 000 030 040

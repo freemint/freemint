@@ -687,6 +687,7 @@ k_main(void *dummy)
 	
 	if (cfg.naes_cookie)
 	{
+		DIAGS(("Install 'nAES' cookie.."));
 		if ( ((long)c_naes = m_xalloc(sizeof(*c_naes), (4<<4)|(1<<3)|3) ))
 		{
 			memcpy(c_naes, &naes_cookie, sizeof(*c_naes));
@@ -694,9 +695,21 @@ k_main(void *dummy)
 			{
 				m_free(c_naes);
 				c_naes = NULL;
-				DIAGS(("Installing nAES cookie failed!"));
+				DIAGS(("Installing 'nAES' cookie failed!"));
 			}
+#if GENERATE_DIAGS
+			else
+			{
+				DIAGS(("Installed 'nAES' cookie in readable memory at %lx", (long)c_naes));
+			}
+#endif
 		}
+#if GENERATE_DIAGS
+		else
+		{
+			DIAGS(("Could not get memory for 'nAES' cookie! (Mxalloc() fail)"));
+		}
+#endif
 	}
 
 	/*
@@ -1029,12 +1042,13 @@ k_exit(void)
 	
 	/* wakeup loader */
 	wake(WAIT_Q, (long)&loader_pid);
-
+#if 0
 	if (C.shutdown & HALT_SYSTEM)
 		s_hutdown(0);  /* poweroff or halt if poweroff is not supported */
 	else if (C.shutdown & REBOOT_SYSTEM)
 		s_hutdown(1);  /* warm start */
-
+#endif
+		
 	DIAGS(("-> kthread_exit"));
 
 	/* XXX todo -> module_exit */

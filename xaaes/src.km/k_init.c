@@ -415,11 +415,12 @@ k_init(void)
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
 
-	v_show_c(C.vh, 0); /* 0 = reset */		
+	v_show_c(C.vh, 0); /* 0 = reset */
 
 	if (cfg.opentaskman)
 		open_taskmanager(NOLOCKING);
 
+	redraw_menu(NOLOCKING);
 	return 0;
 }
 
