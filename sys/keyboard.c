@@ -151,10 +151,11 @@ static	uchar numin[3];		/* buffer for storing ASCII code typed in via numpad */
 static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 
 /* keyboard table pointers */
-static struct keytab *toskeytab;
+static struct keytab *tos_keytab;
+static struct keytab *user_keytab;
 static char *keytab_buffer;
 static long keytab_size;
-static MEMREGION *user_keytab;
+static MEMREGION *user_keytab_region;
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -222,13 +223,19 @@ alt_help(void)
 static void
 put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 {
+	char *new_buf_pos;
+
 	keyrec->tail += 4;
 	if (keyrec->tail >= keyrec->buflen)
 		keyrec->tail = 0;
-	(keyrec->bufaddr + keyrec->tail)[0] = c0;
-	(keyrec->bufaddr + keyrec->tail)[1] = c1;
-	(keyrec->bufaddr + keyrec->tail)[2] = c2;
-	(keyrec->bufaddr + keyrec->tail)[3] = c3;
+
+	/* Precalculating this saves some memory */
+	new_buf_pos = keyrec->bufaddr + keyrec->tail;
+
+	*new_buf_pos++ = c0;
+	*new_buf_pos++ = c1;
+	*new_buf_pos++ = c2;
+	*new_buf_pos++ = c3;
 
 	kintr = 1;
 }
@@ -437,7 +444,7 @@ ikbd_scan (ushort scancode)
 				if (numidx > 2)		/* buffer full? reset it */
 					numidx = 0;
 
-				chartable = toskeytab->unshift;
+				chartable = tos_keytab->unshift;
 				ascii = chartable[scancode];
 				if (ascii)
 				{
@@ -485,11 +492,15 @@ void
 key_repeat(void)
 {
 	register uchar c0, c1, c2, c3;
+	char *new_buf_pos;
 
-	c0 = (keyrec->bufaddr + keyrec->tail)[0];
-	c1 = (keyrec->bufaddr + keyrec->tail)[1];
-	c2 = (keyrec->bufaddr + keyrec->tail)[2];
-	c3 = (keyrec->bufaddr + keyrec->tail)[3];
+	/* Precalculating this saves some memory */
+	new_buf_pos = keyrec->bufaddr + keyrec->tail;
+
+	c0 = *new_buf_pos++;
+	c1 = *new_buf_pos++;
+	c2 = *new_buf_pos++;
+	c3 = *new_buf_pos++;
 
 	put_key_into_buf(c0, c1, c2, c3);
 
@@ -521,7 +532,7 @@ key_repeat(void)
 struct keytab *
 sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 {
-	return toskeytab;
+	return user_keytab;
 }
 
 /* The XBIOS' Bioskeys() function
@@ -542,56 +553,56 @@ sys_b_bioskeys(void)
 {
 	long akp_val = 0;
 	char *buf, *tables;
-	struct keytab *vectors;
+	struct keytab *pointers;
 
 	/* First block the keyboard processing code */
 	kbd_lock = 1;
 
 	/* Release old user keytables and vectors */
-	if (user_keytab)
+	if (user_keytab_region)
 	{
-		detach_region(rootproc, user_keytab);
+		detach_region(rootproc, user_keytab_region);
 
-		user_keytab->links--;
-		assert(user_keytab->links == 0);
+		user_keytab_region->links--;
+		assert(user_keytab_region->links == 0);
 
-		free_region(user_keytab);
+		free_region(user_keytab_region);
 	}
 
 	/* Reserve one region for both keytable and its vectors */
-	user_keytab = get_region(core, keytab_size + sizeof(struct keytab), PROT_PR);
-	buf = (char *)attach_region(rootproc, user_keytab);
-	vectors = (struct keytab *)buf;
+	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_PR);
+	buf = (char *)attach_region(rootproc, user_keytab_region);
+	pointers = (struct keytab *)buf;
 	tables = buf + sizeof(struct keytab);
 
 	/* Copy the master table over */
 	quickmove(tables, keytab_buffer, keytab_size);
 
 	/* Setup the standard vectors */
-	vectors->unshift = tables;
-	vectors->shift = tables + 128;
-	vectors->caps = tables + 128 + 128;
+	pointers->unshift = tables;
+	pointers->shift = tables + 128;
+	pointers->caps = tables + 128 + 128;
 
 	/* and the AKP vectors */
-	vectors->alt = tables + 128 + 128 + 128;
-	vectors->altshift = tbl_scan_fwd(vectors->alt);
-	vectors->altcaps = tbl_scan_fwd(vectors->altshift);
-	vectors->altgr = tbl_scan_fwd(vectors->altcaps);
+	pointers->alt = tables + 128 + 128 + 128;
+	pointers->altshift = tbl_scan_fwd(pointers->alt);
+	pointers->altcaps = tbl_scan_fwd(pointers->altshift);
+	pointers->altgr = tbl_scan_fwd(pointers->altcaps);
 
 	/* Reset the TOS BIOS vectors (this is only necessary
 	 * until we replace all BIOS keyboard routines).
 	 */
-	toskeytab->unshift = vectors->unshift;
-	toskeytab->shift = vectors->shift;
-	toskeytab->caps = vectors->caps;
+	tos_keytab->unshift = pointers->unshift;
+	tos_keytab->shift = pointers->shift;
+	tos_keytab->caps = pointers->caps;
 
 	if (tosvers >= 0x0400)
 	{
-		toskeytab->alt = vectors->alt;
-		toskeytab->altshift = vectors->altshift;
-		toskeytab->altcaps = vectors->altcaps;
+		tos_keytab->alt = pointers->alt;
+		tos_keytab->altshift = pointers->altshift;
+		tos_keytab->altcaps = pointers->altcaps;
 		if (mch == MILAN_C)
-			toskeytab->altgr = vectors->altgr;
+			tos_keytab->altgr = pointers->altgr;
 
 		/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
 		 *
@@ -603,6 +614,8 @@ sys_b_bioskeys(void)
 		set_cookie(NULL, COOKIE__AKP, akp_val);
 	}
 
+	user_keytab = pointers;
+
 	/* Done! */
 	kbd_lock = 0;
 }
@@ -611,9 +624,9 @@ sys_b_bioskeys(void)
  *
  * Notice that we deal with two tables here:
  *
- * - the "master" table, which is kept at keytab_buffer and is used
+ * - the "master" table, which is kept inside keytab_buffer and is used
  *   to restore the user table, when Bioskeys() is called;
- * - the user table, which is kept at user_keytab.
+ * - the user table, which is kept inside user_keytab_region.
  *
  * The load_keyboard_table(), which is called at startup and can be
  * called at runtime via Ssystem(), loads the master table, so that
@@ -636,7 +649,7 @@ static long
 load_external_table(FILEPTR *fp, char *name, long size)
 {
 	uchar *kbuf;
-	long x, ret = 0;
+	long ret = 0;
 
 	/* This is 128+128+128 for unshifted, shifted and caps
 	 * tables respectively; plus 3 bytes for three alt ones,
@@ -645,9 +658,11 @@ load_external_table(FILEPTR *fp, char *name, long size)
 	if (size < 389L)
 		return EFTYPE;
 
-	kbuf = kmalloc(size);
+	kbuf = kmalloc(size + 1);	/* Append a zero (if the table is missing the altgr part) */
 	if (!kbuf)
 		return ENOMEM;
+
+	bzero(kbuf, size + 1);
 
 	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
@@ -655,10 +670,7 @@ load_external_table(FILEPTR *fp, char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				size -= 2;
-
-				for (x = 0; x < size; x++)
-					kbuf[x] = kbuf[x + 2];
+				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short));
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -673,10 +685,7 @@ load_external_table(FILEPTR *fp, char *name, long size)
 				if (sbuf[1] <= MAXAKP)
 					gl_kbd = sbuf[1];
 
-				size -= 4;
-
-				for (x = 0; x < size; x++)
-					kbuf[x] = kbuf[x + 4];
+				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long));
 				break;
 			}
 			default:
@@ -714,16 +723,16 @@ load_internal_table(void)
 
 	if (tosvers >= 0x0400)
 	{
-		size += strlen(toskeytab->alt) + 1;
-		size += strlen(toskeytab->altshift) + 1;
-		size += strlen(toskeytab->altcaps) + 1;
+		size += strlen(tos_keytab->alt) + 1;
+		size += strlen(tos_keytab->altshift) + 1;
+		size += strlen(tos_keytab->altcaps) + 1;
 		if (mch == MILAN_C)
-			size += strlen(toskeytab->altgr) + 1;
+			size += strlen(tos_keytab->altgr) + 1;
 		else
 			size += 2;
 	}
 	else
-		size += 8;	/* two bytes for each missing part */
+		size += 5;	/* a byte for each missing part plus a NUL */
 
 	/* If a buffer was allocated previously, we can perhaps reuse it.
 	 */
@@ -739,49 +748,39 @@ load_internal_table(void)
 	if (!kbuf)
 		return ENOMEM;
 
+	bzero(kbuf, size);
+
 	p = kbuf;
 
-	quickmove(p, toskeytab->unshift, 128);
+	quickmove(p, tos_keytab->unshift, 128);
 	p += 128;
 
-	quickmove(p, toskeytab->shift, 128);
+	quickmove(p, tos_keytab->shift, 128);
 	p += 128;
 
-	quickmove(p, toskeytab->caps, 128);
+	quickmove(p, tos_keytab->caps, 128);
 	p += 128;
 
 	if (tosvers >= 0x0400)
 	{
-		len = strlen(toskeytab->alt) + 1;
-		quickmove(p, toskeytab->alt, len);
+		len = strlen(tos_keytab->alt) + 1;
+		quickmove(p, tos_keytab->alt, len);
 		p += len;
 
-		len = strlen(toskeytab->altshift) + 1;
-		quickmove(p, toskeytab->altshift, len);
+		len = strlen(tos_keytab->altshift) + 1;
+		quickmove(p, tos_keytab->altshift, len);
 		p += len;
 
-		len = strlen(toskeytab->altcaps) + 1;
-		quickmove(p, toskeytab->altcaps, len);
+		len = strlen(tos_keytab->altcaps) + 1;
+		quickmove(p, tos_keytab->altcaps, len);
 		p += len;
 
 		if (mch == MILAN_C)
 		{
-			len = strlen(toskeytab->altgr) + 1;
-			quickmove(p, toskeytab->altgr, len);
+			len = strlen(tos_keytab->altgr) + 1;
+			quickmove(p, tos_keytab->altgr, len);
 			p += len;
 		}
-		else
-		{
-			*p++ = 0;
-			*p++ = 0;
-		}
-	}
-	else
-	{
-		short x;
-
-		for (x = 0; x < 7; x++)
-			*p++ = 0;
 	}
 
 	keytab_buffer = kbuf;
@@ -875,7 +874,7 @@ void
 init_keybd(void)
 {
 	/* call the underlying XBIOS */
-	toskeytab = Keytbl(-1, -1, -1);
+	tos_keytab = Keytbl(-1, -1, -1);
 }
 
 /* EOF */
