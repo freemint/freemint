@@ -113,7 +113,6 @@ XA_handler(void *_pb)
 		DIAGS(("XaAES: No Parameter Block (pid %d)\n", p_getpid()));
 		raise(SIGSYS);
 
-		/* not reached */
 		return 0;
 	}
 
@@ -127,7 +126,6 @@ XA_handler(void *_pb)
 		DIAGS(("XaAES: AES trap (cmd %i) for non AES process (pid %ld, pb 0x%lx)\n", cmd, p_getpid(), pb));
 		raise(SIGILL);
 
-		/* not reached */
 		return 0;
 	}
 
