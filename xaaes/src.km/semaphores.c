@@ -44,8 +44,12 @@ ressource_semaphore_lock(struct ressource_semaphore *s, struct xa_client *client
 	{
 		s->sleepers++;
 
+		client->sleeplock = (long)s;
+		client->sleepqueue = WAIT_Q;
 		while (s->client)
 			sleep(WAIT_Q, (long)s);
+
+		client->sleeplock = 0;
 
 		s->sleepers--;
 	}
@@ -185,7 +189,6 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 	}
 
 	ressource_semaphore_lock(&update_lock, locker);
-
 	return true;
 }
 
