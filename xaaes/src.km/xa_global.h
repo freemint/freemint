@@ -56,6 +56,21 @@ struct shared
 /* Area's shared between server and client, subject to locking. */
 extern struct shared S;
 
+struct shel_write_info
+{
+	struct shel_write_info *next;
+
+	int pid;
+	int ppid;
+	int type;
+
+	char *cmd_tail;
+	bool tail_is_heap;
+
+	Path cmd_name;
+	Path home_path;
+};
+
 struct common
 {
 	short vh;			/* Virtual workstation handle used by the AES */
@@ -94,6 +109,8 @@ struct common
 	Path desk;			/* Remember the desk path for Launch desk. */
 	int mouse;			/* Remember mouse shape */
 	MFORM *mouse_form;		/* Remember mouse form */
+
+	struct shel_write_info *info;	/* remember shel_write values, XXX go over proc extensions instead */
 };
 
 /* All areas that are common. */

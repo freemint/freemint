@@ -96,11 +96,8 @@ new_client(enum locks lock, struct xa_client *client)
 {
 	long f;
 
-	DIAG((D_appl,NULL,"XA_new_client for %d",client->p->pid));
+	DIAG((D_appl, NULL, "XA_new_client for %d", client->p->pid));
 
-	/* HR 040401: This field must be NULL if no menu bar.
-	 *            client->std_menu = C.Aes->std_menu;
-	 */
 	strncpy(client->proc_name, client->p->name, 8);
 
 	f = strlen(client->proc_name);
@@ -121,8 +118,52 @@ new_client(enum locks lock, struct xa_client *client)
 	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
 	update_tasklist(lock);
 
-	DIAG((D_appl,NULL,"Init client '%s' pid=%d",
+	DIAG((D_appl, NULL, "Init client '%s' pid=%d",
 		client->proc_name, client->p->pid));
+
+	DIAGS(("new_client: checking shel info (pid %i)", client->p->pid));
+	{
+		struct shel_write_info **list = &(C.info);
+		struct shel_write_info *info = NULL;
+
+		while (*list)
+		{
+			DIAGS(("new_client: found shel info for pid %i", (*list)->pid));
+
+			if ((*list)->pid == client->p->pid)
+			{
+				/* started via shel_write */
+
+				/* remove from list */
+				info = *list;
+				*list = (*list)->next;
+			}
+
+			list = &((*list)->next);
+		}
+
+		if (info)
+		{
+			DIAGS(("new_client: shel_write started"));
+			DIAGS(("new_client: type %i", info->type));
+			DIAGS(("new_client: cmd_name '%s'", info->cmd_name));
+			DIAGS(("new_client: home_path '%s'", info->home_path));
+
+			if (info->ppid != client->p->ppid)
+				DIAGS(("new_client: ppid don't match (is %i, exp: %i)",
+					client->p->ppid, info->ppid));
+
+			client->type = info->type;
+
+			client->cmd_tail = info->cmd_tail;
+			client->tail_is_heap = info->tail_is_heap;
+
+			strcpy(client->cmd_name, info->cmd_name);
+			strcpy(client->home_path, info->home_path);
+
+			free(info);
+		}
+	}
 
 	client->init = true;
 }
@@ -335,7 +376,7 @@ remove_refs(struct xa_client *client, bool secure)
 void
 exit_client(enum locks lock, struct xa_client *client, int code)
 {
-	struct xa_client *top_owner, *new;
+	struct xa_client *top_owner;
 
 	DIAG((D_appl,NULL,"XA_client_exit: %s %s", c_owner(client), client->killed ? "killed" : ""));
 
@@ -377,9 +418,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		client->attach = NULL;
 	}
 
-	new = top_owner;
-
-	app_in_front(lock, new);
+	app_in_front(lock, top_owner);
 
 	/* If the client forgot to free its resources, we do it for him. */
 	DIAG((D_appl, NULL, "Freeing client xmalloc base"));
@@ -401,13 +440,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	/* Unlock mouse & screen */
 	if (update_locked() == client)
-	{
 		free_update_lock();
-	}
 	if (mouse_locked() == client)
-	{
 		free_mouse_lock();
-	}
 
 	client->init = false;
 	DIAG((D_appl, NULL, "client exit done"));
