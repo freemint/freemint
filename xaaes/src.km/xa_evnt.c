@@ -562,7 +562,7 @@ XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* The Intel ligent format */
 			client->timer_val = timeout;
 			DIAG((D_i,client,"Timer val: %ld(%ld)",
-				client->timer_val, in_xevnts->e_timer->delta));
+				client->timer_val, in->e_timer->delta));
 			if (client->timer_val)
 			{
 				client->timeout = addtimeout(client->timer_val, wakeme_timeout);

@@ -23,6 +23,21 @@ Add to your header file
 #define XA_AGI_VERSION  0x5800
 
 ===============================================================================
+                       -= New window kind definitions =-
+
+ XaAES now makes use of bit 15 in the 'kind' parameter of wind_create(). Setting
+this bit will make XaAES allow for window border sizing without the SIZER gadget
+being used.
+
+#define BORDER  0x8000
+
+ I hope this bit is not used for other purposes. This also means there is no
+more free bits, and so future extensions will have to require an extended
+wind_create() call. As of now, if control[1] has a value of 6 or more, XaAES
+will pick up another 16-bits (short) of 'kind' bits from intin[5]. However,
+no definitions are made yet.
+
+===============================================================================
 
                             -= Shading windows =-
 
