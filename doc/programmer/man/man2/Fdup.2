@@ -1,0 +1,24 @@
+.TH "FDUP" 2 "3 March 1993" "MiNT docs 0.1" "MiNT SYSTEM CALLS"
+.SH NAME
+Fdup - duplicate a standard file handle
+.SH SYNOPSIS
+.nf
+#include <osbind.h>
+
+int Fdup(int handle);
+.fi
+.SH DESCRIPTION
+A duplicate file handle is returned for the standard handle
+indicated by handle.
+
+Standard handles are:
+.br
+  0   keyboard (stdin)
+  1   screen (stdout)
+  2   serial port
+  3   parallel port
+  4   MIDI input        (MiNT)
+  5   MIDI output       (MiNT)
+.SH SEE ALSO
+.BR Fforce(2),
+.BR Fcntl(2)

@@ -1,0 +1,33 @@
+.TH "PTERM" 2 "3 March 1993" "MiNT docs 0.1" "MiNT SYSTEM CALLS"
+.SH NAME
+Pterm, Pterm0, Ptermres - terminate current process
+.SH SYNOPSIS
+.nf
+#include <osbind.h>
+
+void Pterm(int retcode);
+
+void Pterm0(void);
+
+void Ptermres(long keepcnt, int retcode);
+.fi
+.SH DESCRIPTION
+Pterm, Ptermres and Pterm0 terminate the current process.
+All open files will be closed, all structures owned by the
+process will be released and freed. Pterm and Pterm0 return
+all Malloc-ed memory to the Operating System. Ptermres keeps
+keepcnt bytes, counted from the start of the basepage,
+resident; this can be used for TSR programs.
+
+Either retcode (Pterm, Ptermres) or zero (Pterm0) will be
+returned to the calling process. By convention, a zero return
+code means success, a non-zero return code means failure.
+
+If set, the interrupt vector for terminating processes
+(etv_term, located at $0408) will be called by Pterm and
+Pterm0 before the process cleanup code is run. This can be
+used to restore changed vectors and so on.
+.SH SEE ALSO
+.BR Pexec(2)
+.SH NOTE
+Ptermres does not jump through etv_term.
