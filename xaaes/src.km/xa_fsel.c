@@ -175,12 +175,9 @@ fs_prompt(SCROLL_INFO *list)
 				break;
 			list->get(list, seget.e, SEGET_NEXTENT, &seget);
 		}
-		list->cur = NULL;	/* s1 < s2   ==>   -1 */
+		list->cur = NULL;
 		s = seget.e;
 
-	//	while (s && !(match_pattern(s->c.td.text.text->text, fs->file, true)))
-	//		s = s->next;
-		
 		if (s)
 		{
 			list->cur = s;
@@ -250,8 +247,7 @@ dirflag_name(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2)
 /* yields true if case sensitive */
 static bool
 inq_xfs(struct fsel_data *fs, char *p, char *dsep)
-{
-	
+{	
 	long c, t;
 
 	c = fs->fcase = d_pathconf(p, DP_CASE);
@@ -329,16 +325,12 @@ strins(char *d, const char *s, long here)
 	long dlen = strlen(d);
 	char t[512];
 	
-	//display("ins '%s' in '%s' at %ld", s, d, here);
-
 	if (here > dlen)
 		here = dlen;
 
 	strncpy(t, d + here, sizeof(t));
 	strncpy(d + here, s, slen);
 	strcpy(d + here + slen, t);
-
-	//display("result '%s'", d);
 }
 
 static void
@@ -349,11 +341,12 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 	char nm[NAME_MAX+2 + FSIZE_MAX+2];
 	long i, rep;
 
-	if (dir_ent && (dir_ent->istate & OS_OPENED))
+	if (dir_ent && (dir_ent->xstate & OS_OPENED))
 	{
+		/*
+		 * If this directory is already opened, just close it
+		 */
 		list->set(list, dir_ent, SESET_OPEN, 0, NORMREDRAW);
-		//list->empty(list, dir_ent, false);
-		//list->redraw(list, );
 		dir_ent = NULL;
 	} 
 	else
@@ -389,7 +382,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 		
 		DIAG((D_fsel, NULL, "Dopendir -> %lx", i));
 	
-	//	display("Dopendir '%s'-> %lx", fs->path, i);
 		if (i > 0)
 		{
 			struct xattr xat;
@@ -438,7 +430,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					{
 						type |= FLAG_DIR;
 						icon = obtree + FS_ICN_DIR;
-						sc.istate |= OS_NESTICON;
+						sc.xstate |= OS_NESTICON;
 					}
 					else if (executable(nam))
 						icon = obtree + FS_ICN_PRG;
@@ -466,6 +458,9 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 		}
 		if (dir_ent)
 		{
+			/*
+			 * Set bit 0 in user flags to indicate that this directory is read
+			 */
 			long uf;
 			list->get(list, dir_ent, SEGET_USRFLAG, &uf);
 			uf |= 1;
@@ -491,14 +486,12 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	OBJECT *form = fs->form->tree;
 	OBJECT *sl;
 	SCROLL_INFO *list;
-//	bool csens;
 
 	sl = form + FS_LIST;
 	DIAG((D_fsel, NULL, "refresh_filelist: fs = %lx, obtree = %lx, sl = %lx",
 		fs, fs->form->tree, sl));
 	list = object_get_slist(sl);
 	add_slash(fs->root, fs->fslash);
-//	csens = inq_xfs(fs, fs->root, fs->fslash);
 
 #ifdef FS_DBAR
 	{
@@ -534,16 +527,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 
 	graf_mouse(ARROW, NULL, NULL, false);
 
-#if 0	
-	if (!fs_prompt_refresh(list))
-	{
-		list->redraw(list, NULL);
-		list->slider(list, true);
-	}
-#else
 	fs_prompt_refresh(list);
-#endif
-
 }
 
 static void
@@ -789,11 +773,6 @@ fileselector_form_exit(struct xa_client *client,
 	struct fsel_data *fs = list->data;
 #ifdef FS_FILTER
 	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER);
-#endif
-#if 0
-#ifdef FS_UPDIR
-	struct xa_window *wl = list->wi;
-#endif
 #endif
 	
 	/* Ozk:
