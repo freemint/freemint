@@ -6,6 +6,7 @@
 #include <limits.h>
 
 #include "textwin.h"
+#include "event.h"
 #include "console.h"
 #include "ansicol.h"
 #include "isotost.h"
@@ -867,8 +868,8 @@ update_cursor (WINDOW* win, int top)
 	if (win->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
 	win->redraw = 1;
-	wind_update(TRUE);
-	wind_get_grect (win->handle, WF_FIRSTXYWH, &curr);
+	update_window_lock();
+	get_window_rect (win, WF_FIRSTXYWH, &curr);
 
 	while (curr.g_w && curr.g_h) {
 		if (rc_intersect (&work, &curr)) {
@@ -879,7 +880,7 @@ update_cursor (WINDOW* win, int top)
 					char buf[2];
 
 					if (!off)
-						off = hide_mouse_if_needed (&curr2);
+						off = mouse_hide_if_needed (&curr2);
 
 					set_clipping (vdi_handle,
 							    curr2.g_x,
@@ -897,7 +898,7 @@ update_cursor (WINDOW* win, int top)
 
 			if (new_curs.g_w && rc_intersect (&new_curs, &curr)) {
 				if (!off)
-					off = hide_mouse_if_needed (&curr);
+					off = mouse_hide_if_needed (&curr);
 
 				if ((tw->curr_tflags & TCURS_VVIS) 
 				    || !tw->curs_drawn) {
@@ -930,13 +931,13 @@ update_cursor (WINDOW* win, int top)
 			}
 		}
 
-		wind_get_grect (win->handle, WF_NEXTXYWH, &curr);
+		get_window_rect (win, WF_NEXTXYWH, &curr);
 	}
 
 	if (off)
-		show_mouse();
+		mouse_show();
 
-	wind_update(FALSE);
+	update_window_unlock();
 	win->redraw = 0;
 
 	tw->last_cx = tw->cx;
@@ -1088,24 +1089,24 @@ void refresh_textwin(TEXTWIN *t, short force)
 	if (v->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
 	v->redraw = 1;
-	wind_update(TRUE);
-	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
+	update_window_lock();
+	get_window_rect(v, WF_FIRSTXYWH, &t1);
 	while (t1.g_w && t1.g_h) {
 		if (rc_intersect(&t2, &t1)) {
 			if (!off)
-				off = hide_mouse_if_needed(&t1);
+				off = mouse_hide_if_needed(&t1);
 			set_clipping (vdi_handle, t1.g_x, t1.g_y,
 					  t1.g_w, t1.g_h, TRUE);
 			update_screen (t, t1.g_x, t1.g_y, t1.g_w, t1.g_h,
 					   force);
 		}
-		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
+		get_window_rect(v, WF_NEXTXYWH, &t1);
 	}
 	t->scrolled = t->nbytes = t->draw_time = 0;
 	if (off)
-		show_mouse();
+		mouse_show();
 	mark_clean(t);
-	wind_update(FALSE);
+	update_window_unlock();
 	v->redraw = 0;
 }
 
@@ -1136,9 +1137,9 @@ static void full_textwin(WINDOW *v)
 	TEXTWIN	*t = v->extra;
 
 	if (v->flags & WFULLED)
-		wind_get_grect(v->handle, WF_PREVXYWH, &new);
+		get_window_rect(v, WF_PREVXYWH, &new);
 	else
-		wind_get_grect(v->handle, WF_FULLXYWH, &new);
+		get_window_rect(v, WF_FULLXYWH, &new);
 	wind_calc_grect(WC_WORK, v->kind, &new, &v->work);
 
 	/* Snap */
@@ -1159,7 +1160,7 @@ static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 	GRECT full;
 	TEXTWIN	*t = v->extra;
 
-	wind_get_grect(v->handle, WF_FULLXYWH, &full);
+	get_window_rect(v, WF_FULLXYWH, &full);
 
 #if 0
 	if (w > full.g_w)
@@ -1234,13 +1235,13 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 	if (v->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
 	v->redraw = 1;
-	wind_update(TRUE);
+	update_window_lock();
 	
-	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
+	get_window_rect(v, WF_FIRSTXYWH, &t1);
 	while (t1.g_w && t1.g_h) {
 		if (rc_intersect(&t2, &t1)) {
 			if (!m_off)
-				m_off = hide_mouse_if_needed(&t1);
+				m_off = mouse_hide_if_needed(&t1);
 			set_clipping (vdi_handle, t1.g_x, t1.g_y,
 							t1.g_w, t1.g_h, TRUE);
 
@@ -1276,11 +1277,11 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 							     t1.g_w, off, TRUE);
 			}
 		}
-		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
+		get_window_rect(v, WF_NEXTXYWH, &t1);
 	}
 	if (m_off)
-		show_mouse();
-	wind_update(FALSE);
+		mouse_show();
+	update_window_unlock();
 	v->redraw = 0;
 }
 
@@ -2334,19 +2335,10 @@ void sendstr(TEXTWIN *t, char *s)
 	}
 }
 
-/*
- * After this many bytes have been written to a window, it's time to
- * update it. Note that we must also keep a timer and update all windows
- * when the timer expires, or else small writes will never be shown!
- */
-#define THRESHOLD 400
-
 void write_text(TEXTWIN *t, char *b, long len)
 {
 	unsigned char *src = (unsigned char *) b, c;
-	int limit = NROWS(t) - 1;
 	long cnt;
-	extern int draw_ticks;
 	if (len == -1)
 		cnt = strlen(b);
 	else
@@ -2359,15 +2351,14 @@ void write_text(TEXTWIN *t, char *b, long len)
 		{
 			(*t->output)(t, c);
 			t->nbytes++;
+
 			/* The number of scrolled lines is ignored
 			   as an experimental feature.  There is no
 			   point in artificially pulling a break
 			   when output is too fast too read.
 			   This may look strange but it enhance the
 			   usability and subjective performance.  */
-			if ((draw_ticks > MAX_DRAW_TICKS &&
-				t->nbytes >= THRESHOLD)
-			    || (0 && t->scrolled >= limit))
+			if ( needs_redraw(t) )
 				refresh_textwin(t, FALSE);
 		}
 	}

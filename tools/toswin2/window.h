@@ -88,6 +88,11 @@ void	uniconify_all(void);
 
 void	draw_winicon (WINDOW *win);
 
+void	update_window_lock(void);
+void	update_window_unlock(void);
+
+void	get_window_rect(WINDOW *win, short kind, GRECT *rect);
+
 /*
  * Eventverarbeitung.
  */
@@ -102,5 +107,10 @@ bool	wdial_msg(short *msg);
 
 void 	update_avwin(bool new);
 
+/*
+ * Mouse actions.
+ */
+void	mouse_show(void);
+short	mouse_hide_if_needed(GRECT *rect);
 
 #endif
