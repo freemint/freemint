@@ -41,9 +41,9 @@ long put_env(enum locks lock, const char *cmd);
 char * const * const get_raw_env(void);
 
 AES_function
-	XA_shell_write,
-	XA_shell_read,
-	XA_shell_find,
-	XA_shell_envrn;
+	XA_shel_write,
+	XA_shel_read,
+	XA_shel_find,
+	XA_shel_envrn;
 
 #endif /* _xa_shel_h */
