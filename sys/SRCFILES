@@ -12,6 +12,7 @@ COBJS = \
 	cookie.c \
 	crypt_IO.c \
 	debug.c \
+	delay.c \
 	dev-mouse.c \
 	dev-null.c \
 	dma.c \
