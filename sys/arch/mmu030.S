@@ -12,6 +12,7 @@
  *
  */
 
+#ifndef NO_MMU
 #ifndef MMU040
 
 	.data
@@ -72,6 +73,7 @@ normal_set:
 	pmove	4(sp),crp		// caution: crp is 8 bytes
 	pflusha
 	pmove	0xc(sp),tc
+	movem.l	(sp)+,d0-d2/a0-a2
 	rts
 
 set_mmu_called_st_ram:
@@ -132,5 +134,5 @@ _restr_mmu:
 _flush_mmu:
 	pflusha
 	rts
-
+#endif
 #endif
