@@ -111,6 +111,11 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 			obtree = wt->tree;
 			obtree->ob_x = wind->wa.x;
 			obtree->ob_y = wind->wa.y;
+			if (!wt->zen)
+			{
+				obtree->ob_x += wt->ox;
+				obtree->ob_y += wt->oy;
+			}
 		}
 
 		lock_screen(wind->owner, false, NULL, 0);
@@ -338,8 +343,9 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		wind = create_window(lock, send_app_message, NULL, client, false,
 				     tp,
 				     created_for_WDIAL,
-				     0, false,
-				     r, 0, 0);
+				     client->options.thinframe,
+				     client->options.thinwork,
+				     r, NULL, NULL);
 		if (wind)
 		{
 			short rep;
@@ -354,7 +360,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				wt = set_toolbar_widget(lock, wind, obtree, -2);
 				wt->exit_form = NULL; //exit_wdial;
-
+				
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
 				wdlg->wind = wind;
 				wdlg->code = pb->intin[0];			/* Code */
@@ -690,6 +696,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						wt = set_toolbar_widget(lock, wind, obtree, 0);
 						wt->exit_form = NULL;
+						
 						obj_area(wt, 0, &or);
 
 						r = calc_window(lock, client, WC_BORDER,
@@ -701,8 +708,8 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						r.x = wind->r.x;
 						r.y = wind->r.y;
 						move_window(lock, wind, true, -1, r.x, r.y, r.w, r.h);
-						obtree->ob_x = wind->wa.x;
-						obtree->ob_y = wind->wa.y;
+						//obtree->ob_x = wind->wa.x;
+						//obtree->ob_y = wind->wa.y;
 					}
 				}
 				else
