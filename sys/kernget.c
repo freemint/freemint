@@ -36,6 +36,7 @@
 # if WITH_KERNFS
 
 # include "arch/mprot.h"
+# include "arch/timer.h"
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
 # include "mint/signal.h"
@@ -383,15 +384,14 @@ kern_get_hz (SIZEBUF **buffer)
 	SIZEBUF *info;
 	ulong len;
 	
-# define HZ_200 "200\n"
-	
-	len = sizeof HZ_200 - 1;
+	/* enough for a number */
+	len = 16;
 	
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 	
-	memcpy (info->buf, HZ_200, len);
+	ksprintf (info->buf, len, "%s", HZ);
 	info->len = len;
 	
 	*buffer = info;
