@@ -8,6 +8,7 @@ COBJS = \
 	check_exc.c \
 	halt.c \
 	info_mach.c \
+	init_intr.c \
 	init_mach.c \
 	kernfs_mach.c \
 	mprot000.c \

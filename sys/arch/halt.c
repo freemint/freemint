@@ -38,12 +38,12 @@
 # include "mint/asm.h"
 # include "mint/proc.h"
 
+# include "arch/init_intr.h"	/* restore_intr */
+# include "arch/intr.h"		/* reboot */
 # include "arch/tosbind.h"
 
 # include "cookie.h"
 # include "info.h"	/* MSG_* */
-# include "init.h"	/* restore_intr */
-# include "intr.h"	/* reboot */
 # include "proc.h"
 # include "filesys.h"
 
