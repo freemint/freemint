@@ -495,7 +495,9 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, int item, int depth
 		if (start_drawing && !(tree[current].ob_flags & OF_HIDETREE))
 		{
 			/* Display this object */
+			DIAGS(("in"));
 			display_object(lock, wt, current, x, y, 10);
+			DIAGS(("out"));
 		}
 
 		head = tree[current].ob_head;
@@ -536,6 +538,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, int item, int depth
 	wr_mode(MD_TRANS);
 	f_interior(FIS_SOLID);
 
+	DIAGS(("draw_object_tree exit OK!"));
 	return true;
 }
 
