@@ -380,6 +380,36 @@ set_aslide_size(struct xa_lbox_info *lbox)
 
 }
 
+/*
+ * if 'sc' (start coordinate) is negative, use childs X or Y to calculate relative position.
+ * if 'sc' is positive, use it instead of childs X or Y to calcuate relative position.
+ */
+static long
+get_slider_relpos(OBJECT *obtree, short sc, short parent, short child, short orient)
+{
+	short tmp;
+
+	if (orient)
+	{
+		if (!(tmp = obtree[parent].ob_height - obtree[child].ob_height))
+			return 0;
+		else if (sc < 0)
+			return (long)(((long)obtree[child].ob_y * 1000) / tmp);
+		else
+			return (long)(((long)sc * 1000) / tmp);
+			
+	}
+	else
+	{
+		if (!(tmp = obtree[parent].ob_width - obtree[child].ob_width))
+			return 0;
+		else if (sc < 0)
+			return (long)(((long)obtree[child].ob_x * 1000) / tmp);
+		else
+			return (long)(((long)sc * 1000) / tmp);
+	}
+}
+
 static void
 set_aslide_pos(struct xa_lbox_info *lbox)
 {
@@ -389,9 +419,7 @@ set_aslide_pos(struct xa_lbox_info *lbox)
 
 	if ((total = lbox->entries - lbox->visible_a) > 0)
 	{
-		relpos = (long)lbox->first_a * 1000;
-		if (relpos)
-			relpos /= total;
+		relpos = (long)(((long)lbox->first_a * 1000) / total);
 		if (relpos > 1000)
 			relpos = 1000;
 	}
@@ -405,6 +433,129 @@ set_aslide_pos(struct xa_lbox_info *lbox)
 		obtree[child].ob_x = ((long)(obtree[parent].ob_width - obtree[child].ob_width) * relpos) / 1000;
 }
 
+static void
+drag_aslide(struct xa_lbox_info *lbox)
+{
+	short mb, sx, sy;
+
+	check_mouse(lbox->wt->owner, &mb, &sx, &sy);
+
+	if (mb)
+	{
+		short parent, child, first, max, mx, my;
+		OBJECT *obtree = lbox->wt->tree;
+		long slider_rpos;
+		RECT sl_r;
+		RECT lb_r;
+
+		parent = lbox->aslid.slide_bkg;
+		child = lbox->aslid.slider;
+
+		/*
+		 * new current object = total_object - visible_objects * slider_relpos / 1000
+		 */
+		ob_area(obtree, parent, &sl_r);
+		ob_area(obtree, lbox->aslid.parent, &lb_r);
+
+		first = lbox->first_a;
+
+		if (lbox->flags & LBOX_VERT)
+		{
+			max = obtree[parent].ob_height - obtree[child].ob_height;
+		}
+		else
+		{
+			max = obtree[parent].ob_width - obtree[child].ob_width;
+		}
+
+		graf_mouse(FLAT_HAND, NULL);
+		
+		while (mb)
+		{
+
+			check_mouse(lbox->wt->owner, &mb, &mx, &my);
+
+			if (mb && (sx != mx || sy != mx))
+			{
+				short nc;
+				
+				if (lbox->flags & LBOX_VERT)
+				{
+					nc = obtree[child].ob_y + (my - sy);
+					if (nc < 0)
+						nc = 0;
+					else if (nc > max)
+						nc = max;
+
+					if (obtree[child].ob_y != nc)
+					{
+						slider_rpos = get_slider_relpos(obtree, nc, parent, child, 1);
+						first = lbox->entries - lbox->visible_a;
+						if (first > 0)
+							first = ((long)first * slider_rpos + 500) / 1000;
+						else
+							first = 0;
+
+						if (first != lbox->first_a)
+						{
+							nc = first - lbox->first_a;
+							if (nc < 0)
+								scroll_down(lbox, -nc);
+							else
+								scroll_up(lbox, nc);
+
+							set_aslide_pos(lbox);
+							hidem();
+							redraw_lbox(lbox, parent, 2, &sl_r);
+							redraw_lbox(lbox, lbox->aslid.parent, 2, &lb_r);
+							showm();
+
+							sx = mx;
+							sy = my;
+						}
+					}
+				}
+				else
+				{
+					nc = obtree[child].ob_x + (sx + mx);
+					if (nc < 0)
+						nc = 0;
+					else if (nc > max)
+						nc = max;
+
+					if (obtree[child].ob_x != nc)
+					{
+						slider_rpos = get_slider_relpos(obtree, nc, parent, child, 0);
+						first = lbox->entries - lbox->visible_a;
+						if (first > 0)
+							first = ((long)first * slider_rpos + 500) / 1000;
+						else
+							first = 0;
+
+						if (first != lbox->first_a)
+						{
+							nc = first - lbox->first_a;
+							if (nc < 0)
+								scroll_down(lbox, -nc);
+							else
+								scroll_up(lbox, nc);
+
+							set_aslide_pos(lbox);
+							hidem();
+							redraw_lbox(lbox, parent, 2, &sl_r);
+							redraw_lbox(lbox, lbox->aslid.parent, 2, &lb_r);
+							showm();
+
+							sx = mx;
+							sy = my;
+						}
+					}
+				}
+			} /* if (mb && sx != mx && sy != mx) */
+		} /* while (mb) */
+		graf_mouse(ARROW, NULL);
+	} /* if (mb) */
+}
 static void
 clear_all_selected(struct xa_lbox_info *lbox, short skip, RECT *r)
 {
@@ -653,7 +804,9 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				redraw_lbox(lbox, lbox->aslid.slide_bkg, 2, &r);
 				showm();
 			}
-		}				
+		}
+		else if (obj == lbox->aslid.slider)
+			drag_aslide(lbox);
 		else if (obj == lbox->aslid.slide_bkg)
 		{
 			DIAG((D_lbox, client, "XA_lbox_do: page.."));
