@@ -125,7 +125,9 @@
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 # include "mint/signal.h"
+# include "mint/ssystem.h"
 # include "mint/stat.h"
+# include "cookie.h"
 
 # include <mint/osbind.h>
 # include "scc.h"
@@ -1287,9 +1289,7 @@ init (struct kerinfo *k)
 		goto failure;
 	}
 	
-# define SSYS_GETCOOKIE	8
-# define COOKIE__MCH	0x5f4d4348L
-	if ((s_system (SSYS_GETCOOKIE, COOKIE__MCH, (long) &mch) != 0)
+	if ((s_system (S_GETCOOKIE, COOKIE__MCH, (long) &mch) != 0)
 		|| ((mch != MEGASTE) && (mch != TT) && (mch != FALCON)))
 	{
 		c_conws (MSG_MACHINE);

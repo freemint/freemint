@@ -29,16 +29,15 @@
 # include "libkern/libkern.h"
 # include "mint/asm.h"
 # include "mint/dcntl.h"
+# include "mint/errno.h"
 # include "mint/falcon.h"
 # include "mint/file.h"
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 # include "mint/signal.h"
+# include "mint/ssystem.h"
 # include "mint/stat.h"
-
-# include "ssystem.h"
-
-# include <errno.h>
+# include "cookie.h"
 
 # include "dsp56k.h"
 # include "atarihw.h"
@@ -613,8 +612,6 @@ dsp56k_unselect(FILEPTR *f, long proc, int mode)
 {
 }
 
-
-# define COOKIE__SND	0x5f534e44UL
 
 DEVDRV * _cdecl
 init(struct kerinfo *k)
