@@ -1,31 +1,28 @@
-Here is a small FAQ specially for FreeMiNT 1.15:
+Here is a small FAQ specially for FreeMiNT 1.16:
 ------------------------------------------------
 
 
 Q: How I can use a global folder for SLB's under FreeMiNT?
 
-A: The default path pointing to a folder which contains SLB 
-   libraries must be specified in the environment as SLBPATH 
+A: The default path(s) pointing to a folder which contains SLB
+   libraries must be specified in the environment as SLBPATH
    variable. For example:
-   
+
    SLBPATH=u:\usr\local\lib\slb
-   
-   If one wants the previous behaviour, just undefine the 
+
+   If one wants the previous behaviour, just undefine the
    variable.
 
-   Limits: SLBPATH value can be only specified as a GEMDOS-like (not 
-           Unix-like) pathname. Hence such forms of the SLBPATH as:
-           
-           SLBPATH=c:\multitos\slb
-           SLBPATH=u:\c\multitos\slb
-           SLBPATH=u:\usr\local\lib\slb
-           
-           or
-           
-           SLBPATH=u:/usr/local/lib/slb
-           
-           are perfecly valid (provided these folders really do exist).
+   Examples of valid SLBPATH variables:
 
+	SLBPATH=c:\multitos;c:\multitos\slb
+	SLBPATH=u:\c\multitos;u:\c\multitos\slb
+	SLBPATH=u:\usr\local\lib\slb,u:\usr\lib\slb
+	SLBPATH=u:/c/multitos;u:/c/multitos/slb
+        SLBPATH=/c/multitos,/c/multitos/slb
+
+   The usage of ':' character as separator instead of the
+   comma or semicolon is not allowed (unlike in Unix).
 
 Q: I don't need VFAT. Why is the NEWFATFS integrated
    in the kernel?
