@@ -539,7 +539,7 @@ warp_clock (int mode)
 }
 
 long _cdecl
-gettime ()
+sys_b_gettime ()
 {
 	TRACE (("gettime ()"));
 
@@ -553,7 +553,7 @@ gettime ()
 }
 
 void _cdecl
-settime (ulong datetime)
+sys_b_settime (ulong datetime)
 {
 	if (hardtime)
 	{

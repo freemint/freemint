@@ -99,7 +99,7 @@ short ikbd_scan(ushort scancode);
 void init_keybd(void);
 void load_keytbl(void);
 long load_keyboard_table(char *filename, short flag);
-void bioskeys(void);
+void sys_b_bioskeys(void);
 
 extern short gl_kbd;
 extern struct cad_def cad[3];
