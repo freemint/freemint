@@ -6,7 +6,6 @@
 # ifndef _mint_version_h
 # define _mint_version_h
 
-
 # define MINT_MAJ_VERSION	1
 # define MINT_MIN_VERSION	16
 # define MINT_PATCH_LEVEL	0
@@ -21,10 +20,14 @@
 # define MINT_BETA_IDENT	0
 # endif
 
-# define MINT_VERS_STRING	str(MINT_MAJ_VERSION) "."	\
-				str(MINT_MIN_VERSION) "."	\
-				str(MINT_PATCH_LEVEL)	\
+# define MINT_VERS_STRING	str(MINT_MAJ_VERSION) "." \
+				str(MINT_MIN_VERSION) "." \
+				str(MINT_PATCH_LEVEL) \
 				MINT_BETA
+
+# define MINT_VERS_PATH_STRING	str(MINT_MAJ_VERSION) "-" \
+				str(MINT_MIN_VERSION) "-" \
+				str(MINT_PATCH_LEVEL)
 
 # ifndef THIRD_PARTY
 #  ifdef MULTITOS
@@ -35,6 +38,5 @@
 # else
 #  define MINT_NAME		THIRD_PARTY
 # endif
-
 
 # endif /* _mint_version_h */
