@@ -33,15 +33,6 @@
 /* - define as 1 to turn on, 0 to turn off */
 /*----------------------------------------------------------------- */
 
-#define SEPARATE_SCL		0	/* Run xa_scl.prg at bootup */
-
-#define HALF_SCREEN		1	/* Support for WF_SCREEN */
-
-#define MOUSE_KLUDGE		1	/* Still needed including MiNT 1.15.3 */
-
-#define TEAR_OFF		0	/* menu tear off support */
-#define USE_DEBUG_VECTOR	0	/* Hook trap3 instead of trap2 to allow debugging under GEM */
-
 #define DISPLAY_LOGO_IN_TITLE	0	/* Display the XaAES logo in the title bar of each window */
 
 #define POINT_TO_TYPE		0	/* if defined focus can be dynamically changed in the cfg (see parde*/
@@ -54,6 +45,7 @@
 #define FILESELECTOR		1	/* Build a XaAES with fileselector */
 
 #define NAES3D			1	/* ??? */
+
 
 /*----------------------------------------------------------------- */
 /* Maximum space for 'nice name' for app's (menu_register) */
@@ -111,15 +103,6 @@
 #define XAC_BLOCK		0L	/* Block the client indefinitely */
 #define XAC_DONE		1L	/* Function completed - release client immediately */
 #define XAC_TIMER		3L	/* Unclumsify the timer value passing. */
-
-
-/*----------------------------------------------------------------- */
-/* For debugging, I use trap 3 for XaAES so I can run it in tandem with MultiTOS. */
-#if USE_DEBUG_VECTOR
-#define AES_TRAP	3
-#else
-#define AES_TRAP	2
-#endif
 
 
 /*----------------------------------------------------------------- */

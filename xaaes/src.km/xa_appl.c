@@ -144,26 +144,11 @@ new_client(enum locks lock, struct xa_client *client)
 			detach_extension(client->p, XAAES_MAGIC_SH);
 		}
 	}
-
-	client->init = true;
 }
 
 /*
  * Application initialise - appl_init()
- * Remember that this executes under the CLIENT pid, not the kernal.
- * (Hence the semaphore locking on the routine)
  */
-
-/* HR 230301:  new_client_contrl
- *             client_exit_contrl
- *             new_client_packet
- *             new_client_pb;
- * moved these areas to the client structure   !!!!!!!
- * Solved many problems with GEM-init of Ulrich Kayser.
- * Solved problems with proper shutdown. (Many apps issue appl_exit concurrently.
- * Sigh of relief. :-)
- */
-
 unsigned long
 XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -261,42 +246,6 @@ clean_out:
 	return XAC_DONE;
 }
 
-void
-release_client(enum locks lock, struct xa_client *client)
-{
-	Sema_Up(clients);
-
-	DIAGS(("release_client: pid %i, '%s'", client->p->pid, client->name));
-
-	if (!client->killed)
-		remove_attachments(lock|clients, client, client->std_menu.tree);
-
-	if (client == S.client_list)
-		S.client_list = client->next;
-
-	if (client->prior)
-		client->prior->next = client->next;
-	if (client->next)
-		client->next->prior = client->prior;
-
-#if HALF_SCREEN
-	/* If no client using the quart screen buffer is left, free it! */
-	if (client->half_screen_buffer)
-	{
-		proc_free(client->half_screen_buffer);
-		client->half_screen_buffer = NULL;
-	}
-#endif
-
-	/* zero out */
-	bzero(client, sizeof(*client));
-
-	client->cmd_tail = "\0";
-	client->wt.edit_obj = -1;
-
-	Sema_Dn(clients);
-}
-
 static void
 remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 {
@@ -312,64 +261,19 @@ remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 	}
 }
 
-/* remove all references to a clients memory. */
-void
-remove_refs(struct xa_client *client, bool secure)
-{
-	XA_TREE *menu_bar = get_menu();
-
-	DIAGS(("remove_refs for %s mtree %lx %s",
-		c_owner(client), client->std_menu.tree, secure ? "secure" : ""));
-
-	root_window->owner = C.Aes;
-
-	if (client->std_menu.tree)
-		if (client->std_menu.tree == menu_bar->tree)
-			*menu_bar = C.Aes->std_menu;
-
-	client->std_menu.tree = NULL;
-
-	if (secure)
-	{
-		/* Not called from within signal handler. */
-		remove_wind_refs(window_list, client);
-		remove_wind_refs(S.closed_windows.first, client);
-	}
-
-	if (client->desktop.tree)
-	{
-		if (get_desktop()->tree == client->desktop.tree)
-		{
-			set_desktop(&C.Aes->desktop);
-			client->desktop.tree = NULL;
-		}
-	}
-
-	client->killed = true;
-	client->secured = secure;
-}
-
 /*
- * Close down the client reply pipe in response to an struct xa_client_EXIT message
- * HR: No!! it doesnt!
- * - Also does a tidy-up and deletes all the clients windows (in case some untidy programs
- *   fail to close them for themselves).
- * - Also disposes of any pending messages.
- *
+ * close and free all client resources
+ * called on appl_exit() or on process termination (if app crashed)
  */
 void
 exit_client(enum locks lock, struct xa_client *client, int code)
 {
 	struct xa_client *top_owner;
 
-	DIAG((D_appl, NULL, "XA_client_exit: %s %s", c_owner(client), client->killed ? "killed" : ""));
+	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
-	/* Because of the window list, these cannot be done in the signal handler. */
-	if (!client->secured)
-	{
-		remove_wind_refs(window_list, client);
-		remove_wind_refs(S.closed_windows.first, client);
-	}
+	remove_wind_refs(window_list, client);
+	remove_wind_refs(S.closed_windows.first, client);
 
 	/* Go through and check that all windows belonging to this client are closed */
 	remove_windows(lock, client);
@@ -388,14 +292,11 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	{
 		/* if menu attachments */
 #if GENERATE_DIAGS
-		if (!client->killed)
+		XA_MENU_ATTACHMENT *at = client->attach;
+		while (at->to_tree)
 		{
-			XA_MENU_ATTACHMENT *at = client->attach;
-			while (at->to_tree)
-			{
-				DIAGS(("tree left in attachments %lx", at->to_tree));
-				at++;
-			}
+			DIAGS(("tree left in attachments %lx", at->to_tree));
+			at++;
 		}
 #endif
 		free(client->attach);
@@ -414,8 +315,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	client->resources = NULL;
 
 	/* Free name *only if* it is malloced: */
-	/* HR dont compare with a pointer!!!! */
-	if (client->tail_is_heap)		/* HR what if another constant was used? */
+	if (client->tail_is_heap)
 	{
 		free(client->cmd_tail);
 		client->cmd_tail = NULL;
@@ -427,9 +327,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		free_update_lock();
 	if (mouse_locked() == client)
 		free_mouse_lock();
-
-	client->init = false;
-	DIAG((D_appl, NULL, "client exit done"));
 
 	if (client->p->ppid != C.AESpid)
 	{
@@ -450,15 +347,63 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	}
 
 	/* remove any references */
-	remove_refs(client, false);
+	{
+		XA_TREE *menu_bar = get_menu();
+
+		DIAGS(("remove_refs for %s mtree %lx",
+			c_owner(client), client->std_menu.tree));
+
+		root_window->owner = C.Aes;
+
+		if (client->std_menu.tree)
+		{
+			if (client->std_menu.tree == menu_bar->tree)
+				*menu_bar = C.Aes->std_menu;
+		}
+
+		client->std_menu.tree = NULL;
+
+		if (client->desktop.tree)
+		{
+			if (get_desktop()->tree == client->desktop.tree)
+			{
+				set_desktop(&C.Aes->desktop);
+				client->desktop.tree = NULL;
+			}
+		}
+	}
+
+	// if (!client->killed)
+	//	remove_attachments(lock|clients, client, client->std_menu.tree);
+
+	/*
+	 * remove from client pool
+	 */
+	if (client == S.client_list)
+		S.client_list = client->next;
+	if (client->prior)
+		client->prior->next = client->next;
+	if (client->next)
+		client->next->prior = client->prior;
+
+	/* free the quart screen buffer */
+	if (client->half_screen_buffer)
+	{
+		proc_free(client->half_screen_buffer);
+		client->half_screen_buffer = NULL;
+	}
+
+	/* zero out */
+	bzero(client, sizeof(*client));
+
+	client->cmd_tail = "\0";
+	client->wt.edit_obj = -1;
+
+	DIAG((D_appl, NULL, "client exit done"));
 }
 
 /*
  * Application Exit
- * This also executes under the CLIENT pid.
- * This closes the clients end of the reply pipe, and sends a message to the kernal
- * to tell it to close its end as well - the client tidy-up is done at the server
- * end when the struct xa_client_EXIT op-code is recieved, not here.
  */
 unsigned long
 XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -485,7 +430,6 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 
 /*
  * Free timeslice.
- * Runs (of course) under the clients pid.
  */
 unsigned long
 XA_appl_yield(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -494,7 +438,7 @@ XA_appl_yield(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	yield();
 
-	pb->intout[0] = 1;	/* OK */
+	pb->intout[0] = 1; /* OK */
 	return XAC_DONE;
 
 }
@@ -975,13 +919,12 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 /*
  * Extended XaAES calls
  */
-
 unsigned long
 XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	int pid = pb->intin[0];
-	short f = pb->intin[1];
 	struct xa_client *cl = NULL;
+	short pid = pb->intin[0];
+	short f = pb->intin[1];
 
 	CONTROL(2,1,1)
 
@@ -1002,12 +945,12 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_appl, client, "  --    on %s, func %d, 0x%lx",
 			c_owner(cl), f, pb->addrin[0]));
-	
-		/**
+
+		/*
 		 * note: When extending this switch be sure to update
                  *       the appl_getinfo(65) mode corresponding structure
 		 *  tip: grep APC_ * 
-		 **/
+		 */
 		switch (f)
 		{
 			case APC_HIDE:
@@ -1045,20 +988,6 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			break;
-#if 0
-			case APC_MENU:
-			{
-				OBJECT **mn = pb->addrin[0];
-				pb->intout[0] = 0;
-
-				if (mn)
-				{
-					*mn = cl->std_menu.tree;
-					pb->intout[0] = 1;
-				}
-			}
-			break;
-#endif
 			default:
 				pb->intout[0] = 0;
 		}

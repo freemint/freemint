@@ -32,10 +32,10 @@
  * from the basic GEM spec.
  */
 
+#include RSCHNAME
+
 #include "xa_fsel.h"
 #include "xa_global.h"
-
-#include RSCHNAME
 
 #include "c_window.h"
 #include "k_main.h"
