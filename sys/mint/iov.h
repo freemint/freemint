@@ -46,7 +46,7 @@ struct iovec
 };
 
 static inline long
-iov_size (struct iovec *iov, long n)
+iov_size (const struct iovec *iov, long n)
 {
 	register long size;
 
