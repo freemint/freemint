@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <pwd.h>
-#include <macros.h>
 #include <signal.h>
 #include <string.h>
 #include <support.h>
@@ -24,29 +23,37 @@
 #include "toswin2.h"
 #include "share.h"
 
+
 /* static long 	lasthz; */
 static long 	fdmask = 0L;
 static int	shell_cnt = 0;
 static OBJECT	*argbox;
 
-static int open_pty(char *name)
+
+static int
+open_pty(char *name)
 {
-	int	fd = -1;
-	char	line[] = "u:\\pipe\\ttypX";
-	char	lnk[] = "u:\\dev\\ttypX";
-	char	*c; 
+	char *c; 
 	
 	for (c = "0123456789abcdef"; *c; c++) 
 	{
+		char line[] = "u:\\pipe\\ttypX";
+		
 		line[12] = *c;
+		
 		if (!file_exists(line))
 		{
+			int fd;
+			
 			fd = (int)Fcreate(line, FA_SYSTEM|FA_HIDDEN);
 			if (fd < 0) 
 				return -ENOENT;
 			else 
 			{
+				char lnk[] = "u:\\dev\\ttypX";
+				
 				lnk[11] = *c;
+				
 				(void)Fsymlink(line, lnk);
 				if (name)
 					strcpy(name, line);
@@ -61,20 +68,22 @@ static int open_pty(char *name)
 	return -ENOENT;
 }
 
-TEXTWIN *new_proc(char *progname, char *arg, char *env, char *progdir, 
-		  WINCFG *cfg, int talkID, struct passwd *pw)
+TEXTWIN *
+new_proc(char *progname, char *arg, char *env, char *progdir, 
+	 WINCFG *cfg, int talkID, struct passwd *pw)
 {
-	TEXTWIN 			*t;
-	int 				i, ourfd, kidfd;
-	char 				termname[15];
-	long 				oldblock;
+	TEXTWIN *t;
+	int i, ourfd, kidfd;
+	char termname[15];
+	long oldblock;
 	struct winsize tw;
-	char				str[80], *p;
+	char str[80], *p;
 
 	if (cfg->title[0] == '\0')
 		strcpy(str, progname);
 	else
 		strcpy(str, cfg->title);
+
 	t = create_textwin(str, cfg);
 	if (!t) 
 	{
@@ -148,8 +157,19 @@ TEXTWIN *new_proc(char *progname, char *arg, char *env, char *progdir,
 		{
 				struct utmp ut;
 				
+				bzero(&ut, sizeof(ut));
+				
+				/* fill out line name */
+				strncpy(ut.ut_line, t->pty, sizeof(ut.ut_line));
+				ut.ut_line[sizeof(ut.ut_line)-1] = '\0';
+				
+				/* fill out user name */
 				strncpy(ut.ut_user, pw->pw_name, sizeof(ut.ut_user));
+				
+				/* fill out hostname */
 				gethostname(ut.ut_host, sizeof(ut.ut_host));
+				
+				/* fill out timestamp */
 				gettimeofday (&ut.ut_tv, NULL);
 				
 				login(&ut);
@@ -180,12 +200,8 @@ debug("new_proc: pid= %d, fd= %d\n", i, ourfd);
 	return t;
 }
 
-void add_fd(int fd)
-{
-	fdmask |= (1L << fd);
-}
-
-void term_proc(TEXTWIN *t)
+void
+term_proc(TEXTWIN *t)
 {
 	if (t->fd > 0)
 	{
@@ -227,15 +243,15 @@ void term_proc(TEXTWIN *t)
 	exit_code = 0;
 }
 
-
-TEXTWIN *new_shell(void)
+TEXTWIN *
+new_shell(void)
 {
-	struct passwd	*pw;
-	TEXTWIN			*t = NULL;
-	char				*env, *p;
-	char				arg[] = "";	/* 127 -> ARGV */
-	char				shell[80];
-	WINCFG			*cfg;
+	struct passwd *pw;
+	TEXTWIN *t = NULL;
+	char *env, *p;
+	char arg[] = "";	/* 127 -> ARGV */
+	char shell[80];
+	WINCFG *cfg;
 	
 	shel_envrn(&p, "LOGNAME=");
 	if (p != NULL)
@@ -281,14 +297,14 @@ TEXTWIN *new_shell(void)
 	return t;
 }
 
-
-TEXTWIN *start_prog(void)
+TEXTWIN *
+start_prog(void)
 {
 	char filename[256+16], path[80] = "", tmp[60] = "";
 	char *env, arg[51] = " ";
 	TEXTWIN	*t = NULL;
 	WINCFG	*cfg;
-	int		antw;
+	int antw;
 	
 	if (select_file(path, tmp, "", rsc_string(STRPROGSEL), FSCB_NULL))
 	{
@@ -319,22 +335,26 @@ TEXTWIN *start_prog(void)
 	return t;
 }
 
-static void rebuild_fdmask(long which)
+static void
+rebuild_fdmask(long which)
 {
-	int 		i;
-	WINDOW	*w, *wnext;
-	TEXTWIN	*t;
+	int i;
 
 	for (i = 0; i < 32; i++) 
 	{
 		if ((which & (1L << i)) && (Finstat(i) < 0)) 
 		{
+			WINDOW *w, *wnext;
+			
 			/* window has died now */
 			fdmask &= ~(1L << i);
+			
 			for (w = gl_winlist; w; w = wnext) 
 			{
+				TEXTWIN *t = w->extra;
+				
 				wnext = w->next;
-				t = w->extra;
+				
 				if (t && t->fd == i) 
 				{
 					if (t->cfg->autoclose)
@@ -353,26 +373,32 @@ static void rebuild_fdmask(long which)
 	}
 }
 
+void
+add_fd(int fd)
+{
+	fdmask |= (1L << fd);
+}
 
 #define READBUFSIZ 4096 	/* 256 */
 static char buf[READBUFSIZ];
 
-void fd_input(void)
+void
+fd_input(void)
 {
-	long		readfds, r, checkdead;
-	WINDOW 	*w;
-	TEXTWIN 	*t;
+	long readfds, r, checkdead;
+	WINDOW *w;
+	TEXTWIN *t;
 
 	r = 0;
 	checkdead = 0;
 
-/*
-	long 		updtime;
-	long 		newhz;
+#if 0
+	long updtime;
+	long newhz;
 	newhz = clock();
 	updtime = (newhz - lasthz) >> 2;
 	lasthz = newhz;
-*/
+#endif
 
 	if (fdmask) 
 	{
@@ -427,7 +453,6 @@ void fd_input(void)
 	}
 }
 
-
 /*
  * signal handler for dead children
  * all we do is collect the exit code
@@ -435,15 +460,16 @@ void fd_input(void)
  * more data exists for a window
  */
 
-static void dead_kid(void)
+static void
+dead_kid(void)
 {
-	long	r;
+	long r;
 
 	r = Pwait3(WNOHANG, (void *)0);
 /*
 printf("dead_kid: pid=%ld, exit=%ld\n", ((r>>16) & 0x0000ffff),(r & 0x0000ffff));
 */
-	exit_code = (short) (r & 0x0000ffff);
+	exit_code = (short)(r & 0x0000ffff);
 }
 
 
@@ -451,7 +477,8 @@ printf("dead_kid: pid=%ld, exit=%ld\n", ((r>>16) & 0x0000ffff),(r & 0x0000ffff))
  * signal handler for SIGINT and SIGQUIT: these get passed along to the
  * process group in the top window
  */
-static void send_sig(long sig)
+static void
+send_sig(long sig)
 {
 	if (gl_topwin) 
 	{
@@ -463,11 +490,13 @@ static void send_sig(long sig)
 	}
 }
 
-static void ignore()
+static void
+ignore(void)
 {
 }
 
-void proc_init(void)
+void
+proc_init(void)
 {
 	(void)Psignal(SIGCHLD, (long)dead_kid);
 	(void)Psignal(SIGINT, (long)send_sig);
