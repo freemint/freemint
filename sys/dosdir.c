@@ -153,7 +153,7 @@ sys_d_create (const char *path)
 	TRACE(("Dcreate(%s)", path));
 	assert (p->p_fd && p->p_cwd);
 
-	r = path2cookie(path, temp1, &dir);
+	r = path2cookie(p, path, temp1, &dir);
 	if (r)
 	{
 		DEBUG(("Dcreate(%s): returning %ld", path, r));
@@ -218,7 +218,7 @@ sys_d_delete (const char *path)
 
 	TRACE(("Ddelete(%s)", path));
 
-	r = path2cookie (path, temp1, &parentdir);
+	r = path2cookie (cp, path, temp1, &parentdir);
 	if (r)
 	{
 		DEBUG(("Ddelete(%s): error %lx", path, r));
@@ -238,7 +238,7 @@ sys_d_delete (const char *path)
 	}
 
 	/* now get the info on the file itself */
-	r = relpath2cookie (&parentdir, temp1, NULL, &targdir, 0);
+	r = relpath2cookie (cp, &parentdir, temp1, NULL, &targdir, 0);
 	if (r)
 	{
 bailout:
@@ -350,7 +350,7 @@ sys_d_setpath (const char *path)
 	TRACE (("Dsetpath(%s)", path));
 	assert (cwd);
 
-	r = path2cookie (path, follow_links, &dir);
+	r = path2cookie (p, path, follow_links, &dir);
 	if (r)
 	{
 		DEBUG (("Dsetpath(%s): returning %ld", path, r));
@@ -559,7 +559,7 @@ sys_f_sfirst (const char *path, int attrib)
 
 	TRACE(("Fsfirst(%s, %x)", path, attrib));
 
-	r = path2cookie (path, temp1, &dir);
+	r = path2cookie (p, path, temp1, &dir);
 	if (r)
 	{
 		DEBUG(("Fsfirst(%s): path2cookie returned %ld", path, r));
@@ -581,7 +581,7 @@ sys_f_sfirst (const char *path, int attrib)
 	if (slash)
 	{
 		*slash++ = 0;	/* slash now points to a name or pattern */
-		r = relpath2cookie (&dir, temp1, follow_links, &newdir, 0);
+		r = relpath2cookie (p, &dir, temp1, follow_links, &newdir, 0);
 		release_cookie (&dir);
 		if (r)
 		{
@@ -657,7 +657,7 @@ sys_f_sfirst (const char *path, int attrib)
 	if (!havelabel && has_wild (slash) == 0)
 	{
 		/* no wild cards in pattern */
-		r = relpath2cookie (&dir, slash, follow_links, &newdir, 0);
+		r = relpath2cookie (p, &dir, slash, follow_links, &newdir, 0);
 		if (r == E_OK)
 		{
 			r = xfs_getxattr (newdir.fs, &newdir, &xattr);
@@ -891,7 +891,7 @@ baderror:
 			if (r == E_OK)
 			{
 				/* the "1" tells relpath2cookie that we read a link */
-				r = relpath2cookie (&dirh->fc, linkedto,
+				r = relpath2cookie (p, &dirh->fc, linkedto,
 					follow_links, &fc, 1);
 				if (r == E_OK)
 				{
@@ -953,7 +953,7 @@ sys_f_attrib (const char *name, int rwflag, int attr)
 
 	DEBUG(("Fattrib(%s, %d)", name, attr));
 
-	r = path2cookie (name, follow_links, &fc);
+	r = path2cookie (p, name, follow_links, &fc);
 	if (r)
 	{
 		DEBUG(("Fattrib(%s): error %ld", name, r));
@@ -1015,7 +1015,7 @@ sys_f_delete (const char *name)
 	TRACE(("Fdelete(%s)", name));
 
 	/* get a cookie for the directory the file is in */
-	r = path2cookie (name, temp1, &dir);
+	r = path2cookie (p, name, temp1, &dir);
 	if (r)
 	{
 		DEBUG(("Fdelete: couldn't get directory cookie: error %ld", r));
@@ -1112,7 +1112,7 @@ sys_f_rename (int junk, const char *old, const char *new)
 
 	TRACE(("Frename(%s, %s)", old, new));
 
-	r = path2cookie (old, temp2, &olddir);
+	r = path2cookie (p, old, temp2, &olddir);
 	if (r)
 	{
 		DEBUG(("Frename(%s,%s): error parsing old name",old,new));
@@ -1124,7 +1124,7 @@ sys_f_rename (int junk, const char *old, const char *new)
 	 * we enforce this restriction only on regular files; processes,
 	 * directories, and character special files can be renamed at will
 	 */
-	r = relpath2cookie (&olddir, temp2, (char *)0, &oldfil, 0);
+	r = relpath2cookie (p, &olddir, temp2, (char *)0, &oldfil, 0);
 	if (r)
 	{
 		DEBUG(("Frename(%s,%s): old file not found",old,new));
@@ -1147,7 +1147,7 @@ sys_f_rename (int junk, const char *old, const char *new)
 		return EACCES;
 	}
 
-	r = path2cookie(new, temp1, &newdir);
+	r = path2cookie(p, new, temp1, &newdir);
 	if (r)
 	{
 		DEBUG(("Frename(%s,%s): error parsing new name",old,new));
@@ -1206,10 +1206,12 @@ sys_f_rename (int junk, const char *old, const char *new)
 long _cdecl
 sys_d_pathconf (const char *name, int which)
 {
+	struct proc *p = curproc;
+
 	fcookie dir;
 	long r;
 
-	r = path2cookie (name, NULL, &dir);
+	r = path2cookie (p, name, NULL, &dir);
 	if (r)
 	{
 		DEBUG(("Dpathconf(%s): bad path",name));
@@ -1244,7 +1246,7 @@ sys_d_opendir (const char *name, int flag)
 	long r;
 	ushort mode;
 
-	r = path2cookie (name, follow_links, &dir);
+	r = path2cookie (p, name, follow_links, &dir);
 	if (r)
 	{
 		DEBUG(("Dopendir(%s): error %ld", name, r));
@@ -1401,12 +1403,14 @@ sys_d_closedir (long handle)
 long _cdecl
 sys_f_xattr (int flag, const char *name, XATTR *xattr)
 {
+	struct proc *p = curproc;
+
 	fcookie fc;
 	long r;
 
 	TRACE (("Fxattr(%d, %s)", flag, name));
 
-	r = path2cookie (name, flag ? NULL : follow_links, &fc);
+	r = path2cookie (p, name, flag ? NULL : follow_links, &fc);
 	if (r)
 	{
 		DEBUG (("Fxattr(%s): path2cookie returned %ld", name, r));
@@ -1447,14 +1451,14 @@ sys_f_link (const char *old, const char *new)
 
 	TRACE(("Flink(%s, %s)", old, new));
 
-	r = path2cookie (old, temp2, &olddir);
+	r = path2cookie (p, old, temp2, &olddir);
 	if (r)
 	{
 		DEBUG(("Flink(%s,%s): error parsing old name",old,new));
 		return r;
 	}
 
-	r = path2cookie (new, temp1, &newdir);
+	r = path2cookie (p, new, temp1, &newdir);
 	if (r)
 	{
 		DEBUG(("Flink(%s,%s): error parsing new name",old,new));
@@ -1501,7 +1505,7 @@ sys_f_symlink (const char *old, const char *new)
 
 	TRACE(("Fsymlink(%s, %s)", old, new));
 
-	r = path2cookie(new, temp1, &newdir);
+	r = path2cookie(p, new, temp1, &newdir);
 	if (r)
 	{
 		DEBUG(("Fsymlink(%s,%s): error parsing %s", old,new,new));
@@ -1527,13 +1531,15 @@ sys_f_symlink (const char *old, const char *new)
 long _cdecl
 sys_f_readlink (int buflen, char *buf, const char *linkfile)
 {
+	struct proc *p = curproc;
+
 	fcookie file;
 	long r;
 	XATTR xattr;
 
 	TRACE(("Freadlink(%s)", linkfile));
 
-	r = path2cookie (linkfile, (char *)0, &file);
+	r = path2cookie (p, linkfile, (char *)0, &file);
 	if (r)
 	{
 		DEBUG(("Freadlink: unable to find %s", linkfile));
@@ -1567,13 +1573,15 @@ sys_f_readlink (int buflen, char *buf, const char *linkfile)
 long _cdecl
 sys_d_cntl (int cmd, const char *name, long arg)
 {
+	struct proc *p = curproc;
+
 	fcookie dir;
 	long r;
 	char temp1[PATH_MAX];
 
 	DEBUG (("Dcntl(cmd=%x, file=%s, arg=%lx)", cmd, name, arg));
 
-	r = path2cookie (name, temp1, &dir);
+	r = path2cookie (p, name, temp1, &dir);
 	if (r)
 	{
 		DEBUG (("Dcntl: couldn't find %s", name));
@@ -1640,7 +1648,7 @@ sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
 
 	TRACE(("Fchown16(%s, %d, %d, %s)", name, uid, gid, follow_symlinks != 0 ? "follow_links" : "nofollow"));
 
-	r = path2cookie (name, follow_symlinks == 1 ? follow_links : NULL, &fc);
+	r = path2cookie (p, name, follow_symlinks == 1 ? follow_links : NULL, &fc);
 	if (r)
 	{
 		DEBUG(("Fchown(%s): error %ld", name, r));
@@ -1716,7 +1724,7 @@ sys_f_chmod (const char *name, unsigned int mode)
 
 
 	TRACE (("Fchmod(%s, %o)", name, mode));
-	r = path2cookie (name, follow_links, &fc);
+	r = path2cookie (p, name, follow_links, &fc);
 	if (r)
 	{
 		DEBUG (("Fchmod(%s): error %ld", name, r));
@@ -1903,10 +1911,12 @@ sys_d_lock (int mode, int _dev)
 long _cdecl
 sys_d_readlabel (const char *name, char *buf, int buflen)
 {
+	struct proc *p = curproc;
+
 	fcookie dir;
 	long r;
 
-	r = path2cookie (name, NULL, &dir);
+	r = path2cookie (p, name, NULL, &dir);
 	if (r)
 	{
 		DEBUG (("Dreadlabel(%s): bad path", name));
@@ -1941,7 +1951,7 @@ sys_d_writelabel (const char *name, const char *label)
 		return EACCES;
 	}
 
-	r = path2cookie (name, NULL, &dir);
+	r = path2cookie (p, name, NULL, &dir);
 	if (r)
 	{
 		DEBUG (("Dwritelabel(%s): bad path",name));
@@ -1980,7 +1990,7 @@ sys_d_chroot (const char *path)
 		return EPERM;
 	}
 
-	r = path2cookie (path, follow_links, &dir);
+	r = path2cookie (p, path, follow_links, &dir);
 	if (r)
 	{
 		DEBUG (("Dchroot(%s): bad path -> %li", path, r));
@@ -2044,12 +2054,14 @@ error:
 long _cdecl
 sys_f_stat64 (int flag, const char *name, STAT *stat)
 {
+	struct proc *p = curproc;
+
 	fcookie fc;
 	long r;
 
 	TRACE (("Fstat64(%d, %s)", flag, name));
 
-	r = path2cookie (name, flag ? NULL : follow_links, &fc);
+	r = path2cookie (p, name, flag ? NULL : follow_links, &fc);
 	if (r)
 	{
 		DEBUG (("Fstat64(%s): path2cookie returned %ld", name, r));

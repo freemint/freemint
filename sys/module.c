@@ -61,7 +61,7 @@ kernel_opendir(struct dirstruct *dirh, const char *name)
 {
 	long r;
 
-	r = path2cookie(name, follow_links, &dirh->fc);
+	r = path2cookie(curproc, name, follow_links, &dirh->fc);
 	if (r == E_OK)
 	{
 		dirh->index = 0;

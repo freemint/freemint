@@ -295,7 +295,7 @@ pCB_alias(const char *drive, const char *path, struct parsinf *inf)
 	else
 	{
 		fcookie root_dir;
-		long r = path2cookie(path, NULL, &root_dir);
+		long r = path2cookie(curproc, path, NULL, &root_dir);
 		if (r)
 		{
 			parser_msg(inf, NULL);

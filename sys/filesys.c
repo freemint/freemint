@@ -672,11 +672,11 @@ disk_changed (ushort d)
  */
 
 long
-relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, int depth)
+relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
+	       fcookie *res, int depth)
 {
 	static char newpath[16] = "U:\\DEV\\";
 
-	struct proc *p = curproc;
 	struct cwd *cwd = p->p_cwd;
 
 	char temp2[PATH_MAX];
@@ -1099,7 +1099,8 @@ restart_mount:
 					release_cookie (&dir);
 					break;
 				}
-				r = relpath2cookie (&dir, linkstuff, follow_links, res, depth + 1);
+				r = relpath2cookie (p, &dir, linkstuff, follow_links,
+						    res, depth + 1);
 				release_cookie (&dir);
 				if (r)
 				{
@@ -1124,9 +1125,9 @@ restart_mount:
 }
 
 long
-path2cookie (const char *path, char *lastname, fcookie *res)
+path2cookie(struct proc *p, const char *path, char *lastname, fcookie *res)
 {
-	struct cwd *cwd = curproc->p_cwd;
+	struct cwd *cwd = p->p_cwd;
 
 	/* AHDI sometimes will keep insisting that a media change occured;
 	 * we limit the number of retrys to avoid hanging the system
@@ -1138,10 +1139,10 @@ path2cookie (const char *path, char *lastname, fcookie *res)
 	long r;
 
 restart:
-	r = relpath2cookie (dir, path, lastname, res, 0);
+	r = relpath2cookie(p, dir, path, lastname, res, 0);
 	if (r == ECHMEDIA && trycnt--)
 	{
-		DEBUG (("path2cookie: restarting due to media change"));
+		DEBUG(("path2cookie: restarting due to media change"));
 		goto restart;
 	}
 

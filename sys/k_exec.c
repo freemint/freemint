@@ -148,9 +148,9 @@ make_fname(struct proc *p, const char *source)
 		return r;
 
 	/* Get a cookie for the name of the executable */
-	if (path2cookie(p->fname, tmp, &dir) == 0)
+	if (path2cookie(p, p->fname, tmp, &dir) == 0)
 	{
-	 	if (relpath2cookie(&dir, tmp, follow_links, &exe, 0) == 0)
+	 	if (relpath2cookie(p, &dir, tmp, follow_links, &exe, 0) == 0)
 	 	{
 	 		/* the release does nothing
 	 		 * if the exe cookie is clean
