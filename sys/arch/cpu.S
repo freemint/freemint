@@ -503,3 +503,18 @@ _setstack:
 	move.l	(sp)+,a0		// pop return address
 	move.l	(sp)+,sp		// set stack pointer
 	jmp	(a0)			// return
+
+// used for debugging
+
+#ifdef DEBUG_INFO
+	.globl	_get_ssp
+	.globl	_get_usp
+
+_get_ssp:
+	move.l	sp,d0
+	rts
+_get_usp:
+	move.l	usp,a0
+	move.l	a0,d0
+	rts
+#endif

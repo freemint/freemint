@@ -818,6 +818,28 @@ init (void)
 
 	stop_and_ask();
 
+# ifdef DEBUG_INFO
+	{
+		long usp, ssp;
+
+		usp = get_usp();
+		ssp = get_ssp();
+
+		boot_printf("Kernel BP: 0x%08lx,\r\n" \
+				"TEXT: 0x%08lx (SIZE: %ld B)\r\n" \
+				"DATA: 0x%08lx (SIZE: %ld B)\r\n" \
+				" BSS: 0x%08lx (SIZE: %ld B)\r\n" \
+				" USP: 0x%08lx (SIZE: %ld B)\r\n" \
+				" SSP: 0x%08lx (SIZE: %ld B)\r\n", \
+				_base, \
+				_base->p_tbase, _base->p_tlen, \
+				_base->p_dbase, _base->p_dlen, \
+				_base->p_bbase, _base->p_blen, \
+				usp, usp - (_base->p_bbase + _base->p_blen), \
+				ssp, ssp - (_base->p_bbase + _base->p_blen));
+	}
+# endif
+
 	sysdrv = *((short *) 0x446);	/* get the boot drive number */
 
 # ifdef VERBOSE_BOOT
@@ -1069,7 +1091,8 @@ init (void)
 	calibrate_delay();
 
 	/* Round the value and print it */
-	boot_printf("%lu.%02lu BogoMIPS\r\n\r\n", (loops_per_sec + 2500) / 500000, ((loops_per_sec + 2500) / 5000) % 100);
+	boot_printf("%lu.%02lu BogoMIPS\r\n\r\n", \
+		(loops_per_sec + 2500) / 500000, ((loops_per_sec + 2500) / 5000) % 100);
 
 	stop_and_ask();
 
