@@ -219,11 +219,23 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func) ())
 static long _cdecl
 mint_criticerr (long error) /* high word is error, low is drive */
 {
-# if 1
-	return (error >> 16);		/* just return with error */
-# else
-	return (*curproc->criticerr)(error);
-# endif
+	ALERT ("Criticial error: %lx (%c: - %i)!",
+		error, (char) (error & 0xf), (short) (error >> 16));
+	
+	/* just return with error */
+	return (error >> 16);
+	
+	/* 
+	 * this concept is totally wrong
+	 * 
+	 * if critical error handler is called
+	 * the system hang at spl5 or spl6
+	 * also there are negative side effects with memory
+	 * protection, namely the system freeze up
+	 * 
+	 * 
+	 * return (*curproc->criticerr)(error);
+	 */
 }
 
 /*
