@@ -6,8 +6,8 @@
 
 #include <cflib.h>
 
-#if !defined(__CFLIB__)
-#error at least cflib 0.20.0 is required to compile TosWin2
+#if !defined(__CFLIB__) || (__CFLIB_MAJOR__ != 0 || __CFLIB_MINOR__ < 21)
+#error This Toswin2 version require an up-to-date cflib.
 #endif
 
 #ifdef FALSE
