@@ -662,7 +662,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			{
 				const char *func;
 
-				func = alloc_lookup((void *)arg1, NULL);
+				func = km_trace_lookup((void *)arg1, NULL);
 				if (func)
 					strcpy((char *)arg2, func);
 				else
