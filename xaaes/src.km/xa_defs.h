@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -51,7 +51,6 @@
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		32
 /* CONFIGURABLE PARAMETERS */
-#define STRINGS			1024	/* number of environment variable allowes in zaaes.cnf */
 #define NUM_CB			32	/* table of cancel button texts */
 #define CB_L			16
 #define CASCADE			16	/* Max depth of cascading menus */

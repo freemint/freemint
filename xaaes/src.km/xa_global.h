@@ -101,7 +101,6 @@ struct common
 	RECT iconify;			/* Positioning information for iconifying windows */
 	void *Aes_rsc;			/* Pointer to the XaAES resources */
 	char *env;			/* new environment */
-	char *strings[STRINGS];		/* pointers to environment variables from mint & config file */
 
 	struct xa_window *focus;	/* Only 1 of 2: the top window(window_list) or root_window. */
 
