@@ -71,7 +71,7 @@ long	del_rsvfentry	(char *name);
 /* Not that we want to support these below ... */
 # define COOKIE_STiK	0x5354694bL
 # define COOKIE_ICIP	0x49434950L
-# define COOKIE_NF	0x20021021L
+# define COOKIE_NF	0x5F5F4E46L
 
 /* hardware cookies */
 # define COOKIE_CT60	0x43543630L
