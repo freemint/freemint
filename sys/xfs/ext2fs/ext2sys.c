@@ -1572,6 +1572,15 @@ e_dfree (fcookie *dir, long *buffer)
 	buffer[2] = EXT2_BLOCK_SIZE (s);
 	buffer[3] = 1;
 	
+	/* correct free blocks count for non-privileged user */
+	if (p_geteuid ())
+	{
+		long s_r_blocks_count = le2cpu32 (s->sbi.s_sb->s_r_blocks_count);
+		
+		if (buffer[0] > s_r_blocks_count)
+			buffer[0] -= s_r_blocks_count;
+	}
+	
 	return E_OK;
 }
 
