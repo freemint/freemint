@@ -419,7 +419,6 @@ cancelsigintrs (void)
 	spl (s);
 }
 
-# ifdef EXCEPTION_SIGS
 /* exception numbers corresponding to signals
  */
 char excep_num [NSIG] =
@@ -569,7 +568,6 @@ bombs (ushort sig)
 		TRACE (("bombs(%d)", sig));
 	}
 }
-# endif
 
 /*
  * interrupt handlers to raise SIGBUS, SIGSEGV, etc. Note that for
