@@ -16,7 +16,7 @@
 	.globl	_init
 	.globl	__base
 
-#define STACKSIZE 0x1100
+#define STACKSIZE 0x00002000
 
 	.bss
 __base:
