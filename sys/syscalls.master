@@ -424,9 +424,9 @@
 0x158	pgetpriority	(int which, int who)
 0x159	psetpriority	(int which, int who, int prio)
 0x15a	fpoll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
-0x15b	writev		(short fd, const struct iovec *iovp, long iovcnt)
-0x15c	readv		(short fd, const struct iovec *iovp, long iovcnt)
-0x15d	RESERVED
+0x15b	fwritev		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
+0x15c	freadv		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
+0x15d	ffstat		(short fd, struct stat *st)			/* 1.16 */
 0x15e	RESERVED
 0x15f	emulation	(ushort which, ushort op,
 				long a1, long a2, long a3, long a4,
