@@ -66,7 +66,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		client->name, md->x, md->y, md->state, md->clicks,
 		ce->ptr1, ce->ptr2, wind, md));
 
-	if (wind == 0)
+	if (!wind)
 	{
 		if (C.menu_base && md->state && C.menu_base->client == client)
 		{
@@ -157,15 +157,37 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 void
 cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 {
+	struct xa_window *wind;
+	struct xa_widget *widg = NULL;
 	if (cancel)
 		return;
 
-	DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s", ce->client->name));
 
-	if (ce->client->waiting_for & MU_BUTTON)
-		button_event(lock, ce->client, &ce->md);
+	wind = ce->ptr1;
+	if (wind)
+		widg = get_widget(wind, XAW_ICONIFY);
+
+	DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s (wind=%lx, widg=%lx)",
+		ce->client->name, wind, widg));
+
+	/*
+	 * Double click on a iconified window will uniconify
+	 */
+	if (wind && wind->window_status == XAWS_ICONIFIED && widg && widg->click)
+	{
+		if (ce->md.clicks > 1)
+			widg->click(lock, wind, widg, &ce->md);
+		else if (wind->send_message && wind != window_list)
+			wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
+		ce->client->md.clicks = 0;
+	}
 	else
-		add_pending_button(lock, ce->client);
+	{
+		if (ce->client->waiting_for & MU_BUTTON)
+			button_event(lock, ce->client, &ce->md);
+		else
+			add_pending_button(lock, ce->client);
+	}
 }
 
 void
