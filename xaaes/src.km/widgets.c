@@ -74,7 +74,6 @@ static char *t_widg[] =
 };
 #endif
 
-
 /*
  * WINDOW WIDGET SET HANDLING ROUTINES
  * This module handles the behaviour of the window widgets.
@@ -410,6 +409,7 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 	if (new)
 	{
 		bzero(new, sizeof(*new));
+		new->flags |= WTF_ALLOC;
 		new->tree = obtree;
 		new->owner = client;
 		new->c = *(RECT *)&obtree->ob_x;
@@ -451,13 +451,90 @@ free_wtlist(struct xa_client *client)
 {
 	XA_TREE *wt;
 
+	DIAGS(("free_wtlist"));
 	while (client->wtlist)
 	{
 		wt = client->wtlist;
 		client->wtlist = wt->next;
-		kfree(wt);
+		free_wt(wt);
 	}
 }
+/* Unhook a widget_tree from its owners wtlist
+ */
+void
+remove_from_wtlist(XA_TREE *wt)
+{
+	XA_TREE **nwt;
+
+	nwt = &wt->owner->wtlist;
+
+	while (*nwt)
+	{
+		if (*nwt == wt)
+		{
+			*nwt = wt->next;
+			DIAGS(("remove_from_wtlist: removed wt=%lx from %s list",
+				wt, wt->owner->name));
+			break;
+		}
+		nwt = &(*nwt)->next;
+	}
+	wt->next = NULL;
+	DIAGS(("remove_from_wtlist: wt=%lx not in %s wtlist",
+		wt, wt->owner->name));
+}
+
+/* Ozk:
+ * Not all things should be duplicated in a widget_tree
+ */
+void
+copy_wt(XA_TREE *d, XA_TREE *s)
+{
+	ulong f = d->flags;
+	XA_TREE *n = d->next;
+
+	*d = *s;
+
+	d->flags = f;
+	d->next = n;
+}
+	
+void
+free_wt(XA_TREE *wt)
+{
+	DIAGS(("free_wt: wt=%lx", wt));
+	if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
+	{
+		DIAGS(("  --- freed extra %lx", wt->extra));
+		kfree(wt->extra);
+	}
+#if GENERATE_DIAGS
+	else
+		DIAGS(("  --- extra not alloced"));
+#endif
+	if (wt->tree && (wt->flags & WTF_TREE_ALLOC))
+	{
+		DIAGS(("  --- freed obtree %lx", wt->tree));
+		kfree(wt->tree);
+	}
+#if GENERATE_DIAGS
+	else
+		DIAGS(("  --- obtree not alloced"));
+#endif
+	if (wt->flags & WTF_ALLOC)
+	{
+		DIAGS(("  --- freed wt=%lx", wt));
+		kfree(wt);
+	}
+	else
+	{
+		struct xa_client *client = wt->owner;
+		DIAGS(("  --- wt=%lx not alloced", wt));
+		bzero(wt, sizeof(*wt));
+		wt->owner = client;
+	}
+}
+
 #if 0
 XA_TREE *
 check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
@@ -801,15 +878,43 @@ calc_work_area(struct xa_window *wi)
 /*
  * Ozk: Any resources taken by a widget should be released here
  */
-static void
-free_xawidget(struct xa_widget *widg)
+void
+free_xawidget_resources(struct xa_widget *widg)
 {
+	DIAGS(("free_xawidget_resources: widg=%lx", widg));
 	if (widg->stuff && (widg->flags & XAWF_STUFFKMALLOC))
 	{
-		kfree(widg->stuff);
-		widg->stuff = NULL;
-		widg->flags &= ~XAWF_STUFFKMALLOC;
+		switch (widg->stufftype)
+		{
+			case STUFF_IS_WT:
+			{					
+				XA_TREE *wt = widg->stuff;
+				DIAGS(("  --- stuff is wt=%lx in widg=%lx",
+					wt, widg));
+				remove_from_wtlist(wt);
+				free_wt(widg->stuff);
+				break;
+			}
+			default:
+			{
+				DIAGS(("  --- release stuff=%lx in widg=%lx",
+					widg->stuff, widg));
+				kfree(widg->stuff);
+			}
+		}
+		widg->flags    &= ~XAWF_STUFFKMALLOC;
 	}
+#if GENERATE_DIAGS
+	else
+		DIAGS(("  --- stuff=%lx not alloced in widg=%lx",
+			widg->stuff, widg));
+#endif
+	widg->stufftype	= 0;
+	widg->stuff   = NULL;
+ 	widg->display = NULL;
+	widg->click   = NULL;
+	widg->dclick  = NULL;
+	widg->drag    = NULL;
 }
 
 /*
@@ -821,27 +926,27 @@ free_xawidget(struct xa_widget *widg)
 /* put some extra data there as well. */
 static XA_WIDGET_LOCATION
 /*             defaults              index        mask     rsc             top     destruct */
-stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSER,    WIDG_CLOSER,  false, free_xawidget },
-stdl_full    = {RT, { 0, 0, 1, 1 },  XAW_FULL,    FULLER,    WIDG_FULL,    false, free_xawidget },
-stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, WIDG_ICONIFY, false, free_xawidget },
-stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     WIDG_HIDE,    false, free_xawidget },
-stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,            false, free_xawidget },
-stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   0,         0,            false, free_xawidget },
-stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     WIDG_SIZE,    false, free_xawidget },
-stdl_uscroll = {RT, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   WIDG_UP,      false, free_xawidget },
-stdl_upage   = {RT, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   0,            false, free_xawidget },
-stdl_vslide  = {RT, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    0,            false, free_xawidget },
-stdl_dpage   = {RT, { 0, 1, 1, 1 },  XAW_DNPAGE,  DNARROW,   0,            false, free_xawidget },
-stdl_dscroll = {RB, { 0, 1, 1, 1 },  XAW_DNLN,    DNARROW,   WIDG_DOWN,    false, free_xawidget },
-stdl_lscroll = {LB, { 0, 0, 1, 1 },  XAW_LFLN,    LFARROW,   WIDG_LEFT,    false, free_xawidget },
-stdl_lpage   = {LB, { 1, 0, 1, 1 },  XAW_LFPAGE,  LFARROW,   0,            false, free_xawidget },
-stdl_hslide  = {LB, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    0,            false, free_xawidget },
-stdl_rpage   = {LB, { 1, 0, 1, 1 },  XAW_RTPAGE,  RTARROW,   0,            false, free_xawidget },
-stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW,   WIDG_RIGHT,   false, free_xawidget },
-stdl_info    = {LT, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      0,            false, free_xawidget },
-stdl_menu    = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    0,            false, free_xawidget },
-stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     0,            false, free_xawidget },
-stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         0,            false, free_xawidget }
+stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSER,    WIDG_CLOSER,  false, free_xawidget_resources },
+stdl_full    = {RT, { 0, 0, 1, 1 },  XAW_FULL,    FULLER,    WIDG_FULL,    false, free_xawidget_resources },
+stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, WIDG_ICONIFY, false, free_xawidget_resources },
+stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     WIDG_HIDE,    false, free_xawidget_resources },
+stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,            false, free_xawidget_resources },
+stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   0,         0,            false, free_xawidget_resources },
+stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     WIDG_SIZE,    false, free_xawidget_resources },
+stdl_uscroll = {RT, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   WIDG_UP,      false, free_xawidget_resources },
+stdl_upage   = {RT, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   0,            false, free_xawidget_resources },
+stdl_vslide  = {RT, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    0,            false, free_xawidget_resources },
+stdl_dpage   = {RT, { 0, 1, 1, 1 },  XAW_DNPAGE,  DNARROW,   0,            false, free_xawidget_resources },
+stdl_dscroll = {RB, { 0, 1, 1, 1 },  XAW_DNLN,    DNARROW,   WIDG_DOWN,    false, free_xawidget_resources },
+stdl_lscroll = {LB, { 0, 0, 1, 1 },  XAW_LFLN,    LFARROW,   WIDG_LEFT,    false, free_xawidget_resources },
+stdl_lpage   = {LB, { 1, 0, 1, 1 },  XAW_LFPAGE,  LFARROW,   0,            false, free_xawidget_resources },
+stdl_hslide  = {LB, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    0,            false, free_xawidget_resources },
+stdl_rpage   = {LB, { 1, 0, 1, 1 },  XAW_RTPAGE,  RTARROW,   0,            false, free_xawidget_resources },
+stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW,   WIDG_RIGHT,   false, free_xawidget_resources },
+stdl_info    = {LT, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      0,            false, free_xawidget_resources },
+stdl_menu    = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    0,            false, free_xawidget_resources },
+stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     0,            false, free_xawidget_resources },
+stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         0,            false, free_xawidget_resources }
 ;
 
 static void
@@ -2171,9 +2276,13 @@ zwidg(struct xa_window *wind, short n, bool keepstuff)
 {
 	XA_WIDGET *widg = wind->widgets + n;
 	void *stuff = NULL;
+	short st = 0;
 
 	if (keepstuff)
+	{
 		stuff = widg->stuff;
+		st = widg->stufftype;
+	}
 	else if (widg->destruct)
 		(*widg->destruct)(widg);
 
@@ -2182,7 +2291,10 @@ zwidg(struct xa_window *wind, short n, bool keepstuff)
 	widg->type = n;
 
 	if (stuff)
+	{
 		widg->stuff = stuff;
+		widg->stufftype = st;
+	}
 }
 
 /* 
@@ -2212,29 +2324,6 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & (UPARROW|VSLIDE|DNARROW))
 		right = 1;
 
-#if 0
-	if (keep_stuff)
-	{
-		for (wd = 0; wd < XA_MAX_WIDGETS; wd++)
-		{
-			void *stuff;
-
-			widg = wind->widgets + wd;
-			stuff = widg->stuff;
-			bzero(widg, sizeof(XA_WIDGET));
-
-			wind->widgets[wd].type = wd;
-			widg->stuff = stuff;
-		}
-	}
-	else
-	{
-		bzero(wind->widgets, sizeof(XA_WIDGET) * XA_MAX_WIDGETS);
-
-		for (wd = 0; wd < XA_MAX_WIDGETS; wd++)
-			wind->widgets[wd].type = wd;
-	}
-#endif
 	/* 
 	 * function make_widget()
 	 * 
@@ -2724,38 +2813,26 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 	if (wt->e.obj >= 0 || obtree_has_default(obtree))
 		wind->keypress = Key_form_do;
 		
-	//if (has_default(form) || wt->e.obj >= 0)
-	//	wind->keypress = handle_form_key;
-
-#if 0
-	if (wind->dial & created_for_FORM_DO)
-		wt->exit_form = Exit_form_do; //exit_form_do;
-	else
-		wt->exit_form = exit_form_dial;
-#endif
 	wt->exit_form = Exit_form_do;
 
 	loc.relative_type = LT;
+
 	set_toolbar_coords(wind);
-#if 0
-	loc.r.x  = wind->wa.x - wind->r.x - wind->frame;
-	loc.r.y  = wind->wa.y - wind->r.y - wind->frame;
-	loc.r.w  = form->ob_width;
-	loc.r.h  = form->ob_height;
-#endif
+
 	loc.n	 = XAW_TOOLBAR;
 	loc.mask = TOOLBAR;
 
 	widg->display	= display_object_widget;
-	widg->click	= Click_windowed_form_do; //click_object_widget;
-	widg->destruct	= free_xawidget;
+	widg->click	= Click_windowed_form_do;
+	widg->destruct	= free_xawidget_resources;
 	
 	/* HR 280801: clicks are now put in the widget struct.
 	      NB! use this property only when there is very little difference between the 2 */
-	widg->dclick	= Click_windowed_form_do; //click_object_widget;
-	widg->drag	= Click_windowed_form_do; //click_object_widget;
+	widg->dclick	= Click_windowed_form_do;
+	widg->drag	= Click_windowed_form_do;
 	widg->state	= OS_NORMAL;
 	widg->stuff	= wt;
+	widg->stufftype	= STUFF_IS_WT;
 	widg->loc	= loc;
 	widg->start	= 0;
 	wind->tool	= widg;
@@ -2771,24 +2848,18 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 
 	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, wt));
 
-	if (wt)
+	if (widg->destruct)
+		widg->destruct(widg);
+	else
 	{
-		if (wt->extra)
-			kfree(wt->extra);
-
-		if (   wt != &wind->menu_bar
-		    && wt != &wind->toolbar
-		    && wt != &wind->widg_info)
-			kfree(wt);
+		widg->stufftype	= 0;
+		widg->stuff   = NULL;
+ 		widg->display = NULL;
+		widg->click   = NULL;
+		widg->dclick  = NULL;
+		widg->drag    = NULL;
 	}
-
 	wind->keypress = NULL;
-
-	widg->stuff   = NULL;
- 	widg->display = NULL;
-	widg->click   = NULL;
-	widg->dclick  = NULL;
-	widg->drag    = NULL;
 }
 
 static inline bool
