@@ -97,13 +97,15 @@ object_is_transparent(OBJECT *ob)
 
 	switch (ob->ob_type & 0xff)
 	{
+#if 0
 		case G_BOX:
 		case G_BOXCHAR:
 		{
 			if (!(*(BFOBSPEC *)object_get_spec(ob)).fillpattern)
 				ret = true;
 			break;
-		}	
+		}
+#endif	
 		case G_STRING:
 		case G_SHORTCUT:
 		case G_IBOX:
@@ -119,13 +121,15 @@ object_is_transparent(OBJECT *ob)
 				ret = true;
 			break;
 		}
+#if 0
 		case G_BOXTEXT:
 		case G_FBOXTEXT:
 		{
-			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).fillpattern)
+			//if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).fillpattern)
 				ret = true;
 			break;
 		}
+#endif
 	}
 
 	/* opaque */
