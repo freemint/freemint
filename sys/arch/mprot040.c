@@ -122,6 +122,8 @@
  * 
  */
 
+# ifndef NO_MMU
+
 # include "mprot.h"
 
 # include "libkern/libkern.h"
@@ -1898,3 +1900,5 @@ BIG_MEM_DUMP (int bigone, PROC *proc)
 }
 
 # endif /* MMU040 */
+
+# endif /* ONLY68000 */
