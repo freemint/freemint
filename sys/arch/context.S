@@ -57,6 +57,7 @@
 	.globl	_restore_context
 	.globl	_change_context
 
+	.globl	_mcpu
 	.globl	_fpu
 	.globl	_framesizes
 	.globl	_new_trace		// from intr.s
@@ -106,10 +107,18 @@ nojunk:
 #endif
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	nofpu
+
 	fsave	C_FSTATE(a0)		// save internal state frame
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+
+	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	bne.s	no60
+	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu			// skip programmer's model save
-	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
+	bra.s	save
+
+no60:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+	beq.s	nofpu			// skip programmer's model save
+save:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
 	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
 nofpu:
 	lea	C_SFMT(a0),a2
@@ -163,9 +172,16 @@ noprot2:
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	nofpu2
 	fsave	C_FSTATE(a0)		// save internal state frame
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+
+	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	bne.s	no60_2
+	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu2			// skip programmer's model save
-	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
+	bra.s	save2
+
+no60_2:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+	beq.s	nofpu2			// skip programmer's model save
+save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
 	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
 nofpu2:
 // note: I am somewhat unsure of this assumption, viz that save_context
@@ -240,9 +256,14 @@ rcovernc:
 // if running with a true coprocessor we need to restore the FPU state
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	short3
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	bne.s	no60_3
+	tst.b	C_FSTATE+2(a0)
+	beq.s	short4
+	bra.s	save3
+no60_3:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
 	beq.s	short4			// skip programmer's model restore
-	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
+save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
 short4:
 	frestore C_FSTATE(a0)			// finally the internal state
@@ -316,9 +337,14 @@ rcover2nc:
 
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	short6
-	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+	bne.s	no60_4
+	tst.b	C_FSTATE+2(a0)
+	beq.s	short5
+	bra.s	save5
+no60_4:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
 	beq.s	short5			// skip programmer's model restore
-	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
+save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
 short5:
 	frestore C_FSTATE(a0)			// finally the internal state
