@@ -99,7 +99,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	0
+#define KENTRY_MIN_VERSION	1
 
 
 /* hardware dependant vector
@@ -428,11 +428,26 @@ struct kentry_sockets
  */
 struct kentry_module
 {
-	void	_cdecl (*load_modules)(const char *extension, long (*loader)(struct basepage *, const char *));
+	void	_cdecl (*load_modules)(const char *extension,
+				       long _cdecl (*loader)(struct basepage *, const char *));
+
+	/* register VDI or AES trap handler
+	 * 
+	 * mode = 0 -> install
+	 * mode = 1 -> remove
+	 * 
+	 * flag = 0 -> AES dispatcher
+	 * flag = 1 -> VDI dispatcher
+	 * 
+	 * return 0 on success
+	 * or error number for a failure 
+	 */
+	long	_cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag);
 };
 #define DEFAULTS_kentry_module \
 { \
 	load_modules, \
+	register_trap2, \
 }
 
 
