@@ -976,7 +976,7 @@ init (void)
 		/* If someone has already done a Bconmap call, then
 		 * MODEM1 may no longer be the default
 		 */
-		bconmap(curbconmap);
+		sys_b_bconmap(curbconmap);
 		f = rootproc->p_fd->aux;	/* bconmap can change rootproc->aux */
 	}
 

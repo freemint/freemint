@@ -74,8 +74,8 @@ long _cdecl sys_t_gettimeofday (struct timeval *tv, struct timezone *tz);
 long _cdecl sys_t_settimeofday (struct timeval *tv, struct timezone *tz);
 
 /* XBIOS */
-long _cdecl gettime (void);
-void _cdecl settime (ulong datetime);
+long _cdecl sys_b_gettime (void);
+void _cdecl sys_b_settime (ulong datetime);
 
 
 # endif /* _time_h */
