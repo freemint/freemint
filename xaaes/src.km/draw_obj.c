@@ -1716,35 +1716,23 @@ static char *pstates[] =
 };
 #endif
 
-#if 1
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
 #define ret(ut)     (     (long *)(ut->ret_p     ))
 #define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p ))
 void
 d_g_progdef(enum locks lock, struct widget_tree *wt)
 {
-	OBJECT *ob = wt->tree + wt->current;
 	struct sigaction oact, act;
-	struct xa_user_things *ut;
+	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
+	OBJECT *ob = wt->tree + wt->current;
+	PARMBLK *p;
 
 #if GENERATE_DIAGS
 	struct proc *curproc = get_curproc();
-	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
 
 	DIAGS(("XaAES d_g_progdef: curproc - pid %i, name %s", curproc->pid, curproc->name));
 	DIAGS(("XaAES d_g_progdef: client  - pid %i, name %s", client->p->pid, client->name));
 #endif
-
-	// XXX alloc it on client creation
-	ut = umalloc(xa_user_things.len);
-	assert(ut);
-
-	bcopy(&xa_user_things, ut, xa_user_things.len);
-
-	ut->progdef_p  += (long)ut;
-	ut->userblk_pp += (long)ut;
-	ut->ret_p      += (long)ut;
-	ut->parmblk_p  += (long)ut;
 
 //	KERNEL_DEBUG("ut = 0x%lx", ut);
 //	KERNEL_DEBUG("ut->progdef_p = 0x%lx", ut->progdef_p);
@@ -1752,23 +1740,21 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 //	KERNEL_DEBUG("ut->ret_p     = 0x%lx", ut->ret_p    );
 //	KERNEL_DEBUG("ut->parmblk_p = 0x%lx", ut->parmblk_p);
 
-	userblk(ut) = get_ob_spec(ob)->userblk;
+	p = parmblk(client->ut);
+	p->pb_tree = wt->tree;
+	p->pb_obj = wt->current;
 
-//	KERNEL_DEBUG("userblk 0x%lx (0x%lx)", get_ob_spec(ob)->userblk, userblk(ut));
+	p->pb_prevstate = p->pb_currstate = ob->ob_state;
 
-	parmblk(ut)->pb_tree = wt->tree;
-	parmblk(ut)->pb_obj = wt->current;
+	*(RECT *)&(p->pb_x) = wt->r;
 
-	parmblk(ut)->pb_prevstate = parmblk(ut)->pb_currstate = ob->ob_state;
+	p->pb_xc = C.global_clip[0];
+	p->pb_yc = C.global_clip[1];
+	p->pb_wc = C.global_clip[2] - C.global_clip[0] + 1;
+	p->pb_hc = C.global_clip[3] - C.global_clip[1] + 1;
 
-	*(RECT *)&(parmblk(ut)->pb_x) = wt->r;
-
-	parmblk(ut)->pb_xc = C.global_clip[0];
-	parmblk(ut)->pb_yc = C.global_clip[1];
-	parmblk(ut)->pb_wc = C.global_clip[2] - C.global_clip[0] + 1;
-	parmblk(ut)->pb_hc = C.global_clip[3] - C.global_clip[1] + 1;
-
-	parmblk(ut)->pb_parm = userblk(ut)->ub_parm;
+	userblk(client->ut) = get_ob_spec(ob)->userblk;
+	p->pb_parm = userblk(client->ut)->ub_parm;
 
 	wr_mode(MD_TRANS);
 
@@ -1780,10 +1766,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 		DIAG((D_o, wt->owner, "progdef before %s %04x", statestr, *wt->state_mask & ob->ob_state));
 	}
 #endif
-	/* flush data cache, we jump now to it */
-	cpush(ut, xa_user_things.len);
-
-	act.sa_handler = ut->progdef_p;
+	act.sa_handler = client->ut->progdef_p;
 	act.sa_mask = 0xffffffff;
 	act.sa_flags = SA_RESET;
 
@@ -1800,9 +1783,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 	/* The PROGDEF function returns the ob_state bits that
 	 * remain to be handled by the AES:
 	 */
-	*wt->state_mask = *ret(ut);
-	ufree(ut);
-
+	*wt->state_mask = *ret(client->ut);
 
 	/* BUG: OS_SELECTED bit only handled in non-color mode!!!
 	 * (Not too serious I believe... <mk>)
@@ -1837,82 +1818,6 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 #undef userblk
 #undef ret
 #undef parmblk
-#else
-void
-d_g_progdef(enum locks lock, struct widget_tree *wt)
-{
-	OBJECT *ob = wt->tree + wt->current;
-	USERBLK *ub;
-	PARMBLK p;
-
-	ub = get_ob_spec(ob)->userblk;
-	p.pb_tree = wt->tree;
-	p.pb_obj = wt->current;
-
-	p.pb_prevstate = p.pb_currstate = ob->ob_state;
-				
-	*(RECT *)&p.pb_x = wt->r;
-
-	p.pb_xc = C.global_clip[0];
-	p.pb_yc = C.global_clip[1];
-	p.pb_wc = C.global_clip[2] - C.global_clip[0] + 1;
-	p.pb_hc = C.global_clip[3] - C.global_clip[1] + 1;
-
-	p.pb_parm = ub->ub_parm;
-
-	wr_mode(MD_TRANS);
-
-#if GENERATE_DIAGS
-	{
-		char statestr[128];
-
-		show_bits(*wt->state_mask & ob->ob_state, "state ", pstates, statestr);
-		DIAG((D_o, wt->owner, "progdef before %s %04x", statestr, *wt->state_mask & ob->ob_state));
-	}
-#endif
-
-	// XXX -> go in usermode like signal handling
-	// push p on user stack too
-	//ALERT(("d_g_progdef not yet implemented (pid %u)!", p_getpid()));
-	//raise(SIGSEGV);
-
-	/* The PROGDEF function returns the ob_state bits that
-	 * remain to be handled by the AES:
-	 */
-	*wt->state_mask = (unsigned short)(*(ub->ub_code))(&p);
-
-
-	/* BUG: OS_SELECTED bit only handled in non-color mode!!!
-	 * (Not too serious I believe... <mk>)
-	 * HR: Yes I would call that correct, cause in color mode
-	 *     selected appearance is object specific.
-	 *     I even think that it shouldnt be done at ALL.
-	 * 		
-	 * The whole state_mask returning mechanism of progdefs should
-         * be taken into account.
-         * So we actually dont need to do anything special here.
-         * But for progdef'd menu separators it is nicer to check here
-         * and use bg_col.	              
-	 */
-
-#if GENERATE_DIAGS
-	{
-		char statestr[128];
-
-		show_bits(*wt->state_mask, "state ", pstates, statestr);
-		DIAG((D_o, wt->owner, "progdef remaining %s %04x", statestr, *wt->state_mask));
-	}
-#endif
-
-	if (*wt->state_mask & OS_DISABLED)
-	{
-		write_disable(&wt->r, screen.dial_colours.bg_col);
-		done(OS_DISABLED);
-	}
-
-	wr_mode(MD_REPLACE);
-}
-#endif
 
 static void
 l_text(short x, short y, char *t, short w, int left)
