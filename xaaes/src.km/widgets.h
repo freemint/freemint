@@ -37,7 +37,6 @@ void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
 void	display_toolbar(enum locks lock, struct xa_window *wind, short item);
 void	set_toolbar_coords(struct xa_window *wind);
 
-
 XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obj, short item);
 
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
@@ -47,6 +46,10 @@ XA_TREE * obtree_to_wt(struct xa_client *client, OBJECT *obtree);
 XA_TREE * new_widget_tree(struct xa_client *client, OBJECT *obtree);
 XA_TREE * set_client_wt(struct xa_client *client, OBJECT *obtree);
 void free_wtlist(struct xa_client *client);
+void remove_from_wtlist(XA_TREE *wt);
+void copy_wt(XA_TREE *d, XA_TREE *s);
+void free_wt(XA_TREE *wt);
+
 //XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
 
 void	calc_work_area(struct xa_window *wind);
@@ -59,6 +62,9 @@ bool	m_inside(short x, short y, RECT *o);
 void	redraw_menu(enum locks lock);
 void	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state);
 void	done_widget_active(struct xa_window *wind, int i);
+
+void	free_xawidget_resources(struct xa_widget *widg);
+
 RECT	iconify_grid(int i);
 
 DisplayWidget display_vslide; /* For d_g_list, should go! */

@@ -383,6 +383,7 @@ display_alert(struct proc *p, long arg)
 		/* Bring up an alert */
 		do_form_alert(data->lock, C.Aes, 1, data->buf);
 
+		kfree(data->buf);
 		kfree(data);
 	}
 }

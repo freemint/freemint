@@ -99,8 +99,8 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	/* XXX not freed anywhere */
 	nt = kmalloc(sizeof(*nt));
 
-	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx",
-		wind->handle, nt));
+	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx(len=%ld)",
+		wind->handle, nt, (long)sizeof(*nt)));
 
 	if (!nt)
 	{
@@ -109,7 +109,10 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	}
 
 	/* desktop widget.tree */
-	*nt = *desktop;	
+	bzero(nt, sizeof(*nt));
+	copy_wt(nt, desktop);
+	//*nt = *desktop;	
+	nt->flags |= WTF_ALLOC;
 
 	bzero(&loc, sizeof(loc));
 	loc.relative_type = LT;
@@ -127,7 +130,16 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	wi->drag = click_desktop_widget;
 	wi->loc = loc;
 	wi->state = OS_NORMAL;
+
+	/* Ozk;
+	 * Set destruct, stufftype and XAWF_STUFFMALLOC and 'nt' is freed.
+	 * Set XAWF_STUFFMALLOC and nt is freed by free_xawidget()
+	 */
 	wi->stuff = nt;
+	wi->stufftype = STUFF_IS_WT;
+	wi->flags |= XAWF_STUFFKMALLOC;
+	wi->destruct = free_xawidget_resources;
+
 	wi->start = 0;
 }
 
@@ -163,7 +175,8 @@ set_desktop(XA_TREE *new_desktop)
 	XA_TREE *desktop = wi->stuff;
 
 	/* Set the desktop */
-	*desktop = *new_desktop;
+	copy_wt(desktop, new_desktop);
+	//*desktop = *new_desktop;
 
 	ob = desktop->tree;
 	r = *(RECT*)&ob->ob_x;

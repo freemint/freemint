@@ -1602,6 +1602,7 @@ set_menu_widget(struct xa_window *wind, XA_TREE *menu)
 	widg->drag = NULL /* drag_menu_widget */;
 	widg->state = OS_NORMAL;
 	widg->stuff = wt;
+	widg->stufftype = STUFF_IS_WT;
 	widg->start = 0;
 	wind->tool = widg;
 	wind->active_widgets |= XaMENU;
@@ -1655,6 +1656,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item)
 	widg->loc = loc;
 	widg->state = OS_NORMAL;
 	widg->stuff = wt;
+	widg->stuff = STUFF_IS_WT;
 	widg->start = item;
 	if (tab->nest)
 		/* HR testing: Use the window borders. */
