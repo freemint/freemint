@@ -37,6 +37,7 @@
 # ifndef _mint_dcntl_h
 # define _mint_dcntl_h
 
+# include "sockio.h"
 
 /* 64 bit support */
 # ifndef LLONG
@@ -44,49 +45,6 @@
 typedef long long		llong;
 typedef unsigned long long	ullong;
 # endif
-
-
-# define F_DUPFD		0		/* handled by kernel */
-# define F_GETFD		1		/* handled by kernel */
-# define F_SETFD		2		/* handled by kernel */
-/* flag: */
-# define FD_CLOEXEC		1		/* close on exec flag */
-
-# define F_GETFL		3		/* handled by kernel */
-# define F_SETFL		4		/* handled by kernel */
-# define F_GETLK		5
-# define F_SETLK		6
-# define F_SETLKW		7
-
-# if 1
-struct flock
-{
-	short	l_type;				/* type of lock */
-# define F_RDLCK		0
-# define F_WRLCK		1
-# define F_UNLCK		3
-	short	l_whence;			/* SEEK_SET, SEEK_CUR, SEEK_END */
-	long	l_start;			/* start of locked region */
-	long	l_len;				/* length of locked region */
-	short	l_pid;				/* pid of locking process (F_GETLK only) */
-};
-# endif
-
-# define F_GETOPENS		8		/* handled by kernel */
-
-/* jr: structure for F_GETOPENS */
-struct listopens
-{
-# define LO_FILEOPEN		1
-# define LO_DIROPEN		2
-# define LO_CURDIR		4
-# define LO_CURROOT		8
-	short	lo_pid;				/* input: first pid to check;
-						 * output: who's using it? */
-	short	lo_reason;			/* input: bitmask of interesting reasons;
-						 * output: why EACCDN? */
-	short	lo_flags;			/* file's open flags */
-};
 
 
 /*
@@ -292,52 +250,6 @@ struct pmeminfo
 		unsigned long	flags;
 	} **mlist;
 };
-
-
-/*
- * Socket ioctls: these require MiNT-Net 3.0 (or later)
- */
-
-/* socket-level I/O control calls */
-# define SIOCGLOWAT	(('S' << 8) | 1)
-# define SIOCSLOWAT	(('S' << 8) | 2)
-# define SIOCGHIWAT	(('S' << 8) | 3)
-# define SIOCSHIWAT	(('S' << 8) | 4)
-# define SIOCSPGRP	(('S' << 8) | 5)
-# define SIOCGPGRP	(('S' << 8) | 6)
-# define SIOCATMARK	(('S' << 8) | 7)
-
-/* socket configuration controls */
-# define SIOCGIFNAME	(('S' << 8) | 10)	/* get iface name */
-# define SIOCSIFLINK	(('S' << 8) | 11)	/* connect iface to device */
-# define SIOCGIFCONF	(('S' << 8) | 12)	/* get iface list */
-# define SIOCGIFFLAGS	(('S' << 8) | 13)	/* get flags */
-# define SIOCSIFFLAGS	(('S' << 8) | 14)	/* set flags */
-# define SIOCGIFADDR	(('S' << 8) | 15)	/* get iface address */
-# define SIOCSIFADDR	(('S' << 8) | 16)	/* set iface address */
-# define SIOCGIFDSTADDR	(('S' << 8) | 17)	/* get iface remote address */
-# define SIOCSIFDSTADDR	(('S' << 8) | 18)	/* set iface remotw address */
-# define SIOCGIFBRDADDR	(('S' << 8) | 19)	/* get iface ibroadcast address */
-# define SIOCSIFBRDADDR	(('S' << 8) | 20)	/* set iface broadcast address */
-# define SIOCGIFNETMASK	(('S' << 8) | 21)	/* get iface network mask */
-# define SIOCSIFNETMASK	(('S' << 8) | 22)	/* set iface network mask */
-# define SIOCGIFMETRIC	(('S' << 8) | 23)	/* get metric */
-# define SIOCSIFMETRIC	(('S' << 8) | 24)	/* set metric */
-# define SIOCSLNKFLAGS	(('S' << 8) | 25)	/* set link level flags */
-# define SIOCGLNKFLAGS	(('S' << 8) | 26)	/* get link level flags */
-# define SIOCGIFMTU	(('S' << 8) | 27)	/* get MTU size */
-# define SIOCSIFMTU	(('S' << 8) | 28)	/* set MTU size */
-# define SIOCGIFSTATS	(('S' << 8) | 29)	/* get interface statistics */
-# define SIOCADDRT	(('S' << 8) | 30)	/* add routing table entry */
-# define SIOCDELRT	(('S' << 8) | 31)	/* delete routing table entry */
-
-# define SIOCDARP	(('S' << 8) | 40)	/* delete ARP table entry */
-# define SIOCGARP	(('S' << 8) | 41)	/* get ARP table entry */
-# define SIOCSARP	(('S' << 8) | 42)	/* set ARP table entry */
-
-# define SIOCGIFHWADDR	(('S' << 8) | 50)	/* get hardware address */
-# define SIOCGLNKSTATS	(('S' << 8) | 51)	/* get link statistics */
-# define SIOCSIFOPT	(('S' << 8) | 52)	/* set interface option */
 
 
 /*
