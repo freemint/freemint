@@ -351,27 +351,6 @@ do_winmesag(enum locks lock,
 #endif
 }
 
-
-/* Ozk:
- * context dependant
- * deliver_message is guaranteed to run in the dest_client's context
- */
-static void
-deliver_message(enum locks lock, struct xa_client *dest_client, short amq, union msg_buf *msg)
-{
-	queue_message(lock, dest_client, amq, msg);
-	/*
-	 * Ozk: This is a client event message, and such messages are also
-	 * counted. Since queue_message() also counted this message, we "uncount"
-	 * the client event here.
-	 */
-	if (msg->m[0] == WM_REDRAW)
-	{
-		C.redraws--;
-		dest_client->status &= ~CS_CE_REDRAW_SENT;
-	}
-}
-
 static bool inline
 is_inside(const RECT *r, const RECT *o)
 {
@@ -594,6 +573,7 @@ queue_message(enum locks lock, struct xa_client *client, short amq, union msg_bu
 	}
 }
 /*
+ * Context indipendant.
  * Send an AES message to a client application.
  * generalized version, which now can be used by appl_write. :-)
  * 
@@ -650,24 +630,13 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, union 
 		return;
 	}
 
-	if (rc == dest_client)
-	{
-		if (msg->m[0] == WM_REDRAW)
-		{
-			dest_client->status |= CS_CE_REDRAW_SENT;
-			amq = AMQ_REDRAW;
-			C.redraws++;
-		}
-		deliver_message(lock, dest_client, amq, msg);
-	}
-	else
-	{
-		if (msg->m[0] == WM_REDRAW)
-			amq = AMQ_REDRAW;
+	if (msg->m[0] == WM_REDRAW)
+		amq = AMQ_REDRAW;
 
-		queue_message(lock, dest_client, amq, msg);
+	queue_message(lock, dest_client, amq, msg);
+
+	if (rc != dest_client)
 		Unblock(dest_client, 1, 123);
-	}
 }
 
 /*
