@@ -25,10 +25,10 @@ int	add_region (MMAP map, ulong place, ulong size, ushort mflags);
 void	init_core (void);
 void	init_swap (void);
 
-long	change_prot_status (PROC *proc, long start, short newmode);
-long	_cdecl attach_region (PROC *proc, MEMREGION *reg);
-void	_cdecl detach_region (PROC *proc, MEMREGION *reg);
-long	detach_region_by_addr (PROC *p, long block);
+long	change_prot_status (struct proc *proc, long start, short newmode);
+long	_cdecl attach_region (struct proc *proc, MEMREGION *reg);
+void	_cdecl detach_region (struct proc *proc, MEMREGION *reg);
+long	detach_region_by_addr (struct proc *p, long block);
 
 MEMREGION *get_region (MMAP map, ulong size, short mode);
 MEMREGION *_get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *descr, short kernel_flag);
@@ -47,12 +47,12 @@ MEMREGION *load_region (const char *name, MEMREGION *env, const char *cmdlin, XA
 			long *fp, long *err);
 long	load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start,
 			long nbytes, BASEPAGE *base);
-long	memused (PROC *p);
-void	recalc_maxmem (PROC *p);
+long	memused (struct proc *p);
+void	recalc_maxmem (struct proc *p);
 int	valid_address (long addr);
-MEMREGION *_cdecl addr2mem (PROC *p, long addr);
+MEMREGION *_cdecl addr2mem (struct proc *p, long addr);
 MEMREGION *addr2region (long addr);
-MEMREGION *proc_addr2region (PROC *p, long addr);
+MEMREGION *proc_addr2region (struct proc *p, long addr);
 
 long	realloc_region (MEMREGION *, long);
 long	_cdecl sys_s_realloc (long);

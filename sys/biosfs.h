@@ -77,7 +77,7 @@ long iwrite	(int bdev, const char *buf, long bytes, int ndelay, struct bios_file
 long iread	(int bdev, char *buf, long bytes, int ndelay, struct bios_file *b);
 long iocsbrk	(int bdev, int mode, struct bios_tty *t);
 
-int set_auxhandle (PROC *, int);
+int set_auxhandle (struct proc *, int);
 
 
 # endif /* _biosfs_h */
