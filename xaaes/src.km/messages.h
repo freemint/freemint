@@ -31,6 +31,7 @@
 #include "semaphores.h"
 
 struct xa_client;
+struct xa_aesmsg_list;
 
 union msg_buf
 {
@@ -44,6 +45,7 @@ union msg_buf
 
 const char *pmsg(short m);
 
+void cancel_aesmsgs(struct xa_aesmsg_list **m);
 void send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 void deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 void queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);

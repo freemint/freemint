@@ -64,6 +64,20 @@
  * 	
  * We also get keyboard & mouse input data here.
  */
+
+void
+cancel_cevents(struct xa_client *client)
+{
+	while (client->cevnt_head)
+	{
+		struct c_event *ce = client->cevnt_head->next;
+		kfree(client->cevnt_head);
+		client->cevnt_head = ce;
+	}
+	client->cevnt_head = NULL;
+	client->cevnt_tail = NULL;
+}
+
 void
 post_cevent(struct xa_client *client,
 	void (*func)(enum locks, struct c_event *),
@@ -71,43 +85,51 @@ post_cevent(struct xa_client *client,
 	int d0, int d1, RECT *r,
 	const struct moose_data *md)
 {
-	struct c_event *c = kmalloc(sizeof(struct c_event));
+	struct c_event *c;
 
-	if (c)
+	//if (!(client->status & CS_LAGGING))
 	{
-		c->next		= 0;
-		c->funct	= func;
-		c->client	= client;
-		c->ptr1		= ptr1;
-		c->ptr2		= ptr2;
-		c->d0		= d0;
-		c->d1		= d1;
-
-		if (r)
-			c->r = *r;
-		if (md)
-			c->md = *md;
-
-		if (!client->cevnt_head)
+		c = kmalloc(sizeof(struct c_event));
+		if (c)
 		{
-			client->cevnt_head = c;
-			client->cevnt_tail = c;
+			c->next		= 0;
+			c->funct	= func;
+			c->client	= client;
+			c->ptr1		= ptr1;
+			c->ptr2		= ptr2;
+			c->d0		= d0;
+			c->d1		= d1;
+
+			if (r)
+				c->r = *r;
+			if (md)
+				c->md = *md;
+
+			if (!client->cevnt_head)
+			{
+				client->cevnt_head = c;
+				client->cevnt_tail = c;
+			}
+			else
+			{
+				client->cevnt_tail->next = c;
+				client->cevnt_tail = c;
+			}
+			client->cevnt_count++;
 		}
+
+		DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
+			c, client->cevnt_count, client->cevnt_head, client->cevnt_tail, client->name));
+
+		if (client != C.Aes)
+			Unblock(client, 1, 5000);
 		else
-		{
-			client->cevnt_tail->next = c;
-			client->cevnt_tail = c;
-		}
-		client->cevnt_count++;
+			dispatch_cevent(client);
 	}
-
-	DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
-		c, client->cevnt_count, client->cevnt_head, client->cevnt_tail, client->name));
-
-	if (client != C.Aes)
-		Unblock(client, 1, 5000);
+#if GENERATE_DIAGS
 	else
-		dispatch_cevent(client);
+		DIAG((D_mouse, client, "post_cevent: Client %s is lagging - event thrown away!", client->name));
+#endif
 }
 
 int

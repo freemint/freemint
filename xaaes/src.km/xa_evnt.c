@@ -47,24 +47,20 @@ static int
 pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	int rtn = 0;
+	struct xa_aesmsg_list *msg = client->rdrw_msg;
 
 	Sema_Up(clients);
 
-	if (client->rdrw_msg)
+	if (msg)
 	{
 		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
-		struct xa_aesmsg_list *msg = client->rdrw_msg;
 
 		client->rdrw_msg = msg->next;
 		*buf = msg->message;
-
 		DIAG((D_m, NULL, "Got pending WM_REDRAW for %s", c_owner(client) ));
-
-		C.redraws--;
-
 		kfree(msg);
-
 		rtn = 1;
+		C.redraws--;
 	}
 	Sema_Dn(clients);
 	return rtn;
@@ -74,21 +70,13 @@ static int
 pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	int rtn = 0;
-
-	/* Is there a widget active (like a scroll arrow)? If so, check with the action first
-	 * as it may result in some messages (just in case we've not got any already)
-	 */
-	/* The reason why it is done in here is that this way it works in sort of a feed back mode.
-	   The widget is only actioned in case of a MESAG event wait from the client.
-	   Otherwise every pixel slider move would result in a message sent.
-	*/
+	struct xa_aesmsg_list *msg = client->msg;
 
 	Sema_Up(clients);
 
-	if (client->msg)
+	if (msg)
 	{
 		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
-		struct xa_aesmsg_list *msg = client->msg;
 
 		client->msg = msg->next;
 		*buf = msg->message;
@@ -311,6 +299,12 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	because it contains the last mouse event packet returned from moose.
  */
 
+	if (client->status & CS_LAGGING)
+	{
+		client->status &= ~CS_LAGGING;
+		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
+	}
+
 	if (events & MU_BUTTON)
 	{
 		Sema_Up(pending);
@@ -530,6 +524,11 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,1)
 
+	if (client->status & CS_LAGGING)
+	{
+		client->status &= ~CS_LAGGING;
+		DIAG((D_multi, client, "evnt_mesag: %s flagged as lagging! - cleared", client->name));
+	}
 	/*
 	 * Ozk: look at XA_evnt_multi() for explanations..
 	*/
@@ -563,6 +562,12 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	int clicks = 0;
 
 	CONTROL(3,5,1)
+
+	if (client->status & CS_LAGGING)
+	{
+		client->status &= ~CS_LAGGING;
+		DIAG((D_multi, client, "evnt_button: %s flagged as lagging! - cleared", client->name));
+	}
 
 	DIAG((D_button,NULL,"evnt_button for %s; clicks %d mask 0x%x state 0x%x",
 	           c_owner(client), pb->intin[0], pb->intin[1], pb->intin[2]));
@@ -643,6 +648,11 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
+	if (client->status & CS_LAGGING)
+	{
+		client->status &= ~CS_LAGGING;
+		DIAG((D_multi, client, "evnt_keybd: %s flagged as lagging! - cleared", client->name));
+	}
 	if (pending_key_strokes(lock, pb, client, 0))
 		return XAC_DONE;
 
@@ -664,6 +674,11 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	short x, y;
 	CONTROL(5,5,0)
 
+	if (client->status & CS_LAGGING)
+	{
+		client->status &= ~CS_LAGGING;
+		DIAG((D_multi, client, "evnt_mouse: %s flagged as lagging! - cleared", client->name));
+	}
 	/* Flag the app as waiting for messages */
 	client->waiting_for = MU_M1;
 	/* Store a pointer to the AESPB to fill when the event occurs */

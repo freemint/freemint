@@ -36,6 +36,7 @@
 #include "k_init.h"
 #include "k_main.h"
 #include "k_shutdown.h"
+#include "messages.h"
 #include "nkcc.h"
 #include "scrlobjc.h"
 #include "taskman.h"
@@ -928,6 +929,28 @@ static void move_timeout(struct proc *, long arg);
 static void
 move_rtimeout(struct proc *p, long arg)
 {
+	struct xa_client *client = S.client_list;
+
+	while (client)
+	{
+		if (client->rdrw_msg)
+		{
+			if (client->status & CS_LAGGING)
+			{
+				DIAGS(("%s lagging - cancelling all events", client->name));
+				cancel_aesmsgs(&client->rdrw_msg);
+				cancel_aesmsgs(&client->msg);
+				cancel_cevents(client);
+			}
+			else
+			{
+				DIAGS(("%s flagged as lagging", client->name));
+				client->status |= CS_LAGGING;
+			}
+		}
+		client = client->next;
+	}
+
 	C.redraws = 0;
 	m_rto = 0;
 
