@@ -423,6 +423,7 @@ loop:
 			 * write s->next when you want to remove an element 's' from
 			 * the list.
 			 */
+
 			for (s = *(q = &semalist); s; s = *(q = &s->next))
 			{
 				if (s->id == id)
@@ -452,7 +453,6 @@ loop:
 					}
 				}
 			}
-
 			/* no such semaphore */
 			DEBUG(("Psemaphore(%d,%lx): no such semaphore",mode,id));
 			return EBADARG;
