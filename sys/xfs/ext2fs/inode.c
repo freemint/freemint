@@ -811,15 +811,13 @@ inode_getblk (COOKIE *inode, long nr, long new_block, long *err, ushort clear_fl
 		UNIT *u;
 		
 		u = bio.getunit (inode->s->di, tmp, EXT2_BLOCK_SIZE (inode->s));
-		if (u)
-		{
-			bzero (u->data, EXT2_BLOCK_SIZE (inode->s));
-		}
-		else
+		if (!u)
 		{
 			ALERT (("Ext2-FS: inode_getblk: getunit fail!"));
 			tmp = 0;
 		}
+		else
+			bzero (u->data, EXT2_BLOCK_SIZE (inode->s));
 	}
 	
 	DEBUG (("inode_getblk: leave (tmp = %ld)", tmp));

@@ -267,7 +267,7 @@ e_write (FILEPTR *f, const char *buf, long bytes)
 		UNIT *u;
 		ulong data;
 		
-		tmp = ext2_getblk (c, block++, &err, 0);
+		tmp = ext2_getblk (c, block++, &err, 1);
 		if (!tmp)
 		{
 			DEBUG (("Ext2-FS: partial part: ext2_getblk failure (err = %li)", err));
@@ -350,7 +350,7 @@ e_write (FILEPTR *f, const char *buf, long bytes)
 		ulong tmp;
 		UNIT *u;
 		
-		tmp = ext2_getblk (c, block, &err, 0);
+		tmp = ext2_getblk (c, block, &err, 1);
 		if (!tmp)
 		{
 			DEBUG (("Ext2-FS: left part: ext2_getblk failure (err = %li)", err));
@@ -454,32 +454,30 @@ e_read (FILEPTR *f, char *buf, long bytes)
 		tmp = ext2_bmap (c, block++);
 		if (tmp)
 		{
-		
-		if ((todo - data) >= EXT2_BLOCK_SIZE (s))
-		{
-			register ulong tmp_new = ext2_bmap (c, block);
-			register long tmp_old = tmp;
-			
-			/* linear read optimization
-			 */
-			while (tmp_new && ((tmp_new - tmp_old) == 1))
-			{
-				data += EXT2_BLOCK_SIZE (s);
-				block++;
-				blocks++;
-				
-				if ((todo - data) >= EXT2_BLOCK_SIZE (s))
-				{
-					tmp_old = tmp_new;
-					tmp_new = ext2_bmap (c, block);
-				}
-				else
-					break;
-			}
-		}
-		
-		{
 			long r;
+			
+			if ((todo - data) >= EXT2_BLOCK_SIZE (s))
+			{
+				register ulong tmp_new = ext2_bmap (c, block);
+				register long tmp_old = tmp;
+				
+				/* linear read optimization
+				 */
+				while (tmp_new && ((tmp_new - tmp_old) == 1))
+				{
+					data += EXT2_BLOCK_SIZE (s);
+					block++;
+					blocks++;
+					
+					if ((todo - data) >= EXT2_BLOCK_SIZE (s))
+					{
+						tmp_old = tmp_new;
+						tmp_new = ext2_bmap (c, block);
+					}
+					else
+						break;
+				}
+			}
 			
 			r = bio.l_read (s->di, tmp, blocks, EXT2_BLOCK_SIZE (s), buf);
 			if (r)
@@ -488,12 +486,8 @@ e_read (FILEPTR *f, char *buf, long bytes)
 				goto out;
 			}
 		}
-		
-		}
 		else
-		{
 			bzero (buf, data);
-		}
 		
 		buf += data;
 		todo -= data;
