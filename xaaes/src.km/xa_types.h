@@ -286,7 +286,6 @@ typedef	short _cdecl lbox_set	(LIST_BOX *box,
 				short first);
 struct a_slide
 {
-	short parent;
 	short up;
 	short down;
 	short slide_bkg;
@@ -305,30 +304,31 @@ struct b_slide
 struct xa_lbox_info;
 struct xa_lbox_info
 {
-	struct xa_lbox_info *next;
-	void  *handle;
-	void  *lbox_handle;
+	struct xa_lbox_info *next;	/* Next lbox attached to this widget tree */
+	void  *wdlg_handle;		/* wdlg handle */
+	void  *lbox_handle;		/* lbox handle */
 
-	short entries;
-	struct lbox_item *items;
-	short *objs;
-	struct a_slide aslid;
-	struct b_slide bslid;
+	short parent;			/* LBOX parent object */
+	short entries;			/* Total number of entries */
+	struct lbox_item *items;	/* Pointer to first item */
+	short *objs;			/* Pointer to array of objects making up elements in LBOX */
+	struct a_slide aslid;		/* Slider A object indexes + info */
+	struct b_slide bslid;		/* Slider B object indexes + info */
 
-	short visible_a;
-	short first_a;
-	short flags;
-	short pause_a;
+	short visible_a;		/* Number of visible items */
+	short first_a;			/* Numbef of first visible item */
+	short flags;			/* Flags */
+	short pause_a;			/* Autoscroll speed */
 
-	short visible_b;
-	short first_b;
-	short entries_b;
-	short pause_b;
+	short visible_b;		/* Visible this and that for slider B */
+	short first_b;			/* First this and that for slider B */
+	short entries_b;		/* Number of visible this and that for slider B */
+	short pause_b;			/* Autscroll speed for slider B */
 
-	struct widget_tree *wt;		/* Pointer to the object tree of the dialog */
-	void *user_data;
-	lbox_select	*slct;
-	lbox_set	*set;
+	struct widget_tree *wt;		/* Pointer to the widget tree this LBOX is attached to */
+	void *user_data;		/* User data */
+	lbox_select	*slct;		/* Select callback function */
+	lbox_set	*set;		/* Set callback funtion */
 };
 	
 #define OB_CURS_ENABLED	1

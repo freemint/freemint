@@ -34,6 +34,8 @@
 #include "xa_global.h"
 
 #include "app_man.h"
+#include "c_window.h"
+#include "k_main.h"
 #include "k_mouse.h"
 #include "draw_obj.h"
 #include "obtree.h"
@@ -131,35 +133,6 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	wi->start = 0;
 }
 
-
-/*
- * Redraw the desktop object tree
- * - Blindingly simple or what?
- * HR 270801: now a widget, so it is drawn in the standard widget way. :-)
- *            this function only for non standard drawing (cleanup) 
- */
-int
-redraw_desktop(enum locks lock, struct xa_window *wind)
-{
-	XA_TREE *desktop = get_desktop();
-
-	if (desktop == NULL)
-		return false;
-	if (desktop->tree == NULL)
-		return false;
-
-	draw_object_tree(lock, NULL, desktop->tree, 0, MAX_DEPTH, 10);
-	return true;
-}
-
-static void
-Pset_desktop(void *_parm)
-{
-	set_desktop(_parm);
-	wake(IO_Q, (long)_parm);
-	kthread_exit(0);
-}
-	
 /*
  * Set a new object tree for the desktop 
  */
@@ -198,6 +171,19 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->stufftype = STUFF_IS_WT;
 	wi->destruct = free_xawidget_resources;
 }
+static void
+CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		XA_TREE *newdesk = ce->ptr1;
+		DIAGS((" CE_set_desktop: newdesk = %lx (obtree = %lx, owner %s) for %s",
+			newdesk, newdesk->tree, newdesk->owner->name, ce->client->name));
+
+		Set_desktop(newdesk);
+		display_window(lock, 1, root_window, NULL);
+	}
+}
 void
 set_desktop(XA_TREE *new_desktop)
 {
@@ -206,20 +192,26 @@ set_desktop(XA_TREE *new_desktop)
 	if (!rc)
 		rc = C.Aes;
 
-	if (rc == new_desktop->owner || rc == C.Aes)
+	if (rc == new_desktop->owner || new_desktop->owner == C.Aes)
 	{
 		DIAGS((" set_desktop: Direct from %s to %s",
 			rc->name, new_desktop->owner->name));
 
 		Set_desktop(new_desktop);
+		display_window(0, 2, root_window, NULL);
 	}
 	else
 	{
-		DIAGS((" set_desktop: kthreaded from %s to %s",
-			rc->name, new_desktop->owner->name));
-		kthread_create(new_desktop->owner->p, Pset_desktop, new_desktop, NULL,
-				"kt set_desktop (%s)", new_desktop->owner->name);
-		sleep(IO_Q, (long)new_desktop);
+		DIAGS((" set_desktop: posting cevent (%lx) to %s",
+			(long)CE_set_desktop, new_desktop->owner->name));
+
+		post_cevent(new_desktop->owner,
+			    CE_set_desktop,
+			    new_desktop,
+			    NULL,
+			    0, 0,
+			    NULL,
+			    NULL);
 	}
 }	
 struct xa_client *

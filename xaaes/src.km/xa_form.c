@@ -103,11 +103,11 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	OBJECT *alert_form;
 	int sel_b = -1, f, b;
 
-	if (window_list != wind)
+	if (window_list != wind && !(wind->active_widgets & NO_TOPPED))
 	{
-		C.focus = pull_wind_to_top(lock, wind);
+		
+		top_window(lock, wind, 0);
 		after_top(lock, false);
-		display_window(lock, 520, wind, NULL);
 		return false;
 	}
 
@@ -306,7 +306,7 @@ max_w(int m, char to[][MAX_X+1], int *tot)
 int
 do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert)
 {
-	XA_WIND_ATTR kind = NAME|TOOLBAR|USE_MAX;
+	XA_WIND_ATTR kind = MOVER|NAME|TOOLBAR|USE_MAX;
 	struct xa_window *alert_window;
 	XA_WIDGET *widg;
 	XA_TREE *wt;
@@ -465,7 +465,11 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 				C.Aes->options.thinwork,
 				*(RECT *)&alert_form->ob_x);
 
-		alert_window = create_window(lock, NULL, NULL, client, false,
+		alert_window = create_window(lock,
+					     do_winmesag, //NULL,
+					     do_formwind_msg, //NULL,
+					     client,
+					     false,
 					     kind,
 					     created_for_AES,
 					     MG,

@@ -227,6 +227,7 @@ Block(struct xa_client *client, int which)
 		client->inblock = false;
 		client->sleeplock = 0;
 
+
 		/*
 		 * Ozk: This is gonna be the new style of delivering events;
 		 * If the receiver of an event is not the same as the sender of
@@ -234,16 +235,23 @@ Block(struct xa_client *client, int which)
 		 * Then the sender will wake up the receiver, which will call
 		 * check_queued_events() and handle the event.
 		*/
+
+		while (!client->usr_evnt && dispatch_cevent(client))
+			;
+
+		if (client->usr_evnt)
+		{
+			cancel_evnt_multi(client, 1);
+			return;
+		}
+
 		if (check_queued_events(client))
 			return;
 
 		if ((client->waiting_for & MU_TIMER) && !client->timeout)
 			return;
 
-		while (!client->usr_evnt && dispatch_cevent(client))
-			;
 	}
-
 	cancel_evnt_multi(client, 1);
 }
 
