@@ -259,8 +259,6 @@ do_exec_os (long basepage)
 /*
  * initialize all interrupt vectors and new trap routines
  * we also get here any TOS variables that we're going to change
- * (e.ginitialize all interrupt vectors and new trap routines
- * we also get here any TOS variables that we're going to change
  * (e.g. the pointer to the cookie jar) so that rest_intr can
  * restore them.
  */
@@ -364,14 +362,15 @@ init_intr (void)
 	new_xbra_install (&old_getbpb, 0x472L, new_getbpb);
 	olddrvs = *((long *) 0x4c2L);
 	
-	/* initialize psigintr() call stuff (on 68010+ only) */
+	/* initialize psigintr() call stuff (useful on 68010+ only)
+	 */
 # ifndef ONLY030
 	if (mcpu > 10)
 # endif
 	{
-		intr_shadow = kmalloc (1024L);
+		intr_shadow = kmalloc(1024);
 		if (intr_shadow)
-			quickmove ((char *) intr_shadow, (char *) 0x0L, 1024L);
+			quickmove ((char *)intr_shadow, (char *) 0x0L, 1024L);
 	}
 }
 
@@ -387,7 +386,9 @@ init_intr (void)
  * BUG: we should restore *all* vectors, not just the ones that MiNT caught.
  */
 
+# ifdef VM_EXTENSION
 extern void Reset_mmu(void);	/* in vm.s */
+# endif
 
 void
 restr_intr (void)
@@ -496,14 +497,260 @@ get_my_name (void)
 }
 # endif
 
+/* Boot menu routines. Quite lame I admit. Added 19.X.2000. */
 
-/* ask the user whether s/he wants to boot MultiTOS;
- * returns 1 if yes, 0 if no
+# ifdef BOOT_MENU
+static short load_xfs;
+static short load_xdd;
+static short load_auto;
+static short save_ini;
+static const char *ini_keywords[] =
+		{ "XFS_LOAD", "XDD_LOAD", \
+		  "AUTOLOAD", "MEM_PROT", "INI_SAVE" };
+
+/* we assume that the new mint.ini file, containing the boot
+ * menu defaults, is located at same place as mint.cnf is
  */
+
+static char *
+find_ini(void)
+{
+	extern char *cnf_path_1, *cnf_path_2, *cnf_path_3;
+
+	if (Fsfirst(cnf_path_1, 0) == 0)
+		return "mint.ini";
+	if (Fsfirst(cnf_path_2, 0) == 0)
+		return "\\multitos\\mint.ini";
+	if (Fsfirst(cnf_path_3, 0) == 0)
+		return "\\mint\\mint.ini";
+
+	return 0;
+}
+
+static char *
+find_char(char *s, char c)
+{
+	short f = 0;
+
+	while (*s) {
+		if ((*s == '\n') || (*s == '\r'))
+			break;
+		if (*s == c) {
+			f = 1;
+			break;
+		}
+		s++;
+	}
+	if (!f)
+		return 0;
+	return s;
+}
+
+static short
+whether_yes(char *s)
+{
+	s = find_char(s, '=');
+	if ((long)s == 0)
+		return 0;
+	s = find_char(s, 'Y');	/* don't add 'y' here, see below */
+	if ((long)s == 0)
+		return 0;
+	return 1;
+}
+
+static void
+read_ini(void)
+{
+	DTABUF *dta;
+	char *buf, *s, *ini_file = find_ini();
+	long r, x, len;
+	short inihandle, options[5] = { 1, 1, 1, 1, 1 };
+
+	if ((long)ini_file == 0)
+		goto initialize;
+
+	/* Figure out the file's length. Wish I had Fstat() here :-( */
+	dta = (DTABUF *)Fgetdta();
+	r = Fsfirst(ini_file, 0);
+	if (r < 0)
+		goto initialize;	/* No such file, probably */
+	len = dta->dta_size;
+	if (len < 10)
+		goto initialize;	/* proper mint.ini can't be so short */
+	len++;
+
+	buf = (char *)Mxalloc(len, 0x0003);
+	if ((long)buf == -32L)	
+		buf = (char *)Malloc(len);	/* No Mxalloc()? */
+	if ((long)buf == 0)
+		goto initialize;	/* Out of memory or such */
+	bzero(buf, len);
+
+	inihandle = Fopen(ini_file, 0);
+	if (inihandle < 0)
+		goto exit;
+	r = Fread(inihandle, len, buf);
+	if (r < 0)
+		goto close;
+
+	strupr(buf);
+	for (x = 0; x < 5; x++) {
+		s = strstr(buf, ini_keywords[x]);
+		if ((long)s)
+			options[x] = whether_yes(s);
+	}
+
+close:
+	(void)Fclose(inihandle);
+exit:
+	Mfree((long)buf);
+
+initialize:
+	load_xfs = options[0];
+	load_xdd = options[1];
+	load_auto = options[2];
+	no_mem_prot = !options[3];
+	save_ini = options[4];
+}
+
+static void
+write_ini(short *options)
+{
+	extern char *ini_warn;
+	short inihandle;
+	char *ini_file = find_ini(), temp[256];
+	long r, x, l;
+
+	if ((long)ini_file == 0)
+		return;
+ 
+	inihandle = Fcreate(ini_file, 0);
+	if (inihandle < 0)
+		return;
+
+	options++;		/* Ignore the first one :-) */
+
+	l = strlen(ini_warn);
+	r = Fwrite(inihandle, l, ini_warn);
+	if ((r < 0) || (r != l)) {
+		r = -1;
+		goto close;
+	}
+
+	for (x = 0; x < 5; x++) {
+		ksprintf(temp, 256, "%s=%s\n", \
+			ini_keywords[x], options[x] ? "YES" : "NO");
+		l = strlen(temp);
+		r = Fwrite(inihandle, l, temp);
+		if ((r < 0) || (r != l)) {
+			r = -1;
+			break;
+		}
+	}
+close:
+	(void)Fclose(inihandle);
+
+	if (r < 0)
+		(void)Fdelete(ini_file);
+}		
+# endif
 
 static int
 boot_kernel_p (void)
 {
+# ifdef BOOT_MENU
+	extern const char *startmenu;	/* in info.c */
+	char menu[512];
+	short option[6];
+	long c = 0;
+	static struct yn_message
+	{
+		const char *message;	/* message to print */
+		char	yes_let;	/* letter to hit for yes */
+		char	no_let;		/* letter to hit for no */
+	}
+	/* Please change messages to appropriate languages */
+	boot_it [MAXLANG] =
+	{
+		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* English */
+		{ "Das Bootmenu anzeigen? (j)a (n)ein ", 'j', 'n' },	/* German */
+		{ "Display the boot menu? (o)ui (n)on ", 'o', 'n' },	/* French */
+		{ "Display the boot menu? (y)es (n)o ",  'y', 'n' },	/* reserved */
+		{ "¨Display the boot menu? (s)i (n)o ",  's', 'n' },	/* Spanish, upside down ? is 168 dec. */
+		{ "Display the boot menu? (s)i (n)o ",   's', 'n' }	/* Italian */
+	};
+	
+	struct yn_message *msg = &boot_it [gl_lang];
+	int y;
+	
+	Cconws (msg->message);
+	y = (int) Cconin ();
+	if (tolower (y) == msg->no_let)
+		return 1;
+
+	/* English only from here, sorry */
+
+	option[0] = 1;			/* Load MiNT or not */
+	option[1] = load_xfs;		/* Load XFS or not */
+	option[2] = load_xdd;		/* Load XDD or not */
+	option[3] = load_auto;		/* Load AUTO or not */
+	option[4] = !no_mem_prot;	/* Use memprot or not */
+	option[5] = save_ini;
+
+	for (;;) {
+		ksprintf(menu, 512, startmenu, \
+			option[0] ? "yes\r\n" : "no\r\n", \
+			option[1] ? "yes\r\n" : "no\r\n", \
+			option[2] ? "yes\r\n" : "no\r\n", \
+			option[3] ? "yes\r\n" : "no\r\n", \
+			option[4] ? "yes\r\n" : "no\r\n", \
+			option[5] ? "yes\r\n" : "no\r\n" );
+		Cconws(menu);
+wait:
+		c = Crawcin();
+		c &= 0x7f;
+		switch(c)
+		{
+			case 0x03:
+				return 1;
+			case 0x0a:
+			case 0x0d:
+				load_xfs = option[1];
+				load_xdd = option[2];
+				load_auto = option[3];
+				no_mem_prot = !option[4];
+				save_ini = option[5];
+				if (save_ini)
+					write_ini(option);
+				return (int)option[0];
+			case '0':
+				option[5] = option[5] ? 0 : 1;
+				break;
+			case '1':
+				option[0] = option[0] ? 0 : 1;
+				break;
+			case '2':
+				option[1] = option[1] ? 0 : 1;
+				break;
+			case '3':
+				option[2] = option[2] ? 0 : 1;
+				break;
+			case '4':
+				option[3] = option[3] ? 0 : 1;
+				break;
+			case '5':
+				option[4] = option[4] ? 0 : 1;
+				break;
+			default:
+				goto wait;
+		}
+	}
+	return 1;	/* not reached */
+
+# else
+	/* ask the user whether wants to boot MultiTOS;
+ 	 * returns 1 if yes, 0 if no
+ 	 */
 	/* "boot MiNT?" messages, in various langauges:
 	 */
 	static struct yn_message
@@ -531,6 +778,7 @@ boot_kernel_p (void)
 		return 1;
 	else
 		return 0;
+# endif
 }
 
 
@@ -553,13 +801,14 @@ init (void)
 # ifdef VM_EXTENSION
 	int disable_vm = 0;
 # endif
-	
+# ifdef BOOT_MENU
+	read_ini();	/* Read user defined defaults */
+# endif	
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
 	 */
 	boot_print (greet1);
 	boot_print (greet2);
-	
 	
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
@@ -603,8 +852,7 @@ init (void)
 		no_mem_prot = 1;
 	}
 # endif
-	
-# ifndef AUTO_FIX
+# if 0
 	/* look for ourselves as \AUTO\MINTNP.PRG; if so, we turn memory
 	 * protection off
 	 */
@@ -621,6 +869,10 @@ init (void)
 	gem_active = check_for_gem ();
 	
 # ifdef AUTO_FIX
+# ifdef BOOT_MENU
+	if (!gem_active)
+		get_my_name();
+# else
 	/* only useful if we're in the AUTO folder... */
 	if (!gem_active)
 	{
@@ -653,6 +905,7 @@ init (void)
 				}
 		}
 	}
+# endif
 # endif
 # ifdef VERBOSE_BOOT
 	boot_print ("Memory protection ");
@@ -867,13 +1120,19 @@ init (void)
 	d_setpath (curpath);
 	
 	/* load external xdd */
-	load_modules (0);
+# ifdef BOOT_MENU
+	if (load_xdd)
+# endif
+		load_modules (0);
 	
 	/* reset curpath just to be sure */
 	d_setpath (curpath);
 	
 	/* load external xfs */
-	load_modules (1);
+# ifdef BOOT_MENU
+	if (load_xfs)
+# endif
+		load_modules (1);
 	
 	/* reset curpath just to be sure */
 	d_setpath (curpath);
@@ -942,8 +1201,11 @@ init (void)
 	}
 	
 	/* run any programs appearing after us in the AUTO folder */
-	run_auto_prgs ();
-	
+# ifdef BOOT_MENU
+	if (load_auto)
+# endif
+		run_auto_prgs ();
+
 	/* prepare to run the init program as PID 1. */
 	set_pid_1 ();
 	
@@ -1007,7 +1269,7 @@ init (void)
 	/* On r < 0 (error executing init) perform a halt
 	 * else reboot the system. Never go back to TOS.
 	 */ 
-	(void) s_hutdown ((r < 0) ? 0 : 1);
+	(void) s_hutdown ((r < 0 && init_prg) ? 0 : 1);
 # else
 	/* With debug kernels, always halt
 	 */
