@@ -51,603 +51,606 @@
  * - 0x33 reserved for MagiC - LONG Sconfig(WORD subfn, LONG flags);
  */
 
-0x000	pterm0		(void)
+/*
+opcode	class name	args */
 
-0x001	cconin		(void)
-0x002	cconout		(int c)
-0x003	cauxin		(void)
-0x004	cauxout		(int c)
-0x005	cprnout		(int c)
-0x006	crawio		(int c)
-0x007	crawcin		(void)
-0x008	cnecin		(void)
-0x009	cconws		(const char *str)
-0x00a	cconrs		(char *buf)
-0x00b	cconis		(void)
-0x00c	RESERVED
-0x00d	RESERVED
-0x00e	dsetdrv		(int d)
-0x00f	RESERVED
+0x000	p term0		(void)
 
-0x010	cconos		(void)
-0x011	cprnos		(void)
-0x012	cauxis		(void)
-0x013	cauxos		(void)
-0x014	maddalt		(long start, long size)
-0x015	srealloc	(void)
-0x016	slbopen		(void)				/* 1.15.3, MagiC 5 */
-0x017	slbclose	(void)				/* 1.15.3, MagiC 5 */
-0x018	RESERVED
-0x019	dgetdrv		(void)
-0x01a	fsetdta		(DTABUF *dta)
-0x01b	RESERVED
-0x01c	RESERVED
-0x01d	RESERVED
-0x01e	RESERVED
-0x01f	RESERVED
+0x001	c conin		(void)
+0x002	c conout	(short c)
+0x003	c auxin		(void)
+0x004	c auxout	(short c)
+0x005	c prnout	(short c)
+0x006	c rawio		(short c)
+0x007	c rawcin	(void)
+0x008	c necin		(void)
+0x009	c conws		(const char *str)
+0x00a	c conrs		(char *buf)
+0x00b	c conis		(void)
+0x00c	  RESERVED
+0x00d	  RESERVED
+0x00e	d setdrv	(short d)
+0x00f	  RESERVED
 
-0x020	super		(long new_ssp)
-0x021	RESERVED
-0x022	RESERVED
-0x023	RESERVED
-0x024	RESERVED
-0x025	RESERVED
-0x026	RESERVED
-0x027	RESERVED
-0x028	RESERVED
-0x029	RESERVED
-0x02a	tgetdate	(void)
-0x02b	tsetdate	(ushort date)
-0x02c	tgettime	(void)
-0x02d	tsettime	(ushort date)
-0x02e	RESERVED
-0x02f	fgetdta		(void)
+0x010	c conos		(void)
+0x011	c prnos		(void)
+0x012	c auxis		(void)
+0x013	c auxos		(void)
+0x014	m addalt	(long start, long size)
+0x015	s realloc	(void)
+0x016	s slbopen	(void)				/* 1.15.3, MagiC 5 */
+0x017	s slbclose	(void)				/* 1.15.3, MagiC 5 */
+0x018	  RESERVED
+0x019	d getdrv	(void)
+0x01a	f setdta	(DTABUF *dta)
+0x01b	  RESERVED
+0x01c	  RESERVED
+0x01d	  RESERVED
+0x01e	  RESERVED
+0x01f	  RESERVED
 
-0x030	sversion	(void)
-0x031	ptermres	(long save, int code)
-0x032	RESERVED
-0x033	RESERVED	/* MagiC: Sconfig() */
-0x034	RESERVED
-0x035	RESERVED
-0x036	dfree		(long *buf, int d)
-0x037	RESERVED
-0x038	RESERVED
-0x039	dcreate		(const char *name, int attrib)
-0x03a	ddelete		(const char *path)
-0x03b	dsetpath	(const char *path)
-0x03c	fcreate		(const char *name, int attrib)
-0x03d	fopen		(const char *name, int mode)
-0x03e	fclose		(int fh)
-0x03f	fread		(int fh, long count, char *buf)
+0x020	s super		(long new_ssp)
+0x021	  RESERVED
+0x022	  RESERVED
+0x023	  RESERVED
+0x024	  RESERVED
+0x025	  RESERVED
+0x026	  RESERVED
+0x027	  RESERVED
+0x028	  RESERVED
+0x029	  RESERVED
+0x02a	t getdate	(void)
+0x02b	t setdate	(ushort date)
+0x02c	t gettime	(void)
+0x02d	t settime	(ushort date)
+0x02e	  RESERVED
+0x02f	f getdta	(void)
 
-0x040	fwrite		(int fh, long count, const char *buf)
-0x041	fdelete		(const char *path)
-0x042	fseek		(long place, int fh, int how)
-0x043	fattrib		(const char *name, int rwflag, int attr)
-0x044	mxalloc		(long size, int mode)
-0x045	fdup		(int fh)
-0x046	fforce		(int newh, int oldh)
-0x047	dgetpath	(char *path, int drv)
-0x048	malloc		(long size)
-0x049	mfree		(virtaddr block)
-0x04a	mshrink		(int dummy, virtaddr block, long size)
-0x04b	pexec		(int mode, const void *ptr1, const void *ptr2, const void *ptr3)
-0x04c	pterm		(int code)
-0x04d	RESERVED
-0x04e	fsfirst		(const char *path, int attrib)
-0x04f	fsnext		(void)
+0x030	s version	(void)
+0x031	p termres	(long save, short code)
+0x032	  RESERVED
+0x033	  RESERVED	/* MagiC: Sconfig() */
+0x034	  RESERVED
+0x035	  RESERVED
+0x036	d free		(long *buf, short d)
+0x037	  RESERVED
+0x038	  RESERVED
+0x039	d create	(const char *name, short attrib)
+0x03a	d delete	(const char *path)
+0x03b	d setpath	(const char *path)
+0x03c	f create	(const char *name, short attrib)
+0x03d	f open		(const char *name, short mode)
+0x03e	f close		(short fh)
+0x03f	f read		(short fh, long count, char *buf)
 
-0x050	RESERVED
-0x051	RESERVED
-0x052	RESERVED
-0x053	RESERVED
-0x054	RESERVED
-0x055	RESERVED
-0x056	frename		(int junk, const char *old, const char *new)
-0x057	fdatime		(short *timeptr, int fh, int wflag)
-0x058	RESERVED
-0x059	RESERVED
-0x05a	RESERVED
-0x05b	RESERVED
-0x05c	flock		(int fh, int mode, long start, long length)
-0x05d	RESERVED
-0x05e	RESERVED
-0x05f	RESERVED
+0x040	f write		(short fh, long count, const char *buf)
+0x041	f delete	(const char *path)
+0x042	f seek		(long place, short fh, short how)
+0x043	f attrib	(const char *name, short rwflag, short attr)
+0x044	m xalloc	(long size, short mode)
+0x045	f dup		(short fh)
+0x046	f force		(short newh, short oldh)
+0x047	d getpath	(char *path, short drv)
+0x048	m alloc		(long size)
+0x049	m free		(virtaddr block)
+0x04a	m shrink	(short dummy, virtaddr block, long size)
+0x04b	p exec		(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
+0x04c	p term		(short code)
+0x04d	  RESERVED
+0x04e	f sfirst	(const char *path, short attrib)
+0x04f	f snext		(void)
 
-0x060	RESERVED
-0x061	RESERVED
-0x062	RESERVED
-0x063	RESERVED
-0x064	RESERVED
-0x065	RESERVED
-0x066	RESERVED
-0x067	RESERVED
-0x068	RESERVED
-0x069	RESERVED
-0x06a	RESERVED
-0x06b	RESERVED
-0x06c	RESERVED
-0x06d	RESERVED
-0x06e	RESERVED
-0x06f	RESERVED
+0x050	  RESERVED
+0x051	  RESERVED
+0x052	  RESERVED
+0x053	  RESERVED
+0x054	  RESERVED
+0x055	  RESERVED
+0x056	f rename	(short junk, const char *old, const char *new)
+0x057	f datime	(short *timeptr, short fh, short wflag)
+0x058	  RESERVED
+0x059	  RESERVED
+0x05a	  RESERVED
+0x05b	  RESERVED
+0x05c	f lock		(short fh, short mode, long start, long length)
+0x05d	  RESERVED
+0x05e	  RESERVED
+0x05f	  RESERVED
 
-0x070	RESERVED
-0x071	RESERVED
-0x072	RESERVED
-0x073	RESERVED
-0x074	RESERVED
-0x075	RESERVED
-0x076	RESERVED
-0x077	RESERVED
-0x078	RESERVED
-0x079	RESERVED
-0x07a	RESERVED
-0x07b	RESERVED
-0x07c	RESERVED
-0x07d	RESERVED
-0x07e	RESERVED
-0x07f	RESERVED
+0x060	  RESERVED
+0x061	  RESERVED
+0x062	  RESERVED
+0x063	  RESERVED
+0x064	  RESERVED
+0x065	  RESERVED
+0x066	  RESERVED
+0x067	  RESERVED
+0x068	  RESERVED
+0x069	  RESERVED
+0x06a	  RESERVED
+0x06b	  RESERVED
+0x06c	  RESERVED
+0x06d	  RESERVED
+0x06e	  RESERVED
+0x06f	  RESERVED
 
-0x080	RESERVED
-0x081	RESERVED
-0x082	RESERVED
-0x083	RESERVED
-0x084	RESERVED
-0x085	RESERVED
-0x086	RESERVED
-0x087	RESERVED
-0x088	RESERVED
-0x089	RESERVED
-0x08a	RESERVED
-0x08b	RESERVED
-0x08c	RESERVED
-0x08d	RESERVED
-0x08e	RESERVED
-0x08f	RESERVED
+0x070	  RESERVED
+0x071	  RESERVED
+0x072	  RESERVED
+0x073	  RESERVED
+0x074	  RESERVED
+0x075	  RESERVED
+0x076	  RESERVED
+0x077	  RESERVED
+0x078	  RESERVED
+0x079	  RESERVED
+0x07a	  RESERVED
+0x07b	  RESERVED
+0x07c	  RESERVED
+0x07d	  RESERVED
+0x07e	  RESERVED
+0x07f	  RESERVED
 
-0x090	RESERVED
-0x091	RESERVED
-0x092	RESERVED
-0x093	RESERVED
-0x094	RESERVED
-0x095	RESERVED
-0x096	RESERVED
-0x097	RESERVED
-0x098	RESERVED
-0x099	RESERVED
-0x09a	RESERVED
-0x09b	RESERVED
-0x09c	RESERVED
-0x09d	RESERVED
-0x09e	RESERVED
-0x09f	RESERVED
+0x080	  RESERVED
+0x081	  RESERVED
+0x082	  RESERVED
+0x083	  RESERVED
+0x084	  RESERVED
+0x085	  RESERVED
+0x086	  RESERVED
+0x087	  RESERVED
+0x088	  RESERVED
+0x089	  RESERVED
+0x08a	  RESERVED
+0x08b	  RESERVED
+0x08c	  RESERVED
+0x08d	  RESERVED
+0x08e	  RESERVED
+0x08f	  RESERVED
 
-0x0a0	RESERVED
-0x0a1	RESERVED
-0x0a2	RESERVED
-0x0a3	RESERVED
-0x0a4	RESERVED
-0x0a5	RESERVED
-0x0a6	RESERVED
-0x0a7	RESERVED
-0x0a8	RESERVED
-0x0a9	RESERVED
-0x0aa	RESERVED
-0x0ab	RESERVED
-0x0ac	RESERVED
-0x0ad	RESERVED
-0x0ae	RESERVED
-0x0af	RESERVED
+0x090	  RESERVED
+0x091	  RESERVED
+0x092	  RESERVED
+0x093	  RESERVED
+0x094	  RESERVED
+0x095	  RESERVED
+0x096	  RESERVED
+0x097	  RESERVED
+0x098	  RESERVED
+0x099	  RESERVED
+0x09a	  RESERVED
+0x09b	  RESERVED
+0x09c	  RESERVED
+0x09d	  RESERVED
+0x09e	  RESERVED
+0x09f	  RESERVED
 
-0x0b0	RESERVED
-0x0b1	RESERVED
-0x0b2	RESERVED
-0x0b3	RESERVED
-0x0b4	RESERVED
-0x0b5	RESERVED
-0x0b6	RESERVED
-0x0b7	RESERVED
-0x0b8	RESERVED
-0x0b9	RESERVED
-0x0ba	RESERVED
-0x0bb	RESERVED
-0x0bc	RESERVED
-0x0bd	RESERVED
-0x0be	RESERVED
-0x0bf	RESERVED
+0x0a0	  RESERVED
+0x0a1	  RESERVED
+0x0a2	  RESERVED
+0x0a3	  RESERVED
+0x0a4	  RESERVED
+0x0a5	  RESERVED
+0x0a6	  RESERVED
+0x0a7	  RESERVED
+0x0a8	  RESERVED
+0x0a9	  RESERVED
+0x0aa	  RESERVED
+0x0ab	  RESERVED
+0x0ac	  RESERVED
+0x0ad	  RESERVED
+0x0ae	  RESERVED
+0x0af	  RESERVED
 
-0x0c0	RESERVED
-0x0c1	RESERVED
-0x0c2	RESERVED
-0x0c3	RESERVED
-0x0c4	RESERVED
-0x0c5	RESERVED
-0x0c6	RESERVED
-0x0c7	RESERVED
-0x0c8	RESERVED
-0x0c9	RESERVED
-0x0ca	RESERVED
-0x0cb	RESERVED
-0x0cc	RESERVED
-0x0cd	RESERVED
-0x0ce	RESERVED
-0x0cf	RESERVED
+0x0b0	  RESERVED
+0x0b1	  RESERVED
+0x0b2	  RESERVED
+0x0b3	  RESERVED
+0x0b4	  RESERVED
+0x0b5	  RESERVED
+0x0b6	  RESERVED
+0x0b7	  RESERVED
+0x0b8	  RESERVED
+0x0b9	  RESERVED
+0x0ba	  RESERVED
+0x0bb	  RESERVED
+0x0bc	  RESERVED
+0x0bd	  RESERVED
+0x0be	  RESERVED
+0x0bf	  RESERVED
 
-0x0d0	RESERVED
-0x0d1	RESERVED
-0x0d2	RESERVED
-0x0d3	RESERVED
-0x0d4	RESERVED
-0x0d5	RESERVED
-0x0d6	RESERVED
-0x0d7	RESERVED
-0x0d8	RESERVED
-0x0d9	RESERVED
-0x0da	RESERVED
-0x0db	RESERVED
-0x0dc	RESERVED
-0x0dd	RESERVED
-0x0de	RESERVED
-0x0df	RESERVED
+0x0c0	  RESERVED
+0x0c1	  RESERVED
+0x0c2	  RESERVED
+0x0c3	  RESERVED
+0x0c4	  RESERVED
+0x0c5	  RESERVED
+0x0c6	  RESERVED
+0x0c7	  RESERVED
+0x0c8	  RESERVED
+0x0c9	  RESERVED
+0x0ca	  RESERVED
+0x0cb	  RESERVED
+0x0cc	  RESERVED
+0x0cd	  RESERVED
+0x0ce	  RESERVED
+0x0cf	  RESERVED
 
-0x0e0	RESERVED
-0x0e1	RESERVED
-0x0e2	RESERVED
-0x0e3	RESERVED
-0x0e4	RESERVED
-0x0e5	RESERVED
-0x0e6	RESERVED
-0x0e7	RESERVED
-0x0e8	RESERVED
-0x0e9	RESERVED
-0x0ea	RESERVED
-0x0eb	RESERVED
-0x0ec	RESERVED
-0x0ed	RESERVED
-0x0ee	RESERVED
-0x0ef	RESERVED
+0x0d0	  RESERVED
+0x0d1	  RESERVED
+0x0d2	  RESERVED
+0x0d3	  RESERVED
+0x0d4	  RESERVED
+0x0d5	  RESERVED
+0x0d6	  RESERVED
+0x0d7	  RESERVED
+0x0d8	  RESERVED
+0x0d9	  RESERVED
+0x0da	  RESERVED
+0x0db	  RESERVED
+0x0dc	  RESERVED
+0x0dd	  RESERVED
+0x0de	  RESERVED
+0x0df	  RESERVED
+
+0x0e0	  RESERVED
+0x0e1	  RESERVED
+0x0e2	  RESERVED
+0x0e3	  RESERVED
+0x0e4	  RESERVED
+0x0e5	  RESERVED
+0x0e6	  RESERVED
+0x0e7	  RESERVED
+0x0e8	  RESERVED
+0x0e9	  RESERVED
+0x0ea	  RESERVED
+0x0eb	  RESERVED
+0x0ec	  RESERVED
+0x0ed	  RESERVED
+0x0ee	  RESERVED
+0x0ef	  RESERVED
 
 /*
  * MiNT extensions to GEMDOS
  */
 
-0x0f0	RESERVED
-0x0f1	RESERVED
-0x0f2	RESERVED
-0x0f3	RESERVED
-0x0f4	RESERVED
-0x0f5	RESERVED
-0x0f6	RESERVED
-0x0f7	RESERVED
-0x0f8	RESERVED
-0x0f9	RESERVED
-0x0fa	RESERVED
-0x0fb	RESERVED
-0x0fc	RESERVED
-0x0fd	RESERVED
-0x0fe	RESERVED
-0x0ff	syield		(void)
+0x0f0	  RESERVED
+0x0f1	  RESERVED
+0x0f2	  RESERVED
+0x0f3	  RESERVED
+0x0f4	  RESERVED
+0x0f5	  RESERVED
+0x0f6	  RESERVED
+0x0f7	  RESERVED
+0x0f8	  RESERVED
+0x0f9	  RESERVED
+0x0fa	  RESERVED
+0x0fb	  RESERVED
+0x0fc	  RESERVED
+0x0fd	  RESERVED
+0x0fe	  RESERVED
+0x0ff	s yield		(void)
 
-0x100	fpipe		(int *usrh)
-0x101	ffchown		(int fh, int uid, int gid)			/* 1.15.2  */
-0x102	ffchmod		(int fh, ushort mode)				/* 1.15.2  */
-0x103	fsync		(int fh)					/* 1.15.10 */
-0x104	fcntl		(int fh, long arg, int cmd)
-0x105	finstat		(int fh)
-0x106	foutstat	(int fh)
-0x107	fgetchar	(int fh, int mode)
-0x108	fputchar	(int fh, long c, int mode)
-0x109	pwait		(void)
-0x10a	pnice		(int increment)
-0x10b	pgetpid		(void)
-0x10c	pgetppid	(void)
-0x10d	pgetpgrp	(void)
-0x10e	psetpgrp	(int pid, int newgrp)
-0x10f	pgetuid		(void)
+0x100	f pipe		(short *usrh)
+0x101	f fchown	(short fh, short uid, short gid)		/* 1.15.2  */
+0x102	f fchmod	(short fh, ushort mode)				/* 1.15.2  */
+0x103	f fsync		(short fh)					/* 1.15.10 */
+0x104	f fcntl		(short fh, long arg, short cmd)
+0x105	f instat	(short fh)
+0x106	f outstat	(short fh)
+0x107	f getchar	(short fh, short mode)
+0x108	f putchar	(short fh, long c, short mode)
+0x109	p wait		(void)
+0x10a	p nice		(short increment)
+0x10b	p getpid	(void)
+0x10c	p getppid	(void)
+0x10d	p getpgrp	(void)
+0x10e	p setpgrp	(short pid, short newgrp)
+0x10f	p getuid	(void)
 
-0x110	psetuid		(int id)
-0x111	pkill		(int pid, int sig)
-0x112	psignal		(int sig, long handler)
-0x113	pvfork		(void)
-0x114	pgetgid		(void)
-0x115	psetgid		(int id)
-0x116	psigblock	(ulong mask)
-0x117	psigsetmask	(ulong mask)
-0x118	pusrval		(long arg)
-0x119	pdomain		(int arg)
-0x11a	psigreturn	(void)
-0x11b	pfork		(void)
-0x11c	pwait3		(int nohang, long *rusage)
-0x11d	fselect		(unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
-0x11e	prusage		(long *r)
-0x11f	psetlimit	(int i, long v)
+0x110	p setuid	(short id)
+0x111	p kill		(short pid, short sig)
+0x112	p signal	(short sig, long handler)
+0x113	p vfork		(void)
+0x114	p getgid	(void)
+0x115	p setgid	(short id)
+0x116	p sigblock	(ulong mask)
+0x117	p sigsetmask	(ulong mask)
+0x118	p usrval	(long arg)
+0x119	p domain	(short arg)
+0x11a	p sigreturn	(void)
+0x11b	p fork		(void)
+0x11c	p wait3		(short nohang, long *rusage)
+0x11d	f select	(unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
+0x11e	p rusage	(long *r)
+0x11f	p setlimit	(short i, long v)
 
-0x120	talarm		(long x)
-0x121	ppause		(void)
-0x122	sysconf		(int which)
-0x123	psigpending	(void)
-0x124	dpathconf	(const char *name, int which)
-0x125	pmsg		(int mode, long mbid, char *ptr)
-0x126	fmidipipe	(int pid, int in, int out)
-0x127	prenice		(int pid, int increment)
-0x128	dopendir	(const char *path, int flags)
-0x129	dreaddir	(int len, long handle, char *buf)
-0x12a	drewind		(long handle)
-0x12b	dclosedir	(long handle)
-0x12c	fxattr		(int flag, const char *name, XATTR *xattr)
-0x12d	flink		(const char *old, const char *new)
-0x12e	fsymlink	(const char *old, const char *new)
-0x12f	freadlink	(int buflen, char *buf, const char *linkfile)
+0x120	t alarm		(long x)
+0x121	p pause		(void)
+0x122	s sysconf	(short which)
+0x123	p sigpending	(void)
+0x124	d pathconf	(const char *name, short which)
+0x125	p msg		(short mode, long mbid, char *ptr)
+0x126	f midipipe	(short pid, short in, short out)
+0x127	p renice	(short pid, short increment)
+0x128	d opendir	(const char *path, short flags)
+0x129	d readdir	(short len, long handle, char *buf)
+0x12a	d rewind	(long handle)
+0x12b	d closedir	(long handle)
+0x12c	f xattr		(short flag, const char *name, XATTR *xattr)
+0x12d	f link		(const char *old, const char *new)
+0x12e	f symlink	(const char *old, const char *new)
+0x12f	f readlink	(short buflen, char *buf, const char *linkfile)
 
-0x130	dcntl		(int cmd, const char *name, long arg)
-0x131	fchown		(const char *name, int uid, int gid)
-0x132	fchmod		(const char *name, unsigned mode)
-0x133	pumask		(ushort mode)
-0x134	psemaphore	(int mode, long id, long timeout)
-0x135	dlock		(int mode, int drv)
-0x136	psigpause	(ulong mask)
-0x137	psigaction	(int sig, const struct sigaction *act, struct sigaction *oact)
-0x138	pgeteuid	(void)
-0x139	pgetegid	(void)
-0x13a	pwaitpid	(int pid, int nohang, long *rusage)
-0x13b	dgetcwd		(char *path, int drv, int size)
-0x13c	salert		(char *msg)
-0x13d	tmalarm		(long x)
-0x13e	psigintr	(ushort vec, ushort sig)
-0x13f	suptime		(ulong *cur_uptim, ulong loadave[3])
+0x130	d cntl		(short cmd, const char *name, long arg)
+0x131	f chown		(const char *name, short uid, short gid)
+0x132	f chmod		(const char *name, unsigned mode)
+0x133	p umask		(ushort mode)
+0x134	p semaphore	(short mode, long id, long timeout)
+0x135	d lock		(short mode, short drv)
+0x136	p sigpause	(ulong mask)
+0x137	p sigaction	(short sig, const struct sigaction *act, struct sigaction *oact)
+0x138	p geteuid	(void)
+0x139	p getegid	(void)
+0x13a	p waitpid	(short pid, short nohang, long *rusage)
+0x13b	d getcwd	(char *path, short drv, short size)
+0x13c	s alert		(char *msg)
+0x13d	t malarm	(long x)
+0x13e	p sigintr	(ushort vec, ushort sig)
+0x13f	s uptime	(ulong *cur_uptim, ulong loadave[3])
 
-0x140	ptrace		(short request, short pid, void *addr, long data) /* 1.15.10 */
-0x141	RESERVED
-0x142	dxreaddir	(int len, long handle, char *buf, XATTR *xattr, long *xret)
-0x143	pseteuid	(int id)
-0x144	psetegid	(int id)
-0x145	pgetauid	(void)
-0x146	psetauid	(int id)
-0x147	pgetgroups	(int gidsetlen, int gidset[])
-0x148	psetgroups	(int ngroups, int gidset[])
-0x149	tsetitimer	(int which, long *interval, long *value, long *ointerval, long *ovalue)
-0x14a	dchroot		(const char *dir)				/* 1.15.3  */
-0x14b	fstat64		(int flag, const char *name, STAT *stat)	/* 1.15.4  */
-0x14c	fseek64		(llong place, int fh, int how, llong *newpos)	/* 1.15.10 */
-0x14d	dsetkey		(llong dev, char *key, int cipher)		/* 1.15.4  */
-0x14e	psetreuid	(int rid, int eid)
-0x14f	psetregid	(int rid, int eid)
+0x140	p trace		(short request, short pid, void *addr, long data) /* 1.15.10 */
+0x141	  RESERVED
+0x142	d xreaddir	(short len, long handle, char *buf, XATTR *xattr, long *xret)
+0x143	p seteuid	(short id)
+0x144	p setegid	(short id)
+0x145	p getauid	(void)
+0x146	p setauid	(short id)
+0x147	p getgroups	(short gidsetlen, short gidset[])
+0x148	p setgroups	(short ngroups, short gidset[])
+0x149	t setitimer	(short which, long *interval, long *value, long *ointerval, long *ovalue)
+0x14a	d chroot	(const char *dir)				/* 1.15.3  */
+0x14b	f stat64	(short flag, const char *name, STAT *stat)	/* 1.15.4  */
+0x14c	f seek64	(llong place, short fh, short how, llong *newpos)	/* 1.15.10 */
+0x14d	d setkey	(llong dev, char *key, short cipher)		/* 1.15.4  */
+0x14e	p setreuid	(short rid, short eid)
+0x14f	p setregid	(short rid, short eid)
 
-0x150	sync		(void)
-0x151	halt		(long restart)
-0x152	dreadlabel	(const char *path, char *label, int maxlen)
-0x153	dwritelabel	(const char *path, const char *label)
-0x154	ssystem		(int mode, ulong arg1, ulong arg2)
-0x155	tgettimeofday	(struct timeval *tv, struct timezone *tz)
-0x156	tsettimeofday	(struct timeval *tv, struct timezone *tz)
-0x157	RESERVED	/* tadjtime */
-0x158	pgetpriority	(int which, int who)
-0x159	psetpriority	(int which, int who, int prio)
-0x15a	fpoll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
-0x15b	fwritev		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
-0x15c	freadv		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
-0x15d	ffstat		(short fd, struct stat *st)			/* 1.16 */
-0x15e	RESERVED
-0x15f	emulation	(ushort which, ushort op,
-				long a1, long a2, long a3, long a4,
-				long a5, long a6, long a7)		/* 1.15.8  */
+0x150	s sync		(void)
+0x151	s halt		(long restart)
+0x152	d readlabel	(const char *path, char *label, short maxlen)
+0x153	d writelabel	(const char *path, const char *label)
+0x154	s system	(short mode, ulong arg1, ulong arg2)
+0x155	t gettimeofday	(struct timeval *tv, struct timezone *tz)
+0x156	t settimeofday	(struct timeval *tv, struct timezone *tz)
+0x157	  RESERVED	/* tadjtime */
+0x158	p getpriority	(short which, short who)
+0x159	p setpriority	(short which, short who, short prio)
+0x15a	f poll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
+0x15b	f writev	(short fd, const struct iovec *iov, long niov)	/* 1.16 */
+0x15c	f readv		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
+0x15d	f fstat		(short fd, struct stat *st)			/* 1.16 */
+0x15e	  RESERVED
+0x15f	s emulation	(ushort which, ushort op,
+			 long a1, long a2, long a3, long a4,
+			 long a5, long a6, long a7)			/* 1.15.8  */
 
 	/* 1.16 - socket extensions */
 
-0x160	socket		(long domain, long type, long protocol)
-0x161	socketpair	(long domain, long type, long protocol, short fds[2])
-0x162	accept		(short fd, struct sockaddr *name, ulong *anamelen)
-0x163	connect		(short fd, const struct sockaddr *name, ulong namelen)
-0x164	bind		(short fd, const struct sockaddr *name, ulong namelen)
-0x165	listen		(short fd, long backlog)
-0x166	recvmsg		(short fd, struct msghdr *msg, long flags)
-0x167	sendmsg		(short fd, const struct msghdr *msg, long flags)
-0x168	recvfrom	(short fd, void *buf, ulong len, long flags, struct sockaddr *from, ulong *fromlenaddr)
-0x169	sendto		(short fd, const void *buf, ulong len, long flags, const struct sockaddr *to, ulong tolen)
-0x16a	setsockopt	(short fd, long level, long name, const void *val, ulong valsize)
-0x16b	getsockopt	(short fd, long level, long name, void *val, ulong *avalsize)
-0x16c	getpeername	(short fd, struct sockaddr *asa, ulong *alen)
-0x16d	getsockname	(short fd, struct sockaddr *asa, ulong *alen)
-0x16e	shutdown	(short fd, long how)
-0x16f	RESERVED
+0x160	f socket	(long domain, long type, long protocol)
+0x161	f socketpair	(long domain, long type, long protocol, short fds[2])
+0x162	f accept	(short fd, struct sockaddr *name, ulong *anamelen)
+0x163	f connect	(short fd, const struct sockaddr *name, ulong namelen)
+0x164	f bind		(short fd, const struct sockaddr *name, ulong namelen)
+0x165	f listen	(short fd, long backlog)
+0x166	f recvmsg	(short fd, struct msghdr *msg, long flags)
+0x167	f sendmsg	(short fd, const struct msghdr *msg, long flags)
+0x168	f recvfrom	(short fd, void *buf, ulong len, long flags, struct sockaddr *from, ulong *fromlenaddr)
+0x169	f sendto	(short fd, const void *buf, ulong len, long flags, const struct sockaddr *to, ulong tolen)
+0x16a	f setsockopt	(short fd, long level, long name, const void *val, ulong valsize)
+0x16b	f getsockopt	(short fd, long level, long name, void *val, ulong *avalsize)
+0x16c	f getpeername	(short fd, struct sockaddr *asa, ulong *alen)
+0x16d	f getsockname	(short fd, struct sockaddr *asa, ulong *alen)
+0x16e	f shutdown	(short fd, long how)
+0x16f	  RESERVED
 
 	/* 1.16 - svr5 IPC */
 
-0x170	shmget		(long key, long size, long shmflg)
-0x171	shmctl		(long shmid, long cmd, struct shmid_ds *buf)
-0x172	shmat		(long shmid, const void *shmaddr, long shmflg)
-0x173	shmdt		(const void *shmaddr)
-0x174	semget		(long key, long nsems, long semflg)
-0x175	semctl		(long semid, long semnum, long cmd, union __semun *arg)
-0x176	semop		(long semid, struct sembuf *sops, long nsops)
-0x177	semconfig	(long flag)
-0x178	msgget		(long key, long msgflg)
-0x179	msgctl		(long msqid, long cmd, struct msqid_ds *buf)
-0x17a	msgsnd		(long msqid, const void *msgp, long msgsz, long msgflg)
-0x17b	msgrcv		(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
-0x17c	RESERVED
-0x17d	RESERVED
-0x17e	RESERVED	/* mmap */
-0x17f	RESERVED	/* munmap */
+0x170	p shmget	(long key, long size, long shmflg)
+0x171	p shmctl	(long shmid, long cmd, struct shmid_ds *buf)
+0x172	p shmat		(long shmid, const void *shmaddr, long shmflg)
+0x173	p shmdt		(const void *shmaddr)
+0x174	p semget	(long key, long nsems, long semflg)
+0x175	p semctl	(long semid, long semnum, long cmd, union __semun *arg)
+0x176	p semop		(long semid, struct sembuf *sops, long nsops)
+0x177	p semconfig	(long flag)
+0x178	p msgget	(long key, long msgflg)
+0x179	p msgctl	(long msqid, long cmd, struct msqid_ds *buf)
+0x17a	p msgsnd	(long msqid, const void *msgp, long msgsz, long msgflg)
+0x17b	p msgrcv	(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
+0x17c	  RESERVED
+0x17d	  RESERVED
+0x17e	  RESERVED	/* mmap */
+0x17f	  RESERVED	/* munmap */
 
 0x180	MAX
 
 
 [ BIOS ]
 
-0x000	RESERVED	/* getmpb - useless */
-0x001	ubconstat	(int dev)
-0x002	ubconin		(int dev)
-0x003	ubconout	(int dev, int c)
-0x004	rwabs		(int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
-0x005	setexc		(int number, long vector)
-0x006	tickcal		(void)
-0x007	getbpb		(int dev)
-0x008	ubcostat	(int dev)
-0x009	mediach		(int dev)
-0x00a	drvmap		(void)
-0x00b	kbshift		(int mode)
-0x00c	NULL
-0x00d	NULL
-0x00e	NULL
-0x00f	NULL
+0x000	  RESERVED	/* getmpb - useless */
+0x001	b ubconstat	(short dev)
+0x002	b ubconin	(short dev)
+0x003	b ubconout	(short dev, short c)
+0x004	b rwabs		(short rwflag, void *buffer, short number, short recno, short dev, long lrecno)
+0x005	b setexc	(short number, long vector)
+0x006	b tickcal	(void)
+0x007	b getbpb	(short dev)
+0x008	b ubcostat	(short dev)
+0x009	b mediach	(short dev)
+0x00a	b drvmap	(void)
+0x00b	b kbshift	(short mode)
+0x00c	  NULL
+0x00d	  NULL
+0x00e	  NULL
+0x00f	  NULL
 
-0x010	NULL
-0x011	NULL
-0x012	NULL
-0x013	NULL
-0x014	NULL
-0x015	NULL
-0x016	NULL
-0x017	NULL
-0x018	NULL
-0x019	NULL
-0x01a	NULL
-0x01b	NULL
-0x01c	NULL
-0x01d	NULL
-0x01e	NULL
-0x01f	NULL
+0x010	  NULL
+0x011	  NULL
+0x012	  NULL
+0x013	  NULL
+0x014	  NULL
+0x015	  NULL
+0x016	  NULL
+0x017	  NULL
+0x018	  NULL
+0x019	  NULL
+0x01a	  NULL
+0x01b	  NULL
+0x01c	  NULL
+0x01d	  NULL
+0x01e	  NULL
+0x01f	  NULL
 
 0x020	MAX
 
 
 [ XBIOS ]
 
-0x000	NULL
-0x001	NULL
-0x002	NULL
-0x003	NULL
-0x004	NULL
-0x005	vsetscreen	(long log, long phys, int rez, int mode)
-0x006	NULL
-0x007	NULL
-0x008	NULL
-0x009	NULL
-0x00a	NULL
-0x00b	NULL
-0x00c	midiws		(int cnt, const char *buf)
-0x00d	NULL
-0x00e	uiorec		(int dev)
-0x00f	ursconf		(int baud, int flow, int uc, int rs, int ts, int sc)
+0x000	  NULL
+0x001	  NULL
+0x002	  NULL
+0x003	  NULL
+0x004	  NULL
+0x005	b vsetscreen	(long log, long phys, short rez, short mode)
+0x006	  NULL
+0x007	  NULL
+0x008	  NULL
+0x009	  NULL
+0x00a	  NULL
+0x00b	  NULL
+0x00c	b midiws	(short cnt, const char *buf)
+0x00d	  NULL
+0x00e	b uiorec	(short dev)
+0x00f	b ursconf	(short baud, short flow, short uc, short rs, short ts, short sc)
 
-0x010	NULL
-0x011	random		(void)
-0x012	NULL
-0x013	NULL
-0x014	NULL
-0x015	cursconf	(int cmd, int op)
-0x016	settime		(void)
-0x017	gettime		(ulong datetime)
-0x018	NULL
-0x019	NULL
-0x01a	NULL
-0x01b	NULL
-0x01c	NULL
-0x01d	NULL
-0x01e	NULL
-0x01f	NULL
+0x010	  NULL
+0x011	b random	(void)
+0x012	  NULL
+0x013	  NULL
+0x014	  NULL
+0x015	b cursconf	(short cmd, short op)
+0x016	b settime	(void)
+0x017	b gettime	(ulong datetime)
+0x018	  NULL
+0x019	  NULL
+0x01a	  NULL
+0x01b	  NULL
+0x01c	  NULL
+0x01d	  NULL
+0x01e	  NULL
+0x01f	  NULL
 
-0x020	dosound		(const char *ptr)
-0x021	NULL
-0x022	NULL
-0x023	NULL
-0x024	NULL
-0x025	NULL
-0x026	supexec		(Func funcptr, long a1, long a2, long a3, long a4, long a5)
-0x027	NULL
-0x028	NULL
-0x029	NULL
-0x02a	NULL
-0x02b	NULL
-0x02c	bconmap		(int dev)
-0x02d	NULL
-0x02e	NULL
-0x02f	NULL
+0x020	b dosound	(const char *ptr)
+0x021	  NULL
+0x022	  NULL
+0x023	  NULL
+0x024	  NULL
+0x025	  NULL
+0x026	b supexec	(Func funcptr, long a1, long a2, long a3, long a4, long a5)
+0x027	  NULL
+0x028	  NULL
+0x029	  NULL
+0x02a	  NULL
+0x02b	  NULL
+0x02c	b bconmap	(short dev)
+0x02d	  NULL
+0x02e	  NULL
+0x02f	  NULL
 
-0x030	NULL
-0x031	NULL
-0x032	NULL
-0x033	NULL
-0x034	NULL
-0x035	NULL
-0x036	NULL
-0x037	NULL
-0x038	NULL
-0x039	NULL
-0x03a	NULL
-0x03b	NULL
-0x03c	NULL
-0x03d	NULL
-0x03e	NULL
-0x03f	NULL
+0x030	  NULL
+0x031	  NULL
+0x032	  NULL
+0x033	  NULL
+0x034	  NULL
+0x035	  NULL
+0x036	  NULL
+0x037	  NULL
+0x038	  NULL
+0x039	  NULL
+0x03a	  NULL
+0x03b	  NULL
+0x03c	  NULL
+0x03d	  NULL
+0x03e	  NULL
+0x03f	  NULL
 
-0x040	NULL
-0x041	NULL
-0x042	NULL
-0x043	NULL
-0x044	NULL
-0x045	NULL
-0x046	NULL
-0x047	NULL
-0x048	NULL
-0x049	NULL
-0x04a	NULL
-0x04b	NULL
-0x04c	NULL
-0x04d	NULL
-0x04e	NULL
-0x04f	NULL
+0x040	  NULL
+0x041	  NULL
+0x042	  NULL
+0x043	  NULL
+0x044	  NULL
+0x045	  NULL
+0x046	  NULL
+0x047	  NULL
+0x048	  NULL
+0x049	  NULL
+0x04a	  NULL
+0x04b	  NULL
+0x04c	  NULL
+0x04d	  NULL
+0x04e	  NULL
+0x04f	  NULL
 
-0x050	NULL
-0x051	NULL
-0x052	NULL
-0x053	NULL
-0x054	NULL
-0x055	NULL
-0x056	NULL
-0x057	NULL
-0x058	NULL
-0x059	NULL
-0x05a	NULL
-0x05b	NULL
-0x05c	NULL
-0x05d	NULL
-0x05e	NULL
-0x05f	NULL
+0x050	  NULL
+0x051	  NULL
+0x052	  NULL
+0x053	  NULL
+0x054	  NULL
+0x055	  NULL
+0x056	  NULL
+0x057	  NULL
+0x058	  NULL
+0x059	  NULL
+0x05a	  NULL
+0x05b	  NULL
+0x05c	  NULL
+0x05d	  NULL
+0x05e	  NULL
+0x05f	  NULL
 
-0x060	NULL
-0x061	NULL
-0x062	NULL
-0x063	NULL
-0x064	NULL
-0x065	NULL
-0x066	NULL
-0x067	NULL
-0x068	NULL
-0x069	NULL
-0x06a	NULL
-0x06b	NULL
-0x06c	NULL
-0x06d	NULL
-0x06e	NULL
-0x06f	NULL
+0x060	  NULL
+0x061	  NULL
+0x062	  NULL
+0x063	  NULL
+0x064	  NULL
+0x065	  NULL
+0x066	  NULL
+0x067	  NULL
+0x068	  NULL
+0x069	  NULL
+0x06a	  NULL
+0x06b	  NULL
+0x06c	  NULL
+0x06d	  NULL
+0x06e	  NULL
+0x06f	  NULL
 
-0x070	NULL
-0x071	NULL
-0x072	NULL
-0x073	NULL
-0x074	NULL
-0x075	NULL
-0x076	NULL
-0x077	NULL
-0x078	NULL
-0x079	NULL
-0x07a	NULL
-0x07b	NULL
-0x07c	NULL
-0x07d	NULL
-0x07e	NULL
-0x07f	NULL
+0x070	  NULL
+0x071	  NULL
+0x072	  NULL
+0x073	  NULL
+0x074	  NULL
+0x075	  NULL
+0x076	  NULL
+0x077	  NULL
+0x078	  NULL
+0x079	  NULL
+0x07a	  NULL
+0x07b	  NULL
+0x07c	  NULL
+0x07d	  NULL
+0x07e	  NULL
+0x07f	  NULL
 
 0x080	MAX
