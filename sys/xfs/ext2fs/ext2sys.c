@@ -1983,7 +1983,8 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			}
 			else
 			{
-				c->in.i_mtime = c->in.i_atime = c->in.i_ctime;
+				c->in.i_atime =
+				c->in.i_mtime = c->in.i_ctime;
 			}
 			
 			mark_inode_dirty (c);
