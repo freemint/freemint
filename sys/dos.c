@@ -502,9 +502,13 @@ t_malarm (long x)
 
 	/* see how many milliseconds there were to the alarm timeout */
 	oldalarm = 0;
-
+	
 	if (curproc->alarmtim)
 	{
+		ushort sr;
+		
+		sr = splhigh ();
+		
 		for (t = tlist; t; t = t->next)
 		{
 			oldalarm += t->when;
@@ -514,8 +518,9 @@ t_malarm (long x)
 		DEBUG (("Talarm: old alarm not found!"));
 		oldalarm = 0;
 		curproc->alarmtim = 0;
+		
 foundalarm:
-		;
+		spl (sr);
 	}
 
 	/* we were just querying the alarm */
@@ -661,6 +666,10 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 	
 	if (curproc->itimer[which].timeout)
 	{
+		ushort sr;
+		
+		sr = splhigh ();
+		
 		for (t = tlist; t; t = t->next)
 		{
 			oldtimer += t->when;
@@ -670,7 +679,7 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 		DEBUG (("Tsetitimer: old timer not found!"));
 		oldtimer = 0;
 foundtimer:
-		;
+		spl (sr);
 	}
 	
 	if (ointerval)
