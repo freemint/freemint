@@ -15,7 +15,6 @@
 
 # include "dummydev.h"
 # include "timer.h"
-# include "util.h"
 
 # include "mint/file.h"
 # include "mint/socket.h"

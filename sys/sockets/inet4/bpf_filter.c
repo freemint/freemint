@@ -45,7 +45,6 @@
  */
 
 # include "global.h"
-# include "util.h"
 
 # include "if.h"
 # include "in.h"

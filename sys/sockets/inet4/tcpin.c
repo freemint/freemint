@@ -15,8 +15,6 @@
 # include "tcpsig.h"
 # include "tcputil.h"
 
-# include "util.h"
-
 
 static void	tcbs_closed		(struct tcb *, BUF *);
 static void	tcbs_listen		(struct tcb *, BUF *);
