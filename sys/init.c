@@ -923,7 +923,7 @@ init (void)
 	init_block_IO ();
 	DEBUG (("init_block_IO() ok!"));
 
-	/* initialiye floppy */
+	/* initialize floppy */
 #ifdef FLOPPY_ROUTINES
 	init_floppy ();
 	DEBUG (("init_floppy() ok!"));
