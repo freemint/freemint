@@ -189,6 +189,8 @@ extern const char *MSG_shell_xcmd_help;
 extern const char *MSG_shell_xcmd_info;
 extern const char *MSG_shell_xcmd_on;
 extern const char *MSG_shell_xcmd_off;
+extern const char *MSG_shell_cp_not_dir;
+extern const char *MSG_shell_cp_the_same;
 extern const char *MSG_shell_cd_help;
 extern const char *MSG_shell_ls_help;
 extern const char *MSG_shell_help;
