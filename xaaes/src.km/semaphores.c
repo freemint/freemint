@@ -173,11 +173,11 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 		locker = client;
 #endif
 		
-	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s by (%d)%s, state: %d for %d",
+	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s by (%d)%s, state: %d for %d, try: %d",
 		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), update_lock.counter,
-		update_lock.client ? update_lock.client->p->pid : -1));
+		update_lock.client ? update_lock.client->p->pid : -1, try));
 
-	if (try)
+	if (try == true)
 	{
 		if (ressource_semaphore_try(&update_lock, locker))
 			return true;
@@ -245,11 +245,11 @@ lock_mouse(struct xa_client *client, bool try, short *ret, int which)
 		locker = client;
 #endif
 
-	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s by (%d)%s, state: %d for %d",
+	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s by (%d)%s, state: %d for %d, try: %d",
 		which, client->p->pid, c_owner(client), locker->p->pid, c_owner(locker), mouse_lock.counter,
-		mouse_lock.client ? mouse_lock.client->p->pid : -1));
+		mouse_lock.client ? mouse_lock.client->p->pid : -1, try));
 
-	if (try)
+	if (try == true)
 	{
 		if (ressource_semaphore_try(&mouse_lock, locker))
 			return true;
