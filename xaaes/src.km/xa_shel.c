@@ -847,7 +847,7 @@ XA_shell_read(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	}
 
-	if (mytail)
+	if (myname && mytail)
 	{
 		int f;
 
