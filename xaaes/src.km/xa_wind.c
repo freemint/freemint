@@ -831,7 +831,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			else if (!widg->stuff)
 			{
 				DIAGS(("  --- Set new toolbar"));
-				wt = set_toolbar_widget(lock, w, client, ob, pb->intin[5], 0);
+				wt = set_toolbar_widget(lock, w, client, ob, pb->intin[5], 0, NULL);
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{
@@ -1322,7 +1322,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			o[1] = w->owner->p->pid;
 		
 		/* Is the window open? */
-		o[2] = (w->window_status & XAWS_OPEN) ? 0 : 1;
+		o[2] = (w->window_status & XAWS_OPEN) ? 1 : 0;
 		
 		if (w->prev)	/* If there is a window above, return its handle */
 			o[3] = w->prev->handle;

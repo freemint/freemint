@@ -102,9 +102,13 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 		wind->handle, desktop));
 
 	if (wi->stuff)
+	{
 		((XA_TREE *)wi->stuff)->widg = NULL;
+		((XA_TREE *)wi->stuff)->links--;
+	}
 
 	desktop->widg = wi;
+	desktop->links++;
 
 	bzero(&loc, sizeof(loc));
 	loc.relative_type = LT;
@@ -149,10 +153,14 @@ Set_desktop(XA_TREE *new_desktop)
 	{
 		((XA_TREE *)wi->stuff)->widg = NULL;
 		((XA_TREE *)wi->stuff)->flags &= ~WTF_STATIC;
+		((XA_TREE *)wi->stuff)->links--;
 	}
+	
 	new_desktop->widg = wi;
 	wi->owner = new_desktop->owner;
 	new_desktop->flags |= WTF_STATIC;
+	new_desktop->links++;
+
 
 	ob = new_desktop->tree;
 	r = *(RECT*)&ob->ob_x;
@@ -173,23 +181,7 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->stufftype = STUFF_IS_WT;
 	wi->destruct = free_xawidget_resources;
 
-	{
-		send_iredraw(0, root_window, 0, NULL);
-#if 0
-		struct xa_window *wl = root_window;
-		struct xa_rect_list *rl;
-
-		make_rect_list(wl, true);
-		rl = wl->rect_start;
-		while (rl)
-		{
-			//set_clip(&rl->r);
-			//draw_window(0, wl);
-			generate_redraws(0, wl, &rl->r, RDRW_ALL);
-			rl = rl->next;
-		}
-#endif
-	}
+	send_iredraw(0, root_window, 0, NULL);
 }
 static void
 CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)

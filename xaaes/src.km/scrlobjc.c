@@ -498,7 +498,7 @@ set_slist_object(enum locks lock,
 		get_widget(list->wi, XAW_VSLIDE)->drag = drag_vslide;
 		get_widget(list->wi, XAW_HSLIDE)->drag = drag_hslide;
 
-		list->wi->data = list;
+		//list->wi->data = list;
 		
 		list->wi->winob	= form;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;

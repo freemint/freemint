@@ -30,6 +30,7 @@
 #include "xa_fnts.h"
 #include "xa_wdlg.h"
 
+#include "k_main.h"
 #include "k_mouse.h"
 
 #include "app_man.h"
@@ -245,7 +246,7 @@ fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 	struct xa_rect_list *rl;
 	struct widget_tree *wt;
 
-	if ((wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_start))
+	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_start))
 	{
 		OBJECT *obtree;
 		RECT dr;
@@ -303,16 +304,15 @@ new_fnts(void)
 	return new;
 }
 /*
- * This function is pointed to by wind->data_destruct, and is called
- * be delete_window() when window is destroyed. This may be called
- * from any context, so do not do ufree() here...
+ * This function is pointed to by xa_data_hdr->destruct, and is called
+ * by delete_xa_data() and free_xa_data_list() (in global.c).
  */
 static void
-delete_fnts_info(struct xa_window *wind)
+delete_fnts_info(void *_fnts)
 {
-	struct xa_fnts_info *fnts;
+	struct xa_fnts_info *fnts = _fnts;
 
-	if ((fnts = wind->data))
+	if (fnts)
 	{
 		struct xa_fnts_item *f = fnts->fnts_ring;
 		DIAG((D_fnts, NULL, "delete_fnts_info: fnts=%lx", fnts));
@@ -323,7 +323,7 @@ delete_fnts_info(struct xa_window *wind)
 		while (f)
 		{
 			struct xa_fnts_item *n = f->link;
-			DIAG((D_fnts, NULL, " --- deleting nxt_kin item=%lx (%s)", n, n->f.full_name));
+			DIAG((D_fnts, NULL, " --- deleting fnts_item=%lx (%s)", f, f->f.full_name));
 			kfree(f);
 			f = n;
 		}
@@ -340,36 +340,30 @@ delete_fnts_info(struct xa_window *wind)
 			DIAG((D_fnts, NULL, " --- deleting opt_button '%s'", fnts->opt_button));
 			kfree(fnts->opt_button);
 		}
+
+		if (fnts->wt)
+		{
+			fnts->wt->links--;
+			remove_wt(fnts->wt, true);
+		}
+
 		kfree(fnts);
-		
-		wind->data = NULL;
-		wind->data_destruct = NULL;
 	}
 }
 
 /*
  * Lookup window with fnts_ptr in wind->data
  */
+
 static struct xa_window *
 get_fnts_wind(struct xa_client *client, void *fnts_ptr)
 {
-	struct xa_window *wl = window_list;
-	while (wl)
-	{
-		if (wl->owner == client && (long)wl->data == (long)fnts_ptr)
-			return wl;
-		wl = wl->next;
-	}
-
-	wl = S.closed_windows.first;
-	while (wl)
-	{
-		if (wl->owner == client && (long)wl->data == (long)fnts_ptr)
-			return wl;
-		wl = wl->next;
-	}
-
-	return NULL;		
+	struct xa_fnts_info *fnts = lookup_xa_data(&client->xa_data, fnts_ptr);
+	
+	if (fnts)
+		return fnts->wind;
+	else
+		return NULL;
 }
 
 /*
@@ -720,7 +714,7 @@ add_fnts_item(struct xa_fnts_item **list, struct xa_fnts_item *f, short flags)
 }
 
 static struct xa_fnts_item *
-get_font_items(struct xa_client *client, struct xa_fnts_info *fnts)
+get_font_items(struct xa_fnts_info *fnts)
 {
 	short i;
 	XVDIPB *vpb;
@@ -966,93 +960,80 @@ click_size(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
 	return 0;
 }
 
-unsigned long
-XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
+static XA_TREE *
+duplicate_fnts_obtree(struct xa_client *client)
 {
-	struct xa_fnts_info *fnts = NULL;
-	struct xa_window *wind = NULL;
 	OBJECT *obtree = NULL;
 	XA_TREE *wt = NULL;
-	char *s, *d;
-	long slen;
-	XA_WIND_ATTR tp = MOVER|NAME;
-	RECT r, or;
 
-	DIAG((D_fnts, client, "XA_fnts_create"));
-
-	pb->intout[0] = 0;
-	pb->addrout[0] = 0L;
-	
 	if ((obtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, WDLG_FNTS), 0)))
 	{
-
 		wt = new_widget_tree(client, obtree);
-		if (!wt)
-			goto memerr;
+		if (wt)
+		{
+			/*
+			 * We let delete_fnts_info free the widget_tree
+			 */
+			wt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
+			obtree->ob_state &= ~OS_OUTLINED;
+			form_center(obtree, ICON_H);
+		}
+		else
+			free_object_tree(C.Aes, obtree);
+	}
+	return wt;
+}
+
+static struct xa_fnts_info *
+create_new_fnts(enum locks lock,
+		struct xa_client *client,
+		struct xa_window *wind,
+		XA_TREE *wt,
+		short vdih,
+		short num_fonts,
+		short font_flags,
+		short dialog_flags,
+		char *sample,
+		char *opt)
+{
+	struct xa_fnts_info *fnts;
+	char *d;
+
+	if ((fnts = new_fnts()))
+	{
+		/*
+		 * Add fnts structure to the clients xa_data list.
+		 * All structures attached here must have xa_data_hdr structure
+		 * as its first element for the xa_data_xx() functions to work on.
+		 */
+		add_xa_data(&client->xa_data, fnts, delete_fnts_info);
 		
-		wt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
-
-		if (!(fnts = new_fnts()))
-			goto memerr;
-		
-		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-
-		obtree->ob_state &= ~OS_OUTLINED;
-
-		form_center(obtree, ICON_H);
-
-		ob_area(obtree, 0, &or);
-
-		r = calc_window(lock, client, WC_BORDER,
-				tp,
-				client->options.thinframe,
-				client->options.thinwork,
-				*(RECT *)&or);
-
-		if (!(wind = create_window(lock,
-				     send_app_message,
-				     NULL,
-				     client,
-				     false,
-				     tp,
-				     created_for_WDIAL,
-				     client->options.thinframe,
-				     client->options.thinwork,
-				     r, NULL, NULL)))
-			goto memerr;
-
-		wt = set_toolbar_widget(lock, wind, client, obtree, -2, 0);
-		wt->zen = false;
-
 		fnts->wind		= wind;
 		fnts->handle		= (void *)((unsigned long)fnts >> 16 | (unsigned long)fnts << 16);
 		fnts->wt		= wt;
-		fnts->vdi_handle	= pb->intin[0];
-		fnts->num_fonts		= pb->intin[1];
-		fnts->font_flags	= pb->intin[2];
-		fnts->dialog_flags	= pb->intin[3];
+		fnts->vdi_handle	= vdih;
+		fnts->num_fonts		= num_fonts;
+		fnts->font_flags	= font_flags;
+		fnts->dialog_flags	= dialog_flags;
 		
 		d = NULL;
-		if ((s = (char *)pb->addrin[0]))
+		if (sample)
 		{
-			slen = strlen(s) + 1;
+			long slen = strlen(sample) + 1;
 			d = kmalloc(slen);
-			if (d) strcpy(d, s);
+			if (d) strcpy(d, sample);
 		}
 		fnts->sample_text = d;
 		d = NULL;
-		if ((s = (char *)pb->addrin[1]))
+		if (opt)
 		{
-			slen = strlen(s) + 1;
+			long slen = strlen(opt) + 1;
 			d = kmalloc(slen);
-			if (d) strcpy(d, s);
+			if (d) strcpy(d, opt);
 		}
 		fnts->opt_button = d;
-
-		wind->data = fnts;
-		wind->data_destruct = delete_fnts_info;
 		
-		fnts->fnts_ring = get_font_items(client, fnts);
+		fnts->fnts_ring = get_font_items(fnts);
 
 		set_scroll(C.Aes, wt->tree, FNTS_FNTLIST, true);
 		set_scroll(C.Aes, wt->tree, FNTS_TYPE, true);
@@ -1093,7 +1074,8 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		 */ 
 		{
 			struct extbox_parms *p;
-			
+			OBJECT *obtree = wt->tree;
+
 			if ((p = kmalloc(sizeof(struct extbox_parms))))
 			{
 				p->callout = fnts_extb_callout;
@@ -1104,7 +1086,59 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				obtree[FNTS_SHOW].ob_type = G_EXTBOX;
 			}
 		}
+	}
+	return fnts;
+}
+
+extern struct toolbar_handlers wdlg_th;
+
+unsigned long
+XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	struct xa_fnts_info *fnts = NULL;
+	struct xa_window *wind = NULL;
+	OBJECT *obtree = NULL;
+	XA_TREE *wt = NULL;
+	XA_WIND_ATTR tp = MOVER|NAME;
+	RECT r, or;
+
+	DIAG((D_fnts, client, "XA_fnts_create"));
+
+	pb->intout[0] = 0;
+	pb->addrout[0] = 0L;
+
+	if ((wt = duplicate_fnts_obtree(client)))
+	{
+		wt->links++;
+
+		obtree = wt->tree;
+		ob_area(obtree, 0, &or);
 		
+		r = calc_window(lock, client, WC_BORDER,
+				tp,
+				client->options.thinframe,
+				client->options.thinwork,
+				*(RECT *)&or);
+
+		if (!(wind = create_window(lock,
+				     send_app_message,
+				     NULL,
+				     client,
+				     false,
+				     tp,
+				     created_for_WDIAL,
+				     client->options.thinframe,
+				     client->options.thinwork,
+				     r, NULL, NULL)))
+			goto memerr;
+
+
+		if (!(fnts = create_new_fnts(lock, client, wind, wt, pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], (char *)pb->addrin[0], (char *)pb->addrin[1])))
+			goto memerr;
+
+		wt = set_toolbar_widget(lock, wind, client, obtree, -2, 0, &wdlg_th);
+		wt->zen = false;
+
 		update_slists(fnts);
 		
 		pb->addrout[0] = (long)fnts->handle;
@@ -1115,9 +1149,13 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 memerr:
 		if (wt)
-			remove_wt(wt);
+			remove_wt(wt, true);
 		else if (obtree)
 			free_object_tree(C.Aes, obtree);
+
+		if (wind)
+			delete_window(lock, wind);
+		
 		if (fnts)
 			kfree(fnts);
 	}
@@ -1137,10 +1175,13 @@ XA_fnts_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 	fnts = (struct xa_fnts_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (fnts && (wind = get_fnts_wind(client, fnts)))
 	{
+		
 		if (wind->window_status & XAWS_OPEN)
 			close_window(lock, wind);
 
 		delete_window(lock, wind);
+		delete_xa_data(&client->xa_data, fnts);
+
 		pb->intout[0] = 1;
 	}
 	return XAC_DONE;
@@ -1223,6 +1264,75 @@ find_fitembyid(struct xa_fnts_info *fnts, unsigned long id, struct xa_fnts_item 
 		*ret_style = style;
 }
 
+static void
+init_fnts(struct xa_fnts_info *fnts)
+{
+	OBJECT *obtree = fnts->wt->tree;
+
+	{
+		char pt[16];
+		TEDINFO *ted;
+		
+		/*
+		 * set ratio edit field..
+		 */ 
+		ted = object_get_tedinfo(obtree + FNTS_EDRATIO);
+		sprintf(pt, sizeof(pt), "%d", (unsigned short)(fnts->fnt_ratio >> 16));
+		sprintf(pt + strlen(pt), sizeof(pt) - strlen(pt), ".%d", (short)(fnts->fnt_ratio));
+		strcpy(ted->te_ptext, pt);
+		obj_edit(fnts->wt, ED_INIT, FNTS_EDRATIO, 0, -1, false, NULL, NULL, NULL);
+	
+		/*
+		 * Set sizes edit field...
+		 */
+		ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
+
+		if (fnts->fnt_pt)
+		{
+			sprintf(pt, sizeof(pt), "%ld", (fnts->fnt_pt >> 16));
+			strcpy(ted->te_ptext, pt);
+		}
+		else
+			strcpy(ted->te_ptext, "10");
+	
+		//size = ted->te_ptext;
+
+		obj_edit(fnts->wt, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL);
+
+	}
+	DIAG((D_fnts, NULL, " --- fnt_id = %ld, fnt_pt = %lx, fnt_ratio = %lx",
+		fnts->fnt_id, fnts->fnt_pt, fnts->fnt_ratio));
+
+/*
+ * Highlight selected ID, family and point
+ */
+ 	{
+		struct xa_fnts_item *family, *style;
+		struct scroll_info *list;
+		struct scroll_entry *ent;
+	
+		find_fitembyid(fnts, fnts->fnt_id, &family, &style);
+	
+		DIAG((D_fnts, NULL, " --- set family=%lx (%s)", family, family ? family->f.full_name : "Not found"));
+		DIAG((D_fnts, NULL, " --- set style =%lx (%s)", style,  style  ? style->f.full_name  : "Not found"));
+	
+		if (family)
+		{
+			list = (struct scroll_info *)object_get_spec(obtree + FNTS_FNTLIST)->index;	
+			ent = list->search(list, NULL, family, SEFM_BYDATA);
+			DIAG((D_fnts, NULL, " --- search found family entry %lx", ent));
+			if (ent)
+			{
+				list->cur = ent;
+				set_name_list(fnts, style);
+				list->vis(list, ent, false);
+			}
+		}
+	}
+
+	select_edsize(fnts);
+}
+
 unsigned long
 XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1239,8 +1349,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(wind->window_status & XAWS_OPEN))
 		{
 			struct widget_tree *wt = fnts->wt;
-			OBJECT *obtree = wt->tree;
-			char *size;
+			//OBJECT *obtree = wt->tree;
 			RECT r = wind->wa;
 		
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)
@@ -1261,85 +1370,15 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 				or.y = r.y;
 				change_window_attribs(lock, client, wind, wind->active_widgets, true, or, NULL);
 			}
-		
+
 			fnts->button_flags = pb->intin[0];
 			update(fnts, fnts->button_flags);
 
 			fnts->fnt_id	= (long)pb->intin[3] << 16 | pb->intin[4];
 			fnts->fnt_pt	= (long)pb->intin[5] << 16 | pb->intin[6];
 			fnts->fnt_ratio	= (long)pb->intin[7] << 16 | pb->intin[8];
-			
-			{
-				char pt[16];
-				TEDINFO *ted;
-				
-				/*
-				 * set ratio edit field..
-				 */ 
-				ted = object_get_tedinfo(obtree + FNTS_EDRATIO);
-				sprintf(pt, sizeof(pt), "%d", (unsigned short)(fnts->fnt_ratio >> 16));
-				sprintf(pt + strlen(pt), sizeof(pt) - strlen(pt), ".%d", (short)(fnts->fnt_ratio));
-				strcpy(ted->te_ptext, pt);
-				obj_edit(fnts->wt, ED_INIT, FNTS_EDRATIO, 0, -1, false, NULL, NULL, NULL);
-				
-				/*
-				 * Set sizes edit field...
-				 */
-				ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
 
-				if (fnts->fnt_pt)
-				{
-					sprintf(pt, sizeof(pt), "%ld", (fnts->fnt_pt >> 16));
-					strcpy(ted->te_ptext, pt);
-				}
-				else
-					strcpy(ted->te_ptext, "10");
-				
-				size = ted->te_ptext;
-
-				obj_edit(fnts->wt, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL);
-
-			}
-			DIAG((D_fnts, NULL, " --- fnt_id = %ld, fnt_pt = %lx, fnt_ratio = %lx",
-				fnts->fnt_id, fnts->fnt_pt, fnts->fnt_ratio));
-			
-			/*
-			 * Highlight selected ID, family and point
-			 */
-			{
-				struct xa_fnts_item *family, *style;
-				struct scroll_info *list;
-				struct scroll_entry *ent;
-				
-				find_fitembyid(fnts, fnts->fnt_id, &family, &style);
-				
-				DIAG((D_fnts, NULL, " --- set family=%lx (%s)", family, family ? family->f.full_name : "Not found"));
-				DIAG((D_fnts, NULL, " --- set style =%lx (%s)", style,  style  ? style->f.full_name  : "Not found"));
-				
-				if (family)
-				{
-					list = (struct scroll_info *)object_get_spec(obtree + FNTS_FNTLIST)->index;	
-					ent = list->search(list, NULL, family, SEFM_BYDATA);
-					DIAG((D_fnts, NULL, " --- search found family entry %lx", ent));
-					if (ent)
-					{
-						list->cur = ent;
-						set_name_list(fnts, style);
-						list->vis(list, ent, false);
-					}
-				}
-				
-				select_edsize(fnts);
-			#if 0
-				list = (struct scroll_info *)object_get_spec(obtree + FNTS_POINTS)->index;
-				ent = list->search(list, NULL, size, SEFM_BYTEXT);
-				if (ent)
-				{
-					list->cur = ent;
-					list->vis(list, ent, false);
-				}
-			#endif
-			}
+			init_fnts(fnts);
 			
 			wt->tree->ob_x = wind->wa.x;
 			wt->tree->ob_y = wind->wa.y;
@@ -1620,13 +1659,206 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
+#if 0
+static struct xa_fnts_info *
+create_new_fnts(enum locks lock,
+		struct xa_window *wind,
+		XA_TREE *wt,
+		short vdih,
+		short num_fonts,
+		short font_flags,
+		short dialog_flags,
+		char *sample,
+		char *opt)
+
+		
+static void
+init_fnts(struct xa_fnts_info *fnts)
+#endif
+/*
+ * WidgetBehaviour()
+ * Return is used by do_widgets() to check if state of obj is
+ * to be reset or not
+ */
+static WidgetBehaviour fnts_th_click;
+static FormMouseInput	fntsClick_form_do;
+static FormKeyInput	fntsKeypress;
+
+static bool
+fntsKeypress(enum locks lock,
+	    struct xa_client *client,
+	    struct xa_window *wind,
+	    struct widget_tree *wt,
+	    const struct rawkey *key)
+{
+	return false;	
+}
+
+static bool
+fnts_th_click(	enum locks lock,
+			struct xa_window *wind,
+			struct xa_widget *widg,
+			const struct moose_data *md)
+{
+	struct xa_client *client = wind->owner;
+	XA_TREE *wt;
+	
+	wt = widg->stuff;
+
+	DIAG((D_form, client, "fntsClick_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
+		client, wind, wt));
+
+	fntsClick_form_do(lock, client, wind, wt, md);
+
+	return false;
+}
+static bool
+fntsClick_form_do(enum locks lock,
+	      struct xa_client *client,
+	      struct xa_window *wind,
+	      struct widget_tree *wt,
+	      const struct moose_data *md)
+{
+	OBJECT *obtree;
+	RECT r;
+
+	DIAG((D_form, client, "Click_form_do: %s formdo for %s",
+		wind ? "windowed":"classic", client->name));
+	/*
+	 * If window is not NULL, the form_do is a windowed one,
+	 * else it is a classic blocking form_do
+	 */
+	if (wind)
+	{
+		if (!wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
+		{
+			DIAGS(("Click_form_do: topping window"));
+			top_window(lock, true, wind, (void *)-1L, NULL);
+			return false;
+		}
+		
+		if (!wt)
+		{
+			DIAGS(("Click_form_do: using wind->toolbar"));
+			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		}
+		obtree = rp_2_ap(wind, wt->widg, &r);
+	}
+	/*
+	 * Not a windowed form session.
+	 */
+	else
+	{
+		if (!wt)
+		{
+			DIAGS(("Click_form_do: using client->wt"));
+			wt = client->fmd.wt;
+		}
+		obtree = wt->tree;
+	}
+
+	if (obtree)
+	{
+		struct fmd_result fr;
+
+		fr.obj = obj_find(wt, 0, 10, md->x, md->y, NULL);
+		
+		if (fr.obj >= 0 &&
+		    !form_button(wt,
+				 fr.obj,
+				 md,
+				 FBF_REDRAW | FBF_DO_SLIST,
+				 wind ? wind->rect_start : NULL,
+				 &fr.obj_state,
+				 &fr.obj,
+				 &fr.dblmask))
+		{
+			if (wt->exit_form)
+			{
+				DIAGS(("Click_form_do: calling exti_form"));
+				fr.md = md;
+				fr.key = NULL;
+				wt->exit_form(client, wind, wt, &fr);
+			}
+		}
+	}
+#if GENERATE_DIAGS
+	else
+		DIAGS(("Click_form_do: NO OBTREE!!"));
+#endif
+
+	DIAGS(("Click_form_do: return"));
+	return false;
+}
+
+static struct toolbar_handlers fnts_th =
+{
+	NULL,			/* FormExit		*exitform;	*/
+	NULL,			/* FormKeyInput		*keypress;	*/
+
+	NULL,			/* DisplayWidget	*display;	*/
+	fnts_th_click,		/* WidgetBehaviour	*click;		*/
+	fnts_th_click,		/* WidgetBehaviour	*dclick;	*/
+	fnts_th_click,		/* WidgetBehaviour	*drag;		*/
+	NULL,			/* WidgetBehaviour	*release;	*/
+	NULL,			/* void (*destruct)(struct xa_widget *w); */
+
+};
 
 unsigned long
 XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	DIAG((D_fnts, client, "XA_fnts_do"));
+	struct xa_fnts_info *fnts;
+	struct xa_window *wind;
+	
+	DIAG((D_fnts, client, "XA_fnts_open"));
 
 	pb->intout[0] = 0;
+
+	fnts = (struct xa_fnts_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
+	if (fnts && (wind = get_fnts_wind(client, fnts)))
+	{
+		XA_TREE *wt = fnts->wt;
+		OBJECT *obtree = wt->tree;
+		struct xa_window *fwind;
+		RECT r, or;
+		XA_WIND_ATTR tp = 0;
+
+		form_center(obtree, ICON_H);
+		
+		ob_area(obtree, 0, &or);
+		
+		r = calc_window(lock, client, WC_BORDER,
+				tp,
+				client->options.thinframe,
+				client->options.thinwork,
+				*(RECT *)&or);
+
+		if ((fwind = create_window(lock,
+				     do_winmesag,
+				     do_formwind_msg,
+				     client,
+				     false,
+				     tp,
+				     created_for_AES,
+				     client->options.thinframe,
+				     client->options.thinwork,
+				     r, NULL, NULL)))
+		{
+			wt = set_toolbar_widget(lock, fwind, client, obtree, -2, WIDG_NOTEXT, &fnts_th);
+			wt->zen = false;
+			
+			fnts->wind = fwind;
+
+			open_window(lock, fwind, fwind->rc);
+
+			client->status |= CS_FORM_DO;
+			Block(client, 0);
+			client->status &= ~CS_FORM_DO;
+			
+			pb->intout[0] = 0;
+		}
+	}
 	return XAC_DONE;
 }
 

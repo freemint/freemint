@@ -1664,9 +1664,6 @@ delete_window1(enum locks lock, struct xa_window *wind)
 
 	cancel_do_winmesag(lock, wind);
 
-	if (wind->data && wind->data_destruct)
-		wind->data_destruct(wind);
-
 	if (!wind->nolist)
 	{
 		DIAG((D_wind, wind->owner, "delete_window1 %d for %s: open? %s",

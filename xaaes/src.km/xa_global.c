@@ -80,3 +80,78 @@ proc2client(struct proc *p)
 {
 	return lookup_extension(p, XAAES_MAGIC);
 }
+
+
+void *
+lookup_xa_data(struct xa_data_hdr **list, void *_data)
+{
+	struct xa_data_hdr *data = _data;
+
+	while (*list)
+	{
+		if (*list == data)
+			break;
+
+		list = &((*list)->next);
+	}
+	return *list;
+}
+
+void
+add_xa_data(struct xa_data_hdr **list, void *_data, void (*destruct)(void *d))
+{
+	struct xa_data_hdr *data = _data;
+
+	while (*list && (*list)->next)
+		list = &((*list)->next);
+
+	if (*list)
+		(*list)->next = data;
+	else
+		*list = data;
+
+	data->destruct = destruct;
+}
+
+void
+remove_xa_data(struct xa_data_hdr **list, void *_data)
+{
+	struct xa_data_hdr *data = _data;
+
+	while (*list)
+	{
+		if (*list == data)
+		{
+			*list = (*list)->next;
+			break;
+		}
+		list = &((*list)->next);
+	}
+}
+
+void
+delete_xa_data(struct xa_data_hdr **list, void *_data)
+{
+	struct xa_data_hdr *data = _data;
+	//display("delete_xa_data: %lx (destruct=%lx)", data, (long)data->destruct);
+	
+	remove_xa_data(list, data);
+	
+	if (data->destruct)
+		(data->destruct)(data);
+}
+
+void
+free_xa_data_list(struct xa_data_hdr **list)
+{
+	struct xa_data_hdr *l = *list;
+	//display("free_xa_data_list:");
+	while (l)
+	{
+		struct xa_data_hdr *n = l->next;
+		//display(" --- Calling xa_data_destruct: %lx (destruct=%lx)", l, (long)l->destruct);
+		if (l->destruct)
+			(*l->destruct)(l);
+		l = n;
+	}
+}
