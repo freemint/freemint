@@ -348,6 +348,11 @@ setup_handler_table(void)
 	aes_tab[ 52].flags |= DO_LOCKSCREEN; /* XA_FORM_ALERT */
 	aes_tab[ 53].flags |= DO_LOCKSCREEN; /* XA_FORM_ERROR */
 
+	aes_tab[ 70].flags |= DO_LOCKSCREEN; /* XA_GRAF_RUBBERBOX */
+	aes_tab[ 71].flags |= DO_LOCKSCREEN; /* XA_GRAF_DRAGBOX */
+	aes_tab[ 75].flags |= DO_LOCKSCREEN; /* XA_GRAF_WATCHBOX */
+	aes_tab[ 76].flags |= DO_LOCKSCREEN; /* XA_GRAF_SLIDEBOX */
+	
 	aes_tab[ 90].flags |= DO_LOCKSCREEN; /* XA_FSEL_INPUT */
 	aes_tab[ 91].flags |= DO_LOCKSCREEN; /* XA_FSEL_EXINPUT */
 
