@@ -9,10 +9,9 @@
 # define _util_h
 
 # include "mint/mint.h"
-# include "mint/proc.h"
 
 
-PROC *		pid2proc	(int pid);
+struct proc *	pid2proc	(int pid);
 int		newpid		(void);
 int		set_pid_1	(void);
 
