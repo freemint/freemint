@@ -342,7 +342,6 @@ get_top(void)
 	return S.open_windows.first;
 }
 
-/* HR 210801 */
 bool
 is_hidden(XA_WINDOW *wind)
 {
@@ -365,7 +364,7 @@ unhide(XA_WINDOW *wind, short *x, short *y)
 		while (r.y + r.h < d.y)
 			r.y += d.h;
 		if (r.y < root_window->wa.y)
-			r.y = root_window->wa.y;	/* HR 241101: make shure the mover becomes visible. */
+			r.y = root_window->wa.y;	/* make shure the mover becomes visible. */
 		while (r.x > d.x + d.w)
 			r.x -= d.w;
 		while (r.y > d.y + d.h)
@@ -419,10 +418,11 @@ send_ontop(LOCK lock)
 /*
  * Create a window
  *
- * HR: introduced pid -1 for temporary windows created basicly only to be able to do
- *     calc_work_area and center.
+ * introduced pid -1 for temporary windows created basicly only to be able to do
+ * calc_work_area and center.
+ *
+ * needed a dynamiccally sized frame
  */
-/* HR: needed a dynamiccally sized frame */
 XA_WINDOW *
 create_window(
 	LOCK lock,
@@ -458,19 +458,19 @@ create_window(
 		/* Unable to allocate memory for window? */
 		return NULL;
 
-	/* HR: avoid confusion: if only 1 specified, give both (fail safe!) */
+	/* avoid confusion: if only 1 specified, give both (fail safe!) */
 	if ((tp & UPARROW) || (tp & DNARROW))
 		tp |= UPARROW|DNARROW;
 	if ((tp & LFARROW) || (tp & RTARROW))
 		tp |= LFARROW|RTARROW;
-	/* HR 210801: cant hide a window that cannot be moved. */
+	/* cant hide a window that cannot be moved. */
 	if ((tp & MOVE) == 0)
 		tp &= ~HIDE;
-	/* HR 190202: temporary until solved. */
+	/* temporary until solved. */
 	if (tp & MENUBAR)
 		tp |= XaMENU;
 
-	/* HR: implement maximum rectangle (needed for at least TosWin2) */
+	/* implement maximum rectangle (needed for at least TosWin2) */
 	new->max = max ? *max : root_window->wa;
 		
 	new->r  = r;
@@ -483,7 +483,7 @@ create_window(
 	}
 
 # if 0
-	/* HR 280102: implement border sizing. */
+	/* implement border sizing. */
 	if ((tp & (SIZE|MOVE)) == (SIZE|MOVE))
 #endif
 		if (frame > 0 && thinframe > 0)
@@ -543,7 +543,6 @@ create_window(
 	return new;
 }
 
-/* HR: separate function now, to ease draw testing */
 int
 open_window(LOCK lock, XA_WINDOW *wind, RECT r)
 {
@@ -625,15 +624,16 @@ open_window(LOCK lock, XA_WINDOW *wind, RECT r)
 			wl = wl->next;
 		}
 
-		/* HR: streamlining the topping */
+		/* streamlining the topping */
 		after_top(lock|winlist, true);
 
 		/* Display the window using clipping rectangles from the rectangle list */
 		display_window(lock|winlist, 10, wind, NULL);
 
-		via (wind->send_message)(lock|winlist, wind, NULL,
-					 WM_REDRAW, 0, 0, wind->handle,
-					 wind->r.x, wind->r.y, wind->r.w, wind->r.h);
+		if (wind->send_message)
+			wind->send_message(lock|winlist, wind, NULL,
+					   WM_REDRAW, 0, 0, wind->handle,
+					   wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 	}
 
 	IFWL(Sema_Dn(winlist);)
@@ -670,7 +670,7 @@ draw_window(LOCK lock, XA_WINDOW *wind)
 	l_color(BLACK);
 	hidem();
 
-	/* HR: Dont waste precious CRT glass */
+	/* Dont waste precious CRT glass */
 	if (wind != root_window)
 	{
 		RECT cl = wind->r;
@@ -749,7 +749,7 @@ draw_window(LOCK lock, XA_WINDOW *wind)
 		}
 
 #if 0
-		/* HR 250602: for outlined windowed objects */
+		/* for outlined windowed objects */
 		if (wind->outline_adjust)
 		{
 			l_color(screen.dial_colours.bg_col);
@@ -774,7 +774,7 @@ draw_window(LOCK lock, XA_WINDOW *wind)
 	}
 
 	/* If the window has an auto-redraw function, call it
-	 * HR: do this before the widgets. (some programs supply x=0, y=0)
+	 * do this before the widgets. (some programs supply x=0, y=0)
 	 */
 	if (wind->redraw) /* && !wind->owner->killed */
 		wind->redraw(lock, wind);
@@ -871,7 +871,7 @@ get_wind_by_handle(LOCK lock, int h)
 }
 
 /*
- *  HR: Handle windows after topping
+ * Handle windows after topping
  */
 void
 after_top(LOCK lock, bool untop)
@@ -879,11 +879,11 @@ after_top(LOCK lock, bool untop)
 	XA_WINDOW *below;
 
 	IFWL(Sema_Up(winlist);)
-		
+
 	below = window_list->next;
-	
-	if (below)		/* Refresh the previous top window as being 'non-topped' */
-	if (below != root_window)
+
+	/* Refresh the previous top window as being 'non-topped' */
+	if (below && below != root_window)
 	{
 		display_window(lock, 11, below, NULL);
 
@@ -895,7 +895,7 @@ after_top(LOCK lock, bool untop)
 }
 
 /*
- *	Pull this window to the head of the window list
+ * Pull this window to the head of the window list
  */
 XA_WINDOW *
 pull_wind_to_top(LOCK lock, XA_WINDOW *w)
@@ -904,22 +904,24 @@ pull_wind_to_top(LOCK lock, XA_WINDOW *w)
 	XA_WINDOW *wl;
 	RECT clip, r;
 
-	DIAG((D_wind,w->owner,"pull_wind_to_top %d for %s\n", w->handle, w_owner(w)));
+	DIAG((D_wind, w->owner, "pull_wind_to_top %d for %s\n", w->handle, w_owner(w)));
 
 	IFWL(Sema_Up(winlist);)
 
 	check_menu_desktop(wlock, window_list, w);
 
-	if (w == root_window)			/* HR: just a safeguard */
+	if (w == root_window) /* just a safeguard */
+	{
 		generate_rect_list(wlock, w, 3);
+	}
 	else
-	{	
+	{
 		wl = w->prev;
 		r = w->r;
 
-	/* HR 251002: Very small change in logic for was_visible() optimization.
-	              It eliminates a spurious generate_rect_list() call, which
-	              spoiled the setting of rect_prev.                          */
+		/* Very small change in logic for was_visible() optimization.
+	         * It eliminates a spurious generate_rect_list() call, which
+	         * spoiled the setting of rect_prev. */
 
 		if (w != window_list)	
 		{
@@ -952,8 +954,8 @@ send_wind_to_bottom(LOCK lock, XA_WINDOW *w)
 
 	RECT r, clip;
 
-	if (   w->next == root_window		/* Can't send to the bottom a window that's already there */
-	    || w       == root_window		/* HR: just a safeguard */
+	if (   w->next == root_window	/* Can't send to the bottom a window that's already there */
+	    || w       == root_window	/* just a safeguard */
 	    || w->is_open == false)
 		return;
 
@@ -963,7 +965,7 @@ send_wind_to_bottom(LOCK lock, XA_WINDOW *w)
 	r = w->r;
 
 	wi_remove   (&S.open_windows, w);
-	wi_put_blast(&S.open_windows, w);		/* put before last; last = root_window. */
+	wi_put_blast(&S.open_windows, w);	/* put before last; last = root_window. */
 
 	while (wl)
 	{
@@ -975,7 +977,6 @@ send_wind_to_bottom(LOCK lock, XA_WINDOW *w)
 
 	generate_rect_list(lock|winlist, w, 5);
 
-/* HR */
 	check_menu_desktop(lock|winlist, old_top, window_list);
 
 	IFWL(Sema_Dn(winlist);)
@@ -1001,7 +1002,7 @@ DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d\n
 
 #if 0
 	temporary commented out, because I dont know exactly the consequences.
-	/* HR: avoid spurious moves or sizings */
+	/* avoid spurious moves or sizings */
 	if (x != wind->r.x || y != wind->r.y || w != wind->r.w || h != wind->r.h)
 #endif
 	{
@@ -1031,7 +1032,7 @@ DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d\n
 		new = wind->r;
 
 		blit_mode = (    wind == window_list
-			     && (wind->active_widgets & TOOLBAR) == 0	/* HR 290702: temporary slist workarea hack */
+			     && (wind->active_widgets & TOOLBAR) == 0	/* temporary slist workarea hack */
 			     && (pr.x != new.x || pr.y != new.y)
 			     && pr.w == new.w
 			     && pr.h == new.h
@@ -1047,7 +1048,7 @@ DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d\n
 		 */
 		calc_work_area(wind);
 	
-		/* HR: Is it allowed to move a closed window? */
+		/* Is it allowed to move a closed window? */
 		if (wind->is_open)
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
@@ -1108,30 +1109,44 @@ DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d\n
 		
 			wl = wind->next;
 
-/* HR: For some reason the open window had got behind root!!! This was caused by the
-   problems with the SIGCHILD stuff (the root window was pulled to top!)
-   I've put a safeguard there, so that all the below kind of loops can be trusted.
-*/
+			/* For some reason the open window had got behind
+			 * root!!! This was caused by the problems with the
+			 * SIGCHILD stuff (the root window was pulled to top!)
+			 * I've put a safeguard there, so that all the below
+			 * kind of loops can be trusted.
+			 */
 			while (wl)
 			{
 				DIAG((D_wind, wl->owner, "[1]redisplay %d\n", wl->handle));
+
 				clip = wl->r;
-				if (rc_intersect(old, &clip))		/* Check for newly exposed windows */
+
+				/* Check for newly exposed windows */
+				if (rc_intersect(old, &clip))
 				{			
 					generate_rect_list(wlock, wl, 7);
 					display_window(wlock, 13, wl, &clip);
 					via (wl->send_message)(wlock, wl, NULL,
 							WM_REDRAW, 0, 0, wl->handle,
 							clip.x, clip.y, clip.w, clip.h);
-				} else
+				}
+				else
 				{
 					clip = wl->r;
-					if (rc_intersect(new, &clip))		/* Check for newly covered windows */
-						generate_rect_list(wlock, wl, 8);			/* We don't need to send a redraw to these windows, we just have to update their rect lists */
+					/* Check for newly covered windows */
+					if (rc_intersect(new, &clip))
+					{
+						/* We don't need to send a redraw to
+						 * these windows, we just have to update
+						 * their rect lists */
+						generate_rect_list(wlock, wl, 8);
+					}
 				}
+
 				wl = wl->next;
 			}
-	/* HR removed rootwindow stuff, that perfectly worked within the loop. */
+
+			/* removed rootwindow stuff, that perfectly worked within the loop. */
 		}
 	}
 
@@ -1153,18 +1168,20 @@ close_window(LOCK lock, XA_WINDOW *wind)
 	XA_CLIENT *client = wind->owner;
 	RECT r, clip;
 	bool is_top;
-	
+
 	if (wind == NULL)
 	{
 		DIAGS(("close_window: null window pointer\n"));
-		return false;					/* Invalid window handle, return error */
+		/* Invalid window handle, return error */
+		return false;
 	}
 
-	DIAG((D_wind,wind->owner,"close_window: %d (%s)\n", wind->handle, wind->is_open ? "open" : "closed"));
+	DIAG((D_wind, wind->owner, "close_window: %d (%s)\n",
+		wind->handle, wind->is_open ? "open" : "closed"));
 
 	if (wind->is_open == false || wind->nolist)
 		return false;
-	
+
 	IFWL(Sema_Up(winlist);)
 
 	is_top = (wind == window_list);
@@ -1175,8 +1192,9 @@ close_window(LOCK lock, XA_WINDOW *wind)
 	wind->rect_user = wind->rect_list = wind->rect_start = NULL;
 	wi_remove   (&S.open_windows, wind);
 	wi_put_first(&S.closed_windows, wind);
-	
-	wind->is_open = false;					/* Tag window as closed */
+
+	/* Tag window as closed */
+	wind->is_open = false;
 	wind->window_status = XAWS_CLOSED;
 
 	wl = window_list;
@@ -1195,42 +1213,45 @@ close_window(LOCK lock, XA_WINDOW *wind)
 
  		w = window_list;
 
-/*	HR: v_hide/show_c now correctly done in draw_window()  */
-/*  HR: if you want point_to_type, handle that in do_keyboard */
+		/* v_hide/show_c now correctly done in draw_window()  */
+		/* if you want point_to_type, handle that in do_keyboard */
 
-/* First: find a window of the owner */
+		/* First: find a window of the owner */
 		while (w)
 		{
 			if (w != root_window)
 			{ 
-				if (w->owner == client)		/* gotcha */
+				if (w->owner == client) /* gotcha */
 				{
 					top_window(lock|winlist, w, client);
-					send_ontop(lock);	/* HR 060801: send WM_ONTOP to just topped window. */
+					/* send WM_ONTOP to just topped window. */
+					send_ontop(lock);
 					wl = w->next;
 					break;
 				}
 				else if (!napp)
-					napp = w;	/* remember the first window of another app. */
+					/* remember the first window of another app. */
+					napp = w;
 			}
 
 			w = w->next;
 
 			if (w == NULL && napp)
 			{
-/* Second: If none: top any other open window  */
-/* HR: this is the one I was really missing */
+				/* Second: If none: top any other open window  */
+				/* this is the one I was really missing */
 				top_window(lock|winlist, napp, menu_owner());
-				send_ontop(lock);	/* HR 060801: send WM_ONTOP to just topped window. */
+				/* send WM_ONTOP to just topped window. */
+				send_ontop(lock);
 				wl = window_list->next;
 				break;
 			}
 		}
 	}
 
-/* Redisplay any windows below the one we just have closed
-   or just have topped
-*/
+	/* Redisplay any windows below the one we just have closed
+	 * or just have topped
+	 */
 #if 0
 	display_windows_below(lock|winlist, &r, wl);
 #else
@@ -1241,7 +1262,8 @@ close_window(LOCK lock, XA_WINDOW *wind)
 		if (rc_intersect(r, &clip))
 		{
 			DIAG((D_wind, client, "   --   clip %d/%d,%d/%d\n", clip));
-			generate_rect_list(lock|winlist, wl, 9);			/* If a new focus was pulled up, some of these are not needed */
+			/* If a new focus was pulled up, some of these are not needed */
+			generate_rect_list(lock|winlist, wl, 9);
 			display_window(lock|winlist, 14, wl, &clip);
 			via (wl->send_message)(lock|winlist, wl, NULL,
 					WM_REDRAW, 0, 0, wl->handle,
@@ -1251,14 +1273,17 @@ close_window(LOCK lock, XA_WINDOW *wind)
 	}
 #endif
 	if (window_list)
+	{
 		if (   window_list->owner != client
 		    && client->std_menu.tree == NULL)
 		{
-	/* HR: get the menu bar right (only if the pid has no menu bar
-		and no more open windows for pid. */
-			DIAG((D_menu,NULL,"close_window: swap_menu to %s\n", w_owner(window_list)));
+			/* get the menu bar right (only if the pid has no menu bar
+			 * and no more open windows for pid.
+			 */
+			DIAG((D_menu, NULL, "close_window: swap_menu to %s\n", w_owner(window_list)));
 			swap_menu(lock|winlist, window_list->owner, true, 3);
 		}
+	}
 
 	IFWL(Sema_Dn(winlist);)
 
@@ -1308,7 +1333,7 @@ delete_window(LOCK lock, XA_WINDOW *wind)
 
 		IFWL(Sema_Up(winlist);)
 
-		/* HR: 060101 slider widgets leaked. */
+		/* slider widgets leaked. */
 		free_standard_widgets(wind);
 
 		/* Call the window destructor if any */

@@ -27,18 +27,19 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
-#include "xalloc.h"
-#include "util.h"
+#include "app_man.h"
 #include "c_window.h"
-#include "rectlist.h"
 #include "desktop.h"
 #include "menuwidg.h"
+#include "rectlist.h"
+#include "taskman.h"
+#include "util.h"
 #include "widgets.h"
+#include "xalloc.h"
+#include "xa_clnt.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
-#include "xa_clnt.h"
-#include "app_man.h"
-#include "taskman.h"
+
 
 /*
  * Client list handling
@@ -193,42 +194,6 @@ FreeClient(LOCK lock, XA_CLIENT *client)
 long wind_gets = 0, gclk = 0;
 #endif
 
-char *
-getsuf(char *f)
-{
-	char *p;
-
-	if ((p = strrchr(f, '.')) != 0L)
-	{
-		if (strchr(p, '/') == 0L
-		    && strchr(p, '\\') == 0L)
-			/* didnt ran over slash? */
-			return p+1;
-	}
-
-	/* no suffix  */
-	return 0L;
-}
-
-char *
-chsuf(char *f, char *suf)	/* suf incl '.' */
-{
-	char *pt;
-	static Path s;
-
-	strcpy(s,f);
-	if ((pt = strrchr(s, '.')) != 0)
-	{
-		if (strchr(pt, '/') == 0)
-		{
-			strcpy(pt, suf);
-			return s;
-		}
-	}
-	strcat(s,suf);
-	return s;
-}
-
 static void
 pname_to_string(char *to, char *name)
 {
@@ -270,45 +235,62 @@ get_app_options(XA_CLIENT *client)
 	}
 }
 
-
-#include "ipff.h"
-
-char *
-get_procname(short pid)
+static int
+dec_ascii_to_int(const char *s)
 {
+	int v;
 
-	/* static */ Path name;
-	char *suf, *nm = name + 4;
+	v = *s++ - 48;
+	while (*s && isdigit(*s))
+	{
+		int c = *s++ - 48;
+
+		v *= 10;
+		v += c;
+	}
+
+	return v;
+}
+
+bool
+get_procname(short pid, char *buf, size_t len)
+{
 	long i;
 
 	i = Dopendir("u:\\proc", 0);
 	if (i > 0)
 	{
+		Path name;
+		char *nm = name + 4;
+
 		while (Dreaddir(NAME_MAX, i, name) == 0)
 		{
-			suf = getsuf(nm);
+			char *suf;
+
+			suf = strrchr(nm, '.');
 			if (suf)
 			{
 				short d;
 
-				ipff_in(suf);
-				d = idec();
+				d = dec_ascii_to_int(suf+1);
 				if (d == pid)
 				{
 					Dclosedir(i);
 
-					/* gotcha */
-					*(suf - 1) = 0;
+					/* only copy the name */
+					*suf = 0;
+					strncpy(buf, nm, len);
 
-					return nm;
+					return true;
 				}
 			}
+			/* else ignore this entry */
 		}
 
 		Dclosedir(i);
 	}
 
-	return NULL;
+	return false;
 }
 
 
@@ -318,10 +300,9 @@ get_procname(short pid)
 unsigned long
 XA_new_client(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	char pipe_name[50];
+	char pipe_name[64];
+	char pname[32];
 	char *fmt = "u:\\pipe\\XaClnt.%d\0";
-	char *pname;
-	short f;
 
 	DIAG((D_appl,NULL,"XA_new_client for %d\n",client->pid));
 	DIAG((D_appl,NULL," - client_end %d\n",client->client_end));
@@ -349,17 +330,25 @@ XA_new_client(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	/* HR 040401: This field must be NULL if no menu bar.
 	 *            client->std_menu = C.Aes->std_menu;
 	 */
-	pname = get_procname(client->pid);
-	if (pname)
+	if (get_procname(client->pid, pname, sizeof(pname)))
 	{
+		short f;
+
 		strncpy(client->proc_name, pname, 8);
-		for (f = strlen(client->proc_name); f < 8; f++)
+
+		f = strlen(client->proc_name);
+		while (f < 8)
+		{
 			client->proc_name[f] = ' ';
+			f++;
+		}
+
 		client->proc_name[8] = '\0';
-		strnupr(client->proc_name,8);
+		strnupr(client->proc_name, 8);
+
 		/* Individual option settings. */
 		get_app_options(client);
-		DIAGS(("get_procname for %d: '%s'\n",client->pid, client->proc_name));
+		DIAGS(("get_procname for %d: '%s'\n", client->pid, client->proc_name));
 	}
 #if 0
 	else if (*client->cmd_name)
