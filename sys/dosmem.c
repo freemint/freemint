@@ -306,7 +306,14 @@ m_free (long block)
 		DEBUG(("Mfree: null pointer"));
 		return EFAULT;
 	}
-	
+
+	/* Releasing own basepage cannot be legal */
+	if (block == (long)curproc->base)
+	{
+		DEBUG(("Mfree: cannot free bp!"));
+		return EFAULT;
+	}
+
 	r = detach_region_by_addr (curproc, block);
 	if (r == 0)
 		return r;
