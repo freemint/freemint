@@ -425,6 +425,20 @@ _kbdclick:
 L_pop:	movem.l	(sp)+,d0-d2/a0-a2
 L_nocl:	rts
 
+// Send mouse packet to mousevec(). This is used to emulate mouse
+// movements with keyboard shortcuts (alt/arrow).
+
+	.globl	_send_packet
+
+_send_packet:
+	movem.l	d0-a6,-(sp)
+	move.l	64(sp),a2
+	move.l	68(sp),a0
+	move.l	72(sp),a1
+	jsr	(a2)
+	movem.l	(sp)+,d0-a6
+	rts
+
 #endif
 
 # if 0
