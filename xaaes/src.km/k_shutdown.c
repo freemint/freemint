@@ -33,7 +33,6 @@
 #include "nkcc.h"
 #include "objects.h"
 #include "taskman.h"
-#include "xalloc.h"
 #include "xa_rsrc.h"
 
 #include "mint/signal.h"
@@ -119,7 +118,7 @@ k_shutdown(void)
 
 	DIAGS(("Freeing Aes environment"));
 	if (C.env)
-		free(C.env);
+		kfree(C.env);
 
 	DIAGS(("Freeing Aes resources"));
 	/* To demonstrate the working on multiple resources. */
@@ -135,19 +134,12 @@ k_shutdown(void)
 		{
 			struct opt_list *next = op->next;
 
-			free(op);
+			kfree(op);
 			op = next;
 		}
 	}
 
-#if GENERATE_DIAGS
-	DIAGS(("Reporting memory leaks -> XXX todo"));
-#endif
-
-	DIAGS(("Freeing what's left"));
-	/* dummy, just report leaked memory */
-	free_all();
-
+	xaaes_kmalloc_leaks();
 	nkc_exit();
 
 #if 0

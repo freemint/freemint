@@ -36,7 +36,6 @@
 #include "menuwidg.h"
 #include "objects.h"
 #include "rectlist.h"
-#include "xalloc.h"
 
 #include "xa_evnt.h"
 #include "xa_form.h"
@@ -2021,7 +2020,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		widg = make_widget(wind, &stdl_vslide, display_vslide, 0, drag_vslide);
 		if (!keep_stuff)
 		{
-			XA_SLIDER_WIDGET *sl = xcalloc(1,sizeof(*sl), 100);
+			XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
 			widg->stuff = sl;
 			sl->length = SL_RANGE;
 		}
@@ -2032,7 +2031,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		widg = make_widget(wind, &stdl_hslide, display_hslide, 0, drag_hslide);
 		if (!keep_stuff)
 		{
-			XA_SLIDER_WIDGET *sl = xcalloc(1, sizeof(*sl), 101);
+			XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
 			widg->stuff = sl;
 			sl->length = SL_RANGE;
 		}
@@ -2164,12 +2163,12 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	if (wt)
 	{
 		if (wt->extra)
-			free(wt->extra);
+			kfree(wt->extra);
 
 		if (   wt != &wind->menu_bar
 		    && wt != &wind->toolbar
 		    && wt != &wind->widg_info)
-			free(wt);
+			kfree(wt);
 	}
 
 	wind->keypress = NULL;

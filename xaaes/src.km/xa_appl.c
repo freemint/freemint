@@ -37,7 +37,6 @@
 #include "taskman.h"
 #include "util.h"
 #include "widgets.h"
-#include "xalloc.h"
 #include "xa_evnt.h"
 #include "xa_user_things.h"
 
@@ -109,7 +108,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (client)
 	{
-		ALERT(("Double appl_init for %s, ignored!\n", client->proc_name));
+		ALERT(("Double appl_init for %s, ignored!", client->proc_name));
 		goto clean_out;
 	}
 
@@ -374,19 +373,11 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 			at++;
 		}
 #endif
-		free(client->attach);
+		kfree(client->attach);
 		client->attach = NULL;
 	}
 
 	app_in_front(lock, top_owner);
-
-	/*
-	 * If the client forgot to free its resources, we do it for him.
-	*/
-	DIAG((D_appl, NULL, "Freeing client xmalloc base"));
-
-	/* free all blocks allocated on behalf of the client. */
-	/* XXX XA_free_all(&client->base, -1, -1); */
 
 	client->rsrc = NULL;
 	client->resources = NULL;
@@ -394,7 +385,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	/* Free name *only if* it is malloced: */
 	if (client->tail_is_heap)
 	{
-		free(client->cmd_tail);
+		kfree(client->cmd_tail);
 		client->cmd_tail = NULL;
 		client->tail_is_heap = false;
 	}
@@ -468,7 +459,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	/* free the quart screen buffer */
 	if (client->half_screen_buffer)
-		proc_free(client->half_screen_buffer);
+		ufree(client->half_screen_buffer);
 
 	if (client->ut)
 		ufree(client->ut);

@@ -56,8 +56,7 @@ HEADER = \
 	xa_types.h \
 	xa_user_things.h \
 	xa_wdlg.h \
-	xa_wind.h \
-	xalloc.h
+	xa_wind.h
 
 COBJS = \
 	about.c \
@@ -72,6 +71,7 @@ COBJS = \
 	debug.c \
 	desktop.c \
 	draw_obj.c \
+	global.c \
 	handler.c \
 	init.c \
 	k_init.c \
@@ -106,8 +106,7 @@ COBJS = \
 	xa_scrp.c \
 	xa_shel.c \
 	xa_wdlg.c \
-	xa_wind.c \
-	xalloc.c
+	xa_wind.c
 
 SOBJS = \
 	accstart.s \

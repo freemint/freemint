@@ -24,19 +24,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "xalloc.h"
+#include "global.h"
 
 
-/* memory allocation for private XaAES memory
+/*
+ * memory allocation for private XaAES memory
  * 
- * include statistic analysis to detect
+ * include simple statistic analysis to detect
  * memory leaks
  */
 
 static unsigned long memory;
 
 void *
-_xmalloc(size_t size, int key, const char *func)
+xaaes_kmalloc(size_t size, const char *func)
 {
 	register unsigned long *tmp;
 
@@ -54,14 +55,8 @@ _xmalloc(size_t size, int key, const char *func)
 	return tmp;
 }
 
-void *
-_xcalloc(size_t items, size_t size, int key, const char *func)
-{
-	return _xmalloc(items * size, key, func);
-}
-
 void
-_xfree(void *addr, const char *func)
+xaaes_kfree(void *addr, const char *func)
 {
 	register unsigned long *tmp = addr;
 
@@ -72,22 +67,19 @@ _xfree(void *addr, const char *func)
 }
 
 void
-free_all(void)
+xaaes_kmalloc_leaks(void)
 {
 	DEBUG(("XaAES memory leaks: %lu bytes", memory));
 }
 
 
-/* memory allocation for process private XaAES memory
+/*
+ * memory allocation for process private XaAES memory
  */
 
 void *
-_proc_malloc(size_t size, const char *func)
+xaaes_umalloc(size_t size, const char *func)
 {
-	/* XXX todo
-	 * very inefficient
-	 * as the kernel allocate at least a chunk of 8kb
-	 */
 	register void *ptr;
 
 	ptr = _umalloc(size, func);
@@ -98,12 +90,7 @@ _proc_malloc(size_t size, const char *func)
 }
 
 void
-_proc_free(void *addr, const char *func)
+xaaes_ufree(void *addr, const char *func)
 {
 	_ufree(addr, func);
-}
-
-void
-proc_free_all(void)
-{
 }

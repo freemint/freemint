@@ -27,7 +27,6 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
-#include "xalloc.h"
 #include "scrlobjc.h"
 #include "rectlist.h"
 #include "objects.h"
@@ -66,7 +65,7 @@ free_scrollist(SCROLL_INFO *list)
 	while (list->start)
 	{
 		SCROLL_ENTRY *next = list->start->next;
-		free(list->start);
+		kfree(list->start);
 		list->start = next;
 	}
 	list->start = NULL;
@@ -117,9 +116,9 @@ set_scroll(struct xa_client *client, OBJECT *form, int item)
 	SCROLL_INFO *sinfo;
 
 	if (client == C.Aes)
-		sinfo = xmalloc(sizeof(*sinfo), 105);
+		sinfo = kmalloc(sizeof(*sinfo));
 	else
-		sinfo = proc_malloc(sizeof(*sinfo));
+		sinfo = umalloc(sizeof(*sinfo));
 
 	if (!sinfo)
 		return false;
@@ -229,7 +228,7 @@ add_scroll_entry(OBJECT *form, int item,
 	
 	list = (SCROLL_INFO *)get_ob_spec(ob)->index;
 
-	new = xmalloc(sizeof(*new), 5);
+	new = kmalloc(sizeof(*new));
 	if (!new)
 		return false;
 
@@ -276,14 +275,14 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 
 		if ((this->flag & flag) || flag == -1)
 		{
-			if (this->flag&FLAG_MAL)
-				free(this->text);
+			if (this->flag & FLAG_MAL)
+				kfree(this->text);
 			if (this == list->start)
 				list->start = next;
 			if (prior)
 				prior->next = next;
 
-			free(this);
+			kfree(this);
 		}
 		else
 		{

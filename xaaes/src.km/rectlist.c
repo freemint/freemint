@@ -27,7 +27,6 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
-#include "xalloc.h"
 #include "c_window.h"
 #include "rectlist.h"
 
@@ -48,13 +47,13 @@ generate_rect_list(enum locks lock, struct xa_window *w, short which)
 	RECT r_ours, r_win;
 	short win_cnt, f;
 
-	
+
 	if (w->rect_start)
 	{
-		w->prev_rect = *w->rect_start;		/* HR 251002: remember the first rectangle before calc */
-		w->rect_prev = &w->prev_rect;		/*            This can be used to see if redraw are necessary. */
+		w->prev_rect = *w->rect_start;	/* remember the first rectangle before calc */
+		w->rect_prev = &w->prev_rect;	/* This can be used to see if redraw are necessary. */
 		w->prev_rect.next = NULL;
-		free(w->rect_start);
+		kfree(w->rect_start);
 	}
 	else
 		w->rect_prev = NULL;
@@ -63,8 +62,8 @@ generate_rect_list(enum locks lock, struct xa_window *w, short which)
 	for (wl = w->prev; wl; wl = wl->prev)
 		win_cnt++;		
 
-/* Block allocate the required space (approximately) */	
-	w->rect_start = rlist = xmalloc(sizeof(struct xa_rect_list) * (win_cnt * 6 + 2),4);
+	/* Block allocate the required space (approximately) */	
+	w->rect_start = rlist = kmalloc(sizeof(*rlist) * (win_cnt * 6 + 2));
 	rlist++;
 	rlist->r = w->r;
 	rlist->next = NULL;
@@ -85,9 +84,11 @@ generate_rect_list(enum locks lock, struct xa_window *w, short which)
 			{
 				r_win = wl->r;		
 				r_ours = rl->r;				
-				if (xa_rc_intersect(r_ours, &r_win))		/* If window intersects this rectangle, process */
+				/* If window intersects this rectangle, process */
+				if (xa_rc_intersect(r_ours, &r_win))
 				{
-	/* If window doesn't completely mask this rectangle, create new results */				
+					/* If window doesn't completely mask this rectangle,
+					 * create new results */
 					if((r_ours.w != r_win.w) || (r_ours.h != r_win.h))
 					{
 						if(r_win.x != r_ours.x)
@@ -139,12 +140,13 @@ generate_rect_list(enum locks lock, struct xa_window *w, short which)
 					{
 						DIAG((D_r,w->owner,"  Obscured - freeing"));
 					}
-					rl_next = rl->next;			/* Release the original rectangle */
-					rl->next = free_list;			/* Add original rectangle to the free list */
+					rl_next = rl->next;	/* Release the original rectangle */
+					rl->next = free_list;	/* Add original rectangle to the free list */
 					free_list = rl;
 				}
-				else		/* Keep the current rectangle, it hasn't been changed */
+				else
 				{
+					/* Keep the current rectangle, it hasn't been changed */
 					rl_next = rl->next;
 					rl->next = nrl;
 					nrl = rl;
@@ -162,7 +164,7 @@ generate_rect_list(enum locks lock, struct xa_window *w, short which)
 	}
 	else
 	{
-		free(w->rect_start);
+		kfree(w->rect_start);
 		w->rect_list = w->rect_user = w->rect_start = NULL;
 	}	
 
@@ -192,7 +194,7 @@ dispose_rect_list(struct xa_window *w)
 	if (w->rect_start)
 	{
 		DIAG((D_rect, w->owner, "free rect list"));
-		free(w->rect_start);
+		kfree(w->rect_start);
 	}
 	w->rect_start = w->rect_user = w->rect_list = NULL;
 }
@@ -255,16 +257,15 @@ xa_rc_intersect(RECT s, RECT *d)
 {
 #define max(x,y) (((x)>(y))?(x):(y))
 #define min(x,y) (((x)<(y))?(x):(y))
-	short w1 = s.x + s.w,
-	      w2 = d->x + d->w,
-	      h1 = s.y + s.h,
-	      h2 = d->y + d->h;
+	short w1 = s.x + s.w;
+	short w2 = d->x + d->w;
+	short h1 = s.y + s.h;
+	short h2 = d->y + d->h;
+
 	d->x = max(s.x, d->x);
 	d->y = max(s.y, d->y);
-/*	if (s.x > d->x) d->x = s.x; */
-/*	if (s.y > d->y) d->y = s.y; */
 	d->w = min(w1, w2) - d->x;
 	d->h = min(h1, h2) - d->y;
 
-	return d->w > 0 && d->h > 0;
+	return (d->w > 0) && (d->h > 0);
 }
