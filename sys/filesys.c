@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corp.
  * All rights reserved.
- * 
+ *
  */
 
 /*
@@ -75,7 +75,7 @@ xfs_block_level_0 (FILESYS *fs, ushort dev, const char *func)
 		sleep (IO_Q, (long) fs);
 		fs->sleepers--;
 	}
-	
+
 	fs->lock = 1;
 }
 
@@ -83,7 +83,7 @@ static void
 xfs_deblock_level_0 (FILESYS *fs, ushort dev, const char *func)
 {
 	fs->lock = 0;
-	
+
 	if (fs->sleepers)
 	{
 		DMA_DEBUG (("level 0: wake on %lx, %c (%s, %i)", fs, 'A'+dev, func, fs->sleepers));
@@ -95,7 +95,7 @@ static void
 xfs_block_level_1 (FILESYS *fs, ushort dev, const char *func)
 {
 	register ulong bit = 1UL << dev;
-	
+
 	while (fs->lock & bit)
 	{
 		fs->sleepers++;
@@ -103,7 +103,7 @@ xfs_block_level_1 (FILESYS *fs, ushort dev, const char *func)
 		sleep (IO_Q, (long) fs);
 		fs->sleepers--;
 	}
-	
+
 	fs->lock |= bit;
 }
 
@@ -111,7 +111,7 @@ static void
 xfs_deblock_level_1 (FILESYS *fs, ushort dev, const char *func)
 {
 	fs->lock &= ~(1UL << dev);
-	
+
 	if (fs->sleepers)
 	{
 		DMA_DEBUG (("level 1: wake on %lx, %c (%s, %i)", fs, 'A'+dev, func, fs->sleepers));
@@ -138,7 +138,7 @@ xfs_block (FILESYS *fs, ushort dev, const char *func)
 			sleep (IO_Q, (long) &xfs_sema_lock);
 			xfs_sleepers--;
 		}
-		
+
 		xfs_sema_lock = 1;
 	}
 }
@@ -153,7 +153,7 @@ xfs_deblock (FILESYS *fs, ushort dev, const char *func)
 	else
 	{
 		xfs_sema_lock = 0;
-		
+
 		if (xfs_sleepers)
 		{
 			DMA_DEBUG (("[%c: -> %lx] wake on xfs_sema_lock (%s, %i)", 'A'+dev, fs, func, xfs_sleepers));
@@ -195,7 +195,7 @@ xfs_sync (FILESYS *fs)
 	if (!(fs->fsflags & FS_REENTRANT_L2))
 	{
 		register long r;
-		
+
 		if ((fs->fsflags & FS_EXT_2) && (fs->fsflags & FS_REENTRANT_L1))
 		{
 			while (fs->lock)
@@ -205,18 +205,18 @@ xfs_sync (FILESYS *fs)
 				sleep (IO_Q, (long) fs);
 				fs->sleepers--;
 			}
-			
+
 			fs->lock |= 0xffffffff;
 		}
 		else
 			xfs_lock (fs, 0, "xfs_sync");
-		
+
 		r = (*fs->sync)();
-		
+
 		if ((fs->fsflags & FS_EXT_2) && (fs->fsflags & FS_REENTRANT_L1))
 		{
 			fs->lock = 0;
-			
+
 			if (fs->sleepers)
 			{
 				DMA_DEBUG (("special sync: wake on %lx (%s, %i)", fs, "xfs_sync", fs->sleepers));
@@ -225,7 +225,7 @@ xfs_sync (FILESYS *fs)
 		}
 		else
 			xfs_unlock (fs, 0, "xfs_sync");
-		
+
 		return r;
 	}
 	else
@@ -238,9 +238,9 @@ getxattr (FILESYS *fs, fcookie *fc, XATTR *xattr)
 {
 	STAT stat;
 	long r;
-	
+
 	assert (fs->fsflags & FS_EXT_3);
-	
+
 	r = xfs_stat64 (fs, fc, &stat);
 	if (!r)
 	{
@@ -255,24 +255,24 @@ getxattr (FILESYS *fs, fcookie *fc, XATTR *xattr)
 		xattr->blksize	= stat.blksize;
 		xattr->nblocks	= (stat.blksize < 512) ? stat.blocks :
 					stat.blocks / (stat.blksize >> 9);
-		
+
 		*((long *) &(xattr->mtime)) = stat.mtime.time;
 		*((long *) &(xattr->atime)) = stat.atime.time;
 		*((long *) &(xattr->ctime)) = stat.ctime.time;
-		
+
 		xattr->attr	= 0;
-		
+
 		/* fake attr field a little bit */
 		if (S_ISDIR (stat.mode))
 			xattr->attr = FA_DIR;
 		else if (!(stat.mode & 0222))
 			xattr->attr = FA_RDONLY;;
-		
+
 		xattr->reserved2 = 0;
 		xattr->reserved3[0] = 0;
 		xattr->reserved3[1] = 0;
 	}
-	
+
 	return r;
 }
 
@@ -281,9 +281,9 @@ getstat64 (FILESYS *fs, fcookie *fc, STAT *stat)
 {
 	XATTR xattr;
 	long r;
-	
+
 	assert (fs->getxattr);
-	
+
 	r = xfs_getxattr (fs, fc, &xattr);
 	if (!r)
 	{
@@ -294,33 +294,33 @@ getstat64 (FILESYS *fs, fcookie *fc, STAT *stat)
 		stat->uid	= xattr.uid;
 		stat->gid	= xattr.gid;
 		stat->rdev	= xattr.rdev;
-		
+
 		/* no native UTC extension
 		 * -> convert to unix UTC
 		 */
 		stat->atime.high_time = 0;
 		stat->atime.time = unixtime (xattr.atime, xattr.adate) + timezone;
 		stat->atime.nanoseconds = 0;
-		
+
 		stat->mtime.high_time = 0;
 		stat->mtime.time = unixtime (xattr.mtime, xattr.mdate) + timezone;
 		stat->mtime.nanoseconds = 0;
-		
+
 		stat->ctime.high_time = 0;
 		stat->ctime.time = unixtime (xattr.ctime, xattr.cdate) + timezone;
 		stat->ctime.nanoseconds = 0;
-		
+
 		stat->size	= xattr.size;
 		stat->blocks	= (xattr.blksize < 512) ? xattr.nblocks :
 					xattr.nblocks * (xattr.blksize >> 9);
 		stat->blksize	= xattr.blksize;
-		
+
 		stat->flags	= 0;
 		stat->gen	= 0;
-		
+
 		bzero (stat->res, sizeof (stat->res));
 	}
-	
+
 	return r;
 }
 
@@ -360,15 +360,15 @@ init_drive (int i)
 	long r;
 	FILESYS *fs;
 	fcookie root_dir;
-	
+
 	TRACE (("init_drive (%c)", i+'A'));
-	
+
 	assert (i >= 0 && i < NUM_DRIVES);
-	
+
 	drives[i] = 0;		/* no file system */
 	if (dlockproc[i])
 		return;
-	
+
 	for (fs = active_fs; fs; fs = fs->next)
 	{
 		r = xfs_root (fs, i, &root_dir);
@@ -389,20 +389,20 @@ void
 init_filesys (void)
 {
 	int i;
-	
+
 	active_fs = NULL;
-	
+
 	/* init data structures */
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
 		drives[i] = NULL;
 		aliasdrv[i] = 0;
 	}
-	
+
 	/* get the vector of connected GEMDOS drives */
-	dosdrvs = Dsetdrv (Dgetdrv ()) | drvmap ();
-	
-	
+	dosdrvs = Dsetdrv (Dgetdrv ()) | sys_b_drvmap ();
+
+
 # ifdef OLDTOSFS
 	xfs_add (&tos_filesys);
 # endif
@@ -416,23 +416,23 @@ init_filesys (void)
 	xfs_add (&kern_filesys);
 # endif
 	xfs_add (&uni_filesys);
-	
-	
+
+
 	/* initialize the BIOS file system */
 	biosfs_init ();
-	
+
 	/* initialize the proc file system */
 	procfs_init ();
-	
+
 	/* initialize the ramdisk file system */
 	ramfs_init ();
-	
+
 	/* initialize the shared memory file system */
 	shmfs_init ();
-	
+
 	/* initialize the unified file system */
 	unifs_init ();
-	
+
 	/* initialize the main file system */
 	fatfs_init ();
 }
@@ -443,13 +443,13 @@ xfs_name (fcookie *fc)
 {
 	static char buf [SPRINTF_MAX];
 	long r;
-	
+
 	buf [0] = '\0';
-	
+
 	r = xfs_fscntl (fc->fs, fc, buf, MX_KER_XFSNAME, (long) buf);
 	if (r)
 		ksprintf (buf, sizeof (buf), "unknown (%lx -> %li)", fc->fs, r);
-	
+
 	return buf;
 }
 
@@ -461,19 +461,19 @@ long
 _s_ync (void)
 {
 	FILESYS *fs;
-	
+
 	ALERT (MSG_fsys_syncing);
-	
+
 	/* syncing filesystems */
 	for (fs = active_fs; fs; fs = fs->next)
 	{
 		if (fs->fsflags & FS_DO_SYNC)
 			(*fs->sync)();
 	}
-	
+
 	/* always syncing buffercache */
 	bio_sync_all ();
-	
+
 	ALERT (MSG_fsys_syncing_done);
 
 	return 0;
@@ -484,19 +484,19 @@ long _cdecl
 s_ync (void)
 {
 	FILESYS *fs;
-	
+
 	TRACE (("Syncing file systems..."));
-	
+
 	/* syncing filesystems */
 	for (fs = active_fs; fs; fs = fs->next)
 	{
 		if (fs->fsflags & FS_DO_SYNC)
 			xfs_sync (fs);
 	}
-	
+
 	/* always syncing buffercache */
 	bio_sync_all ();
-	
+
 	TRACE (("Syncing done."));
 	return 0;
 }
@@ -514,7 +514,7 @@ xfs_add (FILESYS *fs)
 	if (fs)
 	{
 		xfs_blocking_init (fs);
-		
+
 		fs->next = active_fs;
 		active_fs = fs;
 	}
@@ -524,21 +524,21 @@ void
 close_filesys (void)
 {
 	PROC *p;
-	
+
 	TRACE (("close_filesys"));
-	
+
 	/* close every open file */
 	for (p = proclist; p; p = p->gl_next)
 	{
 		int i;
-		
+
 		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 			continue;
-		
+
 		for (i = MIN_HANDLE; i < p->p_fd->nfiles; i++)
 		{
 			FILEPTR *f;
-			
+
 			f = p->p_fd->ofiles [i];
 			p->p_fd->ofiles [i] = NULL;
 			if (f) do_close (p, f);
@@ -554,7 +554,7 @@ close_filesys (void)
  * disk_changed detects a media change.
  */
 
-void _cdecl 
+void _cdecl
 changedrv (ushort d, const char *function)
 {
 	PROC *p;
@@ -565,13 +565,13 @@ changedrv (ushort d, const char *function)
 	fcookie dir;
 	int warned = (d & 0xf000) == PROC_RDEV_BASE;
 	long r;
-	
+
 	TRACE (("changedrv (%u)", d));
-	
+
 	/* if an aliased drive, change the *real* device */
 	if (d < NUM_DRIVES && aliasdrv[d])
 		d = aliasdrv[d] - 1;
-	
+
 	/* re-initialize the device, if it was a BIOS device */
 	if (d < NUM_DRIVES)
 	{
@@ -581,43 +581,43 @@ changedrv (ushort d, const char *function)
 			TRACE (("changedrv: force change"));
 			xfs_dskchng (fs, d, 1);
 		}
-		
+
 		init_drive (d);
 	}
-	
+
 	for (p = proclist; p; p = p->gl_next)
 	{
 		struct filedesc *fd = p->p_fd;
 		struct cwd *cwd = p->p_cwd;
-		
+
 		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 			continue;
-		
+
 		if (!fd || !cwd)
 			FATAL (ERR_fsys_inv_fdcwd, function);
-		
+
 		/* invalidate all open files on this device */
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
 			f = fd->ofiles[i];
-			
+
 			if (!f || (f == (FILEPTR *) 1))
 				continue;
-			
+
 # ifdef OLDSOCKDEVEMU
 			if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
 			if (f->dev == &sockdev)
 # endif
 				continue;
-			
+
 			/* it's a regular file */
-			
+
 			if (f->fc.dev != d)
 				continue;
-			
+
 			/* and it's on the changed dev */
-			
+
 			if (!warned)
 			{
 				ALERT (MSG_fsys_files_were_open, d, p->name);
@@ -635,9 +635,9 @@ changedrv (ushort d, const char *function)
  * a new file, and gets the same handle back. So, we force the
  * handle to point to /dev/null.
  */
-			    
+
 			fd->ofiles[i] = (FILEPTR *) 1;
-			
+
 			r = FP_ALLOC (p, &f);
 			if (!r)
 			{
@@ -653,7 +653,7 @@ changedrv (ushort d, const char *function)
 			else
 				fd->ofiles[i] = NULL;
 		}
-		
+
 		/* terminate any active directory searches on the drive */
 		for (i = 0; i < NUM_SEARCH; i++)
 		{
@@ -679,10 +679,10 @@ changedrv (ushort d, const char *function)
 				dirh->fc.fs = 0;
 			}
 		}
-		
+
 		if (d >= NUM_DRIVES)
 			continue;
-		
+
 		/* change any active directories on the device to the (new) root */
 		fs = drives[d];
 		if (fs)
@@ -695,7 +695,7 @@ changedrv (ushort d, const char *function)
 			dir.fs = 0;
 			dir.dev = d;
 		}
-		
+
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if (cwd->root[i].dev == d)
@@ -709,7 +709,7 @@ changedrv (ushort d, const char *function)
 				dup_cookie (&cwd->curdir[i], &dir);
 			}
 		}
-		
+
 		/* hmm, what we can do if the drive changed
 		 * that hold our root dir?
 		 */
@@ -719,10 +719,10 @@ changedrv (ushort d, const char *function)
 			cwd->rootdir.fs = 0;
 			kfree (cwd->root_dir);
 			cwd->root_dir = NULL;
-			
+
 			post_sig (p, SIGKILL);
 		}
-		
+
 		release_cookie (&dir);
 	}
 }
@@ -740,17 +740,17 @@ disk_changed (ushort d)
 	long r;
 	FILESYS *fs;
 	static char tmpbuf[8192];
-	
+
 	TRACE (("disk_changed (%u)", d));
-	
+
 	/* watch out for aliased drives */
 	if (d < NUM_DRIVES && aliasdrv[d])
 		d = aliasdrv[d] - 1;
-	
+
 	/* for now, only check BIOS devices */
 	if (d >= NUM_DRIVES)
 		return 0;
-	
+
 	/* has the drive been initialized yet? If not, then initialize it and return
 	 * "no change"
 	 */
@@ -761,7 +761,7 @@ disk_changed (ushort d)
 		changedrv (d, __FUNCTION__);
 		return 0;
 	}
-	
+
 	/* fn: other strategie if FS_OWN_MEDIACHANGE is set:
 	 *     xfs check itself for a mediachange (dskchng do this)
 	 */
@@ -769,27 +769,27 @@ disk_changed (ushort d)
 	{
 		/* ask xfs */
 		long i = xfs_dskchng (fs, d, 0);
-		
+
 		/* if drive changed, invalidate the drive */
 		if (i)
 		{
 			drives[d] = 0;
 			changedrv (d, __FUNCTION__);
 		}
-		
+
 		return i;
 	}
-	
+
 	/* We have to do this stuff no matter what, because someone may have installed
 	 * vectors to force a media change...
 	 * PROBLEM: AHDI may get upset if the drive isn't valid.
 	 * SOLUTION: don't change the default PSEUDODRIVES setting!
 	 */
-	
+
 	TRACE (("calling mediach (%d)", d));
-	r = mediach (d);
+	r = sys_b_mediach (d);
 	TRACE (("mediach (%d) == %li", d, r));
-	
+
 	if (r < 0)
 	{
 		/* KLUDGE: some .XFS drivers don't install BIOS vectors, and
@@ -807,28 +807,28 @@ disk_changed (ushort d)
 		else
 			return r;
 	}
-	
+
 	if (r == 1)
 	{
 		/* drive _may_ have changed */
-		r = rwabs (0, tmpbuf, 1, 0, d, 0L);	/* check the BIOS */
+		r = sys_b_rwabs (0, tmpbuf, 1, 0, d, 0L);	/* check the BIOS */
 		if (r != ECHMEDIA)
 		{
 			/* nope, no change */
 			TRACE (("rwabs returned %d", r));
-			
+
 			return (r < 0) ? r : 0;
 		}
 		r = 2;	/* drive was definitely changed */
 	}
-	
+
 	if (r == 2)
 	{
 		TRACE (("definite media change"));
-		
+
 		/* get filesystem associated with drive */
 		fs = drives[d];
-		
+
 		/* does the fs agree that it changed? */
 		if (xfs_dskchng (fs, d, 0))
 		{
@@ -837,7 +837,7 @@ disk_changed (ushort d)
 			return 1;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -867,31 +867,31 @@ long
 relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, int depth)
 {
 	static char newpath[16] = "U:\\DEV\\";
-	
+
 	struct cwd *cwd = curproc->p_cwd;
-	
+
 	char temp2[PATH_MAX];
 	char linkstuff[PATH_MAX];
-	
+
 	fcookie dir;
 	int drv;
 	XATTR xattr;
 	long r;
-	
-	
+
+
 	/* dolast: 0 == return a cookie for the directory the file is in
 	 *         1 == return a cookie for the file itself, don't follow links
 	 *	   2 == return a cookie for whatever the file points at
 	 */
 	int dolast = 0;
 	int i = 0;
-	
+
 	if (!path)
 		return ENOTDIR;
-	
+
 	if (*path == '\0')
 		return ENOENT;
-	
+
 	if (!lastname)
 	{
 		dolast = 1;
@@ -902,18 +902,18 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 		dolast = 2;
 		lastname = temp2;
 	}
-	
+
 	*lastname = 0;
-	
+
 	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %lx, %i])",
 		path, dolast, depth, relto->fs, relto->dev));
-	
+
 	if (depth > MAX_LINKS)
 	{
 		DEBUG (("Too many symbolic links"));
 		return ELOOP;
 	}
-	
+
 	/* special cases: CON:, AUX:, etc. should be converted to U:\DEV\CON,
 	 * U:\DEV\AUX, etc.
 	 */
@@ -926,9 +926,9 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 		strncpy (newpath+7, path, 3);
 		path = newpath;
 	}
-	
+
 	/* first, check for a drive letter
-	 * 
+	 *
 	 * BUG: a '\' at the start of a symbolic link is relative to the
 	 * current drive of the process, not the drive the link is located on
 	 */
@@ -943,23 +943,23 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	if (path[1] == ':' && !cwd->root_dir)
 	{
 		char c = tolower ((int)path[0] & 0xff);
-		
+
 		if (c >= 'a' && c <= 'z')
 			drv = c - 'a';
 		else if (c >= '1' && c <= '6')
 			drv = 26 + (c - '1');
 		else
 			goto nodrive;
-		
+
 # if 1
 		/* if root_dir is set drive references are forbidden
 		 */
 		if (cwd->root_dir)
 			return ENOTDIR;
 # endif
-		
+
 		path += 2;
-		
+
 		/* remember that we saw a drive letter
 		 */
 		i = 1;
@@ -969,14 +969,14 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 nodrive:
 		drv = cwd->curdrv;
 	}
-	
+
 	/* see if the path is rooted from '\\'
 	 */
 	if (DIRSEP (*path))
 	{
 		while (DIRSEP (*path))
 			path++;
-		
+
 		/* if root_dir is set this is our start point
 		 */
 		if (cwd->root_dir)
@@ -998,23 +998,23 @@ nodrive:
 			dup_cookie (&dir, relto);
 		}
 	}
-	
+
 	if (!dir.fs && !cwd->root_dir)
 	{
 		changedrv (dir.dev, __FUNCTION__);
 		dup_cookie (&dir, &cwd->root[drv]);
 	}
-	
+
 	if (!dir.fs)
 	{
 		DEBUG (("relpath2cookie: no file system: returning ENXIO"));
 		return ENXIO;
 	}
-	
+
 	/* here's where we come when we've gone across a mount point
 	 */
 restart_mount:
-	
+
 	/* see if there has been a disk change; if so, return ECHMEDIA.
 	 * path2cookie will restart the search automatically; other functions
 	 * that call relpath2cookie directly will have to fail gracefully.
@@ -1028,28 +1028,28 @@ restart_mount:
 		release_cookie (&dir);
 		if (r > 0)
 			r = ECHMEDIA;
-		
+
 		PATH2COOKIE_DB (("relpath2cookie: returning %d", r));
 		return r;
 	}
-	
+
 	if (!*path)
 	{
 		/* nothing more to do
 		 */
 		PATH2COOKIE_DB (("relpath2cookie: no more path, returning 0"));
-		
+
 		*res = dir;
 		return 0;
 	}
-	
-	
+
+
 	if (dir.fs->fsflags & FS_KNOPARSE)
 	{
 		if (!dolast)
 		{
 			PATH2COOKIE_DB (("fs is a KNOPARSE, nothing to do"));
-			
+
 			strncpy (lastname, path, PATH_MAX-1);
 			lastname[PATH_MAX - 1] = 0;
 			r = 0;
@@ -1058,14 +1058,14 @@ restart_mount:
 		else
 		{
 			PATH2COOKIE_DB (("fs is a KNOPARSE, calling lookup"));
-			
+
 			r = xfs_lookup (dir.fs, &dir, path, res);
 			if (r == EMOUNT)
 			{
 				/* hmmm... a ".." at a mount point, maybe
 				 */
 				fcookie mounteddir;
-				
+
 				r = xfs_root (dir.fs, dir.dev, &mounteddir);
 				if (r == 0 && drv == UNIDRV)
 				{
@@ -1084,21 +1084,21 @@ restart_mount:
 				{
 					if (r == 0)
 						release_cookie (&mounteddir);
-					
+
 					r = 0;
 				}
 			}
-			
+
 			release_cookie (&dir);
 		}
-		
+
 		PATH2COOKIE_DB (("relpath2cookie: returning %ld", r));
 		return r;
 	}
-	
-	
+
+
 	/* parse all but (possibly) the last component of the path name
-	 * 
+	 *
 	 * rules here: at the top of the loop, &dir is the cookie of
 	 * the directory we're in now, xattr is its attributes, and res is
 	 * unset at the end of the loop, &dir is unset, and either r is
@@ -1111,14 +1111,14 @@ restart_mount:
 		release_cookie (&dir);
 		return EINTERNAL;
 	}
-	
+
 	while (*path)
 	{
 		/*  skip slashes
 		 */
 		while (DIRSEP (*path))
 			path++;
-		
+
 		/* now we must have a directory, since there are more things
 		 * in the path
 		 */
@@ -1129,7 +1129,7 @@ restart_mount:
 			r = ENOTDIR;
 			break;
 		}
-		
+
 		/* we must also have search permission for the directory
 		 */
 		if (denyaccess (&xattr, S_IXOTH))
@@ -1140,7 +1140,7 @@ restart_mount:
 			r = EACCES;
 			break;
 		}
-		
+
 		/* if there's nothing left in the path, we can break here
 		 */
 		if (!*path)
@@ -1149,13 +1149,13 @@ restart_mount:
 			*res = dir;
 			break;
 		}
-		
+
 		/* next, peel off the next name in the path
 		 */
 		{
 			register int len;
 			register char c, *s;
-			
+
 			len = 0;
 			s = lastname;
 			c = *path;
@@ -1165,10 +1165,10 @@ restart_mount:
 					*s++ = c;
 				c = *++path;
 			}
-			
+
 			*s = 0;
 		}
-		
+
 		/* if there are no more names in the path, and we don't want
 		 * to actually look up the last name, then we're done
 		 */
@@ -1179,7 +1179,7 @@ restart_mount:
 			PATH2COOKIE_DB (("relpath2cookie: *res = [%lx, %i]", res->fs, res->dev));
 			break;
 		}
-		
+
 		if (cwd->root_dir)
 		{
 			if (samefile (&dir, &cwd->rootdir)
@@ -1188,18 +1188,18 @@ restart_mount:
 				&& lastname[2] == '\0')
 			{
 				PATH2COOKIE_DB (("relpath2cookie: can't leave root [%s] -> forward to '.'", cwd->root_dir));
-				
+
 				lastname[1] = '\0';
 			}
 		}
-		
+
 		PATH2COOKIE_DB (("relpath2cookie: looking up [%s]", lastname));
-		
+
 		r = xfs_lookup (dir.fs, &dir, lastname, res);
 		if (r == EMOUNT)
 		{
 			fcookie mounteddir;
-			
+
 			r = xfs_root (dir.fs, dir.dev, &mounteddir);
 			if (r == 0 && drv == UNIDRV)
 			{
@@ -1241,7 +1241,7 @@ restart_mount:
 			release_cookie (&dir);
 			break;
 		}
-		
+
 		/* read the file attribute
 		 */
 		r = xfs_getxattr (res->fs, res, &xattr);
@@ -1252,7 +1252,7 @@ restart_mount:
 			release_cookie (res);
 			break;
 		}
-		
+
 		/* check for a symbolic link
 		 * - if the file is a link, and we're following links, follow it
 		 */
@@ -1265,7 +1265,7 @@ restart_mount:
 			if (res->fs == &kern_filesys)
 			{
 				release_cookie (&dir);
-				
+
 				depth++;
 				r = kern_follow_link (res, depth);
 				if (r)
@@ -1302,7 +1302,7 @@ restart_mount:
 			dir = *res;
 		}
 	}
-	
+
 	PATH2COOKIE_DB (("relpath2cookie: returning %ld", r));
 	return r;
 }
@@ -1311,16 +1311,16 @@ long
 path2cookie (const char *path, char *lastname, fcookie *res)
 {
 	struct cwd *cwd = curproc->p_cwd;
-	
+
 	/* AHDI sometimes will keep insisting that a media change occured;
 	 * we limit the number of retrys to avoid hanging the system
 	 */
 # define MAX_TRYS 4
 	int trycnt = MAX_TRYS - 1;
-	
+
 	fcookie *dir = &cwd->curdir[cwd->curdrv];
 	long r;
-	
+
 restart:
 	r = relpath2cookie (dir, path, lastname, res, 0);
 	if (r == ECHMEDIA && trycnt--)
@@ -1328,7 +1328,7 @@ restart:
 		DEBUG (("path2cookie: restarting due to media change"));
 		goto restart;
 	}
-	
+
 	return r;
 }
 
@@ -1347,7 +1347,7 @@ release_cookie (fcookie *fc)
 	if (fc)
 	{
 		FILESYS *fs;
-		
+
 		fs = fc->fs;
 		if (fs && fs->release)
 			xfs_release (fs, fc);
@@ -1365,7 +1365,7 @@ void
 dup_cookie (fcookie *newc, fcookie *oldc)
 {
 	FILESYS *fs;
-	
+
 	fs = oldc->fs;
 	if (fs && fs->dupcookie)
 		xfs_dupcookie (fs, newc, oldc);
@@ -1389,20 +1389,20 @@ dup_cookie (fcookie *newc, fcookie *oldc)
  * in the device open routine.
  */
 
-int _cdecl 
+int _cdecl
 denyshare (FILEPTR *list, FILEPTR *f)
 {
 	int newrm, newsm;	/* new read and sharing mode */
 	int oldrm, oldsm;	/* read and sharing mode of already opened file */
-	
+
 	newrm = f->flags & O_RWMODE;
 	newsm = f->flags & O_SHMODE;
-	
+
 	/* O_EXEC gets treated the same as O_RDONLY for our purposes
 	 */
 	if (newrm == O_EXEC)
 		newrm = O_RDONLY;
-	
+
 	/* New meaning for O_COMPAT: deny write access to all _other_
 	 * processes.
 	 */
@@ -1412,7 +1412,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		if (oldrm == O_EXEC)
 			oldrm = O_RDONLY;
 		oldsm = list->flags & O_SHMODE;
-		
+
 		if (oldsm == O_DENYW || oldsm == O_DENYRW)
 		{
 		 	if (newrm != O_RDONLY)
@@ -1421,7 +1421,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 				return 1;
 			}
 		}
-		
+
 		if (oldsm == O_DENYR || oldsm == O_DENYRW)
 		{
 			if (newrm != O_WRONLY)
@@ -1430,7 +1430,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 				return 1;
 			}
 		}
-		
+
 		if (newsm == O_DENYW || newsm == O_DENYRW)
 		{
 			if (oldrm != O_RDONLY)
@@ -1439,7 +1439,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 				return 1;
 			}
 		}
-		
+
 		if (newsm == O_DENYR || newsm == O_DENYRW)
 		{
 			if (oldrm != O_WRONLY)
@@ -1448,7 +1448,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 				return 1;
 			}
 		}
-		
+
 		/* If either sm == O_COMPAT, then we check to make sure
 		 * that the file pointers are owned by the same process
 		 * (O_COMPAT means "deny writes to any other processes").
@@ -1461,20 +1461,20 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		{
 			struct filedesc *fd = curproc->p_fd;
 			int i;
-			
+
 			for (i = MIN_HANDLE; i < fd->nfiles; i++)
 				if (fd->ofiles[i] == list)
 					goto found;
-			
+
 			/* old file pointer is not open by this process */
 			DEBUG (("O_COMPAT file was opened for writing by another process"));
 			return 1;
-			
+
 		found:
 			;	/* everything is OK */
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -1491,11 +1491,11 @@ denyaccess (XATTR *xattr, ushort perm)
 {
 	struct ucred *cred = curproc->p_cred->ucr;
 	ushort mode;
-	
+
 	/* the super-user can do anything! */
 	if (cred->euid == 0)
 		return 0;
-	
+
 	mode = xattr->mode;
 	if (cred->euid == xattr->uid)
 		perm = perm << 6;
@@ -1503,11 +1503,11 @@ denyaccess (XATTR *xattr, ushort perm)
 		perm = perm << 3;
 	else if (groupmember (cred, xattr->gid))
 		perm = perm << 3;
-	
+
 	if ((mode & perm) != perm)
 		/* access denied */
 		return 1;
-	
+
 	return 0;
 }
 
@@ -1525,7 +1525,7 @@ denyaccess (XATTR *xattr, ushort perm)
  * end of file.
  */
 
-LOCK * _cdecl 
+LOCK * _cdecl
 denylock (LOCK *list, LOCK *lck)
 {
 	ushort pid = curproc->pid;
@@ -1558,7 +1558,7 @@ denylock (LOCK *list, LOCK *lck)
 		    (ltype == F_WRLCK || t->l.l_type == F_WRLCK))
 			break;
 	}
-	
+
 	return t;
 }
 
@@ -1571,33 +1571,33 @@ dir_access (fcookie *dir, ushort perm, ushort *mode)
 {
 	XATTR xattr;
 	long r;
-	
+
 	r = xfs_getxattr (dir->fs, dir, &xattr);
 	if (r)
 	{
 		DEBUG (("dir_access: file system returned %ld", r));
 		return r;
 	}
-	
+
 	if ((xattr.mode & S_IFMT) != S_IFDIR )
 	{
 		DEBUG (("file is not a directory"));
 		return ENOTDIR;
 	}
-	
+
 	if (denyaccess (&xattr, perm))
 	{
 		DEBUG(("no permission for directory"));
 		return EACCES;
 	}
-	
+
 	*mode = xattr.mode;
-	
+
 	return 0;
 }
 
 /*
- * returns 1 if the given name contains a wildcard character 
+ * returns 1 if the given name contains a wildcard character
  */
 
 int
@@ -1608,7 +1608,7 @@ has_wild (const char *name)
 	while ((c = *name++) != 0)
 		if (c == '*' || c == '?')
 			return 1;
-	
+
 	return 0;
 }
 
@@ -1639,14 +1639,14 @@ copy8_3 (char *dest, const char *src)
 			strcpy (dest, ".       .   ");
 			return;
 		}
-		
+
 		if (src[1] == '.' && src[2] == 0)
 		{
 			strcpy (dest, "..      .   ");
 			return;
 		}
 	}
-	
+
 	if (src[0] == '*' && src[1] == '.' && src[2] == '*' && src[3] == 0)
 	{
 		dest[0] = '*';
@@ -1657,18 +1657,18 @@ copy8_3 (char *dest, const char *src)
 	for (i = 0; i < 8; i++)
 	{
 		c = *src++;
-		
+
 		if (!c || c == '.')
 			break;
 		if (c == '*')
 			fill = c = '?';
-		
+
 		*dest++ = toupper((int)c & 0xff);
 	}
-	
+
 	while (i++ < 8)
 		*dest++ = fill;
-	
+
 	*dest++ = '.';
 	i = 0;
 	fill = ' ';
@@ -1680,20 +1680,20 @@ copy8_3 (char *dest, const char *src)
 		for( ;i < 3; i++)
 		{
 			c = *src++;
-			
+
 			if (!c || c == '.')
 				break;
-			
+
 			if (c == '*')
 				c = fill = '?';
-			
+
 			*dest++ = toupper((int)c & 0xff);
 		}
 	}
-	
+
 	while (i++ < 3)
 		*dest++ = fill;
-	
+
 	*dest = 0;
 }
 
@@ -1714,12 +1714,12 @@ pat_match (const char *name, const char *template)
 	char expname [TOS_NAMELEN+1];
 	register char *s;
 	register char c;
-	
+
 	if (*template == '*')
 		return 1;
-	
+
 	copy8_3 (expname, name);
-	
+
 	s = expname;
 	while ((c = *template++) != 0)
 	{
@@ -1727,7 +1727,7 @@ pat_match (const char *name, const char *template)
 			return 0;
 		s++;
 	}
-	
+
 	return 1;
 }
 
@@ -1741,6 +1741,6 @@ samefile (fcookie *a, fcookie *b)
 {
 	if (a->fs == b->fs && a->dev == b->dev && a->index == b->index)
 		return 1;
-	
+
 	return 0;
 }

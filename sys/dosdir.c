@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  */
 
 /* DOS directory functions */
@@ -40,12 +40,12 @@ d_setdrv (int d)
 {
 	PROC *p = curproc;
 	long r;
-	
-	r = drvmap() | dosdrvs;
-	
+
+	r = sys_b_drvmap() | dosdrvs;
+
 	TRACELOW (("Dsetdrv(%d)", d));
 	assert (p->p_fd && p->p_cwd);
-	
+
 	if (d < 0 || d >= NUM_DRIVES
 		|| (r & (1L << d)) == 0
 		|| p->p_cwd->root_dir)
@@ -53,7 +53,7 @@ d_setdrv (int d)
 		DEBUG (("Dsetdrv: invalid drive %d", d));
 		return r;
 	}
-	
+
 	p->base->p_defdrv = p->p_cwd->curdrv = d;
 	return r;
 }
@@ -63,10 +63,10 @@ long _cdecl
 d_getdrv (void)
 {
 	PROC *p = curproc;
-	
+
 	TRACELOW (("Dgetdrv"));
 	assert (p->p_fd && p->p_cwd);
-	
+
 	return p->p_cwd->curdrv;
 }
 
@@ -81,7 +81,7 @@ d_free (long *buf, int d)
 
 	TRACE(("Dfree(%d)", d));
 	assert (p->p_fd && p->p_cwd);
-	
+
 	/* drive 0 means current drive, otherwise it's d-1 */
 	if (d)
 		d = d - 1;
@@ -95,7 +95,7 @@ d_free (long *buf, int d)
 	if (d < 0 || d >= NUM_DRIVES)
 	{
 		int i;
-		
+
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if (aliasdrv[i] == d)
@@ -104,15 +104,15 @@ d_free (long *buf, int d)
 				goto aliased;
 			}
 		}
-		
+
 		fs = get_filesys (d);
 		if (!fs)
 			return ENXIO;
-		
+
 		r = xfs_root (fs, d, &root);
 		if (r < E_OK)
 			return r;
-		
+
 		r = xfs_dfree (fs, &root, buf);
 		release_cookie (&root);
 		return r;
@@ -151,21 +151,21 @@ d_create (const char *path)
 
 	TRACE(("Dcreate(%s)", path));
 	assert (p->p_fd && p->p_cwd);
-	
+
 	r = path2cookie(path, temp1, &dir);
 	if (r)
 	{
 		DEBUG(("Dcreate(%s): returning %ld", path, r));
 		return r;
 	}
-	
+
 	if (temp1[0] == '\0')
 	{
 		DEBUG(("Dcreate(%s): creating a NULL dir?", path));
 		release_cookie(&dir);
 		return EBADARG;
 	}
-	
+
 	/* check for write permission on the directory */
 	r = dir_access(&dir, S_IWOTH, &mode);
 	if (r)
@@ -174,7 +174,7 @@ d_create (const char *path)
 		release_cookie(&dir);
 		return r;
 	}
-	
+
 	if (mode & S_ISGID)
 	{
 		r = xfs_getxattr (dir.fs, &dir, &xattr);
@@ -205,7 +205,7 @@ long _cdecl
 d_delete (const char *path)
 {
 	struct ucred *cred = curproc->p_cred->ucr;
-	
+
 	fcookie parentdir, targdir;
 	long r;
 	PROC *p;
@@ -213,10 +213,10 @@ d_delete (const char *path)
 	XATTR xattr;
 	char temp1[PATH_MAX];
 	ushort mode;
-	
-	
+
+
 	TRACE(("Ddelete(%s)", path));
-	
+
 	r = path2cookie (path, temp1, &parentdir);
 	if (r)
 	{
@@ -224,7 +224,7 @@ d_delete (const char *path)
 		release_cookie(&parentdir);
 		return r;
 	}
-	
+
 	/* check for write permission on the directory which the target
 	 * is located
 	 */
@@ -245,7 +245,7 @@ bailout:
 		DEBUG(("Ddelete: error %ld on %s", r, path));
 		return r;
 	}
-	
+
 	r = xfs_getxattr (targdir.fs, &targdir, &xattr);
 	if (r)
 	{
@@ -280,12 +280,12 @@ bailout:
 		for (p = proclist; p; p = p->gl_next)
 		{
 			struct cwd *cwd = p->p_cwd;
-			
+
 			if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 				continue;
-			
+
 			assert (cwd);
-			
+
 			for (i = 0; i < NUM_DRIVES; i++)
 			{
 				if (samefile (&targdir, &cwd->root[i]))
@@ -304,17 +304,17 @@ bailout:
 				}
 			}
 		}
-		
+
 		/* Wait with this until everything has been verified */
 		for (p = proclist; p; p = p->gl_next)
 		{
 			struct cwd *cwd = p->p_cwd;
-			
+
 			if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 				continue;
-			
+
 			assert (cwd);
-			
+
 			for (i = 0; i < NUM_DRIVES; i++)
 			{
 				if (samefile (&targdir, &cwd->curdir[i]))
@@ -324,11 +324,11 @@ bailout:
 				}
 			}
 		}
-		
+
 		release_cookie (&targdir);
 		r = xfs_rmdir (parentdir.fs, &parentdir, temp1);
 	}
-	
+
 	release_cookie (&parentdir);
 	return r;
 }
@@ -338,26 +338,26 @@ d_setpath (const char *path)
 {
 	PROC *p = curproc;
 	struct cwd *cwd = p->p_cwd;
-	
+
 	XATTR xattr;
 	fcookie dir;
 	int drv;
 	long r;
-	
+
 	TRACE (("Dsetpath(%s)", path));
 	assert (cwd);
-	
+
 	r = path2cookie (path, follow_links, &dir);
 	if (r)
 	{
 		DEBUG (("Dsetpath(%s): returning %ld", path, r));
 		return r;
 	}
-	
+
 	if (path[0] && path[1] == ':')
 	{
 		char c = *path;
-		
+
 		if (c >= 'a' && c <= 'z')
 			drv = c-'a';
 		else if (c >= 'A' && c <= 'Z'+6)  /* A..Z[\]^_` */
@@ -365,7 +365,7 @@ d_setpath (const char *path)
 		else if (c >= '1' && c <= '6')  /* A..Z1..6 */
 			drv = c - '1'+26;
 	}
-	
+
 	r = xfs_getxattr (dir.fs, &dir, &xattr);
 	if (r)
 	{
@@ -373,21 +373,21 @@ d_setpath (const char *path)
 		release_cookie (&dir);
 		return r;
 	}
-	
+
 	if (!(xattr.attr & FA_DIR))
 	{
 		DEBUG (("Dsetpath(%s): not a directory", path));
 		release_cookie (&dir);
 		return ENOTDIR;
 	}
-	
+
 	if (denyaccess (&xattr, S_IXOTH))
 	{
 		DEBUG (("Dsetpath(%s): access denied", path));
 		release_cookie (&dir);
 		return EACCES;
 	}
-	
+
 	/* watch out for symbolic links; if c:\foo is a link to d:\bar, then
 	 * "cd c:\foo" should also change the drive to d:
 	 */
@@ -395,7 +395,7 @@ d_setpath (const char *path)
 	if (drv != UNIDRV && dir.dev != cwd->root[drv].dev)
 	{
 		int i;
-		
+
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if (cwd->root[i].dev == dir.dev
@@ -403,26 +403,26 @@ d_setpath (const char *path)
 			{
 				if (cwd->curdrv == drv)
 					cwd->curdrv = i;
-				
+
 				drv = i;
 				break;
 			}
 		}
 	}
-	
+
 	release_cookie (&cwd->curdir[drv]);
 	cwd->curdir[drv] = dir;
-	
+
 	return E_OK;
 }
 
 /*
  * GEMDOS extension: Dgetcwd(path, drv, size)
- * 
+ *
  * like d_getpath, except that the caller provides a limit
  * for the max. number of characters to be put into the buffer.
  * Inspired by POSIX.1, getcwd(), 5.2.2
- * 
+ *
  * written by jr
  */
 
@@ -431,41 +431,41 @@ d_getcwd (char *path, int drv, int size)
 {
 	PROC *p = curproc;
 	struct cwd *cwd = p->p_cwd;
-	
+
 	FILESYS *fs;
 	fcookie *dir, *root;
 	long r;
-	
-	
+
+
 	TRACE (("Dgetcwd(%c, %d)", drv + '@', size));
 	assert (cwd);
-	
+
 	if (drv < 0 || drv > NUM_DRIVES)
 		return ENXIO;
-	
+
 	drv = (drv == 0) ? cwd->curdrv : drv - 1;
-	
+
 	root = &cwd->root[drv];
 	if (!root->fs)
 	{
 		/* maybe not initialized yet? */
 		changedrv (drv, __FUNCTION__);
-		
+
 		root = &cwd->root[drv];
 		if (!root->fs)
 			return ENXIO;
 	}
-	
+
 	fs = root->fs;
 	dir = &cwd->curdir[drv];
-	
+
 	if (!(fs->fsflags & FS_LONGPATH))
 	{
 		char buf[PATH_MAX];
-		
+
 		r = xfs_getname (fs, root, dir, buf, PATH_MAX);
 		if (r) return r;
-		
+
 		if (strlen (buf) < size)
 			strcpy (path, buf);
 		else
@@ -473,7 +473,7 @@ d_getcwd (char *path, int drv, int size)
 	}
 	else
 		r = xfs_getname (fs, root, dir, path, size);
-	
+
 	if (!r && cwd->root_dir)
 	{
 		if (cwd->curdrv != drv)
@@ -483,22 +483,22 @@ d_getcwd (char *path, int drv, int size)
 		else
 		{
 			int len = strlen (cwd->root_dir);
-			
+
 			DEBUG (("root_dir detected = %i, (%s), %s", len, path, cwd->root_dir));
 			DEBUG (("strncmp = %i", (long) strncmp (cwd->root_dir, path, len)));
-			
+
 			if (!strncmp (cwd->root_dir, path, len))
 			{
 				int i = 0;
-				
+
 				while (path [len])
 					path [i++] = path [len++];
-				
+
 				path [i] = '\0';
 			}
 		}
 	}
-	
+
 	return r;
 }
 
@@ -513,11 +513,11 @@ long _cdecl
 f_setdta (DTABUF *dta)
 {
 	PROC *p = curproc;
-	
+
 	TRACE(("Fsetdta: %lx", dta));
 	p->p_fd->dta = dta;
 	p->base->p_dta = (char *) dta;
-	
+
 	return E_OK;
 }
 
@@ -528,7 +528,7 @@ f_getdta (void)
 	long r;
 
 	r = (long) p->p_fd->dta;
-	
+
 	TRACE(("Fgetdta: returning %lx", r));
 	return r;
 }
@@ -541,7 +541,7 @@ long _cdecl
 f_sfirst (const char *path, int attrib)
 {
 	PROC *p = curproc;
-	
+
 	char *s, *slash;
 	FILESYS *fs;
 	fcookie dir, newdir;
@@ -552,17 +552,17 @@ f_sfirst (const char *path, int attrib)
 	int i, havelabel;
 	char temp1[PATH_MAX];
 	ushort mode;
-	
-	
+
+
 	TRACE(("Fsfirst(%s, %x)", path, attrib));
-	
+
 	r = path2cookie (path, temp1, &dir);
 	if (r)
 	{
 		DEBUG(("Fsfirst(%s): path2cookie returned %ld", path, r));
 		return r;
 	}
-	
+
 	/* we need to split the last name (which may be a pattern) off from
 	 * the rest of the path, even if FS_KNOPARSE is true
 	 */
@@ -574,7 +574,7 @@ f_sfirst (const char *path, int attrib)
 			slash = s;
 		s++;
 	}
-	
+
 	if (slash)
 	{
 		*slash++ = 0;	/* slash now points to a name or pattern */
@@ -589,7 +589,7 @@ f_sfirst (const char *path, int attrib)
 	}
 	else
 		slash = temp1;
-	
+
 	/* BUG? what if there really is an empty file name?
 	 */
 	if (!*slash)
@@ -600,7 +600,7 @@ f_sfirst (const char *path, int attrib)
 
 	fs = dir.fs;
 	dta = p->p_fd->dta;
-	
+
 	/* Now, see if we can find a DIR slot for the search. We use the
 	 * following heuristics to try to avoid destroying a slot:
 	 * (1) if the search doesn't use wildcards, don't bother with a slot
@@ -608,7 +608,7 @@ f_sfirst (const char *path, int attrib)
 	 * (3) if there's a free slot, re-use it. Slots are freed when the
 	 *     corresponding search is terminated.
 	 */
-	
+
 	for (i = 0; i < NUM_SEARCH; i++)
 	{
 		if (p->p_fd->srchdta[i] == dta)
@@ -623,15 +623,15 @@ f_sfirst (const char *path, int attrib)
 			p->p_fd->srchdta[i] = 0; /* slot is now free */
 		}
 	}
-	
+
 	/* copy the pattern over into dta_pat into TOS 8.3 form
 	 * remember that "slash" now points at the pattern
 	 * (it follows the last, if any)
 	 */
 	copy8_3 (dta->dta_pat, slash);
-	
+
 	/* if (attrib & FA_LABEL), read the volume label
-	 * 
+	 *
 	 * BUG: the label date and time are wrong. ISO/IEC 9293 14.3.3 allows this.
 	 * The Desktop set also date and time to 0 when formatting a floppy disk.
 	 */
@@ -650,7 +650,7 @@ f_sfirst (const char *path, int attrib)
 		else if (r == E_OK)
 			havelabel = 1;
 	}
-	
+
 	if (!havelabel && has_wild (slash) == 0)
 	{
 		/* no wild cards in pattern */
@@ -666,11 +666,11 @@ f_sfirst (const char *path, int attrib)
 			DEBUG(("Fsfirst(%s): couldn't get file attributes",path));
 			return r;
 		}
-		
+
 		dta->magic = EVALID;
 		dta->dta_attrib = xattr.attr;
 		dta->dta_size = xattr.size;
-		
+
 		if (fs->fsflags & FS_EXT_3)
 		{
 			/* UTC -> localtime -> DOS style */
@@ -681,15 +681,15 @@ f_sfirst (const char *path, int attrib)
 			dta->dta_time = xattr.mtime;
 			dta->dta_date = xattr.mdate;
 		}
-		
+
 		strncpy (dta->dta_name, slash, TOS_NAMELEN-1);
 		dta->dta_name[TOS_NAMELEN-1] = 0;
 		if (p->domain == DOM_TOS && !(fs->fsflags & FS_CASESENSITIVE))
 			strupr (dta->dta_name);
-		
+
 		return E_OK;
 	}
-	
+
 	/* There is a wild card. Try to find a slot for an opendir/readdir
 	 * search. NOTE: we also come here if we were asked to search for
 	 * volume labels and found one.
@@ -699,7 +699,7 @@ f_sfirst (const char *path, int attrib)
 		if (p->p_fd->srchdta[i] == 0)
 			break;
 	}
-	
+
 	if (i == NUM_SEARCH)
 	{
 		int oldest = 0;
@@ -714,7 +714,7 @@ f_sfirst (const char *path, int attrib)
 				oldtime = p->p_fd->srchtim[i];
 			}
 		}
-		
+
 		/* OK, close this directory for re-use */
 		i = oldest;
 		dirh = &p->p_fd->srchdir[i];
@@ -724,12 +724,12 @@ f_sfirst (const char *path, int attrib)
 			release_cookie(&dirh->fc);
 			dirh->fc.fs = 0;
 		}
-		
+
 		/* invalidate re-used DTA */
 		p->p_fd->srchdta[i]->magic = EVALID;
 		p->p_fd->srchdta[i] = 0;
 	}
-	
+
 	/* check to see if we have read permission on the directory (and make
 	 * sure that it really is a directory!)
 	 */
@@ -740,13 +740,13 @@ f_sfirst (const char *path, int attrib)
 		release_cookie(&dir);
 		return r;
 	}
-	
+
 	/* set up the directory for a search */
 	dirh = &p->p_fd->srchdir[i];
 	dirh->fc = dir;
 	dirh->index = 0;
 	dirh->flags = TOS_SEARCH;
-	
+
 	r = xfs_opendir (dir.fs, dirh, dirh->flags);
 	if (r != E_OK)
 	{
@@ -754,10 +754,10 @@ f_sfirst (const char *path, int attrib)
 		release_cookie(&dir);
 		return r;
 	}
-	
+
 	/* mark the slot as in-use */
 	p->p_fd->srchdta[i] = dta;
-	
+
 	/* set up the DTA for Fsnext */
 	dta->index = i;
 	dta->magic = SVALID;
@@ -770,12 +770,12 @@ f_sfirst (const char *path, int attrib)
 	 */
 	if (havelabel)
 		return E_OK;
-	
+
 	r = f_snext();
 	if (r == ENMFILES) r = ENOENT;
 	if (r)
 		TRACE(("Fsfirst: returning %ld", r));
-	
+
 	/* release_cookie isn't necessary, since &dir is now stored in the
 	 * DIRH structure and will be released when the search is completed
 	 */
@@ -795,7 +795,7 @@ long _cdecl
 f_snext (void)
 {
 	PROC *p = curproc;
-	
+
 	char buf[TOS_NAMELEN+1];
 	DTABUF *dta = p->p_fd->dta;
 	FILESYS *fs;
@@ -804,32 +804,32 @@ f_snext (void)
 	DIR *dirh;
 	long r;
 	XATTR xattr;
-	
-	
+
+
 	TRACE (("Fsnext"));
-	
+
 	if (dta->magic == EVALID)
 	{
 		DEBUG (("Fsnext(%lx): DTA marked a failing search", dta));
 		return ENMFILES;
 	}
-	
+
 	if (dta->magic != SVALID)
 	{
 		DEBUG (("Fsnext(%lx): dta incorrectly set up", dta));
 		return ENOSYS;
 	}
-	
+
 	i = dta->index;
 	if (i >= NUM_SEARCH)
 	{
 		DEBUG (("Fsnext(%lx): DTA has invalid index", dta));
 		return EBADARG;
 	}
-	
+
 	dirh = &p->p_fd->srchdir[i];
 	p->p_fd->srchtim[i] = searchtime;
-	
+
 	fs = dirh->fc.fs;
 	if (!fs)
 	{
@@ -837,7 +837,7 @@ f_snext (void)
 		DEBUG (("Fsnext(%lx): invalid filesystem", dta));
 		return EINTERNAL;
 	}
-	
+
 	/* BUG: f_snext and readdir should check for disk media changes
 	 */
 	for(;;)
@@ -849,7 +849,7 @@ f_snext (void)
 			DEBUG(("Fsnext: name too long"));
 			continue;	/* TOS programs never see these names */
 		}
-		
+
 		if (r != E_OK)
 		{
 baderror:
@@ -863,13 +863,13 @@ baderror:
 				DEBUG(("Fsnext: returning %ld", r));
 			return r;
 		}
-		
+
 		if (!pat_match (buf, dta->dta_pat))
 		{
 			release_cookie (&fc);
 			continue;	/* different patterns */
 		}
-		
+
 		/* check for search attributes */
 		r = xfs_getxattr (fc.fs, &fc, &xattr);
 		if (r)
@@ -878,7 +878,7 @@ baderror:
 			release_cookie (&fc);
 			goto baderror;
 		}
-		
+
 		/* if the file is a symbolic link, try to find what it's linked to */
 		if ((xattr.mode & S_IFMT) == S_IFLNK)
 		{
@@ -901,21 +901,21 @@ baderror:
 		}
 		else
 			release_cookie (&fc);
-		
+
 		/* silly TOS rules for matching attributes */
 		if (xattr.attr == 0)
 			break;
-		
+
 		if (xattr.attr & (FA_CHANGED|FA_RDONLY))
 			break;
-		
+
 		if (dta->dta_sattrib & xattr.attr)
 			break;
 	}
-	
+
 	/* here, we have a match
 	 */
-	
+
 	if (fs->fsflags & FS_EXT_3)
 	{
 		/* UTC -> localtime -> DOS style */
@@ -926,14 +926,14 @@ baderror:
 		dta->dta_time = xattr.mtime;
 		dta->dta_date = xattr.mdate;
 	}
-	
+
 	dta->dta_attrib = xattr.attr;
 	dta->dta_size = xattr.size;
 	strcpy (dta->dta_name, buf);
-	
+
 	if (p->domain == DOM_TOS && !(fs->fsflags & FS_CASESENSITIVE))
 		strupr (dta->dta_name);
-	
+
 	return E_OK;
 }
 
@@ -942,12 +942,12 @@ f_attrib (const char *name, int rwflag, int attr)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
-	
+
 	fcookie fc;
 	XATTR xattr;
 	long r;
-	
-	
+
+
 	DEBUG(("Fattrib(%s, %d)", name, attr));
 
 	r = path2cookie (name, follow_links, &fc);
@@ -985,7 +985,7 @@ f_attrib (const char *name, int rwflag, int attr)
 		}
 		else
 			r = xfs_chattr (fc.fs, &fc, attr);
-		
+
 		release_cookie (&fc);
 		return r;
 	}
@@ -1001,14 +1001,14 @@ f_delete (const char *name)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
-	
+
 	fcookie dir, fc;
 	XATTR xattr;
 	long r;
 	char temp1[PATH_MAX];
 	ushort mode;
-	
-	
+
+
 	TRACE(("Fdelete(%s)", name));
 
 	/* get a cookie for the directory the file is in */
@@ -1042,7 +1042,7 @@ f_delete (const char *name)
 	{
 		release_cookie (&dir);
 		release_cookie (&fc);
-		
+
 		DEBUG(("Fdelete: couldn't get file attributes: error %ld", r));
 		return r;
 	}
@@ -1052,7 +1052,7 @@ f_delete (const char *name)
 	{
 		release_cookie (&dir);
 		release_cookie (&fc);
-		
+
 		DEBUG(("Fdelete: %s is a directory", name));
 		return EISDIR;
 	}
@@ -1063,7 +1063,7 @@ f_delete (const char *name)
 	{
 		release_cookie (&dir);
 		release_cookie (&fc);
-		
+
 		DEBUG(("Fdelete: sticky bit set and not owner"));
 		return EACCES;
 	}
@@ -1078,16 +1078,16 @@ f_delete (const char *name)
 		{
 			release_cookie (&dir);
 			release_cookie (&fc);
-			
+
 			DEBUG(("Fdelete: file access denied"));
 			return EACCES;
 		}
 	}
-	
+
 	release_cookie (&fc);
 	r = xfs_remove (dir.fs, &dir,temp1);
 	release_cookie (&dir);
-	
+
 	return r;
 }
 
@@ -1096,26 +1096,26 @@ f_rename (int junk, const char *old, const char *new)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
-	
+
 	fcookie olddir, newdir, oldfil;
 	XATTR xattr;
 	char temp1[PATH_MAX], temp2[PATH_MAX];
 	long r;
 	ushort mode;
-	
+
 	/* ignored, for TOS compatibility */
 	UNUSED(junk);
-	
-	
+
+
 	TRACE(("Frename(%s, %s)", old, new));
-	
+
 	r = path2cookie (old, temp2, &olddir);
 	if (r)
 	{
 		DEBUG(("Frename(%s,%s): error parsing old name",old,new));
 		return r;
 	}
-	
+
 	/* check for permissions on the old file
 	 * GEMDOS doesn't allow rename if the file is FA_RDONLY
 	 * we enforce this restriction only on regular files; processes,
@@ -1128,7 +1128,7 @@ f_rename (int junk, const char *old, const char *new)
 		release_cookie (&olddir);
 		return r;
 	}
-	
+
 	r = xfs_getxattr (oldfil.fs, &oldfil, &xattr);
 	release_cookie (&oldfil);
 	if (r || ((xattr.mode & S_IFMT) == S_IFREG
@@ -1143,7 +1143,7 @@ f_rename (int junk, const char *old, const char *new)
 		release_cookie (&olddir);
 		return EACCES;
 	}
-	
+
 	r = path2cookie(new, temp1, &newdir);
 	if (r)
 	{
@@ -1151,39 +1151,39 @@ f_rename (int junk, const char *old, const char *new)
 		release_cookie (&olddir);
 		return r;
 	}
-	
+
 	if (newdir.fs != olddir.fs)
 	{
 		DEBUG(("Frename(%s,%s): different file systems",old,new));
 		release_cookie (&olddir);
 		release_cookie (&newdir);
-		
+
 		/* cross device rename */
 		return EXDEV;
 	}
-	
+
 	/* check for write permission on both directories */
 	r = dir_access (&olddir, S_IWOTH, &mode);
 	if (!r && (mode & S_ISVTX) && cred->euid
 	    && cred->euid != xattr.uid)
 		r = EACCES;
-	
+
 	if (!r) r = dir_access (&newdir, S_IWOTH, &mode);
-	
+
 	if (r)
 		DEBUG(("Frename(%s,%s): access to a directory denied",old,new));
 	else
 		r = xfs_rename (newdir.fs, &olddir, temp2, &newdir, temp1);
-	
+
 	release_cookie (&olddir);
 	release_cookie (&newdir);
-	
+
 	return r;
 }
 
 /*
  * GEMDOS extension: Dpathconf(name, which)
- * 
+ *
  * returns information about filesystem-imposed limits; "name" is the name
  * of a file or directory about which the limit information is requested;
  * "which" is the limit requested, as follows:
@@ -1212,7 +1212,7 @@ d_pathconf (const char *name, int which)
 		DEBUG(("Dpathconf(%s): bad path",name));
 		return r;
 	}
-	
+
 	r = xfs_pathconf (dir.fs, &dir, which);
 	if (which == DP_CASE && r == ENOSYS)
 	{
@@ -1220,14 +1220,14 @@ d_pathconf (const char *name, int which)
 		r = (dir.fs->fsflags & FS_CASESENSITIVE) ? DP_CASESENS :
 				DP_CASEINSENS;
 	}
-	
+
 	release_cookie (&dir);
 	return r;
 }
 
 /*
  * GEMDOS extension: Opendir/Readdir/Rewinddir/Closedir
- * 
+ *
  * offer a new, POSIX-like alternative to Fsfirst/Fsnext,
  * and as a bonus allow for arbitrary length file names
  */
@@ -1235,7 +1235,7 @@ long _cdecl
 d_opendir (const char *name, int flag)
 {
 	PROC *p = curproc;
-	
+
 	DIR *dirh;
 	fcookie dir;
 	long r;
@@ -1247,7 +1247,7 @@ d_opendir (const char *name, int flag)
 		DEBUG(("Dopendir(%s): error %ld", name, r));
 		return r;
 	}
-	
+
 	r = dir_access (&dir, S_IROTH, &mode);
 	if (r)
 	{
@@ -1255,7 +1255,7 @@ d_opendir (const char *name, int flag)
 		release_cookie (&dir);
 		return r;
 	}
-	
+
 	dirh = kmalloc (sizeof (*dirh));
 	if (!dirh)
 	{
@@ -1290,14 +1290,14 @@ d_readdir (int len, long handle, char *buf)
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
-	
+
 	if (!dirh->fc.fs)
 		return EBADF;
-	
+
 	r = xfs_readdir (dirh->fc.fs, dirh, buf, len, &fc);
 	if (r == E_OK)
 		release_cookie (&fc);
-	
+
 	return r;
 }
 
@@ -1312,14 +1312,14 @@ d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
-	
+
 	if (!dirh->fc.fs)
 		return EBADF;
-	
+
 	r = xfs_readdir (dirh->fc.fs, dirh, buf, len, &fc);
 	if (r != E_OK)
 		return r;
-	
+
 	*xret = xfs_getxattr (fc.fs, &fc, xattr);
 	if ((*xret == E_OK) && (fc.fs->fsflags & FS_EXT_3))
 	{
@@ -1328,7 +1328,7 @@ d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
-	
+
 	release_cookie (&fc);
 	return r;
 }
@@ -1338,10 +1338,10 @@ long _cdecl
 d_rewind (long handle)
 {
 	DIR *dirh = (DIR *) handle;
-	
+
 	if (!dirh->fc.fs)
 		return EBADF;
-	
+
 	return xfs_rewinddir (dirh->fc.fs, dirh);
 }
 
@@ -1358,20 +1358,20 @@ d_closedir (long handle)
 	DIR *dirh = (DIR *)handle;
 	DIR **where;
 	long r;
-	
+
 	where = &p->p_fd->searches;
 	while (*where && *where != dirh)
 		where = &((*where)->next);
-	
+
 	if (!*where)
 	{
 		DEBUG(("Dclosedir: not an open directory"));
 		return EBADF;
 	}
-	
+
 	/* unlink the directory from the chain */
 	*where = dirh->next;
-	
+
 	if (dirh->fc.fs)
 	{
 		r = xfs_closedir (dirh->fc.fs, dirh);
@@ -1382,14 +1382,14 @@ d_closedir (long handle)
 
 	if (r)
 		DEBUG(("Dclosedir: error %ld", r));
-	
+
 	kfree (dirh);
 	return r;
 }
 
 /*
  * GEMDOS extension: Fxattr(flag, file, xattr)
- * 
+ *
  * gets extended attributes for a file.
  * flag is 0 if symbolic links are to be followed (like stat),
  * flag is 1 if not (like lstat).
@@ -1399,16 +1399,16 @@ f_xattr (int flag, const char *name, XATTR *xattr)
 {
 	fcookie fc;
 	long r;
-	
+
 	TRACE (("Fxattr(%d, %s)", flag, name));
-	
+
 	r = path2cookie (name, flag ? NULL : follow_links, &fc);
 	if (r)
 	{
 		DEBUG (("Fxattr(%s): path2cookie returned %ld", name, r));
 		return r;
 	}
-	
+
 	r = xfs_getxattr (fc.fs, &fc, xattr);
 	if (r)
 	{
@@ -1421,14 +1421,14 @@ f_xattr (int flag, const char *name, XATTR *xattr)
 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
-	
+
 	release_cookie (&fc);
 	return r;
 }
 
 /*
  * GEMDOS extension: Flink(old, new)
- * 
+ *
  * creates a hard link named "new" to the file "old".
  */
 long _cdecl
@@ -1438,16 +1438,16 @@ f_link (const char *old, const char *new)
 	char temp1[PATH_MAX], temp2[PATH_MAX];
 	long r;
 	ushort mode;
-	
+
 	TRACE(("Flink(%s, %s)", old, new));
-	
+
 	r = path2cookie (old, temp2, &olddir);
 	if (r)
 	{
 		DEBUG(("Flink(%s,%s): error parsing old name",old,new));
 		return r;
 	}
-	
+
 	r = path2cookie (new, temp1, &newdir);
 	if (r)
 	{
@@ -1455,7 +1455,7 @@ f_link (const char *old, const char *new)
 		release_cookie(&olddir);
 		return r;
 	}
-	
+
 	if (newdir.fs != olddir.fs)
 	{
 		DEBUG(("Flink(%s,%s): different file systems",old,new));
@@ -1463,7 +1463,7 @@ f_link (const char *old, const char *new)
 		release_cookie (&newdir);
 		return EXDEV;	/* cross device link */
 	}
-	
+
 	/* check for write permission on the destination directory
 	 */
 	r = dir_access (&newdir, S_IWOTH, &mode);
@@ -1471,16 +1471,16 @@ f_link (const char *old, const char *new)
 		DEBUG(("Flink(%s,%s): access to directory denied",old,new));
 	else
 		r = xfs_hardlink (newdir.fs, &olddir, temp2, &newdir, temp1);
-	
+
 	release_cookie (&olddir);
 	release_cookie (&newdir);
-	
+
 	return r;
 }
 
 /*
  * GEMDOS extension: Fsymlink(old, new)
- * 
+ *
  * create a symbolic link named "new" that contains the path "old"
  */
 long _cdecl
@@ -1499,20 +1499,20 @@ f_symlink (const char *old, const char *new)
 		DEBUG(("Fsymlink(%s,%s): error parsing %s", old,new,new));
 		return r;
 	}
-	
+
 	r = dir_access (&newdir, S_IWOTH, &mode);
 	if (r)
 		DEBUG(("Fsymlink(%s,%s): access to directory denied",old,new));
 	else
 		r = xfs_symlink (newdir.fs, &newdir, temp1, old);
-	
+
 	release_cookie (&newdir);
 	return r;
 }
 
 /*
  * GEMDOS extension: Freadlink(buflen, buf, linkfile)
- * 
+ *
  * read the contents of the symbolic link "linkfile" into the buffer
  * "buf", which has length "buflen".
  */
@@ -1531,7 +1531,7 @@ f_readlink (int buflen, char *buf, const char *linkfile)
 		DEBUG(("Freadlink: unable to find %s", linkfile));
 		return r;
 	}
-	
+
 	r = xfs_getxattr (file.fs, &file, &xattr);
 	if (r)
 		DEBUG(("Freadlink: unable to get attributes for %s", linkfile));
@@ -1542,14 +1542,14 @@ f_readlink (int buflen, char *buf, const char *linkfile)
 		DEBUG(("Freadlink: %s is not a link", linkfile));
 		r = EACCES;
 	}
-	
+
 	release_cookie (&file);
 	return r;
 }
 
 /*
  * GEMDOS extension: Dcntl(cmd, path, arg)
- * 
+ *
  * do file system specific functions
  */
 long _cdecl
@@ -1558,16 +1558,16 @@ d_cntl (int cmd, const char *name, long arg)
 	fcookie dir;
 	long r;
 	char temp1[PATH_MAX];
-	
+
 	DEBUG (("Dcntl(cmd=%x, file=%s, arg=%lx)", cmd, name, arg));
-	
+
 	r = path2cookie (name, temp1, &dir);
 	if (r)
 	{
 		DEBUG (("Dcntl: couldn't find %s", name));
 		return r;
 	}
-	
+
 	switch (cmd)
 	{
 		case FUTIME:
@@ -1576,14 +1576,14 @@ d_cntl (int cmd, const char *name, long arg)
 			{
 				MUTIMBUF *buf = (MUTIMBUF *) arg;
 				ulong t [2];
-				
+
 				t [0] = unixtime (buf->actime, buf->acdate) + timezone;
 				t [1] = unixtime (buf->modtime, buf->moddate) + timezone;
-				
+
 				r = xfs_fscntl (dir.fs, &dir, temp1, cmd, (long) t);
 				break;
 			}
-			
+
 			/* else fallback */
 		}
 		default:
@@ -1592,14 +1592,14 @@ d_cntl (int cmd, const char *name, long arg)
 			break;
 		}
 	}
-	
+
 	release_cookie (&dir);
 	return r;
 }
 
 /*
  * GEMDOS extension: Fchown(name, uid, gid)
- * 
+ *
  * changes the user and group ownerships of a file to "uid" and "gid"
  * respectively
  */
@@ -1608,21 +1608,21 @@ f_chown (const char *name, int uid, int gid)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
-	
+
 	fcookie fc;
 	XATTR xattr;
 	long r;
-	
-	
+
+
 	TRACE(("Fchown(%s, %d, %d)", name, uid, gid));
-	
+
 	r = path2cookie (name, NULL, &fc);
 	if (r)
 	{
 		DEBUG(("Fchown(%s): error %ld", name, r));
 		return r;
 	}
-	
+
 	/* MiNT acts like _POSIX_CHOWN_RESTRICTED: a non-privileged process can
 	 * only change the ownership of a file that is owned by this user, to
 	 * the effective group id of the process or one of its supplementary groups
@@ -1633,23 +1633,23 @@ f_chown (const char *name, int uid, int gid)
 			r = EACCES;
 		else
 			r = xfs_getxattr (fc.fs, &fc, &xattr);
-		
+
 		if (r)
 		{
 			DEBUG(("Fchown(%s): unable to get file attributes",name));
 			release_cookie (&fc);
 			return r;
 		}
-		
+
 		if (xattr.uid != cred->euid || xattr.uid != uid)
 		{
 			DEBUG(("Fchown(%s): not the file's owner",name));
 			release_cookie (&fc);
 			return EACCES;
 		}
-		
+
 		r = xfs_chown (fc.fs, &fc, uid, gid);
-		
+
 		/* POSIX 5.6.5.2: if name refers to a regular file the set-user-ID and
 		 * set-group-ID bits of the file mode shall be cleared upon successful
 		 * return from the call to chown, unless the call is made by a process
@@ -1662,7 +1662,7 @@ f_chown (const char *name, int uid, int gid)
 		    && (xattr.mode & (S_ISUID | S_ISGID)))
 		{
 			long s;
-			
+
 			s = xfs_chmode (fc.fs, &fc, xattr.mode & ~(S_ISUID | S_ISGID));
 			if (!s)
 				DEBUG(("Fchown: chmode returned %ld (ignored)", s));
@@ -1670,14 +1670,14 @@ f_chown (const char *name, int uid, int gid)
 	}
 	else
 		r = xfs_chown (fc.fs, &fc, uid, gid);
-	
+
 	release_cookie (&fc);
 	return r;
 }
 
 /*
  * GEMDOS extension: Fchmod (file, mode)
- * 
+ *
  * changes a file's access permissions.
  */
 long _cdecl
@@ -1685,12 +1685,12 @@ f_chmod (const char *name, unsigned int mode)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
-	
+
 	fcookie fc;
 	long r;
 	XATTR xattr;
-	
-	
+
+
 	TRACE (("Fchmod(%s, %o)", name, mode));
 	r = path2cookie (name, follow_links, &fc);
 	if (r)
@@ -1698,7 +1698,7 @@ f_chmod (const char *name, unsigned int mode)
 		DEBUG (("Fchmod(%s): error %ld", name, r));
 		return r;
 	}
-	
+
 	r = xfs_getxattr (fc.fs, &fc, &xattr);
 	if (r)
 	{
@@ -1720,17 +1720,17 @@ f_chmod (const char *name, unsigned int mode)
 
 /*
  * GEMDOS extension: Dlock(mode, dev)
- * 
+ *
  * locks or unlocks access to a BIOS device
  * "mode" bit 0 is 0 for unlock, 1 for lock; "dev" is a
  * BIOS device (0 for A:, 1 for B:, etc.).
- * 
+ *
  * Returns:
  *   E_OK    if the operation was successful
  *   EACCES  if a lock attempt is made on a drive that is being used
  *   ELOCKED if the drive is locked by another process
  *   ENSLOCK if a program attempts to unlock a drive it hasn't locked.
- * 
+ *
  * ++jr: if mode bit 1 is set, then instead of returning ELOCKED the
  * pid of the process which has locked the drive is returned (unless
  * it was locked by pid 0, in which case ELOCKED is still returned).
@@ -1745,17 +1745,17 @@ d_lock (int mode, int _dev)
 	FILEPTR *f;
 	int i;
 	ushort dev = _dev;
-	
+
 	TRACE (("Dlock (%x,%c:)", mode, dev+'A'));
-	
+
 	/* check for alias drives */
 	if (dev < NUM_DRIVES && aliasdrv[dev])
 		dev = aliasdrv[dev] - 1;
-	
+
 	/* range check */
 	if (dev >= NUM_DRIVES)
 		return ENXIO;
-	
+
 	if ((mode & 1) == 0)	/* unlock */
 	{
 		if (dlockproc[dev] == curproc)
@@ -1767,65 +1767,65 @@ d_lock (int mode, int _dev)
 		DEBUG (("Dlock: no such lock"));
 		return ENSLOCK;
 	}
-	
+
 	/* code for locking
 	 */
-	
+
 	/* is the drive already locked? */
 	if (dlockproc[dev])
 	{
 		DEBUG(("Dlock: drive already locked"));
-		
+
 		if ((mode & 2) && (dlockproc[dev]->pid != 0))
 			return dlockproc[dev]->pid;
-		
+
 		return ELOCKED;
 	}
-	
+
 	/* see if the drive is in use */
 	for (p = proclist; p; p = p->gl_next)
 	{
 		struct filedesc *fd = p->p_fd;
 		struct cwd *cwd = p->p_cwd;
-		
+
 		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 			continue;
-		
+
 		assert (fd && cwd);
-		
+
 		if (cwd->root_dir && cwd->rootdir.dev == dev)
 			return EACCES;
-		
+
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
 			f = fd->ofiles[i];
 			if (f && (f != (FILEPTR *) 1) && (f->fc.dev == dev))
 			{
 				DEBUG (("Dlock: process %d (%s) has an open handle on the drive", p->pid, p->name));
-				
+
 				if ((mode & 2) && (p->pid != 0))
 					return p->pid;
-				
+
 				return EACCES;
 			}
 		}
 	}
-	
+
 	/* if we reach here, the drive is not in use
 	 *
 	 * we lock it by setting dlockproc and by setting all root and current
 	 * directories referring to the device to a null file system
 	 */
-	
+
 	for (p = proclist; p; p = p->gl_next)
 	{
 		struct cwd *cwd = p->p_cwd;
-		
+
 		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 			continue;
-		
+
 		assert (cwd);
-		
+
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if (cwd->root[i].dev == dev)
@@ -1840,11 +1840,11 @@ d_lock (int mode, int _dev)
 			}
 		}
 	}
-	
+
 	/* always syncing the filesystems before locking */
 	{
 		FILESYS *fs = drives [dev];
-		
+
 		if (fs)
 		{
 			if (fs->fsflags & FS_EXT_1)
@@ -1855,22 +1855,22 @@ d_lock (int mode, int _dev)
 			else
 			{
 				s_ync ();
-				
+
 				DEBUG (("Invalidate %c: ...", 'A'+dev));
 				(void) xfs_dskchng (fs, dev, 1);
 			}
-			
+
 			drives [dev] = NULL;
 		}
 	}
-	
+
 	dlockproc[dev] = curproc;
 	return E_OK;
 }
 
 /*
  * GEMDOS-extension: Dreadlabel(path, buf, buflen)
- * 
+ *
  * original written by jr
  */
 long _cdecl
@@ -1878,23 +1878,23 @@ d_readlabel (const char *name, char *buf, int buflen)
 {
 	fcookie dir;
 	long r;
-	
+
 	r = path2cookie (name, NULL, &dir);
 	if (r)
 	{
 		DEBUG (("Dreadlabel(%s): bad path", name));
 		return r;
 	}
-	
+
 	r = xfs_readlabel (dir.fs, &dir, buf, buflen);
-	
+
 	release_cookie (&dir);
 	return r;
 }
 
 /*
  * GEMDOS-extension: Dwritelabel(path, newlabel)
- * 
+ *
  * original written by jr
  */
 long _cdecl
@@ -1902,10 +1902,10 @@ d_writelabel (const char *name, const char *label)
 {
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
-	
+
 	fcookie dir;
 	long r;
-	
+
 	/* Draco: in secure mode only superuser can write labels
 	 */
 	if (secure_mode && (cred->euid))
@@ -1913,23 +1913,23 @@ d_writelabel (const char *name, const char *label)
 		DEBUG (("Dwritelabel(%s): access denied", name));
 		return EACCES;
 	}
-	
+
 	r = path2cookie (name, NULL, &dir);
 	if (r)
 	{
 		DEBUG (("Dwritelabel(%s): bad path",name));
 		return r;
 	}
-	
+
 	r = xfs_writelabel (dir.fs, &dir, label);
-	
+
 	release_cookie (&dir);
 	return r;
 }
 
 /*
  * GEMDOS-extensions: Dchroot(path)
- * 
+ *
  * original written by fn
  */
 long _cdecl
@@ -1938,52 +1938,52 @@ d_chroot (const char *path)
 	PROC *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 	struct cwd *cwd = p->p_cwd;
-	
+
 	XATTR xattr;
 	fcookie dir;
 	long r;
-	
-	
+
+
 	DEBUG (("Dchroot(%s): enter", path));
 	assert (cwd);
-	
+
 	if (cred->euid || !p->domain)
 	{
 		DEBUG (("Dchroot(%s): access denied", path));
 		return EPERM;
 	}
-	
+
 	r = path2cookie (path, follow_links, &dir);
 	if (r)
 	{
 		DEBUG (("Dchroot(%s): bad path -> %li", path, r));
 		return r;
 	}
-	
+
 	r = xfs_getxattr (dir.fs, &dir, &xattr);
 	if (r)
 	{
 		DEBUG (("Dchroot(%s): attributes not found -> %li", path, r));
 		goto error;
 	}
-	
+
 	if (!(xattr.attr & FA_DIR))
 	{
 		DEBUG (("Dchroot(%s): not a directory", path));
 		r = ENOTDIR;
 		goto error;
 	}
-	
+
 	{
 		char buf[PATH_MAX];
-		
+
 		r = xfs_getname (dir.fs, &cwd->root[dir.dev], &dir, buf, PATH_MAX);
 		if (r)
 		{
 			DEBUG( ("Dchroot(%s): getname fail!", path));
 			goto error;
 		}
-		
+
 		cwd->root_dir = kmalloc (strlen (buf) + 1);
 		if (!cwd->root_dir)
 		{
@@ -1991,17 +1991,17 @@ d_chroot (const char *path)
 			r = ENOMEM;
 			goto error;
 		}
-		
+
 		strcpy (cwd->root_dir, buf);
 	}
-	
+
 	cwd->rootdir = dir;
-	
+
 	DEBUG (("Dchroot(%s): ok [%lx,%i]", cwd->root_dir, dir.index, dir.dev));
 	DEBUG (("Dchroot: [%lx,%lx]", cwd->curdir[dir.dev].index, cwd->curdir[dir.dev].fs));
 	DEBUG (("Dchroot: [%lx,%lx]", cwd->root[dir.dev].index, cwd->root[dir.dev].fs));
 	return E_OK;
-	
+
 error:
 	release_cookie (&dir);
 	return r;
@@ -2009,7 +2009,7 @@ error:
 
 /*
  * GEMDOS extension: Fstat(flag, file, stat)
- * 
+ *
  * gets extended attributes in native UNIX format for a file.
  * flag is 0 if symbolic links are to be followed (like stat),
  * flag is 1 if not (like lstat).
@@ -2019,19 +2019,19 @@ f_stat64 (int flag, const char *name, STAT *stat)
 {
 	fcookie fc;
 	long r;
-	
+
 	TRACE (("Fstat64(%d, %s)", flag, name));
-	
+
 	r = path2cookie (name, flag ? NULL : follow_links, &fc);
 	if (r)
 	{
 		DEBUG (("Fstat64(%s): path2cookie returned %ld", name, r));
 		return r;
 	}
-	
+
 	r = xfs_stat64 (fc.fs, &fc, stat);
 	if (r) DEBUG (("Fstat64(%s): returning %ld", name, r));
-	
+
 	release_cookie (&fc);
 	return r;
 }

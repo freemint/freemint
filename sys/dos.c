@@ -37,7 +37,7 @@
 
 
 long _cdecl
-s_version (void)
+sys_s_version (void)
 {
 # ifdef OLDTOSFS
 	/* one direct call to ROM less */
@@ -52,7 +52,7 @@ s_version (void)
  * Super(new_ssp): change to supervisor mode.
  */
 long _cdecl
-s_uper (long new_ssp)
+sys_s_uper (long new_ssp)
 {
 	PROC *p = curproc;
 	register int in_super;
@@ -107,7 +107,7 @@ s_uper (long new_ssp)
  * processes are waiting. Always returns 0.
  */
 long _cdecl
-s_yield (void)
+sys_s_yield (void)
 {
 	PROC *p = curproc;
 
@@ -123,9 +123,9 @@ s_yield (void)
  * user i.d.'s
  */
 
-long _cdecl p_getpid (void) { return curproc->pid; }
-long _cdecl p_getppid (void) { return curproc->ppid; }
-long _cdecl p_getpgrp (void) { return curproc->pgrp; }
+long _cdecl sys_p_getpid (void) { return curproc->pid; }
+long _cdecl sys_p_getppid (void) { return curproc->ppid; }
+long _cdecl sys_p_getpgrp (void) { return curproc->pgrp; }
 
 /*
  * note: Psetpgrp(0, ...) is equivalent to Psetpgrp(Pgetpid(), ...)
@@ -133,7 +133,7 @@ long _cdecl p_getpgrp (void) { return curproc->pgrp; }
  */
 
 long _cdecl
-p_setpgrp (int pid, int newgrp)
+sys_p_setpgrp (int pid, int newgrp)
 {
 	PROC *p = curproc;
 	PROC *t;
@@ -172,7 +172,7 @@ p_setpgrp (int pid, int newgrp)
  * XXX what's that???
  */
 long _cdecl
-p_getauid (void)
+sys_p_getauid (void)
 {
 	PROC *p = curproc;
 
@@ -181,7 +181,7 @@ p_getauid (void)
 	return p->auid;
 }
 long _cdecl
-p_setauid (int id)
+sys_p_setauid (int id)
 {
 	PROC *p = curproc;
 
@@ -199,7 +199,7 @@ p_setauid (int id)
  * value of the longword is returned.
  */
 long _cdecl
-p_usrval (long arg)
+sys_p_usrval (long arg)
 {
 	PROC *p = curproc;
 	long r;
@@ -218,7 +218,7 @@ p_usrval (long arg)
  * mask.
  */
 long _cdecl
-p_umask (ushort mode)
+sys_p_umask (ushort mode)
 {
 	PROC *p = curproc;
 	long oldmask = p->p_cwd->cmask;
@@ -233,7 +233,7 @@ p_umask (ushort mode)
  * calls and filename translation.
  */
 long _cdecl
-p_domain (int arg)
+sys_p_domain (int arg)
 {
 	PROC *p = curproc;
 	long r;
@@ -251,7 +251,7 @@ p_domain (int arg)
  * wake us up
  */
 long _cdecl
-p_pause (void)
+sys_p_pause (void)
 {
 	TRACE (("Pause"));
 	sleep (IO_Q, -1L);
@@ -274,11 +274,11 @@ alarmme (PROC *p)
  * old value of the alarm clock
  */
 long _cdecl
-t_alarm (long x)
+sys_t_alarm (long x)
 {
 	register long oldalarm;
 
-	oldalarm = t_malarm (x * 1000);
+	oldalarm = sys_t_malarm (x * 1000);
 	oldalarm = (oldalarm + 999) / 1000;	/* convert to seconds */
 
 	return oldalarm;
@@ -289,7 +289,7 @@ t_alarm (long x)
  * the old value ofthe alarm clock
  */
 long _cdecl
-t_malarm (long x)
+sys_t_malarm (long x)
 {
 	PROC *p = curproc;
 	long oldalarm;
@@ -431,7 +431,7 @@ itimer_prof_me (PROC *p)
  * ointerval and ovalue are the previous values
  */
 long _cdecl
-t_setitimer (int which, long *interval, long *value, long *ointerval, long *ovalue)
+sys_t_setitimer (int which, long *interval, long *value, long *ointerval, long *ovalue)
 {
 	PROC *p = curproc;
 	long oldtimer;
@@ -559,7 +559,7 @@ foundtimer:
  * See also Dpathconf() in dosdir.c.
  */
 long _cdecl
-s_ysconf (int which)
+sys_s_ysconf (int which)
 {
 	PROC *p = curproc;
 
@@ -580,7 +580,7 @@ s_ysconf (int which)
  * the kernel does (i.e. u:\pipe\alert, if it's available
  */
 long _cdecl
-s_alert (char *str)
+sys_s_alert (char *str)
 {
 	/* how's this for confusing code? _ALERT tries to format the
 	 * string as an alert box; if it fails, we let the full-fledged
@@ -598,7 +598,7 @@ s_alert (char *str)
  * kernel.
  */
 long _cdecl
-s_uptime (ulong *cur_uptime, ulong loadaverage[3])
+sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 {
 	*cur_uptime = uptime;
 
@@ -620,7 +620,7 @@ s_uptime (ulong *cur_uptime, ulong loadaverage[3])
  * filesystems). Thus, ending the initial process and calling Shutdown() now
  * does exactly the same, and we've also removed some redundant code.
  */
-void
+static void
 shutdown(void)
 {
 	struct proc *p;
@@ -662,7 +662,7 @@ shutdown(void)
 
 	while (posts--)
 		for (i = 0; i < 16; i++)	/* sleep */
-			s_yield();
+			sys_s_yield();
 
 	sys_q[READY_Q] = 0;
 
@@ -699,7 +699,7 @@ shutdown(void)
 }
 
 long _cdecl
-s_hutdown(long restart)
+sys_s_hutdown(long restart)
 {
 	PROC *p = curproc;
 

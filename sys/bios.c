@@ -65,7 +65,7 @@
 /* tickcal: return milliseconds per system clock tick
  */
 long _cdecl
-tickcal (void)
+sys_b_tickcal (void)
 {
 	return (long) (*((ushort *) 0x0442L));
 }
@@ -73,7 +73,7 @@ tickcal (void)
 /* drvmap: return drives connected to system
  */
 long _cdecl
-drvmap (void)
+sys_b_drvmap (void)
 {
 	return *((long *) 0x4c2L);
 }
@@ -87,7 +87,7 @@ drvmap (void)
 char *kbshft;		/* set in main.c */
 
 long _cdecl
-kbshift (int mode)
+sys_b_kbshift (int mode)
 {
 	int oldshft;
 
@@ -101,7 +101,7 @@ kbshift (int mode)
 /* mediach: check for media change
  */
 long _cdecl
-mediach (int dev)
+sys_b_mediach (int dev)
 {
 	long r;
 
@@ -112,7 +112,7 @@ mediach (int dev)
 /* getbpb: get BIOS parameter block
  */
 long _cdecl
-getbpb (int dev)
+sys_b_getbpb (int dev)
 {
 	long r;
 
@@ -148,7 +148,7 @@ getbpb (int dev)
 /* rwabs: various disk stuff
  */
 long _cdecl
-rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
+sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 {
 	PROC *p = curproc;
 	long r;
@@ -201,7 +201,7 @@ rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 /* setexc: set exception vector
  */
 long _cdecl
-setexc (int number, long vector)
+sys_b_setexc (int number, long vector)
 {
 	PROC *p = curproc;
 	long *place;
@@ -236,7 +236,7 @@ setexc (int number, long vector)
 				if (((p->memflags & F_PROTMODE) == F_PROT_P) ||
 					((p->memflags & F_PROTMODE) == F_PROT_PR))
 				{
-					ALERT  (MSG_bios_kill);
+					ALERT (MSG_bios_kill);
 					/* Avoid an additional alert,
 					 * be f**cking efficient.
 					 */
@@ -418,7 +418,7 @@ overlay_bdevmap (int dev, BDEVMAP *newmap)
 }
 
 long _cdecl
-ubconstat (int dev)
+sys_b_ubconstat (int dev)
 {
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
@@ -430,7 +430,7 @@ ubconstat (int dev)
 }
 
 long _cdecl
-ubconin (int dev)
+sys_b_ubconin (int dev)
 {
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
@@ -442,7 +442,7 @@ ubconin (int dev)
 }
 
 long _cdecl
-ubcostat (int dev)
+sys_b_ubcostat (int dev)
 {
 	if ((ushort) dev < BDEVMAP_MAX)
 	{
@@ -454,7 +454,7 @@ ubcostat (int dev)
 }
 
 long _cdecl
-ubconout (int dev, int c)
+sys_b_ubconout (int dev, int c)
 {
 	if ((ushort) dev < BDEVMAP_MAX)
 	{

@@ -161,7 +161,7 @@ ctrl_alt_del(PROC *p, long arg)
 		/* 1 is to signal a pid */
 		case 1:
 			if (p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
-				s_hutdown(arg);
+				sys_s_hutdown(arg);
 			break;
 
 		/* 2 shall be to exec a program
@@ -169,12 +169,12 @@ ctrl_alt_del(PROC *p, long arg)
 		 */
 		case 2:
 			if (sys_pexec (100, cad[arg].par.path, cad[arg].aux.cmd, cad[arg].env) < 0)
-				s_hutdown (arg);
+				sys_s_hutdown (arg);
 			break;
 
 		/* 0 is default */
 		default:
-			s_hutdown (arg);
+			sys_s_hutdown (arg);
 			break;
 	}
 }
