@@ -72,6 +72,9 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_STiK	0x5354694bL
 # define COOKIE_ICIP	0x49434950L
 
+/* hardware cookies */
+# define COOKIE_CT60	0x43543630L
+
 /* values of MCH cookie
  */
 # define ST		0
@@ -80,6 +83,8 @@ long	del_rsvfentry	(char *name);
 # define TT		0x00020000L
 # define FALCON		0x00030000L
 # define MILAN_C	0x00040000L
+
+
 
 
 # endif /* _cookie_h */
