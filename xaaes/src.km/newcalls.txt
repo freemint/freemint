@@ -87,7 +87,7 @@
  
  'aes_id'       This is a character string with a fixed lenght of 8 bytes,
                 into which the AES will write its unique AES ID.
-                the AES ID is a left-aligned, space padded string, and can
+                the AES ID is a right-aligned, space padded string, and can
                 be considered to be the current AES's short name.
                 For XaAES this string is filled with "   XaAES".
 
