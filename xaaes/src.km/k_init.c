@@ -322,8 +322,10 @@ k_init(void)
 	{
 		RECT c;
 		OBJECT *tree = ResourceTree(widget_resources, 0);
-		ob_area(tree, 1, &c);
-		//object_area(&c, tree, 1, 0, 0);
+		//ob_area(tree, 1, &c);
+		if (!ob_spec_xywh(tree, 1, &c))
+			ob_area(tree, 1, &c);
+		
 		cfg.widg_w = c.w;
 		cfg.widg_h = c.h;
 		cfg.widg_dw = (tree[1].ob_width - c.w)/2;
