@@ -524,12 +524,12 @@ struct kerinfo
 	void	_cdecl (*iwake)(int, long, short);
 	
 	/* 1.15 extensions */
-	BIO	*bio;	/* buffered block I/O, see block_IO.doc */
+	BIO	*bio;		/* buffered block I/O, see block_IO.doc */
 	
 	/* version 1 extension */
-	TIMEVAL	*xtime;	/* pointer to current kernel time - UTC */
+	TIMEVAL	*xtime;		/* pointer to current kernel time - UTC */
 	
-	long	res;	/* reserved */
+	long	res;
 	
 	/* version 2 extension
 	 * pointers are valid if != NULL
@@ -542,8 +542,14 @@ struct kerinfo
 	/* easy to use DMA interface, see dma.c for more details */
 	DMA	*dma;
 	
+	/* for udelay timing loop */
+	ulong	*loops_per_sec;
+	
+	/* lookup cookies in original TOS cookiejar */
+	long	_cdecl (*get_toscookie)(ulong tag, ulong *val);
+	
 	/* reserved, set to 0 */
-	long	res2 [18];
+	long	res2 [16];
 };
 
 
