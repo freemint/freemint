@@ -57,7 +57,7 @@ L_no_profile:
 	tst.w	(0x059e).w
 	beq.s	L_short_1
 #endif
-	clr.w	-(sp)			// set up a jump to VBL emulation
+	clr.w	-(sp)		// set up a jump to VBL emulation
 L_short_1:
 	pea	_mint_vbl.w(pc)
 	move.w	sr,-(sp)
@@ -107,8 +107,7 @@ mod5:	dc.w	5		// initial value matters
 	.globl	_our_clock
 	.globl	_tlist
 
-_mint_vbl:
-	subq.w	#0x01,vblcnt		// each fourth jump here makes a "VBL"
+_mint_vbl:	subq.w	#0x01,vblcnt		// each fourth jump here makes a "VBL"
 	bne.w	L_out
 	move.w	#0x0004,vblcnt
 
@@ -136,9 +135,9 @@ skip:	move.w	(0x0442).w,d0
 
 // "VBL" things go here (50 times per second at IPL 4)
 
-txit:	btst	#2,(sp)
+txit:	btst	#2,24(sp)
 	bne.s	L_popnout
-	move.w	#0x2400,sr
+	move.w	#0x2300,sr
 	jsr	_checkbttys_vbl
 	lea	_uptimetick,a0
 	tst.w	(a0)
@@ -289,27 +288,27 @@ _newmvec:	move.l	a0,-(sp)
 	.globl	_newjvec
 	.globl	_oldjvec
 
-_newjvec:	move.l	a0,-(sp)	// save a0 on the stack
+_newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 	move.b	2(a0),d0		// joystick direction
-	and.b	#1,d0			// middle mouse button in lowest bit
+	and.b	#1,d0		// middle mouse button in lowest bit
 #ifdef ONLY030
 	lsl.b	#0x02,d0
 #else
-	add.b	d0,d0			// times 4
+	add.b	d0,d0		// times 4
 	add.b	d0,d0
 #endif
 	move.b	d0,third_button 	// save it for use in newmvec
 
 	lea	faked_packet,a0 	// 'our' faked mouse event
 	move.b	(a0),d0
-	and.b	#0x3,d0			// unmask our mouse button
+	and.b	#0x3,d0		// unmask our mouse button
 	or.b	#0xF8,d0 		// or in correct header
 	or.b	third_button,d0 	// or in the current status
 	move.b	d0,(a0) 		// write it back
 
 	move.l	a0,-(sp)		// pass pointer to fake packet
 	jsr	_mouse_handler		// to /dev/mouse handler
-	addq.l	#4,sp			// pop parameter
+	addq.l	#4,sp		// pop parameter
 	move.l	(sp)+,a0		// restore original a0 value
 	move.l	_oldjvec,-(sp)		// jump to original joystick handler
 	rts
@@ -364,7 +363,7 @@ _intr_shadow:	dc.l	0		// pointer to private shadow of exception vectors
 
 	.text
 
-_new_intr:	subq.l	#0x08,sp	// make some room on the stack
+_new_intr:	subq.l	#0x08,sp		// make some room on the stack
 	movem.l	d0-d2/a0-a2,-(sp)	// save regs
 	move.w	38(sp),d0		// get frame word
 	and.w	#0x0fff,d0		// mask out the format code
@@ -377,7 +376,7 @@ _new_intr:	subq.l	#0x08,sp	// make some room on the stack
 	jsr	_sig_user		// send signal
 	addq.l	#0x02,sp
 	movem.l	(sp)+,d0-d2/a0-a2
-	rte				// jump to original services
+	rte			// jump to original services
 
 //
 // simple signal handlers
@@ -425,7 +424,7 @@ Do_sig:	move.l	a0,-(sp)		// save a0
 	move.l	(sp)+,a0
 
 	tst.w	_in_kernel		// are we already in the kernel?
-	bne.s	Kernel			// yes
+	bne.s	Kernel		// yes
 	move.w	_sig_exc,-(sp)
 	move.l	_curproc,-(sp)
 	addq.l	#4,(sp) 		// push offset of save area
@@ -434,10 +433,10 @@ Do_sig:	move.l	a0,-(sp)		// save a0
 	move.l	(a4),sp 		// put us in the system stack
 	jsr	_enter_bios		// set up kernel vectors
 	move.l	_sig_routine,a1 	// get signal handling routine
-	jsr	(a1)			// go do it
+	jsr	(a1)		// go do it
 	ori.w	#0x0700,sr
 	jsr	_leave_kernel		// leave kernel
-	addq.w	#4,a4			// get context save area address
+	addq.w	#4,a4		// get context save area address
 	move.l	a4,-(sp)		// push it
 	jsr	_restore_context	// restore the context
 //
@@ -445,7 +444,7 @@ Do_sig:	move.l	a0,-(sp)		// save a0
 //
 Kernel:	movem.l	d0-d2/a0-a2,-(sp)	// save reggies
 	move.l	_sig_routine,a1 	// get handler
-	jsr	(a1)			// go do it
+	jsr	(a1)		// go do it
 	movem.l (sp)+,d0-d2/a0-a2
 // 68000 processor bug: rte right after movem can eat interrupts...
 #ifndef ONLY030
@@ -464,7 +463,7 @@ _mmu_sigbus:
 	move.l	P_EXCSSP(a0),a1 	// a1 is now exception_ssp
 #ifndef MMU040
 	move.w	0xA(a1),d0		// d0 is SSW
-	btst	#6,d0			// read or write?
+	btst	#6,d0		// read or write?
 	beq.s	ms_w030
 	move.w	#2,P_EXCACCESS(a0)	// it was a read access
 	bra.s	ms_aa030
@@ -475,16 +474,16 @@ ms_aa030:
 	move.l	a1,P_EXCADDR(a0)	// save the access address
 
 	ptestr	d0,(a1),#7,a2		// a2 is the table address
-					// (no, it's the descriptor address
-					// matching (a1) - Gryf)
+				// (no, it's the descriptor address
+				// matching (a1) - Gryf)
 	move.l	a2,P_EXCTBL(a0) 	// save table address in curproc
 	pmove	psr,P_EXCMMUSR(a0)	// save resulting mmusr in curproc
 #else
 	move.l	_mcpu,d0
-	cmpi.w	#40,d0			// the 060 uses a different stackframe
+	cmpi.w	#40,d0		// the 060 uses a different stackframe
 	bne.s	ms_060
 	move.w	0xc(a1),d0		// d0 is SSW
-	btst	#8,d0			// read or write?
+	btst	#8,d0		// read or write?
 	beq.s	ms_w040
 	move.w	#2,P_EXCACCESS(a0)	// it was a read access
 	bra.s	ms_aa040
@@ -497,7 +496,7 @@ ms_aa040:
 ms_060:
 	move.l	0xc(a1),d0		// d0 is FSLW
 	swap	d0
-	lsr.w	#7,d0			// extract the access type
+	lsr.w	#7,d0		// extract the access type
 	andi.w	#3,d0
 	move.w	d0,P_EXCACCESS(a0)	// save the access type
 	move.l	0x8(a1),a1		// a1 is the access address
@@ -516,7 +515,7 @@ _nommu_sigbus:
 	lea	0x10(a1),a1		// point to access address
 	tst.w	(0x59e).w		// test longframe
 	beq.s	NOMMU1
-	addq.w	#8,a1			// on 68000, address is 8 bytes further
+	addq.w	#8,a1		// on 68000, address is 8 bytes further
 NOMMU1:
 	move.l	(a1),P_EXCADDR(a0)	// save the access address
 	jmp	_sigbus
@@ -605,7 +604,7 @@ _new_priv:
 	and.w	#0xffc0,d0		// partially decode move sr,...
 	cmp.w	#0x40c0,d0		// and test it
 	movem.l	(sp)+,d0/a0		// preserves the flags
-	bne	Do_sig			// doesn't look like sr,...
+	bne	Do_sig		// doesn't look like sr,...
 	move.l	_old_priv+8,-(sp)	// let our parent handle it
 	rts
 
@@ -637,10 +636,11 @@ S_1:	move.w	#0x24,_sig_exc
 	bra	Do_sig
 
 S_2:	and.w	#0x3fff,(sp)		// clear both trace bits
-	rte				// and re-start the handler
+	rte			// and re-start the handler
 
 //
-// BIOS disk vectors for pseudo-disks like U: and X:// these are present
+// BIOS disk vectors for pseudo-disks like U: and X:
+// these are present
 // just in case some program (foolishly) attempts to access these drives
 // directly and gets horribly confused
 //
@@ -660,23 +660,23 @@ _new_getbpb:
 	move.w	4(sp),d0		// check the drive
 	cmp.w	#0x1f,d0 		// legal drive?
 	bhi.s	noalias0		// no
-	move.w	d0,d1			// get index
-	add.w	d0,d1			// convert to index
+	move.w	d0,d1		// get index
+	add.w	d0,d1		// convert to index
 	lea	_aliasdrv,a0
 	move.w	0(a0,d1.w),d1		// alias drive?
 	beq.s	noalias0
 	move.w	d1,d0
-	subq.w	#1,d0			// adjust for aliasdrv base of '@'
+	subq.w	#1,d0		// adjust for aliasdrv base of '@'
 	cmp.w	#0x1f,d0 		// is this a legal drive?
-	bhi.s	nobpb			// no -- ignore it
+	bhi.s	nobpb		// no -- ignore it
 noalias0:
 	cmp.w	#0x14,d0 		// drive U:?
-	beq.s	nobpb			// yes, no BPB available
+	beq.s	nobpb		// yes, no BPB available
 
 	move.l	_old_getbpb.w(pc),a0	// not our drive
-	jmp	(a0)			// call the old vector for it
+	jmp	(a0)		// call the old vector for it
 nobpb:
-	clr.l	d0			// 0 means "no BPB read"
+	clr.l	d0		// 0 means "no BPB read"
 	rts
 
 	dc.l	0x58425241		// XBRA
@@ -687,22 +687,22 @@ _new_mediach:
 	move.w	4(sp),d0		// check the drive
 	cmp.w	#0x1f,d0 		// legal drive?
 	bhi.s	noalias1		// no
-	move.w	d0,d1			// get index
-	add.w	d0,d1			// convert to index
+	move.w	d0,d1		// get index
+	add.w	d0,d1		// convert to index
 	lea	_aliasdrv,a0
 	move.w	0(a0,d1.w),d1		// alias drive?
 	beq.s	noalias1
 	move.w	d1,d0
-	subq.w	#1,d0			// adjust for aliasdrv base
+	subq.w	#1,d0		// adjust for aliasdrv base
 	cmp.w	#0x1f,d0 		// legal drive?
-	bhi.s	nobpb			// no -- ignore it
+	bhi.s	nobpb		// no -- ignore it
 noalias1:
 	cmp.w	#0x14,d0 		// drive U:?
-	beq.s	nochng			// yes, no change
+	beq.s	nochng		// yes, no change
 	move.l	_old_mediach.w(pc),a0	// not our drive
-	jmp	(a0)			// call the old vector for it
+	jmp	(a0)		// call the old vector for it
 nochng:
-	clr.l	d0			// 0 means "definitely no change"
+	clr.l	d0		// 0 means "definitely no change"
 	rts
 
 	dc.l	0x58425241		// XBRA
@@ -713,21 +713,21 @@ _new_rwabs:
 	move.w	0xe(sp),d0		// check the drive
 	cmp.w	#0x1f,d0 		// legal drive?
 	bhi.s	noalias2		// no
-	move.w	d0,d1			// get index
-	add.w	d0,d1			// convert to index
+	move.w	d0,d1		// get index
+	add.w	d0,d1		// convert to index
 	lea	_aliasdrv,a0
 	move.w	0(a0,d1.w),d1		// alias drive?
 	beq.s	noalias2
 	move.w	d1,d0
-	subq.w	#1,d0			// adjust for aliasdrv base
+	subq.w	#1,d0		// adjust for aliasdrv base
 	cmp.w	#0x1f,d0 		// legal drive?
-	bhi.s	nobpb			// no -- ignore it
+	bhi.s	nobpb		// no -- ignore it
 noalias2:
 	cmp.w	#0x14,d0 		// drive U:?
-	beq.s	rwdone			// yes, fake it
+	beq.s	rwdone		// yes, fake it
 
 	move.l	_old_rwabs.w(pc),a0	// not our drive
-	jmp	(a0)			// call the old vector for it
+	jmp	(a0)		// call the old vector for it
 rwdone:
-	clr.l	d0			// 0 means "successful operation"
+	clr.l	d0		// 0 means "successful operation"
 	rts
