@@ -1,16 +1,36 @@
-#define MAX_DC_TIME	200
-#define SYSTIMER	0x4baL
-#define SYSVBI		0x456L
-#define SYSNVBI		0x454L
+/*
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * 
+ * Copyright 2003 Odd Skancke <ozk@atari.org>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ */
 
-/* Mouse device commands */
+/*
+ * Mouse device structures and definitions
+ */
 
-#define	MOOSE_INIT_PREFIX	0x4d49	/* 'MI' */
-#define	MOOSE_DCLICK_PREFIX	0x4d44	/* 'MD' */
-#define MOOSE_BUTTON_PREFIX	0x5842	/* 'XB' */
-#define MOOSE_MOVEMENT_PREFIX	0x584d	/* 'XM' */
-#define MOOSE_WHEEL_PREFIX	0x5857	/* 'XW' */
-#define MOOSE_VECS_PREFIX	0x4d56	/* 'MV' */
+#ifndef _whlmoose_h
+#define _whlmoose_h
 
 struct moose_data
 {
@@ -25,18 +45,23 @@ struct moose_data
 	short dbg2;
 };
 
-#define FS_BUFFER_SIZE 32*(sizeof(struct moose_data))
-
 struct mooses_data
 {
-	short	state;
-	short	x;
-	short	y;
+	short   state;
+	short   x;
+	short   y;
 };
+
+#define	MOOSE_INIT_PREFIX	0x4d49	/* 'MI' */
+#define	MOOSE_DCLICK_PREFIX	0x4d44	/* 'MD' */
+#define MOOSE_BUTTON_PREFIX	0x5842	/* 'XB' */
+#define MOOSE_MOVEMENT_PREFIX	0x584d	/* 'XM' */
+#define MOOSE_WHEEL_PREFIX	0x5857	/* 'XW' */
+#define MOOSE_VECS_PREFIX	0x4d56	/* 'MV' */
 
 struct moose_init_com
 {
-	ushort init_prefix;
+	unsigned short init_prefix;
 	void *dum;
 };
 
@@ -57,32 +82,4 @@ struct moose_vecs_com
 	vdi_vec *whlv;
 };
 
-#define BUT_PAK 	0x42
-#define WHL_PAK		0x57
-
-struct mouse_pak
-{
-	ushort len;
-	char ty;
-	union
-	{
-		struct
-		{
-			uchar state;
-			short time;
-		}but;
-		struct
-		{
-			uchar wheel;
-			short clicks;
-		}whl;
-		struct
-		{
-			char state;
-		}vbut;
-	}t;
-	short x;
-	short y;
-	long dbg;
-};
-
+#endif /* _whlmoose_h */
