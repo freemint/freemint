@@ -29,11 +29,9 @@ MFSCONFOBJS = mfsconf.o
 
 flist: $(FLISTOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(FLISTOBJS) $(LIBS)
-	$(STRIP) $@
 
 mfsconf: $(MFSCONFOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MFSCONFOBJS) $(LIBS)
-	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES
