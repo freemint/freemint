@@ -40,8 +40,11 @@ progdef_callout:
 |	movem.l	d0-d7/a0-a6,-(sp)
 
 	lea	_userblk(pc),a2		| address of userblk
-	move.l	(a2),d0			| get address of callout
+	move.l	(a2),d0			| get address of the usrblk
 	beq.s	nofunc			| exit if NULL
+	move.l	d0,a2			| Address off A2
+	move.l	(a2),d0			| Here is the callout function address
+	beq.s	nofunc
 	move.l	d0,a0
 	pea	_parmblk(pc)
 	jsr	(a0)
