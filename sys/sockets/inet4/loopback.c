@@ -9,7 +9,7 @@
 
 static long	loop_open	(struct netif *);
 static long	loop_close	(struct netif *);
-static long	loop_output	(struct netif *, BUF *, char *, short, short);
+static long	loop_output	(struct netif *, BUF *, const char *, short, short);
 static long	loop_ioctl	(struct netif *, short, long);
 
 static struct netif if_loopback =
@@ -48,7 +48,7 @@ loop_close (struct netif *nif)
 }
 
 static long
-loop_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+loop_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	long r;
 	

@@ -6,6 +6,8 @@
 
 # include "rawip.h"
 
+# include "mint/net.h"
+
 # include "if.h"
 # include "in.h"
 # include "inet.h"
@@ -14,7 +16,6 @@
 
 # include "buf.h"
 # include "iov.h"
-# include "sockutil.h"
 # include "util.h"
 
 
@@ -308,13 +309,13 @@ rip_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock, s
 	
 	if (addr)
 	{
-		struct sockaddr_in sin;
+		struct sockaddr_in in;
 		
 		*addrlen = MIN (*addrlen, sizeof (struct sockaddr_in));
-		sin.sin_family = AF_INET;
-		sin.sin_addr.s_addr = IP_SADDR (buf);
-		sin.sin_port = 0;
-		memcpy (addr, &sin, *addrlen);
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = IP_SADDR (buf);
+		in.sin_port = 0;
+		memcpy (addr, &in, *addrlen);
 	}
 	
 	if (!(flags & MSG_PEEK))

@@ -14,11 +14,10 @@
 # include "udp.h"
 
 # include "dummydev.h"
-# include "net.h"
-# include "socket.h"
 # include "util.h"
 
-# include <mint/file.h>
+# include "mint/file.h"
+# include "mint/socket.h"
 
 
 /*
@@ -69,12 +68,10 @@ static struct dev_descr inetdev_descr =
 	driver:		&inetdev
 };
 
-static char inetdev_name[] = "u:\\dev\\inet";
-
 long
 inetdev_init (void)
 {
-	return dummydev_init (inetdev_name, &inetdev_descr);
+	return dummydev_init ("u:\\dev\\inet", &inetdev_descr);
 }
 
 /*

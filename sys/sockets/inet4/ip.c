@@ -13,11 +13,15 @@
 # include "inetutil.h"
 # include "masquerade.h"
 
+# include "timer.h"
 # include "util.h"
 
 
 static BUF *	ip_brdcst_copy	(BUF *, struct netif *, struct route *, short);
 static long	ip_do_opts	(struct ip_dgram *);
+
+static long	ip_frag		(BUF *, struct netif *, ulong, short);
+
 
 struct in_ip_ops *allipprotos = NULL;
 
@@ -596,7 +600,7 @@ ip_input (struct netif *nif, BUF *buf)
  * represent the new header length.
  * 07/01/99 MB make functions public
  */
-long
+static long
 frag_opts (struct ip_dgram *iph, long optlen)
 {
 	uchar *cp, len, type;
@@ -636,7 +640,7 @@ done:
 	return i;
 }
 
-long
+static long
 ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short isbrcst)
 {
 	struct ip_dgram *fragiph, *iph = (struct ip_dgram *)buf->dstart;
@@ -731,9 +735,22 @@ ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short isbrcst)
 	return 0;
 }
 
-struct fragment allfrags[IPFRAG_HEADS];
+struct fragment
+{
+	BUF		*buf;		/* chain of fragments */
+	short		id;		/* IP datagram id */
+	ulong		saddr;		/* IP source address */
+	long		totlen;		/* total datagram length */
+	long		curlen;		/* current datagram length */
+	struct event	tmout;		/* timeout event */
+};
 
-void
+# define IPFRAG_HEADS	16		/* max # of fragment lists */
+# define IPFRAG_TMOUT	(60000/EVTGRAN)	/* timeout reassambly after 1 min */
+
+static struct fragment allfrags[IPFRAG_HEADS];
+
+static void
 frag_delete (struct fragment *frag)
 {
 	BUF *buf, *next;
@@ -749,7 +766,7 @@ frag_delete (struct fragment *frag)
 	event_del (&frag->tmout);
 }
 
-void
+static void
 frag_timeout (long arg)
 {
 	struct fragment *frag = (struct fragment *)arg;
@@ -762,7 +779,7 @@ frag_timeout (long arg)
 	frag_delete (frag);
 }
 
-BUF *
+static BUF *
 frag_pullup (struct fragment *frag)
 {
 	struct ip_dgram *iph;
@@ -812,7 +829,7 @@ frag_pullup (struct fragment *frag)
 	return nbuf;
 }
 
-void
+static void
 frag_insert (struct fragment *frag, BUF *buf)
 {
 # define OFFSET(x) (((struct ip_dgram *)(x)->dstart)->fragoff & IP_FRAGOFF)

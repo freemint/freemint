@@ -14,12 +14,11 @@
 # include "inet.h"
 
 # include "dummydev.h"
-# include "net.h"
-# include "socket.h"
 # include "timer.h"
 # include "util.h"
 
-# include <mint/file.h>
+# include "mint/file.h"
+# include "mint/socket.h"
 
 
 /*

@@ -7,13 +7,13 @@
 # ifndef _arp_h
 # define _arp_h
 
+# include "mint/socket.h"
 # include "global.h"
 
 # include "if.h"
 # include "ifeth.h"
 
 # include "buf.h"
-# include "socket.h"
 # include "timer.h"
 
 

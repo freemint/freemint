@@ -106,4 +106,66 @@ own_kfree (void *dst)
 # define kfree		own_kfree
 
 
+/* XXX hack alert
+ * must be in kerinterface or in kerheaders
+ * (redundant with freemint/sys/ipc_socketutil.h)
+ * 
+ * so_rselect(), so_wselect(), so_wakersel(), so_wakewsel() handle
+ * processes for selecting.
+ */
+
+# include "mint/net.h"
+
+static inline long
+so_rselect (struct socket *so, long proc)
+{
+	if (so->rsel)
+		return 2;
+	
+	so->rsel = proc;
+	return 0;
+}
+
+static inline long
+so_wselect (struct socket *so, long proc)
+{
+	if (so->wsel)
+		return 2;
+	
+	so->wsel = proc;
+	return 0;
+}
+
+static inline long
+so_xselect (struct socket *so, long proc)
+{
+	if (so->xsel)
+		return 2;
+	
+	so->xsel = proc;
+	return 0;
+}
+
+static inline void
+so_wakersel (struct socket *so)
+{
+	if (so->rsel)
+		wakeselect (so->rsel);
+}
+
+static inline void
+so_wakewsel (struct socket *so)
+{
+	if (so->wsel)
+		wakeselect (so->wsel);
+}
+
+static inline void
+so_wakexsel (struct socket *so)
+{
+	if (so->xsel)
+		wakeselect (so->xsel);
+}
+
+
 # endif /* _global_h */

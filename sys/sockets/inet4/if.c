@@ -7,7 +7,6 @@
 # include "if.h"
 
 # include "arp.h"
-# include "bpf.h"
 # include "inetutil.h"
 # include "ip.h"
 # include "loopback.h"
@@ -798,7 +797,7 @@ if_ioctl (short cmd, long arg)
 		}
 		case SIOCGIFNETMASK:
 		{
-			struct sockaddr_in sin;
+			struct sockaddr_in in;
 			struct ifaddr *ifa;
 			
 			ifa = if_af2ifaddr (nif, ifr->ifru.broadaddr.sa_family);
@@ -810,11 +809,11 @@ if_ioctl (short cmd, long arg)
 				return EINVAL;
 			}
 			
-			sin.sin_family = AF_INET;
-			sin.sin_addr.s_addr = ifa->subnetmask;
-			sin.sin_port = 0;
+			in.sin_family = AF_INET;
+			in.sin_addr.s_addr = ifa->subnetmask;
+			in.sin_port = 0;
 			
-			sa_copy (&ifr->ifru.netmask, (struct sockaddr *) &sin);
+			sa_copy (&ifr->ifru.netmask, (struct sockaddr *) &in);
 			return 0;
 		}
 	}
@@ -913,10 +912,10 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 	{
 		case AF_INET:
 		{
-			struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+			struct sockaddr_in *in = (struct sockaddr_in *) sa;
 			ulong netmask;
 			
-			netmask = ip_netmask (sin->sin_addr.s_addr);
+			netmask = ip_netmask (in->sin_addr.s_addr);
 			if (netmask == 0)
 			{
 				DEBUG (("if_setaddr: Addr not in class A/B/C"));
@@ -924,15 +923,15 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 				break;
 			}
 			ifa->net           =
-			ifa->subnet        = sin->sin_addr.s_addr & netmask;
+			ifa->subnet        = in->sin_addr.s_addr & netmask;
 			ifa->netmask       =
 			ifa->subnetmask    = netmask;
 			ifa->net_broadaddr = ifa->net | ~netmask;
 			
-			sin = (struct sockaddr_in *)&ifa->ifu.broadaddr;
-			sin->sin_family = AF_INET;
-			sin->sin_port = 0;
-			sin->sin_addr.s_addr = (nif->flags & IFF_BROADCAST)
+			in = (struct sockaddr_in *)&ifa->ifu.broadaddr;
+			in->sin_family = AF_INET;
+			in->sin_port = 0;
+			in->sin_addr.s_addr = (nif->flags & IFF_BROADCAST)
 				? ifa->net_broadaddr
 				: INADDR_ANY;
 			
@@ -1008,15 +1007,15 @@ if_config (struct ifconf *ifconf)
 		ifa = nif->addrlist;
 		if (!ifa)
 		{
-			struct sockaddr_in sin;
+			struct sockaddr_in in;
 			
-			sin.sin_family = AF_INET;
-			sin.sin_addr.s_addr = INADDR_ANY;
-			sin.sin_port = 0;
+			in.sin_family = AF_INET;
+			in.sin_addr.s_addr = INADDR_ANY;
+			in.sin_port = 0;
 			strncpy (ifr->ifr_name, name, IF_NAMSIZ);
-			sa_copy (&ifr->ifru.addr, (struct sockaddr *)&sin);
+			sa_copy (&ifr->ifru.addr, (struct sockaddr *) &in);
 			len -= sizeof (*ifr);
-			++ifr;
+			ifr++;
 		}
 		else
 		{
@@ -1025,7 +1024,7 @@ if_config (struct ifconf *ifconf)
 				strncpy (ifr->ifr_name, name, IF_NAMSIZ);
 				sa_copy (&ifr->ifru.addr, &ifa->addr);
 				len -= sizeof (*ifr);
-				++ifr;
+				ifr++;
 			}
 		}
 	}

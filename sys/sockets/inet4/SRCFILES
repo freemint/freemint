@@ -3,14 +3,30 @@
 
 HEADER = \
 	arp.h \
+	arpdev.h \
 	bpf.h \
 	icmp.h \
 	if.h \
+	ifeth.h \
+	ifload.h \
+	in.h \
 	inet.h \
+	inetdev.h \
+	inetutil.h \
+	init.h \
 	ip.h \
+	loopback.h \
+	masqdev.h \
+	masquerade.h \
 	port.h \
+	rawip.h \
 	route.h \
+	routedev.h \
 	tcp.h \
+	tcpin.h \
+	tcpout.h \
+	tcpsig.h \
+	tcputil.h \
 	udp.h
 
 COBJS = \
@@ -25,6 +41,7 @@ COBJS = \
 	inet.c \
 	inetdev.c \
 	inetutil.c \
+	init.c \
 	ip.c \
 	loopback.c \
 	masqdev.c \

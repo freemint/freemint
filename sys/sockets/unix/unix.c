@@ -11,16 +11,15 @@
 
 # include "unix.h"
 
+# include "mint/file.h"
+# include "mint/signal.h"
+
 # include "cache.h"
 # include "dgram.h"
 # include "stream.h"
 # include "unixdev.h"
 
-# include "sockutil.h"
 # include "util.h"
-
-# include <mint/file.h>
-# include <mint/signal.h>
 
 
 static long	unix_attach	(struct socket *, short);
@@ -458,6 +457,7 @@ unix_shutdown (struct socket *so, short how)
 	/* Note that sock_shutdown() has already set so->flags for us. */
 	if ((so->flags & SO_CANTDOMORE) == SO_CANTDOMORE)
 	{
+		DEBUG (("unix_shutdown: releasing socket"));
 		so_release (so);
 		return 0;
 	}
