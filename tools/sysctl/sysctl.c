@@ -47,6 +47,71 @@
 #include "fparseln.h"
 
 
+#if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+
+#ifndef trap_1_wllllll
+#define trap_1_wllllll(n, a, b, c, d, e, f)				\
+__extension__								\
+({									\
+	register long retvalue __asm__("d0");				\
+	long _a = (long)(a);						\
+	long _b = (long)(b);						\
+	long _c = (long)(c);						\
+	long _d = (long)(d);						\
+	long _e = (long)(e);						\
+	long _f = (long)(f);						\
+	    								\
+	__asm__ volatile						\
+	(								\
+		"movl    %7,sp@-;"					\
+		"movl    %6,sp@-;"					\
+		"movl    %5,sp@-;"					\
+		"movl    %4,sp@-;"					\
+		"movl    %3,sp@-;"					\
+		"movl    %2,sp@-;"					\
+		"movw    %1,sp@-;"					\
+		"trap    #1;"						\
+		"lea     sp@(26),sp"					\
+	: "=r"(retvalue)			/* outputs */		\
+	: "g"(n), "r"(_a), "r"(_b), "r"(_c),				\
+	  "r"(_d), "r"(_e), "r"(_f)		/* inputs  */		\
+	: "d0", "d1", "d2", "a0", "a1", "a2",    /* clobbered regs */	\
+	  "memory"							\
+	);								\
+									\
+	retvalue;							\
+})
+#endif
+
+#ifndef Psysctl
+#define Psysctl(name, namelen, old, oldlenp, new, newlen) \
+		trap_1_wllllll(0x15e,(long)(name),(long)(namelen),(long)(old),(long)(oldlenp),(long)(new),(long)(newlen))
+#endif
+
+int
+sysctl (int *name, unsigned long namelen, void *old, unsigned long *oldlenp,
+        const void *new, unsigned long newlen)
+{
+	static int __have_sysctl = 1;
+
+	if (__have_sysctl) {
+		int ret;
+
+		ret = Psysctl (name, namelen, old, oldlenp, new, newlen);
+		if (ret < 0) {
+			if (ret == -ENOSYS)
+				__have_sysctl = 0;
+			__set_errno (-ret);
+			return -1;
+		}
+		return ret;
+	}
+
+	__set_errno (ENOSYS);
+	return -1;
+}
+#endif
+
 struct ctlname topname[] = CTL_NAMES;
 struct ctlname kernname[] = CTL_KERN_NAMES;
 struct ctlname hwname[] = CTL_HW_NAMES;
