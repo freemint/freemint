@@ -131,6 +131,9 @@ struct options
 	long wind_opts;			/* Default window options - see struct xa_window.opts */
 	long app_opts;
 	long half_screen;
+#if GENERATE_DIAGS
+	enum debug_item point[D_max];
+#endif
 	//IFDIAG(enum debug_item point[D_max];)
 };
 
