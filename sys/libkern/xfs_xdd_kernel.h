@@ -479,192 +479,204 @@ extern struct kerinfo *KERNEL;
 
 	/* 0x190 */		/* DOS_MAX */
 
-INLINE long c_conws (const char *str)
-{ return ((long _cdecl (*)(const char *)) _c_conws) (str); }
+INLINE long c_conws(const char *str)
+{ return ((long _cdecl (*)(const char *)) _c_conws)(str); }
 
-INLINE long f_setdta (DTABUF *dta)
-{ return ((long _cdecl (*)(DTABUF *)) _f_setdta) (dta); }
+INLINE long f_setdta(DTABUF *dta)
+{ return ((long _cdecl (*)(DTABUF *)) _f_setdta)(dta); }
 
-INLINE long t_getdate (void)
-{ return ((long _cdecl (*)(void)) _t_getdate) (); }
+INLINE long t_getdate(void)
+{ return ((long _cdecl (*)(void)) _t_getdate)(); }
 
-INLINE long _cdecl t_gettime (void)
-{ return ((long _cdecl (*)(void)) _t_gettime) (); }
+INLINE long _cdecl t_gettime(void)
+{ return ((long _cdecl (*)(void)) _t_gettime)(); }
 
-INLINE long f_getdta (void)
-{ return ((long _cdecl (*)(void)) _f_getdta) (); }
+INLINE long f_getdta(void)
+{ return ((long _cdecl (*)(void)) _f_getdta)(); }
 
-INLINE long d_setpath (const char *path)
-{ return ((long _cdecl (*)(const char *)) _d_setpath) (path); }
+INLINE long d_setpath(const char *path)
+{ return ((long _cdecl (*)(const char *)) _d_setpath)(path); }
 
-INLINE long f_create (const char *name, int attrib)
-{ return ((long _cdecl (*)(const char *, int)) _f_create) (name, attrib); }
+INLINE long f_create(const char *name, int attrib)
+{ return ((long _cdecl (*)(const char *, int)) _f_create)(name, attrib); }
 
-INLINE long f_open (const char *name, int mode)
-{ return ((long _cdecl (*)(const char *, int)) _f_open) (name, mode); }
+INLINE long f_open(const char *name, int mode)
+{ return ((long _cdecl (*)(const char *, int)) _f_open)(name, mode); }
 
-INLINE long f_close (int fh)
-{ return ((long _cdecl (*)(int)) _f_close) (fh); }
+INLINE long f_close(int fh)
+{ return ((long _cdecl (*)(int)) _f_close)(fh); }
 
-INLINE long f_read (int fh, long count, const char *buf)
-{ return ((long _cdecl (*)(int, long, const char *)) _f_read) (fh, count, buf); }
+INLINE long f_read(int fh, long count, const char *buf)
+{ return ((long _cdecl (*)(int, long, const char *)) _f_read)(fh, count, buf); }
 
-INLINE long f_write (int fh, long count, char *buf)
-{ return ((long _cdecl (*)(int, long, char *)) _f_write) (fh, count, buf); }
+INLINE long f_write(int fh, long count, char *buf)
+{ return ((long _cdecl (*)(int, long, char *)) _f_write)(fh, count, buf); }
 
-INLINE long d_getpath (char *path, int drv)
-{ return ((long _cdecl (*)(char *, int)) _d_getpath) (path, drv); }
+INLINE long d_getpath(char *path, int drv)
+{ return ((long _cdecl (*)(char *, int)) _d_getpath)(path, drv); }
 
-INLINE long m_xalloc (long size, int mode)
-{ return ((long _cdecl (*)(long, int)) _m_xalloc) (size, mode); }
+INLINE long m_xalloc(long size, int mode)
+{ return ((long _cdecl (*)(long, int)) _m_xalloc)(size, mode); }
 
-INLINE long f_dup (short fd)
-{ return ((long _cdecl (*)(short)) _f_dup) (fd); }
+INLINE long f_dup(short fd)
+{ return ((long _cdecl (*)(short)) _f_dup)(fd); }
 
-INLINE long m_alloc (long size)
-{ return ((long _cdecl (*)(long)) _m_alloc) (size); }
+INLINE long m_alloc(long size)
+{ return ((long _cdecl (*)(long)) _m_alloc)(size); }
 
-INLINE long m_free (void *block)
-{ return ((long _cdecl (*)(void *)) _m_free) (block); }
+INLINE long m_free(void *block)
+{ return ((long _cdecl (*)(void *)) _m_free)(block); }
 
-INLINE long m_shrink (int dummy, long block, long size)
-{ return ((long _cdecl (*)(int, long, long)) _m_shrink) (dummy, block, size); }
+INLINE long m_shrink(int dummy, long block, long size)
+{ return ((long _cdecl (*)(int, long, long)) _m_shrink)(dummy, block, size); }
 
-INLINE long p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
-{ return ((long _cdecl (*)(int, const void *, const void *, const void *)) _p_exec) (mode, ptr1, ptr2, ptr3); }
+INLINE long p_exec(int mode, const void *ptr1, const void *ptr2, const void *ptr3)
+{ return ((long _cdecl (*)(int, const void *, const void *, const void *)) _p_exec)(mode, ptr1, ptr2, ptr3); }
 
-INLINE long p_term (int code)
-{ return ((long _cdecl (*)(int)) _p_term) (code); }
+INLINE long p_term(int code)
+{ return ((long _cdecl (*)(int)) _p_term)(code); }
 
-INLINE long f_sfirst (const char *path, int attrib)
-{ return ((long _cdecl (*)(const char *, int)) _f_sfirst) (path, attrib); }
+INLINE long f_sfirst(const char *path, int attrib)
+{ return ((long _cdecl (*)(const char *, int)) _f_sfirst)(path, attrib); }
 
-INLINE long f_snext (void)
-{ return ((long _cdecl (*)(void)) _f_snext) (); }
+INLINE long f_snext(void)
+{ return ((long _cdecl (*)(void)) _f_snext)(); }
 
-INLINE long s_yield (void)
-{ return ((long _cdecl (*)(void)) _s_yield) (); }
+INLINE long s_yield(void)
+{ return ((long _cdecl (*)(void)) _s_yield)(); }
 
-INLINE long f_cntl (int fh, long arg, int cmd)
-{ return ((long _cdecl (*)(int, long, int)) _f_cntl) (fh, arg, cmd); }
+INLINE long f_cntl(int fh, long arg, int cmd)
+{ return ((long _cdecl (*)(int, long, int)) _f_cntl)(fh, arg, cmd); }
 
-INLINE long p_nice (int increment)
-{ return ((long _cdecl (*)(int)) _p_nice) (increment); }
+INLINE long p_nice(int increment)
+{ return ((long _cdecl (*)(int)) _p_nice)(increment); }
 
-INLINE long p_getpid (void)
-{ return ((long _cdecl (*)(void)) _p_getpid) (); }
+INLINE long p_getpid(void)
+{ return ((long _cdecl (*)(void)) _p_getpid)(); }
 
-INLINE long p_getppid (void)
-{ return ((long _cdecl (*)(void)) _p_getppid) (); }
+INLINE long p_getppid(void)
+{ return ((long _cdecl (*)(void)) _p_getppid)(); }
 
-INLINE long p_getpgrp (void)
-{ return ((long _cdecl (*)(void)) _p_getpgrp) (); }
+INLINE long p_getpgrp(void)
+{ return ((long _cdecl (*)(void)) _p_getpgrp)(); }
 
-INLINE long p_setpgrp (int pid, int newgrp)
-{ return ((long _cdecl (*)(int, int)) _p_setpgrp) (pid, newgrp); }
+INLINE long p_setpgrp(int pid, int newgrp)
+{ return ((long _cdecl (*)(int, int)) _p_setpgrp)(pid, newgrp); }
 
-INLINE long p_getuid (void)
-{ return ((long _cdecl (*)(void)) _p_getuid) (); }
+INLINE long p_getuid(void)
+{ return ((long _cdecl (*)(void)) _p_getuid)(); }
 
-INLINE long p_setuid (int id)
-{ return ((long _cdecl (*)(int)) _p_setuid) (id); }
+INLINE long p_setuid(int id)
+{ return ((long _cdecl (*)(int)) _p_setuid)(id); }
 
-INLINE long p_kill (int pid, int sig)
-{ return ((long _cdecl (*)(int, int)) _p_kill) (pid, sig); }
+INLINE long p_kill(int pid, int sig)
+{ return ((long _cdecl (*)(int, int)) _p_kill)(pid, sig); }
 
-INLINE long p_getgid (void)
-{ return ((long _cdecl (*)(void)) _p_getgid) (); }
+INLINE long p_getgid(void)
+{ return ((long _cdecl (*)(void)) _p_getgid)(); }
 
-INLINE long p_setgid (int id)
-{ return ((long _cdecl (*)(int)) _p_setgid) (id); }
+INLINE long p_setgid(int id)
+{ return ((long _cdecl (*)(int)) _p_setgid)(id); }
 
-INLINE long p_sigblock (ulong mask)
-{ return ((long _cdecl (*)(ulong)) _p_sigblock) (mask); }
+INLINE long p_sigblock(ulong mask)
+{ return ((long _cdecl (*)(ulong)) _p_sigblock)(mask); }
 
-INLINE long p_domain (int arg)
-{ return ((long _cdecl (*)(int)) _p_domain) (arg); }
+INLINE long p_domain(int arg)
+{ return ((long _cdecl (*)(int)) _p_domain)(arg); }
 
-INLINE long f_select (unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
-{ return ((long _cdecl (*)(unsigned, long *, long *, long *)) _f_select) (timeout, rfdp, wfdp, xfdp); }
+INLINE long f_select(unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
+{ return ((long _cdecl (*)(unsigned, long *, long *, long *)) _f_select)(timeout, rfdp, wfdp, xfdp); }
 
-INLINE long s_ysconf (int which)
-{ return ((long _cdecl (*)(int)) _s_ysconf) (which); }
+INLINE long s_ysconf(int which)
+{ return ((long _cdecl (*)(int)) _s_ysconf)(which); }
 
-INLINE long d_pathconf (const char *name, int which)
-{ return ((long _cdecl (*)(const char *, int)) _d_pathconf) (name, which); }
+INLINE long d_pathconf(const char *name, int which)
+{ return ((long _cdecl (*)(const char *, int)) _d_pathconf)(name, which); }
 
-INLINE long p_msg (int mode, long _cdecl mbid, char *ptr)
-{ return ((long _cdecl (*)(int, long _cdecl, char *)) _p_msg) (mode, mbid, ptr); }
+INLINE long p_msg(int mode, long _cdecl mbid, char *ptr)
+{ return ((long _cdecl (*)(int, long _cdecl, char *)) _p_msg)(mode, mbid, ptr); }
 
-INLINE long f_xattr (int flag, const char *name, XATTR *xattr)
-{ return ((long _cdecl (*)(int, const char *, XATTR *)) _f_xattr) (flag, name, xattr); }
+INLINE long d_opendir(const char *path, int flags)
+{ return ((long _cdecl (*)(const char *, int)) _d_opendir)(path, flags); }
 
-INLINE long d_cntl (int cmd, const char *name, long arg)
-{ return ((long _cdecl (*)(int, const char *, long)) _d_cntl) (cmd, name, arg); }
+INLINE long d_readdir(int len, long handle, char *buf)
+{ return ((long _cdecl (*)(int, long, char *)) _d_readdir)(len, handle, buf); }
 
-INLINE long f_chown (const char *name, int uid, int gid)
-{ return ((long _cdecl (*)(const char *, int, int)) _f_chown) (name, uid, gid); }
+INLINE long d_closedir(long handle)
+{ return ((long _cdecl (*)(long)) _d_closedir)(handle); }
 
-INLINE long f_chmod (const char *name, unsigned mode)
-{ return ((long _cdecl (*)(const char *, unsigned)) _f_chmod) (name, mode); }
+INLINE long f_xattr(int flag, const char *name, XATTR *xattr)
+{ return ((long _cdecl (*)(int, const char *, XATTR *)) _f_xattr)(flag, name, xattr); }
 
-INLINE long d_lock (int mode, int drv)
-{ return ((long _cdecl (*)(int, int)) _d_lock) (mode, drv); }
+INLINE long d_cntl(int cmd, const char *name, long arg)
+{ return ((long _cdecl (*)(int, const char *, long)) _d_cntl)(cmd, name, arg); }
 
-INLINE long p_geteuid (void)
-{ return ((long _cdecl (*)(void)) _p_geteuid) (); }
+INLINE long f_chown(const char *name, int uid, int gid)
+{ return ((long _cdecl (*)(const char *, int, int)) _f_chown)(name, uid, gid); }
 
-INLINE long p_getegid (void)
-{ return ((long _cdecl (*)(void)) _p_getegid) (); }
+INLINE long f_chmod(const char *name, unsigned mode)
+{ return ((long _cdecl (*)(const char *, unsigned)) _f_chmod)(name, mode); }
 
-INLINE long p_seteuid (int id)
-{ return ((long _cdecl (*)(int)) _p_seteuid) (id); }
+INLINE long p_semaphore(int mode, long id, long timeout)
+{ return ((long _cdecl (*)(int, long, long)) _p_semaphore)(mode, id, timeout); }
 
-INLINE long p_setegid (int id)
-{ return ((long _cdecl (*)(int)) _p_setegid) (id); }
+INLINE long d_lock(int mode, int drv)
+{ return ((long _cdecl (*)(int, int)) _d_lock)(mode, drv); }
 
-INLINE long p_getauid (void)
-{ return ((long _cdecl (*)(void)) _p_getauid) (); }
+INLINE long p_geteuid(void)
+{ return ((long _cdecl (*)(void)) _p_geteuid)(); }
 
-INLINE long p_setauid (int id)
-{ return ((long _cdecl (*)(int)) _p_setauid) (id); }
+INLINE long p_getegid(void)
+{ return ((long _cdecl (*)(void)) _p_getegid)(); }
 
-INLINE long p_getgroups (int gidsetlen, int gidset[])
-{ return ((long _cdecl (*)(int, int [])) _p_getgroups) (gidsetlen, gidset); }
+INLINE long p_seteuid(int id)
+{ return ((long _cdecl (*)(int)) _p_seteuid)(id); }
 
-INLINE long p_setgroups (int ngroups, int gidset[])
-{ return ((long _cdecl (*)(int, int [])) _p_setgroups) (ngroups, gidset); }
+INLINE long p_setegid(int id)
+{ return ((long _cdecl (*)(int)) _p_setegid)(id); }
 
-INLINE long p_setreuid (int rid, int eid)
-{ return ((long _cdecl (*)(int, int)) _p_setreuid) (rid, eid); }
+INLINE long p_getauid(void)
+{ return ((long _cdecl (*)(void)) _p_getauid)(); }
 
-INLINE long p_setregid (int rid, int eid)
-{ return ((long _cdecl (*)(int, int)) _p_setregid) (rid, eid); }
+INLINE long p_setauid(int id)
+{ return ((long _cdecl (*)(int)) _p_setauid)(id); }
 
-INLINE long s_ync (void)
-{ return ((long _cdecl (*)(void)) _s_ync) (); }
+INLINE long p_getgroups(int gidsetlen, int gidset[])
+{ return ((long _cdecl (*)(int, int [])) _p_getgroups)(gidsetlen, gidset); }
 
-INLINE long s_hutdown (long restart)
-{ return ((long _cdecl (*)(long)) _s_hutdown) (restart); }
+INLINE long p_setgroups(int ngroups, int gidset[])
+{ return ((long _cdecl (*)(int, int [])) _p_setgroups)(ngroups, gidset); }
 
-INLINE long s_system (int mode, ulong arg1, ulong arg2)
-{ return ((long _cdecl (*)(int, ulong, ulong)) _s_system) (mode, arg1, arg2); }
+INLINE long p_setreuid(int rid, int eid)
+{ return ((long _cdecl (*)(int, int)) _p_setreuid)(rid, eid); }
+
+INLINE long p_setregid(int rid, int eid)
+{ return ((long _cdecl (*)(int, int)) _p_setregid)(rid, eid); }
+
+INLINE long s_ync(void)
+{ return ((long _cdecl (*)(void)) _s_ync)(); }
+
+INLINE long s_hutdown(long restart)
+{ return ((long _cdecl (*)(long)) _s_hutdown)(restart); }
+
+INLINE long s_system(int mode, ulong arg1, ulong arg2)
+{ return ((long _cdecl (*)(int, ulong, ulong)) _s_system)(mode, arg1, arg2); }
 
 # if 0
-INLINE long t_gettimeofday (struct timeval *tv, struct timezone *tz)
-{ return ((long _cdecl (*)(struct timeval *, struct timezone *)) _t_gettimeofday) (tv, tz); }
+INLINE long t_gettimeofday(struct timeval *tv, struct timezone *tz)
+{ return ((long _cdecl (*)(struct timeval *, struct timezone *)) _t_gettimeofday)(tv, tz); }
 
-INLINE long t_settimeofday (struct timeval *tv, struct timezone *tz)
-{ return ((long _cdecl (*)(struct timeval *, struct timezone *)) _t_settimeofday) (tv, tz); }
+INLINE long t_settimeofday(struct timeval *tv, struct timezone *tz)
+{ return ((long _cdecl (*)(struct timeval *, struct timezone *)) _t_settimeofday)(tv, tz); }
 # endif
 
-INLINE long p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
-{ return ((long _cdecl (*)(long *, ulong, void *, ulong *, const void *, ulong)) _p_sysctl) (name, namelen, old, oldlenp, new, newlen); }
+INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
+{ return ((long _cdecl (*)(long *, ulong, void *, ulong *, const void *, ulong)) _p_sysctl)(name, namelen, old, oldlenp, new, newlen); }
 
 
-# define datestamp		t_getdate ()
-# define timestamp		t_gettime ()
-# define FreeMemory		m_alloc (-1L)
+# define datestamp		t_getdate()
+# define timestamp		t_gettime()
+# define FreeMemory		m_alloc(-1L)
 
 
 # define changedrive		(*KERNEL->drvchng)

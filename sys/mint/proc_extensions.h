@@ -46,7 +46,7 @@ struct proc_ext
 
 	long	(*on_exit  )(struct proc_ext *, struct proc *);
 	long	(*on_exec  )(struct proc_ext *, struct proc *);
-	long	(*on_fork  )(struct proc_ext *, long, struct proc *);
+	long	(*on_fork  )(struct proc_ext *, long, struct proc *, struct proc *);
 	long	(*on_signal)(struct proc_ext *, unsigned short, struct proc *);
 
 	long	reserved[3];	/* sizeof() => 44 bytes */
