@@ -31,9 +31,10 @@
  *
  * Note:
  *
- * 1) the shell is running as separate process, not in kernel context;
- * 2) the shell is running in user mode;
+ * 1) the shell is running as separate process, but in kernel context;
+ * 2) the shell is running in supervisor mode;
  * 3) the shell is very minimal, so don't expect much ;-)
+ * 4) we are on the system stack, which is small;
  *
  * TODO in random order:
  *
@@ -51,8 +52,6 @@
 
 # include <stdarg.h>
 
-# define _SHELL_THREAD
-
 # include "libkern/libkern.h"
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
@@ -68,7 +67,6 @@
 # include "mint/proc.h"		/* curproc (for DEBUG) */
 # endif
 
-# ifdef _SHELL_THREAD
 # include "arch/startup.h"	/* _base */
 # include "console.h"		/* c_conin(), c_conrs() */
 # include "dos.h"		/* p_umask(), p_domain() */
@@ -78,11 +76,6 @@
 # include "k_kthread.h"		/* kthread_create(), kthread_exit() */
 # include "proc.h"		/* struct proc */
 # include "time.h"
-# else
-# include "arch/cpu.h"		/* setstack() */
-# include "arch/syscall.h"	/* Pexec(), Cconrs() et cetera */
-# include "mint/mem.h"		/* F_FASTLOAD et contubernales */
-# endif
 
 # include "mis.h"
 
@@ -90,9 +83,6 @@
 # define STDOUT		1
 # define STDERR		2
 
-# ifndef _SHELL_THREAD
-# define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
-# endif
 # define SHELL_UMASK	~(S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
 # define SH_VER_MAIOR	1
@@ -102,8 +92,6 @@
 
 # define SHELL_ARGS	1024L		/* number of pointers in the argument vector table (i.e. 4K) */
 # define SHELL_MAXPATH	1024L		/* max length of a pathname */
-/* maximum usage is so far about a half ot this */
-# define SHELL_STACK	((SHELL_ARGS * sizeof(long)) + (SHELL_MAXPATH * 3 * sizeof(long)) + 16384L)	/* 32768 */
 
 /* this is an average number of seconds in Gregorian year
  * (365 days, 6 hours, 11 minutes, 15 seconds).
@@ -116,33 +104,26 @@
 static EXITING shell(void) NORETURN;
 
 /* Global variables */
-# ifdef _SHELL_THREAD
 static struct proc *p;
-# endif
 static BASEPAGE *shell_base;
 static short xcommands;		/* if 1, the extended command set is active */
+
+/* Fake command line to prevent complaints from the kernfs and fork() */
+static char shell_cmdline[10] = { 0, 0, 0, sizeof(shell_cmdline), 0, 0, 0, 0, 0, 0 };
 
 /* Utility routines */
 
 static void
 shell_fprintf(long handle, const char *fmt, ...)
 {
-# ifdef _SHELL_THREAD
 	static char buf[SHELL_MAXPATH << 1];
-# else
-	char buf[SHELL_MAXPATH << 1];
-# endif
 	va_list args;
 
 	va_start(args, fmt);
 	vsprintf(buf, sizeof (buf), fmt, args);
 	va_end(args);
 
-# ifdef _SHELL_THREAD
 	f_write(handle, strlen(buf), buf);
-# else
-	Fwrite(handle, strlen(buf), buf);
-# endif
 }
 
 INLINE void
@@ -236,11 +217,7 @@ shell_delenv(const char *strng)
 
 	*var = 0;
 
-# ifdef _SHELL_THREAD
 	m_shrink(0, (long)shell_base->p_env, env_size(shell_base->p_env));
-# else
-	Mshrink((void *)shell_base->p_env, env_size(shell_base->p_env));
-# endif
 }
 
 /* XXX try to avoid reallocation whenever possible */
@@ -259,11 +236,7 @@ shell_setenv(const char *var, char *value)
 	else
 		new_size += strlen(var);	/* this is its NAME */
 
-# ifdef _SHELL_THREAD
 	new_env = (char *)m_xalloc(new_size, 3);
-# else
-	new_env = (char *)Mxalloc(new_size, 3);
-# endif
 	if (new_env == NULL)
 		return;
 
@@ -290,11 +263,7 @@ shell_setenv(const char *var, char *value)
 
 	shell_base->p_env = new_env;
 
-# ifdef _SHELL_THREAD
 	m_free((long)env_str);
-# else
-	Mfree(env_str);
-# endif
 }
 
 /* Split command line into separate strings, put their pointers
@@ -388,12 +357,8 @@ crunch(char *cmd, char **argv)
 INLINE long
 execvp(char **argv)
 {
-	char *var, *new_env, *new_var, *t, *path, *np;
-# ifdef _SHELL_THREAD
 	static char oldcmd[128], npath[SHELL_MAXPATH + 256];
-# else
-	char oldcmd[128], npath[SHELL_MAXPATH + 256];
-# endif
+	char *var, *new_env, *new_var, *t, *path, *np;
 	long count, x, y, r = -1L, blanks = 0;
 
 	/* Calculate the size of the environment */
@@ -407,12 +372,7 @@ execvp(char **argv)
 
 	count <<= 1;				/* make this twice as big (will be shrunk later) */
 
-# ifdef _SHELL_THREAD
 	new_env = (char *)m_xalloc(count, 3);
-# else
-	new_env = (char *)Mxalloc(count, 3);
-# endif
-
 	if (!new_env)
 		return -40;
 
@@ -472,11 +432,7 @@ execvp(char **argv)
 
 	*new_var = 0;
 
-# ifdef _SHELL_THREAD
 	(void)m_shrink(0, (long)new_env, env_size(new_env));
-# else
-	(void)Mshrink((void *)new_env, env_size(new_env));
-# endif
 
 	/* Since crunch() evaluates some arguments, we have now to
 	 * re-create the old GEMDOS style command line string.
@@ -528,19 +484,11 @@ execvp(char **argv)
 			strcat(npath, "/");
 		strcat(npath, argv[0]);
 
-# ifdef _SHELL_THREAD
 		r = sys_pexec(0, npath, oldcmd, new_env);
-# else
-		r = Pexec(0, npath, oldcmd, new_env);
-# endif
 
 	} while (*path && r < 0);
 
-# ifdef _SHELL_THREAD
 	m_free((long)new_env);
-# else
-	Mfree(new_env);
-# endif
 
 	return r;
 }
@@ -575,19 +523,14 @@ sh_help(long argc, char **argv)
 static long
 sh_ls(long argc, char **argv)
 {
+	static char path[SHELL_MAXPATH], link[SHELL_MAXPATH];
+	static char entry[256];
 	struct stat st;
 	struct timeval tv;
 	short year, month, day, hour, minute;
 	short i, all = 0, full = 0;
 	long x, r, s, handle;
 	char *dir;
-# ifndef _SHELL_THREAD
-	char path[SHELL_MAXPATH], link[SHELL_MAXPATH];
-	char entry[256];
-# else
-	static char path[SHELL_MAXPATH], link[SHELL_MAXPATH];
-	static char entry[256];
-# endif
 
 	dir = ".";
 
@@ -620,27 +563,15 @@ sh_ls(long argc, char **argv)
 		}
 	}
 
-# ifdef _SHELL_THREAD
 	handle = d_opendir(dir, 0);
-# else
-	handle = Dopendir(dir, 0);
-# endif
 	if (handle < 0)
 		return handle;
 
-# ifdef _SHELL_THREAD
 	t_gettimeofday(&tv, NULL);
-# else
-	Tgettimeofday(&tv, NULL);
-# endif
 
 	do
 	{
-# ifdef _SHELL_THREAD
 		r = d_readdir(sizeof(entry), handle, entry);
-# else
-		r = Dreaddir(sizeof(entry), handle, entry);
-# endif
 
 		/* Display only names not starting with a dot, unless -a was specified */
 		if (r == 0 && (entry[sizeof(long)] != '.' || all))
@@ -650,20 +581,12 @@ sh_ls(long argc, char **argv)
 			strcat(path, entry + sizeof(long));
 
 			/* `/bin/ls -l' doesn't dereference links, so we don't either */
-# ifdef _SHELL_THREAD
 			s = f_stat64(1, path, &st);
-# else
-			s = Fstat64(1, path, &st);
-# endif
 			if (s == 0)
 			{
 				if (S_ISLNK(st.mode))
 				{
-# ifdef _SHELL_THREAD
 					s = f_readlink(sizeof(link), link, path);
-# else
-					s = Freadlink(sizeof(link), link, path);
-# endif
 					if (s == 0)
 						dos2unix(link);
 				}
@@ -749,30 +672,19 @@ sh_ls(long argc, char **argv)
 		}
 	} while (r == 0);
 
-# ifdef _SHELL_THREAD
 	d_closedir(handle);
-# else
-	Dclosedir(handle);
-# endif
 
 	return 0;
 }
 
 /* Change cwd to the given path. If none given, change to $HOME
- *
- * XXX crashes when entering /kern/1
- *
  */
 static long
 sh_cd(long argc, char **argv)
 {
+	static char cwd[SHELL_MAXPATH];
 	long r;
 	char *newdir, *pwd;
-# ifdef _SHELL_THREAD
-	static char cwd[SHELL_MAXPATH];
-# else
-	char cwd[SHELL_MAXPATH];
-# endif
 
 	if (argc >= 2)
 	{
@@ -792,19 +704,11 @@ sh_cd(long argc, char **argv)
 			newdir = "/";
 	}
 
-# ifdef _SHELL_THREAD
 	r = d_setpath(newdir);
-# else
-	r = Dsetpath(newdir);
-# endif
 
 	if (r == 0)
 	{
-# ifdef _SHELL_THREAD
 		d_getcwd(cwd, 0, sizeof(cwd));
-# else
-		Dgetcwd(cwd, 0, sizeof(cwd));
-# endif
 
 		if (*cwd == 0)
 			strcpy(cwd, "/");
@@ -839,11 +743,7 @@ sh_chgrp(long argc, char **argv)
 
 	fname = argv[2];
 
-# ifdef _SHELL_THREAD
 	r = f_stat64(0, fname, &st);
-# else
-	r = Fstat64(0, fname, &st);
-# endif
 	if (r < 0)
 		return r;
 
@@ -852,11 +752,7 @@ sh_chgrp(long argc, char **argv)
 	if (gid == st.gid)
 		return 0;			/* no change */
 
-# ifdef _SHELL_THREAD
 	return f_chown(fname, st.uid, gid);
-# else
-	return Fchown(fname, st.uid, gid);
-# endif
 }
 
 static long
@@ -876,11 +772,7 @@ sh_chown(long argc, char **argv)
 	own = argv[1];
 	fname = argv[2];
 
-# ifdef _SHELL_THREAD
 	r = f_stat64(0, fname, &st);
-# else
-	r = Fstat64(0, fname, &st);
-# endif
 	if (r < 0)
 		return r;
 
@@ -906,11 +798,7 @@ sh_chown(long argc, char **argv)
 	if (uid == st.uid && gid == st.gid)
 		return 0;			/* no change */
 
-# ifdef _SHELL_THREAD
 	return f_chown(fname, uid, gid);
-# else
-	return Fchown(fname, uid, gid);
-# endif
 }
 
 static long
@@ -937,11 +825,7 @@ sh_chmod(long argc, char **argv)
 
 	d &= S_IALLUGO;
 
-# ifdef _SHELL_THREAD
 	return f_chmod(argv[2], d);
-# else
-	return Fchmod(argv[2], d);
-# endif
 }
 
 static long
@@ -968,18 +852,10 @@ sh_exit(long argc, char **argv)
 
 	shell_print(MSG_shell_exit_q);
 
-# ifdef _SHELL_THREAD
 	y = (short)c_conin();
-# else
-	y = (short)Cconin();
-# endif
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
-# ifndef _SHELL_THREAD
-		Shutdown(2);
-# else
 		s_hutdown(2);
-# endif
 
 	shell_print("\r\n");
 
@@ -1039,11 +915,7 @@ sh_rm(long argc, char **argv)
 
 	while (argv[x])
 	{
-# ifdef _SHELL_THREAD
 		r = f_delete(argv[x++]);
-# else
-		r = Fdelete(argv[x++]);
-# endif
 		if (!force && r < 0)
 			return r;
 	}
@@ -1066,11 +938,7 @@ sh_ln(long argc, char **argv)
 	old = argv[1];
 	new = argv[2];
 
-# ifdef _SHELL_THREAD
 	return f_symlink(old, new);
-# else
-	return Fsymlink(old, new);
-# endif
 }
 
 static long
@@ -1173,11 +1041,7 @@ static const char *commands[] =
 INLINE long
 execute(char *cmdline)
 {
-# ifdef _SHELL_THREAD
 	static char *argv[SHELL_ARGS];
-# else
-	char *argv[SHELL_ARGS];
-# endif
 	char *c;
 	long cnt, cmdno, argc;
 
@@ -1236,22 +1100,14 @@ execute(char *cmdline)
 INLINE char *
 prompt(uchar *buffer, long buflen)
 {
-	char *lbuff;
-# ifdef _SHELL_THREAD
 	static char cwd[SHELL_MAXPATH];
-# else
-	char cwd[SHELL_MAXPATH];
-# endif
+	char *lbuff;
 	short idx;
 
 	buffer[0] = LINELEN;
 	buffer[1] = 0;
 
-# ifdef _SHELL_THREAD
 	d_getcwd(cwd, 0, sizeof(cwd));
-# else
-	Dgetcwd(cwd, 0, sizeof(cwd));
-# endif
 
 	if (*cwd == 0)
 		strcpy(cwd, "/");
@@ -1260,11 +1116,7 @@ prompt(uchar *buffer, long buflen)
 
 	shell_fprintf(STDOUT, "mint:%s#", cwd);
 
-# ifdef _SHELL_THREAD
 	c_conrs(buffer);
-# else
-	Cconrs(buffer);
-# endif
 
 	/* "the string is not guaranteed to be NULL terminated"
 	 * (Atari GEMDOS reference manual)
@@ -1279,89 +1131,40 @@ prompt(uchar *buffer, long buflen)
 static EXITING
 shell(void)
 {
-# ifdef _SHELL_THREAD
 	static uchar linebuf[LINELEN + 2];
-# else
-	uchar linebuf[LINELEN + 2];
-# endif
 	uchar *lbuff;
 	long r;
 
-# ifdef _SHELL_THREAD
 	(void)p_domain(1);			/* switch to MiNT domain */
 	(void)f_force(2, -1);			/* redirect the stderr to console */
+	(void)p_sigsetmask(-1L);		/* mask out the signals */
 	(void)p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
-# else
-	long s;
 
-	(void)Pdomain(1);			/* switch to MiNT domain */
-	(void)Fforce(2, -1);			/* redirect the stderr to console */
-	(void)Pumask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
-# endif
 	shell_print("\ee\ev\r\n");		/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);
 	xcmdstate();
 	shell_print(MSG_shell_type_help);
 
-# ifdef _SHELL_THREAD
 	d_setdrv('U' - 'A');
-# else
-	Dsetdrv('U' - 'A');			/* force current drive to u: */
-# endif
 
 	sh_cd(1, NULL);				/* this sets $HOME as current dir */
 
-	/* This loop restarts the shell when it dies cause of a bus error etc.
-	 */
-# ifndef _SHELL_THREAD
 	for (;;)
 	{
-		s = Pvfork();
+		lbuff = prompt(linebuf, sizeof(linebuf));
 
-		if (s == 0)	/* Child here */
-		{
-# endif
-			for (;;)
-			{
-				lbuff = prompt(linebuf, sizeof(linebuf));
+		r = execute(lbuff);
 
-				r = execute(lbuff);
-
-				if (r < 0)
-					shell_fprintf(STDERR, MSG_shell_error, lbuff, r);
-			}
-# ifndef _SHELL_THREAD
-		}
-		else		/* Parent here */
-			Pwaitpid(s, 0, NULL);
+		if (r < 0)
+			shell_fprintf(STDERR, MSG_shell_error, lbuff, r);
 	}
-# endif
 }
 
-# ifndef _SHELL_THREAD
-/* Notice that we cannot define local variables here due to setstack()
- * which changes the stack pointer value.
- */
-static void
-shell_start(BASEPAGE *bp)
-{
-	/* we must leave some bytes of `pad' behind the (sp)
-	 * (see arch/syscall.S), this is why it is `-256L'.
-	 */
-	setstack((long)bp + SHELL_STACK - 256L);
-	Mshrink((void *)bp, SHELL_STACK);
-	shell();				/* this one doesn't return */
-}
-# endif
-
-/* This below is running in kernel context, called from init.c
- */
 long
 startup_shell(void)
 {
 	long r;
 
-# ifdef _SHELL_THREAD
 	r = kthread_create((void *)shell, NULL, &p, "shell");
 	if (r)
 	{
@@ -1373,27 +1176,9 @@ startup_shell(void)
 	shell_base = _base;
 	shell_base->p_env = init_env;
 
+	p->real_cmdline = shell_cmdline;	/* fake cmdline */
+
 	return p->pid;
-# else
-	shell_base = (BASEPAGE *)sys_pexec(7, (char *)SHELL_FLAGS, "\0", init_env);
-
-	/* Hope this never happens */
-	if (!shell_base)
-	{
-		DEBUG(("Pexec(7) returned 0!\r\n"));
-
-		return -1;
-	}
-
-	/* Start address */
-	shell_base->p_tbase = (long)shell_start;
-
-	r = sys_pexec(104, (char *)"shell", shell_base, 0L);
-
-	m_free((long)shell_base);
-
-	return r;
-# endif
 }
 
 # endif /* BUILTIN_SHELL */
