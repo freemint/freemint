@@ -16,17 +16,11 @@
 #define _OLD_UTMP
 #include <utmp.h>
 
-#include "global.h"
-#include "config.h"
+#include "proc.h"
 #include "console.h"
 #include "environ.h"
-#include "event.h"
-#include "proc.h"
-#include "share.h"
-#include "textwin.h"
 #include "toswin2.h"
-#include "window.h"
-
+#include "share.h"
 
 /* static long 	lasthz; */
 static long 	fdmask = 0L;
