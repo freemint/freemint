@@ -33,7 +33,6 @@
 # include "buf.h"
 # include "inet4/if.h"
 # include "inet4/ifeth.h"
-# include "util.h"
 
 # include "de600.h"
 # include "netinfo.h"
