@@ -193,6 +193,7 @@ extern struct options local_options;
 
 extern XA_PENDING_WIDGET widget_active;
 
+extern struct moose_data mainmd;
 extern const char mnu_clientlistname[];
 
 extern BUTTON mu_button;

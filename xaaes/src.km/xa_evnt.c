@@ -202,6 +202,46 @@ em_flag(int f)
 
 #endif
 
+bool
+check_queued_events(struct xa_client *client)
+{
+	if ( client->waiting_for & MU_MESAG && (client->msg || client->rdrw_msg))
+	{
+		union msg_buf *cbuf;
+
+		if (!client->waiting_pb)
+		{
+			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s", client->name));
+			return false;
+		}
+		
+		if (client->waiting_for & XAWAIT_MULTI)
+			multi_intout(client, client->waiting_pb->intout, MU_MESAG);
+		else
+			client->waiting_pb->intout[0] = 1;
+
+		cbuf = (union msg_buf *)client->waiting_pb->addrin[0];
+		if (!cbuf)
+		{
+			DIAG((D_appl, NULL, "WARNING: Invalid target message buffer for %s", client->name));
+			return false;
+		}
+
+		if ( pending_redraw_msgs(0, client, client->waiting_pb) )
+			goto got_evnt;
+		if ( pending_msgs(0, client, client->waiting_pb) )
+			goto got_evnt;
+	}
+
+	return false;
+
+got_evnt:
+	client->usr_evnt = 1;
+	cancel_evnt_multi(client, 222);
+	return true;
+}
+
+
 /* HR 070601: We really must combine events. especially for the button still down situation.
 */
 
