@@ -113,7 +113,8 @@ struct tablist
 #define MAXCOLS	220
 
 /* text->term_flags */
-#define FINSERT	0x1000		/* insert characters */
+#define FWIDE		0x0800  /* enable 80/132 column switching */
+#define FINSERT		0x1000	/* insert characters */
 #define FFLASH		0x2000	/* cursor is currently showing */
 #define FCURS		0x4000	/* cursor enabled */
 #define FWRAP		0x8000	/* wrap at end of line */
@@ -129,6 +130,9 @@ struct tablist
 #define CE_ITALIC	 0x0400
 #define CE_UNDERLINE	 0x0800
 #define CINVERSE	 0x1000	/* character is in inverse video */
+
+#define CATTRIBUTES	 0x1fff /* Attribute mask.  */
+
 #define CSELECTED	 0x2000	/* character has been selected by mouse */
 #define CTOUCHED	 0x4000	/* character attributes have changed */
 #define CDIRTY		 0x8000	/* the character itself has changed */
@@ -175,12 +179,14 @@ struct textwin
 	short	cfont;				/* font for characters */
 	short	cpoints;			/* size of characters in points */
 	short	savex, savey;			/* saved cursor position */
+	ulong	save_cattr;			/* saved attributes */
 	ushort	term_flags;			/* e.g. cursor on/off */
 	ulong	term_cattr;			/* current character attributes including
 						   foreground/background colors and character
 						   set */
-	short	escy1;				/* first char. for ESC Y */
-	void	(*output)(struct textwin *t, int c); /* output function */
+	unsigned short	escy1;			/* first char. for ESC Y */
+	void	(*output)(struct textwin *t, 
+	                  unsigned int c); 	/* output function */
 	uchar	**data;				/* terminal data */
 	ulong	**cflag;			/* flags for individual characters */
 	char	*dirty;				/* marks whether lines need redrawing */
@@ -199,9 +205,8 @@ struct textwin
 	int	minADE, maxADE;			/* min. and max. character the font can display */
 	short	*cwidths;			/* table of font widths */
 
-	char	escbuf[ESCBUFSIZE];		/* Buffer for multiple char escapes */
+	unsigned char escbuf[ESCBUFSIZE];	/* Buffer for multiple char escapes */
 	short   vt_mode;			/* Terminal emulator mode */
-	short	char_set;			/* Zeichensatz */
 	short   scroll_top;	  		/* Top line for scrolling region */
 	short   scroll_bottom;  		/* Bottom line for scrolling region */
 	TABLIST *tabs;			  	/* List of tab positions */

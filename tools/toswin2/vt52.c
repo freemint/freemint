@@ -19,7 +19,7 @@ extern int do_debug;
 /*
  * lokale prototypen
  */
-static void escy_putch(TEXTWIN *v, int c);
+static void escy_putch (TEXTWIN *v, unsigned int c);
 
 /*
  * delete_line(v, r): delete line r of window v. The screen below this
@@ -82,7 +82,7 @@ static void insert_line(TEXTWIN *v, int r)
  * if c is '\r', then we're finished and we call the callback
  * function
  */
-static void capture(TEXTWIN *v, int c)
+static void capture(TEXTWIN *v, unsigned int c)
 {
 	int 	i = v->captsiz;
 
@@ -104,7 +104,7 @@ static void capture(TEXTWIN *v, int c)
 /*
  * paint a character, even if it's a graphic character
  */
-static void quote_putch(TEXTWIN *v, int c)
+static void quote_putch(TEXTWIN *v, unsigned int c)
 {
 	if (c == 0) 
 		c = ' ';
@@ -128,7 +128,7 @@ static void quote_putch(TEXTWIN *v, int c)
 
 /* Legacy functions for color support.  */
 static 
-void fgcol_putch (TEXTWIN *v, int c)
+void fgcol_putch (TEXTWIN *v, unsigned int c)
 {
 	v->term_cattr = (v->term_cattr & ~CFGCOL) | 
 			 ((c & 0xff) << 4);
@@ -136,7 +136,7 @@ void fgcol_putch (TEXTWIN *v, int c)
 }
 
 static 
-void bgcol_putch (TEXTWIN *v, int c)
+void bgcol_putch (TEXTWIN *v, unsigned int c)
 {
 	v->term_cattr = (v->term_cattr & ~CBGCOL) | 
 			 (c & 0xff);
@@ -145,21 +145,21 @@ void bgcol_putch (TEXTWIN *v, int c)
 
 /* ANSI color functions.  */
 static 
-void ansi_fgcol_putch (TEXTWIN *v, int c)
+void ansi_fgcol_putch (TEXTWIN *v, unsigned int c)
 {
 	set_ansi_fg_color (v, c);
 	v->output = vt52_putch;
 }
 
 static void 
-ansi_bgcol_putch (TEXTWIN *v, int c)
+ansi_bgcol_putch (TEXTWIN *v, unsigned int c)
 {
 	set_ansi_bg_color (v, c);
 	v->output = vt52_putch;
 }
 
 /* set special effects */
-static void seffect_putch(TEXTWIN *v, int c)
+static void seffect_putch(TEXTWIN *v, unsigned int c)
 {
 	v->term_cattr |= ((c & 0x1f) << 8);
 	if (!v->vdi_colors)
@@ -168,7 +168,7 @@ static void seffect_putch(TEXTWIN *v, int c)
 }
 
 /* clear special effects */
-static void ceffect_putch(TEXTWIN *v, int c)
+static void ceffect_putch(TEXTWIN *v, unsigned int c)
 {
 	if (c == '_' && !v->vdi_colors)
 		v->term_cattr &= ~CE_ANSI_EFFECTS;
@@ -180,7 +180,7 @@ static void ceffect_putch(TEXTWIN *v, int c)
 /*
  * putesc(v, c): handle the control sequence ESC c
  */
-static void putesc(TEXTWIN *v, int c)
+static void putesc(TEXTWIN *v, unsigned int c)
 {
 	int 		cx, cy;
 	
@@ -470,7 +470,7 @@ static void putesc(TEXTWIN *v, int c)
 /*
  * escy1_putch(v, c): for when an ESC Y + char has been seen
  */
-static void escy1_putch(TEXTWIN *v, int c)
+static void escy1_putch(TEXTWIN *v, unsigned int c)
 {
 	curs_off(v);
 	if (v->escy1 - ' ' < 0) {
@@ -485,7 +485,7 @@ static void escy1_putch(TEXTWIN *v, int c)
 /*
  * escy_putch(v, c): for when an ESC Y has been seen
  */
-static void escy_putch(TEXTWIN *v, int c)
+static void escy_putch(TEXTWIN *v, unsigned int c)
 {
 	v->escy1 = c;
 	v->output = escy1_putch;
@@ -495,7 +495,7 @@ static void escy_putch(TEXTWIN *v, int c)
  * vt52_putch(v, c): put character 'c' on screen 'v'. This is the default
  * for when no escape, etc. is active
  */
-void vt52_putch(TEXTWIN *v, int c)
+void vt52_putch(TEXTWIN *v, unsigned int c)
 {
 	int cx, cy;
 
