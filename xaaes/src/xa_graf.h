@@ -43,27 +43,27 @@ typedef enum
 
 void graf_mouse(int m_shape, MFORM *mf);
 
-bool rect_changed(RECT *n, RECT *o);
-void keep_inside(RECT *r, RECT *o);
-RECT *rect_dist(RECT *r, RECT *d);
+bool rect_changed(const RECT *n, const RECT *o);
+void keep_inside(RECT *r, const RECT *o);
+const RECT *rect_dist(RECT *r, RECT *d);
 
 RECT widen_rectangle(COMPASS compass,
                 short mx, short my,
                 RECT start,
-                RECT *dist );
+                const RECT *dist );
 
 RECT move_rectangle(short mx, short my,
                 RECT r,
-                RECT *dist );
+                const RECT *dist );
 
 void rubber_box(COMPASS compass,
-                RECT start, RECT *dist,
+                RECT start, const RECT *dist,
                 int minw, int minh,
                 int maxw, int maxg,
                 RECT *last );
 void drag_box(RECT start,
-              RECT *bound,
-              RECT *dist,
+              const RECT *bound,
+              const RECT *dist,
               RECT *last );
 
 int watch_object(LOCK lock, XA_TREE *odc_p, int ob, int in_state, int out_state);

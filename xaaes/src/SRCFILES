@@ -4,7 +4,6 @@
 HEADER = \
 	about.h \
 	accstart.h \
-	aes_defs.h \
 	ahcm.h \
 	app_man.h \
 	bootup.h \
@@ -33,7 +32,6 @@ HEADER = \
 	trnfm.h \
 	util.h \
 	vaproto.h \
-	vdi_defs.h \
 	version.h \
 	widgets.h \
 	xalloc.h \

@@ -93,17 +93,17 @@ open_about(LOCK lock)
 		if (!remember.w)
 		{
 			center_form(form, ICON_H);
-			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSE|NAME, MG,
+			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME, MG,
 						C.Aes->options.thinframe,
-						C.Aes->options.thinwork, form->r);
+						C.Aes->options.thinwork, *(RECT*)&form->ob_x);
 		}
 
 		/* Create the window */
 		dialog_window = create_window(lock, 0,
 						C.Aes,
 						false,
-						CLOSE|NAME|
-						MOVE|
+						CLOSER|NAME|
+						MOVER|
 						TOOLBAR,
 						created_for_AES,
 						MG,
@@ -113,7 +113,7 @@ open_about(LOCK lock)
 		/* Set the window title */
 		get_widget(dialog_window, XAW_TITLE)->stuff = "  About  ";
 		/* Set version date */
-		(form + ABOUT_DATE)->ob_spec.string = __DATE__;
+		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
 
 		wt = set_toolbar_widget(lock, dialog_window, form, -1);
 		wt->exit_form = XA_form_exit;

@@ -52,7 +52,7 @@ map_size(MFDB *m, int i)
 }
 
 bool
-transform_gem_bitmap_data(MFDB msrc, MFDB mdest, int src_planes, int dst_planes)
+transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int dst_planes)
 {
 	static short devtovdi8[] =
 	{
@@ -72,18 +72,18 @@ transform_gem_bitmap_data(MFDB msrc, MFDB mdest, int src_planes, int dst_planes)
 
 	if (src_planes <= 8 && dst_planes <= 8)
 	{
-		vr_trnfm(C.vh, &msrc, &mdest);
+		vr_trnfm(vdih, &msrc, &mdest);
 	}
 	else if (src_planes <= 8)
 	{
 		int i;
 		short x, y, pxy[8], colours[2];
 		long plane_int_size = msrc.fd_wdwidth * msrc.fd_h;
-		short *colour_lut, bits[8], bit, mask;
+		short *colour_lut, words[8], mask;
 		char used_colours[256];
 		MFDB tmp, tmp2;
 
-		DIAGS(("dst_planes %d\n", dst_planes));
+		DIAGS(("dst.planes %d src.fd_stand %d\n", dst_planes, msrc.fd_stand));
 		tmp = msrc;
 		tmp.fd_nplanes = 1;
 		tmp.fd_h = 1 << (src_planes);
@@ -97,17 +97,18 @@ transform_gem_bitmap_data(MFDB msrc, MFDB mdest, int src_planes, int dst_planes)
 		if (!tmp2.fd_addr)
 			tmp2.fd_addr = tmp.fd_addr;
 
+		mask = (1 << src_planes) - 1;
+
 		colours[1] = 0;
 		pxy[4] = pxy[0] = 0;
 		pxy[5] = pxy[1] = 0;
 		pxy[6] = pxy[2] = mdest.fd_w - 1;
 		pxy[7] = pxy[3] = mdest.fd_h - 1;
-		/* vro_cpyfm(C.vh, ALL_WHITE, pxy, &mdest, &mdest);*/
+		/* vro_cpyfm(vdih, ALL_WHITE, pxy, &mdest, &mdest);*/
 		/* The above line crashes in Falcon TC (w/o NVDI) for some reason ?! */
 
 		DIAGS(("mdest planes %d\n", mdest.fd_nplanes));
 		bzero(mdest.fd_addr, map_size(&mdest,3));
-		mask = (1 << src_planes) - 1;
 		
 		switch (src_planes)
 		{
@@ -123,13 +124,16 @@ transform_gem_bitmap_data(MFDB msrc, MFDB mdest, int src_planes, int dst_planes)
 				return false;
 		}
 
+		/* foreach src image line */
 		for (y = 0; y < msrc.fd_h; y++)
 		{
+			DIAGS(("line=%d\n", y));
+
 			pxy[4] = pxy[0] = 0;
 			pxy[5] = pxy[1] = 0;
 			pxy[6] = pxy[2] = tmp.fd_w - 1;
 			pxy[7] = pxy[3] = tmp.fd_h - 1;
-			/* vro_cpyfm(C.vh, ALL_WHITE, pxy, &tmp, &tmp);*/
+			/* vro_cpyfm(vdih, ALL_WHITE, pxy, &tmp, &tmp);*/
 			/* The above line crashes in Falcon TC (w/o NVDI) for some reason ?! */
 
 			bzero(tmp.fd_addr, map_size(&tmp, 4));
@@ -137,46 +141,50 @@ transform_gem_bitmap_data(MFDB msrc, MFDB mdest, int src_planes, int dst_planes)
 			for (x = 0; x < msrc.fd_wdwidth; x++)
 			{		
 				short *ptr = (short *)((char *)msrc.fd_addr + (y * msrc.fd_wdwidth * 2) + (x << 1));
-				short *step = ptr;
-
-				/* Get the 16 bit from each plane in bits[8] */
+				/* Get the 16 bit from each plane in words[8] */
 				i = 0;
 				while (i < src_planes)
-					bits[i++] = *step,
-					step += plane_int_size;
+					words[i++] = *ptr,
+					ptr += plane_int_size;
 			
-				/* Now built the colour index number from them by taking 1 bit from each bits[j]. */
+				/* Now built the colour index number from them
+				 * by taking 1 bit from each words[j]. */
 				for (i = 0; i < 16; i++)
 				{
+					/* interleaved to chunky conversion */
 					int j;
-					bit = 0;
-					for (j = src_planes - 1; j >= 0; j--) /* HR: works also for j = 0 */
+					unsigned short pixcol = 0;
+					for (j = src_planes - 1; j >= 0; j--)
 					{
-						bit <<= 1;
-						bit |= (bits[j] >> i) & 1;
+						pixcol <<= 1;
+						pixcol |= (words[j] >> i) & 1;
 					}
 
-					bit &= mask;
-					
-					if (bit < tmp.fd_h)
-					{
-						ptr = (short *)((char *)tmp.fd_addr + (bit * msrc.fd_wdwidth * 2) + (x << 1));
-						*ptr |= 1 << i;
-						used_colours[bit] = 1;
-					}
+					pixcol &= mask;
+
+					ptr = (short *)((char *)tmp.fd_addr + (pixcol * msrc.fd_wdwidth * 2) + (x << 1));
+					*ptr |= 1 << i;
+					used_colours[pixcol] = 1;
 				}
 			}
 
+			/* src fd_stand to device dependent format translation
+			 * (for the current line) */
 			pxy[5] = pxy[7] = y;
-			vr_trnfm( C.vh, &tmp, &tmp2 );
+			vr_trnfm( vdih, &tmp, &tmp2 );
 
+			/* for each color in src MFDB color depth */
 			for (i = 0; i < tmp.fd_h; i++)
 			{
+				/* only for the used ones */
 				if (used_colours[i])
 				{
+					/* the system palette is a bit complicated */
 					colours[0] = colour_lut[i];
+
 					pxy[1] = pxy[3] = i;
-					vrt_cpyfm( C.vh, MD_TRANS, pxy, &tmp2, &mdest, colours );
+					/* project transparently to the mdest */
+					vrt_cpyfm( vdih, MD_TRANS, pxy, &tmp2, &mdest, colours );
 				}
 			}
 		}

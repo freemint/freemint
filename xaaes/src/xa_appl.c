@@ -209,9 +209,9 @@ handle_XaAES_msgs(LOCK lock, union msg_buf *msg)
 unsigned long
 XA_appl_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
-	int dest_id = pb->intin[0], len = pb->intin[1], rep = 1;
-	union msg_buf *m = pb->addrin[0];
 	IFDIAG(char *pmsg(short m);)
+	int dest_id = pb->intin[0], len = pb->intin[1], rep = 1;
+	union msg_buf *m = (union msg_buf *)pb->addrin[0];
 
 	CONTROL(2,1,1)
 
@@ -369,7 +369,7 @@ static short info_tab[17][4] =
 	/*16 <-- 65 */
 	{
 		1,		/* appl_control exists. */
-		APC_HIGH,	/* highest opcode for appl_control */
+		APC_INFO,	/* highest opcode for appl_control */
 		0,		/* shel_help exists. */
 		0		/* wind_draw exists. */
 	}
@@ -429,7 +429,7 @@ unsigned long
 XA_appl_find(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	struct nn { short m, id;};
-	struct nn *ex = (struct nn *)pb->addrin;
+	const struct nn *ex = (const struct nn *)pb->addrin;
 	char *name = (char *)pb->addrin[0], *t;
 	short f = ex->id, n;
 
@@ -508,7 +508,7 @@ XA_appl_control(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
 	XA_CLIENT *cl;
 	int pid = pb->intin[0];
-	enum apc_code f = pb->intin[1];
+	/*enum apc_code*/short f = pb->intin[1];
 
 	CONTROL(2,1,1)
 
@@ -529,6 +529,11 @@ XA_appl_control(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		DIAG((D_appl, client, "  --    on %s, func %d, 0x%lx\n",
 			c_owner(cl), f, pb->addrin[0]));
 	
+		/**
+		 * note: When extending this switch be sure to update
+                 *       the appl_getinfo(65) mode corresponding structure
+		 *  tip: grep APC_ * 
+		 **/
 		switch (f)
 		{
 			case APC_HIDE:
@@ -549,7 +554,7 @@ XA_appl_control(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			break;
 			case APC_INFO:
 			{
-				short *ii = pb->addrin[0];
+				short *ii = (short*)pb->addrin[0];
 				pb->intout[0] = 0;
 
 				if (ii)

@@ -170,7 +170,7 @@ set_widget_repeat(LOCK lock, XA_WINDOW *wind)
  */
 
 static bool
-is_bevent(int gotbut, int gotcl, short *o, int which)
+is_bevent(int gotbut, int gotcl, const short *o, int which)
 {
 	bool ev;
 	int clks = o[0];
@@ -572,17 +572,17 @@ XA_move_event(LOCK lock, struct moose_data *md)
 	 */
 	{
 		/* HR: watch the menu bar as a whole */
-		XA_CLIENT *aes = C.Aes;
+		XA_CLIENT *aesp = C.Aes;
 
-		if (   (aes->waiting_for & XAWAIT_MENU)
-		    && (aes->em.flags & MU_M1))
+		if (   (aesp->waiting_for & XAWAIT_MENU)
+		    && (aesp->em.flags & MU_M1))
 		{
 			if (   cfg.menu_behave != PUSH
 			    && (S.update_lock == C.AESpid || S.update_lock == 0)
-			    && is_rect(x, y, aes->em.flags & 1, &aes->em.m1))
+			    && is_rect(x, y, aesp->em.flags & 1, &aesp->em.m1))
 			{
 				XA_WIDGET *widg = get_widget(root_window, XAW_MENU);
-				cancel_evnt_multi(aes,2);
+				cancel_evnt_multi(aesp,2);
 
 				Sema_Dn(clients);
 
@@ -1063,7 +1063,7 @@ pending_msgs(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	/* Are there any messages pending? */
 	if (rtn)
 	{
-		union msg_buf *buf = pb->addrin[0];
+		union msg_buf *buf = (union msg_buf *)pb->addrin[0];
 		XA_AESMSG_LIST *msg = client->msg;
 		IFDIAG(char *pmsg(short m);)
 
@@ -1144,7 +1144,7 @@ pending_key_strokes(LOCK lock, AESPB *pb, XA_CLIENT *client, int type)
 bool naes12 = false;
 
 static bool
-still_button(LOCK lock, XA_CLIENT *client, short *o)
+still_button(LOCK lock, XA_CLIENT *client, const short *o)
 {
 
 	XA_CLIENT *owner;
@@ -1369,7 +1369,7 @@ DIAG((D_b,client,"new_waiting_for |= MU_BUTTON\n"));
 		bzero(&client->em, sizeof(XA_MOUSE_RECT));
 		if (events & MU_M1)					/* Mouse rectangle tracking */
 		{
-			RECT *r = (RECT *)&pb->intin[5];
+			const RECT *r = (const RECT *)&pb->intin[5];
 			client->em.m1 = *r;
 			client->em.flags = pb->intin[4] | MU_M1;
 DIAG((D_multi,client,"    M1 rectangle: %d/%d,%d/%d, flag: 0x%x: %s\n", r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
@@ -1389,7 +1389,7 @@ DIAG((D_multi,client,"    MX\n"));
 
 		if (events & MU_M2)
 		{
-			RECT *r = (RECT *)&pb->intin[10];
+			const RECT *r = (const RECT *)&pb->intin[10];
 			client->em.m2 = *r;
 			client->em.flags |= (pb->intin[9] << 1) | MU_M2;
 DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s\n", r->x, r->y, r->w, r->h, client->em.flags, em_flag(client->em.flags)));
@@ -1620,7 +1620,7 @@ XA_evnt_mouse(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	bzero(&client->em, sizeof(XA_MOUSE_RECT));
-	client->em.m1 = *((RECT *) &pb->intin[1]);
+	client->em.m1 = *((const RECT *) &pb->intin[1]);
 	client->em.flags = (long)(pb->intin[0]) | MU_M1;
 
 	get_mouse(6);

@@ -761,7 +761,7 @@ XaAES(void)
 					if (r == sizeof(K_CMD_PACKET) && b.pb)
 					{
 						XA_CLIENT *client = Pid2Client(b.pid);
-						int cmd = b.pb->contrl[0];
+						int cmd = b.pb->control[0];
 						repl = XAC_DONE;
 						
 						// display("h %d, cmd %d, client %s\n", client_handle, cmd, client->name);
