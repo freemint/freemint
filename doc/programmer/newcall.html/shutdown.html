@@ -1,0 +1,87 @@
+<html>
+<head>
+	<title> New MiNT system calls: Shutdown() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Shutdown()</H3>
+
+<P>
+<B>LONG Shutdown(<i>mode</i>)</B>
+<P>
+<B>LONG <I>mode</I>;
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Shutdown()</B> kills all processes, syncs 
+filesystems then halts or reboots the system.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>337 (0x0151)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>This function is available under 
+all <B>MiNT</B> versions integrated with <b>MultiTOS</b>.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD>
+On <I>mode</I> equal to <b>SHUT_HALT</b> (0L), the system will shutdown 
+then enter a halted condition.
+<p>On <I>mode</I> equal to <b>SHUT_BOOT</b> (1L), the system will 
+reboot the machine after shutting everything down.
+<p>On <I>mode</I> equal to <b>SHUT_COLD</b> (2L), the system will act 
+the same as with the <b>SHUT_BOOT</b> mode, except that a cold start 
+rather than the warm start will be performed.
+<p>That last mode is recognized as of FreeMiNT version 1.15.5, older 
+versions of the kernel will treat the <b>SHUT_BOOT</b> and 
+<b>SHUT_COLD</b> values equally.
+<p><i>All other values of <b>mode</b> are reserved for future 
+definition.</i>
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.l	mode,-(sp)
+move.w	#$0151,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><b>Shutdown()</b> returns a 
+negative GEMDOS error code, if failed. On success this call obviously 
+never returns.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+<TR><TH><B>Caveats</B></TH><TD>
+<p><i>Older versions of MiNT contained a bug that might cause the 
+system to crash, if you called <b>Shutdown()</b> while both GEM AES and 
+virtual console daemon were present.</i>
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>You need root privileges to shut the 
+system down.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="sync.html"><b>Sync()</b></a>
+</td>
+</tr>
+
+</table>
+</body>
+</html>

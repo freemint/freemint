@@ -1,0 +1,1386 @@
+MiNT is Now TOS: A Multitasking OS Extension for the Atari ST/TT/Falcon
+
+The MiNT kernel is derived from MiNT, Copyright 1990,1991,1992 Eric R.
+Smith. All rights reserved. Used and modified by Atari under license from
+Eric Smith; new code and features Copyright 1992,1993,1994 Atari Corporation.
+
+
+Introduction
+
+
+MiNT is a replacement for (most of) GEMDOS. It is designed to provide
+the same kind of services as GEMDOS (file and process management,
+primarily) but with extensions to permit such things as multitasking,
+interprocess communication, job control, and a flexible file system
+interface that permits loadable file systems and device drivers.
+
+This document does not discuss the new, multitasking Desktop or utility
+programs such as MINIWIN or TCSH. Refer to other documents for
+descriptions of these programs.
+
+MiNT exists to make your job as a developer easier. You can use MiNT
+system calls to do things like run background processes, to set up
+interprocess communication, to examine files on disk, or in more
+advanced applications to install new kinds of device drivers or
+file systems. Your programs generally don't need to know about
+MiNT unless they want to take advantage of new MiNT features;
+the old GEMDOS calls are still supported for backwards compatibility.
+
+Our discussion of MiNT will begin with some of the changes visible
+to all users, and then continue with tips about programming MiNT.
+
+
+Pseudo Drives
+
+
+MiNT provides a fake "disk drive" called U: (for "unified"). There are
+"directories" in the root of this drive which contain "files" special to
+MiNT. These "files" are not real files, but may represent other objects
+such as devices or executing programs. Ordinary file-access calls are used
+to deal with them; for instance, writing to U:\DEV\CON is like writing to
+the console (as distinct from stdout).
+
+The following directories are available on U:
+
+U:\DEV
+
+Contains files which correspond to the BIOS devices; this allows
+you to access these devices from within programs. For example, saving an
+ASCII text file to "U:\DEV\PRN" should cause it to be printed on your
+printer.
+
+The following devices are available by default in U:\DEV (additional device
+drivers may be installed by applications):
+
+    CENTR   the Centronics (parallel) printer port
+    MODEM1  the RS232 serial port
+    MIDI    midi port
+    KBD     intelligent keyboard controller
+    PRN     printer device (usually the parallel port)
+    AUX     auxiliary terminal (usually the rs232 port)
+    CON     current control terminal
+    TTY     same as CON
+    STDIN   current file handle 0 (standard input)
+    STDOUT  current file handle 1 (standard output)
+    STDERR  current file handle 2 (standard error)
+    CONSOLE the keyboard/screen
+    MOUSE   the mouse (reserved for the operating system)
+    NULL    a null device (like Unix's /dev/null)
+
+The "STD*" file handles are useful for providing I/O redirection to programs
+that normally require file names on the command line, so you
+can run such a program in a pipeline.
+
+
+U:\PIPE
+
+Contains files which are FIFO queues (e.g. pipes). All files
+created in U:\PIPE are temporary; when the last program using a FIFO
+closes it, it is erased. Normally, U:\PIPE will be empty, but it will
+have items on it when you're running a window manager, print spooler,
+or similar program that uses FIFOs or pseudo-ttys for communication.
+(See the section on FIFOs later in this guide.)
+
+U:\PROC
+
+Contains special files that represent all currently executing processes,
+and their states (such as whether they're running, ready, or waiting, their
+process ID numbers, and the amount of memory they've taken.) The "files"
+will have names like "GEM.001"; this means that the process name is "GEM"
+(usually because it was started from a file like "GEM.SYS"), and its
+process ID is 1. You can rename processes just as if they were files,
+except that any extension you give is always replaced with the process ID
+(e.g. if you rename GEM.001 to FOO.BAR, it will really become
+FOO.001). 
+
+The "size" of a process file is the amount of memory that is allocated to
+it. Note that this is the sum of all memory that the process may
+access. The entire size of a shared memory block will be added to every
+process which has access to the block. The date and time stamp of a
+process file is the data and time that the process was started. A process'
+current state is reflected by the attribute bits of the file; most of these
+are not visible from the Desktop, but can be checked by programs such
+as PS or TOP.
+
+Here are the attribute byte combinations for process files on U:\PROC,
+and their meanings:
+
+    ATTRIBUTE    PROCESS STATE
+
+      0x00       currently running
+      0x01       ready to run
+      0x20       waiting for an event
+      0x21       waiting for I/O
+      0x22       zombie (exited)
+      0x02       terminated and resident (TSR)
+      0x24       stopped by a signal
+
+The "zombie" state is for processes which have exited, but whose parents
+haven't yet learned their exit codes.
+
+Deleting a "file" in U:\PROC will send a SIGTERM signal to the
+corresponding process, which will usually result in that process being
+terminated. It is not possible to delete TSR or zombie processes.
+
+
+U:\SHM
+
+U:\SHM is a place for shared memory. Processes may create files
+in this directory which represent blocks of memory that they wish
+to share with other processes. This provides a very fast method
+of interprocess communication. (See the section on Shared Memory
+later in this guide.)
+
+
+Other directories on drive U: are actually other drives. U:\C is
+drive C:, so the file C:\MINT\MW.PRG, for instance, is also visible
+as U:\C\MINT\MW.PRG.
+
+
+
+Background Processes
+
+
+Programs may be started in the background. The easiest way to do this
+is with the MultiTOS desktop. It can also be done with CLIs such as
+TCSH or a similar shell. In TCSH you can say something like:
+
+    % cd \foo\src
+    % make >& errors &
+
+This runs "make" and redirects both its standard output and its error output
+to a file called errors. The final "&" means "in the background." The shell
+starts the program, then comes back for another command without waiting
+for the program to finish running.
+
+A background process that tries to write to the console will stop, which
+is why the example redirects the output of "make." In the shell, the
+command "fg" will bring a stopped process to the foreground. In addition,
+the command "stty -tostop" (read that as "set tty, no terminal-output stop")
+turns off the stop-on-output feature.
+
+
+Pipes
+
+
+Pipes are special files that are used to communicate between processes. The
+data in a pipe is always in memory, so using a pipe instead of a temporary
+file is usually faster; it also doesn't consume disk space. Only a limited
+amount of data can be held in a pipe at once; when a process tries to write
+more data, it is suspended until another process empties the pipe by reading
+some data. If there are no more readers, a process writing on a pipe is
+terminated. Writes of 1K or less to a pipe are atomic, that is, if you
+make an Fwrite call with 1024 or fewer bytes, these bytes are guaranteed
+to be written together; if you try to write more than 1024 bytes to a
+pipe, it's possible that your data will be interleaved with the data
+of some other process writing to the same pipe, or for a process reading from
+the pipe to get your data in chunks, rather than all at once.
+
+Again, with TCSH it is easy to demonstrate the use of pipes:
+
+    % ls -lt | head
+
+This is a "pipeline." The first stage of the pipeline is the program "ls"
+which has "-lt" as its argument. That is, "list directory, long form,
+sorted by date (most recent first)." The output of "ls" is passed as input
+to the next stage of the pipeline, "head." This program displays only the
+first 10 lines of its input. The resulting output from this pipeline,
+then, is a listing of the 10 most-recent files in the current directory.
+
+
+Job Control
+
+
+MiNT supports job control. The ^Z (control-Z) key can be used to
+suspend a process. The process can be restarted again if it is sent the
+appropriate signal. TCSH sends this signal when you use the "fg"
+command. TCSH's "bg" command restarts stopped processes, too, but does
+so in the background, so they'll stop again if they attempt input or
+output. There is also a "delayed" suspend key, ^Y, that takes effect only
+when a process attempts to read it.
+
+Some programs written for TOS put the terminal in "raw" mode, where no
+control characters are interpreted. You can use CTRL-ALT-Z to achieve the
+effect of ^Z for such programs. However, this feature should be used with
+caution -- it's possible that the TOS program had a good reason for not
+wanting to be interrupted.
+
+More sophisticated job control facilities can be provided by shells that are
+specifically written with MiNT in mind. TCSH demonstrates this. Jobs
+run in the background from such shells are automatically stopped when
+they attempt to read from the terminal or write to it. Thus, you can run a
+long compile in the background, and if an error occurs and the compiler
+attempts to write on the screen, it will be stopped.
+
+Some other special keys that MiNT interprets are:
+
+CTRL-ALT-DEL
+Provides a (warm) boot, as in TOS >= 1.4; with the right shift key, you
+get a cold boot.
+
+Some other keys are recognized by MiNT if the process is doing I/O in
+"cooked" mode:
+
+^C (CTRL-C)
+Interrupt the running program with signal SIGINT. This (usually)
+will kill the process, unless it has made arrangements to catch it.
+Note that ^C takes effect immediately under MiNT, whereas under TOS
+it only takes effect when the process reads or writes.
+
+^\ (quit)
+Send a QUIT signal to a process; usually the same end result as ^C, but
+it is guaranteed to kill a TOS program (only MiNT-specific programs
+know how to catch it). Use with caution.
+
+These keys do \not\ have any effect on processes operating in "raw" mode,
+such as editors. However, you can force these to work even on such programs
+by holding down the ALT key as well, e.g. CTRL-ALT-C will always send SIGINT
+to the process. You should use caution when doing this, since some programs
+will function incorrectly and/or lose data if interrupted when they
+aren't expecting it.
+
+
+Testing for the Presence of MiNT
+
+
+The best way to check to see if MiNT is active is to check the cookie jar.
+MiNT installs a cookie of 0x4d694e54 (in ASCII, 'MiNT'), with a value
+consisting of the major/ minor version numbers in the high/low bytes of the
+low word. Thus, MiNT version 1.02 has a cookie value of 0x00000102L.
+(This isn't the place to explain the cookie jar, but basically it's a list
+of (cookie, value) pairs of longwords, terminated by cookie 0; a pointer to
+the jar is found at 0x5a0. MiNT always installs a cookie jar; versions of
+TOS prior to 1.6 don't always, in which case 0x5a0 will contain 0).
+
+
+File Handles and Devices
+
+
+File handle -1 refers to the current control terminal, \not\ necessarily
+the console (though this is where it points by default). BIOS handle 2 also
+refers to the control terminal, so that e.g. Bconout(2, c) outputs
+a character to the control terminal. Thus,
+
+    Fforce(-1, Fopen("U:\\DEV\\MODEM1", 2));
+    r = Bconin(2);
+
+reads a character from the RS232 port under MiNT. This is done so that
+programs that use the BIOS for I/O will be able to run in windows or
+over the modem. Similarly, the GEMDOS device CON: refers to the current
+control terminal, so Fopen("CON:", 2) is normally equivalent to Fdup(-1).
+To access the physical console, use device U:\DEV\CONSOLE (but do
+this only if you really, really need the output to go to the physical
+console; in almost all cases the output should be sent to the control
+terminal, since that's where the user will be expecting it to go).
+
+In a similar fashion, file handle -2 and bios device 1 (GEMDOS device AUX:)
+may be redirected away from the RS232 port (device U:\DEV\MODEM1), and
+file handle -3 and bios device 0 (GEMDOS device PRN:) may be directed away
+from the Centronics printer port (device U:\DEV\CENTR). Since both the
+GEMDOS handles and BIOS device numbers are redirected, any program at all
+will obey the redirection unless it accesses the hardware directly (or
+unless it was written for MiNT and specifically uses the new device names
+like U:\DEV\CENTR; this should be done only if \absolutely\ necessary!)
+See also the PRN= and CON= commands for mint.cnf, which provide another
+way to redirect the printer and console. (Actually, they're just another
+interface to the same method of redirection.)
+
+File handles -4 and -5 are new with MiNT, and refer to the MIDI input
+and output devices respectively. Redirecting these handles will affect
+BIOS operations on bios device 4 (the MIDI port). This is so
+programs that do MIDI I/O using BIOS device 4 can be connected in a special
+kind of pipeline.
+
+
+Programming with MiNT
+
+A file (MINTBIND.H) is provided that gives a C interface to the new
+MiNT system calls. Users of other programming languages will have to write
+the interfaces themselves. This should be relatively straightforward, so
+long as your compiler provides a way to call GEMDOS directly.
+
+
+Interprocess Communication
+
+
+MiNT provides many forms of interprocess communication (IPC): signals, fifos,
+shared memory, message passing, and semaphores.
+
+Signals
+
+
+MiNT introduces the new (to TOS) concept of a signal. If you're
+familiar with Unix/Posix signals, then MiNT signals will will be
+easy to learn; but note that there are some (not so subtle) differences
+between MiNT and Unix!
+
+A signal is a small non-negative integer that represents an exceptional event;
+usually something that is very urgent. It's somewhat like an interrupt or
+exception to the CPU, only it's implemented in the operating system
+instead of in the hardware. Like many exceptions (bus errors, etc.) signals
+are usually fatal. Most signals can be caught by programs (so that a
+program-defined routine is called) or ignored; if a signal is caught or
+ignored, it is no longer fatal. Signals can also be blocked; a
+blocked signal is not acted upon until it is unblocked.
+
+A signal is said to be sent to a process when the exceptional
+condition related to that signal occurs, or when another process sends
+the signal with the Pkill() system call. The signal is said to
+be delivered to the process when that process wakes up and
+begins to take whatever actions are appropriate for the signal. Note
+that there may be a considerable time interval between the sending of
+a signal and its delivery. For example, if process A has blocked the
+SIGHUP signal (signal 1), then no SIGHUP will be delivered to it until
+it has unblocked that signal, even if process B sends it SIGHUP with
+the Pkill() system call. Note also that a signal is not
+necessarily delivered the same number of times that it is sent. If both
+process B and process C send SIGHUP to process A, when process A
+unblocks SIGHUP only one SIGHUP will be delivered. This is because signals
+are like flags; once a flag has been set (the signal is sent) setting
+the flag again will have no effect until it has been cleared (the signal
+is delivered).
+
+What Signals Are There?
+
+There are 32 possible signals, 0-31. Not all of these have been assigned
+a meaning under MiNT. Here are the ones that have been given a meaning;
+we give the symbolic name for the signal, the corresponding integer,
+and the "traditional" meaning for the process that the signal is sent to.
+Any signal not listed here should be considered as "reserved" and should not
+be used by applications.
+
+Unless otherwise noted, the default action for signals is to terminate
+the process.
+
+#define	SIGNULL		0	/* No default action */
+This isn't really a signal at all; it is never delivered to processes
+and has no effect. It exists only so that processes can test to see if
+a particular child process has exited, by attempting to send SIGNULL
+to the child. If the child exists, the attempt will succeed but nothing
+will be done. If the child has terminated, the caller will get an error.
+It is not possible to catch or block this signal, since it is never
+sent to processes anyway.
+
+#define SIGHUP		1
+"The terminal that you're connected to is no longer valid." This signal
+is commonly sent by, for example, window managers when the user has
+closed the window. Processes should not attempt any I/O to their
+controlling terminal after receiving this signal, and indeed should probably
+exit unless the user has specifically asked them to continue.
+
+#define SIGINT		2
+"Please stop what you're doing." This signal is sent when the user presses
+control-C. It usually means that the user wishes the process to stop its
+current task. Non-interactive processes should generally exit when they
+receive this signal; interactive processes may wish to catch SIGINT
+so that the user can use it to break out of time-consuming tasks and
+return to a command prompt.
+
+#define SIGQUIT		3
+"Stop what you're doing, something's gone wrong!" This signal is sent when
+the user presses control-\. It usually indicates a desire to immediately
+abort the process because of an error that the user has noticed. It is
+generally thought to be "stronger" than SIGINT, and exiting (perhaps after
+cleaning up data structures) is an appropriate response to this.
+
+#define SIGILL		4
+"An illegal instruction has been encountered." This corresponds to the
+680x0 illegal instruction trap, and usually indicates a very serious error;
+catching this signal is generally unwise.
+
+#define SIGTRAP		5
+"The single-step trace trap has been encountered." This corresponds to the
+680x0 trace trap, and is usually activated (and handled) by debuggers;
+user programs shouldn't catch this.
+
+#define SIGABRT		6
+"An awful error has occured." This is commonly sent by the abort library
+function, and indicates that something has gone very, very wrong (for
+example, data structures have been unexpectedly corrupted). It is unlikely
+that anything useful can be done after this signal is sent; programs
+should not normally catch or ignore SIGABRT.
+
+#define SIGPRIV		7
+"Privilege violation." An attempt has been made to execute an instruction
+in user mode that is normally restricted to supervisor mode; this corresponds
+to the 680x0 privilege violation exception, and indicates a serious error.
+
+#define SIGFPE		8
+"Division by zero or a floating point error has occured." Processes may
+ignore or catch this signal (which corresponds to the 680x0 division by zero
+trap) and deal with it as they see fit.
+
+#define SIGKILL		9	/* Cannot be blocked or caught */
+"Die!" This signal will never be seen by a process; nor can processes
+block it. Sending SIGKILL is a way to be sure of killing a run-away
+process. Use it only as a last resort, since it gives the process no
+chance to clean up and exit gracefully.
+
+#define SIGBUS		10
+"Bus error." Corresponds to the 680x0 bus error exception, and indicates
+a very serious error; programs should generally not attempt to ignore
+or catch this signal.
+
+#define SIGSEGV		11
+"Illegal memory reference." Corresponds to the 680x0 address error
+exception, and indicates a very serious error; catching or ignoring this
+signal is not recommended.
+
+#define SIGSYS		12
+"Bad argument to a system call." This signal is sent when an illegal
+(usually, out of range) parameter is sent to a system call, and when that
+system call does not have any "nice" way to report errors. For example,
+Super(0L) when the system is already in supervisor mode causes SIGSYS to
+be raised. Note that the kernel does not always detect illegal/out of
+range arguments to system calls, only sometimes.
+
+#define SIGPIPE		13
+"A pipe you were writing to has no readers." Programs may catch this signal
+and attempt to exit gracefully after receiving it; note that exiting is
+appropriate because the standard output is probably no longer connected
+to anything.
+
+#define SIGALRM		14
+"The alarm you set earlier has happened." This signal is sent to processes
+when the alarm clock set by Talarm (q.v.) expires. It's very
+common to catch this signal and from the signal handler jump to a known
+point in the program; for example, to indicate a timeout while attempting
+to communicate over a serial line.
+
+#define SIGTERM		15
+"Please die." This is a polite form of SIGKILL (#9). Programs should
+respect this nice request; they may want to catch the signal to perform
+some cleanup actions, but they should then exit (since if they don't,
+the user will probably get mad and send SIGKILL later anyway...). This
+is the signal that is sent when a process is dragged to the trashcan on
+the desktop.
+
+#define SIGSTOP		17	/* Default action: suspend the process */
+"Suspend yourself." This signal is sent to a process when it should be
+stopped temporarily. SIGSTOP is used primarily by debuggers and similar
+programs; suspensions requested directly by the user usually are signalled
+by SIGTSTP (q.v.) This signal cannot be ignored, blocked, or caught.
+
+#define SIGTSTP		18	/* Default action: suspend the process */
+"The user is asking you to suspend yourself." This signal is sent immediately
+when the user presses the control-Z key, and is sent when the process tries
+to read a control-Y key in cooked mode (for a delayed stop). In both cases,
+the process should suspend itself. Since this is the default action, no
+special handling is normally required, although some programs may wish to
+save the screen state and restore it when they are unsuspended.
+
+#define SIGCONT		19	/* Default action: continue a stopped
+					 process */
+"You are being restarted after having been suspended." This signal is
+sent by shells to resume a suspended process. If the process is not
+suspended, the signal does nothing. This signal cannot be blocked, but
+it *is* possible to install a handler for it (this is rarely necessary,
+though).
+
+#define SIGCHLD		20	/* Default action: no action taken */
+"One of your children has been suspended or has exited." This signal is
+sent by the kernel to the parent of any process that is terminated (either
+because of a signal or by a Pterm, Pterm0, or Ptermres system call) or
+which is suspended because of a signal. Programs that are concerned with the
+status of their children (for example, shells) may wish to catch this signal;
+after a SIGCHLD has been received, the Pwait3 system call may be
+used to determine exactly which child has exited or been suspended.
+Note that the Psigaction system call may be used to force SIGCHLD to be
+delivered only when a child process terminates (so that suspension of
+child processes, for example via job control, does not raise SIGCHLD.
+
+#define SIGTTIN		21	/* Default action: suspended the process */
+"Attempt to read from a terminal you don't own." This signal is sent to
+any process that attempts to do input from a terminal with a different
+process group than their own. Usually, this happens if the user has started
+the job in the background; the process will be suspended until the user
+explicitly brings it to the foreground with the appropriate shell command
+(at which time the shell will reset the terminal's process group and
+send the stopped process a SIGCONT signal to tell it to continue).
+[NOTE: in fact, SIGTTIN and SIGTTOU are sent to all processes in the same
+process group as the process that attempted to do the i/o; this is for
+compatibility with Unix, and it simplifies the implementation of job
+control shells.]
+
+#define SIGTTOU		22	/* Default action: suspend the process */
+"Attempt to write to a terminal that you don't own." Similar to SIGTTIN (q.v.).
+Processes should normally respect the user's job control and should
+override or ignore SIGTTOU only in situations where a very critical error
+has occured and a message must be printed immediately.
+
+#define SIGXCPU		24
+"Your CPU time limit has been exhausted." Sent to processes when they have
+consumed more than the maximum number of milliseconds of CPU time allowed
+by the Psetlimit() system call. The signal will continue to be sent to
+the process until it exits; if a process does catch this signal, it should
+do whatever clean up actions are necessary and then terminate.
+
+#define SIGWINCH	28	/* Default action: no action taken */
+"The window you were running in has changed size." This signal is sent
+to processes by some window managers to indicate that the user has changed
+the size of the window the process is running in. If the process cares
+about the window size, it may catch this signal and use an Fcntl call
+to inquire about the new window size when the signal is received.
+(See the documentation for Fcntl for details.)
+
+#define SIGUSR1		29
+#define SIGUSR2		30
+
+These two signals are reserved for applications, which may define whatever
+meaning they wish for them. Note, however, that these signals do
+terminate processes by default, so don't send them to a process which
+isn't prepared to deal with them.
+
+
+System Calls Dealing With Signals
+
+
+WORD
+Pkill( WORD pid, WORD sig )
+
+If pid > 0, then the given signal (see the numbers above) is sent to the
+process with that pid.
+If pid == 0, then the given signal is sent to all members of the process
+group of the process making the Pkill call. This includes, of course,
+the process itself.
+If pid < 0, the signal is sent to all members of process group (-pid).
+
+Returns:
+0 	for successful sending of the signal
+	(Note that if the current process is a recipient of the signal,
+	and the signal proves to be fatal, then Pkill will never return.)
+ERANGE	if "sig" is less than 0 or greater than 31
+EFILNF	if pid > 0 and the indicated process has terminated or does not
+	exist, or if pid < 0 and there are no processes in the given
+	process group
+EACCDN  if the sending process is not authorized to send signals to
+	the specified receiving process or group (for example, they
+	belong to different users)
+
+
+#define SIG_DFL (0L)
+#define SIG_IGN (1L)
+
+LONG
+Psignal( WORD sig, LONG handler )
+
+Change the handling of the indicated signal.
+
+If "handler" is SIG_DFL, then the default action for the signal will occur when
+the signal is delivered to the current process.
+
+If "handler" is SIG_IGN, then the signal will be ignored by the process, and
+delivery of the signal will have no noticeable effect (in particular, the
+signal will not interrupt the Pause system call, q.v.). If the signal
+is pending at the time of the Psignal call, it is discarded.
+
+If "handler" is any other value, it is assumed to be the address of a
+user function that will be called when the signal is delivered to the
+process. The user function is called with a single LONG argument on
+the stack, which is the number of the signal being delivered (this is done
+so that processes may use the same handler for a number of different
+signals). While the signal is being handled, it is blocked from delivery;
+thus, signal handling is "reliable" (unlike Version 7 and early System V
+Unix implementations, in which delivery of a second signal while it
+was being handled could kill the process). Also note that, unlike some
+versions of Unix, the signal handling is *not* reset to the default action
+before the handler is called; it remains set to the given signal handler.
+
+The signal handler must either return (via a normal 680x0 rts instruction)
+or call the Psigreturn system call to indicate when signal handling is
+complete; in both cases, the signal will be unblocked. Psigreturn also
+performs some internal clean-up of the kernel stack that is necessary if
+the signal handler is not planning to return (for example, if the C
+longjmp() function is to be used to continue execution at another point
+in the program).
+
+Signal handlers may make any GEMDOS, BIOS, or XBIOS system calls freely.
+GEM AES and VDI calls should not be made in a signal handler.
+
+Note that calling Psignal to change behavior of a signal has the side
+effect of unmasking that signal, so that delivery is possible. This is done
+so that processes may, while handling a signal, reset the behavior and
+send themselves another instance of the signal, for example in order
+to suspend themselves while handling a job control signal.
+
+Signal handling is preserved across Pfork and Pvfork calls. Signals
+that are ignored by the parent are also ignored by the child after a Pexec
+call; signals that were being caught for handling in a function are reset
+in the child to the default behavior.
+
+Returns:
+The old value of handler on success.
+ERANGE	if sig < 1 or sig > 31
+EACCDN	if sig cannot be caught by the user (i.e. SIGKILL or SIGSTOP)
+
+Bugs:
+Signal handling can be nested only a small (around 3) number of times,
+i.e. if 4 signals are delivered to a process, and the process has established
+handlers for all 4, and none of the handlers has returned or called
+Psigreturn, then there is a very good chance of a stack overflow killing
+the process off. In practice, this is unlikely to happen.
+
+
+LONG
+Psigblock( LONG amask )
+
+Block receipt of some signals. The "amask" argument is added to the
+current set of signals being masked, i.e. the new set of blocked signals
+is the union of the old set and the set represented by amask. Sets of
+blocked signals are represented by a 32 bit unsigned long quantity, with
+bit (1L << sig) set if signal "sig" is to be blocked, and clear if not.
+
+Blocked signals remain blocked across Pfork and Pvfork calls. For Pexec
+calls, children always start out with an empty set of blocked signals,
+regardless of which signals are blocked in the parent.
+
+Returns:
+The old set of blocked signals (i.e. the set as it was before amask
+was added to it).
+
+NOTE: Certain signals (SIGKILL, SIGSTOP, SIGCONT) cannot be blocked;
+if the corresponding bits are set in amask, the kernel will clear them
+but will not report an error.
+
+
+LONG
+Psigsetmask( LONG mask )
+
+Decide which signals are to be blocked from delivery. Unlike Psigblock
+(which adds to the set of blocked signals) Psigsetmask changes the
+entire set, replacing the old set of blocked signals with the one
+specified in "mask". As with Psigblock, signal n is blocked from
+delivery if bit (1L << n) is set in mask. Note that certain signals
+cannot be blocked, and if the corresponding bits are set in the
+mask the kernel will clear them.
+
+Returns:
+The old set of blocked signals.
+
+Usage:
+Typically, Psigblock and Psigsetmask are used together to temporarily
+block signals, e.g.:
+
+	oldmask = Psigblock( (1L << SIGINT) );
+	... do some things with SIGINT blocked from delivery ...
+	(void) Psigsetmask(oldmask);
+
+
+
+LONG
+Psigpending()
+
+Give an indication of what signals are pending (i.e. have been sent to
+the process but not yet delivered, probably because they are blocked
+from delivery).
+
+Returns:
+A 32 bit unsigned long representing the set of signals that are pending.
+Signal n is pending if bit (1L << n) is set in the returned value.
+
+
+void
+Psigreturn()
+
+Terminate signal handling. This call should be used by any signal
+handler that is not planning to return to the kernel (i.e. if the
+handler is going to execute a non-local jump to another point in the
+program). It cleans up the signal delivery stack and unblocks the
+signal that was being delivered. Calling Psigreturn when no signal
+is being delivered is harmless.
+
+Bugs:
+Calling Psigreturn from a signal handler, and then actually returning
+from that handler, is likely to produce extremely unpleasant results.
+Don't do it.
+
+
+void
+Pause()
+
+Wait until a signal is delivered. This call will return after any (non-fatal)
+signal has been delivered to the process. Note that signals that are being
+ignored are never delivered.
+
+
+void
+Psigpause( LONG mask )
+
+Block the set of signals specified by "mask", and then wait until
+a signal is delivered. This call will return after any (non-fatal)
+signal has been delivered to the process. Before returning, the signal
+mask is restored to its original value.
+
+
+
+struct sigaction {
+	LONG	sa_handler;
+	LONG	sa_mask;
+	WORD	sa_flags;
+#define SA_NOCLDSTOP 1;
+}
+
+WORD
+Psigaction( WORD sig, struct sigaction *act, struct sigaction *act )
+
+Like Psignal, this call changes the handling of the indicated signal.
+If "act" is non-zero, it is a pointer to a structure which describes
+the new signal handling behavior, as follows:
+
+sa_handler	is the function to be called when the signal is delivered,
+		or SIG_DFL, or SIG_IGN. For further information about
+		signal handling functions, see Psignal.
+sa_mask		is a set of additional signals to mask while the signal
+		is being delivered. The signal itself is always masked,
+		but sometimes it might be desireable to mask some
+		other signals as well; this allows a "prioritization"
+		of signals
+sa_flags	extra flags which can affect the behavior of the
+		signal. This field should normally be set to 0.
+		If "sig" is SIGCHLD and "flags" is SA_NOCLDSTOP,
+		then the SIGCHLD signal will not be delivered to
+		this process when one of its children are stopped.
+
+If "oact" is non-zero, then the old signal handling behavior is
+copied into "oact" and returned.
+
+Returns:
+0 on success
+ERANGE	if sig < 1 or sig > 31
+EACCDN	if sig cannot be caught by the user
+
+Usage:
+If "sig" is a valid signal, the call:
+	foo = Psignal(sig, newfunc)
+is equivalent to:
+	struct sigaction newact, oact;
+	newact->sa_mask=0L;
+	newact->sa_flags=0;
+	newact->sa_handler = newfunc;
+	Psigaction(sig, &newact, &oact);
+	foo = oact->sa_handler;
+
+
+LONG
+Talarm( LONG s )
+
+If s > 0, schedule a SIGALRM signal to occur in s seconds. This alarm
+will replace any previously scheduled alarm.
+If s = 0, cancel any previously scheduled alarm.
+If s < 0, inquire about a scheduled alarm but do not change it.
+
+Returns:
+If an alarm was previously scheduled, returns the number of seconds remaining
+until that previously scheduled alarm. Otherwise, returns 0.
+
+Bugs:
+Internal calculations are done in milliseconds, not seconds, so the returned
+value is not exactly accurate.
+For the same reason, setting an alarm more than 2 million seconds or so
+into the future will not work correctly.
+
+
+FIFOs
+
+
+FIFOs are "first in first out" message queues. Pipes are a special kind of
+(unidirectional) FIFO. FIFOs are represented by files in the subdirectory
+"PIPE" on drive "U:." They are created with the Fcreate(name, flags)
+system call. "name" will be the name under which the fifo is known
+(maximum 13 characters); "flags" is explained below. The returned file handle
+is treated just like an ordinary file, and may be written to and read from
+(unless the fifo is unidirectional, in which case it may only be written to).
+The program that creates the FIFO is normally called the "server." Other
+programs ("clients") may use the Fopen(name, mode) system call to open the
+other end of the FIFO and read the data that the server writes, or write data
+for the server to read. When the last program (either client or server) using
+a FIFO closes it, the FIFO is deleted automatically. Note that one program can
+be both client and server, if it creates a FIFO with Fcreate and then opens it
+again with Fopen. Also, children of the server can inherit the Fcreate'd file
+handle and thus have access to the "server" side of the FIFO.
+
+The bits in the "flags" argument to Fcreate have the following meanings:
+
+0x01
+Make the FIFO unidirectional (server can write, clients can read).
+
+0x02
+Cause reads to return EOF if no other processes are writing, and writes
+to raise the SIGPIPE signal if no other processes are reading. The
+default action (if this flag is not given) is to block waiting for
+reads and writes.
+
+0x04
+Make the FIFO a pseudo-tty; to client processes, the FIFO will act
+just like a terminal with the server "typing" the characters; for
+example, if the server writes a control-C, SIGINT will be sent to clients.
+Data can be passed through such a FIFO in long words rather than bytes,
+if the Fputchar() system call is used.
+This allows the server program to pass the extended BIOS information
+(such as the shift key status and scan code) to be returned by Bconin()
+calls on the client side of the FIFO. The 'extra' 3 bytes of the longword
+could also be used for other out of band data.
+
+0x20
+Make the FIFO support Unix style "read" semantics; i.e. Fread() will
+return as soon as any bytes are available on the FIFO, and will return
+the number of bytes read. If this flag is clear, then Fread() will not
+return until the number of bytes specified in the Fread() call have been
+read, or until there are no more writers on the FIFO.
+
+Attempting to Fcreate() a FIFO with the same name as an already existing
+one will result in an access error (i.e. the Fcreate() will fail).
+
+Pipes may be created through the Fpipe() system call as well as through
+the Fcreate()/Fopen() pair; the former method is easier, since the kernel
+takes care of name conflicts, etc. Pipes created in this way
+will be unidirectional, and will have Unix read semantics.
+
+FIFOs may be locked by processes via the Fcntl() system call, as follows:
+
+/* values for the l_type field */
+#define F_RDLCK 0
+#define F_WRLCK 1
+#define F_UNLCK 3
+
+struct flock {
+    short   l_type;     /* type of lock */
+    short   l_whence;   /* what is the lock relative to? */
+    long    l_start;    /* start of locked region */
+    long    l_len;      /* 0 for "rest of file" */
+    short   l_pid;      /* set by F_GETLK */
+};
+.fi
+
+The "l_whence" field takes a value like the "whence" argument of Fseek():
+zero means "from the beginning," one means "from the current position," and
+two means "from the end." The l_start field is added to the appropriate
+offset in the file and the lock starts there.
+
+Fcntl(fd, &lock, F_SETLK)
+Set a lock as specified by the lock structure.
+The current version of MiNT only understands locks on the whole FIFO,
+so lock.l_start and lock.l_len should both be 0.
+If lock.l_type is F_UNLCK,
+then the lock is released. Otherwise, the whole file is locked
+(future versions of MiNT may distinguish between read and write locks,
+but for now all locks are treated as write locks (F_WRLCK) and block both
+reads and writes). If another process has locked the fifo, the
+Fcntl call returns EACCDN (-36). If a process holding a lock terminates,
+the FIFO is automatically unlocked.
+
+Fcntl(fd, &lock, F_GETLK)
+If a lock exists on the fifo, set lock to
+indicate what kind of lock it is; otherwise, set lock.l_type
+to F_UNLCK.
+
+Locks are only "advisory"; that is, a lock on a file prevents obtaining
+another lock, but does not actually prevent reads and writes.
+Thus, programs may ignore locks if they
+choose to do so. However, if all programs that use a fifo also use locks,
+two clients' data will not be not mixed together in that fifo.
+
+Using FIFOs:
+
+FIFOs are actually very easy to use. Here are some things to keep in mind:
+
+(1) The server program (the one that's going to be listening
+    for requests from clients) should create the FIFO with
+    Fcreate(). The file descriptor returned from Fcreate() is
+    the "server" descriptor; descriptors returned by Fopen() will
+    be "client" descriptors. Data written to the server descriptor
+    can be read by client descriptors, and vice-versa.
+(2) FIFOs are by default bidirectional. You can create a single
+    directional FIFO by creating the fifo "read only"; in this case,
+    only the server descriptor can be written to, and only client
+    descriptors can be read from.
+(3) Be careful not to mix data up; if two clients are trying to
+    read from the same FIFO at the same time, they each may read
+    data intended for the other. The easiest way to avoid this is
+    by having every client lock the FIFO before accessing it,
+    and unlock the FIFO when finished. It's also possible (if you're
+    careful) to use the fact that all writes of <1024 bytes are atomic
+    (i.e. take place in one "chunk") to avoid interleaving of data;
+    but locks are probably safer.
+
+Here is a sample pair of applications. The server program ("fortserv.c")
+creates a FIFO and listens on it for requests. When it receives a
+request, it writes a cute saying (a "fortune cookie") back to the FIFO.
+The client program ("fortune.c") opens the FIFO, writes a request,
+reads the response, and prints the result on the terminal. These are
+very simple minded applications, but it should give you an idea of
+the flavour of how to use FIFOs for interprocess communication.
+-------------------------- fortserv.c -------------------------
+/* fortune server: send cookies to clients */
+/* illustrates server side use of fifos */
+
+/*
+ * This program opens a fifo ("U:\PIPE\FORTUNE")
+ * and listens to requests on that fifo. When it
+ * gets a request (consisting of a single '?'
+ * character) it writes back as a reply a 1 byte
+ * "length" followed by a randomly selected saying.
+ * BUGS:
+ *   - maximum of 255 characters for a fortune
+ *   - the fortunes aren't particularly interesting
+ */
+
+#ifdef __GNUC__
+#include <minimal.h>
+#endif
+#include <osbind.h>
+#include <mintbind.h>
+#include <string.h>
+
+#define FIFONAME "U:\\PIPE\\FORTUNE"
+#define MAXSIZE 255
+
+/* witty (?) sayings */
+
+char * sayings[] = {
+"Core fault -- program dumped.",
+"Don't worry, be happy!",
+"Help! I'm trapped in a fortune cookie factory!",
+"\"Home is where you wear-a your hat.\"",
+"I want a cookie.",
+"MS-DOS: just say \"no\".",
+"Never play leapfrog with a unicorn.",
+"No matter where you go, there you are.",
+"Sorry, I'm out of short, pithy sayings today.\r\nTry again later.",
+"They say that playing NetHack is like walking into a death trap.",
+"Vision hazy, try again later.",
+"What? You expected something funny?",
+"Why is it that UFO's always seem to visit idiots?",
+"Your puny intellect is no match for our superior weapons.",
+};
+#define NUMSAYINGS (sizeof(sayings) / sizeof(char *))
+
+/* file descriptor for the fortune fifo */
+int fd;
+
+
+/* send a witty saying out through the fifo */
+
+void
+send_saying()
+{
+	int i;
+	char *s;
+	char tmpbuf[MAXSIZE+1];
+
+/* pick a saying at random */
+	i = ((unsigned)Random() >> 1) % NUMSAYINGS;
+	s = sayings[i];
+
+/* construct the message to send */
+	i = (int)strlen(s);
+	tmpbuf[0] = i;
+	strcpy(tmpbuf+1,s);
+
+/* we really should check for an error */
+	(void)Fwrite(fd, (long)i+1, tmpbuf);
+}
+
+/* main function: create the fifo, then sit around
+ * listening for requests
+ */
+
+int
+main(argc, argv, envp)
+	int argc;
+	char **argv, **envp;
+{
+	char c;
+	long r;
+
+	fd = Fcreate(FIFONAME, 0);
+	if (fd < 0) {
+		Cconws("Couldn't create ");
+		Cconws(FIFONAME);
+		Cconws("!\r\n");
+		Pterm(1);
+	}
+
+	for(;;) {
+		r = Fread(fd, 1L, &c);
+		if (r != 1) {	/* read error?? */
+			break;
+		}
+		if (c == '?') {	/* request for saying */
+			send_saying();
+		}
+	/* could have other requests here */
+	}
+	return 0;
+}
+------------------------ fortune.c ----------------------
+/* fortune client: get a fortune cookie from
+ * the fortune server
+ */
+
+/* illustrates client side use of fifos */
+
+#ifdef __GNUC__
+#include <minimal.h>
+#endif
+#include <osbind.h>
+#include <mintbind.h>
+
+#define FIFONAME "U:\\PIPE\\FORTUNE"
+#define BUFSIZ 256
+#define F_SETLKW 7
+
+struct flock {
+	short l_type;			/* type of lock */
+#define F_RDLCK		0
+#define F_WRLCK		1
+#define F_UNLCK		3
+	short l_whence;			/* SEEK_SET, SEEK_CUR, SEEK_END */
+	long l_start;			/* start of locked region */
+	long l_len;			/* length of locked region */
+	short l_pid;			/* pid of locking process
+						(F_GETLK only) */
+};
+
+int
+main(argc, argv, envp)
+	int argc;
+	char **argv, **envp;
+{
+	int fd;
+	char buf[BUFSIZ];
+	unsigned char len;
+	struct flock lock;
+	long r;
+
+/* open the fifo */
+	fd = Fopen(FIFONAME, 2);
+	if (fd < 0) {
+		Cconws("Couldn't open ");
+		Cconws(FIFONAME);
+		Cconws("!\r\n");
+		Pterm(1);
+	}
+
+/* get a lock; this makes sure that two fortune
+ * programs don't try to send requests and read
+ * replys at the same time
+ */
+
+	lock.l_type = F_WRLCK;
+
+/* lock the whole file -- only thing that makes sense
+ * for a fifo
+ */
+	lock.l_whence = 0;
+	lock.l_start = lock.l_len = 0L;
+
+	r = Fcntl(fd, &lock, F_SETLKW);
+	if (r != 0) {
+		Cconws("Couldn't get a lock!\r\n");
+		Pterm(r);
+	}
+
+/* write the request */
+	Fwrite(fd, 1L, "?");
+/* wait for a reply */
+/* the fortune server writes a 1 byte length, followed by
+ * the fortune itself
+ */
+	r = Fread(fd, 1L, &len);
+	if (r != 1L || len != Fread(fd, (long)len, buf)) {
+		Cconws("Error reading fortune!\r\n");
+		Pterm(1);
+	}
+	buf[len] = 0;
+
+/* unlock the fifo */
+
+	lock.l_type = F_UNLCK;
+	(void) Fcntl(fd, &lock, F_SETLKW);
+
+	Fclose(fd);
+
+/* now write the fortune to the screen */
+	Cconws(buf);
+	Cconws("\r\n");
+
+	return 0;
+}
+
+
+Shared Memory
+
+
+Children created with the Pexec(4,...) or with Pexec(104,...) share all of
+their parent's memory, as do children created with the Pvfork() system call.
+Hence, they may communicate with their parent (or with each other) via
+global variables.
+
+A more general shared memory mechanism is provided by U:\SHM. Files in
+that directory represent blocks of memory. A program may offer to share
+its memory by creating a file in U:\SHM and executing an Fcntl call
+(SHMSETBLK) to associate a block of memory with the file. Other programs
+may then open the file and do a SHMGETBLK call to gain access to that
+memory.
+
+To create a shared memory file, a program uses the Fcreate() call
+to create a file in U:\SHM, e.g.:
+
+fd = Fcreate("U:\\SHM\\MY.SHARE", 0);
+
+It then uses an Fcntl() call to attach a block of memory (previously
+allocated by Malloc() or Mxalloc()) to the file:
+
+blk = Malloc(128L);
+Fcntl(fd, blk, SHMSETBLK);
+
+
+Several things should be noted when creating a shared memory
+file:
+
+(1) The file's attributes must be 0. Read-only shared memory, or
+shared memory with other attributes, is not yet implemented,
+but may be in the future.
+
+(2) Two shared memory files cannot have the same name. An attempt
+to create a new shared memory file with the same name as an
+existing one will fail with an access denied error (EACCDN).
+
+(3) Once the block of memory has been attached to the file, it
+may be accessed by any application that opens the file.
+
+(4) A shared memory file (and associated block) remain allocated
+even after the program which created it terminates. It can be
+deleted (and the associated memory freed) with an Fdelete()
+system call.
+
+(5) The size of the shared memory file will be the actual size
+of the memory block. This may be somewhat larger than the
+size requested in the Malloc or Mxalloc request, due to memory
+rounding.
+
+
+To use a shared memory block, a client application must open
+the file and use the SHMGETBLK Fcntl to gain access to it.
+For example:
+
+fd = Fopen("U:\\SHM\\MY.SHARE", 2);
+blk = Fcntl(fd, 0L, SHMGETBLK);
+Fclose(fd); /* optional -- see below */
+
+Things to note:
+
+(1) The address of the shared memory block is returned by the
+Fcntl() call. NOTE THAT THIS ADDRESS MAY BE DIFFERENT FOR
+DIFFERENT PROGRAMS. That is, a shared memory block that appears
+at address 0x01000100 in one program may appear at address
+0x0007f000 in another. In particular, shared memory blocks
+should not contain absolute addresses (e.g. pointers).
+
+(2) The extra argument passed to Fcntl() is reserved for future
+expansion; use 0L for now to ensure compatibility with
+future versions of MiNT.
+
+(3) The mode argument in the Fopen() function must be an accurate
+reflection of how the program plans to use the memory; read and
+write access permissions will be enforced in future versions
+of MiNT.
+
+(4) If no SHMSETBLK has been made for the file, a SHMGETBLK Fcntl
+will return a NULL pointer to indicate an error.
+
+(5) If a program is finished with a shared memory block and no
+longer wishes to use it, it should call Mfree() with the address
+of the block (i.e. the address returned by Fcntl(fd, 0L, SHMGETBLK)).
+
+Deleting a Shared Memory File
+
+The Fdelete() system call may be used to delete a shared memory
+file. This will *not* necessarily free the associated memory;
+the memory will actually be freed only after (1) the file has
+been deleted, and (2) all processes using the memory have
+freed the memory, either directly or as a result of the process
+terminating.
+
+Fdelete() will fail if the shared memory file is still open.
+Processes may omit the Fclose() call if they wish this to happen;
+it's a way of informing the process trying to delete the file
+that people are still interested in it. Note that it is *not*
+harmful to allow the Fdelete to occur, since (as noted above)
+the memory will not actually be freed until everyone is finished
+with it; but sometimes it may be useful for programs to know that
+the memory is still in use.
+
+
+Rendezvous
+
+
+The Pmsg() system call provides a simple message based form of IPC. See
+the manual page for Pmsg for further details.
+
+
+Semaphores
+
+
+Semaphores may be created and otherwise accessed via the Psemaphore system
+call. They are a way to control exclusive access to a resource, with true
+blocking if desired. See Psemaphore's manual page for more details.
+
+
+
+MiNT Friendly Programs
+
+
+If you want your program to work well in a multitasking environment,
+you should obey the following rules:
+
+(1) Don't hog memory. Mshrink() your initial TPA as soon as possible after
+starting, and only Malloc() as much memory as you need.
+
+(2) Avoid global changes to the system (e.g. modifying the BIOS keyboard
+maps with Keytbl()); if more than one program tries to modify the
+same resource in incompatible ways, confusion is sure to result.
+
+(3) Use supervisor mode sparingly. In the current implementation, processes
+running in supervisor mode are not preempted, and hence will hog the CPU.
+(You should not rely on this side-effect of supervisor mode; it may go
+away.)
+
+(4) Don't write directly to screen memory; use the documented AES, VDI,
+and BIOS calls for output.
+
+(5) Don't access memory that you don't own, and don't make other programs
+access memory that they aren't allowed to. The latter point means that
+if you install an interrupt handler, or provide a cookie that points to
+data or code in your program, you must make sure that the data or code
+pointed to is in global memory (see Appendix A, Memory Protection, for
+details). Otherwise, when another process tries to access the data or
+code (for example, if an interrupt whose vector you replaced occurs)
+it will receive a bus error.
+
+(6) If you do things in the system like exchanging mouse movement/button
+vectors, then do catch signal 15 (SIGTERM) and other signals that can kill
+your process, and perform cleanup operations in a signal handling routine
+before terminating; this makes it easy for the user to remove your process.
+Otherwise your process can be killed and the vectors you've installed will
+be pointing at empty space.
+
+
+MiNT extensions to GEMDOS calls
+
+
+Fsfirst()/Fsnext()
+MiNT domain processes (see the Pdomain()) man page) get lower case
+filenames from Fsfirst() or Fsnext() on a TOS filesystem. This is because most
+programs end up converting them to lowercase anyway, to be more Unix-like.
+Please don't do this translation yourself. Let MiNT handle it, because
+some filesystems (e.g. the minix one) are case sensitive! If you really,
+truly, prefer uppercase filenames, run in the TOS domain.
+
+Fopen()/Fread()/Fwrite()/Flock()
+MiNT implements the Atari file locking protocol, as described in the
+document "GEMDOS File and Record Locking Specification". If no _FLK
+cookie is installed when MINT.PRG is run, one will be created.
+
+Pexec(100, name, cmdline, environment)
+Similar to Pexec(0, ...), except the calling program does not wait for
+the child to finish. Returns a negative error code, or the (positive)
+process ID of the child.
+
+Pexec(104, name, basepage, 0L)
+Similar to Pexec(4, ...); starts executing a basepage previously
+set up by Pexec() mode 3, 5, or 7. The caller does not wait for
+the child to finish. Returns a negative error code, or the process ID
+of the child. Note that the child's environment and basepage are
+owned by both the child and the parent (indeed, the child shares all
+memory owned by the parent). \name\ is a pointer to a string
+to be used to supply a name for the new process; if it is NULL, then
+the parent's name is used.
+
+Pexec(106, name, basepage, 0L)
+Similar to Pexec(104,...) except that the child's environment and
+basepage are \not\ owned by the parent; nor does the child share
+any memory allocated to the parent. Thus, when the child terminates,
+its memory will be freed. A program loaded with mode 3 and then
+started with mode 106 behaves just like one loaded and started with
+mode 100. In the same way, mode 3 followed by mode 6 is just like mode 0.
+
+Pexec(200, name, cmdline, environment)
+As with Pexec(0,...) and Pexec(100,...) this runs a program. However, with
+this variant the caller is completely replaced with the executing program.
+The process retains its process ID and most other attributes, but all of
+its memory is freed and a new address space is set up for it containing the
+code from the indicated program. Whereas Pexec(0,...) is like a subroutine
+call, Pexec(200,...) is like a "goto." It returns only if an error occurs
+in launching the indicated program (e.g. if not enough memory is available,
+or the file is not found).
+
+
+New MiNT calls
+
+
+This list shows the name, return type, and argument types of the new
+MiNT system calls, and the corresponding function number for Trap #1.
+
+word Syield()                                       [ 0x0ff ]
+word Fpipe( word *ptr )                             [ 0x100 ]
+word Fcntl( word f, long arg, word cmd)             [ 0x104 ]
+long Finstat( word f )                              [ 0x105 ]
+long Foutstat( word f )                             [ 0x106 ]
+long Fgetchar(word f, word mode)                    [ 0x107 ]
+long Fputchar( word f, long c, word mode )          [ 0x108 ]
+long Pwait()                                        [ 0x109 ]
+word Pnice( word delta )                            [ 0x10a ]
+word Pgetpid()                                      [ 0x10b ]
+word Pgetppid()                                     [ 0x10c ]
+word Pgetpgrp()                                     [ 0x10d ]
+word Psetpgrp(pid, newgrp)                          [ 0x10e ]
+word Pgetuid()                                      [ 0x10f ]
+word Psetuid( word id )                             [ 0x110 ]
+word Pkill( word pid, word sig )                    [ 0x111 ]
+long Psignal(word sig, long handler)                [ 0x112 ]
+word Pvfork()                                       [ 0x113 ]
+word Pgetgid()                                      [ 0x114 ]
+word Psetgid(word id)                               [ 0x115 ]
+long Psigblock(long mask)                           [ 0x116 ]
+long Psigsetmask(long mask)                         [ 0x117 ]
+long Pusrval(long arg)                              [ 0x118 ]
+word Pdomain(word newdom)                           [ 0x119 ]
+void Psigreturn()                                   [ 0x11a ]
+long Pfork()                                        [ 0x11b ]
+long Pwait3(word flag, long *rusage)                [ 0x11c ]
+word Fselect( word timeout, long *rfds, long *wfds, long *xfds )
+                                                    [ 0x11d ]
+void Prusage( long r[8] )                           [ 0x11e ]
+long Psetlimit(word lim, long value )               [ 0x11f ]
+long Talarm( long secs )                            [ 0x120 ]
+void Pause()                                        [ 0x121 ]
+long Sysconf( word n )                              [ 0x122 ]
+long Psigpending()                                  [ 0x123 ]
+long Dpathconf( char *name, word n )                [ 0x124 ]
+long Pmsg( word mode, long mbox, void *msg )        [ 0x125 ]
+long Fmidipipe( word pid, word in, word out )       [ 0x126 ]
+word Prenice( word pid, word delta )                [ 0x127 ]
+long Dopendir( char *name, word flag )              [ 0x128 ]
+long Dreaddir( word buflen, long dir, char *buf )   [ 0x129 ]
+long Drewinddir( long dir )                         [ 0x12a ]
+long Dclosedir( long dir )                          [ 0x12b ]
+long Fxattr( word flag, char *name, void *buf )     [ 0x12c ]
+long Flink( char *oldname, char *newname )          [ 0x12d ]
+long Fsymlink( char *oldname, char *newname )       [ 0x12e ]
+long Freadlink( word siz, char *buf, char *name )   [ 0x12f ]
+long Dcntl( word cmd, char *name, long arg )        [ 0x130 ]
+long Fchown( char *name, word uid, word gid )       [ 0x131 ]
+long Fchmod( char *name, word mode )                [ 0x132 ]
+long Pumask( unsigned word mode )                   [ 0x133 ]
+long Psemaphore( word mode, long id, long timeout ) [ 0x134 ]
+word Dlock( word mode, word drive )		    [ 0x135 ]
+void Psigpause( long sigmask )			    [ 0x136 ]
+long Psigaction( word sig, long act, long oact )    [ 0x137 ]
+long Pgeteuid()					    [ 0x138 ]
+long Pgetegid()					    [ 0x139 ]
+long Pwaitpid( word pid, word flag, long *rusage )  [ 0x13a ]
+long Dgetcwd( char *path, word drive, word size )   [ 0x13b ]
+long Salert( char *msg )			    [ 0x13c ]
+

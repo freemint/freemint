@@ -1,0 +1,22 @@
+FreeMiNT's buffer cache
+=======================
+
+last update: 2001-07-31
+Author: Frank Naumann <fnaumann@freemint.de>
+
+
+FreeMiNT 1.15 has a new global block cache. It's currently 
+used from the NEWFATFS, ext2fs and MinixFS 0.70.
+
+The cache can be increased at boot time with 
+the configuration keyword "CACHE=<size in kb>" in MiNT 
+configuration file.
+For example: "CACHE=500" sets the cache to a size of
+500 kb (if enough memory is available).
+Default cache size is 100 kb. It's recommended to increase
+the cache if you use many MinixFS 0.70 and NEWFATFS
+partitions. Currently, the cache is first allocated from
+TT-RAM and then from ST-RAM.
+
+Note for removable medias: the cache try to automatically lock
+the drive if there are unwritten sectors in cache.

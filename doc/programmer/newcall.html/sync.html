@@ -1,0 +1,58 @@
+<html>
+<head>
+	<title> New MiNT system calls: Sync() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Sync()</H3>
+
+<P>
+<B>LONG Sync(VOID)</B>
+<P>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Sync()</B> syncs filesystems.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>336 (0x0150)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>This function is available under 
+all <B>MiNT</B> versions integrated with <b>MultiTOS</b>.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	#$0150,-(sp)
+trap	#1
+addq.l	#2,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><b>Sync()</b> always returns 
+<b>E_OK</b>
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>Syncing flushes all filesystems caches 
+and updates the media contents accordingly.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="shutdown.html"><b>Shutdown()</b></a>
+</td>
+</tr>
+
+</table>
+</body>
+</html>

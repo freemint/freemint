@@ -1,0 +1,350 @@
+This is FreeMiNT 1.15.12, official release
+==========================================
+
+Fourth release of FreeMiNT 1.15
+-------------------------------
+
+This is an improved and bugfixed version of the 1.15.5 release.
+
+Thanks to all betatesters who tested intensivly the beta versions
+and helped me and all other FreeMiNT contributors with suggestions
+and constructive critic or interesting discussions.
+
+This FreeMiNT version is dedicated to the MiNT community. Without the
+contributions of the community members there would be nothing todo.
+
+The most important changes:
+
+- new system calls: Pvalidate()/Maccess()/Ptrace()/Psysctl()/Fpoll()/
+  Fseek64()/emulation()
+- improvements in the memory management
+- improvements in the module handling and kernel interface
+- bugfixes of some bad bugs
+- finalized cvs integration of all kernel modules
+- updates and enhancements of the kernel modules
+
+Very important:
+
+The kernel modules are no longer maintained seperatly!
+This implies too that there are no seperate packages for each of the
+modules. If you ever maintained/packed/shipped 10 modules and the FreeMiNT
+kernel and lot of kernel related tools you understand that this is a pure
+waste of time. With CVS it's possible to reduce this overhead dramatically.
+I'm sure you understand this. The archives are a little bit bigger but
+all modules are consistent to the kernel version.
+
+See in ChangeLog.#1.15.12 for more details.
+
+
+Contributors:
+
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Guido Flohr <guido@freemint.de>
+  - Michael Schwingen <rincewind@tubul.dascon.de>
+  - Ralph Lowinski <ralph@aquaplan.de>
+  - Jens Heitmann <jheitmann@debitel.net>
+  - Odd Skancke <oskancke@online.no>
+  - and me
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
+2000-07-31, Magdeburg
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+
+This is FreeMiNT 1.15.5, official release
+=========================================
+
+Third public release of the new FreeMiNT 1.15
+---------------------------------------------
+
+This is an improved and bugfixed version of the 1.15.1 release.
+
+Thanks to all betatesters who tested intensivly the beta versions
+and helped me and all other FreeMiNT contributors with suggestions
+and constructive critic or interesting discussions.
+
+This FreeMiNT version is dedicated to the MiNT community. Without the
+contributions of the community members there would be nothing todo.
+
+The most important changes:
+
+- new system calls: Ffchown(), Ffchmod(), Dchroot(), Fstat64()
+- optional native UTC mode for filesystems
+- better shutdown, FreeMiNT never returns to TOS now
+- new INITIALMEM configuration option (config file/run time)
+- support MagiC style shared libraries
+- support program header flag F_SMALLTPA (introduced by MagiC)
+- and lot of bugfixes and other improvements
+
+See in ChangeLog.#1.13-1.15.9 for more details.
+
+
+Contributors:
+
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Guido Flohr <guido@freemint.de>
+  - Andreas Baer <asbaer@asrael.franken.de>
+  - Michael Schwingen <rincewind@tubul.dascon.de>
+  - Ralph Lowinski <ralph@aquaplan.de>
+  - Joerg Westheide <Joerg_Westheide@su.maus.de>
+  - and I
+
+
+Frank Naumann
+<fnaumann@cs.uni-magdeburg.de>
+
+Magdeburg, 16.11.1999
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+
+This is FreeMiNT 1.15.1, official release
+=========================================
+
+Second public release of the new FreeMiNT 1.15.
+----------------------------------------------
+
+This is mostly a bugfixed and speed optimized version of the 1.15.0 release.
+
+Thanks to all betatesters who tested intensivly the beta versions
+and helped me and all other FreeMiNT contributors with suggestions
+and constructive critic or interesting discussions.
+
+This FreeMiNT version is dedicated to the MiNT community. Without the
+contributions of the community members there would be nothing todo.
+
+The most important changes:
+
+- 040/060 MMU (memory protection) support
+- fix bug in 030 memory protection code (working now)
+- complete new and much faster kernel internal memory management
+  - efficient 3 way algorithm
+- new Ssystem information and configuration options
+  - processor cache information & handling
+  - extended kernel informations
+  - extended debug settings
+- new Dcntl supported (DP_VOLNAMEMAX)
+- fixes and improvements in the NEWFATFS:
+  - software configurable writeprotect mode on filesystem level
+  - more sanity checks and verifications
+  - enhanced FAT32 support
+  - better shell support, x-bit emulation
+  - complete working lookup
+  - fix some other minor bugs related to directory handling,
+  - fix floppy disk bug
+  - pseudo permission support
+- fixes and improvements in the buffer cache:
+  - resident caching (interface enhancement)
+  - remove redundant code
+  - large read caching
+  - writeback optimziation
+  - signed - unsigned bugfixes
+  - bugfixes in mapping routines
+- rewritten syscall entry strategie
+- lot of speed optimizations in periodically tasks
+- complete new enhanced CNF parser
+- rewritten Psigintr(), working now much better
+- own processor detection
+- automatic cpush adaption
+- updates for the TOSFS
+- fix 14 partition problem
+- fix for CENTEK II users (TOS version detection)
+- better Milan support
+- and lot of other minor fixes and cleanups
+
+See in ChangeLog.#1.13-1.15.9 for more details.
+
+
+Contributors:
+
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Guido Flohr <guido@freemint.de>
+  - Michael Schwingen <rincewind@tubul.dascon.de>
+  - Julian F. Reschke <fjr010@email.mot.com>
+  - Ralph Lowinski <ralph@aquaplan.de>
+  - Katherine L. Ellis <kellis@primenet.com>
+  - Christian Felsch <felsch@tu-harburg.de>
+  - Rainer Seitel <Rainer_Seitel@ka.maus.de>
+  - and I
+
+
+Frank Naumann
+<fnaumann@cs.uni-magdeburg.de>
+
+Magdeburg, 08.05.1999
+
+==============================================================================
+******************************************************************************
+==============================================================================
+
+
+This is FreeMiNT 1.15.0, official release
+=========================================
+
+First public release of the new FreeMiNT 1.15.
+----------------------------------------------
+
+Thanks to all the people who've helped me, all betatesters and
+all who've send patches, bug reports or suggestions.
+
+Special thanks to Katherine L. Ellis for her great
+MiNT-Setter and the permission to include this program
+in the distribution. It's freeware, copyright by Kellis.
+Also Katherine L. Ellis checked my english documentation.
+
+Special thanks to Christian Felsch for his great
+FSetter and the permission to include this program
+also in the distribution. Also freeware, copyright by Christian.
+
+Thanks to Konrad M. Kokoszkiewicz, Rainer Seitel, Thomas Binder,
+Julian F. Reschke, Mikko Larjava, Daniel Petersson, Petr Strehlik
+and Jo Even Jarkstein for betatests, suggestions and patches.
+
+Thanks to all betatesters that I'm not mentionning here.
+
+-------------------------------------------------------------------------
+
+Here's a list of extensions relative to FreeMiNT 1.14.7:
+
+1) new FAT filesystem has been added. You can activate it for selected
+   disks using MINT.CNF command NEWFATFS followed by a list of drives. For
+   example:
+
+   NEWFATFS=D,E,F,H
+
+   will activate the new FAT filesystem on drives D:, E:, F and H:
+   respectively. The rest of FAT filesystems will be handled by the old
+   TOS filesystem.
+
+   NOTICE: it is planned for the future to remove the old TOS FS from the
+   MiNT kernel; all FAT drives will be handled by the MiNT FAT filesystem
+   driver. This time the keyword NEWFATFS will also be removed as it won't
+   be necessary anymore.
+
+   The new filesystem features VFAT extension supporting long filenames.
+   The FAT extension may be activated using VFAT cnf keyword:
+
+   VFAT=D,F,H
+
+   will activate VFAT extension for drives D:, F: and H: respectively. It
+   is NOT recommended to use VFAT extension for your BOOT drive.
+
+The new FAT/FAT32/VFAT filesystem makes now possible to have long
+filenames and large partitions under MultiTOS without the Minix filesystem
+driver (MINIX.XFS). However, we still recommend using Minix XFS to run
+multiuser environments and Unix software.
+
+There are no limits in the new FAT/FAT32/VFAT filesystem. It can handle
+large DOS partitions and GEM/BGM partitions of any size. For FAT32 you need at
+least HDDriver 7.55 (older version doesn't handle the different partition ID).
+The new partition ID 'F32' (like GEM, BGM) is for ATARI compatible
+partitions reserved and also featured by HDDriver 7.55.
+
+A tool to create FAT32 partitions has been created (mkfatfs 0.2 beta). It's
+included in this distribution in util\.
+
+2) filesystem caching is now handled internally by the kernel. The size of
+   the cache may be controlled using CACHE keyword in MINT.CNF, for
+   example:
+
+   CACHE=500
+
+   allocates 500 kilobytes for disk caches.
+
+   The cache supports the write-back feature that can be enabled or disabled for
+   each drive. The write-back feature is disabled on all drives as default.
+   On startup you can enable it using WB_ENABLE keyword in the MINT.CNF file:
+
+   WB_ENABLE=D,E,F,H
+
+   enables the write-back cache for drives D:, E:, F and H: respectively.
+
+With the nice tool MiNTSetter by Katherine L. Ellis <kellis@primenet.com> you
+can change a lot of options from 1) and 2) on the fly.
+The latest version of MiNTSetter is on: http://www.primenet.com/~kellis/
+
+With FSetter from Christian Felsch <felsch@tu-harburg.de> you can
+control all settings of NEWFATFS on the fly.
+The latest version from FSetter is on: http://www.tu-harburg.de/~smcf1605/
+
+3) fastload mode can be now forced for all programs using FASTLOAD=YES
+   command in the CNF file.
+
+4) VM extension has been disabled.
+
+5) The kernel has now a new time package. Please refer to the file
+   doc/minttime.doc and doc/timezone.doc for details and use.
+
+6) The XBIOS is now fully protected from an unprivileged access. All XBIOS
+   functions need root euid at SECURELEVEL > 0. Supexec() needs root euid
+   at SECURELEVEL > 1. Only Random() and Cursconf() are accessible for
+   users at any security level.
+
+7) Behaviour of the protection code is changed once more (I hope this was
+   the last time). When a program calls what it should not, the call is
+   ignored and EACCDN (-36) is returned. For Super() and Supexec() this
+   means that the calling program will most likely die very soon due to
+   bus error or privilege violation. Id est: no kills are made when a
+   program is calling a protected function, but it is expected that
+   the forbidden action will later raise a signal, that will most probably
+   kill the faulty program.
+
+   If the returned value (-36) confused the calling application (because
+   it expected a pointer as a response, for example), it can go
+   vegetables. In this case the usual hardware protection as well as the
+   memory protection mechanism should prevent it from destroying the
+   system.
+
+   NOTICE: the protection means, that you probably will not be able to
+   run common GEM software or GEM itself without root privileges at
+   SECURELEVEL > 0 !
+
+8) DSP related XBIOS functions on Falcon should work OK now. It mainly
+   refers to the Dsp_LodToBinary() and Dsp_LoadProg().
+
+9) add some provisional MILAN support
+
+10) new MiNT.CNF keyword 'HIDE_B=' to disable completly drive B:
+
+
+Contributors:
+
+- the new time keeping functions have been developed and applied, as well
+  as a bunch of doc files, manpages and other supplementary files have
+  been written, and collected by Guido Flohr <gufl0000@stud.uni-sb.de>.
+
+- ST ESCC support has been developed by Harald Denker
+  <harry@hal.westfalen.de> and applied to the kernel with all necessary
+  modifications by Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+
+- new FAT/FAT32/VFAT filesystem and new global buffer cache management
+  by me.
+
+- other changes, bugfixes and supplementary programs have been contributed by:
+  - Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+  - Katherine L. Ellis <kellis@primenet.com>
+  - Christian Felsch <felsch@tu-harburg.de>
+  - Konrad M. Kokoszkiewicz <draco@mi.com.pl>
+  - Mikko Larjava <mitala@nic.funet.fi>, 68060 cache patch (once more)
+  - Daniel Petersson <tam@dataphone.se>
+  - Julian F. Reschke <fjr010@email.mot.com>
+  - Rainer Seitel <Rainer_Seitel@ka.maus.de>
+
+Refer to the ChangeLog.#1.13-1.15.9 for the detailed list of changes.
+
+
+Frank Naumann
+<fnaumann@cs.uni-magdeburg.de>
+
+Magdeburg, 08.10.1998

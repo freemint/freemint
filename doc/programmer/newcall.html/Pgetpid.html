@@ -1,0 +1,102 @@
+  <html>
+    <head>
+      <title>
+	FreeMiNT system calls: Pgetpid()
+      </title>
+    </head>
+    
+    <body bgcolor="#FFFFFF">
+      
+      <h3>
+	Pgetpid()
+      </h3>
+
+      <b>
+	WORD Pgetpid( VOID )
+      </b>
+
+      <table>
+
+	<tr>
+	  <th>
+	  </th>
+	  <td>
+	    <b>Pgetpid()</b> returns the PID of the calling process.
+	  </td>
+	</tr>
+
+	<p>
+	</p>
+	
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Opcode</b>
+	  </th>
+	  <td>
+	    267 (0x010b)
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Availability</b>
+	  </th>
+	  <td>
+	    If the MiNT cookie is present.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Parameters</b>
+	  </th>
+	  <td>
+	    none.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Binding</b>
+	  </th>
+	  <td>
+	    <pre>move.w&nbsp; #$010b,-(sp)
+trap&nbsp;&nbsp;&nbsp; #1
+addq.l&nbsp; #6,sp</pre>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Return Value</b>
+	  </th>
+	  <td>
+	    The <b>WORD</b> returned contains the Process IDentifier (pid) of the calling process. This PID is unique and uniquely identifies the process among other processes within the system.
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>Comments</b>
+	  </th>
+	  <td>
+	    <p>
+	      A PID is dynamically assigned to a process when it is created. You should make no assumption on the PID a process may have. For the kernel, the PID is a <b>WORD</b> but when you program in C, you should use the <b>pid_t</b> type, which complies with the POSIX standard. The FreeMiNT kernel's PID is always 0.
+	    </p>
+	    <p>
+	      The PID is useful when it is important to identify a process among others in the system. Knowing the PID of a program, it is possible to do a lot of things: send it a signal with <a href="Psignal.html">Psignal()</a>, look for its name in /proc by searching with a "*.xxx" mask (xxx is the PID of the program which name we wanna know), etc. 
+	    </p>
+	  </td>
+	</tr>
+
+	<tr>
+	  <th valign="top" align="left">
+	    <b>See Also</b>
+	  </th>
+	  <td>
+	    <a href="Pgetppid.html"><b>Pgetppid()</b></a>
+	  </td>
+	</tr>
+      </table>
+    </body>
+  </html>

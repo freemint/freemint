@@ -1,0 +1,129 @@
+Frank Naumann <fnaumann@cs.uni-magdeburg.de>                        1999-11-16
+------------------------------------------------------------------------------
+
+FreeMiNT Memory Protection Compatibility list
+=============================================
+
+I can't test all programs and every new version. So please send me updates
+and corrections if something is wrong!
+
+
+program         version         flags           reason/comment
+------------------------------------------------------------------------------
+
+papyrus         7.0x demo       global          if you use OLGA inplace ext.
+CAB             2.7 demo        global          if you use OLGA inplace ext.
+amail           1.05            global          if you use OLGA inplace ext.
+
+wdialog.prg     2.04            global          (coding)
+
+st-guide        15              readable        (AV protocol)
+finder          1.10            readable        (AV protocol)
+RSC-View        1.00            readable        (AV protocol)
+slay            0.1             readable        (AV protocol)
+
+1st-guide       16.01.1997      readable        (AV protocol)
+clock.acc       1.9e            readable        (AV protocol)
+
+------------------------------------------------------------------------------
+
+these programs seems to work without problems:
+
+program         version         comment
+------------------------------------------------------------------------------
+
+Thing           1.29            display broken AV clients(!)
+CALAMUS SL      98 demo         nice :-)
+CAT             4.10            also nice :-)
+
+HDDriver        7.70            also older versions work fine
+Diskus          3.61            also older versions work fine
+SysInfo         4.50            also older versions work fine
+BoxKite         2.13            also older versions work fine
+CHKDSK          3.0             it's from ATARI
+
+LHarc Shell     3.10            
+STZip           2.6             
+Esscode         6.4
+
+MiNT-Setter     3.6             nice FreeMiNT 1.15 tool
+FSetter         0.6             nice FreeMiNT 1.15 tool
+
+BreakOut        1.11            it's from ATARI
+
+
+- and N.AES
+- and all ported unix tools in my environment
+- and all my supported software for FreeMiNT
+  (fnramfs, MinixFS & tools, ext2fs & tools, mkfatfs)
+- and the MiNT system software I use
+  (MiNT-Net, NE2000.xif, GlueSTiK, xconout2.xdd,
+   SPIN!, ...)
+
+==============================================================================
+the a little bit outdated german list:
+(feel free to clean up the text and send me a better version)
+
+Programm      Version   safe  verantwortlich/schuldig
+--------------------------------------------------------------
+7Up            2.32     nein  Michael ThÑnitz
+Alert-Acc.               ja
+ApplList       0.4       ja   dl1fdt@amsat.org
+Artworx        1.4      nein  Christian_Witt@n.maus.de
+BoxKite        1.80      ja   Harald_Becker@k.maus.de
+CAB            2.6       ja   Alexander_Claus@of2.maus.de
+Chatwin        3.08b     ja   Dirk_Haun@lb.maus.de
+Clix           3.60     nein  Steffen_Engel@pe2.maus.de
+Clock-Acc.     1.0       ja   W. Klaren
+COPS           1.07      ja   Behne & Behne Systemsoftware GbR
+
+Cypress        1.73     nein
+DirSort        1.1       ja   Christoph Zwerschke
+Diskus         3.11      ja   us@bruker.de
+E-Backup       2.01      ja
+Everest        3.6D      ja   Oliver Schmidt
+FED            1.70      ja
+Fiffi          1.05     nein  Juergen_Koneczny@m4.maus.de
+Finder         1.10     nein  Holger_Weets@ol.maus.de
+freeBase       1.01     nein  Holger_Weets@ol.maus.de
+
+GEMar          3.06     nein  Steffen_Engel@pe2.maus.de
+GEM-Graph      1.0D      ja   ABC Software
+GEMGS          5.10      ja   hristian_Felsch@hh.maus.de
+Gemini         1.a       ja   jr@ms.maus.de
+GEM-init       0.77      ja   U_Kaiser@t-online.de
+GEMJing        1.06      ja
+Interface      2.32      ja   Olaf Meisiek
+JAnE           1.52      ja   Harald_Becker@k.maus.de
+jinnee         1.0       ja   Manfred_Lippert@n.maus.de
+Kandinsky      2.5      nein  Ulrich Roûgoderer (1)
+Les Yper Sound 0.1       ja   Dirk_Haun@lb.maus.de
+lps.ttp        1.24     nein  uereder@cip.informatik.uni-erlangen.de
+MultiStrip     1.3       ja   tommi@linguistik.uni-erlangen.de
+MStrip-Config  1.3      nein  tommi@linguistik.uni-erlangen.de
+MultiTex       5.2       ja
+Newsie         0.69a     ja
+no!Desk        3.04     nein  no! (2)
+NovaVDI        2.67      ja   Computerinsel
+NVDI           4.11.8    ja   Behne & Behne Systemsoftware GbR
+OLGA-Manager   1.3       ja   Thomas_Much@ka2.maus.de
+OLGA-Tools     1.0       ja   Thomas_Much@ka2.maus.de
+papyrus        5.11     nein  R.O.M.
+Phoenix        5.0       ja   GebrÅder Geiû/ASH
+qed            4.5       ja   Christian_Felsch@hh.maus.de
+RCS            2.1      nein  ATARI Corp.
+RCS            3.0       ja   ATARI Corp.
+RSM            2.15      ja   A.Diedering@t-online.de
+Scripter       r1       nein  Holger_Weets@ol.maus.de
+smurf          1.0       ja
+SpeedUp        1.91a     ja   tommi@linguistik.uni-erlangen.de
+ST-CAD         1.03      ja   MKrutz@t-online.de
+Start Me Up!   7.02      ja   Thomas_Much@ka2.maus.de
+SysInfo        4.30      ja   Thorsten_Bergner@b.maus.de
+TeraDesk       1.01      ja   W. Klaren
+TOSWIN2        2.2       ja   Christian_Felsch@hh.maus.de
+TWSM/2         2.0       ja   tommi@linguistik.uni-erlangen.de
+ZControl       0.24      ja   dl1fdt@amsat.org
+
+(1) Absturz erst bei Programmende
+(2) Absturz bei Programmstart, trotzdem lÑuft Programm weiter!

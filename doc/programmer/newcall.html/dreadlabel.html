@@ -1,0 +1,75 @@
+<html>
+<head>
+	<title> New MiNT system calls: Dreadlabel() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Dreadlabel()</H3>
+
+<P>
+<B>LONG Dreadlabel( <i>name, label, namelen</i> )</B>
+<P>
+<B>char <I>*name</I>;<br>
+char <i>*label</i>;<br>
+WORD <i>namelen</i>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Dreadlabel()</B> retrieves label from the specified 
+filesystem.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>338 (0x0152)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.12 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><b><I>name</b></I> is a path relative 
+to the root filesystem (U:\) pointing to the disk 
+to read the label from.
+<p><b><i>label</b></i> is a pointer to a memory buffer where the label 
+is supposed to be written to.
+<p><b><i>namelen</b></i> is the length of the buffer pointed 
+to by <b><i>label</b></i>.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	namelen,-(sp)
+pea	label
+pea	name
+move.w	#$0152,-(sp)
+trap	#1
+lea	$0c(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Dreadlabel()</B> returns 
+<b>E_OK</b> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<TR><TH><B>Comments</B></TH><TD>Not all filesystems understand the 
+concept of a disk label.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="dwritelabel.html"><b>Dwritelabel()</b></a>
+</tr>
+
+</table>
+</body>
+</html>

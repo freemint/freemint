@@ -1,0 +1,86 @@
+<html>
+<head>
+	<title> New MiNT system calls: Talarm() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Talarm()</H3>
+
+<P>
+<B>LONG Talarm( <I>time</I> )</B>
+<P>
+<B>LONG <I>time</I>;</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Talarm()</B> reads/sets a process alarm for the 
+current process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>288 (0x0120)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>This function is available under 
+all <B>MiNT</B> versions integrated with <B>MultiTOS</B>.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>time</I> specifies the length of 
+time (in <b>seconds</b>) to wait before a <B>SIGALRM</B> signal is 
+delivered. If time is 0 then any previously set alarm is cancelled. If 
+<I>time</I> is negative the function does not modify any alarm 
+currently set.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.l	time,-(sp)
+move.w	#$0120,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Talarm()</B> returns 0 if no 
+alarm was scheduled prior to this call or the amount of time remaining 
+(in seconds) before the alarm is triggered.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Caveats</B></TH><TD>The call was introduced in the MiNT 
+version 0.8pl8 (!), but prior to the version 1.12 the code contained a 
+bug that affected its functionality.
+<p>
+The original description of this call in the Atari Compendium is 
+<b>wrong</b>. Describing the <b>Talarm()</b> it in fact characterizes 
+the <b>Tmalarm()</b> call.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>If no <B>SIGALRM</B> signal handler has 
+been set up when the alarm is triggered, the process will be killed.
+<p>Since the <b>Talarm()</b> provides less precise time measurement, 
+than <b>Tmalarm()</b>, and additionally is in fact only a wrapper 
+function maintained for compatibility with older kernel versions, it is 
+advisable to use <b>Tmalarm()</b> instead.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="tmalarm.html"><b>Tmalarm()</b></a>, <b>Pause(), 
+Psignal()</b></td>
+</tr>
+
+</table>
+</body>
+</html>

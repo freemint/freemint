@@ -1,0 +1,76 @@
+<html>
+<head>
+	<title> New MiNT system calls: Tmalarm() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Tmalarm()</H3>
+
+<P>
+<B>LONG Tmalarm( <I>time</I> )</B>
+<P>
+<B>LONG <I>time</I>;</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Tmalarm()</B> reads/sets a process alarm for the 
+current process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>317 (0x013d)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a 
+'<B>MiNT</B>' cookie with a version of at least 1.10 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>time</I> specifies the length of 
+time (in <b>milliseconds</b>) to wait before a <B>SIGALRM</B> signal is 
+delivered. If time is 0 then any previously set alarm is cancelled. If 
+<I>time</I> is negative the function does not modify any alarm 
+currently set.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.l	time,-(sp)
+move.w	#$013d,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Tmalarm()</B> returns 0 if no 
+alarm was scheduled prior to this call or the amount of time remaining 
+(in milliseconds) before the alarm is triggered.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Caveats</B></TH><TD>This call was originally described as 
+<b>Talarm()</b> in the Atari Compendium.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>If no <B>SIGALRM</B> signal handler has 
+been set up when the alarm is triggered, the process will be killed.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="talarm.html"><b>Talarm()</b></a>, <b>Pause(), 
+Psignal()</b></td>
+</tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,37 @@
+Memory Protection
+
+Memory protection works on a per-process basis.  Unless it uses the special
+mode bits in Mxalloc(), a process' entire text+data+bss and any memory it
+allocates will be of the same type.  There are four types of memory:
+
+	1. Private.  Only the process itself (and the OS) can use the memory.
+
+	2. Global.  This memory is totally unprotected.
+
+	3. Super.  This memory can be accessed by anybody from Super mode.
+
+	4. Private/readable.  Anybody can read, nobody else can write.
+
+By default, all processes load into private memory.  If a program
+terminates and remains resident with the Ptermres() system call, then
+its private memory will be converted to Super memory; that's because
+TSRs won't work in private memory. Some TSRs may in fact need to be
+set to load into global memory (if they provide services for user
+mode programs).  There are other programs which need to grant wider access
+to their memory space: for example, the Gulam CLI is
+one, because Gulam's children can call Gulam through a pointer found in the
+system variable space.  But Gulam is a bad choice of shell anyway, because
+you can't run more than one of them.  Current versions of STeno also must
+grant wider access, because it passes data to STalker using shared memory;
+private/readable is adequate for that.
+
+Programs that load before MiNT does (i.e. in the AUTO folder) will find
+themselves in global memory.  This is the easiest way to be sure that
+your TSRs will go on working: RAMdisks, FOLDR100, CACHE080, etc. all
+work when loaded that way.
+
+Notice that a process can grant wider access to its own address space, but
+it can't change the access permissions of any other process' space. If you
+set the PRGFLAGS of some process so it loads into global memory, that
+doesn't mean it can access anybody else's memory, it just means that
+anybody can access ITS memory.

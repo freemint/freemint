@@ -1,0 +1,92 @@
+Here is a small FAQ specially for FreeMiNT 1.15:
+------------------------------------------------
+
+
+Q: How I can use a global folder for SLB's under FreeMiNT?
+
+A: The default path pointing to a folder which contains SLB 
+   libraries must be specified in the environment as SLBPATH 
+   variable. For example:
+   
+   SLBPATH=u:\usr\local\lib\slb
+   
+   If one wants the previous behaviour, just undefine the 
+   variable.
+
+   Limits: SLBPATH value can be only specified as a GEMDOS-like (not 
+           Unix-like) pathname. Hence such forms of the SLBPATH as:
+           
+           SLBPATH=c:\multitos\slb
+           SLBPATH=u:\c\multitos\slb
+           SLBPATH=u:\usr\local\lib\slb
+           
+           or
+           
+           SLBPATH=u:/usr/local/lib/slb
+           
+           are perfecly valid (provided these folders really do exist).
+
+
+Q: I don't need VFAT. Why is the NEWFATFS integrated
+   in the kernel?
+
+A: The NEWFATFS is mainly a FAT filesystem. VFAT extension
+   is optional. Main advantage of the FAT filesystem
+   is the speed. Also you can use TOS & DOS partitions
+   of any size. And large FAT32 partitions are supported
+   (FAT32 allows small clusters on large partitions).
+   It can also be fixed and supported easily.
+
+
+Q: I heard I must install MinixFS 0.70 for new 1.15?
+
+A: No, you can use every MinixFS version you like.
+   It's recommended to use MinixFS 0.70.
+   Advantage is that MinixFS 0.70 use new global
+   cache-management, inconvenient is that mount/unmount
+   support is done (never worked reliable, wrong implementation).
+
+
+Q: MinixFS 0.70 doesn't recognize my MinixFS partitions
+   anymore. I use AHDI as harddiskdriver.
+
+A: MinixFS 0.70 need XHDI for partitions larger than
+   32 MB. It's recommended to use a XHDI compliant
+   harddiskdriver.
+
+
+Q: If I delete/copy/move a lot of interleaved folders
+   I get the error message:
+   "block_IO.c: bio_unit_get: no free unit in cache, abort".
+
+A: Your default cache is too small, increase cache size with
+   the line "CACHE=<size in kb>" in your MiNT configuration
+   file (with size >= 200 kb).
+
+
+Q: I have a FAT32 formatted harddisk and it doesn't work
+   under FreeMiNT 1.15. But I read FAT32 are supported?
+
+A: Yes, FAT32 is supported. But you need at least
+   HDDriver 7.55.
+
+
+Q: Why do I need at least HDDriver 7.55 for FAT32 support?
+
+A: Other harddisk drivers and older versions of HDDriver
+   ignore FAT32 partitions completly. Only patch is to
+   distribute our own harddisk driver or to update your
+   driver. Or write an e-mail to the author of the harddisk
+   driver and ask him to patch his driver, but the only
+   supported driver at the moment is HDDriver.
+
+
+Q: Can I use AHDI from ATARI corp. as harddisk driver?
+
+A: Yes, this is possible. But it's strictly recommended
+   to use a modern driver with XHDI interface.
+   If you are going to access DOS partitions this is a must.
+   It's not possible with AHDI to read/write DOS
+   partitions.
+   And also MinixFS 0.70 will no longer support large
+   partitions under AHDI.

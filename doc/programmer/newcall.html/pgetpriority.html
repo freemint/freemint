@@ -1,0 +1,85 @@
+<html>
+<head>
+	<title> New MiNT system calls: Pgetpriority() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Pgetpriority()</H3>
+
+<P>
+<B>LONG Pgetpriority(<i>which</i>, <i>who</i>)</B>
+<P>
+<B>WORD <I>which</I>;<br>
+WORD <i>who</i>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Pgetpriority()</B> gets the current priority value 
+for a process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>344 (0x0158)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a <B>MiNT</B> 
+kernel of a version at least 1.15.0 <i>release</i> is detected.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD>
+<b>Pgetpriority()</b> gets the priority of the processes specified by 
+<b><i>which</i></b> and <b><i>who</i></b>. The interpretation of 
+parameter <b><i>who</i></b> depends on <b><i>which</b></i>:
+<p><b>PRIO_PROCESS</b> (0) reads the priority of process with process 
+<i>id <b>which</i></b>. A <b><i>who</i></b> of 0 implies the process 
+<i>id</i> of the calling process.</p>
+<p><b>PRIO_PGRP</b> (1) reads the priority of the process group with 
+process group <i>id <b>who</i></b>. If the priorities of the process 
+differ, the lowest valued priority (i. e. the highest CPU usage 
+priority) is returned. A <b><i>who</b></i> of 0 implies the process 
+group <i>id</i> of the calling process.</p>
+<p><b>PRIO_USER</b> (2) reads the priority of the process of the user 
+with user <i>id <b>who</b></i>. For multiple processes the lowest 
+valued priority is returned. A <b><i>who</i></b> of 0 implies the user 
+<i>id</i> of the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	who,-(sp)
+move.w	which,-(sp)
+move.w	#$0158,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD>Return value is either a negative 
+error number in case of failure or the requested priority + 20 on 
+success.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>Library functions should first check 
+for an error condition and then decrement the returned value by 20.
+<p>This call makes calls <b>Pnice()</b> and <b>Prenice()</b> obsolete.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="psetpriority.html"><b>Psetpriority()</b></a></td>
+</tr>
+
+</table>
+</body>
+</html>

@@ -1,0 +1,269 @@
+Controlling FreeMiNT's real FAT XFS
+===================================
+
+last update: 1998-10-06
+Author: Frank Naumann <fnaumann@freemint.de>
+notes:
+
+
+I. Introduction
+---------------
+
+FreeMiNT 1.15 has a new FAT filesystem. It is integrated
+in the kernel.
+
+The NEWFATFS has many advantages:
+- very fast
+- mostly configurable also on runtime
+- supports Microsofts VFAT extension
+- supports TOS and DOS partitions of any size
+- supports FAT32 partitions;
+  partitions larger than 2 GB are no longer a problem
+- part of FreeMiNT, available in source for easy support
+
+At the moment the old TOS filesystem is the default
+filesystem. This will change in the future.
+
+To activate the new FAT filesystem (NEWFATFS), there is 
+a new configuration keyword to use in the configuration 
+file (MiNT.CNF).
+With a line like "NEWFATFS=A,D,E,F" the NEWFATFS will be
+active on A:, D:, E: and F: (valid FAT partition only)
+
+VFAT can be configured at boot time in the configuration file
+with "VFAT=<drives>" keyword (same syntax as NEWFATFS).
+
+Write back cache can be activated at boottime with
+"WB_ENABLE=<drives>" keyword (same syntax as NEWFATFS).
+
+VFAT and write back cache configuration is only available for
+NEWFATFS partitions (and MinixFS 0.70 partitions).
+
+
+The following paragraphs describe the supported calls
+for runtime configuration. Only interesting for programmers.
+It exists the tool FSetter from Christian Felsch that
+implemented all these configuration in an easy GEM program.
+FSetter is part of FreeMiNT 1.15 distribution. Thanks to
+Christian Felsch for this.
+
+
+II. Definition
+--------------
+
+Prototype:
+
+long Dcntl (short opcode, const char *path, long arg);
+
+call conventions:
+- all arguments are on the stack
+- return value is stored in d0
+(cdecl call)
+
+return value conventions:
+- negative return values are ATARI error codes
+- if opcode doesn't exist or is not supported
+  EINVFN is returned 
+
+type conventions:
+
+char			8 bit signed
+unsigned char	8 bit unsigned
+short			16 bit signed integer
+unsigned short	16 bit unsigned integer
+long			32 bit signed integer
+unsigned long	32 bit unsigned integer
+llong			64 bit signed integer
+ullong		64 bit unsigned integer
+
+with:
+
+typedef struct { long hi; unsigned long low; } llong;
+typedef struct { unsigned long hi; unsigned long low; } ullong;
+
+
+III. Supported opcodes
+----------------------
+
+name				opcode	comment
+====				======	=======
+
+MX_KER_XFSNAME		0x6d05	like MagiC
+
+Description:
+
+Arg is a pointer to at least 9 characters and the xfs
+print a readable name to arg.
+
+
+VFAT_CNFDFLN		0x5600	like MagiC
+
+Description:
+
+Control the status of the VFAT extension for all drives.
+Arg is a bitfield. These default values are only
+interesting, if there is a valid FAT filesystem on the
+specified drive.
+
+
+VFAT_CNFLN		0x5601	like MagiC
+
+Description:
+
+Enable/disable the VFAT extension for the specified drive.
+You should send a SH_WDRAW message to the shell to see the
+difference.
+
+convention: if arg = -1, the return value is the current status.
+
+status:	DISABLE = 0
+	ENABLE  = 1
+
+
+V_CNTR_SLNK		0x5602	new
+
+Description:
+
+Enable/disable support for MagiC style symbolic links.
+If you have problems on other platforms or you don't like
+links, you can disable this feature with this Dcntl.
+
+convention: if arg = -1, the return value is the current status.
+
+status:	DISABLE = 0
+	ENABLE  = 1
+
+
+V_CNTR_MODE		0x5604	new
+
+Description:
+
+Sets or asks the newname mode for the specified drive.
+This opcode is only available for FAT drives. On VFAT drives
+are all characters allowed (Unicode) and the short name
+truncation always uses the MS-DOS table.
+
+convention: if arg = -1, the return value is the current status.
+
+status:	GEMDOS		0	/* allows all GEMDOS characters:
+				 * A..Z0..9!#$%&'()-@^_`{}~"+,;<=>[]| */
+	ISO		1	/* allows only ISO d-characters as defined in
+				 * ISO/IEC 9293 and ISO 9660: A..Z0..9_ */
+	MSDOS		2	/* allows all MS-DOS characters:
+				 * A..Z0..9!#$%&'()-@^_`{}~ */
+
+
+V_CNTR_FAT32		0x560a	new
+
+Description:
+
+Control some of the FAT32 extensions like FAT mirroring
+and additional info sector. Only available on FAT32
+drives.
+Arg must be pointer to the following struct:
+
+struct control_FAT32
+{
+	short	mode;	/* 0 = fill out; 1 = set values */
+	short	mirr;	/* FAT mirroring: 0 = enabled, otherwise active FAT */
+	short	fats;	/* number of fats */
+	short	info;	/* status of additional info sector */
+# define FAT32_info_exist	0x1
+# define FAT32_info_active	0x2
+};
+
+If (mode == 0) the xfs fills out the struct otherwise it will
+set some things.
+If (mirr == 0) FAT mirroring is enabled, this means ALL FATs
+are updated. If mirr is greater 0 only one FAT is updated and
+the value of mirr is the number of the actual FAT.
+This value is filled out and reading in the context of mode.
+Fats is only an information value. It holds the number of FATs
+that are available (normally 2).
+Info describes the status of the optional info sector. If bit 2 is
+set, the info sector is updated (costs performance).
+
+ATTENTION: the boot sector must be writeable for these operations
+           because some values are stored in the bootsector.
+
+
+FUTIME			0x4603	like MinixFS
+
+Description:
+
+Sets mtime/mdate, atime/adate and ctime/cdate to actual time
+if arg is NULL. If arg != NULL arg is interpreted as a pointer
+to the following struct:
+
+struct mutimbuf
+{
+	unsigned short actime, acdate;	/* GEMDOS format */
+	unsigned short modtime, moddate;
+};
+
+and the timestamps are set to the given values. Works on files
+and directories.
+
+
+FTRUNCATE		0x4604	like MinixFS
+
+Description:
+
+Truncates file to given size. Arg is interpreted as new size.
+Useful if you are shrinking files without deletion.
+
+
+FS_INFO		0xf100	new
+
+Description:
+
+Arg is interpreted as a pointer to the following struct and is filled out
+from the xfs.
+
+struct fs_info
+{
+	char	name [32];	/* name of the xfs (same as MX_KER_XFSNAME but more space) */
+	long	version;	/* upper word: major version; lower word: minor version */
+	long	type;		/* upper word: major type; lower word: minor type */
+	char	type_asc[32];	/* human readable version of type */
+};
+
+
+FS_USAGE		0xf101	new
+
+Description:
+
+Arg is interpreted as a pointer to the following struct and is filled out
+from the xfs.
+
+struct fs_usage
+{
+	ulong	blocksize;	/* 32bit: size in bytes of a block */
+	llong	blocks;		/* 64bit: number of blocks */
+	llong	free_blocks;	/* 64bit: number of free blocks */
+	llong	inodes;		/* 64bit: number of inodes or FS_UNLIMITED */
+	llong	free_inodes;	/* 64bit: number of free inodes or FS_UNLIMITED */
+# define FS_UNLIMITED	-1
+};
+
+
+V_CNTR_WP		0x5664	new
+
+Description:
+
+Not ready yet.
+Only supported by NEWFATFS and MinixFS 0.70 at the moment.
+
+
+V_CNTR_WB		0x5665	new
+
+Description:
+
+Enable/disable write-back cache for the specified (and only for
+this) drive.
+Only supported by NEWFATFS and MinixFS 0.70 at the moment.
+
+convention: if arg = -1, the return value is the current status.
+
+status:	DISABLE = 0
+	ENABLE  = 1

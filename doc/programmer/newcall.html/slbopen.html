@@ -1,0 +1,92 @@
+<html>
+<head>
+	<title> New MiNT system calls: Slbopen() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Slbopen()</H3>
+
+<P>
+<B>LONG Slbopen(<i>name, path, minver, sl, fn</i>)</B>
+<P>
+<B>CHAR *<I>name</I>;<br>
+CHAR *<I>path</I>;<br>
+LONG <I>minver</I>;<br>
+LONG *<I>sl</I>;<br>
+LONG *<I>fn</I>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Slbopen()</B> open a MagiC-style shared library.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>22 (0x016)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available as of FreeMiNT version 
+1.15.4.</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>name</I> specifies the filename of 
+the shared library to open (without path). The filename should 
+exactly match the name stored in the library header, including possible 
+extension, possible dots and casing.
+<p><i>path</i> is the path where to search for the library. If 
+<b>NULL</b>, the current directory is assumed.
+<p><i>minver</i> minimum version number of the library.
+<p><i>sl</i> a pointer to a longword which will be filled with the 
+library handle upon return from the call.
+<p><i>fn</i> a pointer to a longword which will be filled with the 
+pointer that should be jumped through in order to use a function of the 
+library.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+pea	fn
+pea	sl
+move.l	#minver,-(sp)
+pea	path
+pea	name
+move.w	#$0016,-(sp)
+trap	#1
+lea	22(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Slbopen()</B> returns a 
+positive version number of the successfully opened library, or a 
+negative GEMDOS error code otherwise.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Caveats</b></th><td>The original implementation performs 
+<b>PATH</b> searching for the library of the specified filename, if the 
+<i>path</i> parameter passed to the <b>Slbopen()</b> function is 
+<b>NULL</b>. Current FreeMiNT versions do <b>NOT</b> support this 
+behaviour, the library is attempted to be loaded from the current 
+directory instead.
+<p>The <b>Slbopen()</b> call must me made from user mode, or 
+<b>SIGSYS</b> will be generated otherwise in order to kill the calling 
+process.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="slbclose.html"><b>Slbclose()</b></a>,
+</td>
+</tr>
+
+</table>
+</body>
+</html>
