@@ -58,6 +58,7 @@ struct cnfdata
 static PCB_TTx	pCB_setenv;		/* setenv name val	*/
 
 static PCB_T	pCB_toppage;
+static PCB_T	pCB_next_active;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
 static PCB_T    pCB_menu;
@@ -94,6 +95,7 @@ static struct parser_item parser_tab[] =
 	{ "SETENV",         PI_C_TT,  pCB_setenv                },
 	
 	{ "TOPPAGE",        PI_V_T,   pCB_toppage               },
+	{ "NEXT_ACTIVE",    PI_V_T,   pCB_next_active           },
 	{ "FOCUS",          PI_V_T,   pCB_point_to_type         },
 	{ "CANCEL",         PI_V_A,   pCB_cancel                },
 	{ "FILTERS",        PI_V_A,   pCB_filters               },
@@ -228,6 +230,24 @@ pCB_toppage(const char *str)
 		str, cfg.topname, cfg.backname));
 }
 
+static void
+pCB_next_active(const char *str)
+{
+	if (stricmp(str, "client") == 0)
+	{
+		cfg.next_active = 1;
+	}
+	else if (stricmp(str, "window") == 0)
+	{
+		cfg.next_active = 0;
+	}
+	else
+	{
+		// XXX print error, invalid string
+	}
+	DIAGS(("pCB_next_active: %s (next_active %i)",
+		str, cfg.next_active));
+}
 /*----------------------------------------------------------------------------*/
 #if POINT_TO_TYPE
 static void

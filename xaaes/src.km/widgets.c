@@ -1296,8 +1296,8 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	else
 	{
 		/* if not on top or on top and not focus */
-		if (wind != window_list
-		    || (wind == window_list && wind != C.focus))
+		if ( wind != window_list ||
+		    (wind == window_list && wind != C.focus))
 		{
 			if (wind->send_message)
 				wind->send_message(lock, wind, NULL,

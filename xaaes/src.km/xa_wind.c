@@ -601,8 +601,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (w->is_open)
 		{
-			if (    w != window_list
-			    || (w == window_list && w != C.focus))
+			if (    w != window_list ||
+			       (w == window_list && w != C.focus))
 			{
 				if (is_hidden(w))
 					unhide_window(lock|winlist, w);
@@ -1067,9 +1067,9 @@ next:
 
 		if (w)
 		{
-			/* HR 100801: Do not report unfocused window as top.
+			/* HR 100801: Do not report unfocused window as top. */
 			if (C.focus == root_window)
-				w = root_window; */
+				w = root_window;
 
 			o[1] = w->handle; /* Return the window handle */
 			o[2] = w->owner->p->pid; /* AES4 specifies that you return the AESid of the owner here as well */

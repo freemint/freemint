@@ -81,6 +81,7 @@ void	clear_wind_handles(void);
 void	send_ontop(enum locks lock);
 void	send_untop(enum locks lock, struct xa_window *wind);
 
+bool	is_topped(struct xa_window *wind);
 bool	is_hidden(struct xa_window *wind);
 bool	unhide(struct xa_window *w, short *x, short *y);
 
