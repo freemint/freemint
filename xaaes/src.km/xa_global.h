@@ -137,7 +137,9 @@ struct config
 	/* display modes of window title */
 	short topname;
 	short backname;
-
+	
+	short next_active;		/* 0 = set previous active client active upon client termination */
+					/* 1 = set owner of previous topped (or only) window upon client termination */
 	bool no_xa_fsel;
 	bool auto_program;
 	bool point_to_type;
