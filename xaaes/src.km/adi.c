@@ -28,7 +28,6 @@
 #include "xa_global.h"
 
 
-static struct moose_data md;
 static struct adif *alladifs = NULL;
 
 long

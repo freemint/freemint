@@ -109,65 +109,13 @@ post_cevent(struct xa_client *client,
 		Unblock(client, 1, 5000);
 	else
 		dispatch_cevent(client);
-
-#if 0
-
-	int h = client->ce_head;
-
-	/*
-	 * Ozk: Some different tests I did before re-learning
-	 * about screen/mouse lock (see semaphore.c).
-	 * Things here needs going-over, dont have time right now.
-	*/
-	if (client != C.Aes)
-	{
-#if 0
-		if (!client->inblock)
-		{
-			DIAGS(("Client %s not in AES", client->name));
-			return;
-		}
-#endif
-		if ( ((h + 1) & MAX_CEVENTS) == client->ce_tail)
-		{
-			DIAGS(("CLIENT (%s) EVENT MESSAGE QUEUE FULL!!", client->name));
-			Unblock(client, 1, 5001);
-			return;
-		}
-	}
-
-	client->ce[h].funct = func;
-	client->ce[h].client = client;
-	client->ce[h].ptr1 = ptr1;
-	client->ce[h].ptr2 = ptr2;
-	client->ce[h].d0 = d0;
-	client->ce[h].d1 = d1;
-	if (r)
-		client->ce[h].r = *r;
-	if (md)
-		client->ce[h].md = *md;
-
-	h++;
-	DIAG((D_mouse, client, "added cevnt at %d, nxt %d (tail %d) for %s", client->ce_head, h, client->ce_tail, client->name));
-	client->ce_head = h & MAX_CEVENTS;
-
-	if (client != C.Aes)
-	{
-		//if (!C.buffer_moose && client->inblock)
-		//	C.buffer_moose = client;
-		Unblock(client, 1, 5000);
-	}
-	else
-		dispatch_cevent(client);
-#endif
 }
 
 int
 dispatch_cevent(struct xa_client *client)
 {
-	//void (*func)(enum locks, struct c_event *);
 	struct c_event *ce, *nxt;
-	//int t;
+	int ret = 0;
 
 	ce = client->cevnt_head;
 	if (ce)
@@ -184,24 +132,9 @@ dispatch_cevent(struct xa_client *client)
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
 		(*ce->funct)(0, ce);
 		kfree(ce);
-		return 1;
+		ret = 1;
 	}
-	return 0;
-#if 0
-	t = client->ce_tail;
-	if (t == client->ce_head)
-		return 0;
-	
-	func = client->ce[t].funct;
-	ce = &client->ce[t];
-	t++;
-	t &= MAX_CEVENTS;
-	DIAG((D_kern, client, "Dispatch evnt %d, nxt %d (head %d) for %s",
-		client->ce_tail, t, client->ce_head, client->name));
-	client->ce_tail = t;
-	(*func)(0, ce);
-	return 1;
-#endif
+	return ret;
 }
 
 
@@ -257,15 +190,6 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	}
 	wake(IO_Q, (long)client);
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
-#if 0
-	/* the following served as a excellent safeguard on the
-	 * internal consistency of the event handling mechanisms.
-	 */
-	if (value == XA_OK)
-	{
-		cancel_evnt_multi(client,1);
-	}
-#endif
 }
 
 
@@ -284,10 +208,9 @@ static vdi_vec *svwhlv = NULL;
 static bool
 init_moose(void)
 {
-	struct fs_info info;
-	long major, minor;
+	//struct fs_info info;
+	//long major, minor;
 	struct moose_vecsbuf vecs;
-	unsigned short dclick_time;
 	struct adif *a;
 
 	C.adi_mouse = 0;
@@ -330,61 +253,7 @@ init_moose(void)
 		DIAGS(("Could not find moose adi"));
 		C.adi_mouse = 0;
 	}
-
-	if (!C.adi_mouse)
-	{
-		C.buffer_moose = 0;
-
-		if (!C.MOUSE_dev)
-		{
-			C.MOUSE_dev = f_open(moose_name, O_RDWR);
-			if (C.MOUSE_dev < 0)
-			{
-				fdisplay(log, "Can't open %s", moose_name);
-				return false;
-			}
-		}
-
-		/* first check the xdd version */
-		if (f_cntl(C.MOUSE_dev, (long)(&info), FS_INFO) != 0)
-		{
-			fdisplay(log, "Fcntl(FS_INFO) failed, please use the right moose.xdd?");
-			return false;
-		}
-
-		major = info.version >> 16;
-		minor = info.version & 0xffffL;
-		if (major != 0 || minor < 4)
-		{
-			fdisplay(log, ", do you use the right xdd?");
-			return false;
-		}
-
-		if (f_cntl(C.MOUSE_dev, (long)(&vecs), MOOSE_READVECS) != 0)
-		{
-			fdisplay(log, "Moose set dclick time failed");
-			return false;
-		}
-
-		if (vecs.motv)
-		{
-			vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
-			vex_butv(C.P_handle, vecs.butv, (void **)(&svbutv));
-
-			if (vecs.whlv)
-			{
-				vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
-				fdisplay(log, "Wheel support present");
-			}
-			else
-				fdisplay(log, "No wheel support!!");
-		}
-
-		dclick_time = lcfg.double_click_time;
-		if (f_cntl(C.MOUSE_dev, (long)(&dclick_time), MOOSE_DCLICK) != 0)
-			fdisplay(log, "Moose set dclick time failed");
-	}
-	return true;
+	return C.adi_mouse ? true : false;
 }
 
 
@@ -392,8 +261,6 @@ init_moose(void)
  * There is only 1 mouse, so there is only need for 1 global structure.
  */
 XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
-
-
 
 /* Now use the global (once) set values in the button structure */
 void
@@ -625,24 +492,6 @@ k_main(void *dummy)
 	}
 	fdisplay(log, "Open '%s' to %ld", KBD_dev_name, C.KBD_dev);
 
-#if 0
-	/*
-	 * Ozk: Open a fileptr to moose so that every application can read
-	 * indipendant of filedescriptors. I tried to open this in
-	 * check_mouse(), which is _after_ moose is opened and
-	 * initialized using normal gemdos calls. This turned out to make
-	 * Fselect() not work properly so I tried here and it worked.
-	 * I dont know if this is pure luck, or what it is. Gurus (That is,
-	 * Frank Naumann ;-) ), please see if this is OK.
-	 */
-	C.kmoose = kernel_open(moose_name, O_RDONLY, NULL);
-	if (!C.kmoose)
-	{
-		fdisplay(log, "XaAES ERROR: kernel_open(%s) failed",
-			 moose_name);
-		goto leave;
-	}
-#endif
 	/* Open /dev/moose (040201: after xa_setup.scl for mouse configuration) */
 	if (!init_moose())
 	{
@@ -650,8 +499,8 @@ k_main(void *dummy)
 		goto leave;
 	}
 
-	DIAGS(("Handles: MOUSE %ld, KBD %ld, ALERT %ld",
-		C.MOUSE_dev, C.KBD_dev, C.alert_pipe));
+	DIAGS(("Handles: KBD %ld, ALERT %ld",
+		C.KBD_dev, C.alert_pipe));
 
 	/*
 	 * Load Accessories
@@ -714,15 +563,7 @@ k_main(void *dummy)
 			}
 		}
 #endif
-		//preprocess_mouse(lock); 
-
-			
-		if (!C.adi_mouse)
-			input_channels  = 1UL << C.MOUSE_dev;
-		else
-			input_channels = 0UL;
-
-		input_channels |= 1UL << C.KBD_dev;	/* We are waiting on all these channels */
+		input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
 		input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 
 		/* DIAG((D_kern, NULL, "Fselect mask: 0x%08lx", input_channels)); */
@@ -777,9 +618,6 @@ k_main(void *dummy)
 					alert_pending = 0;
 				}
 			}
-
-			if (input_channels & (1UL << C.MOUSE_dev))
-				mouse_input(lock, false);
 
 			if (input_channels & (1UL << C.KBD_dev))
 				keyboard_input(lock);
@@ -849,9 +687,6 @@ k_exit(void)
 	 */
 	if (C.kmoose)
 		kernel_close(C.kmoose);
-
-	if (C.MOUSE_dev > 0)
-		f_close(C.MOUSE_dev);
 
 	if (C.KBD_dev > 0)
 		f_close(C.KBD_dev);
