@@ -22,6 +22,7 @@ struct win
 	GRECT	work;		/* size of window working area */
 	GRECT	full;
 	GRECT	prev;
+	GRECT	full_work;
 	int	max_w, max_h;	/* max size of window working area */
 	int	icon_x, icon_y;	/* WINICON Position, da der Objektbaum mehrfach benutzt wird. */
 	int	flags;		/* various window flags */
