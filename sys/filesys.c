@@ -38,6 +38,7 @@
 # include "dosmem.h"
 # include "kmemory.h"
 # include "memory.h"
+# include "module.h"
 # include "proc.h"
 # include "signal.h"
 # include "time.h"
@@ -499,9 +500,6 @@ sys_fsync (int fh)
  * load file systems from disk
  * this routine is called after process 0 is set up, but before any user
  * processes are run
- *
- * NOTE that a number of directory changes take place here: we look first
- * in the current directory, then in the directory \mint.
  */
 
 void
@@ -515,9 +513,6 @@ xfs_add (FILESYS *fs)
 		active_fs = fs;
 	}
 }
-
-typedef FILESYS * _cdecl (*FSFUNC) (struct kerinfo *);
-typedef DEVDRV * _cdecl (*DEVFUNC) (struct kerinfo *);
 
 static void *
 callout_init (void *initfunction, struct kerinfo *k)
@@ -544,28 +539,19 @@ callout_init (void *initfunction, struct kerinfo *k)
 static void
 load_xfs (const char *path, const char *name)
 {
-	MEMREGION *reg;
-	MEMREGION *dummy;
-	XATTR xattr;
-	long flags;
+	BASEPAGE *b;
 	long r;
-	
 	
 	DEBUG (("load_xfs: enter (%s, %s)", path, name));
 	
-	reg = load_region (path, NULL, NULL, &xattr, &dummy, &flags, 0, &r);
-	if (reg)
+	b = load_module (path, &r);
+	if (b)
 	{
-		BASEPAGE *b = (BASEPAGE *) reg->loc;
-		FSFUNC init = (FSFUNC) b->p_tbase;
 		FILESYS *fs;
 		
-		shrink_region (reg, b->p_tlen + b->p_dlen + b->p_blen + 1024);
-		mark_region (reg, PROT_S);
+		DEBUG (("load_xfs: initializing %s, bp = %lx, size = %lx", path, b, b->p_tlen + b->p_dlen + b->p_blen));
 		
-		DEBUG (("load_xfs: initializing %s, bp = %lx, size = %lx", path, b, b->p_tlen + b->p_dlen + b->p_blen + 1024));
-		
-		fs = callout_init (init, &kernelinfo);
+		fs = callout_init ((void *) b->p_tbase, &kernelinfo);
 		if (fs)
 		{
 			DEBUG (("load_xfs: %s loaded OK (%lx)", path, fs));
@@ -607,8 +593,7 @@ load_xfs (const char *path, const char *name)
 		}
 		else
 		{
-			detach_region (curproc, reg);
-			
+			kfree (b);
 			DEBUG (("load_xfs: %s returned null", path));
 		}
 	}
@@ -622,37 +607,24 @@ load_xfs (const char *path, const char *name)
  * this routine is called after process 0 is set up, but before any user
  * processes are run, but before the loadable file systems come in,
  * so they can make use of external device drivers
- *
- * NOTE that a number of directory changes take place here: we look first
- * in the current directory, then in the directory \mint, and finally
- * the d_lock() calls force us into the root directory.
- * ??? what d_lock() calls ???
  */
 static void
 load_xdd (const char *path, const char *name)
 {
-	MEMREGION *reg;
-	MEMREGION *dummy;
-	XATTR xattr;
-	long flags;
+	BASEPAGE *b;
 	long r;
 	
 	
 	DEBUG (("load_xdd: enter (%s, %s)", path, name));
 	
-	reg = load_region (path, NULL, NULL, &xattr, &dummy, &flags, 0, &r);
-	if (reg)
+	b = load_module (path, &r);
+	if (b)
 	{
-		BASEPAGE *b = (BASEPAGE *) reg->loc;
-		DEVFUNC init = (DEVFUNC) b->p_tbase;
 		DEVDRV *dev;
 		
-		shrink_region (reg, b->p_tlen + b->p_dlen + b->p_blen + 1024);
-		mark_region (reg, PROT_S);
+		DEBUG (("load_xdd: initializing %s, bp = %lx, size = %lx", path, b, b->p_tlen + b->p_dlen + b->p_blen));
 		
-		DEBUG (("load_xdd: initializing %s, bp = %lx, size = %lx", path, b, b->p_tlen + b->p_dlen + b->p_blen + 1024));
-		
-		dev = callout_init (init, &kernelinfo);
+		dev = callout_init ((void *) b->p_tbase, &kernelinfo);
 		if (dev)
 		{
 			DEBUG (("load_xdd: %s loaded OK", path));
@@ -684,16 +656,14 @@ load_xdd (const char *path, const char *name)
 				r = d_cntl (DEV_INSTALL, dev_name, (long) &the_dev);
 				if (r <= 0)
 				{
-					detach_region (curproc, reg);
-					
+					kfree (b);
 					DEBUG (("load_xdd: fail, d_cntl(%s) = %li", dev_name, r));
 				}
 			}
 		}
 		else
 		{
-			detach_region (curproc, reg);
-			
+			kfree (b);
 			DEBUG (("load_xdd: %s returned null", path));
 		}
 	}
