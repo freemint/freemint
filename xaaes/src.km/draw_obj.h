@@ -35,6 +35,8 @@ void init_objects(void);
 
 /* Clipping stuff */
 void	set_clip(const RECT *r);
+void	save_clip(RECT *s);
+void	restore_clip(RECT *s);
 void	clear_clip(void);
 
 void	wr_mode(short);

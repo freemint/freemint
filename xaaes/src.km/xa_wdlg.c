@@ -331,15 +331,14 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		r = calc_window(lock, client, WC_BORDER,
 				tp,
-				MG,
-				false, false,
+				client->options.thinframe,
+				client->options.thinwork,
 				*(RECT *)&or);		// *(RECT*)&tree->ob_x);
 
 		wind = create_window(lock, send_app_message, NULL, client, false,
 				     tp,
 				     created_for_WDIAL,
-				     MG,
-				     false, false,
+				     0, false,
 				     r, 0, 0);
 		if (wind)
 		{
@@ -423,7 +422,9 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			obj_area(wdlg->std_wt, 0, &or);
 
 			r = calc_window(lock, client, WC_BORDER,
-					tp, MG, false, false,
+					tp,
+					client->options.thinframe,
+					client->options.thinwork,
 					*(RECT *)&or); //*(RECT *)&tree->ob_x);
 
 			change_window_attribs(lock, client, wind, tp, r, &r);
@@ -692,7 +693,9 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						obj_area(wt, 0, &or);
 
 						r = calc_window(lock, client, WC_BORDER,
-							wind->active_widgets, MG, false, false,
+							wind->active_widgets,
+							client->options.thinframe,
+							client->options.thinwork,
 							*(RECT *)&or);
 
 						r.x = wind->r.x;
@@ -895,7 +898,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 
  					if (cwind && wind == cwind && (wind == top || (wind->active_widgets & NO_TOPPED)) )
 					{
-						if ( (obj = obj_find(wt, 0,7, ev->mx, ev->my)) >= 0)
+						if ( (obj = obj_find(wt, 0,7, ev->mx, ev->my, NULL)) >= 0)
 						{
 							ev->mwhich &= ~MU_BUTTON;
 							if (!(wind->window_status & XAWS_ICONIFIED))
@@ -974,7 +977,13 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): call HNDL_EDCH exit(%lx) with new edobj=%d for %s",
 							nxtobj, client->name));
-						ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, 0, &nxtobj);
+						
+						if (nxtobj != wt->e.obj)
+						{
+							obj_edit(wt, ED_END, 0, 0, 0, true, wind->rect_start, NULL, NULL);
+							obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, wind->rect_start, NULL, NULL);
+							ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, 0, &nxtobj);
+						}
 					}
 					else 
 					{

@@ -211,6 +211,17 @@ clear_clip(void)
 	rtopxy(C.global_clip, &screen.r);
 	vs_clip(C.vh, 1, C.global_clip);
 }
+void
+restore_clip(RECT *s)
+{
+	rtopxy(C.global_clip, s);
+	vs_clip(C.vh, 1, C.global_clip);
+}
+void
+save_clip(RECT *s)
+{
+	*s = *(RECT *)&C.global_clip;
+}
 
 void
 set_clip(const RECT *r)

@@ -220,6 +220,20 @@ inside_root(RECT *r, struct options *o)
 }
 
 static void
+inside_minmax(RECT *r, struct xa_window *wind)
+{
+	if (wind->max.w && r->w > wind->max.w)
+		r->w = wind->max.w;
+	else if (wind->min.w && r->w < wind->min.w)
+		r->w = wind->min.w;
+	
+	if (wind->max.h && r->h > wind->max.h)
+		r->h = wind->max.h;
+	else if (wind->min.h && r->h < wind->min.h)
+		r->h = wind->min.h;
+}
+
+static void
 wi_put_first(struct win_base *b, struct xa_window *w)
 {
 	if (b->first)
@@ -553,13 +567,15 @@ create_window(
 	XA_WIND_ATTR tp,
 	WINDOW_TYPE dial,
 	int frame,
-	int thinframe,
 	bool thinwork,
-	const RECT r,
+	const RECT R,
 	const RECT *max,
 	RECT *remember)
 {
 	struct xa_window *w;
+	RECT r;
+
+	r = R;
 
 #if GENERATE_DIAGS
 	if (max)
@@ -610,9 +626,14 @@ create_window(
 	w->min.w = 6 * cfg.widg_w;
 	w->min.h = 6 * cfg.widg_h;
 
-	w->rc = w->r = w->pr = r;
+#if 0
+	if (root_window)
+	{
+		inside_root(&r, &client->options);
+	}
+#endif
 
-	frame = thinframe;
+	w->rc = w->r = w->pr = r;
 #if 0
 	if (!MONO && frame > 0)
 	{
@@ -799,6 +820,13 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		DIAGS(("open_window: nolist window"));
 		C.focus  = wind;
 
+#if 0
+		if (wind != root_window)
+		{
+			inside_root(&r, &wind->owner->options);
+			//inside_minmax(&r, wind);
+		}
+#endif
 		wind->rc = wind->r = r;
 
 		if ((wind->window_status & XAWS_SHADED))
@@ -832,18 +860,31 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	if ((wind->window_status & XAWS_ICONIFIED))
 	{
+#if 0
+		if (wind != root_window)
+			inside_root(&r, &wind->owner->options);
+#endif
+			
+
 		if (r.w != -1 && r.h != -1)
 			wind->rc = wind->r = r;
 
 		if ((wind->window_status & XAWS_SHADED))
 			wind->r.h = wind->sh;
 
-		if (wind != root_window)
-			inside_root(&wind->r, &wind->owner->options);
 	}
 	else
 	{
 		/* Change the window coords */
+
+#if 0
+		if (wind != root_window)
+		{
+			inside_root(&r, &wind->owner->options);
+			//inside_minmax(&r, wind);
+		}
+#endif
+
 		wind->rc = wind->r = r;
 
 		if ((wind->window_status & XAWS_SHADED))
@@ -854,12 +895,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 				wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
 					WM_SHADED, 0,0, wind->handle, 0,0,0,0);
 		}
-
-		if (wind != root_window)
-			inside_root(&wind->r, &wind->owner->options);
-
 	}
-
 	wind->window_status |= XAWS_OPEN;
 
 	calc_work_area(wind);
@@ -1845,7 +1881,7 @@ Xpolate(RECT *r, RECT *o, RECT *i)
 }
 
 RECT
-calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, int mg, int thinframe, bool thinwork, RECT r)
+calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, int thinframe, bool thinwork, RECT r)
 {
 	struct xa_window *w_temp;
 	RECT o;
@@ -1853,21 +1889,28 @@ calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, in
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
 
 	/* Create a temporary window with the required widgets */
-	w_temp = create_window(lock, NULL, NULL, client, true, tp, 0, mg, thinframe, thinwork, r, 0, 0);
+	w_temp = create_window(lock, NULL, NULL, client, true, tp, 0, thinframe, thinwork, r, 0, 0);
 
 	switch(request)
 	{
-		case WC_BORDER:	
+		case WC_BORDER:
+		{
 			/* We have to work out the border size ourselves here */
 			Xpolate(&o, &w_temp->r, &w_temp->wa);
+			//inside_root(&o, &client->options);
 			break;
+		}
 		case WC_WORK:
+		{
 			/* Work area was calculated when the window was created */
 			o = w_temp->wa;
 			break;
+		}
 		default:
+		{
 			DIAG((D_wind, client, "wind_calc request %d", request));
 			o = w_temp->wa;	/* HR: return something usefull*/
+		}
 	}
 	DIAG((D_wind,client,"calc returned: %d/%d,%d/%d", o));
 

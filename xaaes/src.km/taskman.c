@@ -371,7 +371,6 @@ open_taskmanager(enum locks lock)
 			form_center(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME,
-						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT*)&form->ob_x);
@@ -384,7 +383,6 @@ open_taskmanager(enum locks lock)
 						false,
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
 						created_for_AES,
-						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						remember, NULL, &remember);
@@ -434,7 +432,6 @@ open_kill_or_wait(enum locks lock, struct xa_client *client)
 			form_center(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME,
-						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT*)&form->ob_x);
@@ -447,7 +444,6 @@ open_kill_or_wait(enum locks lock, struct xa_client *client)
 						false,
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
 						created_for_AES,
-						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						remember, NULL, &remember);
@@ -606,7 +602,6 @@ open_systemalerts(enum locks lock)
 			form_center(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME,
-						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT*)&form->ob_x);
@@ -620,7 +615,6 @@ open_systemalerts(enum locks lock)
 						false,
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
 						created_for_AES,
-						MG,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						remember, NULL, &remember);
