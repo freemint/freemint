@@ -49,6 +49,15 @@ char* months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 char* wdays[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
+#ifdef __CYGWIN__
+int
+getdomainname (char *buf, size_t len)
+{
+	strcpy (buf, "cygwin");
+	return 0;
+}
+#endif
+
 int
 main (int argc, char* argv[])
 {
@@ -127,7 +136,11 @@ main (int argc, char* argv[])
 		"# define BUILD_MIN %d\n"
 		"# define BUILD_SEC %d\n"
 		"\n"
+#ifdef __CYGWIN__
+		"# define BUILD_CTIME \"%s %s %02d %02d:%02d:%02d %04d\"\n"
+#else
 		"# define BUILD_CTIME \"%s %s %02d %02d:%02d:%02d %s %04d\"\n"
+#endif
 		"# define BUILD_USER \"%s\"\n"
 		"# define BUILD_HOST \"%s\"\n"
 		"# define BUILD_DOMAIN \"%s\"\n"
@@ -143,7 +156,10 @@ main (int argc, char* argv[])
 		now->tm_sec,
 		wdays[now->tm_wday], months[now->tm_mon],
 		now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec,
-		now->tm_zone, now->tm_year + 1900,
+#ifndef __CYGWIN__
+		now->tm_zone,
+#endif
+		now->tm_year + 1900,
 		user,
 		host,
 		domain,
