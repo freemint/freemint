@@ -707,7 +707,7 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 		lastname = temp2;
 	}
 
-	*lastname = 0;
+	*lastname = '\0';
 
 	PATH2COOKIE_DB (("relpath2cookie(%s, dolast=%d, depth=%d [relto %lx, %i])",
 		path, dolast, depth, relto->fs, relto->dev));
@@ -918,15 +918,10 @@ restart_mount:
 
 	while (*path)
 	{
-		/*  skip slashes
-		 */
-		while (DIRSEP (*path))
-			path++;
-
-		/* now we must have a directory, since there are more things
+		/* we must have a directory, since there are more things
 		 * in the path
 		 */
-		if ((xattr.mode & S_IFMT) != S_IFDIR)
+		if (!S_ISDIR(xattr.mode))
 		{
 			PATH2COOKIE_DB (("relpath2cookie: not a directory, returning ENOTDIR"));
 			release_cookie (&dir);
@@ -945,11 +940,21 @@ restart_mount:
 			break;
 		}
 
+		/* skip slashes
+		 */
+		while (DIRSEP (*path))
+			path++;
+
 		/* if there's nothing left in the path, we can break here
+		 *
+		 * fna: I think this is an error, e.g.
+		 *      looking up: /foo/bar/ should result in an error, or?
+		 *      at least there is no lastname, so clear it
 		 */
 		if (!*path)
 		{
 			PATH2COOKIE_DB (("relpath2cookie: no more path, breaking (1)"));
+			*lastname = '\0'; /* no lastname */
 			*res = dir;
 			break;
 		}
@@ -1060,7 +1065,7 @@ restart_mount:
 		/* check for a symbolic link
 		 * - if the file is a link, and we're following links, follow it
 		 */
-		if ((xattr.mode & S_IFMT) == S_IFLNK && (*path || dolast > 1))
+		if (S_ISLNK(xattr.mode) && (*path || dolast > 1))
 		{
 # if WITH_KERNFS
 			/* The symbolic links on the kern filesystem have
@@ -1102,6 +1107,8 @@ restart_mount:
 		}
 		else
 		{
+			TRACE(("relpath2cookie: lookup ok, mode 0x%x", xattr.mode));
+
 			release_cookie (&dir);
 			dir = *res;
 		}
@@ -1383,7 +1390,7 @@ dir_access (fcookie *dir, ushort perm, ushort *mode)
 		return r;
 	}
 
-	if ((xattr.mode & S_IFMT) != S_IFDIR )
+	if (!S_ISDIR(xattr.mode))
 	{
 		DEBUG (("file is not a directory"));
 		return ENOTDIR;
