@@ -206,7 +206,6 @@ alt_help(void)
 {
 	char pname[32], cmdln[32];
 
-	/* 0x0446L is the boot device */
 	ksprintf(pname, sizeof(pname), "%salthelp.sys", sysdir);
 	ksprintf(cmdln, sizeof(cmdln), " %salthelp.sys", sysdir);
 
@@ -577,18 +576,22 @@ sys_b_bioskeys(void)
 	syskeytab->unshift = keytable_vecs.unshift;
 	syskeytab->shift = keytable_vecs.shift;
 	syskeytab->caps = keytable_vecs.caps;
-	syskeytab->alt = keytable_vecs.alt;
-	syskeytab->altshift = keytable_vecs.altshift;
-	syskeytab->altcaps = keytable_vecs.altcaps;
-	if (mch == MILAN_C)
-		syskeytab->altgr = keytable_vecs.altgr;
 
-	/* Fix the _AKP cookie, gl_kbd may get changed in load_table()
-	 */
-	get_cookie(NULL, COOKIE__AKP, &akp_val);
-	akp_val &= 0xffffff00L;
-	akp_val |= gl_kbd;
-	set_cookie(NULL, COOKIE__AKP, akp_val);
+	if (tosvers >= 0x0400)
+	{
+		syskeytab->alt = keytable_vecs.alt;
+		syskeytab->altshift = keytable_vecs.altshift;
+		syskeytab->altcaps = keytable_vecs.altcaps;
+		if (mch == MILAN_C)
+			syskeytab->altgr = keytable_vecs.altgr;
+
+		/* Fix the _AKP cookie, gl_kbd may get changed in load_table()
+		 */
+		get_cookie(NULL, COOKIE__AKP, &akp_val);
+		akp_val &= 0xffffff00L;
+		akp_val |= gl_kbd;
+		set_cookie(NULL, COOKIE__AKP, akp_val);
+	}
 
 	/* Done! */
 	kbd_lock = 0;
@@ -777,7 +780,7 @@ load_default_table(void)
 	quickmove(p, syskeytab->caps, 128);
 	p += 128;
 
-	if (tosvers >= 0x200)
+	if (tosvers >= 0x0400)
 	{
 		long len;
 
@@ -890,11 +893,15 @@ init_keybd(void)
 	keytable_vecs.unshift = syskeytab->unshift;
 	keytable_vecs.shift = syskeytab->shift;
 	keytable_vecs.caps = syskeytab->caps;
-	keytable_vecs.alt = syskeytab->alt;
-	keytable_vecs.altshift = syskeytab->altshift;
-	keytable_vecs.altcaps = syskeytab->altcaps;
-	if (mch == MILAN_C)
-		keytable_vecs.altgr = syskeytab->altgr;
+
+	if (tosvers >= 0x0400)
+	{
+		keytable_vecs.alt = syskeytab->alt;
+		keytable_vecs.altshift = syskeytab->altshift;
+		keytable_vecs.altcaps = syskeytab->altcaps;
+		if (mch == MILAN_C)
+			keytable_vecs.altgr = syskeytab->altgr;
+	}
 # endif
 }
 
