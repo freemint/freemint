@@ -37,7 +37,7 @@
 # include "mint/mint.h"
 # include "mint/slb.h"
 
-long *user_header;
+extern long user_header[];
 
 void terminateme(int code);
 
