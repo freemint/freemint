@@ -49,21 +49,29 @@
 # include "rtl8012_vblint.h"
 # include "netinfo.h"
 
+# include <arch/timer.h>
 # include <mint/asm.h>
 # include <mint/dcntl.h>
-# include <arch/timer.h>
+# include <mint/delay.h>
+# include <mint/mdelay.h>
 
 # include <osbind.h>
 
-# ifdef __M68020__
-# include <mint/delay.h>
-# else
+
+# ifdef NO_DELAY
 # define udelay(x)	/* on 68000 we don't need to delay */
+# define mdelay(x)	/* on 68000 we don't need to delay */
+# define wait5ms ({ udelay (1000); udelay (1000); udelay (1000); udelay (1000); udelay (1000); })
+# else
+# define wait5ms ({ udelay (1000); udelay (1000); udelay (1000); udelay (1000); udelay (1000); })
 # endif
 
 
 /* there must be a better place for that */
 volatile long *hz_200 = _hz_200;
+
+# undef INLINE
+# define INLINE static
 
 
 /*
@@ -176,8 +184,15 @@ RdNib (ushort rreg)
 	*(volatile uchar *) (0xfa0000 + Table[RdAddr+rreg]);
 	
 	/* Read nib */
+# if 1
+	//*(volatile ushort *) 0xfa0000;
 	c = *(volatile ushort *) 0xfa0000;
-	//c = *(volatile uchar *) 0xfa0001;
+# else
+	*(volatile uchar *) 0xfa0001;
+	c = *(volatile uchar *) 0xfa0001;
+# endif
+	
+	*(volatile uchar *) (0xfa0000 + Table[EOC+rreg]);
 	
 	return c & 0x0f;
 }
@@ -187,35 +202,35 @@ RdNib (ushort rreg)
  * - 'End Of Write' is issued
  */
 INLINE void
-WrNib (uchar wreg, uchar wdata)
+WrNib (uchar reg, uchar value)
 {
 	register ulong x;
 	
-	x = wreg;
+	/* End Of Write */
+	*(volatile uchar *) (0xfa0000 + Table[EOC|reg]);
 	
-	/* Output end_of_write */
-	*(volatile uchar *) (0xfa0000 + Table[EOC|x]);
 	
-	x |= WrAddr;
+	x = WrAddr | reg;
 	
 	/* Prepare address */
 	*(volatile uchar *) (0xfa0000 + Table[x]);
+	*(volatile uchar *) (0xfa0000 + Table[x]);
 	
 	x &= 0xf0;
-	x |= wdata;
+	x |= value;
 	
 	/* Write address */
 	*(volatile uchar *) (0xfa0000 + Table[x]);
 	
-	x = wdata + 0x80;
+	x = value + 0x80;
 	
 	/* Write data */
 	*(volatile uchar *) (0xfa0000 + Table[x]);
+	*(volatile uchar *) (0xfa0000 + Table[x]);
 	
-	x |= EOC;
 	
 	/* End Of Write */
-	*(volatile uchar *) (0xfa0000 + Table[x]); 
+	*(volatile uchar *) (0xfa0000 + Table[EOC|x]); 
 }
 
 INLINE void
@@ -232,8 +247,8 @@ RdBytEP (void)
 	register uchar c;
 	
 	/* get lo nib */
-	x = *(volatile ushort *) 0xfa0000;
-	//x = *(volatile uchar *) 0xfa0001;
+	//x = *(volatile ushort *) 0xfa0000;
+	x = *(volatile uchar *) 0xfa0001;
 	
 	c = x & 0x0f;
 	
@@ -243,8 +258,8 @@ RdBytEP (void)
 	//nop
 	
 	/* get hi nib */
-	x = *(volatile ushort *) 0xfa0000;
-	//x = *(volatile uchar *) 0xfa0001;
+	//x = *(volatile ushort *) 0xfa0000;
+	x = *(volatile uchar *) 0xfa0001;
 	
 	c |= (x << 4) & 0xf0;
 	
@@ -291,6 +306,7 @@ rtl8012_active (void)
 static void
 rtl8012_doreset (void)
 {
+	ushort sr = splhigh ();
 	uchar i;
 	
 	DEBUG (("rtl8012: reset"));
@@ -300,8 +316,16 @@ rtl8012_doreset (void)
 	WrNib (MODSEL, 0);
 	WrNib (MODSEL+HNib, HNib+2);
 	
+	udelay (10);
+	
 	i = RdNib (MODSEL+HNib);
 	DEBUG (("rtl8012: reset -> 1: %i [expected 2]", i));
+	i = RdNib (MODSEL+HNib);
+	DEBUG (("rtl8012: reset -> 1: %i [expected 2]", i));
+	i = RdNib (MODSEL+HNib);
+	DEBUG (("rtl8012: reset -> 1: %i [expected 2]", i));
+	//if (i != 2)
+	//	return;
 	
 	WrNib (CMR1+HNib, HNib+EPLC_RST);
 	
@@ -315,9 +339,13 @@ rtl8012_doreset (void)
 	WrNib (ISR, EPLC_ROK+EPLC_TER+EPLC_TOK);
 	WrNib (ISR+HNib, HNib+EPLC_RBER);
 	
-	udelay (10);
+	//udelay (10);
 	
-	i = RdNib (CMR2+HNib);				/* must be 2 (EPLC_AM1) */
+	i = RdNib (CMR2+HNib);		/* must be 2 (EPLC_AM1) */
+	DEBUG (("rtl8012: reset -> 2: %i [expected 2]", i));
+	i = RdNib (CMR2+HNib);		/* must be 2 (EPLC_AM1) */
+	DEBUG (("rtl8012: reset -> 2: %i [expected 2]", i));
+	i = RdNib (CMR2+HNib);		/* must be 2 (EPLC_AM1) */
 	DEBUG (("rtl8012: reset -> 2: %i [expected 2]", i));
 	
 # ifdef XIF_DEBUG
@@ -329,6 +357,8 @@ rtl8012_doreset (void)
 	i |= (RdNib (CMR2+HNib) << 4);
 	DEBUG (("rtl8012: reset CMR2 0x%x", i));
 # endif
+	
+	spl (sr);
 }
 
 static int
@@ -366,6 +396,12 @@ rtl8012_ramtest (void)
 	/* 4.enable Tx & Rx */
 	WrNib (CMR1+HNib, HNib+EPLC_RxE+EPLC_TxE);
 	
+	//udelay (10);
+	
+	i = RdNib (CMR1+HNib);
+	DEBUG (("rtl8012: ramtest -> 1: %i", i));
+	i = RdNib (CMR1+HNib);
+	DEBUG (("rtl8012: ramtest -> 1: %i", i));
 	i = RdNib (CMR1+HNib);
 	DEBUG (("rtl8012: ramtest -> 1: %i", i));
 	
@@ -453,6 +489,161 @@ rtl8012_ramtest (void)
 	}
 	
 	return r;
+}
+
+# if 0
+;-------------------------------------------------------------------------
+;	To read Ethernet node id and store in buffer 'ID_addr'
+;	Assume : 9346 is used
+;
+;	entry : nothing!
+;
+;	exit  : Hopefuly the 6 bytes MAC in the buffer :-)
+;
+;	Note: If ID= 12 34 56 78 9A BC,  then the read bit sequence will be
+;		 0011-0100 0001-0010 0111-1000 0101-0110 .......
+;		 ( 3 - 4     1 - 2     7 - 8	 5 - 6	 ..... )
+;
+;-------------------------------------------------------------------------
+# endif
+static void GetNodeID (uchar *buf);
+
+static void
+GetNodeID (uchar *buf)
+{
+	ushort d0, d4, d5, d6, d7;
+	ushort _d4, _d6;
+	
+	WrNib (CMR2, EPLC_PAGE);	/* point to page 1 */
+					/* issue 3 read command to */
+					/* read 6 bytes id */
+	d6 = 0;				
+	d4 = 0x100 | 0x80;		/* start bit | READ command */
+	
+read_next_id_word:
+	_d4 = d4;
+	_d6 = d6;
+	
+	d0 = RdNib (PDR);
+	DEBUG (("GetNodeID [1]: d4 = %x, d6= %x (d0 = %x)", d4, d6, d0));
+	
+	//WrNib (PCMR+HNib, 0x2);
+	
+	d0 = 0x100;			/* mask */
+	for (d6 = 0; d6 < 9; d6++)
+	{
+		/* 
+		 * DI = Data Input of 9346
+		 * 
+		 * 	  ________________
+		 * CS : __|
+		 * 	      ___     ___
+		 * SK : ______|	 |___|	 |
+		 * 	  _______ _______
+		 * DI :	 X_______X_______X
+		 */
+		
+		//d5 = %00010110;	/* d5 = 000 HNIB  0 SKB CS 1 */
+		d5 = 0x4 | 0x2;		/* d5 = 000 HNIB  0 SKB CS 1 */
+		
+		//moveq		#0,d0
+		//roxl.w	#1,d4
+		//addx		d0,d5
+		if (d4 & d0)
+			d5 |= 0x1;	/* put DI bit to lsb of d5 */
+		
+		d0 >>= 1;
+		
+		WrNib (PCMR+HNib, d5);	/* pulls SK low and outputs DI */
+		udelay (1);
+		DEBUG (("1: PCMR+HNib = %x", RdNib (PCMR+HNib)));
+		DEBUG (("1: PCMR+HNib = %x", RdNib (PCMR+HNib)));
+		DEBUG (("1: PCMR+HNib = %x", RdNib (PCMR+HNib)));
+		wait5ms;		/* wait about 5ms (long but...) */
+		//d5 &= ~0x4;		/* let SKB=0 */
+		WrNib (PCMR+HNib, (d5 & ~0x4));	/* Pulls SK high to end this cycle */
+		udelay (1);
+		DEBUG (("2: PCMR+HNib = %x", RdNib (PCMR+HNib)));
+		DEBUG (("2: PCMR+HNib = %x", RdNib (PCMR+HNib)));
+		DEBUG (("2: PCMR+HNib = %x", RdNib (PCMR+HNib)));
+		//wait5ms;
+		
+		//DEBUG (("GetNodeID [2]: d6 = %i, d5 = %x, d0 = %x", d6, d5, d0));
+	}
+	
+	wait5ms;
+	goto read_bit;
+	
+read_bit:
+	d5 = 0;
+	
+	for (d7 = 0; d7 < 17; d7++)
+	{
+		/* read 17-bit data,
+		 * order : 0, D15, D14, --- ,D0
+		 * the 1st bit is the dummy
+		 * bit '0', and is discarded.
+		 */
+		
+		WrNib (PCMR+HNib, 0x4 | 0x2);	/* pull SK low */
+		wait5ms;
+		WrNib (PCMR+HNib, 0x2);		/* pull SK high to latch DO */
+		//wait5ms;
+		
+		d0 = RdNib (PDR);
+		//d0 = RdNib (PDR);
+		//d0 = RdNib (PDR);
+		
+		//nop
+		//nop
+		
+		//lsl.l	#1,d5
+		d5 <<= 1;
+		
+		if (d0 & 0x1)
+			d5++;
+		
+		*(volatile uchar *) 0xfa007f;	/* EORead reg */
+		//wait5ms;
+		
+		//DEBUG (("GetNodeID [3]: d7 = %i, d0 = %x", d7, d0));
+	}
+	
+	DEBUG (("GetNodeID [4]: d5 = %x", d5));
+	goto read_bit_return;
+	
+read_bit_return:
+	d0 = d5;
+	
+	*buf++ = d0;
+	
+	//asr.w	#8,d5
+	d5 >>= 8;
+	
+	*buf++ = d5;
+	
+	//nop
+	//nop
+	
+	//WrNib (PCMR+HNib, %00010100);	/* 000 HNib 0 SKB CS 0 */
+	WrNib (PCMR+HNib, 0x4);		/* 000 HNib 0 SKB CS 0 */
+					/* let CS low to end this instruction */
+	
+	/* 5ms for inter-instruction gap */
+	wait5ms;
+	
+	d4 = _d4;
+	d6 = _d6;
+	
+	d4 += 1;
+	
+	d6++;
+	if (d6 < 3)
+		goto read_next_id_word;
+	
+	WrNib (CMR2, EPLC_CMR2Null);	/* back to page 0 */
+	
+	return;
 }
 
 /*
@@ -548,14 +739,34 @@ rtl8012_sethw (void)
 static long
 rtl8012_probe (struct netif *nif)
 {
+	uchar test[6];
 	int i;
 	
 	/* reset adapter */
 	rtl8012_doreset ();
 	
+	wait5ms;
+	
+	/* reset adapter */
+	rtl8012_doreset ();
+	
+	wait5ms;
+	
 	/* now run the memory test */
 	if (rtl8012_ramtest ())
 		return -1;
+	
+	wait5ms;
+	
+	/* reset adapter */
+	rtl8012_doreset ();
+	
+	wait5ms;
+	
+	RdNib (CMR1);
+	
+	GetNodeID (test);
+	DEBUG (("rtl8012_probe: MAC: %2x:%2x:%2x:%2x:%2x:%2x", test[0], test[1], test[2], test[3], test[4], test[5]));
 	
 	/*
 	 * Try to read magic code and last 3 bytes of hw
@@ -573,11 +784,16 @@ rtl8012_probe (struct netif *nif)
 static long
 rtl8012_reset (struct netif *nif)
 {
+	uchar test[6];
+	
 	/* block out interrupt */
 	in_use = 1;
 	
 	/* reset adapter */
 	rtl8012_doreset ();
+	
+	GetNodeID (test);
+	DEBUG (("rtl8012_reset: MAC: %2x:%2x:%2x:%2x:%2x:%2x", test[0], test[1], test[2], test[3], test[4], test[5]));
 	
 	/* set hw address */
 	rtl8012_sethw ();

@@ -92,8 +92,8 @@
 # define MAR5		0x5
 # define MAR6		0x6
 # define MAR7		0x7
-# define PCMR		TBCR0
-# define PDR		TBCR1
+# define PCMR		0x8
+# define PDR		0x9
 
 /* The followings define remote DMA command through LptCtrl */
 # define ATFD		3		/* ATFD bit in Lpt's Control register */
