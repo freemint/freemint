@@ -17,6 +17,7 @@
 
 # include "mint/asm.h"
 
+# include "arch/acia.h"
 # include "arch/cpu.h"		/* cpush() */
 # include "arch/intr.h"		/* old_xxx */
 # include "arch/kernel.h"	/* enter_gemdos() */
@@ -33,6 +34,8 @@
 /* structures for keyboard/MIDI interrupt vectors */
 KBDVEC *syskey;
 static KBDVEC oldkey;
+
+long vnewkeys;
 
 long old_term;
 long old_resval;	/* old reset validation */
@@ -100,10 +103,18 @@ init_intr (void)
 		syskey_aux = (long *)syskey;
 		syskey_aux--;
 
-		if (*syskey_aux && tosvers >= 0x0200)
-			new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
-	}
+		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
+
+		if (tosvers < 0x0200)
+		{
+			syskey->ikbdsys = (long)ikbdsys_handler;
+# ifndef NO_CPU_CACHES
+			cpush(&syskey->ikbdsys, sizeof(long));
 # endif
+			new_xbra_install(&old_acia, 0x0118L, new_acia);
+		}
+# endif
+	}
 
 	old_term = (long) TRAP_Setexc (0x102, -1UL);
 
@@ -192,19 +203,6 @@ init_intr (void)
 	new_xbra_install (&old_getbpb, 0x472L, new_getbpb);
 	olddrvs = *((long *) 0x4c2L);
 
-# if 0
-	/* initialize psigintr() call stuff (useful on 68010+ only)
-	 */
-# ifndef ONLY030
-	if (mcpu > 10)
-# endif
-	{
-		intr_shadow = kmalloc(1024);
-		if (intr_shadow)
-			quickmove ((char *)intr_shadow, (char *) 0x0L, 1024L);
-	}
-# endif
-
 	/* we'll be making GEMDOS calls */
 	enter_gemdos ();
 }
@@ -231,13 +229,15 @@ restr_intr (void)
 	*syskey = oldkey;	/* restore keyboard vectors */
 
 # ifndef NO_AKP_KEYBOARD
-	if (tosvers >= 0x0200)
 	{
 		long *syskey_aux;
 
 		syskey_aux = (long *)syskey;
 		syskey_aux--;
 		*syskey_aux = (long) oldkeys;
+
+		if (tosvers < 0x0200)
+			*((long *) 0x0118L) = old_acia;
 	}
 # endif
 
