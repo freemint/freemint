@@ -30,6 +30,7 @@
 # include "cookie.h"
 # include "fasttext.h"
 # include "ipc_socketdev.h"
+# include "ipc_unix.h"
 # include "k_fds.h"
 # include "k_prot.h"
 # include "kmemory.h"
@@ -156,6 +157,7 @@ static struct bios_file BDEV [] =
 	{ "random",	&random_device,	 0,       0,     NULL, NULL},
 	{ "urandom",	&urandom_device, 0,       0,     NULL, NULL},
 # endif
+	{ "unix",	&unixdev,	 0,       0,     NULL, NULL},
 # ifdef OLDSOCKDEVEMU
 	{ "socket",	&sockdevemu,	 0,       0,     NULL, NULL},
 # endif
