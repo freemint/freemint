@@ -2754,11 +2754,11 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
 	RECT clip = *(RECT *)&C.global_clip;
 
+	IFDIAG(short *cl = C.global_clip;)
+
 	clip.w -= (clip.x - 1);
 	clip.h -= (clip.y - 1);
 	
-	IFDIAG(short *cl = C.global_clip;)
-
 	if (wt == NULL)
 	{
 		this = nil_tree;
