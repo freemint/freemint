@@ -2166,7 +2166,7 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 	{
 		s_ob = root[menus].ob_head;
 		t_ob = root[s_ob ].ob_head;
-		root[s_ob].ob_height = root[t_ob+3].ob_y - root[s_ob].ob_y;
+		root[s_ob].ob_height = root[t_ob + 3].ob_y - root[s_ob].ob_y;
 		t_ob += 2;
 
 		/* client->mnu_clientlistname is umalloced area */
@@ -2181,7 +2181,7 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 		}
 	}
 
-	DIAG((D_menu, NULL, "done fix_menu()"));
+ 	DIAG((D_menu, NULL, "done fix_menu()"));
 }
 
 static void

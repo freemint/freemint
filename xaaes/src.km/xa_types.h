@@ -521,6 +521,8 @@ struct xa_client
 	LIST_ENTRY(xa_client) client_entry;
 	LIST_ENTRY(xa_client) app_entry;
 
+	short  rppid;			/* Pid of our 'real' parent, the client that called shel_write() to give birth*/
+
 	struct proc *p;			/* context back ptr */
 	struct xa_user_things *ut;	/* trampoline code for user callbacks */
 	struct proc *tp;		/* Thread */

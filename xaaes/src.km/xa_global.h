@@ -189,6 +189,7 @@ tab_list_size(void)
 struct shel_info
 {
 	short type;
+	short rppid;		/* Real parent pid, that is, the pid of app that called of shel_write() */
 	short reserved;
 
 	char *cmd_tail;
