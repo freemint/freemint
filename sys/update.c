@@ -27,9 +27,7 @@ long sync_time = 5;
 
 # define UPDATE_STKSIZE		6144
 
-# ifdef SYSUPDATE_DAEMON
 short update_pid;
-# endif
 
 static void
 do_sync (long sig)
