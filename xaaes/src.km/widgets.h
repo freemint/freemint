@@ -48,13 +48,19 @@ void redraw_menu(enum locks lock);
 void redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state);
 void done_widget_active(struct xa_window *wind, int i);
 RECT iconify_grid(int i);
+
+DisplayWidget display_vslide; /* For d_g_list, should go! */
+DisplayWidget display_object_widget; /* for desktop */
+
+void do_widget_repeat(void);
 void do_active_widget(enum locks lock, struct xa_client *client);
 
-DisplayWidget display_vslide;  /* For d_g_list, should go! */
-DisplayWidget display_object_widget;  /* for desktop */
+/*
+ * inline some very simple functions
+ */
 
-static inline int bound_sl(int p) { return p < 0 ? 0 : (p > SL_RANGE ? SL_RANGE : p); }
-static inline XA_WIDGET *get_widget(struct xa_window *wind, int n) { return &wind->widgets[n]; }
+static inline XA_WIDGET *get_widget(struct xa_window *wind, int n) { return &(wind->widgets[n]); }
+static inline int bound_sl(int p) { return ((p < 0) ? 0 : ((p > SL_RANGE) ? SL_RANGE : p)); }
 
 static inline bool
 is_rect(short x, short y, int fl, RECT *o)
