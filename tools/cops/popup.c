@@ -132,14 +132,14 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 		}
 		else /* keine Strings */
 		{
-			tree->ob_flags += LASTOB;
+			tree->ob_flags += OF_LASTOB;
 			tree->ob_head = -1;
 			tree->ob_tail = -1;
 		}
 
 		tree->ob_type = G_BOX;
-		tree->ob_flags = NONE;
-		tree->ob_state = NORMAL + SHADOWED;
+		tree->ob_flags = OF_NONE;
+		tree->ob_state = OS_NORMAL|OS_SHADOWED;
 		tree->ob_spec.index = 0x00ff1000L;
 		
 		tree->ob_x = button_rect->g_x; /* Buttonposition */
@@ -225,14 +225,14 @@ strs_init(struct POPUP_INIT_args args)
 		obj->ob_head = -1;
 		obj->ob_tail = -1;
 		obj->ob_type = G_STRING;
-		obj->ob_flags = SELECTABLE;
+		obj->ob_flags = OF_SELECTABLE;
 
 		if (i == max_strs) /* letzter Eintrag? */
-			obj->ob_flags |= LASTOB;
+			obj->ob_flags |= OF_LASTOB;
 
-		obj->ob_state = NORMAL;
+		obj->ob_state = OS_NORMAL;
 		if ((i + args.scrollpos - 1) == popup_par->slct) /* ausgewaehlter Eintrag? */
-			obj->ob_state |= CHECKED;
+			obj->ob_state |= OS_CHECKED;
 
 		obj->ob_spec.free_string = tmp; /* Zeiger auf den String */
 
@@ -256,7 +256,7 @@ strs_init(struct POPUP_INIT_args args)
 			obj = args.tree + MAX_STRS;			/* letzter G_STRING */
 
 			obj->ob_type = G_USERDEF;		/* durch Userdef ersetzen */
-			obj->ob_state &= ~CHECKED;		/* kein Haeckchen */
+			obj->ob_state &= ~OS_CHECKED;		/* kein Haeckchen */
 			obj->ob_spec.userblk = &dn_userdef;	/* mit Pfeil nach unten */
 		}
 
@@ -265,7 +265,7 @@ strs_init(struct POPUP_INIT_args args)
 			obj = args.tree + 1;				/* erster G_STRING */
 
 			obj->ob_type = G_USERDEF;		/* durch Userdef ersetzen */
-			obj->ob_state &= ~CHECKED;		/* kein Haeckchen */
+			obj->ob_state &= ~OS_CHECKED;		/* kein Haeckchen */
 			obj->ob_spec.userblk = &up_userdef;	/* mit Pfeil nach oben */
 		}
 	}

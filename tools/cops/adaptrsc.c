@@ -230,7 +230,7 @@ no3d_rsrc(OBJECT *objs, unsigned short no_objs, short ftext_to_fboxtext)
 				{
 					if (objs->ob_spec.tedinfo->te_thickness == -2)
 					{
-						objs->ob_state |= OUTLINED;
+						objs->ob_state |= OS_OUTLINED;
 						objs->ob_spec.tedinfo->te_thickness = -1;
 						objs->ob_type = G_FBOXTEXT;
 					}
@@ -297,7 +297,7 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 
 	while (i > 0)
 	{
-		if ((obj->ob_state & WHITEBAK) && (obj->ob_state & 0x8000)) /* MagiC-Objekt? */
+		if ((obj->ob_state & OS_WHITEBAK) && (obj->ob_state & 0x8000)) /* MagiC-Objekt? */
 		{
 			switch ( obj->ob_type & 0xff )
 			{
@@ -343,7 +343,7 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 				type = obj->ob_type & 0x00ff;
 				state = (unsigned short) obj->ob_state;
 				
-				if ((state & WHITEBAK) && (state & 0x8000)) /* MagiC-Objekt? */
+				if ((state & OS_WHITEBAK) && (state & 0x8000)) /* MagiC-Objekt? */
 				{
 					state &= 0xff00; /* nur das obere Byte ist interessant */
 
@@ -373,7 +373,7 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 			
 								if (state == 0xfe00) /* Gruppenrahmen? */
 									tmp->ub_code = group;
-								else if (obj->ob_flags & RBUTTON) /* Radio-Button? */
+								else if (obj->ob_flags & OF_RBUTTON) /* Radio-Button? */
 									tmp->ub_code = radio_button;
 								else /* Check-Button */
 									tmp->ub_code = check_button;
@@ -471,9 +471,9 @@ check_button(PARMBLK *parmblock)
 	xy[3] = rect[3] - 1;
 	vr_recfl(vdi_handle, xy); /* weisse Box zeichnen */
 
-	if (parmblock->pb_currstate & SELECTED)
+	if (parmblock->pb_currstate & OS_SELECTED)
 	{
-		parmblock->pb_currstate &= ~SELECTED; /* Bit loeschen */
+		parmblock->pb_currstate &= ~OS_SELECTED; /* Bit loeschen */
 		
 		vsl_color(vdi_handle, 1); /* schwarz - fuer das Kreuz */
 		xy[0] = rect[0] + 2;
@@ -514,9 +514,9 @@ radio_button(PARMBLK *parmblock)
 
 	string = (char *) parmblock->pb_parm;
 
-	if (parmblock->pb_currstate & SELECTED) /* Selektion? */
+	if (parmblock->pb_currstate & OS_SELECTED) /* Selektion? */
 	{
-		parmblock->pb_currstate &= ~SELECTED; /* Bit loeschen */
+		parmblock->pb_currstate &= ~OS_SELECTED; /* Bit loeschen */
 		image = radio_slct->ob_spec.bitblk;
 	}
 	else
