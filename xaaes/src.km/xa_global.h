@@ -81,6 +81,8 @@ struct common
 
 	struct xa_client *Aes;		/* */
 
+	struct xa_client *buffer_moose;
+
 	int shutdown;
 	bool mvalidate;
 

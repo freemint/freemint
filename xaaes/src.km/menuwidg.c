@@ -581,12 +581,13 @@ menu_finish(struct task_administration_block *tab)
 	C.Aes->em.flags = MU_M1;
 
 	/* Ozk: Only unlock screen here if locker is XaAES kernel itself! */
-	if (cfg.menu_locking && update_locked() == C.Aes)
+	//if (cfg.menu_locking && update_locked() == C.Aes)
 	{
 		if (is_bar && client)
 			unlock_mouse(client, 10);
 
-		unlock_screen(C.Aes, 10);
+		//unlock_screen(C.Aes, 10);
+		unlock_screen(client, 10);
 	}
 }
 
@@ -1267,27 +1268,33 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 static bool
 click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	int pid = C.AESpid;
+	int pid; // = C.AESpid;
+	struct xa_client *client;
 
 	DIAG((D_menu, NULL, "click_menu_widget"));
+
+	client = ((XA_TREE *)widg->stuff)->owner;
 
 	/* only need locking when the menu is outside a app window. */
 	if (cfg.menu_locking && wind == root_window)
 	{
 		/* Can't bring up menu without locking the screen */
-		if (!lock_screen(C.Aes, 0, NULL, 4))
+		//if (!lock_screen(C.Aes, 0, NULL, 4))
+		if (!lock_screen(client, 0, NULL, 4))
 			/* We return false here so the widget display status
 			 * stays selected whilst it repeats */
 			return false;
 
-		if (!lock_mouse(C.Aes, 0, NULL, 4))
+		//if (!lock_mouse(C.Aes, 0, NULL, 4))
+		if (!lock_mouse(client, 0, NULL, 4))
 		{
-			unlock_screen(C.Aes, 5);
+			//unlock_screen(C.Aes, 5);
+			unlock_screen(client, 5);
 			return false;
 		}
 	}
 
-	if (!menu_title(lock, wind, widg, pid))
+	if (!menu_title(lock, wind, widg, client->p->pid))
 		menu_finish(NULL);
 
 	return false;
