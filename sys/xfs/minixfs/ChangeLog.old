@@ -1,5 +1,11 @@
-From version 0.70 all changes by Frank Naumann
-<fnaumann@freemint.de>
+From version 0.70 all changes by Frank Naumann <fnaumann@freemint.de>
+
+-*- ChangeLog is now automatically handled by CVS -*-
+
+--------------- 0.75
+		- integrated into the FreeMiNT CVS repository
+		  changed to new Makefile system, removed kernel
+		  related headers (are now globally shared)
 
 --------------- 0.74
 		- fixed wrong blocks/nblocks value in getxattr/stat

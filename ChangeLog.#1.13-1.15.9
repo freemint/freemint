@@ -1,8 +1,17 @@
 ******************************************************************************
-2000-05-12:
+2000-05-31:
 
-FreeMiNT 1.15.10 beta
----------------------
+Frank Naumann:
+--------------
+
+Switched over to CVS usage. See in the README for more details.
+Handwritten ChangeLog end here.
+
+< ChangeLog now automatically handled by CVS >
+
+
+******************************************************************************
+2000-05-30:
 
 Frank Naumann:
 --------------
@@ -15,33 +24,6 @@ unifs.c:
 
 Thomas Binder:
 --------------
-mprot030.c:
-	- Didn't use the new interface of ksprintf()
-
-tty.c:
-	- ioctl(TIOCNOTTY) didn't decrease the link count of the
-	  detached filepointer, ioctl(TIOCSCTTY) didn't increase that of
-	  the attached filepointer (and had some useless and buggy code
-	  in a loop). As far as I can judge, this was the reason for the
-	  infamous "dispose_fileptr: f->links == -1" messages a lot of
-	  people get on shutdown. I managed to get them at runtime (when
-	  trying to get sshd 1.2.27 to run properly), so I had a better
-	  chance to track the problem down.
-
-memory.c:
-	- Stupid bug in the new "strict" memory protection model could
-	  lead to a memory violation ...
-
-crypt_IO.c:
-	- crypt_block() now gets the physical record number, adapted
-	  calls to it accordingly
-	- rwabs_crypto() didn't properly skip the bootsector (forgot to
-	  increment the record number, which is used for the feedback in
-	  CBC mode)
-
-filesys.c:
-	- Slighty improved the test for the special cases like CON: etc.
-
 signal.c:
 	- in stop() the parent process that sleep in pwaitpid
 	  was not awakened

@@ -1,5 +1,18 @@
 # @(#) CHANGES  for the networking filesystem by Ulrich Kuehn
 
+-*- ChangeLog is now automatically handled by CVS -*-
+
+VERSION 0.55
+	++ Frank Naumann <fnaumann@freemint.de>
+	Integrated into FreeMiNT CVS repository, changed to new
+	Makefiles system, removed kernel related header files (they are
+	globally shared now).
+
+VERSION 0.54
+	++ Frank Naumann <fnaumann@freemint.de>
+	Totally restructured the xfs src, updated to current kernel header,
+	added new xfs extensions, fixed lot of bugs.
+
 VERSION 0.53
 
 xfs/config.h:
