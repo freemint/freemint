@@ -27,6 +27,10 @@
 # include "proc.h"
 
 
+# define UN_MINBUF	8192
+# define UN_MAXBUF	32000
+
+
 static long	unix_attach	(struct socket *, short);
 static long	unix_dup	(struct socket *, struct socket *);
 static long	unix_abort	(struct socket *, enum so_state);
