@@ -183,7 +183,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	/* make a local copy of the name, in case we are overlaying
 	 * the current process
 	 */
-	if (mkname)
+	if (mkname)	/* Was there passed a filename? */
 	{
 		const char *n = ptr1;
 		const char *lastslash = NULL;
@@ -315,7 +315,15 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		else
 		{
 			b->p_parent = curproc->base;
-			p = fork_proc (0, &r);
+
+			if (thread && (strcmp (curproc->name, "shutdown")))
+			{
+				p = fork_proc ( FORK_SHAREVM, &r);
+			}
+			else
+			{
+				p = fork_proc (0, &r);
+			}
 		}
 
 		if (!p)
