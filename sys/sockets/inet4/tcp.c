@@ -408,10 +408,16 @@ tcp_select (struct in_data *data, short mode, long proc)
 			
 			if (tcp_canread (data) > 0)
 				return 1;
-		
-			if (tcb->state != TCBS_ESTABLISHED)
-				return 1;
 			
+			switch (tcb->state)
+			{
+				case TCBS_SYNSENT:
+				case TCBS_ESTABLISHED:
+					break;
+				default:
+					return 1;
+			}
+ 			
 			return so_rselect (so, proc);
 			
 		case O_WRONLY:

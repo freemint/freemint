@@ -250,6 +250,7 @@ tcbs_synsent (struct tcb *tcb, BUF *buf)
 		tcb->snd_wndack = tcph->ack;
 		
 		tcb->data->sock->state = SS_ISCONNECTED;
+		so_wakersel (tcb->data->sock);
 		so_wakewsel (tcb->data->sock);
 		wake (IO_Q, (long)tcb->data->sock);
 	}

@@ -63,47 +63,4 @@
 # endif
 
 
-/* memory allocation
- * 
- * include statistic analysis to detect
- * memory leaks
- */
-
-extern ulong memory;
-
-INLINE void *
-own_kmalloc (register long size)
-{
-	register ulong *tmp;
-	
-	size += sizeof (*tmp);
-	
-	tmp = kmalloc (size);
-	if (tmp)
-	{
-		*tmp++ = size;
-		memory += size;
-	}
-	
-	return tmp;
-}
-
-INLINE void
-own_kfree (void *dst)
-{
-	register ulong *tmp = dst;
-	
-	tmp--;
-	memory -= *tmp;
-	
-	kfree (tmp);
-}
-
-# undef kmalloc
-# undef kfree
-
-# define kmalloc	own_kmalloc
-# define kfree		own_kfree
-
-
 # endif /* _global_h */
