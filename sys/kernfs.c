@@ -1384,7 +1384,7 @@ kern_open (FILEPTR *f)
 		t = search_inode (rootdir, f->fc.index);
 		if (t && (t->mode & S_IFREG))
 		{
-			ret = (*t->get) ((SIZEBUF **) &f->devinfo);
+			f->devinfo = (long) t;
 		}
 		else
 			ret = EACCES;
@@ -1401,17 +1401,7 @@ kern_close (FILEPTR *f, int pid)
 	TRACE (("kern_close: inode: %lu, flags: 0x%04x", f->fc.index, f->flags));
 	
 	if (f->links <= 0)
-	{
-		SIZEBUF *info = (SIZEBUF *) f->devinfo;
-		
-		if (info)
-		{
-			kfree (info);
-			DEBUG (("kern_close: freed buffer"));
-		}
-		
-		f->devinfo = 0L;
-	}
+		f->devinfo = 0;
 	
 	return E_OK;
 }
@@ -1419,8 +1409,10 @@ kern_close (FILEPTR *f, int pid)
 static long _cdecl 
 kern_read (FILEPTR *f, char *buf, long bytes)
 {
-	SIZEBUF *info = (SIZEBUF *) f->devinfo;
+	KENTRY *t = (KENTRY *) f->devinfo;
+	SIZEBUF *info = NULL;
 	long bytes_read = 0;
+	long ret;
 	char *crs;
 	
 	TRACE (("kern_read: inode: %lu, read %ld bytes", f->fc.index, bytes));
@@ -1431,8 +1423,16 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 		return EINVAL;
 	}
 	
-	if (!info)
-		return 0;	/* EOF */
+	if (!t)
+	{
+		ALERT ("kernfs: internal problem, t == NULL");
+		return 0;
+	}
+	
+	/* fill the buffer */
+	ret = (*t->get)(&info);
+	if (ret || !info)
+		return ret;
 	
 	if (bytes + f->pos > info->len)
 		bytes = info->len - f->pos;
@@ -1445,6 +1445,9 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 		bytes_read++;
 	}
 	
+	/* free the buffer */
+	kfree (info);
+	
 	f->pos += bytes_read;
 	return bytes_read;
 }
@@ -1452,24 +1455,13 @@ kern_read (FILEPTR *f, char *buf, long bytes)
 static long _cdecl
 kern_ioctl (FILEPTR *f, int mode, void *buf)
 {
-	SIZEBUF *info = (SIZEBUF *) f->devinfo;
-	
 	DEBUG (("kern_ioctl: inode: %lu, cmd: %d", f->fc.index, mode));
 	
 	switch (mode)
 	{
 		case FIONREAD:
 		{
-			long value = 0;
-			
-			if (info)
-			{
-				value = info->len - f->pos;
-				if (value < 0)
-					value = 0;
-			}
-			
-			*((long *) buf) = value;
+			*((long *) buf) = 1;
 			break;
 		}
 		case FIONWRITE:
@@ -1491,15 +1483,11 @@ kern_ioctl (FILEPTR *f, int mode, void *buf)
 static long _cdecl
 kern_lseek (FILEPTR *f, long where, int whence)
 {
-	SIZEBUF *info = (SIZEBUF *) f->devinfo;
-	long newpos;
 	long maxpos = 0;
+	long newpos;
 	
 	DEBUG (("kern_lseek: inode: %lu, where: %ld, whence: %d", 
 	        f->fc.index, where, whence));
-	
-	if (info)
-		maxpos = info->len;
 	
 	switch (whence)
 	{
