@@ -55,6 +55,7 @@
 # include "keyboard.h"	/* init_keytbl() */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
+# include "mis.h"	/* startup_shell */
 # include "module.h"	/* load_all_modules */
 # include "proc.h"	/* init_proc, add_q, rm_q */
 # include "signal.h"	/* post_sig */
@@ -243,9 +244,9 @@ do_exec_os (long basepage)
 	/* we have to set a7 to point to lower in our TPA;
 	 * otherwise we would bus error right after the Mshrink call!
 	 */
-	setstack(basepage+500L);
-	Mshrink ((void *)basepage, 512L);
-	r = Pexec(200, (char *) init_prg, init_tail, init_env);
+	setstack(basepage + 500L);
+	Mshrink((void *)basepage, 512L);
+	r = Pexec(200, (char *)init_prg, init_tail, init_env);
 	Pterm ((int)r);
 }
 
@@ -1152,20 +1153,20 @@ init (void)
 	{
 		if (!init_is_gem)
 		{
-			r = sys_pexec(100, (char *) init_prg, init_tail, init_env);
+			r = sys_pexec(100, (char *)init_prg, init_tail, init_env);
 		}
 		else
 		{
 			BASEPAGE *bp;
 
-			bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
+			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", init_env);
 			bp->p_tbase = *((long *) EXEC_OS);
 # ifndef MULTITOS
 			if (((long *) sysbase[5])[0] == 0x87654321)
 				gem_start = ((long *) sysbase[5])[2];
 			gem_base = bp;
 # endif
-			r = sys_pexec(106, (char *) "GEM", bp, 0L);
+			r = sys_pexec(106, (char *)"GEM", bp, 0L);
 		}
 	}
 	else
@@ -1174,9 +1175,9 @@ init (void)
 	/* r < 0 means an error during sys_pexec() execution (e.g. file not found);
 	 * r == 0 means that mint.cnf lacks the GEM= or INIT= line.
 	 *
-	 * In both cases we halt the system, but in the future we will want rather
-	 * to execute some sort of internal minimal shell that could help
-	 * to fix minor fs problems without rebooting to TOS.
+	 * In both cases we halt the system, but before that we will want
+	 * to execute some sort of shell that could help to fix minor fs problems
+	 * without rebooting to TOS.
 	 */
 	if (r <= 0)
 	{
@@ -1201,10 +1202,9 @@ init (void)
 		if (r < 0)
 			boot_printf(MSG_couldnt_run_init, shellpath, r);
 
-# if 0
 		if (r <= 0)
-			r = startup_shell();	/* r is the shell's pid (not yet exists) */
-# endif
+			r = startup_shell();	/* r is the shell's pid */
+
 		/* Everything failed. Halt. */
 		if (r <= 0)
 			s_hutdown(0);		/* never returns */
