@@ -88,10 +88,12 @@
 #define FS_LIST          2   /* BOX in Baum FILE_SELECT */
 #define FS_UNDER         3   /* IBOX in Baum FILE_SELECT */
 #define FS_ICONS         5   /* IBOX in Baum FILE_SELECT */
-#define FS_ICN_DIR       6   /* USERDEF in Baum FILE_SELECT */
-#define FS_ICN_EXE       7   /* USERDEF in Baum FILE_SELECT */
-#define FS_CANCEL        8   /* BUTTON in Baum FILE_SELECT */
-#define FS_OK            9   /* BUTTON in Baum FILE_SELECT */
+#define FS_ICN_EXE       6   /* USERDEF in Baum FILE_SELECT */
+#define FS_ICN_DIR       7   /* USERDEF in Baum FILE_SELECT */
+#define FS_ICN_PRG       8   /* USERDEF in Baum FILE_SELECT */
+#define FS_ICN_FILE      9   /* USERDEF in Baum FILE_SELECT */
+#define FS_CANCEL        10  /* BUTTON in Baum FILE_SELECT */
+#define FS_OK            11  /* BUTTON in Baum FILE_SELECT */
 
 #define KILL_OR_WAIT     9   /* Formular/Dialog */
 #define KORW_WAIT        3   /* BUTTON in Baum KILL_OR_WAIT */

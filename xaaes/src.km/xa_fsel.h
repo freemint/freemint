@@ -43,6 +43,7 @@ struct fsel_data
 	struct xa_client *owner;
 	fsel_handler	*selected;
 	fsel_handler	*canceled;
+	Path root;
 	Path path;
 	char fslash[2];
 	char fs_pattern[NAME_MAX * 2];
