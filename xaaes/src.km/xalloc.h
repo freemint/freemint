@@ -30,14 +30,22 @@
 #include "global.h"
 
 /* private memory */
-void *xmalloc(size_t size, int key);
-void *xcalloc(size_t items, size_t size, int key);
-void free(void *addr);
+void *_xmalloc(size_t size, int key, const char *);
+void *_xcalloc(size_t items, size_t size, int key, const char *);
+void  _xfree  (void *addr, const char *);
+
+#define xmalloc(size, key)		_xmalloc(size, key, FUNCTION)
+#define xcalloc(items, size, key)	_xcalloc(items, size, key, FUNCTION)
+#define free(addr)			_xfree(addr, FUNCTION)
+
 void free_all(void);
 
 /* proc private memory */
-void *proc_malloc(size_t size);
-void proc_free(void *addr);
-void proc_free_all(void); /* XXX todo */
+void *_proc_malloc(size_t size, const char *);
+void  _proc_free(void *addr, const char *);
+void   proc_free_all(void); /* XXX todo */
+
+#define proc_malloc(size)		_proc_malloc(size, FUNCTION)
+#define proc_free(addr)			_proc_free(addr, FUNCTION)
 
 #endif /* _xalloc_h */
