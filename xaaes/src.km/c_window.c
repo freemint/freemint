@@ -1454,6 +1454,11 @@ free_standard_widgets(struct xa_window *wind)
 	DIAGS(("free_standard_widgets for window %d, owner %s", wind->handle, wind->owner->name));
 	for (i = 0; i < XA_MAX_WIDGETS; i++)
 	{
+		//DIAGS(("call remove_widget for widget %d", i));
+		remove_widget(0, wind, i);
+	}
+#if 0
+	{
 		widg = wind->widgets + i;
 		if (widg->destruct)
 		{
@@ -1461,8 +1466,7 @@ free_standard_widgets(struct xa_window *wind)
 			(*widg->destruct)(widg);
 		}
 	}
-	//free_widg(wind, XAW_HSLIDE);
-	//free_widg(wind, XAW_VSLIDE);
+#endif
 }
 
 static void
