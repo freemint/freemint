@@ -1423,7 +1423,7 @@ mint_thread(void *arg)
 			}
 # else
 			r = sys_pwaitpid(-1, 0, NULL);
-			DEBUG(("sys_pwaitpid done -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
+			TRACE(("sys_pwaitpid done -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
 # endif
 		} while (pid != ((r & 0xffff0000L) >> 16));
 	}
