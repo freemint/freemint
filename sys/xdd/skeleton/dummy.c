@@ -44,8 +44,6 @@
  * 
  */
 
-# define __KERNEL_XDD__
-
 # include "mint/mint.h"
 
 # include "mint/asm.h"

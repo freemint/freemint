@@ -20,7 +20,7 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I.. -I$(top_srcdir)
-DEFINITIONS = 
+DEFINITIONS = -D__KERNEL_XDD__
 
 CPU = 000
 

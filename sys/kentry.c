@@ -38,6 +38,7 @@
 
 # include "block_IO.h"		/* bio */
 # include "cookie.h"		/* add_rsvfentry, del_rsvfentry, get_toscookie */
+# include "cnf.h"
 # include "delay.h"		/* loops_per_sec */
 # include "dma.h"		/* dma */
 # include "filesys.h"		/* changedrv, denyshare, denylock */
@@ -78,6 +79,7 @@ struct kentry kentry =
 	DEFAULTS_kentry_fs,
 	DEFAULTS_kentry_sockets,
 	DEFAULTS_kentry_module,
+	DEFAULTS_kentry_cnf,
 	DEFAULTS_kentry_misc,
 	DEFAULTS_kentry_debug,
 	DEFAULTS_kentry_libkern
