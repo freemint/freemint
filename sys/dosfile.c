@@ -1820,7 +1820,7 @@ f_fchown (int fh, int uid, int gid)
 	{
 		XATTR xattr;
 		
-		if (proc->p_cred->ucr->egid != gid && !ngroupmatch (proc->p_cred->ucr, gid))
+		if (proc->p_cred->ucr->egid != gid && !groupmember (proc->p_cred->ucr, gid))
 			r = EACCES;
 		else
 			r = xfs_getxattr (f->fc.fs, &(f->fc), &xattr);

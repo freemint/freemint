@@ -1780,7 +1780,7 @@ denyaccess (XATTR *xattr, ushort perm)
 		perm = perm << 6;
 	else if (cred->egid == xattr->gid)
 		perm = perm << 3;
-	else if (ngroupmatch (cred, xattr->gid))
+	else if (groupmember (cred, xattr->gid))
 		perm = perm << 3;
 	
 	if ((mode & perm) != perm)

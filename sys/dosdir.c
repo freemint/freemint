@@ -1639,7 +1639,7 @@ f_chown (const char *name, int uid, int gid)
 	 */
 	if (cred->euid)
 	{
-		if (cred->egid != gid && !ngroupmatch (cred, gid))
+		if (cred->egid != gid && !groupmember (cred, gid))
 			r = EACCES;
 		else
 			r = xfs_getxattr (fc.fs, &fc, &xattr);
