@@ -17,10 +17,12 @@
 /*
  * conventions:
  * 
- * C_XXX  is offset of XXX in CONTEXT struct
- * P_XXX  is offset of XXX in PROC struct
- * SL_XXX is offset of XXX in SHARED_LIB struct
- * SH_XXX is offset of XXX in SLB_HEAD struct
+ * C_XXX	offset of XXX in struct CONTEXT
+ * P_XXX	offset of XXX in struct PROC
+ * SL_XXX	offset of XXX in struct SHARED_LIB
+ * SH_XXX	offset of XXX in struct SLB_HEAD
+ * KER_XXX	offset of XXX in struct kerninfo
+ * DMA_XXX	offset of XXX in struct DMA
  */
 struct magics
 {
