@@ -28,5 +28,6 @@
 #define _accstart_h
 
 void accstart(void);
+void accend(void);
 
 #endif /* _accstart_h */

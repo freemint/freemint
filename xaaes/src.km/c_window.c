@@ -215,7 +215,7 @@ inside_root(RECT *r, struct options *o)
 }
 
 static void
-wi_put_first(WIN_BASE *b, struct xa_window *w)
+wi_put_first(struct win_base *b, struct xa_window *w)
 {
 	if (b->first)
 	{
@@ -270,7 +270,7 @@ wi_put_last(WIN_BASE *b, struct xa_window *w)
 
 /* This a special version of put last; it puts w just befor last. */
 static void
-wi_put_blast(WIN_BASE *b, struct xa_window *w)
+wi_put_blast(struct win_base *b, struct xa_window *w)
 {
 	if (b->last)
 	{
@@ -297,7 +297,7 @@ wi_put_blast(WIN_BASE *b, struct xa_window *w)
 }
 
 static void
-wi_remove(WIN_BASE *b, struct xa_window *w)
+wi_remove(struct win_base *b, struct xa_window *w)
 {
 	if (w->prev)
 		w->prev->next = w->next;
@@ -1173,13 +1173,17 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (wind->is_open == false || wind->nolist)
 		return false;
 
+	if (C.focus == wind)
+		C.focus = NULL;
+
 	is_top = (wind == window_list);
 	r = wind->r;
 
 	if (wind->rect_start)
 		free(wind->rect_start);
+
 	wind->rect_user = wind->rect_list = wind->rect_start = NULL;
-	wi_remove   (&S.open_windows, wind);
+	wi_remove(&S.open_windows, wind);
 	wi_put_first(&S.closed_windows, wind);
 
 	/* Tag window as closed */
@@ -1192,7 +1196,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	{
 		struct xa_window *w, *napp = NULL;
 
-		if (wind->active_widgets&STORE_BACK)
+		if (wind->active_widgets & STORE_BACK)
 		{
 			form_restore(0, wind->r, wind->background);
 			free(wind->background);
@@ -1241,10 +1245,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	/* Redisplay any windows below the one we just have closed
 	 * or just have topped
 	 */
-#if 0
-	display_windows_below(lock|winlist, &r, wl);
-#else
-	while(wl)
+	while (wl)
 	{
 		clip = wl->r;
 		DIAG((D_wind, client, "[2]redisplay %d", wl->handle));
@@ -1261,7 +1262,7 @@ close_window(enum locks lock, struct xa_window *wind)
 		}
 		wl = wl->next;
 	}
-#endif
+
 	if (window_list)
 	{
 		if (   window_list->owner != client
@@ -1294,13 +1295,43 @@ free_widg(struct xa_window *wind, int n)
 static void
 free_standard_widgets(struct xa_window *wind)
 {
-# if 0
-	/* this is now in struct xa_window. */
-	free_widg(wind, XAW_MENU);
-	free_widg(wind, XAW_TOOLBAR);
-# endif
 	free_widg(wind, XAW_HSLIDE);
 	free_widg(wind, XAW_VSLIDE);
+}
+
+static void
+delete_window1(enum locks lock, struct xa_window *wind)
+{
+	if (!wind->nolist)
+	{
+		DIAG((D_wind, wind->owner, "delete_window1 %d for %s: open? %d",
+			wind->handle, w_owner(wind), wind->is_open));
+
+		assert(!wind->is_open);
+
+		free_standard_widgets(wind);
+
+		/* Call the window destructor if any */
+		if (wind->destructor)
+			wind->destructor(lock|winlist, wind);
+
+		free_wind_handle(wind->handle);
+
+		if (wind->background)
+			free(wind->background);
+
+		if (wind->rect_start)
+			free(wind->rect_start);
+	}
+	else
+	{
+		free_standard_widgets(wind);
+
+		if (wind->destructor)
+			wind->destructor(lock, wind);
+	}
+
+	free(wind);
 }
 
 void
@@ -1316,35 +1347,52 @@ delete_window(enum locks lock, struct xa_window *wind)
 			return;
 		}
 
-		DIAG((D_wind, wind->owner, "delete_window %d for %s: open? %d",
+		wi_remove(&S.closed_windows, wind);
+	}
+
+	delete_window1(lock, wind);
+}
+
+void
+delayed_delete_window(enum locks lock, struct xa_window *wind)
+{
+	if (!wind->nolist)
+	{
+		DIAG((D_wind, wind->owner, "delayed_delete_window %d for %s: open? %d",
 			wind->handle, w_owner(wind), wind->is_open));
 
-		/* slider widgets leaked. */
-		free_standard_widgets(wind);
-
-		/* Call the window destructor if any */
-		if (wind->destructor)
-			wind->destructor(lock|winlist, wind);
-		
-		free_wind_handle(wind->handle);
-
-		if (wind->background)
-			free(wind->background);
-
-		if (wind->rect_start)
-			free(wind->rect_start);
+		/* We must be sure it is in the correct list. */
+		if (wind->is_open)
+		{
+			DIAG((D_wind, wind->owner, "delayed_delete_window %d: not closed", wind->handle));
+			/* open window, return error */
+			return;
+		}
 
 		wi_remove(&S.closed_windows, wind);
 	}
-	else
+
+	wi_put_first(&S.deleted_windows, wind);
+}
+
+void
+do_delayed_delete_window(enum locks lock)
+{
+	struct xa_window *wind = S.deleted_windows.first;
+
+	DIAGS(("do_delayed_delete_window"));
+
+	while (wind)
 	{
-		free_standard_widgets(wind);
+		/* remove from list */
+		wi_remove(&S.deleted_windows, wind);
 
-		if (wind->destructor)
-			wind->destructor(lock, wind);
+		/* final delete */
+		delete_window1(lock, wind);
+
+		/* anything left? */
+		wind = S.deleted_windows.first;
 	}
-
-	free(wind);
 }
 
 /*

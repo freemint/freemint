@@ -275,12 +275,9 @@ xa_fork_exec(short x_mode, const struct xshelw *xsh, const char *fname, char *ta
 }
 #endif
 
-/* HR new_client --> new;  use NewClient() */
-/* HR only called now for real_mode < 4 */
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, char *p_tail, struct xa_client *caller)
 {
-#if 0
 	char cmd[260];		/* 2 full paths */
 	char argvtail[4];
 	struct xshelw x_shell;
@@ -292,6 +289,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	Path save_cmd;
 	char *tail = argvtail;
 	int ret;
+	int drv = 0;
+	Path path,name;
 
 	long fl;
 
@@ -299,7 +298,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
 
 	if (!parm)
-		return 0;
+		return -1;
 
 	x_shell = *(const struct xshelw *) parm;
 
@@ -310,7 +309,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	{
 		/* Do some checks before allocating anything. */
 		if (!x_shell.newcmd)
-			return 0;
+			return -1;
 	}
 
 	if (x_mode)
@@ -368,7 +367,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	}
 #endif
 
-	/* Keep a copy of oroginal for in client structure */
+	/* Keep a copy of original for in client structure */
 	strcpy(save_cmd, pcmd);
 
 	/* HR: This was a very bad bug, it took me a day to find it, although it was
@@ -407,8 +406,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			real_mode = 1, wisgr = 0;
 			DIAG((D_shel, 0, " -= 1,0 =-"));
 		}
-		else
-		if (is_ext(ext, accex))
+		else if (is_ext(ext, accex))
 		{
 			real_mode = 3;
 			DIAG((D_shel, 0, " -= 3,%d =-", wisgr));
@@ -420,33 +418,28 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		}
 	}
 
-	fl = Fopen(cmd, 0);
-	DIAG((D_shel, 0, "Fopen try: '%s' to %ld, real_mode %d", cmd, fl, real_mode));
-	if (fl > 0)
+	switch (real_mode)
 	{
-		int drv = 0;
-		Path path,name;
-
-		Fclose(fl);
-		DIAG((D_shel, 0, "OK Fclose %ld", fl));
-
-		switch (real_mode)
-		{
 		case 1:
+		{
 			/* TOS Launch?  */
 			if (wisgr == 0)
 			{
-				char *tosrun = get_env(lock, "TOSRUN=");
-				if (tosrun == 0)
+				char *tosrun;
+
+				tosrun = get_env(lock, "TOSRUN=");
+				if (!tosrun)
 				{
-					/* HR check tosrun pipe */
-					long fd = Fopen("u:\\pipe\\tosrun", 2);
-					if (fd > 0)
+					/* check tosrun pipe */
+					struct file *f;
+
+					f = kernel_open("u:\\pipe\\tosrun", O_WRONLY, NULL);
+					if (f)
 					{		
-						Fwrite(fd, strlen(cmd), cmd);
-						Fwrite(fd, 1, " ");
-						Fwrite(fd, *tail, tail + 1);
-						Fclose(fd);
+						kernel_write(f, cmd, strlen(cmd));
+						kernel_write(f, " ", 1);
+						kernel_write(f, tail + 1, *tail);
+						kernel_close(f);
 					}
 					else
 					{
@@ -454,13 +447,18 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 							cmd, tail[0], tail+1));
 						DIAGS(("Raw run."));
 						wisgr = 1;
-
 					}
 				}
 				else
 				{
 					char *new_tail = xmalloc(tailsize + 1 + strlen(cmd) + 1, 17);
 					long new_tailsize;
+
+					if (!new_tail)
+					{
+						ret = ENOMEM;
+						goto out;
+					}
 
 					/* command --> tail */
 					strcpy(new_tail + 1, cmd);
@@ -493,7 +491,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			/* HR 260202: 'save_cmd' changed to 'cmd' */
 			drv = drive_and_path(/* save_ */ cmd, path, name, true, true);
 
-			DIAG((D_shel,0,"[2]drive_and_path %d,'%s','%s'",drv,path,name));
+			DIAG((D_shel, 0, "[2]drive_and_path %d,'%s','%s'", drv, path,name));
 
 			if (tailsize && (wiscr == 1 || longtail))
 				make_argv(tail, tailsize, name, argvtail);
@@ -502,121 +500,105 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			{
 				Sema_Up(clients);
 
-				new = xa_fork_exec(x_mode, &x_shell, cmd, *argvtail ? argvtail : tail);
-				if (new)
+				ret = p_exec(100, cmd, *argvtail ? argvtail : tail,
+					     (x_mode & SW_ENVIRON) ? x_shell.env : *C.strings);
+
+				if (ret > 0)
 				{
 					if (((x_mode & SW_PRENICE) == 0)
 					    || ((x_mode & SW_PRENICE) != 0 && x_shell.prenice == 0))
-						(void) Prenice(new->pid, -4);
+						p_renice(ret, -4);
 
-					DIAG((D_appl, 0, "Alloc client; APP %d", new->pid));
-					new->type = APP_APPLICATION;
+					DIAG((D_appl, 0, "Alloc client; APP %d", ret));
+					// XXX new->type = APP_APPLICATION;
 				}
 
 				Sema_Dn(clients);
 			}
 
 			break;
-		case 3:
-			{
-				long p_rtn;
-				long shrink;
-				int child = 0;
-				int shrinked;
-				BASEPAGE* b;
-				long oldmask;
-
-				drv = drive_and_path(save_cmd, path, name, true, true);
-
-				DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'",drv,path,name));
-
-				p_rtn = Pexec(3, cmd, *argvtail ? argvtail : tail, 0);
-				if (p_rtn < 0)
-				{
-					DIAG((D_shel, 0, "acc launch failed:error=%ld", p_rtn));
-					break;
-				}
-
-				b = (BASEPAGE *)p_rtn;
-				shrink = 256 + b->p_tlen + b->p_dlen + b->p_blen;
-				shrinked = Mshrink(b, shrink);
-
-				DIAGS(("Shrinked accessory@%lx to %ld: %d",b, shrink, shrinked));
-
-				b->p_dbase = b->p_tbase;
-				/* This code basically puts the basepage address in a0. */
-				b->p_tbase = (char *)accstart;
-
-				Sema_Up(clients);
-
-				/* block SIGCHLD until we setup our data structures */
-				oldmask = Psigblock(1UL << SIGCHLD);
-
-				DIAG((D_shel, 0, "Pexec(106) '%s'",cmd));
-				child = Pexec(106, cmd, b, *C.strings);		/* HR 104 --> 106 */
-				if (child < 0)
-					; /* XXX failure */
-				DIAG((D_shel, 0, "child = %d", child));
-
-				(void) Prenice(child, -4);
-
-				new = NewClient(child);
-				if (new)
-				{
-					DIAG((D_appl, NULL, "Alloc client; ACC %d", new->pid));
-					new->type = APP_ACCESSORY;
-				}
-
-				/* restore old sigmask */
-				Psigsetmask(oldmask);
-
-				Sema_Dn(clients);
-			}
-			break;
-
 		}
-
-		if (new)
+		case 3:
 		{
-			strcpy(new->cmd_name, save_cmd);
+			struct basepage *b;
+			long p_rtn;
+			long shrink, shrinked;
+			long size;
+			int child = 0;
 
-			new->cmd_tail = save_tail;
-			new->tail_is_heap = true;
-			new->parent = Pgetpid();
+			drv = drive_and_path(save_cmd, path, name, true, true);
 
-			/* As we now unambiguously know the path from which the client is loaded,
-			 * why not fill it out here? :-)
-			 */
-			* new->home_path = drv + 'a';
-			*(new->home_path + 1) = ':';
-			strcpy(new->home_path+2, path);
+			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
-			update_tasklist(lock);
+			p_rtn = p_exec(3, cmd, *argvtail ? argvtail : tail, 0);
+			if (p_rtn < 0)
+			{
+				DIAG((D_shel, 0, "acc launch failed:error=%ld", p_rtn));
+				break;
+			}
+
+			b = (struct basepage *)p_rtn;
+
+			size = 256 + b->p_tlen + b->p_dlen + b->p_blen; /* accsize */
+			shrink = size + 512; /* plus a little bit stack, or? */
+			shrinked = m_shrink(0, (long)b, shrink);
+
+			DIAGS(("Shrinked accessory@0x%lx to %ld: %d", b, shrink, shrinked));
+
+			DIAGS(("Copy accstart to 0x%lx, size %lu", (char *)b + size, (long)accend - (long)accstart));
+			memcpy((char *)b + size, accstart, (long)accend - (long)accstart);
+
+			b->p_dbase = b->p_tbase;
+			b->p_tbase = (char *)b + size;
+
+			Sema_Up(clients);
+
+			DIAG((D_shel, 0, "Pexec(106) '%s'",cmd));
+			child = p_exec(106, cmd, b, *C.strings);
+			if (child < 0)
+				; /* XXX failure */
+			DIAG((D_shel, 0, "child = %d", child));
+
+			p_renice(child, -4);
+			ret = child;
+
+			Sema_Dn(clients);
+			break;
 		}
 	}
 
-	free(tail);
+#if 0
+	if (new)
+	{
+		strcpy(new->cmd_name, save_cmd);
 
-	DIAG((D_shel,0,"Launch for %s returns child %d", c_owner(caller), new ? new->pid : -1));
-	DIAG((D_shel,0,"Remove ARGV"));
+		new->cmd_tail = save_tail;
+		new->tail_is_heap = true;
+		new->parent = Pgetpid();
+
+		/* As we now unambiguously know the path from which the client is loaded,
+		 * why not fill it out here? :-)
+		 */
+		* new->home_path = drv + 'a';
+		*(new->home_path + 1) = ':';
+		strcpy(new->home_path+2, path);
+
+		update_tasklist(lock);
+	}
+#endif
+
+out:
+	if (tail != argvtail)
+		free(tail);
+
+	DIAG((D_shel, 0, "Launch for %s returns child %d", c_owner(caller), ret));
+	DIAG((D_shel, 0, "Remove ARGV"));
 
 	/* Remove ARGV */
 	put_env(lock, 1, 0, ARGV);
 
-	/*
-	 * return pid of new process
-	 * 
-	 * remember this before we unblock SIGCHLD; if the client died
-	 * in the meantime the signal handler run for sure before
-	 * Psigsetmask() return :-)
-	 */
-	ret = new ? new->pid : 0;
-
 	/* and go out */
 	return ret;
-#else
-	return 0;
-#endif
 }
 
 unsigned long
@@ -640,9 +622,6 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 	*/
 	if (wdoex < 4)
 	{
-		int child_id;
-		long oldsigmask;
-
 		Sema_Up(envstr);
 
 		pb->intout[0] = launch(lock|envstr,

@@ -65,7 +65,11 @@ focus_owner(void)
 	if (C.focus == root_window)
 		return menu_owner();
 
-	return C.focus->owner;
+	if (C.focus)
+		return C.focus->owner;
+
+	DIAGS(("No focus_owner()???"));
+	return NULL;
 }
 
 /*
@@ -247,24 +251,21 @@ unhide_app(enum locks lock, struct xa_client *client)
 void
 hide_app(enum locks lock, struct xa_client *client)
 {
-	struct xa_window *w;
 	struct xa_client *focus = focus_owner();
+	struct xa_window *w;
 
 	DIAG((D_appl, NULL, "hide_app for %s", c_owner(client) ));
-	DIAG((D_appl, NULL, "   focus is  %s", c_owner(focus_owner()) ));
+	DIAG((D_appl, NULL, "   focus is  %s", c_owner(focus) ));
 
 	w = window_list;
 	while (w)
 	{
-		if (   w != root_window
+		if (w != root_window
 		    && w->owner == client
-		    && !is_hidden(w) )
-		//    && (w->active_widgets&MOVER) != 0	/* fail save */
-		//    && (w->active_widgets&HIDE) != 0)	/* fail save */
+		    && !is_hidden(w))
 		{
 			RECT r = w->r, d = root_window->r;
 #if HIDE_TO_HEIGHT
-			/* HR: Dead simple, isnt it? ;-) */
 			r.y += d.h;
 #else
 			if (r.x > 0)
@@ -284,7 +285,7 @@ hide_app(enum locks lock, struct xa_client *client)
 		w = w->next;
 	}
 
-	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus_owner()) ));
+	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
 
 	if (client == focus)
 		app_in_front(lock, next_app(lock));

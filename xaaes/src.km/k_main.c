@@ -24,15 +24,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include RSCHNAME
+
 #include "k_main.h"
 #include "xa_global.h"
-
-#include RSCHNAME
 
 #include "app_man.h"
 #include "c_window.h"
 #include "cnf_xaaes.h"
 #include "desktop.h"
+#include "handler.h"
 #include "init.h"
 #include "k_init.h"
 #include "k_keybd.h"
@@ -303,10 +304,22 @@ k_main(void *dummy)
 
 
 	/*
+	 * register trap#2 handler
+	 */
+
+	if (register_trap2(XA_handler, 0, 0))
+	{
+		DIAGS(("register_trap2 failed!"));
+		goto leave;
+	}
+
+
+	/*
 	 * Initialization AES/VDI
 	 */
 	if (k_init() != 0)
 	{
+		DIAGS(("k_init failed!"));
 		goto leave;
 	}
 
@@ -498,6 +511,10 @@ k_main(void *dummy)
 					(*C.active_timeout.task)(&C.active_timeout);
 			}
 		}
+
+		/* execute delayed delete_window */
+		if (S.deleted_windows.first)
+			do_delayed_delete_window(lock);
 	}
 	while (!(C.shutdown & QUIT_NOW));
 
@@ -517,6 +534,14 @@ leave:
 
 	k_shutdown();
 
+	/*
+	 * deinstall trap#2 handler
+	 */
+	register_trap2(XA_handler, 1, 0);
+
+	/*
+	 * close input devices
+	 */
 	if (C.MOUSE_dev > 0)
 		f_close(C.MOUSE_dev);
 

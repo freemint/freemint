@@ -32,8 +32,4 @@ extern char version[];
 extern Path Aes_home_path;
 extern struct file *log;
 
-void unhook_from_vector(void);
-
-void xaaes_shutdown(void);
-
 #endif /* _init_h */

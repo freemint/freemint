@@ -968,9 +968,10 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 
 	/* Just close these windows, they can handle it... */
 	close_window (lock, wind);
-	delete_window(lock, wind);
+	/* delete on the next possible time */
+	delayed_delete_window(lock, wind);
 
-	/* Don't redisplay in the do_widgets() routine as window no longer exists */
+	/* Don't redisplay in the do_widgets() routine */
 	return false;
 }
 
@@ -2088,7 +2089,7 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	XA_WIDGET *widg = get_widget(wind, tool);
 	XA_TREE *wt = widg->stuff;
 
-	DIAG((D_form, NULL, "remove_widget %d: %ld", tool, wt));
+	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, wt));
 
 	if (wt)
 	{
@@ -2349,13 +2350,12 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						DIAG((D_button, NULL, "Deselect widget"));
 						redisplay_widget(lock, w, widg, OS_NORMAL);	/* Flag the widget as de-selected */
 					}
-					else
-					if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
+					else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
 						return false;		/* pass click to desktop owner */
 
 					/* click devoured by widget */
 					return true;
-				} /*if m)inside */
+				} /*if m_inside */
 			} /* if not masked */
 		} /* if there */
 	} /* for f */
