@@ -768,7 +768,7 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 		firstline++;
 	}
 	t->curs_drawn = 0;
-	if (t->curr_tflags & TCURS_ON)
+	if (!t->win->redraw && (t->curr_tflags & TCURS_ON))
 		update_cursor (t->win, -1);
 }
 
