@@ -1,34 +1,34 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1999-02-19
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- *  
+ *
  */
 
 # ifndef _info_h
@@ -175,8 +175,24 @@ extern const char *MSG_keytable_loaded;
 extern const char *MSG_keytable_faulty;
 
 /* mis.c */
+# ifdef BUILTIN_SHELL
 extern const char *MSG_shell_name;
 extern const char *MSG_shell_missing_arg;
+extern const char *MSG_shell_error;
+extern const char *MSG_shell_type_help;
+extern const char *MSG_shell_unmatched_quotes;
+extern const char *MSG_shell_export_help;
+extern const char *MSG_shell_setenv_help;
+extern const char *MSG_shell_rm_help;
+extern const char *MSG_shell_exit_q;
+extern const char *MSG_shell_xcmd_help;
+extern const char *MSG_shell_xcmd_info;
+extern const char *MSG_shell_xcmd_on;
+extern const char *MSG_shell_xcmd_off;
+extern const char *MSG_shell_cd_help;
+extern const char *MSG_shell_ls_help;
+extern const char *MSG_shell_help;
+# endif
 
 /* slb.c */
 extern const char *MSG_slb_couldnt_open;
