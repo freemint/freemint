@@ -913,7 +913,8 @@ graf_mouse(int m_shape, MFORM *mf)
 	}
 	C.mouse = m_shape;
 	hidem();				/* Hide/reveal cursor to update on screen image immediately */
-	forcem();
+	showm();
+//	forcem();
 }
 
 /* Slight differance from GEM here - each application can have a different mouse form,

@@ -222,7 +222,8 @@ button_event(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 				Unblock(client, XA_OK, 3);
 				DIAG((D_button,NULL," - written\n"));
 			}
-		} else
+		}
+		else
 		{
 			DIAG((D_button,NULL," -- evnt_button\n"));
 			if (is_bevent(md->state, md->clicks, client->waiting_pb->intin, 12))
@@ -242,7 +243,7 @@ button_event(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 	}
 }
 
-/* Ozk 040503: Collect up to 4 pending button events */
+/* Ozk: Collect up to 4 pending button events -- do we need more? */
 static void
 add_pending_button(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 {
@@ -320,7 +321,6 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
 	if (!md->state && widget_active.widg)		/* button released? */
 	{
-	//	widget_active.cb  = 0;
 		do_active_widget(lock, widget_active.wind->owner);
 	}
 
@@ -400,7 +400,6 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 			if (client->waiting_for & MU_BUTTON)
 				button_event(lock, client, md);
 			else
-//				button_pending(lock, client, md);
 				add_pending_button(lock, client, md);
 			return;
 		}
@@ -429,7 +428,7 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	    && wind != window_list
 	    && wind != root_window
 	    && wind->owner == client				/* HR 150601: Mouse lock !!! */
-/*	    && (client->waiting_for & MU_MESAG) */
+/*	    && (client->waiting_for & MU_MESAG)*/
 	    && (wind->active_widgets&NO_TOPPED) == 0)		/* WF_BEVENT set */
 	{
 		DIAG((D_wind,wind->owner,"send WM_TOPPED to %s\n", c_owner(client)));
@@ -444,7 +443,7 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	{
 		C.focus = window_list;
 		client = window_list->owner;
-//		display("Click on unfocused top_window of (%d) %s\n", client->pid, client->name);
+//		display("Click on unfocused top_window of (%d)'%s'\n", client->pid, client->name);
 		DIAG((D_menu,NULL,"Click on unfocused top_window of %s\n", c_owner(client)));
 		display_window(lock|clients, 112, window_list, NULL);   /* Redisplay titles */
 		send_ontop(lock|clients);
@@ -453,7 +452,6 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	else if (client->waiting_for & MU_BUTTON)
 		button_event(lock, client, md);
 	else
-//		button_pending(lock, client, md);
 		add_pending_button(lock, client, md);
 
 	Sema_Dn(clients);
@@ -1519,7 +1517,8 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 		if (is_bevent(pending_button[pbi].b, pending_button[pbi].clicks, pb->intin, 3))
 		{
-			multi_intout(pb->intout, 0);
+			vq_key_s( C.vh, (short *)&pb->intout);
+//			multi_intout(pb->intout, 0);
 			pb->intout[0] = pending_button[pbi].clicks;	/* Ozk 040503: Take correct data */
 			pb->intout[1] = pending_button[pbi].x;
 			pb->intout[2] = pending_button[pbi].y;
@@ -1540,7 +1539,7 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			{
 				DIAG((D_button,NULL,"    --    implicit button %d\n",button.b));
 				multi_intout(pb->intout, 0);		/* 0 : for evnt_button */
-				pb->intout[0] = 1;
+				pb->intout[0] = 0;
 				button.got = true;
 				Sema_Dn(pending);
 				return XAC_DONE;
