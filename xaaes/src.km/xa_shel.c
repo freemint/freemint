@@ -189,6 +189,29 @@ print_x_shell(short x_mode, struct xshelw *x_shell)
 }
 #endif
 
+static void _cdecl
+post_x_mode_psetlimit(struct proc *p, void *data)
+{
+	long psetlimit = (long)data;
+
+	DIAGS(("post_x_mode_psetlimit: pid %i -> Psetlimit(2, %li)", p->pid, psetlimit));
+	p_setlimit(2, psetlimit);
+}
+
+static void _cdecl
+post_x_mode_defdir(struct proc *p, void *data)
+{
+	char *defdir = data;
+
+	DIAGS(("post_x_mode_defdir: pid %i -> Dsetpath(%s)", p->pid, defdir));
+
+	if (defdir)
+	{
+		d_setpath(defdir);
+		kfree(defdir);
+	}
+}
+
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
@@ -529,18 +552,11 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		 * post x_mode handling
 		 */
 
-		/* Frank, this code I commented out is what makes Thing
-		 * crash after it launches a process. I tried to look
-		 * through at the relevant places in the kernel sources,
-		 * but could not find anything wrong -- Ozk
-		 */
-#if 0
 		if (x_mode & SW_PSETLIMIT)
 		{
-			DIAGS((" -- proc_setlimit"));
-			proc_setlimit(p, 2, x_shell.psetlimit);
+			DIAGS((" -- addonprocwakeup(post_x_mode_psetlimit)"));
+			addonprocwakeup(p, post_x_mode_psetlimit, (void *)x_shell.psetlimit);
 		}
-#endif
 
 		if (x_mode & SW_PRENICE)
 		{
@@ -548,7 +564,13 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			p_renice(p->pid, x_shell.prenice);
 		}
 
-		// XXX SW_DEFDIR
+		if (x_mode & SW_DEFDIR)
+		{
+			char *defdir = kmalloc(strlen(x_shell.defdir) + 1);
+
+			DIAGS((" -- addonprocwakeup(post_x_mode_defdir)"));
+			addonprocwakeup(p, post_x_mode_defdir, defdir);
+		}
 
 		if (x_mode & SW_UID)
 		{
