@@ -142,6 +142,8 @@ fs_prompt(SCROLL_INFO *list)
 	/* Not if filename empty or list empty */
 	if (*fs.file && s)
 	{
+		SCROLL_ENTRY *old = list->cur;
+
 		list->cur = NULL;	/* s1 < s2   ==>   -1 */
 		while (s->next && stricmp(s->text, fs.file) < 0)
 			s = s->next;
@@ -162,10 +164,23 @@ fs_prompt(SCROLL_INFO *list)
 		}
 
 		list->vis(list,s);
+
+		/* prompt changed the selection... */
+		fs.clear_on_folder_change |= old == list->cur;
+
 		return true;
 	}
 
 	return false;
+}
+
+static bool
+fs_prompt_refresh(SCROLL_INFO *list)
+{
+	int clear = fs.clear_on_folder_change;
+	bool res = fs_prompt(list);
+	fs.clear_on_folder_change = clear;
+	return res;
 }
 
 typedef bool sort_compare(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2);
@@ -447,7 +462,7 @@ refresh_filelist(LOCK lock, int which)
 	list->n = n;
 	graf_mouse(ARROW, NULL);
 	list->slider(list);
-	if (!fs_prompt(list))
+	if (!fs_prompt_refresh(list))
 		display_toolbar(lock, fs.wind, FS_LIST);
 }
 
@@ -572,62 +587,61 @@ fs_updir(LOCK lock, XA_WINDOW *w)
 	if ((drv = get_drv(fs.path)) >= 0)
 		strcpy(fs_paths[drv], fs.path);
 
-	if ( fs.clear_on_folder_change )
-		set_file(lock,"");
-
 	refresh_filelist(fsel,1);
 }
 
 static void
 fs_closer(struct scroll_info *list)
 {
+	if ( fs.clear_on_folder_change )
+		set_file(list->lock,"");
+
 	fs_updir(list->lock, list->wi);
 }
 
-/* HR: flag now in SCROLL_ENTRY as well.
- *     removed dangerous pointer - 1 usage.
- */
 static int
-fs_dclick(LOCK lock, OBJECT *form, int objc)
+fs_item_action(LOCK lock, OBJECT *form, int objc)
 {
 	OBJECT *ob = form + objc;
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 	XA_WINDOW *wl = list->wi;
 
-	DIAG((D_fsel, NULL, "fs_dclick %lx\n", list->cur));
+	DIAG((D_fsel, NULL, "fs_item_action %lx\n", list->cur));
 	if (list->cur)
 	{
 		if ( (list->cur->flag&FLAG_DIR) == 0)
-			/* file double click */
+			/* file entry action */
 			strcpy(fs.file, list->cur->text);
 		else
 		{			
-			/* folder double click */
+			/* folder entry action */
 
 			if (strcmp(list->cur->text, "..") == 0)
 			{
-				/* cur on double dot line */
+				if ( fs.clear_on_folder_change )
+					set_file(lock,"");
+
+				/* cur on double dot folder line */
 				fs_updir(lock, wl);
 				return true;
 			}
 
 			if (strcmp(list->cur->text, ".") != 0)
 			{
-				/* cur on NON dot line */
+				/* cur on common folder line (NON dot) */
 				int drv;
 				add_slash(fs.path);
 				strcat(fs.path, list->cur->text);
 				if ((drv = get_drv(fs.path)) >= 0)
 					strcpy(fs_paths[drv], fs.path);
 				if ( fs.clear_on_folder_change )
-				/*FIXME??? list->cur && !strcmp(list->cur->text,fs.file) )*/
 					set_file(lock, "");
 				refresh_filelist(fsel,2);
 				return true;
 			}
 		}
 	}
-	DIAG((D_fsel, NULL, "fs_dclick: %s%s\n", fs.path, fs.file));
+	DIAG((D_fsel, NULL, "fs_item_action: %s%s\n", fs.path, fs.file));
 
 	if (selected)
 		(*selected)(lock, fs.path, fs.file);
@@ -636,12 +650,21 @@ fs_dclick(LOCK lock, OBJECT *form, int objc)
 }
 
 static int
+fs_dclick(LOCK lock, OBJECT *form, int objc)
+{
+	/* since mouse click we should _not_ clear the file field */
+	fs.clear_on_folder_change = 0;
+
+	return fs_item_action(lock, form, objc);
+}
+
+static int
 fs_click(LOCK lock, OBJECT *form, int objc)
 {
 	OBJECT *ob = form + objc;
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
 
-	/* on mouse click we should clear the file field */
+	/* since mouse click we should _not_ clear the file field */
 	fs.clear_on_folder_change = 0;
 
 	if (list->cur)
@@ -655,7 +678,7 @@ fs_click(LOCK lock, OBJECT *form, int objc)
 			set_file(lock, "");
 		}
 		else {
-			fs_dclick(lock, form, objc);
+			fs_item_action(lock, form, objc);
 		}
 	}
 
@@ -699,9 +722,7 @@ handle_fileselector(LOCK lock, struct widget_tree *wt)
 		else
 #endif
 		{
-			/* on return keypress we should clear the file field */
-			fs.clear_on_folder_change = 1;
-			fs_dclick(lock, wt->tree, FS_LIST);
+			fs_item_action(lock, wt->tree, FS_LIST);
 		}
 		break;
 	/* Cancel this selector */
@@ -763,6 +784,7 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 	OBJECT *ob = form + FS_LIST;
 	
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+	SCROLL_ENTRY *old_entry = list->cur;
 
 	/* HR 310501: ctrl|alt + letter :: select drive */
 	if ((key.raw.conin.state&(K_CTRL|K_ALT)) != 0)
@@ -785,6 +807,9 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 
 		/* ctrl + backspace :: fs_updir() */
 		if ( (nkcode & NKF_CTRL) && nk == NK_BS ) {
+			if ( fs.clear_on_folder_change )
+				set_file(lock,"");
+
 			fs_updir(lock, wind);
 		}
 		if ( (nkcode & NKF_CTRL) && nk == '*' ) {
@@ -801,11 +826,11 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 	/*  If anything in the list and it is a cursor key */
 	if (list->n && scrl_cursor(list, keycode) != -1)
 	{
-		/* FIXME: we should clear when traversing only probably:
-		fs.clear_on_folder_change = 1;
-		*/
 		if (!(list->cur->flag&FLAG_DIR))
 		{
+			if (old_entry != list->cur)
+				fs.clear_on_folder_change = 1;
+
 			set_file(lock, list->cur->text);
 		}
 	}
