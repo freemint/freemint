@@ -484,6 +484,7 @@ bios_root(int drv, fcookie *fc)
 		fc->fs = &bios_filesys;
 		fc->dev = drv;
 		fc->index = 0L;
+		fc->aux = 0;
 		return E_OK;
 	}
 	fc->fs = NULL;
@@ -975,6 +976,8 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	struct bios_file *b;
 	static int devindex = 0;
 	
+	TRACE (("bios_fscntl: name %s cmd %x, %lx", name, cmd, arg));
+	
 	if (cmd == MX_KER_XFSNAME)
 	{
 		strcpy ((char *) arg, "bios-xfs");
@@ -988,7 +991,10 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	}
 	
 	if (IS_FD_DIR (dir))
+	{
+		DEBUG (("biosfs: IS_FD_DIR -> EACCES"));
 		return EACCES;
+	}
 	
 	/* ts: let's see if such an entry already exists */
 	for (b = broot; b; b = b->next)
@@ -1033,9 +1039,15 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				}
 				
 				b = kmalloc (sizeof (*b));
-				if (!b) return 0;
+				if (!b)
+				{
+					DEBUG (("DEV_INSTALL (%s): ENOMEM", name));
+					return ENOMEM;
+				}
+				
 				b->next = broot;
 				broot = b;
+				
 				strncpy (b->name, name, BNAME_MAX);
 				b->name[BNAME_MAX] = 0;
 			}
@@ -1062,6 +1074,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if ((cmd == DEV_INSTALL2) && d->bdev)
 				overlay_bdevmap (d->bdev, d->bdevmap);
 			
+			DEBUG (("DEV_INSTALL: installed %s", name));
 			return (long) &kernelinfo;
 		}
 		case DEV_NEWTTY:
