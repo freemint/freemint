@@ -32,7 +32,7 @@
 # define _global_h
 
 # include "mint/mint.h"
-
+# include "mint/basepage.h"
 
 /*
  * global variables
@@ -48,6 +48,8 @@ extern struct global global;
 #define gl_lang		global.gl_lang
 #define sysdrv		global.sysdrv
 #define sysdir		global.sysdir
+
+extern BASEPAGE *_base;	/* pointer to kernel's basepage */
 
 extern long mcpu; /* processor we are running */
 

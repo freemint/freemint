@@ -16,9 +16,6 @@
 	.globl	_init
 	.globl	__base
 
-	.bss
-__base:	ds.l	1
-
 	.text
 _main:	move.l	0x04(sp),a0		// basepage address
 	move.l	a0,__base
