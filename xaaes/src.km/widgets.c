@@ -630,6 +630,9 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		mc = ((XA_TREE *)widg->stuff)->owner;
 		if (ce->client == mc )
 		{
+			if (C.update_lock && C.update_lock != mc)
+				return;
+
 			DIAGS(("CE_redraw_menu: for %s", ce->client->name));
 			display_widget(lock, root_window, widg);
 		}
@@ -672,6 +675,9 @@ redraw_menu(enum locks lock)
 
 	if (mc == rc || mc == C.Aes)
 	{
+		if (C.update_lock && C.update_lock != rc)
+			return;
+
 		DIAGS(("Display MENU (same client) for %s", rc->name));
 		display_widget(lock, root_window, widg);
 	}
