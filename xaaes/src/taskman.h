@@ -27,7 +27,7 @@
 extern
 XA_WINDOW *task_man_win;
 
-void open_taskmanager	(LOCK lock, int shutdown);
+void open_taskmanager	(LOCK lock);
 void do_system_menu		(LOCK lock, int clicked_title, int menu_item);
 void refresh_tasklist	(LOCK lock);
 void update_tasklist	(LOCK lock);
