@@ -325,7 +325,8 @@ k_init(void)
 	/* Tack a menu onto the root_window widget */
 	C.Aes->std_menu.tree = ResourceTree(C.Aes_rsc, SYSTEM_MENU);
 	C.Aes->std_menu.owner = C.Aes;
-	fix_menu(C.Aes->std_menu.tree, true);
+	strncpy(&C.Aes->mnu_clientlistname, "  Clients \3", 14);
+	fix_menu(C.Aes, C.Aes->std_menu.tree, true);
 	set_menu_widget(root_window, &C.Aes->std_menu);
 	{
 		char *vs = get_ob_spec(C.Aes->std_menu.tree + SYS_DESK)->free_string;
@@ -334,7 +335,7 @@ k_init(void)
 	DIAGS(("menu widget set"));
 
 	/* Fix up the file selector menu */
-	fix_menu(ResourceTree(C.Aes_rsc, FSEL_MENU), false);
+	fix_menu(C.Aes, ResourceTree(C.Aes_rsc, FSEL_MENU), false);
 
 	/* Fix up the window widget bitmaps and any others we might be using
    	 * (Calls vr_trnfm() for all the bitmaps)

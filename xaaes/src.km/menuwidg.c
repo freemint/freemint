@@ -1498,7 +1498,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item)
  */
 
 void
-fix_menu(OBJECT *root, bool do_desk)
+fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 {
 	int titles, menus, tbar, s_ob, t_ob;
 
@@ -1538,7 +1538,14 @@ fix_menu(OBJECT *root, bool do_desk)
 		 * into the OBJECT; this is called from XA_menu_bar
 		 * with client OBJECTs too
 		 */
-		root[t_ob++].ob_spec.free_string = "  Clients \3";
+		/*
+		 * Ozk: Yes, this is not right. It will seldom created problems tho,
+		 * becuase very few, if any, GEM apps handle menus by themselves.
+		 * However, I did something temporarily just to change the function
+		 * prototype, until umalloced space can be used, as this solution
+		 * is just as bad as it originally was.
+		*/
+		root[t_ob++].ob_spec.free_string = &client->mnu_clientlistname; //"  Clients \3";
 		while (t_ob != s_ob)
 		{
 			root[t_ob].ob_flags |= OF_HIDETREE|OS_DISABLED;
