@@ -35,7 +35,8 @@
 #include "c_window.h"
 #include "widgets.h"
 
-#define done(x) (*wt->state_mask&=~(x))
+
+#define done(x) (*wt->state_mask &= ~(x))
 
 OBSPEC *
 get_ob_spec(OBJECT *ob)
@@ -65,54 +66,87 @@ bool d3_activator(OBJECT *ob)  { return (ob->ob_flags & FLD3DANY) == FLD3DACT; }
 
 void wr_mode(int m)
 {
-	static int mode = -1;		/* we must set the mode once at least. */
-	if (m != mode)
-		vswr_mode(C.vh, mode = m);
+	static int mode = -1;
+
+	if (mode != m)
+	{
+		mode = m;
+		vswr_mode(C.vh, mode);
+	}
 }
 
 void l_color(int m)
 {
 	static int mode = -1;
-	if (m != mode)
-		vsl_color(C.vh, mode = m);
+
+	if (mode != m)
+	{
+		mode = m;
+		vsl_color(C.vh, mode);
+	}
 }
 
 void f_color(int m)
 {
 	static int mode = -1;
-	if (m != mode)
-		vsf_color(C.vh, mode = m);
+
+	if (mode != m)
+	{
+		mode = m;
+		vsf_color(C.vh, mode);
+	}
 }
 
 void t_color(int m)
 {
 	static int mode = -1;
-	if (m != mode)
-		vst_color(C.vh, mode = m);
+
+	if (mode != m)
+	{
+		mode = m;
+		vst_color(C.vh, mode);
+	}
 }
 
 void t_effect(int m)
 {
 	static int mode = -1;
-	if (m != mode)
-		vst_effects(C.vh, mode = m);
+
+	if (mode != m)
+	{
+		mode = m;
+		vst_effects(C.vh, mode);
+	}
 }
 
 void t_font(int p, int f)
 {
-	static int pm = -1, fm = -1;
+	static int pm = -1;
+	static int fm = -1;
 	short temp;
-	if (p != pm)
-		vst_point(C.vh, pm = p, &temp, &temp, &temp, &temp);
-	if (f != fm)
-		vst_font(C.vh, fm = f);
+
+	if (pm != p)
+	{
+		pm = p;
+		vst_point(C.vh, pm, &temp, &temp, &temp, &temp);
+	}
+
+	if (fm != f)
+	{
+		fm = f;
+		vst_font(C.vh, fm);
+	}
 }
 
 void f_interior(int m)
 {
 	static int mode = -1;
-	if (m != mode)
-		vsf_interior(C.vh, mode = m);
+
+	if (mode != m)
+	{
+		mode = m;
+		vsf_interior(C.vh, mode);
+	}
 }
 
 void f_style(int m)
@@ -1213,9 +1247,9 @@ d_g_button(LOCK lock, struct widget_tree *wt)
 
 	if ((ob->ob_state & WHITEBAK) && (ob->ob_state & 0x8000))
 	{
-		short und = (short)ob->ob_state>>8;
+		short und = (short)ob->ob_state >> 8;
 		wr_mode(MD_REPLACE);
-		/* GruppenRahmen */
+		/* group frame */
 		if (und == -2)
 		{
 			RECT rr = r;
@@ -1238,21 +1272,21 @@ d_g_button(LOCK lock, struct widget_tree *wt)
 			XA_TREE b;
 			b.tree = get_widgets();
 			display_object(	lock, &b,
-					  (ob->ob_flags&RBUTTON)
+					  (ob->ob_flags & RBUTTON)
 					? (selected ? RADIO_SLCT : RADIO_DESLCT )
 					: (selected ? BUT_SLCT   : BUT_DESLCT   ),
 					gr.x, gr.y, 11);
 			gr.x += ICON_W;
 			gr.x += screen.c_max_w;
 			wr_mode(MD_TRANS);
-			ob_text(wt, &gr, &r, NULL, text, 0, und&0x7f);
+			ob_text(wt, &gr, &r, NULL, text, 0, und & 0x7f);
 		}
 	}
 	else
 	{
 		short und, tw, th;
 
-		und = (ob->ob_state&WHITEBAK) ? (ob->ob_state>>8)&0x7f : -1;
+		und = (ob->ob_state & WHITEBAK) ? (ob->ob_state >> 8) & 0x7f : -1;
 
 		/* Use extent, NOT vst_alinment. Makes x and y to v_gtext
 		 * real values that can be used for other stuff (like shortcut
@@ -1262,7 +1296,7 @@ d_g_button(LOCK lock, struct widget_tree *wt)
 		t_extent(text, &tw, &th);
 		gr.y += (r.h - th) / 2;
 		gr.x += (r.w - tw) / 2;
-	
+
 		if (d3_foreground(ob))
 		{
 			d3_pushbutton(0, &r, NULL, ob->ob_state, thick, 1);
@@ -1280,6 +1314,7 @@ d_g_button(LOCK lock, struct widget_tree *wt)
 			wr_mode(MD_REPLACE);
 			f_interior(FIS_SOLID);
 			f_color(selected ? BLACK : WHITE);
+
 			/* display inside bar */		
 			gbar(-thick, &r);
 

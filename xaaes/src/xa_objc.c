@@ -201,8 +201,10 @@ static char *
 object_txt(OBJECT *tree, int t)			/* HR: I want to know the culprit in a glance */
 {
 	int ty = tree[t].ob_type;
+
 	*nother = 0;
-	switch (ty&0xff)
+
+	switch (ty & 0xff)
 	{
 		case G_FTEXT:
 		case G_TEXT:
@@ -218,6 +220,7 @@ object_txt(OBJECT *tree, int t)			/* HR: I want to know the culprit in a glance 
 		case G_STRING:
 		case G_SHORTCUT:
 			sdisplay(nother," '%s'",get_ob_spec(tree + t)->string);
+			break;
 	}	
 	return nother;
 }
@@ -321,9 +324,10 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 		/* Get display routine for this type of object from jump table */
 		display_routine = objc_jump_table[t];
 
-	/* If we don't have a display routine for a given object type, draw a box instead */
 	if (display_routine == NULL)
 #if 0
+		/* If we don't have a display routine for a given object type,
+		 * draw a box instead */
 		display_routine = objc_jump_table[G_IBOX];
 #else
 	{
@@ -356,8 +360,8 @@ display_object(LOCK lock, XA_TREE *wt, int item, short parent_x, short parent_y,
 		DIAG((D_o, wt->owner, "ob=%d, %d/%d,%d/%d; %s%s %s %s\n",
 			 item,
 			 r.x, r.y, r.w, r.h,
-			 object_type(wt->tree,item),
-			 object_txt(wt->tree,item),
+			 object_type(wt->tree, item),
+			 object_txt(wt->tree, item),
 			 flagstr,
 			 statestr));
 	}
