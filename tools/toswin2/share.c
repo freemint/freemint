@@ -85,7 +85,7 @@ void handle_share(int id)
 			arg[0] = 127;
 			arg[1] = '\0';
 		}
-		t = new_proc(blk->name, arg, env, blk->pfad, cfg, id);
+		t = new_proc(blk->name, arg, env, blk->pfad, cfg, id, NULL);
 		if (t)
 			open_window(t->win, cfg->iconified);
 		free(env);

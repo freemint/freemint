@@ -13,7 +13,9 @@
 #include <unistd.h>
 #include <wait.h>
 
+#if 0
 #define _OLD_UTMP
+#endif
 #include <utmp.h>
 
 #include "proc.h"
@@ -60,7 +62,7 @@ static int open_pty(char *name)
 }
 
 TEXTWIN *new_proc(char *progname, char *arg, char *env, char *progdir, 
-						WINCFG *cfg, int talkID)
+		  WINCFG *cfg, int talkID, struct passwd *pw)
 {
 	TEXTWIN 			*t;
 	int 				i, ourfd, kidfd;
@@ -140,10 +142,23 @@ TEXTWIN *new_proc(char *progname, char *arg, char *env, char *progdir,
 		Fforce(1, kidfd);
 		Fforce(2, kidfd);
 		Fclose(kidfd);
-
+		
+# ifndef _OLD_UTMP
+		if (pw && ((shell_cnt == 0) || gl_allogin))
+		{
+				struct utmp ut;
+				
+				strncpy(ut.ut_user, pw->pw_name, sizeof(ut.ut_user));
+				gethostname(ut.ut_host, sizeof(ut.ut_host));
+				gettimeofday (&ut.ut_tv, NULL);
+				
+				login(&ut);
+		}
+# endif
+		
 		chdir(progdir);
 		i = (int)Pexec(200, progname, arg, env);
-
+		
 		sprintf(str, "\r\n  Pexec failed (err = %d)!\r\n", i);
 		write_text(t, str, -1);
 		_exit(i);
@@ -182,25 +197,33 @@ void term_proc(TEXTWIN *t)
 		}
 		t->fd = 0;
 	}
+	
 	if (t->pgrp > 0)
 	{
 		(void)Pkill(-t->pgrp, SIGHUP);
 		t->pgrp = 0;
 	}
+	
 	if (t->shell != NO_SHELL)
 	{
 		if (t->shell == LOGIN_SHELL)
 		{
+# ifdef _OLD_UTMP
 			_write_utmp(t->pty, "", "", time(NULL));
 			_write_wtmp(t->pty, "", "", time(NULL));
+# else
+			logout (t->pty);
+			logwtmp (t->pty, "", "");
+# endif
 		}
+		
 		t->shell = 0;
 		shell_cnt--;
 	}
-
+	
 	handle_exit(t->talkID);
 	t->talkID = -1;
-
+	
 	exit_code = 0;
 }
 
@@ -219,43 +242,50 @@ TEXTWIN *new_shell(void)
 		pw = getpwnam(p);
 	else
 		pw = getpwuid(geteuid());
-  	if ((pw != NULL) && (pw->pw_shell[0] != '\0'))
+  	
+  	if (pw && pw->pw_shell[0])
 	{
 		graf_mouse(BEE, NULL);
 		unx2dos(pw->pw_shell, shell);
 		cfg = get_wincfg(shell);
 		env = shell_env(cfg->col, cfg->row, cfg->vt_mode, pw->pw_dir, pw->pw_shell,
 							 ((shell_cnt == 0)|| gl_allogin));
-		t = new_proc(shell, arg, env, pw->pw_dir, cfg, -1);
+		t = new_proc(shell, arg, env, pw->pw_dir, cfg, -1, pw);
 		if (t)
 		{
 			if ((shell_cnt == 0) || gl_allogin)
 			{
-				char	hostname[20];
-		
-				t->shell = LOGIN_SHELL;
+# ifdef _OLD_UTMP
+				char hostname[128];
+				
 				gethostname(hostname, sizeof(hostname));
+				
 				_write_utmp(t->pty, pw->pw_name, hostname, time(NULL));
 				_write_wtmp(t->pty, pw->pw_name, hostname, time(NULL));
+# endif
+				t->shell = LOGIN_SHELL;
 			}
 			else
 				t->shell = NORM_SHELL;
+			
 			shell_cnt++;
 			open_window(t->win, cfg->iconified);
 		}
+		
 		free(env);
 		graf_mouse(ARROW, NULL);
 	}
 	else
 		alert(1, 0, NOPWD);
+	
 	return t;
 }
 
 
 TEXTWIN *start_prog(void)
 {
-	char		filename[256],	path[80] = "", tmp[60] = "";
-	char		*env, arg[51] = " ";
+	char filename[256+16], path[80] = "", tmp[60] = "";
+	char *env, arg[51] = " ";
 	TEXTWIN	*t = NULL;
 	WINCFG	*cfg;
 	int		antw;
@@ -280,7 +310,7 @@ TEXTWIN *start_prog(void)
 			strcat(arg, cfg->arg);
 			arg[0] = strlen(arg);
 			env = normal_env(cfg->col, cfg->row, cfg->vt_mode);
-			t = new_proc(filename, arg, env, path, cfg, -1);
+			t = new_proc(filename, arg, env, path, cfg, -1, NULL);
 			if (t)
 				open_window(t->win, cfg->iconified);
 			free(env);
