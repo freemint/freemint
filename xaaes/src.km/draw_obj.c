@@ -1339,8 +1339,8 @@ static const short selected3D_colour[] = {1, 0,13,15,14,10,12,11, 9, 8, 5, 7, 6,
 /*
  * Draw a box (respecting 3d flags)
  */
-void
-d_g_box(enum locks lock, struct widget_tree *wt, const RECT *clip)
+static void
+draw_g_box(struct widget_tree *wt, const RECT *clip)
 {
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
@@ -1382,6 +1382,48 @@ d_g_box(enum locks lock, struct widget_tree *wt, const RECT *clip)
 				shadow_object(0, ob->ob_state, &r, colours.framecol, thick);
 			}
 		}
+	}
+}
+
+void
+d_g_box(enum locks lock, struct widget_tree *wt, const RECT *clip)
+{
+	//RECT r = wt->r;
+	OBJECT *ob = wt->tree + wt->current;
+	//BFOBSPEC colours;
+	//short thick;
+
+	if ((ob->ob_type & 0xff) == G_EXTBOX)
+	{
+		struct extbox_parms *p = (struct extbox_parms *)object_get_spec(ob)->index;
+		short ty = ob->ob_type;
+		
+		ob->ob_type = p->type;
+		object_set_spec(ob, (unsigned long)p->obspec);
+		draw_g_box(wt, clip);
+		object_set_spec(ob, (unsigned long)p);
+		ob->ob_type = ty;
+
+		p->wt		= wt;
+		p->index	= wt->current;
+		p->r		= wt->r;
+		
+		p->clip.x	= clip->x;
+		p->clip.y	= clip->y;
+		p->clip.w	= clip->w - clip->x + 1;
+		p->clip.h	= clip->h - clip->y + 1;
+		
+		if (xa_rect_clip(&wt->r, &p->clip, &p->clip))
+		{
+			p->clip.w = p->clip.x + p->clip.w - 1;
+			p->clip.h = p->clip.y + p->clip.h - 1;
+				
+			(*p->callout)(p);
+		}
+	}
+	else
+	{
+		draw_g_box(wt, clip);
 	}
 }
 
@@ -2383,6 +2425,7 @@ init_objects(void)
 	objc_jump_table[G_CICON   ] = d_g_cicon;
 	objc_jump_table[G_SLIST   ] = d_g_slist;
 	objc_jump_table[G_SHORTCUT] = d_g_string;
+	objc_jump_table[G_EXTBOX  ] = d_g_box;
 }
 
 /*

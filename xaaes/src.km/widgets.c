@@ -457,6 +457,11 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 		ob_area(obtree, 0, &r);
 		new->ox = obtree->ob_x - r.x;
 		new->oy = obtree->ob_y - r.x;
+		
+		if (new->ox < 0)
+			new->ox = 0;
+		if (new->oy < 0)
+			new->oy = 0;
 
 		obtree->ob_x = sx;
 		obtree->ob_y = sy;
@@ -1036,6 +1041,7 @@ stdl_menu    = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_IC
 stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
 stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources }
 ;
+
 
 static void
 set_widget_coords(struct xa_widget *w)

@@ -997,7 +997,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 		retv = form_button(wt,		/* widget tree	*/
 				   obj,		/* obj idx	*/
 				   &md,		/* moose data	*/
-				   true,	/* redraw flag	*/
+				   FBF_REDRAW,	/* redraw flag	*/
 				   NULL,	/* rect list	*/
 				   /* output */
 				   &newstate,	/* new state	*/

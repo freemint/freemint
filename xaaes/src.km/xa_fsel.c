@@ -144,7 +144,7 @@ fs_prompt(SCROLL_INFO *list)
 				list->cur = s;
 		}
 
-		list->vis(list, s);
+		list->vis(list, s, true);
 
 		/* prompt changed the selection... */
 		fs->clear_on_folder_change |= old == list->cur;
@@ -443,7 +443,9 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 		entry = list->start;
 		while (entry)
 		{
-			entry->n = ++n,
+			entry->n = ++n;
+			if (entry->n == list->s)
+				list->bot = entry;
 			entry = entry->next;
 		}
 	}
@@ -1125,7 +1127,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		dialog_window->data = fs;
 
-		set_scroll(C.Aes, form, FS_LIST);
+		set_scroll(C.Aes, form, FS_LIST, true);
 		
 		/* HR: set a scroll list object */
 		set_slist_object(lock,

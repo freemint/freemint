@@ -108,3 +108,9 @@
 #define FNTS_FNTLIST     7   /* BOX in Baum WDLG_FNTS */
 #define FNTS_TYPE        8   /* BOX in Baum WDLG_FNTS */
 #define FNTS_POINTS      9   /* BOX in Baum WDLG_FNTS */
+#define FNTS_EDSIZE      10  /* FBOXTEXT in Baum WDLG_FNTS */
+#define FNTS_EDRATIO     11  /* FBOXTEXT in Baum WDLG_FNTS */
+#define FNTS_CBNAMES     14  /* BOX in Baum WDLG_FNTS */
+#define FNTS_CBSTYLES    15  /* BOX in Baum WDLG_FNTS */
+#define FNTS_CBSIZES     16  /* BOX in Baum WDLG_FNTS */
+#define FNTS_CBRATIO     17  /* BOX in Baum WDLG_FNTS */
