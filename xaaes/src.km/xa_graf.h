@@ -33,8 +33,7 @@
 /* Avoid a clash with the standard function name */
 #define graf_mouse xaaes_graf_mouse
 
-int watch_object(enum locks lock, XA_TREE *wt,
-		 int ob, int in_state, int out_state);
+void check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh);
 
 void graf_mouse(int m_shape, MFORM *mf, bool aesm);
 
