@@ -594,7 +594,9 @@ tfullpath(char *result, struct tindex *basei, const char *path)
  * correctly.
  */
 			if (namelen < TNMTEMP) {
-				*n++ = toupper(*path); path++; namelen++;
+				*n++ = toupper((int)*path & 0xff);
+				path++;
+				namelen++;
 			}
 			else
 				path++;

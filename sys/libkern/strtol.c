@@ -134,7 +134,7 @@ STRTOXX (const char *nptr, char **endptr, long base)
   /* Recognize number prefix and if BASE is zero, figure it out ourselves.  */
   if (*s == '0')
     {
-      if ((base == 0 || base == 16) && TOUPPER (s[1]) == 'X')
+      if ((base == 0 || base == 16) && toupper ((int)s[1] & 0xff) == 'X')
 	{
 	  s += 2;
 	  base = 16;
@@ -168,7 +168,7 @@ STRTOXX (const char *nptr, char **endptr, long base)
 	  if (c >= '0' && c <= '9')
 	    c -= '0';
 	  else if (isalpha (c))
-	    c = TOUPPER (c) - 'A' + 10;
+	    c = toupper ((int)c & 0xff) - 'A' + 10;
 	  else
 	    break;
 	  if ((int) c >= base)
@@ -194,7 +194,7 @@ STRTOXX (const char *nptr, char **endptr, long base)
 	if (c >= '0' && c <= '9')
 	  c -= '0';
 	else if (isalpha (c))
-	  c = TOUPPER (c) - 'A' + 10;
+	  c = toupper ((int)c & 0xff) - 'A' + 10;
 	else
 	  break;
 	if ((int) c >= base)
@@ -249,7 +249,7 @@ noconv:
      ENDPTR points to the `x`.  */
   if (endptr != NULL)
     {
-      if (save - nptr >= 2 && TOUPPER (save[-1]) == 'X'
+      if (save - nptr >= 2 && toupper ((int)save[-1] & 0xff) == 'X'
 	  && save[-2] == '0')
 	*endptr = (char *) &save[-1];
       else
