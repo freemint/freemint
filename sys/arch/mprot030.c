@@ -1208,7 +1208,7 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
 #ifdef DEBUG_INFO
     char linebuf[128];
     char *lp = linebuf;
-    long len;
+    long len = sizeof(linebuf);
     MEMREGION *mp, **mr, **map;
     PROC *p;
     ulong loc;
