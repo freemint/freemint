@@ -203,20 +203,21 @@ slb_init_and_exit:
 
 noenv:	pea	0x01190001.l		// Pdomain(1)
 	trap	#1
+	addq.l	#4,sp
 
 	move.w	#0x0004,d7
 loop:	move.w	d7,-(sp)		// Fclose(x)
 	move.w	#0x003e,-(sp)
 	trap	#1
+	addq.l	#4,sp
 	dbra.w	d7,loop
 
 	clr.l	-(sp)			// Psetpgrp(0,0)
 	move.w	#0x010e,-(sp)
 	trap	#1
+	addq.l	#6,sp
 
-// 30 bytes of junk on the stack here
-
-	move.l	34(sp),a0		// basepage pointer
+	move.l	4(sp),a0		// basepage pointer
 	lea	256(a0),a0		// begin of the TEXT segment
 	cmp.l	#0x283a001a,(a0)
 	bne.s	oldfmt
@@ -225,33 +226,40 @@ loop:	move.w	d7,-(sp)		// Fclose(x)
 
 	lea	228.w(a0),a0		// the header is a bit bigger (new format)
 
-oldfmt:	move.l	a0,-(sp)
+oldfmt:	move.l	a0,-(sp)		// 4 bytes go to the stack
 
 	cmp.l	#0x70004afc,(a0)	// a0 = SLB header address
 	beq.s	exec
 
-	move.l	38(sp),a0
+	move.l	8(sp),a0
 	move.l	#-1,B_CMDLIN(a0)	// put -1 on the bp->p_cmdlin
-	bra.s	halt
+
+	bsr.s	slb_stop		// Slbopen() will now read the status
+
+	bra.s	exit
 
 exec:	move.l	SH_INIT(a0),a0
-	jsr	(a0)
+	jsr	(a0)			// call the slb_init routine
 
-	move.l	38(sp),a0
+	move.l	8(sp),a0
 	move.l	d0,B_CMDLIN(a0)		// return value
 
-halt:	move.w	#0x0011,-(sp)
+	bsr.s	slb_stop		// Slbopen() will now read the status
+
+	move.l	(sp)+,a0		// header address
+	move.l	SH_EXIT(a0),a0
+	jsr	(a0)			// call the slb_exit routine
+
+exit:	clr.w	-(sp)
+	trap	#1
+
+slb_stop:
+	move.w	#0x0011,-(sp)		// SIGSTOP
 	clr.w	-(sp)
 	move.w	#0x0111,-(sp)
 	trap	#1
 	addq.l	#6,sp
-
-	move.l	(sp)+,a0		// header address
-	move.l	SH_EXIT(a0),a0
-	jsr	(a0)
-
-	clr.w	-(sp)
-	trap	#1
+	rts
 
 // slb_exec
 //
