@@ -351,7 +351,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				wind->wdlg = wdlg;
 
-				wt = set_toolbar_widget(lock, wind, obtree, 0);
+				wt = set_toolbar_widget(lock, wind, obtree, -2);
 				wt->exit_form = NULL; //exit_wdial;
 
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);

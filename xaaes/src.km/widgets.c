@@ -1108,7 +1108,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		f_color(G_WHITE);
 		t_color(G_BLACK);
 
-		if (wind == window_list && wind == C.focus)
+		if (is_topped(wind))
 			/* Highlight the title bar of the top window */
 			effect = cfg.topname;
 		else
@@ -1119,7 +1119,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	}
 	else
 	{
-		if (is_topped(wind)) //wind == window_list && wind == C.focus)
+		if (is_topped(wind))
 			/* Highlight the title bar of the top window */
 			t_color(G_BLACK);
 		else
@@ -2841,6 +2841,13 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 	wt->widg = widg;
 	wt->wind = wind;
 	wt->zen  = true;
+
+	/*
+	 * Ozk: if edobj == -2, we want to look for an editable and place the
+	 * cursor there. Used by wdlg_create() atm
+	 */
+	if (edobj == -2)
+		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
 
 	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &edobj))
 		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL);
