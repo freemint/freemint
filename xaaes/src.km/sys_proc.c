@@ -92,6 +92,7 @@ xaaes_on_exit(void *_client, struct proc *p, int code)
 static void _cdecl
 xaaes_on_exec(void *_client, struct proc *p)
 {
+	DIAGS(("xaaes_on_exec for %u", p->pid));
 }
 
 /*
@@ -100,6 +101,7 @@ xaaes_on_exec(void *_client, struct proc *p)
 static void _cdecl
 xaaes_on_fork(void *_client, struct proc *p, long flags, struct proc *child)
 {
+	DIAGS(("xaaes_on_fork for %u, child %u", p->pid, child->pid));
 }
 
 /*
@@ -108,6 +110,7 @@ xaaes_on_fork(void *_client, struct proc *p, long flags, struct proc *child)
 static void _cdecl
 xaaes_on_stop(void *_client, struct proc *p, unsigned short nr)
 {
+	DIAGS(("xaaes_on_stop for %u (%u)", p->pid, nr));
 }
 
 /*
@@ -116,6 +119,7 @@ xaaes_on_stop(void *_client, struct proc *p, unsigned short nr)
 static void _cdecl
 xaaes_on_signal(void *_client, struct proc *p, unsigned short nr)
 {
+	DIAGS(("xaaes_on_signal for %u (signal %u)", p->pid, nr));
 }
 
 
