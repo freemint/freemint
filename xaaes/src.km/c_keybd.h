@@ -30,8 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
-void cXA_fmdkey(enum locks lock, struct c_event *ce);
-void cXA_keypress(enum locks lock, struct c_event *ce);
-void cXA_keybd_event(enum locks lock, struct c_event *ce);
+void cXA_fmdkey(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_keypress(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_keybd_event(enum locks lock, struct c_event *ce, bool cancel);
 
 #endif /* _c_keybd_h */

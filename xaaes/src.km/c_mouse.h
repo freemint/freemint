@@ -31,14 +31,14 @@
 #include "global.h"
 #include "xa_types.h"
 
-void cXA_button_event(enum locks lock, struct c_event *ce);
-void cXA_deliver_button_event(enum locks lock, struct c_event *ce);
-void cXA_deliver_rect_event(enum locks lock, struct c_event *ce);
-void cXA_form_do(enum locks lock, struct c_event *ce);
-void cXA_open_menu(enum locks lock, struct c_event *ce);
-void cXA_menu_move(enum locks lock, struct c_event *ce);
-void cXA_do_widgets(enum locks lock, struct c_event *ce);
-void cXA_active_widget(enum locks lock, struct c_event *ce);
-void cXA_widget_click(enum locks lock, struct c_event *ce);
+void cXA_button_event(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_deliver_rect_event(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_form_do(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel);
 
 #endif /* _c_mouse_h */
