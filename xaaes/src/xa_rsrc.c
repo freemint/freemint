@@ -168,6 +168,8 @@ FixColourIconData(XA_CLIENT *client, CICONBLK *icon, long base)
 			c->col_data = transform_icon_bitmap(client, icon, c->col_data, len, c->num_planes);
 		if (c->sel_data)
 			c->sel_data = transform_icon_bitmap(client, icon, c->sel_data, len, c->num_planes);
+		/* set the new data plane count */
+		c->num_planes = screen.planes;
 	}
 	else
 	{
