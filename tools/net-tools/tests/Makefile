@@ -68,79 +68,60 @@ UDPSERVOBJS     = udpserv.o
 
 client: $(CLIENTOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 dgram: $(DGRAMOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 dgramd: $(DGRAMDOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 hostlookup: $(HOSTLOOKUPOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 oobcl: $(OOBCLOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 oobsv: $(OOBSVOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 pipes: $(PIPESOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 protolookup: $(PROTOLOOKUPOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 server: $(SERVEROBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 servlookup: $(SERVLOOKUPOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 sockname: $(SOCKNAMEOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 sockpair: $(SOCKPAIROBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 speed: $(SPEEDOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 speed2: $(SPEED2OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 speedd: $(SPEEDDOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 tcpcl: $(TCPCLOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 tcpsv: $(TCPSVOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 udpclnt: $(UDPCLNTOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 udpserv: $(UDPSERVOBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES

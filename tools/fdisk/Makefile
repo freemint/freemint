@@ -31,11 +31,9 @@ SFDISKOBJS = sfdisk.o
 
 fdisk: $(FDISKOBJS) $(LIBIOSTMP)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 sfdisk: $(SFDISKOBJS) $(LIBIOSTMP)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $^ $(LIBS)
-	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES
