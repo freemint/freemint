@@ -188,7 +188,7 @@ __BEGIN_DECLS
 #define EINSERT		__KERNEL_NEG(18)		/* Insert media.  */
 
 /* MetaDOS error (deprecated).  */
-#define EDRVNRSP	__KERNEL_NET(19)		/* Drive not responding.  */
+#define EDRVNRSP	__KERNEL_NEG(19)		/* Drive not responding.  */
 
 /* No process matches the specified process ID.
 
