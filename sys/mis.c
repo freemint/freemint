@@ -696,7 +696,7 @@ sh_ls(long argc, char **argv)
 		}
 	}
 
-	handle = d_opendir(dir, 0);
+	handle = sys_d_opendir(dir, 0);
 	if (handle < 0)
 		return handle;
 
@@ -711,7 +711,7 @@ sh_ls(long argc, char **argv)
 
 	do
 	{
-		r = d_readdir(SHELL_MAXFN, handle, entry);
+		r = sys_d_readdir(SHELL_MAXFN, handle, entry);
 
 		/* Display only names not starting with a dot, unless -a was specified */
 		if (r == 0 && (entry[sizeof(long)] != '.' || all))
@@ -721,12 +721,12 @@ sh_ls(long argc, char **argv)
 			strcat(path, entry + sizeof(long));
 
 			/* `/bin/ls -l' doesn't dereference links, so we don't either */
-			s = f_stat64(1, path, &st);
+			s = sys_f_stat64(1, path, &st);
 			if (s == 0)
 			{
 				if (S_ISLNK(st.mode))
 				{
-					s = f_readlink(SHELL_MAXPATH, link, path);
+					s = sys_f_readlink(SHELL_MAXPATH, link, path);
 					if (s == 0)
 						dos2unix(link);
 				}
@@ -816,7 +816,7 @@ sh_ls(long argc, char **argv)
 
 	m_free((long)path);
 
-	d_closedir(handle);
+	sys_d_closedir(handle);
 
 	return 0;
 }
@@ -847,7 +847,7 @@ sh_cd(long argc, char **argv)
 			newdir = "/";
 	}
 
-	r = d_setpath(newdir);
+	r = sys_d_setpath(newdir);
 
 	if (r == 0)
 	{
@@ -855,7 +855,7 @@ sh_cd(long argc, char **argv)
 		if (!cwd)
 			return ENOMEM;
 
-		d_getcwd(cwd, 0, SHELL_MAXPATH);
+		sys_d_getcwd(cwd, 0, SHELL_MAXPATH);
 
 		if (*cwd == 0)
 			strcpy(cwd, "/");
@@ -900,7 +900,7 @@ sh_chgrp(long argc, char **argv)
 
 	fname = argv[2];
 
-	r = f_stat64(0, fname, &st);
+	r = sys_f_stat64(0, fname, &st);
 	if (r < 0)
 		return r;
 
@@ -909,7 +909,7 @@ sh_chgrp(long argc, char **argv)
 	if (gid == st.gid)
 		return 0;			/* no change */
 
-	return f_chown(fname, st.uid, gid);
+	return sys_f_chown(fname, st.uid, gid);
 }
 
 static long
@@ -929,7 +929,7 @@ sh_chown(long argc, char **argv)
 	own = argv[1];
 	fname = argv[2];
 
-	r = f_stat64(0, fname, &st);
+	r = sys_f_stat64(0, fname, &st);
 	if (r < 0)
 		return r;
 
@@ -955,7 +955,7 @@ sh_chown(long argc, char **argv)
 	if (uid == st.uid && gid == st.gid)
 		return 0;			/* no change */
 
-	return f_chown(fname, uid, gid);
+	return sys_f_chown(fname, uid, gid);
 }
 
 static long
@@ -982,7 +982,7 @@ sh_chmod(long argc, char **argv)
 
 	d &= S_IALLUGO;
 
-	return f_chmod(argv[2], d);
+	return sys_f_chmod(argv[2], d);
 }
 
 static long
@@ -1035,11 +1035,11 @@ copy_from_to(short move, char *from, char *to)
 	long r, sfd, dfd, bufsize;
 	llong size;
 
-	r = f_stat64(0, from, &st);
+	r = sys_f_stat64(0, from, &st);
 	if (r < 0)
 		return r;
 
-	r = f_stat64(0, to, &tost);
+	r = sys_f_stat64(0, to, &tost);
 	if (r == 0)
 	{
 		if (st.ino == tost.ino)
@@ -1052,7 +1052,7 @@ copy_from_to(short move, char *from, char *to)
 
 	if (move)
 	{
-		r = f_rename(0, from, to);
+		r = sys_f_rename(0, from, to);
 		if (r != EXDEV)
 			return r;
 	}
@@ -1091,14 +1091,14 @@ copy_from_to(short move, char *from, char *to)
 
 		if (r >= 0)
 		{
-			f_chmod(to, st.mode & S_IALLUGO);
-			f_chown(to, st.uid, st.gid);
+			sys_f_chmod(to, st.mode & S_IALLUGO);
+			sys_f_chown(to, st.uid, st.gid);
 		}
 		else
-			f_delete(to);
+			sys_f_delete(to);
 
 		if (move)
-			f_delete(from);
+			sys_f_delete(from);
 
 	}
 	else
@@ -1128,7 +1128,7 @@ sh_cp(long argc, char **argv)
 	if (!path)
 		return ENOMEM;
 
-	r = f_stat64(0, argv[argc-1], &st);
+	r = sys_f_stat64(0, argv[argc-1], &st);
 
 	if (r < 0 || (r == 0 && !S_ISDIR(st.mode)))
 	{
@@ -1175,7 +1175,7 @@ sh_mv(long argc, char **argv)
 	if (!path)
 		return ENOMEM;
 
-	r = f_stat64(0, argv[argc-1], &st);
+	r = sys_f_stat64(0, argv[argc-1], &st);
 
 	if (r < 0 || (r == 0 && !S_ISDIR(st.mode)))
 	{
@@ -1236,7 +1236,7 @@ sh_rm(long argc, char **argv)
 
 	while (argv[x])
 	{
-		r = f_delete(argv[x++]);
+		r = sys_f_delete(argv[x++]);
 		if (!force && r < 0)
 			return r;
 	}
@@ -1259,7 +1259,7 @@ sh_ln(long argc, char **argv)
 	old = argv[1];
 	new = argv[2];
 
-	return f_symlink(old, new);
+	return sys_f_symlink(old, new);
 }
 
 static long
@@ -1354,7 +1354,7 @@ static const char *commands[] =
 {
 	/* First eight commands are always active */
 	"exit", "ver", "cd", "help", "xcmd", "setenv", "export", "echo", \
-	/* The rest is switchable by `xcmd on' of `off' */
+	/* The rest is switchable by `xcmd on' or `off' */
 	"ls", "cp", "mv", "rm", "ln", "chmod", "chown", "chgrp", NULL
 };
 
@@ -1453,7 +1453,7 @@ prompt(uchar *buffer, long buflen)
 
 	if (cwd)
 	{
-		d_getcwd(cwd, 0, SHELL_MAXPATH);
+		sys_d_getcwd(cwd, 0, SHELL_MAXPATH);
 
 		if (*cwd == 0)
 			strcpy(cwd, "/");
@@ -1498,7 +1498,7 @@ shell(void *arg)
 	xcmdstate();				/* print 'Extended commands are ...' */
 	shell_fprintf(stdout, MSG_shell_type_help);
 
-	d_setdrv('U' - 'A');
+	sys_d_setdrv('U' - 'A');
 	sh_cd(1, NULL);				/* this sets $HOME as current dir */
 
 	for (;;)

@@ -348,9 +348,9 @@ struct parser_item { char *key; PITYPE type; void *cb; long dat;
 	{ "ECHO",        PI_C_A,   pCB_echo           },
 	{ "EXEC",        PI_C_TA,  pCB_exec           },
 	{ "INCLUDE",     PI_C_T,   pCB_include        },
-	{ "REN",         PI_C_0TT, f_rename           },
+	{ "REN",         PI_C_0TT, sys_f_rename       },
 	{ "SETENV",      PI_C_TT,  pCB_setenv         },
-	{ "SLN",         PI_C_TT,  f_symlink          },
+	{ "SLN",         PI_C_TT,  sys_f_symlink      },
 	{ "AUX",         PI_V_T,   pCB_aux            },
 	{ "BIOSBUF",     PI_V_B,   pCB_biosbuf        },
 	{ "CACHE",       PI_V_L,   bio_set_cache_size },
@@ -464,9 +464,9 @@ static void
 pCB_cd (const char *path)
 {
 	int drv;
-	(void)d_setpath(path);
+	(void)sys_d_setpath(path);
 	drv = CHAR2DRV(*path);
-	if (path[1] == ':') (void)d_setdrv(drv);
+	if (path[1] == ':') (void)sys_d_setdrv(drv);
 }
 
 /*----------------------------------------------------------------------------*/
