@@ -11,7 +11,7 @@
 # include "mint/proc.h"
 
 
-extern MMAP core, alt, ker, swap;
+extern MMAP core, alt, swap;
 
 extern short forcefastload;
 extern ulong initialmem;
