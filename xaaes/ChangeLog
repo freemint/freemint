@@ -1,0 +1,14 @@
+2003/03/03 - Henk
+- xa_fsel.c: default action for fileselector added. Should fix the problem
+  with unclosable "Launch desktop" entry in XaAES system menu.
+- xa_scl.c: large cleanup! :)
+
+
+2003/02/03 - joy
+- XaAES 0.963 source code imported to CVS server
+- *.s (assembler) files renamed to *.S in the hope that GCC will eat
+  these files one day
+- all source and text files converted from CRLF to LF. Only PureC project
+  files (*.prj) stay in CRLF to not break the compilation
+- added history_[79].txt to CVS and renamed them to ChangeLog.{Craig|Henk}
+- created this new ChangeLog and a simple README file

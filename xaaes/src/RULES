@@ -1,0 +1,24 @@
+#
+# global definitions
+#
+include $(top_srcdir)/../../RULES
+
+#
+# private definitions
+#
+
+#
+# global CFLAGS and ASFLAGS
+#
+INCLUDES = -I$(top_srcdir)
+DEFINITIONS = 
+MODEL = -m68$(CPU)
+CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
+ASFLAGS = $(INCLUDES) $(DEFINITIONS) $(GENERAL) -m68030
+
+#
+# libkern target
+#
+LIBKERNTARGET = libkern$(CPU).a
+LIBKERNSTMP = $(top_srcdir)/../../sys/libkern/libkern$(CPU).a
+LIBKERN = -L$(top_srcdir)/../../sys/libkern -lkern$(CPU)

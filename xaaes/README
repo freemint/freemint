@@ -1,0 +1,19 @@
+This is XaAES - a multitasking AES written from scratch by Craig Graham
+and released under the GPL. Several other people contributed to this
+project since the 1995, most notably Henk Robbers who has been developing
+XaAES since 1999. You can find detailed info in the ChangeLogs.
+
+
+This version compile now with gcc. I have removed all unnecessary
+stuff especially from the header files. Uptodate AES/VDI bindings
+are in the gemlib library.
+
+Other important changes:
+- use nkcc routines from cflib (available for PureC/gcc)
+- use VDI bindings from current gemlib (available for PureC/gcc)
+- use libkern support library from FreeMiNT;
+  don't depend on any other library now
+- removed all unnnecessary assembler things
+
+Frank Naumann <fnaumann@freemint.de>
+2003-03-15
