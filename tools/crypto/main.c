@@ -45,15 +45,18 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	21
+# define VER_MINOR	22
 # define VER_STATUS	
 
 
 /*
  * config values
  */
-# define SAVEFILE	"crypto.sav"
-# define LOGFILE	"crypto.log"
+# define SAVEFILE_MASK	"drv_%c.sav"
+# define LOGFILE_MASK	"drv_%c.log"
+
+char SAVEFILE [128];
+char LOGFILE [128];
 
 
 /*
@@ -697,10 +700,12 @@ struct rescue
 {
 	int32_t		magic;		/* magic number */
 # define RESCUE_MAGIC	0x34c7868f
-	int32_t		ver;		/* 1 for now */
+	int32_t		ver;		/* 2 for now */
 	int32_t		this_size;	/* size of the struct */
 	time_t		time;
 	
+	int		action;		/* action */
+	int		cipher;		/* cipher algorithm */
 	int64_t		dev;
 	int32_t		p_secsize;
 	int32_t		p_start;
@@ -778,7 +783,7 @@ doit (const char *rescuefile)
 		
 		if (rescue.magic != RESCUE_MAGIC)
 			safe_exit ("not a rescue file, abort.\n");
-		if (rescue.ver != 1)
+		if (rescue.ver != 2)
 			safe_exit ("rescue file version not supported, abort.\n");
 		if (rescue.this_size != sizeof (rescue))
 			safe_exit ("rescue file corrupted, abort.\n");
@@ -817,7 +822,7 @@ doit (const char *rescuefile)
 		{
 			char c;
 			
-			printf ("Restart interrupted session from %s,", ctime (&rescue.time));
+			printf ("Restart interrupted session from %s", ctime (&rescue.time));
 			printf ("on %c: [%i], starting offset %qi.\n\n", 'A'+drv, drv, rescue.pos);
 			printf ("With a different passphrase you destroy your data!\n");
 			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
@@ -835,6 +840,8 @@ doit (const char *rescuefile)
 		if (ret < 0 || ret != rescue.size)
 			emergency_exit ("io_write failed, abort.\n");
 		
+		action = rescue.action;
+		cipher = rescue.cipher;
 		start_pos = rescue.pos;
 	}
 	
@@ -869,11 +876,14 @@ doit (const char *rescuefile)
 	
 	if (mode == ROBUST)
 	{
+		sprintf (SAVEFILE, SAVEFILE_MASK, 'a'+drv);
+		sprintf (LOGFILE, LOGFILE_MASK, 'a'+drv);
+		
 		/* open error recovery file */
 		ret = open (SAVEFILE, O_CREAT|O_WRONLY|O_TRUNC, 0600);
 		if (ret < 0)
 		{
-			perror ("open (\"" SAVEFILE "\")");
+			perror ("open (sav)");
 			safe_exit ("abort.\n");
 		}
 		
@@ -881,10 +891,12 @@ doit (const char *rescuefile)
 		
 		/* prepare rescue data */
 		rescue.magic = RESCUE_MAGIC;
-		rescue.ver = 1;
+		rescue.ver = 2;
 		rescue.this_size = sizeof (rescue);
 		rescue.time = time (NULL);
 		
+		rescue.action = action;
+		rescue.cipher = cipher;
 		rescue.dev = drv;
 		rescue.p_secsize = p_secsize;
 		rescue.p_start = p_start;
@@ -894,7 +906,7 @@ doit (const char *rescuefile)
 		log = fopen (LOGFILE, "w");
 		if (!log)
 		{
-			perror ("fopen (\"" LOGFILE "\")");
+			perror ("fopen (log)");
 			safe_exit ("abort.\n");
 		}
 		
@@ -974,7 +986,7 @@ doit (const char *rescuefile)
 		if (mode == ROBUST)
 		{
 			fputs ("\n", log);
-			fflush (log);
+			// fflush (log);
 		}
 		
 		todo -= left;
