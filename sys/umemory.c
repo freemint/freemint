@@ -41,6 +41,7 @@
 # include "mint/signal.h"
 
 # include "dosmem.h"
+# include "info.h"
 # include "memory.h"
 # include "signal.h"
 
@@ -175,7 +176,7 @@ umem_lookup(struct proc *p, MEMREGION *m, unsigned long size, void **result)
 
 	if (!umem_verify(m, descr))
 	{
-		ALERT("process corrupted it's memory, killing");
+		ALERT(MSG_umem_mem_corrupted);
 
 		ikill(p->pid, SIGKILL);
 		return 0;
@@ -287,7 +288,7 @@ _umalloc(unsigned long size, const char *func)
 
 			if (ptr)
 			{
-				DEBUG(("umalloc: allocated new region", i));
+				DEBUG(("umalloc: allocated new region %i", i));
 				return ptr;
 			}
 		}
@@ -317,7 +318,7 @@ _ufree(void *place, const char *func)
 		{
 			if (!umem_verify(m, descr))
 			{
-				ALERT("process corrupted it's memory");
+				ALERT(MSG_umem_mem_corrupted);
 
 				ikill(p->pid, SIGKILL);
 				return;

@@ -128,6 +128,7 @@ extern const char *MSG_cnf_must_be_a_bool;
 extern const char *MSG_cnf_missing_quotation;
 extern const char *MSG_cnf_junk;
 extern const char *MSG_cnf_unknown_tag;
+extern const char *MSG_cnf_cant_open;
 
 /* debug.c */
 extern const char *MSG_debug_syncing;
@@ -205,6 +206,7 @@ extern const char *MSG_init_error;
 extern const char *MSG_keytable_loading;
 extern const char *MSG_keytable_internal;
 extern const char *MSG_keytable_loaded;
+extern const char *MSG_keyboard_keytbl_ignored;
 # endif
 
 /* memory.c */
@@ -238,6 +240,9 @@ extern const char *MSG_shell_help;
 /* slb.c */
 extern const char *MSG_slb_couldnt_open;
 extern const char *MSG_slb_freeing_used;
+
+/* umemory.c */
+extern const char *MSG_umem_mem_corrupted;
 
 /* unicode.c */
 # ifdef SOFT_UNITABLE
