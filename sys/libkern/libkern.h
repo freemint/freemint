@@ -160,6 +160,7 @@ long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 # define strlwr			_mint_strlwr
 # define strupr			_mint_strupr
 # define strcat			_mint_strcat
+# define strchr			_mint_strchr
 # define strrchr		_mint_strrchr
 # define strrev			_mint_strrev
 # define strstr			_mint_strstr
