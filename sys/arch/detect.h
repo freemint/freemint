@@ -24,4 +24,8 @@ long detect_hardware (void);
 long detect_cpu (void);		/* in detect.spp */
 long detect_fpu (void);		/* ibidem */
 
+long _cdecl test_byte_rd(void *addr);
+long _cdecl test_word_rd(void *addr);
+long _cdecl test_long_rd(void *addr);
+
 # endif  /* _m68k_detect_h */
