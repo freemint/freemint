@@ -224,42 +224,73 @@ typedef struct cib {        /* Connection Information Block                 */
  *   Transport structure / functions
  */
 
+
+struct KRmalloc_param { int32 size; };
+struct KRfree_param { void *mem; };
+struct KRgetfree_param { int16 flag; };
+struct KRrealloc_param { void *mem; int32 newsize; };
+struct get_err_text_param { int16 code; };
+struct getvstr_param { char *var; };
+struct TCP_open_param { uint32 rhost; int16 rport; int16 tos; uint16 obsize; };
+struct TCP_close_param { int16 fd; int16 timeout; };
+struct TCP_send_param { int16 fd; void *buf; int16 len; };
+struct TCP_wait_state_param { int16 fd; int16 state; int16 timeout; };
+struct TCP_ack_wait_param { int16 fd; int16 timeout; };
+struct UDP_open_param { uint32 rhost; int16 rport; };
+struct UDP_close_param { int16 fd; };
+struct UDP_send_param { int16 fd; void *buf; int16 len; };
+struct CNkick_param { int16 fd; };
+struct CNbyte_count_param { int16 fd; };
+struct CNget_char_param { int16 fd; };
+struct CNget_NDB_param { int16 fd; };
+struct CNget_block_param { int16 fd; void *buf; int16 len; };
+struct resolve_param { char *dn; char **rdn; uint32 *alist; int16 lsize; };
+struct set_flag_param { int16 flag; };
+struct clear_flag_param { int16 flag; };
+struct CNgetinfo_param { int16 fd; };
+struct on_port_param { char *port; };
+struct off_port_param { char *port; };
+struct setvstr_param { char *vs; char *value; };
+struct query_port_param { char *port; };
+struct CNgets_param { int16 fd; char *buf; int16 len; char delim; };
+
+
 typedef  struct tpl  {
     char *     module;      /* Specific string that can be searched for     */
     char *     author;      /* Any string                                   */
     char *     version;     /* Format `00.00' Version:Revision              */
-    void *     cdecl  (* KRmalloc) (int32);
-    void       cdecl  (* KRfree) (void *);
-    int32      cdecl  (* KRgetfree) (int16);
-    void *     cdecl  (* KRrealloc) (void *, int32);
-    char *     cdecl  (* get_err_text) (int16);
-    char *     cdecl  (* getvstr) (char *);
+    void *     cdecl  (* KRmalloc) (struct KRmalloc_param p);
+    void       cdecl  (* KRfree) (struct KRfree_param p);
+    int32      cdecl  (* KRgetfree) (struct KRgetfree_param p);
+    void *     cdecl  (* KRrealloc) (struct KRrealloc_param p);
+    char *     cdecl  (* get_err_text) (struct get_err_text_param p);
+    char *     cdecl  (* getvstr) (struct getvstr_param p);
     int16      cdecl  (* carrier_detect) (void);
-    int16      cdecl  (* TCP_open) (uint32, int16, int16, uint16);
-    int16      cdecl  (* TCP_close) (int16, int16);
-    int16      cdecl  (* TCP_send) (int16, void *, int16);
-    int16      cdecl  (* TCP_wait_state) (int16, int16, int16);
-    int16      cdecl  (* TCP_ack_wait) (int16, int16);
-    int16      cdecl  (* UDP_open) (uint32, int16);
-    int16      cdecl  (* UDP_close) (int16);
-    int16      cdecl  (* UDP_send) (int16, void *, int16);
-    int16      cdecl  (* CNkick) (int16);
-    int16      cdecl  (* CNbyte_count) (int16);
-    int16      cdecl  (* CNget_char) (int16);
-    NDB *      cdecl  (* CNget_NDB) (int16);
-    int16      cdecl  (* CNget_block) (int16, void *, int16);
+    int16      cdecl  (* TCP_open) (struct TCP_open_param p);
+    int16      cdecl  (* TCP_close) (struct TCP_close_param p);
+    int16      cdecl  (* TCP_send) (struct TCP_send_param p);
+    int16      cdecl  (* TCP_wait_state) (struct TCP_wait_state_param p);
+    int16      cdecl  (* TCP_ack_wait) (struct TCP_ack_wait_param p);
+    int16      cdecl  (* UDP_open) (struct UDP_open_param p);
+    int16      cdecl  (* UDP_close) (struct UDP_close_param p);
+    int16      cdecl  (* UDP_send) (struct UDP_send_param p);
+    int16      cdecl  (* CNkick) (struct CNkick_param p);
+    int16      cdecl  (* CNbyte_count) (struct CNbyte_count_param p);
+    int16      cdecl  (* CNget_char) (struct CNget_char_param p);
+    NDB *      cdecl  (* CNget_NDB) (struct CNget_NDB_param p);
+    int16      cdecl  (* CNget_block) (struct CNget_block_param p);
     void       cdecl  (* housekeep) (void);
-    int16      cdecl  (* resolve) (char *, char **, uint32 *, int16);
+    int16      cdecl  (* resolve) (struct resolve_param p);
     void       cdecl  (* ser_disable) (void);
     void       cdecl  (* ser_enable) (void);
-    int16      cdecl  (* set_flag) (int16);
-    void       cdecl  (* clear_flag) (int16);
-    CIB *      cdecl  (* CNgetinfo) (int16);
-    int16      cdecl  (* on_port) (char *);
-    void       cdecl  (* off_port) (char *);
-    int16      cdecl  (* setvstr) (char *, char *);
-    int16      cdecl  (* query_port) (char *);
-    int16      cdecl  (* CNgets) (int16, char *, int16, char);
+    int16      cdecl  (* set_flag) (struct set_flag_param p);
+    void       cdecl  (* clear_flag) (struct clear_flag_param p);
+    CIB *      cdecl  (* CNgetinfo) (struct CNgetinfo_param p);
+    int16      cdecl  (* on_port) (struct on_port_param p);
+    void       cdecl  (* off_port) (struct off_port_param p);
+    int16      cdecl  (* setvstr) (struct setvstr_param p);
+    int16      cdecl  (* query_port) (struct query_port_param p);
+    int16      cdecl  (* CNgets) (struct CNgets_param p);
     int16      cdecl  (* ICMP_send) (uint32, uint8, uint8, void *, uint16);
     int16      cdecl  (* ICMP_handler) (int16 cdecl (*) (IP_DGRAM *), int16);
     void       cdecl  (* ICMP_discard) (IP_DGRAM *);
