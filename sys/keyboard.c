@@ -53,7 +53,6 @@
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_fds.h"		/* fp_alloc() */
 # include "keyboard.h"		/* struct cad */
-# include "kmemory.h"		/* kmalloc() */
 # include "memory.h"		/* get_region(), attach_region() */
 # include "proc.h"		/* rootproc */
 # include "random.h"		/* add_keyboard_randomness() */
@@ -486,13 +485,16 @@ key_done:
  * opened by load_keyboard_table() and its contents is loaded to the
  * memory by load_table(). This one also allocates the buffer long
  * enough to hold the entire table. If the file loaded doesn't look
- * like keyboard table, the buffer is released and the function fails.
+ * like a keyboard table, the buffer is released and the function fails.
+ *
  * In this case the vectors remain as they are after init_keybd().
+ *
  * Otherwise the load_table() changes the vectors to point to the newly
  * loaded table and exits with success. Next and last step is bioskeys()
  * which actually moves the contents of the keytable_vecs to the user
  * visible structure in the memory and fixes the value in the Cookie
  * Jar to reflect the current state.
+ *
  */
 
 /* The XBIOS' Bioskeys() function
@@ -527,51 +529,51 @@ bioskeys(void)
 	kbd_lock = 0;
 }
 
+/* Sanity checks are because we don't completely trust
+ * that the softloaded keyboard table is consistent.
+ */
+static uchar *
+tbl_scan_fwd(uchar *tmp)
+{
+	short sanity = 0;
+
+	while(*tmp)
+	{
+		sanity++;
+		if (sanity > 255)	/* One `alt' table can contain up to 128 key definitions */
+			return 0;
+		tmp++;
+	}
+	sanity = 0;
+
+	while(*tmp == 0)
+	{
+		sanity++;
+		if (sanity > 31)	/* Up to 32 zeros can follow */
+			return 0;
+		tmp++;
+	}
+
+	return tmp;
+}
+
 static short
 fill_keystruct(uchar *table)
 {
-	uchar *tmp = table + 384;
 	uchar *unshift, *shift, *caps, *alt, *altshift, *altcaps;
-	short sanity = 1;
 
 	unshift = table;
 	shift = table + 128;
 	caps = table + 256;
-	alt = tmp;
+	alt = table + 384;
 
-	/* Sanity checks are because we don't completely trust
-	 * that the softloaded keyboard table is consistent.
-	 */
-	while((sanity != 0) && (*tmp != 0))
-	{
-		sanity++;
-		tmp++;
-	}
-	if (!sanity) return 0;
-	sanity = 1;
-	while((sanity != 0) && (*tmp == 0))
-	{
-		sanity++;
-		tmp++;
-	}
-	if (!sanity) return 0;
-	altshift = tmp;
+	altshift = tbl_scan_fwd(alt);
+	if (!altshift)
+		return 0;
 
-	sanity = 1;
-	while((sanity != 0) && (*tmp != 0))
-	{
-		sanity++;
-		tmp++;
-	}
-	if (!sanity) return 0;
-	sanity = 1;
-	while((sanity != 0) && (*tmp == 0))
-	{
-		sanity++;
-		tmp++;
-	}
-	if (!sanity) return 0;
-	altcaps = tmp;
+	altcaps = tbl_scan_fwd(altshift);
+	if (!altcaps)
+		return 0;
 
 	keytable_vecs.unshift = unshift;
 	keytable_vecs.shift = shift;
@@ -583,30 +585,18 @@ fill_keystruct(uchar *table)
 	return 1;	/* OK */
 }
 
-static void
+static long
 load_table(FILEPTR *fp, char *name, long size)
 {
 	char *kbuf;
 	short ret = 0;
-	char msg[64];
 	MEMREGION *key_reg;
-
-	/* Special case: `load' the internal table */
-	if (!fp && !name && !size)
-	{
-		key_region = get_region(core, 387L, PROT_PR);
-		kbuf = (char *)attach_region(rootproc, key_region);
-		quickmove(kbuf, usa_kbd, 387L);
-		fill_keystruct((uchar *)kbuf);
-
-		return;
-	}
 
 	/* This is 128+128+128 for unshifted, shifted and caps
 	 * tables respectively; plus 3 bytes for three alt ones,
 	 * plus two bytes magic header, gives 389 bytes minimum.
 	 */
-	if (size < 389L) return;
+	if (size < 389L) return -1;
 
 	/* Crap, the keyboard table must be globally readable :/ */
 	key_reg = get_region(core, size, PROT_PR);
@@ -643,10 +633,9 @@ load_table(FILEPTR *fp, char *name, long size)
 
 	if (!ret)
 	{
-		c_conws(MSG_keytable_faulty);
 		detach_region(rootproc, key_reg);
 		free_region(key_reg);
-		return;
+		return -2;
 	}
 
 	/* Success */
@@ -657,40 +646,57 @@ load_table(FILEPTR *fp, char *name, long size)
 	}
 	key_region = key_reg;
 
-	ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
-	c_conws(msg);
+	return 0;
 }
 
-void
-load_keyboard_table(char *filename)
+/* If `flag' is 0, a failure to load new table causes the
+ * internal one to be initialized instead.
+ */
+long
+load_keyboard_table(char *name, short flag)
 {
 	XATTR xattr;
 	FILEPTR *fp;
-	long ret;
-	char name[32];		/* satis uidetur */
+	long ret, r = -1;
 
 	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
-
-	/* `keybd.tbl' is already used by gem.sys, we can't conflict
-	 */
-	strcpy(name, sysdir);
-	strcat(name, filename);
+	if (ret) return -1;
 
 	if (!do_open(&fp, name, O_RDONLY, 0, &xattr))
 	{
-		load_table(fp, name, xattr.size);
+		r = load_table(fp, name, xattr.size);
 		do_close(rootproc, fp);
 	}
 	else
 	{
 		fp->links = 0;		/* suppress complaints */
 		FP_FREE(fp);
-		load_table(0, 0, 0);
+
+		/* Special case: `load' the internal table */
+		if (!flag)
+		{
+			char *kbuf;
+
+			if (key_region)
+			{
+				detach_region(rootproc, key_region);
+				free_region(key_region);
+			}
+
+			key_region = get_region(core, 387L, PROT_PR);
+			kbuf = (char *)attach_region(rootproc, key_region);
+			quickmove(kbuf, usa_kbd, 387L);
+			fill_keystruct((uchar *)kbuf);
+
+			r = 0;
+		}
 	}
 
 	/* Install the tables in the system */
-	bioskeys();
+	if (!r)
+		bioskeys();
+
+	return r;
 }
 
 /* This is called from init.c at startup
@@ -698,7 +704,23 @@ load_keyboard_table(char *filename)
 void
 load_keytbl(void)
 {
-	load_keyboard_table("keyboard.tbl");
+	long r;
+	char name[32], msg[64];		/* satis uidetur */
+
+	/* `keybd.tbl' is already used by gem.sys, we can't conflict
+	 */
+	strcpy(name, sysdir);
+	strcat(name, "keyboard.tbl");
+
+	r = load_keyboard_table(name, 0);
+
+	if (r == 0)
+	{
+		ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
+		c_conws(msg);
+	}
+	else
+		c_conws(MSG_keytable_faulty);
 }
 
 /* Initialize the built-in keyboard tables.
