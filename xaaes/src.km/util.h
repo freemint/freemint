@@ -34,8 +34,6 @@ int drive_and_path(char *fname, char *path, char *name, bool n, bool set);
 
 void strnupr(char *s, int n);
 
-#if VECTOR_VALIDATION
 bool xa_invalid(int which, int pid, void *addr, long size, bool allownil);
-#endif
 
 #endif /* _util_h */

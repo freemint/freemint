@@ -1,7 +1,6 @@
 #
-# Makefile for 
+# Makefile for XaAES
 #
-TARGET = xaaes.km
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -10,34 +9,72 @@ srcdir = .
 top_srcdir = .
 subdir = src.km
 
-default: all
+default: help
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: $(TARGET) load.prg
+all-here: all-targets load.prg
 
 # default overwrites
-INCLUDES += -I../../sys
-DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=XaAES $(XAAESDEFAULTDEFS)
-OPTS = 
-
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = -lgem16 $(LIBKERN) -lgcc
-CPU = 000
-STRIPFLAGS = 
 
 # default definitions
-SGENFILES = $(TARGET) test.km load.prg
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
+compile_all_dirs = .compile_*
+GENFILES = $(compile_all_dirs) *.km load.prg
 
 
-$(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+help:
+	@echo '#'
+	@echo '# targets:'
+	@echo '# --------'
+	@echo '# - all'
+	@echo '# - $(xaaestargets)'
+	@echo '#'
+	@echo '# - clean'
+	@echo '# - distclean'
+	@echo '# - help'
+	@echo '#'
+
+all-targets:
+	@set fnord $(MAKEFLAGS); amf=$$2; \
+	for i in $(xaaestargets); do \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
+		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
+	done && test -z "$$fail"
+
+$(xaaestargets):
+	$(MAKE) buildxaaes xaaes=$@
 
 load.prg: load.c
 	$(CC) -o $@ -Wall $<
+
+
+#
+# multi target stuff
+#
+
+ifneq ($(xaaes),)
+
+compile_dir = .compile_$(xaaes)
+xaaestarget = _stmp_$(xaaes)
+realtarget = $(xaaestarget)
+
+$(xaaestarget): $(compile_dir)
+	cd $(compile_dir); $(MAKE) all
+
+$(compile_dir): Makefile.objs
+	$(MKDIR) -p $@
+	$(CP) $< $@/Makefile
+
+else
+
+realtarget =
+
+endif
+
+buildxaaes: $(realtarget)
 
 
 include $(top_srcdir)/DEPENDENCIES
