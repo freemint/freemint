@@ -33,15 +33,18 @@ struct xa_client;
 
 struct xa_client *update_locked(void);
 struct xa_client *mouse_locked(void);
+struct xa_client *menustruct_locked(void);
 
 void free_update_lock(void);
 void free_mouse_lock(void);
+void free_menustruct_lock(void);
 
 bool   lock_screen(struct xa_client *client, bool try, short *r, int which);
 bool unlock_screen(struct xa_client *client, int which);
 bool   lock_mouse(struct xa_client *client, bool try, short *r, int which);
 bool unlock_mouse(struct xa_client *client, int which);
-
+bool   lock_menustruct(struct xa_client *client, bool try);
+bool unlock_menustruct(struct xa_client *client);
 
 /*-----------------------------------------------------------------
  * Lock control

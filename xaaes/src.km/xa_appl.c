@@ -426,7 +426,16 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		if (client->std_menu.tree)
 		{
 			if (client->std_menu.tree == menu_bar->tree)
-				*menu_bar = C.Aes->std_menu;
+			{
+				if (menustruct_locked() == client)
+				{
+					C.menu_base = NULL;
+					*menu_bar = C.Aes->std_menu;
+					free_menustruct_lock();
+				}
+				else
+					*menu_bar = C.Aes->std_menu;
+			}
 		}
 
 		client->std_menu.tree = NULL;

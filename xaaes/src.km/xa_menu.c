@@ -143,6 +143,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	switch (pb->intin[0])
 	{
 	case MENU_INSTALL:
+	{
 		DIAG((D_menu,NULL,"MENU_INSTALL"));
 
 		if (mnu)
@@ -171,8 +172,9 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_menu, NULL, "done display, lastob = %d", menu->lastob));
 		}
 		break;
-
+	}
 	case MENU_REMOVE:
+	{
 		DIAG((D_menu,NULL,"MENU_REMOVE"));
 		remove_attachments(lock|winlist, client, menu->tree);
 		menu->tree = NULL;
@@ -192,11 +194,13 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 		swap_menu(lock|winlist, top_owner, false, 7);
 		pb->intout[0] = 1;
 		break;
-		
+	}
 	case MENU_INQUIRE:
+	{
 		DIAG((D_menu, NULL, "MENU_INQUIRE := %d", menu_bar->owner->p->pid));
 		pb->intout[0] = menu_bar->owner->p->pid;
 		break;
+	}
 	}
 
 	DIAG((D_menu,NULL,"done menu_bar()"));
