@@ -349,6 +349,11 @@ const char *MSG_couldnt_run_init = "Couldn't run `%s', error %ld!\r\n";
 const char *MSG_keytable_loaded = "Loaded keyboard table for AKP code %d\r\n";
 const char *MSG_keytable_faulty = "Keyboard table is BAD!\r\n";
 
+/* ------------ mis.c ------------- */
+
+const char *MSG_shell_name = "MiS v.%d.%d, the FreeMiNT internal shell,\r\n%s";
+const char *MSG_shell_missing_arg = "missing argument: ";
+
 /* ------------ slb.c ------------- */
 
 /* ALERTs */

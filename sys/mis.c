@@ -74,16 +74,17 @@
 # define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
 # define SHELL_UMASK	~(S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
-# define SH_VER_MAIOR	0
-# define SH_VER_MINOR	1
+# define SH_VER_MAIOR	1
+# define SH_VER_MINOR	0
 
-# define COPYCOPY	"MiS v.%d.%d, the FreeMiNT internal shell,\r\n" \
-			"(c) 2003 by Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
+# define COPYCOPY	"(c) 2003 Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
 
-# define MISSING_ARG	"missing argument: "
+# define MISSING_ARG	MSG_shell_missing_arg
 
-# define SHELL_STACK	32768L		/* maximum usage is so far about a half ot this */
 # define SHELL_ARGS	1024L		/* number of pointers in the argument vector table (i.e. 4K) */
+# define SHELL_MAXPATH	1024L		/* max length of a pathname */
+/* maximum usage is so far about a half ot this */
+# define SHELL_STACK	((SHELL_ARGS * sizeof(long)) + (SHELL_MAXPATH * 3 * sizeof(long)) + 16384L)	/* 32768 */
 
 /* this is an average number of seconds in Gregorian year
  * (365 days, 6 hours, 11 minutes, 15 seconds).
@@ -139,54 +140,14 @@ dos2unix(char *pathname)
 
 	if (p[1] == ':')
 	{
-		p[1] = p[0];
-		p[0] = '/';
-	}
-}
-
-/* Helpers for ls:
- * justify_left() - just pads the text with spaces upto given lenght
- * justify_right() - shifts the text right adding spaces on the left
- *		until the given length is reached.
- */
-static char *
-justify_left(char *p, long spaces)
-{
-	long s = (spaces - strlen(p));
-
-	while (*p && !isspace(*p))
-		p++;
-
-	while (s)
-	{
-		*p++ = ' ';
-		s--;
-	}
-
-	return p;
-}
-
-static char *
-justify_right(char *p, long spaces)
-{
-	long plen, s;
-	char temp[32];
-
-	plen = strlen(p);
-	s = (spaces - plen);
-
-	if (s > 0)
-	{
-		strcpy(temp, p);
-		while (s)
+		if (toupper(p[0]) == 'U')
+			strcpy(p, p + 2);
+		else
 		{
-			*p++ = ' ';
-			s--;
+			p[1] = p[0];
+			p[0] = '/';
 		}
-		strcpy(p, temp);
 	}
-
-	return (p + plen);
 }
 
 /* Helper routines for manipulating environment */
@@ -220,9 +181,8 @@ env_append(char *where, char *what)
 {
 	strcpy(where, what);
 	where += strlen(where);
-	*where++ = 0;
 
-	return where;
+	return ++where;
 }
 
 static char *
@@ -252,10 +212,7 @@ shell_getenv(const char *var)
 static void
 shell_delenv(const char *strng)
 {
-	char *name, *var, *env_str = shell_base->p_env;
-
-	if (!env_str)
-		return;
+	char *name, *var;
 
 	/* find the tag in the environment */
 	var = shell_getenv(strng);
@@ -263,13 +220,13 @@ shell_delenv(const char *strng)
 	if (!var)
 		return;
 
-	var -= strlen(strng);
-	var--;
-
 	/* if it's found, move all the other environment variables down by 1 to
    	 * delete it
          */
-	name = var + strlen(var) + 1;
+	var -= strlen(strng);
+	name = var + strlen(var);
+
+	var--;
 
 	do
 	{
@@ -441,14 +398,14 @@ execvp(char *oldcmd, char **argv)
 	 */
 	t = strrchr(argv[0], '/');
 
+	path = "";
+
 	if (t == NULL)
 	{
 		path = shell_getenv("PATH");
 		if (path == NULL)
 			path = "./";
 	}
-	else
-		path = "";
 
 	do
 	{
@@ -502,7 +459,7 @@ env(void)
 static long
 sh_ver(long argc, char **argv)
 {
-	shell_fprintf(STDOUT, COPYCOPY, SH_VER_MAIOR, SH_VER_MINOR);
+	shell_fprintf(STDOUT, MSG_shell_name, SH_VER_MAIOR, SH_VER_MINOR, COPYCOPY);
 
 	return 0;
 }
@@ -555,7 +512,7 @@ sh_ls(long argc, char **argv)
 	struct timeval tv;
 	short year, month, day, hour, minute;
 	long r, s, handle;
-	char *p, *dir, path[1024], link[1024];
+	char *dir, path[SHELL_MAXPATH], link[SHELL_MAXPATH];
 	char entry[256];
 
 	dir = ".";
@@ -600,79 +557,56 @@ sh_ls(long argc, char **argv)
 						dos2unix(link);
 				}
 
-				/* Reuse the path[] space */
-				p = path;
-
-				if (S_ISLNK(st.mode))		/* file type */
-					*p++ = 'l';
-				else if (S_ISMEM(st.mode))
-					*p++ = 'm';
-				else if (S_ISFIFO(st.mode))
-					*p++ = 'p';
-				else if (S_ISREG(st.mode))
-					*p++ = '-';
-				else if (S_ISBLK(st.mode))
-					*p++ = 'b';
-				else if (S_ISDIR(st.mode))
-					*p++ = 'd';
-				else if (S_ISCHR(st.mode))
-					*p++ = 'c';
-				else if (S_ISSOCK(st.mode))
-					*p++ = 's';
-				else
-					*p++ = '?';
-
-				/* access attibutes: user */
-				*p++ = (st.mode & S_IRUSR) ? 'r' : '-';
-				*p++ = (st.mode & S_IWUSR) ? 'w' : '-';
-				if (st.mode & S_IXUSR)
-					*p++ = (st.mode & S_ISUID) ? 's' : 'x';
-				else
-					*p++ = '-';
-
-				/* ... group */
-				*p++ = (st.mode & S_IRGRP) ? 'r' : '-';
-				*p++ = (st.mode & S_IWGRP) ? 'w' : '-';
-				if (st.mode & S_IXGRP)
-					*p++ = (st.mode & S_ISGID) ? 's' : 'x';
-				else
-					*p++ = '-';
-
-				/* ... others */
-				*p++ = (st.mode & S_IROTH) ? 'r' : '-';
-				*p++ = (st.mode & S_IWOTH) ? 'w' : '-';
-				if (st.mode & S_IXOTH)
-					*p++ = (st.mode & S_ISVTX) ? 't' : 'x';
-				else
-					*p++ = '-';
-
-				*p++ = ' ';
-
-				/* Unfortunately ksprintf() lacks many formatting features ...
-				 */
-				ksprintf(p, sizeof(path), "%d", (short)st.nlink);	/* XXX */
-				p = justify_right(p, 5);
-				*p++ = ' ';
-
-				ksprintf(p, sizeof(path), "%ld", st.uid);
-				p = justify_left(p, 9);
-
-				ksprintf(p, sizeof(path), "%ld", st.gid);
-				p = justify_left(p, 9);
-
-				/* XXX this will cause problems, if st.size > 2GB */
-				ksprintf(p, sizeof(path), "%ld", (long)st.size);
-				p = justify_right(p, 8);
-				*p++ = ' ';
-
-				/* And now recalculate the time stamp */
+				/* Now recalculate the time stamp */
 				unix2calendar(st.mtime.time, &year, &month, &day, &hour, &minute, NULL);
 
-				ksprintf(p, sizeof(path), "%s", months_abbr_3[month - 1]);
-				p = justify_left(p, 4);
+				/* Reuse the path[] space for attributes */
+				strcpy(path, "?---------");
 
-				ksprintf(p, sizeof(path), "%d", day);
-				p = justify_left(p, 3);
+				if (S_ISLNK(st.mode))		/* file type */
+					path[0] = 'l';
+				else if (S_ISMEM(st.mode))
+					path[0] = 'm';
+				else if (S_ISFIFO(st.mode))
+					path[0] = 'p';
+				else if (S_ISREG(st.mode))
+					path[0] = '-';
+				else if (S_ISBLK(st.mode))
+					path[0] = 'b';
+				else if (S_ISDIR(st.mode))
+					path[0] = 'd';
+				else if (S_ISCHR(st.mode))
+					path[0] = 'c';
+				else if (S_ISSOCK(st.mode))
+					path[0] = 's';
+
+				/* access attibutes: user */
+				if (st.mode & S_IRUSR)
+					path[1] = 'r';
+				if (st.mode & S_IWUSR)
+					path[2] = 'w';
+				if (st.mode & S_IXUSR)
+					path[3] = (st.mode & S_ISUID) ? 's' : 'x';
+
+				/* ... group */
+				if (st.mode & S_IRGRP)
+					path[4] = 'r';
+				if (st.mode & S_IWGRP)
+					path[5] = 'w';
+				if (st.mode & S_IXGRP)
+					path[6] = (st.mode & S_ISGID) ? 's' : 'x';
+
+				/* ... others */
+				if (st.mode & S_IROTH)
+					path[7] = 'r';
+				if (st.mode & S_IWOTH)
+					path[8] = 'w';
+				if (st.mode & S_IXOTH)
+					path[9] = (st.mode & S_ISVTX) ? 't' : 'x';
+
+				shell_fprintf(STDOUT, "%s %5d %8ld %8ld %8ld %s %2d ", \
+						path, (short)st.nlink, st.uid, st.gid, \
+						(long)st.size, months_abbr_3[month - 1], day);
 
 				/* Here we decide whether the timestamp displayed should
 				 * contain the year or the hour/minute of the modification.
@@ -687,15 +621,11 @@ sh_ls(long argc, char **argv)
 				 * unix2calendar again).
 				 */
 				if ((tv.tv_sec - st.mtime.time) > (SEC_OF_YEAR >> 1))
-					ksprintf(p, sizeof(path), "%d", year);
+					shell_fprintf(STDOUT, "%5d", year);
 				else
-					ksprintf(p, sizeof(path), (minute > 9) ? "%d:%d" : "%d:0%d", hour, minute);
+					shell_fprintf(STDOUT, "%02d:%02d", hour, minute);
 
-				p = justify_right(p, 5);
-
-				*p = 0;
-
-				shell_fprintf(STDOUT, "%s %s", path, entry + sizeof(long));
+				shell_fprintf(STDOUT, " %s", entry + sizeof(long));
 
 				if (S_ISLNK(st.mode) && s == 0)
 					shell_fprintf(STDOUT, " -> %s\r\n", link);
@@ -719,7 +649,7 @@ static long
 sh_cd(long argc, char **argv)
 {
 	long r;
-	char *newdir, *pwd, cwd[1024];
+	char *newdir, *pwd, cwd[SHELL_MAXPATH];
 
 	if (argc >= 2)
 	{
@@ -994,10 +924,10 @@ sh_export(long argc, char **argv)
 static long
 sh_echo(long argc, char **argv)
 {
-	short x = 1;
+	short x = 0;
 
 	while (--argc)
-		shell_fprintf(STDOUT, "%s ", argv[x++]);
+		shell_fprintf(STDOUT, "%s ", argv[++x]);
 
 	shell_fprintf(STDOUT, "\r\n");
 
@@ -1016,7 +946,6 @@ static FUNC *cmd_routs[] =
 	sh_ls, sh_cp, sh_mv, sh_rm, sh_ln, sh_chmod, sh_chown, sh_chgrp
 };
 
-/* Add export/setenv */
 static const char *commands[] =
 {
 	"exit", "ver", "cd", "help", "xcmd", "setenv", "export", "echo", \
@@ -1137,8 +1066,7 @@ shell(void)
 	{
 		s = Pvfork();
 
-		/* Child here */
-		if (s == 0)
+		if (s == 0)	/* Child here */
 		{
 			for (;;)
 			{
@@ -1151,9 +1079,7 @@ shell(void)
 			}
 		}
 		else		/* Parent here */
-		{
 			(void)Pwaitpid(s, 0, NULL);	/* this is to avoid zombies */
-		}
 	}
 }
 
