@@ -31,10 +31,13 @@
 
 /* Version numbers */
 #define VER_MAJOR	0
-#define VER_MINOR	993
+#define VER_MINOR	994
 #define ARCH_TARGET	AES_ARCH_M68K
 /*#define DEV_STATUS	(AES_DEVSTATUS_ALPHA|AES_FDEVSTATUS_STABLE)*/
-#define DEV_STATUS	AES_DEVSTATUS_ALPHA
+#define DEV_STATUS	AES_DEVSTATUS_BETA
+
+/* This is only used in wind_get(WF_XAAES) which will be removed */
+#define HEX_VERSION	0x0994
 
 #define SHORT_NAME		"XaAES"
 #define AES_ID		"   " SHORT_NAME
@@ -76,10 +79,5 @@
 #define BDATE		__DATE__
 #define BTIME		__TIME__
 #define BCOMPILER	"gcc 2.95.3"
-
-/*
- * This is only use for wind_get(WF_XAAES) which will be removed
- */
-#define HEX_VERSION	0x0993
 
 #endif /* _xaaes_version_h */
