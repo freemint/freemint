@@ -1,0 +1,10 @@
+These are the results of the vttest program (Dickey version 2.7  from 
+2 Aug 2000) on Toswin in tw100 emulation:
+
+Test Of Cursor Movements
+========================
+
+[ ] DECALN in 80 column mode
+[ ] DECALN in 132 column mode
+[ ] Cursor control characters in ESC sequences
+[x] Test of leading zeros in ESC sequences
