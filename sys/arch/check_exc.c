@@ -41,28 +41,10 @@
 
 # include <global.h>		/* mcpu */
 
-# ifdef SUPER_TESTING
-short safe_super = 0;
-# endif
-
-struct stackframe
-{
-	ulong data_reg[8];	/* it would be better to define a data register as union */
-	ulong addr_reg[7];
-	ushort sr;
-	ushort *pc;
-	ushort format_word;
-	void *address;
-};
-
-struct access
-{
-	long address;
-	long size;
-};
+# include "check_exc.h"
 
 /* Tables that provide information about addresses the user is allowed
- * to access. Size = 0 signalizes the end of the table.
+ * to access. Size == 0 signalizes the end of the table.
  */
 static struct access allow_read[] =
 {
@@ -77,10 +59,71 @@ static struct access allow_write[] =
 	{ 0L, 0L }
 };
 
-long check_bus(struct stackframe frame);
-long check_priv(struct stackframe frame);
 
-/* Returns:
+static long
+handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
+{
+	return 0;
+}
+
+static long
+handle_68030_long_frame(MC68030_LONG_FRAME *frame)
+{
+	return 0;
+}
+
+static long
+handle_68040_frame(MC68040_BUS_FRAME *frame)
+{
+	return 0;
+}
+
+static long
+handle_68060_frame(MC68060_BUS_FRAME *frame)
+{
+	return 0;
+}
+
+/* We use the frame_zero type initially
+ * to get access to the frame format word.
+ */
+long
+check_bus(struct frame_zero frame)
+{
+	/* All this below only applies, when the program
+	 * has called Super() or Supexec() and thinks that
+	 * it is executing in supervisor mode.
+	 */
+	if ((curproc->p_flag & P_FLAG_SUPER) == 0)
+		return 0;
+
+	if ((mcpu == 20) || (mcpu == 30))
+	{
+		if ((frame.format_word & 0xf000) == 0xa000)
+			return handle_68030_short_frame((MC68030_SHORT_FRAME *)&frame);
+		else if ((frame.format_word & 0xf000) == 0xb000)
+			return handle_68030_long_frame((MC68030_LONG_FRAME *)&frame);
+	}
+	else if (mcpu == 40)
+	{
+		if ((frame.format_word & 0xf000) == 0x7000)
+			return handle_68040_frame((MC68040_BUS_FRAME *)&frame);
+	}
+	else if (mcpu == 60)
+	{
+		if ((frame.format_word & 0xf000) == 0x4000)
+			return handle_68060_frame((MC68060_BUS_FRAME *)&frame);
+	}
+
+	/* For all unknown processors and stack frame formats
+	 * we let it go.
+	 */
+	return 0;
+}
+
+/* Our extended privilege violation handler.
+ *
+ * Returns:
  *
  *  0 - handle the exception normally
  * -1 - reload everything and RTE
@@ -89,8 +132,16 @@ long check_priv(struct stackframe frame);
  * reload registers and cause the execution to continue.
  */
 
+# define ANDI_TO_SR	0x027c
+# define EORI_TO_SR	0x0a7c
+# define ORI_TO_SR	0x007c
+
+# define MOVE_FROM_SR	0x40c0
+# define MOVE_TO_SR	0x46c0
+# define MODE_REG_MASK	0xffc0
+
 long
-check_priv(struct stackframe frame)
+check_priv(struct privilege_violation_stackframe frame)
 {
 	ushort opcode;
 
@@ -101,7 +152,7 @@ check_priv(struct stackframe frame)
 	 * Thus many programs (even Thing Desktop) execute it in
 	 * user mode, if they need an access to the condition codes.
 	 */
-	if ((opcode & 0xffc0) == 0x40c0)	/* MOVE from SR */
+	if ((opcode & MODE_REG_MASK) == MOVE_FROM_SR)
 	{
 		ushort mode, reg;
 
@@ -120,7 +171,7 @@ check_priv(struct stackframe frame)
 				temp &= 0xffff0000L;
 				temp |= (frame.sr & 0x20ff);
 				frame.data_reg[reg] = temp;
-				frame.pc += 1;
+				frame.pc++;
 
 				return -1;	/* reload registers and do RTE */
 			}
@@ -129,21 +180,21 @@ check_priv(struct stackframe frame)
 			 * We simply ignore them, because an attempt to fully
 			 * emulate it would be both slow and dangerous.
 			 *
-			 * Programs should not use te instruction, so we are
+			 * Programs should not use the instruction, so we are
 			 * doing them a favour anyways, if we silently tolerate
 			 * the offension.
 			 */
 			case 0x2:		/* MOVE SR,(An) */
 			{
-				frame.pc += 1;
+				frame.pc++;
 
 				return -1;	/* reload registers and do RTE */
 			}
 
-			case 0x3:		/* MOVE SR,(An+) */
+			case 0x3:		/* MOVE SR,(An)+ */
 			{
 				frame.addr_reg[reg] += sizeof(short);
-				frame.pc += 1;
+				frame.pc++;
 
 				return -1;	/* reload registers and do RTE */
 			}
@@ -151,7 +202,7 @@ check_priv(struct stackframe frame)
 			case 0x4:		/* MOVE SR,-(An) */
 			{
 				frame.addr_reg[reg] -= sizeof(short);
-				frame.pc += 1;
+				frame.pc++;
 
 				return -1;	/* reload registers and do RTE */
 			}
@@ -185,6 +236,68 @@ check_priv(struct stackframe frame)
 				return 0;
 			}
 		}
+	}
+
+	/* We mimic the original behaviour: some instructions are only
+	 * available after Super(), so we must now emulate them, when
+	 * letting programs continue in user mode after Super().
+	 */
+	if ((curproc->p_flag & P_FLAG_SUPER) == 0)
+		return 0;
+
+	/* andi.w #xxxx,SR: we generally do andi.w #xxxx,CCR instead
+	 */
+	if (opcode == ANDI_TO_SR)
+	{
+		ushort imm;
+
+		imm = frame.pc[1];
+		/* This can switch the CPU back to user mode, it is now
+		 * safe to do that, so we emulate it as well.
+		 */
+		if ((imm & 0x2000) == 0)
+			curproc->p_flag &= ~P_FLAG_SUPER;
+		imm |= 0xffe0;
+		frame.sr &= imm;
+
+		frame.pc += 2;
+
+		return -1;		/* reload everything and RTE */
+	}
+
+	/* eori.w #xxxx,SR: we generally do eori.w #xxxx,CCR instead
+	 */
+	if (opcode == EORI_TO_SR)
+	{
+		ushort imm;
+
+		imm = frame.pc[1];
+		/* This can switch the CPU back to user mode, it is now
+		 * safe to do that, so we emulate it as well.
+		 */
+		if (imm & 0x2000)
+			curproc->p_flag &= ~P_FLAG_SUPER;
+		imm &= 0x001f;
+		frame.sr ^= imm;
+
+		frame.pc += 2;
+
+		return -1;		/* reload everything and RTE */
+	}
+
+	/* ori.w #xxxx,SR: we generally do ori.w #xxxx,CCR instead
+	 */
+	if (opcode == ORI_TO_SR)
+	{
+		ushort imm;
+
+		imm = frame.pc[1];
+		imm &= 0x001f;
+		frame.sr |= imm;
+
+		frame.pc += 2;
+
+		return -1;		/* reload everything and RTE */
 	}
 
 	return 0;
