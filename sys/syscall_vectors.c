@@ -501,27 +501,20 @@ Func dos_tab [DOS_MAX] =
 	/* 0x16e */	(Func)	sys_shutdown,	/* 1.16 */
 	/* 0x16f */		enosys,		/* reserved */
 	
-# if 0
-	/* 0x170 */		sys_shmget,
-	/* 0x171 */		sys_shmctl,
-	/* 0x172 */	(Func)	sys_shmat,
-	/* 0x173 */		sys_shmdt,
-# else
-	/* 0x170 */		enosys,
-	/* 0x171 */		enosys,
-	/* 0x172 */		enosys,
-	/* 0x173 */		enosys,
-# endif
-	/* 0x174 */		enosys,		/* sys_semgt */
-	/* 0x175 */		enosys,		/* sys_semctl */
-	/* 0x176 */		enosys,		/* sys_semop */
-	/* 0x177 */		enosys,		/* sys_semconfig */
-	/* 0x178 */		enosys,		/* sys_msgget */
-	/* 0x179 */		enosys,		/* sys_msgcntl */
-	/* 0x17a */		enosys,		/* sys_msgsnd */
-	/* 0x17b */		enosys,		/* sys_resmsgrcverved */
-	/* 0x17c */		enosys,		/* sys_reserved */
-	/* 0x17d */		enosys,		/* sys_reserved */
+	/* 0x170 */		sys_p_shmget,
+	/* 0x171 */		sys_p_shmctl,
+	/* 0x172 */	(Func)	sys_p_shmat,
+	/* 0x173 */		sys_p_shmdt,
+	/* 0x174 */		sys_p_semget,	/* not implemented */
+	/* 0x175 */		sys_p_semctl,	/* not implemented */
+	/* 0x176 */		sys_p_semop,	/* not implemented */
+	/* 0x177 */		sys_p_semconfig,/* not implemented */
+	/* 0x178 */		sys_p_msgget,	/* not implemented */
+	/* 0x179 */		sys_p_msgctl,	/* not implemented */
+	/* 0x17a */		sys_p_msgsnd,	/* not implemented */
+	/* 0x17b */		sys_p_msgrcv,	/* not implemented */
+	/* 0x17c */		enosys,		/* reserved */
+	/* 0x17d */		enosys,		/* reserved */
 	/* 0x17e */		enosys,		/* sys_mmap */
 	/* 0x17f */		enosys		/* sys_munmap */
 	
