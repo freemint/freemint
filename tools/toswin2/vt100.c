@@ -127,7 +127,7 @@ static void delete_line(TEXTWIN *v, int r, int b)
 	int 				y;
 	int 				doscroll = (r == 0);
 	unsigned char	*oldline;
-	short				*oldflag;
+	long				*oldflag;
 
 	if (b > v->maxy - 1)
 		b = v->maxy - 1;
@@ -160,7 +160,7 @@ static void insert_line(TEXTWIN *v, int r, int b)
 {
 	int 				i, limit;
 	unsigned char	*oldline;
-	short				*oldflag;
+	long				*oldflag;
 
 	if (b > v->maxy - 1)
 		b = v->maxy - 1;
