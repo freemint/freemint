@@ -83,18 +83,6 @@ space		[ \t\n]
 	return _IDENT_XBIOS;
 }
 
-"NULL"	{
-	strncpy(yylval.ident, yytext, STRMAX);
-	yylval.ident[STRMAX] = '\0';
-	return _IDENT_NULL;
-}
-
-"RESERVED"	{
-	strncpy(yylval.ident, yytext, STRMAX);
-	yylval.ident[STRMAX] = '\0';
-	return _IDENT_RESERVED;
-}
-
 "MAX"	{
 	strncpy(yylval.ident, yytext, STRMAX);
 	yylval.ident[STRMAX] = '\0';
@@ -165,6 +153,30 @@ space		[ \t\n]
 	strncpy(yylval.ident, yytext, STRMAX);
 	yylval.ident[STRMAX] = '\0';
 	return _IDENT_ULONG;
+}
+
+"undefined"	{
+	strncpy(yylval.ident, yytext, STRMAX);
+	yylval.ident[STRMAX] = '\0';
+	return _IDENT_UNDEFINED;
+}
+
+"unsupported"	{
+	strncpy(yylval.ident, yytext, STRMAX);
+	yylval.ident[STRMAX] = '\0';
+	return _IDENT_UNSUPPORTED;
+}
+
+"unimplemented"	{
+	strncpy(yylval.ident, yytext, STRMAX);
+	yylval.ident[STRMAX] = '\0';
+	return _IDENT_UNIMPLEMENTED;
+}
+
+"null"	{
+	strncpy(yylval.ident, yytext, STRMAX);
+	yylval.ident[STRMAX] = '\0';
+	return _IDENT_NULL;
 }
 
 {nonzerodigit}{digit}*	{

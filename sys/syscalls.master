@@ -33,12 +33,36 @@
 
 
 /*
- * RESERVED - return ENOSYS
- * NULL     - no entry
- * MAX      - size of table
+ * Syntax:
+ * 
+ * opcode class name args
+ * opcode class name args (unimplemented|unsupported)
+ * opcode (undefined|null)
+ * 
+ * 
+ * opcode - syscall number
+ * class  - syscall class
+ * name   - syscall name
+ * args   - C style prototype
+ * 
+ * syscall status:
+ * 
+ * - undefined
+ *   there is no system call defined for this opcode -> ENOSYS
+ * 
+ * - unsupported
+ *   system call defined but not supported -> ENOSYS
+ * 
+ * - unimplemented
+ *   system call defined but not yet implemented -> ENOSYS
+ * 
+ * - null
+ *   no entry table, e.g. pass through to TOS
+ * 
+ * MAX - size of table
  *
  * otherwise interpreted as systemcall
- * missing entries are automatically set to NULL
+ * missing entries are automatically set to undefined
  *
  */
 
@@ -68,10 +92,10 @@ opcode	class name	args */
 0x009	c conws		(const char *str)
 0x00a	c conrs		(char *buf)
 0x00b	c conis		(void)
-0x00c	  RESERVED
-0x00d	  RESERVED
+0x00c	  undefined
+0x00d	  undefined
 0x00e	d setdrv	(short d)
-0x00f	  RESERVED
+0x00f	  undefined
 
 0x010	c conos		(void)
 0x011	c prnos		(void)
@@ -81,41 +105,41 @@ opcode	class name	args */
 0x015	s realloc	(void)
 0x016	s slbopen	(void)				/* 1.15.3, MagiC 5 */
 0x017	s slbclose	(void)				/* 1.15.3, MagiC 5 */
-0x018	  RESERVED
+0x018	  undefined
 0x019	d getdrv	(void)
 0x01a	f setdta	(struct dtabuf *dta)
-0x01b	  RESERVED
-0x01c	  RESERVED
-0x01d	  RESERVED
-0x01e	  RESERVED
-0x01f	  RESERVED
+0x01b	  undefined
+0x01c	  undefined
+0x01d	  undefined
+0x01e	  undefined
+0x01f	  undefined
 
 0x020	s super		(long new_ssp)
-0x021	  RESERVED
-0x022	  RESERVED
-0x023	  RESERVED
-0x024	  RESERVED
-0x025	  RESERVED
-0x026	  RESERVED
-0x027	  RESERVED
-0x028	  RESERVED
-0x029	  RESERVED
+0x021	  undefined
+0x022	  undefined
+0x023	  undefined
+0x024	  undefined
+0x025	  undefined
+0x026	  undefined
+0x027	  undefined
+0x028	  undefined
+0x029	  undefined
 0x02a	t getdate	(void)
 0x02b	t setdate	(ushort date)
 0x02c	t gettime	(void)
 0x02d	t settime	(ushort date)
-0x02e	  RESERVED
+0x02e	  undefined
 0x02f	f getdta	(void)
 
 0x030	s version	(void)
 0x031	p termres	(long save, short code)
-0x032	  RESERVED
-0x033	  RESERVED	/* MagiC: Sconfig() */
-0x034	  RESERVED
-0x035	  RESERVED
+0x032	  undefined
+0x033	s config	(long code) unsupported /* MagiC: Sconfig() */
+0x034	  undefined
+0x035	  undefined
 0x036	d free		(long *buf, short d)
-0x037	  RESERVED
-0x038	  RESERVED
+0x037	  undefined
+0x038	  undefined
 0x039	d create	(const char *name, short attrib)
 0x03a	d delete	(const char *path)
 0x03b	d setpath	(const char *path)
@@ -137,199 +161,199 @@ opcode	class name	args */
 0x04a	m shrink	(short dummy, long block, long size)
 0x04b	p exec		(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 0x04c	p term		(short code)
-0x04d	  RESERVED
+0x04d	  undefined
 0x04e	f sfirst	(const char *path, short attrib)
 0x04f	f snext		(void)
 
-0x050	  RESERVED
-0x051	  RESERVED
-0x052	  RESERVED
-0x053	  RESERVED
-0x054	  RESERVED
-0x055	  RESERVED
+0x050	  undefined
+0x051	  undefined
+0x052	  undefined
+0x053	  undefined
+0x054	  undefined
+0x055	  undefined
 0x056	f rename	(short junk, const char *old, const char *new)
 0x057	f datime	(short *timeptr, short fh, short wflag)
-0x058	  RESERVED
-0x059	  RESERVED
-0x05a	  RESERVED
-0x05b	  RESERVED
+0x058	  undefined
+0x059	  undefined
+0x05a	  undefined
+0x05b	  undefined
 0x05c	f lock		(short fh, short mode, long start, long length)
-0x05d	  RESERVED
-0x05e	  RESERVED
-0x05f	  RESERVED
+0x05d	  undefined
+0x05e	  undefined
+0x05f	  undefined
 
-0x060	  RESERVED
-0x061	  RESERVED
-0x062	  RESERVED
-0x063	  RESERVED
-0x064	  RESERVED
-0x065	  RESERVED
-0x066	  RESERVED
-0x067	  RESERVED
-0x068	  RESERVED
-0x069	  RESERVED
-0x06a	  RESERVED
-0x06b	  RESERVED
-0x06c	  RESERVED
-0x06d	  RESERVED
-0x06e	  RESERVED
-0x06f	  RESERVED
+0x060	  undefined
+0x061	  undefined
+0x062	  undefined
+0x063	  undefined
+0x064	  undefined
+0x065	  undefined
+0x066	  undefined
+0x067	  undefined
+0x068	  undefined
+0x069	  undefined
+0x06a	  undefined
+0x06b	  undefined
+0x06c	  undefined
+0x06d	  undefined
+0x06e	  undefined
+0x06f	  undefined
 
-0x070	  RESERVED
-0x071	  RESERVED
-0x072	  RESERVED
-0x073	  RESERVED
-0x074	  RESERVED
-0x075	  RESERVED
-0x076	  RESERVED
-0x077	  RESERVED
-0x078	  RESERVED
-0x079	  RESERVED
-0x07a	  RESERVED
-0x07b	  RESERVED
-0x07c	  RESERVED
-0x07d	  RESERVED
-0x07e	  RESERVED
-0x07f	  RESERVED
+0x070	  undefined
+0x071	  undefined
+0x072	  undefined
+0x073	  undefined
+0x074	  undefined
+0x075	  undefined
+0x076	  undefined
+0x077	  undefined
+0x078	  undefined
+0x079	  undefined
+0x07a	  undefined
+0x07b	  undefined
+0x07c	  undefined
+0x07d	  undefined
+0x07e	  undefined
+0x07f	  undefined
 
-0x080	  RESERVED
-0x081	  RESERVED
-0x082	  RESERVED
-0x083	  RESERVED
-0x084	  RESERVED
-0x085	  RESERVED
-0x086	  RESERVED
-0x087	  RESERVED
-0x088	  RESERVED
-0x089	  RESERVED
-0x08a	  RESERVED
-0x08b	  RESERVED
-0x08c	  RESERVED
-0x08d	  RESERVED
-0x08e	  RESERVED
-0x08f	  RESERVED
+0x080	  undefined
+0x081	  undefined
+0x082	  undefined
+0x083	  undefined
+0x084	  undefined
+0x085	  undefined
+0x086	  undefined
+0x087	  undefined
+0x088	  undefined
+0x089	  undefined
+0x08a	  undefined
+0x08b	  undefined
+0x08c	  undefined
+0x08d	  undefined
+0x08e	  undefined
+0x08f	  undefined
 
-0x090	  RESERVED
-0x091	  RESERVED
-0x092	  RESERVED
-0x093	  RESERVED
-0x094	  RESERVED
-0x095	  RESERVED
-0x096	  RESERVED
-0x097	  RESERVED
-0x098	  RESERVED
-0x099	  RESERVED
-0x09a	  RESERVED
-0x09b	  RESERVED
-0x09c	  RESERVED
-0x09d	  RESERVED
-0x09e	  RESERVED
-0x09f	  RESERVED
+0x090	  undefined
+0x091	  undefined
+0x092	  undefined
+0x093	  undefined
+0x094	  undefined
+0x095	  undefined
+0x096	  undefined
+0x097	  undefined
+0x098	  undefined
+0x099	  undefined
+0x09a	  undefined
+0x09b	  undefined
+0x09c	  undefined
+0x09d	  undefined
+0x09e	  undefined
+0x09f	  undefined
 
-0x0a0	  RESERVED
-0x0a1	  RESERVED
-0x0a2	  RESERVED
-0x0a3	  RESERVED
-0x0a4	  RESERVED
-0x0a5	  RESERVED
-0x0a6	  RESERVED
-0x0a7	  RESERVED
-0x0a8	  RESERVED
-0x0a9	  RESERVED
-0x0aa	  RESERVED
-0x0ab	  RESERVED
-0x0ac	  RESERVED
-0x0ad	  RESERVED
-0x0ae	  RESERVED
-0x0af	  RESERVED
+0x0a0	  undefined
+0x0a1	  undefined
+0x0a2	  undefined
+0x0a3	  undefined
+0x0a4	  undefined
+0x0a5	  undefined
+0x0a6	  undefined
+0x0a7	  undefined
+0x0a8	  undefined
+0x0a9	  undefined
+0x0aa	  undefined
+0x0ab	  undefined
+0x0ac	  undefined
+0x0ad	  undefined
+0x0ae	  undefined
+0x0af	  undefined
 
-0x0b0	  RESERVED
-0x0b1	  RESERVED
-0x0b2	  RESERVED
-0x0b3	  RESERVED
-0x0b4	  RESERVED
-0x0b5	  RESERVED
-0x0b6	  RESERVED
-0x0b7	  RESERVED
-0x0b8	  RESERVED
-0x0b9	  RESERVED
-0x0ba	  RESERVED
-0x0bb	  RESERVED
-0x0bc	  RESERVED
-0x0bd	  RESERVED
-0x0be	  RESERVED
-0x0bf	  RESERVED
+0x0b0	  undefined
+0x0b1	  undefined
+0x0b2	  undefined
+0x0b3	  undefined
+0x0b4	  undefined
+0x0b5	  undefined
+0x0b6	  undefined
+0x0b7	  undefined
+0x0b8	  undefined
+0x0b9	  undefined
+0x0ba	  undefined
+0x0bb	  undefined
+0x0bc	  undefined
+0x0bd	  undefined
+0x0be	  undefined
+0x0bf	  undefined
 
-0x0c0	  RESERVED
-0x0c1	  RESERVED
-0x0c2	  RESERVED
-0x0c3	  RESERVED
-0x0c4	  RESERVED
-0x0c5	  RESERVED
-0x0c6	  RESERVED
-0x0c7	  RESERVED
-0x0c8	  RESERVED
-0x0c9	  RESERVED
-0x0ca	  RESERVED
-0x0cb	  RESERVED
-0x0cc	  RESERVED
-0x0cd	  RESERVED
-0x0ce	  RESERVED
-0x0cf	  RESERVED
+0x0c0	  undefined
+0x0c1	  undefined
+0x0c2	  undefined
+0x0c3	  undefined
+0x0c4	  undefined
+0x0c5	  undefined
+0x0c6	  undefined
+0x0c7	  undefined
+0x0c8	  undefined
+0x0c9	  undefined
+0x0ca	  undefined
+0x0cb	  undefined
+0x0cc	  undefined
+0x0cd	  undefined
+0x0ce	  undefined
+0x0cf	  undefined
 
-0x0d0	  RESERVED
-0x0d1	  RESERVED
-0x0d2	  RESERVED
-0x0d3	  RESERVED
-0x0d4	  RESERVED
-0x0d5	  RESERVED
-0x0d6	  RESERVED
-0x0d7	  RESERVED
-0x0d8	  RESERVED
-0x0d9	  RESERVED
-0x0da	  RESERVED
-0x0db	  RESERVED
-0x0dc	  RESERVED
-0x0dd	  RESERVED
-0x0de	  RESERVED
-0x0df	  RESERVED
+0x0d0	  undefined
+0x0d1	  undefined
+0x0d2	  undefined
+0x0d3	  undefined
+0x0d4	  undefined
+0x0d5	  undefined
+0x0d6	  undefined
+0x0d7	  undefined
+0x0d8	  undefined
+0x0d9	  undefined
+0x0da	  undefined
+0x0db	  undefined
+0x0dc	  undefined
+0x0dd	  undefined
+0x0de	  undefined
+0x0df	  undefined
 
-0x0e0	  RESERVED
-0x0e1	  RESERVED
-0x0e2	  RESERVED
-0x0e3	  RESERVED
-0x0e4	  RESERVED
-0x0e5	  RESERVED
-0x0e6	  RESERVED
-0x0e7	  RESERVED
-0x0e8	  RESERVED
-0x0e9	  RESERVED
-0x0ea	  RESERVED
-0x0eb	  RESERVED
-0x0ec	  RESERVED
-0x0ed	  RESERVED
-0x0ee	  RESERVED
-0x0ef	  RESERVED
+0x0e0	  undefined
+0x0e1	  undefined
+0x0e2	  undefined
+0x0e3	  undefined
+0x0e4	  undefined
+0x0e5	  undefined
+0x0e6	  undefined
+0x0e7	  undefined
+0x0e8	  undefined
+0x0e9	  undefined
+0x0ea	  undefined
+0x0eb	  undefined
+0x0ec	  undefined
+0x0ed	  undefined
+0x0ee	  undefined
+0x0ef	  undefined
 
 /*
  * MiNT extensions to GEMDOS
  */
 
-0x0f0	  RESERVED
-0x0f1	  RESERVED
-0x0f2	  RESERVED
-0x0f3	  RESERVED
-0x0f4	  RESERVED
-0x0f5	  RESERVED
-0x0f6	  RESERVED
-0x0f7	  RESERVED
-0x0f8	  RESERVED
-0x0f9	  RESERVED
-0x0fa	  RESERVED
-0x0fb	  RESERVED
-0x0fc	  RESERVED
-0x0fd	  RESERVED
-0x0fe	  RESERVED
+0x0f0	  undefined
+0x0f1	  undefined
+0x0f2	  undefined
+0x0f3	  undefined
+0x0f4	  undefined
+0x0f5	  undefined
+0x0f6	  undefined
+0x0f7	  undefined
+0x0f8	  undefined
+0x0f9	  undefined
+0x0fa	  undefined
+0x0fb	  undefined
+0x0fc	  undefined
+0x0fd	  undefined
+0x0fe	  undefined
 0x0ff	s yield		(void)
 
 0x100	f pipe		(short *usrh)
@@ -397,7 +421,7 @@ opcode	class name	args */
 0x13b	d getcwd	(char *path, short drv, short size)
 0x13c	s alert		(char *msg)
 0x13d	t malarm	(long x)
-0x13e	  RESERVED   /* Psigintr(), cancelled in 1.16 */
+0x13e	  undefined   /* Psigintr(), cancelled in 1.16 */
 0x13f	s uptime	(ulong *cur_uptim, ulong loadave[3])
 
 0x140	p trace		(short request, short pid, void *addr, long data) /* since 1.15.11 */
@@ -453,7 +477,7 @@ opcode	class name	args */
 0x16c	f getpeername	(short fd, struct sockaddr *asa, ulong *alen)
 0x16d	f getsockname	(short fd, struct sockaddr *asa, ulong *alen)
 0x16e	f shutdown	(short fd, long how)
-0x16f	  RESERVED
+0x16f	  undefined
 
 	/* 1.16 - svr5 IPC */
 
@@ -469,34 +493,34 @@ opcode	class name	args */
 0x179	p msgctl	(long msqid, long cmd, struct msqid_ds *buf)
 0x17a	p msgsnd	(long msqid, const void *msgp, long msgsz, long msgflg)
 0x17b	p msgrcv	(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
-0x17c	  RESERVED
+0x17c	  undefined
 0x17d	m access	(void *addr, long size, short mode) /* since 1.15.12 */
-0x17e	  RESERVED	/* mmap */
-0x17f	  RESERVED	/* munmap */
+0x17e	  undefined	/* mmap */
+0x17f	  undefined	/* munmap */
 
 0x180	f chown16	(const char *name, short uid, short gid, short follow)	/* since 1.16 */
-0x181	  RESERVED
-0x182	  RESERVED
-0x183	  RESERVED
-0x184	  RESERVED
-0x185	  RESERVED
-0x186	  RESERVED
-0x187	  RESERVED
-0x188	  RESERVED
-0x189	  RESERVED
-0x18a	  RESERVED
-0x18b	  RESERVED
-0x18c	  RESERVED
-0x18d	  RESERVED
-0x18e	  RESERVED
-0x18f	  RESERVED
+0x181	  undefined
+0x182	  undefined
+0x183	  undefined
+0x184	  undefined
+0x185	  undefined
+0x186	  undefined
+0x187	  undefined
+0x188	  undefined
+0x189	  undefined
+0x18a	  undefined
+0x18b	  undefined
+0x18c	  undefined
+0x18d	  undefined
+0x18e	  undefined
+0x18f	  undefined
 
 0x190	MAX
 
 
 [ BIOS ]
 
-0x000	  RESERVED	/* getmpb - useless */
+0x000	  undefined	/* getmpb - useless */
 0x001	b ubconstat	(short dev)
 0x002	b ubconin	(short dev)
 0x003	b ubconout	(short dev, short c)
@@ -508,167 +532,167 @@ opcode	class name	args */
 0x009	b mediach	(short dev)
 0x00a	b drvmap	(void)
 0x00b	b kbshift	(short mode)
-0x00c	  NULL
-0x00d	  NULL
-0x00e	  NULL
-0x00f	  NULL
+0x00c	  null
+0x00d	  null
+0x00e	  null
+0x00f	  null
 
-0x010	  NULL
-0x011	  NULL
-0x012	  NULL
-0x013	  NULL
-0x014	  NULL
-0x015	  NULL
-0x016	  NULL
-0x017	  NULL
-0x018	  NULL
-0x019	  NULL
-0x01a	  NULL
-0x01b	  NULL
-0x01c	  NULL
-0x01d	  NULL
-0x01e	  NULL
-0x01f	  NULL
+0x010	  null
+0x011	  null
+0x012	  null
+0x013	  null
+0x014	  null
+0x015	  null
+0x016	  null
+0x017	  null
+0x018	  null
+0x019	  null
+0x01a	  null
+0x01b	  null
+0x01c	  null
+0x01d	  null
+0x01e	  null
+0x01f	  null
 
 0x020	MAX
 
 
 [ XBIOS ]
 
-0x000	  NULL
-0x001	  NULL
-0x002	  NULL
-0x003	  NULL
-0x004	  NULL
+0x000	  null
+0x001	  null
+0x002	  null
+0x003	  null
+0x004	  null
 0x005	b vsetscreen	(long log, long phys, short rez, short mode)
-0x006	  NULL
-0x007	  NULL
-0x008	  NULL
-0x009	  NULL
-0x00a	  NULL
-0x00b	  NULL
+0x006	  null
+0x007	  null
+0x008	  null
+0x009	  null
+0x00a	  null
+0x00b	  null
 0x00c	b midiws	(short cnt, const char *buf)
-0x00d	  NULL
+0x00d	  null
 0x00e	b uiorec	(short dev)
 0x00f	b ursconf	(short baud, short flow, short uc, short rs, short ts, short sc)
 
 0x010	b keytbl	(char *unshift, char *shift, char *caps)
 0x011	b random	(void)
-0x012	  NULL
-0x013	  NULL
-0x014	  NULL
+0x012	  null
+0x013	  null
+0x014	  null
 0x015	b cursconf	(short cmd, short op)
 0x016	b settime	(void)
 0x017	b gettime	(ulong datetime)
 0x018	b bioskeys	(void)
-0x019	  NULL
-0x01a	  NULL
-0x01b	  NULL
-0x01c	  NULL
-0x01d	  NULL
-0x01e	  NULL
-0x01f	  NULL
+0x019	  null
+0x01a	  null
+0x01b	  null
+0x01c	  null
+0x01d	  null
+0x01e	  null
+0x01f	  null
 
 0x020	b dosound	(const char *ptr)
-0x021	  NULL
-0x022	  NULL
-0x023	  NULL
-0x024	  NULL
-0x025	  NULL
+0x021	  null
+0x022	  null
+0x023	  null
+0x024	  null
+0x025	  null
 0x026	b supexec	(void *funcptr, long a1, long a2, long a3, long a4, long a5)
-0x027	  NULL
-0x028	  NULL
-0x029	  NULL
-0x02a	  NULL
-0x02b	  NULL
+0x027	  null
+0x028	  null
+0x029	  null
+0x02a	  null
+0x02b	  null
 0x02c	b bconmap	(short dev)
-0x02d	  NULL
-0x02e	  NULL
-0x02f	  NULL
+0x02d	  null
+0x02e	  null
+0x02f	  null
 
-0x030	  NULL
-0x031	  NULL
-0x032	  NULL
-0x033	  NULL
-0x034	  NULL
-0x035	  NULL
-0x036	  NULL
-0x037	  NULL
-0x038	  NULL
-0x039	  NULL
-0x03a	  NULL
-0x03b	  NULL
-0x03c	  NULL
-0x03d	  NULL
-0x03e	  NULL
-0x03f	  NULL
+0x030	  null
+0x031	  null
+0x032	  null
+0x033	  null
+0x034	  null
+0x035	  null
+0x036	  null
+0x037	  null
+0x038	  null
+0x039	  null
+0x03a	  null
+0x03b	  null
+0x03c	  null
+0x03d	  null
+0x03e	  null
+0x03f	  null
 
-0x040	  NULL
-0x041	  NULL
-0x042	  NULL
-0x043	  NULL
-0x044	  NULL
-0x045	  NULL
-0x046	  NULL
-0x047	  NULL
-0x048	  NULL
-0x049	  NULL
-0x04a	  NULL
-0x04b	  NULL
-0x04c	  NULL
-0x04d	  NULL
-0x04e	  NULL
-0x04f	  NULL
+0x040	  null
+0x041	  null
+0x042	  null
+0x043	  null
+0x044	  null
+0x045	  null
+0x046	  null
+0x047	  null
+0x048	  null
+0x049	  null
+0x04a	  null
+0x04b	  null
+0x04c	  null
+0x04d	  null
+0x04e	  null
+0x04f	  null
 
-0x050	  NULL
-0x051	  NULL
-0x052	  NULL
-0x053	  NULL
-0x054	  NULL
-0x055	  NULL
-0x056	  NULL
-0x057	  NULL
-0x058	  NULL
-0x059	  NULL
-0x05a	  NULL
-0x05b	  NULL
-0x05c	  NULL
-0x05d	  NULL
-0x05e	  NULL
-0x05f	  NULL
+0x050	  null
+0x051	  null
+0x052	  null
+0x053	  null
+0x054	  null
+0x055	  null
+0x056	  null
+0x057	  null
+0x058	  null
+0x059	  null
+0x05a	  null
+0x05b	  null
+0x05c	  null
+0x05d	  null
+0x05e	  null
+0x05f	  null
 
-0x060	  NULL
-0x061	  NULL
-0x062	  NULL
-0x063	  NULL
-0x064	  NULL
-0x065	  NULL
-0x066	  NULL
-0x067	  NULL
-0x068	  NULL
-0x069	  NULL
-0x06a	  NULL
-0x06b	  NULL
-0x06c	  NULL
-0x06d	  NULL
-0x06e	  NULL
-0x06f	  NULL
+0x060	  null
+0x061	  null
+0x062	  null
+0x063	  null
+0x064	  null
+0x065	  null
+0x066	  null
+0x067	  null
+0x068	  null
+0x069	  null
+0x06a	  null
+0x06b	  null
+0x06c	  null
+0x06d	  null
+0x06e	  null
+0x06f	  null
 
-0x070	  NULL
-0x071	  NULL
-0x072	  NULL
-0x073	  NULL
-0x074	  NULL
-0x075	  NULL
-0x076	  NULL
-0x077	  NULL
-0x078	  NULL
-0x079	  NULL
-0x07a	  NULL
-0x07b	  NULL
-0x07c	  NULL
-0x07d	  NULL
-0x07e	  NULL
-0x07f	  NULL
+0x070	  null
+0x071	  null
+0x072	  null
+0x073	  null
+0x074	  null
+0x075	  null
+0x076	  null
+0x077	  null
+0x078	  null
+0x079	  null
+0x07a	  null
+0x07b	  null
+0x07c	  null
+0x07d	  null
+0x07e	  null
+0x07f	  null
 
 0x080	MAX
