@@ -9,7 +9,6 @@
 # include "netinfo.h"
 
 # include "buf.h"
-# include "util.h"
 
 # include "serial.h"
 
@@ -90,6 +89,12 @@ _sld (void)
 				sl = &allslbufs[cmd.slnum];
 				if (sl->flags & SL_INUSE) switch (cmd.cmd) {
 				case SLCMD_OPEN:
+				{
+					char buf[128];
+					
+					ksprintf (buf, "sld: SLCMD_OPEN (sl->fd = %i)", sl->fd);
+					Cconws (buf);
+					
 					r = sl->fd;
 					sl->fd = Fdup (r);
 					Fclose (r);
@@ -100,8 +105,14 @@ _sld (void)
 					}
 					FDSET (sl->fd, rset);
 					break;
-				
+				}
 				case SLCMD_CLOSE:
+				{
+					char buf[128];
+					
+					ksprintf (buf, "sld: SLCMD_CLOSE (sl->fd = %i)", sl->fd);
+					Cconws (buf);
+					
 					FDCLR (sl->fd, rset);
 					FDCLR (sl->fd, wset);
 					FDCLR (sl->fd, wready);
@@ -109,13 +120,16 @@ _sld (void)
 					Fclose (sl->fd);
 					sl->flags &= ~(SL_INUSE|SL_SENDING|SL_CLOSING);
 					break;
-				
+				}
 				case SLCMD_SEND:
+				{
 					FDSET (sl->fd, wset);
 					FDSET (sl->fd, wready); /* pretend we can write */
 					currsl = sl;
-					Supexec (_send);
+					// Supexec (_send);
+					_send ();
 					break;
+				}
 				}
 			}
 		}
@@ -174,7 +188,8 @@ _sld (void)
 			if (sl->ihead != sl->itail)
 			{
 				currsl = sl;
-				Supexec (_recv);
+				// Supexec (_recv);
+				_recv ();
 			}
 			
 			if (!(sl->flags & SL_SENDING))
@@ -236,7 +251,8 @@ _sld (void)
 						FDCLR (sl->fd, wset);
 					}
 					currsl = sl;
-					Supexec (_send);
+					// Supexec (_send);
+					_send ();
 					if (sl->ohead != sl->otail)
 					{
 						sl->flags |= SL_SENDING;
@@ -260,14 +276,14 @@ _sld (void)
 static int
 sld (BASEPAGE *bp)
 {
-	setstack ((char *) bp + STKSIZE);
+	// setstack ((char *) bp + STKSIZE);
 	
-	bp->p_tbase = bp->p_parent->p_tbase;
-	bp->p_tlen  = bp->p_parent->p_tlen;
-	bp->p_dbase = bp->p_parent->p_dbase;
-	bp->p_dlen  = bp->p_parent->p_dlen;
-	bp->p_bbase = bp->p_parent->p_bbase;
-	bp->p_blen  = bp->p_parent->p_blen;
+	// bp->p_tbase = bp->p_parent->p_tbase;
+	// bp->p_tlen  = bp->p_parent->p_tlen;
+	// bp->p_dbase = bp->p_parent->p_dbase;
+	// bp->p_dlen  = bp->p_parent->p_dlen;
+	// bp->p_bbase = bp->p_parent->p_bbase;
+	// bp->p_blen  = bp->p_parent->p_blen;
 	
 	(void) Pdomain (1);
 	(void) Pnice (-5);

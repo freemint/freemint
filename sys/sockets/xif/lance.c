@@ -64,7 +64,6 @@
 # include "buf.h"
 # include "inet4/if.h"
 # include "inet4/ifeth.h"
-# include "util.h"
 
 # include "lancemem.h"
 

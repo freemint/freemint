@@ -42,7 +42,6 @@
 # include "buf.h"
 # include "inet4/if.h"
 # include "inet4/ifeth.h"
-# include "util.h"
 
 # include "rtl8012.h"
 # include "rtl8012_vblint.h"
