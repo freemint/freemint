@@ -13,7 +13,7 @@
 # define VER_PL		0
 # define VER_STATUS	""
 
-# if 1
+# if 0
 # define ALPHA
 # endif
 
