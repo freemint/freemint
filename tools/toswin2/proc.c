@@ -30,7 +30,7 @@
 
 /* static long 	lasthz; */
 static long 	fdmask = 0L;
-static int		shell_cnt = 0;
+static int	shell_cnt = 0;
 static OBJECT	*argbox;
 
 static int open_pty(char *name)
@@ -339,7 +339,6 @@ void fd_input(void)
 	long		read;
 	WINDOW 	*w;
 	TEXTWIN 	*t;
-	int		i;
 
 	r = 0;
 	checkdead = 0;

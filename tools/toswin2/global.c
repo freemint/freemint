@@ -133,13 +133,13 @@ void	set_font(int font, int height)
 		lastheight = vst_point(vdi_handle, height, &cw, &ch, &bw, &bh);
 }
 
-void set_fillstyle(int style, int index)
+void set_fillstyle(int style, int nr)
 {
 	if (laststyle != style)
 		laststyle = vsf_interior(vdi_handle, style);
 
-	if (index != lastindex)
-		lastindex = vsf_style(vdi_handle, index);
+	if (nr != lastindex)
+		lastindex = vsf_style(vdi_handle, nr);
 }
 
 int alert(int def, int undo, int num)
