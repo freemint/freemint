@@ -231,6 +231,17 @@ is_inside(RECT r, RECT o)
 	return true;
 }
 
+void
+cancel_aesmsgs(struct xa_aesmsg_list **m)
+{
+	while (*m)
+	{
+		struct xa_aesmsg_list *nm = (*m)->next;
+		kfree(*m);
+		*m = nm;
+	}
+}
+
 /* Ozk:
  * deliver_message is guaranteed to run in the dest_client's context
 */
@@ -291,16 +302,13 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 	}
 	else
 	{
-		short msgt = msg->m[0];
-
 		queue_message(lock, dest_client, msg);
-
 		/*
 		 * Ozk: This is a client event message, and such messages are also
 		 * counted. Since queue_message() also counted this message, we "uncount"
 		 * the client event here.
-		*/
-		if (msgt == WM_REDRAW)
+		 */
+		if (msg->m[0] == WM_REDRAW)
 			C.redraws--;
 	}
 }
@@ -486,6 +494,17 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	if (dest_client == NULL)
 	{
 		DIAG((D_appl, NULL, "WARNING: Invalid target for send_a_message()"));
+		return;
+	}
+
+	if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT))
+	{
+#if GENERATE_DIAGS
+		if (dest_client->status & CS_FORM_ALERT)
+			DIAG((D_appl, client, "send_a_message: Client %s is in form_alert - AES message discarded!", client->name));
+		if (dest_client->status & CS_LAGGING)
+			DIAG((D_appl, client, "send_a_message: Client %s is lagging - AES message discarded!", client->name));
+#endif
 		return;
 	}
 

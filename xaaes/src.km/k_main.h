@@ -33,7 +33,7 @@
 
 #include "global.h"
 #include "xa_types.h"
-
+void cancel_cevents(struct xa_client *client);
 void post_cevent(struct xa_client *client, void (*func)(enum locks, struct c_event *), void *ptr1, void *ptr2, int d0, int d1, RECT *r, const struct moose_data *md);
 int dispatch_cevent(struct xa_client *client);
 void Block(struct xa_client *client, int which);
