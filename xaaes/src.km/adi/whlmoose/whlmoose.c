@@ -56,7 +56,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	7
+# define VER_MINOR	8
 # define VER_STATUS	
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -191,10 +191,6 @@ static short last_state;
 static short last_time;
 static short halve;
 
-static struct moose_data *md_head;
-static struct moose_data *md_tail;
-static struct moose_data *md_end;
-
 static struct mouse_pak *pak_head;
 static struct mouse_pak *pak_tail;
 static struct mouse_pak *pak_end;
@@ -244,17 +240,9 @@ struct mouse_pak
 	long dbg;
 };
 
-#if 1
-#define MD_BUFFERS	64
-#define MD_BUFFER_SIZE	(MD_BUFFERS * (sizeof(struct moose_data)))
-#endif
-
 #define PAK_BUFFERS	32
 #define PAK_BUFFER_SIZE	(PAK_BUFFERS * (sizeof(struct mouse_pak)))
 
-#if 1
-static short md_buffer[MD_BUFFER_SIZE+1];
-#endif
 static short pak_buffer[PAK_BUFFER_SIZE+1];
 
 /* END global data & access implementation */
@@ -434,23 +422,19 @@ timer_handler(void)
 				{
 					struct moose_data md;
 
-					md = kmalloc(sizeof(md));
-					if (md)
-					{
-						md->l		= sizeof(md);
-						md->ty		= MOOSE_WHEEL_PREFIX;
-						md->x		= pak_head->x;
-						md->y		= pak_head->y;
-						md->sx		= sample_x;
-						md->sy		= sample_y;
-						md->state	= pak_head->t.whl.wheel;
-						md->cstate	= md.state;
-						md->clicks	= pak_head->t.whl.clicks;
-						md->kstate	= 0;
-						md->dbg1	= 0;
-						md->dbg2	= 0;
-						(*ainf->wheel)(&moose_aif, md);
-					}
+					md.l		= sizeof(md);
+					md.ty		= MOOSE_WHEEL_PREFIX;
+					md.x		= pak_head->x;
+					md.y		= pak_head->y;
+					md.sx		= sample_x;
+					md.sy		= sample_y;
+					md.state	= pak_head->t.whl.wheel;
+					md.cstate	= md.state;
+					md.clicks	= pak_head->t.whl.clicks;
+					md.kstate	= 0;
+					md.dbg1		= 0;
+					md.dbg2		= 0;
+					(*ainf->wheel)(&moose_aif, &md);
 				}
 #endif
 				/* more pak types here ... */
@@ -467,29 +451,23 @@ timer_handler(void)
 static void
 do_button_packet(void)
 {
-	md_tail->l		= sizeof(struct moose_data);
-	md_tail->ty		= MOOSE_BUTTON_PREFIX;
-	md_tail->x		= click_x;
-	md_tail->y		= click_y;
-	md_tail->sx		= sample_x;
-	md_tail->sy		= sample_y;
-	md_tail->state		= click_state;
-	md_tail->cstate		= click_cstate;
-	md_tail->clicks		= click_count;
-	md_tail->kstate		= 0;		/* Not set here -- will change*/
-	md_tail->iclicks[0]	= l_clicks;
-	md_tail->iclicks[1]	= r_clicks;
-	*(long*)&md_tail->dbg1 = time_between;
+	struct moose_data md;
 
-	md_tail++;
-	if (md_tail > md_end)
-		md_tail = (struct moose_data *)&md_buffer;
+	md.l		= sizeof(struct moose_data);
+	md.ty		= MOOSE_BUTTON_PREFIX;
+	md.x		= click_x;
+	md.y		= click_y;
+	md.sx		= sample_x;
+	md.sy		= sample_y;
+	md.state	= click_state;
+	md.cstate	= click_cstate;
+	md.clicks	= click_count;
+	md.kstate	= 0;		/* Not set here -- will change*/
+	md.iclicks[0]	= l_clicks;
+	md.iclicks[1]	= r_clicks;
+	*(long*)&md.dbg1 = time_between;
 
-	(*ainf->button)(&moose_aif, md_head);
-
-	md_head++;
-	if (md_head > md_end)
-		md_head = (struct moose_data *)&md_buffer;
+	(*ainf->button)(&moose_aif, &md);
 
 	l_clicks	= 0;
 	r_clicks	= 0;
@@ -533,10 +511,6 @@ moose_open (struct adif *a)
 	pak_tail	= (struct mouse_pak *)&pak_buffer;
 	pak_head	= pak_tail;
 	pak_end		= pak_tail + PAK_BUFFERS;
-
-	md_tail		= (struct moose_data *)&md_buffer;
-	md_head		= md_tail;
-	md_end		= md_tail + MD_BUFFERS;
 
 	halve		= 0;
 	inbuf		= 0;

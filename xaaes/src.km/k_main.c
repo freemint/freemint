@@ -278,7 +278,7 @@ static vdi_vec *svwhlv = NULL;
  * initialise the mouse device
  */
 #define MIN_MOOSE_VER_MAJOR 0
-#define MIN_MOOSE_VER_MINOR 7
+#define MIN_MOOSE_VER_MINOR 8
 
 static bool
 init_moose(void)
@@ -612,6 +612,7 @@ k_main(void *dummy)
 	/* 
 	 * Initialization I/O
 	 */
+#if 0
 	mu_button.b = 0;
 	mu_button.cb = 0;
 	mu_button.clicks = 0;
@@ -619,6 +620,7 @@ k_main(void *dummy)
 	mu_button.y = 0;
 	mu_button.newc = 0;
 	mu_button.newr = 0;
+#endif
 
 	/* Open the MiNT Salert() pipe to be polite about system errors */
 	C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);

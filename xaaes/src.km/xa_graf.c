@@ -1126,12 +1126,12 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client)
 	{
 		DIAG((D_mouse,client,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
-			mu_button.x, mu_button.y, mu_button.b, mu_button.ks));
+			mainmd.x, mainmd.y, mainmd.state, mainmd.kstate));
 	}
 	else
 	{
 		DIAG((D_mouse,NULL,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
-			mu_button.x, mu_button.y, mu_button.b, mu_button.ks));
+			mainmd.x, mainmd.y, mainmd.state, mainmd.kstate));
 	}
 #endif
 	return XAC_DONE;
