@@ -21,8 +21,8 @@ all-here: $(TARGET)
 # default overwrites
 DEFINITIONS = $(XAAESDEFAULTDEFS)
 LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
-LIBS = -lgem16 $(LIBKERN)
-CPU = 020-60
+LIBS = -lgem16 $(LIBKERN) -lgcc
+CPU = 000
 STRIPFLAGS = 
 
 # default definitions
