@@ -72,6 +72,8 @@ extern const char *memprot_warning;
 extern const char *greet1;
 extern const char *greet2;
 
+extern const char *months_abbr_3[];
+
 /* bios.c */
 extern const char *MSG_bios_kill;
 
