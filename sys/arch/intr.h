@@ -2,8 +2,8 @@
  * it is not a part of the original MiNT distribution.
  */
 
-# ifndef _intr_h
-# define _intr_h
+# ifndef _m68k_intr_h
+# define _m68k_intr_h
 
 # include "mint/mint.h"
 
@@ -31,4 +31,4 @@ long _cdecl	new_mediach	(void);
 long _cdecl	new_getbpb	(void);
 
 
-# endif /* _intr_h */
+# endif /* _m68k_intr_h */

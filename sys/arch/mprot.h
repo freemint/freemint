@@ -3,8 +3,8 @@
  * the file Changes.MH for details and dates.
  */
 
-# ifndef _mprot_h
-# define _mprot_h
+# ifndef _m68k_mprot_h
+# define _m68k_mprot_h
 
 # include "mint/mint.h"
 # include "mint/mem.h"
@@ -30,4 +30,4 @@ void BIG_MEM_DUMP (int bigone, PROC *proc);
 int mem_access_for (PROC *p, ulong where, long len);
 
 
-# endif /* _mprot_h */
+# endif /* _m68k_mprot_h */

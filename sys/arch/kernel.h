@@ -3,8 +3,8 @@
  * of the original MiNT distribution.
  */
 
-# ifndef _kernel_h
-# define _kernel_h
+# ifndef _m68k_kernel_h
+# define _m68k_kernel_h
 
 # include "mint/mint.h"
 
@@ -14,4 +14,4 @@ void enter_bios   (void);
 void leave_kernel (void);
 
 
-# endif /* _kernel_h */
+# endif /* _m68k_kernel_h */

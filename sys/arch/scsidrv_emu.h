@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _scsidrv_emu_h
-# define _scsidrv_emu_h
+# ifndef _m68k_scsidrv_emu_h
+# define _m68k_scsidrv_emu_h
 
 # include "mint/mint.h"
 # include "scsidrv.h"
@@ -57,4 +57,4 @@ long _cdecl emu_scsidrv_SendMsg		(ushort bus, ushort msg);
 long _cdecl emu_scsidrv_GetMsg		(ushort bus, ushort *msg);
 
 
-# endif /* _scsidrv_emu_h */
+# endif /* _m68k_scsidrv_emu_h */

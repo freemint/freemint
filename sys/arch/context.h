@@ -2,8 +2,8 @@
  * it is not a part of the original MiNT distribution.
  */
 
-# ifndef _context_h
-# define _context_h
+# ifndef _m68k_context_h
+# define _m68k_context_h
 
 # include "mint/mint.h"
 
@@ -14,4 +14,4 @@ void _cdecl	restore_context	(CONTEXT *sav);
 void _cdecl	change_context	(CONTEXT *sav);
 
 
-# endif /* _context_h */
+# endif /* _m68k_context_h */

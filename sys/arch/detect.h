@@ -14,8 +14,8 @@
  * 
  */
 
-# ifndef _detect_h
-# define _detect_h
+# ifndef _m68k_detect_h
+# define _m68k_detect_h
 
 extern void *ControlRegA, *DataRegA;
 extern void *ControlRegB, *DataRegB;
@@ -26,4 +26,4 @@ long detect_cpu (void);		/* in detect.spp */
 long detect_fpu (void);		/* ibidem */
 
 
-# endif  /* _detect_h */
+# endif  /* _m68k_detect_h */
