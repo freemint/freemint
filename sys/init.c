@@ -244,9 +244,6 @@ init (void)
 		TRAP_Pterm0();
 	}
 
-	/* Read user defined defaults */
-	read_ini();
-
 	/* check for GEM -- this must be done from user mode */
 	if (check_for_gem())
 	{
@@ -267,6 +264,9 @@ init (void)
 		(void) TRAP_Cconin();
 		TRAP_Pterm0();
 	}
+
+	/* Read user defined defaults */
+	read_ini();
 
 	/* Ask the user if s/he wants to boot MiNT */
 	pause_and_ask();
@@ -598,6 +598,8 @@ init (void)
 # ifdef DEV_RANDOM
 	boot_print(random_greet);
 # endif
+
+	stop_and_ask();
 
 	/* initialize built-in domain ops */
 # ifdef VERBOSE_BOOT
