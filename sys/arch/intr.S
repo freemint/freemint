@@ -53,6 +53,10 @@ _mint_5ms:
 	movem.l	(sp)+,d0-d2/a0-a2	// restore C registers
 L_no_profile:
 #endif
+	subq.w	#0x01,vblcnt		// each fourth interrupt makes a "VBL"
+	bne.s	L_novbl
+	move.w	#0x0004,vblcnt
+
 #ifndef ONLY030
 	tst.w	(0x059e).w
 	beq.s	L_short_1
@@ -61,6 +65,7 @@ L_no_profile:
 L_short_1:
 	pea	_mint_vbl.w(pc)
 	move.w	sr,-(sp)
+L_novbl:
 #ifdef ONLY030
 	subq.w	#1,_uptimetick
 	tst.w	_in_kernel
@@ -107,13 +112,9 @@ mod5:	dc.w	5		// initial value matters
 	.globl	_our_clock
 	.globl	_tlist
 
-_mint_vbl:	subq.w	#0x01,vblcnt		// each fourth jump here makes a "VBL"
-	bne.w	L_out
-	move.w	#0x0004,vblcnt
+// timeout things go here (50 times per second at IPL 6)
 
-// timeout things go here (50 times per second at IPL 5)
-
-	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
+_mint_vbl:	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 	addq.l	#0x01,_c20ms
 	move.l	_keyrec,a0
 	move.w	6(a0),d0
@@ -133,11 +134,11 @@ skip:	move.w	(0x0442).w,d0
 	sub.w	d0,a1
 	move.l	a1,8(a0)
 
-// "VBL" things go here (50 times per second at IPL 4)
+// "VBL" things go here (50 times per second at IPL 3)
 
-txit:	btst	#2,24(sp)
+txit:	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
 	bne.s	L_popnout
-	move.w	#0x2300,sr
+	move.w	#0x2300,sr		// lower the current IPL
 	jsr	_checkbttys_vbl
 	lea	_uptimetick,a0
 	tst.w	(a0)
