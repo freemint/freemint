@@ -311,7 +311,7 @@ l_write (ushort inum, long pos, long len, const void *buf, int drive)
 		left -= wleft;
 	}
 	
-	rip.i_mtime = unixtime (timestamp, datestamp);
+	rip.i_mtime = CURRENT_TIME;
 	write_inode (inum, &rip, drive);
 	
 	return len - left;
