@@ -314,7 +314,7 @@ struct kentry_fs
 	 * change during a read or write operation. The parameter is the BIOS
 	 * device number of the disk that changed.
 	 */
-	void _cdecl (*drvchng)(unsigned short drv, const char *function);
+	void _cdecl (*_changedrv)(unsigned short drv, const char *function);
 
 	/* file system utility functions
 	 * -----------------------------
@@ -355,7 +355,7 @@ struct kentry_fs
 	DEFAULT_MODE, \
 	DEFAULT_DIRMODE, \
 	\
-	changedrv, \
+	_changedrv, \
 	\
 	denyshare, \
 	denylock, \

@@ -57,7 +57,7 @@
 
 /* wrapper for the kerinterface */
 
-static void   _cdecl m_changedrv (ushort drv)  { return changedrv (drv, "ext"); }
+static void   _cdecl m_changedrv (ushort drv)  { return _changedrv (drv, "ext"); }
 static void * _cdecl m_kmalloc   (ulong size)  { return _kmalloc (size, "ext"); }
 static void   _cdecl m_kfree     (void *place) { _kfree (place, "ext"); }
 static void * _cdecl m_umalloc   (ulong size)  { return _umalloc (size, "ext"); }
