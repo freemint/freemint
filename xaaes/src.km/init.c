@@ -55,10 +55,13 @@ short my_global_aes[16];
 //short	mt_graf_handle	(short *Wchar, short *Hchar, short *Wbox, short *Hbox, short *global_aes);
 
 
-static char Aes_display_name[32];
+long loader_pid = 0;
+long loader_pgrp = 0;
 
-long loader_pid = -1;
 char version[] = ASCII_VERSION;
+
+
+static char Aes_display_name[32];
 
 static void
 bootmessage(void)
@@ -134,6 +137,7 @@ init(struct kentry *k, const char *path)
 
 	/* remember loader */
 	loader_pid = p_getpid();
+	loader_pgrp = p_getpgrp();
 
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
