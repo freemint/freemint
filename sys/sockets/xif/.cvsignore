@@ -12,3 +12,10 @@ lib*.a
 *.app
 *.prg
 __target.*
+rieblmst.c
+rieblmst_fast.c
+rieblspc.c
+rieblspc_fast.c
+rieblste.c
+riebltt.c
+rtl8012st.c

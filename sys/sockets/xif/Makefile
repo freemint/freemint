@@ -47,6 +47,7 @@ RIEBL_TT_OBJS = $(addsuffix .o, $(basename $(notdir $(RIEBL_TT_SRCS))))
 PAMSDMA_OBJS = $(addsuffix .o, $(basename $(notdir $(PAMSDMA_SRCS))))
 BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
 RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
+RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir rtl8012st.c rtl8012_vblint.s)))
 
 # entry point
 entry: $(LIBKERNTARGET) $(DRIVERS)
@@ -95,11 +96,17 @@ rieblspc:
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_OBJS)" \
 		"DEFINITIONS=-DSPECIAL -DHACK"
 
+rieblspc.c:
+	ln -s lance.c $@
+
 rieblspc_fast:
 	$(MAKE) rieblspc_fast.xif \
 		"TARGET=rieblspc_fast.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_SPEC_FAST_OBJS)" \
 		"DEFINITIONS=-DSPECIAL"
+
+rieblspc_fast.c:
+	ln -s lance.c $@
 
 rieblmst:
 	$(MAKE) rieblmst.xif \
@@ -108,11 +115,17 @@ rieblmst:
 		"DEFINITIONS=-DMEGA_ST -DHACK" \
 		"PRGFLAGS=--msuper-memory"
 
+rieblmst.c:
+	ln -s lance.c $@
+
 rieblmst_fast:
 	$(MAKE) rieblmst_fast.xif \
 		"TARGET=rieblmst_fast.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_MST_FAST_OBJS)" \
 		"DEFINITIONS=-DMEGA_ST"
+
+rieblmst_fast.c:
+	ln -s lance.c $@
 
 rieblste:
 	$(MAKE) rieblste.xif \
@@ -120,11 +133,17 @@ rieblste:
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_MSTE_OBJS)" \
 		"DEFINITIONS=-DMEGA_STE"
 
+rieblste.c:
+	ln -s lance.c $@
+
 riebltt:
 	$(MAKE) riebltt.xif \
 		"TARGET=riebltt.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RIEBL_TT_OBJS)" \
 		"DEFINITIONS=-DATARI_TT"
+
+riebltt.c:
+	ln -s lance.c $@
 
 pamsdma:
 	$(MAKE) pamsdma.xif \
@@ -141,17 +160,18 @@ biodma:
 		"DEFINITIONS=-DSTANDARD_SEND_FIRST"
 
 rtl8012:
-	$(RM) $(RTL8012_OBJS)
 	$(MAKE) rtl8012.xif \
 		"TARGET=rtl8012.xif" \
 		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)" \
 		CPU=020-60
 
 rtl8012st:
-	$(RM) $(RTL8012_OBJS)
 	$(MAKE) rtl8012st.xif \
 		"TARGET=rtl8012st.xif" \
-		"XOBJS=$(COMMON_OBJS) $(RTL8012_OBJS)"
+		"XOBJS=$(COMMON_OBJS) $(RTL8012ST_OBJS)"
+
+rtl8012st.c:
+	ln -s rtl8012.c $@
 
 
 include $(top_srcdir)/DEPENDENCIES
