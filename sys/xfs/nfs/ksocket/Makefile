@@ -7,7 +7,7 @@ SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
-top_srcdir = ../../../..
+top_srcdir = ../../..
 subdir = ksocket
 
 default: all
@@ -27,7 +27,7 @@ CPU = 000
 OBJS = $(COBJS:.c=.o)
 
 $(TARGET): $(OBJS)
-	$(AR) rc $@ $(COBJS)
+	$(AR) r $@ $(OBJS)
 	$(RANLIB) $@
 
 
