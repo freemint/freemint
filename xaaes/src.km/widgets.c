@@ -1390,7 +1390,7 @@ set_widget_repeat(enum locks lock, struct xa_window *wind)
 	t->client = wind->owner;
 	t->task = do_widget_repeat;
 	t->lock = lock;
-	ikill(C.AESpid, SIGCONT);
+	wakeselect(C.Aes->p);
 }
 
 static bool
@@ -2370,7 +2370,11 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 					else if (f == XAW_HSLIDE)
 						ax = is_H_arrow(w,widg,md->x);
 
-					if (ax < 0)
+					/*
+					 * Ozk: If this is a button released click, we just return here..
+					 * same if inside a page arrow thats not active.
+					*/
+					if (ax < 0 || (!md->state && !md->cstate) )
 						/* inside a page arrow, but not active */
 						return true;
 

@@ -1307,7 +1307,7 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	 * This situation happened when right-clicking to 'drag'-scroll 
 	 * contents of a Thing directory window while AtarIrc scrolled.
 	*/
-	try = true;
+	//try = true;
 
 	CONTROL(1,1,0)
 
