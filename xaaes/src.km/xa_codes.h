@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -127,7 +127,6 @@ enum xa_opcodes
 
 	XA_FORM_POPUP		= 135,
 
-#if WDIAL
 	XA_WDIAL_CREATE		= 160,
 	XA_WDIAL_OPEN,
 	XA_WDIAL_CLOSE,
@@ -136,29 +135,15 @@ enum xa_opcodes
 	XA_WDIAL_SET,
 	XA_WDIAL_EVENT,
 	XA_WDIAL_REDRAW,
-#endif
 
-#if LBOX
 	XA_LBOX_CREATE		= 170,
 	XA_LBOX_UPDATE,
 	XA_LBOX_DO,
 	XA_LBOX_DELETE,
 	XA_LBOX_GET,
 	XA_LBOX_SET,
-#endif
 
-	/* XaAES specific extended op-codes
-	 * (these all start at 250, well out of the way of standard AES calls)
-	 */
-	XA_BUTTON_CLICK		= 250,
-	XA_NEW_CLIENT,
-	XA_CLIENT_EXIT,
-	XA_SHUTDOWN,
-
-	XA_OBJC_SETSCROLL,
-
-	XA_APPL_PIPE		= 260,
-	KtableSize
+	KtableSize		= 200
 };
 
 #endif /* _xa_codes_h */

@@ -3,7 +3,7 @@
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -32,6 +32,8 @@
 
 /* the main AES trap handler */
 long _cdecl XA_handler(void *pb);
-void setup_k_function_table(void);
+
+/* initialize trap handler table */
+void setup_handler_table(void);
 
 #endif /* _handler_h */
