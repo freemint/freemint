@@ -1013,12 +1013,11 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_f,NULL,"mouse (non AES process (%d)) %s", p_getpid(), m == M_ON ? "on" : "off"));
 #endif
 	}
-
 	/*
 	 * Ozk: For now we ignore modes other than M_OFF & M_ON
 	 * when process is not a valid AES process.
 	 */
-	if (client)
+	else if (client)
 	{
 		if (m == M_SAVE)
 		{
@@ -1047,6 +1046,11 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->mouse_form = (MFORM*)pb->addrin[0];	
 			DIAG((D_f,client,"mouse_form to %d", m));
 		}
+	}
+	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
+	{
+		graf_mouse(m, (MFORM *)pb->addrin[0]);
+		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %d)", m, p_getpid()));
 	}
 
 	/* Always return no error */
