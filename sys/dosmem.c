@@ -11,7 +11,7 @@
  * 
  */
 
-/*
+/**
  * GEMDOS emulation routines:
  * 
  * these are for the GEMDOS system calls concerning

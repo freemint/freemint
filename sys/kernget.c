@@ -459,6 +459,7 @@ kern_get_meminfo (SIZEBUF **buffer)
 	return 0;
 }
 
+
 /**
  * /kern/stat
  * The processor status.
@@ -1115,6 +1116,62 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 	return 0;
 }
 
+/**
+ * This one gets information about the used pages of the process.
+ * Uiuiui! WHAT A HACK !!
+ * It is far away from being that what it should be.
+ * I just add it to make TOP from the PROCPS-2.0.7 suit happy.
+ *
+ * Most of the stuff isn't meaningful ,because of NO Virtual-Memory(*)
+ *
+ * ATM I do not know if we have shared-stuff. I will check it, soon.
+ * Anyways, we deliver:
+ * - total	Total number of memory pages.
+ * - resid	Number of resident (non swapped) pages.	(see (*))
+ * - share	Number of shared pages.
+ * - txtrs	Text resident pages.			(see (*))
+ * - librs	Shared-lib resident size.		(see (*))
+ * - datrs	Data resident size.
+ * - dpage	Dirty pages.				(see (*))
+ *
+ */
+long
+kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
+{
+	SIZEBUF *info;
+	ulong len = 64;
+
+	ulong total = memused( p);
+	ulong resid = total;
+	ulong share = 0;
+	ulong txtrs = p->p_mem->txtsize;
+	ulong librs = 0;
+	ulong datrs = resid - txtrs;		/* Maybe that will do. */
+	ulong dpage = 0;
+
+	info = kmalloc( sizeof ( *info) + len);
+	if (!info)
+		return ENOMEM;
+
+
+	// exchange LOG2_EIGHT_K with PAGEBITS. !!!
+	// Why is it in 'kmemory.c' and not in 'kmemory.h' ?
+
+	ksprintf (info->buf, len, "%lu %lu %lu %lu %lu %lu %lu\n",
+		total >> LOG2_EIGHT_K,
+		resid >> LOG2_EIGHT_K,
+		share >> LOG2_EIGHT_K,
+		txtrs >> LOG2_EIGHT_K,
+		librs >> LOG2_EIGHT_K,
+		datrs >> LOG2_EIGHT_K,
+		dpage
+	);
+	info->len = len;
+
+	*buffer = info;
+	return 0;
+}
+
 long 
 kern_procdir_get_status (SIZEBUF **buffer, const struct proc *p)
 {
@@ -1142,7 +1199,7 @@ kern_procdir_get_status (SIZEBUF **buffer, const struct proc *p)
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
-	
+
 	crs = info->buf;
 	crs += ksprintf (crs, len - (crs - info->buf), "Name:\t%s\n", p->name);
 	switch (p->wait_q)
@@ -1183,6 +1240,8 @@ kern_procdir_get_status (SIZEBUF **buffer, const struct proc *p)
 	if (p->p_mem && p->p_mem->mem)
 	{
 		regions = p->p_mem->num_reg;
+
+		DEBUG (("status: Number of Regions: %8lu", regions));
 		
 		for (i = 0; i < regions; i++)
 		{
