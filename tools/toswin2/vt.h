@@ -12,18 +12,24 @@ void	delete_char	(TEXTWIN* tw, short x, short y);
 void	set_title	(TEXTWIN* tw);
 void	set_size	(TEXTWIN* tw);
 
-#if 0
-void	set_curs	(TEXTWIN* tw, int on);
-void	curs_on		(TEXTWIN* tw);
-void	curs_off	(TEXTWIN* tw);
-#endif
 void	reset_tabs	(TEXTWIN* tw);
 
 void	vt_quote_putch	(TEXTWIN* tw, unsigned int c);
 void	vt100_putch	(TEXTWIN* tw, unsigned int c);
 void	vt52_putch	(TEXTWIN* tw, unsigned int c);
-void	delete_line	(TEXTWIN* tw, int row, int end);
-void	insert_line	(TEXTWIN* tw, int row, int end);
+void	delete_line	(TEXTWIN* tw);
+void	insert_line	(TEXTWIN* tw);
+void	reverse_cr	(TEXTWIN* tw);
+void	new_line	(TEXTWIN* tw);
+
+void	cuu		(TEXTWIN* tw, short n);
+void	cuu1		(TEXTWIN* tw);
+void	cud		(TEXTWIN* tw, short n);
+void	cud1		(TEXTWIN* tw);
+void	cub		(TEXTWIN* tw, short n);
+void	cub1		(TEXTWIN* tw);
+void	cuf		(TEXTWIN* tw, short n);
+void	cuf1		(TEXTWIN* tw);
 
 void	original_colors (TEXTWIN* tw);
 

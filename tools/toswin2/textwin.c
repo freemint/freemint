@@ -25,7 +25,7 @@ extern int do_debug;
 #define CLEARED 2			/* redrawing a cleared area */
 
 /*
- * lokale Variablen 
+ * lokale Variablen
 */
 static MFDB scr_mfdb;	/* left NULL so it refers to the screen by default */
 
@@ -34,7 +34,7 @@ static MFDB scr_mfdb;	/* left NULL so it refers to the screen by default */
 */
 static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short force);
 static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstline, short lastline, short force);
-static void update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc, 
+static void update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 			   short force);
 static void update_cursor (WINDOW* win, int top);
 static void draw_textwin(WINDOW *v, short x, short y, short w, short h);
@@ -72,42 +72,42 @@ void char2pixel(TEXTWIN *t, short col, short row, short *xp, short *yp)
 	short x;
 
 	*yp = t->win->work.g_y - t->offy + row * t->cheight;
-	if (!WIDE) 
+	if (!WIDE)
 	{
 		*xp = t->win->work.g_x + col * t->cmaxwidth;
 	}
-	else 
-	{	
-		if (col >= NCOLS (t)) 
+	else
+	{
+		if (col >= NCOLS (t))
 			*xp = t->win->work.g_x + t->win->work.g_w;
-		else 
+		else
 		{
 			x = t->win->work.g_x;
-			while(--col >= 0) 
+			while(--col >= 0)
 				x += WIDE[t->data[row][col]];
 			*xp = x;
 		}
 	}
 }
 
-static void 
+static void
 char2grect (TEXTWIN* t, short col, short row, GRECT* g)
 {
 	short* WIDE = t->cwidths;
 
 	g->g_y = t->win->work.g_y - t->offy + row * t->cheight;
 	g->g_h = t->cheight;
-	
+
 	if (!WIDE) {
 		g->g_x = t->win->work.g_x + col * t->cmaxwidth;
 		g->g_w = t->cmaxwidth;
-	} else {	
-		if (col >= NCOLS (t)) { 
+	} else {
+		if (col >= NCOLS (t)) {
 			g->g_x = t->win->work.g_x + t->win->work.g_w;
 			g->g_w = 0;
 		} else {
 			short x = t->win->work.g_x;
-			while(--col >= 0) 
+			while(--col >= 0)
 				x += WIDE[t->data[row][col]];
 			g->g_x = x;
 			g->g_w = WIDE[t->data[row][col]];
@@ -123,15 +123,15 @@ void pixel2char(TEXTWIN *t, short x, short y, short *colp, short *rowp)
 	row = (y - t->win->work.g_y + t->offy) / t->cheight;
 	x -= t->win->work.g_x;
 
-	if (WIDE == 0) 
+	if (WIDE == 0)
 		col = x / t->cmaxwidth;
-	else 
+	else
 	{
 		count = 0;
-		for (col = 0; col <= NCOLS (t); col++) 
+		for (col = 0; col <= NCOLS (t); col++)
 		{
 			nextcount = count + WIDE[t->data[row][col]];
-			if (count <= x && x < nextcount) 
+			if (count <= x && x < nextcount)
 				break;
 			count = nextcount;
 		}
@@ -150,12 +150,12 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 	short cheight = t->cheight;
 	short pxy[8];
 	unsigned char letter[2] = { '\0', '\0' };
-	
+
 	while (*crs && x < max_x) {
 		switch (*crs) {
 			case '}': /* ACS_STERLING */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -163,10 +163,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_textcolor (textcolor);
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case '.': /* ACS_DARROW */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -174,10 +174,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_textcolor (textcolor);
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case ',': /* ACS_LARROW */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -185,10 +185,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_textcolor (textcolor);
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case '+': /* ACS_RARROW */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -196,10 +196,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_textcolor (textcolor);
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case '-': /* ACS_UARROW */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -207,7 +207,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_textcolor (textcolor);
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case 'h': /* ACS_BOARD */
 				pxy[0] = x;
 				pxy[1] = y;
@@ -218,10 +218,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				vsf_perimeter (vdi_handle, 0);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			case '~': /* ACS_BULLET */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -229,7 +229,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_textcolor (textcolor);
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case 'a': /* ACS_CKBOARD */
 				pxy[0] = x;
 				pxy[1] = y;
@@ -240,10 +240,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				vsf_perimeter (vdi_handle, 0);
 				v_bar (vdi_handle, pxy);
 				break;
-			
+
 			case 'f': /* ACS_DEGREE */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -252,7 +252,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_texteffects (0);
 				v_gtext(vdi_handle, x, y + t->cbase, letter);
 				break;
-					
+
 			case '`': /* ACS_DIAMOND */
 				pxy[0] = x + (cwidth >> 1);
 				pxy[1] = y + (cheight >> 2);
@@ -266,10 +266,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_fillstyle (1, 1);
 				v_fillarea (vdi_handle, 4, pxy);
 				break;
-			
+
 			case 'z': /* ACS_GEQUAL */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -281,10 +281,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 					v_gtext (vdi_handle, x, y + t->cbase, letter);
 				}
 				break;
-			
+
 			case '{': /* ACS_PI */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				if (t->cfg->char_tab != TAB_ATARI) {
@@ -298,7 +298,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 					v_gtext (vdi_handle, x, y + t->cbase, letter);
 				}
 				break;
-			
+
 			case 'q': /* ACS_HLINE */
 				pxy[0] = x;
 				pxy[1] = y + (cheight >> 1);
@@ -308,7 +308,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_fillstyle (1, 1);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			case 'i': /* ACS_LANTERN */
 				set_fillcolor (textcolor);
 				set_fillstyle (1, 1);
@@ -317,32 +317,32 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				pxy[2] = x + cwidth - 1;
 				pxy[3] = pxy[1];
 				v_bar (vdi_handle, pxy);
-				
+
 				pxy[1] = y + (cheight >> 1) + 1;
 				pxy[3] = pxy[1];
 				v_bar (vdi_handle, pxy);
-				
+
 				pxy[0] = x + (cwidth >> 1) - 1;
 				pxy[1] = y;
 				pxy[2] = pxy[0];
 				pxy[3] = y + (cheight >> 1) - 1;
 				v_bar (vdi_handle, pxy);
-				
+
 				pxy[0] = x + (cwidth >> 1) + 1;
 				pxy[1] = y;
 				pxy[2] = pxy[0];
 				pxy[3] = y + (cheight >> 1) - 1;
 				v_bar (vdi_handle, pxy);
-				
+
 				pxy[1] = y + cheight - 1;
 				v_bar (vdi_handle, pxy);
-				
+
 				pxy[0] = x + (cwidth >> 1) - 1;
 				pxy[2] = pxy[0];
 				v_bar (vdi_handle, pxy);
-				
+
 				break;
-			
+
 			case 'n': /* ACS_PLUS */
 				pxy[0] = x;
 				pxy[1] = y + (cheight >> 1);
@@ -357,10 +357,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				v_bar (vdi_handle, pxy);
 				v_bar (vdi_handle, pxy + 4);
 				break;
-				
+
 			case 'y': /* ACS_LEQUAL */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -372,7 +372,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 					v_gtext (vdi_handle, x, y + t->cbase, letter);
 				}
 				break;
-			
+
 			case 'm': /* ACS_LLCORNER */
 				pxy[0] = x + (cwidth >> 1);
 				pxy[1] = y;
@@ -384,7 +384,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				vsl_color (vdi_handle, textcolor);
 				v_pline (vdi_handle, 3, pxy);
 				break;
-				
+
 			case 'j': /* ACS_LRCORNER */
 				pxy[0] = x + (cwidth >> 1);
 				pxy[1] = y;
@@ -396,7 +396,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				vsl_color (vdi_handle, textcolor);
 				v_pline (vdi_handle, 3, pxy);
 				break;
-				
+
 			case '|': /* ACS_NEQUAL */
 				letter[0] = '=';
 				set_textcolor (textcolor);
@@ -404,10 +404,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = '/';
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case 'g': /* ACS_PLMINUS */
-				/* We assume that if the Atari font is 
-			         * selected,
+				/* We assume that if the Atari font is
+				    * selected,
 				 * we have a font that is already in ISO-Latin 1.
 				 */
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
@@ -415,7 +415,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_textcolor (textcolor);
 				v_gtext (vdi_handle, x, y + t->cbase, letter);
 				break;
-			
+
 			case 'o': /* ACS_S1 */
 				pxy[0] = x;
 				pxy[1] = y;
@@ -425,7 +425,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_fillstyle (1, 1);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			case 'p': /* ACS_S3 */
 				pxy[0] = x;
 				pxy[1] = y + cheight / 3;
@@ -435,7 +435,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_fillstyle (1, 1);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			case 'r': /* ACS_S7 */
 				pxy[0] = x;
 				pxy[1] = y + cheight - cheight / 3;
@@ -445,7 +445,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_fillstyle (1, 1);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			case 's': /* ACS_S9 */
 				pxy[0] = x;
 				pxy[1] = y + cheight - 1;
@@ -455,7 +455,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_fillstyle (1, 1);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			case '0': /* ACS_BLOCK */
 				pxy[0] = x;
 				pxy[1] = y;
@@ -466,7 +466,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				vsf_perimeter (vdi_handle, 0);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			case 'w': /* ACS_TTEE */
 				pxy[0] = x;
 				pxy[1] = y + (cheight >> 1);
@@ -481,7 +481,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				v_bar (vdi_handle, pxy);
 				v_bar (vdi_handle, pxy + 4);
 				break;
-			
+
 			case 'u': /* ACS_RTEE */
 				pxy[0] = x + (cwidth >> 1);
 				pxy[1] = y;
@@ -496,7 +496,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				v_bar (vdi_handle, pxy);
 				v_bar (vdi_handle, pxy + 4);
 				break;
-			
+
 			case 't': /* ACS_LTEE */
 				pxy[0] = x + (cwidth >> 1);
 				pxy[1] = y;
@@ -511,7 +511,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				v_bar (vdi_handle, pxy);
 				v_bar (vdi_handle, pxy + 4);
 				break;
-			
+
 			case 'v': /* ACS_BTEE */
 				pxy[0] = x;
 				pxy[1] = y + (cheight >> 1);
@@ -526,7 +526,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				v_bar (vdi_handle, pxy);
 				v_bar (vdi_handle, pxy + 4);
 				break;
-			
+
 			case 'l': /* ACS_ULCORNER */
 				pxy[0] = x + (cwidth >> 1);
 				pxy[1] = y + cheight - 1;
@@ -538,7 +538,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				vsl_color (vdi_handle, textcolor);
 				v_pline (vdi_handle, 3, pxy);
 				break;
-							
+
 			case 'k': /* ACS_URCORNER */
 				pxy[0] = x;
 				pxy[1] = y + (cheight >> 1);
@@ -550,7 +550,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				vsl_color (vdi_handle, textcolor);
 				v_pline (vdi_handle, 3, pxy);
 				break;
-							
+
 			case 'x': /* ACS_VLINE */
 				pxy[0] = x + (cwidth >> 1);
 				pxy[1] = y;
@@ -560,11 +560,11 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				set_fillstyle (1, 1);
 				v_bar (vdi_handle, pxy);
 				break;
-				
+
 			default:
 				break;
 		}
-		
+
 		++crs;
 		x += cwidth;
 	}
@@ -591,10 +591,10 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short 
 	use_ansi_colors (t, flag, &textcolor, &fillcolor, &texteffects);
 	x2 = x;
 	s = buf;
-	if (*s) 
+	if (*s)
 	{
 		lastnonblank = s-1;
-		while (*s) 
+		while (*s)
 		{
 			if (*s != ' ') lastnonblank = s;
 			if (WIDE)
@@ -606,12 +606,12 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short 
 		lastnonblank++;
 		if (!(flag & CE_UNDERLINE))
 			*lastnonblank = 0;
-	} 
-	else 
+	}
+	else
 		x2 = t->win->work.g_x + t->win->work.g_w;
 
 	set_wrmode(2);		/* transparent text */
-	if (fillcolor >= 0 || (force != CLEARED)) 
+	if (fillcolor >= 0 || (force != CLEARED))
 	{
 		temp[0] = x;
 		temp[1] = y;
@@ -623,16 +623,16 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short 
 	}
 
 	/* skip leading blanks -- we don't need to draw them again! */
-	if (!(flag & CE_UNDERLINE)) 
+	if (!(flag & CE_UNDERLINE))
 	{
-		while (*buf == ' ') 
+		while (*buf == ' ')
 		{
 			buf++;
 			x += WIDE ? WIDE[' '] : t->cmaxwidth;
 		}
 	}
 
-	if (*buf) 
+	if (*buf)
 	{
 		if (acs)
 		{
@@ -648,14 +648,14 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short 
 }
 
 /*
- * update the characters on screen between "firstline,firstcol" and 
+ * update the characters on screen between "firstline,firstcol" and
  * "lastline-1,lastcol-1" (inclusive)
  * if force == 1, the redraw must occur, otherwise it occurs only for
  * "dirty" characters. Note that we assume here that clipping
  * rectanges and wind_update() have already been set for us.
  */
-static void 
-update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline, 
+static void
+update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 	      short lastline, short force)
 {
 #define CBUFSIZ 127
@@ -677,7 +677,7 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 	if (t->windirty)
 		reread_size (t);
 	t->windirty = 0;
-		
+
 	/* make sure the font is set correctly */
 	set_font(t->cfont, t->cpoints);
 
@@ -685,10 +685,10 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 	char2pixel(t, firstcol, firstline, &ax, &py);
 
 	/* now write the characters we need to */
-	while (firstline < lastline) 
+	while (firstline < lastline)
 	{
 		/* if no characters on the line need re-writing, skip the loop */
-		if (!force && t->dirty[firstline] == 0) 
+		if (!force && t->dirty[firstline] == 0)
 		{
 			py += t->cheight;
 			firstline++;
@@ -709,10 +709,10 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 		lineforce = force;
 		if (!lineforce && (t->dirty[firstline] & ALLDIRTY))
 			lineforce = 1;
-		while (cnt < lastcol) 
+		while (cnt < lastcol)
 		{
 		 	c = t->data[firstline][cnt];
-		 	if (lineforce || (t->cflag[firstline][cnt] & (CDIRTY|CTOUCHED))) 
+		 	if (lineforce || (t->cflag[firstline][cnt] & (CDIRTY|CTOUCHED)))
 		 	{
 				/* yes, this character needs drawing */
 				/* if the font is proportional and the character has really changed,
@@ -727,16 +727,16 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 				if (!(curflag & CACS) && (c < t->minADE || c > t->maxADE))
 					c = '?';
 
-				if (flag == curflag) 
+				if (flag == curflag)
 				{
 					 buf[i++] = c;
 					 bufwidth += (WIDE ? WIDE[c] : t->cmaxwidth);
 					 if (i == CBUFSIZ)
-					 { 
+					 {
 						flushbuf();
 					}
-				} 
-				else 
+				}
+				else
 				{
 				 	if (i)
 				 	{
@@ -746,10 +746,10 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 					 buf[i++] = c;
 					bufwidth += (WIDE ? WIDE[c] : t->cmaxwidth);
 				}
-		  	} 
-		  	else 
+		  	}
+		  	else
 		  	{
-				if (i) 
+				if (i)
 				{
 					flushbuf();
 				}
@@ -783,10 +783,10 @@ update_cursor (WINDOW* win, int top)
 	GRECT curr, work;
 	GRECT new_curs = { 0, 0, 0, 0 };
 	GRECT old_curs = { 0, 0, 0, 0 };
-	bool off = FALSE;	
+	bool off = FALSE;
 	unsigned long old_flag = 0;
 	unsigned long new_flag = 0;
-	
+
 	if (top == 1)
 		tw->wintop = 1;
 	else if (top == 0) {
@@ -796,21 +796,21 @@ update_cursor (WINDOW* win, int top)
 	} else if (top == -1) {
 		force_draw = TRUE;
 	}
-	
+
 	/* Exits if window isn't visible or was iconified/shaded */
-	if (win->handle < 0 || (win->flags & WICONIFIED) || 
+	if (win->handle < 0 || (win->flags & WICONIFIED) ||
 	    (win->flags & WSHADED) ||
 	    (!tw->curs_on && !tw->curs_drawn)) {
 	    	tw->last_cx = tw->last_cy = -1;
 		return;
 	}
 
-	/* If the window is not on top we only have to draw something if a 
+	/* If the window is not on top we only have to draw something if a
 	   redraw has been forced by the caller or the cursor is currently
 	   not showing.  */
 	if (!force_draw && !tw->wintop && tw->curs_drawn)
 		return;
-		
+
 	work = win->work;
 	rc_intersect (&gl_desk, &work);
 	if (work.g_w == 0 || work.g_h == 0)
@@ -819,13 +819,14 @@ update_cursor (WINDOW* win, int top)
 	/* If the cursor simply flashes there is no need to remove it from
 	   the old position.  */
 	if ((tw->last_cx != tw->cx || tw->last_cy != tw->cy) &&
-	    (tw->last_cx >= 0 && tw->last_cy >= tw->miny)) {
+	    (tw->last_cx >= 0 && tw->last_cy >= tw->miny) &&
+	     tw->last_cx < tw->maxx && tw->last_cy < tw->maxy) {
 		old_flag = tw->cflag[tw->last_cy][tw->last_cx];
-		
+
 		char2grect (tw, tw->last_cx, tw->last_cy, &old_curs);
 		if (tw->curs_vvis) {
 			int selected = old_flag & CINVERSE;
-			
+
 			if (!selected)
 				old_flag &= ~CINVERSE;
 			else
@@ -833,7 +834,12 @@ update_cursor (WINDOW* win, int top)
 		}
 	}
 	char2grect (tw, tw->cx, tw->cy, &new_curs);
-	new_flag = tw->cflag[tw->cy][tw->cx];
+
+	if (tw->cx >= 0 && tw->cx < tw->maxx &&
+	    tw->cy >= tw->miny && tw->cy < tw->maxy)
+		new_flag = tw->cflag[tw->cy][tw->cx];
+	else
+		new_curs.g_w = 0;
 
 	if (force_draw || !tw->curs_drawn)
 		tw->curs_drawn = 1;
@@ -842,7 +848,7 @@ update_cursor (WINDOW* win, int top)
 
 	if (tw->curs_vvis) {
 		int selected = new_flag & CINVERSE;
-		
+
 		if (selected ^ tw->curs_drawn)
 			new_flag |= CINVERSE;
 		else
@@ -852,10 +858,10 @@ update_cursor (WINDOW* win, int top)
 			tw->curs_offy - tw->curs_height;
 		new_curs.g_h = tw->curs_height;
 	}
-	
+
 	tw->dirty[tw->cy] = SOMEDIRTY;
 	tw->cflag[tw->cy][tw->cx] |= CDIRTY;
-	
+
 	wind_update(TRUE);
 	wind_get_grect (win->handle, WF_FIRSTXYWH, &curr);
 
@@ -864,60 +870,60 @@ update_cursor (WINDOW* win, int top)
 			if (old_curs.g_w) {
 				GRECT curr2 = curr;
 				if (curr2.g_w && curr2.g_h &&
-				    rc_intersect (&old_curs, &curr2)) {
+					rc_intersect (&old_curs, &curr2)) {
 					char buf[2];
-				
+
 					if (!off)
 						off = hide_mouse_if_needed (&curr2);
 
-					set_clipping (vdi_handle, 
-						      curr2.g_x, 
-						      curr2.g_y, 
-					      	      curr2.g_w, 
-					      	      curr2.g_h, 
-					      	      TRUE);
-					
+					set_clipping (vdi_handle,
+							    curr2.g_x,
+							    curr2.g_y,
+						   		  curr2.g_w,
+						   		  curr2.g_h,
+						   		  TRUE);
+
 					buf[0]= tw->data[tw->last_cy][tw->last_cx];
 					buf[1] = '\000';
 					draw_buf (tw, buf, curr2.g_x, curr2.g_y,
-						  old_flag, 0);
+							old_flag, 0);
 				}
 			}
-			
+
 			if (new_curs.g_w && rc_intersect (&new_curs, &curr)) {
 				if (!off)
 					off = hide_mouse_if_needed (&curr);
-			
+
 				if (tw->curs_vvis || !tw->curs_drawn) {
 					char buf[2] = {
 						tw->data[tw->cy][tw->cx],
 						'\000'};
 
-					set_clipping (vdi_handle, curr.g_x, curr.g_y, 
-						      curr.g_w, curr.g_h, TRUE);
-				
+					set_clipping (vdi_handle, curr.g_x, curr.g_y,
+							    curr.g_w, curr.g_h, TRUE);
+
 					draw_buf (tw, buf, curr.g_x, curr.g_y,
-						  new_flag, 0);
+							new_flag, 0);
 				} else {
 					int fillcolor, textcolor, texteffects;
 					short xy[4] = {
-						curr.g_x, curr.g_y, 
-						curr.g_x + curr.g_w - 1, 
+						curr.g_x, curr.g_y,
+						curr.g_x + curr.g_w - 1,
 						curr.g_y + curr.g_h - 1
 					};
-					use_ansi_colors (tw, tw->term_cattr, 
-							 &textcolor, 
-							 &fillcolor, 
+					use_ansi_colors (tw, tw->term_cattr,
+							 &textcolor,
+							 &fillcolor,
 							 &texteffects);
 					set_fillcolor (textcolor);
 					set_fillstyle (1, 1);
 					set_clipping (vdi_handle, curr.g_x, curr.g_y,
-						      curr.g_w, curr.g_h, FALSE);
-					v_bar (vdi_handle, xy);		
+							    curr.g_w, curr.g_h, FALSE);
+					v_bar (vdi_handle, xy);
 				}
 			}
 		}
-		
+
 		wind_get_grect (win->handle, WF_NEXTXYWH, &curr);
 	}
 
@@ -937,11 +943,11 @@ void mark_clean(TEXTWIN *t)
 {
 	int line, col;
 
-	for (line = 0; line < t->maxy; line++) 
+	for (line = 0; line < t->maxy; line++)
 	{
 		if (t->dirty[line] == 0)
 			continue;
-		for (col = 0; col < NCOLS (t); col++) 
+		for (col = 0; col < NCOLS (t); col++)
 			t->cflag[line][col] &= ~(CDIRTY|CTOUCHED);
 		t->dirty[line] = 0;
 	}
@@ -955,9 +961,9 @@ void mark_clean(TEXTWIN *t)
  * can't mark the window clean during the update; we have to do
  * it in a separate routine (mark_clean)
  */
-static void 
-update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc, 
-	       short force)
+static void
+update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
+		short force)
 {
 	short firstline, lastline, firstscroll;
 	short firstcol, lastcol;
@@ -976,12 +982,12 @@ update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 	if (t->windirty)
 		reread_size (t);
 	t->windirty = 0;
-	
+
 	/* if t->scrolled is set, then the output routines faked the "dirty"
 	 * flags on the scrolled lines under the assumption that we would
 	 * do a blit scroll; so we do it here.
 	 */
-	if ((force == 0) && t->scrolled && (scrollht = t->scrolled * t->cheight) < hc) 
+	if ((force == 0) && t->scrolled && (scrollht = t->scrolled * t->cheight) < hc)
 	{
 		pxy[0] = xc;
 		pxy[1] = yc + (int)scrollht;
@@ -996,18 +1002,18 @@ update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 
 #if 1
 	/* if `force' is set, clear the area to be redrawn -- it looks better */
-	if (force == CLEARED) 
+	if (force == CLEARED)
 	{
 		ulong flag = 0;
 		WINCFG* cfg = t->cfg;
 		int bg_color, fg_color, style;
-		
+
 		if (cfg->vdi_colors) {
 			flag |= cfg->bg_color;
 		} else {
 			flag |= (9 | cfg->bg_effects);
 		}
-		use_ansi_colors (t, flag, &fg_color, &bg_color, &style);		
+		use_ansi_colors (t, flag, &fg_color, &bg_color, &style);
 		set_fillcolor (bg_color);
 		set_fillstyle (1, 1);
 		pxy[0] = xc;
@@ -1021,18 +1027,18 @@ update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 	/* convert from on-screen coordinates to window rows & columns */
 	pixel2char(t, xc, yc, &firstcol, &firstline);
 
-	if (firstline < 0) 
+	if (firstline < 0)
 		firstline = 0;
-	else if (firstline >= t->maxy) 
+	else if (firstline >= t->maxy)
 		firstline = t->maxy - 1;
 
 	lastline = 1 + firstline + (hc + t->cheight - 1) / t->cheight;
 
-	if (lastline > t->maxy) 
+	if (lastline > t->maxy)
 		lastline = t->maxy;
 
 	/* kludge for proportional fonts */
-	if (t->cwidths) 
+	if (t->cwidths)
 	{
 		firstcol = 0;
 		lastcol = NCOLS (t);
@@ -1041,10 +1047,10 @@ update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 		pixel2char(t, xc+wc+t->cmaxwidth-1, yc, &lastcol, &firstline);
 
 	/* if t->scrolled is set, the last few lines *must* be updated */
-	if (t->scrolled && force == 0) 
+	if (t->scrolled && force == 0)
 	{
 		firstscroll = firstline + (hc - (int)scrollht)/t->cheight;
-		if (firstscroll <= firstline) 
+		if (firstscroll <= firstline)
 		 	force = TRUE;
 		else
 		{
@@ -1064,7 +1070,7 @@ void refresh_textwin(TEXTWIN *t, short force)
 	WINDOW	*v = t->win;
 	GRECT t1, t2;
 	bool off = FALSE;
-	
+
 	/* exits if window isn't visible or was iconified/shaded */
 	if (v->handle < 0 || (v->flags & WICONIFIED) || (v->flags & WSHADED))
 		return;
@@ -1078,10 +1084,10 @@ void refresh_textwin(TEXTWIN *t, short force)
 		if (rc_intersect(&t2, &t1)) {
 			if (!off)
 				off = hide_mouse_if_needed(&t1);
-			set_clipping (vdi_handle, t1.g_x, t1.g_y, 
-				      t1.g_w, t1.g_h, TRUE);
-			update_screen (t, t1.g_x, t1.g_y, t1.g_w, t1.g_h, 
-				       force);
+			set_clipping (vdi_handle, t1.g_x, t1.g_y,
+					  t1.g_w, t1.g_h, TRUE);
+			update_screen (t, t1.g_x, t1.g_y, t1.g_w, t1.g_h,
+					   force);
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
 	}
@@ -1117,8 +1123,8 @@ static void full_textwin(WINDOW *v)
 {
 	GRECT new;
 	TEXTWIN	*t = v->extra;
-	
-	if (v->flags & WFULLED) 
+
+	if (v->flags & WFULLED)
 		wind_get_grect(v->handle, WF_PREVXYWH, &new);
 	else
 		wind_get_grect(v->handle, WF_FULLXYWH, &new);
@@ -1132,7 +1138,7 @@ static void full_textwin(WINDOW *v)
 
 	v->flags ^= WFULLED;
 	set_scroll_bars(t);
-	
+
 	t->windirty = 1;
 }
 
@@ -1141,13 +1147,13 @@ static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 {
 	GRECT full;
 	TEXTWIN	*t = v->extra;
-	
+
 	wind_get_grect(v->handle, WF_FULLXYWH, &full);
 
 #if 0
-	if (w > full.g_w) 
+	if (w > full.g_w)
 		w = full.g_w;
-	if (h > full.g_h) 
+	if (h > full.g_h)
 		h = full.g_h;
 #endif
 
@@ -1200,14 +1206,14 @@ static void newyoff(TEXTWIN *t, short y)
 #define scrollup(t, off) scrollupdn(t, off, UP)
 #define scrolldn(t, off) scrollupdn(t, off, DOWN)
 
-static void 
+static void
 scrollupdn (TEXTWIN *t, short off, short direction)
 {
 	WINDOW	*v = t->win;
 	GRECT t1, t2;
 	short pxy[8];
 	bool m_off = FALSE;
-	
+
 	if (off <= 0)
 		return;
 
@@ -1219,11 +1225,11 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 		if (rc_intersect(&t2, &t1)) {
 			if (!m_off)
 				m_off = hide_mouse_if_needed(&t1);
-			set_clipping (vdi_handle, t1.g_x, t1.g_y, 
-						  t1.g_w, t1.g_h, TRUE);
-			
-			if (off >= t1.g_h) 
-				update_screen(t, t1.g_x, t1.g_y, 
+			set_clipping (vdi_handle, t1.g_x, t1.g_y,
+							t1.g_w, t1.g_h, TRUE);
+
+			if (off >= t1.g_h)
+				update_screen(t, t1.g_x, t1.g_y,
 						 t1.g_w, t1.g_h, TRUE);
 			else {
 				if (direction  == UP) {
@@ -1247,11 +1253,11 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 				}
 				vro_cpyfm (vdi_handle, S_ONLY, pxy, &scr_mfdb, &scr_mfdb);
 				if (direction == UP)
-					update_screen (t, t1.g_x, pxy[7], 
-						       t1.g_w, off, TRUE);
+					update_screen (t, t1.g_x, pxy[7],
+							     t1.g_w, off, TRUE);
 				else
-					update_screen (t, t1.g_x, t1.g_y, 
-						       t1.g_w, off, TRUE);
+					update_screen (t, t1.g_x, t1.g_y,
+							     t1.g_w, off, TRUE);
 			}
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
@@ -1269,7 +1275,7 @@ static void arrow_textwin(WINDOW *v, short msg)
 /*
 	refresh_textwin(t, FALSE);
 */
-	switch(msg) 
+	switch(msg)
 	{
 		case WA_UPPAGE:
 			newyoff(t, t->offy - v->work.g_h);
@@ -1325,13 +1331,13 @@ static void set_scroll_bars(TEXTWIN *t)
 	/* see if the new offset is too big for the window */
 	if (t->offy + v->work.g_h > height)
 		t->offy = (int)(height - v->work.g_h);
-	if (t->offy < 0) 
+	if (t->offy < 0)
 		t->offy = 0;
 
 	vsize = (int)(1000L * v->work.g_h / height);
-	if (vsize > 1000) 
+	if (vsize > 1000)
 		vsize = 1000;
-	else if (vsize < 1) 
+	else if (vsize < 1)
 		vsize = 1;
 
 	if (height > v->work.g_h)
@@ -1339,12 +1345,12 @@ static void set_scroll_bars(TEXTWIN *t)
 	else
 		vpos = 1;
 
-	if (vpos < 1) 
+	if (vpos < 1)
 		vpos = 1;
-	else if (vpos > 1000) 
+	else if (vpos > 1000)
 		vpos = 1000;
 
-	if (v->kind & VSLIDE) 
+	if (v->kind & VSLIDE)
 	{
 		wind_set(v->handle, WF_VSLIDE, vpos, 0, 0, 0);
 		wind_set(v->handle, WF_VSLSIZE, vsize, 0, 0, 0);
@@ -1367,7 +1373,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 	long offset, height;
 	long c = (code & 0x00ff) | (((long)code & 0x0000ff00L) << 8L) | ((long)shift << 24L);
 	long r;
-	
+
 	/* Context-sensitive help */
 	if (code == 0x6200)		/* HELP */
 	{
@@ -1406,43 +1412,43 @@ static bool text_type(WINDOW *w, short code, short shift)
 		c = c & 0xFFFFFF00L;
 		c = c | (long) asc;
 	}
-	
-	if (t->miny) 
+
+	if (t->miny)
 	{
 		offset = t->miny * t->cheight;
-		if (offset > t->offy) 
+		if (offset > t->offy)
 		{
 			/* we were looking at scroll back */
 			/* now move so the cursor is visible */
 			height = t->cheight * t->maxy - w->work.g_h;
 			if (height <= 0)
 				offset = 0;
-			else 
+			else
 			{
 				offset = 1000L * t->cy * t->cheight/height;
-				if (offset > 1000L) 
+				if (offset > 1000L)
 					offset = 1000L;
 			}
 			(*w->vslid)(w, (int)offset);
 		}
 	}
-	if (t->fd) 
+	if (t->fd)
 	{
 		r = Foutstat(t->fd);
-		if (r <= 0) 
+		if (r <= 0)
 		{
 			r = Fread(t->fd, (long)READBUFSIZ, buf);
 			write_text(t, buf, r);
 			(void)Fselect(500, 0L, 0L, 0L);
 			r = Foutstat(t->fd);
 		}
-		if (r > 0) 
+		if (r > 0)
 		{
 			/* vt52 -> vt100 cursor/function key remapping */
-			if (t->vt_mode == MODE_VT100 && code >= 0x3b00 && code <= 0x5000) 
+			if (t->vt_mode == MODE_VT100 && code >= 0x3b00 && code <= 0x5000)
 			{
 				(void)Fputchar(t->fd, (long)(0x0001001bL | ((long)shift << 24L)), 0);	  /* 'ESC' */
-			  	switch (code) 
+			  	switch (code)
 			  	{
 					case 0x3b00: 	/* F1 */
 						(void)Fputchar(t->fd, (long)(0x0018004fL | ((long)shift << 24L)), 0);	 /* 'O' */
@@ -1485,7 +1491,7 @@ static bool text_type(WINDOW *w, short code, short shift)
  						(void)Fputchar(t->fd, (long)(0x00150059L | ((long)shift << 24L)), 0);	 /* 'Y' */
  						break;
 				  	case 0x4800: 	/* up arrow */
-						switch (t->curs_mode) 
+						switch (t->curs_mode)
 						{
 							case CURSOR_NORMAL:
 								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
@@ -1497,7 +1503,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 						(void)Fputchar(t->fd, (long)(0x001e0041L | ((long)shift << 24L)), 0);	 /* 'A' */
 						break;
 				  	case 0x4b00: 	/* left arrow */
-						switch (t->curs_mode) 
+						switch (t->curs_mode)
 						{
 							case CURSOR_NORMAL:
 								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
@@ -1509,7 +1515,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 						(void)Fputchar(t->fd, (long)(0x00200044L | ((long)shift << 24L)), 0);	 /* 'D' */
 						break;
 				  	case 0x4d00: 	/* right arrow */
-						switch (t->curs_mode) 
+						switch (t->curs_mode)
 						{
 							case CURSOR_NORMAL:
 								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
@@ -1521,7 +1527,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 						(void)Fputchar(t->fd, (long)(0x002e0043L | ((long)shift << 24L)), 0);	 /* 'C' */
 						break;
 				  	case 0x5000: 	/* down arrow */
-						switch (t->curs_mode) 
+						switch (t->curs_mode)
 						{
 							case CURSOR_NORMAL:
 								(void)Fputchar(t->fd, (long)(0x001a005bL | ((long)shift << 24L)), 0); 	/* '[' */
@@ -1572,7 +1578,7 @@ static bool text_click(WINDOW *w, short clicks, short x, short y, short kshift, 
 	{
 		/* convert to character coordinates */
 		pixel2char(t, x, y, &x1, &y1);
-		
+
 		if (clicks == 2)								/* double click -> select word */
 		{
 			if (select_word(t, x1, y1))
@@ -1596,14 +1602,14 @@ static bool text_click(WINDOW *w, short clicks, short x, short y, short kshift, 
 				if (t->cflag[y1][x1] & CSELECTED)	/* clicked on selected text */
 				{
 					char	sel[80];
-					
+
 					copy(w, sel, 80);
 					send_to("STRNGSRV", sel);		/* send it to StringServer */
 				}
 				else
 					unselect(t);						/* single click -> deselect all */
 			}
-		}			
+		}
 	}
 	else if (button == 2)							/* right click */
 	{
@@ -1626,11 +1632,11 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	short firstchar, lastchar, distances[5], maxwidth, effects[3];
 	short i;
 	ulong flag;
-	
+
 	t = malloc (sizeof *t);
-	if (!t) 
+	if (!t)
 		return NULL;
-		
+
 	memset (t, 0, sizeof *t);
 
 	t->maxx = cfg->col;
@@ -1645,8 +1651,8 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	}
 
 	t->scroll_top = t->miny;
-	t->scroll_bottom = t->maxy-1;
-	
+	t->scroll_bottom = t->maxy;
+
 	/* we get font data from the VDI */
 	set_font(cfg->font_id, cfg->font_pts);
 	vqt_fontinfo(vdi_handle, &firstchar, &lastchar, distances, &maxwidth, effects);
@@ -1663,7 +1669,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	/* initialize the window data */
 	t->alloc_width = (NCOLS (t) + 15) & 0xfffffff0;
 	t->alloc_height = (t->maxy + 15) & 0xfffffff0;
-		
+
 	t->data = malloc(sizeof(char *) * t->alloc_height);
 	t->cflag = malloc(sizeof(void *) * t->alloc_height);
 	t->dirty = malloc((size_t)t->alloc_height);
@@ -1678,26 +1684,23 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->curs_vvis = 0;
 	t->curs_drawn = 0;
 	t->wintop = 0;
-	
+
 	t->cfg = cfg;
 	original_colors (t);
-	flag = t->term_cattr;		
+	flag = t->term_cattr;
 
 	memset (t->dirty, 0, (sizeof t->dirty[0]) * t->maxy);
-	
-	for (i = 0; i < t->alloc_height; ++i) 
+
+	for (i = 0; i < t->alloc_height; ++i)
 	{
-		if (cfg->vdi_colors)
-			flag = COLORS (cfg->fg_color, cfg->bg_color);
-		
 		t->data[i] = malloc ((size_t) t->alloc_width);
-		t->cflag[i] = malloc(sizeof (long) * 
-		              ((size_t) (t->alloc_width)));
-		if (!t->cflag[i] || !t->data[i]) 
+		t->cflag[i] = malloc(sizeof (long) *
+				((size_t) (t->alloc_width)));
+		if (!t->cflag[i] || !t->data[i])
 			goto bail_out;
-		
+
 		memset (t->data[i], ' ', t->alloc_width);
-		
+
 		if (i == 0)
 			memulset (t->cflag[i], flag, t->alloc_width);
 		else
@@ -1708,9 +1711,9 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->scrolled = t->nbytes = t->draw_time = 0;
 
 	/* initialize the WINDOW struct */
-	v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos, cfg->width, cfg->height, 
+	v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos, cfg->width, cfg->height,
 			  SHRT_MAX, SHRT_MAX);
-	if (!v) 
+	if (!v)
 	{
 		/* FIXME: Cleanup for dirty, data, and cflag, too.  */
 		free(t);
@@ -1737,7 +1740,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	v->arrowed = arrow_textwin;
 	v->vslid = vslid_textwin;
 	v->timer = update_cursor;
-	
+
 	v->keyinp = text_type;
 	v->mouseinp = text_click;
 
@@ -1748,34 +1751,34 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 		t->cy = t->maxy - (v->work.g_h / t->cheight);
 	}
 	else
-	{	
+	{
 		t->offy = cfg->scroll * t->cheight;
 		t->cy = t->miny;
 	}
 
 	t->fd = t->pgrp = 0;
-	
+
 	t->pty[0] = '\0';
 	t->shell = NO_SHELL;
 
 	t->prog = t->cmdlin = t->progdir = 0;
-	
+
 	t->block_x1 = 0;
 	t->block_x2 = 0;
 	t->block_y1 = 0;
 	t->block_y2 = 0;
-	
+
 	t->savex = t->savey = 0;
 	t->save_cattr = t->term_cattr;
 	t->last_cx = t->last_cy = -1;
-	
+
 	t->curs_height = t->cheight >> 3;
 	if (t->curs_height < 1)
 		t->curs_height = 1;
 	t->curs_offy = 1;
 	if (t->curs_offy + t->curs_height > t->cheight)
 		t->curs_offy = 0;
-	
+
 	return t;
 
 bail_out:
@@ -1784,7 +1787,7 @@ bail_out:
 		for (i = 0; i < t->maxy; ++i) {
 			if (t->data[i])
 				free (t->data[i]);
-			if (t->cflag[i]) 
+			if (t->cflag[i])
 				free (t->cflag[i]);
 		}
 	}
@@ -1795,7 +1798,7 @@ bail_out:
 		free (t->dirty);
 	if (t->cflag)
 		free (t->cflag);
-	return NULL;	
+	return NULL;
 }
 
 /*
@@ -1806,16 +1809,16 @@ void destroy_textwin(TEXTWIN *t)
 	int i;
 
 	destroy_window(t->win);
-	for (i = 0; i < t->maxy; i++) 
+	for (i = 0; i < t->maxy; i++)
 	{
 		free(t->data[i]);
 		free(t->cflag[i]);
 	}
-	if (t->prog) 
+	if (t->prog)
 		free(t->prog);
-	if (t->cmdlin) 
+	if (t->cmdlin)
 		free(t->cmdlin);
-	if (t->progdir) 
+	if (t->progdir)
 		free(t->progdir);
 
 	free(t->cflag);
@@ -1823,7 +1826,7 @@ void destroy_textwin(TEXTWIN *t)
 	free(t->dirty);
 	if (t->cwidths)
 		free(t->cwidths);
-	
+
 	/* Prozež korrekt abmelden */
 	term_proc(t);
 
@@ -1835,9 +1838,9 @@ void textwin_term(void)
 {
 	WINDOW	*v;
 	TEXTWIN	*t;
-	
+
 	v = gl_winlist;
-	while (v) 
+	while (v)
 	{
 		t = v->extra;
 		term_proc(t);
@@ -1860,7 +1863,7 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 	if (t->cfont == font && t->cpoints == points)
 		return;		/* no real change happens */
 
-	if (w->handle >= 0) 
+	if (w->handle >= 0)
 	{
 		wind_close(w->handle);
 		wind_delete(w->handle);
@@ -1884,9 +1887,9 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 	t->win->max_h = height = NROWS(t) * t->cheight;
 
 	wind_calc(WC_BORDER, w->kind, w->full.g_x, w->full.g_y, width, height, &dummy, &dummy, &w->full.g_w, &w->full.g_h);
-	if (w->full.g_w > gl_desk.g_w) 
+	if (w->full.g_w > gl_desk.g_w)
 		w->full.g_w = gl_desk.g_w;
-	if (w->full.g_h > gl_desk.g_h) 
+	if (w->full.g_h > gl_desk.g_h)
 		w->full.g_h = gl_desk.g_h;
 
 	if (w->full.g_x + w->full.g_w > gl_desk.g_x + gl_desk.g_w)
@@ -1900,7 +1903,7 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 }
 
 static void
-emergency_close (TEXTWIN* tw) 
+emergency_close (TEXTWIN* tw)
 {
 	close_textwin (tw->win);
 	form_alert (1, "[3][ Virtual memory exhausted ][ OK ]");
@@ -1908,7 +1911,7 @@ emergency_close (TEXTWIN* tw)
 
 /* Change scrollback buffer of new window to new
    amount of lines.  */
-static void 
+static void
 change_scrollback (TEXTWIN* tw, short scrollback)
 {
 	short diff = scrollback - tw->miny;
@@ -1918,21 +1921,21 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 	else if (diff < 0) {
 		unsigned char* tmp_data = alloca (-diff * sizeof tmp_data);
 		unsigned long* tmp_cflag = alloca ((-diff) * sizeof tmp_cflag);
-						   		
-		/* Scrollback is becoming smaller.  We move the lines 
-		   at the top to the bottom.  */
-		
-		memmove (tw->dirty, tw->dirty - diff, 
+
+		/* Scrollback is becoming smaller.  We move the lines
+		   at the top to the bottom.	*/
+
+		memmove (tw->dirty, tw->dirty - diff,
 			 (sizeof *tw->dirty) * (tw->maxy + diff));
-		
+
 		memcpy (tmp_data, tw->data + tw->maxy + diff,
 			(sizeof tmp_data) * (-diff));
 		memcpy (tmp_cflag, tw->cflag + tw->maxy + diff,
 			(sizeof tmp_cflag) * (-diff));
 
-		memmove (tw->data, tw->data - diff, 
+		memmove (tw->data, tw->data - diff,
 			 (sizeof tmp_data) * (tw->maxy + diff));
-		memmove (tw->cflag, tw->cflag - diff, 
+		memmove (tw->cflag, tw->cflag - diff,
 			 (sizeof tmp_cflag) * (tw->maxy + diff));
 
 		memcpy (tw->data + tw->maxy + diff, tmp_data,
@@ -1944,58 +1947,58 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 		/* Scrollback is becoming bigger.  */
 		if (tw->maxy + diff > tw->alloc_height) {
 			unsigned short saved_height = tw->alloc_height;
-			
+
 			size_t data_chunk;
-			size_t cflag_chunk;		
+			size_t cflag_chunk;
 
 			tw->alloc_height = (tw->maxy + diff + 15) & 0xfffffff0;
-			data_chunk = (sizeof tw->data[0][0]) * 
-			              tw->alloc_width;
-			cflag_chunk = (sizeof tw->cflag[0][0]) * 
-				      tw->alloc_width;
-	
-			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) * 
-					     tw->alloc_height);
+			data_chunk = (sizeof tw->data[0][0]) *
+					 tw->alloc_width;
+			cflag_chunk = (sizeof tw->cflag[0][0]) *
+					  tw->alloc_width;
+
+			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) *
+						  tw->alloc_height);
 			if (tw->dirty == NULL)
 				goto bail_out;
 			tw->data = realloc (tw->data, (sizeof *tw->data) *
-					    tw->alloc_height);
+						 tw->alloc_height);
 			if (tw->data == NULL)
 				goto bail_out;
 			tw->cflag = realloc (tw->cflag, (sizeof *tw->cflag) *
-					     tw->alloc_height);
+						  tw->alloc_height);
 			if (tw->cflag == NULL)
 				goto bail_out;
-			
+
 			for (i = saved_height; i < tw->alloc_height; ++i) {
 				tw->data[i] = malloc (data_chunk);
 				tw->cflag[i] = malloc (cflag_chunk);
-			
+
 				if (tw->data[i] == NULL || tw->cflag[i] == NULL)
 					goto bail_out;
 			}
 		}
-		
-		memmove (tw->dirty, tw->dirty + diff, 
+
+		memmove (tw->dirty, tw->dirty + diff,
 			 (sizeof *tw->dirty) * tw->maxy);
 
-		memset (tw->dirty, 0, 
-		        (sizeof tw->dirty[0]) * tw->maxy);
-		
-		memmove (tw->data + diff, tw->data, 
+		memset (tw->dirty, 0,
+			  (sizeof tw->dirty[0]) * tw->maxy);
+
+		memmove (tw->data + diff, tw->data,
 			 (sizeof *tw->data) * tw->maxy);
-		memmove (tw->cflag + diff, tw->cflag, 
+		memmove (tw->cflag + diff, tw->cflag,
 			 (sizeof *tw->cflag) * tw->maxy);
 
 		for (i = 0; i < diff; ++i) {
 			memset (tw->data[i], ' ', (sizeof tw->data[0][0]) * NCOLS (tw));
-			
+
 			if (i == 0)
-				memulset (tw->cflag[i], tw->term_cattr, 
+				memulset (tw->cflag[i], tw->term_cattr,
 					  NCOLS (tw));
 			else
-				memcpy (tw->cflag[i], tw->cflag[0], 
-					(sizeof tw->cflag[0][0]) * 
+				memcpy (tw->cflag[i], tw->cflag[0],
+					(sizeof tw->cflag[0][0]) *
 					 NCOLS (tw));
 		}
 
@@ -2004,28 +2007,28 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 	tw->miny += diff;
 	tw->maxy += diff;
 	tw->cy += diff;
-	
+
 	/* Reset scrolling region.  */
 	tw->scroll_top += diff;
 	tw->scroll_bottom += diff;
 
 	tw->offy += diff * tw->cheight;
-	
+
 	set_scroll_bars (tw);
-	
+
 	return;
-	
+
 bail_out:
 	emergency_close (tw);
-	
+
 }
 
 /* Change number of visible lines in window.  */
-static void 
+static void
 change_height (TEXTWIN* tw, short rows)
 {
 	short diff = rows - NROWS (tw);
-	
+
 	if (diff == 0)
 		return;
 	else if (diff > 0) {
@@ -2035,78 +2038,76 @@ change_height (TEXTWIN* tw, short rows)
 		if (tw->maxy + diff > tw->alloc_height) {
 			unsigned short saved_height = tw->alloc_height;
 			size_t data_chunk;
-			size_t cflag_chunk;		
+			size_t cflag_chunk;
 
 			tw->alloc_height = (tw->maxy + diff + 15) & 0xfffffff0;
-			data_chunk = (sizeof tw->data[0][0]) * 
-			             tw->alloc_width;
-			cflag_chunk = (sizeof tw->cflag[0][0]) * 
-				      tw->alloc_width;
-			
-			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) * 
-					     tw->alloc_height);
+			data_chunk = (sizeof tw->data[0][0]) *
+					tw->alloc_width;
+			cflag_chunk = (sizeof tw->cflag[0][0]) *
+					  tw->alloc_width;
+
+			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) *
+						  tw->alloc_height);
 			if (tw->dirty == NULL)
 				goto bail_out;
 			tw->data = realloc (tw->data, (sizeof *tw->data) *
-					    tw->alloc_height);
+						 tw->alloc_height);
 			if (tw->data == NULL)
 				goto bail_out;
 			tw->cflag = realloc (tw->cflag, (sizeof *tw->cflag) *
-					     tw->alloc_height);
+						  tw->alloc_height);
 			if (tw->cflag == NULL)
 				goto bail_out;
-			
+
 			for (i = saved_height; i < tw->alloc_height; ++i) {
 				tw->data[i] = malloc (data_chunk);
 				tw->cflag[i] = malloc (cflag_chunk);
-			
+
 				if (tw->data[i] == NULL || tw->cflag[i] == NULL)
 					goto bail_out;
 			}
 		}
-		
+
 		for (i = tw->maxy; i < tw->maxy + diff; ++i) {
 			memset (tw->data[i], ' ', (sizeof tw->data[0][0]) * NCOLS (tw));
-			
+
 			if (i == tw->maxy)
-				memulset (tw->cflag[i], tw->term_cattr, 
+				memulset (tw->cflag[i], tw->term_cattr,
 					  NCOLS (tw));
 			else
-				memcpy (tw->cflag[i], tw->cflag[tw->maxy], 
-					(sizeof tw->cflag[tw->maxy][0]) * 
+				memcpy (tw->cflag[i], tw->cflag[tw->maxy],
+					(sizeof tw->cflag[tw->maxy][0]) *
 					 NCOLS (tw));
 		}
 
-	        memset (tw->dirty + tw->maxy, ALLDIRTY, diff);
+		 memset (tw->dirty + tw->maxy, ALLDIRTY, diff);
 	}
 
 	tw->maxy += diff;
 	if (tw->cy > tw->maxy)
 		tw->cy = tw->maxy;
-	
-	/* This may screw up curses programs but it will not
-	   break anything.  */
-	tw->scroll_bottom += diff;
-	if (tw->scroll_top >= tw->scroll_bottom)
-		tw->scroll_top = tw->miny;
-		
+
+	tw->scroll_bottom = tw->maxy;
+	tw->scroll_top = tw->miny;
+	tw->origin = 0;
+
 	/* Dunno why this is necessary.  */
 	tw->offy += diff * tw->cheight;
-	
+
 	set_scroll_bars (tw);
-		
+
 	return;
-	
+
 bail_out:
 	emergency_close (tw);
-	
+
 }
 
 static void
 change_width (TEXTWIN* tw, short cols)
 {
 	short diff = cols - NCOLS (tw);
-	
+
 	if (diff == 0)
 		return;
 	else if (diff > 0) {
@@ -2114,91 +2115,91 @@ change_width (TEXTWIN* tw, short cols)
 		unsigned long flag = tw->term_cattr | CDIRTY | CTOUCHED;
 		int old_cols = NCOLS (tw);
 		int new_cols = old_cols + diff;
-		
+
 		/* We need to enlarge the buffer.  */
 		if (new_cols + 1 > tw->alloc_width) {
 			size_t data_chunk;
-			size_t cflag_chunk;		
+			size_t cflag_chunk;
 
 			tw->alloc_width = (tw->maxx + diff + 15) & 0xfffffff0;
 			data_chunk = (sizeof tw->data[0][0]) * tw->alloc_width;
 			cflag_chunk = (sizeof tw->cflag[0][0]) * tw->alloc_width;
-			
+
 			for (i = 0; i < tw->alloc_height; ++i) {
 				tw->data[i] = realloc (tw->data[i], data_chunk);
 				tw->cflag[i] = realloc (tw->cflag[i], cflag_chunk);
-			
+
 				if (tw->data[i] == NULL || tw->cflag[i] == NULL)
 					goto bail_out;
 			}
 		}
-		
+
 		/* Initialize the freshly exposed columns.  */
 		for (i = 0; i < tw->maxy; ++i) {
 			memset (tw->data[i] + old_cols, ' ', diff);
-			
+
 			if (i == 0)
-				memulset (tw->cflag[i] + old_cols, 
+				memulset (tw->cflag[i] + old_cols,
 					  flag, diff);
 			else
-				memcpy (tw->cflag[i] + old_cols, 
-					tw->cflag[0] + old_cols, 
-					(sizeof tw->cflag[0][0]) * 
+				memcpy (tw->cflag[i] + old_cols,
+					tw->cflag[0] + old_cols,
+					(sizeof tw->cflag[0][0]) *
 					 diff);
 		}
-	        memset (tw->dirty, SOMEDIRTY, tw->maxy);
+		 memset (tw->dirty, SOMEDIRTY, tw->maxy);
 	}
 
 	tw->maxx += diff;
 	if (tw->cx >= NCOLS (tw))
 		tw->cx = NCOLS (tw) - 1;
-	
+
 	return;
-	
+
 bail_out:
 	emergency_close (tw);
-	
+
 }
 
-/* 
+/*
  * make a text window have a new number of rows and columns, and
  * a new amount of scrollback
  */
-void 
+void
 resize_textwin (TEXTWIN* tw, short cols, short rows, short scrollback)
 {
 	int changed = 0;
-	
-	if (NCOLS (tw) == cols && SCROLLBACK (tw) == scrollback && 
+
+	if (NCOLS (tw) == cols && SCROLLBACK (tw) == scrollback &&
 	    tw->maxy == rows + scrollback)
 		return;		/* no change */
 
 	if (NCOLS (tw) != cols && (changed = 1))
 		change_width (tw, cols);
-		
+
 	if (NROWS (tw) != rows && (changed = 1))
 		change_height (tw, rows);
-		
+
 	if (tw->miny != scrollback)
 		change_scrollback (tw, scrollback);
-	
+
 	if (changed) {
 		GRECT border;
 		WINDOW* win = tw->win;
-			
+
 		tw->cfg->col = NCOLS (tw);
 		tw->cfg->row = NROWS (tw);
 		tw->cfg->scroll = tw->miny;
-	
+
 		win->work.g_w = NCOLS (tw) * tw->cmaxwidth;
 		win->work.g_h = NROWS (tw) * tw->cheight;
 
-		wind_calc (WC_BORDER, win->kind, 
+		wind_calc (WC_BORDER, win->kind,
 			   win->work.g_x, win->work.g_y,
-			   win->work.g_w, win->work.g_h, 
-		   	   &border.g_x, &border.g_y, 
-		   	   &border.g_w, &border.g_h);
-		wind_set (win->handle, WF_CURRXYWH, 
+			   win->work.g_w, win->work.g_h,
+		   		 &border.g_x, &border.g_y,
+		   		 &border.g_w, &border.g_h);
+		wind_set (win->handle, WF_CURRXYWH,
 			  border.g_x, border.g_y,
 		  	  border.g_w, border.g_h);
 
@@ -2209,20 +2210,20 @@ resize_textwin (TEXTWIN* tw, short cols, short rows, short scrollback)
 }
 
 static void
-reread_size (TEXTWIN* tw) 
+reread_size (TEXTWIN* tw)
 {
 	int rows = tw->win->work.g_h / tw->cheight;
 	int cols = tw->win->work.g_w / tw->cmaxwidth;
 	int changed = 0;
-	
+
 	if (cols != NCOLS (tw) && (changed = 1))
 		change_width (tw, cols);
 	if (rows != NROWS (tw) && (changed = 1))
 		change_height (tw, rows);
-	
+
 	tw->cfg->col = cols;
 	tw->cfg->row = rows;
-	
+
 	if (changed)
 		notify_winch (tw);
 }
@@ -2231,19 +2232,17 @@ void
 notify_winch (TEXTWIN* tw)
 {
 	struct winsize ws;
-	
+
 	ws.ws_row = NROWS (tw);
 	ws.ws_col = NCOLS (tw);
 	ws.ws_xpixel = ws.ws_ypixel = 0;
 	(void) Fcntl (tw->fd, &ws, TIOCSWINSZ);
-	(void) Pkill (-(tw->pgrp), SIGWINCH);	
+	(void) Pkill (-(tw->pgrp), SIGWINCH);
 }
 
-void 
+void
 reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 {
-	int i;
-
 	change_window_gadgets(t->win, cfg->kind);
 	if (cfg->title[0] != '\0')
 		title_window(t->win, cfg->title);
@@ -2252,14 +2251,9 @@ reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 
 	original_colors (t);
 
-	for (i = 0; i < t->maxy; i++) 
-	{
-		t->dirty[i] = ALLDIRTY;
-		memulset (t->cflag[i], COLORS (cfg->fg_color, cfg->bg_color),
-			  NCOLS (t));
-	}
+	memset (t->dirty, ALLDIRTY, t->alloc_height);
 
-	refresh_textwin(t, TRUE);
+	refresh_textwin(t, FALSE);
 
 	/* cfg->vt_mode wird bewužt ignoriert -> wirkt erst bei neuem Fenster */
 }
@@ -2275,26 +2269,26 @@ static void set_cwidths(TEXTWIN *t)
 	short monospaced = 1;
 	short dfltwide;
 
-	if (t->cwidths) 
+	if (t->cwidths)
 	{
 		free(t->cwidths);
 		t->cwidths = 0;
 	}
 	vqt_width(vdi_handle, '?', &dfltwide, &dummy, &dummy);
 
-	for (i = 0; i < 255; i++) 
+	for (i = 0; i < 255; i++)
 	{
 		status = vqt_width(vdi_handle, i, &wide, &dummy, &dummy);
-		if (status == -1) 
+		if (status == -1)
 			wide = dfltwide;
 		if (wide != t->cmaxwidth)
 			monospaced = 0;
 		widths[i] = wide;
 	}
-	if (!monospaced) 
+	if (!monospaced)
 	{
 		t->cwidths = malloc(256 * sizeof(short));
-		if (!t->cwidths) 
+		if (!t->cwidths)
 			return;
 		for (i = 0; i < 255; i++)
 			t->cwidths[i] = widths[i];
@@ -2311,7 +2305,7 @@ void sendstr(TEXTWIN *t, char *s)
 
 	if (t->fd > 0 && t->fd != con_fd)
 	{
-		while (*s) 
+		while (*s)
 		{
 			c = *((unsigned char *)s);
 			s++;
@@ -2338,21 +2332,21 @@ void write_text(TEXTWIN *t, char *b, long len)
 	else
 		cnt = len;
 
-	while (cnt-- > 0) 
+	while (cnt-- > 0)
 	{
 		c = *src++;
 		if (c != '\0')
 		{
 			(*t->output)(t, c);
 			t->nbytes++;
-			/* The number of scrolled lines is ignored 
+			/* The number of scrolled lines is ignored
 			   as an experimental feature.  There is no
-			   point in artificially pulling a break 
-			   when output is too fast too read.  
+			   point in artificially pulling a break
+			   when output is too fast too read.
 			   This may look strange but it enhance the
 			   usability and subjective performance.  */
-			if ((draw_ticks > MAX_DRAW_TICKS && 
-			     t->nbytes >= THRESHOLD) 
+			if ((draw_ticks > MAX_DRAW_TICKS &&
+				t->nbytes >= THRESHOLD)
 			    || (0 && t->scrolled >= limit))
 				refresh_textwin(t, FALSE);
 		}
@@ -2366,10 +2360,10 @@ TEXTWIN *get_textwin(short handle, short talkID)
 {
 	WINDOW *w;
 	TEXTWIN	*t;
-	
-	if (handle < 0 || talkID < 0) 
+
+	if (handle < 0 || talkID < 0)
 		return NULL;
-	
+
 	for (w = gl_winlist; w; w = w->next)
 	{
 		if (handle > 0 && w->handle == handle)
