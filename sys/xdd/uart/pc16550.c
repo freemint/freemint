@@ -2438,7 +2438,7 @@ tx_stop (IOVAR *iovar)
 		DEBUG (("tx_stop: stop transmitter"));
 		
 		/* transmitter stopped */
-		iovar->tx_empty = 0;
+		iovar->tx_empty = 1;
 		
 		/* disable interrupts */
 		top_txint_off (iovar);
