@@ -72,6 +72,7 @@ long _cdecl sys_t_settime (ushort time);
 /* New GEMDOS extensions */
 long _cdecl sys_t_gettimeofday (struct timeval *tv, struct timezone *tz);
 long _cdecl sys_t_settimeofday (struct timeval *tv, struct timezone *tz);
+long _cdecl sys_t_adjtime      (const struct timeval *delta, struct timeval *olddelta);
 
 /* XBIOS */
 long _cdecl sys_b_gettime (void);

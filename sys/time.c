@@ -313,6 +313,44 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 	return E_OK;
 }
 
+/* Adjust the current time of day by the amount in DELTA.
+ * If OLDDELTA is not NULL, it is filled in with the amount
+ * of time adjustment remaining to be done from the last
+ * Tadjtime() call.
+ */
+long _cdecl
+sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
+{
+	TRACE (("Tadjtime (delta = 0x%x, olddelta = 0x%x)", delta, olddelta));
+
+	if (!suser (curproc->p_cred->ucr))
+	{
+		DEBUG (("t_adjtime: attempt to change time by unprivileged user"));
+		return EPERM;
+	}
+
+	if (delta != NULL) {
+		struct timeval tv;
+		long retval = do_gettimeofday(&tv);
+		if (retval < 0)
+			return retval;
+
+		tv.tv_usec += delta->tv_usec;
+		if (tv.tv_usec >= 1000000L)
+		{
+			tv.tv_usec -= 1000000L;
+			tv.tv_sec++;
+		}
+		tv.tv_sec += delta->tv_sec;
+		
+		retval = do_settimeofday (&tv);
+		if (retval < 0)
+			return retval;
+	}
+
+	return E_OK;
+}
+
 /* Most programs assume that the values returned by Tgettime()
  * and Tgetdate() are in local time.  We won't disappoint them.
  * However it is favorable to have at least the high-resolution
