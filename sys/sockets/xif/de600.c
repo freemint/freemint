@@ -40,16 +40,12 @@
 
 # include <mint/asm.h>
 # include <mint/dcntl.h>
+# include <arch/timer.h>
 
 # include <osbind.h>
 
 
 # define DE600_VERSION	"0.4"
-
-/*
- * 200 Hz timer
- */
-# define HZ200 (*(volatile long *)0x4baL)
 
 /*
  * Some macros for managing the output queue.
@@ -155,7 +151,7 @@ de600_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pkty
 	 */
 	if (!Q_EMPTY (pr))
 	{
-		ticks = HZ200+1;
+		ticks = *hz_200+1;
 		do {
 			stat = recv_stat () & (TX_BUSY|TX_FAILED16|RX_GOOD);
 			if (stat & RX_GOOD)
@@ -172,10 +168,10 @@ de600_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pkty
 				nif->collisions++;
 				send_addr (TX_ADDR, Q_LAST (pr));
 				send_cmd (pr->rx_page, TX_ENABLE);
-				ticks = HZ200+1;
+				ticks = *hz_200+1;
 			}
 		}
-		while (!Q_EMPTY (pr) && HZ200 - ticks <= 0);
+		while (!Q_EMPTY (pr) && *hz_200 - ticks <= 0);
 		
 		/*
 		 * transmission timed out
