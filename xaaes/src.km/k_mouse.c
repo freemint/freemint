@@ -94,8 +94,8 @@ static struct moose_data md_buff[MDBUF_SIZE];
  * Now the condition is "NOT (button #0 released AND button #1
  * released)". Or in other words: "button #0 pressed OR button #1
  * pressed". Nice, isn't it?!
+ * 
  */
-
 
 static void
 new_mu_mouse(struct moose_data *md)
@@ -113,7 +113,7 @@ new_mu_mouse(struct moose_data *md)
 	/*
 	 * If this packet had buttons released upon being sent
 	 * by moose, it contains both a click and a release event
-	*/
+	 */
 	if (md->state && !md->cstate)
 		mu_button.newr	= 1;	/* Indicate button release */
 	else
@@ -135,7 +135,7 @@ new_active_widget_mouse(struct moose_data *md)
 /*
  * Ozk: Store a moose packet in our queue
  * We dont collec more than one MOVEMENT packet, the most recent one.
-*/
+ */
 static void
 buffer_moose_pkt(struct moose_data *md)
 {
@@ -154,7 +154,7 @@ buffer_moose_pkt(struct moose_data *md)
 /*
  * Ozk: Read a packet out of our queue. Button event packets are
  * prioritized.
-*/
+ */
 static int
 unbuffer_moose_pkt(struct moose_data *md)
 {
@@ -227,7 +227,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				mu_button.newc = 0;
 
 				client->usr_evnt = 1;
-				
 				DIAG((D_button, NULL, " - written"));
 			}
 		}
@@ -307,7 +306,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	/*
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
-	*/
+	 */
 	if (C.menu_base && md->state)
 	{
 		client = C.menu_base->client;
@@ -317,7 +316,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	}
 	/*
 	 * If button released and widget_active is set (live movements)...
-	*/
+	 */
 	if (widget_active.widg && !md->state)
 	{
 		widget_active.m = *md;
@@ -353,7 +352,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 
 	/*
 	 * Found a window under mouse, and no mouse lock
-	*/
+	 */
 	if (wind && !locker)
 	{
 		client = wind == root_window ? get_desktop()->owner : wind->owner;
@@ -361,7 +360,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		 * Ozk: If root window owner and desktop owner is not the same, the Desktop
 		 * should get the clicks made on it. If no desktop is installed, XaAES
 		 * XaAES is also the desktop owner (I think)
-		*/
+		 */
 		if (wind->owner != client)
 		{
 			DIAG((D_mouse, client, "post deliver button event (wind) to %s", client->name));
@@ -462,11 +461,9 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	{
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
 		{
-			//AESPB *pb = client->waiting_pb;
 			int events;
 
 			/* combine mouse events. */
-			//pb->intout[0] = 0;
 			events = 0;
 
 			if (   (client->em.flags & MU_M1)
@@ -711,8 +708,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 static int
 new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 {
-
-	/* exclusive mouse input */
 	/*
 	 * Ozk: We cannot distpach anything while a client wants exclusive
 	 * right to mouse inputs. So, we need a flag. If this flag is set, it means
@@ -720,18 +715,18 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	 * events normally. If flag is set, but client is not waiting,
 	 * i.e., S.wait_mouse == NULL, it means the client is processing mouse input,
 	 * and we gotta buffer it, so client receive it at the next wait_mouse() call.
-	*/
+	 */
 	if (S.wm_count)
 	{
 		/*
 		 * Ozk: We want mu_mouse to always contain the latest mouse state.
-		*/
+		 */
 		if (md->ty == MOOSE_BUTTON_PREFIX)
 			new_mu_mouse(md), mu_button.newc = 0;
 
 		/*
 		 * Check if a client is actually waiting. If not, buffer the packet.
-		*/
+		 */
 		if (internal || (S.wait_mouse && (S.wait_mouse->waiting_for & XAWAIT_MOUSE)))
 		{
 			/* a client wait exclusivly for the mouse */
@@ -753,13 +748,13 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	/*
 	 * Ozk: No client is exclusively waiting for mouse, but we check
 	 * if the queue contains anything and clear it if it does.
-	*/
+	 */
 	if (md_head != md_tail)
 		md_head = md_tail = md_lmvalid = 0;
 
 	/*
 	 * Ozk: now go dispatch the mouse event....
-	*/
+	 */
 	switch (md->ty)
 	{
 	case MOOSE_BUTTON_PREFIX:
@@ -818,7 +813,6 @@ extern long redraws;
 
 static short last_x = 0;
 static short last_y = 0;
-static short bto = 0;
 static TIMEOUT *b_to = 0;
 static TIMEOUT *m_to = 0;
 static TIMEOUT *m_rto = 0;
@@ -844,7 +838,7 @@ move_rtimeout(struct proc *p, long arg)
 	 * that does not answer WM_REDRAW messages.
 	 * Such a flag should prevent AES from sending it message
 	 * until it wakes up (enters evnt_multi again)
-	*/
+	 */
 	if (!m_to)
 		m_to = addroottimeout(0L, move_timeout, 1);
 }
@@ -924,7 +918,7 @@ move_timeout(struct proc *p, long arg)
 /*
  * adi_move() AES Device Interface entry point,
  * taken whenever mouse moves.
-*/
+ */
 void
 adi_move(struct adif *a, short x, short y)
 {
@@ -964,7 +958,7 @@ adi_move(struct adif *a, short x, short y)
 /*
  * WM_REDRAW event dispatchers calls kick_mousemove_timeout
  * when all WM_REDRAW messages have been processed.
-*/
+ */
 void
 kick_mousemove_timeout(void)
 {
@@ -983,7 +977,7 @@ kick_mousemove_timeout(void)
 /*
  * button_timeout() - issued by the AES Device Interface
  * entry point for mouse button changes.
-*/
+ */
 static void
 button_timeout(struct proc *p, long arg)
 {
@@ -999,7 +993,7 @@ button_timeout(struct proc *p, long arg)
 /*
  * adi_button() - the entry point taken by moose.adi whenever
  * mouse button packet is ready for delivery.
-*/
+ */
 void
 adi_button(struct adif *a, struct moose_data *md)
 {
@@ -1024,7 +1018,7 @@ adi_button(struct adif *a, struct moose_data *md)
 /* XXX */
 /*
  * adi_wheel() - Not done!
-*/
+ */
 void
 adi_wheel(struct adif *a, struct moose_data *md)
 {
@@ -1063,7 +1057,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		/* XXX
 		 * Ozk: A hack to make wait_mouse() not return unless wake
 		 * really happened because of new mouse data... how else to do this?
-		*/
+		 */
 		data[0] = 0xffff;
 		while (data[0] == 0xffff)
 		{
@@ -1092,14 +1086,8 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 void
 check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 {
-
 	DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
 		mu_button.cb, x_mouse, y_mouse, client->name));
-
-	/*
-	 * Ozk: Have to yield here
-	*/
-	//yield();
 
 	if (br)
 		*br = mu_button.cb;

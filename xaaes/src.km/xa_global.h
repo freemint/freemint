@@ -89,8 +89,6 @@ struct common
 
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
-	long MOUSE_dev;			/* AESSYS: The /dev/mouse file handle */
-	struct file *kmoose;		/* internal, context mouse handle */
 	struct adif *adi_mouse;
 	
 	/* exteneded & generalized (was GeneralCallback & stuff) */

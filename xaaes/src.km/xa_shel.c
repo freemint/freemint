@@ -544,7 +544,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			assert(p);
 
 			DIAGS(("create_process ok, fixing ACC basepage"));
-			b = p->p_mem->base;
 			m = addr2mem(p, (long)p->p_mem->base);
 			assert(m);
 
