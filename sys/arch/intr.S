@@ -21,6 +21,7 @@
 	.globl	_enter_bios		// see kernel.spp
 	.globl	_leave_kernel
 	.globl	_preempt		// C function in proc.c
+	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_in_kernel
 	.globl	__base
 	.globl	_calc_load_average
@@ -40,6 +41,7 @@
 	dc.l	0x4d694e54		// MiNT
 _old_5ms:	dc.l	0
 
+#ifdef ONLY030
 _mint_5ms:
 #ifdef PROFILING
 	tst.w	_profil_on
@@ -56,16 +58,11 @@ L_no_profile:
 	bne.s	L_novbl
 	move.w	#0x0004,vblcnt
 
-#ifndef ONLY030
-	tst.w	(0x059e).w
-	beq.s	L_short_1
-#endif
 	clr.w	-(sp)		// set up a jump to VBL emulation
 L_short_1:
 	pea	_mint_vbl.w(pc)
 	move.w	sr,-(sp)
 L_novbl:
-#ifdef ONLY030
 	subq.w	#1,_uptimetick
 	tst.w	_in_kernel
 	bne.s	L_systime
@@ -74,7 +71,32 @@ L_novbl:
 L_systime:
 	addq.l	#5,([_curproc],P_SYSTIME)
 	jmp	([_old_5ms],0.w)
+
 #else
+
+_mint_5ms:
+#ifdef PROFILING
+	tst.w	_profil_on
+	beq.s	L_no_profile
+	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
+	move.l	26(sp),d0		// try to get interrupted PC
+	move.l	d0,-(sp)
+	jsr	_profil_counter		// call profiler
+	addq.l	#0x04,sp		// this is better than lea
+	movem.l	(sp)+,d0-d2/a0-a2	// restore C registers
+L_no_profile:
+#endif
+	subq.w	#0x01,vblcnt		// each fourth interrupt makes a "VBL"
+	bne.s	L_novbl
+	move.w	#0x0004,vblcnt
+
+	tst.w	(0x059e).w
+	beq.s	L_short_1
+	clr.w	-(sp)		// set up a jump to VBL emulation
+L_short_1:
+	pea	_mint_vbl.w(pc)
+	move.w	sr,-(sp)
+L_novbl:
 	move.l	_old_5ms.w(pc),-(sp)	// push old vector & save a bit of memory
 	move.l	a0,-(sp)
 	subq.w	#1,_uptimetick
@@ -91,8 +113,10 @@ L_systime:
 #endif
 
 // Our VBL handler.
-// Long time ago (just a version back :-)) it was a real VBL handler.
-// However, it is not anymore...
+// In fact this is not a VBL handler, this is the same 5ms interrupt as above
+// just the routine below is called each 4th time (i.e. with 20ms period).
+// The name is historical, in earlier versions of MiNT it was hooked onto
+// VBL autovector.
 
 	.data
 
@@ -110,7 +134,6 @@ mod5:	dc.w	5		// initial value matters
 	.globl	_c20ms
 	.globl	_keyrec
 	.globl	_kintr
-	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_our_clock
 	.globl	_tlist
 #ifdef FLOPPY_ROUTINES
