@@ -223,7 +223,8 @@ object_type(OBJECT *tree, int t)
 {
 	static char other[80];
 
-	unsigned int ty = tree[t].ob_type,tx;
+	unsigned int ty = tree[t].ob_type;
+	unsigned int tx;
 
 	if (ty >= G_BOX && ty < G_BOX+sizeof(ob_types)/sizeof(*ob_types))
 		return ob_types[ty-G_BOX];

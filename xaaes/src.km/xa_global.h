@@ -49,7 +49,7 @@ struct shared
 	struct win_base deleted_windows;/* list of windows to be deleted (delayed action) */
 
 	struct xa_client *client_list;	/* The clients database */
-	struct xa_client *excl_mouse_input;	/* This client need mouse events exclusivly */
+	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
 	struct opt_list *app_options;	/* individual option settings. */
 };
 
@@ -73,9 +73,10 @@ struct common
 	int shutdown;
 	bool mvalidate;
 
-	long MOUSE_dev;			/* The /dev/mouse handle */
-	long KBD_dev;			/* The MiNT keyboard device's file handle */
-	long alert_pipe;		/* The MiNT Salert() pipe's file handle */
+	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
+	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
+	long MOUSE_dev;			/* AESSYS: The /dev/mouse file handle */
+	struct file *kmoose;		/* internal, context mouse handle */
 
 	/* exteneded & generalized (was GeneralCallback & stuff) */
 	Tab active_menu[CASCADE];

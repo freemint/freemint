@@ -58,7 +58,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 	int pobf = -2, obf = ob;
 	short mx, my, mb, x, y, omx, omy;
 
-	exclusive_mouse_input(wt->owner, 1, &mb, &omx, &omy);
+	check_mouse(wt->owner, &mb, &omx, &omy);
 
 	object_offset(dial, ob, wt->dx, wt->dy, &x, &y);
 
@@ -80,7 +80,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 	{
 		while (mb)
 		{
-			exclusive_mouse_input(wt->owner, 0, &mb, &mx, &my);
+			wait_mouse(wt->owner, &mb, &mx, &my);
 
 			if ((mx != omx) || (my != omy))
 			{
@@ -127,8 +127,7 @@ rect_dist(struct xa_client *client, RECT *r, RECT *d)
 {
 	short mb, x, y;
 
-	exclusive_mouse_input(client, 1, &mb, &x, &y);
-	//vq_mouse(C.vh, &mb, &x, &y);
+	check_mouse(client, &mb, &x, &y);
 
 	d->x = r->x - x;
 	d->y = r->y - y;
@@ -274,7 +273,7 @@ rubber_box(struct xa_client *client, COMPASS cp,
 	new_box(&r, NULL);
 
 	do {
-		exclusive_mouse_input(client, 0, &mb, &x, &y);
+		wait_mouse(client, &mb, &x, &y);
 
 		r = widen_rectangle(cp, x, y, r, dist);
 		check_wh(&r, minw, minh, maxw, maxh);
@@ -304,7 +303,7 @@ drag_box(struct xa_client *client, RECT r,
 
 	do
 	{
-		exclusive_mouse_input(client, 0, &mb, &x, &y);
+		wait_mouse(client, &mb, &x, &y);
 
 		r = move_rectangle(x, y, r, dist);
 		keep_inside(&r, bound);			/* Ensure we are inside the bounding rectangle */
@@ -350,15 +349,14 @@ unsigned long
 XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	RECT r, d = {0};
-	short mb;		/* HR 150202: generalization of rubber_box (See drag_border in widgets.c) */
+	short mb;
 
 	CONTROL(4,3,0)
 
 	r.x = pb->intin[0],
 	r.y = pb->intin[1];
 
-	exclusive_mouse_input(client, 1, &mb, &r.w, &r.h);
-	//vq_mouse(C.vh, &mb, &r.w, &r.h);
+	check_mouse(client, &mb, &r.w, &r.h);
 
 	rubber_box(client, SE, r, &d,
 		pb->intin[2],		/* minimum */

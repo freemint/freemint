@@ -794,14 +794,14 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 			{
 				/* Drag title */
 
-			/*	vq_mouse(C.vh, &mb, &mx, &my);	*/
+				/* vq_mouse(C.vh, &mb, &mx, &my); */
 				set_widget_active(wind, widg, drag_title,1);
 
 				widget_active.x = widget_active.nx;
 				widget_active.y = widget_active.ny;
 
-//				widget_active.x = mx;
-//				widget_active.y = my;
+				/* widget_active.x = mx; */
+				/* widget_active.y = my; */
 				widget_active.d.x = d.x;
 				widget_active.d.y = d.y;
 
@@ -1166,7 +1166,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		COMPASS xy;
 
 		/* need to do this anyhow, for mb */
-//		vq_mouse(C.vh, &mb, &pmx, &pmy);
+		/* vq_mouse(C.vh, &mb, &pmx, &pmy); */
 
 		if (widget_active.widg)
 		{
@@ -1187,11 +1187,11 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		/* Drag border */
 		if (widget_active.cb)	/*(mb)*/
 		{
-//			vq_mouse(C.vh, &mb, &mx, &my);
+			/* vq_mouse(C.vh, &mb, &mx, &my); */
 			set_widget_active(wind, widg, next, 6);
 
-//			widget_active.x = mx;
-//			widget_active.y = my;
+			/* widget_active.x = mx; */
+			/* widget_active.y = my; */
 			widget_active.x = widget_active.nx;
 			widget_active.y = widget_active.ny;
 
@@ -1330,17 +1330,17 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 			RECT r;
 
 			/*
-			 * ozk: Center sliders at the clicked position..
-			*/
-
-			/*
+			 * Center sliders at the clicked position.
 			 * Wait for mousebutton release
-			*/
+			 */
 			graf_mouse(XACRS_POINTSLIDE, NULL);
 			mb = widg->s;
-			while (mb == widg->s) exclusive_mouse_input(wind->owner, 0, &mb, &mx, &my); // vq_mouse(C.vh, &mb, &mx, &my);
+			while (mb == widg->s)
+				wait_mouse(wind->owner, &mb, &mx, &my);
 
-			rp_2_ap(wind, slider, &r);		/* Convert relative coords and window location to absolute screen location */
+			/* Convert relative coords and window location to absolute screen location */
+			rp_2_ap(wind, slider, &r);
+
 			inside = m_inside(mx, my, &r);
 			if (inside)
 			{
@@ -1392,8 +1392,8 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 					   WM_ARROWED, 0, 0, wind->handle,
 					   reverse ? widg->xarrow : widg->arrowx, 0, 0, 0);
 
-			exclusive_mouse_input(wind->owner, 1, &mb, &mx, &my); //vq_mouse(C.vh, &mb, &mx, &my);
-	
+			check_mouse(wind->owner, &mb, &mx, &my);
+
 			if (mb)
 			{
 				/* If the button has been held down, set a
@@ -2262,10 +2262,11 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						ax = is_V_arrow(w,widg,md->y);
 					else if (f == XAW_HSLIDE)
 						ax = is_H_arrow(w,widg,md->x);
-	
+
 					if (ax < 0)
-						return true;	/* inside a page arrow, but not active */
-	
+						/* inside a page arrow, but not active */
+						return true;
+
 					if (ax)
 					{
 						widg = w->widgets + f + ax;
@@ -2286,28 +2287,31 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
 							redisplay_widget(lock, w, widg, OS_SELECTED);
 		
-						exclusive_mouse_input( w->owner, 1, &b, &rx, &ry); //vq_mouse(C.vh, &b, &rx, &ry);
+						check_mouse( w->owner, &b, &rx, &ry);
 
-					//	widget_active.nx	= md->x;
-					//	widget_active.ny	= md->y;
-					//	widget_active.b		= md->cstate;
-
-						if ((widget_active.cb) && widg->drag) 	/* If the mouse button is still down do a drag (if the widget has a drag behaviour) */
+						if ((widget_active.cb) && widg->drag) 
+							/* If the mouse button is still down
+							 * do a drag (if the widget has a drag
+							 * behaviour) */
 							rtn = widg->drag(lock, w, widg);
 			
-						else				/*  otherwise, process as a mouse click(s) */
+						else
 						{
+							/*  otherwise, process as a mouse click(s) */
+
 							short tx = widget_active.nx, ty = widget_active.ny;
 							bool ins = 1;
-							while (b)				/* Wait for the mouse to be released */
+							while (b)
 							{
-								exclusive_mouse_input(w->owner, 0, &b, &rx, &ry); //vq_mouse(C.vh, &b, &rx, &ry);
+								/* Wait for the mouse to be released */
+								wait_mouse(w->owner, &b, &rx, &ry);
+
 								if (tx != rx || ty != ry)
 								{
 									if (m_inside(rx, ry, &r))
 									{
 										if (!ins)
-										{	//redisplay_widget(lock, w, widg, OS_SELECTED);
+										{
 											redisplay_widget(lock, w, widg, OS_SELECTED);
 											ins = 1;
 										}

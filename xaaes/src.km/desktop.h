@@ -28,6 +28,7 @@
 #define _desktop_h
 
 #include "global.h"
+#include "xa_types.h"
 
 void set_desktop(XA_TREE *);
 XA_TREE *get_desktop(void);
