@@ -9,32 +9,7 @@
 
 
 /*
- * PART 1: common stuff
- */
-
-/*
- * use the new way for Fselect()
- */
-# define NEW_SELECT
-
-
-/*
- * PART 2: AF_UNIX specific stuff
- */
-
-/*
- * Use unix file name lookup cache. This speeds up on filesystems where
- * Fxattr() works for XATTR.index :-) and slows down on filesystems where
- * Fxattr() doesn't work for XATTR.index :-(.
- * That means:
- * - undefine if your unix sockets reside on TosFs
- * - define if your unix sockets reside on MinixFs
- */
-# define USE_UN_LOOKUP_CACHE
-
-
-/*
- * PART 3: AF_INET specific stuff
+ * AF_INET specific stuff
  */
 
 /*
