@@ -71,6 +71,7 @@
 
 	.globl	_old_trap2
 	.globl	_mint_trap2
+	.globl	_gdos_version,_vdi_handler,_aes_handler
 
 	.globl	_curproc
 	.globl	_bios_tab,_bios_max
