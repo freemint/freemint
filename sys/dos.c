@@ -675,6 +675,10 @@ shutdown (void)
 		}
 	}
 	
+	/* Give up the CPU, so that the signals above get delivered
+	 */
+	s_yield();
+
 	if (proc_left)
 	{
 		/* sleep a little while, to give the other processes
@@ -695,12 +699,15 @@ shutdown (void)
 		{
 			if ((p->pid == 0) || (p == curproc))
 				continue;
-			
+
 			DEBUG (("Posting SIGKILL for pid %d", p->pid));
 			post_sig (p, SIGKILL);
 		}
 	}
 	
+	/* Again */
+	s_yield();
+
 	sys_q[READY_Q] = 0;
 	
 	DEBUG (("Close open files ..."));
