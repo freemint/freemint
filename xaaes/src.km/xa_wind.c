@@ -674,7 +674,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (in.w == -1 && in.h == -1)
 			in = free_icon_pos(lock);
 		w->save_widgets = w->active_widgets;
-		standard_widgets(w, NAME|MOVER|ICONIFIER, true);
+		standard_widgets(w, (w->active_widgets & (NO_TOPPED)) | NAME|MOVER|ICONIFIER, true);
 		move_window(lock, w, XAWS_ICONIFIED, in.x, in.y, in.w, in.h);
 		break;
 	}
