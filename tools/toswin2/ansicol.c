@@ -9,7 +9,7 @@
 #include "ansicol.h"
 
 const int ansi2vdi[8] = { 1, 2, 3, 6, 4, 7, 5, 0 };
-const int vdi2ansi[8] = { 7, 0, 1, 2, 4, 6, 3, 0 };
+const int vdi2ansi[8] = { 7, 0, 1, 2, 4, 6, 3, 5 };
 
 struct rgb {
 	short int red, green, blue;
@@ -118,30 +118,16 @@ set_ansi_fg_color (TEXTWIN* v, int color)
 
 	if (color == 9) {
 		v->term_cattr = (v->term_cattr & ~CFGCOL) | 
-			(v->cfg->fg_color << 4) | C_ANSI_FG;
+			(v->cfg->fg_color << 4);
 	} else if (color >= 0 && color < 8) {
 		v->term_cattr = (v->term_cattr & ~CFGCOL) | 
-			(color << 4) | C_ANSI_FG;
+			(color << 4);
 	} else if (color == 'M') {
-		if (!(v->term_cattr & C_ANSI_FG)) {
-			int new_color = 
-				vdi2ansi[0x7 & 
-					 (v->term_cattr & CFGCOL) >> 4];
-			v->term_cattr = (v->term_cattr & ~CFGCOL) | 
-				(new_color << 4);
-		}
-		v->term_cattr = (v->term_cattr | C_ANSI_BRIGHT | C_ANSI_FG) &
-			~(C_ANSI_HBRIGHT | C_ANSI_EFFECTS);
+		v->term_cattr = (v->term_cattr & ~CE_ANSI_EFFECTS) |
+			CE_BOLD;
 	} else if (color == 'N') {
-		if (!(v->term_cattr & C_ANSI_FG)) {
-			int new_color = 
-				vdi2ansi[0x7 & 
-					 (v->term_cattr & CFGCOL) >> 4];
-			v->term_cattr = (v->term_cattr & ~CFGCOL) | 
-				(new_color << 4);
-		}
-		v->term_cattr = (v->term_cattr | C_ANSI_HBRIGHT | C_ANSI_FG) &
-			~(C_ANSI_BRIGHT | C_ANSI_EFFECTS);
+		v->term_cattr = (v->term_cattr & ~CE_ANSI_EFFECTS) |
+			~CE_LIGHT;
 	}
 }
 
@@ -151,8 +137,7 @@ set_ansi_bg_color (TEXTWIN* v, int color)
 	color -= 48;
 	
 	if (color == 9 || (color >= 0 && color < 8))
-		v->term_cattr = (v->term_cattr & ~CBGCOL) | 
-			color | C_ANSI_BG;
+		v->term_cattr = (v->term_cattr & ~CBGCOL) | color;
 }
 
 /* Calculate the difference between two colors.  */
@@ -213,35 +198,39 @@ use_ansi_colors (TEXTWIN* v, unsigned long flag,
 		*fgcolor = temp;
 	}
 	
-	if (flag & C_ANSI_FG && *fgcolor >= 0 && *fgcolor <= 7) {
-		*texteffects &= ~C_ANSI_EFFECTS;
-		
-		if (flag & C_ANSI_BRIGHT) {
-			*texteffects |= 
-				renderer[*fgcolor].bright_effects;
-			*fgcolor = renderer[*fgcolor].bright;
-		} else if (flag & C_ANSI_HBRIGHT) {
-			*fgcolor = renderer[*fgcolor].hbright;
+	if (!v->vdi_colors) {
+		*texteffects &= ~CE_ANSI_EFFECTS;
+			
+		if (*fgcolor >= 0 && *fgcolor <= 7) {
+			*texteffects &= ~CE_ANSI_EFFECTS;
+			
+			if (flag & CE_BOLD) {
+				*texteffects |= 
+					renderer[*fgcolor].bright_effects;
+				*fgcolor = renderer[*fgcolor].bright;
+			} else if (flag & CE_LIGHT) {
+				*fgcolor = renderer[*fgcolor].hbright;
+			} else {
+				*fgcolor = renderer[*fgcolor].normal;
+			}
+		} else if (*fgcolor == 9) {
+			*fgcolor = v->cfg->fg_color;
 		} else {
-			*fgcolor = renderer[*fgcolor].normal;
+			*fgcolor &= 0xf;
 		}
-	} else if (flag & C_ANSI_FG && *fgcolor == 9) {
-		*fgcolor = v->cfg->fg_color;
-	} else {
-		*fgcolor &= 0xf;
-	}
-	
-	if (flag & C_ANSI_BG && *bgcolor >= 0 && *bgcolor <= 7) {
-		*bgcolor = renderer[*bgcolor].normal;
-	} else if (flag & C_ANSI_BG && *bgcolor == 9) {
-		*bgcolor = v->cfg->bg_color;
-	} else {
-		*bgcolor &= 0xf;
+		if (*bgcolor >= 0 && *bgcolor <= 7) {
+			*bgcolor = renderer[*bgcolor].normal;
+		} else if (*bgcolor == 9) {
+			*bgcolor = v->cfg->bg_color;
+		} else {
+			*bgcolor &= 0xf;
+		}
 	}
 	
 	*texteffects >>= 8;
 }
 
+#if 0
 int
 get_ansi_color (color)
 	int color;
@@ -251,3 +240,4 @@ get_ansi_color (color)
 	else
 		return renderer[color].normal;
 }
+#endif

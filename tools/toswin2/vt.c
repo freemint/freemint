@@ -82,26 +82,6 @@ void gotoxy(TEXTWIN *v, int x, int y)
 }
 
 /*
- * smear_background (v): Called by movement commands in order to 
- * propage the current attributes to the character cells overstriked.
- */
-void
-smear_background (TEXTWIN* v, int lastx)
-{
-	int line = v->cy;
-	int column = v->cx;
-	ulong flag = v->term_cattr & ~(CDIRTY | CTOUCHED);
-	int i;
-	
-	for (i = column + 1; i < v->maxx && i < lastx; ++i) {
-		ulong here_flag = v->cflag[line][i] &
-			~(CDIRTY | CTOUCHED);
-		if (flag != here_flag)
-			v->cflag[line][i] = flag | CDIRTY | CTOUCHED;
-	}
-}
-
-/*
  * clrline(v, r): clear line r of window v
  */
 void clrline(TEXTWIN *v, int r)
@@ -112,7 +92,7 @@ void clrline(TEXTWIN *v, int r)
 	{
 		v->data[r][i] = ' ';
 		v->cflag[r][i] = v->term_cattr & 
-			(CBGCOL | CFGCOL | C_ANSI_FG | C_ANSI_BG);
+			(CBGCOL | CFGCOL);
 	}
 	v->dirty[r] = ALLDIRTY;
 }
@@ -255,7 +235,7 @@ void curs_off(TEXTWIN *v)
 void original_colors(TEXTWIN *v)
 {
 	v->term_cattr = (v->term_cattr & 
-		~(CFGCOL | CBGCOL | C_ANSI_MASK)) |
+		~(CFGCOL | CBGCOL)) |
 		COLORS(v->cfg->fg_color, v->cfg->bg_color);
 	v->output = vt52_putch;
 }

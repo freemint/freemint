@@ -2,6 +2,7 @@
 #include <mintbind.h>
 #include <signal.h>
 #include <sys/ioctl.h>
+#include <string.h>
 
 #include "global.h"
 #include "av.h"
@@ -1541,6 +1542,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t = malloc(sizeof(TEXTWIN));
 	if (!t) 
 		return t;
+	memset (t, 0, sizeof *t);
 
 	t->maxx = cfg->col;
 	t->maxy = cfg->row + cfg->scroll;

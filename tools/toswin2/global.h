@@ -120,7 +120,7 @@ struct tablist
 #define CFGCOL		 0x00f0	/* foreground color mask */
 #define COLORS(fg, bg)	 (((fg) << 4) | (bg))
 #define CEFFECTS	 0x0f00	/* VDI output style mask */
-#define C_ANSI_EFFECTS (CE_BOLD | CE_LIGHT)
+#define CE_ANSI_EFFECTS (CE_BOLD | CE_LIGHT)
 #define CE_BOLD		 0x0100
 #define CE_LIGHT	 0x0200
 #define CE_ITALIC	 0x0400
@@ -131,11 +131,6 @@ struct tablist
 #define CDIRTY		 0x8000	/* the character itself has changed */
 #define CENACS		0x10000 /* Alternate character set enabled.  */
 #define CACS		0x20000	/* Alternate character set active.  */
-#define C_ANSI_FG	0x40000 /* Ansi foreground colors enabled.  */
-#define C_ANSI_BG	0x80000 /* Ansi background colors enabled.  */
-#define C_ANSI_BRIGHT  0x100000 /* Ansi bright colors.  */
-#define C_ANSI_HBRIGHT 0x200000 /* Ansi half-bright colors.  */
-#define C_ANSI_MASK (C_ANSI_BRIGHT | C_ANSI_HBRIGHT)
 
 
 /* text->dirty */
@@ -217,6 +212,10 @@ struct textwin
 		block_x2,
 		block_y1,
 		block_y2;
+	int	vdi_colors;			/* Non-zero if vdi colors active.  */
+	int	fg_effects;			/* Bit vector of text effects.  */
+	int	bg_effects;			/* Bit vector with background effects
+						   (only CE_BOLD/CE_LIGHT are used).  */
 };
 
 
