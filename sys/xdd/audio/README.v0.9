@@ -1,0 +1,35 @@
+ ------------------------------------------------------------------------------
+
+Modified by John Blakeley 9802 to provide more support on the Falcon.
+
+I have changed the device definition to support the Falcon more completely.
+This meant changing most of the files :-(
+
+The Falcon now supports extra sample rates of 8195, 9834, 12292, 16390, 19668,
+24585, 32780 and 49170Hz. It also supports s16 and u16 sample formats...
+
+It is programmed to provide support for an external DAC and should play
+8 track samples. This is untested as I don't have the hardware :-( ...
+	...yet :-)
+If anyone can test this please email me.
+
+The usage of actrl has changed somewhat, to implement >2 channel support
+for falcons:
+
+	'actrl mono' will no longer work - use 'actrl chan 1'
+	'actrl stereo' becomes 'actrl chan 2'
+	'actrl chan 4' allows you to audition 4 channel samples if you
+		have the necessary external hardware for your falcon! You can
+		also try 6 or 8 too!
+		
+
+There is no control over the levels of bass and treble on the Falcon, as it
+does not have a Microwire Interface.
+
+A word of warning: the Falcon hardware does _not_ support the STe/TT compatible
+sample rate of 6258Hz - it mutes. This is a feature, not a bug!!
+
+johnnie@ligotage.demon.co.uk
+¯¯
+John Blakeley
+http://www.ligotage.demon.co.uk
