@@ -370,68 +370,6 @@ deliver_message(enum locks lock, struct xa_client *dest_client, short amq, union
 		C.redraws--;
 		dest_client->status &= ~CS_CE_REDRAW_SENT;
 	}
-#if 0
-	/* Is the dest client waiting for a message at the moment? */
-	if (dest_client->waiting_for & MU_MESAG &&
-	    !dest_client->msg &&
-	    !dest_client->rdrw_msg &&
-	    !dest_client->crit_msg)
-	{
-		union msg_buf *clnt_buf;
-
-#if GENERATE_DIAGS
-		if (dest_client->waiting_pb == NULL)
-		{
-			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s", c_owner(dest_client)));
-			return;
-		}
-#endif
-		/* If the client is waiting on a multi, the response is  */
-		if (dest_client->waiting_for & XAWAIT_MULTI)
-			/* slightly different to the evnt_mesag() response. */
-			/* HR: fill out the mouse data!!! */
-			multi_intout(dest_client, dest_client->waiting_pb->intout, MU_MESAG);
-		else
-			dest_client->waiting_pb->intout[0] = 1;
-
-		clnt_buf = (union msg_buf *)(dest_client->waiting_pb->addrin[0]);
-		if (!clnt_buf)
-		{
-			DIAG((D_appl, NULL, "WARNING: Invalid target message buffer"));
-			return;
-		}
-
-		/* Fill in the client's message buffer */
-		*clnt_buf = *msg;
-
-		DIAG((D_m, NULL, "Send message %s to %s", pmsg(msg->s.msg), c_owner(dest_client)));
-		/* Write success to client's reply pipe to unblock the process */
-
-		dest_client->usr_evnt = 1;
-		cancel_evnt_multi(dest_client, 22);
-		if (msg->m[0] == WM_REDRAW)
-		{
-			C.redraws--;
-			dest_client->status &= ~CS_CE_REDRAW_SENT;
-			if (!C.redraws)
-				kick_mousemove_timeout();
-		}
-	}
-	else
-	{
-		queue_message(lock, dest_client, amq, msg);
-		/*
-		 * Ozk: This is a client event message, and such messages are also
-		 * counted. Since queue_message() also counted this message, we "uncount"
-		 * the client event here.
-		 */
-		if (msg->m[0] == WM_REDRAW)
-		{
-			C.redraws--;
-			dest_client->status &= ~CS_CE_REDRAW_SENT;
-		}
-	}
-#endif
 }
 
 static bool inline

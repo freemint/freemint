@@ -1156,6 +1156,14 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (client)
 	{
+		struct mbs mbs;
+
+		get_mbstate(client, &mbs);
+		pb->intout[1] = mbs.x;
+		pb->intout[2] = mbs.y;
+		pb->intout[3] = mbs.b;
+		pb->intout[4] = mbs.ks;
+#if 0
 		short clicks;
 
 		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
@@ -1188,6 +1196,7 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		vq_key_s(C.vh, &pb->intout[4]);
 		check_mouse(client, NULL, &pb->intout[1], &pb->intout[2]);
+#endif
 	}
 	else
 		multi_intout(client, pb->intout, 0);

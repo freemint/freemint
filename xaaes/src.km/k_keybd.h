@@ -51,7 +51,11 @@ struct key_queue
 };
 extern struct key_queue pending_keys;
 
-void keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key);
-void keyboard_input(enum locks lock);
+//void keybd_event(enum locks lock, struct xa_client *client, struct rawkey *key);
+void cancel_keyqueue	(struct xa_client *client);
+void queue_key		(struct xa_client *client, const struct rawkey *key);
+bool unqueue_key	(struct xa_client *client, struct rawkey *key);
+
+void keyboard_input	(enum locks lock);
 
 #endif /* _k_keybd_h */
