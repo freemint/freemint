@@ -43,7 +43,6 @@
 # include "global.h"
 
 # include "inet4/ip.h"
-# include "buf.h"
 
 
 # define MAX_STATES	16	/* must be > 2 and < 256 */

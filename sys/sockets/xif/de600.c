@@ -74,7 +74,7 @@ static struct de600 de600_priv;
 
 static long	de600_open	(struct netif *);
 static long	de600_close	(struct netif *);
-static long	de600_output	(struct netif *, BUF *, char *, short, short);
+static long	de600_output	(struct netif *, BUF *, const char *, short, short);
 static long	de600_ioctl	(struct netif *, short, long);
 
 static long	de600_probe	(struct netif *);
@@ -96,7 +96,7 @@ de600_close (struct netif *nif)
 }
 
 static long
-de600_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+de600_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	struct de600 *pr = nif->data;
 	short stat, addr, len, sr;

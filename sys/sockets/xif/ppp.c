@@ -104,7 +104,7 @@ struct ppp
 static long	ppp_link	(struct iflink *);
 static long	ppp_open	(struct netif *);
 static long	ppp_close	(struct netif *);
-static long	ppp_output	(struct netif *, BUF *, char *, short, short);
+static long	ppp_output	(struct netif *, BUF *, const char *, short, short);
 static long	ppp_ioctl	(struct netif *, short, long);
 static short	ppp_send	(struct slbuf *);
 static short	ppp_recv	(struct slbuf *);
@@ -291,7 +291,7 @@ ppp_close (struct netif *nif)
 }
 
 static long
-ppp_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+ppp_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	struct ppp *ppp = nif->data;
 	
