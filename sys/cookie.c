@@ -380,13 +380,13 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 
 		if (ret)
 		{
-			DEBUG (("get_cookie(): tag returned at %08lx", ret));
+			DEBUG (("get_cookie(): tag %08lx returned at %08lx", cjar->tag, ret));
 			*ret = cjar->tag;
 			return E_OK;
 		}
 		else
 		{
-			DEBUG (("get_cookie(): tag returned in d0"));
+			DEBUG (("get_cookie(): tag %08lx returned in d0", cjar->tag));
 			return cjar->tag;
 		}
 	}
@@ -400,13 +400,13 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 		{
 			if (ret)
 			{
-				DEBUG (("get_cookie(): value returned at %08lx", ret));
+				DEBUG (("get_cookie(): value %08lx returned at %08lx", cjar->value, ret));
 				*ret = cjar->value;
 				return E_OK;
 			}
 			else
 			{
-				DEBUG (("get_cookie(): value returned in d0"));
+				DEBUG (("get_cookie(): value %08lx returned in d0", cjar->value));
 				return cjar->value;
 			}
 		}
@@ -444,13 +444,13 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 	/* 0x0000xxxx feature of GETCOOKIE may be confusing, so
 	 * prevent users from using slotnumber HERE :)
 	 */
-	DEBUG (("entering set_cookie(): tag=%08x val=%08x", tag, val));
+	DEBUG (("entering set_cookie(): tag=%08lx val=%08lx", tag, val));
 	if (	((tag & 0xff000000UL) == 0) ||
 		((tag & 0x00ff0000UL) == 0) ||
 		((tag & 0x0000ff00UL) == 0) ||
 		((tag & 0x000000ffUL) == 0))
 	{
-		DEBUG (("set_cookie(): invalid tag id %8x", tag));
+		DEBUG (("set_cookie(): invalid tag id %08lx", tag));
 		return EINVAL;
 	}
 
@@ -462,7 +462,7 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 		if (cjar->tag == tag)
 		{
 			cjar->value = val;
-			TRACE (("set_cookie(): old entry %08x updated", tag));
+			TRACE (("set_cookie(): old entry %08lx updated", tag));
 			return E_OK;
 		}
 		cjar++;
