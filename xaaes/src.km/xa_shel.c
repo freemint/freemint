@@ -440,23 +440,28 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	{
 		if (is_ext(ext, tosex))
 		{
-			real_mode = 1, wisgr = 0;
-			DIAG((D_shel, 0, " -= 1,0 =-"));
+			real_mode = 1; wisgr = 0;
+			DIAG((D_shel, NULL, "launch: -= 1,0 =-"));
 		}
 		else if (is_ext(ext, accex))
 		{
 			real_mode = 3;
-			DIAG((D_shel, 0, " -= 3,%d =-", wisgr));
+			DIAG((D_shel, NULL, "launch: -= 3,%d =-", wisgr));
 		}
 		else
 		{
-			real_mode = 1, wisgr = 1;
-			DIAG((D_shel, 0, " -= 1,1 =-"));
+			real_mode = 1; wisgr = 1;
+			DIAG((D_shel, NULL, "launch: -= 1,1 =-"));
 		}
 	}
 
 	switch (real_mode)
 	{
+		default:
+		{
+			DIAGS(("launch: unhandled shel_write mode %i???", real_mode));
+			break;
+		}
 		case 1:
 		{
 			/* TOS Launch?  */
