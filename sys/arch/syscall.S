@@ -120,73 +120,9 @@ _mint_dos:
 mg_in_super:
 // Do some simple saving of registers...
 	movem.l	d2-d7/a2-a6,-(sp)
-	tst.w	_fpu
-	beq.s	mg_fpu_saved
-	fsave	-(sp)
-	cmp.w	#60,_mcpu+2
-	bne.s	mg_no_060
-	tst.b	2(sp)
-	beq.s	mg_fpu_notused
-	bra.s	mg_save_fpu
-mg_no_060:
-	tst.b	(sp)
-	beq.s	mg_fpu_notused
-mg_save_fpu:
-	fmovem.x fp0-fp7,-(sp)
-	fmovem.l fpcr/fpsr/fpiar,-(sp)
-	move.w	#1,-(sp)
-	bra.s	mg_fpu_saved
-mg_fpu_notused:
-	clr.w	-(sp)
-mg_fpu_saved:
-
-// Copy parameters
-	lea	32(a0),a0
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-	move.l	-(a0),-(sp)
-
 	lea	_dos_tab,a5
 	move.w	_dos_max,d5
-
-	move.w	(sp)+,d0
-	cmp.w	d5,d0
-	bhi.s	mg_enosys
-
-#ifdef NEW_SYSCALL
-#error not fully implemented here!
-#error adjust parameter copying etc.
-	move.l	(a5,d0.w*8),d0
-#else
-	move.l	(a5,d0.w*4),d0
-#endif
-	beq.s	mg_enosys
-
-	move.l	d0,a0
-	jsr	(a0)
-mg_out:
-	lea	30(sp),sp
-	tst.w	_fpu
-	beq.s	mg_out_no_fpu
-	tst.w	(sp)+
-	beq.s	mg_no_fpu_saved
-	fmovem.l (sp)+,fpcr/fpsr/fpiar
-	fmovem.x (sp)+,fp0-fp7
-mg_no_fpu_saved:
-	frestore (sp)+
-
-mg_out_no_fpu:
-	movem.l	(sp)+,d2-d7/a2-a6
-	rte
-
-mg_enosys:
-	moveq	#-32,d0
-	bra.s	mg_out
+	bra	reentrant_trap
 
 norm_gemdos:
 
@@ -259,6 +195,38 @@ rom_gemdos:	move.l	_old_dos.w(pc),-(sp)
 _old_xbios:
 	dc.l	0
 _mint_xbios:
+
+// Reentrant syscall handler
+//
+// Reentrant means here that we can enter the kernel again through
+// the trap handler from inside kernel space.
+// This is not neccessary for the kernel itself but rather if you want
+// to use other subsystems which use the trap#1 to enter the kernel again.
+// You can, for example,use the TOS-VDI subsystem safely and the VDI can
+// reenter the kernel through the trap handler.
+
+	tst.w	_in_kernel
+	beq	norm_xbios
+
+	movea.l	sp,a0
+	move.w	(a0),d0		| sr before the trap
+	addq.w	#2+4+2,a0	| A0 now points past the stackfram, where the params are
+
+// This should never happen. Since _in_kernel is set, this is
+// a trap done from kernel context, which always runs in supervisor
+//
+//	btst	#13,d0
+//	bne.s	mg_in_super
+//	move.l	usp,sp
+
+xbios_in_super:
+// Do some simple saving of registers...
+	movem.l	d2-d7/a2-a6,-(sp)
+	lea	_xbios_tab,a5
+	move.w	_xbios_max,d5
+	bra	reentrant_trap
+
+norm_xbios:
 
 // Kludge for Setscreen: under Falcon TOS, this
 // calls a GEMDOS function (Srealloc) and so
@@ -349,6 +317,38 @@ ret:	sub.l	a0,a0			// curproc address is our sweet secret
 	dc.l	0x4d694e54		// MiNT
 _old_bios:	dc.l	0
 _mint_bios:
+// Reentrant syscall handler
+//
+// Reentrant means here that we can enter the kernel again through
+// the trap handler from inside kernel space.
+// This is not neccessary for the kernel itself but rather if you want
+// to use other subsystems which use the trap#1 to enter the kernel again.
+// You can, for example,use the TOS-VDI subsystem safely and the VDI can
+// reenter the kernel through the trap handler.
+
+	tst.w	_in_kernel
+	beq	norm_bios
+
+	movea.l	sp,a0
+	move.w	(a0),d0		| sr before the trap
+	addq.w	#2+4+2,a0	| A0 now points past the stackfram, where the params are
+
+// This should never happen. Since _in_kernel is set, this is
+// a trap done from kernel context, which always runs in supervisor
+//
+//	btst	#13,d0
+//	bne.s	mg_in_super
+//	move.l	usp,sp
+
+bios_in_super:
+// Do some simple saving of registers...
+	movem.l	d2-d7/a2-a6,-(sp)
+	lea	_bios_tab,a5
+	move.w	_bios_max,d5
+	bra	reentrant_trap
+
+norm_bios:
+
 //
 // Entering the kernel can be very expensive so, we take a short-cut
 // if possible -- we try some BIOS functions out, and if they
@@ -759,3 +759,81 @@ _do_usrcall:
 ucret:	lea	24(sp),sp		// fix up stack
 	move.l	d0,_usrret		// save returned value
 	rts				// back to caller
+
+// Reentrant trap handling -- not complete yet
+reentrant_trap:
+	tst.w	_fpu
+	beq.s	mg_fpu_saved
+	fsave	-(sp)
+	cmp.w	#60,_mcpu+2
+	bne.s	mg_no_060
+	tst.b	2(sp)
+	beq.s	mg_fpu_notused
+	bra.s	mg_save_fpu
+mg_no_060:
+	tst.b	(sp)
+	beq.s	mg_fpu_notused
+mg_save_fpu:
+	fmovem.x fp0-fp7,-(sp)
+	fmovem.l fpcr/fpsr/fpiar,-(sp)
+	move.w	#1,-(sp)
+	bra.s	mg_fpu_saved
+mg_fpu_notused:
+	clr.w	-(sp)
+mg_fpu_saved:
+
+// Copy parameters
+	lea	24(a0),a0
+	cmpa.l	#_dos_tab,a5
+	bne.s	mg_only_24
+	addq.w	#8,a0
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+mg_only_24:
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+
+	//lea	_dos_tab,a5
+	//move.w	_dos_max,d5
+
+	move.w	(sp)+,d0
+	cmp.w	d5,d0
+	bhi.s	mg_enosys
+
+#ifdef NEW_SYSCALL
+#error not fully implemented here!
+#error adjust parameter copying etc.
+	move.l	(a5,d0.w*8),d0
+#else
+	move.l	(a5,d0.w*4),d0
+#endif
+	beq.s	mg_enosys
+
+	move.l	d0,a0
+	jsr	(a0)
+mg_out:
+	lea	22(sp),sp
+	cmpa.l	#_dos_tab,a5
+	bne.s	mg_out_only_24
+	addq.w	#8,sp
+mg_out_only_24:
+	tst.w	_fpu
+	beq.s	mg_out_no_fpu
+	tst.w	(sp)+
+	beq.s	mg_no_fpu_saved
+	fmovem.l (sp)+,fpcr/fpsr/fpiar
+	fmovem.x (sp)+,fp0-fp7
+mg_no_fpu_saved:
+	frestore (sp)+
+
+mg_out_no_fpu:
+	movem.l	(sp)+,d2-d7/a2-a6
+	rte
+
+mg_enosys:
+	moveq	#-32,d0
+	bra.s	mg_out
