@@ -74,6 +74,8 @@ RECT	iconify_grid(int i);
 DisplayWidget display_vslide; /* For d_g_list, should go! */
 DisplayWidget display_object_widget; /* for desktop */
 
+void	remove_widget_active(struct xa_client *client);
+
 void	do_widget_repeat(void);
 void	do_active_widget(enum locks lock, struct xa_client *client);
 void	set_winmouse(void);

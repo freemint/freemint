@@ -368,6 +368,8 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	if (C.realmouse_form == client->mouse_form)
 		graf_mouse(ARROW, NULL, false);
 
+	remove_widget_active(client);
+
 	/*
 	 * Go through and check that all windows belonging to this
 	 * client are closed
@@ -488,16 +490,18 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	/* Unlock mouse & screen */
 	if (update_locked() == client)
-	{
-		if (C.update_lock == client)
-			C.update_lock = NULL;
 		free_update_lock();
+	if (C.update_lock == client)
+	{
+		C.update_lock = NULL;
+		C.updatelock_count = 0;
 	}
 	if (mouse_locked() == client)
-	{
-		if (C.mouse_lock == client)
-			C.mouse_lock = NULL;
 		free_mouse_lock();
+	if (C.mouse_lock == client)
+	{
+		C.mouse_lock = NULL;
+		C.mouselock_count = 0;
 	}
 
 	// if (!client->killed)

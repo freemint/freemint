@@ -30,9 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
-void set_rootmenu(struct xa_client *client, bool do_topwind);
-
-void set_menu_rectangle(struct xa_window *wind, XA_WIDGET *widg);
+void wt_menu_area(XA_TREE *wt);
+void set_rootmenu_area(struct xa_client *client);
 
 TASK click_form_popup_entry, click_popup_entry, do_scroll_menu;
 Tab *	nest_menutask(Tab *tab);

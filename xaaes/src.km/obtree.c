@@ -971,7 +971,7 @@ obtree_is_menu(OBJECT *tree)
 	if (title > 0)
 		title = tree[title].ob_head;
 	if (title > 0)
-		m = (tree[title].ob_type&0xff) == G_TITLE;
+		m = (tree[title].ob_type & 0xff) == G_TITLE;
 
 	return m;
 }
