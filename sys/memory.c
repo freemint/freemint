@@ -23,6 +23,7 @@
 # include "arch/cpu.h"		/* cpush */
 # include "arch/mprot.h"
 # include "arch/syscall.h"	/* lineA0 */
+# include "arch/user_things.h"
 
 # include "bios.h"
 # include "dosmem.h"
@@ -1475,6 +1476,46 @@ create_env (const char *env, ulong flags)
 	
 	return m;
 }
+
+/* Create the trampoline region for the signal and SLB related code,
+ * that must be executed in process' space.
+ */
+# if 0
+MEMREGION *
+create_trampoline (ulong flags)
+{
+	MEMREGION *m;
+	long size, v;
+	char *dest;
+	short protmode;
+	
+	TRACELOW (("create_trampoline: %lx", flags));
+	
+	size = ((long)sig_r_end - (long)sig_return) + \
+			((long)slb_trampoline_end - (long)slb_init_and_exit);
+
+	protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
+	
+	v = alloc_region(core, size, protmode);
+	/* if core fails, try alt */
+	if (!v)
+	    v = alloc_region(alt, size, protmode);
+	
+	if (!v)
+	{
+		DEBUG(("create_trampoline: alloc_region failed"));
+		return NULL;
+	}
+	m = addr2mem(curproc, v);
+
+	/* copy the code to the new location */
+	dest = (char *) m->loc;
+
+	/* not finished */
+	
+	return m;
+}
+# endif
 
 static void
 terminateme (int code)
