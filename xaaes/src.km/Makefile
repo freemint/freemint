@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS = xaloader
 
 srcdir = .
 top_srcdir = .
@@ -15,13 +15,13 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: all-targets load.prg
+all-here: all-targets
 
 # default overwrites
 
 # default definitions
 compile_all_dirs = .compile_*
-GENFILES = $(compile_all_dirs) *.km load.prg
+GENFILES = $(compile_all_dirs) *.km
 
 
 help:
@@ -46,9 +46,6 @@ all-targets:
 
 $(xaaestargets):
 	$(MAKE) buildxaaes xaaes=$@
-
-load.prg: load.c
-	$(CC) -o $@ -Wall $<
 
 
 #
