@@ -763,7 +763,7 @@ f_write(int fh, long count, const char *buf)
 }
 
 long _cdecl
-f_seek(long place, int fh, int how)
+f_seek (long place, int fh, int how)
 {
 	FILEPTR *f;
 	PROC *proc;
@@ -1525,17 +1525,21 @@ retry_after_collision:
 		}
 	}
 #endif
-	if (count == 0) {	/* no data is ready yet */
-		if (timeout && !t) {
-			t = addtimeout((long)timeout, unselectme);
+	if (count == 0)
+	{
+		/* no data is ready yet */
+		if (timeout && !t)
+		{
+			t = addtimeout (curproc, (long)timeout, unselectme);
 			timeout = 0;
 		}
-
-	/* curproc->wait_cond changes when data arrives or the timeout happens */
-		sr = spl7();
-		while (curproc->wait_cond == (long)wakeselect) {
+		
+		/* curproc->wait_cond changes when data arrives or the timeout happens */
+		sr = spl7 ();
+		while (curproc->wait_cond == (long)wakeselect)
+		{
 			curproc->wait_cond = wait_cond;
-			spl(sr);
+			spl (sr);
 			/*
 			 * The 0x100 tells sleep() to return without sleeping
 			 * when curproc->wait_cond changes. This way we don't
@@ -1545,16 +1549,17 @@ retry_after_collision:
 			 * curproc. But sleep used to reset curproc->wait_cond
 			 * to wakeselect causing curproc to sleep forever.
 			 */
-			if (sleep(SELECT_Q|0x100, wait_cond))
+			if (sleep (SELECT_Q|0x100, wait_cond))
 				curproc->wait_cond = 0;
-			sr = spl7();
+			sr = spl7 ();
 		}
-		if (curproc->wait_cond == (long)&select_coll) {
+		if (curproc->wait_cond == (long)&select_coll)
+		{
 			curproc->wait_cond = (long)wakeselect;
-			spl(sr);
+			spl (sr);
 			goto retry_after_collision;
 		}
-		spl(sr);
+		spl (sr);
 
 	/* we can cancel the time out now (if it hasn't already happened) */
 		if (t) canceltimeout(t);
@@ -1850,4 +1855,123 @@ f_fchmod (int fh, unsigned mode)
 	}
 	
 	return r;
+}
+
+/*
+ * GEMDOS extension: Fseek64 (place, fh, how, newpos)
+ * 
+ * - 64bit clean seek system call
+ * - newpos is written only if return value is 0 (no failure)
+ * - at the moment only a wrapper around Fseek() as there is no
+ *   64bit xfs/xdd support
+ */
+
+long _cdecl
+f_seek64 (llong place, int fh, int how, llong *newpos)
+{
+	long r;
+	
+# define LONG_MAX	2147483647L
+	if (place > LONG_MAX)
+		return EBADARG;
+	
+	r = f_seek ((long) place, fh, how);
+	if (r >= 0)
+		*newpos = (llong) r;
+	
+	return r;
+}
+
+/*
+ * GEMDOS extension: Fpoll (fds, nfds, timeout)
+ * 
+ * - new Fselect() call for more than 32 filedeskriptors
+ * - at the moment only a wrapper around Fselect()
+ */
+
+long _cdecl
+f_poll (POLLFD *fds, ulong nfds, ulong timeout)
+{
+	ulong rfds = 0;
+	ulong wfds = 0;
+	ulong xfds = 0;
+	long retval;
+	register long i;
+	
+	for (i = 0; i < nfds; i++)
+	{
+		if (fds[i].fd > 31)
+			return EINVAL;
+		
+# define LEGAL_FLAGS \
+	(POLLIN | POLLPRI | POLLOUT | POLLERR | POLLHUP | POLLNVAL)
+		
+		if ((fds[i].events | LEGAL_FLAGS) != LEGAL_FLAGS)
+			return EINVAL;
+		
+		if (fds[i].events & POLLIN)
+			rfds |= (1L << (fds[i].fd));
+		if (fds[i].events & POLLPRI)
+			xfds |= (1L << (fds[i].fd));
+		if (fds[i].events & POLLOUT)
+			wfds |= (1L << (fds[i].fd));
+	}
+	
+	if (timeout == ~0)
+		retval = f_select (0L, &rfds, &wfds, &xfds);
+	else if (timeout == 0)
+		retval = f_select (1L, &rfds, &wfds, &xfds);
+# define USHRT_MAX	65535
+	else if (timeout < USHRT_MAX)
+		retval = f_select (timeout, &rfds, &wfds, &xfds);
+	else
+	{
+		ulong saved_rfds, saved_wfds, saved_xfds;
+		ushort this_timeout;
+		int last_round = 0;
+		
+		saved_rfds = rfds;
+		saved_wfds = wfds;
+		saved_xfds = xfds;
+		
+		do {
+			if ((ulong) timeout > USHRT_MAX)
+				this_timeout = USHRT_MAX;
+			else
+			{
+				this_timeout = timeout;
+				last_round = 1;
+			}
+			
+			retval = f_select (this_timeout, &rfds, &wfds, &xfds);
+			if (retval != 0)
+				break;
+			
+			timeout -= this_timeout;
+			
+			rfds = saved_rfds;
+			wfds = saved_wfds;
+			xfds = saved_xfds;
+		}
+		while (!last_round);
+	}
+	
+	if (retval < 0)
+		return retval;
+	
+	for (i = 0; i < nfds; i++)
+	{
+		if (rfds & (1L << (fds[i].fd)))
+			fds[i].revents = POLLIN;
+		else
+			fds[i].revents = 0;
+		
+		if (xfds & (1L << (fds[i].fd)))
+			fds[i].revents |= POLLPRI;
+		
+		if (wfds & (1L << (fds[i].fd)))
+			fds[i].revents |= POLLOUT;
+	}
+	
+	return retval;
 }

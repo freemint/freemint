@@ -33,6 +33,8 @@ long _cdecl f_midipipe (int pid, int in, int out);
 
 long _cdecl f_fchown (int fh, int uid, int gid);
 long _cdecl f_fchmod (int fh, unsigned mode);
+long _cdecl f_seek64 (llong place, int fh, int how, llong *newpos);
+long _cdecl f_poll (POLLFD *fds, ulong nfds, ulong timeout);
 
 
 # endif /* _dosfile_h */
