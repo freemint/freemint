@@ -20,7 +20,7 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_XDD__
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=whlmoose
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
