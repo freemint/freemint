@@ -1,7 +1,7 @@
 #
 # Makefile for tw-call, TosWin2 helper
 #
-TARGET = tw-call.prg
+TARGET = tw-call.app
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -24,6 +24,7 @@ INCLUDES += -I/usr/GEM/include
 # default definitions
 OBJS = $(COBJS:.c=.o)
 LIBS += -L/usr/GEM/lib -lcflib -lgemx -lgem
+LIBS += -liio
 GENFILES = $(TARGET)
 
 
