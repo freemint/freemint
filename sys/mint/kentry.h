@@ -442,7 +442,7 @@ struct kentry_module
 	 * return 0 on success
 	 * or error number for a failure 
 	 */
-	long	_cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag);
+	long	_cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
 };
 #define DEFAULTS_kentry_module \
 { \
