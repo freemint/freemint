@@ -515,7 +515,7 @@ f_setdta (DTABUF *dta)
 	PROC *p = curproc;
 	
 	TRACE(("Fsetdta: %lx", dta));
-	p->dta = dta;
+	p->p_fd->dta = dta;
 	p->base->p_dta = (char *) dta;
 	
 	return E_OK;
@@ -527,7 +527,7 @@ f_getdta (void)
 	PROC *p = curproc;
 	long r;
 
-	r = (long) p->dta;
+	r = (long) p->p_fd->dta;
 	
 	TRACE(("Fgetdta: returning %lx", r));
 	return r;
@@ -599,7 +599,7 @@ f_sfirst (const char *path, int attrib)
 	}
 
 	fs = dir.fs;
-	dta = p->dta;
+	dta = p->p_fd->dta;
 	
 	/* Now, see if we can find a DIR slot for the search. We use the
 	 * following heuristics to try to avoid destroying a slot:
@@ -611,16 +611,16 @@ f_sfirst (const char *path, int attrib)
 	
 	for (i = 0; i < NUM_SEARCH; i++)
 	{
-		if (p->srchdta[i] == dta)
+		if (p->p_fd->srchdta[i] == dta)
 		{
-			dirh = &p->srchdir[i];
+			dirh = &p->p_fd->srchdir[i];
 			if (dirh->fc.fs)
 			{
 				xfs_closedir (dirh->fc.fs, dirh);
 				release_cookie(&dirh->fc);
 				dirh->fc.fs = 0;
 			}
-			p->srchdta[i] = 0; /* slot is now free */
+			p->p_fd->srchdta[i] = 0; /* slot is now free */
 		}
 	}
 	
@@ -696,27 +696,28 @@ f_sfirst (const char *path, int attrib)
 	 */
 	for (i = 0; i < NUM_SEARCH; i++)
 	{
-		if (p->srchdta[i] == 0)
+		if (p->p_fd->srchdta[i] == 0)
 			break;
 	}
 	
 	if (i == NUM_SEARCH)
 	{
-		int oldest = 0; long oldtime = curproc->srchtim[0];
+		int oldest = 0;
+		long oldtime = curproc->p_fd->srchtim[0];
 
 		DEBUG(("Fsfirst(%s): having to re-use a directory slot!", path));
 		for (i = 1; i < NUM_SEARCH; i++)
 		{
-			if (p->srchtim[i] < oldtime)
+			if (p->p_fd->srchtim[i] < oldtime)
 			{
 				oldest = i;
-				oldtime = p->srchtim[i];
+				oldtime = p->p_fd->srchtim[i];
 			}
 		}
 		
 		/* OK, close this directory for re-use */
 		i = oldest;
-		dirh = &p->srchdir[i];
+		dirh = &p->p_fd->srchdir[i];
 		if (dirh->fc.fs)
 		{
 			xfs_closedir (dirh->fc.fs, dirh);
@@ -725,8 +726,8 @@ f_sfirst (const char *path, int attrib)
 		}
 		
 		/* invalidate re-used DTA */
-		p->srchdta[i]->magic = EVALID;
-		p->srchdta[i] = 0;
+		p->p_fd->srchdta[i]->magic = EVALID;
+		p->p_fd->srchdta[i] = 0;
 	}
 	
 	/* check to see if we have read permission on the directory (and make
@@ -741,7 +742,7 @@ f_sfirst (const char *path, int attrib)
 	}
 	
 	/* set up the directory for a search */
-	dirh = &p->srchdir[i];
+	dirh = &p->p_fd->srchdir[i];
 	dirh->fc = dir;
 	dirh->index = 0;
 	dirh->flags = TOS_SEARCH;
@@ -755,7 +756,7 @@ f_sfirst (const char *path, int attrib)
 	}
 	
 	/* mark the slot as in-use */
-	p->srchdta[i] = dta;
+	p->p_fd->srchdta[i] = dta;
 	
 	/* set up the DTA for Fsnext */
 	dta->index = i;
@@ -796,7 +797,7 @@ f_snext (void)
 	PROC *p = curproc;
 	
 	char buf[TOS_NAMELEN+1];
-	DTABUF *dta = p->dta;
+	DTABUF *dta = p->p_fd->dta;
 	FILESYS *fs;
 	fcookie fc;
 	ushort i;
@@ -826,8 +827,8 @@ f_snext (void)
 		return EBADARG;
 	}
 	
-	dirh = &p->srchdir[i];
-	p->srchtim[i] = searchtime;
+	dirh = &p->p_fd->srchdir[i];
+	p->p_fd->srchtim[i] = searchtime;
 	
 	fs = dirh->fc.fs;
 	if (!fs)
@@ -856,7 +857,7 @@ baderror:
 				(void) xfs_closedir (fs, dirh);
 			release_cookie(&dirh->fc);
 			dirh->fc.fs = 0;
-			p->srchdta[i] = 0;
+			p->p_fd->srchdta[i] = 0;
 			dta->magic = EVALID;
 			if (r != ENMFILES)
 				DEBUG(("Fsnext: returning %ld", r));
@@ -1277,8 +1278,8 @@ d_opendir (const char *name, int flag)
 	/* we keep a chain of open directories so that if a process
 	 * terminates without closing them all, we can clean up
 	 */
-	dirh->next = p->searches;
-	p->searches = dirh;
+	dirh->next = p->p_fd->searches;
+	p->p_fd->searches = dirh;
 
 	return (long) dirh;
 }
@@ -1358,7 +1359,7 @@ d_closedir (long handle)
 	DIR **where;
 	long r;
 	
-	where = &p->searches;
+	where = &p->p_fd->searches;
 	while (*where && *where != dirh)
 		where = &((*where)->next);
 	

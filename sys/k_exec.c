@@ -624,7 +624,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	for (i = 0; i < 6; i++)
 		b->p_devx[i] = i;
 	
-	p->dta = (DTABUF *)(b->p_dta = &b->p_cmdlin[0]);
+	fd->dta = (DTABUF *)(b->p_dta = &b->p_cmdlin[0]);
 	p->base = b;
 	
 	/* close extra open files */
