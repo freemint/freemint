@@ -411,7 +411,7 @@ built_desk_popup(enum locks lock, short x, short y)
 	client = S.client_list;
 	while (client)
 	{
-		if (client->type != APP_ACCESSORY)
+		if (client->type != APP_ACCESSORY && client != C.Aes)
 		{
 			menu_regcl[n] = client;
 			sprintf(menu_regt[n], sizeof(menu_regt[n]), "  %d->%d %s",
