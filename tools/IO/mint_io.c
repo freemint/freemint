@@ -58,16 +58,33 @@
 # endif
 
 
-/* prototypes for the real libc functions */
+/* prototypes */
 
 int __open_v (const char *_filename, int iomode, va_list argp);
-int __close (int fd);
-int __read (int fd, void *buf, size_t size);
-int __write (int fd, const void *buf, size_t size);
+
+int open (__const char *__file, int __oflag, ...) __THROW;
+int __open (__const char *__file, int __oflag, ...) __THROW;
+
+int ioctl (int fd, int cmd, void *arg);
 int __ioctl (int fd, int cmd, void *arg);
-int __fstat (int, struct stat *);
-int __fsync (int fd);
-off_t __lseek (int fd, long offset, int mode);
+
+int fsync (int __fd) __THROW;
+int __fsync (int __fd) __THROW;
+
+__off_t lseek (int __fd, __off_t __offset, int __whence) __THROW;
+__off_t __lseek (int __fd, __off_t __offset, int __whence) __THROW;
+
+int close (int __fd) __THROW;
+int __close (int __fd) __THROW;
+
+ssize_t read (int __fd, void *__buf, size_t __nbytes) __THROW;
+ssize_t __read (int __fd, void *__buf, size_t __nbytes) __THROW;
+
+ssize_t write (int __fd, __const void *__buf, size_t __n) __THROW;
+ssize_t __write (int __fd, __const void *__buf, size_t __n) __THROW;
+
+int fstat (int __fd, struct stat *__buf) __THROW;
+int __fstat (int __fd, struct stat *__buf) __THROW;
 
 
 struct device
@@ -734,8 +751,8 @@ lseek64 (int fd, loff_t offset, int origin)
 	return llseek (fd, offset, origin);
 }
 
-off_t
-lseek (int fd, long offset, int mode)
+__off_t
+lseek (int fd, __off_t offset, int mode)
 {
 	struct device *mydev = get_device (fd);
 	

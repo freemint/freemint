@@ -5,6 +5,10 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+typedef size_t socklen_t;
+# endif
+
 #define SOCK_TYPE	SOCK_STREAM
 
 #define OFFSET	((size_t)((struct sockaddr_un *)0)->sun_path)
@@ -15,7 +19,8 @@ static struct sockaddr_un
 int
 main (void)
 {
-	int r, fd1, fd2, addrlen;
+	int r, fd1, fd2;
+	socklen_t addrlen;
 
 	fd1 = socket (PF_UNIX, SOCK_TYPE, 0);
 	if (fd1 < 0)

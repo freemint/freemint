@@ -7,10 +7,15 @@
 #include <netinet/in.h>
 
 
+# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+typedef size_t socklen_t;
+# endif
+
 int
 main (void)
 {
 	struct sockaddr_in in;
+	socklen_t addrlen;
 	int fd, r, i;
 
 	in.sin_family = AF_INET;
@@ -33,8 +38,8 @@ main (void)
 		return 0;
 	}
 
-	r = sizeof (in);
-	r = getsockname (fd, (struct sockaddr *) &in, &r);
+	addrlen = sizeof (in);
+	r = getsockname (fd, (struct sockaddr *) &in, &addrlen);
 	if (r < 0)
 	{
 		perror ("getsockname");
