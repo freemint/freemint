@@ -204,17 +204,15 @@ XA_handler(void *_pb)
 			/* callout the AES function */
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
 
-			DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
-				op_code_names[cmd], cmd, cmd_rtn, client->name));
-
 			if (aes_tab[cmd].p & LOCKSCREEN)
 				unlock_screen(client, 2);
-
 
 			/* execute delayed delete_window */
 			if (S.deleted_windows.first)
 				do_delayed_delete_window(lock);
 
+			DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
+				op_code_names[cmd], cmd, cmd_rtn, client->name));
 
 			switch (cmd_rtn)
 			{
