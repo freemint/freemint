@@ -232,7 +232,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 133 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 134 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 135 */ { XA_form_popup,             0,        DESCR("form_popup")      },
-	/* 136 */ { NULL,                      0,        DESCR("form_err")        }, // unimplemented
+	/* 136 */ { NULL,                      0,        DESCR("form_xerr")       }, // unimplemented
 	/* 137 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 138 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 139 */ { NULL,                      0,        DESCR(NULL)              },
