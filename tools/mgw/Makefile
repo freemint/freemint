@@ -29,7 +29,7 @@ GENFILES = $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
 	$(STRIP) $@
-	flags --mglobal-memory $@
+	$(FLAGS) --mglobal-memory $@
 
 
 include $(top_srcdir)/DEPENDENCIES
