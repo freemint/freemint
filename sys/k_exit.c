@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -21,10 +23,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-11-07
- * last change:	2000-11-07
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2000-11-07
  * 
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
@@ -120,7 +120,7 @@ terminate (PROC *curproc, int code, int que)
 	/* make sure that any open files that refer to this process are
 	 * closed
 	 */
-	changedrv (PROC_RDEV_BASE | curproc->pid);
+	changedrv (PROC_RDEV_BASE | curproc->pid, __FUNCTION__);
 	
 	/* release any drives locked by Dlock */
 	for (i = 0; i < NUM_DRIVES; i++)
@@ -566,16 +566,14 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 	
 	/* take the child off both the global and ZOMBIE lists */
 	{
-		ushort sr;
+		ushort sr = splhigh ();
 		
-		sr = splhigh ();
 		rm_q (ZOMBIE_Q, p);
-		spl (sr);
 		
 		if (proclist == p)
 		{
 			proclist = p->gl_next;
-			p->gl_next = 0;
+			p->gl_next = NULL;
 		}
 		else
 		{
@@ -587,8 +585,10 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 			assert (q);
 			
 			q->gl_next = p->gl_next;
-			p->gl_next = 0;
+			p->gl_next = NULL;
 		}
+		
+		spl (sr);
 	}
 	
 	if (--p->p_cred->links == 0)

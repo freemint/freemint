@@ -1,15 +1,17 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
+ * 
+ * 
  * blowfish.c dated 99/09/26
- *
+ * 
  * Implements the Blowfish cipher algorithm. It's in fact the original code
  * from Bruce Schneier, enhanced so that it can handle multiple keys at a time
  * (as the code found in "Applied Cryptography", I don't know why he dropped
  * this in the later version).
+ * 
  */
 
 # include "blowfish.h"

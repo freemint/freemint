@@ -1,12 +1,14 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ * 
+ * 
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corp.
  * All rights reserved.
+ * 
  */
 
 /*
@@ -551,7 +553,7 @@ close_filesys (void)
  */
 
 void _cdecl 
-changedrv (ushort d)
+changedrv (ushort d, const char *function)
 {
 	PROC *p;
 	int i;
@@ -589,7 +591,8 @@ changedrv (ushort d)
 		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
 			continue;
 		
-		assert (fd && cwd);
+		if (!fd || !cwd)
+			FATAL ("In changedrv called from %s, invalid fd/cwd", function);
 		
 		/* invalidate all open files on this device */
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
@@ -753,7 +756,7 @@ disk_changed (ushort d)
 	if (!fs)
 	{
 		TRACE (("drive %c not yet initialized", d+'A'));
-		changedrv (d);
+		changedrv (d, __FUNCTION__);
 		return 0;
 	}
 	
@@ -769,7 +772,7 @@ disk_changed (ushort d)
 		if (i)
 		{
 			drives[d] = 0;
-			changedrv (d);
+			changedrv (d, __FUNCTION__);
 		}
 		
 		return i;
@@ -828,7 +831,7 @@ disk_changed (ushort d)
 		if (xfs_dskchng (fs, d, 0))
 		{
 			drives[d] = 0;
-			changedrv (d);	/* yes -- do the change */
+			changedrv (d, __FUNCTION__); /* yes -- do the change */
 			return 1;
 		}
 	}
@@ -993,7 +996,7 @@ nodrive:
 	
 	if (!dir.fs && !cwd->root_dir)
 	{
-		changedrv (dir.dev);
+		changedrv (dir.dev, __FUNCTION__);
 		dup_cookie (&dir, &cwd->root[drv]);
 	}
 	

@@ -1,15 +1,18 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ * 
+ * 
  * Copyright 1992,1993 Eric R. Smith.
  * Copyright 1993,1994 Atari Corporation.
  * All rights reserved.
+ * 
+ * 
+ * Shared memory file system
+ * 
  */
-
-/* Shared memory file system */
 
 # include "shmfs.h"
 # include "global.h"

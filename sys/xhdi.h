@@ -1,9 +1,10 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
+ *
+ *
  * @(#)XHDI/xhdi.h
  * 
  * Julian F. Reschke, Rainer Seitel, 1997-07-28
@@ -12,8 +13,8 @@
  * --- NOT FULLY TESTED, USE AT YOUR OWN RISK ---
  * 
  * 
- * Co-Author: Frank Naumann <fnaumann@freemint.de>
- *            (some preprocessor changes for MiNT)
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 1999-01-01
  * 
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list

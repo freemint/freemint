@@ -1,11 +1,14 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/* uk: this is the system update daemon, its only purpose is to call
- *     Sync() in regular intervals, so file systems get their sync()
- *     function called.
+ * 
+ * 
+ * this is the system update daemon, its only purpose is to call
+ * Sync() in regular intervals, so file systems get their sync()
+ * function called.
+ * 
  */
 
 # include "update.h"

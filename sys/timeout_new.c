@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -22,17 +24,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2001-01-16
- * last change:	2001-01-16
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2001-01-16
  * 
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  * 
- */
-
-/* 
+ * 
  * This file provides a timer with 10 ms granularity. We must
  * have our own routines for this, because the Mint builtin
  * timer does not provide for an argument to the timeout function.

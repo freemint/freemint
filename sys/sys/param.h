@@ -1,3 +1,10 @@
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution.
+ * 
+ */
 
 #ifndef _SYS_PARAM_H
 #define _SYS_PARAM_H 1

@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * GNU-C Bindings for Falcon XBIOS functions
  * -- hyc 11-9-1992 (uunet!hanauma.Jpl.Nasa.Gov!hyc)
  */

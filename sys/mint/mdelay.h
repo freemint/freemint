@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
@@ -23,8 +25,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * last change:	2000-05-14
  * 
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list

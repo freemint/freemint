@@ -1,12 +1,16 @@
-// This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
-// distribution.  See the file Changes.MH for a detailed log of changes.
-//
-// set_mmu(crp,tc): called once, the first time a page table is built, to 
-// switch away from the MMU setup that came from the ROM and into the setup 
-// that we just built.  The CRP is actually on the stack, and it's 8 bytes.
-// The TC is four bytes at sp@(0xc).  "Nulls" is here because we need to
-// shove zeros into a few places.
-//
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
+ * distribution.  See the file Changes.MH for a detailed log of changes.
+ *
+ * set_mmu(crp,tc): called once, the first time a page table is built, to 
+ * switch away from the MMU setup that came from the ROM and into the setup 
+ * that we just built.  The CRP is actually on the stack, and it's 8 bytes.
+ * The TC is four bytes at sp@(0xc).  "Nulls" is here because we need to
+ * shove zeros into a few places.
+ *
+ */
 
 #ifndef MMU040
 

@@ -1,56 +1,62 @@
-//
-// This file has been modified as part of the FreeMiNT project. See
-// the file Changes.MH for details and dates.
-//
-//
-// Copyright 1992 Eric R. Smith
-// Copyright 1992,1993,1994 Atari Corporation
-// All rights reserved.
-//
-//
-// syscall: interface for system calls. The following entry points are
-//    defined:
-// _mint_bios:	entry point for the BIOS calls (trap #13)
-// _mint_xbios: entry point for XBIOS calls (trap #14)
-// _mint_dos:	entry point for GEMDOS calls (trap #1)
-// _sig_return: user signal handlers return to this routine (see signal.c)
-//	       it is responsible for restoring the kernel's old context
-//	       via the Psigreturn() system call
-// _lineA0:	calls the line A initialize routine
-// _call_aes:	calls the GEM AES
-// _do_usrcall: calls a user supplied function (e.g. for Supexec), with
-//	arguments supplied from global variables usrarg1, usrarg2, etc.
-// _callout:	calls an external function, after first saving all registers,
-//	and restores the registers afterward
-//
-// external variables referenced:
-// _bios_tab, _bios_max:
-//    table of entry points for BIOS routines, max # of routines
-// _xbios_tab, _xbios_max:
-//    ditto for XBIOS
-// _dos_tab, _dos_max:
-//    ditto for GEMDOS
-// _curproc:
-//    pointer to current process table entry, and hence to save area for
-//    context (this is always the first entry in the PROC table).
-// _pc_valid_return:
-//    used to indicate to the kernel that a valid return from user mode
-//    is taking place
-//
-// _bconbuf, _bconbsiz, _bconbdev:
-//    256 byte buffer for Bconout() output. If _bconbsiz is non-zero,
-//    there are that many bytes in _bconbuf waiting to be flushed. The
-//    output is for device _bconbdev.
-//
-// The function enter_gemdos() resp. enter_bios() is called while entering
-// the kernel and leave_kernel() while leaving the kernel. These are
-// responsible for managing appropriate semaphores and pointers.
-//
-// we also call certain BIOS functions directly if these are known not to
-// require saving/restoring of context
-//
-// Best view in 800x600 //-)
-//
+/*
+ * $Id$
+ * 
+ * This file has been modified as part of the FreeMiNT project. See
+ * the file Changes.MH for details and dates.
+ * 
+ * 
+ * Copyright 1992 Eric R. Smith
+ * Copyright 1992,1993,1994 Atari Corporation
+ * All rights reserved.
+ * 
+ * 
+ * Interface for system calls
+ * 
+ * The following entry points are defined:
+ * 
+ * _mint_bios:	entry point for the BIOS calls (trap #13)
+ * _mint_xbios: entry point for XBIOS calls (trap #14)
+ * _mint_dos:	entry point for GEMDOS calls (trap #1)
+ * _sig_return: user signal handlers return to this routine (see signal.c)
+ *              it is responsible for restoring the kernel's old context
+ *              via the Psigreturn() system call
+ * _lineA0:	calls the line A initialize routine
+ * _call_aes:	calls the GEM AES
+ * _do_usrcall: calls a user supplied function (e.g. for Supexec), with
+ *              arguments supplied from global variables usrarg1, usrarg2, etc.
+ * _callout:	calls an external function, after first saving all registers,
+ *              and restores the registers afterward
+ * 
+ * external variables referenced:
+ * 
+ * _bios_tab, _bios_max:
+ *    table of entry points for BIOS routines, max # of routines
+ * _xbios_tab, _xbios_max:
+ *    ditto for XBIOS
+ * _dos_tab, _dos_max:
+ *    ditto for GEMDOS
+ * _curproc:
+ *    pointer to current process table entry, and hence to save area for
+ *    context (this is always the first entry in the PROC table).
+ * _pc_valid_return:
+ *    used to indicate to the kernel that a valid return from user mode
+ *    is taking place
+ * 
+ * _bconbuf, _bconbsiz, _bconbdev:
+ *    256 byte buffer for Bconout() output. If _bconbsiz is non-zero,
+ *    there are that many bytes in _bconbuf waiting to be flushed. The
+ *    output is for device _bconbdev.
+ * 
+ * The function enter_gemdos() resp. enter_bios() is called while entering
+ * the kernel and leave_kernel() while leaving the kernel. These are
+ * responsible for managing appropriate semaphores and pointers.
+ * 
+ * we also call certain BIOS functions directly if these are known not to
+ * require saving/restoring of context
+ * 
+ * Best view in 800x600 //-)
+ * 
+ */
 
 #include "magic/magic.i"
 

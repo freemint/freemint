@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -21,10 +23,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-11-07
- * last change:	2000-11-07
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2000-11-07
  * 
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
@@ -109,7 +109,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	p2->ptracer = 0;
 	p2->ptraceflags = 0;
 	
-	p2->q_next = 0;
+	p2->q_next = NULL;
 	p2->wait_q = 0;
 	
 	
@@ -192,8 +192,14 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 		init_page_table (p2, p2->p_mem);
 	
 	/* hook into the process list */
-	p2->gl_next = proclist;
-	proclist = p2;
+	{
+		ushort sr = splhigh ();
+		
+		p2->gl_next = proclist;
+		proclist = p2;
+		
+		spl (sr);
+	}
 	
 	return p2;
 	
@@ -243,6 +249,8 @@ sys_pvfork (void)
 		DEBUG(("p_vfork: couldn't get new PROC struct"));
 		return r;
 	}
+	
+	assert (p->p_mem && p->p_mem->mem);
 	
 	/* set u:\proc time+date */
 	procfs_stmp = xtime;
@@ -316,6 +324,8 @@ sys_pfork (void)
 		return r;
 	}
 	
+	assert (p->p_mem && p->p_mem->mem);
+	
 	/* set u:\proc time+date */
 	procfs_stmp = xtime;
 	
@@ -371,7 +381,9 @@ sys_pfork (void)
 			p->p_mem->mem[i] = n;
 		}
 	}
-
+	
+	assert (curproc->p_mem && curproc->p_mem->mem);
+	
 	/* The save regions are initially attached to the child's regions. To
 	 * prevent swapping of the region and its save region (which should
 	 * still be identical) on the next context switch, we attach them here

@@ -1,13 +1,12 @@
-/*
- * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
- * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
- * begin:	1998-11
- * last change: 1998-12-20
+/* 
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
  * 
  * Author: J”rg Westheide <joerg_westheide@su.maus.de>
+ * Started: 1998-12-20
  * 
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list

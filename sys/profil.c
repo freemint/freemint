@@ -1,11 +1,13 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
  * Modified for FreeMiNT by Frank Naumann <fnaumann@freemint.de>
- */
-
-/* Low-level statistical profiling support function.  Mostly POSIX.1 version.
+ * 
+ * 
+ * Low-level statistical profiling support function.  Mostly POSIX.1 version.
  * Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
  * This file is part of the GNU C Library.
  * 
@@ -23,6 +25,7 @@
  * License along with the GNU C Library; see the file COPYING.LIB.  If not,
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
+ * 
  */
 
 # include "profil.h"
