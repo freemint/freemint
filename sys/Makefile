@@ -16,7 +16,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: allkernels
+all-here: all-kernels
 
 # default overwrites
 
@@ -30,7 +30,7 @@ help:
 	@echo '# --------'
 	@echo '# - all'
 	@echo '# - sockets / xdd / xfs'
-	@echo '# - allkernels'
+	@echo '# - all-kernels'
 	@echo '# - $(kerneltargets)'
 	@echo '#'
 	@echo '# - bakclean'
@@ -41,7 +41,7 @@ help:
 	@echo '# example for a Milan kernel: -> make mil'
 	@echo '#'
 
-allkernels:
+all-kernels:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(kerneltargets); do \
 		echo "Making $$i"; \
