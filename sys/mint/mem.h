@@ -20,22 +20,25 @@
 
 typedef struct memregion MEMREGION;
 
+/** @struct memregion
+ * Description of a memory region.
+ */
+
 struct memregion
 {
-	long	loc;		/* base of memory region */
-	ulong	len;		/* length of memory region */
-	ushort	links;		/* number of users of region */
-	ushort	mflags;		/* e.g. which map this came from */
-	MEMREGION *save;	/* used to save inactive shadows */
-	MEMREGION *shadow;	/* ring of shadows or 0 */
-	MEMREGION *next;	/* next region in memory map */
+        long	loc;		///< Base of memory region.
+        ulong	len;		///< Length of memory region.
+        ushort	links;		///< Number of users of region.
+        ushort	mflags;		///< E.g. which map this came from.
+        MEMREGION *save;	///< Used to save inactive shadows.
+        MEMREGION *shadow;	///< Ring of shadows or 0.
+        MEMREGION *next;	///< Next region in memory map.
 };
 
-/* flags for memory regions: these are used only in MEMREGION struct */
-# define M_CORE		0x0001	/* region came from core map */
-# define M_ALT		0x0002	/* region came from alt map */
-# define M_SWAP		0x0004	/* region came from swap map */
-# define M_KER		0x0008	/* region came from kernel map */
+#define M_CORE		0x0001	/// Region came from core map.
+#define M_ALT		0x0002	///< Region came from alt map.
+#define M_SWAP		0x0004	///< Region came from swap map.
+# define M_KER		0x0008	///< Region came from kernel map.
 # define M_MAP		0x000f	/* and with this to pick out map */
 
 /* obsolete M_SHTEXT	0x0010	 * region is a shared text region */
@@ -50,11 +53,13 @@ struct memregion
 # define M_KMALLOC	0x4000	/* used by kmalloc */
 # define M_SEEN		0x8000	/* for memused() to find links */
 
-/* dummy type for virtual addresses */
+/**
+ * Dummy type for virtual addresses.
+ */
 typedef struct vaddr {
 	char dummy;
 } *virtaddr;
-
+ 
 /*
  * Here's the deal with memory bits:
  *
@@ -71,8 +76,11 @@ typedef struct vaddr {
  * mflags.
  */
 
-/* structure of exectuable program headers */
-typedef struct fileheader {
+/**
+ * Structure of exectuable program headers.
+ *
+ */
+struct fileheader {
 	short	fmagic;
 	long	ftext;
 	long	fdata;
@@ -81,7 +89,9 @@ typedef struct fileheader {
 	long	reserved;
 	long	flag;
 	short	reloc;
-} FILEHEAD;
+};
+
+typedef struct fileheader FILEHEAD;
 
 # define GEMDOS_MAGIC 0x601a
 
@@ -235,3 +245,7 @@ typedef ulong tc_reg;
 
 
 # endif /* _mint_mem_h */
+
+
+
+
