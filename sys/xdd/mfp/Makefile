@@ -20,7 +20,8 @@ all-here: entry
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
-DEFINITIONS = 
+DEFINITIONS = -D__KERNEL_XDD__ $(XDD_DEFINITIONS)
+XDD_DEFINITIONS = 
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
@@ -31,8 +32,8 @@ SGENFILES = $(TARGET) mfp_mil.xdd
 OBJS = $(COBJS:.c=.o)
 
 entry:
-	$(MAKE) DEFINITIONS="" CPU="000" mfp.xdd
-	$(MAKE) DEFINITIONS="-DMILAN" CPU="020-60" mfp_mil.xdd
+	$(MAKE) XDD_DEFINITIONS="" CPU="000" mfp.xdd
+	$(MAKE) XDD_DEFINITIONS="-DMILAN" CPU="020-60" mfp_mil.xdd
 
 mfp.xdd: mfp.o $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $< $(LIBS)

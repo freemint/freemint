@@ -21,8 +21,6 @@
 # ifndef _global_h
 # define _global_h
 
-# define __KERNEL_XDD__
-
 # include "mint/mint.h"
 # include "libkern/libkern.h"
 

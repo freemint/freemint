@@ -13,11 +13,6 @@
 
 extern const char *drv_list;
 
-typedef enum {
-	true  = (1 == 1),
-	false = (0 == 1)
-} bool;
-
 struct range
 {
 	short a, b;
@@ -118,9 +113,14 @@ struct parser_item
 	long dat;
 };
 
+
+# if __KERNEL__ == 1
+
 void parser_msg(struct parsinf *, const char *msg);
 
 void parse_include(const char *path, struct parsinf *, struct parser_item *);
 void parse_cnf(const char *name, struct parser_item *, void *);
+
+# endif
 
 # endif /* _cnf_h */

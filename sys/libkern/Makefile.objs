@@ -18,6 +18,7 @@ include $(top_srcdir)/PHONY
 all-here: objs
 
 # default overwrites
+DEFINITIONS = -D__KERNEL__
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
