@@ -845,6 +845,12 @@ typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 
 typedef void DrawWinElement(struct xa_window *wind);
 
+#define XAWO_WHEEL	WO0_WHEEL
+#define XAWO_FULLREDRAW WO0_FULLREDRAW
+#define XAWO_NOBLITW	WO0_NOBLITW
+#define XAWO_NOBLITH	WO0_NOBLITH
+#define XAWO_SENDREPOS	WO0_SENDREPOS
+
 #define XAWS_OPEN	0x0001
 #define XAWS_ICONIFIED	0x0002
 #define XAWS_SHADED	0x0004

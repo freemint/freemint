@@ -84,31 +84,35 @@ about_form_exit(struct xa_client *client,
 		struct fmd_result *fr)
 {
 	enum locks lock = 0;
+	OBJECT *obtree = wt->tree;
+	
 	wt->current = fr->obj|fr->dblmask;
-	/* The ''form_do'' part */
-	if (fr->obj == ABOUT_OK)
-	{
-		object_deselect(wt->tree + ABOUT_OK);
-		display_toolbar(lock, about_window, ABOUT_OK);
-		close_window(lock, about_window);
-		delete_window(lock, about_window);
-	}
-}
 
-#if 0
-static void
-handle_about(enum locks lock, struct widget_tree *wt)
-{
-	/* The ''form_do'' part */
-	if ((wt->current & 0xff) == ABOUT_OK)
+	switch (fr->obj)
 	{
-		object_deselect(wt->tree + ABOUT_OK);
-		display_toolbar(lock, about_window, ABOUT_OK);
-		close_window(lock, about_window);
-		delete_window(lock, about_window);
+		case ABOUT_OK:
+		{
+			object_deselect(obtree + ABOUT_OK);
+			display_toolbar(lock, about_window, ABOUT_OK);
+			close_window(lock, about_window);
+			delete_window(lock, about_window);
+			break;
+		}
+		case ABOUT_LIST:
+		{
+			short obj = fr->obj;
+
+			if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+			{
+				if (fr->md->clicks > 1)
+					dclick_scroll_list(lock, obtree, obj, fr->md);
+				else
+					click_scroll_list(lock, obtree, obj, fr->md);
+			}
+			break;
+		}
 	}
 }
-#endif
 
 void
 open_about(enum locks lock)
@@ -145,15 +149,17 @@ open_about(enum locks lock)
 		/* Set the window title */
 		get_widget(dialog_window, XAW_TITLE)->stuff = "  About  ";
 		/* set version */
-		(form + ABOUT_VERSION)->ob_spec.free_string = version;
+		(form + ABOUT_VERSION)->ob_spec.free_string = vversion;
 		/* Set version date */
 		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
+		(form + ABOUT_TARGET)->ob_spec.free_string = arch_target;
+		(form + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 
 		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, form, -1, WIDG_NOTEXT);
 		wt->exit_form = about_form_exit;
 
 		/* set a scroll list widget */
-		list = set_slist_object(lock, wt, form, ABOUT_LIST, 0, 0, 0, 0, 0, 0, 42);
+		list = set_slist_object(lock, wt, form, ABOUT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, 42);
 
 		/* fill the list if already list */
 		if (!list->start)

@@ -59,8 +59,7 @@ short my_global_aes[16];
 long loader_pid = 0;
 long loader_pgrp = 0;
 
-char version[] = ASCII_VERSION;
-
+//char version[] = ASCII_VERSION;
 
 static char Aes_display_name[32];
 
@@ -220,17 +219,18 @@ init(struct kentry *k, const char *path)
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
 
+	sprintf(version, sizeof(version), "%i.%i", VER_MAJOR, VER_MINOR);
+	sprintf(vversion, sizeof(vversion), "%s %s", version, ASCII_DEV_STATUS);
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;
 	/* Set the default debug file */
 	strcpy(D.debug_path, "xaaes.log");
 	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL);
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) %s", version);
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s", vversion);
 #else
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES %s", version);
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
 #endif
-
 	/*
 	 * default configuration
 	 */
@@ -440,8 +440,6 @@ init(struct kentry *k, const char *path)
 	DIAGS(("load adi modules"));
 	adi_load();
 
-	init_apgi_infotab();
-	
 	DIAGS(("Creating XaAES kernel thread"));
 	{
 		long r;
