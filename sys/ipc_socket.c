@@ -620,8 +620,10 @@ sys_sendmsg (short fd, struct msghdr *msg, long flags)
 	if (so->state == SS_VIRGIN)
 		return EINVAL;
 	
-	if (msg->msg_accrights && msg->msg_accrightslen)
-		return EINVAL;
+	if (msg->msg_accrights || msg->msg_accrightslen) {
+		msg->msg_accrights = NULL;
+		msg->msg_accrightslen = 0;
+	}
 	
 	return (*so->ops->send)(so, msg->msg_iov, msg->msg_iovlen,
 				fp->flags & O_NDELAY, flags,
