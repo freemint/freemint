@@ -125,7 +125,7 @@ stop_and_ask(void)
 	if (step_by_step)
 	{
 		boot_print(MSG_init_hitanykey);
-		
+
 		if (intr_done)
 			sys_c_conin();
 		else
@@ -146,8 +146,8 @@ xbra_vec old_bus;
 xbra_vec old_addr;
 xbra_vec old_ill;
 xbra_vec old_divzero;
-xbra_vec old_trace;
 xbra_vec old_priv;
+xbra_vec old_trace;
 xbra_vec old_linef;
 xbra_vec old_chk;
 xbra_vec old_trapv;
@@ -246,31 +246,6 @@ mint_criticerr (long error) /* high word is error, low is drive */
 }
 
 /*
- * if we are MultiTOS, and if we are running from the AUTO folder,
- * then we grab the exec_os vector and use that to start GEM; that
- * way programs that expect exec_os to act a certain way will still
- * work.
- *
- * NOTE: we must use Pexec instead of sys_pexec here, because we will
- * be running in a user context (that of process 1, not process 0)
- */
-
-static void _cdecl
-do_exec_os (long basepage)
-{
-	register long r;
-
-	/* we have to set a7 to point to lower in our TPA;
-	 * otherwise we would bus error right after the Mshrink call!
-	 */
-	setstack(basepage + QUANTUM - 40L);
-	TRAP_Mshrink((void *)basepage, QUANTUM);
-	r = TRAP_Pexec(200, init_prg, init_tail, _base->p_env);
-	TRAP_Pterm ((int)r);
-}
-
-
-/*
  * initialize all interrupt vectors and new trap routines
  * we also get here any TOS variables that we're going to change
  * (e.g. the pointer to the cookie jar) so that rest_intr can
@@ -350,7 +325,9 @@ init_intr (void)
 	xbra_install (&old_ill, 16L, new_ill);
 	xbra_install (&old_divzero, 20L, new_divzero);
 	xbra_install (&old_trace, 36L, new_trace);
+
 	xbra_install (&old_priv, 32L, new_priv);
+
 	if (tosvers >= 0x106)
 		xbra_install (&old_linef, 44L, new_linef);
 	xbra_install (&old_chk, 24L, new_chk);
@@ -425,7 +402,6 @@ restr_intr (void)
 	*((long *) 0x00cL) = (long) old_addr.next;
 	*((long *) 0x010L) = (long) old_ill.next;
 	*((long *) 0x014L) = (long) old_divzero.next;
-	*((long *) 0x020L) = (long) old_priv.next;
 	*((long *) 0x024L) = (long) old_trace.next;
 
 	if (old_linef.next)
@@ -741,126 +717,6 @@ check_for_gem (void)
 
 static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 
-/* This seems to be an overkill, but we sometimes need to set something
- * in the environment.
- */
-
-/* A macro used to calculate the remaining free part of an
- * allocated block of memory (in other words, the difference
- * between the requested/used size and the size actually allocated).
- */
-# define RAM_PAD(x) (QUANTUM - (x % QUANTUM))
-
-/* Measures the size of the environment */
-
-long
-env_size(char *var)
-{
-	long count = 1;			/* Trailing NULL */
-
-	while (var && *var)
-	{
-		while (*var)
-		{
-			var++;
-			count++;
-		}
-		var++;
-		count++;
-	}
-
-	return count;
-}
-
-/* _mint_delenv() idea is borrowed from mintlib's del_env() */
-void
-_mint_delenv(BASEPAGE *bp, const char *strng)
-{
-	char *name, *var;
-
-	/* find the tag in the environment */
-	var = _mint_getenv(bp, strng);
-	if (!var)
-		return;
-
-	/* if it's found, move all the other environment variables down by 1 to
-   	 * delete it
-         */
-	var -= (strlen(strng) + 1);
-	name = var + strlen(var) + 1;
-
-	do
-	{
-		while (*name)
-			*var++ = *name++;
-		*var++ = *name++;
-
-	} while (*name);
-
-	*var = 0;
-
-	sys_m_shrink(0, (long)bp->p_env, env_size(bp->p_env));
-}
-
-void
-_mint_setenv(BASEPAGE *bp, const char *var, const char *value)
-{
-	char *env_str = bp->p_env, *new_env, *es, *ne;
-	long old_size, var_size;
-
-	/* If it already exists, delete it */
-	_mint_delenv(bp, var);
-
-	old_size = env_size(env_str);
-	var_size = strlen(var) + strlen(value) + 1;	/* '=' */
-
-	/* If there is enough place in the current environment,
-	 * don't reallocate it.
-	 */
-	if (RAM_PAD(old_size) >= var_size)
-	{
-		ne = env_str;
-
-		while (*ne)
-		{
-			while (*ne)
-				ne++;
-			ne++;
-		}
-	}
-	else
-	{
-		new_env = (char *)sys_m_xalloc(old_size + var_size, 3);
-
-		if (new_env == NULL)
-			return;
-
-		es = env_str;
-		ne = new_env;
-
-		/* Copy old env to new place */
-		while (*es)
-		{
-			while (*es)
-				*ne++ = *es++;
-			*ne++ = *es++;
-		}
-
-		bp->p_env = new_env;
-
-		sys_m_free((long)env_str);
-	}
-
-	/* Append new variable at the end */
-	strcpy(ne, var);
-	strcat(ne, "=");
-	strcat(ne, value);
-
-	/* and place the zero terminating the environment */
-	ne += strlen(ne);
-	*++ne = 0;
-}
-
 void
 init (void)
 {
@@ -873,9 +729,9 @@ init (void)
 	boot_print (greet1);
 	boot_print (greet2);
 
-	/* 
+	/*
 	 * Initialize sysdir
-	 * 
+	 *
 	 * from 1.16 we ignore any multitos folder
 	 * from 1.16 we default to \mint
 	 * from 1.16 we search for \mint\<MINT_VERSION>
@@ -897,6 +753,9 @@ init (void)
 		TRAP_Pterm0();
 	}
 
+	/* Read user defined defaults */
+	read_ini();
+
 	/* check for GEM -- this must be done from user mode */
 	if (check_for_gem())
 	{
@@ -905,9 +764,6 @@ init (void)
 		(void) TRAP_Cconin();
 		TRAP_Pterm0();
 	}
-
-	/* Read user defined defaults */
-	read_ini();
 
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
@@ -958,9 +814,6 @@ init (void)
 	/* These are set inside getmch() */
 	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
 # endif
-
-	/* Delete the TOS environment */
-	_base->p_env = NULL;
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_supermode);
@@ -1297,6 +1150,255 @@ init (void)
 
 	stop_and_ask();
 
+# ifdef PROFILING
+	/* compiled with profiling support */
+	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
+# endif
+
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_pid_0);
+# endif
+
+	save_context(&(rootproc->ctxt[CURRENT]));
+	save_context(&(rootproc->ctxt[SYSCALL]));
+
+	/* zero the user registers, and set the FPU in a "clear" state */
+	for (r = 0; r < 15; r++)
+	{
+		rootproc->ctxt[CURRENT].regs[r] = 0;
+		rootproc->ctxt[SYSCALL].regs[r] = 0;
+	}
+
+	rootproc->ctxt[CURRENT].fstate[0] = 0;
+	rootproc->ctxt[CURRENT].pc = (long) mint_thread;
+	rootproc->ctxt[CURRENT].usp = rootproc->sysstack;
+	rootproc->ctxt[CURRENT].ssp = rootproc->sysstack;
+	rootproc->ctxt[CURRENT].term_vec = (long) rts;
+
+	rootproc->ctxt[SYSCALL].fstate[0] = 0;
+	rootproc->ctxt[SYSCALL].pc = (long) mint_thread;
+	rootproc->ctxt[SYSCALL].usp = rootproc->sysstack;
+	rootproc->ctxt[SYSCALL].ssp = (long)(rootproc->stack + ISTKSIZE);
+	rootproc->ctxt[SYSCALL].term_vec = (long) rts;
+
+	*((long *)(rootproc->ctxt[CURRENT].usp + 4)) = 0;
+	*((long *)(rootproc->ctxt[SYSCALL].usp + 4)) = 0;
+
+	restore_context(&(rootproc->ctxt[CURRENT]));
+
+	/* not reached */
+	FATAL("restore_context() returned ???");
+}
+
+/* ------------------ The MiNT thread and related code --------------------- */
+
+/*
+ * run programs in the AUTO folder that appear after MINT.PRG
+ * some things to watch out for:
+ * (1) make sure GEM isn't active
+ * (2) make sure there really is a MINT.PRG in the auto folder
+ */
+
+INLINE void
+run_auto_prgs (void)
+{
+	DTABUF *dta;
+	long r;
+ 	short curdriv, runthem = 0;		/* set to 1 after we find MINT.PRG */
+	char pathspec[32], curpath[PATH_MAX];
+
+	/* OK, now let's run through \\AUTO looking for
+	 * programs...
+	 */
+	sys_d_getpath(curpath,0);
+	curdriv = sys_d_getdrv();
+
+	sys_d_setdrv(sysdrv);	/* set above, right after Super() */
+	sys_d_setpath("/");
+
+	dta = (DTABUF *) sys_f_getdta();
+	r = sys_f_sfirst("/auto/*.prg", 0);
+	while (r >= 0)
+	{
+		if (strcmp(dta->dta_name, my_name) == 0)
+		{
+			runthem = 1;
+		}
+		else if (runthem)
+		{
+			ksprintf(pathspec, sizeof(pathspec), "/auto/%s", dta->dta_name);
+			sys_pexec(0, pathspec, (char *)"", _base->p_env);
+		}
+		r = sys_f_snext();
+	}
+
+ 	sys_d_setdrv(curdriv);
+ 	sys_d_setpath(curpath);
+}
+
+/* This seems to be an overkill, but we sometimes need to set something
+ * in the environment.
+ */
+
+/* A macro used to calculate the remaining free part of an
+ * allocated block of memory (in other words, the difference
+ * between the requested/used size and the size actually allocated).
+ */
+# define RAM_PAD(x) (QUANTUM - (x % QUANTUM))
+
+/* Measures the size of the environment */
+
+long
+env_size(char *var)
+{
+	long count = 1;			/* Trailing NULL */
+
+	while (var && *var)
+	{
+		while (*var)
+		{
+			var++;
+			count++;
+		}
+		var++;
+		count++;
+	}
+
+	return count;
+}
+
+/* _mint_delenv() idea is borrowed from mintlib's del_env() */
+void
+_mint_delenv(BASEPAGE *bp, const char *strng)
+{
+	char *name, *var;
+
+	/* find the tag in the environment */
+	var = _mint_getenv(bp, strng);
+	if (!var)
+		return;
+
+	/* if it's found, move all the other environment variables down by 1 to
+   	 * delete it
+         */
+	var -= (strlen(strng) + 1);
+	name = var + strlen(var) + 1;
+
+	do
+	{
+		while (*name)
+			*var++ = *name++;
+		*var++ = *name++;
+
+	} while (*name);
+
+	*var = 0;
+
+	sys_m_shrink(0, (long)bp->p_env, env_size(bp->p_env));
+}
+
+void
+_mint_setenv(BASEPAGE *bp, const char *var, const char *value)
+{
+	char *env_str = bp->p_env, *new_env, *es, *ne;
+	long old_size, var_size;
+
+	/* If it already exists, delete it */
+	_mint_delenv(bp, var);
+
+	old_size = env_size(env_str);
+	var_size = strlen(var) + strlen(value) + 1;	/* '=' */
+
+	/* If there is enough place in the current environment,
+	 * don't reallocate it.
+	 */
+	if (RAM_PAD(old_size) >= var_size)
+	{
+		ne = env_str;
+
+		while (*ne)
+		{
+			while (*ne)
+				ne++;
+			ne++;
+		}
+	}
+	else
+	{
+		new_env = (char *)sys_m_xalloc(old_size + var_size, 3);
+
+		if (new_env == NULL)
+			return;
+
+		es = env_str;
+		ne = new_env;
+
+		/* Copy old env to new place */
+		while (es && *es)
+		{
+			while (*es)
+				*ne++ = *es++;
+			*ne++ = *es++;
+		}
+
+		bp->p_env = new_env;
+
+		sys_m_free((long)env_str);
+	}
+
+	/* Append new variable at the end */
+	strcpy(ne, var);
+	strcat(ne, "=");
+	strcat(ne, value);
+
+	/* and place the zero terminating the environment */
+	ne += strlen(ne);
+	*++ne = 0;
+}
+
+/*
+ * if we are MultiTOS, and if we are running from the AUTO folder,
+ * then we grab the exec_os vector and use that to start GEM; that
+ * way programs that expect exec_os to act a certain way will still
+ * work.
+ *
+ * NOTE: we must use Pexec instead of sys_pexec here, because we will
+ * be running in a user context (that of process 1, not process 0)
+ */
+
+static void _cdecl
+do_exec_os (long basepage)
+{
+	register long r;
+
+	/* we have to set a7 to point to lower in our TPA;
+	 * otherwise we would bus error right after the Mshrink call!
+	 */
+	setstack(basepage + QUANTUM - 40L);
+	TRAP_Mshrink((void *)basepage, QUANTUM);
+	r = TRAP_Pexec(200, init_prg, init_tail, _base->p_env);
+	TRAP_Pterm ((int)r);
+}
+
+void
+mint_thread(void *arg)
+{
+	int pid;
+	long r;
+
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_done);
+# endif
+
+	/* Delete old TOS environment, we don't inherit it */
+	_base->p_env = (char *)sys_m_xalloc(QUANTUM, 0x0003);
+
+	if (_base->p_env == NULL)
+		FATAL ("Can't allocate environment!");
+
+	_base->p_env[0] = 0;
+	_base->p_env[1] = 0;
+
 	/* load the configuration file */
 	load_config();
 
@@ -1372,100 +1474,6 @@ init (void)
 	{
 		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
-
-# ifdef PROFILING
-	/* compiled with profiling support */
-	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
-# endif
-
-# ifdef VERBOSE_BOOT
-	boot_print(MSG_init_pid_0);
-# endif
-
-	save_context(&(rootproc->ctxt[CURRENT]));
-	save_context(&(rootproc->ctxt[SYSCALL]));
-
-	/* zero the user registers, and set the FPU in a "clear" state */
-	for (r = 0; r < 15; r++)
-	{
-		rootproc->ctxt[CURRENT].regs[r] = 0;
-		rootproc->ctxt[SYSCALL].regs[r] = 0;
-	}
-
-	rootproc->ctxt[CURRENT].fstate[0] = 0;
-	rootproc->ctxt[CURRENT].pc = (long) mint_thread;
-	rootproc->ctxt[CURRENT].usp = rootproc->sysstack;
-	rootproc->ctxt[CURRENT].ssp = rootproc->sysstack;
-	rootproc->ctxt[CURRENT].term_vec = (long) rts;
-
-	rootproc->ctxt[SYSCALL].fstate[0] = 0;
-	rootproc->ctxt[SYSCALL].pc = (long) mint_thread;
-	rootproc->ctxt[SYSCALL].usp = rootproc->sysstack;
-	rootproc->ctxt[SYSCALL].ssp = (long)(rootproc->stack + ISTKSIZE);
-	rootproc->ctxt[SYSCALL].term_vec = (long) rts;
-
-	*((long *)(rootproc->ctxt[CURRENT].usp + 4)) = 0;
-	*((long *)(rootproc->ctxt[SYSCALL].usp + 4)) = 0;
-
-	restore_context(&(rootproc->ctxt[CURRENT]));
-
-	/* not reached */
-	FATAL("restore_context() returned ???");
-}
-
-/*
- * run programs in the AUTO folder that appear after MINT.PRG
- * some things to watch out for:
- * (1) make sure GEM isn't active
- * (2) make sure there really is a MINT.PRG in the auto folder
- */
-
-INLINE void
-run_auto_prgs (void)
-{
-	DTABUF *dta;
-	long r;
- 	short curdriv, runthem = 0;		/* set to 1 after we find MINT.PRG */
-	char pathspec[32], curpath[PATH_MAX];
-
-	/* OK, now let's run through \\AUTO looking for
-	 * programs...
-	 */
-	sys_d_getpath(curpath,0);
-	curdriv = sys_d_getdrv();
-
-	sys_d_setdrv(sysdrv);	/* set above, right after Super() */
-	sys_d_setpath("/");
-
-	dta = (DTABUF *) sys_f_getdta();
-	r = sys_f_sfirst("/auto/*.prg", 0);
-	while (r >= 0)
-	{
-		if (strcmp(dta->dta_name, my_name) == 0)
-		{
-			runthem = 1;
-		}
-		else if (runthem)
-		{
-			ksprintf(pathspec, sizeof(pathspec), "/auto/%s", dta->dta_name);
-			sys_pexec(0, pathspec, (char *)"", _base->p_env);
-		}
-		r = sys_f_snext();
-	}
-
- 	sys_d_setdrv(curdriv);
- 	sys_d_setpath(curpath);
-}
-
-void
-mint_thread(void *arg)
-{
-	int pid;
-	long r;
-
-# ifdef VERBOSE_BOOT
-	boot_print(MSG_init_done);
-# endif
 
 	/* Load the keyboard table */
 	load_keytbl();
