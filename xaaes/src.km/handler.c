@@ -292,10 +292,15 @@ XA_handler(void *_pb)
 #if GENERATE_DIAGS
 			if (client)
 			{
-				if (mouse_locked() == client)
-					DIAG((D_kern, client, "Leaving AES with mouselock %s", client->name));
-				if (update_locked() == client)
-					DIAG((D_kern, client, "Leaving AES with screenlock %s", client->name));
+				if (mouse_locked() || update_locked())
+				{
+					if (mouse_locked() == client)
+						DIAG((D_kern, client, "Leaving AES with mouselock %s", client->name));
+					if (update_locked() == client)
+						DIAG((D_kern, client, "Leaving AES with screenlock %s", client->name));
+				}
+				else
+					DIAG((D_kern, client, "Leaving AES %s", client->name));
 			}
 #endif
 			return 0;
