@@ -778,7 +778,6 @@ load_internal_table(void)
 		{
 			len = strlen(tos_keytab->altgr) + 1;
 			quickmove(p, tos_keytab->altgr, len);
-			p += len;
 		}
 	}
 
