@@ -30,8 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
-extern char version[16];
-extern char vversion[32];
+extern char version[32];
+extern char vversion[128];
 
 extern char arch_target[];
 extern char long_name[];

@@ -506,13 +506,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 
 	/*
-	 * remove from client list
-	 * remove from app list
-	 */
-	CLIENT_LIST_REMOVE(client);
-	APP_LIST_REMOVE(client);
-
-	/*
 	 * Figure out which client to make active
 	 */
 	if (cfg.next_active == 1)
@@ -529,6 +522,12 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	app_in_front(lock, top_owner);
 
+	/*
+	 * remove from client list
+	 * remove from app list
+	 */
+	CLIENT_LIST_REMOVE(client);
+	APP_LIST_REMOVE(client);
 		
 	if (redraws)
 	{
@@ -1124,7 +1123,10 @@ init_apgi_infotab(void)
 	DIAGS(("Build status-string '%s'", info_string));
 }
 
-
+/*
+ * Ozk: XA_appl_getinfo() may be called by processes not yet called
+ * appl_init(). So, it must not depend on client being valid!
+ */
 unsigned long
 XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1159,17 +1161,17 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				if (pb->control[N_ADDRIN] >= 3)
 				{
-					char *d = (char *)pb->addrin[0];
+					char *d;
 				
-					if (d)
+					if ((d = (char *)pb->addrin[0]))
 					{
 						for (i = 0; i < 8; i++)
 							*d++ = aes_id[i];
 					}
-					if (pb->addrin[1])
-						strcpy((char *)pb->addrin[1], long_name);
-					if (pb->addrin[2])
-						strcpy((char *)pb->addrin[2], info_string);
+					if ((d = (char *)pb->addrin[1]))
+						strcpy(d, long_name);
+					if ((d = (char *)pb->addrin[2]))
+						strcpy(d, info_string);
 				}
 				n_intout = pb->control[N_INTOUT];
 				gi_type = XA_VERSION_INFO;
@@ -1187,6 +1189,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		for (i = 1; i < n_intout; i++)
 			pb->intout[i] = info_tab[gi_type][i-1];
+		
 		gi_type = 1;
 	}
 	else
