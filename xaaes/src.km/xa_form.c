@@ -455,8 +455,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	{
 		RECT r;
 
-		if (client->fmd.lock)
-			kind |= STORE_BACK;
+		//if (client->fmd.lock)
+		//	kind |= STORE_BACK;
 
 		r = calc_window(lock, client, WC_BORDER,
 				kind,

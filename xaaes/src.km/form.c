@@ -27,6 +27,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
+#include "app_man.h"
 #include "form.h"
 #include "app_man.h"
 #include "draw_obj.h"
@@ -857,6 +858,9 @@ do_formwind_msg(
 {
 	XA_WIDGET *widg = wind->tool;
 	bool draw = false;
+
+	DIAG((D_form, wind->owner, "do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
+		wind->owner->name, to->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
 
 	if (widg)
 	{

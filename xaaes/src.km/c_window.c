@@ -669,9 +669,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	DIAG((D_wind, wind->owner, "open_window %d for %s to %d/%d,%d/%d status %x",
 		wind->handle, c_owner(wind->owner), r.x,r.y,r.w,r.h, wind->window_status));
 
+	if (C.redraws)
+		yield();
+
 #if 0
-	if (r.w <= 0) r.w = 6*cfg.widg_w;
-	if (r.h <= 0) r.h = 6*cfg.widg_h;
+	if (r.w <= 0) r.w = 6 * cfg.widg_w;
+	if (r.h <= 0) r.h = 6 * cfg.widg_h;
 #endif
 
 	if (wind->nolist)
@@ -719,6 +722,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	check_menu_desktop(lock|winlist, wl, wind);
 
+	make_rect_list(wind, true);
+	
 	/* Is this a 'preserve own background' window? */
 	if (wind->active_widgets & STORE_BACK)
 	{
@@ -767,9 +772,35 @@ if_bar(short pnt[4])
 		v_bar(C.vh, pnt);
 }
 
+void
+do_rootwind_msg(
+	struct xa_window *wind,
+	struct xa_client *to,			/* if different from wind->owner */
+	short *msg)
+{
+	DIAG((D_form, wind->owner, "do_rootwind_msg: wown %s, to %s, msg %d, %d, %d, %d, %d, %d, %d, %d",
+		wind->owner->name, to->name, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
+
+	switch (msg[0])
+	{
+		case WM_REDRAW:
+		{
+			XA_WIDGET *widg = get_widget(root_window, XAW_TOOLBAR);
+			
+			if (get_desktop()->owner == to && widg->display)
+			{
+				hidem();
+				set_clip((RECT *)&msg[4]);
+				widg->display(0, root_window, widg);
+				clear_clip();
+				showm();
+			}
+			break;
+		}
+	}
+}
 
 void
-//draw_window(enum locks lock, struct xa_window *wind)
 draw_window(enum locks lock, struct xa_window *wind)
 {
 	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
@@ -917,6 +948,20 @@ draw_window(enum locks lock, struct xa_window *wind)
 	{
 		int f;
 		XA_WIDGET *widg;
+
+		for (f = 0; f < XA_MAX_CF_WIDGETS; f++)
+		{
+			widg = get_widget(wind, f);
+			if (widg->display)
+			{
+				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
+					wind->handle, f, widg->display));
+				widg->display(lock, wind, widg);
+			}
+		}
+#if 0
+		int f;
+		XA_WIDGET *widg;
 		XA_WIDGET *mwidg = get_menu_widg();
 
 		/*
@@ -957,6 +1002,8 @@ draw_window(enum locks lock, struct xa_window *wind)
 						widg->display(lock, wind, widg);
 			}
 		}
+#endif
+
 	}
 
 	showm();
@@ -1075,11 +1122,8 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 				wl = wl->prev;
 			}
 		}
-//		else			/* already on top */
 		set_and_update_window(w, true, NULL);
-			//make_rect_list(w, 1);
 	}
-
 	return w;
 }
 
@@ -1121,89 +1165,39 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 void
 move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y, int W, int H)
 {
-	enum locks wlock = lock|winlist;
 	IFDIAG(struct xa_client *client = wind->owner;)
-	struct xa_window *wl;
-	RECT old, new, clip; //, oldw, pr;
+	RECT old, new;
 	bool blit = true;
 
 	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d",
 	      wind->is_open ? "open" : "closed",
 	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, X,Y,W,H));
 
-#if 0
-	temporary commented out, because I dont know exactly the consequences.
-	/* avoid spurious moves or sizings */
-	if (x != wind->r.x || y != wind->r.y || w != wind->r.w || h != wind->r.h)
-#endif
+	new.x = X;
+	new.y = Y;
+	new.w = W;
+	new.h = H;
+
+	old = wind->r;
+
+	if (newstate >= 0)
 	{
-		new.x = X;
-		new.y = Y;
-		new.w = W;
-		new.h = H;
-
-		old = wind->r;
-
-		if (newstate >= 0)
-		{
-			wind->window_status = newstate;
-			if (newstate == XAWS_ICONIFIED)
-				wind->ro = wind->r;
-			blit = false;
-		}
-		else
-			wind->pr = wind->r;
-
-		inside_root(&new, &wind->owner->options);
-		set_and_update_window(wind, blit, &new);
-
-		if (wind->is_open)
-		{
-			wl = wind->next;
-
-			/* For some reason the open window had got behind
-			 * root!!! This was caused by the problems with the
-			 * SIGCHILD stuff (the root window was pulled to top!)
-			 * I've put a safeguard there, so that all the below
-			 * kind of loops can be trusted.
-			 */
-			while (wl)
-			{
-				DIAG((D_wind, wl->owner, "[1]redisplay %d", wl->handle));
-
-				clip = wl->r;
-
-				/* Check for newly exposed windows */
-				if (xa_rc_intersect(old, &clip))
-				{			
-					make_rect_list(wl, 1);
-					display_window(wlock, 13, wl, &clip);
-					if (wl->send_message)
-						wl->send_message(wlock, wl, NULL,
-							WM_REDRAW, 0, 0, wl->handle,
-							clip.x, clip.y, clip.w, clip.h);
-
-				}
-				else
-				{
-					clip = wl->r;
-					/* Check for newly covered windows */
-					if (xa_rc_intersect(new, &clip))
-					{
-						/* We don't need to send a redraw to
-						 * these windows, we just have to update
-						 * their rect lists */
-						make_rect_list(wl, 1);
-					}
-				}
-
-				wl = wl->next;
-			}
-
-			/* removed rootwindow stuff, that perfectly worked within the loop. */
-		}
+		wind->window_status = newstate;
+		if (newstate == XAWS_ICONIFIED)
+			wind->ro = wind->r;
+		blit = false;
 	}
+	else
+		wind->pr = wind->r;
 
+	inside_root(&new, &wind->owner->options);
+	set_and_update_window(wind, blit, &new);
+
+	if (wind->is_open)
+	{
+		update_windows_below(lock, &old, &new, wind->next); //wl = wind->next;
+	}
+	
 	if (wind->remember)
 		*wind->remember = wind->r;
 }
@@ -1218,7 +1212,7 @@ close_window(enum locks lock, struct xa_window *wind)
 {
 	struct xa_window *wl;
 	struct xa_client *client = wind->owner;
-	RECT r, clip;
+	RECT r;
 	bool is_top;
 
 	if (wind == NULL)
@@ -1310,23 +1304,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	/* Redisplay any windows below the one we just have closed
 	 * or just have topped
 	 */
-	while (wl)
-	{
-		clip = wl->r;
-		DIAG((D_wind, client, "[2]redisplay %d", wl->handle));
-		if (xa_rc_intersect(r, &clip))
-		{
-			DIAG((D_wind, client, "   --   clip %d/%d,%d/%d", clip));
-			/* If a new focus was pulled up, some of these are not needed */
-			make_rect_list(wl, 1);
-			display_window(lock|winlist, 14, wl, &clip);
-			if (wl->send_message)
-				wl->send_message(lock|winlist, wl, NULL,
-					WM_REDRAW, 0, 0, wl->handle,
-					clip.x, clip.y, clip.w, clip.h);
-		}
-		wl = wl->next;
-	}
+	update_windows_below(lock, &r, NULL, wl);
 
 	if (window_list)
 	{
@@ -1344,21 +1322,6 @@ close_window(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
-#if 0
-static void
-free_widg(struct xa_window *wind, int n)
-{
-	XA_WIDGET *widg;
-
-	widg = get_widget(wind, n);
-	if (widg->stuff)
-	{
-		kfree(widg->stuff);
-		widg->stuff = NULL;
-	}
-}
-#endif
-
 static void
 free_standard_widgets(struct xa_window *wind)
 {
@@ -1371,16 +1334,6 @@ free_standard_widgets(struct xa_window *wind)
 		//DIAGS(("call remove_widget for widget %d", i));
 		remove_widget(0, wind, i);
 	}
-#if 0
-	{
-		widg = wind->widgets + i;
-		if (widg->destruct)
-		{
-			DIAGS(("call widget destruct for widget %d", i));
-			(*widg->destruct)(widg);
-		}
-	}
-#endif
 }
 
 static void
@@ -1479,8 +1432,9 @@ do_delayed_delete_window(enum locks lock)
 	}
 }
 
-static void
-diswin(enum locks lock, struct xa_window *wind, RECT *clip)
+//static void
+//diswin(enum locks lock, struct xa_window *wind, RECT *clip)
+void display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 {
 	if (wind->is_open)
 	{
@@ -1514,133 +1468,62 @@ diswin(enum locks lock, struct xa_window *wind, RECT *clip)
 	}
 }
 
-static void
-CE_display_window(enum locks lock, struct c_event *ce, bool cancel)
-{
-	if (!cancel)
-	{
-		struct xa_window *wind = ce->ptr1;
-		/*
-		 * If we're about to redraw root_window, make sure
-		 * owner of it didnt change between sending and receiving
-		 * cevent.
-		 */
-
-		if (wind == root_window)
-		{
-			DIAG((D_wind, ce->client, "CE_display_window: rootwindow"));
-			if (get_desktop()->owner != ce->client)
-			{
-				DIAG((D_wind, ce->client, "CE_display_window: rootwindow is not ours, forwarding..."));
-				post_cevent(get_desktop()->owner,
-					    CE_display_window,
-					    wind,
-					    NULL,
-					    ce->d0,
-					    0,
-					    ce->d0 ? &ce->r : NULL,
-					    NULL);
-				return;
-			}
-		}
-		DIAG((D_wind, ce->client, "CE_display_window: %s, %s for %s",
-			wind == root_window ? "rootwindow":"normal wind", ce->d0 ? "got clip":"no clip", ce->client->name ));
-		diswin(lock, wind, ce->d0 ? &ce->r : NULL);
-	}
-}
-
 /*
  * Display a window that isn't on top, respecting clipping
  * - Pass clip == NULL to redraw whole window, otherwise clip is a pointer to a GRECT that
  * defines the clip rectangle.
  */
 void
-display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
+update_windows_below(enum locks lock, RECT *old, RECT *new, struct xa_window *wl)
 {
-	if (wind->is_open)
-	{
-		struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-		struct xa_client *wo = wind == root_window ? get_desktop()->owner : wind->owner;
-
-		DIAG((D_wind, wind->owner, "display_window: wind %d, running %s, wind owner %s",
-			wind->handle, rc->name, wo->name));
-
-		if (rc == wo)
-			diswin(lock, wind, clip);
-		else
-		{
-			post_cevent(wo,
-				    CE_display_window,
-				    wind,
-				    NULL,
-				    clip ? 1 : 0, 0,
-				    clip ? clip : NULL,
-				    NULL);
-		}
-	}
-}
-
-static void
-CE_display_windows_below(enum locks lock, struct c_event *ce, bool cancel)
-{
-	struct xa_window *wl;
-	struct xa_client *wo;
-	struct xa_rect_list *rl;
-	RECT *r;
-	//short *p;
-	//union msg_buf m;
 	RECT clip;
-
-	wl = ce->ptr1;
-	r  = &ce->r;
-	
-	DIAG((D_wind, ce->client, "CE_display_windows_below:"));
+	enum locks wlock = lock | winlist;
 
 	while (wl)
 	{
-		wo = wl == root_window ? get_desktop()->owner : wl->owner;
-		if (wo == ce->client)
+		if (wl->is_open)
 		{
-			rl = wl->rect_start;
-			while (rl)
-			{
-				if (xa_rect_clip(r, &rl->r, &clip))
+			/* Check for newly exposed windows */
+			if (xa_rect_clip(old, &wl->r, &clip))
+			{			
+				struct xa_rect_list *rl;
+				RECT d;
+
+				make_rect_list(wl, true);
+
+				rl = wl->rect_start;
+				while (rl)
 				{
-					set_clip(&clip);
-
-					draw_window(lock, wl);
-				
-					if (wl->send_message && xa_rect_clip(&wl->wa, &clip, &clip))
+					if (xa_rect_clip(&rl->r, &clip, &d))
 					{
-						wl->send_message(lock, wl, NULL,
-							WM_REDRAW, 0, 0, wl->handle,
-							clip.x,
-							clip.y,
-							clip.w,
-							clip.h);
-
-					#if 0
-
-						p = m.m;
-						*p++ = WM_REDRAW;
-						*p++ = C.AESpid;
-						*p++ = 0;
-						*p++ = wl->handle;
-						*(RECT *)p = clip;
-					
-						queue_message(lock, wo, &m);
-					#endif
+						set_clip(&d);
+						draw_window(wlock, wl);
+						if (wl->send_message && xa_rect_clip(&wl->wa, &d, &d))
+						{
+							wl->send_message(wlock, wl, NULL,
+								WM_REDRAW, 0, 0, wl->handle,
+								d.x, d.y, d.w, d.h);
+						}
 					}
+					rl = rl->next;
 				}
-				rl = rl->next;
+				clear_clip();
+			}
+			else if (new)
+			{
+				/* Check for newly covered windows */
+				if (xa_rect_clip(new, &wl->r, &clip))
+				{
+					/* We don't need to send a redraw to
+					 * these windows, we just have to update
+					 * their rect lists */
+					make_rect_list(wl, 1);
+				}
 			}
 		}
 		wl = wl->next;
 	}
-	clear_clip();
-	DIAG((D_wind, ce->client, "CE_display_windows_below: exit"));
-}
-	
+}	
 /*
  * Display windows below a given rectangle, starting with window w.
  * HR: at the time only called for form_dial(FMD_FINISH)
@@ -1648,43 +1531,101 @@ CE_display_windows_below(enum locks lock, struct c_event *ce, bool cancel)
 void
 display_windows_below(enum locks lock, const RECT *r, struct xa_window *wl)
 {
-	struct xa_client *client;
+	struct xa_rect_list *rl;
+	RECT clip;
 
-	FOREACH_CLIENT(client)
+	DIAG((D_wind, wl->owner, "display_windows_below:"));
+
+	while (wl)
 	{
-		post_cevent(client,
-			    CE_display_windows_below,
-			    wl,
-			    NULL,
-			    0, 0,
-			    r,
-			    NULL);
+		rl = wl->rect_start;
+		while (rl)
+		{
+			if (xa_rect_clip(r, &rl->r, &clip))
+			{
+				set_clip(&clip);
+
+				draw_window(lock, wl);
+				
+				if (wl->send_message && xa_rect_clip(&wl->wa, &clip, &clip))
+				{
+					wl->send_message(lock, wl, NULL,
+						WM_REDRAW, 0, 0, wl->handle,
+						clip.x,
+						clip.y,
+						clip.w,
+						clip.h);
+				}
+			}
+			rl = rl->next;
+		}
+		wl = wl->next;
 	}
+	clear_clip();
+	DIAG((D_wind, NULL, "display_windows_below: exit"));
 }
 
 /*
- * Typically called after client have been 'lagging' - redraw all its windows.
+ * Typically called after client have been 'lagging',
+ * Redraw and send a FULL SET of WM_REDRAWS for all windows owned by
+ * the client going non-lagged.
  * Context dependant!
  */
 void
 redraw_client_windows(enum locks lock, struct xa_client *client)
 {
 	struct xa_window *wl;
+	struct xa_rect_list *rl;
 
 	if (get_desktop()->owner == client)
-		diswin(lock, root_window, NULL);
+	{
+		wl = root_window;
+		make_rect_list(wl, true);
+		rl = wl->rect_start;
+		while (rl)
+		{
+			set_clip(&rl->r);
+			draw_window(lock, wl);
+			if (wl->send_message)
+			{
+				wl->send_message(lock, wl, NULL,
+					WM_REDRAW, 0, 0, wl->handle,
+					rl->r.x, rl->r.y, rl->r.w, rl->r.h);
+			}
+			rl = rl->next;
+		}
+	}
 
 	wl = root_window->prev;
 
 	while (wl)
 	{
-		if (wl->owner == client)
+		if (wl->owner == client && wl->is_open)
 		{
 			make_rect_list(wl, true);
-			diswin(lock, wl, NULL);
+
+			if (wl->nolist)
+				draw_window(lock, wl);
+			else
+			{
+				rl = wl->rect_start;
+				while (rl)
+				{
+					set_clip(&rl->r);
+					draw_window(lock, wl);
+					if (wl->send_message)
+					{
+						wl->send_message(lock, wl, NULL,
+							WM_REDRAW, 0, 0, wl->handle,
+							rl->r.x, rl->r.y, rl->r.w, rl->r.h);
+					}
+					rl = rl->next;
+				}
+			}
 		}
 		wl = wl->prev;
 	}
+	clear_clip();
 }
 
 /*
@@ -1743,7 +1684,7 @@ calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, in
 void
 set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 {
-	short dir, resize, move, wlock = 0;
+	short dir, resize, xmove, ymove, wlock = 0;
 	struct xa_rect_list *oldrl, *orl, *newrl, *brl, *prev, *next, *rrl, *nrl;
 	RECT bs, bd, old, wa, oldw;
 
@@ -1770,10 +1711,12 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 	newrl = make_rect_list(wind, 0);
 	wind->rect_start = newrl;
 
+	xmove = new->x - old.x;
+	ymove = new->y - old.y;
+	
 	resize	= new->w != old.w || new->h != old.h ? 1 : 0;
-	move	= new->x != old.x || new->y != old.y ? 1 : 0;
-				
-	if (move)
+
+	if (xmove || ymove)
 	{
 		/* XXX - This makes set_and_update_window() context dependant
 		 *	 when moving windows!!
@@ -1795,12 +1738,24 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",
 			old, *new));
 
-		if (new->y > old.y)
-			dir = 1;
+		if (xmove || ymove)
+		{
+			if (ymove > 0)
+				dir = 1;
+			else
+			{
+				dir = 0;
+				ymove = -ymove;
+			}			
+			if (xmove > 0)
+			{
+				dir |= 2;
+			}
+			else
+				xmove = -xmove;
+		}
 		else
-			dir = 0;
-		if (new->x > old.x)
-			dir |= 2;
+			dir = 4;
 					
 		brl = NULL;
 
@@ -1872,6 +1827,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					if (brl)
 					{
 						struct xa_rect_list *n, *p;
+						short ox2 = bd.x + bd.w;
+						short oy2 = bd.y + bd.h;
+						
 						switch (dir)
 						{
 							case 0:	// up/left
@@ -1880,7 +1838,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								p = NULL;
 								while (n)
 								{
-									if (bd.x < n->r.x && bd.y <= (n->r.y + n->r.h))
+									if ( (bd.x < n->r.x && ox2 <= n->r.x) ||
+									     ((n->r.x + n->r.w) > bd.x && oy2 <= n->r.y) )
 									{
 										if (p)
 										{
@@ -1910,7 +1869,8 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								p = NULL;
 								while (n)
 								{
-									if (bd.x < n->r.x || bd.y >= (n->r.y + n->r.h))
+									if ( (bd.x < n->r.x && ox2 <= n->r.x) ||
+									     ((n->r.x + n->r.w) > bd.x && (n->r.y + n->r.h) <= bd.y) )
 									{
 										if (p)
 										{
@@ -1940,7 +1900,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								p = NULL;
 								while (n)
 								{
-									if (bd.x > n->r.x && bd.y < (n->r.y + n->r.h))
+									//if (bd.x > n->r.x && bd.y < (n->r.y + n->r.h))
+									if ( (ox2 > (n->r.x + n->r.w) && bd.x >= (n->r.x + n->r.w)) ||
+									     ((n->r.x + n->r.w) < bd.x && oy2 <= n->r.y) )
 									{
 										if (p)
 										{
@@ -1970,7 +1932,9 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 								p = NULL;
 								while (n)
 								{
-									if (bd.x > n->r.x || bd.y >= (n->r.y + n->r.h))
+									//if (bd.x > n->r.x || bd.y >= (n->r.y + n->r.h))
+									if ( ( ox2 > (n->r.x + n->r.w) && bd.x >= (n->r.x + n->r.w)) ||
+									     ( bd.y >= (n->r.y + n->r.h) && (n->r.x + n->r.w) > bd.x) )
 									{
 										if (p)
 										{
@@ -1992,6 +1956,12 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 									p->next = nrl;
 									nrl->next = NULL;
 								}
+								break;
+							}
+							case 4: // No sort - area is not moving
+							{
+								nrl->next = brl->next;
+								brl->next = nrl;
 								break;
 							}
 						}
@@ -2023,7 +1993,7 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 			/*
 			 * Do the blitting first...
 			 */
-			if (move)
+			if (xmove || ymove)
 			{
 				nrl = brl;
 				while (nrl)
@@ -2211,7 +2181,7 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 					/*
 					 * we only redraw window borders here if wind moves
 					 */
-					if (!resize) //new->h == old.h && new->w == old.w)
+					if (!resize)
 						display_window(wlock, 2, wind, &nrl->r);
 					if (xa_rect_clip(&wind->wa, &nrl->r, &bs))
 					{
@@ -2242,7 +2212,7 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 			/*
 			 * If window was resized, redraw all window borders
 			 */
-			if (resize) //new->h != old.h || new->w != old.w)
+			if (resize)
 				display_window(wlock, 2, wind, NULL);
 						
 		} /* if (brl) */
