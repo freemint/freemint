@@ -40,13 +40,13 @@ the same as with the <b>SHUT_BOOT</b> mode, except that a cold start
 rather than the warm start will be performed.</p>
 <p>On <I>mode</I> equal to <b>SHUT_POWER</b> (3L), the system will 
 turn power off. The only hardware that supports it is atm. CT60. If 
-hardware does not support it, SHUT_HALT will be performed</p>
+hardware does not support it, SHUT_HALT will be performed.</p>
 <p><b>SHUT_COLD</b> mode is recognized as of FreeMiNT version 1.15.5, 
 older versions of the kernel will treat the <b>SHUT_COLD</b> as 
 <b>SHUT_BOOT</b>.</p>
 <p><b>SHUT_POWER</b> mode is recognized as of FreeMiNT version 1.16a, 
 older versions of the kernel will treat the <b>SHUT_POWER</b> as 
-<b>SHUT_HALT</b>.</p>
+<b>SHUT_COLD</b>.</p>
 <p><i>All other values of <b>mode</b> are reserved for future 
 definition.</i></p>
 </TD></TR>
