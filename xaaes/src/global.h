@@ -25,7 +25,32 @@
 #ifndef _global_h
 #define _global_h
 
+/* XXX clean me up */
+# ifndef _cdecl
+# define _cdecl __CDECL
+# endif
+
+/* PureC specifics to replace the mint kernel's libkern */
+#ifdef __PUREC__
+
+#include <compiler.h>
+
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* memset */
+#define bzero( buffer, count )  memset( buffer, 0, count )
+
+typedef unsigned char uchar;
+
+#else
+
+/* common FreeMiNT kernel library used */
 #include "libkern.h"
+
+#endif
+
 
 /* these are otherwise built in */
 typedef enum boolean
@@ -34,8 +59,6 @@ typedef enum boolean
 	true
 } bool;
 
-typedef int bits;		/* use these for bitfields */
-typedef unsigned int ubits;
 
 #ifndef PATH_MAX
 #define PATH_MAX 128
