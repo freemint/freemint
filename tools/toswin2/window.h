@@ -6,7 +6,7 @@ extern WINDOW 	*gl_topwin;	/* oberstes Fenster */
 extern WINDOW 	*gl_winlist;	/* LIFO Liste der offenen Fenster */
 extern int	 gl_winanz;	/* Anzahl der offenen Fenster */
 
-WINDOW	*create_window (const char *title, short kind, 
+WINDOW	*create_window (char *title, short kind, 
 			short wx, short wy, short ww, short wh,
 			short max_w, short max_h);
 
