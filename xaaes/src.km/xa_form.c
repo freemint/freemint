@@ -103,9 +103,8 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	OBJECT *alert_form;
 	int sel_b = -1, f, b;
 
-	if (window_list != wind && !(wind->active_widgets & NO_TOPPED))
-	{
-		
+	if (!wind->nolist && window_list != wind && !(wind->active_widgets & NO_TOPPED))
+	{	
 		top_window(lock, wind, 0);
 		after_top(lock, false);
 		return false;
@@ -139,6 +138,9 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 			}
 
 			/* invalidate our data structures */
+			if (wt->owner->alert == wind)
+				wt->owner->alert = NULL;
+
 			close_window(lock, wind);
 			if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
 			{
@@ -464,8 +466,15 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 	/* Create a window and attach the alert object tree centered to it */
 	{
+		bool nolist = false;
 		RECT r;
 
+		if (C.update_lock && C.update_lock == client)
+		{
+			kind |= STORE_BACK;
+			nolist = true;
+		}
+			
 		//if (client->fmd.lock)
 		//	kind |= STORE_BACK;
 
@@ -480,42 +489,49 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 					     do_winmesag, //NULL,
 					     do_formwind_msg, //NULL,
 					     client,
-					     false,
+					     nolist,
 					     kind,
 					     created_for_AES,
 					     MG,
 					     C.Aes->options.thinframe,
 					     C.Aes->options.thinwork,
 					     r, NULL, NULL);
+
+		if (alert_window)
+		{
+			widg = get_widget(alert_window, XAW_TOOLBAR);
+
+			wt = set_toolbar_widget(lock, alert_window, alert_form, -1);
+			wt->extra = alertxt;
+			wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
+
+			/* Change the click & drag behaviours for the alert box widget,
+			 * because alerts return a number
+			 * 1 to 3, not an object index.
+			 * we also need a keypress handler for the default button (if there)
+			 */
+			alert_window->keypress = key_alert_widget;
+			widg->click = click_alert_widget;
+			widg->drag  = click_alert_widget;
+
+			/* We won't get any redraw messages
+			 * - The widget handler will take care of it.
+			 * - the message handler vector id NULL!!!
+			 * 
+			 * Set the window title to be the client's name to avoid confusion
+			 */
+			get_widget(alert_window, XAW_TITLE)->stuff = client->name;
+			alert_window->destructor = alert_destructor;
+
+			if (nolist)
+				client->alert = alert_window;
+
+			open_window(lock, alert_window, alert_window->r);
+	
+			/* For if the app has hidden the mouse */
+			forcem();
+		}
 	}
-
-	widg = get_widget(alert_window, XAW_TOOLBAR);
-
-	wt = set_toolbar_widget(lock, alert_window, alert_form, -1);
-	wt->extra = alertxt;
-	wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
-
-	/* Change the click & drag behaviours for the alert box widget,
-	 * because alerts return a number
-	 * 1 to 3, not an object index.
-	 * we also need a keypress handler for the default button (if there)
-	 */
-	alert_window->keypress = key_alert_widget;
-	widg->click = click_alert_widget;
-	widg->drag  = click_alert_widget;
-
-	/* We won't get any redraw messages
-	 * - The widget handler will take care of it.
-	 * - the message handler vector id NULL!!!
-	 * 
-	 * Set the window title to be the client's name to avoid confusion
-	 */
-	get_widget(alert_window, XAW_TITLE)->stuff = client->name;
-	alert_window->destructor = alert_destructor;
-	open_window(lock, alert_window, alert_window->r);
-
-	/* For if the app has hidden the mouse */
-	forcem();
 
 	return retv;
 }
@@ -749,10 +765,13 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	switch(pb->intin[0])
 	{
-	case FMD_START: 
+	case FMD_START:
+	{
 		DIAG((D_form, client, "form_dial(FMD_START,%d,%d,%d,%d) for %s",
 			pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], c_owner(client)));
 
+		client->fmd.state = 1;
+#if 0
 		/* If the client forgot to FMD_FINISH, we dont create a new window, but
 		 * simply move the window to the new coordinates.
 		 */
@@ -783,15 +802,19 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->fmd.state = 1;
 			client->fmd.kind = kind;
 		}
+#endif
 		break;
-
+	}
 	case FMD_GROW:
+	{
 		break;
-
+	}
 	case FMD_SHRINK:
+	{
 		break;
-
+	}
 	case FMD_FINISH:
+	{
 		DIAG((D_form,client,"form_dial(FMD_FINISH) for %s", c_owner(client)));
 
 		if (client->fmd.wind)
@@ -804,10 +827,12 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 			/* This was just a redraw request */
-			display_windows_below(lock, (const RECT *)&pb->intin[5], window_list);
+			update_windows_below(lock, (const RECT *)&pb->intin[5], NULL, window_list);
+			//display_windows_below(lock, (const RECT *)&pb->intin[5], window_list);
 
 		bzero(&client->fmd, sizeof(client->fmd));
 		break;
+	}
 	}
 	
 	pb->intout[0] = 1;
@@ -842,7 +867,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				if (!(wind->window_status & XAWS_OPEN))
 					open_window(lock, wind, wind->r);
-				else if (wind != window_list)
+				else if (!wind->nolist && !is_topped(wind)) //wind != window_list)
 					top_window(lock, wind, client);
 				else
 					display_window(lock, 4, wind, NULL);
@@ -884,7 +909,7 @@ key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wi
 
 	wt = widg->stuff; /* always NULL */
 
-	if (window_list != wind)			/* You can only work alerts when they are on top */
+	if (!wind->nolist && window_list != wind)			/* You can only work alerts when they are on top */
 		return false;
 
 	alert_form = wt->tree;
@@ -909,6 +934,9 @@ key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wi
 
 			//Unblock(client, XA_OK, 11);
 		}
+
+		if (wt->owner->alert == wind)
+			wt->owner->alert = NULL;
 
 		/* invalidate our data structures */
 		close_window(lock, wind);

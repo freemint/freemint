@@ -380,6 +380,9 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, bool prepend)
 
 		DIAG((D_m, NULL, "WM_REDRAW rect %d/%d,%d/%d", new[4], new[5], new[6], new[7]));
 
+		if (!new[3])
+			display("WM_REDRAW on root-window???");
+		
 		next = queue;
 
 		while (*next)

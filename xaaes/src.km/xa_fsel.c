@@ -985,6 +985,8 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 		   fsel_handler *s, fsel_handler *c)
 {
 	int dh;			/* HR variable height for fileselector :-) */
+	bool nolist;
+	XA_WIND_ATTR kind;
 	OBJECT *form = ResourceTree(C.Aes_rsc, FILE_SELECT);
 	struct xa_window *dialog_window;
 	XA_TREE *wt;
@@ -1062,13 +1064,25 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 			strcpy(fs_paths[drv], fs.path);
 	}
 
+	kind = (XaMENU|NAME|TOOLBAR);
+	if (C.update_lock == client)
+	{
+		nolist = true;
+		kind |= STORE_BACK;
+	}
+	else
+	{
+		kind |= hide_move(&(client->options));
+		nolist = false;
+	}
+
 	/* Create the window */
 	dialog_window = create_window(  lock,
 					do_winmesag, //fs_msg_handler,
 					fs_msg_handler,
 					client,
-					false,
-					XaMENU|NAME|TOOLBAR|hide_move(&(client->options)),
+					nolist,
+					kind, //XaMENU|NAME|TOOLBAR|hide_move(&(client->options)),
 					created_for_AES,
 					MG,
 					C.Aes->options.thinframe,
