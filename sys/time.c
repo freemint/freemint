@@ -16,6 +16,7 @@
 # include "mint/arch/mfp.h"
 # include "arch/timer.h"
 
+# include "k_prot.h"
 # include "pipefs.h"
 # include "procfs.h"
 # include "shmfs.h"
@@ -103,9 +104,9 @@ t_setdate (ushort date)
 {
 	struct timeval tv = { 0, 0 };
 	
-	if (curproc->euid)
+	if (!suser (curproc->p_cred->ucr))
 	{
-		DEBUG (("Tsetdate: attempt to change time by unprivileged user id %d", (int) curproc->euid));
+		DEBUG (("Tsetdate: attempt to change time by unprivileged user"));
 		return EPERM;
 	}
 	
@@ -118,9 +119,9 @@ t_settime (ushort time)
 {
 	struct timeval tv = { 0, 0 };
 	
-	if (curproc->euid)
+	if (!suser (curproc->p_cred->ucr))
 	{
-		DEBUG (("Tsettime: attempt to change time by unprivileged user id %d", (int) curproc->euid));
+		DEBUG (("Tsettime: attempt to change time by unprivileged user"));
 		return EPERM;
 	}
 	
@@ -236,9 +237,9 @@ t_settimeofday (struct timeval *tv, struct timezone *tz)
 {
 	TRACE (("Tsettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
 	
-	if (curproc->euid)
+	if (!suser (curproc->p_cred->ucr))
 	{
-		DEBUG (("t_settimeofday: attempt to change time by unprivileged user id %d", (int) curproc->euid));
+		DEBUG (("t_settimeofday: attempt to change time by unprivileged user"));
 		return EPERM;
 	}
 	
@@ -538,9 +539,9 @@ settime (ulong datetime)
 		
 		TRACE (("settime (%li) -> do_settimeofday", datetime));
 		
-		if (curproc->euid != 0)
+		if (!suser (curproc->p_cred->ucr))
 		{
-			DEBUG (("Settime: attempt to change time by unprivileged user id %d", (int) curproc->euid));
+			DEBUG (("Settime: attempt to change time by unprivileged user"));
 			return;
 		}
 		
@@ -549,6 +550,6 @@ settime (ulong datetime)
 		
 		tv.tv_sec = unixtime (time, date) + timezone;
 		
-		(void) do_settimeofday (&tv);
+		do_settimeofday (&tv);
 	}
 }

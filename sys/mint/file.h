@@ -15,7 +15,10 @@
 # include "kcompiler.h"
 # include "ktypes.h"
 # include "block_IO.h"		/* eXtended kernelinterface */
-# include "dcntl.h"		/* dcntl opcodes are now in a seperate file */
+# include "dcntl.h"
+# include "time.h"
+
+# include "emu_tos.h"		/* XXX */
 
 
 struct fcookie
@@ -25,34 +28,6 @@ struct fcookie
 	ushort	aux;		/* extra data that the file system may want */
 	long	index;		/* this+dev uniquely identifies a file */
 };
-
-struct timeval
-{
-	long	tv_sec;		/* seconds */
-	long	tv_usec;	/* microseconds */
-};
-
-
-# define TOS_NAMELEN 13
-
-struct dtabuf
-{
-	ushort	index;		/* index into arrays in the PROC struct */
-	long	magic;
-# define SVALID	0x1234fedcL	/* magic for a valid search */
-# define EVALID	0x5678ba90L	/* magic for an exhausted search */
-	
-	char	dta_pat [TOS_NAMELEN+1]; /* pointer to pattern, if necessary */
-	char	dta_sattrib;	/* attributes being searched for */
-	
-	/* this stuff is returned to the user */
-	char	dta_attrib;
-	ushort	dta_time;
-	ushort	dta_date;
-	ulong	dta_size;
-	char	dta_name [TOS_NAMELEN+1];
-};
-
 
 /* structure for opendir/readdir/closedir */
 struct dirstruct
@@ -66,7 +41,6 @@ struct dirstruct
 	DIR	*next;		/* linked together so we can close them
 				 * on process termination */
 };
-
 
 /* structure for getxattr */
 struct xattr
@@ -147,14 +121,6 @@ struct xattr
 	long	reserved3[2];
 };
 
-typedef struct time TIME;
-struct time
-{
-	long	high_time;
-	long	time;		/* This has to be signed!  */
-	ulong	nanoseconds;
-};
-
 /* structure for stat */
 struct stat
 {
@@ -178,7 +144,7 @@ struct stat
 };
 
 
-struct fileptr
+struct file
 {
 	short	links;		/* number of copies of this descriptor */
 	ushort	flags;		/* file open mode and other file flags */
@@ -800,7 +766,8 @@ struct fs_descr
 
 
 /* number of BIOS drives */
-# define NUM_DRIVES		32
+# define NDRIVES		32
+# define NUM_DRIVES		NDRIVES
 
 # define BIOSDRV		(NUM_DRIVES)
 # define PIPEDRV		(BIOSDRV + 1)

@@ -481,24 +481,6 @@ v_rte:	rte			; and return :-)
 %endif
 
 ;
-; sig_return: user signal handlers return to us. At that point, the
-; stack looks like this:
-;  -4(sp)	(long) sfmt
-;    (sp)	(long) signal number -- was a parameter for user routine
-;
-	XDEF	_sig_return
-	XDEF	_pc_valid_return
-
-_sig_return:	addq.w	#8,sp		; pop signal number and sfmt
-	move.w	#$11a,-(sp)		; Psigreturn() system call
-	trap	#1
-_pc_valid_return:			; tells kernel it's us
-; we had better not come back; if we did, something terrible
-; happened, and we might as well terminate
-	move.w	#-998,-(sp)
-	move.w	#$4c,-(sp)		; Pterm()
-	trap	#1
-;
 ; bconout special code: on entry, a1 points to the stack the user
 ; was using. If possible, we just buffer the output until later.
 ;
