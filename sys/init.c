@@ -219,7 +219,12 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func) ())
 static long _cdecl
 mint_criticerr (long error) /* high word is error, low is drive */
 {
-	ALERT ("Criticial error: %lx (%c: - %i)!",
+	/* Sure that we want to replace AES alert with this one?
+	 * I thought getting rid of an alert at all is more convenient
+	 * (Thing displays own alert anyways, so you have two)
+	 */
+
+	ALERT ("Critical error: %lx (%c: - %i)!",
 		error, (char) (error & 0xf), (short) (error >> 16));
 	
 	/* just return with error */
