@@ -11,20 +11,20 @@ COBJS = \
 	timer.c
 
 SOBJS = \
-	sigreturn.s
+	context.S \
+	cpu.S \
+	detect.S \
+	intr.S \
+	kernel.S \
+	mmu030.S \
+	mmu040.S \
+	scsidrv_emu.S \
+	sigreturn.S \
+	slb_util.S \
+	syscall.S \
+	xhdi_emu.S
 
 SPPOBJS = \
-	context.spp \
-	cpu.spp \
-	detect.spp \
-	intr.spp \
-	kernel.spp \
-	mmu030.spp \
-	mmu040.spp \
-	slb_util.spp \
-	syscall.spp \
 	vm5.spp \
-	scsidrv_emu.spp \
-	xhdi_emu.spp
 
 SRCFILES = $(STARTUP) $(COBJS) $(SPPOBJS) $(SOBJS)

@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = asmtrans magic
+SUBDIRS = magic
 
 srcdir = .
 top_srcdir = ..

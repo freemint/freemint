@@ -21,6 +21,12 @@ all-here: startup objs
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 
+CFLAGS-context.S = -m68030
+CFLAGS-cpu.S = -m68030
+CFLAGS-detect.S = -m68030
+CFLAGS-intr.S = -m68030
+CFLAGS-mmu030.S = -m68030
+
 NOCFLAGS-mprot030.c = -m68000 -m68020 -m68040 -m68060 -m68020-60
 NOCFLAGS-mprot040.c = -m68000 -m68020 -m68030 -m68040 -m68020-60
 CFLAGS-mprot030.c = -m68030
@@ -30,9 +36,7 @@ cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
 # default definitions
-OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.s=%.o) $(SPPOBJS:%.spp=%.o)
-ASMTRANS = $(srcdir)/asmtrans/asmtrans
-MAGICS = $(srcdir)/magic/magic.i
+OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.S=%.o)
 
 VPATH = ..
 
@@ -41,33 +45,6 @@ startup: $(STARTUP)
 
 objs: $(OBJS)
 	echo $(OBJS) > $@
-
-#
-# assembler source files
-#
-%.o: %.spp
-	$(ASMTRANS) $(DEFINITIONS) -gas -o $*.s $<
-	$(CRLF) $*.s
-	$(AS) $(ASFLAGS) -c $*.s -o $@
-	$(RM) $*.s	
-
-context.o:	$(ASMTRANS) $(MAGICS) context.spp
-cpu.o:		$(ASMTRANS)           cpu.spp
-detect.o:	$(ASMTRANS)           detect.spp
-intr.o:		$(ASMTRANS) $(MAGICS) intr.spp
-kernel.o:	$(ASMTRANS) $(MAGICS) kernel.spp
-memset.o:	$(ASMTRANS)           memset.spp
-mmu030.o:	$(ASMTRANS)           mmu030.spp
-mmu040.o:	$(ASMTRANS)           mmu040.spp
-peekpoke.o:	$(ASMTRANS)           peekpoke.spp
-quickzero.o:	$(ASMTRANS)           quickzero.spp
-quickmove.o:	$(ASMTRANS)           quickmove.spp
-quickswap.o:	$(ASMTRANS)           quickswap.spp
-slb_util.o:	$(ASMTRANS) $(MAGICS) slb_util.spp
-startup.o:	$(ASMTRANS)           startup.spp
-syscall.o:	$(ASMTRANS) $(MAGICS) syscall.spp
-vm5.o:		$(ASMTRANS)           vm5.spp
-xhdi_emu.o:	$(ASMTRANS)           xhdi_emu.spp
 
 # default dependencies
 # must be included last
