@@ -96,9 +96,10 @@ const char *clipped_name(const void *s, char *t, short w);
 void write_disable(RECT *r, short colour);
 
 void enable_objcursor(struct widget_tree *wt);
-void disable_objcursor(struct widget_tree *wt);
-void draw_objcursor(struct widget_tree *wt);
-void undraw_objcursor(struct widget_tree *wt);
+void disable_objcursor(struct widget_tree *wt, struct xa_rect_list *rl);
+void eor_objcursor(struct widget_tree *wt, struct xa_rect_list *rl);
+void draw_objcursor(struct widget_tree *wt, struct xa_rect_list *rl);
+void undraw_objcursor(struct widget_tree *wt, struct xa_rect_list *rl);
 void set_objcursor(struct widget_tree *wt);
 
 ObjectDisplay
