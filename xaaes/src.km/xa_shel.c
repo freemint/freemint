@@ -529,23 +529,43 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		 * post x_mode handling
 		 */
 
+		/* Frank, this code I commented out is what makes Thing
+		 * crash after it launches a process. I tried to look
+		 * through at the relevant places in the kernel sources,
+		 * but could not find anything wrong -- Ozk
+		 */
+#if 0
 		if (x_mode & SW_PSETLIMIT)
+		{
+			DIAGS((" -- proc_setlimit"));
 			proc_setlimit(p, 2, x_shell.psetlimit);
+		}
+#endif
 
 		if (x_mode & SW_PRENICE)
+		{
+			DIAGS((" -- p_renice"));
 			p_renice(p->pid, x_shell.prenice);
+		}
 
 		// XXX SW_DEFDIR
 
 		if (x_mode & SW_UID)
+		{
+			DIAGS((" -- proc_setuid"));
 			proc_setuid(p, x_shell.uid);
+		}
 
 		if (x_mode & SW_GID)
+		{
+			DIAGS((" -- proc_setgid"));
 			proc_setgid(p, x_shell.gid);
+		}
 
 		/*
 		 * remember shel_write info for appl_init
 		 */
+		DIAGS((" -- attaching extension"));
 		info = attach_extension(p, XAAES_MAGIC_SH, sizeof(*info),
 					&xaaes_cb_vector_sh_info);
 		if (info)
