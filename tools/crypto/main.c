@@ -41,7 +41,6 @@
 # include "crypt.h"
 # include "io.h"
 
-
 /*
  * version
  */
@@ -150,9 +149,9 @@ static int noninteractive = 0;
 static int auto_passphrase_set = 1;
 
 static int drv = -1;
-static int mode = 0;
-static int action = 0;
-static int cipher = 0;
+static int mode = SAFE;
+static int action = ENCIPHER;
+static int cipher = BLOWFISH;
 
 static char *passphrase = NULL;
 static char *oldpassphrase = NULL;
@@ -185,22 +184,20 @@ verify_encrypt_key (void)
 	printf ("\n");
 	printf ("Please enter the passphrase for encryption.\n");
 restart:
-	printf ("passphrase [8 chars minimum]: ");
-	scanf ("%s", buf1);
-	printf ("passphrase verification: ");
-	scanf ("%s", buf2);
+	strcpy (buf1, getpass("passphrase [8 chars minimum]: "));
+	strcpy (buf2, getpass("passphrase verification: "));
 	printf ("\n");
 	
 	if (strcmp (buf1, buf2))
 	{
-		printf ("Passphrases doesn't match!\nTry it again.\n");
+		printf ("Passphrases don't match!\nTry again.\n");
 		printf ("\n");
 		goto restart;
 	}
 	
 	if (strlen (buf1) < 8)
 	{
-		printf ("Passphrase to short!\nTry it again.\n");
+		printf ("Passphrase too short!\nTry again.\n");
 		printf ("\n");
 		goto restart;
 	}
@@ -234,27 +231,25 @@ verify_decrypt_key (void)
 	printf ("\n");
 	printf ("WARNING: THIS WILL TOTALLY DECRYPT ANY DATA ON %c:\n", 'A'+drv);
 	printf ("\n");
-	printf ("         IF YOU USE THE WRONG PASSPHRASE OR DECRYPT AN NOT\n");
-	printf ("         ENCRYPTED PARTITION YOU DESTROY ALL YOUR DATA!\n");
+	printf ("         IF YOU USE THE WRONG PASSPHRASE OR DECRYPT A NOT\n");
+	printf ("         ENCRYPTED PARTITION YOU'LL DESTROY ALL YOUR DATA!\n");
 	printf ("\n");
 	printf ("Please enter the passphrase for decryption.\n");
 restart:
-	printf ("passphrase [8 chars minimum]: ");
-	scanf ("%s", buf1);
-	printf ("passphrase verification: ");
-	scanf ("%s", buf2);
+	strcpy (buf1, getpass("passphrase [8 chars minimum]: "));
+	strcpy (buf2, getpass("passphrase verification: "));
 	printf ("\n");
 	
 	if (strcmp (buf1, buf2))
 	{
-		printf ("Passphrases doesn't match!\nTry it again.\n");
+		printf ("Passphrases dosn't match!\nTry again.\n");
 		printf ("\n");
 		goto restart;
 	}
 	
 	if (strlen (buf1) < 8)
 	{
-		printf ("Passphrase to short!\nTry it again.\n");
+		printf ("Passphrase too short!\nTry again.\n");
 		printf ("\n");
 		goto restart;
 	}
@@ -475,9 +470,9 @@ main (int argc, char **argv)
 	if (auto_passphrase_set)
 	{
 		if (action == DECIPHER)
-			Dsetkey (0, drv, "", cipher);
+			Dsetkey (0, drv, "", 0);
 		else
-			Dsetkey (0, drv, passphrase, cipher);
+			Dsetkey (0, drv, passphrase, 0);
 	}
 	
 	
@@ -590,11 +585,19 @@ doit (void)
 	while (todo)
 	{
 		int32_t left = min (todo, bufsize);
+		int64_t pos;
+		int32_t recno;
+		
+		pos = io_seek (fh, SEEK_CUR, 0);
+		recno = pos / p_secsize;
+		
+		if (pos < 0)
+			emergency_exit ("io_seek failed, abort.\n");
 		
 		ret = io_read (fh, buf, left);
 		if (ret < 0)
 			emergency_exit ("io_read failed, abort.\n");
-		
+
 		if (mode == ROBUST)
 		{
 			lseek (save_file, 0, SEEK_SET);
@@ -602,16 +605,8 @@ doit (void)
 			fsync (save_file);
 		}
 		
-		{
-			int64_t pos = io_seek (fh, SEEK_CUR, 0);
-			int32_t recno = pos / p_secsize;
-			
-			if (pos < 0)
-				emergency_exit ("io_seek failed, abort.\n");
-			
-			do_cipher (recno, p_secsize);
-		}
-		
+		do_cipher (recno, p_secsize);
+	    
 		if (!simulate)
 		{
 			ret = io_seek (fh, SEEK_CUR, -left);
