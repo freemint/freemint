@@ -110,7 +110,7 @@ copy_mem (struct proc *p)
 	int i;
 	
 	TRACE (("copy_mem: pid %i (%lx)", p->pid, p));
-	assert (p->p_mem->links > 0);
+	assert (p && p->p_mem && p->p_mem->links > 0);
 	
 	m = kmalloc (sizeof (*m));
 	if (!m)
@@ -155,12 +155,13 @@ nomem:
 void
 free_mem (struct proc *p)
 {
-	struct memspace *p_mem = p->p_mem;
+	struct memspace *p_mem;
 	MEMREGION **hold_mem;
 	virtaddr *hold_addr;
 	int i;
 	
-	assert (p_mem->links > 0);
+	assert (p && p->p_mem && p->p_mem->links > 0);
+	p_mem = p->p_mem;
 	// XXX p->p_mem = NULL; --- dependency in arch/mprot0?0.c
 	
 	if (--p_mem->links > 0)
@@ -227,12 +228,13 @@ free_mem (struct proc *p)
 struct filedesc *
 copy_fd (struct proc *p)
 {
-	struct filedesc *org_fd = p->p_fd;
+	struct filedesc *org_fd;
 	struct filedesc *fd;
 	long i;
 	
 	TRACE (("copy_fd: pid %i (%lx)", p->pid, p));
-	assert (p->p_fd->links > 0);
+	assert (p && p->p_fd && p->p_fd->links > 0);
+	org_fd = p->p_fd;
 	
 	fd = kmalloc (sizeof (*fd));
 	if (!fd)
@@ -295,11 +297,12 @@ copy_fd (struct proc *p)
 void
 free_fd (struct proc *p)
 {
-	struct filedesc *p_fd = p->p_fd;
+	struct filedesc *p_fd;
 	FILEPTR *f;
 	int i;
 	
-	assert (p_fd->links > 0);
+	assert (p && p->p_fd && p->p_fd->links > 0);
+	p_fd = p->p_fd;
 	p->p_fd = NULL;
 	
 	if (--p_fd->links > 0)
@@ -413,12 +416,13 @@ found:
 struct cwd *
 copy_cwd (struct proc *p)
 {
-	struct cwd *org_cwd = p->p_cwd;
+	struct cwd *org_cwd;
 	struct cwd *cwd;
 	int i;
 	
 	TRACE (("copy_cwd: pid %i (%lx)", p->pid, p));
-	assert (p->p_cwd->links > 0);
+	assert (p && p->p_cwd && p->p_cwd->links > 0);
+	org_cwd = p->p_cwd;
 	
 	cwd = kmalloc (sizeof (*cwd));
 	if (!cwd)
@@ -461,10 +465,11 @@ copy_cwd (struct proc *p)
 void
 free_cwd (struct proc *p)
 {
-	struct cwd *p_cwd = p->p_cwd;
+	struct cwd *p_cwd;
 	int i;
 	
-	assert (p_cwd->links > 0);
+	assert (p && p->p_cwd && p->p_cwd->links > 0);
+	p_cwd = p->p_cwd;
 	p->p_cwd = NULL;
 	
 	if (--p_cwd->links > 0)
@@ -502,7 +507,7 @@ copy_sigacts (struct proc *p)
 	struct sigacts *p_sigacts;
 	
 	TRACE (("copy_sigacts: pid %i (%lx)", p->pid, p));
-	assert (p->p_sigacts->links > 0);
+	assert (p && p->p_sigacts && p->p_sigacts->links > 0);
 	
 	p_sigacts = kmalloc (sizeof (*p_sigacts));
 	if (!p_sigacts)
@@ -521,9 +526,10 @@ copy_sigacts (struct proc *p)
 void
 free_sigacts (struct proc *p)
 {
-	struct sigacts *p_sigacts = p->p_sigacts;
+	struct sigacts *p_sigacts;
 	
-	assert (p_sigacts->links > 0);
+	assert (p && p->p_sigacts && p->p_sigacts->links > 0);
+	p_sigacts = p->p_sigacts;
 	p->p_sigacts = NULL;
 	
 	if (--p_sigacts->links > 0)

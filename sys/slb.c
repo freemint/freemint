@@ -533,7 +533,9 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 	mark_proc_region (curproc, slb->slb_region, PROT_G);
 
 	/* Mark all memregions of the shared library as "global" for curproc */
-	if ((mr = slb->slb_proc->p_mem->mem) != 0)
+	assert (slb->slb_proc->p_mem);
+	mr = slb->slb_proc->p_mem->mem;
+	if (mr)
 	{
 		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
@@ -659,7 +661,9 @@ s_lbclose(SHARED_LIB *sl)
 	 * - if no more users remain - remove the library from memory.
 	 */
 	mark_users(slb, curproc->pid, 0);
-	if ((mr = slb->slb_proc->p_mem->mem) != 0)
+	assert (slb->slb_proc->p_mem);
+	mr = slb->slb_proc->p_mem->mem;
+	if (mr)
 	{
 		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
@@ -737,7 +741,9 @@ slb_close_on_exit (int terminate)
 		if (has_opened(slb, curproc->pid))
 			slb->slb_used--;
 		mark_opened(slb, curproc->pid, 0);
-		if ((mr = slb->slb_proc->p_mem->mem) != 0)
+		assert (slb->slb_proc->p_mem);
+		mr = slb->slb_proc->p_mem->mem;
+		if (mr)
 		{
 			for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 			{

@@ -34,7 +34,11 @@
 long _cdecl
 m_addalt (long start, long size)
 {
-	if (!suser (curproc->p_cred->ucr))
+	struct proc *p = curproc;
+	
+	assert (p->p_cred && p->p_cred->ucr);
+	
+	if (!suser (p->p_cred->ucr))
 		return EPERM;
 	
 	if (!no_mem_prot)
@@ -289,6 +293,7 @@ long _cdecl
 m_free (virtaddr block)
 {
 	struct memspace *mem;
+	long r;
 	int i;
 	
 	TRACE(("Mfree(%lx)", block));
@@ -299,41 +304,9 @@ m_free (virtaddr block)
 		return EFAULT;
 	}
 	
-# if 0
-	mem = curproc->p_mem;
-	
-	/* search backwards so that most recently allocated incarnations of
-	 * shared memory blocks are freed first
-	 * (this doesn't matter very often)
-	 */
-
-	for (i = mem->num_reg - 1; i >= 0; i--)
-	{
-		if (mem->addr[i] == block)
-		{
-			m = mem->mem[i];
-			
-			assert (m != NULL);
-			assert (m->loc == (long) block);
-			
-			mem->mem[i] = 0;
-			mem->addr[i] = 0;
-			
-			m->links--;
-			if (m->links == 0)
-				free_region (m);
-			
-			return E_OK;
-		}
-	}
-# else
-	{
-		long r = detach_region_by_addr (curproc, block);
-		
-		if (!r)
-			return r;
-	}
-# endif
+	r = detach_region_by_addr (curproc, block);
+	if (r == 0)
+		return r;
 	
 	mem = rootproc->p_mem;
 	
@@ -377,28 +350,27 @@ m_free (virtaddr block)
 long _cdecl
 m_shrink (int dummy, virtaddr block, long size)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct memspace *mem = p->p_mem;
-	
-	MEMREGION *m;
 	int i;
-
-
-	UNUSED(dummy);
+	
 	
 	TRACE(("Mshrink: %lx to %ld", block, size));
 	
 	if (!block)
 	{
 		DEBUG(("Mshrink: null pointer"));
-		return EFAULT;
+		goto error;
 	}
-
+	
+	if (!mem || !mem->mem)
+		goto error;
+	
 	for (i = 0; i < mem->num_reg; i++)
 	{
 		if (mem->addr[i] == block)
 		{
-			m = mem->mem[i];
+			MEMREGION *m = mem->mem[i];
 			
 			assert (m != NULL);
 			assert (m->loc == (long) block);
@@ -408,5 +380,6 @@ m_shrink (int dummy, virtaddr block, long size)
 	}
 	
 	DEBUG(("Mshrink: bad address (%lx)", block));
+error:
 	return EFAULT;
 }

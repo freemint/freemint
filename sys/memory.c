@@ -555,7 +555,13 @@ attach_region (PROC *p, MEMREGION *reg)
 	
 	if (!reg || !reg->loc)
 	{
-		ALERT ("attach_region: attaching a null region??");
+		ALERT ("attach_region: attaching a null region?");
+		return 0;
+	}
+	
+	if (!mem || !mem->mem)
+	{
+		ALERT ("attach_region: attaching a region to an invalid proc?");
 		return 0;
 	}
 	
@@ -652,7 +658,13 @@ detach_region (PROC *p, MEMREGION *reg)
 	
 	if (!reg || !reg->loc)
 	{
-		ALERT ("detach_region: detaching a null region??");
+		ALERT ("detach_region: detaching a null region?");
+		return;
+	}
+	
+	if (!mem || !mem->mem)
+	{
+		ALERT ("detach_region: detaching a region from an invalid proc?");
 		return;
 	}
 	
@@ -685,6 +697,12 @@ detach_region_by_addr (PROC *p, virtaddr block)
 	
 	TRACELOW(("detach_region_by_addr %lx from pid %d",
 		block, p->pid));
+	
+	if (!mem || !mem->mem)
+	{
+		ALERT ("detach_region_by_addr: invalid proc?");
+		return EBADARG;
+	}
 	
 	for (i = mem->num_reg - 1; i >= 0; i--)
 	{
@@ -1453,6 +1471,8 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 	 */
 	if (execproc)
 	{
+		assert (execproc->p_mem && execproc->p_mem->mem);
+		
 		for (i = 0; i < execproc->p_mem->num_reg; i++)
 		{
 			m = execproc->p_mem->mem[i];
@@ -1980,6 +2000,9 @@ valid_address (long addr)
 	struct memspace *mem = p->p_mem;
 	int i;
 	
+	if (!mem || !mem->mem)
+		goto error;
+	
 	for (i = 0; i < mem->num_reg; i++)
 	{
 		MEMREGION *m = mem->mem[i];
@@ -1988,6 +2011,7 @@ valid_address (long addr)
 			return 1;
 	}
 	
+error:
 	return 0;
 }
 
@@ -2001,10 +2025,14 @@ addr2mem (PROC *p, virtaddr a)
 	struct memspace *mem = p->p_mem;
 	register int i;
 	
+	if (!mem || !mem->mem)
+		goto error;
+	
 	for (i = 0; i < mem->num_reg; i++)
 		if (a == mem->addr[i])
 			return mem->mem[i];
 	
+error:
 	return NULL;
 }
 
@@ -2053,6 +2081,9 @@ proc_addr2region (PROC *p, long addr)
 	struct memspace *mem = p->p_mem;
 	int i;
 	
+	if (!mem || !mem->mem)
+		goto error;
+	
 	for (i = 0; i < mem->num_reg; i++)
 	{
 		MEMREGION *m;
@@ -2062,6 +2093,7 @@ proc_addr2region (PROC *p, long addr)
 			return m;
 	}
 	
+error:
 	return NULL;
 }
 

@@ -58,6 +58,8 @@ fd_alloc (struct proc *p, short *fd, short min, const char *func)
 {
 	short i;
 	
+	assert (p->p_fd);
+	
 	for (i = min; i < p->p_fd->nfiles; i++)
 	{
 		if (!p->p_fd->ofiles[i])
@@ -90,6 +92,8 @@ fd_alloc (struct proc *p, short *fd, short min, const char *func)
 void
 fd_remove (struct proc *p, short fd, const char *func)
 {
+	assert (p->p_fd);
+	
 	p->p_fd->ofiles[fd] = NULL;
 }
 
@@ -122,6 +126,7 @@ fp_alloc (struct proc *p, FILEPTR **resultfp, const char *func)
 void
 fp_done (struct proc *p, FILEPTR *fp, short fd, char fdflags, const char *func)
 {
+	assert (p->p_fd);
 	assert (p->p_fd->ofiles[fd] == (FILEPTR *) 1);
 	
 	p->p_fd->ofiles[fd] = fp;

@@ -736,6 +736,9 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const PROC *p)
 	ulong len;
 	int i;
 	
+	if (!mem || !mem->mem)
+		return EBADARG;
+	
 	len = mem->num_reg * 64;
 	
 	info = kmalloc (sizeof (*info) + len);
@@ -853,7 +856,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
 			break;
 	}
 	
-	if (p->p_fd->control)
+	if (p->p_fd && p->p_fd->control)
 	{
 		struct tty *tty = (struct tty *) p->p_fd->control->devinfo;
 		ttypgrp = tty->pgrp;
@@ -880,35 +883,42 @@ kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
 	if (first != NULL)
 		timeout = first->when;
 	
-	for (i = 0; i < p->p_mem->num_reg; i++)
+	if (p->p_mem && p->p_mem->mem)
 	{
-		if ((void *) p->p_mem->addr[i] == (void *) p->base)
+		for (i = 0; i < p->p_mem->num_reg; i++)
 		{
-			MEMREGION *m = p->p_mem->mem[i];
-			
-			if (m == NULL || m->loc != (long) p->base)
-				break;
-			
-			endcode = ((ulong) (p->base) + m->len);
+			if ((void *) p->p_mem->addr[i] == (void *) p->base)
+			{
+				MEMREGION *m = p->p_mem->mem[i];
+				
+				if (m == NULL || m->loc != (long) p->base)
+					break;
+				
+				endcode = ((ulong) (p->base) + m->len);
+			}
 		}
 	}
+	else
+		endcode = 0;
 	
-	assert (p->p_sigacts);
-	for (i = 1; i < NSIG; i++)
+	if (p->p_sigacts)
 	{
-		switch (SIGACTION(p, i).sa_handler)
+		for (i = 1; i < NSIG; i++)
 		{
-			case SIG_DFL:
-				break;
-			case SIG_IGN:
-				sigign |= bit;
-				break;
-			default:
-				sigcgt |= bit;
-				break;
+			switch (SIGACTION(p, i).sa_handler)
+			{
+				case SIG_DFL:
+					break;
+				case SIG_IGN:
+					sigign |= bit;
+					break;
+				default:
+					sigcgt |= bit;
+					break;
+			}
+			
+			bit <<= 1;
 		}
-		
-		bit <<= 1;
 	}
 	
 	DEBUG (("kern_procdir_get_stat: do ksprintf"));
@@ -949,12 +959,12 @@ kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
 				(long) p->alarmtim->when / 5,
 				(long) p->itimer->timeout->when / 5,
 				(long) starttime.tv_sec * 200L + (long) starttime.tv_usec / 5000L,
-				(ulong) memused ((PROC *) p),
-				(ulong) memused ((PROC *) p),  /* rss */
-				0x7fffffffUL,  /* rlim */
+				(ulong) memused (p),
+				(ulong) memused (p),	/* rss */
+				0x7fffffffUL,		/* rlim */
 				(ulong) (p->base) + 256UL,
 				endcode,
-				endcode - (ulong) p->base->p_bbase - (ulong) p->base->p_blen,
+				endcode ? endcode - (ulong) p->base->p_bbase - (ulong) p->base->p_blen : 0,
 				
 				0UL, 0UL,
 				(ulong) (p->sigpending >> 1), 
@@ -982,6 +992,7 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 	ulong altsize = 0;
 	ulong swapsize = 0;
 	ulong kersize = 0;
+	ulong regions = 0;
 	ulong shtextsize = 0;
 	ulong shtexttsize = 0;
 	ulong fsavedsize = 0;
@@ -1024,44 +1035,51 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 	
 	crs += ksprintf (crs, len - (crs - info->buf), "State:\t%s\n", state);
 	
+	assert (p->p_cred && p->p_cred->ucr);
+	
 	crs += ksprintf (crs, len - (crs - info->buf), "Pid:\t%d\nPPid:\t%d\nUid:\t%d\t%d\t%d\nGid:\t%d\t%d\t%d\n",
 		         p->pid, p->ppid,
 		         p->p_cred->ruid, p->p_cred->ucr->euid, p->p_cred->suid,
 		         p->p_cred->rgid, p->p_cred->ucr->egid, p->p_cred->sgid);
 	
-	for (i = 0; i < p->p_mem->num_reg; i++)
+	if (p->p_mem && p->p_mem->mem)
 	{
-		MEMREGION *mem = p->p_mem->mem[i];
+		regions = p->p_mem->num_reg;
 		
-		memsize += mem->len;
-		switch (mem->mflags & M_MAP)
+		for (i = 0; i < regions; i++)
 		{
-			case M_CORE:
-				coresize += mem->len;
-				break;
-			case M_ALT:
-				altsize += mem->len;
-				break;
-			case M_SWAP:
-				swapsize += mem->len;
-				break;
-			case M_KER:
-				kersize += mem->len;
-				break;
+			MEMREGION *mem = p->p_mem->mem[i];
+			
+			memsize += mem->len;
+			switch (mem->mflags & M_MAP)
+			{
+				case M_CORE:
+					coresize += mem->len;
+					break;
+				case M_ALT:
+					altsize += mem->len;
+					break;
+				case M_SWAP:
+					swapsize += mem->len;
+					break;
+				case M_KER:
+					kersize += mem->len;
+					break;
+			}
+			
+			if (mem->mflags & M_SHTEXT)
+				shtextsize += mem->len;
+			if (mem->mflags & M_SHTEXT_T)
+				shtexttsize += mem->len;
+			if (mem->mflags & M_FSAVED)
+				fsavedsize += mem->len;
+			if (mem->mflags & M_SHARED)
+				sharedsize += mem->len;
+			if (mem->mflags & M_KEEP)
+				keepsize += mem->len;
+			if (mem->mflags & M_KMALLOC)
+				kmallocsize += mem->len;
 		}
-		
-		if (mem->mflags & M_SHTEXT)
-			shtextsize += mem->len;
-		if (mem->mflags & M_SHTEXT_T)
-			shtexttsize += mem->len;
-		if (mem->mflags & M_FSAVED)
-			fsavedsize += mem->len;
-		if (mem->mflags & M_SHARED)
-			sharedsize += mem->len;
-		if (mem->mflags & M_KEEP)
-			keepsize += mem->len;
-		if (mem->mflags & M_KMALLOC)
-			kmallocsize += mem->len;
 	}
 	
 	crs += ksprintf (crs, len - (crs - info->buf),
@@ -1070,13 +1088,13 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 			"VmAlt:\t%8lu kB\n"
 			"VmSwap:\t%8lu kB\n"
 			"VmKer:\t%8lu kB\n"
-			"NumReg:\t%8u \n",
+			"NumReg:\t%8lu \n",
 			memsize >> 10,
 			coresize >> 10,
 			altsize >> 10, 
 			swapsize >> 10,
 			kersize >> 10,
-			(unsigned) p->p_mem->num_reg
+			regions
 	);
 	
 	crs += ksprintf (crs, len - (crs - info->buf),
@@ -1094,22 +1112,24 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 			kmallocsize >> 10
 	);
 	
-	assert (p->p_sigacts);
-	for (i = 1; i < NSIG; i++)
+	if (p->p_sigacts)
 	{
-		switch (SIGACTION(p, i).sa_handler)
+		for (i = 1; i < NSIG; i++)
 		{
-			case SIG_DFL:
-				break;
-			case SIG_IGN:
-				sigign |= bit;
-				break;
-			default:
-				sigcgt |= bit;
-				break;
+			switch (SIGACTION(p, i).sa_handler)
+			{
+				case SIG_DFL:
+					break;
+				case SIG_IGN:
+					sigign |= bit;
+					break;
+				default:
+					sigcgt |= bit;
+					break;
+			}
+			
+			bit <<= 1;
 		}
-		
-		bit <<= 1;
 	}
 	
 	crs += ksprintf (crs, len - (crs - info->buf),

@@ -322,6 +322,7 @@ sys_ptermres (long save, int code)
 	
 	
 	TRACE(("Ptermres(%ld, %d)", save, code));
+	assert (mem);
 	
 	m = mem->mem[1];	/* should be the basepage (0 is env.) */
 	if (m)
@@ -597,10 +598,6 @@ sys_pwaitpid (int pid, int nohang, long *rusage)
 	}
 	
 	free_sigacts (p);
-	
-	// kfree (p->p_fd);
-	// kfree (p->p_cwd);
-	// free_mem (p);
 	
 	/* free the PROC structure */
 	kfree (p);
