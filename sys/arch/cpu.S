@@ -142,12 +142,12 @@ ccw_dmasks:
 // Set the CACR according to the Cache Control Word and Mask
 
 _ccw_set:
-	movem.l	d1-d2/a0-a2,-(sp)
 	tst.w	hascaches
 	beq.s	clq
+	movem.l	d1-d2/a0-a2,-(sp)
 	bsr.s	_ccw_get		// get the current CCW
 	move.l	d0,-(sp)		// save it for later reference
-	movem.l	8(sp),d1/d2		// user specified CCW and CCM
+	movem.l	28(sp),d1/d2		// user specified CCW and CCM
 	and.l	d2,d1			// clear "unused" user-CCW bits
 	not.l	d2			// negate all bits in CCM
 	and.l	d2,d0			// clear bits to change in actual CCW
@@ -185,16 +185,16 @@ dc_off:
 	dc.w	0xF478			// cpusha dc
 lt040:
 	movec	d0,cacr			// write CACR
-clq:	movem.l	(sp)+,d1-d2/a0-a2
-	clr.l	d0			// E_OK
+	movem.l	(sp)+,d1-d2/a0-a2
+clq:	clr.l	d0			// E_OK
 	rts
 
 // Extract Cache Control Word from the CACR
 
 _ccw_get:
-	movem.l	d1-d2/a0-a2,-(sp)
 	tst.w	hascaches
 	beq.s	clq
+	movem.l	d1-d2/a0-a2,-(sp)
 	movec	cacr,d0			// read CACR
 	move.l	c2lv,a0			// convert
 	jsr	(a0)
