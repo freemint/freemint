@@ -112,7 +112,8 @@ COBJS = \
 
 SOBJS = \
 	accstart.s \
-	nkcc-gc.s
+	nkcc-gc.s \
+	xa_user_things.s
 
 SSOBJS = 
 
