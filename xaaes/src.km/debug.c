@@ -220,7 +220,7 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 						mouse_lock->pid);
 
 			if (update_lock)
-				l += sprintf(line+l, sizeof(line)-l, "[U%d/%d]",
+				l += sprintf(line+l, sizeof(line)-l, "[U%d]",
 						update_lock->pid);
 		}
 

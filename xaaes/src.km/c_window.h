@@ -96,6 +96,8 @@ void	clear_wind_handles(void);
 void	send_moved	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_sized	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_reposed	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
+void	send_vslid	(enum locks lock, struct xa_window *wind, short offs);
+void	send_hslid	(enum locks lock, struct xa_window *wind, short offs);
 void	send_redraw	(enum locks lock, struct xa_window *wind, RECT *r);
 void	send_iredraw	(enum locks lock, struct xa_window *wind, short xaw, RECT *r);
 void	generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags);

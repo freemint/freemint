@@ -401,6 +401,27 @@ send_redraw(enum locks lock, struct xa_window *wind, RECT *r)
 }
 
 void
+send_vslid(enum locks lock, struct xa_window *wind, short offs)
+{
+	if (wind->send_message)
+	{
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+			WM_VSLID, 0,0, wind->handle,
+			offs, 0,0,0);
+	}
+}
+void
+send_hslid(enum locks lock, struct xa_window *wind, short offs)
+{
+	if (wind->send_message)
+	{
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+			WM_HSLID, 0,0, wind->handle,
+			offs, 0,0,0);
+	}
+}
+
+void
 send_iredraw(enum locks lock, struct xa_window *wind, short xaw, RECT *r)
 {
 	if (wind == root_window)
