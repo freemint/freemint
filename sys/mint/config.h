@@ -34,14 +34,6 @@
 # ifndef _mint_config_h
 # define _mint_config_h
 
-
-/*
- * undefine VM_EXTENSION if CPU030 is not defined
- */
-# ifndef CPU030
-# undef VM_EXTENSION
-# endif
-
 /*
  * make real processor exceptions (bus error, etc.) raise a signal
  */

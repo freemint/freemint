@@ -72,12 +72,6 @@ extern int gl_lang;
 extern long gemdos_version;
 # endif
 
-# ifdef VM_EXTENSION
-extern int vm_in_use;
-extern ulong st_left_after_vm;
-# endif
-
-
 typedef struct kbdvbase KBDVEC;
 struct kbdvbase
 {

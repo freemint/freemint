@@ -26,14 +26,6 @@
 	XREF	_calc_load_average
 	XREF	_uptimetick
 	XREF	_checkbttys_vbl
-%ifdef VM_EXTENSION
-	XREF	Test_if_page_fault
-	XREF	Patch_bios_rout
-	XREF	VM_Installed
-	XREF	Device_sector_size
-	XREF	VM_start
-	XREF	VM_stop
-%endif
 
 ; AKP: this code is hit once every 5ms
 ; it updates the time fields of curproc.
@@ -381,22 +373,12 @@ _new_intr:
 ; We don't want to mess up any registers here because we might bring the
 ; page in and RTE.
 ;
-%ifdef VM_EXTENSION
-	XDEF	_kludge_bus
-%endif
 
 _new_bus:
 %ifndef ONLY030
 	move.w	#$8,_sig_exc
 	cmp.l	#30,_mcpu
 	bne.s	noMMU
-%endif
-%ifdef VM_EXTENSION
-	; this parameter is here for historical reasons...
-	move.l	sp,-(sp)
-	jsr	Test_if_page_fault
-	addq.w	#4,sp
-	beq	Return_now
 %endif
 	move.l	#_mmu_sigbus,_sig_routine
 %ifndef ONLY030
@@ -406,14 +388,6 @@ noMMU:
 %endif
 
 Do_sig:
-%ifdef VM_EXTENSION
-	; check if a new routine is set (by setexc)
-	tst.l	_kludge_bus
-	beq.s	no_new_bus
-	move.l	_kludge_bus,-(sp)
-	rts				; jump to it..
-no_new_bus:
-%endif
 	move.l	a0,-(sp)		; save a0
 	move.l	_curproc,a0
 	move.l	sp,P_EXCSSP(a0)
@@ -627,6 +601,7 @@ _new_trace:
 	beq.s	S_2
 	cmp.l	#_old_chk+12,2(a7)
 	beq.s	S_2
+
 ; add any other non-traceable entities here...
 
 S_1:	move.w	#$24,_sig_exc
@@ -670,43 +645,10 @@ noalias0:
 	cmp.w	#$14,d0 	; drive U:?
 	beq.s	nobpb		; yes, no BPB available
 
-%ifdef VM_EXTENSION
-	; check to see if we should get the
-	; sector size..
-
-	tst.w	VM_Installed
-	bne.s	no_VM
-
-	; patch us into the callchain
-	; however this makes bios non reentrant
-	; but many drivers (i.e. AHDI) is actually
-	; nonreentrant so this is not really any
-	; problem..
-
-	move.w	d0,save_drive
-	move.l	(sp)+,save_return
-	move.l	_old_getbpb,a0	; not our drive
-	jsr	(a0)		; call the old vector for it
-	move.l	save_return,-(sp)
-	move.w	save_drive,d1
-	and.w	#31,d1
-	add.w	d1,d1
-	move.w	d1,a1
-	add.l	#Device_sector_size,a1
-	tst.l	d0
-	beq.s	no_bpb
-	move.l	d0,a0
-	move.w	(a0),(a1)	; copy sector size
-no_bpb: moveq.l #0,d1
-	move.l	d1,a1
-	move.l	d1,a0
-	rts
-no_VM:
-%endif
-	move.l	_old_getbpb,a0	; not our drive
+	move.l	_old_getbpb(pc),a0	; not our drive
 	jmp	(a0)		; call the old vector for it
 nobpb:
-	moveq.l #0,d0		; 0 means "no BPB read"
+	clr.l	d0		; 0 means "no BPB read"
 	rts
 
 	dc.l	$58425241		; XBRA
@@ -729,10 +671,10 @@ _new_mediach:
 noalias1:
 	cmp.w	#$14,d0 	; drive U:?
 	beq.s	nochng		; yes, no change
-	move.l	_old_mediach,a0	; not our drive
+	move.l	_old_mediach(pc),a0	; not our drive
 	jmp	(a0)		; call the old vector for it
 nochng:
-	moveq.l #0,d0		; 0 means "definitely no change"
+	clr.l	d0		; 0 means "definitely no change"
 	rts
 
 	dc.l	$58425241		; XBRA
@@ -755,40 +697,14 @@ _new_rwabs:
 noalias2:
 	cmp.w	#$14,d0 	; drive U:?
 	beq.s	rwdone		; yes, fake it
-%ifdef VM_EXTENSION
-	move.l	6(sp),d1
-	cmp.l	VM_start,d1
-	bmi.s	buff_ok
-	cmp.l	VM_stop,d1
-	bpl.s	buff_ok
 
-	; we must recopy memory into the VM so that
-	; we never get a pagefault in bioshandler
-	; or dma is used into VM!
-
-	jmp	Patch_bios_rout
-
-buff_ok:
-%endif
-	move.l	_old_rwabs,a0	; not our drive
+	move.l	_old_rwabs(pc),a0	; not our drive
 	jmp	(a0)		; call the old vector for it
 rwdone:
-	moveq.l #0,d0		; 0 means "successful operation"
+	clr.l	d0		; 0 means "successful operation"
 	rts
 
 	DATA
-
-%ifdef VM_EXTENSION
-_kludge_bus:
-	dc.l	0
-
-	; things for bios patch
-save_return:
-	dc.l	0
-
-save_drive:
-	dc.w	0
-%endif
 
 ; buffer for faked mouse packet (actually only 3 bytes)
 
