@@ -101,28 +101,45 @@
 # define INSTALL	"u:\\dev\\moose"
 # define INSTALL1	"u:\\dev\\mooses"
 
-void butv (void);
-void cbutv (void);
-void motv (void);
-void whlv (void);
-void cwhlv (void);
-void timv (void);
-void timer_handler(void);
-void wake_listeners(void);
-void gen_write(struct moose_data *md);
-void do_button_packet(void);
-void th_wrapper(void);
-
 /****************************************************************************/
 /* BEGIN kernel interface */
 
-struct kerinfo *kernel;
+static struct kerinfo *kernel;
 
 /* END kernel interface */
 /****************************************************************************/
 
 /****************************************************************************/
 /* BEGIN definition part */
+
+/*
+ * assembler functions
+ */
+
+void butv (void);
+void motv (void);
+void whlv (void);
+void timv (void);
+void th_wrapper(void);
+
+
+/*
+ * exported functions
+ */
+
+void cbutv (void);
+void cwhlv (void);
+void timer_handler(void);
+
+
+/*
+ * internal functions
+ */
+
+static void wake_listeners(void);
+static void gen_write(struct moose_data *md);
+static void do_button_packet(void);
+
 
 /*
  * device driver
@@ -133,7 +150,7 @@ static long _cdecl	write		(FILEPTR *f, const char *buf, long bytes);
 static long _cdecl	read		(FILEPTR *f, char *buf, long bytes);
 static long _cdecl	lseek		(FILEPTR *f, long where, int whence);
 static long _cdecl	ioctl		(FILEPTR *f, int mode, void *buf);
-static long _cdecl	datime		(FILEPTR *f, ushort *timeptr, int rwflag);
+static long _cdecl	datime		(FILEPTR *f, unsigned short *timeptr, int rwflag);
 static long _cdecl	close		(FILEPTR *f, int pid);
 static long _cdecl	select		(FILEPTR *f, long proc, int mode);
 static void _cdecl	unselect	(FILEPTR *f, long proc, int mode);
@@ -146,7 +163,6 @@ static DEVDRV devtab =
 	select, unselect,
 	write, read
 };
-
 
 /*
  * debugging stuff
@@ -162,7 +178,6 @@ static DEVDRV devtab =
 #  define ALERT(x)	KERNEL_ALERT x
 # endif
 
-
 DEVDRV * _cdecl		init		(struct kerinfo *k);
 
 /* END definition part */
@@ -171,40 +186,40 @@ DEVDRV * _cdecl		init		(struct kerinfo *k);
 /****************************************************************************/
 /* BEGIN global data definition & access implementation */
 
-struct kerinfo *kernel;
+#define MAX_DC_TIME	200
+#define SYSTIMER	0x4baL
+#define SYSVBI		0x456L
+#define SYSNVBI		0x454L
 
-long *VBI_timer_entry;
-long *VBI_entry;
+static long *VBI_entry;
 
-short moose_inuse;
+static short moose_inuse;
 
-short click_x;
-short click_y;
-short click_state;
-short click_cstate;
-short click_count;
+static short click_x;
+static short click_y;
+static short click_state;
+static short click_cstate;
+static short click_count;
 
-short timeout;
-short dc_time;
-short last_state;
-short last_time;
-short halve;
+static short timeout;
+static short dc_time;
+static short last_state;
+static short last_time;
+static short halve;
 
-short old_buttons;
+static struct mouse_pak *pak_head;
+static struct mouse_pak *pak_tail;
+static struct mouse_pak *pak_end;
+static short inbuf;
+static long rsel;
 
-struct mouse_pak *pak_head;
-struct mouse_pak *pak_tail;
-struct mouse_pak *pak_end;
-short inbuf;
-long rsel;
+static short rptr;
+static short wptr;
+static short mused;
 
-short rptr;
-short wptr;
-short mused;
-
-short old_x;
-short old_y;
-short mmoved;
+static short old_x;
+static short old_y;
+static short mmoved;
 
 volatile short sample_butt;
 volatile short sample_x;
@@ -212,22 +227,56 @@ volatile short sample_y;
 volatile short sample_wheel;
 volatile short sample_wclicks;
 
-#define MB_BUFFERS	32
-#define MB_BUFFER_SIZE	MB_BUFFERS*(sizeof(struct moose_data))
-#define PAK_BUFFERS	32
-#define PAK_BUFFER_SIZE	PAK_BUFFERS*(sizeof(struct mouse_pak))
 
-short moose_buffer[MB_BUFFER_SIZE];
-short pak_buffer[PAK_BUFFER_SIZE];
+struct mouse_pak
+{
+	unsigned short len;
+
+#define BUT_PAK 	0x42
+#define WHL_PAK		0x57
+	char ty;
+
+	union
+	{
+		struct
+		{
+			unsigned char state;
+			short time;
+		} but;
+		
+		struct
+		{
+			unsigned char wheel;
+			short clicks;
+		} whl;
+		
+		struct
+		{
+			char state;
+		} vbut;
+	} t;
+	short x;
+	short y;
+	long dbg;
+};
+
+#define MB_BUFFERS	32
+#define MB_BUFFER_SIZE	(MB_BUFFERS * (sizeof(struct moose_data)))
+#define PAK_BUFFERS	32
+#define PAK_BUFFER_SIZE	(PAK_BUFFERS * (sizeof(struct mouse_pak)))
+
+static short moose_buffer[MB_BUFFER_SIZE];
+static short pak_buffer[PAK_BUFFER_SIZE];
 
 /* END global data & access implementation */
 /****************************************************************************/
+
 void
 cbutv(void)
 {
 	pak_tail->len		= sizeof(struct mouse_pak);
 	pak_tail->ty		= BUT_PAK;
-	pak_tail->t.but.state	= (uchar)sample_butt;
+	pak_tail->t.but.state	= (unsigned char)sample_butt;
 	pak_tail->t.but.time	= *(short *)(SYSTIMER+2);
 	pak_tail->x		= sample_x;
 	pak_tail->y		= sample_y;
@@ -247,7 +296,7 @@ cwhlv(void)
 {
 	pak_tail->len		= sizeof(struct mouse_pak);
 	pak_tail->ty		= WHL_PAK;
-	pak_tail->t.whl.wheel	= (uchar)sample_wheel;
+	pak_tail->t.whl.wheel	= (unsigned char)sample_wheel;
 	pak_tail->t.whl.clicks	= sample_wclicks;
 	pak_tail->x		= sample_x;
 	pak_tail->y		= sample_y;
@@ -306,7 +355,7 @@ timer_handler(void)
 			if (pak_head->ty == BUT_PAK)
 			{	
 				short tm = pak_head->t.but.time;
-				short s = (uchar)pak_head->t.but.state;
+				short s = (unsigned char)pak_head->t.but.state;
 
 				if (timeout)
 				{
@@ -391,7 +440,7 @@ timer_handler(void)
 	return;
 }
 
-void
+static void
 do_button_packet(void)
 {
 	struct moose_data md;
@@ -413,7 +462,7 @@ do_button_packet(void)
 	return;
 }
 
-void
+static void
 gen_write(struct moose_data *md)
 {
 
@@ -466,7 +515,7 @@ gen_write(struct moose_data *md)
 	return;
 }
 
-void
+static void
 wake_listeners(void)
 {
 	if (rsel)
@@ -634,7 +683,7 @@ read (FILEPTR *f, char *buf, long bytes)
 {
 	register long ret = 0;
 
-//	register ushort sr;
+//	register unsigned short sr;
 //	sr = splhigh ();
 //	spl (sr);
 	
@@ -756,7 +805,7 @@ ioctl (FILEPTR *f, int mode, void *buf)
 }
 
 static long _cdecl
-datime (FILEPTR *f, ushort *timeptr, int rwflag)
+datime (FILEPTR *f, unsigned short *timeptr, int rwflag)
 {
 	if (rwflag)
 		return EACCES;
@@ -773,7 +822,6 @@ close (FILEPTR *f, int pid)
 	if (f->links < 0)
 		return EINTERNAL;
 
-	
 	if (f->links == 0 && f->fc.aux == 0)
 	{
 		*VBI_entry = 0;
@@ -844,4 +892,3 @@ unselect (FILEPTR *f, long proc, int mode)
 		rsel = 0;
 	}
 }
-
