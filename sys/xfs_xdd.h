@@ -1,0 +1,95 @@
+/*
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ * 
+ * 
+ * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
+ * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ */
+
+# ifndef _xfs_xdd_h
+# define _xfs_xdd_h
+
+# include "mint/mint.h"
+
+
+long getxattr (FILESYS *fs, fcookie *fc, XATTR *xattr);
+long getstat64 (FILESYS *fs, fcookie *fc, STAT *ptr);
+
+
+void xfs_block (FILESYS *fs, ushort dev, const char *func);
+void xfs_deblock (FILESYS *fs, ushort dev, const char *func);
+
+
+long xfs_root(FILESYS *fs, int drv, fcookie *fc);
+long xfs_lookup(FILESYS *fs, fcookie *dir, const char *name, fcookie *fc);
+
+DEVDRV *xfs_getdev(FILESYS *fs, fcookie *fc, long *devsp);
+
+long xfs_getxattr(FILESYS *fs, fcookie *fc, XATTR *xattr);
+
+long xfs_chattr(FILESYS *fs, fcookie *fc, int attr);
+long xfs_chown(FILESYS *fs, fcookie *fc, int uid, int gid);
+long xfs_chmode(FILESYS *fs, fcookie *fc, unsigned mode);
+
+long xfs_mkdir(FILESYS *fs, fcookie *dir, const char *name, unsigned mode);
+long xfs_rmdir(FILESYS *fs, fcookie *dir, const char *name);
+long xfs_creat(FILESYS *fs, fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc);
+long xfs_remove(FILESYS *fs, fcookie *dir, const char *name);
+long xfs_getname(FILESYS *fs, fcookie *root, fcookie *dir, char *buf, int len);
+long xfs_rename(FILESYS *fs, fcookie *olddir, char *oldname, fcookie *newdir, const char *newname);
+
+long xfs_opendir(FILESYS *fs, DIR *dirh, int flags);
+long xfs_readdir(FILESYS *fs, DIR *dirh, char *nm, int nmlen, fcookie *fc);
+long xfs_rewinddir(FILESYS *fs, DIR *dirh);
+long xfs_closedir(FILESYS *fs, DIR *dirh);
+
+long xfs_pathconf(FILESYS *fs, fcookie *dir, int which);
+long xfs_dfree(FILESYS *fs, fcookie *dir, long *buf);
+long xfs_writelabel(FILESYS *fs, fcookie *dir, const char *name);
+long xfs_readlabel(FILESYS *fs, fcookie *dir, char *name, int namelen);
+
+long xfs_symlink(FILESYS *fs, fcookie *dir, const char *name, const char *to);
+long xfs_readlink(FILESYS *fs, fcookie *fc, char *buf, int len);
+long xfs_hardlink(FILESYS *fs, fcookie *fromdir, const char *fromname, fcookie *todir, const char *toname);
+long xfs_fscntl(FILESYS *fs, fcookie *dir, const char *name, int cmd, long arg);
+long xfs_dskchng(FILESYS *fs, int drv, int mode);
+
+long xfs_release(FILESYS *fs, fcookie *fc);
+long xfs_dupcookie(FILESYS *fs, fcookie *dst, fcookie *src);
+
+long xfs_mknod(FILESYS *fs, fcookie *dir, const char *name, ulong mode);
+long xfs_unmount(FILESYS *fs, int drv);
+long xfs_stat64(FILESYS *fs, fcookie *fc, STAT *stat);
+
+
+long xdd_open(FILEPTR *f);
+long xdd_write(FILEPTR *f, const char *buf, long bytes);
+long xdd_read(FILEPTR *f, char *buf, long bytes);
+long xdd_lseek(FILEPTR *f, long where, int whence);
+long xdd_ioctl(FILEPTR *f, int mode, void *buf);
+long xdd_datime(FILEPTR *f, ushort *timeptr, int rwflag);
+long xdd_close(FILEPTR *f, int pid);
+
+# endif /* _xfs_xdd_h */
