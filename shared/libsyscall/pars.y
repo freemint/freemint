@@ -461,6 +461,10 @@ status
 	{
 		$$ = SYSCALL_UNIMPLEMENTED;
 	}
+|	_IDENT_NULL
+	{
+		$$ = SYSCALL_NULL;
+	}
 ;
 
 %%
