@@ -17,9 +17,6 @@
  * _mint_bios:	entry point for the BIOS calls (trap #13)
  * _mint_xbios: entry point for XBIOS calls (trap #14)
  * _mint_dos:	entry point for GEMDOS calls (trap #1)
- * _sig_return: user signal handlers return to this routine (see signal.c)
- *              it is responsible for restoring the kernel's old context
- *              via the Psigreturn() system call
  * _lineA0:	calls the line A initialize routine
  * _call_aes:	calls the GEM AES
  * _do_usrcall: calls a user supplied function (e.g. for Supexec), with
@@ -38,10 +35,7 @@
  * _curproc:
  *    pointer to current process table entry, and hence to save area for
  *    context (this is always the first entry in the PROC table).
- * _pc_valid_return:
- *    used to indicate to the kernel that a valid return from user mode
- *    is taking place
- * 
+ *
  * _bconbuf, _bconbsiz, _bconbdev:
  *    256 byte buffer for Bconout() output. If _bconbsiz is non-zero,
  *    there are that many bytes in _bconbuf waiting to be flushed. The
@@ -54,7 +48,7 @@
  * we also call certain BIOS functions directly if these are known not to
  * require saving/restoring of context
  * 
- * Best view in 800x600 //-)
+ * Best view in 800x600 ;-)
  * 
  */
 
