@@ -31,6 +31,7 @@
 
 #include "app_man.h"
 #include "c_window.h"
+#include "desktop.h"
 #include "form.h"
 #include "k_main.h"
 #include "k_mouse.h"
@@ -3280,3 +3281,49 @@ do_active_widget(enum locks lock, struct xa_client *client)
 		}
 	}
 }
+
+short
+wind_mshape(struct xa_window *wind, short x, short y)
+{
+	short shape = -1;
+	struct xa_client *wo = wind == root_window ? get_desktop()->owner : wind->owner;
+	XA_WIDGET *widg;
+	RECT r;
+
+	if (wind)
+	{
+		if (wind->active_widgets & SIZER)
+		{
+			widg = wind->widgets + XAW_RESIZE;
+
+			if (wind->frame > 0 && (!m_inside(x, y, &wind->ba)))
+			{
+				r = wind->r;
+				shape = border_mouse[compass(16, x, y, r)];
+			}
+			else
+			{
+				rp_2_ap_cs(wind, widg, &r);
+				if (m_inside(x, y, &r))
+					shape = border_mouse[SE];
+			}
+		}
+		if (shape != -1)
+		{
+			if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != shape))
+				graf_mouse(shape, NULL, true);
+		}
+		else
+		{
+			if (C.aesmouse != -1)
+				graf_mouse(-1, NULL, true);
+			if (C.mouse_form != wind->owner->mouse_form)
+				graf_mouse(wo->mouse, wo->mouse_form, false);
+		}
+	}
+	else if (C.aesmouse != -1)
+		graf_mouse(-1, NULL, true);
+
+	return shape;
+}
+
