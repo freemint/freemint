@@ -5,6 +5,7 @@ COBJS = \
 	bios.c \
 	biosfs.c \
 	block_IO.c \
+	bootmenu.c \
 	cnf_mint.c \
 	cnf.c \
 	cmdline.c \
