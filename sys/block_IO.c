@@ -399,6 +399,12 @@ rwabs_log (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 		return ESECTOR;
 	}
 	
+	if (di->size && (recno + n) > di->size)
+	{
+		BIO_ALERT (("block_IO [%c]: rwabs_log: access outside partition", di->drv+'A'));
+		return ESECTOR;
+	}
+	
 	return rwabs (rw, buf, n, recno, di->drv, 0L);
 }
 
@@ -415,13 +421,19 @@ rwabs_log_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 //		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
 //		return EROFS;
 //	}
-	 
+	
 	n = size >> di->pshift;
 	recno = rec << di->lshift;
 	
 	if (!n || n > 65535UL)
 	{
 		BIO_ALERT (("block_IO [%c]: rwabs_log_lrec: n outside range (%li)", di->drv+'A', n));
+		return ESECTOR;
+	}
+	
+	if (di->size && (recno + n) > di->size)
+	{
+		BIO_ALERT (("block_IO [%c]: rwabs_log_lrec: access outside partition", di->drv+'A'));
 		return ESECTOR;
 	}
 	
@@ -525,7 +537,7 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 		return ESECTOR;
 	}
 	
-	if ((recno + n) > di->size)
+	if (/* di->size && */ (recno + n) > di->size)
 	{
 		BIO_ALERT (("block_IO [%c]: rwabs_xhdi: access outside partition", di->drv+'A'));
 		return ESECTOR;
@@ -1192,7 +1204,7 @@ bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 			return NULL;
 		}
 		
-		if ((recno + n) > di->size)
+		if (di->size && (recno + n) > di->size)
 		{
 			BIO_ALERT (("block_IO [%c]: bio_unit_get: access outside partition", di->drv+'A'));
 			
