@@ -1,35 +1,35 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 1998, 1999, 2000, 2001 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1998-02-01
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * changes since last version:
  *
  * 2000-10-20:
@@ -39,25 +39,25 @@
  * - new: added 'SLB' to the list of executable file extensions
  *
  * 2000-09-27:	(v1.22)
- * 
+ *
  * - fix: spelling correction, replaced most 'actual' with 'current'
  * - new: added kernel ALERT for illegal FAT entries
  * - new: changed getcl{12,16}/fixcl{12,16} to read/write FAT#2 at first
  *        like TOS, MagiC, DOS/Windows
  *
  * 2000-06-30:	(v1.21)
- * 
+ *
  * - fix: c_del_cookie now bzero the complete COOKIE struct;
  *        so the COOKIE is an well defined initial state
  * - fix: splitted of delete_cookie into real delete and unlink
  *        to handle Unix style unlinking; changes over the src to
  *        reflect this, cleaned up some functions
  * - fix: get_bpb don't complain about non FAT DOS partitions
- * 
+ *
  * 2000-04-28:	(v1.20)
- * 
+ *
  * - new: is_short declared static as is at least two times used
- * 
+ *
  * Gryf:
  * - fix: Calculation of rdlen now rounds up, as described in the
  *        Microsoft FAT whitepaper
@@ -67,67 +67,67 @@
  *        are accessed like this: A-B-A or B-A-B
  * - fix: Fixed wrong order of arguments in a macro call in
  *        fatfs_rename(), causing write accesses to wrong sectors
- * 
+ *
  * 2000-01-10:	(v1.19)
- * 
+ *
  * - fix: 0x05 as first byte in _DIR is handled as 0xe5
  *        (see Microsoft White Paper)
  * - new: always initialize ctime, cdate, adate in make_cookie
- * 
+ *
  * Gryf:
  * - fix: correct '..' STCL on FAT32 in fatfs_mkdir
  * - fix: correct dirread(TOS_SEARCH) for the case the buffer is to small
  *        so nextdir failed and returned EBADARG to fsfirst/fsnext
- * 
+ *
  * 2000-01-06:	(v1.18)
- * 
+ *
  * - fix: corrected wrong return code ENAMETOOLONG to EBADARG
  * - new: restructurized FAT access a little bit in a more logical way;
  *        cleaned up
  * - fix: finally fixed fat32 access optimization
  * - fix: possible cache inconsistency in fatfs_rename
  *        missing remove of subdirentries on a directory rename
- * 
+ *
  * 1999-11-23:
- * 
+ *
  * - fix: debug output in get_bpb now as unsigend and not signed
- * 
+ *
  * 1999-10-28:	(v1.17)
- * 
+ *
  * - fix: missing time/date initialization for the ROOT cookie
  *        in get_devinfo
- * 
+ *
  * 1999-07-18:	(v1.16)
- * 
+ *
  * - fix: bug in fat_truncate: searched with wrong string ptr
  * - fix: some optimizations and corrections in cookie lock behaviour
  * - fix: bug in rmdir again: cookie release now hopefully always correct
- * 
+ *
  * 1999-06-20:	(v1.15)
- * 
+ *
  * - new: chown return always E_OK (temporary compatibility reason)
  * - fix: bug in device driver, flen is a global attribute
  * - fix: bug in rmdir, missing cookie release in error condition
  * - fix: bug in rename, wrong return value for cross device rename
  * - fix: bug in rename, '..' entry was not updated on a directory move
- * 
+ *
  * 1999-05-06:	(v1.14)
- * 
+ *
  * - fix: bug in symlink, if file already exist was not checked
- * 
+ *
  * 1999-04-24:	(v1.13)
- * 
+ *
  * - fix: ffree32 doesn't count correctly
  * - fix: bug in bio_fat_l_read
  *        blocks are absolut number -> offsett correction
- * 
+ *
  * 1999-04-09:	(v1.12)
- * 
+ *
  * - new: added read only check to all 'write' functions
  *        added read only flag, soft/hard, configurable
- * 
+ *
  * 1999-03-27:	(v1.11)
- * 
+ *
  * - new: bio access is mapped through special support routines
  *        divided into bootsector-, fat- and data access with
  *        optional verification
@@ -135,21 +135,21 @@
  * - new: 'fend' member in DEVINFO for the last fat sector
  * - new: the root cookie is now part of DEVINFO struct and no longer
  *        seperatly allocated (save one kmalloc for every drive)
- * 
+ *
  * 1999-03-13:	(v1.10)
- * 
+ *
  * - new: optional LRU cookie cache
  * - new: hash table efficiency statistic
  * - fix: typo in newcl16/32
  * - fix: typo in MS-DOS character table
- * 
+ *
  * 1999-03-06:	(v1.09)
- * 
+ *
  * Gryf:
  * - new: high speed ffree32 (need temporary much memory)
  * - fix: added 0xc and 0xe DOS partition types
  * - fix: optimised expressions in ffree16/32 (recalc max if overflow)
- * 
+ *
  * - new: declared some functions that are used only once as inline
  *        -> save some static functions
  * - new: more checks in val_bpb
@@ -159,43 +159,43 @@
  *        loaded with new buffer cache feature and fatfs_sync() periodically
  *        update the info sector now
  * - fix: bug in __nextdir: invalid entrys are accepted as valid
- * 
+ *
  * 1999-02-25:	(v1.08)
- * 
+ *
  * - fix: bug in fatfs_lookup (..); forgot to copy last byte
- * 
+ *
  * 1999-02-14:	(v1.07)
- * 
+ *
  * - fix: bug in rename (rename '.' or '..' in root dir)
  * - fix: FAT32 info sector data start at offset 480 and not 0
- * 
+ *
  * Draco:
  * - new: better is_exec(); enabled by default
- * 
+ *
  * 1999-01-29:	(v1.06)
- * 
+ *
  * - fix: fatfs_root return now better values (EBUSY, EMEDIUMTYPE, ENOMEM, ENXIO)
- * 
+ *
  * Thomas Binder (gryf):
  * - fix: dirread -> never lowercase on TOS_SEARCH
  * - fix: old gas syntax for WPEEK/WPOKE_INTEL inline assembler
- * 
+ *
  * 1999-01-10:	(v1.05)
- * 
+ *
  * - fix: fatfs_rename: lastlookup not freed after table manipulating
  * - fix: search_cookie: better failure behaviour
  * - add: unimplemented '..' search in fatfs_lookup
- * 
+ *
  * 1998-12-22:	(v1.04)
- * 
+ *
  * - add: __FIO -> fix for READ calls with negative bytecount
  *        -> read the complete file to buf
  * - add: dynamic memory usage statistic in DEBUG mode
  * - fix: bug in rename - inode cache not correct after
  *        a position save renaming, also forgot to decrease old->links
- * 
+ *
  * 1998-12-11:	(v1.03)
- * 
+ *
  * - add: extended debug information in get_bpb (sector dump)
  * - new: writelabel/readlabel rewritten
  * - new: WPOKE_INTEL/WPEEK_INTEL replaced with inline assembler
@@ -205,14 +205,14 @@
  * - new: replaced ROBUST keyword by check for drive A/B
  *        -> write through sync on non critical operations only on A/B
  * - new: added _cdecl keyword for interface functions
- * 
+ *
  * 1998-11-15:	(v1.02)
- * 
+ *
  * - fix: bug in FAT12 handling routines
  *        (getcl12 & fixcl12)
- * 
+ *
  * 1998-11-01:	(v1.01)
- * 
+ *
  * - new: ROBUST keyword; perform also write through sync on non
  *        critical operations like chattr, FUTIME, datime
  * - add: Dpathconf (DP_VOLNAMEMAX)
@@ -220,40 +220,40 @@
  * - new: some internal cleanup
  * - new: uid/gid/mode for the root cookie
  *   -> getxattr/chown/chmode
- * 
+ *
  * 1998-10-12:
- * 
+ *
  * - add: Dcntl (FS_USAGE)
  * - fix: fatfs_fscntl incorrect return values
- * 
+ *
  * 1998-09-25:	(v1.00)
- * 
+ *
  * - add: lcase flag to force a strlwr operation on real 8+3 names
  *        -> make_shortname/fatfs_readdir/fatfs_config modified
  * - fix: some modifications to reduce overkill syncing for small
  *        fatfs_write calls in writethrough mode
  * - fix: bug in lseek (SEEK_END)
  *        negative offsets are allowed, the compendium is wrong
- * 
+ *
  * 1998-09-09:
- * 
+ *
  * - fix: bug in symlink (idiotic implementation from MagiC)
  * - some name changes related to block_IO restructurization
  * - add: val_bpb - check the xpbp
  * - fix: delete_cookie: missing check for 'cookie->links'
  * - fix: missing increment/decrement for 'cookie->links' in open/close
- * 
+ *
  * 1998-08-06:	(v0.99)
- * 
+ *
  * - new: free cluster counter for every drive (speedup dfree)
  *        -> changed dfree?? to ffree?? (fat free)
  *        -> modified nextcl (decrease freecl counter)
  *        -> modified del_chain (increase freecl counter)
- * 
+ *
  * Rainer Seitel:
  * - change: replace t_getdate()/t_gettime() by datestamp/timestamp
  * - fix: getcl12 and fixcl12 unaligned word access (68000)
- * 
+ *
  * - fix: FAT syncing if mirroring is enabled
  * - fix: missing breaks in Dcntl (FS_INFO)
  * - fix: some missing const in function declaration
@@ -264,32 +264,32 @@
  * - fix: get_devinfo - better start lastalloc
  * - fix: newcl32 - little bug in overflow calculation
  * - fix: fixcl32 - bug in updating more than 2 FATs
- * 
+ *
  * 1998-07-23:	(v0.98)
- * 
+ *
  * - change: dskchng now support new method
  * - new: start alloc of clusters on FAT32 at cluster 16
  *        (avoid fragmentation of the root dir)
  * - fix: get_bpb: FAT32 calculation was not correct
- * 
+ *
  * Rainer Seitel:
  * - fix: readlabel/writelabel (detection of a label)
  * - fix: getxattr: ctime was incorrect set
  * - fix: chmode: directories can now be hidden
  * - fix: dpathconf (DP_XATTRFIELDS) now doesn't return DP_RDEV flag
- * - fix: functions return now konsequent E_OK 
- * 
+ * - fix: functions return now konsequent E_OK
+ *
  * - add: a little fix for A/B cache consistence
  * - add: Dcntl opcode 'FS_INFO' (experimental!)
- * 
+ *
  * 1998-07-13:	(v0.97)
- * 
+ *
  * - new: remove sync buffercache (now global in s_ync)
  * - new: writelabel create label if it doesn't exist
  * - fix: is_short -> double points are not detected
- * 
+ *
  * 1998-07-08:	(v0.96)
- * 
+ *
  * - new: some opcodes
  * - change: Dcntl opcodes
  * - fix: correct dostrunc on FAT
@@ -298,11 +298,11 @@
  *        (own getbpb)
  * - change: adaption for new block low level I/O
  * - change: adaption for new buffer cache
- * 
+ *
  * 1998-07-01:	(v0.95)
  *
  * - fix: little bug in getxattr (CLUSTSIZE and not CLSIZE)
- * 
+ *
  * - fix: little bug in nextcl16/32 (last free clusters are not found)
  * - fix: bug in lseek
  * - new: __updatedir to mark the current dir entry as modified
@@ -310,7 +310,7 @@
  * - new: some Dcntl's
  * - new: ISO, GEMDOS and MSDOS name modus
  *   configurable for every drive
- * 
+ *
  * - fix: update of FA_CHANGED and mdate/mtime correct
  * - add: FTRUNCATE on fatfs_ioctl (not tested)
  * - add: FUTIME on fatfs_ioctl (not tested)
@@ -320,11 +320,11 @@
  * - fix: make_shortname (now up to 6 digits for the number after ~)
  * - fix: fatfs_close (archivbit is not set on symlinks now)
  * - fix: rename (check for existing file now)
- * 
+ *
  * - change: replace makros by inline functions
  *   (better typecheck and automatic cast)
  * - change: dir2str, str2dir (reduce a variable, more logical parameter)
- * 
+ *
  * - new: optimized search_cookie -> really speed improvement
  * - new: is_short (determine a FAT or VFAT entry)
  *   --> change: make_shortname (faster)
@@ -333,22 +333,22 @@
  * - new: complete file name trunc (make_shortname)
  * - new: symlink is configurable for every drive
  *   --> change: fatfs_symlink, fatfs_pathconf
- * 
- * 
+ *
+ *
  * known bugs:
- * 
+ *
  * - dskchng() doesn't free the dynamically used memory for the drive
  *   (LOCKS & FILE structs) if open files are on an invalidated medium
- * 
+ *
  * todo:
- * 
+ *
  * - fall back mechanism in fat_trunc?
  * - real file locking
  * - writelabel/readlabel -> update bootsector label on DOS 4.0 mediums
  * - MSDOS boot sector info stuff (extended information)
- * 
+ *
  * optimizations to do:
- * 
+ *
  * - __FIO -> L_BS, linear algorithm?
  * - make_cookie -> intelligent search with history
  * - what about auto correction and fall back mechanism?
@@ -382,7 +382,7 @@
 
 # define VER_MAJOR	1
 # define VER_MINOR	22
-# define VER_STATUS	
+# define VER_STATUS
 
 # if VER_MINOR > 9
 # define str_VER_MINOR	str (VER_MINOR)
@@ -390,7 +390,7 @@
 # define str_VER_MINOR	"0" str (VER_MINOR)
 # endif
 
-# define MSG_VERSION	str (VER_MAJOR) "." str_VER_MINOR str (VER_STATUS) 
+# define MSG_VERSION	str (VER_MAJOR) "." str_VER_MINOR str (VER_STATUS)
 # define MSG_BUILDDATE	__DATE__
 
 # define MSG_BOOT	\
@@ -477,16 +477,16 @@ static void *
 fatfs_kmalloc (long size, const char *func)
 {
 	register ulong *place;
-	
+
 	size += sizeof (*place);
 	place = _kmalloc (size, func);
-	
+
 	if (place)
 	{
 		*place++ = size;
 		fatfs_dynamic_mem += size;
 	}
-	
+
 	return place;
 }
 
@@ -494,10 +494,10 @@ static void
 fatfs_kfree (void *ptr, const char *func)
 {
 	register ulong *place = ptr;
-	
+
 	place--;
 	fatfs_dynamic_mem -= *place;
-	
+
 	_kfree (place, func);
 }
 
@@ -519,7 +519,7 @@ WPEEK_INTEL (register uchar *ptr)
 {
 	register ushort c1 = *ptr++;
 	register ushort c2 = *ptr;
-	
+
 	return ((c2 << 8) | (c1 & 0x00ff));
 }
 
@@ -581,7 +581,7 @@ static long	_cdecl fatfs_unmount	(int drv);
 FILESYS fatfs_filesys =
 {
 	next:			NULL,
-	
+
 	fsflags:
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
@@ -605,7 +605,7 @@ FILESYS fatfs_filesys =
 	FS_OWN_MEDIACHANGE	|
 	FS_EXT_1		|
 	FS_EXT_2		,
-	
+
 	root:			fatfs_root,
 	lookup:			fatfs_lookup,
 	creat:			fatfs_creat,
@@ -635,20 +635,20 @@ FILESYS fatfs_filesys =
 	release:		fatfs_release,
 	dupcookie:		fatfs_dupcookie,
 	sync:			fatfs_sync,
-	
+
 	/* FS_EXT_1 */
 	mknod:			null_mknod,
 	unmount:		fatfs_unmount,
-	
+
 	/* FS_EXT_2
 	 */
-	
+
 	/* FS_EXT_3 */
 	stat64:			NULL,
-	res1:			0, 
+	res1:			0,
 	res2:			0,
 	res3:			0,
-	
+
 	lock: 0, sleepers: 0,
 	block: NULL, deblock: NULL
 };
@@ -690,7 +690,7 @@ typedef struct
 {
 	uchar	boot_jump[3];	/* Boot strap short or near jump */
 	char	system_id[8];	/* Name - can be used to special case partition manager volumes */
-	
+
 	uchar	sector_size[2];	/* bytes per logical sector */
 	uchar	cluster_size;	/* sectors/cluster */
 	ushort	reserved;	/* reserved sectors */
@@ -703,7 +703,7 @@ typedef struct
 	ushort	heads;		/* number of heads */
 	ulong	hidden;		/* hidden sectors (unused) */
 	ulong	total_sect;	/* number of sectors (if sectors == 0) */
-	
+
 } _F_BS;
 
 /* FAT volume info */
@@ -712,35 +712,35 @@ typedef struct
 	uchar	drive_number;	/* BIOS drive number */
 	uchar	RESERVED;	/* Unused */
 	uchar	ext_boot_sign;	/* 0x29 if fields below exist (DOS 3.3+) */
-	
+
 # define EXT_INFO		0x29
-	
+
 	uchar	vol_id[4];	/* Volume ID number */
 	char	vol_label[11];	/* Volume label */
 	char	fs_type[8];	/* Typically FAT12, FAT16, or FAT32 */
-	
+
 } _F_VI;
 
 /* FAT32 boot sector */
 typedef struct
 {
 	_F_BS	fbs;		/* normal FAT boot sector */
-	
+
 	ulong	fat32_length;	/* sectors/FAT */
 	ushort	flags;		/* bit 8: fat mirroring, low 4: active fat */
-	
+
 # define FAT32_ActiveFAT_Mask	0x0f
 # define FAT32_NoFAT_Mirror	0x80
-	
+
 	ushort	version;	/* major, minor filesystem version */
 	ulong	root_cluster;	/* first cluster in root directory */
 	ushort	info_sector;	/* filesystem info sector */
 	ushort	backup_boot;	/* backup boot sector */
-	
+
 # define INVALID_SECTOR		0xffff
-	
+
 	ushort	RESERVED2[6];	/* Unused */
-	
+
 } _F32_BS;
 
 /* FAT32 boot fsinfo */
@@ -748,15 +748,15 @@ typedef struct
 {
 	ulong	reserved1;	/* Nothing as far as I can tell */
 	ulong	signature;	/* 0x61417272L */
-	
+
 # define FAT32_FSINFOSIG	0x61417272L
-	
+
 	ulong	free_clusters;	/* Free cluster count.  -1 if unknown */
 	ulong	next_cluster;	/* Most recently allocated cluster. Unused under Linux. */
 	ulong	reserved2[4];
-	
+
 # define _FAT32_BFSINFO_OFF	480 /* offset from the beginning */
-	
+
 } _FAT32_BFSINFO;
 
 /* fat entry structure */
@@ -774,7 +774,7 @@ typedef struct
 	ushort	date;		/* last modification date */
 	ushort	stcl;		/* start cluster */
 	ulong	flen;		/* file len */
-	
+
 } _DIR; /* 32 byte */
 
 /* vfat entry structure */
@@ -788,7 +788,7 @@ typedef struct
 	uchar	name5_10[12];	/* 6 unicode character */
 	ushort	stcl;		/* start cluster (must be 0) */
 	uchar	name11_12[4];	/* 2 unicode character */
-	
+
 } LDIR; /* 32 byte */
 
 
@@ -837,7 +837,7 @@ struct cookie
 	char	*lastlookup;	/* last lookup fail cache, must be kmalloc'ed */
 	long	nextslot;	/* next free slot in directories */
 	ushort	slots;		/* number of VFAT slots */
-	ushort	unlinked;	/* entry is unlinked */	
+	ushort	unlinked;	/* entry is unlinked */
 };
 
 /* internal eXtended bpb */
@@ -846,40 +846,40 @@ typedef struct
 	ulong	recsiz;		/* bytes per sector */
 	ulong	clsiz;		/* sectors per cluster */
 	ulong	clsizb;		/* bytes per cluster */
-	
+
 	ulong	numcl;		/* total number of clusters */
-	
+
 	ulong	rdrec;		/* root directory rec or stcl if FAT32 */
 	ulong	rdlen;		/* root directory size or 0 if FAT32 */
 	ulong	datrec;		/* first data sector */
-	
+
 	ulong	fsiz;		/* size of a FAT */
 	ulong	fatrec;		/* startsector of !*first*! FAT */
 	ushort	fats;		/* number of additional FATs (0 = 1 FAT, 1 = 2 FATs, ...) */
 	ushort	ftype;		/* type of FAT */
-	
+
 /* ftype: */
 # define FAT_INVALID	0xffff
 # define FAT_TYPE_12	2
 # define FAT_TYPE_16	0
 # define FAT_TYPE_32	1
-	
+
 	/* special for FAT32 */
 	ushort	fflag;		/* FAT flag, contain mirror or active FAT status */
 	ushort	info;		/* FAT32 info sector, 0 == doesn't exist */
 	ushort	version;	/* major/minor version */
 	ushort	res;		/* reserved */
-	
+
 } _x_BPB;
 
 /* device info structure */
 typedef struct
 {
 	DI	*di;		/* device identifikator for this drive */
-	
+
 	ushort	rdonly;		/* rdonly flag */
 	ushort	clean;		/* set if cleanly mounted */
-	
+
 	ulong	recsiz;		/* bytes per sector */
 	ulong	clsiz;		/* sectors per cluster */
 	ulong	clsizb;		/* bytes per cluster */
@@ -894,24 +894,24 @@ typedef struct
 	ulong	numcl;		/* total number of clusters */
 	ulong	maxcl;		/* highest valid clnumber */
 	ulong	entrys;		/* number of dir entrys in a cluster */
-	
+
 	long	(*getcl)(long, const ushort, ulong);
 	long	(*fixcl)(long, const ushort, long);
 	long	(*newcl)(long, const ushort);
 	long	(*ffree)(      const ushort);
-	
+
 	COOKIE	root;		/* the root COOKIE for this drive */
 	ushort	ftype;		/* the type of the fat */
 	ushort	fat2on;		/* is there an active second FAT? */
 	long	lastcl;		/* the last allocated cluster */
 	long	freecl;		/* free cluster counter, -1 if unknown */
-	
+
 	/* FAT32 extensions */
 	ushort	fmirroring;	/* status of fat mirroring (flag) */
 	ushort	current_fat;	/* active fat if fat mirroring is disabled */
 	UNIT	*info_unit;	/* unit descriptor for the info sector */
 _FAT32_BFSINFO	*info;		/* info sector pointer */
-	
+
 } DEVINFO;
 
 /* extended open directory descriptor */
@@ -926,7 +926,7 @@ typedef struct
 	long	real_index;	/* index there normal & vfat point */
 	UNIT	*u;		/* the locked UNIT */
 	_DIR	*info;		/* points to the current _DIR */
-	
+
 } oDIR;
 
 /* extended open file descriptor */
@@ -936,7 +936,7 @@ typedef struct
 	long	current;	/* current cluster */
 	long	cl;		/* number of the current cluster */
 	long	error;		/* holds the last error */
-	
+
 } FILE;
 
 
@@ -1048,13 +1048,13 @@ static long	__FIO		(FILEPTR *f, char *buf, long bytes, ushort mode);
 
 # ifndef FS_DEBUG
 
-#  define FAT_ASSERT(x)		
+#  define FAT_ASSERT(x)
 #  define FAT_FORCE(x)		{ FORCE x; }
 #  define FAT_ALERT(x)		{ ALERT x; }
-#  define FAT_DEBUG(x)		
-#  define FAT_DEBUG_PRINTDIR(x)	
-#  define FAT_DEBUG_COOKIE(x)	
-#  define FAT_DEBUG_HASH(x)	
+#  define FAT_DEBUG(x)
+#  define FAT_DEBUG_PRINTDIR(x)
+#  define FAT_DEBUG_COOKIE(x)
+#  define FAT_DEBUG_HASH(x)
 
 #  define FAT_DEBUG_ON
 #  define FAT_DEBUG_OFF
@@ -1109,21 +1109,21 @@ static struct
 {
 	DEVINFO	*info;		/* device information */
 	ushort	valid;		/* validation flag */
-	
+
 /* valid: */
 # define INVALID		0
 # define VALID			1
-	
+
 	ushort	__vfat;		/* VFAT configuration */
 	ushort	__slnk;		/* symbolic link configuration */
-	
+
 	ushort	__new_mode;	/* newname mode configuration */
 const	char *	__table;	/* current character table */
-	
+
 	ushort	__uid;		/* root permissions */
 	ushort	__gid;
 	ushort	__mode;
-	
+
 # ifdef FATFS_TESTING
 	ushort	__test;		/* test partitions */
 # else
@@ -1133,7 +1133,7 @@ const	char *	__table;	/* current character table */
 	ulong	__c_hit;	/* cookie cache hits */
 	ulong	__c_miss;	/* cookie cache miss */
 # endif
-	
+
 } devinfo[NUM_DRIVES];
 
 /*
@@ -1235,7 +1235,7 @@ bio_fat_getunit (const ushort dev, ulong sector, ulong blocksize)
 # ifdef FATFS_ACESS_CHECK_FAT
 	if ((sector >= FATSTART (dev)) && (sector <= FATEND (dev)))
 		return bio.getunit (DI (dev), sector, blocksize);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_fat_getunit: out of range (%ld [%ld,%ld]), aborted",
 		    'A'+dev, sector, FATSTART (dev), FATEND (dev)));
 	return NULL;
@@ -1250,7 +1250,7 @@ bio_fat_read (const ushort dev, ulong sector, ulong blocksize)
 # ifdef FATFS_ACESS_CHECK_FAT
 	if ((sector >= FATSTART (dev)) && (sector <= FATEND (dev)))
 		return bio.read (DI (dev), sector, blocksize);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_fat_read: out of range (%ld [%ld,%ld]), aborted",
 		    'A'+dev, sector, FATSTART (dev), FATEND (dev)));
 	return NULL;
@@ -1265,7 +1265,7 @@ bio_fat_l_read (const ushort dev, ulong sector, ulong blocks, ulong blocksize, v
 # ifdef FATFS_ACESS_CHECK_FAT
 	if ((sector >= FATSTART (dev)) && (sector + blocks - 1 <= FATEND (dev)))
 		return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_fat_l_read: out of range (%ld+%ld [%ld,%ld]), aborted",
 		    'A'+dev, sector, blocks, FATSTART (dev), FATEND (dev)));
 	return EREAD;
@@ -1279,11 +1279,11 @@ INLINE UNIT *
 bio_root_read (const ushort dev, ulong sector)
 {
 	register const ulong blocksize = SECSIZE (dev);
-	
+
 # ifdef FATFS_ACESS_CHECK_DATA
 	if (sector > FATEND (dev) && sector < CLFIRST (dev))
 		return bio.read (DI (dev), sector, blocksize);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_root_read: out of range (%ld [%ld,%ld]), aborted",
 		    'A'+dev, sector, FATEND (dev), CLFIRST (dev)));
 	return NULL;
@@ -1298,12 +1298,12 @@ bio_data_getunit (const ushort dev, long cluster)
 {
 	register const ulong sector = C2S (cluster, dev);
 	register const ulong blocksize = CLUSTSIZE (dev);
-	
+
 # ifdef FATFS_ACESS_CHECK_DATA
 	if (cluster >= MINCL (dev) && cluster <= MAXCL (dev)
 	    && sector >= CLFIRST (dev))
 		return bio.getunit (DI (dev), sector, blocksize);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_data_getunit: out of range (%ld [%ld] %ld [%ld]), aborted",
 		    'A'+dev, cluster, MAXCL (dev), sector, CLFIRST (dev)));
 	return NULL;
@@ -1317,12 +1317,12 @@ bio_data_read (const ushort dev, long cluster)
 {
 	register const ulong sector = C2S (cluster, dev);
 	register const ulong blocksize = CLUSTSIZE (dev);
-	
+
 # ifdef FATFS_ACESS_CHECK_DATA
 	if (cluster >= MINCL (dev) && cluster <= MAXCL (dev)
 	    && sector >= CLFIRST (dev))
 		return bio.read (DI (dev), sector, blocksize);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_data_read: out of range (%ld [%ld] %ld [%ld]), aborted",
 		    'A'+dev, cluster, MAXCL (dev), sector, CLFIRST (dev)));
 	return NULL;
@@ -1336,12 +1336,12 @@ bio_data_l_read (const ushort dev, long cluster, ulong blocks, void *buf)
 {
 	register const ulong sector = C2S (cluster, dev);
 	register const ulong blocksize = CLUSTSIZE (dev);
-	
+
 # ifdef FATFS_ACESS_CHECK_DATA
 	if (cluster >= MINCL (dev) && cluster+blocks <= MAXCL (dev)
 	    && sector >= CLFIRST (dev))
 		return bio.l_read (DI (dev), sector, blocks, blocksize, buf);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_data_l_read: out of range (%ld,%ld [%ld] %ld [%ld]), aborted",
 		    'A'+dev, cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
 	return EREAD;
@@ -1355,12 +1355,12 @@ bio_data_l_write (const ushort dev, long cluster, ulong blocks, void *buf)
 {
 	register const ulong sector = C2S (cluster, dev);
 	register const ulong blocksize = CLUSTSIZE (dev);
-	
+
 # ifdef FATFS_ACESS_CHECK_DATA
 	if (cluster >= MINCL (dev) && cluster+blocks <= MAXCL (dev)
 	    && sector >= CLFIRST (dev))
 		return bio.l_write (DI (dev), sector, blocks, blocksize, buf);
-	
+
 	FAT_ALERT (("FATFS [%c]: bio_data_l_write: out of range (%ld,%ld [%ld] %ld [%ld]), aborted",
 		    'A'+dev, cluster, blocks, MAXCL (dev), sector, CLFIRST (dev)));
 	return EWRITE;
@@ -1402,15 +1402,15 @@ INLINE long
 DFREE (const fcookie *dir, ulong *buf)
 {
 	const ushort dev = dir->dev;
-	
+
 	if (FREECL (dev) < 0)
 		FREECL (dev) = (*(BPB (dev)->ffree))(dev);
-	
+
 	*buf++ = FREECL (dev);
 	*buf++ = CLUSTER (dev);
 	*buf++ = SECSIZE (dev);
 	*buf   = CLSIZE (dev);
-	
+
 	return E_OK;
 }
 
@@ -1424,7 +1424,7 @@ fullname (const COOKIE *c, const char *name)
 {
 	register long len = strlen (c->name);
 	register char *full;
-	
+
 	full = kmalloc (len + strlen (name) + 2);
 	if (full)
 	{
@@ -1436,7 +1436,7 @@ fullname (const COOKIE *c, const char *name)
 	{
 		FAT_ALERT (("FATFS: kmalloc failed on: fullname (%s, %s)", c->name, name));
 	}
-	
+
 	return full;
 }
 
@@ -1446,7 +1446,7 @@ INDEX (const COOKIE *c)
 	return
 		c->stcl ?	c->stcl
 			:	c->dir + (c->offset << 16);
-	
+
 	/* "x << 16" equivalent to "x * 32 * 2048" */
 }
 
@@ -1487,15 +1487,15 @@ INLINE ulong
 c_hash_hash (register const char *s)
 {
 	register ulong hash = 0;
-	
+
 	while (*s)
 	{
 		hash = ((hash << 5) - hash) + TOUPPER ((int)*s & 0xff);
 		s++;
 	}
-	
+
 	hash ^= (hash >> COOKIE_HASHBITS) ^ (hash >> (COOKIE_HASHBITS << 1));
-	
+
 	return hash & COOKIE_HASHMASK;
 }
 # else
@@ -1532,20 +1532,20 @@ static ushort crcTable[] = /* 16 12 5 0 */
 	0xe70e, 0xf687, 0xc41c, 0xd595, 0xa12a, 0xb0a3, 0x8238, 0x93b1,
 	0x6b46, 0x7acf, 0x4854, 0x59dd, 0x2d62, 0x3ceb, 0x0e70, 0x1ff9,
 	0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330,
-	0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78 
+	0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78
 };
 
 INLINE ulong
 c_hash_hash (register const char *s)
 {
 	register ulong result = 0;
-	
+
 	while (*s)
 	{
 		result = (crcTable[(((ulong) TOUPPER ((int)*s & 0xff)) ^ result) & 0xff]) ^ (result >> 8);
 		s++;
 	}
-	
+
 	return result & COOKIE_HASHMASK;
 }
 # endif
@@ -1555,15 +1555,15 @@ c_hash_lookup (register const char *s, register ushort dev)
 {
 	register const ulong hashval = c_hash_hash (s);
 	register COOKIE *c;
-	
+
 	FAT_DEBUG (("c_hash_lookup: s = %s, c_hash (s) = %li", s, hashval));
-	
+
 	for (c = ctable[hashval]; c != NULL; c = c->next)
 	{
 		if ((dev == c->dev) && (stricmp (c->name, s) == 0))
 		{
 			FAT_DEBUG (("c_hash_lookup: match s = %s, c->name = %s", s, c->name));
-			
+
 # ifdef LRU_COOKIE_CACHE
 			c_stat_update (c);
 # endif
@@ -1571,7 +1571,7 @@ c_hash_lookup (register const char *s, register ushort dev)
 			return c;
 		}
 	}
-	
+
 	COOKIE_CACHE_MISS (dev);
 	return NULL;
 }
@@ -1580,12 +1580,12 @@ INLINE void
 c_hash_install (register COOKIE *c)
 {
 	register const ulong hashval = c_hash_hash (c->name);
-	
+
 	FAT_DEBUG (("c_hash_lookup: c->name = %s, c_hash (c->name) = %li", c->name, c_hash_hash (c->name)));
-	
+
 	c->next = ctable[hashval];
 	ctable[hashval] = c;
-	
+
 # ifdef LRU_COOKIE_CACHE
 	c_stat_update (c);
 # endif
@@ -1596,7 +1596,7 @@ c_hash_remove  (register COOKIE *c)
 {
 	register const ulong hashval = c_hash_hash (c->name);
 	register COOKIE **temp = & ctable[hashval];
-	
+
 	while (*temp)
 	{
 		if (*temp == c)
@@ -1615,7 +1615,7 @@ c_get_cookie (register char *s)
 	register COOKIE *u = NULL;
 	register ulong min = 4294967295UL;
 	register long i;
-	
+
 	for (i = 0; i < COOKIE_CACHE; i++)
 	{
 		register COOKIE *c = &(cookies[i]);
@@ -1629,16 +1629,16 @@ c_get_cookie (register char *s)
 			}
 		}
 	}
-	
+
 	if (u)
 	{
 		if (u->name)
 			c_del_cookie (u);
-		
+
 		u->name = s;
 		u->links = 1;
 		u->nextslot = 0;
-		
+
 		c_hash_install (u);
 	}
 	else
@@ -1646,7 +1646,7 @@ c_get_cookie (register char *s)
 		FAT_ALERT (("FATFS: c_get_cookie: no free COOKIE found for %s", s));
 		FAT_DEBUG_HASH (());
 	}
-	
+
 	return u;
 }
 # else
@@ -1655,7 +1655,7 @@ c_get_cookie (register char *s)
 {
 	static long count = 0;
 	register long i;
-	
+
 	for (i = 0; i < COOKIE_CACHE; i++)
 	{
 		count++; if (count == COOKIE_CACHE) count = 0;
@@ -1665,19 +1665,19 @@ c_get_cookie (register char *s)
 			{
 				if (c->name)
 					c_del_cookie (c);
-				
+
 				c->name = s;
 				c->links = 1;
-				
+
 				c_hash_install (c);
-				
+
 				return c;
 			}
 		}
 	}
-	
+
 	FAT_ALERT (("FATFS: c_get_cookie: no free COOKIE found for %s", s));
-	
+
 	FAT_DEBUG_HASH (());
 	return NULL;
 }
@@ -1687,18 +1687,18 @@ static void
 c_del_cookie (register COOKIE *c)
 {
 	FAT_ASSERT ((c->name));
-	
+
 	c_hash_remove (c);
-	
+
 	if (c->open)
 		FAT_ALERT (("FATFS [%c]: open FILEPTR detected in: c_del_cookie (%s)", c->name, c->dev));
-	
+
 	if (c->locks)
 		FAT_ALERT (("FATFS [%c]: open LOCKS detected in: c_del_cookie (%s)", c->name, c->dev));
-	
+
 	if (c->lastlookup)
 		kfree (c->lastlookup);
-	
+
 	kfree (c->name);
 	bzero (c, sizeof (*c));
 }
@@ -1754,7 +1754,7 @@ c_del_cookie (register COOKIE *c)
 
 
 /*
- * stlc (start cluster) access 
+ * stlc (start cluster) access
  */
 
 # define GET32_STCL(dir)	get32_stcl (dir)
@@ -1797,7 +1797,7 @@ PUT_STCL (_DIR *dir, ushort dev, long cl)
  * getcl??:
  * --------
  * get the contents of the fat entry 'cluster' [repeat n]
- * 
+ *
  * return: cluster number to be linked or
  *         negative error number:
  *          CLFREE    ... free
@@ -1805,21 +1805,21 @@ PUT_STCL (_DIR *dir, ushort dev, long cl)
  *          CLBAD     ... bad cluster
  *          CLILLEGAL ... illegal value
  *          EREAD     ... read fail
- * 
+ *
  * fixcl??:
  * --------
  * set the contents of the fat entry 'cluster'
  * to link to 'next';
  * next can be pos. value or CLFREE, CLLAST, CLBAD
- * 
+ *
  * newcl??:
  * ------------
  * allocate a new cluster
- * 
+ *
  * ffree??:
  * --------
  * fat free - return the number of free cluster
- * 
+ *
  */
 
 
@@ -1831,19 +1831,19 @@ static long
 getcl12 (long cluster, const ushort dev, ulong n)
 {
 	FAT_DEBUG (("getcl12: enter (cluster = %li, n = %li)", cluster, n));
-	
+
 	/* input validation */
 	if (!FAT_VALID12 (cluster, dev))
 	{
 		FAT_DEBUG (("getcl12: leave failure (cluster out of range)"));
 		return CLILLEGAL;
 	}
-	
+
 	{
 		register const ulong entrys = SECSIZE (dev) << 1; /* we read 3 sectors */
 		register ulong old_sector = 0; /* always invalid for FAT start */
 		UNIT *u = NULL;
-		
+
 		do {
 			register const ulong sector = FATSTART (dev) + FATSIZE (dev) + ((cluster / entrys) * 3);
 			register const ulong offset = ((cluster % entrys) * 12) / 8;
@@ -1851,20 +1851,20 @@ getcl12 (long cluster, const ushort dev, ulong n)
 			register long newcl;
 # endif
 			long prevcluster = cluster;
-			
+
 			if (sector != old_sector)
 			{
 				register long sectors;
-				
+
 				sectors = FATSIZE (dev) - (sector - (FATSTART (dev) + FATSIZE (dev)));
 				sectors = MIN (3, sectors);
-				
+
 				FAT_ASSERT ((sectors == 1 || sectors == 2 || sectors == 3));
 				FAT_ASSERT (((sector + sectors) >= (FATSTART (dev) + FATSIZE (dev))));
 				FAT_ASSERT (((sector + sectors) <= (FATSTART (dev) + 2 * FATSIZE (dev))));
-				
+
 				FAT_DEBUG (("getcl12: start = %li, sectors = %li", sector, sectors));
-				
+
 				old_sector = sector;
 				u = bio_fat_read (dev, sector, SECSIZE (dev) * sectors);
 				if (!u)
@@ -1873,13 +1873,13 @@ getcl12 (long cluster, const ushort dev, ulong n)
 					return EREAD;
 				}
 			}
-			
+
 # if 1
 			/* copy the entry */
 			newcl = WPEEK_INTEL (u->data + offset);
-			
+
 			FAT_DEBUG (("getcl12: cluster & 1 = %li, newcl = %li", cluster & 1, newcl));
-			
+
 			/* mask out the 12 bits */
 			if (cluster & 1)
 				cluster = newcl >> 4;
@@ -1888,14 +1888,14 @@ getcl12 (long cluster, const ushort dev, ulong n)
 # else
 			cluster = fat12_peek (u->data, offset);
 # endif
-			
+
 			FAT_DEBUG (("getcl12: cluster = %li", cluster));
-			
+
 			/* entry valid? */
 			if (!FAT_VALID12 (cluster, dev))
 			{
 				register long ret;
-				
+
 				FAT_FREE (cluster) ? (ret = CLFREE) :
 				FAT_LAST12 (cluster) ? (ret = CLLAST) :
 				FAT_BAD12  (cluster) ? (ret = CLBAD) :
@@ -1903,14 +1903,14 @@ getcl12 (long cluster, const ushort dev, ulong n)
 					ret = CLILLEGAL;
 					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
 				});
-				
+
 				FAT_DEBUG (("getcl12: leave failure (invalid entry, ret = %li)", ret));
 				return ret;
 			}
 		}
 		while (--n);
 	}
-	
+
 	FAT_DEBUG (("getcl12: leave ok (sector = %li, cluster = %li)", C2S (cluster, dev), cluster));
 	return cluster;
 }
@@ -1919,24 +1919,24 @@ static long
 getcl16 (long cluster, const ushort dev, ulong n)
 {
 	FAT_DEBUG (("getcl16: enter (cluster = %li, n = %li)", cluster, n));
-	
+
 	/* input validation */
 	if (!FAT_VALID16 (cluster, dev))
 	{
 		FAT_DEBUG (("getcl16: leave failure (cluster out of range)"));
 		return CLILLEGAL;
 	}
-	
+
 	{
 		register const ulong entrys = SECSIZE (dev) >> 1;
 		register ulong old_sector = 0; /* always invalid for FAT start */
 		UNIT *u = NULL;
-		
+
 		do {
 			register const ulong sector = FATSTART (dev) + FATSIZE (dev) + cluster / entrys;
 			register const ulong offset = cluster % entrys;
 			long prevcluster = cluster;
-			
+
 			if (sector != old_sector)
 			{
 				old_sector = sector;
@@ -1947,15 +1947,15 @@ getcl16 (long cluster, const ushort dev, ulong n)
 					return EREAD;
 				}
 			}
-			
+
 			/* copy the entry */
 			cluster = le2cpu16 (*(((ushort *) u->data) + offset));
-			
+
 			/* entry valid? */
 			if (!FAT_VALID16 (cluster, dev))
 			{
 				register long ret;
-				
+
 				FAT_FREE (cluster) ? (ret = CLFREE) :
 				FAT_LAST16 (cluster) ? (ret = CLLAST) :
 				FAT_BAD16  (cluster) ? (ret = CLBAD) :
@@ -1963,14 +1963,14 @@ getcl16 (long cluster, const ushort dev, ulong n)
 					ret = CLILLEGAL;
 					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
 				});
-				
+
 				FAT_DEBUG (("getcl16: leave failure (invalid entry, ret = %li)", ret));
 				return ret;
 			}
 		}
 		while (--n);
 	}
-	
+
 	FAT_DEBUG (("getcl16: leave ok (sector = %li, cluster = %li)", C2S (cluster, dev), cluster));
 	return cluster;
 }
@@ -1979,24 +1979,24 @@ static long
 getcl32 (long cluster, const ushort dev, ulong n)
 {
 	FAT_DEBUG (("getcl32: enter (cluster = %li, n = %li)", cluster, n));
-	
+
 	/* input validation */
 	if (!FAT_VALID32 (cluster, dev))
 	{
 		FAT_DEBUG (("getcl32: leave failure (cluster out of range)"));
 		return CLILLEGAL;
 	}
-	
+
 	{
 		register const ulong entrys = SECSIZE (dev) >> 2;
 		register ulong old_sector = 0; /* always invalid for FAT start */
 		UNIT *u = NULL;
-		
+
 		do {
 			register const ulong sector = FAT32prim (dev) + cluster / entrys;
 			register const ulong offset = cluster % entrys;
 			long prevcluster = cluster;
-			
+
 			if (sector != old_sector)
 			{
 				old_sector = sector;
@@ -2007,18 +2007,18 @@ getcl32 (long cluster, const ushort dev, ulong n)
 					return EREAD;
 				}
 			}
-			
+
 			/* copy the entry */
 			cluster = le2cpu32 (*(((ulong *) u->data) + offset));
-			
+
 			/* the highest 4 Bits are reserved, mask out */
 			cluster &= 0x0fffffffL;
-			
+
 			/* entry valid? */
 			if (!FAT_VALID32 (cluster, dev))
 			{
 				register long ret;
-				
+
 				FAT_FREE (cluster) ? (ret = CLFREE) :
 				FAT_LAST32 (cluster) ? (ret = CLLAST) :
 				FAT_BAD32  (cluster) ? (ret = CLBAD) :
@@ -2026,14 +2026,14 @@ getcl32 (long cluster, const ushort dev, ulong n)
 					ret = CLILLEGAL;
 					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
 				});
-				
+
 				FAT_DEBUG (("getcl32: leave failure (invalid entry, ret = %li)", ret));
 				return ret;
 			}
 		}
 		while (--n);
 	}
-	
+
 	FAT_DEBUG (("getcl32: leave ok (sector = %li, cluster = %li)", C2S (cluster, dev), cluster));
 	return cluster;
 }
@@ -2046,37 +2046,37 @@ static long
 fixcl12 (long cluster, const ushort dev, long next)
 {
 	FAT_DEBUG (("fixcl12: enter (cluster = %li, next = %li)", cluster, next));
-	
+
 	/* input validation */
 	if (!FAT_VALID12 (cluster, dev))
 	{
 		FAT_DEBUG (("fixcl12: leave failure (cluster out of range)"));
 		return CLILLEGAL;
 	}
-	
+
 	switch (next)
 	{
 		case CLLAST:	next = CLLAST12;	break;
 		case CLBAD:	next = CLBAD12;		break;
 	}
-	
+
 	{
 		register const ulong entrys = SECSIZE (dev) << 1; /* we read 3 sectors */
 		register const ulong sector = FATSTART (dev) + ((cluster / entrys) * 3);
 		register const ulong offset = ((cluster % entrys) * 12) / 8;
-		
+
 		register long sectors;
-		
+
 		UNIT *u;
-		
+
 		sectors = FATSIZE (dev) - (sector - FATSTART (dev));
 		sectors = MIN (3, sectors);
-		
+
 		FAT_ASSERT ((sectors == 1 || sectors == 2 || sectors == 3));
 		FAT_ASSERT (((sector + sectors) <= (FATSTART (dev) + FATSIZE (dev))));
-		
+
 		FAT_DEBUG (("fixcl12: (1) start = %li, sectors = %li", sector, sectors));
-		
+
 		/* update FAT#2 */
 		u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev) * sectors);
 		if (u)
@@ -2085,46 +2085,46 @@ fixcl12 (long cluster, const ushort dev, long next)
 # if 1
 			/* read the FAT entry */
 			newcl = WPEEK_INTEL (u->data + offset);
-			
+
 			FAT_DEBUG (("fixcl12: newcl = %li", newcl));
-			
+
 			/* mask in the 12 used bits */
 			if (cluster & 1)
 				newcl = (newcl & 0x000f) | (next << 4);
 			else
 				newcl = (newcl & 0xf000) | next;
-			
+
 			FAT_DEBUG (("fixcl12: newcl = %li", newcl));
-			
+
 			/* write the entry to the first FAT */
 			WPOKE_INTEL (u->data + offset, newcl);
 # else
 			newcl = fat12_poke (u->data, offset, next);
 # endif
-			
+
 			bio_MARK_MODIFIED ((&bio), u);
-			
+
 			if (FAT2ON (dev))
 			{
 				FAT_DEBUG (("fixcl12: (2) start = %li, sectors = %li", sector + FATSIZE (dev), sectors));
-				
+
 				/* update FAT#1 */
 				u = bio_fat_read (dev, sector, SECSIZE (dev) * sectors);
 				if (u)
 				{
 					/* write the entry to the second FAT */
 					WPOKE_INTEL (u->data + offset, newcl);
-					
+
 					bio_MARK_MODIFIED ((&bio), u);
 				}
 			}
-			
+
 			FAT_DEBUG (("fixcl12: leave ok (return E_OK)"));
 			return E_OK;
 		}
-		
+
 	}
-	
+
 	FAT_DEBUG (("fixcl12: leave failure (can't read the fat)"));
 	return EREAD;
 }
@@ -2133,36 +2133,36 @@ static long
 fixcl16 (long cluster, const ushort dev, long next)
 {
 	FAT_DEBUG (("fixcl16: enter (cluster = %li, next = %li)", cluster, next));
-	
+
 	/* input validation */
 	if (!FAT_VALID16 (cluster, dev))
 	{
 		FAT_DEBUG (("fixcl16: leave failure (cluster out of range)"));
 		return CLILLEGAL;
 	}
-	
+
 	switch (next)
 	{
 		case CLLAST:	next = CLLAST16;	break;
 		case CLBAD:	next = CLBAD16;		break;
 	}
-	
+
 	{
 		register const ulong entrys = SECSIZE (dev) >> 1;
 		register const ulong sector = FATSTART (dev) + cluster / entrys;
 		register const ulong offset = cluster % entrys;
-		
+
 		UNIT *u;
-		
+
 		/* update FAT#2 */
 		u = bio_fat_read (dev, sector + FATSIZE (dev), SECSIZE (dev));
 		if (u)
 		{
 			/* write the entry to the first FAT */
 			*(((ushort *) u->data) + offset) = cpu2le16 ((ushort) next);
-			
+
 			bio_MARK_MODIFIED ((&bio), u);
-			
+
 			if (FAT2ON (dev))
 			{
 				/* update FAT#1 */
@@ -2171,16 +2171,16 @@ fixcl16 (long cluster, const ushort dev, long next)
 				{
 					/* write the entry to the second FAT */
 					*(((ushort *) u->data) + offset) = cpu2le16 ((ushort) next);
-					
+
 					bio_MARK_MODIFIED ((&bio), u);
 				}
 			}
-			
+
 			FAT_DEBUG (("fixcl16: leave ok (return E_OK)"));
 			return E_OK;
 		}
 	}
-	
+
 	FAT_DEBUG (("fixcl16: leave failure (can't read the fat)"));
 	return EREAD;
 }
@@ -2189,38 +2189,38 @@ static long
 fixcl32 (long cluster, const ushort dev, long next)
 {
 	FAT_DEBUG (("fixcl32: enter (cluster = %li, next = %li)", cluster, next));
-	
+
 	/* input validation */
 	if (!FAT_VALID32 (cluster, dev))
 	{
 		FAT_DEBUG (("fixcl32: leave failure (cluster out of range)"));
 		return CLILLEGAL;
 	}
-	
+
 	switch (next)
 	{
 		case CLLAST:	next = CLLAST32;	break;
 		case CLBAD:	next = CLBAD32;		break;
 	}
-	
+
 	{
 		register const ulong entrys = SECSIZE (dev) >> 2;
 		register ulong sector = FAT32prim (dev) + cluster / entrys;
 		register const ulong offset = cluster % entrys;
-		
+
 		UNIT *u;
-		
+
 		u = bio_fat_read (dev, sector, SECSIZE (dev));
 		if (u)
 		{
 			/* mask in the highest 4 bit (reserved) */
 			next |= le2cpu32 (*(((ulong *) u->data) + offset)) & 0xf0000000L;
-			
+
 			/* write the entry to the first FAT */
 			*(((ulong *) u->data) + offset) = cpu2le32 ((ulong) next);
-			
+
 			bio_MARK_MODIFIED ((&bio), u);
-			
+
 			if (FAT32mirr (dev))
 			{
 				/* update all FATs,
@@ -2236,17 +2236,17 @@ fixcl32 (long cluster, const ushort dev, long next)
 					{
 						/* write the FAT entry */
 						*(((ulong *) u->data) + offset) = cpu2le32 ((ulong) next);
-						
+
 						bio_MARK_MODIFIED ((&bio), u);
 					}
 				}
 			}
-			
+
 			FAT_DEBUG (("fixcl32: leave ok (return E_OK)"));
 			return E_OK;
 		}
 	}
-	
+
 	FAT_DEBUG (("fixcl32: leave failure (can't read the fat)"));
 	return EREAD;
 }
@@ -2262,15 +2262,15 @@ newcl12 (register long cluster, register const ushort dev)
 	register const long min = MINCL (dev);
 	register const long max = MAXCL (dev);
 	register long i;
-	
+
 	FAT_DEBUG (("newcl12: enter cluster = %li, dev = %i", cluster, dev));
-	
+
 	if (cluster == 0)
 	{
 		cluster = LASTALLOC (dev);
 		FAT_DEBUG (("newcl12: use LASTALLOC = %li", cluster));
 	}
-	
+
 	/* search free cluster */
 	for (i = 2; i < max; i++)
 	{
@@ -2279,7 +2279,7 @@ newcl12 (register long cluster, register const ushort dev)
 		{
 			cluster = 2;
 		}
-		
+
 		if (getcl12 (cluster, dev, 1) != CLFREE)
 		{
 			cluster++;
@@ -2288,12 +2288,12 @@ newcl12 (register long cluster, register const ushort dev)
 		{
 			/* yes, found a free cluster */
 			LASTALLOC (dev) = cluster;
-			
+
 			FAT_DEBUG (("newcl12: leave ok, cluster = %li, dev = %i", cluster, dev));
 			return cluster;
 		}
 	}
-	
+
 	/* disk full */
 	return EACCES;
 }
@@ -2305,24 +2305,24 @@ newcl16 (register long cluster, register const ushort dev)
 	long todo = FATSIZE (dev) + 1;
 	long sector;
 	register long i;
-	
+
 	FAT_DEBUG (("newcl16: enter cluster = %li", cluster));
-	
+
 	if (cluster == 0)
 	{
 		cluster = LASTALLOC (dev);
 		FAT_DEBUG (("newcl16: use LASTALLOC = %li", cluster));
 	}
-	
+
 	sector = FATSTART (dev) + cluster / entrys;
 	i = cluster % entrys;
 	cluster -= i;
-	
+
 	FAT_DEBUG (("newcl16: i = %li, sector = %li", i, sector));
-	
+
 	do {
 		UNIT *u;
-		
+
 		u = bio_fat_read (dev, sector, SECSIZE (dev));
 		if (u)
 		{
@@ -2331,7 +2331,7 @@ newcl16 (register long cluster, register const ushort dev)
 			{
 				entrys = MAXCL (dev) - cluster;
 			}
-			
+
 			/* search a free cluster */
 			{
 				register ushort *value = (ushort *) u->data;
@@ -2341,14 +2341,14 @@ newcl16 (register long cluster, register const ushort dev)
 					{
 						cluster += i;
 						LASTALLOC (dev) = cluster;
-						
+
 						FAT_DEBUG (("newcl16: leave ok, cluster = %li, dev = %i", cluster, dev));
 						return cluster;
 					}
 					i++;
 				}
 			}
-			
+
 			cluster += entrys;
 			sector++;
 			i = 0;
@@ -2362,7 +2362,7 @@ newcl16 (register long cluster, register const ushort dev)
 		}
 	}
 	while (--todo);
-	
+
 	/* disk full */
 	return EACCES;
 }
@@ -2374,24 +2374,24 @@ newcl32 (register long cluster, register const ushort dev)
 	long todo = FATSIZE (dev) + 1;
 	long sector;
 	register long i;
-	
+
 	FAT_DEBUG (("newcl32: enter cluster = %li", cluster));
-	
+
 	if (cluster == 0)
 	{
 		cluster = LASTALLOC (dev);
 		FAT_DEBUG (("newcl32: use LASTALLOC = %li", cluster));
 	}
-	
+
 	sector = FAT32prim (dev) + cluster / entrys;
 	i = cluster % entrys;
 	cluster -= i;
-	
+
 	FAT_DEBUG (("newcl32: i = %li, sector = %li", i, sector));
-	
+
 	do {
 		UNIT *u;
-		
+
 		u = bio_fat_read (dev, sector, SECSIZE (dev));
 		if (u)
 		{
@@ -2400,7 +2400,7 @@ newcl32 (register long cluster, register const ushort dev)
 			{
 				entrys = MAXCL (dev) - cluster;
 			}
-			
+
 			/* search a free cluster */
 			{
 				register ulong *value = (ulong *) u->data;
@@ -2416,7 +2416,7 @@ newcl32 (register long cluster, register const ushort dev)
 					/* the highest 4 bits are reserved
 					 */
 					register long cl;
-					
+
 					cl = le2cpu32 (*(value + i));
 					cl &= 0x0fffffff;
 					if (!cl)
@@ -2424,15 +2424,15 @@ newcl32 (register long cluster, register const ushort dev)
 					{
 						cluster += i;
 						LASTALLOC (dev) = cluster;
-						
+
 						FAT_DEBUG (("newcl32: leave ok, cluster = %li, dev = %i", cluster, dev));
 						return cluster;
 					}
-					
+
 					i++;
 				}
 			}
-			
+
 			cluster += entrys;
 			sector++;
 			i = 0;
@@ -2446,7 +2446,7 @@ newcl32 (register long cluster, register const ushort dev)
 		}
 	}
 	while (--todo);
-	
+
 	/* disk full */
 	return EACCES;
 }
@@ -2477,7 +2477,7 @@ ffree12 (const ushort dev)
 	 */
 # error not implemented
 # endif
-	
+
 	FAT_DEBUG (("ffree12: leave count = %li", count));
 	return count;
 }
@@ -2505,10 +2505,10 @@ ffree16 (const ushort dev)
 		long sector = FATSTART (dev);		/* the final startsector to read */
 		long todo = FATSIZE (dev);		/* number of sectors to read */
 		long cluster = 0;
-		
+
 		do {
 			UNIT *u;
-			
+
 			u = bio_fat_read (dev, sector, SECSIZE (dev));
 			if (u)
 			{
@@ -2517,7 +2517,7 @@ ffree16 (const ushort dev)
 				{
 					entrys = MAXCL (dev) - cluster;
 				}
-				
+
 				/* count the free cluster */
 				{
 					register ushort *value = (ushort *) u->data;
@@ -2539,8 +2539,8 @@ ffree16 (const ushort dev)
 		}
 		while (--todo);
 	}
-# endif	
-	
+# endif
+
 	FAT_DEBUG (("ffree16: leave count = %li", count));
 	return count;
 }
@@ -2567,17 +2567,17 @@ ffree32 (const ushort dev)
 	{	long entrys = SECSIZE (dev) >> 2;	/* FAT entrys per sector */
 		long sector = FAT32prim (dev);		/* the final startsector to read */
 		long todo = FATSIZE (dev);		/* number of sectors to read */
-		
+
 # ifdef FAST_FFREE32
 		ulong *fat;
-		
+
 		fat = kmalloc (SECSIZE (dev) * todo);
 		if (fat)
 		{
 			if (bio_fat_l_read (dev, sector, todo, SECSIZE (dev), fat))
 			{
 				FAT_DEBUG (("fast ffree32: bio_fat_l_read (%i, %lu, %lu, %lu) fail", dev, sector, todo, SECSIZE (dev)));
-				
+
 				kfree (fat);
 				fat = NULL;
 			}
@@ -2586,14 +2586,14 @@ ffree32 (const ushort dev)
 		{
 			FAT_DEBUG (("fast ffree32: kmalloc (%ld) fail", SECSIZE (dev) * todo));
 		}
-		
+
 		if (fat)
 		{
 			register ulong *value = fat + 2;
 			register long i;
-			
+
 			FAT_DEBUG (("fast ffree32: work on fat [%ld bytes]", SECSIZE (dev) * todo));
-			
+
 			for (i = MAXCL (dev); i > 2; i--)
 			{
 # if 1
@@ -2607,24 +2607,24 @@ ffree32 (const ushort dev)
 				/* the highest 4 bits are reserved
 				 */
 				register long cl;
-				
+
 				cl = le2cpu32 (*value++);
 				cl &= 0x0fffffff;
 				if (!cl)
 					count++;
 # endif
 			}
-			
+
 			kfree (fat);
 		}
 		else
 # endif /* FAST_FFREE32 */
 		{
 			long cluster = 0;
-			
+
 			do {
 				UNIT *u;
-				
+
 				u = bio_fat_read (dev, sector, SECSIZE (dev));
 				if (u)
 				{
@@ -2633,7 +2633,7 @@ ffree32 (const ushort dev)
 					{
 						entrys = MAXCL (dev) - cluster;
 					}
-					
+
 					/* count the free cluster */
 					{
 						register ulong *value = (ulong *) u->data;
@@ -2656,7 +2656,7 @@ ffree32 (const ushort dev)
 							/* the highest 4 bits are reserved
 							 */
 							register long cl;
-							
+
 							cl = le2cpu32 (*value++);
 							cl &= 0x0fffffff;
 							if (!cl)
@@ -2671,8 +2671,8 @@ ffree32 (const ushort dev)
 			while (--todo);
 		}
 	}
-# endif	
-	
+# endif
+
 	FAT_DEBUG (("ffree32: leave count = %li", count));
 	return count;
 }
@@ -2683,12 +2683,12 @@ ffree32 (const ushort dev)
 /****************************************************************************/
 /* BEGIN FAT utility functions */
 
-/* 
+/*
  * nextcl:
  * -------
  * get the next cluster; at the end of the cluster chain is
  * a new cluster is allocated
- * 
+ *
  * del_chain:
  * ----------
  * delete the cluster chain started at cluster
@@ -2699,30 +2699,30 @@ nextcl (register long cluster, register const ushort dev)
 {
 	register long content =
 		(cluster == 0) ? CLLAST : GETCL (cluster, dev, 1);
-	
+
 	if (content == 0)
 	{
 		FAT_ALERT (("fatfs.c: nextcl: content = 0!"));
 	}
-	
+
 	if (content == CLLAST)
 	{
 		/* last, alloc a new cluster */
-		
+
 		content = NEWCL (cluster, dev);
 		if (content > 0)
 		{
 			register long r;
-			
+
 			r = FIXCL (content, dev, CLLAST);
 			if (r) return r;
-			
+
 			/* decrease free cluster counter */
 			if (!(FREECL (dev) < 0))
 			{
 				FREECL (dev)--;
 			}
-			
+
 			if (cluster)
 			{
 				r = FIXCL (cluster, dev, content);
@@ -2730,7 +2730,7 @@ nextcl (register long cluster, register const ushort dev)
 			}
 		}
 	}
-	
+
 	return content;
 }
 
@@ -2738,16 +2738,16 @@ static long
 del_chain (long cluster, const ushort dev)
 {
 	register long next;
-	
+
 	FAT_DEBUG (("del_chain: enter"));
-	
+
 	next = GETCL (cluster, dev, 1);
 	while (next > 0)
 	{
 		register long r;
-		
+
 		FAT_DEBUG (("del_chain: FIXCL cluster = %li, next = %li", cluster, next));
-		
+
 		r = FIXCL (cluster, dev, 0);
 		if (r == 0)
 		{
@@ -2756,7 +2756,7 @@ del_chain (long cluster, const ushort dev)
 			{
 				FREECL (dev)++;
 			}
-			
+
 			cluster = next;
 			next = GETCL (cluster, dev, 1);
 		}
@@ -2766,11 +2766,11 @@ del_chain (long cluster, const ushort dev)
 			return r;
 		}
 	}
-	
+
 	if (next == CLLAST)
 	{
 		register long r;
-		
+
 		r = FIXCL (cluster, dev, 0);
 		if (r == 0)
 		{
@@ -2780,11 +2780,11 @@ del_chain (long cluster, const ushort dev)
 				FREECL (dev)++;
 			}
 		}
-		
+
 		FAT_DEBUG (("del_chain: leave ok (return FIXCL = %li) cluster = %li", r, cluster));
 		return r;
 	}
-	
+
 	FAT_DEBUG (("del_chain: leave failure (not at end)"));
 	return EERROR;
 }
@@ -2799,7 +2799,7 @@ INLINE void
 zero_cl (register long cl, register const ushort dev)
 {
 	UNIT *u;
-	
+
 	u = bio_data_getunit (dev, cl);
 	if (u)
 	{
@@ -2816,13 +2816,13 @@ dir2str (register const char *src, register char *nm)
 	char *_nm = nm;
 # endif
 	register long i;
-	
+
 	i = 8;
 	while (i-- && *src != ' ')
 	{
 		*nm++ = *src++;
 	}
-	
+
 	src += i + 1;
 	if (*src > ' ')
 	{
@@ -2833,9 +2833,9 @@ dir2str (register const char *src, register char *nm)
 			*nm++ = *src++;
 		}
 	}
-	
+
 	*nm = '\0';
-	
+
 	FAT_DEBUG (("dir2str: ok (src = %s, nm = %s)", _src, _nm));
 }
 
@@ -2847,7 +2847,7 @@ str2dir (register const char *src, register char *nm)
 	char *_nm = nm;
 # endif
 	register long i;
-	
+
 	i = 8;
 	while (i--)
 	{
@@ -2856,7 +2856,7 @@ str2dir (register const char *src, register char *nm)
 		else
 			*nm++ = ' ';
 	}
-	
+
 	if (*src == '.') src++;
 	i = 3;
 	while (i--)
@@ -2866,7 +2866,7 @@ str2dir (register const char *src, register char *nm)
 		else
 			*nm++ = ' ';
 	}
-	
+
 	FAT_DEBUG (("str2dir: ok (src = %s, nm = %s)", _src, _nm));
 }
 
@@ -2883,25 +2883,25 @@ is_exec (register const char *src)
 		ulong value;
 		char buf[3];
 	} data;
-	
+
 	data.buf[0] = *src++;
 	data.buf[1] = *src++;
 	data.buf[2] = *src;
-	
+
 	i = data.value;
 # else
 	i = *(const ulong *) src;
 # endif
-	
+
 	/* force uppercase */
 	i &= 0xdfdfdf00;
-	
+
 	/* 0x544f5300L = TOS, 0x54545000L = TTP, 0x50524700L = PRG
 	 * 0x41505000L = APP, 0x47545000L = GTP, 0x41434300L = ACC
 	 */
-	
+
 	return (i == 0x544f5300L || i == 0x54545000L || i == 0x50524700L ||
-		i == 0x41505000L || i == 0x47545000L || i == 0x41434300L || 
+		i == 0x41505000L || i == 0x47545000L || i == 0x41434300L ||
 		i == 0x534c4200L);
 }
 
@@ -3064,31 +3064,31 @@ static int
 is_short (register const char *src, register const char *table)
 {
 	register long i = strlen (src);
-	
+
 	FAT_DEBUG (("is_short: enter (src = %s, len = %li)", src, i));
-	
+
 	/* verify length and leading point/space */
 	if (i > 12 || *src == '.' || *src == ' ')
 	{
 		FAT_DEBUG (("is_short: leave islong 0 (src = %s)", src));
 		return 0;
 	}
-	
+
 	/* verify base name */
 	i = 8;
 	while (i-- && *src && *src != '.')
 	{
 		register uchar index = *src;
-		
+
 		if (!table[index])
 		{
 			FAT_DEBUG (("is_short: leave islong 1 (src = %s)", src));
 			return 0;
 		}
-		
+
 		src++;
 	}
-	
+
 	/* verify extension */
 	if (*src == '.')
 	{
@@ -3097,24 +3097,24 @@ is_short (register const char *src, register const char *table)
 		while (i-- && *src && *src != '.')
 		{
 			register uchar index = *src;
-			
+
 			if (!table[index])
 			{
 				FAT_DEBUG (("is_short: leave islong 2 (src = %s)", src));
 				return 0;
 			}
-			
+
 			src++;
 		}
 	}
-	
+
 	/* anything left? */
 	if (*src)
 	{
 		FAT_DEBUG (("is_short: leave check 3 (src = %s)", src));
 		return 0;
 	}
-	
+
 	FAT_DEBUG (("is_short: leave ishort"));
 	return TOS_SEARCH; /* shortname */
 }
@@ -3124,43 +3124,43 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 {
 	/* truncate name to 8+3 and verify that the name
 	 * doesn't exist in this dir
-	 * 
+	 *
 	 * 1: select the first eight characters
-	 * 
+	 *
 	 * 2: if there is an extension, select its first three
 	 *    characters
-	 * 
+	 *
 	 * 3: convert letters to uppercase.
-	 * 
+	 *
 	 * 4: convert to underscore any character
 	 *    that are illegal
-	 * 
+	 *
 	 * 5: check for existing filename
 	 */
-	
+
 	register const char *table = DEFAULT_T (dir->dev);
 	register const uchar *s = src;
 	register char *d = dst;
 	register long i;
-	
+
 	/* step 1 - 4 */
-	
+
 	/* remove leading '.' and ' ' */
 	while (*s == '.' || *s == ' ')
 		s++;
-	
+
 	i = 8;
 	while (i-- && *s && *s != '.')
 	{
 		register int upper = TOUPPER((int)*s & 0xff);
-		
+
 		*d++ = table[upper] ? upper : '_';
 		s++;
 	}
-	
+
 	s = src + len; s--;
 	while (*s && *s != '.') s--;
-	
+
 	if (*s == '.')
 	{
 		*d++ = '.';
@@ -3168,21 +3168,21 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 		for (i = 1; i < 4 && *s; i++)
 		{
 			register int upper = TOUPPER((int)*s & 0xff);
-			
+
 			*d++ = table[upper] ? upper : '_';
 			s++;
 		}
 	}
-	
+
 	/* step 5 */
 	i = search_cookie (dir, NULL, dst, TOS_SEARCH);
-	
+
 	if (i == E_OK)
 	{
 		/* file exist */
 		return EACCES;
 	}
-	
+
 	/* file doesn't exist */
 	return E_OK;
 }
@@ -3194,54 +3194,54 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 * doesn't exist in this dir
 	 *
 	 * 1: select the first eight characters
-	 * 
+	 *
 	 * 2: if there is an extension, select its first three
 	 *    characters
-	 * 
+	 *
 	 * 3: convert letters to uppercase.
-	 * 
+	 *
 	 * 4: convert to underscore any character that are illegal
 	 *    under the FAT fs; valid are:
 	 *    character, digit and $ % ' - _ @ ~ ` ! ( ) # { }
-	 * 
+	 *
 	 * 5: if the resulting name already exists in the same dir,
 	 *    replace the last two characters with a tilde and a
 	 *    unique integer (Even if the resulting name is unique,
 	 *    replace the last two characters if the long filename
 	 *    has embedded spaces or illegal characters.)
 	 */
-	
+
 	char ext[4] = { '\0', '\0', '\0', '\0' };
 	register const uchar *s = src;
 	register char *d = dst;
 	register char *bak;
 	register long i;
-	
+
 	/* first zero the dst */
 	for (i = 13; i; i--)
 		*d++ = '\0';
-	
+
 	/* step 1 - 4 */
-	
+
 	/* remove leading '.' and ' ' */
 	while (*s == '.' || *s == ' ')
 		s++;
-	
+
 	d = dst;
 	i = 8;
 	while (i-- && *s && *s != '.')
 	{
 		register int upper = TOUPPER((int)*s & 0xff);
-		
+
 		*d++ = MSDOS_TABLE[upper] ? upper : '_';
 		s++;
 	}
-	
+
 	bak = d - 1;
-	
+
 	s = src + len; s--;
 	while (*s && *s != '.') s--;
-	
+
 	if (*s == '.')
 	{
 		ext[0] = *d++ = '.';
@@ -3249,12 +3249,12 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 		for (i = 1; i < 4 && *s; i++)
 		{
 			register int upper = TOUPPER((int)*s & 0xff);
-			
+
 			ext[i] = *d++ = MSDOS_TABLE[upper] ? upper : '_';
 			s++;
 		}
 	}
-	
+
 	/* step 5 */
 	i = bak - dst;
 	if (i < 7)
@@ -3289,7 +3289,7 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 		*d = '~';
 		i++;
 	}
-	
+
 	return E_OK;
 }
 
@@ -3298,27 +3298,27 @@ make_shortname (COOKIE *dir, const char *src, char *dst)
 {
 	register const long len = strlen (src);
 	const int sflag = is_short (src, DEFAULT_T (dir->dev));
-	
+
 # ifdef FS_DEBUG
 	const char *start = dst;
 # endif
-	
+
 	FAT_DEBUG (("make_shortname: enter (src = %s, len, = %li, sflag = %u)", src, len, sflag));
 	if (!sflag)
 	{
 		long r;
-		
+
 		if (VFAT (dir->dev))
 			r = vfat_trunc (dst, src, len, dir);
 		else
 			r = fat_trunc (dst, src, len, dir);
-		
+
 		if (r) return r;
 	}
 	else
 	{
 		/* copy the name (it's in correct 8+3 format) */
-		
+
 		register const uchar *s = src;
 		while (*s)
 		{
@@ -3327,17 +3327,17 @@ make_shortname (COOKIE *dir, const char *src, char *dst)
 		}
 		*dst ='\0';
 	}
-	
+
 	if (VFAT (dir->dev))
 	{
 		if (!sflag)
 		{
 			/* a really longname */
-			
+
 			FAT_DEBUG (("make_shortname: leave ok (VFAT) (s = %s, return = %li)", start, len));
 			return len;
 		}
-		
+
 		/* casesensitive check */
 		if (LCASE (dir->dev))
 		{
@@ -3376,12 +3376,12 @@ make_shortname (COOKIE *dir, const char *src, char *dst)
 					s++;
 			}
 		}
-		
+
 		/* name is in 8+3 and correct upper/lower case */
 	}
-	
+
 	/* else { truncated, copied and verifed before } */
-	
+
 	FAT_DEBUG (("make_shortname: leave ok (FAT) (s = %s, return = 0)", start));
 	return 0;
 }
@@ -3397,7 +3397,7 @@ __opendir (register oDIR *dir, register const long cluster, register const ushor
 	dir->index = -1;
 	dir->real_index = -1;
 	dir->u = NULL;
-	
+
 	FAT_DEBUG (("__opendir: ok (dev = %i, stcl = %li)", dir->dev, dir->stcl));
 	return E_OK;
 }
@@ -3407,7 +3407,7 @@ __closedir (register oDIR *dir)
 {
 	if (dir->u)
 		bio.unlock (dir->u);
-	
+
 	FAT_DEBUG (("__closedir: ok (dev = %i, stcl = %li)", dir->dev, dir->stcl));
 }
 
@@ -3415,7 +3415,7 @@ INLINE void
 __updatedir (register oDIR *dir)
 {
 	bio_MARK_MODIFIED (&(bio), dir->u);
-	
+
 	FAT_DEBUG (("__updatedir: ok (dev = %i, stcl = %li)", dir->dev, dir->stcl));
 }
 
@@ -3424,49 +3424,49 @@ __seekdir (register oDIR *dir, register long index, ushort mode)
 {
 	register const ushort dev = dir->dev;
 	register long offset;
-	
+
 	FAT_DEBUG (("__seekdir: enter (index = %li, dev = %i, stcl = %li)", index, dir->dev, dir->stcl));
-	
+
 	if (dir->stcl == 1)
 	{
 		/* ROOT DIR */
-		
+
 		if (index >= ROOTENTRYS (dev))
 		{
 			/* no more in root dir */
-			
+
 			FAT_DEBUG (("__seekdir: leave ok (no more in root, dev = %i)", dir->dev));
 			return ENMFILES;
 		}
 		else
 		{
 			/* calculate the offset */
-			
+
 			register const long entrys = ENTRYS (dev) / CLSIZE (dev);
 			register const long sector = index / entrys;
-			
+
 			offset = index % entrys;
-			
+
 			if (sector != dir->cl)
 			{
 				/* read the right unit */
-				
+
 				if (dir->u)
 					bio.unlock (dir->u);
-				
+
 				dir->current = sector;
 				dir->cl = sector;
 				dir->u = bio_root_read (dev, ROOT (dev) + sector);
-				
+
 				if (!dir->u)
 				{
 					dir->cl = -1;
 					dir->info = NULL;
-					
+
 					FAT_DEBUG (("__seekdir: leave failure (read cluster, sector = %li);", ROOT (dir->dev) + sector));
 					return EREAD;
 				}
-				
+
 				bio.lock (dir->u);
 			}
 		}
@@ -3474,16 +3474,16 @@ __seekdir (register oDIR *dir, register long index, ushort mode)
 	else
 	{
 		/* SUB DIR */
-		
+
 		register const long entrys = ENTRYS (dev);
 		register const long cluster = index / entrys;
-		
+
 		offset = index % entrys;
-		
+
 		if (cluster != dir->cl)
 		{
 			/* read the right cluster */
-			
+
 			register long current = GETCL (dir->stcl, dev, cluster);
 			if (current <= 0)
 			{
@@ -3507,30 +3507,30 @@ __seekdir (register oDIR *dir, register long index, ushort mode)
 				}
 				zero_cl (current, dev);
 			}
-			
+
 			if (dir->u)
 				bio.unlock (dir->u);
-			
+
 			dir->current = current;
 			dir->cl = cluster;
 			dir->u = bio_data_read (dev, current);
-			
+
 			if (!dir->u)
 			{
 				dir->cl = -1;
 				dir->info = NULL;
-				
+
 				FAT_DEBUG (("__seekdir: leave failure (read cluster, sector = %li);", dir->current));
 				return EREAD;
 			}
-			
+
 			bio.lock (dir->u);
 		}
 	}
-	
+
 	dir->index = dir->real_index = index;
 	dir->info = ((_DIR *) dir->u->data) + offset;
-	
+
 	FAT_DEBUG (("__seekdir: leave ok"));
 	return E_OK;
 }
@@ -3541,17 +3541,17 @@ __SEEKDIR (register oDIR *dir, register long index, ushort mode)
 	register const long entrys = (dir->stcl > 1) ?
 		ENTRYS (dir->dev) :
 		ENTRYS (dir->dev) / CLSIZE (dir->dev);
-	
+
 	FAT_DEBUG (("__SEEKDIR: set index = %li (dev = %i, stcl = %li)", index, dir->dev, dir->stcl));
-	
+
 	if ((index / entrys) == dir->cl)
 	{
 		dir->index = dir->real_index = index;
 		dir->info = ((_DIR *) dir->u->data) + (index % entrys);
-		
+
 		return E_OK;
 	}
-	
+
 	return __seekdir (dir, index, mode);
 }
 
@@ -3560,14 +3560,14 @@ ldir2unicode (long slot, uchar *name, LDIR *ldir)
 {
  	register long offset = slot * 13 * 2;
 	register long i;
-	
+
 	for (i = 0; i < 10; i++)
 		name[offset+i] = ldir->name0_4[i];
-	
+
 	offset += 10;
 	for (i = 0; i < 12; i++)
 		name[offset+i] = ldir->name5_10[i];
-	
+
 	offset += 12;
 	for (i = 0; i < 4; i++)
 		name[offset+i] = ldir->name11_12[i];
@@ -3577,29 +3577,29 @@ INLINE long
 __readvfat (register oDIR *dir, char *lname, long size)
 {
 	LDIR *ldir = (LDIR *) dir->info;
-	
+
 	FAT_DEBUG (("__readvfat: enter (real = %li, index = %li)", dir->real_index, dir->index));
-	
+
 	if (ldir->head & 0x40)
 	{
 		uchar name[VFAT_NAMEMAX * 2];
 		long r = 0;
 		long is_long = 1;
-		
+
 		long slots = ldir->head & ~0x40;
 		long slot = slots - 1;
 		uchar chksum = ldir->chksum;
-		
+
 		FAT_DEBUG (("__readvfat: slots = %li, chksum = %li", slots, (long) chksum));
-		
+
 		if (lname) ldir2unicode (slot, name, ldir);
-		
+
 		while (slot > 0)
 		{
 			r = __SEEKDIR (dir, dir->real_index + 1, READ);
 			if (r) return r;
 			ldir = (LDIR *) dir->info;
-			
+
 			if (ldir->head != slot)
 			{
 				FAT_DEBUG (("__readvfat: error (head != slot, head = %li)", (long) ldir->head));
@@ -3612,23 +3612,23 @@ __readvfat (register oDIR *dir, char *lname, long size)
 				is_long = 0;
 				break;
 			}
-			
+
 			slot--;
-			
+
 			if (lname) ldir2unicode (slot, name, ldir);
 		}
-		
+
 		if (is_long)
 		{
 			register uchar sum;
-			
+
 			r = __SEEKDIR (dir, dir->real_index + 1, READ);
 			if (r) return r;
-			
+
 			ldir = (LDIR *) dir->info;
-			
+
 			FAT_DEBUG_PRINTDIR ((dir->info, dir->dev));
-			
+
 			/* calculate the checksum */
 			{
 				register long i;
@@ -3638,14 +3638,14 @@ __readvfat (register oDIR *dir, char *lname, long size)
 						+ dir->info->name[i];
 				}
 			}
-			
+
 			if (sum == chksum)
 			{
 				if (lname)
 				{
 					/* copy Unicode string to Atari ST character string */
 					register long i = slots * 13;
-					
+
 					/* range check */
 					if (i >= size)
 					{
@@ -3665,7 +3665,7 @@ __readvfat (register oDIR *dir, char *lname, long size)
 							slots = EBADARG;
 						}
 					}
-					
+
 					/* copy */
 					lname[i] = '\0';
 					while (i--)
@@ -3673,10 +3673,10 @@ __readvfat (register oDIR *dir, char *lname, long size)
 						register const long j = i << 1;
 						lname[i] = UNI2ATARI ((name[j]), (name[j+1]));
 					}
-					
+
 					FAT_DEBUG (("__readvfat: (lname = %s)", lname));
 				}
-				
+
 				FAT_DEBUG (("__readvfat: leave ok"));
 				return slots;
 			}
@@ -3685,13 +3685,13 @@ __readvfat (register oDIR *dir, char *lname, long size)
 				FAT_DEBUG (("__readvfat: error (bad chksum, sum = %li)", (long) sum));
 			}
 		}
-		
+
 		/* repositionate backward (for nextdir) */
 		r = __SEEKDIR (dir, dir->real_index - 1, READ);
-		
+
 		return r;
 	}
-	
+
 	FAT_DEBUG (("__readvfat: leave failure (not valid head)"));
 	return 0;
 }
@@ -3703,14 +3703,14 @@ __nextdir (register oDIR *dir, char *name, long size)
 	{
 		register long index = dir->real_index + 1;
 		register long r;
-		
+
 		r = __SEEKDIR (dir, index, READ);
 		if (r) return r;
-		
+
 		if (dir->info->name[0] == '\0')
 		{
 			/* never used */
-			
+
 			FAT_DEBUG (("__nextdir: leave failure (no more) index = %li", index));
 			return ENMFILES;
 		}
@@ -3718,34 +3718,34 @@ __nextdir (register oDIR *dir, char *name, long size)
 			|| (dir->info->name[0] == (char) 0x05))
 		{
 			/* a deleted entry */
-			
+
 			FAT_DEBUG (("__nextdir: (skip deleted) index = %li", index));
 			/* skip */
 		}
 		else if (dir->info->attr == FA_VFAT)
 		{
 			/* a vfat entry */
-			
+
 			r = __readvfat (dir, name, size);
 			if (r > 0)
 			{
 				dir->index = index;
 				return r;
 			}
-			
+
 			if (r == EBADARG)
 			{
 				FAT_DEBUG (("__nextdir: EBADARG (buffer to small)"));
 				return r;
 			}
-			
+
 			FAT_DEBUG (("__nextdir: (vfat entry, return = %li, index = %li, real = %li)", r, index, dir->real_index));
 			/* failure, skip */
 		}
 		else if ((dir->info->attr & ~FA_VALID) == 0)
 		{
 			/* a valid entry */
-			
+
 			if (name) dir2str (dir->info->name, name);
 			return E_OK;
 		}
@@ -3753,7 +3753,7 @@ __nextdir (register oDIR *dir, char *name, long size)
 		else if ((dir->info->attr & (FA_DIR | FA_LABEL)) == FA_LABEL)
 		{
 			/* the label or an invalid vfat entry */
-			
+
 			FAT_DEBUG (("__nextdir: (skip label) index = %li", index));
 			/* skip */
 		}
@@ -3761,12 +3761,12 @@ __nextdir (register oDIR *dir, char *name, long size)
 		else
 		{
 			/* an invalid entry */
-			
+
 			FAT_DEBUG (("__nextdir: (skip invalid) index = %li", index));
 			/* skip */
 		}
 	}
-	
+
 	FAT_DEBUG (("__nextdir: leave failure (unknown)"));
 	return ENMFILES;
 }
@@ -3777,24 +3777,24 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 {
 	oDIR odir;
 	long r;
-	
+
 	FAT_DEBUG (("search_cookie: enter (name = %s)", name));
-	
+
 	/* 1. search in COOKIE cache
 	 */
 	{
 		COOKIE *search;
 		char *temp;
-		
+
 		temp = fullname (dir, name);
 		if (!temp)
 		{
 			FAT_DEBUG (("search_cookie: leave failure, out of memory"));
 			return ENOMEM;
 		}
-		
+
 		FAT_DEBUG (("search_cookie: looking for: %s", temp));
-		
+
 		search = c_hash_lookup (temp, dir->dev); kfree (temp);
 		if (search)
 		{
@@ -3803,12 +3803,12 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 				*found = search;
 				search->links++;
 			}
-			
+
 			FAT_DEBUG (("search_cookie: leave ok, found in table"));
 			return E_OK;
 		}
 	}
-	
+
 	/* 2. check negative lookup cache
 	 */
 	if (dir->lastlookup)
@@ -3819,25 +3819,25 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 			return ENOENT;
 		}
 	}
-	
+
 	/* 3. search on disk
 	 */
 	if (mode == 0)
 		mode = is_short (name, VFAT (dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
-	
+
 	r = __opendir (&odir, dir->stcl, dir->dev);
 	if (r)
 	{
 		FAT_DEBUG (("search_cookie: __opendir fail (r = %li)", r));
 		return r;
 	}
-	
+
 	if (mode == TOS_SEARCH)
 	{
 		/* FAT search on FAT or VFAT */
-		
+
 		char fat_name[FAT_NAMEMAX];
-		
+
 		str2dir (name, fat_name);
 		while ((r = __nextdir (&odir, NULL, 0)) >= 0)
 		{
@@ -3847,17 +3847,17 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 				{
 					char *temp;
 					char buf[VFAT_NAMEMAX];
-					
+
 					if (r)
 					{
 						register long j;
-						
+
 						(void) __SEEKDIR (&odir, odir.index - 1, READ);
 						j = __nextdir (&odir, buf, VFAT_NAMEMAX);
 						if (r != j)
 						{
 							FAT_ALERT (("fatfs.c: filesystem inconsistent in search_cookie!"));
-							
+
 							r = ENOENT;
 							goto leave;
 						}
@@ -3866,16 +3866,16 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 					{
 						dir2str (odir.info->name, buf);
 					}
-					
+
 					temp = fullname (dir, buf);
 					if (temp == NULL)
 					{
 						FAT_DEBUG (("search_cookie: out of memory"));
-						
+
 						r = ENOMEM;
 						goto leave;
 					}
-					
+
 					if (r)
 					{
 						*found = c_hash_lookup (temp, dir->dev);
@@ -3883,25 +3883,25 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 						{
 							(*found)->links++;
 							kfree (temp);
-							
+
 							FAT_DEBUG (("search_cookie: found in table (FAT search, r = %li)", r));
-							
+
 							r = E_OK;
 							goto leave;
 						}
 					}
-					
+
 					*found = c_get_cookie (temp);
 					if (*found == NULL)
 					{
 						kfree (temp);
-						
+
 						FAT_DEBUG (("search_cookie: c_get_cookie fail!"));
-						
+
 						r = ENOMEM;
 						goto leave;
 					}
-					
+
 					(*found)->dev = dir->dev;
 					(*found)->rdev = dir->dev;
 					(*found)->dir = dir->stcl;
@@ -3911,9 +3911,9 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 					(*found)->info = *(odir.info);
 					(*found)->slots = r;
 				}
-				
+
 				FAT_DEBUG (("search_cookie: found (FAT search)"));
-				
+
 				r = E_OK;
 				goto leave;
 			}
@@ -3922,9 +3922,9 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 	else
 	{
 		/* VFAT search */
-		
+
 		char buf[VFAT_NAMEMAX];
-		
+
 		while ((r = __nextdir (&odir, buf, VFAT_NAMEMAX)) >= 0)
 		{
 			if (stricmp (buf, name) == 0) /* always not casesensitive, yes, right */
@@ -3932,27 +3932,27 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 				if (found)
 				{
 					char *temp;
-					
+
 					temp = fullname (dir, buf);
 					if (temp == NULL)
 					{
 						FAT_DEBUG (("search_cookie: out of memory"));
-						
+
 						r = ENOMEM;
 						goto leave;
 					}
-					
+
 					*found = c_get_cookie (temp);
 					if (*found == NULL)
 					{
 						kfree (temp);
-						
+
 						FAT_DEBUG (("search_cookie: c_get_cookie fail!"));
-						
+
 						r = ENOMEM;
 						goto leave;
 					}
-					
+
 					(*found)->dev = dir->dev;
 					(*found)->rdev = dir->dev;
 					(*found)->dir = dir->stcl;
@@ -3962,33 +3962,33 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 					(*found)->info = *(odir.info);
 					(*found)->slots = r;
 				}
-				
+
 				FAT_DEBUG (("search_cookie: found (VFAT search)"));
-				
+
 				r = E_OK;
 				goto leave;
 			}
 		}
 	}
-	
+
 	r = ENOENT;
-	
+
 	/* 4. update negative lookup cache
 	 */
 	{
 		if (dir->lastlookup)
 			kfree (dir->lastlookup);
-		
+
 		dir->lastlookup = kmalloc (strlen (name) + 1);
 		if (dir->lastlookup)
 		{
 			strcpy (dir->lastlookup, name);
 		}
 	}
-	
+
 leave:
 	__closedir (&odir);
-	
+
 	FAT_DEBUG (("search_cookie: leave %s (%li)", r ? "failure" : "ok", r));
 	return r;
 }
@@ -3998,43 +3998,43 @@ write_cookie (COOKIE *c)
 {
 	oDIR dir;
 	register long r;
-	
+
 	FAT_DEBUG (("write_cookie: enter (dir = %li, offset = %li, dev = %i)", c->dir, c->offset, c->dev));
-	
+
 	if (c->dir == 0)
 	{
 		/* ROOT */
-		
+
 		FAT_DEBUG (("write_cookie: leave failure (root)"));
 		return EACCES;
 	}
-	
+
 	if (c->unlinked)
 	{
 		/* entry unlinked but until now it's in use */
-		
+
 		FAT_DEBUG (("write_cookie: skip unlinked entry"));
 		return E_OK;
 	}
-	
+
 	/* open the dir */
 	r = __opendir (&dir, c->dir, c->dev);
-	
+
 	r = __seekdir (&dir, c->offset + c->slots, READ);
 	if (r < E_OK)
 	{
 		__closedir (&dir);
-		
+
 		FAT_DEBUG (("write_cookie: leave failure (__seekdir)"));
 		return r;
 	}
-	
+
 	/* copy the dirstruct */
 	*dir.info = c->info;
-	
+
 	__updatedir (&dir);
 	__closedir (&dir);
-	
+
 	FAT_DEBUG (("write_cookie: leave ok (return E_OK)"));
 	return E_OK;
 }
@@ -4044,16 +4044,16 @@ delete_cookie (COOKIE *c)
 {
 	if (c->dir == 0)
 		FAT_ALERT (("delete_cookie: leave failure (root)"));
-	
+
 	if (c->links > 1)
 		FAT_ALERT (("delete_cookie: leave failure (cookie in use)"));
-	
+
 	/* delete the cluster-chain */
 	if (c->stcl)
 		del_chain (c->stcl, c->dev);
-	
+
 	c_del_cookie (c);
-	
+
 	FAT_DEBUG (("delete_cookie: leave ok"));
 }
 
@@ -4061,7 +4061,7 @@ void
 rel_cookie (COOKIE *c)
 {
 	c->links--;
-	
+
 	if (!c->links)
 	{
 		if (c->unlinked)
@@ -4077,34 +4077,34 @@ unlink_cookie_i (COOKIE *c, int disc_only)
 {
 	oDIR dir;
 	register long r;
-	
+
 	FAT_DEBUG (("unlink_cookie: enter (dir = %li, offset = %i, dev = %i)", c->dir, c->offset, c->dev));
-	
+
 	if (c->dir == 0)
 	{
 		/* ROOT */
-		
+
 		FAT_DEBUG (("unlink_cookie: leave failure (root)"));
 		return EACCES;
 	}
-	
+
 	/* open the dir */
 	r = __opendir (&dir, c->dir, c->dev);
-	
+
 	/* seek to the right dir */
 	r = __seekdir (&dir, c->offset + c->slots, READ);
 	if (r < E_OK)
 	{
 		__closedir (&dir);
-		
+
 		FAT_DEBUG (("unlink_cookie: leave failure (__seekdir)"));
 		return r;
 	}
-	
+
 	/* invalidate the FAT entry */
 	dir.info->name[0] = (char) 0xe5;
 	__updatedir (&dir);
-	
+
 	if (c->slots)
 	{
 		/* invalidate the VFAT entrys */
@@ -4116,16 +4116,16 @@ unlink_cookie_i (COOKIE *c, int disc_only)
 			__updatedir (&dir);
 		}
 	}
-	
+
 	__closedir (&dir);
-	
+
 	/* remove from hash table */
 	c_hash_remove (c);
-	
+
 	if (!disc_only)
 		/* mark deleted */
 		c->unlinked = 1;
-	
+
 	FAT_DEBUG (("unlink_cookie: leave ok"));
 	return E_OK;
 }
@@ -4142,13 +4142,13 @@ copy_to_vfat (LDIR *ldir, register const char *name)
 	char unicode[26];
 	register long i;
 	register long slot = ldir->head;
-	
+
 	slot = (slot & 0x40) ? slot & ~0x40 : slot;
 	slot--;
 	name += slot * 13;
-	
+
 	FAT_DEBUG (("copy_to_vfat: enter (name = %s, ldir->head = %li)", name, slot));
-	
+
 	for (i = 0; *name && i < 25; i += 2)
 	{
 		ATARI2UNI (*name, unicode + i);
@@ -4162,14 +4162,14 @@ copy_to_vfat (LDIR *ldir, register const char *name)
 			for (; i < 26; i++)
 				unicode[i] = 0xff;
 	}
-	
+
 	for (i = 0; i < 10; i++)
 		ldir->name0_4[i] = unicode[i];
 	for (i = 0; i < 12; i++)
 		ldir->name5_10[i] = unicode[i+10];
 	for (i = 0; i < 4; i++)
 		ldir->name11_12[i] = unicode[i+22];
-	
+
 	FAT_DEBUG (("copy_to_vfat: leave ok"));
 }
 
@@ -4179,7 +4179,7 @@ update_nextslot (register long *nextslot, register long freeslot)
 {
 	if (*nextslot && *nextslot < freeslot)
 		return;
-	
+
 	*nextslot = freeslot;
 }
 # endif
@@ -4188,7 +4188,7 @@ INLINE long
 search_free (oDIR *dir, long *pos, long slots)
 {
 	long r;
-	
+
 	r = __seekdir (dir, *pos, WRITE);
 	while (r == 0)
 	{
@@ -4196,7 +4196,7 @@ search_free (oDIR *dir, long *pos, long slots)
 			|| (dir->info->name[0] == (char) 0x05))
 		{
 			/* a deleted entry */
-			
+
 			if (slots > 1)
 			{
 				/* we need more as one, check for more */
@@ -4232,12 +4232,12 @@ search_free (oDIR *dir, long *pos, long slots)
 			/* here are the end of the dir */
 			break;
 		}
-		
+
 		/* go to the next entry */
 		(*pos)++;
 		r = __SEEKDIR (dir, *pos, WRITE);
 	}
-	
+
 	return r;
 }
 
@@ -4253,14 +4253,14 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 	long vfat;
 	long slot;
 	long r;
-	
+
 	FAT_DEBUG (("make_cookie: enter (name = %s, stcl = %li, pos = %li)", name, dir->stcl, pos));
-	
+
 	/* validate the name and make a correkt 8+3 name
 	 * if VFAT is enabled and the name is a longname
 	 * 'vfat' holds the len of the longname
 	 */
-	
+
 	vfat = make_shortname (dir, name, shortname);
 	FAT_DEBUG (("make_cookie: (8+3 = %s, vfat = %li)", shortname, vfat));
 	if (vfat < 0)
@@ -4268,80 +4268,80 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 		/* invalid name (no vfat) */
 		return vfat;
 	}
-	
+
 	/* clear the negative lookup cache */
 	if (dir->lastlookup)
 	{
 		kfree (dir->lastlookup);
 		dir->lastlookup = NULL;
 	}
-	
+
 	if (vfat)
 	{
 		/* slots to be filled out */
 		vfat = (vfat / 13) + ((vfat % 13) ? 1 : 0);
 		FAT_DEBUG (("make_cookie: (slots = %li)", vfat));
 	}
-	
+
 	r = __opendir (&odir, dir->stcl, dir->dev);
 	if (r == E_OK)
 		r = search_free (&odir, &pos, vfat ? vfat + 1 : 1);
-	
+
 	/* create fullname, so it can't fail later if written to disc */
 	full = fullname (dir, name);
-	
+
 	if (rename)
 		/* backup cookie */
 		save = **new;
 	else
 		/* get new cookie */
 		*new = c_get_cookie (full);
-	
+
 	/* if anything goes wrong we leave here */
 	if (r || !full || !*new)
 	{
 		FAT_DEBUG (("make_cookie: leave failure (r = %li)", r));
-		
+
 		if (rename)
 			kfree (full);
 		else if (*new)
 			c_del_cookie (*new);
-		
+
 		/* close directory */
 		__closedir (&odir);
-		
+
 		return r;
 	}
-	
+
 	/* copy the short name to the entry */
 	str2dir (shortname, (*new)->info.name);
-	
+
 	if (vfat)
 	{
 		/* a VFAT entry */
-		
+
 		/* calculate the checksum */
 		register uchar chksum = 0;
 		{
 			register long i;
-			
+
 			for (chksum = i = 0; i < 11; i++)
 			{
 				chksum = (((chksum & 1) << 7) | ((chksum & 0xfe) >> 1))
 					+ (*new)->info.name[i];
 			}
 		}
-		
+
 		FAT_DEBUG (("make_cookie: chksum = %li, pos = %li", (ulong) chksum, pos));
-		
+
 		/* now we write the VFAT entrys */
 		slot = 0;
 		while (slot < vfat)
 		{
 			register LDIR *ldir = (LDIR *) odir.info;
-			
+
 			FAT_DEBUG (("make_cookie: writing VFAT, slot = %li", slot));
-			
+
 			/* fill out the slot */
 			ldir->head = vfat - slot; if (slot == 0) ldir->head |= 0x40;
 			ldir->attr = FA_VFAT;
@@ -4349,14 +4349,14 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 			ldir->stcl = 0;
 			ldir->chksum = chksum;
 			copy_to_vfat (ldir, name);
-			
+
 			__updatedir (&odir);
-			
+
 			r = __SEEKDIR (&odir, pos + slot + 1, WRITE);
 			if (r)
 			{
 				FAT_DEBUG (("make_cookie: leave failure (__seekdir = %li)", r));
-				
+
 				if (rename)
 				{
 					**new = save;
@@ -4365,53 +4365,53 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 				else
 					/* remove from cache */
 					c_del_cookie (*new);
-				
+
 				/* close directory */
 				__closedir (&odir);
-				
+
 				return r;
 			}
-			
+
 			slot++;
 		}
 	}
-	
+
 	if (rename)
 	{
 		/* rename mode */
-		
+
 		/* unlink name on disc only */
 		r = unlink_cookie_i (*new, 1);
 		if (r)
 		{
 			**new = save;
 			kfree (full);
-			
+
 			return r;
 		}
-		
+
 		/* clear negative lookup cache */
 		if ((*new)->lastlookup)
 		{
 			kfree ((*new)->lastlookup);
 			(*new)->lastlookup = NULL;
 		}
-		
+
 		/* and release old name */
 		kfree ((*new)->name);
-		
+
 		/* update cookie members */
 		(*new)->name = full;
 		(*new)->links++;
 		(*new)->nextslot = 0;
-		
+
 		/* and finally install new path in hash table */
 		c_hash_install (*new);
 	}
 	else
 	{
 		/* create mode */
-		
+
 		(*new)->info.attr = attr;
 		(*new)->info.lcase = 0;
 		(*new)->info.ctime_ms = 0;
@@ -4423,22 +4423,22 @@ make_cookie (COOKIE *dir, COOKIE **new, const char *name, int attr)
 		(*new)->info.date = (*new)->info.cdate;
 		(*new)->info.stcl = 0;
 		(*new)->info.flen = 0;
-		
+
 		(*new)->dev = dir->dev;
 		(*new)->rdev = dir->dev;
 		(*new)->stcl = 0;
 		(*new)->flen = 0;
 	}
-	
+
 	(*new)->dir = dir->stcl;
 	(*new)->offset = pos;
 	(*new)->slots = vfat;
-	
+
 	*(odir.info) = (*new)->info;
-	
+
 	__updatedir (&odir);
 	__closedir (&odir);
-	
+
 	FAT_DEBUG (("make_cookie: leave E_OK"));
 	return E_OK;
 }
@@ -4453,7 +4453,7 @@ void
 fatfs_init (void)
 {
 	long i;
-	
+
 	/* binary check */
 	if (sizeof (_DIR) != 32 || sizeof (LDIR) != 32)
 	{
@@ -4461,29 +4461,29 @@ fatfs_init (void)
 			"Internal error! "
 			"Compiler problem (sizeof (_DIR) != 32).");
 	}
-	
+
 	/* internal init */
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
 		/* zero devinfo */
 		BPB (i) = NULL;
 		BPBVALID (i) = INVALID;
-		
+
 		/* VFAT extension disabled by default */
 		VFAT (i) = DISABLE;
-		
+
 		/* symbolic link configuration default on */
 		SLNK (i) = ENABLE;
-		
+
 		/* new name mode configuration default to GEMDOS */
 		NAME_MODE (i) = GEMDOS;
 		DEFAULT_T (i) = GEMDOS_TABLE;
-		
+
 		/* default root permissions */
 		ROOT_UID (i) = 0;			/* user  0 */
 		ROOT_GID (i) = 0;			/* group 0 */
 		ROOT_MODE (i) = FATFS_DEFAULT_MODE;
-		
+
 # ifdef FATFS_TESTING
 		/* no test partition for default */
 		TEST_PART (i) = DISABLE;
@@ -4493,7 +4493,7 @@ fatfs_init (void)
 		C_MISS (i) = 0;
 # endif
 	}
-	
+
 	boot_print (MSG_BOOT);
 	boot_print (MSG_GREET);
 	boot_print ("\r\n");
@@ -4506,7 +4506,7 @@ fatfs_config (const ushort drv, const long config, const long mode)
 	{
 		return EBADARG;
 	}
-	
+
 	switch (config)
 	{
 		case FATFS_VFAT:
@@ -4515,9 +4515,9 @@ fatfs_config (const ushort drv, const long config, const long mode)
 			{
 				return VFAT (drv);
 			}
-			
+
 			VFAT (drv) = mode ? ENABLE : DISABLE;
-			
+
 			if (VFAT (drv))
 			{
 				NAME_MODE (drv) = MSDOS;
@@ -4528,7 +4528,7 @@ fatfs_config (const ushort drv, const long config, const long mode)
 				NAME_MODE (drv) = GEMDOS;
 				DEFAULT_T (drv) = GEMDOS_TABLE;
 			}
-			
+
 			return E_OK;
 		}
 		case FATFS_VCASE:
@@ -4537,16 +4537,16 @@ fatfs_config (const ushort drv, const long config, const long mode)
 			{
 				return LCASE (drv);
 			}
-			
+
 			LCASE (drv) = mode ? ENABLE : DISABLE;
-			
+
 			return E_OK;
 		}
 		case FATFS_SECURE:
 		{
 			long smode;
 			long i;
-			
+
 			switch (mode)
 			{
 				case 0:
@@ -4569,14 +4569,14 @@ fatfs_config (const ushort drv, const long config, const long mode)
 					return EBADARG;
 				}
 			}
-			
+
 			for (i = 0; i < NUM_DRIVES; i++)
 			{
 				ROOT_UID (i) = 0;
 				ROOT_GID (i) = 0;
 				ROOT_MODE (i) = smode;
 			}
-			
+
 			return E_OK;
 		}
 # ifdef FS_DEBUG
@@ -4584,13 +4584,13 @@ fatfs_config (const ushort drv, const long config, const long mode)
 		{
 			(void) bio.config (drv, BIO_DEBUGLOG, mode);
 			fatfs_debug_mode = mode;
-			
+
 			return E_OK;
 		}
 		case FATFS_DEBUG_T:
 		{
 			FAT_DEBUG_HASH (());
-			
+
 			return E_OK;
 		}
 # endif
@@ -4601,14 +4601,14 @@ fatfs_config (const ushort drv, const long config, const long mode)
 			{
 				return TEST_PART (drv);
 			}
-			
+
 			TEST_PART (drv) = mode ? ENABLE : DISABLE;
-			
+
 			return E_OK;
 		}
 # endif
 	}
-	
+
 	/* failure */
 	return ENOSYS;
 }
@@ -4629,9 +4629,9 @@ upd_fat32fats (register const ushort dev, long reference)
 		if (u)
 		{
 			long j;
-			
+
 			bio.lock (u);
-			
+
 			for (j = 0; j <= FAT2ON (dev); j++)
 			{
 				long start = FATSTART (dev) + j * FATSIZE (dev);
@@ -4645,7 +4645,7 @@ upd_fat32fats (register const ushort dev, long reference)
 					}
 				}
 			}
-			
+
 			bio.unlock (u);
 		}
 	}
@@ -4660,7 +4660,7 @@ upd_fat32boot (register const ushort dev)
 		_F32_BS *f32bs = (_F32_BS *) u->data;
 		ushort temp;
 		ushort i = 0;
-		
+
 		if (!FAT32mirr (dev))
 		{
 			temp = FAT32prim (dev);
@@ -4669,9 +4669,9 @@ upd_fat32boot (register const ushort dev)
 			i |= (temp & FAT32_ActiveFAT_Mask);
 			i |= FAT32_NoFAT_Mirror;
 		}
-		
+
 		f32bs->flags = cpu2le16 (i);
-		
+
 		bio_MARK_MODIFIED ((&bio), u);
 	}
 }
@@ -4683,9 +4683,9 @@ val_fat32info (register const ushort dev)
 	{
 		FREECL (dev) = le2cpu32 (FAT32info (dev)->free_clusters);
 		LASTALLOC (dev) = le2cpu32 (FAT32info (dev)->next_cluster);
-		
+
 		FAT_DEBUG (("val_fat32info [%c]: free_clusters = %li, next_cluster = %li", dev+'A', FREECL (dev), LASTALLOC (dev)));
-		
+
 		/* validation of FREECL */
 		if (FREECL (dev) >= CLUSTER (dev))
 		{
@@ -4694,7 +4694,7 @@ val_fat32info (register const ushort dev)
 			 */
 			FREECL (dev) = -1;
 		}
-		
+
 		/* validation of LASTALLOC */
 		if (LASTALLOC (dev) < FAT32_ROFF || LASTALLOC (dev) > MAXCL (dev))
 		{
@@ -4711,12 +4711,12 @@ inv_fat32info (register const ushort dev)
 {
 	if (RDONLY (dev))
 		return;
-	
+
 	if (FAT32info (dev))
 	{
 		FAT32info (dev)->free_clusters = cpu2le32 (-1L);
 		FAT32info (dev)->next_cluster = cpu2le32 (FAT32_ROFF);
-		
+
 		bio_MARK_MODIFIED ((&bio), FAT32infu (dev));
 	}
 }
@@ -4726,18 +4726,18 @@ upd_fat32info (register const ushort dev)
 {
 	if (RDONLY (dev))
 		return;
-	
+
 	if (FAT32info (dev))
 	{
 		register long i = cpu2le32 (FREECL (dev));
 		register long j = cpu2le32 (LASTALLOC (dev));
-		
+
 		if (i != FAT32info (dev)->free_clusters
 			|| j != FAT32info (dev)->next_cluster)
 		{
 			FAT32info (dev)->free_clusters = i;
 			FAT32info (dev)->next_cluster = j;
-			
+
 			bio_MARK_MODIFIED ((&bio), FAT32infu (dev));
 		}
 	}
@@ -4751,38 +4751,38 @@ INLINE int
 clean_flag16 (const ushort dev, ushort action)
 {
 	UNIT *u;
-	
+
 	/* update FAT#2 */
 	u = bio_fat_read (dev, FATSTART (dev) + FATSIZE (dev), SECSIZE (dev));
 	if (u)
 	{
 		const int offset = 1; /* FAT entry 1 */
 		ushort v;
-		
+
 		v = le2cpu16 (*(((ushort *) u->data) + offset));
-		
+
 		switch (action)
 		{
 			case CLEANFLAG_READ:
 				return (v & CLEANFLAG16);
-			
+
 			case CLEANFLAG_CLEAR:
 				v &= ~CLEANFLAG16;
 				break;
-			
+
 			case CLEANFLAG_SET:
 				v |= CLEANFLAG16;
 				break;
-			
+
 			default:
 				return 0;
 		}
-		
+
 		/* write the entry to the first FAT */
 		*(((ushort *) u->data) + offset) = cpu2le16 (v);
-		
+
 		bio_MARK_MODIFIED ((&bio), u);
-		
+
 		if (FAT2ON (dev))
 		{
 			/* update FAT#1 */
@@ -4791,12 +4791,12 @@ clean_flag16 (const ushort dev, ushort action)
 			{
 				/* write the entry to the second FAT */
 				*(((ushort *) u->data) + offset) = cpu2le16 (v);
-				
+
 				bio_MARK_MODIFIED ((&bio), u);
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -4805,37 +4805,37 @@ clean_flag32 (const ushort dev, ushort action)
 {
 	ulong sector = FAT32prim (dev);
 	UNIT *u;
-	
+
 	u = bio_fat_read (dev, sector, SECSIZE (dev));
 	if (u)
 	{
 		const int offset = 1; /* FAT entry 1 */
 		ulong v;
-		
+
 		v = le2cpu32 (*(((ulong *) u->data) + offset));
-				
+
 		switch (action)
 		{
 			case CLEANFLAG_READ:
 				return (v & CLEANFLAG32);
-			
+
 			case CLEANFLAG_CLEAR:
 				v &= ~CLEANFLAG32;
 				break;
-			
+
 			case CLEANFLAG_SET:
 				v |= CLEANFLAG32;
 				break;
-			
+
 			default:
 				return 0;
 		}
-		
+
 		/* write the entry to the first FAT */
 		*(((ulong *) u->data) + offset) = cpu2le32 (v);
-		
+
 		bio_MARK_MODIFIED ((&bio), u);
-		
+
 		if (FAT32mirr (dev))
 		{
 			/* update all FATs,
@@ -4843,7 +4843,7 @@ clean_flag32 (const ushort dev, ushort action)
 			 * in this case
 			 */
 			long i;
-			
+
 			for (i = FAT2ON (dev); i; i--)
 			{
 				sector += FATSIZE (dev);
@@ -4852,13 +4852,13 @@ clean_flag32 (const ushort dev, ushort action)
 				{
 					/* write the FAT entry */
 					*(((ulong *) u->data) + offset) = cpu2le32 (v);
-					
+
 					bio_MARK_MODIFIED ((&bio), u);
 				}
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -4867,16 +4867,16 @@ clean_flag (const ushort dev, ushort action)
 {
 	if (RDONLY (dev) && (action != CLEANFLAG_READ))
 		return 0;
-	
+
 	switch (FAT_TYPE (dev))
 	{
 		case FAT_TYPE_16:
 			return clean_flag16 (dev, action);
-		
+
 		case FAT_TYPE_32:
 			return clean_flag32 (dev, action);
 	}
-	
+
 	return 0;
 }
 
@@ -4895,20 +4895,20 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 {
 	/* ask every time -> dynamic reconfiguration */
 	long max = bio.config (0, BIO_MAX_BLOCK, 0);
-	
+
 	FAT_DEBUG (("val_bpb: enter (max = %li)", max));
-	
+
 	if (xbpb->clsizb > max)
 	{
 		FAT_ALERT (("FATFS [%c]: unitsize (%li) too small (clsizb = %li)!", 'A'+drv, max, xbpb->clsizb));
 		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return ENXIO;
 	}
-	
+
 	/*
 	 * other checks:
 	 */
-	
+
 	/* fat type */
 	if (xbpb->ftype != FAT_TYPE_12
 		&& xbpb->ftype != FAT_TYPE_16
@@ -4918,7 +4918,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return EMEDIUMTYPE;
 	}
-	
+
 	/* vital values */
 	if (xbpb->recsiz & (512 - 1)
 		|| xbpb->recsiz == 0
@@ -4928,7 +4928,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return EMEDIUMTYPE;
 	}
-	
+
 	/* root directory size */
 	if (xbpb->ftype == FAT_TYPE_32)
 	{
@@ -4941,7 +4941,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 			return EMEDIUMTYPE;
 		}
 	}
-	else 
+	else
 	{
 		if (xbpb->rdlen == 0)
 		{
@@ -4950,7 +4950,7 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 			return EMEDIUMTYPE;
 		}
 	}
-	
+
 	/* number of clusters */
 	if ((xbpb->ftype == FAT_TYPE_12 && xbpb->numcl >= 0x0000fefL)
 		|| (xbpb->ftype == FAT_TYPE_16 && xbpb->numcl >= 0x000ffefL)
@@ -4963,11 +4963,11 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 		FAT_ALERT (("FATFS [%c]: medium access denied", 'A'+drv));
 		return EMEDIUMTYPE;
 	}
-	
+
 	/* size of FAT */
 	{
 		ulong minfat = xbpb->numcl + 2;	/* size in cluster */
-		
+
 		switch (xbpb->ftype)
 		{
 			case FAT_TYPE_12:	minfat *= 12;	/* in bits */
@@ -4978,10 +4978,10 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 						break;
 		}
 		minfat >>= 3; /* in bytes */
-		
+
 		minfat += xbpb->recsiz - 1L;
 		minfat /= xbpb->recsiz;
-		
+
 		if (minfat > xbpb->fsiz)
 		{
 			FAT_ALERT (("FATFS [%c]: FAT too small (FAT size = %li, minfat = %li)", 'A'+drv, xbpb->fsiz, minfat));
@@ -4989,16 +4989,16 @@ val_bpb (_x_BPB *xbpb, ushort drv)
 			return EMEDIUMTYPE;
 		}
 	}
-	
+
 	/* special FAT32 checks */
 	if (xbpb->ftype == FAT_TYPE_32)
 	{
 		/* anyone has a good idea?
 		 */
 	}
-	
+
 	FAT_DEBUG (("val_bpb: leave ok"));
-	
+
 	/* device ok */
 	return E_OK;
 }
@@ -5009,13 +5009,13 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	_F_BS *fbs;
 	_F32_BS *f32bs;
 	_F_VI *fvi;
-	
+
 	UNIT *u;
 	long r;
-	
+
 	FAT_DEBUG (("get_bpb: enter (drv = %i)", di->drv));
-	
-	
+
+
 	/* read boot sector */
 	u = bio_boot_read (di);
 	if (!u)
@@ -5023,11 +5023,11 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: bio_boot_read fail, leave EBUSY"));
 		return EBUSY;
 	}
-	
-	
+
+
 	fbs = (void *) u->data;
 	f32bs = (void *) u->data;
-	
+
 	FAT_DEBUG (("get_bpb: fbs:"));
 	FAT_DEBUG (("get_bpb: sector_size = %u", WPEEK_INTEL (fbs->sector_size));
 	FAT_DEBUG (("get_bpb: cluster_size = %u", (ushort) fbs->cluster_size)));
@@ -5041,52 +5041,52 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	FAT_DEBUG (("get_bpb: heads = %lu", le2cpu16 (fbs->heads)));
 	FAT_DEBUG (("get_bpb: hidden = %lu", le2cpu32 (fbs->hidden)));
 	FAT_DEBUG (("get_bpb: media = %x", (ushort) (fbs->media)));
-	
+
 	FAT_DEBUG (("get_bpb: f32bs:"));
 	FAT_DEBUG (("get_bpb: fat32_length = %lu", le2cpu32 (f32bs->fat32_length)));
 	FAT_DEBUG (("get_bpb: flags = %x", le2cpu16 (f32bs->flags)));
 	FAT_DEBUG (("get_bpb: root_cluster = %lu", le2cpu32 (f32bs->root_cluster)));
 	FAT_DEBUG (("get_bpb: info_sector = %u", le2cpu16 (f32bs->info_sector)));
 	FAT_DEBUG (("get_bpb: backup_boot = %u", le2cpu16 (f32bs->backup_boot)));
-	
-	
+
+
 	xbpb->ftype = FAT_INVALID;
-	
+
 	/*
 	 * step 1: check for GEM/BGM partition
 	 */
-	
+
 	if ((di->id[0] == 'B' && di->id[1] == 'G' && di->id[2] == 'M')
 		|| (di->id[0] == 'G' && di->id[1] == 'E' && di->id[2] == 'M'))
 	{
 		FAT_DEBUG (("get_bpb: GEM/BGM detected"));
-		
+
 		xbpb->ftype = FAT_TYPE_16;
 		fvi = (void *) (u->data + sizeof (*fbs));
 	}
 	else
-	
+
 	/*
 	 * step 2: check for F32 partition
 	 */
-	
+
 	if (di->id[0] == 'F' && di->id[1] == '3' && di->id[2] == '2')
 	{
 		FAT_DEBUG (("get_bpb: F32 detected"));
-		
+
 		xbpb->ftype = FAT_TYPE_32;
 		fvi = (void *) (u->data + sizeof (*f32bs));
 	}
 	else
-	
+
 	/*
 	 * step 3: check for dos medium (supported signs: 0x04, 0x06, 0x0b, 0x0c, 0x0e)
 	 */
-	
+
 	if (di->id[0] == '\0' && di->id[1] == 'D')
-	{		
+	{
 		FAT_DEBUG (("get_bpb: DOS medium detected (%x)", (int) (di->id[2])));
-		
+
 		switch (di->id[2])
 		{
 			case 0x04:
@@ -5110,7 +5110,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 				return EMEDIUMTYPE;
 			}
 		}
-		
+
 		/* check media descriptor (must be 0xf8 on harddisks) */
 		if (fbs->media != 0xf8)
 		{
@@ -5118,42 +5118,42 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		}
 	}
 	else
-	
+
 	/*
 	 * step 4: check for NULL partition (A, B or other BIOS device)
 	 */
-	
+
 	if (di->id[0] == '\0' && di->id[1] == '\0' && di->id[2] == '\0')
 	{
 		FAT_DEBUG (("get_bpb: \\0\\0\\0 detected"));
-		
+
 		if (di->drv == 0 || di->drv == 1)
 		{
 			/* assume FAT12 disk medium through BIOS ??? */
 			xbpb->ftype = FAT_TYPE_12;
-			
+
 			FAT_DEBUG (("get_bpb: assume FAT12 (BIOS)"));
 		}
 		else
 		{
 			/* assume FAT16 TOS partition through BIOS */
 			xbpb->ftype = FAT_TYPE_16;
-			
+
 			FAT_DEBUG (("get_bpb: assume FAT16 (BIOS)"));
 		}
 	}
 	else
-	
+
 	/*
 	 * this can't be a FAT partition
 	 */
 		return EMEDIUMTYPE;
-	
-	
+
+
 	xbpb->recsiz = WPEEK_INTEL (fbs->sector_size);
 	xbpb->clsiz = fbs->cluster_size;
 	xbpb->clsizb = xbpb->recsiz * xbpb->clsiz;
-	
+
 # if 1
 	xbpb->rdlen = (WPEEK_INTEL (fbs->dir_entries) * 32L + xbpb->recsiz - 1) / xbpb->recsiz;
 # else
@@ -5167,33 +5167,33 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		xbpb->rdlen = 1;
 	}
 # endif
-	
+
 	xbpb->fatrec = le2cpu16 (fbs->reserved);
 	xbpb->fats = fbs->fats;
-	
+
 	switch (xbpb->ftype)
 	{
 		case FAT_TYPE_12:
 		case FAT_TYPE_16:
 		{
 			xbpb->fsiz = le2cpu16 (fbs->fat_length);
-			
+
 			xbpb->rdrec = xbpb->fatrec + xbpb->fsiz * xbpb->fats;
 			xbpb->datrec = xbpb->rdrec + xbpb->rdlen;
-			
+
 			break;
 		}
 		case FAT_TYPE_32:
 		{
 			xbpb->fsiz = le2cpu32 (f32bs->fat32_length);
-			
+
 			xbpb->rdrec = le2cpu32 (f32bs->root_cluster);
 			xbpb->datrec = xbpb->fatrec + xbpb->fsiz * xbpb->fats;
-			
+
 			break;
 		}
 	}
-	
+
 	if (WPEEK_INTEL (fbs->sectors))
 	{
 		xbpb->numcl = WPEEK_INTEL (fbs->sectors);
@@ -5202,33 +5202,33 @@ get_bpb (_x_BPB *xbpb, DI *di)
 	{
 		xbpb->numcl = le2cpu32 (fbs->total_sect);
 	}
-	
+
 	xbpb->numcl -= xbpb->datrec;
 	xbpb->numcl /= xbpb->clsiz;
-	
+
 	if (xbpb->ftype == FAT_TYPE_32)
 	{
 		xbpb->fflag = le2cpu16 (f32bs->flags);
 		xbpb->info = le2cpu16 (f32bs->info_sector);
 		xbpb->version = le2cpu16 (f32bs->version);
-		
+
 		if (xbpb->info >= le2cpu16 (fbs->reserved))
 		{
 			xbpb->info = 0;
 		}
 	}
-	
+
 	xbpb->fats--;
-	
+
 	/* validate device informations */
 	r = val_bpb (xbpb, di->drv);
-	
+
 	if (r == E_OK)
 	{
 		/* update logical sectorsize for block_IO wrapper */
 		bio.set_lshift (di, xbpb->recsiz);
 	}
-	
+
 	FAT_DEBUG (("get_bpb: val_bpb = %li", r));
 	return r;
 }
@@ -5237,53 +5237,53 @@ static DEVINFO *
 get_devinfo (const ushort drv, long *err)
 {
 	DI *di;
-	
+
 	_x_BPB xbpb;
 	_x_BPB *t = &xbpb;
-	
+
 	FAT_DEBUG (("get_devinfo: enter (drv = %i -> %c)", drv, 'A'+drv));
-	
+
 	if (BPBVALID (drv) == VALID)
 	{
 		*err = E_OK;
-		
+
 		FAT_DEBUG (("get_devinfo: leave ok (VALID)"));
 		return BPB (drv);
 	}
-	
+
 	di = bio.get_di (drv);
 	if (!di)
 	{
 		*err = EBUSY;
-		
+
 		FAT_DEBUG (("get_devinfo: leave (bio.get_di fail -> EBUSY)"));
 		return NULL;
 	}
-	
+
 	BPB (drv) = kmalloc (sizeof (*BPB (drv)));
 	if (!BPB (drv))
 	{
 		bio.free_di (di);
 		*err = ENOMEM;
-		
+
 		FAT_ALERT (("fatfs.c: kmalloc failed in: get_devinfo for BPB (%i)", drv));
 		return NULL;
 	}
-	
+
 	/* initialize the complete area with 0 */
 	bzero (BPB (drv), sizeof (*BPB (drv)));
-	
+
 	*err = get_bpb (t, di);
 	if (*err == E_OK)
 	{
 		DEVINFO *d = BPB (drv);
-		
-		
+
+
 		d->di		= di;
-		
+
 		d->rdonly	= BIO_WP_CHECK (di);
 		d->clean	= 0;
-		
+
 		d->recsiz	= t->recsiz;
 		d->clsiz	= t->clsiz;
 		d->clsizb	= t->clsizb;
@@ -5298,7 +5298,7 @@ get_devinfo (const ushort drv, long *err)
 		d->numcl	= t->numcl;
 		d->maxcl	= t->numcl + 2;
 		d->entrys	= t->clsizb >> 5; /* t->clsizb / 32 */;
-		
+
 		/* initialize root cookie
 		 * (all values are here NULL from previous zero)
 		 */
@@ -5308,54 +5308,54 @@ get_devinfo (const ushort drv, long *err)
 		d->root.info.attr = FA_DIR;
 		d->root.info.time = cpu2le16 (timestamp);
 		d->root.info.date = cpu2le16 (datestamp);
-		
+
 		d->freecl	= -1; /* unknown */
 		d->fat2on	= t->fats;
-		
+
 		switch (t->ftype)
 		{
 			case FAT_TYPE_12:
 			{
 				d->ftype	= FAT_TYPE_12;
-				
+
 				d->getcl	= getcl12;
 				d->fixcl	= fixcl12;
 				d->newcl	= newcl12;
 				d->ffree	= ffree12;
 				d->lastcl	= 2;
-				
+
 				break;
 			}
 			case FAT_TYPE_16:
 			{
 				d->ftype	= FAT_TYPE_16;
-				
+
 				d->getcl	= getcl16;
 				d->fixcl	= fixcl16;
 				d->newcl	= newcl16;
 				d->ffree	= ffree16;
 				d->lastcl	= 2;
-				
+
 				break;
 			}
 			case FAT_TYPE_32:
 			{
 				d->ftype	= FAT_TYPE_32;
-				
+
 				d->getcl	= getcl32;
 				d->fixcl	= fixcl32;
 				d->newcl	= newcl32;
 				d->ffree	= ffree32;
 				d->lastcl	= FAT32_ROFF;
-				
+
 				d->root.stcl	= t->rdrec;
 				PUT32_STCL (&(d->root.info), t->rdrec);
-				
+
 				/* FAT stuff
 				 */
 				d->fmirroring	= t->fflag & FAT32_NoFAT_Mirror;
 				d->current_fat	= t->fflag & FAT32_ActiveFAT_Mask;
-				
+
 				if (d->fmirroring)	/* disabled, setup up primary FAT */
 				{
 					if (d->current_fat <= t->fats)
@@ -5369,12 +5369,12 @@ get_devinfo (const ushort drv, long *err)
 				{
 					d->fmirroring = ENABLE;
 				}
-				
+
 				if (d->fmirroring)	/* enabled, primary FAT = first FAT */
 				{
 					d->current_fat = d->fstart;
 				}
-				
+
 				/* info sector stuff
 				 */
 				if (!t->info)
@@ -5394,13 +5394,13 @@ get_devinfo (const ushort drv, long *err)
 					else
 						d->info = NULL;
 				}
-				
+
 				val_fat32info (drv);
-				
+
 				break;
 			}
 		}
-		
+
 		FAT_DEBUG ((
 			"%c -> recsize = %ld x clsiz = %ld -> clsizb = %ld\r\n"
 			"rdstart = %ld, rdlen = %ld\r\n"
@@ -5411,23 +5411,23 @@ get_devinfo (const ushort drv, long *err)
 		));
 		FAT_DEBUG (("fstart = %ld, fend = %ld, flen = %ld", d->fstart, d->fend, d->flen));
 		FAT_DEBUG (("fat2on = %d, ftype = %d", d->fat2on, d->ftype));
-		
+
 		BPBVALID (drv) = VALID;
-		
+
 		CLEAN (drv) = clean_flag (drv, CLEANFLAG_READ);
 		if (CLEAN (drv))
 			clean_flag (drv, CLEANFLAG_CLEAR);
 		else
 			Debug ("FAT-FS [%c]: WARNING: mounting unchecked fs, running dosfsck is recommended", drv+'A');
-		
+
 		FAT_DEBUG (("get_devinfo: leave ok"));
 		return d;
 	}
-	
+
 	bio.free_di (di);
 	BPBVALID (drv) = INVALID;
 	kfree (BPB (drv)); BPB (drv) = NULL;
-	
+
 	FAT_DEBUG (("get_devinfo: leave (get_bpb fail, *err = %li)", *err));
 	return NULL;
 }
@@ -5442,51 +5442,51 @@ static long _cdecl
 fatfs_root (int drv, fcookie *fc)
 {
 	long r = ENXIO;
-	
+
 	FAT_DEBUG (("fatfs_root: enter"));
-	
+
 # ifdef FATFS_TESTING
 	if (TEST_PART (drv))
 # endif
 	{
 		DEVINFO *a;
-		
+
 		if (drv == 0 || drv == 1)
 		{
 			/* verify that only A or B is active */
-			
+
 			register long check = drv ? 0 : 1;
-			
+
 			if (BPBVALID (check))
 			{
 				// bio.sync_drv (DI (check));
-				
+
 				/* crash bug from ulrich? */
 				/* fatfs_dskchng (check, 1); */
 			}
 		}
-		
+
 		a = get_devinfo (drv, &r);
 		if (a)
 		{
 			FAT_ASSERT ((r == E_OK));
-			
+
 			/* nice, make a fcookie for the kernel */
-			
+
 			fc->fs = &fatfs_filesys;
 			fc->dev = drv;
 			fc->aux = 0;
 			fc->index = (long) RCOOKIE (drv); RCOOKIE (drv)->links++;
-			
+
 			FAT_DEBUG (("fatfs_root: drive %d active", drv));
 			return E_OK;
 		}
-		
+
 		FAT_DEBUG (("fatfs_root: get_devinfo fail"));
 	}
-	
+
 	fc->fs = NULL;
-	
+
 	FAT_DEBUG (("fatfs_root: return ENXIO (drive %c)", 'A'+drv));
 	return r;
 }
@@ -5495,54 +5495,54 @@ static long _cdecl
 fatfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	COOKIE *c = (COOKIE *) dir->index;
-	
+
 	FAT_DEBUG (("fatfs_lookup [%s]: enter (c->dir = %li, %s)", c->name, c->dir, name));
-	
+
 	/* 1 - itself */
 	if (!*name || (name[0] == '.' && name[1] == '\0'))
-	{	
+	{
 		c->links++;
 		*fc = *dir;
-		
+
 		FAT_DEBUG (("fatfs_lookup: leave ok, (name = \".\")"));
 		return E_OK;
 	}
-	
+
 	/* 2 - parent dir */
 	if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 	{
 		char *temp = NULL;
-		
+
 		if (c->dir == 0)
 		{
 			/* special case: no parent, ROOT itself */
-			
+
 			*fc = *dir;
-			
+
 			FAT_DEBUG (("fatfs_lookup: leave ok, EMOUNT, (name = \"..\")"));
 			return EMOUNT;
 		}
-		
+
 		if (c->dir == RCOOKIE (c->dev)->stcl)
 		{
 			/* special case: parent is ROOT DIR */
-			
+
 			fc->fs = &fatfs_filesys;
 			fc->dev = c->dev;
 			fc->aux = 0;
 			fc->index = (long) RCOOKIE (c->dev); RCOOKIE (c->dev)->links++;
-			
+
 			FAT_DEBUG (("fatfs_lookup: leave ok, ROOT DIR, (name = \"..\")"));
 			return E_OK;
 		}
-		
-		
+
+
 		/* normal case: parent is a SUB DIR */
-		
+
 		{	/* calculate parent path */
-			
+
 			register long i = strlen (c->name);
-			
+
 			i--;
 			while (i--)
 			{
@@ -5554,43 +5554,43 @@ fatfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 						FAT_DEBUG (("fatfs_lookup: leave failure (out of memory)"));
 						return ENOMEM;
 					}
-					
+
 					strncpy_f (temp, c->name, i + 1);
-					
+
 					break;
 				}
 			}
-			
+
 			FAT_ASSERT ((i > 0));
 		}
-		
+
 		{	/* 1. search in INODE cache */
-			
+
 			COOKIE *search;
-			
+
 			search = c_hash_lookup (temp, c->dev);
 			if (search)
 			{
 				kfree (temp);
-				
+
 				fc->fs = &fatfs_filesys;
 				fc->dev = c->dev;
 				fc->aux = 0;
 				fc->index = (long) search;
-				
+
 				search->links++;
-				
+
 				FAT_DEBUG (("fatfs_lookup: leave ok, found in table"));
 				return E_OK;
 			}
 		}
-		
+
 		{	/* 2. search on disk */
-			
+
 			oDIR odir;
 			long stcl = 0;
 			long r;
-			
+
 			r = __opendir (&odir, c->dir, c->dev);
 			if (r == E_OK)
 			{
@@ -5609,25 +5609,25 @@ fatfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 						r = ENOENT;
 					}
 				}
-				
+
 				__closedir (&odir);
 			}
-			
+
 			if (r == E_OK)
 			{
 				r = __opendir (&odir, stcl, c->dev);
 				if (r == E_OK)
 				{
 					char buf[VFAT_NAMEMAX];
-					
+
 					while ((r = __nextdir (&odir, buf, VFAT_NAMEMAX)) >= 0)
 					{
 						if (GET_STCL (odir.info, c->dev) == c->dir)
 						{
 							COOKIE *found;
-							
+
 							FAT_DEBUG (("fatfs_lookup: make COOKIE [%s] -> %s", temp, buf));
-							
+
 							found = c_get_cookie (temp);
 							if (!found)
 							{
@@ -5645,33 +5645,33 @@ fatfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 							found->flen = le2cpu32 (odir.info->flen);
 							found->info = *(odir.info);
 							found->slots = r;
-							
+
 							fc->fs = &fatfs_filesys;
 							fc->dev = c->dev;
 							fc->aux = 0;
 							fc->index = (long) found;
-							
+
 							r = E_OK;
 							break;
 						}
 					}
-					
+
 					__closedir (&odir);
 				}
 			}
-			
+
 			if (temp) kfree (temp);
-			
+
 			FAT_DEBUG (("fatfs_lookup: leave %li, SUB DIR, (name = \"..\")", r));
 			return r;
 		}
 	}
-	
+
 	/* 3 - normal name */
 	{
 		COOKIE *search;
 		register long r;
-		
+
 		r = search_cookie (c, &search, name, 0);
 		if (r == E_OK)
 		{
@@ -5680,7 +5680,7 @@ fatfs_lookup (fcookie *dir, const char *name, fcookie *fc)
 			fc->aux = 0;
 			fc->index = (long) search;
 		}
-		
+
 		FAT_DEBUG (("fatfs_lookup: leave (r = %li)", r));
 		return r;
 	}
@@ -5690,9 +5690,9 @@ static DEVDRV * _cdecl
 fatfs_getdev (fcookie *fc, long *devsp)
 {
 	FAT_DEBUG (("fatfs_getdev [%s]: ok", ((COOKIE *) fc->index)->name));
-	
+
 	if (fc->fs == &fatfs_filesys) return &fatfs_device;
-	
+
 	FAT_DEBUG (("fatfs_getdev: leave failure"));
 	*devsp = ENOSYS;
 	return NULL;
@@ -5702,24 +5702,24 @@ static long _cdecl
 fatfs_getxattr (fcookie *fc, XATTR *xattr)
 {
 	COOKIE *c = (COOKIE *) fc->index;
-	
+
 	FAT_DEBUG (("fatfs_getxattr [%s]: enter", c->name));
 	FAT_DEBUG_COOKIE ((c));
-	
+
 	xattr->index	= INDEX (c);
 	xattr->dev	= c->dev;
 	xattr->rdev	= c->rdev;
-	
+
 	xattr->uid	= ROOT_UID (c->dev);
 	xattr->gid	= ROOT_GID (c->dev);
-	
+
 	xattr->blksize	= CLUSTSIZE (c->dev);
 	xattr->nlink	= 1;
-	
+
 	if (c->info.attr & FA_DIR)
 	{
 		xattr->mode	= S_IFDIR;
-		
+
 		if (c->stcl == 1)
 		{
 			/* rootdir have fixed values */
@@ -5730,7 +5730,7 @@ fatfs_getxattr (fcookie *fc, XATTR *xattr)
 		{
 # ifdef EXTENSIVE_GETXATTR
 			register long cluster = c->stcl;
-			
+
 			xattr->nblocks	= 0;
 			do {
 				xattr->nblocks++;
@@ -5741,19 +5741,19 @@ fatfs_getxattr (fcookie *fc, XATTR *xattr)
 # endif
 			xattr->nlink	= 2; /* subdirs have 2 links */
 		}
-		
+
 		xattr->size = xattr->blksize * xattr->nblocks;
 	}
 	else
 	{
 		xattr->mode	= S_IFREG;
-		
+
 		xattr->size	= c->flen;
 		xattr->nblocks	= (xattr->size + xattr->blksize - 1) / xattr->blksize;
 	}
-	
+
 	xattr->mode |= (ROOT_MODE (c->dev) & DEFAULT_DIRMODE);
-	
+
 	if (!(c->info.attr & FA_DIR))
 	{
 		if (!is_exec (c->info.name + 8))
@@ -5761,25 +5761,25 @@ fatfs_getxattr (fcookie *fc, XATTR *xattr)
 			xattr->mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
 		}
 	}
-	
+
 	if (c->info.attr & FA_RDONLY)
 	{
 		xattr->mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 	}
-	
+
 	if (c->info.attr == FA_SYMLINK)
 	{
 		xattr->mode = S_IFLNK | 0777;
 	}
-	
+
 	xattr->mtime	= le2cpu16 (c->info.time);
 	xattr->mdate	= le2cpu16 (c->info.date);
-	xattr->atime	= xattr->mtime; 
+	xattr->atime	= xattr->mtime;
 	xattr->adate	= c->info.adate ? le2cpu16 (c->info.adate) : xattr->mdate;
 	xattr->ctime	= c->info.ctime ? le2cpu16 (c->info.ctime) : xattr->mtime;
 	xattr->cdate	= c->info.cdate ? le2cpu16 (c->info.cdate) : xattr->mdate;
 	xattr->attr	= c->info.attr & FA_TOSVALID;
-	
+
 	FAT_DEBUG (("fatfs_getxattr: return ok"));
 	return E_OK;
 }
@@ -5789,18 +5789,18 @@ fatfs_chattr (fcookie *fc, int attrib)
 {
 	COOKIE *c = (COOKIE *) fc->index;
 	long r = EACCES;
-	
+
 	FAT_DEBUG (("fatfs_chattr [%s]: enter", c->name));
 	FAT_DEBUG_COOKIE ((c));
-	
+
 	if (RDONLY (c->dev))
 		return EROFS;
-	
+
 	if (c->dir)
 	{
 		/* only the lowest 8 bits are used */
 		c->info.attr = attrib & FA_TOSVALID;
-		
+
 		r = write_cookie (c);
 		if (r)
 		{
@@ -5812,11 +5812,11 @@ fatfs_chattr (fcookie *fc, int attrib)
 			{
 				bio_SYNC_DRV ((&bio), DI (c->dev));
 			}
-			
+
 			r = E_OK;
 		}
 	}
-	
+
 	FAT_DEBUG (("fatfs_chattr: leave ok (r = %li)", r));
 	return r;
 }
@@ -5825,18 +5825,18 @@ static long _cdecl
 fatfs_chown (fcookie *fc, int uid, int gid)
 {
 	COOKIE *c = (COOKIE *) fc->index;
-	
+
 	FAT_DEBUG (("fatfs_chown [%s]: enter (%s)", c->name, (c->dir == 0) ? "ROOT" : "SUB"));
-	
+
 	if (RDONLY (c->dev))
 		return EROFS;
-	
+
 	if (c->dir == 0)
 	{
 		ROOT_UID (c->dev) = uid;
 		ROOT_GID (c->dev) = gid;
 	}
-	
+
 	/* temporary: always return E_OK to make Unix programs happy
 	 *            this will be removed if MiNT-Lib automatically do this
 	 */
@@ -5850,7 +5850,7 @@ fatfs_chown (fcookie *fc, int uid, int gid)
 		}
 	}
 # endif
-	
+
 	FAT_DEBUG (("fatfs_chown: leave ok"));
 	return E_OK;
 }
@@ -5859,13 +5859,13 @@ static long _cdecl
 fatfs_chmode (fcookie *fc, unsigned mode)
 {
 	COOKIE *c = (COOKIE *) fc->index;
-	
+
 	FAT_DEBUG (("fatfs_chmode [%s]: enter (%s)", c->name, (c->dir == 0) ? "ROOT" : "SUB"));
 	FAT_DEBUG_COOKIE ((c));
-	
+
 	if (RDONLY (c->dev))
 		return EROFS;
-	
+
 	if (c->dir == 0)
 	{
 		ROOT_MODE (c->dev) = mode;
@@ -5873,7 +5873,7 @@ fatfs_chmode (fcookie *fc, unsigned mode)
 	else
 	{
 		char new;
-		
+
 		if (!(mode & S_IWUSR))
 		{
 			new = c->info.attr | FA_RDONLY;
@@ -5882,7 +5882,7 @@ fatfs_chmode (fcookie *fc, unsigned mode)
 		{
 			new = c->info.attr & ~FA_RDONLY;
 		}
-		
+
 		if (c->info.attr & FA_DIR)
 		{
 			if (mode & S_ISUID)
@@ -5895,11 +5895,11 @@ fatfs_chmode (fcookie *fc, unsigned mode)
 				new &= ~FA_HIDDEN;
 			}
 		}
-		
+
 		if (new != c->info.attr)
 		{
 			long r;
-			
+
 			c->info.attr = new;
 			r = write_cookie (c);
 			if (r)
@@ -5907,14 +5907,14 @@ fatfs_chmode (fcookie *fc, unsigned mode)
 				FAT_DEBUG (("fatfs_chmode: leave failure (write_cookie = %li)", r));
 				return r;
 			}
-			
+
 			if (c->dev == 0 || c->dev == 1)
 			{
 				bio_SYNC_DRV ((&bio), DI (c->dev));
 			}
 		}
 	}
-	
+
 	FAT_DEBUG (("fatfs_chmode: leave ok"));
 	return E_OK;
 }
@@ -5925,14 +5925,14 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 	COOKIE *c = (COOKIE *) dir->index;
 	COOKIE *new = NULL;
 	long r;
-	
+
 	UNUSED (mode);
-	
+
 	FAT_DEBUG (("fatfs_mkdir [%s]: enter (%s)", c->name, name));
-	
+
 	if (RDONLY (c->dev))
 		return EROFS;
-	
+
 	/* check if dir exist */
 	r = search_cookie (c, NULL, name, 0);
 	if (r == E_OK)
@@ -5940,23 +5940,23 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 		FAT_DEBUG (("fatfs_mkdir: leave failure (dir exist)"));
 		return EACCES;
 	}
-	
+
 	r = make_cookie (c, &new, name, FA_DIR);
 	if (r == E_OK)
 	{
 		long stcl;
-		
+
 		stcl = r = nextcl (0, c->dev);
 		if (r > 0)
 		{
 			PUT_STCL (&(new->info), c->dev, stcl);
 			new->stcl = stcl;
-			
+
 			r = write_cookie (new);
 			if (r == E_OK)
 			{
 				UNIT *u;
-				
+
 				u = bio_data_getunit (c->dev, stcl);
 				if (u)
 				{
@@ -5964,16 +5964,16 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 					register const ushort time = cpu2le16 (timestamp);
 					register _DIR *info = (_DIR *) u->data;
 					register long j;
-					
+
 					quickzero (u->data, CLUSTSIZE (c->dev) >> 8);
-					
+
 					info->name[0] = '.';
 					for (j = 1; j < 11; j++) info->name[j] = ' ';
 					info->attr = FA_DIR;
 					info->date = date;
 					info->time = time;
 					PUT_STCL (info, c->dev, stcl);
-					
+
 					info++;
 					info->name[0] = info->name[1] = '.';
 					for (j = 2; j < 11; j++) info->name[j] = ' ';
@@ -5984,34 +5984,34 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 					{
 						PUT_STCL (info, c->dev, new->dir);
 					}
-					
+
 					bio_MARK_MODIFIED ((&bio), u);
 					bio_SYNC_DRV ((&bio), DI (c->dev));
-					
+
 					rel_cookie (new);
-					
+
 					FAT_DEBUG (("fatfs_mkdir: leave ok"));
 					return E_OK;
-					
+
 				}
 				else /* if (ptr) */
 				{
 					FAT_DEBUG (("fatfs_mkdir: leave failure (read)"));
 					r = EREAD;
 				}
-				
+
 			}
 			else /* if (r == E_OK) */
 			{
 				FAT_DEBUG (("fatfs_mkdir: leave failure (write_cookie = %li)", r));
 			}
-			
+
 		}
 		else /* if (r > 0) */
 		{
 			FAT_DEBUG (("fatfs_mkdir: leave failure (nextcl = %li)", r));
 		}
-		
+
 		unlink_cookie (new);
 		rel_cookie (new);
 	}
@@ -6019,63 +6019,63 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 	{
 		FAT_DEBUG (("fatfs_mkdir: leave failure (make_cookie = %li)", r));
 	}
-	
+
 	return r;
 }
 
 static long _cdecl
 fatfs_rmdir (fcookie *dir, const char *name)
 {
-	DIR dirh;	
+	DIR dirh;
 	long r;
-	
+
 	FAT_DEBUG (("fatfs_rmdir [%s]: enter (%s)", ((COOKIE *) dir->index)->name, name));
-	
+
 	if (RDONLY (dir->dev))
 		return EROFS;
-	
+
 	r = fatfs_lookup (dir, name, &(dirh.fc));
 	if (r == E_OK)
 	{
 		FAT_DEBUG (("fatfs_rmdir: found: dev = %i", dirh.fc.dev));
-		
+
 		/* Ordner muss leer sein, ansonsten EACCES
 		 */
 		dirh.flags = 0;
 		r = fatfs_opendir (&dirh, dirh.flags);
-		
+
 		if (r)
 		{
 			fatfs_release (&(dirh.fc));
-			
+
 			FAT_DEBUG (("fatfs_rmdir: leave failure (fatfs_opendir = %li)", r));
 			return r;
 		}
-		
+
 		{
 			char buf[VFAT_NAMEMAX];
 			fcookie file;
 			long count = 0;
-			
+
 			while (fatfs_readdir (&dirh, buf, VFAT_NAMEMAX, &file) == 0)
 			{
 				fatfs_release (&file);
 				c_del_cookie ((COOKIE *) file.index);
-				
+
 				count++;
 				if (count > 2)
 				{
 					(void) fatfs_closedir (&dirh);
 					(void) fatfs_release (&(dirh.fc));
-					
+
 					FAT_DEBUG (("fatfs_rmdir: leave failure (not free)"));
 					return EACCES;
 				}
 			}
 		}
-		
+
 		fatfs_closedir (&dirh);
-		
+
 		r = unlink_cookie ((COOKIE *) dirh.fc.index);
 		if (r)
 		{
@@ -6085,7 +6085,7 @@ fatfs_rmdir (fcookie *dir, const char *name)
 		{
 			FAT_DEBUG (("fatfs_rmdir: leave ok"));
 		}
-		
+
 		fatfs_release (&(dirh.fc));
 		bio_SYNC_DRV ((&bio), DI (dir->dev));
 	}
@@ -6093,7 +6093,7 @@ fatfs_rmdir (fcookie *dir, const char *name)
 	{
 		FAT_DEBUG (("fatfs_rmdir: leave failure (fatfs_lookup = %li)", r));
 	}
-	
+
 	return r;
 }
 
@@ -6103,14 +6103,14 @@ fatfs_creat (fcookie *dir, const char *name, unsigned mode, int attrib, fcookie 
 	COOKIE *c = (COOKIE *) dir->index;
 	COOKIE *new = NULL;
 	long r;
-	
+
 	UNUSED (mode);
-	
+
 	FAT_DEBUG (("fatfs_creat [%s]: enter (%s)", c->name, name));
-	
+
 	if (RDONLY (c->dev))
 		return EROFS;
-	
+
 # if 0 	/* --- kernel do this --- */
 	r = search_cookie (c, NULL, name, 0);
 	if (r == E_OK)
@@ -6119,16 +6119,16 @@ fatfs_creat (fcookie *dir, const char *name, unsigned mode, int attrib, fcookie 
 		return EACCES;
 	}
 # endif
-	
+
 	r = make_cookie (c, &new, name, attrib);
-	
+
 	fc->fs = &fatfs_filesys;
 	fc->dev = c->dev;
 	fc->aux = 0;
 	fc->index = (long) new;
-	
+
 	bio_SYNC_DRV ((&bio), DI (c->dev));
-	
+
 	FAT_DEBUG (("fatfs_creat: leave ok (return make_cookie = %li)", r));
 	return r;
 }
@@ -6138,12 +6138,12 @@ fatfs_remove (fcookie *dir, const char *name)
 {
 	COOKIE *c;
 	long r;
-	
+
 	FAT_DEBUG (("fatfs_remove [%s]: enter (%s)", ((COOKIE *) dir->index)->name, name));
-	
+
 	if (RDONLY (dir->dev))
 		return EROFS;
-	
+
 	r = search_cookie ((COOKIE *) dir->index, &c, name, 0);
 	if (r == E_OK)
 	{
@@ -6156,7 +6156,7 @@ fatfs_remove (fcookie *dir, const char *name)
 		{
 			FAT_DEBUG (("fatfs_remove: leave ok"));
 		}
-		
+
 		rel_cookie (c);
 		bio_SYNC_DRV ((&bio), DI (dir->dev));
 	}
@@ -6164,7 +6164,7 @@ fatfs_remove (fcookie *dir, const char *name)
 	{
 		FAT_DEBUG (("fatfs_remove: leave failure (search_cookie)"));
 	}
-	
+
 	return r;
 }
 
@@ -6174,23 +6174,23 @@ fatfs_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 	const char *r = ((COOKIE *) root->index)->name;
 	const char *d = ((COOKIE *) dir->index)->name;
 	long i, j;
-	
+
 	FAT_DEBUG (("fatfs_getname: enter - root = %s, dir = %s", r, d));
-	
+
 	if (size <= 0)
 	{
 		FAT_DEBUG (("fatfs_getname: leave failure (EBADARG)"));
 		return EBADARG;
 	}
-	
+
 	*pathname = '\0';
-	
+
 	if (COOKIE_EQUAL (root, dir))
 	{
 		FAT_DEBUG (("fatfs_getname: leave ok, equal"));
 		return E_OK;
 	}
-	
+
 	i = strlen (r);
 	j = strlen (d);
 	if (j > i)
@@ -6198,15 +6198,15 @@ fatfs_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 		if ((j - i) < size)
 		{
 			strcpy (pathname, d + i);
-			
+
 			FAT_DEBUG (("fatfs_getname: leave pathname = %s", pathname));
 			return E_OK;
 		}
-		
+
 		FAT_DEBUG (("fatfs_getname: leave failure (EBADARG)"));
 		return EBADARG;
 	}
-	
+
 	FAT_DEBUG (("fatfs_getname: leave failure (EINTERNAL)"));
 	return EINTERNAL;
 }
@@ -6218,20 +6218,20 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	COOKIE *newd = (COOKIE *) newdir->index;
 	COOKIE *old;
 	long r;
-	
+
 	FAT_DEBUG (("fatfs_rename: enter (oldd = %s, newd = %s)", oldd->name, newd->name));
 	FAT_DEBUG (("fatfs_rename: old = %s, new = %s", oldname, newname));
-	
+
 	if (RDONLY (oldd->dev))
 		return EROFS;
-	
+
 	/* on same device? */
 	if (oldd->dev != newd->dev)
 	{
 		FAT_DEBUG (("fatfs_rename: cross device rename: [%c] -> [%c]!", olddir->dev+'A', newdir->dev+'A'));
 		return EXDEV;
 	}
-	
+
 	/* check if the file exist */
 	r = search_cookie (newd, NULL, newname, 0);
 	if (r == E_OK)
@@ -6243,7 +6243,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			return EACCES;
 		}
 	}
-	
+
 	/* search_cookie doesn't find '.' or '..' in the root directory
 	 * so we verify here that newname does not match '.' or '..'
 	 */
@@ -6260,32 +6260,32 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			}
 		}
 	}
-	
+
 	r = search_cookie (oldd, &old, oldname, 0);
 	if (r)
 	{
 		FAT_DEBUG (("fatfs_rename: leave failure (not found -> %li)", r));
 		return r;
 	}
-	
+
 # if 0
 	if (old->links > 1)
 	{
 		rel_cookie (old);
-		
+
 		FAT_DEBUG (("fatfs_rename: leave failure (cookie in use)"));
 		return EACCES;
 	}
 # endif
-	
+
 	if (old->info.attr & FA_DIR)
 	{
 		long i;
-		
+
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
 			COOKIE *c = &(cookies[i]);
-			
+
 			if (c->name)
 			{
 				if (old->stcl == c->dir)
@@ -6293,7 +6293,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 					if (c->links)
 					{
 						rel_cookie (old);
-						
+
 						FAT_DEBUG (("fatfs_rename: leave failure (can't remove subcookies)"));
 						return EACCES;
 					}
@@ -6303,28 +6303,28 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			}
 		}
 	}
-	
+
 	if (!old->slots && !VFAT (old->dev) && COOKIE_EQUAL (olddir, newdir))
 	{
 		/* special case for non VFAT drives -> position save renaming
-		 * 
+		 *
 		 * requirenments:
-		 * 
+		 *
 		 * 1. the file is in the same directory [COOKIE_EQUAL]
 		 * 2. the old filename has no VFAT entries [!old->slots]
 		 * 3. the new filename is a 8+3 name [!VFAT (dev)]
 		 *    the new 8+3 name is verified later but !VFAT
 		 *    guarantees that the validated name is 8+3 if
 		 *    make_shortname returns successfully
-		 * 
+		 *
 		 * side effect: the '..' in directories must not be
 		 *              updated
 		 */
-		
+
 		char shortname[FAT_NAMEMAX];
-		
+
 		FAT_DEBUG (("fatfs_rename: same entry method"));
-		
+
 		/* verify new name */
 		r = make_shortname (oldd, newname, shortname);
 		if (r)
@@ -6332,24 +6332,24 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			rel_cookie (old);
 			return r;
 		}
-		
+
 		/* update directory entry */
 		str2dir (shortname, old->info.name);
-		
+
 		/* here we must update the inode cache self
 		 */
 		{
 			register char *name;
-			
+
 			name = fullname (oldd, shortname);
 			if (!name)
 			{
 				rel_cookie (old);
-				
+
 				FAT_DEBUG (("fatfs_rename: leave failure (out of memory)"));
 				return ENOMEM;
 			}
-			
+
 			c_hash_remove (old);
 			{
 				kfree (old->name);
@@ -6357,9 +6357,9 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			}
 			c_hash_install (old);
 		}
-		
+
 		FAT_DEBUG (("fatfs_rename: old->name = %s", old->name));
-		
+
 		/* invalidate negative lookup cache
 		 */
 		if (oldd->lastlookup)
@@ -6367,10 +6367,10 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 			kfree (oldd->lastlookup);
 			oldd->lastlookup = NULL;
 		}
-		
+
 		/* update data on disk */
 		r = write_cookie (old);
-		
+
 		rel_cookie (old);
 		bio_SYNC_DRV ((&bio), DI (old->dev));
 	}
@@ -6378,32 +6378,32 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	{
 # if 1
 		/* normal renaming
-		 * 
+		 *
 		 * if a directory is moved the '..' entry must be
 		 * updated
 		 */
-		
+
 		FAT_DEBUG (("fatfs_rename: normal method"));
-		
+
 		r = make_cookie (newd, &old, newname, old->info.attr);
-		
+
 		rel_cookie (old);
 		if (r) return r;
-		
+
 		if ((old->info.attr & FA_DIR) && !COOKIE_EQUAL (olddir, newdir))
 		{
 			UNIT *u;
-			
+
 			u = bio_data_read (old->dev, old->stcl);
 			if (u)
 			{
 				register _DIR *info = (_DIR *) u->data;
-				
+
 				info++;
-				
+
 				if (old->dir > 1)	PUT_STCL (info, old->dev, old->dir);
 				else			PUT_STCL (info, old->dev, 0);
-				
+
 				bio_MARK_MODIFIED ((&bio), u);
 			}
 			else
@@ -6411,27 +6411,27 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 				FAT_ALERT (("FATFS [%c]: can't update '..' in directory rename; possible filesystem corruption!", old->dev+'A'));
 			}
 		}
-		
+
 		rel_cookie (old);
 		bio_SYNC_DRV ((&bio), DI (old->dev));
 # else
 		/* normal renaming
-		 * 
+		 *
 		 * if a directory is moved the '..' entry must be
 		 * updated
 		 */
-		
+
 		COOKIE *new = NULL;
-		
+
 		FAT_DEBUG (("fatfs_rename: normal method"));
-		
+
 		r = make_cookie (newd, &new, newname, old->info.attr);
 		if (r)
 		{
 			rel_cookie (old);
 			return r;
 		}
-		
+
 		new->info.lcase		= old->info.lcase;
 		new->info.ctime_ms	= old->info.ctime_ms;
 		new->info.ctime		= old->info.ctime;
@@ -6442,38 +6442,38 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		new->info.date		= old->info.date;
 		new->info.stcl		= old->info.stcl;
 		new->info.flen		= old->info.flen;
-		
+
 		new->stcl = old->stcl;
 		new->flen = old->flen;
-		
+
 		/* mark old cookie as free */
 		old->info.stcl = old->stcl = 0;
 		old->info.flen = old->flen = 0;
-		
+
 		r = write_cookie (new);
 		if (r)
 		{
 			rel_cookie (old);
 			/* rel_cookie (new); */
-			
+
 			/* ALERT about to run fsck? */
 			return r;
 		}
-		
+
 		if ((new->info.attr & FA_DIR) && !COOKIE_EQUAL (olddir, newdir))
 		{
 			UNIT *u;
-			
+
 			u = bio_data_read (new->dev, new->stcl);
 			if (u)
 			{
 				register _DIR *info = (_DIR *) u->data;
-				
+
 				info++;
-				
+
 				if (new->dir > 1)	PUT_STCL (info, new->dev, new->dir);
 				else			PUT_STCL (info, new->dev, 0);
-				
+
 				bio_MARK_MODIFIED ((&bio), u);
 			}
 			else
@@ -6481,16 +6481,16 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 				FAT_ALERT (("FATFS [%c]: can't update '..' in directory rename; possible filesystem corruption!", new->dev+'A'));
 			}
 		}
-		
+
 		r = unlink_cookie (old);
-		
+
 		rel_cookie (old);
 		rel_cookie (new);
-		
+
 		bio_SYNC_DRV ((&bio), DI (new->dev));
 # endif
 	}
-	
+
 	FAT_DEBUG (("fatfs_rename: leave %s, r = %li", r ? "failure" : "ok", r));
 	return r;
 }
@@ -6501,15 +6501,15 @@ fatfs_opendir (DIR *dirh, int flags)
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	oDIR *dir = (oDIR *) dirh->fsstuff;
 	long r;
-	
+
 	UNUSED (flags);
-	
+
 	dirh->index = 0;
-	
+
 	r = __opendir (dir, c->stcl, c->dev);
 	if (!r)
 		c->links++;
-	
+
 	FAT_DEBUG_COOKIE ((c));
 	FAT_DEBUG (("fatfs_opendir [%s]: (%li, %li), %li -> r = %li", c->name, c->dir, c->offset, c->stcl, r));
 	return r;
@@ -6526,17 +6526,17 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 	char buf[VFAT_NAMEMAX];
 	char shortbuf[FAT_NAMEMAX];
 	register long r;
-	
+
 	FAT_DEBUG (("fatfs_readdir [%s]: enter", c->name));
-	
+
 	if (dirh->flags & TOS_SEARCH)
 	{
 		FAT_DEBUG (("fatfs_readdir: TOS_SEARCH"));
-		
+
 		r = __nextdir (dir, buf, VFAT_NAMEMAX);
 		if (r < 0)
 			return r;
-		
+
 		if (r)
 		{
 			dir2str (dir->info->name, shortbuf);
@@ -6547,24 +6547,24 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 		{
 			if (strlen (buf) >= nmlen)
 				return EBADARG;
-			
+
 			strcpy (nm, buf);
 		}
-		
+
 		read_nm = buf;
 	}
 	else
 	{
 		nm += 4;
 		nmlen -= 4;
-		
+
 		r = __nextdir (dir, nm, nmlen);
 		if (r < 0)
 			return r;
-		
+
 		read_nm = nm;
 	}
-	
+
 	name = fullname (c, read_nm);
 	if (name)
 	{
@@ -6589,26 +6589,26 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 			kfree (name);
 			new->links++;
 		}
-		
+
 		if (new)
 		{
 			fc->fs = &fatfs_filesys;
 			fc->dev = dir->dev;
 			fc->aux = 0;
 			fc->index = (long) new;
-			
+
 			dirh->index = dir->index;
-			
+
 			if (r && ((dirh->flags & TOS_SEARCH) || !VFAT (dir->dev)))
 			{
 				/* return TOS name */
 				FAT_DEBUG (("fatfs_readdir: TOS_SEARCH, make TOS_NAME"));
 				dir2str (dir->info->name, nm);
-				
+
 				if (curproc->domain != DOM_TOS)
 					strlwr (nm);
 			}
-			
+
 			if (!(dirh->flags & TOS_SEARCH) && VFAT (dir->dev))
 			{
 				if (!r && LCASE (dir->dev))
@@ -6619,21 +6619,21 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 				if (curproc->domain != DOM_TOS)
 					strlwr (nm);
 			}
-			
+
 			if ((dirh->flags & TOS_SEARCH) == 0)
 			{
 				*(long *) (nm - 4) = INDEX (new);
 			}
-			
+
 			FAT_DEBUG_COOKIE ((new));
 			FAT_DEBUG (("fatfs_readdir: leave ok (nm = %s)", nm));
-			
+
 			return E_OK;
 		}
-		
+
 		FAT_DEBUG (("fatfs_readdir: leave failure (c_get_cookie)"));
 	}
-	
+
 	FAT_DEBUG (("fatfs_readdir: leave failure (out of memory)"));
 	return ENOMEM;
 }
@@ -6642,10 +6642,10 @@ static long _cdecl
 fatfs_rewinddir (DIR *dirh)
 {
 	register long r;
-	
+
 	(void) fatfs_closedir (dirh);
 	r = fatfs_opendir (dirh, dirh->flags);
-	
+
 	FAT_DEBUG (("fatfs_rewinddir [%s]: ok", ((COOKIE *) dirh->fc.index)->name));
 	return r;
 }
@@ -6654,10 +6654,10 @@ static long _cdecl
 fatfs_closedir (DIR *dirh)
 {
 	COOKIE *c = (COOKIE *) dirh->fc.index;
-	
+
 	__closedir ((oDIR *) dirh->fsstuff);
 	rel_cookie (c);
-	
+
 	FAT_DEBUG (("fatfs_closedir [%s]: ok (links = %li)", c->name, c->links));
 	return E_OK;
 }
@@ -6666,7 +6666,7 @@ static long _cdecl
 fatfs_pathconf (fcookie *dir, int which)
 {
 	FAT_DEBUG (("fatfs_pathconf [%s]: enter", ((COOKIE *) dir->index)->name));
-	
+
 	switch (which)
 	{
 		case DP_INQUIRE:	return DP_VOLNAMEMAX;
@@ -6692,8 +6692,8 @@ fatfs_pathconf (fcookie *dir, int which)
 					);
 		case DP_VOLNAMEMAX:	return FAT_NAMEMAX - 2; /* . and \0 */
 	}
-	
-	FAT_DEBUG (("fatfs_pathconf: leave failure"));	
+
+	FAT_DEBUG (("fatfs_pathconf: leave failure"));
 	return ENOSYS;
 }
 
@@ -6709,12 +6709,12 @@ fatfs_writelabel (fcookie *dir, const char *name)
 	oDIR odir;
 	long index = 0;
 	long r;
-	
+
 	FAT_DEBUG (("fatfs_writelabel [%s]: enter (name = %s)", ((COOKIE *) dir->index)->name, name));
-	
+
 	if (RDONLY (dir->dev))
 		return EROFS;
-	
+
 	r = __opendir (&odir, RCOOKIE (dir->dev)->stcl, dir->dev);
 	while ((r = __SEEKDIR (&odir, index++, READ)) == E_OK)
 	{
@@ -6727,14 +6727,14 @@ fatfs_writelabel (fcookie *dir, const char *name)
 			}
 		}
 	}
-	
+
 	if (r)
 	{
 		/* no label found, search free entry */
 		FAT_DEBUG (("fatfs_writelabel: no label found, search free entry"));
-		
+
 		index = 0;
-		
+
 		while ((r = __SEEKDIR (&odir, index++, READ)) == E_OK)
 		{
 			if (odir.info->name[0] == (char) 0xe5)
@@ -6745,30 +6745,30 @@ fatfs_writelabel (fcookie *dir, const char *name)
 				break;
 		}
 	}
-	
+
 	if (r == E_OK)
 	{
 		register const char *table = DEFAULT_T (dir->dev);
 		register const uchar *src = name;
 		register char *dst = odir.info->name;
 		register long i;
-		
+
 		for (i = 0; i < 11 && *src; i++)
 		{
 			register int upper = TOUPPER ((int)*src & 0xff);
-			
+
 			if (!table[upper])
 				*dst++ = (*src == ' ') ? ' ' : '_';
 			else
 				*dst++ = upper;
-			
+
 			src++;
 		}
-		
+
 		/* fill out with spaces */
 		for (; i < 11; i++)
-			*dst++ = ' ';		
-		
+			*dst++ = ' ';
+
 		/* set up entry */
 		odir.info->attr = FA_LABEL;
 		odir.info->lcase = 0;
@@ -6781,14 +6781,14 @@ fatfs_writelabel (fcookie *dir, const char *name)
 		odir.info->date = cpu2le16 (datestamp);
 		odir.info->stcl = 0;
 		odir.info->flen = 0;
-		
+
 		__updatedir (&odir);
-		
+
 		bio_SYNC_DRV ((&bio), DI (dir->dev));
 	}
-	
+
 	__closedir (&odir);
-	
+
 	FAT_DEBUG (("fatfs_writelabel: leave r = %li (index = %li)", r, odir.index));
 	return r;
 }
@@ -6799,12 +6799,12 @@ fatfs_readlabel (fcookie *dir, char *name, int namelen)
 	oDIR odir;
 	long index = 0;
 	long r;
-	
+
 	FAT_DEBUG (("fatfs_readlabel [%s]: enter (namelen = %i)", ((COOKIE *) dir->index)->name, namelen));
-	
+
 	/* set up empty label */
 	*name = '\0';
-	
+
 	r = __opendir (&odir, RCOOKIE (dir->dev)->stcl, dir->dev);
 	while ((r = __SEEKDIR (&odir, index++, READ)) == E_OK)
 	{
@@ -6817,21 +6817,21 @@ fatfs_readlabel (fcookie *dir, char *name, int namelen)
 			}
 		}
 	}
-	
+
 	if (r == E_OK)
 	{
 		register long space = 0;
 		register long i;
-		
+
 		FAT_DEBUG (("fatfs_readlabel: label found (index = %li)", odir.index));
-		
+
 		for (i = 0; namelen && i < 11; namelen--, i++)
 		{
 			name[i] = odir.info->name[i];
 			if (odir.info->name[i] == ' ') space++;
 			else space = 0;
 		}
-		
+
 		if (namelen == 0)
 		{
 			FAT_DEBUG (("fatfs_readlabel: namelen == 0 -> EBADARG"));
@@ -6849,9 +6849,9 @@ fatfs_readlabel (fcookie *dir, char *name, int namelen)
 		FAT_DEBUG (("fatfs_readlabel: label not found -> ENOENT"));
 		r = ENOENT;
 	}
-	
+
 	__closedir (&odir);
-	
+
 	FAT_DEBUG (("fatfs_readlabel: leave r = %li (label = %s, namelen = %i, index = %li)", r, name, namelen, odir.index));
 	return r;
 }
@@ -6862,16 +6862,16 @@ fatfs_symlink (fcookie *dir, const char *name, const char *to)
 	FILEPTR f;
 	ushort linklen;
 	long r;
-	
+
 	if (!SLNK (dir->dev))
 		return ENOSYS;
-	
+
 	if (RDONLY (dir->dev))
 		return EROFS;
-	
+
 	FAT_DEBUG (("fatfs_symlink [%s]: enter", ((COOKIE *) dir->index)->name));
 	FAT_DEBUG (("fatfs_symlink: name = %s, to = %s", name, to));
-	
+
 	/* check if file exist */
 	r = search_cookie ((COOKIE *) dir->index, NULL, name, 0);
 	if (r == E_OK)
@@ -6879,22 +6879,22 @@ fatfs_symlink (fcookie *dir, const char *name, const char *to)
 		FAT_DEBUG (("fatfs_symlink: leave failure (file exist)"));
 		return EACCES;
 	}
-	
+
 	r = fatfs_creat (dir, name, 0, FA_SYMLINK, &(f.fc));
 	if (r)
 	{
 		FAT_DEBUG (("fatfs_symlink: leave failure (creat = %li)", r));
 		return r;
 	}
-	
+
 	f.flags = O_TRUNC | O_WRONLY;
 	f.links = 0;
-	
+
 	r = fatfs_open (&f);
 	if (r)
 	{
 		unlink_cookie ((COOKIE *) f.fc.index);
-		
+
 		FAT_DEBUG (("fatfs_symlink: leave failure (open = %li)", r));
 	}
 	else
@@ -6902,17 +6902,17 @@ fatfs_symlink (fcookie *dir, const char *name, const char *to)
 		linklen = strlen (to) + 1;
 		if (linklen & 1)
 			linklen += 1;
-		
+
 		fatfs_write (&f, (char *) &linklen, 2);
 		fatfs_write (&f, to, linklen - 1);
 		fatfs_write (&f, "\0", 1);
 		fatfs_close (&f, 0);
-		
+
 		FAT_DEBUG (("fatfs_symlink: leave ok"));
 	}
-	
+
 	fatfs_release (&(f.fc));
-	
+
 	return r;
 }
 
@@ -6923,17 +6923,17 @@ fatfs_readlink (fcookie *file, char *buf, int len)
 	FILEPTR f;
 	ushort linklen;
 	long r;
-	
+
 	FAT_DEBUG (("fatfs_readlink [%s]: enter", c->name));
-	
+
 	if (c->info.attr != FA_SYMLINK)
 	{
 		FAT_DEBUG (("fatfs_readlink: leave failure (not a symlink)"));
 		return EACCES;  /* EINVAL on HP-UX */
 	}
-	
+
 	(void) fatfs_dupcookie (&(f.fc), file);
-	
+
 	f.flags = O_RDONLY;
 	f.links = 0;
 	r = fatfs_open (&f);
@@ -6963,16 +6963,16 @@ fatfs_readlink (fcookie *file, char *buf, int len)
 				r = (r < 0) ? r : EERROR;
 			}
 		}
-		
+
 		(void) fatfs_close (&f, 0);
 	}
 	else
 	{
 		FAT_DEBUG (("fatfs_readlink: failure (open = %li)", r));
 	}
-	
+
 	(void) fatfs_release (&(f.fc));
-	
+
 	FAT_DEBUG (("fatfs_readlink: leave return = %li", r));
 	return r;
 }
@@ -6981,7 +6981,7 @@ static long _cdecl
 fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 {
 	FAT_DEBUG (("fatfs_fscntl [%s]: enter (name = %s, cmd = %i, arg = %li)", ((COOKIE *) dir->index)->name, name, cmd, arg));
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -6992,16 +6992,16 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		case FS_INFO:
 		{
 			struct fs_info *info;
-			
+
 			info = (struct fs_info *) arg;
 			if (info)
 			{
 				char *dst = info->type_asc;
-				
+
 				strcpy (info->name, "vfat-xfs");
 				info->version = (long) VER_MAJOR << 16;
 				info->version |= (long) VER_MINOR;
-				
+
 				if (VFAT (dir->dev))
 				{
 					info->type = _MAJOR_VFAT;
@@ -7011,12 +7011,25 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				{
 					info->type = _MAJOR_FAT;
 				}
-				
+
+# ifndef ONLY030
 				*dst++ = 'f';
 				*dst++ = 'a';
 				*dst++ = 't';
 				*dst++ = ' ';
-				
+# else
+				/* The compiler should optimize this below
+				 * into a single move.
+				 */
+				{
+					ulong *ddest;
+
+					ddest = (ulong *)dst;
+					/* this is 'fat ' */
+					*ddest++ = 0x66617420UL;
+					dst = (char *)ddest;
+				}
+# endif
 				switch (FAT_TYPE (dir->dev))
 				{
 					case FAT_TYPE_12:
@@ -7024,7 +7037,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 						info->type |= FS_FAT12;
 						*dst++ = '1';
 						*dst++ = '2';
-						
+
 						break;
 					}
 					case FAT_TYPE_16:
@@ -7032,7 +7045,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 						info->type |= FS_FAT16;
 						*dst++ = '1';
 						*dst++ = '6';
-						
+
 						break;
 					}
 					case FAT_TYPE_32:
@@ -7040,53 +7053,53 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 						info->type |= FS_FAT32;
 						*dst++ = '3';
 						*dst++ = '2';
-						
+
 						break;
 					}
 				}
-				
+
 				*dst++ = '\0';
 			}
-			
+
 			return E_OK;
 		}
 		case FS_USAGE:
 		{
 			struct fs_usage *usage;
-			
+
 			usage = (struct fs_usage *) arg;
 			if (usage)
 			{
 				ulong buf[4];
 				long r;
-				
+
 				r = fatfs_dfree (dir, buf);
 				if (r) return r;
-				
+
 				usage->blocksize = buf[2] * buf[3];
 				usage->blocks = buf[1];
 				usage->free_blocks = buf[0];
 				usage->inodes = FS_UNLIMITED;
 				usage->free_inodes = FS_UNLIMITED;
 			}
-			
+
 			return E_OK;
 		}
 		case VFAT_CNFDFLN:
 		{
 			long drv = 1;
 			long i;
-			
+
 			for (i = 0; i < NUM_DRIVES; i++)
 			{
 				if (arg & drv)
 					VFAT (i) = ENABLE;
 				else
 					VFAT (i) = DISABLE;
-				
+
 				drv <<= 1;
 			}
-			
+
 			return E_OK;
 		}
 		case VFAT_CNFLN:
@@ -7097,16 +7110,16 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		{
 			if (arg == ASK)
 				return SLNK (dir->dev);
-			
+
 			SLNK (dir->dev) = arg ? ENABLE : DISABLE;
-			
+
 			return E_OK;
 		}
 		case DL_SETCHAR:
 		case V_CNTR_MODE:
 		{
 			if (VFAT (dir->dev)) return ENOSYS;
-			
+
 			switch (arg)
 			{
 				case ASK:
@@ -7136,15 +7149,15 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					return ENOSYS;
 				}
 			}
-			
+
 			return E_OK;
 		}
 		case V_CNTR_FAT32:
 		{
 			struct control_FAT32 *f32 = (struct control_FAT32 *) arg;
-			
+
 			if (!FAT32 (dir->dev)) return ENOSYS;
-			
+
 			if (f32->mode == 0)
 			{
 				if (FAT32mirr (dir->dev))
@@ -7168,10 +7181,10 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				/*
 				 * setup FAT stuff
 				 */
-				
+
 				long old_mirr = FAT32mirr (dir->dev);
 				long old_fat = FAT32prim (dir->dev);
-				
+
 				if (f32->mirr)
 				{
 					f32->mirr--;
@@ -7179,7 +7192,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					{
 						f32->mirr *= FATSIZE (dir->dev);
 						f32->mirr += FATSTART (dir->dev);
-						
+
 						FAT32prim (dir->dev) = f32->mirr;
 						FAT32mirr (dir->dev) = DISABLE;
 					}
@@ -7192,12 +7205,12 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				{
 					FAT32mirr (dir->dev) = ENABLE;
 				}
-				
+
 				if (FAT32mirr (dir->dev))
 				{
 					FAT32prim (dir->dev) = FATSTART (dir->dev);
 				}
-				
+
 				/* anything changed? */
 				if (old_mirr != FAT32mirr (dir->dev) || old_fat != FAT32prim (dir->dev))
 				{
@@ -7206,20 +7219,20 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					{
 						upd_fat32fats (dir->dev, old_fat);
 					}
-					
+
 					/* set up new boot sector */
 					upd_fat32boot (dir->dev);
 				}
-				
+
 				/*
 				 * setup INFO sector
 				 */
-				
+
 				if (FAT32infu (dir->dev))
 				{
 					if (f32->info & FAT32_info_reset)
 						FREECL (dir->dev) = -1;
-					
+
 					if (f32->info & FAT32_info_active)
 					{
 						if (!FAT32info (dir->dev))
@@ -7235,7 +7248,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 						FAT32info (dir->dev) = NULL;
 					}
 				}
-				
+
 				/* non maskable sync
 				 * we changed eventually very critical data
 				 * not called very often, so no speed
@@ -7243,40 +7256,40 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				 */
 				bio.sync_drv (DI (dir->dev));
 			}
-			
+
 			return E_OK;
 		}
 		case V_CNTR_WP:
 		{
 			long r;
-			
+
 			r = bio.config (dir->dev, BIO_WP, arg);
 			if (r || (arg == ASK))
 				return r;
-			
+
 			r = EINVAL;
 			if (BIO_WP_CHECK (DI (dir->dev)) && !RDONLY (dir->dev))
 			{
 				if (CLEAN (dir->dev))
 					clean_flag (dir->dev, CLEANFLAG_SET);
-				
+
 				bio.sync_drv (DI (dir->dev));
-				
+
 				RDONLY (dir->dev) = 1;
 				FAT_ALERT (("FAT-FS [%c]: remounted read-only!", dir->dev+'A'));
 			}
 			else if (RDONLY (dir->dev))
 			{
 				RDONLY (dir->dev) = 0;
-				
+
 				if (CLEAN (dir->dev))
 					clean_flag (dir->dev, CLEANFLAG_CLEAR);
-				
+
 				bio.sync_drv (DI (dir->dev));
-				
+
 				FAT_ALERT (("FAT-FS [%c]: remounted read/write!", dir->dev+'A'));
 			}
-			
+
 			return r;
 		}
 		case V_CNTR_WB:
@@ -7287,14 +7300,14 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		{
 			COOKIE *c;
 			long r;
-			
+
 			r = search_cookie ((COOKIE *) dir->index, &c, name, 0);
 			if (r == E_OK)
 			{
 				r = __FUTIME (c, (ushort *) arg);
 				rel_cookie (c);
 			}
-			
+
 			FAT_DEBUG (("fatfs_fscntl: leave (FUTIME) (r = %li)", r));
 			return r;
 		}
@@ -7302,19 +7315,19 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		{
 			COOKIE *c;
 			long r;
-			
+
 			r = search_cookie ((COOKIE *) dir->index, &c, name, 0);
 			if (r == E_OK)
 			{
 				r = __FTRUNCATE (c, *((long *) arg));
 				rel_cookie (c);
 			}
-			
+
 			FAT_DEBUG (("fatfs_fscntl: leave (FTRUNCATE) (r = %li)", r));
 			return r;
 		}
 	}
-	
+
 	FAT_DEBUG (("fatfs_fscntl: invalid function"));
 	return ENOSYS;
 }
@@ -7323,26 +7336,26 @@ static long _cdecl
 fatfs_dskchng (int drv, int mode)
 {
 	long change = 1;
-	
+
 	FAT_DEBUG (("fatfs_dskchng: enter (drv = %c, mode = %i)", 'A'+drv, mode));
-	
+
 	if (mode == 0)
 	{
 		change = BIO_DSKCHNG (DI (drv));
 	}
-	
+
 	if (change == 0)
 	{
 		/* no change */
 		FAT_DEBUG (("fatfs_dskchng: leave no change"));
 		return change;
 	}
-	
+
 	FAT_DEBUG (("fatfs_dskchng: invalidate drv (change = %li)", change));
-	
+
 	/* I hope this isn't a failure */
 	bio.sync_drv (DI (drv));
-	
+
 	/* invalid all cookies */
 	{
 		register long i;
@@ -7358,16 +7371,16 @@ fatfs_dskchng (int drv, int mode)
 			}
 		}
 	}
-	
+
 	/* free the DI (also invalidate cache units) */
 	bio.free_di (DI (drv));
-	
+
 	/* invalidate the BPB */
 	BPBVALID (drv) = INVALID;
-	
+
 	/* free the dynamically allocated memory */
 	kfree (BPB (drv)); BPB (drv) = NULL;
-	
+
 	FAT_DEBUG (("fatfs_dskchng: leave (change = %li)", change));
 	return change;
 }
@@ -7379,9 +7392,9 @@ fatfs_release (fcookie *fc)
 # ifdef FS_DEBUG
 	register long links = c->links;
 # endif
-	
+
 	rel_cookie (c);
-	
+
 	FAT_DEBUG (("fatfs_release [%s]: ok (c->dev = %i, c->links = %li -> %li)", c->name, c->dev, links, c->links));
 	return E_OK;
 }
@@ -7390,10 +7403,10 @@ static long _cdecl
 fatfs_dupcookie (fcookie *dst, fcookie *src)
 {
 	register COOKIE *c = (COOKIE *) src->index;
-	
+
 	c->links++;
 	*dst = *src;
-	
+
 	FAT_DEBUG (("fatfs_dupcookie [%s]: ok (c->dev = %i, c->links = %li)", c->name, c->dev, c->links));
 	return E_OK;
 }
@@ -7402,14 +7415,14 @@ static long _cdecl
 fatfs_sync (void)
 {
 	ushort drv;
-	
+
 	/* update FAT32 info sectors */
 	for (drv = 0; drv < NUM_DRIVES; drv++)
 		if (BPBVALID (drv) && FAT32 (drv) && FAT32info (drv))
 			upd_fat32info (drv);
-	
+
 	/* buffer cache automatically synced */
-	
+
 	FAT_DEBUG (("fatfs_sync: ok"));
 	return E_OK;
 }
@@ -7419,9 +7432,9 @@ fatfs_unmount (int drv)
 {
 	if (CLEAN (drv))
 		clean_flag (drv, CLEANFLAG_SET);
-	
+
 	fatfs_dskchng (drv, 1);
-	
+
 	return E_OK;
 }
 
@@ -7439,12 +7452,12 @@ static long
 __FUTIME (COOKIE *c, ushort *ptr)
 {
 	long r;
-	
+
 	FAT_DEBUG (("__FUTIME [%s]: enter", c->name));
-	
+
 	if (RDONLY (c->dev))
 		return EROFS;
-	
+
 	/* VFAT adate */
 	if (VFAT (c->dev))
 	{
@@ -7453,7 +7466,7 @@ __FUTIME (COOKIE *c, ushort *ptr)
 		else
 			c->info.adate = cpu2le16 (datestamp);
 	}
-	
+
 	/* mtime/mdate */
 	if (ptr)
 	{
@@ -7465,17 +7478,17 @@ __FUTIME (COOKIE *c, ushort *ptr)
 		c->info.time = cpu2le16 (timestamp);
 		c->info.date = cpu2le16 (datestamp);
 	}
-	
+
 	FAT_DEBUG (("__FUTIME: leave return write_cookie"));
-	
+
 	/* write and leave */
 	r = write_cookie (c);
-	
+
 	if (c->dev == 0 || c->dev == 1)
 	{
 		bio_SYNC_DRV ((&bio), DI (c->dev));
 	}
-	
+
 	return r;
 }
 
@@ -7486,24 +7499,24 @@ __FTRUNCATE (COOKIE *c, long newlen)
 	long cl = newlen / CLUSTSIZE (c->dev);
 	long current;
 	long r;
-	
+
 	FAT_DEBUG (("__FTRUNCATE [%s]: enter (newlen = %li)", c->name, newlen));
-	
+
 	if (RDONLY (c->dev))
 		return EROFS;
-	
+
 	/* range check */
 	if (newlen > oldlen) return EBADARG;
-	
+
 	/* avoid simple case */
 	if (newlen == oldlen) return E_OK;
-	
+
 	if (newlen && (newlen % CLUSTSIZE (c->dev) == 0))
 	{
 		/* correct cluster boundary */
 		cl--;
 	}
-	
+
 	/* search the new last cluster */
 	current = GETCL (c->stcl, c->dev, cl);
 	if (current <= 0)
@@ -7512,7 +7525,7 @@ __FTRUNCATE (COOKIE *c, long newlen)
 		FAT_DEBUG (("__FTRUNCATE: leave failure, bad clustered (error = %li)", current));
 		return current;
 	}
-	
+
 	/* truncate cluster chain and update last cluster */
 	r = GETCL (current, c->dev, 1);
 	if (r > 0)
@@ -7520,16 +7533,16 @@ __FTRUNCATE (COOKIE *c, long newlen)
 		(void) del_chain (r, c->dev);
 		(void) FIXCL (current, c->dev, CLLAST);
 	}
-	
+
 	/* write new file len */
 	c->flen = newlen;
 	c->info.flen = cpu2le32 (newlen);
-	
+
 	FAT_DEBUG (("__FTRUNCATE: leave return write_cookie"));
-	
+
 	/* write and leave */
 	r = write_cookie (c);
-	
+
 	bio_SYNC_DRV ((&bio), DI (c->dev));
 	return r;
 }
@@ -7545,10 +7558,10 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 	long todo;
 	long offset;
 	long data;
-	
+
 	FAT_DEBUG (("__FIO [%s]: enter (bytes = %li, mode: %s)", c->name, bytes, (mode == READ) ? "READ" : "WRITE"));
 	FAT_DEBUG (("__FIO: f->pos = %li, ptr->current = %li", f->pos, ptr->current));
-	
+
 	if (ptr->error < 0)
 	{
 		register long i = ptr->error;
@@ -7556,15 +7569,15 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 		FAT_DEBUG (("__FIO: ERROR (value = %li)", i));
 		return i;
 	}
-	
+
 	if (bytes <= 0)
 	{
 		FAT_DEBUG (("__FIO: ERROR -> bytes = %li)", bytes));
-		
+
 		if (bytes < 0 && mode == READ)
 		{
 			/* hmm, Draco's idea */
-			
+
 			bytes = 2147483647L; /* LONG_MAX */
 			FAT_DEBUG (("__FIO: (fix) mode == READ -> bytes = %li", bytes));
 		}
@@ -7574,7 +7587,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			return 0;
 		}
 	}
-	
+
 	if (mode == READ)
 	{
 		if (temp <= 0)
@@ -7589,9 +7602,9 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 		if (RDONLY (dev))
 			return 0;
 	}
-	
+
 	todo = bytes;
-	
+
 	if (c->stcl == 0)
 	{
 		/* no first cluster,
@@ -7606,16 +7619,16 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 		c->stcl = ptr->current = current;
 		PUT_STCL (&(c->info), dev, current);
 	}
-	
+
 	while (todo > 0)
 	{
 		temp = f->pos / CLUSTSIZE (dev);
 		if (temp > ptr->cl)
 		{
 			/* get next cluster */
-			
+
 			FAT_DEBUG (("__FIO: temp - ptr->cl = %li", temp - ptr->cl));
-			
+
 			current = NEXTCL (current, dev, mode);
 			if (current <= 0)
 			{
@@ -7624,35 +7637,35 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 				FAT_DEBUG (("__FIO: leave failure, bad clustered (return = %li)", bytes - todo));
 				break;
 			}
-			
+
 			ptr->current = current;
 			ptr->cl++;
 		}
-		
+
 		/* offset */
 		offset = f->pos % CLUSTSIZE (dev);
-		
+
 		if ((todo >= CLUSTSIZE (dev)) && (offset == 0))
 		{
 			register long cls = 1;
 			data = CLUSTSIZE (dev);
-			
+
 			FAT_DEBUG (("__FIO: CLUSTER (todo = %li, pos = %li)", todo, f->pos));
-			
+
 			if (todo - data > CLUSTSIZE (dev))
 			{
 				register long oldcl = ptr->current;
 				register long newcl = NEXTCL (oldcl, dev, mode);
-				
+
 				/* linear read/write optimization */
 				while ((newcl > 0) && (newcl == (oldcl + 1)))
 				{
 					data += CLUSTSIZE (dev);
 					cls++;
-					
+
 					ptr->current++;
 					ptr->cl++;
-					
+
 					if (todo - data > CLUSTSIZE (dev))
 					{
 						oldcl = newcl;
@@ -7662,9 +7675,9 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 						break;
 				}
 			}
-			
+
 			FAT_DEBUG (("__FIO: CLUSTER (data = %li, cluster = %li)", data, cls));
-			
+
 			/* read/write direct */
 			if (mode == READ)
 			{
@@ -7674,24 +7687,24 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			{
 				ptr->error = bio_data_l_write (dev, current, cls, buf);
 			}
-			
+
 			if (ptr->error)
 			{
 				FAT_DEBUG (("__FIO: leave failure, read/write direct"));
 				break;
 			}
-			
+
 			current = ptr->current;
 		}
 		else
 		{
 			UNIT *u;
-			
+
 			FAT_DEBUG (("__FIO: BYTES (todo = %li, pos = %li)", todo, f->pos));
-			
+
 			data = CLUSTSIZE (dev) - offset;
 			data = MIN (todo, data);
-			
+
 			/* read the unit */
 			u = bio_data_read (dev, ptr->current);
 			if (!u)
@@ -7700,27 +7713,27 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 				FAT_DEBUG (("__FIO: leave failure, read unit (return = %li, dev = %i)", bytes - todo, dev));
 				break;
 			}
-			
+
 			if (mode == READ)
 			{
 				/* copy */
-				
+
 				quickmovb (buf, (u->data + offset), data);
 			}
 			else
 			{
 				/* copy and write */
-				
+
 				quickmovb ((u->data + offset), buf, data);
 				bio_MARK_MODIFIED ((&bio), u);
 			}
 		}
-		
+
 		buf += data;
 		todo -= data;
 		f->pos += data;
 	}
-	
+
 	if (mode == WRITE)
 	{
 		if (f->pos > c->flen)
@@ -7736,7 +7749,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 		c->info.time = cpu2le16 (timestamp);
 		c->info.date = cpu2le16 (datestamp);
 		ptr->error = write_cookie (c);
-		
+
 		if (!BIO_WB_CHECK (DI (dev)))
 		{
 			/* this reduce overkill syncs
@@ -7749,7 +7762,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			}
 		}
 	}
-	
+
 	FAT_DEBUG (("__FIO: leave ok (todo = %li, processed = %li, pos = %li)", todo, bytes - todo, f->pos));
 	return (bytes - todo);
 }
@@ -7763,21 +7776,21 @@ fatfs_open (FILEPTR *f)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 	FILE *ptr;
-	
+
 	FAT_DEBUG (("fatfs_open [%s]: enter", c->name));
-	
+
 	if (c->open && denyshare (c->open, f))
 	{
 		FAT_DEBUG (("fatfs_open: file sharing denied"));
 		return EACCES;
 	}
-	
+
 	if (c->info.attr & FA_LABEL || c->info.attr & FA_DIR)
 	{
 		FAT_DEBUG (("fatfs_open: leave failure, not a valid file"));
 		return EACCES;
 	}
-	
+
 	ptr = kmalloc (sizeof (*ptr));
 	if (!ptr)
 	{
@@ -7785,22 +7798,22 @@ fatfs_open (FILEPTR *f)
 		FAT_DEBUG (("fatfs_open: leave failure, out of memory for FILE struct"));
 		return ENOMEM;
 	}
-	
+
 	ptr->mode = f->flags;
 	ptr->current = c->stcl;
 	ptr->cl = 0;
 	ptr->error = 0;
-	
+
 	if (ptr->mode & O_TRUNC && (c->flen || c->stcl))
 	{
 		long r;
-		
+
 		FAT_DEBUG (("fatfs_open: truncate file to 0 bytes (flen = %li, stcl = %li)", c->flen, c->stcl));
-		
+
 		c->flen = 0;
 		c->info.flen = 0;
 		c->info.stcl = c->info.stcl_fat32 = 0;
-		
+
 		r = write_cookie (c);
 		if (r)
 		{
@@ -7808,29 +7821,29 @@ fatfs_open (FILEPTR *f)
 			FAT_DEBUG (("fatfs_open: leave failure (write_cookie = %li)", r));
 			return r;
 		}
-		
+
 		FAT_DEBUG (("fatfs_open: del_chain"));
 		if (c->stcl)
 		{
 			(void) del_chain (c->stcl, c->dev);
 			c->stcl = 0;
 		}
-		
+
 		bio_SYNC_DRV ((&bio), DI (c->dev));
 	}
-	
+
 	if ((ptr->mode & O_RWMODE) == O_EXEC)
 	{
 		ptr->mode = (ptr->mode ^ O_EXEC) | O_RDONLY;
 	}
-	
+
 	f->pos = 0;
 	f->next = c->open;
 	c->open = f;
 	c->links++;
-	
+
 	f->devinfo = (long) ptr;
-	
+
 	FAT_DEBUG (("fatfs_open: leave ok"));
 	return E_OK;
 }
@@ -7839,13 +7852,13 @@ static long _cdecl
 fatfs_write (FILEPTR *f, const char *buf, long bytes)
 {
 	FAT_DEBUG (("fatfs_write [%s]: enter (bytes = %li)", ((COOKIE *) f->fc.index)->name, bytes));
-	
+
 	if ((((FILE *) f->devinfo)->mode & O_RWMODE) == O_RDONLY)
 	{
 		FAT_DEBUG (("fatfs_write: leave failure (bad mode)"));
 		return EACCES;
 	}
-	
+
 	FAT_DEBUG (("fatfs_write: leave return __FIO ()"));
 	return __FIO (f, (char *) buf, bytes, WRITE);
 }
@@ -7860,7 +7873,7 @@ fatfs_read (FILEPTR *f, char *buf, long bytes)
 		FAT_DEBUG (("fatfs_read: leave failure (bad mode)"));
 		return EACCES;
 	}
-	
+
 	FAT_DEBUG (("fatfs_read: leave return __FIO (bytes = %li)", bytes));
 	return __FIO (f, buf, bytes, READ);
 }
@@ -7870,9 +7883,9 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 {
 	register COOKIE *c = (COOKIE *) f->fc.index;
 	register FILE *ptr = (FILE *) f->devinfo;
-	
+
 	FAT_DEBUG (("fatfs_lseek [%s]: enter (where = %li, whence = %i)", c->name, where, whence));
-	
+
 	switch (whence)
 	{
 		case SEEK_SET:				break;
@@ -7880,34 +7893,34 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 		case SEEK_END:	where += c->flen;	break;
 		default:	return ENOSYS;
 	}
-	
+
 	if (where > c->flen || where < 0)
 	{
 		FAT_DEBUG (("fatfs_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
 	}
-	
+
 	if (where == 0)
 	{
 		f->pos = 0;
 		ptr->cl = 0;
 		ptr->current = c->stcl;
-		
+
 		FAT_DEBUG (("fatfs_lseek: leave ok (where = %li)", where));
 		return 0;
 	}
-	
+
 	{	/* calculate and set the new current cluster and position */
-		
+
 		long current = 0;
 		register long cl = where / CLUSTSIZE (c->dev);
-		
+
 		if ((where % CLUSTSIZE (c->dev) == 0) && (where == c->flen))
 		{
 			/* correct cluster boundary */
 			cl--;
 		}
-		
+
 		if (cl != ptr->cl)
 		{
 			if (cl > ptr->cl)
@@ -7918,23 +7931,23 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 			{
 				current = GETCL (c->stcl, c->dev, cl);
 			}
-			
+
 			if (current <= 0)
 			{
 				/* bad clustered or read error */
 				ptr->error = current;
-				
+
 				FAT_DEBUG (("fatfs_lseek: leave failure, bad clustered (ptr->error = %li)", ptr->error));
 				return EACCES;
 			}
-			
+
 			ptr->cl = cl;
 			ptr->current = current;
 		}
-		
+
 		f->pos = where;
 	}
-	
+
 	FAT_DEBUG (("fatfs_lseek: leave ok (f->pos = %li)", f->pos));
 	return where;
 }
@@ -7948,19 +7961,19 @@ static long _cdecl
 fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
-	
+
 	FAT_DEBUG (("fatfs_ioctl [%s]: enter (mode = %i)", c->name, mode));
-	
+
 	switch (mode)
 	{
 		case FIONREAD:
 		{
 			long bytes;
-			
+
 			bytes = c->flen - f->pos;
 			if (bytes < 0)
 				bytes = 0;
-			
+
 			*(long *) buf = bytes;
 			return E_OK;
 		}
@@ -7981,12 +7994,12 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 		case FTRUNCATE:
 		{
 			long r;
-			
+
 			if ((f->flags & O_RWMODE) == O_RDONLY)
 			{
 				return EACCES;
 			}
-			
+
 			r = __FTRUNCATE (c, *((long *) buf));
 			if (r == E_OK)
 			{
@@ -7994,23 +8007,23 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				(void) fatfs_lseek (f, 0, SEEK_SET);
 				(void) fatfs_lseek (f, pos, SEEK_SET);
 			}
-			
+
 			return r;
 		}
 		case FIBMAP:
 		{
 			long block;
-			
+
 			DEBUG (("FAT-FS: fatfs_ioctl (FIBMAP)"));
-			
+
 			if (!buf)
 				return EINVAL;
-			
+
 			block = *(long *) buf;
 			block = GETCL (c->stcl, c->dev, block);
 			if (block < 0)
 				block = 0;
-			
+
 			*(long *) buf = block;
 			return E_OK;
 		}
@@ -8019,12 +8032,12 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 		case F_GETLK:
 		{
 			struct flock *fl = (struct flock *) buf;
-			
+
 			LOCK t;
 			LOCK *lck;
-			
+
 			t.l = *fl;
-			
+
 			switch (t.l.l_whence)
 			{
 				case SEEK_SET:
@@ -8050,10 +8063,10 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 					return ENOSYS;
 				}
 			}
-			
+
 			if (t.l.l_start < 0) t.l.l_start = 0;
 			t.l.l_whence = 0;
-			
+
 			if (mode == F_GETLK)
 			{
 				lck = denylock (c->locks, &t);
@@ -8065,15 +8078,15 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				{
 					fl->l_type = F_UNLCK;
 				}
-				
+
 				return E_OK;
 			}
-			
+
 			if (t.l.l_type == F_UNLCK)
 			{
 				/* try to find the lock */
 				LOCK **lckptr = &(c->locks);
-				
+
 				lck = *lckptr;
 				while (lck)
 				{
@@ -8085,26 +8098,26 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 						*lckptr = lck->next;
 						FAT_DEBUG (("fatfs_ioctl: unlocked %s: %ld + %ld", c->name, t.l.l_start, t.l.l_len));
 						/* (void) fatfs_lock (f, 1, t.l.l_start, t.l.l_len); */
-						
+
 						/* wake up anyone waiting on the lock */
 						wake (IO_Q, (long) lck);
 						kfree (lck);
-						
+
 						return E_OK;
 					}
-					
+
 					lckptr = &(lck->next);
 					lck = lck->next;
 				}
-				
+
 				return ENSLOCK;
 			}
-			
+
 			FAT_DEBUG (("fatfs_ioctl: lock %s: %ld + %ld", c->name, t.l.l_start, t.l.l_len));
-			
+
 			do {
 				long r;
-				
+
 				/* see if there's a conflicting lock */
 				while ((lck = denylock (c->locks, &t)) != 0)
 				{
@@ -8119,7 +8132,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 						return ELOCKED;
 					}
 				}
-				
+
 				/* if not, add this lock to the list */
 				lck = kmalloc (sizeof (*lck));
 				if (!lck)
@@ -8127,7 +8140,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 					FAT_ALERT (("fatfs.c: kmalloc failed in: fatfs_ioctl (%s)", c->name));
 					return ENOMEM;
 				}
-				
+
 				r = E_OK; /* fatfs_lock (f, 0, t.l.l_start, t.l.l_len); */
 				if (r)
 				{
@@ -8144,18 +8157,18 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				}
 			}
 			while (!lck);
-			
+
 			lck->l = t.l;
 			lck->l.l_pid = curproc->pid;
 			lck->next = c->locks;
 			c->locks = lck;
-			
+
 			/* mark the file as being locked */
 			f->flags |= O_LOCK;
 			return E_OK;
 		}
 	}
-	
+
 	FAT_DEBUG (("fatfs_ioctl: return ENOSYS"));
 	return ENOSYS;
 }
@@ -8165,26 +8178,26 @@ fatfs_datime (FILEPTR *f, ushort *time, int rwflag)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
 	register FILE *ptr = (FILE *) f->devinfo;
-	
+
 	FAT_DEBUG (("fatfs_datime [%s]: enter", c->name));
-	
+
 	if (rwflag)
 	{
 		/* set the date/time */
-		
+
 		if (RDONLY (c->dev))
 			return EROFS;
-		
+
 		c->info.time = cpu2le16 (time[0]);
 		c->info.date = cpu2le16 (time[1]);
-		
+
 		if (VFAT (c->dev))
 		{
 			c->info.adate = c->info.date;
 		}
-		
+
 		ptr->error = write_cookie (c);
-		
+
 		if (c->dev == 0 || c->dev == 1)
 		{
 			bio_SYNC_DRV ((&bio), DI (c->dev));
@@ -8193,11 +8206,11 @@ fatfs_datime (FILEPTR *f, ushort *time, int rwflag)
 	else
 	{
 		/* read the date/time */
-		
+
 		time[0] = le2cpu16 (c->info.time);
 		time[1] = le2cpu16 (c->info.date);
 	}
-	
+
 	FAT_DEBUG (("fatfs_datime: leave ok"));
 	return E_OK;
 }
@@ -8206,9 +8219,9 @@ static long _cdecl
 fatfs_close (FILEPTR *f, int pid)
 {
 	COOKIE *c = (COOKIE *) f->fc.index;
-	
+
 	FAT_DEBUG (("fatfs_close [%s]: enter (f->links = %i)", c->name, f->links));
-	
+
 /*
  * the following code based on 'tos_close' from 'tosfs.c'
  * please notice the right copyright
@@ -8220,12 +8233,12 @@ fatfs_close (FILEPTR *f, int pid)
 	{
 		LOCK *lock;
 		LOCK **oldlock;
-		
+
 		FAT_DEBUG (("fatfs_close: remove lock (pid = %i)", pid));
-		
+
 		oldlock = &c->locks;
 		lock = *oldlock;
-		
+
 		while (lock)
 		{
 			if (lock->l.l_pid == pid)
@@ -8243,12 +8256,12 @@ fatfs_close (FILEPTR *f, int pid)
 		}
 	}
 /* end */
-	
+
 	if (f->links <= 0)
 	{
 		register FILEPTR **temp;
 		register long flag = 1;
-		
+
 		/* remove the FILEPTR from the linked list */
 		temp = &c->open;
 		while (*temp)
@@ -8262,20 +8275,20 @@ fatfs_close (FILEPTR *f, int pid)
 			}
 			temp = &(*temp)->next;
 		}
-		
+
 		if (flag)
 		{
 			FAT_ALERT (("fatfs.c: open FILEPTR removal failed in: fatfs_close (%s)", c->name));
 		}
-		
+
 		/* free the extra info */
 		kfree ((FILE *) f->devinfo);
-		
+
 		rel_cookie (c);
 	}
-	
+
 	bio_SYNC_DRV ((&bio), DI (c->dev));
-	
+
 	FAT_DEBUG (("fatfs_close: leave ok"));
 	return E_OK;
 }
@@ -8296,30 +8309,30 @@ fatfs_debug (const char *fmt, ...)
 {
 	static char buf[SPRINTF_MAX];
 	static const long buflen = sizeof (buf);
-	
+
 	va_list args;
 	FILEPTR *fp;
 	long ret;
-	
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	va_start (args, fmt);
 	ret = do_open (&fp, FS_LOGFILE, (O_WRONLY | O_CREAT | O_APPEND), 0, NULL);
 	if (!ret)
 	{
 		(*fp->dev->lseek)(fp, 0, SEEK_END);
-		
+
 		vsprintf (buf, buflen, fmt, args);
 		(*fp->dev->write)(fp, buf, strlen (buf));
 		(*fp->dev->write)(fp, "\r\n", 2);
-		
+
 		do_close (rootproc, fp);
 	}
 	else
 	{
 		FP_FREE (fp);
-		
+
 		vsprintf (buf, buflen, fmt, args);
 		DEBUG ((buf));
 	}
@@ -8333,9 +8346,9 @@ fatfs_print_dir (const _DIR *d, ushort dev)
 	char stime[20];
 	char sdate[20];
 	long i = 0;
-	
+
 	attr[0] = '\0';
-	
+
 	if (d->attr & FA_RDONLY)
 	{
 		ksprintf (attr + i, sizeof (attr) - i, "READONLY  ");
@@ -8366,22 +8379,22 @@ fatfs_print_dir (const _DIR *d, ushort dev)
 		ksprintf (attr + i, sizeof (attr) - i, "CHANGED   ");
 		i += 10;
 	}
-	
+
 	{
 		ushort time = le2cpu16 (d->time);
 		ushort date = le2cpu16 (d->date);
-		
+
 		ksprintf (stime, sizeof (stime), "%d:%d,%d",
 			((time >> 11) & 31),
 			((time >> 5) & 63),
 			((time & 31) << 1));
-		
+
 		ksprintf (sdate, sizeof (sdate), "%d.%d.19%d",
 			 (date & 31),
 			 ((date >> 5) & 15),
 			 (80 + ((date >> 9) & 127)));
 	}
-	
+
 	FAT_DEBUG ((
 		"---\r\n"
 		"name: %s, attr: %s\r\n"
@@ -8400,20 +8413,20 @@ fatfs_dump_hashtable (void)
 	static const long buflen = sizeof (buf);
 	FILEPTR *fp;
 	long ret;
-	
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
-	
+
 	FAT_FORCE (("fatfs.c: dynamic used memory = %li bytes", fatfs_dynamic_mem));
-	
+
 	ret = do_open (&fp, FS_DUMPFILE, (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
 	if (!ret)
 	{
 		long i;
-		
+
 		ksprintf (buf, buflen, "fatfs.c: dynamic used memory = %li bytes\r\n", fatfs_dynamic_mem);
 		(*fp->dev->write)(fp, buf, strlen (buf));
-		
+
 		(*fp->dev->write)(fp, "BPBs:\r\n", 7);
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
@@ -8428,7 +8441,7 @@ fatfs_dump_hashtable (void)
 			);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 		}
-		
+
 		(*fp->dev->write)(fp, "cookies:\r\n", 10);
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
@@ -8442,7 +8455,7 @@ fatfs_dump_hashtable (void)
 			);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 		}
-		
+
 		(*fp->dev->write)(fp, "table:\r\n", 8);
 		for (i = 0; i < COOKIE_CACHE; i++)
 		{
@@ -8459,11 +8472,11 @@ fatfs_dump_hashtable (void)
 					temp->dev,
 					temp->name
 				);
-				(*fp->dev->write)(fp, buf, strlen (buf));	
+				(*fp->dev->write)(fp, buf, strlen (buf));
 			}
 			(*fp->dev->write)(fp, "\r\n", 2);
 		}
-		
+
 		do_close (rootproc, fp);
 	}
 	else
