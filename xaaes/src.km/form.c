@@ -960,6 +960,12 @@ do_formwind_msg(
 			}
 			break;
 		}
+		case WM_CLOSED:
+		{
+			close_window(0, wind);
+			delayed_delete_window(0, wind);
+			break;
+		}
 		case WM_VSLID:
 		{
 			if (wh < oh)
