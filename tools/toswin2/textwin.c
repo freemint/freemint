@@ -1661,6 +1661,10 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->block_y1 = 0;
 	t->block_y2 = 0;
 	
+	t->vdi_colors = cfg->vdi_colors;
+	t->fg_effects = cfg->fg_effects;
+	t->bg_effects = cfg->bg_effects;
+	
 	return t;
 }
 

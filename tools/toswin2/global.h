@@ -85,6 +85,9 @@ struct _wincfg
 	int	vt_mode;
 	int	fg_color;
 	int	bg_color;
+	int	vdi_colors;
+	ulong	fg_effects;
+	ulong	bg_effects;
 	int	char_tab;
 };
 
@@ -213,8 +216,8 @@ struct textwin
 		block_y1,
 		block_y2;
 	int	vdi_colors;			/* Non-zero if vdi colors active.  */
-	int	fg_effects;			/* Bit vector of text effects.  */
-	int	bg_effects;			/* Bit vector with background effects
+	ulong	fg_effects;			/* Bit vector of text effects.  */
+	ulong	bg_effects;			/* Bit vector with background effects
 						   (only CE_BOLD/CE_LIGHT are used).  */
 };
 
