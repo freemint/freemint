@@ -51,16 +51,8 @@ static TASK click_menu_entry;
 static TASK menu_bar;
 
 
-//static void menuclick(Tab *tab);
 static void CE_do_popup(enum locks lock, struct c_event *ce, bool cancel);
 static void cancel_CE_do_popup(void);
-//static void outofpop(Tab *tab);
-
-//static void click_desk_popup(struct task_administration_block *tab);
-//static void popup(struct task_administration_block *tab);
-//static void where_are_we(struct task_administration_block *tab);
-//static void click_menu_entry(struct task_administration_block *tab);
-//static void new_title(struct task_administration_block *tab);
 
 static XAMENU desk_popup;
 static XA_TREE desk_wt;
@@ -111,12 +103,12 @@ change_title(Tab *tab, int state)
 	obtree->ob_x = k->rdx;
 	obtree->ob_y = k->rdy;
 
-	obj_change(wt, //tab->widg->stuff,
+	obj_change(wt,
 		   t,
 		   state,
 		   obtree[t].ob_flags,
 		   true,
-		   k->rl_bar/*NULL*/);
+		   k->rl_bar);
 }
 
 static void
@@ -138,8 +130,8 @@ change_entry(Tab *tab, int state)
 	else
 		state = obtree[t].ob_state & ~OS_SELECTED;
 
-	obtree->ob_x = k->pdx; //k->rdx;
-	obtree->ob_y = k->pdy; //k->rdy;
+	obtree->ob_x = k->pdx;
+	obtree->ob_y = k->pdy;
 
 	if (k->popw)
 	{
@@ -159,7 +151,7 @@ change_entry(Tab *tab, int state)
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_change(wt, t, state, obtree[t].ob_flags, true, k->rl_drop); //NULL);
+		obj_change(wt, t, state, obtree[t].ob_flags, true, k->rl_drop);
 	}
 }
 
@@ -259,7 +251,6 @@ inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, X
 int
 attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn)
 {
-	//XA_MENU_ATTACHMENT *at = client->attach;
 	OBJECT *attach_to;
 	int ret = 0;
 
@@ -342,7 +333,7 @@ detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item)
 		if ((attach_to->ob_type & 0xff) == G_STRING)
 		{
 			text = object_get_spec(attach_to)->free_string;
-			text[strlen(text)-1] = ' ';
+			text[strlen(text) - 1] = ' ';
 		}
 
 		if (xt->prev)
@@ -657,8 +648,8 @@ built_desk_popup(enum locks lock, short x, short y)
 			else
 				*(txt + 1) = ' ';
 			
-			if (appmenu[i].client->type == APP_SYSTEM)
-				*(txt + 1) = '+';
+			//if (appmenu[i].client->type == APP_SYSTEM)
+			//	*(txt + 1) = '+';
 			
 			ob[j].ob_spec.free_string = txt;
 		}
@@ -701,7 +692,7 @@ desk_menu(Tab *tab)
 	MENU_TASK *k = &tab->task_data.menu;
 
 	return    tab->ty == ROOT_MENU
-	       && !NEXT_TAB(tab) /*tab->nest == NULL*/
+	       && !NEXT_TAB(tab)
 	       && k->clicked_title == k->wt->tree[k->titles].ob_head;
 }
 
@@ -752,11 +743,7 @@ menu_pop(Tab *tab)
 	if (barred(tab))
 	{
 		if (!NEXT_TAB(tab))
-		{
-			//if (k->change_title && k->clicked_title > 0)
-			//	change_title(tab, 0);
 			obtree[k->pop_item].ob_flags |= OF_HIDETREE;
-		}
 		if (desk_menu(tab))
 			/* remove attached clients popup */
 			detach_menu(tab->lock, C.Aes, k->wt, k->about + 2);
@@ -807,7 +794,7 @@ menu_finish(struct task_administration_block *tab)
 		cancel_pop_timeouts();
 		
 		is_bar = barred(tab);
-		client = tab->client; //pid2client(tab->locker);
+		client = tab->client;
 
 		DIAG((D_menu, tab->client, "[%d]menu_finish, ty:%d for %s", tab->dbg2, tab->ty, tab->client->name));
 
@@ -821,7 +808,6 @@ menu_finish(struct task_administration_block *tab)
 
 		free_menutask(tab);
 		client->status &= ~CS_MENU_NAV;
-		//Unblock(client, 1, 0);
 	}
 	else
 	{
@@ -900,7 +886,7 @@ popup_inside(Tab *tab, RECT r)
 
 	if (rc.x != r.x)
 	{
-		Tab *tx = NEXT_TAB(tab); //tab->nest;
+		Tab *tx = NEXT_TAB(tab);
 
 		if (tx && tx->ty == POP_UP)
 		{
@@ -930,8 +916,8 @@ find_menu_object(Tab *tab, int start, short dx, short dy, RECT *c)
 	MENU_TASK *k = &tab->task_data.menu;
 	OBJECT *obtree = k->wt->tree;
 
-	obtree->ob_x = dx; //k->rdx;
-	obtree->ob_y = dy; //k->rdy;
+	obtree->ob_x = dx;
+	obtree->ob_y = dy;
 
 	return obj_find(k->wt, start, MAX_DEPTH, k->x, k->y, c);
 }
@@ -1154,7 +1140,7 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 		k->outof = NULL;
 
 		check_mouse(wt->owner, NULL, &x, &y);
-		if (m_inside(x, y, &k->drop))		//is_rect(x, y, k->em.flags & 1, &k->em.m1))
+		if (m_inside(x, y, &k->drop))
 		{
 			k->x = x;
 			k->y = y;
@@ -1348,7 +1334,7 @@ set_popout_timeout(Tab *tab)
 	{
 		if (cfg.popout_timeout)
 		{
-			t = addroottimeout(cfg.popout_timeout, do_popout_timeout, 0);
+			t = addroottimeout(cfg.popout_timeout, do_popout_timeout, 1);
 			if ((S.popout_timeout = t))
 				t->arg = (long)tab;
 		}
@@ -1542,7 +1528,7 @@ popup(struct task_administration_block *tab)
 
 			k->em.m2 = k->drop;
 			k->em.flags |= MU_M2;
-			k->em.m2_flag = 0;			/* into popup */
+			k->em.m2_flag = 0;	/* into popup */
 			k->em.t2 = popup;
 			k->outof = NULL;
 		}
@@ -1593,7 +1579,7 @@ popup(struct task_administration_block *tab)
 					{
 						TIMEOUT *t;
 					
-						t = addroottimeout(cfg.popup_timeout, do_popup_to, 0);
+						t = addroottimeout(cfg.popup_timeout, do_popup_to, 1);
 						if (t)
 						{
 							t->arg = (long)tab;
@@ -1681,11 +1667,8 @@ click_menu_entry(struct task_administration_block *tab)
 		d = obtree[m].ob_state & OS_DISABLED;
 		if (!d)
 			a = is_attach(menu_client(tab), wt, m, NULL);
-#if 0
-		if (m < 0)
-			m = find_menu_object(tab, 0, &k->bar);
-#endif
-		if (!a || k->clicks >= 2) // || (a && PREV_TAB(tab) && k->attached_to == m))
+		
+		if (!a || k->clicks >= 2)
 		{
 			titles = k->titles,
 			about = k->about,
@@ -1702,7 +1685,6 @@ click_menu_entry(struct task_administration_block *tab)
 			 */
 			if (m > -1 && !d)
 			{
-				//obtree[m].ob_state &= ~OS_SELECTED;	/* Deselect the menu entry */
 				if (wind != root_window)
 				{
 					OBJECT *rs = obtree;
@@ -1742,15 +1724,11 @@ click_menu_entry(struct task_administration_block *tab)
 				DIAG((D_menu, NULL, "Disabled entry, title_tnormal"));
 				title_tnormal(tab);
 			}
-
 			menu_finish(tab);
 			tab = NULL;
 		}
 		else
 		{
-			//if (PREV_TAB(tab))
-			//	collapse(TAB_LIST_START, tab);
-			
 			if (a && !d && k->attached_to != m)
 			{
 				do_timeout_popup(tab);
@@ -1842,17 +1820,7 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 
 	if (wt->menu_line)	/* HR 090501  menu in user window.*/
 	{
-		//short titles;
-
 		write_menu_line((RECT*)&obtree->ob_x);	/* HR: not in standard menu's object tree */
-
-#if 0
-		/* HR: Use the AES's client structure to register the rectangle for the current menu bar. */
-		titles = obtree[obtree[0].ob_head].ob_head;
-		C.Aes->waiting_for = XAWAIT_MENU;
-		obj_area(wt, titles, &C.Aes->em.m1);
-		C.Aes->em.flags = MU_M1;	/* into menu bar */
-#endif
 	}
 }
 
@@ -1906,7 +1874,6 @@ static bool
 click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *client, *rc = lookup_extension(NULL, XAAES_MAGIC);
-	//bool l = false;
 
 	DIAG((D_menu, NULL, "click_menu_widget"));
 
