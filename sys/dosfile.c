@@ -47,7 +47,7 @@ short select_coll;
 long _cdecl
 sys_f_open (const char *name, short mode)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
 	int global = 0;
@@ -120,7 +120,7 @@ error:
 long _cdecl
 sys_f_create (const char *name, short attrib)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
 	long ret;
@@ -154,7 +154,7 @@ sys_f_create (const char *name, short attrib)
 		ret = do_open (&fp, "u:\\dev\\null", O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 		if (ret) goto error;
 
-		ret = path2cookie (name, temp1, &dir);
+		ret = path2cookie (p, name, temp1, &dir);
 		if (ret) goto error;
 
 		ret = xfs_writelabel (dir.fs, &dir, temp1);
@@ -192,7 +192,7 @@ error:
 long _cdecl
 sys_f_close (short fd)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 
@@ -235,7 +235,7 @@ sys_f_close (short fd)
 long _cdecl
 sys_f_read (short fd, long count, char *buf)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 
@@ -258,7 +258,7 @@ sys_f_read (short fd, long count, char *buf)
 long _cdecl
 sys_f_write (short fd, long count, const char *buf)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 
@@ -312,7 +312,7 @@ sys_f_write (short fd, long count, const char *buf)
 long _cdecl
 sys_f_seek (long place, short fd, short how)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 
@@ -341,7 +341,7 @@ sys_f_dup (short fd)
 long _cdecl
 sys_f_force (short newfd, short oldfd)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *fp;
 	long ret;
 
@@ -391,7 +391,7 @@ sys_f_force (short newfd, short oldfd)
 long _cdecl
 sys_f_datime (ushort *timeptr, short fd, short wflag)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 
@@ -426,7 +426,7 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 long _cdecl
 sys_f_lock (short fd, short mode, long start, long length)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 	struct flock lock;
@@ -529,7 +529,7 @@ sys_ffstat (short fd, struct stat *st)
 long _cdecl
 sys_f_cntl (short fd, long arg, short cmd)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR	*f;
 	long r;
 
@@ -650,7 +650,7 @@ sys_f_cntl (short fd, long arg, short cmd)
 
 /* helper function for time outs */
 static void _cdecl
-unselectme (PROC *p)
+unselectme (struct proc *p)
 {
 	wakeselect (p);
 }
@@ -662,7 +662,7 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	long mask, bytes;
 	int i, count;
 	FILEPTR *f;
-	PROC *p;
+	struct proc *p;
 	TIMEOUT *t;
 	int rsel;
 	long wait_cond;
@@ -990,7 +990,7 @@ long _cdecl
 sys_f_midipipe (short pid, short in, short out)
 {
 	FILEPTR *fin, *fout;
-	PROC *p;
+	struct proc *p;
 
 	/* first, find the process */
 
@@ -1045,7 +1045,7 @@ sys_f_midipipe (short pid, short in, short out)
 long _cdecl
 sys_f_fchown (short fd, short uid, short gid)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 
@@ -1121,7 +1121,7 @@ sys_f_fchown (short fd, short uid, short gid)
 long _cdecl
 sys_f_fchmod (short fd, ushort mode)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 	XATTR xattr;
@@ -1279,7 +1279,7 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 long _cdecl
 sys_fwritev (short fd, const struct iovec *iov, long niov)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 
@@ -1344,7 +1344,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 long _cdecl
 sys_freadv (short fd, const struct iovec *iov, long niov)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	FILEPTR *f;
 	long r;
 

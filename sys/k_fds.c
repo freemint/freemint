@@ -251,7 +251,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	/*
 	 * first step: get a cookie for the directory
 	 */
-	r = path2cookie (name, temp1, &dir);
+	r = path2cookie (p, name, temp1, &dir);
 	if (r)
 	{
 		DEBUG (("do_open(%s): error %ld", name, r));
@@ -261,7 +261,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	/*
 	 * second step: try to locate the file itself
 	 */
-	r = relpath2cookie (&dir, temp1, follow_links, &fc, 0);
+	r = relpath2cookie (p, &dir, temp1, follow_links, &fc, 0);
 
 # if 1
 	/*

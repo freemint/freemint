@@ -1079,7 +1079,7 @@ mint_thread(void *arg)
 		 * For that, the absolute path must be used, because the user
 		 * could have changed the current drive/dir inside mint.cnf file.
 		 */
-		path2cookie(sysdir, NULL, &dir);
+		path2cookie(curproc, sysdir, NULL, &dir);
 		ext = (dir.fs->fsflags & FS_NOXBIT) ? ".tos" : "";
 		release_cookie(&dir);
 
