@@ -50,7 +50,12 @@
 struct ctlname topname[] = CTL_NAMES;
 struct ctlname kernname[] = CTL_KERN_NAMES;
 struct ctlname hwname[] = CTL_HW_NAMES;
+#ifdef CTL_MACHDEP_NAMES
+struct ctlname machdepname[] = CTL_MACHDEP_NAMES;
+#endif
 struct ctlname debugname[CTL_DEBUG_MAXID];
+/* this one is dummy, it's used only for '-a' or '-A' */
+struct ctlname procname[] = { {0, 0}, {"curproc", CTLTYPE_NODE} };
 
 char names[BUFSIZ];
 
@@ -63,8 +68,13 @@ struct list secondlevel[] = {
 	{ 0, 0 },			/* CTL_UNSPEC */
 	{ kernname, KERN_MAXID },	/* CTL_KERN */
 	{ hwname, HW_MAXID },		/* CTL_HW */
+#ifdef CTL_MACHDEP_NAMES
+	{ machdepname, CPU_MAXID },	/* CTL_MACHDEP */
+#else
 	{ 0, 0 },			/* CTL_MACHDEP */
+#endif
 	{ 0, CTL_DEBUG_MAXID },		/* CTL_DEBUG */
+	{ procname, 2 },		/* dummy name */
 	{ 0, 0},
 };
 
@@ -83,6 +93,7 @@ int main __P((int, char *[]));
 static void listall __P((const char *, struct list *));
 static void parse __P((char *, int));
 static void debuginit __P((void));
+static int sysctl_proc __P((char *, char **, int[], int, int *));
 static int findname __P((char *, char *, char **, struct list *));
 static void usage __P((void));
 
@@ -260,6 +271,11 @@ parse(char *string, int flags)
 //	case CTL_USER:
 //	case CTL_DDB:
 		break;
+	case CTL_PROC:
+		len = sysctl_proc(string, &bufp, mib, flags, &type);
+		if (len < 0)
+			return;
+		break;
 	default:
 		warnx("Illegal top level value: %d", mib[0]);
 		return;
@@ -424,6 +440,56 @@ debuginit(void)
 		debugname[i].ctl_type = CTLTYPE_INT;
 		loc += size;
 	}
+}
+
+struct ctlname procnames[] = PROC_PID_NAMES;
+struct list procvars = {procnames, PROC_PID_MAXID};
+/*
+ * handle kern.proc requests
+ */
+static int
+sysctl_proc(char *string, char **bufpp, int mib[], int flags, int *typep)
+{
+	char *cp, name[BUFSIZ];
+	struct list *lp;
+	int indx;
+
+	if (*bufpp == NULL) {
+		strcpy(name, string);
+		cp = &name[strlen(name)];
+		*cp++ = '.';
+		strcpy(cp, "curproc");
+		parse(name, Aflag);
+		return (-1);
+	}
+	cp = strsep(bufpp, ".");
+	if (cp == NULL) {
+		warnx("%s: incomplete specification", string);
+		return (-1);
+	}
+	if (strcmp(cp, "curproc") == 0) {
+		mib[1] = PROC_CURPROC;
+	} else {
+		mib[1] = atoi(cp);
+		if (mib[1] == 0) {
+			warnx("second level name %s in %s is invalid", cp,
+			    string);
+			return (-1);
+		}
+	}
+	*typep = CTLTYPE_NODE;
+	lp = &procvars;
+	if (*bufpp == NULL) {
+		listall(string, lp);
+		return (-1);
+	}
+	if ((indx = findname(string, "third", bufpp, lp)) == -1)
+		return (-1);
+	mib[2] = indx;
+	*typep = lp->list[indx].ctl_type;
+	if (*typep != CTLTYPE_NODE)
+		return(3);
+	return(5);
 }
 
 /*
