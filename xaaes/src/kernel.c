@@ -359,8 +359,6 @@ BUTTON button = {NULL};
 
 static int alert_pending = 0;
 
-static struct moose_data mdata;
-
 void
 XaAES(void)
 {
@@ -573,7 +571,7 @@ XaAES(void)
 			/* Did we get a mouse message? */
 			if (input_channels & (1L << C.MOUSE_dev))
 			{
-				/* XXX struct moose_data mdata; */
+				struct moose_data mdata;
 				long n;
 
 				mdata.l = 0;
