@@ -56,7 +56,7 @@ free(void *addr)
 #if GENERATE_DIAGS
 	XA_unit *un;
 
-	un = (long)addr - unitprefix;
+	un = (XA_unit*)((long)addr - unitprefix);
 	DIAG((D_x, 0, "XA_free %ld k:%d\n", addr, un->key));
 #endif
 	XA_free(0, addr);
