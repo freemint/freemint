@@ -27,9 +27,9 @@ struct cookie
  */
 # define CJAR		((struct cookie **) 0x5a0)
 
-
 /* exported functions
  */
+# if __KERNEL__ == 1
 void	init_cookies	(void);
 long	get_toscookie	(ulong tag, ulong *val);
 long	set_toscookie	(ulong tag, ulong val);
@@ -38,7 +38,7 @@ long	set_cookie	(struct cookie *cj, ulong tag, ulong val);
 long	del_cookie	(struct cookie *cj, ulong tag);
 long	add_rsvfentry	(char *name, char portflags, char bdev);
 long	del_rsvfentry	(char *name);
-
+# endif
 
 /* List of currently available tag values
  */
@@ -67,6 +67,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_NVDI	0x4e564449L
 # define COOKIE_FSMC	0x46534d43L
 # define COOKIE_RSVF	0x52535646L
+# define COOKIE_FSEL	0x4653454CL
 
 /* Not that we want to support these below ... */
 # define COOKIE_STiK	0x5354694bL
@@ -85,6 +86,5 @@ long	del_rsvfentry	(char *name);
 # define TT		0x00020000L
 # define FALCON		0x00030000L
 # define MILAN_C	0x00040000L
-
 
 # endif /* _cookie_h */
