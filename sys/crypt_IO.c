@@ -51,6 +51,7 @@
 # include "block_IO.h"
 # include "blowfish.h"
 # include "dosdir.h"
+# include "info.h"
 # include "init.h"
 # include "kmemory.h"
 # include "md5.h"
@@ -60,15 +61,7 @@ void
 init_crypt_IO (void)
 {
 # ifdef CRYPTO_CODE
-	boot_print (
-		"WARNING: This version of MiNT contains\r\n"
-		"strong cryptography. Depending on where\r\n"
-	);
-	boot_print (
-		"you live, using or exporting it might be\r\n"
-		"illegal. Thus, do so at your own risk!\r\n"
-		"\r\n"
-	);
+	boot_print (crypto_greet);
 # endif
 }	
 

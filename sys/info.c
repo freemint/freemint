@@ -94,7 +94,7 @@ char  COMPILER_VERS [] = str (__GNUC__) "." str (__GNUC_MINOR__);
 
 const char *greet1 =
 	"\r\n"
-	"033p\033f"
+	"033p"
 	" MiNT is Now TOS (" __DATE__ ")         \033q\r\n"
 	" MiNT v" VERS_STRING " "
 ;
@@ -113,7 +113,7 @@ const char *greet2 =
 
 const char *greet1 =
 	"\r\n"
-	"\033p\033f"
+	"\033p"
 	" This is " MINT_NAME " v" VERS_STRING "        "
 ;
 
@@ -137,18 +137,33 @@ const char *memprot_warning =
 	"\007\033p"
 	"             *** WARNING ***              \033q\r\n"
 	"You have turned off the memory protection.\r\n"
-	"This is not recommended, and may not be\r\n"
+	"This is not recommended and may not be\r\n"
 	"supported in the future.\r\n"
 	"\r\n"
 ;
 
 # ifdef DEV_RANDOM
 const char *random_greet =
-	"\033p High-quality random number generator \033q\r\n"
+	"\033p High quality random number generator \033q\r\n"
 	" courtesy of Theodore Ts'o.\r\n"
 	" Copyright \xbd 1994-1998 Theodore Ts'o\r\n"
 	" All Rights Reserved.\r\n"
 	" See the file COPYRAND for details.\r\n"
+	"\r\n"
+;
+# endif
+
+# ifdef CRYPTO_CODE
+const char *crypto_greet =
+	"\033p"
+	"              *** WARNING! ***              "
+	"\033q\r\n"
+	" This software contains strong cryptography.\r\n"
+	" Depending on where you live, exporting it\r\n"
+	" or using might be illegal.\r\n"
+	"\033p"
+	"    *** Thus, do so at your own risk ***    "
+	"\033q\r\n"
 	"\r\n"
 ;
 # endif
