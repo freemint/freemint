@@ -31,6 +31,7 @@
 
 #include "c_window.h"
 #include "form.h"
+#include "init.h"
 #include "messages.h"
 #include "obtree.h"
 #include "scrlobjc.h"
@@ -45,19 +46,26 @@ static char *about_lines[] =
 {
   /*          1         2         3         4         5         6
      123456789012345678901234567890123456789012345678901234567890 */
-	"Original code by Craig at Data Uncertain.",
-	"Additional work by:",
-	"Johan K, Martin K, Mario B, T Eero,",
-	"Steve S, Evan K, Thomas B, James C.",
-	"Using Harald Siegmunds NKCC.",
-	"Thanks to all on the MiNT mailing list,",
-	"       Joakim H for his 3D test program.",
 	"",
-	"XaAES is free software. You may use it,",
-	"modify it, rip out and renovate it's dark",
-	"inner secrets .... as long as you tell",
-	"me. You can NOT sell it for profit.",
-	0
+	"Copyright (c) 1992 - 1998 C.Graham",
+	"              1999 - 2003 H.Robbers",
+	"                from 2004 F.Naumann & O.Skancke",
+	"",
+	"Additional work by:",
+	"   Johan K, Martin K, Mario B, T Eero,",
+	"   Steve S, Evan K, Thomas B, James C.",
+	"",
+	"Thanks to all on the MiNT mailing list,",
+	"to Joakim H for his 3D test program.",
+	"Using Harald Siegmunds NKCC.",
+	"",
+	"XaAES is free software; you can redistribute it",
+	"and/or modify it under the terms of the GNU",
+	"General Public License as published by the Free",
+	"Software Foundation; either version 2 of the",
+	"License, or (at your option) any later version.",
+	"",
+	NULL
 };
 
 static struct xa_window *about_window = NULL;
@@ -139,6 +147,8 @@ open_about(enum locks lock)
 
 		/* Set the window title */
 		get_widget(dialog_window, XAW_TITLE)->stuff = "  About  ";
+		/* set version */
+		(form + ABOUT_VERSION)->ob_spec.free_string = version;
 		/* Set version date */
 		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
 

@@ -43,6 +43,7 @@
 
 #define ABOUT_XAAES 4   /* Formular/Dialog */
 #define ABOUT_LIST 5   /* BOX in Baum ABOUT_XAAES */
+#define ABOUT_VERSION 7   /* STRING in Baum ABOUT_XAAES */
 #define ABOUT_DATE 9   /* STRING in Baum ABOUT_XAAES */
 #define ABOUT_OK 10  /* BUTTON in Baum ABOUT_XAAES */
 
