@@ -352,51 +352,51 @@ const char *MSG_keytable_faulty = "Keyboard table is BAD!\r\n";
 /* ------------ mis.c ------------- */
 
 # ifdef BUILTIN_SHELL
-const char *MSG_shell_name = "MiS v.%d.%d, the FreeMiNT internal shell,\r\n%s";
+const char *MSG_shell_name = "MiS v.%d.%d, the FreeMiNT internal shell,\n%s";
 const char *MSG_shell_missing_arg = ": missing argument.";
-const char *MSG_shell_error = "mint: %s: error %ld\r\n";
-const char *MSG_shell_type_help = "Type `help' for help\r\n\r\n";
-const char *MSG_shell_unmatched_quotes = "mint: unmatched quotes.\r\n";
-const char *MSG_shell_export_help = "Usage: %s [NAME=value]\r\n";
-const char *MSG_shell_setenv_help = "Usage: %s [NAME value]\r\n";
-const char *MSG_shell_rm_help = "Usage: %s [-f] FILE [FILE...]\r\n";
+const char *MSG_shell_error = "mint: %s: error %ld\n";
+const char *MSG_shell_type_help = "Type `help' for help\n\n";
+const char *MSG_shell_syntax_error = "mint: syntax error.\n";
+const char *MSG_shell_export_help = "Usage: %s [NAME=value]\n";
+const char *MSG_shell_setenv_help = "Usage: %s [NAME value]\n";
+const char *MSG_shell_rm_help = "Usage: %s [-f] FILE [FILE...]\n";
 const char *MSG_shell_exit_q = "Are you sure to exit and reboot (y/n)?";
-const char *MSG_shell_xcmd_help = "Usage: %s [on|off]\r\n";
-const char *MSG_shell_xcmd_info = "Extended commands are %s\r\n";
+const char *MSG_shell_xcmd_help = "Usage: %s [on|off]\n";
+const char *MSG_shell_xcmd_info = "Extended commands are %s\n";
 const char *MSG_shell_xcmd_on = "on";
 const char *MSG_shell_xcmd_off = "off";
-const char *MSG_shell_cd_help = "Usage: %s [NEWDIR]\r\n";
-const char *MSG_shell_ls_help = "Usage: %s [-l|-a] [DIR]\r\n";
+const char *MSG_shell_cd_help = "Usage: %s [NEWDIR]\n";
+const char *MSG_shell_ls_help = "Usage: %s [-l|-a] [DIR]\n";
 const char *MSG_shell_help = \
-	"	MiS is not intended to be a regular system shell, so don't\r\n" \
-	"	expect much. It is only a tool to fix bigger problems that\r\n" \
-	"	prevent the system from booting normally. Basic commands:\r\n" \
-	"\r\n" \
-	"	cd [DIR] - change directory\r\n" \
-	"	echo TEXT - display `text'\r\n" \
-	"	exit - leave and reboot\r\n" \
-	"	export [NAME=value] - set an environment variable\r\n" \
-	"	help - display this message\r\n" \
-	"	setenv [NAME value] - set an environment variable\r\n" \
-	"	ver - display version information\r\n" \
-	"	xcmd [on|off] - switch the extended command set on/off\r\n"
-	"\r\n" \
-	"	Extended commands (now %s):\r\n" \
-	"\r\n" \
-	"	chgrp DEC-GROUP FILE - change group the file belongs to\r\n" \
-	"	chmod OCTAL-MODE FILE - change access permissions for file\r\n" \
-	"	chown DEC-OWNER[:DEC-GROUP] FILE - change file's ownership\r\n" \
-	"	*cp - copy file\r\n" \
-	"	ln OLD NEW - create a symlink `new' pointing to file `old'\r\n" \
-	"	ls [-l|-a] [DIR] - display directory\r\n" \
-	"	*mv - move/rename a file\r\n" \
-	"	rm [-f] FILE [FILE...] - delete a file\r\n" \
-	"\r\n" \
-	"	All other words typed are understood as names of programs\r\n" \
-	"	to execute. In case you'd want to execute something, that\r\n" \
-	"	has been named like one of the internal commands, use the\r\n" \
+	"	MiS is not intended to be a regular system shell, so don't\n" \
+	"	expect much. It is only a tool to fix bigger problems that\n" \
+	"	prevent the system from booting normally. Basic commands:\n" \
+	"\n" \
+	"	cd [DIR] - change directory\n" \
+	"	echo TEXT - display `text'\n" \
+	"	exit - leave and reboot\n" \
+	"	export [NAME=value] - set an environment variable\n" \
+	"	help - display this message\n" \
+	"	setenv [NAME value] - set an environment variable\n" \
+	"	ver - display version information\n" \
+	"	xcmd [on|off] - switch the extended command set on/off\n"
+	"\n" \
+	"	Extended commands (now %s):\n" \
+	"\n" \
+	"	chgrp DEC-GROUP FILE - change group the file belongs to\n" \
+	"	chmod OCTAL-MODE FILE - change access permissions for file\n" \
+	"	chown DEC-OWNER[:DEC-GROUP] FILE - change file's ownership\n" \
+	"	*cp - copy file\n" \
+	"	ln OLD NEW - create a symlink `new' pointing to file `old'\n" \
+	"	ls [-l|-a] [DIR] - display directory\n" \
+	"	*mv - move/rename a file\n" \
+	"	rm [-f] FILE [FILE...] - delete a file\n" \
+	"\n" \
+	"	All other words typed are understood as names of programs\n" \
+	"	to execute. In case you'd want to execute something, that\n" \
+	"	has been named like one of the internal commands, use the\n" \
 	"	full pathname." \
-	"\r\n";
+	"\n";
 # endif
 
 /* ------------ slb.c ------------- */
