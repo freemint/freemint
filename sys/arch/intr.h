@@ -33,6 +33,7 @@ void _cdecl	reboot		(void);
 void _cdecl	newmvec		(void);
 void _cdecl	newjvec		(void);
 long _cdecl	newkeys		(void);
+void _cdecl	kbdclick	(short scancode);
 long _cdecl	new_rwabs	(void);
 long _cdecl	new_mediach	(void);
 long _cdecl	new_getbpb	(void);
