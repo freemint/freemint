@@ -107,7 +107,7 @@ killgroup (int pgrp, ushort sig, int priv)
 
 	DEBUG (("killgroup(%i, %i, %i)", pgrp, sig, priv));
 
-	if (pgrp <= 0)
+	if (pgrp < 0)
 		return EINTERNAL;
 
 	if (sig >= NSIG)
