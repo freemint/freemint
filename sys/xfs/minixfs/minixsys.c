@@ -537,7 +537,7 @@ m_mkdir (fcookie *dir, const char *name, unsigned int mode)
 		return pos;
 	
 	read_inode (dir->index, &rip, dir->dev);
-	if (rip.i_nlinks >= MINIX_MAX_LINK)
+	if (rip.i_nlinks >= MINIX2_LINK_MAX)
 		return EACCES;
 	
 	/* Get new inode */
@@ -872,7 +872,7 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 			if (ret < 0) return ret;
 			if (ret) return EACCES;
 			read_inode (newdir->index, &riptemp, newdir->dev);
-			if (riptemp.i_nlinks == MINIX_MAX_LINK) return EACCES;
+			if (riptemp.i_nlinks == MINIX2_LINK_MAX) return EACCES;
 			TRACE (("Minix-FS (%c): valid directory move", olddir->dev+'A'));
 			dirmove = 1;
 # endif
@@ -1039,7 +1039,7 @@ m_pathconf (fcookie *dir, int which)
 	{
 		case DP_INQUIRE:	return DP_VOLNAMEMAX;
 		case DP_IOPEN:		return UNLIMITED;
-		case DP_MAXLINKS:	return MINIX_MAX_LINK;
+		case DP_MAXLINKS:	return MINIX2_LINK_MAX;
 		case DP_PATHMAX:	return UNLIMITED;
 		case DP_NAMEMAX:	return super_ptr[dir->dev]->mfname;
 		case DP_ATOMIC:		return BLOCK_SIZE;
@@ -1216,7 +1216,7 @@ m_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char *
 
 	read_inode (finode, &rip, fromdir->dev);
 	if ((!IS_REG (rip) && !IM_SPEC (rip.i_mode))
-		|| (rip.i_nlinks >= MINIX_MAX_LINK)) return EACCES;
+		|| (rip.i_nlinks >= MINIX2_LINK_MAX)) return EACCES;
 
 	/* Create new entry */
 	if ((pos = search_dir (toname, todir->index, todir->dev, ADD)) < 0)
