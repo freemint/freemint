@@ -779,15 +779,19 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md)
 {
 	/*
 	 */
-	if (internal || (S.excl_mouse_input && S.excl_mouse_input->waiting_for == XAWAIT_MOUSE))
+	if (internal || (S.excl_mouse_input && (S.excl_mouse_input->waiting_for & XAWAIT_MOUSE)))
 	{
 		/* a client wait exclusivly for the mouse */
 		short *data = S.excl_mouse_input->waiting_short;
 
 		if (md->ty == MOOSE_BUTTON_PREFIX)
+		{
 			new_mu_mouse(md);
-
-		data[0] = md->state;
+			data[0] = md->state;
+		}
+		else
+			data[0] = mu_button.b;
+			
 		data[1] = md->x;
 		data[2] = md->y;
 
@@ -938,7 +942,7 @@ mouse_input(enum locks lock, int internal)
 	return false;
 }
 
-static struct file *kmoose = 0;
+extern struct file *kmoose;
 
 void
 exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, short *yr)
@@ -977,9 +981,15 @@ exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, 
 			 */
 			if (kmoose)
 			{
-				DIAGS(("read kmoose 1"));
+				DIAGS(("poll: kernel_read moose"));
 				n = kernel_read(kmoose, &md, sizeof(md));
 			}
+			else
+			{
+				DIAGS(("poll: attempt normal f_read"));
+				n = f_read(C.MOUSE_dev, sizeof(md), &md);
+			}
+#if 0
 			else
 			{
 				long err;
@@ -990,6 +1000,7 @@ exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, 
 			}
 			if (!kmoose)
 				n = f_read(C.MOUSE_dev, sizeof(md), &md);
+#endif
 
 			if (n == sizeof(md))
 			{
@@ -1037,59 +1048,72 @@ exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, 
 			}
 		}
 		b = mu_button.b;
-		DIAG((D_mouse, NULL, "Poll - return %d, %d.%d", b, x, y));
-	}
-	else if (client != C.Aes)
-	{
-		/* wait for input from AESSYS */
-		short data[3];
-
-		DIAGS(("exclusive_mouse_input for %s", client->name));
-
-		client->waiting_for = XAWAIT_MOUSE;
-		client->waiting_short = data;
-
-		/* only one client can exclusivly wait for the mouse */
-		assert(S.excl_mouse_input == NULL);
-
-		S.excl_mouse_input = client;
-		Block(client, 2);
-		S.excl_mouse_input = NULL;
-
-		client->waiting_for = 0;
-		client->waiting_short = NULL;
-
-		b = data[0];
-		x = data[1];
-		y = data[2];
 	}
 	else
 	{
-		/* AESSYS internal -> poll mouse */
-		short data[3];
+		int pid;
 
-		DIAGS(("exclusive_mouse_input for XaAES"));
+		/*
+		 * Ozk: Make absolutely sure wether we're the AES kernel or a user
+		 * application.
+		*/
+		pid = p_getpid();
 
-		client->waiting_for = XAWAIT_MOUSE;
-		client->waiting_short = data;
+		if (C.Aes->p->pid == pid)
+		{
 
-		/* only one client can exclusivly wait for the mouse */
-		assert(S.excl_mouse_input == NULL);
+			/* AESSYS internal -> poll mouse */
+			short data[3];
 
-		S.excl_mouse_input = client;
+			DIAGS(("exclusive_mouse_input for XaAES"));
 
-		while (!mouse_input(NOLOCKS/*XXX*/, true))
-			yield();
+			client->waiting_for |= XAWAIT_MOUSE;
+			client->waiting_short = data;
 
-		S.excl_mouse_input = NULL;
+			/* only one client can exclusivly wait for the mouse */
+			assert(S.excl_mouse_input == NULL);
 
-		client->waiting_for = 0;
-		client->waiting_short = NULL;
+			S.excl_mouse_input = client;
 
-		b = data[0];
-		x = data[1];
-		y = data[2];
+			while (!mouse_input(NOLOCKS/*XXX*/, true))
+				yield();
+
+			S.excl_mouse_input = NULL;
+
+			client->waiting_for &= ~XAWAIT_MOUSE;
+			client->waiting_short = NULL;
+
+			b = data[0];
+			x = data[1];
+			y = data[2];
+		}
+		else
+		{
+			/* wait for input from AESSYS */
+			short data[3];
+
+			DIAGS(("exclusive_mouse_input for %s", client->name));
+
+			client->waiting_for |= XAWAIT_MOUSE;
+			client->waiting_short = data;
+
+			/* only one client can exclusivly wait for the mouse */
+			assert(S.excl_mouse_input == NULL);
+
+			S.excl_mouse_input = client;
+			Block(client, 2);
+			S.excl_mouse_input = NULL;
+
+			client->waiting_for &= ~XAWAIT_MOUSE;
+			client->waiting_short = NULL;
+
+			b = data[0];
+			x = data[1];
+			y = data[2];
+		}
 	}
+
+	DIAG((D_mouse, NULL, "Poll/exclusive - return %d, %d.%d for %s", b, x, y, client->name));
 
 	if (br)
 		*br = b;

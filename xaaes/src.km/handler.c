@@ -225,9 +225,9 @@ XA_handler(void *_pb)
 						client = lookup_extension(NULL, XAAES_MAGIC);
 					if (client)
 					{
-						DIAG((D_trap, client, "Block client %s", client->name));
+						DIAG((D_trap, client, "XA_Hand: Block client %s", client->name));
 						Block(client, 1);
-						DIAG((D_trap, client, "Unblocked %s", client->name));
+						DIAG((D_trap, client, "XA_Hand: Unblocked %s", client->name));
 						break;
 					}
 				}
