@@ -802,6 +802,8 @@ format_dialog_text(char *text_out, char *template, char *text_in, int edit_pos)
 	int edit_index = max;
 	bool aap = *text_in == '@';
 
+	DIAG((D_o, NULL, "format_dialog_text edit_pos %d\n", edit_pos));
+
 	while (*template)
 	{
 		if (*template != '_')
