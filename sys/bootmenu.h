@@ -19,7 +19,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *
- * Author: Konrad M. Kokoszkiewicz <fnaumann@freemint.de>
+ * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
  *
  * please send suggestions or bug reports to me or
  * the MiNT mailing list

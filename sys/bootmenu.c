@@ -21,7 +21,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *
- * Author: Konrad M. Kokoszkiewicz <fnaumann@freemint.de>
+ * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
  *
  * please send suggestions or bug reports to me or
  * the MiNT mailing list
@@ -47,7 +47,7 @@
 /* if the user is holding down the magic shift key, we ask before booting */
 # define MAGIC_SHIFT	0x2		/* left shift */
 
-# define MENU_OPTIONS	7
+# define MENU_OPTIONS	9
 # define MAX_CMD_LEN	32
 
 short load_xfs_f = 1;		/* Flag: load XFS modules (if 1) */
@@ -104,6 +104,26 @@ getdelim(char *buf, long n, int terminator, int fd)
 
 	return 0;
 }
+
+static const char *debug_levels[] =
+{
+	"(none)",
+	"(ALERT)",
+	"(ALERT, DEBUG)",
+	"(ALERT, DEBUG, TRACE)",
+	"(ALERT, DEBUG, TRACE, TRACELOW)"
+};
+
+static const char *debug_devices[] =
+{
+	"(PRN:, printer)",
+	"(AUX:, modem)",
+	"(CON:, console)",
+	"(MID:, midi)",
+	"(KBD:, keyboard)",
+	"(RAW:, raw console)",
+	"", "", "", ""
+};
 
 /* Pairs of functions handling each keyword. The do_xxx_yyyy() function
  * is called when the mint.ini is read; the `arg' points to the line buffer
@@ -426,7 +446,7 @@ read_ini (void)
 					if (s && (s == line))
 					{
 						s = strchr(line, '=');
-						if (s && *s)
+						if (s)
 						{
 							s++;
 							do_func[x](s);
@@ -450,8 +470,8 @@ read_ini (void)
 int
 boot_kernel_p (void)
 {
-	short option[MENU_OPTIONS];
-	long c = 0;
+	long off, opt, option[MENU_OPTIONS];
+	int c;
 
 	option[0] = 1;			/* Load MiNT or not */
 	option[1] = load_xfs_f;		/* Load XFS or not */
@@ -459,28 +479,34 @@ boot_kernel_p (void)
 	option[3] = load_auto;		/* Load AUTO or not */
 	option[4] = !no_mem_prot;	/* Use memprot or not */
 	option[5] = step_by_step;	/* Enter stepper mode */
+	option[6] = debug_level;
+	option[7] = out_device;
 	option[MENU_OPTIONS-1] = save_ini;
 
 	for (;;)
 	{
 		boot_printf(MSG_init_bootmenu, \
-			option[0] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
-			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
-			option[2] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
-			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
-			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
-			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn, \
+			option[0] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+			option[2] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+# ifndef NO_MMU
+			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+# endif
+			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+			option[6], debug_levels[option[6]],
+			option[7], debug_devices[option[7]],
 			option[MENU_OPTIONS-1] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
 wait:
 		c = TRAP_Crawcin();
 		c &= 0x7f;
-		switch(c)
+
+		switch ((char)c)
 		{
 			case 0x03:
 			{
 				return 1;
 			}
-			case 0x0a:
 			case 0x0d:
 			{
 				load_xfs_f = option[1];
@@ -488,6 +514,8 @@ wait:
 				load_auto = option[3];
 				no_mem_prot = !option[4];
 				step_by_step = option[5];
+				debug_level = option[6];
+				out_device = option[7];
 				save_ini = option[MENU_OPTIONS-1];
 				if (save_ini)
 					write_ini();
@@ -500,7 +528,33 @@ wait:
 			}
 			case '1' ... '6':
 			{
-				option[(c - 1) & 0x0f] = option[(c - 1) & 0x0f] ? 0 : 1;
+				off = ((c & 0x0f) - 1);
+				option[off] = option[off] ? 0 : 1;
+
+				break;
+			}
+			case '7':
+			{
+				off = ((c & 0x0f) - 1);
+				opt = option[off];
+
+				opt++;
+				if (opt > LOW_LEVEL)
+					opt = 0;
+				option[off] = opt;
+
+				break;
+			}
+			case '8':
+			{
+				off = ((c & 0x0f) - 1);
+				opt = option[off];
+
+				opt++;
+				if (opt > 9)
+					opt = 0;
+				option[off] = opt;
+
 				break;
 			}
 			default:
