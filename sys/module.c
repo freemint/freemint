@@ -93,18 +93,27 @@ struct file * _cdecl
 kernel_open(const char *path, int rwmode, long *err)
 {
 	struct file *f;
+	long r;
 
-	*err = FP_ALLOC(rootproc, &f);
-	if (*err) return NULL;
+	r = FP_ALLOC(rootproc, &f);
+	if (r)
+	{
+		f = NULL;
+		goto leave;
+	}
 
-	*err = do_open(&f, path, rwmode, 0, NULL);
-	if (*err)
+	r = do_open(&f, path, rwmode, 0, NULL);
+	if (r)
 	{
 		f->links--;
 		FP_FREE(f);
-		return NULL;
+
+		f = NULL;
+		goto leave;
 	}
 
+leave:
+	if (err) *err = r;
 	return f;
 }
 
