@@ -31,6 +31,7 @@
 
 #include "c_window.h"
 #include "form.h"
+#include "messages.h"
 #include "obtree.h"
 #include "scrlobjc.h"
 #include "widgets.h"
@@ -123,7 +124,9 @@ open_about(enum locks lock)
 		}
 
 		/* Create the window */
-		dialog_window = create_window(lock, NULL, NULL,
+		dialog_window = create_window(lock,
+						do_winmesag, //NULL,
+						do_formwind_msg, //NULL,
 						C.Aes,
 						false,
 						CLOSER|NAME|

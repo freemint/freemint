@@ -684,6 +684,26 @@ ob_area(OBJECT *obtree, short obj, RECT *c)
 }
 
 /*
+ * Calculate the differance between border corrections for two
+ * objects. For example a slider where the slide parent is a non-3d
+ * object while the slider is, we need to take 3d border offsets 
+ * into accrount when positioning/sizing the slider.
+ */
+void
+ob_border_diff(OBJECT *obtree, short obj1, short obj2, RECT *r)
+{
+	RECT r1, r2;
+
+	object_offsets(obtree + obj1, &r1);
+	object_offsets(obtree + obj2, &r2);
+
+	r->x = r1.x - r2.x;
+	r->y = r1.y - r2.y;
+	r->w = r1.w - r2.w;
+	r->h = r1.h - r2.h;
+}
+
+/*
  * Find which object is at a given location
  *
  */

@@ -251,6 +251,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 		}
 	}
 }
+
 static void
 reset_pending_button(void)
 {
