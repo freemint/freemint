@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,13 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2000-10-31
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  * 
  */
 
@@ -96,5 +93,17 @@ void free_sigacts (struct proc *p);
 struct plimit *copy_limits (struct proc *p);
 void free_limits (struct proc *p);
 
+
+/* P_ext */
+
+void *_cdecl proc_lookup_extension(struct proc *, long ident);
+void *_cdecl proc_attach_extension(struct proc *, long ident, unsigned long size, struct module_callback *);
+void  _cdecl proc_detach_extension(struct proc *, long ident);
+
+void proc_ext_on_exit(struct proc *p);
+void proc_ext_on_exec(struct proc *p);
+void proc_ext_on_fork(struct proc *p, long flags, struct proc *child);
+void proc_ext_on_stop(struct proc *p, unsigned short nr);
+void proc_ext_on_signal(struct proc *p, unsigned short nr);
 
 # endif /* _proc_help_h */

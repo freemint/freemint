@@ -53,22 +53,6 @@ extern struct kentry *kentry;
 # define MINT_PATCHLEVEL	(KENTRY->patchlevel)
 
 /*
- * general version check
- */
-INLINE long
-check_kentry_version(void)
-{
-        if ((MINT_MAJOR != MINT_MAJ_VERSION) || (MINT_MINOR != MINT_MIN_VERSION)
-	    || (kentry->version_major != KENTRY_MAJ_VERSION))
-	{
-		c_conws("Wrong FreeMiNT version!\r\n");
-		c_conws("This module is compiled against " MINT_NAME);
-		c_conws(MINT_VERS_STRING);
-		return -1;
-	}
-}
-
-/*
  * vec_dos
  */
 
@@ -742,6 +726,25 @@ INLINE long b_drvmap(void)
 
 
 /*
+ * generic version check
+ */
+
+INLINE long
+check_kentry_version(void)
+{
+        if ((MINT_MAJOR != MINT_MAJ_VERSION) || (MINT_MINOR != MINT_MIN_VERSION)
+	    || (kentry->version_major != KENTRY_MAJ_VERSION))
+	{
+		c_conws("Wrong FreeMiNT version!\r\n");
+		c_conws("This module is compiled against " MINT_NAME);
+		c_conws(MINT_VERS_STRING);
+		return -1;
+	}
+	return 0;
+}
+
+
+/*
  * kentry_proc
  */
 
@@ -761,6 +764,16 @@ INLINE long b_drvmap(void)
 
 # define kthread_create		(*KENTRY->vec_proc.kthread_create)
 # define kthread_exit		(*KENTRY->vec_proc.kthread_exit)
+
+# define semaphore_init(s)	(*KENTRY->vec_proc._semaphore_init)(s, FUNCTION)
+# define semaphore_lock(s)	(*KENTRY->vec_proc._semaphore_lock)(s, FUNCTION)
+# define semaphore_rel(s)	(*KENTRY->vec_proc._semaphore_rel)(s, FUNCTION)
+
+# define get_curproc		(*KENTRY->vec_proc.get_curproc)
+
+# define lookup_extension	(*KENTRY->vec_proc.lookup_extension)
+# define attach_extension	(*KENTRY->vec_proc.attach_extension)
+# define detach_extension	(*KENTRY->vec_proc.detach_extension)
 
 /* for sleep */
 # define CURPROC_Q		0

@@ -49,6 +49,7 @@
 # include "module.h"		/* load_modules */
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "proc_help.h"		/* proc_extensions */
+# include "semaphores.h"	/* semaphore_* */
 # include "signal.h"		/* ikill */
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
 # include "time.h"		/* xtime */
@@ -62,29 +63,4 @@
 # define DEFAULT_DIRMODE	(0755)
 
 
-struct kentry kentry =
-{
-	MINT_MAJ_VERSION,
-	MINT_MIN_VERSION,
-	MINT_PATCH_LEVEL,
-	KENTRY_MAJ_VERSION,
-	KENTRY_MIN_VERSION,
-	
-	0x00000040,
-	0,
-
-	dos_tab,
-	bios_tab,
-	xbios_tab,
-
-	DEFAULTS_kentry_mch,
-	DEFAULTS_kentry_proc,
-	DEFAULTS_kentry_mem,
-	DEFAULTS_kentry_fs,
-	DEFAULTS_kentry_sockets,
-	DEFAULTS_kentry_module,
-	DEFAULTS_kentry_cnf,
-	DEFAULTS_kentry_misc,
-	DEFAULTS_kentry_debug,
-	DEFAULTS_kentry_libkern
-};
+struct kentry kentry = DEFAULTS_kentry;
