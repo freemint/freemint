@@ -654,16 +654,17 @@ trap2_vdihandler:
 	move.l	_vdi_handler,d0
 	bne.s	trap2_out
 
+	// Call old trap 2, when no function registered
 old_trap2:
 	clr.w	-(sp)
 	move.l	#trap2_out,-(sp)
 	move.w	sr,-(sp)
+#ifdef	ONLY030
 	jmp	([_old_trap2])
-//	move.l	_old_trap2,-(sp)
-//	rts
-	
-//	jsr	_trap_2_emu
-//	bra.s	trap2_out
+#else
+	move.l	_old_trap2,-(sp)
+	rts
+#endif
 
 rom_trap2:
 	move.l	_old_trap2,-(sp)
@@ -676,7 +677,8 @@ rom_trap2:
 // Trap wrapper for calling ROM from the inside of the kernel.
 // Usage: just replace trap #1 with a jsr _trap_1_emu etc.
 
-#ifdef SYSCALL_REENTRANT
+// Ozk: wouldnt these be useful in any case?
+//#ifdef SYSCALL_REENTRANT
 
 	.globl	_trap_1_emu
 	.globl	_trap_2_emu
@@ -694,8 +696,12 @@ _trap_1_emu:
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
 TE_D:	move.w	sr,-(sp)
+#ifdef	ONLY030
+	jmp	([_old_dos])
+#else
 	move.l	_old_dos.w(pc),-(sp)
 	rts
+#endif
 
 	// Ozk: we cannot use D0/D1 becaues the ugly VDI and AES
 	// passes paremters in these registers.
@@ -708,9 +714,12 @@ _trap_2_emu:
 	clr.w	-(sp)			// frame format word
 	subq.w	#4,sp			// already got return address here
 TE_AV:	move.w	sr,-(sp)
+#ifdef	ONLY030
 	jmp	([_old_trap2])
-//	move.l	_old_trap2.w(pc),-(sp)
-//	rts
+#else
+	move.l	_old_trap2.w(pc),-(sp)
+	rts
+#endif
 	
 _trap_13_emu:
 #ifndef ONLY030
@@ -721,8 +730,12 @@ _trap_13_emu:
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
 TE_B:	move.w	sr,-(sp)
+#ifdef	ONLY030
+	jmp	([_old_bios])
+#else
 	move.l	_old_bios.w(pc),-(sp)
 	rts
+#endif
 
 _trap_14_emu:
 #ifndef ONLY030
@@ -733,9 +746,14 @@ _trap_14_emu:
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
 TE_X:	move.w	sr,-(sp)
+#ifdef	ONLY030
+	jmp	([_old_xbios])
+#else
 	move.l	_old_xbios.w(pc),-(sp)
 	rts
 #endif
+
+//#endif	// SYSCALL_REENTRANT
 
 // ******************************
 // * unused trap's trap handler *
