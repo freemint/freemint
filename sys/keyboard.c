@@ -43,7 +43,7 @@
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
-# include "cnf.h"		/* init_env */
+# include "cnf_mint.h"		/* init_env */
 # include "cookie.h"		/* get_cookie(), set_cookie() */
 # include "debug.h"		/* do_func_key() */
 # include "dev-mouse.h"		/* mshift */
