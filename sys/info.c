@@ -357,6 +357,7 @@ const char *MSG_init_starting_sysupdate = "Starting up the update daemon ...";
 const char *MSG_init_pid_0 = "Starting up the idle process (pid 0) ...";
 const char *MSG_init_launching_init = "Launching %s: %s ...";
 const char *MSG_init_no_init_specified = "No init program specified to be started.\r\n";
+const char *MSG_init_rom_AES = "No init, launching ROM AES.\r\n";
 const char *MSG_init_starting_shell = "Starting up `%s' ...";
 const char *MSG_init_starting_internal_shell = "Giving up, reverting to internal shell.\r\n";
 const char *MSG_init_done = " done!\r\n";
