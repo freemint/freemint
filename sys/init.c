@@ -1011,7 +1011,7 @@ init (void)
 	 * so that AHDI doesn't get upset by references to drive U:
 	 */
 	
-	r = fp_alloc (rootproc, &f);
+	r = FP_ALLOC (rootproc, &f);
 	if (r) FATAL ("Can't allocate fp!");
 	
 	r = do_open (&f, "U:\\DEV\\CONSOLE", O_RDWR, 0, NULL);
@@ -1022,7 +1022,7 @@ init (void)
 	curproc->p_fd->ofiles[0] = f; f->links++;
 	curproc->p_fd->ofiles[1] = f; f->links++;
 	
-	r = fp_alloc (rootproc, &f);
+	r = FP_ALLOC (rootproc, &f);
 	if (r) FATAL ("Can't allocate fp!");
 	
 	r = do_open (&f, "U:\\DEV\\MODEM1", O_RDWR, 0, NULL);
@@ -1048,7 +1048,7 @@ init (void)
 		f->links++;
 	}
 	
-	r = fp_alloc (rootproc, &f);
+	r = FP_ALLOC (rootproc, &f);
 	if (r) FATAL ("Can't allocate fp!");
 	
 	r = do_open (&f, "U:\\DEV\\CENTR", O_RDWR, 0, NULL);
@@ -1059,7 +1059,7 @@ init (void)
 		f->links++;
 	}
 	
-	r = fp_alloc (rootproc, &f);
+	r = FP_ALLOC (rootproc, &f);
 	if (r) FATAL ("Can't allocate fp!");
 	
 	r = do_open (&f, "U:\\DEV\\MIDI", O_RDWR, 0, NULL);
@@ -1069,7 +1069,8 @@ init (void)
 		curproc->p_fd->midiout = f;
 		f->links++;
 		
-		((struct tty *) f->devinfo)->aux_cnt = 1;
+		((struct tty *) f->devinfo)->use_cnt++;
+		((struct tty *) f->devinfo)->aux_cnt = 2;
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
 	

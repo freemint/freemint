@@ -452,7 +452,7 @@ biosfs_init (void)
 	midi_btty.tosfd = ENODEV;
 	midi_btty.bdev = 3;
 	
-	if (fp_alloc (rootproc, &defaultaux))
+	if (FP_ALLOC (rootproc, &defaultaux))
 		FATAL ("Can't allocate defaultaux FILEPTR!");
 	
 	defaultaux->links = 1;		/* so it never gets freed */
@@ -2546,7 +2546,7 @@ set_auxhandle (PROC *p, int dev)
 	long ret;
 	struct bios_file *b;
 	
-	ret = fp_alloc (p, &f);
+	ret = FP_ALLOC (p, &f);
 	if (!ret)
 	{
 		struct tty *tty;
@@ -2576,7 +2576,7 @@ set_auxhandle (PROC *p, int dev)
 				    p->p_fd->aux->fc.index == f->fc.index)
 				{
 					f->links = 0;
-					fp_free (f);
+					FP_FREE (f);
 					return 1;
 				}
 # endif
@@ -2590,7 +2590,7 @@ found_device:
 		if ((*f->dev->open)(f) < E_OK)
 		{
 			f->links = 0;
-			fp_free (f);
+			FP_FREE (f);
 			return 0;
 		}
 		
