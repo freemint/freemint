@@ -1085,6 +1085,8 @@ mark_region(MEMREGION *region, short int mode)
     	goto finished;
 
     for (proc = proclist; proc; proc = proc->gl_next) {
+	if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
+		continue;
 	assert(proc->page_table);
 	if (!shortcut && (mode == PROT_I || mode == PROT_G)) {
 	    /* everybody gets the same flags */
@@ -1726,6 +1728,8 @@ BIG_MEM_DUMP (int bigone, PROC *proc)
 					
 					for (p = proclist; p; p = p->gl_next)
 					{
+						if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+							continue;
 						if (p->mem)
 						{
 							mr = p->mem;

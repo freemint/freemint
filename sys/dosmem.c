@@ -1026,6 +1026,9 @@ terminate (PROC *curproc, int code, int que)
 			{
 				for (p = proclist; p; p = p->gl_next)
 				{
+					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+						continue;
+					
 					if (p->pgrp == pgrp
 						&& p != curproc
 						&& (0 != (pfp = p->control))
@@ -1040,6 +1043,9 @@ terminate (PROC *curproc, int code, int que)
 			{
 				for (p = proclist; p; p = p->gl_next)
 				{
+					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+						continue;
+					
 					if (p->pgrp == pgrp
 						&& p != curproc
 						&& p->control == fp)
@@ -1190,7 +1196,7 @@ found:
 	/* make sure that any open files that refer to this process are
 	 * closed
 	 */
-	changedrv (PROC_RDEV_BASE | curproc->pid);
+	// XXX changedrv (PROC_RDEV_BASE | curproc->pid);
 	
 	/* find our parent (if parent not found, then use process 0 as parent
 	 * since that process is constantly in a wait loop)

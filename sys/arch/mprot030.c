@@ -547,6 +547,8 @@ mark_region(MEMREGION *region, short int mode)
     memset(&global_mode_table[start >> 13],mode,(len >> 13));
 
     for (proc = proclist; proc; proc = proc->gl_next) {
+	if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
+		continue;
 	assert(proc->page_table);
 	if (mode == PROT_I || mode == PROT_G) {
 	    /* everybody gets the same flags */
@@ -1178,6 +1180,8 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
 		*lp++ = modesym[global_mode_table[loc / EIGHT_K]];
 
 		for (p = proclist; p; p = p->gl_next) {
+		    if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
 		    if (p->mem) {
 			mr = p->mem;
 			for (i=0; i < p->num_reg; i++, mr++) {

@@ -813,6 +813,9 @@ close_filesys (void)
 	{
 		int i;
 		
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
 		for (i = MIN_HANDLE; i < MAX_OPEN; i++)
 		{
 			FILEPTR *f;
@@ -872,6 +875,9 @@ changedrv (ushort d)
 	
 	for (p = proclist; p; p = p->gl_next)
 	{
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
 		/* invalidate all open files on this device */
 		for (i = MIN_HANDLE; i < MAX_OPEN; i++)
 		{

@@ -132,6 +132,9 @@ killgroup (int pgrp, ushort sig, int priv)
 	
 	for (p = proclist; p; p = p->gl_next)
 	{
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
 		if (p->pgrp == pgrp)
 		{
 			long last_error;

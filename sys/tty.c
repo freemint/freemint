@@ -1196,6 +1196,8 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (tty->pgrp > 0) {
 				PROC* p;
 				for (p = proclist; p; p = p->gl_next) {
+					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+						continue;
 					if (p->control &&
 					    p->pgrp == p->pid &&
 					    p->control->fc.index == f->fc.index &&

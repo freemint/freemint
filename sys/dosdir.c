@@ -1630,6 +1630,9 @@ d_lock (int mode, int _dev)
 	
 	for (p = proclist; p; p = p->gl_next)
 	{
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if (p->root[i].dev == dev)
