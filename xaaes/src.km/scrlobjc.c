@@ -127,7 +127,11 @@ set_scroll(struct xa_client *client, OBJECT *form, int item)
 	if (!sinfo)
 		return false;
 
+	bzero(sinfo, sizeof(*sinfo));
+
 	/* colours are those for windows */
+	sinfo->prev_ob = *ob;
+	
 	object_set_spec(form + item, (unsigned long)sinfo);
 	ob->ob_type = G_SLIST;
 	ob->ob_flags |= OF_TOUCHEXIT;
@@ -135,6 +139,30 @@ set_scroll(struct xa_client *client, OBJECT *form, int item)
 	sinfo->item = item;
 
 	return true;
+}
+
+void
+unset_G_SLIST(struct xa_client *client, OBJECT *form, short item)
+{
+	struct scroll_info *list;
+	OBJECT *ob = form + item;
+
+	DIAG((D_objc, NULL, "unset_G_SLIST: obtree=%lx, index=%d",
+		form, item));
+	
+	DIAGS(("unset_G_SLIST: obtree=%lx, index=%d",
+		form, item));
+
+	if (ob->ob_type == G_SLIST && (list = (struct scroll_info *)object_get_spec(ob)->index))
+	{
+		DIAGS((" --- emptying..."));
+		empty_scroll_list(form, item, -1);
+		*ob = list->prev_ob;
+		if (client == C.Aes)
+			kfree(list);
+		else
+			ufree(list);
+	}
 }
 
 /* preparations for windowed list box widget;
@@ -145,6 +173,7 @@ SCROLL_INFO *
 set_slist_object(enum locks lock,
         	 XA_TREE *wt,
 		 OBJECT *form,
+		 struct xa_window *parentwind,
 		 short item,
 		 scrl_widget *closer,
 		 scrl_widget *fuller,
@@ -152,6 +181,7 @@ set_slist_object(enum locks lock,
 		 scrl_click *click,
 		 char *title,
 		 char *info,
+		 void *data,
 		 short lmax)	/* Used to determine whether a horizontal slider is needed. */
 {
 	RECT r;
@@ -159,7 +189,9 @@ set_slist_object(enum locks lock,
 	OBJECT *ob = form + item;
 	SCROLL_INFO *list = (SCROLL_INFO *)object_get_spec(ob)->index;
 
+	list->pw = parentwind;
 	list->wt = wt;
+	list->data = data;
 
 	list->dclick = dclick;			/* Pass the scroll list's double click function */
 	list->click = click;			/* Pass the scroll list's click function */
@@ -186,10 +218,10 @@ set_slist_object(enum locks lock,
 	wkind |= TOOLBAR;
 
 	list->wi = create_window(lock,
-				 do_winmesag, //slist_msg_handler,
+				 do_winmesag,
 				 slist_msg_handler,
 				 wt->owner,
-				 true, 					/* nolist */
+				 true,			/* nolist */
 				 wkind,
 				 created_for_AES | created_for_SLIST,
 				 0, false,r,NULL,NULL);
@@ -201,7 +233,6 @@ set_slist_object(enum locks lock,
 			get_widget(list->wi, XAW_INFO)->stuff = info;
 		list->wi->winob = form;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;
-		//list->wi->window_status |= XAWS_OPEN;		
 		r = list->wi->wa;
 		r.h /= screen.c_max_h;
 		r.h *= screen.c_max_h;		/* snap the workarea hight */
@@ -218,14 +249,7 @@ set_slist_object(enum locks lock,
 		list->v = (r.w - cfg.widg_w) / screen.c_max_w;
 		list->max = lmax;
 
-		//list->wi->rc = list->wi->r;
 		open_window(lock, list->wi, list->wi->r);
-#if 0
-		/* recalc for aligned work area */
-		list->wi->rc = list->wi->r;
-		calc_work_area(list->wi);
-		make_rect_list(list->wi, true, RECT_SYS);
-#endif
 	}
 	return list;
 }
@@ -282,10 +306,16 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 	int n = 0;
 	list = (SCROLL_INFO *)object_get_spec(ob)->index;
 	this = next = list->start;
-	
+
+	DIAGS(("empty_scroll_list: list=%lx, obtree=%lx, ind=%d",
+		list, form, item));
+
 	while (this)
 	{
 		next = this->next;
+		
+		DIAGS((" --- this=%lx, next=%lx, this->flag=%x",
+			this, this->flag));
 
 		if ((this->flag & flag) || flag == -1)
 		{
@@ -296,6 +326,7 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 			if (prior)
 				prior->next = next;
 
+			DIAGS(("empty_scroll_list: free %lx", this));
 			kfree(this);
 		}
 		else
@@ -303,7 +334,6 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 			this->n = ++n;
 			prior = this;
 		}
-
 		this = next;
 	}
 
@@ -534,7 +564,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 			showm();
 
 			if (list->click)			/* Call the new object selected function */
-				(*list->click)(lock, form, item);
+				(*list->click)(lock, list, form, item);
 		}
 	}
 }
@@ -567,6 +597,6 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 			list->cur = this;
 		
 		if (list->dclick)
-			(*list->dclick)(lock, form, item);
+			(*list->dclick)(lock, list, form, item);
 	}
 }

@@ -52,7 +52,7 @@ void free_wtlist(struct xa_client *client);
 void remove_from_wtlist(XA_TREE *wt);
 void copy_wt(XA_TREE *d, XA_TREE *s);
 void free_wt(XA_TREE *wt);
-void remove_wt(XA_TREE *wt);
+bool remove_wt(XA_TREE *wt);
 
 //XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
 
