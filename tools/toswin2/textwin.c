@@ -34,7 +34,9 @@ static MFDB scr_mfdb;	/* left NULL so it refers to the screen by default */
 */
 static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short force);
 static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstline, short lastline, short force);
-static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, short force);
+static void update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc, 
+			   short force, bool clipped);
+static void update_cursor (WINDOW* win, int top);
 static void draw_textwin(WINDOW *v, short x, short y, short w, short h);
 static void close_textwin(WINDOW *v);
 static void full_textwin(WINDOW *v);
@@ -84,6 +86,31 @@ void char2pixel(TEXTWIN *t, short col, short row, short *xp, short *yp)
 			while(--col >= 0) 
 				x += WIDE[t->data[row][col]];
 			*xp = x;
+		}
+	}
+}
+
+static void 
+char2grect (TEXTWIN* t, short col, short row, GRECT* g)
+{
+	short* WIDE = t->cwidths;
+
+	g->g_y = t->win->work.g_y - t->offy + row * t->cheight;
+	g->g_h = t->cheight;
+	
+	if (!WIDE) {
+		g->g_x = t->win->work.g_x + col * t->cmaxwidth;
+		g->g_w = t->cmaxwidth;
+	} else {	
+		if (col >= NCOLS (t)) { 
+			g->g_x = t->win->work.g_x + t->win->work.g_w;
+			g->g_w = 0;
+		} else {
+			short x = t->win->work.g_x;
+			while(--col >= 0) 
+				x += WIDE[t->data[row][col]];
+			g->g_x = x;
+			g->g_w = WIDE[t->data[row][col]];
 		}
 	}
 }
@@ -627,8 +654,9 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short 
  * "dirty" characters. Note that we assume here that clipping
  * rectanges and wind_update() have already been set for us.
  */
-static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstline, 
-									short lastline, short force)
+static void 
+update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline, 
+	      short lastline, short force)
 {
 #define CBUFSIZ 127
 	unsigned char buf[CBUFSIZ+1], c;
@@ -741,6 +769,162 @@ static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstl
 		py += t->cheight;
 		firstline++;
 	}
+	if (t->curs_on)
+		update_cursor (t->win, -1);
+}
+
+/* Update the cursor.  FIXME: This function nests to deep.  */
+static void
+update_cursor (WINDOW* win, int top)
+{
+	TEXTWIN* tw = win->extra;
+	bool force_draw = FALSE;
+	GRECT curr, work;
+	GRECT new_curs = { 0, 0, 0, 0 };
+	GRECT old_curs = { 0, 0, 0, 0 };
+	bool off = FALSE;	
+	unsigned long old_flag = 0;
+	unsigned long new_flag = 0;
+	
+	if (top == 1)
+		tw->wintop = 1;
+	else if (top == 0) {
+		tw->wintop = 0;
+		if (!tw->curs_drawn)
+			force_draw = TRUE;
+	} else if (top == -1) {
+		force_draw = TRUE;
+	}
+	
+	/* Exits if window isn't visible or was iconified/shaded */
+	if (win->handle < 0 || (win->flags & WICONIFIED) || 
+	    (win->flags & WSHADED) ||
+	    (!tw->curs_on && !tw->curs_drawn)) {
+	    	tw->last_cx = tw->last_cy = -1;
+		return;
+	}
+
+	/* If the window is not on top we only have to draw something if a 
+	   redraw has been forced by the caller or the cursor is currently
+	   not showing.  */
+	if (!force_draw && !tw->wintop && tw->curs_drawn)
+		return;
+		
+	work = win->work;
+	rc_intersect (&gl_desk, &work);
+	if (work.g_w == 0 || work.g_h == 0)
+		return;
+
+	/* If the cursor simply flashes there is no need to remove it from
+	   the old position.  */
+	if ((tw->last_cx != tw->cx || tw->last_cy != tw->cy) &&
+	    (tw->last_cx >= 0 && tw->last_cy >= tw->miny)) {
+		old_flag = tw->cflag[tw->last_cy][tw->last_cx];
+		
+		char2grect (tw, tw->last_cx, tw->last_cy, &old_curs);
+		if (tw->curs_vvis) {
+			int selected = old_flag & CINVERSE;
+			
+			if (selected)
+				old_flag &= ~CINVERSE;
+			else
+				old_flag |= CINVERSE;
+		}
+	}
+	char2grect (tw, tw->cx, tw->cy, &new_curs);
+	new_flag = tw->cflag[tw->cy][tw->cx];
+
+	if (force_draw || !tw->curs_drawn)
+		tw->curs_drawn = 1;
+	else
+		tw->curs_drawn = 0;
+
+	if (tw->curs_vvis) {
+		int selected = new_flag & CINVERSE;
+		
+		if (selected)
+			new_flag &= ~CINVERSE;
+		else
+			new_flag |= CINVERSE;
+	} else if (tw->curs_drawn) {
+		new_curs.g_y += tw->cheight - 1 -
+			tw->curs_offy - tw->curs_height;
+		new_curs.g_h = tw->curs_height;
+	}
+	
+	tw->dirty[tw->cy] = SOMEDIRTY;
+	tw->cflag[tw->cy][tw->cx] |= CDIRTY;
+	
+	wind_update(TRUE);
+	wind_get_grect (win->handle, WF_FIRSTXYWH, &curr);
+
+	while (curr.g_w && curr.g_h) {
+		if (rc_intersect (&work, &curr)) {
+			if (old_curs.g_w) {
+				GRECT curr2 = curr;
+				if (curr2.g_w && curr2.g_h &&
+				    rc_intersect (&old_curs, &curr2)) {
+					char buf[2];
+				
+					if (!off)
+						off = hide_mouse_if_needed (&curr2);
+
+					set_clipping (vdi_handle, 
+						      curr2.g_x, 
+						      curr2.g_y, 
+					      	      curr2.g_w, 
+					      	      curr2.g_h, 
+					      	      TRUE);
+					
+					buf[0]= tw->data[tw->last_cy][tw->last_cx];
+					buf[1] = '\000';
+					draw_buf (tw, buf, curr2.g_x, curr2.g_y,
+						  old_flag, 0);
+				}
+			}
+			
+			if (new_curs.g_w && rc_intersect (&new_curs, &curr)) {
+				if (!off)
+					off = hide_mouse_if_needed (&curr);
+			
+				if (tw->curs_vvis || !tw->curs_drawn) {
+					char buf[2] = {
+						tw->data[tw->cy][tw->cx],
+						'\000'};
+
+					set_clipping (vdi_handle, curr.g_x, curr.g_y, 
+						      curr.g_w, curr.g_h, TRUE);
+				
+					draw_buf (tw, buf, curr.g_x, curr.g_y,
+						  new_flag, 0);
+				} else {
+					int fillcolor, textcolor, texteffects;
+					short xy[4] = {
+						curr.g_x, curr.g_y, 
+						curr.g_x + curr.g_w - 1, 
+						curr.g_y + curr.g_h - 1
+					};
+					use_ansi_colors (tw, tw->term_cattr, 
+							 &textcolor, 
+							 &fillcolor, 
+							 &texteffects);
+					set_fillcolor (textcolor);
+					set_fillstyle (1, 1);
+					v_bar (vdi_handle, xy);		
+				}
+			}
+		}
+		
+		wind_get_grect (win->handle, WF_NEXTXYWH, &curr);
+	}
+
+	if (off)
+		show_mouse();
+
+	wind_update(FALSE);
+
+	tw->last_cx = tw->cx;
+	tw->last_cy = tw->cy;
 }
 
 /*
@@ -768,7 +952,9 @@ void mark_clean(TEXTWIN *t)
  * can't mark the window clean during the update; we have to do
  * it in a separate routine (mark_clean)
  */
-static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, short force)
+static void 
+update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc, 
+	       short force, bool clipped)
 {
 	short firstline, lastline, firstscroll;
 	short firstcol, lastcol;
@@ -839,9 +1025,8 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 
 	lastline = firstline + hc / t->cheight;
 
-	if (xc != t->win->work.g_x || yc != t->win->work.g_y ||
-	    wc != t->win->work.g_w || hc != t->win->work.g_h)
-		lastline += 2;
+	if (clipped)
+		++lastline;
 		
 	if (lastline > t->maxy) 
 		lastline = t->maxy;
@@ -889,18 +1074,20 @@ void refresh_textwin(TEXTWIN *t, short force)
 
 	wind_update(TRUE);
 	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
-	while (t1.g_w && t1.g_h) 
-	{
-		if (rc_intersect(&t2, &t1)) 
-		{
+	while (t1.g_w && t1.g_h) {
+		if (rc_intersect(&t2, &t1)) {
+			bool clipped;
+			
 			if (!off)
 				off = hide_mouse_if_needed(&t1);
 			if (memcmp (&t1, &t2, sizeof t1))
-				set_clipping (vdi_handle, t1.g_x, t1.g_y, 
-					      t1.g_w, t1.g_h, TRUE);
+				clipped = TRUE;
 			else
-				set_clipping (vdi_handle, 0, 0, 0, 0, FALSE);
-			update_screen(t, t1.g_x, t1.g_y, t1.g_w, t1.g_h, force);
+				clipped = FALSE;
+			set_clipping (vdi_handle, t1.g_x, t1.g_y, 
+				      t1.g_w, t1.g_h, clipped);
+			update_screen (t, t1.g_x, t1.g_y, t1.g_w, t1.g_h, 
+				       force, clipped);
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
 	}
@@ -915,12 +1102,12 @@ void refresh_textwin(TEXTWIN *t, short force)
  * Methods for reacting to user events
  */
 /* draw part of a window */
-static void draw_textwin(WINDOW *v, short x, short y, short w, short h)
+static void draw_textwin (WINDOW *v, short x, short y, short w, short h)
 {
 	TEXTWIN *t = v->extra;
 
 	t->scrolled = 0;
-	update_screen(v->extra, x, y, w, h, CLEARED);
+	update_screen (v->extra, x, y, w, h, CLEARED, FALSE);
 	t->nbytes = t->draw_time = 0;
 }
 
@@ -1019,7 +1206,8 @@ static void newyoff(TEXTWIN *t, short y)
 #define scrollup(t, off) scrollupdn(t, off, UP)
 #define scrolldn(t, off) scrollupdn(t, off, DOWN)
 
-static void scrollupdn(TEXTWIN *t, short off, short direction)
+static void 
+scrollupdn (TEXTWIN *t, short off, short direction)
 {
 	WINDOW	*v = t->win;
 	GRECT t1, t2;
@@ -1033,25 +1221,24 @@ static void scrollupdn(TEXTWIN *t, short off, short direction)
 	rc_intersect(&gl_desk, &t2);
 	wind_update(TRUE);
 	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
-	while (t1.g_w && t1.g_h) 
-	{
-		if (rc_intersect(&t2, &t1)) 
-		{
+	while (t1.g_w && t1.g_h) {
+		if (rc_intersect(&t2, &t1)) {
+			bool clipped;
+			
 			if (!m_off)
 				m_off = hide_mouse_if_needed(&t1);
 			if (memcmp (&t1, &t2, sizeof t1))
-				set_clipping(vdi_handle, t1.g_x, t1.g_y, 
-							 t1.g_w, t1.g_h, TRUE);
+				clipped = TRUE;
 			else
-				set_clipping (vdi_handle, 0, 0, 0, 0, FALSE);
-				
+				clipped = FALSE;
+			set_clipping(vdi_handle, t1.g_x, t1.g_y, 
+						 t1.g_w, t1.g_h, clipped);
+			
 			if (off >= t1.g_h) 
 				update_screen(t, t1.g_x, t1.g_y, 
-						 t1.g_w, t1.g_h, TRUE);
-			else 
-			{
-				if (direction  == UP) 
-				{
+						 t1.g_w, t1.g_h, TRUE, clipped);
+			else {
+				if (direction  == UP) {
 					pxy[0] = t1.g_x;	/* "from" address */
 					pxy[1] = t1.g_y + off;
 					pxy[2] = t1.g_x + t1.g_w - 1;
@@ -1060,9 +1247,7 @@ static void scrollupdn(TEXTWIN *t, short off, short direction)
 					pxy[5] = t1.g_y;
 					pxy[6] = t1.g_x + t1.g_w - 1;
 					pxy[7] = t1.g_y + t1.g_h - off - 1;
-				} 
-				else 
-				{
+				} else {
 					pxy[0] = t1.g_x;
 					pxy[1] = t1.g_y;
 					pxy[2] = t1.g_x + t1.g_w - 1;
@@ -1072,15 +1257,15 @@ static void scrollupdn(TEXTWIN *t, short off, short direction)
 					pxy[6] = t1.g_x + t1.g_w - 1;
 					pxy[7] = t1.g_y + t1.g_h - 1;
 				}
-				vro_cpyfm(vdi_handle, S_ONLY, pxy, &scr_mfdb, &scr_mfdb);
+				vro_cpyfm (vdi_handle, S_ONLY, pxy, &scr_mfdb, &scr_mfdb);
 				if (direction == UP)
-					update_screen(t, t1.g_x, pxy[7], 
-						      t1.g_w, off, TRUE);
+					update_screen (t, t1.g_x, pxy[7], 
+						       t1.g_w, off, TRUE, clipped);
 				else
-					update_screen(t, t1.g_x, t1.g_y, 
-						      t1.g_w, off, TRUE);
+					update_screen (t, t1.g_x, t1.g_y, 
+						       t1.g_w, off, TRUE, clipped);
 			}
-			}
+		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
 	}
 	if (m_off)
@@ -1501,7 +1686,11 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->vdi_colors = cfg->vdi_colors;
 	t->fg_effects = cfg->fg_effects;
 	t->bg_effects = cfg->bg_effects;
-
+	t->curs_on = 1;
+	t->curs_vvis = 0;
+	t->curs_drawn = 0;
+	t->wintop = 0;
+	
 	t->cfg = cfg;
 	original_colors (t);
 	flag = t->term_cattr;		
@@ -1559,7 +1748,8 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	v->sized = size_textwin;
 	v->arrowed = arrow_textwin;
 	v->vslid = vslid_textwin;
-
+	v->timer = update_cursor;
+	
 	v->keyinp = text_type;
 	v->mouseinp = text_click;
 
@@ -1589,7 +1779,15 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	
 	t->savex = t->savey = 0;
 	t->save_cattr = t->term_cattr;
-
+	t->last_cx = t->last_cy = -1;
+	
+	t->curs_height = t->cheight >> 3;
+	if (t->curs_height < 1)
+		t->curs_height = 1;
+	t->curs_offy = 1;
+	if (t->curs_offy + t->curs_height > t->cheight)
+		t->curs_offy = 0;
+	
 	return t;
 
 bail_out:
@@ -2058,7 +2256,6 @@ reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 {
 	int i;
 
-	curs_off(t);
 	change_window_gadgets(t->win, cfg->kind);
 	if (cfg->title[0] != '\0')
 		title_window(t->win, cfg->title);
@@ -2073,7 +2270,6 @@ reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 		memulset (t->cflag[i], COLORS (cfg->fg_color, cfg->bg_color),
 			  NCOLS (t));
 	}
-	curs_on(t);
 
 	refresh_textwin(t, TRUE);
 
