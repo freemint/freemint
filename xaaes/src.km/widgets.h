@@ -49,8 +49,8 @@ void done_widget_active(struct xa_window *wind, int i);
 RECT iconify_grid(int i);
 void do_active_widget(enum locks lock, struct xa_client *client);
 
-WidgetBehaviour display_vslide;  /* For d_g_list, should go! */
-WidgetBehaviour display_object_widget;  /* for desktop */
+DisplayWidget display_vslide;  /* For d_g_list, should go! */
+DisplayWidget display_object_widget;  /* for desktop */
 
 static inline int bound_sl(int p) { return p < 0 ? 0 : (p > SL_RANGE ? SL_RANGE : p); }
 static inline XA_WIDGET *get_widget(struct xa_window *wind, int n) { return &wind->widgets[n]; }

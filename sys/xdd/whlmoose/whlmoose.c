@@ -72,7 +72,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	4
+# define VER_MINOR	5
 # define VER_STATUS	
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -198,6 +198,8 @@ static short click_y;
 static short click_state;
 static short click_cstate;
 static short click_count;
+static short l_clicks;
+static short r_clicks;
 
 static short timeout;
 static short dc_time;
@@ -377,9 +379,15 @@ timer_handler(void)
 						click_state |= s;
 						click_cstate = s;
 						if (s & 1)
+						{
+							l_clicks++;
 							click_count++;
-						else if (s & 2)
+						}
+						if (s & 2) //else if (s & 2)
+						{
+							r_clicks++;
 							click_count++;
+						}
 						if (click_count > 1)
 							timeout += 10;	/* extend timeout, so a triple-click becomes easier */
 					}
@@ -397,6 +405,10 @@ timer_handler(void)
 							last_time	= tm;
 							timeout		= dc_time;
 							click_count	= 1;
+							if (s & 1)
+								l_clicks = 1;
+							if (s & 2)
+								r_clicks = 1;
 						}
 						else
 						/* Ozk 180603: A new event, but with a initial button-released state
@@ -404,7 +416,7 @@ timer_handler(void)
 						*  most likely was sent while button(s) were still pressed (click-hold).
 						*/
 						{
-							click_count	= 0;
+							click_count = l_clicks = r_clicks = 0;
 							do_button_packet();
 						}
 					}
@@ -447,9 +459,14 @@ do_button_packet(void)
 	md.ty		= MOOSE_BUTTON_PREFIX;
 	md.x		= click_x;
 	md.y		= click_y;
+	md.sx		= sample_x;
+	md.sy		= sample_y;
 	md.state	= click_state;
 	md.cstate	= click_cstate;
 	md.clicks	= click_count;
+	md.kstate	= 0;		/* Not set here -- will change*/
+	md.iclicks[0]	= l_clicks;
+	md.iclicks[1]	= r_clicks;
 	md.dbg1		= 0;
 	md.dbg2		= 0;
 
