@@ -42,8 +42,8 @@ void		reset_priorities(void);
 void		run_next	(struct proc *p, int slices);
 void		fresh_slices	(int slices);
 
-void		add_q		(int que, PROC *proc);
-void		rm_q		(int que, PROC *proc);
+void		add_q		(int que, struct proc *proc);
+void		rm_q		(int que, struct proc *proc);
 
 void	_cdecl	preempt		(void);
 int	_cdecl	sleep		(int que, long cond);
