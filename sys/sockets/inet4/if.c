@@ -424,7 +424,7 @@ if_close (struct netif *nif)
 	arp_flush (nif);
 	
 	ifa = if_af2ifaddr (nif, AF_INET);
-	if (ifa != 0)
+	if (ifa)
 		route_del (SIN (&ifa->addr)->sin_addr.s_addr, 0xffffffff);
 	
 	if (nif->flags & IFF_LOOPBACK)
@@ -1086,11 +1086,16 @@ if_config (struct ifconf *ifconf)
 struct ifaddr *
 if_af2ifaddr (struct netif *nif, short family)
 {
-	struct ifaddr *ifa;
+	struct ifaddr *ifa = NULL;
 	
-	for (ifa = nif->addrlist; ifa; ifa = ifa->next)
-		if (ifa->family == family)
-			break;
+	if (nif)
+	{
+		for (ifa = nif->addrlist; ifa; ifa = ifa->next)
+		{
+			if (ifa->family == family)
+				break;
+		}
+	}
 	
 	return ifa;
 }
