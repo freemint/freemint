@@ -568,7 +568,8 @@ create_window(
 			opts |= WO_FULLREDRAW;
 		w->opts = opts;
 	}
-	
+
+	w->vdi_handle = C.vh;	
 	w->wheel_mode = client->options.wheel_mode;
 	w->frame = frame;
 	w->thinwork = thinwork;
@@ -848,7 +849,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	{
 		our_win = wind->r;
 
-		wl = wind;
+		wl = wind->next;
 		while (wl)
 		{
 			clip = wl->r;
@@ -938,6 +939,7 @@ draw_window(enum locks lock, struct xa_window *wind)
 	/* Dont waste precious CRT glass */
 	if (wind != root_window)
 	{
+		
 		RECT cl = wind->r;
 		RECT wa = wind->wa;
 
