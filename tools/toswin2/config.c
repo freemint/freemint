@@ -75,7 +75,6 @@ static WINCFG *crt_newcfg(char *prog)
 	new->width = -1;
 	new->height = -1;
 	new->vt_mode = MODE_VT52;
-	new->wrap = TRUE;
 	new->autoclose = FALSE;
 	new->iconified = FALSE;
 	new->fg_color = 7;
@@ -277,7 +276,6 @@ static void open_cfgwd(WDIALOG *wd)
 		set_state(cfg_wd->tree, WGSMALLER, OS_SELECTED, cfg->kind & SMALLER);
 		set_state(cfg_wd->tree, WGFULLER, OS_SELECTED, cfg->kind & FULLER);
 		set_state(cfg_wd->tree, WGSLVERT, OS_SELECTED, cfg->kind & VSLIDE);
-		set_state(cfg_wd->tree, WGSLHOR, OS_SELECTED, cfg->kind & HSLIDE);
 		set_state(cfg_wd->tree, WGSIZER, OS_SELECTED, cfg->kind & SIZER);
 		set_string(cfg_wd->tree, WTITLE, title);
 	
@@ -311,7 +309,6 @@ static void open_cfgwd(WDIALOG *wd)
 		}
 		/* FIXME: Set future checkboxes for pseudo effects.  */
 		
-		set_state(cfg_wd->tree, WWRAP, OS_SELECTED, cfg->wrap);
 		set_state(cfg_wd->tree, WCLOSE, OS_SELECTED, cfg->autoclose);
 
 		new_id = cfg->font_id;
@@ -427,7 +424,9 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 			cfg->scroll = atoi(str);
 			if (cfg->scroll < 0)
 				cfg->scroll = 0;
-	
+			else if (cfg->scroll > 999)
+				cfg->scroll = 999;
+				
 			if (new_id != -1)
 				cfg->font_id = new_id;
 			if (new_pts != -1)
@@ -444,8 +443,6 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 				cfg->kind |= FULLER;
 			if (get_state(wd->tree, WGSLVERT, OS_SELECTED))
 				cfg->kind |= (VSLIDE|UPARROW|DNARROW);
-			if (get_state(wd->tree, WGSLHOR, OS_SELECTED))
-				cfg->kind |= (HSLIDE|LFARROW|RTARROW);
 			if (get_state(wd->tree, WGSIZER, OS_SELECTED))
 				cfg->kind |= SIZER;
 			get_string(wd->tree, WTITLE, cfg->title);
@@ -459,7 +456,6 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 			cfg->fg_color = cfg->vdi_colors ? new_fg : vdi2ansi[new_fg & 0x7];
 			cfg->bg_color = cfg->vdi_colors ? new_bg : vdi2ansi[new_bg & 0x7];
 
-			cfg->wrap = get_state(wd->tree, WWRAP, OS_SELECTED);
 			cfg->autoclose = get_state(wd->tree, WCLOSE, OS_SELECTED);
 
 			if (cfg_win)
@@ -706,8 +702,6 @@ static void parse_line(char *zeile)
 				p_cfg->height = atoi(value);
 			else if (strcmp(var, "WinTitle") == 0)
 				get_str(value, p_cfg->title);
-			else if (strcmp(var, "WinWrap") == 0)
-				get_bool(value, &p_cfg->wrap);
 			else if (strcmp(var, "WinVtMode") == 0)
 				p_cfg->vt_mode = atoi(value);
 			else if (strcmp(var, "WinVDIColors") == 0)
@@ -842,7 +836,6 @@ void config_save(void)
 			write_int("WinSizeH", p->height);
 			write_str("WinTitle", p->title);
 			write_int("WinVtMode", p->vt_mode);
-			write_bool("WinWrap", p->wrap);
 			write_int("WinVDIColors", p->vdi_colors);
 			write_ulong("WinFGEffects", p->fg_effects);
 			write_ulong("WinBGEffects", p->bg_effects);

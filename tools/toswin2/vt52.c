@@ -101,31 +101,6 @@ static void capture(TEXTWIN *v, unsigned int c)
 	}
 }
 
-/*
- * paint a character, even if it's a graphic character
- */
-static void quote_putch(TEXTWIN *v, unsigned int c)
-{
-	if (c == 0) 
-		c = ' ';
-	curs_off(v);
-	paint(v, c);
-	v->cx++;
-	if (v->cx == v->maxx) 
-	{
-		if (v->term_flags & FWRAP) 
-		{
-			v->cx = 0;
-			vt52_putch(v, '\n');
-		} 
-		else
-			v->cx = v->maxx - 1;
-	}
-
-	curs_on(v);
-	v->output = vt52_putch;
-}
-
 /* Legacy functions for color support.  */
 static 
 void fgcol_putch (TEXTWIN *v, unsigned int c)
@@ -305,13 +280,6 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			delete_line(v, cy);
 			gotoxy(v, 0, cy);
 			break;
-		case 'Q':		/* MW extension: quote next character */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is quote next char");
-#endif
-			v->output = quote_putch;
-			curs_on(v);
-			return;
 		case 'R':		/* TW extension: set window size */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is set window size");
@@ -440,13 +408,13 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is linewrap on");
 #endif
-			v->term_flags |= FWRAP;
+			v->term_flags &= ~FNOAM;
 			break;
 		case 'w':
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is linewrap off");
 #endif
-			v->term_flags &= ~FWRAP;
+			v->term_flags |= ~FNOAM;
 			break;
 		case 'y':		/* TW extension: set special effects */
 #ifdef DEBUG
@@ -555,18 +523,7 @@ void vt52_putch(TEXTWIN *v, unsigned int c)
 	}
 	else
 	{
-		paint(v, c);
-		v->cx++;
-		if (v->cx == v->maxx) 
-		{
-			if (v->term_flags & FWRAP) 
-			{
-				v->cx = 0;
-				vt52_putch(v, '\n');
-			} 
-			else
-				v->cx = v->maxx - 1;
-		}
+		vt_quote_putch (v, c);
 	}
 	curs_on(v);
 }
