@@ -1,0 +1,806 @@
+2005-01-23 Sunday 22:28  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/buildinfo/version.h, xaaes/src.km/version.h:
+
+	Bumped version numbers for 1.16.2 beta release.
+	
+2005-01-23 Sunday 20:54  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: menuwidg.c, xa_fsel.c:
+
+	fixed forgotten clearing of selected on fileselctor menu-titles
+	
+2005-01-23 Sunday 16:41  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: about.c, c_window.c, draw_obj.c, k_keybd.c,
+	menuwidg.c, obtree.c, obtree.h, scrlobjc.c, scrlobjc.h, taskman.c,
+	widgets.c, widgets.h, xa_form.c, xa_fsel.c, xa_fsel.h, xa_types.h:
+
+	Implemented object-tree copier, needed for multiple fileselectors and
+	wdialog's printer and font parts. Reworked fileselector code a bit.
+	
+2005-01-21 Friday 02:56  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/menuwidg.c:
+
+	Yet another idiotic fatal bug removed from menu-navigation, am I a retard?
+	
+2005-01-20 Thursday 18:38  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, draw_obj.c, k_mouse.c, menuwidg.c:
+
+	Found a fatal bug in menu-navigation system.
+	
+2005-01-20 Thursday 13:41  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: menuwidg.c, xa_menu.c, xa_wind.c:
+
+	Try setting interrupt-flag on roottimeouts for menu-navigation.
+	Some more cleanups
+	
+2005-01-20 Thursday 12:48  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_mouse.c, menuwidg.c, menuwidg.h, xa_types.h,
+	adi/adidefs.h, adi/whlmoose/whlmoose.c:
+
+	Use roottimeout instead of timeouts for menu-navigation. Small fixes/cleanups
+	
+2005-01-19 Wednesday 15:07  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_mouse.c, adi/whlmoose/whlmoose.c:
+
+	Corrected counting of mouseclicks in moose. Some cleanups
+	
+2005-01-18 Tuesday 17:36  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/obtree.c:
+
+	Fixed wrong check for transparent AES objects
+	
+2005-01-18 Tuesday 16:49  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: XAAESDEFS, adiload.c, app_man.c, c_window.c,
+	debug.c, init.c, k_main.c, k_main.h, k_mouse.c, k_shutdown.c,
+	menuwidg.c, messages.c, messages.h, obtree.c, rectlist.c,
+	rectlist.h, widgets.c, xa_appl.c, xa_global.h, xa_graf.c,
+	xa_graf.h, xa_wind.c:
+
+	Fixed bug #121. Fixed inconsitent handling of windows that are hidden.
+	Fixed problem where some aes objects were not detected as transparent,
+	giving redraw errors in popups, like Connect popups.
+	
+2005-01-16 Sunday 00:19  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xaaes.cnf:
+
+	New app_option variable INHIBIT_HIDE, that, when set, prevents the
+	application from being hidden. Very useful for apps like Taskbar,
+	read xaaes.cnf for details
+	
+2005-01-16 Sunday 00:09  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, app_man.h, c_window.c, c_window.h,
+	cnf_xaaes.c, form.c, k_keybd.c, menuwidg.c, mt_gem.h, taskman.c,
+	xa_appl.c, xa_shel.c, xa_types.h, xa_wdlg.c:
+
+	More fixes around Taskbar/multistrip problems and hide/top apps
+	
+2005-01-15 Saturday 18:12  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, app_man.h, c_window.c, c_window.h,
+	k_keybd.c, menuwidg.c, mt_gem.h, obtree.c, xa_appl.c, xa_fnts.c,
+	xa_menu.c, xa_types.h, xa_wind.c:
+
+	Fixed a couple of problems with taskbar/multistip and hide/topped application
+	
+2005-01-13 Thursday 14:53  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: README-misbehavers.txt, k_main.c, xa_aes.h,
+	xa_lbox.c, xa_user_things.h, xa_user_things.s, xa_wdlg.c:
+
+	Cleanup wdlg/lbox callback handling a bit. Remember to make distclean
+	
+2005-01-11 Tuesday 17:29  Odd Skancke <ozk@atari.org>
+
+	* sys/fatfs.c:
+
+	Fixed inconsistency when long (ie,. not 8+3) filenames are used on FAT
+	partitions.
+	
+2005-01-09 Sunday 12:51  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, c_window.c, menuwidg.c, widgets.c,
+	xa_menu.c:
+
+	Fixed a bit the menu-handling - dont unhighlight title if a valid
+	menu-entry event is sent to client. Removed some cases of menu-
+	title double-redraw
+	
+2005-01-08 Saturday 22:31  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, cnf_xaaes.c, menuwidg.c, mt_gem.h,
+	xa_global.h, xaaes.cnf:
+
+	Added configuration keyword 'MENUPOP_PIDS', see xaaes.cnf.
+	Version number to 0.993.
+	
+2005-01-08 Saturday 18:07  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: XAAESDEFS, about.c, init.c, k_init.c, k_keybd.c,
+	k_main.c, version.h:
+
+	Moved shutdown() call out of kthread(), fixing a problem
+	where kernel kills the aes kthread owner and thus thinking
+	INIT program exited
+	
+2005-01-08 Saturday 10:11  Odd Skancke <ozk@atari.org>
+
+	* sys/arch/cpu.S:
+
+	Commented out code in cpush() function, so that whole cache is
+	written out/invalidated for the 040 as it is for the 060. Something is
+	wrong with this code, as cpush() dont work as expected
+	
+2005-01-07 Friday 11:40  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: cnf_xaaes.c, k_main.c, newcalls.txt, xa_aes.h,
+	xa_appl.c, xa_global.h, xa_types.h, xaaes.cnf:
+
+	Added 'NAES_COOKIE' confiuration variable, makes XaAES install
+	a fake 'nAES' cookie. See newcalls.txt and xaaes.cnf for details
+	
+2005-01-06 Thursday 10:53  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xa_evnt.c:
+
+	Fixed potential bug where root_window might be redrawn by wrong
+	process, meaning wrong process accessing object tree in another
+	context
+	
+2005-01-05 Wednesday 21:59  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: rectlist.c, taskman.c, xa_appl.c, xa_wdlg.c:
+
+	Now adding _aes_shell_ to list of 'ctlalta_survivors' actually have
+	an effect. Some cleanups
+	
+2005-01-05 Wednesday 11:15  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: handler.c, sys_proc.c, xa_appl.c, xa_appl.h,
+	xa_rsrc.c, xa_types.h:
+
+	keep shel_info throughout process lifetime. Fixed possible access of
+	a freed client-structure in handler. Any process started via shel_write
+	that terminates should generate CH_EXIT AES message to parent when it
+	terminates, even when its not an AES client
+	
+2005-01-04 Tuesday 21:02  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_window.c, c_window.h, xa_appl.c, xa_fsel.c,
+	xa_wind.c:
+
+	Fixed a problem with autohighlighting window-widgets, caused by
+	the title of fileselector living in the wrong memory-type.
+	This was only visible with MP enabled
+	
+2005-01-04 Tuesday 11:23  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/form.c:
+
+	Removed code putin by a frustrated mind looking for that
+	shel_write() bug
+	
+2005-01-04 Tuesday 11:12  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xa_shel.c:
+
+	Found a terrible bug causing a negative size being passed to
+	kmalloc() in shel_write(). This fixes mysterious crashes with
+	Arcview when extracting 'mldebug.zip'.
+	
+2005-01-04 Tuesday 01:39  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_window.c, cnf_xaaes.c, draw_obj.c, form.c,
+	handler.c, init.c, k_keybd.c, k_main.c, rectlist.c, xa_defs.h,
+	xa_lbox.c, xa_shel.c, xa_types.h, xa_user_things.h,
+	xa_user_things.s, xa_wdlg.c:
+
+	lbox and wdlg callbacks are now done as signal-callouts, so they no
+	longer run in OS context.
+	
+2005-01-02 Sunday 16:34  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/memory.c:
+
+	Corrected missing argument in debug output.
+	
+2004-12-30 Thursday 19:49  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: cnf_xaaes.c, handler.c, init.c, k_keybd.c,
+	k_shutdown.c, newcalls.txt, taskman.c, taskman.h, xa_appl.c,
+	xa_appl.h, xa_global.h, xa_rsrc.c, xa_types.h, xaaes.cnf:
+
+	Added new configuration variable, 'CTLALTA_SURVIVORS', see xaaes.cnf for
+	explanation. Added code to attach client structure to a process making
+	a any other call than appl_init(), making it an AES process automatically.
+	
+2004-12-29 Wednesday 11:09  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/k_keybd.c:
+
+	ctrl-alt-a not quits all apps, leaves XaAES running as was the original
+	intention.
+	
+2004-12-29 Wednesday 10:58  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/k_keybd.c:
+
+	Removed ctrl-alt-[u,n,h,j] keycombos (mousewheel simulation keys) and
+	added ctrl-alt-h which will HALT system
+	
+2004-12-28 Tuesday 20:34  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: widgets.c, xa_appl.c, xa_wdlg.c:
+
+	Problem causing closer-box/window title to disappear after a
+	wdlg_open/wdlg_close/wdlg_open sequence fixed (ArcView)
+	
+2004-12-28 Tuesday 12:08  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: menuwidg.c, xa_appl.c, xa_global.h, xa_menu.c,
+	xa_shel.c, xa_types.h:
+
+	Fixed terrible bug in menu_ienable() where bit 15 of obj was not interpreted
+	like it should be (redraw-flag, I think). Added code that sends CH_EXIT to
+	the _real_ parent of a process started via shel_write(), since all apps
+	have parent-pid set to AESSYS.
+	
+2004-12-26 Sunday 15:07  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_init.c, obtree.c, widgets.c, xa_graf.c,
+	xa_menu.c:
+
+	Now menu-lines should be drawn correctly
+	
+2004-12-25 Saturday 21:36  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/adi/whlmoose/vex_x.s:
+
+	Fix potential ugly bug, save _all_ cpu registers in _th_wrapper
+	
+2004-12-25 Saturday 18:04  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_init.c, obtree.c, obtree.h, xa_graf.c,
+	xa_rsrc.c:
+
+	Fixed rubber/drag_box functions, now returns immediately if mouse-button
+	is released upon entry. Widget dimentions is now taken from the cicon
+	itself, not the calculated object dimentions, fixing wrong window-layout
+	
+2004-12-25 Saturday 16:48  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_init.c, mt_gem.h, widgets.c, xa_appl.c,
+	xa_graf.c, xa_rsrc.c:
+
+	Reworked rsrc_load() a little bit.
+	
+2004-12-24 Friday 00:59  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/module.c, sys/module.h, sys/libkern/kernel_module.h,
+	sys/mint/kentry.h, xaaes/src.km/init.c, xaaes/src.km/k_init.c,
+	xaaes/src.km/obtree.c, xaaes/src.km/win_draw.h,
+	xaaes/src.km/xa_rsrc.c, xaaes/src.km/xa_shel.c:
+
+	Enhanced kernel_open to pass xattr structure dow to do_open.
+	Attention, incompatible kentry change, update all modules.
+	
+2004-12-21 Tuesday 23:48  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, widgets.c, xa_appl.c:
+
+	I think setting bit 1 in ap_gout4 for appl_getinfo(AES_SYSTEM)
+	without knowing why is a very, very bad idea.
+	
+2004-12-21 Tuesday 22:43  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: adiload.c, draw_obj.c, k_init.c, sys_proc.c,
+	xa_fsel.c, xa_global.c, xa_global.h, xa_wind.c:
+
+	Changed wind_set(h, WF_SHADE, -1, 0,0,0) to actually perfor shade, any
+	other value than -1 will unshade... is this correct?
+	Fixed a couple of compiler warnings
+	
+2004-12-21 Tuesday 11:33  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_mouse.c, xa_appl.c, xa_global.h:
+
+	Prevent mouse-event timeouts to do its thing while clients are
+	exiting. Fixed memoryleak related to menu-attachment removal
+	during exit_client()
+	
+2004-12-21 Tuesday 01:43  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: widgets.c, xa_graf.c, xa_rsrc.c:
+
+	Use horizontal mouse-shape for horizontal slider actions.
+	
+2004-12-21 Tuesday 00:46  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_window.c, c_window.h, debug.c, k_main.c,
+	widgets.c, xa_appl.c, xa_evnt.c, xa_evnt.h, xa_form.c, xa_graf.c,
+	xa_rsrc.c, xa_types.h:
+
+	Fixed one incredibly stupid bug where mouseforms got to live in
+	user-context for graf_mode(USER_DEF), effectively causing death
+	of operating system. Added right-button slideractions to act like
+	in other AES's, no realtime. Prevented potential situation where
+	several mu_timer timeouts could exist at once.
+	
+2004-12-20 Monday 12:30  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: xa_appl.c, xa_global.c, xa_global.h, xa_rsrc.c,
+	xa_wind.c:
+
+	When application ontop exited the top-window of the newly topped
+	application was not redrawn to show it being topped under certain
+	situations - fixed
+	
+2004-12-20 Monday 09:57  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: version.h, xa_appl.c, xa_shel.c, xa_wind.c:
+
+	Fixed bug where wrong pid was returned when non-aes client
+	called appl_find() with name == NULL
+	
+2004-12-19 Sunday 19:02  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: README-misbehavers.txt, handler.c, newcalls.txt,
+	xa_appl.c, xa_shel.c:
+
+	No need to yield() if the AES messages is sent to oneself.
+	Potential problem where AES messages other than WM_REDRAW
+	had a duplicate-check, and therefore lost. Repair mistake
+	causing compiler error when building debug aes kernel.
+	
+2004-12-19 Sunday 12:17  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: init.c, version.h, xa_appl.c, xa_rsrc.c:
+
+	Size of resource was not put into GLOBAL structure by rsrc_load,
+	causing gewicht to think its resource file was not found
+	
+2004-12-18 Saturday 18:58  Odd Skancke <ozk@atari.org>
+
+	* sys/gsxb.c, sys/gsxb.h, xaaes/src.km/about.c,
+	xaaes/src.km/c_window.c, xaaes/src.km/init.c,
+	xaaes/src.km/k_init.c, xaaes/src.km/k_mouse.c,
+	xaaes/src.km/mt_gem.h, xaaes/src.km/newcalls.txt,
+	xaaes/src.km/version.h, xaaes/src.km/widgets.c,
+	xaaes/src.km/xa_appl.c, xaaes/src.km/xa_global.c,
+	xaaes/src.km/xa_global.h, xaaes/src.km/xa_types.h,
+	xaaes/src.km/xa_wind.c, xaaes/src.km/xaaes.h,
+	xaaes/src.km/xaaes.hrd, xaaes/src.km/xaaes.rsc:
+
+	Added appl_getinfo(AES_VERSION(=96)). Added some info to other appl_getinfo()
+	modes. See newcalls.txt.
+	
+2004-12-14 Tuesday 20:35  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: init.c, mt_gem.h, rectlist.c, xa_appl.c,
+	xa_appl.h, xa_objc.c, xa_rsrc.c, xa_wind.c:
+
+	Implemented WF_FIRSTAREAXYWH and gave it mode #13. It was so easy I hope it is OK.
+	Changed appl_getinfo(2) according to Olivier's suggestion
+	
+2004-12-13 Monday 18:00  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: SRCFILES, c_window.c, widgets.c, win_draw.c,
+	win_draw.h, xa_types.h, xa_wind.c:
+
+	Removed MyAES implementation of wind_xget. Fixed a problem where
+	rectangle list was built, released then rebuilt when opening
+	windows
+	
+2004-12-10 Friday 09:14  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_main.c, win_draw.c, win_draw.h, xa_types.h:
+
+	New files. Removed one display
+	
+2004-12-09 Thursday 08:53  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xa_fsel.c:
+
+	Fixed problem where apps holding ONLY mouse-lock would get blocked
+	forever when opening file-selector
+	
+2004-12-08 Wednesday 11:29  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/dosdir.c, sys/dosdir.h, sys/k_exec.c, sys/k_exec.h,
+	sys/k_resource.c, sys/memory.c, sys/memory.h, sys/mint/kentry.h,
+	xaaes/src.km/xa_shel.c:
+
+	Overworked extended shel_write mode. create_process handle now
+	the critical options directly. Changed kentry interface.
+	Don't forget to recompile and update your moose.adi too.
+	
+2004-12-04 Saturday 14:57  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: cnf_mint.c, dosdir.c, dosfile.c, filesys.c, filesys.h,
+	init.c, k_exec.c, k_fds.c, module.c:
+
+	Changed path2cookie and relapth2cookie to be independant of curproc.
+	
+2004-12-04 Saturday 13:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: biosfs.h, cmdline.h, dosdir.c, dosdir.h, fatfs.c,
+	filesys.c, filesys.h, k_exit.h, k_fds.c, kerinfo.c, kernget.h,
+	memory.h, proc.h, ramfs.c, signal.h, timeout.h:
+
+	Changed denyaccess, dir_access and denylock to be independant from
+	curproc.
+	
+2004-11-29 Monday 16:31  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, c_mouse.c, c_window.c, c_window.h,
+	debug.c, draw_obj.c, form.c, handler.c, k_init.c, k_keybd.c,
+	k_main.c, k_main.h, k_mouse.c, k_shutdown.c, menuwidg.c,
+	scrlobjc.c, semaphores.c, semaphores.h, sys_proc.c, taskman.c,
+	widgets.c, xa_appl.c, xa_appl.h, xa_evnt.c, xa_form.c, xa_fsel.c,
+	xa_global.h, xa_graf.c, xa_graf.h, xa_lbox.c, xa_menu.c,
+	xa_types.h, xa_wdlg.c, xa_wind.c:
+
+	Non-client processes can now do wind_update().
+	Better cleanup when terminating clients/processes.
+	Fixed problem with text-cursor being drawn on
+	hidden objects
+	
+2004-11-25 Thursday 21:05  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/widgets.c:
+
+	Fixed fresh bug biting when exiting clients under certain situations
+	
+2004-11-25 Thursday 18:23  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, k_init.c, k_main.c, k_mouse.c,
+	menuwidg.c, menuwidg.h, obtree.c, widgets.c, widgets.h, xa_appl.c,
+	xa_global.h, xa_menu.c, xa_types.h:
+
+	Fixed non-freed update/mouse locks when applications crash. Fixed new
+	problem where a started client dont get topped when windowless
+	
+2004-11-24 Wednesday 20:02  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, c_mouse.c, form.c, k_main.c, k_mouse.c,
+	menuwidg.c, menuwidg.h, xa_evnt.c, xa_global.h, xa_menu.c,
+	xa_types.h:
+
+	Fixed several problems with the new menu navigation. Fixed a bug that
+	prevented keyboard input to work in Cat.
+	
+2004-11-22 Monday 18:51  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: cnf_xaaes.c, init.c, k_shutdown.c, menuwidg.c,
+	messages.c, messages.h, xa_appl.c, xa_global.h, xaaes.cnf:
+
+	Added configuration variable POPOUT_TIMEOUT which configures the time before
+	an attachement is closed when mouse leaves it. See xaaes.cnf for details.
+	No tests done with windowed popups, so dont expect that to work yet..
+	
+2004-11-21 Sunday 13:11  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_mouse.c, menuwidg.c, xa_types.h, xaaes.cnf:
+
+	More work on menu/popup navigation. Added new config variable, POPUP_TIMEOUT
+	that sets the timeout value for menu attachments. Please read xaaes.cnf for
+	details since XaAES behaves a little different from other AES's now!
+	
+2004-11-20 Saturday 17:31  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_mouse.c, cnf_xaaes.c, menuwidg.c, xa_global.h,
+	xa_menu.c, xa_types.h:
+
+	Timed out popup/popout navigation under implementation
+	
+2004-11-19 Friday 18:18  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_mouse.c, draw_obj.c, init.c, k_main.c,
+	k_mouse.c, k_shutdown.c, menuwidg.c, menuwidg.h, messages.c,
+	rectlist.c, rectlist.h, xa_appl.c, xa_evnt.c, xa_global.h,
+	xa_menu.c, xa_types.h, xa_wdlg.c:
+
+	Fixed wrong positioning of object tree in wdlg_set_tree().
+	Menu/popup navigation rework started .. not done. Hopefully got rid of the
+	problem with desktop icon (really a progdef prob) being drawn using wrong
+	clipping rectangle in some cases.
+	
+2004-11-15 Monday 21:42  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: rectlist.c, xa_wind.c:
+
+	Fixed bug where a windows complete rectangle list was deleted when
+	building rectlist for wind_xget()
+	
+2004-11-15 Monday 21:18  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xa_wind.c:
+
+	Added some checks regarding wind_xget() correcting a GEMMA problem suggested by Arnaud
+	BERCEGEAY
+	
+2004-11-15 Monday 11:45  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_window.c, c_window.h, cnf_xaaes.c, k_mouse.c,
+	rectlist.c, rectlist.h, scrlobjc.c, xa_types.h, xa_wind.c:
+
+	Implemented wind_xget() MyAES function, refer to gemlib's wind_xget_grect()
+	for info. Minor adjustments...
+	
+2004-11-15 Monday 08:21  Frank Naumann <fnaumann@freemint.de>
+
+	* xaaes/src.km/: adiload.c, k_main.c, k_main.h, xa_appl.c,
+	xa_rsrc.c:
+
+	Removed unnecessary casts.
+	
+2004-11-14 Sunday 21:23  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: about.c, app_man.c, c_mouse.c, c_window.c,
+	c_window.h, desktop.c, draw_obj.c, draw_obj.h, form.c, handler.c,
+	k_keybd.c, k_main.c, k_mouse.c, k_shutdown.c, menuwidg.c,
+	messages.c, messages.h, taskman.c, widgets.c, widgets.h, xa_appl.c,
+	xa_evnt.c, xa_evnt.h, xa_form.c, xa_fsel.c, xa_global.h, xa_shel.c,
+	xa_types.h, xa_wdlg.c, xa_wind.c:
+
+	Major changes to how redraw messages are handled internally. Now any window redraws
+	happens in the context of the window-owner. Started AES thread implementation to
+	handle certain things, not finished. Now the test-program dialtest.prg runs under
+	memory-protection too. These changes are MAJOR, so be careful
+	
+2004-11-11 Thursday 10:51  Arnaud BERCEGEAY <arnaud.bercegeay@free.fr>
+
+	* xaaes/src.km/xaaes.cnf:
+
+	filename for teradesk is now desktop.prg
+	
+2004-11-09 Tuesday 17:12  Gerhard Stoll <Gerhard_Stoll@b.maus.de>
+
+	* doc/programmer/newcall.html/ssystem.html, sys/ssystem.c,
+	sys/mint/ssystem.h:
+
+	Adjust docu and sourcecode
+	
+2004-11-09 Tuesday 17:11  Gerhard Stoll <Gerhard_Stoll@b.maus.de>
+
+	* tools/toswin2/doc/toswin2.stg:
+
+	Add history from version 2.7
+	
+2004-11-08 Monday 14:44  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, c_keybd.c, c_mouse.c, c_window.c,
+	form.c, k_keybd.c, k_main.c, k_mouse.c, k_mouse.h, newcalls.txt,
+	widgets.c, xa_evnt.c, xa_graf.c, xa_types.h, xa_wdlg.c, xa_wind.c:
+
+	Some cleanups
+	
+2004-11-07 Sunday 01:13  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_window.c, c_window.h, init.c, k_mouse.c,
+	mt_gem.h, newcalls.txt, widgets.c, xa_aes.h, xa_types.h, xa_wind.c:
+
+	Added wind_set(WF_OPTS), see newcalls.txt. Fixed bugs regarding
+	BORDER window gadget handling
+	
+2004-11-06 Saturday 09:38  Daniel Pralle <pralle@gdv.uni-hannover.de>
+
+	* sys/mint/: proc.h, time.h:
+
+	dded some doxygen comments.
+	
+2004-11-05 Friday 23:27  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_window.c, mt_gem.h, newcalls.txt, widgets.c,
+	xa_evnt.c, xa_wind.c:
+
+	Added BORDER window gadget (bit 15, last free bit in 'kind' parameter).
+	Hopefully no other use for this bit is already done. See newcalls.txt for
+	more info
+	
+2004-11-05 Friday 13:25  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xa_wind.c:
+
+	Forgot to remove display() statements
+	
+2004-11-05 Friday 13:23  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: xa_evnt.c, xa_wind.c:
+
+	Fixed stupid mistake in wind_set when it should return coordinates
+	
+2004-11-04 Thursday 13:32  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: about.c, app_man.c, app_man.h, c_window.c,
+	c_window.h, form.c, k_keybd.c, k_main.c, k_mouse.c, newcalls.txt,
+	taskman.c, widgets.c, xa_aes.h, xa_appl.c, xa_evnt.c, xa_evnt.h,
+	xa_form.c, xa_global.h, xa_menu.c, xa_objc.c, xa_shel.c,
+	xa_types.h, xa_wdlg.c, xa_wind.c:
+
+	Commented out addprocwakeup usage, causing weird problem with gluestik.
+	Reworking window-handling, got rid of many double-redraws, more to do.
+	Started implementation of xevnt_multi()/xevnt_poll(), far from finshed.
+	Hopefully no new bugs have been added
+	
+2004-11-02 Tuesday 22:42  Frank Naumann <fnaumann@freemint.de>
+
+	* xaaes/src.km/: c_window.c, xa_fsel.c:
+
+	Added assert() around unchecked kmalloc() calls. This need definitly
+	to be improved. But XaAES don't crash now unexpectly if running out
+	of memory, it halt the machine instead (still better than crashing).
+	
+2004-11-02 Tuesday 22:22  Frank Naumann <fnaumann@freemint.de>
+
+	* xaaes/src.km/xa_shel.c:
+
+	Bugfix of a very bad bug (possible memory corruption) in launch, missing
+	strcpy of the defdir for SW_DEFDIR extended shel_write mode (tracked down
+	by ozk).
+	
+2004-11-01 Monday 19:51  Odd Skancke <ozk@atari.org>
+
+	* sys/: gsxb.c, gsxb.h:
+
+	Added gsxb.c/h.
+	
+2004-11-01 Monday 19:34  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_mouse.c, c_window.c, cnf_xaaes.c, desktop.c,
+	form.c, init.c, k_keybd.c, k_mouse.c, menuwidg.c, messages.c,
+	messages.h, newcalls.txt, scrlobjc.c, taskman.c, widgets.c,
+	xa_appl.c, xa_fsel.c, xa_global.h, xa_shel.c, xa_wind.c, xaaes.cnf:
+
+	Added more wheelmouse config posibilities, see xaaes.cnf.
+	WM_REDRAW messages send by AES under WHL_AROWWHEEL changed,
+	see newcalls.txt.
+	
+2004-10-30 Saturday 18:47  Odd Skancke <ozk@atari.org>
+
+	* sys/arch/syscall.S:
+
+	Preserve CPU register D0 across trap-handlers. Makes XBIOS aware
+	sound apps work again
+	
+2004-10-30 Saturday 11:05  Odd Skancke <ozk@atari.org>
+
+	* sys/arch/syscall.S:
+
+	Now we even do it correctly
+	
+2004-10-30 Saturday 10:41  Odd Skancke <ozk@atari.org>
+
+	* sys/arch/syscall.S:
+
+	Clear D0 in trap_xx_emu as well
+	
+2004-10-30 Saturday 10:27  Odd Skancke <ozk@atari.org>
+
+	* sys/arch/syscall.S:
+
+	Make sure cpu register d0 is cleared before calling out functions
+	in trap-handler
+	
+2004-10-29 Friday 21:45  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: cnf_xaaes.c, widgets.c, xa_global.h, xaaes.cnf:
+
+	Implemented experimental automatic highlighting of window widgets,
+	see xaaes.cnf - WIDGET_AUTO_HIGHLIGHT
+	
+2004-10-29 Friday 10:26  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_window.c, c_window.h, desktop.c, k_mouse.c,
+	widgets.c, widgets.h, xa_global.h, xa_types.h, xa_wdlg.c:
+
+	Fixed problem with 'walking' wdlg windows
+	
+2004-10-28 Thursday 10:38  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_mouse.c, xa_graf.c:
+
+	Fixed a problem where internal button events did not get delivered,
+	fixing bug #108 (ximgsnap fails)
+	
+2004-10-28 Thursday 01:04  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_mouse.c, newcalls.txt:
+
+	Small corrections to newcalls.txt + some cleanup
+	
+2004-10-28 Thursday 00:35  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: xa_types.h, xa_wind.c:
+
+	Fixed broken DIAGS, now deb version also compiles
+	
+2004-10-28 Thursday 00:12  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: about.c, c_window.c, form.c, k_init.c, k_mouse.c,
+	menuwidg.c, menuwidg.h, newcalls.txt, obtree.c, taskman.c,
+	widgets.c, widgets.h, xa_form.c, xa_fsel.c, xa_objc.c, xa_types.h,
+	xa_wdlg.c, xa_wind.c:
+
+	Added owner to struct xa_widget. Update wheel-mouse related things.
+	Fixed bug where cursor was redrawn when it should not be.
+	Fixed bug where buttons in fileselector was not handled.
+	
+2004-10-27 Wednesday 09:47  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xa_wind.c:
+
+	Fixed stupid typingmistake
+	
+2004-10-27 Wednesday 01:02  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: c_mouse.c, c_window.c, k_init.c, k_shutdown.c,
+	menuwidg.c, widgets.c, xa_rsrc.c, xa_wdlg.c, xa_wind.c:
+
+	Fixed annoying uniconifying bug where the coords in the WF_UNICONIFY
+	were not used. Set windows's max coordinates to root windows workarea,
+	fixing bug 103. Fixed annoying flickering of sub-menues.
+	Fixed calculations of border-area used for resizing when using 3d
+	framing of windows workarea (see 'thinwork' in xaaes.cnf). May have
+	fixed bug 105, but got no Joe to test with.
+	
+2004-10-25 Monday 21:18  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/xa_wdlg.c:
+
+	Fixed redraw-bug with wdlg windows (#106)
+	
+2004-10-25 Monday 10:30  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: app_man.c, app_man.h, c_window.c, k_keybd.c,
+	k_mouse.c, newcalls.txt, widgets.c, xa_types.h, xa_wind.c,
+	adi/whlmoose/whlmoose.c:
+
+	Added more wheel-mouse support and new stuff. Please read
+	newcalls.txt
+	
+2004-10-22 Friday 22:09  Odd Skancke <ozk@atari.org>
+
+	* xaaes/src.km/: k_keybd.c, k_main.c, k_mouse.c, xa_evnt.c,
+	xa_types.h, adi/whlmoose/whlmoose.c:
+
+	Got mouse wheel support working. XaAES sends wheel events to either
+	owner of update/mouse locks, or to owner of window underneath mouse.
+	Update your moose.xdd (make moose_w.adi, move to xaaes sysdir asmoose.adi).
+	
+2004-10-22 Friday 16:17  Frank Naumann <fnaumann@freemint.de>
+
+	* xaaes/src.km/adi/whlmoose/.cvsignore,
+	xaaes/src.km/adi/whlmoose/Makefile, sys/xdd/mfp/Makefile:
+
+	New moose_w.adi target for wheel moose driver, corrected mfp Makefile.
+	
+2004-10-19 Tuesday 16:45  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: bootmenu.c, bootmenu.h, info.c, info.h, init.c:
+
+	Overworked bootmenu handling a little bit, now with more accurate
+	information on startup (reading/writing/failures). Should fix bug #101.
+	
+2004-10-13 Wednesday 06:29  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/buildinfo/version.h:
+
+	Bumped version to 1.16.2-ALPHA for next development.
+	
+2004-10-11 Monday 21:49  Frank Naumann <fnaumann@freemint.de>
+
+	* ChangeLog.#1.16.1:
+
+	Added ChangeLog of 1.16.1 beta release.
+	
