@@ -358,7 +358,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 	rt = route_get (daddr);
 	if (!rt)
 	{
-		DEBUG (("ip_send: not route to dst %lx", daddr));
+		DEBUG (("ip_send: no route to dst %lx", daddr));
 		icmp_send (ICMPT_DSTUR, ICMPC_NETUR, saddr, nbuf, 0);
 		return ENETUNREACH;
 	}
@@ -366,7 +366,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 	addrtype = ip_chk_addr (daddr, rt);
 	if (addrtype == IPADDR_BADCLASS)
 	{
-		DEBUG (("ip_send: Dst addr not in class A/B/C"));
+		DEBUG (("ip_send: dst addr not in class A/B/C"));
 		buf_deref (nbuf, BUF_NORMAL);
 		route_deref (rt);
 		return EADDRNOTAVAIL;
