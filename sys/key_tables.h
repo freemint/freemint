@@ -29,6 +29,21 @@
  * see the code in keyboard.c
  */
 
+/* You can define other keyboards in this module, only
+ * include them in appropriate ifdefs, e.g. for Spanish
+ * keyboard:
+ *
+ * # ifdef KBD_SPAIN
+ * ...
+ * # endif
+ *
+ * and define everything inside, i.e. the keyboard, the sys_keytable struct
+ * and default_akp. Then if you remove -DKBD_USA from KERNELDEFS, and do
+ * -DKBD_SPAIN, kernel with spanish keyboard table will be compiled.
+ */
+ 
+# ifdef KBD_USA
+
 /* USA, _AKP code 0 */
 
 /* Unshifted */
@@ -103,6 +118,8 @@ static const uchar usa_kbd[] =
 	0x00
 };
 
+static const short default_akp = 0;
+
 static struct keytab sys_keytab =
 {
 	(uchar *)usa_kbd,
@@ -114,6 +131,6 @@ static struct keytab sys_keytab =
 	(uchar *)usa_kbd + 387
 };
 
-static struct keytab *tos_keytab = &sys_keytab;
+# endif
 
 /* EOF */

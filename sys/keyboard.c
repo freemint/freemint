@@ -106,6 +106,11 @@
  *
  */
 
+# if 0
+# define WITHOUT_TOS
+# define KBD_USA
+# endif
+
 # ifdef WITHOUT_TOS
 #  include "key_tables.h"
 # endif
@@ -158,7 +163,11 @@ static	ushort krpdel;
 static	ushort kdel, krep;	/* actual counters */
 
 /* keyboard table pointers */
-static struct keytab *tos_keytab;
+# ifdef WITHOUT_TOS
+static struct keytab *tos_keytab = &sys_keytab;		/* see key_tables.h */
+# else
+static struct keytab *tos_keytab;			/* see init_keybd() */
+# endif
 static struct keytab *user_keytab;
 static char *keytab_buffer;
 static long keytab_size;
@@ -998,6 +1007,7 @@ load_internal_table(void)
 	len = strlen(tos_keytab->altgr) + 1;
 	quickmove(p, tos_keytab->altgr, len);
 
+	gl_kbd = default_akp;
 # endif
 
 	keytab_buffer = kbuf;
@@ -1100,6 +1110,7 @@ init_keybd(void)
 	ushort delayrate;
 
 	/* Call the underlying XBIOS to get some defaults.
+	 *
 	 * On WITHOUT_TOS, the tos_keytab is defined as
 	 * static pointer to an initialized struct in
 	 * key_tables.h
