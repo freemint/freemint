@@ -109,6 +109,23 @@ init (struct kerinfo *k)
 	c_conws ("(w) 1997, 1998 John Blakeley\r\n");
 	c_conws ("(w) 2001 Frank Naumann\r\n");
 
+# define SSYS_GETCOOKIE	8
+# define COOKIE__MCH	0x5f4d4348L
+/* values of MCH cookie
+ */
+# define ST		0
+# define STE		0x00010000L
+# define MEGASTE	0x00010010L
+# define TT		0x00020000L
+# define FALCON		0x00030000L
+# define MILAN_C	0x00040000L
+	if ((s_system (SSYS_GETCOOKIE, COOKIE__MCH, (long) &mch) == 0)
+		&& (mch == MILAN_C))
+	{
+		c_conws ("\033pThis driver don't work on a Milan!\033q\r\n");
+		return NULL;
+	}
+	
 	if ((MINT_MAJOR == 0)
 		|| ((MINT_MAJOR == 1) && ((MINT_MINOR < 15) || (MINT_KVERSION < 2))))
 	{
