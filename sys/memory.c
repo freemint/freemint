@@ -1781,17 +1781,8 @@ memused (PROC *p)
  * change (through p_exec or p_setlimit) this routine must be called
  */
 void
-recalc_maxmem (PROC *p)
+recalc_maxmem(PROC *p, long size)
 {
-	long size = 0;
-
-	if (p->p_mem && p->p_mem->base)
-	{
-		size = p->p_mem->base->p_tlen;
-		size += p->p_mem->base->p_dlen;
-		size += p->p_mem->base->p_blen;
-	}
-
 	p->maxmem = 0;
 
 	if (p->maxdata)

@@ -38,6 +38,7 @@
 
 #include "mint/signal.h"
 #include "mint/stat.h"
+#include "k_exec.h"
 
 
 #define STRINGS 1024 /* number of environment variable allowes in zaaes.cnf */
@@ -189,29 +190,6 @@ print_x_shell(short x_mode, struct xshelw *x_shell)
 }
 #endif
 
-static void _cdecl
-post_x_mode_psetlimit(struct proc *p, void *data)
-{
-	long psetlimit = (long)data;
-
-	DIAGS(("post_x_mode_psetlimit: pid %i -> Psetlimit(2, %li)", p->pid, psetlimit));
-	p_setlimit(2, psetlimit);
-}
-
-static void _cdecl
-post_x_mode_defdir(struct proc *p, void *data)
-{
-	char *defdir = data;
-
-	DIAGS(("post_x_mode_defdir: pid %i -> Dsetpath(%s)", p->pid, defdir));
-
-	if (defdir)
-	{
-		d_setpath(defdir);
-		kfree(defdir);
-	}
-}
-
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
@@ -219,6 +197,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	char cmd[260]; /* 2 full paths */
 	char argvtail[4];
 	struct xshelw x_shell;
+	struct create_process_opts cpopts;
 	short x_mode, real_mode;
 	const char *pcmd;
 	char *save_tail = NULL, *ext = NULL;
@@ -250,6 +229,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	real_mode = mode & 0xff;
 	x_mode = mode & 0xff00;
 
+	cpopts.mode = 0;
+
 	if (x_mode)
 	{
 		x_shell = *(const struct xshelw *) parm;
@@ -263,6 +244,33 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			return -1;
 
 		pcmd = x_shell.newcmd;
+
+		/* setup create_process options */
+		if (x_mode & SW_PSETLIMIT)
+		{
+			cpopts.mode |= CREATE_PROCESS_OPTS_MAXCORE;
+			cpopts.maxcore = x_shell.psetlimit;
+		}
+		if (x_mode & SW_PRENICE)
+		{
+			cpopts.mode |= CREATE_PROCESS_OPTS_NICELEVEL;
+			cpopts.nicelevel = x_shell.prenice;
+		}
+		if (x_mode & SW_DEFDIR)
+		{
+			cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
+			cpopts.defdir = x_shell.defdir;
+		}
+		if (x_mode & SW_UID)
+		{
+			cpopts.mode |= CREATE_PROCESS_OPTS_UID;
+			cpopts.uid = x_shell.uid;
+		}
+		if (x_mode & SW_GID)
+		{
+			cpopts.mode |= CREATE_PROCESS_OPTS_GID;
+			cpopts.gid = x_shell.gid;
+		}
 	}
 	else
 		pcmd = parm;
@@ -472,7 +480,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			{
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
-						     &p, 0);
+						     &p, 0, cpopts.mode ? &cpopts : NULL);
 
 				if (ret == 0)
 				{
@@ -498,7 +506,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			ret = create_process(cmd, *argvtail ? argvtail : tail,
 					     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
-					     &p, 128);
+					     &p, 256, cpopts.mode ? &cpopts : NULL);
 			if (ret < 0)
 			{
 				DIAG((D_shel, 0, "acc launch failed: error %i", ret));
