@@ -38,6 +38,8 @@ int launch(enum locks lock,
 char *shell_find(enum locks lock, struct xa_client *client, char *fn);
 long put_env(enum locks lock, const char *cmd);
 
+char * const * const get_raw_env(void);
+
 AES_function
 	XA_shell_write,
 	XA_shell_read,

@@ -40,6 +40,7 @@
 #include "objects.h"
 #include "semaphores.h"
 #include "xalloc.h"
+#include "xa_shel.h"
 
 #include "version.h"
 
@@ -47,7 +48,7 @@
 #include "cookie.h"
 
 
-static char *scls_name = "xaaes.cnf";
+static const char *cnf_name = "xaaes.cnf";
 
 static char Aes_display_name[32];
 Path Aes_home_path;
@@ -259,10 +260,27 @@ init(struct kentry *k)
 	/* Set the default accessory path */
 	strcpy(cfg.acc_path, "c:\\");
 
+	/* copy over environment from loader */
+	{
+		struct proc *p = get_curproc();
+		const char *env_str = p->p_mem->base->p_env;
 
-	/* Parse the standard startup file.
-	 */
-	SCL(scls_name);
+		if (env_str)
+		{
+			while (*env_str)
+			{
+				put_env(NOLOCKING, env_str);
+
+				while (*env_str)
+					env_str++;
+
+				env_str++;
+			}
+		}
+	}
+
+	/* Parse the config file */
+	load_config(cnf_name);
 
 	C.Aes->options = default_options;
 

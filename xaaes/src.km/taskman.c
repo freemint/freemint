@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -465,47 +465,59 @@ open_systemalerts(enum locks lock)
 void
 do_system_menu(enum locks lock, int clicked_title, int menu_item)
 {
-	switch(menu_item)
+	switch (menu_item)
 	{
-		case SYS_MN_ABOUT: /* Open the "About XaAES..." dialog */
+		/* Open the "About XaAES..." dialog */
+		case SYS_MN_ABOUT:
 			open_about(lock);
 			break;
-	
-		case SYS_MN_SHUTDOWN: /* Shutdown the system */
+
+		/* Shutdown the system */
+		case SYS_MN_SHUTDOWN:
 			DIAGS(("shutdown by menu"));
 			shutdown(lock);
 			break;
-		case SYS_MN_QUIT: /* Quit XaAES */
+
+		/* Quit XaAES */
+		case SYS_MN_QUIT:
 			C.shutdown = QUIT_NOW;
 			break;
-		
-		case SYS_MN_TASKMNG: /* Open the "Task Manager" window */
+
+		/* Open the "Task Manager" window */
+		case SYS_MN_TASKMNG:
 			open_taskmanager(lock);
 			break;
-		case SYS_MN_SALERT: /* Open system alerts log window */
+
+		/* Open system alerts log window */
+		case SYS_MN_SALERT:
 			open_systemalerts(lock);
 			break;
-#if MN_ENV
+
+		/* Open system alerts log window filled with environment */
 		case SYS_MN_ENV:
 		{
 			OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
+			char * const * const strings = get_raw_env();
 			int i;
 
 			empty_scroll_list(form, SYSALERT_LIST, FLAG_ENV);
 
-			for (i = 0; C.strings[i]; i++)
-				add_scroll_entry(form, SYSALERT_LIST, NULL, C.strings[i], FLAG_ENV);
+			for (i = 0; strings[i]; i++)
+				add_scroll_entry(form, SYSALERT_LIST, NULL, strings[i], FLAG_ENV);
 
 			open_systemalerts(lock);
+			break;
 		}
-		break;
-#endif
+
 #if FILESELECTOR
-		case SYS_MN_LAUNCH: /* Launch a new app */
+		/* Launch a new app */
+		case SYS_MN_LAUNCH:
 			open_launcher(lock);
 			break;
 #endif
-		case SYS_MN_DESK: /* Launch desktop. */
+
+		/* Launch desktop. */
+		case SYS_MN_DESK:
 			if (*C.desk)
 				C.DSKpid = launch(lock, 0, 0, 0, C.desk, "\0", C.Aes);
 			break;

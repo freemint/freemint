@@ -3,7 +3,7 @@
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -103,7 +103,6 @@ char *t_owner(struct widget_tree *t);
 extern struct debugger D;
 
 void DeBug(enum debug_item item, struct xa_client *client, char *t, ...);
-void display_env(char **env, int which);
 
 #if DEBUG_CONTROL
 #define CONTROL(a,b,c) {short *co = pb->control; \
