@@ -150,19 +150,22 @@ init (struct kerinfo *k)
 	long i, len;
 	
 	kernel = k;
-	len = strlen (name);
+	
+	DEBUG (("%s: enter init", __FILE__));
 	
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 	c_conws ("\r\n");
 	
+	len = strlen (name);
+	
 	for (i = 0; i < (sizeof (drivers) / sizeof (RAWDEV)); i++)
 	{
-		strcpy (name + len, drivers [i].name);
+		strcpy (name + len, drivers[i].name);
 		dev_descriptor.dinfo = i;
-		drivers[i].blocksize = ((long) drivers [i].secsize) * drivers [i].sectors; 
+		drivers[i].blocksize = ((long) drivers[i].secsize) * drivers[i].sectors; 
 		
-		TRACE (("[RAWDEV] init: device [%s]", name));
+		DEBUG (("[RAWDEV] init: device [%s]", name));
 		
 		if (d_cntl (DEV_INSTALL, name, (long) &dev_descriptor) <= 0)
 			ALERT (("[RAWDEV] floppy_init: Unable to install %s", name));
@@ -186,14 +189,14 @@ read_block (FLOBLOCK *floblock)
 	int r;
 	
 	TRACE (("[RAWDEV] read_block: drive #%d, track #%d, side %d", 
-		drivers [floblock->dev_id].drive, floblock->track, floblock->side));
+		drivers[floblock->dev_id].drive, floblock->track, floblock->side));
 	
 	r = Floprd (floblock->buffer,
 			0L,
-			drivers [floblock->dev_id].drive,
+			drivers[floblock->dev_id].drive,
 			1,
 			floblock->track, floblock->side,
-			drivers [floblock->dev_id].sectors);
+			drivers[floblock->dev_id].sectors);
 		
 	if (r)
 	{
@@ -217,14 +220,14 @@ flush_block (FLOBLOCK *floblock)
 		return 0;
 	
 	TRACE (("[RAWDEV] flush_block: drive #%d, track #%d, side %d", 
-		drivers [floblock->dev_id].drive, floblock->track, floblock->side));
+		drivers[floblock->dev_id].drive, floblock->track, floblock->side));
 	
-	r = Flopwr(floblock->buffer,
+	r = Flopwr (floblock->buffer,
 			0L,
-			drivers [floblock->dev_id].drive,
+			drivers[floblock->dev_id].drive,
 			1,
 			floblock->track, floblock->side,
-			drivers [floblock->dev_id].sectors);
+			drivers[floblock->dev_id].sectors);
 	
 	if (r)
 		DEBUG (("[RAWDEV] flush_block: Flopwr error #%d", r));
@@ -244,15 +247,15 @@ seek2int (long pos, FLOBLOCK *floblock)
 	if (pos < 0)
 		pos = 0;
 	
-	floblock->byte = pos % drivers [floblock->dev_id].blocksize;
-	pos /= drivers [floblock->dev_id].blocksize;
-	floblock->side = pos % drivers [floblock->dev_id].sides;
-	pos /= drivers [floblock->dev_id].sides;
+	floblock->byte = pos % drivers[floblock->dev_id].blocksize;
+	pos /= drivers[floblock->dev_id].blocksize;
+	floblock->side = pos % drivers[floblock->dev_id].sides;
+	pos /= drivers[floblock->dev_id].sides;
 	floblock->track = pos;
 	
-	if (floblock->track >= drivers [floblock->dev_id].tracks)
+	if (floblock->track >= drivers[floblock->dev_id].tracks)
 	{
-		floblock->track = drivers [floblock->dev_id].tracks;
+		floblock->track = drivers[floblock->dev_id].tracks;
 		floblock->side = 0;
 		floblock->byte = 0;
 		floblock->state = ATEOF;
@@ -269,9 +272,9 @@ int2seek (FLOBLOCK *floblock)
 	TRACE (("[RAWDEV] int2seek: convert floppy_block"));
 	
 	r  = floblock->track;
-	r *= drivers [floblock->dev_id].sides;
+	r *= drivers[floblock->dev_id].sides;
 	r += floblock->side;
-	r *= drivers [floblock->dev_id].blocksize;
+	r *= drivers[floblock->dev_id].blocksize;
 	r += floblock->byte;
 	
 	return r;
@@ -289,10 +292,10 @@ next_block (FLOBLOCK *floblock)
 	if (floblock->state != ATEOF)
 	{
 		r = flush_block (floblock);
-		if (++floblock->side == drivers [floblock->dev_id].sides)
+		if (++floblock->side == drivers[floblock->dev_id].sides)
 		{
 			floblock->side = 0;
-			if (++floblock->track == drivers [floblock->dev_id].tracks)
+			if (++floblock->track == drivers[floblock->dev_id].tracks)
 			{
 				DEBUG (("[RAWDEV] next_block: end of file"));
 				floblock->state = ATEOF;
@@ -348,7 +351,7 @@ flop_open (FILEPTR *f)
 	floblock->byte = 0;
 	floblock->dev_id = f->fc.aux;
 	
-	if (d_lock (1, drivers [floblock->dev_id].drive))
+	if (d_lock (1, drivers[floblock->dev_id].drive))
 	{
 		kfree (floblock->buffer);
 		kfree (floblock);
@@ -378,12 +381,12 @@ flop_write (FILEPTR *f, const char *buf, long bytes)
 	 */
 	while (!r && floblock->state != ATEOF && bytes)
 	{
-		if (floblock->byte < drivers [floblock->dev_id].blocksize)
+		if (floblock->byte < drivers[floblock->dev_id].blocksize)
 		{
 			/* data in buffer */
 			
 			char *ptr = floblock->buffer + floblock->byte;
-			long num = drivers [floblock->dev_id].blocksize - floblock->byte;
+			long num = drivers[floblock->dev_id].blocksize - floblock->byte;
 			
 			if (num > bytes) num = bytes;
 			bytes_written += num;
@@ -426,12 +429,12 @@ flop_read (FILEPTR *f, char *buf, long bytes)
 	 */
 	while (!r && floblock->state != ATEOF && bytes)
 	{
-		if (floblock->byte < drivers [floblock->dev_id].blocksize)
+		if (floblock->byte < drivers[floblock->dev_id].blocksize)
 		{
 			/* data in buffer */
 			
 			char *ptr = floblock->buffer + floblock->byte;
-			long num = drivers [floblock->dev_id].blocksize - floblock->byte;
+			long num = drivers[floblock->dev_id].blocksize - floblock->byte;
 
 			if (num > bytes) num = bytes;
 			bytes_read += num;
@@ -476,9 +479,9 @@ flop_lseek (FILEPTR *f, long where, int whence)
 		}
 		case SEEK_END:
 		{
-			newpos  = drivers [floblock->dev_id].sides;
-			newpos *= drivers [floblock->dev_id].tracks;
-			newpos *= drivers [floblock->dev_id].blocksize;
+			newpos  = drivers[floblock->dev_id].sides;
+			newpos *= drivers[floblock->dev_id].tracks;
+			newpos *= drivers[floblock->dev_id].blocksize;
 			newpos -= newpos;
 			break;
 		}
@@ -489,10 +492,10 @@ flop_lseek (FILEPTR *f, long where, int whence)
 		}
 	}
 	
-	if (int2seek (floblock) % drivers [floblock->dev_id].blocksize != newpos % drivers [floblock->dev_id].blocksize)
+	if (int2seek (floblock) % drivers[floblock->dev_id].blocksize != newpos % drivers[floblock->dev_id].blocksize)
 	{
 		if (flush_block (floblock))
-			DEBUG (("[RAWDEV] floppy_lseek: flush_block failed on %s", drivers [floblock->dev_id].name));
+			DEBUG (("[RAWDEV] floppy_lseek: flush_block failed on %s", drivers[floblock->dev_id].name));
 		
 		floblock->state = INVALID;
 	}
@@ -515,9 +518,9 @@ flop_ioctl (FILEPTR *f, int mode, void *buf)
 			/* we never block - use BLOCKSIZE as a sensible
 			 * number to read as a chunk
 			 */
-			*((long *) buf) = drivers [f->fc.aux].secsize * drivers [f->fc.aux].sectors;
+			*((long *) buf) = drivers[f->fc.aux].secsize * drivers[f->fc.aux].sectors;
 			
-			TRACE (("[RAWDEV] floppy_ioctl: FIONREAD/FIONWRITE on %s -> %ld", drivers [f->fc.aux].name, *((long *) buf)));
+			TRACE (("[RAWDEV] floppy_ioctl: FIONREAD/FIONWRITE on %s -> %ld", drivers[f->fc.aux].name, *((long *) buf)));
 			
 			return E_OK;
 		}
@@ -529,7 +532,7 @@ flop_ioctl (FILEPTR *f, int mode, void *buf)
 static long _cdecl
 flop_datime (FILEPTR *f, ushort *timeptr, int wrflag)
 {
-	TRACE (("[RAWDEV] floppy_datime: on %s", drivers [f->fc.aux].name));
+	TRACE (("[RAWDEV] floppy_datime: on %s", drivers[f->fc.aux].name));
 	
 	if (wrflag)
 		return ENOSYS;
@@ -553,7 +556,7 @@ flop_close (FILEPTR *f, int pid)
 		/* flush the buffer */
 		r = flush_block (floblock);
 		
-		(void) d_lock (0, drivers [floblock->dev_id].drive);
+		(void) d_lock (0, drivers[floblock->dev_id].drive);
 		
 		kfree (floblock->buffer);
 		kfree (floblock);
