@@ -655,6 +655,27 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 			break;
 		}
+#ifdef DEBUG_INFO
+		case S_DEBUGKMTRACE:
+		{
+			if (isroot)
+			{
+				const char *func;
+
+				func = alloc_lookup((void *)arg1, NULL);
+				if (func)
+					strcpy((char *)arg2, func);
+				else
+					*(char *)arg2 = '\0';
+
+				r = 0;
+			}
+			else
+				r = EPERM;
+
+			break;
+		}
+#endif
 #if MINT_STATUS_CVS
 		/* XXX only for testing */
 		case 2000:
