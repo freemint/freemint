@@ -2799,7 +2799,8 @@ uart_close (FILEPTR *f, int pid)
 	
 	DEBUG (("uart_close [%i]: enter", f->fc.aux));
 	
-	if ((f->flags & O_LOCK) && (iovar->lockpid == pid))
+	if ((f->flags & O_LOCK)
+	    && ((iovar->lockpid == pid) || (f->links <= 0)))
 	{
 		DEBUG (("uart_close: remove lock by %i", pid));
 		
