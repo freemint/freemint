@@ -170,8 +170,10 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func)())
 	*(long *) addr = (long) func;
 
 	/* better to be safe... */
+# ifndef NO_CPU_CACHES
 	cpush ((long *) addr, sizeof (addr));
 	cpush (xv, sizeof (xv));
+# endif
 }
 
 /*
@@ -527,8 +529,10 @@ init (void)
 
 	get_my_name();
 
+# ifndef NO_MMU
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_mp, no_mem_prot ? MSG_init_mp_disabled : MSG_init_mp_enabled);
+# endif
 # endif
 # ifdef VERBOSE_BOOT
 	/* These are set inside getmch() */
@@ -554,18 +558,12 @@ init (void)
 		usp = get_usp();
 		ssp = get_ssp();
 
-		boot_printf("Kernel BP: 0x%08lx,\r\n" \
-				"TEXT: 0x%08lx (SIZE: %ld B)\r\n" \
-				"DATA: 0x%08lx (SIZE: %ld B)\r\n" \
-				" BSS: 0x%08lx (SIZE: %ld B)\r\n" \
-				" USP: 0x%08lx (SIZE: %ld B)\r\n" \
-				" SSP: 0x%08lx (SIZE: %ld B)\r\n", \
-				_base, \
-				_base->p_tbase, _base->p_tlen, \
-				_base->p_dbase, _base->p_dlen, \
-				_base->p_bbase, _base->p_blen, \
-				usp, usp - (_base->p_bbase + _base->p_blen), \
-				ssp, ssp - (_base->p_bbase + _base->p_blen));
+		DEBUG(("Kernel BASE: 0x%08lx", _base));
+		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
+		DEBUG(("Kernel DATA: 0x%08lx (SIZE: %ld bytes)", _base->p_dbase, _base->p_dlen));
+		DEBUG(("Kernel BSS:  0x%08lx (SIZE: %ld bytes)", _base->p_bbase, _base->p_blen));
+		DEBUG(("Kernel USP:  0x%08lx (SIZE: %ld bytes)", usp, usp - (_base->p_bbase + _base->p_blen)));
+		DEBUG(("Kernel SSP:  0x%08lx (SIZE: %ld bytes)", ssp, ssp - (_base->p_bbase + _base->p_blen)));
 	}
 # endif
 
@@ -573,6 +571,10 @@ init (void)
 
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
+# endif
+
+# ifndef NO_MMU
+# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_saving_mmu);
 # endif
 
@@ -581,6 +583,7 @@ init (void)
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
+# endif
 # endif
 
 	stop_and_ask();
@@ -645,8 +648,10 @@ init (void)
 # endif
 
 	/* initialize cache */
+# ifndef NO_CPU_CACHES
 	init_cache ();
 	DEBUG (("init_cache() ok!"));
+# endif
 
 	/* initialize memory */
 	init_mem ();
@@ -690,7 +695,9 @@ init (void)
 	init_keybd();
 
 	/* Disable all CPU caches */
+# ifndef NO_CPU_CACHES
 	ccw_set(0x00000000L, 0x0000c57fL);
+# endif
 
 	/* initialize interrupt vectors */
 	init_intr ();
@@ -703,12 +710,16 @@ init (void)
 	intr_done = 1;
 
 	/* Enable superscalar dispatch on 68060 */
+# ifndef ONLY68000
 	get_superscalar();
+# endif
 
 	/* Init done, now enable/unfreeze all caches.
 	 * Don't touch the write/allocate bits, though.
 	 */
+# ifndef NO_CPU_CACHES
 	ccw_set(0x0000c567L, 0x0000c57fL);
+# endif
 
 # ifdef _xx_KMEMDEBUG
 	/* XXX */
@@ -812,10 +823,12 @@ init (void)
 	}
 
 	/* print the warning message if MP is turned off */
+# ifndef NO_MMU
 	if (no_mem_prot && mcpu > 20)
 		boot_print(memprot_warning);
 
 	stop_and_ask();
+# endif
 
 	/* initialize delay */
 	boot_print(MSG_init_delay_loop);
@@ -848,6 +861,22 @@ init (void)
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_loading_modules);
+# endif
+
+# ifdef DEBUG_INFO
+	{
+		long usp, ssp;
+
+		usp = get_usp();
+		ssp = get_ssp();
+
+		DEBUG(("Kernel BASE: 0x%08lx", _base));
+		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
+		DEBUG(("Kernel DATA: 0x%08lx (SIZE: %ld bytes)", _base->p_dbase, _base->p_dlen));
+		DEBUG(("Kernel BSS:  0x%08lx (SIZE: %ld bytes)", _base->p_bbase, _base->p_blen));
+		DEBUG(("Kernel USP:  0x%08lx (SIZE: %ld bytes)", usp, usp - (_base->p_bbase + _base->p_blen)));
+		DEBUG(("Kernel SSP:  0x%08lx (SIZE: %ld bytes)", ssp, ssp - (_base->p_bbase + _base->p_blen)));
+	}
 # endif
 
 	/* load the kernel modules */
