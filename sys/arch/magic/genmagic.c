@@ -18,7 +18,8 @@
 
 /*
  * conventions:
- * 
+ *
+ * B_XXX	offset of XXX in struct BASEPAGE
  * C_XXX	offset of XXX in struct CONTEXT
  * P_XXX	offset of XXX in struct PROC
  * SL_XXX	offset of XXX in struct SHARED_LIB
@@ -33,6 +34,20 @@ struct magics
 }
 magics [] =
 {
+	{ "B_LOWTPA",		offsetof (BASEPAGE, p_lowtpa)		},
+	{ "B_HITPA",		offsetof (BASEPAGE, p_hitpa)		},
+	{ "B_TBASE",		offsetof (BASEPAGE, p_tbase)		},
+	{ "B_TLEN",		offsetof (BASEPAGE, p_tlen)		},
+	{ "B_DBASE",		offsetof (BASEPAGE, p_dbase)		},
+	{ "B_DLEN",		offsetof (BASEPAGE, p_dlen)		},
+	{ "B_BBASE",		offsetof (BASEPAGE, p_bbase)		},
+	{ "B_BLEN",		offsetof (BASEPAGE, p_blen)		},
+	{ "B_DTA",		offsetof (BASEPAGE, p_dta)		},
+	{ "B_PARENT",		offsetof (BASEPAGE, p_parent)		},
+	{ "B_FLAGS",		offsetof (BASEPAGE, p_flags)		},
+	{ "B_ENV", 		offsetof (BASEPAGE, p_env)		},
+	{ "B_CMDLIN",		offsetof (BASEPAGE, p_cmdlin)		},
+
 	{ "C_PTRACE",		offsetof (CONTEXT, ptrace)		},
 	{ "C_SFMT",		offsetof (CONTEXT, sfmt)		},
 	{ "C_INTERNAL",		offsetof (CONTEXT, internal)		},
@@ -51,7 +66,7 @@ magics [] =
 	{ "C_A1",		offsetof (CONTEXT, regs) + 36		},
 	{ "C_CRP",		offsetof (CONTEXT, crp)			},
 	{ "C_TC",		offsetof (CONTEXT, tc)			},
-	
+
 	{ "P_CTXT0",		offsetof (PROC, ctxt)			},
 	{ "P_EUID",		offsetof (PROC, _euid)	/* XXX */	},
 	{ "P_SYSTIME",		offsetof (PROC, systime)		},
@@ -68,17 +83,19 @@ magics [] =
 	{ "P_SIGPENDING",	offsetof (PROC, sigpending)		},
 	{ "P_INDOS",		offsetof (PROC, in_dos)			},
 	{ "P_BASE",		offsetof (PROC, base)			},
-	
+
 	{ "SL_HEAD",		offsetof (SHARED_LIB, slb_head)		},
 	{ "SL_NAME",		offsetof (SHARED_LIB, slb_name)		},
-	
+
 	{ "SH_NAME",		offsetof (SLB_HEAD, slh_name)		},
 	{ "SH_VERSION",		offsetof (SLB_HEAD, slh_version)	},
+	{ "SH_INIT",		offsetof (SLB_HEAD, slh_slb_init)	},
+	{ "SH_EXIT",		offsetof (SLB_HEAD, slh_slb_exit)	},
 	{ "SH_OPEN",		offsetof (SLB_HEAD, slh_slb_open)	},
 	{ "SH_CLOSE",		offsetof (SLB_HEAD, slh_slb_close)	},
 	{ "SH_NO_FUNCS",	offsetof (SLB_HEAD, slh_no_funcs)	},
 	{ "SH_FUNCTIONS",	offsetof (SLB_HEAD, slh_functions)	},
-	
+
 	{ "KER_MAJ_VERSION",	offsetof (struct kerinfo, maj_version)	},
 	{ "KER_MIN_VERSION",	offsetof (struct kerinfo, min_version)	},
 	{ "KER_VERSION",	offsetof (struct kerinfo, version)	},
@@ -100,14 +117,14 @@ magics [] =
 	{ "KER_XTIME",		offsetof (struct kerinfo, xtime)	},
 	{ "KER_KILLGROUP",	offsetof (struct kerinfo, killgroup)	},
 	{ "KER_DMA",		offsetof (struct kerinfo, dma)		},
-	
+
 	{ "DMA_GET_CHANNEL",	offsetof (DMA, get_channel)		},
 	{ "DMA_FREE_CHANNEL",	offsetof (DMA, free_channel)		},
 	{ "DMA_START",		offsetof (DMA, dma_start)		},
 	{ "DMA_END",		offsetof (DMA, dma_end)			},
 	{ "DMA_BLOCK",		offsetof (DMA, block)			},
 	{ "DMA_DEBLOCK",	offsetof (DMA, deblock)			},
-	
+
 	{ "",			0					}
 };
 
@@ -119,31 +136,31 @@ small_main (void)
 	char buf [128];
 	long fd;
 	int i;
-	
+
 //	if (argc != 2)
 //	{
 //		Cconws ("Usage: genmagic outputfile\r\n");
-//		
+//
 //		goto leave;
 //	}
-	
+
 	fd = Fopen (outfile, O_WRONLY | O_CREAT | O_TRUNC);
 	if (fd < 0)
 	{
 		ksprintf (buf, sizeof (buf), "Fopen(%s) -> %li\r\n", outfile, fd);
 		Cconws (buf);
-		
+
 		goto leave;
 	}
-	
+
 	for (i = 0; *magics[i].name; i++)
 	{
 		ksprintf (buf, sizeof (buf), "#define %s %ld\n", magics[i].name, magics[i].value);
 		Fwrite (fd, strlen (buf), buf);
 	}
-	
+
 	Fclose (fd);
-	
+
 leave:
 	Pterm0 ();
 }
