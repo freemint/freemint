@@ -677,14 +677,23 @@ XA_form_keybd(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			return XAC_DONE;
 		}
-		else			
+		else if ((keycode != 0x1c0d && keycode != 0x720d))
 		{
-			/* just a plain key - pass character */
+			/* just a plain key and not <return> - pass character */
 			DIAG((D_keybd, client, "XA_form_keybd: nxt_obj=%d, passing character back to client\n", obj));
 
 			*op++ = 1; /* continue */
 			*op++ = obj; /* pnxt_obj */
 			*op   = keycode;/* pchar */
+		}
+		else
+		{
+			/* Return key, but no default button or other edits */
+			DIAG((D_keybd, client, "XA_form_keybd: clear character but leave nextobj unchanged\n", obj));
+
+			*op++ = 1; /* continue */
+			*op++ = obj; /* pnxt_obj */
+			*op   = 0;/* pchar */
 		}
 	}
 
