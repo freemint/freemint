@@ -295,8 +295,6 @@ init(struct kentry *k)
 	/* default to live actions */
 	default_options.live = true;
 
-	cfg.videomode = -1;
-
 	/* Parse the config file */
 	load_config(cnf_name);
 
