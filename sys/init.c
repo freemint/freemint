@@ -751,6 +751,7 @@ init (void)
 	/* XXX: why `static' ?? */
 	static char curpath[128];
 	
+	int pid;
 	long *sysbase;
 	long r;
 	FILEPTR *f;
@@ -1179,12 +1180,11 @@ init (void)
 	 */
 	if (init_prg && (!init_is_gem || gem_active))
 	{
-		r = sys_pexec(0, (char *) init_prg, init_tail, init_env);
+		r = sys_pexec(100, (char *) init_prg, init_tail, init_env);
 	}
 	else if (!gem_active)
 	{   
 		BASEPAGE *bp;
-		int pid;
 		
 		bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
 		bp->p_tbase = *((long *) EXEC_OS);
@@ -1194,20 +1194,35 @@ init (void)
 		gem_base = bp;
 # endif
 		r = sys_pexec(106, (char *) "GEM", bp, 0L);
-		pid = (int) r;
-		if (pid > 0)
-		{
-			do {
-				r = sys_pwaitpid(-1, 0, NULL);
-			}
-			while (pid != ((r & 0xffff0000L) >> 16));
-			r &= 0x0000ffff;
-		}
 	}
 	else
 	{
 		boot_print(MSG_init_specify_prg);
 		r = 0;
+	}
+
+	/* Here we have the code for the process 0 (MiNT itself).
+	 * It waits for the init program to terminate. When it is checked that
+	 * the init program is still alive, the pid 0 goes to sleep.
+	 * It can only be awaken, when noone else is ready to run, sleep()
+	 * in proc.c moves it to the run queque then (q.v.). In this case,
+	 * instead of calling sleep() again and force the CPU to execute the
+	 * loop again and again, we request it to be stopped.
+         *
+	 */
+	pid = (int) r;
+	if (pid > 0)
+	{
+		do {
+			r = sys_pwaitpid(-1, 1, NULL);
+			if (!r)
+			{
+				sleep(WAIT_Q, 0L);
+				low_power_stop();	/* assembler instruction STOP #$2000 */
+			}
+		}
+		while (pid != ((r & 0xffff0000L) >> 16));
+		r &= 0x0000ffff;
 	}
 	
 	if (r < 0 && init_prg)
