@@ -43,12 +43,12 @@
 _detect_native_features:
 
 	clr.l	d0			// assume no NatFeats available
+	move.l	sp,a1			// save the ssp
+	move.l	(0x0010).w,a0		// illegal instruction vector
+	move.l	#fail_natfeat,(0x0010).w
 
-	.equ vec_illegal, 0x10		// illegal exception vector
+	nop				// flush pipelines (for 68040+)
 
-	move.l	sp,a1
-	move.l	(vec_illegal).w,a0
-	move.l	#fail_natfeat,(vec_illegal).w
 	pea	(nf_version_name).w(pc)
 	subq.l	#4,sp
 	dc.w	0x7300			// Jump to NATFEAT_ID
@@ -58,7 +58,9 @@ _detect_native_features:
 
 fail_natfeat:
 	move.l	a1,sp
-	move.l	a0,(vec_illegal).w
+	move.l	a0,(0x0010).w
+
+	nop				// flush pipelines (for 68040+)
 
 	rts
 
