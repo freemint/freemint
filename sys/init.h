@@ -14,6 +14,7 @@
 
 extern KBDVEC *syskey;
 extern short intr_done;
+extern short step_by_step;
 
 void	boot_print	(const char *s);
 void	boot_printf	(const char *fmt, ...);
