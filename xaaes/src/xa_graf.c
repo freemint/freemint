@@ -32,6 +32,26 @@
 
 #define THICKNESS	2
 
+/* Ozk: This is a temprorary solution to this problem; After dragging boxes
+ *	the data in mu_button is not valid anymore. We also need to flush the
+ * 	moose, since this will hold pending data these functions already acted
+ *	upon. Dont know if this made sense to anyone, tho....
+*/
+void
+update_mu_button(void)
+{
+	struct moose_data md;
+	long n = sizeof(struct moose_data);
+
+	vq_mouse(C.vh, &mu_button.b, &mu_button.x, &mu_button.y);
+	mu_button.cb = mu_button.b;
+	vq_key_s(C.vh, &mu_button.ks);
+
+	/* ozk: Gotta flush the moose device, or we'll get clicks all over */
+	while(n > 0)
+		n = Fread(C.MOUSE_dev, sizeof(md), &md);
+}
+
 /*
  * This routine behaves a lot like graf_watchbox() - in fact, XaAES's
  * graf_watchbox calls this.
@@ -107,6 +127,8 @@ watch_object(LOCK lock, XA_TREE *wt, int ob, int in_state, int out_state)
 
 	f_interior(FIS_SOLID);
 	wr_mode(MD_TRANS);
+
+	update_mu_button();
 
 	if (obf == ob)
 		return 1;
@@ -280,6 +302,8 @@ rubber_box(COMPASS cp,
 	new_box(&r, NULL);
 	wr_mode(MD_TRANS);
 
+	update_mu_button();
+
 	*last = r;
 }
 
@@ -297,7 +321,8 @@ drag_box(RECT r,
 	wr_mode(MD_XOR);
 	new_box(&r, NULL);
 
-	do {
+	do
+	{
 		(void) Syield();
 		vq_mouse(C.vh, &mb, &x, &y);
 
@@ -309,6 +334,8 @@ drag_box(RECT r,
 
 	new_box(&r,NULL);
 	wr_mode(MD_TRANS);
+
+	update_mu_button();
 
 	*last = r;
 }
@@ -336,6 +363,7 @@ XA_graf_dragbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	pb->intout[2] = last.y;
 
 	DIAG((D_graf,client,"_drag_box\n"));
+
 	return XAC_DONE;
 }
 
@@ -364,6 +392,7 @@ XA_graf_rubberbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	pb->intout[2] = r.h;
 
 	DIAG((D_graf,client,"_rubbox x=%d, y=%d, w=%d, h=%d\n",pb->intin[0],pb->intin[1],r.w,r.h));	
+
 	return XAC_DONE;
 }
 
@@ -384,6 +413,7 @@ XA_graf_watchbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 					pb->intin[3]);
 
 	DIAG((D_graf,client,"_watchbox\n"));
+
 	return XAC_DONE;
 }
 
@@ -421,6 +451,7 @@ XA_graf_slidebox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	DIAG((D_graf,client,"    --     d:%d last.x%d, last.y%d  p:%d/%d,%d/%d c:%d/%d,%d/%d\n",
 		d, last.x, last.y, p, c));
+
 	return XAC_DONE;
 }
 
@@ -489,6 +520,7 @@ XA_graf_growbox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	pb->intout[0] = 1;
 	
 DIAG((D_graf,client->pid,"_growbox\n"));
+
 	return XAC_DONE;
 }
 
@@ -546,6 +578,7 @@ XA_graf_movebox(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	pb->intout[0] = 1;
 	
 DIAG((D_graf,client->pid,"_movebox\n"));
+
 	return XAC_DONE;
 }
 #endif
@@ -857,28 +890,44 @@ graf_mouse(int m_shape, MFORM *mf)
 		hidem();
 		return;
 	case ARROW:
+		hidem();
 		vsc_form(C.vh, &M_ARROW_MOUSE);
+		showm();
 		break;
 	case TEXT_CRSR:
+		hidem();
 		vsc_form(C.vh, &M_TXT_MOUSE);
+		showm();
 		break;
 	case HOURGLASS:
+		hidem();
 		vsc_form(C.vh, &M_BEE_MOUSE);
+		showm();
 		break;
 	case POINT_HAND:
+		hidem();
 		vsc_form(C.vh, &M_POINT_MOUSE);
+		showm();
 		break;
 	case FLAT_HAND:
+		hidem();
 		vsc_form(C.vh, &M_HAND_MOUSE);
+		showm();
 		break;
 	case THIN_CROSS:
+		hidem();
 		vsc_form(C.vh, &M_TCRS_MOUSE);
+		showm();
 		break;
 	case THICK_CROSS:
+		hidem();
 		vsc_form(C.vh, &M_THKCRS_MOUSE);
+		showm();
 		break;
 	case OUTLN_CROSS:
+		hidem();
 		vsc_form(C.vh, &M_OCRS_MOUSE);
+		showm();
 		break;
 	case M_SAVE:
 		return;
@@ -890,30 +939,44 @@ graf_mouse(int m_shape, MFORM *mf)
 		if (!mf)
 			mf = &M_BUBD_MOUSE;	/* HR: Scare people ;-) */
 		C.mouse_form = mf;
+		hidem();
 		vsc_form(C.vh, mf);
+		showm();
 		break;
 	case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
+		hidem();
 		vsc_form(C.vh, &M_BUBD_MOUSE);
+		showm();
 		break;
 	case XACRS_RESIZER:			/* The 'resize window' cursor */
+		hidem();
 		vsc_form(C.vh, &M_SE_SIZER_MOUSE);
+		showm();
 		break;
 	case XACRS_NE_SIZER:
+		hidem();
 		vsc_form(C.vh, &M_NE_SIZER_MOUSE);
+		showm();
 		break;
 	case XACRS_MOVER:			/* The 'move window' cursor */
+		hidem();
 		vsc_form(C.vh, &M_MOVER_MOUSE);
+		showm();
 		break;
 	case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
+		hidem();
 		vsc_form(C.vh, &M_VERTSIZER_MOUSE);
+		showm();
 		break;
 	case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
+		hidem();
 		vsc_form(C.vh, &M_HORSIZER_MOUSE);
+		showm();
 		break;
 	}
 	C.mouse = m_shape;
-	hidem();				/* Hide/reveal cursor to update on screen image immediately */
-	showm();
+//	hidem();				/* Hide/reveal cursor to update on screen image immediately */
+//	showm();
 //	forcem();
 }
 

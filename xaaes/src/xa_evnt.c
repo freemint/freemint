@@ -91,7 +91,7 @@ multi_intout(short *o, int evnt)
 	*o++ = evnt;
 	*o++ = button.x;
 	*o++ = button.y;
-	*o++ = mu_button.b;	/*button.b;*/
+	*o++ = mu_button.cb;	/*button.b;*/
 	*o++ = button.ks;
 
 	if (evnt)
@@ -243,14 +243,27 @@ button_event(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 	}
 }
 
+static void
+reset_pending_button(void)
+{
+	int i;
+
+	pending_button_tail = 0;
+	pending_button_head = 0;
+	for (i = 0; i < 4; i++)
+		pending_button[i].client = 0;
+}
+
 /* Ozk: Collect up to 4 pending button events -- do we need more? */
 static void
 add_pending_button(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 {
-
 	Sema_Up(pending);
 
+
 	if (!(pending_button[pending_button_head].client == client))
+		reset_pending_button();
+#if 0
 	{
 		pending_button_tail = 0;
 		pending_button_head = 0;
@@ -258,20 +271,21 @@ add_pending_button(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 		pending_button[2].client = 0;
 		pending_button[3].client = 0;
 	}
-
-	
-	pending_button[pending_button_tail].client = client;
-	pending_button[pending_button_tail].x = md->x;
-	pending_button[pending_button_tail].y = md->y;
-	pending_button[pending_button_tail].b = md->state;
-	pending_button[pending_button_tail].cb = md->cstate;
-	pending_button[pending_button_tail].clicks = md->clicks;
+#endif
+	pending_button[pending_button_tail].client	= client;
+	pending_button[pending_button_tail].x		= mu_button.x;		/* md->x; */
+	pending_button[pending_button_tail].y		= mu_button.y;		/* md->y; */
+	pending_button[pending_button_tail].b		= mu_button.b;		/* md->state; */
+	pending_button[pending_button_tail].cb		= mu_button.cb;		/* md->cstate; */
+	pending_button[pending_button_tail].clicks	= mu_button.clicks;	/* md->clicks; */
+	pending_button[pending_button_tail].ks		= mu_button.ks;
 
 	pending_button_tail++;
 	pending_button_tail &= 3;
 
 	Sema_Dn(pending);
 }
+
 
 #if 0
 static void
@@ -443,16 +457,21 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	{
 		C.focus = window_list;
 		client = window_list->owner;
-//		display("Click on unfocused top_window of (%d)'%s'\n", client->pid, client->name);
 		DIAG((D_menu,NULL,"Click on unfocused top_window of %s\n", c_owner(client)));
 		display_window(lock|clients, 112, window_list, NULL);   /* Redisplay titles */
 		send_ontop(lock|clients);
 		swap_menu(lock|clients, client, true, 4);
 	}
 	else if (client->waiting_for & MU_BUTTON)
+	{
+		//display("deliver\n");
 		button_event(lock, client, md);
+	}
 	else
+	{
+		//display("pending\n");
 		add_pending_button(lock, client, md);
+	}
 
 	Sema_Dn(clients);
 }
@@ -1312,7 +1331,7 @@ DIAG((D_button,NULL,"still_button multi?? o[0,2] %x,%x button.got %d, lock %d, M
 			if (still_button(lock, client, pb->intin + 1))
 			{
 DIAG((D_button,NULL,"still_button multi %d,%d/%d\n", button.b, button.x, button.y));
-				if (is_bevent(mu_button.b, 0, pb->intin + 1, 2))
+				if (is_bevent(mu_button.cb, 0, pb->intin + 1, 2))
 				{
 DIAG((D_button,NULL,"still button %d: fall_through |= MU_BUTTON\n", button.b));					
 					fall_through |= MU_BUTTON;
@@ -1430,6 +1449,7 @@ DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s\n", r->x, r-
 			/* Ozk 040501: And we need to take the data from the correct place. */
 			if (mu_butt_p)
 			{
+				//display("evmu: deliver pending\n");
 				pb->intout[1] = pending_button[pbi].x;
 				pb->intout[2] = pending_button[pbi].y;
 				pb->intout[3] = pending_button[pbi].b;
@@ -1437,9 +1457,10 @@ DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s\n", r->x, r-
 			}
 			else
 			{
+				//display("evmu: chk mu_button %d\n", mu_button.cb);
 				pb->intout[1] = mu_button.x;
 				pb->intout[2] = mu_button.y;
-				pb->intout[3] = mu_button.b;
+				pb->intout[3] = mu_button.cb;
 				pb->intout[6] = mu_button.clicks;
 			}
 		}
@@ -1517,12 +1538,13 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 		if (is_bevent(pending_button[pbi].b, pending_button[pbi].clicks, pb->intin, 3))
 		{
-			vq_key_s( C.vh, &pb->intout[4]);
+//			vq_key_s( C.vh, &pb->intout[4]);
 //			multi_intout(pb->intout, 0);
 			pb->intout[0] = pending_button[pbi].clicks;	/* Ozk 040503: Take correct data */
 			pb->intout[1] = pending_button[pbi].x;
 			pb->intout[2] = pending_button[pbi].y;
 			pb->intout[3] = pending_button[pbi].b;
+			pb->intout[4] = pending_button[pbi].ks;
 			pb->intout[5] = 0;
 			pb->intout[6] = 0;
 			Sema_Dn(pending);
@@ -1537,11 +1559,12 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		if (still_button(lock, client, pb->intin))
 		{
 			DIAG((D_button,NULL,"still_button %d,%d/%d\n", button.b, button.x, button.y));
-			if (is_bevent(mu_button.b, 0, pb->intin, 4))
+			if (is_bevent(mu_button.cb, 0, pb->intin, 4))
 			{
 				DIAG((D_button,NULL,"    --    implicit button %d\n",button.b));
 				multi_intout(pb->intout, 0);		/* 0 : for evnt_button */
 				pb->intout[0] = 1;
+				pb->intout[3] = mu_button.cb;
 				button.got = true;
 				Sema_Dn(pending);
 				return XAC_DONE;

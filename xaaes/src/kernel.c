@@ -188,14 +188,13 @@ new_mu_mouse(struct moose_data *md)
 	widget_active.ny	= md->y;
 	widget_active.clicks	= md->clicks;
 
-	mu_button.b	= md->state;
-	mu_button.cb	= md->cstate;
-	mu_button.x	= md->x;
-	mu_button.y	= md->y;
-	mu_button.clicks = md->clicks;
-	mu_button.got	= false;
-
+	mu_button.b		= md->state;
+	mu_button.cb		= md->cstate;
+	mu_button.x		= md->x;
+	mu_button.y		= md->y;
+	mu_button.clicks 	= md->clicks;
 	vq_key_s(C.vh, &mu_button.ks);
+	mu_button.got		= false;
 	
 }
 
@@ -705,7 +704,7 @@ XaAES(void)
 						DIAG((D_button, NULL, "Button %d on: %d/%d\n",
 							mdata.state, mdata.x, mdata.y));
 						
-						//display("butv pkt: Len = %d, - x,y = %d,%d - state,cstate %d,%d - clicks %d",
+						//display("butv pkt: Len = %d, - x,y = %d,%d - state,cstate %d,%d - clicks %d\n",
 						//	mdata.l, mdata.x, mdata.y, mdata.state, mdata.cstate, mdata.clicks);
 
 						have_mouse(&mdata);
