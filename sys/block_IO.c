@@ -225,7 +225,9 @@ static void	_cdecl bio_set_lshift	(DI *di, ulong logical);
 
 /* cached block I/O */
 static UNIT *	_cdecl bio_lookup	(DI *di, ulong sector, ulong blocksize);
+static UNIT *	_cdecl bio_getunit1	(DI *di, ulong sector, ulong blocksize, long *err);
 static UNIT *	_cdecl bio_getunit	(DI *di, ulong sector, ulong blocksize);
+static UNIT *	_cdecl bio_read1	(DI *di, ulong sector, ulong blocksize, long *err);
 static UNIT *	_cdecl bio_read		(DI *di, ulong sector, ulong blocksize);
 static long	_cdecl bio_write	(UNIT *u);
 static long	_cdecl bio_l_read	(DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf);
@@ -342,7 +344,7 @@ static void	bio_wb_queue		(DI *di);
 
 static void	bio_unit_remove_cache	(register UNIT *u);
 static void	bio_unit_remove		(register UNIT *u);
-static UNIT *	bio_unit_get		(DI *di, ulong sector, ulong size);
+static UNIT *	bio_unit_get		(DI *di, ulong sector, ulong size, long *err);
 
 
 /* debugging functions */
@@ -393,7 +395,7 @@ rwabs_log (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	
 	if (!n || n > 65535UL)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_log (%c): n outside range (%li)", di->drv+'A', n));
+		BIO_ALERT (("block_IO [%c]: rwabs_log: n outside range (%li)", di->drv+'A', n));
 		return ESECTOR;
 	}
 	
@@ -419,7 +421,7 @@ rwabs_log_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	
 	if (!n || n > 65535UL)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_log_lrec (%c): n outside range (%li)", di->drv+'A', n));
+		BIO_ALERT (("block_IO [%c]: rwabs_log_lrec: n outside range (%li)", di->drv+'A', n));
 		return ESECTOR;
 	}
 	
@@ -446,19 +448,19 @@ rwabs_phy (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	
 	if (!n || n > 65535UL)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_phy (%c): n outside range (%li)", di->drv+'A', n));
+		BIO_ALERT (("block_IO [%c]: rwabs_phy: n outside range (%li)", di->drv+'A', n));
 		return ESECTOR;
 	}
 	
 # if 0
 	if ((recno + n) > di->size)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_phy: access outside partition (drv = %i)", di->drv));
+		BIO_ALERT (("block_IO [%c]: rwabs_phy: access outside partition", di->drv));
 		return ESECTOR;
 	}
 # endif
 	
-	BIO_FORCE (("block_IO.c: (%i) rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
+	BIO_FORCE (("block_IO [%i]: rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
 	return rwabs (rw | 8, buf, n, (recno + di->start), di->major, 0L);
 }
 # endif
@@ -483,19 +485,19 @@ rwabs_phy_lrec (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 	
 	if (!n || n > 65535UL)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_phy_lrec (%c): n outside range (%li)", di->drv+'A', n));
+		BIO_ALERT (("block_IO [%c]: rwabs_phy_lrec: n outside range (%li)", di->drv+'A', n));
 		return ESECTOR;
 	}
 	
 # if 0
 	if ((recno + n) > di->size)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_phy_lrec: access outside partition (drv = %i)", di->drv));
+		BIO_ALERT (("block_IO [%c]: rwabs_phy_lrec: access outside partition", di->drv));
 		return ESECTOR;
 	}
 # endif
 	
-	BIO_FORCE (("block_IO.c: (%i) rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
+	BIO_FORCE (("block_IO [%i]: rw = %i, start = %li, recno = %li, size = %li, n = %li", di->major, rw, di->start, recno, size, n));
 	return rwabs (rw | 8, buf, n, -1, di->major, (recno + di->start));
 }
 # endif
@@ -513,19 +515,19 @@ rwabs_xhdi (DI *di, ushort rw, void *buf, ulong size, ulong rec)
 //		BIO_ALERT (("block_IO [%c]: attempting to write on a write protected device (block %ld)!", di->drv+'A', (rec << di->lshift)));
 //		return EROFS;
 //	}
-	 
+	
 	n = size >> di->pshift;
 	recno = rec << di->lshift;
 	
 	if (!n)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_xhdi (%c): n = 0 (failure)!", di->drv+'A'));
+		BIO_ALERT (("block_IO [%c]: rwabs_xhdi: n = 0 (failure)!", di->drv+'A'));
 		return ESECTOR;
 	}
 	
 	if ((recno + n) > di->size)
 	{
-		BIO_ALERT (("block_IO.c: rwabs_xhdi (%c): access outside partition", di->drv+'A'));
+		BIO_ALERT (("block_IO [%c]: rwabs_xhdi: access outside partition", di->drv+'A'));
 		return ESECTOR;
 	}
 	
@@ -752,7 +754,7 @@ bio_readin (DI *di, void *buffer, ulong size, ulong sector)
 	r = BIO_RWABS (di, 0, buffer, size, sector);
 	if (r)
 	{
-		BIO_ALERT (("block_IO.c: bio_readin: RWABS fail (return = %li))", r));
+		BIO_ALERT (("block_IO [%c]: bio_readin: RWABS fail (%li))", di->drv+'A', r));
 	}
 	else
 	{
@@ -777,7 +779,7 @@ bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 	r = BIO_RWABS (di, 1, (void *) buffer, size, sector);
 	if (r)
 	{
-		BIO_ALERT (("block_IO.c: bio_writeout: RWABS fail (ignored, return = %li))", r));
+		BIO_ALERT (("block_IO [%c]: bio_writeout: RWABS fail (ignored, %li))", di->drv+'A', r));
 	}
 	else
 	{
@@ -828,7 +830,7 @@ bio_unit_wait (register UNIT *u)
 {
 	if (u->io_pending != BIO_UNIT_READY)
 	{
-		FORCE ("block_IO: sleeping in bio_unit_wait [%c:, %lu, %lu]", 'A'+u->di->drv, u->sector, u->size);
+		FORCE ("block_IO [%c]: sleeping in bio_unit_wait [%lu, %lu]", u->di->drv+'A', u->sector, u->size);
 		
 		u->io_sleep = 1;
 		sleep (IO_Q, (long) u);
@@ -1164,7 +1166,7 @@ bio_unit_remove (register UNIT *u)
  */
 
 static UNIT *
-bio_unit_get (DI *di, ulong sector, ulong size)
+bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 {
 	const ulong n = bio_get_chunks (size);
 	UNIT *new;
@@ -1176,6 +1178,28 @@ bio_unit_get (DI *di, ulong sector, ulong size)
 	
 	/* failure of the xfs */
 	BIO_ASSERT ((size <= cache.max_size));
+	
+	/* sector validation */
+	{
+		ulong n = size >> di->pshift;
+		ulong recno = sector << di->lshift;
+		
+		if (!n)
+		{
+			BIO_ALERT (("block_IO [%c]: bio_unit_get n = 0 failure!", di->drv+'A'));
+			
+			*err = ESECTOR;
+			return NULL;
+		}
+		
+		if ((recno + n) > di->size)
+		{
+			BIO_ALERT (("block_IO [%c]: bio_unit_get: access outside partition", di->drv+'A'));
+			
+			*err = ESECTOR;
+			return NULL;
+		}
+	}
 	
 retry:
 	{	register CBL *b = cache.blocks;
@@ -1213,7 +1237,9 @@ retry:
 			goto retry;
 		}
 		
-		BIO_ALERT (("block_IO.c: abort, no free unit in cache! (cache too small?)"));
+		BIO_ALERT (("block_IO [%c]: abort, no free unit in cache! (cache too small?)", di->drv+'A'));
+		
+		*err = ENOMEM;
 		return NULL;
 	}
 	
@@ -1309,7 +1335,9 @@ retry:
 	else
 	{
 		BIO_DEBUG (("bio_unit_get: leave can't get free UNIT (kmalloc (%lu) fail)", sizeof (*new)));
-		BIO_ALERT (("block_IO.c: bio_unit_get: kmalloc (%lu) fail, out of memory?", sizeof (*new)));
+		BIO_ALERT (("block_IO [%c]: bio_unit_get: kmalloc (%lu) fail, out of memory?", di->drv+'A', sizeof (*new)));
+		
+		*err = ENOMEM;
 	}
 	
 	return new;
@@ -1410,7 +1438,7 @@ bio_set_cache_size (long size)
 	count = (size * 1024L) / cache.max_size;
 	if (!count)
 	{
-		BIO_ALERT (("%s, %ld: Specified cache size too small (%li).", __FILE__, __LINE__, size));
+		BIO_ALERT (("block_IO []: %s, %ld: Specified cache size too small (%li).", __FILE__, __LINE__, size));
 		return EBADARG;
 	}
 	
@@ -1424,7 +1452,7 @@ bio_set_cache_size (long size)
 	data = kmalloc (count * cache.max_size);
 	if ((long) data & 15)
 	{
-		BIO_FORCE (("%s, %ld: not aligned (%lx)!", __FILE__, (long) __LINE__, data));
+		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long) __LINE__, data));
 	}
 	
 	if (!blocks || !data)
@@ -1432,7 +1460,7 @@ bio_set_cache_size (long size)
 		if (blocks) kfree (blocks);
 		if (data) kfree (data);
 		
-		BIO_ALERT (("block_IO.c: Not enough RAM for buffer cache (kmalloc fail)."));
+		BIO_ALERT (("block_IO []: Not enough RAM for buffer cache (kmalloc fail)."));
 		r = ENOMEM;
 	}
 	else
@@ -1669,7 +1697,7 @@ bio_get_di (ushort drv)
 	di->table = kmalloc (HASHSIZE * sizeof (*(di->table)));
 	if (!di->table)
 	{
-		BIO_ALERT (("block_IO.c: kmalloc fail in bio_get_di (%c:), out of memory?", 'A'+drv));
+		BIO_ALERT (("block_IO [%c]: kmalloc fail in bio_get_di, out of memory?", 'A'+drv));
 		return NULL;
 	}
 	
@@ -1805,7 +1833,7 @@ bio_get_di (ushort drv)
 					di->mode |= BIO_LRECNO;
 					
 					BIO_DEBUG (("bio_get_di: major = %i, minor = %i, start = %li", di->major, di->minor, di->start));
-					BIO_FORCE (("bio_get_di: major = %i, minor = %i, start = %li", di->major, di->minor, di->start));
+					BIO_FORCE (("block_IO []: major = %i, minor = %i, start = %li", di->major, di->minor, di->start));
 				}
 				else if (drv > 1)
 				{
@@ -1856,7 +1884,7 @@ bio_res_di (ushort drv)
 	di->table = kmalloc (HASHSIZE * sizeof (*(di->table)));
 	if (!di->table)
 	{
-		BIO_ALERT (("block_IO.c: kmalloc fail in bio_get_di (%c:), out of memory?", 'A'+drv));
+		BIO_ALERT (("block_IO [%c]: kmalloc fail in bio_get_di, out of memory?", 'A'+drv));
 		return NULL;
 	}
 	
@@ -1962,7 +1990,7 @@ restart:
 }
 
 static UNIT * _cdecl
-bio_getunit (DI *di, ulong sector, ulong blocksize)
+bio_getunit1 (DI *di, ulong sector, ulong blocksize, long *err)
 {
 	register UNIT *u;
 	
@@ -1971,8 +1999,7 @@ bio_getunit (DI *di, ulong sector, ulong blocksize)
 	u = bio_lookup (di, sector, blocksize);
 	if (!u)
 	{
-		/* can block but always success */
-		u = bio_unit_get (di, sector, blocksize);
+		u = bio_unit_get (di, sector, blocksize, err);
 		if (u)
 		{
 			u->io_pending = BIO_UNIT_READY;
@@ -1986,7 +2013,15 @@ bio_getunit (DI *di, ulong sector, ulong blocksize)
 }
 
 static UNIT * _cdecl
-bio_read (DI *di, ulong sector, ulong blocksize)
+bio_getunit (DI *di, ulong sector, ulong blocksize)
+{
+	long err;
+	
+	return bio_getunit1 (di, sector, blocksize, &err);
+}
+
+static UNIT * _cdecl
+bio_read1 (DI *di, ulong sector, ulong blocksize, long *err)
 {
 	UNIT *u;
 	
@@ -1995,15 +2030,13 @@ bio_read (DI *di, ulong sector, ulong blocksize)
 	u = bio_lookup (di, sector, blocksize);
 	if (!u)
 	{
-		u = bio_unit_get (di, sector, blocksize);
+		u = bio_unit_get (di, sector, blocksize, err);
 		if (u)
 		{
-			long r;
-			
-			r = bio_unit_read (u);
-			if (r)
+			*err = bio_unit_read (u);
+			if (*err)
 			{
-				BIO_DEBUG (("bio_read: bio_unit_read fail (ret = %li)", r));
+				BIO_DEBUG (("bio_read: bio_unit_read fail (ret = %li)", *err));
 				
 				bio_unit_remove_cache (u);
 				u = NULL;
@@ -2013,6 +2046,14 @@ bio_read (DI *di, ulong sector, ulong blocksize)
 	
 	BIO_DEBUG (("bio_read: leave %s", u ? "ok" : "failure"));
 	return u;
+}
+
+static UNIT * _cdecl
+bio_read (DI *di, ulong sector, ulong blocksize)
+{
+	long err;
+	
+	return bio_read1 (di, sector, blocksize, &err);
 }
 
 static long _cdecl
@@ -2039,8 +2080,9 @@ bio_units_add (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf, c
 		while (blocks)
 		{
 			register UNIT *u;
+			long err;
 			
-			u = bio_unit_get (di, sector, blocksize);
+			u = bio_unit_get (di, sector, blocksize, &err);
 			if (u)
 			{
 				/* copy */
@@ -2092,6 +2134,10 @@ bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
 			{
 				register const ulong size = tblocks * blocksize;
 				
+				/* first copy the content of the active UNIT
+				 * as the UNIT can be invalidated during
+				 * the next operations
+				 */
 				quickmovb ((char *) buf + size, u->data, blocksize);
 				
 				r = bio_readin (di, buf, size, tstart);
@@ -2135,7 +2181,7 @@ bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
 	
 	if (r)
 	{
-		BIO_ALERT (("bio_l_read: leave failure, RWABS fail (ret = %li)", r));
+		BIO_ALERT (("block_IO [%c]: bio_l_read: leave failure, RWABS fail (%li)", di->drv+'A', r));
 	}
 	else
 	{
@@ -2191,7 +2237,7 @@ restart:
 	i = bio_writeout (di, buf, size, sector);
 	if (i)
 	{
-		BIO_ALERT (("bio_large_write: leave failure, RWABS fail (ret = %li)", i));
+		BIO_ALERT (("block_IO [%c]: bio_large_write: leave failure, RWABS fail (%li)", di->drv+'A', i));
 	}
 	else
 	{
@@ -2213,17 +2259,15 @@ bio_small_write (DI *di, ulong sector, ulong blocks, ulong blocksize, const void
 	{
 		register UNIT *u;
 		
-		u = bio_lookup (di, sector, blocksize);
-		if (!u)
-			u = bio_getunit (di, sector, blocksize);
-		
+		u = bio_getunit1 (di, sector, blocksize, &r);
 		if (!u)
 		{
 			/* for any unknown reason there are no
 			 * free cache units available
 			 * -> fall back to direct transfer
 			 */
-			r = bio_large_write (di, sector, blocks * blocksize, buf);
+			if (r == ENOMEM)
+				r = bio_large_write (di, sector, blocks * blocksize, buf);
 			
 			/* and go out */
 			break;
@@ -2250,13 +2294,9 @@ bio_l_write (DI *di, ulong sector, ulong blocks, ulong blocksize, const void *bu
 	BIO_DEBUG (("bio_l_write: entry (sector = %lu, drv = %u, size = %lu", sector, di->drv, size));
 	
 	if (size > cache.max_size)
-	{
 		r = bio_large_write (di, sector, size, buf);
-	}
 	else
-	{
 		r = bio_small_write (di, sector, blocks, blocksize, buf);
-	}
 	
 	return r;
 }
@@ -2420,7 +2460,7 @@ bio_invalidate (DI *di)
 	
 	if (di->lock > 1)
 	{
-		BIO_FORCE (("bio_invalidate [%c]: invalidate on LOCKED di", 'A'+di->drv));
+		BIO_FORCE (("block_IO [%c]: invalidate on LOCKED di", di->drv+'A'));
 	}
 	
 restart:
@@ -2445,7 +2485,7 @@ restart:
 				u->dirty = 0;
 				
 				/* inform user */
-				BIO_ALERT (("block_IO.c: bio_invalidate: cache unit not written back (%li, %li)!", u->sector, u->size));
+				BIO_ALERT (("block_IO [%c]: bio_invalidate: cache unit not written back (%li, %li)!", di->drv+'A', u->sector, u->size));
 			}
 			
 			/* remove from table */
