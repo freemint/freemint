@@ -182,6 +182,8 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				mwt->is_menu = true;
 				mwt->menu_line = true;
 
+				wt_menu_area(mwt);
+
 				if (swap)
 					swap_menu(lock|winlist, client, false, true, 6);
 
@@ -189,7 +191,10 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				DIAG((D_menu, NULL, "done display, lastob = %d", mwt->lastob));
 			}
 			else if (mwt && swap)
+			{
+				wt_menu_area(mwt);
 				swap_menu(lock|winlist, client, false, true, 7);
+			}
 		}
 		break;
 	}
@@ -231,6 +236,22 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+static void
+upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item)
+{
+	XA_TREE *wt;
+
+	if (tree[item].ob_type == G_TITLE && (wt = obtree_to_wt(client, tree)))
+	{
+		wt_menu_area(wt);
+		if (wt == get_menu())
+		{
+			set_rootmenu_area(client);
+			redraw_menu(lock);
+		}
+	}
+}
+	
 /*
  * Highlight / un-highlight a menu title
  * - Actually, this isn't really needed as XaAES cancels the highlight itself...
@@ -239,21 +260,30 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	XA_TREE *menu_bar = get_menu();
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
+	short i = pb->intin[0];
 	
 	CONTROL(2,1,1)
 
 	/* Change the highlight / normal status of a menu title */
 	if (pb->intin[1])
-		tree[pb->intin[0]].ob_state &= ~OS_SELECTED;
+		tree[i].ob_state &= ~OS_SELECTED;
 	else
-		tree[pb->intin[0]].ob_state |= OS_SELECTED;
+		tree[i].ob_state |= OS_SELECTED;
 
-	/* If we just changed the main root window's menu, better redraw it */
-	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
-		redraw_menu(lock);
+	upd_menu(lock, client, tree, i);
 
+#if 0
+	if (tree[pb->intin[0]].ob_type == G_TITLE && (wt = obtree_to_wt(client, tree)))
+	{
+		wt_menu_area(wt);
+		if (wt == get_menu())
+		{
+			set_rootmenu_area(client);
+			redraw_menu(lock);
+		}
+	}
+#endif
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }
@@ -264,20 +294,18 @@ XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	XA_TREE *menu_bar = get_menu();
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
+	short i = pb->intin[0];
 
 	CONTROL(2,1,1)
 
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
-		tree[pb->intin[0]].ob_state &= ~OS_DISABLED;
+		tree[i].ob_state &= ~OS_DISABLED;
 	else
-		tree[pb->intin[0]].ob_state |= OS_DISABLED;
+		tree[i].ob_state |= OS_DISABLED;
 
-	/* If we just changed the main root window's menu, better redraw it */
-	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
-		redraw_menu(lock);
+	upd_menu(lock, client, tree, i);
 
 	pb->intout[0] = 1;
 	return XAC_DONE;
@@ -289,21 +317,19 @@ XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	XA_TREE *menu_bar = get_menu();
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
+	short i = pb->intin[0];
 
 	CONTROL(2,1,1)
 
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
-		tree[pb->intin[0]].ob_state |= OS_CHECKED;
+		tree[i].ob_state |= OS_CHECKED;
 	else
-		tree[pb->intin[0]].ob_state &= ~OS_CHECKED;
+		tree[i].ob_state &= ~OS_CHECKED;
 
-	/* If we just changed the main root window's menu, better redraw it */
-	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
-		redraw_menu(lock);
-
+	upd_menu(lock, client, tree, i);
+	
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }
@@ -315,18 +341,15 @@ unsigned long
 XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	const char *text = (const char *)pb->addrin[1];
-
-	XA_TREE *menu_bar = get_menu();
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
+	short i = pb->intin[0];
 
 	CONTROL(1,1,2)
 
-	strcpy(object_get_spec(&tree[pb->intin[0]])->free_string, text);
+	strcpy(object_get_spec(&tree[i])->free_string, text);
 
-	/* If we just changed the main root window's menu, better redraw it */
-	if ((tree == menu_bar->tree) && (tree[pb->intin[0]].ob_type == G_TITLE))
-		redraw_menu(lock);
-
+	upd_menu(lock, client, tree, i);
+	
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }

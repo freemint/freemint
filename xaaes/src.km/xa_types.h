@@ -398,6 +398,7 @@ struct widget_tree
 	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
 					/* And set a usefull RECT as soon as possible, ready for use in
 					 * all kind of functions. */
+	RECT area;
 	ushort *state_mask;
 
 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
