@@ -33,6 +33,7 @@ COBJS = \
 	mcount.c \
 	md5.c \
 	memory.c \
+	module.c \
 	nullfs.c \
 	pipefs.c \
 	proc.c \
