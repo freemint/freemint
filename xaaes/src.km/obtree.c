@@ -1492,6 +1492,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 	short x = -wt->dx, y = -wt->dy;
 	bool start_checking = false;
 	short pos_object = -1;
+	RECT r;
 
 	DIAG((D_objc, NULL, "obj_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
@@ -1514,17 +1515,12 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 				/* This is only a possible object, as it may have children on top of it. */
 				if (c)
 				{
-					RECT r;
 					r.x = obtree[current].ob_x + x;
 					r.y = obtree[current].ob_y + y;
 					r.w = obtree[current].ob_width;
 					r.h = obtree[current].ob_height;
-					
-					if (xa_rect_clip(c, &r, &r))
-						pos_object = current;
 				}
-				else
-					pos_object = current;
+				pos_object = current;
 			}
 		}
 
@@ -1556,6 +1552,12 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 		}	
 	}
 	while ((current != -1) && (rel_depth > 0));
+
+	if (c && pos_object >= 0)
+	{
+		if (!xa_rect_clip(c, &r, &r))
+			pos_object = -1;
+	}
 
 	DIAG((D_objc, NULL, "obj_find: found %d", pos_object));
 
@@ -1679,6 +1681,7 @@ obj_change(XA_TREE *wt,
 	   short state,
 	   short flags,
 	   bool redraw,
+	   const RECT *clip,
 	   struct xa_rect_list *rl)
 {
 	OBJECT *obtree = wt->tree;
@@ -1697,12 +1700,12 @@ obj_change(XA_TREE *wt,
 
 	if (draw && redraw)
 	{
-		obj_draw(wt, obj, rl);
+		obj_draw(wt, obj, clip, rl);
 	}
 }
 
 void
-obj_draw(XA_TREE *wt, short obj, struct xa_rect_list *rl)
+obj_draw(XA_TREE *wt, short obj, const RECT *clip, struct xa_rect_list *rl)
 {
 	short start = obj, i;
 	RECT or;
@@ -1723,17 +1726,21 @@ obj_draw(XA_TREE *wt, short obj, struct xa_rect_list *rl)
 		RECT r;
 		do
 		{
-			if (xa_rect_clip(&rl->r, &or, &r))
+			r = rl->r;
+			if (!clip || (clip && xa_rect_clip(clip, &r, &r)))
 			{
-				set_clip(&r);
-				draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, 1);
+				if (xa_rect_clip(&or, &r, &r))
+				{
+					set_clip(&r);
+					draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, NULL);
+				}
 			}
 		} while ((rl = rl->next));
 	}
 	else
 	{
 		set_clip(&or);
-		draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, 1);
+		draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, NULL);
 	}
 	clear_clip();
 
@@ -2114,6 +2121,7 @@ chk_edobj(OBJECT *obtree, short obj, short lastobj)
 		return true;
 	}
 }
+
 static short
 obj_ED_INIT(struct widget_tree *wt,
 	    struct objc_edit_info *ei,
@@ -2183,6 +2191,7 @@ obj_edit(XA_TREE *wt,
 	 short keycode,
 	 short pos,	/* -1 sets position to end of text */
 	 bool redraw,
+	 const RECT *clip,
 	 struct xa_rect_list *rl,
 	/* outputs */
 	 short *ret_pos,
@@ -2263,7 +2272,7 @@ obj_edit(XA_TREE *wt,
 						{
 							eor_objcursor(wt, rl);
 							if (obj_ed_char(wt, &wt->e, ted, keycode))
-								obj_draw(wt, wt->e.obj, rl);
+								obj_draw(wt, wt->e.obj, clip, rl);
 							eor_objcursor(wt, rl);
 						}
 						else
@@ -2286,7 +2295,7 @@ obj_edit(XA_TREE *wt,
 					{
 						eor_objcursor(wt, rl);
 						if (obj_ed_char(wt, ei, ted, keycode))
-							obj_draw(wt, obj, rl);
+							obj_draw(wt, obj, clip, rl);
 						eor_objcursor(wt, rl);
 					}
 					else
@@ -2398,7 +2407,7 @@ obj_edit(XA_TREE *wt,
 					if (obj_ED_INIT(wt, &lei, obj, -1, last, &ted, &old_ed_obj))
 					{
 						if (obj_ed_char(wt, &lei, ted, keycode))
-							obj_draw(wt, obj, rl);
+							obj_draw(wt, obj, clip, rl);
 
 						pos = lei.pos;
 					}
@@ -2415,7 +2424,7 @@ obj_edit(XA_TREE *wt,
 
 					undraw_objcursor(wt, rl);
 					if (obj_ed_char(wt, ei, ted, keycode))
-						obj_draw(wt, obj, rl);
+						obj_draw(wt, obj, clip, rl);
 					set_objcursor(wt);
 					draw_objcursor(wt, rl);
 					pos = ei->pos;
@@ -2461,6 +2470,7 @@ void
 obj_set_radio_button(XA_TREE *wt,
 		      short obj,
 		      bool redraw,
+		      const RECT *clip,
 		      struct xa_rect_list *rl)
 {
 	OBJECT *obtree = wt->tree;
@@ -2487,6 +2497,7 @@ obj_set_radio_button(XA_TREE *wt,
 						   obtree[o].ob_state & ~OS_SELECTED,
 						   obtree[o].ob_flags,
 						   redraw,
+						   clip,
 						   rl);
 				}	
 			}
@@ -2497,7 +2508,7 @@ obj_set_radio_button(XA_TREE *wt,
 			   obj,
 			   obtree[obj].ob_state | OS_SELECTED,
 			   obtree[obj].ob_flags,
-			   redraw,
+			   redraw, clip,
 			   rl);
 	}
 }
@@ -2507,6 +2518,7 @@ obj_watch(XA_TREE *wt,
 	   short obj,
 	   short in_state,
 	   short out_state,
+	   const RECT *clip,
 	   struct xa_rect_list *rl)
 {
 	OBJECT *focus = wt->tree + obj;
@@ -2526,12 +2538,12 @@ obj_watch(XA_TREE *wt,
 		/* If mouse button is already released, assume that was just
 		 * a click, so select
 		 */
-		obj_change(wt, obj, in_state, flags, true, rl);
+		obj_change(wt, obj, in_state, flags, true, clip, rl);
 	}
 	else
 	{
 		S.wm_count++;
-		obj_change(wt, obj, in_state, flags, true, rl);
+		obj_change(wt, obj, in_state, flags, true, clip, rl);
 		while (mb)
 		{
 			short s;
@@ -2552,7 +2564,7 @@ obj_watch(XA_TREE *wt,
 				if (pobf != obf)
 				{
 					pobf = obf;
-					obj_change(wt, obj, s, flags, true, rl);
+					obj_change(wt, obj, s, flags, true, clip, rl);
 				}
 			}
 		}
@@ -2567,163 +2579,3 @@ obj_watch(XA_TREE *wt,
 	else
 		return 0;
 }
-
-/* ************************************************************ */
-/*      OLD STUFF   */
-/* ************************************************************ */
-#if 0
-
-/* HR: I wonder which one is faster;
-		This one is smaller. and easier to follow. */
-/* sheduled for redundancy */
-
-
-void
-redraw_object(enum locks lock, XA_TREE *wt, int item)
-{
-	hidem();
-	draw_object_tree(lock, wt, NULL, item, MAX_DEPTH, 2);
-	showm();
-}
-
-void
-change_object(enum locks lock, XA_TREE *wt, OBJECT *root, int i, const RECT *r, int state,
-              bool draw)
-{
-	int start  = i;
-
-	root[start].ob_state = state;
-
-	if (draw)
-	{
-		RECT c; int q;
-
-		while (transparent(root, start))
-			if ((q = get_parent(root, start)) < 0)
-				break;
-			else
-				start = q;
-
-		hidem();
-		object_area(&c,root,i,wt ? wt->dx : 0, wt ? wt->dy : 0);
-		if (!r || (r && xa_rc_intersect(*r, &c)))
-		{
-			set_clip(&c);
-			draw_object_tree(lock, wt, root, start, MAX_DEPTH, 1);
-			clear_clip();
-		}
-		showm();
-	}
-}
-
-
-/* HR 271101: separate function, also used by wdlg_xxx extension. */
-int
-edit_object(enum locks lock,
-	    struct xa_client *client,
-	    int func,
-	    XA_TREE *wt,
-	    OBJECT *form,
-	    int ed_obj,
-	    int keycode,
-	    short *newpos)
-{
-	TEDINFO *ted;
-	OBJECT *otree = wt->tree;
-	int  last = 0, old_edit_obj = -1;
-	bool update = false;
-
-#if GENERATE_DIAGS
-	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
-	DIAG((D_form,wt->owner,"  --  edit_object: wt=%lx form=%lx, obj:%d, k:%x, m:%s", wt, form, ed_obj, keycode, funcstr));
-#endif
-
-	/* 
-	 * go through the objects until the LASTOB
-	 */
-	do
-	{
-		/*
-		 * exit if ed_obj is not editable
-		 */
-		if (last == ed_obj && (form[last].ob_flags & OF_EDITABLE) == 0)
-			return 0;
-	} while (!(form[last++].ob_flags & OF_LASTOB));
-
-	/* the ed_obj is past the LASTOB (last is past the one -> decrement) */
-	if (ed_obj >= --last)
-		return 0;
-
-	if (otree == form && wt->e.obj != ed_obj)
-	{
-		old_edit_obj = wt->e.obj;
-		update = true;
-	}
-
-	/* set the object to edit to the widget structure */
-	wt->e.obj = ed_obj;
-
-	ted = get_ob_spec(&form[ed_obj])->tedinfo;
-
-	switch(func)
-	{
-	/* set current edit field */
-	case ED_INIT:
-	{
-		if (*(ted->te_ptext) == '@')
-			*(ted->te_ptext) = 0;
-		wt->e.pos = strlen(ted->te_ptext);
-		update = true;
-		break;
-	}
-	/* process a character */
-	case ED_CHAR:
-	{
-		update = update || ed_char(wt, ted, keycode);
-		break;
-	}
-	/* turn off the cursor */
-	case ED_END:
-	{
-		wt->e.obj = -1;
-		update = true;
-		break;
-	}
-	/* ED_INIT with the edit_position setup for the x coordinate value
-	   (comming in keycode) */
-	case ED_CRSR:
-	{
-		/* TODO: x coordinate -> cursor position conversion */
-
-		/* TODO: REMOVE: begin ... ED_INIT like position return */
-		if (*(ted->te_ptext) == '@')
-			wt->e.pos = 0;
-		else
-			wt->e.pos = strlen(ted->te_ptext);
-		/* TODO: REMOVE: end */
-		break;
-	}
-	default:
-	{
-		return 1;
-	}
-	}
-
-	/* update the cursor position */
-	if (newpos)
-		*newpos = wt->e.pos;
-
-	if (update)
-	{
-		DIAGS(("newpos wt %lx, old_ed_obj %d, ed_obj %d ed_pos %d", wt, old_edit_obj, ed_obj, wt->e.pos));
-		if (old_edit_obj != -1)
-			redraw_object(lock, wt, old_edit_obj);
-		redraw_object(lock, wt, ed_obj);
-	}
-
-	return 1;
-}
-/* HR: Only the '\0' in the te_ptext field is determining the corsor position, NOTHING ELSE!!!!
-		te_tmplen is a constant and strictly owned by the APP.
-*/
-#endif

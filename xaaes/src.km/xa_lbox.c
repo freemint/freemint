@@ -320,7 +320,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 				if (xa_rect_clip(&rl->r, r, &dr))
 				{
 					set_clip(&dr);
-					draw_object_tree(0, wt, wt->tree, start, depth, 1);
+					draw_object_tree(0, wt, wt->tree, start, depth, NULL);
 				}
 				rl = rl->next;
 			}
@@ -331,13 +331,13 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 		if (xa_rect_clip(r, &or, &or))
 		{
 			set_clip(&or);
-			draw_object_tree(0, wt, wt->tree, start, depth, 1);
+			draw_object_tree(0, wt, wt->tree, start, depth, NULL);
 		}
 	}
 	else
 	{
 		set_clip(&or);
-		draw_object_tree(0, wt, wt->tree, start, depth, 1);
+		draw_object_tree(0, wt, wt->tree, start, depth, NULL);
 	}
 	clear_clip();
 	unlock_screen(wt->owner->p, 0);

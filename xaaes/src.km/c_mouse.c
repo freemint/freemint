@@ -276,7 +276,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 			 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
 			 *      of the list during our wander down towards the bottom of it.
 			 */
-			while(tab) //FOREACH_TAB(tab) //while (tab)
+			while(tab)
 			{
 				k = &tab->task_data.menu;
 
@@ -290,7 +290,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 					tab = k->em.t1(tab);	/* call the function */
 					break;
 				}
-				if (k->em.flags & MU_M1)
+				if ((k->em.flags & MU_M1))
 				{
 					if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
 					{
@@ -300,8 +300,10 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 						tab = k->em.t1(tab);	/* call the function */
 						break;
 					}
+					if (m_inside(x, y, &k->bar))
+						break;
 				}
-				if (k->em.flags & MU_M2)
+				if ((k->em.flags & MU_M2))
 				{
 					if (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2))
 					{
@@ -311,6 +313,8 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 						tab = k->em.t2(tab);
 						break;
 					}
+					if (m_inside(x, y, &k->drop))
+						break;
 				}
 				tab = tab->tab_entry.next;
 			}

@@ -205,7 +205,8 @@ nextwind_rect(struct build_rl_parms *p)
 	int ret = 0;
 	struct xa_window *wind = p->ptr1;
 
-	while (wind)
+	
+	while (wind && !ret)
 	{
 		/*
 		 * Lets skip windows whose owner is exiting or is hidden
@@ -214,11 +215,14 @@ nextwind_rect(struct build_rl_parms *p)
 		     (wind->window_status & (XAWS_HIDDEN|XAWS_OPEN)) == XAWS_OPEN)
 		{
 			p->next_r = &wind->r;
-			wind = wind->prev;
+			//wind = wind->prev;
 			ret = 1;
-			break;
+			//break;
 		}
-		wind = wind->prev;
+		if (!wind->prev && !wind->nolist)
+			wind = S.open_nlwindows.last;
+		else
+			wind = wind->prev;
 	}
 	p->ptr1 = wind;
 	return ret;
@@ -271,7 +275,10 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 		{
 			p.getnxtrect = nextwind_rect;
 			p.area = &wind->r;
-			p.ptr1 = wind->prev;
+			if (!wind->prev && !wind->nolist)
+				p.ptr1 = S.open_nlwindows.last;
+			else
+				p.ptr1 = wind->prev;
 			nrl = build_rect_list(&p);
 			if (nrl && swap)
 				wind->rect_list = wind->rect_user = wind->rect_start = nrl;
@@ -282,7 +289,10 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 		{
 			p.getnxtrect = nextwind_rect;
 			p.area = &wind->rl_clip;
-			p.ptr1 = wind->prev;
+			if (!wind->prev && !wind->nolist)
+				p.ptr1 = S.open_nlwindows.last;
+			else
+				p.ptr1 = wind->prev;
 			nrl = build_rect_list(&p);
 			if (nrl && swap)
 				wind->rect_opt_start = wind->rect_opt = nrl;

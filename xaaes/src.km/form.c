@@ -70,8 +70,8 @@ Set_form_do(struct xa_client *client,
 	if (edobj == -2)
 		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
 
-	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &new_obj))
-		obj_edit(wt, ED_INIT, new_obj, 0, -1, false, NULL, NULL, NULL);
+	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, &new_obj))
+		obj_edit(wt, ED_INIT, new_obj, 0, -1, false, NULL, NULL, NULL, NULL);
 
 	/* Ozk:
 	 * Check if this obtree needs a keypress handler..
@@ -248,6 +248,7 @@ form_button(XA_TREE *wt,
 	    short *nxtob,
 	    short *clickmsk)
 {
+	RECT *clip = NULL;
 	OBJECT *obtree = wt->tree;
 	short next_obj = 0;
 	short flags, state;
@@ -284,19 +285,19 @@ form_button(XA_TREE *wt,
 		else if (flags & OF_RBUTTON)
 		{
 			DIAGS(("form_button: call obj_set_radio_button"));
-			obj_set_radio_button(wt, obj, redraw, rl);
+			obj_set_radio_button(wt, obj, redraw, clip, rl);
 		}
 		else
 		{
 			if (redraw)
 			{
 				DIAGS(("form_button: call obj_watch"));
-				obj_watch(wt, obj, state^OS_SELECTED, state, rl);
+				obj_watch(wt, obj, state^OS_SELECTED, state, clip, rl);
 			}
 			else
 			{
 				DIAGS(("form_button: switch state"));
-				obj_change(wt, obj, state^OS_SELECTED, flags, redraw, rl);
+				obj_change(wt, obj, state^OS_SELECTED, flags, redraw, clip, rl);
 			}
 		}
 		state = obtree[obj].ob_state;
@@ -734,6 +735,7 @@ Key_form_do(enum locks lock,
 	    struct widget_tree *wt,
 	    const struct rawkey *key)
 {
+	RECT *clip = NULL;
 	OBJECT *obtree;
 	struct xa_rect_list *rl = wind ? wind->rect_start : NULL;
 	struct fmd_result fr;
@@ -792,6 +794,7 @@ Key_form_do(enum locks lock,
 					  fr.aeskey,
 					  wt->e.pos,
 					  true,
+					  clip,
 					  rl,
 					  NULL,
 					  NULL);
@@ -801,8 +804,8 @@ Key_form_do(enum locks lock,
 			}
 			else if (fr.obj >= 0 && wt->e.obj != fr.obj)
 			{
-				obj_edit(wt, ED_END, 0, 0, 0, true, rl, NULL, NULL);
-				obj_edit(wt, ED_INIT, fr.obj, 0, -1, true, rl, NULL, NULL);
+				obj_edit(wt, ED_END, 0, 0, 0, true, clip, rl, NULL, NULL);
+				obj_edit(wt, ED_INIT, fr.obj, 0, -1, true, clip, rl, NULL, NULL);
 			}
 		}
 		else
@@ -822,14 +825,16 @@ Key_form_do(enum locks lock,
 }
 
 static void
-dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
+dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt, RECT *clip)
 {
 	if (wt && wt->tree)
 	{
 		RECT dr;
 		struct xa_rect_list *rl;
+		
+		rl = wind->rect_start;
 
-		if ((rl = wind->rect_start))
+		if (widg->display && rl)
 		{
 			hidem();
 			while (rl)
@@ -841,13 +846,15 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 						if (xa_rect_clip(clip, &dr, &dr))
 						{
 							set_clip(&dr);
-							draw_object_tree(0, wt, wt->tree, 0, 10, 1);
+							widg->display(0, wind, widg);
+							//draw_object_tree(0, wt, wt->tree, 0, 10, NULL);
 						}
 					}
 					else
 					{
 						set_clip(&dr);
-						draw_object_tree(0, wt, wt->tree, 0, 10, 1);
+						widg->display(0, wind, widg);
+						//draw_object_tree(0, wt, wt->tree, 0, 10, NULL);
 					}
 				}
 				rl = rl->next;
@@ -894,12 +901,12 @@ do_formwind_msg(
 		{
 			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
 			{
-				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, wind->rect_start, NULL, NULL);
+				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
 			}
-			dfwm_redraw(wind, wt, (RECT *)&msg[4]);
+			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
 			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
 			{
-				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, wind->rect_start, NULL, NULL);
+				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
 			}
 			kick_mousemove_timeout();
 			break;
@@ -1046,7 +1053,7 @@ do_formwind_msg(
 			wt->dy = dy;
 			save_clip(&sc);
 			display_window(0, 120, wind, NULL);
-			dfwm_redraw(wind, wt, NULL);
+			dfwm_redraw(wind, widg, wt, NULL);
 			restore_clip(&sc);
 		}
 	}

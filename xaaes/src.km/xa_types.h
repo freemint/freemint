@@ -491,6 +491,10 @@ struct widget_tree
 	short lastob;			/* Can be used to validate item number */
 	short which;			/* kind of event for use by WDIAL exit handler. */
 
+	short rdx, rdy;
+	short puobj;
+	short pdx, pdy;
+
 	bool is_menu;			/* true when the tree is a menu or part of it. */
 	bool menu_line;			/* draw a menu line. */
 	bool zen;			/* true when the tree is embedded in a window.

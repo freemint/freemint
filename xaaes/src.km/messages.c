@@ -304,6 +304,9 @@ cdwm(struct c_event *ce, long arg)
 
 	if (args->wind == wind)
 	{
+		if (args->msg[0] == WM_REDRAW)
+			kick_mousemove_timeout();
+
 		kfree(args);
 		return true;
 	}

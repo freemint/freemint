@@ -892,8 +892,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					rp_2_ap_cs(w, widg, NULL);
 					if (wt && wt->tree)
 					{
-						wt->tree->ob_x = w->wa.x;
-						wt->tree->ob_y = w->wa.y;
+						wt->tree->ob_x = wt->rdx = widg->ar.x; //w->wa.x;
+						wt->tree->ob_y = wt->rdx = widg->ar.y; //w->wa.y;
 						if (!wt->zen)
 						{
 							wt->tree->ob_x += wt->ox;
