@@ -44,6 +44,15 @@
  */
 # ifdef OLDTOSFS
 
+/* variable set if someone has already installed an flk cookie
+ */
+int flk = 0;
+
+/* version of GEMDOS in ROM.
+ * dos.c no longer directly calls Sversion()
+ */
+long gemdos_version;
+
 /*
  * used GEMDOS calls (as ROM_*),
  * they are made directly to the ROM, not via trap #1 (see syscall.h)
@@ -804,7 +813,7 @@ around:
 
 	/* jr: if cluster size unknown, do a getbpb once */
 	if (fc->dev < NUM_DRIVES && ! clsizb[fc->dev])
-		getbpb (fc->dev);
+		sys_b_getbpb (fc->dev);
 
 	xattr->blksize = 1024;
 	if (fc->dev < NUM_DRIVES && clsizb[fc->dev])
