@@ -98,9 +98,9 @@ k_shutdown(void)
 		/* sleep a second */
 		//f_select(5000L, NULL, 0, 0);
 		
-		nap(5000);
+		nap(50);
 
-		if (j > 10000)
+		if (j > 1000)
 		{
 			DIAGS(("Cleaning up clients"));
 
