@@ -3,15 +3,17 @@
  * the file Changes.MH for details and dates.
  */
 
-# include <stdio.h>
-# include <stdlib.h>
 # include <stddef.h>
+# include <mint/mintbind.h>
+
 # include "mint/mint.h"
 # include "mint/ktypes.h"
+# include "mint/file.h"
 # include "mint/mem.h"
 # include "mint/proc.h"
-# include "mint/file.h"
 # include "mint/slb.h"
+
+# include "libkern/libkern.h"
 
 
 /*
@@ -112,37 +114,39 @@ magics [] =
 	{ "",			0					}
 };
 
-static void usage (void);
+char *outfile = "magic.i";
 
-static void
-usage (void)
+void
+small_main (void)
 {
-	fprintf (stderr, "Usage: genmagic outputfile\n");
-	fflush (stderr);
-	exit (2);
-}
-
-int
-main (int argc, char **argv)
-{
-	FILE *f;
+	char buf [128];
+	long fd;
 	int i;
 	
-	if (argc != 2)
-		usage ();
+//	if (argc != 2)
+//	{
+//		Cconws ("Usage: genmagic outputfile\r\n");
+//		
+//		goto leave;
+//	}
 	
-	f = fopen (argv [1], "w");
-	if (!f)
+	fd = Fopen (outfile, O_WRONLY | O_CREAT | O_TRUNC);
+	if (fd < 0)
 	{
-		perror (argv [1]);
-		exit (1);
+		ksprintf (buf, sizeof (buf), "Fopen(%s) -> %li\r\n", outfile, fd);
+		Cconws (buf);
+		
+		goto leave;
 	}
 	
 	for (i = 0; *magics[i].name; i++)
 	{
-		fprintf (f, "%%define %s %ld\n", magics[i].name, magics[i].value);
+		ksprintf (buf, sizeof (buf), "%%define %s %ld\n", magics[i].name, magics[i].value);
+		Fwrite (fd, strlen (buf), buf);
 	}
 	
-	fclose (f);
-	return 0;
+	Fclose (fd);
+	
+leave:
+	Pterm0 ();
 }
