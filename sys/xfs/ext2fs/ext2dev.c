@@ -28,8 +28,8 @@
 
 # include "ext2dev.h"
 
-# include <mint/endian.h>
-# include <mint/dcntl.h>
+# include "mint/endian.h"
+# include "mint/dcntl.h"
 
 # include "ext2sys.h"
 # include "inode.h"

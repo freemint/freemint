@@ -28,9 +28,9 @@
 
 # include "ext2sys.h"
 
-# include <mint/endian.h>
-# include <mint/file.h>
-# include <mint/dcntl.h>
+# include "mint/dcntl.h"
+# include "mint/endian.h"
+# include "mint/file.h"
 
 # include "ext2dev.h"
 # include "inode.h"
@@ -418,18 +418,28 @@ e_stat64 (fcookie *fc, STAT *ptr)
 		}
 # endif
 	}
-	ptr->nlink	= le2cpu16 (c->in.i_links_count);
-	ptr->uid	= le2cpu16 (c->in.i_uid);
-	ptr->gid	= le2cpu16 (c->in.i_gid);
-	ptr->rdev 	= c->rdev;
-	ptr->atime.time	= le2cpu32 (c->in.i_atime);
-	ptr->mtime.time	= le2cpu32 (c->in.i_mtime);
-	ptr->ctime.time	= le2cpu32 (c->in.i_ctime);
-	ptr->size 	= le2cpu32 (c->in.i_size);
-	ptr->blocks	= le2cpu32 (c->in.i_blocks);
-	ptr->blksize	= EXT2_BLOCK_SIZE (s);
-	ptr->flags	= 0;
-	ptr->gen	= 0;
+	ptr->nlink		= le2cpu16 (c->in.i_links_count);
+	ptr->uid		= le2cpu16 (c->in.i_uid);
+	ptr->gid		= le2cpu16 (c->in.i_gid);
+	ptr->rdev 		= c->rdev;
+	
+	ptr->atime.high_time	= 0;
+	ptr->atime.time		= le2cpu32 (c->in.i_atime);
+	ptr->atime.nanoseconds	= 0;
+	
+	ptr->mtime.high_time	= 0;
+	ptr->mtime.time		= le2cpu32 (c->in.i_mtime);
+	ptr->mtime.nanoseconds	= 0;
+	
+	ptr->ctime.high_time	= 0;
+	ptr->ctime.time		= le2cpu32 (c->in.i_ctime);
+	ptr->ctime.nanoseconds	= 0;
+	
+	ptr->size 		= le2cpu32 (c->in.i_size);
+	ptr->blocks		= le2cpu32 (c->in.i_blocks);
+	ptr->blksize		= EXT2_BLOCK_SIZE (s);
+	ptr->flags		= 0;
+	ptr->gen		= 0;
 	
 	bzero (ptr->res, sizeof (ptr->res));
 	

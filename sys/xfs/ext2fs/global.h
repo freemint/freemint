@@ -27,12 +27,11 @@
 
 # define __KERNEL_XFS__
 
-# include <mint/mint.h>
+# include "mint/mint.h"
 
-# include <mint/dcntl.h>
-# include <mint/file.h>
-# include <mint/proc.h>
-# include <libkern/libkern.h>
+# include "libkern/libkern.h"
+# include "mint/file.h"
+# include "mint/proc.h"
 
 # include "ext2.h"
 
