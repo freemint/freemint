@@ -287,8 +287,6 @@ extern short border_mouse[];
 
 extern const char mnu_clientlistname[];
 
-extern BUTTON mu_button;
-
 extern XA_TREE nil_tree;
 
 /* shortcuts */
