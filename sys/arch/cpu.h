@@ -22,5 +22,8 @@ void _cdecl	cpush060	(const void *base, long size);
 
 void _cdecl	setstack	(long);
 
+void _cdecl	get_superscalar	(void);
+short _cdecl	is_superscalar	(void);
+
 
 # endif /* _m68k_cpu_h */

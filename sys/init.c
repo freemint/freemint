@@ -1038,9 +1038,20 @@ init (void)
 	init_xbios ();
 	DEBUG (("%s, %ld: init_xbios() ok!", __FILE__, (long) __LINE__));
 	
+	/* Disable all CPU caches */
+	ccw_set(0x00000000L, 0x0000c57fL);
+	
 	/* initialize interrupt vectors */
 	init_intr ();
 	DEBUG (("%s, %ld: init_intr() ok!", __FILE__, (long) __LINE__));
+	
+	/* Enable superscalar dispatch on 68060 */
+	get_superscalar();
+	
+	/* Init done, now enable/unfreeze all caches.
+	 * Don't touch the write/allocate bits, though.
+	 */
+	ccw_set(0x0000c567L, 0x0000c57fL);
 	
 	/* set up cookie jar */
 	init_cookies ();

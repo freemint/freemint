@@ -1,4 +1,28 @@
 ;
+; this below is only called from init.c on 68060 or newer
+;
+	XDEF	_get_superscalar
+	XREF	_mcpu
+
+_get_superscalar:
+	cmp.w	#60,_mcpu+2
+	bmi.s	ssret
+	dc.l	$4e7a0808		; movec pcr,d0
+	ori.w	#$0001,d0		; enable the superscalar dispatch
+	dc.l	$4e7b0808		; movec d0,pcr
+ssret:	rts
+
+	XDEF	_is_superscalar
+
+_is_superscalar:
+	clr.w	d0
+	cmp.w	#60,_mcpu+2
+	bmi.s	ssret
+	dc.l	$4e7a0808		; movec pcr,d0
+	andi.w	#$0001,d0
+	rts
+
+;
 ; Cache tricks
 ;
 	XDEF	_cpush
