@@ -237,6 +237,11 @@ load_module(const char *filename, long *err)
 	/* close file */
 	kernel_close(f);
 
+	/* Ozk: For some reason, this cpush is needed,
+	 * else the kernel wont run on my Milan040!
+	 */
+	cpush(NULL, -1);
+
 	/* check for errors */
 	if (*err)
 	{
