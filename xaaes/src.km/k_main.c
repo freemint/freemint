@@ -1,4 +1,3 @@
-/* http://www.bygjohn.fsnet.co.uk/atari/mdp */
 /*
  * $Id$
  *
@@ -203,29 +202,24 @@ static vdi_vec *svwhlv = NULL;
 /* static vdi_vec *svtimv = NULL; */
 
 /*
- * (Re)initialise the mouse device /dev/moose
+ * initialise the mouse device
  */
 static bool
 init_moose(void)
 {
-	//struct fs_info info;
-	//long major, minor;
-	struct moose_vecsbuf vecs;
-	struct adif *a;
+	bool ret = false;
 
-	C.adi_mouse = 0;
-	a = adi_name2adi("moose");
-	if (a)
+	C.adi_mouse = adi_name2adi("moose");
+	if (C.adi_mouse)
 	{
-		long aerr = 1;
+		long aerr;
 
-		aerr = adi_open(a);
-
+		aerr = adi_open(C.adi_mouse);
 		if (!aerr)
 		{
-			C.adi_mouse = a;
+			struct moose_vecsbuf vecs;
 
-			aerr = (*a->ioctl)(a, MOOSE_READVECS, (long)&vecs);
+			aerr = (*C.adi_mouse->ioctl)(C.adi_mouse, MOOSE_READVECS, (long)&vecs);
 
 			if (vecs.motv)
 			{
@@ -240,20 +234,25 @@ init_moose(void)
 				else
 					fdisplay(log, "No wheel support!!");
 			}
-			if ( (*a->ioctl)(a, MOOSE_DCLICK, (long)lcfg.double_click_time) )
+
+			if ((*C.adi_mouse->ioctl)(C.adi_mouse, MOOSE_DCLICK, (long)lcfg.double_click_time))
 				fdisplay(log, "Moose set dclick time failed");
 
 			DIAGS(("Using moose adi"));
+			ret = true;
 		}
 		else
-			DIAGS(("Error opening moose adi %lx", aerr));	
+		{
+			fdisplay(log, "Error opening moose adi %lx", aerr);	
+			C.adi_mouse = NULL;
+		}
 	}
 	else
 	{
-		DIAGS(("Could not find moose adi"));
-		C.adi_mouse = 0;
+		fdisplay(log, "Could not find moose.adi, please install in %s!", sysdir);
 	}
-	return C.adi_mouse ? true : false;
+
+	return ret;
 }
 
 
@@ -446,6 +445,7 @@ k_main(void *dummy)
 		goto leave;
 	}
 
+
 	/*
 	 * Initialization AES/VDI
 	 */
@@ -470,7 +470,7 @@ k_main(void *dummy)
 	mu_button.y = 0;
 	mu_button.newc = 0;
 	mu_button.newr = 0;
-	//mu_button.got = true;
+
 
 	/* Open the MiNT Salert() pipe to be polite about system errors */
 	C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);
@@ -492,15 +492,15 @@ k_main(void *dummy)
 	}
 	fdisplay(log, "Open '%s' to %ld", KBD_dev_name, C.KBD_dev);
 
-	/* Open /dev/moose (040201: after xa_setup.scl for mouse configuration) */
+	/* initialize mouse */
 	if (!init_moose())
 	{
 		fdisplay(log, "XaAES ERROR: init_moose failed");
 		goto leave;
 	}
 
-	DIAGS(("Handles: KBD %ld, ALERT %ld",
-		C.KBD_dev, C.alert_pipe));
+	DIAGS(("Handles: KBD %ld, ALERT %ld", C.KBD_dev, C.alert_pipe));
+
 
 	/*
 	 * Load Accessories
@@ -544,32 +544,19 @@ k_main(void *dummy)
 	 */
 
 	do {
-		/* HR: The root of all locking under AES pid. */
-		/* HR: how about this? It means that these
-	         *     semaphores are not needed and are effectively skipped.
+		/* The root of all locking under AES pid. */
+		/* how about this? It means that these
+	         * semaphores are not needed and are effectively skipped.
 		 */
 		enum locks lock = winlist|envstr|pending;
-#if _xxx_GENERATE_DIAGS
-		/* For if no keys can be received anymore. */
-		{
-			short sta;
 
-			vq_key_s(C.vh, &sta);
-			if ((sta & 14) == 14)	/* CTRL|ALT|LSHF (break_in) */
-			{
-				DIAGS(("shutdown by CtlAltShift"));
-				shutdown(lock);
-				break;
-			}
-		}
-#endif
 		input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
 		input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 
 		/* DIAG((D_kern, NULL, "Fselect mask: 0x%08lx", input_channels)); */
 
 		/* The pivoting point of XaAES!
-		 * Wait via Fselect() for keyboard, mouse and the AES command pipe(s).
+		 * Wait via Fselect() for keyboard and alerts.
 		 */
 		fs_rtn = f_select(C.active_timeout.timeout, (long *) &input_channels, 0L, 0L);	
 
@@ -685,16 +672,12 @@ k_exit(void)
 	/*
 	 * close input devices
 	 */
-	if (C.kmoose)
-		kernel_close(C.kmoose);
-
 	if (C.KBD_dev > 0)
 		f_close(C.KBD_dev);
 
 	if (C.adi_mouse)
 		adi_close(C.adi_mouse);
 		
-
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
 
