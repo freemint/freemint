@@ -30,7 +30,7 @@ main (void)
 
 	while (1)
 	{
-		size_t len = sizeof (in);
+		socklen_t len = sizeof (in);
 		static char buf[10000];
 
 		r = recvfrom (fd, buf, sizeof (buf), 0,

@@ -141,7 +141,7 @@ display_config (char *program_name)
 			addr.s_addr = record.masq_addr;
 			ascii_addr = inet_ntoa (addr);
 			pent = getprotobynumber (record.proto);
-			printf ("%ld\t%s\t%ld\t%s\t%ld\t%ld\t%s\n", MASQ_BASE_PORT+record.num, ascii_addr, (unsigned long) record.masq_port, pent->p_name, record.modified, record.timeout, record.modified + record.timeout < cur_time ? "CONDEMNED" : "");
+			printf ("%d\t%s\t%ld\t%s\t%ld\t%ld\t%s\n", MASQ_BASE_PORT+record.num, ascii_addr, (unsigned long) record.masq_port, pent->p_name, record.modified, record.timeout, record.modified + record.timeout < cur_time ? "CONDEMNED" : "");
 			i = read (fd, &record, sizeof (record));
 		}
 		
