@@ -284,10 +284,10 @@ static struct xa_ftab aes_tab[220] =
 #endif
 #if WDIALOG_LBOX
 	/* 170 */ { XA_lbox_create,            0,        DESCR("lbox_create")     }, // MagiC extension
-	/* 171 */ { NULL,                      0,        DESCR("lbox_update")     }, // MagiC extension
+	/* 171 */ { XA_lbox_update,            0,        DESCR("lbox_update")     }, // MagiC extension
 	/* 172 */ { XA_lbox_do,                0,        DESCR("lbox_do")         }, // MagiC extension
-	/* 173 */ { NULL,                      0,        DESCR("lbox_delete")     }, // MagiC extension
-	/* 174 */ { NULL,                      0,        DESCR("lbox_get")        }, // MagiC extension
+	/* 173 */ { XA_lbox_delete,            0,        DESCR("lbox_delete")     }, // MagiC extension
+	/* 174 */ { XA_lbox_get,               0,        DESCR("lbox_get")        }, // MagiC extension
 	/* 175 */ { XA_lbox_set,               0,        DESCR("lbox_set")        }, // MagiC extension
 	/* 176 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 177 */ { NULL,                      0,        DESCR(NULL)              },
