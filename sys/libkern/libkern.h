@@ -217,4 +217,6 @@ void	_cdecl bzero		(void *dst, unsigned long size);
 # include "kernel_module.h"
 # endif
 
+void unaligned_putl(char *addr, long value);
+
 # endif /* _libkern_h */

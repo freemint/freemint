@@ -47,6 +47,7 @@ COBJS = \
 	strupr.c \
 	tolower.c \
 	toupper.c \
+	unaligned.c \
 	unix2xbios.c \
 	unixtime.c \
 	vsprintf.c
