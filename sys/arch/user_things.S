@@ -41,25 +41,28 @@
 
 _user_header:
 	.long	0xdeadbabe		// nice magic value first, for validation
-	.long	0x00000100		// version number
+	.long	0x0100			// version number
 	.long	user_end-_user_header	// total number of bytes (to copy)
 	.long	0			// user process' basepage pointer (to be filled)
 	.long	8			// number of valid addresses in the jumptable below
 
 // now the jumptable, with relative addresses
 
-	.long	_user_terminateme-_user_header
-	.long	_user_sig_return-_user_header
-	.long	_user_pc_valid_return-_user_header
-	.long	_user_slb_init_and_exit-_user_header
-	.long	_user_slb_open-_user_header
-	.long	_user_slb_close-_user_header
-	.long	_user_slb_close_and_pterm-_user_header
-	.long	_user_slb_exec-_user_header
+	.long	_terminateme-_user_header
+	.long	_sig_return-_user_header
+	.long	_pc_valid_return-_user_header
+	.long	_slb_init_and_exit-_user_header
+	.long	_slb_open-_user_header
+	.long	_slb_close-_user_header
+	.long	_slb_close_and_pterm-_user_header
+	.long	_slb_exec-_user_header
 	.long	0
 
-_user_terminateme:
-	clr.w	-(sp)
+	.globl	_terminateme
+
+_terminateme:
+	move.w	4(sp),-(sp)
+	move.w	#0x004c,-(sp)
 	trap	#1
 
 // sig_return: user signal handlers return to us. At that point, the
@@ -70,22 +73,18 @@ _user_terminateme:
 	.globl	_sig_return
 	.globl	_pc_valid_return
 
-_user_sig_return:
 _sig_return:	addq.w	#8,sp		// pop signal number and sfmt
 	move.w	#0x011a,-(sp)		// Psigreturn() system call
 	trap	#1
-_user_pc_valid_return:
 _pc_valid_return:			// tells kernel its us
 // we had better not come back
 // if we did, something terrible
 // happened, and we might as well terminate
 	move.w	#-998,-(sp)
-	move.w	#0x4c,-(sp)		// Pterm()
-	trap	#1
+	bsr.s	_terminateme		// never returns
 
 	.globl	_slb_init_and_exit
 
-_user_slb_init_and_exit:
 _slb_init_and_exit:
 
 	move.l	4(sp),a0		// basepage pointer
@@ -166,11 +165,9 @@ halt:	move.w	#0x0011,-(sp)
 
 	.globl	_slb_open
 
-_user_slb_open:
 _slb_open:
 	move.l	(sp),a0
-	move.l	4(sp),d0
-	move.l	d0,-(sp)
+	move.l	4(sp),-(sp)
 	move.l	SH_OPEN(a0),a1
 	jsr	(a1)
 	addq.l	#4,sp
@@ -212,17 +209,14 @@ failed:	move.l	8(sp),a0
 
 	.globl	_slb_close
 
-_user_slb_close:
 _slb_close:
 	move.l	4(sp),a0
 	move.l	SL_HEAD(a0),a0
 	move.l	SH_CLOSE(a0),a0
-	move.l	(sp),d0
-	move.l	d0,-(sp)
+	move.l	(sp),-(sp)
 	jsr	(a0)
 	addq.l	#4,sp
-	move.l	4(sp),a0
-	move.l	a0,-(sp)
+	move.l	4(sp),-(sp)
 	move.w	#0x0017,-(sp)
 	trap	#1
 	lea	14(sp),sp
@@ -235,23 +229,18 @@ _slb_close:
 
 	.globl	_slb_close_and_pterm
 
-_user_slb_close_and_pterm:
 _slb_close_and_pterm:
 	move.l	d0,-(sp)
 	move.l	8(sp),a0
 	move.l	SL_HEAD(a0),a0
 	move.l	SH_CLOSE(a0),a0
-	move.l	4(sp),d0
-	move.l	d0,-(sp)
+	move.l	4(sp),-(sp)
 	jsr	(a0)
 	addq.l	#4,sp
 	move.l	(sp)+,d0
 	addq.l	#8,sp
 	move.w	d0,-(sp)
-	move.w	#0x004c,-(sp)
-	trap	#1
-	addq.l	#4,sp
-	rts
+	bsr.w	_terminateme
 
 // slb_exec
 //
@@ -271,7 +260,6 @@ _slb_close_and_pterm:
 	.globl	_slb_exec
 	.globl	_tosbp
 
-_user_slb_exec:
 _slb_exec:
 	move.l	8(sp),d0
 	bmi.s	einvfn
