@@ -24,7 +24,7 @@ struct renderer {
 } renderer[8];
 
 char* tw52_env = "tw52";
-char* tw100_env = "xterm";
+char* tw100_env = "tw100";
 char* colorterm_env = "1";
 
 static struct rgb ansi_colors[8 * 3] = {
@@ -89,7 +89,7 @@ init_ansi_colors (const short* work_out)
 	
 	if (ncolors < 8) {
 		tw52_env = "tw52-m";
-		tw100_env = "xterm-mono";
+		tw100_env = "tw100-m";
 		colorterm_env = "0";
 	}
 	
