@@ -230,6 +230,7 @@ is_inside(RECT r, RECT o)
 	return true;
 }
 
+extern long redraws;
 /* Ozk:
  * deliver_message is guaranteed to run in the dest_client's context
 */
@@ -278,12 +279,16 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 
 		DIAG((D_m, NULL, "Send message %s to %s", pmsg(msg->s.msg), c_owner(dest_client)));
 		/* Write success to client's reply pipe to unblock the process */
+
 		dest_client->usr_evnt = 1;
+
 		if (dest_client->p->pid != p_getpid())
 		{
 			Unblock(dest_client, XA_OK, 22);
-			yield();
+			//yield();
 		}
+		else
+			cancel_evnt_multi(dest_client, 22);
 	}
 	else /* Create a new entry in the destination client's pending messages list */
 	{
@@ -435,6 +440,9 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 					/* First entry in the client's pending message list */
 					dest_client->msg = new_msg;
 
+				if (msg->m[0] == WM_REDRAW)
+					redraws++;
+
 				DIAG((D_m, NULL, "Queued message %s for %s", pmsg(msg->s.msg), c_owner(dest_client)));
 			}
 		}
@@ -442,6 +450,17 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 
 	//Sema_Dn(clients);
 }
+
+static void
+Pdeliver_message(void *_parm)
+{
+	long *parm = _parm;
+
+	deliver_message(0, (struct xa_client *)parm[0], (union msg_buf *)parm[1]);
+	kfree(_parm);
+	kthread_exit(0);
+}
+
 /*
  * Send an AES message to a client application.
  * generalized version, which now can be used by appl_write. :-)
@@ -468,8 +487,24 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	}
 	else
 	{
-		m = (union msg_buf *)kmalloc(sizeof(m));
+		long *p = (long *)kmalloc(16);
 
+		if (p)
+		{
+			m = (union msg_buf *)kmalloc(sizeof(m));
+			if (m && dest_client)
+			{
+				*m = *msg;
+				p[0] = (long)dest_client;
+				p[1] = (long)m;
+				(void)kthread_create(dest_client->p, Pdeliver_message, p, NULL, "k%s", dest_client->name);
+			}
+			else
+				kfree(p);
+		}
+#if 0
+		m = (union msg_buf *)kmalloc(sizeof(m));
+		
 		if (m)
 		{
 			if (dest_client)
@@ -478,6 +513,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
 			}
 		}
+#endif
 	}
 }
 /* AES internal msgs (All standard) */
