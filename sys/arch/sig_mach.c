@@ -49,11 +49,12 @@ int
 sendsig (ushort sig)
 {
 	struct sigaction *sigact = & SIGACTION (curproc, sig);
-	
 	long oldstack, newstack;
 	long *stack;
+	USER_THINGS *ut;
 	struct sigcontext *sigctxt;
 	CONTEXT *call, contexts[2];
+
 # define newcurrent (contexts[0])
 # define oldsysctxt (contexts[1])
 	
@@ -140,6 +141,8 @@ sendsig (ushort sig)
 	 * can discriminate amongst the multiple things which may get
 	 * thrown its way
 	 */
+	ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
+
 	stack -= 3;
 	sigctxt = (struct sigcontext *) stack;
 	sigctxt->sc_pc = oldsysctxt.pc;
@@ -148,7 +151,7 @@ sendsig (ushort sig)
 	*(--stack) = (long) sigctxt;
 	*(--stack) = (long) call->sfmt & 0xfff;
 	*(--stack) = (long) sig;
-	*(--stack) = (long) sig_return;
+	*(--stack) = ut->sig_return_p;
 	if (call->sr & 0x2000)
 		call->ssp = ((long) stack);
 	else
@@ -214,6 +217,7 @@ sendsig (ushort sig)
 	
 	curproc->ctxt[SYSCALL] = oldsysctxt;
 	assert (curproc->magic == CTXT_MAGIC);
+
 # undef oldsysctxt
 # undef newcurrent
 	
@@ -238,6 +242,7 @@ sys_psigreturn (void)
 	CONTEXT *oldctxt;
 	long *frame;
 	long sig;
+	USER_THINGS *ut = (USER_THINGS *)curproc->p_mem->tp_ptr;
 
 	unwound_stack = 0;
 top:
@@ -259,7 +264,7 @@ top:
 	curproc->sysstack = frame[1];	/* restore frame */
 	curproc->p_sigmask &= ~(1L<<sig); /* unblock signal */
 	
-	if (curproc->ctxt[SYSCALL].pc != (long) &pc_valid_return)
+	if (curproc->ctxt[SYSCALL].pc != ut->pc_valid_return_p)
 	{
 		/* here, the user is telling us that a longjmp out of a signal
 		 * handler is about to occur; so we should unwind *all* the
