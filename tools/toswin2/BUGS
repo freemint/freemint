@@ -3,4 +3,4 @@
 - function and cursor keys don't always work with tw52
 - resizing the window may crash toswin, be careful.  Will be fixed soon.
 - switching to line drawing mode in tw100 is merely heuristics
-  
+- some redraw errors with resizing and changing scrollback buffer
