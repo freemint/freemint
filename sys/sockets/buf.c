@@ -36,7 +36,7 @@ static short	buf_free_block	(void);
 static BUF	pool[BUF_NSPLIT+1];
 static long	failed_allocs;
 static long	mem_used;
-static TIMEOUT	*tmout = 0;
+static TIMEOUT	*tmout = NULL;
 
 
 static void
@@ -68,7 +68,7 @@ static short
 buf_add_block (void)
 {
 	BUF *new;
-	short sr;
+	ushort sr;
 	
 	new = kmalloc (BUF_BLOCK_SIZE);
 	if (!new)
@@ -99,7 +99,7 @@ static short
 buf_free_block (void)
 {
 	BUF *buf;
-	short sr;
+	ushort sr;
 	
 	sr = spl7 ();
 	buf = pool[0]._nfree;
@@ -229,7 +229,7 @@ buf_reserve (BUF *buf, long reserve, short mode)
 			break;
 	}
 	
-	FATAL (("buf_reserve: invalid mode"));
+	FATAL ("buf_reserve: invalid mode");
 	
 	/* NOTREACHED */
 	return 0;
@@ -240,7 +240,7 @@ buf_alloc (ulong size, ulong reserve, short mode)
 {
 	short index, i;
 	BUF *newbuf;
-	short sr;
+	ushort sr;
 	
 	reserve = (reserve + 1) & ~1;
 	
@@ -261,8 +261,8 @@ buf_alloc (ulong size, ulong reserve, short mode)
 		/*
 		 * requested block to big
 		 */
-		++failed_allocs;
-		return 0;
+		failed_allocs++;
+		return NULL;
 	}
 	
 try_again:
@@ -276,7 +276,7 @@ try_again:
 		{
 			if (!tmout)
 				tmout = addroottimeout (0, addmem, 1);
-			++failed_allocs;
+			failed_allocs++;
 			spl (sr);
 			return 0;
 		}
@@ -287,8 +287,8 @@ try_again:
 			/*
 			 * out of kernel memory
 			 */
-			++failed_allocs;
-			return 0;
+			failed_allocs++;
+			return NULL;
 		}
 		
 		goto try_again;
@@ -314,7 +314,7 @@ try_again:
 		newbuf->_n = nxtbuf;
 		
 		while (nxtbuf->buflen < BUF_SIZE (i))
-			++i;
+			i++;
 		
 		nxtbuf->_nfree = pool[i]._nfree;
 		nxtbuf->_pfree = &pool[i];
@@ -324,15 +324,18 @@ try_again:
 	newbuf->_nfree = newbuf->_pfree = 0;
 	newbuf->links = 1;
 	spl (sr);
+	
 	newbuf->dstart = newbuf->data + reserve;
 	newbuf->dend = newbuf->dstart;
+	
 	return newbuf;
 }
 
 void
 buf_free (BUF *buf, short mode)
 {
-	short i, sr;
+	short i;
+	ushort sr;
 	BUF *b;
 	
 	sr = spl7 ();
@@ -381,7 +384,9 @@ buf_free (BUF *buf, short mode)
 void
 buf_deref (BUF *buf, short mode)
 {
-	if (--buf->links <= 0)
+	buf->links--;
+	
+	if (buf->links <= 0)
 		buf_free (buf, mode);
 }
 

@@ -391,7 +391,7 @@ sock_close (FILEPTR *f, int pid)
 			kfree (so);
 		}
 		else
-			FATAL (("sock_close: close() reentrancy problem!"));
+			FATAL ("sock_close: close() reentrancy problem!");
 	}
 	
 	return 0;
