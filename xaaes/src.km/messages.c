@@ -655,12 +655,16 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, union 
 		if (msg->m[0] == WM_REDRAW)
 		{
 			dest_client->status |= CS_CE_REDRAW_SENT;
+			amq = AMQ_REDRAW;
 			C.redraws++;
 		}
 		deliver_message(lock, dest_client, amq, msg);
 	}
 	else
 	{
+		if (msg->m[0] == WM_REDRAW)
+			amq = AMQ_REDRAW;
+
 		queue_message(lock, dest_client, amq, msg);
 		Unblock(dest_client, 1, 123);
 	}
