@@ -99,8 +99,8 @@ static void sanity_check	(MMAP map, ulong line);
 # define SANITY_CHECK(map)
 # endif
 
-short forcefastload = 0;	/* for MINT.CNF keyword */
-unsigned long initialmem = 4096;/* ditto */
+short forcefastload = 0;		/* for MINT.CNF keyword */
+unsigned long initialmem = 1024;	/* ditto */
 
 /*
  * memory.c:: routines for managing memory regions
