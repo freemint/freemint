@@ -39,6 +39,7 @@
 # define S_INITIALTPA	24
 # define S_CAD		25	/* ctraltdel behavoiur */
 # define S_DELCOOKIE	26
+# define S_LOADKBD	27	/* reload the keyboard table */
 # define S_CLOCKUTC	100
 # define S_TIOCMGET	0x54f8	/* 21752 */
 

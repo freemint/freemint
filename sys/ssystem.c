@@ -1,23 +1,23 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
+ *
  * Copyright by jerry g geiger
  * <jerry@zedat.fu-berlin.de> or <jerry@merlin.abacus.de>
- * 
+ *
  * almost completely rewritten by Draco, draco@mi.com.pl,
- * Warszawa, 4.XII.1997. 
- * 
+ * Warszawa, 4.XII.1997.
+ *
  * added time related stuff, Guido, gufl0000@stud.uni-sb.de Mar/Apr 1998.
- * 
- * 
+ *
+ *
  * General purpose: access vital system variables and constants without need
  * to switch to Supervisor mode. Prototype:
- * 
+ *
  * long _cdecl s_system (int mode, ulong arg1, ulong arg2);
- * 
+ *
  */
 
 # include "ssystem.h"
@@ -58,12 +58,12 @@ s_system (int mode, ulong arg1, ulong arg2)
 	uchar *bpointer;
 	ulong *sysbase;
 	short *mfp;
-	
+
 	register long r = E_OK;
-	
+
 	TRACE(("enter s_system(): mode %04x, arg1 %08x, arg2 %08x", mode, arg1, arg2));
-	
-	switch (mode) 
+
+	switch (mode)
 	{
 		case -1:
 		{
@@ -259,7 +259,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 		case S_GETCOOKIE:
 		{
 			r = get_cookie (arg1, (long *) arg2);
-			
+
 			break;
 		}
 		case S_SETCOOKIE:
@@ -270,7 +270,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 				r = EPERM;
 			}
 			else	r = set_cookie (arg1, arg2);
-			
+
 			break;
 		}
 		case S_DELCOOKIE:
@@ -281,26 +281,26 @@ s_system (int mode, ulong arg1, ulong arg2)
 				r = EPERM;
 			}
 			else	r = del_cookie (arg1);
-			
+
 			break;
 		}
-		
+
 		/* Hack (dirty one) for MiNTLibs */
 		case S_TIOCMGET:
 		{
 			mfp = (short *) arg1;
 			r = ((*mfp) & 0x00ff);
-			
+
 			break;
 		}
-		
+
 		case S_SECLEVEL:
 		{
 			if (isroot == 0)	r = EPERM;
 			else if (arg1 == -1)	r = secure_mode;
 			else if (arg1 > 2)	r = EBADARG;
 			else			secure_mode = arg1;
-			
+
 			break;
 		}
 # if 0 /* bogus concept & code */
@@ -310,7 +310,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			if (isroot == 0 || disallow_single)	r = EPERM;
 			if (arg1 == 0 || arg1 == 1)		run_level = arg1;
 			else					r = EACCES;
-			
+
 			break;
 		}
 # endif
@@ -321,14 +321,14 @@ s_system (int mode, ulong arg1, ulong arg2)
 			 * that require super-user privileges should
 			 * return EACCES if only the real user-id is
 			 * root.  This does not only apply to Ssystem
-			 * but to a lot of other calls too like 
+			 * but to a lot of other calls too like
 			 * Pkill.  (Personal opinion of Guido).
 			 * Agreed. Done. (Draco)
 			 */
  			if (arg1 == -1)		r = clock_mode;
 			else if (isroot == 0)	r = EPERM;
 			else			warp_clock (arg1 ? 1 : 0);
- 			
+
  			break;
 		}
 		case S_FASTLOAD:
@@ -336,7 +336,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			if (isroot == 0)	r = EPERM;
 			else if (arg1 == -1)	r = forcefastload;
 			else 			forcefastload = arg1 ? 1 : 0;
-			
+
 			break;
 		}
 		case S_SYNCTIME:
@@ -345,14 +345,14 @@ s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1 == -1)	r = sync_time;
 			else if (arg1 > 0)	sync_time = arg1;
 			else			r = EBADARG;
-			
+
 			break;
 		}
 		case S_BLOCKCACHE:
 		{
 			if (isroot == 0)	r = EPERM;
 			else			r = bio_set_percentage (arg1);
-			
+
 			break;
 		}
 		case S_TSLICE:
@@ -361,7 +361,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1 == -1)	r = time_slice;
 			else if (arg1 >= 0 && arg1 <= 20) time_slice = arg1;
 			else			r = EBADARG;
-			
+
 			break;
 		}
 		case S_FLUSHCACHE:
@@ -376,7 +376,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg2 == -1)		r = ccw_getdmask ();
 			else if (isroot == 0)		r = EPERM;
 			else				r = ccw_set (arg1, arg2);
-			
+
 			break;
 		}
 		case S_INITIALTPA:
@@ -385,7 +385,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1 == -1)	r = initialmem;
 			else if (arg1 > 0)	initialmem = arg1;
 			else			r = EBADARG;
-			
+
 			break;
 		}
 
@@ -501,7 +501,16 @@ s_system (int mode, ulong arg1, ulong arg2)
 			}
 			break;
 		}
-		
+
+		case S_LOADKBD:
+		{
+			if (isroot == 0)
+				r = EPERM;
+			else
+				r = load_keyboard_table((char *)arg1, 1);
+			break;
+		}
+
 		/* experimental section
 		 */
 		case S_KNAME:
@@ -529,7 +538,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			strncpy_f ((char *) arg1, COMPILER_OPTS, arg2);
 			break;
 		}
-		
+
 		/* debug section
 		 */
 		case S_DEBUGLEVEL:
@@ -538,7 +547,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1 == -1)	r = debug_level;
 			else if (arg1 >= 0)	debug_level = arg1;
 			else			r = EBADARG;
-			
+
 			break;
 		}
 		case S_DEBUGDEVICE:
@@ -547,18 +556,18 @@ s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1 == -1)	r = out_device;
 			else if (arg1 >= 0 && arg1 <= 9) out_device = arg1;
 			else			r = EBADARG;
-			
+
 			break;
 		}
 		default:
 		{
 			DEBUG (("s_system(): invalid mode %d", mode));
 			r = ENOSYS;
-			
+
 			break;
 		}
 	}
-	
+
 	TRACE (("s_system() returned %ld", r));
 	return r;
 }
