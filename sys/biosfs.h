@@ -52,6 +52,7 @@ struct bios_file
 	ushort	flags;			/* flags for device open */
 	struct tty *tty;		/* tty structure (if appropriate) */
 	struct bios_file *next;
+	short	defmode;		/* default mode */
 	short	lockpid;		/* owner of the lock */
 	XATTR	xattr;			/* guess what... */
 	long	drvsize;		/* size of DEVDRV struct */
