@@ -1,0 +1,67 @@
+
+Here is a (working) /dev/audio for ALL (well, don't know if it works
+on falcons -- I don't have one to test it on) Ataris running Mint.
+It supports:
+
+ * Yamaha PSG
+   - arbitrary speed
+   - 8 bit signed/unsigned/u-law encoded samples
+
+ * Ste DMA hardware
+   - 6/12/25/50 kHz
+   - mono/stereo
+   - 8 bit signed/unsigned/u-law encoded samples
+   - volume/balance/bass/treble setting
+
+To install just copy audiodev.xdd to /multitos/ or /mint/ of your boot
+drive and reboot.
+
+actrl is a utility program that lets you set the various characteristics
+of the audio device (speed, mono/stereo, sample format, volume, balance,
+bass, treble) and is a good source to look at if you plan to write programs
+that use /dev/audio. If you don't have Ste compatible sound hardware, only
+the speed can be set. actrl should go to /usr/local/bin.
+
+Examples:
+ 1.) Set max. volume, linear treble and bass amplification, mono mode (works
+     only on machines that have STe compatible sound hardware):
+	actrl volume 100 treble 50 bass 50 mono
+
+ 2.) Play an unsigned sample at 6 kHz:
+	actrl format u8 speed 6000
+	cat sample > /dev/audio
+
+ 3.) Play a sun .au audio file:
+	actrl format ulaw speed 8000
+	cat sample.au > /dev/audio
+
+     A note on playing SUN .au files on STe DMA hardware: the old style SUN
+     audio files are 8 bit u-law encoded at 8000 Hz. Since the STe audio
+     hardware is only capable of playing at 6kHz or 12kHz (but not 8kHz)
+     SUN .au's are either played too fast or too slow. One solution to this
+     problem is to convert the sample rate to 12kHz using sox:
+	sox -U -r 8000 sample.au -U -r 12517 sample-at-12k.au
+
+     and then playing the file with:
+	actrl speed 12517 format ulaw
+	cat sample-at-12k.au > /dev/audio
+
+     or as a one-liner:
+	actrl speed 12517 format ulaw
+	sox -U -r 8000 sample.au -U -r 12517 - > /dev/audio
+
+ 4.) Up to 8 channel MOD's and Screamtracker 3 files can be played using
+     s3mod.
+
+Both sox and s3mod are NOT part of this distribution.
+
+This audiodev is based on audiodev 0.1 by C. Briscoe-Smith which in turn is
+based on lpdev 0.6 by Theirry Bousch. However, what you are holding in your
+hands is completely rewritten by me, Kay Roemer.
+
+
+have fun,
+ Kay Roemer
+--
+roemer@informatik.uni-frankfurt.de
+
