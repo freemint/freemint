@@ -37,6 +37,7 @@
 # include "mint/kernel.h"
 # include "mint/kcompiler.h"
 # include "mint/ktypes.h"
+# include "mint/basepage.h"
 
 # include <stdarg.h>
 
@@ -111,6 +112,8 @@ _mint_tolower_inline (register int c)
 long	_cdecl vsprintf		(char *buf, long buflen, const char *fmt, va_list args);
 long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...);
 int	_cdecl ksprintf_old	(char *buf, const char *fmt, ...);
+
+char *	_cdecl _mint_getenv	(BASEPAGE *bp, const char *var);
 
 long	_cdecl _mint_atol	(const char *s);
 long	_cdecl strtonumber	(const char *name, long *result, int neg, int zerolead);
