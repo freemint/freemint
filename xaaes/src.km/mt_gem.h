@@ -999,7 +999,8 @@ typedef struct user_block
 /** TODO */
 typedef struct rshdr
 {
-	short			rsh_vrsn;			/**< TODO */
+	short		rsh_vrsn;			/**< TODO */
+	
 	unsigned short	rsh_object;			/**< TODO */
 	unsigned short	rsh_tedinfo;		/**< TODO */
 	unsigned short	rsh_iconblk;		/**< list of ICONBLKS */
@@ -1009,15 +1010,41 @@ typedef struct rshdr
 	unsigned short	rsh_imdata;			/**< image data */
 	unsigned short	rsh_frimg;			/**< TODO */
 	unsigned short	rsh_trindex;		/**< TODO */
-	short			rsh_nobs;			/**< counts of various structs */
-	short			rsh_ntree;			/**< TODO */
-	short			rsh_nted;			/**< TODO */
-	short			rsh_nib;			/**< TODO */
-	short			rsh_nbb;			/**< TODO */
-	short			rsh_nstring;		/**< TODO */
-	short			rsh_nimages;		/**< TODO */
+	
+	short		rsh_nobs;			/**< counts of various structs */
+	short		rsh_ntree;			/**< TODO */
+	short		rsh_nted;			/**< TODO */
+	short		rsh_nib;			/**< TODO */
+	short		rsh_nbb;			/**< TODO */
+	short		rsh_nstring;		/**< TODO */
+	short		rsh_nimages;		/**< TODO */
 	unsigned short	rsh_rssize;			/**< total bytes in resource */
 } RSHDR;
+
+typedef struct rsxhdr
+{
+	unsigned short	rsh_vrsn;     /* should be 3                                 */
+	unsigned short	rsh_extvrsn;  /* not used, initialised to 'IN' for Interface */
+	
+	unsigned long	rsh_object;
+	unsigned long	rsh_tedinfo;
+	unsigned long	rsh_iconblk;  /* list of ICONBLKS                            */
+	unsigned long	rsh_bitblk;
+	unsigned long	rsh_frstr;
+	unsigned long	rsh_string;
+	unsigned long	rsh_imdata;   /* image data                                  */
+	unsigned long	rsh_frimg;
+	unsigned long	rsh_trindex;
+	
+	unsigned long	rsh_nobs;     /* counts of various structs                   */
+	unsigned long	rsh_ntree;
+	unsigned long	rsh_nted;
+	unsigned long	rsh_nib;
+	unsigned long	rsh_nbb;
+	unsigned long	rsh_nstring;
+	unsigned long	rsh_nimages;
+	unsigned long	rsh_rssize;   /* total bytes in resource                     */
+} RSXHDR;
 
 /** MENU structure, used by a_menu functions */
 typedef struct _menu

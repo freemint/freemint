@@ -33,6 +33,7 @@
 #include "xa_shel.h"
 
 #include "mint/fcntl.h"
+#include "mint/stat.h"
 
 
 /*
@@ -204,7 +205,6 @@ list_resource(struct xa_client *client, void *resource, short flags)
 {
 	struct xa_rscs *new;
 
-
 	if (client == C.Aes)
 		new = kmalloc(sizeof(*new));
 	else
@@ -236,308 +236,204 @@ list_resource(struct xa_client *client, void *resource, short flags)
 	return new;
 }
 
-/*
- * LoadResources: Load a GEM resource file
- * fname = name of file to load
- * Return = base pointer of resources or NULL on failure
- */
-void *
-LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight)
+
+static void
+fix_chrarray(void *b, char **p, unsigned long n)
 {
-#define resWidth (screen.c_max_w)
-#define resHeight (screen.c_max_h)
-
-	RSHDR hdr;
-	CICONBLK **cibh = NULL;
-	OBJECT *obj, **trees;
-	unsigned long osize = 0, size = 0;
-	char *base = NULL;
-	struct xa_rscs *rscs = NULL; 
-	int i, j, type, numCibs = 0;
-	short vdih = C.vh;
-
-//	IFDIAG(OBJECT *tree;)
-
-	if (fname)
+	while (n)
 	{
-		struct file *f;
-		long err;
-
-		DIAG((D_rsrc, client, "LoadResources(%s)", fname));
-
-		f = kernel_open(fname, O_RDONLY, &err, NULL);
-		if (!f)
-		{
-			DIAG((D_rsrc, client, "LoadResources(): file not found"));
-			return NULL;
-		}
-
-		kernel_read(f, &hdr, sizeof(hdr));
-		size = (unsigned long) hdr.rsh_rssize;
-		osize = (size + 1UL) & 0xfffffffeUL;
-
-		/* Extended format, get new 32-bit length */
-		if (hdr.rsh_vrsn & 4)
-		{
-			kernel_lseek(f, osize, 0);
-			kernel_read(f, &size, 4);
-			DIAG((D_rsrc, client, "extended format osize=%ld: read extended size=%ld", osize, size));
-		}
-
-		kernel_lseek(f, 0, 0);
-
-		DIAG((D_x, client, "XA_alloc 1 %ld", size));
-
-		if (client == C.Aes)
-			base = kmalloc(size);
-		else
-			base = umalloc(size);
-
-		if (!base)
-		{
-			DIAG((D_rsrc, client, "Can't allocate space for resource file"));
-			kernel_close(f);
-			return NULL;
-		}
-
-		/* Reread everything */
-		kernel_read(f, base, size);
-		kernel_close(f);
-
-		/*
-		 * Ozk: Added 'flags' to xa_rscs structure, so we know
-		 * if the resource associated with it was allocated by
-		 * XaAES or not. Added this parameter to list_resource().
-		 * list_resource() also return the address of the new
-		 * xa_rscs attached to the client for further references.
-		 */
-		client->rsct++;
-		if (!(rscs = list_resource(client, base, RSRC_ALLOC)))
-		{
-			client->rsct--;
-
-			if (client == C.Aes)
-				kfree(base);
-			else
-				ufree(base);
-		}
-	}
-	else
-	{
-		DIAG((D_rsrc, client, "LoadResources %ld(%lx)", rshdr, rshdr));
-		if (rshdr)
-		{
-			hdr = *rshdr;
-			(RSHDR *)base = rshdr;
-			size = (unsigned long)hdr.rsh_rssize;
-			osize = (size + 1UL) & 0xfffffffeUL;
-			client->rsct++;
-			rscs = list_resource(client, base, 0);
-		}
-	}
-
-	if (!rscs)
-		return NULL;
-
-	/* fixup all free string pointers */
-	{
-		char **fs = (char **)(base + hdr.rsh_frstr);
-		for (i = 0; i < hdr.rsh_nstring; i++, fs++)
-		{
-//			IFDIAG(char *d = *fs;)
-			*fs += (long)base;
-//			DIAG((D_s,client,"fs[%d]>%ld='%s'",i,d,*fs));
-		}
+		DIAG((D_rsrc, NULL, " -- %lx, value %lx", p, *p));
+		*p += (unsigned long)b;
+		DIAG((D_rsrc, NULL, " -- to %lx", *p));
 		
-		DIAG((D_rsrc, client, "fixed up %d free_string pointers", hdr.rsh_nstring));
+		p++;
+		n--;
 	}
-
-	/* fixup all free image pointers */
+}
+/* fixup all tedinfo field pointers */
+static void
+fix_tedarray(void *b, TEDINFO *ti, unsigned long n)
+{
+	while (n)
 	{
-		char **fs = (char **)(base + hdr.rsh_frimg);
-		for (i = 0; i < hdr.rsh_nimages; i++, fs++)
-		{
-//			IFDIAG(char *d = *fs;)
-			*fs += (long)base;
-//			DIAG((D_s, client, "imgs[%d]>%ld=%lx",i, d, *fs));
-		}
+		(unsigned long)ti->te_ptext  += (unsigned long)b;
+		(unsigned long)ti->te_ptmplt += (unsigned long)b;
+		(unsigned long)ti->te_pvalid += (unsigned long)b;
+		DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
+		DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
+			ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
 		
-		DIAG((D_rsrc,client,"fixed up %d free_image pointers", hdr.rsh_nimages));
+		ti++;
+		n--;
 	}
-
-	/* fixup all tedinfo field pointers */
-	{
-		TEDINFO *ti = (TEDINFO *)(base + hdr.rsh_tedinfo);
-		for (i = 0; i < hdr.rsh_nted; i++, ti++)
-		{
-			(long)ti->te_ptext  += (long)base;
-			(long)ti->te_ptmplt += (long)base;
-			(long)ti->te_pvalid += (long)base;
-		}
 	
-		DIAG((D_rsrc, client, "fixed up %d tedinfo's", hdr.rsh_nted));
-	}
+	DIAG((D_rsrc, NULL, "fixed up %ld tedinfo's", n));
+}
 
-	/* fixup all iconblk field pointers */
+/* fixup all iconblk field pointers */
+static void
+fix_icnarray(void *b, ICONBLK *ib, unsigned long n)
+{
+	while (n)
 	{
-		ICONBLK *ib = (ICONBLK *)(base + hdr.rsh_iconblk);
-		for (i = 0; i < hdr.rsh_nib; i++, ib++)
-		{
-			(long)ib->ib_pmask += (long)base;
-			(long)ib->ib_pdata += (long)base;
-			(long)ib->ib_ptext += (long)base;
-		}
+		(unsigned long)ib->ib_pmask += (unsigned long)b;
+		(unsigned long)ib->ib_pdata += (unsigned long)b;
+		(unsigned long)ib->ib_ptext += (unsigned long)b;
+
+		DIAG((D_rsrc, NULL, "fix_icnarray: ib=%lx, ib->ib_pmask=%lx, ib->ib_pdata=%lx, ib->ib_ptext=%lx",
+			ib, ib->ib_pmask, ib->ib_pdata, ib->ib_ptext));
 		
-		DIAG((D_rsrc, client, "fixed up %d iconblk's", hdr.rsh_nib));
+		ib++;
+		n--;
 	}
+	
+	DIAG((D_rsrc, NULL, "fixed up %ld iconblk's", n));
+}
 
-	/* fixup all bitblk data pointers */
+/* fixup all bitblk data pointers */
+static void
+fix_bblarray(void *b, BITBLK *bb, unsigned long n)
+{
+	while (n)
 	{
-		BITBLK *bb = (BITBLK *)(base + hdr.rsh_bitblk);
-		for (i = 0; i < hdr.rsh_nbb; i++, bb++)
+		(unsigned long)bb->bi_pdata += (unsigned long)b;
+
+		DIAG((D_rsrc, NULL, "fix_bblarray: bb=%lx, pdata=%lx",
+			bb, bb->bi_pdata));
+		bb++;
+		n--;
+	}
+	DIAG((D_rsrc, NULL, "fixed up %ld bitblk's", n));
+}
+
+static void
+fix_cicons(void *base, CICONBLK **cibh)
+{
+	unsigned long *addr;
+	long isize;
+	short *pdata, numRez;
+	int i, j, numCibs = 0;
+	CICONBLK *cib, **cp = cibh;
+
+	DIAG((D_rsrc, NULL, "Enhanced resource file"));
+
+	/*
+	 * Find out how many CICONBLK's are present
+	 */
+	while (*cp++ != (CICONBLK *) -1L)
+		numCibs++;
+
+	DIAG((D_rsrc, NULL, "fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, cibh, cibh[0]));
+	/*
+	 * Pointer to the first CICONBLK (went past the -1L above)
+	 */
+	cib = (CICONBLK *)cp;
+
+	/* Fix up all the CICONBLK's */
+	for (i = 0; i < numCibs; i++)
+	{
+		CICON *cicn;
+		ICONBLK *ib = &cib->monoblk;
+
+		cibh[i] = cib;						/* Put absolute address of this ciconblk into array */
+		isize = calc_back((RECT*)&ib->ib_xicon, 1);
+
+		addr = (unsigned long *)((unsigned long)cib + sizeof(ICONBLK));
+		numRez = addr[0];
+		pdata = (short *)&addr[1];
+		/* mono data & mask */
+		ib->ib_pdata = pdata;
+		(unsigned long)pdata += isize;
+		ib->ib_pmask = pdata;
+		(unsigned long)pdata += isize;
+		/* HR: the texts are placed the same way as for all other objects
+		 * when longer than 12 bytes.
+		 */
+		DIAG((D_rsrc, NULL, "cibh[%d]=%lx, isize=%ld, addr=%lx, numRez=%d",
+			i, cibh[i], isize, addr, numRez));
+		DIAG((D_rsrc, NULL, "ib = %lx, ib_pdata=%lx, ib_pmask=%lx",
+			ib, ib->ib_pdata, ib->ib_pmask));
+		
+		if (ib->ib_ptext)
 		{
-			(long)bb->bi_pdata += (long)base;
+			short l = ib->ib_wtext/6;
+			/* fix some resources */
+			ib->ib_ptext += (unsigned long)base;
+			DIAG((D_rsrc, NULL, "cicon: ib->ptext = %lx", ib->ib_ptext));
+			if (strlen(ib->ib_ptext) > l)
+				*(ib->ib_ptext + l) = 0;
 		}
+		else
+			/* The following word is no of planes which cannot
+			 * be larger than 32, so there is 1 zero byte there */
+			ib->ib_ptext = (char *)pdata; 
 
-		DIAG((D_rsrc, client, "fixed up %d bitblk's", hdr.rsh_nbb));
-	}
+		/* (unused) place for name */
+		(unsigned long)pdata += 12;
 
-	if (hdr.rsh_vrsn & 4)
-	{
-		/* It's an enhanced RSC file */
-		unsigned long *earray, *addr;
-
-		DIAG((D_rsrc, client, "Enhanced resource file"));
-
-		/* this the row of pointers to extensions */
-		/* terminated by a 0L */
-		earray = (unsigned long *)(osize + (long)base);
-		earray++;						/* ozk: skip filesize */
-		cibh = (CICONBLK **)(*earray + (long)base);		/* address of the CICONBLK pointer table */
-		if (*earray && *earray != -1L) /* Get colour icons */
+		cicn = (CICON *)pdata;
+		/* There can be color icons with NO color icons,
+		 * only the mono icon block. */
+		cib->mainlist = NULL;
+		/* Get CICON's at different rez's */
+		for (j = 0; j < numRez; j++)
 		{
-			CICONBLK *cib, **cp = cibh;
-
-			/*
-			 * Find out how many CICONBLK's are present
-			 */
-			while (*cp++ != (CICONBLK *) -1L)
-				numCibs++;
-
-			/*
-			 * Pointer to the first CICONBLK (went past the -1L above)
-			 */
-			cib = (CICONBLK *)cp;
-
-			/* Fix up all the CICONBLK's */
-			for (i = 0; i < numCibs; i++)
+			short planes = cicn->num_planes;
+			unsigned long psize = isize * planes;
+			
+			(unsigned long)pdata += sizeof(CICON);
+			cicn->col_data = pdata;
+			(unsigned long)pdata += psize;
+			cicn->col_mask = pdata;
+			(unsigned long)pdata +=  isize;
+			if (cicn->sel_data)
 			{
-				CICON *cicn;
-				ICONBLK *ib = &cib->monoblk;
-				short *pdata, numRez;
-				long isize;
-
-				cibh[i] = cib;
-				isize = calc_back((RECT*)&ib->ib_xicon, 1);
-
-				addr = (unsigned long*)((long)cib + sizeof(ICONBLK));
-				numRez = addr[0];
-				pdata = (short *)&addr[1];
-				/* mono data & mask */
-				ib->ib_pdata = pdata;
-				(long)pdata += isize;
-				ib->ib_pmask = pdata;
-				(long)pdata += isize;
-				/* HR: the texts are placed the same way as for all other objects
-				 * when longer than 12 bytes.
-				 */
-				if (ib->ib_ptext)
-				{
-					short l = ib->ib_wtext/6;
-					/* fix some resources */
-					ib->ib_ptext += (long)base;
-					if (strlen(ib->ib_ptext) > l)
-						*(ib->ib_ptext + l) = 0;
-				}
-				else
-					/* The following word is no of planes which cannot
-					 * be larger than 32, so there is 1 zero byte there */
-					ib->ib_ptext = (char *)pdata; 
-
-				/* (unused) place for name */
-				(long)pdata += 12;
-
-				cicn = (CICON *)pdata;
-				/* There can be color icons with NO color icons,
-				 * only the mono icon block. */
-				cib->mainlist = NULL;
-				/* Get CICON's at different rez's */
-				for (j = 0; j < numRez; j++)
-				{
-					short planes = cicn->num_planes;
-					long psize = isize * planes;
-					(long)pdata += sizeof(CICON);
-					cicn->col_data = pdata;
-					(long)pdata += psize;
-					cicn->col_mask = pdata;
-					(long)pdata +=  isize;
-					if (cicn->sel_data)
-					{
-						/* It's got a selected form */
-						cicn->sel_data = pdata;
-						(long)pdata += psize;
-						cicn->sel_mask = pdata;
-						(long)pdata +=  isize;
-					}
-					else
-						/* No selected version */
-						cicn->sel_data = cicn->sel_mask = NULL;
-
-					if (cib->mainlist == NULL)
-						cib->mainlist = cicn;
-
-					if ((long)cicn->next_res == 1)
-						cicn->next_res = (CICON *)pdata;
-					else
-						cicn->next_res = NULL;
-
-					cicn = (CICON *)pdata;
-				}
-				cib = (CICONBLK *)cicn;
+				/* It's got a selected form */
+				cicn->sel_data = pdata;
+				(unsigned long)pdata += psize;
+				cicn->sel_mask = pdata;
+				(unsigned long)pdata +=  isize;
 			}
-			DIAG((D_rsrc, client, "fixed up %d color icons", numCibs));
+			else
+				/* No selected version */
+				cicn->sel_data = cicn->sel_mask = NULL;
+
+			if (cib->mainlist == NULL)
+				cib->mainlist = cicn;
+
+			if ((long)cicn->next_res == 1)
+				cicn->next_res = (CICON *)pdata;
+			else
+				cicn->next_res = NULL;
+
+			cicn = (CICON *)pdata;
 		}
-
-		if (*earray)
-			earray++;
-
-		if (*earray && *earray != -1L)
-		{
-			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
-			short work_out[58];
-
-			vdih = C.P_handle;
-			v_opnvwk(work_in, &vdih, work_out);
-
-			DIAG((D_rsrc, client, "Color palette present"));
-		}
-#if 0
-		/* ozk: Enable this when (if) more extensions are added ... */
-		if (*earray)
-			earray++;
-#endif
+		cib = (CICONBLK *)cicn;
 	}
+	DIAG((D_rsrc, NULL, "fixed up %d color icons", numCibs));
+}
 
-	/* As you see, the objects are NOT in a pointer array!!! */
-	obj = (OBJECT *)(base + hdr.rsh_object);
+static void
+fix_objects(struct xa_client *client,
+	    struct xa_rscs *rscs,
+	    CICONBLK **cibh,
+	    short vdih,
+	    void *b,
+	    OBJECT *obj,
+	    unsigned long n)
+{
+	unsigned long i;
+	short type;
 
-	//IFDIAG (tree = obj;)
+	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
+		b, cibh, obj, n));
 
 	/* fixup all objects' ob_spec pointers */
-	for (i = 0; i < hdr.rsh_nobs; i++, obj++)
+	for (i = 0; i < n; i++, obj++)
 	{
 		type = obj->ob_type & 255;
 
+		DIAG((D_rsrc, client, "obj = %lx, type = %d", obj, type));
 #if 0
 		DIAG((D_s, client, "obj[%d]>%ld=%lx, %s;\t%d,%d,%d",
 			i,
@@ -560,12 +456,12 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			case G_FBOXTEXT:
 			case G_TITLE:
 			{
-				obj->ob_spec.free_string += (long)base;
+				obj->ob_spec.free_string += (long)b;
 				break;
 			}
 			case G_ICON:
 			{
-				obj->ob_spec.free_string += (long)base;
+				obj->ob_spec.free_string += (long)b;
 				break;
 			}
 			case G_CICON:
@@ -574,8 +470,21 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				 * Ozk: Added xa_rsc * parameter to FixColourIconData(),
 				 * since its needed to remember memory allocs.
 				 */
-				FixColourIconData(client, cibh[obj->ob_spec.index], rscs, vdih);
-				obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
+				if (cibh)
+				{
+			#if GENERATE_DIAGS
+					long idx = obj->ob_spec.index;
+			#endif
+				
+					FixColourIconData(client, cibh[obj->ob_spec.index], rscs, vdih);
+					obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
+					DIAG((D_rsrc, client, "ciconobj: idx=%ld, ciconblk=%lx (%lx)",
+						idx, cibh[idx], obj->ob_spec.ciconblk));
+				}
+			#if GENERATE_DIAGS
+				else
+					DIAG((D_rsrc, client, "No cicons but G_CICON object???"));
+			#endif
 				break;
 			}
 			case G_PROGDEF:
@@ -596,27 +505,28 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			}
 		}
 	}
+	DIAG((D_rsrc, client, "fixed up %ld objects ob_spec (end=%lx)", n, obj));
+}
+	
+static void
+fix_trees(void *b, OBJECT **trees, unsigned long n, short designWidth, short designHeight)
+{
+	unsigned long i;
+	int j;
+	OBJECT *obj;
 
-	/*
-	 * Close the virtual workstation that handled the RSC
-	 * color palette (if present).
-	 */
-	if (vdih != C.vh)
-		v_clsvwk(vdih);
-
-	DIAG((D_rsrc, client, "fixed up %d objects ob_spec", hdr.rsh_nobs));
-
-	/* HR!!!!! the pointer array wasnt fixed up!!!!! which made it unusable via global[5] */
-
-	(unsigned long)trees = (unsigned long)(base + hdr.rsh_trindex);
-	for (i = 0; i < hdr.rsh_ntree; i++)
+	DIAG((D_rsrc, NULL, "trees=%lx (%lx)", trees, trees[0]));
+	
+	for (i = 0; i < n; i++, trees++)
 	{
-		if (trees[i] != (void *)-1)
+		if (*trees != (OBJECT *)-1)
 		{
-			(unsigned long)trees[i] += (unsigned long)base;
-			DIAG((D_s,client,"tree[%d]>%ld = %lx",i,(long)trees[i]-(long)base,trees[i]));
+			(unsigned long)*trees += (unsigned long)b;
+			
+			DIAG((D_s, NULL,"tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
 
-			obj = trees[i];
+			obj = *trees;
+			
 			if ((obj[3].ob_type & 255) != G_TITLE)
 			{
 				/* Not a menu tree */
@@ -664,6 +574,154 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			}
 		}
 	}
+}
+
+/*
+ * LoadResources: Load a GEM resource file
+ * fname = name of file to load
+ * Return = base pointer of resources or NULL on failure
+ */
+void *
+LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight)
+{
+#define resWidth (screen.c_max_w)
+#define resHeight (screen.c_max_h)
+
+	RSHDR *hdr = NULL;
+	CICONBLK **cibh = NULL;
+	unsigned long osize = 0, size = 0;
+	char *base = NULL;
+	struct xa_rscs *rscs = NULL; 
+	short vdih = C.vh;
+
+	if (fname)
+	{
+		struct file *f;
+		long err, fsize;
+		XATTR x;
+
+		DIAG((D_rsrc, client, "LoadResources(%s)", fname));
+
+		f = kernel_open(fname, O_RDONLY, &err, &x);
+		if (!f)
+		{
+			DIAG((D_rsrc, client, "LoadResources(): file not found"));
+			return NULL;
+		}
+		fsize = x.size;
+		if (client == C.Aes)
+			base = kmalloc(fsize + sizeof(RSXHDR));
+		else
+			base = umalloc(fsize + sizeof(RSXHDR));
+
+		size = kernel_read(f, base, fsize);
+		kernel_close(f);
+		if (size != fsize)
+		{
+			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
+			if (client == C.Aes)
+				kfree(base);
+			else
+				ufree(base);
+			return NULL;
+		}
+
+		hdr = (RSHDR *)base;
+		size = (unsigned long)hdr->rsh_rssize;
+		osize = (size + 1UL) & 0xfffffffeUL;
+
+		if (hdr->rsh_vrsn & 4)
+		{
+			size = (unsigned long)((short *)((long)base + osize));
+		}
+		/*
+		 * Ozk: Added 'flags' to xa_rscs structure, so we know
+		 * if the resource associated with it was allocated by
+		 * XaAES or not. Added this parameter to list_resource().
+		 * list_resource() also return the address of the new
+		 * xa_rscs attached to the client for further references.
+		 */
+		client->rsct++;
+		if (!(rscs = list_resource(client, base, RSRC_ALLOC)))
+		{
+			client->rsct--;
+
+			if (client == C.Aes)
+				kfree(base);
+			else
+				ufree(base);
+		}
+	}
+	else
+	{
+		DIAG((D_rsrc, client, "LoadResources %ld(%lx)", rshdr, rshdr));
+		if (rshdr)
+		{
+			hdr = rshdr;
+			(RSHDR *)base = rshdr;
+			size = (unsigned long)hdr->rsh_rssize;
+			osize = (size + 1UL) & 0xfffffffeUL;
+			client->rsct++;
+			rscs = list_resource(client, base, 0);
+		}
+	}
+
+	if (!rscs)
+		return NULL;
+
+	fix_chrarray(base, (char **)	(base + hdr->rsh_frstr),   hdr->rsh_nstring);
+	fix_chrarray(base, (char **)	(base + hdr->rsh_frimg),   hdr->rsh_nimages);
+	fix_tedarray(base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted);
+	fix_icnarray(base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib);
+	fix_bblarray(base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb);
+	
+	if (hdr->rsh_vrsn & 4)
+	{
+		/* It's an enhanced RSC file */
+		unsigned long *earray; //, *addr;
+
+		DIAG((D_rsrc, client, "Enhanced resource file"));
+
+		/* this the row of pointers to extensions */
+		/* terminated by a 0L */
+		earray = (unsigned long *)(osize + (long)base);
+		earray++;						/* ozk: skip filesize */
+		if (*earray && *earray != -1L) /* Get colour icons */
+		{
+			cibh = (CICONBLK **)(*earray + (long)base);
+			fix_cicons(base, cibh);
+		}
+
+		if (*earray)
+			earray++;
+
+		if (*earray && *earray != -1L)
+		{
+			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
+			short work_out[58];
+
+			vdih = C.P_handle;
+			v_opnvwk(work_in, &vdih, work_out);
+
+			DIAG((D_rsrc, client, "Color palette present"));
+		}
+#if 0
+		/* ozk: Enable this when (if) more extensions are added ... */
+		if (*earray)
+			earray++;
+#endif
+	}
+
+	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
+
+	/*
+	 * Close the virtual workstation that handled the RSC
+	 * color palette (if present).
+	 */
+	if (vdih != C.vh)
+		v_clsvwk(vdih);
+
+	fix_trees(base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 	
 	return base;
 }

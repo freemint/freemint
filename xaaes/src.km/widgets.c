@@ -186,6 +186,7 @@ remove_widget_active(struct xa_client *client)
 		widget_active.widg = NULL;
 		widget_active.cont = false;
 		C.do_widget_repeat_client = NULL;
+		aessys_timeout = 0;
 	}
 }
 
