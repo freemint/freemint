@@ -101,7 +101,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	6
+#define KENTRY_MIN_VERSION	7
 
 
 /* hardware dependant vector
@@ -518,6 +518,13 @@ struct kentry_misc
 	/* return the number of milliseconds remaining to preemption time.
 	 */
 	unsigned long _cdecl (*remaining_proc_time)(void);
+
+	/*
+	 * TOS trap vectors
+	 */
+	long _cdecl (*trap_1_emu)(short fnum, ...);
+	long _cdecl (*trap_13_emu)(short fnum, ...);
+	long _cdecl (*trap_14_emu)(short fnum, ...);
 };
 #define DEFAULTS_kentry_misc \
 { \
@@ -529,6 +536,10 @@ struct kentry_misc
 	del_rsvfentry, \
 	\
 	remaining_proc_time, \
+	\
+	trap_1_emu, \
+	trap_13_emu, \
+	trap_14_emu, \
 }
 
 

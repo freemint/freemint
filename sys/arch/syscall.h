@@ -70,16 +70,12 @@ long	_cdecl	callout6	(long, int, int, int, int, int, int);
 long	_cdecl	callout6spl7	(long, int, int, int, int, int, int);
 void	_cdecl	do_usrcall	(void);
 
-
-# ifdef SYSCALL_REENTRANT
-
+/*
+ * callout original TOS trap vectors
+ */
 long	_cdecl	trap_1_emu(short fnum, ...);
 long	_cdecl	trap_13_emu(short fnum, ...);
 long	_cdecl	trap_14_emu(short fnum, ...);
-
-/* Currently these bindings are only needed in biosfs.c in the rsvf_* functions
- * and in tosfs.c, the old TOS-FS.
- */
 
 # define ROM_Fsetdta(dta)			(void)	trap_1_emu(0x01a,dta)
 # define ROM_Dfree(buf,d)				trap_1_emu(0x036,buf,d)
@@ -95,7 +91,7 @@ long	_cdecl	trap_14_emu(short fnum, ...);
 # define ROM_Fattrib(fn,rwflag,attr)		(int)	trap_1_emu(0x043,fn,rwflag,attr)
 # define ROM_Fsfirst(filespec,attr)			trap_1_emu(0x04e,filespec,attr)
 # define ROM_Fsnext()					trap_1_emu(0x04f)
-# define ROM_Frename(zero,old,new)		(int)	trap_1_emu(0x056,zero,old,new)
+# define ROM_Frename(zero,oldname,newname)	(int)	trap_1_emu(0x056,zero,oldname,newname)
 # define ROM_Fdatime(timeptr,handle,rwflag)		trap_1_emu(0x057,timeptr,handle,rwflag)
 # define ROM_Flock(handle,mode,start,length)		trap_1_emu(0x05c,handle,mode,start,length)
 # define ROM_Fcntl(f,arg,cmd)				trap_1_emu(0x104,f,arg,cmd)
@@ -123,53 +119,5 @@ long	_cdecl	trap_14_emu(short fnum, ...);
 # define ROM_Bconmap(dev)				trap_14_emu(0x2c,(short)(dev))
 
 # define ROM_VsetScreen(lscrn,pscrn,rez,mode)	(void)	trap_14_emu(0x05,(long)(lscrn),(long)(pscrn),(short)(rez),(short)(mode))
-
-# else /* SYSCALL_REENTRANT */
-
-# include "tosbind.h"
-
-# define ROM_Fsetdta(dta)				TRAP_Fsetdta(dta)
-# define ROM_Dfree(buf,d)				TRAP_Dfree(buf,d)
-# define ROM_Dcreate(path)				TRAP_Dcreate(path)
-# define ROM_Ddelete(path)				TRAP_Ddelete(path)
-# define ROM_Fcreate(fn,mode)				TRAP_Fcreate(fn,mode)
-# define ROM_Fopen(filename,mode)			TRAP_Fopen(filename,mode)
-# define ROM_Fclose(handle)				TRAP_Fclose(handle)
-# define ROM_Fread(handle,cnt,buf)			TRAP_Fread(handle,cnt,buf)
-# define ROM_Fwrite(handle,cnt,buf)			TRAP_Fwrite(handle,cnt,buf)
-# define ROM_Fdelete(fn)				TRAP_Fdelete(fn)
-# define ROM_Fseek(where,handle,how)			TRAP_Fseek(where,handle,how)
-# define ROM_Fattrib(fn,rwflag,attr)			TRAP_Fattrib(fn,rwflag,attr)
-# define ROM_Fsfirst(filespec,attr)			TRAP_Fsfirst(filespec,attr)
-# define ROM_Fsnext()					TRAP_Fsnext()
-# define ROM_Frename(zero,old,new)			TRAP_Frename(zero,old,new)
-# define ROM_Fdatime(timeptr,handle,rwflag)		TRAP_Fdatime(timeptr,handle,rwflag)
-# define ROM_Flock(handle,mode,start,length)		TRAP_Flock(handle,mode,start,length)
-# define ROM_Fcntl(f,arg,cmd)				TRAP_Fcntl(f,arg,cmd)
-
-# define ROM_Bconstat(dev)				TRAP_Bconstat(dev)
-# define ROM_Bconin(dev)				TRAP_Bconin(dev)
-# define ROM_Bconout(dev,c)				TRAP_Bconout(dev,c)
-# define ROM_Setexc(vnum,vptr)				TRAP_Setexc(vnum,vptr)
-# define ROM_Bcostat(dev)				TRAP_Bcostat(dev)
-# define ROM_Kbshift(data)				TRAP_Kbshift(data)
-
-# define ROM_Initmous(type,param,vptr)			TRAP_Initmous(type,param,vptr)
-# define ROM_Getrez()					TRAP_Getrez()
-# define ROM_Iorec(ioDEV)				TRAP_Iorec(ioDEV)
-# define ROM_Rsconf(baud,flow,uc,rs,ts,sc)		TRAP_Rsconf(baud,flow,uc,rs,ts,sc)
-# define ROM_Keytbl(nrml,shft,caps)			TRAP_Keytbl(nrml,shft,caps)
-# define ROM_Cursconf(rate,attr)			TRAP_Cursconf(rate,attr)
-# define ROM_Settime(time)				TRAP_Settime(time)
-# define ROM_Gettime()					TRAP_Gettime()
-# define ROM_Offgibit(ormask)				TRAP_Offgibit(ormask)
-# define ROM_Ongibit(andmask)				TRAP_Ongibit(andmask)
-# define ROM_Dosound(ptr)				TRAP_Dosound(ptr)
-# define ROM_Vsync()					TRAP_Vsync()
-# define ROM_Bconmap(dev)				TRAP_Bconmap(dev)
-
-# define ROM_VsetScreen(lscrn,pscrn,rez,mode)		TRAP_VsetScreen(lscrn,pscrn,rez,mode)
-
-# endif /* SYSCALL_REENTRANT */
 
 # endif /* _m68k_syscall_h */
