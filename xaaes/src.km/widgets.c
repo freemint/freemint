@@ -794,7 +794,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * Click & drag on the title bar - does a move window
  */
 static bool
-drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	/* You can only move a window if its MOVE attribute is set */
 	if (wind->active_widgets & MOVER)
@@ -880,7 +880,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, stru
 			{
 				/* Drag title */
 
-				set_widget_active(wind, widg, drag_title,1);
+				set_widget_active(wind, widg, drag_title, 1);
 
 				widget_active.x = widget_active.m.x;
 				widget_active.y = widget_active.m.y;
@@ -919,7 +919,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, stru
  * Single click title bar sends window to the back
  */
 static bool
-click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	//short b;
 
@@ -976,7 +976,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, str
  * Double click title bar of iconified window - sends a restore message
  */
 static bool
-dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	if (wind->send_message)
 	{
@@ -1039,7 +1039,7 @@ display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  * owns the window.
  */
 static bool
-click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	if (wind->send_message)
 	{
@@ -1068,7 +1068,7 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, str
 /* Default full widget behaviour - Just send a WM_FULLED message to the client that */
 /* owns the window. */
 static bool
-click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	if (wind->send_message)
 		wind->send_message(lock, wind, NULL,
@@ -1086,7 +1086,7 @@ click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, stru
  * click the iconify widget
  */
 static bool
-click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	if (wind->send_message == NULL)
 		return false;
@@ -1133,7 +1133,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, s
  * click the hider widget
  */
 static bool
-click_hide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_hide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	hide_app(lock, wind->owner);
 
@@ -1342,12 +1342,12 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 /* HR 150202: make rubber_box omnidirectional. */
 
 static inline bool
-drag_resize(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+drag_resize(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	return size_window(lock, wind, widg, true, drag_resize);
 }
 static inline bool
-drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	return size_window(lock, wind, widg, false, drag_border);
 }
@@ -1394,7 +1394,7 @@ set_widget_repeat(enum locks lock, struct xa_window *wind)
 }
 
 static bool
-click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	bool reverse = widg->s == 2;
 	short mx = md->x, my = md->y, mb = md->state;
@@ -1713,7 +1713,7 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
  */
 
 static bool
-drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	short ny;
@@ -1753,7 +1753,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, str
 				/* Has the mouse moved? */
 				offs = bound_sl(offs + pix_to_sl(widget_active.m.y - ny, widg->loc.r.h - sl->r.h) );
 
-			set_widget_active(wind, widg, drag_vslide,3);
+			set_widget_active(wind, widg, drag_vslide, 3);
 			widget_active.y = widget_active.m.y;
 			widget_active.offs = offs;
 
@@ -1774,7 +1774,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, str
 }
 
 static bool
-drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	short nx;
@@ -1814,7 +1814,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, str
 			if (widget_active.m.x != nx)
 				offs = bound_sl(offs + pix_to_sl(widget_active.m.x - nx, widg->loc.r.w - sl->r.w) );
 
-			set_widget_active(wind, widg, drag_hslide,4);
+			set_widget_active(wind, widg, drag_hslide, 4);
 			widget_active.x = widget_active.m.x;
 			widget_active.offs = offs;
 

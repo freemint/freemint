@@ -1338,7 +1338,7 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 /* Called by XA_move_event()
    and by do_widgets() only for the menu_bar itself */
 static bool
-click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *client;
 	bool l = false;

@@ -846,10 +846,10 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 }
 
 static void
-Pdraw_window( void *_parm)
+Pdraw_window(void *_parm)
 {
 	long *parm = _parm;
-	struct xa_client *c = (struct xa_client *)parm[1];
+//	struct xa_client *c = (struct xa_client *)parm[1];
 
 	Ddraw_window(0, (struct xa_window *)parm[0]);
 	wake(IO_Q, (long)parm);
