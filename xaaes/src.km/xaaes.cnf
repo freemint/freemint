@@ -68,6 +68,16 @@
 #                    If set, use the default screen resolution as preset by
 #                    CentScreen.
 #
+# For example:
+# 
+# video = 26      will select 640*480*16colour VGA mode.
+# video = 0x801a  will select 16 colour VGA mode in
+#                 the resolution preset by centscreen.
+# Note: 
+# When you use a screenexpander like Screenblaster, you have to use
+# the video option as well. This will make the Screenblaster-Software
+# to show up the resolution-selection-menu.
+# 
 #video = <mode>
 
 #
@@ -114,7 +124,7 @@ menu = leave
 #
 clipboard = c:\clipbrd\
 accpath   = c:\
-launcher  = u:\opt\toswin2\tw-call.prg
+#launcher  = u:\opt\toswin2\tw-call.prg
 
 #
 # widgets  = <file>
@@ -164,11 +174,11 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #
 #---------- Thing -----------
 #
-setenv AVSERVER THING
-setenv FONTSELECT THING
+#setenv AVSERVER THING
+#setenv FONTSELECT THING
 #
-setenv THINGDIR c:\thing\thing
-shell = c:\thing\thing\thing.app
+#setenv THINGDIR c:\thing\thing
+#shell = c:\thing\thing\thing.app
 
 #
 #---------- Jinnee ----------
