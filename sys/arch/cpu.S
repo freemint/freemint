@@ -508,13 +508,15 @@ _setstack:
 
 #ifdef DEBUG_INFO
 	.globl	_get_ssp
-	.globl	_get_usp
 
 _get_ssp:
 	move.l	sp,d0
 	rts
+#endif
+
+	.globl	_get_usp
+
 _get_usp:
 	move.l	usp,a0
 	move.l	a0,d0
 	rts
-#endif
