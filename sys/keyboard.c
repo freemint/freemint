@@ -1,3 +1,25 @@
+/*
+ * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
+ * distribution.
+ *
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
+ *
+ */
+
 /* Keyboard tables for MiNT (taken off TOS 4.04, with fixes) */
 
 /* USA, _AKP code 0 */
@@ -596,7 +618,7 @@ static const char sw_german_kbd[] =
 
 const short max_kbd = 8;
 
-const char *keyboards[10] =
+char *keyboards[10] =
 {
 	usa_kbd,
 	german_kbd,
