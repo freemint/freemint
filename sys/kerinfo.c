@@ -43,13 +43,14 @@
 # include "filesys.h"		/* changedrv, denyshare, denylock */
 # include "ipc_socketutil.h"	/* so_* */
 # include "k_kthread.h"		/* kthread_create, kthread_exit */
-# include "kmemory.h"		/* kmalloc, kfree, umalloc, ufree */
+# include "kmemory.h"		/* kmalloc, kfree */
 # include "module.h"		/* load_modules */
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "signal.h"		/* ikill */
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
 # include "time.h"		/* xtime */
 # include "timeout.h"		/* nap, addtimeout, canceltimeout, addroottimeout, cancelroottimeout */
+# include "umemory.h"		/* umalloc, ufree */
 
 
 # undef DEFAULT_MODE

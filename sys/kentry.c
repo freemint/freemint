@@ -47,7 +47,7 @@
 # include "k_exec.h"		/* create_process */
 # include "k_kthread.h"		/* kthread_create, kthread_exit */
 # include "kerinfo.h"		/* */
-# include "kmemory.h"		/* kmalloc, kfree, umalloc, ufree */
+# include "kmemory.h"		/* kmalloc, kfree */
 # include "module.h"		/* load_modules */
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "proc_help.h"		/* proc_extensions */
@@ -57,6 +57,7 @@
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
 # include "time.h"		/* xtime */
 # include "timeout.h"		/* nap, addtimeout, canceltimeout, addroottimeout, cancelroottimeout */
+# include "umemory.h"		/* umalloc, ufree */
 # include "util.h"		/* pid2proc */
 
 
