@@ -896,9 +896,20 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 	}
 	else
 	{
+		short x, y;
+
 		k->em.m1 = k->drop;
 		k->em.flags = MU_M1|0;			/* into popup */
 		k->em.t1 = popup;
+
+		check_mouse(wt->owner, NULL, &x, &y);
+		if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
+		{
+			k->em.flags = 0;
+			k->x = x;
+			k->y = y;
+			k->em.t1(C.menu_base);
+		}
 	}
 }
 

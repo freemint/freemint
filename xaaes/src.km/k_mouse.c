@@ -459,10 +459,58 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	}
 }
 
+static void
+dispatch_mu_event(struct xa_client *client, const struct moose_data *md)
+{
+	if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
+	{
+		int events;
+
+		/* combine mouse events. */
+		events = 0;
+
+		if (   (client->em.flags & MU_M1)
+		    && is_rect(md->x, md->y, client->em.flags & 1, &client->em.m1))
+		{
+			DIAG((D_mouse, client, "%s have M1 event", client->name));
+			events |= MU_M1;
+		}
+
+		if (   (client->em.flags & MU_M2)		/* M2 in evnt_multi only */
+		    && is_rect(md->x, md->y, client->em.flags & 2, &client->em.m2))
+		{
+			DIAG((D_mouse, client, "%s have M2 event", client->name));
+			events |= MU_M2;
+		}
+
+		if (client->em.flags & MU_MX)			/* MX: any movement. */
+		{
+			DIAG((D_mouse, client, "%s have MX event", client->name));
+			events |= MU_MX;
+		}
+
+		if (events)
+		{
+			struct xa_window *wind;
+			struct xa_client *wo = NULL;
+			
+			DIAG((D_mouse, client, "Post deliver M1/M2 events %d to %s", events, client->name));
+
+			wind = find_window(0, md->x, md->y);
+			
+			if (wind)
+				wo = wind == root_window ? get_desktop()->owner : wind->owner;
+
+			if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
+				post_cevent(client, cXA_deliver_rect_event, (void *)client->status, 0, events, 0, 0, 0);
+		}
+	}
+}
+
 int
 XA_move_event(enum locks lock, const struct moose_data *md)
 {
-	struct xa_client *client;
+	struct xa_client *client, *locker;
 	short x = md->x;
 	short y = md->y;
 
@@ -519,6 +567,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	}
 
 
+#if 0
 	/* mouse lock is also for rectangle events! */
 	if (mouse_locked())
 	{
@@ -528,50 +577,29 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	}
 	else
 		client = CLIENT_LIST_START;
-
-	/* internalized the client loop */
-	while (client)
+#endif
+	client = mouse_locked();
+	if (!client)
+		client = update_locked();
+	
+	if (client && client->waiting_for & (MU_M1|MU_M2|MU_MX))
 	{
-		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
-		{
-			int events;
-
-			/* combine mouse events. */
-			events = 0;
-
-			if (   (client->em.flags & MU_M1)
-			    && is_rect(x, y, client->em.flags & 1, &client->em.m1))
-			{
-				DIAG((D_mouse, client, "%s have M1 event", client->name));
-				events |= MU_M1;
-			}
-
-			if (   (client->em.flags & MU_M2)		/* M2 in evnt_multi only */
-			    && is_rect(x, y, client->em.flags & 2, &client->em.m2))
-			{
-				DIAG((D_mouse, client, "%s have M2 event", client->name));
-				events |= MU_M2;
-			}
-
-			if (client->em.flags & MU_MX)			/* MX: any movement. */
-			{
-				DIAG((D_mouse, client, "%s have MX event", client->name));
-				events |= MU_MX;
-			}
-
-			if (events)
-			{
-				DIAG((D_mouse, client, "Post deliver M1/M2 events %d to %s", events, client->name));
-				post_cevent(client, cXA_deliver_rect_event, 0, 0, events, 0, 0, 0);
-			}
-		}
-
-		if (mouse_locked())
-			break;
-
-		client = NEXT_CLIENT(client);
+		dispatch_mu_event(client, md);
 	}
+	else
+	{
+		client = CLIENT_LIST_START;
 
+		/* internalized the client loop */
+		while (client)
+		{
+			dispatch_mu_event(client, md);
+			//if (mouse_locked())
+			//	break;
+
+			client = NEXT_CLIENT(client);
+		}
+	}
 	Sema_Dn(clients);
 
 	return false;
