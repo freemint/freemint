@@ -100,6 +100,7 @@
 # define TRAP_Iorec(ioDEV)			Iorec(ioDEV)
 # define TRAP_Rsconf(baud,flow,uc,rs,ts,sc)	Rsconf(baud,flow,uc,rs,ts,sc)
 # define TRAP_Keytbl(nrml,shft,caps)		Keytbl(nrml,shft,caps)
+# define TRAP_Kbrate(delay,rate)		Kbrate(delay,rate)
 # define TRAP_Cursconf(rate,attr)		Cursconf(rate,attr)
 # define TRAP_Settime(time)			Settime(time)
 # define TRAP_Gettime()				Gettime()
