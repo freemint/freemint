@@ -258,6 +258,9 @@ init(struct kentry *k, const char *path)
 	cfg.hor_wheel_id = 1;
 	cfg.hor_wheel_amount = 1;
 
+	cfg.popup_timeout = 10;
+	cfg.popout_timeout = 1000;
+
 #if !FILESELECTOR
 #error external fileselectors not supported yet!
 	cfg.no_xa_fsel = true;

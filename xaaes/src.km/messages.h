@@ -52,7 +52,9 @@ union msg_buf
 
 const char *pmsg(short m);
 
-void cancel_aesmsgs(struct xa_aesmsg_list **m);
+long cancel_aesmsgs(struct xa_aesmsg_list **m);
+long cancel_app_aesmsgs(struct xa_client *client);
+
 void send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
 //void deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 //void queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);

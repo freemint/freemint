@@ -30,6 +30,7 @@
 #include "xa_global.h"
 
 #include "k_main.h"
+#include "k_keybd.h"
 #include "c_window.h"
 #include "init.h"
 #include "nkcc.h"
@@ -179,9 +180,9 @@ k_shutdown(void)
 	if (C.button_waiter == C.Aes)
 		C.button_waiter = NULL;
 
-	cancel_aesmsgs(&(C.Aes->rdrw_msg));
-	cancel_aesmsgs(&(C.Aes->msg));
+	cancel_app_aesmsgs(C.Aes);
 	cancel_cevents(C.Aes);
+	cancel_keyqueue(C.Aes);
 
 	if (C.Aes->attach)
 		kfree(C.Aes->attach);
