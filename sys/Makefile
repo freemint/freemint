@@ -3,19 +3,20 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = arch buildinfo gen-syscall libkern
+SUBDIRS = arch buildinfo gen-syscall libkern sockets xdd xfs
+KERNELSUBDIRS = arch buildinfo
 
 srcdir = .
 top_srcdir = .
 subdir = 
 
-default: all
+default: help
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: kernel
+all-here: allkernels
 
 # default overwrites
 
@@ -27,8 +28,11 @@ help:
 	@echo '#'
 	@echo '# targets:'
 	@echo '# --------'
-	@echo '# - $(kerneltargets)'
+	@echo '# - all'
+	@echo '# - sockets / xdd / xfs'
 	@echo '# - allkernels'
+	@echo '# - $(kerneltargets)'
+	@echo '#'
 	@echo '# - bakclean'
 	@echo '# - clean'
 	@echo '# - distclean'
@@ -40,10 +44,13 @@ help:
 allkernels:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	for i in $(kerneltargets); do \
-		echo "Making kernel=$$i"; \
-		($(MAKE) kernel=$$i) \
+		echo "Making $$i"; \
+		($(MAKE) $$i) \
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
 $(kerneltargets):
-	$(MAKE) kernel=$@
+	$(MAKE) buildkernel kernel=$@
+
+sockets xdd xfs:
+	cd $@; $(MAKE) all
