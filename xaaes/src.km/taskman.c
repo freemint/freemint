@@ -399,8 +399,7 @@ open_taskmanager(enum locks lock)
 		get_widget(dialog_window, XAW_TITLE)->stuff = " Task Manager";
 
 		wt = set_toolbar_widget(lock, dialog_window, form, -1);
-		wt->exit_form = taskmanager_form_exit; //XA_form_exit;
-		//wt->exit_handler = handle_taskmanager;
+		wt->exit_form = taskmanager_form_exit;
 
 		/* set a scroll list widget */
 		set_slist_object(lock, wt, form, TM_LIST, NULL, NULL, NULL, NULL, "Client Applications", NULL, NICE_NAME);
@@ -559,8 +558,6 @@ open_systemalerts(enum locks lock)
 		get_widget(dialog_window, XAW_TITLE)->stuff = " System window & Alerts Log";
 		wt = set_toolbar_widget(lock, dialog_window, form, -1);
 		wt->exit_form = sysalerts_form_exit;
-		//wt->exit_form = XA_form_exit;
-		//wt->exit_handler = handle_systemalerts;
 
 		/* HR: set a scroll list widget */
 		set_slist_object(lock, wt, form, SYSALERT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, 256);

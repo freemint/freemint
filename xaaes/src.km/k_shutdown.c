@@ -36,6 +36,7 @@
 #include "draw_obj.h"
 #include "scrlobjc.h"
 #include "taskman.h"
+#include "widgets.h"
 #include "xa_rsrc.h"
 
 #include "mint/signal.h"
@@ -68,7 +69,6 @@ k_shutdown(void)
 				DIAGS(("client '%s' still running", client->name));
 				Unblock(client, 1, 1);
 			}
-
 			client = client->next;
 		}
 
@@ -84,8 +84,10 @@ k_shutdown(void)
 			while (client)
 			{
 				if (client != C.Aes)
+				{
+					DIAGS(("killing client '%s'", client->name));
 					ikill(client->p->pid, SIGKILL);
-
+				}
 				client = client->next;
 			}
 		}
@@ -153,7 +155,9 @@ k_shutdown(void)
 		kfree(C.Aes->attach);
 
 	kfree(C.Aes->mnu_clientlistname);
+	free_wtlist(C.Aes);
 	kfree(C.Aes);
+
 
 	C.Aes = NULL;
 
@@ -170,6 +174,7 @@ k_shutdown(void)
 			op = next;
 		}
 	}
+
 
 	xaaes_kmalloc_leaks();
 	nkc_exit();

@@ -1578,32 +1578,44 @@ menu_title(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int locker)
 /* HR: Define loc completely outside this function,
        Click behaviour is a parameter (for popup's).
        300801: all XA_TREE instances in struct xa_window (no more calloc's) */
+
+/* XXX - Fixme: What to do when widget_tree resource fetching fails!
+ */
 void
 set_menu_widget(struct xa_window *wind, XA_TREE *menu)
 {
-	XA_TREE *wt = &wind->menu_bar;
 	XA_WIDGET *widg = get_widget(wind, XAW_MENU);
-	OBJECT *obj = menu->tree;
+	OBJECT *obtree = menu->tree;
 
-	DIAG((D_widg, menu->owner, "set_menu_widget on %d for %s",
+	DIAG((D_widg, wind->owner, "set_menu_widget on %d for %s",
 		wind->handle, w_owner(wind)));
+
+	if (widg->stuff)
+	{
+		((XA_TREE *)widg->stuff)->widg = NULL;
+		if (wind == root_window)
+			((XA_TREE *)widg->stuff)->flags &= ~WTF_STATIC;
+	}
 
 	menu->is_menu   = true;				/* set the flags in the original */
 	menu->menu_line = (wind == root_window);	/* menu in root window.*/
-
-	*wt = *menu;
+	menu->widg = widg;
+	if (wind == root_window)
+		menu->flags |= WTF_STATIC;
 
 	/* additional fix to fit in window */
-	obj->ob_width = obj[obj->ob_head].ob_width = obj[obj->ob_tail].ob_width = wind->wa.w;
+	obtree->ob_width = obtree[obtree->ob_head].ob_width = obtree[obtree->ob_tail].ob_width = wind->wa.w;
 
 	widg->display = display_menu_widget;
 	widg->click = click_menu_widget;
 	widg->dclick = NULL;
 	widg->drag = NULL /* drag_menu_widget */;
 	widg->state = OS_NORMAL;
-	widg->stuff = wt;
+	widg->stuff = menu;
 	widg->stufftype = STUFF_IS_WT;
+	widg->destruct = free_xawidget_resources;
 	widg->start = 0;
+
 	wind->tool = widg;
 	wind->active_widgets |= XaMENU;
 }
@@ -1615,18 +1627,25 @@ static XA_TREE *
 set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	XA_TREE *wt = &wind->toolbar;
+	XA_TREE *wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_MENU);
 	XA_WIDGET_LOCATION loc;
 	OBJECT *ob = form +item;
 	DisplayWidget display_object_widget;
 	int frame = wind->frame;
 
+	if ( widg->stuff)
+		((XA_TREE *)widg->stuff)->widg = NULL;
+
+	wt = obtree_to_wt(wind->owner, form);
+	if (!wt)
+		wt = new_widget_tree(wind->owner, form);
+	
+	wt->is_menu = true;
+	wt->widg = widg;
+
 	if (frame < 0)
 		frame = 0;
-
-	wt->tree = form;
-	wt->owner = wind->owner;
 
 	loc.relative_type = LT;
 
@@ -1657,12 +1676,14 @@ set_popup_widget(Tab *tab, struct xa_window *wind, OBJECT *form, int item)
 	widg->state = OS_NORMAL;
 	widg->stuff = wt;
 	widg->stufftype = STUFF_IS_WT;
+	widg->destruct = free_xawidget_resources;
 	widg->start = item;
 	if (tab->nest)
 		/* HR testing: Use the window borders. */
 		wt->zen = true;
-	wt->is_menu = true;
+
 	wind->tool = widg;
+
 	XA_slider(wind, XAW_HSLIDE, ob->ob_width, wind->wa.w, 0);
 	XA_slider(wind, XAW_VSLIDE, ob->ob_height, wind->wa.h, 0);
 

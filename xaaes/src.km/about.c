@@ -140,8 +140,7 @@ open_about(enum locks lock)
 		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
 
 		wt = set_toolbar_widget(lock, dialog_window, form, -1);
-		wt->exit_form = about_form_exit; //XA_form_exit;
-		//wt->exit_handler = handle_about;
+		wt->exit_form = about_form_exit;
 
 		/* set a scroll list widget */
 		list = set_slist_object(lock, wt, form, ABOUT_LIST, 0, 0, 0, 0, 0, 0, 42);

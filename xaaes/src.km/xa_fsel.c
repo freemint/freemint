@@ -67,7 +67,7 @@ static fsel_handler *canceled = NULL;
 struct fsel_data
 {
 	struct xa_window *wind;
-	XA_TREE menu;
+	XA_TREE *menu;
 	struct xa_client *owner;
 	Path path;
 	char fslash[2];
@@ -877,7 +877,7 @@ fs_key_form_do(enum locks lock,
 			/* change the filter to '*'
 			 * - this should always be the FSEL_PATA entry IIRC
 			 */
-			fs_change(lock, fs.menu.tree,
+			fs_change(lock, fs.menu->tree,
 					FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs_pattern);
 			/* apply the change to the filelist */
 			refresh_filelist(fsel,6);
@@ -928,11 +928,11 @@ fs_msg_handler(
 	case MN_SELECTED:
 	{
 		if (msg[3] == FSEL_FILTER)
-			fs_change(lock, fs.menu.tree, msg[4], FSEL_FILTER, FSEL_PATA, fs_pattern);
+			fs_change(lock, fs.menu->tree, msg[4], FSEL_FILTER, FSEL_PATA, fs_pattern);
 		else if (msg[3] == FSEL_DRV)
 		{
 			int drv;
-			fs_change(lock, fs.menu.tree, msg[4], FSEL_DRV, FSEL_DRVA, fs.path);
+			fs_change(lock, fs.menu->tree, msg[4], FSEL_DRV, FSEL_DRVA, fs.path);
 			inq_xfs(fs.path, fs.fslash);
 			add_slash(fs.path);
 			drv = get_drv(fs.path);
@@ -966,6 +966,7 @@ fs_destructor(enum locks lock, struct xa_window *wind)
 	free_scrollist(list);
 
 	fs.wind = NULL;
+	fs.menu = NULL;
 	selected = NULL;
 	canceled = NULL;
 
@@ -1056,15 +1057,6 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 			strcpy(fs_paths[drv], fs.path);
 	}
 
-	fs.menu.owner = client; //C.Aes;
-	fs.menu.tree = ResourceTree(C.Aes_rsc, FSEL_MENU);
-	fs.drives = fsel_drives(fs.menu.tree,
-				*(fs.path+1) == ':' ? tolower(*fs.path) - 'a' : d_getdrv());
-	fsel_filters(fs.menu.tree, fs_pattern);
-
-	fs.clear_on_folder_change = 0;
-	strcpy(fs.file, file); /* fill in the file edit field */
-
 	/* Create the window */
 	dialog_window = create_window(  lock,
 					do_winmesag, //fs_msg_handler,
@@ -1086,13 +1078,25 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 
 	/* HR: at last actually there */
 	/* Set the menu widget */				
-	set_menu_widget(dialog_window, &fs.menu);
+	fs.menu = obtree_to_wt(client, ResourceTree(C.Aes_rsc, FSEL_MENU));
+	if (!fs.menu)
+		fs.menu = new_widget_tree(client, ResourceTree(C.Aes_rsc, FSEL_MENU));
+	
+	set_menu_widget(dialog_window, fs.menu);
+	//fs.menu->owner = client;
+	//fs.menu->tree = ResourceTree(C.Aes_rsc, FSEL_MENU);
+
+	fs.drives = fsel_drives(fs.menu->tree,
+				*(fs.path+1) == ':' ? tolower(*fs.path) - 'a' : d_getdrv());
+	fsel_filters(fs.menu->tree, fs_pattern);
+
+	fs.clear_on_folder_change = 0;
+	strcpy(fs.file, file); /* fill in the file edit field */
 
 	wt = set_toolbar_widget(lock, dialog_window, form, FS_FILE);
 	/* This can be of use for drawing. (keep off border & outline :-) */
 	wt->zen = true;
 	wt->exit_form = fileselector_form_exit;
-	//wt->exit_handler = handle_fileselector;
 
 	/* HR: We need to do some specific things with the key's,
 	 *     so we supply our own handler,

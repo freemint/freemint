@@ -266,9 +266,10 @@ struct widget_tree
 {
 	struct widget_tree *next;	/* Next widget tree */
 
-#define WTF_ALLOC 1
-#define WTF_XTRA_ALLOC 2
-#define WTF_TREE_ALLOC 4
+#define WTF_ALLOC	1
+#define WTF_XTRA_ALLOC	2
+#define WTF_TREE_ALLOC	4
+#define WTF_STATIC	8
 
 	ulong	flags;
 
@@ -342,11 +343,10 @@ struct fmd_result
 struct fmd
 {
 	struct xa_window *wind;		/* Pointer to a window that could be about to become a dialog */
+	struct widget_tree *wt;
 	short state;			/* fmd.r contains a valid rectangle of a form_dial, which is postponed. */
 	short lock;			/* Client has locked the screen. */
 	XA_WIND_ATTR kind;		/* Window attributes to be used. */
-	//WindowKeypress *keypress;
-	//ClassicClick *mousepress;
 	FormKeyInput *keypress;
 	FormMouseInput *mousepress;
 	RECT r;				/* The rectangle for the postponed dialogue window */
@@ -411,11 +411,16 @@ struct xa_client
 	int rsct;			/* count up/down the loaded resources. Used by XA_alloc, XA_free */
 
 	XA_TREE *wtlist;
-	
+
+	XA_TREE *std_menu;
+	XA_TREE *desktop;
+
 	XA_MENU_ATTACHMENT *attach;	/* submenus */
+#if 0
 	XA_TREE std_menu;		/* The client's standard GEM-style menu-bar widget */
 	XA_TREE desktop;		/* The clients desktop as a standard toolbar widget */
 	XA_TREE wt;			/* Widget tree for everything except form_do(). */
+#endif
 
 	Path home_path;			/* The directory that the client was started in */
 	Path cmd_name;			/* The full filename used when launching the process (if launched by shell_write) */
@@ -707,15 +712,6 @@ struct xa_window
 	SendMessage	*send_message;
 	DoWinMesag	*do_message;
 
-#if 0
-	void (*send_message)(
-		enum locks lock,
-		struct xa_window *wind,
-		struct xa_client *to,
-		short mp0, short mp1, short mp2, short mp3,
-		short mp4, short mp5, short mp6, short mp7);
-#endif
-
 	OBJECT *winob;			/* Tree and index of a sub window (The parent object of the window) */
 	int winitem;			/* currently used by list boxes */
 
@@ -726,8 +722,16 @@ struct xa_window
 	XA_WIDGET widgets[XA_MAX_WIDGETS]; /* The windows standard widget set (array for speed) */
 
 	XA_TREE widg_info;		/* Holds the object tree information for def_widgets. */
+
+#if 0
+	XA_TREE *wdlg_info;
+	XA_TREE *menu_bar;
+	XA_TREE *toolbar;
+
+	XA_TREE widg_info;		/* Holds the object tree information for def_widgets. */
 	XA_TREE menu_bar;		/*   "         "              "      for a menu bar. */
 	XA_TREE toolbar;		/*   "         "              "      for a tool bar. */
+#endif
 
 	char wname[200];		/* window name line (copy) */
 	char winfo[200];		/* window info line (copy) */
@@ -862,6 +866,7 @@ struct menu_task
 	void *Mpreserve;
 	TASK *entry;
 	OBJECT *root;
+	//XA_TREE *wt;
 	/* root displacements */
 	short rdx, rdy;
 };
