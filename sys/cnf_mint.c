@@ -475,6 +475,7 @@ pCB_prn(const char *path)
 static void
 pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 {
+	DEBUG(("pCB_setenv: %s=%s", var, arg));
 	_mint_setenv(_base, var, arg);
 }
 
