@@ -451,7 +451,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x13e */	(Func)	sys_psigintr,
 	/* 0x13f */		s_uptime,
 	
-	/* 0x140 */	(Func)	p_trace,	/* 1.16.0 */
+	/* 0x140 */	(Func)	p_trace,	/* 1.15.11 */
 	/* 0x141 */		sys_m_validate,	/* 1.15.11 */
 	/* 0x142 */		d_xreaddir,
 	/* 0x143 */	(Func)	sys_pseteuid,
@@ -482,7 +482,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x15b */	(Func)	sys_fwritev,	/* 1.16 */
 	/* 0x15c */	(Func)	sys_freadv,	/* 1.16 */
 	/* 0x15d */	(Func)	sys_ffstat,	/* 1.16 */
-	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.16 */
+	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.15.11 */
 	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
 	
 	/* 0x160 */	(Func)	sys_socket,	/* 1.16 */
