@@ -11,10 +11,6 @@ this is the "rather must" kernel-stuff:
 - finish the keyboard handler
 
 this is the "not must" kernel-stuff:
-- libkern struct for XDD/XFS modules (a jumptable to libkern functions
-  linked with the kernel, purpose: prevent libkern functions to be
-  present in memory in many copies (esp. strcpy() and such stuff).
-  Adams idea btw.
 - make kernel TEXT+DATA+BSS supervisor protected
 - make ROM and hardware registers supervisor protected, currently
   IDE I/O registers are *freely* available in user mode, at least
@@ -37,10 +33,6 @@ tools
   -> shutdown tool
   -> cache setter
   and they should work under XaAES :-)
-
-xaaes
-- prepare for 0.971 release?
-- add missing example configuration
 
 docu
 - overview of the internal changes
