@@ -10,7 +10,7 @@
 
 # define VER_MAJOR	1
 # define VER_MINOR	6
-# define VER_PL		0
+# define VER_PL		1
 # define VER_STATUS	""
 
 # if 0
