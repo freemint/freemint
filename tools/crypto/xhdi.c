@@ -47,13 +47,13 @@
 
 /* dummy routine */
 static long
-XHDIfail (ushort opcode, ...)
+XHDIfail (void)
 {
 	return -ENOSYS;
 }
 
 /* XHDI handler function */
-static long (*XHDI)(ushort opcode, ...) = XHDIfail;
+static long (*XHDI)() = XHDIfail;
 
 ushort XHDI_installed = 0;
 
@@ -62,7 +62,7 @@ ushort XHDI_installed = 0;
 # define XHDIMAGIC	0x27011992L
 
 long
-XHDI_init (void)
+init_XHDI (void)
 {
 	long *val;
 	long r;
@@ -108,382 +108,463 @@ XHDI_init (void)
  * XHDI wrapper routines
  */
 
+# define CALL \
+	long oldstack = 0;		\
+	long r;				\
+					\
+	if (!Super (1L))		\
+		oldstack = Super (0L);	\
+					\
+	r = XHDI (args);		\
+	if (r < 0)			\
+	{				\
+		__set_errno (-r);	\
+		r = -1;			\
+	}				\
+					\
+	if (oldstack)			\
+		Super (oldstack);	\
+					\
+	return r
+
 long
 XHGetVersion (void)
 {
-	long oldstack = 0;
-	long r = 0;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (0);
-	if (r < 0)
+	struct args_XHGetVersion
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
 	}
+	args = 
+	{
+		0
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHInqTarget (ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (1, major, minor, block_size, device_flags, product_name);
-	if (r < 0)
+	struct args_XHInqTarget
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ulong	*block_size;
+		ulong	*device_flags;
+		char	*product_name;
 	}
+	args =
+	{
+		1,
+		major,
+		minor,
+		block_size,
+		device_flags,
+		product_name
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHReserve (ushort major, ushort minor, ushort do_reserve, ushort key)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (2, major, minor, do_reserve, key);
-	if (r < 0)
+	struct args_XHReserve
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ushort	do_reserve;
+		ushort	key;
 	}
+	args =
+	{
+		2,
+		major,
+		minor,
+		do_reserve,
+		key
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHLock (ushort major, ushort minor, ushort do_lock, ushort key)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (3, major, minor, do_lock, key);
-	if (r < 0)
+	struct args_XHLock
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ushort	do_lock;
+		ushort	key;
 	}
+	args =
+	{
+		3,
+		major,
+		minor,
+		do_lock,
+		key
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHStop (ushort major, ushort minor, ushort do_stop, ushort key)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (4, major, minor, do_stop, key);
-	if (r < 0)
+	struct args_XHStop
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ushort	do_stop;
+		ushort	key;
 	}
+	args =
+	{
+		4,
+		major,
+		minor,
+		do_stop,
+		key
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHEject (ushort major, ushort minor, ushort do_eject, ushort key)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (5, major, minor, do_eject, key);
-	if (r < 0)
+	struct args_XHEject
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ushort	do_eject;
+		ushort	key;
 	}
+	args =
+	{
+		5,
+		major,
+		minor,
+		do_eject,
+		key
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHDrvMap (void)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (6);
-	if (r < 0)
+	struct args_XHDrvMap
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
 	}
+	args =
+	{
+		6
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHInqDev (ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *bpb)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (7, bios, major, minor, start, bpb);
-	if (r < 0)
+	struct args_XHInqDev
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	bios;
+		ushort	*major;
+		ushort	*minor;
+		ulong	*start;
+		__BPB	*bpb;
 	}
+	args =
+	{
+		7,
+		bios,
+		major,
+		minor,
+		start,
+		bpb
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHInqDriver (ushort bios, char *name, char *version, char *company, ushort *ahdi_version, ushort *maxIPL)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (8, bios, name, version, company, ahdi_version, maxIPL);
-	if (r < 0)
+	struct args_XHInqDriver
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	bios;
+		char	*name;
+		char	*version;
+		char	*company;
+		ushort	*ahdi_version;
+		ushort	*maxIPL;
 	}
+	args =
+	{
+		8,
+		bios,
+		name,
+		version,
+		company,
+		ahdi_version,
+		maxIPL
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHNewCookie (void *newcookie)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (9, newcookie);
-	if (r < 0)
+	struct args_XHNewCookie
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		void	*newcookie;
 	}
+	args =
+	{
+		9,
+		newcookie
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHReadWrite (ushort major, ushort minor, ushort rwflag, ulong recno, ushort count, void *buf)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (10, major, minor, rwflag, recno, count, buf);
-	if (r < 0)
+	struct args_XHReadWrite
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ushort	rwflag;
+		ulong	recno;
+		ushort	count;
+		void	*buf;
 	}
+	args =
+	{
+		10,
+		major,
+		minor,
+		rwflag,
+		recno,
+		count,
+		buf
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHInqTarget2 (ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name, ushort stringlen)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (11, major, minor, block_size, device_flags, product_name, stringlen);
-	if (r < 0)
+	struct args_XHInqTarget2
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ulong	*block_size;
+		ulong	*device_flags;
+		char	*product_name;
+		ushort	stringlen;
 	}
+	args =
+	{
+		11,
+		major,
+		minor,
+		block_size,
+		device_flags,
+		product_name,
+		stringlen
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHInqDev2 (ushort bios, ushort *major, ushort *minor, ulong *start, __BPB *bpb, ulong *blocks, char *partid)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (12, bios, major, minor, start, bpb, blocks, partid);
-	if (r < 0)
+	struct args_XHInqDev2
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	bios;
+		ushort	*major;
+		ushort	*minor;
+		ulong	*start;
+		__BPB	*bpb;
+		ulong	*blocks;
+		char	*partid;
 	}
+	args =
+	{
+		12,
+		bios,
+		major,
+		minor,
+		start,
+		bpb,
+		blocks,
+		partid
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHDriverSpecial (ulong key1, ulong key2, ushort subopcode, void *data)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (13, key1, key2, subopcode, data);
-	if (r < 0)
+	struct args_XHDriverSpecial
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ulong	key1;
+		ulong	key2;
+		ushort	subopcode;
+		void 	*data;
 	}
+	args =
+	{
+		13,
+		key1,
+		key2,
+		subopcode,
+		data
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHGetCapacity (ushort major, ushort minor, ulong *blocks, ulong *bs)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (14, major, minor, blocks, bs);
-	if (r < 0)
+	struct args_XHGetCapacity
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ulong	*blocks;
+		ulong	*bs;
 	}
+	args =
+	{
+		14,
+		major,
+		minor,
+		blocks,
+		bs
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHMediumChanged (ushort major, ushort minor)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (15, major, minor);
-	if (r < 0)
+	struct args_XHMediumChanged
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
 	}
+	args =
+	{
+		15,
+		major,
+		minor
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
-XHMiNTInfo (ushort opcode, void *data)
+XHMiNTInfo (ushort op, void *data)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (16, opcode, data);
-	if (r < 0)
+	struct args_XHMiNTInfo
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	op;
+		void	*data;
 	}
+	args =
+	{
+		16,
+		op,
+		data
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHDOSLimits (ushort which, ulong limit)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (17, which, limit);
-	if (r < 0)
+	struct args_XHDOSLimits
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	which;
+		ulong	limit;
 	}
+	args =
+	{
+		17,
+		which,
+		limit
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHLastAccess (ushort major, ushort minor, ulong *ms)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (18, major, minor, ms);
-	if (r < 0)
+	struct args_XHLastAccess
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
+		ulong	*ms;
 	}
+	args =
+	{
+		18,
+		major,
+		minor,
+		ms
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
 
 long
 XHReaccess (ushort major, ushort minor)
 {
-	long oldstack = 0;
-	long r;
-	
-	if (!Super (1L)) oldstack = Super (0L);
-	
-	r = XHDI (19, major, minor);
-	if (r < 0)
+	struct args_XHReaccess
 	{
-		__set_errno (-r);
-		r = -1;
+		ushort	opcode;
+		ushort	major;
+		ushort	minor;
 	}
+	args =
+	{
+		19,
+		major,
+		minor
+	};
 	
-	if (oldstack) Super (oldstack);
-	return r;
+	CALL;
 }
