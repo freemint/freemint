@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -28,24 +28,24 @@ struct nf_ops;
 
 /* kerinfo - kernel interface table
  * --------------------------------
- * 
+ *
  * All functions should be called using the GCC calling conventions:
- * 
+ *
  * (1) parameters are passed on the stack, aligned on 16 bit boundaries
  * (2) registers d0-d2 and a0-a2 are scratch registers and may be modified
  *     by the called functions
  * (3) if the function returns a value, it will be returned in register
  *     d0
- * 
+ *
  * data types:
  * -----------
  * int   is 16bit
- * 
+ *
  * short is 16bit
  * long  is 32bit
- * 
+ *
  * ushort, ulong - unsigned version of short, long
- * 
+ *
  */
 
 struct kerinfo
@@ -54,16 +54,16 @@ struct kerinfo
 	ushort	min_version;	/* minor kernel version number */
 	ushort	default_perm;	/* default file permissions */
 	ushort	version;	/* version number */
-	
-	
+
+
 	/* OS functions
 	 * ------------
 	 * NOTE: these tables are definitely READ ONLY!!!!
 	 */
 	Func	*bios_tab;	/* pointer to the BIOS entry points */
 	Func	*dos_tab;	/* pointer to the GEMDOS entry points */
-	
-	
+
+
 	/* media change vector
 	 * -------------------
 	 * call this if a device driver detects a disk
@@ -71,10 +71,10 @@ struct kerinfo
 	 * device number of the disk that changed.
 	 */
 	void	_cdecl (*drvchng)(ushort);
-	
+
 	/* Debugging stuff
 	 * ---------------
-	 * 
+	 *
 	 * trace - informational messages
 	 * debug - error messages
 	 * alert - really serious errors
@@ -84,19 +84,19 @@ struct kerinfo
 	void	_cdecl (*debug)(const char *, ...);
 	void	_cdecl (*alert)(const char *, ...);
 	EXITING _cdecl (*fatal)(const char *, ...) NORETURN;
-	
-	
+
+
 	/* memory allocation functions
 	 * ---------------------------
-	 * 
+	 *
 	 * kmalloc(size) / kfree (ptr)
-	 * 
+	 *
 	 * kmalloc and kfree should be used for most purposes, and act like
 	 * malloc and free respectively; kmalloc'ed memory is *exclusive*
 	 * kernel memory, supervisor proteced
-	 * 
+	 *
 	 * umalloc(size) / ufree (ptr)
-	 * 
+	 *
 	 * umalloc and ufree may be used to allocate/free memory that is
 	 * attached to the current process, and which is freed automatically
 	 * when the process exits; this is generally not of much use to a file
@@ -106,13 +106,13 @@ struct kerinfo
 	void	_cdecl (*kfree)(void *);
 	void *	_cdecl (*umalloc)(ulong);
 	void	_cdecl (*ufree)(void *);
-	
-	
+
+
 	/* utility functions for string manipulation
 	 * -----------------------------------------
-	 * 
+	 *
 	 * like the normal library functions
-	 * 
+	 *
 	 * sprintf:
 	 * --------
 	 * kernel sprintf, like library sprintf but not so heavy; floating
@@ -125,51 +125,51 @@ struct kerinfo
 	char *	_cdecl (*kstrlwr)(char *);
 	char *	_cdecl (*kstrupr)(char *);
 	int	_cdecl (*ksprintf)(char *, const char *, ...);
-	
-	
+
+
 	/* utility functions for manipulating time
 	 * ---------------------------------------
-	 * 
+	 *
 	 * millis_time(ms, timeptr)
-	 * 
+	 *
 	 * convert "ms" milliseconds into a DOS time (in td[0]) and date
 	 * (in td[1]) convert a DOS style time and date into a Unix style
 	 * time; returns the Unix time
-	 * 
+	 *
 	 * unixtime(time, date)
-	 * 
+	 *
 	 * convert a DOS style time and date into a Unix style time; returns
 	 * the Unix time
-	 * 
+	 *
 	 * dostime(time)
-	 * 
+	 *
 	 * convert a Unix time into a DOS time (in the high word of the
 	 * returned value) and date (in the low word)
 	 */
 	void	_cdecl (*millis_time)(ulong, short *);
 	long	_cdecl (*unixtime)(ushort, ushort);
 	long	_cdecl (*dostime)(long);
-	
-	
+
+
 	/* utility functions for dealing with pauses and sleep
 	 * ---------------------------------------------------
-	 * 
+	 *
 	 * nap(n)
-	 * 
+	 *
 	 * go to sleep temporarily for about "n" milliseconds
 	 * (the exact time slept may vary)
-	 * 
+	 *
 	 * sleep(que, cond)
-	 * 
+	 *
 	 * wait on system queue "que" until a condition occurs
-	 * 
+	 *
 	 * wake(que, cond)
-	 * 
+	 *
 	 * wake all processes on queue "que" that are waiting for
 	 * condition "cond"
-	 * 
+	 *
 	 * wakeselect(p)
-	 * 
+	 *
 	 * wake a process that is doing a select(); "param" should be the
 	 * process code passed to select()
 	 */
@@ -177,20 +177,20 @@ struct kerinfo
 	int	_cdecl (*sleep)(int que, long cond);
 	void	_cdecl (*wake)(int que, long cond);
 	void	_cdecl (*wakeselect)(long param);
-	
-	
+
+
 	/* file system utility functions
 	 * -----------------------------
-	 * 
+	 *
 	 * denyshare(list, f)
-	 * 
+	 *
 	 * "list" is a list of open files, "f" is a new file that is being
 	 * opened.
 	 * If the file sharing mode of f conflicts with any of the FILEPTRs
 	 * in the list, then this returns 1, otherwise 0.
-	 * 
+	 *
 	 * denylock(list, newlock)
-	 * 
+	 *
 	 * checks a list of locks to see if the new lock conflicts with any
 	 * one in the list. If so, the first conflicting lock is returned;
 	 * otherwise, a NULL is returned.
@@ -199,13 +199,13 @@ struct kerinfo
 	 */
 	int	_cdecl (*denyshare)(FILEPTR *, FILEPTR *);
 	LOCK *	_cdecl (*denylock)(LOCK *, LOCK *);
-	
-	
+
+
 	/* functions for adding/cancelling timeouts
 	 * ----------------------------------------
-	 * 
+	 *
 	 * addtimeout(delta, func)
-	 * 
+	 *
 	 * schedules a callback to occur at some future time "delta" is the
 	 * number of milliseconds before the timeout is to occur, and func is
 	 * a pointer to the function which should be called at that time. Note
@@ -220,16 +220,16 @@ struct kerinfo
 	 * the canceltimeout() function to cancel the pending time out.
 	 * This function is only available in MiNT versions 1.06 and later;
 	 * otherwise the pointer will be NULL.
-	 * 
+	 *
 	 * canceltimeout(which)
-	 * 
+	 *
 	 * cancels a pending timeout. The parameter is the "magic cookie"
 	 * returned from addtimeout(). If the timeout has already occured,
 	 * canceltimeout does nothing, otherwise it removes the timeout from the
 	 * kernel's schedule.
-	 * 
+	 *
 	 * addroottimeout(delta, func, flags)
-	 * 
+	 *
 	 * same as addtimeout() but the timeout is attached to the root
 	 * process (MiNT) and is never implicitly (programm termination)
 	 * canceled
@@ -238,53 +238,53 @@ struct kerinfo
 	 *         handler and use a static list for new timeouts
 	 *         Useful for Softinterrupts!
 	 *       - all other bits must be set to 0
-	 * 
+	 *
 	 * cancelroottimeout(which)
-	 * 
+	 *
 	 * same as canceltimeout() but for root timeouts
 	 */
 	TIMEOUT * _cdecl (*addtimeout)(long, void _cdecl (*)());
 	void	_cdecl (*canceltimeout)(TIMEOUT *);
 	TIMEOUT * _cdecl (*addroottimeout)(long, void _cdecl (*)(), ushort);
 	void	_cdecl (*cancelroottimeout)(TIMEOUT *);
-	
-	
+
+
 	/* miscellaneous other things
 	 * --------------------------
-	 * 
+	 *
 	 * interrupt safe kill and wake
-	 * 
+	 *
 	 * ikill(p, sig)
 	 * iwake(que, cond, pid)
 	 */
 	long	_cdecl (*ikill)(int, ushort);
 	void	_cdecl (*iwake)(int, long, short);
-	
+
 	/* 1.15 extensions */
 	BIO	*bio;		/* buffered block I/O, see block_IO.doc */
-	
+
 	/* version 1 extension */
 	TIMEVAL	*xtime;		/* pointer to current kernel time - UTC */
-	
+
 	long	res;
-	
+
 	/* version 2 extension
 	 * pointers are valid if != NULL
 	 */
-	
+
 	long	_cdecl (*add_rsvfentry)(char *, char, char);
 	long	_cdecl (*del_rsvfentry)(char *);
 	long	_cdecl (*killgroup)(int, ushort, int);
-	
+
 	/* easy to use DMA interface, see dma.c for more details */
 	DMA	*dma;
-	
+
 	/* for udelay timing loop */
 	ulong	*loops_per_sec;
-	
+
 	/* lookup cookies in original TOS cookiejar */
 	long	_cdecl (*get_toscookie)(ulong tag, ulong *val);
-	
+
 	/* XXX temporary until new kernel interface */
 	void	_cdecl (*so_register)(short, struct dom_ops *);
 	void	_cdecl (*so_unregister)(short);
@@ -295,25 +295,29 @@ struct kerinfo
 	long	_cdecl (*so_create)(struct socket **, short, short, short);
 	long	_cdecl (*so_dup)(struct socket **, struct socket *);
 	void	_cdecl (*so_free)(struct socket *);
-	
+
 	/* load safely additional modules */
 	void	_cdecl (*load_modules)(const char *extension, long (*loader)(struct basepage *, const char *));
-	
+
 	/* fork/leave a kernel thread */
 	long	_cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
 	void	_cdecl (*kthread_exit)(short code);
-	
+
 	/* allocate DMA buffer (from ST-RAM with cache mode set to cmode
 	 */
 	void *	_cdecl (*dmabuf_alloc)(ulong size, short cmode);
-	
+
 	/* nf operation vector if available
 	 * on this machine; NULL otherwise
 	 */
 	struct nf_ops *nf_ops;
-	
+
+	/* return the number of milliseconds remaining to preemption time.
+	 */
+	ulong	_cdecl	(*remaining_proc_time)(void);
+
 	/* reserved, set to 0 */
-	long	res2 [2];
+	long	res2 [1];
 };
 
 
