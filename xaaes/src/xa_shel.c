@@ -507,11 +507,22 @@ XA_shell_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	DIAG((D_shel, NULL, "shel_write(0x%x,%d,%d) for %s\n",
 		pb->intin[0], wisgr, wiscr, client->name));
 
+	/* Ozk: I had loads of problems with small applications freezing
+	 *	my Hades. Reason turned out to be that small apps might
+	 *	terminate before the the parent code after Pvfork() call
+	 *	ran, which means the parent accessed a XA_CLIENT already
+	 *	freed by the SigCHLD handler. So we just block SIGCHLD here
+	 *	and wait with releasing it until we've done our work on it.
+	*/
 	if ((pb->intin[0] & 0xff) < 4)
 	{
 		int child_id;
+		long oldsigmask;
 
 		Sema_Up(envstr);
+
+		oldsigmask = Psigblock(1UL << SIGCHLD);		/* Ozk: Very, very necessary on fast machines
+								 *	when running small programs! */
 
 		child_id = launch(lock|envstr,
 				  pb->intin[0],
@@ -541,6 +552,10 @@ XA_shell_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			}
 		}
 
+		Psigsetmask(oldsigmask);			/* Ozk: Now we can unblock sigchld.
+								 *	The XA_CLIENT will now be destroyed
+								 *	if the child already terminated or
+								 *	died. */
 		Sema_Dn(envstr);
 	}
 	else
