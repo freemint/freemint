@@ -525,7 +525,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				{
 					ide(rstr);
 					if (strncmp(rstr, "task", 4) == 0)
-						open_taskmanager(lock, false);
+						open_taskmanager(lock);
 				}
 				else if (co == 2)
 				{

@@ -106,8 +106,8 @@ refresh_tasklist(LOCK lock)
 	}
 
 	list->slider(list);
-	if (counter==1 && C.shutdown) 
-		C.shutdown|=4;
+	if ( counter==1 && C.shutdown)  /* now all programs are quitted */
+		C.shutdown |= QUIT_XAAES;
 
 	Sema_Dn(clients);
 }
@@ -211,17 +211,17 @@ handle_taskmanager(LOCK lock, struct widget_tree *wt)
 			break;
 		case TM_QUIT:
 			deselect(wt->tree, TM_QUIT);
-			C.shutdown = 4;  /* quit now */
+			C.shutdown = QUIT_XAAES;  /* quit now */
 			break;
 		case TM_HALT:
 			deselect(wt->tree, TM_HALT);
 			shutdown(lock);
-			C.shutdown |= 8;
+			C.shutdown |= HALT_SYSTEM;
 			refresh_tasklist(lock);
 			break;
 		case TM_REBOOT:
 			deselect(wt->tree, TM_REBOOT);
-			C.shutdown |= 16;
+			C.shutdown |= REBOOT_SYSTEM;
 			shutdown(lock);
 			refresh_tasklist(lock);
 			break;
@@ -231,16 +231,18 @@ handle_taskmanager(LOCK lock, struct widget_tree *wt)
 }
 
 void
-open_taskmanager(LOCK lock, int shutdown)
+open_taskmanager(LOCK lock)
 {
 	XA_WINDOW *dialog_window;
 	XA_TREE *wt;
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	static RECT remember = { 0,0,0,0 };
 
-/*	if (shutdown) */
+
+/*	i don´t see the use for this...
+	if (shutdown) 
 		form[TM_QUIT].ob_flags &= ~HIDETREE;
-/*	else
+	else
 		form[TM_QUIT].ob_flags |=  HIDETREE;
 */
 
@@ -459,11 +461,11 @@ do_system_menu(LOCK lock, int clicked_title, int menu_item)
 			shutdown(lock);
 			break;
 		case SYS_MN_QUIT: /* Quit XaAES */
-			C.shutdown = 4;
+			C.shutdown = QUIT_XAAES;
 			break;
 		
 		case SYS_MN_TASKMNG: /* Open the "Task Manager" window */
-			open_taskmanager(lock, false);
+			open_taskmanager(lock);
 			break;
 		case SYS_MN_SALERT: /* Open system alerts log window */
 			open_systemalerts(lock);
@@ -527,7 +529,7 @@ shutdown(LOCK lock)
 
 	lock |= clients;
 
-	open_taskmanager(lock, true);
+	open_taskmanager(lock);
 
 	client = S.client_list;
 	while (client)

@@ -251,7 +251,7 @@ send_a_message(LOCK lock, short dest, union msg_buf *msg)
 		return;
 
 	/* XaAES has left its main loop, so no point queuing messages. */
-	if (C.shutdown & 4)
+	if (C.shutdown & QUIT_XAAES)
 		return;
 
 	Sema_Up(clients);

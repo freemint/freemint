@@ -376,7 +376,7 @@ kernel_key(LOCK lock, KEY *key)
 			recover();
 			return true;
 		case 'L':						/* open the task manager */
-			open_taskmanager(lock, false);
+			open_taskmanager(lock);
 			return true;
 		case 'K':						/* tidy up after any clients that have died without calling appl_exit() */
 			find_dead_clients(lock);
@@ -548,7 +548,7 @@ XaAES(void)
 		DIAG((D_kern, NULL,">>Fselect(t%d) :: %d, channels: 0x%08lx, U%dM%d\n",
 			C.active_timeout.timeout, fs_rtn, input_channels, S.update_lock, S.mouse_lock));
 
-		if (C.shutdown & 4)
+		if (C.shutdown & QUIT_XAAES)
 			break;
 
 		/* get_mouse(0); */
@@ -945,7 +945,7 @@ cont:
 			}
 		}
 	}
-	while ( !(C.shutdown & 4) );
+	while ( !(C.shutdown & QUIT_XAAES) );
 
 	DIAGS(("**** Leave kernel for shutdown\n"));
 }
