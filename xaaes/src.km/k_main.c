@@ -109,6 +109,8 @@ post_cevent(struct xa_client *client,
 		c = kmalloc(sizeof(*c));
 		if (c)
 		{
+			struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+
 			c->next		= NULL;
 			c->funct	= func;
 			c->client	= client;
@@ -122,21 +124,29 @@ post_cevent(struct xa_client *client,
 			if (md)
 				c->md = *md;
 
-			if (!client->cevnt_head)
+			if (rc == client)
 			{
-				client->cevnt_head = c;
-				client->cevnt_tail = c;
+				(*func)(0, c, false);
+				kfree(c);
 			}
 			else
 			{
-				client->cevnt_tail->next = c;
-				client->cevnt_tail = c;
-			}
-			client->cevnt_count++;
+				if (!client->cevnt_head)
+				{
+					client->cevnt_head = c;
+					client->cevnt_tail = c;
+				}
+				else
+				{
+					client->cevnt_tail->next = c;
+					client->cevnt_tail = c;
+				}
+				client->cevnt_count++;
 
-			DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
-				c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
-				client->name));
+				DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
+					c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
+					client->name));
+			}
 		}
 		else
 		{

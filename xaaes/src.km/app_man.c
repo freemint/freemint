@@ -223,9 +223,9 @@ recover(void)
 void
 swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind, int which)
 {
-	//struct xa_window *top = NULL;
-	//struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-	//XA_WIDGET *widg = get_menu_widg();
+	struct xa_window *top = NULL;
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+	XA_WIDGET *widg = get_menu_widg();
 
 	DIAG((D_appl, NULL, "[%d]swap_menu", which));
 
@@ -234,8 +234,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 	{
 	
 		DIAG((D_appl, NULL, "  --   to %s", c_owner(new)));
-		set_rootmenu(new, do_topwind);
-#if 0
+		
 		/* menu widget.tree */
 		if (new->std_menu != widg->stuff) /* Different menu? */
 		{
@@ -260,6 +259,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 			widg->stuff = wt = new->std_menu;
 			wt->flags |= WTF_STATIC;
 			wt->widg = widg;
+			set_rootmenu_area(new);
 			unlock_menustruct(rc);
 			new->status &= ~CS_WAIT_MENU;
 
@@ -275,7 +275,6 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 						send_ontop(lock);
 				
 					send_iredraw(lock, top, 0, NULL);
-					//display_window(lock, 110, top, NULL);
 				}
 			}
 		}
@@ -283,7 +282,6 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 		{
 			DIAG((D_appl, NULL, "Same menu %s", c_owner(new)));
 		}
-#endif
 	}
 
 	/* Change desktops? */
@@ -294,17 +292,14 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind,
 	{
 		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
 		set_desktop(new->desktop);
-		//redraw_menu(lock);
+		redraw_menu(lock);
 	}
-#if 0
 	else if (new->std_menu)
 	{
 		/* No - just change menu bar */
 		DIAG((D_appl, NULL, "redrawing menu..."));
-		set_rootmenu(new->desktop);
 		redraw_menu(lock);
 	}
-#endif
 	DIAG((D_appl, NULL, "exit ok"));
 }
 

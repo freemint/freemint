@@ -178,6 +178,17 @@ cancel_widget_active(struct xa_window *wind, int i)
 	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, false);
 }
 
+void
+remove_widget_active(struct xa_client *client)
+{
+	if (widget_active.wind->owner == client)
+	{
+		widget_active.widg = NULL;
+		widget_active.cont = false;
+		C.do_widget_repeat_client = NULL;
+	}
+}
+
 
 #ifndef __GNUC__
 /* check slider value */
@@ -1783,15 +1794,15 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
  *            double click on an arrow sends WM_xSLIDE with the apropriate limit.
  */
 
-static struct xa_client *do_widget_repeat_client = NULL;
-static enum locks do_widget_repeat_lock;
+//static struct xa_client *do_widget_repeat_client = NULL;
+//static enum locks do_widget_repeat_lock;
 
 void
 do_widget_repeat(void)
 {
-	if (do_widget_repeat_client)
+	if (C.do_widget_repeat_client)
 	{
-		do_active_widget(do_widget_repeat_lock, do_widget_repeat_client);
+		do_active_widget(C.do_widget_repeat_lock, C.do_widget_repeat_client);
 
 		/*
 		 * Ozk: The action functions clear the active widget by clearing the 
@@ -1801,7 +1812,7 @@ do_widget_repeat(void)
 		if (!widget_active.widg)
 		{
 			aessys_timeout = 0;
-			do_widget_repeat_client = NULL;
+			C.do_widget_repeat_client = NULL;
 		}
 	}
 }
@@ -1809,11 +1820,11 @@ do_widget_repeat(void)
 static void
 set_widget_repeat(enum locks lock, struct xa_window *wind)
 {
-	if (!do_widget_repeat_client)
+	if (!C.do_widget_repeat_client)
 	{
 		aessys_timeout = 1;
-		do_widget_repeat_client = wind->owner;
-		do_widget_repeat_lock = lock;
+		C.do_widget_repeat_client = wind->owner;
+		C.do_widget_repeat_lock = lock;
 
 		/* wakup wakeselect */
 		wakeselect(C.Aes->p);
