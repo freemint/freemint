@@ -73,8 +73,8 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				   client->options.thinframe,
 				   client->options.thinwork,
 				   r,
-				   &r,
-				   0);	
+				   &root_window.wa, //&r,
+				   NULL);	
 
 	if (new_window)
 		/* Return the window handle in intout[0] */
@@ -93,7 +93,7 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	const RECT r = *((const RECT *)&pb->intin[1]);
 	struct xa_window *w;
 
-	CONTROL(5,1,0)	
+	CONTROL(5,1,0)
 
 	/* Get the window */
 	w = get_wind_by_handle(lock, pb->intin[0]);
@@ -848,7 +848,15 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(w->window_status & XAWS_ICONIFIED))
 			pb->intout[0] = 0;
 		else
-			uniconify_window(lock, w, (RECT *)&w->ro);
+		{
+			RECT in;
+			if (pb->intin[4] == -1 || pb->intin[5] == -1 || !pb->intin[4] || !pb->intin[5])
+				in = w->ro;
+			else
+				in = *((const RECT *)(pb->intin+2));
+			
+			uniconify_window(lock, w, &in);
+		}
 		break;
 	}
 

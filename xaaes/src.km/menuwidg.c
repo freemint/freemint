@@ -1174,8 +1174,11 @@ popup(struct task_administration_block *tab)
 			new = nest_menutask(tab);
 			do_popup(new, new_wt, at->item, click, rdx, rdy);
 
+			menu_area(&k->em.m2, tab, m, k->pdx, k->pdy);
+			k->em.flags = MU_M2|1;
+			k->em.t2 = where_are_we;
 		}
-
+		else
 		{
 			RECT r;
 
