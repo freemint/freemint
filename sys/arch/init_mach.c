@@ -383,7 +383,7 @@ identify (enum special_hw info)
 				: "d0"
 			);
 			
-			ksprintf (buf, sizeof (buf), "68%s060 rev.%d",
+			ksprintf (buf, sizeof (buf), "68%s060 rev.%ld",
 					pcr & 0x10000 ? "LC/EC" : "",
 					(pcr >> 8) & 0xff);
 			
