@@ -837,18 +837,12 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 	else if (firstline >= t->maxy) 
 		firstline = t->maxy - 1;
 
-	lastline = 1 + firstline + (hc + t->cheight - 1) / t->cheight;
+	lastline = firstline + hc / t->cheight;
 
-	/* The following if-clause preventd from drawing beyond
-	   the lower limit of the window.  */
-	if (lastline * t->cheight > t->offy + hc - t->cheight)
-		lastline = (t->offy + hc - t->cheight) / t->cheight;
-	/* And this one from forgetting the last line if it is partly
-	   covered by another object.  */
-	if (xc != t->win->work.g_x || yc == t->win->work.g_y ||
-	    wc == t->win->work.g_w || hc == t->win->work.g_h)
-		++lastline;
-	/* And this one from crashes.  */
+	if (xc != t->win->work.g_x || yc != t->win->work.g_y ||
+	    wc != t->win->work.g_w || hc != t->win->work.g_h)
+		lastline += 2;
+		
 	if (lastline > t->maxy) 
 		lastline = t->maxy;
 
