@@ -589,7 +589,16 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			char *defdir = kmalloc(strlen(x_shell.defdir) + 1);
 
 			DIAGS((" -- addonprocwakeup(post_x_mode_defdir)"));
-			addonprocwakeup(p, post_x_mode_defdir, defdir);
+
+			if (defdir)
+			{
+				strcpy(defdir, x_shell.defdir);
+				addonprocwakeup(p, post_x_mode_defdir, defdir);
+			}
+			else
+				/* ignore this here */
+				DIAGS(("    -- out of memory"));
+				
 		}
 
 		if (x_mode & SW_UID)
@@ -661,12 +670,12 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 #if GENERATE_DIAGS
 	if (client)
 	{
-		DIAG((D_shel, NULL, "shel_write(0x%d,%d,%d) for %s",
+		DIAG((D_shel, NULL, "shel_write(0x%x,%d,%d) for %s",
 			wdoex, wisgr, wiscr, client->name));
 	}
 	else
 	{
-		DIAG((D_shel, NULL, "shel_write(0x%d,%d,%d) for non AES process (pid %ld)",
+		DIAG((D_shel, NULL, "shel_write(0x%x,%d,%d) for non AES process (pid %ld)",
 			wdoex, wisgr, wiscr, p_getpid()));
 	}
 #endif	
