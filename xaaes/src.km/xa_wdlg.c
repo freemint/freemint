@@ -866,7 +866,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				if (ev->mwhich & MU_MESAG)
 				{
-					if ((ret = wdlg_mesag(lock, wind, wt, ev)))
+					if ((ret = wdlg_mesag(lock, wind, wt, ev)) > 0)
 						ev->mwhich &= ~MU_MESAG;
 				}
 
