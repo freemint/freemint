@@ -76,7 +76,7 @@ struct timeval;
  * -----------------------------------------------------------------
  * 
  * (1) parameters are passed on the stack, aligned on 16 bit boundaries
- * (2) registers d0-d2 and a0-a2 are scratch registers and may be modified
+ * (2) registers d0-d1 and a0-a1 are scratch registers and may be modified
  *     by the called functions
  * (3) if the function returns a value, it will be returned in register
  *     d0
