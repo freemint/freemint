@@ -3,4 +3,4 @@
 .PHONY: clean clean-recursive dist distclean distclean-recursive \
 bakclean bakclean-recursive bin-dist distdir bindistdir default \
 all all-here all-recursive install install-recursive \
-uninstall uninstall-recursive help
+uninstall uninstall-recursive help strip strip-recursive
