@@ -52,6 +52,7 @@
 #include "objects.h"
 #include "rectlist.h"
 #include "scrlobjc.h"
+#include "semaphores.h"
 #include "signals.h"
 #include "taskman.h"
 #include "widgets.h"
@@ -174,10 +175,6 @@ bootmessage(unsigned long mint)
 
 #if ALT_CTRL_APP_OPS
 	fdisplay(loghandle, true, " - CTRL+ALT key-combo's\n");
-#endif
-
-#if USE_CALL_DIRECT
-	fdisplay(loghandle, true, " - Use direct-call\n");
 #endif
 
 #if MEMORY_PROTECTION
@@ -411,39 +408,21 @@ cleanup(void)
 		Fclose(C.Salert_pipe);
 
 	/* Remove semaphores: */
-DIAGS(("Deleting semaphores\n"));
-	Psemaphore(1, APPL_INIT_SEMA, 0);
-//	Psemaphore(1, TRAP_HANDLER_SEMA, 0);
-	Psemaphore(1, ROOT_SEMA, 0);
-	Psemaphore(1, CLIENTS_SEMA, 0);
-	Psemaphore(1, UPDATE_LOCK, 0);
-	Psemaphore(1, MOUSE_LOCK, 0);
-	Psemaphore(1, FSELECT_SEMA, 0);
+	destroy_semaphores(loghandle);
 
-	Psemaphore(1, ENV_SEMA, 0);
-	Psemaphore(1, PENDING_SEMA, 0);
-
-DIAGS(("Bye!\n"));
-DIAGS(("\n"));
-DIAGS(("\n"));
-DIAGS(("\n"));
-DIAGS(("\n"));
-DIAGS(("\n"));
-
-	/* Close the debug output file */
+	DIAGS(("Bye!\n"));
+	DIAGS(("\n"));
 
 #if GENERATE_DIAGS
+	/* Close the debug output file */
 	if (D.debug_file > 0)
-	{
 		Fclose(D.debug_file);
-	}
 #endif
 
 	t_color(BLACK);
 	wr_mode(MD_REPLACE);
 
 	/* Shut down the VDI */
-
 	v_clrwk(C.vh);
 
 	if (cfg.auto_program)
@@ -888,20 +867,8 @@ BTRACE(22);
 BTRACE(23);
 
 	/* Create a whole wodge of semphores */
-
-	DIAGS(("Creating Semaphores\n"));
-
-	Psemaphore(0, APPL_INIT_SEMA, 0);
-/*	Psemaphore(0, TRAP_HANDLER_SEMA, 0); */
-	Psemaphore(0, WIN_LIST_SEMA, 0);
-	Psemaphore(0, ROOT_SEMA, 0);
-	Psemaphore(0, CLIENTS_SEMA, 0);
-	Psemaphore(0, UPDATE_LOCK, 0);
-	Psemaphore(0, MOUSE_LOCK, 0);
-	Psemaphore(0, FSELECT_SEMA, 0);
-
-	Psemaphore(0, ENV_SEMA, 0);
-	Psemaphore(0, PENDING_SEMA, 0);
+	if (create_semaphores(loghandle))
+		return 1;
 
 BTRACE(24);
 	lcfg.mint = Ssystem(S_OSVERSION, 0, 0);
@@ -1311,9 +1278,10 @@ BTRACE(53);
 	/* I just like to have the unlocks at the same level as the locks. */
 
 	/* Unlock the semaphores...we're ready to go */
-
-/*	Sema_Dn(trap);
-*/	Sema_Dn(desk);
+#if 0
+	Sema_Dn(trap);
+#endif
+	Sema_Dn(desk);
 	Sema_Dn(update);
 	Sema_Dn(mouse);
 	Sema_Dn(fsel);
@@ -1321,14 +1289,14 @@ BTRACE(53);
 	Sema_Dn(envstr);
 	Sema_Dn(pending);
 
-
 	Sema_Dn(clients);
 	Sema_Dn(appl);
 
 	DIAGS(("Semaphores Unlocked!!!\n"));
 
 	fdisplay(loghandle, false, "*** End of successfull setup ***\n");
-	Fclose(loghandle);
+	// don't close the log handle, useful for debugging
+	// Fclose(loghandle);
 
 	lcfg.booting = false;
 
