@@ -146,7 +146,7 @@ sock_read (FILEPTR *f, char *buf, long buflen)
 static long
 sock_lseek (FILEPTR *f, long where, int whence)
 {
-	return EACCES;
+	return ESPIPE;
 }
 
 static long
