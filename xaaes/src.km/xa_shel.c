@@ -1205,6 +1205,23 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+static struct xa_client *
+lookup_proc_name(const char *name)
+{
+	struct xa_client *client;
+
+	client = S.client_list;
+	while (client)
+	{
+		if (stricmp(name, client->proc_name) == 0)
+			break;
+
+		client = client->next;
+	}
+
+	return client;
+}
+
 unsigned long
 XA_shel_help(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1296,9 +1313,17 @@ XA_shel_help(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (help)
 		{
-			// check if helpserver is running
-			// if not running start helpserver, argv with sh_hfile/sh_hkey
-			// if running send VA_START with sh_hfile/sh_hkey
+			struct xa_client *server;
+
+			server = lookup_proc_name(help->name);
+			if (server)
+			{
+				// if running send VA_START with sh_hfile/sh_hkey
+			}
+			else if (help->path)
+			{
+				// if not running start helpserver, argv with sh_hfile/sh_hkey
+			}
 		}
 		else
 		{
