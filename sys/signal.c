@@ -421,10 +421,10 @@ _default:
 			 * by a signal.  Used by Pwaitpid.
 			 */
 			curproc->signaled = 1;
-# ifdef EXCEPTION_SIGS
+
 			/* tell the user what happened */
 			bombs (sig);
-# endif
+
 			/* the "p_sigmask" check is in case a bus error happens
 			 * in the user's term_vec code; we don't want to get
 			 * stuck in an infinite loop!

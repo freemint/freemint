@@ -37,11 +37,6 @@
 # define _mint_config_h
 
 /*
- * make real processor exceptions (bus error, etc.) raise a signal
- */
-# define EXCEPTION_SIGS
-
-/*
  * Fcreate() on pipes should not fail
  */
 # define CREATE_PIPES
