@@ -589,12 +589,12 @@ XA_handler(void *_pb)
 #if GENERATE_DIAGS
 			if (client)
 			{
-				DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
+				DIAG((D_trap, client, " %s[%d] returned %ld for %s",
 					aes_tab[cmd].descr, cmd, cmd_rtn, client->name));
 			}
 			else
 			{
-				DIAG((D_trap, client, " %s[%d] retuned %ld for non AES process (pid %ld)",
+				DIAG((D_trap, client, " %s[%d] returned %ld for non AES process (pid %ld)",
 					aes_tab[cmd].descr, cmd, cmd_rtn, p_getpid()));
 			}
 #endif
