@@ -23,6 +23,7 @@
 # include "mint/stat.h"
 
 # include "dev-null.h"
+# include "kerinfo.h"
 # include "kmemory.h"
 # include "memory.h"
 # include "nullfs.h"
