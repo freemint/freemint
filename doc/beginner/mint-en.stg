@@ -54,6 +54,8 @@
 
                      INIT=
 
+                     KBD_AT_CAPS=
+
                      KERN_BIOSBUF=
                      KERN_DEBUG_DEVNO=
                      KERN_DEBUG_LEVEL=
@@ -533,6 +535,8 @@ The mint.cnf control variables
           TPA_FASTLOAD=              FASTLOAD=
           TPA_INITIALMEM=            INITIALMEM=
 
+          KBD_AT_CAPS=               (none)
+
 Here is a mint.cnf example. You find the same file in the directory
 freemint/doc/examples/ in the FreeMiNT source distribution.
 
@@ -796,29 +800,36 @@ With 'KERN_SECURITY_LEVEL=0' all these limitations are disabled.
 
 @endnode
 
-
-@node "TPA_FASTLOAD="
-@alias "FDC_HIDE_B="
-@alias "FS_NEWFATFS="
-@alias "FS_VFAT="
-@alias "FS_VFAT_LCASE="
-@alias "FS_WRITE_PROTECT="
+@node "FDC_HIDE_B="
+@alias "KBD_AT_CAPS="
 @toc "The mint.cnf file"
 
 @line 1 70 0
-
-@{B}TPA_FASTLOAD=no@{b} or
-@{B}TPA_FASTLOAD=yes@{b}
-With 'TPA_FASTLOAD=yes' the real state of the 'fastload' bit in the
-program header is ignored and all programs are loaded like it was
-always set. With 'TPA_FASTLOAD=no' this bit is interpreted the same
-way as under TOS. The default is 'no'.
 
 @{B}FDC_HIDE_B=no@{b} or
 @{B}FDC_HIDE_B=yes@{b}
 This 'hides' (removes from the list of valid system drives) the
 floppy disk B:. Of course, this is only useful on systems, where
 the floppy B: is not present physically. The default is 'no'.
+
+@{B}KBD_AT_CAPS=no@{b} or
+@{B}KBD_AT_CAPS=yes@{b}
+When this is set to "YES", the CapsLock and Shift keys operate as on
+PC/AT keyboard, i.e. the Shift key reverses the state of the Caps:
+holding shift produces upper case letters, unless the Caps is
+active.
+
+@line 1 70 0
+
+@endnode
+
+@node "FS_NEWFATFS="
+@alias "FS_VFAT="
+@alias "FS_VFAT_LCASE="
+@alias "FS_WRITE_PROTECT="
+@toc "The mint.cnf file"
+
+@line 1 70 0
 
 @{B}FS_NEWFATFS=drive,drive,drive,...@{b}
 Specifies the list of drives (hard disk partitions and floppies)
@@ -945,9 +956,17 @@ consistency of the data on your harddisk.
 
 @node "PROC_MAXMEM="
 @alias "TPA_INITIALMEM="
+@alias "TPA_FASTLOAD="
 @toc "The mint.cnf file"
 
 @line 1 70 0
+
+@{B}TPA_FASTLOAD=no@{b} or
+@{B}TPA_FASTLOAD=yes@{b}
+With 'TPA_FASTLOAD=yes' the real state of the 'fastload' bit in the
+program header is ignored and all programs are loaded like it was
+always set. With 'TPA_FASTLOAD=no' this bit is interpreted the same
+way as under TOS. The default is 'no'.
 
 @{B}TPA_INITIALMEM=x@{b}
 This specifies the maximum amount of memory allocated for program's
@@ -1047,26 +1066,36 @@ will silently change this to 1.
 
 @node "mint.cnf example"
 @toc "The mint.cnf file"
-
+@autorefoff
 @line 1 70 0
 
-# MiNT configuration file.
+# ---------------- FreeMiNT configuration file ---------------------
 #
 # The mint.cnf file is loaded, when the entire system is practically
 # up, all device drivers and filesystem drivers have been loaded etc.
 # If you want to control earlier settings, see mint.ini file.
 #
-
 # Edit this with a normal ASCII text editor. Lines starting with '#'
 # are comments. Other lines are commands for MiNT to execute at boot
 # up, or variables that control how MiNT behaves.
 
-# For best results, the convention u:/drive/pathname should be used
-# for all specified pathnames.
+# NOTICE: as of FreeMiNT 1.16.0, the format of most keywords has
+#         changed. Old keywords are still supported, however, you
+#         cannot use this configuration file for older versions
+#         of MiNT!
+
+# The term `sysdir' we use here is short for `system directory' and
+# means the directory, where you keep your mint.cnf file, your
+# modules (XFS and XDD files) and other such system binaries. The
+# sysdir value is usually u:/c/mint.
+#
+# For clarity, it is assumed all over this example file, that your
+# boot drive is C:, and, if you have installed SpareMiNT distribution,
+# that your SpareMiNT drive is E:. Note, that if you have installed
+# SpareMiNT, you can refer to your sysdir as u:/boot/mint/
 
 #
-# Here are things you can change if you want to. There are
-# reasonable defaults for all of these.
+# -------------------- ACTUAL CONFIGURATION -----------------------
 #
 
 # Set current working directory to u: respective /
@@ -1075,7 +1104,14 @@ will silently change this to 1.
 # on previous versions (also on 1.16 alphas compiled before second
 # half of July 2004).
 
-cd u:/
+#cd u:/
+
+#
+# ------------------ mint.cnf parser commands ---------------------
+#
+
+# The '#' sign at the begin of the line means that a comment follows.
+# The entire line after the '#' sign will be ignored by the parser.
 
 # The "set" directive controls the behaviour of the mint.cnf parser.
 # It accepts one of three parameters:
@@ -1084,45 +1120,67 @@ cd u:/
 #set -v - print command lines (+v don't)
 #set -c - control interpretation of escape sequences
 
+#set -q
+
+# The include command allows you to include other files while the
+# mint.cnf file is being interpreted. The included file will be
+# interpreted as a part of the mint.cnf file.
+
+#include u:/c/mint/vars.cnf
+
+# More commands follow.
+
+#
+# ---------------------- Kernel settings --------------------------
+#
+
+#
+# Here are things you can change if you want to. There are reasonable
+# defaults for all of these.
+#
+
 # KERN_SLICES controls how long a process may run before being
-# interrupted.
+# interrupted. The number means an amount of 20 ms time intervals.
 #
 # The default value (2) is usually best, but if you tend to run
 # very processor intensive applications in the foreground, you might
-# want to put SLICES=3 (this makes CPU hogs get more time than they
-# otherwise would).
+# want to put KERN_SLICES=3 (this makes CPU hogs get more time than
+# they otherwise would).
 #
-# The smaller the SLICES value, your processes have faster response
-# time but the general performance is worse.
+# The smaller the KERN_SLICES value, your processes have faster
+# response time but the general performance is worse. Very fast
+# machines however, may benefit from setting 1 here.
 
-KERN_SLICES=2
+#KERN_SLICES=2
 
 # KERN_DEBUG_LEVEL controls output of global debugging information.
 # The higher the level, the more stuff MiNT will spew about about
 # what it's doing.
 #
 # The average user doesn't want to hear about this stuff, so the
-# default is 1, i.e. display ALERT messages only.
+# default is 1, i.e. display ALERT messages only. Note that you need
+# a debug kernel to get more: normal kernels do not contain so much
+# debug information.
 #
-# KERN_DEBUG_DEVNO is the BIOS device number to which the info should
-# be sent.
+# KERN_DEBUG_DEVNO is the BIOS device number to which the info
+# should be sent.
 #
-# Devno can be: 0=printer, 1=aux/modem, 2=screen(console), 3=midi,
+# Devno can be: 0=printer, 1=aux/modem, 2=screen (console), 3=midi,
 # 4=keybrd, 5=raw.
 #
 # The default is the console.
 
 #KERN_DEBUG_LEVEL=1
-#KERN_DEBUG_DEVNO=3
+#KERN_DEBUG_DEVNO=2
 
 # KERN_BIOSBUF controls how BIOS I/O is performed. Normally, MiNT
 # tries to buffer this to provide a (considerable) improvement in
 # speed. However, some applications may get upset by this.
 #
-# BIOSBUF=no turns off all buffering for maximum compatibility. The
-# default is YES.
+# KERN_BIOSBUF=NO turns off all buffering for maximum compatibility.
+# The default is YES.
 
-#KERN_BIOSBUF=NO
+#KERN_BIOSBUF=YES
 
 # KERN_SECURITY_LEVEL= enables the appropriate security level:
 #
@@ -1130,7 +1188,7 @@ KERN_SLICES=2
 # 1 - recommended for multiuser setups, like KGMD.
 # 2 - full protection, unsupported by software, thus discouraged.
 
-KERN_SECURITY_LEVEL=1
+#KERN_SECURITY_LEVEL=1
 
 # KERN_MPFLAGS controls the memory protection behaviour. Its argument
 # is a bitfield. Only the bit 0 is defined: 1 means, that more strict
@@ -1150,9 +1208,10 @@ KERN_SECURITY_LEVEL=1
 #TPA_FASTLOAD=YES
 
 # Set maximum additional TPA size for new processes
-# (in kilobytes). The default is 1024.
+# (in kilobytes). The default is 1024. Better keep it low (1024 is
+# what we call low) if your machine has 4 MB RAM or less.
 
-#TPA_INITIALMEM=1024
+#TPA_INITIALMEM=4096
 
 # FS_NEWFATFS= enables the new FAT filesystem driver for selected FAT
 # filesystems. The old TOS FS will be used otherwise.
@@ -1164,9 +1223,12 @@ KERN_SECURITY_LEVEL=1
 #FS_NEWFATFS=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
 
 # FS_VFAT= enables VFAT extension for selected drives specified in the
-# NEWFATFS= command. The VFAT extension is disabled by default.
+# FS_NEWFATFS= command. The VFAT extension is disabled by default.
+#
+# If you use both TOS and MiNT, better don't enable VFAT extension
+# on your boot drive.
 
-#FS_VFAT=A,J
+#FS_VFAT=D,E,F,G
 
 # FS_VFAT_LCASE=YES tells the kernel to return lowercase filenames
 # from VFAT directory searches. The default is NO.
@@ -1177,12 +1239,12 @@ KERN_SECURITY_LEVEL=1
 # write back cache is disabled by default. Also, it does not have
 # any effect for TOSFS drives.
 
-#FS_WB_ENABLE=C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
+#FS_WB_ENABLE=C,D,E,F
 
 # FS_CACHE_SIZE= specifies the size of disk cache in kilobytes for the
 # internal caching module. Default is 128.
 
-#FS_CACHE_SIZE=500
+#FS_CACHE_SIZE=4096
 
 # FS_CACHE_PERCENTAGE specifies the size of the disk cache (in
 # percents) to be filled with linear reads. The default is 5.
@@ -1227,15 +1289,20 @@ KERN_SECURITY_LEVEL=1
 
 # Three commands, that define output files for RS-232, console and
 # printer devices. The argument for each one must be a pathname.
+#
+# For best results, the convention u:/drive/pathname should be used
+# for all specified pathnames from now on.
 
 #GEMDOS_AUX=u:/c/mint/aux.out
 #GEMDOS_CON=u:/c/mint/con.out
 #GEMDOS_PRN=u:/c/mint/prn.out
 
 # End of kernel settings
+
 #
-# ---------------------- ************** ------------------------------
+# -------------------------- Commands ------------------------------
 #
+
 # Here are some commands that you can give to MiNT:
 #
 # alias d: path -- make a fake "drive" that actually points to the
@@ -1268,39 +1335,68 @@ KERN_SECURITY_LEVEL=1
 # the actual directories).
 
 # Setting up the root filesystem for UNIX environment
+#
+# WARNING: directories listed in the left column must really exist!
 
-#sln g:/bin      u:/bin
-#sln g:/boot     u:/boot
-#sln g:/etc      u:/etc
-#sln g:/home     u:/home
-#sln g:/lib      u:/lib
-#sln g:/mnt      u:/mnt
-#sln g:/opt      u:/opt
-#sln g:/root     u:/root
-#sln g:/sbin     u:/sbin
-#sln g:/tmp      u:/tmp
-#sln g:/usr      u:/usr
-#sln g:/var      u:/var
+#sln e:/bin      u:/bin
+#sln e:/boot     u:/boot
+#sln e:/etc      u:/etc
+#sln e:/home     u:/home
+#sln e:/lib      u:/lib
+#sln e:/lost+found u:/lost+found
+#sln e:/mnt      u:/mnt
+#sln e:/opt      u:/opt
+#sln e:/root     u:/root
+#sln e:/sbin     u:/sbin
+#sln e:/tmp      u:/tmp
+#sln e:/usr      u:/usr
+#sln e:/var      u:/var
+
+# Some people want also to do this:
+
+#sln u:/pipe/pty.A u:/dev/pty.A 
+#sln u:/pipe/pty.B u:/dev/pty.B 
+#sln u:/pipe/pty.C u:/dev/pty.C 
+#sln u:/pipe/pty.D u:/dev/pty.D 
+#sln u:/pipe/pty.E u:/dev/pty.E 
+#sln u:/pipe/pty.F u:/dev/pty.F 
+#sln u:/pipe/pty.G u:/dev/pty.G 
+#sln u:/pipe/pty.H u:/dev/pty.H 
+#sln u:/pipe/pty.I u:/dev/pty.I 
+#sln u:/pipe/pty.J u:/dev/pty.J 
+#sln u:/pipe/pty.K u:/dev/pty.K 
 
 # PCONVERT and UNIXMODE variables control some internals of
 # MiNT Library.
 #
 # FreeMiNT 1.16.0 sets these two below automatically.
+# Default values are as below.
 
-setenv PCONVERT PATH,HOME,SHELL
-setenv UNIXMODE /brUs
+#setenv PCONVERT PATH,HOME,SHELL
+#setenv UNIXMODE /brUs
 
 # Default path
 #
-# Default on 1.16.0 is c:/, on 1.16.1 u:/c/mint (i.e.
-# same as sysdir).
+# Default on 1.16.0 is c:/, on 1.16.1 this is the sysdir.
 
-setenv PATH /boot/mint/bin;/sbin;/bin;/usr/sbin;/usr/bin
+setenv PATH /sbin;/bin;/usr/sbin;/usr/bin
 
-# Default path to search the SLBs (MagiC style 'shared
-# libraries'). Default (on 1.16.0) is /c/mint
+# Default path to search the SLBs (MagiC style 'shared libraries
+# Default - on 1.16.0 - is the system directory (so called sysdir).
+#
+# Note, that FreeMiNT 1.16.0 and up will search SLBs in the sysdir
+# automatically, if found nowhere else, so it is useless to
+# explicitly add this here.
 
-setenv SLBPATH ./;/c/mint
+setenv SLBPATH /c/mint/slb
+
+# It is advisable to set this here to a preferred name
+
+setenv HOSTNAME saturn
+
+# This also can be useful
+
+setenv TMPDIR u:/tmp
 
 # Checking filesystem if necessary
 # Note: you need a correct /etc/fstab
@@ -1311,7 +1407,7 @@ setenv SLBPATH ./;/c/mint
 # Alternative method, if you have e2fsck.ttp in /c/mint,
 # and e: is your ext2fs drive.
 
-#exec /c/mint/e2fsck.ttp -C 0 -p e:
+#exec u:/c/mint/e2fsck.ttp -C 0 -p e:
 
 # Set up time stuff. Note that you need MiNT Lib timezone package
 # (installed along with the library) for this below to work.
@@ -1320,21 +1416,21 @@ setenv SLBPATH ./;/c/mint
 # time you have to add -l to the tzinit.
 
 #setenv TZ 'Europe/London'
-#exec u:/usr/sbin/tzinit
-#exec u:/usr/sbin/tzinit -l
+#exec u:/sbin/tzinit
+#exec u:/sbin/tzinit -l
 
 # The "exec" command is used to launch programs. Note that programs
 # so launched are started before GEM is, so they must be TOS/TTP
-# programs. Most commonly used for starting device drivers.
+# programs.
 
 # Start Draconis to MiNT-Net gateway
 
-#exec u:/boot/mint/mgw.prg
+#exec u:/c/mint/mgw.prg
 #echo
 
 # Start Gluestik
 
-#exec u:/boot/mint/gluestik.prg
+#exec u:/c/mint/gluestik.prg
 #echo
 
 # Default login variables. Leave them commented out, if you use
@@ -1348,9 +1444,12 @@ setenv SLBPATH ./;/c/mint
 
 # These lines (with proper pathnames) are obligatory, if you're
 # going to use N.AES and Thing Desktop, respectively.
+#
+# Note that of you don't set the THINGDIR, the Thing desktop
+# will store all its files in your $HOME.
 
-#setenv AESDIR   u:/boot/mint/aes/
-#setenv THINGDIR u:/boot/mint/aes/desktop
+#setenv AESDIR   u:/c/mint/n_aes/
+#setenv THINGDIR u:/c/mint/thing/
 
 # The best option is to have INIT= command here, after all pathnames
 # are already set up by commands above.
@@ -1358,7 +1457,7 @@ setenv SLBPATH ./;/c/mint
 # If the MiNT is supposed to execute GEM, you should specify the full
 # path and filename like that:
 
-#GEM=u:/boot/mint/aes/xaaes.prg
+#GEM=u:/c/mint/xaaes/xaloader.prg
 
 # You can also request MiNT to execute the TOS AES residing in ROM.
 # WARNING: this is not recommended, you should use a GEM version
@@ -1369,7 +1468,7 @@ setenv SLBPATH ./;/c/mint
 # Otherwise, if your init program is not GEM, you should use INIT= as
 # follows:
 
-INIT=u:/boot/mint/init.prg
+#INIT=u:/c/mint/init.prg
 
 # If you leave both commands above commented out, the MiNT will
 # attempt to execute a file called `sh.tos' found in the system
@@ -1382,7 +1481,7 @@ INIT=u:/boot/mint/init.prg
 #
 # FreeMiNT 1.16.0 does this automatically.
 
-cd u:/
+#cd u:/
 
 #
 # The "echo" command is really straightforward.
@@ -1392,7 +1491,7 @@ echo Setup complete, now booting the system...
 echo
 
 # End of mint.cnf file
-
+@autorefon
 @line 1 70 0
 
 @endnode
@@ -1405,7 +1504,7 @@ The FreeMiNT kernel 1.16.0, unlike previous versions, exports few
 environment variables on its own during startup. These are:
 
 PATH
-This is initially set to u:/
+This is initially set to the same value as $SYSDIR.
 
 SYSDIR
 Contains the full path to the system directory.
@@ -2954,12 +3053,12 @@ then.
 
 @line 1 70 0
 
-@{B}Calamus 1.09N@{0}
+@{B}Calamus 1.09N@{b}
 Calamus 1.09N is basically unable to find its RSC file. To get this
 version to work you must copy the calamus.rsc file to the same
 directory, where the main binary file calamus.prg is.
 
-@{B}Calamus SL 96@{0}
+@{B}Calamus SL 96@{b}
 This version tries to use the FreeMiNT extended filesystem
 functions. However, due to a bug in the linked library, this is
 done incorrectly, so that after the correct system response to the
@@ -3002,14 +3101,14 @@ setenv MODEMDEV u:/dev/ttyS1
 
 @line 1 70 0
 
-@{B}Data Manager ST@{0}
+@{B}Data Manager ST@{b}
 This is a very old database program, ported in 1986 from PC GEM. To
 get it to work correctly you must limit the amount of memory
 available for this program to some size, for example 512k.
 Otherwise it will hog all the memory, so that there's not enough
 free RAM to actually display a fileselector.
 
-@{B}The 1st Word Plus 3.20TT@{0}
+@{B}The 1st Word Plus 3.20TT@{b}
 This one is a (quite popular some years ago) wordprocessor
 developed in early 1990s. The solution is the same as above.
 
@@ -3028,7 +3127,7 @@ can be automatically loaded from within the editor, it is advisable
 to change its filename or even completely delete monst.prg from the
 Devpac's bin folder, so that the editor couldn't find it.
 
-The Devpac 3.10 editor @{B}may@{0} work, but running it is
+The Devpac 3.10 editor @{B}may@{b} work, but running it is
 endangered by system crash (it may fool the AES to use its special
 privileges to destroy the system). Hence it is advisable to use
 another editor instead, for example QED 4.52, provided you enable
@@ -3081,7 +3180,7 @@ to set assembly options directly in the source file.
 The Diamond Edge generally works fine, except that it tends to
 report errors when used on a VFAT disk (it does not recognize VFAT
 entries, symbolic links etc). For this reason, the Diamond Edge
-should @{B}not@{0} be used for checking, defragmentation or fixing
+should @{B}not@{b} be used for checking, defragmentation or fixing
 enhanced FAT filesystems.
 
 The DADE program (Diamond Advanced Disk Editor) will also run when
@@ -3146,9 +3245,7 @@ perhaps some day someone will make it work better.
 The other option is called Paral. It is a Pure Debugger lookalike
 one with fully graphical GEM interface. However, unlike the Pure
 Debugger, the Paral has *real* GEM interface and is also compatible
-with 68040 and 68060 processors. It is currently (10.XII.1999) the
-absolutely best debugger available for all Atari systems (and it
-runs only under MiNT).
+with 68040 and 68060 processors.
 
 @line 1 70 0
 
@@ -3182,10 +3279,10 @@ runs only under MiNT).
 1) Unix is an operating system
 
 2) The manual for each command is displayed after you type
-   @{B}man command@{0}
+   @{B}man command@{b}
 
 3) The manual for the command man is displayed after you type
-   @{B}man man@{0}
+   @{B}man man@{b}
 
 @line 1 70 0
 
@@ -3197,7 +3294,7 @@ runs only under MiNT).
 
 @line 1 70 0
 
-@{B}Graphic shell@{0}
+@{B}Graphic shell@{b}
 The graphic shell on Atari machines is called 'the Desktop'. And
 this is basically everything we can tell you about this kind of a
 shell, because you (being an Atarian) are either experienced in
@@ -3209,7 +3306,7 @@ resort) the Atari Desktop that comes with the last version (1.08)
 of the Atari MultiTOS.
 
 Unlike under TOS (and derivatives), usage of a GEM shell in
-FreeMiNT is @{B}optional@{0} - the system is fully useable even
+FreeMiNT is @{B}optional@{b} - the system is fully useable even
 without it. See chapter Text shell for details.
 
 @line 1 70 0
@@ -3357,9 +3454,9 @@ option for GNU Tar:
 
         tar xvf stuff.tar.gz
 
-Invoking tar or gzip with parameter @{B}--help@{0} lists available
+Invoking tar or gzip with parameter @{B}--help@{b} lists available
 options. You can also try out the system manuals disposing commands
-@{B}man tar@{0} and @{B}man gzip@{0} while being at shell prompt.
+@{B}man tar@{b} and @{B}man gzip@{b} while being at shell prompt.
 
 @line 1 70 0
 
@@ -3390,7 +3487,7 @@ that the file has two names, but its physical instance is one.
 
 There are in fact two different types of links:
 
-@{B}Hard link@{0}
+@{B}Hard link@{b}
 This is litterally just another name for a file. Making a hard
 link, the GEMDOS creates a regular directory entry just like for a
 newly created file, but such an entry references data, that belong
@@ -3402,11 +3499,11 @@ directory entry. But hard links have disadvantages too: first, you
 can hardly :-) know, whether a directory entry is a "real" file
 name, or a hard link, because they look identical (upto smallest
 details) and are treated equally. Second, a hard link
-@{B}cannot@{0} be created across different filesystems
+@{B}cannot@{b} be created across different filesystems
 (partitions). Third, hard links are supported only by few
 filesystems, like Minix FS and Ext2 FS.
 
-@{B}Symbolic links@{0}
+@{B}Symbolic links@{b}
 Unlike a hard link, a symbolic link is more like a pseudo-file,
 which holds an exact pathname (instead of holding data like
 regular files do) for the file the link references. Symlinks take
@@ -3436,10 +3533,10 @@ one.
 In other cases links reference data blocks of the file they point
 to - we say that they 'are dereferenced'. While copying, if you
 give a link as the source file, this by default @{B}becomes a
-@{B}regular file on the destination@{0}. This is always the case for
+@{B}regular file on the destination@{b}. This is always the case for
 hard links. A symlink can be copied without dereferencing, see the
 documentation of your desktop and to the system manual and help
-option of the command cp (@{B}man cp@{0} and @{B}cp --help@{0}
+option of the command cp (@{B}man cp@{b} and @{B}cp --help@{b}
 respectively).
 
 @line 1 70 0
@@ -3460,22 +3557,37 @@ the 'real', graphic console.
 Despite that, all versions of FreeMiNT handle the following
 keyboard shortcuts:
 
-@{B}Ctrl/Alt/Del@{0}
+@{B}Ctrl/Alt/Del@{b}
 Warm start, as in all TOS versions.
 
-@{B}Ctrl/Alt/RShift/Del@{0}
+@{B}Ctrl/Alt/RShift/Del@{b}
 Cold start, as in TOS version >= 1.04.
 
-@{B}Ctrl/Alt/Undo@{0}
+@{B}Ctrl/Alt/LShift/Del@{b}
+Halts the system and powers it off, whenever possible.
+
+@{B}Ctrl/Alt/Undo@{b}
 Sends SIGQUIT to the whole group of processes running on the
 console, including the shell. This is equal to a "logout", but
 don't use it while using the GEM Desktop! :-)
 
-@{B}Left Shift@{0}
+@{B}Left Shift@{b}
 When you hold down the left Shift key while booting FreeMiNT, it
 will either ask you whether it should load itself or not (kernels
-before 1.15.10) or whether it should display the boot menu or not
-(kernels 1.15.10 and later).
+before 1.16.0) or whether it should display the boot menu or not
+(kernels 1.16.0 and later).
+
+@{B}Alt/Up@{b}, @{B}Alt/Down@{b}, @{B}Alt/Left@{b}, @{B}Alt/Right@{b}
+Move the mouse cursor in the specified direction. The mouse cursor is
+moved for 8 pixels, unless you hold down the Shift key: the movement
+distance is 1 pixel at once then.
+
+@{B}Alt/Insert@{b}, @{B}Alt/ClrHome@{b}
+Emulate left and right mouse click, respectively. Unlike on TOS, the
+Alternate key is ignored, when processing mouse events.
+
+@{B}Shift/Alt/Insert@{b}
+Emulate double click of the left mouse button.
 
 @line 1 70 0
 
@@ -3487,25 +3599,25 @@ before 1.15.10) or whether it should display the boot menu or not
 
 @line 1 70 0
 
-@{B}FIFO@{0} aka @{B}pipe@{0}
+@{B}FIFO@{b} aka @{B}pipe@{b}
 'First In, First Out', a structure (a virtual file actually) used
 for interprocess communication. Basically, if two programs open the
 same FIFO, they can exchange data with read/write calls via the
 FIFO without arranging disk space. Physically a FIFO is just a
 memory buffer.
 
-@{B}GEM@{0}
+@{B}GEM@{b}
 Graphic Environment Manager. On Atari computers the part of the
 operating system, that creates and manages the graphic front end of
 the OS, i.e. windows, dialog boxes, menus, mouse.
 
-@{B}GEMDOS@{0}
+@{B}GEMDOS@{b}
 On Atari computers, the part of the operating system that actually
 manages data storage. The FreeMiNT kernel's core is a completely
 new, multitasking GEMDOS, which replaces the old TOS' one, which is
 located in ROM.
 
-@{B}home@{0} aka @{B}home directory@{0}
+@{B}home@{b} aka @{B}home directory@{b}
 In multiuser systems, a directory that contains files and
 subdirectories private to the user, who 'owns' this directory.
 The home directory usually has the same name as the corresponding
@@ -3516,10 +3628,10 @@ for dealing with user files. Obviously, to make it work painlessly,
 there must be as many home directories in the system, as many users
 are there.
 
-@{B}manpage@{0}
+@{B}manpage@{b}
 System manual file accessible with the command man. When you need
 to view the manpage of a program called 'gcc', you type
-@{B}man gcc@{0}. These online manuals provide condensed and
+@{B}man gcc@{b}. These online manuals provide condensed and
 specific information on the given topic, though the language
 they've been written is not always fully understandable for people
 not used to. Also, the first reference to the manpage can be slow,
@@ -3527,7 +3639,7 @@ because it (the page) need to be formatted for the current display
 size. The formatted result is cached on the disk, so that all later
 references to the same page are much faster.
 
-@{B}MiNT@{0}
+@{B}MiNT@{b}
 The multitasking kernel for Atari ST computers and compatibles. The
 first version was released 18 May 1990. The abbreviation 'MiNT'
 originally stands for 'MiNT is Not TOS', but later, after the
@@ -3536,13 +3648,13 @@ changed to 'MiNT is Now TOS'. FreeMiNT is a MiNT derivative
 copyrighted by Atari Corporation, and licensed under terms
 described in the file COPYING included in the system distribution.
 
-@{B}MultiTOS-like configuration@{0}
+@{B}MultiTOS-like configuration@{b}
 This is a term, which, as opposed to an Un*x like configuration,
 describes a single user, multitasking setup, without the Un*x
 filesystem structures built up on the disk and without Un*x
 software. In other words, it is a multitasking TOS.
 
-@{B}NFS@{0}
+@{B}NFS@{b}
 Network File System. A type of an XFS, which allows a networked
 machine to access a storage media that physically exists on another
 machine provided it has been connected to the same network and
@@ -3554,42 +3666,46 @@ mount and use this way any filesystem exported, even if the machine
 it belongs to is located on another continent (provided both
 machines are connected to the worldwide network).
 
-@{B}root@{0}
-Also known as @{B}Superuser@{0} (q.v.), the system administrator.
+@{B}root@{b}
+Also known as @{B}Superuser@{b} (q.v.), the system administrator.
 The name is 'root' because in earlier Unix systems the superuser's
 home directory was the root directory of the entire filesystem,
 i.e. the '/'.
 
-@{B}scheduler@{0}
+@{B}scheduler@{b}
 A piece of code inside the operating system kernel, that actually
 deals with granting processes the CPU time for execution.
 
-@{B}server@{0}
+@{B}server@{b}
 Surprisingly, a *program*, that manages some resources (especially
 in networks) and allows clients to access them in standardized way.
 Also common name for a computer running one or more server programs.
 
-@{B}Superuser@{0} aka @{B}root@{0} aka @{B}System administrator@{0}
+@{B}Superuser@{b} aka @{B}root@{b} aka @{B}System administrator@{b}
 In a multiuser system an user, who is privileged enough to actually
 control the operating system.
 
-@{B}Supervisor@{0}
+@{B}Supervisor@{b}
 One of two (the higher one) privilege levels supported by the
 Motorola 68k series of processors. The OS code usually runs the
 supervisor mode since it grants the fullest possible control on the
 hardware resources of the machine. Unfortunately, while the CPU is
 switched to the supervisor mode, no multitasking is possible.
 
-@{B}XDD@{0}
+@{B}sysdir@{b}
+'System directory', where MiNT keeps its configuration files,
+modules etc. Usually u:/c/mint.
+
+@{B}XDD@{b}
 Stands for 'eXtended Device Driver', a softloaded FreeMiNT module
 that installs a device on the BIOS FS (u:/dev/).
 
-@{B}XFS@{0}
+@{B}XFS@{b}
 Stands for 'eXtended File System driver', a softloaded FreeMiNT
 module that installs a filesystem driver, what allows to mount a
 filesystem (disk) on the drive u:
 
-@{B}TSR@{0}
+@{B}TSR@{b}
 Terminate-and-Stay-Resident. A class of TOS extensions loaded from
 the auto folder, which become resident system extensions after they
 have been loaded.
@@ -3606,29 +3722,29 @@ have been loaded.
 
 Thanks going to:
 
-@{B}Tom Quellenberg@{0} and @{B}Christian Felsch@{0}
+@{B}Tom Quellenberg@{b} and @{B}Christian Felsch@{b}
 because I've done most of this document in QED 4.52.
 
-@{B}Christian Peppermueller@{0}
+@{B}Christian Peppermueller@{b}
 because his little editor ED saved me a suicide when I started to
 be beaten by formatting bugs in QED.
 
-@{B}University of Washington@{0}
+@{B}University of Washington@{b}
 because I finally ended up with Pico.
 
-@{B}Guido Flohr@{0}
+@{B}Guido Flohr@{b}
 for his work on the time zone stuff and all the supplied
 information.
 
-@{B}Frank Naumann@{0}
+@{B}Frank Naumann@{b}
 for his work on the FreeMiNT kernel and all the supplied
 information.
 
-@{B}Edgar Aichinger@{0}
+@{B}Edgar Aichinger@{b}
 for his final adjustments of the hypertext structure and all the
 work done on the German translation.
 
-@{B}The MiNT mailing list members@{0}
+@{B}The MiNT mailing list members@{b}
 who, willing or not, gave me many hints included in this document.
 
 @line 1 70 0
