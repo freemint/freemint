@@ -697,10 +697,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (ob && ob == have)
 		{
+			/* XXX - Ozk: Fix this -- at least check out what is
+			 *	 going on. only obj_edit() should modify e.obj
+			 *	 and friends.
+			 */
 			if (w->is_open)
 			{
 				widg->start = pb->intin[4];
-				wt->edit_obj = pb->intin[5];
+				wt->e.obj = pb->intin[5];
 				display_widget(lock, w, widg);
 				widg->start = 0;
 			}

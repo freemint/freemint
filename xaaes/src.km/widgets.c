@@ -352,6 +352,114 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 }
 
 XA_TREE *
+obtree_to_wt(struct xa_client *client, OBJECT *obtree)
+{
+	struct xa_window *wind = client->fmd.wind;
+	XA_TREE *wt = NULL;
+
+	DIAGS(("obtree_to_wt: look for wt with obtree=%lx for %s",
+		obtree, client->name));
+
+	if (obtree == client->wt.tree)
+	{
+		DIAGS((" -- found in client->wt"));
+		wt = &client->wt;
+	}
+	else if (wind)
+	{
+		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
+
+		if (obtree == ((XA_TREE *)widg->stuff)->tree)
+		{
+			DIAGS((" -- found in XAW_TOOLBAR fmd wind %d - %s",
+				wind->handle, client->name));
+			wt = widg->stuff;
+		}
+	}
+	else
+	{
+		wt = client->wtlist;
+		DIAGS((" -- lookup in wtlist for %s", client->name));
+		while (wt)
+		{
+			if (obtree == wt->tree)
+				break;
+			wt = wt->next;
+		}
+#if GENERATE_DIAGS
+		if (!wt)
+			DIAGS((" -- lookup failed"));
+#endif
+	}
+	DIAGS((" obtree_to_wt: return %lx for %s",
+		wt, client->name));
+
+	return wt;
+}
+
+XA_TREE *
+new_widget_tree(struct xa_client *client, OBJECT *obtree)
+{
+	XA_TREE *new;
+
+	DIAGS((" === Create new widget tree - obtree=%lx, for %s",
+		obtree, client->name));
+
+	new = kmalloc(sizeof(*new));
+
+	if (new)
+	{
+		bzero(new, sizeof(*new));
+		new->tree = obtree;
+		new->owner = client;
+		new->c = *(RECT *)&obtree->ob_x;
+		new->e.obj = -1;
+
+		new->next = client->wtlist;
+		client->wtlist = new;
+	}
+	DIAGS((" return new wt=%lx", new));
+	return new;
+}
+
+/* Ozk:
+ * This is the last resort, when all else fails trying to
+ * obtain a widget tree for a obtree. Uses the widget tree
+ * embedded in the client structure.
+ */
+XA_TREE *
+set_client_wt(struct xa_client *client, OBJECT *obtree)
+{
+	XA_TREE *wt = &client->wt;
+
+	DIAGS(("set_client_wt: obtree %lx for %s",
+		obtree, client->name));
+	if (wt->tree != obtree)
+	{
+		bzero(wt, sizeof(*wt));
+		wt->tree = obtree;
+		wt->owner = client;
+		wt->e.obj = -1;
+		wt->e.c_state = 0;
+		wt->c = *(RECT *)&obtree->ob_x;
+	}
+	return wt;
+}
+
+void
+free_wtlist(struct xa_client *client)
+{
+	XA_TREE *wt;
+
+	while (client->wtlist)
+	{
+		wt = client->wtlist;
+		client->wtlist = wt->next;
+		kfree(wt);
+	}
+}
+#if 0
+XA_TREE *
 check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
 {
 	struct xa_window *wind = client->fmd.wind;
@@ -359,7 +467,7 @@ check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
 
 	DIAG((D_form, client, "check_widget_tree for %s: wh=%d obj:%lx, ed:%d, tree:%lx, %d/%d",
 		c_owner(client), wind ? wind->handle:-1,
-		wt->tree, wt->edit_obj, tree, tree->ob_x, tree->ob_y));
+		wt->tree, wt->e.obj, tree, tree->ob_x, tree->ob_y));
 
 	/* HR 220401: x & y governed by fmd.wind */
 	if (wind)
@@ -374,7 +482,8 @@ check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
 			client->fmd.wind->wa.x, client->fmd.wind->wa.y,
 			wt->tree ? wt->tree->ob_x : -1, wt->tree ? wt->tree->ob_y : -1));
 
-		if (!ct) {
+		if (!ct)
+		{
 			tree->ob_x = client->fmd.wind->wa.x,
 			tree->ob_y = client->fmd.wind->wa.y;
 		} /* else governed by widget.loc */
@@ -382,11 +491,11 @@ check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
 		wt->zen = true;
 	}
 	else if (tree != wt->tree)
-	{
+	{		
 		DIAG((D_form, client, " -- different obtree (was %lx)", wt->tree));
 		bzero(wt, sizeof(XA_TREE));
-		wt->edit_obj = -1;
-		wt->cr_state = 0;
+		wt->e.obj = -1;
+		wt->e.c_state = 0;
 	}
 
 	wt->tree = tree;
@@ -395,6 +504,7 @@ check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
 	DIAG((D_form, client, "  --  zen: %d", wt->zen));
 	return wt;
 }
+#endif
 
 void
 display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
@@ -2010,8 +2120,8 @@ display_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget 
 	/* Convert relative coords and window location to absolute screen location */
 	root = rp_2_ap(wind, widg, NULL);
 
-	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, edit_obj=%d, edit_pos=%d, form: %d/%d",
-		wind->handle, wt, wt->edit_obj, wt->edit_pos, root->ob_x, root->ob_y));
+	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d, form: %d/%d",
+		wind->handle, wt, wt->e.obj, wt->e.pos, root->ob_x, root->ob_y));
 
 	if (wind->nolist && (wind->dial & created_for_POPUP))
 	{
@@ -2611,10 +2721,10 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &edobj))
 		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL);
 
-	if (wt->edit_obj >= 0 || obtree_has_default(obtree))
+	if (wt->e.obj >= 0 || obtree_has_default(obtree))
 		wind->keypress = Key_form_do;
 		
-	//if (has_default(form) || wt->edit_obj >= 0)
+	//if (has_default(form) || wt->e.obj >= 0)
 	//	wind->keypress = handle_form_key;
 
 #if 0
