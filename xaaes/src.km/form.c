@@ -840,6 +840,7 @@ set_button_timer(enum locks lock, struct xa_window *wind)
 		struct woken_active_widget_data *data;
 
 		data = kmalloc(sizeof(*data));
+
 		if (data)
 		{
 			struct timeout *t;
@@ -1104,6 +1105,6 @@ do_formwind_msg(
 			display_window(0, 120, wind, NULL);
 			dfwm_redraw(wind, wt, NULL);
 		}
-		set_button_timer(0, wind);
+		//set_button_timer(0, wind);
 	}
 }

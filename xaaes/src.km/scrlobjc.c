@@ -436,7 +436,7 @@ slist_msg_handler(
 	 * the kernel to wake us up;
 	 * This is immensely better then the original Fselect in it's own loop.
 	 */
-	set_button_timer(lock, wind);
+	//set_button_timer(lock, wind);
 }
 int
 scrl_cursor(SCROLL_INFO *list, ushort keycode)

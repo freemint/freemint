@@ -64,15 +64,28 @@
 static short x_mouse;
 static short y_mouse;
 struct moose_data mainmd;	// ozk: Have to take the most recent moose packet into global space
-BUTTON mu_button = { NULL };
 
 #define MDBUF_SIZE 32
 
-static int md_head = 0;
-static int md_tail = 0;
+/*
+ * This moose_data buffer is used when delivering exlusive
+ * mouse input.
+ */ 
+static int md_buff_head = 0;
+static int md_buff_tail = 0;
 static int md_lmvalid = 0;
 static struct moose_data md_lastmove;
-static struct moose_data md_buff[MDBUF_SIZE];
+static struct moose_data md_buff[MDBUF_SIZE + 1];
+
+/*
+ * This is the queue of incoming moose_data packets.
+ * packets coming from moose.adi is stored here immediately
+ */
+static struct moose_data mdb[];
+static struct moose_data *md_head = mdb;
+static struct moose_data *md_tail = mdb;
+static struct moose_data *md_end = mdb + MDBUF_SIZE;
+static struct moose_data mdb[MDBUF_SIZE + 1];
 
 /*
  * Mouse button click handler 
@@ -115,25 +128,54 @@ static void
 new_mu_mouse(struct moose_data *md)
 {
 	//DIAG((D_v, NULL, "new_mu_mouse %d %d,%d/%d", md->state, md->cstate, md->x, md->y));
-	mu_button.b		= md->state;
-	mu_button.cb		= md->cstate;
-	mu_button.x = x_mouse	= md->x;
-	mu_button.y = y_mouse	= md->y;
-	mu_button.clicks 	= md->clicks;
-	mu_button.ks		= md->kstate;
-
 	/*
 	 * Copy into the global main moose data if necessary
 	 */
 	if (md != &mainmd)
 		mainmd = *md;
-
 }
 
 static void
 new_active_widget_mouse(struct moose_data *md)
 {
 	widget_active.m	= *md;
+}
+
+static bool
+add_md(struct moose_data *md)
+{
+	struct moose_data *n = md_tail;
+
+	n++;
+	if (n > md_end)
+		n = mdb;
+	if (n == md_head)
+		return false;
+
+	*md_tail = *md;
+	md_tail = n;
+
+	return true;
+}
+
+static bool
+get_md(struct moose_data *r)
+{
+	if (md_head != md_tail)
+	{
+		*r = *md_head;
+		md_head++;
+		if (md_head > md_end)
+			md_head = mdb;
+		return true;
+	}
+	return false;
+}
+
+static bool
+pending_md(void)
+{
+	return md_head == md_tail ? false : true;
 }
 
 /*
@@ -145,8 +187,8 @@ buffer_moose_pkt(struct moose_data *md)
 {
 	if (md->ty == MOOSE_BUTTON_PREFIX)
 	{
-		md_buff[md_head++] = *md;
-		md_head &= MDBUF_SIZE - 1;
+		md_buff[md_buff_head++] = *md;
+		md_buff_head &= MDBUF_SIZE - 1;
 	}
 	else if (md->ty == MOOSE_MOVEMENT_PREFIX)
 	{
@@ -162,7 +204,7 @@ buffer_moose_pkt(struct moose_data *md)
 static int
 unbuffer_moose_pkt(struct moose_data *md)
 {
-	if (md_head == md_tail)
+	if (md_buff_head == md_buff_tail)
 	{
 		if (md_lmvalid)
 		{
@@ -172,8 +214,8 @@ unbuffer_moose_pkt(struct moose_data *md)
 		}
 		return 0;
 	}
-	*md = md_buff[md_tail++];
-	md_tail &= MDBUF_SIZE - 1;
+	*md = md_buff[md_buff_tail++];
+	md_buff_tail &= MDBUF_SIZE - 1;
 	return 1;
 }
 
@@ -242,7 +284,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = 0;
 				*to++ = md->clicks;
 				client->md_tail->clicks = 0;
-				//client->md.clicks = 0;
 
 				client->usr_evnt = 1;
 				DIAG((D_button, NULL, " - written"));
@@ -259,7 +300,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				*to++ = md->state;
 				*to   = md->kstate;
 				client->md_tail->clicks = 0;
-				//client->md.clicks = 0;
 
 				client->usr_evnt = 1;
 				DIAG((D_button, NULL, " - written"));
@@ -725,58 +765,55 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 
 		return true;
 	}
-
 	/*
 	 * Ozk: No client is exclusively waiting for mouse, but we check
 	 * if the queue contains anything and clear it if it does.
 	 */
-	if (md_head != md_tail)
-		md_head = md_tail = md_lmvalid = 0;
+	if (md_buff_head != md_buff_tail)
+		md_buff_head = md_buff_tail = md_lmvalid = 0;
 
 	/*
 	 * Ozk: now go dispatch the mouse event....
 	 */
 	switch (md->ty)
 	{
-	case MOOSE_BUTTON_PREFIX:
-	{
-		DIAG((D_button, NULL, "Button %d, cstate %d on: %d/%d",
-			md->state, md->cstate, md->x, md->y));
+		case MOOSE_BUTTON_PREFIX:
+		{
+			DIAG((D_button, NULL, "Button %d, cstate %d on: %d/%d",
+				md->state, md->cstate, md->x, md->y));
 
-		//new_active_widget_mouse(md);
-		XA_button_event(lock, md, true);
-		break;
-	}
-	case MOOSE_MOVEMENT_PREFIX:
-	{
-		/* mouse rectangle events */
-		/* DIAG((D_v, NULL,"mouse move to: %d/%d", mdata.x, mdata.y)); */
+			XA_button_event(lock, md, true);
+			break;
+		}
+		case MOOSE_MOVEMENT_PREFIX:
+		{
+			/* mouse rectangle events */
+			/* DIAG((D_v, NULL,"mouse move to: %d/%d", mdata.x, mdata.y)); */
 
-		/*
-		 * Call the mouse movement event handler
-		*/
-		//new_active_widget_mouse(md);
-		XA_move_event(lock, md);
+			/*
+			 * Call the mouse movement event handler
+			*/
+			XA_move_event(lock, md);
 
-		break;
-	}
+			break;
+		}
 
-	case MOOSE_WHEEL_PREFIX:
-	{
-		XA_wheel_event(lock, md);
+		case MOOSE_WHEEL_PREFIX:
+		{
+			XA_wheel_event(lock, md);
 
-		break;
-	}
-	default:
-	{
-		DIAG((D_mouse, NULL, "Unknown mouse datatype (0x%x)", md->ty));
-		DIAG((D_mouse, NULL, " l=0x%x, ty=%d, x=%d, y=%d, state=0x%x, clicks=%d",
-			md->l, md->ty, md->x, md->y, md->state, md->clicks));
-		DIAG((D_mouse, NULL, " dbg1=0x%x, dbg2=0x%x",
-			md->dbg1, md->dbg2));
+			break;
+		}
+		default:
+		{
+			DIAG((D_mouse, NULL, "Unknown mouse datatype (0x%x)", md->ty));
+			DIAG((D_mouse, NULL, " l=0x%x, ty=%d, x=%d, y=%d, state=0x%x, clicks=%d",
+				md->l, md->ty, md->x, md->y, md->state, md->clicks));
+			DIAG((D_mouse, NULL, " dbg1=0x%x, dbg2=0x%x",
+				md->dbg1, md->dbg2));
 
-		return false;
-	}
+			return false;
+		}
 	}
 	return true;
 }
@@ -880,7 +917,7 @@ move_timeout(struct proc *p, long arg)
 				*/
 				if (!m_rto)
 					m_rto = addroottimeout(400L, move_rtimeout, 1);
-				m_to = 0;
+				m_to = NULL;
 			}
 			else
 			{
@@ -891,7 +928,7 @@ move_timeout(struct proc *p, long arg)
 				if (m_rto)
 				{
 					cancelroottimeout(m_rto);
-					m_rto = 0;
+					m_rto = NULL;
 				}
 				/*
 				 * new movement...
@@ -900,10 +937,10 @@ move_timeout(struct proc *p, long arg)
 			}
 		}
 		else
-			m_to = 0;
+			m_to = NULL;
 	}
 	else
-		m_to = 0;
+		m_to = NULL;
 }
 
 /*
@@ -939,7 +976,7 @@ adi_move(struct adif *a, short x, short y)
 		if (m_rto)
 		{
 			cancelroottimeout(m_rto);
-			m_rto = 0;
+			m_rto = NULL;
 		}
 		if (!m_to)
 			m_to = addroottimeout(0L, move_timeout, 1);
@@ -958,7 +995,7 @@ kick_mousemove_timeout(void)
 		if (m_rto)
 		{
 			cancelroottimeout(m_rto);
-			m_rto = 0;
+			m_rto = NULL;
 			if (!m_to)
 				m_to = addroottimeout(0L, move_timeout, 1);
 		}
@@ -972,23 +1009,27 @@ kick_mousemove_timeout(void)
 static void
 button_timeout(struct proc *p, long arg)
 {
-	struct moose_data *md = (struct moose_data *)arg;
-	struct moose_data *new_md;
-
-	new_md = kmalloc(sizeof(struct moose_data));
-	
-	if (new_md)
+	if (pending_md())
 	{
-		*new_md = *md;
-		DIAGS(("adi_button_event %d/%d", md->state, md->cstate));
+		struct moose_data md;
 
-		vq_key_s(C.vh, &new_md->kstate);
-		mu_button.ks = new_md->kstate;
-		new_moose_pkt(0, 0, new_md);
-		kfree(new_md);
+		get_md(&md);
+		vq_key_s(C.vh, &md.kstate);
+
+		if (C.button_waiter)
+		{
+			add_client_md(C.button_waiter, &md);
+			C.button_waiter = NULL;
+		}
+
+		new_moose_pkt(0, 0, &md);
+
+		if ( pending_md() )
+			b_to = addroottimeout(0L, button_timeout, 1);
+		else
+			b_to = NULL;
 	}
-	b_to = 0;
-}
+}	
 
 /*
  * adi_button() - the entry point taken by moose.adi whenever
@@ -997,34 +1038,23 @@ button_timeout(struct proc *p, long arg)
 void
 adi_button(struct adif *a, struct moose_data *md)
 {
-	TIMEOUT *t;
-
 	/*
 	 * Ozk: should have obtained the keyboard-shift state here,
 	 * but I dont think it is safe. So we get that in button_timeout()
 	 * instead. Eventually, moose.adi will provide this info...
 	 */
+	add_md(md);
 	new_mu_mouse(md);
 	new_active_widget_mouse(md);
-
-	if (C.button_waiter)
-	{
-		add_client_md(C.button_waiter, md);
-		C.button_waiter = 0;
-	}
 
 	if (m_to)
 	{
 		cancelroottimeout(m_to);
-		m_to = 0;
+		m_to = NULL;
 	}
 
-	t = addroottimeout(0L, button_timeout, 1);
-	if (t)
-	{
-		b_to = t;
-		t->arg = (long)md;
-	}
+	if (!b_to)
+		b_to = addroottimeout(0L, button_timeout, 1);
 }
 
 /* XXX */
@@ -1106,16 +1136,16 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	if (client)
 	{
 		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
-			mu_button.cb, x_mouse, y_mouse, client->name));
+			mainmd.cstate, x_mouse, y_mouse, client->name));
 	}
 	else
 	{
 		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for non AES process (pid %ld)",
-			mu_button.cb, x_mouse, y_mouse, p_getpid()));
+			mainmd.cstate, x_mouse, y_mouse, p_getpid()));
 	}
 #endif
 	if (br)
-		*br = mu_button.cb;
+		*br = mainmd.cstate;
 	if (xr)
 		*xr = x_mouse;
 	if (yr)
