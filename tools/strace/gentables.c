@@ -126,7 +126,7 @@ generate_printer_impl(FILE *out, struct syscall *call, const char *pre)
 }
 
 static void
-strupr(char *s)
+my_strupr(char *s)
 {
 	if (s)
 	{
@@ -153,7 +153,7 @@ generate_strace_printer(FILE *out, struct systab *tab, const char *name)
 			
 			tmp = strdup(name);
 			assert(tmp);
-			strupr(tmp);
+			my_strupr(tmp);
 			
 			fprintf(out, "#ifndef %s_%s\n", tmp, call->name);
 			fprintf(out, "static void\n");
