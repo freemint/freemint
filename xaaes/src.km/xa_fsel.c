@@ -917,22 +917,22 @@ fs_key_form_do(enum locks lock,
 /* dest_pid, msg, source_pid, mp3, mp4,  ....    */
 static void
 fs_msg_handler(
-	enum locks lock,
 	struct xa_window *wind,
 	struct xa_client *to,
-	short mp0, short mp1, short mp2, short mp3,
-	short mp4, short mp5, short mp6, short mp7)
+	short *msg)
 {
-	switch (mp0)
+	enum locks lock = 0;
+
+	switch (msg[0])
 	{
 	case MN_SELECTED:
 	{
-		if (mp3 == FSEL_FILTER)
-			fs_change(lock, fs.menu.tree, mp4, FSEL_FILTER, FSEL_PATA, fs_pattern);
-		else if (mp3 == FSEL_DRV)
+		if (msg[3] == FSEL_FILTER)
+			fs_change(lock, fs.menu.tree, msg[4], FSEL_FILTER, FSEL_PATA, fs_pattern);
+		else if (msg[3] == FSEL_DRV)
 		{
 			int drv;
-			fs_change(lock, fs.menu.tree, mp4, FSEL_DRV, FSEL_DRVA, fs.path);
+			fs_change(lock, fs.menu.tree, msg[4], FSEL_DRV, FSEL_DRVA, fs.path);
 			inq_xfs(fs.path, fs.fslash);
 			add_slash(fs.path);
 			drv = get_drv(fs.path);
@@ -949,7 +949,7 @@ fs_msg_handler(
 	}
 	case WM_MOVED:
 	{
-		move_window(lock, fs.wind, -1, mp4, mp5, fs.wind->r.w, fs.wind->r.h);
+		move_window(lock, fs.wind, -1, msg[4], msg[5], fs.wind->r.w, fs.wind->r.h);
 	}
 	}
 }
@@ -1067,6 +1067,7 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 
 	/* Create the window */
 	dialog_window = create_window(  lock,
+					do_winmesag, //fs_msg_handler,
 					fs_msg_handler,
 					client,
 					false,

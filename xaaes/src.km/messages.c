@@ -230,7 +230,78 @@ cancel_aesmsgs(struct xa_aesmsg_list **m)
 	}
 }
 
-/*
+/* Ozk:
+ * If we want to do direct handling of the message sendt to a window
+ * via wind->send_message, we need to install the real handler in
+ * wind->do_message and place the address of do_winmesag()
+ * in wind->send_message(). This is because direct handling of window
+ * messages requires the handler to run in the context of windows
+ * owner.
+ * xxx - not dealing with cases where to is different from wind->owner!
+ */
+static void
+Phfw(void *_parm)
+{
+	long *parms = _parm;
+	struct xa_window *w = (struct xa_window *)parms[0];
+	
+	w->do_message(w,
+			 (struct xa_client *)parms[1],
+			 (short *)parms[2]);
+
+	wake(IO_Q, (long)_parm);
+	kfree(_parm);
+	kthread_exit(0);
+}
+
+void
+do_winmesag(enum locks lock,
+	struct xa_window *wind,
+	struct xa_client *to,			/* if different from wind->owner */
+	short mp0, short mp1, short mp2, short mp3,
+	short mp4, short mp5, short mp6, short mp7)
+{
+	if (wind->do_message)
+	{
+		struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+		short msg[8] = { mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7 };
+
+		if (!rc)
+			rc = C.Aes;
+
+		if (wind->owner == rc)
+		{
+			DIAGS((" --==-- do_winmesag: Doing direct handle_form_wind"));
+			wind->do_message(wind, to, msg);
+		}
+		else
+		{
+			long *p = kmalloc(16);
+
+			if (p)
+			{
+				p[0] = (long)wind;
+				p[1] = (long)to;
+				p[2] = (long)msg;
+
+				DIAGS((" --==-- do_winmesag: Doing kthread handle_form_wind"));
+
+				kthread_create(wind->owner->p,
+						Phfw,
+						p,
+						NULL, "k%s", wind->owner->name);
+				sleep(IO_Q, (long)p);
+			}
+		}
+	}
+#if GENERATE_DIAGS
+	else
+		DIAGS((" --==-- do_winmesag: no do_message!"));
+#endif
+}
+
+
+/* Ozk:
  * context dependant
  * deliver_message is guaranteed to run in the dest_client's context
  */
