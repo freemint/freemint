@@ -3,7 +3,7 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2001 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
  * This file is free software; you can redistribute it and/or modify
@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-11-07
- * last change:	2000-11-07
+ * begin:	2001-04-24
+ * last change:	2001-04-24
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,24 +31,16 @@
  * 
  */
 
-# ifndef _k_fork_h
-# define _k_fork_h
+# ifndef _k_kthread_h
+# define _k_kthread_h
 
 # include "mint/mint.h"
 
-
-/* flags for internal fork */
-# define FORK_PPWAIT		0x01	/* block parent until child exit */
-# define FORK_SHAREVM		0x02	/* share vmspace with parent */
-# define FORK_SHARECWD		0x04	/* share cdir/rdir/cmask */
-# define FORK_SHAREFILES	0x08	/* share file descriptors */
-# define FORK_SHARESIGS		0x10	/* share signal actions */
-
-struct proc *	fork_proc1	(struct proc *p1, long flags, long *err);
-struct proc *	fork_proc	(long flags, long *err);
-
-long _cdecl	sys_pvfork	(void);
-long _cdecl	sys_pfork	(void);
+struct proc;
 
 
-# endif /* _k_fork_h */
+long _cdecl kthread_create (void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
+void _cdecl kthread_exit (short code);
+
+
+# endif /* _k_kthread_h */

@@ -20,6 +20,8 @@
 # include "ktypes.h"
 # include "block_IO.h"		/* eXtended kernelinterface */
 
+struct basepage;
+
 
 /* kerinfo - kernel interface table
  * --------------------------------
@@ -291,8 +293,15 @@ struct kerinfo
 	long	_cdecl (*so_dup)(struct socket **, struct socket *);
 	void	_cdecl (*so_free)(struct socket *);
 	
+	/* load safely additional modules */
+	void	_cdecl (*load_modules)(const char *extension, long (*loader)(struct basepage *, const char *));
+	
+	/* fork/leave a kernel thread */
+	long	_cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
+	void	_cdecl (*kthread_exit)(short code);
+	
 	/* reserved, set to 0 */
-	long	res2 [7];
+	long	res2 [4];
 };
 
 
