@@ -206,8 +206,8 @@ extern const char *MSG_init_error;
 extern const char *MSG_keytable_loading;
 extern const char *MSG_keytable_internal;
 extern const char *MSG_keytable_loaded;
-extern const char *MSG_keyboard_keytbl_ignored;
 # endif
+extern const char *MSG_keyboard_keytbl_ignored;
 
 /* memory.c */
 extern const char *MSG_mem_core;
