@@ -56,7 +56,6 @@ entry: $(DRIVERS)
 # generic driver target
 $(TARGET): $(XOBJS) $(LIBKERNSTMP)
 	$(LD) $(CFLAGS) -o $@ $(XOBJS) $(LIBS)
-	$(STRIP) $@
 
 
 dial:
