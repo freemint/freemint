@@ -924,41 +924,6 @@ fs_destructor(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
-/* HR: (*)()    *s,*c */
-/* HR The use of the word 'Callback' is entirely nonsense of course.
-   Nothing is 'called back'. Calling is forward, be it indirect.
-   'calling back' could eventually be the case in recursions, but
-   that is a entirely different story.
-   Or when a pointer to structure is used to call back from the OS to a
-   application like 'progdefs' then you could use the word 'Callback'.
-   But everyone knows by now that such a thing should have been forbidden
-   in the first place.
-
-   Moreover, the word is annoyingly superfluous. The fact that its a pointer to
-   a function tells enough.
-   Note that both '*' and 'Callback' appeared in the same typedefed declaration.
-
-   The typedef name doesnt need to be specific on it's usage, but when it is
-   used with a '*', you know that its usage is indirect.
-   
-   In XaAES the pointer to a function is a simple switching device.
-   Nothing more.
-
-   So: first I removed the '*' from the typedef. This makes the name more widely usable.
-   	   then I removed 'Callback' from the name.
-old:
-void open_fsel(enum locks lock, char *path, char *title, FileSelectedCallback *s, FileSelectedCallback *c)
-
-The bad work of the ANSI committee still remains extremely annoying!!!
-"void open_fsel(enum locks lock; char *path, *title; fsel_handler *s, *c;)"  should have been good enough.
-This makes a parameterlist syntactically the same as a structure; semantically they're always
-have been the same of course.
-From the point of view of a procedure, the parameter list is a volatile struct
-describing the local memory where the parameters are found. 
-*/
-
-/* HR 060202: The file parameter (pb->addrin[1]) was never used. And I mean never at all.
-              New parameter top open_fileselector: char *file */
 void
 open_fileselector(enum locks lock, struct xa_client *client,
 		  const char *path, const char *file, const char *title,

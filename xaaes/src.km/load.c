@@ -34,5 +34,6 @@ main(int argc, char *argv[])
 	r = Ssystem(2000, path, 0);
 	printf("Ssystem -> %li\n", r);
 
+	pause();
 	return 0;
 }

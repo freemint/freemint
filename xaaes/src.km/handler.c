@@ -108,7 +108,7 @@ XA_handler(void *_pb)
 	struct xa_client *client;
 	short cmd;
 
-	DIAG((D_trap, NULL, "XA_handler (pb=%lx)", pb));
+//	DIAG((D_trap, NULL, "XA_handler (pb=%lx)", pb));
 
 	if (!pb)
 	{
@@ -206,7 +206,8 @@ XA_handler(void *_pb)
 			/* callout the AES function */
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
 
-			DIAG((D_trap, client, " %s[%d] retuned %ld for %s", op_code_names[cmd], cmd, cmd_rtn, client->name));
+//			DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
+//				op_code_names[cmd], cmd, cmd_rtn, client->name));
 
 			if (aes_tab[cmd].p & LOCKSCREEN)
 				unlock_screen(client, 2);
