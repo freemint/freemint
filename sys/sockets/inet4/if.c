@@ -720,7 +720,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.dstaddr.sa_family));
+					ifr->ifru.addr.sa_family));
 				return EINVAL;
 			}
 			
@@ -797,7 +797,8 @@ if_ioctl (short cmd, long arg)
 			if (!ifa)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
-					"in AF_INET"));
+					"in this AF",
+					ifr->ifru.netmask.sa_family));
 				return EINVAL;
 			}
 			
@@ -818,7 +819,7 @@ if_ioctl (short cmd, long arg)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
 					"in this AF",
-					ifr->ifru.broadaddr.sa_family));
+					ifr->ifru.netmask.sa_family));
 				return EINVAL;
 			}
 			
@@ -929,7 +930,7 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 			ulong netmask;
 			
 			netmask = ip_netmask (in->sin_addr.s_addr);
-			if (netmask == 0)
+			if (netmask == 0 && in->sin_addr.s_addr != INADDR_ANY)
 			{
 				DEBUG (("if_setaddr: Addr not in class A/B/C"));
 				error = EADDRNOTAVAIL;
