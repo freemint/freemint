@@ -33,10 +33,13 @@
 
 # include "init.h"
 
+# include "mint/sockio.h"
+
 # include "bpf.h"
 # include "if.h"
 # include "icmp.h"
 # include "inet.h"
+# include "inetutil.h"
 # include "masquerade.h"
 # include "rawip.h"
 # include "route.h"
@@ -69,6 +72,53 @@ inet4_init (void)
 	/* initialize TCP protocol */
 	tcp_init ();
 	
+	/* initialize lo0 */
+	{
+		struct sockaddr_in in;
+		struct netif *nif;
+		struct ifaddr *ifa;
+		
+		nif = if_name2if ("lo0");
+		if (!nif)
+		{
+			ALERT (("inet4: No such interface lo0 ???"));
+			goto error;
+		}
+		
+		/* addr 127.0.0.1 */
+		
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = 2130706433UL;
+		in.sin_port = 0;
+		
+		if_setifaddr (nif, (struct sockaddr *) &in);
+		
+		ifa = if_af2ifaddr (nif, AF_INET);
+		if (!ifa)
+		{
+			ALERT (("inet4: initializing lo0 failed ???"));
+        		goto error;
+        	}
+		
+		/* netmask 255.255.255.0 */
+		
+		ifa->subnetmask = 4294967040UL;
+		ifa->subnet = ifa->subnetmask & 4294967040UL;
+		
+		/* broadaddr 127.0.0.255 */
+		
+		in.sin_family = AF_INET;
+		in.sin_addr.s_addr = 2130706687UL;
+		in.sin_port = 0;
+		
+		sa_copy (&ifa->ifu.broadaddr, (struct sockaddr *) &in);
+		
+		/* up & running */
+		
+		nif->ioctl(nif, SIOCSIFADDR, 0);
+	}
+	
+error:
 	/* register our domain */
 	inet_init ();
 }
