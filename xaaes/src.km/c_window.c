@@ -1315,7 +1315,7 @@ draw_window(enum locks lock, struct xa_window *wind, RECT *clip)
 			{
 				if (wind->thinwork)
 				{
-					left_line(1, &wa, wind->colours->frame_col);
+					//left_line(1, &wa, wind->colours->frame_col);
 					//right_line(1, &wa, G_BLACK);
 					//tl_hook(1, &wa, G_LBLACK);
 					//br_hook(1, &wa, G_BLACK);
