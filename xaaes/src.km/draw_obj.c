@@ -1275,7 +1275,7 @@ d_g_button(enum locks lock, struct widget_tree *wt)
 		else
 		{
 			XA_TREE b;
-			b.owner = C.Aes;
+			b.owner = wt->owner; //C.Aes;
 			b.tree = get_widgets();
 			display_object(	lock, &b,
 					  (ob->ob_flags & OF_RBUTTON)
@@ -1773,7 +1773,7 @@ l_text(short x, short y, char *t, short w, int left)
 }
 
 static void
-display_list_element(enum locks lock, SCROLL_ENTRY *this, int left, short x, short y, short w, int sel)
+display_list_element(enum locks lock, struct xa_client *client, SCROLL_ENTRY *this, int left, short x, short y, short w, int sel)
 {
 	XA_TREE tr = nil_tree;
 	short xt = x + ICON_W;
@@ -1802,7 +1802,7 @@ display_list_element(enum locks lock, SCROLL_ENTRY *this, int left, short x, sho
 				this->icon->ob_state &= ~OS_SELECTED;
 
 			tr.tree = this->icon;
-			tr.owner = C.Aes;
+			tr.owner = client; //C.Aes;
 			display_object(lock, &tr, 0, x, y, 12);
 		}
 	}
@@ -1852,7 +1852,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 		for (; y <= maxy; y += screen.c_max_h)
 		{
 			/* can handle nil this */
-			display_list_element(lock, this, list->left, wa.x, y, wa.w, this == list->cur);
+			display_list_element(lock, wt->owner, this, list->left, wa.x, y, wa.w, this == list->cur);
 			if (this)
 			{
 				list->bot = this;
@@ -1880,7 +1880,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt)
 		}
 		/* scroll list windows are not on top, but are visible! */
 		display_vslide(list->lock, w, get_widget(w, XAW_VSLIDE));
-		display_list_element(lock, this, list->left, wa.x, y, wa.w, this == list->cur);
+		display_list_element(lock, wt->owner, this, list->left, wa.x, y, wa.w, this == list->cur);
 		list->state = 0;
 	}
 	done(OS_SELECTED);
