@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * Keyboard handling stuff
  *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
@@ -136,7 +136,7 @@ static const ushort mmasks[] =
 };
 
 struct	cad_def cad[3];	/* for halt, warm and cold resp. */
-short	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
+short	gl_kbd;		/* keyboard layout, initialized at startup */
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;	/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;	/* place for saving the hz_200 timer value */
@@ -144,10 +144,12 @@ static	long hz_ticks;	/* place for saving the hz_200 timer value */
 static	uchar numin[3];	/* buffer for storing ASCII code typed in via numpad */
 static	ushort numidx;	/* index for the buffer (0 = empty, 3 = full) */
 
-/* keyboard table pointers indexed by AKP */
-struct keytab keyboards[MAXAKP+1];
-
-static uchar *current_keytab;	/* keyboard table being in use */
+/* keyboard table pointers */
+static struct keytab keytable_vecs;
+/* this is 0, if no external table was loaded,
+ * or points to its buffer otherwise
+ */
+static uchar *current_keytab;
 
 /* Routine called after the user hit Ctrl/Alt/Del
  */
@@ -433,7 +435,7 @@ ikbd_scan (ushort scancode)
 				if (numidx > 2)		/* buffer full? reset it */
 					numidx = 0;
 
-				chartable = keyboards[gl_kbd].unshift;
+				chartable = keytable_vecs.unshift;
 				ascii = chartable[scancode];
 				if (ascii)
 				{
@@ -476,11 +478,59 @@ key_done:
 	return -1;			/* don't go to TOS, just return */
 }
 
-/* Initialization routines
+/* Init section
+ *
+ * There's our private set of keyboard translation vectors (the
+ * struct keytable_vecs above). The init_keybd() called from init.c
+ * pre-initializes these to point to the embedded table (usa_kbd[]
+ * in key_tables.h). Some time later init.c calls load_keytbl() to
+ * load an user supplied keyboard table, if one exists. The file is
+ * opened by load_keyboard_table() and its contents is loaded to the
+ * memory by load_table(). This one also allocates the buffer long
+ * enough to hold the entire table. If the file loaded doesn't look
+ * like keyboard table, the buffer is released and the function fails.
+ * In this case the vectors remain as they are after init_keybd().
+ * Otherwise the load_table() changes the vectors to point to the newly
+ * loaded table and exits with success. Next and last step is bioskeys()
+ * which actually moves the contents of the keytable_vecs to the user
+ * visible structure in the memory and fixes the value in the Cookie
+ * Jar to reflect the current state.
  */
 
+/* The XBIOS' Bioskeys() function
+ */
+void
+bioskeys(void)
+{
+	long akp_val = 0;
+	struct keytab *syskeytab;
+
+	kbd_lock = 1;
+
+	/* call the underlying XBIOS */
+	syskeytab = Keytbl(-1, -1, -1);
+
+	/* Reset the vectors */
+	syskeytab->unshift = keytable_vecs.unshift;
+	syskeytab->shift = keytable_vecs.shift;
+	syskeytab->caps = keytable_vecs.caps;
+	syskeytab->alt = keytable_vecs.alt;
+	syskeytab->altshift = keytable_vecs.altshift;
+	syskeytab->altcaps = keytable_vecs.altcaps;
+
+	/* Fix the _AKP cookie, gl_kbd may get changed in load_table()
+	 */
+	get_cookie(COOKIE__AKP, &akp_val);
+	akp_val &= 0xffffff00L;
+	akp_val |= gl_kbd;
+	set_cookie(COOKIE__AKP, akp_val);
+
+	/* Done! */
+	kbd_lock = 0;
+}
+
 static short
-fill_keystruct(short index, uchar *table)
+fill_keystruct(uchar *table)
 {
 	uchar *tmp = table + 384;
 	uchar *unshift, *shift, *caps, *alt, *altshift, *altcaps;
@@ -525,12 +575,12 @@ fill_keystruct(short index, uchar *table)
 	if (!sanity) return 0;
 	altcaps = tmp;
 
-	keyboards[index].unshift = unshift;
-	keyboards[index].shift = shift;
-	keyboards[index].caps = caps;
-	keyboards[index].alt = alt;
-	keyboards[index].altshift = altshift;
-	keyboards[index].altcaps = altcaps;
+	keytable_vecs.unshift = unshift;
+	keytable_vecs.shift = shift;
+	keytable_vecs.caps = caps;
+	keytable_vecs.alt = alt;
+	keytable_vecs.altshift = altshift;
+	keytable_vecs.altcaps = altcaps;
 
 	return 1;	/* OK */
 }
@@ -540,6 +590,7 @@ load_table(FILEPTR *fp, char *name, long size)
 {
 	char *kbuf;
 	short ret = 0;
+	char msg[64];
 
 	/* This is 128+128+128 for unshifted, shifted and caps
 	 * tables respectively; plus 3 bytes for three alt ones,
@@ -556,7 +607,7 @@ load_table(FILEPTR *fp, char *name, long size)
 		{
 			case	0x2771:		/* magic word for std format */
 			{
-				ret = fill_keystruct(gl_kbd, (uchar *)kbuf + sizeof(short));
+				ret = fill_keystruct((uchar *)kbuf + sizeof(short));
 				break;
 			}
 			case	0x2772:		/* magic word for ext format */
@@ -570,7 +621,7 @@ load_table(FILEPTR *fp, char *name, long size)
 
 				if (sbuf[1] <= MAXAKP)
 				{
-					ret = fill_keystruct(sbuf[1], (uchar *)kbuf + sizeof(long));
+					ret = fill_keystruct((uchar *)kbuf + sizeof(long));
 					if (ret)
 						gl_kbd = sbuf[1];
 				}
@@ -587,105 +638,22 @@ load_table(FILEPTR *fp, char *name, long size)
 	}
 
 	/* Success */
-	{
-		char msg[64];
+	if (current_keytab)
+		kfree(current_keytab);
+	current_keytab = (uchar *)kbuf;
 
-		ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
-		c_conws(msg);
-	}
+	ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
+	c_conws(msg);
 
 	return 1;
 }
 
-/* The XBIOS' Bioskeys() function
- */
 void
-bioskeys(void)
-{
-	short x;
-	uchar *src, *dst;
-	long oldbase, newbase;
-	struct keytab *syskeytab;
-
-	kbd_lock = 1;
-
-	/* Copy the basic keycode definitions (unshifted, shifted
-	 * and caps) to the current buffer
-	 */
-	src = keyboards[gl_kbd].unshift;
-	dst = current_keytab;
-
-	for (x = 0; x < 384; x++)
-		*dst++ = *src++;
-
-	/* Now copy the definitions with Alternate */
-	src = keyboards[gl_kbd].alt;
-	do
-	{
-		*dst++ = *src;
-	} while (*src++);
-
-	src = keyboards[gl_kbd].altshift;
-	do
-	{
-		*dst++ = *src;
-	} while (*src++);
-
-	src = keyboards[gl_kbd].altcaps;
-	do
-	{
-		*dst++ = *src;
-	} while (*src++);
-
-	syskeytab = Keytbl(-1, -1, -1);	/* call the underlying XBIOS */
-
-	/* Calculate the addresses */
-	oldbase = (long)keyboards[gl_kbd].unshift;
-	newbase = (long)current_keytab;
-
-	syskeytab->unshift = current_keytab;
-	syskeytab->shift = (uchar *)((long)keyboards[gl_kbd].shift - oldbase + newbase);
-	syskeytab->caps = (uchar *)((long)keyboards[gl_kbd].caps - oldbase + newbase);
-	syskeytab->alt = (uchar *)((long)keyboards[gl_kbd].alt - oldbase + newbase);
-	syskeytab->altshift = (uchar *)((long)keyboards[gl_kbd].altshift - oldbase + newbase);
-	syskeytab->altcaps = (uchar *)((long)keyboards[gl_kbd].altcaps - oldbase + newbase);
-
-	/* Done! */
-	kbd_lock = 0;
-}
-
-/* Initialize the built-in keyboard tables.
- * This must be done before init_intr()!
- */
-void
-init_keybd(void)
-{
-	short x;
-
-	kbd_lock = 1;
-
-	/* The USA keyboard is default */
-	for (x = 0; x < 127; x++)
-		fill_keystruct(x, (uchar *)usa_kbd);
-
-	fill_keystruct(1, (uchar *)german_kbd);
-	fill_keystruct(2, (uchar *)french_kbd);
-	fill_keystruct(3, (uchar *)british_kbd);
-	fill_keystruct(4, (uchar *)spanish_kbd);
-	fill_keystruct(5, (uchar *)italian_kbd);
-	fill_keystruct(6, (uchar *)british_kbd);
-	fill_keystruct(7, (uchar *)sw_french_kbd);
-	fill_keystruct(8, (uchar *)sw_german_kbd);
-
-	kbd_lock = 0;
-}
-
-void
-load_keytbl(void)
+load_keyboard_table(char *filename)
 {
 	XATTR xattr;
 	FILEPTR *fp;
-	long ret, table_len = 387L, akp_val = 0L;
+	long ret;
 	char name[32];		/* satis uidetur */
 
 	ret = FP_ALLOC(rootproc, &fp);
@@ -694,7 +662,7 @@ load_keytbl(void)
 	/* `keybd.tbl' is already used by gem.sys, we can't conflict
 	 */
 	strcpy(name, sysdir);
-	strcat(name, "keyboard.tbl");
+	strcat(name, filename);
 
 	if (!do_open(&fp, name, O_RDONLY, 0, &xattr))
 	{
@@ -707,27 +675,26 @@ load_keytbl(void)
 		FP_FREE(fp);
 	}
 
-	/* Now fix the _AKP code in the Cookie Jar, if it changes */
-	if (ret)
-	{
-		get_cookie(COOKIE__AKP, &akp_val);
-		akp_val &= 0xffffff00L;
-		akp_val |= gl_kbd;
-		set_cookie(COOKIE__AKP, akp_val);
-	}
-
-	/* Alloc the buffer for the `current' keyboard table */
-	table_len += strlen(keyboards[gl_kbd].alt);
-	table_len += strlen(keyboards[gl_kbd].altshift);
-	table_len += strlen(keyboards[gl_kbd].altcaps);
-
-	current_keytab = kmalloc(table_len);
-
-	if (!current_keytab)
-		FATAL(__FILE__ ": out of RAM in " __FUNCTION__);
-
 	/* Install the tables in the system */
 	bioskeys();
+}
+
+/* This is called from init.c at startup
+ */
+void
+load_keytbl(void)
+{
+	load_keyboard_table("keyboard.tbl");
+}
+
+/* Initialize the built-in keyboard tables.
+ * This must be done before init_intr()!
+ */
+void
+init_keybd(void)
+{
+	fill_keystruct((uchar *)usa_kbd);
+	gl_kbd = 0;
 }
 
 /* EOF */

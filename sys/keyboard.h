@@ -97,6 +97,7 @@ short ikbd_scan(ushort scancode);
 
 void init_keybd(void);
 void load_keytbl(void);
+void load_keyboard_table(char *filename);
 void bioskeys(void);
 
 extern short gl_kbd;
