@@ -287,10 +287,11 @@ dosleep:
  *		or you don't own it (modes 1 and 4).
  *
  * If you create a semaphore you will also own it, so you have to release
- * it with mode 2 before anybody else can get it.  Semaphore ID's are magic
+ * it with mode 3 before anybody else can get it.  Semaphore ID's are magic
  * numbers which the creator should make available to the users. You have
- * to own a semaphore to destroy it.  If you block waiting for a semaphore,
- * and then it gets destroyed, you get EBADARG.
+ * to own a semaphore to destroy it or the semaphore must be free.
+ * If you block waiting for a semaphore and then it gets destroyed,
+ * you get EBADARG.
  *
  * The timeout argument is ignored except in mode 2.  In that mode, 0 means
  * "return immediately" and, as a special case, -1 means "forever."
