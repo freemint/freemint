@@ -38,12 +38,15 @@
 
 # include "ptrace.h"
 
-# include "arch/process_reg.h"
-# include "arch/mprot.h"
 # include "libkern/libkern.h"
+
 # include "mint/arch/register.h"
 # include "mint/asm.h"
 # include "mint/proc.h"
+# include "mint/signal.h"
+
+# include "arch/process_reg.h"
+# include "arch/mprot.h"
 
 # include "memory.h"
 # include "proc.h"

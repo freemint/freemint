@@ -254,6 +254,7 @@
 # include "arch/timer.h"
 
 # include "dev-null.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "proc.h"
 # include "ssystem.h"
@@ -1500,7 +1501,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDADDTOENTCNT:
 		{
-			if (curproc->euid != 0)
+			if (!suser (curproc->p_cred->ucr))
 				return EACCES;
 			
 			ent_count = *((long *) arg);
@@ -1526,7 +1527,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDGETPOOL:
 		{
-			if (curproc->euid != 0)
+			if (!suser (curproc->p_cred->ucr))
 				return EACCES;
 			
 			p = arg;
@@ -1544,7 +1545,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDADDENTROPY:
 		{
-			if (curproc->euid != 0)
+			if (!suser (curproc->p_cred->ucr))
 				return EACCES;
 			
 			p = arg;
@@ -1574,7 +1575,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDZAPENTCNT:
 		{
-			if (curproc->euid != 0)
+			if (!suser (curproc->p_cred->ucr))
 				return EACCES;
 			
 			random_state.entropy_count = 0;
@@ -1583,7 +1584,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDCLEARPOOL:
 		{
-			if (curproc->euid != 0)
+			if (!suser (curproc->p_cred->ucr))
 				return EACCES;
 			
 			/* Clear the entropy pool and associated counters */

@@ -65,7 +65,7 @@ INLINE void *
 __kcore (ulong size, char *file, long line)
 {
 	void *ptr = _kcore (size);
-	FORCE ("%s, %ld: kcore (%lu -> %lx) called!", file, line, size, ptr);
+	TRACE (("%s, %ld: kcore (%lu -> %lx) called!", file, line, size, ptr));
 	return ptr;
 }
 # define kcore			__kcore (size, __FILE__, __LINE__)
@@ -78,9 +78,9 @@ INLINE void *
 __kmalloc (ulong size, char *file, long line)
 {
 	void *ptr;
-	FORCE ("%s, %ld: kmalloc (%lu) called!", file, line, size);
+	TRACE (("%s, %ld: kmalloc (%lu) called!", file, line, size));
 	ptr = _kmalloc (size);
-	FORCE ("%s, %ld: kmalloc return %lx.", file, line, ptr);
+	TRACE (("%s, %ld: kmalloc return %lx.", file, line, ptr));
 	return ptr;
 }
 # define kmalloc(size)		__kmalloc (size, __FILE__, __LINE__)
@@ -93,7 +93,7 @@ __kmalloc (ulong size, char *file, long line)
 INLINE void
 __kfree (void *place, char *file, long line)
 {
-	FORCE ("%s, %ld: kfree (%lx) called!", file, line, place);
+	TRACE (("%s, %ld: kfree (%lx) called!", file, line, place));
 	return _kfree (place);
 }
 # define kfree(place)		__kfree (place, __FILE__, __LINE__)
@@ -107,7 +107,7 @@ INLINE void *
 __umalloc (ulong size, char *file, long line)
 {
 	void *ptr = _umalloc (size);
-	FORCE ("%s, %ld: umalloc (%lu -> %lx) called!", file, line, size, ptr);
+	TRACE (("%s, %ld: umalloc (%lu -> %lx) called!", file, line, size, ptr));
 	return ptr;
 }
 # define umalloc(size)		__umalloc (size, __FILE__, __LINE__)
@@ -120,7 +120,7 @@ __umalloc (ulong size, char *file, long line)
 INLINE void
 __ufree (void *place, char *file, long line)
 {
-	FORCE ("%s, %ld: ufree (%lx) called!", file, line, place);
+	TRACE (("%s, %ld: ufree (%lx) called!", file, line, place));
 	return _ufree (place);
 }
 # define ufree(place)		__ufree (place, __FILE__, __LINE__)

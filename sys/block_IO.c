@@ -169,6 +169,7 @@
 # include "libkern/libkern.h"
 
 # include "bios.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "pun.h"
 # include "proc.h"
@@ -1503,6 +1504,7 @@ bio_set_percentage (long percentage)
 static long _cdecl
 bio_config (const ushort drv, const long config, const long mode)
 {
+	struct ucred *cred = curproc->p_cred->ucr;
 	if (drv >= NUM_DRIVES)
 		return ENXIO;
 	
@@ -1515,7 +1517,7 @@ bio_config (const ushort drv, const long config, const long mode)
 			if (mode == ASK)
 				return BIO_WP_CHECK (di);
 			
-			if (!(curproc->euid == 0))
+			if (!suser (cred))
 				return EPERM;
 			
 			if (di->mode & BIO_WP_HARD)
@@ -1535,7 +1537,7 @@ bio_config (const ushort drv, const long config, const long mode)
 			if (mode == ASK)
 				return BIO_WB_CHECK (di);
 			
-			if (!(curproc->euid == 0))
+			if (!suser (cred))
 				return EPERM;
 			
 			if (mode)
@@ -1551,7 +1553,7 @@ bio_config (const ushort drv, const long config, const long mode)
 			if (mode == ASK)
 				return (di->mode & BIO_ENCRYPTED);
 			
-			if (!(curproc->euid == 0))
+			if (!suser (cred))
 				return EPERM;
 			
 			return E_OK;

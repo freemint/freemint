@@ -168,29 +168,9 @@ const char *crypto_greet =
 ;
 # endif
 
-const char *startmenu =
-	"\033E\r\n\033p"
-	"     FreeMiNT boot menu     \033q\r\n\r\n"
-	"<1> Start up FreeMiNT: %s"
-	"<2> Load external XFS: %s"
-	"<3> Load external XDD: %s"
-	"<4> Continue the AUTO: %s"
-	"<5> Memory protection: %s"
-	"<0> Save default-file: %s\r\n"
-	"[Return] accept,\r\n"
-	"[Ctrl-C] cancel.\r\n"
-;
 
 /* Paths used by init.c and cnf.c to find out where the cnf file is */
 
 const char *cnf_path_1 = "mint.cnf";
 const char *cnf_path_2 = "\\multitos\\mint.cnf";
 const char *cnf_path_3 = "\\mint\\mint.cnf";
-
-const char *ini_warn =
-	"# This file is automatically created,\n"
-	"# do not edit.\n\n"
-;
-
-/* EOF */
-

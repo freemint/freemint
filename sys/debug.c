@@ -337,10 +337,8 @@ Debug (const char *s, ...)
 		va_end (args);
 	}
 	
-	if (debug_logging && debug_level >= DEBUG_LEVEL)
-	{
+	if (debug_logging && (debug_level >= DEBUG_LEVEL))
 		DUMPLOG ();
-	}
 }
 
 void _cdecl
@@ -355,10 +353,8 @@ ALERT (const char *s, ...)
 		va_end (args);
 	}
 	
-	if (debug_logging && debug_level >= ALERT_LEVEL)
-	{
+	if (debug_logging && (debug_level >= ALERT_LEVEL))
 		DUMPLOG ();
-	}
 }
 
 void _cdecl
@@ -518,7 +514,7 @@ HALT (void)
 	for (;;)
 	{
 		/* get a key; if ctl-alt then do it, else halt */
-		key = Bconin (out_device);
+		key = Bconin (2);
 		
 		if ((key & 0x0c000000L) == 0x0c000000L)
 		{

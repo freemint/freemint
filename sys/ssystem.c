@@ -32,6 +32,7 @@
 # include "cookie.h"
 # include "info.h"
 # include "memory.h"
+# include "k_prot.h"
 # include "proc.h"
 # include "time.h"
 # include "update.h"
@@ -46,7 +47,7 @@ short disallow_single = 0;
 long _cdecl
 s_system (int mode, ulong arg1, ulong arg2)
 {
-	ushort isroot = (curproc->euid == 0);
+	ushort isroot = suser (curproc->p_cred->ucr);
 	ulong *lpointer;
 	ushort *wpointer;
 	uchar *bpointer;
