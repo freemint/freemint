@@ -9,6 +9,8 @@
 #define SYS_MN_SALERT 20  /* STRING in Baum SYSTEM_MENU */
 #define SYS_MN_ENV 21  /* STRING in Baum SYSTEM_MENU */
 #define SYS_MN_SHUTDOWN 23  /* STRING in Baum SYSTEM_MENU */
+#define SYS_MN_QUIT 24  /* STRING in Baum SYSTEM_MENU */
+
 
 #define FSEL_MENU 1   /* Menuebaum */
 #define FSEL_DRV 3   /* TITLE in Baum FSEL_MENU */
@@ -66,6 +68,8 @@
 #define TM_QUIT  14  /* BUTTON in Baum TASK_MANAGER */
 #define TM_SHUT  15  /* BUTTON in Baum TASK_MANAGER */
 #define TM_OK    16  /* BUTTON in Baum TASK_MANAGER */
+#define TM_REBOOT 17 /* BUTTON in Baum TASK_MANAGER */
+#define TM_HALT   18 /* BUTTON in Baum TASK_MANAGER */
 
 #define SYS_ERROR 7   /* Formular/Dialog */
 #define SYSALERT_LIST 1   /* BOX in Baum SYS_ERROR */
