@@ -94,25 +94,14 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 {
 	XA_WIDGET *wi = get_widget(wind, XAW_TOOLBAR);
 	XA_WIDGET_LOCATION loc;
-	XA_TREE *nt;
 
-	/* XXX not freed anywhere */
-	nt = kmalloc(sizeof(*nt));
+	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx",
+		wind->handle, desktop));
 
-	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx(len=%ld)",
-		wind->handle, nt, (long)sizeof(*nt)));
+	if (wi->stuff)
+		((XA_TREE *)wi->stuff)->widg = NULL;
 
-	if (!nt)
-	{
-		DIAG((D_widg, NULL, " - unable to allocate widget."));
-		return;
-	}
-
-	/* desktop widget.tree */
-	bzero(nt, sizeof(*nt));
-	copy_wt(nt, desktop);
-	//*nt = *desktop;	
-	nt->flags |= WTF_ALLOC;
+	desktop->widg = wi;
 
 	bzero(&loc, sizeof(loc));
 	loc.relative_type = LT;
@@ -135,11 +124,10 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	 * Set destruct, stufftype and XAWF_STUFFMALLOC and 'nt' is freed.
 	 * Set XAWF_STUFFMALLOC and nt is freed by free_xawidget()
 	 */
-	wi->stuff = nt;
+	wi->stuff = desktop;
 	wi->stufftype = STUFF_IS_WT;
-	wi->flags |= XAWF_STUFFKMALLOC;
 	wi->destruct = free_xawidget_resources;
-
+	
 	wi->start = 0;
 }
 
@@ -164,21 +152,34 @@ redraw_desktop(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
+static void
+Pset_desktop(void *_parm)
+{
+	set_desktop(_parm);
+	wake(IO_Q, (long)_parm);
+	kthread_exit(0);
+}
+	
 /*
  * Set a new object tree for the desktop 
  */
-void
-set_desktop(XA_TREE *new_desktop)
+static void
+Set_desktop(XA_TREE *new_desktop)
 {
 	OBJECT *ob; RECT r;
 	XA_WIDGET *wi = get_widget(root_window, XAW_TOOLBAR);
-	XA_TREE *desktop = wi->stuff;
 
 	/* Set the desktop */
-	copy_wt(desktop, new_desktop);
-	//*desktop = *new_desktop;
 
-	ob = desktop->tree;
+	if (wi->stuff)
+	{
+		((XA_TREE *)wi->stuff)->widg = NULL;
+		((XA_TREE *)wi->stuff)->flags &= ~WTF_STATIC;
+	}
+	new_desktop->widg = wi;
+	new_desktop->flags |= WTF_STATIC;
+
+	ob = new_desktop->tree;
 	r = *(RECT*)&ob->ob_x;
 
 	/* Now use the root window's auto-redraw function to redraw it
@@ -192,8 +193,34 @@ set_desktop(XA_TREE *new_desktop)
 	/* HR 010501: general fix */
 	if (root_window->r.h > r.h)
 		wi->loc.r.y = ob->ob_y = root_window->r.h - r.h;
-}
 
+	wi->stuff = new_desktop;
+	wi->stufftype = STUFF_IS_WT;
+	wi->destruct = free_xawidget_resources;
+}
+void
+set_desktop(XA_TREE *new_desktop)
+{
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+
+	if (!rc)
+		rc = C.Aes;
+
+	if (rc == new_desktop->owner || rc == C.Aes)
+	{
+		DIAGS((" set_desktop: Direct from %s to %s",
+			new_desktop->owner->name));
+
+		Set_desktop(new_desktop);
+	}
+	else
+	{
+		DIAGS((" set_desktop: kthreaded from %s to %s",
+			rc->name, new_desktop->owner->name));
+		kthread_create(new_desktop->owner->p, Pset_desktop, new_desktop, NULL, "kt set_desktop (%s)", new_desktop->owner->name);
+		sleep(IO_Q, (long)new_desktop);
+	}
+}	
 struct xa_client *
 desktop_owner(void)
 {

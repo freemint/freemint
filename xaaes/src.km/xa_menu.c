@@ -126,7 +126,7 @@ unsigned long
 XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	XA_TREE *menu_bar;
-	XA_TREE *menu = &client->std_menu;
+	XA_TREE *menu = client->std_menu;
 
 	OBJECT *mnu = (OBJECT*)pb->addrin[0];
 	struct xa_window *wl;
@@ -148,51 +148,68 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (mnu)
 		{
-			/* Do a special fix on the menu  */
-			fix_menu(client, mnu,true);
-			DIAG((D_menu,NULL,"fixed menu"));
+			XA_TREE *mwt = obtree_to_wt(client, mnu);
 
-			mnu->ob_width = mnu[mnu->ob_tail].ob_width = mnu[mnu->ob_head].ob_width = screen.r.w;
+			if (!mwt || (mwt && mwt != menu))
+			{
+				if (!mwt)
+					mwt = new_widget_tree(client, mnu);
+
+				client->std_menu = mwt;
+
+				/* Do a special fix on the menu  */
+				fix_menu(client, mnu,true);
+				DIAG((D_menu,NULL,"fixed menu"));
+
+				mnu->ob_width = mnu[mnu->ob_tail].ob_width = mnu[mnu->ob_head].ob_width = screen.r.w;
 	
 #if GENERATE_DIAGS
-			{
-				int i = 0;
-				while ((mnu[i].ob_flags & OF_LASTOB) == 0)
-					i++;
-				menu_bar->lastob = i;
-			}
+				{
+					int i = 0;
+					while ((mnu[i].ob_flags & OF_LASTOB) == 0)
+						i++;
+					mwt->lastob = i;
+				}
 #endif
-			/* HR: std_menu is now a complete widget_tree :-) */
-			menu->tree = mnu;
-			menu->owner = client;
-			menu->is_menu = true;
-			menu->menu_line = true;
-			swap_menu(lock|winlist, client, false, 6);
-			pb->intout[0] = 1;
-			DIAG((D_menu, NULL, "done display, lastob = %d", menu->lastob));
+				/* HR: std_menu is now a complete widget_tree :-) */
+				mwt->is_menu = true;
+				mwt->menu_line = true;
+
+				//menu->tree = mnu;
+				//menu->owner = client;
+				//menu->is_menu = true;
+				//menu->menu_line = true;
+				swap_menu(lock|winlist, client, false, 6);
+				pb->intout[0] = 1;
+				DIAG((D_menu, NULL, "done display, lastob = %d", mwt->lastob));
+			}
 		}
 		break;
 	}
 	case MENU_REMOVE:
 	{
 		DIAG((D_menu,NULL,"MENU_REMOVE"));
-		remove_attachments(lock|winlist, client, menu->tree);
-		menu->tree = NULL;
 
-		top_owner = C.Aes;
-		wl = window_list;
-		while (wl)
+		if (menu)
 		{
-			if (   wl->owner != client
-			    && wl->owner->std_menu.tree)
+			remove_attachments(lock|winlist, client, menu->tree);
+
+			top_owner = C.Aes;
+			wl = window_list;
+			while (wl)
 			{
-				top_owner = wl->owner;
-				break;
+				if (   wl->owner != client
+				    && wl->owner->std_menu)
+				{
+					top_owner = wl->owner;
+					break;
+				}
+				wl = wl->next;
 			}
-			wl = wl->next;
+			swap_menu(lock|winlist, top_owner, false, 7);
+			client->std_menu = NULL;
+			pb->intout[0] = 1;
 		}
-		swap_menu(lock|winlist, top_owner, false, 7);
-		pb->intout[0] = 1;
 		break;
 	}
 	case MENU_INQUIRE:

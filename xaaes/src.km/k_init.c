@@ -353,15 +353,14 @@ k_init(void)
 				0);			/* need no remembrance */
 
 	/* Tack a menu onto the root_window widget */
-	C.Aes->std_menu.tree = ResourceTree(C.Aes_rsc, SYSTEM_MENU);
-	C.Aes->std_menu.owner = C.Aes;
+	C.Aes->std_menu = new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYSTEM_MENU));
 	C.Aes->mnu_clientlistname = kmalloc(strlen(mnu_clientlistname)+1);
 	assert(C.Aes->mnu_clientlistname);
 	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
-	fix_menu(C.Aes, C.Aes->std_menu.tree, true);
-	set_menu_widget(root_window, &C.Aes->std_menu);
+	fix_menu(C.Aes, C.Aes->std_menu->tree, true);
+	set_menu_widget(root_window, C.Aes->std_menu);
 	{
-		char *vs = object_get_spec(C.Aes->std_menu.tree + SYS_DESK)->free_string;
+		char *vs = object_get_spec(C.Aes->std_menu->tree + SYS_DESK)->free_string;
 		strcpy(vs + strlen(vs) - 3, version + 3);
 	}
 	DIAGS(("menu widget set"));
@@ -383,11 +382,10 @@ k_init(void)
 		*(RECT*)&ob->ob_x = root_window->r;
 		(ob + DESKTOP_LOGO)->ob_x = (root_window->wa.w - (ob + DESKTOP_LOGO)->ob_width) / 2;
 		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
-		C.Aes->desktop.tree = ob;
-		C.Aes->desktop.owner = C.Aes;
+		C.Aes->desktop = new_widget_tree(C.Aes, ob);
 		
-		set_desktop_widget(root_window, &C.Aes->desktop);
-		set_desktop(&C.Aes->desktop);
+		set_desktop_widget(root_window, C.Aes->desktop);
+		set_desktop(C.Aes->desktop);
 	}
 
 	DIAGS(("setting up task manager"));
