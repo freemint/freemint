@@ -61,6 +61,20 @@ struct privilege_violation_stackframe
  * access faults. Very funny...
  */
 
+/* 68000 Special Status Word */
+struct mc68000_ssw
+{
+	unsigned :11;
+	unsigned rw:1;		/* Read/write (1 = read) */
+	unsigned in:1;		/* Instruction/Not (1 = Not) */
+	unsigned fc:3;		/* Function code (address space) */
+};
+
+struct mc68010_ssw
+{
+	unsigned :16;		/* Not yet */
+};
+
 /* 68020/68030 Special Status Word */
 struct mc68030_ssw
 {
@@ -123,10 +137,43 @@ struct mc68060_fslw
 	unsigned see:1;
 };
 
+typedef struct mc68000_bus_frame MC68000_BUS_FRAME;
+typedef struct mc68010_bus_frame MC68010_BUS_FRAME;
 typedef struct mc68030_bus_frame_short MC68030_SHORT_FRAME;
 typedef struct mc68030_bus_frame_long MC68030_LONG_FRAME;
 typedef struct mc68040_bus_frame MC68040_BUS_FRAME;
 typedef struct mc68060_bus_frame MC68060_BUS_FRAME;
+
+/* 68000 bus error stack frame */
+struct mc68000_bus_frame
+{
+	ulong data_reg[8];
+	ulong addr_reg[7];
+	struct mc68000_ssw ssw;
+	void *fault_address;
+	ushort instruction_register;
+	ushort sr;
+	ushort *pc;
+};
+
+/* 68010 bus error stack frame, format $8 */
+struct mc68010_bus_frame
+{
+	ulong data_reg[8];
+	ulong addr_reg[7];
+	ushort sr;
+	ushort *pc;
+	ushort format_word;
+	struct mc68010_ssw ssw;
+	void *fault_address;
+	ushort unused_1;
+	ushort data_output_buffer;
+	ushort unused_2;
+	ushort data_input_buffer;
+	ushort unused_3;
+	ushort instruction_output_buffer;
+	ushort version_number;
+};
 
 /* 68020/68030 short bus cycle fault stack frame, format $a */
 struct mc68030_bus_frame_short
