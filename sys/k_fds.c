@@ -223,7 +223,7 @@ do_dup (short fd, short min)
 	short newfd;
 	long ret;
 	
-	assert (p->p_fd && p->p_cwd);
+	assert (p->p_fd);
 	
 	ret = FD_ALLOC (curproc, &newfd, min);
 	if (ret) return ret;
