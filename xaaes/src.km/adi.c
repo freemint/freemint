@@ -117,7 +117,7 @@ adi_name2adi (char *aname)
 }
 
 long
-adi_ioctl(char *name, short cmd, long arg)
+adi_ioctl(struct adif *a, short cmd, long arg)
 {
-	return 0;
+	return (*a->ioctl)(a, cmd, arg);
 }
