@@ -194,6 +194,7 @@ Block(struct xa_client *client, int which)
 
 	if (check_queued_events(client))
 		return;
+
 	/*
 	 * Getting here if no more client events are in the queue
 	 * Looping around doing client events until a user event
@@ -450,17 +451,29 @@ dispatch_shutdown(int flags)
 	wakeselect(C.Aes->p);
 }
 
+static void k_exit(void);
+
 /*
  * signal handlers
  */
 static void
 ignore(void)
 {
-	DIAGS(("signal ignored!"));
+	DIAGS(("AESSYS: ignored signal"));
+	KERNEL_DEBUG("AESSYS: ignored signal");
 }
+#if !GENERATE_DIAGS
+static void
+fatal(void)
+{
+	KERNEL_DEBUG("AESSYS: fatal error, try to cleaning up");
+	k_exit();
+}
+#endif
 static void
 sigterm(void)
 {
+	KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");
 	dispatch_shutdown(0);
 }
 static void
@@ -473,8 +486,6 @@ sigchld(void)
 		DIAGS(("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16)));
 	}
 }
-
-static void k_exit(void);
 
 /*
  * our XaAES server kernel thread
@@ -513,14 +524,14 @@ k_main(void *dummy)
 
 #if !GENERATE_DIAGS
 	/* fatal signals */
-	p_signal(SIGILL,   (long) k_exit);
-	p_signal(SIGTRAP,  (long) k_exit);
-	p_signal(SIGTRAP,  (long) k_exit);
-	p_signal(SIGABRT,  (long) k_exit);
-	p_signal(SIGFPE,   (long) k_exit);
-	p_signal(SIGBUS,   (long) k_exit);
-	p_signal(SIGSEGV,  (long) k_exit);
-	p_signal(SIGSYS,   (long) k_exit);
+	p_signal(SIGILL,   (long) fatal);
+	p_signal(SIGTRAP,  (long) fatal);
+	p_signal(SIGTRAP,  (long) fatal);
+	p_signal(SIGABRT,  (long) fatal);
+	p_signal(SIGFPE,   (long) fatal);
+	p_signal(SIGBUS,   (long) fatal);
+	p_signal(SIGSEGV,  (long) fatal);
+	p_signal(SIGSYS,   (long) fatal);
 #endif
 
 	/* other stuff */
