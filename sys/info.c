@@ -274,12 +274,6 @@ const char *MSG_oglobal_denied = "O_GLOBAL for sockets denied; update your netwo
 const char *MSG_global_handle = "Opening global handle (%s)";
 # endif
 
-/* -------- fasttext.c -------- */
-# ifdef FASTTEXT
-const char *ERR_ftxt_insuff_mem_for_table = "Insufficient memory for screen offset table!";
-const char *MSG_ftxt_insuff_mem_for_scroll = "Insufficient memory for hardware scrolling!";
-# endif
-
 /* -------- filesys.c --------- */
 
 const char *ERR_fsys_inv_fdcwd = "In changedrv() called from %s, invalid fd/cwd";

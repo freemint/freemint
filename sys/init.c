@@ -109,11 +109,6 @@ boot_printf (const char *fmt, ...)
 }
 
 
-# ifndef MULTITOS
-BASEPAGE *gem_base = 0;
-long gem_start = 0;
-# endif
-
 /* GEMDOS pointer to current basepage */
 BASEPAGE **tosbp;
 
@@ -715,11 +710,7 @@ wait:
 }
 
 
-# ifndef MULTITOS
-long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_ALLOCZERO;
-# else
 long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
-# endif
 
 void
 init (void)
@@ -1157,11 +1148,7 @@ init (void)
 
 			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", init_env);
 			bp->p_tbase = *((long *) EXEC_OS);
-# ifndef MULTITOS
-			if (((long *) sysbase[5])[0] == 0x87654321)
-				gem_start = ((long *) sysbase[5])[2];
-			gem_base = bp;
-# endif
+
 			r = sys_pexec(106, (char *)"GEM", bp, 0L);
 		}
 	}

@@ -26,7 +26,6 @@
 
 # include "bios.h"
 # include "dosmem.h"
-# include "fasttext.h"	/* for line A stuff */
 # include "filesys.h"
 # include "init.h"	/* __printf(f) */
 # include "k_exec.h"

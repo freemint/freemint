@@ -2,7 +2,6 @@
 # 
 # generic flags
 # 
-# -DMULTITOS		build MultiTOS kernel
 # -DVERBOSE_BOOT	include extensive messages
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
@@ -16,11 +15,6 @@
 # -DCPU040		build for 040/060
 # -DMILAN		build Milan kernel
 # -DMMU040		add 040/060 MMU support instead 030 MMU
-
-# 
-# deprecated flags (not recommended)
-# 
-# -DFASTTEXT		include the u:\dev\fasttext fast console driver
 
 # 
 # debug flags
@@ -38,7 +32,6 @@
 # mandatory for kernel source now
 KERNELDEFAULTDEFS = -D__KERNEL__
 
-KERNELDEFAULTDEFS += -DMULTITOS
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
 
 ifneq ($(kernel),000)

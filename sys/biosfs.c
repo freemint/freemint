@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1991,1992 Eric R. Smith.
  * Copyright 1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  */
 
 /* simple biosfs.c */
@@ -33,7 +33,6 @@
 # include "dev-mouse.h"
 # include "dev-null.h"
 # include "cookie.h"
-# include "fasttext.h"
 # include "info.h"
 # include "ipc_socketdev.h"
 # include "ipc_unix.h"
@@ -109,13 +108,13 @@ DEVDRV fakedev;
 FILESYS bios_filesys =
 {
 	NULL,
-	
+
 	FS_LONGPATH	|
 	FS_NO_C_CACHE	|
 	FS_REENTRANT_L1	|
 	FS_REENTRANT_L2	|
 	FS_EXT_2	,
-	
+
 	bios_root,
 	bios_lookup, null_creat, bios_getdev, bios_getxattr,
 	null_chattr, bios_chown, bios_chmode,
@@ -123,10 +122,10 @@ FILESYS bios_filesys =
 	bios_opendir, bios_readdir, null_rewinddir, null_closedir,
 	bios_pathconf, bios_dfree, null_writelabel, null_readlabel,
 	bios_symlink, bios_readlink, null_hardlink, bios_fscntl, null_dskchng,
-	
+
 	NULL, NULL, NULL,
 	NULL, NULL,
-	
+
 	0, 0, 0, 0, 0, 0,
 	NULL, NULL
 };
@@ -143,7 +142,7 @@ static struct bios_file BDEV [] =
 	{ "console",	&bios_tdevice,	 2,       O_TTY, &con_tty, NULL},
 	{ "midi",	&bios_tdevice,	 3,       O_TTY, &midi_tty, NULL},
 	{ "kbd",	&bios_ndevice,	 4,       0,     NULL, NULL},
-	
+
 	/* devices that duplicate handles
 	 */
 	{ "prn",	&fakedev,	-3,       0,     NULL, NULL}, /* printer */
@@ -154,7 +153,7 @@ static struct bios_file BDEV [] =
 	{ "stdout",	&fakedev,	 1,       0,     NULL, NULL}, /* stdout */
 	{ "stderr",	&fakedev,	 2,       0,     NULL, NULL}, /* stderr */
 	{ "fd",		&fakedev,	 S_IFDIR, 0,     NULL, NULL}, /* file descriptor directory */
-	
+
 	/* other miscellaneous devices
 	 */
 	{ "mouse",	&mouse_device,	 0,       0,     NULL, NULL},
@@ -168,13 +167,7 @@ static struct bios_file BDEV [] =
 # ifdef OLDSOCKDEVEMU
 	{ "socket",	&sockdevemu,	 0,       0,     NULL, NULL},
 # endif
-	
-# ifdef FASTTEXT
-	/* alternate console driver
-	 */
-	{ "fasttext",	&screen_device,	 2,       O_TTY, &con_tty, NULL},
-# endif
-	
+
 	/* serial port things *must* come last, because not all of these
 	 * are present on all machines (except for modem1, which does however
 	 * have a different device number on TTs and STs)
@@ -183,7 +176,7 @@ static struct bios_file BDEV [] =
 	{ "modem2",	&bios_tdevice,	 7,       O_TTY, &sccb_tty, NULL},
 	{ "serial1",	&bios_tdevice,	 8,       O_TTY, &ttmfp_tty, NULL},
 	{ "serial2",	&bios_tdevice,	 9,       O_TTY, &scca_tty, NULL},
-	
+
 	{"", 0, 0, 0, 0, 0}
 };
 
@@ -213,7 +206,7 @@ scc_set5 (volatile char *control, int setp, unsigned int bits, IOREC_T *iorec)
 {
 # ifndef MILAN
 	volatile char dummy;
-	
+
 	short sr = spl7();
 # if 1
 /* sanity check: if the w5 copy at offset 1d has bit 3 off something is wrong */
@@ -273,7 +266,7 @@ rsvf_open (int bdev)
 		}
 		if ((r->flags & 0xe0) == 0xe0 && r->bdev == bdev) {
 			char rname[0x80];
-			
+
 			strcpy (rname, "u:\\dev\\");
 			strncpy (rname + sizeof "u:\\dev\\" - 1, r->f.name,
 				(sizeof rname - sizeof "u:\\dev\\"));
@@ -294,13 +287,13 @@ INLINE long
 rsvf_close (int f)
 {
 	long r = EBADF;
-	
+
 	if (f != ENODEV)
 	{
 		r = ROM_Fclose (f);
 		if (r) ALERT ("rsvf_close(%d): ROM_Fclose %x returned %lx", f, r);
 	}
-	
+
 	return r;
 }
 
@@ -309,7 +302,7 @@ rsvf_ioctl (int f, void *arg, int mode)
 {
 	if (f == ENODEV)
 		return ENOSYS;
-	
+
 	TRACE(("rsvf_ioctl: passing ioctl %x (tosfd=0x%x)", mode, f));
 	/* is there a more direct way than this? */
 	return ROM_Fcntl (f, (long) arg, mode);
@@ -345,16 +338,16 @@ static void
 _set_xattr (XATTR *xp, ushort mode, int rdev)
 {
 	bzero (xp, sizeof (*xp));
-	
+
 	xp->mode	= mode;
 	xp->dev		= BIOSDRV;
 	xp->rdev	= rdev;
 	xp->nlink	= 1;
 	xp->blksize	= 1024L;
-	
+
 	xp->mtime = xp->atime = xp->ctime = timestamp;
 	xp->mdate = xp->adate = xp->cdate = datestamp;
-	
+
 	/* root directory only */
 	if ((mode & S_IFMT) == S_IFDIR)
 		xp->attr = FA_DIR;
@@ -364,7 +357,7 @@ static void
 set_xattr (XATTR *xp, ushort mode, int rdev)
 {
 	_set_xattr (xp, mode, rdev);
-	
+
 	xp->uid		= curproc->p_cred->ucr->euid;
 	xp->gid		= curproc->p_cred->ucr->egid;
 }
@@ -376,11 +369,11 @@ biosfs_init (void)
 	struct bios_file *b, *c;
 	int majdev, mindev;
 	int i;
-	
+
 	get_toscookie (COOKIE_RSVF, &rsvf);
-	
+
 	broot = BDEV;
-	
+
 	c = NULL;
 	for (b = broot; b->name[0]; b++)
 	{
@@ -404,7 +397,7 @@ biosfs_init (void)
 			b->next = 0;
 			break;
 		}
-		
+
 		/* SERIAL1(!) is not present on the Mega STe or Falcon,
 		 * device 8 is SCC channel A
 		 */
@@ -422,7 +415,7 @@ biosfs_init (void)
 		--b;
 		b->next = 0;
 	}
-	
+
 	/* Initialize bios_tty structures */
 	for (i = 0; c && i < MAX_BTTY; c = c->next, i++)
 	{
@@ -454,10 +447,10 @@ biosfs_init (void)
 	midi_btty.clocal = 1;
 	midi_btty.tosfd = ENODEV;
 	midi_btty.bdev = 3;
-	
+
 	if (FP_ALLOC (rootproc, &defaultaux))
 		FATAL (ERR_biosfs_aux_fptr);
-	
+
 	defaultaux->links = 1;		/* so it never gets freed */
 	defaultaux->flags = O_RDWR;
 	defaultaux->pos = 0;
@@ -467,11 +460,11 @@ biosfs_init (void)
 	defaultaux->fc.aux = 1;
 	defaultaux->fc.dev = BIOSDRV;
 	defaultaux->dev = &bios_ndevice;
-	
+
 	/* set up XATTR fields */
 	_set_xattr (&rxattr, S_IFDIR|DEFAULT_DIRMODE, BIOSDRV);
 	_set_xattr (&fdxattr, S_IFDIR|DEFAULT_DIRMODE, BIOSDRV);
-	
+
 	for (b = BDEV; b; b = b->next)
 	{
 		if (b->device == &bios_ndevice || b->device == &bios_tdevice)
@@ -489,7 +482,7 @@ biosfs_init (void)
 			majdev = UNK_RDEV;
 			mindev = b->private;
 		}
-		
+
 		_set_xattr (&b->xattr, b->defmode ? b->defmode : S_IFCHR|DEFAULT_MODE,
 			    majdev | (mindev & 0x00ff));
 	}
@@ -551,7 +544,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 		DEBUG(("bios_lookup: name (%s) not found", name));
 		return ENOENT;
 	}
-	
+
 	/* special case: an empty name in a directory means that directory */
 	/* so does "." */
 	if (!*name || (name[0] == '.' && name[1] == 0))
@@ -657,7 +650,7 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->index = fc->index;
 		xattr->dev = fc->dev;
 	}
-	
+
 	return E_OK;
 }
 
@@ -665,7 +658,7 @@ static long _cdecl
 bios_chown (fcookie *fc, int uid, int gid)
 {
 	struct bios_file *b = (struct bios_file *) fc->index;
-	
+
 	if (suser (curproc->p_cred->ucr))
 	{
 		if (!b)
@@ -685,10 +678,10 @@ bios_chown (fcookie *fc, int uid, int gid)
 			if (uid != -1) b->xattr.uid = uid;
 			if (gid != -1) b->xattr.gid = gid;
 		}
-		
+
 		return E_OK;
 	}
-	
+
 	return EACCES;
 }
 
@@ -773,7 +766,7 @@ bios_remove (fcookie *dir, const char *name)
 
 	if (b->device == 0 || b->device == &bios_tdevice)
 		kfree (b->tty);
-	
+
 	kfree (b);
 	return E_OK;
 }
@@ -785,17 +778,17 @@ bios_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 
 	if (size <= 0)
 		return EBADARG;
-	
+
 	if (root->index == dir->index)
 	{
 		*pathname = '\0';
 		return E_OK;
 	}
-	
+
 	/* DIR must point to the fd directory */
 	if (!IS_FD_DIR (dir))
 		return EINTERNAL;
-	
+
 	*pathname++ = '\\';
 	size--;
 	foo = ((struct bios_file *) dir->index)->name;
@@ -803,7 +796,7 @@ bios_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 		strcpy (pathname, foo);
 	else
 		return EBADARG;
-	
+
 	return E_OK;
 }
 
@@ -813,7 +806,7 @@ bios_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newnam
 	struct ucred *cred = curproc->p_cred->ucr;
 	struct bios_file *b;
 	struct bios_file *be = 0;
-	
+
 	UNUSED (olddir); UNUSED (newdir);
 
 	if (cred->euid)
@@ -858,18 +851,18 @@ bios_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	int giveindex = dirh->flags == 0;
 	int i;
 	char buf[5];
-	
+
 	if (IS_FD_DIR (&dirh->fc))
 	{
 		i = dirh->index++;
 		if (i + MIN_HANDLE >= curproc->p_fd->nfiles)
 			return ENMFILES;
-		
+
 		fc->fs = &bios_filesys;
 		fc->index = i + 1;
 		fc->aux = i + MIN_HANDLE;
 		fc->dev = dirh->fc.dev;
-		
+
 		if (giveindex)
 		{
 			namelen -= (int) sizeof (long);
@@ -878,13 +871,13 @@ bios_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			*(long *) name = (long) i + 1;
 			name += sizeof (long);
 		}
-		
+
 		ksprintf (buf, sizeof (buf), "%d", i + MIN_HANDLE);
 		if (strlen (buf) < namelen)
 			strcpy (name, buf);
 		else
 			return EBADARG;
-		
+
 		return E_OK;
 	}
 
@@ -899,12 +892,12 @@ bios_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	{
 		return ENMFILES;
 	}
-	
+
 	fc->fs = &bios_filesys;
 	fc->index = (long) b;
 	fc->aux = b->private;
 	fc->dev = dirh->fc.dev;
-	
+
 	if (giveindex)
 	{
 		namelen -= (int) sizeof (long);
@@ -913,12 +906,12 @@ bios_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		*((long *) name) = (long) b;
 		name += sizeof (long);
 	}
-	
+
 	if (strlen (b->name) < namelen)
 		strcpy (name, b->name);
 	else
 		return EBADARG;
-	
+
 	return E_OK;
 }
 
@@ -963,17 +956,17 @@ bios_dfree (fcookie *dir, long *buf)
 	buf[1] = 0;	/* total number of clusters */
 	buf[2] = 1;	/* sector size (bytes) */
 	buf[3] = 1;	/* cluster size (sectors) */
-	
+
 	return E_OK;
 }
 
 /*
  * BIOS Dcntl() calls:
- * 
+ *
  * Dcntl(DEV_INSTALL, "U:\DEV\FOO", &foo_descr):
  *     install a new device called "FOO", which is described
  *     by the dev_descr structure "foo_descr".
- *     
+ *
  *     this structure has the following fields:
  *         DEVDRV *driver		the device driver itself
  *	   short  dinfo			info for the device driver
@@ -983,10 +976,10 @@ bios_dfree (fcookie *dir, long *buf)
  *	   long   fmode			XATTR mode the device should have
  * for DEV_INSTALL2
  *         BDEVMAP *bdevmap		BIOS devmap to remap BIOS devices
- * 
+ *
  * Dcntl(DEV_NEWTTY, "U:\DEV\BAR", n):
  *     install a new BIOS terminal device, with BIOS device number "n".
- * 
+ *
  * Dcntl(DEV_NEWBIOS, "U:\DEV\BAR", n):
  *     install a new non-tty BIOS device, with BIOS device number "n".
  */
@@ -997,39 +990,39 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	struct ucred *cred = curproc->p_cred->ucr;
 	struct bios_file *b;
 	static int devindex = 0;
-	
+
 	TRACE (("bios_fscntl: name %s cmd %x, %lx", name, cmd, arg));
-	
+
 	if (cmd == MX_KER_XFSNAME)
 	{
 		strcpy ((char *) arg, "bios-xfs");
 		return E_OK;
 	}
-	
+
 	if (cred->euid)
 	{
 		DEBUG (("biosfs: Dcntl() by non-privileged process"));
 		return ((unsigned) cmd == DEV_INSTALL) ? 0 : EACCES;
 	}
-	
+
 	if (IS_FD_DIR (dir))
 	{
 		DEBUG (("biosfs: IS_FD_DIR -> EACCES"));
 		return EACCES;
 	}
-	
+
 	/* ts: let's see if such an entry already exists */
 	for (b = broot; b; b = b->next)
 		if (!stricmp (b->name, name))
 			break;
-	
+
 	switch (cmd)
 	{
 		case DEV_INSTALL:
 		case DEV_INSTALL2:
 		{
 			struct dev_descr *d = (struct dev_descr *) arg;
-			
+
 			if (!b)
 			{
 				if ((cmd == DEV_INSTALL2) && d->bdev)
@@ -1039,46 +1032,46 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					while (b)
 					{
 						DEBUG (("biosfs: %s (%i)", b->name, b->private));
-						
+
 						if ((b->device == &bios_tdevice)
 							&& (b->private == d->bdev))
 						{
 							DEBUG (("biosfs: remove %s (%i)", b->name, d->bdev));
-							
+
 							if (prev)
 							{
 								prev->next = b->next;
 							}
 							else
 								broot = broot->next;
-							
+
 							break;
 						}
-						
+
 						prev = b;
 						b = b->next;
 					}
 				}
-				
+
 				b = kmalloc (sizeof (*b));
 				if (!b)
 				{
 					DEBUG (("DEV_INSTALL (%s): ENOMEM", name));
 					return ENOMEM;
 				}
-				
+
 				b->next = broot;
 				broot = b;
-				
+
 				strncpy (b->name, name, BNAME_MAX);
 				b->name[BNAME_MAX] = 0;
 			}
-			
+
 			b->drvsize = d->drvsize;
 			b->device = d->driver;
 			b->private = d->dinfo;
 			b->flags = d->flags;
-			
+
 			if (b->flags & O_TTY)
 			{
 				b->tty = d->tty;
@@ -1086,16 +1079,16 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			}
 			else
 				b->tty = NULL;
-			
+
 			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, UNK_RDEV|devindex);
 			if (d->fmode)
 				b->xattr.mode = (short) d->fmode & 0177777;
-			
+
 			devindex = (devindex+1) & 0x00ff;
-			
+
 			if ((cmd == DEV_INSTALL2) && d->bdev)
 				overlay_bdevmap (d->bdev, d->bdevmap);
-			
+
 			DEBUG (("DEV_INSTALL: installed %s", name));
 			return (long) &kernelinfo;
 		}
@@ -1105,17 +1098,17 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			{
 				b = kmalloc (sizeof (*b));
 				if (!b) return ENOMEM;
-				
+
 				b->tty = kmalloc (sizeof (*(b->tty)));
 				if (!b->tty)
 				{
 					kfree (b);
 					return ENOMEM;
 				}
-				
+
 				strncpy (b->name, name, BNAME_MAX);
 				b->name[BNAME_MAX] = 0;
-				
+
 				b->next = broot;
 				broot = b;
 			}
@@ -1127,21 +1120,21 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				 * memory to do it!
 				 */
 				struct tty *ttyptr;
-				
+
 				ttyptr = kmalloc (sizeof (*ttyptr));
 				if (!ttyptr) return ENOMEM;
-				
+
 				b->tty = ttyptr;
 			}
-			
+
 			b->drvsize = 0;
 			b->device = &bios_tdevice;
 			b->private = arg;
 			b->flags = O_TTY;
 			*b->tty = default_tty;
-			
+
 			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, BIOS_RDEV|(b->private&0x00ff));
-			
+
 			return E_OK;
 		}
 		case DEV_NEWBIOS:
@@ -1150,14 +1143,14 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			{
 				b = kmalloc (sizeof (*b));
 				if (!b) return ENOMEM;
-				
+
 				strncpy (b->name, name, BNAME_MAX);
 				b->name[BNAME_MAX] = 0;
-				
+
 				b->next = broot;
 				broot = b;
 			}
-			
+
 			b->drvsize = 0;
 			/*  ts: it's probably better not to free an old tty
 			 * structure here, cause we don't know if any process
@@ -1167,13 +1160,13 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			b->device = &bios_ndevice;
 			b->private = arg;
 			b->flags = 0;
-			
+
 			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, BIOS_RDEV|(b->private&0x00ff));
-			
+
 			return E_OK;
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -1184,7 +1177,7 @@ bios_symlink (fcookie *dir, const char *name, const char *to)
 	struct bios_file *b;
 	long r;
 	fcookie fc;
-	
+
 	if (cred->euid)
 		return EACCES;
 
@@ -1272,7 +1265,7 @@ bios_topen (FILEPTR *f)
 	f->flags |= O_TTY;
 	if (!tty->use_cnt && NULL != (b = BTTY (f)) && b->tosfd == ENODEV)
 		b->tosfd = rsvf_open (bdev);
-	
+
 	return E_OK;
 }
 
@@ -1310,7 +1303,7 @@ bios_twrite (FILEPTR *f, const char *buf, long bytes)
 			if (!bcostat (bdev)) break;
 			if (bconout (bdev, (int) *r) == 0)
 				break;
-			
+
 			r++;
 			bytes -= 4;
 			ret+= 4;
@@ -1322,7 +1315,7 @@ bios_twrite (FILEPTR *f, const char *buf, long bytes)
 		{
 			if (bconout (bdev, (int) *r) == 0)
 				break;
-			
+
 			r++;
 			bytes -= 4;
 			ret+= 4;
@@ -1334,7 +1327,7 @@ bios_twrite (FILEPTR *f, const char *buf, long bytes)
 		b->xattr.mtime = b->xattr.atime = timestamp;
 		b->xattr.mdate = b->xattr.adate = datestamp;
 	}
-	
+
 	return ret;
 }
 
@@ -1353,7 +1346,7 @@ bios_tread (FILEPTR *f, char *buf, long bytes)
 		{
 			if (!bconstat (bdev))
 				break;
-			
+
 			*r++ = bconin (bdev) & 0x7fffffffL;
 			bytes -= 4;
 			ret += 4;
@@ -1368,13 +1361,13 @@ bios_tread (FILEPTR *f, char *buf, long bytes)
 			ret += 4;
 		}
 	}
-	
+
 	if (ret > 0)
 	{
 		b->xattr.atime = timestamp;
 		b->xattr.adate = datestamp;
 	}
-	
+
 	return ret;
 }
 
@@ -1421,7 +1414,7 @@ bios_writeb (FILEPTR *f, const char *buf, long bytes)
 	 */
 	if (!(((struct tty *) f->devinfo)->sg.sg_flags & T_RAW))
 		return ENODEV;
-	
+
 	return iwrite (bdev, buf, bytes, (f->flags & O_NDELAY), b);
 }
 
@@ -1554,12 +1547,12 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 			else
 			{
 				TIMEOUT *t;
-				
+
 				if (isleep > 200)
 					isleep = 200;
-				
+
 				curproc->wait_cond = (long) &tty->state;
-				
+
 				t = addtimeout (curproc, (long) isleep, wakewrite);
 				if (t)
 				{
@@ -1568,7 +1561,7 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 					canceltimeout (t);
 				}
 			}
-			
+
 			/* loop and try again. */
 			slept = (ulong) free < 2;
 			continue;
@@ -1639,7 +1632,7 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 			ior->tail = newtail;
 
 			spl (sr);
-			
+
 			if (b)
 			{
 				b->xattr.mtime = b->xattr.atime = timestamp;
@@ -1668,7 +1661,7 @@ bios_readb (FILEPTR *f, char *buf, long bytes)
 
 	if (!(tty->sg.sg_flags & T_RAW) || (tty->sg.sg_flags & T_ECHO))
 		return ENODEV;
-	
+
 	/* if VTIME is set tty_read already select()ed the tty
 	 * so from here on the read should not block anymore */
 	return iread (bdev, buf, bytes, (f->flags & O_NDELAY) || tty->vtime, b);
@@ -1814,9 +1807,9 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 			else
 				(void) callout1 (*cin, bdev);
 		}
-		
+
 		spl (sr);
-		
+
 		if (b)
 		{
 			b->xattr.atime = timestamp;
@@ -1825,7 +1818,7 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 	}
 	if (!buf)
 		return 0;
-	
+
 	return p - buf;
 }
 
@@ -1853,15 +1846,15 @@ bios_nwrite (FILEPTR *f, const char *buf, long bytes)
 
 		bytes--; ret++;
 	}
-	
+
 	if (ret > 0)
 	{
 		struct bios_file *b = (struct bios_file *) f->fc.index;
-		
+
 		b->xattr.mtime = b->xattr.atime = timestamp;
 		b->xattr.mdate = b->xattr.adate = datestamp;
 	}
-	
+
 	return ret;
 }
 
@@ -1870,7 +1863,7 @@ bios_nread(FILEPTR *f, char *buf, long bytes)
 {
 	long ret = 0;
 	int bdev = f->fc.aux;
-	
+
 	while (bytes > 0)
 	{
 		if ((f->flags & O_NDELAY) && !bconstat (bdev))
@@ -1878,15 +1871,15 @@ bios_nread(FILEPTR *f, char *buf, long bytes)
 		*buf++ = bconin (bdev) & 0xff;
 		bytes--; ret++;
 	}
-	
+
 	if (ret > 0)
 	{
 		struct bios_file *b = (struct bios_file *) f->fc.index;
-		
+
 		b->xattr.atime = timestamp;
 		b->xattr.adate = datestamp;
 	}
-	
+
 	return ret;
 }
 
@@ -1899,7 +1892,7 @@ static long _cdecl
 bios_tseek (FILEPTR *f, long where, int whence)
 {
 	UNUSED (f); UNUSED (where); UNUSED (whence);
-	
+
 	/* terminals always are at position 0 */
 	return 0;
 }
@@ -1933,17 +1926,17 @@ iocsbrk (int bdev, int mode, struct bios_tty *t)
 		if (bdev >= 6)
 			curproc->p_fd->bconmap = bdev;
 	}
-	
+
 	bits = rsconf (-1, -1, -1, -1, -1, -1);	/* get settings */
 	bits = (bits >> 8) & 0x0ff;		/* isolate TSR byte */
-	
+
 	if (mode == TIOCCBRK)
 		bits &= ~8;
 	else
 		bits |= 8;
-	
+
 	(void) rsconf(-1, -1, -1, -1, (int) bits, -1);
-	
+
 	curproc->p_fd->bconmap = oldmap;
 	return E_OK;
 }
@@ -1969,19 +1962,19 @@ iocsflagsb (int bdev, ulong flags, ulong mask, struct tty *tty, struct bios_tty 
 		oflags = (((char *) t->irec)[0x20] << 12) & (T_TANDEM|T_RTSCTS);
 	else
 		oflags = *sgflags & (T_TANDEM|T_RTSCTS);
-	
+
 	if ((long) flags >= 0)
 		/* clear unused bits */
 		flags &= (TF_STOPBITS|TF_CHARBITS|TF_BRKINT|TF_CAR|T_RTSCTS|T_TANDEM|T_EVENP|T_ODDP);
-	
+
 	if (t && (mask & (TF_BRKINT|TF_CAR)))
 	{
 		if (t->brkint)
 			oflags |= TF_BRKINT;
-		
+
 		if (!t->clocal)
 			oflags |= TF_CAR;
-		
+
 		if ((long) flags >= 0)
 		{
 			if (mask & TF_CAR)
@@ -2000,7 +1993,7 @@ iocsflagsb (int bdev, ulong flags, ulong mask, struct tty *tty, struct bios_tty 
 			{
 				flags = (flags & ~TF_CAR) | (oflags & TF_CAR);
 			}
-			
+
 			if (mask & TF_BRKINT)
 			{
 				t->brkint = flags & TF_BRKINT;
@@ -2490,7 +2483,7 @@ bios_select (FILEPTR *f, long p, int mode)
 		}
 		return 0;
 	}
-	
+
 	/* default -- we don't know this mode, return 0 */
 	return 0;
 }
@@ -2522,17 +2515,17 @@ bios_close (FILEPTR *f, int pid)
 		f->flags &= ~O_LOCK;
 		wake (IO_Q, (long) b);	/* wake anyone waiting for this lock */
 	}
-	
+
 	if (tty && f->links <= 0 && f->pos)
 		/* f->pos used as flag that f came from Bconmap (/dev/aux) */
 		tty->aux_cnt--;
-	
+
 	if (tty && !tty->use_cnt && (NULL != (t = BTTY(f)) && t->tosfd != ENODEV))
 	{
 		rsvf_close (t->tosfd);
 		t->tosfd = ENODEV;
 	}
-	
+
 	return E_OK;
 }
 
@@ -2549,21 +2542,21 @@ set_auxhandle (PROC *p, int dev)
 	FILEPTR *f;
 	long ret;
 	struct bios_file *b;
-	
+
 	ret = FP_ALLOC (p, &f);
 	if (!ret)
 	{
 		struct tty *tty;
-		
+
 		f->links = 1;
 		f->flags = O_RDWR;
 		f->pos = 0;
 		f->devinfo = 0;
-		
+
 		f->fc.fs = &bios_filesys;
 		f->fc.aux = dev;
 		f->fc.dev = BIOSDRV;
-		
+
 		for (b = broot; b; b = b->next)
 		{
 			if (b->private == dev
@@ -2597,7 +2590,7 @@ found_device:
 			FP_FREE (f);
 			return 0;
 		}
-		
+
 		/* special code for opening a tty */
 		if (NULL != (tty = (struct tty *) f->devinfo))
 		{
@@ -2606,7 +2599,7 @@ found_device:
 			{
 				sleep (IO_Q, (long) &tty->state);
 			}
-			
+
 			/* first open for this device? */
 			if (tty->use_cnt == 1)
 			{
@@ -2616,7 +2609,7 @@ found_device:
 				tty->use_cnt = 1;
 				tty_ioctl(f, TIOCSTART, 0);
 			}
-			
+
 			tty->aux_cnt++;
 			f->pos = 1;	/* flag for close to --aux_cnt */
 		}
@@ -2629,10 +2622,10 @@ found_device:
 		f = defaultaux;
 		f->links++;
 	}
-	
+
 	if (p->p_fd->aux)
 		do_close (p, p->p_fd->aux);
-	
+
 	p->p_fd->aux = f;
 
 	return 1;
