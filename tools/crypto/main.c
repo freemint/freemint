@@ -45,7 +45,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	20
+# define VER_MINOR	21
 # define VER_STATUS	
 
 
@@ -77,13 +77,11 @@
 static char *modes[] =
 {
 	"fast",
-	"safe",
 	"robust",
 	NULL
 };
 # define FAST		0
-# define SAFE		1
-# define ROBUST		2
+# define ROBUST		1
 
 static char *actions[] =
 {
@@ -112,9 +110,10 @@ static int noninteractive = 0;
 static int auto_passphrase_set = 1;
 
 static int drv = -1;
-static int mode = SAFE;
+static int mode = ROBUST;
 static int action = ENCIPHER;
 static int cipher = BLOWFISH;
+static char *restart = NULL;
 
 static char *passphrase = NULL;
 static char *oldpassphrase = NULL;
@@ -151,10 +150,10 @@ emergency_exit (char *msg, ...)
 {
 	va_list args;
 	
-	if ((mode == ROBUST) && (save_file >= 0))
+	if (save_file >= 0)
 		close (save_file);
 	
-	if ((mode >= SAFE) && log)
+	if (log)
 	{
 		fflush (log);
 		
@@ -303,20 +302,20 @@ useful options:
                           default is %ikb
     -c# [or --cipher #]:  select cipher algorithm (blowfish)
                           default is blowfish
-    -m# [or --mode #]:    select mode (safe, robust, fast)
-                          default is safe
+    -m# [or --mode #]:    select mode (robust, fast)
+                          default is robust
     -h  [or --help]:      print this message
     -q  [or --quiet]:     be quiet
+    -r# [or --restart #]: restart interrupted session, parameter
+                          is the generated *.sav file in robust mode
     -t  [or --simulate]:  testing mode, simulate action without any write
     -v  [or --version]:   print version
 dangerous options,
-for repair of interrupted sessions:
+for professionals only:
     -e# [or --end #]:     set end position for action
                           default is partition end
     -s# [or --start #]:   set start position for action
                           default is partition start (512)
-    -r# [or --restore #]: restore image data from robust mode after an
-                          emergency exit
 ", basename (myname), bufsize / 1024);
 	
 	fflush (stdout);
@@ -325,9 +324,7 @@ for repair of interrupted sessions:
 
 static void default_sig_handler (int signum);
 static void sigint_handler (int signum);
-static void doit (void);
-static void restore_save_file (char *name);
-
+static void doit (const char *rescuefile);
 
 int
 main (int argc, char **argv)
@@ -361,7 +358,7 @@ main (int argc, char **argv)
 			{ "cipher",	1, 0, 'c'	},
 			{ "start",	1, 0, 's'	},
 			{ "end",	1, 0, 'e'	},
-			{ "restore",	1, 0, 'r'	},
+			{ "restart",	1, 0, 'r'	},
 			{ 0,		0, 0, 0		}
 		};
 		
@@ -494,7 +491,7 @@ main (int argc, char **argv)
 			}
 			case 'r':
 			{
-				restore_save_file (optarg);
+				restart = optarg;
 				break;
 			}
 			case '?':
@@ -595,7 +592,7 @@ main (int argc, char **argv)
 		/* set new signal mask */
 		sigprocmask (SIG_SETMASK, &newmask, &oldmask);
 		
-		doit ();
+		doit (restart);
 		
 		/* restore signal mask */
 		sigprocmask (SIG_SETMASK, &oldmask, NULL);
@@ -647,15 +644,8 @@ main (int argc, char **argv)
 static void
 default_sig_handler (int signum)
 {
-	if ((mode >= SAFE) && log)
-	{
-		fflush (log);
-		
+	if (log)
 		fprintf (log, "got signal %i\n", signum);
-		fflush (log);
-		
-		fclose (log);
-	}
 	
 	emergency_exit ("got fatal signal %i, terminating.\n", signum);
 }
@@ -702,12 +692,29 @@ do_cipher (int32_t recno, int32_t p_secsize)
 	}	
 }
 
-static char *magic_str = "crypto1";
+typedef struct rescue RESCUE;
+struct rescue
+{
+	int32_t		magic;		/* magic number */
+# define RESCUE_MAGIC	0x34c7868f
+	int32_t		ver;		/* 1 for now */
+	int32_t		this_size;	/* size of the struct */
+	time_t		time;
+	
+	int64_t		dev;
+	int32_t		p_secsize;
+	int32_t		p_start;
+	int32_t		p_size;
+	
+	int64_t		pos;
+	int32_t		size;
+};
 
 static void
-doit (void)
+doit (const char *rescuefile)
 {
 	char *action_pre = ((action == ENCIPHER) ? "en" : ((action == DECIPHER) ? "de" : "re"));
+	RESCUE rescue;
 	
 	int32_t p_secsize;
 	int32_t p_start;
@@ -747,6 +754,89 @@ doit (void)
 	size = io_seek (fh, SEEK_END, 0);
 	if (size < 0)
 		safe_exit ("failed to determine partition size, abort.\n");
+	
+	/* do restart things */
+	if (restart)
+	{
+		/* first read rescue file informations */
+		
+		ret = open (rescuefile, O_RDONLY);
+		if (ret < 0)
+		{
+			perror ("open (...)");
+			safe_exit ("abort.\n");
+		}
+		
+		save_file = ret;
+		
+		ret = read (save_file, &rescue, sizeof (rescue));
+		if (ret != sizeof (rescue))
+		{
+			perror ("read (rescue)");
+			safe_exit ("abort.\n");
+		}
+		
+		if (rescue.magic != RESCUE_MAGIC)
+			safe_exit ("not a rescue file, abort.\n");
+		if (rescue.ver != 1)
+			safe_exit ("rescue file version not supported, abort.\n");
+		if (rescue.this_size != sizeof (rescue))
+			safe_exit ("rescue file corrupted, abort.\n");
+		
+		if (rescue.dev != drv)
+			safe_exit ("drv number doesn't match, abort.\n");
+		if (rescue.p_secsize != p_secsize)
+			safe_exit ("physical sector size doesn't match, abort.\n");
+		if (rescue.p_start != p_start)
+			safe_exit ("partition start doesn't match, abort.\n");
+		if (rescue.p_size != p_size)
+			safe_exit ("partition size doesn't match, abort.\n");
+		
+		if (bufsize != rescue.size)
+		{
+			buf = realloc (buf, rescue.size);
+			if (!buf)
+				safe_exit ("out of memory, abort.\n");
+			
+			bufsize = rescue.size;
+		}
+		
+		ret = read (save_file, buf, rescue.size);
+		if (ret != rescue.size)
+		{
+			perror ("read (buf)");
+			safe_exit ("abort.\n");
+		}
+		
+		close (save_file);
+		save_file = -1;
+		
+		
+		/* now write the buffer back to the filesystem */
+		
+		{
+			char c;
+			
+			printf ("Restart interrupted session from %s,", ctime (&rescue.time));
+			printf ("on %c: [%i], starting offset %qi.\n\n", 'A'+drv, drv, rescue.pos);
+			printf ("With a different passphrase you destroy your data!\n");
+			printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
+			scanf ("%c", &c);
+			
+			if (c != 'y' && c != 'Y')
+				safe_exit ("user abort.\n");
+		}
+		
+		ret64 = io_seek (fh, SEEK_SET, rescue.pos);
+		if (ret64 < 0 || ret64 != rescue.pos)
+			safe_exit ("io_seek failed, abort.\n");
+		
+		ret = io_write (fh, buf, rescue.size);
+		if (ret < 0 || ret != rescue.size)
+			emergency_exit ("io_write failed, abort.\n");
+		
+		start_pos = rescue.pos;
+	}
 	
 	/* verify or initialize start position */
 	if (start_pos)
@@ -788,10 +878,18 @@ doit (void)
 		}
 		
 		save_file = ret;
-	}
-	
-	if (mode >= SAFE)
-	{
+		
+		/* prepare rescue data */
+		rescue.magic = RESCUE_MAGIC;
+		rescue.ver = 1;
+		rescue.this_size = sizeof (rescue);
+		rescue.time = time (NULL);
+		
+		rescue.dev = drv;
+		rescue.p_secsize = p_secsize;
+		rescue.p_start = p_start;
+		rescue.p_size = p_size;
+		
 		/* open logfile */
 		log = fopen (LOGFILE, "w");
 		if (!log)
@@ -829,11 +927,8 @@ doit (void)
 		if (pos < 0)
 			emergency_exit ("io_seek failed, abort.\n");
 		
-		if (mode >= SAFE)
-		{
+		if (mode == ROBUST)
 			fprintf (log, "off %10qi  size %7i  - reading ", pos, left);
-			fflush (log);
-		}
 		
 		ret = io_read (fh, buf, left);
 		if (ret < 0)
@@ -841,25 +936,22 @@ doit (void)
 		
 		if (mode == ROBUST)
 		{
+			fputs ("ok - ", log);
+			fputs (action_pre, log);
+			fputs ("cipher ", log);
+			
+			rescue.pos = pos;
+			rescue.size = left;
+			
 			lseek (save_file, 0, SEEK_SET);
-			write (save_file, magic_str, sizeof (magic_str));
-			write (save_file, &drv, sizeof (drv));
-			write (save_file, &pos, sizeof (pos));
-			write (save_file, &left, sizeof (left));
+			write (save_file, &rescue, sizeof (rescue));
 			write (save_file, buf, left);
 			fsync (save_file);
 		}
 		
-		if (mode >= SAFE)
-		{
-			fputs ("ok - ", log);
-			fputs (action_pre, log);
-			fputs ("cipher ", log);
-		}
-		
 		do_cipher (recno, p_secsize);
 		
-		if (mode >= SAFE)
+		if (mode == ROBUST)
 			fputs ("ok", log);
 		
 		if (!simulate)
@@ -868,25 +960,22 @@ doit (void)
 			if (ret64 < 0)
 				emergency_exit ("io_seek failed, abort.\n");
 			
-			if (mode >= SAFE)
-			{
+			if (mode == ROBUST)
 				fputs (" - write ", log);
-				fflush (log);
-			}
 			
 			ret = io_write (fh, buf, left);
 			if (ret < 0)
 				emergency_exit ("io_write failed, abort.\n");
 			
-			if (mode >= SAFE)
-			{
+			if (mode == ROBUST)
 				fputs ("ok", log);
-				fflush (log);
-			}
 		}
 		
-		if (mode >= SAFE)
+		if (mode == ROBUST)
+		{
 			fputs ("\n", log);
+			fflush (log);
+		}
 		
 		todo -= left;
 		
@@ -907,112 +996,14 @@ doit (void)
 		}
 	}
 	
-	if (mode >= SAFE)
+	if (mode == ROBUST)
 	{
 		fputs ("\n", log);
 		fclose (log);
-	}
-	
-	if (mode == ROBUST)
-	{
+		
 		close (save_file);
 		unlink (SAVEFILE);
 	}
 	
 	io_close (fh);
-}
-
-static void
-restore_save_file (char *name)
-{
-	char magic[sizeof (magic_str)];
-	int ret;
-	
-	int64_t pos, ret64;
-	int32_t left;
-	
-	ret = open (name, O_RDONLY);
-	if (ret < 0)
-	{
-		perror ("open (...)");
-		safe_exit ("abort.\n");
-	}
-	
-	save_file = ret;
-	
-	ret = read (save_file, magic, sizeof (magic_str));
-	if (ret != sizeof (magic))
-	{
-		perror ("read (magic)");
-		safe_exit ("abort.\n");
-	}
-	
-	if (strncmp (magic_str, magic,  sizeof (magic_str)))
-		safe_exit ("magic id mismatch, abort.\n");
-	
-	ret = read (save_file, &drv, sizeof (drv));
-	if (ret != sizeof (drv))
-	{
-		perror ("read (drv)");
-		safe_exit ("abort.\n");
-	}
-	
-	ret = read (save_file, &pos, sizeof (pos));
-	if (ret != sizeof (pos))
-	{
-		perror ("read (pos)");
-		safe_exit ("abort.\n");
-	}
-	
-	ret = read (save_file, &left, sizeof (left));
-	if (ret != sizeof (left))
-	{
-		perror ("read (left)");
-		safe_exit ("abort.\n");
-	}
-	
-	buf = malloc (left);
-	if (!buf)
-	{
-		perror ("malloc");
-		safe_exit ("abort.\n");
-	}
-	
-	ret = read (save_file, buf, left);
-	if (ret != left)
-	{
-		perror ("read (buf)");
-		safe_exit ("abort.\n");
-	}
-	
-	close (save_file);
-	
-	
-	/* now write it back to the filesystem */
-	
-	{
-		char c;
-		
-		printf ("Restore %i bytes at %qi on %c: [%i]\n", left, pos, 'A'+drv, drv);
-		printf ("Are you ABSOLUTELY SURE you want to do this? (y/n) ");
-		scanf ("%c", &c);
-		
-		if (c != 'y' && c != 'Y')
-			safe_exit ("user abort.\n");
-	}
-	
-	fh = io_open (drv);
-	if (fh < 0)
-		safe_exit ("failed to open device, abort.\n");
-	
-	ret64 = io_seek (fh, SEEK_SET, pos);
-	if (ret64 < 0 || ret64 != pos)
-		safe_exit ("io_seek failed, abort.\n");
-	
-	ret = io_write (fh, buf, left);
-	if (ret < 0 || ret != left)
-		emergency_exit ("io_write failed, abort.\n");
-	
-	io_close (fh);
-	exit (0);
 }
