@@ -45,7 +45,7 @@ void Unblock(struct xa_client *client, unsigned long value, int which);
 void multi_intout(struct xa_client *client, short *o, int evnt);
 void cancel_evnt_multi(struct xa_client *client, int which);
 
-void TP_entry(struct xa_client *client);
+void TP_entry(void *client);
 void TP_terminate(enum locks lock, struct c_event *ce, bool cancel);
 void cancel_tpcevents(struct xa_client *client);
 void post_tpcevent(struct xa_client *client, void (*func)(enum locks, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, RECT *r, const struct moose_data *md);
