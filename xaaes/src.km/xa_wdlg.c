@@ -299,11 +299,11 @@ XA_wdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_get_edit */
 			case 1:
 			{
-				pb->intout[0] = wt->edit_obj;
-				if (wt->edit_obj < 0)
+				pb->intout[0] = wt->e.obj;
+				if (wt->e.obj < 0)
 					pb->intout[0] = 0;
-				pb->intout[1] = wt->edit_pos;
-				DIAG((D_wdlg, client, " ---> edit_obj %d, edit_pos %d", pb->intout[0], pb->intout[1]));
+				pb->intout[1] = wt->e.pos;
+				DIAG((D_wdlg, client, " ---> e.obj %d, e.pos %d", pb->intout[0], pb->intout[1]));
 				break;
 			}
 			/* wdlg_get_udata */
@@ -601,7 +601,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 							}
 							else
 							{
-								if ( is_editobj(wt->tree, nxtobj) && nxtobj != wt->edit_obj)
+								if ( is_editobj(wt->tree, nxtobj) && nxtobj != wt->e.obj)
 								{
 									Nedit_object(lock, wt, ED_END, 0, 0, NULL);
 									Nedit_object(lock, wt, ED_INIT, nxtobj, 0, NULL);
@@ -636,7 +636,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 				if ( wind == top && (ev->mwhich & MU_KEYBD) )
 				{
 					unsigned short key = ev->key;
-					short obj = form_cursor(lock, wt, ev->key, wt->edit_obj);
+					short obj = form_cursor(lock, wt, ev->key, wt->e.obj);
 
 					if (obj >= 0)
 						ret = wt->wdlg.>exit(wt->wdlg.handle, ev, HNDL_EDCH, ev, &obj);

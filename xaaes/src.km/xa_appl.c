@@ -178,7 +178,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->globl_ptr = globl;
 
 	client->cmd_tail = "\0";
-	client->wt.edit_obj = -1;
+	client->wt.e.obj = -1;
 
 	/* Ozk: About the fix_menu() thing; This is just as bad as it
 	 * originally was, the client should have an attachment with
@@ -441,6 +441,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	/* if taskmanager is open the tasklist will be updated */
 	update_tasklist(lock);
 
+	yield();
+	free_wtlist(client);
+
 	/* free the quart screen buffer */
 	if (client->half_screen_buffer)
 		ufree(client->half_screen_buffer);
@@ -455,7 +458,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	bzero(client, sizeof(*client));
 
 	client->cmd_tail = "\0";
-	client->wt.edit_obj = -1;
+	client->wt.e.obj = -1;
 
 	DIAG((D_appl, NULL, "client exit done"));
 }

@@ -1169,10 +1169,10 @@ set_text(OBJECT *ob,
 void
 enable_objcursor(struct widget_tree *wt)
 {
-	if (wt->edit_obj > 0)
+	if (wt->e.obj > 0)
 	{
 		set_objcursor(wt);
-		wt->cr_state |= OB_CURS_ENABLED;
+		wt->e.c_state |= OB_CURS_ENABLED;
 	}
 }
 
@@ -1180,33 +1180,33 @@ void
 disable_objcursor(struct widget_tree *wt)
 {
 	undraw_objcursor(wt);
-	wt->cr_state &= ~OB_CURS_ENABLED;
+	wt->e.c_state &= ~OB_CURS_ENABLED;
 }
 
 void
 draw_objcursor(struct widget_tree *wt)
 {
-	if ( (wt->cr_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
+	if ( (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
 	{
-		RECT r = wt->cr;
+		RECT r = wt->e.cr;
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
 		write_selection(0, &r);
-		wt->cr_state |= OB_CURS_DRAWN;
+		wt->e.c_state |= OB_CURS_DRAWN;
 	}
 }
 void
 undraw_objcursor(struct widget_tree *wt)
 {
-	if ( (wt->cr_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
+	if ( (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
 	{
-		RECT r = wt->cr;
+		RECT r = wt->e.cr;
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
 		write_selection(0, &r);
-		wt->cr_state &= ~OB_CURS_DRAWN;
+		wt->e.c_state &= ~OB_CURS_DRAWN;
 	}
 }
 
@@ -1220,18 +1220,18 @@ set_objcursor(struct widget_tree *wt)
 	BFOBSPEC colours;
 	short thick;
 
-	if (wt->edit_obj <= 0)
+	if (wt->e.obj <= 0)
 		return;
 
-	ob_offset(wt->tree, wt->edit_obj, &r.x, &r.y);
-	ob = wt->tree + wt->edit_obj;
+	ob_offset(wt->tree, wt->e.obj, &r.x, &r.y);
+	ob = wt->tree + wt->e.obj;
 	r.w  = ob->ob_width;
 	r.h  = ob->ob_height;
 	
-	set_text(ob, &gr, &wt->cr, true, wt->edit_pos, temp_text, &colours, &thick, r);
+	set_text(ob, &gr, &wt->e.cr, true, wt->e.pos, temp_text, &colours, &thick, r);
 
-	wt->cr.x -= wt->tree->ob_x;
-	wt->cr.y -= wt->tree->ob_y;
+	wt->e.cr.x -= wt->tree->ob_x;
+	wt->e.cr.y -= wt->tree->ob_y;
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
 }
@@ -1463,11 +1463,11 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt)
 	OBJECT *ob = wt->tree + wt->current;
 	RECT gr,cr;
 	BFOBSPEC colours;
-	const bool is_edit = (wt->current == wt->edit_obj);
+	const bool is_edit = (wt->current == wt->e.obj);
 	const unsigned short selected = ob->ob_state & OS_SELECTED;
 	short thick;
 
-	set_text(ob, &gr, &cr, true, is_edit ? wt->edit_pos : -1, temp_text, &colours, &thick, r);
+	set_text(ob, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, r);
 	set_colours(ob, &colours);
 
 	if (d3_foreground(ob))
@@ -1499,16 +1499,17 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt)
 		}
 	}
 
-
+#if 0
 	/*
 	 * Save cursor position
 	 */
 	if (is_edit)
 	{
-		wt->cr = cr;
-		wt->cr.x -= wt->tree->ob_x;
-		wt->cr.y -= wt->tree->ob_y;
+		wt->e.cr = cr;
+		wt->e.cr.x -= wt->tree->ob_x;
+		wt->e.cr.y -= wt->tree->ob_y;
 	}
+#endif
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
 	done(OS_SELECTED);
@@ -1914,10 +1915,10 @@ d_g_ftext(enum locks lock, struct widget_tree *wt)
 	OBJECT *ob = wt->tree + wt->current;
 	RECT r = wt->r, gr, cr;
 	BFOBSPEC colours;
-	bool is_edit = wt->current == wt->edit_obj;
+	bool is_edit = wt->current == wt->e.obj;
 	char temp_text[256];
 
-	set_text(ob, &gr, &cr, true, is_edit ? wt->edit_pos : -1, temp_text, &colours, &thick, r);
+	set_text(ob, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, r);
 	set_colours(ob, &colours);
 	thin = thick > 0 ? thick-1 : thick+1;
 
@@ -1929,15 +1930,17 @@ d_g_ftext(enum locks lock, struct widget_tree *wt)
 
 	ob_text(wt, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
+#if 0
 	/*
 	 * Save cursor position
 	 */
 	if (is_edit)
 	{
-		wt->cr = cr;
-		wt->cr.x -= wt->tree->ob_x;
-		wt->cr.y -= wt->tree->ob_y;
+		wt->e.cr = cr;
+		wt->e.cr.x -= wt->tree->ob_x;
+		wt->e.cr.y -= wt->tree->ob_y;
 	}
+#endif
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
 }
@@ -2430,6 +2433,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	short current = 0, rel_depth = 1, head;
 	short x, y;
 	bool start_drawing = false;
+	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
 
 	IFDIAG(short *cl = C.global_clip;)
 
@@ -2438,7 +2442,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 		this = nil_tree;
 
 		wt = &this;
-		wt->edit_obj = -1;
+		wt->e.obj = -1;
 		wt->owner = C.Aes;
 	}
 
@@ -2464,7 +2468,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 
 	depth++;
 
-	undraw_objcursor(wt);
+	if (curson)
+		undraw_objcursor(wt);
 
 	do {
 		if (current == item)
@@ -2514,7 +2519,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	}
 	while (current != -1 && !(start_drawing && rel_depth < 1));
 
-	draw_objcursor(wt);
+	if (curson)
+		draw_objcursor(wt);
 
 	wr_mode(MD_TRANS);
 	f_interior(FIS_SOLID);
