@@ -527,13 +527,13 @@ iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
 	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h))
 		*r = free_icon_pos(lock, NULL);
-	move_window(lock, wind, XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
+	move_window(lock, wind, true, XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
 }
 
 void
 uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
-	move_window(lock, wind, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
+	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
 }
 /*
  * Create a window
@@ -606,6 +606,10 @@ create_window(
 	/* implement maximum rectangle (needed for at least TosWin2) */
 	w->max = max ? *max : root_window->wa;
 		
+	w->min.x = w->min.y = -1;
+	w->min.w = 6 * cfg.widg_w;
+	w->min.h = 6 * cfg.widg_h;
+
 	w->rc = w->r = w->pr = r;
 
 	frame = thinframe;
@@ -626,6 +630,13 @@ create_window(
 			/* see how well it performs. */
 			frame += thinframe;
 #endif
+
+	if (client->options.naes_ff)
+		w->opts = XAWO_NAES_FF;
+	else
+		w->opts = 0;
+
+	//w->opts = ((client->options.naes_ff) ? XAWO_NAES_FF : 0);
 
 	w->frame = frame;
 	w->thinwork = thinwork;
@@ -1279,11 +1290,11 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
  * Change an open window's coordinates, updating rectangle lists as appropriate
  */
 void
-move_window(enum locks lock, struct xa_window *wind, short newstate, short X, short Y, short W, short H)
+move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, short X, short Y, short W, short H)
 {
 	IFDIAG(struct xa_client *client = wind->owner;)
 	RECT old, new;
-	bool blit = true;
+	//bool blit = true;
 
 	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d",
 	      (wind->window_status & XAWS_OPEN) ? "open" : "closed",
@@ -1303,6 +1314,7 @@ move_window(enum locks lock, struct xa_window *wind, short newstate, short X, sh
 
 	if (newstate != -1)
 	{
+		blit = false;
 		if (newstate < -1)
 		{
 			if (!(newstate & XAWS_ICONIFIED))
@@ -1326,6 +1338,12 @@ move_window(enum locks lock, struct xa_window *wind, short newstate, short X, sh
 				DIAGS(("move_window: clear shaded"));
 			}
 #endif
+			if (newstate == ~XAWS_FULLED)
+			{
+				blit = false;
+				wind->pr = wind->rc;
+				DIAGS(("move_window: unFULLED"));
+			}
 			wind->window_status &= newstate;
 		}
 		else
@@ -1339,17 +1357,21 @@ move_window(enum locks lock, struct xa_window *wind, short newstate, short X, sh
 					standard_widgets(wind, (wind->active_widgets & (NO_TOPPED)) | NAME|MOVER|ICONIFIER, true);
 					wind->ro = wind->rc;
 				}
-			}	
-
+			}
 #if GENERATE_DIAGS
 			if ((newstate & XAWS_SHADED))
 			{
 				DIAGS(("move_window: set shaded"));
 			}
 #endif
+			if (newstate == XAWS_FULLED)
+			{
+				blit = false;
+				wind->pr = wind->rc;
+				DIAGS(("move_window: win is FULLED"));
+			}
 			wind->window_status |= newstate;
 		}
-		blit = false;
 	}
 	else
 	{

@@ -1371,29 +1371,32 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	}
 	else if (md->state == MBS_RIGHT)
 	{
-		if ((wind->window_status & XAWS_SHADED))
+		if (!(wind->window_status & XAWS_ZWSHADED))
 		{
-			if (wind->send_message)
+			if ((wind->window_status & XAWS_SHADED))
 			{
-				DIAGS(("Click_title: unshading window %d for %s",
-					wind->handle, wind->owner->name));
+				if (wind->send_message)
+				{
+					DIAGS(("Click_title: unshading window %d for %s",
+						wind->handle, wind->owner->name));
 
-				wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
-					WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
+					wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
+						WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
 
-				move_window(lock, wind, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+					move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+				}
 			}
-		}
-		else
-		{
-			if (wind->send_message)
+			else
 			{
-				DIAGS(("Click_title: shading window %d for %s",
-					wind->handle, wind->owner->name));
+				if (wind->send_message)
+				{
+					DIAGS(("Click_title: shading window %d for %s",
+						wind->handle, wind->owner->name));
 
-				move_window(lock, wind, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
-				wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
-					WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
+					move_window(lock, wind, true, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+					wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
+						WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
+				}
 			}
 		}
 	}
@@ -1620,7 +1623,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 	bool move, size;
 	RECT r = wind->r, d;
 	
-	bool use_max = (wind->active_widgets&USE_MAX) != 0;
+	//bool use_max = (wind->active_widgets&USE_MAX) != 0;
 
 	if (   widg->s == 2
 	    || wind->send_message == NULL
@@ -1635,10 +1638,10 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		rubber_box(wind->owner, xy,
 		           r,
 			   rect_dist(wind->owner, &r, &d),
-			   6 * cfg.widg_w,
-			   6 * cfg.widg_h,
-			   use_max ? wind->max.w : root_window->wa.w,
-			   use_max ? wind->max.h : root_window->wa.h,
+			   wind->min.w, //6 * cfg.widg_w,
+			   wind->min.h, //6 * cfg.widg_h,
+			   wind->max.w, //use_max ? wind->max.w : root_window->wa.w,
+			   wind->max.h, //use_max ? wind->max.h : root_window->wa.h,
 			   &r);
 		unlock_screen(wind->owner, 1234);
 
@@ -1701,10 +1704,10 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);	/*(xy, mx, my, r, &d);*/
 
 				check_wh_cp(&r, xy,
-					    6 * cfg.widg_w,
-					    6 * cfg.widg_h,
-					    use_max ? wind->max.w : root_window->wa.w,
-					    use_max ? wind->max.h : root_window->wa.h);
+					    wind->min.w, //6 * cfg.widg_w,
+					    wind->min.h, //6 * cfg.widg_h,
+					    wind->max.w, //use_max ? wind->max.w : root_window->wa.w,
+					    wind->max.h); //use_max ? wind->max.h : root_window->wa.h);
 			}
 
 			move = r.x != wind->r.x || r.y != wind->r.y,
@@ -3311,8 +3314,11 @@ do_active_widget(enum locks lock, struct xa_client *client)
 			/* HR: 050601: if the pending widget is canceled, its state is undefined!!!!!! */
 			/* If the widget click/drag function returned true we reset the state of the widget */
 			if (rtn)
+			{
 				/* Flag the widget as de-selected */
 				redisplay_widget(lock, wind, widg, OS_NORMAL);
+				set_winmouse();
+			}
 		}
 	}
 }

@@ -526,6 +526,8 @@ pCB_app_options(char *line)
 				get_boolarg(s + 6, &opts->nolive);
 			else if (!strnicmp(s, "wheel_reverse", 13))
 				get_boolarg(s + 13, &opts->wheel_reverse);
+			else if (!strnicmp(s, "naesff", 6))
+				get_boolarg(s + 7, &opts->naes_ff);
 			else if (!strnicmp(s, "naes12", 6))
 				get_boolarg(s + 6, &opts->naes12);
 			else if (!strnicmp(s, "naes", 4))
