@@ -115,27 +115,9 @@
 #  include "key_tables.h"
 # endif
 
-/* Keyboard interrupt routine.
- *
- * TOS goes through here with the freshly baked and still
- * warm key scancode in hands. If there are any keys or
- * key combinations we want to handle (e.g. Ctrl/Alt/Del)
- * then we intercept it now.
- *
- * At the end, you need to return the original scancode for
- * TOS to process it. If you change the value, TOS will buy
- * this as well. If you want to omit the TOS routines at all,
- * return -1 (see code in intr.spp).
- *
- * Developing this code will probably allow us to get rid of
- * checkkeys() in bios.c, have processes waiting for keyboard
- * awaken immediately, load own scancode->ASCII keyboard tables
- * and do other such nifty things (draco).
- *
- */
-
 static const uchar modifiers[] =
 {
+	/* Don't add CAPS here, it's handled separately */
 	CONTROL, RSHIFT, LSHIFT, ALTERNATE, CLRHOME, INSERT,
 	ALTGR, 0
 };
@@ -152,10 +134,10 @@ short	pc_style = 0;		/* PC-style vs. Atari-style for Caps operation */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
-static	short kbd_lock = 1;	/* semaphore to temporarily block the keyboard processing */
+static	short kbd_lock;		/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;		/* place for saving the hz_200 timer value */
 
-static	uchar numin[3];		/* buffer for storing ASCII code typed in via numpad */
+static	uchar numin[8];		/* buffer for storing ASCII code typed in via numpad */
 static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 
 /* Variables that deal with keyboard autorepeat */
@@ -422,6 +404,16 @@ output_scancode(PROC *p, long arg)
 }
 # endif
 
+/* Keyboard interrupt routine.
+ *
+ * The scancode is passed from newkeys(), which in turn is called
+ * by BIOS.
+ *
+ * BUG: Alt/arrow doesn't move the mouse cursor, this has to
+ * be done yet.
+ *
+ */
+
 /* `scancode' is short, but only low byte matters. The high byte
  * is zeroed by newkeys().
  */
@@ -479,13 +471,12 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 			if (make)
 			{
 				shift ^= MM_CAPS;
-				mod = 1;
-				clk = 1;
+				clk = mod = 1;
 			}
 			break;
 		}
 		/* Releasing Alternate should generate a character, whose ASCII
-		 * code was typed in via the numpad
+		 * code was typed in via the numpad.
 		 */
 		case	ALTERNATE:
 		{
@@ -493,25 +484,18 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 			{
 				if (numidx)
 				{
-					ushort ascii_c = 0, tempidx = 0;
+					ushort ascii_c;
 
-					while(numidx--)
-					{
-						ascii_c += (numin[tempidx] & 0x0f);
-						if (numidx)
-						{
-							tempidx++;
-							ascii_c *= 10;
-						}
-					}
+					ascii_c = (ushort)atol(numin);
 
 					/* Only the values 0-255 are valid. Silently
 					 * ignore the elder byte
 					 */
 					ascii_c &= 0x00ff;
 
-					/* Reset the buffer for next use */
+					/* Reset the numin[] buffer for next use */
 					numidx = 0;
+					numin[0] = 0;
 
 					put_key_into_buf(0, 0, 0, (uchar)ascii_c);
 				}
@@ -524,10 +508,15 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	{
 		*kbshft = mshift = shift;
 
+		/* CapsLock, ClrHome, Insert make keyclick,
+		 * Alt, AltGr, Control and Shift don't.
+		 */
 		if (clk && make)
 			kbdclick(scan);
 
-		/* this catches i.a. release code of CapsLock */
+		/* CapsLock key cannot be auto-repeated (unlike on original TOS).
+		 * ClrHome and Insert must be handled as other keys.
+		 */
 		if ((scan != CLRHOME) && (scan != INSERT))
 			return -1;
 	}
@@ -660,7 +649,10 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 				if (make)			/* we ignore release codes */
 				{
 					if (numidx > 2)		/* buffer full? reset it */
+					{
+						numin[0] = 0;
 						numidx = 0;
+					}
 
 					ascii = user_keytab->unshift[scan];
 
@@ -668,6 +660,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 					{
 						numin[numidx] = ascii;
 						numidx++;
+						numin[numidx] = 0;
 					}
 
 					kbdclick(scan);
