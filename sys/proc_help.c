@@ -33,8 +33,10 @@
 
 # include "proc_help.h"
 
+# include "arch/cpu.h"
 # include "arch/mprot.h"
-# include "arch/user_things.h"	/* user_header */
+# include "arch/user_things.h"
+
 # include "libkern/libkern.h"
 # include "mint/file.h"
 
@@ -107,6 +109,7 @@ free_page_table_ptr (struct memspace *m)
 struct memspace *
 copy_mem (struct proc *p)
 {
+	USER_THINGS *ut;
 	struct memspace *m;
 	int i;
 	
@@ -128,9 +131,10 @@ copy_mem (struct proc *p)
 	m->mem = kmalloc (m->num_reg * sizeof (MEMREGION *));
 	m->addr = kmalloc (m->num_reg * sizeof (long));
 	
-	m->tp_reg = get_region(alt, user_header[2], PROT_P);
+	/* Trampoline */
+	m->tp_reg = get_region(alt, user_things.len, PROT_P);
 	if (!m->tp_reg)
-		m->tp_reg = get_region(core, user_header[2], PROT_P);
+		m->tp_reg = get_region(core, user_things.len, PROT_P);
 	
 	if ((!no_mem_prot && !m->pt_mem) || !m->mem || !m->addr || !m->tp_reg)
 		goto nomem;
@@ -146,11 +150,24 @@ copy_mem (struct proc *p)
 	}
 	
 	/* initialize trampoline things */
-	m->tp_ptr = (long *) m->tp_reg->loc;
-	
+	ut = (USER_THINGS *) m->tp_ptr = (long *) m->tp_reg->loc;
+
 	/* temporary attach to curproc so it's accessible */
 	attach_region(curproc, m->tp_reg);
-	bcopy(user_header, m->tp_ptr, user_header[2]);
+	bcopy(&user_things, m->tp_ptr, user_things.len);
+
+	/* Initialize trampoline vectors */
+	ut->terminateme_p += (long)ut;
+	ut->sig_return_p += (long)ut;
+	ut->pc_valid_return_p += (long)ut;
+	ut->slb_init_and_exit_p += (long)ut;
+	ut->slb_open_p += (long)ut;
+	ut->slb_close_p += (long)ut;
+	ut->slb_close_and_pterm_p += (long)ut;
+	ut->slb_exec_p += (long)ut;
+
+	cpush(ut, sizeof(USER_THINGS));
+
 	detach_region(curproc, m->tp_reg);
 	
 	TRACE (("copy_mem: ok (%lx)", m));
