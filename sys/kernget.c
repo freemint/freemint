@@ -505,6 +505,30 @@ kern_get_stat (SIZEBUF **buffer)
 }
 
 /*
+ * /kern/sysdir
+ * The system directory there the kernel load the modules and
+ * the configuration.
+ */
+long
+kern_get_sysdir (SIZEBUF **buffer)
+{
+	SIZEBUF *info;
+	ulong len;
+
+	len = strlen(sysdir) + 1;
+
+	info = kmalloc (sizeof (*info) + len);
+	if (!info)
+		return ENOMEM;
+
+	strcpy (info->buf, sysdir);
+	info->len = strlen(info->buf);
+
+	*buffer = info;
+	return 0;
+}
+
+/*
  *
  */
 long

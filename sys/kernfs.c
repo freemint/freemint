@@ -228,7 +228,8 @@ struct ktab
 # define ROOTDIR_TIME		0x10
 # define ROOTDIR_WELCOME	0x11
 # define ROOTDIR_BUILDINFO	0x12
-# define ROOTDIR_STAT       0x13
+# define ROOTDIR_STAT       	0x13
+# define ROOTDIR_SYSDIR		0x14
 
 static KENTRY __rootdir [] =
 {
@@ -248,6 +249,7 @@ static KENTRY __rootdir [] =
 	{ ROOTDIR_MEMINFO,	S_IFREG | 0444,	"meminfo",	kern_get_meminfo	},
 	{ ROOTDIR_SELF,		S_IFLNK | 0777,	"self",		kern_get_unimplemented	},
 	{ ROOTDIR_STAT,		S_IFREG | 0444,	"stat",		kern_get_stat		},
+	{ ROOTDIR_SYSDIR,	S_IFREG | 0444, "sysdir",	kern_get_sysdir		},
 	{ ROOTDIR_TIME,		S_IFREG | 0444,	"time",		kern_get_time		},
 	{ ROOTDIR_UPTIME,	S_IFREG | 0444,	"uptime",	kern_get_uptime		},
 	{ ROOTDIR_VERSION,	S_IFREG | 0444,	"version",	kern_get_version	},

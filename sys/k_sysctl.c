@@ -41,6 +41,7 @@
 # include "mint/time.h"
 # include "sys/param.h"
 
+# include "global.h"
 # include "info.h"
 # include "k_prot.h"
 # include "memory.h"
@@ -205,6 +206,9 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 
 		case KERN_INITIALTPA:
 			return sysctl_long (oldp, oldlenp, newp, newlen, &initialmem);
+
+		case KERN_SYSDIR:
+			return sysctl_rdstring (oldp, oldlenp, newp, sysdir);
 	}
 
 	return EOPNOTSUPP;
