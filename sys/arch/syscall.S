@@ -553,7 +553,6 @@ new_dev:
 
 error:	cmp.l	#_xbios_tab,a5
 	bne.s	enosys
-	moveq	#0,d0
 	jsr	_trap_14_emu
 	bra	out
 enosys:	moveq	#-32,d0	// ENOSYS
@@ -708,8 +707,8 @@ _trap_1_emu:
 	move.l	(sp)+,d0
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
-	moveq	#0,d0
 TE_D:	move.w	sr,-(sp)
+	moveq	#0,d0
 #ifdef	ONLY030
 	jmp	([_old_dos])
 #else
@@ -743,8 +742,8 @@ _trap_13_emu:
 	move.l	(sp)+,d0
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
-	moveq	#0,d0
 TE_B:	move.w	sr,-(sp)
+	moveq	#0,d0
 #ifdef	ONLY030
 	jmp	([_old_bios])
 #else
@@ -760,8 +759,8 @@ _trap_14_emu:
 	move.l	(sp)+,d0
 	clr.w	-(sp)			// frame format word
 	move.l	d0,-(sp)		// return address
-	moveq	#0,d0
 TE_X:	move.w	sr,-(sp)
+	moveq	#0,d0
 #ifdef	ONLY030
 	jmp	([_old_xbios])
 #else
