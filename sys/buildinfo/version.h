@@ -7,33 +7,33 @@
 # define _version_h
 
 
-# define MAJ_VERSION	1
-# define MIN_VERSION	16
-# define PATCH_LEVEL	0
+# define MINT_MAJ_VERSION	1
+# define MINT_MIN_VERSION	16
+# define MINT_PATCH_LEVEL	0
 
-# define THIRD_PARTY	"FreeMiNT"
+# define THIRD_PARTY		"FreeMiNT"
 
 # if 1
-# define BETA		"-ALPHA"
-# define BETA_IDENT	'a'
+# define MINT_BETA		"-ALPHA"
+# define MINT_BETA_IDENT	'a'
 # else
-# define BETA		""
-# define BETA_IDENT	0
+# define MINT_BETA		""
+# define MINT_BETA_IDENT	0
 # endif
 
-# define VERS_STRING	str (MAJ_VERSION) "."	\
-			str (MIN_VERSION) "."	\
-			str (PATCH_LEVEL)	\
-			BETA
+# define MINT_VERS_STRING	str(MINT_MAJ_VERSION) "."	\
+				str(MINT_MIN_VERSION) "."	\
+				str(MINT_PATCH_LEVEL)	\
+				MINT_BETA
 
 # ifndef THIRD_PARTY
 #  ifdef MULTITOS
-#   define MINT_NAME	"MultiTOS"
+#   define MINT_NAME		"MultiTOS"
 #  else
-#   define MINT_NAME	"MiNT"
+#   define MINT_NAME		"MiNT"
 #  endif
 # else
-#  define MINT_NAME	THIRD_PARTY
+#  define MINT_NAME		THIRD_PARTY
 # endif
 
 

@@ -8,6 +8,10 @@
  * Copyright 1999, 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,16 +26,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 1999-02-19
- *
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- *
- *
+ */
+
+/*
  * Set compilation time variables
- *
  */
 
 # include "info.h"
@@ -47,18 +45,18 @@
  */
 
 const char ostype    [] = THIRD_PARTY;
-const char osrelease [] = VERS_STRING;
-const char version   [] = THIRD_PARTY " " VERS_STRING;
+const char osrelease [] = MINT_VERS_STRING;
+const char version   [] = THIRD_PARTY " " MINT_VERS_STRING;
 
 
 /* definitions in automatically created build.h
  */
 
 const ulong MiNT_version =
-	  ((ulong) MAJ_VERSION << 24)
-	| ((ulong) MIN_VERSION << 16)
-	| ((ulong) PATCH_LEVEL << 8)
-	| ((ulong) BETA_IDENT);
+	  ((ulong) MINT_MAJ_VERSION << 24)
+	| ((ulong) MINT_MIN_VERSION << 16)
+	| ((ulong) MINT_PATCH_LEVEL << 8)
+	| ((ulong) MINT_BETA_IDENT);
 
 const ulong MiNT_date =
 	  ((ulong) BUILD_DAY << 24)
@@ -104,7 +102,7 @@ const char *greet1 =
 	"\ev\r\n"
 	"033p"
 	" MiNT is Now TOS (" __DATE__ ")         \033q\r\n"
-	" MiNT v" VERS_STRING " "
+	" MiNT v" MINT_VERS_STRING " "
 ;
 
 const char *greet2 =
@@ -122,7 +120,7 @@ const char *greet2 =
 const char *greet1 =
 	"\ev\r\n"
 	"\033p"
-	" This is " MINT_NAME " v" VERS_STRING "        "
+	" This is " MINT_NAME " v" MINT_VERS_STRING "        "
 ;
 
 const char *greet2 =
@@ -464,5 +462,3 @@ const char *MSG_kerinfo_rejected = "rejected";
 const char *MSG_xhdi_absent = "This system does not feature XHDI.\r\n\r\n";
 
 # endif /* LANG_ENGLISH */
-
-/* EOF */

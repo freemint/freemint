@@ -572,8 +572,8 @@ kern_get_version (SIZEBUF **buffer)
 
 	info->len = ksprintf (info->buf, len,
 			"FreeMiNT version %d.%d%s%s (%s@%s.%s) (%s) #%lu %s\n",
-			(int) MAJ_VERSION,
-			(int) MIN_VERSION,
+			(int) MINT_MAJ_VERSION,
+			(int) MINT_MIN_VERSION,
 			revision,
 			beta_ident,
 			build_user,
