@@ -45,7 +45,7 @@
 /* socket system calls */
 
 long
-sys_socket (short domain, enum so_type type, short protocol)
+sys_socket (long domain, long type, long protocol)
 {
 	PROC *p = curproc;
 	FILEPTR *fp = NULL;
@@ -53,7 +53,7 @@ sys_socket (short domain, enum so_type type, short protocol)
 	struct socket *so = NULL;
 	long ret;
 	
-	DEBUG (("sys_socket(%i, %i, %i)", domain, type, protocol));
+	DEBUG (("sys_socket(%li, %li, %li)", domain, type, protocol));
 	
 	ret = so_create (&so, domain, type, protocol);
 	if (ret) goto error;
@@ -83,7 +83,7 @@ error:
 }
 
 long
-sys_socketpair (short domain, enum so_type type, short protocol, short fds[2])
+sys_socketpair (long domain, long type, long protocol, short fds[2])
 {
 	PROC *p = curproc;
 	FILEPTR *fp1 = NULL, *fp2 = NULL;
@@ -91,7 +91,7 @@ sys_socketpair (short domain, enum so_type type, short protocol, short fds[2])
 	struct socket *so1 = NULL, *so2 = NULL;
 	long ret;
 	
-	DEBUG (("sys_socketpair(%i, %i, %i, %lx)", domain, type, protocol, fds));
+	DEBUG (("sys_socketpair(%li, %li, %li, %lx)", domain, type, protocol, fds));
 	
 	ret = so_create (&so1, domain, type, protocol);
 	if (ret) goto error;
@@ -144,14 +144,14 @@ error:
 }
 
 long
-sys_bind (short fd, struct sockaddr *addr, short addrlen)
+sys_bind (short fd, struct sockaddr *addr, long addrlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_bind(%i, %lx, %i)", fd, addr, addrlen));
+	DEBUG (("sys_bind(%i, %lx, %li)", fd, addr, addrlen));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -164,14 +164,14 @@ sys_bind (short fd, struct sockaddr *addr, short addrlen)
 }
 
 long
-sys_listen (short fd, short backlog)
+sys_listen (short fd, long backlog)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_listen(%i, %i)", fd, backlog));
+	DEBUG (("sys_listen(%i, %li)", fd, backlog));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -195,7 +195,7 @@ sys_listen (short fd, short backlog)
 }
 
 long
-sys_accept (short fd, struct sockaddr *addr, short *addrlen)
+sys_accept (short fd, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp, *newfp = NULL;
@@ -240,12 +240,15 @@ sys_accept (short fd, struct sockaddr *addr, short *addrlen)
 	
 	if (addr)
 	{
-		ret = (*newso->ops->getname)(newso, addr, addrlen, PEER_ADDR);
+		short addrlen16 = *addrlen;
+		ret = (*newso->ops->getname)(newso, addr, &addrlen16, PEER_ADDR);
 		if (ret < 0)
 		{
 			DEBUG (("sys_accept: getname failed"));
 			*addrlen = 0;
 		}
+		else
+			*addrlen = addrlen16;
 	}
 	
 	fp_done (p, newfp, newfd, FD_CLOEXEC);
@@ -264,14 +267,14 @@ error1:
 }
 
 long
-sys_connect (short fd, struct sockaddr *addr, short addrlen)
+sys_connect (short fd, struct sockaddr *addr, long addrlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_connect(%i, %lx, %i)", fd, addr, addrlen));
+	DEBUG (("sys_connect(%i, %lx, %li)", fd, addr, addrlen));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -312,12 +315,13 @@ sys_connect (short fd, struct sockaddr *addr, short addrlen)
 }
 
 long
-sys_getsockname (short fd, struct sockaddr *addr, short *addrlen)
+sys_getsockname (short fd, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
+	short addrlen16;
 	
 	DEBUG (("sys_getsockname(%i, %lx, %lx)", fd, addr, addrlen));
 	
@@ -328,16 +332,25 @@ sys_getsockname (short fd, struct sockaddr *addr, short *addrlen)
 	if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
 		return EINVAL;
 	
-	return (*so->ops->getname)(so, addr, addrlen, SOCK_ADDR);
+	if (addrlen)
+		addrlen16 = *addrlen;
+	
+	r = (*so->ops->getname)(so, addr, &addrlen16, SOCK_ADDR);
+	
+	if (addrlen)
+		*addrlen = addrlen16;
+	
+	return r;
 }
 
 long
-sys_getpeername (short fd, struct sockaddr *addr, short *addrlen)
+sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
+	short addrlen16;
 	
 	DEBUG (("sys_getpeername(%i, %lx, %lx)", fd, addr, addrlen));
 	
@@ -348,11 +361,19 @@ sys_getpeername (short fd, struct sockaddr *addr, short *addrlen)
 	if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
 		return EINVAL;
 	
-	return (*so->ops->getname)(so, addr, addrlen, PEER_ADDR);
+	if (addrlen)
+		addrlen16 = *addrlen;
+	
+	r =  (*so->ops->getname)(so, addr, &addrlen16, PEER_ADDR);
+	
+	if (addrlen)
+		*addrlen = addrlen16;
+	
+	return r;
 }
 
 long
-sys_sendto (short fd, char *buf, long buflen, short flags, struct sockaddr *addr, short addrlen)
+sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long addrlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
@@ -360,7 +381,7 @@ sys_sendto (short fd, char *buf, long buflen, short flags, struct sockaddr *addr
 	struct socket *so;
 	struct iovec iov[1] = {{ buf, buflen }};
 	
-	DEBUG (("sys_sendto(%i, %lx, %li, %i, %lx, %i)", fd, buf, buflen, flags, addr, addrlen));
+	DEBUG (("sys_sendto(%i, %lx, %li, %li, %lx, %li)", fd, buf, buflen, flags, addr, addrlen));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -373,14 +394,14 @@ sys_sendto (short fd, char *buf, long buflen, short flags, struct sockaddr *addr
 }
 
 long
-sys_sendmsg (short fd, struct msghdr *msg, short flags)
+sys_sendmsg (short fd, struct msghdr *msg, long flags)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_sendmsg(%i, %lx, %i)", fd, msg, flags));
+	DEBUG (("sys_sendmsg(%i, %lx, %li)", fd, msg, flags));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -399,15 +420,16 @@ sys_sendmsg (short fd, struct msghdr *msg, short flags)
 }
 
 long
-sys_recvfrom (short fd, char *buf, long buflen, short flags, struct sockaddr *addr, short *addrlen)
+sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long *addrlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	struct iovec iov[1] = {{ buf, buflen }};
+	short addrlen16;
 	
-	DEBUG (("sys_recvfrom(%i, %lx, %li, %i, %lx, %lx)", fd, buf, buflen, flags, addr, addrlen));
+	DEBUG (("sys_recvfrom(%i, %lx, %li, %li, %lx, %lx)", fd, buf, buflen, flags, addr, addrlen));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -416,11 +438,19 @@ sys_recvfrom (short fd, char *buf, long buflen, short flags, struct sockaddr *ad
 	if (so->state == SS_VIRGIN)
 		return EINVAL;
 	
-	return (*so->ops->recv)(so, iov, 1, fp->flags & O_NDELAY, flags, addr, addrlen);
+	if (addrlen)
+		addrlen16 = *addrlen;
+	
+	r = (*so->ops->recv)(so, iov, 1, fp->flags & O_NDELAY, flags, addr, &addrlen16);
+	
+	if (addrlen)
+		*addrlen = addrlen16;
+	
+	return r;
 }
 
 long
-sys_recvmsg (short fd, struct msghdr *msg, short flags)
+sys_recvmsg (short fd, struct msghdr *msg, long flags)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
@@ -428,7 +458,7 @@ sys_recvmsg (short fd, struct msghdr *msg, short flags)
 	struct socket *so;
 	short namelen = msg->msg_namelen;
 	
-	DEBUG (("sys_recvmsg(%i, %lx, %i)", fd, msg, flags));
+	DEBUG (("sys_recvmsg(%i, %lx, %li)", fd, msg, flags));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -448,14 +478,14 @@ sys_recvmsg (short fd, struct msghdr *msg, short flags)
 }
 
 long
-sys_setsockopt (short fd, short level, short optname, void *optval, long optlen)
+sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_setsockopt(%i, %i, %i, %lx, %li)", fd, level, optname, optval, optlen));
+	DEBUG (("sys_setsockopt(%i, %li, %li, %lx, %li)", fd, level, optname, optval, optlen));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -486,14 +516,14 @@ sys_setsockopt (short fd, short level, short optname, void *optval, long optlen)
 }
 
 long
-sys_getsockopt (short fd, short level, short optname, void *optval, long *optlen)
+sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_getsockopt(%i, %i, %i, %lx, %lx)", fd, level, optname, optval, optlen));
+	DEBUG (("sys_getsockopt(%i, %li, %li, %lx, %lx)", fd, level, optname, optval, optlen));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
@@ -525,14 +555,14 @@ sys_getsockopt (short fd, short level, short optname, void *optval, long *optlen
 }
 
 long
-sys_shutdown (short fd, short how)
+sys_shutdown (short fd, long how)
 {
 	PROC *p = curproc;
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
 	
-	DEBUG (("sys_shutdown(%i, %i)", fd, how));
+	DEBUG (("sys_shutdown(%i, %li)", fd, how));
 	
 	r = FP_GET1 (p, fd, &fp);
 	if (r) return r;
