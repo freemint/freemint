@@ -27,6 +27,9 @@ COBJS = \
 	global.c \
 	gmon.c \
 	init.c \
+	ipc_socket.c \
+	ipc_socketdev.c \
+	ipc_socketutil.c \
 	k_exec.c \
 	k_exit.c \
 	k_fds.c \
