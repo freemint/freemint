@@ -429,6 +429,24 @@ remove_shel_info(struct proc *p)
 }
 
 /*
+ * Ozk: check if other clients reference us, and remove or fix it
+ */
+static void
+remove_client_crossrefs(struct xa_client *client)
+{
+	struct xa_client *cl;
+
+	FOREACH_CLIENT(cl)
+	{
+		if (cl->nextclient == client)
+		{
+			cl->nextclient = NEXT_CLIENT(client);
+			break;
+		}
+	}
+}
+
+/*
  * close and free all client resources
  * 
  * Called on appl_exit() or on process termination (if app crashed
@@ -616,7 +634,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 		 */
 		remove_shel_info(p);
 	}
-		
+
+	remove_client_crossrefs(client);
+	
 	S.clients_exiting--;
 
 	DIAG((D_appl, NULL, "client exit done"));
@@ -722,14 +742,16 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			/* simply the first */
 			next = CLIENT_LIST_START;
+			client->nextclient = NEXT_CLIENT(next);
 		}
 		else if (cpid == APP_NEXT)
 		{
-			next = client->temp;
+			next = client->nextclient;
 			if (next)
-				next = NEXT_CLIENT(next);
+			{
+				client->nextclient = NEXT_CLIENT(next);
+			}
 		}
-
 		Sema_Dn(clients);
 	}
 
@@ -766,16 +788,17 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 		o[2] = cpid;
 
 		if (lang)
+		{
 			strcpy(fname, next->name);
+			DIAGS((" -- nicename '%s'", fname));
+		}
 		else
 		{
 			strncpy(fname, next->proc_name, 8);
 			fname[8] = '\0';
+			DIAGS((" -- procname '%s'", fname));
 		}
-
-		client->temp = next;
 	}
-
 	return XAC_DONE;
 }
 
@@ -1332,6 +1355,8 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 			cl = focus_owner();
 			if (cl)
 				pb->intout[0] = cl->p->pid;
+			else
+				pb->intout[0] = 0;
 
 			break;
 		}
@@ -1392,7 +1417,8 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (pid == -1)
 	{
-		cl = get_app_infront(); //focus_owner();
+		if (!(cl = find_focus(true, NULL, NULL, NULL))) //get_app_infront(); //focus_owner();
+			cl = get_app_infront();
 	}
 	else
 		cl = pid2client(pid);
@@ -1461,8 +1487,6 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 						*ii |= 2 /* APCI_HASMBAR */;
 					if (cl->desktop)
 						*ii |= 4 /* APCI_HASDESK */;
-
-					pb->intout[0] = 1;
 				}
 				break;
 			}
