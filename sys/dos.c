@@ -25,6 +25,7 @@
 # include "mint/stat.h"
 
 # include "console.h"
+# include "cookie.h"
 # include "filesys.h"
 # include "k_prot.h"
 # include "memory.h"
@@ -714,10 +715,23 @@ sys_s_hutdown(long restart)
 	{
 		shutdown();
 
-		/* 0 = halt, 1 = warm start, 2 = cold start
+		/* 0 = halt, 1 = warm start, 2 = cold start, 3 = poweroff
 		 */
 		switch (restart)
 		{
+			case  3:
+			{
+				/* CT60 poweroff */
+				long int dummy;
+
+				if (get_cookie(NULL,COOKIE_CT60,&dummy)==E_OK)
+				{
+					*(char *)0xFA800000L = 1; /* any write to that address causes
+				        	                     poweroff */
+				
+					/* does not return */ 
+				}
+			}
 			case  0:
 			{
 				DEBUG(("Halting system ..."));
