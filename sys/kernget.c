@@ -43,6 +43,7 @@
 
 # include "biosfs.h"
 # include "cookie.h"
+# include "delay.h"
 # include "filesys.h"
 # include "info.h"
 # include "kernfs.h"
@@ -302,8 +303,10 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 				"MMU:\t\t%s\n"
 				"FPU:\t\t%s\n"
 				"Clockspeed:\t ? MHz\n"
-				"BogoMips:\t ?\n",
-				cpu, mmu, fpuname);
+				"BogoMips:\t %lu.%02lu\n",
+				cpu, mmu, fpuname,
+				(loops_per_sec + 2500) / 500000,
+				((loops_per_sec + 2500) / 5000) % 100);
 	
 	*buffer = info;
 	return 0;
@@ -553,6 +556,9 @@ kern_get_welcome (SIZEBUF **buffer)
 		greet1,
 		greet2,
 		no_mem_prot ? memprot_warning : "",
+# ifdef CRYPTO_CODE
+		crypto_greet,
+# endif
 # ifdef DEV_RANDOM
 		random_greet,
 # endif
