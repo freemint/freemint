@@ -131,7 +131,6 @@ void timer_handler(void);
  * internal functions
  */
 
-//static void gen_write(struct moose_data *md);
 static void do_button_packet(void);
 
 
@@ -292,8 +291,7 @@ cbutv(void)
 	if (pak_tail > pak_end)
 		pak_tail = (struct mouse_pak *)&pak_buffer;
 
-	inbuf	+= sizeof(struct mouse_pak);
-	return;
+	inbuf += sizeof(struct mouse_pak);
 }
 
 void
@@ -312,8 +310,7 @@ cwhlv(void)
 	if (pak_tail > pak_end)
 		pak_tail = (struct mouse_pak *)&pak_buffer;
 
-	inbuf	+= sizeof(struct mouse_pak);
-	return;
+	inbuf += sizeof(struct mouse_pak);
 }
 
 void
@@ -454,10 +451,10 @@ timer_handler(void)
 			pak_head++;
 			if (pak_head > pak_end)
 				pak_head = (struct mouse_pak *)&pak_buffer;
+
 			inbuf -= sizeof(struct mouse_pak);
 		}
 	}
-	return;
 }
 
 static void
@@ -480,92 +477,13 @@ do_button_packet(void)
 		md->kstate	= 0;		/* Not set here -- will change*/
 		md->iclicks[0]	= l_clicks;
 		md->iclicks[1]	= r_clicks;
-		md->dbg1		= 0;
-		md->dbg2		= 0;
+		md->dbg1	= 0;
+		md->dbg2	= 0;
 
 		(*ainf->button)(&moose_aif, md);
 	}
 	timeout = 0;
-#if 0
-	struct moose_data md;
-
-	md.l		= sizeof(md);
-	md.ty		= MOOSE_BUTTON_PREFIX;
-	md.x		= click_x;
-	md.y		= click_y;
-	md.sx		= sample_x;
-	md.sy		= sample_y;
-	md.state	= click_state;
-	md.cstate	= click_cstate;
-	md.clicks	= click_count;
-	md.kstate	= 0;		/* Not set here -- will change*/
-	md.iclicks[0]	= l_clicks;
-	md.iclicks[1]	= r_clicks;
-	md.dbg1		= 0;
-	md.dbg2		= 0;
-
-	gen_write(&md);
-
-	timeout = 0;
-
-	return;
-#endif
 }
-
-#if 0
-static void
-gen_write(struct moose_data *md)
-{
-	
-	short *mb = (short *)&moose_buffer;
-	short *buf = (short *) md;
-	short len;
-	int i;
-	
-	if (!moose_inuse)
-		return;
-
-	if (wptr == rptr)
-	{
-		wptr	= 0;
-		rptr	= 0;
-		mused	= 0;
-	}
-
-	(char *)mb += wptr;
-	len = md->l >> 1;
-
-	if ((wptr + md->l) > MB_BUFFER_SIZE)
-	{
-		for (i = 0; i < len; i++)
-		{
-			if (wptr > MB_BUFFER_SIZE)
-			{
-				wptr 	= 0;
-				mb	= (short *)&moose_buffer;
-			}
-			*mb++	= *buf++;
-			wptr	+= 2;
-		}
-	}
-	else
-	{
-		for (i = 0;i < len; i++)
-			*mb++ = *buf++;
-
-		wptr += md->l;
-	}
-
-	mused += md->l;
-
-	if (wptr > MB_BUFFER_SIZE)
-		wptr = 0;
-
-	wake_listeners();
-
-	return;
-}
-#endif
 
 long _cdecl
 init (struct kentry *k, struct adiinfo *ainfo)
@@ -575,12 +493,14 @@ init (struct kentry *k, struct adiinfo *ainfo)
 	kentry	= k;
 	ainf	= ainfo;
 
+	if (check_kentry_version())
+		return -1;
+
 	//c_conws (MSG_BOOT);
 	//c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
 	ret = (*ainf->adi_register)(&moose_aif);
-
 	if (ret)
 	{
 		DEBUG (("%s: init failed!", __FILE__));
@@ -593,7 +513,6 @@ init (struct kentry *k, struct adiinfo *ainfo)
 static long _cdecl
 moose_open (struct adif *a)
 {
-
 	short nvbi;
 	int i;
 
@@ -671,9 +590,10 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 static long _cdecl
 moose_close (struct adif *a)
 {
-	*VBI_entry = 0;
+	*VBI_entry = NULL;
 	moose_inuse = 0;
 	dc_time = 0;
+
 	return E_OK;
 }
 
