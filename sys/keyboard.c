@@ -33,11 +33,12 @@
  *
  */
 
-# include "arch/intr.h"		/* click */
+# include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
+
 # include "mint/signal.h"	/* SIGQUIT */
 # include "mint/mint.h"		/* FATAL() */
 
-# include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
+# include "arch/intr.h"		/* click */
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
@@ -139,7 +140,7 @@ static const ushort mmasks[] =
 };
 
 struct	cad_def cad[3];	/* for halt, warm and cold resp. */
-short	gl_kbd;		/* keyboard layout, initialized at startup */
+short	gl_kbd;		/* default keyboard layout */
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;	/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;	/* place for saving the hz_200 timer value */
@@ -148,6 +149,7 @@ static	uchar numin[3];	/* buffer for storing ASCII code typed in via numpad */
 static	ushort numidx;	/* index for the buffer (0 = empty, 3 = full) */
 
 /* keyboard table pointers */
+static struct keytab *syskeytab;
 static struct keytab keytable_vecs;
 static MEMREGION *key_region;
 
@@ -216,11 +218,25 @@ alt_help(void)
 
 /* The handler
  */
+static void
+put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
+{
+	keyrec->tail += 4;
+	if (keyrec->tail >= keyrec->buflen)
+		keyrec->tail = 0;
+	(keyrec->bufaddr + keyrec->tail)[0] = c0;
+	(keyrec->bufaddr + keyrec->tail)[1] = c1;
+	(keyrec->bufaddr + keyrec->tail)[2] = c2;
+	(keyrec->bufaddr + keyrec->tail)[3] = c3;
+
+	kintr = 1;
+}
+
 short
 ikbd_scan (ushort scancode)
 {
 	ushort mod = 0, clk = 0, shift = *kbshft, x = 0;
-	uchar *chartable;
+	uchar *chartable, ascii;
 
 	/* This is set during various keyboard table initializations
 	 * e.g. when the user calls Bioskeys(), to prevent processing
@@ -237,7 +253,7 @@ ikbd_scan (ushort scancode)
 
 	/* We handle modifiers first
 	 */
-	while(modifiers[x])
+	while (modifiers[x])
 	{
 		if (scancode == modifiers[x])
 		{
@@ -271,37 +287,27 @@ ikbd_scan (ushort scancode)
 		{
 			if (numidx)
 			{
-				ushort ascii = 0, tempidx = 0;
+				ushort ascii_c = 0, tempidx = 0;
 
 				while(numidx--)
 				{
-					ascii += (numin[tempidx] & 0x0f);
+					ascii_c += (numin[tempidx] & 0x0f);
 					if (numidx)
 					{
 						tempidx++;
-						ascii *= 10;
+						ascii_c *= 10;
 					}
 				}
 
 				/* Only the values 0-255 are valid. Silently
 				 * ignore the elder byte
 				 */
-				ascii &= 0x00ff;
+				ascii_c &= 0x00ff;
 
 				/* Reset the buffer for next use */
 				numidx = 0;
 
-				/* Insert the character to the keyboard buffer.
-				 * XXX: is this correct?
-				 */
-				keyrec->tail += 4;
-				if (keyrec->tail >= keyrec->buflen)
-					keyrec->tail = 0;
-				(keyrec->bufaddr + keyrec->tail)[0] = 0;
-				(keyrec->bufaddr + keyrec->tail)[1] = 0;
-				(keyrec->bufaddr + keyrec->tail)[2] = 0;
-				(keyrec->bufaddr + keyrec->tail)[3] = (char)ascii;
-				kintr = 1;
+				put_key_into_buf(0, 0, 0, ascii_c);
 			}
 			break;
 		}
@@ -405,8 +411,6 @@ ikbd_scan (ushort scancode)
 	{
 		switch (scancode)
 		{
-			uchar ascii;
-
 			/* Alt/Help fires up a program named `althelp.sys'
 			 * located in the system directory (e.g. `c:\multitos\')
 			 */
@@ -432,7 +436,7 @@ ikbd_scan (ushort scancode)
 				if (numidx > 2)		/* buffer full? reset it */
 					numidx = 0;
 
-				chartable = keytable_vecs.unshift;
+				chartable = syskeytab->unshift;
 				ascii = chartable[scancode];
 				if (ascii)
 				{
@@ -462,17 +466,81 @@ ikbd_scan (ushort scancode)
 		}
 	}
 
-	/* Ordinary keyboard add here ...
+	/* Ordinary keyboard here.
 	 */
+# if 0
+	if (scancode < 0x80)
+	{
+		if (shift & MM_ALTERNATE)
+		{
+			if (shift & MM_ESHIFT)
+				chartable = keytable_vecs.altshift;
+			else if (shift & MM_CAPS)
+				chartable = keytable_vecs.altcaps;
+			else
+				chartable = keytable_vecs.alt;
 
-	if ((scancode & 0x80) == 0)
+			ascii = 0;
+
+			while (*chartable)
+			{
+				if (chartable[0] == scancode)
+				{
+					ascii = chartable[1];
+					break;
+				}
+				chartable += 2;
+			}
+		}
+		else
+		{
+			if (shift & MM_ESHIFT)
+				chartable = keytable_vecs.shift;
+			else if (shift & MM_CAPS)
+				chartable = keytable_vecs.caps;
+			else
+				chartable = keytable_vecs.unshift;
+
+			ascii = chartable[scancode];
+
+			if (shift & MM_CTRL)
+			{
+				if (isupper(ascii))
+					ascii &= ~0x40;
+				else if (islower(ascii))
+					ascii &= ~0x60;
+			}
+		}
+
+		put_key_into_buf(0, 0, (uchar)scancode, ascii);
+	}
+# else
+	if (scancode < 0x80)
 		kintr = 1;
 
-	return scancode;		/* for now, give the scancode away to TOS */
+	return scancode;
+# endif
 
 key_done:
-	kbdclick(scancode);		/* produce keyclick */
+	if (scancode < 0x80)
+		kbdclick(scancode);	/* produce keyclick */
+
 	return -1;			/* don't go to TOS, just return */
+}
+
+void
+key_repeat(void)
+{
+	register uchar c0, c1, c2, c3;
+
+	c0 = (keyrec->bufaddr + keyrec->tail)[0];
+	c1 = (keyrec->bufaddr + keyrec->tail)[1];
+	c2 = (keyrec->bufaddr + keyrec->tail)[2];
+	c3 = (keyrec->bufaddr + keyrec->tail)[3];
+
+	put_key_into_buf(c0, c1, c2, c3);
+
+	kbdclick(c2);
 }
 
 /* Init section
@@ -503,12 +571,8 @@ void
 sys_b_bioskeys(void)
 {
 	long akp_val = 0;
-	struct keytab *syskeytab;
 
 	kbd_lock = 1;
-
-	/* call the underlying XBIOS */
-	syskeytab = Keytbl(-1, -1, -1);
 
 	/* Reset the vectors */
 	syskeytab->unshift = keytable_vecs.unshift;
@@ -604,8 +668,7 @@ load_table(FILEPTR *fp, char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				ret = fill_keystruct(kbuf + sizeof(short),
-						     kbuf + size);
+				ret = fill_keystruct(kbuf + sizeof(short), kbuf + size);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -619,8 +682,7 @@ load_table(FILEPTR *fp, char *name, long size)
 
 				if (sbuf[1] <= MAXAKP)
 				{
-					ret = fill_keystruct(kbuf + sizeof(long),
-							     kbuf + size);
+					ret = fill_keystruct(kbuf + sizeof(long), kbuf + size);
 					if (ret)
 						gl_kbd = sbuf[1];
 				}
@@ -679,12 +741,8 @@ load_default_table(void)
 
 	return 0;
 # else
-	struct keytab *syskeytab;
 	uchar *kbuf, *p;
 	long size;
-
-	/* call the underlying XBIOS */
-	syskeytab = Keytbl(-1, -1, -1);
 
 # if 1
 	size = 1024;
@@ -766,12 +824,14 @@ load_keyboard_table(char *name, short flag)
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return -1;
 
-	ret = -1;
-
-	if (!do_open(&fp, name, O_RDONLY, 0, &xattr))
+	ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
+	if (!ret)
 	{
 		ret = load_table(fp, name, xattr.size);
 		do_close(rootproc, fp);
+
+		if (!ret)
+			sys_b_bioskeys();
 	}
 	else
 	{
@@ -780,12 +840,11 @@ load_keyboard_table(char *name, short flag)
 
 		/* Special case: `load' the default table */
 		if (flag == 0)
-			ret = load_default_table();
+		{
+			load_default_table();
+			sys_b_bioskeys();
+		}
 	}
-
-	/* Install the tables in the system */
-	if (!ret)
-		sys_b_bioskeys();
 
 	return ret;
 }
@@ -825,9 +884,6 @@ init_keybd(void)
 	fill_keystruct(usa_kbd, kbuf + sizeof(usa_kbd));
 	gl_kbd = 0;
 # else
-	struct keytab *syskeytab;
-	long akp_val;
-
 	/* call the underlying XBIOS */
 	syskeytab = Keytbl(-1, -1, -1);
 
@@ -840,11 +896,7 @@ init_keybd(void)
 	keytable_vecs.altcaps = syskeytab->altcaps;
 	if (mch == MILAN_C)
 		keytable_vecs.altgr = syskeytab->altgr;
-
-	get_cookie(NULL, COOKIE__AKP, &akp_val);
-	gl_kbd = (akp_val & 0xffL);
 # endif
 }
 
 /* EOF */
-
