@@ -864,7 +864,7 @@ struct xa_window
 	RECT max;			/* Creator dimension's, maximum for sizing */
 	RECT min;
 	RECT r;				/* Current dimensions */
-	RECT rc;
+	RECT rc;			/* Real coordinates when shaded */
 	RECT ro;			/* Original dimemsions when iconified */
 	RECT wa;			/* user work area */
 	RECT bd;			/* border displacement */
@@ -889,7 +889,12 @@ struct xa_window
 	struct xa_rect_list *rect_wastart;
 	struct xa_rect_list *rect_prev;	/* Remember the first rectangle */
 	struct xa_rect_list  prev_rect;
-
+	
+	bool use_rlc;
+	RECT rl_clip;
+	struct xa_rect_list *rect_opt_start;
+	struct xa_rect_list *rect_opt;
+	
 	void *background;		/* Pointer to a buffer containing the saved background */
 
 	WINDOW_TYPE dial;		/* Flag - 1 = this window was created by form_dial,

@@ -29,18 +29,24 @@
 
 #include "global.h"
 
+#define RECT_SYS	0
+#define RECT_OPT	1
+
 bool was_visible(struct xa_window *w);
 bool xa_rc_intersect(const RECT s, RECT *d);
 bool xa_rect_clip(const RECT *s, RECT *d, RECT *r);
 
 //struct xa_rect_list *generate_rect_list(enum locks lock, struct xa_window *w, short which);
 
-struct xa_rect_list *make_rect_list(struct xa_window *w, bool swap);
+struct xa_rect_list *make_rect_list(struct xa_window *w, bool swap, short which);
+int get_rect(struct xa_window *wind, RECT *clip, bool first, RECT *ret);
 void free_rect_list(struct xa_rect_list *first);
 
 //void dispose_rect_list(struct xa_window *w);
 
+struct xa_rect_list *rect_get_optimal_first(struct xa_window *w);
 struct xa_rect_list *rect_get_user_first(struct xa_window *w);
+struct xa_rect_list *rect_get_optimal_next(struct xa_window *w);
 struct xa_rect_list *rect_get_user_next(struct xa_window *w);
 struct xa_rect_list *rect_get_system_first(struct xa_window *w);
 struct xa_rect_list *rect_get_system_next(struct xa_window *w);

@@ -1026,9 +1026,12 @@ move_timeout(struct proc *p, long arg)
 				 * start a timeout which will handle clients
 				 * not responding/too busy to react to WM_REDRAWS
 				*/
-				if (!m_rto)
-					m_rto = addroottimeout(cfg.redraw_timeout/*400L*/, move_rtimeout, 1);
-				m_to = NULL;
+				if (cfg.redraw_timeout)
+				{
+					if (!m_rto)
+						m_rto = addroottimeout(cfg.redraw_timeout/*400L*/, move_rtimeout, 1);
+					m_to = NULL;
+				}
 			}
 			else
 			{
@@ -1073,7 +1076,7 @@ adi_move(struct adif *a, short x, short y)
 		 * If WM_REDRAW messages pending, add timeout
 		 * to handle locked/busy clients.
 		*/
-		if (!m_rto)
+		if (!m_rto && cfg.redraw_timeout)
 			m_rto = addroottimeout(cfg.redraw_timeout, move_rtimeout, 1);
 	}
 	else
