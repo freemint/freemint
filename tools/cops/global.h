@@ -45,6 +45,12 @@
 #define between(x,a,b)	((x >= a) && (x <= b))
 #define	ABS(a)		((a) < 0 ? -(a) : (a))
 
+#if 1
+#define DEBUG(x) printf x
+#else
+#define DEBUG(x)
+#endif
+
 /* XXX add to mintlib somewhere under include/mint */
 struct xattr
 {

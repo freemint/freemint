@@ -40,8 +40,6 @@
 #include "popup.h"
 #include "objmacro.h"
 
-#define	DEBUG	0
-
 #undef min
 #undef max
 
@@ -142,9 +140,7 @@ save_header(struct cpxlist *cpx_list)
 	long handle;
 	short result = 0;
 
-#if DEBUG
-	printf("save_header\n");
-#endif
+	DEBUG(("save_header\n"));
 
 	cpx_desc = (CPX_DESC *)((unsigned char *)cpx_list - offsetof(CPX_DESC, old));
 	strcpy(name, settings.cpx_path);
@@ -194,10 +190,8 @@ cpx_rsh_fix(CPX_DESC *cpx_desc, const struct rsh_fix_args *args)
 	{
 		short num_objs = args->num_objs;
 
-#if DEBUG
-		printf("rsh_fix num_objs %d, num_frstr %d, num_frimg %d, num_tree %d\n",
-		       args->num_objs, args->num_frstr, args->num_frimg, args->num_tree);
-#endif
+		DEBUG(("rsh_fix num_objs %d, num_frstr %d, num_frimg %d, num_tree %d\n",
+		       args->num_objs, args->num_frstr, args->num_frimg, args->num_tree));
 
 		fix_rsc(args->num_objs, args->num_frstr, args->num_frimg, args->num_tree,
 			args->rs_object, args->rs_tedinfo, args->rs_strings, args->rs_iconblk, args->rs_bitblk,
@@ -244,9 +238,7 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 {
 	short hpix, ypix;
 
-#if DEBUG_OBFIX
-	printf("rsh_obfix ob %d\n", ob);
-#endif
+	DEBUG(("rsh_obfix ob %d\n", ob));
 
 	ypix = (tree[ob].ob_y & 0xff00) >> 8;
 	tree[ob].ob_y &= 0xff;
@@ -256,9 +248,9 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 
 	rsrc_obfix(tree, ob);					/* von Zeichen- in Pixelkoordinaten umrechnen */
 
-	if ((pwchar == 8) && (phchar == 8))			/* unselige Aufl”sung? */
+	if ((pwchar == 8) && (phchar == 8))			/* unselige Aufloesung? */
 	{
-		tree[ob].ob_y += tree[ob].ob_y;			/* H”he und Position korrigieren */
+		tree[ob].ob_y += tree[ob].ob_y;			/* Hoehe und Position korrigieren */
 		tree[ob].ob_height += tree[ob].ob_height;
 	}
 
@@ -308,15 +300,13 @@ rsh_obfix(struct rsh_obfix_args args)
 /*	no_strs:	Anzahl der Strings						*/
 /*	slct:		Index des selektierten Eintrags					*/
 /*	font:		wird ignoriert							*/
-/*	button_rect:	Ausmaže des Grundbuttons					*/
-/*	tree_rect:	Ausmaže des CPX						*/
+/*	button_rect:	Ausmasse des Grundbuttons					*/
+/*	tree_rect:	Ausmasse des CPX						*/
 /*----------------------------------------------------------------------------------------*/ 
 static short _cdecl
 Popup(struct Popup_args args)
 {
-#if DEBUG
-	printf("Popup\n");
-#endif
+	DEBUG(("Popup\n"));
 
 	return do_popup(args.up, args.items, args.no_items, 0, args.slct);
 }
@@ -338,7 +328,7 @@ redraw_obj(OBJECT *tree, short obj)
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Slidergr”že einstellen								*/
+/* Slidergroesse einstellen								*/
 /* Funktionsresultat:	-								*/
 /* tree:		Zeiger auf den Objektbaum					*/
 /*	base:		Hintergrundobjekt fuer den Slider				*/
@@ -346,7 +336,7 @@ redraw_obj(OBJECT *tree, short obj)
 /*	num_items:	Anzahl der vorhandenen Elemente					*/
 /*	visible:	Anzahl der sichtbaren Elemente					*/
 /*	direction:	Richtung (0: vertikal, 1: horizontal)				*/
-/*	min_size:	minimale Slidergr”že						*/
+/*	min_size:	minimale Slidergroesse						*/
 /*----------------------------------------------------------------------------------------*/ 
 static void _cdecl
 Sl_size(struct Sl_size_args args)
@@ -358,10 +348,8 @@ Sl_size(struct Sl_size_args args)
 #define direction args.direction
 #define min_size  args.min_size
 {
-#if DEBUG
-	printf("Sl_size base %d, slider %d, num_items %d, visible %d, direction %d, min_size %d\n",
-	       base, slider, num_items, visible, direction, min_size);
-#endif
+	DEBUG(("Sl_size base %d, slider %d, num_items %d, visible %d, direction %d, min_size %d\n",
+	       base, slider, num_items, visible, direction, min_size));
 
 	if (direction)
 	{
@@ -418,10 +406,8 @@ cpx_Sl_x(OBJECT *tree, short base, short slider, short value,
 {
 	short w;
 
-#if DEBUG
-	printf("Sl_x base %d, slider %d, value %d, min %d, max %d\n",
-	       base, slider, value, min, max);
-#endif
+	DEBUG(("Sl_x base %d, slider %d, value %d, min %d, max %d\n",
+	       base, slider, value, min, max));
 
 	w = tree[base].ob_width - tree[slider].ob_width;
 
@@ -477,10 +463,8 @@ cpx_Sl_y(OBJECT *tree, short base, short slider, short value,
 {
 	short h;
 
-#if DEBUG
-	printf("Sl_y base %d, slider %d, value %d, min %d, max %d\n",
-	       base, slider, value, min, max);
-#endif
+	DEBUG(("Sl_y base %d, slider %d, value %d, min %d, max %d\n",
+	       base, slider, value, min, max));
 
 	h = tree[base].ob_height - tree[slider].ob_height;
 
@@ -548,12 +532,10 @@ Sl_arrow(struct Sl_arrow_args args)
 
 	short val;
 
-#if DEBUG
-	printf("Sl_arrow base %d, slider %d, obj %d, inc %d, min %d, max %, value %d, direction %d\n",
-	       base, slider, obj, inc, min, max, *value, direction);
-#endif
+	DEBUG(("Sl_arrow base %d, slider %d, obj %d, inc %d, min %d, max %d, value %d, direction %d\n",
+	       base, slider, obj, inc, min, max, *value, direction));
 
-	val = *value + inc;					/* neue Position */
+	val = *value + inc;			/* neue Position */
 
 	if (min <= max)
 	{
@@ -570,26 +552,26 @@ Sl_arrow(struct Sl_arrow_args args)
 			val = min;
 	}
 
-	*value = val;						/* Wert zurueckschreiben */
+	*value = val;				/* Wert zurueckschreiben */
 	
 	if (obj >= 0)
 	{
 		obj_SELECTED(tree, obj);
-		redraw_obj(tree, obj);				/* Button selektieren */
+		redraw_obj(tree, obj);		/* Button selektieren */
 	}
 	
-	if (direction)						/* horizontaler Slider? */
+	if (direction)				/* horizontaler Slider? */
 		cpx_Sl_x(tree, base, slider, val, min, max, userdef);
 	else
 		cpx_Sl_y(tree, base, slider, val, min, max, userdef);
 
-	redraw_obj(tree, base);					/* Slider neuzeichnen */
+	redraw_obj(tree, base);			/* Slider neuzeichnen */
 
-	evnt_timer(40);						/* warten, damit das Scrolling nicht zu schnell wird */
+	evnt_timer(40);				/* warten, damit das Scrolling nicht zu schnell wird */
 	if (obj >= 0)
 	{
 		obj_DESELECTED(tree, obj);
-		redraw_obj(tree, obj);				/* Button wieder normal */
+		redraw_obj(tree, obj);		/* Button wieder normal */
 	}
 #undef tree
 #undef base
@@ -627,10 +609,8 @@ Sl_dragx(struct Sl_dragxy_args args)
 {
 	short hpos;
 
-#if DEBUG
-	printf("Sl_dragx base %d, slider %d, min %d, max %d, value %d\n",
-	       base, slider, min, max, *value);
-#endif
+	DEBUG(("Sl_dragx base %d, slider %d, min %d, max %d, value %d\n",
+	       base, slider, min, max, *value));
 
 	hpos = graf_slidebox(tree, base, slider,0);
 	*value = (short)(((long)(max - min) * hpos) / 1000);
@@ -658,10 +638,8 @@ Sl_dragy(struct Sl_dragxy_args args)
 {
 	short vpos;
 
-#if DEBUG
-	printf("Sl_dragy base %d, slider %d, min %d, max %d, value %d\n",
-	       base, slider, min, max, *value);
-#endif
+	DEBUG(("Sl_dragy base %d, slider %d, min %d, max %d, value %d\n",
+	       base, slider, min, max, *value));
 
 	vpos = graf_slidebox(tree, base, slider, 1);
 	*value = (short)(((long)(max - min) * (1000 - vpos)) / 1000);
@@ -716,9 +694,7 @@ cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg)
 	short last_edit_obj;
 	short cursor;
 
-#if DEBUG
-	printf("cpx_form_do\n");
-#endif
+	DEBUG(("cpx_form_do\n"));
 
 	dialog = cpx_desc->dialog;
 
@@ -768,22 +744,19 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 	cpx_desc->redraw_area = *redraw_area; /* fuer Aufruf von cpx_get_next_rect() merken */
 	w = &cpx_desc->dirty_area;
 
-#if DEBUG
-	printf("cpx_get_first_rect: redraw_area ist x %d y %d w %d h %d\n",
-	       redraw_area->g_x, redraw_area->g_y, redraw_area->g_w, redraw_area->g_h);
-#endif
+	DEBUG(("cpx_get_first_rect: redraw_area is x %d y %d w %d h %d\n",
+	       redraw_area->g_x, redraw_area->g_y, redraw_area->g_w, redraw_area->g_h));
 
-	/* erstes Redraw-Rechteck */
+	/* first redraw rectangle */
 	wind_get(cpx_desc->whdl, WF_FIRSTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
 
 	while (w->g_w)
 	{
 		if (rc_intersect(&cpx_desc->redraw_area, w))
 		{
-#if DEBUG
-			printf("cpx_get_first_rect: x %d y %d w %d h %d\n",
-			       w->g_x, w->g_y, w->g_w, w->g_h);
-#endif
+			DEBUG(("cpx_get_first_rect: x %d y %d w %d h %d\n",
+			       w->g_x, w->g_y, w->g_w, w->g_h));
+
 			/* zu zeichnender Bereich */
 			return w;
 		}
@@ -792,9 +765,7 @@ cpx_get_first_rect(CPX_DESC *cpx_desc, GRECT *redraw_area)
 		wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
 	}
 
-#if DEBUG
-	printf("cpx_get_first_rect: kein weiteres Rechteck\n");
-#endif	
+	DEBUG(("cpx_get_first_rect: no more rectangles\n"));
 
 	return NULL;
 
@@ -829,10 +800,9 @@ cpx_get_next_rect(CPX_DESC *cpx_desc)
 	{
 		if (rc_intersect(&cpx_desc->redraw_area, w))
 		{
-#if DEBUG
-			printf("cpx_get_next_rect: x %d y %d w %d h %d\n",
-			       w->g_x, w->g_y, w->g_w, w->g_h);
-#endif
+			DEBUG(("cpx_get_next_rect: x %d y %d w %d h %d\n",
+			       w->g_x, w->g_y, w->g_w, w->g_h));
+
 			/* zu zeichnender Bereich */
 			return w;
 		}
@@ -841,10 +811,7 @@ cpx_get_next_rect(CPX_DESC *cpx_desc)
 		wind_get(cpx_desc->whdl, WF_NEXTXYWH, &w->g_x, &w->g_y, &w->g_w, &w->g_h);
 	}
 
-#if DEBUG
-	printf("cpx_get_next_rect: kein weiteres Rechteck\n");
-#endif	
-
+	DEBUG(("cpx_get_next_rect: no more rectangles\n"));
 	return NULL;
 }
 static GRECT * _cdecl
@@ -873,9 +840,7 @@ GetNextRect(void)
 static inline void
 cpx_set_evnt_mask(CPX_DESC *cpx_desc, short mask, MOBLK *m1, MOBLK *m2, long time)
 {
-#if DEBUG
-	printf("cpx_set_evnt_mask\n");
-#endif
+	DEBUG(("cpx_set_evnt_mask\n"));
 
 	if (m1)				/* erstes Mausrechteck? */
 		cpx_desc->m1 = *m1;
@@ -913,9 +878,7 @@ Set_Evnt_Mask(struct Set_Evnt_Mask_args args)
 static short _cdecl
 XGen_Alert(struct XGen_Alert_args args)
 {
-#if DEBUG
-	printf("XGen_Alert\n");
-#endif
+	DEBUG(("XGen_Alert\n"));
 
 	switch (args.alert_id)
 	{
@@ -962,9 +925,7 @@ cpx_save_data(CPX_DESC *cpx_desc, void *buf, long bytes)
 	long handle, offset;
 	short result = 0;
 
-#if DEBUG
-	printf("CPX_Save\n");
-#endif
+	DEBUG(("CPX_Save\n"));
 
 	strcpy(name, settings.cpx_path);
 	strcat(name, cpx_desc->file_name);
@@ -1010,9 +971,7 @@ Get_Buffer(void)
 	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-#if DEBUG
-	printf("cpx_get_tmp_buffert\n");
-#endif
+	DEBUG(("Get_Buffer\n"));
 
 	cpx = find_cpx(addr);
 	if (cpx)
@@ -1030,9 +989,7 @@ Get_Buffer(void)
 static short _cdecl
 getcookie(long cookie, long *p_value)
 {
-#if DEBUG
-	printf("getcookie\n");
-#endif
+	DEBUG(("getcookie(0x%lx, %p)\n", cookie, p_value));
 
 	return (Getcookie(cookie, p_value) == 0);
 }
@@ -1047,9 +1004,7 @@ getcookie(long cookie, long *p_value)
 static void _cdecl
 MFsave(short flag, MFORM *mf)
 {
-#if DEBUG
-	printf("MFsave\n");
-#endif
+	DEBUG(("MFsave\n"));
 
 	if (flag)					/* Mausform sichern? */
 	{
@@ -1073,18 +1028,20 @@ static void _cdecl
 MFsave(struct MFsave_args args)
 {
 	static short has_mouse = 0;
-	
+
+	DEBUG(("MFsave\n"));
+
 	if (has_mouse == 0)
 	{
 		short parm1, dum;
-		
+
 		if (appl_getinfo(AES_MOUSE, &parm1, &dum, &dum, &dum) == 1
 		    && parm1 == 1)
 			has_mouse = 1;
 		else
 			has_mouse = -1;
 	}
-	
+
 	if (args.flag)
 	{
 		if (has_mouse > 0)
@@ -1101,4 +1058,3 @@ MFsave(struct MFsave_args args)
 	}
 }
 #endif
-
