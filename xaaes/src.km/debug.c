@@ -63,11 +63,13 @@ display(const char *fmt, ...)
 
 	DEBUG((buf));
 
+#if GENERATE_DIAGS
 	if (D.debug_file)
 	{
 		buf[l++] = '\n';
 		kernel_write(D.debug_file, buf, l);
 	}
+#endif
 }
 
 #if GENERATE_DIAGS
