@@ -289,6 +289,9 @@ slb_exec:
 einvfn:	moveq	#-32,d0
 	rts
 
+// The user XHDI call. The XHDI entry in the Cookie Jar points to the begin
+// of this code, of course only when each user has own Jar.
+
 	dc.l	0x27011992		// XHDIMAGIC
 
 user_xhdi:
