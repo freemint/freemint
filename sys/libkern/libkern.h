@@ -134,6 +134,11 @@ char *	_cdecl _mint_strcat	(char *dst, const char *src);
 char *	_cdecl _mint_strrchr	(const char *str, long which);
 char *	_cdecl _mint_strrev	(char *s);
 
+long	_cdecl _mint_strtol	(const char *nptr, char **endptr, long base);
+llong	_cdecl _mint_strtoll	(const char *nptr, char **endptr, long base);
+ulong	_cdecl _mint_strtoul	(const char *nptr, char **endptr, long base);
+ullong	_cdecl _mint_strtoull	(const char *nptr, char **endptr, long base);
+
 void *	_cdecl _mint_memchr	(void *s, long search, ulong size);
 long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 
@@ -151,6 +156,10 @@ long	_cdecl _mint_memcmp	(const void *s1, const void *s2, ulong size);
 # define strcat			_mint_strcat
 # define strrchr		_mint_strrchr
 # define strrev			_mint_strrev
+# define strtol			_mint_strtol
+# define strtoll		_mint_strtoll
+# define strtoul		_mint_strtoul
+# define strtoull		_mint_strtoull
 # define memchr			_mint_memchr
 # define memcmp			_mint_memcmp
 
