@@ -68,7 +68,7 @@
 #define	USERMODE(ps)	(((ps) & PSL_S) == 0)
 
 long
-process_single_step (PROC *p, int flag)
+process_single_step (struct proc *p, int flag)
 {
 	if (flag)
 		p->ctxt[SYSCALL].sr |= PSL_T;
@@ -79,7 +79,7 @@ process_single_step (PROC *p, int flag)
 }
 
 long
-process_set_pc (PROC *p, long pc)
+process_set_pc (struct proc *p, long pc)
 {
 	p->ctxt[SYSCALL].pc = pc;
 	
@@ -87,7 +87,7 @@ process_set_pc (PROC *p, long pc)
 }
 
 long
-process_getregs (PROC *p, struct reg *reg)
+process_getregs (struct proc *p, struct reg *reg)
 {
 	reg->regs[ 0] = p->ctxt[SYSCALL].regs[ 0];
 	reg->regs[ 1] = p->ctxt[SYSCALL].regs[ 1];
@@ -112,7 +112,7 @@ process_getregs (PROC *p, struct reg *reg)
 }
 
 long
-process_setregs (PROC *p, struct reg *reg)
+process_setregs (struct proc *p, struct reg *reg)
 {
 	if ((reg->sr & PSL_USERCLR) != 0 ||
 	    (reg->sr & PSL_USERSET) != PSL_USERSET)
@@ -134,14 +134,14 @@ process_setregs (PROC *p, struct reg *reg)
 	p->ctxt[SYSCALL].regs[13] = reg->regs[13];
 	p->ctxt[SYSCALL].regs[14] = reg->regs[14];
 	p->ctxt[SYSCALL].usp      = reg->regs[15];
-	p->ctxt[SYSCALL].sr       = reg->sr; /* XXX user flags only */
+	p->ctxt[SYSCALL].sr       = reg->sr;
 	p->ctxt[SYSCALL].pc       = reg->pc;
 	
 	return 0;
 }
 
 long
-process_getfpregs (PROC *p, struct fpreg *fpreg)
+process_getfpregs (struct proc *p, struct fpreg *fpreg)
 {
 	bcopy (p->ctxt[SYSCALL].fregs, fpreg->regs, sizeof (fpreg->regs));
 	fpreg->fpcr = p->ctxt[SYSCALL].fctrl[0];
@@ -152,7 +152,7 @@ process_getfpregs (PROC *p, struct fpreg *fpreg)
 }
 
 long
-process_setfpregs (PROC *p, struct fpreg *fpreg)
+process_setfpregs (struct proc *p, struct fpreg *fpreg)
 {
 	bcopy (fpreg->regs, p->ctxt[SYSCALL].fregs, sizeof (fpreg->regs));
 	p->ctxt[SYSCALL].fctrl[0] = fpreg->fpcr;
