@@ -188,9 +188,9 @@ do_TCP_open (uint32 rhost, int16 rport, int16 tos, uint16 obsize)
 	if (rhost == 0)
 	{
 		rhost = 0;
-		rport = 0;
 		lhost = INADDR_ANY;
 		lport = rport;
+		rport = 0;
 	}
 	else if (rport == 0)
 	{
