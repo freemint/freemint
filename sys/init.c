@@ -32,6 +32,7 @@
 # include "console.h"	
 # include "cookie.h"	
 # include "crypt_IO.h"	/* init_crypt_IO */
+# include "delay.h"	/* calibrate_delay */
 # include "dos.h"	
 # include "dosdir.h"	
 # include "dosfile.h"	
@@ -839,6 +840,18 @@ init (void)
 	if (no_mem_prot && mcpu > 20)
 		c_conws (memprot_warning);
 	
+	
+	/* initialize delay */
+	c_conws ("Calibrating delay loop... ");
+	calibrate_delay ();
+	/* Round the value and print it */
+	{
+		char buf[128];
+		ksprintf (buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
+			(loops_per_sec + 2500) / 500000,
+			((loops_per_sec + 2500) / 5000) % 100);
+		c_conws (buf);
+	}
 	
 	/* initialize internal xdd */
 # ifdef DEV_RANDOM
