@@ -27,6 +27,8 @@
 # include "arch/syscall.h"
 # include "arch/timer.h"
 
+# include "libkern/libkern.h"
+
 # include "biosfs.h"
 # include "console.h"
 # include "dosdir.h"
@@ -232,24 +234,21 @@ setexc (int number, long vector)
 			 * Unfortunately some programs go Super() then change
 			 * vectors directly. Common practice in games/demos :(
 	 		 */
-			if (!no_mem_prot)
+			if ((curproc->memflags & F_OS_SPECIAL) == 0)
 			{
-				if ((curproc->memflags & F_OS_SPECIAL) == 0)
+				if (((curproc->memflags & F_PROTMODE) == F_PROT_P) ||
+					((curproc->memflags & F_PROTMODE) == F_PROT_PR))
 				{
-					if (((curproc->memflags & F_PROTMODE) == F_PROT_P) ||
-						((curproc->memflags & F_PROTMODE) == F_PROT_PR))
-					{
-						ALERT  ("KILLED. INVALID PROTECTION MODE. "
-							"Please change the protection mode "
-							"to \'Super\' in the program header.");
+					ALERT  ("KILLED. INVALID PROTECTION MODE. "
+						"Please change the protection mode "
+						"to \'Super\' in the program header.");
 
-						/* Avoid an additional alert,
-						 * be f**cking efficient.
-						 */
-						raise (SIGKILL);
+					/* Avoid an additional alert,
+					 * be f**cking efficient.
+					 */
+					raise (SIGKILL);
 
-						return EACCES;
-					}
+					return EACCES;
 				}
 			}
 		}
@@ -1564,151 +1563,4 @@ checkkeys (void)
 	}
 
 	return ret;
-}
-
-
-/*
- * special vector stuff: we try to save as many vectors as possible,
- * just in case we need to restore them later
- *
- * BUG: this really should be integrated with the init_intr routine
- * in main.c
- */
-
-# if 0		/* this is actually never used, so why to keep? */
-
-# define A(x) ((long *)(long)(x))
-# define L(x) (long)(x)
-
-struct vectab
-{
-	long *addr;
-	long def_value;
-}
-VEC [] =
-{
-	{A(0x028), 0},	/* Line A */
-	{A(0x02c), 0},	/* Line F */
-	{A(0x060), 0},	/* spurious interrupt */
-	{A(0x064), 0},	/* level 1 interrupt */
-	{A(0x068), 0},	/* level 2 interrupt */
-	{A(0x06c), 0},	/* level 3 interrupt */
-	{A(0x070), 0},	/* level 4 interrupt */
-	{A(0x074), 0},	/* level 5 interrupt */
-	{A(0x078), 0},	/* level 6 interrupt */
-	{A(0x07c), 0},	/* level 7 interrupt */
-	{A(0x100), 0},	/* various MFP interrupts */
-	{A(0x104), 0},
-	{A(0x108), 0},
-	{A(0x10c), 0},
-	{A(0x110), 0},
-	{A(0x114), 0},
-	{A(0x118), 0},
-	{A(0x11c), 0},
-	{A(0x120), 0},
-	{A(0x124), 0},
-	{A(0x128), 0},
-	{A(0x12c), 0},
-	{A(0x130), 0},
-	{A(0x134), 0},
-	{A(0x138), 0},
-	{A(0x13c), 0},
-	{A(0x400), 0},	/* etv_timer */
-	{A(0x4f6), 0},  /* shell_p */
-	
-	{A(0x000), 0}	/* special tag indicating end of list */
-};
-
-void
-init_vectors (void)
-{
-	struct vectab *v;
-	
-	for (v = VEC; v->addr; v++)
-	{
-		v->def_value = *(v->addr);
-	} 
-}
-
-# endif
-
-# if 0	/* bad code */
-
-/* unhook a vector; if possible, do this with XBRA, but
- * if that isn't possible force the vector to have the
- * same value it had when MiNT started
- */
-
-static void
-unhook (struct vectab *v, long where)
-{
-	xbra_vec *xbra;
-	long newval;
-	int cookie;
-	
-	/* to check for XBRA, we need access to the memory where the
-	 * vector is
-	 */
-	cookie = prot_temp (where - 12, 16L, -1);
-	
-	if (cookie == 0)
-		newval = v->def_value;
-	else
-	{
-		xbra = (xbra_vec *)(where - 12);
-		if (xbra->xbra_magic == XBRA_MAGIC)
-			newval = (long) xbra->next;
-		else
-			newval = v->def_value;
-	}
-	*(v->addr) = newval;
-	
-	(void) prot_temp (where - 12, 16L, cookie);
-}
-# endif
-
-/*
- * unlink_vectors(start, end): any of the "normal" system vectors
- * pointing into a freed memory region must be reset to their
- * default values, or else we'll get a memory protection violation
- * next time the vector gets called
- */
-
-void
-unlink_vectors (long start, long end)
-{
-# if 0	/* this code is hosed somewhere */
-	
-	struct vectab *v;
-	long where, *p;
-	int i;
-	
-	/* first, unhook any VBL handlers
-	 */
-	
-	i = *((short *) 0x454L);	/* i = nvbls */
-	p = *((long **) 0x456L);	/* p = _vblqueue */
-	
-	while (i-- > 0)
-	{
-		where = *p;
-		if (where >= start && where < end)
-			*p = 0;
-		p++;
-	}
-	
-	/* next, unhook various random vectors
-	 */
-	
-	for (v = VEC; v->addr; v++)
-	{
-		where = *(v->addr);
-		if (where >= start && where < end)
-		{
-			unhook (v, where);
-		}
-	}
-# else
-	UNUSED (start); UNUSED (end);
-# endif
 }
