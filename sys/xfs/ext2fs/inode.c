@@ -183,7 +183,7 @@ del_cookie (COOKIE *c)
 	
 	if (c->open)
 	{
-		ALERT (("Ext2-FS [%c]: open FILEPTR detect in: del_cookie #%li", c->dev+'A', c->inode));
+		DEBUG (("Ext2-FS [%c]: open FILEPTR detect in: del_cookie #%li", c->dev+'A', c->inode));
 		c->open = NULL;
 	}
 	if (c->locks)
