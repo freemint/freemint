@@ -62,7 +62,7 @@
 # include "dos.h"		/* p_umask(), p_domain() */
 # include "dosdir.h"		/* d_opendir(), d_readdir(), d_closedir(), f_symlink(), f_stat64(), ...*/
 # include "dosfile.h"		/* f_write() */
-# include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
+# include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink(), QUANTUM */
 # include "info.h"		/* national stuff */
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_kthread.h"		/* kthread_create(), kthread_exit() */
@@ -92,6 +92,12 @@
 # define SEC_OF_YEAR	31556925L
 
 # define LINELEN	254
+
+/* A macro used to calculate the remaining free part of an
+ * allocated block of memory (in other words, the difference
+ * between the requested size and the size actually allocated).
+ */
+# define RAM_PAD(x) (QUANTUM - (x % QUANTUM))
 
 /* Global variables */
 static short xcommands;		/* if 1, the extended command set is active */
@@ -163,7 +169,7 @@ dos2unix(char *p)
 static long
 env_size(char *var)
 {
-	long count = 0;
+	long count = 1;			/* Trailing NULL */
 
 	while (var && *var)
 	{
@@ -176,7 +182,7 @@ env_size(char *var)
 		count++;
 	}
 
-	return ++count;		/* plus trailing NULL */
+	return count;
 }
 
 static char *
@@ -225,7 +231,7 @@ shell_setenv(const char *var, char *value)
 	char *env_str = _base->p_env, *new_env, *old_var, *es, *ne;
 	long new_size;
 
-	new_size = env_size(env_str) + strlen(value) + 2;	/* '=' and trailing zero */
+	new_size = env_size(env_str) + strlen(value) + 1;	/* '=' */
 	old_var = _mint_getenv(_base, var);
 
 	if (old_var)
@@ -237,11 +243,11 @@ shell_setenv(const char *var, char *value)
 	if (new_env == NULL)
 		return;
 
-	es = env_str;
-	ne = new_env;
-
 	/* If it already exists, delete it */
 	shell_delenv(var);
+
+	es = env_str;
+	ne = new_env;
 
 	/* Copy old env to new place */
 	while (*es)
