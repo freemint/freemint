@@ -102,19 +102,23 @@ struct cad_def
 	char *env;		/* only valid for exec */
 };
 
+extern short kbd_pc_style_caps;
+extern short kbd_mpixels;
+extern short kbd_mpixels_fine;
+extern struct cad_def cad[3];
+
 /* Interrupt routines */
 short ikbd_scan(ushort scancode, IOREC_T *rec);
 void autorepeat_timer(void);
 
-struct keytab *get_keytab(void);
+/* keyboard releated BIOS system calls */
 struct keytab *sys_b_keytbl(char *unshift, char *shift, char *caps);
 void sys_b_bioskeys(void);
 ushort sys_b_kbrate(ushort del, ushort rep);
 KBDVEC *sys_b_kbdvbase(void);
 
-extern struct cad_def cad[3];
-extern short pc_style;
-
+/* internal support routines */
+struct keytab *get_keytab(void);
 long load_keyboard_table(const char *path, short flag);
 void init_keybd(void);
 

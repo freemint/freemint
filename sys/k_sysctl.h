@@ -52,6 +52,7 @@ long _cdecl sys_p_sysctl (long *, ulong, void *, ulong *, const void *, ulong);
  */
 typedef long (sysctlfn)(long *, ulong, void *, ulong *, const void *, ulong, struct proc *);
 
+long sysctl_short (void *, ulong *, const void *, ulong, short *);
 long sysctl_long (void *, ulong *, const void *, ulong, long *);
 long sysctl_rdlong (void *, ulong *, const void *, long);
 long sysctl_quad (void *, ulong *, const void *, ulong, llong *);

@@ -222,7 +222,7 @@ static struct parser_item parser_tab[] =
 	{ "TPA_INITIALMEM",		PI_R_L,	& initialmem			},
 	{ "FDC_HIDE_B",			PI_V_B,	pCB_hide_b			},
 # ifndef NO_AKP_KEYBOARD
-	{ "KBD_AT_CAPS",		PI_R_B,	& pc_style			},
+	{ "KBD_AT_CAPS",		PI_R_B,	& kbd_pc_style_caps		},
 # endif
 
 	/* These two remain the same as in the old format */
