@@ -56,8 +56,6 @@ void object_area     (RECT *c, OBJECT *ob, int i, short dx, short dy);
 void write_menu_line(RECT *cl);
 void write_selection(int d, RECT *r);
 long calc_back(RECT *r, int planes);
-/* in my_aes.c */
-int  get_parent(OBJECT *ob, int item);
 
 /* HR: intermediate level draw functions & misc. */
 void adjust_size(int d, RECT *r);
@@ -104,4 +102,7 @@ ObjectDisplay
 	d_g_text,
 	d_g_title;
 
-#endif
+/* XXX in my_aes.c */
+int get_parent(OBJECT *ob, int item);
+
+#endif /* _OBJECTS_H_ */

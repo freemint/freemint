@@ -4,7 +4,7 @@
 
 extern short my_global_aes[];
 
-/* gemlib */
+/* XXX gemlib */
 extern short	mt_appl_init    (short *global_aes);
 extern short	mt_appl_exit    (short *global_aes);
 extern short	mt_graf_handle	(short *Wchar, short *Hchar, short *Wbox, short *Hbox, short *global_aes);

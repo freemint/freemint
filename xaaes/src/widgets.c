@@ -38,6 +38,7 @@
 #include "menuwidg.h"
 #include "xa_rsrc.h"
 #include "app_man.h"
+#include "xa_evnt.h"
 
 
 static OBJECT *def_widgets;
@@ -256,7 +257,6 @@ display_widget(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg)
 		{
 			XA_RECT_LIST *rl;
 
-			IFWL(Sema_Up(winlist);)
 			hidem();
 			rl = rect_get_system_first(wind);
 			while (rl)
@@ -268,7 +268,6 @@ display_widget(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg)
 			}
 			clear_clip();
 			showm();
-			IFWL(Sema_Dn(winlist);)
 		}
 	}
 }
@@ -716,7 +715,6 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 #if PRESERVE_DIALOG_BGD
 		{
 			XA_WINDOW *scan_wind;
-			IFWL(Sema_Up(winlist);)
 
 			/* Don't allow windows below a STORE_BACK to move */
 			if (wind != window_list)
@@ -725,12 +723,10 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 				{
 					if (scan_wind->active_widgets & STORE_BACK)
 					{
-						IFWL(Sema_Dn(winlist);)
 						return true;
 					}
 				}
 			}
-			IFWL(Sema_Dn(winlist);)
 		}
 #endif
 		if (!widget_active.cont)
@@ -839,7 +835,7 @@ click_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	short b;
 
-	vq_key_s( C.vh, &b);
+	vq_key_s(C.vh, &b);
 
 	/* Ozk: If either shifts pressed, unconditionally send the window to bottom */
 	if ((b & 3) && (!((wind->active_widgets & STORE_BACK) !=0 ) || !((wind->active_widgets & BACKDROP) == 0)))
@@ -887,21 +883,29 @@ click_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 dclick_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	if (wind->send_message == NULL)
-		return false;
-	
-	/* If window is iconified - send request to restore it */
+	if (wind->send_message)
+	{
+		/* If window is iconified - send request to restore it */
 
-	if (wind->window_status == XAWS_ICONIFIED)
-		wind->send_message(lock, wind, NULL,
-					WM_UNICONIFY, 0, 0, wind->handle,
-					wind->pr.x, wind->pr.y, wind->pr.w, wind->pr.h);
-	else
-		/* Ozk 100503: Double click on title now sends WM_FULLED, as N.AES does it */
-		via (wind->send_message)(lock, wind, NULL,
-						WM_FULLED, 0, 0, wind->handle,
-						0, 0, 0, 0);
-	return true;
+		if (wind->window_status == XAWS_ICONIFIED)
+		{
+			wind->send_message(lock, wind, NULL,
+					   WM_UNICONIFY, 0, 0, wind->handle,
+					   wind->pr.x, wind->pr.y, wind->pr.w, wind->pr.h);
+		}
+		else
+		{
+			/* Ozk 100503: Double click on title now sends WM_FULLED,
+			 * as N.AES does it */
+			wind->send_message(lock, wind, NULL,
+					   WM_FULLED, 0, 0, wind->handle,
+					   0, 0, 0, 0);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 /*======================================================
@@ -951,14 +955,13 @@ click_close(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 		/* Redisplay.... */
 		return true;
 	}
-	else
-	{	/* Just close these windows, they can handle it... */
-		close_window (lock, wind);
-		delete_window(lock, wind);
 
-		/* Don't redisplay in the do_widgets() routine as window no longer exists */
-		return false;
-	}
+	/* Just close these windows, they can handle it... */
+	close_window (lock, wind);
+	delete_window(lock, wind);
+
+	/* Don't redisplay in the do_widgets() routine as window no longer exists */
+	return false;
 }
 
 /*======================================================
@@ -971,9 +974,10 @@ click_close(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 click_full(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	via (wind->send_message)(lock, wind, NULL,
-					WM_FULLED, 0, 0, wind->handle,
-					0, 0, 0, 0);
+	if (wind->send_message)
+		wind->send_message(lock, wind, NULL,
+				   WM_FULLED, 0, 0, wind->handle,
+				   0, 0, 0, 0);
 	return true;
 }
 
@@ -988,35 +992,40 @@ click_full(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 click_iconify(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	RECT ic;
-
 	if (wind->send_message == NULL)
 		return false;
 
-	switch(wind->window_status)
+	switch (wind->window_status)
 	{
-		case XAWS_OPEN:			/* Window is open - send request to iconify it */
-			IFWL(Sema_Up(winlist);)
+		case XAWS_OPEN:
+		{
+			/* Window is open - send request to iconify it */
 
-			ic = free_icon_pos(lock|winlist);
+			RECT ic = free_icon_pos(lock|winlist);
 
-		/* Could the whole screen be covered by iconified windows? That would be an achievement, wont it? */
+			/* Could the whole screen be covered by iconified
+			 * windows? That would be an achievement, wont it?
+			 */
 			if (ic.y > root_window->wa.y)
 				wind->send_message(lock|winlist, wind, NULL,
-						WM_ICONIFY, 0, 0, wind->handle,
-						ic.x, ic.y, ic.w, ic.h);
+						   WM_ICONIFY, 0, 0, wind->handle,
+						   ic.x, ic.y, ic.w, ic.h);
 
-			IFWL(Sema_Dn(winlist);)
 			break;	
+		}
+		case XAWS_ICONIFIED:
+		{
+			/* Window is already iconified - send request to restore it */
 
-		case XAWS_ICONIFIED:	/* Window is already iconified - send request to restore it */
 			wind->send_message(lock, wind, NULL,
-						WM_UNICONIFY, 0, 0, wind->handle,
-						wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
+					   WM_UNICONIFY, 0, 0, wind->handle,
+					   wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
 			break;
+		}
 	}
-	
-	return true; /* Redisplay.... */
+
+	/* Redisplay.... */
+	return true;
 }
 
 /*======================================================
@@ -1091,7 +1100,6 @@ compass(int d, short x, short y, RECT r)
 static bool
 size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehaviour next)
 {
-	COMPASS xy;
 	bool move, size;
 	RECT r = wind->r, d;
 	
@@ -1140,6 +1148,7 @@ size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehav
 	else
 	{
 		short pmx, pmy /*, mx, my, mb*/;
+		COMPASS xy;
 
 		/* need to do this anyhow, for mb */
 //		vq_mouse(C.vh, &mb, &pmx, &pmy);

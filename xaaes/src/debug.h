@@ -90,11 +90,7 @@ char *t_owner(struct widget_tree *t);
 
 #define NAES3D 1
 
-#if USE_CALL_DIRECT
-#define File_Line display(D_flu,clock()-strtclk,Pgetpid(),__FILE__,__LINE__)
-#else
 #define File_Line display(D_fl,__FILE__,__LINE__)
-#endif
 #define DIAGS(x) if (D.debug_level) File_Line,display x
 #define DIAG(x) DeBug x
 #define IFDIAG(x) x
