@@ -497,6 +497,12 @@ do_mask (BUF *b, struct netif *nif, long len)
 	icmph = (struct icmp_dgram *) IP_DATA (b);
 
 	ifa = if_af2ifaddr (nif, AF_INET);
+	if (!ifa)
+	{
+		DEBUG (("do_mask: if_af2ifaddr returned NULL"));
+		return -1;
+	}
+	
 	((long *)icmph->data)[0] = ifa->subnetmask;
 	icmp_send (ICMPT_MASKRP, 0, IP_SADDR (b), b, 0);
 	
