@@ -34,41 +34,57 @@
 # include "mint/mint.h"
 
 
-/* global exported variables
+/*
+ * global variables
  */
 
-extern ulong c20ms;
-
-extern long mch;		/* machine */
-extern long mcpu;		/* cpu type */
-extern long fputype;		/* fpu type */
-extern short fpu;		/* flag if fpu is present */
-extern int tosvers;		/* the underlying TOS version */
-extern short falcontos;
-extern int secure_mode;
-extern int FalconVideo;
-extern short ste_video;
-extern char sysdir[];
-extern short sysdrv;
-
-# define MAXLANG 6	/* languages supported */
-extern int gl_lang;
-
-typedef struct kbdvbase KBDVEC;
-struct kbdvbase
+struct global
 {
-	long	midivec;
-	long	vkbderr;
-	long	vmiderr;
-	long	statvec;
-	long	mousevec;
-	long	clockvec;
-	long	joyvec;
-	long	midisys;
-	long	ikbdsys;
-	short	drvstat;	/* Non-zero if a packet is currently transmitted. */
+	long  mch;		/* machine we are are running */
+	long  fputype;		/* fpu type, value for cookie jar */
+
+	short tosvers;		/* the underlying TOS version */
+
+	short gl_lang;		/* language preference */
+# define MAXLANG 6		/* languages supported */
+	short reserved;
+
+	/* The path to the system directory
+	 */
+	short sysdrv;
+	char  sysdir[32];
 };
 
-extern KBDVEC *syskey;
+extern struct global global;
+
+#define mch		global.mch
+#define fputype		global.fputype
+#define tosvers		global.tosvers
+#define gl_lang		global.gl_lang
+#define sysdrv		global.sysdrv
+#define sysdir		global.sysdir
+
+extern long mcpu; /* processor we are running */
+
+/* for proper co-processors we must consider saving their context.
+ * This variable when non-zero indicates that the BIOS considers a
+ * true coprocessor to be present. We use this variable in the context
+ * switch code to decide whether to attempt an FPU context save.
+ */
+extern short fpu; /* flag if fpu is present */
+
+/* if this variable is set, then we have "secure mode" enabled; that
+ * means only the superuser may access some functions those may be
+ * critical for system security.
+ */
+extern short secure_mode;
+
+/* linear 20ms counter */
+extern unsigned long c20ms;
+
+/* special flags */
+extern short falcontos;
+extern short FalconVideo;
+extern short ste_video;
 
 # endif /* _global_h */
