@@ -200,13 +200,9 @@ p_signal (short sig, long handler)
 	/* save old value for return */
 	ret = sigact->sa_handler;
 	
-	TRACE (("Psignal() 1 (%lx)", ret));
-	
 	sigact->sa_handler = handler;
 	sigact->sa_mask = 0;
 	sigact->sa_flags = 0;
-	
-	TRACE (("Psignal() 2"));
 	
 	/* various special things that should happen */
 	if (handler == SIG_IGN)
@@ -214,8 +210,6 @@ p_signal (short sig, long handler)
 		/* discard pending signals */
 		p->sigpending &= ~(1L<<sig);
 	}
-	
-	TRACE (("Psignal() 3"));
 	
 	/* I dunno if this is right, but bash seems to expect it */
 	p->p_sigmask &= ~(1L<<sig);
