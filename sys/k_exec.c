@@ -158,13 +158,6 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 				DEBUG (("Pexec: invalid protection mode changed to private"));
 				flags = (flags & ~F_PROTMODE) | F_PROT_P;
 			}
-# ifndef MULTITOS
-			if ((flags & F_PROTMODE) == 0 && curproc->base == gem_base)
-			{
-				flags |= F_PROT_G;
-				TRACE (("p_exec: AES special"));
-			}
-# endif
 			/* and fall through */
 		case 5:
 			mkbase = 1;
@@ -404,7 +397,6 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		if (ptrace)
 			p->ptracer = pid2proc (p->ppid);
 
-# ifdef MULTITOS
 		/* Stephan Haslbeck: GEM kludge no. x+1
 		 * If a program is started by AESSYS, reset its euid/egid,
 		 * so AES can run with root rights, but user programs don't.
@@ -422,7 +414,6 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			cred->ucr->euid = cred->suid = cred->ruid;
 			cred->ucr->egid = cred->sgid = cred->rgid;
 		}
-# endif
 		
 		/* Even though the file system won't allow unauthorized access
 		 * to setuid/setgid programs, it's better to err on the side
