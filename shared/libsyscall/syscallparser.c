@@ -95,6 +95,9 @@ generate_args(FILE *out, struct arg *l, const char *pre, int flag, const char *p
 		if (l->flags & FLAG_POINTER)
 			fprintf(out, "*");
 		
+		if (l->flags & FLAG_POINTER2)
+			fprintf(out, "*");
+		
 		fprintf(out, "%s", l->name);
 		
 		if (l->flags & FLAG_ARRAY)
