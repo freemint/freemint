@@ -147,18 +147,26 @@ mod5:	dc.w	5		// initial value matters
 	.globl	_kintr
 	.globl	_our_clock
 	.globl	_tlist
+#ifndef NO_AKP_KEYBOARD
+	.globl	_autorepeat_timer
+#endif
 #ifdef FLOPPY_ROUTINES
 	.globl	_flopvbl
 #endif
 
 // timeout things go here (50 times per second at IPL 6)
 
-_mint_vbl:	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
+_mint_vbl:
+	movem.l	d0-d2/a0-a2,-(sp)	// save C registers
 	addq.l	#0x01,_c20ms
+
+#ifdef NO_AKP_KEYBOARD
 	move.l	_keyrec,a0
 	move.w	6(a0),d0
 	cmp.w	8(a0),d0
 	sne	_kintr+1
+#endif
+
 	lea	_proc_clock,a0
 	move.w	(a0),d0
 	beq.s	skip
@@ -175,6 +183,12 @@ skip:	move.w	(0x0442).w,d0
 	move.l	TM_WHEN(a0),a1
 	sub.w	d0,a1
 	move.l	a1,TM_WHEN(a0)
+
+// keyboard autorepeat
+
+#ifndef NO_AKP_KEYBOARD
+	jsr	_autorepeat_timer	// in keyboard.c
+#endif
 
 // "VBL" things go here (50 times per second at IPL 3)
 
@@ -371,6 +385,7 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 // BUG: will not work on TOS < 2.0. The vector used is available
 //	since TOS 2.0.
 
+#ifndef NO_AKP_KEYBOARD
 	.globl	_newkeys
 	.globl	_oldkeys
 	.globl	_ikbd_scan
@@ -402,6 +417,8 @@ _kbdclick:
 	move.w	4(sp),d0	// scancode
 	jmp	(a0)
 L_nocl:	rts
+
+#endif
 
 # if 0
 // Generic routines for handling any user-specified interrupts.
