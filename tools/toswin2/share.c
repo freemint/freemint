@@ -3,8 +3,6 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-#include <cflib.h>
-
 #include "global.h"
 #include "config.h"
 #include "environ.h"

@@ -3,8 +3,6 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 
-#include <cflib.h>
-
 #include "global.h"
 #include "av.h"
 #include "clipbrd.h"

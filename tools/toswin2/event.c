@@ -6,7 +6,6 @@
  */
 
 #include <string.h>
-#include <cflib.h>
 
 #include "global.h"
 #include "av.h"
