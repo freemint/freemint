@@ -479,10 +479,17 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		{
 			dispatch_button_event(lock, wind, md);
 		}
+		else // if (client == NULL)
+		{
+			button_event(lock, locker, md);
+			Unblock(locker, 1, 1);
+		}
+#if 0
 		else
 		{
 			deliver_button_event(client == locker ? wind : NULL, locker, md);
 		}
+#endif
 	}
 }
 
