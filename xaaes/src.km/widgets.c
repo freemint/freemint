@@ -1139,11 +1139,12 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	if (o->windowner && wind->owner && !wind->winob && !dial)
 	{
 		char *ow = NULL;
-		if (o->windowner == 1)
+
+		if (o->windowner == true)
 			ow = wind->owner->proc_name;
-		else
-		if (o->windowner == 2)
-			ow = wind->owner->name;
+		/* XXX this can't happen
+		else if (o->windowner == 2)
+			ow = wind->owner->name; */
 
 		if  (ow)
 		{

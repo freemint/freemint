@@ -316,7 +316,7 @@ pCB_alias(const char *drive, const char *path, struct parsinf *inf)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_aux(const char *path)
+pCB_aux(char *path)
 {
 	FILEPTR *fp;
 	long ret;
@@ -358,7 +358,7 @@ pCB_biosbuf(bool onNoff)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_cd(const char *path)
+pCB_cd(char *path)
 {
 	int drv;
 
@@ -371,7 +371,7 @@ pCB_cd(const char *path)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_con(const char *path)
+pCB_con(char *path)
 {
 	FILEPTR *fp;
 	long ret;
@@ -397,7 +397,7 @@ pCB_con(const char *path)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_echo(const char *line)
+pCB_echo(char *line)
 {
 	boot_print(line);
 	boot_print("\r\n");
@@ -467,7 +467,7 @@ pCL_securelevel(long level)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_include(const char *path, struct parsinf *inf)
+pCB_include(char *path, struct parsinf *inf)
 {
 	parse_include(path, inf, parser_tab);
 }
@@ -515,7 +515,7 @@ pCB_newfatfs(unsigned long list, struct parsinf *inf)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_prn(const char *path)
+pCB_prn(char *path)
 {
 	FILEPTR *fp;
 	long ret;
@@ -649,7 +649,7 @@ pCB_writeprotect(unsigned long list, struct parsinf *inf)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_set(const char *line, struct parsinf *inf)
+pCB_set(char *line, struct parsinf *inf)
 {
 	unsigned long opt = 0UL;
 	char onNoff;
