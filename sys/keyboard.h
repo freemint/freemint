@@ -88,9 +88,9 @@ struct keytab
 	uchar *unshift;		/* every TOS */
 	uchar *shift;		/* every TOS */
 	uchar *caps;		/* every TOS */
-	uchar *alt;		/* TOS 2.0x and above */
-	uchar *altshift;	/* TOS 2.0x and above */
-	uchar *altcaps;		/* TOS 2.0x and above */
+	uchar *alt;		/* TOS 4.0x and above */
+	uchar *altshift;	/* TOS 4.0x and above */
+	uchar *altcaps;		/* TOS 4.0x and above */
 	uchar *altgr;		/* Milan TOS */
 };
 
@@ -105,6 +105,5 @@ void sys_b_bioskeys(void);
 
 extern short gl_kbd;
 extern struct cad_def cad[3];
-
 
 # endif /* _keyboard_h */
