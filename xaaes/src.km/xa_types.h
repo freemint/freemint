@@ -855,7 +855,9 @@ struct xa_window
 {
 	struct xa_window *next;		/* Window list stuff - next is the window below */
 	struct xa_window *prev;		/*		     - prev is the window above (both NULL terminated) */
-
+	
+	//struct xa_window_draw *wdraw;
+	
 	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
 	XA_WIND_ATTR save_widgets;	/* Remember active_widgets if iconified */
 
@@ -901,6 +903,7 @@ struct xa_window
 	RECT rl_clip;
 	struct xa_rect_list *rect_opt_start;
 	struct xa_rect_list *rect_opt;
+
 	
 	void *background;		/* Pointer to a buffer containing the saved background */
 
