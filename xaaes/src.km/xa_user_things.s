@@ -34,11 +34,9 @@ _xa_user_things:
 	.long _retcode		- _xa_user_things	| return code
 	.long _parmblk		- _xa_user_things	| address of local parmblk
 
-	| This is all that is needed to test this with existing signal
-	| handling scheme I think...
+| This is all that is needed to test this with existing signal
+| handling scheme I think...
 progdef_callout:
-|	movem.l	d0-d7/a0-a6,-(sp)
-
 	lea	_userblk(pc),a2		| address of userblk
 	move.l	(a2),d0			| get address of the usrblk
 	beq.s	nofunc			| exit if NULL
@@ -52,7 +50,6 @@ progdef_callout:
 nofunc:
 	lea	_retcode(pc),a0
 	move.l	d0,(a0)
-|	movem.l	(sp)+,d0-d7/a0-a6
 	rts
 
 _userblk: dc.l 0

@@ -34,6 +34,7 @@
 #include "objects.h"
 #include "c_window.h"
 #include "widgets.h"
+#include "xa_user_things.h"
 
 #include "mint/signal.h"
 
@@ -45,6 +46,28 @@ get_ob_spec(OBJECT *ob)
 {
 	return (ob->ob_flags & OF_INDIRECT) ?
 			ob->ob_spec.indirect : &ob->ob_spec;
+}
+
+/*
+ * Returns the object number of this object's parent or -1 if it is the root
+ */
+int
+get_parent(OBJECT *t, int object)
+{
+	if (object)
+	{
+		int last;
+
+		do {
+			last = object;
+			object = t[object].ob_next;
+		}
+		while(t[object].ob_tail != last);
+
+		return object;
+	}
+
+	return -1;
 }
 
 bool
@@ -212,7 +235,7 @@ void bar(int d,  short x, short y, short w, short h)
 	v_bar(C.vh, l);
 }
 
-void gbar(int d, const RECT *r)	/* for perimeter = 0 */
+void gbar(int d, const RECT *r)		/* for perimeter = 0 */
 {
 	short l[4];
 	l[0] = r->x - d;
@@ -222,11 +245,11 @@ void gbar(int d, const RECT *r)	/* for perimeter = 0 */
 	v_bar(C.vh, l);
 }
 
-void p_bar(int d, short x, short y, short w, short h)	/* for perimeter = 1 */
+void p_bar(int d, short x, short y, short w, short h) /* for perimeter = 1 */
 {
 	short l[10];
 	x -= d, y -= d, w += d+d, h += d+d;
-	l[0] = x+1;	/* only the inside */
+	l[0] = x+1;			/* only the inside */
 	l[1] = y+1;
 	l[2] = x+w-2;
 	l[3] = y+h-2;
@@ -240,18 +263,18 @@ void p_bar(int d, short x, short y, short w, short h)	/* for perimeter = 1 */
 	l[6] = x;
 	l[7] = y+h-1;
 	l[8] = x;
-	l[9] = y+1;		/* beware Xor mode :-) */
+	l[9] = y+1;			/* beware Xor mode :-) */
 	v_pline(C.vh,5,l);
 }
 
 void p_gbar(int d, const RECT *r)	/* for perimeter = 1 */
 {
-	short l[10],
-	    x = r->x - d,
-	    y = r->y - d,
-	    w = r->w + d+d,
-	    h = r->h + d+d;
-	l[0] = x+1;	/* only the inside */
+	short l[10];
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+	short h = r->h + d+d;
+	l[0] = x+1;			/* only the inside */
 	l[1] = y+1;
 	l[2] = x+w-2;
 	l[3] = y+h-2;
@@ -265,7 +288,7 @@ void p_gbar(int d, const RECT *r)	/* for perimeter = 1 */
 	l[6] = x;
 	l[7] = y+h-1;
 	l[8] = x;
-	l[9] = y+1;		/* beware Xor mode :-) */
+	l[9] = y+1;			/* beware Xor mode :-) */
 	v_pline(C.vh,5,l);
 }
 
@@ -282,17 +305,17 @@ void box(int d, short x, short y, short w, short h)
 	l[6] = x;
 	l[7] = y+h-1;
 	l[8] = x;
-	l[9] = y+1;		/* for Xor mode :-) */
+	l[9] = y+1;			/* for Xor mode :-) */
 	v_pline(C.vh,5,l);
 }
 
 void gbox(int d, const RECT *r)
 {
-	short l[10],
-	    x = r->x - d,
-	    y = r->y - d,
-	    w = r->w + d+d,
-	    h = r->h + d+d;
+	short l[10];
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+	short h = r->h + d+d;
 	l[0] = x;
 	l[1] = y;
 	l[2] = x+w-1;
@@ -302,7 +325,7 @@ void gbox(int d, const RECT *r)
 	l[6] = x;
 	l[7] = y+h-1;
 	l[8] = x;
-	l[9] = y+1;		/* for Xor mode :-) */
+	l[9] = y+1;			/* for Xor mode :-) */
 	v_pline(C.vh,5,l);
 }
 
@@ -314,11 +337,11 @@ void gbox(int d, const RECT *r)
 
 void tl_hook(int d, const RECT *r, int col)
 {
-	short pnt[6],
-	    x = r->x - d,
-	    y = r->y - d,
-	    w = r->w + d+d,
-	    h = r->h + d+d;
+	short pnt[6];
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+	short h = r->h + d+d;
 	l_color(col);
 	pnt[0] = x;
 	pnt[1] = y + h - 1 - PW;
@@ -331,11 +354,11 @@ void tl_hook(int d, const RECT *r, int col)
 
 void br_hook(int d, const RECT *r, int col)
 {
-	short pnt[6],
-	    x = r->x - d,
-	    y = r->y - d,
-	    w = r->w + d+d,
-	    h = r->h + d+d;
+	short pnt[6];
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+	short h = r->h + d+d;
 	l_color(col);
 	pnt[0] = x + PW;
 	pnt[1] = y + h - 1;
@@ -362,7 +385,7 @@ void chiseled_gbox(int d, const RECT *r)
 	tl_hook(d-1, r, screen.dial_colours.lit_col);
 }
 
-void t_extent(char *t, short *w, short *h)
+void t_extent(const char *t, short *w, short *h)
 {
 	short e[8];
 	vqt_extent(C.vh, t, e);
@@ -386,7 +409,7 @@ void write_selection(int d, RECT *r)
 
 void d3_pushbutton(int d, RECT *r, BFOBSPEC *col, int state, int thick, int mode)
 {
-	ushort selected = state&OS_SELECTED;
+	const unsigned short selected = state & OS_SELECTED;
 	int t, j, outline;
 
 	thick = -thick;		/* make thick same direction as d (positive value --> LARGER!) */
@@ -394,7 +417,7 @@ void d3_pushbutton(int d, RECT *r, BFOBSPEC *col, int state, int thick, int mode
 	if (thick > 0)		/* outside thickness */
 		d += thick;
 	d += 2;
-	
+
 	if (mode & 1)		/* fill ? */
 	{
 		if (col == NULL)
@@ -447,23 +470,29 @@ void d3_pushbutton(int d, RECT *r, BFOBSPEC *col, int state, int thick, int mode
 	l_color(screen.dial_colours.border_col);
 }
 
-/* HR 220401: strip leading and trailing spaces. */
-void strip_name(char *to, char *fro)
+/* strip leading and trailing spaces. */
+void strip_name(char *to, const char *fro)
 {
-	char *last = fro + strlen(fro) - 1;
-	while (*fro && *fro == ' ')  fro++;
+	const char *last = fro + strlen(fro) - 1;
+
+	while (*fro && *fro == ' ')
+		fro++;
+
 	if (*fro)
 	{
 		while (*last == ' ') last--;
 		while (*fro &&  fro != last + 1) *to++ = *fro++;
 	}
-	*to = 0;
+
+	*to = '\0';
 }
 
 /* should become c:\s...ng\foo.bar */
-void cramped_name(void *s, char *t, int w)
+void cramped_name(const void *s, char *t, int w)
 {
-	char *q=s,*p=t, tus[256];
+	char tus[256];
+	const char *q = s;
+	char *p = t;
 	int l, d, h;
 
 	l = strlen(q);
@@ -478,32 +507,36 @@ void cramped_name(void *s, char *t, int w)
 	}
 
 	if (d <= 0)
-		strcpy(t,s);
+	{
+		strcpy(t, s);
+	}
 	else
 	{
 		if (w < 12)		/* 8.3 */
+		{
 			strcpy(t, q+d); /* only the last ch's */
+		}
 		else
 		{
 			h = (w-3)/2;
-			strncpy(p,q,h);
-			p+=h;
+			strncpy(p, q, h);
+			p += h;
 			*p++='.';
 			*p++='.';
 			*p++='.';
-			strcpy(p,q+l-h);
+			strcpy(p, q+l-h);
 		}
 	}
 }
 
-char *clipped_name(void *s, char *t, int w)
+const char *clipped_name(const void *s, char *t, int w)
 {
-	char *q=s;
+	const char *q = s;
 	int l = strlen(q);
 
 	if (l > w)
 	{
-		strncpy(t,q,w);
+		strncpy(t, q, w);
 		t[w]=0;
 		return t;
 	}
@@ -520,10 +553,10 @@ inline long calc_back(const RECT *r, int planes)
 
 void *form_save(int d, RECT r, void *area)
 {
-	MFDB Mscreen={0};
+	MFDB Mscreen = { 0 };
 	MFDB Mpreserve;
 	short pnt[8];
-	
+
 	r.x-=d, r.y-=d, r.w+=2*d, r.h+=2*d;
 
 	rtopxy(pnt, &r);
@@ -538,19 +571,20 @@ void *form_save(int d, RECT r, void *area)
 	Mpreserve.fd_stand = 0;
 
 	if (area == NULL)
-		area = xmalloc(calc_back(&r,screen.planes),210);
+		area = xmalloc(calc_back(&r,screen.planes), 210);
 
 	if (area)
 	{
 		Mpreserve.fd_addr = area;
 		vro_cpyfm(C.vh, S_ONLY, pnt, &Mscreen, &Mpreserve);
 	}
+
 	return area;
 }
 
 void form_restore(int d, RECT r, void *area)
 {
-	MFDB Mscreen={0};
+	MFDB Mscreen = { 0 };
 	MFDB Mpreserve;
 	short pnt[8];
 	
@@ -571,13 +605,14 @@ void form_restore(int d, RECT r, void *area)
 	Mpreserve.fd_stand = 0;
 	Mpreserve.fd_addr = area;
 	vro_cpyfm(C.vh, S_ONLY, pnt, &Mpreserve, &Mscreen);
+
 	free(area);
 }
 
 void form_copy(const RECT *fr, const RECT *to)
 {
+	MFDB Mscreen = { 0 };
 	short pnt[8];
-	MFDB Mscreen={0};
 	rtopxy(pnt,fr);
 	rtopxy(pnt+4,to);
 	hidem();
@@ -618,7 +653,9 @@ void shadow_object(int d, int state, RECT *rp, int colour, int thick)
 static int menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
 {
 	int c = G_BLACK;
+
 	if (!MONO)
+	{
 		if (wt->is_menu)
 		{
 			OBJECT *ob = wt->tree + wt->current;
@@ -628,12 +665,15 @@ static int menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
 				done(OS_DISABLED);
 			}
 		}
+	}
+
 	return c;
 }
 
 static BFOBSPEC button_colours(void)
 {
 	BFOBSPEC c;
+
 	c.character = 0;
 	c.framesize = 0;
 
@@ -642,10 +682,11 @@ static BFOBSPEC button_colours(void)
 	c.textmode = 1;
 	c.fillpattern = IP_HOLLOW;
 	c.interiorcol = screen.dial_colours.bg_col;
+
 	return c;
 }
 
-static void ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, char *t, int state, int und)
+static void ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, const char *t, int state, int und)
 {
 	if (t && *t)
 	{
@@ -699,9 +740,9 @@ static void ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, char *t, int sta
 	}
 }
 
-static void g_text(XA_TREE *wt, RECT r, RECT *o, char *text, int state)
+static void g_text(XA_TREE *wt, RECT r, RECT *o, const char *text, int state)
 {
-	/* HR: only center the text. ;-) */
+	/* only center the text. ;-) */
 	r.y += (r.h-screen.c_max_h) / 2;
 	if (!MONO && (state&OS_DISABLED))
 	{
@@ -723,8 +764,8 @@ static void g_text(XA_TREE *wt, RECT r, RECT *o, char *text, int state)
 	}
 }
 
-/* HR 051002: This function doesnt change colourword anymore, but just sets the required color.
-              Neither does it affect writing mode for text (this is handled in ob_text() */
+/* This function doesnt change colourword anymore, but just sets the required color.
+ * Neither does it affect writing mode for text (this is handled in ob_text() */
 static void
 set_colours(OBJECT *ob, BFOBSPEC *colourword)
 {
@@ -778,19 +819,18 @@ set_colours(OBJECT *ob, BFOBSPEC *colourword)
 /*
  * Format a G_FTEXT type text string from its template,
  * and return the real position of the text cursor.
+ * 
+ * HR: WRONG_LEN
+ * It is a very confusing here, edit_pos is always (=1) passed as tedinfo->te_tmplen.
+ * which means that this only works if that field is wrongly used as the text corsor position.
+ * A very bad thing, because it is supposed to be a constant describing the amount of memory
+ * allocated to the template string.
+ * 
+ * 28 jan 2001
+ * OK, edit_pos is not anymore the te_tmplen field.
  */
-/* HR: WRONG_LEN
-   It is a very confusing here, edit_pos is always (=1) passed as tedinfo->te_tmplen.
-   which means that this only works if that field is wrongly used as the text corsor position.
-   A very bad thing, because it is supposed to be a constant describing the amount of memory
-   allocated to the template string.
-   
-   28 jan 2001
-   OK, edit_pos is not anymore the te_tmplen field.
-*/
-
 static int
-format_dialog_text(char *text_out, char *template, char *text_in, int edit_pos)
+format_dialog_text(char *text_out, const char *template, const char *text_in, int edit_pos)
 {
 	int index = 0, tpos = 0, max = strlen(template);
 	/* HR: In case a template ends with '_' and the text is completely
@@ -838,13 +878,13 @@ format_dialog_text(char *text_out, char *template, char *text_in, int edit_pos)
 	return edit_index;
 }
 
-/* HR: implement wt->x,y */
-/* HR: Modifications: set_text(...  &gr, &cr, temp_text ...)
- *     cursor alignment in centered text.
- *     Justification now integrated in set_text (v_gtext isolated).
- *     Preparations for positioning cursor in proportional fonts.
- *     Moved a few calls.
-	pbox(hl,ext[0]+x,ext[1]+y,ext[4]+x-1,ext[5]+y-1);
+/* implement wt->x,y
+ * Modifications: set_text(...  &gr, &cr, temp_text ...)
+ * cursor alignment in centered text.
+ * Justification now integrated in set_text (v_gtext isolated).
+ * Preparations for positioning cursor in proportional fonts.
+ * Moved a few calls.
+ * pbox(hl,ext[0]+x,ext[1]+y,ext[4]+x-1,ext[5]+y-1);
  */
 static void
 set_text(OBJECT *ob,
@@ -1175,19 +1215,17 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt)
 	t_font(screen.standard_font_point, screen.standard_font_id);
 	done(OS_SELECTED);
 }
-
-
 void
 d_g_fboxtext(enum locks lock, struct widget_tree *wt)
 {
+	char temp_text[256];
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
 	RECT gr,cr;
 	BFOBSPEC colours;
-	bool is_edit = wt->current == wt->edit_obj;
-	ushort selected=ob->ob_state & OS_SELECTED;
+	const bool is_edit = (wt->current == wt->edit_obj);
+	const unsigned short selected = ob->ob_state & OS_SELECTED;
 	int thick;
-	char temp_text[256];
 
 	set_text(ob, &gr, &cr, true, is_edit ? wt->edit_pos : -1, temp_text, &colours, &thick, r);
 	set_colours(ob, &colours);
@@ -1233,7 +1271,6 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt)
 /*
  * Draw a button object
  */
-
 void
 d_g_button(enum locks lock, struct widget_tree *wt)
 {
@@ -1601,7 +1638,6 @@ d_g_cicon(enum locks lock, struct widget_tree *wt)
 /*
  * Draw a text object
  */
-
 void
 d_g_text(enum locks lock, struct widget_tree *wt)
 {
@@ -1625,7 +1661,6 @@ d_g_text(enum locks lock, struct widget_tree *wt)
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
 }
-
 void
 d_g_ftext(enum locks lock, struct widget_tree *wt)
 {
@@ -1682,32 +1717,23 @@ static char *pstates[] =
 #endif
 
 #if 1
-struct user_things
-{
-	const long len;		/* number of bytes to copy (this struct and the code) */
-	long progdef_p;
-	long userblk_p;
-	long ret_p;
-	long parmblk_p;
-};
-#define userblk(ut) (*(USERBLK **)(ut->userblk_p))
-#define ret(ut)     (     (long *)(ut->ret_p    ))
-#define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p))
-
-extern const struct user_things xa_user_things;
-
+#define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
+#define ret(ut)     (     (long *)(ut->ret_p     ))
+#define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p ))
 void
 d_g_progdef(enum locks lock, struct widget_tree *wt)
 {
 	OBJECT *ob = wt->tree + wt->current;
 	struct sigaction oact, act;
-	struct user_things *ut;
+	struct xa_user_things *ut;
 
+#if GENERATE_DIAGS
 	struct proc *curproc = get_curproc();
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
 
 	DIAGS(("XaAES d_g_progdef: curproc - pid %i, name %s", curproc->pid, curproc->name));
 	DIAGS(("XaAES d_g_progdef: client  - pid %i, name %s", client->p->pid, client->name));
+#endif
 
 	// XXX alloc it on client creation
 	ut = umalloc(xa_user_things.len);
@@ -1715,10 +1741,10 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 
 	bcopy(&xa_user_things, ut, xa_user_things.len);
 
-	ut->progdef_p += (long)ut;
-	ut->userblk_p += (long)ut;
-	ut->ret_p     += (long)ut;
-	ut->parmblk_p += (long)ut;
+	ut->progdef_p  += (long)ut;
+	ut->userblk_pp += (long)ut;
+	ut->ret_p      += (long)ut;
+	ut->parmblk_p  += (long)ut;
 
 //	KERNEL_DEBUG("ut = 0x%lx", ut);
 //	KERNEL_DEBUG("ut->progdef_p = 0x%lx", ut->progdef_p);
@@ -2072,7 +2098,7 @@ d_g_title(enum locks lock, struct widget_tree *wt)
 {
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
-	char *text = get_ob_spec(ob)->free_string;
+	const char *text = get_ob_spec(ob)->free_string;
 
 	wr_mode( MD_TRANS);
 
