@@ -1,12 +1,12 @@
 #
-# Makefile for freemint
+# Makefile for shared
 #
 
 SHELL = /bin/sh
-SUBDIRS = shared sys xaaes tools
+SUBDIRS = libsyscall
 
 srcdir = .
-top_srcdir = .
+top_srcdir = ..
 subdir = 
 
 default: all
