@@ -311,7 +311,7 @@ m_free (long block)
 	if (block == (long)curproc->base)
 	{
 		DEBUG(("Mfree: cannot free bp!"));
-		return EFAULT;
+		return EINVAL;
 	}
 
 	r = detach_region_by_addr (curproc, block);
