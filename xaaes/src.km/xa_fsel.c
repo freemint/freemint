@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -926,10 +926,10 @@ fs_destructor(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
-void
-open_fileselector(enum locks lock, struct xa_client *client,
-		  const char *path, const char *file, const char *title,
-		  fsel_handler *s, fsel_handler *c)
+static void
+open_fileselector1(enum locks lock, struct xa_client *client,
+		   const char *path, const char *file, const char *title,
+		   fsel_handler *s, fsel_handler *c)
 {
 	int dh;			/* HR variable height for fileselector :-) */
 	OBJECT *form = ResourceTree(C.Aes_rsc, FILE_SELECT);
@@ -1110,6 +1110,15 @@ cancel_fsel(enum locks lock, const char *path, const char *file)
 static int locked = 0;
 static int sleepers = 0;
 
+void
+open_fileselector(enum locks lock, struct xa_client *client,
+		  const char *path, const char *file, const char *title,
+		  fsel_handler *s, fsel_handler *c)
+{
+	if (!locked)
+		open_fileselector1(lock, client, path, file, title, s, c);
+}
+
 /*
  * File selector interface routines
  */
@@ -1136,7 +1145,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 	fs.owner = client;
 	fs.done = 0;
 
-	open_fileselector(lock|fsel, client,
+	open_fileselector1(lock|fsel, client,
 			  path, file, text,
 			  handle_fsel, cancel_fsel);
 
