@@ -34,15 +34,21 @@ all <B>MiNT</B> versions integrated with <b>MultiTOS</b>.
 On <I>mode</I> equal to <b>SHUT_HALT</b> (0L), the system will shutdown 
 then enter a halted condition.
 <p>On <I>mode</I> equal to <b>SHUT_BOOT</b> (1L), the system will 
-reboot the machine after shutting everything down.
+reboot the machine after shutting everything down.</p>
 <p>On <I>mode</I> equal to <b>SHUT_COLD</b> (2L), the system will act 
 the same as with the <b>SHUT_BOOT</b> mode, except that a cold start 
-rather than the warm start will be performed.
-<p>That last mode is recognized as of FreeMiNT version 1.15.5, older 
-versions of the kernel will treat the <b>SHUT_BOOT</b> and 
-<b>SHUT_COLD</b> values equally.
+rather than the warm start will be performed.</p>
+<p>On <I>mode</I> equal to <b>SHUT_POWER</b> (3L), the system will 
+turn power off. The only hardware that supports it is atm. CT60. If 
+hardware does not support it, SHUT_HALT will be performed</p>
+<p><b>SHUT_COLD</b> mode is recognized as of FreeMiNT version 1.15.5, 
+older versions of the kernel will treat the <b>SHUT_COLD</b> as 
+<b>SHUT_BOOT</b>.</p>
+<p><b>SHUT_POWER</b> mode is recognized as of FreeMiNT version 1.16a, 
+older versions of the kernel will treat the <b>SHUT_POWER</b> as 
+<b>SHUT_HALT</b>.</p>
 <p><i>All other values of <b>mode</b> are reserved for future 
-definition.</i>
+definition.</i></p>
 </TD></TR>
 
 <TR><TH></TH><TD></TD></TR>
