@@ -54,9 +54,10 @@ void g2d_box(int b, RECT *r, int colour);
 void object_rectangle(RECT *c, OBJECT *ob, int i, short dx, short dy);
 void object_area     (RECT *c, OBJECT *ob, int i, short dx, short dy);
 void write_menu_line(RECT *cl);
-int _cdecl get_parent(OBJECT *ob, int item);
 void write_selection(int d, RECT *r);
 long calc_back(RECT *r, int planes);
+/* in my_aes.c */
+int  get_parent(OBJECT *ob, int item);
 
 /* HR: intermediate level draw functions & misc. */
 void adjust_size(int d, RECT *r);
