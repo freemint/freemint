@@ -175,7 +175,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		return;
 
 	DIAG((D_keybd,client,"XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
-		waiting ? "waiting" : "", update_locked() ? update_locked()->p->pid : 0,
+		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 		c_owner(client), w_owner(keywind)));
 
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */

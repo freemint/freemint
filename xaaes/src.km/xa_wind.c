@@ -203,7 +203,7 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	/* Ozk: Now pull the new topped window to top of list..
 	 */
 	pull_wind_to_top(lock, w);
-	graf_mouse(client->mouse, client->mouse_form, false);
+	graf_mouse(client->mouse, client->mouse_form, client, false);
 	/* Ozk: redisplay title of the window previously on top
 	 *	to indicate its not topped anymore
 	 */
@@ -1647,56 +1647,69 @@ XA_wind_delete(enum locks lock, struct xa_client *client, AESPB *pb)
  *     If called by the signal handler, it is unclear, so the
  *     lock is applied. (doesnt harm).
  */
+static void
+rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
+{
+	struct xa_window *nwl;
+
+	while (wl)
+	{
+		DIAGS(("-- RW: %lx, next=%lx, prev=%lx",
+			wl, wl->next, wl->prev));
+
+		nwl = wl->next;
+		if (wl != root_window)
+		{
+			if (!client || (client && wl->owner == client))
+			{
+				if ((wl->window_status & XAWS_OPEN))
+				{
+					DIAGS(("-- RW: closing %lx, client=%lx", wl, client));
+					close_window(lock, wl);
+				}
+				DIAGS(("-- RW: deleting %lx", wl));
+				delete_window(lock, wl);
+			}
+		}
+#if GENERATE_DIAGS
+		else
+			DIAGS((" -- RW: skipping root window"));
+#endif
+#if 0								
+		if (wl != root_window && wl->owner == client)
+		{
+			if (wl->window_status & XAWS_OPEN)
+			{
+				DIAGS(("-- RW: closing %lx", wl));
+				close_window(lock, wl);
+			}
+			DIAGS(("-- RW: deleting %lx", wl));
+			delete_window(lock, wl);
+		}
+#endif
+		wl = nwl;
+	}
+}
 
 void
 remove_windows(enum locks lock, struct xa_client *client)
 {
-	struct xa_window *wl, *nwl;
+	DIAG((D_wind,client,"remove_windows on open_windows list for %s", c_owner(client)));
+	rw(lock, window_list, client);
+	DIAG((D_wind,client,"remove_windows on closed_windows list for %s", c_owner(client)));
+	rw(lock, S.closed_windows.first, client);
+}
 
-	DIAG((D_wind,client,"remove_windows for %s", c_owner(client)));
+void
+remove_all_windows(enum locks lock, struct xa_client *client)
+{
+	DIAG((D_wind, client,"remove_all_windows for %s", c_owner(client)));
 
-	wl = window_list;
-	while (wl)
-	{
-		nwl = wl->next;
-
-		if (wl == root_window)
-			break;
-
-		if (wl->owner == client)
-		{
-			/* checks is_open */
-			if (wl->window_status & XAWS_OPEN)
-				close_window(lock|winlist, wl);
-			delete_window(lock|winlist, wl);
-		}
-		wl = nwl;
-	}
-
-	wl = S.closed_windows.first;
-	while (wl)
-	{
-		nwl = wl->next;
-
-		if (wl->owner == client)
-			delete_window(lock|winlist, wl);
-
-		wl = nwl;
-	}
-
-	wl = S.nolist_windows.first;
-	while (wl)
-	{
-		nwl = wl->next;
-		if (wl->owner == client)
-		{
-			if (wl->window_status & XAWS_OPEN)
-				close_window(lock, wl);
-			delete_window(lock, wl);
-		}
-		wl = nwl;
-	}
-	
+	remove_windows(lock, client);
+	DIAG((D_wind, client, "remove_all_windows on open_nlwindows for %s", c_owner(client)));
+	rw(lock, S.open_nlwindows.first, client);
+	DIAG((D_wind, client, "remove_all_windows on closed_nlwindows for %s", c_owner(client)));
+	rw(lock, S.closed_nlwindows.first, client);
 }
 
 unsigned long
@@ -1746,12 +1759,12 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
  * Also changed fmd.lock usage to additive flags.
  */
 
-#define SCREEN_UPD	1
-#define MOUSE_UPD	2
 
 unsigned long
 XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	struct proc *p;
+
 	short op = pb->intin[0];
 	bool try = (op & 0x100) ? true : false; /* Test for check-and-set mode */
 
@@ -1762,18 +1775,24 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	pb->intout[0] = 1;
 
+	if (client)
+		p = client->p;
+	else
+		p = get_curproc();
+
 	switch (op & 0xff)
 	{
 
 	/* Grab the update lock */
 	case BEG_UPDATE:
 	{
-		DIAG((D_sema, NULL, "'%s' BEG_UPDATE", client->name));
+		DIAG((D_sema, NULL, "'%s' BEG_UPDATE", p->name));
 
-		if (lock_screen(client, try, pb->intout, 1))
+		if (lock_screen(p, try, pb->intout, 1))
 		{
-			client->fmd.lock |= SCREEN_UPD;
-			C.update_lock = client;
+			if (client)
+				client->fmd.lock |= SCREEN_UPD;
+			C.update_lock = p;
 			C.updatelock_count++;
 		}
 		DIAG((D_sema, NULL, " -- count %d for %s",
@@ -1784,20 +1803,21 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Release the update lock */
 	case END_UPDATE:
 	{
-		if (unlock_screen(client, 1))
+		if (unlock_screen(p, 1))
 		{
-			client->fmd.lock &= ~SCREEN_UPD;
+			if (client)
+				client->fmd.lock &= ~SCREEN_UPD;
 		}
-		if (C.update_lock == client)
+		if (C.update_lock == p)
 		{
 			C.updatelock_count--;
 			if (!C.updatelock_count)
 				C.update_lock = NULL;
 		}
 
-		DIAG((D_sema, NULL, "'%s' END_UPDATE", client->name));
+		DIAG((D_sema, NULL, "'%s' END_UPDATE", p->name));
 		DIAG((D_sema, NULL, " -- count %d for %s",
-			C.updatelock_count, C.update_lock->name));
+			C.updatelock_count, p->name));
 		break;
 	}
 
@@ -1806,10 +1826,11 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAG((D_sema, NULL, "'%s' BEG_MCTRL", client->name));
 
-		if (lock_mouse(client, try, pb->intout, 1))
+		if (lock_mouse(p, try, pb->intout, 1))
 		{
-			client->fmd.lock |= MOUSE_UPD;
-			C.mouse_lock = client;
+			if (client)
+				client->fmd.lock |= MOUSE_UPD;
+			C.mouse_lock = p;
 			C.mouselock_count++;
 		}
 
@@ -1821,21 +1842,22 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	case END_MCTRL:
 	{
 		
-		if (unlock_mouse(client, 1))
+		if (unlock_mouse(p, 1))
 		{
-			client->fmd.lock &= ~MOUSE_UPD;
+			if (client)
+				client->fmd.lock &= ~MOUSE_UPD;
 		}
-		if (C.mouse_lock == client)
+		if (C.mouse_lock == p)
 		{
 			C.mouselock_count--;
 			if (!C.mouselock_count)
 				C.mouse_lock = NULL;
 		}
 
-		DIAG((D_sema, NULL, "'%s' END_MCTRL", client->name));
+		DIAG((D_sema, NULL, "'%s' END_MCTRL", p->name));
 
 		DIAG((D_sema, NULL, " -- count %d for %s",
-			C.mouselock_count, C.mouse_lock->name));
+			C.mouselock_count, p->name));
 		break;
 	}
 

@@ -83,6 +83,7 @@ void	top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_wind
 void	bottom_window(enum locks lock, struct xa_window *w);
 void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);
+void	remove_all_windows(enum locks lock, struct xa_client *client);
 void	inside_root(RECT *r, struct options *o);
 
 void	iconify_window(enum locks lock, struct xa_window *wind, RECT *r);

@@ -200,7 +200,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 104 */ { XA_wind_get,               0,        DESCR("wind_get")        },
 	/* 105 */ { XA_wind_set,               0,        DESCR("wind_set")        },
 	/* 106 */ { XA_wind_find,              0,        DESCR("wind_find")       },
-	/* 107 */ { XA_wind_update,            0,        DESCR("wind_update")     },
+	/* 107 */ { XA_wind_update,            NOCLIENT, DESCR("wind_update")     },
 	/* 108 */ { XA_wind_calc,              0,        DESCR("wind_calc")       },
 	/* 109 */ { XA_wind_new,               0,        DESCR("wind_new")        },
 
@@ -510,6 +510,8 @@ XA_handler(void *_pb)
 		/* inform user what's going on */
 		ALERT(("XaAES: No AES Parameter Block, killing it", p_getpid()));
 
+		exit_proc(0, get_curproc());
+
 		raise(SIGKILL);
 		return 0;
 	}
@@ -536,7 +538,7 @@ XA_handler(void *_pb)
 
 			/* inform user what's going on */
 			ALERT(("XaAES: non-AES process issued AES system call %i, killing it", cmd));
-
+			exit_proc(0, get_curproc());
 			raise(SIGKILL);
 			return 0;
 		}
@@ -598,13 +600,13 @@ XA_handler(void *_pb)
 			enum locks lock = winlist|envstr|pending;
 
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
-				lock_screen(client, 0, NULL, 2);
+				lock_screen(client->p, 0, NULL, 2);
 
 			/* callout the AES function */
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
 
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
-				unlock_screen(client, 2);
+				unlock_screen(client->p, 2);
 
 			/* execute delayed delete_window */
 			if (S.deleted_windows.first)
@@ -701,9 +703,9 @@ XA_handler(void *_pb)
 			{
 				if (mouse_locked() || update_locked())
 				{
-					if (mouse_locked() == client)
+					if (mouse_locked() == client->p)
 						DIAG((D_kern, client, "Leaving AES with mouselock %s", client->name));
-					if (update_locked() == client)
+					if (update_locked() == client->p)
 						DIAG((D_kern, client, "Leaving AES with screenlock %s", client->name));
 				}
 				else

@@ -584,8 +584,7 @@ create_window(
 
 	if (nolist)
 	{
-		/* Dont put in the windowlist */
-
+		wi_put_first(&S.closed_nlwindows, w);
 		/* Attach the appropriate widgets to the window */
 		DIAGS((" -- nolist window"));
 		standard_widgets(w, tp, false);
@@ -751,11 +750,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		return 0;
 	}
 
-	if (wind->nolist)
+	if (wind->nolist || (wind->dial & created_for_SLIST))
 	{
-		DIAGS(("open_window: nolist window"));
+		DIAGS(("open_window: nolist window - SLIST wind? %s",
+			(wind->dial & created_for_SLIST) ? "yes":"no"));
 
-		if (wind != root_window && !(wind->dial & created_for_POPUP))
+		if (wind != root_window && !(wind->dial & (created_for_POPUP | created_for_SLIST)))
 		{
 			inside_root(&r, &wind->owner->options);
 			inside_minmax(&r, wind);
@@ -774,12 +774,13 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		{
 			form_save(0, wind->r, &(wind->background));
 		}
-
-		wi_put_first(&S.nolist_windows, wind);
+		wi_remove(&S.closed_nlwindows, wind);
+		wi_put_first(&S.open_nlwindows, wind);
 		move_ctxdep_widgets(wind);
 		//draw_window(lock|winlist, wind);
 
-		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
+		if (!(wind->dial & created_for_SLIST))
+			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 		//send_redraw(lock|winlist, wind, &wind->wa);
 		/* dont open unlisted windows */
 		return 1;
@@ -789,7 +790,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	wi_put_first(&S.open_windows, wind);
 
 	/* New top window - change the cursor to this client's choice */
-	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, false);
+	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
 
 	if ((wind->window_status & XAWS_ICONIFIED))
 	{
@@ -806,15 +807,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	else
 	{
 		/* Change the window coords */
-
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
 		{
 			inside_root(&r, &wind->owner->options);
 			//inside_minmax(&r, wind);
 		}
-
 		wind->rc = wind->r = r;
-
 		if ((wind->window_status & XAWS_SHADED))
 		{
 			wind->r.h = wind->sh;
@@ -1404,14 +1402,18 @@ close_window(enum locks lock, struct xa_window *wind)
 		return false;
 
 	if (wind == C.hover_wind)
-		C.hover_wind = NULL, C.hover_widg = NULL;
+	{
+		C.hover_wind = NULL;
+		C.hover_widg = NULL;
+	}
 
 	if (wind->nolist)
 	{
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
 			wind->handle, wind->background));
 
-		wi_remove(&S.nolist_windows, wind);
+		wi_remove(&S.open_nlwindows, wind);
+		wi_put_first(&S.closed_nlwindows, wind);
 
 		if (wind->active_widgets & STORE_BACK)
 			form_restore(0, wind->r, &(wind->background));
@@ -1525,8 +1527,15 @@ free_standard_widgets(struct xa_window *wind)
 static void
 delete_window1(enum locks lock, struct xa_window *wind)
 {
+	/* Ozk: I dont think this is really necessary here as it should
+	 *	should be done when closing the window..
+	 */
 	if (wind == C.hover_wind)
-		C.hover_wind = NULL, C.hover_widg = NULL;
+	{
+		C.hover_wind = NULL;
+		C.hover_widg = NULL;
+		graf_mouse(ARROW, NULL, NULL, false);
+	}
 
 	if (!wind->nolist)
 	{
@@ -1568,18 +1577,18 @@ delete_window1(enum locks lock, struct xa_window *wind)
 void
 delete_window(enum locks lock, struct xa_window *wind)
 {
-	if (!wind->nolist)
+	/* We must be sure it is in the correct list. */
+	if ((wind->window_status & XAWS_OPEN))
 	{
-		/* We must be sure it is in the correct list. */
-		if ((wind->window_status & XAWS_OPEN))
-		{
-			DIAG((D_wind, wind->owner, "delete_window %d: not closed", wind->handle));
-			/* open window, return error */
-			return;
-		}
-
-		wi_remove(&S.closed_windows, wind);
+		DIAG((D_wind, wind->owner, "delete_window %d: not closed", wind->handle));
+		/* open window, return error */
+		return;
 	}
+	if (wind->nolist)
+		wi_remove(&S.closed_nlwindows, wind);
+	else
+		wi_remove(&S.closed_windows, wind);
+	
 	remove_from_iredraw_queue(lock, wind);
 	delete_window1(lock, wind);
 }
@@ -1587,22 +1596,21 @@ delete_window(enum locks lock, struct xa_window *wind)
 void
 delayed_delete_window(enum locks lock, struct xa_window *wind)
 {
-	if (!wind->nolist)
+	DIAG((D_wind, wind->owner, "delayed_delete_window %d for %s: open? %s",
+		wind->handle, w_owner(wind),
+		(wind->window_status & XAWS_OPEN) ? "yes":"no" ));
+		
+	/* We must be sure it is in the correct list. */
+	if ((wind->window_status & XAWS_OPEN))
 	{
-		DIAG((D_wind, wind->owner, "delayed_delete_window %d for %s: open? %d",
-			wind->handle, w_owner(wind),
-			(wind->window_status & XAWS_OPEN) ? "yes":"no" ));
-
-		/* We must be sure it is in the correct list. */
-		if ((wind->window_status & XAWS_OPEN))
-		{
-			DIAG((D_wind, wind->owner, "delayed_delete_window %d: not closed", wind->handle));
-			/* open window, return error */
-			return;
-		}
-
-		wi_remove(&S.closed_windows, wind);
+		DIAG((D_wind, wind->owner, "delayed_delete_window %d: not closed", wind->handle));
+		/* open window, return error */
+		return;
 	}
+	if (wind->nolist)
+		wi_remove(&S.closed_nlwindows, wind);
+	else
+		wi_remove(&S.closed_windows, wind);
 
 	wi_put_first(&S.deleted_windows, wind);
 }

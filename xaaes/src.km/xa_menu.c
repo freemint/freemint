@@ -273,17 +273,6 @@ XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	upd_menu(lock, client, tree, i);
 
-#if 0
-	if (tree[pb->intin[0]].ob_type == G_TITLE && (wt = obtree_to_wt(client, tree)))
-	{
-		wt_menu_area(wt);
-		if (wt == get_menu())
-		{
-			set_rootmenu_area(client);
-			redraw_menu(lock);
-		}
-	}
-#endif
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }

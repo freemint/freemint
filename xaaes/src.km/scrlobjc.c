@@ -191,7 +191,7 @@ set_slist_object(enum locks lock,
 				 wt->owner,
 				 true, 					/* nolist */
 				 wkind,
-				 created_for_AES,
+				 created_for_AES | created_for_SLIST,
 				 0, false,r,NULL,NULL);
 	if (list->wi)
 	{
@@ -201,7 +201,7 @@ set_slist_object(enum locks lock,
 			get_widget(list->wi, XAW_INFO)->stuff = info;
 		list->wi->winob = form;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;
-		list->wi->window_status |= XAWS_OPEN;
+		//list->wi->window_status |= XAWS_OPEN;		
 		r = list->wi->wa;
 		r.h /= screen.c_max_h;
 		r.h *= screen.c_max_h;		/* snap the workarea hight */
@@ -218,10 +218,14 @@ set_slist_object(enum locks lock,
 		list->v = (r.w - cfg.widg_w) / screen.c_max_w;
 		list->max = lmax;
 
+		//list->wi->rc = list->wi->r;
+		open_window(lock, list->wi, list->wi->r);
+#if 0
 		/* recalc for aligned work area */
 		list->wi->rc = list->wi->r;
 		calc_work_area(list->wi);
 		make_rect_list(list->wi, true, RECT_SYS);
+#endif
 	}
 	return list;
 }

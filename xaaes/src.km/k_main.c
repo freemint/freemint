@@ -93,6 +93,11 @@ cancel_cevents(struct xa_client *client)
 
 	if (C.ce_open_menu == client)
 		C.ce_open_menu = NULL;
+	if (C.ce_menu_click == client)
+		C.ce_menu_click = NULL;
+	if (C.ce_menu_move == client)
+		C.ce_menu_move = NULL;
+
 }
 
 void
@@ -109,8 +114,6 @@ post_cevent(struct xa_client *client,
 		c = kmalloc(sizeof(*c));
 		if (c)
 		{
-			struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-
 			c->next		= NULL;
 			c->funct	= func;
 			c->client	= client;
@@ -123,30 +126,22 @@ post_cevent(struct xa_client *client,
 				c->r = *r;
 			if (md)
 				c->md = *md;
-
-			if (rc == client)
+			
+			if (!client->cevnt_head)
 			{
-				(*func)(0, c, false);
-				kfree(c);
+				client->cevnt_head = c;
+				client->cevnt_tail = c;
 			}
 			else
 			{
-				if (!client->cevnt_head)
-				{
-					client->cevnt_head = c;
-					client->cevnt_tail = c;
-				}
-				else
-				{
-					client->cevnt_tail->next = c;
-					client->cevnt_tail = c;
-				}
-				client->cevnt_count++;
-
-				DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
-					c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
-					client->name));
+				client->cevnt_tail->next = c;
+				client->cevnt_tail = c;
 			}
+			client->cevnt_count++;
+
+			DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
+				c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
+				client->name));
 		}
 		else
 		{
@@ -192,13 +187,37 @@ dispatch_cevent(struct xa_client *client)
 	}
 	return ret;
 }
-
+#if 0
 short
 check_cevents(struct xa_client *client)
 {
+	while ((client->status & CS_MENU_NAV))
+	{
+		while (client->irdrw_msg || client->cevnt_count)
+		{
+			if (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
+			
+			dispatch_cevent(client);
+		}
+		if (!(client->status & CS_MENU_NAV))
+			break;
+		do_block(client);
+	}
+	else
+	{
+		while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
+		{
+			if (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
+
+			dispatch_cevent(client);
+		}
+	}
+#if 0
 	while (!client->usr_evnt && dispatch_cevent(client))
 		;
-
+#endif
 	if (client->usr_evnt)
 	{
 		cancel_evnt_multi(client, 1);
@@ -207,6 +226,7 @@ check_cevents(struct xa_client *client)
 	else
 		return 0;
 }
+#endif
 
 #if 0
 
@@ -810,7 +830,7 @@ k_main(void *dummy)
 	 */
 
 	C.AESpid = p_getpid();
-
+	
 	setup_common();
 	
 	/* join process group of loader */
@@ -983,8 +1003,8 @@ k_main(void *dummy)
 		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d, mouse_lock %d",
 			fs_rtn,
 			input_channels,
-			update_locked() ? update_locked()->p->pid : 0,
-			mouse_locked() ? mouse_locked()->p->pid : 0));
+			update_locked() ? update_locked()->pid : 0,
+			mouse_locked() ? mouse_locked()->pid : 0));
 
 		if (C.shutdown & QUIT_NOW)
 			break;
