@@ -81,19 +81,25 @@
 
 	.globl	_secure_mode,_falcontos
 
+// ***********************
+// * GEMDOS trap handler *
+// ***********************
+//
+// NOTICE: MiNT *no longer ever* traps to ROM GEMDOS, because even
+//         the TOSFS *jumps* (not traps) there. So these two lines
+//         below only waste space and CPU time. And btw I really hate
+//         doing same changes twice! (draco)
+
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
 _old_dos:
 	dc.l	0
 _mint_dos:
 
-// NOTICE: MiNT *no longer ever* traps to ROM GEMDOS, because even
-//         the TOSFS *jumps* (not traps) there. So these two lines
-//         below only waste space and CPU time. And btw I really hate
-//         doing same changes twice! (draco)
-
 #ifdef SYSCALL_REENTRANT
-
+//
+// see at symbol reentrant_trap for a detailed explanation
+//
 	tst.w	_in_kernel
 	beq.s	norm_gemdos
 
@@ -105,7 +111,7 @@ _mint_dos:
 
 norm_gemdos:
 
-#else /* SYSCALL_REENTRANT */
+#else
 
 // Non-reentrant syscall handler
 //
@@ -164,10 +170,21 @@ no_sys_printf:
 #endif
 	bra	_syscall
 
-#ifndef SYSCALL_REENTRANT		// see above
-rom_gemdos:	move.l	_old_dos.w(pc),-(sp)
+#ifndef SYSCALL_REENTRANT
+rom_gemdos:
+	move.l	_old_dos.w(pc),-(sp)
 	rts
 #endif
+
+// **********************
+// * XBIOS trap handler *
+// **********************
+//
+// Kludge for Setscreen: under Falcon TOS, this
+// calls a GEMDOS function (Srealloc) and so
+// we must *not* change any of the vectors!!
+// Same kludge for Dsp_LoadProg() and Dsp_LodToBinary.
+// They call GEMDOS *a lot* (Fgetdta, Fsetdta, Malloc, Mfree...)
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
@@ -176,15 +193,9 @@ _old_xbios:
 _mint_xbios:
 
 #ifdef SYSCALL_REENTRANT
-// Reentrant syscall handler
 //
-// Reentrant means here that we can enter the kernel again through
-// the trap handler from inside kernel space.
-// This is not neccessary for the kernel itself but rather if you want
-// to use other subsystems which use the trap#1 to enter the kernel again.
-// You can, for example,use the TOS-VDI subsystem safely and the VDI can
-// reenter the kernel through the trap handler.
-
+// see at symbol reentrant_trap for a detailed explanation
+//
 	tst.w	_in_kernel
 	beq	norm_xbios
 
@@ -195,18 +206,11 @@ _mint_xbios:
 	bra	reentrant_trap
 
 norm_xbios:
-
-#else	//SYSCALL_REENTRANT
-
-// Kludge for Setscreen: under Falcon TOS, this
-// calls a GEMDOS function (Srealloc) and so
-// we must *not* change any of the vectors!!
-// Same kludge for Dsp_LoadProg() and Dsp_LodToBinary.
-// They call GEMDOS *a lot* (Fgetdta, Fsetdta, Malloc, Mfree...)
-
+#else
 	tst.w	_in_kernel
 	bne	LX_rom
-#endif	// SYSCALL_REENTRANT
+#endif
+
 	btst	#5,(sp) 		// test for user/super mode
 	beq.s	LX_usr
 #ifdef ONLY030
@@ -276,36 +280,13 @@ sk:	clr.w	-(sp)			// no frame format needed
 LX_rom:	move.l	_old_xbios.w(pc),a0	// jump to ROM
 	jmp	(a0)
 
-rom_bios:
-	move.l	_old_bios.w(pc),-(sp)
-	rts
-
 ret:	sub.l	a0,a0			// curproc address is our sweet secret
 	moveq	#-36,d0 		// return EACCDN
 	rte
 
-	dc.l	0x58425241		// XBRA
-	dc.l	0x4d694e54		// MiNT
-_old_bios:	dc.l	0
-_mint_bios:
-
-#ifdef	SYSCALL_REENTRANT
-
-// Reentrant syscall handler
-
-	tst.w	_in_kernel
-	beq	norm_bios
-
-	movea.l	sp,a0
-	movem.l	d2-d7/a2-a6,-(sp)
-	lea	_bios_tab,a5
-	move.w	_bios_max,d5
-	bra	reentrant_trap
-
-norm_bios:
-
-#else	// SYSCALL_REENTRANT
-
+// *********************
+// * BIOS trap handler *
+// *********************
 //
 // Entering the kernel can be very expensive so, we take a short-cut
 // if possible -- we try some BIOS functions out, and if they
@@ -318,15 +299,38 @@ norm_bios:
 // BIOS code works on our (private) system stack
 //
 // the shortcuts are also turned off if BIOSBUF=n
+
+	dc.l	0x58425241		// XBRA
+	dc.l	0x4d694e54		// MiNT
+_old_bios:	dc.l	0
+_mint_bios:
+
+#ifdef	SYSCALL_REENTRANT
 //
+// see at symbol reentrant_trap for a detailed explanation
+//
+
+	tst.w	_in_kernel
+	beq	norm_bios
+
+	movea.l	sp,a0
+	movem.l	d2-d7/a2-a6,-(sp)
+	lea	_bios_tab,a5
+	move.w	_bios_max,d5
+	bra	reentrant_trap
+
+norm_bios:
+
+#else
+
 	tst.w	_in_kernel
 	bne.s	rom_bios
 
-#endif	// SYSCALL_REENTRANT
+#endif
 
 	bset	#0x07,_in_kernel
 	tst.w	_bconbdev		// is BIOS buffering on?
-	bmi	L_bios			// no// skip all this
+	bmi	L_bios			// no, skip all this
 
 	btst	#5,(sp) 		// test for user/super mode
 	bne.s	L_bios			// if super, goto L_bios
@@ -476,6 +480,43 @@ nosig:
 	pea	4(a0)
 	jsr	_restore_context	// never returns
 
+rom_bios:
+	move.l	_old_bios.w(pc),-(sp)
+	rts
+
+//
+// bconout special code: on entry, a1 points to the stack the user
+// was using. If possible, we just buffer the output until later.
+//
+
+do_bconout:
+	tst.w	_bconbdev		// is BIOS buffering on?
+	bmi	L_bios			// no buffering -- skip this code
+	move.w	2(a1),d0		// what device is this for?
+	beq	L_bios			// don't buffer the printer
+	cmp.w	_bconbdev,d0		// same device as is buffered?
+	bne.s	new_dev 		// no -- maybe we can't do this
+put_buf:
+	move.w	4(a1),d0		// get the character to output
+	move.w	_bconbsiz,d1		// get index into buffer table
+	cmp.w	#255,d1 		// buffer full?
+	beq	L_bios			// yes -- flush it out
+	lea	_bconbuf,a0
+	add.w	d1,a0
+	move.b	d0,(a0) 		// store the character
+	addq.w	#1,d1
+	move.w	d1,_bconbsiz
+	ori.w	#0x0400,sr		// spl7()
+	jsr	_leave_kernel		// restore vectors
+	moveq.l	#-1,d0			// return character output OK
+	rte
+
+new_dev:
+	tst.w	_bconbsiz		// characters already in buffer?
+	bne	L_bios			// yes: we can't buffer this one
+	move.w	d0,_bconbdev		// no: OK, we have a new device
+	bra.s	put_buf
+
 //
 // we handle errors by calling through to GEMDOS or the BIOS/XBIOS,
 // as appropriate, and letting them handle it -- that way, if the underlying
@@ -485,11 +526,15 @@ nosig:
 
 error:	cmp.l	#_xbios_tab,a5
 	bne.s	enosys
-	trap	#14
+	trap	#14			// XXX trap#14 here??? -> go over _trap_14_emu
 	bra	out
 enosys:	moveq	#-32,d0	// ENOSYS
 	bra	out
 
+// *********************************
+// * ROM GEMDOS/BIOS/XBIOS callout *
+// *********************************
+//
 // Trap wrapper for calling ROM from the inside of the kernel.
 // Usage: just replace trap #1 with a jsr _trap_1_emu etc.
 
@@ -538,6 +583,10 @@ TE_X:	move.w	sr,-(sp)
 	rts
 #endif
 
+// ******************************
+// * unused trap's trap handler *
+// ******************************
+//
 // Default routine for "unused" traps. Without this, any user (even
 // on remote) can draw bombs on the console freely. So this is sorta
 // security patch.
@@ -560,38 +609,9 @@ _unused_trap:
 	addq.l	#0x08,sp
 v_rte:	rte				// and return :-)
 
-//
-// bconout special code: on entry, a1 points to the stack the user
-// was using. If possible, we just buffer the output until later.
-//
-
-do_bconout:
-	tst.w	_bconbdev		// is BIOS buffering on?
-	bmi	L_bios			// no buffering -- skip this code
-	move.w	2(a1),d0		// what device is this for?
-	beq	L_bios			// don't buffer the printer
-	cmp.w	_bconbdev,d0		// same device as is buffered?
-	bne.s	new_dev 		// no -- maybe we can't do this
-put_buf:
-	move.w	4(a1),d0		// get the character to output
-	move.w	_bconbsiz,d1		// get index into buffer table
-	cmp.w	#255,d1 		// buffer full?
-	beq	L_bios			// yes -- flush it out
-	lea	_bconbuf,a0
-	add.w	d1,a0
-	move.b	d0,(a0) 		// store the character
-	addq.w	#1,d1
-	move.w	d1,_bconbsiz
-	ori.w	#0x0400,sr		// spl7()
-	jsr	_leave_kernel		// restore vectors
-	moveq.l	#-1,d0			// return character output OK
-	rte
-
-new_dev:
-	tst.w	_bconbsiz		// characters already in buffer?
-	bne	L_bios			// yes: we can't buffer this one
-	move.w	d0,_bconbdev		// no: OK, we have a new device
-	bra.s	put_buf
+// ************************
+// * miscellaneous things *
+// ************************
 
 //
 // _lineA0: MiNT calls this to get the address of the line A variables
@@ -720,7 +740,9 @@ ucret:	lea	24(sp),sp		// fix up stack
 	move.l	d0,_usrret		// save returned value
 	rts				// back to caller
 
-// Reentrant syscall handler
+// *****************************
+// * Reentrant syscall handler *
+// *****************************
 //
 // Implemented by Odd Skancke.
 //
@@ -863,8 +885,6 @@ reent_erange:
 // ---- in the function table
 reent_nofunc:
 	moveq	#0,d5
-	cmpa.l	#_dos_tab,a5
-	beq.s	reent_rom_dos
 	cmpa.l	#_bios_tab,a5
 	beq.s	reent_rom_bios
 	cmpa.l	#_xbios_tab,a5
@@ -880,7 +900,4 @@ reent_rom_bios:
 	bra.s	reent_out
 reent_rom_xbios:
 	move.l	_old_xbios,d1
-	bra.s	reent_out
-reent_rom_dos:
-	move.l	_old_dos,d1
 	bra.s	reent_out
