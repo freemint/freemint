@@ -509,7 +509,7 @@ XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		long ev0 = in_ev->ev_0;
 
 		pb->intout[0] = 1;
-		
+
 		/* Copy data from the structures we need access to into safe space */		
 		if (ev0 & XMU_BUTTON)
 			client->xev_button = *in->e_but;
@@ -517,7 +517,7 @@ XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->xev_fselect = *in->e_fselect;
 		if (ev0 & XMU_PMSG)
 			client->xev_pmsg = *in->e_pmsg;
-	
+
 		client->em.flags = 0;
 		if (ev0 & XMU_M1)
 		{
@@ -538,7 +538,7 @@ XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->em.m2 = *r;
 			client->em.flags |= ((in->e_mu2->flag & 1) << 1) | MU_M2;
 		}
-		
+
 		if (ev0 & XMU_TIMER)
 		{
 			long timeout;
