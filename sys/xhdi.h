@@ -25,7 +25,7 @@
 # define _xhdi_h
 
 # include "mint/mint.h"
-# include "mint/file.h"
+# include "mint/kerinfo.h"
 
 
 /*
