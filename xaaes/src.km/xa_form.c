@@ -800,44 +800,6 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-#if WDIALOG_WDLG
-void
-exit_wdial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
-	   struct widget_tree *wt, int f, int os, int dbl, int which,
-	   struct rawkey *key)
-{
-	struct xa_client *client = wt->owner;
-	OBJECT *form = wt->tree;
-	struct moose_data md;
-
-	md.x = form->ob_x + widg->x;
-	md.y = form->ob_y + widg->y;
-	md.state = widg->s;
-	md.clicks = dbl ? 2 : 1;
-
-	if (os != -1)
-	{
-		form[f].ob_state = os;
-		redraw_object(lock, wt, f);
-	}
-	wt->tree = form;	/* After redraw of object. :-) */
-	wt->current = f|dbl;	/* pass the double click to the internal handlers as well. */
-	wt->which = which;	/* pass the event type. */
-
-	if (which == MU_BUTTON)
-	{
-		DIAG((D_wdlg, client, "button_event: x=%d, y=%d, clicks=%d",
-			md.x, md.y, md.clicks));
-		button_event(lock, client, &md);
-	}
-	else
-	{
-		DIAG((D_wdlg, client, "keybd_event: x=%d, y=%d, clicks=%d",
-			md.x, md.y, md.clicks));
-		keybd_event(lock, client, key);
-	}
-}
-#endif
 
 /*
  * Non-blocking form_do

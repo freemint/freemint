@@ -2472,6 +2472,12 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 		undraw_objcursor(wt);
 
 	do {
+
+		DIAG((D_objc, NULL, " ~~~ obj=%d(%d/%d), flags=%x, state=%x, head=%d, tail=%d, next=%d, depth=%d, draw=%s",
+			current, x, y, tree[current].ob_flags, tree[current].ob_state,
+			tree[current].ob_head, tree[current].ob_tail, tree[current].ob_next,
+			rel_depth, start_drawing ? "yes":"no"));
+
 		if (current == item)
 		{
 			start_drawing = true;

@@ -38,6 +38,8 @@
 #include "mint/proc.h"
 #include "../../sys/adi/whlmoose/whlmoose.h"
 
+#define MAX_WINDOW_NAME 200
+#define MAX_WINDOW_INFO 200
 
 /* forward declarations */
 struct task_administration_block;
@@ -176,9 +178,7 @@ struct xa_mouse_rect
 typedef struct menu_attachments
 {
 	struct widget_tree *wt;
-	//OBJECT *tree;		/* attached menu tree */
 	int item;
-	//OBJECT *to_tree;	/* attached to */
 	struct widget_tree *to;
 	int to_item;
 } XA_MENU_ATTACHMENT;
@@ -246,19 +246,84 @@ typedef void ExitForm(enum locks lock, struct xa_window *wind,
                                  int f, int os, int dbl, int which, struct rawkey *key);
 #endif
 
+
 /* Object Tree based widget descriptor */
 struct wdlg_info
 {
 	void *handle;			/* For use as 'wdialog structure' */
 	struct xa_window *wind;		/* cross reference to parent window. */
-	int code;			/* Data for wdlg_xxx extension. */
-	int flag;
+	short code;			/* Data for wdlg_xxx extension. */
+	short flag;
 	void *user_data;
 	void *data;
 	EVNT *evnt;
 	HNDL_OBJ exit;
+
+	short ify_obj;
+	struct widget_tree *std_wt;
+	struct widget_tree *ify_wt;
+	char std_name[MAX_WINDOW_NAME];
+	char ify_name[40];
 };
 
+typedef	void  _cdecl lbox_select(LIST_BOX *box,
+				OBJECT *tree,
+				struct lbox_item *item,
+				void *user_data,
+				short obj_index,
+				short last_state);
+typedef	short _cdecl lbox_set	(LIST_BOX *box,
+				OBJECT *tree,
+				struct lbox_item *item,
+				short obj_index,
+				void *user_data,
+				GRECT *rect,
+				short first);
+struct a_slide
+{
+	short parent;
+	short up;
+	short down;
+	short slide_bkg;
+	short slider;
+};
+
+struct b_slide
+{
+	short left;
+	short right;
+	short slide_bkg;
+	short slider;
+};	
+struct xa_lbox_info;
+struct xa_lbox_info
+{
+	struct xa_lbox_info *next;
+	void  *handle;
+	void  *lbox_handle;
+
+	short entries;
+	struct lbox_item *items;
+	short *objs;
+	struct a_slide aslid;
+	struct b_slide bslid;
+
+	short visible_a;
+	short first_a;
+	short flags;
+	short pause_a;
+
+	short visible_b;
+	short first_b;
+	short entries_b;
+	short pause_b;
+
+	struct widget_tree *wt;		/* Pointer to the object tree of the dialog */
+	void *user_data;
+	lbox_select	*slct;
+	lbox_set	*set;
+};
+	
 #define OB_CURS_ENABLED	1
 #define OB_CURS_DRAWN	2
 
@@ -313,12 +378,8 @@ struct widget_tree
 	FormExit *exit_form;		/* Called if exit condition occurs
 					 * while handling a form_do or a toolbar
 					 * or anything the like ;-) */
-
 	void *extra;			/* Extra info if needed (texts for alert) */
-
-#if WDIALOG_WDLG
-	struct wdlg_info wdlg;
-#endif
+	struct xa_lbox_info *lbox;
 };
 typedef struct widget_tree XA_TREE;
 
@@ -740,8 +801,10 @@ struct xa_window
 	XA_TREE toolbar;		/*   "         "              "      for a tool bar. */
 #endif
 
-	char wname[200];		/* window name line (copy) */
-	char winfo[200];		/* window info line (copy) */
+	char wname[MAX_WINDOW_NAME];	/* window name line (copy) */
+	char winfo[MAX_WINDOW_INFO];	/* window info line (copy) */
+
+	struct wdlg_info *wdlg;
 };
 
 struct xa_window *get_top(void);
