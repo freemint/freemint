@@ -117,10 +117,8 @@ do_widget_repeat(struct task_administration_block *tab)
 
 	do_active_widget(tab->lock, tab->client);
 
-	if (widget_active.b)
-	{
+	if (widget_active.cb)
 		tab->timeout = 1;
-	}
 	else
 	{
 		tab->timeout = 0;
@@ -322,9 +320,7 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
 	if (!md->state)		/* button released? */
 	{
-		widget_active.nx = md->x;
-		widget_active.ny = md->y;
-		widget_active.b  = 0;
+	//	widget_active.cb  = 0;
 		do_active_widget(lock, widget_active.wind->owner);
 	}
 
@@ -505,7 +501,7 @@ XA_move_event(LOCK lock, struct moose_data *md)
 	{
 		widget_active.nx = md->x;
 		widget_active.ny = md->y;
-		widget_active.b  = md->state;
+		widget_active.cb = md->state;
 		do_active_widget(lock, widget_active.wind->owner);
 		return false;
 	}

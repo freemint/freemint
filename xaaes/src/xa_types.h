@@ -591,7 +591,7 @@ struct xa_pending_widget
 	struct xa_window *wind;		/* Window to which the widget is connected */
 	WidgetBehaviour *action;	/* Function to call */
 	short x, y;
-	short b, nx, ny;
+	short b, cb, clicks, nx, ny;
 	int offs;			/* slider information */
 	RECT d;				/* distance information */
 	int xy;				/* compass when border sizing */
