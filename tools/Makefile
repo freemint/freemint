@@ -12,6 +12,7 @@ SUBDIRS = \
 	mgw \
 	minix \
 	mkfatfs \
+	mktbl \
 	net-tools \
 	nfs \
 	sysctl \
