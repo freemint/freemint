@@ -1,5 +1,5 @@
-Ext2.xfs version 0.57
-=====================
+ext2.xfs
+========
 
 This is a full working Ext2 filesystem driver for FreeMiNT. The complete
 project is copyrighted by the GNU Public License.
@@ -70,7 +70,7 @@ USING THIS PROGRAM. BACKUP OFTEN, BACKUP QUICK.
 
 History:
 --------
-see in Changes for more details
+See in ChangeLog for more details
 
 Thanks to Axel Kaiser who started this project and put it into the GPL.
 Now it's almost ready, stable and very fast.
@@ -83,6 +83,6 @@ motivation.
 Have fun.
 
 Frank Naumann
-<fnaumann@cs.uni-magdeburg.de>
+<fnaumann@freemint.de>
 
-Magdeburg, 10.10.1999
+Magdeburg, 16.09.2000
