@@ -33,7 +33,10 @@
 void wt_menu_area(XA_TREE *wt);
 void set_rootmenu_area(struct xa_client *client);
 
-TASK click_form_popup_entry, click_popup_entry, do_scroll_menu;
+TASK	click_form_popup_entry;
+TASK	click_popup_entry;
+TASK	do_scroll_menu;
+
 Tab *	nest_menutask(Tab *tab);
 void	popout(Tab *tab);
 void	start_popup_session(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy);
