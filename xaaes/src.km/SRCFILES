@@ -22,7 +22,6 @@ HEADER = \
 	my_aes.h \
 	nkcc.h \
 	objects.h \
-	op_names.h \
 	rectlist.h \
 	scrlobjc.h \
 	semaphores.h \
@@ -70,7 +69,6 @@ COBJS = \
 	messages.c \
 	my_aes.c \
 	nkcc.c \
-	op_names.c \
 	rectlist.c \
 	scrlobjc.c \
 	semaphores.c \

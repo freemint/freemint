@@ -38,7 +38,6 @@
 #include "c_window.h"
 #include "k_main.h"
 #include "k_mouse.h"
-#include "op_names.h"
 #include "xa_codes.h"
 
 #include "mint/signal.h"
@@ -48,6 +47,9 @@ struct xa_ftab
 {
 	AES_function *f;	/* function pointer */
 	bool lockscreen;	/* if true syscall is enclosed with lock/unclock_screen */
+#if GENERATE_DIAGS
+	char *descr;
+#endif
 };
 
 /* The main AES kernal command jump table */
@@ -61,11 +63,7 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
 	wake(IO_Q, (long)client);
 }
 
-/*
- * Trap exception handler
- * - This routine executes under the client application's pid
- * - I've semaphore locked any sensitive bits
- */
+/* the main AES trap handler */
 long _cdecl
 XA_handler(void *_pb)
 {
@@ -142,7 +140,7 @@ XA_handler(void *_pb)
 #endif
 
 		DIAG((D_trap, client, "AES trap: %s[%d] made by %s",
-			op_code_names[cmd], cmd, client->name));
+			aes_tab[cmd].descr, cmd, client->name));
 
 		cmd_routine = aes_tab[cmd].f;
 
@@ -175,7 +173,7 @@ XA_handler(void *_pb)
 				do_delayed_delete_window(lock);
 
 			DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
-				op_code_names[cmd], cmd, cmd_rtn, client->name));
+				aes_tab[cmd].descr, cmd, cmd_rtn, client->name));
 
 			switch (cmd_rtn)
 			{
@@ -285,12 +283,10 @@ XA_handler(void *_pb)
 
 
 /*
- * Setup the AES kernal jump table
+ * initialize trap handler table
  * 
- * HR 210202: LOCKSCREEN flag for AES functions that are writing the screen
- *            and are supposed to be locking
- * HR 110802: NO_SEMA flag for Call direct for small AES functions that do
- *            not need the call_direct semaphores.
+ * lockscreen flag for AES functions that are writing the screen
+ * and are supposed to be locking
  */
 
 #include "xa_appl.h"
@@ -308,14 +304,15 @@ XA_handler(void *_pb)
 #include "xa_lbox.h"
 
 void
-setup_k_function_table(void)
+setup_handler_table(void)
 {
+	int i;
+
 	bzero(aes_tab, sizeof(aes_tab));
 
 	/*
 	 * appl_? class functions
 	 */
-
 	aes_tab[XA_APPL_INIT      ].f = XA_appl_init;
 	aes_tab[XA_APPL_EXIT      ].f = XA_appl_exit;
 	aes_tab[XA_APPL_GETINFO   ].f = XA_appl_getinfo;
@@ -329,7 +326,6 @@ setup_k_function_table(void)
 	/*
 	 * form_? class functions
 	 */
-
 	aes_tab[XA_FORM_ALERT     ].f = XA_form_alert;
 	aes_tab[XA_FORM_ERROR     ].f = XA_form_error;
 	aes_tab[XA_FORM_CENTER    ].f = XA_form_center;
@@ -339,19 +335,18 @@ setup_k_function_table(void)
 	aes_tab[XA_FORM_KEYBD     ].f = XA_form_keybd;
 
 
+#if FILESELECTOR
 	/*
 	 * fsel_? class functions
 	 */
-
-#if FILESELECTOR
 	aes_tab[XA_FSEL_INPUT     ].f = XA_fsel_input;
 	aes_tab[XA_FSEL_EXINPUT   ].f = XA_fsel_exinput;
 #endif
 
+
 	/*
 	 * evnt_? class functions
 	 */
-
 	aes_tab[XA_EVNT_BUTTON    ].f = XA_evnt_button;
 	aes_tab[XA_EVNT_KEYBD     ].f = XA_evnt_keybd;
 	aes_tab[XA_EVNT_MESAG     ].f = XA_evnt_mesag;
@@ -364,7 +359,6 @@ setup_k_function_table(void)
 	/*
 	 * graf_? class functions
 	 */
-
 	aes_tab[XA_GRAF_RUBBERBOX ].f = XA_graf_rubberbox;
 	aes_tab[XA_GRAF_DRAGBOX   ].f = XA_graf_dragbox;
 	aes_tab[XA_GRAF_HANDLE    ].f = XA_graf_handle;
@@ -380,7 +374,6 @@ setup_k_function_table(void)
 	/*
 	 * wind_? class functions
 	 */
-
 	aes_tab[XA_WIND_CREATE    ].f = XA_wind_create;
 	aes_tab[XA_WIND_OPEN      ].f = XA_wind_open;
 	aes_tab[XA_WIND_CLOSE     ].f = XA_wind_close;
@@ -396,7 +389,6 @@ setup_k_function_table(void)
 	/*
 	 * objc_? class functions
 	 */
-
 	aes_tab[XA_OBJC_ADD       ].f = XA_objc_add;
 	aes_tab[XA_OBJC_DELETE    ].f = XA_objc_delete;
 	aes_tab[XA_OBJC_DRAW      ].f = XA_objc_draw;
@@ -411,7 +403,6 @@ setup_k_function_table(void)
 	/*
 	 * rsrc_? class functions
 	 */
-
 	aes_tab[XA_RSRC_LOAD      ].f = XA_rsrc_load;
 	aes_tab[XA_RSRC_FREE      ].f = XA_rsrc_free;
 	aes_tab[XA_RSRC_GADDR     ].f = XA_rsrc_gaddr;
@@ -422,7 +413,6 @@ setup_k_function_table(void)
 	/*
 	 * menu_? class functions
 	 */
-
 	aes_tab[XA_MENU_BAR       ].f = XA_menu_bar;
 	aes_tab[XA_MENU_TNORMAL   ].f = XA_menu_tnormal;
 	aes_tab[XA_MENU_ICHECK    ].f = XA_menu_icheck;
@@ -438,7 +428,6 @@ setup_k_function_table(void)
 	/*
 	 * shell_? class functions
 	 */
-
 	aes_tab[XA_SHELL_WRITE    ].f = XA_shell_write;
 	aes_tab[XA_SHELL_READ     ].f = XA_shell_read;
 	aes_tab[XA_SHELL_FIND     ].f = XA_shell_find;
@@ -448,9 +437,9 @@ setup_k_function_table(void)
 	/*
 	 * scrap_? class functions
 	 */
-
 	aes_tab[XA_SCRAP_READ     ].f = XA_scrp_read;
 	aes_tab[XA_SCRAP_WRITE    ].f = XA_scrp_write;
+
 	aes_tab[XA_FORM_POPUP     ].f = XA_form_popup;
 
 
@@ -458,7 +447,6 @@ setup_k_function_table(void)
 	/*
 	 * wdlg_? class functions
 	 */
-
 	aes_tab[XA_WDIAL_CREATE   ].f = XA_wdlg_create;
 	aes_tab[XA_WDIAL_OPEN     ].f = XA_wdlg_open;
 	aes_tab[XA_WDIAL_CLOSE    ].f = XA_wdlg_close;
@@ -507,4 +495,169 @@ setup_k_function_table(void)
 	aes_tab[XA_MENU_POPUP     ].lockscreen = true;
 
 	aes_tab[XA_FORM_POPUP     ].lockscreen = true;
+
+
+#if GENERATE_DIAGS
+	/*
+	 * human readable description of the syscall
+	 */
+
+	for (i = 0; i < KtableSize; i++)
+		aes_tab[i].descr = "unknown";
+
+
+	/*
+	 * appl_? class functions
+	 */
+	aes_tab[XA_APPL_INIT      ].descr = "appl_init";
+	aes_tab[XA_APPL_EXIT      ].descr = "appl_exit";
+	aes_tab[XA_APPL_GETINFO   ].descr = "appl_getinfo";
+	aes_tab[XA_APPL_FIND      ].descr = "appl_find";
+	aes_tab[XA_APPL_WRITE     ].descr = "appl_write";
+	aes_tab[XA_APPL_YIELD     ].descr = "appl_yield";
+	aes_tab[XA_APPL_SEARCH    ].descr = "appl_search";
+	aes_tab[XA_APPL_CONTROL   ].descr = "appl_control";
+
+
+	/*
+	 * form_? class functions
+	 */
+	aes_tab[XA_FORM_ALERT     ].descr = "form_alert";
+	aes_tab[XA_FORM_ERROR     ].descr = "form_error";
+	aes_tab[XA_FORM_CENTER    ].descr = "form_center";
+	aes_tab[XA_FORM_DIAL      ].descr = "form_dial";
+	aes_tab[XA_FORM_BUTTON    ].descr = "form_button";
+	aes_tab[XA_FORM_DO        ].descr = "form_do";
+	aes_tab[XA_FORM_KEYBD     ].descr = "form_keybd";
+
+
+	/*
+	 * fsel_? class functions
+	 */
+	aes_tab[XA_FSEL_INPUT     ].descr = "fsel_input";
+	aes_tab[XA_FSEL_EXINPUT   ].descr = "fsel_exinput";
+
+
+	/*
+	 * evnt_? class functions
+	 */
+	aes_tab[XA_EVNT_BUTTON    ].descr = "evnt_button";
+	aes_tab[XA_EVNT_KEYBD     ].descr = "evnt_keybd";
+	aes_tab[XA_EVNT_MESAG     ].descr = "evnt_mesag";
+	aes_tab[XA_EVNT_MULTI     ].descr = "evnt_multi";
+	aes_tab[XA_EVNT_TIMER     ].descr = "evnt_timer";
+	aes_tab[XA_EVNT_MOUSE     ].descr = "evnt_mouse";
+	aes_tab[XA_EVNT_DCLICK    ].descr = "evnt_dclick";
+
+
+	/*
+	 * graf_? class functions
+	 */
+	aes_tab[XA_GRAF_RUBBERBOX ].descr = "graf_rubberbox";
+	aes_tab[XA_GRAF_DRAGBOX   ].descr = "graf_dragbox";
+	aes_tab[XA_GRAF_HANDLE    ].descr = "graf_handle";
+	aes_tab[XA_GRAF_MOUSE     ].descr = "graf_mouse";
+	aes_tab[XA_GRAF_MKSTATE   ].descr = "graf_mkstate";
+	aes_tab[XA_GRAF_GROWBOX   ].descr = "graf_growbox";
+	aes_tab[XA_GRAF_SHRINKBOX ].descr = "graf_growbox";
+	aes_tab[XA_GRAF_MOVEBOX   ].descr = "graf_movebox";
+	aes_tab[XA_GRAF_SLIDEBOX  ].descr = "graf_slidebox";
+	aes_tab[XA_GRAF_WATCHBOX  ].descr = "graf_watchbox";
+
+
+	/*
+	 * wind_? class functions
+	 */
+	aes_tab[XA_WIND_CREATE    ].descr = "wind_create";
+	aes_tab[XA_WIND_OPEN      ].descr = "wind_open";
+	aes_tab[XA_WIND_CLOSE     ].descr = "wind_close";
+	aes_tab[XA_WIND_SET       ].descr = "wind_set";
+	aes_tab[XA_WIND_GET       ].descr = "wind_get";
+	aes_tab[XA_WIND_FIND      ].descr = "wind_find";
+	aes_tab[XA_WIND_UPDATE    ].descr = "wind_update";
+	aes_tab[XA_WIND_DELETE    ].descr = "wind_delete";
+	aes_tab[XA_WIND_NEW       ].descr = "wind_new";
+	aes_tab[XA_WIND_CALC      ].descr = "wind_calc";
+
+
+	/*
+	 * objc_? class functions
+	 */
+	aes_tab[XA_OBJC_ADD       ].descr = "objc_add";
+	aes_tab[XA_OBJC_DELETE    ].descr = "objc_delete";
+	aes_tab[XA_OBJC_DRAW      ].descr = "objc_draw";
+	aes_tab[XA_OBJC_FIND      ].descr = "objc_find";
+	aes_tab[XA_OBJC_OFFSET    ].descr = "objc_offset";
+	aes_tab[XA_OBJC_ORDER     ].descr = "objc_order";
+	aes_tab[XA_OBJC_CHANGE    ].descr = "objc_change";
+	aes_tab[XA_OBJC_EDIT      ].descr = "objc_edit";
+	aes_tab[XA_OBJC_SYSVAR    ].descr = "objc_sysvar";
+
+
+	/*
+	 * rsrc_? class functions
+	 */
+	aes_tab[XA_RSRC_LOAD      ].descr = "rsrc_load";
+	aes_tab[XA_RSRC_FREE      ].descr = "rsrc_free";
+	aes_tab[XA_RSRC_GADDR     ].descr = "rsrc_gaddr";
+	aes_tab[XA_RSRC_OBFIX     ].descr = "rsrc_obfix";
+	aes_tab[XA_RSRC_RCFIX     ].descr = "rsrc_rcfix";
+
+
+	/*
+	 * menu_? class functions
+	 */
+	aes_tab[XA_MENU_BAR       ].descr = "menu_bar";
+	aes_tab[XA_MENU_TNORMAL   ].descr = "menu_tnormal";
+	aes_tab[XA_MENU_ICHECK    ].descr = "menu_icheck";
+	aes_tab[XA_MENU_IENABLE   ].descr = "menu_ienable";
+	aes_tab[XA_MENU_TEXT      ].descr = "menu_text";
+	aes_tab[XA_MENU_REGISTER  ].descr = "menu_register";
+	aes_tab[XA_MENU_POPUP     ].descr = "menu_popup";
+	aes_tab[XA_MENU_ATTACH    ].descr = "menu_attach";
+	aes_tab[XA_MENU_ISTART    ].descr = "menu_istart";
+	aes_tab[XA_MENU_SETTINGS  ].descr = "menu_settings";
+
+
+	/*
+	 * shell_? class functions
+	 */
+	aes_tab[XA_SHELL_WRITE    ].descr = "shell_write";
+	aes_tab[XA_SHELL_READ     ].descr = "shell_read";
+	aes_tab[XA_SHELL_FIND     ].descr = "shell_find";
+	aes_tab[XA_SHELL_ENVRN    ].descr = "shell_envrn";
+
+
+	/*
+	 * scrap_? class functions
+	 */
+	aes_tab[XA_SCRAP_READ     ].descr = "scrp_read";
+	aes_tab[XA_SCRAP_WRITE    ].descr = "scrp_write";
+
+	aes_tab[XA_FORM_POPUP     ].descr = "form_popup";
+
+
+	/*
+	 * wdlg_? class functions
+	 */
+	aes_tab[XA_WDIAL_CREATE   ].descr = "wdlg_create";
+	aes_tab[XA_WDIAL_OPEN     ].descr = "wdlg_open";
+	aes_tab[XA_WDIAL_CLOSE    ].descr = "wdlg_close";
+	aes_tab[XA_WDIAL_DELETE   ].descr = "wdlg_delete";
+	aes_tab[XA_WDIAL_GET      ].descr = "wdlg_get";
+	aes_tab[XA_WDIAL_SET      ].descr = "wdlg_set";
+	aes_tab[XA_WDIAL_EVENT    ].descr = "wdlg_event";
+	aes_tab[XA_WDIAL_REDRAW   ].descr = "wdlg_redraw";
+
+
+	/*
+	 * lbox_? class functions
+	 */
+	aes_tab[XA_LBOX_CREATE    ].descr = "lbox_create";
+	aes_tab[XA_LBOX_UPDATE    ].descr = "lbox_update";
+	aes_tab[XA_LBOX_DO        ].descr = "lbox_do";
+	aes_tab[XA_LBOX_DELETE    ].descr = "lbox_delete";
+	aes_tab[XA_LBOX_GET       ].descr = "lbox_get";
+	aes_tab[XA_LBOX_SET       ].descr = "lbox_set";
+#endif
 }

@@ -3,9 +3,9 @@
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
- * A multitasking AES replacement for FreeMiNT
+ * A multitasking AES replacement for MiNT
  *
  * This file is part of XaAES.
  *
@@ -54,11 +54,6 @@ Path Aes_home_path;
 
 long loader_pid = -1;
 struct file *log = NULL;
-
-
-/*
- * private data
- */
 
 char version[] = ASCII_VERSION;
 
@@ -137,11 +132,9 @@ bootmessage(unsigned long mint)
 struct kentry *kentry;
 
 /*
- * Startup & Initialisation...
- * - Spawn off any extra programs we need (mouse server, etc).
- * - Open physical & virtual workstations.
- * - Install our trap handler.
- * - Run the xaaes.cnf startup script.
+ * Module initialisation
+ * - setup internal data
+ * - start main kernel thread
  */
 void *
 init(struct kentry *k)
@@ -170,7 +163,9 @@ init(struct kentry *k)
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;
-	D.debug_file = kernel_open("xaaes.log", O_WRONLY|O_CREAT|O_TRUNC, NULL);
+	/* Set the default debug file */
+	strcpy(D.debug_path, "xaaes.log");
+	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL);
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) %s", version);
 #else
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES %s", version);
@@ -262,14 +257,8 @@ init(struct kentry *k)
 	DIAGS(("bootmessage ok!"));
 
 	/* Setup the kernel OS call jump table */
-	setup_k_function_table();
-	DIAGS(("setup_k_function_table ok!"));
-
-#if 0
-	/* Create a whole wodge of semphores */
-	if (create_semaphores(log))
-		return NULL;
-#endif
+	setup_handler_table();
+	DIAGS(("setup_handler_table ok!"));
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
 	{
@@ -293,9 +282,6 @@ init(struct kentry *k)
 	/* Set the default accessory path */
 	strcpy(cfg.acc_path, "c:\\");
 
-	/* Set the default debug file */
-	IFDIAG(strcpy(D.debug_path, "xaaes.log");)
-
 
 	/* Parse the standard startup file.
 	 */
@@ -307,21 +293,6 @@ init(struct kentry *k)
 
 	C.Aes->options = default_options;
 
-	/* semaphores no longer needed */
-#if 0
-	/* I just like to have the unlocks at the same level as the locks. */
-	/* Unlock the semaphores...we're ready to go */
-	Sema_Dn(desk);
-	Sema_Dn(lck_update);
-	Sema_Dn(mouse);
-	Sema_Dn(fsel);
-	Sema_Dn(envstr);
-	Sema_Dn(pending);
-	Sema_Dn(clients);
-	Sema_Dn(appl);
-	DIAGS(("Semaphores Unlocked!!!"));
-#endif
-
 	fdisplay(log, "*** End of successfull setup ***");
 	lcfg.booting = false;
 
@@ -330,16 +301,13 @@ init(struct kentry *k)
 		long r;
 
 		r = kthread_create(NULL, k_main, NULL, &(C.Aes->p), "AESSYS");
-		if (r == 0)
-			/* this blocks SIGKILL */
-			C.Aes->p->p_flag |= P_FLAG_SYS;
-		else
+		if (r)
 			/* XXX todo -> exit gracefully */
-			FATAL(("can't create \"XaAES\" kernel thread"));
+			FATAL(("can't create XaAES kernel thread"));
 
 	}
 
-	return ((DEVDRV *) -1L);
+	return ((void *) -1L);
 
 error:
 	if (log)

@@ -3,7 +3,7 @@
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -28,14 +28,12 @@
 
 #include "k_init.h"
 #include "xa_global.h"
-#include "xa_codes.h"
 
 #include "app_man.h"
 #include "c_window.h"
 #include "cnf_xaaes.h"
 #include "desktop.h"
 #include "init.h"
-#include "op_names.h"
 #include "nkcc.h"
 #include "rectlist.h"
 #include "scrlobjc.h"
