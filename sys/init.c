@@ -693,10 +693,12 @@ init (void)
 
 	/* initialize basic keyboard stuff */
 	init_keybd();
+	DEBUG (("init_keybd() ok!"));
 
 	/* Disable all CPU caches */
 # ifndef NO_CPU_CACHES
 	ccw_set(0x00000000L, 0x0000c57fL);
+	DEBUG (("ccw_set() ok!"));
 # endif
 
 	/* initialize interrupt vectors */
