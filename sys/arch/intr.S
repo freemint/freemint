@@ -452,8 +452,11 @@ _new_bus:
 	jsr	_check_bus
 	tst.l	d0
 	movem.l	(sp)+,d0-a6
+#ifdef ONLY030
 	bne.s	Return_now
-
+#else
+	bne	Return_now
+#endif
 #ifndef ONLY030
 	move.w	#0x8,_sig_exc
 	cmp.l	#30,_mcpu
