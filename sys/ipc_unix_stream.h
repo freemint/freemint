@@ -40,8 +40,8 @@
 
 long	unix_stream_socketpair	(struct socket *, struct socket *);
 long	unix_stream_connect	(struct socket *, struct sockaddr *, short, short);
-long	unix_stream_send	(struct socket *, struct iovec *, short, short, short, struct sockaddr *, short);
-long	unix_stream_recv	(struct socket *, struct iovec *, short, short, short, struct sockaddr *, short *);
+long	unix_stream_send	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
+long	unix_stream_recv	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 long	unix_stream_select	(struct socket *, short, long);
 long	unix_stream_ioctl	(struct socket *, short, void *);
 long	unix_stream_getname	(struct socket *, struct sockaddr *, short *, short);

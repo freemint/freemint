@@ -39,7 +39,7 @@
 
 extern void	(*tcb_ostate[])(struct tcb *, short);
 
-long	tcp_output  (struct tcb *, struct iovec *, short, long, long, short);
+long	tcp_output  (struct tcb *, const struct iovec *, short, long, long, short);
 long	tcp_timeout (struct tcb *);
 long	tcp_rcvwnd  (struct tcb *, short);
 

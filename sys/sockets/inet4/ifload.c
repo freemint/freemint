@@ -44,62 +44,57 @@ struct netinfo netinfo =
 	_bpf_input:		bpf_input
 };
 
-char *paths[] = { "\\mint\\", "\\multitos\\" };
 
-typedef long (*XIFFUNC)(struct kerinfo *, struct netinfo *);
+static long
+callout_init (void *initfunction, struct kerinfo *k, struct netinfo *n)
+{
+	register long ret __asm__("d0");
+	
+	__asm__ volatile
+	(
+		"moveml d3-d7/a3-a6,sp@-;"
+		"movl	%3,sp@-;"
+		"movl	%2,sp@-;"
+		"movl   %1,a0;"
+		"jsr    a0@;"
+		"addqw  #8,sp;"
+		"moveml sp@+,d3-d7/a3-a6;"
+		: "=r"(ret)				/* outputs */
+		: "g"(initfunction), "r"(k), "r"(n)	/* inputs  */
+		: "d0", "d1", "d2", "a0", "a1", "a2",   /* clobbered regs */
+		  "memory"
+	);
+	
+	return ret;
+}
+
+static long
+load_xif (struct basepage *b, const char *name)
+{
+	long r;
+	
+	DEBUG (("load_xif: enter (0x%lx, %s)", b, name));
+	DEBUG (("load_xif: init 0x%lx, size %li", (void *) b->p_tbase, (b->p_tlen + b->p_dlen + b->p_blen)));
+	
+	/* pass a pointer to the drivers file name on to the
+	 * driver.
+	 */
+	netinfo.fname = name;
+	
+	r = callout_init ((void *) b->p_tbase, KERNEL, &netinfo);
+	
+	netinfo.fname = NULL;
+	
+	return r;
+}
 
 void
 if_load (void)
 {
-	static char oldpath[PATH_MAX];
-	static DTABUF dta;
-	DTABUF *olddta;
-	BASEPAGE *bp;
-	XIFFUNC initf;
-	short i;
-	long r;
+	c_conws ("Loading interfaces:\r\n");
 	
-	olddta = (DTABUF *) f_getdta ();
-	d_getpath (oldpath, 0);
-	f_setdta (&dta);
-	
-	/*
-	 * pass a pointer to the drivers file name on to the
-	 * driver.
-	 */
-	netinfo.fname = dta.dta_name;
-	
-	c_conws ("Loading interfaces:\n\r");
-	
-	for (i = 0; i < sizeof (paths)/sizeof (*paths); ++i)
-	{
-		r = d_setpath (paths[i]);
-		if (r == 0)
-			r = f_sfirst ("*.xif", 0);
-		
-		while (r == 0)
-		{
-			bp = (BASEPAGE *) p_exec (3, dta.dta_name, "", 0);
-			if ((long)bp < 0)
-			{
-				DEBUG (("if_load: can't load %s", dta.dta_name));
-				r = f_snext ();
-				continue;
-			}
-			
-			m_shrink (0, (long) bp, 512+bp->p_tlen+bp->p_dlen+bp->p_blen);
-			initf = (XIFFUNC) bp->p_tbase;
-			TRACE (("if_load: init %s", dta.dta_name));
-			if ((*initf) (KERNEL, &netinfo) != 0)
-			{
-				DEBUG (("if_load: init %s failed", dta.dta_name));
-				m_free (bp);
-			}
-			TRACE (("if_load: init %s ok.", dta.dta_name)); 
-			r = f_snext ();
-		}
-	}
-	
-	d_setpath (oldpath);
-	f_setdta (olddta);
+	if (load_modules)
+		load_modules (".xif", load_xif);
+	else
+		FATAL ("This version require a newer kernel!");
 }
