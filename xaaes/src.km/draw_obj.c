@@ -363,11 +363,19 @@ void write_menu_line(RECT *cl)
 {
 	short pnt[4];
 	l_color(G_BLACK);
+
+	pnt[0] = cl->x;
+	pnt[1] = cl->y + cl->h - 1;
+	pnt[2] = cl->x + cl->w - 1;
+	pnt[3] = pnt[1];
+	v_pline(C.vh, 2, pnt);
+#if 0
 	pnt[0] = cl->x;
 	pnt[1] = cl->y + MENU_H;
 	pnt[2] = cl->x + cl->w - 1;
 	pnt[3] = pnt[1];
 	v_pline(C.vh,2,pnt);
+#endif
 }
 
 void rtopxy(short *p, const RECT *r)
@@ -1180,7 +1188,7 @@ set_text(OBJECT *ob,
 	}
 	case TE_STANDARD:		/* Use the standard system font (probably 10 point) */
 	{
-		t_font(10, 1);
+		t_font(screen.standard_font_point, screen.standard_font_id);
 		cur.w = screen.c_max_w;
 		cur.h = screen.c_max_h;
 		break;
@@ -1568,13 +1576,13 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			gr.y += PUSH3D_DISTANCE;
 		}
 		wr_mode(colours.textmode ? MD_REPLACE : MD_TRANS);
-		t_font(10, 1);
+		t_font(screen.standard_font_point, screen.standard_font_id);
 		ob_text(wt, &gr, &r, NULL, temp_text, 0, -1);
 	}
 	else
 	{
 		gbar(0, &r);
-		t_font(10, 1);
+		t_font(screen.standard_font_point, screen.standard_font_id);
 		ob_text(wt, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
 		if (selected)
@@ -1737,7 +1745,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 				chiseled_gbox(0, &rr);
 			gr.x = r.x + screen.c_max_w;
 			gr.y = r.y;
-			t_font(10, 1);
+			t_font(screen.standard_font_point, screen.standard_font_id);
 			t_extent(text, &gr.w, &gr.h);
 			ob_text(wt, &gr, NULL, &colours, text, 0, -1);
 		}
@@ -1755,7 +1763,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			gr.x += ICON_W;
 			gr.x += screen.c_max_w;
 			wr_mode(MD_TRANS);
-			t_font(10, 1);
+			t_font(screen.standard_font_point, screen.standard_font_id);
 			ob_text(wt, &gr, &r, NULL, text, 0, und & 0x7f);
 		}
 	}
@@ -1769,7 +1777,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		 * real values that can be used for other stuff (like shortcut
 		 * underlines :-)
 		 */
-		t_font(10, 1);
+		t_font(screen.standard_font_point, screen.standard_font_id);
 		t_extent(text, &tw, &th);
 		gr.y += (r.h - th) / 2;
 		gr.x += (r.w - tw) / 2;
@@ -2274,7 +2282,7 @@ display_list_element(enum locks lock, struct xa_client *client, const RECT *clip
 	XA_TREE tr = nil_tree;
 	short xt = x + ICON_W;
 
-	t_font(10, 1);
+	t_font(screen.standard_font_point, screen.standard_font_id);
 	
 	if (this)
 	{
@@ -2305,7 +2313,7 @@ display_list_element(enum locks lock, struct xa_client *client, const RECT *clip
 			tr.tree = this->icon;
 			tr.owner = client;
 			display_object(lock, &tr, clip, 0, x, y, 12);
-			t_font(10, 1);
+			t_font(screen.standard_font_point, screen.standard_font_id);
 		}
 	}
 	else /* filler line */
@@ -2361,10 +2369,9 @@ d_g_slist(enum locks lock, struct widget_tree *wt, const RECT *clip)
 
 		wr_mode(MD_TRANS);
 		
-		t_font(10, 1);
 		for (; y <= maxy; y += screen.c_max_h)
 		{
-			/* can handle nil this */
+		/* can handle nil this */
 			display_list_element(lock, wt->owner, clip, this, list->left, wa.x, y, wa.w, this == list->cur);
 			if (this)
 			{
@@ -2445,7 +2452,7 @@ d_g_string(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		}
 		else
 		{
-			t_font(10, 1);
+			t_font(screen.standard_font_point, screen.standard_font_id);
 			g_text(wt, r, &wt->r, text, ob->ob_state);
 		}
 
@@ -2470,7 +2477,7 @@ d_g_title(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	/* most AES's allow null string */
 	if (text)
 	{
-		t_font(10, 1);
+		t_font(screen.standard_font_point, screen.standard_font_id);
 		g_text(wt, r, &wt->r, text, ob->ob_state);
 	}
 

@@ -436,6 +436,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #
 # defaults:
 #
+
 #font_id=1
 #standard_point=10
 #medium_point=9
