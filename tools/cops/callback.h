@@ -36,9 +36,18 @@
 extern struct xcpb xctrl_pb;
 
 /* lookup cpx descriptor with addr */
-CPX_DESC *find_cpx_by_addr(const void *addr);
+CPX_DESC *find_cpx_by_addr(const long *sp);
 
 short _cdecl save_header(struct cpxlist *header);
 CPX_DESC *cpx_form_do(CPX_DESC *cpx_desc, OBJECT *tree, short edit_obj, short *msg);
+
+/* used by the asm wrapper */
+void    _cdecl rsh_fix(const long *sp);
+void    _cdecl rsh_obfix(const long *sp);
+GRECT * _cdecl GetFirstRect(const long *sp);
+GRECT * _cdecl GetNextRect(const long *sp);
+void    _cdecl Set_Evnt_Mask(const long *sp);
+short   _cdecl CPX_Save(const long *sp);
+void *  _cdecl Get_Buffer(const long *sp);
 
 #endif /* _callback_h */

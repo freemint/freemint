@@ -32,7 +32,7 @@
 #include "cops.h"
 
 
-#define DEBUG_CPX_CALL(cpx) DEBUG(("%s(%s)\n", __FUNCTION__, cpx->file_name))
+#define DEBUG_CALLBACK(cpx) DEBUG(("%s(%s)\n", __FUNCTION__, cpx->file_name))
 
 
 void
@@ -51,9 +51,10 @@ cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb)
 	register CPXINFO *_cdecl (*init)(struct xcpb *, long, long);
 	register CPXINFO *ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	init = cpx_desc->start_of_cpx;
+	assert(init);
 
 	/*
 	 * COPS extensions:
@@ -72,8 +73,10 @@ cpx_call(CPX_DESC *cpx_desc, GRECT *work)
 {
 	register short ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
+	DEBUG(("calling out cpx_call at %p\n", cpx_desc->info->cpx_call));
 
+	assert(cpx_desc->info->cpx_call);
 	ret = (*cpx_desc->info->cpx_call)(work, cpx_desc->dialog);
 
 	DEBUG(("cpx_call -> %d\n", ret));
@@ -83,7 +86,7 @@ cpx_call(CPX_DESC *cpx_desc, GRECT *work)
 void
 cpx_draw(CPX_DESC *cpx_desc, GRECT *clip)
 {
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_draw)
 		(*cpx_desc->info->cpx_draw)(clip);
@@ -92,7 +95,7 @@ cpx_draw(CPX_DESC *cpx_desc, GRECT *clip)
 void
 cpx_wmove(CPX_DESC *cpx_desc, GRECT *work)
 {
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_wmove)
 		(*cpx_desc->info->cpx_wmove)(work);
@@ -103,7 +106,7 @@ cpx_timer(CPX_DESC *cpx_desc)
 {
 	short ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_timer)
 		(*cpx_desc->info->cpx_timer)(&ret);
@@ -118,7 +121,7 @@ cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 {
 	short ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_key)
 	{
@@ -136,7 +139,7 @@ cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 {
 	short ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_button)
 	{
@@ -154,7 +157,7 @@ cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets)
 {
 	short ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_m1)
 		(*cpx_desc->info->cpx_m1)(mrets, &ret);
@@ -169,7 +172,7 @@ cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 {
 	short ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_m2)
 		(*cpx_desc->info->cpx_m2)(mrets, &ret);
@@ -184,7 +187,7 @@ cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, 
 {
 	register short ret;
 
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_hook)
 	{
@@ -200,7 +203,7 @@ cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, 
 void
 cpx_close(CPX_DESC *cpx_desc, short flag)
 {
-	DEBUG_CPX_CALL(cpx_desc);
+	DEBUG_CALLBACK(cpx_desc);
 
 	if (cpx_desc->info->cpx_close)
 	{
@@ -243,6 +246,7 @@ a_call_main(void)
 	}
 
 	kernel_stack = alpha_context[12];
+	DEBUG(("a_call_main: kernelstack 0x%lx\n", kernel_stack));
 
 	DEBUG(("a_call_main: main loop\n"));
 	cpx_main_loop();
@@ -318,29 +322,31 @@ call_cpx_form_do(void)
 	assert(0);
 }
 short _cdecl
-Xform_do(struct Xform_do_args args)
+Xform_do(const long *sp)
 {
-	const void *addr = __builtin_return_address(1);
 	CPX_DESC *cpx;
 
-	cpx = find_cpx_by_addr(addr);
+	cpx = find_cpx_by_addr(sp);
+	DEBUG_CALLBACK(cpx);
+
 	if (cpx)
 	{
 		jmp_buf jb;
+
+		/*
+		 * save arguments
+		 */
+		call_cpx_form_do_cpx = cpx;
+		call_cpx_form_do_args = *(const struct Xform_do_args *)(++sp);
 
 		/* save for later return */
 		if (setjmp(cpx->jb))
 			return cpx->button;
 
 		/*
-		 * save arguments
 		 * switch stack and call out form_do
 		 */
 
-		call_cpx_form_do_cpx = cpx;
-		call_cpx_form_do_args = args;
-
-		memcpy(jb, cpx->jb, sizeof(jb));
 		jb[0] = (long)call_cpx_form_do;
 		jb[12] = kernel_stack;
 
@@ -350,7 +356,7 @@ Xform_do(struct Xform_do_args args)
 		assert(0);
 	}
 
-	*args.msg = AC_CLOSE;
+	*(((const struct Xform_do_args *)(++sp))->msg) = AC_CLOSE;
 	return -1;
 }
 
@@ -390,22 +396,36 @@ new_context_err:
 	rts
 #endif
 static CPX_DESC *call_open_cpx_context_desc = NULL;
-static jmp_buf call_open_cpx_context_jb;
 
-static void
-call_open_cpx_context(void)
-{
-	DEBUG(("call_open_cpx_context(%s)\n", call_open_cpx_context_desc->file_name));
-
-	open_cpx_context(call_open_cpx_context_desc);
-	longjmp(call_open_cpx_context_jb, 1);
-	
-}
 static void
 new_context_done(void)
 {
+	jmp_buf jb;
+
 	DEBUG(("new_context_done\n"));
-	cpx_main_loop();
+
+//	free(call_open_cpx_context_desc->stack);
+//	call_open_cpx_context_desc->stack = NULL;
+
+	jb[0] = (long)cpx_main_loop;
+	jb[12] = kernel_stack;
+
+	longjmp(jb, 1);
+}
+static void
+call_open_cpx_context(void)
+{
+	jmp_buf jb;
+
+	DEBUG(("call_open_cpx_context(%s)\n", call_open_cpx_context_desc->file_name));
+	open_cpx_context(call_open_cpx_context_desc);
+
+	DEBUG(("call_open_cpx_context(%s) -> go back\n", call_open_cpx_context_desc->file_name));
+
+	jb[0] = (long)new_context_done;
+	jb[12] = kernel_stack;
+
+	longjmp(jb, 1);
 }
 short
 new_context(CPX_DESC *cpx_desc)
@@ -417,27 +437,13 @@ new_context(CPX_DESC *cpx_desc)
 	{
 		jmp_buf jb;
 
-		if (setjmp(call_open_cpx_context_jb))
-		{
-			DEBUG(("new_context: back from call_open_cpx_context\n"));
-
-			free(cpx_desc->stack);
-			cpx_desc->stack = NULL;
-
-			memcpy(jb, call_open_cpx_context_jb, sizeof(jb));
-			jb[0] = (long)new_context_done;
-			jb[12] = kernel_stack;
-
-			longjmp(jb, 1);
-		}
-
+		DEBUG(("new_context: stack %p\n", cpx_desc->stack));
 		DEBUG(("new_context -> call_open_cpx_context\n"));
 
 		call_open_cpx_context_desc = cpx_desc;
 
-		memcpy(jb, call_open_cpx_context_jb, sizeof(jb));
 		jb[0] = (long)call_open_cpx_context;
-		jb[12] = (long)cpx_desc->stack + 16384;
+		jb[12] = (long)cpx_desc->stack + 16380;
 
 		longjmp(jb, 1);
 
@@ -467,4 +473,3 @@ switch_context(CPX_DESC *cpx_desc)
 	/* return to interrupted Xform_do */
 	longjmp(cpx_desc->jb, 1);
 }
-

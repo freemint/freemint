@@ -32,4 +32,7 @@ COBJS = \
 	popup.c \
 	wlib.c
 
+SOBJS = \
+	callback_wrap.s
+
 SRCFILES = $(HEADER) $(COBJS)
