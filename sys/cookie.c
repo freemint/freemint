@@ -311,14 +311,11 @@ init_cookies (void)
 # endif
 
 # ifndef NO_AKP_KEYBOARD
-	if (!no_mem_prot)
-	{
-		TRACE(("_AKP cookie = %08lx", (long)0L));
+	TRACE(("_AKP cookie = %08lx", (long)0L));
 
-		newcookie[i].tag   = COOKIE__AKP;
-		newcookie[i].value = (((gl_lang & 0x000000ff) << 8) | (gl_kbd & 0x000000ff));
-		i++;
-	}
+	newcookie[i].tag   = COOKIE__AKP;
+	newcookie[i].value = (((gl_lang & 0x000000ff) << 8) | (gl_kbd & 0x000000ff));
+	i++;
 # endif
 
 	/* jr: install PMMU cookie if memory protection is used
