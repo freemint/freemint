@@ -481,7 +481,7 @@ DIAGS(("\n"));
 	else
 	{
 		v_clsvwk(C.vh);
-		my_appl_exit();
+		mt_appl_exit(my_global_aes);
 	}
 }
 
@@ -779,11 +779,12 @@ BTRACE(19);
 
 	/* Are we an auto/mint.cnf launched program? */
 
-	my_gl_ap_version = 0;		
 BTRACE(20);
-	my_appl_init();
+	/* clear my_global_aes[0] for old gemlib */
+	my_global_aes[0] = 0;
+	mt_appl_init(my_global_aes);
 BTRACE(21);
-	cfg.auto_program = (my_gl_ap_version == 0);
+	cfg.auto_program = (my_global_aes[0] == 0);
 
 	for (f = 0; f < 10; f++)
 		work_in[f] = 1;
@@ -878,7 +879,7 @@ BTRACE(21);
 		 * so get the physical workstation handle from it
 		 */
 		short junk;
-		C.P_handle = my_graf_handle(&junk, &junk, &junk, &junk);
+		C.P_handle = mt_graf_handle(&junk, &junk, &junk, &junk, my_global_aes);
 	}
 
 	/* Setup the kernel OS call jump table */
