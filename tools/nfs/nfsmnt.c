@@ -12,22 +12,24 @@
  *        do an nfs mount
  */
 
-# include <osbind.h>
-# include <mintbind.h>
+# include <errno.h>
 # include <string.h>
 # include <support.h>
 # include <time.h>
 # include <sys/socket.h>
 # include <sys/stat.h>
 # include <sys/types.h>
+
 # include <netinet/in.h>
 # include <netdb.h>
+# include <rpc/clnt.h>
+
+# include <osbind.h>
+# include <mintbind.h>
+
 # include "mount.h"
-# include "clnt.h"
-# include "mntent.h"
-# include "common.h"
-
-
+# include "mount_xdr.h"
+# include "nfsmnt.h"
 
 
 /* nfs specific option values */
@@ -36,6 +38,7 @@ long wsize = 0;
 long timeo = 0;
 long retrans = 0;
 long actimeo = 0;
+
 int port = 0; /* use the default port as default */
 
 int soft = 0;
@@ -43,8 +46,6 @@ int intr = 0;
 int secure = 0;
 int noac = 0;
 int nosuid = 0;
-
-
 
 
 #define OPT_DEFAULT 0x0000
@@ -62,12 +63,10 @@ int nosuid = 0;
 
 
 #define MOUNT_PORT  2050
-
-
 #define NFS_MOUNT_VERS 1
 
 
-typedef struct xattr		XATTR;
+typedef struct xattr XATTR;
 
 /* structure for getxattr */
 struct xattr
@@ -92,17 +91,17 @@ struct xattr
 
 typedef struct
 {
-	long version;
-	fhandle handle;      /* initial file handle from the server's mountd */
+	long	version;
+	fhandle	handle;		/* initial file handle from the server's mountd */
 	XATTR	mntattr;	/* not used yet */
-	long flags;
-	long rsize;
-	long wsize;
+	long	flags;
+	long	rsize;
+	long	wsize;
 
-	int retrans;
-	long timeo;
-	long actimeo;
-	long reserved[8];
+	short	retrans;
+	long	timeo;
+	long	actimeo;
+	long	reserved[8];
 
 	struct sockaddr_in server;
 	char hostname[256];
@@ -110,97 +109,86 @@ typedef struct
 
 
 
-#define NFS_MOUNT   (('N' << 8) | 1)
-#define NFS_UNMOUNT (('N' << 8) | 2)
+# define NFS_MOUNT	(('N' << 8) | 1)
+# define NFS_UNMOUNT	(('N' << 8) | 2)
 
 /* only for debugging purposes */
-#define NFS_MNTDUMP  (('N' << 8) | 42)
-#define NFS_DUMPALL  (('N' << 8) | 43)
+# define NFS_MNTDUMP	(('N' << 8) | 42)
+# define NFS_DUMPALL	(('N' << 8) | 43)
 
 
-#define IPNAMELEN  256
-
-#define MOUNT_PORT  2050
-
-
-
-extern int errno;
+# define IPNAMELEN	256
+# define MOUNT_PORT	2050
 
 
 
+# if 0
 /* bindresvport() copied from nfs-050/xfs/sock_ipc.c  --cpbs */
 
 long
-bindresvport(int s)
+my_bindresvport (int s)
 {
-#define EADDRINUSE	(-310)
 	struct sockaddr_in sin;
 	short port;
 	long r;
-
+	
 	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	for (port = IPPORT_RESERVED-1; port > IPPORT_RESERVED/2; --port)
+	sin.sin_addr.s_addr = htonl (INADDR_ANY);
+	
+	for (port = IPPORT_RESERVED - 1; port > IPPORT_RESERVED/2; --port)
 	{
 		sin.sin_port = htons(port);
-		r = bind(s, (struct sockaddr *)&sin, sizeof(sin));
+		r = bind(s, (struct sockaddr *) &sin, sizeof (sin));
 		if (r == 0)
 			return 0;
 
-		if (r < 0 && (-errno) != EADDRINUSE)
+		if (r < 0 && errno != EADDRINUSE)
 			return r;
 	}
+	
 	return EADDRINUSE;
 }
-
+# endif
 
 
 static int
-make_socket(long maxmsgsize)
+make_socket (long maxmsgsize)
 {
+	struct sockaddr_in in;
 	long res;
 	int fd;
-#if 0
-	struct sockaddr_in sin;
-#endif
-
-	fd = socket(PF_INET, SOCK_DGRAM, 0);
+	
+	fd = socket (PF_INET, SOCK_DGRAM, 0);
 	if (fd < 0)
 	{
-		fprintf(stderr, "open_connection: socket() failed with %d\n", -errno);
+		fprintf (stderr, "open_connection: socket() failed with %d\n", errno);
 		return fd;
 	}
-
+	
 #if 0
-	res = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &maxmsgsize, sizeof(long));
+	res = setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &maxmsgsize, sizeof (long));
 	if (res < 0)
 	{
-		fprintf(stderr, "open_connection: setsockopt() failed with %d\n",-errno);
+		fprintf (stderr, "open_connection: setsockopt() failed with %d\n", errno);
 		return res;
 	}
 #endif
-
-#if 0
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	sin.sin_port = htons(0);
-
-	res = bind(fd, (struct sockaddr*)&sin, sizeof(sin));
-#else
-	res = bindresvport(fd);
-#endif
+	
+	in.sin_family = AF_INET;
+	in.sin_addr.s_addr = htonl (INADDR_ANY);
+	
+	res = bindresvport (fd, &in);
 	if (res < 0)
 	{
-		fprintf(stderr, "open_connection: bind() failed with %d\n", -errno);
+		fprintf (stderr, "open_connection: bind() failed with %d\n", errno);
 		return res;
 	}
+	
 	return fd;
 }
 
-
-
 long
-do_nfs_mount(char *remote, char *localdir)
+do_nfs_mount (char *remote, char *localdir)
 {
 	long r;
 	NFS_MOUNT_INFO info;
@@ -216,24 +204,24 @@ do_nfs_mount(char *remote, char *localdir)
 	int s;
 	struct sockaddr_in server;
 	struct hostent *hp;
-
-
-	unx2dos(localdir, mountname);
-	p = strchr(remote, ':');    /* find end of hostname */
+	
+	
+	unx2dos (localdir, mountname);
+	p = strchr (remote, ':');    /* find end of hostname */
 	if (!p)
-		strcpy(hostname, "");
+		strcpy (hostname, "");
 	else
 	{
 		char c = *p;
 		*p = '\0';
-		strcpy(hostname, remote);
+		strcpy (hostname, remote);
 		*p = c;
 		remote = p+1;
 	}
-
+	
 	info.version = NFS_MOUNT_VERS;
 	info.flags = OPT_DEFAULT;
-
+	
 	if (readonly)
 		info.flags |= OPT_RO;
 	if (nosuid)
@@ -246,80 +234,84 @@ do_nfs_mount(char *remote, char *localdir)
 		info.flags |= OPT_INTR;
 	if (secure)
 		info.flags |= OPT_SECURE;
-
+	
 	info.retrans = retrans;
 	info.timeo = timeo * CLOCKS_PER_SEC/10;
 	info.rsize = rsize;
 	info.wsize = wsize;
 	info.actimeo = actimeo * CLOCKS_PER_SEC/10;
-	strncpy(info.hostname, hostname, sizeof(info.hostname)-1);
+	strncpy (info.hostname, hostname, sizeof (info.hostname) - 1);
 	info.hostname[sizeof(info.hostname)-1] = '\0';
-
-	s = make_socket(maxmsgsize);
+	
+	s = make_socket (maxmsgsize);
 	if (s < 0)
 		return 1;
-
+	
 	/* get the server address from the net database */
-	hp = gethostbyname(hostname);
+	hp = gethostbyname (hostname);
 	if (!hp)
 	{
-		fprintf(stderr, "do_nfs_mount: failed to look up server address\n");
+		fprintf (stderr, "do_nfs_mount: failed to look up server address\n");
 		return 1;
 	}
+	
 	if (hp->h_addrtype != AF_INET)
 	{
 		fprintf(stderr, "do_nfs_mount: not AF_INET address type\n");
 		return 1;
 	}
+	
 	server.sin_family = AF_INET;
-	memcpy((char*)&server.sin_addr, hp->h_addr, hp->h_length);
-	server.sin_port = htons(0);  /* ask the port mapper for that port */
-
-	cl = clnt_create(&server, MOUNT_PROGRAM, MOUNT_VERSION,
-	                               retry_time, maxmsgsize, maxmsgsize, &s);
+	memcpy ((char*) &server.sin_addr, hp->h_addr, hp->h_length);
+	server.sin_port = htons (0);  /* ask the port mapper for that port */
+	
+	cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
 	if (!cl)
 	{
 		/* also try a fallback method with a fixed port number */
 		server.sin_port = htons(MOUNT_PORT);
-		cl = clnt_create(&server, MOUNT_PROGRAM, MOUNT_VERSION,
-		                              retry_time, maxmsgsize, maxmsgsize, &s);
+		cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
 		if (!cl)
 		{
-			fprintf(stderr, "do_nfs_mount: failed to create RPC client\n");
+			fprintf (stderr, "do_nfs_mount: failed to create RPC client\n");
 			return 1;
 		}
 	}
-
-	res = clnt_call(cl, MOUNTPROC_MNT,
-	                (xdrproc_t)xdr_dirpath, (caddr_t)remote,
-	                (xdrproc_t)xdr_fhstatus, (caddr_t)&fh, total_time);
-	clnt_destroy(cl);
-
+	
+	res = clnt_call (cl, MOUNTPROC_MNT,
+	                (xdrproc_t) xdr_dirpath, (caddr_t) remote,
+	                (xdrproc_t) xdr_fhstatus, (caddr_t) &fh, total_time);
+	
 	if (res != RPC_SUCCESS)
 	{
-		fprintf(stderr, "do_nfs_mount: RPC call returned %ld\n", (long)res);
-		return (long)res;
+		clnt_perror (cl, "do_nfs_mount");
+		clnt_destroy (cl);
+		
+		return res;
 	}
+	
+	clnt_destroy (cl);
+	
 	if (fh.status != 0)
 	{
-		fprintf(stderr, "do_nfs_mount: mount request failed with %ld\n",
-		                          (long)fh.status);
+		fprintf (stderr, "do_nfs_mount: mount request failed with %ld\n", fh.status);
 		return -1;
 	}
+	
 	info.server.sin_family = AF_INET;
-	memcpy((char*)&info.server.sin_addr, hp->h_addr, hp->h_length);
-	info.server.sin_port = htons(port);
+	memcpy ((char*) &info.server.sin_addr, hp->h_addr, hp->h_length);
+	info.server.sin_port = htons (port);
 	info.handle = fh.fhstatus_u.directory;
-	r = Dcntl(NFS_MOUNT, mountname, &info);
+	
+	r = Dcntl (NFS_MOUNT, mountname, &info);
 	if (r != 0)
-		fprintf(stderr, "%s: mount request to kernel failed\n", commandname);
+		fprintf (stderr, "%s: mount request to kernel failed\n", commandname);
+	
 	return r;
 }
 
-
-
 long
-do_nfs_unmount(char *remote, char *local)
+do_nfs_unmount (char *remote, char *local)
 {
 	long r;
 	char mountname[MNTPATHLEN+1];
@@ -333,70 +325,71 @@ do_nfs_unmount(char *remote, char *local)
 	char *p;
 	struct sockaddr_in server;
 	struct hostent *hp;
-
-
+	
+	
 	if (!local)
 		return -1;
-	unx2dos(local, mountname);
-
-	p = strchr(remote, ':');    /* find end of hostname */
+	
+	unx2dos (local, mountname);
+	
+	p = strchr (remote, ':');    /* find end of hostname */
 	if (!p)
 		strcpy(hostname, "");
 	else
 	{
 		char c = *p;
 		*p = '\0';
-		strcpy(hostname, remote);
+		strcpy (hostname, remote);
 		*p = c;
 		remote = p+1;
 	}
-
+	
 	/* do unmount on the local kernel */
-	r = Dcntl(NFS_UNMOUNT, mountname, 0);
+	r = Dcntl (NFS_UNMOUNT, mountname, 0);
 	if (r != 0)
 	{
-		fprintf(stderr, "%s: unmount request to kernel failed\n", commandname);
+		fprintf (stderr, "%s: unmount request to kernel failed\n", commandname);
 		return r;
 	}
-
+	
 	/* no error checks here, as we should not fail the unmount if there was
 	 * no contact with the nfs server.
 	 */
-	s = make_socket(maxmsgsize);
+	s = make_socket (maxmsgsize);
 	if (s < 0)
 		return 0;
-
+	
 	/* get the server address from the net database */
-	hp = gethostbyname(hostname);
+	hp = gethostbyname (hostname);
 	if (!hp)
 	{
 		fprintf(stderr, "do_nfs_mount: failed to look up server address\n");
 		return 1;
 	}
+	
 	if (hp->h_addrtype != AF_INET)
 	{
 		fprintf(stderr, "do_nfs_mount: not AF_INET address type\n");
 		return 1;
 	}
+	
 	server.sin_family = AF_INET;
-	memcpy((char*)&server.sin_addr, hp->h_addr, hp->h_length);
-	server.sin_port = htons(0);  /* ask the port mapper for the port */
-
-	cl = clnt_create(&server, MOUNT_PROGRAM, MOUNT_VERSION,
-	                               retry_time, maxmsgsize, maxmsgsize, &s);
+	memcpy ((char*) &server.sin_addr, hp->h_addr, hp->h_length);
+	server.sin_port = htons (0);  /* ask the port mapper for the port */
+	
+	cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
 	if (!cl)
 	{
 		/* Also try a fallback method with a fixed port number */
-		server.sin_port = htons(MOUNT_PORT);
-		cl = clnt_create(&server, MOUNT_PROGRAM, MOUNT_VERSION,
-		                                retry_time, maxmsgsize, maxmsgsize, &s);
+		server.sin_port = htons (MOUNT_PORT);
+		cl = clntudp_create (&server, MOUNT_PROGRAM, MOUNT_VERSION, retry_time, &s);
 		if (!cl)
 			return 0;
 	}
-
-	res = clnt_call(cl, MOUNTPROC_UMNT,
+	
+	res = clnt_call (cl, MOUNTPROC_UMNT,
 	                  (xdrproc_t)xdr_dirpath, (caddr_t)remote,
 	                  (xdrproc_t)xdr_void, (caddr_t)NULL, total_time);
-	clnt_destroy(cl);
+	clnt_destroy (cl);
 	return 0;
 }
