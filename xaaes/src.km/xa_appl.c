@@ -255,16 +255,18 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->p->pid, client->home_path));
 	}
 
-	app_in_front(lock, client);
-
 #if 0
 	{
 		long tpc;
 
-		tpc = kthread_create(client->p, KT_idle, NULL, &client->tp, "kt-%s", client->proc_name);
+		tpc = kthread_create(client->p, TP_entry, (void *)client, &client->tp, "kt-%s", client->proc_name);
+		if (tpc < 0)
+			client->tp = NULL;
 	}
 #endif
 			
+	app_in_front(lock, client);
+
 clean_out:
 	/* Reset the AES messages pending list for our new application */
 	client->msg = NULL;
@@ -333,6 +335,18 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	struct xa_client *top_owner;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
+
+#if 0
+	if (client->tp)
+	{
+		post_tpcevent(client, TP_terminate, NULL, NULL, 0,0, NULL,NULL);
+		yield();
+		yield();
+		yield();
+		yield();
+		yield();
+	}
+#endif
 
 	/*
 	 * Clear if client was exclusively waiting for mouse input
@@ -1000,6 +1014,7 @@ static short info_tab[][4] =
 
 	/* 18 <-- XaAES index 0 */
 	/* XaAES version information */
+	/* Frank, I need correct data here .. could you fix this for me? */
 	{
 		0,		/* Major */
 		HEX_VERSION,	/* Minor */
@@ -1057,10 +1072,10 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			gi_type = (gi_type & 0xff) + XA_AGI;
 			if (gi_type > XA_MAGI)
-				gi_type == -1;
+				gi_type = -1;
 		}
 		else
-			gi_type == -1;
+			gi_type = -1;
 	}
 
 	if (gi_type == -1)
