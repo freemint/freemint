@@ -29,7 +29,6 @@
 # include "arch/context.h"	/* save_context, change_context */
 # include "arch/kernel.h"
 # include "arch/mprot.h"
-# include "arch/startup.h"
 # include "arch/tosbind.h"
 # include "arch/user_things.h"	/* trampoline */
 

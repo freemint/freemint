@@ -49,7 +49,6 @@
 
 # include "arch/cpu.h"		/* cpush */
 # include "arch/mprot.h"
-# include "arch/startup.h"
 
 # include "dev-null.h"
 # include "filesys.h"
