@@ -22,9 +22,8 @@ SOBJS = \
 	mmu030.S \
 	mmu040.S \
 	scsidrv_emu.S \
-	sigreturn.S \
-	slb_util.S \
 	syscall.S \
+	user_things.S \
 	xhdi_emu.S
 
 SRCFILES = $(STARTUP) $(COBJS) $(SOBJS)
