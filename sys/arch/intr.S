@@ -140,7 +140,11 @@ skip:	move.w	(0x0442).w,d0
 	sub.w	d0,a1
 	move.l	a1,8(a0)
 
-txit:
+// "VBL" things go here (50 times per second at IPL 3)
+
+txit:	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
+	bne.s	L_popnout
+	move.w	#0x2300,sr		// lower the current IPL
 
 // floppy stuff
 
@@ -155,11 +159,6 @@ txit:
 piramida_hejhopsa:
 #endif
 
-// "VBL" things go here (50 times per second at IPL 3)
-
-	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
-	bne.s	L_popnout
-	move.w	#0x2300,sr		// lower the current IPL
 	jsr	_checkbttys_vbl
 	lea	_uptimetick,a0
 	tst.w	(a0)
