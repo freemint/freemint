@@ -49,9 +49,17 @@ static void	_cdecl e_unselect	(FILEPTR *f, long proc, int mode);
 
 DEVDRV ext2_dev =
 {
-	e_open, e_write, e_read,
-	e_lseek, e_ioctl, e_datime,
-	e_close, e_select, e_unselect
+	open:		e_open,
+	write:		e_write,
+	read:		e_read,
+	lseek:		e_lseek,
+	ioctl:		e_ioctl,
+	datime:		e_datime,
+	close:		e_close,
+	select:		e_select,
+	unselect:	e_unselect,
+	writeb:		NULL,
+	readb:		NULL
 };
 
 
