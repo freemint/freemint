@@ -24,15 +24,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "global.h"
-
 #include RSCHNAME
 
-#include "xa_types.h"
+#include "desktop.h"
 #include "xa_global.h"
 
 #include "app_man.h"
-#include "desktop.h"
 #include "objects.h"
 #include "menuwidg.h"
 #include "widgets.h"

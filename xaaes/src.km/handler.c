@@ -269,8 +269,7 @@ XA_handler(void *_pb)
 								o = client->waiting_pb->intout;
 								if (!(o[0] & MU_BUTTON))
 								{
-									//vq_mouse(C.vh, o+3, o+1, o+2);
-									exclusive_mouse_input(client, 1, o+3, o+1, o+2);
+									check_mouse(client, o+3, o+1, o+2);
 									vq_key_s(C.vh, o+4);
 								}
 
