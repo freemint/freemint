@@ -219,6 +219,28 @@ error:
 }
 
 
+/* help function */
+
+static long
+getsock (struct proc *p, short fd, struct file **fp)
+{
+	long r;
+	
+	r = FP_GET1 (p, fd, fp);
+	if (r) return r;
+	
+	if ((*fp)->dev != &sockdev
+# ifdef OLDSOCKDEVEMU
+		&& (*fp)->dev != &sockdevemu
+# endif
+	)
+		return ENOTSOCK;
+	
+	
+	return 0;
+}
+
+
 /* socket system calls */
 
 long
@@ -332,7 +354,7 @@ sys_bind (short fd, struct sockaddr *addr, long addrlen)
 	
 	DEBUG (("sys_bind(%i, %lx, %li)", fd, addr, addrlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -352,7 +374,7 @@ sys_listen (short fd, long backlog)
 	
 	DEBUG (("sys_listen(%i, %li)", fd, backlog));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -384,7 +406,7 @@ sys_accept (short fd, struct sockaddr *addr, long *addrlen)
 	
 	DEBUG (("sys_accept(%i, %lx, %lx)", fd, addr, addrlen));
 	
-	ret = FP_GET1 (p, fd, &fp);
+	ret = getsock (p, fd, &fp);
 	if (ret) return ret;
 	
 	so = (struct socket *) fp->devinfo;
@@ -455,7 +477,7 @@ sys_connect (short fd, struct sockaddr *addr, long addrlen)
 	
 	DEBUG (("sys_connect(%i, %lx, %li)", fd, addr, addrlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -504,7 +526,7 @@ sys_getsockname (short fd, struct sockaddr *addr, long *addrlen)
 	
 	DEBUG (("sys_getsockname(%i, %lx, %lx)", fd, addr, addrlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -533,7 +555,7 @@ sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 	
 	DEBUG (("sys_getpeername(%i, %lx, %lx)", fd, addr, addrlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -562,7 +584,7 @@ sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr,
 	
 	DEBUG (("sys_sendto(%i, %lx, %li, %li, %lx, %li)", fd, buf, buflen, flags, addr, addrlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -582,7 +604,7 @@ sys_sendmsg (short fd, struct msghdr *msg, long flags)
 	
 	DEBUG (("sys_sendmsg(%i, %lx, %li)", fd, msg, flags));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -610,7 +632,7 @@ sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *add
 	
 	DEBUG (("sys_recvfrom(%i, %lx, %li, %li, %lx, %lx)", fd, buf, buflen, flags, addr, addrlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -639,7 +661,7 @@ sys_recvmsg (short fd, struct msghdr *msg, long flags)
 	
 	DEBUG (("sys_recvmsg(%i, %lx, %li)", fd, msg, flags));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -666,7 +688,7 @@ sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 	
 	DEBUG (("sys_setsockopt(%i, %li, %li, %lx, %li)", fd, level, optname, optval, optlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -704,7 +726,7 @@ sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 	
 	DEBUG (("sys_getsockopt(%i, %li, %li, %lx, %lx)", fd, level, optname, optval, optlen));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
@@ -743,7 +765,7 @@ sys_shutdown (short fd, long how)
 	
 	DEBUG (("sys_shutdown(%i, %li)", fd, how));
 	
-	r = FP_GET1 (p, fd, &fp);
+	r = getsock (p, fd, &fp);
 	if (r) return r;
 	
 	so = (struct socket *) fp->devinfo;
