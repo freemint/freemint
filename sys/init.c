@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  */
 
 # include <stdarg.h>
@@ -91,7 +91,7 @@ static int	boot_kernel_p (void);
 void
 boot_print (const char *s)
 {
-	Cconws (s);	
+	Cconws (s);
 }
 
 void
@@ -99,11 +99,11 @@ boot_printf (const char *fmt, ...)
 {
 	char buf [SPRINTF_MAX];
 	va_list args;
-	
+
 	va_start (args, fmt);
 	vsprintf (buf, sizeof (buf), fmt, args);
 	va_end (args);
-	
+
 	Cconws (buf);
 }
 
@@ -122,7 +122,7 @@ KBDVEC *syskey, oldkey;
 xbra_vec old_criticerr;
 xbra_vec old_execos;
 
-/* bus error, address error, illegal instruction, etc. vectors 
+/* bus error, address error, illegal instruction, etc. vectors
  */
 xbra_vec old_bus;
 xbra_vec old_addr;
@@ -158,8 +158,8 @@ uchar framesizes[16] =
 			/* MC68060 access error */
 	/*5*/	0,	/* NOTUSED */
 	/*6*/	0,	/* NOTUSED */
-	/*7*/	26,	/* M68040 access error */	
-	/*8*/	25,	/* MC68010 long */	
+	/*7*/	26,	/* M68040 access error */
+	/*8*/	25,	/* MC68010 long */
 	/*9*/	6,	/* M68020/M68030 mid instruction */
 	/*A*/	12,	/* M68020/M68030 short bus cycle */
 	/*B*/	42,	/* M68020/M68030 long bus cycle */
@@ -172,12 +172,12 @@ uchar framesizes[16] =
 /*
  * install a new vector for address "addr", using the XBRA protocol.
  * must run in supervisor mode!
- * 
- * 
+ *
+ *
  * WHO DID THIS?
  * self-modifying code is a bad idea - especially when not flushing
  * CPU caches afterwards!
- * 
+ *
  * The best idea would be to get rid of the separate struct xbra,
  * and instead have enough space in front of all routines that might be
  * installed in a XBRA chain, so we can just patch in the XBRA chain
@@ -194,7 +194,7 @@ xbra_install (xbra_vec *xv, long addr, long _cdecl (*func) ())
 	xv->this = func;
 	xv->next = *((struct xbra **) addr);
 	*((short **) addr) = &xv->jump;
-	
+
 	/* ms - workaround for now */
 	cpush (xv, sizeof (xv));
 }
@@ -209,7 +209,7 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func) ())
 {
 	*xv = *(long *) addr;
 	*(long *) addr = (long) func;
-	
+
 	/* better to be safe... */
 	cpush ((long *) addr, sizeof (addr));
 	cpush (xv, sizeof (xv));
@@ -279,20 +279,20 @@ init_intr (void)
 	ushort savesr;
 	int i;
 	long *syskey_aux;
-	
+
 	syskey = (KBDVEC *) Kbdvbase ();
 	oldkey = *syskey;
-	
+
 	syskey_aux = (long *)syskey;
 	syskey_aux--;
 
 	if (*syskey_aux)
 		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
-		
+
 	old_term = (long) Setexc (0x102, -1UL);
-	
+
 	savesr = spl7();
-	
+
 	/* Take all traps; notice, that the "old" address for any trap
 	 * except #1, #13 and #14 (GEMDOS, BIOS, XBIOS) is lost.
 	 * It does not matter, because MiNT does not pass these
@@ -303,11 +303,11 @@ init_intr (void)
 	 * WARNING: NVDI 5.00 uses trap #15 and isn't even polite
 	 * enough to link it with XBRA.
 	 */
-	
+
 # ifdef TRAPS_PRIVATE
 	{
 	long dummy;
-	
+
 	new_xbra_install (&dummy, 0x80L, unused_trap);		/* trap #0 */
 	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */
 # if 0
@@ -334,16 +334,16 @@ init_intr (void)
 	new_xbra_install (&old_bios, 0xb4L, mint_bios);		/* trap #13, BIOS */
 	new_xbra_install (&old_xbios, 0xb8L, mint_xbios);	/* trap #14, XBIOS */
 # endif
-	
+
 	xbra_install (&old_criticerr, 0x404L, mint_criticerr);
 	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
-	
+
 	new_xbra_install (&old_resvec, 0x042aL, reset);
 	old_resval = *((long *)0x426L);
 	*((long *) 0x426L) = RES_MAGIC;
-	
+
 	spl (savesr);
-	
+
 	/* set up signal handlers */
 	xbra_install (&old_bus, 8L, new_bus);
 	xbra_install (&old_addr, 12L, new_addr);
@@ -355,10 +355,10 @@ init_intr (void)
 		xbra_install (&old_linef, 44L, new_linef);
 	xbra_install (&old_chk, 24L, new_chk);
 	xbra_install (&old_trapv, 28L, new_trapv);
-	
+
 	for (i = (int)(sizeof (old_fpcp) / sizeof (old_fpcp[0])); i--; )
 		xbra_install (&old_fpcp[i], 192L + i * 4, new_fpcp);
-	
+
 	xbra_install (&old_mmuconf, 224L, new_mmu);
 	xbra_install (&old_pmmuill, 228L, new_mmu);
 	xbra_install (&old_pmmuacc, 232L, new_pmmuacc);
@@ -366,13 +366,13 @@ init_intr (void)
 	xbra_install (&old_cpv, 52L, new_cpv);
 	xbra_install (&old_uninit, 60L, new_uninit);
 	xbra_install (&old_spurious, 96L, new_spurious);
-	
+
 	/* set up disk vectors */
 	new_xbra_install (&old_mediach, 0x47eL, new_mediach);
 	new_xbra_install (&old_rwabs, 0x476L, new_rwabs);
 	new_xbra_install (&old_getbpb, 0x472L, new_getbpb);
 	olddrvs = *((long *) 0x4c2L);
-	
+
 	/* initialize psigintr() call stuff (useful on 68010+ only)
 	 */
 # ifndef ONLY030
@@ -383,7 +383,7 @@ init_intr (void)
 		if (intr_shadow)
 			quickmove ((char *)intr_shadow, (char *) 0x0L, 1024L);
 	}
-	
+
 	/* we'll be making GEMDOS calls */
 	enter_gemdos ();
 }
@@ -406,7 +406,7 @@ restr_intr (void)
 	ushort savesr;
 	int i;
 	long *syskey_aux;
-	
+
 	savesr = spl7 ();
 
 	*syskey = oldkey;	/* restore keyboard vectors */
@@ -416,26 +416,26 @@ restr_intr (void)
 	*syskey_aux = (long) oldkeys;
 
 	*tosbp = _base;		/* restore GEMDOS basepage pointer */
-	
+
 	restr_cookies ();
-	
+
 	*((long *) 0x008L) = (long) old_bus.next;
-	
+
 	*((long *) 0x00cL) = (long) old_addr.next;
 	*((long *) 0x010L) = (long) old_ill.next;
 	*((long *) 0x014L) = (long) old_divzero.next;
 	*((long *) 0x020L) = (long) old_priv.next;
 	*((long *) 0x024L) = (long) old_trace.next;
-	
+
 	if (old_linef.next)
 		*((long *) 0x2cL) = (long) old_linef.next;
-	
+
 	*((long *) 0x018L) = (long) old_chk.next;
 	*((long *) 0x01cL) = (long) old_trapv.next;
-	
+
 	for (i = (int)(sizeof (old_fpcp) / sizeof (old_fpcp[0])); i--; )
 		((long *) 0x0c0L)[i] = (long) old_fpcp[i].next;
-	
+
 	*((long *) 0x0e0L) = (long) old_mmuconf.next;
 	*((long *) 0x0e4L) = (long) old_pmmuill.next;
 	*((long *) 0x0e8L) = (long) old_pmmuacc.next;
@@ -443,7 +443,7 @@ restr_intr (void)
 	*((long *) 0x034L) = (long) old_cpv.next;
 	*((long *) 0x03cL) = (long) old_uninit.next;
 	*((long *) 0x060L) = (long) old_spurious.next;
-	
+
 	*((long *) 0x084L) = old_dos;
 	*((long *) 0x0b4L) = old_bios;
 	*((long *) 0x0b8L) = old_xbios;
@@ -456,7 +456,7 @@ restr_intr (void)
 	*((long *) 0x47eL) = old_mediach;
 	*((long *) 0x472L) = old_getbpb;
 	*((long *) 0x4c2L) = olddrvs;
-	
+
 	spl (savesr);
 }
 
@@ -468,7 +468,7 @@ get_my_name (void)
 	register BASEPAGE *bp;
 	register DTABUF *dta;
 	register char *p;
-	
+
 	/* When executing AUTO folder programs, the ROM TOS locates
 	 * all programs using Fsfirst/Fsnext; by peeking into our
 	 * parent's (the AUTO-execute process's) DTA area, we can
@@ -480,16 +480,16 @@ get_my_name (void)
 	 *
 	 * Some validity checks first...
 	 */
-	
+
 	bp = _base->p_parent;
-	
+
 	if (bp) dta = (DTABUF *) bp->p_dta;
 	else dta = NULL;
-	
+
 	if (bp && dta)
 	{
 		p = dta->dta_name;
-		
+
 		/* Test if "MINT*.PRG" or "MNT*.PRG" */
 		if ((strncmp (p, "MINT", 4) == 0 || strncmp (p, "MNT", 3) == 0)
 			 && strncmp (p + strlen (p) - 4, ".PRG", 4) == 0)
@@ -587,7 +587,7 @@ read_ini (void)
 	len++;
 
 	buf = (char *) Mxalloc (len, 0x0003);
-	if ((long)buf < 0)	
+	if ((long)buf < 0)
 		buf = (char *) Malloc (len);	/* No Mxalloc()? */
 	if ((long)buf <= 0) goto initialize;	/* Out of memory or such */
 	bzero (buf, len);
@@ -659,7 +659,7 @@ close:
 
 	if (r < 0)
 		Fdelete (ini_file);
-}		
+}
 
 static int
 boot_kernel_p (void)
@@ -668,7 +668,7 @@ boot_kernel_p (void)
 	short option[6];
 	long c = 0;
 	int y;
-	
+
 	Cconws(MSG_init_askmenu);
 	y = (int) Cconin();
 	if (tolower (y & 0xff) == MSG_init_menu_no[0])
@@ -750,12 +750,12 @@ init (void)
 {
 	/* XXX: why `static' ?? */
 	static char curpath[128];
-	
+
 	int pid;
 	long *sysbase;
 	long r;
 	FILEPTR *f;
-	
+
 	/* Initialize sysdir */
 	strcpy(curpath, "\\multitos\\");
 	strcat(curpath, "mint.cnf");
@@ -772,13 +772,13 @@ init (void)
 	}
 
 	read_ini();	/* Read user defined defaults */
-	
+
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
 	 */
 	boot_print (greet1);
 	boot_print (greet2);
-	
+
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
 	 * - also sets no_mem_prot
@@ -790,7 +790,7 @@ init (void)
 		(void) Cconin();
 		Pterm0();
 	}
-	
+
 	/* Ask the user if s/he wants to boot MiNT */
 	if ((Kbshift (-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
 	{
@@ -799,7 +799,7 @@ init (void)
 		if (!yn)
 			Pterm0 ();
 	}
-	
+
 # if 0
 	/* if less than 1 megabyte free, turn off memory protection */
 	if (Mxalloc (-1L, 3) < ONE_MEG && !no_mem_prot)
@@ -815,15 +815,15 @@ init (void)
 	if (!no_mem_prot && Fsfirst ("\\AUTO\\MINTNP.PRG", 0) == 0)
 		no_mem_prot = 1;
 # endif
-	
+
 # ifdef OLDTOSFS
 	/* Get GEMDOS version from ROM for later use by our own Sversion() */
 	gemdos_version = Sversion ();
-# endif	
-	
+# endif
+
 	/* check for GEM -- this must be done from user mode */
 	gem_active = check_for_gem ();
-	
+
 	if (!gem_active)
 		get_my_name();
 
@@ -834,7 +834,7 @@ init (void)
 	else
 		boot_print(MSG_init_mp_enabled);
 # endif
-	
+
 	/* get the current directory, so that we can switch back to it after
 	 * the file systems are properly initialized
 	 *
@@ -846,14 +846,14 @@ init (void)
 		curpath[0] = '\\';
 		curpath[1] = 0;
 	}
-	
+
 	(void) Super (0L);
-	
+
 	if (!no_mem_prot)
 		save_mmu ();		/* save current MMU setup */
-	
+
 	/* get GEMDOS pointer to current basepage
-	 * 
+	 *
 	 * 0x4f2 points to the base of the OS; here we can find the OS compilation
 	 * date, and (in newer versions of TOS) where the current basepage pointer
 	 * is kept; in older versions of TOS, it's at 0x602c
@@ -893,7 +893,7 @@ init (void)
 		 * this is the real way to test for Bconmap ability
 		 */
 		has_bconmap = (Bconmap (0) == 0);
-		
+
 		/* kludge for PAK'ed ST/STE's
 		 * they have a patched TOS 3.06 and say they have Bconmap(),
 		 * ... but the patched TOS crash hardly if Bconmap() is used.
@@ -903,23 +903,23 @@ init (void)
 			if (mch == ST || mch == STE || mch == MEGASTE)
 				has_bconmap = 0;
 		}
-		
+
 		if (has_bconmap)
 			bconmap2 = (BCONMAP2_T *) Bconmap (-2);
 	}
-	
+
 	/* initialize cache */
 	init_cache ();
 	DEBUG (("init_cache() ok!"));
-	
+
 	/* initialize memory */
 	init_mem ();
 	DEBUG (("init_mem() ok!"));
-	
+
 	/* Initialize high-resolution calendar time */
 	init_time ();
 	DEBUG (("init_time() ok!"));
-	
+
 	/* initialize buffered block I/O */
 	init_block_IO ();
 	DEBUG (("init_block_IO() ok!"));
@@ -929,19 +929,19 @@ init (void)
 	init_floppy ();
 	DEBUG (("init_floppy() ok!"));
 #endif
-	
+
 	/* initialize crypto I/O layer */
 	init_crypt_IO ();
 	DEBUG (("init_crypt_IO() ok!"));
-	
+
 	/* initialize the basic file systems */
 	init_filesys ();
 	DEBUG (("init_filesys() ok!"));
-	
+
 	/* initialize processes */
 	init_proc();
 	DEBUG (("init_proc() ok! (base = %lx)", _base));
-	
+
 	/* initialize system calls */
 	init_dos ();
 	DEBUG (("init_dos() ok!"));
@@ -949,25 +949,25 @@ init (void)
 	DEBUG (("init_bios() ok!"));
 	init_xbios ();
 	DEBUG (("init_xbios() ok!"));
-	
+
 	/* initialize basic keyboard stuff */
 	init_keybd();
 
 	/* Disable all CPU caches */
 	ccw_set(0x00000000L, 0x0000c57fL);
-	
+
 	/* initialize interrupt vectors */
 	init_intr ();
 	DEBUG (("init_intr() ok!"));
-	
+
 	/* Enable superscalar dispatch on 68060 */
 	get_superscalar();
-	
+
 	/* Init done, now enable/unfreeze all caches.
 	 * Don't touch the write/allocate bits, though.
 	 */
 	ccw_set(0x0000c567L, 0x0000c57fL);
-	
+
 # ifdef _xx_KMEMDEBUG
 	/* XXX */
 	{
@@ -975,41 +975,41 @@ init (void)
 		kmemdebug_can_init = 1;
 	}
 # endif
-	
+
 	/* set up cookie jar */
 	init_cookies();
 	DEBUG(("init_cookies() ok!"));
-	
+
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
-	
+
 	/* set up standard file handles for the current process
 	 * do this here, *after* init_intr has set the Rwabs vector,
 	 * so that AHDI doesn't get upset by references to drive U:
 	 */
-	
+
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
-	
+
 	r = do_open(&f, "U:\\DEV\\CONSOLE", O_RDWR, 0, NULL);
 	if (r)
 		FATAL("unable to open CONSOLE device");
-	
+
 	curproc->p_fd->control = f;
 	curproc->p_fd->ofiles[0] = f; f->links++;
 	curproc->p_fd->ofiles[1] = f; f->links++;
-	
+
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
-	
+
 	r = do_open(&f, "U:\\DEV\\MODEM1", O_RDWR, 0, NULL);
 	if (r)
 		FATAL("unable to open MODEM1 device");
-	
+
 	curproc->p_fd->aux = f;
 	((struct tty *) f->devinfo)->aux_cnt = 1;
 	f->pos = 1;	/* flag for close to --aux_cnt */
-	
+
 	if (has_bconmap)
 	{
 		/* If someone has already done a Bconmap call, then
@@ -1018,16 +1018,16 @@ init (void)
 		bconmap(curbconmap);
 		f = curproc->p_fd->aux;	/* bconmap can change curproc->aux */
 	}
-	
+
 	if (f)
 	{
 		curproc->p_fd->ofiles[2] = f;
 		f->links++;
 	}
-	
+
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
-	
+
 	r = do_open(&f, "U:\\DEV\\CENTR", O_RDWR, 0, NULL);
 	if (!r)
 	{
@@ -1035,53 +1035,53 @@ init (void)
 		curproc->p_fd->prn = f;
 		f->links++;
 	}
-	
+
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
-	
+
 	r = do_open(&f, "U:\\DEV\\MIDI", O_RDWR, 0, NULL);
 	if (!r)
 	{
 		curproc->p_fd->midiin = f;
 		curproc->p_fd->midiout = f;
 		f->links++;
-		
+
 		((struct tty *) f->devinfo)->use_cnt++;
 		((struct tty *) f->devinfo)->aux_cnt = 2;
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
-	
+
 	/* print the warning message if MP is turned off */
 	if (no_mem_prot && mcpu > 20)
 		c_conws(memprot_warning);
-	
+
 	/* initialize delay */
 	{
 		char buf[128];
-		
+
 		c_conws(MSG_init_delay_loop);
-		
+
 		calibrate_delay();
-		
+
 		/* Round the value and print it */
 		ksprintf(buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
 			(loops_per_sec + 2500) / 500000,
 			((loops_per_sec + 2500) / 5000) % 100);
-		
+
 		c_conws(buf);
 	}
-	
+
 	/* initialize internal xdd */
 # ifdef DEV_RANDOM
 	c_conws(random_greet);
 # endif
-	
+
 	/* initialize built-in domain ops */
 	domaininit();
-	
+
 	/* Load the keyboard table */
 	load_keytbl();
-	
+
 	/* Load the unicode table */
 # ifdef SOFT_UNITABLE
 	init_unicode();
@@ -1092,13 +1092,13 @@ init (void)
 
 	/* load the kernel modules */
 	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
-	
+
 	/* start system update daemon */
 	start_sysupdate();
-	
+
 	/* load the configuration file */
 	load_config();
-	
+
 # ifdef OLDTOSFS
 	/*
 	 * Until the old TOSFS is completely removed, we try to trigger a media
@@ -1109,7 +1109,7 @@ init (void)
 	{
 		ushort	i;
 		char	cwd[PATH_MAX] = "X:";
-		
+
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if ((drives[i] == &tos_filesys) &&
@@ -1132,10 +1132,10 @@ init (void)
 		}
 	}
 # endif
-	
+
 	if (init_env == 0)
 		init_env = (char *) _base->p_env;
-	
+
 	/* empty environment?
 	 * Set the PATH variable to the root of the current drive
 	 */
@@ -1145,7 +1145,7 @@ init (void)
 		path_env[6] = curproc->p_cwd->curdrv + 'A';
 		init_env = path_env;
 	}
-	
+
 	/* if we are MultiTOS, we're running in the AUTO folder, and our INIT
 	 * is in fact GEM, take the exec_os() vector. (We know that INIT
 	 * is GEM if the user told us so by using GEM= instead of INIT=.)
@@ -1154,19 +1154,19 @@ init (void)
 	{
 		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
-	
+
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
 		run_auto_prgs();
 
 	/* prepare to run the init program as PID 1. */
 	set_pid_1();
-	
+
 # ifdef PROFILING
 	/* compiled with profiling support */
 	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
 # endif
-	
+
 	/* run the initial program
 	 *
 	 * if that program is in fact GEM, we start it via exec_os, otherwise
@@ -1183,9 +1183,9 @@ init (void)
 		r = sys_pexec(100, (char *) init_prg, init_tail, init_env);
 	}
 	else if (!gem_active)
-	{   
+	{
 		BASEPAGE *bp;
-		
+
 		bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
 		bp->p_tbase = *((long *) EXEC_OS);
 # ifndef MULTITOS
@@ -1196,9 +1196,28 @@ init (void)
 		r = sys_pexec(106, (char *) "GEM", bp, 0L);
 	}
 	else
-	{
-		boot_print(MSG_init_specify_prg);
 		r = 0;
+
+	/* r < 0 means an error during sys_pexec() execution (e.g. file not found);
+	 * r == 0 means that mint.cnf lacks the GEM= or INIT= line.
+	 *
+	 * In this case we halt the system, but in the future we will want rather
+	 * to execute some sort of internal minimal shell that could help
+	 * to fix minor fs problems without rebooting to TOS.
+	 */
+	if (r <= 0)
+	{
+		if (r < 0)
+			boot_printf(MSG_couldnt_run_init, init_prg, r);	/* temporary here */
+		else
+			boot_print(MSG_init_specify_prg);
+
+# if 0
+		r = shell();			/* r is the shell's pid (not yet exists) */
+# else
+		rootproc->base = _base;
+		s_hutdown(0);
+# endif
 	}
 
 	/* Here we have the code for the process 0 (MiNT itself).
@@ -1218,33 +1237,38 @@ init (void)
 			if (!r)
 			{
 				sleep(WAIT_Q, 0L);
-				low_power_stop();	/* assembler instruction STOP #$2000 */
+				if (mcpu == 60)
+					cpu_lpstop();	/* low power stop and wait for an interrupt */
+				else
+					cpu_stop();	/* stop and wait for interrupt */
 			}
 		}
 		while (pid != ((r & 0xffff0000L) >> 16));
 		r &= 0x0000ffff;
 	}
-	
+
+# if 0
 	if (r < 0 && init_prg)
 	{
 		boot_printf("FATAL: couldn't run `%s'.\r\n", init_prg);
 		boot_printf("exit code: %ld\r\n", r);
 	}
-	
+# endif
+
 	rootproc->base = _base;
-	
+
 # ifndef DEBUG_INFO
-	/* On r < 0 (error executing init) perform a halt
-	 * else reboot the system. Never go back to TOS.
-	 */ 
-	(void) s_hutdown((r < 0 && init_prg) ? 0 : 1);
+	/* If init program exited, reboot the system.
+	 * Never go back to TOS.
+	 */
+	(void) s_hutdown(2);	/* cold reboot is more efficient ;-) */
 # else
 	/* With debug kernels, always halt
 	 */
 	(void) s_hutdown(0);
 # endif
-	
-	/* Never returns */	
+
+	/* Never returns */
 }
 
 /*
@@ -1287,22 +1311,22 @@ run_auto_prgs (void)
 	short runthem = 0;	/* set to 1 after we find MINT.PRG */
 	char curpath[PATH_MAX];
  	int curdriv, bootdriv;
-	
+
 	/* if the AES is running, don't check AUTO */
 	if (gem_active)
 		return;
-	
+
 	/* OK, now let's run through \\AUTO looking for
 	 * programs...
 	 */
 	d_getpath(curpath,0);
 	curdriv = d_getdrv();
-	
+
 	/* We are in Supervisor mode, so we can do this */
 	bootdriv = *((short *) 0x446);
 	d_setdrv(bootdriv);
 	d_setpath("\\");
-	
+
 	dta = (DTABUF *) f_getdta();
 	r = f_sfirst("\\auto\\*.prg", 0);
 	while (r >= 0)
@@ -1318,7 +1342,7 @@ run_auto_prgs (void)
 		}
 		r = f_snext();
 	}
-	
+
  	d_setdrv(curdriv);
  	d_setpath(curpath);
 }
