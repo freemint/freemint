@@ -1,0 +1,69 @@
+COPYING CONDITIONS
+--------------------------------------------------------------------
+
+This is a little complicated. First of all, I hope all things are
+handled correctly. I don't want to bother anyone and I don't want
+to break any copyright terms. If you think I made a mistake, please
+contact me.
+
+The source code of the FreeMiNT CVS repository is based on several
+different packages with different copying terms. I spent a lot of
+time lately doing the same things on every package I updated over
+and over again. Furthermore, large parts of the code were identical
+in some of the packages. So my main goal was to get rid of such
+time consuming jobs, making FreeMiNT development much more
+efficient.
+
+CVS, a freely available source control system, helped a lot in
+achieving this goal. It handles a unique source base
+(the CVS master tree) and records every change with the exact date,
+the author and a changelog message. For that to work I had to
+restructure the kernel source, the modules, and the tools into one
+source hierarchy.
+
+--------------------------------------------------------------------
+
+Here now a short summary which parts of the source tree apply
+to which copyright terms.
+
+Please look at the header of the files for exact information!
+Files that fall under the GPL are marked with `COPYING.GPL'.
+
+sys/             - COPYING.MiNT if copyright is held by Eric Smith,
+                   otherwise it's stated at the top of the file
+  
+  gen-syscall/   - COPYING.GPL
+  
+  sockets/       - Copyright Kay Roemer, see sys/sockets/COPYING
+    xif/         - various authors, see file header
+  
+  xdd/
+    flop_raw/    - Public Domain
+    mfp/         - COPYING.GPL
+    scc/         - COPYING.GPL
+    uart/        - COPYING.GPL
+    xconout2/    - COPYING.GPL
+  
+  xfs/
+    ext2fs/      - COPYING.GPL
+    minixfs/     - Copyright S.N. Henson, see sys/xfs/minixfs/COPYING
+    nfs/         - Copyright Ulrich Kuehn, see sys/xfs/nfs/COPYING
+      ksocket/   - COPYING.GPL
+
+tools/
+
+  IO/            - COPYING.GPL
+  crypto/        - COPYING.GPL
+  fdisk/         - COPYING.GPL
+  fsetter/       - COPYING.GPL
+  gluestik/      - COPYING.GPL
+  mgw/           - COPYING.GPL
+  minix/         - Copyright S.N. Henson, see sys/xfs/minixfs/COPYING
+  mkfatfs        - COPYING.GPL
+  nfs/           - Copyright Ulrich Kuehn, see sys/xfs/nfs/COPYING
+  toswin2/       - Public Domain
+
+
+Frank Naumann
+<fnaumann@freemint.de>
+
