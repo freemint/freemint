@@ -56,17 +56,17 @@
 # include "crypt_IO.h"
 # include "global.h"
 
+# include "libkern/blowfish.h"
 # include "libkern/libkern.h"
+# include "libkern/md5.h"
 # include "mint/proc.h"
 
 # include "block_IO.h"
-# include "blowfish.h"
 # include "dosdir.h"
 # include "info.h"
 # include "init.h"
 # include "k_prot.h"
 # include "kmemory.h"
-# include "md5.h"
 
 
 void
@@ -364,7 +364,7 @@ sys_d_setkey (llong dev, char *key, int cipher)
 			di->mode |= BIO_ENCRYPTED;
 		}
 
-		InitializeBlowfish (di->crypt.key, hash, 16);
+		Blowfish_initialize (di->crypt.key, hash, 16);
 	}
 	else
 	{
