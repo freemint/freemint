@@ -64,7 +64,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_NVDI	0x4e564449L
 # define COOKIE_FSMC	0x46534d43L
 # define COOKIE_RSVF	0x52535646L
-
+# define COOKIE_STiK	0x5354694bL
 
 /* values of MCH cookie
  */
