@@ -501,9 +501,9 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	{
 #if GENERATE_DIAGS
 		if (dest_client->status & CS_FORM_ALERT)
-			DIAG((D_appl, client, "send_a_message: Client %s is in form_alert - AES message discarded!", client->name));
+			DIAG((D_appl, dest_client, "send_a_message: Client %s is in form_alert - AES message discarded!", dest_client->name));
 		if (dest_client->status & CS_LAGGING)
-			DIAG((D_appl, client, "send_a_message: Client %s is lagging - AES message discarded!", client->name));
+			DIAG((D_appl, dest_client, "send_a_message: Client %s is lagging - AES message discarded!", dest_client->name));
 #endif
 		return;
 	}
