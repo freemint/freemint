@@ -626,22 +626,40 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (ob)
 		{
-			client->desktop.tree = ob;
-			client->desktop.owner = client;
-			set_desktop(&client->desktop);
-			DIAGS(("  desktop for %s to (%d/%d,%d/%d)", 
-				c_owner(client), ob->ob_x, ob->ob_y, ob->ob_width, ob->ob_height));
-			display_window(lock, 47, root_window, 0);
+			XA_TREE *wt = obtree_to_wt(client, ob);
+
+			if (!wt || (wt && wt != client->desktop))
+			{
+				if (!wt)
+					wt = new_widget_tree(client, ob);
+
+				if (wt)
+				{
+					DIAGS(("  desktop for %s to (%d/%d,%d/%d)", 
+						c_owner(client), ob->ob_x, ob->ob_y, ob->ob_width, ob->ob_height));
+
+					client->desktop = wt;
+					set_desktop(wt);
+				}
+				else
+				{
+					struct xa_client *new = find_desktop(lock);
+					DIAGS(("  desktop for %s failed!", client->name)); 
+					set_desktop(new->desktop);
+					client->desktop = NULL;
+				}
+				display_window(lock, 47, root_window, 0);
+			}
 		}
 		else
 		{
-			if (client->desktop.tree)
+			if (client->desktop)
 			{
 				struct xa_client *new;
-				client->desktop.tree = 0;
 				/* find a prev app's desktop. */
+				client->desktop = NULL;
 				new = find_desktop(lock);
-				set_desktop(&new->desktop);
+				set_desktop(new->desktop);
 				DIAGS(("  desktop for %s removed", c_owner(client)));
 				display_window(lock, 48, root_window, 0);
 			}
@@ -673,48 +691,49 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_TOOLBAR:
 	{
 		short obptr[2] = { pb->intin[2], pb->intin[3] };
-		OBJECT *have, *ob;
-		XA_WIDGET *widg;
+		OBJECT *ob;
+		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
 		XA_TREE *wt;
 
 		ob = *(OBJECT **)&obptr;
-		widg = get_widget(w, XAW_TOOLBAR);
-		wt = widg->stuff;
-		have = wt ? wt->tree : 0;
 
-		if (have == 0 && ob == 0)
-			break;
-
-		if (have && ob == 0)
+		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
+			ob, widg->stuff));
+		if (ob)
 		{
+			wt = obtree_to_wt(client, ob);
+
+			if (wt && wt == widg->stuff)
+			{
+				DIAGS((" --- Same toolbar installed"));
+				if (w->is_open)
+				{
+					widg->start = pb->intin[4];
+					wt->e.obj = pb->intin[5];
+					display_widget(lock, w, widg);
+					widg->start = 0;
+				}
+			}
+			else if (!widg->stuff)
+			{
+				DIAGS(("  --- Set new toolbar"));
+				set_toolbar_widget(lock, w, ob, pb->intin[5]);
+				w->dial |= created_for_TOOLBAR;
+			}
+		}
+		else if (widg->stuff)
+		{
+			DIAGS(("  --- Remove toolbar"));
 			remove_widget(lock, w, XAW_TOOLBAR);
 		}
-		else if (ob && have == 0)
-		{
-			wt = set_toolbar_widget(lock, w, ob, pb->intin[5]);
-			//wt->exit_form = exit_toolbar;
-			w->dial |= created_for_TOOLBAR;
-		}
-		else if (ob && ob == have)
-		{
-			/* XXX - Ozk: Fix this -- at least check out what is
-			 *	 going on. only obj_edit() should modify e.obj
-			 *	 and friends.
-			 */
-			if (w->is_open)
-			{
-				widg->start = pb->intin[4];
-				wt->e.obj = pb->intin[5];
-				display_widget(lock, w, widg);
-				widg->start = 0;
-			}
-			break;
-		}
-
 		if (w->is_open && w->send_message)
+		{
+			DIAGS(("  --- send WM_REDRAW"));
 			w->send_message(lock, w, 0,
 					WM_REDRAW, 0, 0, w->handle,
 					w->r.x, w->r.y, w->r.w, w->r.h);
+		}
+		DIAGS(("  wind_set(WF_TOOLBAR) done"));
 		break;
 	}
 
@@ -726,35 +745,33 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		    && (w->active_widgets & XaMENU) != 0)
 		{
 			short obptr[2] = { pb->intin[2], pb->intin[3] };
-			OBJECT *have, *ob;
-			XA_WIDGET *widg;
+			OBJECT *ob;
+			XA_WIDGET *widg = get_widget(w, XAW_MENU);
 			XA_TREE *wt;
 
 			ob = *(OBJECT **)&obptr;
-			widg = get_widget(w, XAW_MENU);
-			wt = widg->stuff;
-			have = wt ? wt->tree : NULL;
 
-			if (have == NULL && ob == NULL)
-				break;
+			DIAGS(("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
+				ob, widg->stuff, client->name));
 
-			if (have && ob == NULL)
+			if (ob)
 			{
+				wt = obtree_to_wt(client, ob);
+				if (!wt || (wt && wt != widg->stuff))
+				{
+					DIAGS(("  --- install new menu"));
+					fix_menu(client, ob, false);
+					if (!wt)
+						wt = new_widget_tree(client, ob);
+					set_menu_widget(w, wt);
+				}
+			}
+			else if (widg->stuff)
+			{
+				DIAGS(("  --- Remove menu"));
 				remove_widget(lock, w, XAW_MENU);
-				w->active_widgets &= ~(XaMENU|MENUBAR);
 			}
-			else if (ob && have == NULL)
-			{
-				wt = &w->menu_bar;
-				bzero(wt, sizeof(*wt));
-				/* was: memset(wt, sizeof(*wt), 0);
-				 * -> wrong I mean
-				 */
-				wt->tree = ob;
-				wt->owner = client;
-				fix_menu(client, ob, false);
-				set_menu_widget(w, &w->menu_bar);
-			}
+			DIAGS(("  wind_set(WF_MENU) done"));
 		}
 		break;
 	}
@@ -925,18 +942,24 @@ next:
 
 	case WF_TOOLBAR:
 		{
-			OBJECT *ob = get_widget(w, XAW_TOOLBAR)->stuff;
+			XA_TREE *wt = get_widget(w, XAW_TOOLBAR)->stuff;
 			OBJECT **have = (OBJECT **)&pb->intout[1];
 
-			*have = ob;
+			if (wt)
+				*have = wt->tree; //ob;
+			else
+				*have = NULL;
 		}
 		break;
 	case WF_MENU:
 		{
-			OBJECT *ob = get_widget(w, XAW_MENU)->stuff;
+			XA_TREE *wt = get_widget(w, XAW_MENU)->stuff;
 			OBJECT **have = (OBJECT **)&pb->intout[1];
 
-			*have = ob;
+			if (wt)
+				*have = wt->tree;
+			else
+				*have = NULL;
 		}
 		break;
 

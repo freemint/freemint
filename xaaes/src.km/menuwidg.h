@@ -31,16 +31,17 @@
 #include "xa_types.h"
 
 TASK click_form_popup_entry, click_popup_entry, do_scroll_menu;
-void do_popup(Tab *tab, OBJECT *root, int item, TASK *click, short rdx, short rdy);
-int inquire_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, MENU *mn);
-int attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, MENU *mn);
-int detach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item);
-void remove_attachments(enum locks lock, struct xa_client *client, OBJECT *menu);
-void set_menu_widget(struct xa_window *wind, struct widget_tree *wit);
-void fix_menu(struct xa_client *client, OBJECT *root, bool);
+void	do_popup(Tab *tab, OBJECT *root, int item, TASK *click, short rdx, short rdy);
+int	inquire_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, MENU *mn);
+int	attach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item, MENU *mn);
+int	detach_menu(enum locks lock, struct xa_client *client, OBJECT *tree, int item);
+void	remove_attachments(enum locks lock, struct xa_client *client, OBJECT *menu);
+void	set_menu_widget(struct xa_window *wind, XA_TREE *menu);
+void	fix_menu(struct xa_client *client, OBJECT *root, bool);
 
-INLINE struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW_MENU]; }
-INLINE XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
-INLINE struct xa_client *menu_owner(void) { return get_menu()->owner; }
+INLINE	struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW_MENU]; }
+//INLINE XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
+INLINE	XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
+INLINE	struct xa_client *menu_owner(void) { return get_menu()->owner; }
 
 #endif /* _menuwidg_h */

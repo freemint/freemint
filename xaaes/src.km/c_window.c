@@ -632,7 +632,7 @@ change_window_attribs(enum locks lock,
 	 * workarea coordinates now.
 	 */
 
-	if (w->toolbar.tree)
+	if ( get_widget(w, XAW_TOOLBAR)->stuff )
 	{
 		set_toolbar_coords(w);
 	}
@@ -1417,7 +1417,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (window_list)
 	{
 		if (   window_list->owner != client
-		    && client->std_menu.tree == NULL)
+		    && !client->std_menu) //client->std_menu.tree == NULL)
 		{
 			/* get the menu bar right (only if the pid has no menu bar
 			 * and no more open windows for pid.
@@ -1449,7 +1449,7 @@ static void
 free_standard_widgets(struct xa_window *wind)
 {
 	int i;
-	struct xa_widget *widg;
+	//struct xa_widget *widg;
 	
 	DIAGS(("free_standard_widgets for window %d, owner %s", wind->handle, wind->owner->name));
 	for (i = 0; i < XA_MAX_WIDGETS; i++)

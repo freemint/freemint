@@ -359,10 +359,10 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 	DIAGS(("obtree_to_wt: look for wt with obtree=%lx for %s",
 		obtree, client->name));
 
-	if (obtree == client->wt.tree)
+	if (client->fmd.wt && obtree == client->fmd.wt->tree)
 	{
 		DIAGS((" -- found in client->wt"));
-		wt = &client->wt;
+		wt = client->fmd.wt;
 	}
 	else if (wind)
 	{
@@ -430,6 +430,7 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 XA_TREE *
 set_client_wt(struct xa_client *client, OBJECT *obtree)
 {
+#if 0
 	XA_TREE *wt = &client->wt;
 
 	DIAGS(("set_client_wt: obtree %lx for %s",
@@ -444,18 +445,24 @@ set_client_wt(struct xa_client *client, OBJECT *obtree)
 		wt->c = *(RECT *)&obtree->ob_x;
 	}
 	return wt;
+#endif
+	return NULL;
 }
 
+/* Ozk:
+ * This will also free statically declared widget_tree's
+ */
 void
 free_wtlist(struct xa_client *client)
 {
 	XA_TREE *wt;
 
-	DIAGS(("free_wtlist"));
+	DIAGS(("free_wtlist for %s", client->name));
 	while (client->wtlist)
 	{
 		wt = client->wtlist;
 		client->wtlist = wt->next;
+		wt->flags &= ~WTF_STATIC;
 		free_wt(wt);
 	}
 }
@@ -465,6 +472,13 @@ void
 remove_from_wtlist(XA_TREE *wt)
 {
 	XA_TREE **nwt;
+
+	if (wt->flags & WTF_STATIC)
+	{
+		DIAGS(("remove_from_wtlist: wt=%lx declared as static - not removed",
+			wt));
+		return;
+	}
 
 	nwt = &wt->owner->wtlist;
 
@@ -502,7 +516,15 @@ copy_wt(XA_TREE *d, XA_TREE *s)
 void
 free_wt(XA_TREE *wt)
 {
+
 	DIAGS(("free_wt: wt=%lx", wt));
+
+	if (wt->flags & WTF_STATIC)
+	{
+		DIAGS(("free_wt: Declared as static!"));
+		return;
+	}
+
 	if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
 	{
 		DIAGS(("  --- freed extra %lx", wt->extra));
@@ -533,6 +555,13 @@ free_wt(XA_TREE *wt)
 		bzero(wt, sizeof(*wt));
 		wt->owner = client;
 	}
+}
+
+void
+remove_wt(XA_TREE *wt)
+{
+	remove_from_wtlist(wt);
+	free_wt(wt);
 }
 
 #if 0
@@ -882,7 +911,7 @@ void
 free_xawidget_resources(struct xa_widget *widg)
 {
 	DIAGS(("free_xawidget_resources: widg=%lx", widg));
-	if (widg->stuff && (widg->flags & XAWF_STUFFKMALLOC))
+	if (widg->stuff)
 	{
 		switch (widg->stufftype)
 		{
@@ -891,15 +920,18 @@ free_xawidget_resources(struct xa_widget *widg)
 				XA_TREE *wt = widg->stuff;
 				DIAGS(("  --- stuff is wt=%lx in widg=%lx",
 					wt, widg));
-				remove_from_wtlist(wt);
-				free_wt(widg->stuff);
+				//remove_wt(wt);
+				wt->widg = NULL;
 				break;
 			}
 			default:
 			{
-				DIAGS(("  --- release stuff=%lx in widg=%lx",
-					widg->stuff, widg));
-				kfree(widg->stuff);
+				if (widg->flags & XAWF_STUFFKMALLOC)
+				{
+					DIAGS(("  --- release stuff=%lx in widg=%lx",
+						widg->stuff, widg));
+					kfree(widg->stuff);
+				}
 			}
 		}
 		widg->flags    &= ~XAWF_STUFFKMALLOC;
@@ -2778,7 +2810,7 @@ set_toolbar_coords(struct xa_window *wind)
 {
 	struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 	XA_WIDGET_LOCATION *loc = &widg->loc;
-	OBJECT *form = wind->toolbar.tree;
+	OBJECT *form = ((XA_TREE *)widg->stuff)->tree;
 
 	loc->r.x  = wind->wa.x - wind->r.x - wind->frame;
 	loc->r.y  = wind->wa.y - wind->r.y - wind->frame;
@@ -2795,17 +2827,20 @@ XA_TREE *
 set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, short edobj)
 {
 	XA_TREE *wt;
-	XA_WIDGET *widg;
+	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 	XA_WIDGET_LOCATION loc;
 
 	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): obtree %lx, %d",
 		wind->handle, wind->owner->name, obtree, edobj));
 
-	wt = &wind->toolbar;
-	widg = get_widget(wind, XAW_TOOLBAR);
-	wt->tree = obtree;
+	if (widg->stuff)
+		((XA_TREE *)widg->stuff)->widg = NULL;
+
+	wt = obtree_to_wt(wind->owner, obtree);
+	if (!wt)
+		wt = new_widget_tree(wind->owner, obtree);
+
 	wt->widg = widg;
-	wt->owner = wind->owner;
 
 	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &edobj))
 		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL);
@@ -2814,13 +2849,6 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 		wind->keypress = Key_form_do;
 		
 	wt->exit_form = Exit_form_do;
-
-	loc.relative_type = LT;
-
-	set_toolbar_coords(wind);
-
-	loc.n	 = XAW_TOOLBAR;
-	loc.mask = TOOLBAR;
 
 	widg->display	= display_object_widget;
 	widg->click	= Click_windowed_form_do;
@@ -2833,10 +2861,14 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 	widg->state	= OS_NORMAL;
 	widg->stuff	= wt;
 	widg->stufftype	= STUFF_IS_WT;
-	widg->loc	= loc;
 	widg->start	= 0;
 	wind->tool	= widg;
 
+	loc.relative_type = LT;
+	set_toolbar_coords(wind);
+	loc.n	 = XAW_TOOLBAR;
+	loc.mask = TOOLBAR;
+	widg->loc	= loc;
 	return wt;
 }
 
@@ -2844,9 +2876,8 @@ void
 remove_widget(enum locks lock, struct xa_window *wind, int tool)
 {
 	XA_WIDGET *widg = get_widget(wind, tool);
-	XA_TREE *wt = widg->stuff;
 
-	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, wt));
+	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, widg->stuff));
 
 	if (widg->destruct)
 		widg->destruct(widg);
