@@ -816,6 +816,10 @@ check_kentry_version(void)
 # define attach_extension	(*KENTRY->vec_proc.attach_extension)
 # define detach_extension	(*KENTRY->vec_proc.detach_extension)
 
+# define proc_setuid		(*KENTRY->vec_proc.proc_setuid)
+# define proc_setgid		(*KENTRY->vec_proc.proc_setgid)
+# define proc_setlimit		(*KENTRY->vec_proc.proc_setlimit)
+
 /* for sleep */
 # define CURPROC_Q		0
 # define READY_Q		1

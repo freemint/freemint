@@ -8,6 +8,10 @@
  * Copyright 1998 Guido Flohr <guido@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,20 +26,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Guido Flohr <guido@freemint.de>
- * Started: 1998-03-30
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
  */
 
 # ifndef _k_resource_h
 # define _k_resource_h
 
 # include "mint/mint.h"
-
 
 /* Return the highest priority of any process specified by WHICH and WHO
  * (see above); if WHO is zero, the current process, process group, or user
@@ -54,11 +50,8 @@ long _cdecl sys_prenice (int pid, int increment);
 long _cdecl sys_pnice (int increment);
 
 long _cdecl sys_prusage (long *r);
+
+long _cdecl proc_setlimit (struct proc *p, int i, long v);
 long _cdecl sys_psetlimit (int i, long v);
-
-
-struct plimit *copy_limit (struct plimit *p_limit);
-void free_limit (struct plimit *p_limit);
-
 
 # endif	/* _k_resource_h  */
