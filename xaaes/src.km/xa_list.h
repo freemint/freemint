@@ -37,7 +37,7 @@
 /* list types */
 
 #define LIST_HEAD(type) \
-	struct { struct type *first; }
+	struct { struct type *first; int mflag; }
 
 #define LIST_ENTRY(type) \
 	struct { struct type *next; struct type *prev; }
@@ -46,6 +46,9 @@
 
 #define LIST_START(head) \
 	((head)->first)
+
+#define LIST_MFLAG(head) \
+	((head)->mflag)
 
 #define LIST_NEXT(element,field) \
 	((element)->field.next)
@@ -63,6 +66,8 @@
 
 #define LIST_INSERT_START(head,element,field) do { \
 	\
+	LIST_MFLAG(head) = 1; \
+	\
 	LIST_PREV(element,field) = NULL; \
 	LIST_NEXT(element,field) = LIST_START(head); \
 	\
@@ -78,6 +83,8 @@
 	struct type **end = &(LIST_START(head)); \
 	struct type *prev = NULL; \
 	\
+	LIST_MFLAG(head) = 1; \
+	\
 	while (*end) \
 	{ \
 		prev = *end; \
@@ -92,6 +99,8 @@
 
 #define LIST_REMOVE(head,element,field) do { \
 	\
+	LIST_MFLAG(head) = 1; \
+	\
 	if ((element) == LIST_START(head)) \
 		LIST_START(head) = LIST_NEXT(element,field); \
 	\
@@ -104,6 +113,8 @@
 } while (0)
 
 #define LIST_FOREACH(head,run,field) \
-	for ((run) = LIST_START(head); (run); (run) = LIST_NEXT(run,field))
+	for (LIST_MFLAG(head) = 0, (run) = LIST_START(head); \
+	     assert(LIST_MFLAG(head) == 0), (run); \
+	     assert(LIST_MFLAG(head) == 0), (run) = LIST_NEXT(run,field))
 
 #endif /* _xa_list_h */
