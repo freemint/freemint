@@ -68,6 +68,11 @@
 # undef OLDTOSFS
 
 /*
+ * include old style socket device emulation
+ */
+# define OLDSOCKDEVEMU
+
+/*
  * include Linux style /kern pseudo filesystem
  * define to 0 to exclude
  */
