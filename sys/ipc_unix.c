@@ -453,12 +453,39 @@ unix_shutdown (struct socket *so, short how)
 		return 0;
 	}
 	
-	if (how == 0)
+	switch (how)
 	{
-		struct un_data *undata = so->data;
-		undata->head = undata->tail = 0;
+		case 0:
+			{
+				struct un_data *undata = so->data;
+				undata->head = undata->tail = 0;
+
+				if (so->conn)
+					so->conn->flags |= SO_CANTSNDMORE;
+			}
+			break;
+		case 1:
+			if (so->conn)
+				so->conn->flags |= SO_CANTSNDMORE;
+			break;
+		case 2:
+			if (so->conn)
+				so->conn->flags |= SO_CANTDOMORE;
+			break;
 	}
-	
+
+	wake (IO_Q, (long) so);
+	so_wakersel (so);
+	so_wakewsel (so);
+	so_wakexsel (so);
+	if (so->conn)
+	{
+		wake (IO_Q, (long) so->conn);
+		so_wakersel (so->conn);
+		so_wakewsel (so->conn);
+		so_wakexsel (so->conn);
+	}
+
 	return 0;
 }
 
