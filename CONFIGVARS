@@ -2,7 +2,7 @@
 # 
 # cross compiling
 #CROSS = yes
-CROSS = no
+#CROSS = no
 
 #
 # target and host compiler
