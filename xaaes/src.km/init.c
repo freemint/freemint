@@ -55,14 +55,7 @@ short my_global_aes[16];
 //short	mt_graf_handle	(short *Wchar, short *Hchar, short *Wbox, short *Hbox, short *global_aes);
 
 
-#if GENERATE_DIAGS
-static const char *cnf_name = "xaaesdbg.cnf";
-#else
-static const char *cnf_name = "xaaes.cnf";
-#endif
-
 static char Aes_display_name[32];
-Path Aes_home_path;
 
 long loader_pid = -1;
 char version[] = ASCII_VERSION;
@@ -131,7 +124,7 @@ struct kentry *kentry;
  * - start main kernel thread
  */
 long
-init(struct kentry *k)
+init(struct kentry *k, const char *path)
 {
 	/* setup kernel entry */
 	kentry = k;
@@ -167,7 +160,7 @@ init(struct kentry *k)
 		if (buf)
 		{
 			strcpy(buf, sysdir);
-			strcat(buf, "\\moose.xdd");
+			strcat(buf, "moose.xdd");
 
 			check = kernel_open(buf, O_RDONLY, NULL);
 			if (check)
@@ -197,7 +190,7 @@ init(struct kentry *k)
 		if (buf)
 		{
 			strcpy(buf, sysdir);
-			strcat(buf, "\\moose.adi");
+			strcat(buf, "moose.adi");
 
 			check = kernel_open(buf, O_RDONLY, NULL);
 			if (check)
@@ -294,20 +287,27 @@ init(struct kentry *k)
 	strcpy(C.Aes->proc_name,"AESSYS  ");
 
 	/* Where were we started? */
-	C.home_drv = d_getdrv();
-	DIAGS(("Home drive: %d", C.home_drv));
+	strcpy(C.Aes->home_path, path);
 
-	d_getpath(C.home, 0);
-	DIAGS(("Home directory: '%s'", C.home));
+	/* strip off last element */
+	{
+		char *s = C.Aes->home_path, *name = NULL;
+		char c;
 
-	d_getcwd(C.home, C.home_drv + 1, sizeof(C.home) - 1);
-	DIAGS(("current working directory: '%s'", C.home));
+		do {
+			c = *s++;
+			if (c == '\\' || c == '/')
+				name = s;
+		}
+		while (c);
 
-	sprintf(Aes_home_path, sizeof(Aes_home_path), "%c:%s", C.home_drv + 'A', C.home);
-	strcpy(C.Aes->home_path, Aes_home_path);
+		if (name)
+			*name = '\0';
+	}
+	DIAGS(("module path: '%s'", C.Aes->home_path));
 
-	C.Aes->xdrive = C.home_drv;
-	strcpy(C.Aes->xpath, C.home);
+	C.Aes->xdrive = d_getdrv();
+	d_getpath(C.Aes->xpath, 0);
 
 
 	/* Are we an auto/mint.cnf launched program? */
@@ -369,7 +369,7 @@ init(struct kentry *k)
 	default_options.live = true;
 
 	/* Parse the config file */
-	load_config(cnf_name);
+	load_config();
 
 	C.Aes->options = default_options;
 

@@ -465,52 +465,13 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		if (*earray && *earray != -1L)
 		{
-			short *rsrc_colour_lut = (short *)(*earray + (long)base);
-
-			int rc, col;
 			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
 			short work_out[58];
+
 			vdih = C.P_handle;
 			v_opnvwk(work_in, &vdih, work_out);
-			DIAG((D_rsrc, client, "Color palette present"));
 
-			/*
-			* ozk:	under NO goddamned circumstances do we EVER touch the first 16 VDI pens!!!!
-			*	These 16 pens are global, and should be setup upon boot, not for every
-			*	resource file loaded!
-			*/
-#if 0
-			/* set the palette up to the vdi workstation */
-			for (rc = 0;rc < 16; rc++)
-			{
-				static short tos_colours[] = { 0, 255, 1, 2, 4, 6, 3, 5, 7, 8, 9, 10, 12, 14, 11, 13};
-				vs_color(vdih, rc, &rsrc_colour_lut[tos_colours[rc]*4]);
-			}
-#endif
-			/*
-			 * ozk:	And here we make sure that the resource file actually contains a valid palette.
-			 *	After some research I found out that although there is a palette, it is by no
-			 *	means certain it is filled with valid RGB data. Most of the time, only the first
-			 *	16 colors are set. So we just check if the 16 - 255 colours conatin anything.
-			*/
-			/* Ozk: This is driving me insane, disabled it
-			 */
-#if 0
-			col = 0;
-			for (rc = 16; rc < 256; rc++)
-			{
-				if (rsrc_colour_lut[rc*4] | rsrc_colour_lut[(rc*4)+1] | rsrc_colour_lut[(rc*4)+2])
-					col = 1; break;
-			}
-			/* 1:1 mapping for other colors */
-			if (col)
-			{
-				for (rc = 16;rc < 255; rc++)
-					vs_color(vdih, rc, &rsrc_colour_lut[rc*4]);
-				/* the last one mapped to 15 seee tos_colours */
-				vs_color(vdih, 255, &rsrc_colour_lut[15*4]);
-			}
-#endif
+			DIAG((D_rsrc, client, "Color palette present"));
 		}
 #if 0
 		/* ozk: Enable this when (if) more extensions are added ... */

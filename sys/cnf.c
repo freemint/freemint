@@ -605,9 +605,8 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 }
 
 void
-parse_cnf(const char *name, struct parser_item *parser_tab, void *data)
+parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 {
-	char cnf_path[128];
 	struct parsinf inf  = { 0ul, NULL, 1, NULL, NULL, data };
 	XATTR xattr;
 	FILEPTR *fp;
@@ -616,9 +615,7 @@ parse_cnf(const char *name, struct parser_item *parser_tab, void *data)
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 
-	ksprintf(cnf_path, sizeof(cnf_path), "%s%s", sysdir, name);
-
-	ret = do_open(&fp, inf.file = cnf_path, O_RDONLY, 0, &xattr);
+	ret = do_open(&fp, inf.file = path, O_RDONLY, 0, &xattr);
 	if (!ret)
 	{
 		parser(fp, xattr.size, &inf, parser_tab);
@@ -629,6 +626,6 @@ parse_cnf(const char *name, struct parser_item *parser_tab, void *data)
 		fp->links = 0;
 		FP_FREE(fp);
 
-		ALERT("parse_cnf: can't open %s", cnf_path);
+		ALERT("parse_cnf: can't open %s", path);
 	}
 }
