@@ -268,6 +268,7 @@ do_block(struct xa_client *client)
 void
 Block(struct xa_client *client, int which)
 {
+#if 0
 	while ((client->status & CS_MENU_NAV))
 	{
 		while (client->irdrw_msg || client->cevnt_count)
@@ -281,6 +282,7 @@ Block(struct xa_client *client, int which)
 			break;
 		do_block(client);
 	}
+#endif
 	
 	
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
@@ -317,6 +319,7 @@ Block(struct xa_client *client, int which)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
 		do_block(client);
+	#if 0
 		while ((client->status & CS_MENU_NAV))
 		{
 			while (client->irdrw_msg || client->cevnt_count)
@@ -330,6 +333,7 @@ Block(struct xa_client *client, int which)
 			
 			do_block(client);
 		}
+	#endif
 
 		/*
 		 * Ozk: This is gonna be the new style of delivering events;

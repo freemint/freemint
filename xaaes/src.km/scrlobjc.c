@@ -148,7 +148,7 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, bool redraw)
 	{
 		/* HR 290702 (do without parent window; A listbox is a OBJECT and part of a object tree.) */
 		hidem();
-		draw_object_tree(list->lock, list->wt, list->wi->winob, list->wi->winitem, 2, 200);
+		draw_object_tree(list->lock, list->wt, list->wi->winob, list->wi->winitem, 2, NULL);
 		showm();
 	}
 }
@@ -487,7 +487,7 @@ set_slist_object(enum locks lock,
 				 true,			/* nolist */
 				 wkind,
 				 created_for_AES | created_for_SLIST,
-				 0, false,r,NULL,NULL);
+				 0, false, r, NULL, NULL);
 	if (list->wi)
 	{
 		int dh;
@@ -807,7 +807,7 @@ slist_msg_handler(
 		list->slider(list);
 		/* do without parent window; A listbox is a OBJECT and part of a object tree */
 		hidem();
-		draw_object_tree(lock, list->wt, list->wi->winob, list->wi->winitem, 2, 200);
+		draw_object_tree(lock, list->wt, list->wi->winob, list->wi->winitem, 2, NULL);
 		showm();
 	}
 }
@@ -912,7 +912,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
             So the below draw is moved from the end of this function to here. */
 
 			hidem();
-			draw_object_tree(lock, list->wt, form, item, 2, 200);
+			draw_object_tree(lock, list->wt, form, item, 2, NULL);
 			showm();
 
 			if (list->click)			/* Call the new object selected function */

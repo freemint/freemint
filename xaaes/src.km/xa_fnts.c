@@ -257,7 +257,7 @@ fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		hidem();
 				
 		if (wt->e.obj != -1)
-			obj_edit(wt, ED_END, 0, 0, 0, true, wind->rect_start, NULL, NULL);
+			obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
 		
 		if (r)
 		{
@@ -266,7 +266,7 @@ fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 				if (xa_rect_clip(&rl->r, r, &dr))
 				{
 					set_clip(&dr);
-					draw_object_tree(0, wt, wt->tree, start, depth, 1);
+					draw_object_tree(0, wt, wt->tree, start, depth, NULL);
 				}
 				rl = rl->next;
 			}
@@ -276,13 +276,13 @@ fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 			while (rl)
 			{
 				set_clip(&rl->r);
-				draw_object_tree(0, wt, wt->tree, start, depth, 1);
+				draw_object_tree(0, wt, wt->tree, start, depth, NULL);
 				rl = rl->next;
 			}
 		}
 		
 		if (wt->e.obj != -1)
-			obj_edit(wt, ED_END, 0, 0, 0, true, wind->rect_start, NULL, NULL);
+			obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
 		
 		showm();
 		clear_clip();
@@ -951,6 +951,7 @@ click_size(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
 			 -1,
 			 false,
 			 NULL,
+			 NULL,
 			 NULL, NULL);
 
 		fnts->fnt_pt = get_edpoint(fnts);
@@ -1047,7 +1048,7 @@ create_new_fnts(enum locks lock,
 				 FNTS_FNTLIST,
 				 NULL, NULL,		/* scrl_widget closer, fuller*/
 				 NULL, click_name,	/* scrl_click dclick, click */
-				 NULL, NULL, fnts, 30);
+				 NULL, NULL, fnts, 1);
 
 		set_slist_object(lock,
 				 wt,
@@ -1280,7 +1281,7 @@ init_fnts(struct xa_fnts_info *fnts)
 		sprintf(pt, sizeof(pt), "%d", (unsigned short)(fnts->fnt_ratio >> 16));
 		sprintf(pt + strlen(pt), sizeof(pt) - strlen(pt), ".%d", (short)(fnts->fnt_ratio));
 		strcpy(ted->te_ptext, pt);
-		obj_edit(fnts->wt, ED_INIT, FNTS_EDRATIO, 0, -1, false, NULL, NULL, NULL);
+		obj_edit(fnts->wt, ED_INIT, FNTS_EDRATIO, 0, -1, false, NULL, NULL, NULL, NULL);
 	
 		/*
 		 * Set sizes edit field...
@@ -1297,7 +1298,7 @@ init_fnts(struct xa_fnts_info *fnts)
 	
 		//size = ted->te_ptext;
 
-		obj_edit(fnts->wt, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL);
+		obj_edit(fnts->wt, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL, NULL);
 
 	}
 	DIAG((D_fnts, NULL, " --- fnt_id = %ld, fnt_pt = %lx, fnt_ratio = %lx",
@@ -1633,7 +1634,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		ret = wdialog_event(lock, client, &wep);
 
 		if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
-			obj_change(fnts->wt, wep.obj, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, wind->rect_start);
+			obj_change(fnts->wt, wep.obj, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_start);
 
 		val = get_edpoint(fnts);
 		if (val != fnts->fnt_pt)
