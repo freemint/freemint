@@ -666,7 +666,7 @@ sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 {
 	if ((long)unshifted > 0 || (long)shifted > 0 || (long)caps > 0)
 	{
-		ALERT(("Keytbl(): attempt to modify the table!"));
+		ALERT(MSG_keyboard_keytbl_ignored, (long)unshifted, (long)shifted, (long)caps);
 	}
 
 	return user_keytab;
@@ -757,7 +757,7 @@ sys_b_bioskeys(void)
 	akp_val &= 0xffffff00L;
 	akp_val |= (gl_kbd & 0x000000ff);
 	set_cookie(NULL, COOKIE__AKP, akp_val);
-	
+
 # else
 	/* Reset the TOS BIOS vectors (this is only necessary
 	 * until we replace all BIOS keyboard routines).
@@ -903,6 +903,8 @@ load_internal_table(void)
 
 	size = 128 + 128 + 128;
 
+# ifndef WITHOUT_TOS
+
 	if (tosvers >= 0x0400)
 	{
 		size += strlen(tos_keytab->alt) + 1;
@@ -915,6 +917,17 @@ load_internal_table(void)
 	}
 	else
 		size += 16;	/* a byte for each missing part plus a NUL plus some space */
+# else
+	/* Our default keyboard table (see key_table.h) is always
+	 * a complete one.
+	 */
+	size += strlen(tos_keytab->alt) + 1;
+	size += strlen(tos_keytab->altshift) + 1;
+	size += strlen(tos_keytab->altcaps) + 1;
+	size += strlen(tos_keytab->altgr) + 1;
+
+	size += 8;	/* add some space */
+# endif
 
 	/* If a buffer was allocated previously, we can perhaps reuse it.
 	 */
@@ -942,6 +955,8 @@ load_internal_table(void)
 	quickmove(p, tos_keytab->caps, 128);
 	p += 128;
 
+# ifndef WITHOUT_TOS
+
 	if (tosvers >= 0x0400)
 	{
 		len = strlen(tos_keytab->alt) + 1;
@@ -962,6 +977,28 @@ load_internal_table(void)
 			quickmove(p, tos_keytab->altgr, len);
 		}
 	}
+
+# else
+	/* Our default keyboard table (see key_table.h) is always
+	 * a complete one.
+	 */
+
+	len = strlen(tos_keytab->alt) + 1;
+	quickmove(p, tos_keytab->alt, len);
+	p += len;
+
+	len = strlen(tos_keytab->altshift) + 1;
+	quickmove(p, tos_keytab->altshift, len);
+	p += len;
+
+	len = strlen(tos_keytab->altcaps) + 1;
+	quickmove(p, tos_keytab->altcaps, len);
+	p += len;
+
+	len = strlen(tos_keytab->altgr) + 1;
+	quickmove(p, tos_keytab->altgr, len);
+
+# endif
 
 	keytab_buffer = kbuf;
 
