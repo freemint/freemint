@@ -18,9 +18,7 @@
 # include "arch/mprot.h"
 # include "arch/startup.h"	/* _base */
 # include "libkern/libkern.h"
-# include "mint/signal.h"
 
-# include "biosfs.h"
 # include "block_IO.h"
 # include "dos.h"
 # include "fatfs.h"
@@ -31,7 +29,6 @@
 # include "k_fds.h"
 # include "kmemory.h"
 # include "proc.h"
-# include "signal.h"
 
 # include <osbind.h>
 
@@ -549,24 +546,11 @@ HALT (void)
 	}
 }
 
-
-/* some key definitions */
-# define CTRLALT	0x0c
-# define DEL		0x53	/* scan code of delete key */
-# define UNDO		0x61	/* scan code of undo key */
-
-extern char *kbshft;	/* in bios.c */
-
 void
 do_func_key (int scan)
 {
 	switch (scan)
 	{
-		case UNDO:
-		{
-			killgroup (con_tty.pgrp, SIGQUIT, 1);
-			break;
-		}
 # ifdef DEBUG_INFO
 		/* F1: increase debugging level */
 		case 0x3b:
