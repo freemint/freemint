@@ -638,9 +638,8 @@ struct xa_window
 	XA_TREE menu_bar;		/*   "         "              "      for a menu bar. */
 	XA_TREE toolbar;		/*   "         "              "      for a tool bar. */
 
-	char wname[200];
-	char winfo[200];
-	//Path name, info;		/* wind_set makes copies. */
+	char wname[200];		/* window name line (copy) */
+	char winfo[200];		/* window info line (copy) */
 };
 
 struct xa_window *get_top(void);
