@@ -274,12 +274,21 @@ init_intr (void)
 {
 	ushort savesr;
 	int i;
+	long *syskey_aux;
 	
 	syskey = (KBDVEC *) Kbdvbase ();
 	oldkey = *syskey;
 	
-	new_xbra_install (&old_ikbd, (long) (&syskey->ikbdsys), new_ikbd);
-	
+	syskey_aux = (long *)syskey;
+	syskey_aux--;
+
+	if (*syskey_aux)
+		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
+# if 0
+	else
+		new_xbra_install (&old_ikbd, (long)(&syskey->ikbdsys), new_ikbd);
+# endif
+		
 	old_term = (long) Setexc (0x102, -1UL);
 	
 	savesr = spl7();

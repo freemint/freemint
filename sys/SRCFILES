@@ -38,6 +38,7 @@ COBJS = \
 	k_resource.c \
 	kernfs.c \
 	kernget.c \
+	keyboard.c \
 	kmemory.c \
 	mcount.c \
 	md5.c \

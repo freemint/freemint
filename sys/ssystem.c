@@ -383,6 +383,18 @@ s_system (int mode, ulong arg1, ulong arg2)
 			
 			break;
 		}
+		/* Arg1 == signal number to be sent on C/A/D
+		 * Arg2 == pid of the signal receiver
+		 *
+		 * If arg1 == 0, then revert to the default behaviour
+		 *
+		 * XXX: any better idea?
+		 */
+# if 0
+		case S_CAD:
+		{
+		}
+# endif
 		
 		/* experimental section
 		 */

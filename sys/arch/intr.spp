@@ -64,10 +64,10 @@ L_short_1:	pea	_mint_vbl.w(pc)
 	tst.w	_in_kernel
 	bne.s	L_systime
 	addq.l	#5,([_curproc],P_USRTIME)
-	jmp	([_old_5ms],0)
+	jmp	([_old_5ms],0.w)
 L_systime:
 	addq.l	#5,([_curproc],P_SYSTIME)
-	jmp	([_old_5ms],0)
+	jmp	([_old_5ms],0.w)
 %else
 	move.l	_old_5ms.w(pc),-(sp)	; push old vector & save a bit of memory
 	move.l	a0,-(sp)
@@ -254,8 +254,17 @@ _reset:	move.w	#$2700,sr		; avoid interruption here
 ; (by merging the last mouse packet header, or-ing in the
 ; middle button state and using 0/0 for the x/y increment).
 ;
-; the faked_packet and third_button variables are declared at the
-; end of this file
+	DATA
+
+; buffer for faked mouse packet (actually only 3 bytes)
+
+faked_packet:	dc.l	0
+
+; here we store the additional button state
+
+third_button:	dc.w	0
+
+	TEXT
 
 _newmvec:	move.l	a0,-(sp)
 	move.b	(a0),d0
@@ -270,18 +279,6 @@ _newmvec:	move.l	a0,-(sp)
 ;
 	XDEF	_newjvec
 	XREF	_oldjvec
-
-	DATA
-
-; buffer for faked mouse packet (actually only 3 bytes)
-
-faked_packet:	dc.l	0
-
-; here we store the additional button state
-
-third_button:	dc.w	0
-
-	TEXT
 
 _newjvec:	move.l	a0,-(sp)	; save a0 on the stack
 	move.b	2(a0),d0	; joystick direction
@@ -308,49 +305,30 @@ _newjvec:	move.l	a0,-(sp)	; save a0 on the stack
 	move.l	_oldjvec,-(sp)	; jump to original joystick handler
 	rts
 
-; ACIA interrupt service routine
+; The routine is called by TOS prior to processing the IKBD
+; keyboard scancode. The scancode byte is in d0.
+; BUG: not sure if this works on TOS < 2.0. The vector used
+;      seems not published (although it may be just a flaw
+;      in docs).
 
-%ifdef NOT_YET
-	XDEF	_new_acia
-	XDEF	_old_acia
-	XREF	_syskey
+	XDEF	_newkeys
+	XDEF	_oldkeys
+	XREF	_ikbd_scan
 
-	dc.l	$58425241	; XBRA
-	dc.l	$4d694e54	; MiNT
-old_acia:	dc.l	0
-new_acia:	movem.l	d0-d3/a0-a3,-(sp)
-L_again:	move.l	_syskey,a0
-	move.l	28(a0),a0	; midisys
-	jsr	(a0)
-	move.l	_syskey,a0
-	move.l	32(a0),a0	; ikbdsys
-	jsr	(a0)
-	btst	#$04,$fa01.w	; MFP active edge register
-	beq.s	L_again
-	move.b	#$bf,$fa11.w	; MFP interrupt in service B
-	movem.l	(sp)+,d0-d3/a0-a3
-%ifndef ONLY030
-	nop
-%endif
-	rte
-%endif
-
-;
-; new ikbd keyboard interrupt vector
-; kintr is a global variable that should be non-zero if a keyboard
-; event occured
-;
-	XDEF	_new_ikbd
-	XDEF	_old_ikbd
-	XREF	_kintr
-
-	dc.l	$58425241	; XBRA
-	dc.l	$4d694e54	; MiNT
-_old_ikbd:	dc.l	0
-
-_new_ikbd:	move.w	#1,_kintr
-	move.l	_old_ikbd.w(pc),-(sp)
-	rts		; jump to system interrupt routine
+	dc.l	$58425241		; XBRA
+	dc.l	$4d694e54		; MiNT
+_oldkeys:	dc.l	0
+_newkeys:	movem.l	d1-d2/a0-a2,-(sp)
+	move.w	d0,-(sp)
+	jsr	_ikbd_scan
+	addq.l	#$02,sp
+	cmp.w	#$ffff,d0
+	beq.s	L_bye
+	movem.l	(sp)+,d1-d2/a0-a2
+	move.l	_oldkeys.w(pc),-(sp)
+	rts
+L_bye:	movem.l	(sp)+,d1-d2/a0-a2
+	rts
 
 ; Generic routines for handling any user-specified interrupts.
 ; These only work on a 68020+ (long frame format is needed),
