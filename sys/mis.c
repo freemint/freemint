@@ -31,6 +31,8 @@
  *
  */
 
+# include <stdarg.h>
+
 # include "libkern/libkern.h"
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
@@ -43,7 +45,7 @@
 
 # include "cnf.h"		/* init_env */
 # include "info.h"		/* national stuff */
-# include "init.h"		/* boot_printf */
+# include "init.h"		/* boot_print */
 # include "k_exec.h"		/* sys_pexec */
 # include "k_exit.h"		/* sys_pwaitpid */
 
@@ -70,6 +72,11 @@
 # define SHELL_ARGS	2048L
 # define SHELL_FLAGS	(F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_P)
 
+/* this is an average number of seconds in Gregorian year
+ * (365 days, 6 hours, 11 minutes, 15 seconds).
+ */
+# define SEC_OF_YEAR	31558275L
+
 # define LINELEN	126
 
 # define SHCMD_EXIT	1
@@ -92,13 +99,10 @@
 static BASEPAGE *shell_base;
 static short xcommands;
 
-static short current_year;		/* sh_ls() wants to know this */
-static struct timeval ctv;
-
 static const char *commands[] =
 {
 	"exit", "ver", "ls", "cd", "cp", "mv", "rm", "chmod", \
-	"help", "ln", "exec", "env", "chown", "chgrp", "xcmd", 0
+	"help", "ln", "exec", "env", "chown", "chgrp", "xcmd", NULL
 };
 
 static const char *months[] =
@@ -107,61 +111,20 @@ static const char *months[] =
 	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-/* Used twice, don't INLINE */
+/* Utility routines */
+
 static void
-xcmdstate(void)
+shell_printf(const char *fmt, ...)
 {
-	boot_printf("Extended commands are %s\r\n", xcommands ? "on" : "off");
+	char buf[1024];
+	va_list args;
+
+	va_start(args, fmt);
+	vsprintf(buf, sizeof (buf), fmt, args);
+	va_end(args);
+
+	Cconws(buf);
 }
-
-/* Idem */
-static void
-ver(void)
-{
-	boot_printf(COPYCOPY, SH_VER_MAIOR, SH_VER_MINOR);
-}
-
-INLINE void
-help(void)
-{
-	boot_print( \
-	"	MiS is not intended to be a regular system shell, so don't\r\n" \
-	"	expect much. It is only a tool to fix bigger problems that\r\n" \
-	"	prevent the system from booting normally.\r\n" \
-	"\r\n" \
-	"	Basic commands are:\r\n" \
-	"\r\n" \
-	"	cd - change directory\r\n" \
-	"	exit - leave and reboot\r\n" \
-	"	help - display this message\r\n" \
-	"	ver - display version information\r\n" \
-	"	xcmd - switch the extended command set on/off\r\n"
-	"\r\n");
-
-	/* boot_printf() can only expand strings up to 128 bytes :-( */
-	boot_printf("	Extended commands (now %s) are:\r\n\r\n", xcommands ? "on" : "off");
-
-	boot_print( \
-	"	chgrp - change the group a file belongs to\r\n" \
-	"	chmod - change the access permissions for a file\r\n" \
-	"	chown - change file's ownership\r\n" \
-	"	*cp - copy file\r\n" \
-	"	env - display environment\r\n" \
-	"	*ln - create a link\r\n" \
-	"	ls - display directory\r\n" \
-	"	*mv - move/rename a file\r\n" \
-	"	*rm - delete a file\r\n" \
-	"\r\n" \
-	"	All other words typed are understood as names of programs\r\n" \
-	"	to execute. In case you'd want to execute something, that\r\n" \
-	"	is named with one of the words displayed above, use 'exec'\r\n" \
-	"	or supply the full pathname." \
-	"\r\n");
-}
-
-/* Display all files in the current directory, with attributes et ceteris.
- * No wilcards filtering what to display, no sorted output, no nothing.
- */
 
 /* Helpers for ls:
  * justify_left() - just pads the text with spaces upto given lenght
@@ -173,7 +136,7 @@ justify_left(char *p, long spaces)
 {
 	long s = (spaces - strlen(p));
 
-	while (*p && *p != 0x20)
+	while (*p && !isspace(*p))
 		p++;
 
 	while (s)
@@ -204,229 +167,6 @@ justify_right(char *p, long spaces)
 	strcpy(p, temp);
 
 	return (p + plen);
-}
-
-INLINE long
-sh_ls(char *dir)
-{
-	struct stat st;
-	short year, month, day, hour, minute;
-	long r, s, handle, gemdos_time;
-	char *p, path[1024];
-	char entry[256];
-
-	if (!dir || *dir == 0)
-		dir = "./";
-
-	r = Dopendir(dir, 0);
-	if (r < 0)
-		return r;
-
-	handle = r;
-
-	do
-	{
-		r = Dreaddir(sizeof(entry), handle, entry);
-
-		if (r == 0)
-		{
-			strcpy(path, dir);
-			strcat(path, "/");
-			strcat(path, entry + sizeof(long));
-
-			s = Fstat64(0, path, &st);
-
-			if (s == 0)
-			{
-				/* Reuse the path[] space */
-				p = path;
-
-				if (S_ISLNK(st.mode))
-					*p++ = 'l';
-				else if (S_ISMEM(st.mode))
-					*p++ = 'm';
-				else if (S_ISFIFO(st.mode))
-					*p++ = 'p';
-				else if (S_ISREG(st.mode))
-					*p++ = '-';
-				else if (S_ISBLK(st.mode))
-					*p++ = 'b';
-				else if (S_ISDIR(st.mode))
-					*p++ = 'd';
-				else if (S_ISCHR(st.mode))
-					*p++ = 'c';
-				else if (S_ISSOCK(st.mode))
-					*p++ = 's';
-				else
-					*p++ = '?';
-
-				/* user */
-				*p++ = (st.mode & S_IRUSR) ? 'r' : '-';
-				*p++ = (st.mode & S_IWUSR) ? 'w' : '-';
-				if (st.mode & S_IXUSR)
-					*p++ = (st.mode & S_ISUID) ? 's' : 'x';
-				else
-					*p++ = '-';
-
-				/* group */
-				*p++ = (st.mode & S_IRGRP) ? 'r' : '-';
-				*p++ = (st.mode & S_IWGRP) ? 'w' : '-';
-				if (st.mode & S_IXGRP)
-					*p++ = (st.mode & S_ISGID) ? 's' : 'x';
-				else
-					*p++ = '-';
-
-				/* others */
-				*p++ = (st.mode & S_IROTH) ? 'r' : '-';
-				*p++ = (st.mode & S_IWOTH) ? 'w' : '-';
-				if (st.mode & S_IXOTH)
-					*p++ = (st.mode & S_ISVTX) ? 't' : 'x';
-				else
-					*p++ = '-';
-
-				*p++ = ' ';
-
-				/* Unfortunately ksprintf() lacks many formatting features ...
-				 */
-				ksprintf(p, sizeof(path), "%d", (short)st.nlink);	/* XXX */
-				p = justify_right(p, 4);
-				*p++ = ' ';
-
-				ksprintf(p, sizeof(path), "%ld", st.uid);
-				p = justify_left(p, 9);
-
-				ksprintf(p, sizeof(path), "%ld", st.gid);
-				p = justify_left(p, 9);
-
-				/* XXX this will cause problems, if st.size > 2GB */
-				ksprintf(p, sizeof(path), "%ld", (long)st.size);
-				p = justify_right(p, 8);
-				*p++ = ' ';
-
-				gemdos_time = unix2xbios(st.mtime.time);
-				gemdos_time >>= 5;				/* discard seconds */
-
-				minute = (short)(gemdos_time & 0x0000003fL);
-				gemdos_time >>= 6;
-
-				hour = (short)(gemdos_time & 0x0000001fL);
-				gemdos_time >>= 5;
-
-				day = (short)(gemdos_time & 0x0000001fL);
-				gemdos_time >>= 5;
-
-				month = (short)(gemdos_time & 0x0000000fL);
-				gemdos_time >>= 4;
-
-				year = (short)(gemdos_time & 0x0000007fL);
-				year += 1980;
-
-				ksprintf(p, sizeof(path), "%s", months[month - 1]);
-				p = justify_left(p, 4);
-
-				ksprintf(p, sizeof(path), "%d", day);
-				p = justify_left(p, 3);
-
-				if ((ctv.tv_sec - st.mtime.time) > 15768000L)	/* approx. number of seconds in 6 months */
-				{
-					ksprintf(p, sizeof(path), "%d", year);
-					p = justify_right(p, 5);
-				}
-				else
-				{
-					ksprintf(p, sizeof(path), "%d", hour);
-					p = justify_right(p, 2);
-					*p++ = ':';
-					if (minute < 10)
-						*p++ = '0';
-					ksprintf(p, sizeof(path), "%d", minute);
-					while (*p) p++;
-				}
-
-				*p++ = ' ';
-
-				*p = 0;
-
-				boot_print(path);
-				boot_print(entry + sizeof(long));
-				boot_print("\r\n");
-			}
-		}
-	} while (r == 0);
-
-	(void)Dclosedir(handle);
-
-	return 0;
-}
-
-/* chgrp, chown, chmod: change various attributes */
-INLINE long
-sh_chgrp(char *grp, char *fname)
-{
-	struct stat st;
-	long r, gid;
-
-	r = Fstat64(0, fname, &st);
-	if (r < 0)
-		return r;
-
-	gid = atol(grp);
-
-	if (gid == st.gid)
-		return 0;			/* no change */
-
-	return Fchown(fname, st.uid, gid);
-}
-
-INLINE long
-sh_chown(char *own, char *fname)
-{
-	struct stat st;
-	long r, uid, gid;
-	char *grp;
-
-	r = Fstat64(0, fname, &st);
-	if (r < 0)
-		return r;
-
-	grp = strrchr(own, '.');
-	if (!grp)
-		grp = strrchr(own, ':');
-
-	if (grp)
-	{
-		*grp++ = 0;
-		gid = atol(grp);
-	}
-	else
-		gid = st.gid;
-
-	uid = atol(own);
-
-	if (uid == st.uid && gid == st.gid)
-		return 0;			/* no change */
-
-	return Fchown(fname, uid, gid);
-}
-
-INLINE long
-sh_chmod(char *attr, char *fname)
-{
-	long d = 0;
-	short c;
-	char *s;
-
-	s = attr;
-
-	while ((c = *s++) != 0 && (c >= '0' && c <= '7'))
-	{
-		d <<= 3;
-		d += (c & 0x0007);
-	}
-
-	d &= 0x00007fffL;
-
-	return Fchmod(fname, d);
 }
 
 /* Helper routines for manipulating environment */
@@ -471,9 +211,9 @@ sh_getenv(const char *var)
 	char *es, *env_str = shell_base->p_env;
 	long vl, r;
 
-	if (!env_str || *env_str == 0)
+	if (env_str == NULL || *env_str == 0)
 	{
-		boot_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
+		shell_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
 
 		return 0;
 	}
@@ -523,7 +263,7 @@ sh_setenv(const char *var, char *value)
 	new_size++;				/* trailing zero */
 
 	new_env = (char *)Mxalloc(new_size, 3);
-	if (!new_env)
+	if (new_env == NULL)
 		return;
 
 	bzero(new_env, new_size);
@@ -560,33 +300,6 @@ sh_setenv(const char *var, char *value)
 	Mfree(env_str);
 }
 
-INLINE void
-env(char *envie)
-{
-	char *var;
-
-	if (envie)
-		var = envie;		/* debug reasons */
-	else
-		var = shell_base->p_env;
-
-	if (!var || *var == 0)
-	{
-		boot_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
-
-		return;
-	}
-
-	while (*var)
-	{
-		boot_print(var);	/* avoid excessing 128 char limit for boot_printf() */
-		boot_print("\r\n");
-		while (*var)
-			var++;
-		var++;
-	}
-}
-
 /* Split command line into separate strings and put their pointers
  * into args[].
  *
@@ -594,18 +307,17 @@ env(char *envie)
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
  *
  */
-INLINE void
+INLINE long
 crunch(char *cmdline, char *args[])
 {
 	char *cmd = cmdline, *start;
-	short idx = 0;
-	long cmdlen;
+	long cmdlen, idx = 0;
 
 	cmdlen = strlen(cmdline);
 
 	do
 	{
-		while (cmdlen && *cmd == 0x20)			/* kill leading spaces */
+		while (cmdlen && isspace(*cmd))			/* kill leading spaces */
 		{
 			cmd++;
 			cmdlen--;
@@ -613,18 +325,14 @@ crunch(char *cmdline, char *args[])
 
 		start = cmd;
 
-		while (cmdlen && *cmd != 0x20)
+		while (cmdlen && !isspace(*cmd))
 		{
 			cmd++;
 			cmdlen--;
 		}
 
 		if (start == cmd)
-		{
-			args[idx] = 0;
-
-			return;
-		}
+			break;
 		else if (*cmd)
 		{
 			*cmd = 0;
@@ -637,7 +345,9 @@ crunch(char *cmdline, char *args[])
 
 	} while (cmdlen > 0);
 
-	args[idx] = 0;
+	args[idx] = NULL;
+	
+	return idx;
 }
 
 /* Execute an external program */
@@ -730,12 +440,316 @@ execvp(char *oldcmd, char *args[])
 	return r;
 }
 
+/* Used twice, don't INLINE */
+static void
+xcmdstate(void)
+{
+	shell_printf("Extended commands are %s\r\n", xcommands ? "on" : "off");
+}
+
+/* End utilities, begin commands */
+
+/* XXX it would be more convenient for internal commands to get standard
+ * argc/argv[] arguments as normal C programs do, for flexibility.
+ */
+
+/* Used twice, don't INLINE */
+static void
+ver(void)
+{
+	shell_printf(COPYCOPY, SH_VER_MAIOR, SH_VER_MINOR);
+}
+
+INLINE void
+help(void)
+{
+	boot_print( \
+	"	MiS is not intended to be a regular system shell, so don't\r\n" \
+	"	expect much. It is only a tool to fix bigger problems that\r\n" \
+	"	prevent the system from booting normally.\r\n" \
+	"\r\n" \
+	"	Basic commands are:\r\n" \
+	"\r\n" \
+	"	cd - change directory\r\n" \
+	"	exit - leave and reboot\r\n" \
+	"	help - display this message\r\n" \
+	"	ver - display version information\r\n" \
+	"	xcmd - switch the extended command set on/off\r\n"
+	"\r\n");
+
+	shell_printf("	Extended commands (now %s) are:\r\n\r\n", xcommands ? "on" : "off");
+
+	boot_print( \
+	"	chgrp - change the group a file belongs to\r\n" \
+	"	chmod - change the access permissions for a file\r\n" \
+	"	chown - change file's ownership\r\n" \
+	"	*cp - copy file\r\n" \
+	"	env - display environment\r\n" \
+	"	*ln - create a link\r\n" \
+	"	ls - display directory\r\n" \
+	"	*mv - move/rename a file\r\n" \
+	"	*rm - delete a file\r\n" \
+	"\r\n" \
+	"	All other words typed are understood as names of programs\r\n" \
+	"	to execute. In case you'd want to execute something, that\r\n" \
+	"	is named with one of the words displayed above, use 'exec'\r\n" \
+	"	or supply the full pathname." \
+	"\r\n");
+}
+
+/* Display all files in the current directory, with attributes et ceteris.
+ * No wilcards filtering what to display, no sorted output, no nothing.
+ */
+
+INLINE long
+sh_ls(char *dir)
+{
+	struct stat st;
+	struct timeval tv;
+	short year, month, day, hour, minute;
+	long r, s, handle;
+	char *p, path[1024];
+	char entry[256];
+
+	if (!dir || *dir == 0)
+		dir = "./";
+
+	r = Dopendir(dir, 0);
+	if (r < 0)
+		return r;
+
+	tv.tv_sec = 0;
+	Tgettimeofday(&tv, NULL);
+
+	handle = r;
+
+	do
+	{
+		r = Dreaddir(sizeof(entry), handle, entry);
+
+		if (r == 0)
+		{
+			strcpy(path, dir);
+			strcat(path, "/");
+			strcat(path, entry + sizeof(long));
+
+			/* `/bin/ls -l' doesn't dereference links, so we don't either */
+			s = Fstat64(1, path, &st);
+
+			/* XXX softlinks displayed should -> point to the file they point to */
+
+			if (s == 0)
+			{
+				/* Reuse the path[] space */
+				p = path;
+
+				if (S_ISLNK(st.mode))		/* file type */
+					*p++ = 'l';
+				else if (S_ISMEM(st.mode))
+					*p++ = 'm';
+				else if (S_ISFIFO(st.mode))
+					*p++ = 'p';
+				else if (S_ISREG(st.mode))
+					*p++ = '-';
+				else if (S_ISBLK(st.mode))
+					*p++ = 'b';
+				else if (S_ISDIR(st.mode))
+					*p++ = 'd';
+				else if (S_ISCHR(st.mode))
+					*p++ = 'c';
+				else if (S_ISSOCK(st.mode))
+					*p++ = 's';
+				else
+					*p++ = '?';
+
+				/* access attibutes: user */
+				*p++ = (st.mode & S_IRUSR) ? 'r' : '-';
+				*p++ = (st.mode & S_IWUSR) ? 'w' : '-';
+				if (st.mode & S_IXUSR)
+					*p++ = (st.mode & S_ISUID) ? 's' : 'x';
+				else
+					*p++ = '-';
+
+				/* ... group */
+				*p++ = (st.mode & S_IRGRP) ? 'r' : '-';
+				*p++ = (st.mode & S_IWGRP) ? 'w' : '-';
+				if (st.mode & S_IXGRP)
+					*p++ = (st.mode & S_ISGID) ? 's' : 'x';
+				else
+					*p++ = '-';
+
+				/* ... others */
+				*p++ = (st.mode & S_IROTH) ? 'r' : '-';
+				*p++ = (st.mode & S_IWOTH) ? 'w' : '-';
+				if (st.mode & S_IXOTH)
+					*p++ = (st.mode & S_ISVTX) ? 't' : 'x';
+				else
+					*p++ = '-';
+
+				*p++ = ' ';
+
+				/* Unfortunately ksprintf() lacks many formatting features ...
+				 */
+				ksprintf(p, sizeof(path), "%d", (short)st.nlink);	/* XXX */
+				p = justify_right(p, 4);
+				*p++ = ' ';
+
+				ksprintf(p, sizeof(path), "%ld", st.uid);
+				p = justify_left(p, 9);
+
+				ksprintf(p, sizeof(path), "%ld", st.gid);
+				p = justify_left(p, 9);
+
+				/* XXX this will cause problems, if st.size > 2GB */
+				ksprintf(p, sizeof(path), "%ld", (long)st.size);
+				p = justify_right(p, 8);
+				*p++ = ' ';
+
+				/* And now recalculate the time stamp */
+				unix2calendar(st.mtime.time, &year, &month, &day, &hour, &minute, NULL);
+
+				ksprintf(p, sizeof(path), "%s", months[month - 1]);
+				p = justify_left(p, 4);
+
+				ksprintf(p, sizeof(path), "%d", day);
+				p = justify_left(p, 3);
+
+				/* There can be up to 18 hours and 33 minutes of error
+				 * relative to the calendar time, but for this purpose
+				 * it does not matter.
+				 */
+				if ((tv.tv_sec - st.mtime.time) > (SEC_OF_YEAR >> 1))
+					ksprintf(p, sizeof(path), "%d", year);
+				else
+					ksprintf(p, sizeof(path), (minute > 9) ? "%d:%d" : "%d:0%d", hour, minute);
+
+				p = justify_right(p, 5);
+				*p++ = ' ';
+
+				*p = 0;
+
+				boot_print(path);
+				boot_print(entry + sizeof(long));
+				boot_print("\r\n");
+			}
+		}
+	} while (r == 0);
+
+	Dclosedir(handle);
+
+	return 0;
+}
+
+/* chgrp, chown, chmod: change various attributes */
+INLINE long
+sh_chgrp(char *grp, char *fname)
+{
+	struct stat st;
+	long r, gid;
+
+	r = Fstat64(0, fname, &st);
+	if (r < 0)
+		return r;
+
+	gid = atol(grp);
+
+	if (gid == st.gid)
+		return 0;			/* no change */
+
+	return Fchown(fname, st.uid, gid);
+}
+
+INLINE long
+sh_chown(char *own, char *fname)
+{
+	struct stat st;
+	long r, uid, gid;
+	char *grp;
+
+	r = Fstat64(0, fname, &st);
+	if (r < 0)
+		return r;
+
+	uid = st.uid;
+	gid = st.gid;
+
+	/* cases like `chown 0 filename' and `chown 0. filename' */
+	grp = strrchr(own, '.');
+	if (!grp)
+		grp = strrchr(own, ':');
+
+	if (grp)
+	{
+		*grp++ = 0;
+		if (isdigit(*grp))
+			gid = atol(grp);
+	}
+
+	/* cases like `chown .0 filename' */
+	if (isdigit(*own))
+		uid = atol(own);
+
+	if (uid == st.uid && gid == st.gid)
+		return 0;			/* no change */
+
+	return Fchown(fname, uid, gid);
+}
+
+INLINE long
+sh_chmod(char *attr, char *fname)
+{
+	long d = 0;
+	short c;
+	char *s;
+
+	s = attr;
+
+	while ((c = *s++) != 0 && isodigit(c))
+	{
+		d <<= 3;
+		d += (c & 0x0007);
+	}
+
+	d &= 0x00007fffL;
+
+	return Fchmod(fname, d);
+}
+
+INLINE void
+env(char *envie)
+{
+	char *var;
+
+	if (envie)
+		var = envie;		/* debug reasons */
+	else
+		var = shell_base->p_env;
+
+	if (!var || *var == 0)
+	{
+		shell_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
+
+		return;
+	}
+
+	while (*var)
+	{
+		shell_printf("%s\r\n", var);
+		while (*var)
+			var++;
+		var++;
+	}
+}
+
+/* End of the commands, begin control routines */
+
 /* Execute the given command */
+
 INLINE long
 execute(char *cmdline, char *args[])
 {
 	char newcmd[128], *c, *home;
-	long r, cnt, cmdno;
+	long r, cnt, cmdno, argc;
 	short y;
 
 	c = cmdline;
@@ -744,28 +758,28 @@ execute(char *cmdline, char *args[])
 	while (*c)
 	{
 		if (*c == '\r')
-			*c = 0x20;
+			*c = ' ';
 		if (*c == '\n')
-			*c = 0x20;
+			*c = ' ';
 		c++;
 	}
 
 	c = cmdline;
 
 	/* Skip the first word (command) */
-	while (*c && *c == 0x20)
+	while (*c && isspace(*c))
 		c++;
-	while (*c && *c != 0x20)
+	while (*c && !isspace(*c))
 		c++;
 
 	bzero(newcmd, sizeof(newcmd));
 
 	strncpy(newcmd, c, 127);		/* crunch() destroys the `cmdline', so we need to copy it */
 
-	crunch(cmdline, args);
+	argc = crunch(cmdline, args);
 
-	if (!args[0])
-		return 0;			/* empty command line */
+	if (!argc)
+		return 0;			/* empty command line (unlikely) */
 
 	/* Result a zero if the string given is not an internal command,
 	 * or the number of the internal command otherwise (the number is
@@ -812,7 +826,7 @@ execute(char *cmdline, char *args[])
 		{
 			boot_print("Are you sure to exit and reboot (y/n)?");
 			y = (short)Cconin();
-			if (tolower(y & 0xff) == *MSG_init_menu_yes)
+			if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
 				Pterm(0);
 			boot_print("\r\n");
 			break;
@@ -902,7 +916,7 @@ shell(void)
 {
 	char *args[SHELL_ARGS];
 	char cwd[1024], linebuf[LINELEN+2], *lb, *home;
-	long gemdos_time, r;
+	long r;
 	short x;
 
 	/* XXX enable word wrap for the console, cursor etc. */
@@ -916,7 +930,7 @@ shell(void)
 	{
 		r = Dsetpath(home);
 		if (r < 0)
-			boot_printf("mint: %s: can't set home directory, error %ld\r\n\r\n", __FUNCTION__, r);
+			shell_printf("mint: %s: can't set home directory, error %ld\r\n\r\n", __FUNCTION__, r);
 	}
 
 	for (;;)
@@ -942,20 +956,10 @@ shell(void)
 
 		sh_setenv("PWD=", cwd);
 
-		boot_print("mint:");		/* limits in the boot_printf(), as usual */
+		boot_print("mint:");
 		boot_print(cwd);
 		boot_print("#");
 		Cconrs(linebuf);
-
-		ctv.tv_sec = 0;
-		(void)Tgettimeofday(&ctv, 0);
-
-		if (ctv.tv_sec)
-		{
-			gemdos_time = unix2xbios(ctv.tv_sec);
-			current_year = (short)(gemdos_time >> 25);
-			current_year += 1980;
-		}
 
 		if (linebuf[1] > 1)
 		{
@@ -973,7 +977,7 @@ shell(void)
 			r = execute(lb, args);
 
 			if (r < 0)
-				boot_printf("mint: %s: error %ld\r\n", lb, r);
+				shell_printf("mint: %s: error %ld\r\n", lb, r);
 		}
 	}
 }
