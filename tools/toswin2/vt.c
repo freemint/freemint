@@ -18,6 +18,17 @@ void paint(TEXTWIN *v, int c)
 	int i;
 	int line = v->cy;
 
+	ulong use_attribute = ~CACS & v->term_cattr;
+	
+	if ((v->term_cattr & CACS) && 
+	    (c== '`' ||
+	     c == 'a' ||
+	     (c >= 'f' && c <= '~') ||
+	     (c >= '+' && c <= '.') ||
+	     c == '.' || 
+	     c == '0'))
+	     	use_attribute |= CACS;
+	
 	switch (v->cfg->char_tab)
 	{
 		case TAB_ATARI :
@@ -44,10 +55,10 @@ void paint(TEXTWIN *v, int c)
 	if (v->data[line][v->cx] != c) 
 	{
 		v->data[line][v->cx] = c;
-		v->cflag[line][v->cx] = CDIRTY | v->term_cattr;
+		v->cflag[line][v->cx] = CDIRTY | use_attribute;
 	}
 	else
-		v->cflag[line][v->cx] = (CTOUCHED | v->term_cattr);
+		v->cflag[line][v->cx] = (CTOUCHED | use_attribute);
 	v->dirty[line] |= SOMEDIRTY;
 }
 

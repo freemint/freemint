@@ -29,7 +29,7 @@ static void delete_line(TEXTWIN *v, int r)
 	int 				y;
 	int 				doscroll = (r == 0);
 	unsigned char	*oldline;
-	short 			*oldflag;
+	long 			*oldflag;
 
 	oldline = v->data[r];
 	oldflag = v->cflag[r];
@@ -57,7 +57,7 @@ static void insert_line(TEXTWIN *v, int r)
 {
 	int 				i, limit;
 	unsigned char	*oldline;
-	short 			*oldflag;
+	long 			*oldflag;
 
 	limit = v->maxy - 1;
 	oldline = v->data[limit];
@@ -120,6 +120,7 @@ static void quote_putch(TEXTWIN *v, int c)
 		else
 			v->cx = v->maxx - 1;
 	}
+
 	curs_on(v);
 	v->output = vt52_putch;
 }
@@ -516,6 +517,18 @@ void vt52_putch(TEXTWIN *v, int c)
 				gotoxy(v, (v->cx +8) & ~7, v->cy); 
 				break;
 
+			case '\016':		/* smacs, start alternate character set.  */
+printf ("%s:%d:term_cattr was: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
+				v->term_cattr |= CACS;
+printf ("%s:%d:term_cattr is: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
+				break;
+				
+			case '\017':		/* rmacs, end alternate character set.  */
+printf ("%s:%d:term_cattr was: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
+				v->term_cattr &= ~CACS;
+printf ("%s:%d:term_cattr was: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
+				break;
+				
 			default:
 				break;
 		}
