@@ -595,7 +595,7 @@ again:
 			mem->addr[i] = reg->loc;
 
 			reg->links++;
-			mark_proc_region (p, reg, PROT_P);
+			mark_proc_region (p->p_mem, reg, PROT_P, p->pid);
 
 			return mem->addr[i];
 		}
@@ -699,7 +699,7 @@ detach_region (PROC *p, MEMREGION *reg)
 				free_region (reg);
 			else
 				/* cause curproc's table to be updated */
-				mark_proc_region (p, reg, PROT_I);
+				mark_proc_region (p->p_mem, reg, PROT_I, p->pid);
 
 			return;
 		}
@@ -740,7 +740,7 @@ detach_region_by_addr (PROC *p, long block)
 				free_region (m);
 			else
 				/* cause curproc's table to be updated */
-				mark_proc_region (p, m, PROT_I);
+				mark_proc_region (p->p_mem, m, PROT_I, p->pid);
 
 			return 0;
 		}
@@ -1667,7 +1667,7 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 				}
 
 				if (mem_prot_flags & MPF_STRICT)
-					mark_proc_region (execproc, m, PROT_I);
+					mark_proc_region (execproc->p_mem, m, PROT_I, execproc->pid);
 
 				free_region(m);
 			}

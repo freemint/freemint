@@ -202,7 +202,7 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 		kfree(fullpath);
 		return(ENOMEM);
 	}
-	mark_proc_region(curproc, mr, PROT_G);
+	mark_proc_region(curproc->p_mem, mr, PROT_G, curproc->pid);
 	*sl = (SHARED_LIB *)mr->loc;
 	bzero(*sl, sizeof(SHARED_LIB));
 	(*sl)->slb_region = mr;
@@ -368,7 +368,7 @@ slb_error:
 	(*sl)->slb_proc->p_flag |= 3;	/* mark as SLB (2) and unkillable process (1) */
 	(*sl)->slb_next = slb_list;
 	slb_list = *sl;
-	mark_proc_region(curproc, mr, PROT_PR);
+	mark_proc_region(curproc->p_mem, mr, PROT_PR, curproc->pid);
 	return(0);
 }
 
@@ -529,7 +529,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 	}
 
 	/* Allow curproc temporary global access to the library structure */
-	mark_proc_region (curproc, slb->slb_region, PROT_G);
+	mark_proc_region (curproc->p_mem, slb->slb_region, PROT_G, curproc->pid);
 
 	/* Mark all memregions of the shared library as "global" for curproc */
 	assert (slb->slb_proc->p_mem);
@@ -539,7 +539,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
 			if (*mr != 0L)
-				mark_proc_region (curproc, *mr, PROT_G);
+				mark_proc_region (curproc->p_mem, *mr, PROT_G, curproc->pid);
 		}
 	}
 
@@ -554,7 +554,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 		DEBUG(("Slbopen: open() successful"));
 		mark_opened(slb, curproc->pid, 1);
 		slb->slb_used++;
-		mark_proc_region(curproc, slb->slb_region, PROT_PR);
+		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 		return(slb->slb_version);
 	}
 
@@ -578,7 +578,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 	*(--usp) = (long)slb->slb_head;
 	curproc->ctxt[SYSCALL].pc = (long)slb_open;
 	curproc->ctxt[SYSCALL].usp = (long)usp;
-	mark_proc_region(curproc, slb->slb_region, PROT_PR);
+	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 	DEBUG(("Slbopen: Calling open()"));
 	return(slb->slb_version);
 }
@@ -637,7 +637,7 @@ s_lbclose(SHARED_LIB *sl)
 	 * context so that upon returning from Slbclose(), slb_close() in
 	 * slb_util.spp will be called
 	 */
-	mark_proc_region(curproc, slb->slb_region, PROT_G);
+	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_G, curproc->pid);
 	if (has_opened(slb, curproc->pid))
 	{
 		slb->slb_used--;
@@ -648,7 +648,7 @@ s_lbclose(SHARED_LIB *sl)
 		*(--usp) = (long)curproc->base;
 		curproc->ctxt[SYSCALL].pc = (long)slb_close;
 		curproc->ctxt[SYSCALL].usp = (long)usp;
-		mark_proc_region(curproc, slb->slb_region, PROT_PR);
+		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 		DEBUG(("Slbclose: Calling close()"));
 		return(0);
 	}
@@ -667,7 +667,7 @@ s_lbclose(SHARED_LIB *sl)
 		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
 			if (*mr != 0L)
-				mark_proc_region(curproc, *mr, PROT_I);
+				mark_proc_region(curproc->p_mem, *mr, PROT_I, curproc->pid);
 		}
 	}
 	if (slb->slb_used == 0)
@@ -681,11 +681,11 @@ s_lbclose(SHARED_LIB *sl)
 		 */
 		slb->slb_name[0] = 0;
 		slb->slb_proc->p_flag &= ~3;
-		mark_proc_region(curproc, slb->slb_region, PROT_PR);
+		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 		p_kill(pid, SIGCONT);
 	}
 	else
-		mark_proc_region(curproc, slb->slb_region, PROT_PR);
+		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 
 	return(0);
 }
@@ -733,7 +733,7 @@ slb_close_on_exit (int terminate)
 	 * call came from supervisor mode or curproc has already close()d the
 	 * library (or never open()ed it).
 	 */
-	mark_proc_region (curproc, slb->slb_region, PROT_G);
+	mark_proc_region (curproc->p_mem, slb->slb_region, PROT_G, curproc->pid);
 	if (terminate || (curproc->ctxt[SYSCALL].sr & 0x2000) ||
 		!has_opened(slb, curproc->pid))
 	{
@@ -748,7 +748,7 @@ slb_close_on_exit (int terminate)
 			for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 			{
 				if (*mr != 0L)
-					mark_proc_region(curproc, *mr, PROT_I);
+					mark_proc_region(curproc->p_mem, *mr, PROT_I, curproc->pid);
 			}
 		}
 		if (slb->slb_used == 0)
@@ -756,11 +756,11 @@ slb_close_on_exit (int terminate)
 			short	pid = slb->slb_proc->pid;
 
 			slb->slb_name[0] = 0;
-			mark_proc_region(curproc, slb->slb_region, PROT_PR);
+			mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 			p_kill(pid, SIGCONT);
 		}
 		else
-			mark_proc_region(curproc, slb->slb_region, PROT_PR);
+			mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 		return(-1);
 	}
 
@@ -777,7 +777,7 @@ slb_close_on_exit (int terminate)
 	*(--usp) = (long)curproc->base;
 	curproc->ctxt[SYSCALL].pc = (long)slb_close_and_pterm;
 	curproc->ctxt[SYSCALL].usp = (long)usp;
-	mark_proc_region(curproc, slb->slb_region, PROT_PR);
+	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
 	return(1);
 }
 
@@ -815,9 +815,9 @@ remove_slb(void)
 	}
 	if (last)
 	{
-		mark_proc_region(curproc, last->slb_region, PROT_G);
+		mark_proc_region(curproc->p_mem, last->slb_region, PROT_G, curproc->pid);
 		last->slb_next = slb->slb_next;
-		mark_proc_region(curproc, last->slb_region, PROT_PR);
+		mark_proc_region(curproc->p_mem, last->slb_region, PROT_PR, curproc->pid);
 	}
 	else
 		slb_list = slb->slb_next;

@@ -30,6 +30,7 @@
 # include "arch/kernel.h"
 # include "arch/mprot.h"
 # include "arch/startup.h"
+# include "arch/user_things.h"	/* user_header */
 
 # include "bios.h"
 # include "dosfile.h"
@@ -128,7 +129,6 @@ init_proc (void)
 	curproc->domain = DOM_TOS;	/* TOS domain */
 	curproc->sysstack = (long) (curproc->stack + STKSIZE - 12);
 	curproc->magic = CTXT_MAGIC;
-	curproc->memflags = F_PROT_S;	/* default prot mode: super-only */
 	
 	((long *) curproc->sysstack)[1] = FRAME_MAGIC;
 	((long *) curproc->sysstack)[2] = 0;
@@ -141,6 +141,7 @@ init_proc (void)
 	strcpy (curproc->cmdlin, "MiNT");
 	
 	/* get some memory */
+	curproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
 	curproc->p_mem->num_reg = NUM_REGIONS;
 	curproc->p_mem->mem = kmalloc (curproc->p_mem->num_reg * sizeof (MEMREGION *));
 	curproc->p_mem->addr = kmalloc (curproc->p_mem->num_reg * sizeof (long));
@@ -151,6 +152,14 @@ init_proc (void)
 	/* make sure it's filled with zeros */
 	bzero (curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof (MEMREGION *));
 	bzero (curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof (long));
+	
+	/* init trampoline things */
+	curproc->p_mem->tp_ptr = user_header;
+	curproc->p_mem->tp_reg = NULL;
+	
+	/* init page table for curproc */
+	init_page_table_ptr (curproc->p_mem);
+	init_page_table (curproc, curproc->p_mem);
 	
 	/* get root and current directories for all drives */
 	{
@@ -174,9 +183,6 @@ init_proc (void)
 			}
 		}
 	}
-	
-	init_page_table_ptr (curproc->p_mem);
-	init_page_table (curproc, curproc->p_mem);
 	
 	/* Set the correct drive. The current directory we
 	 * set later, after all file systems have been loaded.

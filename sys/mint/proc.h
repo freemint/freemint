@@ -66,12 +66,15 @@ struct memspace
 {
 	long	links;
 
-	ushort	num_reg;		///< Nnumber of allocated memoryregions.
-	MEMREGION **mem;		///< Array of ptrs to allocated regions.
-	long	*addr;			///< Array of addresses of regions.
+	ushort	memflags;	///< malloc preferences
+	ushort	num_reg;	///< Nnumber of allocated memoryregions.
+	MEMREGION **mem;	///< Array of ptrs to allocated regions.
+	long	*addr;		///< Array of addresses of regions.
 	void	*page_table;	///< rounded page table pointer.
-	void	*pt_mem;		///< original kmalloc'd block for above.
-	long	txtsize;		///< size of text region (for fork()).
+	void	*pt_mem;	///< original kmalloc'd block for above.
+	long	txtsize;	///< size of text region (for fork()).
+	void	*tp_ptr;	///< pointer to the trampoline things
+	MEMREGION *tp_reg;	///< memregion of the trampoline code
 };
 
 
@@ -113,7 +116,7 @@ struct proc
 	short	_euid;			/* unused */
 	short	_egid;			/* unused */
 
-	ushort	memflags;		/* e.g. malloc from alt ram	*/
+	ushort	_memflags;		/* unused */
 	short	pri;			/* base process priority 	*/
 	short	wait_q;			/* current process queue	*/
 
