@@ -134,99 +134,132 @@ struct kerinfo kernelinfo =
 
 # if 0
 
-# include "mfp.h"
+# include "mint/arch/mfp.h"
+# include "arch/cpu.h"
 
-struct mch
+struct kentry_mch
 {
 	/* hardware dependant vector
 	 */
 
-	long	cpu;	/* our actual cpu type */
-	short	fpu;	/* our actual fpu type */
-	short	vdo;	/* video system */
-	long	mch;	/* the machine we running */
-	char *	mname;	/* ASCII version of mch */
+	long		cpu;	/* our actual cpu type */
+	short		fpu;	/* our actual fpu type */
+	short		vdo;	/* video system */
+	long		mch;	/* the machine we running */
+	char 		*mname;	/* ASCII version of mch */
 
-	short	lang;	/* language preference */
-	short	res;	/* reserved */
+	short		lang;	/* language preference */
+	short		res;	/* reserved */
 
-	ulong	c20ms;	/* linear 20 ms counter */
+	unsigned long	c20ms;	/* linear 20 ms counter */
 
 	/* the (important) MFP base address */
-	MFP *	_mfpbase;
+	MFP		*_mfpbase;
 
 	/* interrupt vector */
 	/* Func	intr [256]; */
 
 	/* CPU dependant functions */
-	void	_cdecl (*cpush)(const void *base, long size);
+	void	_cdecl	(*cpush)(const void *base, long size);
 };
+#define DEFAULTS_kentry_mch \
+{ \
+	0, \
+	0, \
+	0, \
+	0, \
+	NULL, \
+	\
+	0, \
+	0, \
+	\
+	/* c20ms */ 0, \
+	\
+	/* _mfpbase */ NULL, \
+	\
+	cpush, \
+}
 
-struct mch mch_ =
-{
-};
 
-
-struct prc
+struct kentry_proc
 {
 	/* utility functions for dealing with pauses, or for putting processes
 	 * to sleep
 	 */
-	void	_cdecl (*nap)(unsigned);
-	int	_cdecl (*sleep)(int que, long cond);
-	void	_cdecl (*wake)(int que, long cond);
-	void	_cdecl (*wakeselect)(long param);
+	void	_cdecl	(*nap)(unsigned);
+	int	_cdecl	(*sleep)(int que, long cond);
+	void	_cdecl	(*wake)(int que, long cond);
+	void	_cdecl	(*wakeselect)(struct proc *p);
 
 	/* miscellaneous other things */
-	long	_cdecl (*ikill)(int, int);
-	void	_cdecl (*iwake)(int que, long cond, short pid);
+	long	_cdecl	(*ikill)(int, unsigned short);
+	void	_cdecl	(*iwake)(int que, long cond, short pid);
+	long	_cdecl	(*killgroup)(int, ushort, int);
 
 	/* functions for adding/cancelling timeouts */
 	TIMEOUT * _cdecl (*addtimeout)(long, void (*)());
-	void	_cdecl (*canceltimeout)(TIMEOUT *);
-	TIMEOUT * _cdecl (*addroottimeout)(long, void (*)(), ushort);
-	void	_cdecl (*cancelroottimeout)(TIMEOUT *);
+	void	  _cdecl (*canceltimeout)(TIMEOUT *);
+	TIMEOUT * _cdecl (*addroottimeout)(long, void (*)(), unsigned short);
+	void	  _cdecl (*cancelroottimeout)(TIMEOUT *);
+
+	/* fork/leave a kernel thread */
+	long	_cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
+	void	_cdecl (*kthread_exit)(short code);
 };
+#define DEFAULTS_kentry_proc \
+{ \
+	nap, \
+	sleep, \
+	wake, \
+	wakeselect, \
+	\
+	ikill, \
+	iwake, \
+	killgroup, \
+	\
+	addtimeout_curproc, \
+	canceltimeout, \
+	addroottimeout, \
+	cancelroottimeout, \
+	\
+	kthread_create, \
+	kthread_exit, \
+}
 
-struct prc prc =
-{
-	nap,
-	sleep,
-	wake,
-	(void _cdecl (*)(long)) wakeselect,
-	ikill,
-	iwake,
-	addtimeout,
-	canceltimeout,
-	addroottimeout,
-	cancelroottimeout
-};
 
-
-struct mem
+struct kentry_mem
 {
 	/* memory vector
 	 */
 
-	void *	_cdecl (*kcore)		(ulong size);	/* ST-RAM alloc */
-	void *	_cdecl (*kmalloc)	(ulong size);	/* TT-RAM alloc */
-	void	_cdecl (*kfree)		(void *place);	/* memory free  */
+	void *	_cdecl (*kcore)(unsigned long size, const char *func);
+	void *	_cdecl (*kmalloc)(unsigned long size, const char *func);
+	void	_cdecl (*kfree)(void *place, const char *func);
+	
+	void *	_cdecl (*dmabuf_alloc)(unsigned long size, short cmode, const char *func);
+
+	void *	_cdecl (*umalloc)(unsigned long size, const char *func);
+	void	_cdecl (*ufree)(void *place, const char *func);
 };
+#define DEFAULTS_kentry_mem \
+{ \
+	NULL, \
+	_kmalloc, \
+	_kfree, \
+	\
+	_dmabuf_alloc, \
+	\
+	_umalloc, \
+	_ufree, \
+}
 
-struct mem mem =
-{
-	_kcore,
-	_kmalloc,
-	_kfree,
-};
 
-
-struct xfs
+struct kentry_fs
 {
 	/* extended filesystem vector
 	 */
 
-	ushort	default_perm;		/* default file permissions */
+	unsigned short default_perm;	/* default file permissions */
 
 	/* media change vector */
 	void	_cdecl (*drvchng)(ushort);
@@ -235,31 +268,132 @@ struct xfs
 	int	_cdecl (*denyshare)(FILEPTR *, FILEPTR *);
 	LOCK *	_cdecl (*denylock)(LOCK *, LOCK *);
 
-	/* 1.15 extensions */
-	BIO *	bio;			/* buffered block I/O */
+	BIO *bio;			/* buffered block I/O */
+	TIMEVAL	*xtime;			/* pointer to current kernel time - UTC */
 };
+#define DEFAULTS_kentry_fs \
+{ \
+	DEFAULT_MODE, \
+	m_changedrv, \
+	denyshare, \
+	denylock, \
+	&bio, \
+	&xtime, \
+}
 
-struct xfs xfs =
+
+struct kentry_sockets
 {
-	DEFAULT_MODE,
-	m_changedrv,
-	denyshare,
-	denylock,
-	& bio
+	void	_cdecl (*so_register)(short, struct dom_ops *);
+	void	_cdecl (*so_unregister)(short);
+	long	_cdecl (*so_release)(struct socket *);
+	void	_cdecl (*so_sockpair)(struct socket *, struct socket *);
+	long	_cdecl (*so_connect)(struct socket *, struct socket *, short, short, short);
+	long	_cdecl (*so_accept)(struct socket *, struct socket *, short);
+	long	_cdecl (*so_create)(struct socket **, short, short, short);
+	long	_cdecl (*so_dup)(struct socket **, struct socket *);
+	void	_cdecl (*so_free)(struct socket *);
 };
+#define DEFAULTS_kentry_sockets \
+{ \
+	so_register, \
+	so_unregister, \
+	so_release, \
+	so_sockpair, \
+	so_connect, \
+	so_accept, \
+	so_create, \
+	so_dup, \
+	so_free, \
+}
 
 
-struct str
+struct kentry_module
 {
-	/* string manipulation vector
+	void	_cdecl (*load_modules)(const char *extension, long (*loader)(struct basepage *, const char *));
+};
+#define DEFAULTS_kentry_module \
+{ \
+	load_modules, \
+}
+
+
+struct kentry_misc
+{
+	/* easy to use DMA interface, see dma.c for more details */
+	DMA *dma;
+
+	/* for udelay timing loop */
+	unsigned long *loops_per_sec;
+
+	/* lookup cookies in original TOS cookiejar */
+	long	_cdecl (*get_toscookie)(unsigned long tag, unsigned long *val);
+
+	long	_cdecl (*add_rsvfentry)(char *, char, char);
+	long	_cdecl (*del_rsvfentry)(char *);
+
+	ulong	_cdecl (*remaining_proc_time)(void);
+
+	/* XXX -> kentry_arch or something like this */
+	struct nf_ops *nf_ops;
+};
+#define DEFAULTS_kentry_misc \
+{ \
+	&dma, \
+	&loops_per_sec, \
+	\
+	get_toscookie, \
+	\
+	add_rsvfentry, \
+	del_rsvfentry, \
+	\
+	remaining_proc_time, \
+	\
+	NULL, \
+}
+
+
+struct kentry_debug
+{
+	/* Debugging stuff
 	 */
 
-	long	_cdecl (*sprintf)(char *dst, const char *fmt, ...);
-	long	_cdecl (*atol)(const char *s);
+	void	_cdecl (*trace)(const char *, ...);
+	void	_cdecl (*debug)(const char *, ...);
+	void	_cdecl (*alert)(const char *, ...);
+	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN;
+};
+#define DEFAULTS_kentry_debug \
+{ \
+	Trace, \
+	Debug, \
+	ALERT, \
+	FATAL, \
+}
 
-	uchar *	_ctype;				/* character type table */
-	int	_cdecl (*tolower)(int c);	/* */
-	int	_cdecl (*toupper)(int c);	/* */
+
+struct kentry_libkern
+{
+	/*
+	 * kernel character classification and conversion
+	 */
+
+	unsigned char *_ctype;
+
+	int	_cdecl (*tolower)(int c);
+	int	_cdecl (*toupper)(int c);
+
+	/*
+	 * kernel string functions
+	 */
+
+	long	_cdecl (*vsprintf)(char *buf, long buflen, const char *fmt, va_list args);
+	long	_cdecl (*sprintf)(char *dst, long buflen, const char *fmt, ...);
+
+	char *	_cdecl (*getenv)(BASEPAGE *bp, const char *var);
+
+	long	_cdecl (*atol)(const char *s);
+	long	_cdecl (*strtonumber)(const char *name, long *result, int neg, int zerolead);
 
 	long	_cdecl (*strlen)(const char *s);
 
@@ -271,99 +405,111 @@ struct str
 
 	char *	_cdecl (*strcpy)(char *dst, const char *src);
 	char *	_cdecl (*strncpy)(char *dst, const char *src, long len);
+	void	_cdecl (*strncpy_f)(char *dst, const char *src, long len);
 
 	char *	_cdecl (*strlwr)(char *s);
 	char *	_cdecl (*strupr)(char *s);
 
 	char *	_cdecl (*strcat)(char *dst, const char *src);
+	char *	_cdecl (*strchr)(const char *s, long charwanted);
 	char *	_cdecl (*strrchr)(const char *str, long which);
 	char *	_cdecl (*strrev)(char *s);
 
-	/* unicode functions
-	 */
-	char	_cdecl (*uni2atari)(uchar off, uchar cp);
-	void	_cdecl (*atari2uni)(uchar atari_st, uchar *dst);
-};
+	char *	_cdecl (*strstr)(const char *s, const char *w);
 
-struct str str =
-{
-	ksprintf,
-	_mint_atol,
-	_mint_ctype,
-	_mint_tolower,
-	_mint_toupper,
-	_mint_strlen,
-	_mint_strcmp,
-	_mint_strncmp,
-	_mint_stricmp,
-	_mint_strnicmp,
-	_mint_strcpy,
-	_mint_strncpy,
-	_mint_strlwr,
-	_mint_strupr,
-	_mint_strcat,
-	_mint_strrchr,
-	_mint_strrev,
-	NULL, /*_mint_uni2atari,*/
-	NULL  /*_mint_atari2uni */
-};
+	long	_cdecl (*strtol)(const char *nptr, char **endptr, long base);
+	llong	_cdecl (*strtoll)(const char *nptr, char **endptr, long base);
+	ulong	_cdecl (*strtoul)(const char *nptr, char **endptr, long base);
+	ullong	_cdecl (*strtoull)(const char *nptr, char **endptr, long base);
 
+	void *	_cdecl (*memchr)(void *s, long search, unsigned long size);
+	long	_cdecl (*memcmp)(const void *s1, const void *s2, unsigned long size);
 
-struct hlp
-{
-	/* help function vector
+	/*
+	 * kernel time help functions
 	 */
 
-	void	_cdecl (*bcopy)(void *dst, const void *src, long size);	/* quickmovb */
-	void	_cdecl (*fcopy)(void *dst, void *src, long size);	/* quickmove */
-	void	_cdecl (*fswap)(void *dst, void *src, long size);	/* quickswap */
-	void	_cdecl (*fzero)(char *place, long blocks);		/* quickzero */
+	void	_cdecl (*ms_time)(unsigned long ms, short *timeptr);
+	void	_cdecl (*unix2calendar)(long tv_sec,
+					unsigned short *year, unsigned short *month,
+					unsigned short *day, unsigned short *hour,
+					unsigned short *minute, unsigned short *second);
+	long	_cdecl (*unix2xbios)(long tv_sec);
+	long	_cdecl (*dostime)(long tv_sec);
+	long	_cdecl (*unixtime)(unsigned short time, unsigned short date);
 
-	void	_cdecl (*ms_time)(ulong ms, short *timeptr);		/* util.h */
-	long	_cdecl (*unixtime)(ushort time, ushort date);		/* util.h */
-	long	_cdecl (*dostime)(long time);				/* util.h */
-};
-
-struct hlp hlp =
-{
-	quickmovb,
-	quickmove,
-	quickswap,
-	quickzero,
-	ms_time,
-	unixtime,
-	dostime
-};
-
-
-struct deb
-{
-	/* Debugging stuff
+	/*
+	 * kernel block functions
 	 */
 
-	void	_cdecl (*trace)(const char *, ...);
-	void	_cdecl (*debug)(const char *, ...);
-	void	_cdecl (*alert)(const char *, ...);
-	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN;
+	void	_cdecl (*blockcpy)(char *dst, const char *src, unsigned long nblocks);
+	void	_cdecl (*quickcpy)(void *dst, const void *src, unsigned long nbytes);
+	void	_cdecl (*quickswap)(void *dst, void *src, unsigned long nbytes);
+	void	_cdecl (*quickzero)(char *place, unsigned long size);
+
+	void *	_cdecl (*memcpy)(void *dst, const void *src, unsigned long nbytes);
+	void *	_cdecl (*memset)(void *dst, int ucharfill, unsigned long size);
+
+	void	_cdecl (*bcopy)(const void *src, void *dst, unsigned long nbytes);
+	void	_cdecl (*bzero)(void *dst, unsigned long size);
 };
+#define DEFAULTS_kentry_libkern \
+{ \
+	_mint_ctype, \
+	_mint_tolower, \
+	_mint_toupper, \
+	vsprintf, \
+	ksprintf, \
+	_mint_getenv, \
+	_mint_atol, \
+	strtonumber, \
+	_mint_strlen, \
+	_mint_strcmp, \
+	_mint_strncmp, \
+	_mint_stricmp, \
+	_mint_strnicmp, \
+	_mint_strcpy, \
+	_mint_strncpy, \
+	_mint_strncpy_f, \
+	_mint_strlwr, \
+	_mint_strupr, \
+	_mint_strcat, \
+	_mint_strchr, \
+	_mint_strrchr, \
+	_mint_strrev, \
+	_mint_strstr, \
+	_mint_strtol, \
+	_mint_strtoll, \
+	_mint_strtoul, \
+	_mint_strtoull, \
+	_mint_memchr, \
+	_mint_memcmp, \
+	\
+	ms_time, \
+	unix2calendar, \
+	unix2xbios, \
+	dostime, \
+	unixtime, \
+	\
+	_mint_blockcpy, \
+	_mint_quickcpy, \
+	_mint_quickswap, \
+	_mint_quickzero, \
+	memcpy, \
+	memset, \
+	bcopy, \
+	bzero, \
+}
 
-struct deb deb =
+
+struct kentry
 {
-	Trace,
-	Debug,
-	ALERT,
-	FATAL
-};
-
-
-struct kernel
-{
-	ushort		major;		/* FreeMiNT major version */
-	ushort		minor;		/* FreeMiNT minor version */
-	ushort		patchlevel;	/* FreeMiNT patchlevel */
-	ushort		version;	/* kernel struct version */
-	ulong		dos_version;	/* running GEMDOS version */
-	ulong		status;		/* FreeMiNT status */
+	unsigned short	major;		/* FreeMiNT major version */
+	unsigned short	minor;		/* FreeMiNT minor version */
+	unsigned short	patchlevel;	/* FreeMiNT patchlevel */
+	unsigned short	version;	/* kernel struct version */
+	unsigned long	dos_version;	/* running GEMDOS version */
+	unsigned long	status;		/* FreeMiNT status */
 
 	/* OS functions */
 	Func		*dos_vec;	/* DOS entry points */
@@ -371,19 +517,21 @@ struct kernel
 	Func		*xbios_vec;	/* XBIOS entry points */
 
 	/* */
-	struct mch	*mch_vec;
-	struct prc	*prc_vec;
-	struct mem	*mem_vec;
-	struct xfs	*xfs_vec;
-	struct str	*str_vec;
-	struct hlp	*hlp_vec;
-	struct deb	*deb_vec;
+	struct kentry_mch	vec_mch;
+	struct kentry_proc	vec_proc;
+	struct kentry_mem	vec_mem;
+	struct kentry_fs	vec_fs;
+	struct kentry_sockets	vec_sockets;
+	struct kentry_module	vec_module;
+	struct kentry_misc	vec_misc;
+	struct kentry_debug	vec_debug;
+	struct kentry_libkern	vec_libkern;
 
 	/* future expansion */
-	char		reserved [40];
+	char reserved[40];
 };
 
-struct kernel kernel =
+struct kentry kentry =
 {
 	MAJ_VERSION,
 	MIN_VERSION,
@@ -396,13 +544,15 @@ struct kernel kernel =
 	bios_tab,
 	xbios_tab,
 
-	& mch_,
-	& prc,
-	& mem,
-	& xfs,
-	& str,
-	& hlp,
-	& deb
+	DEFAULTS_kentry_mch,
+	DEFAULTS_kentry_proc,
+	DEFAULTS_kentry_mem,
+	DEFAULTS_kentry_fs,
+	DEFAULTS_kentry_sockets,
+	DEFAULTS_kentry_module,
+	DEFAULTS_kentry_misc,
+	DEFAULTS_kentry_debug,
+	DEFAULTS_kentry_libkern
 };
 
 # endif
