@@ -111,7 +111,6 @@ supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 	usrarg4 = arg4;
 	usrarg5 = arg5;
 	SIGACTION(curproc, 0).sa_handler = (long) do_usrcall;
-//	curproc->sighandle[0] = (long) do_usrcall;
 	
 	savesr = syscall->sr;	/* save old super/user mode flag */
 	syscall->sr |= 0x2000;	/* set supervisor mode */
