@@ -1345,7 +1345,7 @@ main (int argc, char **argv)
 	time (&CTIME);
 	VOL_ID = (long) CTIME;
 	
-	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:r:s:a:v")) != EOF)
+	while ((c = getopt (argc, argv, "cf:F:i:l:m:n:r:s:av")) != EOF)
 	{
 		/* Scan the command line for options */
 		switch (c)
