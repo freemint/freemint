@@ -107,13 +107,13 @@ XA_slider(struct xa_window *w, int which, int total, int visible, int start)
 			sl->length = SL_RANGE;
 
 		if (total - visible < 0 || start == 0)
-			sl->position = 0;
+			sl->position = sl->rpos = 0;
 		else
 		{
 			if (start + visible >= total)
-				sl->position = SL_RANGE;
+				sl->position = sl->rpos = SL_RANGE;
 			else
-				sl->position = pix_to_sl(start, total - visible);
+				sl->position = sl->rpos = pix_to_sl(start, total - visible);
 		}
 	}
 }
@@ -980,10 +980,10 @@ static XA_WIDGET_LOCATION
 /*							      mask					 */
 stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSER,    XAWS_ICONIFIED,				WIDG_CLOSER,  false, free_xawidget_resources },
 stdl_full    = {RT, { 0, 0, 1, 1 },  XAW_FULL,    FULLER,    XAWS_ICONIFIED,				WIDG_FULL,    false, free_xawidget_resources },
-stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, 0,				WIDG_ICONIFY, false, free_xawidget_resources },
+stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, 0,						WIDG_ICONIFY, false, free_xawidget_resources },
 stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     XAWS_ICONIFIED,				WIDG_HIDE,    false, free_xawidget_resources },
-stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,				0,            false, free_xawidget_resources },
-stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   0,         0,				0,            false, free_xawidget_resources },
+stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,						0,            false, free_xawidget_resources },
+stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   0,         0,						0,            false, free_xawidget_resources },
 stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,		WIDG_SIZE,    false, free_xawidget_resources },
 stdl_uscroll = {RT, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,		WIDG_UP,      false, free_xawidget_resources },
 stdl_upage   = {RT, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,		0,            false, free_xawidget_resources },
@@ -1970,7 +1970,8 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		sl->r.x = sl->r.y = 0;
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
-		slider_back(&widg->ar);
+		cl = widg->ar;
+		slider_back(&cl);
 		return true;
 	}
 
@@ -1993,7 +1994,8 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		sl->r.x = sl->r.y = 0;
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
-		slider_back(&widg->ar);	/* whole background */
+		cl = widg->ar;
+		slider_back(&cl);	/* whole background */
 	}
 	else
 	{				/* should really use xa_rc_intersect */
@@ -2029,19 +2031,18 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	 */
 	{
 		int thick = 1, mode = 3;
-		RECT r;
 
 		if (MONO)
 			mode = 1;
 		else if (!is_topped(wind))
 			thick = 0;
 
-		r.x = sl->r.x + widg->ar.x;
-		r.y = sl->r.y + widg->ar.y;
-		r.w = sl->r.w;
-		r.h = sl->r.h;
+		cl.x = sl->r.x + widg->ar.x;
+		cl.y = sl->r.y + widg->ar.y;
+		cl.w = sl->r.w;
+		cl.h = sl->r.h;
 
-		d3_pushbutton(-2, &r, NULL, widg->state, thick, mode);
+		d3_pushbutton(-2, &cl, NULL, widg->state, thick, mode);
 	}
 
 	wr_mode(MD_TRANS);
@@ -2175,6 +2176,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		
 			if (offs != sl->position && wind->send_message)
 			{
+				sl->rpos = offs;
 				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						   WM_VSLID, 0,0, wind->handle,
 						   offs, 0,0,0);
@@ -2212,6 +2214,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		
 			if (offs != sl->position && wind->send_message)
 			{
+				sl->rpos = offs;
 				wind->send_message(lock, wind, NULL, AMQ_NORM,
 						   WM_HSLID, 0,0, wind->handle,
 						   offs, 0,0,0);
