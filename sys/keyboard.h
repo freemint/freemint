@@ -71,6 +71,8 @@
 # define NUMPAD_3	0x6f
 # define NUMPAD_0	0x70
 
+# define UNDEF		0x00	/* bios.c and tty.c */
+
 # define MAXAKP		126	/* maximum _AKP code supported */
 
 /* Vectors for scancode -> ASCII conversions
