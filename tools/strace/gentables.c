@@ -128,14 +128,10 @@ generate_printer_impl(FILE *out, struct syscall *call, const char *pre)
 static void
 my_strupr(char *s)
 {
-	if (s)
-	{
-		while (*s)
-		{
-			*s = toupper(*s);
-			s++;
-		}
-	}
+	int c;
+	
+	while ((c = *s))
+		*s++ = toupper(c);
 }
 
 static void
