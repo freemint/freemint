@@ -95,7 +95,7 @@
 
 /* A macro used to calculate the remaining free part of an
  * allocated block of memory (in other words, the difference
- * between the requested size and the size actually allocated).
+ * between the requested/used size and the size actually allocated).
  */
 # define RAM_PAD(x) (QUANTUM - (x % QUANTUM))
 
@@ -185,15 +185,6 @@ env_size(char *var)
 	return count;
 }
 
-static char *
-env_append(char *where, char *what)
-{
-	strcpy(where, what);
-	where += strlen(where);
-
-	return ++where;
-}
-
 /* shell_delenv() idea is borrowed from mintlib's del_env() */
 static void
 shell_delenv(const char *strng)
@@ -224,49 +215,64 @@ shell_delenv(const char *strng)
 	sys_m_shrink(0, (long)_base->p_env, env_size(_base->p_env));
 }
 
-/* XXX try to avoid reallocation whenever possible */
+/* shell_setenv() */
 static void
 shell_setenv(const char *var, char *value)
 {
-	char *env_str = _base->p_env, *new_env, *old_var, *es, *ne;
-	long new_size;
-
-	new_size = env_size(env_str) + strlen(value) + 1;	/* '=' */
-	old_var = _mint_getenv(_base, var);
-
-	if (old_var)
-		new_size -= strlen(old_var);	/* this is the VALUE of the var */
-	else
-		new_size += strlen(var);	/* this is its NAME */
-
-	new_env = (char *)sys_m_xalloc(new_size, 3);
-	if (new_env == NULL)
-		return;
+	char *env_str = _base->p_env, *new_env, *es, *ne;
+	long old_size, var_size;
 
 	/* If it already exists, delete it */
 	shell_delenv(var);
 
-	es = env_str;
-	ne = new_env;
+	old_size = env_size(env_str);
+	var_size = strlen(var) + strlen(value) + 1;	/* '=' */
 
-	/* Copy old env to new place */
-	while (*es)
+	/* If there is enough place in the current environment,
+	 * don't reallocate it.
+	 */
+	if (RAM_PAD(old_size) >= var_size)
 	{
+		ne = env_str;
+
+		while (*ne)
+		{
+			while (*ne)
+				ne++;
+			ne++;
+		}
+	}
+	else
+	{
+		new_env = (char *)sys_m_xalloc(old_size + var_size, 3);
+
+		if (new_env == NULL)
+			return;
+
+		es = env_str;
+		ne = new_env;
+
+		/* Copy old env to new place */
 		while (*es)
+		{
+			while (*es)
+				*ne++ = *es++;
 			*ne++ = *es++;
-		*ne++ = *es++;
+		}
+
+		_base->p_env = new_env;
+
+		sys_m_free((long)env_str);
 	}
 
+	/* Append new variable at the end */
 	strcpy(ne, var);
 	strcat(ne, "=");
 	strcat(ne, value);
 
+	/* and place the zero terminating the environment */
 	ne += strlen(ne);
 	*++ne = 0;
-
-	_base->p_env = new_env;
-
-	sys_m_free((long)env_str);
 }
 
 /* Split command line into separate strings, put their pointers
@@ -465,8 +471,17 @@ crunch(char *cmd, char **argv)
 	return idx;
 }
 
+static char *
+env_append(char *where, char *what)
+{
+	strcpy(where, what);
+	where += strlen(where);
+
+	return ++where;
+}
+
 /* Execute an external program */
-INLINE long
+static long
 execvp(char **argv)
 {
 	char *oldcmd, *npath, *var, *new_env, *new_var, *t, *path, *np;
@@ -1359,7 +1374,7 @@ static const char *commands[] =
 };
 
 /* Execute the given command line */
-INLINE long
+static long
 execute(char *cmdline)
 {
 	char *c, **argv;
@@ -1440,7 +1455,7 @@ execute(char *cmdline)
 
 /* XXX because of Cconrs() the command line cannot be longer than 254 bytes.
  */
-INLINE char *
+static char *
 prompt(uchar *buffer, long buflen)
 {
 	char *lbuff, *cwd;
