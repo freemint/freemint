@@ -220,35 +220,148 @@ em_flag(int f)
 bool
 check_queued_events(struct xa_client *client)
 {
+	short events = 0;
+	short clicks = 0, mbutts = 0, mx, my, ks;
+	bool multi = client->waiting_for & XAWAIT_MULTI ? true : false;
+	AESPB *pb;
+	short *out;
+	
+	if (!(pb = client->waiting_pb))
+	{
+		DIAG((D_appl, NULL, "WARNING: Invalid target message buffer for %s", client->name));
+		return false;
+	}
+
+	out = pb->intout;
+
+	check_mouse(client, NULL, &mx, &my);
+	vq_key_s(C.vh, &ks);
+
 	if ((client->waiting_for & MU_MESAG) && (client->msg || client->rdrw_msg))
 	{
 		union msg_buf *cbuf;
 
-		if (!client->waiting_pb)
+		cbuf = (union msg_buf *)pb->addrin[0];
+		if (cbuf)
+		{
+			if (!pending_redraw_msgs(0, client, pb))
+				pending_msgs(0, client, pb);
+
+			if (client->waiting_for & XAWAIT_MULTI)
+			{
+				events |= MU_MESAG;
+			}
+			else
+			{
+				*out = 1;
+				goto got_evnt;
+			}
+		}
+		else
 		{
 			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s", client->name));
 			return false;
 		}
-
-		if (client->waiting_for & XAWAIT_MULTI)
-			multi_intout(client, client->waiting_pb->intout, MU_MESAG);
-		else
-			client->waiting_pb->intout[0] = 1;
-
-		cbuf = (union msg_buf *)client->waiting_pb->addrin[0];
-		if (!cbuf)
-		{
-			DIAG((D_appl, NULL, "WARNING: Invalid target message buffer for %s", client->name));
-			return false;
-		}
-
-		if (pending_redraw_msgs(0, client, client->waiting_pb))
-			goto got_evnt;
-		if (pending_msgs(0, client, client->waiting_pb))
-			goto got_evnt;
 	}
 
-	return false;
+	if ((client->waiting_for & MU_BUTTON))
+	{
+		bool bev = false;
+		const short *in = multi ? pb->intin + 1 : pb->intin;
+
+		DIAG((D_button, NULL, "still_button multi?? o[0,2] "
+			"%x,%x, lock %d, Mbase %lx, active.widg %lx",
+			pb->intin[1], pb->intin[3],
+			mouse_locked() ? mouse_locked()->p->pid : 0,
+			C.menu_base, widget_active.widg));
+
+		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
+			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
+
+		clicks = client->md_head->clicks;
+				
+		if (clicks == -1)
+		{
+			if (client->md_head != client->md_tail)
+			{
+				client->md_head++;
+				if (client->md_head > client->md_end)
+					client->md_head = client->mdb;
+				clicks = client->md_head->clicks;
+				DIAG((D_button, NULL, "Next packet %lx (s=%d, cs=%d)",
+					client->md_head, client->md_head->state, client->md_head->cstate));
+			}
+			else
+			{
+				DIAG((D_button, NULL, "Used packet %lx (s=%d, cs=%d)",
+					client->md_head, client->md_head->state, client->md_head->cstate));
+				clicks = 0;
+			}
+		}
+
+		if (clicks)
+		{
+			DIAG((D_button, NULL, "New event %lx (s=%d, cs=%d)",
+				client->md_head, client->md_head->state, client->md_head->cstate));
+			if ((bev = is_bevent(client->md_head->state, clicks, in, 1)))
+			{
+				mbutts = client->md_head->state;
+				mx = client->md_head->x;
+				my = client->md_head->y;
+				ks = client->md_head->kstate;
+			}
+			client->md_head->clicks = 0;
+		}
+		else
+		{
+			DIAG((D_button, NULL, "old event %lx (s=%d, cs=%d)",
+				client->md_head, client->md_head->state, client->md_head->cstate));
+			if ((bev = is_bevent(client->md_head->cstate, clicks, in, 1)))
+			{
+				mbutts = client->md_head->cstate;
+				clicks = 1;			/* Turns out we have to lie about clicks .. ARGHHH! */
+			}
+			client->md_head->clicks = -1;
+		}
+		if (bev)
+		{
+			if (multi)
+				events = MU_BUTTON;
+			else
+			{
+				*out++ = clicks;
+				*out++ = mx;
+				*out++ = my;
+				*out++ = mbutts;
+				*out++ = ks;
+				goto got_evnt;
+			}
+		}
+	}
+
+	if (events)
+	{
+
+#if GENERATE_DIAGS
+		{
+			char evtxt[128];
+			show_bits(events, "evnt=", xev, evtxt);
+			DIAG((D_multi,client,"check_queued_events for %s, %s clks=0x%x, msk=0x%x, bst=0x%x T:%d",
+				c_owner(client),
+				evtxt,pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1));
+			DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
+		}
+#endif
+		*out++ = events;
+		*out++ = mx;
+		*out++ = my;
+		*out++ = mbutts;
+		*out++ = ks;
+		*out++ = 0;
+		*out++ = clicks;
+	}
+	else
+		return false;
 
 got_evnt:
 	client->usr_evnt = 1;
@@ -378,23 +491,35 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 				mouse_locked() ? mouse_locked()->p->pid : 0,
 				C.menu_base, widget_active.widg));
 
-			DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%d, end=%lx",
+			DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 				client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 			{
+
 				clicks = client->md_head->clicks;
 				
-				if (clicks == -1 && (client->md_head != client->md_tail))
+				if (clicks == -1)
 				{
-					client->md_head++;
-					if (client->md_head > client->md_end)
-						client->md_head = client->mdb;
-					clicks = client->md_head->clicks;
+					if (client->md_head != client->md_tail)
+					{
+						client->md_head++;
+						if (client->md_head > client->md_end)
+							client->md_head = client->mdb;
+						clicks = client->md_head->clicks;
+						DIAG((D_button, NULL, "Next packet %lx (s=%d, cs=%d)",
+							client->md_head, client->md_head->state, client->md_head->cstate));
+					}
+					else
+					{
+						DIAG((D_button, NULL, "Used packet %lx (s=%d, cs=%d)",
+							client->md_head, client->md_head->state, client->md_head->cstate));
+						clicks = 0;
+					}
 				}
-				else
-					clicks = 0;
 
 				if (clicks)
 				{
+					DIAG((D_button, NULL, "New event %lx (s=%d, cs=%d)",
+						client->md_head, client->md_head->state, client->md_head->cstate));
 					if ((bev = is_bevent(client->md_head->state, clicks, pb->intin + 1, 1)))
 					{
 						mbutts = client->md_head->state;
@@ -406,10 +531,13 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				else
 				{
+					DIAG((D_button, NULL, "old event %lx (s=%d, cs=%d)",
+						client->md_head, client->md_head->state, client->md_head->cstate));
 					if ((bev = is_bevent(client->md_head->cstate, clicks, pb->intin + 1, 1)))
 					{
 						mbutts = client->md_head->cstate;
 						mx = x, my = y;
+						clicks = 1;			/* Turns out we have to lie about clicks .. ARGHHH! */
 					}
 					client->md_head->clicks = -1;
 				}
@@ -657,38 +785,46 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 			mouse_locked() ? mouse_locked()->p->pid : 0,
 			C.menu_base, widget_active.widg));
 
-		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%d, end=%lx",
+		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
 		{
 			clicks = client->md_head->clicks;
 				
-			if (clicks == -1 && (client->md_head != client->md_tail))
+			if (clicks == -1)
 			{
-				client->md_head++;
-				if (client->md_head > client->md_end)
-					client->md_head = client->mdb;
-				clicks = client->md_head->clicks;
+				if (client->md_head != client->md_tail)
+				{
+					client->md_head++;
+					if (client->md_head > client->md_end)
+						client->md_head = client->mdb;
+					clicks = client->md_head->clicks;
+				}
+				else
+					clicks = 0;
 			}
-			else
-				clicks = 0;
 
 			if (clicks)
 			{
-				bev = is_bevent(client->md_head->state, clicks, pb->intin, 1);
+				if ((bev = is_bevent(client->md_head->state, clicks, pb->intin, 1)))
+				{
+					mbutts = client->md_head->state;
+					mx = client->md_head->x;
+					my = client->md_head->y;
+					ks = client->md_head->kstate;
+				}
 				client->md_head->clicks = 0;
-				mbutts = client->md_head->state;
-				mx = client->md_head->x;
-				my = client->md_head->y;
-				ks = client->md_head->kstate;
 			}
 			else
 			{
-				bev = is_bevent(client->md_head->cstate, clicks, pb->intin, 1);
+				if ((bev = is_bevent(client->md_head->cstate, clicks, pb->intin, 1)))
+				{
+					mbutts = client->md_head->cstate;
+					check_mouse(client, NULL, &mx, &my);
+					vq_key_s(C.vh, &ks);
+					clicks = 1;			/* Turns out we have to lie about clicks ... ARGHH! */
+				}
 				client->md_head->clicks = -1;
-				mbutts = client->md_head->cstate;
-				check_mouse(client, NULL, &mx, &my);
-				vq_key_s(C.vh, &ks);
 			}
 		}
 		if (bev)

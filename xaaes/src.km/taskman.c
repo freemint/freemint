@@ -413,6 +413,66 @@ open_taskmanager(enum locks lock)
 		display_window(lock, 100, task_man_win, NULL);
 	}
 }
+#if 0
+void
+open_kill_or_wait(enum locks lock, struct xa_client *client)
+{
+	static RECT remember = { 0,0,0,0 };
+
+	struct xa_window *dialog_window;
+	XA_TREE *wt;
+	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+
+
+	if (!korw_win)
+	{
+		form[TM_ICONS].ob_flags |= OF_HIDETREE;
+
+		/* Work out sizing */
+		if (!remember.w)
+		{
+			form_center(form, ICON_H);
+			remember = calc_window(lock, C.Aes, WC_BORDER,
+						CLOSER|NAME,
+						MG,
+						C.Aes->options.thinframe,
+						C.Aes->options.thinwork,
+						*(RECT*)&form->ob_x);
+		}
+
+		/* Create the window */
+		dialog_window = create_window(lock,
+						do_winmesag, do_formwind_msg, //NULL, NULL,
+						C.Aes,
+						false,
+						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
+						created_for_AES,
+						MG,
+						C.Aes->options.thinframe,
+						C.Aes->options.thinwork,
+						remember, NULL, &remember);
+
+		/* Set the window title */
+		get_widget(dialog_window, XAW_TITLE)->stuff = " Task Manager";
+
+		wt = set_toolbar_widget(lock, dialog_window, form, -1);
+		wt->exit_form = korw_form_exit;
+
+		/* Set the window destructor */
+		dialog_window->destructor = taskmanager_destructor;
+	
+		/* better position (to get sliders correct initially) */
+		open_window(lock, dialog_window, dialog_window->r);
+		korw_win = dialog_window;
+	}
+	else if (korw_win != window_list)
+	{
+		C.focus = pull_wind_to_top(lock, korw_win);
+		after_top(lock, true);
+		display_window(lock, 100, korw_win, NULL);
+	}
+}
+#endif
 
 static void
 handle_launcher(enum locks lock, const char *path, const char *file)

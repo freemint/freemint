@@ -136,8 +136,6 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 
 				client->waiting_pb->intout[0] = f - ALERT_BUT1 +1;
 				client->usr_evnt = 1;
-
-				//Unblock(client, XA_OK, 7);
 			}
 
 			/* invalidate our data structures */
