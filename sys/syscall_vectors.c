@@ -515,7 +515,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x17a */		sys_p_msgsnd,	/* not implemented */
 	/* 0x17b */		sys_p_msgrcv,	/* not implemented */
 	/* 0x17c */		enosys,		/* reserved */
-	/* 0x17d */		enosys,		/* reserved */
+	/* 0x17d */		sys_m_access,	/* 1.15.12 */
 	/* 0x17e */		enosys,		/* sys_mmap */
 	/* 0x17f */		enosys		/* sys_munmap */
 	
