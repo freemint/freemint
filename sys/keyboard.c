@@ -119,8 +119,10 @@ static const uchar mmasks[] =
 };
 
 /* Exported variables */
-short	pc_style = 0;		/* PC-style vs. Atari-style for Caps operation */
-struct	cad_def cad[3];		/* for halt, warm and cold resp. */
+short kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
+short kbd_mpixels = 8;		/* mouse pixel steps */
+short kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
+struct cad_def cad[3];		/* for halt, warm and cold resp. */
 
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
@@ -297,7 +299,7 @@ mouse_dclick(PROC *p, long arg)
 INLINE short
 generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
-	char delta = (shift & MM_ESHIFT) ? 1 : 8;
+	short delta = (shift & MM_ESHIFT) ? kbd_mpixels_fine : kbd_mpixels;
 	TIMEOUT *t;
 
 	switch (scan)
@@ -598,7 +600,7 @@ scan2asc(uchar scancode)
 	}
 
 	/* We can optionally emulate the PC-like behaviour of Caps/Shift */
-	if (pc_style)
+	if (kbd_pc_style_caps)
 	{
 		if (((shift & MM_ALTGR) == 0) && (shift & MM_CAPS) && (shift & MM_ESHIFT) && isupper(asc))
 			asc = tolower(asc);
