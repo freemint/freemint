@@ -905,13 +905,6 @@ parse_line (PARSINF *inf)
 }
 
 /*----------------------------------------------------------------------------*/
-static char *
-strchr (const char *str, char c)
-{
-	while (*str && *str != c) str++;
-	return (*str ? (char*)str : NULL);
-}
-
 static GENARG
 parse_drvlst (PARSINF *inf)
 {
