@@ -54,6 +54,7 @@
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
 # include "time.h"		/* xtime */
 # include "timeout.h"		/* nap, addtimeout, canceltimeout, addroottimeout, cancelroottimeout */
+# include "util.h"		/* pid2proc */
 
 
 # undef DEFAULT_MODE

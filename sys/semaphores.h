@@ -31,22 +31,30 @@
 
 # include "mint/mint.h"
 
+#if 0
+
 struct semaphore
 {
-	volatile short lock;
-	short count;
+	volatile unsigned short lock;
+	unsigned short sleepers;
+	short pid;
+	short pad;
 };
 
 # if __KERNEL__ == 1
 
 void _semaphore_init(struct semaphore *s, const char *);
 void _semaphore_lock(struct semaphore *s, const char *);
-void _semaphore_rel (struct semaphore *s, const char *);
+int  _semaphore_rel (struct semaphore *s, const char *);
+int  _semaphore_try (struct semaphore *s, const char *);
 
 # define semaphore_init(s)	_semaphore_init(s, FUNCTION)
 # define semaphore_lock(s)	_semaphore_lock(s, FUNCTION)
 # define semaphore_rel(s)	_semaphore_rel (s, FUNCTION)
+# define semaphore_try(s)	_semaphore_try (s, FUNCTION)
 
 # endif
+
+#endif
 
 # endif /* _semaphores_h */

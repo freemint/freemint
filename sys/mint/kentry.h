@@ -236,13 +236,9 @@ struct kentry_proc
 	long _cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
 	void _cdecl (*kthread_exit)(short code);
 
-	/* simple kernel semaphore */
-	void _cdecl (*_semaphore_init)(struct semaphore *s, const char *);
-	void _cdecl (*_semaphore_lock)(struct semaphore *s, const char *);
-	void _cdecl (*_semaphore_rel )(struct semaphore *s, const char *);
-
 	/* return current process context descriptor */
-	const struct proc *_cdecl (*get_curproc)(void);
+	struct proc *_cdecl (*get_curproc)(void);
+	struct proc *_cdecl (*pid2proc)(int pid);
 
 	/* */
 	void *_cdecl (*lookup_extension)(struct proc *p, long ident);
@@ -268,11 +264,8 @@ struct kentry_proc
 	kthread_create, \
 	kthread_exit, \
 	\
-	_semaphore_init, \
-	_semaphore_lock, \
-	_semaphore_rel, \
-	\
 	get_curproc, \
+	pid2proc, \
 	\
 	proc_lookup_extension, \
 	proc_attach_extension, \
