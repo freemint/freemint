@@ -27,6 +27,7 @@
 #include "k_mouse.h"
 #include "xa_global.h"
 #include "c_mouse.h"
+#include "xa_graf.h"
 
 #include "app_man.h"
 #include "c_window.h"
@@ -460,7 +461,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 }
 
 static void
-dispatch_mu_event(struct xa_client *client, const struct moose_data *md)
+dispatch_mu_event(struct xa_client *client, const struct moose_data *md, bool is_locker)
 {
 	if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
 	{
@@ -496,12 +497,17 @@ dispatch_mu_event(struct xa_client *client, const struct moose_data *md)
 			
 			DIAG((D_mouse, client, "Post deliver M1/M2 events %d to %s", events, client->name));
 
-			wind = find_window(0, md->x, md->y);
+			if (!is_locker)
+			{
+				wind = find_window(0, md->x, md->y);
 			
-			if (wind)
-				wo = wind == root_window ? get_desktop()->owner : wind->owner;
+				if (wind)
+					wo = wind == root_window ? get_desktop()->owner : wind->owner;
 
-			if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
+				if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
+					post_cevent(client, cXA_deliver_rect_event, (void *)client->status, 0, events, 0, 0, 0);
+			}
+			else
 				post_cevent(client, cXA_deliver_rect_event, (void *)client->status, 0, events, 0, 0, 0);
 		}
 	}
@@ -554,6 +560,9 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 				XA_WIDGET *widg = get_widget(root_window, XAW_MENU);
 				XA_TREE *menu;
 
+				if (C.aesmouse != -1)
+					graf_mouse(-1, NULL, true);
+
 				menu = (XA_TREE *)widg->stuff;
 				client = menu->owner;
 				DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
@@ -571,16 +580,50 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	if (client)
 	{
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
-	 		dispatch_mu_event(client, md);
+	 		dispatch_mu_event(client, md, true);
 	}
 	else
 	{
+		struct xa_window *wind = find_window(0, md->x, md->y);
+
+		if (wind && wind->frame > 0 && (wind->active_widgets & SIZER))
+		{
+			if (!m_inside(md->x, md->y, &wind->ba))
+			{
+				RECT r = wind->r;
+				short xy = border_mouse[compass(16, md->x, md->y, r)];
+
+				if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != xy))
+				{
+					//C.aesmouse = xy;
+					graf_mouse(xy, NULL, true);
+				}
+			}
+			else
+			{
+				if (C.aesmouse != -1)
+					graf_mouse(-1, NULL, true);
+				if (C.mouse_form != wind->owner->mouse_form)
+					graf_mouse(wind->owner->mouse, wind->owner->mouse_form, false);
+			}
+#if 0
+			else if (C.aesmouse != -1)
+			{
+				graf_mouse(-1, NULL, true);
+			}
+#endif
+		}
+		else if (C.aesmouse != -1)
+		{
+			graf_mouse(-1, NULL, true);
+		}
+
 		client = CLIENT_LIST_START;
 
 		/* internalized the client loop */
 		while (client)
 		{
-			dispatch_mu_event(client, md);
+			dispatch_mu_event(client, md, false);
 			client = NEXT_CLIENT(client);
 		}
 	}

@@ -71,6 +71,19 @@ struct xamenu
 };
 typedef struct xamenu XAMENU;
 
+typedef enum
+{
+	NW,
+	N_,
+	NE,
+	E_,
+	SE,
+	S_,
+	SW,
+	W_,
+	CDV			/* compass divisions */
+} COMPASS;
+
 /*-----------------------------------------------------------------
  * Display descriptions
  *-----------------------------------------------------------------*/

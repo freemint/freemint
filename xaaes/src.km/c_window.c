@@ -728,7 +728,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	C.focus = wind;
 
 	/* New top window - change the cursor to this client's choice */
-	graf_mouse(wind->owner->mouse, wind->owner->mouse_form);
+	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, false);
 
 	if (wind->window_status == XAWS_ICONIFIED)
 	{

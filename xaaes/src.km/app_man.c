@@ -501,7 +501,6 @@ hide_other(enum locks lock, struct xa_client *client)
 		if (cl != client)
 			hide_app(lock, cl);
 	}
-
 	app_in_front(lock, client);
 }
 
@@ -605,6 +604,17 @@ next_wind(enum locks lock)
 		DIAG((D_appl, NULL, " -- no next window"));
 #endif
 	return wind;
+}
+
+bool
+app_is_hidable(struct xa_client *client)
+{
+	if (client->std_menu ||
+	    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
+	    any_window(winlist, client))
+	    	return true;
+	else
+		return false;
 }
 
 /*
