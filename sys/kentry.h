@@ -5,8 +5,12 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2001 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ *  
  * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,31 +26,16 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2001-04-24
- * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- *  
  */
 
-# ifndef _kerinfo_h
-# define _kerinfo_h
+# ifndef _kentry_h
+# define _kentry_h
 
 # include "mint/mint.h"
-# include "mint/kerinfo.h"
+# include "mint/kentry.h"
 
 
-# define DEFAULT_DIRMODE	(0777)
-
-# if 0
-# define DEFAULT_MODE		(0666)
-# else
-# define DEFAULT_MODE		(kernelinfo.default_perm)
-# endif
-
-extern struct kerinfo kernelinfo;
+extern struct kentry kentry;
 
 
-# endif /* _kerinfo_h */
+# endif /* _kentry_h */

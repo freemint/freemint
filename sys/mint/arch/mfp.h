@@ -14,7 +14,7 @@
 
 # define REG_ABSTAND	2
 
-typedef struct
+typedef struct mfp
 {
 	uchar	dum1;
 	volatile uchar	gpip;	/*	0	0x01	3	0x03	*/
@@ -86,7 +86,7 @@ typedef struct
 # define MILANDDR	0x09
 # define REG_ABSTAND	4
 
-typedef struct
+typedef struct mfp
 {
 	uchar	dum1[3];
 	volatile uchar	gpip;	/*	3	0x03	*/
