@@ -8,7 +8,7 @@
  * A multitasking AES replacement for FreeMiNT
  *
  * This file is part of XaAES.
-d *
+ *
  * XaAES is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -124,30 +124,18 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		DIAG((D_button, client, "cXA_button_event: Topped win"));
 		if (do_widgets(lock, wind, 0, md))
 		{
-			client->md.clicks = 0;
+			//client->md.clicks = 0;
 			return;
 		}
-		if (client->waiting_for & MU_BUTTON)
-		{
-			button_event(lock, client, md);
-			return;
-		}
-		else
-		{
-			add_pending_button(lock, client);
-			client->md.clicks = 0;
-			return;
-		}
+		button_event(lock, client, md);
+		return;
 	}
 
 	if (!is_topped(wind)) //wind != window_list)
 	{
 		DIAG((D_button, client, "cXA_button_event: wind not on top"));
 		if (do_widgets(lock, wind, 0, md))
-		{
-			client->md.clicks = 0;
 			return;
-		}
 	}
 
 	if (md->state)
@@ -157,7 +145,6 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
 		}
-		client->md.clicks = 0;
 		return;
 	}
 }
@@ -187,14 +174,10 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 			widg->click(lock, wind, widg, &ce->md);
 		else if (wind->send_message && !is_topped(wind)) //wind != window_list)
 			wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
-		ce->client->md.clicks = 0;
 	}
 	else
 	{
-		if (ce->client->waiting_for & MU_BUTTON)
-			button_event(lock, ce->client, &ce->md);
-		else
-			add_pending_button(lock, ce->client);
+		button_event(lock, ce->client, &ce->md);
 	}
 }
 

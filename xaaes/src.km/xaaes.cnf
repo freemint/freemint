@@ -96,7 +96,7 @@ usehome = yes
 #dc_time = 50
 
 #
-# Mouse packet time-gap. This is the time (in 200hz timer tics) that
+# Mouse packet time-gap. This is the time (in 200hz timer ticks) that
 # must pass after a button-release event before a new button-press
 # event is accepted by moose.adi. Because of unstable mouse-buttons,
 # a button-press may follow immediately after a button-release, creating
@@ -106,6 +106,18 @@ usehome = yes
 #
 #mp_timegap (default is 3)
  
+#
+# redraw_timeout. This is the time in ms XaAES will wait for clients to
+# service WM_REDRAW messages between actions that generate redraws,
+# like moving/closing/opening/etc. windows. If a client is busy and this
+# 'times out'happens, it is marked as lagging and XaAES will service the
+# redraws for it. When this happens, XaAES just draws the areas not
+# serviced with dark gray color until the client re-enters evnt_multi().
+# For slow machines, this timeout must be higher (longer) than on faster
+# machines.
+#
+# redraw_timeout (default is 500)
+
 # 
 #
 # menu = pull or push or leave + optional nolocking

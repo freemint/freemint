@@ -242,6 +242,7 @@ init(struct kentry *k, const char *path)
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
 	cfg.double_click_time = DOUBLE_CLICK_TIME;
 	cfg.mouse_packet_timegap = MOUSE_PACKET_TIMEGAP;
+	cfg.redraw_timeout = 500;
 	cfg.standard_font_point = STANDARD_FONT_POINT;	/* Size for normal text */
 	cfg.medium_font_point = MEDIUM_FONT_POINT;	/* The same, but for low resolution screens */
 	cfg.small_font_point = SMALL_FONT_POINT;	/* Size for small text */

@@ -75,6 +75,7 @@ DisplayWidget display_object_widget; /* for desktop */
 
 void	do_widget_repeat(void);
 void	do_active_widget(enum locks lock, struct xa_client *client);
+void	set_winmouse(void);
 short	wind_mshape(struct xa_window *wind, short x, short y);
 
 /*
