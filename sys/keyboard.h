@@ -85,12 +85,13 @@ struct cad_def
  */
 struct keytab
 {
-	uchar *unshift;
-	uchar *shift;
-	uchar *caps;
-	uchar *alt;
-	uchar *altshift;
-	uchar *altcaps;
+	uchar *unshift;		/* every TOS */
+	uchar *shift;		/* every TOS */
+	uchar *caps;		/* every TOS */
+	uchar *alt;		/* TOS 2.0x and above */
+	uchar *altshift;	/* TOS 2.0x and above */
+	uchar *altcaps;		/* TOS 2.0x and above */
+	uchar *altgr;		/* Milan TOS */
 };
 
 short ikbd_scan(ushort scancode);

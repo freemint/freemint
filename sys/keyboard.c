@@ -48,6 +48,7 @@
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
 # include "dossig.h"		/* p_kill() */
+# include "global.h"		/* tosver, mch */
 # include "init.h"		/* boot_printf(), *sysdir */
 # include "info.h"		/* messages */
 # include "k_exec.h"		/* sys_pexec() */
@@ -102,7 +103,9 @@
  *
  */
 
-# include "key_tables.h"
+# ifdef WITHOUT_TOS
+#  include "key_tables.h"
+# endif
 
 /* Keyboard interrupt routine.
  *
@@ -504,12 +507,12 @@ bioskeys(void)
 {
 	long akp_val = 0;
 	struct keytab *syskeytab;
-
+	
 	kbd_lock = 1;
-
+	
 	/* call the underlying XBIOS */
 	syskeytab = Keytbl(-1, -1, -1);
-
+	
 	/* Reset the vectors */
 	syskeytab->unshift = keytable_vecs.unshift;
 	syskeytab->shift = keytable_vecs.shift;
@@ -517,14 +520,16 @@ bioskeys(void)
 	syskeytab->alt = keytable_vecs.alt;
 	syskeytab->altshift = keytable_vecs.altshift;
 	syskeytab->altcaps = keytable_vecs.altcaps;
-
+	if (mch == MILAN_C)
+		syskeytab->altgr = keytable_vecs.altgr;
+	
 	/* Fix the _AKP cookie, gl_kbd may get changed in load_table()
 	 */
 	get_cookie(COOKIE__AKP, &akp_val);
 	akp_val &= 0xffffff00L;
 	akp_val |= gl_kbd;
 	set_cookie(COOKIE__AKP, akp_val);
-
+	
 	/* Done! */
 	kbd_lock = 0;
 }
@@ -535,94 +540,108 @@ bioskeys(void)
 static uchar *
 tbl_scan_fwd(uchar *tmp)
 {
-	short sanity = 0;
-
-	while(*tmp)
+	short sanity;
+	
+	sanity = 0;
+	while (*tmp)
 	{
 		sanity++;
 		if (sanity > 255)	/* One `alt' table can contain up to 128 key definitions */
 			return 0;
 		tmp++;
 	}
+	
 	sanity = 0;
-
-	while(*tmp == 0)
+	while (*tmp == 0)
 	{
 		sanity++;
 		if (sanity > 31)	/* Up to 32 zeros can follow */
 			return 0;
 		tmp++;
 	}
-
+	
 	return tmp;
 }
 
-static short
+static long
 fill_keystruct(uchar *table)
 {
-	uchar *unshift, *shift, *caps, *alt, *altshift, *altcaps;
-
+	uchar *unshift, *shift, *caps, *alt, *altshift, *altcaps, *altgr;
+	
 	unshift = table;
 	shift = table + 128;
 	caps = table + 256;
 	alt = table + 384;
-
+	
 	altshift = tbl_scan_fwd(alt);
 	if (!altshift)
 		return 0;
-
+	
 	altcaps = tbl_scan_fwd(altshift);
 	if (!altcaps)
 		return 0;
-
+	
+	/* XXX */
+	if (mch == MILAN_C)
+	{
+		altgr = tbl_scan_fwd(altcaps);
+		if (!altgr)
+			return 0;
+	}
+	else
+		altgr = NULL;
+	
 	keytable_vecs.unshift = unshift;
 	keytable_vecs.shift = shift;
 	keytable_vecs.caps = caps;
 	keytable_vecs.alt = alt;
 	keytable_vecs.altshift = altshift;
 	keytable_vecs.altcaps = altcaps;
-
-	return 1;	/* OK */
+	keytable_vecs.altgr = altgr;
+	
+	/* OK */
+	return 1;
 }
 
 static long
 load_table(FILEPTR *fp, char *name, long size)
 {
 	char *kbuf;
-	short ret = 0;
+	long ret = 0;
 	MEMREGION *key_reg;
-
+	
 	/* This is 128+128+128 for unshifted, shifted and caps
 	 * tables respectively; plus 3 bytes for three alt ones,
 	 * plus two bytes magic header, gives 389 bytes minimum.
 	 */
-	if (size < 389L) return -1;
-
+	if (size < 389L)
+		return -1;
+	
 	/* Crap, the keyboard table must be globally readable :/ */
-	key_reg = get_region(core, size, PROT_PR);
-	kbuf = (char *)attach_region(rootproc, key_reg);
-
+	key_reg = get_region(core, size, PROT_G);
+	kbuf = (char *) attach_region(rootproc, key_reg);
+	
 	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
-		switch(*(ushort *)kbuf)
+		switch (*(ushort *) kbuf)
 		{
-			case	0x2771:		/* magic word for std format */
+			case 0x2771:		/* magic word for std format */
 			{
-				ret = fill_keystruct((uchar *)kbuf + sizeof(short));
+				ret = fill_keystruct((uchar *) kbuf + sizeof(short));
 				break;
 			}
-			case	0x2772:		/* magic word for ext format */
+			case 0x2772:		/* magic word for ext format */
 			{
 				/* The extended format is identical as the old one
 				 * with exception that the second word of the data
 				 * contains the AKP code for the keyboard table
 				 * loaded.
 				 */
-				ushort *sbuf = (ushort *)kbuf;
-
+				ushort *sbuf = (ushort *) kbuf;
+				
 				if (sbuf[1] <= MAXAKP)
 				{
-					ret = fill_keystruct((uchar *)kbuf + sizeof(long));
+					ret = fill_keystruct((uchar *) kbuf + sizeof(long));
 					if (ret)
 						gl_kbd = sbuf[1];
 				}
@@ -630,14 +649,14 @@ load_table(FILEPTR *fp, char *name, long size)
 			}
 		}
 	}
-
+	
 	if (!ret)
 	{
 		detach_region(rootproc, key_reg);
 		free_region(key_reg);
 		return -2;
 	}
-
+	
 	/* Success */
 	if (key_region)
 	{
@@ -645,8 +664,93 @@ load_table(FILEPTR *fp, char *name, long size)
 		free_region(key_region);
 	}
 	key_region = key_reg;
-
+	
 	return 0;
+}
+
+static long
+load_default_table(void)
+{
+# ifdef WITHOUT_TOS
+	char *kbuf;
+	
+	if (key_region)
+	{
+		detach_region(rootproc, key_region);
+		free_region(key_region);
+	}
+	
+	key_region = get_region(core, 387L, PROT_PR);
+	kbuf = (char *) attach_region(rootproc, key_region);
+	quickmove(kbuf, usa_kbd, 387L);
+	fill_keystruct((uchar *) kbuf);
+	
+	return 0;
+# else
+	struct keytab *syskeytab;
+	char *kbuf, *p;
+	long size;
+	
+	/* call the underlying XBIOS */
+	syskeytab = Keytbl(-1, -1, -1);
+	
+# if 1
+	size = 1024;
+# else
+	size = 128 + 128 + 128;
+	size += strlen(syskeytab->alt) + 1;
+	size += strlen(syskeytab->altshift) + 1;
+	size += strlen(syskeytab->altcaps) + 1;
+	size += strlen(syskeytab->altgr) + 1;
+# endif
+	
+	if (key_region)
+	{
+		detach_region(rootproc, key_region);
+		free_region(key_region);
+	}
+	
+	key_region = get_region(core, size, PROT_G);
+	kbuf = (char *) attach_region(rootproc, key_region);
+	
+	p = kbuf;
+	
+	quickmove(p, syskeytab->unshift, 128);
+	p += 128;
+	
+	quickmove(p, syskeytab->shift, 128);
+	p += 128;
+	
+	quickmove(p, syskeytab->caps, 128);
+	p += 128;
+	
+	if (tosvers >= 0x200)
+	{
+		size = strlen(syskeytab->alt) + 1;
+		quickmove(p, syskeytab->alt, size);
+		p += size;
+		
+		size = strlen(syskeytab->altshift) + 1;
+		quickmove(p, syskeytab->altshift, size);
+		p += size;
+		
+		size = strlen(syskeytab->altcaps) + 1;
+		quickmove(p, syskeytab->altcaps, size);
+		p += size;
+	}
+	
+	if (mch == MILAN_C)
+	{
+		size = strlen(syskeytab->altgr) + 1;
+		quickmove(p, syskeytab->altgr, size);
+		p += size;
+	}
+	
+	size = fill_keystruct((uchar *) kbuf);
+	assert(size == 1);
+	
+	return 0;
+# endif
 }
 
 /* If `flag' is 0, a failure to load new table causes the
@@ -657,46 +761,33 @@ load_keyboard_table(char *name, short flag)
 {
 	XATTR xattr;
 	FILEPTR *fp;
-	long ret, r = -1;
-
+	long ret;
+	
 	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return -1;
-
+	
+	ret = -1;
+	
 	if (!do_open(&fp, name, O_RDONLY, 0, &xattr))
 	{
-		r = load_table(fp, name, xattr.size);
+		ret = load_table(fp, name, xattr.size);
 		do_close(rootproc, fp);
 	}
 	else
 	{
-		fp->links = 0;		/* suppress complaints */
+		fp->links = 0; /* XXX suppress complaints */
 		FP_FREE(fp);
-
-		/* Special case: `load' the internal table */
+		
+		/* Special case: `load' the default table */
 		if (!flag)
-		{
-			char *kbuf;
-
-			if (key_region)
-			{
-				detach_region(rootproc, key_region);
-				free_region(key_region);
-			}
-
-			key_region = get_region(core, 387L, PROT_PR);
-			kbuf = (char *)attach_region(rootproc, key_region);
-			quickmove(kbuf, usa_kbd, 387L);
-			fill_keystruct((uchar *)kbuf);
-
-			r = 0;
-		}
+			ret = load_default_table();
 	}
-
+	
 	/* Install the tables in the system */
-	if (!r)
+	if (!ret)
 		bioskeys();
-
-	return r;
+	
+	return ret;
 }
 
 /* This is called from init.c at startup
@@ -704,18 +795,19 @@ load_keyboard_table(char *name, short flag)
 void
 load_keytbl(void)
 {
+	char name[32];
 	long r;
-	char name[32], msg[64];		/* satis uidetur */
-
+	
 	/* `keybd.tbl' is already used by gem.sys, we can't conflict
 	 */
 	strcpy(name, sysdir);
 	strcat(name, "keyboard.tbl");
-
+	
 	r = load_keyboard_table(name, 0);
-
 	if (r == 0)
 	{
+		char msg[64];
+		
 		ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
 		c_conws(msg);
 	}
@@ -729,8 +821,27 @@ load_keytbl(void)
 void
 init_keybd(void)
 {
-	fill_keystruct((uchar *)usa_kbd);
+# ifdef WITHOUT_TOS
+	fill_keystruct((uchar *) usa_kbd);
 	gl_kbd = 0;
+# else
+	struct keytab *syskeytab;
+	long akp_val;
+	
+	/* call the underlying XBIOS */
+	syskeytab = Keytbl(-1, -1, -1);
+	
+	/* temporary init */
+	keytable_vecs.unshift = syskeytab->unshift;
+	keytable_vecs.shift = syskeytab->shift;
+	keytable_vecs.caps = syskeytab->caps;
+	keytable_vecs.alt = syskeytab->alt;
+	keytable_vecs.altshift = syskeytab->altshift;
+	keytable_vecs.altcaps = syskeytab->altcaps;
+	if (mch == MILAN_C)
+		keytable_vecs.altgr = syskeytab->altgr;
+	
+	get_cookie(COOKIE__AKP, &akp_val);
+	gl_kbd = (akp_val & 0xffL);
+# endif
 }
-
-/* EOF */
