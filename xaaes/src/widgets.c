@@ -863,8 +863,14 @@ click_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 		}
 		/* If window is already top, then send it to the back */
 
+		/* Ozk: Always bottom iconified windows... */
+		else if (wind->window_status == XAWS_ICONIFIED)
+		{
+			if (wind->send_message)
+				wind->send_message(lock, wind, NULL, WM_BOTTOMED, 0, 0, wind->handle, 0,0,0,0);
+		}
 		else if (!((wind->active_widgets & STORE_BACK) != 0		/* Don't bottom STORE_BACK windows */
-			    || !((wind->active_widgets & BACKDROP) == 0)) )	/* Don/t bottom NO BACKDROP windows */
+			    || (wind->active_widgets & BACKDROP) == 0) )	/* Don/t bottom NO BACKDROP windows */
 		{
 				if (wind->send_message)
 					wind->send_message(lock, wind, NULL,
