@@ -19,7 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: magic.i
 
 # default overwrites
-CFLAGS = $(GENERAL) -I$(top_srcdir)
+CFLAGS = -I$(top_srcdir) $(GENERAL)
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
 
