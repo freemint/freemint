@@ -86,7 +86,8 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	char localname[PNAMSIZ+1];
 	XATTR xattr;
 	int newpid;
-
+	int aes_hack = 0;
+	
 # ifdef DEBUG_INFO
 	/* tfmt and tail_offs are used for debugging only */
 	const char *tfmt = "Pexec(%d,%s,\"%s\",%lx)";
@@ -435,7 +436,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		
 		if (ptrace)
 			p->ptracer = pid2proc (p->ppid);
-		
+
 # ifdef MULTITOS
 		/* Stephan Haslbeck: GEM kludge no. x+1
 		 * If a program is started by AESSYS, reset its euid/egid,
@@ -443,8 +444,10 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * This should be done by the AES, however.
 		 */
 		if (!strcmp (curproc->name, "AESSYS"))
-		{
+		{	
 			struct pcred *cred = p->p_cred;
+			
+			aes_hack = 1;
 			
 			cred->ucr = copy_cred (cred->ucr);
 			cred->ucr->euid = cred->suid = cred->ruid;
@@ -462,7 +465,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		{
 			struct pcred *cred = p->p_cred;
 			
-			if (xattr.mode & S_ISUID)
+			if (!aes_hack && (xattr.mode & S_ISUID))
 			{
 				cred->ucr = copy_cred (cred->ucr);
 				cred->ucr->euid = cred->suid = xattr.uid;
@@ -470,7 +473,10 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			else
 				cred->suid = cred->ucr->euid;
 			
-			if (xattr.mode & S_ISGID)
+			/* Whether or not the AES hack should still be used
+			 * for the group ids is debatable.  --gfl
+			 */
+			if (!aes_hack && (xattr.mode & S_ISGID))
 			{
 				cred->ucr = copy_cred (cred->ucr);
 				cred->ucr->egid = cred->sgid = xattr.gid;
