@@ -434,7 +434,7 @@ enosys:	moveq	#-32,d0	// ENOSYS
 	.globl	_trap_14_emu
 #endif
 
-	TEXT
+	.text
 
 _trap_1_emu:
 #ifndef ONLY030

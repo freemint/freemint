@@ -50,6 +50,7 @@
 # include "xbios.h"
 
 # include <stddef.h>
+# include <mint/osbind.h>
 
 
 static long	_cdecl bios_root	(int drv, fcookie *fc);
