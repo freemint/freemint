@@ -25,8 +25,10 @@
 
 
 /* values for original system vectors */
-extern long old_dos, old_bios, old_xbios;
+extern long old_dos, old_bios, old_xbios, old_trap2;
+extern long aes_handle, vdi_handle, gdos_version;
 
+long	_cdecl	mint_trap2	(void);
 long	_cdecl	unused_trap	(void);
 long	_cdecl	mint_bios	(void);
 long	_cdecl	mint_dos	(void);
