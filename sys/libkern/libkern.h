@@ -134,6 +134,7 @@ char *	_cdecl _mint_strlwr	(char *s);
 char *	_cdecl _mint_strupr	(char *s);
 
 char *	_cdecl _mint_strcat	(char *dst, const char *src);
+char *	_cdecl _mint_strchr	(const char *s, long charwanted);
 char *	_cdecl _mint_strrchr	(const char *str, long which);
 char *	_cdecl _mint_strrev	(char *s);
 
