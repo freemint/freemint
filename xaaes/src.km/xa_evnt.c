@@ -59,7 +59,7 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 		/* write to client */
 		*buf = msg->message;
 
-		DIAG((D_m, NULL, "Got pending WM_REDRAW for %s", c_owner(client) ));
+		DIAG((D_m, NULL, "Got pending WM_REDRAW (%lx) for %s", msg, c_owner(client) ));
 
 		kfree(msg);
 		rtn = 1;
