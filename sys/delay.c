@@ -96,6 +96,7 @@ calibrate_delay (void)
 	 */
 	loops_per_sec *= HZ;
 	
+# if 0
 	/* recalibrate every minute */
 	addroottimeout (60 * 1000L, (void _cdecl (*)(PROC *)) calibrate_delay, 0);
 	
@@ -107,6 +108,7 @@ calibrate_delay (void)
 			((loops_per_sec + 2500) / 5000) % 100);
 		DEBUG ((buf));
 	}
+# endif
 # endif
 # endif
 }
