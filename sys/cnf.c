@@ -153,8 +153,6 @@ static const char *drv_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
 static void parser	(FILEPTR *f, PARSINF *inf, long f_size);
 static void parser_msg	(PARSINF *inf, const char *msg);
 
-static char cnf_path[32];	/* should be plenty */
-
 /*----------------------------------------------------------------------------*/
 void
 load_config (void)
@@ -163,7 +161,8 @@ load_config (void)
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
-	
+	char cnf_path[32];	/* should be plenty */
+
 	ret = FP_ALLOC (rootproc, &fp);
 	if (ret) return;
 	
@@ -176,6 +175,11 @@ load_config (void)
 	{
 		parser (fp, &inf, xattr.size);
 		do_close (rootproc, fp);
+	}
+	else
+	{
+		fp->links = 0;
+		FP_FREE(fp);
 	}
 }
 

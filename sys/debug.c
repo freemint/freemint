@@ -27,6 +27,7 @@
 # include "fatfs.h"
 # include "filesys.h"
 # include "gmon.h"
+# include "info.h"		/* messages */
 # include "init.h"
 # include "memory.h"
 # include "k_fds.h"
@@ -415,7 +416,7 @@ DUMPLOG (void)
 void
 PAUSE (void)
 {
-	debug_ws ("Hit a key\r\n");
+	debug_ws (MSG_init_hitanykey);
 	(void) Bconin (2);
 }
   
@@ -442,16 +443,6 @@ FATAL (const char *s, ...)
  *     systems are synced.
  */
 
-static const char *haltmsg [MAXLANG] =
-{
-	"System halted.\r\n",
-	"System angehalten.\r\n",	/* German */
-	"Arràt du systäme.\r\n",	/* French */
-	"System halted.\r\n",		/* UK */
-	"System halted.\r\n",		/* Spanish */
-	"System halted.\r\n"		/* Italian */
-};
-
 EXITING
 halt (void)
 {
@@ -460,7 +451,7 @@ halt (void)
 	int scan;
 	
 	DEBUG (("halt() called, system halting...\r\n"));
-	debug_ws (haltmsg[gl_lang]);
+	debug_ws (MSG_system_halted);
 	
 	sys_q[READY_Q] = 0;	/* prevent context switches */
 	restr_intr();		/* restore interrupts to normal */
@@ -483,24 +474,13 @@ halt (void)
 	
 	for(;;)
 	{
-		debug_ws (haltmsg[gl_lang]);
+		debug_ws (MSG_system_halted);
 		r = Bconin (2);
 		if ((r & 0x0ff) == 'x')
 		{
 		}
 	}
 }
-
-
-static const char *rebootmsg[MAXLANG] =
-{
-	"FATAL ERROR. You must reboot the system.\r\n",
-	"FATALER FEHLER. Das System muû neu gestartet werden.\r\n",	/* German */
-	"ERREUR FATALE. Vous devez redÇmarrer le systäme.\r\n",		/* French */
-	"FATAL ERROR. You must reboot the system.\r\n",			/* UK */
-	"FATAL ERROR. You must reboot the system.\r\n",			/* Spanish */
-	"FATAL ERROR. You must reboot the system.\r\n"			/* Italian */
-};
 
 EXITING 
 HALT (void)
@@ -510,7 +490,7 @@ HALT (void)
 	int scan;
 	
 	DEBUG (("Fatal MiNT error: adjust debug level and hit a key...\r\n"));
-	debug_ws (rebootmsg[gl_lang]);
+	debug_ws (MSG_fatal_reboot);
 	
 	sys_q[READY_Q] = 0;	/* prevent context switches */
 	restr_intr ();		/* restore interrupts to normal */
@@ -531,7 +511,7 @@ HALT (void)
 	
 	for (;;)
 	{
-		debug_ws (rebootmsg[gl_lang]);
+		debug_ws (MSG_fatal_reboot);
 		r = Bconin (2);
 		
 		if (((r & 0x0ff) == 'x') || ((r & 0xff) == 's'))
@@ -541,9 +521,9 @@ HALT (void)
 			/* if the user pressed 's', try to sync before halting the system */
 			if ((r & 0xff) == 's')
 			{
-				debug_ws ("Syncing...");
+				debug_ws (MSG_debug_syncing);
 				s_ync ();
-				debug_ws ("done.\r\n");
+				debug_ws (MSG_debug_syncdone);
 			}
 		}
 	}
