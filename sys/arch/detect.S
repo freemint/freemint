@@ -26,7 +26,9 @@
 	.globl	_test_word_rd
 	.globl	_test_long_rd
 
-_test_byte_rd:	move.l	sp,a0
+_test_byte_rd:
+	move.l	a2,-(sp)
+	move.l	sp,a0
 	move.l	(8).w,a1
 	lea	berr.w(pc),a2
 	move.l	a2,(8).w
@@ -41,9 +43,12 @@ pass:	moveq	#0x01,d0	// passed
 berr:	move.l	a1,(8).w
 	move.l	a0,sp
 	nop
+	move.l	(sp)+,a2
 	rts
 
-_test_word_rd:	move.l	sp,a0
+_test_word_rd:
+	move.l	a2,-(sp)
+	move.l	sp,a0
 	move.l	(8).w,a1
 	lea	berr.w(pc),a2
 	move.l	a2,(8).w
@@ -55,7 +60,9 @@ _test_word_rd:	move.l	sp,a0
 
 	bra.s	pass
 
-_test_long_rd:	move.l	sp,a0
+_test_long_rd:
+	move.l	a2,-(sp)
+	move.l	sp,a0
 	move.l	(8).w,a1
 	lea	berr.w(pc),a2
 	move.l	a2,(8).w

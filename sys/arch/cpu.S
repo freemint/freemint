@@ -4,6 +4,8 @@
 //
 // this below is only called from init.c on 68060 or newer
 
+#ifndef NO_CPU_CACHES
+
 	.globl	_get_superscalar
 	.globl	_mcpu
 
@@ -28,7 +30,6 @@ _is_superscalar:
 //
 // Cache tricks
 //
-	.globl	_cpush
 	.globl	_mcpu			// in main.c
 	.globl	_init_cache
 
@@ -54,27 +55,28 @@ hascaches:
 // init cache routines
 
 _init_cache:
+	movem.l	d0-d1/a0-a2,-(sp)
 	move.l	_mcpu,d0
 	beq.s	icquit
 	cmp.w	#10,d0
 	beq.s	icquit
-	lea	_cache030.w(pc),a0
-	lea	l2c020.w(pc),a1
-	lea	c2l020.w(pc),a2
+	lea	_cache030,a0
+	lea	l2c020,a1
+	lea	c2l020,a2
 	cmp.w	#20,d0
 	beq.s	icset
-	lea	l2c030.w(pc),a1
-	lea	c2l030.w(pc),a2
+	lea	l2c030,a1
+	lea	c2l030,a2
 	cmp.w	#30,d0
 	beq.s	icset
-	lea	_cache040.w(pc),a0
-	lea	l2c040.w(pc),a1
-	lea	c2l040.w(pc),a2
+	lea	_cache040,a0
+	lea	l2c040,a1
+	lea	c2l040,a2
 	cmp.w	#40,d0
 	beq.s	icset
-	lea	_cache060.w(pc),a0
-	lea	l2c060.w(pc),a1
-	lea	c2l060.w(pc),a2
+	lea	_cache060,a0
+	lea	l2c060,a1
+	lea	c2l060,a2
 	cmp.w	#60,d0
 	bne.s	icquit
 icset:	move.l	a0,_cachevec
@@ -82,7 +84,8 @@ icset:	move.l	a0,_cachevec
 	move.l	a2,c2lv
 	st	hascaches
 	nop
-icquit:	rts
+icquit:	movem.l	(sp)+,d0-d1/a0-a2
+	rts
 
 // Cache control routines.
 //
@@ -139,11 +142,8 @@ ccw_dmasks:
 // Set the CACR according to the Cache Control Word and Mask
 
 _ccw_set:
-#ifdef ONLY030
-	tst.w	hascaches.w(pc)
-#else
+	movem.l	d1-d2/a0-a2,-(sp)
 	tst.w	hascaches
-#endif
 	beq.s	clq
 	bsr.s	_ccw_get		// get the current CCW
 	move.l	d0,-(sp)		// save it for later reference
@@ -185,17 +185,15 @@ dc_off:
 	dc.w	0xF478			// cpusha dc
 lt040:
 	movec	d0,cacr			// write CACR
-clq:	clr.l	d0			// E_OK
+clq:	movem.l	(sp)+,d1-d2/a0-a2
+	clr.l	d0			// E_OK
 	rts
 
 // Extract Cache Control Word from the CACR
 
 _ccw_get:
-#ifdef ONLY030
-	tst.w	hascaches.w(pc)
-#else
+	movem.l	d1-d2/a0-a2,-(sp)
 	tst.w	hascaches
-#endif
 	beq.s	clq
 	movec	cacr,d0			// read CACR
 	move.l	c2lv,a0			// convert
@@ -204,6 +202,7 @@ _ccw_get:
 	bsr.s	_ccw_getdmask
 	and.w	d1,d0
 	and.l	#0x0000ffff,d0
+	movem.l	(sp)+,d1-d2/a0-a2
 	rts
 
 // get default Cache Control Mask for currently used CPU
@@ -212,7 +211,7 @@ _ccw_getdmask:
 	move.l	_mcpu,d0		// high word assumed 0
 	divu.w	#5,d0
 	and.l	#0x0000ffff,d0		// better to be safe...
-	lea	ccw_dmasks.w(pc),a0
+	lea	ccw_dmasks,a0
 	move.w	0(a0,d0.w),d0		// _not_ a (a0,d0.w*2), see divu
 	rts
 
@@ -243,7 +242,7 @@ ccw30:	dc.w	0x0001,0x0008,0x0000,0x0000
 	dc.w	0x0002,0x0010,0x0000,0x0000
 	dc.w	0x0040,0x0080,0x0000,0x0000
 
-l2c030:	lea	cacr30.w(pc),a0
+l2c030:	lea	cacr30,a0
 	clr.l	d1
 	moveq	#0x07,d2
 l30:	lsr.w	#0x01,d0
@@ -254,7 +253,7 @@ s30:	addq.l	#0x02,a0
 	move.l	d1,d0
 	rts
 
-c2l030:	lea	ccw30.w(pc),a0
+c2l030:	lea	ccw30,a0
 	clr.l	d1
 	moveq	#0x0f,d2
 c30:	lsr.w	#0x01,d0
@@ -295,7 +294,7 @@ ccw60:	dc.w	0x0000,0x0100,0x0200,0x0001
 	dc.w	0x0000,0x0000,0x0000,0x0400
 	dc.w	0x4000,0x8000,0x0800,0x0002
 
-l2c060:	lea	cacr60.w(pc),a0
+l2c060:	lea	cacr60,a0
 	clr.l	d1
 	moveq	#0x0f,d2
 l60:	lsr.w	#0x01,d0
@@ -307,7 +306,7 @@ s60:	addq.l	#0x04,a0
 	eori.l	#0x58006000,d0		// adjust reverted bits
 	rts
 
-c2l060:	lea	ccw60.w(pc),a0
+c2l060:	lea	ccw60.w,a0
 	lsr.l	#0x08,d0		// first 13 bits of CACR aren't used
 	lsr.l	#0x04,d0
 	clr.l	d1
@@ -321,17 +320,22 @@ s61:	addq.l	#0x02,a0
 	eor.w	#0x4f00,d0		// adjust reverted bits
 	rts
 
+#endif
+
 //
 // cpush(void *base, long length):
 // flush both caches from base over a distance of length. If length is -1
 // then the entire cache is flushed
 //
 
+	.globl	_cpush
+
 _cpush:
+#ifndef NO_CPU_CACHES
 	movem.l	4(sp),d0/a0		// get parameters
 	exg	a0,d0			// and in the right order
 	nop				// flush pipelines
-	move.l	_cachevec.w(pc),a1
+	move.l	_cachevec,a1
 	jmp	(a1)
 
 _cache030:				// 68030 cache
@@ -358,8 +362,10 @@ rescacr:
 	move.l	(sp)+,d0
 	movec	d0,cacr
 _cache000:				// 68000 cache (i.e. no cache)
+#endif
 	rts
 
+#ifndef NO_CPU_CACHES
 _cache040:				// 68040 cache
 	addq.l	#1,d0			// if was -1
 	beq.s	abc040			// then flush everything
@@ -493,6 +499,8 @@ temp_access:
 	moveq	#-1,d0
 	move.l	d0,a0			// Signal "no valid physical address found"
 	bra.s	l2p_return
+
+#endif
 
 //
 // Set the stack pointer to a new value
