@@ -298,7 +298,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 
-	if (!rc || rc == wind->owner)
+	if (!rc || rc == wind->owner || wind->owner == C.Aes)
 	{
 		DIAGS(("Display widget (same client) for %s", wind->owner->name));
 		Display_widget(lock, wind, widg);
@@ -332,7 +332,7 @@ redraw_menu(enum locks lock)
 	widg = get_widget(root_window, XAW_MENU);
 	mc = ((XA_TREE *)widg->stuff)->owner;
 
-	if (mc == rc)
+	if (!rc || mc == rc || rc == C.Aes)
 	{
 		DIAGS(("Display MENU (same client) for %s", rc->name));
 		Display_widget(lock, root_window, widg);
