@@ -165,17 +165,23 @@ emit_exe_auto(short fd)
 static void
 do_mem_prot(char *arg)
 {
+# ifndef NO_MMU
 	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
+# endif
 }
 
 static long
 emit_mem_prot(short fd)
 {
+# ifndef NO_MMU
 	char line[MAX_CMD_LEN];
 
 	ksprintf(line, sizeof(line), "MEM_PROT=%s\n", no_mem_prot ? "NO" : "YES");
 
 	return TRAP_Fwrite(fd, strlen(line), line);
+# else
+	return 0;
+# endif
 }
 
 static void
@@ -214,13 +220,10 @@ static void
 do_debug_level(char *arg)
 {
 	long val;
-	char msg[64];
 
 	if (!isdigit(*arg))
 	{
-		ksprintf(msg, sizeof(msg), \
-			"mint.ini: %s requires number as an argument!\r\n", "DEBUG_LEVEL");
-		TRAP_Cconws(msg);
+		boot_printf(MSG_init_syntax_error, "DEBUG_LEVEL");
 
 		return;
 	}
@@ -229,10 +232,8 @@ do_debug_level(char *arg)
 
 	if (val < 0 || val > LOW_LEVEL)
 	{
-		ksprintf(msg, sizeof(msg), \
-			"mint.ini: %s value %ld is out of range (%d-%d)\r\n", \
-			"DEBUG_LEVEL", val, (short)0, (short)LOW_LEVEL);
-		TRAP_Cconws(msg);
+		boot_printf(MSG_init_value_out_of_range, \
+				"DEBUG_LEVEL", val, (short)0, (short)LOW_LEVEL);
 
 		return;
 	}
@@ -254,13 +255,10 @@ static void
 do_debug_devno(char *arg)
 {
 	long val;
-	char msg[64];
 
 	if (!isdigit(*arg))
 	{
-		ksprintf(msg, sizeof(msg), \
-			"mint.ini: %s requires number as an argument!\r\n", "DEBUG_DEVNO");
-		TRAP_Cconws(msg);
+		boot_printf(MSG_init_syntax_error, "DEBUG_DEVNO");
 
 		return;
 	}
@@ -269,10 +267,8 @@ do_debug_devno(char *arg)
 
 	if (val < 0 || val > 9)
 	{
-		ksprintf(msg, sizeof(msg), \
-			 "mint.ini: %s value %ld is out of range (%d-%d)\r\n", \
-			 "DEBUG_DEVNO", val, (short)0, (short)9);
-		TRAP_Cconws(msg);
+		boot_printf(MSG_init_value_out_of_range, \
+			 	"DEBUG_DEVNO", val, (short)0, (short)9);
 
 		return;
 	}
@@ -294,13 +290,10 @@ static void
 do_boot_delay(char *arg)
 {
 	long val;
-	char msg[64];
 
 	if (!isdigit(*arg))
 	{
-		ksprintf(msg, sizeof(msg), \
-			"mint.ini: %s requires number as an argument!\r\n", "BOOT_DELAY");
-		TRAP_Cconws(msg);
+		boot_printf(MSG_init_syntax_error, "BOOT_DELAY");
 
 		return;
 	}
@@ -309,10 +302,8 @@ do_boot_delay(char *arg)
 
 	if (val < 0 || val > 59)
 	{
-		ksprintf(msg, sizeof(msg), \
-			"mint.ini: %s value %ld is out of range (%d-%d)\r\n", \
-			"BOOT_DELAY", val, (short)0, (short)59);
-		TRAP_Cconws(msg);
+		boot_printf(MSG_init_value_out_of_range, \
+				"BOOT_DELAY", val, (short)0, (short)59);
 
 		return;
 	}
@@ -373,7 +364,7 @@ static void
 write_ini (void)
 {
 	short inihandle;
-	char ini_file[32], line[64];
+	char ini_file[32];
 	long r, x, l;
 
 	ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, "mint.ini");
@@ -404,9 +395,7 @@ close:
 
 	if (r < 0)
 	{
-		ksprintf(line, sizeof(line), "Error %ld writing %s\r\n", r, "mint.ini");
-
-		TRAP_Cconws(line);
+		boot_printf(MSG_init_write_error, r, "mint.ini");
 		TRAP_Fdelete(ini_file);
 	}
 }
@@ -436,26 +425,21 @@ read_ini (void)
 					s = strstr(line, ini_keywords[x]);
 					if (s && (s == line))
 					{
-						while (*s && (*s != '='))
-							s++;
-						while (*s && (*s == '='))
-							s++;
-						if (*s)
+						s = strchr(line, '=');
+						if (s && *s)
 						{
+							s++;
 							do_func[x](s);
 							break;
 						}
+						else
+							boot_printf(MSG_init_no_value, line);
 					}
 					x++;
 				}
 
 				if (ini_keywords[x] == NULL)
-				{
-					char msg[80];
-
-					ksprintf(msg, sizeof(msg), "mint.ini: unknown command '%s'\r\n", line);
-					TRAP_Cconws(msg);
-				}
+					boot_printf(MSG_init_unknown_cmd, line);
 			}
 		}
 	}
