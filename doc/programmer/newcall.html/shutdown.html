@@ -14,7 +14,7 @@
 </B>
 <TABLE BORDER=1>
 
-<TR><TH></TH><TD><B>Shutdown()</B> kills all processes, syncs 
+<TR><TH></TH><TD><B>Shutdown()</B> kills all processes, syncs
 filesystems then halts or reboots the system.
 </TD></TR>
 
@@ -24,30 +24,33 @@ filesystems then halts or reboots the system.
 
 <TR><TH></TH><TD></TD></TR>
 
-<TR><TH><B>Availability</B></TH><TD>This function is available under 
+<TR><TH><B>Availability</B></TH><TD>This function is available under
 all <B>MiNT</B> versions integrated with <b>MultiTOS</b>.
 </TD></TR>
 
 <TR><TH></TH><TD></TD></TR>
 
 <TR><TH><B>Parameters</B></TH><TD>
-On <I>mode</I> equal to <b>SHUT_HALT</b> (0L), the system will shutdown 
-then enter a halted condition.
-<p>On <I>mode</I> equal to <b>SHUT_BOOT</b> (1L), the system will 
+On <I>mode</I> equal to <b>SHUT_HALT</b> (0L), the system will shut
+down and then switch the power off, whenever possible. If this is not
+possible, the system will simply enter a halted condition.</p>
+<p>On <I>mode</I> equal to <b>SHUT_BOOT</b> (1L), the system will
 reboot the machine after shutting everything down.</p>
-<p>On <I>mode</I> equal to <b>SHUT_COLD</b> (2L), the system will act 
-the same as with the <b>SHUT_BOOT</b> mode, except that a cold start 
+<p>On <I>mode</I> equal to <b>SHUT_COLD</b> (2L), the system will act
+the same as with the <b>SHUT_BOOT</b> mode, except that a cold start
 rather than the warm start will be performed.</p>
-<p>On <I>mode</I> equal to <b>SHUT_POWER</b> (3L), the system will 
-turn power off. The only hardware that supports it is atm. CT60. If 
-hardware does not support it, SHUT_HALT will be performed.</p>
-<p><b>SHUT_COLD</b> mode is recognized as of FreeMiNT version 1.15.5, 
-older versions of the kernel will treat the <b>SHUT_COLD</b> as 
+<p>On <I>mode</I> equal to <b>SHUT_NOPOWEROFF</b> (3L), the system will
+shutdown and enter a halted condition without switching the power
+off.</p>
+<p><b>SHUT_HALT</b> is available on all MiNT versions. As of FreeMiNT 1.16.0
+this mode has been extended and is now able to shut the power off on machines
+which have such a facility (CT060).</p>
+<p><b>SHUT_COLD</b> mode is recognized as of FreeMiNT version 1.15.5,
+older versions of the kernel will treat the <b>SHUT_COLD</b> as
 <b>SHUT_BOOT</b>.</p>
-<p><b>SHUT_POWER</b> mode is recognized as of FreeMiNT version 1.16a, 
-older versions of the kernel will treat the <b>SHUT_POWER</b> as 
-<b>SHUT_COLD</b>.</p>
-<p><i>All other values of <b>mode</b> are reserved for future 
+<p><b>SHUT_NOPOWEROFF</b> mode operates as SHUT_BOOT on versions of FreeMiNT
+prior to 1.16.0.</p>
+<p><i>All other values of <b>mode</b> are reserved for future
 definition.</i></p>
 </TD></TR>
 
@@ -65,20 +68,20 @@ addq.l	#6,sp
 
 <TR><TH></TH><TD></TD></TR>
 
-<TR><TH><B>Return Value</B></TH><TD><b>Shutdown()</b> returns a 
-negative GEMDOS error code, if failed. On success this call obviously 
+<TR><TH><B>Return Value</B></TH><TD><b>Shutdown()</b> returns a
+negative GEMDOS error code, if failed. On success this call obviously
 never returns.
 </TD></TR>
 
 <TR><TH></TH><TD></TD></TR>
 <TR><TH><B>Caveats</B></TH><TD>
-<p><i>Older versions of MiNT contained a bug that might cause the 
-system to crash, if you called <b>Shutdown()</b> while both GEM AES and 
+<p><i>Older versions of MiNT contained a bug that might cause the
+system to crash, if you called <b>Shutdown()</b> while both GEM AES and
 virtual console daemon were present.</i>
 </td></tr>
 
 <tr><th></th><td></td></tr>
-<tr><th><b>Comments</b></th><td>You need root privileges to shut the 
+<tr><th><b>Comments</b></th><td>You need root privileges to shut the
 system down.
 </td></tr>
 
