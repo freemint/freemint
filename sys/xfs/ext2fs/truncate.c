@@ -383,7 +383,7 @@ ext2_truncate (COOKIE *inode, unsigned long newsize)
 	long offset;
 	long err;
 	
-	if (!EXT2_ISREG (i_mode))
+	if (!(EXT2_ISREG (i_mode) || EXT2_ISDIR (i_mode) || EXT2_ISLNK (i_mode)))
 		return;
 	
 	inode->in.i_size = cpu2le32 (newsize);
