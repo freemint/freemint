@@ -507,14 +507,16 @@ fstr(char *p, int cas, int lval)
 			{
 				c = *ln;
 				if (!apo)
-					if ((c = fstpa[(uchar)c]) == 0)
+					if ((c = fstpa[c & 0xff]) == 0)
 						break;
 				*p++ = cas ? cas > 0 ? toupper(c) : tolower(c) : c;
 				ln++;
 			}
-	
+
 			if (apo && *ln == apo)
+			{
 				ln++;
+			}
 			else
 			{
 				*p = 0;
@@ -592,16 +594,17 @@ Fload(const char *name, int *fh, long *l)
 	char *bitmap=0L;
 
 	*l =0;
-	fl = *fh;		/* if already opened, *fh is handle */
+	fl = *fh; /* if already opened, *fh is handle */
 
-	if (name)		/* if not already or want to open */
+	if (name)
+		/* if not already or want to open */
 		fl = Fopen(name,O_RDONLY);
 
 	if (fl > 0)
 	{
 		fl &= 0xffff;
-		pl = Fseek(0L, fl, 2);		/* seek end */
-		Fseek(0L, fl, 0);		/* seek start */
+		pl = Fseek(0L, fl, 2); /* seek end */
+		Fseek(0L, fl, 0); /* seek start */
 
 		bitmap = xmalloc(pl+1, 200);
 		if (bitmap)

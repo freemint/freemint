@@ -93,8 +93,10 @@ static char *scls_name = "xa_setup.scl";
 static char *old_name  = "xaaes.cnf";
 #endif
 static char *scle_name = "xa_exec.scl";
-/* static char *scl1_name = "xa_user1.scl"; */
-/* static char *scl2_name = "xa_user2.scl"; */
+#if SCL_HOOKS
+static char *scl1_name = "xa_user1.scl";
+static char *scl2_name = "xa_user2.scl";
+#endif
 static char *sclp_name = "xa_scl.prg";
 
 static char Aes_display_name[32];
@@ -440,10 +442,12 @@ DIAGS(("\n"));
 
 	/* Close the debug output file */
 
-	IFDIAG (if (D.debug_file > 0)
-	        {
-		       Fclose(D.debug_file);
-		    })
+#if GENERATE_DIAGS
+	if (D.debug_file > 0)
+	{
+		Fclose(D.debug_file);
+	}
+#endif
 
 	t_color(BLACK);
 	wr_mode(MD_REPLACE);
@@ -586,6 +590,8 @@ _crtinit(void)
 
 XA_WINDOW *root_window;
 
+static char aessys_name[32] = "AESSYS";
+
 /*
  * Startup & Initialisation...
  * - Spawn off any extra programs we need (mouse server, etc).
@@ -685,7 +691,8 @@ BTRACE(7);
 	(void) Pdomain(1);	/* HR The kernel runs in the MiNT domain. */
 
 BTRACE(8);
-	argv[0] = get_procname(C.AESpid);
+	get_procname(C.AESpid, aessys_name, sizeof(aessys_name));
+	argv[0] = aessys_name;
 
 BTRACE(9);
 	/* Ulrichs advice */
@@ -1031,16 +1038,17 @@ BTRACE(31);
 	/* Parse the standard startup file.
 	 * This can redirect the debugging output to another file/device
 	 */
-
 	full = xa_find(scls_name);
 	if (full)
+	{
 		SCL(NOLOCKING, 0, scls_name, full, 0);
+	}
 	else /* transition time */
 	{
 		SCL(NOLOCKING, 2, old_name, 0, 0);
 		lcfg.oldcnf = true;
 	}
-	
+
 #if SCL_HOOKS
 	full = xa_find(scl1_name);
 	if (full)
@@ -1305,13 +1313,17 @@ BTRACE(53);
 #endif
 
 	if (!lcfg.oldcnf)
+	{
 #if !SEPARATE_SCL
-		SCL(NOLOCKING, 1, scle_name, 0, 0);
+		full = xa_find(scle_name);
+		if (full)
+			SCL(NOLOCKING, 1, scle_name, full, 0);
 #else
 	/* 130402: xa_scl */
-	{
 		char par[256];
-		char *p, *n = xa_find(scle_name);
+		char *p, *n;
+
+		n = xa_find(scle_name);
 		if (n)
 		{
 			par[0] = sdisplay(par + 1, "%s", n); /* Grrrrrrr!!!!! */
@@ -1319,8 +1331,8 @@ BTRACE(53);
 			if (p)
 				launch(NOLOCKING, 0, 0, 0, p, par, C.Aes);
 		}
-	}
 #endif
+	}
 
 	/* I just like to have the unlocks at the same level as the locks. */
 

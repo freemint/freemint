@@ -246,10 +246,10 @@ rp_2_ap(XA_WINDOW *wind, XA_WIDGET *widg, RECT *r)
 void
 display_widget(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg)
 {
-	/* HR 100701: if removed or lost */
+	/* if removed or lost */
 	if (widg->display)
 	{
-		/* HR 260501: Some programs do this! */
+		/* Some programs do this! */
 		if (!(   wind->window_status == XAWS_ICONIFIED
 		      && widg->type != XAW_TITLE
 		      && widg->type != XAW_ICONIFY))
@@ -480,9 +480,9 @@ calc_work_area(XA_WINDOW *wi)
  * Define the widget locations using window relative coordinates.
  */
 
-/* HR: needed a dynamic margin (for windowed list boxes) */
+/* needed a dynamic margin (for windowed list boxes) */
 /* eliminated both margin and shadow sizes from this table */
-/* HR 260901: put some extra data there as well. */
+/* put some extra data there as well. */
 static XA_WIDGET_LOCATION
 /*             defaults              index        mask     rsc         */
 stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSE,   WIDG_CLOSER  },
@@ -505,7 +505,7 @@ stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW, WIDG_RIGHT   },
 stdl_info    = {LT, { 0, 0, 1, 1 },  XAW_INFO,    INFO,    0            },
 stdl_menu    = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,  0            },
 stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,   0            },
-stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,       0            } /* HR 280102: implement border sizing. */
+stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,       0            }
 ;
 
 static XA_WIDGET *
@@ -549,7 +549,7 @@ make_widget(XA_WINDOW *wind, XA_WIDGET_LOCATION *loc,
 	return widg;
 }
 
-/* HR: Establish iconified window position from a simple ordinal. */
+/* Establish iconified window position from a simple ordinal. */
 RECT
 iconify_grid(int i)
 {
@@ -611,7 +611,7 @@ display_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	wr_mode(MD_TRANS);
 
 #if DISPLAY_LOGO_IN_TITLE_BAR
-	/* HR: It ressembles too much a closer */
+	/* It ressembles too much a closer */
 	if (widg->stat & SELECTED)
 		def_widgets[WIDG_LOGO].ob_state |= SELECTED;
 	else
@@ -620,7 +620,7 @@ display_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	wind->wt.tree = def_widgets;
 	display_object(lock, wind->wt, WIDG_LOGO, r.x, r.y, 1);
 
-	/* HR: tiny pixel correction (better spacing) */
+	/* tiny pixel correction (better spacing) */
 	r.x += cfg.widg_w + 2;
 	r.w -= cfg.widg_w + 2;
 #endif
@@ -647,7 +647,7 @@ display_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 		else
 			t_color(WHITE);
 
-		/* HR 231002: no move, no 3D */
+		/* no move, no 3D */
 		if (wind->active_widgets & MOVE)
 			d3_pushbutton(-2, &r, NULL, widg->state, 0, 0);
 		else
@@ -685,7 +685,7 @@ display_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 
 	cramped_name(tn, temp, r.w/screen.c_max_w);
 
-	/* HR 080501: avoid inner border. */
+	/* avoid inner border. */
 	if (*temp != ' ')
 		++r.x;
 
@@ -811,7 +811,7 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 								WM_MOVED, 0, 0, wind->handle,
 								r.x, r.y, r.w, r.h);
 				else
-					/* HR 191201: Send a dummy message. */
+					/* Send a dummy message. */
 					wind->send_message(lock, wind, NULL, 0, 0, 0, 0, 0, 0, 0, 0);
 
 				/* We return false here so the widget display
@@ -832,7 +832,7 @@ drag_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 click_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	/* HR: if not on top or on top and not focus */
+	/* if not on top or on top and not focus */
 	if (wind != window_list
 	    || (wind == window_list && wind != C.focus))
 	{
@@ -889,17 +889,18 @@ display_info(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	char t[160];
 	RECT r;
 
-	rp_2_ap(wind, widg, &r);	/* Convert relative coords and window location to absolute screen location */
+	/* Convert relative coords and window location to absolute screen location */
+	rp_2_ap(wind, widg, &r);
 
-	if (!MONO)	 			/* HR: in mono just leave unbordered */
+	/* in mono just leave unbordered */
+	if (!MONO)
 	{
-		tl_hook( 0, &r, screen.dial_colours.lit_col);
-		br_hook( 0, &r, screen.dial_colours.shadow_col);
+		tl_hook(0, &r, screen.dial_colours.lit_col);
+		br_hook(0, &r, screen.dial_colours.shadow_col);
 	}
 	t_color(BLACK);
 
-/* HR */	
-	r.y += (r.h-screen.c_max_h)/2;		/* HR 251201 */
+	r.y += (r.h-screen.c_max_h)/2;
 	v_gtext(C.vh, r.x + 4, r.y, clipped_name(widg->stuff, t, (r.w/screen.c_max_w)-1));
 
 	return true;
@@ -920,15 +921,19 @@ click_close(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	if (wind->send_message)
 	{
 		wind->send_message(lock, wind, NULL,
-					WM_CLOSED, 0, 0, wind->handle,
-					0, 0, 0, 0);
-		return true; /* Redisplay.... */
+				   WM_CLOSED, 0, 0, wind->handle,
+				   0, 0, 0, 0);
+
+		/* Redisplay.... */
+		return true;
 	}
 	else
 	{	/* Just close these windows, they can handle it... */
 		close_window (lock, wind);
 		delete_window(lock, wind);
-		return false;	/* Don't redisplay in the do_widgets() routine as window no longer exists */
+
+		/* Don't redisplay in the do_widgets() routine as window no longer exists */
+		return false;
 	}
 }
 
@@ -990,7 +995,6 @@ click_iconify(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	return true; /* Redisplay.... */
 }
 
-/* HR 210801 */
 /*======================================================
 	HIDER WIDGET BEHAVIOUR
 ========================================================*/
@@ -1004,14 +1008,18 @@ click_hide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	hide_app(lock, wind->owner);
 
-	return true; /* Redisplay.... (Unselect basically.) */
+	/* Redisplay.... (Unselect basically.) */
+	return true;
 }
 
-/* HR 150202 helper functions for sizing. */
+/* 
+ * helper functions for sizing.
+ */
 static bool
 display_border(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 {
-	return true; 	/* Dummy; no draw, no selection status. */
+	/* Dummy; no draw, no selection status. */
+	return true;
 }
 
 static int border_mouse[CDV] =
@@ -1098,8 +1106,8 @@ size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehav
 					/* Just move these windows, they can handle it... */
 					move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
 			}
-	
-			if (size)
+
+			if (size && wind->send_message)
 				wind->send_message(lock, wind, NULL,
 						   WM_SIZED, 0, 0, wind->handle,
 						   r.x, r.y, r.w, r.h);
@@ -1108,11 +1116,13 @@ size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehav
 	else
 	{
 		short pmx, pmy, mx, my, mb;
-		
-		vq_mouse(C.vh, &mb, &pmx, &pmy);  /* need to do this anyhow, for mb */
 
-		if (widget_active.widg)		/* pending widget: take that */
+		/* need to do this anyhow, for mb */
+		vq_mouse(C.vh, &mb, &pmx, &pmy);
+
+		if (widget_active.widg)
 		{
+			/* pending widget: take that */
 			pmx = widget_active.x;
 			pmy = widget_active.y;
 			d = widget_active.d;
@@ -1129,23 +1139,23 @@ size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehav
 		{
 			vq_mouse(C.vh, &mb, &mx, &my);
 			set_widget_active(wind, widg, next, 6);
-	
+
 			widget_active.x = mx;
 			widget_active.y = my;
 			widget_active.d = d;
 			widget_active.xy = xy;
-	
+
 			if (!widget_active.cont)
 			{
 				widget_active.cont = true;
 				/* Always have a nice consistent SIZER when resizing a window */
 				graf_mouse(border_mouse[xy], NULL);
 			}
-		
-			
-			if (mx != pmx || my != pmy)			/* Has the mouse moved? */
-				r = widen_rectangle(xy, mx, my, r, &d);  /* HR 150202: in xa_graf.c */
-	
+
+			/* Has the mouse moved? */
+			if (mx != pmx || my != pmy)
+				r = widen_rectangle(xy, mx, my, r, &d);
+
 			if (use_max)
 			{
 				if (r.w > wind->max.w)
@@ -1153,12 +1163,12 @@ size_window(LOCK lock, XA_WINDOW *wind, XA_WIDGET *widg, bool sizer, WidgetBehav
 				if (r.h > wind->max.h)
 					r.h = wind->max.h;
 			}
-	
+
 			if (r.w < 6*cfg.widg_w)
 				r.w = 6*cfg.widg_w;
 			if (r.h < 6*cfg.widg_h)
 				r.h = 6*cfg.widg_h;
-	
+
 			move = r.x != wind->r.x || r.y != wind->r.y,
 			size = r.w != wind->r.w || r.h != wind->r.h;
 			
@@ -1501,9 +1511,11 @@ drag_vslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 		set_widget_active(wind, widg, drag_vslide,3);
 		widget_active.y = my;
 		widget_active.offs = offs;
-		wind->send_message(lock, wind, NULL,
-				WM_VSLID, 0, 0, wind->handle,
-				offs,     0, 0, 0);
+
+		if (wind->send_message)
+			wind->send_message(lock, wind, NULL,
+					   WM_VSLID, 0, 0, wind->handle,
+					   offs,     0, 0, 0);
 
 		/* We return false here so the widget display status stays
 		 * selected whilst it repeats
@@ -1555,9 +1567,11 @@ drag_hslide(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 		set_widget_active(wind, widg, drag_hslide,4);
 		widget_active.x = mx;
 		widget_active.offs = offs;
-		wind->send_message(lock, wind, NULL,
-				WM_HSLID, 0, 0, wind->handle,
-				offs, 0, 0, 0);
+
+		if (wind->send_message)
+			wind->send_message(lock, wind, NULL,
+					   WM_HSLID, 0, 0, wind->handle,
+					   offs, 0, 0, 0);
 
 		/* We return false here so the widget display status stays
 		 * selected whilst it repeats
@@ -1812,7 +1826,7 @@ standard_widgets(XA_WINDOW *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		}
 	}
 
-	if (tp & XaPOP) /* HR: popups in a window */
+	if (tp & XaPOP) /* popups in a window */
 		make_widget(wind, &stdl_pop, 0, 0, 0);
 
 	if (tp & XaMENU)
@@ -1968,7 +1982,9 @@ is_page(int f)
 	return false;
 }
 
-/* The mouse is inside the large slider bar */
+/*
+ * The mouse is inside the large slider bar
+ */
 static inline int
 is_H_arrow(XA_WINDOW *w, XA_WIDGET *widg, int click)
 {
@@ -1993,10 +2009,13 @@ is_H_arrow(XA_WINDOW *w, XA_WIDGET *widg, int click)
 			return 2;
 	}
 
-	return -1;		/* no active widget, skip */
+	/* no active widget, skip */
+	return -1;
 }
 
-/* same as above, but for vertical slider */
+/*
+ * same as above, but for vertical slider
+ */
 static inline int
 is_V_arrow(XA_WINDOW *w, XA_WIDGET *widg, int click)
 {
@@ -2009,6 +2028,7 @@ is_V_arrow(XA_WINDOW *w, XA_WIDGET *widg, int click)
 	{
 		if (sl->position > 0 && click < sl->r.y)	
 			return 1;
+
 		if (sl->position < SL_RANGE && click > sl->r.y + sl->r.h)
 			return 2;
 	}
@@ -2143,7 +2163,7 @@ do_widgets(LOCK lock, XA_WINDOW *w, XA_WIND_ATTR mask, struct moose_data *md)
 	
 					if (rtn)	/* If the widget click/drag function returned true we reset the state of the widget */
 					{
-						DIAG((D_button,NULL,"Deselect widget\n"));
+						DIAG((D_button, NULL, "Deselect widget\n"));
 						redisplay_widget(lock, w, widg, NONE);	/* Flag the widget as de-selected */
 					}
 					else

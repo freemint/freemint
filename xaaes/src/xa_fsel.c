@@ -85,6 +85,23 @@ init_fsel(void)
 	*fs.fslash = '\\';
 }
 
+static char *
+getsuf(char *f)
+{
+	char *p;
+
+	if ((p = strrchr(f, '.')) != 0L)
+	{
+		if (strchr(p, '/') == 0L
+		    && strchr(p, '\\') == 0L)
+			/* didnt ran over slash? */
+			return p+1;
+	}
+
+	/* no suffix  */
+	return 0L;
+}
+
 /*
  *  find typed characters in the list
  */

@@ -691,7 +691,7 @@ XA_wind_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		case WF_TOP:
 		case WF_NEWDESK:
 		case WF_SCREEN:
-		case 0x5841: /* 'XA', idee stolen from WINX */
+		case WF_XAAES: /* 'XA', idee stolen from WINX */
 			break;
 		default:
 			DIAGS(("WARNING:wind_get for %s: Invalid window handle %d\n", c_owner(client), wind));
@@ -1083,8 +1083,8 @@ DIAGS(("half_screen_buffer for %s: mode:%x, %ld(%lx) size %ld use %ld\n",
 		*ro = w->window_status == XAWS_ICONIFIED ? w->ro : w->r;
 		break;
 
-	case 0x5841: /* 'XA' */
-		o[0] = 0x5841;
+	case WF_XAAES: /* 'XA' */
+		o[0] = WF_XAAES;
 		o[1] = HEX_VERSION;
 		DIAGS(("hex_version = %04x\n",o[1]));
 		break;

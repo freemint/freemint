@@ -57,10 +57,11 @@ struct lconfig lcfg =
 	false
 };
 
-/* HR: find a xaaes file. When the cd command to XaAES load directory is
-       missing in mint.cnf (which is likely for inexperienced mint users. ;-) 
-       XaAES wont fail completely.
-*/
+/*
+ * find a xaaes file. When the cd command to XaAES load directory is
+ * missing in mint.cnf (which is likely for inexperienced mint users. ;-) 
+ * XaAES wont fail completely.
+ */
 static char **aes_path;
 static char *dirs[] =
 {
@@ -79,7 +80,7 @@ static char *dirs[] =
 	NULL
 };
 
-/* HR: last resort if shell_find fails. */
+/* last resort if shell_find fails. */
 char *
 xa_find(char *fn)
 {
@@ -89,7 +90,8 @@ xa_find(char *fn)
 
 	DIAGS(("xa_find '%s'\n", fn ? fn : "~"));
 
-	f = shell_find(NOLOCKING, C.Aes, fn);		/* HR 020402: combined shell_find & xa_find permanently. */
+	/* combined shell_find & xa_find permanently. */
+	f = shell_find(NOLOCKING, C.Aes, fn);
 	if (f)
 		return f;
 	else
@@ -99,12 +101,12 @@ xa_find(char *fn)
 		{
 			char *pad = *aes_path;
 			sdisplay(p,"%s%s", pad, fn);
-	#if GENERATE_DIAGS
+#if GENERATE_DIAGS
 			if (lcfg.booting)
 				display("try open '%s'\n", p);
 			else
 				DIAGS(("%s\n", p));
-	#endif
+#endif
 			h = Fopen(p,0);
 			if (h > 0)
 			{
@@ -170,7 +172,7 @@ have_wild(char *s)
 	char *t = s + strlen(s);
 	while (--t > s)
 	{
-		if (*t == '\\' or *t == ':' or *t == '/')
+		if (*t == '\\' || *t == ':' || *t == '/')
 			break;
 		if (is_wild(*t))
 			return true;
@@ -304,7 +306,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 			full = xa_find(name);
 
 		if (full)
-			cnf = Fload(full,&fh,&tl);
+			cnf = Fload(full, &fh, &tl);
 
 		if (cnf == 0)
 		{
@@ -360,7 +362,8 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 			ipff_trail(lb);	/* remove trailing spaces */
 
 			if (lcfg.booting)
-				fdisplay(loghandle, false, "%s%s\n", iftruth == 0 ? "" : "# ", ipff_getp());
+				fdisplay(loghandle, false, "%s%s\n",
+					 iftruth == 0 ? "" : "# ", ipff_getp());
 
 			ide(rstr);		/* get a identifier */
 			sk();			/* skip white space */
@@ -378,7 +381,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 			}
 			else
 			{
-				if (inif == 1)		/* in if but not yet then */
+				if (inif == 1) /* in if but not yet then */
 				{
 					if (strcmp(rstr, "then") == 0)
 					{
@@ -387,9 +390,9 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 						continue;
 					}
 				}
-				else				/* in then or else */
+				else /* in then or else */
 				{
-					if (   inif == 2		/* in then */
+					if (   inif == 2 /* in then */
 					    && strcmp(rstr, "else") == 0)
 					{
 						iftruth ^= 1;
@@ -413,7 +416,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 			{
 				skc();
 				have_brace = true;
-				continue;			/* while lb = ipff_line */
+				continue; /* while lb = ipff_line */
 			}
 			if (have_brace && c == '}')
 			{
@@ -431,17 +434,18 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				}
 				local_list = NULL;
 	
-				continue;			/* while lb = ipff_line */
+				continue; /* while lb = ipff_line */
 			}
 		
 			if (*rstr == 0)
 			{
 				err = 1;
 				if (lcfg.booting)
-					fdisplay(loghandle, true, "line %d: a line must start with a alphanumeric keyword\n", lnr);
+					fdisplay(loghandle, true,
+						 "line %d: a line must start with a alphanumeric keyword\n", lnr);
 			}
 			/* Begin of options. */
-			else if (!have_opt && strcmp(rstr,"options") == 0)
+			else if (!have_opt && strcmp(rstr, "options") == 0)
 			{
 				have_opt = true;
 				fstr(parms, 0, 0);
@@ -450,7 +454,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				 * Make it more work as the syntax suggests.
 				 */
 
-				if (strcmp(parms,"default") == 0)
+				if (strcmp(parms, "default") == 0)
 					curopt = &default_options;
 				else
 					curopt = &local_options,
@@ -501,49 +505,49 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 			}
 
 #if NAES12
-			else if (strcmp(rstr,"naes12") == 0)
+			else if (strcmp(rstr, "naes12") == 0)
 			{
 				curopt->naes12 = true,
 				set_option(curopt, ONA12);
 			}
 #endif
 #if NAES3D
-			else if (strcmp(rstr,"naes3d") == 0)
+			else if (strcmp(rstr, "naes3d") == 0)
 			{
 				curopt->naes = true,
 				set_option(curopt, ONA);
 			}
 #endif
-			else if (strcmp(rstr,"open") == 0)
+			else if (strcmp(rstr, "open") == 0)
 			{
 				if (co == 1)
 				{
 					ide(rstr);
-					if (strncmp(rstr,"task",4) == 0)
+					if (strncmp(rstr, "task", 4) == 0)
 						open_taskmanager(lock, false);
 				}
 				else if (co == 2)
 				{
 					ide(rstr);
-					if (strncmp(rstr,"task",4) == 0)
+					if (strncmp(rstr, "task",4) == 0)
 						cfg.opentaskman = true;
 				}
 			}
-			else if (strcmp(rstr,"windows") == 0)
+			else if (strcmp(rstr, "windows") == 0)
 			{
 				do {
 					ide(rstr);
-					if (strcmp(rstr,"nohide") == 0)
+					if (strcmp(rstr, "nohide") == 0)
 					{
 						curopt->nohide = true;
 						set_option(curopt, ONOH);
 					}
-					else if (strcmp(rstr,"noleft") == 0)
+					else if (strcmp(rstr, "noleft") == 0)
 					{
 						curopt->noleft = true;
 						set_option(curopt, ONOL);
 					}
-					else if (strcmp(rstr,"thinframe") == 0)
+					else if (strcmp(rstr, "thinframe") == 0)
 					{
 						curopt->thinframe = -1;
 						set_option(curopt, OFRAME);
@@ -553,18 +557,18 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 						curopt->thinframe = 1;
 						set_option(curopt, OFRAME);
 					}
-					else if (strcmp(rstr,"frame_size") == 0)
+					else if (strcmp(rstr, "frame_size") == 0)
 					{
 						sk();
 						curopt->thinframe = idec();
 						set_option(curopt, OFRAME);
 					}
-					else if (strcmp(rstr,"thinwork") == 0)
+					else if (strcmp(rstr, "thinwork") == 0)
 					{
 						curopt->thinwork = true;
 						set_option(curopt, OTHINW);
 					}
-					else if (strcmp(rstr,"live") == 0)
+					else if (strcmp(rstr, "live") == 0)
 					{
 						curopt->live = true;
 						set_option(curopt, OLIVE);
@@ -577,7 +581,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				}
 				while (1);
 			}
-			else if (strcmp(rstr,"wheel") == 0)
+			else if (strcmp(rstr, "wheel") == 0)
 			{
 				do {
 					ide(rstr);
@@ -599,7 +603,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				}
 				while (1);
 			}
-			else if (strcmp(rstr,"xa_windows") == 0)
+			else if (strcmp(rstr, "xa_windows") == 0)
 			{
 				do {
 					ide(rstr);
@@ -608,18 +612,18 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 						curopt->xa_none = true;
 						set_option(curopt, OXNON);
 					}
-					else if (strcmp(rstr,"nohide") == 0)
+					else if (strcmp(rstr, "nohide") == 0)
 					{
 						curopt->xa_nohide = true;
 						set_option(curopt, OXNOH);
 					}
-					else if (strcmp(rstr,"nomove") == 0)
+					else if (strcmp(rstr, "nomove") == 0)
 					{
 						curopt->xa_nomove = true;
 						curopt->xa_nohide = true;
 						set_option(curopt, OXNOM);
 					}
-					else if (strcmp(rstr,"noleft") == 0)
+					else if (strcmp(rstr, "noleft") == 0)
 					{
 						curopt->noleft = true;
 						set_option(curopt, ONOL);
@@ -630,32 +634,32 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				}
 				while (1);
 			}
-			else if (   strcmp(rstr,"windowner") == 0
-				 || strcmp(rstr,"winowner" ) == 0)
+			else if (   strcmp(rstr, "windowner") == 0
+				 || strcmp(rstr, "winowner" ) == 0)
 			{
 				ide(rstr);
-				if (   strcmp(rstr,"true" ) == 0
-				    || strcmp(rstr,"short") == 0)
+				if (   strcmp(rstr, "true" ) == 0
+				    || strcmp(rstr, "short") == 0)
 				{
 					curopt->windowner = 1;
 					set_option(curopt, OWOWN);
 				}
-				else if (strcmp(rstr,"long") == 0)
+				else if (strcmp(rstr, "long") == 0)
 				{
 					curopt->windowner = 2;
 					set_option(curopt, OWOWN);
 				}
 				/* default is zero anyway. */
 			}
-			else if (strcmp(rstr,"menu") == 0)
+			else if (strcmp(rstr, "menu") == 0)
 			{
 				do {
 					ide(rstr);
-					if (strcmp(rstr,"pull") == 0)
+					if (strcmp(rstr, "pull") == 0)
 						cfg.menu_behave = PULL;
-					else if (strcmp(rstr,"push") == 0)
+					else if (strcmp(rstr, "push") == 0)
 						cfg.menu_behave = PUSH;
-					else if (strcmp(rstr,"leave") == 0)
+					else if (strcmp(rstr, "leave") == 0)
 						cfg.menu_behave = LEAVE;
 					else if (strcmp(rstr, "nolocking") == 0)
 						cfg.menu_locking = false;
@@ -665,31 +669,31 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				}
 				while(1);
 			}
-			else if (strcmp(rstr,"popscroll") == 0)
+			else if (strcmp(rstr, "popscroll") == 0)
 				cfg.popscroll = idec();
-			else if (strcmp(rstr,"priority") == 0)
+			else if (strcmp(rstr, "priority") == 0)
 			{
 				int prio = idec();
 				if (prio >= -20 && prio <= 20)
 					Psetpriority(0, C.AESpid, prio);
 			}
-			else if (strcmp(rstr,"usehome") == 0)		/* HR 051002 */
+			else if (strcmp(rstr, "usehome") == 0)
 				cfg.usehome = true;
-			else if (strcmp(rstr,"font_id") == 0)
+			else if (strcmp(rstr, "font_id") == 0)
 				cfg.font_id = idec();
-			else if (strcmp(rstr,"standard_point") == 0)
+			else if (strcmp(rstr, "standard_point") == 0)
 				cfg.standard_font_point = idec();
-			else if (strcmp(rstr,"medium_point") == 0)
+			else if (strcmp(rstr, "medium_point") == 0)
 				cfg.medium_font_point = idec();
-			else if (strcmp(rstr,"small_point") == 0)
+			else if (strcmp(rstr, "small_point") == 0)
 				cfg.small_font_point = idec();
 
 			/* End of options. */
-			else if (strcmp(rstr,"widgets") == 0)
+			else if (strcmp(rstr, "widgets") == 0)
 				fstr(lcfg.widg_name, 0, 0);
-			else if (strcmp(rstr,"resource") == 0)
+			else if (strcmp(rstr, "resource") == 0)
 				fstr(lcfg.rsc_name, 0, 0);
-			else if (strcmp(rstr,"run") == 0)
+			else if (strcmp(rstr, "run") == 0)
 			{
 				if (co)
 				{
@@ -764,8 +768,8 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 #endif
 				}
 			}
-			else if (   strcmp(rstr,"shell") == 0
-				 || strcmp(rstr,"desk" ) == 0)
+			else if (   strcmp(rstr, "shell") == 0
+				 || strcmp(rstr, "desk" ) == 0)
 			{
 				if (co)
 				{
@@ -779,18 +783,18 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 						strcpy(C.desk, p);
 				}
 			}
-			else if (strcmp(rstr,"launcher") == 0)
+			else if (strcmp(rstr, "launcher") == 0)
 				fstr(cfg.launch_path, 0, 0);
-			else if (strcmp(rstr,"clipboard") == 0)
+			else if (strcmp(rstr, "clipboard") == 0)
 				fstr(cfg.scrap_path, 0, 0);
-			else if (strcmp(rstr,"accpath") == 0)
+			else if (strcmp(rstr, "accpath") == 0)
 				fstr(cfg.acc_path, 0, 0);
-			else if (strcmp(rstr,"dc_time") == 0)
+			else if (strcmp(rstr, "dc_time") == 0)
 				lcfg.double_click_time = idec();
 #if GENERATE_DIAGS
-			else if (strcmp(rstr,"debug_lines") == 0)
+			else if (strcmp(rstr, "debug_lines") == 0)
 				D.debug_lines = dec();
-			else if (strcmp(rstr,"debug") == 0)
+			else if (strcmp(rstr, "debug") == 0)
 			{
 				if (isdigit(sk()))
 				{
@@ -845,7 +849,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 			}
 			/* If specified together with debug all, the meaning is reversed. */
 			/* HR 081102: Increased intuitivity of debugpoint all except|but x,x,x,x,x,x */
-			else if (strcmp(rstr,"debugpoint") == 0)
+			else if (strcmp(rstr, "debugpoint") == 0)
 			{
 				int state = 1;
 
@@ -871,33 +875,35 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 
 				do {
 					if (strlen(rstr) == 1 && isalpha(*rstr))
-						debugp(D_a + (tolower(*rstr)-'a'),state);
-					else if (strncmp(rstr,"appl", 4) == 0 ) debugp(D_appl, state);
-					else if (strcmp (rstr,"evnt"   ) == 0 ) debugp(D_evnt, state);
-					else if (strncmp(rstr,"mult", 4) == 0 ) debugp(D_multi, state);
-					else if (strncmp(rstr,"form", 4) == 0 ) debugp(D_form, state);
-					else if (strncmp(rstr,"fsel", 4) == 0 ) debugp(D_fsel, state);
-					else if (strncmp(rstr,"graf", 4) == 0 ) debugp(D_graf, state);
-					else if (strncmp(rstr,"menu", 4) == 0 ) debugp(D_menu, state);
-					else if (strcmp (rstr,"objc"   ) == 0 ) debugp(D_objc, state);
-					else if (strcmp (rstr,"rsrc"   ) == 0 ) debugp(D_rsrc, state);
-					else if (strcmp (rstr,"scrp"   ) == 0 ) debugp(D_scrp, state);
-					else if (strncmp(rstr,"shel", 4) == 0 ) debugp(D_shel, state);
-					else if (strncmp(rstr,"wind", 4) == 0 ) debugp(D_wind, state);
-					else if (strncmp(rstr,"widg", 4) == 0 ) debugp(D_widg, state);
-					else if (strncmp(rstr,"mous", 4) == 0 ) debugp(D_mouse,state);
-					else if (strncmp(rstr,"butt", 4) == 0 ) debugp(D_button, state);
-					else if (strncmp(rstr,"keyb", 4) == 0 ) debugp(D_keybd, state);
-					else if (strncmp(rstr,"sema", 4) == 0 ) debugp(D_sema, state);
-					else if (strncmp(rstr,"rect", 4) == 0 ) debugp(D_rect, state);
-					else if (strncmp(rstr,"pipe", 4) == 0 ) debugp(D_pipe, state);
-					else if (strncmp(rstr,"trap", 4) == 0 ) debugp(D_trap, state);
-					else if (strncmp(rstr,"kern", 4) == 0 ) debugp(D_kern, state);
+						debugp(D_a + (tolower(*rstr) - 'a'),state);
+					else if (strncmp(rstr, "appl", 4) == 0 ) debugp(D_appl, state);
+					else if (strcmp (rstr, "evnt"   ) == 0 ) debugp(D_evnt, state);
+					else if (strncmp(rstr, "mult", 4) == 0 ) debugp(D_multi, state);
+					else if (strncmp(rstr, "form", 4) == 0 ) debugp(D_form, state);
+					else if (strncmp(rstr, "fsel", 4) == 0 ) debugp(D_fsel, state);
+					else if (strncmp(rstr, "graf", 4) == 0 ) debugp(D_graf, state);
+					else if (strncmp(rstr, "menu", 4) == 0 ) debugp(D_menu, state);
+					else if (strcmp (rstr, "objc"   ) == 0 ) debugp(D_objc, state);
+					else if (strcmp (rstr, "rsrc"   ) == 0 ) debugp(D_rsrc, state);
+					else if (strcmp (rstr, "scrp"   ) == 0 ) debugp(D_scrp, state);
+					else if (strncmp(rstr, "shel", 4) == 0 ) debugp(D_shel, state);
+					else if (strncmp(rstr, "wind", 4) == 0 ) debugp(D_wind, state);
+					else if (strncmp(rstr, "widg", 4) == 0 ) debugp(D_widg, state);
+					else if (strncmp(rstr, "mous", 4) == 0 ) debugp(D_mouse,state);
+					else if (strncmp(rstr, "butt", 4) == 0 ) debugp(D_button, state);
+					else if (strncmp(rstr, "keyb", 4) == 0 ) debugp(D_keybd, state);
+					else if (strncmp(rstr, "sema", 4) == 0 ) debugp(D_sema, state);
+					else if (strncmp(rstr, "rect", 4) == 0 ) debugp(D_rect, state);
+					else if (strncmp(rstr, "pipe", 4) == 0 ) debugp(D_pipe, state);
+					else if (strncmp(rstr, "trap", 4) == 0 ) debugp(D_trap, state);
+					else if (strncmp(rstr, "kern", 4) == 0 ) debugp(D_kern, state);
 #if WDIAL
-					else if (strcmp (rstr,"wdlg"   ) == 0 ) debugp(D_wdlg, state);
-					else if (strncmp(rstr,"lbox", 4) == 0 ) debugp(D_lbox, state);
+					else if (strcmp (rstr, "wdlg"   ) == 0 ) debugp(D_wdlg, state);
 #endif
-					else if (strcmp (rstr,"this"   ) == 0 ) debugp(D_this, state);
+#if LBOX
+					else if (strncmp(rstr, "lbox", 4) == 0 ) debugp(D_lbox, state);
+#endif
+					else if (strcmp (rstr, "this"   ) == 0 ) debugp(D_this, state);
 
 					if (!infix())
 						break;
@@ -912,18 +918,18 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 					memcpy(D.point, curopt->point, sizeof(D.point));
 			}
 #else
-			else if (   strcmp(rstr,"debug") == 0
-				 || strcmp(rstr,"debugpoint") == 0
-				 || strcmp(rstr,"debug_lines") == 0)
+			else if (   strcmp(rstr, "debug") == 0
+				 || strcmp(rstr, "debugpoint") == 0
+				 || strcmp(rstr, "debug_lines") == 0)
 			{
 				/* Do nothing with this line */
 			}
 #endif
 #if USE_CALL_DIRECT
-			else if (strcmp(rstr,"direct") == 0)
+			else if (strcmp(rstr, "direct") == 0)
 			{
 				ide(rstr);
-				if (strcmp(rstr,"on") == 0)
+				if (strcmp(rstr, "on") == 0)
 					cfg.direct_call = true;
 				else
 					cfg.direct_call = false;
@@ -934,7 +940,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				curopt->half_screen = dec(); 
 				set_option(curopt, OHALF);
 			}
-			else if (strcmp(rstr,"cancel") == 0)
+			else if (strcmp(rstr, "cancel") == 0)
 			{
 				t = 0;
 				do {
@@ -947,30 +953,30 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				}
 				while (1);
 			}
-			else if (strcmp(rstr,"toppage") == 0)
+			else if (strcmp(rstr, "toppage") == 0)
 			{
 				ide(rstr);
-				if (strcmp(rstr,"bold") == 0)
+				if (strcmp(rstr, "bold") == 0)
 				{
 					cfg.topname = BOLD;
 					cfg.backname = 0;
 				}
-				else if (strcmp(rstr,"faint") == 0)
+				else if (strcmp(rstr, "faint") == 0)
 				{
 					cfg.topname = 0;
 					cfg.backname = FAINT;
 				}
 			}
-			else if (strcmp(rstr,"superprogdef") == 0)
+			else if (strcmp(rstr, "superprogdef") == 0)
 			{
 				cfg.superprogdef = true;
 			}
-			else if (   strcmp(rstr,"string"  ) == 0
-				 || strcmp(rstr,"int"     ) == 0
-				 || strcmp(rstr,"integral") == 0
-				 || strcmp(rstr,"integer" ) == 0
-				 || strcmp(rstr,"bool"    ) == 0
-				 || strcmp(rstr,"boolean" ) == 0) /* integer, integral, boolean */
+			else if (   strcmp(rstr, "string"  ) == 0
+				 || strcmp(rstr, "int"     ) == 0
+				 || strcmp(rstr, "integral") == 0
+				 || strcmp(rstr, "integer" ) == 0
+				 || strcmp(rstr, "bool"    ) == 0
+				 || strcmp(rstr, "boolean" ) == 0) /* integer, integral, boolean */
 			{
 				Path ident, p;
 				ide(ident);
@@ -1003,7 +1009,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 					}
 				}
 			}
-			else if (strcmp (rstr,"setenv") == 0 || strcmp (rstr,"export") == 0)
+			else if (strcmp (rstr, "setenv") == 0 || strcmp (rstr, "export") == 0)
 			{
 				Path ident;
 				char p[512], *isp, *q;
@@ -1046,10 +1052,10 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				}
 			}
 #if POINT_TO_TYPE
-			else if (strcmp(rstr,"focus") == 0)
+			else if (strcmp(rstr, "focus") == 0)
 			{
 				ide(rstr);
-				cfg.point_to_type = (strcmp(rstr,"point") == 0);
+				cfg.point_to_type = (strcmp(rstr, "point") == 0);
 			}
 #endif
 #if FILESELECTOR

@@ -608,7 +608,8 @@ enum wind_code
 	WF_SHADE	= 0x575d,	/* WINX 2.3 */
 	WF_STACK	= 0x575e,	/* WINX 2.3 */
 	WF_TOPALL	= 0x575f,	/* WINX 2.3 */
-	WF_BOTTOMALL	= 0x5760	/* WINX 2.3 */
+	WF_BOTTOMALL	= 0x5760,	/* WINX 2.3 */
+	WF_XAAES	= 0x5841	/* XaAES */
 };
 
 enum widget_t

@@ -30,7 +30,7 @@
 /* - define as 1 to turn on, 0 to turn off */
 /*----------------------------------------------------------------- */
 
-#define SEPARATE_SCL			1		/* Run xa_scl.prg at bootup */
+#define SEPARATE_SCL			0		/* Run xa_scl.prg at bootup */
 
 #define HALF_SCREEN			1		/* Support for WF_SCREEN */
 
