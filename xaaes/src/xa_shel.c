@@ -146,7 +146,6 @@ launch(LOCK lock, short mode, short wisgr, short wiscr, char *parm, char *p_tail
 	char cmd[260];		/* 2 full paths */
 	Path save_cmd;
 	char *tail = argvtail;
-	long oldmask;
 	int ret;
 
 	long fl;
@@ -276,9 +275,6 @@ launch(LOCK lock, short mode, short wisgr, short wiscr, char *parm, char *p_tail
 		}
 	}
 
-	/* block SIGCHLD until we setup our data structures */
-	oldmask = Psigblock(1UL << SIGCHLD);
-
 	fl = Fopen(cmd, 0);
 	DIAG((D_shel, 0, "Fopen try: '%s' to %ld, real_mode %d\n", cmd, fl, real_mode));
 	if (fl > 0)
@@ -396,6 +392,7 @@ launch(LOCK lock, short mode, short wisgr, short wiscr, char *parm, char *p_tail
 				int child = 0;
 				int shrinked;
 				BASEPAGE* b;
+				long oldmask;
 
 				drv = drive_and_path(save_cmd, path, name, true, true);
 
@@ -420,6 +417,9 @@ launch(LOCK lock, short mode, short wisgr, short wiscr, char *parm, char *p_tail
 
 				Sema_Up(clients);
 
+				/* block SIGCHLD until we setup our data structures */
+				oldmask = Psigblock(1UL << SIGCHLD);
+
 				DIAG((D_shel, 0, "Pexec(106) '%s'\n",cmd));
 				child = Pexec(106, cmd, b, *C.strings);		/* HR 104 --> 106 */
 				if (child < 0)
@@ -434,6 +434,9 @@ launch(LOCK lock, short mode, short wisgr, short wiscr, char *parm, char *p_tail
 					DIAG((D_appl, NULL, "Alloc client; ACC %d\n", new->pid));
 					new->type = APP_ACCESSORY;
 				}
+
+				/* restore old sigmask */
+				Psigsetmask(oldmask);
 
 				Sema_Dn(clients);
 			}
@@ -487,9 +490,6 @@ launch(LOCK lock, short mode, short wisgr, short wiscr, char *parm, char *p_tail
 	 * Psigsetmask() return :-)
 	 */
 	ret = new ? new->pid : 0;
-
-	/* restore old sigmask */
-	Psigsetmask(oldmask);
 
 	/* and go out */
 	return ret;
