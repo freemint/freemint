@@ -148,6 +148,7 @@ struct common
 
 	short P_handle;			/* Physical workstation handle used by the AES */
 	short global_clip[4];
+	short prev_clip[4];
 
 	struct xa_client *Aes;		/* */
 

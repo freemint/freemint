@@ -109,7 +109,6 @@ create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WI
 			     nolist,
 			     kind,
 			     dial,
-			     MG,
 			     0, //C.Aes->options.thinframe,
 			     C.Aes->options.thinwork,
 			     *r,
@@ -130,7 +129,6 @@ calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, RECT 
 			 client,
 			 WC_BORDER,
 			 kind,
-			 MG,
 			 0,
 			 C.Aes->options.thinwork,
 			 *r);
@@ -684,7 +682,7 @@ Click_form_do(enum locks lock,
 	{
 		struct fmd_result fr;
 
-		fr.obj = obj_find(wt, 0, 10, md->x, md->y);
+		fr.obj = obj_find(wt, 0, 10, md->x, md->y, NULL);
 		
 		if (fr.obj >= 0 &&
 		    !form_button(wt,
@@ -816,64 +814,18 @@ Key_form_do(enum locks lock,
 	return fr.no_exit;
 }
 
-/* big simplification by constructing function do_active_widget()
- * This eliminates redrawing of the sliders when the mouse isnt moved.
- */
-struct woken_active_widget_data
-{
-	struct xa_client *client;
-	enum locks lock;
-};
-
-static void
-woken_active_widget(struct proc *p, long arg)
-{
-	struct woken_active_widget_data *data = (struct woken_active_widget_data *)arg;
-
-	do_active_widget(data->lock, data->client);
-	kfree(data);
-}
-
-void
-set_button_timer(enum locks lock, struct xa_window *wind)
-{
-	short exit_mb, x, y;
-
-	check_mouse(wind->owner, &exit_mb, &x, &y);
-
-	/* still down? */
-	if (exit_mb)
-	{
-		struct woken_active_widget_data *data;
-
-		data = kmalloc(sizeof(*data));
-
-		if (data)
-		{
-			struct timeout *t;
-
-			t = addroottimeout(50, woken_active_widget, 0);
-			if (t)
-			{
-				data->client = wind->owner;
-				data->lock = lock;
-
-				t->arg = (long)data;
-			}
-		}
-	}
-}
 static void
 dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 {
 	if (wt && wt->tree)
 	{
-		RECT dr;
+		RECT dr, sc;
 		struct xa_rect_list *rl;
 
 		if ((rl = wind->rect_start))
 		{
 			hidem();
+			save_clip(&sc);
 			while (rl)
 			{
 				if (xa_rect_clip(&wind->wa, &rl->r, &dr))
@@ -894,7 +846,7 @@ dfwm_redraw(struct xa_window *wind, struct widget_tree *wt, RECT *clip)
 				}
 				rl = rl->next;
 			}
-			clear_clip();
+			restore_clip(&sc); //clear_clip();
 			showm();
 		}
 	}
@@ -1083,11 +1035,13 @@ do_formwind_msg(
 
 		if (draw)
 		{
+			RECT sc;
 			wt->dx = dx;
 			wt->dy = dy;
+			save_clip(&sc);
 			display_window(0, 120, wind, NULL);
 			dfwm_redraw(wind, wt, NULL);
+			restore_clip(&sc);
 		}
-		//set_button_timer(0, wind);
 	}
 }

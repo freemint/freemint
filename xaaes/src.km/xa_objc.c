@@ -153,7 +153,8 @@ XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 						 pb->intin[0],
 						 pb->intin[1],
 						 pb->intin[2],
-						 pb->intin[3]);
+						 pb->intin[3],
+						 NULL);
 		}
 		else
 		{
