@@ -349,7 +349,7 @@ st_socket (struct st_socket_param p)
 	if (sockfd < 0)
 	{
 		DEBUG (("st_socket: socket fail (%li)\n", sockfd));
-		return sockfd;
+		return r_map (sockfd);
 	}
 	
 	r = map_it (sockfd);
@@ -358,11 +358,11 @@ st_socket (struct st_socket_param p)
 		Fclose (sockfd);
 		
 		DEBUG (("st_socket: map_it fail -> r = %i\n", r));
-		return r;
+		return r_map (r);
 	}
 	
 	DEBUG (("st_socket: return r = %i\n", r));
-	return r_map (r);
+	return r;
 }
 
 /* ----------------

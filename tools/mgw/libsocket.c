@@ -77,6 +77,31 @@ struct st_getservbyport_param
 
 
 /*
+ * synchronization stuff
+ * neccessary to avoid reentrancy problems with blocking
+ * lib calls
+ */
+
+static volatile int lock = 0;
+
+static void
+libsocket_lock (void)
+{
+	while (lock)
+	{
+		sleep (1);
+	}
+	
+	lock = 1;
+}
+
+static void
+libsocket_unlock (void)
+{
+	lock = 0;
+}
+
+/*
  * prototypes
  */
 struct st_hostent * _cdecl st_gethostbyname (struct st_gethostbyname_param p);
@@ -94,23 +119,28 @@ st_gethostbyname (struct st_gethostbyname_param p)
 {
 	static char buf [4096];
 	
-	struct hostent *host = NULL;
 	PMSG pmsg;
 	long r;
 	
+	libsocket_lock ();
+	
 	strcpy (buf, p.name);
-	pmsg.msg1 = (long) buf;
-	pmsg.msg2 = 0;
+	pmsg.msg1 = MGW_GETHOSTBYNAME;
+	pmsg.msg2 = (long) buf;
 	
 	DEBUG (("Wait for Pmsg receive on [%s]!\n", buf));
-	r = Pmsg (2, MGW_GETHOSTBYNAME, &pmsg);
+	r = Pmsg (2, MGW_LIBSOCKETCALL, &pmsg);
 	DEBUG (("Pmsg received = %li, %lx!\n", r, pmsg.msg2));
 	
-	if (r == 0)
+	/* there is a still a race with the static data */
+	libsocket_unlock ();
+	
+	if ((r == 0)
+		&& (pmsg.msg1 == MGW_GETHOSTBYNAME)
+		&& (pmsg.msg2 != 0))
 	{
 		static struct st_hostent r_st;
-		
-		host = (struct hostent *) pmsg.msg2;
+		struct hostent *host = (struct hostent *) pmsg.msg2;
 		
 		/* struct st_hostent
 		 * {
@@ -140,16 +170,37 @@ st_gethostbyname (struct st_gethostbyname_param p)
 struct st_hostent * _cdecl
 st_gethostbyaddr (struct st_gethostbyaddr_param p)
 {
-	struct hostent *r;
+	static long buf[3];
+	
+	PMSG pmsg;
+	long r;
 	
 	DEBUG (("st_gethostbyaddr: enter (%s)\n", p.haddr));
 	
-	r = gethostbyaddr (p.haddr, p.len, p.type);
-	if (r)
+	libsocket_lock ();
+	
+	buf[0] = (long) p.haddr;
+	buf[1] = p.len;
+	buf[2] = p.type;
+	
+	pmsg.msg1 = MGW_GETHOSTBYADDR;
+	pmsg.msg2 = (long) &buf[0];
+	
+	DEBUG (("st_gethostbyaddr: wait for Pmsg receive!\n"));
+	r = Pmsg (2, MGW_LIBSOCKETCALL, &pmsg);
+	DEBUG (("st_gethostbyaddr: Pmsg received = %li!\n", r));
+	
+	/* there is a still a race with the static data */
+	libsocket_unlock ();
+	
+	if ((r == 0)
+		&& (pmsg.msg1 == MGW_GETHOSTBYADDR)
+		&& (pmsg.msg2 != 0))
 	{
 		static struct st_hostent r_st;
+		struct hostent *host = (struct hostent *) pmsg.msg2;
 		
-		DEBUG (("st_gethostbyaddr: ok (%s)\n", r->h_name));
+		DEBUG (("st_gethostbyaddr: ok (%s)\n", host->h_name));
 		
 		/* struct st_hostent
 		 * {
@@ -161,11 +212,11 @@ st_gethostbyaddr (struct st_gethostbyaddr_param p)
 		 * };
 		 */
 		
-		r_st.h_name = r->h_name;
-		r_st.h_aliases = r->h_aliases;
-		r_st.h_addrtype = r->h_addrtype;
-		r_st.h_length = r->h_length;
-		r_st.h_addr_list = r->h_addr_list;
+		r_st.h_name = host->h_name;
+		r_st.h_aliases = host->h_aliases;
+		r_st.h_addrtype = host->h_addrtype;
+		r_st.h_length = host->h_length;
+		r_st.h_addr_list = host->h_addr_list;
 		
 		return &r_st;
 	}
@@ -180,11 +231,34 @@ st_gethostbyaddr (struct st_gethostbyaddr_param p)
 short _cdecl
 st_gethostname (struct st_gethostname_param p)
 {
-	short r;
+	static long buf[2];
+	
+	PMSG pmsg;
+	long r;
 	
 	DEBUG (("st_gethostname: enter\n"));
 	
-	r = gethostname (p.name, p.namelen);
+	libsocket_lock ();
+	
+	buf[0] = (long) p.name;
+	buf[1] = p.namelen;
+	
+	pmsg.msg1 = MGW_GETHOSTNAME;
+	pmsg.msg2 = (long) &buf[0];
+	
+	DEBUG (("st_gethostname: wait for Pmsg receive!\n"));
+	r = Pmsg (2, MGW_LIBSOCKETCALL, &pmsg);
+	DEBUG (("st_gethostname: Pmsg received = %li!\n", r));
+	
+	/* there is a still a race with the static data */
+	libsocket_unlock ();
+	
+	if ((r == 0)
+		&& (pmsg.msg1 == MGW_GETHOSTNAME))
+	{
+		r = pmsg.msg2;
+	}
+	
 	if (!r)
 		DEBUG (("st_gethostname: ok (%s)\n", p.name));
 	else
@@ -199,16 +273,36 @@ st_gethostname (struct st_gethostname_param p)
 struct st_servent * _cdecl
 st_getservbyname (struct st_getservbyname_param p)
 {
-	struct servent *r;
+	static long buf[2];
+	
+	PMSG pmsg;
+	long r;
 	
 	DEBUG (("st_getservbyname: enter (%s, %s)\n", p.name, p.proto));
 	
-	r = getservbyname (p.name, p.proto);
-	if (r)
+	libsocket_lock ();
+	
+	buf[0] = (long) p.name;
+	buf[1] = (long) p.proto;
+	
+	pmsg.msg1 = MGW_GETSERVBYNAME;
+	pmsg.msg2 = (long) &buf[0];
+	
+	DEBUG (("st_getservbyname: wait for Pmsg receive!\n"));
+	r = Pmsg (2, MGW_LIBSOCKETCALL, &pmsg);
+	DEBUG (("st_getservbyname: Pmsg received = %li!\n", r));
+	
+	/* there is a still a race with the static data */
+	libsocket_unlock ();
+	
+	if ((r == 0)
+		&& (pmsg.msg1 == MGW_GETSERVBYNAME)
+		&& (pmsg.msg2 != 0))
 	{
 		static struct st_servent st_r;
+		struct servent *host = (struct servent *) pmsg.msg2;
 		
-		DEBUG (("st_getservbyname: -> %s, %s\n", r->s_name, r->s_proto));
+		DEBUG (("st_getservbyname: -> %s, %s\n", host->s_name, host->s_proto));
 		
 		/* struct st_servent
 		 * {
@@ -219,10 +313,10 @@ st_getservbyname (struct st_getservbyname_param p)
 		 * };
 		 */
 		
-		st_r.s_name    = r->s_name;
-		st_r.s_aliases = r->s_aliases;
-		st_r.s_port    = r->s_port;
-		st_r.s_proto   = r->s_proto;
+		st_r.s_name    = host->s_name;
+		st_r.s_aliases = host->s_aliases;
+		st_r.s_port    = host->s_port;
+		st_r.s_proto   = host->s_proto;
 		
 		return &st_r;
 	}
@@ -237,16 +331,36 @@ st_getservbyname (struct st_getservbyname_param p)
 struct st_servent * _cdecl
 st_getservbyport (struct st_getservbyport_param p)
 {
-	struct servent *r;
+	static long buf[2];
+	
+	PMSG pmsg;
+	long r;
 	
 	DEBUG (("st_getservbyport: enter (%i, %s)\n", p.port, p.proto));
 	
-	r = getservbyport (p.port, p.proto);
-	if (r)
+	libsocket_lock ();
+	
+	buf[0] = p.port;
+	buf[1] = (long) p.proto;
+	
+	pmsg.msg1 = MGW_GETSERVBYPORT;
+	pmsg.msg2 = (long) &buf[0];
+	
+	DEBUG (("st_getservbyport: wait for Pmsg receive!\n"));
+	r = Pmsg (2, MGW_LIBSOCKETCALL, &pmsg);
+	DEBUG (("st_getservbyport: Pmsg received = %li!\n", r));
+	
+	/* there is a still a race with the static data */
+	libsocket_unlock ();
+	
+	if ((r == 0)
+		&& (pmsg.msg1 == MGW_GETSERVBYPORT)
+		&& (pmsg.msg2 != 0))
 	{
 		static struct st_servent st_r;
+		struct servent *host = (struct servent *) pmsg.msg2;
 		
-		DEBUG (("st_getservbyport: -> %s, %s\n", r->s_name, r->s_proto));
+		DEBUG (("st_getservbyport: -> %s, %s\n", host->s_name, host->s_proto));
 		
 		/*
 		 * struct st_servent
@@ -258,10 +372,10 @@ st_getservbyport (struct st_getservbyport_param p)
 		 * };
 		 */
 		
-		st_r.s_name    = r->s_name;
-		st_r.s_aliases = r->s_aliases;
-		st_r.s_port    = r->s_port;
-		st_r.s_proto   = r->s_proto;
+		st_r.s_name    = host->s_name;
+		st_r.s_aliases = host->s_aliases;
+		st_r.s_port    = host->s_port;
+		st_r.s_proto   = host->s_proto;
 		
 		return &st_r;
 	}

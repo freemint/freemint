@@ -68,9 +68,14 @@ typedef struct
 	short pid;
 } PMSG;
 
-# define MGW_GETHOSTBYNAME	0x6d676d01UL
+# define MGW_LIBSOCKETCALL	0x6d676d01UL
+# define MGW_GETHOSTBYNAME	1
+# define MGW_GETHOSTBYADDR	2
+# define MGW_GETHOSTNAME	3
+# define MGW_GETSERVBYNAME	4
+# define MGW_GETSERVBYPORT	5
 
-	
+
 /*
  * Adapted part of STSOCKET.H
  */
