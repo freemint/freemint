@@ -37,12 +37,20 @@
 # include "libkern/libkern.h"
 # include "mint/proc.h"
 
+# include "ipc_unix.h"
 # include "kmemory.h"
 # include "proc.h"
 # include "time.h"
 
 
 /* socket utility functions */
+
+
+void
+domaininit (void)
+{
+	so_register (AF_UNIX, &unix_ops);
+}
 
 
 /* list of registered domains */
