@@ -684,19 +684,22 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					/* stop shutdown sequence */
 					case 0:
+					{
 						/* not possible */
 						break;
-
+					}
 					/* partial shutdown */
 					case 1:
+					{
 					/*
 					 * the only difference of partial shutdown
 					 * compared to full shutdown is that ACC also
 					 * get AP_TERM
 					 */
 						quit_all_apps(lock, client);
+						pb->intout[0] = 1;
 						break;
-
+					}
 					/*
 					 * and we need also to send status informations back
 					 * to the caller
@@ -704,10 +707,12 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 					/* full shutdown */
 					case 2:
+					{
 						quit_all_apps(lock, client);
+						pb->intout[0] = 1;
 						break;
+					}
 				}
-
 				break;
 			}
 
@@ -736,6 +741,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 
 				Sema_Dn(clients);
+				pb->intout[0] = 1;
 				break;
 			}
 
@@ -780,12 +786,14 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				if (client)
 					client->apterm = (wisgr & 1) != 0;
+				pb->intout[0] = 1;
 				break;
 			}
 
 			/* Send a msg to the AES  */
 			case 10:
 			{
+				pb->intout[0] = 1;
 				break;
 			}
 
