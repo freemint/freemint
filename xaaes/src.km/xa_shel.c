@@ -869,6 +869,10 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
  * rubbish. At least on Atari GEM the processes own command must be
  * given, NOT that of the parent.
  */
+/*
+ * Ozk: XA_shel_read() may be called by processes not yet called
+ * appl_init(). So, it must not depend on client being valid!
+ */
 unsigned long
 XA_shel_read(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1224,6 +1228,11 @@ put_env(enum locks lock, const char *cmd)
  *     (shel_write(8, ...) changing the pointer array strings,
  *     it is necessary to make a permanent copy of the variable.
  */
+/*
+ * Ozk: XA_shel_envrn() may be called by processes not yet called
+ * appl_init(). So, it must not depend on client being valid!
+ */
+
 unsigned long
 XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 {

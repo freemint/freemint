@@ -1626,9 +1626,8 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_XAAES: /* 'XA' */
 	{
 		o[0] = WF_XAAES;
-		o[1] = VER_MAJOR; //HEX_VERSION;
-		o[2] = VER_MINOR;
-		DIAGS(("hex_version = v%01x%04x",o[1], o[2]));
+		o[1] = HEX_VERSION;
+		DIAGS(("hex_version = v%04x",o[1]));
 		break;
 	}
 	case WF_OPTS:
