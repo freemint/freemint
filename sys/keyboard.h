@@ -1,12 +1,6 @@
 /*
- * $Id$
- * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
- * Copyright 2001 Konrad M. Kokoszkiewicz <draco@atari.org>
- * All rights reserved.
  * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,28 +16,28 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
- * Started: 2001-03-01
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
- * 
- * Keyboard handling stuff
- * 
  */
 
-# ifndef _keyboard_h
-# define _keyboard_h
+/* Struct for the default action on C/A/D
+ */
+struct cad_def
+{
+	short	action;
+	union {
+		long pid;	/* e.g. pid to be signalled */
+		char *path;	/* e.g. a path to executable file */
+	} par;
+	union {
+		long arg;	/* e.g. signal number */
+		char *cmd;	/* e.g. command line */
+	} aux;
+	char *env;		/* only valid for exec */
+};
 
-# include "mint/mint.h"
-
-
-short ikbd_scan (ushort scancode);
-void  load_keytbl (void);
+short ikbd_scan(ushort scancode);
+void init_keytbl(void);
 
 extern short gl_kbd;
+extern struct cad_def cad[3];
 
-
-# endif /* _keyboard_h */
+/* EOF */
