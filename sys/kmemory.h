@@ -41,11 +41,11 @@
 MEMREGION *	_kmr_get	(void);
 void		_kmr_free	(MEMREGION *ptr);
 
-void *	_cdecl	_kcore		(ulong size);	/* ST-RAM alloc */
-void *	_cdecl	_kmalloc	(ulong size);	/* TT-RAM alloc */
-void	_cdecl	_kfree		(void *place);
-void *	_cdecl	_umalloc	(ulong size);	/* user space alloc */
-void	_cdecl	_ufree		(void *place);	/* user space free */
+void *	_cdecl	_kcore		(ulong size, const char *func);	/* ST-RAM alloc */
+void *	_cdecl	_kmalloc	(ulong size, const char *func);	/* TT-RAM alloc */
+void	_cdecl	_kfree		(void *place, const char *func);
+void *	_cdecl	_umalloc	(ulong size, const char *func);	/* user space alloc */
+void	_cdecl	_ufree		(void *place, const char *func);/* user space free */
 
 
 void	init_kmemory		(void);		/* initalize km allocator */
@@ -57,74 +57,11 @@ long	km_config		(long mode, long arg);
 # define kmr_get		_kmr_get
 # define kmr_free		_kmr_free
 
-
-# if 1
-# define kcore			_kcore
-# else
-INLINE void *
-__kcore (ulong size, char *file, long line)
-{
-	void *ptr = _kcore (size);
-	TRACE (("%s, %ld: kcore (%lu -> %lx) called!", file, line, size, ptr));
-	return ptr;
-}
-# define kcore			__kcore (size, __FILE__, __LINE__)
-# endif
-
-# if 1
-# define kmalloc		_kmalloc
-# else
-INLINE void *
-__kmalloc (ulong size, char *file, long line)
-{
-	void *ptr;
-	TRACE (("%s, %ld: kmalloc (%lu) called!", file, line, size));
-	ptr = _kmalloc (size);
-	TRACE (("%s, %ld: kmalloc return %lx.", file, line, ptr));
-	return ptr;
-}
-# define kmalloc(size)		__kmalloc (size, __FILE__, __LINE__)
-# endif
-
-
-# if 1
-# define kfree			_kfree
-# else
-INLINE void
-__kfree (void *place, char *file, long line)
-{
-	TRACE (("%s, %ld: kfree (%lx) called!", file, line, place));
-	return _kfree (place);
-}
-# define kfree(place)		__kfree (place, __FILE__, __LINE__)
-# endif
-
-
-# if 1
-# define umalloc		_umalloc
-# else
-INLINE void *
-__umalloc (ulong size, char *file, long line)
-{
-	void *ptr = _umalloc (size);
-	TRACE (("%s, %ld: umalloc (%lu -> %lx) called!", file, line, size, ptr));
-	return ptr;
-}
-# define umalloc(size)		__umalloc (size, __FILE__, __LINE__)
-# endif
-
-
-# if 1
-# define ufree			_ufree
-# else
-INLINE void
-__ufree (void *place, char *file, long line)
-{
-	TRACE (("%s, %ld: ufree (%lx) called!", file, line, place));
-	return _ufree (place);
-}
-# define ufree(place)		__ufree (place, __FILE__, __LINE__)
-# endif
+# define kcore(size)		_kcore (size, __FUNCTION__)
+# define kmalloc(size)		_kmalloc (size, __FUNCTION__)
+# define kfree(place)		_kfree (place, __FUNCTION__)
+# define umalloc(size)		_umalloc (size, __FUNCTION__)
+# define ufree(place)		_ufree (place, __FUNCTION__)
 
 
 # endif /* _kmemory_h */
