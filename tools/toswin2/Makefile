@@ -10,6 +10,8 @@ srcdir = .
 top_srcdir = ..
 subdir = toswin2
 
+installdir = /opt/GEM/toswin2
+
 default: all
 
 include $(top_srcdir)/CONFIGVARS
@@ -34,3 +36,9 @@ $(TARGET): $(OBJS)
 
 
 include $(top_srcdir)/DEPENDENCIES
+
+install: all
+	$(top_srcdir)/mkinstalldirs $(installdir)
+	cp $(TARGET) $(srcdir)/toswin2.rsc $(srcdir)/toswin2.hrd $(installdir)
+	chmod 755 $(installdir)/$(TARGET)
+	
