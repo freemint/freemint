@@ -52,7 +52,7 @@ KERN_SLICES=2
 # The average user doesn't want to hear about this stuff, so the
 # default is 1, i.e. display ALERT messages only.
 #
-# KERN_DEBUG_DEVNO is the BIOS device number to which the info should 
+# KERN_DEBUG_DEVNO is the BIOS device number to which the info should
 # be sent.
 #
 # Devno can be: 0=printer, 1=aux/modem, 2=screen(console), 3=midi,
@@ -88,7 +88,7 @@ KERN_SECURITY_LEVEL=1
 #KERN_MPFLAGS=1
 
 # TPA_FASTLOAD=YES forces fast loading (without zeroing all the
-# memory) for all programs. This defines a default state, that can be 
+# memory) for all programs. This defines a default state, that can be
 # modified later via appropriate kernel calls (use MiNT Setter
 # utility to toggle it later when neessary, without reboots).
 #
@@ -154,18 +154,18 @@ KERN_SECURITY_LEVEL=1
 #FDC_HIDE_B=YES
 
 # PROC_MAXMEM= gives the maximum amount of memory that any process
-# may use (in kilobytes). The default is to make this unlimited, but 
+# may use (in kilobytes). The default is to make this unlimited, but
 # if you have a lot of memory and/or programs that grab more memory
 # than they should, try setting this.
 #
 # E.g. to limit processes to 4096K of memory, remove the '#' at the
 # beginning of the next line.
 #
-# WARNING: the process will not be allowed to allocate memory beyond 
+# WARNING: the process will not be allowed to allocate memory beyond
 # the limit, and it won't "see" more memory as available from the
 # system.
 # Please understand that programs like "free" (or any other that
-# interrogates the system how much memory is available) is a process 
+# interrogates the system how much memory is available) is a process
 # as well, thus it will undergo this limit too!
 #
 # Decent shells (desktops) allow you to limit the maximum amount of
@@ -240,7 +240,8 @@ setenv UNIXMODE /brUs
 
 # Default path
 #
-# Default (on 1.16.0) is u:/
+# Default on 1.16.0 is c:/, on 1.16.1 is u:/c/mint/
+# (i.e. same as sysdir)
 
 setenv PATH /boot/mint/bin;/sbin;/bin;/usr/sbin;/usr/bin
 
