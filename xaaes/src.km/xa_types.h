@@ -506,8 +506,10 @@ struct xa_client
 
 	struct proc *p;			/* context back ptr */
 	struct xa_user_things *ut;	/* trampoline code for user callbacks */
+	struct proc *tp;		/* Thread */
 
-	bool apterm;			/* true if application understands AP_TERM. */
+	bool apterm;			/* true if application understands 
+	AP_TERM. */
 	bool wa_wheel;			/* The client wants WA_HEEL messages. */
 
 	struct xa_aesmsg_list *msg;	 /* Pending AES messages */
@@ -607,6 +609,10 @@ struct xa_client
 	short	cevnt_count;
 	struct	c_event *cevnt_head;
 	struct	c_event *cevnt_tail;
+
+	short	tp_cevnt_count;
+	struct	c_event *tpcevnt_head;
+	struct	c_event *tpcevnt_tail;
 };
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
