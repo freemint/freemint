@@ -44,14 +44,14 @@ int main(int argc, char *argv[])
 	char str[25];
 	OBJECT *tmp;
 
-#ifdef DEBUG
 	if (getenv("DEBUG") || strcmp(argv[1], "--debug") == 0)
 	{
+#ifdef DEBUG
 		do_debug = 1;
+#endif
 /*		debug_init("ntw", Datei, "i:\\ntw.log");*/
 		debug_init("ntw", Con, NULL);
 	}
-#endif
 
 	(void)Pdomain(1);
 	init_app(RSCNAME);
