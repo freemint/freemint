@@ -43,6 +43,29 @@ static struct adiinfo ai =
 	0,
 };
 
+static void *	 
+module_init(void *initfunc, struct kentry *k, struct adiinfo *a)
+{
+	register void *ret __asm__("d0");	 
+
+	__asm__ volatile	 
+	(	 
+		"moveml	d3-d7/a3-a6,sp@-;"	 
+		"movl	%3,sp@-;"	 
+		"movl	%2,sp@-;"	 
+		"movl	%1,a0;"	 
+		"jsr	a0@;"	 
+		"addqw	#8,sp;"	 
+		"moveml	sp@+,d3-d7/a3-a6;"	 
+		: "=r"(ret)				/* outputs */	 
+		: "g"(initfunc), "r"(k), "r"(a)		/* inputs  */	 
+		: "d0", "d1", "d2", "a0", "a1", "a2",	/* clobbered regs */	 
+		"memory"	 
+	);	 
+
+	return ret;	 
+}
+
 static long
 load_adi(struct basepage *b, const char *name)
 {
