@@ -465,7 +465,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 
 # ifndef NO_AKP_KEYBOARD
-		case S_CAD:
+		case S_CTRLALTDEL:
 		{
 			if (!isroot)		r = EPERM;
 
