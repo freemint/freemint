@@ -69,4 +69,9 @@
 #define BTIME		__TIME__
 #define BCOMPILER	"gcc 2.95.3"
 
+/*
+ * This is only use for wind_get(WF_XAAES) which will be removed
+ */
+#define HEX_VERSION	0x0992
+
 #endif /* _xaaes_version_h */
