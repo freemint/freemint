@@ -45,7 +45,7 @@
  */
 struct module_callback
 {
-	long (*share)(void *);
+	void (*share)(void *);
 	void (*release)(void *);
 
 	void (*on_exit  )(void *, struct proc *, int);
