@@ -200,9 +200,13 @@ struct cnfdata
 void
 load_config(void)
 {
+	char cnf_path[128];
 	struct cnfdata mydata;
 	
-	parse_cnf("mint.cnf", parser_tab, &mydata);
+	strcpy(cnf_path, sysdir);
+	strcat(cnf_path, "mint.cnf");
+	
+	parse_cnf(cnf_path, parser_tab, &mydata);
 }
 
 /*============================================================================*/
