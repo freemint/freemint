@@ -453,10 +453,12 @@ _new_intr:	subq.l	#0x08,sp		// make some room on the stack
 _old_bus:
 	dc.l	0
 _new_bus:
+#ifndef NO_FAKE_SUPER
 	movem.l	d0-a6,-(sp)		// check_bus() relies on this!
 	jsr	_check_bus
 	tst.l	d0
 	movem.l	(sp)+,d0-a6
+#endif
 #ifdef ONLY030
 	bne.s	Return_now
 #else
@@ -804,11 +806,13 @@ _new_priv:
 	tst.w	(0x59e).w		// 68000s always get SIGPRIV
 	beq	Do_sig
 #endif
+#ifndef ONLY68000
 	movem.l	d0-a6,-(sp)		// check_priv() relies on this!
 	jsr	_check_priv
 	tst.l	d0
 	movem.l	(sp)+,d0-a6
 	beq	Do_sig
+#endif
 	rte
 
 // system entry points from syscall.spp
