@@ -246,8 +246,8 @@ const char *MSG_init_bootmenu =
 	"<5> Memory protection: %s"
 # endif
 	"<6> Init step by step: %s"
-	"<7> Debug/trace level: %ld %s\r\n"
-	"<8> Debug output dev.: %ld %s\r\n"
+	"<7> Debug/trace level: %d %s\r\n"
+	"<8> Debug output dev.: %d %s\r\n"
 	"<0> Remember settings: %s\r\n"
 	"[Return] accept,\r\n"
 	"[Ctrl-C] cancel.\r\n"
@@ -258,11 +258,14 @@ const char *MSG_init_menuwarn =
 	"# do not edit.\n\n"
 ;
 
-const char *MSG_init_unknown_cmd = "mint.ini: unknown command '%s'\r\n";
-const char *MSG_init_no_value = "mint.ini: '%s' lacks value\r\n";
-const char *MSG_init_write_error = "Error %ld writing %s\r\n";
-const char *MSG_init_value_out_of_range = "mint.ini: %s value %ld is out of range (%d-%d)\r\n";
-const char *MSG_init_syntax_error = "mint.ini: %s syntax error\r\n";
+const char *MSG_init_unknown_cmd = "%s: unknown command '%s'\r\n";
+const char *MSG_init_no_value = "%s: '%s' lacks value\r\n";
+const char *MSG_init_read = "Reading `%s' ... ";
+const char *MSG_init_write = "Writing `%s' ... ";
+const char *MSG_init_rw_done = "done\r\n";
+const char *MSG_init_rw_error = "error %ld\r\n";
+const char *MSG_init_value_out_of_range = "%s: %s value %ld is out of range (%d-%d)\r\n";
+const char *MSG_init_syntax_error = "%s: %s syntax error\r\n";
 
 /* ------------ cnf.c ---------- */
 
