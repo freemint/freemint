@@ -714,9 +714,16 @@ short 	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 
 const char *keyboards[] =
 {
-	usa_kbd, german_kbd, french_kbd, british_kbd, spanish_kbd,
-	italian_kbd, british_kbd, sw_french_kbd, sw_german_kbd,
-	0
+	usa_kbd,
+	german_kbd,
+	french_kbd,
+	british_kbd,
+	spanish_kbd,
+	italian_kbd,
+	british_kbd,
+	sw_french_kbd,
+	sw_german_kbd,
+	NULL
 };
 
 struct cad_def cad[3];		/* for halt, warm and cold resp. */
@@ -724,43 +731,57 @@ struct cad_def cad[3];		/* for halt, warm and cold resp. */
 /* Routine called after the user hit Ctrl/Alt/Del
  */
 static void
-ctrl_alt_del(PROC *p, long arg)
+ctrl_alt_del (PROC *p, long arg)
 {
-	switch(cad[arg].action)
+	switch (cad[arg].action)
 	{
-		case 1:			/* 1 is to signal a pid */
-			if (p_kill(cad[arg].par.pid, cad[arg].aux.arg) < 0)
-				s_hutdown(arg);
+		/* 1 is to signal a pid */
+		case 1:
+			if (p_kill (cad[arg].par.pid, cad[arg].aux.arg) < 0)
+				s_hutdown (arg);
 			break;
-		case 2:			/* 2 shall be to exec a program
-					 * with a path pointed to by
-					 * par.path */
-			if (verify_access(cad[arg].par.path) && verify_access(cad[arg].aux.cmd))
-				if (sys_pexec(100, cad[arg].par.path, cad[arg].aux.cmd, 0L) < 0)
-					s_hutdown(arg);
+		
+		/* 2 shall be to exec a program
+		 * with a path pointed to by
+		 * par.path */
+		case 2:
+			if (verify_access (cad[arg].par.path) && verify_access (cad[arg].aux.cmd))
+				if (sys_pexec (100, cad[arg].par.path, cad[arg].aux.cmd, 0L) < 0)
+					s_hutdown (arg);
 			break;
+		
+		/* 0 is default */
 		default:
-			s_hutdown(arg);	/* 0 is default */
+			s_hutdown (arg);
 			break;
 	}
+}
+
+/* synchronous Ctrl/Alt/F? callback
+ * for the debug facilities
+ */
+static void
+ctrl_alt_Fxx (PROC *p, long arg)
+{
+	do_func_key (arg);
 }
 
 /* The handler
  */
 short
-ikbd_scan(ushort scancode)
+ikbd_scan (ushort scancode)
 {
 	ushort mod = 0, clk = 0, shift = *kbshft;
 
 	scancode &= 0x00ff;		/* better safe than sorry */
 
 # ifdef DEV_RANDOM
-	add_keyboard_randomness((ushort)((scancode << 8) | shift));
+	add_keyboard_randomness ((ushort)((scancode << 8) | shift));
 # endif
 
 	/* We handle modifiers first
 	 */
-	switch(scancode)
+	switch (scancode)
 	{
 		case	CONTROL:
 		{
@@ -872,35 +893,48 @@ ikbd_scan(ushort scancode)
 			{
 				TIMEOUT *t;
 
-				t = addroottimeout(0L, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
+				t = addroottimeout (0L, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
 				if (t)
 				{
 					t->arg = 1;
+					
 					if ((shift & MM_ESHIFT) == MM_RSHIFT)
 						t->arg++;
 					else if ((shift & MM_ESHIFT) == MM_LSHIFT)
 						t->arg--;
+					
 					cad_lock++;
 				}
 			}
+			
 			goto key_handled;
 		}
 		else if (scancode == UNDO)
 		{
-			killgroup(con_tty.pgrp, SIGQUIT, 1);
+			killgroup (con_tty.pgrp, SIGQUIT, 1);
+			
 			goto key_handled;
 		}
 		else if ((scancode >= 0x003b) && (scancode <= 0x0044))
 		{
+			TIMEOUT *t;
+			
 			if (shift & MM_ESHIFT)
 				scancode += 0x0019;	/* emulate F11-F20 */
-			do_func_key(scancode);
+			
+			t = addroottimeout (0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+			if (t) t->arg = scancode;
+			
 			goto key_handled;
 		}
 		/* This is in case the keyboard has real F11-F20 keys on it */
 		else if ((scancode >= 0x0054) && (scancode <= 0x005d))
 		{
-			do_func_key(scancode);
+			TIMEOUT *t;
+			
+			t = addroottimeout (0L, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
+			if (t) t->arg = scancode;
+			
 			goto key_handled;
 		}
 	}
