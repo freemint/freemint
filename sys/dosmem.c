@@ -406,7 +406,7 @@ sys_m_validate (int pid, void *addr, long size)
 		return ESRCH;
 	}
 	
-	if (p != curproc && !suser (curproc->p_cred->ucr) && !(p->memflags & F_OS_SPECIAL))
+	if (p != curproc && !suser (curproc->p_cred->ucr) && !(curproc->memflags & F_OS_SPECIAL))
 	{
 		DEBUG (("Mvalidate: permission denied"));
 		return EPERM;
