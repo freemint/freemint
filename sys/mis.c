@@ -35,6 +35,7 @@
 
 # include "mint/basepage.h"	/* BASEPAGE struct */
 # include "mint/mem.h"		/* F_FASTLOAD et contubernales */
+# include "mint/stat.h"		/* struct stat */
 
 # include "arch/cpu.h"		/* setstack() */
 # include "arch/startup.h"	/* _base */
@@ -56,12 +57,14 @@
  *
  */
 
+/* XXX after the code stops changing so quickly, move all the messages to info.c
+ */
+
 # define SH_VER_MAIOR	0
 # define SH_VER_MINOR	1
 
-# define COPYCOPY	"MiS, the FreeMiNT internal shell.\r\n" \
-			"Ver. %d.%d, (c) 2003 by Konrad M.Kokoszkiewicz (draco@atari.org)\r\n" \
-			"Type help for help.\r\n"
+# define COPYCOPY	"MiS v.%d.%d, the FreeMiNT internal shell,\r\n" \
+			"(c) 2003 by Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
 
 # define SHELL_STACK	32768L
 # define SHELL_ARGS	2048L
@@ -82,22 +85,43 @@
 # define SHCMD_EXEC	11
 # define SHCMD_ENV	12
 # define SHCMD_CHOWN	13
+# define SHCMD_CHGRP	14
+# define SHCMD_XCMD	15
 
+/* Global variables */
 static BASEPAGE *shell_base;
+static short xcommands;
+
+static short current_year;		/* sh_ls() wants to know this */
+static struct timeval ctv;
 
 static const char *commands[] =
 {
 	"exit", "ver", "ls", "cd", "cp", "mv", "rm", "chmod", \
-	"help", "ln", "exec", "env", "chown", 0
+	"help", "ln", "exec", "env", "chown", "chgrp", "xcmd", 0
 };
 
+static const char *months[] =
+{
+	"Jan", "Feb", "Mar", "Apr", "May", "Jun", \
+	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+
+/* Used twice, don't INLINE */
+static void
+xcmdstate(void)
+{
+	boot_printf("Extended commands are %s\r\n", xcommands ? "on" : "off");
+}
+
+/* Idem */
 static void
 ver(void)
 {
 	boot_printf(COPYCOPY, SH_VER_MAIOR, SH_VER_MINOR);
 }
 
-static void
+INLINE void
 help(void)
 {
 	boot_print( \
@@ -105,26 +129,304 @@ help(void)
 	"	expect much. It is only a tool to fix bigger problems that\r\n" \
 	"	prevent the system from booting normally.\r\n" \
 	"\r\n" \
-	"	Recognized commands are:\r\n\r\n" \
+	"	Basic commands are:\r\n" \
+	"\r\n" \
 	"	cd - change directory\r\n" \
-	"	chmod - change file permissions\r\n" \
-	"	chown - change file ownership\r\n" \
-	"	cp - copy file\r\n" \
-	"	env - display environment\r\n" \
-	"	exec - (optional) execute a program\r\n" \
 	"	exit - leave and reboot\r\n" \
 	"	help - display this message\r\n" \
-	"	ln - create a link\r\n" \
-	"	ls - display directory\r\n" \
-	"	mv - move/rename a file\r\n" \
-	"	rm - delete a file\r\n" \
 	"	ver - display version information\r\n" \
+	"	xcmd - switch the extended command set on/off\r\n"
+	"\r\n");
+
+	/* boot_printf() can only expand strings up to 128 bytes :-( */
+	boot_printf("	Extended commands (now %s) are:\r\n\r\n", xcommands ? "on" : "off");
+
+	boot_print( \
+	"	chgrp - change the group a file belongs to\r\n" \
+	"	chmod - change the access permissions for a file\r\n" \
+	"	chown - change file's ownership\r\n" \
+	"	*cp - copy file\r\n" \
+	"	env - display environment\r\n" \
+	"	*ln - create a link\r\n" \
+	"	ls - display directory\r\n" \
+	"	*mv - move/rename a file\r\n" \
+	"	*rm - delete a file\r\n" \
 	"\r\n" \
 	"	All other words typed are understood as names of programs\r\n" \
 	"	to execute. In case you'd want to execute something, that\r\n" \
 	"	is named with one of the words displayed above, use 'exec'\r\n" \
 	"	or supply the full pathname." \
 	"\r\n");
+}
+
+/* Display all files in the current directory, with attributes et ceteris.
+ * No wilcards filtering what to display, no sorted output, no nothing.
+ */
+
+/* Helpers for ls:
+ * justify_left() - just pads the text with spaces upto given lenght
+ * justify_right() - shifts the text right adding spaces on the left
+ *		until the given length is reached.
+ */
+static char *
+justify_left(char *p, long spaces)
+{
+	long s = (spaces - strlen(p));
+
+	while (*p && *p != 0x20)
+		p++;
+
+	while (s)
+	{
+		*p++ = ' ';
+		s--;
+	}
+
+	return p;
+}
+
+static char *
+justify_right(char *p, long spaces)
+{
+	long plen, s;
+	char temp[32];
+
+	plen = strlen(p);
+	s = (spaces - plen);
+	if (s <= 0)
+		return (p + plen);
+	strcpy(temp, p);
+	while (s)
+	{
+		*p++ = ' ';
+		s--;
+	}
+	strcpy(p, temp);
+
+	return (p + plen);
+}
+
+INLINE long
+sh_ls(char *dir)
+{
+	struct stat st;
+	short year, month, day, hour, minute;
+	long r, s, handle, gemdos_time;
+	char *p, path[1024];
+	char entry[256];
+
+	if (!dir || *dir == 0)
+		dir = "./";
+
+	r = Dopendir(dir, 0);
+	if (r < 0)
+		return r;
+
+	handle = r;
+
+	do
+	{
+		r = Dreaddir(sizeof(entry), handle, entry);
+
+		if (r == 0)
+		{
+			strcpy(path, dir);
+			strcat(path, "/");
+			strcat(path, entry + sizeof(long));
+
+			s = Fstat64(0, path, &st);
+
+			if (s == 0)
+			{
+				/* Reuse the path[] space */
+				p = path;
+
+				if (S_ISLNK(st.mode))
+					*p++ = 'l';
+				else if (S_ISMEM(st.mode))
+					*p++ = 'm';
+				else if (S_ISFIFO(st.mode))
+					*p++ = 'p';
+				else if (S_ISREG(st.mode))
+					*p++ = '-';
+				else if (S_ISBLK(st.mode))
+					*p++ = 'b';
+				else if (S_ISDIR(st.mode))
+					*p++ = 'd';
+				else if (S_ISCHR(st.mode))
+					*p++ = 'c';
+				else if (S_ISSOCK(st.mode))
+					*p++ = 's';
+				else
+					*p++ = '?';
+
+				/* user */
+				*p++ = (st.mode & S_IRUSR) ? 'r' : '-';
+				*p++ = (st.mode & S_IWUSR) ? 'w' : '-';
+				if (st.mode & S_IXUSR)
+					*p++ = (st.mode & S_ISUID) ? 's' : 'x';
+				else
+					*p++ = '-';
+
+				/* group */
+				*p++ = (st.mode & S_IRGRP) ? 'r' : '-';
+				*p++ = (st.mode & S_IWGRP) ? 'w' : '-';
+				if (st.mode & S_IXGRP)
+					*p++ = (st.mode & S_ISGID) ? 's' : 'x';
+				else
+					*p++ = '-';
+
+				/* others */
+				*p++ = (st.mode & S_IROTH) ? 'r' : '-';
+				*p++ = (st.mode & S_IWOTH) ? 'w' : '-';
+				if (st.mode & S_IXOTH)
+					*p++ = (st.mode & S_ISVTX) ? 't' : 'x';
+				else
+					*p++ = '-';
+
+				*p++ = ' ';
+
+				/* Unfortunately ksprintf() lacks many formatting features ...
+				 */
+				ksprintf(p, sizeof(path), "%d", (short)st.nlink);	/* XXX */
+				p = justify_right(p, 4);
+				*p++ = ' ';
+
+				ksprintf(p, sizeof(path), "%ld", st.uid);
+				p = justify_left(p, 9);
+
+				ksprintf(p, sizeof(path), "%ld", st.gid);
+				p = justify_left(p, 9);
+
+				/* XXX this will cause problems, if st.size > 2GB */
+				ksprintf(p, sizeof(path), "%ld", (long)st.size);
+				p = justify_right(p, 8);
+				*p++ = ' ';
+
+				gemdos_time = unix2xbios(st.mtime.time);
+				gemdos_time >>= 5;				/* discard seconds */
+
+				minute = (short)(gemdos_time & 0x0000003fL);
+				gemdos_time >>= 6;
+
+				hour = (short)(gemdos_time & 0x0000001fL);
+				gemdos_time >>= 5;
+
+				day = (short)(gemdos_time & 0x0000001fL);
+				gemdos_time >>= 5;
+
+				month = (short)(gemdos_time & 0x0000000fL);
+				gemdos_time >>= 4;
+
+				year = (short)(gemdos_time & 0x0000007fL);
+				year += 1980;
+
+				ksprintf(p, sizeof(path), "%s", months[month - 1]);
+				p = justify_left(p, 4);
+
+				ksprintf(p, sizeof(path), "%d", day);
+				p = justify_left(p, 3);
+
+				if ((ctv.tv_sec - st.mtime.time) > 15768000L)	/* approx. number of seconds in 6 months */
+				{
+					ksprintf(p, sizeof(path), "%d", year);
+					p = justify_right(p, 5);
+				}
+				else
+				{
+					ksprintf(p, sizeof(path), "%d", hour);
+					p = justify_right(p, 2);
+					*p++ = ':';
+					if (minute < 10)
+						*p++ = '0';
+					ksprintf(p, sizeof(path), "%d", minute);
+					while (*p) p++;
+				}
+
+				*p++ = ' ';
+
+				*p = 0;
+
+				boot_print(path);
+				boot_print(entry + sizeof(long));
+				boot_print("\r\n");
+			}
+		}
+	} while (r == 0);
+
+	(void)Dclosedir(handle);
+
+	return 0;
+}
+
+/* chgrp, chown, chmod: change various attributes */
+INLINE long
+sh_chgrp(char *grp, char *fname)
+{
+	struct stat st;
+	long r, gid;
+
+	r = Fstat64(0, fname, &st);
+	if (r < 0)
+		return r;
+
+	gid = atol(grp);
+
+	if (gid == st.gid)
+		return 0;			/* no change */
+
+	return Fchown(fname, st.uid, gid);
+}
+
+INLINE long
+sh_chown(char *own, char *fname)
+{
+	struct stat st;
+	long r, uid, gid;
+	char *grp;
+
+	r = Fstat64(0, fname, &st);
+	if (r < 0)
+		return r;
+
+	grp = strrchr(own, '.');
+	if (!grp)
+		grp = strrchr(own, ':');
+
+	if (grp)
+	{
+		*grp++ = 0;
+		gid = atol(grp);
+	}
+	else
+		gid = st.gid;
+
+	uid = atol(own);
+
+	if (uid == st.uid && gid == st.gid)
+		return 0;			/* no change */
+
+	return Fchown(fname, uid, gid);
+}
+
+INLINE long
+sh_chmod(char *attr, char *fname)
+{
+	long d = 0;
+	short c;
+	char *s;
+
+	s = attr;
+
+	while ((c = *s++) != 0 && (c >= '0' && c <= '7'))
+	{
+		d <<= 3;
+		d += (c & 0x0007);
+	}
+
+	d &= 0x00007fffL;
+
+	return Fchmod(fname, d);
 }
 
 /* Helper routines for manipulating environment */
@@ -199,8 +501,9 @@ sh_getenv(const char *var)
 	return 0;
 }
 
-# if 0
-static void
+/* `static void' when it gets used more often (once for now)
+ */
+INLINE void
 sh_setenv(const char *var, char *value)
 {
 	char *env_str = shell_base->p_env;
@@ -256,9 +559,8 @@ sh_setenv(const char *var, char *value)
 
 	Mfree(env_str);
 }
-# endif
 
-static void
+INLINE void
 env(char *envie)
 {
 	char *var;
@@ -277,7 +579,8 @@ env(char *envie)
 
 	while (*var)
 	{
-		boot_printf("%s\r\n", var);
+		boot_print(var);	/* avoid excessing 128 char limit for boot_printf() */
+		boot_print("\r\n");
 		while (*var)
 			var++;
 		var++;
@@ -291,7 +594,7 @@ env(char *envie)
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
  *
  */
-static void
+INLINE void
 crunch(char *cmdline, char *args[])
 {
 	char *cmd = cmdline, *start;
@@ -338,8 +641,8 @@ crunch(char *cmdline, char *args[])
 }
 
 /* Execute an external program */
-static long
-execv(char *oldcmd, char *args[])
+INLINE long
+execvp(char *oldcmd, char *args[])
 {
 	char *var, *new_env, *new_var, *t, *path, *np, npath[2048];
 	long count = 0, x, r = -1L;
@@ -427,7 +730,8 @@ execv(char *oldcmd, char *args[])
 	return r;
 }
 
-static long
+/* Execute the given command */
+INLINE long
 execute(char *cmdline, char *args[])
 {
 	char newcmd[128], *c, *home;
@@ -479,13 +783,36 @@ execute(char *cmdline, char *args[])
 		cnt++;
 	}
 
+	/* If xcommands == 1 internal code is used for the commands
+	 * below, or external programs are executed otherwise
+	 */
+	if (!xcommands)
+	{
+		switch (cmdno)
+		{
+			case	SHCMD_LS:
+			case	SHCMD_CP:
+			case	SHCMD_MV:
+			case	SHCMD_RM:
+			case	SHCMD_CHMOD:
+			case	SHCMD_LN:
+			case	SHCMD_ENV:
+			case	SHCMD_CHOWN:
+			case	SHCMD_CHGRP:
+			{
+				cmdno = 0;
+				break;
+			}
+		}
+	}
+
 	switch (cmdno)
 	{
 		case	SHCMD_EXIT:
 		{
 			boot_print("Are you sure to exit and reboot (y/n)?");
 			y = (short)Cconin();
-			if (tolower (y & 0xff) == *MSG_init_menu_yes)
+			if (tolower(y & 0xff) == *MSG_init_menu_yes)
 				Pterm(0);
 			boot_print("\r\n");
 			break;
@@ -493,6 +820,11 @@ execute(char *cmdline, char *args[])
 		case	SHCMD_VER:
 		{
 			ver();
+			break;
+		}
+		case	SHCMD_LS:
+		{
+			r = sh_ls(args[1]);
 			break;
 		}
 		case	SHCMD_CD:
@@ -507,6 +839,30 @@ execute(char *cmdline, char *args[])
 			}
 			break;
 		}
+		case	SHCMD_CHMOD:
+		{
+			if (args[1] && args[2])
+				r = sh_chmod(args[1], args[2]);
+			else
+				boot_print("chmod OCTAL-MODE FILE\r\n");
+			break;
+		}
+		case	SHCMD_CHOWN:
+		{
+			if (args[1] && args[2])
+				r = sh_chown(args[1], args[2]);
+			else
+				boot_print("chown DEC-OWNER[:DEC-GROUP] FILE\r\n");
+			break;
+		}
+		case	SHCMD_CHGRP:
+		{
+			if (args[1] && args[2])
+				r = sh_chgrp(args[1], args[2]);
+			else
+				boot_print("chgrp DEC-GROUP FILE\r\n");
+			break;
+		}
 		case	SHCMD_HELP:
 		{
 			help();
@@ -517,9 +873,21 @@ execute(char *cmdline, char *args[])
 			env(0);
 			break;
 		}
+		case	SHCMD_XCMD:
+		{
+			if (args[1])
+			{
+				if (strcmp(args[1], "on") == 0)
+					xcommands = 1;
+				else if (strcmp(args[1], "off") == 0)
+					xcommands = 0;
+			}
+			xcmdstate();
+			break;
+		}
 		default:
 		{
-			r = execv(newcmd, args);
+			r = execvp(newcmd, args);
 			break;
 		}
 	}
@@ -527,19 +895,21 @@ execute(char *cmdline, char *args[])
 	return r;
 }
 
-/* BUG: because of Cconrs() the command line cannot be longer than 126 bytes.
+/* XXX because of Cconrs() the command line cannot be longer than 126 bytes.
  */
 static void
 shell(void)
 {
 	char *args[SHELL_ARGS];
 	char cwd[1024], linebuf[LINELEN+2], *lb, *home;
-	long r;
+	long gemdos_time, r;
 	short x;
 
+	/* XXX enable word wrap for the console, cursor etc. */
 	boot_print("\r\n");
 	ver();
-	boot_print("\r\n");
+	xcmdstate();
+	boot_print("Type `help' for help\r\n\r\n");
 
 	home = sh_getenv("HOME=");
 	if (home)
@@ -559,20 +929,33 @@ shell(void)
 
 		r = Dgetcwd(cwd, 0, sizeof(cwd));
 
-		strcat(cwd, "/");
-
-		for (x = 0;x < sizeof(cwd);x++)
+		if (*cwd == 0)
+			strcpy(cwd, "/");
+		else
 		{
-			if (cwd[x] == '\\')
-				cwd[x] = '/';
+			for (x = 0;x < sizeof(cwd);x++)
+			{
+				if (cwd[x] == '\\')
+					cwd[x] = '/';
+			}
 		}
 
-# if 0
 		sh_setenv("PWD=", cwd);
-# endif
 
-		boot_printf("mint:%s#", cwd);
+		boot_print("mint:");		/* limits in the boot_printf(), as usual */
+		boot_print(cwd);
+		boot_print("#");
 		Cconrs(linebuf);
+
+		ctv.tv_sec = 0;
+		(void)Tgettimeofday(&ctv, 0);
+
+		if (ctv.tv_sec)
+		{
+			gemdos_time = unix2xbios(ctv.tv_sec);
+			current_year = (short)(gemdos_time >> 25);
+			current_year += 1980;
+		}
 
 		if (linebuf[1] > 1)
 		{
@@ -611,7 +994,7 @@ shell_start(long bp)
 	(void)Pdomain(1);
 	(void)Pumask(0x022);
 
-	shell();		/* this one should never return */
+	shell();			/* this one should never return */
 }
 
 /* This below is running in kernel context, called from init.c
@@ -622,6 +1005,14 @@ startup_shell(void)
 	long r;
 
 	shell_base = (BASEPAGE *)sys_pexec(7, (char *)SHELL_FLAGS, "\0", init_env);
+
+	/* Hope this never happens */
+	if (!shell_base)
+	{
+		DEBUG(("Pexec(7) returned 0!\r\n"));
+
+		return -1;
+	}
 
 	/* Start address */
 	shell_base->p_tbase = (long)shell_start;
