@@ -39,7 +39,7 @@
 #endif
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
-_old_5ms:	dc.l	0	
+_old_5ms:	dc.l	0
 
 _mint_5ms:
 #ifdef PROFILING
@@ -144,7 +144,7 @@ skip:	move.w	(0x0442).w,d0
 
 txit:	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
 	bne.s	L_popnout
-	move.w	#0x2300,sr		// lower the current IPL
+	move.w	#0x2400,sr		// lower the current IPL
 
 // floppy stuff
 
@@ -369,6 +369,7 @@ _kbdclick:	move.l	(0x05b0).w,d0
 	jmp	(a0)
 L_nocl:	rts
 
+# if 0
 // Generic routines for handling any user-specified interrupts.
 // These only work on a 68020+ (long frame format is needed),
 // psigintr() code in dossig.c prevents this from being ran on
@@ -398,6 +399,7 @@ _new_intr:	subq.l	#0x08,sp		// make some room on the stack
 	addq.l	#0x02,sp
 	movem.l	(sp)+,d0-d2/a0-a2
 	rte			// jump to original services
+# endif
 
 //
 // simple signal handlers
