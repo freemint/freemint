@@ -81,22 +81,6 @@
 
 # define LINELEN	126
 
-# define SHCMD_EXIT	1
-# define SHCMD_VER	2
-# define SHCMD_LS	3
-# define SHCMD_CD	4
-# define SHCMD_CP	5
-# define SHCMD_MV	6
-# define SHCMD_RM	7
-# define SHCMD_CHMOD	8
-# define SHCMD_HELP	9
-# define SHCMD_LN	10
-# define SHCMD_EXEC	11
-# define SHCMD_ENV	12
-# define SHCMD_CHOWN	13
-# define SHCMD_CHGRP	14
-# define SHCMD_XCMD	15
-
 /* Global variables */
 static BASEPAGE *shell_base;
 static short xcommands;
@@ -126,6 +110,30 @@ shell_printf(const char *fmt, ...)
 	va_end(args);
 
 	shell_print(buf);
+}
+
+/* Simple conversion of a pathname from the DOS to Unix format */
+static void
+dos2unix(char *pathname)
+{
+	char *p;
+
+	p = pathname;
+
+	while (*p)
+	{
+		if (*p == '\\')
+			*p = '/';
+		p++;
+	}
+
+	p = pathname;
+
+	if (p[1] == ':')
+	{
+		p[1] = p[0];
+		p[0] = '/';
+	}
 }
 
 /* Helpers for ls:
@@ -212,7 +220,7 @@ static char *
 sh_getenv(const char *var)
 {
 	char *es, *env_str = shell_base->p_env;
-	long vl, r;
+	long vl;
 
 	if (env_str == NULL || *env_str == 0)
 	{
@@ -225,8 +233,7 @@ sh_getenv(const char *var)
 
 	while (*env_str)
 	{
-		r = strncmp(env_str, var, vl);
-		if (r == 0)
+		if (strncmp(env_str, var, vl) == 0)
 		{
 			es = env_str;
 			while (*es != '=')
@@ -267,8 +274,6 @@ sh_setenv(const char *var, char *value)
 	new_env = (char *)Mxalloc(new_size, 3);
 	if (new_env == NULL)
 		return;
-
-	bzero(new_env, new_size);
 
 	es = env_str;
 	ne = new_env;
@@ -371,8 +376,6 @@ execvp(char *oldcmd, char *argv[])
 
 	if (!new_env)
 		return -40;
-
-	bzero(new_env, count + 1);
 
 	var = shell_base->p_env;
 	new_var = new_env;
@@ -505,7 +508,7 @@ sh_ls(long argc, char **argv)
 	struct timeval tv;
 	short year, month, day, hour, minute;
 	long r, s, handle;
-	char *p, *dir, path[1024];
+	char *p, *dir, path[1024], link[1024];
 	char entry[256];
 
 	dir = ".";
@@ -518,14 +521,14 @@ sh_ls(long argc, char **argv)
 
 			return 0;
 		}
-		dir = argv[1];
+		else
+			dir = argv[1];
 	}
 
 	r = Dopendir(dir, 0);
 	if (r < 0)
 		return r;
 
-	tv.tv_sec = 0;
 	Tgettimeofday(&tv, NULL);
 
 	handle = r;
@@ -543,10 +546,15 @@ sh_ls(long argc, char **argv)
 			/* `/bin/ls -l' doesn't dereference links, so we don't either */
 			s = Fstat64(1, path, &st);
 
-			/* XXX softlinks displayed should -> point to the file they point to */
-
 			if (s == 0)
 			{
+				if (S_ISLNK(st.mode))
+				{
+					s = Freadlink(sizeof(link), link, path);
+					if (s == 0)
+						dos2unix(link);
+				}
+
 				/* Reuse the path[] space */
 				p = path;
 
@@ -621,9 +629,17 @@ sh_ls(long argc, char **argv)
 				ksprintf(p, sizeof(path), "%d", day);
 				p = justify_left(p, 3);
 
-				/* There can be up to 18 hours and 33 minutes of error
-				 * relative to the calendar time, but for this purpose
-				 * it does not matter.
+				/* Here we decide whether the timestamp displayed should
+				 * contain the year or the hour/minute of the modification.
+				 *
+				 * Basically everything that was modified 6 months ago or
+				 * earlier will have the year, more recent stuff will get
+				 * hour/minute. This is less or more what /bin/ls does.
+				 *
+				 * There can be up to 18 hours, 33 minutes and 45 seconds
+				 * of error relative to the calendar time, but for this purpose
+				 * it does not matter so much (and we avoid calling
+				 * unix2calendar again).
 				 */
 				if ((tv.tv_sec - st.mtime.time) > (SEC_OF_YEAR >> 1))
 					ksprintf(p, sizeof(path), "%d", year);
@@ -634,7 +650,12 @@ sh_ls(long argc, char **argv)
 
 				*p = 0;
 
-				shell_printf("%s %s\r\n", path, entry + sizeof(long));
+				shell_printf("%s %s", path, entry + sizeof(long));
+
+				if (S_ISLNK(st.mode) && s == 0)
+					shell_printf(" -> %s\r\n", link);
+				else
+					shell_print("\r\n");
 			}
 		}
 	} while (r == 0);
@@ -644,7 +665,7 @@ sh_ls(long argc, char **argv)
 	return 0;
 }
 
-/* Change cwd to the given path. If none give, change to $HOME */
+/* Change cwd to the given path. If none given, change to $HOME */
 static long
 sh_cd(long argc, char **argv)
 {
@@ -674,6 +695,7 @@ sh_chgrp(long argc, char **argv)
 {
 	struct stat st;
 	long r, gid;
+	char *fname;
 
 	if (argc < 3)
 	{
@@ -682,7 +704,9 @@ sh_chgrp(long argc, char **argv)
 		return 0;
 	}
 
-	r = Fstat64(0, argv[2], &st);
+	fname = argv[2];
+
+	r = Fstat64(0, fname, &st);
 	if (r < 0)
 		return r;
 
@@ -691,7 +715,7 @@ sh_chgrp(long argc, char **argv)
 	if (gid == st.gid)
 		return 0;			/* no change */
 
-	return Fchown(argv[2], st.uid, gid);
+	return Fchown(fname, st.uid, gid);
 }
 
 static long
@@ -855,24 +879,21 @@ sh_exec(long argc, char **argv)
 
 /* End of the commands, begin control routines */
 
-static const char *commands[] =
-{
-	"exit", "ver", "ls", "cd", "cp", "mv", "rm", "chmod", \
-	"help", "ln", "exec", "env", "chown", "chgrp", "xcmd", NULL
-};
+/* Bitfield of flags for functions (1 = gets switched on/off by xcmd) */
+static const long is_ext = 0x00007fc0L;	/* 0111-1111-1100-0000 */
 
-static const char is_ext[] =
-{
-	0, 0, 1, 0, 1, 1, 1, 1, \
-	0, 1, 0, 0, 1, 1, 0	\
-};
-
-typedef long (FUNC)();
+typedef long FUNC();
 
 static FUNC *cmd_routs[] =
 {
-	sh_exit, sh_ver, sh_ls, sh_cd, sh_cp, sh_mv, sh_rm, sh_chmod, \
-	sh_help, sh_ln, sh_exec, sh_env, sh_chown, sh_chgrp, sh_xcmd \
+	sh_exit, sh_ver, sh_cd, sh_help, sh_exec, sh_xcmd, \
+	sh_env, sh_ls, sh_cp, sh_mv, sh_rm, sh_ln, sh_chmod, sh_chown, sh_chgrp
+};
+
+static const char *commands[] =
+{
+	"exit", "ver", "cd", "help", "exec", "xcmd", \
+	"env", "ls", "cp", "mv", "rm", "ln", "chmod", "chown", "chgrp", NULL
 };
 
 /* Execute the given command */
@@ -880,16 +901,14 @@ INLINE long
 execute(char *cmdline)
 {
 	char *argv[SHELL_ARGS], newcmd[128], *c;
-	long r, cnt, cmdno, argc;
+	long cnt, cmdno, argc;
 
 	c = cmdline;
 
-	/* Convert possible CR/LF characters to spaces */
+	/* Convert possible control characters to spaces */
 	while (*c)
 	{
-		if (*c == '\r')
-			*c = ' ';
-		if (*c == '\n')
+		if (iscntrl(*c))
 			*c = ' ';
 		c++;
 	}
@@ -915,7 +934,7 @@ execute(char *cmdline)
 	 * or the number of the internal command otherwise (the number is
 	 * just their index in the commands[] table, plus one).
 	 */
-	cmdno = cnt = r = 0;
+	cmdno = cnt = 0;
 
 	while (commands[cnt])
 	{
@@ -927,16 +946,19 @@ execute(char *cmdline)
 		cnt++;
 	}
 
+	if (commands[cnt] == NULL)
+		cmdno = 0;
+
 	/* If xcommands == 1 internal code is used for the commands
 	 * below, or external programs are executed otherwise
 	 */
 	if (cmdno && !xcommands)
 	{
-		if (is_ext[cmdno - 1])
+		if (is_ext & (1L << cnt))
 			cmdno = 0;
 	}
 
-	return (cmdno == 0) ? execvp(newcmd, argv) : cmd_routs[cmdno - 1](argc, argv);
+	return (cmdno == 0) ? execvp(newcmd, argv) : cmd_routs[cnt](argc, argv);
 }
 
 /* XXX because of Cconrs() the command line cannot be longer than 126 bytes.
@@ -964,8 +986,6 @@ shell(void)
 
 	for (;;)
 	{
-		bzero(linebuf, sizeof(linebuf));
-
 		linebuf[0] = (sizeof(linebuf) - 2);
 		linebuf[1] = 0;
 
