@@ -1080,7 +1080,7 @@ sys_f_fchown (short fd, short uid, short gid)
 		 * directories with BSD-like setgid semantics, these bits
 		 * should be left unchanged.
 		 */
-		if (!r && (xattr.mode & S_IFMT) != S_IFDIR
+		if (!r && !S_ISDIR(xattr.mode)
 			&& (xattr.mode & (S_ISUID | S_ISGID)))
 		{
 			long s;
