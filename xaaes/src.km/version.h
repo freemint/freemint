@@ -27,13 +27,13 @@
 #ifndef _xaaes_version_h
 #define _xaaes_version_h
 
-#define DSMASM 0xff
+#define DSMASM 0x00ff
 
 /* Version numbers */
 #define VER_MAJOR	0
-#define VER_MINOR	992
+#define VER_MINOR	993
 #define ARCH_TARGET	AES_ARCH_M68K
-//#define DEV_STATUS	(AES_DEVSTATUS_ALPHA|AES_FDEVSTATUS_STABLE)
+/*#define DEV_STATUS	(AES_DEVSTATUS_ALPHA|AES_FDEVSTATUS_STABLE)*/
 #define DEV_STATUS	AES_DEVSTATUS_ALPHA
 
 #define SHORT_NAME		"XaAES"
@@ -41,15 +41,23 @@
 
 #define LONG_NAME	"XaAES Ain't the AES, a free MultiTasking AES for FreeMiNT"
 
-#if ((DEV_STATUS & DSMASK) == AES_DEVSTATUS_ALPHA)
+#if ((DEV_STATUS & 0x000f) == AES_DEVSTATUS_ALPHA)
 #define ASCII_DEV_STATUS	"Alpha"
 #endif
 
-#if ((DEV_STATUS & DSMASK) == AES_DEVSTATUS_BETA)
+#if ((DEV_STATUS & 0x000f) == AES_DEVSTATUS_BETA)
+#ifdef XAAES_RELEASE
+#undef XAAES_RELEASE
+#endif
+#define XAAES_RELEASE		1
 #define ASCII_DEV_STATUS	"Beta"
 #endif
 
-#if ((DEV_STATUS & DSMASK) == AES_DEVSTATUS_RELEASE)
+#if ((DEV_STATUS & 0x000f) == AES_DEVSTATUS_RELEASE)
+#ifdef XAAES_RELEASE
+#undef XAAES_RELEASE
+#endif
+#define XAAES_RELEASE 		1
 #define ASCII_DEV_STATUS	"Release"
 #endif
 
@@ -72,6 +80,6 @@
 /*
  * This is only use for wind_get(WF_XAAES) which will be removed
  */
-#define HEX_VERSION	0x0992
+#define HEX_VERSION	0x0993
 
 #endif /* _xaaes_version_h */

@@ -297,6 +297,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case NK_HOME:				/*     "    Home       "     */
 		{
 			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
+			redraw_menu(lock);
 		}
 		case 'M':				/* ctrl+alt+M  recover mouse */
 		{

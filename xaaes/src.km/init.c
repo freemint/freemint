@@ -470,8 +470,13 @@ init(struct kentry *k, const char *path)
 
 		while (!(C.shutdown & QUIT_NOW))
 			sleep(WAIT_Q, (long)&loader_pid);
-
+		
 		p->p_sigmask = oldmask;
+		if (C.shutdown & HALT_SYSTEM)
+			s_hutdown(0);  /* poweroff or halt if poweroff is not supported */
+		else if (C.shutdown & REBOOT_SYSTEM)
+			s_hutdown(1);  /* warm start */
+	
 	}
 
 	/* succeeded */
