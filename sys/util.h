@@ -13,7 +13,7 @@
 
 struct proc *	pid2proc	(int pid);
 int		newpid		(void);
-int		set_pid_1	(void);
+void		set_pid_1	(void);
 
 
 # endif /* _util_h */
