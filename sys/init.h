@@ -10,7 +10,6 @@
 
 # include "mint/mint.h"
 
-
 void	boot_print	(const char *s);
 void	boot_printf	(const char *fmt, ...);
 

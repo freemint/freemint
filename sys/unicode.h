@@ -36,9 +36,10 @@
 
 # include "mint/mint.h"
 
-
 extern uchar *t_uni2atari [256];
 extern uchar  t_atari2uni [256];
+
+void init_unicode(void);
 
 /*
  * uni2atari
