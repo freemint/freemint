@@ -336,13 +336,26 @@ const char *MSG_init_menuwarn =
 ;
 const char *MSG_must_be_auto = "MiNT MUST be executed from the AUTO folder!\r\n";
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
+const char *MSG_init_delay_loop = "Calibrating delay loop ... ";
 # ifdef VERBOSE_BOOT
 const char *MSG_init_mp = "Memory protection %s\r\n";
 const char *MSG_init_mp_enabled = "enabled";
 const char *MSG_init_mp_disabled = "disabled";
+const char *MSG_init_supermode = "Entering supervisor mode ...";
+const char *MSG_init_sysdrv_is = "Booting from '%c'\r\n";
+const char *MSG_init_saving_mmu = "Saving MMU setup ...";
+const char *MSG_init_tosver_kbshft = "Resident TOS version %d.%02d%s\r\nKbshft 0x%08lx.\r\n";
+const char *MSG_init_bconmap = "BIOS Bconmap() %s.\r\n";
+const char *MSG_init_pid_0 = "Starting up the idle process (pid 0) ...";
+const char *MSG_init_launching_init = "Launching %s: %s ...";
+const char *MSG_init_no_init_specified = "No init program specified to be started.\r\n";
+const char *MSG_init_starting_shell = "Starting up %s ...";
+const char *MSG_init_starting_internal_shell = "Giving up, reverting to internal shell.\r\n";
+const char *MSG_init_done = " done!\r\n";
+const char *MSG_init_present = "present";
+const char *MSG_init_not_present = "not present";
+const char *MSG_init_error = " error %ld.\r\n";
 # endif
-const char *MSG_init_delay_loop = "Calibrating delay loop... ";
-const char *MSG_couldnt_run_init = "Couldn't run `%s', error %ld!\r\n";
 
 /* ---------- keyboard.c ---------- */
 

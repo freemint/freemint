@@ -792,12 +792,29 @@ init (void)
 		curpath[1] = 0;
 	}
 
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_supermode);
+# endif
+
 	(void) Super (0L);
+
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_done);
+# endif
 
 	sysdrv = *((short *) 0x446);	/* get the boot drive number */
 
+# ifdef VERBOSE_BOOT
+	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
+	boot_print(MSG_init_saving_mmu);
+# endif
+
 	if (!no_mem_prot)
 		save_mmu ();		/* save current MMU setup */
+
+# ifdef VERBOSE_BOOT
+	boot_print(MSG_init_done);
+# endif
 
 	/* get GEMDOS pointer to current basepage
 	 *
@@ -811,6 +828,11 @@ init (void)
 	tosvers = (int)(sysbase[0] & 0x0000ffff);
 	kbshft = (tosvers == 0x100) ? (char *) 0x0e1bL : (char *)sysbase[9];
 	falcontos = (tosvers >= 0x0400 && tosvers <= 0x0404) || (tosvers >= 0x0700);
+
+# ifdef VERBOSE_BOOT
+	boot_printf(MSG_init_tosver_kbshft, (tosvers >> 8) & 0xff, tosvers & 0xff, \
+			falcontos ? " (FalconTOS)" : "", (long)kbshft);
+# endif
 
 	if (falcontos)
 	{
@@ -842,6 +864,10 @@ init (void)
 		if (has_bconmap)
 			bconmap2 = (BCONMAP2_T *) Bconmap (-2);
 	}
+
+# ifdef VERBOSE_BOOT
+	boot_printf(MSG_init_bconmap, has_bconmap ? MSG_init_present : MSG_init_not_present);
+# endif
 
 	/* initialize cache */
 	init_cache ();
@@ -1034,12 +1060,6 @@ init (void)
 	/* load the configuration file */
 	load_config();
 
-	/* time_slice must be at least 1, the cnf parser doesn't
-	 * allow to check the range.
-	 */
-	if (time_slice < 1)
-		time_slice = 1;
-
 # ifdef OLDTOSFS
 	/*
 	 * Until the old TOSFS is completely removed, we try to trigger a media
@@ -1100,6 +1120,8 @@ init (void)
 	/* compiled with profiling support */
 	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
 # endif
+
+	boot_print(MSG_init_pid_0);
 
 	/* zero the user registers, and set the FPU in a "clear" state */
 	for (r = 0; r < 15; r++)
@@ -1202,6 +1224,8 @@ mint_thread(void *arg)
 	int pid;
 	long r;
 
+	boot_print(MSG_init_done);
+
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
 		run_auto_prgs();
@@ -1222,6 +1246,9 @@ mint_thread(void *arg)
 	 */
 	if (init_prg)
 	{
+# ifdef VERBOSE_BOOT
+		boot_printf(MSG_init_launching_init, init_is_gem ? "GEM" : "init", init_prg);
+# endif 
 		if (!init_is_gem)
 		{
 # if 1
@@ -1240,9 +1267,20 @@ mint_thread(void *arg)
 
 			r = sys_pexec(106, (char *)"GEM", bp, 0L);
 		}
+# ifdef VERBOSE_BOOT
+		if (r >= 0)
+			boot_print(MSG_init_done);
+		else
+			boot_printf(MSG_init_error, r);
+# endif
 	}
 	else
+	{
+# ifdef VERBOSE_BOOT
+		boot_print(MSG_init_no_init_specified);
+# endif
 		r = 0;
+	}
 
 	/* r < 0 means an error during sys_pexec() execution (e.g. file not found);
 	 * r == 0 means that mint.cnf lacks the GEM= or INIT= line.
@@ -1255,9 +1293,6 @@ mint_thread(void *arg)
 	{
 		char *ext, shellpath[32];	/* 32 should be plenty */
 		fcookie dir;
-
-		if (r < 0)
-			boot_printf(MSG_couldnt_run_init, init_prg, r);
 
 		/* Last resort: try to execute sysdir/shell.tos.
 		 * For that, the absolute path must be used, because the user
@@ -1273,11 +1308,22 @@ mint_thread(void *arg)
 		strcat(shellpath, "sh");
 		strcat(shellpath, ext);
 
+# ifdef VERBOSE_BOOT
+		boot_printf(MSG_init_starting_shell, shellpath);
+# endif
 		r = sys_pexec(100, shellpath, init_tail, init_env);
-		if (r < 0)
-			boot_printf(MSG_couldnt_run_init, shellpath, r);
+
+# ifdef VERBOSE_BOOT
+		if (r > 0)
+			boot_print(MSG_init_done);
+		else
+			boot_printf(MSG_init_error, r);
+# endif
 
 # ifdef BUILTIN_SHELL
+# ifdef VERBOSE_BOOT
+		boot_print(MSG_init_starting_internal_shell);
+# endif
 		if (r <= 0)
 			r = startup_shell();	/* r is the shell's pid */
 # endif
