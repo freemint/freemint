@@ -1,2 +1,3 @@
 .deps
-cops.app
+.compile_*
+cops*.app
