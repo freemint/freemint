@@ -865,7 +865,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 
 	wo = wind == root_window ? get_desktop()->owner : wind->owner;
 		
-	//if (!rc || rc == wo || wo == C.Aes)
 	if (rc == wo || wo == C.Aes)
 	{
 		DIAG((D_wind, rc, "draw_window %d, for %s", wind->handle, rc->name));
