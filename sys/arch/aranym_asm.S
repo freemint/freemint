@@ -47,10 +47,10 @@ _detect_native_features:
 	.equ vec_illegal, 0x10		// illegal exception vector
 
 	move.l	sp,a1
-	move.l	vec_illegal,a0
-	move.l	#fail_natfeat,vec_illegal
-	pea	nf_version_name
-	sub.l	#4,sp
+	move.l	(vec_illegal).w,a0
+	move.l	#fail_natfeat,(vec_illegal).w
+	pea	(nf_version_name).w(pc)
+	subq.l	#4,sp
 	dc.w	0x7300			// Jump to NATFEAT_ID
 	tst.l	d0
 	beq.s	fail_natfeat
@@ -58,7 +58,7 @@ _detect_native_features:
 
 fail_natfeat:
 	move.l	a1,sp
-	move.l	a0,vec_illegal
+	move.l	a0,(vec_illegal).w
 
 	rts
 
