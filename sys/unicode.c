@@ -794,7 +794,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 			{
 				char msg[128];
 
-				ksprintf(msg, sizeof(msg), "Unicode: cannot change codes lower then 128\r\n");
+				ksprintf(msg, sizeof(msg), MSG_unicode_cannot_below_128);
 				c_conws(msg);
 			}
 			else

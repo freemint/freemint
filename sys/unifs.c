@@ -26,6 +26,7 @@
 
 # include "bios.h"
 # include "filesys.h"
+# include "info.h"
 # include "k_prot.h"
 # include "kerinfo.h"
 # include "kmemory.h"
@@ -321,7 +322,7 @@ uni_getxattr (fcookie *fc, XATTR *xattr)
 	
 	if (fc->fs != &uni_filesys)
 	{
-		ALERT("ERROR: wrong file system getxattr called");
+		ALERT(MSG_unifs_wrong_getxattr);
 		return EINTERNAL;
 	}
 	
@@ -453,7 +454,7 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 
 	if (!u)
 	{
-		ALERT("unifs: couldn't match a drive with a directory");
+		ALERT(MSG_unifs_couldnt_match);
 		return ENOTDIR;
 	}
 
@@ -492,7 +493,7 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 
 	if (curproc->p_cwd->root[dir->dev].fs != fs)
 	{
-		ALERT("unifs: drive's file system doesn't match directory's");
+		ALERT(MSG_unifs_fs_doesnt_match_dirs);
 		return EINTERNAL;
 	}
 
