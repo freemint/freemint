@@ -13,7 +13,7 @@
 ; NOTICE: these routines are mainly responsible for the fact that
 ; the kernel is not reentrant. Some day we will have to fix it.
 
-%include "magic/magic.i"
+%include "../magic/magic.i"
 
 	XDEF	_enter_gemdos
 	XDEF	_enter_bios

@@ -7,7 +7,7 @@
 ; Copyright 1993,1994 Atari Corporation
 ; All rights reserved.
 
-%include "magic/magic.i"
+%include "../magic/magic.i"
 ;
 ; interrupt wrapping routines; these should just save registers and call
 ; the appropriate C handlers, unless speed is a major problem
