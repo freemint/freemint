@@ -91,6 +91,9 @@ static long skiplist [] =
 	COOKIE__CPU,
 	COOKIE__FPU,
 	COOKIE_RSVF,
+# ifndef OLDTOSFS
+	COOKIE__FLK,
+# endif
 	0
 };
 
@@ -114,10 +117,10 @@ init_cookies (void)
 	{
 		while (cookie->tag)
 		{
-			/* check for _FLK cookie */
+# ifdef OLDTOSFS
 			if (cookie->tag == COOKIE__FLK)
 				flk = 1;
-			
+# endif
 			cookie++;
 			ncookies++;
 		}
@@ -187,12 +190,18 @@ init_cookies (void)
 	
 	/* install _FLK cookie to indicate that file locking works
 	 */
+# ifdef OLDTOSFS
 	if (!flk)
 	{
 		newcookie[i].tag   = COOKIE__FLK;
-		newcookie[i].value = 0;
+		newcookie[i].value = 0x00000100;	/* This is version number, 1.0 :-) */
 		i++;
 	}
+# else
+	newcookie[i].tag   = COOKIE__FLK;
+	newcookie[i].value = 0x00000100;
+	i++;
+# endif
 	
 	/* jr: install PMMU cookie if memory protection is used
 	 */
