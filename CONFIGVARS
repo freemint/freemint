@@ -1,15 +1,15 @@
 # 
 # 
 # cross compiling
-CROSS = yes
-#CROSS = no
+#CROSS = yes
+CROSS = no
 
 #
 # target and host compiler
 # 
 ifeq ($(CROSS),yes)
 
-CROSSPREFIX=/usr/local/bin/m68k-atari-mint-
+CROSSPREFIX=m68k-atari-mint-
 
 NATIVECC = gcc
 NATIVECFLAGS = -O -Wall
