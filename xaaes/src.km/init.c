@@ -419,6 +419,7 @@ init(struct kentry *k, const char *path)
 	default_options.xa_nohide = true;
 	//default_options.xa_objced = true;
 	default_options.thinframe = 1;
+	default_options.wheel_mode = WHL_AROWWHEEL;
 
 	C.Aes->options = default_options;
 

@@ -1672,10 +1672,15 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 
 		if (move || size)
 		{
-			if (move)
-				send_moved(lock, wind, AMQ_NORM, &r);
-			if (size)
-				send_sized(lock, wind, AMQ_NORM, &r);
+			if (move && size && (wind->opts & WO_SENDREPOS)) //XAWO_WM_REPOS))
+				send_reposed(lock, wind, AMQ_NORM, &r);
+			else
+			{
+				if (move)
+					send_moved(lock, wind, AMQ_NORM, &r);
+				if (size)
+					send_sized(lock, wind, AMQ_NORM, &r);
+			}
 		}
 	}
 	else if (widget_active.m.cstate)
@@ -1737,10 +1742,15 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			
 			if (move || size)
 			{
-				if (move)
-					send_moved(lock, wind, AMQ_NORM, &r);
-				if (size)
-					send_sized(lock, wind, AMQ_NORM, &r);
+				if (move && size && (wind->opts & WO_SENDREPOS)) //XAWO_WM_REPOS))
+					send_reposed(lock, wind, AMQ_NORM, &r);
+				else
+				{
+					if (move)
+						send_moved(lock, wind, AMQ_NORM, &r);
+					if (size)
+						send_sized(lock, wind, AMQ_NORM, &r);
+				}
 			}
 			/* We return false here so the widget display status
 			 * stays selected whilst it repeats */
@@ -2455,10 +2465,10 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		zwidg(wind, XAW_RESIZE, keep_stuff);
 	}
 			
-	if ( (tp & BORDER) || (tp & (SIZER|MOVER)) == (SIZER|MOVER) )
+	if ( (tp & BORDER) || ((tp & (SIZER|MOVER)) == (SIZER|MOVER)) )
 	{
 		tp |= BORDER;
-		if ( (old_tp & BORDER) || (old_tp & (SIZER|MOVER)) != (SIZER|MOVER) )
+		if (!(old_tp & BORDER)) // || ((old_tp & (SIZER|MOVER)) != (SIZER|MOVER)) )
 		{
 			DIAGS(("Make border"));
 			make_widget(wind, &stdl_border, display_border, drag_border, drag_border, NULL);
@@ -2468,7 +2478,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			DIAGS(("border already made"));
 #endif
 	}
-	else if ( (old_tp & BORDER) || (old_tp & (SIZER|MOVER)) == (SIZER|MOVER) )
+	else if ((old_tp & BORDER)) // || ((old_tp & (SIZER|MOVER)) == (SIZER|MOVER)) )
 	{
 		DIAGS(("clear border"));
 		zwidg(wind, XAW_BORDER, keep_stuff);

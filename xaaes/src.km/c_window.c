@@ -519,6 +519,16 @@ send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 		}
 	}
 }
+void
+send_reposed(enum locks lock, struct xa_window *wind, short amq, RECT *r)
+{
+	if (wind->send_message)
+	{
+		wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
+			WM_REPOSED, 0,0, wind->handle,
+			r->x, r->y, r->w, r->h);
+	}
+}
 
 void
 send_redraw(enum locks lock, struct xa_window *wind, RECT *r)
@@ -657,7 +667,7 @@ create_window(
 		long opts = client->options.wind_opts;
 		
 		if (client->options.naes_ff)
-			opts |= XAWO_NAES_FF;
+			opts |= WO_FULLREDRAW; //XAWO_NAES_FF;
 		w->opts = opts;
 	}
 	
