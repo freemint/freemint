@@ -56,7 +56,7 @@ const ulong MiNT_version =
 	  ((ulong) MINT_MAJ_VERSION << 24)
 	| ((ulong) MINT_MIN_VERSION << 16)
 	| ((ulong) MINT_PATCH_LEVEL << 8)
-	| ((ulong) MINT_BETA_IDENT);
+	| ((ulong) MINT_STATUS_IDENT);
 
 const ulong MiNT_date =
 	  ((ulong) BUILD_DAY << 24)
