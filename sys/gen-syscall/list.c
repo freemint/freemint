@@ -81,7 +81,7 @@ resize_tab (SYSTAB *tab, int newsize)
 }
 
 int
-add_tab (SYSTAB *tab, int nr, const char *name, LIST *p)
+add_tab (SYSTAB *tab, int nr, const char *class, const char *name, LIST *p)
 {
 	SYSCALL *call = NULL;
 	
@@ -94,6 +94,11 @@ add_tab (SYSTAB *tab, int nr, const char *name, LIST *p)
 		call = malloc (sizeof (*call));
 		if (!call)
 			return 1;
+		
+		bzero (call, sizeof (*call));
+		
+		if (class)
+			strcpy (call->class, class);
 		
 		strcpy (call->name, name);
 		call->args = p;

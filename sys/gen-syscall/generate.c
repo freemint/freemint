@@ -95,7 +95,7 @@ generate_struct (FILE *out, SYSTAB *tab)
 		{
 			if (call->args)
 			{
-				fprintf (out, "struct sys_%s_args\n", call->name);
+				fprintf (out, "struct sys_%s_%s_args\n", call->class, call->name);
 				fprintf (out, "{\n");
 				
 				generate_args (out, call->args, "\t", 1, ";\n");
@@ -118,15 +118,15 @@ generate_proto (FILE *out, SYSTAB *tab)
 		
 		if (call && strcmp (call->name, "RESERVED"))
 		{
-			fprintf (out, "long _cdecl sys_%s\t", call->name);
+			fprintf (out, "long _cdecl sys_%s_%s\t", call->class, call->name);
 			
-			if (strlen (call->name) < (8))
+			if ((strlen (call->class) + strlen (call->name)) < (7))
 				fprintf (out, "\t");
 			
-			fprintf (out, "(PROC *");
+			fprintf (out, "(struct proc *");
 			
 			if (call->args)
-				fprintf (out, ", struct sys_%s_args", call->name);
+				fprintf (out, ", struct sys_%s_%s_args", call->class, call->name);
 			
 			fprintf (out, ");\n");
 		}
@@ -140,7 +140,7 @@ generate_tab (FILE *out, SYSTAB *tab, const char *prefix)
 	
 	fprintf (out, "ushort %s_max = 0x%x;\n", prefix, tab->max);
 	fprintf (out, "\n");
-	fprintf (out, "SYSTAB %s_tab [ 0x%x ] =\n", prefix, tab->max);
+	fprintf (out, "struct systab %s_tab [ 0x%x ] =\n", prefix, tab->max);
 	fprintf (out, "{\n");
 	
 	for (i = 0, j = 1; i < tab->size; i++, j++)
@@ -155,11 +155,11 @@ generate_tab (FILE *out, SYSTAB *tab, const char *prefix)
 			
 			if (strcmp (call->name, "RESERVED"))
 			{
-				fprintf (out, "sys_%s, ", call->name);
+				fprintf (out, "sys_%s_%s, ", call->class, call->name);
 				fprintf (out, "%i, ", nr_args);
 				
 				if (call->args)
-					fprintf (out, "sizeof (struct sys_%s_args)", call->name);
+					fprintf (out, "sizeof (struct sys_%s_%s_args)", call->class, call->name);
 				else
 					fprintf (out, "0");
 			}
@@ -198,10 +198,10 @@ generate_wrapper (FILE *out, SYSTAB *tab, const char *prefix)
 		if (call && strcmp (call->name, "RESERVED"))
 		{
 			fprintf (out, "static long\n");
-			fprintf (out, "old_%s (", call->name);
+			fprintf (out, "old_%s_%s (", call->class, call->name);
 			
 			if (call->args)
-				fprintf (out, "struct sys_%s_args args", call->name);
+				fprintf (out, "struct sys_%s_%s_args args", call->class, call->name);
 			else
 				fprintf (out, "void");
 			
@@ -210,7 +210,7 @@ generate_wrapper (FILE *out, SYSTAB *tab, const char *prefix)
 			/* body */
 			fprintf (out, "{\n");
 			
-			fprintf (out, "\treturn sys_%s (curproc", call->name);
+			fprintf (out, "\treturn sys_%s_%s (curproc", call->class, call->name);
 			if (call->args)
 				fprintf (out, ", args");
 			fprintf (out, ");\n");
@@ -234,7 +234,7 @@ generate_wrapper (FILE *out, SYSTAB *tab, const char *prefix)
 		if (call)
 		{
 			if (strcmp (call->name, "RESERVED"))
-				fprintf (out, "old_%s", call->name);
+				fprintf (out, "old_%s_%s", call->class, call->name);
 			else
 				fprintf (out, "old_enosys");
 		}

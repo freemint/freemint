@@ -71,12 +71,13 @@ struct systab
 
 struct syscall
 {
+	char	class [STRMAX];
 	char	name [STRMAX];
 	LIST	*args;
 };
 
 int	resize_tab	(SYSTAB *tab, int newsize);
-int	add_tab		(SYSTAB *tab, int nr, const char *name, LIST *p);
+int	add_tab		(SYSTAB *tab, int nr, const char *class, const char *name, LIST *p);
 
 
 struct list
@@ -95,10 +96,11 @@ struct list
 # define TYPE_ULONG	8
 # define TYPE_IDENT	9
 	int	flags;
-# define FLAG_CONST	0x1
-# define FLAG_STRUCT	0x2
-# define FLAG_POINTER	0x4
-# define FLAG_ARRAY	0x8
+# define FLAG_CONST	0x01
+# define FLAG_STRUCT	0x02
+# define FLAG_UNION	0x04
+# define FLAG_POINTER	0x08
+# define FLAG_ARRAY	0x10
 	int	ar_size;
 	
 	char	types [STRMAX];
