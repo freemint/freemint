@@ -31,9 +31,7 @@ XA_CLIENT *pid2client(int pid, char *f, int l);
 XA_CLIENT *pid2client(int pid);
 #endif
 
-char *getsuf(char *f);
-char *chsuf(char *f, char *suf);
-char *get_procname(short pid);
+bool get_procname(short pid, char *buf, size_t len);
 
 void remove_refs(XA_CLIENT *client, bool secure);
 void get_app_options(XA_CLIENT *client);
