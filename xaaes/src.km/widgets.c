@@ -133,7 +133,6 @@ set_widget_active(struct xa_window *wind, XA_WIDGET *widg, WidgetBehaviour *wc, 
 	widget_active.wind = wind;
 	widget_active.widg = widg;
 	widget_active.action = wc;
-	/* widget_active.cont = true; */
 }
 
 /*
@@ -144,6 +143,7 @@ cancel_widget_active(struct xa_window *wind, int i)
 {
 	widget_active.widg = NULL;
 	widget_active.cont = false;
+
 	/* Restore the mouse now we've finished the action */
 	graf_mouse(wind->owner->mouse, wind->owner->mouse_form);
 }
@@ -1332,66 +1332,51 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
  *            double click on an arrow sends WM_xSLIDE with the apropriate limit.
  */
 
-struct do_widget_repeat_data
+static struct xa_client *do_widget_repeat_client = NULL;
+static enum locks do_widget_repeat_lock;
+
+void
+do_widget_repeat(void)
 {
-	struct xa_client *client;
-	enum locks lock;
-};
-
-static void
-do_widget_repeat(struct proc *p, long arg)
-{
-	struct do_widget_repeat_data *data = (struct do_widget_repeat_data *)arg;
-	struct timeout *t = NULL;
-
-	do_active_widget(data->lock, data->client);
-
-	/*
-	 * Ozk: The action functions clear the active widget by clearing the 
-	 * widg member when the mouse button is released, so we check that
-	 * instead of the button state here.
-	 */
-	if (widget_active.widg)
+	if (do_widget_repeat_client)
 	{
-		/* repeat */
+		do_active_widget(do_widget_repeat_lock, do_widget_repeat_client);
+
 		/*
-		 * Ozk: had to set the flag to 1, else this didnt work ??
-		*/
-		t = addroottimeout(0, do_widget_repeat, 1);
+		 * Ozk: The action functions clear the active widget by clearing the 
+		 * widg member when the mouse button is released, so we check that
+		 * instead of the button state here.
+		 */
+		if (!widget_active.widg)
+		{
+			aessys_timeout = 0;
+			do_widget_repeat_client = NULL;
+		}
 	}
-	if (t)
-		t->arg = (long)data;
-	else
-		kfree(data);
 }
 
 static void
 set_widget_repeat(enum locks lock, struct xa_window *wind)
 {
-	struct do_widget_repeat_data *data;
-
-	data = kmalloc(sizeof(*data));
-	if (data)
+	if (!do_widget_repeat_client)
 	{
-		struct timeout *t;
+		aessys_timeout = 1;
+		do_widget_repeat_client = wind->owner;
+		do_widget_repeat_lock = lock;
 
-		t = addroottimeout(1, do_widget_repeat, 0);
-		if (t)
-		{
-			data->client = wind->owner;
-			data->lock = lock;
-
-			t->arg = (long)data;
-		}
+		/* wakup wakeselect */
+		wakeselect(C.Aes->p);
 	}
 }
 
 static bool
 click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	bool reverse = widg->s == 2;
-	short mx = md->x, my = md->y, mb = md->state;
-	XA_WIDGET *slider = &wind->widgets[widg->slider_type];
+	XA_WIDGET *slider = &(wind->widgets[widg->slider_type]);
+	bool reverse = (widg->s == 2);
+	short mx = md->x;
+	short my = md->y;
+	short mb = md->state;
 
 	if (!(   widget_active.widg
 	      && slider
@@ -1438,15 +1423,18 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 				widg->clicks = 0;
 
 				if (widg->slider_type == XAW_VSLIDE)
-					offs = bound_sl(pix_to_sl(widg->y - (ssl->r.h >> 1), slider->loc.r.h - ssl->r.h) );
+					offs = bound_sl(pix_to_sl(widg->y - (ssl->r.h >> 1),
+								  slider->loc.r.h - ssl->r.h));
 				else
-					offs = bound_sl(pix_to_sl(widg->x - (ssl->r.w >> 1), slider->loc.r.w - ssl->r.w) );
+					offs = bound_sl(pix_to_sl(widg->x - (ssl->r.w >> 1),
+								  slider->loc.r.w - ssl->r.w));
 
 				if (wind->send_message)
 					wind->send_message(lock, wind, NULL,
-							   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID, 0, 0, wind->handle,
-							   offs,     0, 0, 0);
+							   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
+							   0, 0, wind->handle, offs, 0, 0, 0);
 			}
+
 			cancel_widget_active(wind, 2);
 			return true;
 		}
@@ -1455,15 +1443,15 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 		{
 			if (reverse)
 			{
-				wind->send_message(lock, wind, NULL, widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
-							0, 0, wind->handle, widg->xlimit, 0, 0, 0);
+				wind->send_message(lock, wind, NULL,
+						   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
+						   0, 0, wind->handle, widg->xlimit, 0, 0, 0);
 			}
 			else
 			{
 				wind->send_message(lock, wind, NULL,
 						   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID, 
-						   0, 0, wind->handle,
-						   widg->limit, 0, 0, 0);
+						   0, 0, wind->handle, widg->limit, 0, 0, 0);
 			}
 		}
 		else

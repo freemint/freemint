@@ -487,6 +487,8 @@ sigchld(void)
 	}
 }
 
+int aessys_timeout = 0;
+
 /*
  * our XaAES server kernel thread
  * 
@@ -662,7 +664,7 @@ k_main(void *dummy)
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard and alerts.
 		 */
-		fs_rtn = f_select(0, (long *) &input_channels, 0L, 0L);	
+		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);	
 
 		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d, mouse_lock %d",
 			fs_rtn,
@@ -680,6 +682,18 @@ k_main(void *dummy)
 
 			if (input_channels & (1UL << C.alert_pipe))
 				alert_input(lock);
+		}
+
+		if (aessys_timeout)
+		{
+			/* some regular thing todo */
+
+			/* XXX
+			 * hardcoded the only needed place;
+			 * replace it by some register function
+			 * with callback interface
+			 */
+			do_widget_repeat();
 		}
 
 		/* execute delayed delete_window */

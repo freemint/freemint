@@ -46,4 +46,6 @@ void cancel_evnt_multi(struct xa_client *client, int which);
 void dispatch_shutdown(int flags);
 void k_main(void *);
 
+extern int aessys_timeout;
+
 #endif /* _k_main_h */
