@@ -68,7 +68,7 @@
 # include "mint/signal.h"
 # include "mint/stat.h"
 
-# include <osbind.h>
+# include <mint/osbind.h>
 # include "mfp.h"
 
 
@@ -206,7 +206,7 @@ struct iovar
 	uchar	tx_empty;	/* output buffer empty */
 	
 	uchar	sendnow;	/* one byte of control data, bypasses buffer */
-	uchar	datmask;	/* AND mask for read from sccdat */
+	uchar	datmask;	/* AND mask for read from data */
 	
 	uchar	iointr;		/* I/O interrupt */
 	uchar	stintr;		/* status interrupt */
@@ -1372,7 +1372,7 @@ wr_mfp (IOVAR *iovar, MFP *regs)
 		{
 			if (iorec_empty (&iovar->output))
 			{
-				DEBUG_I (("wr_scc: buffer empty"));
+				DEBUG_I (("wr_mfp: buffer empty"));
 				
 				/* buffer empty */
 				iovar->tx_empty = 1;
@@ -1496,6 +1496,8 @@ mfp_txerror (void)
 	regs = iovar->regs;
 	DEBUG_I (("mfp_txerror: handling MFP at %lx", regs));
 	
+	(void) regs->tsr;
+	
 	/* acknowledge */
 	regs->isra = ~0x02;
 }
@@ -1550,29 +1552,6 @@ mfp_txempty (void)
 	
 	/* acknowledge */
 	regs->isra = ~0x04;
-}
-
-static void
-mfp_rxerror (void)
-{
-	IOVAR *iovar;
-	MFP *regs;
-	
-	asm volatile
-	(
-		"move.l %%a0,%0"
-		: "=da" (iovar)		/* output register */
-		: 			/* input registers */
-	);
-	
-	regs = iovar->regs;
-	DEBUG_I (("mfp_rxerror: handling MFP at %lx", regs));
-	
-	/* skip data */
-	(void) regs->udr;
-	
-	/* acknowledge */
-	regs->isra = ~0x08;
 }
 
 INLINE void
@@ -1670,6 +1649,62 @@ mfp_rxavail (void)
 	
 	/* acknowledge */
 	regs->isra = ~0x10;
+}
+
+static void
+mfp_rxerror (void)
+{
+	IOVAR *iovar;
+	MFP *regs;
+	register char rsr;
+	
+	asm volatile
+	(
+		"move.l %%a0,%0"
+		: "=da" (iovar)		/* output register */
+		: 			/* input registers */
+	);
+	
+	regs = iovar->regs;
+	DEBUG_I (("mfp_rxerror: handling MFP at %lx", regs));
+	
+	rsr = regs->rsr;
+	if (rsr & RSR_OVERRUN_ERR)
+	{
+		if (iovar->shake & SHAKE_SOFT)	mfp_read_x (iovar, regs);
+		else				mfp_read_o (iovar, regs);
+		
+		/* test the free space
+		 */
+		if (!iovar->rx_full && (iorec_used (&iovar->input) > iovar->input.high_water))
+		{
+			DEBUG_I (("mfp_rxerror: stop rx"));
+			
+			iovar->rx_full = 1;
+			
+			if (iovar->shake & SHAKE_HARD)
+			{
+				/* set rts off */
+				if (!iovar->tt_port)
+					rts_off (regs);
+			}
+			
+			if (iovar->shake & SHAKE_SOFT)
+			{
+				/* send XOFF */
+				iovar->sendnow = XOFF;
+				wr_mfp (iovar, regs);
+			}
+		}
+		
+		notify_top_half (iovar);
+	}
+	else
+		/* skip data */
+		(void) regs->udr;
+	
+	/* acknowledge */
+	regs->isra = ~0x08;
 }
 
 /* interrupt wrappers - call the target C routines
@@ -1845,7 +1880,7 @@ check_ioevent (PROC *p, long arg)
 		if (iorec_used (&iovar->output) < iovar->output.low_water
 			|| !iorec_empty (&iovar->input))
 		{
-			DEBUG (("scc.xdd: check_ioevent: waking I/O wait (%lu)", iovar->iosleepers));
+			DEBUG (("mfp.xdd: check_ioevent: waking I/O wait (%lu)", iovar->iosleepers));
 			wake (IO_Q, (long) &iovar->tty.state);
 		}
 	}
@@ -2242,7 +2277,7 @@ ctl_TIOCSFLAGSB (IOVAR *iovar, long flags, long mask)
 		long r;
 		
 		r = ctl_TIOCSFLAGS (iovar, flags);
-		if (r) ALERT (("scc.xdd: ctl_TIOCSFLAGSB -> set flags failed!"));
+		if (r) ALERT (("mfp.xdd: ctl_TIOCSFLAGSB -> set flags failed!"));
 		
 		DEBUG (("ctl_TIOCSFLAGSB: new flags (%lx) set (= %li)", flags, r));
 	}
@@ -2283,7 +2318,7 @@ rx_start (IOVAR *iovar)
 	}
 	else
 	{
-		DEBUG (("rx_start: buffer not full"));
+		DEBUG (("rx_start: already started"));
 	}
 }
 
@@ -3260,7 +3295,7 @@ mfp_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case TIOCSFLAGSB:
 		{
-			DEBUG (("scc_ioctl(TIOCSFLAGSB) -> %lx, %lx", ((long *) buf)[0],
+			DEBUG (("mfp_ioctl(TIOCSFLAGSB) -> %lx, %lx", ((long *) buf)[0],
 									((long *) buf)[1]));
 			
 			*(long *) buf = ctl_TIOCSFLAGSB (iovar, ((long *) buf)[0],
