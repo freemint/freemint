@@ -1,3 +1,15 @@
+; CPU tricks
+
+; this below is only called from init.c on 68060 or newer
+
+	XDEF	_get_superscalar
+
+_get_superscalar:
+	dc.l	$4e7a0808	; movec pcr,d0
+	ori.w	#$0001,d0	; enable the superscalar dispatch
+	dc.l	$4e7b0808	; movec d0,pcr
+	rts
+
 ;
 ; Cache tricks
 ;

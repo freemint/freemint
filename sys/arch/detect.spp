@@ -197,7 +197,18 @@ _detect_fpu:
 	cmpi.w	#20,d1
 	bmi.s	sfp
 	
-	fnop
+	cmpi.w	#60,d1		; enable FPU on 68060 before the check
+	bmi.s	no60
+
+	dc.l	$4e7a0808	; movec pcr,d0
+	swap	d0
+	cmp.w	#$0431,d0	; "broken" 68LC/EC060
+	beq.s	no60
+	swap	d0
+	bclr	#$01,d0
+	dc.l	$4e7b0808	; movec d0,pcr
+
+no60:	fnop
 	clr.l	-(sp)		; push NULL frame
 	clr.l	-(sp)		; extra longs for 68060
 	clr.l	-(sp)
@@ -225,3 +236,5 @@ fexit:	move.l	a1,($2c).w	; restore Line-F
 	nop			; flush pipelines
 	swap	d0
 	rts
+
+; EOF
