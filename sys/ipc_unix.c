@@ -466,32 +466,34 @@ unix_setsockopt (struct socket *so, short level, short optname, char *optval, lo
 		
 	switch (optname)
 	{
-		case SO_DEBUG:
-			break;
-		
 		case SO_SNDBUF:
+		{
 			if (!optval || optlen < sizeof (long) ||
 			    so->state != SS_ISCONNECTED)
 				return EINVAL;
 			
 			undata = so->conn->data;
-			newsize = *(long *)optval;
+			newsize = *(long *) optval;
+			
 			if (newsize < UN_MINBUF) newsize = UN_MINBUF;
 			else if (newsize > UN_MAXBUF) newsize = UN_MAXBUF;
 			
 			return un_resize (undata, newsize);
-		
+		}
 		case SO_RCVBUF:
+		{
 			if (!optval || optlen < sizeof (long))
 				return EINVAL;
 			
 			undata = so->data;
-			newsize = *(long *)optval;
+			newsize = *(long *) optval;
+			
 			if (newsize < UN_MINBUF) newsize = UN_MINBUF;
 			else if (newsize > UN_MAXBUF) newsize = UN_MAXBUF;
 			
 			return un_resize (undata, newsize);
-		
+		}
+		case SO_DEBUG:
 		default:
 			break;
 	}
