@@ -624,9 +624,7 @@ void
 shutdown(void)
 {
 	struct proc *p;
-# if 0
-	int proc_left = 0;
-# endif
+	int posts = 0;
 	int i;
 
 	DEBUG(("shutdown() entered"));
@@ -639,11 +637,8 @@ shutdown(void)
 	SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGHUP).sa_handler = SIG_IGN;
 
-	p = proclist;
-	while (p)
+	for (p = proclist; p; p = p->gl_next)
 	{
-		struct proc *next = p->gl_next;
-
 		/* Skip MiNT, curproc and AES */
 		if (p->pid && (p != curproc) && ((p->memflags & F_OS_SPECIAL) == 0))
 		{
@@ -660,45 +655,14 @@ shutdown(void)
 				DEBUG(("SIGTERM -> %s (pid %i)", p->name, p->pid));
 				post_sig(p, SIGTERM);
 
-				for (i = 0; i < 16; i++)	/* sleep */
-					s_yield();
-# if 0
-				proc_left++;
-# endif
+				posts++;
 			}
 		}
-		/* p may be invalidated; so save next ptr before
-		 * and sue it here
-		 */
-		p = next;
 	}
 
-/* Please don't delete this for now
- */
-# if 0
-	if (proc_left)
-	{
-		/* sleep a little while, to give the other processes
-		 * a chance to shut down
-		 */
-		if (addtimeout(curproc, 1000, shutmedown))
-		{
-			do {
-				DEBUG(("Sleeping..."));
-				sleep(WAIT_Q, (long) s_hutdown);
-			}
-			while (curproc->wait_cond == (long) s_hutdown);
-		}
-
-		for (p = proclist; p; p = p->gl_next)
-		{
-			if (!p->pid || (p == curproc) || \
-					(p->memflags & F_OS_SPECIAL))
-				continue;
-			post_sig(p, SIGKILL);
-		}
-	}
-# endif
+	while (posts--)
+		for (i = 0; i < 16; i++)	/* sleep */
+			s_yield();
 
 	sys_q[READY_Q] = 0;
 
