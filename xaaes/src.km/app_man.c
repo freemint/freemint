@@ -430,7 +430,9 @@ next_app(enum locks lock, bool wwom)
 {
 	struct xa_client *client;
 
+	DIAGS(("next_app"));
 	client = APP_LIST_START;
+
 	if (client)
 	{
 		while (NEXT_APP(client))
@@ -453,6 +455,7 @@ next_app(enum locks lock, bool wwom)
 			client = NULL;
 	}
 
+	DIAGS(("next_app: return %s", client->name));
 	return client;
 }
 

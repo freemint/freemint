@@ -1195,7 +1195,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		/* If right button is used, do a classic outline drag. */
 		if (   widg->s == 2
 		    || wind->send_message == NULL
-		    || !wind->owner->options.live)
+		    || wind->owner->options.nolive)
 		{
 			RECT bound;
 			
@@ -1568,7 +1568,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 
 	if (   widg->s == 2
 	    || wind->send_message == NULL
-	    || !wind->owner->options.live)
+	    || wind->owner->options.nolive)
 	{
 		int xy = sizer ? SE : compass(10, widg->mx, widg->my, r);
 
