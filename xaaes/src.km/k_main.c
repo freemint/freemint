@@ -75,6 +75,9 @@ cancel_cevents(struct xa_client *client)
 	}
 	client->cevnt_head = NULL;
 	client->cevnt_tail = NULL;
+
+	if (C.ce_open_menu == client)
+		C.ce_open_menu = NULL;
 }
 
 void

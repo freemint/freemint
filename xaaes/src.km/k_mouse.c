@@ -533,6 +533,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	/* Moving the mouse into the menu bar is outside
 	 * Tab handling, because the bar itself is not for popping.
 	 */
+	if (!menustruct_locked() && !C.ce_open_menu)
 	{
 		/* HR: watch the menu bar as a whole */
 		struct xa_client *aesp = C.Aes;
@@ -550,7 +551,8 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 				menu = (XA_TREE *)widg->stuff;
 				client = menu->owner;
 				DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
-				post_cevent(client, cXA_widget_click, widg, 0,0,0,0,md);
+				C.ce_open_menu = client;
+				post_cevent(client, cXA_open_menu, widg, menu,0,0,0,md);
 				return false;
 			}
 		}

@@ -556,6 +556,9 @@ menu_pop(Tab *tab)
 	return tab;
 }
 
+/*
+ * This is always called to end a menu navigation sesstion
+*/
 static void
 menu_finish(struct task_administration_block *tab)
 {
@@ -591,18 +594,8 @@ menu_finish(struct task_administration_block *tab)
 	C.menu_base = NULL;
 	C.Aes->waiting_for = XAWAIT_MENU; /* ready for next menu choice */
 	C.Aes->em.flags = MU_M1;
-
-#if 0
-	/* Ozk: Only unlock screen here if locker is XaAES kernel itself! */
-	if (cfg.menu_locking && update_locked() == C.Aes)
-	{
-		if (is_bar && client)
-			unlock_mouse(client, 10);
-
-		//unlock_screen(C.Aes, 10);
-		unlock_screen(client, 10);
-	}
-#endif
+	if (menustruct_locked())
+		unlock_menustruct(menustruct_locked());
 }
 
 static Tab *
@@ -1023,6 +1016,10 @@ any_pop(Tab *tab)
 	return tab;
 }
 
+/*
+ * This is installed in em.t1 and handles navigating (moving)
+ * around an open menu
+*/
 static void
 where_are_we(struct task_administration_block *tab)
 {
@@ -1040,17 +1037,24 @@ where_are_we(struct task_administration_block *tab)
 		{
 			DIAG((D_menu, NULL, "[2]collapse"));
 			tab = collapse(tab, any);
-			k = &tab->task_data.menu;
+			//k = &tab->task_data.menu;
 		}
 
 		k = &tab->task_data.menu;
 
+		/*
+		 * A menu bar? (and not just a popup?)
+		 * and is mouse still on the bar?
+		*/
 		if (   barred(tab)
 		    && m_inside(k->x,k->y,&k->bar))
 		{
 			new_title(tab);
 		}
-		/* in desktop ? */
+		/*
+		 * Mouse somewhere on desktop? Must also be 'barred'
+		 *
+		*/
 		else if (   cfg.menu_behave == LEAVE
 		 	 && barred(tab)
 		 	 && !tab->nest
@@ -1060,7 +1064,7 @@ where_are_we(struct task_administration_block *tab)
 		{
 			DIAG((D_menu, NULL, "popout for leave"));
 			IFDIAG(tab->dbg = 2;)
-			popout(tab);
+			popout(tab);			/* This will end the menu navigation */
 		}
 		else
 		{
@@ -1348,33 +1352,48 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 
 	client = ((XA_TREE *)widg->stuff)->owner;
 
+#if 1
+	if ( widg->stuff == get_menu())
+	{
+		if ( !lock_menustruct(client, false) )
+			return false;
+	}
+#endif
+
+#if 0
 	/* only need locking when the menu is outside a app window. */
 	if (cfg.menu_locking && (wind == root_window))
 	{
 		/* Can't bring up menu without locking the screen */
 		if (!lock_screen(client, 0, NULL, 4))
+		{
 			/* We return false here so the widget display status
 			 * stays selected whilst it repeats */
+			unlock_menustruct(client);
 			return false;
-
+		}
 		if (!lock_mouse(client, 0, NULL, 4))
 		{
 			unlock_screen(client, 5);
+			unlock_menustruct(client);
 			return false;
 		}
-
 		l = true;
 	}
+#endif
 
 	if (!menu_title(lock, wind, widg, client->p->pid))
+	{
 		menu_finish(NULL);
+	}
 
+#if 0
 	if (l)
 	{
 		unlock_screen(client, 6);
 		unlock_mouse(client, 7);
 	}
-
+#endif
 	return false;
 }
 
