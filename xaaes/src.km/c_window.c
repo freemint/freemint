@@ -1266,7 +1266,7 @@ close_window(enum locks lock, struct xa_window *wind)
 		if (wind->active_widgets & STORE_BACK)
 		{
 			form_restore(0, wind->r, wind->background);
-			free(wind->background);
+			//free(wind->background);
 			wind->background = NULL;
 			return true;
 		}
