@@ -56,7 +56,7 @@
 
 # ifndef __KERNEL__
 # ifdef __SYSCALL__
-# include "syscall-bind.h
+# include "syscall-bind.h"
 # define Ptrace(SYS_ptrace, pid, arg, data) \
 	trap_1_wwwll (XXX, request, pid, arg, data)
 # endif
