@@ -421,6 +421,8 @@ struct xa_fnts_info
 	struct	xa_fnts_item *fnts_list;
 	
 	struct	xa_fnts_item *fnts_selected;
+	short	exit_button;
+	short	resrvd;
 	long	fnt_id;
 	long	fnt_pt;
 	long	fnt_ratio;
