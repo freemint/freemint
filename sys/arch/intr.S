@@ -381,7 +381,9 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 	rts
 
 // The routine is called by TOS prior to processing the IKBD
-// keyboard scancode. The scancode byte is in d0.
+// keyboard scancode. The scancode byte is in d0, IOREC struct
+// pointer in a0.
+//
 // BUG: will not work on TOS < 2.0. The vector used is available
 //	since TOS 2.0.
 
@@ -395,9 +397,11 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 _oldkeys:	dc.l	0
 _newkeys:
 	movem.l	d1-d2/a0-a2,-(sp)
+	move.l	a0,-(sp)
+	and.w	#0x00ff,d0
 	move.w	d0,-(sp)
 	jsr	_ikbd_scan
-	addq.l	#0x02,sp
+	addq.l	#0x06,sp
 	movem.l	(sp)+,d1-d2/a0-a2
 	cmp.w	#0xffff,d0
 	beq.s	L_bye
