@@ -8,13 +8,13 @@
 
 
 # define VER_MAJOR	0
-# define VER_MINOR	55
+# define VER_MINOR	56
 
 # if 0
 # define ALPHA
 # endif
 
-# if 1
+# if 0
 # define BETA
 # endif
 
