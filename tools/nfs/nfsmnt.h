@@ -31,8 +31,8 @@ extern int noac;
 
 
 
-long do_nfs_mount(char *remote, char *local);
-long do_nfs_unmount(char *remote, char *local);
+long do_nfs_mount(const char *remote, const char *local);
+long do_nfs_unmount(const char *remote, const char *local);
 
 
 char *commandname;
