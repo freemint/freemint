@@ -237,7 +237,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 static void
-upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item)
+upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item, bool redraw)
 {
 	XA_TREE *wt;
 
@@ -247,7 +247,8 @@ upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item)
 		if (wt == get_menu())
 		{
 			set_rootmenu_area(client);
-			redraw_menu(lock);
+			if (redraw)
+				redraw_menu(lock);
 		}
 	}
 }
@@ -261,22 +262,31 @@ unsigned long
 XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
-	short i = pb->intin[0];
+	short i = pb->intin[0], obj;
 	
 	CONTROL(2,1,1)
+
+	obj = i & ~0x8000;
 	
-	DIAG((D_menu, client, "menu_tnormal: tree=%lx, obj=%d, state=%d",
-		tree, i, pb->intin[1]));
-
-	/* Change the highlight / normal status of a menu title */
-	if (pb->intin[1])
-		tree[i].ob_state &= ~OS_SELECTED;
+	if ((tree[obj].ob_state & OS_DISABLED))
+	{
+		pb->intout[0] = 0;
+	}
 	else
-		tree[i].ob_state |= OS_SELECTED;
+	{
+		DIAG((D_menu, client, "menu_tnormal: tree=%lx, obj=%d(%d), state=%d",
+			tree, obj, i, pb->intin[1]));
 
-	upd_menu(lock, client, tree, i);
+		/* Change the highlight / normal status of a menu title */
+		if (pb->intin[1])
+			tree[obj].ob_state &= ~OS_SELECTED;
+		else
+			tree[obj].ob_state |= OS_SELECTED;
 
-	pb->intout[0] = 1;
+		upd_menu(lock, client, tree, obj, true);
+
+		pb->intout[0] = 1;
+	}
 	return XAC_DONE;
 }
 
@@ -287,18 +297,25 @@ unsigned long
 XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
-	short i = pb->intin[0];
-
+	short i = pb->intin[0], obj;
+	bool redraw;
+	
 	CONTROL(2,1,1)
-
+	
+	redraw = i & 0x8000 ? true : false;
+	obj = i & ~0x8000;
+	
+	DIAG((D_menu, client, "menu_ienable: tree=%lx, obj=%d(%d), state=%d",
+		tree, obj, i, pb->intin[1]));
+	
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
-		tree[i].ob_state &= ~OS_DISABLED;
+		tree[obj].ob_state &= ~OS_DISABLED;
 	else
-		tree[i].ob_state |= OS_DISABLED;
+		tree[obj].ob_state |= OS_DISABLED;
 
-	upd_menu(lock, client, tree, i);
-
+	upd_menu(lock, client, tree, obj, redraw);
+	
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }
@@ -310,19 +327,24 @@ unsigned long
 XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
-	short i = pb->intin[0];
+	short i = pb->intin[0], obj;
 
 	CONTROL(2,1,1)
 
+	obj = i & ~0x8000;
+
+	DIAG((D_menu, client, "menu_icheck: tree=%lx, obj=%d(%d), state=%d",
+		tree, obj, i, pb->intin[1]));
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
-		tree[i].ob_state |= OS_CHECKED;
+		tree[obj].ob_state |= OS_CHECKED;
 	else
-		tree[i].ob_state &= ~OS_CHECKED;
+		tree[obj].ob_state &= ~OS_CHECKED;
 
-	upd_menu(lock, client, tree, i);
+	upd_menu(lock, client, tree, obj, false);
 	
 	pb->intout[0] = 1;
+	
 	return XAC_DONE;
 }
 
@@ -334,15 +356,18 @@ XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	const char *text = (const char *)pb->addrin[1];
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
-	short i = pb->intin[0];
+	short i = pb->intin[0], obj;
 
 	CONTROL(1,1,2)
+	
+	obj = i & ~0x8000;
+	
+	strcpy(object_get_spec(&tree[obj])->free_string, text);
 
-	strcpy(object_get_spec(&tree[i])->free_string, text);
-
-	upd_menu(lock, client, tree, i);
+	upd_menu(lock, client, tree, obj, false);
 	
 	pb->intout[0] = 1;
+	
 	return XAC_DONE;
 }
 
