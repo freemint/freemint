@@ -353,9 +353,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		/* if menu attachments */
 #if GENERATE_DIAGS
 		XA_MENU_ATTACHMENT *at = client->attach;
-		while (at->to_tree)
+		while (at->to)
 		{
-			DIAGS(("tree left in attachments %lx", at->to_tree));
+			DIAGS(("wt left in attachments %lx(%s)", at->to, at->to->owner));
 			at++;
 		}
 #endif
@@ -441,7 +441,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 
 	// if (!client->killed)
-	//	remove_attachments(lock|clients, client, client->std_menu.tree);
+	//	remove_attachments(lock|clients, client, client->std_menu);
 
 	/*
 	 * remove from client pool

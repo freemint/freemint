@@ -412,7 +412,6 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 		new->flags |= WTF_ALLOC;
 		new->tree = obtree;
 		new->owner = client;
-		new->c = *(RECT *)&obtree->ob_x;
 		new->e.obj = -1;
 
 		new->next = client->wtlist;

@@ -53,6 +53,12 @@ enum menu_behave
 	LEAVE
 };
 
+struct xamenu
+{
+	struct widget_tree *wt;
+	MENU menu;
+};
+typedef struct xamenu XAMENU;
 
 /*-----------------------------------------------------------------
  * Display descriptions
@@ -169,9 +175,11 @@ struct xa_mouse_rect
 
 typedef struct menu_attachments
 {
-	OBJECT *tree;		/* attached menu tree */
+	struct widget_tree *wt;
+	//OBJECT *tree;		/* attached menu tree */
 	int item;
-	OBJECT *to_tree;	/* attached to */
+	//OBJECT *to_tree;	/* attached to */
+	struct widget_tree *to;
 	int to_item;
 } XA_MENU_ATTACHMENT;
 
@@ -280,7 +288,6 @@ struct widget_tree
 	struct xa_widget *widg;		/* Cross pointer to widget. */
 	
 	OBJECT *tree;			/* The object tree */
-	RECT c;
 	short current;			/* current item within above tree. */
 	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
 					/* And set a usefull RECT as soon as possible, ready for use in
@@ -865,8 +872,8 @@ struct menu_task
 	struct xa_mouse_rect em;
 	void *Mpreserve;
 	TASK *entry;
-	OBJECT *root;
-	//XA_TREE *wt;
+	//OBJECT *root;
+	XA_TREE *wt;
 	/* root displacements */
 	short rdx, rdy;
 };
