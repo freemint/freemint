@@ -1,22 +1,23 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/* @(#)ssystem2.c FreeMiNT
- * $Id$
- * by jerry g geiger
- *  - jerry@zedat.fu-berlin.de  or jerry@merlin.abacus.de
- * almost completely rewritten by Draco, draco@mi.com.pl, Warszawa, 4.XII.1997. 
+ * 
+ * Copyright by jerry g geiger
+ * <jerry@zedat.fu-berlin.de> or <jerry@merlin.abacus.de>
+ * 
+ * almost completely rewritten by Draco, draco@mi.com.pl,
+ * Warszawa, 4.XII.1997. 
  * 
  * added time related stuff, Guido, gufl0000@stud.uni-sb.de Mar/Apr 1998.
  * 
-
- General purpose: access vital system variables and constants without need
- to switch to Supervisor mode. Prototype:
-
- long _cdecl s_system (int mode, ulong arg1, ulong arg2);
-
+ * 
+ * General purpose: access vital system variables and constants without need
+ * to switch to Supervisor mode. Prototype:
+ * 
+ * long _cdecl s_system (int mode, ulong arg1, ulong arg2);
+ * 
  */
 
 # include "ssystem.h"

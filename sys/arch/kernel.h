@@ -1,6 +1,8 @@
-/*
- * This file belongs to FreeMiNT, it is not a part
- * of the original MiNT distribution.
+/* 
+ * $Id$
+ * 
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
  */
 
 # ifndef _m68k_kernel_h

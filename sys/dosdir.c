@@ -1,12 +1,14 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ * 
+ * 
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
+ * 
  */
 
 /* DOS directory functions */
@@ -447,7 +449,7 @@ d_getcwd (char *path, int drv, int size)
 	if (!root->fs)
 	{
 		/* maybe not initialized yet? */
-		changedrv (drv);
+		changedrv (drv, __FUNCTION__);
 		
 		root = &cwd->root[drv];
 		if (!root->fs)
@@ -1761,7 +1763,7 @@ d_lock (int mode, int _dev)
 		if (dlockproc[dev] == curproc)
 		{
 			dlockproc[dev] = NULL;
-			/* changedrv (dev); */
+			/* changedrv (dev, __FUNCTION__); */
 			return E_OK;
 		}
 		DEBUG (("Dlock: no such lock"));

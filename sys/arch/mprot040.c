@@ -1,21 +1,35 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/*
- * This file is dedicated to the FreeMiNT project.
- * It's not allowed to use this file for other projects without my
- * explicit permission.
- */
-
-/*
- * mprot040.c dated 00/02/15
- *
- * Author:
- * Thomas Binder
- * (gryf@hrzpub.tu-darmstadt.de)
- *
+ * 
+ * 
+ * Copyright 1999, 2000 Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * All rights reserved.
+ * 
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ * 
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
+ * 
+ * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+ * Started: 1999-03-24
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * Purpose:
  * Memory protection routines (mainly MMU-tree handling stuff) for MC68040
  * (and MC68060, though I can't test this myself). EXPERIMENTAL! USE WITH
@@ -67,17 +81,17 @@
  * 99/03/31: - Added MMU tree dumping in BIG_MEM_DUMP (Gryf)
  * 99/03/21-
  * 99/03/24: - Creation, based on original memprot.c (Gryf)
- */
-
-/*
+ * 
+ * 
+ * 
  * Unfortunately, the MMU found in the MC68040 (and, with minor differences,
  * in the MC68060) is quite different from the one in the MC68030, so it made
  * no sense trying to clutter the original memprot.c with countless #ifdefs.
- *
+ * 
  * What is nice, though, is the fact that the MMU handling in the MC68040 is
  * quite straight-forward, the layout of the translation tree is not near as
  * flexible (or complex, if you want), which makes things easier.
- *
+ * 
  * As there are quite different machines with a 040 (or higher) out there
  * (Falcons with Afterburner, Hades, Milan) which all have a different layout
  * of their physical memory, it's not possible to create the MMU tree for
@@ -88,23 +102,24 @@
  * also assumes that the memory layout found was static (i.e. no virtual
  * memory or similar stuff) and access to all unused RAM was unrestricted.
  * All this is true for the Milan, I can't check other machines myself.
- *
+ * 
  * The MC68040 only allows 4K and 8K for the page size, so it's no problem to
  * use MiNT's memory management with active memory protection, as it uses 8K
  * chunks. Even if the MMU is configured for 4K blocks, it's still possible
  * to use it, as the only difference concerning MiNT's memory protection is
  * that always two pages have to be marked for one memory chunk.
- *
+ * 
  * As said above, this code /should/ work with the MC68060 as well, but as I
  * not (yet) have a machine with this CPU, I can't test it myself.
  * Nevertheless, I have consulted the MC68060 user's manual, and respected
  * the important differences in MMU handling to the MC68040 (which are mainly
  * that things that were recommended for the MC68040 are now mandatory).
- *
+ * 
  * Of course, this code is still experimental, so I recommend not to use it
  * in production environments. But if possible, test this code (especially
  * if you're a happy owner of a MC68060-equipped machine) and report both
  * success and failures to me or the MiNT mailing list. Thank you!
+ * 
  */
 
 # include "mprot.h"

@@ -1,21 +1,23 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- */
-
-/* This file was "stolen" from Linux, see the copyright notice below.
-   I (Guido Flohr) have adapted it to fit into the FreeMiNT kernel.  
-   
-   Please note that the benchmarking code is not tested with FreeMiNT.  */
-  
-/*
+ * 
+ * 
+ * This file was "stolen" from Linux, see the copyright notice below.
+ * I (Guido Flohr) have adapted it to fit into the FreeMiNT kernel.  
+ * 
+ * Please note that the benchmarking code is not tested with FreeMiNT.
+ * 
+ * 
  * random.c -- A strong random number generator
- *
+ * 
  * Version 1.04, last modified 26-Apr-98
  * 
  * Copyright Theodore Ts'o, 1994, 1995, 1996, 1997, 1998.  All rights
  * reserved.
- *
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -46,6 +48,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 
  */
 
 /*

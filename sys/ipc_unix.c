@@ -1,12 +1,14 @@
 /*
- *	This file implements the UNIX communication domain.
- *	Neither MSG_OOB nor MSG_PEEK flags for send/recv
- *	work on UNIX sockets. The getsockname/getpeername calls
- *	are not implemented (the wouldn't make sense, because
- *	filenames can be relative to the process' current
- *	directory).
- *
- *	10/09/93, kay roemer.
+ * $Id$
+ * 
+ * This file implements the UNIX communication domain.
+ * Neither MSG_OOB nor MSG_PEEK flags for send/recv
+ * work on UNIX sockets. The getsockname/getpeername calls
+ * are not implemented (the wouldn't make sense, because
+ * filenames can be relative to the process' current
+ * directory).
+ * 
+ * 10/09/93, kay roemer.
  */
 
 # include "ipc_unix.h"

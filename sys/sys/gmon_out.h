@@ -1,11 +1,13 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
  * Modified for FreeMiNT by Frank Naumann <fnaumann@freemint.de>
- */
-
-/* Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+ * 
+ * 
+ * Copyright (C) 1996, 1997 Free Software Foundation, Inc.
  * This file is part of the GNU C Library.
  * Contributed by David Mosberger <davidm@cs.arizona.edu>.
  * 
@@ -32,6 +34,7 @@
  * A gmon.out file consists of a header (defined by gmon_hdr) followed by
  * a sequence of records.  Each record starts with a one-byte tag
  * identifying the type of records, followed by records specific data.
+ * 
  */
 
 # ifndef _sys_gmon_out_h

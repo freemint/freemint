@@ -1,11 +1,11 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
  * 
  * Modified for FreeMiNT by Frank Naumann <fnaumann@freemint.de>
- */
-
-/*
+ * 
  * Copyright 1994 Hamish Macdonald
  * All rights reserved.
  * 
@@ -24,7 +24,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * last change:	2000-05-14
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2000-05-14
  * 
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list

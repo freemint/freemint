@@ -1,6 +1,9 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
+ * 
  * 
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
@@ -20,6 +23,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
+ * Author: Frank Naumann <fnaumann@freemint.de>
  * last change:	2000-07-17
  * 
  * please send suggestions, patches or bug reports to me or

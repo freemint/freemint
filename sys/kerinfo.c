@@ -1,4 +1,6 @@
 /*
+ * $Id$
+ * 
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
@@ -21,10 +23,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2001-04-24
- * last change: 2001-04-24
- * 
- * Author: Frank Naumann - <fnaumann@freemint.de>
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2001-04-24
  * 
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
@@ -56,10 +56,12 @@
 # define DEFAULT_MODE	(0666)
 
 /* wrapper for the kerinterface */
-static void * _cdecl m_kmalloc (ulong size)  { return _kmalloc (size, "ext"); }
-static void   _cdecl m_kfree   (void *place) { _kfree (place, "ext"); }
-static void * _cdecl m_umalloc (ulong size)  { return _umalloc (size, "ext"); }
-static void   _cdecl m_ufree   (void *place) { _ufree (place, "ext"); }
+
+static void   _cdecl m_changedrv (ushort drv)  { return changedrv (drv, "ext"); }
+static void * _cdecl m_kmalloc   (ulong size)  { return _kmalloc (size, "ext"); }
+static void   _cdecl m_kfree     (void *place) { _kfree (place, "ext"); }
+static void * _cdecl m_umalloc   (ulong size)  { return _umalloc (size, "ext"); }
+static void   _cdecl m_ufree     (void *place) { _ufree (place, "ext"); }
 
 /*
  * kernel info that is passed to loaded file systems and device drivers
@@ -71,7 +73,7 @@ struct kerinfo kernelinfo =
 	DEFAULT_MODE,
 	2,
 	bios_tab, dos_tab,
-	changedrv,
+	m_changedrv,
 	Trace, Debug, ALERT, FATAL,
 	m_kmalloc,
 	m_kfree,
@@ -232,7 +234,7 @@ struct xfs
 struct xfs xfs =
 {
 	DEFAULT_MODE,
-	changedrv,
+	m_changedrv,
 	denyshare,
 	denylock,
 	& bio

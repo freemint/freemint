@@ -1,16 +1,18 @@
 /*
+ * $Id$
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ * 
+ * 
  * Copyright 1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- */
-
-/* PROC pseudo-filesystem routines */
-/* basically just to allow 'ls -l X:' to give a list of active processes
+ * 
+ * 
+ * PROC pseudo-filesystem routines
+ * 
+ * basically just to allow 'ls -l X:' to give a list of active processes
  * some things to note:
  * process names are given as name.XXX, where 'XXX' is the pid of the
  *   process
@@ -27,6 +29,7 @@
  * have the system bit (0x04) set, and the read-only bit is used to
  * otherwise distinguish states (which is unfortunate, since it would be
  * nice if this bit corresponded with file permissions).
+ * 
  */
 
 # include "procfs.h"

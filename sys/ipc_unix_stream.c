@@ -1,8 +1,10 @@
 /*
- *	send(), recv(), socketpair(), connect(), select() and ioctl()
- *	routines for stream unix sockets.
- *
- *	10/17/93, kay roemer.
+ * $Id$
+ * 
+ * send(), recv(), socketpair(), connect(), select() and ioctl()
+ * routines for stream unix sockets.
+ * 
+ * 10/17/93, kay roemer.
  */
 
 # include "ipc_unix_stream.h"

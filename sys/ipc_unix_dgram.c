@@ -1,8 +1,10 @@
 /*
- *	send(), recv(), socketpair() and connect(), select() and ioctl()
- *	routines for datagram unix sockets.
- *
- *	10/17/93, kay roemer.
+ * $Id$
+ * 
+ * send(), recv(), socketpair() and connect(), select() and ioctl()
+ * routines for datagram unix sockets.
+ * 
+ * 10/17/93, kay roemer.
  */
 
 # include "ipc_unix_dgram.h"

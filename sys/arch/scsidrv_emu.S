@@ -21,22 +21,11 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-03-31
- * last change:	2000-03-31
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
+ * Author: Frank Naumann <fnaumann@freemint.de>
+ * Started: 2000-03-31
  * 
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
- * changes since last version:
- * 
- * known bugs:
- * 
- * todo:
- * 
- * optimizations:
  * 
  */
 

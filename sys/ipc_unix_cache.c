@@ -1,10 +1,12 @@
 /*
- *	This file implements some sort of filename -> un_index conversion
- *	cache. Speeds up for real FS's (where the inode numbers are NOT
- *	junk) and slows down for the silly FS's where the inode numbers
- *	are junk.
- *
- *	12/12/93, kay roemer.
+ * $Id$
+ * 
+ * This file implements some sort of filename -> un_index conversion
+ * cache. Speeds up for real FS's (where the inode numbers are NOT
+ * junk) and slows down for the silly FS's where the inode numbers
+ * are junk.
+ * 
+ * 12/12/93, kay roemer.
  */
 
 # include "ipc_unix_cache.h"
