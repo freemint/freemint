@@ -57,16 +57,18 @@ static void gototab(TEXTWIN* tw, int x, int y)
 }
 
 /* Insert a space at position (X|Y).  Scroll rest of the line
-* to the right.  Discard characters pushed out of the screen.  */
+ * to the right.  Discard characters pushed out of the screen.  */
 static void insert_char(TEXTWIN* tw, int x, int y)
 {
 	int i;
 	unsigned char *twdata = tw->data[y];
 	unsigned long *twcflag = tw->cflag[y];
 
-	for (i = tw->maxx; i > x; --i) {
-		/* FIXME: Use memmove for this operation.  */
-		twdata[i] = twdata[i - 1];
+	if (x < 1 || (NCOLS (tw) - x < 1))
+		return;
+	
+	memmove (twdata + x, twdata + x - 1, NCOLS (tw) - x);
+	for (i = NCOLS (tw) - 1; i > x; --i) {
 		twcflag[i] = twcflag[i - 1] | CDIRTY;
 	}
 	twdata[x] = ' ';
@@ -89,6 +91,7 @@ static void delete_line(TEXTWIN* tw, int row, int end)
 	if (row == tw->miny)
 		row = 0;
 
+	/* FIXME: A ring buffer would be better.  */	
 	oldline = tw->data[row];
 	oldflag = tw->cflag[row];
 	memmove (tw->data + row, tw->data + row + 1,
@@ -101,7 +104,6 @@ static void delete_line(TEXTWIN* tw, int row, int end)
 	} else {
 		memset (tw->dirty, ALLDIRTY, end - row);
 	}
-
 	tw->data[end] = oldline;
 	tw->cflag[end] = oldflag;
 
@@ -117,23 +119,23 @@ static void delete_line(TEXTWIN* tw, int row, int end)
  */
 static void insert_line(TEXTWIN* tw, int row, int end)
 {
-	int i, limit;
 	unsigned char *oldline;
 	long *oldflag;
 
 	if (end > tw->maxy - 1)
 		end = tw->maxy - 1;
-	limit = end;
-	oldline = tw->data[limit];
-	oldflag = tw->cflag[limit];
-	for (i = limit - 1; i >= row; --i) {
-		/* FIXME: Use memmove for that.  */
-		tw->data[i + 1] = tw->data[i];
-		tw->cflag[i + 1] = tw->cflag[i];
-		tw->dirty[i + 1] = ALLDIRTY;
-	}
+
+	/* FIXME: A ring buffer would be better.  */	
+	oldline = tw->data[end];
+	oldflag = tw->cflag[end];
+	memulset (tw->dirty + row, ALLDIRTY, end - row);
+	memmove (tw->data + row - 1, tw->data + row, 
+		 (end - row) * sizeof tw->data[0]);
+	memmove (tw->cflag + row - 1, tw->cflag + row,
+		 (end - row) * sizeof tw->cflag[0]);
 	tw->cflag[row] = oldflag;
 	tw->data[row] = oldline;
+
 	clrline(tw, row);
 	tw->do_wrap = 0;
 }
@@ -202,16 +204,17 @@ pushescbuf (unsigned char* escbuf, unsigned int c)
 static void
 fill_window (TEXTWIN* tw, unsigned int c)
 {
-	int row, col;
-
+	int row;
+	unsigned long new_attribute = tw->term_cattr & 
+		(CBGCOL | CFGCOL);
+	int cols = NCOLS (tw);
+	
 	for (row = tw->miny; row < tw->maxy; ++row) {
-		for (col = tw->maxx - 1; col >= 0; --col) {
-			tw->data[row][col] = c;
-			tw->cflag[row][col] = tw->term_cattr & 
-				(CBGCOL | CFGCOL);
-		}
-		tw->dirty[row] = ALLDIRTY;
+		memset (tw->data[row], c, cols);
+		memulset (tw->cflag[row], new_attribute, cols);
 	}
+	memset (tw->dirty + tw->miny, ALLDIRTY, NROWS (tw));
+	curs_on (tw);
 }
 
 /* Return int (n) from [?n, #n, }n or (n esc sequence:
@@ -643,8 +646,10 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		if (count < 1)
 			count = 1;
 		while (count) {
+			/* FIXME: Make insert_char take a fourth parameter
+			   with the number of characters to insert.  */
 			insert_char(tw, cx, cy);
-			count--;
+			--count;
 		}
 		break;
 	case 'A':		/* cursor up N */
@@ -1626,7 +1631,6 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 				else
 					gotoxy (tw, cx, cy + 1);
 			}
-			tw->do_wrap = 0;
 			break;
 
 		case '\b':	/* backspace */
