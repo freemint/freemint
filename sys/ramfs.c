@@ -221,9 +221,9 @@
 /****************************************************************************/
 /* BEGIN tools */
 
-# define IS_DIR(c)		(((c)->stat.mode & S_IFMT) == S_IFDIR)
-# define IS_REG(c)		(((c)->stat.mode & S_IFMT) == S_IFREG)
-# define IS_SLNK(c)		(((c)->stat.mode & S_IFMT) == S_IFLNK)
+# define IS_DIR(c)		S_ISDIR((c)->stat.mode)
+# define IS_REG(c)		S_ISREG((c)->stat.mode)
+# define IS_SLNK(c)		S_ISLNK((c)->stat.mode)
 
 # define IS_SETUID(c)		((c)->stat.mode & S_ISUID)
 # define IS_SETGID(c)		((c)->stat.mode & S_ISGID)
