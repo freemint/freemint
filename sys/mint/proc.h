@@ -42,12 +42,12 @@
  */
 struct session
 {
-	long	links;
+	long links;
 	struct proc *leader;		/* session leader */
 	fcookie *ttyvp;			/* vnode of controlling terminal */
 	struct tty *ttyp;		/* controlling terminal */
-	char	login[MAXLOGNAME];	/* Setlogin() name */
-	short	sid;			/* session ID (pid of leader) */
+	char login[MAXLOGNAME];		/* Setlogin() name */
+	short sid;			/* session ID (pid of leader) */
 };
 
 /*
@@ -58,7 +58,7 @@ struct pgrp
 	LIST_ENTRY(pgrp) pg_hash;	/* Hash chain. */
 	LIST_HEAD(, proc) pg_members;	/* Pointer to pgrp members. */
 	struct session *pg_session;	/* Pointer to session. */
-	short	pg_id;			/* Pgrp id. */
+	short pg_id;			/* Pgrp id. */
 };
 
 /** @struct memspace
@@ -68,19 +68,18 @@ struct pgrp
  */
 struct memspace
 {
-	long	links;
+	long links;
 
-	ushort	memflags;	///< malloc preferences
-	ushort	num_reg;	///< Nnumber of allocated memoryregions.
-	MEMREGION **mem;	///< Array of ptrs to allocated regions.
-	long	*addr;		///< Array of addresses of regions.
-	void	*page_table;	///< rounded page table pointer.
-	void	*pt_mem;	///< original kmalloc'd block for above.
-	long	txtsize;	///< size of text region (for fork()).
-	struct user_things
-		*tp_ptr;	///< pointer to the trampoline things
-	MEMREGION *tp_reg;	///< memregion of the trampoline code
-	BASEPAGE *base;		///< process base page
+	unsigned short memflags;	///< malloc preferences
+	unsigned short num_reg;		///< Nnumber of allocated memoryregions.
+	MEMREGION **mem;		///< Array of ptrs to allocated regions.
+	long *addr;			///< Array of addresses of regions.
+	void *page_table;		///< rounded page table pointer.
+	void *pt_mem;			///< original kmalloc'd block for above.
+	long txtsize;			///< size of text region (for fork()).
+	struct user_things *tp_ptr;	///< pointer to the trampoline things
+	MEMREGION *tp_reg;		///< memregion of the trampoline code
+	BASEPAGE *base;			///< process base page
 };
 
 
@@ -115,7 +114,7 @@ struct proc
 
 	long	magic;			/* validation for proc struct	*/
 
-	BASEPAGE *base;			/* process base page		*/
+	BASEPAGE *_base;		/* unused */
 	short	pid, ppid, pgrp;
 	short	_ruid;			/* unused */
 	short	_rgid;			/* unused */

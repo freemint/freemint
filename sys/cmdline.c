@@ -100,11 +100,11 @@
 # define SINGLE_QUOTE	'\''
 
 int
-make_real_cmdline (PROC *p)
+make_real_cmdline(struct proc *p)
 {
 	char *to;		/* General purpose cursor over arrays */
 	char *from;
-	char *env = p->base->p_env;
+	char *env;
 	char *raw_cmdline = NULL;
 	char *end_parse = NULL;
 	int silly_quotes = 0;
@@ -119,6 +119,9 @@ make_real_cmdline (PROC *p)
 	int quoted = 0;
 	char **raw_argv = NULL;
 	int opt;
+
+	assert(p->p_mem);
+	env = p->p_mem->base->p_env;
 
 	if (p->real_cmdline != NULL)
 	{

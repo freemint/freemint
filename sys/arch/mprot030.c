@@ -1160,12 +1160,12 @@ report_buserr(void)
 
     aptr = alertbuf + strlen (alertbuf);
     len = sizeof (alertbuf) - strlen (alertbuf);
-    ksprintf (aptr, len, " Addr: %08lx  BP: %08lx ][ OK ]", aa, curproc->base);
+    ksprintf (aptr, len, " Addr: %08lx  BP: %08lx ][ OK ]", aa, curproc->p_mem->base);
 
     if (!_ALERT(alertbuf)) {
     	/* this will call _alert again, but it will just fail again */
     	ALERT("MEMORY VIOLATION: type=%s RW=%s AA=%lx PC=%lx BP=%lx",
-    		type, rw, aa, pc, curproc->base);
+    		type, rw, aa, pc, curproc->p_mem->base);
     }
     	
     if (curproc->pid == 0 || curproc->p_mem->memflags & F_OS_SPECIAL) {

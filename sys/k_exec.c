@@ -364,7 +364,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 		if (overlay)
 		{
-			b->p_parent = curproc->base->p_parent;
+			b->p_parent = curproc->p_mem->base->p_parent;
 			p = curproc;
 
 			/* make sure that exec_region doesn't free the base and env */
@@ -373,7 +373,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 		else
 		{
-			b->p_parent = curproc->base;
+			b->p_parent = curproc->p_mem->base;
 			p = fork_proc(thread ? FORK_SHAREVM : 0, &r);
 		}
 
@@ -641,7 +641,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		b->p_devx[i] = i;
 
 	fd->dta = (DTABUF *)(b->p_dta = &b->p_cmdlin[0]);
-	p->base = b;
+	p->p_mem->base = b;
 
 	/* close extra open files */
 	for (i = MIN_OPEN; i < fd->nfiles; i++)
@@ -827,7 +827,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	 * Pexec'ing program (i.e. curproc) is in user mode.
 	 */
 	if (curproc != rootproc)
-		curproc->base->p_usp = curproc->ctxt[SYSCALL].usp - 0x32;
+		curproc->p_mem->base->p_usp = curproc->ctxt[SYSCALL].usp - 0x32;
 
 	TRACE (("exec_region: ok (%lx)", p));
 	return p;
@@ -876,7 +876,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	}
 
 	/* tell the child who the parent was */
-	b->p_parent = curproc->base;
+	b->p_parent = curproc->p_mem->base;
 
 	r = 0;
 	p = fork_proc(0, &r);
