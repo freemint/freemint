@@ -42,7 +42,8 @@ XA_appl_search(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	bool lang = false;
 	bool spec = false;
 	char *fname = (char *)pb->addrin[0];
-	short *o = pb->intout, cpid = pb->intin[0];
+	short *o = pb->intout;
+	short cpid = pb->intin[0];
 
 	CONTROL(1,3,1)
 
@@ -56,11 +57,13 @@ XA_appl_search(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		cpid = -cpid;
 		if (cpid < 1 || cpid > MAX_PID)
 			cpid = 1;
+
 		next = Pid2Client(cpid);
 		lang = true;
 	}
-	else if (cpid == APP_DESK) /* N.aes  short name of desktop program */
+	else if (cpid == APP_DESK)
 	{
+		/* N.AES: short name of desktop program */
 		next = Pid2Client(C.DSKpid);
 	}
 	else
@@ -119,6 +122,7 @@ XA_appl_search(LOCK lock, XA_CLIENT *client, AESPB *pb)
 				o[1] |= APP_HIDDEN;
 			if (focus_owner() == next)
 				o[1] |= APP_FOCUS;
+
 			DIAG((D_appl, client, "   --   o[1] --> 0x%x\n", o[1]));
 		}
 
@@ -234,34 +238,57 @@ XA_appl_write(LOCK lock, XA_CLIENT *client, AESPB *pb)
  */
 static short info_tab[17][4] =
 {
-	{0, 0, 0, 0},		/* 0 large font */
-	{0, 0, 0, 0},		/* 1 small font */
-	{			/* 2 colours */
+	/* 0 large font */
+	{
+		0,
+		0,
+		0,
+		0
+	},
+	/* 1 small font */
+	{
+		0,
+		0,
+		0,
+		0
+	},
+	/* 2 colours */
+	{
 		1,		/* Getrez() */
 		16,		/* no of colours */
 		1,		/* colour icons */
 		1		/* extended rsrc file format */
 	},
-	{0, 0, 0, 0},		/* 3 language (english) */
-	{			/* 4 processes */
+	/* 3 language (english) */
+	{
+		0,
+		0,
+		0,
+		0
+	},
+	/* 4 processes */
+	{
 		1,		/* preemptive */
 		1,		/* convert mint id <--> aes id */
 		1,		/* appl_search */
 		1		/* rsrc_rcfix */
 	},
-	{			/* 5 PC_GEM (none!) */
+	/* 5 PC_GEM (none!) */
+	{
 		0,		/* objc_xfind */
 		0,
 		0,		/* menu_click */
 		0		/* shel_rdef/wdef */
 	},
-	{			/* 6 extended inquiry */
+	/* 6 extended inquiry */
+	{
 		0,		/* -1 not a valid app id for appl_read */
 		0,		/* -1 not a valid length parameter to shel_get */
 		1,		/* -1 is a valid mode parameter to menu_bar */
 		0		/* MENU_INSTL is not a valid mode parameter to menu_bar */
 	},
-	{			/* 7 MagiC specific */
+	/* 7 MagiC specific */
+	{
 #if WDIAL
 		3,		/* bit: 0 WDIALOG, 1 SCRLBOX, 2 FONTSEL, 3 FSELX, 4 PDLB  */
 #else
@@ -271,71 +298,81 @@ static short info_tab[17][4] =
 		0,
 		0
 	},
-	{			/* 8 mouse support */
+	/* 8 mouse support */
+	{
 		1,		/* modes 258 - 260 applicable */
 		1,		/* mouse form maintained per application */
 		1,		/* mouse wheels support */
 		0
 	},
-	{			/* 9 menu support */
+	/* 9 menu support */
+	{
 		1,		/* sub menus */
 		1,		/* popup menus */
 		1,		/* scrollable menus */
 		1		/* MN_SELECTED provides object tree information */
 	},
-	{			/*10 AES shell support */
+	/*10 AES shell support */
+	{
 		0x3f07,		/* supported extended bits + highest mode */
 		0,		/* 0 launch mode */
 		0,		/* 1 launch mode */
 		1		/* ARGV style via wiscr to shel_write supported */
 	},
-	/* WF_COLOR and WF_DCOLOR are not completely supported. Especially not changing them.
+	/*11 window functions
+	 * 
+	 * WF_COLOR and WF_DCOLOR are not completely supported. Especially not changing them.
 	 * So the bits are off, although wind_get() will supply default values.
-	 */
-	/* These values are'nt bits, so I dont think this is correct
-	 * WF_TOP + WF_NEWDESK + WF_OWNER + WF_BEVENT + WF_BOTTOM + WF_ICONIFY + WF_UNICONIFY */
-	/* bit 9 WF_WHEEL */
-	{			/*11 window functions ?*/
+	 * 
+	 * These values are'nt bits, so I dont think this is correct
+	 * WF_TOP + WF_NEWDESK + WF_OWNER + WF_BEVENT + WF_BOTTOM + WF_ICONIFY + WF_UNICONIFY
+	 * bit 9 WF_WHEEL */
+	{
 		01763,		/* see above */
 		0,
 		5,		/* window behaviours iconifier & click for bottoming */
 		1		/* wind_update(): check and set available (mode + 0x100) */
 	},
-	/* WM_UNTOPPED + WM_ONTOP + AP_TERM + CH_EXIT (HR) + WM_BOTTOMED + WM_ICONIFY + WM_UNICONIFY */
-	{			/*12 messages */
-		0756,		/* see above */
+	/*12 messages
+	 * WM_UNTOPPED + WM_ONTOP + AP_TERM + CH_EXIT (HR) + WM_BOTTOMED +
+	 * WM_ICONIFY + WM_UNICONIFY
+	 */
+	{
+		0756,		/* see above */ /* XXX is this correct? 0756 is octal */
 		0,
 		1,		/* WM_ICONIFY gives coordinates */
 		0
 	},
-	{			/*13 objects */
+	/*13 objects */
+	{
 		1,		/* 3D objects */
 		1,		/* objc_sysvar */
 		0,		/* GDOS fonts */
 		014		/* extended objects (0x8 G_SHORTCUT, 0x4 WHITEBAK objects)
 				                     0x2 G_POPUP,    0x1 G_SWBUTTON */
 	},
-	{			/*14 form support (form_xdo, form_xdial) */
+	/*14 form support (form_xdo, form_xdial) */
+	{
 		0,		/* MagiC flydials */
-		0,		/*   "   keyboard tables */
+		0,		/* MagiC keyboard tables */
 		0,		/* return last cursor position */
 		0
 	},
-	{			/*15 <-- 64 */
+	/*15 <-- 64 */
+	{
 		0,		/* shel_write and AP_AESTERM */
 		0,		/* shel_write and SHW_SHUTDOWN/SHW_RESCHANGE */
-		3,		/* appl_search with long names */
-		                /*   and additive mode APP_TASKINFO available. */
+		3,		/* appl_search with long names and additive mode APP_TASKINFO available. */
 		0		/* form_error and all GEMDOS errorcodes */
 	},
-	{			/*16 <-- 65 */
+	/*16 <-- 65 */
+	{
 		1,		/* appl_control exists. */
 		APC_HIGH,	/* highest opcode for appl_control */
 		0,		/* shel_help exists. */
 		0		/* wind_draw exists. */
 	}
 };										
-
 
 /*
  * appl_getinfo() handler
@@ -352,7 +389,7 @@ XA_appl_getinfo(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	if (gi_type > 14)
 	{
-		/* N.Aes extensions */
+		/* N.AES extensions */
 		if (gi_type == 64 || gi_type == 65)
 		{
 			gi_type -= 64 - 15;
