@@ -532,26 +532,18 @@ long
 kern_get_uptime (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
+	ulong len = 64;
 	ulong idle = rootproc->systime + rootproc->usrtime;
-	char buf[32];
-	ulong len;
-	
-	len = ksprintf (buf, sizeof (buf), "%lu.%03d %lu.%03lu\n",
-			uptime,
-			1000 - uptimetick * 5,
-			idle / 1000,
-			idle % 1000);
 	
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
-	{
-		DEBUG (("kern_get_uptime: virtual memory exhausted"));
 		return ENOMEM;
-	}
 	
-	/* Not null-terminated! */
-	memcpy (info->buf, buf, len);
-	info->len = len;
+	info->len = ksprintf (info->buf, len, "%lu.%03d %lu.%03lu\n",
+			      uptime,
+			      1000 - uptimetick * 5,
+			      idle / 1000,
+			      idle % 1000);
 	
 	*buffer = info;
 	return 0;
@@ -1141,10 +1133,10 @@ kern_procdir_get_statm( SIZEBUF **buffer, PROC *p)
 	SIZEBUF *info;
 	ulong len = 64;
 
-	ulong total = memused( p);
+	ulong total = memused(p);
 	ulong resid = total;
 	ulong share = 0;
-	ulong txtrs = p->p_mem->txtsize;
+	ulong txtrs = p->p_mem ? p->p_mem->txtsize : 0;
 	ulong librs = 0;
 	ulong datrs = resid - txtrs;		/* Maybe that will do. */
 	ulong dpage = 0;
