@@ -38,7 +38,6 @@
  *
  * TODO in random order:
  *
- * - cp, mv;
  * - filename completion;
  * - make crunch() expand wildcards;
  * - make possible to execute some sort of init script (shellrc or something);
