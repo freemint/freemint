@@ -16,6 +16,7 @@
 # include "mint/proc.h"
 
 # include "dosfile.h"
+# include "filesys.h"
 # include "tty.h"
 
 
@@ -32,7 +33,7 @@ long
 file_instat (FILEPTR *f)
 {
 	long r;
-
+	
 	if (!f)
 		return EBADF;
 	
@@ -40,9 +41,9 @@ file_instat (FILEPTR *f)
 	r = 1;
 	
 	if (is_terminal (f))
-		(void) tty_ioctl (f, FIONREAD, &r);
+		tty_ioctl (f, FIONREAD, &r);
 	else
-		(void) (*f->dev->ioctl)(f, FIONREAD, &r);
+		xdd_ioctl (f, FIONREAD, &r);
 	
 	return r;
 }
@@ -59,9 +60,9 @@ file_outstat (FILEPTR *f)
 	r = 1;
 	
 	if (is_terminal (f))
-		(void) tty_ioctl (f, FIONWRITE, &r);
+		tty_ioctl (f, FIONWRITE, &r);
 	else
-		(void) (*f->dev->ioctl)(f, FIONWRITE, &r);
+		xdd_ioctl (f, FIONWRITE, &r);
 	
 	return r;
 }
@@ -79,7 +80,7 @@ file_getchar (FILEPTR *f, int mode)
 		char c;
 		long r;
 		
-		r = (*f->dev->read)(f, &c, 1L);
+		r = xdd_read (f, &c, 1L);
 		if (r != 1)
 			return MiNTEOF;
 		else
@@ -100,7 +101,7 @@ file_putchar (FILEPTR *f, long c, int mode)
 		char ch;
 		
 		ch = c & 0x00ff;
-		return (*f->dev->write)(f, &ch, 1L);
+		return xdd_write (f, &ch, 1L);
 	}
 }
 
