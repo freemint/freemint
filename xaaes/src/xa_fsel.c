@@ -726,6 +726,21 @@ find_drive(int a)
 	return -1;
 }
 
+static void
+fs_change(LOCK lock, OBJECT *m, int p, int title, int d, char *t)
+{
+	XA_WIDGET *widg = get_widget(fs.wind, XAW_MENU);
+	int bx = d-1;
+	do
+		m[d].ob_state&=~CHECKED;
+	while (m[d++].ob_next != bx);
+	m[p].ob_state|=CHECKED;
+	sdisplay(m[title].ob_spec.string," %s", m[p].ob_spec.string + 2);
+	widg->start = 0;
+	display_widget(lock, fs.wind, widg);
+	strcpy(t, m[p].ob_spec.string + 2);
+}
+
 static int
 fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 	       ushort keycode, ushort nkcode, KEY key)
@@ -757,6 +772,15 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 		if ( (nkcode & NKF_CTRL) && nk == NK_BS ) {
 			fs_updir(lock, wind);
 		}
+		if ( (nkcode & NKF_CTRL) && nk == '*' ) {
+			/* change the filter to '*'
+			 * - this should always be the FSEL_PATA entry IIRC
+			 */
+			fs_change(lock, fs.menu.tree,
+					FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs_pattern);
+			/* apply the change to the filelist */
+			refresh_filelist(fsel,6);
+		}
 	}
 	else
 	/*  If anything in the list and it is a cursor key */
@@ -778,21 +802,6 @@ fs_key_handler(LOCK lock, struct xa_window *wind, struct widget_tree *wt,
 				fs_prompt(list);
 	}
 	return true;
-}
-
-static void
-fs_change(LOCK lock, OBJECT *m, int p, int title, int d, char *t)
-{
-	XA_WIDGET *widg = get_widget(fs.wind, XAW_MENU);
-	int bx = d-1;
-	do
-		m[d].ob_state&=~CHECKED;
-	while (m[d++].ob_next != bx);
-	m[p].ob_state|=CHECKED;
-	sdisplay(m[title].ob_spec.string," %s", m[p].ob_spec.string + 2);
-	widg->start = 0;
-	display_widget(lock, fs.wind, widg);
-	strcpy(t, m[p].ob_spec.string + 2);
 }
 
 /* HR: make a start */
@@ -1029,7 +1038,7 @@ open_fileselector(LOCK lock, XA_CLIENT *client, char *path, char *file, char *ti
 	open_window(lock, dialog_window, dialog_window->r);
 
 	/* HR: after set_slist_object() & opwn_window */
-	refresh_filelist(lock, 5);
+	refresh_filelist(lock,5);
 
 	DIAG((D_fsel,NULL,"done.\n"));
 }
