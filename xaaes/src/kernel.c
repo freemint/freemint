@@ -549,7 +549,7 @@ XaAES(void)
 		DIAG((D_kern, NULL,">>Fselect(t%d) :: %d, channels: 0x%08lx, U%dM%d\n",
 			C.active_timeout.timeout, fs_rtn, input_channels, S.update_lock, S.mouse_lock));
 
-		if (C.shutdown)
+		if (C.shutdown & 4)
 			break;
 
 		/* get_mouse(0); */
@@ -946,7 +946,7 @@ cont:
 			}
 		}
 	}
-	while (!C.shutdown);
+	while ( !(C.shutdown & 4) );
 
 	DIAGS(("**** Leave kernel for shutdown\n"));
 }
