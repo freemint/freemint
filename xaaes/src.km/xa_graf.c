@@ -812,15 +812,72 @@ static MFORM M_POINTSLIDE_MOUSE =
 	0x1FF8, 0x0180, 0x0180, 0x0000 }
 };
 
+static void
+set_mouse_shape(short m_shape, MFORM *m_form, bool aesm)
+{
+	bool chg = false;
+
+	if (aesm)
+	{
+		if (m_shape == -1)
+		{
+			chg = C.realmouse != C.mouse ? true : false;
+			C.aesmouse = m_shape;
+			C.aesmouse_form = NULL;
+			C.realmouse = C.mouse;
+			C.realmouse_form = C.mouse_form;
+		}
+		else if (C.realmouse != m_shape)
+		{
+			C.aesmouse = m_shape;
+			C.aesmouse_form = m_form;
+			if (C.realmouse != m_shape)
+			{
+				chg = true;
+				C.realmouse = m_shape;
+				C.realmouse_form = m_form;
+			}
+		}
+	}
+	else
+	{
+		if (C.aesmouse == -1)
+		{
+			chg = C.realmouse != m_shape ? true : false;
+			C.realmouse = m_shape;
+			C.realmouse_form = m_form;
+			C.mouse = m_shape;
+			C.mouse_form = m_form;
+		}
+		else if (m_shape != C.mouse)
+		{
+			C.mouse = m_shape;
+			C.mouse_form = m_form;
+		}
+	}
+	if (chg)
+	{
+		hidem();
+		vsc_form(C.vh, (short *)C.realmouse_form);
+		showm();
+	}
+}
+
 /*
  * AES graf_mouse() routines
  * Small extension to give a couple of extra cursor shapes
  * (Data Uncertain logo, mover & sizers)
  */
 void
-graf_mouse(int m_shape, MFORM *mf)
+graf_mouse(int m_shape, MFORM *mf, bool aesm)
 {
-	C.mouse_form = NULL;
+	//C.mouse_form = NULL;
+
+	if (m_shape == -1 && aesm)
+	{
+		set_mouse_shape(m_shape, NULL, aesm);
+		return;
+	}
 
 	switch (m_shape)
 	{
@@ -831,44 +888,28 @@ graf_mouse(int m_shape, MFORM *mf)
 		hidem();
 		return;
 	case ARROW:
-		hidem();
-		vsc_form(C.vh, (short *)&M_ARROW_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_ARROW_MOUSE, aesm);
 		break;
 	case TEXT_CRSR:
-		hidem();
-		vsc_form(C.vh, (short *)&M_TXT_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_TXT_MOUSE, aesm);
 		break;
 	case HOURGLASS:
-		hidem();
-		vsc_form(C.vh, (short *)&M_BEE_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_BEE_MOUSE, aesm);
 		break;
 	case POINT_HAND:
-		hidem();
-		vsc_form(C.vh, (short *)&M_POINT_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_POINT_MOUSE, aesm);
 		break;
 	case FLAT_HAND:
-		hidem();
-		vsc_form(C.vh, (short *)&M_HAND_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_HAND_MOUSE, aesm);
 		break;
 	case THIN_CROSS:
-		hidem();
-		vsc_form(C.vh, (short *)&M_TCRS_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_TCRS_MOUSE, aesm);
 		break;
 	case THICK_CROSS:
-		hidem();
-		vsc_form(C.vh, (short *)&M_THKCRS_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_THKCRS_MOUSE, aesm);
 		break;
 	case OUTLN_CROSS:
-		hidem();
-		vsc_form(C.vh, (short *)&M_OCRS_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_OCRS_MOUSE, aesm);
 		break;
 	case M_SAVE:
 		return;
@@ -877,50 +918,42 @@ graf_mouse(int m_shape, MFORM *mf)
 	case M_LAST:
 		return;
 	case USER_DEF:
+		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, aesm);
+#if 0
 		if (!mf)
 			mf = &M_BUBD_MOUSE;	/* HR: Scare people ;-) */
 		C.mouse_form = mf;
-		hidem();
-		vsc_form(C.vh, (short *)mf);
-		showm();
+		if (C.aesmouse == -1)
+		{
+			hidem();
+			vsc_form(C.vh, (short *)mf);
+			showm();
+		}
+#endif
 		break;
 	case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
-		hidem();
-		vsc_form(C.vh, (short *)&M_BUBD_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_BUBD_MOUSE, aesm);
 		break;
 	case XACRS_RESIZER:			/* The 'resize window' cursor */
-		hidem();
-		vsc_form(C.vh, (short *)&M_SE_SIZER_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_SE_SIZER_MOUSE, aesm);
 		break;
 	case XACRS_NE_SIZER:
-		hidem();
-		vsc_form(C.vh, (short *)&M_NE_SIZER_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_NE_SIZER_MOUSE, aesm);
 		break;
 	case XACRS_MOVER:			/* The 'move window' cursor */
-		hidem();
-		vsc_form(C.vh, (short *)&M_MOVER_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_MOVER_MOUSE, aesm);
 		break;
 	case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
-		hidem();
-		vsc_form(C.vh, (short *)&M_VERTSIZER_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_VERTSIZER_MOUSE, aesm);
 		break;
 	case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
-		hidem();
-		vsc_form(C.vh, (short *)&M_HORSIZER_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_HORSIZER_MOUSE, aesm);
 		break;
 	case XACRS_POINTSLIDE:
-		hidem();
-		vsc_form(C.vh, (short *)&M_POINTSLIDE_MOUSE);
-		showm();
+		set_mouse_shape(m_shape, &M_POINTSLIDE_MOUSE, aesm);
 		break;
 	}
-	C.mouse = m_shape;
+	//C.mouse = m_shape;
 }
 
 /* Slight differance from GEM here - each application can have a different mouse form,
@@ -942,7 +975,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (m == M_OFF || m == M_ON)
 	{
 		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
-		graf_mouse(m, NULL);
+		graf_mouse(m, NULL, false);
 #if GENERATE_DIAGS
 		if (client)
 			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
@@ -964,21 +997,21 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (m == M_RESTORE)
 		{
-			graf_mouse(client->save_mouse, client->save_mouse_form);
+			graf_mouse(client->save_mouse, client->save_mouse_form, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			client->mouse       = client->save_mouse;
 			client->mouse_form  = client->save_mouse_form;
 		}
 		else if (m == M_PREVIOUS)
 		{
-			graf_mouse(C.mouse, C.mouse_form);
+			graf_mouse(C.mouse, C.mouse_form, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
 			client->mouse       = C.mouse;
 			client->mouse_form  = C.mouse_form;
 		}
 		else
 		{
-			graf_mouse(m, (MFORM*)pb->addrin[0]);
+			graf_mouse(m, (MFORM*)pb->addrin[0], false);
 			client->mouse = m;
 			client->mouse_form = (MFORM*)pb->addrin[0];	
 			DIAG((D_f,client,"mouse_form to %d", m));
@@ -986,7 +1019,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
 	{
-		graf_mouse(m, (MFORM *)pb->addrin[0]);
+		graf_mouse(m, (MFORM *)pb->addrin[0], false);
 		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %ld)", m, p_getpid()));
 	}
 

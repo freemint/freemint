@@ -56,7 +56,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	5
+# define VER_MINOR	6
 # define VER_STATUS	
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -165,11 +165,17 @@ long _cdecl		init		(struct kentry *k, struct adiinfo *ai);
 /* BEGIN global data definition & access implementation */
 
 #define MAX_DC_TIME	200
+#define MAX_TIMEGAP	20
 #define SYSTIMER	0x4baL
 #define SYSVBI		0x456L
 #define SYSNVBI		0x454L
 
 static long *VBI_entry;
+
+static long lpkt;
+static long time_between;
+static short eval_timegap;
+static short pkt_timegap;
 
 static short moose_inuse;
 
@@ -196,10 +202,6 @@ static long rsel;
 static short rptr;
 static short wptr;
 static short mused;
-
-static short old_x;
-static short old_y;
-static short mmoved;
 
 volatile short sample_butt;
 volatile short sample_x;
@@ -259,13 +261,38 @@ static short pak_buffer[PAK_BUFFER_SIZE];
 void
 cbutv(void)
 {
+	long t = *(long *)(SYSTIMER);
+	long t1;
+
+	if (eval_timegap)
+	{
+		t1 = t - lpkt;
+		lpkt = t;
+		/*
+		 * Ozk: Button-release can never follow a button-press too fast.
+		 *      But a Button-press CAN follow a button release too fast!
+		 * So we check the time between a button-release and button-press
+		 * event, and if too short we ingore. This solves problems with
+		 * "extra-clicks" when you release button after a click-hold session
+		 * caused by unstable mouse-switches (I think .. what else may cause this?)
+		 */
+		if (sample_butt && (t1 <= (long)pkt_timegap))
+			return;
+	}
+	else
+	{
+		t1 = -1;			/* for debugging purposes */
+		eval_timegap = 2;
+		lpkt = t;
+	}
+
 	pak_tail->len		= sizeof(struct mouse_pak);
 	pak_tail->ty		= BUT_PAK;
 	pak_tail->t.but.state	= (unsigned char)sample_butt;
-	pak_tail->t.but.time	= *(short *)(SYSTIMER+2);
+	pak_tail->t.but.time	= (short)t; //*(short *)(SYSTIMER+2);
 	pak_tail->x		= sample_x;
 	pak_tail->y		= sample_y;
-	pak_tail->dbg		= 0;
+	pak_tail->dbg		= t1; //0;
 
 	pak_tail++;
 
@@ -300,140 +327,137 @@ cmotv(void)
 	(*ainf->move)(&moose_aif, sample_x, sample_y);
 }
 
+static void
+chk_but_timeout(short tm)
+{
+	if (timeout)
+	{
+		short t = tm;
+		t		-= last_time;
+		last_time	= tm;
+		timeout		-= t;
+		if (timeout <= 0)
+			do_button_packet();
+	}
+}
+
 void
 timer_handler(void)
 {
-
-	halve--;
-
-	if (halve)
-		return;
-
-	halve = 2;
-
-	if (!mmoved && (sample_x != old_x || sample_y != old_y))
+	if (moose_inuse)
 	{
-		mmoved = 1;
-	}
+		
+		if (eval_timegap)
+			eval_timegap--;
 
-	if (!inbuf)
-	{
-		if (!timeout)
-			return;
+		if (!inbuf)
+		{
+			chk_but_timeout(*(short*)(SYSTIMER+2));
+		}
 		else
 		{
-			short t = *(short *)(SYSTIMER+2);
+			if (inbuf) //while (inbuf)
+			{
+				if (pak_head->ty == BUT_PAK)
+				{	
+					short tm = pak_head->t.but.time;
+					short s = (unsigned char)pak_head->t.but.state;
 
-			t		-= last_time;
-			last_time	= *(short *)(SYSTIMER+2);
-			timeout		-= t;
+					time_between = pak_head->dbg;
 
-			if (timeout > 0)
-				return;
-			else
-				do_button_packet();
-
-			return;
-		}
-	}
-	else
-	{
-		while (inbuf)
-		{
-			if (pak_head->ty == BUT_PAK)
-			{	
-				short tm = pak_head->t.but.time;
-				short s = (unsigned char)pak_head->t.but.state;
-
-				if (timeout)
-				{
-					short t = tm;
-
-					t		-= last_time;
-					last_time	= tm;
-					timeout		-= t;
-
-					if (timeout <= 0)
-						do_button_packet();
-				}
-			
-				if (s != last_state) /* We skip identical button state events */
-				{
-					last_state = s;
-
-					if (timeout)
+					if (s != last_state) /* We skip identical button state events */
 					{
-					/* Add clicks to a not-yet-timed-out button packet */
-						click_state |= s;
-						click_cstate = s;
-						if (s & 1)
-						{
-							l_clicks++;
-							click_count++;
-						}
-						if (s & 2) //else if (s & 2)
-						{
-							r_clicks++;
-							click_count++;
-						}
-						if (click_count > 1)
-							timeout += 10;	/* extend timeout, so a triple-click becomes easier */
-					}
-					else
-					{
-					/* NEW PACKET */
-						click_state	= s;
-						click_cstate	= s;
-						click_x		= pak_head->x;
-						click_y		= pak_head->y;
+						last_state = s;
 
-						if (s & 3)
-						/* Ozk 180603: Starting a new event... */
+						if (timeout)
 						{
-							last_time	= tm;
-							timeout		= dc_time;
-							click_count	= 1;
+						/* Add clicks to a not-yet-timed-out button packet */
+							click_state |= s;
+							click_cstate = s;
 							if (s & 1)
-								l_clicks = 1;
-							if (s & 2)
-								r_clicks = 1;
+							{
+								l_clicks++;
+								click_count++;
+							}
+							if (s & 2) //else if (s & 2)
+							{
+								r_clicks++;
+								click_count++;
+							}
+							if (click_count > 1)
+								timeout += 10;	/* extend timeout, so a triple-click becomes easier */
+
+							chk_but_timeout(tm);
 						}
 						else
-						/* Ozk 180603: A new event, but with a initial button-released state
-						*  makes us send it immediately. This is because the previous event
-						*  most likely was sent while button(s) were still pressed (click-hold).
-						*/
 						{
-							click_count = l_clicks = r_clicks = 0;
-							do_button_packet();
+						/* NEW PACKET */
+							click_state	= s;
+							click_cstate	= s;
+							click_x		= pak_head->x;
+							click_y		= pak_head->y;
+
+							if (s)
+							/* Ozk 180603: Starting a new event... */
+							{
+								last_time	= tm;
+								timeout		= dc_time;
+
+								if (s & 1)
+								{
+									l_clicks = 1;
+									click_count++;
+								}
+								if (s & 2)
+								{
+									r_clicks = 1;
+									click_count++;
+								}
+							}
+							else
+							/* Ozk 180603: A new event, but with a initial button-released state
+							*  makes us send it immediately. This is because the previous event
+							*  most likely was sent while button(s) were still pressed (click-hold).
+							*/
+							{
+								do_button_packet();
+							}
 						}
 					}
+					else
+						chk_but_timeout(tm);
 				}
-			}
 #ifdef	HAVE_WHEEL 
-			else if (pak_head->ty == WHL_PAK)
-			{
-				struct moose_data md;
+				else if (pak_head->ty == WHL_PAK)
+				{
+					struct moose_data md;
 
-				md.l		= sizeof(md);
-				md.ty		= MOOSE_BUTTON_PREFIX;
-				md.x		= pak_head->x;
-				md.y		= pak_head->y;
-				md.state	= pak_head->t.whl.wheel;
-				md.cstate	= md.state;
-				md.clicks	= pak_head->t.whl.clicks;
-				md.dbg1		= 0;
-				md.dbg2		= 0;
-
-				gen_write(&md);
-			}
+					md = kmalloc(sizeof(md));
+					if (md)
+					{
+						md->l		= sizeof(md);
+						md->ty		= MOOSE_WHEEL_PREFIX;
+						md->x		= pak_head->x;
+						md->y		= pak_head->y;
+						md->sx		= sample_x;
+						md->sy		= sample_y;
+						md->state	= pak_head->t.whl.wheel;
+						md->cstate	= md.state;
+						md->clicks	= pak_head->t.whl.clicks;
+						md->kstate	= 0;
+						md->dbg1	= 0;
+						md->dbg2	= 0;
+						(*ainf->wheel)(&moose_aif, md);
+					}
+				}
 #endif
-			/* more pak types here ... */
-			pak_head++;
-			if (pak_head > pak_end)
-				pak_head = (struct mouse_pak *)&pak_buffer;
+				/* more pak types here ... */
+				pak_head++;
+				if (pak_head > pak_end)
+					pak_head = (struct mouse_pak *)&pak_buffer;
 
-			inbuf -= sizeof(struct mouse_pak);
+				inbuf -= sizeof(struct mouse_pak);
+			}
 		}
 	}
 }
@@ -458,12 +482,18 @@ do_button_packet(void)
 		md->kstate	= 0;		/* Not set here -- will change*/
 		md->iclicks[0]	= l_clicks;
 		md->iclicks[1]	= r_clicks;
-		md->dbg1	= 0;
-		md->dbg2	= 0;
+		*(long*)&md->dbg1 = time_between;
+		//md->dbg1	= 0;
+		//md->dbg2	= 0;
 
 		(*ainf->button)(&moose_aif, md);
+
+		//kfree(md);
 	}
-	timeout = 0;
+	l_clicks	= 0;
+	r_clicks	= 0;
+	click_count	= 0;
+	timeout		= 0;
 }
 
 long _cdecl
@@ -510,6 +540,14 @@ moose_open (struct adif *a)
 	mused		= 0;
 	halve		= 4;
 
+	moose_inuse	= 0;
+	dc_time		= 50;
+	pkt_timegap	= 3;
+	click_count	= 0;
+	l_clicks	= 0;
+	r_clicks	= 0;
+	timeout		= 0;
+
 	VBI_entry = (long *) *(long *)SYSVBI;
 
 	for (i = 0; i < nvbi; i++)
@@ -523,7 +561,6 @@ moose_open (struct adif *a)
 	}
 
 	moose_inuse	= -1;
-	dc_time		= 50;
 
 	return E_OK;
 }
@@ -560,6 +597,15 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 				dc_time = arg;
 			break;
 		}
+		case MOOSE_PKT_TIMEGAP :
+		{
+			if (arg > MAX_TIMEGAP)
+				pkt_timegap = MAX_TIMEGAP;
+			else
+				pkt_timegap = arg;
+
+			break;
+		}
 		default:
 		{
 			return ENOSYS;
@@ -583,4 +629,3 @@ moose_timeout(struct adif *a)
 {
 	return 0;
 }
-

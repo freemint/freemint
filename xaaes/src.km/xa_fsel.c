@@ -399,7 +399,7 @@ refresh_filelist(enum locks lock, int which)
 	/* Clear out current file list contents */
 	free_scrollist(list);
 
-	graf_mouse(HOURGLASS, NULL);
+	graf_mouse(HOURGLASS, NULL, false);
 
 	i = d_opendir(fs.path,0);
 	DIAG((D_fsel, NULL, "Dopendir -> %lx", i));
@@ -476,7 +476,7 @@ refresh_filelist(enum locks lock, int which)
 	
 	list->top = list->cur = list->start;
 	list->n = n;
-	graf_mouse(ARROW, NULL);
+	graf_mouse(ARROW, NULL, false);
 	list->slider(list);
 	if (!fs_prompt_refresh(list))
 		display_toolbar(lock, fs.wind, FS_LIST);

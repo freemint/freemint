@@ -37,6 +37,7 @@
 #include "taskman.h"
 #include "util.h"
 #include "widgets.h"
+#include "xa_graf.h"
 #include "xa_types.h"
 #include "xa_evnt.h"
 #include "xa_rsrc.h"
@@ -314,14 +315,26 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
+	/*
+	 * Clear if client was exclusively waiting for mouse input
+	 */
 	if (S.wait_mouse == client)
+	{
+		S.wm_count = 0;
 		S.wait_mouse = NULL;
+	}
 	
 	/*
 	 * It is no longer interested in button released packet
 	 */
 	if (C.button_waiter == client)
 		C.button_waiter = NULL;
+
+	/*
+	 * Check and remove if client set its own mouse-form
+	 */
+	if (C.realmouse_form == client->mouse_form)
+		graf_mouse(ARROW, NULL, false);
 
 	cancel_aesmsgs(&client->rdrw_msg);
 	cancel_aesmsgs(&client->msg);
@@ -1053,7 +1066,9 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_appl, client, "appl_control for %s", c_owner(client)));
 
 	if (pid == -1)
-		cl = focus_owner();
+	{
+		cl = get_app_infront(); //focus_owner();
+	}
 	else
 		cl = pid2client(pid);
 
@@ -1076,21 +1091,34 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 		switch (f)
 		{
 			case APC_HIDE:
+			{
 				hide_app(lock, cl);
-			break;
+
+				break;
+			}
 			case APC_SHOW:
-				unhide_app(lock, cl);
-			break;
+			{
+				if (pid == -1)
+					unhide_all(lock, cl);
+				else
+					unhide_app(lock, cl);
+				break;
+			}
 			case APC_TOP:
+			{
 				app_in_front(lock, cl);
 				if (cl->type == APP_ACCESSORY)
 					send_app_message(lock, NULL, cl,
 							 AC_OPEN, 0, 0, 0,
 							 cl->p->pid, 0, 0, 0);
-			break;
+				break;
+			}
 			case APC_HIDENOT:
+			{
 				hide_other(lock, cl);
-			break;
+				app_in_front(lock, cl);
+				break;
+			}
 			case APC_INFO:
 			{
 				short *ii = (short*)pb->addrin[0];
@@ -1108,14 +1136,15 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 
 					pb->intout[0] = 1;
 				}
+				break;
 			}
-			break;
 			default:
+			{
 				pb->intout[0] = 0;
+			}
 		}
 
 	}
-
 	return XAC_DONE;
 }
 

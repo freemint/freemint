@@ -200,7 +200,7 @@ k_init(void)
 
 	vsf_perimeter(C.vh, 0);		/* from set_colours; never set to 1 ever */
 
-	graf_mouse(ARROW, 0);
+	graf_mouse(ARROW, NULL, false);
 	v_hide_c(C.vh);
 	wr_mode(MD_TRANS); /* We run in TRANSPARENT mode for all AES ops (unless otherwise requested) */
 	vst_alignment(C.vh, 0, 5, &f, &f); /* YESss !!! */
