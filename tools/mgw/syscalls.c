@@ -854,7 +854,7 @@ check_exception (fd_set *mint_fds, st_fd_set *st_fds)
 			r = Frecvfrom (i, &c, 1, MSG_PEEK, 0, 0);
 			DEBUG (("[Frecvfrom = %li] ", r));
 			
-			if (r == 0)
+			if (r < 0) /* Exception on error or EOF */
 			{
 				/* Wenn EOF dann exception, sollte zwar eigentlich nur
 				 * einmal gesetzt werden, und ist auch etwas unelegant,
@@ -897,7 +897,7 @@ remap_fdset (fd_set *mint_fds, st_fd_set *st_fds, char *type, int is_read)
 				r = Frecvfrom (i, &c, 1, MSG_PEEK, 0, 0);
 				DEBUG (("[Frecvfrom = %li] ", r));
 				
-				if (r != 0)
+				if (r > 0)	/* only return codes > 0 are ok */
 				{
 					DEBUG (("# %i -> %i ", i, i));
 				
@@ -995,7 +995,7 @@ st_select (struct st_select_param p)
 	/* if 0 is returned the structures are not cleared.
 	   This will make us problems, during remapping it. 
 	   So we clear it before... */
-	FD_ZERO (&rfds);
+//	FD_ZERO (&rfds);
 	FD_ZERO (&wfds);
 	}
 
