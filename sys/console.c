@@ -13,6 +13,7 @@
 
 # include "console.h"
 
+# include "mint/filedesc.h"
 # include "mint/proc.h"
 
 # include "dosfile.h"
@@ -113,31 +114,31 @@ file_putchar (FILEPTR *f, long c, int mode)
 long _cdecl
 c_conin (void)
 {
-	return file_getchar (curproc->handle[0], COOKED | ECHO);
+	return file_getchar (curproc->p_fd->ofiles[0], COOKED | ECHO);
 }
 
 long _cdecl
 c_conout (int c)
 {
-	return file_putchar (curproc->handle [1], (long) c, COOKED);
+	return file_putchar (curproc->p_fd->ofiles[1], (long) c, COOKED);
 }
 
 long _cdecl
 c_auxin (void)
 {
-	return file_getchar (curproc->handle [2], RAW);
+	return file_getchar (curproc->p_fd->ofiles[2], RAW);
 }
 
 long _cdecl
 c_auxout (int c)
 {
-	return file_putchar (curproc->handle [2], (long) c, RAW);
+	return file_putchar (curproc->p_fd->ofiles[2], (long) c, RAW);
 }
 
 long _cdecl
 c_prnout (int c)
 {
-	return file_putchar (curproc->handle [3], (long) c, RAW);
+	return file_putchar (curproc->p_fd->ofiles[3], (long) c, RAW);
 }
 
 long _cdecl
@@ -149,29 +150,29 @@ c_rawio (int c)
 	{
 		long r;
 		
-		if (!file_instat (p->handle [0]))
+		if (!file_instat (p->p_fd->ofiles[0]))
 			return 0;
 		
-		r = file_getchar (p->handle [0], RAW);
+		r = file_getchar (p->p_fd->ofiles[0], RAW);
 		if (r <= E_OK)
 			return 0;
 		
 		return r;
 	}
 	else
-		return file_putchar (p->handle [1], (long)c, RAW);
+		return file_putchar (p->p_fd->ofiles[1], (long) c, RAW);
 }
 
 long _cdecl
 c_rawcin (void)
 {
-	return file_getchar (curproc->handle [0], RAW);
+	return file_getchar (curproc->p_fd->ofiles[0], RAW);
 }
 
 long _cdecl
 c_necin (void)
 {
-	return file_getchar (curproc->handle [0],COOKED | NOECHO);
+	return file_getchar (curproc->p_fd->ofiles[0], COOKED | NOECHO);
 }
 
 long _cdecl
@@ -192,7 +193,7 @@ c_conrs (char *buf)
 	long size, count, r;
 	
 	size = ((long) *buf) & 0xff;
-	if (is_terminal (curproc->handle [0]))
+	if (is_terminal (curproc->p_fd->ofiles[0]))
 	{
 		/* TB: When reading from a terminal, f_read is used which
 		 * automatically breaks at the first newline
@@ -264,31 +265,31 @@ c_conrs (char *buf)
 long _cdecl
 c_conis (void)
 {
-	return -(!!file_instat (curproc->handle [0]));
+	return -(!!file_instat (curproc->p_fd->ofiles[0]));
 }
 
 long _cdecl
 c_conos (void)
 {
-	return -(!!file_outstat (curproc->handle [1]));
+	return -(!!file_outstat (curproc->p_fd->ofiles[1]));
 }
 
 long _cdecl
 c_prnos (void)
 {
-	return -(!!file_outstat (curproc->handle [3]));
+	return -(!!file_outstat (curproc->p_fd->ofiles[3]));
 }
 
 long _cdecl
 c_auxis (void)
 {
-	return -(!!file_instat (curproc->handle [2]));
+	return -(!!file_instat (curproc->p_fd->ofiles[2]));
 }
 
 long _cdecl
 c_auxos (void)
 {
-	return -(!!file_outstat (curproc->handle [2]));
+	return -(!!file_outstat (curproc->p_fd->ofiles[2]));
 }
 
 
@@ -311,13 +312,13 @@ f_instat (int h)
 # endif
 		proc = curproc;
 	
-	if (fh < MIN_HANDLE || fh >= MAX_OPEN)
+	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Finstat: bad handle %d", h));
 		return EBADF;
 	}
 	
-	return file_instat (proc->handle [fh]);
+	return file_instat (proc->p_fd->ofiles[fh]);
 }
 
 long _cdecl
@@ -336,13 +337,13 @@ f_outstat (int h)
 # endif
 		proc = curproc;
 	
-	if (fh < MIN_HANDLE || fh >= MAX_OPEN)
+	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Foutstat: bad handle %d", h));
 		return EBADF;
 	}
 	
-	return file_outstat (proc->handle [fh]);
+	return file_outstat (proc->p_fd->ofiles[fh]);
 }
 
 long _cdecl
@@ -361,13 +362,13 @@ f_getchar (int h, int mode)
 # endif
 		proc = curproc;
 	
-	if (fh < MIN_HANDLE || fh >= MAX_OPEN)
+	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Fgetchar: bad handle %d", h));
 		return EBADF;
 	}
 	
-	return file_getchar (proc->handle [fh], mode);
+	return file_getchar (proc->p_fd->ofiles[fh], mode);
 }
 
 long _cdecl
@@ -386,11 +387,11 @@ f_putchar (int h, long c, int mode)
 # endif
 		proc = curproc;
 	
-	if (fh < MIN_HANDLE || fh >= MAX_OPEN)
+	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Fputchar: bad handle %d", h));
 		return EBADF;
 	}
 	
-	return file_putchar (proc->handle [fh], c, mode);
+	return file_putchar (proc->p_fd->ofiles[fh], c, mode);
 }

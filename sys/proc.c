@@ -15,8 +15,12 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
+
 # include "mint/asm.h"
+# include "mint/credentials.h"
+# include "mint/filedesc.h"
 # include "mint/basepage.h"
+# include "mint/resource.h"
 # include "mint/signal.h"
 
 # include "arch/context.h"	/* save_context, change_context */
@@ -28,8 +32,10 @@
 # include "dosmem.h"
 # include "fasttext.h"
 # include "filesys.h"
+# include "k_exit.h"
 # include "kmemory.h"
 # include "memory.h"
+# include "proc_help.h"
 # include "random.h"
 # include "signal.h"
 # include "time.h"
@@ -66,315 +72,54 @@ PROC *sys_q[NUM_QUEUES] =
 /* default; actual value comes from mint.cnf */
 short time_slice = 2;
 
-# define TIME_SLICE	time_slice
-
-/* macro for calculating number of missed time slices, based on a
- * process' priority
- */
-# define SLICES(pri)	(((pri) >= 0) ? 0 : -(pri))
-
-/*
- * get a new process struct
- */
-
-PROC *
-new_proc (void)
-{
-	PROC *p;
-	void *pt;
-	
-# ifdef MMU040
-	extern int page_ram_type;	/* in mprot040.c */
-	
-	pt = 0L;
-	if (page_ram_type & 2)
-		pt = get_region (alt, page_table_size + 512, PROT_S);
-	if (!pt && (page_ram_type & 1))
-		pt = get_region (core, page_table_size + 512, PROT_S);
-# else
-	pt = kmalloc (page_table_size + 16);
-# endif
-	if (!pt)
-		return NULL;
-	
-	p = kmalloc (sizeof (*p));
-	if (!p)
-	{
-# ifndef MMU040
-		kfree (pt);
-# else
-		((MEMREGION *) pt)->links--;
-		if (!((MEMREGION *) pt)->links)
-			free_region (pt);
-# endif
-		return 0;
-	}
-	
-	/* zero out the new allocated memory */
-	bzero (p, sizeof (*p));
-	
-	/* set the stack barrier */
-	p->stack_magic = STACK_MAGIC;
-	
-# ifndef MMU040
-	/* page tables must be on 16 byte boundaries, so we
-	 * round off by 16 for that; however, we will want to
-	 * kfree that memory at some point, so we squirrel
-	 * away the original address for later use
-	 */
-	p->page_table = ROUND16 (pt);
-# else
-	/* For the 040, the page tables must be on 512 byte boundaries */
-	p->page_table = ROUND512 (((MEMREGION *)pt)->loc);
-# endif
-	p->pt_mem = pt;
-	
-	DEBUG (("Successfully generated proc %lx", (long)p));
-	return p;
-}
-
-/*
- * dispose of an old proc
- */
-
-void
-dispose_proc (PROC *p)
-{
-	TRACELOW (("dispose_proc"));
-	
-# ifndef MMU040
-	kfree (p->pt_mem);
-# else
-	((MEMREGION *) p->pt_mem)->links--;
-	if (!((MEMREGION *) p->pt_mem)->links)
-		free_region (p->pt_mem);
-# endif
-	
-	kfree (p);
-}
-
-/*
- * create a new process that is (practically) a duplicate of the
- * current one
- */
-
-PROC *
-fork_proc (long *err)
-{
-	PROC *p;
-	char *root_dir = NULL;
-	long i;
-	
-	p = new_proc ();
-	if (!p)
-	{
-nomem:
-		DEBUG (("fork_proc: insufficient memory"));
-		
-		if (err) *err = ENOMEM;
-		return NULL;
-	}
-	
-	if (curproc->root_dir)
-	{
-		root_dir = kmalloc (strlen (curproc->root_dir) + 1);
-		if (!root_dir)
-		{
-			kfree (p);
-			goto nomem;
-		}
-	}
-	
-	/* child shares most things with parent,
-	 * but hold on to page table ptr
-	 */
-	 {
-# ifndef MMU040
-		long_desc *pthold;
-# else
-		ulong *pthold;
-# endif
-		void *ptmemhold;
-		
-		pthold = p->page_table;
-		ptmemhold = p->pt_mem;
-		
-		*p = *curproc;
-		
-		p->page_table = pthold;
-		p->pt_mem = ptmemhold;
-	}
-	
-	/* these things are not inherited
-	 */
-	p->ppid = curproc->pid;
-	p->pid = newpid ();
-	p->sigpending = 0;
-	p->nsigs = 0;
-	p->sysstack = (long) (p->stack + STKSIZE - 12);
-	p->ctxt[CURRENT].ssp = p->sysstack;
-	p->ctxt[SYSCALL].ssp = (long) (p->stack + ISTKSIZE);
-	p->stack_magic = STACK_MAGIC;
-	p->alarmtim = 0;
-	p->curpri = p->pri;
-	p->slices = SLICES (p->pri);
-	
-	p->itimer[0].interval = 0;
-	p->itimer[0].reqtime = 0;
-	p->itimer[0].timeout = 0;
-	p->itimer[1].interval = 0;
-	p->itimer[1].reqtime = 0;
-	p->itimer[1].timeout = 0;
-	p->itimer[2].interval = 0;
-	p->itimer[2].reqtime = 0;
-	p->itimer[2].timeout = 0;
-	
-	((long *) p->sysstack)[1] = FRAME_MAGIC;
-	((long *) p->sysstack)[2] = 0;
-	((long *) p->sysstack)[3] = 0;
-	
-	p->usrtime = p->systime = p->chldstime = p->chldutime = 0;
-	
-	/* allocate space for memory regions: do it here so that we can fail
-	 * before we duplicate anything else. The memory regions are
-	 * actually copied later
-	 */
-	p->mem = kmalloc (p->num_reg * sizeof (MEMREGION *));
-	if (!p->mem)
-	{
-		dispose_proc (p);
-		goto nomem;
-	}
-	
-	p->addr = kmalloc (p->num_reg * sizeof (virtaddr));
-	if (!p->addr)
-	{
-		kfree (p->mem);
-		dispose_proc (p);
-		goto nomem;
-	}
-	
-	/* Duplicate command line */
-	if (p->real_cmdline != NULL
-		&& (p->real_cmdline [0] != 0 || p->real_cmdline [1] != 0
-			|| p->real_cmdline [2] != 0 || p->real_cmdline [3] != 0))
-	{
-		ulong *parent_cmdline = (ulong *) p->real_cmdline;
-		
-		p->real_cmdline = kmalloc ((*parent_cmdline) + 4);
-		if (p->real_cmdline) 
-		{
-			memcpy (p->real_cmdline, parent_cmdline, (*parent_cmdline) + 4);
-		}
-		else
-		{
-			kfree (p->mem);
-			kfree (p->addr);
-			dispose_proc (p);
-			
-			goto nomem;
-		}
-	}
-	else if (p->ppid != 0)
-	{
-		if (p->fname != NULL)
-		{
-			ALERT ("Oops: no command line for %s (pid %d)", p->fname, p->pid);
-		}
-		else if (p->name != NULL)
-		{
-			ALERT ("Oops: no command line for %s (pid %d)", p->name, p->pid);
-		}
-		else
-		{
-			ALERT ("Oops: no command line for pid %d (ppid %d)", p->pid, p->ppid);
-		}
-		
-		p->real_cmdline = NULL;
-	}
-	
-	/* copy open handles */
-	for (i = MIN_HANDLE; i < MAX_OPEN; i++)
-	{
-		FILEPTR *f;
-		
-		if ((f = p->handle[i]) != 0)
-		{
-			if ((f == (FILEPTR *) 1L) || (f->flags & O_NOINHERIT))
-			{
-				/* oops, we didn't really want to copy this
-				 * handle
-				 */
-				p->handle[i] = 0;
-			}
-			else
-				f->links++;
-		}
-	}
-	
-	/* copy root and current directories */
-	for (i = 0; i < NUM_DRIVES; i++)
-	{
-		dup_cookie (&p->root[i], &curproc->root[i]);
-		dup_cookie (&p->curdir[i], &curproc->curdir[i]);
-	}
-	
-	if (root_dir)
-	{
-		p->root_dir = root_dir;
-		strcpy (p->root_dir, curproc->root_dir);
-		dup_cookie (&p->root_fc, &curproc->root_fc);
-	}
-	
-	/* Duplicate cookie for the executable file */
-	dup_cookie (&p->exe, &curproc->exe);
-	
-	/* clear directory search info */
-	bzero (p->srchdta, NUM_SEARCH * sizeof (DTABUF *));
-	bzero (p->srchdir, sizeof (p->srchdir));
-	p->searches = 0;
-	
-	/* copy memory */
-	for (i = 0; i < curproc->num_reg; i++)
-	{
-		p->mem[i] = curproc->mem[i];
-		if (p->mem[i] != 0)
-			p->mem[i]->links++;
-		
-		p->addr[i] = curproc->addr[i];
-	}
-	
-	/* now that memory ownership is copied, fill in page table */
-	init_page_table (p);
-	
-	/* child isn't traced */
-	p->ptracer = 0;
-	p->ptraceflags = 0;
-	
-	p->started = xtime;
-	
-	p->q_next = 0;
-	p->wait_q = 0;
-	
-	/* hook into the process list */
-	p->gl_next = proclist;
-	proclist = p;
-	
-	return p;
-}
 
 /*
  * initialize the process table
  */
-
 void
 init_proc (void)
 {
 	static DTABUF dta;
 	
+	static struct proc	rootproc0;
+	static struct memspace	mem0;
+	static struct ucred	ucred0;
+	static struct pcred	pcred0;
+	static struct filedesc	fd0;
+	static struct cwd	cwd0;
+	static struct sigacts	sigacts0;
+	static struct plimit	limits0;
 	
-	rootproc = curproc = new_proc ();
-	assert (curproc);
+	/* XXX */
+	bzero (&rootproc0, sizeof (rootproc0));
+	bzero (&mem0, sizeof (mem0));
+	bzero (&ucred0, sizeof (ucred0));
+	bzero (&pcred0, sizeof (pcred0));
+	bzero (&fd0, sizeof (fd0));
+	bzero (&cwd0, sizeof (cwd0));
+	bzero (&sigacts0, sizeof (sigacts0));
+	bzero (&limits0, sizeof (limits0));
+	
+	pcred0.ucr = &ucred0;			ucred0.links = 1;
+	
+	rootproc0.p_mem		= &mem0;	mem0.links = 1;
+	rootproc0.p_cred	= &pcred0;	pcred0.links = 1;
+	rootproc0.p_fd		= &fd0;		fd0.links = 1;
+	rootproc0.p_cwd		= &cwd0;	cwd0.links = 1;
+	rootproc0.p_sigacts	= &sigacts0;	sigacts0.links = 1;
+//	rootproc0.p_limits	= &limits0;	limits0.links = 1;
+	
+	fd0.ofiles = fd0.dfiles;
+	fd0.ofileflags = fd0.dfileflags;
+	fd0.nfiles = NDFILE;
+	
+	DEBUG (("%lx, %lx, %lx, %lx, %lx, %lx, %lx",
+		&rootproc0, &mem0, &pcred0, &ucred0, &fd0, &cwd0, &sigacts0));
+	
+	rootproc = curproc = &rootproc0;	rootproc0.links = 1;
+	
+	/* set the stack barrier */
+	curproc->stack_magic = STACK_MAGIC;
 	
 	curproc->ppid = -1;		/* no parent */
 	curproc->domain = DOM_TOS;	/* TOS domain */
@@ -391,16 +136,16 @@ init_proc (void)
 	strcpy (curproc->name, "MiNT");
 	
 	/* get some memory */
-	curproc->num_reg = NUM_REGIONS;
-	curproc->mem = kmalloc (curproc->num_reg * sizeof (MEMREGION *));
-	curproc->addr = kmalloc (curproc->num_reg * sizeof (virtaddr));
+	curproc->p_mem->num_reg = NUM_REGIONS;
+	curproc->p_mem->mem = kmalloc (curproc->p_mem->num_reg * sizeof (MEMREGION *));
+	curproc->p_mem->addr = kmalloc (curproc->p_mem->num_reg * sizeof (virtaddr));
 	
 	/* make sure kmalloc was successful */
-	assert (curproc->mem && curproc->addr);
+	assert (curproc->p_mem->mem && curproc->p_mem->addr);
 	
 	/* make sure it's filled with zeros */
-	bzero (curproc->mem, curproc->num_reg * sizeof (MEMREGION *));
-	bzero (curproc->addr, curproc->num_reg * sizeof (virtaddr));
+	bzero (curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof (MEMREGION *));
+	bzero (curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof (virtaddr));
 	
 	/* get root and current directories for all drives */
 	{
@@ -414,43 +159,50 @@ init_proc (void)
 			fs = drives [i];
 			if (fs && xfs_root (fs, i, &dir) == E_OK)
 			{
-				curproc->root[i] = dir;
-				dup_cookie (&curproc->curdir[i], &dir);
+				curproc->p_cwd->root[i] = dir;
+				dup_cookie (&curproc->p_cwd->curdir[i], &dir);
 			}
 			else
 			{
-				curproc->root[i].fs = curproc->curdir[i].fs = 0;
-				curproc->root[i].dev = curproc->curdir[i].dev = i;
+				curproc->p_cwd->root[i].fs = curproc->p_cwd->curdir[i].fs = 0;
+				curproc->p_cwd->root[i].dev = curproc->p_cwd->curdir[i].dev = i;
 			}
 		}
 	}
 	
-	init_page_table (curproc);
+	init_page_table_ptr (curproc->p_mem);
+	init_page_table (curproc, curproc->p_mem);
 	
 	/* Set the correct drive. The current directory we
 	 * set later, after all file systems have been loaded.
 	 */
-	curproc->curdrv = Dgetdrv ();
+	curproc->p_cwd->curdrv = Dgetdrv ();
 	proclist = curproc;
 	
-	curproc->umask = 0;
+	curproc->p_cwd->cmask = 0;
 	
 	/* some more protection against job control; unless these signals are
 	 * re-activated by a shell that knows about job control, they'll have
 	 * no effect
 	 */
+# if 1
+	SIGACTION(curproc, SIGTTIN).sa_handler = SIG_IGN;
+	SIGACTION(curproc, SIGTTOU).sa_handler = SIG_IGN;
+	SIGACTION(curproc, SIGTSTP).sa_handler = SIG_IGN;
+# else
 	curproc->sighandle[SIGTTIN] =
 	curproc->sighandle[SIGTTOU] =
 	curproc->sighandle[SIGTSTP] = SIG_IGN;
+# endif
 	
 	/* set up some more per-process variables */
 	curproc->started = xtime;
 	
 	if (has_bconmap)
 		/* init_xbios not happened yet */
-		curproc->bconmap = (int) Bconmap (-1);
+		curproc->p_fd->bconmap = (int) Bconmap (-1);
 	else
-		curproc->bconmap = 1;
+		curproc->p_fd->bconmap = 1;
 	
 	curproc->logbase = (void *) Logbase();
 	curproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
@@ -509,7 +261,7 @@ fresh_slices (int slices)
 	
 	curproc->slices = 0;
 	curproc->curpri = MAX_NICE + 1;
-	proc_clock = TIME_SLICE + slices;
+	proc_clock = time_slice + slices;
 }
 
 /*
@@ -587,7 +339,7 @@ preempt (void)
 {
 	if (bconbsiz)
 	{
-		(void) bflush ();
+		bflush ();
 	}
 	else
 	{
@@ -607,13 +359,14 @@ preempt (void)
 static void
 swap_in_curproc (void)
 {
-	long txtsize = curproc->txtsize;
+	struct memspace *mem = curproc->p_mem;
+	long txtsize = curproc->p_mem->txtsize;
 	MEMREGION *m, *shdw, *save;
 	int i;
 	
-	for (i = 0; i < curproc->num_reg; i++)
+	for (i = 0; i < mem->num_reg; i++)
 	{
-		m = curproc->mem[i];
+		m = mem->mem[i];
 		if (m && m->save)
 		{
 			save = m->save;
@@ -677,7 +430,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 		/* check for alarms and similar time out stuff */
 		checkalarms ();
 		
-		if (p->sigpending && cond != (long) p_waitpid)
+		if (p->sigpending && cond != (long) sys_pwaitpid)
 			/* check for signals */
 			check_sigs ();
 	}
@@ -687,12 +440,12 @@ do_wakeup_things (short sr, int newslice, long cond)
 		if (p->slices >= 0)
 		{
 			/* get a fresh time slice */
-			proc_clock = TIME_SLICE;
+			proc_clock = time_slice;
 		}
 		else
 		{
 			/* slices set by run_next */
-			proc_clock = TIME_SLICE - p->slices;
+			proc_clock = time_slice - p->slices;
 			p->curpri = p->pri;
 		}
 		
@@ -726,7 +479,7 @@ sleep (int _que, long cond)
 	/* if there have been keyboard interrupts since our last sleep,
 	 * check for special keys like CTRL-ALT-Fx
 	 */
-	sr = spl7 ();
+	sr = splhigh ();
 	if ((sr & 0x700) < 0x500)
 	{
 		/* can't call checkkeys if sleep was called
@@ -745,8 +498,8 @@ sleep (int _que, long cond)
 		checkrandom ();
 # endif
 		
-		sr = spl7 ();
-		if ((curproc->sigpending & ~(curproc->sigmask))
+		sr = splhigh ();
+		if ((curproc->sigpending & ~(curproc->p_sigmask))
 			&& curproc->pid && que != ZOMBIE_Q && que != TSR_Q)
 		{
 			spl (sr);
@@ -797,7 +550,7 @@ sleep (int _que, long cond)
 		 */
 		wake (SELECT_Q, (long) nap);
 		
-		sr = spl7 ();
+		sr = splhigh ();
 		if (!sys_q[READY_Q])
 		{
 			p = rootproc;		/* pid 0 */
@@ -830,7 +583,7 @@ sleep (int _que, long cond)
 	 *		}
 	 *	}
 	 */
-	sr = spl7 ();
+	sr = splhigh ();
 	p = 0;
 	while (!p)
 	{
@@ -876,7 +629,7 @@ sleep (int _que, long cond)
 	curproc->ctxt[CURRENT].regs[0] = 1;
 	curproc = p;
 	
-	proc_clock = TIME_SLICE;			/* fresh time */
+	proc_clock = time_slice;			/* fresh time */
 	
 	if ((p->ctxt[CURRENT].sr & 0x2000) == 0)	/* user mode? */
 		leave_kernel ();

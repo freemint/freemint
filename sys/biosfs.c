@@ -15,8 +15,10 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
+
 # include "mint/arch/mfp.h"
 # include "mint/asm.h"
+# include "mint/filedesc.h"
 
 # include "arch/detect.h"
 # include "arch/syscall.h"
@@ -29,6 +31,7 @@
 # include "dosfile.h"
 # include "fasttext.h"
 # include "filesys.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "nullfs.h"
 # include "proc.h"
@@ -302,8 +305,10 @@ rsvf_ioctl (int f, void *arg, int mode)
 
 /* Does the fcookie fc refer to the \dev\fd directory? */
 #define IS_FD_DIR(fc) ((fc)->aux == S_IFDIR)
+
 /* Does the fcookie fc refer to a file in the \dev\fd directory? */
-#define IS_FD_ENTRY(fc) ((fc)->index > 0 && (fc)->index <= MAX_OPEN-MIN_HANDLE)
+#define IS_FD_ENTRY(fc, p) \
+	((fc)->index > 0 && (fc)->index <= ((p)->p_fd->nfiles - MIN_HANDLE))
 
 struct bios_file *broot, *bdevlast;
 
@@ -348,8 +353,8 @@ set_xattr (XATTR *xp, ushort mode, int rdev)
 {
 	_set_xattr (xp, mode, rdev);
 	
-	xp->uid		= curproc->euid;
-	xp->gid		= curproc->egid;
+	xp->uid		= curproc->p_cred->ucr->euid;
+	xp->gid		= curproc->p_cred->ucr->egid;
 }
 
 
@@ -439,6 +444,7 @@ biosfs_init (void)
 	midi_btty.bdev = 3;
 
 	defaultaux = new_fileptr();
+	assert (defaultaux);
 	defaultaux->links = 1;		/* so it never gets freed */
 	defaultaux->flags = O_RDWR;
 	defaultaux->pos = 0;
@@ -483,6 +489,7 @@ bios_root(int drv, fcookie *fc)
 		fc->fs = &bios_filesys;
 		fc->dev = drv;
 		fc->index = 0L;
+		fc->aux = 0;
 		return E_OK;
 	}
 	fc->fs = NULL;
@@ -518,7 +525,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 		if (isdigit(*name) || *name == '-')
 		{
 			int fd = (int) atol(name);
-			if (fd >= MIN_HANDLE && fd < MAX_OPEN)
+			if (fd >= MIN_HANDLE && fd < curproc->p_fd->nfiles)
 			{
 				fc->fs = &bios_filesys;
 				fc->dev = dir->dev;
@@ -586,7 +593,7 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->index = fc->index;
 		xattr->dev = fc->dev;
 	}
-	else if (IS_FD_ENTRY(fc))
+	else if (IS_FD_ENTRY(fc, curproc))
 	{
 		/* u:\dev\fd\n */
 #ifdef FOLLOW_XATTR_CHAIN
@@ -645,7 +652,7 @@ bios_chown (fcookie *fc, int uid, int gid)
 {
 	struct bios_file *b = (struct bios_file *) fc->index;
 	
-	if (!(curproc->euid))
+	if (suser (curproc->p_cred->ucr))
 	{
 		if (!b)
 		{
@@ -658,7 +665,7 @@ bios_chown (fcookie *fc, int uid, int gid)
 			if (uid != -1) fdxattr.uid = uid;
 			if (gid != -1) fdxattr.gid = gid;
 		}
-		else if (!IS_FD_ENTRY(fc))
+		else if (!IS_FD_ENTRY(fc, curproc))
 		{
 			/* any other entry */
 			if (uid != -1) b->xattr.uid = uid;
@@ -674,12 +681,13 @@ bios_chown (fcookie *fc, int uid, int gid)
 static long _cdecl
 bios_chmode (fcookie *fc, unsigned int mode)
 {
+	struct ucred *cred = curproc->p_cred->ucr;
 	struct bios_file *b = (struct bios_file *) fc->index;
 
 	if (!b)
 	{
 		/* root directory */
-		if (!curproc->euid || (curproc->euid == rxattr.uid))
+		if (suser (cred) || (cred->euid == rxattr.uid))
 		{
 			rxattr.mode = (rxattr.mode & S_IFMT) | mode;
 			return E_OK;
@@ -687,15 +695,15 @@ bios_chmode (fcookie *fc, unsigned int mode)
 	}
 	else if (IS_FD_DIR (fc))
 	{
-		if (!curproc->euid || (curproc->euid == fdxattr.uid))
+		if (suser (cred) || (cred->euid == fdxattr.uid))
 		{
 			fdxattr.mode = (fdxattr.mode & S_IFMT) | mode;
 			return E_OK;
 		}
 	}
-	else if (!IS_FD_ENTRY (fc))
+	else if (!IS_FD_ENTRY (fc, curproc))
 	{
-		if (!curproc->euid || (curproc->euid == b->xattr.uid))
+		if (suser (cred) || (cred->euid == b->xattr.uid))
 		{
 			b->xattr.mode = (b->xattr.mode & S_IFMT) | mode;
 			return E_OK;
@@ -719,9 +727,10 @@ bios_rmdir (fcookie *dir, const char *name)
 static long _cdecl
 bios_remove (fcookie *dir, const char *name)
 {
+	struct ucred *cred = curproc->p_cred->ucr;
 	struct bios_file *b, **lastb;
 
-	if (curproc->euid)
+	if (!suser (cred))
 		return EACCES;
 
 	/* don't allow removal in the fd directory */
@@ -737,10 +746,9 @@ bios_remove (fcookie *dir, const char *name)
 	if (!b) return ENOENT;
 
 	/* don't allow removal of the device if we don't own it */
-	if (curproc->euid && (curproc->euid != b->xattr.uid))
-	{
+	/* XXX we never get here, euid is 0 */
+	if (cred->euid && (cred->euid != b->xattr.uid))
 		return EACCES;
-	}
 
 	/* don't allow removal of the basic system devices */
 	if (b >= BDEV && b <= bdevlast)
@@ -788,12 +796,13 @@ bios_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 static long _cdecl
 bios_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
+	struct ucred *cred = curproc->p_cred->ucr;
 	struct bios_file *b;
 	struct bios_file *be = 0;
 	
 	UNUSED (olddir); UNUSED (newdir);
 
-	if (curproc->euid)
+	if (cred->euid)
 		return EACCES;
 
 	for (b = broot; b; b = b->next)
@@ -839,7 +848,7 @@ bios_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	if (IS_FD_DIR (&dirh->fc))
 	{
 		i = dirh->index++;
-		if (i + MIN_HANDLE >= MAX_OPEN)
+		if (i + MIN_HANDLE >= curproc->p_fd->nfiles)
 			return ENMFILES;
 		
 		fc->fs = &bios_filesys;
@@ -971,8 +980,11 @@ bios_dfree (fcookie *dir, long *buf)
 static long _cdecl
 bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 {
+	struct ucred *cred = curproc->p_cred->ucr;
 	struct bios_file *b;
 	static int devindex = 0;
+	
+	TRACE (("bios_fscntl: name %s cmd %x, %lx", name, cmd, arg));
 	
 	if (cmd == MX_KER_XFSNAME)
 	{
@@ -980,14 +992,17 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		return E_OK;
 	}
 	
-	if (curproc->euid)
+	if (cred->euid)
 	{
 		DEBUG (("biosfs: Dcntl() by non-privileged process"));
 		return ((unsigned) cmd == DEV_INSTALL) ? 0 : EACCES;
 	}
 	
 	if (IS_FD_DIR (dir))
+	{
+		DEBUG (("biosfs: IS_FD_DIR -> EACCES"));
 		return EACCES;
+	}
 	
 	/* ts: let's see if such an entry already exists */
 	for (b = broot; b; b = b->next)
@@ -1032,9 +1047,15 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				}
 				
 				b = kmalloc (sizeof (*b));
-				if (!b) return 0;
+				if (!b)
+				{
+					DEBUG (("DEV_INSTALL (%s): ENOMEM", name));
+					return ENOMEM;
+				}
+				
 				b->next = broot;
 				broot = b;
+				
 				strncpy (b->name, name, BNAME_MAX);
 				b->name[BNAME_MAX] = 0;
 			}
@@ -1061,6 +1082,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if ((cmd == DEV_INSTALL2) && d->bdev)
 				overlay_bdevmap (d->bdev, d->bdevmap);
 			
+			DEBUG (("DEV_INSTALL: installed %s", name));
 			return (long) &kernelinfo;
 		}
 		case DEV_NEWTTY:
@@ -1144,11 +1166,12 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 static long _cdecl
 bios_symlink (fcookie *dir, const char *name, const char *to)
 {
+	struct ucred *cred = curproc->p_cred->ucr;
 	struct bios_file *b;
 	long r;
 	fcookie fc;
 	
-	if (curproc->euid)
+	if (cred->euid)
 		return EACCES;
 
 	if (IS_FD_DIR (dir))
@@ -1187,7 +1210,7 @@ bios_readlink (fcookie *fc, char *buf, int buflen)
 {
 	struct bios_file *b = (struct bios_file *) fc->index;
 
-	if (IS_FD_DIR (fc) || IS_FD_ENTRY (fc))
+	if (IS_FD_DIR (fc) || IS_FD_ENTRY (fc, curproc))
 		return ENOSYS;
 	if (!b) return ENOSYS;
 	if (b->device) return ENOSYS;
@@ -1205,7 +1228,7 @@ bios_getdev (fcookie *fc, long *devsp)
 	struct bios_file *b;
 
 	/* Check for \dev\fd\... */
-	if (IS_FD_ENTRY (fc))
+	if (IS_FD_ENTRY (fc, curproc))
 	{
 	    *devsp = (int) fc->aux;
 	    return &fakedev;
@@ -1875,7 +1898,7 @@ long
 iocsbrk (int bdev, int mode, struct bios_tty *t)
 {
 	ulong bits;
-	int oldmap = curproc->bconmap;
+	int oldmap = curproc->p_fd->bconmap;
 
 	if (has_bconmap)
 	{
@@ -1894,7 +1917,7 @@ iocsbrk (int bdev, int mode, struct bios_tty *t)
 			return E_OK;
 		}
 		if (bdev >= 6)
-			curproc->bconmap = bdev;
+			curproc->p_fd->bconmap = bdev;
 	}
 	
 	bits = rsconf (-1, -1, -1, -1, -1, -1);	/* get settings */
@@ -1907,7 +1930,7 @@ iocsbrk (int bdev, int mode, struct bios_tty *t)
 	
 	(void) rsconf(-1, -1, -1, -1, (int) bits, -1);
 	
-	curproc->bconmap = oldmap;
+	curproc->p_fd->bconmap = oldmap;
 	return E_OK;
 }
 
@@ -1980,10 +2003,10 @@ iocsflagsb (int bdev, ulong flags, ulong mask, struct tty *tty, struct bios_tty 
 	}
 	if (mask & (TF_FLAGS|TF_STOPBITS|TF_CHARBITS))
 	{
-		int oldmap = curproc->bconmap;
+		int oldmap = curproc->p_fd->bconmap;
 
 		if (has_bconmap && bdev >= 6)
-			curproc->bconmap = bdev;
+			curproc->p_fd->bconmap = bdev;
 		bits = rsconf (-1, -1, -1, -1, -1, -1);	/* get settings */
 		oucr = ucr = (bits >> 24L) & 0x0ff;	/* isolate UCR byte */
 		oflags |= (ucr >> 3) & (TF_STOPBITS|TF_CHARBITS);
@@ -2056,7 +2079,7 @@ iocsflagsb (int bdev, ulong flags, ulong mask, struct tty *tty, struct bios_tty 
 				*sgflags |= flags & (T_RTSCTS|T_TANDEM);
 			}
 		}
-		curproc->bconmap = oldmap;
+		curproc->p_fd->bconmap = oldmap;
 	}
 	return (long) flags >= 0 ? flags : oflags;
 }
@@ -2207,10 +2230,10 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 				t->vticks = 0;
 				return oldbaud;
 			}
-/* trick rsconf into setting the correct port (it uses curproc->bconmap) */
-			oldmap = curproc->bconmap;
+/* trick rsconf into setting the correct port (it uses curproc->p_fd->bconmap) */
+			oldmap = curproc->p_fd->bconmap;
 			if (has_bconmap && dev >= 6)
-				curproc->bconmap = dev;
+				curproc->p_fd->bconmap = dev;
 			i = (int)rsconf(-2, -1, -1, -1, -1, -1);
 
 			if (i < 0 || i >= MAXBAUD)
@@ -2231,20 +2254,20 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 				}
 				if (newbaud == oldbaud ||
 				    ((struct tty *)f->devinfo)->hup_ospeed) {
-					curproc->bconmap = oldmap;
+					curproc->p_fd->bconmap = oldmap;
 					return E_OK;
 				}
 				for (i = 0; i < MAXBAUD; i++) {
 					if (baudmap[i] == newbaud) {
 						rsconf(i, -1, -1, -1, -1, -1);
-						curproc->bconmap = oldmap;
+						curproc->p_fd->bconmap = oldmap;
 						return 0;
 					} else if (baudmap[i] < newbaud) {
 						*r = baudmap[i];
 						break;
 					}
 				}
-				curproc->bconmap = oldmap;
+				curproc->p_fd->bconmap = oldmap;
 				return EBADARG;
 			} else if (newbaud == 0L) {
 	/* drop DTR: works only on modem1 and SCC lines */
@@ -2258,7 +2281,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 						0, (1 << 7), t->irec);
 				}
 			}
-			curproc->bconmap = oldmap;
+			curproc->p_fd->bconmap = oldmap;
 			return E_OK;
 		} else if (dev == 2 || dev == 5) {
 			/* screen: assume 9600 baud */
@@ -2538,8 +2561,8 @@ set_auxhandle (PROC *p, int dev)
 # if 1
 				/* don't close and reopen the same device again
 				 */
-				if (p->aux && p->aux->fc.fs == &bios_filesys &&
-				    p->aux->fc.index == f->fc.index)
+				if (p->p_fd->aux && p->p_fd->aux->fc.fs == &bios_filesys &&
+				    p->p_fd->aux->fc.index == f->fc.index)
 				{
 					f->links = 0;
 					dispose_fileptr(f);
@@ -2591,9 +2614,11 @@ found_device:
 		f = defaultaux;
 		f->links++;
 	}
-
-	(void) do_pclose (p, p->aux);
-	p->aux = f;
+	
+	if (p->p_fd->aux)
+		(void) do_pclose (p, p->p_fd->aux);
+	
+	p->p_fd->aux = f;
 
 	return 1;
 }

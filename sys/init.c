@@ -14,7 +14,9 @@
 
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
+
 # include "mint/asm.h"
+# include "mint/filedesc.h"
 # include "mint/basepage.h"
 # include "mint/xbra.h"
 
@@ -36,10 +38,11 @@
 # include "dos.h"	
 # include "dosdir.h"	
 # include "dosfile.h"	
-# include "dosmem.h"	
 # include "filesys.h"	/* init_filesys, s_ync, load_*, close_filesys */
 # include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
+# include "k_exec.h"	/* sys_pexec */
+# include "k_exit.h"	/* sys_pwaitpid */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
 # include "proc.h"	/* init_proc, add_q, rm_q */
@@ -223,7 +226,7 @@ mint_criticerr (long error) /* high word is error, low is drive */
  * then we grab the exec_os vector and use that to start GEM; that
  * way programs that expect exec_os to act a certain way will still
  * work.
- * NOTE: we must use Pexec instead of p_exec here, because we will
+ * NOTE: we must use Pexec instead of sys_pexec here, because we will
  * be running in a user context (that of process 1, not process 0)
  */
 
@@ -373,6 +376,9 @@ init_intr (void)
 		if (intr_shadow)
 			quickmove ((char *)intr_shadow, (char *) 0x0L, 1024L);
 	}
+	
+	/* we'll be making GEMDOS calls */
+	enter_gemdos ();
 }
 
 /* restore all interrupt vectors and trap routines
@@ -498,45 +504,70 @@ get_my_name (void)
 }
 # endif
 
+
 /* Boot menu routines. Quite lame I admit. Added 19.X.2000. */
 
-# ifdef BOOT_MENU
 static short load_xfs;
 static short load_xdd;
 static short load_auto;
 static short save_ini;
 static const char *ini_keywords[] =
-		{ "XFS_LOAD", "XDD_LOAD", \
-		  "AUTOLOAD", "MEM_PROT", "INI_SAVE" };
+{
+	"XFS_LOAD",
+	"XDD_LOAD",
+	"AUTOLOAD",
+	"MEM_PROT",
+	"INI_SAVE"
+};
+
+static const char *startmenu =
+	"\033E\r\n\033p"
+	"     FreeMiNT boot menu     \033q\r\n\r\n"
+	"<1> Start up FreeMiNT: %s"
+	"<2> Load external XFS: %s"
+	"<3> Load external XDD: %s"
+	"<4> Continue the AUTO: %s"
+	"<5> Memory protection: %s"
+	"<0> Save default-file: %s\r\n"
+	"[Return] accept,\r\n"
+	"[Ctrl-C] cancel.\r\n"
+;
+
+static const char *ini_warn =
+	"# This file is automatically created,\n"
+	"# do not edit.\n\n"
+;
 
 /* we assume that the new mint.ini file, containing the boot
  * menu defaults, is located at same place as mint.cnf is
  */
 
 static char *
-find_ini(void)
+find_ini (void)
 {
 	extern char *cnf_path_1, *cnf_path_2, *cnf_path_3;
 
-	if (Fsfirst(cnf_path_1, 0) == 0)
+	if (Fsfirst (cnf_path_1, 0) == 0)
 		return "mint.ini";
-	if (Fsfirst(cnf_path_2, 0) == 0)
+	if (Fsfirst (cnf_path_2, 0) == 0)
 		return "\\multitos\\mint.ini";
-	if (Fsfirst(cnf_path_3, 0) == 0)
+	if (Fsfirst (cnf_path_3, 0) == 0)
 		return "\\mint\\mint.ini";
 
 	return 0;
 }
 
 static char *
-find_char(char *s, char c)
+find_char (char *s, char c)
 {
 	short f = 0;
 
-	while (*s) {
+	while (*s)
+	{
 		if ((*s == '\n') || (*s == '\r'))
 			break;
-		if (*s == c) {
+		if (*s == c)
+		{
 			f = 1;
 			break;
 		}
@@ -548,7 +579,7 @@ find_char(char *s, char c)
 }
 
 static short
-whether_yes(char *s)
+whether_yes (char *s)
 {
 	s = find_char(s, '=');
 	if ((long)s == 0)
@@ -560,19 +591,19 @@ whether_yes(char *s)
 }
 
 static void
-read_ini(void)
+read_ini (void)
 {
 	DTABUF *dta;
 	char *buf, *s, *ini_file = find_ini();
 	long r, x, len;
 	short inihandle, options[5] = { 1, 1, 1, 1, 1 };
 
-	if ((long)ini_file == 0)
+	if ((long) ini_file == 0)
 		goto initialize;
 
 	/* Figure out the file's length. Wish I had Fstat() here :-( */
-	dta = (DTABUF *)Fgetdta();
-	r = Fsfirst(ini_file, 0);
+	dta = (DTABUF *) Fgetdta ();
+	r = Fsfirst (ini_file, 0);
 	if (r < 0)
 		goto initialize;	/* No such file, probably */
 	len = dta->dta_size;
@@ -580,31 +611,32 @@ read_ini(void)
 		goto initialize;	/* proper mint.ini can't be so short */
 	len++;
 
-	buf = (char *)Mxalloc(len, 0x0003);
-	if ((long)buf == -32L)	
-		buf = (char *)Malloc(len);	/* No Mxalloc()? */
-	if ((long)buf == 0)
+	buf = (char *) Mxalloc (len, 0x0003);
+	if ((long) buf == -32L)	
+		buf = (char *) Malloc (len);	/* No Mxalloc()? */
+	if ((long) buf == 0)
 		goto initialize;	/* Out of memory or such */
-	bzero(buf, len);
+	bzero (buf, len);
 
-	inihandle = Fopen(ini_file, 0);
+	inihandle = Fopen (ini_file, 0);
 	if (inihandle < 0)
 		goto exit;
-	r = Fread(inihandle, len, buf);
+	r = Fread (inihandle, len, buf);
 	if (r < 0)
 		goto close;
 
-	strupr(buf);
-	for (x = 0; x < 5; x++) {
-		s = strstr(buf, ini_keywords[x]);
-		if ((long)s)
-			options[x] = whether_yes(s);
+	strupr (buf);
+	for (x = 0; x < 5; x++)
+	{
+		s = strstr (buf, ini_keywords[x]);
+		if ((long) s)
+			options[x] = whether_yes (s);
 	}
 
 close:
-	(void)Fclose(inihandle);
+	Fclose (inihandle);
 exit:
-	Mfree((long)buf);
+	Mfree ((long) buf);
 
 initialize:
 	load_xfs = options[0];
@@ -615,52 +647,51 @@ initialize:
 }
 
 static void
-write_ini(short *options)
+write_ini (short *options)
 {
-	extern char *ini_warn;
 	short inihandle;
-	char *ini_file = find_ini(), temp[256];
+	char *ini_file = find_ini (), buf[256];
 	long r, x, l;
 
-	if ((long)ini_file == 0)
+	if ((long) ini_file == 0)
 		return;
  
-	inihandle = Fcreate(ini_file, 0);
+	inihandle = Fcreate (ini_file, 0);
 	if (inihandle < 0)
 		return;
 
 	options++;		/* Ignore the first one :-) */
 
-	l = strlen(ini_warn);
-	r = Fwrite(inihandle, l, ini_warn);
-	if ((r < 0) || (r != l)) {
+	l = strlen (ini_warn);
+	r = Fwrite (inihandle, l, ini_warn);
+	if ((r < 0) || (r != l))
+	{
 		r = -1;
 		goto close;
 	}
 
-	for (x = 0; x < 5; x++) {
-		ksprintf(temp, 256, "%s=%s\n", \
+	for (x = 0; x < 5; x++)
+	{
+		ksprintf (buf, sizeof (buf), "%s=%s\n",
 			ini_keywords[x], options[x] ? "YES" : "NO");
-		l = strlen(temp);
-		r = Fwrite(inihandle, l, temp);
-		if ((r < 0) || (r != l)) {
+		l = strlen (buf);
+		r = Fwrite (inihandle, l, buf);
+		if ((r < 0) || (r != l))
+		{
 			r = -1;
 			break;
 		}
 	}
 close:
-	(void)Fclose(inihandle);
+	Fclose (inihandle);
 
 	if (r < 0)
-		(void)Fdelete(ini_file);
+		Fdelete (ini_file);
 }		
-# endif
 
 static int
 boot_kernel_p (void)
 {
-# ifdef BOOT_MENU
-	extern const char *startmenu;	/* in info.c */
 	char menu[512];
 	short option[6];
 	long c = 0;
@@ -747,39 +778,6 @@ wait:
 		}
 	}
 	return 1;	/* not reached */
-
-# else
-	/* ask the user whether wants to boot MultiTOS;
- 	 * returns 1 if yes, 0 if no
- 	 */
-	/* "boot MiNT?" messages, in various langauges:
-	 */
-	static struct yn_message
-	{
-		const char *message;	/* message to print */
-		char	yes_let;	/* letter to hit for yes */
-		char	no_let;		/* letter to hit for no */
-	}
-	boot_it [MAXLANG] =
-	{
-		{ "Load " MINT_NAME "?   (y)es (n)o ",     'y', 'n' },
-		{ MINT_NAME " laden?   (j)a (n)ein ",      'j', 'n' },
-		{ "Charger " MINT_NAME "?   (o)ui (n)on ", 'o', 'n' },
-		{ "Load " MINT_NAME "?   (y)es (n)o ",     'y', 'n' },	/* reserved */
-		{ "¨Cargar " MINT_NAME "?   (s)i (n)o ",   's', 'n' },	/* upside down ? is 168 dec. */
-		{ "Carica " MINT_NAME "?   (s)i (n)o ",    's', 'n' }
-	};
-	
-	struct yn_message *msg = &boot_it [gl_lang];
-	int y;
-	
-	Cconws (msg->message);
-	y = (int) Cconin ();
-	if (tolower (y) == msg->yes_let)
-		return 1;
-	else
-		return 0;
-# endif
 }
 
 
@@ -802,9 +800,8 @@ init (void)
 # ifdef VM_EXTENSION
 	int disable_vm = 0;
 # endif
-# ifdef BOOT_MENU
 	read_ini();	/* Read user defined defaults */
-# endif	
+	
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
 	 */
@@ -1034,9 +1031,6 @@ init (void)
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
 	
-	/* we'll be making GEMDOS calls */
-	enter_gemdos ();
-	
 	/* set up standard file handles for the current process
 	 * do this here, *after* init_intr has set the Rwabs vector,
 	 * so that AHDI doesn't get upset by references to drive U:
@@ -1045,16 +1039,15 @@ init (void)
 	if (!f)
 		FATAL ("unable to open CONSOLE device");
 	
-	curproc->control = f;
-	curproc->handle[0] = f;
-	curproc->handle[1] = f;
-	f->links = 3;
+	curproc->p_fd->control = f;
+	curproc->p_fd->ofiles[0] = f; f->links++;
+	curproc->p_fd->ofiles[1] = f; f->links++;
 	
 	f = do_open ("U:\\DEV\\MODEM1", O_RDWR, 0, NULL, NULL);
 	if (!f)
 		FATAL ("unable to open MODEM1 device");
 	
-	curproc->aux = f;
+	curproc->p_fd->aux = f;
 	((struct tty *) f->devinfo)->aux_cnt = 1;
 	f->pos = 1;	/* flag for close to --aux_cnt */
 	
@@ -1064,29 +1057,32 @@ init (void)
 		 * MODEM1 may no longer be the default
 		 */
 		bconmap (curbconmap);
-		f = curproc->aux;	/* bconmap can change curproc->aux */
+		f = curproc->p_fd->aux;	/* bconmap can change curproc->aux */
 	}
 	
 	if (f)
 	{
-		curproc->handle[2] = f;
+		curproc->p_fd->ofiles[2] = f;
 		f->links++;
 	}
 	
 	f = do_open ("U:\\DEV\\CENTR", O_RDWR, 0, NULL, NULL);
 	if (f)
 	{
-		curproc->handle[3] = curproc->prn = f;
-		f->links = 2;
+		curproc->p_fd->ofiles[3] = f;
+		curproc->p_fd->prn = f;
+		f->links++;
 	}
 	
 	f = do_open ("U:\\DEV\\MIDI", O_RDWR, 0, NULL, NULL);
 	if (f)
 	{
-		curproc->midiin = curproc->midiout = f;
+		curproc->p_fd->midiin = f;
+		curproc->p_fd->midiout = f;
+		f->links++;
+		
 		((struct tty *) f->devinfo)->aux_cnt = 1;
 		f->pos = 1;	/* flag for close to --aux_cnt */
-		f->links = 2;
 	}
 	
 	
@@ -1124,18 +1120,14 @@ init (void)
 	d_setpath (curpath);
 	
 	/* load external xdd */
-# ifdef BOOT_MENU
 	if (load_xdd)
-# endif
 		load_modules (0);
 	
 	/* reset curpath just to be sure */
 	d_setpath (curpath);
 	
 	/* load external xfs */
-# ifdef BOOT_MENU
 	if (load_xfs)
-# endif
 		load_modules (1);
 	
 	/* reset curpath just to be sure */
@@ -1191,7 +1183,7 @@ init (void)
 	if (init_env[0] == 0)
 	{
 		static char path_env[] = "PATH=\0C:\0";
-		path_env[6] = curproc->curdrv + 'A';
+		path_env[6] = curproc->p_cwd->curdrv + 'A';
 		init_env = path_env;
 	}
 	
@@ -1205,9 +1197,7 @@ init (void)
 	}
 	
 	/* run any programs appearing after us in the AUTO folder */
-# ifdef BOOT_MENU
 	if (load_auto)
-# endif
 		run_auto_prgs ();
 
 	/* prepare to run the init program as PID 1. */
@@ -1231,24 +1221,24 @@ init (void)
 	 */
 	if (init_prg && (!init_is_gem || gem_active))
 	{
-		r = p_exec (0, (char *) init_prg, init_tail, init_env);
+		r = sys_pexec (0, (char *) init_prg, init_tail, init_env);
 	}
 	else if (!gem_active)
 	{   
 		BASEPAGE *bp; int pid;
-		bp = (BASEPAGE *) p_exec (7, (char *) GEM_memflags, (char *) "\0", init_env);
+		bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
 		bp->p_tbase = *((long *) EXEC_OS);
 # ifndef MULTITOS
 		if (((long *) sysbase[5])[0] == 0x87654321)
 			gem_start = ((long *) sysbase[5])[2];
 		gem_base = bp;
 # endif
-		r = p_exec (106, (char *) "GEM", bp, 0L);
+		r = sys_pexec (106, (char *) "GEM", bp, 0L);
 		pid = (int) r;
 		if (pid > 0)
 		{
 			do {
-				r = p_wait3(0, (long *)0);
+				r = sys_pwaitpid (-1, 0, NULL);
 			}
 			while (pid != ((r & 0xffff0000L) >> 16));
 			r &= 0x0000ffff;
@@ -1491,7 +1481,7 @@ run_auto_prgs (void)
 		else if (runthem)
 		{
 			strcpy (pathspec+6, dta->dta_name);
-			p_exec (0, pathspec, (char *)"", init_env);
+			sys_pexec (0, pathspec, (char *)"", init_env);
 		}
 		r = f_snext ();
 	}

@@ -16,10 +16,13 @@
 # include "filesys.h"
 # include "global.h"
 
-# include "arch/mprot.h"
 # include "libkern/libkern.h"
+
 # include "mint/basepage.h"
+# include "mint/filedesc.h"
 # include "mint/signal.h"
+
+# include "arch/mprot.h"
 
 # include "biosfs.h"
 # include "block_IO.h"
@@ -36,6 +39,7 @@
 # include "dosdir.h"
 # include "dosfile.h"
 # include "dosmem.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "memory.h"
 # include "module.h"
@@ -490,7 +494,7 @@ s_ync (void)
 }
 
 long _cdecl
-sys_fsync (int fh)
+sys_fsync (short fh)
 {
 	/* dummy function at the moment */
 	return s_ync ();
@@ -813,11 +817,14 @@ close_filesys (void)
 	{
 		int i;
 		
-		for (i = MIN_HANDLE; i < MAX_OPEN; i++)
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
+		for (i = MIN_HANDLE; i < p->p_fd->nfiles; i++)
 		{
 			FILEPTR *f;
 			
-			f = p->handle [i];
+			f = p->p_fd->ofiles [i];
 			if (f)
 			{
 				if (p->wait_q == TSR_Q || p->wait_q == ZOMBIE_Q)
@@ -844,8 +851,6 @@ changedrv (ushort d)
 	int i;
 	FILEPTR *f;
 	FILESYS *fs;
-	SHTEXT *stext, **old;
-	extern SHTEXT *text_reg;	/* in mem.c */
 	DIR *dirh;
 	fcookie dir;
 	int warned = (d & 0xf000) == PROC_RDEV_BASE;
@@ -872,11 +877,17 @@ changedrv (ushort d)
 	
 	for (p = proclist; p; p = p->gl_next)
 	{
+		struct filedesc *fd = p->p_fd;
+		struct cwd *cwd = p->p_cwd;
+		
+		if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+			continue;
+		
 		/* invalidate all open files on this device */
-		for (i = MIN_HANDLE; i < MAX_OPEN; i++)
+		for (i = MIN_HANDLE; i < fd->nfiles; i++)
 		{
-			if (((f = p->handle[i]) != 0) &&
-				(f != (FILEPTR *)1) && (f->fc.dev == d))
+			f = fd->ofiles[i];
+			if (f && (f != (FILEPTR *) 1) && (f->fc.dev == d))
 			{
 			    if (!warned)
 			    {
@@ -889,13 +900,13 @@ changedrv (ushort d)
  * calls to the device driver since the file has gone away
  */
 			    f->dev = NULL;
-			    (void)do_pclose(p, f);
+			    do_pclose(p, f);
 /* we could just zero the handle, but this could lead to confusion if
  * a process doesn't realize that there's been a media change, Fopens
  * a new file, and gets the same handle back. So, we force the
  * handle to point to /dev/null.
  */
-			    p->handle[i] =
+			    fd->ofiles[i] =
 				do_open("U:\\DEV\\NULL", O_RDWR, 0, NULL, NULL);
 			}
 		}
@@ -938,65 +949,38 @@ changedrv (ushort d)
 		}
 		else
 		{
-			dir.fs = 0; dir.dev = d;
+			dir.fs = 0;
+			dir.dev = d;
 		}
 		
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
-			if (p->root[i].dev == d)
+			if (cwd->root[i].dev == d)
 			{
-				release_cookie (&p->root[i]);
-				dup_cookie (&p->root[i], &dir);
+				release_cookie (&cwd->root[i]);
+				dup_cookie (&cwd->root[i], &dir);
 			}
-			if (p->curdir[i].dev == d)
+			if (cwd->curdir[i].dev == d)
 			{
-				release_cookie (&p->curdir[i]);
-				dup_cookie (&p->curdir[i], &dir);
+				release_cookie (&cwd->curdir[i]);
+				dup_cookie (&cwd->curdir[i], &dir);
 			}
 		}
 		
 		/* hmm, what we can do if the drive changed
 		 * that hold our root dir?
 		 */
-		if (p->root_dir)
+		if (cwd->root_dir && cwd->rootdir.dev == d)
 		{
-			release_cookie (&p->root_fc);
-			p->root_fc.fs = 0;
-			kfree (p->root_dir);
-			p->root_dir = NULL;
+			release_cookie (&cwd->rootdir);
+			cwd->rootdir.fs = 0;
+			kfree (cwd->root_dir);
+			cwd->root_dir = NULL;
 			
 			post_sig (p, SIGKILL);
 		}
 		
 		release_cookie (&dir);
-	}
-	
-	/* free any file descriptors associated with shared text regions */
-	for (old = &text_reg; 0 != (stext = *old);)
-	{
-		f = stext->f;
-		if (f->fc.dev == d)
-		{
-			f->dev = NULL;
-			do_pclose(rootproc, f);
-			stext->f = 0;
-			
-			/* free region if unattached */
-			if (stext->text->links == 0xffff)
-			{
-				stext->text->links = 0;
-				stext->text->mflags &= ~(M_SHTEXT|M_SHTEXT_T);
-				free_region (stext->text);
-				*old = stext->next;
-				kfree (stext);
-				
-				continue;
-			}
-			
-			/* else clear `sticky bit' */
-			stext->text->mflags &= ~M_SHTEXT_T;
-		}
-		old = &stext->next;
 	}
 }
 
@@ -1141,6 +1125,8 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 {
 	static char newpath[16] = "U:\\DEV\\";
 	
+	struct cwd *cwd = curproc->p_cwd;
+	
 	char temp2[PATH_MAX];
 	char linkstuff[PATH_MAX];
 	
@@ -1148,6 +1134,7 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	int drv;
 	XATTR xattr;
 	long r;
+	
 	
 	/* dolast: 0 == return a cookie for the directory the file is in
 	 *         1 == return a cookie for the file itself, don't follow links
@@ -1207,7 +1194,7 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	 * maybe "/home/ftp" then we should interpret the same filename
 	 * now as "/home/ftp/c:/auto".
 	 */
-	if (path[1] == ':' && !curproc->root_dir)
+	if (path[1] == ':' && !cwd->root_dir)
 	{
 		char c = tolower (path[0]);
 		
@@ -1221,7 +1208,7 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 # if 1
 		/* if root_dir is set drive references are forbidden
 		 */
-		if (curproc->root_dir)
+		if (cwd->root_dir)
 			return ENOTDIR;
 # endif
 		
@@ -1234,7 +1221,7 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	else
 	{
 nodrive:
-		drv = curproc->curdrv;
+		drv = cwd->curdrv;
 	}
 	
 	/* see if the path is rooted from '\\'
@@ -1246,10 +1233,10 @@ nodrive:
 		
 		/* if root_dir is set this is our start point
 		 */
-		if (curproc->root_dir)
-			dup_cookie (&dir, &curproc->root_fc);
+		if (cwd->root_dir)
+			dup_cookie (&dir, &cwd->rootdir);
 		else
-			dup_cookie (&dir, &curproc->root[drv]);
+			dup_cookie (&dir, &cwd->root[drv]);
 	}
 	else
 	{
@@ -1257,7 +1244,7 @@ nodrive:
 		{
 			/* an explicit drive letter was given
 			 */
-			dup_cookie (&dir, &curproc->curdir[drv]);
+			dup_cookie (&dir, &cwd->curdir[drv]);
 		}
 		else
 		{
@@ -1266,10 +1253,10 @@ nodrive:
 		}
 	}
 	
-	if (!dir.fs && !curproc->root_dir)
+	if (!dir.fs && !cwd->root_dir)
 	{
 		changedrv (dir.dev);
-		dup_cookie (&dir, &curproc->root[drv]);
+		dup_cookie (&dir, &cwd->root[drv]);
 	}
 	
 	if (!dir.fs)
@@ -1342,7 +1329,7 @@ restart_mount:
 					{
 						release_cookie (&dir);
 						release_cookie (&mounteddir);
-						dup_cookie (&dir, &curproc->root[UNIDRV]);
+						dup_cookie (&dir, &cwd->root[UNIDRV]);
 						TRACE (("path2cookie: restarting from mount point"));
 						goto restart_mount;
 					}
@@ -1446,14 +1433,14 @@ restart_mount:
 			break;
 		}
 		
-		if (curproc->root_dir)
+		if (cwd->root_dir)
 		{
-			if (samefile (&dir, &curproc->root_fc)
+			if (samefile (&dir, &cwd->rootdir)
 				&& lastname[0] == '.'
 				&& lastname[1] == '.'
 				&& lastname[2] == '\0')
 			{
-				PATH2COOKIE_DB (("relpath2cookie: can't leave root [%s] -> forward to '.'", curproc->root_dir));
+				PATH2COOKIE_DB (("relpath2cookie: can't leave root [%s] -> forward to '.'", cwd->root_dir));
 				
 				lastname[1] = '\0';
 			}
@@ -1473,8 +1460,8 @@ restart_mount:
 				{
 					release_cookie (&dir);
 					release_cookie (&mounteddir);
-					dup_cookie (&dir, &curproc->root[UNIDRV]);
-					TRACE( ("path2cookie: restarting from mount point"));
+					dup_cookie (&dir, &cwd->root[UNIDRV]);
+					TRACE(("path2cookie: restarting from mount point"));
 					goto restart_mount;
 				}
 				else if (r == 0)
@@ -1560,7 +1547,7 @@ restart_mount:
 				}
 			}
 			dir = *res;
-			(void) xfs_getxattr (res->fs, res, &xattr);
+			xfs_getxattr (res->fs, res, &xattr);
 		}
 		else
 		{
@@ -1576,13 +1563,15 @@ restart_mount:
 long
 path2cookie (const char *path, char *lastname, fcookie *res)
 {
+	struct cwd *cwd = curproc->p_cwd;
+	
 	/* AHDI sometimes will keep insisting that a media change occured;
 	 * we limit the number of retrys to avoid hanging the system
 	 */
 # define MAX_TRYS 4
 	int trycnt = MAX_TRYS - 1;
 	
-	fcookie *dir = &curproc->curdir[curproc->curdrv];
+	fcookie *dir = &cwd->curdir[cwd->curdrv];
 	long r;
 	
 restart:
@@ -1632,7 +1621,7 @@ dup_cookie (fcookie *newc, fcookie *oldc)
 	
 	fs = oldc->fs;
 	if (fs && fs->dupcookie)
-		(void) xfs_dupcookie (fs, newc, oldc);
+		xfs_dupcookie (fs, newc, oldc);
 	else
 		*newc = *oldc;
 }
@@ -1647,10 +1636,9 @@ new_fileptr (void)
 	FILEPTR *f;
 	
 	f = kmalloc (sizeof (*f));
-	if (!f)
-		FATAL ("new_fileptr: out of memory");
+	if (f) bzero (f, sizeof (*f));
 	
-	f->next = 0;
+	TRACE (("new_fileptr: kmalloc %lx", f));
 	return f;
 }
 
@@ -1660,6 +1648,7 @@ dispose_fileptr (FILEPTR *f)
 	if (f->links != 0)
 		FATAL ("dispose_fileptr: f->links == %d", f->links);
 	
+	TRACE (("dispose_fileptr: kfree %lx", f));
 	kfree (f);
 }
 
@@ -1684,9 +1673,6 @@ denyshare (FILEPTR *list, FILEPTR *f)
 {
 	int newrm, newsm;	/* new read and sharing mode */
 	int oldrm, oldsm;	/* read and sharing mode of already opened file */
-	extern MEMREGION *tofreed;
-	MEMREGION *m = tofreed;
-	int i;
 	
 	newrm = f->flags & O_RWMODE;
 	newsm = f->flags & O_SHMODE;
@@ -1702,21 +1688,14 @@ denyshare (FILEPTR *list, FILEPTR *f)
 	for ( ; list; list = list->next)
 	{
 		oldrm = list->flags & O_RWMODE;
-		if (oldrm == O_EXEC) oldrm = O_RDONLY;
+		if (oldrm == O_EXEC)
+			oldrm = O_RDONLY;
 		oldsm = list->flags & O_SHMODE;
 		
 		if (oldsm == O_DENYW || oldsm == O_DENYRW)
 		{
 		 	if (newrm != O_RDONLY)
 		 	{
-				/* conflict because of unattached shared text region? */
-				if (!m && NULL != (m = find_text_seg (list)))
-				{
-					if (m->links == 0xffff)
-						continue;
-					m = 0;
-				}
-				
 				DEBUG (("write access denied"));
 				return 1;
 			}
@@ -1759,8 +1738,11 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		if ((newsm == O_COMPAT && newrm != O_RDONLY && oldrm != O_RDONLY)
 			|| (oldsm == O_COMPAT && newrm != O_RDONLY))
 		{
-			for (i = MIN_HANDLE; i < MAX_OPEN; i++)
-				if (curproc->handle[i] == list)
+			struct filedesc *fd = curproc->p_fd;
+			int i;
+			
+			for (i = MIN_HANDLE; i < fd->nfiles; i++)
+				if (fd->ofiles[i] == list)
 					goto found;
 			
 			/* old file pointer is not open by this process */
@@ -1771,10 +1753,6 @@ denyshare (FILEPTR *list, FILEPTR *f)
 			;	/* everything is OK */
 		}
 	}
-	
-	/* cannot close shared text regions file here... have open do it. */
-	if (m)
-		tofreed = m;
 	
 	return 0;
 }
@@ -1788,32 +1766,21 @@ denyshare (FILEPTR *list, FILEPTR *f)
  */
 
 int
-ngroupmatch (int group)
+denyaccess (XATTR *xattr, ushort perm)
 {
-	int i;
-	
-	for (i = 0; i < curproc->ngroups; i++)
-		if (curproc->ngroup[i] == group)
-			return 1;
-	
-	return 0;
-}
-
-int
-denyaccess (XATTR *xattr, unsigned int perm)
-{
-	unsigned mode;
+	struct ucred *cred = curproc->p_cred->ucr;
+	ushort mode;
 	
 	/* the super-user can do anything! */
-	if (curproc->euid == 0)
+	if (cred->euid == 0)
 		return 0;
 	
 	mode = xattr->mode;
-	if (curproc->euid == xattr->uid)
+	if (cred->euid == xattr->uid)
 		perm = perm << 6;
-	else if (curproc->egid == xattr->gid)
+	else if (cred->egid == xattr->gid)
 		perm = perm << 3;
-	else if (ngroupmatch (xattr->gid))
+	else if (ngroupmatch (cred, xattr->gid))
 		perm = perm << 3;
 	
 	if ((mode & perm) != perm)
@@ -1840,10 +1807,10 @@ denyaccess (XATTR *xattr, unsigned int perm)
 LOCK * _cdecl 
 denylock (LOCK *list, LOCK *lck)
 {
+	ushort pid = curproc->pid;
 	LOCK *t;
-	unsigned long tstart, tend;
-	unsigned long lstart, lend;
-	int pid = curproc->pid;
+	ulong tstart, tend;
+	ulong lstart, lend;
 	int ltype;
 
 	ltype = lck->l.l_type;
@@ -1854,14 +1821,15 @@ denylock (LOCK *list, LOCK *lck)
 	else
 		lend = lstart + lck->l.l_len - 1;
 
-	for (t = list; t; t = t->next) {
+	for (t = list; t; t = t->next)
+	{
 		tstart = t->l.l_start;
 		if (t->l.l_len == 0)
 			tend = 0xffffffffL;
 		else
 			tend = tstart + t->l.l_len - 1;
 
-	/* look for overlapping locks */
+		/* look for overlapping locks */
 		if (tstart <= lstart && tend >= lstart && t->l.l_pid != pid &&
 		    (ltype == F_WRLCK || t->l.l_type == F_WRLCK))
 			break;
@@ -1869,6 +1837,7 @@ denylock (LOCK *list, LOCK *lck)
 		    (ltype == F_WRLCK || t->l.l_type == F_WRLCK))
 			break;
 	}
+	
 	return t;
 }
 
@@ -1877,7 +1846,7 @@ denylock (LOCK *list, LOCK *lck)
  * is granted; return an error code, or 0 if everything is ok.
  */
 long
-dir_access (fcookie *dir, unsigned int perm, unsigned int *mode)
+dir_access (fcookie *dir, ushort perm, ushort *mode)
 {
 	XATTR xattr;
 	long r;
@@ -1911,13 +1880,14 @@ dir_access (fcookie *dir, unsigned int perm, unsigned int *mode)
  */
 
 int
-has_wild(const char *name)
+has_wild (const char *name)
 {
 	char c;
 
-	while ((c = *name++) != 0) {
-		if (c == '*' || c == '?') return 1;
-	}
+	while ((c = *name++) != 0)
+		if (c == '*' || c == '?')
+			return 1;
+	
 	return 0;
 }
 
@@ -1936,55 +1906,73 @@ has_wild(const char *name)
  */
 
 void
-copy8_3(char *dest, const char *src)
+copy8_3 (char *dest, const char *src)
 {
 	char fill = ' ', c;
 	int i;
 
-	if (src[0] == '.') {
-		if (src[1] == 0) {
-			strcpy(dest, ".       .   ");
+	if (src[0] == '.')
+	{
+		if (src[1] == 0)
+		{
+			strcpy (dest, ".       .   ");
 			return;
 		}
-		if (src[1] == '.' && src[2] == 0) {
-			strcpy(dest, "..      .   ");
+		
+		if (src[1] == '.' && src[2] == 0)
+		{
+			strcpy (dest, "..      .   ");
 			return;
 		}
 	}
-	if (src[0] == '*' && src[1] == '.' && src[2] == '*' && src[3] == 0) {
+	
+	if (src[0] == '*' && src[1] == '.' && src[2] == '*' && src[3] == 0)
+	{
 		dest[0] = '*';
 		dest[1] = 0;
 		return;
 	}
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < 8; i++)
+	{
 		c = *src++;
-		if (!c || c == '.') break;
-		if (c == '*') {
+		
+		if (!c || c == '.')
+			break;
+		if (c == '*')
 			fill = c = '?';
-		}
+		
 		*dest++ = toupper(c);
 	}
-	while (i++ < 8) {
+	
+	while (i++ < 8)
 		*dest++ = fill;
-	}
+	
 	*dest++ = '.';
 	i = 0;
 	fill = ' ';
 	while (c && c != '.')
 		c = *src++;
 
-	if (c) {
-		for( ;i < 3; i++) {
+	if (c)
+	{
+		for( ;i < 3; i++)
+		{
 			c = *src++;
-			if (!c || c == '.') break;
+			
+			if (!c || c == '.')
+				break;
+			
 			if (c == '*')
 				c = fill = '?';
+			
 			*dest++ = toupper(c);
 		}
 	}
+	
 	while (i++ < 3)
 		*dest++ = fill;
+	
 	*dest = 0;
 }
 

@@ -15,6 +15,11 @@ extern short time_slice;
 extern PROC *sys_q[NUM_QUEUES];		/* process queues */
 
 
+/* macro for calculating number of missed time slices, based on a
+ * process' priority
+ */
+# define SLICES(pri)	(((pri) >= 0) ? 0 : -(pri))
+
 # define TICKS_PER_TOCK		200
 # define TOCKS_PER_SECOND	1
 
@@ -29,10 +34,6 @@ extern ulong avenrun[3];
 extern ushort uptimetick;
 
 
-PROC *		new_proc	(void);
-void		dispose_proc	(PROC *p);
-
-PROC *		fork_proc	(long *err);
 void		init_proc	(void);
 
 void		reset_priorities(void);

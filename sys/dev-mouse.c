@@ -160,9 +160,7 @@ mouse_handler (const char *buf)
 	 * up
 	 */
 	if (mousersel)
-	{
 		wakeselect ((PROC *) mousersel);
-	}
 }
 
 long oldvec = 0;

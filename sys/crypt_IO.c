@@ -53,6 +53,7 @@
 # include "dosdir.h"
 # include "info.h"
 # include "init.h"
+# include "k_prot.h"
 # include "kmemory.h"
 # include "md5.h"
 
@@ -291,7 +292,7 @@ d_setkey (llong dev, char *key, int cipher)
 	
 	DEBUG (("Dsetkey(%li, %d)", (long) dev, cipher));
 	
-	if (curproc->euid)
+	if (!suser (curproc->p_cred->ucr))
 		return EPERM;
 	
 	switch (cipher)

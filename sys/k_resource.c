@@ -10,13 +10,22 @@
  * Started: Mon, 30 Mar 1998.
  */  
 
-# include "resource.h"
+# include "k_resource.h"
 
+# include "libkern/libkern.h"
+
+# include "mint/resource.h"
+
+# include "k_prot.h"
+# include "kmemory.h"
+# include "memory.h"
 # include "util.h"
+
 
 # ifndef __MSHORT__
 # error This file is not 32-bit clean.
 # endif
+
 
 /* NOTE:  For the rest of the *ix world a negative priority value
  *        signifies high priority when requesting cpu usage.  In
@@ -78,7 +87,7 @@
  */
 
 long _cdecl 
-p_getpriority (int which, int who) 
+sys_pgetpriority (int which, int who) 
 { 
 	TRACE (("Pgetpriority: which = %d, who = %d", (int) which, (int) who));
 	
@@ -152,11 +161,11 @@ p_getpriority (int which, int who)
 				return EINVAL;
 			}
 			else if (who == 0)
-				who = curproc->euid;
+				who = curproc->p_cred->ucr->euid;
 			
 			for (p = proclist; p; p = p->gl_next)
 			{
-				if (p->euid == who)
+				if (p->p_cred->ucr->euid == who)
 				{
 					hits++;
 					if (p->pri > max_priority)
@@ -210,7 +219,7 @@ p_getpriority (int which, int who)
  */
  
 long _cdecl 
-p_setpriority (int which, int who, int pri)
+sys_psetpriority (int which, int who, int pri)
 { 
 	TRACE (("Psetpriority: which = %d, who = %d, pri = %d", (int) which, (int) who, (int) pri));
 
@@ -219,7 +228,7 @@ p_setpriority (int which, int who, int pri)
 	else if (pri > PRIO_MAX)
 		pri = PRIO_MAX;
   
-	if (pri < 0 && curproc->euid != 0)
+	if (pri < 0 && !suser (curproc->p_cred->ucr))
 	{
 		DEBUG (("Psetpriority: attempt to assign negative priority by non-root"));
 		return EPERM;
@@ -245,7 +254,8 @@ p_setpriority (int which, int who, int pri)
 				DEBUG (("Psetpriority: no such process %d", (int) who));
 				return ESRCH;
 			}
-			if (curproc->euid != 0 && curproc->euid != p->euid)
+			if (curproc->p_cred->ucr->euid
+				&& curproc->p_cred->ucr->euid != p->p_cred->ucr->euid)
 			{
 				DEBUG (("Psetpriority: not owner"));
 				return EACCES;
@@ -273,7 +283,8 @@ p_setpriority (int which, int who, int pri)
 				if (p->pgrp == who) 
 					hits++;
 				
-				if (curproc->euid != 0 && curproc->euid != p->euid)
+				if (curproc->p_cred->ucr->euid
+					&& curproc->p_cred->ucr->euid != p->p_cred->ucr->euid)
 				{
 					DEBUG (("Psetpriority: not owner"));
 					retval = EACCES;
@@ -306,10 +317,10 @@ p_setpriority (int which, int who, int pri)
 			}
 			else if (who == 0)
 			{
-				who = curproc->euid;
+				who = curproc->p_cred->ucr->euid;
 			}
 			
-			if (who != curproc->euid)
+			if (who != curproc->p_cred->ucr->euid)
 			{
 				DEBUG (("Psetpriority: not owner"));
 				retval = EACCES;
@@ -317,7 +328,7 @@ p_setpriority (int which, int who, int pri)
 			
 			for (p = proclist; p; p = p->gl_next)
 			{
-				if (p->euid == who)
+				if (p->p_cred->ucr->euid == who)
 				{
 					hits++;
 					p->pri = p->curpri = -pri;
@@ -359,14 +370,14 @@ p_setpriority (int which, int who, int pri)
  */
 
 long _cdecl
-p_renice (int pid, int delta)
+sys_prenice (int pid, int delta)
 {
 	long pri;
 	
 	if (pid < 0)
 		return ESRCH;
 	
-	pri = p_getpriority (PRIO_PROCESS, pid);
+	pri = sys_pgetpriority (PRIO_PROCESS, pid);
 	
 	if (pri < 0)
 		return pri;
@@ -379,7 +390,7 @@ p_renice (int pid, int delta)
 		
 		pri += delta;
 		
-		r = p_setpriority (PRIO_PROCESS, pid, (int) pri);
+		r = sys_psetpriority (PRIO_PROCESS, pid, (int) pri);
 		if (r < E_OK)
 			return r;
 	}
@@ -396,7 +407,125 @@ p_renice (int pid, int delta)
 }
 
 long _cdecl
-p_nice (int delta)
+sys_pnice (int delta)
 {
-	return p_renice (curproc->pid, delta);
+	return sys_prenice (curproc->pid, delta);
+}
+
+/*
+ * get process resource usage. 8 longwords are returned, as follows:
+ *     r[0] == system time used by process
+ *     r[1] == user time used by process
+ *     r[2] == system time used by process' children
+ *     r[3] == user time used by process' children
+ *     r[4] == memory used by process
+ *     r[5] - r[7]: reserved for future use
+ */
+long _cdecl
+sys_prusage (long *r)
+{
+	PROC *p = curproc;
+	
+	r[0] = p->systime;
+	r[1] = p->usrtime;
+	r[2] = p->chldstime;
+	r[3] = p->chldutime;
+	r[4] = memused (p);
+	/* r[5] = ; */
+	/* r[6] = ; */
+	/* r[7] = ; */
+	
+	return E_OK;
+}
+
+/*
+ * get/set resource limits i to value v. The old limit is always returned;
+ * if v == -1, the limit is unchanged, otherwise it is set to v. Possible
+ * values for i are:
+ *    1:  max. cpu time	(milliseconds)
+ *    2:  max. core memory allowed
+ *    3:  max. amount of malloc'd memory allowed
+ */
+long _cdecl
+sys_psetlimit (int i, long v)
+{
+	PROC *p = curproc;
+	long oldlimit;
+
+	switch(i)
+	{
+		case 1:
+		{
+			oldlimit = p->maxcpu;
+			if (v >= 0) p->maxcpu = v;
+			break;
+		}
+		case 2:
+		{
+			oldlimit = p->maxcore;
+			if (v >= 0)
+			{
+				p->maxcore = v;
+				recalc_maxmem (p);
+			}
+			break;
+		}
+		case 3:
+		{
+			oldlimit = p->maxdata;
+			if (v >= 0)
+			{
+				p->maxdata = v;
+				recalc_maxmem (p);
+			}
+			break;
+		}
+		default:
+		{
+			DEBUG (("Psetlimit: invalid mode %d", i));
+			return ENOSYS;
+		}
+	}
+	
+	TRACE (("p_setlimit(%d, %ld): oldlimit = %ld", i, v, oldlimit));
+	return oldlimit;
+}
+
+
+struct plimit *
+copy_limit (struct plimit *p_limit)
+{
+	struct plimit *n;
+	
+	TRACE (("copy_limit: %lx links %li", p_limit, p_limit->links));
+	assert (p_limit->links > 0);
+	
+	if (p_limit->links == 1)
+		return p_limit;
+	
+	n = kmalloc (sizeof (*n));
+	if (n)
+	{
+		/* copy */
+		memcpy (n->limits, p_limit->limits, sizeof (n->limits));
+		
+		/* reset flags */
+		n->flags = 0;
+		
+		/* adjust link counters */
+		p_limit->links--;
+		n->links = 1;
+	}
+		DEBUG(("copy_limit: kmalloc failed -> NULL"));
+	
+	return n;
+}
+
+void
+free_limit (struct plimit *p_limit)
+{
+	assert (p_limit->links > 0);
+	
+	if (--p_limit->links == 0)
+		kfree (p_limit);
 }
