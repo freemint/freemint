@@ -938,6 +938,8 @@ mouse_input(enum locks lock, int internal)
 	return false;
 }
 
+static struct file *kmoose = 0;
+
 void
 exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, short *yr)
 {
@@ -953,7 +955,7 @@ exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, 
 		/*
 		 * First we check if a fake button-released packet is to be delivered
 		 */
-		DIAG((D_button, NULL, "Poll mouse"));
+		DIAGS(("Poll mouse for %s", client->name));
 		if (mainmd.state && !mainmd.cstate)
 		{
 			DIAG((D_button, NULL, "Poll: Sending fake button released"));
@@ -973,7 +975,21 @@ exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, 
 			 * If no fake packet is need, try to read to get most recent
 			 * data. If that fails, the data already in mu_mouse is uptodate.
 			 */
-			n = f_read(C.MOUSE_dev, sizeof(md), &md);
+			if (kmoose)
+			{
+				DIAGS(("read kmoose 1"));
+				n = kernel_read(kmoose, &md, sizeof(md));
+			}
+			else
+			{
+				long err;
+				kmoose = kernel_open("u:\\dev\\moose", O_RDONLY, &err);
+				if (kmoose)
+					n = kernel_read(kmoose, &md, sizeof(md));
+				DIAGS(("open/read kmoose 2 n = %lx, err %lx, kmoose %lx", n, err, kmoose));
+			}
+			if (!kmoose)
+				n = f_read(C.MOUSE_dev, sizeof(md), &md);
 
 			if (n == sizeof(md))
 			{
@@ -1015,7 +1031,7 @@ exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, 
 				/*
 				 * No mouse news today...
 				*/
-				DIAG((D_mouse, NULL, "Poll - no new data"));
+				DIAGS(("Poll - no new data %lx", n));
 				x = x_mouse;
 				y = y_mouse;
 			}
@@ -1082,3 +1098,4 @@ exclusive_mouse_input(struct xa_client *client, int poll, short *br, short *xr, 
 	if (yr)
 		*yr = y;
 }
+

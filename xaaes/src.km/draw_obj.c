@@ -1718,8 +1718,8 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 
 	// XXX -> go in usermode like signal handling
 	// push p on user stack too
-	ALERT(("d_g_progdef not yet implemented (pid %u)!", p_getpid()));
-	raise(SIGSEGV);
+	//ALERT(("d_g_progdef not yet implemented (pid %u)!", p_getpid()));
+	//raise(SIGSEGV);
 
 	/* The PROGDEF function returns the ob_state bits that
 	 * remain to be handled by the AES:
