@@ -345,13 +345,9 @@ XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
 void
 multi_intout(struct xa_client *client, short *o, int evnt)
 {
-	short b, x, y;
-
 	check_mouse(client, &o[3], &o[1], &o[2]);
-
 	o[0] = evnt;
 	vq_key_s(C.vh, &o[4]);
-
 	if (evnt)
 	{
 		o[5] = o[6] = 0;
