@@ -127,6 +127,11 @@
  *
  */
 
+short	gl_kbd;			/* default keyboard layout */
+struct	cad_def cad[3];		/* for halt, warm and cold resp. */
+
+# ifndef NO_AKP_KEYBOARD
+
 static const ushort modifiers[] =
 {
 	CONTROL, RSHIFT, LSHIFT,
@@ -139,8 +144,6 @@ static const ushort mmasks[] =
 	MM_ALTERNATE, MM_CLRHOME, MM_INSERT
 };
 
-struct	cad_def cad[3];		/* for halt, warm and cold resp. */
-short	gl_kbd;			/* default keyboard layout */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock = 1;	/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;		/* place for saving the hz_200 timer value */
@@ -148,9 +151,12 @@ static	long hz_ticks;		/* place for saving the hz_200 timer value */
 static	uchar numin[3];		/* buffer for storing ASCII code typed in via numpad */
 static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 
+/* Variables that deal with keyboard autorepeat */
 static	uchar last_key[4];	/* last pressed key */
-static	short key_pressed;	/* counter for keys pressed/released (0 = no key is pressed) */
-static	ushort keydel, krpdel;	/* keybard delay rate and keyboard repeat reate, respectively */
+static	short key_pressed;	/* flag for keys pressed/released (0 = no key is pressed) */
+static	ushort keydel = 23;	/* keybard delay rate and keyboard repeat rate, respectively */
+static	ushort krpdel = 2;
+static	ushort kdel, krep;	/* actual counters */
 
 /* keyboard table pointers */
 static struct keytab *tos_keytab;
@@ -251,13 +257,16 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 	*new_buf_pos++ = c2;
 	*new_buf_pos++ = c3;
 
+	if (c2)
+		kbdclick((ushort)c2);
+
 	kintr = 1;
 }
 
-void
+static void
 key_repeat(void)
 {
-	register uchar c0, c1, c2, c3;
+	uchar c0, c1, c2, c3;
 
 	c0 = last_key[0];
 	c1 = last_key[1];
@@ -265,8 +274,35 @@ key_repeat(void)
 	c3 = last_key[3];
 
 	put_key_into_buf(c0, c1, c2, c3);
+}
 
-	kbdclick(c2);
+/* Called every 20ms */
+void
+autorepeat_timer(void)
+{
+	if (key_pressed)
+	{
+		if (kdel)
+		{
+			kdel--;
+			if (kdel == 0)
+				key_repeat();
+		}
+		else
+		{
+			krep--;
+			if (krep == 0)
+			{
+				key_repeat();
+				krep = krpdel;
+			}
+		}
+	}
+	else
+	{
+		kdel = keydel;
+		krep = krpdel;
+	}
 }
 
 /* Translate scancode into ASCII according to the keyboard
@@ -476,7 +512,9 @@ ikbd_scan (ushort scancode)
 		{
 			killgroup (con_tty.pgrp, SIGQUIT, 1);
 
-			goto key_done;
+			kbdclick(scancode);
+
+			return -1;
 		}
 		else if ((scancode >= 0x003b) && (scancode <= 0x0044))
 		{
@@ -488,7 +526,9 @@ ikbd_scan (ushort scancode)
 			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 
-			goto key_done;
+			kbdclick(scancode);
+
+			return -1;
 		}
 		/* This is in case the keyboard has real F11-F20 keys on it */
 		else if ((scancode >= 0x0054) && (scancode <= 0x005d))
@@ -498,7 +538,9 @@ ikbd_scan (ushort scancode)
 			t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *)) ctrl_alt_Fxx, 1);
 			if (t) t->arg = scancode;
 
-			goto key_done;
+			kbdclick(scancode);
+
+			return -1;
 		}
 		/* We ignore release codes, but catch them to avoid
 		 * spurious execution of checkkeys() on every release of a key.
@@ -521,8 +563,10 @@ ikbd_scan (ushort scancode)
 			case HELP:
 			{
 				addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))alt_help, 1);
-				goto key_done;
-				break;
+
+				kbdclick(scancode);
+
+				return -1;
 			}
 			/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
 			 */
@@ -542,13 +586,16 @@ ikbd_scan (ushort scancode)
 
 				chartable = tos_keytab->unshift;
 				ascii = chartable[scancode];
+
 				if (ascii)
 				{
 					numin[numidx] = ascii;
 					numidx++;
 				}
-				goto key_done;
-				break;
+
+				kbdclick(scancode);
+
+				return -1;
 			}
 			/* Ignore release codes as usual.
 			 */
@@ -572,33 +619,16 @@ ikbd_scan (ushort scancode)
 
 	/* Ordinary keyboard here.
 	 */
-# if 0
-	/* This code works, but there's no key repeat yet */
 	if (scancode & 0x80)
-	{
-		/* Definitely don't go below zero */
-		if (key_pressed > 0)
-			key_pressed--;
-	}
+		key_pressed = 0;
 	else
 	{
-		key_pressed++;
+		key_pressed = 1;
 
 		ascii = scan2asc(scancode);
 
 		put_key_into_buf(0, 0, (uchar)scancode, ascii);
 	}
-# else
-	/* This is just to make all this work for now */
-	kintr = 1;
-
-	return scancode;
-# endif
-
-key_done:
-
-	if (scancode < 0x80)
-		kbdclick(scancode);	/* produce keyclick */
 
 	return -1;			/* don't go to TOS, just return */
 }
@@ -997,6 +1027,11 @@ init_keybd(void)
 {
 	/* call the underlying XBIOS */
 	tos_keytab = TRAP_Keytbl(-1, -1, -1);
+
+	kdel = keydel;
+	krep = krpdel;
 }
+
+# endif	/* NO_AKP_KEYBOARD */
 
 /* EOF */

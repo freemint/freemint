@@ -200,16 +200,21 @@ static void
 init_intr (void)
 {
 	ushort savesr;
-	long *syskey_aux;
 
 	syskey = (KBDVEC *) TRAP_Kbdvbase ();
 	oldkey = *syskey;
 
-	syskey_aux = (long *)syskey;
-	syskey_aux--;
+# ifndef NO_AKP_KEYBOARD
+	{
+		long *syskey_aux;
 
-	if (*syskey_aux && tosvers >= 0x0200)
-		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
+		syskey_aux = (long *)syskey;
+		syskey_aux--;
+
+		if (*syskey_aux && tosvers >= 0x0200)
+			new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
+	}
+# endif
 
 	old_term = (long) TRAP_Setexc (0x102, -1UL);
 
@@ -331,18 +336,21 @@ void
 restr_intr (void)
 {
 	ushort savesr;
-	long *syskey_aux;
 
 	savesr = splhigh();
 
 	*syskey = oldkey;	/* restore keyboard vectors */
 
+# ifndef NO_AKP_KEYBOARD
 	if (tosvers >= 0x0200)
 	{
+		long *syskey_aux;
+
 		syskey_aux = (long *)syskey;
 		syskey_aux--;
 		*syskey_aux = (long) oldkeys;
 	}
+# endif
 
 	*((long *) 0x008L) = old_bus;
 
@@ -695,8 +703,10 @@ init (void)
 	DEBUG (("init_xbios() ok!"));
 
 	/* initialize basic keyboard stuff */
+# ifndef NO_AKP_KEYBOARD
 	init_keybd();
 	DEBUG (("init_keybd() ok!"));
+# endif
 
 	/* Disable all CPU caches */
 # ifndef NO_CPU_CACHES
@@ -1219,8 +1229,10 @@ mint_thread(void *arg)
 		new_xbra_install(&old_exec_os, EXEC_OS, (long _cdecl (*)())new_exec_os);
 	}
 
+# ifndef NO_AKP_KEYBOARD
 	/* Load the keyboard table */
 	load_keytbl();
+# endif
 
 	/* Load the unicode table */
 # ifdef SOFT_UNITABLE
