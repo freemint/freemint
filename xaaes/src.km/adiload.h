@@ -1,43 +1,34 @@
 /*
- * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
- * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
- * All rights reserved.
- * 
- * This file is free software; you can redistribute it and/or modify
+ * $Id$
+ *
+ * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
+ *                                 1999 - 2003 H.Robbers
+ *                                        2004 F.Naumann & O.Skancke
+ *
+ * A multitasking AES replacement for MiNT
+ *
+ * This file is part of XaAES.
+ *
+ * XaAES is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
- * any later version.
- * 
- * This file is distributed in the hope that it will be useful,
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * XaAES is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
- * begin:	2000-04-18
- * last change:	2000-04-18
- * 
- * Author:	Frank Naumann <fnaumann@freemint.de>
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
+ * along with XaAES; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-# ifndef _addload_h
-# define _addload_h
+#ifndef _adiload_h
+#define _adiload_h
 
-# include "global.h"
+#include "global.h"
 
+void adi_load(void);
 
-void adi_load (void);
-
-
-# endif /* _addload_h */
+#endif /* _adiload_h */
