@@ -55,7 +55,8 @@
 
 
 /*
- * create a new process that is (practically) a duplicate of p1
+ * duplicate process p1
+ * return new process struct
  */
 struct proc *
 fork_proc1 (struct proc *p1, long flags, long *err)
