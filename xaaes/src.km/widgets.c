@@ -47,6 +47,11 @@
 
 #include "mint/signal.h"
 
+
+static struct widget_row * get_last_row(struct widget_row *row, short lmask, short lvalid, bool backwards);
+static struct widget_row * get_first_row(struct widget_row *row, short lmask, short lvalid, bool backwards);
+static void rp_2_ap_row(struct xa_window *wind);
+
 static OBJECT *def_widgets;
 
 #if GENERATE_DIAGS
@@ -214,6 +219,13 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		t_widg[widg->type], widg, widg->stuff,
 		widg->type == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 ));
 
+	if (widg->type != XAW_TOOLBAR)
+	{
+		if (r && (long)r != (long)&widg->ar)
+			*r = widg->ar;
+		return NULL;
+	}
+
 	if (frame < 0)
 		frame = 0;
 
@@ -234,7 +246,7 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	ww = wind->frame < 0 ? wind->r.w : wind->r.w - SHADOW_OFFSET;
 	wh = wind->frame < 0 ? wind->r.h : wind->r.h - SHADOW_OFFSET;
 
-	switch (widg->loc.relative_type)
+	switch ((widg->loc.relative_type & (R_BOTTOM|R_RIGHT|R_CENTER)))
 	{
 	case LT:
 		r->x += rtx;
@@ -242,15 +254,15 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		break;
 	case LB:
 		r->x += rtx;
-		r->y += (wh - r->h - rty);
+		r->y += (wh - rty); //(wh - r->h - rty);
 		break;
 	case RT:
-		r->x += (ww - r->w - rtx);
+		r->x += (ww - rtx); //(ww - r->w - rtx);
 		r->y += rty;
 		break;
 	case RB:
-		r->x += (ww - r->w - rtx);
-		r->y += (wh - r->h - rty);
+		r->x += (ww - rtx); //(ww - r->w - rtx);
+		r->y += (wh - rty); //(wh - r->h - rty);
 		break;
 	case CT:
 		r->x += (ww - r->w) / 2;
@@ -313,6 +325,13 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		t_widg[widg->type], widg, widg->stuff,
 		widg->type == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 ));
 
+	if (widg->type != XAW_TOOLBAR)
+	{
+		if (r && (long)r != (long)&widg->ar)
+			*r = widg->ar;
+		return;
+	}
+
 	if (frame < 0)
 		frame = 0;
 
@@ -333,7 +352,7 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	ww = wind->frame < 0 ? wind->r.w : wind->r.w - SHADOW_OFFSET;
 	wh = wind->frame < 0 ? wind->r.h : wind->r.h - SHADOW_OFFSET;
 
-	switch (widg->loc.relative_type)
+	switch ((widg->loc.relative_type & (R_BOTTOM|R_RIGHT|R_CENTER)))
 	{
 	case LT:
 		r->x += rtx;
@@ -341,15 +360,15 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		break;
 	case LB:
 		r->x += rtx;
-		r->y += (wh - r->h - rty);
+		r->y += (wh - rty); //(wh - r->h - rty);
 		break;
 	case RT:
-		r->x += (ww - r->w - rtx);
+		r->x += (ww - rtx); //(ww - r->w - rtx);
 		r->y += rty;
 		break;
 	case RB:
-		r->x += (ww - r->w - rtx);
-		r->y += (wh - r->h - rty);
+		r->x += (ww - rtx); //(ww - r->w - rtx);
+		r->y += (wh - rty); //(wh - r->h - rty);
 		break;
 	case CT:
 		r->x += (ww - r->w) / 2;
@@ -778,19 +797,14 @@ redraw_menu(enum locks lock)
 void
 calc_work_area(struct xa_window *wind)
 {
-	struct widget_row *row;
+	struct widget_row *rows = wind->widg_rows;
 
-	RECT r = wind->rc, *rt;
-	XA_SLIDER_WIDGET *sl;
-	XA_WIDGET *widg;
+	RECT r = wind->rc;
 	XA_WIND_ATTR k = wind->active_widgets;
 	int thin = wind->thinwork;
 	int frame = wind->frame;
-	int bottom = 0;
-	int right = 0;
 	int tl_margin, br_margin, wa_margins;
 	int t_margin, b_margin, l_margin, r_margin;
-	int winside; /* , hinside */;
 
 	wind->wa = r;
 
@@ -824,7 +838,7 @@ calc_work_area(struct xa_window *wind)
 		//tl_margin = (MONO || thin) ? 1 : 2;
 		t_margin = (MONO || thin) ? 0 : 2;
 		b_margin = (MONO || thin) ? 0 : 2;
-		l_margin = (MONO || thin) ? 1 : 2;
+		l_margin = (MONO || thin) ? 0 : 2;
 		r_margin = (MONO || thin) ? 0 : 2;
 		
 		tl_margin = (MONO || thin) ? 0 : 2;
@@ -863,161 +877,22 @@ calc_work_area(struct xa_window *wind)
 		wind->ba.w = wind->r.w - frame;
 		wind->ba.h = wind->r.h - frame;
 
-		/*
-		 * calculate correct width for windows title line
-		 */
-		winside = wind->wa.w + l_margin + r_margin; //wa_margins;
-		/* hinside = wind->wa.h + wa_margins; */
+		rp_2_ap_row(wind);
 
-		rt = &get_widget(wind, XAW_TITLE)->r;
-
-		if (k & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))	/* top bar */
+		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_START, false)))
 		{
-			wind->wa.y += rt->h; //cfg.widg_h; // + 2,
-			wind->wa.h -= rt->h; //cfg.widg_h; // + 2;
+			wind->wa.y += (rows->r.y + rows->r.h);
+			wind->wa.h -= (rows->r.y + rows->r.h);
 		}
-
-		rt = &get_widget(wind, XAW_TITLE)->r;
-		rt->w = winside;
-
-		if (k & CLOSER)
+		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START), false)))
 		{
-			rt->w -= get_widget(wind, XAW_CLOSE)->r.w;
-		
-			/* + space between name and closer
-			 *   name has a inside border
-			 */
-			//rt->w -= cfg.widg_w; // + 1;
+			wind->wa.x += (rows->r.x + rows->r.w);
+			wind->wa.w -= (rows->r.x + rows->r.w);
 		}
-
-		if (k & (ICONIFIER|FULLER|HIDE))
-		{
-			/* Due to pushbutton behaviour in color, in mono its a rectangle. */
-			//rt->w -=  MONO ? 1 : 2;
-			if (k & FULLER)
-				rt->w -= get_widget(wind, XAW_FULL)->r.w; //cfg.widg_w;
-			if (k & ICONIFIER)
-				rt->w -= get_widget(wind, XAW_ICONIFY)->r.w; //cfg.widg_w;
-			if (k & HIDE)
-				rt->w -= get_widget(wind, XAW_HIDE)->r.w; //cfg.widg_w;
-		}
-
-		if (!(wind->window_status & XAWS_ICONIFIED))
-		{
-			/* fatter topbar */
-			if (k & INFO)
-			{
-				widg = get_widget(wind, XAW_INFO);
-				wind->wa.y += widg->r.h;
-				wind->wa.h -= widg->r.h;
-			}
-
-			if (k & XaMENU)
-			{
-				/* menu is a standard widget!
-				 * 
-				 * Now I can specify the desktop window w/o dummy name. :-)
-				 * the +1 is for the menu_line
-				 */
-				widg = get_widget(wind, XAW_MENU);
-				wind->wa.y += widg->r.h; //MENU_H + 1;
-				wind->wa.h -= widg->r.h; //MENU_H + 1;
-				widg->r.w = wind->wa.w + winside;
-			}
-
-			if (k & (UPARROW|DNARROW|VSLIDE))
-			{
-				/* right bar */
-				right = 1;
-			}
-
-			if (k & (LFARROW|RTARROW|HSLIDE))
-			{
-				/* bottom bar */
-				wind->wa.h -= get_widget(wind, XAW_HSLIDE)->r.h; //cfg.widg_h; // + WASP; /* + spacer */
-				bottom = 1;
-			}
-
-			if (right || ((k & SIZER))) // && !(right || bottom)))
-			{
-				short w = 0;
-				
-				if (right)
-					w = get_widget(wind, XAW_VSLIDE)->r.w;
-				if (k & SIZER)
-				{
-					short sw = get_widget(wind, XAW_RESIZE)->r.w;
-					if (sw > w)
-						w = sw;
-				}
-				wind->wa.w -= w;
-
-				if (k & HSLIDE)
-					get_widget(wind, XAW_HSLIDE)->r.w -= w;
-
-				/* sizer only retain right bar */
-				//wind->wa.w -= cfg.widg_w; // + WASP; /* + spacer */
-			}
-			/* Update info bar */
-			if (k & INFO)
-				/* full width inside standard borders */
-				get_widget(wind, XAW_INFO)->r.w = winside;
-
-			if (k & XaMENU)
-				get_widget(wind, XAW_MENU)->r.w = winside;	
-
-
-			/* Sliders are completely oriented on the work area */
-
-			/* Update horizontal slider */
-			if (k & HSLIDE)
-			{
-				widg = get_widget(wind, XAW_HSLIDE);
-				sl = widg->stuff;
-				/* initializes slider draw */
-				//sl->r.w = 0;
-
-				rt = &widg->r;
-				rt->w = wind->wa.w + l_margin + r_margin; //wa_margins;
-
-				if (k & LFARROW)
-					rt->w -= get_widget(wind, XAW_LFLN)->r.w;
-				if (k & RTARROW)
-					rt->w -= get_widget(wind, XAW_RTLN)->r.w;
-		
-					/* includes RTARROW */
-					//rt->w -= 2*cfg.widg_w;
-
-			}
-
-			/* Update vertical slider */
-			if (k & (VSLIDE|SIZER|UPARROW|DNARROW))
-			{
-				widg = get_widget(wind, XAW_VSLIDE);
-				sl = widg->stuff;
-				/* initializes slider draw */
-				//sl->r.h = 0;
-
-				rt = &widg->r;
-				rt->h = wind->wa.h + t_margin + b_margin; //wa_margins;
-
-				if (k & UPARROW)
-					rt->h -= get_widget(wind, XAW_UPLN)->r.h;
-				if (k & DNARROW)
-					/* includes UPARROW */
-					rt->h -= get_widget(wind, XAW_DNLN)->r.h; //2 * cfg.widg_h;
-
-				if ((k & SIZER) && !bottom)
-					rt->h -= get_widget(wind, XAW_RESIZE)->r.h;
-			}
-		#if 0
-			else if ((k & (SIZER|UPARROW|DNARROW)))
-			{
-				widg = get_widget(wi, XAW_VSLIDE);
-				widg->r.h = wind->wa.h + wa_margins - cfg.widg_h;
-			}
-		#endif
-		}
+		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_END, false)))
+			wind->wa.h -= rows->r.y;
+		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END), false)))
+			wind->wa.w -= rows->r.x;
 	}
 
 	/* border displacement */
@@ -1100,151 +975,29 @@ stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSER,    XAWS_ICONIFIED,			W
 stdl_full    = {RT, { 0, 0, 1, 1 },  XAW_FULL,    FULLER,    XAWS_ICONIFIED,			WIDG_FULL,    WIP_ACTIVE, free_xawidget_resources },
 stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, 0,					WIDG_ICONIFY, WIP_ACTIVE, free_xawidget_resources },
 stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     XAWS_ICONIFIED,			WIDG_HIDE,    WIP_ACTIVE, free_xawidget_resources },
-stdl_title   = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_notitle = {LT, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,                     0, free_xawidget_resources },
-stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,    WIP_ACTIVE, free_xawidget_resources },
-stdl_nresize = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,             0, free_xawidget_resources },
-stdl_uscroll = {RT, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_UP,      WIP_ACTIVE, free_xawidget_resources },
+stdl_title   = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_notitle = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,                     0, free_xawidget_resources },
+//stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,    WIP_ACTIVE, free_xawidget_resources },
+stdl_resize  = {RT, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,    WIP_ACTIVE, free_xawidget_resources },
+stdl_nresize = {RT/*RB*/, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,             0, free_xawidget_resources },
+stdl_uscroll = {LT/*RT*/, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_UP,      WIP_ACTIVE, free_xawidget_resources },
 stdl_upage   = {NO, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_vslide  = {RT, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_nvslide = {RT, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                     0, free_xawidget_resources },
+stdl_vslide  = {LT | R_VARIABLE/*RT*/, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_nvslide = {LT | R_VARIABLE/*RT*/, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                     0, free_xawidget_resources },
 stdl_dpage   = {NO, { 0, 1, 1, 1 },  XAW_DNPAGE,  DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_dscroll = {RB, { 0, 1, 1, 1 },  XAW_DNLN,    DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_DOWN,    WIP_ACTIVE, free_xawidget_resources },
+stdl_dscroll = {RT/*RB*/, { 0, 1, 1, 1 },  XAW_DNLN,    DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_DOWN,    WIP_ACTIVE, free_xawidget_resources },
 stdl_lscroll = {LB, { 0, 0, 1, 1 },  XAW_LFLN,    LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_LEFT,    WIP_ACTIVE, free_xawidget_resources },
 stdl_lpage   = {NO, { 1, 0, 1, 1 },  XAW_LFPAGE,  LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_hslide  = {LB, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_nhslide = {LB, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                     0, free_xawidget_resources },
+stdl_hslide  = {LB | R_VARIABLE, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_nhslide = {LB | R_VARIABLE, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                     0, free_xawidget_resources },
 stdl_rpage   = {NO, { 1, 0, 1, 1 },  XAW_RTPAGE,  RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
 stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_RIGHT,   WIP_ACTIVE, free_xawidget_resources },
-stdl_info    = {LT, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_menu    = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_info    = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_menu    = {LT | R_VARIABLE, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
 stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
 stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources }
 ;
 
-#if 0
-static void
-set_widget_coords(struct xa_widget *w, void(*widg_size)(struct xa_widget *widg))
-{
-	XA_WIDGET_LOCATION *l = &w->loc;
-
-	w->r.x = l->r.x * cfg.widg_w;
-	w->r.y = l->r.y * cfg.widg_h;
-	w->r.w = l->r.w * cfg.widg_w;
-	w->r.h = l->r.h * cfg.widg_h;
-	
-	if (l->rsc_index && (cfg.widg_dw || cfg.widg_dh))
-	{
-		switch(l->relative_type)
-		{
-		case LT:
-			w->r.x -= cfg.widg_dw;
-			w->r.y -= cfg.widg_dh;
-			break;
-		case RT:
-			w->r.x += cfg.widg_dw;
-			w->r.y -= cfg.widg_dh;
-			break;
-		case LB:
-			w->r.x -= cfg.widg_dw;
-			w->r.y += cfg.widg_dh;
-			break;
-		case RB:
-			w->r.x += cfg.widg_dw;
-			w->r.y += cfg.widg_dh;
-			break;
-		default:;
-		}
-	}
-}
-#endif
-static struct widget_row *
-get_next_bot_wr(struct widget_row *row)
-{
-	struct widget_row *nxt = row->next;
-
-	while (nxt)
-	{
-		if (nxt->start && (nxt->rel & R_BOTTOM))
-			break;
-		nxt = nxt->next;
-	}
-	return nxt;
-}
-static struct widget_row *
-get_prev_bot_wr(struct widget_row *row)
-{
-	struct widget_row *nxt = row->prev;
-
-	while (nxt)
-	{
-		if (nxt->start && (nxt->rel & R_BOTTOM))
-			break;
-		nxt = nxt->prev;
-	}
-	return nxt;
-}
-
-static struct widget_row *
-get_next_top_wr(struct widget_row *row)
-{
-	struct widget_row *nxt = row->next;
-
-	while (nxt)
-	{
-		if (nxt->start && !(nxt->rel & R_BOTTOM))
-			break;
-		nxt = nxt->next;
-	}
-	return nxt;
-}
-static struct widget_row *
-get_prev_top_wr(struct widget_row *row)
-{
-	struct widget_row *nxt = row->prev;
-
-	while (nxt)
-	{
-		if (nxt->start && !(nxt->rel & R_BOTTOM))
-			break;
-		nxt = nxt->prev;
-	}
-	return nxt;
-}
-
-
-static void
-adjust_row_tY(struct widget_row *row)
-{
-	struct widget_row *prev;
-	struct xa_widget *widg;
-
-	if (row && (widg = row->start) && (prev = get_prev_top_wr(row)))
-	{
-		row->r.y = prev->r.y + prev->r.h;
-		while (widg)
-		{
-			widg->r.y = row->r.y;
-			widg = widg->next;
-		}
-	}
-}
-static void
-adjust_row_bY(struct widget_row *row)
-{
-	struct widget_row *next;
-	struct xa_widget *widg;
-
-	if (row && (widg = row->start) && (next = get_next_bot_wr(row)))
-	{
-		row->r.y = next->r.y + row->r.h;
-		while (widg)
-		{
-			widg->r.y = row->r.y;
-			widg = widg->next;
-		}
-	}
-}
 
 static struct widget_row *
 get_widget_row(struct xa_window *wind, struct xa_widget *widg)
@@ -1260,11 +1013,299 @@ get_widget_row(struct xa_window *wind, struct xa_widget *widg)
 	return row;
 }
 
+static struct widget_row *
+get_prev_row(struct widget_row *row, short lmask, short lvalid)
+{
+	struct widget_row *r = row->prev;
+
+	while (r)
+	{
+		if (r->start && (r->rel & lmask) == lvalid)
+			break;
+		r = r->prev;
+	}
+
+	return r;
+}
+static struct widget_row *
+get_next_row(struct widget_row *row, short lmask, short lvalid)
+{
+	struct widget_row *r = row->next;
+
+	while (r)
+	{
+		if (r->start && (r->rel & lmask) == lvalid)
+			break;
+		r = r->next;
+	}
+
+	return r;
+}
+
+static struct widget_row *
+get_last_row(struct widget_row *row, short lmask, short lvalid, bool backwards)
+{
+	struct widget_row *last = NULL;
+
+	if (row->start && (row->rel & lmask) == lvalid)
+		last = row;
+
+	if (backwards)
+	{
+		while ((row = get_prev_row(row, lmask, lvalid)))
+			last = row;
+	}
+	else
+	{
+		while ((row = get_next_row(row, lmask, lvalid)))
+			last = row;
+	}
+	return last;
+}
+
+static struct widget_row *
+get_first_row(struct widget_row *row, short lmask, short lvalid, bool backwards)
+{
+	if (!(row->start && (row->rel & lmask) == lvalid))
+	{
+		if (backwards)
+			row = get_prev_row(row, lmask, lvalid);
+		else
+			row = get_next_row(row, lmask, lvalid);
+	}
+	return row;
+}
+	
+static void
+reloc_widget_row(struct widget_row *row)
+{
+	struct xa_widget *widg = row->start;
+	short lxy, rxy;
+
+	if (row->rel & XAR_VERT)
+	{
+		lxy = rxy = 0;
+		while (widg)
+		{
+			if (widg->loc.relative_type & R_BOTTOM)
+			{
+				widg->r.y = row->rxy + widg->r.h + rxy;
+				rxy += widg->r.h;
+			}
+			else
+			{
+				widg->r.y = row->r.y + lxy;
+				lxy += widg->r.h;
+			}
+			widg->r.x = row->r.x;
+			widg->r.w = row->r.w;
+			widg = widg->next;
+		}
+	}
+	else
+	{
+		lxy = rxy = 0;
+		while (widg)
+		{
+			if (widg->loc.relative_type & R_RIGHT)
+			{
+				widg->r.x = row->rxy + widg->r.w + rxy;
+				rxy += widg->r.w;
+			}
+			else
+			{
+				widg->r.x = row->r.x + lxy;
+				lxy += widg->r.w;
+			}
+			widg->r.y = row->r.y;
+			widg->r.h = row->r.h;
+			widg = widg->next;
+		}
+	}
+}
+
+static void
+rp_2_ap_row(struct xa_window *wind)
+{
+	struct widget_row *row = wind->widg_rows;
+	struct xa_widget *widg;
+	RECT r;
+	short v, x2, y2, l;
+
+	r = wind->r;
+
+	if (wind->frame >= 0)
+	{
+		short frame = wind->frame;
+
+		r.x += frame;
+		r.y += frame;
+		frame <<= 1;
+		r.w -= (frame + SHADOW_OFFSET);
+		r.h -= (frame + SHADOW_OFFSET);
+	}
+	
+	x2 = r.x + r.w;
+	y2 = r.y + r.h;
+
+	while (row)
+	{
+		v = 0;
+		if ((widg = row->start))
+		{
+			if (!(row->rel & XAR_VERT))
+			{
+				l = x2 - row->rxy;
+				while (widg)
+				{
+					if (widg->loc.relative_type & R_VARIABLE)
+						v++;
+
+					switch ((widg->loc.relative_type & (R_RIGHT|R_BOTTOM|R_CENTER)))
+					{
+						case 0:
+						{
+							widg->ar.x = r.x + widg->r.x;
+							widg->ar.y = r.y + widg->r.y;
+							break;
+						}
+						case R_RIGHT:
+						{
+							widg->ar.x = x2 - widg->r.x;
+							widg->ar.y = r.y + widg->r.y;
+							if (l > widg->ar.x)
+								l = widg->ar.x;
+							break;
+						}
+						case R_BOTTOM:
+						{
+							widg->ar.x = r.x + widg->r.x;
+							widg->ar.y = y2 - widg->r.y;
+							break;
+						}
+						case (R_BOTTOM|R_RIGHT):
+						{
+							widg->ar.x = x2 - widg->r.x;
+							widg->ar.y = y2 - widg->r.y;
+							if (l > widg->ar.x)
+								l = widg->ar.x;
+							break;
+						}
+						default:;
+					}
+					widg->ar.w = widg->r.w;
+					widg->ar.h = widg->r.h;
+					widg = widg->next;
+				}
+				if (v)
+				{
+					widg = row->start;
+					while (widg)
+					{
+						if (widg->loc.relative_type & R_VARIABLE)
+						{
+							widg->ar.w = widg->r.w = (l - widg->ar.x);
+						}
+						if (widg->type == XAW_MENU)
+						{
+							XA_TREE *wt = widg->stuff;
+							if (wt && wt->tree)
+							{
+								wt->tree->ob_x = widg->ar.x;
+								wt->tree->ob_y = widg->ar.y;
+								if (!wt->zen)
+								{
+									wt->tree->ob_x += wt->ox;
+									wt->tree->ob_y += wt->oy;
+								}
+							}
+						}
+						widg = widg->next;
+					}
+				}
+				
+			}
+			else
+			{
+				l = y2 - row->rxy;
+				while (widg)
+				{
+					if (widg->loc.relative_type & R_VARIABLE)
+						v++;
+
+					switch ((widg->loc.relative_type & (R_RIGHT|R_BOTTOM|R_CENTER)))
+					{
+						case 0:
+						{
+							widg->ar.x = r.x + widg->r.x;
+							widg->ar.y = r.y + widg->r.y;
+							break;
+						}
+						case R_RIGHT:
+						{
+							widg->ar.x = x2 - widg->r.x;
+							widg->ar.y = r.y + widg->r.y;
+							break;
+						}
+						case R_BOTTOM:
+						{
+							widg->ar.x = r.x + widg->r.x;
+							widg->ar.y = y2 - widg->r.y;
+							if (l > widg->ar.y)
+								l = widg->ar.y;
+							break;
+						}
+						case (R_BOTTOM|R_RIGHT):
+						{
+							widg->ar.x = x2 - widg->r.x;
+							widg->ar.y = y2 - widg->r.y;
+							if (l > widg->ar.y)
+								l = widg->ar.y;
+							break;
+						}
+						default:;
+					}
+					widg->ar.w = widg->r.w;
+					widg->ar.h = widg->r.h;
+					widg = widg->next;
+				}
+				if (v)
+				{
+					widg = row->start;
+					while (widg)
+					{
+						if (widg->loc.relative_type & R_VARIABLE)
+						{
+							widg->ar.h = widg->r.h = (l - widg->ar.y);
+						}
+						if (widg->type == XAW_MENU)
+						{
+							XA_TREE *wt = widg->stuff;
+							if (wt && wt->tree)
+							{
+								wt->tree->ob_x = widg->ar.x;
+								wt->tree->ob_y = widg->ar.y;
+								if (!wt->zen)
+								{
+									wt->tree->ob_x += wt->ox;
+									wt->tree->ob_y += wt->oy;
+								}
+							}
+						}
+						widg = widg->next;
+					}
+				}
+			}
+		}
+		row = row->next;
+	}
+}
+		
+
 static void
 position_widget(struct xa_window *wind, struct xa_widget *widg, void(*widg_size)(struct xa_window *wind, struct xa_widget *widg))
 {
 	struct widget_row *rows = wind->widg_rows;
-	short height;
 
 	if (widg->loc.relative_type & R_NONE)
 		return;
@@ -1277,6 +1318,10 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, void(*widg_size)
 	if (rows)
 	{
 		struct xa_widget *nxt_w = rows->start;
+		struct widget_row *nxt_r;
+		short diff;
+		short orient = rows->rel & XAR_VERT;
+		short placement = rows->rel & XAR_PM;
 
 		/*
 		 * See if this widget is already in this row
@@ -1294,52 +1339,75 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, void(*widg_size)
 		}
 		else if (!nxt_w)
 		{
-			struct widget_row *r;
 			/*
 			 * This is the first widget in this row, and thus we also init its Y
 			 */
 			rows->start = widg;
 			widg->next = NULL;
-			rows->r.y = 0;
+			rows->r.y = rows->r.x = rows->r.w = rows->r.h = 0;
 
-			if (!(rows->rel & R_BOTTOM))
+			if (!orient)	/* horizontal */
 			{
-				r = rows->prev;
-				while (r)
+				switch (placement)
 				{
-					if (!(r->rel & R_BOTTOM) && r->start)
+					case XAR_START:
 					{
-						rows->r.y = r->r.y + r->r.h;
-						//display("TOP-line %d, start y=%d", rows->rownr, rows->r.y);
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
+							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
+							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_END))))
+							rows->rxy = nxt_r->r.x;
+						
 						break;
 					}
-					r = r->prev;
-				}
-			}
-			else
-			{
-				r = rows->next;
-				while (r)
-				{
-					if ((r->rel & R_BOTTOM) && r->start)
+					case XAR_END:
 					{
-						rows->r.y = r->r.y;
-						//display("BOT-line %d, start y=%d", rows->rownr, rows->r.y);
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_END))))
+							rows->r.y = nxt_r->r.y;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
+							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT|XAR_END))))
+							rows->rxy = nxt_r->r.x;
 						break;
 					}
-					r = r->next;
+					
+					default:;
 				}
 			}
-			//display("%s-line %d, y = %d", rows->rel & R_BOTTOM ? "BOT":"TOP", rows->rownr, rows->r.y);
-		}
-
+			else		/* vertical */
+			{
+				switch (placement)
+				{
+					case XAR_START:
+					{
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
+							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
+							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), XAR_END)))
+							rows->rxy = nxt_r->r.y;
+						break;
+					}
+					case XAR_END:
+					{
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_END))))
+							rows->r.x = nxt_r->r.x;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
+							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), XAR_END)))
+							rows->rxy = nxt_r->r.y;
+						break;
+					}
+				}
+			}
+		}	
 		/*
 		 * If callback to calc w/h of widget provided...
 		 */
 		if (widg_size)
 		{
 			(*widg_size)(wind, widg);
-			height = widg->r.h;
 		}
 		/*
 		 * ... else just use standard w/h
@@ -1347,96 +1415,117 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, void(*widg_size)
 		else
 		{
 			widg->r.w = cfg.widg_w;
-			height = widg->r.h = cfg.widg_h;
+			widg->r.h = cfg.widg_h;
 		}
 		/*
 		 * If Widget height is larger than largest one in this row,
 		 * adjust all widgets height, and all following rows Y coord...
 		 */
-		if (rows->r.h < height)
+		if (!orient)
 		{
-			struct widget_row *nxtrow;
+			widg->loc.relative_type &= (R_VARIABLE | R_RIGHT);
+			if (placement == XAR_END)
+				widg->loc.relative_type |= R_BOTTOM;
 
-			rows->r.h = height;
-						
-			if (!(rows->rel & R_BOTTOM))
+			if ((diff = widg->r.h - rows->r.h) > 0)
 			{
-				nxtrow = rows->next;
-				while (nxtrow)
+				rows->r.h = widg->r.h;
+				
+				switch (placement)
 				{
-					if (!(nxtrow->rel & R_BOTTOM))
-						adjust_row_tY(nxtrow);
-					nxtrow = nxtrow->next;
+					case XAR_START:
+					{
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT|XAR_PM), XAR_START)))
+						{
+							nxt_r->r.y += diff;
+							reloc_widget_row(nxt_r);
+						}
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, XAR_VERT)))
+						{
+							nxt_r->r.y += diff;
+							reloc_widget_row(nxt_r);
+						}
+						break;
+					}
+					case XAR_END:
+					{
+						rows->r.y += diff;
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), XAR_END)))
+						{
+							nxt_r->r.y += diff;
+							reloc_widget_row(nxt_r);
+						}
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, XAR_VERT)))
+						{
+							nxt_r->rxy += diff;
+							reloc_widget_row(nxt_r);
+						}	
+						break;
+					}
 				}
 			}
 			else
-			{
-				struct widget_row *next;
-				 
-				next = get_next_bot_wr(rows);
-				rows->r.y = next ? (next->r.y + rows->r.h) : 0;
-				next = rows;
-				while ((next = get_prev_bot_wr(next)))
-					adjust_row_bY(next);
-			#if 0
-				nxtrow = rows->prev;
-				while (nxtrow)
-				{
-					if ((nxtrow->rel & R_BOTTOM))
-						adjust_row_bY(nxtrow);
-					nxtrow = nxtrow->prev;
-				}
-			#endif
-			}
-			nxt_w = rows->start;
-			while (nxt_w)
-			{
-				if (nxt_w != widg)
-				{
-					nxt_w->r.y = rows->r.y;
-					nxt_w->r.h = height;
-				}
-				nxt_w = nxt_w->next;
-			}
+				widg->r.h = rows->r.h;
 		}
 		else
 		{
-			height = rows->r.h;
-			widg->r.h = height;
-		}
-		
-		widg->r.y = rows->r.y;
+			XA_RELATIVE rt = widg->loc.relative_type & R_VARIABLE;
 
-		switch (widg->loc.relative_type)
-		{
-			case LB:
-			case LT:
+			if (widg->loc.relative_type & R_RIGHT)
+				rt |= R_BOTTOM;
+			if (placement == XAR_END)
+				rt |= R_RIGHT;
+
+			widg->loc.relative_type = rt;
+
+			if ((diff = widg->r.w - rows->r.w) > 0)
 			{
-				widg->r.x = rows->r.x;
-				nxt_w = rows->start;
-				while (nxt_w)
+				rows->r.w = widg->r.w;
+				switch (placement)
 				{
-					if (nxt_w != widg && !(nxt_w->loc.relative_type & R_RIGHT))
-						widg->r.x += nxt_w->r.w;
-					nxt_w = nxt_w->next;
+					case XAR_START:
+					{
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, 0)))
+						{
+							nxt_r->r.x += diff;
+							reloc_widget_row(nxt_r);
+						}
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START))))
+						{
+							nxt_r->r.x += diff;
+							reloc_widget_row(nxt_r);
+						}
+						break;
+					}
+					case XAR_END:
+					{
+						rows->r.x += diff;
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END))))
+						{
+							nxt_r->r.x += diff;
+							reloc_widget_row(nxt_r);
+						}
+						nxt_r = rows;
+						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT), 0)))
+						{
+							nxt_r->rxy += diff;
+							reloc_widget_row(nxt_r);
+						}
+						break;
+					}
 				}
-				break;
 			}
-			case RB:
-			case RT:
-			{
-				widg->r.x = 0;
-				nxt_w = rows->start;
-				while (nxt_w)
-				{
-					if (nxt_w != widg && (nxt_w->loc.relative_type & R_RIGHT))
-						widg->r.x += nxt_w->r.w;
-					nxt_w = nxt_w->next;
-				}
-				break;
-			}
-			default:;
+			else
+				widg->r.w = rows->r.w;
 		}
+		reloc_widget_row(rows);
 	}
 }
 
@@ -1459,7 +1548,7 @@ make_widget(struct xa_window *wind,
 	widg->type	= loc->n;
 	widg->destruct	= loc->destruct;
 
-	position_widget(wind, widg, widg_size); //set_widget_coords(widg, widg_size);
+	position_widget(wind, widg, widg_size);
 
 	return widg;
 }
@@ -1482,31 +1571,6 @@ iconify_grid(int i)
 
 	return ic;
 }
-#if 0
-static bool
-display_def_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	RECT r; int i = widg->loc.rsc_index;
-
-	rp_2_ap(wind, widg, &r);
-
-	if (widg->state & OS_SELECTED)
-		def_widgets[i].ob_state |= OS_SELECTED;
-	else
-		def_widgets[i].ob_state &= ~OS_SELECTED;
-
-/*
-DIAG((D_widg, wind->owner, "display_def_widget %d: state %d, global clip: %d:%d,%d:%d r: %d:%d/%d:%d",
-				wind->handle, (widg->state & SELECTED) != 0,
-				C.global_clip[0],C.global_clip[1],C.global_clip[2],C.global_clip[3],
-				r.x,r.y,r.x+r.w-1,r.y+r.h-1
-				));
-*/
-	display_object(lock, &wind->widg_info, (const RECT *)&C.global_clip, i, r.x, r.y, 0);
-
-	return true;
-}
-#endif
 /*
  * Draw a window widget
  */
@@ -1734,17 +1798,11 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	struct options *o = &wind->owner->options;
 	struct xa_wcol_inf *wci = &wind->colours->title;
 	struct xa_wtxt_inf *wti = &wind->colours->title_txt;
-	//char temp[256];
 	char tn[256];
-	//RECT r;
-	//short x, y;
-	//int effect = wti->e;
 	bool dial = (wind->dial & (created_for_FORM_DO|created_for_FMD_START)) != 0;
 
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &widg->ar);
-	
-	//r = widg->ar;
 
 	if (MONO)
 	{
@@ -1773,12 +1831,6 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 			p_gbar(0, &widg->ar);
 			f_color(wci->n.c);
 			gbar(-1, &widg->ar);
-		#if 0
-			
-			f_color(screen.dial_colours.bg_col);
-			l_color(screen.dial_colours.shadow_col);
-			p_gbar(0, &r);
-		#endif
 		}
 	}
 
@@ -1813,45 +1865,10 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	
 	//cramped_name(tn, temp, widg->ar.w/screen.c_max_w);
 #if 0
-	/* avoid inner border. */
-	if (*temp != ' ')
-		++r.x;
-#endif
-#if 0
 	if (dial)
 		effect |= ITALIC;
 #endif
-	draw_widget_text(widg, wti, tn, 1, 0);
-#if 0
-	t_font(wti->p, wti->f);
-
-	vst_effects(C.vh, effect);
-
-	prop_clipped_name(tn, temp, widg->ar.w - 4);
-	
-	t_extent(temp, &x, &y);
-	y = widg->ar.y + ((widg->ar.h - y) >> 1);
-	x = widg->ar.x;
-	x++;	
-
-	if (wti->flags & WTXT_DRAW3D)
-	{
-		if ((widg->state & OS_SELECTED) && (wti->flags & WTXT_ACT3D))
-			x++, y++;
-	
-		t_color(wti->bgc);
-		x++;
-		y++;
-		v_gtext(C.vh, x, y, temp);
-		x--;
-		y--;
-	}
-	t_color(wti->fgc);
-	v_gtext(C.vh, x, y, temp);
-
-	/* normal */
-	vst_effects(C.vh, 0);
-#endif
+	draw_widget_text(widg, wti, tn, 4, 0);
 	return true;
 }
 /*
@@ -2104,39 +2121,8 @@ display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &widg->ar);
-
 	draw_widg_box(0, wci, widg->state, &widg->ar);
-#if 0
-	wr_mode(wci->wrm);
-	f_color(wci->c);
-	f_interior(wci->i);
-	if (wci->i > 1)
-		f_style(wci->f);
-
-	gbar(0, &widg->ar);
-	
-	/* in mono just leave unbordered */
-	if (!MONO)
-	{
-		tl_hook(0, &widg->ar, wci->tlc); //screen.dial_colours.lit_col);
-		br_hook(0, &widg->ar, wci->brc); //screen.dial_colours.shadow_col);
-		t_color(wti->fgc);
-	}
-	else
-		t_color(G_BLACK);
-#endif
-
 	draw_widget_text(widg, wti, widg->stuff, 4, 0); 
-#if 0
-
-	t_font(wti->p, wti->f);
-	t_extent(widg->stuff, &x, &y);
-	y = widg->ar.y + ((widg->ar.h - y) >> 1);
-	x = widg->ar.x;
-	wr_mode(MD_TRANS);
-	
-	v_gtext(C.vh, x + 4, y, prop_clipped_name(widg->stuff, t, widg->ar.w - 6));
-#endif
 	return true;
 }
 
@@ -2681,21 +2667,11 @@ static bool
 display_unused(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_wcol_inf *wc = &wind->colours->win;
-
 	rp_2_ap(wind, widg, &widg->ar);
 	draw_widg_box(0, wc, 0, &widg->ar);
-#if 0
-	wr_mode(wc->wrm);
-	f_color(wc->n.c);
-	f_interior(wc->n.i);
-	if (wc->n.i > 1)
-		f_style(wc->n.f);
-
-	gbar(0, &widg->ar);
-#endif
 	return true;
 }
-
+#if 0
 static bool
 display_nvslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
@@ -2712,6 +2688,7 @@ display_nvslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 
 	return true;
 }
+#endif
 
 /* Display now includes the background */
 bool
@@ -2732,13 +2709,8 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		sl->r.h = widg->ar.h;
 		cl = widg->ar;
 		draw_widg_box(0, &wc->slider, 0, &widg->ar);
-		
-		//slider_back(&widg->ar, &wc->slider);
 		return true;
 	}
-
-	//wr_mode(MD_REPLACE);
-	
 	len = sl_to_pix(widg->ar.h, sl->length);
 	if (len < cfg.widg_h - 3)
 		len = cfg.widg_h - 3;
@@ -2751,7 +2723,6 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		len = widg->ar.y + widg->ar.h - offs;
 
 	draw_widg_box(0, &wc->slide, 0, &widg->ar);	
-	//slider_back(&widg->ar, &wc->slide);
 	
 	sl->r.y = offs - widg->ar.y;
 	sl->r.h = len;
@@ -2762,7 +2733,6 @@ display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	//draw_slider(0, &cl, widg->state, &wc->slider);
 	draw_widg_box(-1, &wc->slider, widg->state, &cl);
 	wr_mode(MD_TRANS);
 	return true;
@@ -2789,12 +2759,8 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
 		draw_widg_box(0, &wc->slider, 0, &widg->ar);
-		//slider_back(&widg->ar, &wc->slider);
 		return true;
 	}
-
-	//wr_mode(MD_REPLACE);
-	
 	len = sl_to_pix(widg->ar.w, sl->length);
 	if (len < cfg.widg_w - 3)
 		len = cfg.widg_w - 3;
@@ -2807,7 +2773,6 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		len = widg->ar.x + widg->ar.w - offs;
 	
 	draw_widg_box(0, &wc->slide, 0, &widg->ar);	
-	//slider_back(&widg->ar, &wc->slide);
 	
 	sl->r.x = offs - widg->ar.x;
 	sl->r.w = len;
@@ -2819,7 +2784,6 @@ display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	cl.h = sl->r.h;
 	
 	draw_widg_box(-1, &wc->slider, widg->state, &cl);
-	//draw_slider(0, &cl, widg->state, &wc->slider);
 	wr_mode(MD_TRANS);
 	return true;
 }
@@ -3047,13 +3011,11 @@ struct wdglo_desc
 
 static struct wdglo_desc widglayout[] =
 {
-	{LT, (NAME | CLOSER | FULLER | ICONIFIER | HIDE)},
-	{LT, INFO},
-	{LT, XaMENU},
-	{RT, UPARROW},
-	{RT, VSLIDE},
-	{RB, DNARROW},
-	{LB, (LFARROW | HSLIDE | RTARROW | SIZER)},
+	{(XAR_START),			(NAME | CLOSER | FULLER | ICONIFIER | HIDE)},
+	{(XAR_START),			INFO},
+	{(XAR_START),			XaMENU},
+	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER)},
+	{(XAR_END),			(LFARROW | HSLIDE | RTARROW)},
 	{0, -1},
 };
 
@@ -3172,6 +3134,8 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
 
 	if (f & WCOL_DRAW3D)
 		h += 2, w += 2;
+	if (f & WCOL_BOXED)
+		h += 2, w += 2;
 
 	widg->r.w = w;
 	widg->r.h = h;
@@ -3239,15 +3203,13 @@ void
 standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 {
 	XA_WIDGET *widg;
-	int /*wd,*/ bottom = 0, right = 0;
+	int bottom = 0, right = 0;
 	XA_WIND_ATTR old_tp = wind->active_widgets;
 	XA_WIND_ATTR utp;
 
 	DIAGS(("standard_widgets: new(%lx), prev(%lx) on wind %d for %s",
 		tp, old_tp, wind->handle, wind->owner->proc_name));
 
-	//display("stdwidg enter");
-	
 	if (!wind->widg_rows)
 		wind->widg_rows = create_widg_layout(wind, (struct wdglo_desc *)&widglayout);
 	else
@@ -3419,7 +3381,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		if (old_tp & VSLIDE)
 			zwidg(wind, XAW_DNPAGE, keep_stuff);
 	}
-	
+
 	if (tp & LFARROW)
 	{
 		widg = make_widget(wind, &stdl_lscroll, display_lfarrow, click_scroll, click_scroll, NULL, set_lfarrow_size);
@@ -3551,21 +3513,6 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	
 	}
 	wind->active_widgets = tp;
-#if 0
-	vq_key_s(C.vh, (short *)&bottom);
-	if (bottom & (K_RSHIFT|K_LSHIFT))
-	{
-		struct widget_row *rows = wind->widg_rows;
-		display("\n");
-
-		while (rows && rows->rownr <= 6)
-		{
-			display("prv=%lx, nxt=%lx, start=%lx %s-row %d, y=%d", rows->prev, rows->next, rows->start, (rows->rel & R_BOTTOM) ? "BOT":"TOP", rows->rownr, rows->r.y);
-			rows = rows->next;
-		}
-		display("std_widg - leave");
-	}
-#endif
 }
 
 static bool
@@ -3602,7 +3549,7 @@ redraw_toolbar(enum locks lock, struct xa_window *wind, short item)
 	{			
 		if (xa_rect_clip(&rl->r, &wind->wa, &r))
 		{
- 			set_clip(&r);
+			set_clip(&r);
 			widg->display(lock, wind, widg);
 		}
 		rl = rl->next;
