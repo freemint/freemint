@@ -67,4 +67,6 @@ long _cdecl	new_rwabs	(void);
 long _cdecl	new_mediach	(void);
 long _cdecl	new_getbpb	(void);
 
+void _cdecl	send_packet	(long func, char *buf, char *bufend);
+
 # endif /* _m68k_intr_h */
