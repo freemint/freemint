@@ -761,6 +761,7 @@ INLINE long b_drvmap(void)
 # define kernel_open		(*KENTRY->vec_fs.kernel_open)
 # define kernel_read		(*KENTRY->vec_fs.kernel_read)
 # define kernel_write		(*KENTRY->vec_fs.kernel_write)
+# define kernel_lseek		(*KENTRY->vec_fs.kernel_lseek)
 # define kernel_close		(*KENTRY->vec_fs.kernel_close)
 
 
