@@ -46,9 +46,9 @@ struct sigcontext
 };
 
 int
-sendsig (ushort sig)
+sendsig(ushort sig)
 {
-	struct sigaction *sigact = & SIGACTION (curproc, sig);
+	struct sigaction *sigact = &(SIGACTION(curproc, sig));
 	long oldstack, newstack;
 	long *stack;
 	struct user_things *ut;
@@ -58,7 +58,7 @@ sendsig (ushort sig)
 # define newcurrent (contexts[0])
 # define oldsysctxt (contexts[1])
 	
-	assert (curproc->stack_magic == STACK_MAGIC);
+	assert(curproc->stack_magic == STACK_MAGIC);
 	
 	/* another kludge: there is one case in which the p_sigreturn
 	 * mechanism is invoked by the kernel, namely when the user
@@ -88,7 +88,7 @@ sendsig (ushort sig)
 		
 		if (curproc->p_sigmask & 1L)
 		{
-			sys_psigreturn ();
+			sys_psigreturn();
 			curproc->p_sigmask &= ~1L;
 		}
 		else
@@ -99,12 +99,6 @@ sendsig (ushort sig)
 	
 	++curproc->nsigs;
 	
-	if (sigact->sa_flags & SA_RESET)
-	{
-		sigact->sa_handler = SIG_DFL;
-		sigact->sa_flags &= ~SA_RESET;
-	}
-	
 	if (curproc->p_flag & P_FLAG_SYS)
 	{
 		/* This is a system process, e.g. a kernel thread. We can't
@@ -114,11 +108,21 @@ sendsig (ushort sig)
 		 * as function.
 		 */
 		
-		((void (*)(void)) sigact->sa_handler)();
+		DEBUG(("system process, calling signal handler 0x%lx directly", sigact->sa_handler));
+		((void (*)(short)) sigact->sa_handler)(sig);
+		
+		if (sigact->sa_flags & SA_RESET)
+		{
+			TRACE(("resetting sa_handler"));
+			
+			sigact->sa_handler = SIG_DFL;
+			sigact->sa_flags &= ~SA_RESET;
+		}
+		
 		return 0;
 	}
 	
-	call = &curproc->ctxt[SYSCALL];
+	call = &(curproc->ctxt[SYSCALL]);
 	
 	/* what we do is build two fake stack frames; the top one is
 	 * for a call to the user function, with (long)parameter being the
@@ -134,12 +138,12 @@ sendsig (ushort sig)
 	
 	if (newstack < (long) curproc->stack + ISTKSIZE + 256)
 	{
-		ALERT ("stack overflow");
+		ALERT("stack overflow");
 		return 1;
 	}
 	else if ((long) curproc->stack + STKSIZE < newstack)
 	{
-		FATAL ("system stack not in proc structure");
+		FATAL("system stack not in proc structure");
 	}
 	
 	oldsysctxt = *call;
@@ -163,7 +167,7 @@ sendsig (ushort sig)
 	ut = curproc->p_mem->tp_ptr;
 
 	stack -= 3;
-	sigctxt = (struct sigcontext *) stack;
+	sigctxt = (struct sigcontext *)stack;
 	sigctxt->sc_pc = oldsysctxt.pc;
 	sigctxt->sc_usp = oldsysctxt.usp;
 	sigctxt->sc_sr = oldsysctxt.sr;
@@ -172,15 +176,23 @@ sendsig (ushort sig)
 	*(--stack) = (long) sig;
 	*(--stack) = ut->sig_return_p;
 	if (call->sr & 0x2000)
-		call->ssp = ((long) stack);
+		call->ssp = ((long)stack);
 	else
-		call->usp = ((long) stack);
+		call->usp = ((long)stack);
 	
 	call->pc = sigact->sa_handler;
 	/* don't restart FPU communication */
 	call->sfmt = call->fstate[0] = 0;
 	
-	if (save_context (&newcurrent) == 0)
+	if (sigact->sa_flags & SA_RESET)
+	{
+		TRACE(("resetting sa_handler"));
+		
+		sigact->sa_handler = SIG_DFL;
+		sigact->sa_flags &= ~SA_RESET;
+	}
+	
+	if (save_context(&newcurrent) == 0)
 	{
 		/* go do the signal; eventually, we'll restore this
 		 * context (unless the user longjmp'd out of his
@@ -189,29 +201,31 @@ sendsig (ushort sig)
 		 * p_sigreturn() will unmask it for us when the user
 		 * is finished.
 		 */
+		
+		/* set D0 so next return is different */
 		newcurrent.regs[0] = CTXT_MAGIC;
-			/* set D0 so next return is different */
-		assert (curproc->magic == CTXT_MAGIC);
+		assert(curproc->magic == CTXT_MAGIC);
 		
 		/* unwound_stack is set by p_sigreturn() */
 		if (sig == 0 && unwound_stack)
-			stack = (long *) unwound_stack;
+			stack = (long *)unwound_stack;
 		else
 			/* newstack points just below our current sp,
 			 * much less than ISTKSIZE away so better set
 			 * it up with interrupts off...  -nox
 			 */
-			stack = (long *) newstack;
+			stack = (long *)newstack;
 		
-		spl7 ();
+		splhigh();
+		
 		unwound_stack = 0;
-		curproc->sysstack = (long) stack;
+		curproc->sysstack = (long)stack;
 		++stack;
 		*stack++ = FRAME_MAGIC;
 		*stack++ = oldstack;
 		*stack = sig;
-		leave_kernel ();
-		restore_context (call);
+		leave_kernel();
+		restore_context(call);
 	}
 	
 	/* OK, we get here from p_sigreturn, via the user returning
@@ -221,7 +235,7 @@ sendsig (ushort sig)
 	 * context and continue with whatever it was we were doing.
 	 */
 	
-	TRACE (("done handling signal"));
+	TRACE(("done handling signal"));
 	
 	oldsysctxt.pc = sigctxt->sc_pc;
 	oldsysctxt.usp = sigctxt->sc_usp;
@@ -229,7 +243,7 @@ sendsig (ushort sig)
 	oldsysctxt.sr |= sigctxt->sc_sr & 0xff;
 	
 	curproc->ctxt[SYSCALL] = oldsysctxt;
-	assert (curproc->magic == CTXT_MAGIC);
+	assert(curproc->magic == CTXT_MAGIC);
 
 # undef oldsysctxt
 # undef newcurrent
