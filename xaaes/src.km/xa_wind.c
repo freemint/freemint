@@ -165,9 +165,9 @@ XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 void
-top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_owner)
+top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *old_focus, struct xa_client *desk_menu_owner)
 {
-	struct xa_window *old_focus;
+	//struct xa_window *old_focus;
 	struct xa_client *client = w->owner;
 
 	if (!desk_menu_owner)
@@ -175,26 +175,39 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 
 	DIAG((D_wind, client, "top_window %d for %s",  w->handle, c_owner(client)));
 
-	old_focus = window_list;
+	if (old_focus == (void *)-1L)
+		old_focus = is_topped(window_list) ? window_list : NULL;
+	else if (old_focus && !is_topped(old_focus))
+		old_focus = NULL;
+
+	if (old_focus == root_window)
+		old_focus = NULL;
 
 	/* New top window - change the cursor to this client's choice */
-	set_active_client(lock, w->owner);
-
+	if (!is_infront(w->owner))
+	{
+		set_active_client(lock, w->owner);
+		swap_menu(lock, w->owner, true, false, 0);
+	}
 	pull_wind_to_top(lock, w);
-
-	if (client != desk_menu_owner)
-		C.focus = root_window;
-	else
-		C.focus = window_list;
 
 	graf_mouse(client->mouse, client->mouse_form, false);
 
 	/* redisplay title */
-	display_window(lock, 40, old_focus, 0); 
+	if (old_focus && !is_topped(old_focus))
+	{
+		display_window(lock, 40, old_focus, 0);
+		if (domsg) send_untop(lock, old_focus);
+	}
 
-	if (old_focus != w)
-		/* Display the window */
-		display_window(lock, 41, w, 0);
+	if (!old_focus || (old_focus && old_focus != w))
+	{
+		if (is_topped(w) && w != root_window)
+		{
+			display_window(lock, 41, w, 0);
+			if (domsg) send_ontop(lock);
+		}
+	}
 
 	set_winmouse();
 }
@@ -202,7 +215,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 void
 bottom_window(enum locks lock, struct xa_window *w)
 {
-	bool was_top = (w == window_list);
+	bool was_top = (is_topped(w) ? true : false);
 	RECT clip;
 	struct xa_window *wl = w->next;
 
@@ -218,15 +231,10 @@ bottom_window(enum locks lock, struct xa_window *w)
 	DIAG((D_wind, w->owner, " - menu_owner %s, w_list_owner %s",
 		t_owner(get_menu()), w_owner(window_list)));
 
-	if (window_list->owner != menu_owner())
-		C.focus = root_window;
-	else
-		C.focus = window_list;
-
 	/* Redisplay titles */
-	display_window(lock, 42, w, 0);
-	display_window(lock, 43, window_list, 0);
-
+	if (was_top)
+		display_window(lock, 42, w, NULL);
+	
 	/* Our window is now right above root_window */
 	while (wl != w)
 	{
@@ -245,8 +253,19 @@ bottom_window(enum locks lock, struct xa_window *w)
 	}
 
 	if (was_top)
+	{
 		/*  send WM_ONTOP to just topped window. */
-		send_ontop(lock);
+		if (is_topped(window_list))
+			send_ontop(lock);
+		send_untop(lock, w);
+		if (!is_infront(window_list->owner))
+		{
+			set_active_client(lock, window_list->owner);
+			swap_menu(lock, window_list->owner, true, false, 0);
+		}
+		if (is_topped(window_list))
+			display_window(lock, 43, window_list, NULL);
+	}
 }
 
 #if GENERATE_DIAGS
@@ -764,11 +783,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (is_hidden(w))
 					unhide_window(lock|winlist, w);
 
-				top_window(lock|winlist, w, 0);
+				top_window(lock|winlist, true, w, (void *)-1L, NULL);
 
 				/* needed because the changed behaviour in close_window. */
-				swap_menu(lock|winlist, w->owner, true, 5);
-				after_top(lock|winlist, true);
+				//swap_menu(lock|winlist, w->owner, true, 5);
+				//after_top(lock|winlist, true);
 			}
 		}
 
@@ -1287,7 +1306,7 @@ next:
 		if (w)
 		{
 			/* HR 100801: Do not report unfocused window as top. */
-			if (!is_topped(w)) //C.focus == root_window)
+			if (!is_topped(w))
 				w = root_window;
 
 			o[1] = w->handle; /* Return the window handle */

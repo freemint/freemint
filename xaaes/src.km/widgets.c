@@ -1356,8 +1356,6 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		else
 		{
 			/* if not on top or on top and not focus */
-			//if ( wind != window_list ||
-			//    (wind == window_list && wind != C.focus))
 			if (!is_topped(wind))
 			{
 				if (wind->send_message)
@@ -1367,7 +1365,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 				else
 					/* Just top these windows, they can handle it... */
 					/* Top the window */
-					top_window(lock, wind, NULL);
+					top_window(lock, false, wind, (void *)-1L, NULL);
 			}
 			/* If window is already top, then send it to the back */
 

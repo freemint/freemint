@@ -183,13 +183,13 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				mwt->menu_line = true;
 
 				if (swap)
-					swap_menu(lock|winlist, client, false, 6);
+					swap_menu(lock|winlist, client, false, true, 6);
 
 				pb->intout[0] = 1;
 				DIAG((D_menu, NULL, "done display, lastob = %d", mwt->lastob));
 			}
 			else if (mwt && swap)
-				swap_menu(lock|winlist, client, false, 7);
+				swap_menu(lock|winlist, client, false, true, 7);
 		}
 		break;
 	}
@@ -213,7 +213,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				wl = wl->next;
 			}
-			swap_menu(lock|winlist, top_owner, false, 7);
+			swap_menu(lock|winlist, top_owner, false, true, 7);
 			client->std_menu = NULL;
 			pb->intout[0] = 1;
 		}

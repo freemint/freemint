@@ -29,6 +29,7 @@
 
 #include "global.h"
 #include "xa_types.h"
+#include "xa_global.h"
 
 struct xa_window *create_window(enum locks lock,
 				SendMessage *message_handler,
@@ -48,6 +49,9 @@ void change_window_attribs(enum locks lock,
 			   bool r_is_wa,
 			   RECT r, RECT *remember);
 
+void wi_remove(struct win_base *b, struct xa_window *w);
+void wi_put_first(struct win_base *b, struct xa_window *w);
+
 struct xa_window *find_window(enum locks lock, short x, short y);
 struct xa_window *get_wind_by_handle(enum locks lock, short h);
 struct xa_window *pull_wind_to_top(enum locks lock, struct xa_window *w);
@@ -66,6 +70,7 @@ void	display_window(enum locks lock, int which, struct xa_window *w, RECT *clip)
 DoWinMesag	do_rootwind_msg;
 
 void	draw_window(enum locks lock, struct xa_window *wind);
+void	update_all_windows(enum locks lock, struct xa_window *wl);
 void	update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_window *wl);
 void	display_windows_below(enum locks lock, const RECT *r, struct xa_window *w);
 void	redraw_client_windows(enum locks lock, struct xa_client *client);
@@ -75,7 +80,7 @@ RECT	calc_window(enum locks lock, struct xa_client *client, int request,
 		    unsigned long tp, int thinframe, bool thinwork,
 		    RECT r);
 
-void	top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_owner);
+void	top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *oldtop, struct xa_client *desk_menu_owner);
 void	bottom_window(enum locks lock, struct xa_window *w);
 void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);
@@ -99,7 +104,7 @@ bool	is_topped(struct xa_window *wind);
 bool	is_hidden(struct xa_window *wind);
 bool	unhide(struct xa_window *w, short *x, short *y);
 
-void	set_and_update_window(struct xa_window *wind, bool blit, RECT *new);
+void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
 
 XA_WIND_ATTR hide_move(struct options *o);
 

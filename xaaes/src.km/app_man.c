@@ -61,16 +61,6 @@ struct xa_client *
 focus_owner(void)
 {
 	return find_focus(true, NULL, NULL, NULL);
-#if 0
-	if (C.focus == root_window)
-		return menu_owner();
-
-	if (C.focus)
-		return C.focus->owner;
-
-	DIAGS(("No focus_owner()???"));
-	return NULL;
-#endif
 }
 
 /*
@@ -193,7 +183,7 @@ recover(void)
 
 	DIAG((D_appl, NULL, "Attempting to recover control....."));
 
-	swap_menu(0, C.Aes, true, 0);
+	swap_menu(0, C.Aes, true, false, 0);
 
 	if ((client = C.update_lock))
 	{
@@ -242,9 +232,9 @@ recover(void)
  * See also click_menu_widget() for APP's
  */
 void
-swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
+swap_menu(enum locks lock, struct xa_client *new, bool do_desk, bool do_topwind, int which)
 {
-	struct xa_window *top;
+	struct xa_window *top = NULL;
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	XA_WIDGET *widg = get_menu_widg();
 
@@ -258,11 +248,16 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 		/* menu widget.tree */
 		if (new->std_menu != widg->stuff) /* Different menu? */
 		{
+			bool wastop = false;
+
 			DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
 
 			if (!rc)
 				rc = C.Aes;
 
+			if (do_topwind && (top = window_list != root_window ? root_window : NULL))
+				wastop = is_topped(top) ? true : false;
+			
 			new->status |= CS_WAIT_MENU;
 			lock_menustruct(rc, false);
 			if (widg->stuff)
@@ -276,29 +271,19 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 			unlock_menustruct(rc);
 			new->status &= ~CS_WAIT_MENU;
 
-			top = window_list;
-
 			DIAG((D_appl, NULL, "top: %s", w_owner(top)));
 
-			if (top != root_window && top->owner != new)
+			if (do_topwind && top)
 			{
-				/* untop other pids windows */
-				C.focus = root_window;
-				DIAG((D_appl, NULL, "Focus to root_window."));
-				display_window(lock, 110, top, NULL);   /* Redisplay titles */
-				send_untop(lock, top);
-			}
-			else if (C.focus == root_window && top->owner == new)
-			{
-				C.focus = top;
-				DIAG((D_appl, NULL, "Focus to top_window %s", w_owner(top)));
-				display_window(lock, 111, top, NULL);   /* Redisplay titles */
-				send_ontop(lock);
-			}
-			else if (top->owner != new)
-			{
-				DIAG((D_appl, NULL, "Set focus to root_window."));
-				C.focus = root_window;
+				if ((wastop && !is_topped(top)) || (!wastop && is_topped(top)))
+				{
+					if (wastop)
+						send_untop(lock, top);
+					else
+						send_ontop(lock);
+				
+					display_window(lock, 110, top, NULL);
+				}
 			}
 		}
 		else
@@ -549,15 +534,31 @@ any_window(enum locks lock, struct xa_client *client)
 
 	return ret;
 }
+
 struct xa_window *
-get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw)
+get_topwind(enum locks lock, struct xa_client *client, bool not, struct xa_window *startw)
 {
 	struct xa_window *w = startw;
 
 	while (w)
 	{
-		if (w != root_window && w->owner == client && (w->window_status & XAWS_OPEN))
-			break;
+		if (w != root_window &&
+		    (w->window_status & XAWS_OPEN) &&
+		    !is_hidden(w))
+		{
+			if (client)
+			{
+				if (!not)
+				{
+					if (w->owner == client)
+						break;
+				}
+				else if (w->owner != client)
+					break;
+			}
+			else
+				break;
+		}
 		w = w->next;
 	}
 	return w;
@@ -673,13 +674,19 @@ app_in_front(enum locks lock, struct xa_client *client)
 	struct xa_window *wl,*wf,*wp;
 
 	if (client)
-	{
+	{	
 		struct xa_client *infront;
+		struct xa_window *topped = NULL, *wastop;
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
-			
+
+		if (window_list != root_window)
+			wastop = is_topped(window_list) ? window_list : NULL;
+		else
+			wastop = NULL;
+		
 		infront = get_app_infront();
 		set_active_client(lock, client);
-		swap_menu(lock, client, true, 1);
+		swap_menu(lock, client, true, false, 1);
 
 		wl = root_window->prev;
 		wf = window_list;
@@ -695,7 +702,10 @@ app_in_front(enum locks lock, struct xa_client *client)
 					if (is_hidden(wl))
 						unhide_window(lock|winlist, wl);
 
-					top_window(lock|winlist, wl, NULL);
+					wi_remove(&S.open_windows, wl);
+					wi_put_first(&S.open_windows, wl);
+					topped = wl;
+					//top_window(lock|winlist, wl, NULL);
 				}
 			}
 
@@ -704,7 +714,32 @@ app_in_front(enum locks lock, struct xa_client *client)
 			
 			wl = wp;
 		}
+		
+		if (topped)
+		{
+			update_all_windows(lock, window_list);
+			set_winmouse();
+		}
 
+		if (wastop)
+		{
+			if (!is_topped(wastop))
+			{
+				send_untop(lock, wastop);
+				display_window(lock, 0, wastop, NULL);
+			}
+			if (wastop != window_list && window_list != root_window && is_topped(window_list))
+			{
+				send_ontop(lock);
+				display_window(lock, 0, window_list, NULL);
+			}
+		}
+		else if (window_list != root_window && is_topped(window_list))
+		{
+			send_ontop(lock);
+			display_window(lock, 0, window_list, NULL);
+		}			
+#if 0
 		if (wf != window_list)
 		{
 			send_untop(lock, wf);
@@ -715,14 +750,15 @@ app_in_front(enum locks lock, struct xa_client *client)
 			if (!is_topped(wf))
 			{
 				send_untop(lock, wf);
-				display_window(lock, 0, wf, NULL);
+				//display_window(lock, 0, wf, NULL);
 			}
 			else if (infront != client)
 			{
 				send_ontop(lock);
-				display_window(lock, 0, wf, NULL);
+				//display_window(lock, 0, wf, NULL);
 			}
 		}
+#endif
 	}
 }
 
