@@ -99,7 +99,7 @@
 /* program to run at startup */
 #define INIT_IS_GEM   1
 #define INIT_IS_PRG   0
-int init_is_gem = INIT_IS_GEM;	/* set to 1 if init_prg is GEM */
+int init_is_gem = INIT_IS_PRG;	/* set to 1 if init_prg is GEM (ROM or external) */
 
 char *init_prg = NULL;
 char *init_env = NULL;
@@ -528,10 +528,12 @@ pCB_exec (const char *path, const char *line, PARSINF *inf)
 static void
 pCB_gem_init (const char *path, const char *line, long val)
 {
-	if ((init_prg = kmalloc (strlen(path) +1)))
+        init_is_gem = val;
+	if (stricmp(path,"ROM") == 0)
+	  init_prg = 0;
+	else if ((init_prg = kmalloc (strlen(path) +1)))
 	{
 		strcpy (init_prg, path);
-		init_is_gem = val;
 		strncpy (init_tail +1, line, 125);
 		init_tail[126] = '\0';
 		init_tail[0]   = strlen (init_tail +1);
