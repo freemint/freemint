@@ -1248,7 +1248,7 @@ init (void)
 	rootproc->ctxt[SYSCALL].fstate[0] = 0;
 	rootproc->ctxt[SYSCALL].pc = (long) mint_thread;
 	rootproc->ctxt[SYSCALL].usp = rootproc->sysstack;
-	rootproc->ctxt[SYSCALL].ssp = rootproc->sysstack;
+	rootproc->ctxt[SYSCALL].ssp = (long)(rootproc->stack + ISTKSIZE);
 	rootproc->ctxt[SYSCALL].term_vec = (long) rts;
 
 	*((long *)(rootproc->ctxt[CURRENT].usp + 4)) = 0;
