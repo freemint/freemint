@@ -266,6 +266,7 @@ sk:	bset	#0x07,_in_kernel
 	jsr	_build_context
 	lea	_xbios_tab,a5		// set syscall_tab
 	move.w	_xbios_max,d5		// set syscall_max
+	
 //
 // copy parameters onto process stack. a0 and a1 were set by _build_context
 //
@@ -454,6 +455,7 @@ pt_ende:
 	beq	error			// null entry means invalid call
 	addq.w	#2,sp			// pop function number off stack
 	move.l	d0,a0
+	moveq.l	#0,d0
 	jsr	(a0)			// go do the call
 
 out:	moveq	#0,d2
@@ -505,6 +507,7 @@ nosig:
 	jsr	_restore_context	// never returns
 
 rom_bios:
+	moveq	#0,d0
 	move.l	_old_bios.w(pc),-(sp)
 	rts
 
@@ -550,6 +553,7 @@ new_dev:
 
 error:	cmp.l	#_xbios_tab,a5
 	bne.s	enosys
+	moveq	#0,d0
 	jsr	_trap_14_emu
 	bra	out
 enosys:	moveq	#-32,d0	// ENOSYS
@@ -723,17 +727,6 @@ _trap_2_emu:
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
 TE_AV:	move.w	sr,-(sp)
-
-//	move.l	(sp)+,a0
-//	clr.w	-(sp)
-//	move.l	a0,-(sp)
-//TE_AV:	move.w	sr,-(sp)
-
-//	Ozk: Can someone tell me why this code doesnt work???
-//	move.l	(sp)+,-6(sp)
-//	clr.w	-(sp)
-//	subq.w	#4,sp
-//TE_AV:	move.w	sr,-(sp)
 #ifdef	ONLY030
 	jmp	([_old_trap2])
 #else
@@ -1044,6 +1037,7 @@ reent_cpyargs:
 reent_noargs:
 
 	move.l	d0,a0		// Function address
+	moveq	#0,d0
 	jsr	(a0)
 	moveq	#0,d1		// Clear D1 -- we're not gonna call anything else
 reent_out:
@@ -1064,6 +1058,7 @@ reent_out_no_fpu:
 	rte
 reent_call_rom:
 	move.l	d1,a0
+	moveq	#0,d0
 	jmp	(a0)
 
 // ---- What to do when function number is outside function range
