@@ -43,7 +43,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <mint/sysctl.h>
+#include "../../sys/mint/sysctl.h"
 #include "fparseln.h"
 
 

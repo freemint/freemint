@@ -44,6 +44,9 @@
 # define DEBUG(x)	{ printf x; printf ("\n"); fflush (stdout); }
 # endif
 
+# if __MINTLIB_MAJOR__ == 0 && __MINTLIB_MINOR__ < 57
+# error Require at least MiNTLib 0.57
+# endif
 
 typedef unsigned char	uchar;
 
