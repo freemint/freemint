@@ -58,6 +58,7 @@ typedef long _cdecl (*Func)();
  */
 struct socket;
 struct dom_ops;
+struct iovec;
 
 /* forward declarations: file.h
  */
