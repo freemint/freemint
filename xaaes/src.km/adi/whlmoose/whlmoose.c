@@ -10,6 +10,10 @@
  * Copyright 1995 Torsten Scherer <itschere@techfak.uni-bielefeld.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -24,31 +28,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Odd Skancke <ozk@atari.org>
- * Started: 2003-05-17
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
- * 
- * changes since last version:
- * 
- * 2003-06-17:	(v0.3)
- * 
- * - inital revision
- * 
- * 
- * known bugs:
- * 
- * - nothing
- * 
- * todo:
- * 
- * 
  */
-
-#include "adi/adidefs.h"
 
 # include "mint/mint.h"
 # include "libkern/libkern.h"
@@ -59,7 +39,8 @@
 # include "mint/proc.h"
 # include "mint/stat.h"
 
-# include "whlmoose.h"
+# include "../adidefs.h"
+
 
 /*
  * debugging stuff

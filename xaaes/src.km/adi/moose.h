@@ -6,6 +6,10 @@
  * Copyright 2003 Odd Skancke <ozk@atari.org>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -20,17 +24,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  */
 
 /*
  * Mouse device structures and definitions
  */
 
-#ifndef _whlmoose_h
-#define _whlmoose_h
+#ifndef _moose_h
+#define _moose_h
 
 #define MBS_RIGHT 1
 #define MBS_LEFT 2
@@ -69,8 +70,7 @@ struct mooses_data
 #define MOOSE_WHEEL_PREFIX	0x5857	/* 'XW' */
 
 /*
- * Fcntl() opcodes
- * (move to mint/ioctl.h if finished)
+ * ioctl opcodes
  */
 #define MOOSE_READVECS	(('M'<< 8) | 0)	/* buf is ptr to struct moose_vecsbuf */
 #define MOOSE_DCLICK	(('M'<< 8) | 1)	/* buf is ptr to unsigned short */
@@ -86,4 +86,4 @@ struct moose_vecsbuf
 	vdi_vec *whlv;
 };
 
-#endif /* _whlmoose_h */
+#endif /* _moose_h */
