@@ -46,15 +46,8 @@
 
 #define ALT_CTRL_APP_OPS		1		/* Some ALT+CTRL+key combo's will perform functions relating to */
                        					/* the XaAES system */
-#define USE_CALL_DIRECT			0		/* Bypass the command pipe for certain op-codes */
 #define NOSEMA_CALL_DIRECT		1		/* HR 110802: Call direct for small AES functions
 							   that do not need the call_direct semaphores. */
-
-#if USE_CALL_DIRECT
-#define IFWL(x) x					/* Used for completely leave out winlist locking code. */
-#else
-#define IFWL(x)
-#endif
 
 #define MEMORY_PROTECTION		1		/* Enable patches to help with memory protection */
 

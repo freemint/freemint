@@ -269,8 +269,6 @@ unhide_app(LOCK lock, XA_CLIENT *client)
 {
 	XA_WINDOW *w;
 
-	IFWL(Sema_Up(winlist));
-
 	w = window_list;
 	while (w)
 	{
@@ -284,8 +282,6 @@ unhide_app(LOCK lock, XA_CLIENT *client)
 	}
 
 	app_in_front(lock, client);
-
-	IFWL(Sema_Dn(winlist));
 }
 
 void
@@ -293,8 +289,6 @@ hide_app(LOCK lock, XA_CLIENT *client)
 {
 	XA_WINDOW *w;
 	XA_CLIENT *focus = focus_owner();
-
-	IFWL(Sema_Up(winlist));
 
 	DIAG((D_appl, NULL, "hide_app for %s\n", c_owner(client) ));
 	DIAG((D_appl, NULL, "   focus is  %s\n", c_owner(focus_owner()) ));
@@ -334,8 +328,6 @@ hide_app(LOCK lock, XA_CLIENT *client)
 
 	if (client == focus)
 		app_in_front(lock, next_app(lock));
-
-	IFWL(Sema_Dn(winlist));
 }
 
 void
@@ -374,8 +366,6 @@ any_hidden(LOCK lock, XA_CLIENT *client)
 	bool ret = false;
 	XA_WINDOW *w;
 
-	IFWL(Sema_Up(winlist));
-
 	w = window_list;
 	while (w)
 	{
@@ -391,8 +381,6 @@ any_hidden(LOCK lock, XA_CLIENT *client)
 		w = w->next;
 	}
 
-	IFWL(Sema_Dn(winlist));
-
 	return ret;
 }
 
@@ -401,8 +389,6 @@ any_window(LOCK lock, XA_CLIENT *client)
 {
 	XA_WINDOW *w;
 	bool ret = false;
-
-	IFWL(Sema_Up(winlist));
 
 	w = window_list;
 	while (w)
@@ -418,8 +404,6 @@ any_window(LOCK lock, XA_CLIENT *client)
 		}
 		w = w->next;
 	}
-
-	IFWL(Sema_Dn(winlist));
 
 	return ret;
 }
@@ -490,14 +474,14 @@ app_in_front(LOCK lock, XA_CLIENT *client)
 
 		swap_menu(lock, client, true, 1);
 
-		IFWL(Sema_Up(winlist));
-
 		wf = root_window->prev;
-		while(wf)
+		while (wf)
+		{
 			if (wf->owner == client)
 				break;
 			else
 				wf = wf->prev;
+		}
 
 		if (wf)
 		{
@@ -515,6 +499,5 @@ app_in_front(LOCK lock, XA_CLIENT *client)
 					break;
 			}
 		}
-		IFWL(Sema_Dn(winlist));
 	}
 }

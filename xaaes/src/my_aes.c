@@ -2,6 +2,7 @@
 #include "global.h"
 #include "my_aes.h"
 #include "xa_types.h"
+#include "objects.h"
 
 short my_global_aes[16];
 
