@@ -1,0 +1,680 @@
+==============================================================================
+ ==                                                                        ==
+    ==                  FreeMiNT 1.16.0 beta release                    ==
+ ==                                                                        ==
+==============================================================================
+
+
+Index
+=====
+
+1 Preface
+
+2 Contributors
+
+3 Installation
+  3.1 Overview
+      3.1.1 Boot menu & basic settings
+      3.1.2 The new sysdir strategy
+  3.2 Simple installation
+  3.3 Special installations
+      3.3.1 Upgrading EasyMiNT
+      3.3.2 KGMD
+  3.4 Configuration
+      3.4.1 xdd/xfs modules
+      3.4.2 Important changes
+      3.4.3 New options
+  3.5 Tips & tricks
+
+4 Getting in contact
+
+5 Problems
+  5.1 Known problems
+  5.2 How to report a bug
+
+6 Changes in FreeMiNT 
+  6.1 FreeMiNT Kernel
+      6.1.1 New system calls
+      6.1.2 New modules
+      6.1.3 Internal changes
+      6.1.4 New debug facilities
+  6.2 XaAES
+      6.2.1 The XaAES kernel module
+      6.2.1 The XaAES loader
+  6.3 System tools
+      6.3.1 COPS
+      6.3.2 sysctl
+
+7 Development
+  7.1 Application development
+  7.2 Kernel development
+
+
+==============================================================================
+
+1 Preface
+---------
+
+It has been a very long time since the last official FreeMiNT kernel release.
+For the 1.16 kernel line I wanted to do so many things that require lots of 
+time and while all of the planned changes have not yet been made, I decided to
+make a new beta release available. The reason for this was that the current
+state of things seems very stable to me and all alpha testers. Furthermore,
+there are lots of new and nice features. Perhaps the most exciting news
+recently is the integration of XaAES, the multitasking AES for FreeMiNT. Many
+thanks to Henk Robbers for his XaAES development in the last few years. In the
+beginning of 2003 he handed over responsibility for maintaining XaAES to the
+FreeMiNT project and I then started to integrate it into the FreeMiNT CVS
+repository.
+
+An overview of the most important changes and additions is available in
+section 6 of this document. Section 3 hopefully covers all aspects of the
+FreeMiNT installation. As the installation and booting process of the kernel
+differs significantly from previous releases it's recommended you read through
+section 3 carefully!
+
+Do keep in mind that I'm not a native speaker of the English language, so
+please excuse any typing errors and grammatical errors. I'd be grateful for
+corrections and feedback. Don't hesitate to contact me or write to the MiNT
+mailing list. Please see section 4 for more details on how to contact me or
+write to the MiNT mailing list.
+
+
+Frank Naumann <fnaumann@freemint.de>
+------------------------------------
+Magdeburg, July 18, 2004
+
+==============================================================================
+
+2 Contributors
+--------------
+
+I'm grateful to everyone still supporting FreeMiNT and would especially like
+to thank Odd Skancke for his great improvements of the new XaAES kernel
+module. Without him it wouldn't be useable and stable yet. Many thanks also to
+Konrad M. Kokoszkiewicz for his great development on the kernel and his
+constructive criticism and discussions about kernel development. And many,
+many thanks to everyone else contributing to the FreeMiNT project as well.
+
+My thanks also go to all the ones who are using FreeMiNT and helping out with
+alpha/beta tests and bug reports, and to all application developers supporting
+FreeMiNT. It's nice that so many people still are interested in FreeMiNT and
+actively using it.
+
+Special thanks goes to Rob Mahlert who contributes server capacity to run the
+Sparemint webpage, the FreeMiNT CVS repository and the FreeMiNT bugtracker.
+This is a great donation to the FreeMiNT project!
+
+Many thanks also to Joakim Hoegberg who tries to contact developers of dead
+ATARI software. One result of his efforts is the contribution of COPS to the
+FreeMiNT project. And he always has a helpful comment ready.
+
+
+Contributors of the 1.16.0 beta (according to the cvs generated ChangeLog):
+---------------------------------------------------------------------------
+- Adam Klobukowski <atari@gabo.pl>
+- Arnaud BERCEGEAY <arnaud.bercegeay@free.fr>
+- Daniel Pralle <pralle@gdv.uni-hannover.de>
+- Frank Naumann <fnaumann@freemint.de>
+- Gerhard Stoll <Gerhard_Stoll@b.maus.de>
+- Guido Flohr <guido@freemint.de>
+- Ingo Schmidt <ich@der-ingo.de>
+- Jens Heitmann <jheitmann@debitel.net>
+- Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+- Matthias Alles <alles@rhrk.uni-kl.de>
+- Michael Schwingen <rincewind@a-tuin.dascon.de>
+- Odd Skancke <ozk@atari.org>
+- Petr Stehlik <joy@sophics.cz>
+- Ralph Lowinski <altf4@freemint.de>
+- Standa Opichal <opichals@seznam.cz>
+- Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
+
+
+==============================================================================
+
+3 Installation
+--------------
+
+3.1 Overview
+------------
+Compared to the previous kernel release there are some significant changes in
+the installation and booting process of the kernel. All these changes were
+done in an attempt to address the most common problem of FreeMiNT: an
+installation procedure that is too difficult for inexperienced users. Even the
+experienced users will hopefully enjoy and benefit from the new features. It's
+recommended that you read through this section carefully.
+
+3.1.1 Boot menu and basic settings
+----------------------------------
+From now on the name of the kernel doesn't matter at all. While it's no longer
+important under what name you store the kernel in the AUTO folder you are
+however recommended to use the name MINT.PRG so you can identify it easier.
+
+The kernel now has a built-in boot menu that controls the basic boot up
+configuration. When the kernel is being loaded it will display its version
+and identification message and then wait 4 seconds for any of the shift keys
+to be pressed. If a shift key is pressed then the boot menu is entered,
+otherwise the normal boot sequence will continue.
+
+If the boot menu is entered you can enable/disable the desired option by
+pressing the corresponding number on the keyboard. You can enable/disable the
+memory protection, loading of xdd and xfs modules and single step booting. The
+settings you select here will take effect once you leave the boot menu, and
+are remembered in MINT.INI which is stored in your <sysdir> (see the next
+subchapter for more details). The chosen settings will thus be used when
+booting up in future sessions.
+
+3.1.2 The new sysdir strategy
+-----------------------------
+To simplify installation and configuration FreeMiNT now has a so-called
+'system directory', or in short <sysdir>. The kernel will now exclusively load
+xdd/xfs modules and the configuration files (MINT.CNF and MINT.INI) from the
+<sysdir>. 
+
+The <sysdir> defaults to "<bootdrive>/mint/<VERSION>" or, if this directory
+doesn't exist, "<bootdrive>/mint".
+
+NOTE: If no <sysdir> is found FreeMiNT will stop the booting procedure,
+      display an error message and then return to TOS.
+
+The <VERSION> is the kernel version coded as 8+3 directory name. For example,
+the FreeMiNT 1.16.0 beta release will have a <VERSION> of 1-16-0. This
+strategy allows you to keep parallel installations of different kernel
+versions from now on.
+
+Example 1:
+
+Your boot drive is C:. You create a folder on C:\ called "MINT" where you
+place the xdd/xfs modules you use and the configuration file MINT.CNF.
+
+   ==> Your <sysdir> is: "C:\MINT"
+
+Example 2:
+
+Your boot drive is C:. You create a folder on C:\ called "MINT". Inside this
+folder you create a folder "1-16-0" where you place the xdd/xfs modules you
+use and the configuration file MINT.CNF.
+
+   ==> Your <sysdir> is: "C:\MINT\1-16-0"
+
+If you choose the latter option (recommended) you can install a future
+FreeMiNT 1.16.1 release in parallel. Just create a 1-16-1 folder inside
+"C:\MINT" and copy the xdd/xfs modules and MINT.CNF from the FreeMiNT 1.16.1
+release to this directory. On the next boot just enable the kernel release you
+want to boot. I hope this option is especially useful to all the helpful alpha
+and beta testers who now can test new versions without complicated
+installation changes. 
+
+After the kernel has booted you can also lookup what your <sysdir> is. The
+<sysdir> setting is available through the environment variable $SYSDIR, under
+/kern/sysdir or through 'sysctl kern.sysdir'.
+
+3.2 Simple installation
+-----------------------
+Like with previous installations you need to place the FreeMiNT kernel in the
+AUTO folder of your boot drive. If you choose the wrong kernel for your
+hardware the kernel will detect this, display an error message and not enter
+the boot sequence (e.g. return to TOS). The next step is to copy the MINT
+folder from the distribution archive to your boot drive (rename or delete
+any already existing MINT folder).
+
+In summary (if your boot drive is C:):
+
+Step 1: - copy the appropriate kernel for your hardware to C:\AUTO
+        - deactivate any existing FreeMiNT kernel
+        - sort FreeMiNT as last kernel; take a look at section 3.4, Tips &
+          Tricks
+
+Step 2: - Copy the MINT folder from the distribution archive to C:\.
+
+	    If there exists a MINT folder on C: you can do 2 things:
+
+	    1. Remove/rename the existing MINT folder thus deactivating your
+	       existing FreeMiNT installation.
+
+	    2. Copy the 1-16-0 folder from the distribution archive to C:\MINT
+	       and install FreeMiNT 1.16.0 in parallel. You can switch back
+	       to your old FreeMiNT installation by booting the old kernel.
+
+Step 3: - Edit C:\MINT\1-16-0\MINT.CNF; take a look at section 3.3.
+
+          The distribution archive is setup to boot XaAES; if you don't want
+          this, change the INIT configuration directive to your choice.
+
+          If you want to boot XaAES, edit C:\MINT\1-16-0\XAAES\XAAES.CNF
+          and adjust the settings for the desktop.
+
+Step 4: - Reboot; the new kernel and XaAES is booted
+
+          NOTE: If you want to disable memory protection press the shift
+                key while the FreeMiNT message appears on screen. You will
+	        then enter the boot menu and can select whether or not to
+                use the memory protection.
+
+                You can also activate step-by-step initialization, which might
+                be useful if you encounter problems with your boot sequence.
+                If this setting is enabled, the kernel will wait for a
+                key press after each initialization step.
+
+3.3 Special installations
+-------------------------
+
+3.3.1 Upgrading EasyMiNT
+------------------------
+When upgrading EasyMiNT you can follow the steps from the 'Simple
+Installation'. The only thing that differs is that you need to copy your
+existing MINT.CNF from the EasyMiNT installation to your <sysdir> after you
+installed the new kernel components. As the MINT.CNF from your EasyMiNT
+installation is required to boot your EasyMiNT setup, you are advised to
+backup this file before upgrading to the new 1.16.0 beta release!
+
+If you want to use XaAES you can run xaloader.prg from commandline after login
+or add xaloader.prg to /etc/ttytab in order to launch XaAES automatically.
+
+3.3.2 KGMD
+----------
+KGMD is no longer supported. I recommend you to install EasyMiNT and upgrade
+the EasyMiNT installation to FreeMiNT 1.16.0 beta release.
+
+3.4 Configuration
+-----------------
+The distribution archive includes an example MINT.CNF that is ready to use for
+the 'Simple Installation'. This setup is normally sufficient. Depending on
+your main memory you may want to increase the buffer cache. This is the CACHE
+directive in the MINT.CNF file. Increasing the buffer cache will significantly
+speed-up file system operations. Useful settings are 5% - 10% of your main
+memory (if you have enough RAM).
+
+More details about the configuration directives used in the MINT.CNF are
+explained in the file 'cnf.txt'.
+
+3.4.1 xdd/xfs modules
+---------------------
+There are internal kernel changes that also affects some xdd and xfs modules.
+The kernel enhancements of the new socket system call interface required
+incompatible changes in network related modules too. The previous sockdev.xdd
+module is gone and have been replaced by inet4.xdd, which provides the TCP/IP
+stack. As a consequence of this, nfs.xfs has become incompatible due to a
+different kernel interface.
+
+Conclusion: don't use kernel modules from previous FreeMiNT releases with
+the new kernel. Use only the provided ones or bugfixed versions that are
+compiled for FreeMiNT 1.16.0.
+
+3.4.2 Important changes
+-----------------------
+FreeMiNT 1.16.0 doesn't use the underlying TOS for file system access anymore.
+The kernel will only use it's own (V)FAT(32) file system driver. The old TOSFS
+is removed, the NEWFATFS directive in the MINT.CNF file will be ignored if
+present.
+
+3.4.3 New options
+-----------------
+- loadable keyboard tables
+
+  The kernel is now able to load and use keyboard translation tables.
+  If there exists a file called KEYBOARD.TBL in the <sysdir> of your FreeMiNT
+  setup, it will be loaded at boot time and used for the keyboard mapping.
+  If no such file exists, the TOS-BIOS translation table is used instead. If
+  your TOS-BIOS supports the right keyboard mapping there is no need to
+  install a KEYBOARD.TBL file. Take a look in the folder "TBL" in MINT/1-16-0
+  in the distribution archive.
+
+- loadable unicode translation tables
+
+  This translation table is used by the (V)FAT(32) file system driver for
+  ASCII <-> Unicode conversion of filenames. As the ASCII set above number 127
+  is locale dependant, the kernel will use the translation table in order to
+  obtain correct Unicode mapping. This option is rarely needed (dependant on
+  your locale setting and whether you use VFAT and want to exchange data with
+  Microsoft Windows).
+
+3.5 Tips & tricks
+-----------------
+- FreeMiNT doesn't require patch programs at all!
+
+- In general, be restrictive with resident programs (TSR) and system
+  enhancements; If you really need them, start them BEFORE FreeMiNT.
+
+- If you use NVDI, always start it BEFORE FreeMiNT.
+
+- On Hades/Milan you need to run FPU_2M.PRG; don't run it before FreeMiNT,
+  this will have no effect. It's recommended to start it from MINT.CNF
+  (look at the example file, there is an commented out exec directive about
+  it).
+
+- Please remove or disable all things related to serial ports! FreeMiNT has
+  much better serial drivers for mfp/scc/uart (as loadable xdd modules).
+  These drivers are HSMODEM compatible too.
+
+- To save memory, reduce the caches of HDDriver to a minimum. FreeMiNT has
+  it's own, much better, unified cache management. The HDDriver caches are
+  not used at all under FreeMiNT. To increase the FreeMiNT buffer cache use
+  the MiNT.CNF directive 'CACHE'.
+
+- Don't ever use wdialog.prg; wdialog is only TOS compatible;
+  XaAES has wdialog routines built-in, for N.AES you can use the wdialog
+  replacement N.DIALOG.
+
+- Don't use Freedom; Freedom is only TOS/MagiC compatible.
+
+- Don't use vcons; This is a dirty hack and will not work on 1.16.x kernels! 
+  This will be looked into when time allows -- anyone?
+
+==============================================================================
+
+4 Getting in contact
+--------------------
+
+You can contact me directly by e-mail or subscribe to the MiNT mailing list.
+This mailing list is the central discussion list for all topics related to
+FreeMiNT (development, bugs, programming questions, tools). It's read by the
+kernel developers, application developers and lots of FreeMiNT users.
+
+My e-mail address is: Frank Naumann <fnaumann@freemint.de>
+
+Information about the MiNT mailing list and the mailing list archive are
+available here:
+
+http://sparemint.atariforge.net/mailinglist/
+
+==============================================================================
+
+5 Problems
+----------
+
+This is a beta test release. Please don't expect everything to work perfectly.
+In the past, most problems reported by FreeMiNT users were more or less
+related to the setup and configuration procedure. The new 1.16 kernel tries to
+address these problems by using a more logical and strict configuration. For
+example using of the <sysdir> to read modules and configuration (and only
+<sysdir>), the mint.ini file to control elementary settings like memory
+protection on/off. Neither the location of the kernel nor its filename will be
+used to determine a configuration setting anymore. I hope that these changes
+made the installation and configuration of the kernel clearer and easier.
+
+5.1 Known problems
+------------------
+There still exist some problems that are already reported and known. Most of
+them are minor problems and mainly related to the brand new XaAES. As XaAES
+was developed very intensively the last months and it's perfectly normal that
+there still are some things to do. The problems that are already known are
+listed in the file PROBLEMS. Please don't report them again! Do note that the
+PROBLEMS file constitutes a short summary of the most important issues. The
+FreeMiNT project uses a bugtracker for bug reporting and tracing. If possible,
+please consider utilizing the bugtracker if you encounter problems. See the
+next subchapter for more details regarding the bugtracker and bug reporting in
+general.
+
+5.2 How to report a bug
+-----------------------
+For some time the FreeMiNT project uses a bugtracker to keep track of bugs
+and problems. If you think you found a new bug or a bug that is not yet
+reported, the best way to report the bug is through the bugtracker. The
+bugtracker is available at:
+
+http://sparemint.atariforge.net/bugtracker/login_page.php
+
+Please include a detailed description of the problem and, if possible, specify
+how the problem can be reproduced. In the bugtracker you can also see any
+other reported problems and bugs, search them and follow their status. When
+discussing bugs on the MiNT mailing list you should include the bug number as
+a reference to others. This enables them to scan the bugtracker for additional
+information.
+
+
+==============================================================================
+
+6 Changes in FreeMiNT
+---------------------
+
+There have been so many changes that I'm sure I will forget to mention half of
+them. I'll try to collect them here though.
+
+6.1 FreeMiNT Kernel
+-------------------
+
+6.1.1 New system calls
+----------------------
+The 1.16. kernel has been supplied with several new system calls to reflect
+the development enhancements. Most importantly the kernel itself now has a
+socket interface. The sockets are thus integrated into the file system layer
+and now behave exactly like the BSD defined socket interface. You can use
+any BSD manual regarding the socket interface as reference. All new system
+calls have a corresponding binding in the mintlib (include/mint/mintbind.h)
+for reference. The mintlib socket library will automatically use the new
+socket system calls if they are available (and fall back to the old interface
+under old kernels or under magicnet).
+
+
+The new system calls in detail:
+
+- Fwritev(), Opcode 0x15b
+- Freadv(), Opcode 0x15c
+  - vector read/write
+
+- Fstat(), Opcode 0x15d
+  - Fxattr() replacement; use UTC timestamps and is 64bit prepared
+
+- Fchown16(), Opcode 0x180
+  - Like Fchown() but with additional argument wether to follow symbolic links
+    or not
+
+The socket extensions:
+
+- Fsocket(), Opcode 0x160
+- Fsocketpair(), Opcode 0x161
+- Faccept(), Opcode 0x162
+- Fconnect(), Opcode 0x163
+- Fbind(), Opcode 0x164
+- Flisten(), Opcode 0x165
+- Frecvmsg(), Opcode 0x166
+- Fsendmsg(), Opcode 0x167
+- Frecvfrom(), Opcode 0x168
+- Fsendto(), Opcode 0x169
+- Fsetsockopt(), Opcode 0x16a
+- Fgetsockopt(), Opcode 0x16b
+- Fgetpeername(), Opcode 0x16c
+- Fgetsockname(), Opcode 0x16d
+- Fshutdown(), Opcode 0x16e
+
+NOTE: Psigintr() is no longer supported in 1.16 kernels.
+
+6.1.2 New modules
+-----------------
+Two new modules are imported into the source tree:
+
+dsp56k - a driver for the Falcon DSP. It's cleaned up and synchronized with
+         FreeMiNT headers and build system.
+
+lp - an interrupt driven driver for the parallel port on original ATARI
+     hardware. You can use it for interrupt triggered printing if you
+     output to this device.
+
+6.1.3 Internal changes
+----------------------
+The internal changes are not visible on the surface but are hidden much deeper
+and are highly important for the future.
+
+I restructured the proc context structure and sorted out the relevant things
+into shareable substructures. This required adding and rewriting large parts
+that are involved in managing these resources. Shareable resources in this
+context means resources that can be used by several processes at the same
+time. This is for example the address room, e.g. all memory of a process. The
+open file handles, signal handlers and such things. If two processes share as
+much as possible they can be seen as two threads of one process. They just
+differ in pid (that is unique for each context). As a side effect there is now
+an internal interface to create kernel threads, e.g. threads that run in the
+same context as the kernel (pid 0). In the future it's planned to create a new
+system call to export this feature to user processes as well so that they can
+create threads too. There are also plans to support the MagiC AES thread
+interface in XaAES.
+
+The second big internal addition is the new socket interface. The file
+descriptor handling is extended to work together with the new system calls.
+There is a new internal interface to access the socket interface directly
+(used by the nfs.xfs). Every socket is now a real file descriptor and now
+behaves like on a unix system. This improves compatibility with network
+related tools ported from unix. Also, the existing socket.xdd is gone and
+replaced by inet4.xdd. The file inet4.xdd now only contains the TCP/IPv4
+functionality. All other things, like file descriptor handling and the unix
+domain sockets, are now part of the kernel. Anonymous pipes are now using the
+unix domain sockets, thus improving the speed of the pipes. Also local
+networking through unix domain sockets is now always possible as base kernel
+functionality. If someone doesn't need TCP/IP protocol one can leave this
+module out and save some memory.
+
+For XaAES a complete new kernel interface was developed. This was necessary
+since XaAES as a central component of the operating system needs much more
+control and access to kernel functions and resources than is needed for xdd
+and xfs modules. For the future it is planned that all modules should switch
+to the new interface as well, thus removing the old interface completely.
+
+There are also tons of bug fixes and minor modifications and optimizations.
+For example CT60 power off support on system shutdown, aranym interface,
+support for modules. FreeMiNT now also catches the keyboard vector, most
+noticeably ctrl-alt-del is now handled by the kernel (entering shutdown
+sequence).
+
+New start-up strategy, new mint.ini config file for elementary configurations
+like memory protection, xfs/xdd loading, single step boot process.
+
+The kernel now also hosts a minimal internal shell to fix problems on failed
+start-up or if the INIT program is not found.
+
+6.1.4 New debug facilities
+--------------------------
+Especially for developers and intensive alpha/beta testers there are some
+interesting extensions to make debugging easier:
+
+- It's now possible to trace system calls of a process through the Ptrace()
+  debug system call. A command line tool that behaves similiar to the strace
+  tool, known from the Linux world, is in development (if you want to help
+  please contact me; the prototype is working and needs some nice pretty
+  printing of the system calls).
+
+- Under aranym debug messages are output through the aranym host interface
+  to the host system. These messages can be caught and analyzed easily. If
+  you compile and boot a debug kernel you will see the debug messages (on
+  debug level 2 and above) in the console where you started aranym.
+
+- If you have an MFP port you can use the new direct MFP debug output. To use
+  this you need to deactivate mfp.xdd and compile a kernel with this option
+  enabled (just look into sys/KERNELDEFS). You are then able to see all debug
+  output with a terminal program from any other computer connected to the MFP
+  serial port. Default settings are 19200 and 8N1. You can also control the
+  ATARI through the terminal program. Pressing a key will stop the machine
+  AFTER the next debug message is printed. Pressing a key again continues. If
+  the machine is stopped you can press key 1-9 to call the appropriate debug
+  feature like it's done on the original machine with ctr-alt-F? key
+  combination.
+
+- You can enable kernel debug output for a specific process. Unlike the global
+  debug level you can set a process private debug level which will behave like
+  the global debug level but is restricted to this process. You can manipulate
+  this per process debug level through the sysctl tool (the relevant option
+  is proc.curproc.<pid>.debug).
+
+6.2 XaAES
+---------
+From now on XaAES is integrated into the kernel. Theoretically it now falls
+under the category 'kernel modules' but I made a separate subchapter for it.
+
+6.2.1 The XaAES kernel module
+-----------------------------
+XaAES is now integrated into the kernel. Please note that this doesn't mean
+it's linked together with the kernel into one binary. Lots of people are
+mixing these two things up. XaAES is a loadable kernel module and is loaded if
+required. If you still want to use N.AES or any other AES, just ignore all
+configuration things regarding XaAES. The kernel will behave as before for
+another AES.
+
+The main reason for the kernel integration was to make XaAES much more
+useable. The previous design violated several rules and was not very fast
+either. The new kernel module addresses mainly these two problems. One major
+difference is that the old XaAES was an application that ran in user mode.
+However, being an operating system component it handled system calls and also
+needed full access to the resources of an AES client. This required some dirty
+tricks, and most noticeably XaAES required the F_OSPECIAL kernel hack that
+gives XaAES ultimate access to all processes. As a kernel component the new
+XaAES module no longer needs such dirty hacks. It's much cleaner now, and as
+an operating system component it has legal access to the client resources (and
+only to AES clients where XaAES is servicing a system call). In addition to
+this XaAES' code is now even smaller as it can reuse lots of things from the
+kernel (the library functions).
+
+The severely complex synchronization mechanism is not needed anymore either.
+This mechanism was a permanent source of bugs and failures in XaAES in the
+past. Previously XaAES also used a time consuming communication scheme, which
+relied on message pipes. This has now been removed and replaced by an internal
+kernel event queue which is a lot faster. All in all, these improvements
+results in a much shorter response times, allowing far better user interaction
+and a snappier feeling to XaAES. Just try it out and compare it with the old
+XaAES!
+
+6.2.1 The XaAES loader
+----------------------
+As XaAES is now a kernel module, and unlike before, it can't be started as a
+program. Instead, there is now a loader for XaAES, called xaloader.prg. This
+loader starts and initializes the XaAES kernel module. The loader program is
+blocked until XaAES is finished (either due to return to login or on
+reboot/shutdown). I tried to write the loader as failsafe as possible. If
+started without any arguments, the loader will look in the FreeMiNT
+<sysdir>/xaaes for an XaAES kernel module. If found, it's started. The loader
+can also take an argument, the module name to load (either as filename or as
+a complete, absolute path). If only a filename is given, the loader will look
+in <sysdir>/xaaes for this name and start it if found. If an absolute path is
+given, the loader will look up the path and start the module if found.
+
+NOTE: In all cases, XaAES system directory is the directory where the kernel
+      module is located. XaAES loads its rsc and cnf file ONLY from the XaAES
+      system directory.
+
+
+6.3 System tools
+----------------
+
+6.3.1 COPS
+----------
+COPS is a new surprising addition to the tools section. Many thanks to Joakim
+Hoegberg and Sascha Uhlig who were able to retrieve the sources of COPS.
+COPS is published under the GPL license. I have converted them to GCC,
+removed most of the assembler stuff and adapted it to gemlib. COPS is now part
+of the FreeMiNT CVS repository. It's not tested much yet but should work in
+the same way as the previous COPS version.
+
+
+6.3.2 sysctl
+------------
+Updated to reflect all enhancements of the Psysctl() system call.
+
+
+==============================================================================
+
+7 Development
+-------------
+
+7.1 Application development
+---------------------------
+The FreeMiNT documentation was and is a cause for criticism. It's far from
+perfect and especially the newly added things are not documented very well.
+Please excuse that, I'm working hard to update the documentation. The
+programmers documentation is located in the subdirectory doc/programmer. Just
+take a look. If you have any questions regarding system calls, behavior or
+such things, please, please ask me.
+
+7.2 Kernel development
+----------------------
+There are always so many things to do. If you want to help or if you have
+a patch or want to contribute something (source code, documentation updates)
+you are VERY welcome! The FreeMiNT project uses cvs for source management
+system and everybody can thus follow the current development. As a developer
+you get write access and are then able to directly submit your changes. The
+kernel development is a teamwork. We help each other. It's not necessary to
+know or understand each line of the kernels source code. If something is not
+clear, just ask. Developers with more knowledge on that particular issue can
+then help you understand the required things, hence making development a
+whole lot easier. 
+
+It's only your inner temptation that you need to defeat in order to help out a
+little bit :-)
