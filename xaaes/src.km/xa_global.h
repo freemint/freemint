@@ -403,5 +403,6 @@ static inline void showm(void)  { v_show_c(C.vh, 1); }
 static inline void forcem(void) { v_show_c(C.vh, 0); }
 
 struct xa_client *pid2client(short pid);
+struct xa_client *proc2client(struct proc *p);
 
 #endif /* _xa_global_h */

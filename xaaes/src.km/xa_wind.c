@@ -1035,9 +1035,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		short status, msg;
 
-		/* Ozk: Pure guessing - a non-zero value in intin[2] == set shade?
-		*/
-		if (pb->intin[2])
+		/*
+		 * Ozk: Pure guessing - a non-zero value in intin[2] == set shade?
+		 *      According to Gerhard Stoll, a value of -1 in intin[2] == set shade!
+		 */
+		if (pb->intin[2] == -1)
 		{
 			status = XAWS_SHADED;
 			msg = WM_SHADED;

@@ -39,6 +39,7 @@
 #include "taskman.h"
 #include "widgets.h"
 
+#include "xa_appl.h"
 #include "xa_evnt.h"
 #include "xa_form.h"
 #include "xa_fsel.h"
