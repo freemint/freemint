@@ -197,7 +197,7 @@ use_ansi_colors (TEXTWIN* v, unsigned long flag,
 		*bgcolor = *fgcolor; 
 		*fgcolor = temp;
 	}
-	
+
 	if (!v->vdi_colors) {
 		*texteffects &= ~CE_ANSI_EFFECTS;
 			
