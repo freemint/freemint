@@ -5,7 +5,6 @@ If something is missing just add it; freestyle text!
 kernel
 - test and bugfix slip.xif (sld, ppp)
 - bugfix rtl8012 driver
-- BIOS remapping for lp.xdd (like it's done for the serial xdd)
 - libkern struct for XDD/XFS modules (a jumptable to libkern functions
   linked with the kernel, purpose: prevent libkern functions to be
   present in memory in many copies (esp. strcpy() and such stuff).
