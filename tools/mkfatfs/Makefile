@@ -1,7 +1,7 @@
 #
-# Makefile for crypt I/O initialization
+# Makefile for mkaftafs and gemkfatfs
 #
-TARGET = mkfatfs
+TARGET = mkfatfs # gemkfatfs.app
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -19,16 +19,21 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-INCLUDES = -I$(top_srcdir)/IO
+INCLUDES = -I$(top_srcdir)/IO -I/usr/GEM/include
 
 # default definitions
-OBJS = $(COBJS:.c=.o)
-LIBS += $(LIBIO)
+OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 GENFILES = $(TARGET)
 
-$(TARGET): $(OBJS) $(LIBIOSTMP)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(STRIP) $@
+MKFATFSOBJS = mkfatfs.o
+GEMKFATFSOBJS = startup.o gemkfatfs.o util.o
+
+mkfatfs: $(MKFATFSOBJS) $(LIBIOSTMP)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MKFATFSOBJS) $(LIBIO)
+
+gemkfatfs.app: $(GEMKFATFSOBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(GEMKFATFSOBJS) \
+		-nostartfiles -nostdlib -L/usr/GEM/lib -lgemma -lslb -lc -lgcc
 
 
 include $(top_srcdir)/DEPENDENCIES
