@@ -932,21 +932,9 @@ do_formwind_msg(
 		}
 		case WM_MOVED:
 		{
-			if (wt && wt->tree)
+			if (wind != root_window && wt && wt->tree)
 			{
-				short status = -1;
-
-				if (!msg[7])
-				{
-					if (!(wind->window_status & XAWS_SHADED))
-						status = XAWS_SHADED;
-				}	
-				else if (wind->window_status & XAWS_SHADED)
-				{
-					if (msg[7] != wind->sh)
-						status = ~XAWS_SHADED;
-				}
-				move_window(0, wind, status, msg[4], msg[5], msg[6], msg[7]);
+				move_window(0, wind, -1, msg[4],msg[5],msg[6],msg[7]);
 			}
 			break;
 		}
