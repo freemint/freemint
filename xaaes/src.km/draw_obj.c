@@ -755,6 +755,7 @@ void form_save(short d, RECT r, void **area)
 		*area = kmalloc(calc_back(&r,screen.planes));
 		if (*area)
 		{
+			DIAG((D_menu, NULL, "form_save: to %lx", *area));
 			Mpreserve.fd_addr = *area;
 			hidem();
 			vro_cpyfm(C.vh, S_ONLY, pnt, &Mscreen, &Mpreserve);
@@ -792,7 +793,7 @@ void form_restore(short d, RECT r, void **area)
 			rtopxy(pnt+4, &r);
 			ritopxy(pnt,0,0,r.w,r.h);
 
-			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d from %lx", r.x, r.y, r.w, r.h, *area));
 
 			Mpreserve.fd_w = r.w;
 			Mpreserve.fd_h = r.h;

@@ -404,7 +404,7 @@ repos_iconified(struct proc *p, long arg)
 
 	while (w)
 	{
-		if ((w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_ICONIFIED|XAWS_HIDDEN)) //&& !is_hidden(w))
+		if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
 		{
 			r = free_icon_pos(lock, w);
 			send_moved(lock, w, AMQ_NORM, &r);

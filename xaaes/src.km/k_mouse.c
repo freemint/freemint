@@ -577,7 +577,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 					DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
 					C.ce_open_menu = client;
 					post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
-					//post_tpcevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
 				}
 				return false;
 			}
