@@ -2487,7 +2487,7 @@ bios_close (FILEPTR *f, int pid)
 
 /*
  * UTILITY ROUTINE called by Bconmap() in xbios.c:
- * this sets handle -1 of process p to a file handle
+ * this sets handle -2 of process p to a file handle
  * that has BIOS device "dev". Returns 0 on failure,
  * non-zero on success.
  */
