@@ -218,11 +218,11 @@ L_expired:
 L_switch:
 	clr.w	-(sp)		// no frame format needed
 	move.l	_curproc,-(sp)
-	addq.l	#P_CTXT0,(sp)		// to get &curproc->ctxt[SYSCALL]
+	addq.l	#P_SYSCTXT,(sp)		// to get &curproc->ctxt[SYSCALL]
 	jsr	_build_context		// build context
 	move.l	_curproc,a0
 	move.l	(a0),sp 		// use curproc->sysstack
-	move.w	P_CTXT0+C_SR(a0),d7	// get saved int level
+	move.w	P_SYSCTXT+C_SR(a0),d7	// get saved int level
 
 // inlined enter_kernel(0). Notice we can't be in_kernel here (see above),
 // so no need to tst.w _in_kernel & stuff. Also, we don't need to increase

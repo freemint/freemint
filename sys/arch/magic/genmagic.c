@@ -70,12 +70,11 @@ magics [] =
 	{ "C_CRP",		offsetof(struct context, crp)			},
 	{ "C_TC",		offsetof(struct context, tc)			},
 
-	{ "P_CTXT0",		offsetof(struct proc, ctxt)			},
+	{ "P_SYSCTXT",		offsetof(struct proc, ctxt)			},
 	{ "P_EUID",		offsetof(struct proc, _euid)	/* XXX */	},
 	{ "P_SYSTIME",		offsetof(struct proc, systime)			},
 	{ "P_USRTIME",		offsetof(struct proc, usrtime)			},
 	{ "P_PTRACER",		offsetof(struct proc, ptracer)			},
-	{ "P_SYSCTXT",		offsetof(struct proc, ctxt)			},
 	{ "P_EXCPC",		offsetof(struct proc, exception_pc)		},
 	{ "P_EXCSSP",		offsetof(struct proc, exception_ssp)		},
 	{ "P_EXCADDR",		offsetof(struct proc, exception_addr)		},
@@ -85,7 +84,6 @@ magics [] =
 	{ "P_SIGMASK",		offsetof(struct proc, p_sigmask)		},
 	{ "P_SIGPENDING",	offsetof(struct proc, sigpending)		},
 	{ "P_INDOS",		offsetof(struct proc, in_dos)			},
-	{ "P_BASE",		offsetof(struct proc, base)			},
 
 	{ "SL_HEAD",		offsetof(struct shared_lib, slb_head)		},
 	{ "SL_NAME",		offsetof(struct shared_lib, slb_name)		},
