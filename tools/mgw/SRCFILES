@@ -1,0 +1,7 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = global.h mgw.h mintsock.h options.h
+COBJS = main.c mgw.c
+
+SRCFILES = $(HEADER) $(COBJS)

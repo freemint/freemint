@@ -36,7 +36,7 @@
 # include <netinet/in.h>
 
 
-# include "include/errno.h"
+# include <errno.h>
 extern int errno;
 
 # include "gs_func.h"
