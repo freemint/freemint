@@ -533,7 +533,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 				break;
 			}
 
-			b = p->base;
+			b = p->p_mem->base;
 
 			/* accsize */
 			size = 256 + b->p_tlen + b->p_dlen + b->p_blen;
@@ -543,6 +543,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 			b->p_dbase = b->p_tbase;
 			b->p_tbase = (char *)b + size;
+
+			/* set PC appropriately */
+			p->ctxt[CURRENT].pc = b->p_tbase;
 
 			p_renice(p->pid, -4);
 
@@ -580,7 +583,7 @@ out:
 		free(tail);
 
 	DIAG((D_shel, 0, "Launch for %s returns child %d (bp 0x%lx)",
-		c_owner(caller), ret, p ? p->base : NULL));
+		c_owner(caller), ret, p ? p->p_mem->base : NULL));
 	DIAG((D_shel, 0, "Remove ARGV"));
 
 	/* Remove ARGV */
