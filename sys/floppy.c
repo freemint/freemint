@@ -25,6 +25,8 @@
 
 #ifdef FLOPPY_ROUTINES
 
+# include "libkern/libkern.h"
+
 # include "mint/ktypes.h"
 # include "mint/arch/mfp.h"
 # include "mint/arch/wd1772.h"
@@ -126,6 +128,8 @@ __extension__															 \
 	retvalue;																 \
 })
 
+# if 0	/* memcmp() is alredy defined inside libkern */
+
 /* do it faster in asm */
 int memcmp(const void * aa, const void * bb, ulong n)
 {
@@ -142,6 +146,8 @@ int memcmp(const void * aa, const void * bb, ulong n)
 	if(*a < *b) return -1;
 	return 1;
 }
+
+# endif
 
 /* freemint */
 
