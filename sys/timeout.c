@@ -155,13 +155,15 @@ inserttimeout (TIMEOUT *t, long delta)
  */
 
 TIMEOUT * _cdecl
-addtimeout (long delta, void _cdecl (*func)(PROC *))
+addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *))
 {
 	TIMEOUT *t;
 	
 	{
 		register TIMEOUT **prev;
-		register short sr = spl7 ();
+		register ushort sr;
+		
+		sr = spl7 ();
 		
 		/* Try to reuse an already expired timeout that had the
 		 * same function attached
@@ -169,7 +171,7 @@ addtimeout (long delta, void _cdecl (*func)(PROC *))
 		prev = &expire_list;
 		for (t = *prev; t != NULL; prev = &t->next, t = *prev)
 		{
-			if (t->proc == curproc && t->func == func)
+			if (t->proc == p && t->func == func)
 			{
 				*prev = t->next;
 				break;
@@ -186,11 +188,17 @@ addtimeout (long delta, void _cdecl (*func)(PROC *))
 	 */
 	assert (t);
 	
-	t->proc = curproc;
+	t->proc = p;
 	t->func = func;
 	inserttimeout (t, delta);
 	
 	return t;
+}
+
+TIMEOUT * _cdecl
+addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
+{
+	return addtimeout (curproc, delta, func);
 }
 
 /*
@@ -420,17 +428,13 @@ timeout (void)
 	kintr = keyrec->head != keyrec->tail;
 	
 	if (proc_clock)
-	{
 		proc_clock--;
-	}
-
+	
 	ms = *((short *) 0x442L);
 	our_clock -= ms;
 	
 	if (tlist)
-	{
 		tlist->when -= ms;
-	}
 }
 # endif
 
@@ -442,7 +446,7 @@ timeout (void)
 void
 checkalarms (void)
 {
-	register short sr;
+	register ushort sr;
 	register long delta;
 	
 	/* do the once per second things */
@@ -533,7 +537,7 @@ nap (unsigned n)
 {
 	TIMEOUT *t;
 	
-	t = addtimeout (n, unnapme);
+	t = addtimeout (curproc, n, unnapme);
 	sleep (SELECT_Q, (long) nap);
 	canceltimeout (t);
 }
