@@ -1148,8 +1148,8 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
 {
 #ifdef DEBUG_INFO
     char linebuf[128];
-    long buflen = sizeof (linebuf);
     char *lp = linebuf;
+    long len;
     MEMREGION *mp, **mr, **map;
     PROC *p;
     ulong loc;
@@ -1168,8 +1168,10 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
 	for (loc = mp->loc; loc < (mp->loc + mp->len); loc += EIGHT_K) {
 	    if (first || ((loc & 0x1ffffL) == 0)) {
 		if (*linebuf) FORCE(linebuf);
-		ksprintf(linebuf,buflen,"\r%08lx: ",loc);
-		lp = &linebuf[11];
+		len = sizeof(linebuf);
+		ksprintf(linebuf,len,"\r%08lx: ",loc);
+		lp = linebuf + 11;
+		len -= 11;
 		first = 0;
 	    }
 	    if (loc == mp->loc) {
@@ -1188,8 +1190,9 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
 		}
 		owner = 000;
 gotowner:
-		ksprintf(lp,buflen,"%03d",owner);
+		ksprintf(lp,len,"%03d",owner);
 		lp += 3;
+		len -= 3;
 	    }
 	    else {
 		*lp++ = ' ';
@@ -1197,6 +1200,7 @@ gotowner:
 		*lp++ = '-';
 		*lp++ = '-';
 		*lp = '\0';	/* string is always null-terminated */
+		len -= 4;
 	    }
         }
     }
