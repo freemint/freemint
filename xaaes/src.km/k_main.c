@@ -759,7 +759,7 @@ static struct sgttyb KBD_dev_sg;
 
 int aessys_timeout = 0;
 
-static const char aesthread_name[] = "athr";
+static const char aesthread_name[] = "aesthred";
 
 /*
  * AES thread
@@ -795,7 +795,7 @@ aesthread_entry(void *c)
 			break;	
 		sleep(IO_Q, (long)client->tp);
 	}
-	display("aesthread terminating");
+	//display("aesthread terminating");
 	client->tp = NULL;
 	client->tp_term = 2;
 	kthread_exit(0);
@@ -921,11 +921,13 @@ k_main(void *dummy)
 
 	DIAGS(("Handles: KBD %ld, ALERT %ld", C.KBD_dev, C.alert_pipe));
 
-
+	/*
+	 * Start AES thread
+	 */
 	{
 		long tpc;
 
-		tpc = kthread_create(C.Aes->p, aesthread_entry, C.Aes, &C.Aes->tp, "kt-%s", aesthread_name);
+		tpc = kthread_create(C.Aes->p, aesthread_entry, C.Aes, &C.Aes->tp, "%s", aesthread_name);
 		if (tpc < 0)
 		{
 			display("XaAES ERROR: start AES thread failed");
