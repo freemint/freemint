@@ -1707,10 +1707,10 @@ dump_area (ulong *table, ulong start, ulong end, char *buf, long buflen)
 	dump_descriptor (last, buf);
 }
 
-void
-BIG_MEM_DUMP (int bigone, PROC *proc)
-{
 # ifdef DEBUG_INFO
+static void
+BIG_MEM_DUMP_1 (int bigone, PROC *proc, MMAP which)
+{
 	char buf[128];
 	long buflen = sizeof (buf);
 	char *lp = buf;
@@ -1725,66 +1725,65 @@ BIG_MEM_DUMP (int bigone, PROC *proc)
 	if (no_mem_prot)
 		return;
 	
-	for (map = core; map != 0; ((map == core) ? (map = alt) : (map = 0)))
+	map = which;
+	
+	FORCE ("Annotated memory dump for %s",(map == core ? "core" : "alt"));
+	
+	first = 1;
+	*buf = '\0';
+	for (mp = *map; mp; mp = mp->next)
 	{
-		FORCE ("Annotated memory dump for %s",(map == core ? "core" : "alt"));
-		
-		first = 1;
-		*buf = '\0';
-		for (mp = *map; mp; mp = mp->next)
+		for (loc = mp->loc; loc < (mp->loc + mp->len); loc += EIGHT_K)
 		{
-			for (loc = mp->loc; loc < (mp->loc + mp->len); loc += EIGHT_K)
+			if (first || ((loc & 0x1ffffL) == 0))
 			{
-				if (first || ((loc & 0x1ffffL) == 0))
-				{
-					if (*buf)
-						FORCE (buf);
-					
-					ksprintf (buf, buflen, "\r%08lx: ",loc);
-					lp = &buf[11];
-					first = 0;
-				}
+				if (*buf)
+					FORCE (buf);
 				
-				if (loc == mp->loc)
+				ksprintf (buf, buflen, "\r%08lx: ",loc);
+				lp = &buf[11];
+				first = 0;
+			}
+			
+			if (loc == mp->loc)
+			{
+				*lp++ = modesym[global_mode_table[loc / EIGHT_K]];
+				
+				for (p = proclist; p; p = p->gl_next)
 				{
-					*lp++ = modesym[global_mode_table[loc / EIGHT_K]];
-					
-					for (p = proclist; p; p = p->gl_next)
+					if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
+						continue;
+					if (p->p_mem && p->p_mem->mem)
 					{
-						if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
-							continue;
-						if (p->p_mem && p->p_mem->mem)
+						mr = p->p_mem->mem;
+						for (i = 0; i < p->p_mem->num_reg; i++, mr++)
 						{
-							mr = p->p_mem->mem;
-							for (i = 0; i < p->p_mem->num_reg; i++, mr++)
+							if (*mr == mp)
 							{
-								if (*mr == mp)
-								{
-									owner = p->pid;
-									goto gotowner;
-								}
+								owner = p->pid;
+								goto gotowner;
 							}
 						}
 					}
-					
-					owner = 000;
+				}
+				
+				owner = 000;
 gotowner:
-					ksprintf(lp, buflen, "%03d", owner);
-					lp += 3;
-				}
-				else
-				{
-					*lp++ = ' ';
-					*lp++ = '-';
-					*lp++ = '-';
-					*lp++ = '-';
-					*lp = '\0';
-				}
+				ksprintf(lp, buflen, "%03d", owner);
+				lp += 3;
+			}
+			else
+			{
+				*lp++ = ' ';
+				*lp++ = '-';
+				*lp++ = '-';
+				*lp++ = '-';
+				*lp = '\0';
 			}
 		}
-		
-		FORCE (buf);
 	}
+	
+	FORCE (buf);
 	
 	if (bigone && proc->p_mem)
 	{
@@ -1801,6 +1800,15 @@ gotowner:
 			dump_area (table, 0x01000000UL, mint_top_tt, buf, buflen);
 		}
 	}
+}
+# endif
+
+void
+BIG_MEM_DUMP (int bigone, PROC *proc)
+{
+# ifdef DEBUG_INFO
+	BIG_MEM_DUMP_1 (bigone, proc, core);
+	BIG_MEM_DUMP_1 (bigone, proc, alt);
 # else
 	UNUSED (proc);
 	UNUSED (bigone);
