@@ -34,10 +34,20 @@
 # ifndef _m68k_xhdi_emu_h
 # define _m68k_xhdi_emu_h
 
+# ifndef ASM_ONLY
 # include "mint/mint.h"
 
-
 long emu_xhdi (ushort opcode, ...);
+
+# endif
+
+# if 0 /* set to 1 to enable XHDI_MON */
+# define XHDI_MON
+# endif
+
+# if !defined(ASM_ONLY) && defined(XHDI_MON)
+long xhdi_mon_dispatcher (ushort opcode, ...);
+# endif
 
 
 # endif /* _m68k_xhdi_emu_h */
