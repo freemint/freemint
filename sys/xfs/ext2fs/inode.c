@@ -36,7 +36,7 @@
 # include "truncate.h"
 
 
-# if 0
+# if 1
 # define COOKIE_HASHBITS	(8)
 # else
 # define COOKIE_HASHBITS	(12)
