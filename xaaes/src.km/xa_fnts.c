@@ -344,7 +344,6 @@ delete_fnts_info(void *_fnts)
 		if (fnts->wt)
 		{
 			fnts->wt->links--;
-			//display("delete_fnts_inf: links-- on %lx (links=%d)", fnts->wt, fnts->wt->links);
 			remove_wt(fnts->wt, false);
 		}
 
@@ -504,15 +503,8 @@ add_point(struct xa_fnts_item *f, short point)
 	}
 	if (!dup)
 	{
-		//DIAGS((" --- keep %d", point));
 		f->f.pts[f->f.npts++] = point;
 	}
-#if 0
-#if GENERATE_DIAGS
-	else
-		DIAGS((" --- dupl %d", point));
-#endif
-#endif
 }
 
 /*
@@ -736,8 +728,6 @@ get_font_items(struct xa_fnts_info *fnts)
 		if (!(new = new_fnts_item()))
 			break;
 
-		//DIAGS(("get_font_items: new item=%lx", new));
-
 		xvqt_name(fnts, vpb, i, new);
 		
 		if (!fitem)
@@ -793,7 +783,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 	struct scroll_info *list = object_get_slist(obtree + FNTS_POINTS);
 	char b[8];
 
-	list->empty(list, -1); //empty_scroll_list(obtree, FNTS_POINTS, -1);
+	list->empty(list, -1);
 
 	if (f)
 	{
@@ -801,7 +791,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 		{
 			sprintf(b, sizeof(b), "%d", f->f.pts[i]);
 			DIAGS(("set_point_list: add '%s'", b));
-			list->add(list, NULL, b, FLAG_AMAL, f); //add_scroll_entry(obtree, FNTS_POINTS, NULL, b, FLAG_AMAL, f);
+			list->add(list, NULL, b, FLAG_AMAL, f);
 		}
 	}
 
@@ -820,7 +810,7 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 	SCROLL_INFO *list = object_get_slist(obtree + FNTS_FNTLIST);
 	SCROLL_INFO *list_type = object_get_slist(obtree + FNTS_TYPE);
 
-	list_type->empty(list_type, -1); //empty_scroll_list(obtree, FNTS_TYPE, -1);
+	list_type->empty(list_type, -1);
 
 	if (list->cur)
 	{
@@ -829,7 +819,7 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 		{
 			while (f)
 			{
-				list_type->add(list_type, NULL, f->f.style_name, 0, f); //add_scroll_entry(obtree, FNTS_TYPE, NULL, f->f.style_name, 0, f);
+				list_type->add(list_type, NULL, f->f.style_name, 0, f);
 				f = f->nxt_kin;
 			}
 		}
@@ -874,8 +864,8 @@ update_slists(struct xa_fnts_info *fnts)
 	list_name  = object_get_slist(obtree + FNTS_FNTLIST);
 	list_style = object_get_slist(obtree + FNTS_TYPE);
 
-	list_name->empty(list_name, -1); //empty_scroll_list(obtree, FNTS_FNTLIST, -1);
-	list_style->empty(list_style, -1); //empty_scroll_list(obtree, FNTS_TYPE, -1);
+	list_name->empty(list_name, -1);
+	list_style->empty(list_style, -1);
 
 	/*
 	 * Rebuild font item list according to flags
@@ -1015,7 +1005,6 @@ create_new_fnts(enum locks lock,
 		fnts->handle		= (void *)((unsigned long)fnts >> 16 | (unsigned long)fnts << 16);
 		fnts->wt		= wt;
 		wt->links++;
-		//display("create_new_fnts: links++ on %lx (links=%d)", wt, wt->links);
 		fnts->vdi_handle	= vdih;
 		fnts->num_fonts		= num_fonts;
 		fnts->font_flags	= font_flags;
@@ -1040,14 +1029,9 @@ create_new_fnts(enum locks lock,
 		
 		fnts->fnts_ring = get_font_items(fnts);
 
-		//set_scroll(C.Aes, wt->tree, FNTS_FNTLIST, true);
-		//set_scroll(C.Aes, wt->tree, FNTS_TYPE, true);
-		//set_scroll(C.Aes, wt->tree, FNTS_POINTS, true);
-
 		/* HR: set a scroll list object */
 		set_slist_object(lock,
 				 wt,
-				 //wt->tree,
 				 wind,
 				 FNTS_FNTLIST,
 				 SIF_SELECTABLE,
@@ -1058,7 +1042,6 @@ create_new_fnts(enum locks lock,
 
 		set_slist_object(lock,
 				 wt,
-				 //wt->tree,
 				 wind,
 				 FNTS_TYPE,
 				 SIF_SELECTABLE,
@@ -1069,7 +1052,6 @@ create_new_fnts(enum locks lock,
 		
 		set_slist_object(lock,
 				 wt,
-				 //wt->tree,
 				 wind,
 				 FNTS_POINTS,
 				 SIF_SELECTABLE,
@@ -1304,8 +1286,6 @@ init_fnts(struct xa_fnts_info *fnts)
 		else
 			strcpy(ted->te_ptext, "10");
 	
-		//size = ted->te_ptext;
-
 		obj_edit(fnts->wt, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL, NULL);
 
 	}
@@ -1358,7 +1338,6 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(wind->window_status & XAWS_OPEN))
 		{
 			struct widget_tree *wt = fnts->wt;
-			//OBJECT *obtree = wt->tree;
 			RECT r = wind->wa;
 		
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)

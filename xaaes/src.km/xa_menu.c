@@ -86,8 +86,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (!mwt)
 					mwt = new_widget_tree(client, mnu);
 
-			//	client->std_menu = mwt;
-
 				/* Do a special fix on the menu  */
 				fix_menu(client, mnu,true);
 				DIAG((D_menu,NULL,"fixed menu"));
@@ -125,12 +123,16 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	case MENU_REMOVE:
 	{
 		DIAG((D_menu,NULL,"MENU_REMOVE"));
+		
+		if (!menu)
+			menu = client->nxt_menu;
 
 		if (menu)
 		{
 			if (menustruct_locked() == client->p)
 				popout(TAB_LIST_START);
 
+			client->std_menu = client->nxt_menu = NULL;
 			
 			top_owner = C.Aes;
 			wl = window_list;
@@ -147,7 +149,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			swap_menu(lock|winlist, top_owner, NULL, false, true, 7);
 			remove_attachments(lock|winlist, client, menu);
 			
-			client->std_menu = NULL;
 			pb->intout[0] = 1;
 		}
 		break;

@@ -106,7 +106,6 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	if (!wind->nolist && window_list != wind && !(wind->active_widgets & NO_TOPPED))
 	{	
 		top_window(lock, true, wind, (void *)-1L, NULL);
-		//after_top(lock, false);
 		return false;
 	}
 
@@ -121,7 +120,6 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	    && f <  ALERT_BUT1 + ALERT_BUTTONS
 	    && !(alert_form[f].ob_flags & OF_HIDETREE))
 	{
-		//b = watch_object(lock, wt, f, OS_SELECTED, 0);
 		b = obj_watch(wt, f, OS_SELECTED, 0, &wind->wa, wind->rect_start);
 
 		if (b)
@@ -485,8 +483,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 				*(RECT *)&alert_form->ob_x);
 
 		alert_window = create_window(lock,
-					     do_winmesag, //NULL,
-					     do_formwind_msg, //NULL,
+					     do_winmesag,
+					     do_formwind_msg,
 					     client,
 					     nolist,
 					     kind,
@@ -595,7 +593,6 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 		short ks;
 		struct rawkey key;
 
-		//check_widget_tree(lock, client, obtree);
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 
@@ -749,7 +746,7 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 	Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 	
-	return XAC_DONE; //XAC_BLOCK;
+	return XAC_DONE;
 }
 
 /*
@@ -884,7 +881,6 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			Block(client, 0);
 			client->status &= ~CS_FORM_DO;
 			return XAC_DONE;
-			//return XAC_BLOCK;
 		}
 		/* XXX - Ozk:
 		 *  If client didnt fetch update lock calling wind_upd(), XaAES uses
@@ -976,7 +972,6 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		short newstate, nextobj, clickmask;
 
-		//wt = check_widget_tree(lock, client, obtree);
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 

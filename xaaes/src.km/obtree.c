@@ -165,8 +165,6 @@ getbest_cicon(CICONBLK *ciconblk)
 	return best_cicon;
 }
 
-#if 1
-
 static long
 sizeof_tedinfo(TEDINFO *ted)
 {
@@ -635,9 +633,6 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 		}
 	
 	} while ((curr = obtree[curr].ob_next) != parent);
-
-	//display("return obtreelen = %ld, objs = %d", size, objs);
-	
 }
 
 OBJECT *
@@ -710,7 +705,7 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 			case G_SLIST:
 			{
 				struct scroll_info *list = object_get_slist(ob);
-				list->destroy(list); //unset_G_SLIST(client, obtree, j);
+				list->destroy(list);
 				break;
 			}
 			case G_EXTBOX:
@@ -745,8 +740,6 @@ free_object_tree(struct xa_client *client, OBJECT *obtree)
 			ufree(obtree);
 	}
 }
-
-#endif
 
 short
 object_thickness(OBJECT *ob)
@@ -1265,8 +1258,8 @@ obj_offset(XA_TREE *wt, short object, short *mx, short *my)
 			x += obtree[current].ob_x;
 			y += obtree[current].ob_y;
 			
-			*mx = x; // + obtree[current].ob_x;
-			*my = y; // + obtree[current].ob_y;
+			*mx = x;
+			*my = y;
 
 			DIAG((D_objc, NULL, "obj_offset: return found obj=%d at x=%d, y=%d",
 				object, x, y));
@@ -1320,8 +1313,8 @@ ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 			x += obtree[current].ob_x;
 			y += obtree[current].ob_y;
 			
-			*mx = x; // + obtree[current].ob_x;
-			*my = y; // + obtree[current].ob_y;
+			*mx = x;
+			*my = y;
 
 			DIAG((D_objc, NULL, "ob_offset: return found obj=%d at x=%d, y=%d",
 				object, x, y));
@@ -2080,7 +2073,7 @@ obj_ed_char(XA_TREE *wt,
 			else
 			{
 				cursor_pos += chg;		/* Ugly hack! */
-				ei->pos = cursor_pos;	//wt->e.pos = cursor_pos;
+				ei->pos = cursor_pos;
 				return XAC_DONE;
 			}
 		}
@@ -2577,9 +2570,6 @@ obj_watch(XA_TREE *wt,
 		}
 		S.wm_count--;
 	}
-
-	//f_interior(FIS_SOLID);
-	//wr_mode(MD_TRANS);
 
 	if (obf == obj)
 		return 1;

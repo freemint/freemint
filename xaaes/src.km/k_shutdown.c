@@ -176,19 +176,7 @@ k_shutdown(void)
 	}
 
 	DIAGS(("Freeing Aes resources"));
-#if 0
-	/* empty alert scrollbar */
-	{
-		OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		if (form)
-		{
-			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			DIAGS(("Free sysalert list %lx (empty=%lx)", list, (long)list->empty));
 	
-			//list->empty(list, -1); //empty_scroll_list(form, SYSALERT_LIST, -1);
-		}
-	}
-#endif
 	/* To demonstrate the working on multiple resources. */
 	FreeResources(C.Aes, 0);/* first: widgets */
 	FreeResources(C.Aes, 0);/* then: big resource */

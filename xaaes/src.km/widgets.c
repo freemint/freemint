@@ -97,7 +97,7 @@ XA_slider(struct xa_window *w, int which, int total, int visible, int start)
 {
 	XA_WIDGET *widg = get_widget(w, which);
 
-	if (w->active_widgets & widg->loc.mask) //widg->loc.mask)
+	if (w->active_widgets & widg->loc.mask)
 	{
 		XA_SLIDER_WIDGET *sl = widg->stuff;
 
@@ -305,7 +305,6 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 void
 rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 {
-	//RECT dr;
 	short rtx, rty, ww, wh;
 	int frame = wind->frame;
 
@@ -317,7 +316,7 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		frame = 0;
 
 	if (r == NULL)
-		r = &widg->ar; //&dr;
+		r = &widg->ar;
 
 	/* HR: window frame size dynamic
 	 *     thanks to the good design these 2 additions are all there is :-)
@@ -573,7 +572,7 @@ free_wt(XA_TREE *wt)
 {
 
 	DIAGS(("free_wt: wt=%lx", wt));
-#if 0
+#if 1
 	if (wt->links)
 	{
 		display("free_wt: links not NULL!!!!!");
@@ -1313,7 +1312,6 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		    || wind->send_message == NULL
 		    || wind->owner->options.nolive)
 		{
-			//short x, y;
 			RECT bound;
 			
 			bound.x = wind->owner->options.noleft ?
@@ -1356,7 +1354,6 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 				widget_active.m.y = md->sy;
 			}
 
-			//if (widget_active.m.cstate)	/*(mb)*/
 			{
 				/* Drag title */
 
@@ -2278,7 +2275,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			else
 				y = md->y;
 
-			if (widget_active.y != y) //md->y)
+			if (widget_active.y != y)
 			{
 				offs = bound_sl(pix_to_sl((y - widget_active.offs) - widg->ar.y, widg->r.h - sl->r.h));
 		
@@ -2464,7 +2461,6 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	XA_WIDGET *widg;
 	int /*wd,*/ bottom = 0, right = 0;
 	XA_WIND_ATTR old_tp = wind->active_widgets;
-	//void *stuff;
 
 	DIAGS(("standard_widgets: new(%lx), prev(%lx) on wind %d for %s",
 		tp, old_tp, wind->handle, wind->owner->proc_name));
@@ -2592,7 +2588,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if ( (tp & BORDER) || ((tp & (SIZER|MOVER)) == (SIZER|MOVER)) )
 	{
 		tp |= BORDER;
-		if (!(old_tp & BORDER)) // || ((old_tp & (SIZER|MOVER)) != (SIZER|MOVER)) )
+		if (!(old_tp & BORDER))
 		{
 			DIAGS(("Make border"));
 			make_widget(wind, &stdl_border, display_border, drag_border, drag_border, NULL);
@@ -2602,7 +2598,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			DIAGS(("border already made"));
 #endif
 	}
-	else if ((old_tp & BORDER)) // || ((old_tp & (SIZER|MOVER)) == (SIZER|MOVER)) )
+	else if ((old_tp & BORDER))
 	{
 		DIAGS(("clear border"));
 		zwidg(wind, XAW_BORDER, keep_stuff);
@@ -3417,7 +3413,6 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
 							redisplay_widget(lock, w, widg, OS_SELECTED);
 		
-						//check_mouse( w->owner, &b, &rx, &ry);
 
 						/*
 						 * Check if the widget has a dragger function if button still pressed

@@ -225,7 +225,7 @@ list_resource(struct xa_client *client, void *resource, short flags)
 		if (new->next)
 			new->next->prior = new;
 
-		client->resources = new;			
+		client->resources = new;
 
 		/* set defaults up */
 		new->id = 2;
@@ -776,8 +776,8 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				/* free the entry for the freed rsc. */
 				RSHDR *hdr = cur->rsc;
 				char *base = cur->rsc;
-				OBJECT **trees; //, *obtree;
-				short i; //, j, type;
+				OBJECT **trees;
+				short i;
 
 
 				/* Free the memory allocated for scroll list objects. */
@@ -785,98 +785,7 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				for (i = 0; i < hdr->rsh_ntree; i++)
 				{
 					free_obtree_resources(client, trees[i]);
-					
-/* ------------------------------------- */
-/* Ozk: I dont know if this was really necessary ... only time will tell.
- * It makes it easy to add cleanup-code to individual objects loaded
- * by LoadResources..
- */
- #if 0
-					obtree = trees[i];
-					j = 0;
-					do
-					{
-						type = obtree[j].ob_type & 255;
-						switch (type)
-						{
-							case G_TEXT:
-							case G_BOXTEXT:
-							case G_IMAGE:
-							case G_BUTTON:
-							case G_STRING:
-							case G_SHORTCUT:
-							case G_FTEXT:
-							case G_FBOXTEXT:
-							case G_TITLE:
-							case G_ICON:
-							{
-								break;
-							}
-							case G_CICON:
-							{
-								break;
-							}
-							case G_PROGDEF:
-							{
-								break;
-							}
-							case G_IBOX:
-							case G_BOX:
-							case G_BOXCHAR:
-							{
-								break;
-							}
-							case G_SLIST:
-							{
-								if (client == C.Aes)
-								{
-									DIAG((D_rsrc, client, "kFree: scroll list info %lx",
-										(long)obtree[j].ob_spec.index));
-									kfree((SCROLL_INFO*)obtree[j].ob_spec.index);
-								}
-								else
-								{
-									DIAG((D_rsrc, client, "uFree: scroll list info %lx",
-										(long)obtree[j].ob_spec.index));
-									ufree((SCROLL_INFO*)obtree[j].ob_spec.index);
-								}
-								break;
-							}
-							default:
-							{
-								DIAG((D_rsrc, client, "Unknown object type %d", type));
-								break;
-							}
-						}
-					} while (!(obtree[j++].ob_flags & OF_LASTOB));
-#endif
 				}
-/* ------------------------------------- */
-/* Old stuff - -- it will be removed if noone have objections
- */
-#if 0
-					int f = 0;
-					obj = trees[i];
-					do {
-						if ((obj[f].ob_type & 255) == G_SLIST)
-						{
-							if (client == C.Aes)
-							{
-								DIAG((D_rsrc, client, "kFree: scroll list info %lx",
-									(long)obj[f].ob_spec.index));
-								kfree((SCROLL_INFO*)obj[f].ob_spec.index);
-							}
-							else
-							{
-								DIAG((D_rsrc, client, "uFree: scroll list info %lx",
-									(long)obj[f].ob_spec.index));
-								ufree((SCROLL_INFO*)obj[f].ob_spec.index);
-							}
-						}
-					}
-					while (!(obj[f++].ob_flags & OF_LASTOB));
-				}
-#endif
 
 				/* unhook the entry from the chain */
 				if (cur->prior)
@@ -1159,7 +1068,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		/* inform user what's going on */
 		ALERT(("XaAES: rsrc_load: %s, client with no globl_ptr, killing it", client->name));
-		exit_client(lock, client, -1, true); //get_curproc());
+		exit_client(lock, client, -1, true);
 		raise(SIGKILL);
 		return 0;
 	}

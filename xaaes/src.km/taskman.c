@@ -58,11 +58,11 @@ refresh_tasklist(enum locks lock)
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	OBJECT *tl = form + TM_LIST;
-	SCROLL_INFO *list = object_get_slist(tl); //(SCROLL_INFO *)tl->ob_spec.index;
+	SCROLL_INFO *list = object_get_slist(tl);
 	struct xa_client *client;
 
 	/* Empty the task list */
-	list->empty(list, -1); //empty_scroll_list(form, TM_LIST, -1);
+	list->empty(list, -1);
 
 	Sema_Up(clients);
 
@@ -96,10 +96,10 @@ refresh_tasklist(enum locks lock)
 			else
 				sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
 
-			list->add(list, icon, tx, FLAG_MAL, NULL); //add_scroll_entry(form, TM_LIST, icon, tx, FLAG_MAL, NULL);
+			list->add(list, icon, tx, FLAG_MAL, NULL);
 		}
 		else
-			list->add(list, icon, client->name, 0, NULL); //add_scroll_entry(form, TM_LIST, icon, client->name, 0, NULL);
+			list->add(list, icon, client->name, 0, NULL);
 	}
 
 	list->slider(list);
@@ -233,20 +233,6 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 	SCROLL_INFO *list = object_get_slist(ob); //(SCROLL_INFO *)ob->ob_spec.index;
 
 	list->empty(list, -1);
-
-#if 0
-	/* Empty the task list */
-	list->empty(list, -1); //empty_scroll_list(form, TM_LIST, -1);
-
-	if (list->wi)
-	{
-		if ((list->wi->window_status & XAWS_OPEN))
-			close_window(lock, list->wi);
-		
-		delayed_delete_window(lock, list->wi);
-		list->wi = NULL;
-	}
-#endif
 	task_man_win = NULL;
 
 	return true;
@@ -359,9 +345,6 @@ taskmanager_form_exit(struct xa_client *Client,
 	Sema_Up(clients);
 	lock |= clients;
 	
-	/* Ozk:
-	 * Still dont know exactly what these two does...
-	 */
 	wt->current = fr->obj;
 	wt->which = 0;
 
@@ -530,7 +513,7 @@ open_taskmanager(enum locks lock)
 
 		/* Create the window */
 		dialog_window = create_window(lock,
-						do_winmesag, do_formwind_msg, //NULL, NULL,
+						do_winmesag, do_formwind_msg,
 						C.Aes,
 						false,
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
@@ -545,13 +528,6 @@ open_taskmanager(enum locks lock)
 		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = taskmanager_form_exit;
 
-#if 0
-		/* set a scroll list widget */
-		set_slist_object(lock, wt, form, dialog_window, TM_LIST,
-				 NULL, NULL, NULL, NULL,
-				 NULL, NULL, NULL, NULL,
-				 "Client Applications", NULL, NULL, NICE_NAME);
-#endif
 
 		/* Set the window destructor */
 		dialog_window->destructor = taskmanager_destructor;
@@ -566,67 +542,10 @@ open_taskmanager(enum locks lock)
 		top_window(lock, true, task_man_win, (void *)-1L, NULL);
 	}
 }
-#if 0
-void
-open_kill_or_wait(enum locks lock, struct xa_client *client)
-{
-	static RECT remember = { 0,0,0,0 };
-
-	struct xa_window *dialog_window;
-	XA_TREE *wt;
-	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-
-
-	if (!korw_win)
-	{
-		form[TM_ICONS].ob_flags |= OF_HIDETREE;
-
-		/* Work out sizing */
-		if (!remember.w)
-		{
-			form_center(form, ICON_H);
-			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSER|NAME,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
-						*(RECT*)&form->ob_x);
-		}
-
-		/* Create the window */
-		dialog_window = create_window(lock,
-						do_winmesag, do_formwind_msg, //NULL, NULL,
-						C.Aes,
-						false,
-						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
-						created_for_AES,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
-						remember, NULL, &remember);
-
-		/* Set the window title */
-		get_widget(dialog_window, XAW_TITLE)->stuff = " Task Manager";
-
-		wt = set_toolbar_widget(lock, dialog_window, form, -1);
-		wt->exit_form = korw_form_exit;
-
-		/* Set the window destructor */
-		dialog_window->destructor = taskmanager_destructor;
-	
-		/* better position (to get sliders correct initially) */
-		open_window(lock, dialog_window, dialog_window->r);
-		korw_win = dialog_window;
-	}
-	else if (korw_win != window_list)
-	{
-		top_window(lock, true, korw_win, (void *)-1L, NULL);
-	}
-}
-#endif
 
 static void
 handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
-	//extern char fs_pattern[];
 	char parms[200], *t;
 	
 	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
@@ -645,7 +564,11 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 	launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
 }
 
+
 #if FILESELECTOR
+
+static struct fsel_data aes_fsel_data;
+
 static void
 open_launcher(enum locks lock)
 {
@@ -659,15 +582,12 @@ open_launcher(enum locks lock)
 		cfg.launch_path[3] = '*';
 		cfg.launch_path[4] = 0;
 	}
-	fs = kmalloc(sizeof(*fs));
-	if (fs)
-	{
-		open_fileselector(lock, C.Aes, fs,
-				  cfg.launch_path,
-				  NULL, "Launch Program",
-				  handle_launcher, NULL);
-		kfree(fs);
-	}
+
+	fs = &aes_fsel_data;
+	open_fileselector(lock, C.Aes, fs,
+			  cfg.launch_path,
+			  NULL, "Launch Program",
+			  handle_launcher, NULL);
 }
 #endif
 
@@ -705,7 +625,7 @@ sysalerts_form_exit(struct xa_client *Client,
 		case SALERT_CLEAR:
 		{
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			list->empty(list, -1); //empty_scroll_list(form, SYSALERT_LIST, -1);
+			list->empty(list, -1);
 			object_deselect(wt->tree + item);
 			display_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 			display_toolbar(lock, systemalerts_win, item);
@@ -725,20 +645,7 @@ sysalerts_form_exit(struct xa_client *Client,
 static int
 systemalerts_destructor(enum locks lock, struct xa_window *wind)
 {
-	//OBJECT *ob = ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST;
-	//SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
-#if 0
-	if (list->wi)
-	{
-		if ((list->wi->window_status & XAWS_OPEN))
-			close_window(lock, list->wi);
-		
-		delayed_delete_window(lock, list->wi);
-		list->wi = NULL;
-	}
-#endif
 	systemalerts_win = NULL;
-
 	return true;
 }
 
@@ -779,8 +686,8 @@ open_systemalerts(enum locks lock)
 
 		/* Create the window */
 		dialog_window = create_window(lock,
-						do_winmesag, //NULL,
-						do_formwind_msg, //NULL,
+						do_winmesag,
+						do_formwind_msg,
 						C.Aes,
 						false,
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
@@ -790,18 +697,10 @@ open_systemalerts(enum locks lock)
 						remember, NULL, &remember);
 
 		/* Set the window title */
-		get_widget(dialog_window, XAW_TITLE)->stuff = " System window & Alerts Log";
 		set_window_title(dialog_window, " System window & Alerts log", false);
 
 		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = sysalerts_form_exit;
-#if 0
-		/* HR: set a scroll list widget */
-		set_slist_object(lock, wt, form, dialog_window, SYSALERT_LIST,
-				 NULL, NULL, NULL, NULL,
-				 NULL, NULL, NULL, NULL,
-				 NULL, NULL, NULL, 256);
-#endif
 		/* Set the window destructor */
 		dialog_window->destructor = systemalerts_destructor;
 
@@ -863,10 +762,10 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			char * const * const strings = get_raw_env();
 			int i;
 
-			list->empty(list, FLAG_ENV); //empty_scroll_list(form, SYSALERT_LIST, FLAG_ENV);
+			list->empty(list, FLAG_ENV);
 
 			for (i = 0; strings[i]; i++)
-				list->add(list, NULL, strings[i], FLAG_ENV, NULL); //add_scroll_entry(form, SYSALERT_LIST, NULL, strings[i], FLAG_ENV, NULL);
+				list->add(list, NULL, strings[i], FLAG_ENV, NULL);
 
 			open_systemalerts(lock);
 			break;
