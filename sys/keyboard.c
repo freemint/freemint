@@ -1619,6 +1619,7 @@ load_keyboard_table(const char *path, short flag)
 				else
 					boot_printf(MSG_init_error, ret);
 			}
+			boot_printf("\r\n");
 # endif
 			do_close(rootproc, fp);
 		}
@@ -1672,6 +1673,7 @@ init_keybd(void)
 	load_internal_table(); /* either from BIOS or builtin */
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
+	boot_printf("\r\n");
 # endif
 }
 
