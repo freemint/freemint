@@ -280,7 +280,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 				k->x = x;
 				k->y = y;
 				k->em.t1(tab); //&C.menu_base);	/* call the function */
-				//break;
+				break;
 			}
 			if (k->em.flags & MU_M1)
 			{
@@ -290,7 +290,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 					k->x = x;
 					k->y = y;
 					k->em.t1(tab); //C.menu_base);	/* call the function */
-					//break;
+					break;
 				}
 			}
 			if (k->em.flags & MU_M2)
@@ -300,10 +300,21 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 					k->em.flags &= ~MU_M2; //0;
 					k->x = x;
 					k->y = y;
-					k->em.t2(tab); //(C.menu_base);
-					//break;
+					k->em.t2(tab);
+					break;
 				}
 			}
+			tab = tab->tab_entry.next;
+		}
+
+		if (tab)
+			tab = tab->tab_entry.next;
+		
+		while (tab)
+		{
+			k = &tab->task_data.menu;
+			if (k->outof)
+				k->outof(tab);
 			tab = tab->tab_entry.next;
 		}
 	}

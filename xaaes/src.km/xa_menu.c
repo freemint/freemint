@@ -419,7 +419,6 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (tab)		/* else already locked */
 		{	
 			XA_TREE *wt;
-			MENU_TASK *mt;
 
 			wt = obtree_to_wt(client, ob);
 			if (!wt)
@@ -441,11 +440,6 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			tab->widg = NULL;
 			tab->ty = POP_UP;
 			tab->scroll = mn->mn_scroll != 0;
-			
-			mt = &tab->task_data.menu;
-			mt->attach_wt = NULL;
-			mt->attach_item = -1;
-			mt->attached_to = -1;
 			
 			do_popup(tab, wt, mn->mn_menu,
 				 click_popup_entry,
@@ -477,7 +471,6 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (tab)		/* else already locked */
 		{
 			XA_TREE *wt;
-			MENU_TASK *mt;
 			short x, y;
 
 			wt = obtree_to_wt(client, ob);
@@ -515,11 +508,6 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 				y = MENU_H;
 			ob->ob_x = 0;
 			ob->ob_y = 0;
-
-			mt = &tab->task_data.menu;
-			mt->attach_wt = NULL;
-			mt->attach_item = -1;
-			mt->attached_to = -1;
 
 			do_popup(tab, wt, 0,
 				 click_form_popup_entry,

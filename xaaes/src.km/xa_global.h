@@ -53,7 +53,9 @@ struct shared
 	LIST_HEAD(xa_client) app_list;
 	
 	LIST_HEAD(task_administration_block) menu_base;
-	
+	TIMEOUT *drop_timeout;
+	struct xa_client *drop_timeout_ce;
+
 	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
 	struct opt_list *app_options;	/* individual option settings. */
 
@@ -300,7 +302,9 @@ struct config
 	short double_click_time;	/* Double click timing */
 	short mouse_packet_timegap;	
 	short redraw_timeout;
-	
+
+	short popup_timeout;
+
 	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
 					   we have a VDI that supports mouse wheels. */
 	short ver_wheel_id;		/* ID of horizontal wheel */
