@@ -618,7 +618,7 @@ static const char sw_german_kbd[] =
 
 const short max_kbd = 8;
 
-char *keyboards[10] =
+const char *keyboards[10] =
 {
 	usa_kbd,
 	german_kbd,
