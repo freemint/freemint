@@ -28,7 +28,7 @@
 #define _xaaes_version_h
 
 /* VERSION NUMBER */
-#define ASCII_VERSION		"v0.991"
-#define HEX_VERSION		0x0991
+#define ASCII_VERSION		"v0.992"
+#define HEX_VERSION		0x0992
 
 #endif /* _xaaes_version_h */
