@@ -114,6 +114,7 @@ Setup_form_do(struct xa_client *client,
 	/*
 	 * Should this client do classic blocking form_do's?
 	 */
+#if 0
 	else if (client->fmd.lock)
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
@@ -121,6 +122,7 @@ Setup_form_do(struct xa_client *client,
 		wt = client->fmd.wt;
 		goto okexit;
 	}
+#endif
 	/*
 	 * First time this client does a form_do/dial, do some preps
 	 */
@@ -130,16 +132,18 @@ Setup_form_do(struct xa_client *client,
 
 		DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
 		ob_area(obtree, 0, &r);
+
 		client->fmd.r = calc_window(lock,
 					    client,
 					    WC_BORDER,
 					    kind,
 					    MG,
-					    0, //C.Aes->options.thinframe,
+					    0,
 					    C.Aes->options.thinwork,
-					    r); //*(RECT *)&obtree->ob_x);
+					    r);
 		if (!client->options.xa_nomove)
 			kind |= MOVER;
+
 		client->fmd.kind = kind;
 	}
 
@@ -886,24 +890,39 @@ do_formwind_msg(
 		{
 			if (wt && wt->tree)
 			{
+				short doit = 0;
 				RECT *clip = (RECT *)&msg[4];
 				RECT dr;
 				struct xa_rect_list *rl;
 
 				if ((rl = wind->rect_start))
 				{
-					hidem();
-					while (rl)
+					if (wind->owner == C.Aes)
 					{
-						if (xa_rect_clip(clip, &rl->r, &dr))
-						{
-							set_clip(&dr);
-							draw_object_tree(0, wt, wt->tree, 0, 10, 1);
-						}
-						rl = rl->next;
+						if (lock_screen(wind->owner, true, NULL, 1))
+							doit = 1;
 					}
-					clear_clip();
-					showm();
+					else
+					{
+						lock_screen(wind->owner, false, NULL, 1);
+						doit = 1;
+					}
+					if (doit)
+					{
+						hidem();
+						while (rl)
+						{
+							if (xa_rect_clip(clip, &rl->r, &dr))
+							{
+								set_clip(&dr);
+								draw_object_tree(0, wt, wt->tree, 0, 10, 1);
+							}
+							rl = rl->next;
+						}
+						clear_clip();
+						showm();
+						unlock_screen(wind->owner, 2);
+					}
 				}
 			}
 			break;
