@@ -139,8 +139,14 @@ pending_msgs(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 #if GENERATE_DIAGS
-static char *xev[] = {"KBD","BUT","M1","M2","MSG","TIM","WHL","MX","NKBD","9","10","11","12","13","14","15"};
 
+static char *xev[] =
+{
+	"KBD", "BUT", "M1", "M2", "MSG", "TIM", "WHL", "MX", "NKBD",
+	"9", "10", "11", "12", "13", "14", "15"
+};
+
+#if 0
 static void
 evnt_diag_output(void *pb, struct xa_client *client, char *which)
 {
@@ -154,6 +160,7 @@ evnt_diag_output(void *pb, struct xa_client *client, char *which)
 	}
 }
 #define diag_out(x,c,y) evnt_diag_output(x,c,y);
+#endif
 
 #if 0
 static char *

@@ -256,26 +256,32 @@ cancel_aesmsgs(struct xa_aesmsg_list **m)
  * owner.
  * XXX - not dealing with cases where to is different from wind->owner!
  */
-static void
-KT_do_winmesag(void *_parm)
+
+struct KT_do_winmesag_data
 {
-	void **parm = _parm;
+	struct xa_window *wind;
+	struct xa_client *client;
+	bool block_move;
+	short amq;
+	short msg[8];
+};
 
-	struct xa_window *wind = parm[0];
-	struct xa_client *client = parm[1];
-	bool block_move = (bool)parm[2];
-	short amq = (short)parm[3];
-	short *msg = (short *)&parm[4];
+static void
+KT_do_winmesag(void *_args)
+{
+	struct KT_do_winmesag_data *args = _args;
+	assert(args);
 
-	wind->do_message(wind, client, amq, msg);
+	args->wind->do_message(args->wind, args->client, args->amq, args->msg);
 
-	if (block_move)
+	if (args->block_move)
 	{
 		if (--C.redraws)
 			kick_mousemove_timeout();
 	}
-	wake(IO_Q, (long)_parm);
-	kfree(_parm);
+
+	/* wakeup cllaer */
+	wake(IO_Q, (long)_args);
 
 	kthread_exit(0);
 }
@@ -326,23 +332,28 @@ do_winmesag(enum locks lock,
 		}
 		else
 		{
-			void **p;
+			struct KT_do_winmesag_data *p;
 
-			p = kmalloc((sizeof(*p) * 4) + 16);
+			p = kmalloc(sizeof(*p));
 			if (p)
 			{
-				short i;
-				short *pm = (short *)&p[4];
 				long r;
+				int i;
 
-				p[0] = wind;
-				p[1] = wo;
-				(bool)p[2] = block_move;
-				(short *)p[3] = amq;
-				for (i = 0; i < 8; *pm++ = msg[i], i++)
-					;
-				r = kthread_create(wo->p, KT_do_winmesag, p, NULL, "kt-%s", wo->proc_name);
+				p->wind = wind;
+				p->client = wo;
+				p->block_move = block_move;
+				p->amq = amq;
+				for (i = 0; i < 8; i++)
+					p->msg[i] = msg[i];
+
+				r = kthread_create(wo->p, KT_do_winmesag, p, NULL,
+						   "kt-%s", wo->proc_name);
+
+				/* wait until done */
 				sleep(IO_Q, (long)p);
+
+				kfree(p);
 			}			
 		}
 	}
