@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  */
 
 /* MiNT routines for doing console I/O */
@@ -37,18 +37,18 @@ long
 file_instat (FILEPTR *f)
 {
 	long r;
-	
+
 	if (!f)
 		return EBADF;
-	
+
 	/* default is to assume input waiting (e.g. TOS files) */
 	r = 1;
-	
+
 	if (is_terminal (f))
 		tty_ioctl (f, FIONREAD, &r);
 	else
 		xdd_ioctl (f, FIONREAD, &r);
-	
+
 	return r;
 }
 
@@ -59,15 +59,15 @@ file_outstat (FILEPTR *f)
 
 	if (!f)
 		return EBADF;
-	
+
 	/* default is to assume output OK (e.g. TOS files) */
 	r = 1;
-	
+
 	if (is_terminal (f))
 		tty_ioctl (f, FIONWRITE, &r);
 	else
 		xdd_ioctl (f, FIONWRITE, &r);
-	
+
 	return r;
 }
 
@@ -76,14 +76,14 @@ file_getchar (FILEPTR *f, int mode)
 {
 	if (!f)
 		return EBADF;
-	
+
 	if (is_terminal (f))
 		return tty_getchar (f, mode);
-	
+
 	{
 		char c;
 		long r;
-		
+
 		r = xdd_read (f, &c, 1L);
 		if (r != 1)
 			return MiNTEOF;
@@ -97,13 +97,13 @@ file_putchar (FILEPTR *f, long c, int mode)
 {
 	if (!f)
 		return EBADF;
-	
+
 	if (is_terminal (f))
 		return tty_putchar (f, c & 0x7fffffffL, mode);
-	
+
 	{
 		char ch;
-		
+
 		ch = c & 0x00ff;
 		return xdd_write (f, &ch, 1L);
 	}
@@ -115,51 +115,51 @@ file_putchar (FILEPTR *f, long c, int mode)
  */
 
 long _cdecl
-c_conin (void)
+sys_c_conin (void)
 {
 	return file_getchar (curproc->p_fd->ofiles[0], COOKED | ECHO);
 }
 
 long _cdecl
-c_conout (int c)
+sys_c_conout (int c)
 {
 	return file_putchar (curproc->p_fd->ofiles[1], (long) c, COOKED);
 }
 
 long _cdecl
-c_auxin (void)
+sys_c_auxin (void)
 {
 	return file_getchar (curproc->p_fd->ofiles[2], RAW);
 }
 
 long _cdecl
-c_auxout (int c)
+sys_c_auxout (int c)
 {
 	return file_putchar (curproc->p_fd->ofiles[2], (long) c, RAW);
 }
 
 long _cdecl
-c_prnout (int c)
+sys_c_prnout (int c)
 {
 	return file_putchar (curproc->p_fd->ofiles[3], (long) c, RAW);
 }
 
 long _cdecl
-c_rawio (int c)
+sys_c_rawio (int c)
 {
 	PROC *p = curproc;
-	
+
 	if (c == 0x00ff)
 	{
 		long r;
-		
+
 		if (!file_instat (p->p_fd->ofiles[0]))
 			return 0;
-		
+
 		r = file_getchar (p->p_fd->ofiles[0], RAW);
 		if (r <= E_OK)
 			return 0;
-		
+
 		return r;
 	}
 	else
@@ -167,34 +167,34 @@ c_rawio (int c)
 }
 
 long _cdecl
-c_rawcin (void)
+sys_c_rawcin (void)
 {
 	return file_getchar (curproc->p_fd->ofiles[0], RAW);
 }
 
 long _cdecl
-c_necin (void)
+sys_c_necin (void)
 {
 	return file_getchar (curproc->p_fd->ofiles[0], COOKED | NOECHO);
 }
 
 long _cdecl
-c_conws (const char *str)
+sys_c_conws (const char *str)
 {
 	const char *p = str;
 	long cnt = 0;
-	
+
 	while (*p++)
 		cnt++;
-	
+
 	return f_write (1, cnt, str);
 }
 
 long _cdecl
-c_conrs (char *buf)
+sys_c_conrs (char *buf)
 {
 	long size, count, r;
-	
+
 	size = ((long) *buf) & 0xff;
 	if (is_terminal (curproc->p_fd->ofiles[0]))
 	{
@@ -206,10 +206,10 @@ c_conrs (char *buf)
 			buf [1] = 0;
 		else
 			buf [1] = (char) r;
-		
+
 		return (r < E_OK) ? r : E_OK;
 	}
-	
+
 	/* TB: In all other cases, we must read character by character, breaking
 	 * at a newline or carriage return, or when the maximum number of
 	 * characters has been read
@@ -217,15 +217,15 @@ c_conrs (char *buf)
 	for (count = 0L; ; count++)
 	{
 		char dummy;
-		
+
 		if (count == size)
 		{
 			buf [1] = (char) count;
 			buf [count + 2] = 0;
 			return E_OK;
 		}
-		r = c_conin ();
-		
+		r = sys_c_conin ();
+
 		/* Also break on error... */
 		if (r < E_OK)
 		{
@@ -233,9 +233,9 @@ c_conrs (char *buf)
 			buf [1] = (char) count;
 			return r;
 		}
-		
+
 		dummy = (char) r;
-		
+
 		/* ... or at EOF */
 		if ((short) r == MiNTEOF)
 		{
@@ -243,12 +243,12 @@ c_conrs (char *buf)
 			buf [1] = (char) count;
 			return E_OK;
 		}
-		
+
 		if ((dummy == '\r') || (dummy == '\n'))
 		{
 			buf [count + 2] = 0;
 			buf [1] = (char) count;
-			
+
 			/* When we've read a carriage return, the next char
 			 * has to be skipped, because it usually is a
 			 * linefeed (GEMDOS-style lines end with CR/LF).
@@ -260,37 +260,37 @@ c_conrs (char *buf)
 			 else
 				return E_OK;
 		}
-		
+
 		buf [count + 2] = dummy;
 	}
 }
 
 long _cdecl
-c_conis (void)
+sys_c_conis (void)
 {
 	return -(!!file_instat (curproc->p_fd->ofiles[0]));
 }
 
 long _cdecl
-c_conos (void)
+sys_c_conos (void)
 {
 	return -(!!file_outstat (curproc->p_fd->ofiles[1]));
 }
 
 long _cdecl
-c_prnos (void)
+sys_c_prnos (void)
 {
 	return -(!!file_outstat (curproc->p_fd->ofiles[3]));
 }
 
 long _cdecl
-c_auxis (void)
+sys_c_auxis (void)
 {
 	return -(!!file_instat (curproc->p_fd->ofiles[2]));
 }
 
 long _cdecl
-c_auxos (void)
+sys_c_auxos (void)
 {
 	return -(!!file_outstat (curproc->p_fd->ofiles[2]));
 }
@@ -300,11 +300,11 @@ c_auxos (void)
  */
 
 long _cdecl
-f_instat (int h)
+sys_f_instat (int h)
 {
 	PROC *proc;
 	int fh = h;
-	
+
 # if O_GLOBAL
 	if (fh >= 100)
 	{
@@ -314,22 +314,22 @@ f_instat (int h)
 	else
 # endif
 		proc = curproc;
-	
+
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Finstat: bad handle %d", h));
 		return EBADF;
 	}
-	
+
 	return file_instat (proc->p_fd->ofiles[fh]);
 }
 
 long _cdecl
-f_outstat (int h)
+sys_f_outstat (int h)
 {
 	PROC *proc;
 	int fh = h;
-	
+
 # if O_GLOBAL
 	if (fh >= 100)
 	{
@@ -339,22 +339,22 @@ f_outstat (int h)
 	else
 # endif
 		proc = curproc;
-	
+
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Foutstat: bad handle %d", h));
 		return EBADF;
 	}
-	
+
 	return file_outstat (proc->p_fd->ofiles[fh]);
 }
 
 long _cdecl
-f_getchar (int h, int mode)
+sys_f_getchar (int h, int mode)
 {
 	PROC *proc;
 	int fh = h;
-	
+
 # if O_GLOBAL
 	if (fh >= 100)
 	{
@@ -364,22 +364,22 @@ f_getchar (int h, int mode)
 	else
 # endif
 		proc = curproc;
-	
+
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Fgetchar: bad handle %d", h));
 		return EBADF;
 	}
-	
+
 	return file_getchar (proc->p_fd->ofiles[fh], mode);
 }
 
 long _cdecl
-f_putchar (int h, long c, int mode)
+sys_f_putchar (int h, long c, int mode)
 {
 	PROC *proc;
 	int fh = h;
-	
+
 # if O_GLOBAL
 	if (fh >= 100)
 	{
@@ -389,12 +389,12 @@ f_putchar (int h, long c, int mode)
 	else
 # endif
 		proc = curproc;
-	
+
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
 		DEBUG (("Fputchar: bad handle %d", h));
 		return EBADF;
 	}
-	
+
 	return file_putchar (proc->p_fd->ofiles[fh], c, mode);
 }

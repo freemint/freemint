@@ -1009,7 +1009,7 @@ sh_exit(long argc, char **argv)
 
 	shell_fprintf(stdout, MSG_shell_exit_q);
 
-	y = (short)c_conin();
+	y = (short)sys_c_conin();
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
 		s_hutdown(2);
@@ -1463,7 +1463,7 @@ prompt(uchar *buffer, long buflen)
 
 	shell_fprintf(stdout, "%s:%s#", _mint_getenv(_base, "HOSTNAME") ?: "mint", cwd ?: "");
 
-	c_conrs(buffer);
+	sys_c_conrs(buffer);
 
 	/* "the string is not guaranteed to be NULL terminated"
 	 * (Atari GEMDOS reference manual)

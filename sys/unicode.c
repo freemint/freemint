@@ -795,7 +795,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 				char msg[128];
 
 				ksprintf(msg, sizeof(msg), MSG_unicode_cannot_below_128);
-				c_conws(msg);
+				sys_c_conws(msg);
 			}
 			else
 			{
@@ -819,7 +819,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 		char msg[128];
 
 		ksprintf(msg, sizeof(msg), MSG_unitable_loaded, name);
-		c_conws(msg);
+		sys_c_conws(msg);
 	}
 
 	return 0;
