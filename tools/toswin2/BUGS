@@ -1,0 +1,3 @@
+- the lower right corner is not accessible in tw52
+- characters sets GF0, GR1, and GR2 missing
+- function and cursor keys don't always work with tw52
