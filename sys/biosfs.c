@@ -131,49 +131,49 @@ static struct bios_file BDEV [] =
 {
 	/* "real" bios devices present on all machines
 	 */
-	{ "centr",	&bios_ndevice,	 0, 0, 0, 0},
-	{ "console",	&bios_tdevice,	 2, O_TTY, &con_tty, 0},
-	{ "midi",	&bios_tdevice,	 3, O_TTY, &midi_tty, 0},
-	{ "kbd",	&bios_ndevice,	 4, 0, 0, 0},
+	{ "centr",	&bios_ndevice,	 0,       0,     NULL, NULL},
+	{ "console",	&bios_tdevice,	 2,       O_TTY, &con_tty, NULL},
+	{ "midi",	&bios_tdevice,	 3,       O_TTY, &midi_tty, NULL},
+	{ "kbd",	&bios_ndevice,	 4,       0,     NULL, NULL},
 	
 	/* devices that duplicate handles
 	 */
-	{ "prn",	&fakedev,	-3, 0, 0, 0}, /* handle -3 (printer) */
-	{ "aux",	&fakedev,	-2, 0, 0, 0}, /* handle -2 (aux. terminal) */
-	{ "con",	&fakedev,	-1, 0, 0, 0}, /* handle -1 (control terminal) */
-	{ "tty",	&fakedev,	-1, 0, 0, 0}, /* the Unix name for it */
-	{ "stdin",	&fakedev,	 0, 0, 0, 0}, /* handle 0 (stdin)  */
-	{ "stdout",	&fakedev,	 1, 0, 0, 0}, /* handle 1 (stdout) */
-	{ "stderr",	&fakedev,	 2, 0, 0, 0}, /* handle 2 (stderr) */
-	{ "fd",		&fakedev,	 S_IFDIR, 0, 0, 0}, /* file descriptor directory */
+	{ "prn",	&fakedev,	-3,       0,     NULL, NULL}, /* printer */
+	{ "aux",	&fakedev,	-2,       0,     NULL, NULL}, /* aux. terminal */
+	{ "con",	&fakedev,	-1,       0,     NULL, NULL}, /* control terminal */
+	{ "tty",	&fakedev,	-1,       0,     NULL, NULL}, /* the Unix name for it */
+	{ "stdin",	&fakedev,	 0,       0,     NULL, NULL}, /* stdin  */
+	{ "stdout",	&fakedev,	 1,       0,     NULL, NULL}, /* stdout */
+	{ "stderr",	&fakedev,	 2,       0,     NULL, NULL}, /* stderr */
+	{ "fd",		&fakedev,	 S_IFDIR, 0,     NULL, NULL}, /* file descriptor directory */
 	
 	/* other miscellaneous devices
 	 */
-	{ "mouse",	&mouse_device,	 0, 0, 0, 0},
-	{ "null",	&null_device,	 0, 0, 0, 0},
-	{ "zero",	&zero_device,	 0, 0, 0, 0},
+	{ "mouse",	&mouse_device,	 0,       0,     NULL, NULL},
+	{ "null",	&null_device,	 0,       0,     NULL, NULL},
+	{ "zero",	&zero_device,	 0,       0,     NULL, NULL},
 # ifdef DEV_RANDOM
-	{ "random",	&random_device,	 0, 0, 0, 0},
-	{ "urandom",	&urandom_device, 0, 0, 0, 0},
+	{ "random",	&random_device,	 0,       0,     NULL, NULL},
+	{ "urandom",	&urandom_device, 0,       0,     NULL, NULL},
 # endif
 # ifdef OLDSOCKDEVEMU
-	{ "socket",	&sockdevemu,	 0, 0, 0, 0},
+	{ "socket",	&sockdevemu,	 0,       0,     NULL, NULL},
 # endif
 	
 # ifdef FASTTEXT
 	/* alternate console driver
 	 */
-	{ "fasttext",	&screen_device,	2, O_TTY, &con_tty, 0},
+	{ "fasttext",	&screen_device,	 2,       O_TTY, &con_tty, NULL},
 # endif
 	
 	/* serial port things *must* come last, because not all of these
 	 * are present on all machines (except for modem1, which does however
 	 * have a different device number on TTs and STs)
 	 */
-	{ "modem1",	&bios_tdevice,	6, O_TTY, &aux_tty, 0},
-	{ "modem2",	&bios_tdevice,	7, O_TTY, &sccb_tty, 0},
-	{ "serial1",	&bios_tdevice,	8, O_TTY, &ttmfp_tty, 0},
-	{ "serial2",	&bios_tdevice,	9, O_TTY, &scca_tty, 0},
+	{ "modem1",	&bios_tdevice,	 6,       O_TTY, &aux_tty, NULL},
+	{ "modem2",	&bios_tdevice,	 7,       O_TTY, &sccb_tty, NULL},
+	{ "serial1",	&bios_tdevice,	 8,       O_TTY, &ttmfp_tty, NULL},
+	{ "serial2",	&bios_tdevice,	 9,       O_TTY, &scca_tty, NULL},
 	
 	{"", 0, 0, 0, 0, 0}
 };
