@@ -1,0 +1,154 @@
+These are some of the more frequently asked questions and hopefully some
+good answers to them.
+
+Q: I want to log into another Unix box via ssh, telnet, or rlogin from
+   my MiNT box in a Toswin2 window.  I get stuck because the remote
+   party insults me with something like `unknown terminal tw52, using
+   dumb instead' or `your terminal lacks required capabilities'.
+
+A: Read the file `README.terminfo'.
+
+Q: What is the recommended value for the "TERM" environment variable
+   on remote machines?
+
+A: Read the file `README.terminfo'.
+  
+Q: I don't see anything at all in my window, looks like black characters
+   on black background.
+
+A: If this happens when you open a window you have messed up your
+   color settings (foreground color = background color).  Reconfigure
+   your window to sane settings.
+   
+   If this happens in the middle of a session, some program has modified
+   the foreground and background color.  Type `tput sgr0' (turn off
+   all attributes), `tput op' (original color pair) or `tput oc'
+   (original colors) into your shell.
+
+Q: The display is completely messed up.
+
+A: Reset the terminal to sane settings using either `tput sgr0' or
+   even stronger `tput is2' or `tput rs2'.  This is _not_ the same
+   as `stty sane'.
+
+Q: I see a lot of garbage on the screen, no characters at all but rather
+   line graphics
+
+A: You have enabled the alternate character set which activates PC
+   graphics.  Type `tput rmacs' into your shell (of course you have
+   to do that blindly).
+
+Q: How can I configure something for all windows?
+
+A: Close or iconify all windows and configure the window then.  This
+   will manipulate the default settings.
+
+Q: When I display manual pages, long lines are split by an ugly looking
+   `<AD>' in reverse video mode.
+
+A: `AD' is the hexadecimal representation for decimal 173.  Whenever
+   the program `less' (which is usually the pager used by the `man'
+   command) encounters a special (or 8 bit) character it assumes that 
+   the terminal cannot display it and outputs the hex code in reverse 
+   video instead.  The copyright sign would be displayed as `<A9>' 
+   according to that rule.
+   
+   Fix: First make sure that your terminal is capable of displaying
+   ISO-8859-1 (aka Latin-1) correctly.  Either select a font that is
+   coded in Latin-1 and configure your window for charset `AtariST'
+   or - if you select an ordinary GDOS font or the default system
+   font - let Toswin2 map your characters from AtariST to Latin-1 by
+   configuring your window with the codeset `ISO-8859-1'.
+   
+   The trick is now to tell less about that capability: You have to
+   set the environment variable `LESSCHARSET' to `Latin1'.  In the
+   Bourne shell (or bash or ksh) you do that by:
+   
+   	LESSCHARSET="Latin1"
+   	export LESSCHARSET
+   
+   In the C shell (csh or tcsh) you do it with
+   
+   	setenv LESSCHARSET "Latin1"
+   
+   You can do that in your shell startup scripts (/etc/profile for
+   sh/bash/ksh or /etc/cshrc for csh/tcsh).
+
+Q: Why is white suddenly gray?
+
+A: The terminal capability `bold' was silently re-interpreted along
+   the years to `bright'.  You can for instance display the pure
+   color red (RGB #ff0000) by using bright red.  The `normal' red
+   is somewhat darker.  All colors in `dim' (or half-bright) mode
+   are a little darker again).
+   
+   The problem with white is that you cannot make it any brighter.
+   In ANSI mode white is therefore really some light gray.  In order
+   to have a white background you have to choose bright (bold) white
+   in the window configuration dialog.  Alternatively you can edit
+   your `toswin2.cnf' for the particular window to:
+   
+   	WinColorBG=7
+   	WinColorFG=0
+   	WinFGEffects=256
+   	WinBGEffects=0
+   
+   This may seem strange but many advanced curses applications draw
+   tiny white lines on gray blackground and achieve this by using
+   bright (resp. bold) white on normal white (which is really gray
+   background).  This wouldn't work if white is really white.
+   
+   A similar problem applies to black.  A brighter black would actually
+   tend to gray.  However, the `bold' (bright) attribute is usually
+   employed to emphasize a particular part of the text.  Bold (bright)
+   black is therefore really displayed in a bold font instead of
+   changing the color.
+
+   By the way, if your video hardware cannot display enough colors
+   (at least 20 are required to define distinguishable colors for
+   all ANSI modes in all colors) Toswin2 is smart enough to detect
+   that and fall back to really using bold resp. dimmed fonts instead
+   of changing the color rgb values.
+   
+Q: I have an application that uses colors but the colors are not at
+   all what the application says they should look like.
+   
+A: There is no easy answer to that one.
+
+   First possibility: At startup Toswin2 will inspect the current
+   color map and pick the colors that come closest to the ones
+   desired.  If another application changes the color map afterwards,
+   Toswin2 will currently not detect that and there is no other
+   possibility than restarting Toswin2 to make it re-read the color
+   map.
+   
+   Second possibility: You use some legacy application for Toswin2
+   that doesn't use the terminfo database.  Try to configure
+   `VDI colors' for that application in the window configuration 
+   dialog.  Alternatively you may edit your toswin2.cnf:
+   
+   	WinVDIColors=1
+   
+   This is _not_ recommended as a default setting since applications
+   that use the terminfo database will look very ugly in these windows.
+   
+   Third possibility: You are talking about the color yellow.  The
+   Linux console (which is somewhat the `opinion leader' in terms
+   of color interpretation) has decided that yellow should rather be
+   some kind of dirty orange.  Toswin2 follows this convention, merely
+   because it makes `yellow' readable even on white background.  Another
+   reason is that many, many curses applications are optimized for
+   looking nice on the Linux console.  They will also look nice in
+   Toswin2 windows then.
+
+Q: What is this `tput'? Where can I learn more about all that terminal
+   stuff?
+
+A: Take a week off from your job and start reading `man 5 terminfo'.
+   This manual page is installed with the `ncurses' package on your
+   system.  The programs `tput' (enable/disable some named terminal
+   capability), `tic' (compile and install a terminfo description
+   file) and `tack' (convert a compiled terminfo description into
+   `/etc/termcap' for legacy termcap applications) also belong to
+   `ncurses'.
+ 
