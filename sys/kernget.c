@@ -240,10 +240,10 @@ long
 kern_get_cpuinfo (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
-	ulong len = 256, clkspeed, clkdiv, div = 0;
-	extern ulong bogomips[2];
+	int len = 256;
 	char *cpu, *mmu, *fpuname;
-	
+	ulong clockfreq, clockfactor;
+
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
@@ -251,8 +251,7 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 	cpu = "68000";
 	fpuname = mmu = "none";
 
-	/* Average number of cycles per instruction in __delay() */
-	clkdiv = 9;	/* 8/10, 68000 is sloooooow */
+	clockfactor = 0;
 
 	switch (mcpu)
 	{
@@ -261,25 +260,19 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 			break;
 		case 20:
 			cpu = "68020";
-			clkdiv = 4;		/* 2/6 */
+			clockfactor = 8;
 			break;
 		case 30:
 			cpu = mmu = "68030";
-			clkdiv = 4;		/* 2/6 */
+			clockfactor = 8;
 			break;
 		case 40:
 			cpu = mmu = "68040";
-			clkdiv = 2;		/* 2/2 */
+			clockfactor = 3;
 			break;
 		case 60:
 			cpu = mmu = "68060";
-			if (is_superscalar())
-			{
-				div = 1;		/* divide, don't multiply */
-				clkdiv = 2;		/* 1/0 (predicted branch) */
-			}
-			else
-				clkdiv = 1;
+			clockfactor = 1;
 			break;
 
 		/* Add more processors here */
@@ -313,50 +306,31 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 				break;
 		}
 	}
-	
-# ifndef ONLY030
-	if (mcpu > 10)
-	{
-# endif
-		/* Round the fractional part up to an unit,
-		 * add units, then mul everything by clkdiv */
-		clkspeed = ((bogomips[1] + 50)/100) + bogomips[0];
 
-		/* mc68060 can execute more than 1 instruction in a cycle
-		 * and this is the case. So we must div, not mul.
-		 */
-		if (div)
-			clkspeed /= clkdiv;
-		else
-			clkspeed *= clkdiv;
-# ifndef ONLY030
-	}
-	else
+	clockfreq = loops_per_sec * clockfactor;
+
+	if (mcpu <= 10)
 	{
-		/* This is:
-		 * bogomips = (clkspeed - ((0.24/2) * 4)) / clkdiv
-		 * The subtracted value is calculated out of the
-		 * correction value on a 16 Mhz 68030 (0.24)
-		 * scaled down according to the clock frequency
-		 * then multiplied as many times as 68000 is
-		 * slower than 68030 :-)
-		 * Notice this stuff has no real meaning on ST, it has
-		 * a visual purpose only.
+		/* Assume 8 MHz ST
 		 */
-		clkspeed = 8;
-		bogomips[0] = 0;
-		bogomips[1] = 83;
+		
+		clockfreq = 8 * 1000000;
+		loops_per_sec = 83 * 5000;
 	}
-# endif
 
 	info->len = ksprintf (info->buf, len,
 				"CPU:\t\t%s\n"
 				"MMU:\t\t%s\n"
 				"FPU:\t\t%s\n"
-				"Clockspeed:\t %lu MHz\n"
-				"BogoMIPS:\t %lu.%02lu\n",
-				cpu, mmu, fpuname, clkspeed,
-				bogomips[0], bogomips[1]);
+		   		"Clocking:\t%lu.%1luMHz\n"
+				"BogoMIPS:\t %lu.%02lu\n"
+		   		"Calibration:\t%lu loops\n",
+				cpu, mmu, fpuname,
+		  		clockfreq / 1000000, (clockfreq / 100000) % 10,
+		   		loops_per_sec / 500000, (loops_per_sec / 5000) % 100,
+		   		loops_per_sec
+	);
+	
 	*buffer = info;
 	return 0;
 }
