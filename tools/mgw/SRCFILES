@@ -1,7 +1,17 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-HEADER = global.h mgw.h mintsock.h options.h
-COBJS = main.c mgw.c
+HEADER = \
+	global.h \
+	libsocket.h \
+	mgw.h \
+	options.h \
+	syscalls.h
+
+COBJS = \
+	libsocket.c \
+	main.c \
+	mgw.c \
+	syscalls.c
 
 SRCFILES = $(HEADER) $(COBJS)
