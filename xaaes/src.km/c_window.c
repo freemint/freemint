@@ -896,7 +896,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	{
 		form_save(0, wind->r, &(wind->background));
 		/* This is enough, it is only for TOOLBAR windows. */
-		redraw_menu(lock);
+		//redraw_menu(lock);
 		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 	}
 	else
@@ -918,7 +918,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		after_top(lock|winlist, true);
 
 		/* Display the window using clipping rectangles from the rectangle list */
-		redraw_menu(lock);
+		//redraw_menu(lock);
 		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 	}
 
