@@ -713,12 +713,12 @@ init (void)
 	FILEPTR *f;
 	char curpath[128];
 
-	/* Initialize sysdir */
-	sysdir = "\\";
+	/* Initialize sysdir (TOS style) */
+	strcpy(sysdir, "\\");
 	if (Fsfirst("\\multitos\\mint.cnf", 0) == 0)
-		sysdir = "\\multitos\\";
+		strcpy(sysdir, "\\multitos\\");
 	else if (Fsfirst("\\mint\\mint.cnf", 0) == 0)
-		sysdir = "\\mint\\";
+		strcpy(sysdir, "\\mint\\");
 
 	read_ini();	/* Read user defined defaults */
 
@@ -1032,25 +1032,37 @@ init (void)
 	/* Use internal sys_c_conws() in boot_print() since now */
 	use_sys = 1;
 
+	/* Make the sysdir MiNT-style */
+	{
+		char temp[32];
+		short sdx = 0;
+
+		while (sysdir[sdx])
+		{
+			if (sysdir[sdx] == '\\')
+				sysdir[sdx] = '/';
+			sdx++;
+		}
+
+		ksprintf(temp, sizeof(temp), "u:/a%s", sysdir);
+		temp[3] = (char)(sysdrv + 'a');
+
+		strcpy(sysdir, temp);
+	}
+
 	/* print the warning message if MP is turned off */
 	if (no_mem_prot && mcpu > 20)
 		boot_print(memprot_warning);
 
+	stop_and_ask();
+
 	/* initialize delay */
-	{
-		char buf[128];
+	boot_print(MSG_init_delay_loop);
 
-		boot_print(MSG_init_delay_loop);
+	calibrate_delay();
 
-		calibrate_delay();
-
-		/* Round the value and print it */
-		ksprintf(buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
-			(loops_per_sec + 2500) / 500000,
-			((loops_per_sec + 2500) / 5000) % 100);
-
-		boot_print(buf);
-	}
+	/* Round the value and print it */
+	boot_printf("%lu.%02lu BogoMIPS\r\n\r\n", (loops_per_sec + 2500) / 500000, ((loops_per_sec + 2500) / 5000) % 100);
 
 	stop_and_ask();
 
@@ -1352,19 +1364,15 @@ mint_thread(void *arg)
 		char *ext, shellpath[32];	/* 32 should be plenty */
 		fcookie dir;
 
-		/* Last resort: try to execute sysdir/shell.tos.
+		/* Last resort: try to execute sysdir/sh.tos.
 		 * For that, the absolute path must be used, because the user
 		 * could have changed the current drive/dir inside mint.cnf file.
 		 */
-		ksprintf(shellpath, sizeof(shellpath), "u:\\a%s", sysdir);
-		shellpath[3] = (char)sysdrv + 'a';
-
-		path2cookie(shellpath, NULL, &dir);
+		path2cookie(sysdir, NULL, &dir);
 		ext = (dir.fs->fsflags & FS_NOXBIT) ? ".tos" : "";
 		release_cookie(&dir);
 
-		strcat(shellpath, "sh");
-		strcat(shellpath, ext);
+		ksprintf(shellpath, sizeof(shellpath), "%ssh%s", sysdir, ext);
 
 # ifdef VERBOSE_BOOT
 		boot_printf(MSG_init_starting_shell, shellpath);

@@ -207,10 +207,9 @@ alt_help(void)
 	char pname[32], cmdln[32];
 
 	/* 0x0446L is the boot device */
-	ksprintf(pname, sizeof(pname), "a:%salthelp.sys", sysdir);
-	ksprintf(cmdln, sizeof(cmdln), " a:%salthelp.sys", sysdir);
+	ksprintf(pname, sizeof(pname), "%salthelp.sys", sysdir);
+	ksprintf(cmdln, sizeof(cmdln), " %salthelp.sys", sysdir);
 
-	pname[0] = cmdln[1] = *(short *)0x0446L + 'a';
 	cmdln[0] = (char)(strlen(cmdln) - 1);
 
 	sys_pexec(100, pname, cmdln, init_env);
