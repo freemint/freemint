@@ -282,25 +282,12 @@ dma_end (ulong i)
 }
 
 static void _cdecl
-dma_timeout (PROC *p)
+dma_timeout (PROC *p, long i)
 {
-	ulong i;
+	CHANNEL *c = &channels[i];
 	
-	for (i = 0; i < CHANNELS; i++)
-	{
-		CHANNEL *c = &channels[i];
-		
-		if (c->used && (c->p == p))
-		{
-			c->t = NULL;
-			dma_deblock (i, (void *) -2);
-			
-			DMA_DEBUG (("dma_timeout: timeout on %i", i+1));
-			return;
-		}
-	}
-	
-	FATAL ("dma_timeout: CHANNEL not found");
+	c->t = NULL;
+	dma_deblock (i + 1, (void *) -2);
 }
 
 /* only synchronusly callable [to kernel]
@@ -324,6 +311,8 @@ dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p))
 		c->t = addroottimeout (timeout, func ? func : dma_timeout, 0);
 		if (!c->t)
 			FATAL ("dma_block: addroottimeout failed!");
+		
+		c->t->arg = i;
 	}
 	
 	sleep (IO_Q, (long) &(c->pid));
