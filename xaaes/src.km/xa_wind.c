@@ -59,21 +59,22 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (pb->intin[0] < 0 && pb->control[1] == 6)
 		kind |= (long) pb->intin[5] << 16;
+
 	if (!client->options.nohide)
 		kind |= HIDE;
 
-	new_window = create_window(	lock,
-					send_app_message,
-					client,
-					false,
-					kind|BACKDROP,
-					created_for_CLIENT,
-					MG,
-					client->options.thinframe,
-					client->options.thinwork,
-					r,
-					&r,
-					0);	
+	new_window = create_window(lock,
+				   send_app_message,
+				   client,
+				   false,
+				   kind|BACKDROP,
+				   created_for_CLIENT,
+				   MG,
+				   client->options.thinframe,
+				   client->options.thinwork,
+				   r,
+				   &r,
+				   0);	
 
 	if (new_window)
 		/* Return the window handle in intout[0] */

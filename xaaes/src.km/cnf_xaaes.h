@@ -29,24 +29,6 @@
 
 #include "global.h"
 
-#include "messages.h"
-
-
-/* config data local to bootup & config.
- */
-struct lconfig
-{
-	Path widg_name;
-	Path rsc_name;
-
-	unsigned long falcon;	  /* cookies & cookie values */
-
-	int modecode;
-	int double_click_time;	/* Double click timing */
-};
-
-extern struct lconfig lcfg;
-
 void load_config(const char *name);
 
 #endif /* _cnf_xaaes_h */

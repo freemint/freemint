@@ -89,7 +89,6 @@ get_app_options(struct xa_client *client)
 
 		op = op->next;
 	}
-	client->options.live = true;
 }
 
 /*
@@ -180,7 +179,6 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	client->cmd_tail = "\0";
 	client->wt.edit_obj = -1;
-	client->options = default_options;
 
 	/* Ozk: About the fix_menu() thing; This is just as bad as it
 	 * originally was, the client should have an attachment with
@@ -200,6 +198,8 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->proc_name[8] = '\0';
 	strnupr(client->proc_name, 8);
 	DIAGS(("proc_name for %d: '%s'", client->p->pid, client->proc_name));
+
+	client->options = default_options;
 
 	/* Individual option settings. */
 	get_app_options(client);
