@@ -1916,8 +1916,8 @@ memused (PROC *p)
 	long size;
 	int i;
 	
-	/* a ZOMBIE owns no memory and its mem array ptr is zero */
-	if (mem->mem == NULL) return 0;
+	if (!mem || !mem->mem)
+		return 0;
 	
 	size = 0;
 	for (i = 0; i < mem->num_reg; i++)
