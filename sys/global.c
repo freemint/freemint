@@ -41,6 +41,7 @@
 # include "delay.h"		/* loops_per_sec */
 # include "dma.h"		/* dma */
 # include "filesys.h"		/* changedrv, denyshare, denylock */
+# include "ipc_socketutil.h"	/* so_* */
 # include "kmemory.h"		/* kmalloc, kfree, umalloc, ufree */
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "signal.h"		/* ikill */
@@ -93,9 +94,18 @@ struct kerinfo kernelinfo =
 	&loops_per_sec,
 	get_toscookie,
 	
+	so_register,
+	so_unregister,
+	so_release,
+	so_sockpair,
+	so_connect,
+	so_accept,
+	so_create,
+	so_dup,
+	so_free,
+	
 	{
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0
+		0, 0, 0, 0, 0, 0, 0
 	}
 };
 
