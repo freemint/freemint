@@ -74,14 +74,12 @@ kthread_create (void (*func)(void *), void *arg, struct proc **np, const char *f
 		p2->ctxt[CURRENT].fstate[0] = 0;
 		p2->ctxt[CURRENT].pc = (long)func;
 		p2->ctxt[CURRENT].usp = p2->sysstack;
-		p2->ctxt[CURRENT].ssp = p2->sysstack;
 		p2->ctxt[CURRENT].term_vec = (long) rts;
 
 		p2->ctxt[SYSCALL].sr = 0x2000;	/* kernel threads work in super mode */
 		p2->ctxt[SYSCALL].fstate[0] = 0;
 		p2->ctxt[SYSCALL].pc = (long)func;
 		p2->ctxt[SYSCALL].usp = p2->sysstack;
-		p2->ctxt[SYSCALL].ssp = p2->sysstack;
 		p2->ctxt[SYSCALL].term_vec = (long) rts;
 
 		*((long *)(p2->ctxt[CURRENT].usp + 4)) = (long) arg;
