@@ -18,6 +18,12 @@
  * 
  */
 
+# ifndef _keyboard_h
+# define _keyboard_h
+
+# include "mint/mint.h"
+
+
 /* Struct for the default action on C/A/D
  */
 struct cad_def
@@ -35,9 +41,12 @@ struct cad_def
 };
 
 short ikbd_scan(ushort scancode);
-void init_keytbl(void);
+
+void init_keybd(void);
+void load_keytbl(void);
 
 extern short gl_kbd;
 extern struct cad_def cad[3];
 
-/* EOF */
+
+# endif /* _keyboard_h */
