@@ -44,7 +44,6 @@
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
 # include "cnf.h"		/* init_env */
-# include "console.h"		/* c_conws() */
 # include "cookie.h"		/* get_cookie(), set_cookie() */
 # include "debug.h"		/* do_func_key() */
 # include "dev-mouse.h"		/* mshift */
@@ -56,7 +55,7 @@
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_fds.h"		/* fp_alloc() */
 # include "kmemory.h"		/* kmalloc(), kfree() */
-# include "keyboard.h"		/* struct cad */
+# include "keyboard.h"		/* struct cad, struct keytbl */
 # include "memory.h"		/* get_region(), attach_region() */
 # include "proc.h"		/* rootproc */
 # include "random.h"		/* add_keyboard_randomness() */
@@ -513,7 +512,7 @@ key_repeat(void)
  * parts of the keyboard translation tables, and moreover returns a
  * pointer to the global keytab structure so that programs can directly
  * manipulate that. This may severely affect system stability, if a
- * program changes the translation table and redirected one of the
+ * program changes the translation table and redirects one of the
  * vectors to own memory (even supervisor protected), and then suddenly
  * dies.
  *
@@ -670,7 +669,7 @@ load_external_table(FILEPTR *fp, char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short));
+				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short) + 1);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -685,7 +684,7 @@ load_external_table(FILEPTR *fp, char *name, long size)
 				if (sbuf[1] <= MAXAKP)
 					gl_kbd = sbuf[1];
 
-				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long));
+				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 1);
 				break;
 			}
 			default:
@@ -814,6 +813,9 @@ load_keyboard_table(char *name, short flag)
 			do_close(rootproc, fp);
 			if (ret == 0)
 			{
+				/* don't add 1, the size is already bigger 2 or 4 bytes
+				 * than it is needed to keep the table.
+				 */
 				size = xattr.size;
 # ifdef VERBOSE_BOOT
 				/* During startup generate a message */
