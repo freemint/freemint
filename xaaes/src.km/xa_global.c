@@ -36,6 +36,8 @@ struct xa_screen screen; /* The screen descriptor */
 
 XA_PENDING_WIDGET widget_active;
 
+const char mnu_clientlistname[] = "  Clients \3";
+
 BUTTON button;
 BUTTON mu_button;
 

@@ -25,6 +25,7 @@
  */
 
 #include "sys_proc.h"
+#include "xa_global.h"
 
 #include "xa_appl.h"
 #include "semaphores.h"
@@ -115,4 +116,30 @@ xaaes_on_stop(void *_client, struct proc *p, unsigned short nr)
 static void _cdecl
 xaaes_on_signal(void *_client, struct proc *p, unsigned short nr)
 {
+}
+
+
+static void _cdecl xaaes_sh_info_release(void *);
+
+
+struct module_callback xaaes_cb_vector_sh_info =
+{
+	NULL,			/* share */
+	xaaes_sh_info_release,
+
+	NULL,			/* on_exit */
+	NULL,			/* on_exec */
+	NULL,			/* on_fork */
+	NULL,			/* on_stop */
+	NULL,			/* on_signal */
+};
+
+
+static void _cdecl
+xaaes_sh_info_release(void *_info)
+{
+	struct shel_info *info = _info;
+
+	if (info->tail_is_heap && info->cmd_tail)
+		kfree(info->cmd_tail);
 }

@@ -32,6 +32,7 @@
 
 #include "accstart.h"
 #include "init.h"
+#include "sys_proc.h"
 #include "taskman.h"
 #include "util.h"
 
@@ -607,8 +608,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			/* remove mapping */
 			detach_region(curproc, m);
 
-			p_renice(p->pid, -4);
-
 			type = APP_ACCESSORY;
 			ret = p->pid;
 
@@ -620,7 +619,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	{
 		struct shel_info *info;
 
-		info = attach_extension(p, XAAES_MAGIC_SH, sizeof(*info), NULL);
+		info = attach_extension(p, XAAES_MAGIC_SH, sizeof(*info), &xaaes_cb_vector_sh_info);
 		if (info)
 		{
 			info->type = type;

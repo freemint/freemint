@@ -274,21 +274,26 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 		}
 	}
 }
+
 static void
 Pdisplay_widget(void *_parm)
 {
-	long *parm = _parm;
+	void **parm = _parm;
 
-	display_widget(0, (struct xa_window *)parm[0], (struct xa_widget *)parm[1]);
+	/* draw display; we are in the process context now */
+	display_widget(0, parm[0], parm[1]);
+
+	/* wakup initiator */
 	wake(IO_Q, (long)parm);
-	kfree(parm);
+
+	/* and terminate */
 	kthread_exit(0);
 }
 
 /*
  * Ozk: redraw menu need to check the owner of the menu object tree
  * and draw it in the right context. 
-*/
+ */
 void
 redraw_menu(enum locks lock)
 {
@@ -302,23 +307,25 @@ redraw_menu(enum locks lock)
 	if (mc == rc || rc == C.Aes)
 	{
 		DIAGS(("Display MENU (same client) for %s", rc->name));
-		//Display_widget(lock, root_window, widg);
 		display_widget(lock, root_window, widg);
 	}
 	else
 	{
-		long *p;
+		void **parm;
 
 		DIAGS(("Display MENU (other client %s) for %s", mc->name, rc->name));
 
-		p = kmalloc(16);
-		if (p)
+		parm = kmalloc(sizeof(*parm) * 4);
+		if (parm)
 		{
-			p[0] = (long)root_window;
-			p[1] = (long)widg;
-			p[2] = (long)rc;
-			kthread_create(mc->p, Pdisplay_widget, p, NULL, "k%S", mc->name);
-			sleep(IO_Q, (long)p);
+			parm[0] = root_window;
+			parm[1] = widg;
+			parm[2] = rc;
+
+			kthread_create(mc->p, Pdisplay_widget, parm, NULL, "k%S", mc->name);
+			sleep(IO_Q, (long)parm);
+
+			kfree(parm);
 		}
 	}
 
