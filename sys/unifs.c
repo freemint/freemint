@@ -854,6 +854,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			struct fs_descr *d = (struct fs_descr *) arg;
 			FILESYS *fs;
 			UNIFILE *u;
+			int drvmap_dev_no = -1;
 
 			if (!suser (curproc->p_cred->ucr))
 				return EPERM;
@@ -865,6 +866,23 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 				release_cookie (&fc);
 				return EACCES; /* name exists already */
 			}
+			if (r == ENOTDIR && name[0] && !name[1]) {
+				/* one letter drive mapping check */
+				drvmap_dev_no = tolower(name[0]);
+
+				/* convert the ASCII value to the drive number */
+				drvmap_dev_no = ( drvmap_dev_no < 'a' || drvmap_dev_no > 'z'
+								  ? ( drvmap_dev_no < '1' || drvmap_dev_no > '6' ? -1 : drvmap_dev_no - '1' + 26 )
+								  : drvmap_dev_no - 'a' );
+
+				if (drvmap_dev_no == -1)
+					return r;
+
+				/* check whether it is not already mounted */
+				if (((sys_b_drvmap() | dosdrvs) & (1UL << drvmap_dev_no)) != 0)
+					return EACCES; /* already exists */
+			}
+			else
 			if (r != ENOENT) return r; /* some other error */
 
 			if (!d) return EACCES;
@@ -877,21 +895,35 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 
 			if (!fs) return EACCES; /* not installed, so return an error */
 
-			u = kmalloc (sizeof (*u));
-			if (!u) return ENOMEM;
+			/* A..Z1..6 mount check */
+			if ( drvmap_dev_no == -1 )
+			{
+				/* new mount point */
+				u = kmalloc (sizeof (*u));
+				if (!u) return ENOMEM;
 
-			strncpy (u->name, name, UNINAME_MAX);
-			u->name[UNINAME_MAX] = 0;
+				/* chain new entry into unifile list */
+				u->next = u_root;
+				u_root = u;
+
+				strncpy (u->name, name, UNINAME_MAX);
+				u->name[UNINAME_MAX] = 0;
+			}
+			else
+			{
+				/* A..Z1..6 mount */
+				u = &u_drvs[drvmap_dev_no];
+				/* update the _drvbits (the value of sys_b_drvmap() result) */
+				*((long *) 0x4c2L) |= 1UL << drvmap_dev_no;
+			}
+
+			/* now get the file system its own device number */
+			u->dev = d->dev_no = curr_dev_no++;
 			u->mode = S_IFDIR|DEFAULT_DIRMODE;
 			u->data = 0;
 			u->fs = d->file_system;
 
-			/* now get the file system its own device number */
-			u->dev = d->dev_no = curr_dev_no++;
-
-			/* chain new entry into unifile list */
-			u->next = u_root;
-			u_root = u;
+			DEBUG (("uni_fscntl(FS_MOUNT, %s, drvmap_dev_no %d:%d)", name, drvmap_dev_no, u->dev));
 			return (long) u->dev;
 		}
 		case FS_UNMOUNT: /* remove a file system's directory */
@@ -925,6 +957,18 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 					break;
 
 			if (!fs) return EACCES; /* not installed, so return an error */
+
+			/* The FS_MOUNT can mount to e.g. u:\m. It uses the builtin
+			 * mountpoint structure for that.
+			 *
+			 * It is not possible to unmount the builtin mount entries so far.
+			 * BUG: ? TODO: use some additional flag for this or restructuralize
+			 *              the unifs a bit to be able to do this.
+			 */
+			if (u >= &u_drvs[0] && u <= &u_drvs[sizeof(u_drvs)/sizeof(*u_drvs) - 1]) {
+				DEBUG (("uni_remove: trying to remove the buildting mountpoint '%s'", name));
+				return EACCES;
+			}
 
 			/* here comes the difficult part: we have to close all files on that
 			 * device, so we have to call changedrv(). The file system driver
