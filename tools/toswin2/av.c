@@ -1,6 +1,7 @@
 
 #undef DEBUG_AV
 
+#include <osbind.h>
 #include <cflib.h>
 
 #include "global.h"
@@ -11,10 +12,10 @@
 #include "toswin2.h"
 
 
-int				av_shell_id = -1;				/* ID des Desktops */
-unsigned short	av_shell_status = 0;			/* Welche AV_* kann Desktop */
+int		av_shell_id = -1;		/* ID des Desktops */
+unsigned short	av_shell_status = 0;		/* Welche AV_* kann Desktop */
 
-static char		*global_str = NULL;
+static char	*global_str = NULL;
 static short	msgbuff[8];
 
 static bool send_msg(void)
@@ -23,7 +24,7 @@ static bool send_msg(void)
 
 	msgbuff[1] = gl_apid;
 	msgbuff[2] = 0;
-	ret = appl_write(av_shell_id, (int) sizeof(msgbuff), msgbuff);
+	ret = appl_write(av_shell_id, sizeof(msgbuff), msgbuff);
 	return (ret > 0);
 }
 
@@ -62,7 +63,7 @@ static void send_avexit(void)
 {
 	if ((av_shell_id >= 0) && (av_shell_status & 1024))
 	{
-		memset(msgbuff, 0, (int)sizeof(msgbuff));
+		memset(msgbuff, 0, sizeof(msgbuff));
 		msgbuff[0] = AV_EXIT;
 		msgbuff[3] = gl_apid;
 #ifdef DEBUG_AV
@@ -72,13 +73,13 @@ debug("AV_EXIT\n");
 	}
 }
 
-bool send_avkey(int ks, int kr)
+bool send_avkey(short ks, short kr)
 {
 	bool	b = FALSE;
 
 	if ((av_shell_id >= 0) && (av_shell_status & 1))
 	{
-		memset(msgbuff, 0, (int)sizeof(msgbuff));
+		memset(msgbuff, 0, sizeof(msgbuff));
 		msgbuff[0] = AV_SENDKEY;
 		msgbuff[1] = gl_apid;
 		msgbuff[3] = ks;
@@ -91,7 +92,7 @@ debug("AV_SENDKEY (%d,%d)\n", ks, kr);
 	return b;
 }
 
-void send_avwinopen(int handle)
+void send_avwinopen(short handle)
 {
 	if ((av_shell_id >= 0) && gl_avcycle)
 	{
@@ -105,7 +106,7 @@ debug("AV_ACCWINDOPEN (%d)\n", handle);
 	}
 }
 
-void send_avwinclose(int handle)
+void send_avwinclose(short handle)
 {
 	if ((av_shell_id >= 0) && gl_avcycle)
 	{
@@ -119,9 +120,9 @@ debug("AV_ACCWINDCLOSED (%d)\n", handle);
 	}
 }
 
-void handle_av(int msgbuff[])
+void handle_av(short *msgbuff)
 {
-	char	*p;
+	char *p;
 	
 	switch (msgbuff[0])
 	{
@@ -213,7 +214,7 @@ bool av_init(void)
 	{
 		strncpy(name, p, 8);
 		name[8] = '\0';
-		for (i = (int)strlen(name); i < 8; i++)
+		for (i = strlen(name); i < 8; i++)
 			strcat(name, " ");
 		i = appl_find(name);
 		if (i >= 0)

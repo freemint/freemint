@@ -5,6 +5,7 @@
 #include <cflib.h>
 
 #include "global.h"
+#include "environ.h"
 
 
 static char TERMprefix[] = "TERM";
@@ -25,13 +26,13 @@ static char *get_aesenv(long extra_bytes)
 	len = shel_write(8, 0, 0, NULL, NULL);
 	if (len > 0)
 	{
-		buf = (char *)malloc(len + extra_bytes);
-		shel_write(8, 2, (short)len, buf, NULL);
+		buf = malloc(len + extra_bytes);
+		shel_write(8, 2, len, buf, NULL);
 	}
 	else
 	{
 		/* FIXME: copy env from basepge into buf! */
-		buf = (char *)malloc(extra_bytes);
+		buf = malloc(extra_bytes);
 	}
 	return buf;
 }
@@ -60,10 +61,9 @@ static char *get_var(char *env, char *var)
 /*
  * Kopiert von <s> nach <d>.
 */
-void copy_env(char *s, char *d)
+static void copy_env(char *s, char *d)
 {
-	do
-	{
+	do {
 		while ((*d++ = *s++) != '\0')
 			;
 	}
@@ -108,7 +108,9 @@ static void put_env(char *env, char *var, char *value)
 }
 
 
-void dump_env(char *env)
+#if 0
+
+static void dump_env(char *env)
 {
 	char	*p;
 	
@@ -123,6 +125,8 @@ void dump_env(char *env)
 	}
 	printf("\n");
 }
+
+#endif
 
 /* --------------------------------------------------------------------------- */
 char *normal_env(int cols, int rows, int term)
@@ -222,7 +226,7 @@ char *share_env(int cols, int rows, int term, char *prgname, char *arg, char *en
 		len = p - env;
 	}
 
-	new = (char *)malloc(len + extra);
+	new = malloc(len + extra);
 	copy_env(env, new);
 	
 	/* Eigene Vars eintragen */

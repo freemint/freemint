@@ -7,6 +7,7 @@
  * Also understands (most) ANSI escape sequences
  */
 
+#include <osbind.h>
 #include <support.h>
 
 #include <cflib.h>
@@ -186,7 +187,7 @@ static void insert_line(TEXTWIN *v, int r, int b)
  * if c is '\r', then we're finished and we call the callback
  * function
  */
-void capture(TEXTWIN *v, int c)
+static void capture(TEXTWIN *v, int c)
 {
 	int i = v->captsiz;
 
@@ -1360,7 +1361,7 @@ static void soft_reset(TEXTWIN *v)
 /*
  * full_reset(v): do a full reset
  */
-void full_reset(TEXTWIN *v)
+static void full_reset(TEXTWIN *v)
 {
 	soft_reset(v);							/* clear all tabs */
 	clearalltabs (v);						/* white foreground, black foreground */
