@@ -6,6 +6,7 @@
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
 # -DBUILTIN_SHELL	include the built-in minimal shell
+# -DJAR_PRIVATE		make Cookie Jar private for processes
 
 #
 # machine flags
@@ -39,6 +40,7 @@ KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 KERNELDEFAULTDEFS += -DCRYPTO_CODE
 KERNELDEFAULTDEFS += -DSOFT_UNITABLE
 KERNELDEFAULTDEFS += -DBUILTIN_SHELL
+KERNELDEFAULTDEFS += -DJAR_PRIVATE
 endif
 
 ifeq ($(kernel),000)

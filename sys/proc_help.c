@@ -40,6 +40,10 @@
 # include "libkern/libkern.h"
 # include "mint/file.h"
 
+# ifdef JAR_PRIVATE
+# include "cookie.h"
+# endif
+
 # include "filesys.h"
 # include "k_fds.h"
 # include "kmemory.h"
@@ -131,10 +135,25 @@ copy_mem (struct proc *p)
 	m->mem = kmalloc (m->num_reg * sizeof (MEMREGION *));
 	m->addr = kmalloc (m->num_reg * sizeof (long));
 	
-	/* Trampoline */
-	m->tp_reg = get_region(alt, user_things.len, PROT_P);
+	/* Trampoline. Space is added for user cookie jar */
+
+# ifdef JAR_PRIVATE
+	/* When the jar is not global, it is more than doubtful,
+	 * that anybody would need so many cookies.
+	 */
+# define PRIV_JAR_SLOTS	64
+# define PRIV_JAR_SIZE	PRIV_JAR_SLOTS*sizeof(COOKIE)
+
+# else
+
+# define PRIV_JAR_SLOTS	0
+# define PRIV_JAR_SIZE	0
+
+# endif
+
+	m->tp_reg = get_region(alt, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	if (!m->tp_reg)
-		m->tp_reg = get_region(core, user_things.len, PROT_P);
+		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	
 	if ((!no_mem_prot && !m->pt_mem) || !m->mem || !m->addr || !m->tp_reg)
 		goto nomem;
@@ -154,9 +173,11 @@ copy_mem (struct proc *p)
 
 	/* temporary attach to curproc so it's accessible */
 	attach_region(curproc, m->tp_reg);
+
+	/* trampoline is inherited from the kernel */
 	bcopy(&user_things, m->tp_ptr, user_things.len);
 
-	/* Initialize trampoline vectors */
+	/* Initialize user vectors */
 	ut->terminateme_p += (long)ut;
 
 	ut->sig_return_p += (long)ut;
@@ -170,8 +191,44 @@ copy_mem (struct proc *p)
 
 	ut->user_xhdi_p += (long)ut;
 
-	cpush(ut, sizeof(USER_THINGS));
+# ifdef JAR_PRIVATE
+	/* Cookie Jar is appended at the end of the trampoline */
+	ut->user_jar_p = (long)ut + user_things.len;
 
+	/* Copy the cookies over */
+	{
+		USER_THINGS *ct;
+		COOKIE *ctj, *utj;
+
+		/* The child inherits the jar from the parent
+		 */
+		ct = (USER_THINGS *)p->p_mem->tp_ptr;
+
+		utj = (COOKIE *)ut->user_jar_p;
+		ctj = (COOKIE *)ct->user_jar_p;
+
+		for (i = 0; ctj->tag && i < PRIV_JAR_SLOTS-1; i++)
+		{
+			utj->tag = ctj->tag;
+
+			/* Setup private XHDI cookie for new process */
+			if (ctj->tag == COOKIE_XHDI)
+				utj->value = ut->user_xhdi_p;
+			else
+				utj->value = ctj->value;
+
+			utj++;
+			ctj++;
+		}
+
+		/* User jars have less slots, than the kernel one (1024) */
+		utj->tag = 0;
+		utj->value = PRIV_JAR_SLOTS;
+	}
+
+# endif
+
+	cpush(ut, sizeof(USER_THINGS));
 	detach_region(curproc, m->tp_reg);
 	
 	TRACE (("copy_mem: ok (%lx)", m));
