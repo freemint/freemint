@@ -1,0 +1,20 @@
+Notes about the FreeMiNT integration
+------------------------------------
+
+File suffix convention
+----------------------
+In the motorola subdir all of the original Motorola files are imported.
+
+These are:
+
+*.s:	Assembler files; unsupported by Motorola, provided as a reference
+*.sa:	Pseudo assembler hex dump files; supported by Motorola
+*.doc:	documentation by Motorola
+
+CHANGES, ERRATA, MISC, README: by Motorola.
+
+We use:		To create: 
+-------         ----------
+isp.sa		isp.S
+fpsp.sa		fpsp.S
+
