@@ -25,7 +25,7 @@ INCLUDES += -I/usr/GEM/include
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
-LIBS += -L/usr/GEM/lib -lcflib -lgemx -lgem
+LIBS += -L/usr/GEM/lib -lcflib -lgem
 LIBS += -liio
 GENFILES = $(TARGET)
 
