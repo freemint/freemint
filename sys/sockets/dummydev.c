@@ -6,20 +6,22 @@
 
 # include "dummydev.h"
 
-# include <mint/dcntl.h>
+# include "mint/dcntl.h"
 
 
 long
 dummydev_init (char *name, struct dev_descr *descr)
 {
-	char message[200];
 	long r;
 	
 	r = d_cntl (DEV_INSTALL, name, (long) descr);
 	if (!r || r == ENOSYS)
 	{
+		char message[128];
+		
 		ksprintf (message, "Cannot install device %s\r\n", name);
 		c_conws (message);
+		
 		return -1;
 	}
 	
