@@ -1,16 +1,16 @@
 Version 2.7 - 7 April 2001
 
-* tw52 colors are now fully ansi-compatible 
+* colors are now fully ansi-compatible 
 
 * terminal capabilities `bold' and `dim' are now represented using
   light resp. half-bright colors where applicable
 
-* support for alternate character set (pc graphics) in tw52 mode
+* support for alternate character set (pc graphics)
 
 * TERM is automatically set to `tw52-m' or `tw100-m' if less than
   8 colors are available
 
-* terminfo source file updated (many bugfixes for tw52), recompile
+* terminfo source files updated (many bugfixes), recompile
   it with tic on the target system
 
 * environment variable COLORTERM is set to 1 if color support available
@@ -18,3 +18,9 @@ Version 2.7 - 7 April 2001
 * The horizontal slider has vanished.  If you want to get it back
   call me at office hours and keep your credit card at hand.  Please
   allow six weeks for delivery.
+
+* The checkbox for so-called auto-wrapping has vanished.  Explanation:
+  It really enabled semi-automatic margins, i. e. printing in the
+  last column caused a line-break.  Now both tw52 and tw100 have
+  proper automatic margins and there is no more need for such a
+  user-definable feature.

@@ -4,16 +4,16 @@ These are the results of the vttest program (Dickey version 2.7  from
 Test Of Cursor Movements
 ========================
 
-[ ] DECALN in 80 column mode
-[ ] DECALN in 132 column mode
-[ ] Cursor control characters in ESC sequences
+[x] DECALN in 80 column mode
+[x] DECALN in 132 column mode
+[x] Cursor control characters in ESC sequences
 [x] Test of leading zeros in ESC sequences
 
 Test Of Screen Features
 =======================
 
 [x] Wrap around
-[ ] Tab setting/resetting
+[x] Tab setting/resetting
 [ ] 132 column mode, light background
 [ ] 80 column mode, light background
 [x] 132 column mode, dark background
@@ -21,9 +21,9 @@ Test Of Screen Features
 [ ] Soft scroll down 1
 [x] Soft scroll down 2
 [ ] Jump scroll down 1
-[x] Jump scroll down 2
+[ ] Jump scroll down 2
 [ ] Origin mode test
-[ ] Graphic rendition dark background
+[x] Graphic rendition dark background
 [ ] Graphic rendition light background
 [ ] Test of save/restore cursor
 
