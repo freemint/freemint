@@ -78,10 +78,10 @@ ressource_semaphore_rel(struct ressource_semaphore *s, struct xa_client *client)
 		DIAG((D_sema, client, "Releasing unused lock %s", client->name));
 		return 1;
 	}
-	if (s->client && s->client != client)
+	if (s->client != client)
 	{
 		DIAG((D_sema, client, "%s try releasing lock owned by %s", client->name, s->client->name));
-		return 1;
+		return 0;
 	}
 
 	/* decrement semaphore */

@@ -49,6 +49,7 @@ struct shared
 	struct win_base deleted_windows;/* list of windows to be deleted (delayed action) */
 
 	struct xa_client *client_list;	/* The clients database */
+	short		 wm_count;
 	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
 	struct opt_list *app_options;	/* individual option settings. */
 };

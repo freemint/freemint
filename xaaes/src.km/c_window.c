@@ -838,8 +838,6 @@ Pdraw_window( void *_parm)
 	Ddraw_window(0, (struct xa_window *)parm[0]);
 	wake(IO_Q, (long)parm);
 	kfree(parm);
-	//if (c->usr_evnt && c->sleeplock)
-	//	Unblock(c, 1, 9000);
 	kthread_exit(0);
 }
 
@@ -876,60 +874,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 	}
 	DIAGS(("DrawWind - exit OK"));
 }
-#if 0
-static void
-Pdraw_window(struct proc *p, void *_parm)
-{
-	long *parm = _parm;
-
-	Ddraw_window(0, (struct xa_window *)parm[0]);
-	wake(IO_Q, (long)parm);
-	kfree(parm);
-}
-
-//static void
-//cXA_draw_window(enum locks lock, struct c_event *ce)
-void
-draw_window(enum locks lock, struct xa_window *wind)
-{
-	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-
-	if (!rc || rc == wind->owner || wind->owner == C.Aes)
-	{
-		DIAG((D_wind, rc, "draw_window %d, for %s", wind->handle, rc->name));
-		Ddraw_window(lock, wind);
-	}
-	else
-	{
-		long *p;
-		long wakeit;
-		DIAG((D_wind, rc, "draw_window %d for %s by %s", wind->handle, wind->owner->name, rc->name));
-
-		p = (long *)kmalloc(16);
-
-		p[0] = (long)wind;
-		p[1] = (long)wind->owner;
-
-		addonprocwakeup(wind->owner->p, Pdraw_window, p);
-		if (wind->owner->sleeplock)
-			wake(wind->owner->sleepqueue, wind->owner->sleeplock);
-
-		sleep(IO_Q, (long)p);
-	}
-	DIAGS(("DrawWind - exit OK"));
-}
-#endif
-
-#if 0
-/*
- * Display a window
- */
-void
-draw_window(enum locks lock, struct xa_window *wind)
-{
-	post_cevent(wind->owner, cXA_draw_window, wind, 0, 0, 0, 0, 0);
-}
-#endif
 
 struct xa_window *
 find_window(enum locks lock, int x, int y)
