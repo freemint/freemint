@@ -77,7 +77,7 @@ vt_quote_putch (TEXTWIN* tw, unsigned int c)
 		/* Character was drawn in last column.  */
 		if (tw->do_wrap && !(tw->term_flags & FNOAM)) {
 			vt100_putch (tw, '\n');
-			tw->cx = 1;
+			tw->cx = 0;
 			tw->do_wrap = 0;
 		} else {
 			tw->cx = tw->maxx - 1;
