@@ -80,7 +80,8 @@ static struct devdrv bpf_dev =
 
 static struct dev_descr	bpf_desc =
 {
-	driver:		&bpf_dev
+	driver:		&bpf_dev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 /*

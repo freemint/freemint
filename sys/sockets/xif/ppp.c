@@ -142,7 +142,8 @@ static struct devdrv	ppp_dev =
 
 static struct dev_descr	ppp_desc =
 {
-	driver:		&ppp_dev
+	driver:		&ppp_dev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 static ushort fcstab[256] =

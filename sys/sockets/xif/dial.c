@@ -133,7 +133,8 @@ static struct devdrv dial_dev =
 
 static struct dev_descr dial_desc =
 {
-	driver:	&dial_dev
+	driver:		&dial_dev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 

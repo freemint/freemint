@@ -45,7 +45,8 @@ static DEVDRV unixdev =
 
 static struct dev_descr unixdev_descr =
 {
-	driver:		&unixdev
+	driver:		&unixdev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 static char unixdev_name[] = "u:\\dev\\unix";

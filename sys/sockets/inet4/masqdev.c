@@ -38,7 +38,8 @@ static DEVDRV masqdev =
 
 static struct dev_descr masqdev_descr =
 {
-	driver:		&masqdev
+	driver:		&masqdev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 static char masqdev_name[] = "u:\\dev\\masquerade";

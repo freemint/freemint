@@ -66,7 +66,8 @@ static DEVDRV inetdev =
 
 static struct dev_descr inetdev_descr =
 {
-	driver:		&inetdev
+	driver:		&inetdev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 static char inetdev_name[] = "u:\\dev\\inet";

@@ -46,7 +46,8 @@ static DEVDRV routedev =
 
 static struct dev_descr routedev_descr =
 {
-	driver:		&routedev
+	driver:		&routedev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 static char routedev_name[] = "u:\\dev\\route";

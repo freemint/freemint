@@ -54,7 +54,8 @@ static DEVDRV arpdev =
 
 static struct dev_descr arpdev_descr =
 {
-	driver:		&arpdev
+	driver:		&arpdev,
+	fmode:		S_IFCHR | S_IRUSR | S_IWUSR
 };
 
 static char arpdev_name[] = "u:\\dev\\arp";
