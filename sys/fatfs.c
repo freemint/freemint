@@ -22,7 +22,7 @@
  * 
  * 
  * begin:	1998-02-01
- * last change:	2000-06-21
+ * last change:	2000-06-30
  * 
  * Author: Frank Naumann <fnaumann@freemint.de>
  * 
@@ -32,8 +32,10 @@
  * 
  * changes since last version:
  * 
- * 2000-06-21:	(v1.21)
+ * 2000-06-30:	(v1.21)
  * 
+ * - fix: c_del_cookie now bzero the complete COOKIE struct;
+ *        so the COOKIE is an well defined initial state
  * - fix: splitted of delete_cookie into real delete and unlink
  *        to handle Unix style unlinking; changes over the src to
  *        reflect this, cleaned up some functions
@@ -564,8 +566,9 @@ static long	_cdecl fatfs_unmount	(int drv);
 
 FILESYS fatfs_filesys =
 {
-	NULL,
+	next:			NULL,
 	
+	fsflags:
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -589,27 +592,51 @@ FILESYS fatfs_filesys =
 	FS_EXT_1		|
 	FS_EXT_2		,
 	
-	fatfs_root,
-	fatfs_lookup, fatfs_creat, fatfs_getdev, fatfs_getxattr,
-	fatfs_chattr, fatfs_chown, fatfs_chmode,
-	fatfs_mkdir, fatfs_rmdir, fatfs_remove, fatfs_getname, fatfs_rename,
-	fatfs_opendir, fatfs_readdir, fatfs_rewinddir, fatfs_closedir,
-	fatfs_pathconf, fatfs_dfree, fatfs_writelabel, fatfs_readlabel,
-	fatfs_symlink, fatfs_readlink, null_hardlink, fatfs_fscntl, fatfs_dskchng,
-	fatfs_release, fatfs_dupcookie,
-	fatfs_sync,
+	root:			fatfs_root,
+	lookup:			fatfs_lookup,
+	creat:			fatfs_creat,
+	getdev:			fatfs_getdev,
+	getxattr:		fatfs_getxattr,
+	chattr:			fatfs_chattr,
+	chown:			fatfs_chown,
+	chmode:			fatfs_chmode,
+	mkdir:			fatfs_mkdir,
+	rmdir:			fatfs_rmdir,
+	remove:			fatfs_remove,
+	getname:		fatfs_getname,
+	rename:			fatfs_rename,
+	opendir:		fatfs_opendir,
+	readdir:		fatfs_readdir,
+	rewinddir:		fatfs_rewinddir,
+	closedir:		fatfs_closedir,
+	pathconf:		fatfs_pathconf,
+	dfree:			fatfs_dfree,
+	writelabel:		fatfs_writelabel,
+	readlabel:		fatfs_readlabel,
+	symlink:		fatfs_symlink,
+	readlink:		fatfs_readlink,
+	hardlink:		null_hardlink,
+	fscntl:			fatfs_fscntl,
+	dskchng:		fatfs_dskchng,
+	release:		fatfs_release,
+	dupcookie:		fatfs_dupcookie,
+	sync:			fatfs_sync,
 	
 	/* FS_EXT_1 */
-	null_mknod, fatfs_unmount,
+	mknod:			null_mknod,
+	unmount:		fatfs_unmount,
 	
 	/* FS_EXT_2
 	 */
 	
 	/* FS_EXT_3 */
-	NULL,
+	stat64:			NULL,
+	res1:			0, 
+	res2:			0,
+	res3:			0,
 	
-	0, 0, 0, 0, 0,
-	NULL, NULL
+	lock: 0, sleepers: 0,
+	block: NULL, deblock: NULL
 };
 
 /*
@@ -624,14 +651,19 @@ static long	_cdecl fatfs_ioctl	(FILEPTR *f, int mode, void *buf);
 static long	_cdecl fatfs_datime	(FILEPTR *f, ushort *time, int rwflag);
 static long	_cdecl fatfs_close	(FILEPTR *f, int pid);
 
-DEVDRV fatfs_device =
+static DEVDRV fatfs_device =
 {
-	fatfs_open,
-	fatfs_write, fatfs_read, fatfs_lseek,
-	fatfs_ioctl, fatfs_datime,
-	fatfs_close,
-	null_select, null_unselect,
-	NULL, NULL
+	open:			fatfs_open,
+	write:			fatfs_write,
+	read:			fatfs_read,
+	lseek:			fatfs_lseek,
+	ioctl:			fatfs_ioctl,
+	datime:			fatfs_datime,
+	close:			fatfs_close,
+	select:			null_select,
+	unselect:		null_unselect,
+	writeb:			NULL,
+	readb:			NULL
 };
 
 
@@ -1571,7 +1603,6 @@ c_get_cookie (register char *s)
 				
 				c->name = s;
 				c->links = 1;
-				c->nextslot = 0;
 				
 				c_hash_install (c);
 				
@@ -1590,27 +1621,21 @@ c_get_cookie (register char *s)
 static void
 c_del_cookie (register COOKIE *c)
 {
+	FAT_ASSERT ((c->name));
+	
 	c_hash_remove (c);
 	
 	if (c->open)
-	{
 		FAT_ALERT (("fatfs.c: open FILEPTR detect in: c_del_cookie (%s)", c->name));
-		c->open = NULL;
-	}
+	
 	if (c->locks)
-	{
 		FAT_ALERT (("fatfs.c: open LOCKS detect in: c_del_cookie (%s)", c->name));
-		c->locks = NULL;
-	}
+	
 	if (c->lastlookup)
-	{
 		kfree (c->lastlookup);
-		c->lastlookup = NULL;
-	}
 	
 	kfree (c->name);
-	c->name = NULL;
-	c->links = 0;
+	bzero (c, sizeof (*c));
 }
 
 /* END global data & access implementation */
