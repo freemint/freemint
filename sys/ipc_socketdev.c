@@ -730,79 +730,17 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SETSOCKOPT_CMD:
 		{
 			struct setsockopt_cmd *c = buf;
-			
-			if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
-				return EINVAL;
-			
-			if (c->level == SOL_SOCKET) switch (c->optname)
-			{
-				case SO_DROPCONN:
-				{
-					if (!c->optval || c->optlen < sizeof (long))
-						return EINVAL;
-					
-					if (*(long *)(c->optval))
-						so->flags |= SO_DROP;
-					else
-						so->flags &= ~SO_DROP;
-					
-					return 0;
-				}
-				default:
-					break;
-			}
-			
-			return (*so->ops->setsockopt)(so, c->level, c->optname, c->optval, c->optlen);
+			return so_setsockopt (so, c->level, c->optname, c->optval, c->optlen);
 		}
 		case GETSOCKOPT_CMD:
 		{
 			struct getsockopt_cmd *c = buf;
-			
-			if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
-			{
-				DEBUG (("sockemu_getsockopt: virgin state -> EINVAL"));
-				return EINVAL;
-			}
-			
-			if (c->level == SOL_SOCKET) switch (c->optname)
-			{
-				case SO_DROPCONN:
-				{
-					if (!c->optval || !c->optlen || *(c->optlen) < sizeof (long))
-						return EINVAL;
-					
-					*(long *)(c->optval) = !!(so->flags & SO_DROP);
-					*(c->optlen) = sizeof (long);
-					
-					return 0;
-				}
-				default:
-					break;
-			}
-			
-			return (*so->ops->getsockopt)(so, c->level, c->optname, c->optval, c->optlen);
+			return so_getsockopt (so, c->level, c->optname, c->optval, c->optlen);
 		}
 		case SHUTDOWN_CMD:
 		{
 			struct shutdown_cmd *c = buf;
-			
-			if (so->state == SS_VIRGIN || so->state == SS_ISDISCONNECTED)
-				return EINVAL;
-			
-			switch (c->how)
-			{
-				case 0:
-					so->flags |= SO_CANTRCVMORE;
-					break;
-				case 1:
-					so->flags |= SO_CANTSNDMORE;
-					break;
-				case 2:
-					so->flags |= (SO_CANTRCVMORE|SO_CANTSNDMORE);
-					break;
-			}
-			
-			return (*so->ops->shutdown)(so, c->how);
+			return so_shutdown (so, c->how);
 		}
 	}
 	

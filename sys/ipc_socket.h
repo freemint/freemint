@@ -61,5 +61,11 @@ long _cdecl sys_setsockopt (short fd, long level, long optname, void *optval, lo
 long _cdecl sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen);
 long _cdecl sys_shutdown (short fd, long how);
 
+/* internal socket functions */
+
+long so_setsockopt (struct socket *so, long level, long optname, void *optval, long optlen);
+long so_getsockopt (struct socket *so, long level, long optname, void *optval, long *optlen);
+long so_shutdown (struct socket *so, long how);
+
 
 # endif	/* _ipc_socket_h  */
