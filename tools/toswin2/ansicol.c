@@ -29,7 +29,7 @@ char* colorterm_env = "1";
 static struct rgb ansi_colors[8 * 3] = {
 		{    0,    0,	 0 },	/* Bright black.  */
 		{    0,    0,	 0 },	/* Black.  */
-		{  408,  408,  408 },	/* Half-bright (dimmed) red.  */
+		{  408,  408,  408 },	/* Half-bright (dimmed) black.  */
 		{ 1000,   94,	94 },	/* Bright red.	*/
 		{  698,   94,	94 },	/* Red.  */
 		{  408,   94,	94 },	/* Half-bright (dimmed) red.  */
