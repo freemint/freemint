@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,13 +26,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2000-10-31
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
  */
 
 # include "proc_help.h"
@@ -39,6 +36,7 @@
 
 # include "libkern/libkern.h"
 # include "mint/file.h"
+# include "mint/proc_extensions.h"
 
 # ifdef JAR_PRIVATE
 # include "cookie.h"
@@ -663,4 +661,182 @@ copy_limits (struct proc *p)
 void
 free_limits (struct proc *p)
 {
+}
+
+/* p_ext */
+
+void * _cdecl
+proc_lookup_extension(struct proc *p, long ident)
+{
+	struct proc_ext *p_ext;
+
+	if (!p) p = curproc;
+
+	p_ext = p->p_ext;
+	while (p_ext)
+	{
+		if (p_ext->ident == ident)
+			return p_ext->data;
+
+		p_ext = p_ext->next;
+	}
+
+	/* not found */
+	return NULL;
+}
+
+void * _cdecl
+proc_attach_extension(struct proc *p, long ident, unsigned long size, struct module_callback *cb)
+{
+	struct proc_ext *p_ext = NULL;
+
+	if (!p) p = curproc;
+
+	assert(size);
+
+	p_ext = kmalloc(sizeof(*p_ext));
+	if (p_ext)
+	{
+		bzero(p_ext, sizeof(*p_ext));
+
+		/* initialize data */
+		p_ext->ident = ident;
+		p_ext->links = 1;
+		p_ext->cb_vector = cb;
+
+		/* allocate data area */
+		p_ext->data = kmalloc(size);
+		if (p_ext->data)
+		{
+			struct proc_ext **list;
+
+			/* clean data area */
+			bzero(p_ext->data, size);
+
+			/* search end of list */
+			list = &(p->p_ext);
+			while (*list)
+				list = &((*list)->next);
+
+			/* and add */
+			*list = p_ext;
+
+			/* return success */
+			return p_ext->data;
+		}
+		else
+			kfree(p_ext);
+	}
+
+	/* out of memory */
+	return NULL;
+}
+
+void _cdecl
+proc_detach_extension(struct proc *p, long ident)
+{
+	struct proc_ext **p_ext;
+
+	if (!p) p = curproc;
+
+	p_ext = &(p->p_ext);
+	while (*p_ext)
+	{
+		struct proc_ext *check = *p_ext;
+
+		if (check->ident == ident)
+		{
+			/* remove from list */
+			*p_ext = check->next;
+
+			/* adjust link counter */
+			check->links--;
+
+			/* if no longer in use free up memory */
+			if (check->links == 0)
+			{
+				/* call release callback */
+				if (check->cb_vector && check->cb_vector->release)
+					(*check->cb_vector->release)(check->data);
+
+				kfree(check->data);
+				kfree(check);
+			}
+
+			break;
+		}
+
+		p_ext = &(check->next);
+	}
+}
+
+
+void
+proc_ext_on_exit(struct proc *p)
+{
+	struct proc_ext *p_ext = p->p_ext;
+
+	while (p_ext)
+	{
+		if (p_ext->cb_vector && p_ext->cb_vector->on_exit)
+			(*p_ext->cb_vector->on_exit)(p_ext->data, p);
+
+		p_ext = p_ext->next;
+	}
+}
+
+void
+proc_ext_on_exec(struct proc *p)
+{
+	struct proc_ext *p_ext = p->p_ext;
+
+	while (p_ext)
+	{
+		if (p_ext->cb_vector && p_ext->cb_vector->on_exec)
+			(*p_ext->cb_vector->on_exec)(p_ext->data, p);
+
+		p_ext = p_ext->next;
+	}
+}
+
+void
+proc_ext_on_fork(struct proc *p, long flags, struct proc *child)
+{
+	struct proc_ext *p_ext = p->p_ext;
+
+	while (p_ext)
+	{
+		if (p_ext->cb_vector && p_ext->cb_vector->on_fork)
+			(*p_ext->cb_vector->on_fork)(p_ext->data, p, flags, child);
+
+		p_ext = p_ext->next;
+	}
+}
+
+void
+proc_ext_on_stop(struct proc *p, unsigned short nr)
+{
+	struct proc_ext *p_ext = p->p_ext;
+
+	while (p_ext)
+	{
+		if (p_ext->cb_vector && p_ext->cb_vector->on_stop)
+			(*p_ext->cb_vector->on_stop)(p_ext->data, p, nr);
+
+		p_ext = p_ext->next;
+	}
+}
+
+void
+proc_ext_on_signal(struct proc *p, unsigned short nr)
+{
+	struct proc_ext *p_ext = p->p_ext;
+
+	while (p_ext)
+	{
+		if (p_ext->cb_vector && p_ext->cb_vector->on_signal)
+			(*p_ext->cb_vector->on_signal)(p_ext->data, p, nr);
+
+		p_ext = p_ext->next;
+	}
 }

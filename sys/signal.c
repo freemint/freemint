@@ -28,6 +28,7 @@
 # include "k_exit.h"
 # include "k_prot.h"
 # include "proc.h"
+# include "proc_help.h"
 # include "util.h"
 
 
@@ -146,10 +147,10 @@ killgroup (int pgrp, ushort sig, int priv)
 void
 post_sig (PROC *p, ushort sig)
 {
-	ulong sigm;
+	unsigned long sigm;
 
 	/* just to be sure */
-	assert (sig < NSIG);
+	assert(sig < NSIG);
 
 	/* if the process is already dead, do nothing */
 	if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
@@ -181,7 +182,7 @@ post_sig (PROC *p, ushort sig)
 		return;
 	}
 
-	assert (p->p_sigacts);
+	assert(p->p_sigacts);
 
 	/* if process is ignoring this signal, do nothing
 	 * also: signal 0 is SIGNULL, and should never be delivered through
@@ -201,7 +202,7 @@ post_sig (PROC *p, ushort sig)
 	}
 
 	/* mark the signal as pending */
-	sigm = (1L << (ulong) sig);
+	sigm = (1L << (unsigned long) sig);
 	p->sigpending |= sigm;
 
 	/* if the signal is masked, do nothing further
@@ -215,13 +216,13 @@ post_sig (PROC *p, ushort sig)
 
 	/* otherwise, make sure the process is awake */
 	{
-		ushort sr = spl7 ();
+		unsigned short sr = splhigh();
 		if (p->wait_q && p->wait_q != READY_Q)
 		{
-			rm_q (p->wait_q, p);
-			add_q (READY_Q, p);
+			rm_q(p->wait_q, p);
+			add_q(READY_Q, p);
 		}
-		spl (sr);
+		spl(sr);
 	}
 }
 
@@ -362,6 +363,9 @@ handle_sig (ushort sig)
 	/* just to be sure */
 	assert (sig < NSIG);
 	assert (curproc->p_sigacts);
+
+	/* notify proc extensions */
+	proc_ext_on_signal(curproc, sig);
 
 	curproc->last_sig = sig;
 	if (SIGACTION(curproc, sig).sa_handler == SIG_IGN)
@@ -550,7 +554,7 @@ stop (ushort sig)
 		if (p) assert (p->p_sigacts);
 		if (p && !(SIGACTION(p, SIGCHLD).sa_flags & SA_NOCLDSTOP))
 		{
-			ushort sr;
+			unsigned short sr;
 
 			post_sig (p, SIGCHLD);
 
@@ -573,6 +577,9 @@ stop (ushort sig)
 		/* mask out most signals */
 		curproc->p_sigmask |= ~(UNMASKABLE | SIGTERM);
 	}
+
+	/* notify proc extensions */
+	proc_ext_on_stop(curproc, sig);
 
 	/* sleep until someone signals us awake */
 	sleep (STOP_Q, (long) code | 0177);
