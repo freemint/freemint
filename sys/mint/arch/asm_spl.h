@@ -34,14 +34,24 @@
 # ifndef _mint_m68k_asm_spl_h
 # define _mint_m68k_asm_spl_h
 
-/* Used inside init.c near the end of init() */
+/* Called inside init.c */
 
 static inline void
-low_power_stop (void)
+cpu_stop (void)
 {
 	__asm__ volatile
 	(
 		"stop  #0x2000"
+	);
+}
+
+static inline void
+cpu_lpstop (void)
+{
+	/* 68060's lpstop #$2000 instruction */
+	__asm__ volatile
+	(
+		"dc.w	0xf800,0x01c0,0x2000"
 	);
 }
 
