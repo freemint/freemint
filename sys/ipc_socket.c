@@ -208,11 +208,11 @@ error:
 	if (rso) so_free (rso);
 	if (wso) so_free (wso);
 	
-	if (rf) { rf->links--; fp_free (rf); }
-	if (wf) { wf->links--; fp_free (wf); }
+	if (rf) { rf->links--; FP_FREE (rf); }
+	if (wf) { wf->links--; FP_FREE (wf); }
 	
-	if (rfd >= MIN_OPEN) fd_remove (p, rfd);
-	if (wfd >= MIN_OPEN) fd_remove (p, wfd);
+	if (rfd >= MIN_OPEN) FD_REMOVE (p, rfd);
+	if (wfd >= MIN_OPEN) FD_REMOVE (p, wfd);
 	
 	DEBUG (("sys_pipe: failure %li", ret));
 	return ret;
@@ -267,15 +267,15 @@ sys_socket (long domain, long type, long protocol)
 	fp->devinfo = (long) so;
 	fp->dev = &sockdev;
 	
-	fp_done (p, fp, fd, FD_CLOEXEC);
+	FP_DONE (p, fp, fd, FD_CLOEXEC);
 	
 	DEBUG (("sys_socket: fd %i", fd));
 	return fd;
 	
 error:
 	if (so) so_free (so);
-	if (fp) { fp->links--; fp_free (fp); }
-	if (fd >= MIN_OPEN) fd_remove (p, fd);
+	if (fp) { fp->links--; FP_FREE (fp); }
+	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
 	
 	DEBUG (("sys_socket: failure %li", ret));
 	return ret;
@@ -318,8 +318,8 @@ sys_socketpair (long domain, long type, long protocol, short fds[2])
 	ret = (*so1->ops->socketpair)(so1, so2);
 	if (!ret)
 	{
-		fp_done (p, fp1, fd1, FD_CLOEXEC);
-		fp_done (p, fp2, fd2, FD_CLOEXEC);
+		FP_DONE (p, fp1, fd1, FD_CLOEXEC);
+		FP_DONE (p, fp2, fd2, FD_CLOEXEC);
 		
 		fds[0] = fd1;
 		fds[1] = fd2;
@@ -334,11 +334,11 @@ error:
 	if (so1) so_free (so1);
 	if (so2) so_free (so2);
 	
-	if (fp1) { fp1->links--; fp_free (fp1); }
-	if (fp2) { fp2->links--; fp_free (fp2); }
+	if (fp1) { fp1->links--; FP_FREE (fp1); }
+	if (fp2) { fp2->links--; FP_FREE (fp2); }
 	
-	if (fd1 >= MIN_OPEN) fd_remove (p, fd1);
-	if (fd2 >= MIN_OPEN) fd_remove (p, fd2);
+	if (fd1 >= MIN_OPEN) FD_REMOVE (p, fd1);
+	if (fd2 >= MIN_OPEN) FD_REMOVE (p, fd2);
 	
 	DEBUG (("sys_socketpair: failure %li", ret));
 	return ret;
@@ -454,7 +454,7 @@ sys_accept (short fd, struct sockaddr *addr, long *addrlen)
 			*addrlen = addrlen16;
 	}
 	
-	fp_done (p, newfp, newfd, FD_CLOEXEC);
+	FP_DONE (p, newfp, newfd, FD_CLOEXEC);
 	
 	DEBUG (("sys_accept: newfd %i", newfd));
 	return newfd;
@@ -463,8 +463,8 @@ error:
 	so_drop (so, fp->flags & O_NDELAY);
 error1:
 	if (newso) so_free (newso);
-	if (newfp) fp_free (newfp);
-	if (newfd >= MIN_OPEN) fd_remove (p, newfd);
+	if (newfp) FP_FREE (newfp);
+	if (newfd >= MIN_OPEN) FD_REMOVE (p, newfd);
 	
 	return ret;
 }

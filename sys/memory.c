@@ -1681,7 +1681,7 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 	long size, start;
 	FILEHEAD fh;
 	
-	*err = fp_alloc (curproc, &f);
+	*err = FP_ALLOC (curproc, &f);
 	if (*err) return NULL;
 	
 	/* bug: this should be O_DENYW mode, not O_DENYNONE
@@ -1697,7 +1697,7 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 	if (*err)
 	{
 		f->links--;
-		fp_free (f);
+		FP_FREE (f);
 		return NULL;
 	}
 	

@@ -148,14 +148,14 @@ load_module (const char *filename, long *err)
 	long size;
 	FILEHEAD fh;
 	
-	*err = fp_alloc (rootproc, &f);
+	*err = FP_ALLOC (rootproc, &f);
 	if (*err) return NULL;
 	
 	*err = do_open (&f, filename, O_DENYW | O_EXEC, 0, NULL);
 	if (*err)
 	{
 		f->links--;
-		fp_free (f);
+		FP_FREE (f);
 		return NULL;
 	}
 	

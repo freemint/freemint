@@ -181,7 +181,7 @@ _ALERT (char *s)
 	debug_level = 0;
 	debug_logging = 0;
 	
-	ret = fp_alloc (rootproc, &fp);
+	ret = FP_ALLOC (rootproc, &fp);
 	if (!ret)
 		ret = do_open (&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
 	
