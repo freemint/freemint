@@ -823,7 +823,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			if (m)
-				send_a_message(lock, dest_clnt, amq, qmf/*QMF_CHKDUP*/, m);
+				send_a_message(lock, dest_clnt, amq, qmf, m);
 			
 			if (dest_clnt != client)
 				yield();
@@ -1228,6 +1228,8 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 			pb->intout[0] = client->p->pid;
 			DIAG((D_appl, client, "   Mode NULL"));
 		}
+		else
+			pb->intout[0] = p_getpid();
 	}
 	else
 	{
