@@ -444,17 +444,22 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (events & (MU_M1|MU_M2|MU_MX))
 	{
 		struct xa_window *wind;
-		struct xa_client *wo = NULL;
+		struct xa_client *wo = NULL, *locker;
 
 		bzero(&client->em, sizeof(client->em));
 
 		check_mouse(client, NULL, &x, &y);
 
+		locker = mouse_locked();
+		if (!locker)
+			locker = update_locked();
+
 		wind = find_window(0, x, y);
 		if (wind)
 			wo = wind == root_window ? get_desktop()->owner : wind->owner;
 
-		if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
+		if ( (locker && locker == client) ||
+		     (is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED))) )
 		{
 			if (events & MU_M1)
 			{
@@ -791,7 +796,7 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	short x, y;
 	struct xa_window *wind;
-	struct xa_client *wo = NULL;
+	struct xa_client *wo = NULL, *locker;
 
 	CONTROL(5,5,0)
 
@@ -810,11 +815,16 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->em.m1 = *((const RECT *) &pb->intin[1]);
 	client->em.flags = (long)(pb->intin[0]) | MU_M1;
 
+	locker = mouse_locked();
+	if (!locker)
+		locker = update_locked();
+
 	check_mouse(client, NULL, &x, &y);
 	wind = find_window(0, x, y);
 	if (wind)
 		wo = wind == root_window ? get_desktop()->owner : wind->owner;
-	if ( is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED)) )
+	if ( (locker && locker == client) ||
+	     (is_infront(client) || !wo || (wo && wo == client && (is_topped(wind) || wind->active_widgets & NO_TOPPED))) )
 	{
 		if (mouse_ok(client) && is_rect(x, y, client->em.flags & 1, &client->em.m1))
 		{

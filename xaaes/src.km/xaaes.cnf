@@ -96,6 +96,18 @@ usehome = yes
 #dc_time = 50
 
 #
+# Mouse packet time-gap. This is the time (in 200hz timer tics) that
+# must pass after a button-release event before a new button-press
+# event is accepted by moose.adi. Because of unstable mouse-buttons,
+# a button-press may follow immediately after a button-release, creating
+# and "extra" mouse-click. This is especially annoying when releasing
+# the right-button after a drag-session (Thing's directory-window, for
+# example), and the "extra-click" fires some unwanted action.
+#
+#mp_timegap (default is 3)
+ 
+# 
+#
 # menu = pull or push or leave + optional nolocking
 # default is 
 #
