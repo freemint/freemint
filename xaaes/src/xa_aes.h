@@ -28,6 +28,7 @@
 #ifndef _xa_aes_h
 #define _xa_aes_h
 
+#include "mt_gem.h"
 #include "mt_gemx.h"
 
 /* TODO: Usage of RECT should be eliminated somehow
