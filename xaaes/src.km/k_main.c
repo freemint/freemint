@@ -328,7 +328,7 @@ init_moose(void)
 	}
 	else
 	{
-		display("Could not find moose.adi, please install in %s!", sysdir);
+		display("Could not find moose.adi, please install in %s!", C.Aes->home_path);
 	}
 
 	return ret;
