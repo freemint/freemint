@@ -104,15 +104,13 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
 long _cdecl
 XA_handler(void *_pb)
 {
-	AESPB *pb = _pb;
+	register AESPB *pb = _pb;
 	struct xa_client *client;
 	short cmd;
 
-//	DIAG((D_trap, NULL, "XA_handler (pb=%lx)", pb));
-
 	if (!pb)
 	{
-		ALERT(("XaAES: No Parameter Block (pid %d)\n", p_getpid()));
+		DIAGS(("XaAES: No Parameter Block (pid %d)\n", p_getpid()));
 		raise(SIGSYS);
 
 		/* not reached */
@@ -126,7 +124,7 @@ XA_handler(void *_pb)
 	{
 		pb->intout[0] = 0;
 
-		ALERT(("XaAES: AES trap for non AES process (pid %d)\n", p_getpid()));
+		DIAGS(("XaAES: AES trap (cmd %i) for non AES process (pid %ld, pb 0x%lx)\n", cmd, p_getpid(), pb));
 		raise(SIGILL);
 
 		/* not reached */
@@ -206,8 +204,8 @@ XA_handler(void *_pb)
 			/* callout the AES function */
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
 
-//			DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
-//				op_code_names[cmd], cmd, cmd_rtn, client->name));
+			DIAG((D_trap, client, " %s[%d] retuned %ld for %s",
+				op_code_names[cmd], cmd, cmd_rtn, client->name));
 
 			if (aes_tab[cmd].p & LOCKSCREEN)
 				unlock_screen(client, 2);

@@ -52,6 +52,7 @@ static char *scls_name = "xaaes.cnf";
 static char Aes_display_name[32];
 Path Aes_home_path;
 
+long loader_pid = -1;
 struct file *log = NULL;
 
 
@@ -152,6 +153,8 @@ init(struct kentry *k)
 
 	if (check_kentry_version())
 		return NULL;
+
+	loader_pid = p_getpid();
 
 	/* open the log
 	 * if failed nothing is written; fdisplay is failsafe

@@ -501,7 +501,7 @@ find_focus(bool *waiting, struct xa_client **locked_client)
 		return top->owner;
 	}
 
-	/* HR 141201: special case, no menu bar, possibly no windows either
+	/* special case, no menu bar, possibly no windows either
 	 * but a dialogue on the screen, not governed by form_do. (handled above)
 	 * The client must also be waiting.
 	 */
@@ -523,7 +523,7 @@ find_focus(bool *waiting, struct xa_client **locked_client)
 	if (locked)
 	{
 		client = locked;
-		if (client->fmd.keypress) /* HR 250602 classic (blocked) form_do */
+		if (client->fmd.keypress) /* classic (blocked) form_do */
 		{
 			*waiting = true;
 			DIAGS(("-= 4 =-"));
@@ -538,13 +538,10 @@ find_focus(bool *waiting, struct xa_client **locked_client)
 		}
 	}
 
-	/* HR 131202: removed some spuriosuty and unclear stuff (things got too complex) */
-	/* If C.focus == rootwindow, then the top_window owner is not the menu owner;
-	                 the menu has prcedence, and the top window isnt drawn bold. */
 	client = focus_owner();
 	*waiting = (client->waiting_for & (MU_KEYBD|MU_NORM_KEYBD)) != 0 || top->keypress != NULL;
-	DIAGS(("-= 9 =-"));
 
+	DIAGS(("-= 9 =-"));
 	return client;
 }
 

@@ -579,7 +579,8 @@ out:
 	if (tail != argvtail)
 		free(tail);
 
-	DIAG((D_shel, 0, "Launch for %s returns child %d", c_owner(caller), ret));
+	DIAG((D_shel, 0, "Launch for %s returns child %d (bp 0x%lx)",
+		c_owner(caller), ret, p ? p->base : NULL));
 	DIAG((D_shel, 0, "Remove ARGV"));
 
 	/* Remove ARGV */
