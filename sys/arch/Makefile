@@ -21,6 +21,14 @@ all-here: startup objs
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 
+NOCFLAGS-mprot030.c = -m68000 -m68020 -m68040 -m68060 -m68020-60
+NOCFLAGS-mprot040.c = -m68000 -m68020 -m68030 -m68040 -m68020-60
+CFLAGS-mprot030.c = -m68030
+CFLAGS-mprot040.c = -m68060
+
+cflags = $(kernel_cflags)
+nocflags = $(kernel_nocflags)
+
 # default definitions
 OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.spp=%.o)
 ASMTRANS = asmtrans/asmtrans
@@ -32,18 +40,6 @@ startup: $(STARTUP)
 
 objs: $(OBJS)
 	echo $(OBJS) > $@
-
-# overwrite the default
-# gcc brings errors without -m68030 option
-mprot030.o: mprot030.c
-	@echo "$(CC) $(CFLAGS) -m68030 -c $< -o $@"; \
-	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -m68030 -c $< -o $@
-
-# overwrite the default
-# gcc brings errors without -m68040 option
-mprot040.o: mprot040.c
-	@echo "$(CC) $(CFLAGS) -m68040 -c $< -o $@"; \
-	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -m68040 -c $< -o $@
 
 #
 # assembler source files

@@ -5,7 +5,8 @@ STARTUP = startup.o
 
 COBJS = \
 	mprot030.c \
-	mprot040.c
+	mprot040.c \
+	timer.c
 
 SOBJS = \
 	context.spp \
