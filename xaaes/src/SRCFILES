@@ -27,6 +27,7 @@ HEADER = \
 	op_names.h \
 	rectlist.h \
 	scrlobjc.h \
+	semaphores.h \
 	signals.h \
 	taskman.h \
 	trnfm.h \
@@ -71,6 +72,7 @@ COBJS = \
 	nkcc.c \
 	rectlist.c \
 	scrlobjc.c \
+	semaphores.c \
 	signals.c \
 	taskman.c \
 	trnfm.c \
