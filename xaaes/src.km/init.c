@@ -41,6 +41,7 @@
 #include "semaphores.h"
 #include "xa_shel.h"
 #include "xa_appl.h"
+#include "taskman.h"
 
 #include "version.h"
 
@@ -429,6 +430,10 @@ init(struct kentry *k, const char *path)
 
 	C.Aes->options = default_options;
 
+//	addto_namelist(&cfg.ctlalta, "taskbar ");
+//	addto_namelist(&cfg.ctlalta, "strngsrv");
+//	addto_namelist(&cfg.ctlalta, "toswin2 ");
+	
 	/* Parse the config file */
 	load_config();
 
@@ -450,7 +455,7 @@ init(struct kentry *k, const char *path)
 			FATAL("can't create XaAES kernel thread");
 
 	}
-
+	
 	{
 		struct proc *p = get_curproc();
 		ulong oldmask;

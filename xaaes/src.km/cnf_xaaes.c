@@ -28,6 +28,7 @@
 
 #include "xa_global.h"
 #include "xa_shel.h"
+#include "taskman.h"
 
 #include "cnf_xaaes.h"
 #include "init.h"
@@ -63,6 +64,7 @@ static PCB_T	pCB_close_lastwind;
 static PCB_A	pCB_app_options;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
+static PCB_A	pCB_ctlalta_survivors;
 static PCB_T    pCB_menu;
 static PCB_A    pCB_helpserver;
 
@@ -104,11 +106,12 @@ static struct parser_item parser_tab[] =
 	
 	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
-	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind	},
+	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
 	{ "FOCUS",                 PI_V_T,   pCB_point_to_type		},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
-	{ "CANCEL",                PI_V_A,   pCB_cancel		},
+	{ "CANCEL",                PI_V_A,   pCB_cancel			},
 	{ "FILTERS",               PI_V_A,   pCB_filters		},
+	{ "CTLALTA_SURVIVORS",	   PI_V_A,   pCB_ctlalta_survivors	},
 	{ "MENU",                  PI_V_T,   pCB_menu			},
 	{ "HELPSERVER",            PI_V_A,   pCB_helpserver		},
 	
@@ -582,6 +585,96 @@ pCB_filters(char *line)
 	}
 }
 
+static char *
+isolate_strarg(char **str)
+{
+	char *s, *e, *ret = NULL;
+
+	DIAGS(("isolate_strarg: start=%lx", *str));
+
+	s = *str;
+
+	s = skip(s);
+	
+	DIAGS((" -- remaining='%s'", s));
+	
+	if (*s == 0x22 || *s == 0x27)
+	{
+		s++;
+		e = s;
+		while (1)
+		{
+			if (!*e || (*e && (*e == '\r' || *e == '\n' || *e == ',')))
+			{
+				DIAGS(("isolate_string: missing end quote!"));
+				break;
+			}
+			
+			if (*e != 0x5c && (*e == 0x22 || *e == 0x27))
+			{
+				ret = s;
+				if (*e)
+					*e++ = 0;
+				break;
+			}
+			e++;
+		}
+#if GENERATE_DIAGS
+		if (ret)
+		{
+			DIAGS((" -- got quoted string = '%s', start of next = %lx", ret, e));
+		}
+		else
+			DIAGS((" -- some error"));
+#endif
+	}
+	else
+	{
+		e = s;
+
+		while (*e
+			&& *e != '\r'
+			&& *e != '\n'
+			&& *e != ',') e++;
+	
+		if (s != e)
+		{
+			ret = s;
+			if (*e)
+				*e++ = 0;
+		}
+		
+#if GENERATE_DIAGS
+		if (ret)
+		{
+			DIAGS((" -- got unquoted string = '%s', start of next = %lx", ret, e));
+		}
+		else
+			DIAGS((" -- some unquote error"));
+#endif		
+	}
+	
+	if (ret)
+	{
+		*str = e;
+	}
+	
+	return ret;
+}
+
+
+static void
+pCB_ctlalta_survivors(char *line)
+{
+	char *s;
+
+	while ((s = isolate_strarg(&line)))
+	{
+		DIAGS(("pCB_ctlalta_surv: Got string '%s'", s));
+		addto_namelist(&cfg.ctlalta, s);
+	}
+}
+	
 /*----------------------------------------------------------------------------*/
 static void
 pCB_menu(char *line)

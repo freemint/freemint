@@ -165,7 +165,7 @@ no definitions are made yet.
 
      wind_set(wh, WF_SHADE, mode, p2, p3, p4)
 
-     'mode' selects wether to SHADE (mode = 1) or UNSHADE (mode = 0) the
+     'mode' selects wether to SHADE (mode = -1) or UNSHADE (mode = 0) the
      window in question. p2, p3 and p4 are usused at the moment and
      must be set to 0.
 

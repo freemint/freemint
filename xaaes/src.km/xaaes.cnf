@@ -312,6 +312,36 @@ menu = leave
 #app_options = ataricq, thinwork = true, winframe_size = 1
 
 #
+# ctlalta_survivors = <list of app-names>
+#
+# 'app-names' is the filename part of the program file, padded with
+# spaces to fit 8 characters. This is NOT the 'nice' name. So, if your
+# Toswin2 binary is named "tw2.app", you use "tw2     ". Each app-name
+# is separated with comma.
+#
+# This will allow you to specify which applications XaAES does not
+# attempt to terminate when user presses CTRL-ALT-A to quit all
+# applications. Normally, this keycombo quits all running applications
+# leaving only XaAES. However, most of the time, keeping certain
+# applications running is preferred, such as the desktop, the taskbar,
+# av-server application, etc, etc.
+#
+# One special name is '_aes_shell_', which will prevent XaAES from
+# terminating the desktop loaded via "shell = " configuration variable.
+# One can still use the name of the desktop program if it is konwn, but
+# an easier way is to use '_aes_shell_', as that will work without
+# further configuration modifications when one changes desktop from, say,
+# Thing to Jinnee.
+#
+# If you want to bypass this setting, and quit ALL applications, leaving
+# only XaAES, you can press ctrl-alt-shift-a.
+#
+# The following will keep the desktop, taskbar and toswin2 running after
+# a ctrl-alt-a action;
+#
+#cltalta_survivors = "_aes_shell_", "taskbar ", "toswin2 "
+
+#
 # clipboard = <path>   # path to clipboard
 # accpath   = <path>   # path from which accs are loaded
 # launcher  = <path>   # path to tos program launcher

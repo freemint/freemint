@@ -286,6 +286,14 @@ struct helpserver
 	char *path; /* optional */
 };
 
+struct cfg_name_list;
+struct cfg_name_list
+{
+	struct cfg_name_list *next;
+	short nlen;
+	char name[32];
+};
+	
 struct config
 {
 	Path launch_path;		/* Initial path for launcher */
@@ -350,6 +358,7 @@ struct config
 	short videomode;		/* ID of screen device opened by v_opnwk() */
 
 	struct helpserver *helpservers;	/* configured helpservers */
+	struct cfg_name_list *ctlalta;
 
 	/* postponed cnf things */
 	char *cnf_shell;		/* SHELL= */

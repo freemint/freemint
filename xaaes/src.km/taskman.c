@@ -108,6 +108,112 @@ refresh_tasklist(enum locks lock)
 
 static struct xa_window *task_man_win = NULL;
 
+bool
+isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_name_list **last, struct cfg_name_list **prev)
+{
+	bool ret = false;
+
+	if (!nlen)
+		nlen = strlen(name);
+
+	DIAGS(("isin_namelist: find '%s'(len=%d) in list=%lx (name='%s', len=%d)",
+		name, nlen, list,
+		list ? list->name : "noname",
+		list ? list->nlen : -1));
+
+	if (last)
+		*last = NULL;
+	if (prev)
+		*prev = NULL;
+	
+	while (list)
+	{
+		DIAGS((" -- checking list=%lx, name=(%d)'%s'",
+			list, list->nlen, list->name));
+
+		if (list->nlen == nlen && !strnicmp(list->name, name, nlen))
+		{
+			ret = true;
+			break;
+		}
+		if (prev)
+			*prev = list;
+		
+		list = list->next;
+	}
+
+	if (last)
+		*last = list;
+	
+	DIAGS((" -- ret=%s, last=%lx, prev=%lx",
+		ret ? "true":"false", last, prev));
+
+	return ret;
+}
+			
+void
+addto_namelist(struct cfg_name_list **list, char *name)
+{
+	struct cfg_name_list *new, *prev;
+	short nlen = strlen(name);
+
+	DIAGS(("addto_namelist: add '%s' to list=%lx(%lx)", name, *list, list));
+	
+	if (nlen && !isin_namelist(*list, name, 0, NULL, &prev))
+	{
+		new = kmalloc(sizeof(*new));
+	
+		if (new)
+		{
+			if (nlen > 32)
+				nlen = 32;
+
+			bzero(new, sizeof(*new));
+
+			if (prev)
+			{
+				DIAGS((" -- add new=%lx to prev=%lx", new, prev));
+				prev->next = new;
+			}
+			else
+			{
+				DIAGS((" -- add first=%lx to start=%lx", new, list));
+				*list = new;
+			}
+			strcpy(new->name, name);
+			new->nlen = nlen;
+		}
+	}
+}
+
+void
+removefrom_namelist(struct cfg_name_list **list, char *name, short nlen)
+{
+	struct cfg_name_list *this, *prev;
+
+	if (isin_namelist(*list, name, nlen, &this, &prev))
+	{
+		if (prev)
+			prev->next = this->next;
+		else
+			*list = this->next;
+		kfree(this);
+	}
+}
+
+void
+free_namelist(struct cfg_name_list **list)
+{
+	while (*list)
+	{
+		struct cfg_name_list *l = *list;
+		*list = (*list)->next;
+		DIAGS(("free_namelist: freeing %lx, next=%lx(%lx) name='%s'",
+			l, *list, list, l->name));
+		kfree(l);
+	}
+}
+
 void
 update_tasklist(enum locks lock)
 {
@@ -202,6 +308,37 @@ quit_all_apps(enum locks lock, struct xa_client *except)
 		}
 	}
 
+	Sema_Dn(clients);
+}
+
+void
+quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl)
+{
+	struct xa_client *client, *dsk = NULL;
+
+	Sema_Up(clients);
+	lock |= clients;
+
+	DIAGS(("quit_all_clients: name_list=%lx, except_client=%lx", except_nl, except_cl));
+	/*
+	 * '_aes_shell' is special. If it is defined, we lookup the pid of
+	 * the shell (desktop) loaded by the AES and let it continue to run
+	 */
+	if (isin_namelist(except_nl, "_aes_shell_", 11, NULL, NULL))
+	{
+		dsk = pid2client(C.DSKpid);
+		DIAGS((" -- _aes_shell_ defined: pid=%d, client=%lx, name=%s",
+			C.DSKpid, dsk, dsk ? dsk->name : "no shell loaded"));
+	}
+	
+	FOREACH_CLIENT(client)
+	{
+		if (is_client(client) && client != except_cl && !isin_namelist(except_nl, client->proc_name, 8, NULL, NULL))
+		{
+			DIAGS(("Shutting down %s", c_owner(client)));
+			send_terminate(lock, client);
+		}
+	}
 	Sema_Dn(clients);
 }
 

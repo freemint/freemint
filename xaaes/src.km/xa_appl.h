@@ -30,6 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
+struct xa_client *init_client(enum locks lock);
+
 bool is_client(struct xa_client *client);
 void exit_proc(enum locks lock, struct proc *proc);
 void exit_client(enum locks lock, struct xa_client *client, int code);
