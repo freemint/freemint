@@ -188,15 +188,17 @@ list_resource(XA_CLIENT *client, void *resource)
 	new = XA_alloc(&client->base, sizeof(XA_RSCS), 2, 0);
 	if (new)
 	{
-		DIAG((D_rsrc, client, "list_resource %ld(%lx) for %s rsc:%ld(%lx)\n",
-			new, new, c_owner(client), resource, resource));
+		DIAG((D_rsrc, client, "list_resource %ld(%lx) for %s rsc:%ld(%lx) rscs %lx\n",
+			new, new, c_owner(client), resource, resource, client->resources));
 
-		if (client->resources)
-			client->resources->prior = new;
-
+		/* hook it to the chain (double linked list) */
 		new->next = client->resources;
-		client->resources = new;			
 		new->prior = NULL;
+		if (new->next)
+			new->next->prior = new;
+		client->resources = new;			
+
+		/* set defaults up */
 		new->id = 2;
 		new->handle = client->rsct;
 		new->rsc = resource;
@@ -432,8 +434,7 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 			DIAG((D_rsrc, client, "fixed up %d color icons\n", numCibs));
 		}
 
-		if (0 /*FIXME: the palette support doesn't work yet properly*/ &&
-		    earray[1] > 0L && earray[2] > 0L) /* Get color palette */
+		if (earray[1] > 0L && earray[2] > 0L) /* Get color palette */
 		{
 			short *rsrc_colour_lut = (short *)(earray[2] + (long)base);
 
@@ -443,16 +444,18 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 			vdih = C.P_handle;
 			v_opnvwk(work_in, &vdih, work_out);
 
+			DIAG((D_rsrc, client, "Color palette present\n"));
+
 			/* set the palette up to the vdi workstation */
 			for (rc=0;rc<16;rc++) {
 				static short tos_colours[] = { 0, 255, 1, 2, 4, 6, 3, 5, 7, 8, 9, 10, 12, 14, 11, 13};
 				vs_color( vdih, rc, &rsrc_colour_lut[tos_colours[rc]*4] );
 			}
-			vs_color( vdih, 255, &rsrc_colour_lut[15*4] );
-
 			/* 1:1 mapping for other colors */
 			for (rc=16;rc<255;rc++)
 				vs_color( vdih, rc, &rsrc_colour_lut[rc*4] );
+			/* the last one mapped to 15 seee tos_colours */
+			vs_color( vdih, 255, &rsrc_colour_lut[15*4] );
 		}
 	}
 
@@ -505,6 +508,10 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 		}
 	}
 
+	/**
+	 * Close the virtual workstation that handled the RSC
+	 * color palette (if present).
+	 */
 	if ( vdih != C.vh )
 		v_clsvwk(vdih);
 
@@ -572,12 +579,11 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 	XA_RSCS *cur;
 	RSHDR *rsc = NULL;
 
-	if (pb)
-		if (pb->global)
-			rsc = ((struct aes_global *)pb->global)->rshdr;
+	if (pb && pb->global)
+		rsc = ((struct aes_global *)pb->global)->rshdr;
 
 	cur = client->resources;
-	DIAG((D_rsrc,client,"FreeResources: %ld for %d, ct=%d, pb->global->rsc=%lx\n",
+	DIAG((D_rsrc,client,"FreeResources: %lx for %d, ct=%d, pb->global->rsc=%lx\n",
 		cur, client->pid, client->rsct, rsc));
 
 	if (cur && client->rsct)
@@ -586,7 +592,8 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 		while (cur)
 		{
 			bool have = rsc && rsc == cur->rsc;
-			XA_RSCS *nx = cur->next;
+			DIAG((D_rsrc,client,"Free: test cur %lx\n", (long)cur));
+
 			if (   have
 			    || (!rsc && cur->handle == client->rsct))	/* free the entry for the freed rsc. */
 			{
@@ -610,22 +617,27 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 		
 				XA_free_all(&client->base, -1, client->rsct);
 
+				/* unhook the entry from the chain */
 				if (cur->prior)
 					cur->prior->next = cur->next;
 				if (cur->next)
 					cur->next->prior = cur->prior;
+
 				DIAG((D_rsrc,client,"Free cur %lx\n", (long)cur - 16));
 				XA_free(&client->base, cur);
 			}
 			else if (cur->handle == client->rsct - 1)
 			{
+				DIAG((D_rsrc,client,"Free: Rsrc_setglobal %lx\n", cur->rsc));
+
 				/* Yeah, there is a resource left! */
 				client->rsrc = cur->rsc;
 				Rsrc_setglobal(cur->rsc, client->globl_ptr);
 			}
 			if (have)
 				break;
-			cur = nx;
+
+			cur = cur->next;
 		}
 		client->rsct--;
 	}
