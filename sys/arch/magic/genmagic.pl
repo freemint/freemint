@@ -1,10 +1,12 @@
-#! /usr/bin/perl
-# genmagic -- dump magics from (crosscompiled...) genmagic executable
-#
+#!/usr/bin/perl
+# 
+# genmagic -- dump magics from (crosscompiled...) genmagic.o object
+# file
+# 
 # This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
 # distribution.
 #                                                                              
-$f = 'genmagic';
+$f = 'genmagic.o';
 $firstsym = 'C_PTRACE';
 $val = 'A28 N';
 #       const char name[28];
