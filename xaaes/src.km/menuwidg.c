@@ -179,7 +179,9 @@ bool
 is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat)
 {
 	XA_MENU_ATTACHMENT *at = client->attach;
-	//OBJECT *attach_to = wt->tree + item;
+#if GENERATE_DIAGS
+	OBJECT *attach_to = wt->tree + item;
+#endif
 	int i;
 
 	DIAGS(("is_attach: for %s, wt=%lx, obj=%d, obtree=%lx",
@@ -664,7 +666,7 @@ menu_finish(struct task_administration_block *tab)
 		unlock_menustruct(menustruct_locked());
 }
 
-static Tab *
+Tab *
 collapse(Tab *tab, Tab *upto)
 {
 	DIAG((D_menu,NULL,"collapse tab:%lx, upto:%lx", tab, upto));
@@ -1128,6 +1130,21 @@ popup(struct task_administration_block *tab)
 			k->em.t1 = where_are_we;
 		}
 	}
+}
+
+Tab *
+find_pop(Tab *tab, short x, short y)
+{
+	do {
+		RECT r = tab->task_data.menu.drop;
+		bool in = m_inside(x ,y , &r);
+		if (in)
+			break;
+		tab = tab->nest;
+	}
+	while (tab);
+
+	return tab;
 }
 
 static Tab *

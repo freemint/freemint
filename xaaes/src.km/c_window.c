@@ -823,15 +823,15 @@ do_rootwind_msg(
 			
 			if (get_desktop()->owner == to && widg->display)
 			{
-				if (to != C.Aes)
-					lock_screen(to, false, NULL, 3);
+				//if (to != C.Aes)
+				//	lock_screen(to, false, NULL, 3);
 				hidem();
 				set_clip((RECT *)&msg[4]);
 				widg->display(0, root_window, widg);
 				clear_clip();
 				showm();
-				if (to != C.Aes)
-					unlock_screen(to, 4);
+				//if (to != C.Aes)
+				//	unlock_screen(to, 4);
 			}
 			break;
 		}
@@ -1179,6 +1179,9 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 	      wind->is_open ? "open" : "closed",
 	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, X,Y,W,H));
 
+	if (C.redraws)
+		yield();
+
 	new.x = X;
 	new.y = Y;
 	new.w = W;
@@ -1331,7 +1334,7 @@ close_window(enum locks lock, struct xa_window *wind)
 				break;
 			}
 		}
-	}			
+	}
 	return true;
 }
 

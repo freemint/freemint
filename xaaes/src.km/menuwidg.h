@@ -41,6 +41,10 @@ void	remove_attachments(enum locks lock, struct xa_client *client, XA_TREE *wt);
 void	set_menu_widget(struct xa_window *wind, XA_TREE *menu);
 void	fix_menu(struct xa_client *client, OBJECT *root, bool);
 
+Tab *	collapse(Tab *from, Tab *upto);
+Tab *	find_pop(Tab *start, short x, short y);
+
+
 INLINE	struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW_MENU]; }
 //INLINE XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
 INLINE	XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
