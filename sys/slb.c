@@ -80,9 +80,6 @@ SHARED_LIB *slb_list = NULL;
  * basepage (which in turn is read by s_lbopen()). After that, it goes to
  * sleep, and calls the library's exit() function when it is woken up again.
  *
- * BUGS: Can be killed by a regular Pkill(), so that the library dies while
- * still being in use.
- *
  * Input:
  * b: Pointer to the basepage
  */
@@ -439,6 +436,7 @@ slb_error:
 	strcpy((*sl)->slb_name, name);
 	(*sl)->slb_proc = pid2proc(newpid);
 	assert((*sl)->slb_proc);
+	(*sl)->slb_proc->p_flag |= 3;	/* mark as SLB (2) and unkillable process (1) */
 	(*sl)->slb_next = slb_list;
 	slb_list = *sl;
 	mark_proc_region(curproc, mr, PROT_PR);
@@ -691,6 +689,7 @@ s_lbclose(SHARED_LIB *sl)
 		 * finally removed from memory
 		 */
 		slb->slb_name[0] = 0;
+		slb->slb_proc->p_flag &= ~3;
 		mark_proc_region(curproc, slb->slb_region, PROT_PR);
 		p_kill(pid, SIGCONT);
 	}
