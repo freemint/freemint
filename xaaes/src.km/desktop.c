@@ -48,7 +48,7 @@ get_desktop(void)
 }
 
 bool
-click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, struct moose_data *md)
+click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *mowner = menu_owner();
 	struct xa_client *client = desktop_owner();
