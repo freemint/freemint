@@ -13,7 +13,7 @@
 # include "mint/mint.h"
 
 
-# define CLOCKS_PER_SEC 200L
+# define CLOCKS_PER_SEC HZ
 
 struct timezone
 {
@@ -30,10 +30,6 @@ extern long clock_mode;			/* Non-zero if clock is ticking in
 					 * local time instead of UTC
 					 * (read-only).
 					 */
-
-/* Pointer to the 200-Hz system timer. */
-extern ulong *hz_200;
-# define jiffies	(*hz_200)	/* Handy when stealing from Linux.  */
 
 /* Used by filesystems and the kernel, updated once per second.  */
 extern ushort timestamp;		/* Local time in TOS format. */

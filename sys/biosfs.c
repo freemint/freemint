@@ -19,6 +19,7 @@
 
 # include "arch/detect.h"
 # include "arch/syscall.h"
+# include "arch/timer.h"
 
 # include "bios.h"
 # include "dev-mouse.h"
@@ -1400,12 +1401,10 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 	int slept = 0;
 
 # if 1
-# define _hz_200 (*((long *) 0x4baL))
-
 	if (bdev == 3 && tosvers >= 0x0102)
 	{
 		/* midi */
-		long ret = 0, tick = _hz_200 + 1;
+		long ret = 0, tick = jiffies + 1;
 
 		cout = &xconout[3];
 		while (bytes > 0)
@@ -1414,10 +1413,10 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 			{
 				if (ndelay)
 					break;
-				if (_hz_200 - tick > 0)
+				if (jiffies - tick > 0)
 				{
 					yield();
-					tick = _hz_200 + 1;
+					tick = jiffies + 1;
 				}
 			}
 			(void) callout2 (*cout, bdev, (uchar) *p++);
