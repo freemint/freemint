@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -65,7 +65,7 @@ struct pgrp
 struct memspace
 {
 	long	links;
-	
+
 	ushort	num_reg;		///< Nnumber of allocated memoryregions.
 	MEMREGION **mem;		///< Array of ptrs to allocated regions.
 	long	*addr;			///< Array of addresses of regions.
@@ -103,16 +103,16 @@ struct proc
 {
 	long	sysstack;		/* must be first		*/
 	CONTEXT	ctxt[PROC_CTXTS];	/* must be second		*/
-	
+
 	long	magic;			/* validation for proc struct	*/
-	
+
 	BASEPAGE *base;			/* process base page		*/
 	short	pid, ppid, pgrp;
 	short	_ruid;			/* unused */
 	short	_rgid;			/* unused */
 	short	_euid;			/* unused */
 	short	_egid;			/* unused */
-	
+
 	ushort	memflags;		/* e.g. malloc from alt ram	*/
 	short	pri;			/* base process priority 	*/
 	short	wait_q;			/* current process queue	*/
@@ -124,36 +124,36 @@ struct proc
 	 */
 	long	wait_cond;		/* condition we're waiting on	*/
 					/* (also return code from wait) */
-	
+
 # define WAIT_MB	0x3a140001L	/* wait_cond for p_msg call	*/
 # define WAIT_SEMA	0x3a140003L	/* wait_cond for p_semaphore	*/
-	
+
 	ulong	systime;		/* XXX unused */
 	ulong	usrtime;		/* XXX unused */
 	ulong	chldstime;		/* XXX unused */
 	ulong	chldutime;		/* XXX unused */
-	
+
 	ulong	maxmem;			/* XXX max. amount of memory to use */
 	ulong	maxdata;		/* XXX max. data region for process */
 	ulong	maxcore;		/* XXX max. core memory for process */
 	ulong	maxcpu;			/* XXX max. cpu time to use 	*/
-	
+
 	short	domain;			/* process domain (TOS or UNIX)	*/
-	
+
 	short	curpri;			/* current process priority	*/
 	short	_suid, _sgid;		/* XXX unused */
 # define MIN_NICE -20
 # define MAX_NICE  20
 
-/* 
+/*
  * magic line:
  * ---------------------------------------------------------------------------
  */
-	ushort	p_flag;			/* */
+	ushort	p_flag;			/* bit 0 = unkillable system process, bit 1 = SLB */
 	ushort	p_stat;			/* */
 	ushort	debug_level;		/* debug-level of the process	*/
 	ushort	pad;
-	
+
 	/* sharable substructures */
 	struct memspace	*p_mem;		/* address space */
 	struct pcred	*p_cred;	/* owner identity */
@@ -161,17 +161,17 @@ struct proc
 	struct cwd	*p_cwd;		/* path stuff */
 	struct sigacts	*p_sigacts;	/* signal stuff */
 	struct plimit	*p_limits;	/* process limits */
-	
+
 	/* statistics */
 	struct timeval started;		/* start time in UTC		*/
-	
+
 	/* XXX all times are in milliseconds
 	 * XXX usrtime must always follow systime
 	 */
 	ulong	_systime;		/* time spent in kernel		*/
 	ulong	_usrtime;		/* time spent out of kernel	*/
 	ulong	_chldstime;		/* children's kernel time 	*/
-	ulong	_chldutime;		/* children's user time		*/	
+	ulong	_chldutime;		/* children's user time		*/
 # if 0
 	/* For a future improvement of getrusage() */
 	long	ru_majflt;		/* Number of page faults	*/
@@ -180,77 +180,77 @@ struct proc
 	long	ru_msgsnd;		/* Number of messages sent	*/
 	long	ru_msgrcv;		/* Number of messages received	*/
 # endif
-	
-	
+
+
 	/* jr: two fields to hold information passed to Pexec */
 	char	fname[PATH_MAX];	/* name of binary		*/
 	char	cmdlin[128];		/* original command line	*/
-	
+
 	char	*real_cmdline;		/* Saved command line		*/
 	fcookie exe;			/* File cookie for binary	*/
-	
+
 	char	name[PNAMSIZ+1];	/* process name			*/
 	short	slices;			/* number of time slices before	*
 					 * this process gets to run	*
 					 * again			*/
-	
-	
+
+
 	TIMEOUT	*alarmtim;		/* alarm() event		*/
 	struct	itimervalue itimer[3];	/* interval timers */
-	
+
 	struct pgrp *p_pgrp;		/* XXX process group		*/
 	void	*p_ctxlink;		/* XXX uc_link {get,set}context */
-	
-	
+
+
 	ulong	sigpending;		/* pending signals		*/
 	ulong	nsigs;			/* number of signals delivered 	*/
-	
+
 	ulong	p_sigmask;		/* current signal mask		*/
 //	ulong	p_sigignore;		/* signals being ignored	*/
 //	ulong	p_sigcatch;		/* signals being caught by user	*/
-	
-	
+
+
 	long	_cdecl (*criticerr)(long);
 					/* critical error handler	*/
 	void	*logbase;		/* XXX logical screen base	*/
-	
+
 	PROC	*ptracer;		/* process which is tracing this one */
 	short	ptraceflags;		/* flags for process tracing	*/
-	
+
 	short	in_dos;			/* flag: 1 = process is executing a GEMDOS call */
 	short	fork_flag;		/* flag: set to 1 if process has called Pfork() */
 	short	auid;			/* XXX tesche: audit user id */
-	
+
 	short	last_sig;		/* Last signal received by the process	*/
 	short	signaled;		/* Non-zero if process was killed by	*
 					 * a fatal signal			*/
-	
-	
+
+
 	long	links;			/* reference count		*/
 	PROC	*q_prev;		/* prev process on queue	*/
 	PROC	*q_next;		/* next process on queue	*/
 	PROC	*gl_next;		/* next process in system	*/
-	
-	
+
+
 	/* GEMDOS extension: Pmsg() */
 	char	*mb_ptr;		/* p_msg buffer ptr		*/
 	long	mb_long1, mb_long2;	/* p_msg storage		*/
 	long	mb_mbid;		/* p_msg id being waited for	*/
 	short	mb_mode;		/* p_msg mode being waiting in	*/
 	short	mb_writer;		/* p_msg pid of writer of msg	*/
-	
+
 	/* GEMDOS extension: Pusrval() */
 	long	usrdata;		/* p_usrval user-supplied data	*/
-	
-	
+
+
 	ulong	exception_pc;		/* pc at time of bombs		*/
 	ulong	exception_ssp;		/* ssp at time of bomb (e.g. bus error)	*/
 	ulong	exception_tbl;		/* table in use at exception time */
 	ulong	exception_addr;		/* access address from stack	*/
 	ushort	exception_mmusr;	/* result from ptest insn	*/
 	ushort	exception_access;	/* cause of the bus error (read, write, read/write) */
-	
-	
+
+
 	ulong	stack_magic;		/* to detect stack overflows	*/
 	char	stack[STKSIZE+4];	/* stack for system calls	*/
 };
