@@ -171,7 +171,7 @@ top_window(enum locks lock, struct xa_window *w, struct xa_client *desk_menu_own
 	struct xa_window *old_focus;
 	struct xa_client *client = w->owner;
 
-	if (desk_menu_owner == 0)
+	if (!desk_menu_owner)
 		desk_menu_owner = w->owner;
 
 	DIAG((D_wind, client, "top_window %d for %s",  w->handle, c_owner(client)));

@@ -383,11 +383,53 @@ any_window(enum locks lock, struct xa_client *client)
 	return ret;
 }
 
+struct xa_window *
+next_wind(enum locks lock)
+{
+	struct xa_window *w, *wind;
+
+	DIAG((D_appl, NULL, "next_window"));
+	wind = window_list;
+
+	if (wind)
+		wind = wind->next;
+
+	w = wind;
+
+	if (wind)
+	{
+		while (wind->next)
+			wind = wind->next;
+	}
+
+	while (wind)
+	{
+		if ( wind != root_window
+		  && wind->is_open
+		  && !is_hidden(wind)
+		  && wind->r.w
+		  && wind->r.h )
+		{
+			break;
+		}
+		wind = wind->prev;
+	}
+#if GENERATE_DIAGS
+	if (wind)
+		DIAG((D_appl, NULL, "  --  return %d, owner %s",
+			wind->handle, wind->owner->name));
+	else
+		DIAG((D_appl, NULL, " -- no next window"));
+#endif
+	return wind;
+}
+
 struct xa_client *
 next_app(enum locks lock)
 {
-	struct xa_client *client;
+	struct xa_client *client, *fc;
 
+#if 0
 	client = focus_owner();
 	if (client)
 	{
@@ -401,9 +443,20 @@ next_app(enum locks lock)
 	}
 	else
 		DIAGS(("No focus_owner()"));
+#endif
+	fc = focus_owner();
+	client = NULL;
 
-	client = S.client_list;
-	while (client)
+	if (fc)
+		client = fc->next;
+
+	if (!client)
+	{
+		if (!(client = S.client_list))
+			return NULL;
+	}
+	fc = client;
+	do
 	{
 		bool anywin = any_window(lock, client);
 
@@ -414,9 +467,10 @@ next_app(enum locks lock)
 			DIAG((D_appl, NULL, "  --  return %s", c_owner(client)));
 			return client;
 		}
+		if (!(client = client->next))
+			client = S.client_list;
 
-		client = client->next;
-	}
+	} while (client != fc);
 
 	DIAG((D_appl, NULL, "  --  fail"));
 	return NULL;
