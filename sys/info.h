@@ -37,6 +37,10 @@
 # include "mint/mint.h"
 
 
+extern const char ostype    [];
+extern const char osrelease [];
+extern const char version   [];
+
 extern ulong MiNT_version;
 extern ulong MiNT_date;
 extern ulong MiNT_time;

@@ -34,6 +34,7 @@ long shrink_region (MEMREGION *reg, ulong newsize);
 
 long max_rsize (MMAP map, long needed);
 long tot_rsize (MMAP map, int flag);
+long freephysmem (void);
 virtaddr alloc_region (MMAP map, ulong size, int mode);
 MEMREGION *fork_region (MEMREGION *reg, long txtsize);
 MEMREGION *create_env (const char *env, ulong flags);

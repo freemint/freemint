@@ -36,17 +36,13 @@
 # include "arch/info_mach.h"
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
-# include "mint/credentials.h"
 # include "mint/endian.h"
 # include "mint/iov.h"
-# include "mint/pathconf.h"
 # include "mint/proc.h"
 # include "mint/sysctl.h"
-# include "mint/time.h"
 # include "sys/param.h"
 
 # include "info.h"
-# include "k_prot.h"
 # include "memory.h"
 # include "proc.h"
 # include "time.h"
@@ -81,7 +77,7 @@ sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp, const void *
 # endif
 	)
 	{
-		if (!suser (p->p_cred->ucr))
+		if (p->euid)
 			return EPERM;
 	}
 
@@ -195,8 +191,8 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp, const void *
 		case KERN_IOV_MAX:
 			return sysctl_rdlong (oldp, oldlenp, newp, IOV_MAX);
 
-		case KERN_LOGIN_NAME_MAX:
-			return sysctl_rdlong (oldp, oldlenp, newp, LOGIN_NAME_MAX);
+//		case KERN_LOGIN_NAME_MAX:
+//			return sysctl_rdlong (oldp, oldlenp, newp, LOGIN_NAME_MAX);
 
 		case KERN_BOOTTIME:
 			return sysctl_rdstruct (oldp, oldlenp, newp, &boottime, sizeof (struct timeval));

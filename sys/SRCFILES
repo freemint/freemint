@@ -27,6 +27,7 @@ COBJS = \
 	global.c \
 	gmon.c \
 	init.c \
+	k_sysctl.c \
 	kernfs.c \
 	kernget.c \
 	kmemory.c \
@@ -39,6 +40,7 @@ COBJS = \
 	proc.c \
 	procfs.c \
 	profil.c \
+	ptrace.c \
 	pun.c \
 	ramfs.c \
 	random.c \

@@ -418,6 +418,39 @@ m_shrink(int dummy, virtaddr block, long size)
 }
 
 long _cdecl
+m_validate (int pid, void *addr, long size)
+{
+	struct proc *p = NULL;
+	MEMREGION *m;
+	
+	TRACE (("Mvalidate(%i, %lx, %li)", pid, addr, size));
+	
+	if (pid == 0)
+		p = curproc;
+	else if (pid > 0)
+		p = pid2proc (pid);
+	
+	if (!p)
+	{
+		DEBUG (("Mvalidate: no such process (pid %i)", pid));
+		return ESRCH;
+	}
+	
+	if (p != curproc && curproc->euid && !(curproc->memflags & F_OS_SPECIAL))
+	{
+		DEBUG (("Mvalidate: permission denied"));
+		return EPERM;
+	}
+	
+	m = proc_addr2region (p, (long) addr);
+	if (m && ((long) addr + size) <= (m->loc + m->len))
+		return 0;
+	
+	DEBUG (("Mvalidate: invalid vector"));
+	return EINVAL;
+}
+
+long _cdecl
 p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 {
 	MEMREGION *base;

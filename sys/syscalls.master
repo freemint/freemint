@@ -396,8 +396,8 @@
 0x13e	psigintr	(ushort vec, ushort sig)
 0x13f	suptime		(ulong *cur_uptim, ulong loadave[3])
 
-0x140	RESERVED
-0x141	RESERVED
+0x140	ptrace		(int request, int pid, void *addr, long data) /* 1.15.11 */
+0x141	mvalidate	(int pid, void *addr, long size) /* 1.15.11 */
 0x142	dxreaddir	(int len, long handle, char *buf, XATTR *xattr, long *xret)
 0x143	pseteuid	(int id)
 0x144	psetegid	(int id)
@@ -427,48 +427,12 @@
 0x15b	RESERVED
 0x15c	RESERVED
 0x15d	RESERVED
-0x15e	RESERVED
+0x15e	psysctl		(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
 0x15f	emulation	(ushort which, ushort op,
 				long a1, long a2, long a3, long a4,
 				long a5, long a6, long a7)		/* 1.15.8  */
 
-	/* 1.15.?? - socket extensions */
-
-0x160	socket		(long domain, long type, long protocol)
-0x161	socketpair	(long domain, long type, long protocol, int *rsv)
-0x162	accept		(int fh, struct sockaddr *name, ulong *anamelen)
-0x163	connect		(int fh, const struct sockaddr *name, ulong namelen)
-0x164	bind		(int fh, const struct sockaddr *name, ulong namelen)
-0x165	listen		(int fh, long backlog)
-0x166	recvmsg		(int fh, struct msghdr *msg, long flags)
-0x167	sendmsg		(int fh, const struct msghdr *msg, long flags)
-0x168	recvfrom	(int fh, void *buf, ulong len, long flags, struct sockaddr *from, ulong *fromlenaddr)
-0x169	sendto		(int fh, const void *buf, ulong len, long flags, const struct sockaddr *to, ulong tolen)
-0x16a	setsockopt	(int fh, long level, long name, const void *val, ulong valsize)
-0x16b	getsockopt	(int fh, long level, long name, void *val, ulong *avalsize)
-0x16c	getpeername	(int fh, struct sockaddr *asa, ulong *alen)
-0x16d	getsockname	(int fh, struct sockaddr *asa, ulong *alen)
-0x16e	writev		(int fh, const struct iovec *iovp, long iovcnt)
-0x16f	readv		(int fh, const struct iovec *iovp, long iovcnt)
-
-0x170	shutdown	(int fh, long how)
-0x171	RESERVED
-0x172	RESERVED
-0x173	RESERVED
-0x174	RESERVED
-0x175	RESERVED
-0x176	RESERVED
-0x177	RESERVED
-0x178	RESERVED
-0x179	RESERVED
-0x17a	RESERVED
-0x17b	RESERVED
-0x17c	RESERVED
-0x17d	RESERVED
-0x17e	RESERVED
-0x17f	RESERVED
-
-0x180	MAX
+0x160	MAX
 
 
 [ BIOS ]

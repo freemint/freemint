@@ -53,8 +53,10 @@
 # include "dosmem.h"
 # include "dossig.h"
 # include "filesys.h"
+# include "k_sysctl.h"
 # include "memory.h"
 # include "proc.h"
+# include "ptrace.h"
 # include "rendez.h"
 # include "resource.h"
 # include "signal.h"
@@ -439,8 +441,8 @@ Func dos_tab [DOS_MAX] =
 	/* 0x13e */	(Func)	p_sigintr,
 	/* 0x13f */		s_uptime,
 	
-	/* 0x140 */		enosys,		/* reserved */
-	/* 0x141 */		enosys,		/* reserved */
+	/* 0x140 */	(Func)	p_trace,	/* 1.15.11 */
+	/* 0x141 */		m_validate,	/* 1.15.11 */
 	/* 0x142 */		d_xreaddir,
 	/* 0x143 */		p_seteuid,
 	/* 0x144 */		p_setegid,
@@ -470,7 +472,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x15b */		enosys,		/* reserved */
 	/* 0x15c */		enosys,		/* reserved */
 	/* 0x15d */		enosys,		/* reserved */
-	/* 0x15e */		enosys,		/* reserved */
+	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.15.11 */
 	/* 0x15f */	(Func)	sys_emu		/* 1.15.8, interface emulation */
 	
 	/* 0x160 */		/* DOS_MAX */

@@ -42,7 +42,6 @@
 # include "cookie.h"
 # include "global.h"
 # include "init.h"
-# include "keyboard.h"
 
 # include <mint/osbind.h>
 
@@ -123,7 +122,6 @@ _getmch (void)
 			else if (jar->tag == COOKIE__AKP)
 			{
 				gl_lang = (int) ((jar->value >> 8) & 0x00ff);
-				gl_kbd = (short)(jar->value & 0x00ffL);
 			}
 			else if (jar->tag == COOKIE_PMMU)
 			{

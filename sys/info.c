@@ -43,6 +43,14 @@
 # include "libkern/libkern.h"
 
 
+/* definitions for the kernel
+ */
+
+const char ostype    [] = THIRD_PARTY;
+const char osrelease [] = VERS_STRING;
+const char version   [] = THIRD_PARTY " " VERS_STRING;
+
+
 /* definitions in automatically created build.h
  */
 

@@ -1396,6 +1396,17 @@ tot_rsize (MMAP map, int flag)
 	return size;
 }
 
+long
+freephysmem (void)
+{
+	long size;
+	
+	size = tot_rsize (core, 0);
+	size += tot_rsize (alt, 0);
+	
+	return size;
+}
+
 /*
  * alloc_region(MMAP map, ulong size, int mode): allocate a new region and
  * attach it to the current process; returns the address at which the region
