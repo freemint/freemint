@@ -169,7 +169,7 @@ gs_accept (int fd)
 {
 	GS *gs = gs_get (fd);
 	struct sockaddr_in addr, addr2;
-	size_t addr_size = sizeof (struct sockaddr_in);
+	socklen_t addr_size = sizeof (struct sockaddr_in);
 	int in_fd;
 	long fdflags;
 	long ret;
@@ -293,7 +293,7 @@ gs_connect (int fd, uint32 rhost, int16 rport, uint32 lhost, int16 lport)
 	GS *gs = gs_get (fd);
 	struct sockaddr_in laddr;
 	struct sockaddr_in raddr;
-	size_t addr_size = sizeof (struct sockaddr_in);
+	socklen_t addr_size = sizeof (struct sockaddr_in);
 	int sock_fd;
 	int retval;
 # if 0
@@ -416,7 +416,7 @@ gs_udp_open (int fd, uint32 rhost, int16 rport)
 {
 	GS *gs = gs_get (fd);
 	struct sockaddr_in addr, addr2;
-	size_t addr_size = sizeof (struct sockaddr_in);
+	socklen_t addr_size = sizeof (struct sockaddr_in);
 	int sock_fd;
 	int retval;
 # if 0
