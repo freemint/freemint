@@ -19,8 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-CC = $(NATIVECC)
-CFLAGS = $(NATIVECFLAGS) $(OPTS) -D_GNU_SOURCE
+DEFINITIONS += -D_GNU_SOURCE
 LIBS = 
 
 # default definitions
