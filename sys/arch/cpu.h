@@ -1,6 +1,6 @@
-/* 
+/*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  */
@@ -23,6 +23,11 @@ void _cdecl	cpush040	(const void *base, long size);
 void _cdecl	cpush060	(const void *base, long size);
 
 void _cdecl	setstack	(long);
+
+# ifdef DEBUG_INFO
+long _cdecl	get_ssp		(void);
+long _cdecl	get_usp		(void);
+# endif
 
 void _cdecl	get_superscalar	(void);
 short _cdecl	is_superscalar	(void);
