@@ -716,7 +716,7 @@ prot_temp(ulong loc, ulong len, int mode)
 static short mmu_is_set_up = 0;
 
 void
-init_page_table (PROC *proc, MEMSPACE *p_mem)
+init_page_table (PROC *proc, struct memspace *p_mem)
 {
 	if (no_mem_prot)
 		return;
