@@ -222,13 +222,13 @@ static bool
 kernel_key(enum locks lock, struct rawkey *key)
 {
 #if ALT_CTRL_APP_OPS	
-	if ((key->raw.conin.state&(K_CTRL|K_ALT)) == (K_CTRL|K_ALT))
+	if ((key->raw.conin.state & (K_CTRL|K_ALT)) == (K_CTRL|K_ALT))
 	{
 		struct xa_client *client;
 		short nk;
 
 		key->norm = nkc_tconv(key->raw.bcon);
-		nk = key->norm & 0xff;
+		nk = key->norm & 0x00ff;
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));
 
@@ -305,8 +305,18 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 		case 'A':
 		{
+			struct xa_client *dsk = NULL;
+			struct cfg_name_list *nl = NULL;
+
+			if (!(key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
+			{
+				dsk = pid2client(C.DSKpid);
+				nl = cfg.ctlalta;
+			}
+			
 			DIAGS(("Quit all apps by CtlAlt A"));
-			quit_all_apps(lock, NULL);
+			//quit_all_apps(lock, NULL);
+			quit_all_clients(lock, nl, dsk);
 			return true;
 		}
 		case 'Q':

@@ -29,12 +29,13 @@
 
 #include "draw_obj.h"
 #include "trnfm.h"
+#include "xa_appl.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
 
 #include "mint/fcntl.h"
 #include "mint/stat.h"
-
+#include "mint/signal.h"
 
 /*
  * RESOURCE FILE HANDLER
@@ -1098,6 +1099,12 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(0,1,1)
 
+	/* XXX	- ozk: Because of the hack at line 526 in handler.c, we
+	 * cannot allow applications with a NULL globl_ptr to use rsrc_load()
+	 * until we come up with a decent solution...
+	 */
+	if (client->globl_ptr)
+	{
 /* If the client is overwriting its existing resource then better free it
 	 (it shouldn't, but just in case) */
 /* I don't think this is a good idea - much better to have a memory leak
@@ -1109,39 +1116,50 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	    left in XA_client_exit.
 	    7/9/200   done.  As well as the memory allocated for colour icon data.
 */
-	path = shell_find(lock, client, (char*)pb->addrin[0]);
-	if (path)
-	{
-		RSHDR *rsc;
-		DIAG((D_rsrc, client, "rsrc_load('%s')", path));
-	
-		rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV);
-		if (rsc)
+		path = shell_find(lock, client, (char*)pb->addrin[0]);
+		if (path)
 		{
-			OBJECT **o;
-			(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
-			client->rsrc = rsc;
-			client->trees = o;
+			RSHDR *rsc;
+			DIAG((D_rsrc, client, "rsrc_load('%s')", path));
+	
+			rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV);
+			if (rsc)
+			{
+				OBJECT **o;
+				(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
+				client->rsrc = rsc;
+				client->trees = o;
 
 #if GENERATE_DIAGS
-			if (client->globl_ptr != (struct aes_global *)pb->global)
-			{
-				DIAGS(("WARNING: rsrc_load global is different from appl_init's global"));
-			}
+				if (client->globl_ptr != (struct aes_global *)pb->global)
+				{
+					DIAGS(("WARNING: rsrc_load global is different from appl_init's global"));
+				}
 #endif
-			Rsrc_setglobal(rsc, client->globl_ptr);
+				if (client->globl_ptr)
+					Rsrc_setglobal(rsc, client->globl_ptr);
 
-			DIAG((D_rsrc,client,"pb %lx, gl %lx, gl->rsc %lx, gl->ptree %lx",
-				pb, pb->global, ((struct aes_global *)pb->global)->rshdr, ((struct aes_global *)pb->global)->ptree));
+				DIAG((D_rsrc,client,"pb %lx, gl %lx, gl->rsc %lx, gl->ptree %lx",
+					pb, pb->global, ((struct aes_global *)pb->global)->rshdr, ((struct aes_global *)pb->global)->ptree));
 
-			if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
-				/* Fill it out in the global of the rsrc_load. */
-				Rsrc_setglobal(rsc, (struct aes_global *)pb->global);
+				if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
+					/* Fill it out in the global of the rsrc_load. */
+					Rsrc_setglobal(rsc, (struct aes_global *)pb->global);
 
-			pb->intout[0] = 1;
-			return XAC_DONE;
+				pb->intout[0] = 1;
+				return XAC_DONE;
+			}
 		}
 	}
+	else
+	{
+		/* inform user what's going on */
+		ALERT(("XaAES: rsrc_load: %s, client with no globl_ptr, killing it", client->name));
+		exit_client(lock, client, -1); //get_curproc());
+		raise(SIGKILL);
+		return 0;
+	}
+
 
 	DIAGS(("ERROR: rsrc_load '%s' failed", pb->addrin[0] ? (char*)pb->addrin[0] : "~~"));
 
@@ -1158,7 +1176,7 @@ XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
-	if (client)
+	if (client && client->globl_ptr)
 	{
 		if (client->rsrc)
 		{
@@ -1168,7 +1186,7 @@ XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 			pb->intout[0] = 0;
 	}
-	else /* ozk: if no client, we assume everythings OK */
+	else /* ozk: if no client, or global paramblock, we assume everythings OK */
 		pb->intout[0] = 1;
 		
 	return XAC_DONE;
@@ -1347,23 +1365,34 @@ XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_rsrc, client, "rsrc_rcfix for %s on %ld(%lx)",
 		c_owner(client), pb->addrin[0], pb->addrin[0]));
 
-	rsc = LoadResources(client, NULL, (RSHDR*)pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV);
-	if (rsc)
+	if (client->globl_ptr)
 	{
-		client->rsrc = rsc;
-#if GENERATE_DIAGS
-		if (client->globl_ptr != (struct aes_global *)pb->global)
+		rsc = LoadResources(client, NULL, (RSHDR*)pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV);
+		if (rsc)
 		{
-			DIAGS(("WARNING: rsrc_rcfix global %ld(%lx) is different from appl_init's global %ld(%lx)",
-				pb->global, pb->global, client->globl_ptr, client->globl_ptr));
-		}
+			client->rsrc = rsc;
+#if GENERATE_DIAGS
+			if (client->globl_ptr != (struct aes_global *)pb->global)
+			{
+				DIAGS(("WARNING: rsrc_rcfix global %ld(%lx) is different from appl_init's global %ld(%lx)",
+					pb->global, pb->global, client->globl_ptr, client->globl_ptr));
+			}
 #endif
-		Rsrc_setglobal(client->rsrc, client->globl_ptr);
-		if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
-			Rsrc_setglobal(client->rsrc, (struct aes_global *)pb->global);
+			Rsrc_setglobal(client->rsrc, client->globl_ptr);
+			if (pb->global && (struct aes_global *)pb->global != client->globl_ptr)
+				Rsrc_setglobal(client->rsrc, (struct aes_global *)pb->global);
 
-		pb->intout[0] = 1;
-		return XAC_DONE;
+			pb->intout[0] = 1;
+			return XAC_DONE;
+		}
+	}
+	else
+	{
+		/* inform user what's going on */
+		ALERT(("XaAES: rsrc_rcfix: %s, client with no globl_ptr, killing it", client->name));
+		exit_client(lock, client, -1); //get_curproc());
+		raise(SIGKILL);
+		return 0;
 	}
 
 	pb->intout[0] = 0;

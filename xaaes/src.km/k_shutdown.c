@@ -209,6 +209,8 @@ k_shutdown(void)
 	{
 		int i;
 
+		free_namelist(&cfg.ctlalta);
+
 		if (cfg.cnf_shell)
 			kfree(cfg.cnf_shell);
 
