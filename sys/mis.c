@@ -117,7 +117,7 @@ shell_fprintf(long handle, const char *fmt, ...)
 	Fwrite(handle, strlen(buf), buf);
 }
 
-static void
+INLINE void
 shell_print(char *text)
 {
 	shell_fprintf(STDOUT, text);
@@ -261,8 +261,6 @@ sh_getenv(const char *var)
 	return 0;
 }
 
-/* `static void' when it gets used more often (once for now)
- */
 static void
 sh_setenv(const char *var, char *value)
 {
@@ -324,9 +322,9 @@ sh_setenv(const char *var, char *value)
  * XXX add 'quoted arguments' handling.
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
  * XXX also evaluate env variables, if given as arguments
- * 
+ *
  */
-static long
+INLINE long
 crunch(char *cmdline, char *argv[])
 {
 	char *cmd = cmdline, *start;
@@ -370,7 +368,7 @@ crunch(char *cmdline, char *argv[])
 }
 
 /* Execute an external program */
-static long
+INLINE long
 execvp(char *oldcmd, char *argv[])
 {
 	char *var, *new_env, *new_var, *t, *path, *np, npath[2048];
@@ -512,7 +510,6 @@ sh_help(long argc, char **argv)
 /* Display all files in the current directory, with attributes et ceteris.
  * No wilcards filtering what to display, no sorted output, no nothing.
  */
-
 static long
 sh_ls(long argc, char **argv)
 {
@@ -969,7 +966,7 @@ execute(char *cmdline)
 	argc = crunch(cmdline, argv);
 
 	if (!argc)
-		return 0;			/* empty command line (unlikely) */
+		return 0;			/* empty command line */
 
 	/* Result a zero if the string given is not an internal command,
 	 * or the number of the internal command otherwise (the number is
@@ -1004,10 +1001,11 @@ execute(char *cmdline)
 
 /* XXX because of Cconrs() the command line cannot be longer than 254 bytes.
  */
-static void
+INLINE char *
 prompt(uchar *buffer, long buflen)
 {
-	char cwd[1024];
+	char *lbuff, cwd[1024];
+	short idx;
 
 	buffer[0] = 254;
 	buffer[1] = 0;
@@ -1021,6 +1019,16 @@ prompt(uchar *buffer, long buflen)
 
 	shell_fprintf(STDOUT, "mint:%s#", cwd);
 	Cconrs(buffer);
+
+	/* "the string is not guaranteed to be NULL terminated"
+	 * (Atari GEMDOS reference manual)
+	 */
+	lbuff = buffer + 2;
+	idx = buffer[1];
+	idx--;
+	lbuff[idx] = 0;
+
+	return lbuff;
 }
 
 static void
@@ -1028,10 +1036,8 @@ shell(void)
 {
 	uchar linebuf[256], *lbuff;
 	long r;
-	short idx;
 
-	/* XXX enable word wrap for the console, cursor etc. */
-	shell_print("\r\n");
+	shell_print("\ee\ev\r\n");	/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);
 	xcmdstate();
 	shell_print("Type `help' for help\r\n\r\n");
@@ -1042,23 +1048,12 @@ shell(void)
 
 	for (;;)
 	{
-		prompt(linebuf, sizeof(linebuf));
+		lbuff = prompt(linebuf, sizeof(linebuf));
 
-		if (linebuf[1] > 1)
-		{
-			/* "the string is not guaranteed to be NULL terminated"
-			 * (Atari GEMDOS reference manual)
-			 */
-			lbuff = linebuf + 2;
-			idx = linebuf[1];
-			idx--;
-			lbuff[idx] = 0;
+		r = execute(lbuff);
 
-			r = execute(lbuff);
-
-			if (r < 0)
-				shell_fprintf(STDERR, "mint: %s: error %ld\r\n", lbuff, r);
-		}
+		if (r < 0)
+			shell_fprintf(STDERR, "mint: %s: error %ld\r\n", lbuff, r);
 	}
 }
 
