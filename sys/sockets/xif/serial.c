@@ -85,10 +85,12 @@ _sld (void)
 				if (sl->flags & SL_INUSE) switch (cmd.cmd) {
 				case SLCMD_OPEN:
 				{
+# ifdef SLD_DEBUG
 					char buf[128];
 					
 					ksprintf (buf, "sld: SLCMD_OPEN (sl->fd = %i)\r\n", sl->fd);
 					c_conws (buf);
+# endif
 					
 					r = sl->fd;
 					sl->fd = f_dup (r);
@@ -99,19 +101,23 @@ _sld (void)
 						c_conws ("sld: PANIC: Fdup failed\r\n");
 						return;
 					}
+# ifdef SLD_DEBUG
 					
 					ksprintf (buf, "sld: SLCMD_OPEN -> sl->fd = %i (0x%lx)\r\n", sl->fd, sld_p->p_fd->ofiles[sl->fd]);
 					c_conws (buf);
+# endif
 					
 					FDSET (sl->fd, rset);
 					break;
 				}
 				case SLCMD_CLOSE:
 				{
+# ifdef SLD_DEBUG
 					char buf[128];
 					
 					ksprintf (buf, "sld: SLCMD_CLOSE (sl->fd = %i)\r\n", sl->fd);
 					c_conws (buf);
+# endif
 					
 					FDCLR (sl->fd, rset);
 					FDCLR (sl->fd, wset);
@@ -284,7 +290,7 @@ serial_init (void)
 	
 	if (!kthread_create)
 	{
-		ALERT (("This slip.xif require an uptodate 1.16 kernel!"));
+		ALERT (("This slip.xif requires an uptodate 1.16 kernel!"));
 		return -1;
 	}
 	
