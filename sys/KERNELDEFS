@@ -25,6 +25,16 @@
 # -DPROFILING		include profiling support
 # -DMFP_DEBUG_DIRECT	direct MFP routines to output debug
 
+#
+# Flags for building a minimal 68000 kernel
+#
+# -DONLY68000		disables various code for 68020-60
+# -DNO_MMU		disables MMU routines
+# -DNO_CPU_CACHES	disables all CPU cache handling
+# -DNO_RAMFS		disables the internal ramdisk (/ram)
+# -DNO_FAKE_SUPER	disables the extended bus error handler
+#
+
 # 
 # experimental; for developers only
 # 
@@ -48,7 +58,7 @@ endif
 ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
-KERNELDEFS = 
+KERNELDEFS = -DONLY68000 -DNO_MMU -DNO_CPU_CACHE -DNO_RAMFS -DNO_FAKE_SUPER #-DDEBUG_INFO
 OPTS += -fstrength-reduce
 endif
 
@@ -79,7 +89,7 @@ endif
 ifeq ($(kernel),ara)
 MINT = mintara.prg
 CPU  = 020-60
-KERNELDEFS = -DONLY030 -DMMU040 -DARANYM -DCPU040
+KERNELDEFS = -DONLY030 -DMMU040 -DARANYM -DCPU040 -DDEBUG_INFO
 endif
 
 ifeq ($(kernel),my1)
