@@ -318,10 +318,13 @@ free_mem (struct proc *p)
 	kfree (hold_addr);
 	kfree (hold_mem);
 	
+	/* invalidate memory space for proc before freeing it
+	 * -> so the MMU code don't access it
+	 */
+	p->p_mem = NULL;
+	
 	free_page_table_ptr (p_mem);
 	kfree (p_mem);
-	
-	p->p_mem = NULL;
 }
 
 /* p_fd */
