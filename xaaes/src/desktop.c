@@ -64,7 +64,7 @@ click_desktop_widget(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 
 		item = find_object(get_desktop()->tree, 0, 1, widg->mx, widg->my, 0, 0);
 
-		DIAG((D_button, NULL, "  --  bs %d, item %d\n", b, item));
+		DIAG((D_button, NULL, "  --  item %d\n", item));
 
 		/* button must be released on the root object. */
 
