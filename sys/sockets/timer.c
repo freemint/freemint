@@ -9,7 +9,7 @@
 # include "global.h"
 
 # include "timer.h"
-# include "mint/file.h"
+# include "mint/time.h"
 
 
 static void	update_head	(void);
@@ -40,6 +40,7 @@ update_head (void)
 	}
 }
 
+# if 0
 /* I don't see a reason for that */
 
 static char stack[8192];
@@ -59,6 +60,7 @@ setstack (register void *sp)
 	
 	return osp;
 }
+# endif
 
 static void
 check_events (long proc)
@@ -66,9 +68,11 @@ check_events (long proc)
 	register struct event *ep;
 	register void (*func)(long);
 	register long arg;
+# if 0
 	register void *sp;
 	
 	sp = setstack (stack + sizeof (stack));
+# endif
 	
 	update_head ();
 	while ((ep = allevents) && ep->delta <= 0)
@@ -92,7 +96,9 @@ check_events (long proc)
 	else
 		nexttimeout = 0;
 	
+# if 0
 	setstack (sp);
+# endif
 }
 
 static void

@@ -36,7 +36,8 @@
 
 # include "global.h"
 
-# include <mint/file.h>
+# include "mint/file.h"
+# include "mint/fsops.h"
 
 
 long	dummydev_init		(char *, struct dev_descr *);

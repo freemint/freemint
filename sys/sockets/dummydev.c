@@ -7,6 +7,8 @@
 # include "dummydev.h"
 
 # include "mint/dcntl.h"
+# include "mint/ioctl.h"
+# include "mint/pathconf.h"
 
 
 long

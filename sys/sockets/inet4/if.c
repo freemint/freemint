@@ -12,8 +12,8 @@
 # include "loopback.h"
 # include "route.h"
 
-# include <mint/asm.h>
-# include <mint/file.h>
+# include "mint/asm.h"
+# include "mint/sockio.h"
 
 
 /*

@@ -19,7 +19,7 @@
 
 # include "netinfo.h"
 
-# include <mint/dcntl.h>
+# include "mint/sockio.h"
 
 
 /*
