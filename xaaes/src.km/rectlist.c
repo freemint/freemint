@@ -47,6 +47,9 @@ make_rect_list(struct xa_window *wind, bool swap)
 		wind->rect_list = wind->rect_user = wind->rect_start = NULL;
 	}
 
+	if (wind->owner->status & CS_EXITING)
+		return;
+
 	DIAGS(("make_rect_list for wind %d", wind->handle));
 
 	if (wind->r.x > (screen.r.x + screen.r.w) ||
@@ -103,156 +106,159 @@ make_rect_list(struct xa_window *wind, bool swap)
 
 		while (wl)
 		{
-#if GENERATE_DIAGS
-			i = 0;
-#endif
-			r_win = wl->r;		
-			win_x2 = r_win.x + r_win.w;
-			win_y2 = r_win.y + r_win.h;
-
-			for (rl = nrl, rl_prev = NULL; rl; rl = rl_next)
+			if (!(wl->owner->status & CS_EXITING))
 			{
-
-				r_ours = rl->r;
-
-				flag = 0;
-
-				h = r_win.y - r_ours.y;
-				w = r_win.x - r_ours.x;
-
-				rl_next = rl->next;
-
-				DIAGS((" -- nrl=%lx, rl_prev=%lx", nrl, rl_prev));
-				DIAGS((" -- [%d] ours=(%d/%d/%d/%d), wind %d = (%d/%d/%d/%d)", i, r_ours, wl->handle, r_win));
-				DIAGS((" --      win2=%d/%d, w=%d, h=%d",
-					win_x2, win_y2, w, h));
 #if GENERATE_DIAGS
-				i++;
+				i = 0;
 #endif
-				if ( h < r_ours.h	&&
-				     w < r_ours.w	&&
-				     win_x2 > r_ours.x	&&
-				     win_y2 > r_ours.y)
+				r_win = wl->r;		
+				win_x2 = r_win.x + r_win.w;
+				win_y2 = r_win.y + r_win.h;
+
+				for (rl = nrl, rl_prev = NULL; rl; rl = rl_next)
 				{
-					our_x2 = r_ours.x + r_ours.w;
-					our_y2 = r_ours.y + r_ours.h;
 
-					if (r_win.x > r_ours.x)
-					{
-						rl->r.x = r_ours.x;
-						rl->r.y = r_ours.y;
-						rl->r.h = r_ours.h;
-						rl->r.w = w;
+					r_ours = rl->r;
 
-						r_ours.x += w;
-						r_ours.w -= w;
-						flag = 1;
-						DIAGS((" -- 2. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
-					}
-					if (r_win.y > r_ours.y)
-					{
-						if (flag)
-						{
-							rl_prev = rl;
-							rl = kmalloc(sizeof(*rl));
-							assert(rl);
-							rl->next = rl_prev->next;
-							rl_prev->next = rl;
-							DIAGS((" -- 2. alloc new=%lx", rl));
-						}
+					flag = 0;
+
+					h = r_win.y - r_ours.y;
+					w = r_win.x - r_ours.x;
+
+					rl_next = rl->next;
+
+					DIAGS((" -- nrl=%lx, rl_prev=%lx", nrl, rl_prev));
+					DIAGS((" -- [%d] ours=(%d/%d/%d/%d), wind %d = (%d/%d/%d/%d)", i, r_ours, wl->handle, r_win));
+					DIAGS((" --      win2=%d/%d, w=%d, h=%d",
+						win_x2, win_y2, w, h));
 #if GENERATE_DIAGS
-						else
-							DIAGS((" -- 2. using orig=%lx", rl));
+					i++;
 #endif
-						rl->r.x = r_ours.x;
-						rl->r.y = r_ours.y;
-						rl->r.w = r_ours.w;
-						rl->r.h = h;
+					if ( h < r_ours.h	&&
+					     w < r_ours.w	&&
+					     win_x2 > r_ours.x	&&
+					     win_y2 > r_ours.y)
+					{
+						our_x2 = r_ours.x + r_ours.w;
+						our_y2 = r_ours.y + r_ours.h;
 
-						r_ours.y += h;
-						r_ours.h -= h;
+						if (r_win.x > r_ours.x)
+						{
+							rl->r.x = r_ours.x;
+							rl->r.y = r_ours.y;
+							rl->r.h = r_ours.h;
+							rl->r.w = w;
+
+							r_ours.x += w;
+							r_ours.w -= w;
+							flag = 1;
+							DIAGS((" -- 2. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						}
+						if (r_win.y > r_ours.y)
+						{
+							if (flag)
+							{
+								rl_prev = rl;
+								rl = kmalloc(sizeof(*rl));
+								assert(rl);
+								rl->next = rl_prev->next;
+								rl_prev->next = rl;
+								DIAGS((" -- 2. alloc new=%lx", rl));
+							}
+#if GENERATE_DIAGS
+							else
+								DIAGS((" -- 2. using orig=%lx", rl));
+#endif
+							rl->r.x = r_ours.x;
+							rl->r.y = r_ours.y;
+							rl->r.w = r_ours.w;
+							rl->r.h = h;
+
+							r_ours.y += h;
+							r_ours.h -= h;
 						
-						flag = 1;
-						DIAGS((" -- 1. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
-					}
-					if (our_x2 > win_x2)
-					{
-						if (flag)
-						{
-							rl_prev = rl;
-							rl = kmalloc(sizeof(*rl));
-							assert(rl);
-							rl->next = rl_prev->next;
-							rl_prev->next = rl;
-							DIAGS((" -- 4. alloc new=%lx", rl));
+							flag = 1;
+							DIAGS((" -- 1. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 						}
+						if (our_x2 > win_x2)
+						{
+							if (flag)
+							{
+								rl_prev = rl;
+								rl = kmalloc(sizeof(*rl));
+								assert(rl);
+								rl->next = rl_prev->next;
+								rl_prev->next = rl;
+								DIAGS((" -- 4. alloc new=%lx", rl));
+							}
 #if GENERATE_DIAGS
-						else
-							DIAGS((" -- 4. using orig=%lx", rl));
+							else
+								DIAGS((" -- 4. using orig=%lx", rl));
 #endif
 
-						rl->r.x = win_x2;
-						rl->r.y = r_ours.y;
-						rl->r.w = our_x2 - win_x2;
-						rl->r.h = r_ours.h;
+							rl->r.x = win_x2;
+							rl->r.y = r_ours.y;
+							rl->r.w = our_x2 - win_x2;
+							rl->r.h = r_ours.h;
 
-						r_ours.w -= rl->r.w;
-						flag = 1;
-						DIAGS((" -- 4. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
-					}
-					if (our_y2 > win_y2)
-					{
-						if (flag)
-						{
-							rl_prev = rl;
-							rl = kmalloc(sizeof(*rl));
-							assert(rl);
-							rl->next = rl_prev->next;
-							rl_prev->next = rl;
-							DIAGS((" -- 3. alloc new=%lx", rl));
+							r_ours.w -= rl->r.w;
+							flag = 1;
+							DIAGS((" -- 4. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 						}
+						if (our_y2 > win_y2)
+						{
+							if (flag)
+							{
+								rl_prev = rl;
+								rl = kmalloc(sizeof(*rl));
+								assert(rl);
+								rl->next = rl_prev->next;
+								rl_prev->next = rl;
+								DIAGS((" -- 3. alloc new=%lx", rl));
+							}
 #if GENERATE_DIAGS
-						else
-							DIAGS((" -- 3. using orig=%lx", rl));
+							else
+								DIAGS((" -- 3. using orig=%lx", rl));
 #endif
-						rl->r.x = r_ours.x;
-						rl->r.y = win_y2;
-						rl->r.w = r_ours.w;
-						rl->r.h = our_y2 - win_y2;
+							rl->r.x = r_ours.x;
+							rl->r.y = win_y2;
+							rl->r.w = r_ours.w;
+							rl->r.h = our_y2 - win_y2;
 
-						r_ours.h -= rl->r.h;
-						flag = 1;
-						DIAGS((" -- 3. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+							r_ours.h -= rl->r.h;
+							flag = 1;
+							DIAGS((" -- 3. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						}
 					}
-				}
-				else
-				{
-					flag = 1;
-					DIAGS((" -- 1. whole=(%d/%d/%d/%d)", rl->r));
-				}
-
-				if (!flag)
-				{
-					DIAGS((" covered, releasing (nrl=%lx) %lx=(%d/%d/%d/%d) rl_prev=%lx(%lx)",
-						nrl, rl, rl->r, rl_prev, rl_prev ? (long)rl_prev->next : 0));
-					if (rl == nrl)
+					else
 					{
-						//if (rl_prev == nrl)
-						//	rl_prev = NULL;
-						nrl = rl_next;
+						flag = 1;
+						DIAGS((" -- 1. whole=(%d/%d/%d/%d)", rl->r));
 					}
-					else if (nrl->next == rl)
-						nrl->next = rl_next;
 
-					if (rl_prev)
-						rl_prev->next = rl_next;
-					kfree(rl);
-				}
-				else
-				{
-					rl_prev = rl;
-				}
-			} /* for (rl = nrl; rl; rl = rl_next) */
+					if (!flag)
+					{
+						DIAGS((" covered, releasing (nrl=%lx) %lx=(%d/%d/%d/%d) rl_prev=%lx(%lx)",
+							nrl, rl, rl->r, rl_prev, rl_prev ? (long)rl_prev->next : 0));
+						if (rl == nrl)
+						{
+							//if (rl_prev == nrl)
+							//	rl_prev = NULL;
+							nrl = rl_next;
+						}
+						else if (nrl->next == rl)
+							nrl->next = rl_next;
+
+						if (rl_prev)
+							rl_prev->next = rl_next;
+						kfree(rl);
+					}
+					else
+					{
+						rl_prev = rl;
+					}
+				} /* for (rl = nrl; rl; rl = rl_next) */
+			} /* if (!(wl->owner->status & CS_EXITING)) */
 			wl = wl->prev;			
 		} /* while (wl) */
 	} /* if (nrl && w->prev) */

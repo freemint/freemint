@@ -83,6 +83,57 @@ Set_form_do(struct xa_client *client,
 	client->fmd.wt = wt;
 }
 
+struct xa_window *
+create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT *r)
+{
+	struct xa_window *wind = NULL;
+	
+	bool nolist = false;
+
+	DIAGS(("Setup_form_do: create window"));
+
+	if (C.update_lock && C.update_lock == client)
+	{
+		kind |= STORE_BACK;
+		nolist = true;
+	}
+
+	kind |= (TOOLBAR | USE_MAX);
+	wind = create_window(lock,
+			     do_winmesag, //handle_form_window,
+			     do_formwind_msg,
+			     client,
+			     nolist,
+			     kind,
+			     dial,
+			     MG,
+			     0, //C.Aes->options.thinframe,
+			     C.Aes->options.thinwork,
+			     *r,
+			     NULL,
+			     NULL);
+
+	return wind;
+}
+
+static void
+calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, RECT *r)
+{
+	DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
+
+	ob_area(obtree, 0, r);
+
+	*r = calc_window(0,
+			 client,
+			 WC_BORDER,
+			 kind,
+			 MG,
+			 0,
+			 C.Aes->options.thinwork,
+			 *r);
+
+}
+
 /*
  * XXX - Ozk:
  *     This call should never fail, so callers of this function
@@ -108,14 +159,16 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
+		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, obtree, edobj);
 		wt->zen = false; //true;
+		move_window(lock, wind, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h); //wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 	}
-#if 0
+#if 1
 	/*
 	 * Should this client do classic blocking form_do's?
 	 */
-	else if (client->fmd.lock)
+	else if (C.update_lock == client) //client->fmd.lock)
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
 		Set_form_do(client, obtree, edobj);
@@ -128,6 +181,8 @@ Setup_form_do(struct xa_client *client,
 	 */
 	else
 	{
+		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
+#if 0
 		RECT r;
 
 		DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
@@ -141,6 +196,8 @@ Setup_form_do(struct xa_client *client,
 					    0,
 					    C.Aes->options.thinwork,
 					    r);
+
+#endif
 		if (!client->options.xa_nomove)
 			kind |= MOVER;
 
@@ -153,16 +210,32 @@ Setup_form_do(struct xa_client *client,
 	 */
 	if (!wind)
 	{
+		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
+		{
+			client->fmd.wind = wind;
+			wt = set_toolbar_widget(lock, wind, obtree, edobj);
+			wt->zen = false;
+		}
+		else
+			return false;
+#if 0
+		bool nolist = false;
 		RECT r = client->fmd.r;
 
 		DIAGS(("Setup_form_do: create window"));
+
+		if (C.update_lock && C.update_lock == client)
+		{
+			kind |= STORE_BACK;
+			nolist = true;
+		}
 
 		kind |= (TOOLBAR | USE_MAX);
 		wind = create_window(lock,
 				     do_winmesag, //handle_form_window,
 				     do_formwind_msg,
 				     client,
-				     false,
+				     nolist,
 				     kind,
 				     client->fmd.state ? created_for_FMD_START : created_for_FORM_DO,
 				     MG,
@@ -186,8 +259,9 @@ Setup_form_do(struct xa_client *client,
 		 */
 			return false;
 		}
+#endif
 	}
-/* okexit: */
+okexit:
 	DIAGS(("Key_form_do: returning - edobj=%d, wind %lx",
 		wt->e.obj, wind));
 	if (ret_edobj)
@@ -518,7 +592,15 @@ Exit_form_do( struct xa_client *client,
 
 	if (wind)
 	{
-		if (wind == client->fmd.wind)
+#if 0
+		if (wind == client->alert)
+		{
+			client->alert == NULL;
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+		}
+#endif
+		/*else*/ if (wind == client->fmd.wind)
 		{
 			DIAG((D_form, NULL, "Exit_form_do: exit windowed form_do() for %s",
 				client->name));
@@ -650,14 +732,14 @@ Click_form_do(enum locks lock,
 	 */
 	if (wind)
 	{
-		if (wind != window_list && !(wind->active_widgets & NO_TOPPED) )
+		if (!wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
 			top_window(lock, wind, 0);
 			after_top(lock, false);
 			return false;
 		}
-
+		
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using wind->toolbar"));

@@ -630,8 +630,10 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		mc = ((XA_TREE *)widg->stuff)->owner;
 		if (ce->client == mc )
 		{
+#if 0
 			if (C.update_lock && C.update_lock != mc)
 				return;
+#endif
 
 			DIAGS(("CE_redraw_menu: for %s", ce->client->name));
 			display_widget(lock, root_window, widg);
@@ -1119,7 +1121,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 		f_color(G_WHITE);
 		t_color(G_BLACK);
 
-		if (is_topped(wind))
+		if (wind->nolist || is_topped(wind))
 			/* Highlight the title bar of the top window */
 			effect = cfg.topname;
 		else
@@ -1130,11 +1132,11 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	}
 	else
 	{
-		if (is_topped(wind))
+		if (wind->nolist || is_topped(wind))
 			/* Highlight the title bar of the top window */
 			t_color(G_BLACK);
 		else
-			t_color(G_WHITE);
+			t_color(G_LBLACK); //(G_WHITE);
 
 		/* no move, no 3D */
 		if (wind->active_widgets & MOVER)
@@ -1444,8 +1446,15 @@ display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	{
 		tl_hook(0, &r, screen.dial_colours.lit_col);
 		br_hook(0, &r, screen.dial_colours.shadow_col);
+
+		if (wind->nolist || is_topped(wind))
+			/* Highlight the title bar of the top window */
+			t_color(G_BLACK);
+		else
+			t_color(G_LBLACK); //(G_WHITE);
 	}
-	t_color(G_BLACK);
+	else
+		t_color(G_BLACK);
 
 	r.y += (r.h-screen.c_max_h)/2;
 	v_gtext(C.vh, r.x + 4, r.y, clipped_name(widg->stuff, t, (r.w/screen.c_max_w)-1));
