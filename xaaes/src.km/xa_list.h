@@ -66,6 +66,9 @@
 	LIST_PREV(element,field) = NULL; \
 	LIST_NEXT(element,field) = LIST_START(head); \
 	\
+	if (LIST_START(head)) \
+		LIST_PREV(LIST_START(head),field) = element; \
+	\
 	LIST_START(head) = element; \
 	\
 } while (0)
@@ -89,7 +92,7 @@
 
 #define LIST_REMOVE(head,element,field) do { \
 	\
-	if (element == LIST_START(head)) \
+	if ((element) == LIST_START(head)) \
 		LIST_START(head) = LIST_NEXT(element,field); \
 	\
 	if (LIST_PREV(element,field)) \
