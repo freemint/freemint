@@ -592,7 +592,9 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 		while (cur)
 		{
 			bool have = rsc && rsc == cur->rsc;
+			XA_RSCS *nx = cur->next;
 			DIAG((D_rsrc,client,"Free: test cur %lx\n", (long)cur));
+			DIAG((D_rsrc,client,"Free: test cur handle %d\n", cur->handle));
 
 			if (   have
 			    || (!rsc && cur->handle == client->rsct))	/* free the entry for the freed rsc. */
@@ -637,7 +639,7 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 			if (have)
 				break;
 
-			cur = cur->next;
+			cur = nx;
 		}
 		client->rsct--;
 	}
