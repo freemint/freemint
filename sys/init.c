@@ -198,7 +198,7 @@ uchar framesizes[16] =
  */
 
 static void
-xbra_install (xbra_vec *xv, long addr, long _cdecl (*func) ())
+xbra_install (xbra_vec *xv, long addr, long _cdecl (*func)())
 {
 	xv->xbra_magic = XBRA_MAGIC;
 	xv->xbra_id = MINT_MAGIC;
@@ -216,8 +216,8 @@ xbra_install (xbra_vec *xv, long addr, long _cdecl (*func) ())
  * instead of by the xbra_install()
  */
 
-static void
-new_xbra_install (long *xv, long addr, long _cdecl (*func) ())
+void
+new_xbra_install (long *xv, long addr, long _cdecl (*func)())
 {
 	*xv = *(long *) addr;
 	*(long *) addr = (long) func;
@@ -307,7 +307,7 @@ init_intr (void)
 
 	new_xbra_install (&dummy, 0x80L, unused_trap);		/* trap #0 */
 	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */
-# if 1
+# if 0	/* we only install this on request yet */
 	new_xbra_install (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
 # endif
 	new_xbra_install (&dummy, 0x8cL, unused_trap);		/* trap #3 */
@@ -330,7 +330,7 @@ init_intr (void)
 	xbra_install (&old_criticerr, 0x404L, mint_criticerr);
 	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
 
-#if 0 // this should really not be necessary ... rincewind
+#if 0	/* this should really not be necessary ... rincewind */
 	new_xbra_install (&old_resvec, 0x042aL, reset);
 	old_resval = *((long *)0x426L);
 	*((long *) 0x426L) = RES_MAGIC;
@@ -742,12 +742,16 @@ init (void)
 	FILEPTR *f;
 	char curpath[128];
 
-	/* Initialize sysdir (TOS style) */
-	strcpy(sysdir, "\\");
-	if (TRAP_Fsfirst("\\multitos\\mint.cnf", 0) == 0)
-		strcpy(sysdir, "\\multitos\\");
-	else if (TRAP_Fsfirst("\\mint\\mint.cnf", 0) == 0)
-		strcpy(sysdir, "\\mint\\");
+	/* Initialize sysdir
+	 * from 1.16 we ignore any multitos folder
+	 * from 1.16 we default to \mint
+	 * from 1.16 we search for \mint\<MINT_VERSION>
+	 *           for example \mint\1.16.0
+	 */
+	strcpy(sysdir, "\\mint");
+
+	if (TRAP_Fsfirst("\\mint\\" MINT_VERS_PATH_STRING "\\mint.cnf", 0) == 0)
+		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
 
 	read_ini();	/* Read user defined defaults */
 
