@@ -170,8 +170,11 @@ Block(struct xa_client *client, int which)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
 		client->inblock = true;
+		client->sleeplock = (long)client;
+		client->sleepqueue = IO_Q;
 		sleep(IO_Q, (long)client);
 		client->inblock = false;
+		client->sleeplock = 0;
 		if ((client->waiting_for & MU_TIMER) && !client->timeout)
 		{
 #if 1

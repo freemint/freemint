@@ -145,7 +145,10 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 				send_ontop(lock);
 			}
 			else if (top->owner != new)
+			{
+				DIAG((D_appl, NULL, "Set focus to root_window."));
 				C.focus = root_window;
+			}
 		}
 		else
 		{
@@ -164,8 +167,12 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 		display_window(lock, 30, root_window, NULL);
 	}
 	else if (new->std_menu.tree)
+	{
 		/* No - just change menu bar */
+		DIAG((D_appl, NULL, "redrawing menu..."));
 		redraw_menu(lock);
+	}
+	DIAG((D_appl, NULL, "exit ok"));
 }
 
 XA_TREE *

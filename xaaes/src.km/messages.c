@@ -237,6 +237,7 @@ is_inside(RECT r, RECT o)
 void
 send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
 {
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	union msg_buf *m;
 
 	if (dest_client == NULL)
@@ -249,14 +250,19 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	if (C.shutdown & QUIT_NOW)
 		return;	
 
-	m = (union msg_buf *)kmalloc(sizeof(m));
-
-	if (m)
+	if (!rc || rc == dest_client)
+		deliver_message(lock, dest_client, msg);
+	else
 	{
-		if (dest_client)
+		m = (union msg_buf *)kmalloc(sizeof(m));
+
+		if (m)
 		{
-			*m = *msg;
-			post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
+			if (dest_client)
+			{
+				*m = *msg;
+				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
+			}
 		}
 	}
 }
