@@ -295,12 +295,13 @@ do_winmesag(enum locks lock,
 	short mp0, short mp1, short mp2, short mp3,
 	short mp4, short mp5, short mp6, short mp7)
 {
-	if (wind->do_message)
+	if (wind->do_message && !(wind->owner->status & CS_EXITING))
 	{
 		struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 		struct xa_client *wo;
 		bool block_move;
 		short msg[8] = { mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7 };
+
 
 		if (!rc)
 			rc = C.Aes;
