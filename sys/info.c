@@ -311,7 +311,7 @@ const char *MSG_init_getname = "[MiNT is named \\AUTO\\%s]\r\n";
 /* In German this is "BootmenÅ anzeigen? (j)a (n)ein "
  * In French "Afficher le menu de dÇmarrage? (o)ui (n)on "
  */
-const char *MSG_init_askmenu = "Hold down the SHIFT key to enter menu or wait %ld s.\r\n";
+const char *MSG_init_askmenu = "Hold down the SHIFT key to enter menu or wait %d s.\r\n";
 const char *MSG_init_menu_yes = "y";
 # if 0
 const char *MSG_init_menu_no = "n";
