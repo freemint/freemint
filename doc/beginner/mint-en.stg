@@ -4,10 +4,12 @@
 @$VER: mint.stg (9/1/2001)
 @subject "Documentation/Manual"
 
-
 @node "Main" "FreeMiNT for absolute beginners"
-@{0B}                 FreeMiNT for absolute beginners@{0}
+@line 1 70 0
 
+@{B}                 FreeMiNT for absolute beginners@{b}
+
+@line 1 70 0
 
         Preface
 
@@ -25,24 +27,44 @@
 
                  1.1 Commands
 
-                     @{"#" LINK "#"}               @{"include" LINK "include"}
-                     @{"alias" LINK "alias"}           ren
-                     @{"cd" LINK "cd"}              set
-                     @{"echo" LINK "echo"}            setenv
-                     @{"exec" LINK "exec"}            sln
+                     #               include
+                     alias           ren
+                     cd              set
+                     echo            setenv
+                     exec            sln
 
-                 1.2. Variables
+                 1.2. Control variables
 
-                     AUX=            @{"NEWFATFS=" LINK "FASTLOAD="}
-                     BIOSBUF=        @{"PERCENTAGE=" LINK "CACHE="}
-                     CACHE=          @{"PRN=" LINK "AUX="}
-                     @{"CON=" LINK "AUX="}            SECURELEVEL=
-                     FASTLOAD=       SLICES=
-                     @{"GEM=" LINK "INIT="}            @{"UPDATE=" LINK "CACHE="}
-                     @{"HIDE_B=" LINK "FASTLOAD="}         @{"VFAT=" LINK "FASTLOAD="}
-                     INIT=           @{"VFATLCASE=" LINK "FASTLOAD="}
-                     @{"INITIALMEM=" LINK "MAXMEM="}     @{"WB_ENABLE=" LINK "CACHE="}
-                     MAXMEM=         @{"WRITEPROTECT=" LINK "FASTLOAD="}
+                     FDC_HIDE_B=
+
+                     FS_CACHE_SIZE=
+                     FS_CACHE_PERCENTAGE=
+                     FS_NEWFATFS=
+                     FS_UPDATE=
+                     FS_VFAT=
+                     FS_VFAT_LCASE=
+                     FS_WB_ENABLE=
+                     FS_WRITE_PROTECT=
+
+                     GEM=
+
+                     GEMDOS_AUX=
+                     GEMDOS_CON=
+                     GEMDOS_PRN=
+
+                     INIT=
+
+                     KERN_BIOSBUF=
+                     KERN_DEBUG_DEVNO=
+                     KERN_DEBUG_LEVEL=
+                     KERN_MPFLAGS=
+                     KERN_SECURITY_LEVEL=
+                     KERN_SLICES=
+
+                     PROC_MAXMEM=
+
+                     TPA_FASTLOAD=
+                     TPA_INITIALMEM=
 
                  1.3. mint.cnf example
 
@@ -59,9 +81,9 @@
               1. Path and filename length
               2. Case sensitivity
               3. File ownership and access permissions
-                 3.1. @{"Regular file" LINK "regular file"}
+                 3.1. Regular file
                  3.2. Symbolic links
-                 3.3. @{"Number of links" LINK "number of links"}
+                 3.3. Number of links
               4. Wildcard expansion
               5. Filesystem cache
 
@@ -90,17 +112,20 @@
 
         XI.   Gratias
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Preface"
+Preface
+@line 1 70 0
 
 If you're reading this, you are probably new to the FreeMiNT world,
 so welcome. We hope you will find FreeMiNT useful. However, there
 are several things to note, before you actually become a MiNTer.
-@{0B}
-@{0B}FreeMiNT is a free software@{0}
+
+@{B}FreeMiNT is free software@{b}
 It comes with no warranty and no support. Although other MiNT users
 and developers will probably do their best to solve all
 "unsolveable problems" you can encounter, the first one, who has to
@@ -109,28 +134,28 @@ maintained, improved actively by its users for themselves.
 You're given software, that has been developed for over 10
 years. You don't pay your money, but you must be prepared to pay
 with your creativity and intelligence.
-@{0B}
-@{0B}FreeMiNT is an operating system@{0}
+
+@{B}FreeMiNT is an operating system@{b}
 After you install the FreeMiNT successfully, you can expect your
 computer to change its usual face - you will have to accommodate to
 work in a different environment, and, furthermore, you will have to
-actually @{0B}understand@{0} what and why some things are different,
+actually @{B}understand@{b} what and why some things are different,
 than under old TOS.
-@{0B}
-@{0B}FreeMiNT is a multitasking operating system@{0}
+
+@{B}FreeMiNT is a multitasking operating system@{b}
 With FreeMiNT you can use multiple programs running simultaneously.
 This is a true, pre-emptive multitasking with adaptive
 prioritization. There can be as much as 1000 processes (programs)
 running simultaneously.
-@{0B}
-@{0B}FreeMiNT is a multiuser operating system@{0}
+
+@{B}FreeMiNT is a multiuser operating system@{b}
 With FreeMiNT you can configure your computer, so that you will be
 able to share its resources with other people, without a risk of
 loosing your valuable data. There is a lot of mechanisms
 implemented at the operating system level to protect all the
 resources from an unauthorized access.
-@{0B}
-@{0B}FreeMiNT is an Un*x like OS@{0}
+
+@{B}FreeMiNT is an Un*x like OS@{b}
 With FreeMiNT you're introduced to the great world of Unices, the
 most advanced operating systems for all hardware platforms. The
 FreeMiNT belongs to the same family as System V, FreeBSD, OpenBSD,
@@ -140,8 +165,8 @@ compiler and special libraries, those have been prepared to help
 you compiling Un*x programs. A large number of Un*x software has
 been already compiled for FreeMiNT and is available in source and
 binary form from FTP services.
-@{0B}
-@{0B}FreeMiNT is the tradition@{0}
+
+@{B}FreeMiNT is the tradition@{b}
 FreeMiNT is heritage of the Atari Corporation, the next generation
 of TOS. It is actually the best they left for us.
 
@@ -157,7 +182,7 @@ of this space is actually taken by documentation and various source
 code.
 
 As a last resort, you can always ask questions on the MiNT mailing
-list @{0B}mint@@fishpool.com@{0}. But before you do that, please read
+list @{B}mint@@fishpool.com@{b}. But before you do that, please read
 all the supplied documentation carefully. This helps to make the
 FreeMiNT list traffic reasonable. Also, asking your questions, try
 to be specific as much as possible - generic cries like "It does
@@ -171,14 +196,17 @@ for terms and conditions.
 All other trademarks and registered trademarks belong to their
 respective owners.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Getting started"
 @next "The mint.cnf file"
+Getting started
+@line 1 70 0
 
-This section is @{0B}not@{0} a detailed instruction on how to
+This section is @{B}not@{b} a detailed instruction on how to
 configure and setup a FreeMiNT system. Since the FreeMiNT is highly
 customizable, we cannot provide a detailed setup information
 without an assumption that you'd want to see the system to behave
@@ -197,26 +225,29 @@ Position of the associated files on the filesystem
 
 Important things to know about nohog.acc
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Filename and pathname convention"
 @toc "Getting started"
+Filename and pathname convention
+@line 1 70 0
 
 The writing convention for file an path names (also including drive
 letters) in TOS was, that all these were written always in
 UPPERCASE. For some reason, which will be discussed later, this
-convention is no longer valid. In FreeMiNT all filenames should be
+manner is no longer valid. In FreeMiNT all filenames should be
 lowercase by default, although mixed casing is of course allowed,
 when necessary. Basically you must remember that in FreeMiNT,
 unlike in TOS, the letter casing you use to reference files and
-folders, @{0B}does@{0} matter.
+folders, @{B}does@{b} matter.
 
 Respecting that, we won't use pathnames like C:\MINT\MINT.CNF
 preferring the form c:\mint\mint.cnf instead. This is different
 from what the TOS (and even MultiTOS) documentation says,
-eventhough it is called @{0B}compatibility convention@{0} of storing
+eventhough it is called @{B}compatibility convention@{b} of storing
 file- and pathnames. Such a form of a pathname is accepted by all
 TOS derivatives, hence the name.
 
@@ -257,12 +288,15 @@ kernel itself, you should use the second convention (i.e. the
 ('/c/mint/mint.cnf') should be only used with software ported
 from Unices.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Position of the mint.prg in the 'auto' folder"
 @toc "Getting started"
+mint.prg in the AUTO folder
+@line 1 70 0
 
 Unlike, for instance, the Linux/68k, the FreeMiNT does not need a
 separate loader to be started. Or, strictly speaking, it does, but
@@ -271,11 +305,11 @@ that is used to load and initialize the FreeMiNT kernel.
 
 Since the FreeMiNT is usually booted from the auto folder sequence,
 the auto folder sorting and physical order of its contents
-@{0B}does@{0} matter and @{0B}has@{0} an influence on the FreeMiNT
+@{B}does@{b} matter and @{B}has@{b} an influence on the FreeMiNT
 operation.
 
 The golden rule is: the FreeMiNT executable should be
-@{0B}definitely last@{0} program executed from the auto sequence. It
+@{B}definitely last@{b} program executed from the auto sequence. It
 is so for the following reasons:
 
 - auto folder programs are usually TOS extensions, so they will
@@ -319,23 +353,27 @@ Finally, there is software like HSMODEM, where the documentation
 explicitly says it should be loaded after MiNT. In this case you
 should verify such a statement on the MiNT mailing list
 (mint@@fishpool.com). In the particular case of the HSMODEM, you
-should load the software @{0B}before@{0} MiNT (regardless of what
+should load the software @{B}before@{b} MiNT (regardless of what
 the HSMODEM documentation says), if you want the MiNT Network
-package to work correctly.
+package to work correctly. Or better use dedicated MiNT serial 
+drivers instead of HSMODEM, which is now a bit outdated.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Name of the FreeMiNT executable in the 'auto' folder"
 @toc "Getting started"
+Name of the MiNT binary
+@line 1 70 0
 
 The name of the FreeMiNT executable people have in the auto is
 usually either mint.prg or mintnp.prg. Now surprise: this filename
 does not matter, you can change it to banana.prg and it still will
 work!
 
-With one notable exception: you @{0B}must@{0} rename the executable
+With one notable exception: you @{B}must@{b} rename the executable
 to mintnp.prg or mntnp.prg (both forms are valid), if you want to
 switch off the hardware memory protection mechanism (this changed
 as of FreeMiNT 1.16.0, see the section The mint.ini file
@@ -348,12 +386,15 @@ You may want to do so, if you're heavily using TOS software, that
 is not compatible with the memory protected mode. However, we
 recommend to do a little effort to find a replacement, if possible.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Position of the associated files on the filesystem"
 @toc "Getting started"
+Associated files
+@line 1 70 0
 
 After the FreeMiNT is loaded, it performs a search for its
 configuration file (mint.cnf) and other modules like extended
@@ -371,7 +412,7 @@ found the mint.cnf file.
 Optionally, you can put configuration files and modules also to the 
 subdirectory, that is named after the FreeMiNT kernel version number. 
 For example, the kernel version 1.16.0 accepts /mint/1-16-0/ as a 
-folder, where you can store the appropriate filesand modules. This 
+folder, where you can store the appropriate files and modules. This 
 allows to keep configuration files and modules for different kernel 
 versions on the disk separately without a risk to mix them up.
 
@@ -379,11 +420,15 @@ Also, unlike it is with the auto folder stuff, the execution
 sequence of the XDD and XFS modules does not matter - they can be
 physically sorted in any order.
 
+@line 1 70 0
+
 @endnode
 
 
 @node "Important things to know about nohog.acc"
 @toc "Getting started"
+nohog.acc
+@line 1 70 0
 
 The nohog accessory program, which you can find on some FTP sites,
 get it along with older FreeMiNT distributions etc., is considered
@@ -391,7 +436,7 @@ a thing that fixes some problems with GEM while using it (the GEM)
 with MiNT. Thus some people put the nohog.acc into their accessory
 folder in order to use it as advertised.
 
-                        @{0B}THIS IS WRONG!@{0}
+                        @{B}THIS IS WRONG!@{0}
 
 The nohog.acc is a very old program, that had been developed before
 the first version of multitasking GEM has appeared. Thus, the "GEM"
@@ -409,6 +454,7 @@ respectively), or under N.AES, or under oAESis, please stop doing
 it immediately and delete the nohog.acc file from your disk. This
 will greatly improve the system's stability.
 
+@line 1 70 0
 
 @endnode
 
@@ -416,6 +462,8 @@ will greatly improve the system's stability.
 @node "The mint.cnf file"
 @next "Understanding the concept of an 'init program'"
 @prev "Getting started"
+mint.cnf
+@line 1 70 0
 
 The mint.cnf file is one of corner stones for your FreeMiNT setup,
 because it allows to set many important things up inside the
@@ -425,49 +473,68 @@ system, the FreeMiNT configuration file defines a number of
 defaults to make the system up and running at all. So, if you're
 about to tune your setup, it is highly likely you'll have to edit
 your mint.cnf file as one of the first steps.
-@{0B}
-@{0B}NOTICE:
-@{0B}Older versions of MiNT had a limitation, that disallowed to use TAB
-@{0B}as a horizontal separator in the mint.cnf file. In the latest
-@{0B}versions of MiNT this limitation is gone, however, you're still
-@{0B}encouraged to use blank space as a separator for consistency.
-@{0B}@{0}
+
+@{B}NOTICE:
+@{B}Older versions of MiNT had a limitation, that disallowed to use TAB
+@{B}as a horizontal separator in the mint.cnf file. In the latest
+@{B}versions of MiNT this limitation is gone, however, you're still
+@{B}encouraged to use blank space as a separator for consistency.
+@{b}
+
+also
+
+@{B}NOTICE:
+@{B}Older versions of MiNT used different mint.cnf keywords. We
+@{B}provide old names inside parentheses here. The old keywords
+@{B}are still supported, however, we encourage you to switch now
+@{B}because the old format will go away some day.
+@{b}
 
 The mint.cnf commands:
 
-        @{"#" LINK "#"}               @{"include" LINK "include"}
-        @{"alias" LINK "alias"}           ren
-        @{"cd" LINK "cd"}              set
-        @{"echo" LINK "echo"}            setenv
-        @{"exec" LINK "exec"}            sln
+                     #               include
+                     alias           ren
+                     cd              set
+                     echo            setenv
+                     exec            sln
 
-The mint.cnf variables:
+The mint.cnf control variables
 
-        AUX=
-        BIOSBUF=
-        CACHE=
-        @{"CON=" LINK "AUX="}
-        @{"DEBUG_DEVNO=" LINK "DEBUG_DEVNO="}
-        @{"DEBUG_LEVEL=" LINK "DEBUG_LEVEL="}
-        FASTLOAD=
-        @{"GEM=" LINK "INIT="}
-        @{"HIDE_B=" LINK "FASTLOAD="}
-        INIT=
-        @{"INITIALMEM=" LINK "MAXMEM="}
-        MAXMEM=
-        @{"NEWFATFS=" LINK "FASTLOAD="}
-        @{"PERCENTAGE=" LINK "CACHE="}
-        @{"PRN=" LINK "AUX="}
-        SECURELEVEL=
-        SLICES=
-        @{"UPDATE=" LINK "CACHE="}
-        @{"VFAT=" LINK "FASTLOAD="}
-        @{"VFATLCASE=" LINK "FASTLOAD="}
-        @{"WB_ENABLE=" LINK "CACHE="}
-        @{"WRITEPROTECT=" LINK "FASTLOAD="}
+                     FDC_HIDE_B=
 
-Here is a mint.cnf example
+                     FS_CACHE_SIZE=
+                     FS_CACHE_PERCENTAGE=
+                     FS_NEWFATFS=
+                     FS_UPDATE=
+                     FS_VFAT=
+                     FS_VFAT_LCASE
+                     FS_WB_ENABLE=
+                     FS_WRITE_PROTECT=
 
+                     GEM=
+
+                     GEMDOS_AUX=
+                     GEMDOS_CON=
+                     GEMDOS_PRN=
+
+                     INIT=
+
+                     KERN_BIOSBUF=
+                     KERN_DEBUG_DEVNO=
+                     KERN_DEBUG_LEVEL=
+                     KERN_MPFLAGS=
+                     KERN_SECURITY_LEVEL=
+                     KERN_SLICES=
+
+                     PROC_MAXMEM=
+
+                     TPA_FASTLOAD=
+                     TPA_INITIALMEM=
+
+Here is a mint.cnf example. You find the same file in the directory 
+freemint/doc/examples/ in the FreeMiNT source distribution.
+
+@line 1 70 0
 
 @endnode
 
@@ -547,6 +614,9 @@ include u:/c/mint/config.cnf
 @prev "The mint.cnf file"
 @toc "The mint.cnf file"
 ren
+@line 1 70 0
+
+ren
 
 This is a "rename" command. Use this, if you need to change the
 default name a device is getting during a bootup:
@@ -558,15 +628,18 @@ stored on the disk. Also, be sure you know what you're doing while
 using this, because if you misuse the command, software can have
 problems finding system devices.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "sln"
 @toc "The mint.cnf file"
+sln
+@line 1 70 0
 
 This command creates so called symbolic links (also referenced as
-@{"symlinks" LINK "Symbolic links"}) on the unified filesystem (u:/) and the device
+symlinks) on the unified filesystem (u:/) and the device
 filesystem (u:/dev). The syntax is:
 
 sln u:/path/filename u:/path/linkname
@@ -581,19 +654,22 @@ hard drive, but in fact it is not a good idea, since the creation
 will be attempted on each bootup. To create symlinks on the hard
 drive you should use the GEM Desktop or shell commands.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "setenv"
-@next "SECURELEVEL="
+@next "KERN_SECURITY_LEVEL="
 @toc "The mint.cnf file"
+setenv
+@line 1 70 0
 
 Unlike in TOS, the FreeMiNT software makes a heavy use of so called
-@{0B}environment variables@{0}. In fact, TOS is perhaps the one and
+@{B}environment variables@{b}. In fact, TOS is perhaps the one and
 only operating system, where the environment variables have never
 been used, though (and it may be a small suprise for some of its
-users) the support for them has @{0B}always@{0} existed, since (and
+users) the support for them has @{B}always@{b} existed, since (and
 including) the earliest version possible to think of.
 
 An environment variable is basically a human-readable string
@@ -606,13 +682,13 @@ other user-defineable settings is, that these former ones are
 stored in the computer's memory exactly in the text form they have
 been defined, while other settings are usually converted to a form
 of binary data. A typical environment variable looks like this:
-@{0B}
-@{0B}HOSTNAME=saturn
-@{0B}@{0}
+
+@{B}HOSTNAME=saturn@{b}
+
 or
-@{0B}
-@{0B}PATH=u:/c/mint;u:/d/programs
-@{0B}@{0}
+
+@{B}PATH=u:/c/mint;u:/d/programs@{b}
+
 The environment variables usually control application software
 (including shells), but do not control the system itself, which
 actually maintains them only. Also, each user program (application)
@@ -622,24 +698,24 @@ not have an influence on other programs, unless they have been
 explicitly started by the process that made the modification (we
 say "unless they're its children"). Of course, since all programs
 are started by a shell, a modification done by the shell influences
-all programs - but only if they have been launched @{0B}after@{0}
+all programs - but only if they have been launched @{B}after@{b}
 the modification has been made.
 
 There are two "common" commands you can define an environment
 variable, so if one fails, you can always try the other one:
 
-@{0B}setenv@{0}
+@{B}setenv@{b}
 This one is supported by the FreeMiNT kernel while executing the
 mint.cnf file, by the Atari AES 4.10 (MultiTOS) while parsing the
 gem.cnf file and by any text shell derived from the so called "C
 shell" (csh). The syntax that assigns a 'value' to a variable named
-'NAME' is: @{0B}setenv NAME value@{0}
+'NAME' is: @{B}setenv NAME value@{b}
 
 The other command used by N.AES in n_aes.cnf files and by any text
 shell derived from the so called "Bourne shell" (of which the most
-common one is bash) is @{0B}export@{0}. To define a variable 'NAME'
+common one is bash) is @{B}export@{b}. To define a variable 'NAME'
 with a value of 'value', you do the following:
-@{0B}export NAME=value@{0}
+@{B}export NAME=value@{b}
 
 Neither one is 'better' or 'worse', exactly like neither type of
 the shell mentioned above is really superior over the other, though
@@ -649,25 +725,28 @@ See also:
 
 Environment variables set by the kernel
 
+@line 1 70 0
+
 @endnode
 
 
-@pnode "DEBUG_DEVNO="
+@pnode "KERN_DEBUG_DEVNO="
 
 determines the device for printing
 the FreeMiNT kernel's debug messages.
 
-default is 2 (/dev/console).
+default is 2 (/dev/console), maximum
+is 9.
 
 @endnode
 
 
-@pnode "DEBUG_LEVEL="
+@pnode "KERN_DEBUG_LEVEL="
 
 controls verbosity of the FreeMiNT
 kernel debug messages.
 
-default is 1.
+default is 1, maximum is 4.
 
 Notice the distribution kernels
 support only basic debug information.
@@ -677,59 +756,69 @@ by special debug kernels.
 @endnode
 
 
-@node "SECURELEVEL="
+@node "KERN_SECURITY_LEVEL="
 @prev "setenv"
 @toc "The mint.cnf file"
-@{0B}
-@{0B}SECURELEVEL=x@{0}
+
+@line 1 70 0
+
+@{B}KERN_SECURIY_LEVEL=x@{0}
 This keyword enables some additional security features implemented
 at the kernel level of the operating system. The 'x' ranges from 0
 to 2.
 
-With 'SECURELEVEL=1' the system blocks most of the BIOS/XBIOS
-functions, those are critical for system's security, so that these
+With 'KERN_SECURITY_LEVEL=1' the system blocks most of the BIOS/XBIOS
+functions, which are critical for system's security, so that these
 functions can be accessed only by software, that runs with
 superuser privileges (so called 'root privileges'). If you have a
 multiuser setup and allow people to access your computer via
 network, so that they are actually able to login and run programs,
-you should set the 'SECURELEVEL=1' in your mint.cnf file, because
-otherwise nothing (perhaps except a loyalty or lack of knowledge)
-prevents them from reformatting your hard drive. The only person,
-who should be able to do that - and it is really the case after
-raising the security level to 1 - is you, i.e. the superuser.
+you should set the 'KERN_SECURITY_LEVEL=1' in your mint.cnf file, 
+because otherwise nothing (perhaps except a loyalty or lack of 
+knowledge) prevents them from reformatting your hard drive. The only 
+person, who should be able to do that - and it is really the case 
+after raising the security level to 1 - is you, i.e. the superuser.
 
-With 'SECURELEVEL=2' this protection is even more strict - so
+With 'KERN_SECURITY_LEVEL=2' this protection is even more strict - so
 strict that it can be actually inacceptable not only for TOS
 programs, but also for Un*x programs those have been linked with
 old versions of the MiNT Library (up to, and including, PL 47).
 Hence do not enable this unless you're deadly sure your software is
 compatible, because otherwise your users won't be able to use your
 machine remotely. Obviously, the KGMD distribution (anno Domini
-1995) is not compatible with the SECURELEVEL=2.
+1995) is not compatible with the KERN_SECURITY_LEVEL=2.
 
-With 'SECURELEVEL=0' all these limitations are disabled.
+With 'KERN_SECURITY_LEVEL=0' all these limitations are disabled.
 
+@line 1 70 0
 
 @endnode
 
 
-@node "FASTLOAD="
+@node "TPA_FASTLOAD="
+@alias "FDC_HIDE_B="
+@alias "FS_NEWFATFS="
+@alias "FS_VFAT="
+@alias "FS_VFAT_LCASE="
+@alias "FS_WRITE_PROTECT="
 @toc "The mint.cnf file"
-@{0B}
-@{0B}FASTLOAD=no@{0} or@{0B}
-@{0B}FASTLOAD=yes@{0}
-With 'FASTLOAD=yes' the real state of the 'fastload' bit in the
+
+@line 1 70 0
+
+@{B}TPA_FASTLOAD=no@{b} or
+@{B}TPA_FASTLOAD=yes@{b}
+With 'TPA_FASTLOAD=yes' the real state of the 'fastload' bit in the
 program header is ignored and all programs are loaded like it was
-always set. With 'FASTLOAD=no' this bit is interpreted the same way
-as under TOS. The default is 'no'.
-@{0B}
-@{0B}HIDE_B=no@{0} or@{0B}
-@{0B}HIDE_B=yes@{0}
+always set. With 'TPA_FASTLOAD=no' this bit is interpreted the same 
+way as under TOS. The default is 'no'.
+
+@{B}FDC_HIDE_B=no@{b} or
+@{B}FDC_HIDE_B=yes@{b}
 This 'hides' (removes from the list of valid system drives) the
 floppy disk B:. Of course, this is only useful on systems, where
 the floppy B: is not present physically. The default is 'no'.
-@{0B}
-@{0B}NEWFATFS=drive,drive,drive,...@{0}
+
+@{B}FS_NEWFATFS=drive,drive,drive,...@{b}
 Specifies the list of drives (hard disk partitions and floppies)
 where the internal FAT filesystem should be used (otherwise the old
 TOS filesystem is used). If the TOS FS is not present in the system
@@ -739,29 +828,35 @@ enable is enabled anyways. If there is no FAT filesystem structure
 on a specifies partition, this command has no effect for this
 parition either. The default is none, if the TOS FS is present, or
 all otherwise.
-@{0B}
-@{0B}VFAT=drive,drive,drive,...@{0}
+
+@{B}FS_VFAT=drive,drive,drive,...@{b}
 Specifies a list of FAT filesystem drives, where the Windows 95
 VFAT extension should be enabled. This only works with the
 NEWFAT filesystem (see above). The default is none.
-@{0B}
-@{0B}VFATLCASE=no@{0} or@{0B}
-@{0B}VFATLCASE=yes@{0}
+
+@{B}FS_VFAT_LCASE=no@{b} or
+@{B}FS_VFAT_LCASE=yes@{b}
 This one forces the FAT filenames returned in lower case from
 directory searches (like it is in the VFAT). The default is 'no'.
-@{0B}
-@{0B}WRITEPROTECT=drive,drive,drive,...@{0}
+
+@{B}FS_WRITE_PROTECT=drive,drive,drive,...@{b}
 Specifies a list of drives to enable the software write protection.
 The defaultis none.
 
+@line 1 70 0
 
 @endnode
 
 
-@node "CACHE="
+@node "FS_CACHE_SIZE="
+@alias "FS_CACHE_PERCENTAGE="
+@alias "FS_UPDATE="
+@alias "FS_WB_ENABLE="
 @toc "The mint.cnf file"
-@{0B}
-@{0B}CACHE=x@{0}
+
+@line 1 70 0
+
+@{B}FS_CACHE_SIZE=x@{b}
 Specifies the amount of kilobytes, that will be allocated for
 bufferring (caching) all disk operations. This significantly speeds
 all the disk operations up, especially massive renaming, deleting
@@ -769,19 +864,19 @@ or moving directory entries. Since the filesystem cache is designed
 especially to handle the FreeMiNT disk operations, you do not
 need to use any external caching programs anymore. The default
 value is 120.
-@{0B}
-@{0B}PERCENTAGE=x@{0}
+
+@{B}FS_CACHE_PERCENTAGE=x@{b}
 Defines the percentage of the aforementioned disk cache to be
 filled with linear reads. Default is 5 (percent), which means, that
 if you set the cache size to 1 MB, any read operation fetches a 50k
 of non-cached data from the physical media.
-@{0B}
-@{0B}UPDATE=x@{0}
+
+@{B}FS_UPDATE=x@{b}
 Specifies the amount of time (in seconds), after which the write
 back cache units are written to the disk's magnetic media. The
 default is 5 sec.
-@{0B}
-@{0B}WB_ENABLE=drive,drive,drive,...@{0}
+
+@{B}FS_WB_ENABLE=drive,drive,drive,...@{b}
 Specifies the filesystems (partitions and floppies) where the
 write-back cache has to be active. The default is none. The
 write-back cache buffers all write operations in the memory, then
@@ -792,21 +887,26 @@ e.g. because of a power failure or crash - a data loss occurs. This
 is also the reason to close the system by explicitly disposing a
 shutdown command, because executing a shutdown sequence forces all
 cache units to be written out immediately.
-@{0B}
-@{0B}NOTICE:
-@{0B}The filesystem cache works only with 'true' FreeMiNT filesystems,
-@{0B}i.e. Minix FS, ext2 FS, FAT FS - and does NOT influence the old
-@{0B}TOSFS.
-@{0B}@{0}
+
+@{B}NOTICE:
+@{B}The filesystem cache works only with 'true' FreeMiNT filesystems,
+@{B}i.e. Minix FS, ext2 FS, FAT FS - and does NOT influence the old
+@{B}TOSFS.
+@{b}
+
+@line 1 70 0
 
 @endnode
 
 
 @node "INIT="
+@alias "GEM="
 @toc "The mint.cnf file"
-@{0B}
-@{0B}INIT=file
-@{0B}GEM=file@{0}
+
+@line 1 70 0
+
+@{B}INIT=file
+@{B}GEM=file@{0}
 This specifies the command you want the FreeMiNT to run at boot up
 time. The 'file' should be a full path name.
 
@@ -836,44 +936,56 @@ own risk: ROM AES cannot be shutdown, and forces to switch the power
 off without flushing the filesystem caches, thus endangering the 
 consistency of the data on your harddisk.
 
+@line 1 70 0
+
 @endnode
 
 
-@node "MAXMEM="
+@node "PROC_MAXMEM="
+@alias "TPA_INITIALMEM="
 @toc "The mint.cnf file"
-@{0B}
-@{0B}INITIALMEM=x@{0}
+
+@line 1 70 0
+
+@{B}TPA_INITIALMEM=x@{b}
 This specifies the maximum amount of memory allocated for program's
 TPA (i.e. this is everything over the size of the binary plus the
 size of the BSS segment).
 
-Unlike the MAXMEM, the INITIALMEM does not limit the amount of memory 
-available for processes by explicit allocation. The 'x' is measured 
-in kilobytes.
-@{0B}
-@{0B}MAXMEM=x@{0}
+Unlike the PROC_MAXMEM, the TPA_INITIALMEM does not limit the amount 
+of memory available for processes by explicit allocation. The 'x' is 
+measured in kilobytes.
+
+@{B}PROC_MAXMEM=x@{b}
 Specifies the maximum amount of memory that may be used by a
 process. The 'x' is measured in kilobytes.
 
 WARNING: many users tend to understand this option wrong. They set 
-MAXMEM=1024, and then complain that the system does not "see" more 
-than 1 MB of the memory. The system obviously does, just the program 
-the user uses to interrogate the total amount of memory doesn't, 
-because such a program is a process, and is limited by thuis keyword 
-to 1 MB.
+PROC_MAXMEM=1024, and then complain that the system does not "see" 
+more than 1 MB of the memory. The system obviously does, just the 
+program the user uses to interrogate the total amount of memory 
+doesn't, because such a program is a process, and is limited by this 
+keyword to 1 MB.
 
-Generally, don't use MAXMEM. If you want to limit the initial TPA 
-size, use INITIALMEM keyword.
+Generally, don't use PROC_MAXMEM, unless you deadly know what you 
+want or what you're doing. If you want to limit the initial TPA size, 
+use TPA_INITIALMEM keyword.
+
+@line 1 70 0
 
 @endnode
 
 
-@node "AUX="
+@node "GEMDOS_AUX="
+@alias "GEMDOS_CON="
+@alias "GEMDOS_PRN="
 @toc "The mint.cnf file"
-@{0B}
-@{0B}AUX=file
-@{0B}CON=file
-@{0B}PRN=file@{0}
+
+@line 1 70 0
+
+@{B}GEMDOS_AUX=file@{b}
+@{B}GEMDOS_CON=file@{b}
+@{B}GEMDOS_PRN=file@{b}
 This specifies the file or device you want MiNT to use by default
 for all output on the serial port, console and printer,
 respectively (including debugging output generated by a special,
@@ -883,33 +995,39 @@ obvious choice for console is u:/dev/console (the default). The
 default for the printer is u:/dev/centr, which is the device
 corresponding to the Centronics port.
 
+@line 1 70 0
 
 @endnode
 
 
-@node "BIOSBUF="
+@node "KERN_BIOSBUF="
 @toc "The mint.cnf file"
-@{0B}
-@{0B}BIOSBUF=no@{0} or@{0B}
-@{0B}BIOSBUF=yes@{0}
-If 'BIOSBUF=yes' appears in your configuration file, then certain
+
+@line 1 70 0
+
+@{B}KERN_BIOSBUF=no@{b} or
+@{B}KERN_BIOSBUF=yes@{b}
+If 'KERN_BIOSBUF=yes' appears in your configuration file, then certain
 optimizations in the FreeMiNT kernel concerning BIOS input and
 output are used. These optimizations should normally be transparent
 to user programs - and they usually are, but can be turned off with
-'BIOSBUF=no', when needed. Especially 'BIOSBUF=no' may help GFA
-BASIC programs to run, but the best solution is to avoid using
+'KERN_BIOSBUF=no', when needed. Especially 'KERN_BIOSBUF=no' may help 
+GFA BASIC programs to run, but the best solution is to avoid using
 GFA BASIC programs at all (unless you're deadly sure the program is
 cleanly written and compiled with a patched version of the GFA
 compiler). The default is 'yes' (optimizations on).
 
+@line 1 70 0
 
 @endnode
 
 
-@node "SLICES="
+@node "KERN_SLICES="
 @toc "The mint.cnf file"
-@{0B}
-@{0B}SLICES=x@{0}
+
+@line 1 70 0
+
+@{B}KERN_SLICES=x@{0}
 Controls the number of 20ms time slices to give to processes before
 they will be preempted. The default (2) is usually the best value;
 a higher value (e.g. 3) will cause CPU intensive tasks to receive
@@ -917,126 +1035,204 @@ more time, while a lower one (e.g. 1) will favour interactive tasks
 slightly. Generally, the lower the value, your processes have
 faster response time, but the general performance is worse.
 
-A zero (0) is a forbidden value. If you set SLICES=0, the system
+A zero (0) is a forbidden value. If you set KERN_SLICES=0, the system
 will silently change this to 1.
+
+@line 1 70 0
 
 @endnode
 
 
 @node "mint.cnf example"
 @toc "The mint.cnf file"
+
+@line 1 70 0
+
 # MiNT configuration file.
+#
+# The mint.cnf file is loaded, when the entire system is practically
+# up, all device drivers and filesystem drivers have been loaded etc.
+# If you want to control earlier settings, see mint.ini file.
+#
 
 # Edit this with a normal ASCII text editor. Lines starting with '#'
 # are comments. Other lines are commands for MiNT to execute at boot
 # up, or variables that control how MiNT behaves.
 
-# For best results, the convention u:/drive/pathname should be used for
-# all specified pathnames.
+# For best results, the convention u:/drive/pathname should be used
+# for all specified pathnames.
 
 #
-# Here are things you can change if you want to. There are reasonable
-# defaults for all of these.
+# Here are things you can change if you want to. There are
+# reasonable defaults for all of these.
 #
 
-# SECURELEVEL= enables the appropriate security level:
-# 0 - recommended for single user setups, like MultiTOS (default).
-# 1 - recommended for multiuser setups, like KGMD.
-# 2 - full protection, unsupported by software, thus discouraged.
+# Set current working directory to u: respective /
+#
+# FreeMiNT 1.16 does this automatically, this line is only required
+# on previous versions (also on 1.16 alphas compiled before second
+# half of July 2004).
 
-SECURELEVEL=1
+cd u:/
 
-# FASTLOAD=YES forces fast loading (without zeroing all the memory)
-# for all programs. This defines a default state, that can be modified
-# later via appropriate kernel calls (use MiNT Setter utility to
-# toggle it later when neessary, without reboots).
-# FASTLOAD=NO means that the information from the program header will be
-# used to decide (this is like TOS does).
+# The "set" directive controls the behaviour of the mint.cnf parser.
+# It accepts one of three parameters:
+#
+#set -q - silent output (+q for verbose output)
+#set -v - print command lines (+v don't)
+#set -c - control interpretation of escape sequences
 
-#FASTLOAD=YES
-
-# NEWFATFS= enables the new FAT filesystem driver for selected FAT
-# filesystems. The old TOS FS will be used otherwise.
-
-#NEWFATFS=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
-
-# VFAT= enables VFAT extension for selected drives specified in the
-# NEWFATFS= command.
-
-#VFAT=A,J
-
-# WB_ENABLE= enables write back cache for selected drives.
-# This does not have any influence on the old TOS FS, if used.
-
-#WB_ENABLE=C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
-
-# CACHE= specifies the size of disk cache in kilobytes for the internal
-# caching module
-
-#CACHE=500
-
-# UPDATE= set update time for system update daemon in seconds
-# default is 5, it isn't recommended to use a value less than 4
-
-#UPDATE=5
-
-# Software write protection on filesystem level for the specified drives
-
-#WRITEPROTECT=R,S
-
-# HIDE_B= tells the MiNT to remove floppy drive B: from the system.
-# It is useful on single floppy systems to get rid of "Insert
-# disk B: into drive A:" messages from the AES.
-
-#HIDE_B=YES
-
-# MAXMEM= gives the maximum amount of memory that any process may use
-# (in kilobytes). The default is to make this unlimited, but if you have
-# a lot of memory and/or programs that grab more memory than they should,
-# try setting this.
-# e.g. to limit processes to 4096K of memory, remove the '#' at the
-# beginning of the next line.
-# Decent shells (desktops) allow you to limit the maximum amount of memory
-# independently for each program.
-
-#MAXMEM=4096
-
-# Set maximum additional TPA size for new processes
-# (in kilobytes)
-
-INITIALMEM=1024
-
-# SLICES controls how long a process may run before being interrupted.
+# KERN_SLICES controls how long a process may run before being
+# interrupted.
+#
 # The default value (2) is usually best, but if you tend to run
 # very processor intensive applications in the foreground, you might
 # want to put SLICES=3 (this makes CPU hogs get more time than they
 # otherwise would).
-# The lower the SLICES value, your processes have faster response time
-# but the general performance is worse.
-
-SLICES=1
-
-# DEBUG_LEVEL controls output of debugging information. The higher
-# the level, the more stuff MiNT will spew about about what it's doing.
-# The average user doesn't want to hear about this stuff, so the default
-# is 1 (alerts and fatal errors only are displayed). More levels are
-# supported only by special, debug MiNT kernels.
 #
-# DEBUG_DEVNO is the BIOS device number to which the info should be sent.
+# The smaller the SLICES value, your processes have faster response
+# time but the general performance is worse.
+
+KERN_SLICES=2
+
+# KERN_DEBUG_LEVEL controls output of global debugging information.
+# The higher the level, the more stuff MiNT will spew about about
+# what it's doing.
+#
+# The average user doesn't want to hear about this stuff, so the
+# default is 1, i.e. display ALERT messages only.
+#
+# KERN_DEBUG_DEVNO is the BIOS device number to which the info should 
+# be sent.
+#
 # Devno can be: 0=printer, 1=aux/modem, 2=screen(console), 3=midi,
 # 4=keybrd, 5=raw.
+#
 # The default is the console.
 
-#DEBUG_LEVEL=1
-#DEBUG_DEVNO=3
+#KERN_DEBUG_LEVEL=1
+#KERN_DEBUG_DEVNO=3
 
-# BIOSBUF controls how BIOS I/O is performed. Normally, MiNT tries to buffer
-# this to provide a (considerable) improvement in speed. However, some
-# applications may get upset by this. BIOSBUF=no turns off all buffering
-# for maximum compatibility.
+# KERN_BIOSBUF controls how BIOS I/O is performed. Normally, MiNT
+# tries to buffer this to provide a (considerable) improvement in
+# speed. However, some applications may get upset by this.
+#
+# BIOSBUF=no turns off all buffering for maximum compatibility. The
+# default is YES.
 
-#BIOSBUF=NO
+#KERN_BIOSBUF=NO
 
+# KERN_SECURITY_LEVEL= enables the appropriate security level:
+#
+# 0 - recommended for single user setups, like MultiTOS (default).
+# 1 - recommended for multiuser setups, like KGMD.
+# 2 - full protection, unsupported by software, thus discouraged.
+
+KERN_SECURITY_LEVEL=1
+
+# KERN_MPFLAGS controls the memory protection behaviour. Its argument
+# is a bitfield. Only the bit 0 is defined: 1 means, that more strict
+# model of the protection should be enabled. Some programs may
+# refuse to run, so the default is 0.
+
+#KERN_MPFLAGS=1
+
+# TPA_FASTLOAD=YES forces fast loading (without zeroing all the
+# memory) for all programs. This defines a default state, that can be 
+# modified later via appropriate kernel calls (use MiNT Setter
+# utility to toggle it later when neessary, without reboots).
+#
+# TPA_FASTLOAD=NO (default) means that the information from the
+# program header will be used to decide (this is like TOS does).
+
+#TPA_FASTLOAD=YES
+
+# Set maximum additional TPA size for new processes
+# (in kilobytes). The default is 1024.
+
+#TPA_INITIALMEM=1024
+
+# FS_NEWFATFS= enables the new FAT filesystem driver for selected FAT
+# filesystems. The old TOS FS will be used otherwise.
+#
+# The default depends on whether the TOSFS driver is compiled into the
+# kernel or not. If it is, all drives are TOSFS by default. If not,
+# all drives are NEWFATFS by default and this keyword has no effect.
+
+#FS_NEWFATFS=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
+
+# FS_VFAT= enables VFAT extension for selected drives specified in the
+# NEWFATFS= command. The VFAT extension is disabled by default.
+
+#FS_VFAT=A,J
+
+# FS_VFAT_LCASE=YES tells the kernel to return lowercase filenames
+# from VFAT directory searches. The default is NO.
+
+#FS_VFAT_LCASE=YES
+
+# FS_WB_ENABLE= enables write back cache for selected drives. The
+# write back cache is disabled by default. Also, it does not have
+# any effect for TOSFS drives.
+
+#FS_WB_ENABLE=C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,V,W,X,Y,Z
+
+# FS_CACHE_SIZE= specifies the size of disk cache in kilobytes for the
+# internal caching module. Default is 128.
+
+#FS_CACHE_SIZE=500
+
+# FS_CACHE_PERCENTAGE specifies the size of the disk cache (in
+# percents) to be filled with linear reads. The default is 5.
+
+#FS_CACHE_PERCENTAGE=10
+
+# FS_UPDATE= set update time for system update daemon in seconds
+# default is 5, it isn't recommended to use a value less than 4.
+
+#FS_UPDATE=10
+
+# Software write protection on filesystem level.
+
+#FS_WRITE_PROTECT=R,S
+
+# FDC_HIDE_B= tells the MiNT to remove floppy drive B: from the
+# system.
+# It is useful on single floppy systems to get rid of "Insert
+# disk B: into drive A:" messages from the AES. Default is NO.
+
+#FDC_HIDE_B=YES
+
+# PROC_MAXMEM= gives the maximum amount of memory that any process
+# may use (in kilobytes). The default is to make this unlimited, but 
+# if you have a lot of memory and/or programs that grab more memory
+# than they should, try setting this.
+#
+# E.g. to limit processes to 4096K of memory, remove the '#' at the
+# beginning of the next line.
+#
+# WARNING: the process will not be allowed to allocate memory beyond 
+# the limit, and it won't "see" more memory as available from the
+# system.
+# Please understand that programs like "free" (or any other that
+# interrogates the system how much memory is available) is a process 
+# as well, thus it will undergo this limit too!
+#
+# Decent shells (desktops) allow you to limit the maximum amount of
+# memory independently for each program.
+
+#PROC_MAXMEM=4096
+
+# Three commands, that define output files for RS-232, console and
+# printer devices. The argument for each one must be a pathname.
+
+#GEMDOS_AUX=u:/c/mint/aux.out
+#GEMDOS_CON=u:/c/mint/con.out
+#GEMDOS_PRN=u:/c/mint/prn.out
+
+# End of kernel settings
+#
+# ---------------------- ************** ------------------------------
 #
 # Here are some commands that you can give to MiNT:
 #
@@ -1047,8 +1243,8 @@ SLICES=1
 # exec program  -- runs a program; you must give the complete path
 #                  and file extensions (e.g. c:/bin/echo.prg)
 # include file  -- include another portion of the MINT.CNF file.
-# sln path link -- make a symbolic link named "link" pointing to "path"
-#                  "link" must be on drive U: for this to work
+# sln path link -- make a symbolic link named "link" pointing to
+#                  "path". "link" must be on drive U: for this to work
 
 # Examples follow
 #
@@ -1057,7 +1253,9 @@ SLICES=1
 #
 # You could use "alias" to provide a quick way of getting at
 # nested directories, e.g. if you do
+#
 # alias r: u:/c/some/long/path
+#
 # then clicking on drive r: puts you into the folder c:/some/long/path
 
 # The "sln" command may be used to create "links" on drive U:. If
@@ -1082,70 +1280,56 @@ SLICES=1
 #sln g:/usr      u:/usr
 #sln g:/var      u:/var
 
-# Setting up pseudo terminal links for MINIWIN and WLOGIN
-
-sln u:/pipe/pty.A u:/dev/pty.A
-sln u:/pipe/pty.B u:/dev/pty.B
-sln u:/pipe/pty.C u:/dev/pty.C
-sln u:/pipe/pty.D u:/dev/pty.D
-sln u:/pipe/pty.E u:/dev/pty.E
-sln u:/pipe/pty.F u:/dev/pty.F
-sln u:/pipe/pty.G u:/dev/pty.G
-sln u:/pipe/pty.H u:/dev/pty.H
-sln u:/pipe/pty.I u:/dev/pty.I
-sln u:/pipe/pty.J u:/dev/pty.J
-sln u:/pipe/pty.K u:/dev/pty.K
-
-# Setting defaults for programs linked with MiNT C Library.
-# These are not only GNU programs, but also a lot of GEM
-# applications, like TosWin, QED etc.
+# PCONVERT and UNIXMODE variables control some internals of
+# MiNT Library.
 #
-# FreeMiNT 1.16.0 sets these two variables automatically.
+# FreeMiNT 1.16.0 sets these two below automatically.
 
-#setenv PCONVERT PATH,HOME,SHELL
-#setenv UNIXMODE /brUs
+setenv PCONVERT PATH,HOME,SHELL
+setenv UNIXMODE /brUs
 
 # Default path
+#
+# Default (on 1.16.0) is u:/
 
 setenv PATH /boot/mint/bin;/sbin;/bin;/usr/sbin;/usr/bin
 
-# Default path for SLBs (MagiC-style "shared libraries")
-#
-# FreeMiNT 1.16 sets this by default to $SYSDIR (see:
-# Environment variables set by the kernel). Note that
-# kernel versions prior to 1.16.0 won't treat this variable as
-# containing multiple paths. Formerly only single path was
-# allowed here.
+# Default path to search the SLBs (MagiC style 'shared
+# libraries'). Default (on 1.16.0) is /c/mint
 
-setenv SLBPATH u:/c/mint,u:/c/mint/slb
+setenv SLBPATH ./;/c/mint
 
-# The "exec" command is used to launch programs. Note that programs
-# so launched are started before GEM is, so they must be TOS/TTP
-# programs.
-
-# Perform filesystem checks if necessary.
+# Checking filesystem if necessary
 # Note: you need a correct /etc/fstab
 
 #exec u:/c/mint/bin/sh u:/c/mint/bin/fscheck.sh
 #echo
 
-# Set up time stuff.
-# The tzinit program is provided in the util/tzinit
-# subdirectory. For information about the exec keyword see the
-# paragraph above.
+# Alternative method, if you have e2fsck.ttp in /c/mint,
+# and e: is your ext2fs drive.
 
-# You must have installed the MiNTLib's timezone database for
-# this to work.
+#exec /c/mint/e2fsck.ttp -C 0 -p e:
 
-#setenv TZ 'Europe/Warsaw'
+# Set up time stuff. Note that you need MiNT Lib timezone package
+# (installed along with the library) for this below to work.
+#
+# Such settings are valid if your clock ticks in UTC. For local
+# time you have to add -l to the tzinit.
+
+#setenv TZ 'Europe/London'
 #exec u:/usr/sbin/tzinit
+#exec u:/usr/sbin/tzinit -l
 
-# start Draconis to MiNT-Net gateway
+# The "exec" command is used to launch programs. Note that programs
+# so launched are started before GEM is, so they must be TOS/TTP
+# programs. Most commonly used for starting device drivers.
+
+# Start Draconis to MiNT-Net gateway
 
 #exec u:/boot/mint/mgw.prg
 #echo
 
-# start Gluestik
+# Start Gluestik
 
 #exec u:/boot/mint/gluestik.prg
 #echo
@@ -1159,13 +1343,25 @@ setenv SLBPATH u:/c/mint,u:/c/mint/slb
 #setenv HOME    /root
 #setenv SHELL   /bin/bash
 
+# These lines (with proper pathnames) are obligatory, if you're
+# going to use N.AES and Thing Desktop, respectively.
+
+#setenv AESDIR   u:/boot/mint/aes/
+#setenv THINGDIR u:/boot/mint/aes/desktop
+
 # The best option is to have INIT= command here, after all pathnames
 # are already set up by commands above.
 
 # If the MiNT is supposed to execute GEM, you should specify the full
 # path and filename like that:
 
-#GEM=u:/boot/mint/aes/n_aes.sys
+#GEM=u:/boot/mint/aes/xaaes.prg
+
+# You can also request MiNT to execute the TOS AES residing in ROM.
+# WARNING: this is not recommended, you should use a GEM version
+# instead, that is multitasking friendly.
+
+#GEM=ROM
 
 # Otherwise, if your init program is not GEM, you should use INIT= as
 # follows:
@@ -1173,15 +1369,15 @@ setenv SLBPATH u:/c/mint,u:/c/mint/slb
 INIT=u:/boot/mint/init.prg
 
 # If you leave both commands above commented out, the MiNT will
-# attempt to execute a shell called `sh.tos' found in the system
-# directory (the same as mint.cnf is). If this fails too, the
-# internal minimum shell will be launched.
+# attempt to execute a file called `sh.tos' found in the system
+# directory (the same where the mint.cnf resides), and if this
+# fails, the internal minimum shell will be executed.
 
 # Before the MiNT executes the rest of the operating system, it is
 # usually the best to change the current directory to the top
 # directory of all filesystems.
-
-# FreeMiNT 1.16 does this automatically.
+#
+# FreeMiNT 1.16.0 does this automatically.
 
 cd u:/
 
@@ -1194,10 +1390,13 @@ echo
 
 # End of mint.cnf file
 
+@line 1 70 0
 
 @endnode
 
 @node "Environment variables set by the kernel"
+
+@line 1 70 0
 
 The FreeMiNT kernel 1.16.0, unlike previous versions, exports few 
 environment variables on its own during startup. These are:
@@ -1221,15 +1420,19 @@ This is set to "/brUs".
 PCONVERT
 This is set to "PATH,HOME,SHELL"
 
+@line 1 70 0
+
 @endnode
 
 @node "The mint.ini file"
+
+@line 1 70 0
 
 As of kernel version 1.16.0 the FreeMiNT uses an additional
 configuration file, apart from the traditional mint.cnf. The
 difference is, that the mint.cnf contains settings used to tune the
 system, when everything is practically up, while the mint.ini file
-declares some defaults @{0B}before@{0} initialization.
+declares some defaults @{B}before@{b} initialization.
 
 The mint.ini file defines variables, which you can change inside
 the kernel boot menu (hold down the left shift key while booting
@@ -1241,17 +1444,17 @@ by default.
 
 There are six variables, which can be set to 'YES' or 'NO':
 
-@{0B}XFS_LOAD@{0} and @{0B}XDD_LOAD@{0}
+@{B}XFS_LOAD@{b} and @{B}XDD_LOAD@{b}
 When set to 'NO', it will prevent the FreeMiNT kernel from loading
 filesystem drivers (XFS) and device drivers (XDD) respectively from
 the disk. This may be useful to bootup the system, eventhough
 there's a broken driver installed.
 
-@{0B}EXE_AUTO@{0}
+@{B}EXE_AUTO@{b}
 When set to 'NO', the auto folder programs appearing after mint.prg
 will not be executed.
 
-@{0B}MEM_PROT@{0}
+@{B}MEM_PROT@{b}
 Enable the memory protection ('YES') or not ('NO'). This works
 independently of the kernel name in the auto folder - in other
 words the times of mintnp.prg are gone. Notice however, that the
@@ -1259,12 +1462,12 @@ kernel may disable the memory protection during initialization
 anyways, when it detects, that the memory management unit is
 already in use. This is the case on e.g. Centurbo 2 Falcons.
 
-@{0B}INI_SAVE@{0}
+@{B}INI_SAVE@{b}
 'YES' states, that the current mint.ini file will be overwritten
 when leaving the boot menu by the user. This can be changed in the
 menu itself as well.
 
-@{0B}INI_STEP@{0}
+@{B}INI_STEP@{b}
 'YES' means, that the kernel will stop in certain points while
 initialization and ask the user for confirmation.
 
@@ -1290,30 +1493,42 @@ This is so, because the mint.ini parser is not complicated, thus
 everything that does not look like a known command, is ignored and
 not preserved between read and writeout.
 
+@line 1 70 0
+
 @endnode
 
 @node "The keyboard.tbl file"
+
+@line 1 70 0
 
 The optional keyboard.tbl file located in the system directory (i.e.
 the same as mint.cnf is) contains the global keyboard translation
 table. Example translation tables in source and object form, and
 also a program that compiles them, are available along with the
-kernel distribution.
+kernel source distribution.
+
+@line 1 70 0
 
 @endnode
 
 @node "The unicode.tbl file"
+
+@line 1 70 0
 
 The optional unicode.tbl file located in the system directory (i.e.
 the same as mint.cnf is) contains supplemental data for the
 default codepage tables, i.e. tables which map Unicode characters
 into ASCII.
 
+@line 1 70 0
+
 @endnode
 
 
 @node "Understanding the concept of an 'init program'"
 @prev "The mint.cnf file"
+
+@line 1 70 0
 
 It may not be obvious for everyone, but a typical operating system
 usually consists of at least two separate parts. One is the system
@@ -1340,22 +1555,22 @@ control off to an external program, which could take care on
 further initialization and (possibly) responsibility for
 interaction with the user. In Unices such a program is commonly
 called 'init'.
-@{0B}
-@{0B} It is very important to understand, that the 'init' program,
-@{0B} whatever it really is, is completely necessary for the system
-@{0B} to operate.
-@{0B}@{0}
+
+@{B} It is very important to understand, that the 'init' program,
+@{B} whatever it really is, is completely necessary for the system
+@{B} to operate.
+@{b}
 In MultiTOS-like configuration of the FreeMiNT, the 'init' program
 is GEM, or, strictly speaking, the multitasking AES. The GEM (AES)
 is not a part of the FreeMiNT kernel binary, and, due to legal
 reasons, it is not even a part of the FreeMiNT distributions. In
 other words, to use the multitasking GEM, you must get its
 distribution floppies separately.
-@{0B}
-@{0B} Since the GEM is one of possible init programs, you cannot specify
-@{0B} a GEM application in INIT= or @{"GEM=" LINK "INIT="} keywords, since at this stage
-@{0B} of the system initialization, the GEM is not yet active!
-@{0B}@{0}
+
+@{B} Since the GEM is one of possible init programs, you cannot specify
+@{B} a GEM application in INIT= or GEM= keywords, since at this stage
+@{B} of the system initialization, the GEM is not yet active!
+@{b}
 To start the 'init' program, you must specify its full pathname in
 the INIT= keyword of the mint.cnf file. For example,
 
@@ -1368,27 +1583,30 @@ place here to explain technical details, for now you just want to
 know, that you use GEM= keyword if your init program is GEM, and
 INIT= keyword otherwise. Notice, that only one of these two may be
 used in one mint.cnf file!
-@{0B}
-@{0B} The pathname given in INIT= or GEM= keyword must be accurate, and
-@{0B} it must point to a valid executable file. If starting the init
-@{0B} program fails, the FreeMiNT kernel halts the machine, and you have
-@{0B} nothing to do except rebooting to TOS to fix the configuration.
-@{0B}@{0}
+
+@{B} The pathname given in INIT= or GEM= keyword must be accurate, and
+@{B} it must point to a valid executable file. If starting the init
+@{B} program fails, the FreeMiNT kernel halts the machine, and you have
+@{B} nothing to do except rebooting to TOS to fix the configuration.
+@{b}
 Once started, the init program (whatever it is) takes the control
 on the further boot process using own configuration files and/or
-scripts. For example, the Atari GEM (the multitasking
-versions) and Geneva use gem.cnf file, while the Un*x-like init -
-known as 'init.prg' or just 'init' - wants to execute shell scripts
+scripts. For example, the Atari GEM (the multitasking versions) and 
+Geneva use gem.cnf file, while the Un*x-like init -known as 
+'init.prg' or just 'init' - wants to execute shell scripts
 present in /etc (u:/etc) directory. Hence you must refer to the
 documentation of the init program you choose on how to setup it or
 tune the configuration to your own requirements.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Understanding the concept of multiple filesystems"
 @next "Understanding the memory protection mechanism"
+
+@line 1 70 0
 
 The FreeMiNT implements so called virtual filesystem (VFS), which
 means, that you're no longer limited to the old, PC-DOS like style
@@ -1451,6 +1669,7 @@ Wildcard expansion
 
 Filesystem cache
 
+@line 1 70 0
 
 @endnode
 
@@ -1458,10 +1677,12 @@ Filesystem cache
 @node "unifs"
 @toc "Understanding the concept of multiple filesystems"
 
-@{0B}unifs@{0} aka @{0B}unified filesystem@{0}
+@line 1 70 0
+
+@{B}unifs@{b} aka @{B}unified filesystem@{b}
 This is what handles all references to the root directory of the
 drive u:. The XFS allows to mount other filesystems on it, and
-create symbolic links, but you cannot make @{"hard links" LINK "Symbolic links"}, create
+create symbolic links, but you cannot make hard links, create
 folders the usual way, or use it as data storage for files.
 
 The unified filesystem is considered the top directory (so called
@@ -1472,19 +1693,20 @@ locally via the Network File System (nfs).
 
 In other words, all files accessible by the GEMDOS can be
 referenced from the unifs. For example, a file like
-@{0B}mint.cnf@{0} present in the @{0B}mint@{0} directory of the
+@{B}mint.cnf@{b} present in the @{B}mint@{b} directory of the
 drive c:, what is 'normally' referenced as
 
-@{0B}c:\mint\mint.cnf@{0}
+@{B}c:\mint\mint.cnf@{b}
 
 can be also accessed via the unifs as
 
-@{0B}u:\c\mint\mint.cnf@{0} or
-@{0B}/c/mint/mint.cnf@{0}
+@{B}u:\c\mint\mint.cnf@{b} or
+@{B}/c/mint/mint.cnf@{b}
 
 because the drive c: is 'mounted' on the unified filesystem as a
 folder.
 
+@line 1 70 0
 
 @endnode
 
@@ -1492,11 +1714,14 @@ folder.
 @node "biosfs"
 @toc "Understanding the concept of multiple filesystems"
 
-@{0B}biosfs@{0} aka @{0B}BIOS filesystem@{0}
+@line 1 70 0
+
+@{B}biosfs@{b} aka @{B}BIOS filesystem@{b}
 This one takes care on all references to the /dev directory. All
 entries there are system devices actually active. You rather don't
 do anything there manually.
 
+@line 1 70 0
 
 @endnode
 
@@ -1504,12 +1729,15 @@ do anything there manually.
 @node "pipefs"
 @toc "Understanding the concept of multiple filesystems"
 
-@{0B}pipefs@{0} aka @{0B}pipeline filesystem@{0}
+@line 1 70 0
+
+@{B}pipefs@{b} aka @{B}pipeline filesystem@{b}
 This is the /pipe folder. All entries there are FIFOs. They're
 created by software wishing to use this way of interprocess
 communication. As in the biosfs, no real use for a human, but
 important for the software.
 
+@line 1 70 0
 
 @endnode
 
@@ -1517,7 +1745,9 @@ important for the software.
 @node "procfs"
 @toc "Understanding the concept of multiple filesystems"
 
-@{0B}procfs@{0} aka @{0B}process filesystem@{0}
+@line 1 70 0
+
+@{B}procfs@{b} aka @{B}process filesystem@{b}
 This is the /proc directory. Each entry there represents a process.
 You cannot explicitly create anything there, entries are made
 automatically by the system when you start a program, but you can
@@ -1535,7 +1765,7 @@ Notice: that last is usually just the amount of memory the process
 took from the system resources, but in some cases it may be not
 completely true. For example, if there is a 16k block of memory
 shared by two processes, the size of this block will be added to
-the process 'size' displayed in the proc directory for @{0B}both@{0}
+the process 'size' displayed in the proc directory for @{B}both@{b}
 programs those are sharing it. So you can have an impression, that
 either process is using a separate 16k block and the size of the
 free memory was lowered by 32k, while in fact only 16k is being
@@ -1579,6 +1809,7 @@ the init so far has always been pid 1, the pid 2 may be a process
 started by MiNT Net for example, if that last is installed. The
 update daemon may then have pid 3, or greater.
 
+@line 1 70 0
 
 @endnode
 
@@ -1586,13 +1817,16 @@ update daemon may then have pid 3, or greater.
 @node "shmfs"
 @toc "Understanding the concept of multiple filesystems"
 
-@{0B}shmfs@{0} aka @{0B}shared memory filesystem@{0}
+@line 1 70 0
+
+@{B}shmfs@{0} aka @{B}shared memory filesystem@{0}
 This one is the /shm directory. Entries there (if any) represent
 memory blocks, those have been explicitly requested to be shared
 between two or more processes. As such structures are usually
 temporary, you rarely see anything there. Also, the shmfs has
 completely no use for a human.
 
+@line 1 70 0
 
 @endnode
 
@@ -1600,7 +1834,9 @@ completely no use for a human.
 @node "ramfs"
 @toc "Understanding the concept of multiple filesystems"
 
-@{0B}ramfs@{0} aka @{0B}ramdisk filesystem@{0}
+@line 1 70 0
+
+@{B}ramfs@{b} aka @{B}ramdisk filesystem@{b}
 This one is the /ram directory. This one is not really used by the
 system, it is just a dynamic ramdisk. It previously used to be a
 separate xfs module, however, has been integrated into the kernel
@@ -1609,6 +1845,7 @@ ramdisk as a temporary directory (/tmp), for speed reasons,
 although since disk filesystems are cached, the /tmp located on a
 partition is fast too.
 
+@line 1 70 0
 
 @endnode
 
@@ -1616,14 +1853,16 @@ partition is fast too.
 @node "kernfs"
 @toc "Understanding the concept of multiple filesystems"
 
-@{0B}kernfs@{0} aka @{0B}kernel filesystem@{0}
+@line 1 70 0
+
+@{B}kernfs@{b} aka @{B}kernel filesystem@{b}
 This is the /kern directory. It has been added in FreeMiNT 1.15.5
 mainly as an expanded replacement for /proc.
 
 Files present in the /kern directory contain global information
 about the system. These are:
 
-@{0B}/kern/buildinfo@{0}
+@{B}/kern/buildinfo@{b}
 This file provides information about the compiler, options and
 flags which were used to compile the kernel, for example:
 
@@ -1635,11 +1874,11 @@ CDEFS: -DMULTITOS -DVERBOSE_BOOT -DTRAPS_PRIVATE -DCRYPTO_CODE
 Obviously, the definitions set in the FreeMiNT's config.h are not
 taken here into account.
 
-@{0B}/kern/cookiejar@{0}
+@{B}/kern/cookiejar@{b}
 The cookie jar slots listed in the order they have been installed,
 for example:
 
-@{"#" LINK "#"} Slots available: 1024
+# Slots available: 1024
 # Slots used:        20
 0x5F435055 (_CPU): 0x0000001E
 0x5F465055 (_FPU): 0x00060000
@@ -1666,7 +1905,7 @@ Each line, except the first two, contains the jar tag
 hexadecimally, the same value in ASCII and the entry value in hex
 respectively.
 
-@{0B}/kern/cpuinfo@{0}
+@{B}/kern/cpuinfo@{b}
 Here the basic information about the CPU is provided, it may look
 like this (Falcon030):
 
@@ -1680,13 +1919,13 @@ The 'BogoMIPS' field contains an approximate information about the
 CPU speed measured in million instructions per second. The rest
 should be self explaining.
 
-@{0B}/kern/filesystems@{0}
+@{B}/kern/filesystems@{b}
 This is a list of installed filesystem drivers.
 
-@{0B}/kern/hz@{0}
+@{B}/kern/hz@{b}
 The system timer resolution in ticks per second.
 
-@{0B}/kern/loadavg@{0}
+@{B}/kern/loadavg@{b}
 This is the current load average information. The first three
 numbers provide the information about the average system load last
 1, 5 and 15 minutes respectively. The fourth one, presented as a
@@ -1700,34 +1939,37 @@ always equals 0.
 This is the pathname to the FreeMiNT system directory, usually 
 u:/c/mint.
 
-@{0B}/kern/time@{0}
+@{B}/kern/time@{b}
 Here is the information about the kernel time, i.e. the number of
 seconds since January the 1st 1970, and the same number with
 timezone value subtracted.
 
-@{0B}/kern/uptime@{0}
+@{B}/kern/uptime@{b}
 The system uptime and the total idling time in seconds.
 
-@{0B}/kern/version@{0}
+@{B}/kern/version@{b}
 The system name, version number and compile time.
 
-@{0B}/kern/welcome@{0}
+@{B}/kern/welcome@{b}
 The system welcome messages displayed at bootup.
 
-@{0B}/kern/devices@{0}
-@{0B}/kern/dma@{0}
-@{0B}/kern/meminfo@{0}
+@{B}/kern/devices@{b}
+@{B}/kern/dma@{b}
+@{B}/kern/meminfo@{b}
 These are not yet implemented.
 
 Folders inside the /kern provide an extended information about
 processes separately for each one.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Path and filename length"
 @toc "Understanding the concept of multiple filesystems"
+
+@line 1 70 0
 
 Old TOS filesystem supported 'short filenames', i.e. a directory
 entry representing a file or folder could have maximum 12
@@ -1755,6 +1997,7 @@ are programs which completely refuse to run on an extended
 filesystem. Such software should be used on disks where long
 filenames are disabled (e.g. NEWFAT without VFAT).
 
+@line 1 70 0
 
 @endnode
 
@@ -1762,10 +2005,12 @@ filenames are disabled (e.g. NEWFAT without VFAT).
 @node "Case sensitivity"
 @toc "Understanding the concept of multiple filesystems"
 
+@line 1 70 0
+
 There are three general methods of storing file/folder names on the
 disk:
 
-@{0B}Case insensitive@{0}
+@{B}Case insensitive@{b}
 All filenames are stored on the disk and appear on directory
 listings with unified casing (all upper or all lower). Mixed casing
 is not allowed, there is no difference between upper and lower case
@@ -1775,7 +2020,7 @@ file, which was saved as "program.app", is perfectly legal. An
 example of such a filesystem is the TOS FS or NEWFAT without VFAT
 extension.
 
-@{0B}Case preserving@{0}
+@{B}Case preserving@{b}
 This is similar to the case insensitive one, with a notable
 exception, that the filename casing is preserved in the form used
 by the creator of the file. For example, if you create a file
@@ -1788,25 +2033,29 @@ filesystem is the NEWFAT with VFAT or fnramfs.xfs (ramdisk). Also
 all internal pseudo-filesystems in FreeMiNT, like unifs, biosfs
 etc. are case preserving.
 
-@{0B}Case sensitive@{0}
+@{B}Case sensitive@{b}
 Here casing just matters. If you save a file under a name like
 "program.app", you cannot access it later as "PROGRAM.APP", because
 these two names will be considered different. Also, a case
 sensitive filesystem is simultaneously case preserving by nature.
 An example of such a filesystem is ext2.xfs or minix.xfs.
-@{0B}
-@{0B} NOTICE:
-@{0B} Because of the case preserving and case sensitive filesystems, the
-@{0B} old TOS convention of storing all path and filenames in UPPERCASE
-@{0B} is *** no longer valid ***. File- and pathnames should be
-@{0B} lowercase by default.
-@{0B}@{0}
+
+@{B} NOTICE:
+@{B} Because of the case preserving and case sensitive filesystems, the
+@{B} old TOS convention of storing all path and filenames in UPPERCASE
+@{B} is *** no longer valid ***. File- and pathnames should be
+@{B} lowercase by default.
+@{b}
+
+@line 1 70 0
 
 @endnode
 
 
 @node "File ownership and access permissions"
 @toc "Understanding the concept of multiple filesystems"
+
+@line 1 70 0
 
 The FreeMiNT is an operating system with multiuser support, which
 means, that it is possible to create a setup, which could grant -
@@ -1859,22 +2108,22 @@ it is needed to display them in human readable form.
 Although there may be many groups of many users in the system,
 there are in fact only three classes of access privileges:
 
-@{0B}user@{0} (u)
+@{B}user@{b} (u)
 The actual one who created the file, and whose UID is associated
 with the file's directory entry.
 
-@{0B}group@{0} (g)
+@{B}group@{b} (g)
 All users, who belong to the same group as the creator of the file.
 
-@{0B}others@{0} (o)
+@{B}others@{b} (o)
 All users, who belong to group(s) other than the creator of the
 file.
-@{0B}
-@{0B} NOTICE:
-@{0B} In any case, the system administrator (Superuser), i.e. the user
-@{0B} with UID 0 and GID 0, can override any attributes other users
-@{0B} could set.
-@{0B}@{0}
+
+@{B} NOTICE:
+@{B} In any case, the system administrator (Superuser), i.e. the user
+@{B} with UID 0 and GID 0, can override any attributes other users
+@{B} could set.@{b}
+
 The actual access is controlled by the 'access permission' field as
 shown above. This is encoded on a 10-character field, where the
 first one (from the left) indicates a directory (d), link (l),
@@ -1899,24 +2148,24 @@ others can read    ----------------+ | |
 If the access is given, it appears in the directory as the
 appropriate letter as shown above (r, w, or x respectively). If the
 access is denied, there is a minus mark (-) instead. You change
-permission codes and ownership with shell command @{0B}chmod@{0} or
+permission codes and ownership with shell command @{B}chmod@{b} or
 any decent GEM desktop - please experiment with it for a while -
 but not on valuable files or system binaries! - to learn how does
 it really work.
-@{0B}
-@{0B} There are more permission marks, than the aforementioned 'r', 'w'
-@{0B} or 'x'. They're not discussed here for sake of simplicity, but
-@{0B} they do exist and have obviously special meaning. If you come
-@{0B} across a file with 'weird' access permission codes, do not touch
-@{0B} it, before you'll be absolutely sure what are you doing!
-@{0B}@{0}
+
+@{B} There are more permission marks, than the aforementioned 'r', 'w'
+@{B} or 'x'. They're not discussed here for sake of simplicity, but
+@{B} they do exist and have obviously special meaning. If you come
+@{B} across a file with 'weird' access permission codes, do not touch
+@{B} it, before you'll be absolutely sure what are you doing!@{b}
+
 The way this works may be sometimes tricky. For instance, the read
 and write permission (r/w) control an explicit and implicit data
 reads and writes referring to the contents of the file.
 
 However, and it may be important to know, operations on the
 directory entry itself may depend on the ownership and permission
-access of @{0B}the directory the entry belongs to@{0} rather than
+access of @{B}the directory the entry belongs to@{b} rather than
 the ownership and permissions of the file the entry does represent.
 So, if there is a file you don't have write access to, but it is
 located in a directory, where you have the write access to, you can
@@ -1935,14 +2184,14 @@ permissions ---x--x--x cannot be read or written by anyone, but can
 be run by everybody. When same permission codes are on a folder,
 everybody can enter it and read/write/execute files in it, but
 nobody can list the contents of this directory!
-@{0B}
-@{0B} NOTICE:
-@{0B} On an Un*x filesystem, the 'x' flag (so called 'x-bit')
-@{0B} exclusively marks a binary file as executable REGARDLESS of the
-@{0B} filename extension, if any. In other words, the system won't
-@{0B} execute an *.app file, if all 'x-bits' of the appropriate
-@{0B} directory entry are cleared!
-@{0B}@{0}
+
+@{B} NOTICE:
+@{B} On an Un*x filesystem, the 'x' flag (so called 'x-bit')
+@{B} exclusively marks a binary file as executable REGARDLESS of the
+@{B} filename extension, if any. In other words, the system won't
+@{B} execute an *.app file, if all 'x-bits' of the appropriate
+@{B} directory entry are cleared!@{b}
+
 Of course, all this works as expected only on filesystems, which
 support the data ownership and access permissions, i.e. on ext2 and
 minix filesystem. Actually, when you do 'ls -l' from a text shell
@@ -1953,12 +2202,15 @@ with Un*x software. Of course, since most of these access codes are
 fake, there is no real data safety and no real access control on a
 FAT disk.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Wildcard expansion"
 @toc "Understanding the concept of multiple filesystems"
+
+@line 1 70 0
 
 This topic does not quite belong to the filesystem section, as the
 manner the wildcards ('*' and '?' characters when used in
@@ -1992,7 +2244,7 @@ also wildcards behave differently:
 - the mask '.*' maches all files and directories with filenames
   starting with a dot.
 
-@{0B}WARNINGS@{0}
+@{B}WARNINGS@{b}
 That last also matches entries '.' and '..'! Eventhough you won't
 be able to do anything to these entries themselves, however when an
 operation is started, which is supposed to work recursively across
@@ -2001,16 +2253,16 @@ entry ('..'), the command will first walk up to the topmost
 directory in the system (i.e. u:/), then go down recursively
 across its folders.
 
-In other words @{0B}this is likely to affect all files and folders
-@{0B}which are present in the system@{0} including devices, pipes,
+In other words @{B}this is likely to affect all files and folders@{b}
+@{B}which are present in the system@{b} including devices, pipes,
 processes, remote machines mounted via network filesystem,
 everything. If you were unfortunate enough to dispose a 'delete'
 operation in this manner with superuser (root) privileges, it will
 wipe your harddisks destroying the system completely.
 
 Many people reflexively add flags '-rf' ('operate recursively' and
-'force') to any command rm they dispose. @{0B}THIS IS A VERY WRONG
-@{0B}HABIT@{0} and in case of a mistake done with superuser privileges,
+'force') to any command rm they dispose. @{B}THIS IS A VERY WRONG@{b}
+@{B}HABIT@{0} and in case of a mistake done with superuser privileges,
 it may end up with a wiped hard drive. You have been warned.
 
 The other common mistake is to add a superfluous space character
@@ -2034,12 +2286,15 @@ Although many of the topics discussed there do not really
 belong to FreeMiNT, you're encouraged to treat this as a lecture
 for your spare time.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Filesystem cache"
 @toc "Understanding the concept of multiple filesystems"
+
+@line 1 70 0
 
 The filesystem cache is (physically) a memory area where all disk
 operations are bufferred. The main goal of the cache is to reduce
@@ -2074,7 +2329,7 @@ a high performance caching module has been built into the FreeMiNT
 kernel. Hence, when using FreeMiNT, it is advisable to deactivate
 all external caching programs, read/write buffers, FAT caches and
 so on, because these, in conjunction with the FreeMiNT built-in
-cache, will @{0B}slow down@{0} disk operations, rather than speeding
+cache, will @{B}slow down@{b} disk operations, rather than speeding
 anything up.
 
 The backside of the caching is, that written data resides for
@@ -2088,50 +2343,61 @@ shutdown is initiated, the system ensures that all the cached data
 is written out to the media before performing a reboot or entering
 a halted condition.
 
-Refer to the CACHE= keyword in the chapter The mint.cnf file on how
-to activate and configure the FreeMiNT filesystem caches.
+Refer to the FS_CACHE_SIZE= keyword in the chapter The mint.cnf file 
+on how to activate and configure the FreeMiNT filesystem caches.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "regular file"
+@alias "Regular file"
 @toc "Filesystem cache"
+
+@line 1 70 0
 
 A 'regular' file is the same as a normal data file on TOS - a
 number of data blocks on a disk, associated with a directory entry.
 It is called 'regular', because apart from that there are also
 'links', directories and 'special files', such as pipes or devices.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "number of links"
+@alias "Number of links"
 @toc "Filesystem cache"
+
+@line 1 70 0
 
 The leftmost number in a directory entry displayed by the command
 ls is a number of directory entries associated with (linked to) the
 file. This can have two different meanings:
 
-@{"Regular file" LINK "regular file"}
+Regular file
 This is the number of directory entries associated with the file.
-In other words, it is the number of @{"hard links" LINK "Symbolic links"} made to this file.
+In other words, it is the number of hard links made to this file.
 
-@{0B}Directory@{0} (folder)
+@{B}Directory@{b} (folder)
 This is the number of directories created inside the directory.
 Notice even an 'empty' folder contains two such entries, i.e. the
 '.'(reference to the folder itself) and '..' (reference to the
 parent directory of the folder). Thus, practically, the number in
-question is the number of directories inside the folder @{0B}plus
-@{0B}two@{0}.
+question is the number of directories inside the folder @{B}plus@{b}
+@{B}two@{0}.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Understanding the memory protection mechanism"
 @prev "Understanding the concept of multiple filesystems"
+
+@line 1 70 0
 
 The FreeMiNT, what is normal for Unices, but new to TOS-like
 systems, has a concept of protecting the program's memory space
@@ -2166,7 +2432,7 @@ memory space can be protected is encoded in the program's
 binary file header. There are four "levels", or modes, of
 the protection implemented:
 
-@{0B}Private@{0}
+@{B}Private@{b}
 In this mode the program's memory space is under a very restrictive
 protection: noone can access the area taken by the program, except
 the program itself and the operating system. Even interrupt
@@ -2174,24 +2440,24 @@ handlers, if any are installed by the program, cannot do that! This
 is the default protection mode and most programs really work fairly
 good under it.
 
-@{0B}Private/Readable@{0}
+@{B}Private/Readable@{b}
 Here the protection is less restrictive: still, noone can write
 to the program's area (except the program itself and the operating
 system), but everybody can safely read data from it. You should set
 this mode for GEM programs, those use the AV protocol, but are not
-written with the memory protection in mind. @{"ST Guide" LINK "1st Guide"} is one of good
+written with the memory protection in mind. ST Guide} is one of good
 (bad) examples here.
 
-@{0B}Super@{0}
+@{B}Super@{b}
 The full name is "Supervisor accessible": the program's area can be
 accessed by noone (again, except the program itself and the
 operating system) as long as the "intruder" runs in the CPU user
 mode. However, any code running in the CPU supervisor mode (as
 an interrupt handler for example) can access the program's memory
 space freely. You should set this mode for software, that installs
-own interrupt handlers. The @{"Dump!" LINK "1st Guide"} module player is a good example.
+own interrupt handlers. The Dump!module player is a good example.
 
-@{0B}Global@{0}
+@{B}Global@{b}
 This mode can be set, if a program does not run under any of the
 aforementioned protection modes. The program's space is unprotected
 and anyone can freely access it.
@@ -2217,7 +2483,7 @@ protection:
    to fix the bug).
 
 3) it causes a complete system crash. Examples are: Pure Debugger,
-   X-Boot III or @{"Dump!" LINK "1st Guide"} module player. Paradoxally, as it is with
+   X-Boot III or Dump! module player. Paradoxally, as it is with
    the mentioned programs, it may be the most easy thing to fix -
    it is just enough to change the protection status to
    "Supervisor".
@@ -2237,16 +2503,20 @@ If the program still does not work, it may be worth to give it a
 try without the memory protection. However, you're encouraged to
 run the system in the memory protected mode (unless it is
 completely unacceptable for you).
-@{0B}
-@{0B}NOTICE:
-@{0B}The memory protection mechanism works only on machines equipped
-@{0B}with processor 68030 or newer.
-@{0B}@{0}
+
+@{B}NOTICE:
+@{B}The memory protection mechanism works only on machines equipped
+@{B}with processor 68030 or newer.
+@{b}
+
+@line 1 70 0
 
 @endnode
 
 
 @node "Prioritization"
+
+@line 1 70 0
 
 The commonly known truth is that a CPU can run only one instruction
 at once. Hence, even in a multitasking system, programs don't
@@ -2309,11 +2579,14 @@ in FreeMiNT. The adaptive prioritization method used is considered
 more flexible, than the way of using two fixed priorities, as it
 can be observed on some systems.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "The problem of the memory fragmentation"
+
+@line 1 70 0
 
 When using the command 'free' from a text sheel, you can see text
 similar to the following:
@@ -2410,6 +2683,7 @@ several rules worth to obey:
    larger amount of relatively small memory blocks to hold screen
    objects (like, for instance, windows).
 
+@line 1 70 0
 
 @endnode
 
@@ -2417,13 +2691,15 @@ several rules worth to obey:
 @node "Supplying time zone information"
 @next "Tuning TOS programs for FreeMiNT"
 
+@line 1 70 0
+
 Beginning with kernel version 1.14.8 the time related functions of
 FreeMiNT have changed drastically. Don't worry if you have missed
 to read this documentation until now; if you don't use the new
 facilities you can't mess up anything. The new stuff is 100 %
 compatible with the old time interface to the kernel.
 
-@{0B}1. Standard TOS time@{0}
+@{B}1. Standard TOS time@{b}
 
 Earlier versions of FreeMiNT have inherited the standard TOS time
 setting (and retrieval) functions. The only difference was that
@@ -2435,7 +2711,7 @@ two seconds for the system time. Furthermore, timezones were
 completely ignored; evaluating user-supplied timezone information
 was left to software.
 
-@{0B}2. New MiNT features@{0}
+@{B}2. New MiNT features@{b}
 
 As a default the MiNT kernel clock now ticks in UTC (Universal Time
 Coordinated, GMT or Greenwich Mean Time is more or less a synonyme
@@ -2449,7 +2725,7 @@ explicitely, no correction will take place, no mess, the kernel
 will believe that you live in London/UK and that there is no such
 thing as daylight savings time.
 
-@{0B}3. How to use them?@{0}
+@{B}3. How to use them?@{b}
 
 The user-level (resp. system-administrator-level) interface to the
 new time facilities is the tzinit program. You should add the
@@ -2486,12 +2762,12 @@ DST to standard time or standard time to DST during your machine is
 running you should reboot. In case your kernel clock ticks in local
 time you also have to change the hardware clock by hand.
 
-@{0B}4. UTC vs. Local Time@{0}
+@{B}4. UTC vs. Local Time@{b}
 
 You have the choice if you want the kernel clock to tick in UTC
 or in local time. Both alternatives have pros and cons:
 
-@{0B}UTC@{0}
+@{B}UTC@{b}
 This is the standard for 'real' Eunuchs machines. A major advantage
 is that you never have to change the hardware clock whether or not
 DST applies or not. If you sometimes run Linux or NetBSD on your
@@ -2499,7 +2775,7 @@ machine you will also welcome this possibility because these
 operating systems feel much more comfortable with a hardware clock
 ticking in UTC.
 
-@{0B}Local time@{0}
+@{B}Local time@{b}
 Deprecated, but probably better if you run other non-Eunuchs-like
 operatings systems, too. If your hardware clock is actually fed by
 some radio time signal or other source that provides the time in
@@ -2508,20 +2784,20 @@ disadvantage. You have to ensure that you change the hardware clock
 whenever DST starts or ends (when running UTC it is sufficient to
 reboot).
 
-@{0B}5. The TZ Environment Variable@{0}
+@{B}5. The TZ Environment Variable@{b}
 
 The TZ environment variable is the standard for setting timezone
 information. Not only the kernel (via tzinit) but all software
 on your system that processes calendar times evaluate it.
 
-@{0B}6. Other user-visible changes@{0}
+@{B}6. Other user-visible changes@{b}
 
 The kernel time now has an accuracy of approximately 26 microseconds
 and a resolution of 1 microsecond (the old interface provided a maximum
 accuracy of 2 seconds). Provided that your software gets adapted to
 the new MiNT features you will see that the accuracy increases.
 
-@{0B}7. Bugs@{0}
+@{B}7. Bugs@{b}
 
 Many, many time-keeping variables inside the kernel use the old TOS
 format (which is more or less derived from MS-DOS). This was
@@ -2534,6 +2810,7 @@ timezone or the kernel clock mode from somewhere else than
 mint.cnf. In mint.cnf you should call the tzinit program as soon as
 possible.
 
+@line 1 70 0
 
 @endnode
 
@@ -2541,9 +2818,13 @@ possible.
 @node "The TZ environment variable"
 @toc "Supplying time zone information"
 
+@line 1 70 0
+
 This is now superseded by the MiNTLib's timezone database. It's
 strictly recommended to remove any TZ environment variable and to
 install the timezone database.
+
+@line 1 70 0
 
 @endnode
 
@@ -2552,33 +2833,35 @@ install the timezone database.
 @next "Appendices"
 @prev "Supplying time zone information"
 
+@line 1 70 0
+
 This list is incomplete, please send suggestions and updates.
 
 A list of programs, those can be tuned to run under FreeMiNT:
 
         1st Guide
-        @{"Amail" LINK "1st Guide"} 1.05
-        @{"CAB" LINK "1st Guide"} 2.7
+        Amail 1.05
+        CAB 2.7
         Calamus 1.09N and SL 96
-        @{"clock.acc" LINK "1st Guide"}
+        clock.acc
         Connect
         Data Manager ST 1.0
         Devpac 3.10
         Diamond Edge 2.04
-        @{"Dump!" LINK "1st Guide"} 1.x by DHS (Falcon030 only)
+        Dump! 1.x by DHS (Falcon030 only)
         FastCopy Pro 1.2
-        @{"Finder" LINK "1st Guide"} 1.10
-        @{"FlaySID" LINK "1st Guide"} 3.01 (Falcon030 only)
-        @{"Magic Shadow Archiver" LINK "1st Guide"} (MSA) v.1.0ž by Marwijn Hessel
-        @{"MPEG Audio layer 2 decoder" LINK "1st Guide"} by BitMaster (Falcon030 only)
-        @{"Papyrus" LINK "1st Guide"} 7.0x
+        Finder 1.10
+        FlaySID 3.01 (Falcon030 only)
+        Magic Shadow Archiver (MSA) v.1.0ž by Marwijn Hessel
+        MPEG Audio layer 2 decoder by BitMaster (Falcon030 only)
+        Papyrus 7.0x
         Premium Mah Jongg (the game)
-        @{"RSC View" LINK "1st Guide"} 1.00
-        @{"Slay" LINK "1st Guide"} 0.1
-        @{"SND Play" LINK "1st Guide"} 1.0 by AssemSoft & DHS
-        @{"ST Guide" LINK "1st Guide"}
-        @{"The 1st Word Plus" LINK "Data Manager ST"} 3.20TT
-        @{"XBoot!" LINK "1st Guide"} III
+        RSC View 1.00
+        Slay 0.1
+        SND Play 1.0 by AssemSoft & DHS
+        ST Guide
+        The 1st Word Plus 3.20TT
+        XBoot! III
 
 A list of programs those are replaced by the FreeMiNT kernel, or
 dedicated software, thus there's no need to use them anymore:
@@ -2603,12 +2886,26 @@ FreeMiNT:
 effort) get these programs to work properly, but they may still
 have a bad influence on the stability of the system.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "1st Guide"
+@alias "clock.acc"
+@alias "Dump!"
+@alias "Finder"
+@alias "FlaySID"
+@alias "MPEG Audio"
+@alias "MSA"
+@alias "RSC View"
+@alias "SND Play"
+@alias "Slay"
+@alias "St Guide"
+@alias "XBoot!"
 @toc "Tuning TOS programs for FreeMiNT"
+
+@line 1 70 0
 
 To get these programs to work, you must reset the default
 protection mode as shown below:
@@ -2637,13 +2934,14 @@ Drawing' is used (otherwise they run fine with 'Private' status).
 Read the chapter Understanding the memory protection mechanism for
 more details.
 
-@{0B}WARNING@{0}
+@{B}WARNING@{b}
 Programs which require the 'Supervisor' flag usually grab interrupt
 vectors. When such a program suddenly dies due to some failure
 (e.g. bus error), these vectors may be left pointing to invalid
 memory. Any next occurrance of the interrupt will crash the system
 then.
 
+@line 1 70 0
 
 @endnode
 
@@ -2651,12 +2949,14 @@ then.
 @node "Calamus"
 @toc "Tuning TOS programs for FreeMiNT"
 
-@{0B}Calamus 1.09N@{0}
+@line 1 70 0
+
+@{B}Calamus 1.09N@{0}
 Calamus 1.09N is basically unable to find its RSC file. To get this
 version to work you must copy the calamus.rsc file to the same
 directory, where the main binary file calamus.prg is.
 
-@{0B}Calamus SL 96@{0}
+@{B}Calamus SL 96@{0}
 This version tries to use the FreeMiNT extended filesystem
 functions. However, due to a bug in the linked library, this is
 done incorrectly, so that after the correct system response to the
@@ -2665,12 +2965,15 @@ this error only affects the Calamus' internal fileselector. The
 solution is to disable the built-in fileselector using the
 system.cxm module (or upgrade to SL 98).
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Connect"
 @toc "Tuning TOS programs for FreeMiNT"
+
+@line 1 70 0
 
 The modem terminal program Connect may want to know which system
 device has a modem attached to it. For example, if the modem is
@@ -2685,24 +2988,29 @@ you supply:
 
 setenv MODEMDEV u:/dev/ttyS1
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Data Manager ST"
+@alias "The 1st Word Plus 3.20TT"
 @toc "Tuning TOS programs for FreeMiNT"
 
-@{0B}Data Manager ST@{0}
+@line 1 70 0
+
+@{B}Data Manager ST@{0}
 This is a very old database program, ported in 1986 from PC GEM. To
 get it to work correctly you must limit the amount of memory
 available for this program to some size, for example 512k.
 Otherwise it will hog all the memory, so that there's not enough
 free RAM to actually display a fileselector.
 
-@{0B}The 1st Word Plus 3.20TT@{0}
+@{B}The 1st Word Plus 3.20TT@{0}
 This one is a (quite popular some years ago) wordprocessor
 developed in early 1990s. The solution is the same as above.
 
+@line 1 70 0
 
 @endnode
 
@@ -2710,12 +3018,14 @@ developed in early 1990s. The solution is the same as above.
 @node "Devpac"
 @toc "Tuning TOS programs for FreeMiNT"
 
+@line 1 70 0
+
 The Devpac 3.10 debugger (MonST) does not work at all. Since it
 can be automatically loaded from within the editor, it is advisable
 to change its filename or even completely delete monst.prg from the
 Devpac's bin folder, so that the editor couldn't find it.
 
-The Devpac 3.10 editor @{0B}may@{0} work, but running it is
+The Devpac 3.10 editor @{B}may@{0} work, but running it is
 endangered by system crash (it may fool the AES to use its special
 privileges to destroy the system). Hence it is advisable to use
 another editor instead, for example QED 4.52, provided you enable
@@ -2755,6 +3065,7 @@ main bin folder (and obviously you must have the make program
 properly installed :-)). Refer to the Devpac documentation on how
 to set assembly options directly in the source file.
 
+@line 1 70 0
 
 @endnode
 
@@ -2762,15 +3073,18 @@ to set assembly options directly in the source file.
 @node "Diamond Edge"
 @toc "Tuning TOS programs for FreeMiNT"
 
+@line 1 70 0
+
 The Diamond Edge generally works fine, except that it tends to
 report errors when used on a VFAT disk (it does not recognize VFAT
 entries, symbolic links etc). For this reason, the Diamond Edge
-should @{0B}not@{0} be used for checking, defragmentation or fixing
+should @{B}not@{0} be used for checking, defragmentation or fixing
 enhanced FAT filesystems.
 
 The DADE program (Diamond Advanced Disk Editor) will also run when
 its protection mode is set to 'Super'.
 
+@line 1 70 0
 
 @endnode
 
@@ -2778,16 +3092,21 @@ its protection mode is set to 'Super'.
 @node "FastCopy Pro"
 @toc "Tuning TOS programs for FreeMiNT"
 
+@line 1 70 0
+
 This program works fine provided you don't invoke a nonmodal
 fileselector from within it (e.g. N.Fileselector, if installed),
 because such an action confuses it horribly.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Premium Mah Jongg"
 @toc "Tuning TOS programs for FreeMiNT"
+
+@line 1 70 0
 
 Similarly to the problem occurring with the Calamus 1.09N, the game
 is unable to find the RSC file. Also, similarly, you must copy the
@@ -2796,12 +3115,15 @@ located (either mahjongg.prg or mhj_eng.prg). It is also advisable
 to unpack the binary - as it has been packed with PFX (save a copy
 of the original before doing that!).
 
+@line 1 70 0
 
 @endnode
 
 
 @node "TOS debuggers"
 @toc "Tuning TOS programs for FreeMiNT"
+
+@line 1 70 0
 
 Debuggers are perhaps the only class of TOS application software,
 that do not work in gremio. Because of the memory protection and
@@ -2825,6 +3147,7 @@ with 68040 and 68060 processors. It is currently (10.XII.1999) the
 absolutely best debugger available for all Atari systems (and it
 runs only under MiNT).
 
+@line 1 70 0
 
 @endnode
 
@@ -2832,6 +3155,8 @@ runs only under MiNT).
 @node "Appendices"
 @next "Gratias"
 @prev "Tuning TOS programs for FreeMiNT"
+
+@line 1 70 0
 
    1. Unix user's manual
    2. Graphic shell
@@ -2841,6 +3166,7 @@ runs only under MiNT).
    6. Special keys
    7. Glossary
 
+@line 1 70 0
 
 @endnode
 
@@ -2848,14 +3174,17 @@ runs only under MiNT).
 @node "Unix user's manual"
 @toc "Appendices"
 
+@line 1 70 0
+
 1) Unix is an operating system
 
 2) The manual for each command is displayed after you type
-   @{0B}man command@{0}
+   @{B}man command@{0}
 
 3) The manual for the command man is displayed after you type
-   @{0B}man man@{0}
+   @{B}man man@{0}
 
+@line 1 70 0
 
 @endnode
 
@@ -2863,7 +3192,9 @@ runs only under MiNT).
 @node "Graphic shell"
 @toc "Appendices"
 
-@{0B}Graphic shell@{0}
+@line 1 70 0
+
+@{B}Graphic shell@{0}
 The graphic shell on Atari machines is called 'the Desktop'. And
 this is basically everything we can tell you about this kind of a
 shell, because you (being an Atarian) are either experienced in
@@ -2875,15 +3206,18 @@ resort) the Atari Desktop that comes with the last version (1.08)
 of the Atari MultiTOS.
 
 Unlike under TOS (and derivatives), usage of a GEM shell in
-FreeMiNT is @{0B}optional@{0} - the system is fully useable even
+FreeMiNT is @{B}optional@{0} - the system is fully useable even
 without it. See chapter Text shell for details.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Text shell"
 @toc "Appendices"
+
+@line 1 70 0
 
 The text shell in Un*x provides a CLI functionality to the system
 and simultaneously serves as a script interpreter - this does not
@@ -2926,12 +3260,15 @@ it before you actually try to use the shell. Hint here: the HTML
 and manpage for tcsh are the same, just the former is more 'user
 friendly' (when you use a graphic HTML browser).
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Using tar & gzip"
 @toc "Appendices"
+
+@line 1 70 0
 
 The GNU Zip (aka gzip) is commonly used under Unices. Also, as you
 can probably easily notice while using FTP sites, many FreeMiNT
@@ -2972,16 +3309,16 @@ creates archives, which are compressed by GNU Zip. Since both
 programs are very often used together, there is a facility
 implemented to invoke gzip from within tar, so that the archive is
 both created and compressed (resp. uncompressed) in one shot.
-@{0B}
-@{0B} Since the Tar archiver and GZip packer are separate programs, you
-@{0B} can sometimes find archives marked tar.Z, tar.zip, tar.bz2, which
-@{0B} have been created with GNU Tar, but compressed using Compress,
-@{0B} Zip or bzip2, instead of GNU Zip. Out of these, tar.Z and tar.zip
-@{0B} are likely to unpack the same way as tar.gz files (i.e. gzip
-@{0B} should be able to decompress it). For the rest you must first make
-@{0B} decompression using bzip2, and then unpack the actual archive with
-@{0B} tar.
-@{0B}@{0}
+
+@{B} Since the Tar archiver and GZip packer are separate programs, you
+@{B} can sometimes find archives marked tar.Z, tar.zip, tar.bz2, which
+@{B} have been created with GNU Tar, but compressed using Compress,
+@{B} Zip or bzip2, instead of GNU Zip. Out of these, tar.Z and tar.zip
+@{B} are likely to unpack the same way as tar.gz files (i.e. gzip
+@{B} should be able to decompress it). For the rest you must first make
+@{B} decompression using bzip2, and then unpack the actual archive with
+@{B} tar.@{b}
+
 To quickly unpack an archive named stuff.tar.gz you use the
 following command from your shell (assuming you have Un*x
 distribution installed):
@@ -3004,9 +3341,9 @@ digs into subdirectories.
 
 Sometimes it may happen that while trying to unpack something named
 *.tar.gz, you only see a message saying:
-@{0B}
-@{0B}gzip: stdin: not in gzip format
-@{0B}@{0}
+
+@{B}gzip: stdin: not in gzip format
+@{b}
 This may not necessarily mean the archive is broken. Some brain
 damaged network clients (notably: MSIE) can silently decompress the
 tar.gz file, while it is being downloaded, still keeping the
@@ -3017,16 +3354,21 @@ option for GNU Tar:
 
         tar xvf stuff.tar.gz
 
-Invoking tar or gzip with parameter @{0B}--help@{0} lists available
+Invoking tar or gzip with parameter @{B}--help@{0} lists available
 options. You can also try out the system manuals disposing commands
-@{0B}man tar@{0} and @{0B}man gzip@{0} while being at shell prompt.
+@{B}man tar@{0} and @{B}man gzip@{0} while being at shell prompt.
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Symbolic links"
+@alias "symlinks"
+@alias "hard links"
 @toc "Appendices"
+
+@line 1 70 0
 
 Apart from regular files and directories (folders) you certainly
 know from TOS and other operating systems, the FreeMiNT supports so
@@ -3045,7 +3387,7 @@ that the file has two names, but its physical instance is one.
 
 There are in fact two different types of links:
 
-@{0B}Hard link@{0}
+@{B}Hard link@{0}
 This is litterally just another name for a file. Making a hard
 link, the GEMDOS creates a regular directory entry just like for a
 newly created file, but such an entry references data, that belong
@@ -3057,11 +3399,11 @@ directory entry. But hard links have disadvantages too: first, you
 can hardly :-) know, whether a directory entry is a "real" file
 name, or a hard link, because they look identical (upto smallest
 details) and are treated equally. Second, a hard link
-@{0B}cannot@{0} be created across different filesystems
+@{B}cannot@{0} be created across different filesystems
 (partitions). Third, hard links are supported only by few
 filesystems, like Minix FS and Ext2 FS.
 
-@{0B}Symbolic links@{0}
+@{B}Symbolic links@{0}
 Unlike a hard link, a symbolic link is more like a pseudo-file,
 which holds an exact pathname (instead of holding data like
 regular files do) for the file the link references. Symlinks take
@@ -3079,30 +3421,33 @@ There is also an important difference in how the system does treat
 a hard link and a symlink, when the user disposes a file to be
 deleted. If the file name of a symlink is given, only the symlink
 will be removed and the original file remains intact. However, if
-the file name of a @{0B}hard link@{0} is given, the original file
-remains intact @{0B}provided there's at least yet one hard link@{0},
+the file name of a @{B}hard link@{0} is given, the original file
+remains intact @{B}provided there's at least yet one hard link@{0},
 which references the data. In other words, deleting a last hard
 link is equal to a physical deletion of the file referenced by that
 one.
-@{0B}
-@{0B}This may be important to know, because on Un*x filesystems there's
-@{0B}usually NO WAY to recover a deleted file.
-@{0B}@{0}
+
+@{B}This may be important to know, because on Un*x filesystems there's
+@{B}usually NO WAY to recover a deleted file.
+@{b}
 In other cases links reference data blocks of the file they point
 to - we say that they 'are dereferenced'. While copying, if you
-give a link as the source file, this by default @{0B}becomes a
-@{0B}regular file on the destination@{0}. This is always the case for
+give a link as the source file, this by default @{B}becomes a
+@{B}regular file on the destination@{0}. This is always the case for
 hard links. A symlink can be copied without dereferencing, see the
 documentation of your desktop and to the system manual and help
-option of the command cp (@{0B}man cp@{0} and @{0B}cp --help@{0}
+option of the command cp (@{B}man cp@{0} and @{B}cp --help@{0}
 respectively).
 
+@line 1 70 0
 
 @endnode
 
 
 @node "Special keys"
 @toc "Appendices"
+
+@line 1 70 0
 
 When the virtual console daemon is installed, function keys F1-F9
 in conjunction with the Alt key, activate virtual text consoles,
@@ -3112,23 +3457,24 @@ the 'real', graphic console.
 Despite that, all versions of FreeMiNT handle the following
 keyboard shortcuts:
 
-@{0B}Ctrl/Alt/Del@{0}
+@{B}Ctrl/Alt/Del@{0}
 Warm start, as in all TOS versions.
 
-@{0B}Ctrl/Alt/RShift/Del@{0}
+@{B}Ctrl/Alt/RShift/Del@{0}
 Cold start, as in TOS version >= 1.04.
 
-@{0B}Ctrl/Alt/Undo@{0}
+@{B}Ctrl/Alt/Undo@{0}
 Sends SIGQUIT to the whole group of processes running on the
 console, including the shell. This is equal to a "logout", but
 don't use it while using the GEM Desktop! :-)
 
-@{0B}Left Shift@{0}
+@{B}Left Shift@{0}
 When you hold down the left Shift key while booting FreeMiNT, it
 will either ask you whether it should load itself or not (kernels
 before 1.15.10) or whether it should display the boot menu or not
 (kernels 1.15.10 and later).
 
+@line 1 70 0
 
 @endnode
 
@@ -3136,25 +3482,27 @@ before 1.15.10) or whether it should display the boot menu or not
 @node "Glossary"
 @toc "Appendices"
 
-@{0B}FIFO@{0} aka @{0B}pipe@{0}
+@line 1 70 0
+
+@{B}FIFO@{0} aka @{B}pipe@{0}
 'First In, First Out', a structure (a virtual file actually) used
 for interprocess communication. Basically, if two programs open the
 same FIFO, they can exchange data with read/write calls via the
 FIFO without arranging disk space. Physically a FIFO is just a
 memory buffer.
 
-@{0B}GEM@{0}
+@{B}GEM@{0}
 Graphic Environment Manager. On Atari computers the part of the
 operating system, that creates and manages the graphic front end of
 the OS, i.e. windows, dialog boxes, menus, mouse.
 
-@{0B}GEMDOS@{0}
+@{B}GEMDOS@{0}
 On Atari computers, the part of the operating system that actually
 manages data storage. The FreeMiNT kernel's core is a completely
 new, multitasking GEMDOS, which replaces the old TOS' one, which is
 located in ROM.
 
-@{0B}home@{0} aka @{0B}home directory@{0}
+@{B}home@{0} aka @{B}home directory@{0}
 In multiuser systems, a directory that contains files and
 subdirectories private to the user, who 'owns' this directory.
 The home directory usually has the same name as the corresponding
@@ -3165,10 +3513,10 @@ for dealing with user files. Obviously, to make it work painlessly,
 there must be as many home directories in the system, as many users
 are there.
 
-@{0B}manpage@{0}
+@{B}manpage@{0}
 System manual file accessible with the command man. When you need
 to view the manpage of a program called 'gcc', you type
-@{0B}man gcc@{0}. These online manuals provide condensed and
+@{B}man gcc@{0}. These online manuals provide condensed and
 specific information on the given topic, though the language
 they've been written is not always fully understandable for people
 not used to. Also, the first reference to the manpage can be slow,
@@ -3176,7 +3524,7 @@ because it (the page) need to be formatted for the current display
 size. The formatted result is cached on the disk, so that all later
 references to the same page are much faster.
 
-@{0B}MiNT@{0}
+@{B}MiNT@{0}
 The multitasking kernel for Atari ST computers and compatibles. The
 first version was released 18 May 1990. The abbreviation 'MiNT'
 originally stands for 'MiNT is Not TOS', but later, after the
@@ -3185,13 +3533,13 @@ changed to 'MiNT is Now TOS'. FreeMiNT is a MiNT derivative
 copyrighted by Atari Corporation, and licensed under terms
 described in the file COPYING included in the system distribution.
 
-@{0B}MultiTOS-like configuration@{0}
+@{B}MultiTOS-like configuration@{0}
 This is a term, which, as opposed to an Un*x like configuration,
 describes a single user, multitasking setup, without the Un*x
 filesystem structures built up on the disk and without Un*x
 software. In other words, it is a multitasking TOS.
 
-@{0B}NFS@{0}
+@{B}NFS@{0}
 Network File System. A type of an XFS, which allows a networked
 machine to access a storage media that physically exists on another
 machine provided it has been connected to the same network and
@@ -3203,46 +3551,47 @@ mount and use this way any filesystem exported, even if the machine
 it belongs to is located on another continent (provided both
 machines are connected to the worldwide network).
 
-@{0B}root@{0}
-Also known as @{0B}Superuser@{0} (q.v.), the system administrator.
+@{B}root@{0}
+Also known as @{B}Superuser@{0} (q.v.), the system administrator.
 The name is 'root' because in earlier Unix systems the superuser's
 home directory was the root directory of the entire filesystem,
 i.e. the '/'.
 
-@{0B}scheduler@{0}
+@{B}scheduler@{0}
 A piece of code inside the operating system kernel, that actually
 deals with granting processes the CPU time for execution.
 
-@{0B}server@{0}
+@{B}server@{0}
 Surprisingly, a *program*, that manages some resources (especially
 in networks) and allows clients to access them in standardized way.
 Also common name for a computer running one or more server programs.
 
-@{0B}Superuser@{0} aka @{0B}root@{0} aka @{0B}System administrator@{0}
+@{B}Superuser@{0} aka @{B}root@{0} aka @{B}System administrator@{0}
 In a multiuser system an user, who is privileged enough to actually
 control the operating system.
 
-@{0B}Supervisor@{0}
+@{B}Supervisor@{0}
 One of two (the higher one) privilege levels supported by the
 Motorola 68k series of processors. The OS code usually runs the
 supervisor mode since it grants the fullest possible control on the
 hardware resources of the machine. Unfortunately, while the CPU is
 switched to the supervisor mode, no multitasking is possible.
 
-@{0B}XDD@{0}
+@{B}XDD@{0}
 Stands for 'eXtended Device Driver', a softloaded FreeMiNT module
 that installs a device on the BIOS FS (u:/dev/).
 
-@{0B}XFS@{0}
+@{B}XFS@{0}
 Stands for 'eXtended File System driver', a softloaded FreeMiNT
 module that installs a filesystem driver, what allows to mount a
 filesystem (disk) on the drive u:
 
-@{0B}TSR@{0}
+@{B}TSR@{0}
 Terminate-and-Stay-Resident. A class of TOS extensions loaded from
 the auto folder, which become resident system extensions after they
 have been loaded.
 
+@line 1 70 0
 
 @endnode
 
@@ -3250,32 +3599,35 @@ have been loaded.
 @node "Gratias"
 @prev "Appendices"
 
+@line 1 70 0
+
 Thanks going to:
 
-@{0B}Tom Quellenberg@{0} and @{0B}Christian Felsch@{0}
+@{B}Tom Quellenberg@{0} and @{B}Christian Felsch@{0}
 because I've done most of this document in QED 4.52.
 
-@{0B}Christian Peppermueller@{0}
+@{B}Christian Peppermueller@{0}
 because his little editor ED saved me a suicide when I started to
 be beaten by formatting bugs in QED.
 
-@{0B}University of Washington@{0}
+@{B}University of Washington@{0}
 because I finally ended up with Pico.
 
-@{0B}Guido Flohr@{0}
+@{B}Guido Flohr@{0}
 for his work on the time zone stuff and all the supplied
 information.
 
-@{0B}Frank Naumann@{0}
+@{B}Frank Naumann@{0}
 for his work on the FreeMiNT kernel and all the supplied
 information.
 
-@{0B}Edgar Aichinger@{0}
+@{B}Edgar Aichinger@{0}
 for his final adjustments of the hypertext structure and all the
 work done on the German translation.
 
-@{0B}The MiNT mailing list members@{0}
+@{B}The MiNT mailing list members@{0}
 who, willing or not, gave me many hints included in this document.
 
+@line 1 70 0
 
 @endnode
