@@ -664,10 +664,11 @@ Func xbios_tab [XBIOS_MAX] =
 
 	/* 0x020 */		sys_b_dosound,
 	/* 0x021 */		NULL,
-	/* 0x022 */		NULL,
 # ifndef NO_AKP_KEYBOARD
+	/* 0x022 */	(Func)	sys_b_kbdvbase,
 	/* 0x023 */	(Func)	sys_b_kbrate,
 # else
+	/* 0x022 */		NULL,
 	/* 0x023 */		NULL,
 # endif
 	/* 0x024 */		NULL,

@@ -1047,6 +1047,13 @@ sys_b_bioskeys(void)
 	kbd_lock = 0;
 }
 
+/* Kbdvbase() */
+KBDVEC *
+sys_b_kbdvbase(void)
+{
+	return syskey;
+}
+
 /* Init section
  *
  * Notice that we deal with two tables here:
