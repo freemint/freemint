@@ -103,44 +103,47 @@ post_cevent(struct xa_client *client,
 {
 	struct c_event *c;
 
+	c = kmalloc(sizeof(*c));
+	if (c)
 	{
-		c = kmalloc(sizeof(*c));
-		if (c)
+		c->next		= NULL;
+		c->funct	= func;
+		c->client	= client;
+		c->ptr1		= ptr1;
+		c->ptr2		= ptr2;
+		c->d0		= d0;
+		c->d1		= d1;
+
+		if (r)
+			c->r = *r;
+		if (md)
+			c->md = *md;
+
+		if (!client->cevnt_head)
 		{
-			c->next		= 0;
-			c->funct	= func;
-			c->client	= client;
-			c->ptr1		= ptr1;
-			c->ptr2		= ptr2;
-			c->d0		= d0;
-			c->d1		= d1;
-
-			if (r)
-				c->r = *r;
-			if (md)
-				c->md = *md;
-
-			if (!client->cevnt_head)
-			{
-				client->cevnt_head = c;
-				client->cevnt_tail = c;
-			}
-			else
-			{
-				client->cevnt_tail->next = c;
-				client->cevnt_tail = c;
-			}
-			client->cevnt_count++;
+			client->cevnt_head = c;
+			client->cevnt_tail = c;
 		}
+		else
+		{
+			client->cevnt_tail->next = c;
+			client->cevnt_tail = c;
+		}
+		client->cevnt_count++;
 
 		DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
-			c, client->cevnt_count, client->cevnt_head, client->cevnt_tail, client->name));
-
-		if (client != C.Aes)
-			Unblock(client, 1, 5000);
-		else
-			dispatch_cevent(client);
+			c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
+			client->name));
 	}
+	else
+	{
+		DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
+	}
+
+	if (client != C.Aes)
+		Unblock(client, 1, 5000);
+	else
+		dispatch_cevent(client);
 }
 
 int
@@ -176,7 +179,6 @@ dispatch_cevent(struct xa_client *client)
 void
 Block(struct xa_client *client, int which)
 {
-
 	/*
 	 * Get rid of any event queue
 	 */
@@ -198,18 +200,23 @@ Block(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+
 		client->inblock = true;
 		client->sleeplock = (long)client;
 		client->sleepqueue = IO_Q;
+
 		sleep(IO_Q, (long)client);
+
 		client->inblock = false;
 		client->sleeplock = 0;
+
 		if ((client->waiting_for & MU_TIMER) && !client->timeout)
-		{
 			return;
-		}
-		while (!client->usr_evnt && dispatch_cevent(client) ){}
+
+		while (!client->usr_evnt && dispatch_cevent(client))
+			;
 	}
+
 	cancel_evnt_multi(client, 1);
 }
 
@@ -220,22 +227,19 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	 * internal consistency of the event handling mechanisms.
 	 */
 	if (value == XA_OK)
-	{
 		cancel_evnt_multi(client,1);
-	}
+
 	wake(IO_Q, (long)client);
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 }
 
 
-static const char alert_pipe_name[] = "u:\\pipe\\alert";
 static const char KBD_dev_name[] = "u:\\dev\\console";
-static const char moose_name[] = "u:\\dev\\moose";
+static const char alert_pipe_name[] = "u:\\pipe\\alert";
 
 static vdi_vec *svmotv = NULL;
 static vdi_vec *svbutv = NULL;
 static vdi_vec *svwhlv = NULL;
-/* static vdi_vec *svtimv = NULL; */
 
 /*
  * initialise the mouse device
@@ -300,12 +304,10 @@ init_moose(void)
  */
 XA_PENDING_WIDGET widget_active = { NULL }; /* Pending active widget (if any) */
 
-/* Now use the global (once) set values in the button structure */
-
 /*
  * Ozk: multi_intout() may be called by processes not yet called
- * appl_ini(). So, it must not depend on client being valid!
-*/
+ * appl_init(). So, it must not depend on client being valid!
+ */
 void
 multi_intout(struct xa_client *client, short *o, int evnt)
 {
@@ -715,7 +717,7 @@ k_exit(void)
 
 
 	if (C.shutdown & HALT_SYSTEM)
-		s_hutdown(0);  /* halt */
+		s_hutdown(0);  /* poweroff or halt if poweroff is not supported */
 	else if (C.shutdown & REBOOT_SYSTEM)
 		s_hutdown(1);  /* warm start */
 

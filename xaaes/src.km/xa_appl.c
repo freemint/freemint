@@ -123,7 +123,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 	client->ut = umalloc(xa_user_things.len);
-	client->mnu_clientlistname = umalloc(20);
+	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
 
 	if (!client->ut || !client->mnu_clientlistname)
 	{
@@ -182,7 +182,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	 * temporarily...
 	 * When changing this, also change it in k_init.c for the AESSYS
 	 */
-	strncpy(client->mnu_clientlistname, "  Clients \3", 14);
+	strcpy(client->mnu_clientlistname, mnu_clientlistname);
 
 	strncpy(client->proc_name, client->p->name, 8);
 	f = strlen(client->proc_name);
@@ -218,8 +218,11 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			client->type = info->type;
 
-			client->cmd_tail = info->cmd_tail;
 			client->tail_is_heap = info->tail_is_heap;
+			client->cmd_tail = info->cmd_tail;
+
+			/* invalidate */
+			info->cmd_tail = NULL;
 
 			strcpy(client->cmd_name, info->cmd_name);
 			strcpy(client->home_path, info->home_path);
@@ -314,7 +317,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	/*
 	 * Go through and check that all windows belonging to this
 	 * client are closed
-	*/
+	 */
 	remove_windows(lock, client);
 
 	top_owner = window_list->owner;
@@ -323,44 +326,11 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 * It is no longer interested in button released packet
 	 */
 	if (C.button_waiter == client)
-		C.button_waiter = 0;
+		C.button_waiter = NULL;
 
 	cancel_aesmsgs(&client->rdrw_msg);
 	cancel_aesmsgs(&client->msg);
-
-#if 0
-	/*
-	 * Dispose of any pending messages for the client
-	*/
-	while (client->msg)
-	{
-		struct xa_aesmsg_list *nm = client->msg->next;
-		kfree(client->msg);
-		client->msg = nm;
-	}
-	/*
-	 * WM_REDRAW messages is separate from other messages
-	*/
-	while (client->rdrw_msg)
-	{
-		struct xa_aesmsg_list *nm = client->rdrw_msg->next;
-		C.redraws--;
-		kfree(client->rdrw_msg);
-		client->rdrw_msg = nm;
-	}
-#endif
 	cancel_cevents(client);
-#if 0
-	/*
-	 * Dispose of any pending client events
-	*/
-	while (client->cevnt_head)
-	{
-		struct c_event *a = client->cevnt_head->next;
-		kfree(client->cevnt_head);
-		client->cevnt_head = a;
-	}
-#endif
 
 	if (client->attach)
 	{
