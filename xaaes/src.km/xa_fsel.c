@@ -69,7 +69,6 @@ struct fsel_data
 {
 	struct xa_window *wind;
 	XA_TREE menu;
-	AESPB *pb;
 	struct xa_client *owner;
 	Path path;
 	char fslash[2];
@@ -78,6 +77,8 @@ struct fsel_data
 	long fcase,trunc;
 	int drives;
 	int clear_on_folder_change;
+	int ok;
+	int done;
 	
 };
 static struct fsel_data fs;
@@ -1083,17 +1084,12 @@ close_fileselector(enum locks lock)
 static void
 handle_fsel(enum locks lock, const char *path, const char *file)
 {
-	strcpy((char *)fs.pb->addrin[0], path);
-	strcpy((char *)fs.pb->addrin[1], file);
-
-	DIAG((D_fsel,NULL,"fsel OK:path=%s,file=%s",
-		(char *)fs.pb->addrin[0], file));
-
-	fs.pb->intout[0] = 1;
-	fs.pb->intout[1] = 1;
+	DIAG((D_fsel, NULL, "fsel OK: path=%s, file=%s", path, file));
 
 	close_fileselector(lock);
 
+	fs.ok = 1;
+	fs.done = 1;
 	fs.owner->usr_evnt = 1;
 	//Unblock(fs.owner, XA_OK, 20);
 }
@@ -1101,14 +1097,18 @@ handle_fsel(enum locks lock, const char *path, const char *file)
 static void
 cancel_fsel(enum locks lock, const char *path, const char *file)
 {
-	fs.pb->intout[0] = 1;
-	fs.pb->intout[1] = 0;
+	DIAG((D_fsel, NULL, "fsel CANCEL: path=%s, file=%s", path, file));
 
 	close_fileselector(lock);
 
+	fs.ok = 0;
+	fs.done = 1;
 	fs.owner->usr_evnt = 1;
 	//Unblock(fs.owner, XA_OK, 21);
 }
+
+static int locked = 0;
+static int sleepers = 0;
 
 /*
  * File selector interface routines
@@ -1116,18 +1116,45 @@ cancel_fsel(enum locks lock, const char *path, const char *file)
 static void
 do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char *text)
 {
-	const char *path = (const char *)(pb->addrin[0]);
-	const char *file = (const char *)(pb->addrin[1]);
+	char *path = (char *)(pb->addrin[0]);
+	char *file = (char *)(pb->addrin[1]);
 
-	DIAG((D_fsel, NULL, "fsel_(ex)input:title=%s,path=%s,file=%s",
+	DIAG((D_fsel, NULL, "fsel_(ex)input: title=%s, path=%s, file=%s",
 		text, path, file));
 
+	while (locked)
+	{
+		DIAG((D_fsel, NULL, "fsel_(ex)input: in use, sleeping"));
+
+		sleepers++;
+		sleep(IO_Q, (long)do_fsel_exinput);
+		sleepers--;
+	}
+
+	locked = 1;
+
 	fs.owner = client;
-	fs.pb = pb;
+	fs.done = 0;
 
 	open_fileselector(lock|fsel, client,
 			  path, file, text,
 			  handle_fsel, cancel_fsel);
+
+	Block(client, 21);
+	assert(fs.done);
+
+	strcpy(path, fs.path);
+	strcpy(file, fs.file);
+
+	pb->intout[0] = 1;
+	pb->intout[1] = fs.ok;
+
+	DIAG((D_fsel, NULL, "fsel_(ex)input: DONE (%i, %s, %s)",
+		pb->intout[1], path, file));
+
+	locked = 0;
+	if (sleepers)
+		wake(IO_Q, (long)do_fsel_exinput);
 }
 
 unsigned long
@@ -1137,13 +1164,13 @@ XA_fsel_input(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	do_fsel_exinput(lock, client, pb, "");
 
-	return XAC_BLOCK;
+	return XAC_DONE;
 }
 
 unsigned long
 XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	char *t = (char *)(pb->addrin[2]);
+	const char *t = (const char *)(pb->addrin[2]);
 
 	CONTROL(0,2,3)
 
@@ -1152,5 +1179,5 @@ XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	do_fsel_exinput(lock, client, pb, t);
 
-	return XAC_BLOCK;
+	return XAC_DONE;
 }
