@@ -890,39 +890,28 @@ do_formwind_msg(
 		{
 			if (wt && wt->tree)
 			{
-				short doit = 0;
 				RECT *clip = (RECT *)&msg[4];
 				RECT dr;
 				struct xa_rect_list *rl;
 
 				if ((rl = wind->rect_start))
 				{
-					if (wind->owner == C.Aes)
-					{
-						if (lock_screen(wind->owner, true, NULL, 1))
-							doit = 1;
-					}
-					else
-					{
+					if (wind->owner != C.Aes)
 						lock_screen(wind->owner, false, NULL, 1);
-						doit = 1;
-					}
-					if (doit)
+					hidem();
+					while (rl)
 					{
-						hidem();
-						while (rl)
+						if (xa_rect_clip(clip, &rl->r, &dr))
 						{
-							if (xa_rect_clip(clip, &rl->r, &dr))
-							{
-								set_clip(&dr);
-								draw_object_tree(0, wt, wt->tree, 0, 10, 1);
-							}
-							rl = rl->next;
+							set_clip(&dr);
+							draw_object_tree(0, wt, wt->tree, 0, 10, 1);
 						}
-						clear_clip();
-						showm();
-						unlock_screen(wind->owner, 2);
+						rl = rl->next;
 					}
+					clear_clip();
+					showm();
+					if (wind->owner != C.Aes)
+						unlock_screen(wind->owner, 2);
 				}
 			}
 			break;
