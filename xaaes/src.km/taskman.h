@@ -30,6 +30,13 @@
 #include "global.h"
 
 void quit_all_apps(enum locks lock, struct xa_client *except);
+void quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl);
+
+bool isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_name_list **last, struct cfg_name_list **prev);
+void addto_namelist(struct cfg_name_list **list, char *name);
+void removefrom_namelist(struct cfg_name_list **list, char *name, short nlen);
+void free_namelist(struct cfg_name_list **list);
+
 
 void open_taskmanager(enum locks lock);
 void update_tasklist(enum locks lock);
