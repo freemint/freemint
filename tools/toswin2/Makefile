@@ -1,7 +1,7 @@
 #
 # Makefile for TosWin 2
 #
-TARGET = toswin2.prg
+TARGET = toswin2.app
 
 SHELL = /bin/sh
 SUBDIRS = tw-call
@@ -24,6 +24,7 @@ INCLUDES += -I/usr/GEM/include
 # default definitions
 OBJS = $(COBJS:.c=.o)
 LIBS += -L/usr/GEM/lib -lcflib -lgemx -lgem
+LIBS += -liio
 GENFILES = $(TARGET)
 
 
