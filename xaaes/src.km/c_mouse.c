@@ -68,16 +68,18 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 
 	if (!wind)
 	{
-		if (C.menu_base && md->state && C.menu_base->client == client)
+		Tab *root_tab;
+
+		if ((root_tab = TAB_LIST_START) && md->state && root_tab->client == client)
 		{
 			Tab *tab;
 
-			tab = find_pop(C.menu_base, md->x, md->y);
+			tab = find_pop(md->x, md->y);
 			
-			if (tab && tab != C.menu_base)
-				tab = collapse(C.menu_base, tab);
+			if (tab && tab != root_tab)
+				tab = collapse(root_tab, tab);
 			else if (!tab)
-				tab = C.menu_base;
+				tab = root_tab;
 
 			DIAG((D_button, client, "cXA_button_event: Menu click"));
 			if (tab->ty)
@@ -253,16 +255,20 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 	if (cancel)
 		return;
 
-	if (C.menu_base->client == ce->client)
+	if (TAB_LIST_START->client == ce->client && !C.move_block)
 	{
-		Tab *tab = C.menu_base;
-		MENU_TASK *k = &C.menu_base->task_data.menu;
+		Tab *tab = TAB_LIST_START; // = C.menu_base;
+		MENU_TASK *k; // = &C.menu_base->task_data.menu;
 		int x = ce->md.x;
 		int y = ce->md.y;
 
 		DIAG((D_mouse, ce->client, "cXA_menu_move for %s", ce->client->name));
-
-		while (tab)
+		
+		/*
+		 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
+		 *      of the list during our wander down towards the bottom of it.
+		 */
+		while(tab) //FOREACH_TAB(tab) //while (tab)
 		{
 			k = &tab->task_data.menu;
 
@@ -270,35 +276,35 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 			{
 				/* XaAES internal flag: report any mouse movement. */
 
-				k->em.flags = 0;
+				k->em.flags &= ~MU_MX; //0;
 				k->x = x;
 				k->y = y;
-				k->em.t1(C.menu_base);	/* call the function */
-				break;
+				k->em.t1(tab); //&C.menu_base);	/* call the function */
+				//break;
 			}
 			if (k->em.flags & MU_M1)
 			{
-				if (is_rect(x, y, k->em.flags & 1, &k->em.m1))
+				if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
 				{
-					k->em.flags = 0;
+					k->em.flags &= ~MU_M1; //0;
 					k->x = x;
 					k->y = y;
-					k->em.t1(C.menu_base);	/* call the function */
-					break;
+					k->em.t1(tab); //C.menu_base);	/* call the function */
+					//break;
 				}
 			}
 			if (k->em.flags & MU_M2)
 			{
-				if (is_rect(x, y, k->em.flags & 1, &k->em.m2))
+				if (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2))
 				{
-					k->em.flags = 0;
+					k->em.flags &= ~MU_M2; //0;
 					k->x = x;
 					k->y = y;
-					k->em.t2(C.menu_base);
-					break;
+					k->em.t2(tab); //(C.menu_base);
+					//break;
 				}
 			}
-			tab = tab->nest;
+			tab = tab->tab_entry.next;
 		}
 	}
 }

@@ -2112,7 +2112,12 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		DIAG((D_o, wt->owner, "progdef remaining %s %04x", statestr, *wt->state_mask));
 	}
 #endif
-
+	/*
+	 * Ozk: Since it is possible that taskswitches happens during the callout of
+	 *	progdef's, we need to restore the clip-rect used by this 'thread'
+	 */
+	vs_clip(C.vh, 1, (const short *)clip);	
+	
 	if (*wt->state_mask & OS_DISABLED)
 	{
 		write_disable(&wt->r, screen.dial_colours.bg_col);

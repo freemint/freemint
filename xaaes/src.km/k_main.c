@@ -142,13 +142,16 @@ post_cevent(struct xa_client *client,
 		{
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
 		}
-
+#if 0
 		if (client != C.Aes)
 			Unblock(client, 1, 5000);
 		else
 		{
 			dispatch_cevent(client);
 		}
+#else
+		Unblock(client, 1, 0);
+#endif
 	}
 }
 
@@ -648,6 +651,8 @@ dispatch_shutdown(int flags)
 }
 
 static void k_exit(void);
+static void restore_sigs(void);
+static void setup_common(void);
 
 /*
  * signal handlers
@@ -700,27 +705,45 @@ aesthread_entry(void *c)
 {
 	struct xa_client *client = c;
 
+	setup_common();
+	
 	for (;;)
 	{
-		if (client->tp_term)
+		while ((client->irdrw_msg || client->cevnt_count))
 		{
-			break;
+			if (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
+
+			dispatch_cevent(client);
 		}
-		
+#if 0		
 		while (client->irdrw_msg)
 			exec_iredraw_queue(0, client);
 		
 		//if (!dispatch_tpcevent(client))
+#endif
 		if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 		{
 			client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		}
-			
+		
+		if (client->tp_term)
+			break;	
 		sleep(IO_Q, (long)client->tp);
 	}
+	display("aesthread terminating");
 	client->tp = NULL;
 	client->tp_term = 2;
 	kthread_exit(0);
+}
+
+static void
+CE_at_restoresigs(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		restore_sigs();
+	}
 }
 
 /*
@@ -744,44 +767,10 @@ k_main(void *dummy)
 
 	C.AESpid = p_getpid();
 
-	/* terminating signals */
-	p_signal(SIGHUP,   (long) ignore);
-	p_signal(SIGINT,   (long) ignore);
-	p_signal(SIGQUIT,  (long) ignore);
-	p_signal(SIGPIPE,  (long) ignore);
-	p_signal(SIGALRM,  (long) ignore);
-	p_signal(SIGTSTP,  (long) ignore);
-	p_signal(SIGTTIN,  (long) ignore);
-	p_signal(SIGTTOU,  (long) ignore);
-	p_signal(SIGXCPU,  (long) ignore);
-	p_signal(SIGXFSZ,  (long) ignore);
-	p_signal(SIGVTALRM,(long) ignore);
-	p_signal(SIGPROF,  (long) ignore);
-	p_signal(SIGUSR1,  (long) ignore);
-	p_signal(SIGUSR2,  (long) ignore);
-
-#if !GENERATE_DIAGS
-	/* fatal signals */
-	p_signal(SIGILL,   (long) fatal);
-	p_signal(SIGTRAP,  (long) fatal);
-	p_signal(SIGTRAP,  (long) fatal);
-	p_signal(SIGABRT,  (long) fatal);
-	p_signal(SIGFPE,   (long) fatal);
-	p_signal(SIGBUS,   (long) fatal);
-	p_signal(SIGSEGV,  (long) fatal);
-	p_signal(SIGSYS,   (long) fatal);
-#endif
-
-	/* other stuff */
-	p_signal(SIGTERM,  (long) sigterm);
-	p_signal(SIGCHLD,  (long) sigchld);
-
-	d_setdrv('u' - 'a');
- 	d_setpath("/");
-
+	setup_common();
+	
 	/* join process group of loader */
 	p_setpgrp(0, loader_pgrp);
-
 
 	/*
 	 * register trap#2 handler
@@ -996,10 +985,48 @@ leave:
 }
 
 static void
-k_exit(void)
+setup_common(void)
 {
-	C.shutdown |= QUIT_NOW;
 
+	/* terminating signals */
+	p_signal(SIGHUP,   (long) ignore);
+	p_signal(SIGINT,   (long) ignore);
+	p_signal(SIGQUIT,  (long) ignore);
+	p_signal(SIGPIPE,  (long) ignore);
+	p_signal(SIGALRM,  (long) ignore);
+	p_signal(SIGTSTP,  (long) ignore);
+	p_signal(SIGTTIN,  (long) ignore);
+	p_signal(SIGTTOU,  (long) ignore);
+	p_signal(SIGXCPU,  (long) ignore);
+	p_signal(SIGXFSZ,  (long) ignore);
+	p_signal(SIGVTALRM,(long) ignore);
+	p_signal(SIGPROF,  (long) ignore);
+	p_signal(SIGUSR1,  (long) ignore);
+	p_signal(SIGUSR2,  (long) ignore);
+
+#if !GENERATE_DIAGS
+	/* fatal signals */
+	p_signal(SIGILL,   (long) fatal);
+	p_signal(SIGTRAP,  (long) fatal);
+	p_signal(SIGTRAP,  (long) fatal);
+	p_signal(SIGABRT,  (long) fatal);
+	p_signal(SIGFPE,   (long) fatal);
+	p_signal(SIGBUS,   (long) fatal);
+	p_signal(SIGSEGV,  (long) fatal);
+	p_signal(SIGSYS,   (long) fatal);
+#endif
+	/* other stuff */
+	p_signal(SIGTERM,  (long) sigterm);
+	p_signal(SIGCHLD,  (long) sigchld);
+
+	d_setdrv('u' - 'a');
+ 	d_setpath("/");
+
+}
+
+static void
+restore_sigs(void)
+{
 	/* don't reenter on fatal signals */
 	p_signal(SIGILL,   SIG_DFL);
 	p_signal(SIGTRAP,  SIG_DFL);
@@ -1008,6 +1035,17 @@ k_exit(void)
 	p_signal(SIGFPE,   SIG_DFL);
 	p_signal(SIGBUS,   SIG_DFL);
 	p_signal(SIGSEGV,  SIG_DFL);
+
+}
+
+static void
+k_exit(void)
+{
+	C.shutdown |= QUIT_NOW;
+
+	restore_sigs();
+	post_cevent(C.Aes, CE_at_restoresigs, NULL, NULL, 0,0, NULL, NULL);
+	yield();
 
 	if (svmotv)
 	{
@@ -1020,7 +1058,7 @@ k_exit(void)
 			vex_wheelv(C.P_handle, svwhlv, &h);
 	}
 
-
+	
 	k_shutdown();
 
 	/*

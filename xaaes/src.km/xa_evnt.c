@@ -382,7 +382,7 @@ check_queued_events(struct xa_client *client)
 			"%x,%x, lock %d, Mbase %lx, active.widg %lx",
 			pb->intin[1], pb->intin[3],
 			mouse_locked() ? mouse_locked()->p->pid : 0,
-			C.menu_base, widget_active.widg));
+			TAB_LIST_START, widget_active.widg));
 
 		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));

@@ -411,16 +411,15 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (pb->addrin[0] && pb->addrin[1])
 	{
-		Tab *tab = C.active_menu;
+		Tab *tab = nest_menutask(NULL);
 		MENU *mn = (MENU*)pb->addrin[0], *md = (MENU*)pb->addrin[1];
 		short x, y;
 		OBJECT *ob = mn->mn_tree;
 
-		bzero(tab, sizeof(*tab));
-
-		if (tab->ty == NO_TASK)		/* else already locked */
+		if (tab)		/* else already locked */
 		{	
 			XA_TREE *wt;
+			MENU_TASK *mt;
 
 			wt = obtree_to_wt(client, ob);
 			if (!wt)
@@ -432,7 +431,6 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			DIAG((D_menu,NULL,"menu_popup %lx + %d",ob, mn->mn_menu));
 
-			C.menu_base = tab;
 			tab->pb = pb;
 			tab->locker = client->p->pid;
 			tab->client = client;
@@ -443,16 +441,18 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			tab->widg = NULL;
 			tab->ty = POP_UP;
 			tab->scroll = mn->mn_scroll != 0;
-
-			bzero(&(tab->task_data.menu), sizeof(tab->task_data.menu));
-
+			
+			mt = &tab->task_data.menu;
+			mt->attach_wt = NULL;
+			mt->attach_item = -1;
+			mt->attached_to = -1;
+			
 			do_popup(tab, wt, mn->mn_menu,
 				 click_popup_entry,
 				 pb->intin[0] - x,
 				 pb->intin[1] - y);
 
 			Block(client, 1);
-			//return XAC_BLOCK;
 			return XAC_DONE;
 		}
 	}
@@ -472,24 +472,22 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (ob)
 	{
-		Tab *tab = C.active_menu;
+		Tab *tab = nest_menutask(NULL);
 
-		bzero(tab, sizeof(*tab));
-
-		if (tab->ty == NO_TASK)		/* else already locked */
+		if (tab)		/* else already locked */
 		{
 			XA_TREE *wt;
+			MENU_TASK *mt;
 			short x, y;
 
 			wt = obtree_to_wt(client, ob);
 			if (!wt)
-				new_widget_tree(client, ob);
+				wt = new_widget_tree(client, ob);
 			if (!wt)
 				return XAC_DONE;
 
 			DIAG((D_menu,NULL,"form_popup %lx",ob));
 
-			C.menu_base = tab;
 			tab->pb = pb;
 			tab->locker = client->p->pid;
 			tab->client = client;
@@ -518,7 +516,10 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 
-			bzero(&(tab->task_data.menu), sizeof(tab->task_data.menu));
+			mt = &tab->task_data.menu;
+			mt->attach_wt = NULL;
+			mt->attach_item = -1;
+			mt->attached_to = -1;
 
 			do_popup(tab, wt, 0,
 				 click_form_popup_entry,
@@ -526,7 +527,6 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 				 y);
 
 			Block(client, 1);
-			//return XAC_BLOCK;
 			return XAC_DONE;
 		}
 	}

@@ -372,7 +372,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 						break;
 					}
 				}
-				next	= &((*next)->next);
+				next = &((*next)->next);
 			}
 		}
 		else
