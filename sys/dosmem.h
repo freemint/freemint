@@ -16,7 +16,7 @@ long _cdecl m_alloc (long size);
 long _cdecl m_free (virtaddr block);
 long _cdecl m_shrink (int dummy, virtaddr block, long size);
 long _cdecl m_validate (int pid, void *addr, long size, long *flags);
-long _cdecl m_access (int mode, void *addr, long size);
+long _cdecl m_access (void *addr, long size, int mode);
 long _cdecl p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3);
 long terminate (PROC *curproc, int code, int que);
 long _cdecl p_term (int code);

@@ -462,7 +462,7 @@ m_validate (int pid, void *addr, long size, long *flags)
 }
 
 long _cdecl
-m_access (int mode, void *addr, long size)
+m_access (void *addr, long size, int mode)
 {
 	struct proc *p = curproc;
 	MEMREGION *m;

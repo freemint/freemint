@@ -466,7 +466,7 @@
 0x17a	pmsgsnd		(long msqid, const void *msgp, long msgsz, long msgflg)
 0x17b	pmsgrcv		(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
 0x17c	RESERVED
-0x17d	maccess		(short mode, void *addr, long size) /* 1.15.12 */
+0x17d	maccess		(void *addr, long size, short mode) /* 1.15.12 */
 0x17e	RESERVED	/* mmap */
 0x17f	RESERVED	/* munmap */
 
