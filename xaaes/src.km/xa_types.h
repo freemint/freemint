@@ -1063,15 +1063,18 @@ struct menu_task
 	short clients;
 	short exit_mb;
 	short omx, omy;
-	short x, y;
+	short clicks, x, y;
 	RECT bar, drop;
-	void	(*outof)(struct task_administration_block *tab);
+	//void	(*outof)(struct task_administration_block *tab);
 	struct xa_rect_list *rl_bar;
 	struct xa_rect_list *rl_drop;
 	
 	struct xa_mouse_rect em;
 	void *Mpreserve;
+	TASK *outof;
 	TASK *entry;
+	TASK *select;
+	
 	//OBJECT *root;
 	XA_TREE *wt;
 	/* root displacements */

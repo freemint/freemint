@@ -167,6 +167,23 @@ menu = leave
 #popscroll = 0
 
 #
+# popup_timeout - sets the time in ms XaAES's menu/popup navigation waits before
+# brining up the attachment for a given entry when mouse hovers over. In normal
+# AES menu/popup navigation it is possible to click, and select, a menu or pop
+# entry that has an attachment.
+# However, to be able to implement decent navigation, XaAES behaves slightly
+# different from other AES's now;
+#
+# Single click entry without attachment - select it, like normal AES
+# single click entry with attachment - open it immediately, like on most other GUIs
+# Double click entry with attachment - select it, like single-click on normal AES
+#
+#
+#popup_timeout = 200
+
+#
+# 
+#
 # toppage = bold or faint
 #
 #toppage = faint
