@@ -808,7 +808,7 @@ static short info_tab[17][4] =
 		0,		/* shel_write and AP_AESTERM */
 		0,		/* shel_write and SHW_SHUTDOWN/SHW_RESCHANGE */
 		3,		/* appl_search with long names and additive mode APP_TASKINFO available. */
-		0		/* form_error and all GEMDOS errorcodes */
+		1		/* form_error and all GEMDOS errorcodes */
 	},
 	/*16 <-- 65 */
 	{
