@@ -16,13 +16,13 @@
 
 # include "libkern/libkern.h"
 # include "mint/basepage.h"
-# include "mint/falcon.h"	/* FIXME: Include this in osbind.h and ostruct.h! */
 # include "mint/signal.h"
 # include "mint/slb.h"
 
 # include "arch/cpu.h"		/* cpush */
 # include "arch/mprot.h"
 # include "arch/syscall.h"	/* lineA0 */
+# include "arch/tosbind.h"
 # include "arch/user_things.h"
 
 # include "bios.h"
@@ -194,8 +194,8 @@ init_mem (void)
 		if (r)
 		{
 			quickmove((char *)r->loc, (char *)scrnplace, scrnsize);
-			Setscreen((void *)r->loc, (void *)r->loc, -1);
-			Vsync();
+			TRAP_Setscreen((void *)r->loc, (void *)r->loc, -1);
+			TRAP_Vsync();
 			quickmove((char *)newbase, (char *)r->loc, scrnsize);
 		}
 		else
@@ -203,47 +203,12 @@ init_mem (void)
 			quickmove((char *)newbase, (char *)scrnplace, scrnsize);
 		}
 
-		Setscreen((void *)newbase, (void *)newbase, -1);
+		TRAP_Setscreen((void *)newbase, (void *)newbase, -1);
 		boot_print ("\r\n");
 	}
 
 	SANITY_CHECK_MAPS ();
 }
-
-/* The function below is not used anywhere anymore */
-
-# if 0
-void
-restr_screen(void)
-{
-	long base = (long) Physbase ();
-	MEMREGION *r;
-
-	if (base != scrnplace)
-	{
-		for (r = *core; r; r = r->next)
-		{
-			if (ISFREE (r) && r->len >= scrnsize)
-				break;
-		}
-
-		if (r)
-		{
-			quickmove ((char *) r->loc, (char *) base, scrnsize);
-			Setscreen ((void *) r->loc, (void *) r->loc, -1);
-			Vsync ();
-			quickmove ((char *) scrnplace, (char *) r->loc, scrnsize);
-		}
-		else
-		{
-			quickmove ((char *) scrnplace, (char *) base, scrnsize);
-		}
-
-		Setscreen ((void *) scrnplace, (void *) scrnplace, -1);
-		boot_print ("\r\n");
-	}
-}
-# endif
 
 /*
  * init_core(): initialize the core memory map (normal ST ram) and also
@@ -328,7 +293,7 @@ core_malloc (long amt, short mode)
 
 	if (mxalloc < 0)
 	{
-		ret = (long)Mxalloc(-1L, 0);
+		ret = (long)TRAP_Mxalloc(-1L, 0);
 		if (ret == -32)
 			mxalloc = 0;	/* unknown function */
 		else
@@ -342,18 +307,18 @@ core_malloc (long amt, short mode)
 	}
 
 	if (mxalloc)
-		return (long) Mxalloc(amt, mode);
+		return (long)TRAP_Mxalloc(amt, mode);
 	else
 		if (mode == 1)
 			return 0L;
 		else
-			return (long) Malloc(amt);
+			return (long)TRAP_Malloc(amt);
 }
 
 static void
 core_free (long where)
 {
-	Mfree((void *)where);
+	TRAP_Mfree((void *)where);
 }
 
 /**
@@ -393,7 +358,7 @@ init_core (void)
 	 * rest of our code by pretending to have a really huge
 	 * screen that can't be changed.
 	 */
-	scrnplace = (long) Physbase();
+	scrnplace = (long) TRAP_Physbase();
 
 # if 1
 	/* kludge: some broken graphics card drivers (notably, some versions of
@@ -408,7 +373,7 @@ init_core (void)
 	if (FalconVideo)
 	{
 		/* the Falcon can tell us the screen size */
-		scrnsize = VgetSize(VsetMode(-1));
+		scrnsize = TRAP_VgetSize(TRAP_VsetMode(-1));
 	}
 	else
 	{
@@ -434,13 +399,13 @@ init_core (void)
 		temp = (ulong)core_malloc(scrnsize+256L, 0);
 		if (temp)
 		{
-			(void)Setscreen((void *)-1L, (void *)((temp+511)&(0xffffff00L)), -1);
-			if ((long)Physbase() != ((temp+511)&(0xffffff00L)))
+			TRAP_Setscreen((void *)-1L, (void *)((temp+511)&(0xffffff00L)), -1);
+			if ((long)TRAP_Physbase() != ((temp+511)&(0xffffff00L)))
 			{
 				scrnsize = 0x7fffffffUL;
 				scrndone = 1;
 			}
-			(void)Setscreen((void *)-1L, (void *)scrnplace, -1);
+			TRAP_Setscreen((void *)-1L, (void *)scrnplace, -1);
 			core_free(temp);
 		}
 	}
@@ -493,7 +458,7 @@ init_core (void)
 	}
 
 # ifdef OLDTOSFS
-	(void) Mfree (tossave); /* leave some memory for TOS to use */
+	(void) TRAP_Mfree (tossave); /* leave some memory for TOS to use */
 # endif
 }
 

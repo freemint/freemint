@@ -38,14 +38,14 @@
 
 # include "libkern/libkern.h"
 # include "mint/arch/mfp.h"
+# include "arch/syscall.h"
 # include "arch/timer.h"
+# include "arch/tosbind.h"
 
 # include "k_prot.h"
 # include "pipefs.h"
 # include "procfs.h"
 # include "shmfs.h"
-
-# include <osbind.h>
 
 
 ushort timestamp;
@@ -254,7 +254,7 @@ do_settimeofday (struct timeval* tv)
 
 	hardtime = unix2xbios (xtime.tv_sec + sys2tos);
 
-	Settime (hardtime);
+	ROM_Settime (hardtime);
 
 	return E_OK;
 }
@@ -410,13 +410,13 @@ init_time (void)
 	 */
 
 	do {
-		kvecs = (KBDVEC *) Kbdvbase ();
+		kvecs = (KBDVEC *) TRAP_Kbdvbase ();
 	}
 	while (kvecs->drvstat);
 
 	oldcvec = kvecs->clockvec;
 	kvecs->clockvec = (long) &newcvec;
-	Ikbdws (1, &ikbd_clock_get);
+	TRAP_Ikbdws (1, &ikbd_clock_get);
 	for (count = 0; count < 9999 && packet_came == 0; count++);
 	kvecs->clockvec = oldcvec;
 # endif
@@ -425,7 +425,7 @@ init_time (void)
 	{
 		ulong tostime;
 
-		tostime = Gettime ();
+		tostime = TRAP_Gettime ();
 
 		datestamp = (tostime >> 16) & 0xffff;
 		timestamp = tostime & 0xffff;
@@ -511,7 +511,7 @@ synch_timers ()
 		 * is here.
 		 */
 		hardtime = unix2xbios (xtime.tv_sec + sys2tos);
-		Settime (hardtime);
+		ROM_Settime (hardtime);
 		hardtime = 0;
 	}
 }
@@ -598,7 +598,7 @@ sys_b_settime (ulong datetime)
 		TRACE (("settime (%li) -> Settime (%li)", datetime, hardtime));
 
 		/* Called from the kernel.  */
-		Settime (hardtime);
+		ROM_Settime (hardtime);
 	}
 	else
 	{

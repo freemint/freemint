@@ -20,6 +20,8 @@
 # include "mint/ioctl.h"
 # include "mint/signal.h"
 
+# include "arch/syscall.h"
+
 # include "bios.h"
 # include "biosfs.h"
 # include "dosfile.h"	/* select_coll */
@@ -30,7 +32,6 @@
 # include "signal.h"
 # include "timeout.h"
 
-# include <osbind.h>
 # include <stddef.h>
 
 
@@ -1359,7 +1360,7 @@ escseq (struct tty *tty, int scan)
 		return (scan + '0') | 0x80;
 	}
 	
-	tab = *(((char **) Keytbl((void *) -1UL, (void *) -1UL, (void *) -1UL)) + 2 );
+	tab = *(((char **) ROM_Keytbl((void *) -1UL, (void *) -1UL, (void *) -1UL)) + 2 );
 	scan = tab[scan];
 	if (scan >= 'A' && scan <= 'Z')
 		return scan | 0x80;

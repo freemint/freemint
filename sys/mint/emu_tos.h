@@ -75,6 +75,14 @@ struct dtabuf
 # define FA_SYMLINK	0x40	/* symbolic link */
 # endif
 
+/* Codes used with Cursconf() */
+# define CURS_HIDE	0
+# define CURS_SHOW	1
+# define CURS_BLINK	2
+# define CURS_NOBLINK	3
+# define CURS_SETRATE	4
+# define CURS_GETRATE	5
+
 /* structure used to hold i/o buffers */
 typedef struct io_rec
 {

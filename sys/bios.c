@@ -49,7 +49,6 @@
 # include "tty.h"
 # include "xbios.h"
 
-# include <osbind.h>
 # include <stddef.h>
 
 
@@ -301,7 +300,7 @@ sys_b_setexc (int number, long vector)
 			 */
 			long mintcerr;
 
-			mintcerr = (long) Setexc (0x101, (void (*)()) vector);
+			mintcerr = (long)ROM_Setexc (0x101, (void (*)()) vector);
 			*place = mintcerr;
 		}
 		else
@@ -346,7 +345,7 @@ sys_b_setexc (int number, long vector)
 			if (intr_shadow && number < 0x0100 && p->in_dos == 0)
 				intr_shadow[number] = vector;
 # endif
-			old = (long) Setexc (number, (void (*)()) vector);
+			old = (long)ROM_Setexc (number, (void (*)()) vector);
 		}
 	}
 
@@ -543,24 +542,24 @@ const short boutput[MAX_BHANDLE] = { -3, -2, -1, -5 };
 /* and then do BCOSTAT ourselves, the BIOS SCC ones are often broken */
 #define BCOSTAT(dev) \
 	(((unsigned)dev <= 4) ? ((tosvers >= 0x0102) ? \
-	   (int)callout1(xcostat[dev], dev) : Bcostat(dev)) : \
+	   (int)callout1(xcostat[dev], dev) : ROM_Bcostat(dev)) : \
 	   ((has_bconmap && (unsigned)dev-SERDEV < btty_max) ? \
-		bcxstat(MAPTAB[dev-SERDEV].iorec+1) : Bcostat(dev)))
+		bcxstat(MAPTAB[dev-SERDEV].iorec+1) : ROM_Bcostat(dev)))
 #define BCONOUT(dev, c) \
 	(((unsigned)dev <= 4) ? ((tosvers >= 0x0102) ? \
-	   callout2(xconout[dev], dev, c) : Bconout(dev, c)) : \
+	   callout2(xconout[dev], dev, c) : ROM_Bconout(dev, c)) : \
 	   ((has_bconmap && (unsigned)dev-SERDEV < btty_max) ? \
-		callout2(MAPTAB[dev-SERDEV].bconout, dev, c) : Bconout(dev, c)))
+		callout2(MAPTAB[dev-SERDEV].bconout, dev, c) : ROM_Bconout(dev, c)))
 #define BCONSTAT(dev) \
 	(((unsigned)dev <= 4) ? ((tosvers >= 0x0102) ? \
-	   (int)callout1(xconstat[dev], dev) : Bconstat(dev)) : \
+	   (int)callout1(xconstat[dev], dev) : ROM_Bconstat(dev)) : \
 	   ((has_bconmap && (unsigned)dev-SERDEV < btty_max) ? \
-		(int)callout1(MAPTAB[dev-SERDEV].bconstat, dev) : Bconstat(dev)))
+		(int)callout1(MAPTAB[dev-SERDEV].bconstat, dev) : ROM_Bconstat(dev)))
 #define BCONIN(dev) \
 	(((unsigned)dev <= 4) ? ((tosvers >= 0x0102) ? \
-	   callout1(xconin[dev], dev) : Bconin(dev)) : \
+	   callout1(xconin[dev], dev) : ROM_Bconin(dev)) : \
 	   ((has_bconmap && (unsigned)dev-SERDEV < btty_max) ? \
-		callout1(MAPTAB[dev-SERDEV].bconin, dev) : Bconin(dev)))
+		callout1(MAPTAB[dev-SERDEV].bconin, dev) : ROM_Bconin(dev)))
 
 /* variables for monitoring the keyboard */
 IOREC_T	*keyrec;		/* keyboard i/o record pointer */

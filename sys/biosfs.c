@@ -28,6 +28,7 @@
 # include "arch/detect.h"
 # include "arch/syscall.h"
 # include "arch/timer.h"
+# include "arch/tosbind.h"
 
 # include "bios.h"
 # include "dev-mouse.h"
@@ -50,7 +51,6 @@
 # include "xbios.h"
 
 # include <stddef.h>
-# include <mint/osbind.h>
 
 
 static long	_cdecl bios_root	(int drv, fcookie *fc);
@@ -425,7 +425,7 @@ biosfs_init (void)
 		if (has_bconmap)
 			bttys[i].irec = MAPTAB[c->private-6].iorec;
 		else
-			bttys[i].irec = Iorec(0);
+			bttys[i].irec = TRAP_Iorec(0);
 		bttys[i].orec = bttys[i].irec+1;
 		bttys[i].rsel = &(c->tty->rsel);
 		bttys[i].wsel = &(c->tty->wsel);
@@ -442,7 +442,7 @@ biosfs_init (void)
 	}
 	btty_max = i;
 
-	midi_btty.irec = Iorec(2);
+	midi_btty.irec = TRAP_Iorec(2);
 	midi_btty.rsel = &midi_tty.rsel;
 	midi_btty.wsel = &midi_tty.wsel;
 	midi_btty.tty = &midi_tty;
@@ -2254,7 +2254,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 			if (newbaud > 0) {
 	/* assert DTR works only on modem1 and SCC lines */
 				if (dev == 1 || dev == 6) {
-					Offgibit(0xef);
+					ROM_Offgibit(0xef);
 				} else if (t && (dev == 7 ||
 					   ((struct tty *)f->devinfo) == &scca_tty))
 				{
@@ -2282,7 +2282,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 			} else if (newbaud == 0L) {
 	/* drop DTR: works only on modem1 and SCC lines */
 				if (dev == 1 || dev == 6) {
-					Ongibit(0x10);
+					ROM_Ongibit(0x10);
 				} else if (t && (dev == 7 ||
 					   ((struct tty *)f->devinfo) == &scca_tty))
 				{
@@ -2358,19 +2358,19 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 	case TCURSSTEADY:
 		if (f->fc.aux != 2)
 			return ENOSYS;
-		(void) Cursconf(mode - TCURSOFF, 0);
+		ROM_Cursconf(mode - TCURSOFF, 0);
 		break;
 	case TCURSSRATE:
 	case TCURSSDELAY:	/* undocumented! */
 		if (f->fc.aux != 2)
 			return ENOSYS;
-		(void) Cursconf(mode - TCURSOFF, *((short *)buf));
+		ROM_Cursconf(mode - TCURSOFF, *((short *)buf));
 		break;
 	case TCURSGRATE:
 	case TCURSGDELAY:	/* undocumented! */
 		if (f->fc.aux != 2)
 			return ENOSYS;
-		*(short *)buf = Cursconf(mode - TCURSOFF, 0);
+		*(short *)buf = ROM_Cursconf(mode - TCURSOFF, 0);
 		break;
 	case F_SETLK:
 	case F_SETLKW:
