@@ -1,7 +1,16 @@
 # This file gets included by the Makefile in this directory to determine
 # the files that should go only into source distributions.
 
-HEADER = 
-COBJS = mkfatfs.c
+HEADER = \
+	gemkfatfs.h \
+	util.h
 
-SRCFILES = $(HEADER) $(COBJS)
+COBJS = \
+	gemkfatfs.c \
+	mkfatfs.c \
+	util.c
+
+SOBJS = \
+	startup.S
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS)

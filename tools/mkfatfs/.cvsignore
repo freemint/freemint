@@ -12,3 +12,4 @@ lib*.a
 *.prg
 __target.*
 mkfatfs
+gemkfatfs.app
