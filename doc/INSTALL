@@ -1,0 +1,38 @@
+
+Installation is simple:
+
+- copy the right MiNT kernel to your auto folder
+- remove a older MiNT version from your auto folder
+- to disable memory protection rename it to mintnp.prg
+
+Note 1: if you want to start it with memory protection, rename it to 
+        mint.prg
+
+Note 2: The 1.15.12 kernel release follow the traditional
+        naming scheme and does NOT include the boot menu
+        like in previous beta versions.
+
+mint000.prx - 68000 kernel for the ST serie and Emulators
+mint030.prx - 68030 kernel for all 030 ATARIs
+mint040.prx - 68040/68060 kernel for all 040/060 ATARIs except Milan
+mintmil.prx - 68040 kernel for the Milan
+mintnp.prx  - 68030 debug kernel with debugging code
+              (Note: the debugging code slows down this kernel)
+
+Installation tips:
+
+- NVDI must always be started before MiNT.
+
+- WDIALOG must always be started after MiNT, best after starting the 
+  AES. WDIALOG is also a very dirty hack, doesn't work correctly 
+  under memory protection (to set the flags to global doesn't help 
+  very much).
+  
+  It's recommended to skip Wdialog if it's possible. Under N.AES
+  you can use N.DIALOG as clean Wdialog replacement. It's part
+  of the N.AES distribution.
+
+- Freedom is also a very dirty program. You get a lot of problems with
+  Freedom installed. Your system will be unstable.
+  
+  It's strongly recommended not to use Freedom under MiNT!

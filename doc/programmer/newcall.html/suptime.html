@@ -1,0 +1,79 @@
+<html>
+<head>
+	<title> New MiNT system calls: Suptime() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Suptime()</H3>
+
+<P>
+<B>LONG Suptime( <i>uptime</i>, <i>loadaverage</i> )</B>
+<P>
+<B>LONG <I>*uptime</I>;<br>
+LONG <i>*loadaverage</i>;</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Suptime()</B> returns the current uptime and load 
+averages from the system.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>319 (0x013f)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>uptime</I> is a pointer 
+to a <b>LONG</b> value that will be filled with the current 
+amount of seconds elapsed since last reboot.
+<p><i>loadaverage</i> is a pointer to a three longword array, that will 
+be filled with the current load averages (for last 1, 5 and 15 minutes).
+</p>
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+pea	loadaverage
+pea	uptime
+move.w	#$013f,-(sp)
+trap	#1
+lea	$0a(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Suptime()</B> returns 
+<b>E_OK</b> or a negative GEMDOS error code otherwise (actually it may 
+be only <b>ENOSYS</b> if the call is not supported...).
+</p>
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>The load average value is calculated 
+using the following formula:
+<pre>
+sum += (new_load - old_load) * LOAD_SCALE;
+load_avg = sum / MAX_SIZE;
+</pre>
+where <b>LOAD_SCALE</b> is 2048, <b>MAX_SIZE</b> is the number of 5 
+second periods in the specified amount of time (12 for 1 min., 60 for 5 
+min. and 180 for 15 min). <i>new_load</i> is the number of currently 
+running processes, <i>old_load</i> is the number of processes running 
+<i>previous time</i>. A 'running' process is considered the one which 
+is put onto run or ready queue.
+</td></tr>
+
+</table>
+</body>
+</html>

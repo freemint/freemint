@@ -1,0 +1,696 @@
+<html>
+<head>
+	<title> New MiNT system calls: Ssystem() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Ssystem()</H3>
+
+<P>
+<B>LONG Ssystem( <I>mode</I>, <i>arg1</i>, <i>arg2</i>)</B>
+<P><B>
+WORD <I>mode</I>;<br>
+LONG <i>arg1</i>;<br>
+LONG <i>arg2</i>;<br>
+</B></p>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD colspan=2><B>Ssystem()</B> is a multipurpose call 
+controlling Cookie Jar, memory access and various system settings.
+</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD colspan=2>340 (0x0154)</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD colspan=2>Available when a 
+'<B>MiNT</B>' cookie with a version of at least 1.15 exists.
+</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD colspan=2><i>arg1</i> 
+and <i>arg2</i> are long parameters specific for a 
+particular <i>mode</i>. If a <i>mode</i> doesn't use a parameter, it is 
+usually ignored, but should be set to a zero for future compatibility. 
+<I>mode</I> specifies a particular action as follows:
+</TD></TR>
+<tr><th></th><td colspan=2></td></tr>
+<tr><th></th><td>
+<center>
+<i><b><font size=2>mode</font></b></i>
+</center>
+</td><td>
+<center>
+<b><font size=2>meaning</font></b></td>
+</center>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSNAME</b><br>(0x0000)
+</center>
+<td>Identifies the operating system type. Returned longword contains a 
+32-bit positive number, which interpreted as an ASCII string gives a 
+4-character <i>id</i>. For MiNT the returned value is 0x4d694e54 
+('MiNT').
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSXNAME</b><br>(0x0001)
+</center>
+<td>Identifies the subtype of the operating system. If this call 
+returns a zero or a negative value, that means, that no subtype is 
+available. Otherwise the returned value, when interpreted as an ASCII 
+string gives a 4-character subtype <i>id</i>. For FreeMiNT, being a 
+derivative of the MiNT, the returned value is 0x46726565 ('Free').
+<p><i>If a subtype id
+is less than 4 characters long, it should be padded with zeros.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSVERSION</b><br>(0x0002)
+</center>
+<td>Identifies the exact operating system version. Returned longword 
+contains a 32 bit positive version number encoded as follows: <pre>
+bits	meaning
+----	-------
+0-7	some printable character
+	to characterize the current version,
+	e.g.
+	0x61 (`a') if <i>alpha</i> release,
+	0x62 (`b') if <i>beta</i> release.
+	For <i>official</i> releases you will
+	always find a value of 0 here.
+8-15	patchlevel (0x55 for pl 88)
+16-23	minor version number (0x0e for x.14)
+24-31	major version number ($01 for 1.xx)
+</pre>
+Definition of an <i>official</i> release: every release for which in 
+bits 0-7 a value of 0 is returned...
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSHEADER</b><br>(0x0003)
+</center>
+<td>Allows to access the TOS header in order to get some 
+information from. Current implementation allows to access the first 
+256 longwords of the header. The address of the required longword, 
+relative to the begin address of the TOS header, has to be specified as 
+<b><i>arg1</i></b>. Only even values are allowed (bit 0 of the 
+<b><i>arg1</b></i> is masked out by the kernel). Always a whole 
+longword is returned.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSBUILDDATE</b><br>(0x0004)
+</center>
+<td>
+Returns a 32 bit positive value with the build date encoded as follows:
+<pre>
+bits	meaning
+----	-------
+0-15	binary year ($07dd for 1998)
+16-23	binary month ($0c for the December)
+24-31	binary day of the month 
+</pre>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSBUILDTIME</b><br>(0x0005)
+</center>
+<td>Returns a 32 bit positive value with the build time encoded as 
+follows:
+<pre>
+bits	meaning
+----	-------
+0-7	binary seconds
+8-15	binary minutes
+16-23	binary hours
+24-31	day of week
+</pre>
+<i>day of week</i> has 1 for Monday, 2 for Tuesday... 7 for Sunday.
+<p><i>The call should never return a zero in these bits, but if it 
+does, it should be interpreted as Sunday.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSCOMPILE</b><br>(0x0006)
+</center>
+<td>Returns a 32-bit positive value specifying the primary CPU type the 
+kernel has been compiled for. Encoding:
+<pre>
+bits	meaning
+----	-------
+0-7	binary minor CPU ID
+8-15	binary major CPU ID
+16-31	reserved for future definition.
+</pre>
+The major ID identifies a particular series of processors. Currently 
+only a value of $00 is defined and it is assigned to Motorola 68k 
+series. Other values of this field are reserved for future definition.
+<p>The minor CPU ID interpretation depends on the major ID. For 
+68k series, values are as follows:
+<pre>
+$00	68000
+$0a	68010
+$14	68020
+$1e	68030
+$28	68040
+$3c	68060
+</pre>
+<i>This is not the same as the </i><b>_CPU</b><i> cookie value. The 
+</i><b>_CPU</b><i> cookie specifies the CPU physically present in the 
+machine, while the </i><b>S_OSCOMPILE</b><i> indicates the processor 
+type selected at the time when the system was compiled. In other words, 
+running a 68000 compiled kernel will return a $00 here, even if the 
+machine is running 68040 or something.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_OSFEATURES</b><br>(0x0007)
+</center>
+<td>Returns a 32-bit positive value specifying the state of kernel 
+features. Encoding:
+<pre>
+bits	meaning
+----	-------
+0	memory protection (1 = turned on)
+1	virtual memory (1 = turned on)
+2-31	reserved for future usage 
+</pre>
+<i>This call has an informative purpose only and you cannot toggle 
+anything with it.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_GETCOOKIE</b><br>(0x0008)
+</center>
+<td>Fetches required information from the Cookie Jar.
+<ol>
+<li>If <b><i>arg1</b></i> is a value bigger than 65535 (0xffff), it is 
+interpreted as a tag id. The Cookie Jar is searched for such a tag, 
+then if the tag is found, the corresponding slot value is returned or 
+-1 otherwise.
+<li>If <b><i>arg1</b></i> is a value between 1 and 65535, it is 
+interpreted as a slot number, not a tag id.Then the corresponding tag 
+id is fetched and returned or a value of -1 if the specified slot is 
+free or does not exist at all (a slot number past the end of the Cookie 
+Jar was specified). <b>The first slot in the Cookie Jar is considered 
+number 1.</b>
+<li>If <b><i>arg1</i></b> is equal to a zero, then the Cookie Jar is 
+searched for the <b>NULL</b> cookie, then the corresponding slot value 
+is returned.
+</ol>
+The place where the value fetched from the Cookie Jar will be returned 
+is defined by the <b><i>arg2</b></i>. If this is a zero, the call 
+returns its values in the GEMDOS return value (d0). If the 
+<b><i>arg2</i></b> is not a zero, it is interpreted as a pointer to a 
+memory location, where the slot tag or its value should be written to. 
+The return value is 0 (<b>E_OK</b>) then, if everything went OK, or -1 
+otherwise.
+
+<p><i>This behaviour (where </i><b>arg2 != NULL</b><i>) is not 
+implemented in MiNT versions below 1.14.8.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_SETCOOKIE</b><br>(0x0009)
+</center>
+<td>
+Places a tag id specified by the <b><i>arg1</b></i> with the value of 
+the <b><i>arg2</b></i> in the Cookie Jar. If a slot with the specified 
+tag id already exists, it will be replaced with the new value. 
+<b>NULL</b> cookie is reallocated automatically and its value is 
+adjusted. If there are no more free slots, no action is performed and 
+<b>ENOMEM</b> is returned instead.
+<p>
+<b>S_SETCOOKIE</b> requires root <i>euid</i>, <b>EACCES</b> is returned 
+otherwise and no action is performed.
+</p>
+<p><i>The call refuses to place a cookie (a value of -1 is returned) 
+whose tag id contains a zero-byte.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_GETLVAL</b><br>(0x000a)
+</center>
+<td>Fetches and returns a longword from the address of supervisor area 
+specified as a 16-bit, even, unsigned integer value passed as 
+<b><i>arg1</b></i>. Bit 0 and bits 16-31 are masked out (ignored). 
+The call returns a zero if the value at the specified address has to be 
+"hidden" from reading. Currently the hidden values are the initial PC 
+value and the initial stack pointer value stored at $00000000 and 
+$00000004 respectively. Reading a hidden value may require root 
+<i>euid</i>.
+<p><i>If the desired address is long word aligned, longwords can be 
+also retrieved from the supervisor area using </i><b>Setexc()</b>.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_GETWVAL</b><br>(0x000b)
+</center>
+<td>Fetches and returns a word from the address of supervisor area 
+specified as a 16-bit, even, unsigned integer value passed as 
+<b><i>arg1</b></i>. Bit 0 and bits 16-31 are masked out (ignored). 
+The call returns a zero if the value at the specified address has to be 
+"hidden" from reading. Currently the hidden values are the initial PC 
+value and the initial stack pointer value stored at $00000000 and 
+$00000004 respectively. Reading a hidden value may require root 
+<i>euid</i>.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_GETBVAL</b><br>(0x000c)
+</center>
+<td>Fetches and returns a byte from the address of supervisor area 
+specified as a 16-bit unsigned integer value passed as 
+<b><i>arg1</b></i>. Bits 16-31 are masked out (ignored). The call 
+returns a zero if the value at the specified address has to be "hidden" 
+from reading. Currently the hidden values are the initial PC value and 
+the initial stack pointer value stored at $00000000 and $00000004 
+respectively. Reading a hidden value may require root <i>euid</i>.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_SETLVAL</b><br>(0x000d)
+</center>
+<td>Places a longword value specified by <b><i>arg2</b></i> at address 
+specified as 16 bit integer by <b><i>arg1</b></i>. Bit 0 and bits 
+16-31 of the <b><i>arg1</b></i> are masked out (ignored). Since this 
+call is designed to manipulate operating system variables located 
+within the supervisor area (first 32k), it is restricted for root 
+<i>euid</i> and returns <b>EACCES</b> if called by an unprivileged 
+process.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_SETWVAL</b><br>(0x000e)
+</center>
+<td>Places a word value specified by <b><i>arg2</b></i> at address 
+specified as 16 bit integer by <b><i>arg1</b></i>. Bit 0 and bits 
+16-31 of the <b><i>arg1</b></i> are masked out (ignored). Since this 
+call is designed to manipulate operating system variables located 
+within the supervisor area (first 32k), it is restricted for root 
+<i>euid</i> and returns <b>EACCES</b> if called by an unprivileged 
+process.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_SETBVAL</b><br>(0x000f)
+</center>
+<td>Places a byte value specified by <b><i>arg2</b></i> at address 
+specified as 16 bit integer by <b><i>arg1</b></i>. Bits 16-31 of the 
+<b><i>arg1</b></i> are masked out (ignored). Since this call is 
+designed to manipulate operating system variables located within the 
+supervisor area (first 32k), it is restricted for root 
+<i>euid</i> and returns <b>EACCES</b> if called by an unprivileged 
+process.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_SECLEVEL</b><br>(0x0010)
+</center>
+<td>Resets the current security level to a value specified by 
+<b><i>arg1</b></i>. Valid levels are as follows:
+<p>
+<b>0</b>: none of hardware specific system calls are restricted. This 
+is a 'MultiTOS compatibility' mode.</p>
+<p><b>1</b>: <b>BIOS</b> and <b>XBIOS</b> calls require root 
+privileges; any call except <b>Supexec()</b> and <b>Super()</b> returns 
+<b>EACCES</b> if called by an unprivileged process. This does not apply 
+to <b>Setexc()</b>, which sends SIGSYS to the caller if a change of an 
+exception vector was attempted.</p>
+<p><b>2</b>: as above, with except that <b>Supexec()</b> and 
+<b>Super()</b> generates <b>SIGSYS</b> in order to kill the calling 
+process.</p>
+<p>On values bigger than a 2, the <b>EACCES</b> is returned. If 
+<b><i>arg1</b></i> is equal to a -1, the current security level value 
+is returned.
+<p><i>The call totally needs root privileges - user processes cannot 
+even inquire the current security level value.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_RUNLEVEL</b><br>(0x0011)
+</center>
+<td>Reserved for future definition.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_TSLICE</b><br>(0x0012)
+</center>
+<td>Allows to set/interrogate the global timeslice value. Values are 
+exactly the same as for <b>SLICES</b> keyword in mint.cnf. If 
+<b><i>arg1</b></i> is equal to -1, the call returns the current global 
+timeslice value.
+<p><i>Setting the timeslice requires root privileges.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_FORCEFASTLOAD</b><br>(0x0013)
+</center>
+<td>Allows to change the interpretation of the FASTLOAD bit in the 
+program header.
+<p>On <b>Ssystem(S_FORCEFASTLOAD, 0L, 0L);</b> the program header bit 
+will be used as before, this is actually equal to <b>FASTLOAD=NO</b> in 
+mint.cnf.
+<p>On <b>Ssystem(S_FORCEFASTLOAD, 1L, 0L); </b>, the program header bit 
+will be ignored and fastload will be forced for all programs. 
+<p>
+<b><i>arg1</b></i> = -1 allows to interrogate the current state of this 
+variable.
+<p><i>You need root privileges to toggle the <b></i>FASTLOAD<i></b> 
+mode.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_SYNCTIME</b><br>(0x0014)
+</center>
+<td>Allows to interrogate or change the global filesystem sync time. 
+The default value is 5 sec.
+<p>If <b><i>arg1</i></b> is a positive value, it is interpreted as a 
+new sync time value.</p>
+<p>If <b><i>arg1</i></b> is equal to -1, the current sync time value 
+will be returned.</p>
+<p><i>To be able to change the filesystem sync time you need root 
+privileges desperately.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_BLOCKCACHE</b><br>(0x0015)
+</center>
+<td>A positive value of <b><i>arg1</i></b> ranging from 0 to 
+100, specifies the percentage of filesystem cache to be filled with 
+linear reads, as in the PERCENTAGE keyword in the mint.cnf file. A 
+negative value of <b><i>arg1</i></b> returns the currently set 
+percentage value.
+<p><i>Root privileges are required to use this mode.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_FLUSHCACHE</b><br>(0x0016)
+</center>
+<td>Invalidates CPU cache entries. The <b><i>arg1</b></i> is a pointer 
+to the memory area whose cache entries should be invalidated, the 
+<b><i>arg2</b></i> is the size of the area in bytes. Passing -1 as the 
+<b><i>arg2</b></i> invalidates all cache entries. If the CPU features a 
+separate instruction and data caches, both are flushed.
+<p>This call automatically recognizes caches in 68020/030/040/060 and 
+handles them as appropriate. The 68060 branch cache is 
+automatically invalidated too. On 68000/68010 calling this mode has no 
+effect. This mode is in fact just an interface to the MiNT function 
+<b>cpush()</b> used internally by the system.</p>
+<p><i>Root privileges are <b>NOT</b> required to use this mode.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_CTRLCACHE</b><br>(0x0017)
+</center>
+<td>Provides an universal (among 68k family members) way of controlling 
+the CPU on chip caches. The <b><i>arg1</b></i>, referenced as Cache 
+Control Word (CCW) is a bitfield where each bit enables (if 1) or 
+disables (if 0) a particular function of CPU caches. The 
+<b><i>arg2</b></i>, referenced as Cache Control Mask (CCM), is a bit 
+mask where you define (by setting appropriate bits to 1) which bits of 
+the Cache Control Word should be actually taken into account and 
+written into the Cache Control Register (CACR). This is <i>control 
+mode</i> of the <b>S_CTRLCACHE</b>.
+<p>In <i>inquire mode</i> you can pass -1 as either argument. If the 
+CCW is -1, the call returns a longword reflecting the actual state of 
+the caches.
+<p>If the CCM is -1, a default bitmask is returned, where any bit set 
+indicates, that a cache function defined by the same bit in the 
+Cache Control Word is valid for the processor the MiNT is currently 
+running on.
+<p>If both arguments are negative, the call simply returns <b>E_OK</b> 
+if it is valid at all or <b>ENOSYS</b> otherwise. This is the 
+<i>acknowledge mode</i> of the <b>S_CTRLCACHE</b>.
+<p>Bits in either argument are defined as follows:
+<pre>
+0	enable instruction cache
+1	enable data cache
+2	enable branch cache
+3	freeze instruction cache
+4	freeze data cache
+5	instruction burst enable
+6	data burst enable
+7	enable write allocate
+8	instruction cache full mode enable
+9	instruction cache read/write allocate enable
+10	data cache full mode enable
+11	data cache read/write allocate enable
+12	invalidate branch cache
+13	invalidate branch cache user entries
+14	enable CPUSH invalidate
+15	enable store buffer
+16-31	reserved for future definition
+</pre>
+<p>Notice, that no processor currently supports all of these functions 
+and some (68000 and 68010) have no on-chip caches at all. To figure 
+out, what functions are valid for the actual CPU used, you should first 
+request the default bitmask using the <i>inquire mode</i> described 
+above. Your program should save this mask, logically AND the 
+<b><i>arg2</i></b> with it, then pass the result as the Cache Control 
+Mask for a <i>control mode</i> call.
+<p><b>Also notice, that the above bit definition does not exactly 
+reflect the function and even position of actual bits in the physical 
+Cache Control Register</b>. The bits of either argument are arbitrarily 
+assigned to particular cache functions, but their position and state 
+are converted by the system before the Cache Control Register is 
+written and after it is read, so that the user program can see always 
+the same functions assigned to bits as above regardless of the physical 
+configuration of the Cache Control Register.</p>
+<p><i>Since changing cache configuration is global and may severely 
+affect system performance, root privileges are needed to use 
+</i><b>S_CTRLCACHE</b><i> control mode.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_INITIALTPA</b><br>(0x0018)
+</center>
+<td>A positive non-zero value of <b><i>arg1</i></b> defines the default 
+amount of memory (in bytes) allocated for TPA space, as in the 
+INITIALMEM keyword of the mint.cnf file. A negative value allows to 
+interrogate the value currently set. A value of 0 is illegal and will 
+cause the call to fail and return <b>EBADARG</b>. Notice that even if 
+you define a very small value, like 1 or 2 bytes, the system will round 
+this up to the smallest size of a memory block possible to allocate.
+<p><i>Root privileges are required to use this mode.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_CAD</b><br>(0x0019)
+</center>
+<td>Reserved for future definition.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_CLOCKMODE</b><br>(0x0064)
+</center>
+<td> 
+<b>S_CLOCKMODE</b> called with an <b><i>arg1</b></i> of -1 inquires the 
+kernel's notion of the hardware system clock. If the command returns 
+a zero, the hardware clock is considered to tick in UTC; if it returns 
+a positive non-zero value, it is considered to tick in local time.
+<p>Any other positive value of the <b><i>arg1</b></i> sets the current 
+clock mode. On a 0 it is reset to UTC, or to local time otherwise.
+</p>
+<p><i>Although this call will never really change the setting of the 
+hardware clock, due to the changed interpretation the clock seems to 
+warp; don't play around too much with it.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_KNAME</b><br>(0x0384)
+</center>
+<td> 
+<b><i>arg1</i></b> and <b><i>arg2</i></b> specify the address and 
+length in bytes, respectively, of a memory buffer, where will be 
+written a <b>NULL</b> terminated ASCII string identifying the full name 
+and version of the system kernel. If the memory buffer is not long 
+enough to hold the entire string, the string is truncated down to the 
+buffer size.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_CNAME</b><br>(0x038e)
+</center>
+<td> 
+<b><i>arg1</i></b> and <b><i>arg2</i></b> specify the address and 
+length in bytes, respectively, of a memory buffer, where will be 
+written a <b>NULL</b> terminated ASCII string identifying the full name 
+of the compiler used to compile the system kernel. If the memory buffer 
+is not long enough to hold the entire string, the string is truncated 
+down to the buffer size.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_CVERSION</b><br>(0x038f)
+</center>
+<td> 
+<b><i>arg1</i></b> and <b><i>arg2</i></b> specify the address and 
+length in bytes, respectively, of a memory buffer, where will be 
+written a <b>NULL</b> terminated ASCII string identifying the version 
+of the compiler used to compile the system kernel. If the memory buffer 
+is not long enough to hold the entire string, the string is truncated 
+down to the buffer size.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_CDEFINES</b><br>(0x0390)
+</center>
+<td> 
+<b><i>arg1</i></b> and <b><i>arg2</i></b> specify the address and 
+length in bytes, respectively, of a memory buffer, where will be 
+written a <b>NULL</b> terminated ASCII string containing the 
+compile time definitions (switches) used while compiling the system 
+kernel. If the memory buffer is not long enough to hold the entire 
+string, the string is truncated down to the buffer size.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_COPTIM</b><br>(0x0391)
+</center>
+<td> 
+<b><i>arg1</i></b> and <b><i>arg2</i></b> specify the address and 
+length in bytes, respectively, of a memory buffer, where will be 
+written a <b>NULL</b> terminated ASCII string containing the compile 
+time optimization options used while compiling the system kernel. If 
+the memory buffer is not long enough to hold the entire string, the 
+string is truncated down to the buffer size.
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_DEBUGLEVEL</b><br>(0x03e8)
+</center>
+<td> 
+<b>S_DEBUGLEVEL</b> called with an <b><i>arg1</b></i> of -1 inquires 
+the kernel's current debug level. Any other positive value will set 
+the current debug level. If it is a zero, the kernel will not output 
+any debugging information, except for fatal error messages. The higher 
+the debug level, the more MiNT will spew about what it is doing.
+<p>Notice, that special debug kernels will output more information than 
+an ordinary distribution kernel.
+<p><i>Root privileges are needed to change the debug level.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_DEBUGDEV</b><br>(0x03e9)
+</center>
+<td> 
+<b>S_DEBUGDEV</b> called with an <b><i>arg1</b></i> of -1 inquires the 
+current BIOS device to output the debug information to. The order of 
+defined BIOS devices is as follows:
+<ul>
+	<li>0, printer
+	<li>1, AUX:
+	<li>2, console (default)
+	<li>3, MIDI
+	<li>4, keyboard
+	<li>5, raw screen
+</ul>
+<p>Any positive value of <b><i>arg1</i></b>, that ranges from 0 to 9, 
+will redirect the debug information output to an appropriate BIOS 
+device. Notice however, that setting device 4 (keyboard) as a debug 
+device does not make much sense and may produce undesired results. The 
+system does not restrict this in any way though, just assuming that you 
+know what you're doing.
+<p><i>Root privileges are needed to change the debug device.</i>
+</td></tr>
+
+<tr><th></th><td>
+<center>
+<b>S_TIOCMGET</b><br>(0x54f8)
+</center>
+<td>This mode is reserved for the internal and exclusive usage of the 
+MiNT Library.
+</td></tr>
+
+<TR><TH><B>Binding</B></TH><TD colspan=2>
+<PRE>
+move.l  arg2,-(sp)
+move.l  arg1,-(sp)
+move.w	opcode,-(sp)
+move.w  #$0154,-(sp)
+trap    #1
+lea     $0c(sp),sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD colspan=2></TD></TR>
+
+<TR><TH><B>Caveats</B></TH><TD colspan=2><B>Ssystem()</B> was first 
+introduced as of MiNT version 1.14.6, but it is considered fully 
+functional as of MiNT version 1.15.0 <b>release</b>.
+<p>The <b>S_OSHEADER</b> opcode should be only used for fetching the 
+TOS version number when running MiNT versions below 1.15.0 release.
+</p>
+<p>The <b>S_FLUSHCACHE</b>, <b>S_CTRLCACHE</b>, <b>S_DEBUGLEVEL</b> and 
+<b>S_DEBUGDEV</b> are supported as of MiNT version 1.15.1 release.</p>
+<p>You should <b>never</b> use <b>Ssystem(S_TIOCMGET, ...);</b> in own 
+programs.</p>
+<p>The <b>Ssystem()</b> behaviour does <i>not</i> depend on the 
+<b>S_SECLEVEL</b> settings.<p>
+<p>Any values returned by the kernel on <i>reserved</i> fields should 
+be considered undocumented and no software should rely on 
+them.
+</p>
+</TD></TR>
+
+<tr><th><b>Comments</b></th><td colspan=2>Its strictly encouraged to 
+access GEMDOS variables and system vectors via the <b>Ssystem()</b>, 
+because this way is considered safe for multiuser setups. For example, 
+you can access the cookie jar pointer using <b>Ssystem(S_GETLVAL, 
+0x05a0, NULL)</b>, though if TOS compatibility is the issue, you should 
+rather use <b>Setexc(0x05a0>>2, -1)</b>.
+<p>Prior to any further <b>Ssystem()</b> usage, your application should 
+first check if the kernel supports this call. If it does, the 
+<b>Ssystem(-1, 0L, 0L);</b> should return a zero.
+<p><b>Ssystem()</b> is used and supported by the MiNT Library 
+as of patchlevel 48.
+</td></tr>
+<TR><TH><b>See also</b></TH><TD colspan=2>
+<a href="tgettimeofday.html"><b>Tgettimeofday()</b></a>,
+<a href="tsettimeofday.html"><b>Tsettimeofday()</b></a>
+</td></tr>
+</table>
+</body>
+</html>

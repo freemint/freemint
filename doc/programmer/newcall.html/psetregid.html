@@ -1,0 +1,77 @@
+<html>
+<head>
+	<title> New MiNT system calls: Psetregid() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Psetregid()</H3>
+
+<P>
+<B>LONG Psetregid(<i>rgid</i>, <i>egid</i>)</B>
+<P>
+<B>WORD <I>rgid</I>;<br>
+WORD <i>egid</i>;
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Psetregid()</B> sets the real and/or effective 
+group <i>id</i> for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>335 (0x014f)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.12 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><i>rgid</i> specifies the new real 
+group <i>id</i> and <I>egid</I> specifies the new effective group 
+<i>id</i> for the calling process. If either argument is -1, only the 
+other gets changed.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+move.w	egid,-(sp)
+move.w	rgid,-(sp)
+move.w	#$014f,-(sp)
+trap	#1
+addq.l	#6,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Psetregid()</B> returns 
+<b>E_OK</b> on success or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+<TR><TH><B>Caveats</B></TH><TD>Setting group <i>ids</i> needs root 
+privileges.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>This call is often used by daemon 
+processes to <i>downgrade</i> their privileges to user level.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="psetreuid.html"><b>Psetreuid()</b></a>,
+<a href="psetegid.html"><b>Psetegid()</b></a></td>
+</tr>
+
+</table>
+</body>
+</html>

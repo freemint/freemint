@@ -1,0 +1,80 @@
+<html>
+<head>
+	<title> New MiNT system calls: Psetgroups() </title>
+	<nextid = 1>
+</head>
+<body bgcolor=#FFFFFF>
+
+<H3>Psetgroups()</H3>
+
+<P>
+<B>LONG Psetgroups(<i>len</i>, <i>gidset</i>)</B>
+<P>
+<B>WORD <I>len</I>;<br>
+WORD <i>*gidset</i>;<br>
+</B>
+<TABLE BORDER=1>
+
+<TR><TH></TH><TD><B>Psetgroups()</B> sets the supplementary group 
+<i>ids</i> for the calling process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Opcode</B></TH><TD>328 (0x0148)</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Availability</B></TH><TD>Available when a '<B>MiNT</B>' 
+cookie with a version of at least 1.11 exists.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Parameters</B></TH><TD><I>len</I> specifies the length (in 
+words) of the array containing the supplementary group <i>ids</i> to be 
+set. This value must be a positive number not greater than 
+<b>NGROUPS_MAX</b>. If <i>len</i> is a zero, the call will return the 
+number of supplementary group ids those have been set.
+<p><i>gidset</i> is a pointer to a word array containing the new 
+supplementary group <i>ids</i> for the process.
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Binding</B></TH><TD>
+<PRE>
+pea	gidset
+move.w	len,-(sp)
+move.w	#$0148,-(sp)
+trap	#1
+addq.l	#8,sp
+</PRE>
+
+</TD></TR>
+
+<TR><TH></TH><TD></TD></TR>
+
+<TR><TH><B>Return Value</B></TH><TD><B>Psetgroups()</B> returns a 
+number of new supplementary group <i>ids</i> for the process on success 
+or a negative GEMDOS error code otherwise.
+</TD></TR>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Caveats</b></th><td>Setting new supplementary group 
+<i>ids</i> needs root privileges.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>Comments</b></th><td>The <b>NGROUPS_MAX</b> value is 
+returned by <b>Sysconf()</b>.
+</td></tr>
+
+<tr><th></th><td></td></tr>
+<tr><th><b>See Also</b></th><td>
+<a href="pgetgroups.html"><b>Pgetgroups()</b></a>, <b>Sysconf()</b></td>
+</tr>
+
+</table>
+</body>
+</html>

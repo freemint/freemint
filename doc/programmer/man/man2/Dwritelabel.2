@@ -1,0 +1,23 @@
+.TH Dwritelabel 2 "MiNT Programmer's Manual" "Version 1.11" "Nov 11, 1994"
+.SH NAME
+Dwritelabel \- set filesystem label
+.SH SYNOPSIS
+.nf
+LONG Dwritelabel ( const char *path, const char *label );
+.fi
+.SH DESCRIPTION
+.I Dwritelabel
+writes a new label to the filesystem specified by
+.IR name 
+in
+.IR label .
+Note that not all filesystems have labels. Examples are the 
+DOS or TOS filesystem, the Mac HFS filesystem and the ISO9660 filesystem 
+for CD ROMs.
+.SH RETURNS
+0 if successful,
+ENAMETOOLONG if the label is too long for the filesystem,
+EACCDN if the filesystem does not support labels,
+or another appropiate GEMDOS error code.
+.SH "SEE ALSO"
+.IR Dreadlabel (2)

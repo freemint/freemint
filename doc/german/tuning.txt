@@ -1,0 +1,95 @@
+Frank Naumann <fnaumann@cs.uni-magdeburg.de>                        1999-11-16
+------------------------------------------------------------------------------
+
+FreeMiNT Tuning Guide
+=====================
+
+Hier ein paar Tips wie man eine bessere Systemperformance erreichen kann.
+
+
+Allgemein
+---------
+
+Auf schnellen Rechnern (030 mit 50MHZ, 040, 060) sollte man den Wert von
+Slices auf 1 oder maximal 2 setzen (siehe Konfiguration). Dadurch erreicht
+man eine bessere Anwortzeit auch bei hoher Systemlast.
+
+
+Filesystem I/O
+--------------
+
+Dies ist mit eines der wichtigsten Performancemerkmale eines Systems.
+Benchmarkprogramme wie bspw. GEMBENCH berÅcksichtigen dies in keinster Weise.
+
+Ab FreeMiNT 1.15 gibt es einige Auswahl bezÅglich des Filesystems.
+
+Zum einen kann man das altbekannte TOS Filesystem des originalen
+GEMDOS benutzen (im folgenden kurz TOSFS).
+
+Weiterhin hat FreeMiNT 1.15 ein eigenes natives FAT Filesystem
+fest eingebaut (im folgenden kurz NEWFATFS).
+
+Und dann gibt es noch das Ñusserst leistungfÑhige Ext2 Filesystem, das etwas
+Ñltere Minix Filesystem und ein dynamisches RAMDISK Filesystem;
+jeweils als externe Treiber.
+
+Die Filesysteme im einzelnen:
+-----------------------------
+
+Das TOSFS ist veraltet. Es is nur noch im Kernel aus KompatibilitÑtsgrÅnden.
+Es wird empfohlen auf allen FAT Laufwerken das NEWFATFS zu aktivieren (siehe
+dazu im Konfiguartions Readme). In Zukunft wird das TOSFS auch ganz
+entfallen.
+
+Das NEWFATFS besticht nicht nur durch eine sehr gute Performance sondern ist
+auch auf dem neuesten Stand der Technik. Es kann unter anderem auch VFAT
+und FAT32 Medien lesen und schreiben (Windows und DOS kompatibel). Es gibt
+weiterhin keine GrîûenbeschrÑnkungen soweit es die Struktur von FAT zulÑût.
+Mit FAT32 sind problemlos Partitionsgrîûen bis in den TerraByte Bereich
+mîglich.
+
+Das schnellste unter FreeMiNT verfÅgbare Filesystem ist das Ext2 Filesystem.
+Ext2 ist das native Filesystem das Linux verwendet und ist speziell auf
+hohen Durchsatz und EffektivitÑt optimiert.
+Die Partitionen kînnen hierbei theorethisch auch mehrere TerraByte groû sein.
+
+Weiterhin gibt es noch das Minix Filesystem. Dieses kommt ebenfalls aus dem
+Unix Bereich und hat auch eine recht gute Performance. Allerdings ist es
+inzwischen nicht mehr so aktuell und hat einige EinschrÑnkungen. Partitionen
+kînnen bspw. maximal nur 2 GB groû sein. Der Vorteil vom Minix Filesystem ist
+das es unter FreeMiNT Åber Jahre hinweg erprobt ist.
+
+Der Filesystemcache:
+--------------------
+
+Die drei eben vorgestellten Filesysteme fÅr FreeMiNT (das NEWFATFS, MinixFS
+und Ext2FS) benutzen alle zusammen einen globalen Filesystemcache der in
+FreeMiNT ab 1.15 integriert ist.
+
+Die Vorteile dieses Designs liegen klar auf der Hand. Die Filesysteme werden
+kompakter da diese sich nicht mehr selbst eine Cache Verwaltung beinhalten
+mÅssen. Weiterhin nutzt man wesentlich effizienter den zur VerfÅgung
+gestellten Cache aus. Je nachdem wo gerade die meiste FilesystemaktivitÑt
+herrscht kann der gesamte Cache diese Operationen beschleunigen.
+
+Es ist dringend zu empfehlen den Cache zu vergrîûern. Die ist problemlos Åber
+die MiNT.CNF mîglich (siehe Konfiguration).
+Der Default Cache betrÑgt nur 100 kb. Je nach RAM Ausstattung des Rechners
+sind als Werte 10%-20% vom verfÅgbaren Hauptspeicher zu empfehlen. Ab 5 MB
+Cache wird man aber wohl keine umwerfenden Geschwindigkeitsgewinne mehr
+feststellen kînnen.
+
+Falls GEMDOS Caches Åber den Festplattentreiber eingerichtet sind, so sind
+diese fÅr die drei genannten alternativen Filesysteme total irrelevant und
+reine Speicherverschwendung. Kann man also getrost auf das Minimum
+verkleinern.
+
+
+Device I/O
+----------
+
+Um das drucken zu beschleunigen sollte man sich den Interruptgesteuerten
+Druckertreiber lpdev.xdd installieren (in den MiNT Ordner kopieren).
+SÑmtliche Druckausgaben sollte man dann Åber /dev/lp (U:\dev\lp)
+abwickeln.
+
