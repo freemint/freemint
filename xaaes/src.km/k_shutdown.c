@@ -3,7 +3,7 @@
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -45,8 +45,6 @@
 void
 k_shutdown(void)
 {
-	int count = 0;
-
 	DIAGS(("Cleaning up ready to exit...."));
 
 	/* wait until the clients are gone */
@@ -72,25 +70,20 @@ k_shutdown(void)
 		if (flag)
 			break;
 
-		if (count >= 1000)
+		/* sleep a second */
+		nap(1000);
+
+		DIAGS(("Cleaning up clients"));
 		{
-			DIAGS(("Cleaning up clients"));
+			client = S.client_list;
+			while (client)
 			{
-				client = S.client_list;
-				while (client)
-				{
-					if (client != C.Aes)
-						ikill(client->p->pid, SIGKILL);
+				if (client != C.Aes)
+					ikill(client->p->pid, SIGKILL);
 
-					client = client->next;
-				}
+				client = client->next;
 			}
-			count = 0;
 		}
-		else
-			count++;
-
-		yield();
 	}
 	DIAGS(("all clients have exited"));
 
