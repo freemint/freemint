@@ -848,7 +848,10 @@ e_ioctl (FILEPTR *f, int mode, void *arg)
 			}
 			else */
 			{
-				if ((p_geteuid () != le2cpu16 (inode->in.i_uid)) /*&& !capable (CAP_FOWNER)*/)
+				int euid;
+				
+				euid = p_geteuid ();
+				if (euid && (euid != le2cpu16 (inode->in.i_uid)) /*&& !capable (CAP_FOWNER)*/)
 					return EACCES;
 			}
 			
