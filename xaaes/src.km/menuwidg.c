@@ -1346,7 +1346,7 @@ static bool
 click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *client;
-	bool l = false;
+	//bool l = false;
 
 	DIAG((D_menu, NULL, "click_menu_widget"));
 

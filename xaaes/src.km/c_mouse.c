@@ -53,11 +53,14 @@
 
 
 void
-cXA_button_event(enum locks lock, struct c_event *ce)
+cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_client *client = ce->client;
 	struct xa_window *wind = (struct xa_window *)ce->ptr1;
 	struct moose_data *md = &ce->md;
+
+	if (cancel)
+		return;
 
 	DIAG((D_button, client, "cXA_button_event for %s - %d/%d, state=%d, clicks=%d - ptr1=%lx, ptr2=%lx, %lx/%lx",
 		client->name, md->x, md->y, md->state, md->clicks,
@@ -144,8 +147,11 @@ cXA_button_event(enum locks lock, struct c_event *ce)
 }
 
 void
-cXA_deliver_button_event(enum locks lock, struct c_event *ce)
+cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 {
+	if (cancel)
+		return;
+
 	DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s", ce->client->name));
 	if (ce->client->waiting_for & MU_BUTTON)
 		button_event(lock, ce->client, &ce->md);
@@ -154,12 +160,14 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce)
 }
 
 void
-cXA_deliver_rect_event(enum locks lock, struct c_event *ce)
+cXA_deliver_rect_event(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_client *client = ce->client;
 	AESPB *pb = client->waiting_pb;
 	int events = ce->d0;
 
+	if (cancel)
+		return;
 	if (pb)
 	{
 		if (client->waiting_for & XAWAIT_MULTI)
@@ -176,32 +184,41 @@ cXA_deliver_rect_event(enum locks lock, struct c_event *ce)
 }
 
 void
-cXA_form_do(enum locks lock, struct c_event *ce)
+cXA_form_do(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_client *client = ce->client;
+
+	if (cancel)
+		return;
 
 	DIAG((D_mouse, client, "cXA_form_do for %s", client->name));
 	client->fmd.mousepress(lock, client, &ce->md);
 }
 
 void
-cXA_open_menu(enum locks lock, struct c_event *ce)
+cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 {
 	XA_WIDGET *widg = ce->ptr1;
 	XA_TREE *menu = ce->ptr2;
 
-	DIAG((D_mouse, ce->client, "cXA_open_menu for %s", ce->client->name));
-	if ( menu == get_menu() ) // && lock_menustruct(ce->client, true) )
-		widg->click(lock, root_window, widg, &ce->md);
+	if (!cancel)
+	{
+		DIAG((D_mouse, ce->client, "cXA_open_menu for %s", ce->client->name));
+		if ( menu == get_menu() ) // && lock_menustruct(ce->client, true) )
+			widg->click(lock, root_window, widg, &ce->md);
 #if GENERATE_DIAGS
-	else
-		DIAG((D_mouse, ce->client, "cXA_open_menu skipped for %s - menu changed before cevent.", ce->client->name));
+		else
+			DIAG((D_mouse, ce->client, "cXA_open_menu skipped for %s - menu changed before cevent.", ce->client->name));
 #endif
+	}
 	C.ce_open_menu = NULL;
 }
 void
-cXA_menu_move(enum locks lock, struct c_event *ce)
+cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 {
+	if (cancel)
+		return;
+
 	if (C.menu_base->client == ce->client)
 	{
 		MENU_TASK *k = &C.menu_base->task_data.menu;
@@ -246,23 +263,32 @@ cXA_menu_move(enum locks lock, struct c_event *ce)
 }
 
 void
-cXA_do_widgets(enum locks lock, struct c_event *ce)
+cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel)
 {
+	if (cancel)
+		return;
+
 	DIAG((D_mouse, ce->client, "cXA_do_widgets for %s", ce->client->name));
 	do_widgets(lock, (struct xa_window *)ce->ptr1, 0, &ce->md);
 }
  
 void
-cXA_active_widget(enum locks lock, struct c_event *ce)
+cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
 {
+	if (cancel)
+		return;
+
 	DIAG((D_mouse, ce->client, "cXA_active_widget for %s", ce->client->name));
 	do_active_widget(lock, ce->client);
 }
 
 void
-cXA_widget_click(enum locks lock, struct c_event *ce)
+cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel)
 {
 	XA_WIDGET *widg = ce->ptr1;
+
+	if (cancel)
+		return;
 
 	DIAG((D_mouse, ce->client, "cXA_widget_click for %s", ce->client->name));
 	widg->click(lock, root_window, widg, &ce->md);
