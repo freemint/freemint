@@ -7,7 +7,10 @@
 
 #include <string.h>
 #include "global.h"
+#include "window.h"
 #include "textwin.h"
+#include "av.h"
+#include "console.h"
 
 #ifndef WM_SHADED
 #define WM_SHADED				0x5758
@@ -15,11 +18,7 @@
 #define WF_SHADE				0x575D
 #endif
 
-#include "global.h"
-#include "av.h"
 #include "window.h"
-#include "ansicol.h"
-#include "console.h"
 
 WINDOW	*gl_topwin;		/* oberstes Fenster */
 WINDOW	*gl_winlist;		/* LIFO Liste der offenen Fenster */
@@ -759,4 +758,40 @@ void window_timer (void)
 		if (!is_console (win))
 			win->timer (win, win == topwin ? 1 : 0);
 	}
+}
+
+void draw_winicon(WINDOW *win)
+{
+	OBJECT	*icon;
+	GRECT	t1, t2;
+	bool	off = FALSE;		
+
+	if (is_console(win))
+		icon = get_con_icon();
+	else
+		icon = winicon;
+		
+	wind_get_grect(win->handle, WF_WORKXYWH, &t2);
+			
+	icon[0].ob_x = t2.g_x;
+	icon[0].ob_y = t2.g_y;
+	icon[0].ob_width = t2.g_w;
+	icon[0].ob_height = t2.g_h;
+	icon[1].ob_x = (t2.g_w - icon[1].ob_width) / 2;
+	icon[1].ob_y = (t2.g_h - icon[1].ob_height) / 2;
+	
+	rc_intersect(&gl_desk, &t2);
+	wind_get_grect(win->handle, WF_FIRSTXYWH, &t1);
+	while (t1.g_w && t1.g_h) 
+	{
+		if (rc_intersect(&t2, &t1)) 
+		{
+			if (!off)
+				off = hide_mouse_if_needed(&t1);
+			objc_draw(icon, ROOT, MAX_DEPTH, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
+		}
+		wind_get_grect(win->handle, WF_NEXTXYWH, &t1);
+	}
+	if (off)
+		show_mouse();
 }
