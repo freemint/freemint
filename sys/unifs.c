@@ -175,12 +175,12 @@ unifs_init (void)
 				strcpy (u->name, "proc");
 				u->fs = &proc_filesys;
 				break;
-
+# ifndef NO_RAMFS
 			case RAM_DRV:
 				strcpy (u->name, "ram");
 				u->fs = &ramfs_filesys;
 				break;
-
+# endif
 			case SHM_DRV:
 				strcpy (u->name, "shm");
 				u->fs = &shm_filesys;

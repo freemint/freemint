@@ -214,7 +214,9 @@ init_filesys (void)
 	xfs_add (&bios_filesys);
 	xfs_add (&pipe_filesys);
 	xfs_add (&proc_filesys);
+# ifndef NO_RAMFS
 	xfs_add (&ramfs_filesys);
+# endif
 	xfs_add (&shm_filesys);
 # ifdef WITH_KERNFS
 	xfs_add (&kern_filesys);
@@ -229,7 +231,9 @@ init_filesys (void)
 	procfs_init ();
 
 	/* initialize the ramdisk file system */
+# ifndef NO_RAMFS
 	ramfs_init ();
+# endif
 
 	/* initialize the shared memory file system */
 	shmfs_init ();
