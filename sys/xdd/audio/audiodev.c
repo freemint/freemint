@@ -122,7 +122,7 @@ init (struct kerinfo *k)
 	if ((s_system (SSYS_GETCOOKIE, COOKIE__MCH, (long) &mch) == 0)
 		&& (mch == MILAN_C))
 	{
-		c_conws ("\033pThis driver don't work on a Milan!\033q\r\n");
+		c_conws ("\033pThis driver won't work on a Milan!\033q\r\n");
 		return NULL;
 	}
 	
