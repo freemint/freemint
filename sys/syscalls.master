@@ -43,7 +43,7 @@
  */
 
 
-[ DOS ]
+[ GEMDOS ]
 
 /* special Opcodes:
  *
@@ -83,7 +83,7 @@ opcode	class name	args */
 0x017	s slbclose	(void)				/* 1.15.3, MagiC 5 */
 0x018	  RESERVED
 0x019	d getdrv	(void)
-0x01a	f setdta	(DTABUF *dta)
+0x01a	f setdta	(struct dtabuf *dta)
 0x01b	  RESERVED
 0x01c	  RESERVED
 0x01d	  RESERVED
@@ -133,8 +133,8 @@ opcode	class name	args */
 0x046	f force		(short newh, short oldh)
 0x047	d getpath	(char *path, short drv)
 0x048	m alloc		(long size)
-0x049	m free		(virtaddr block)
-0x04a	m shrink	(short dummy, virtaddr block, long size)
+0x049	m free		(long block)
+0x04a	m shrink	(short dummy, long block, long size)
 0x04b	p exec		(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 0x04c	p term		(short code)
 0x04d	  RESERVED
@@ -378,7 +378,7 @@ opcode	class name	args */
 0x129	d readdir	(short len, long handle, char *buf)
 0x12a	d rewind	(long handle)
 0x12b	d closedir	(long handle)
-0x12c	f xattr		(short flag, const char *name, XATTR *xattr)
+0x12c	f xattr		(short flag, const char *name, struct xattr *xattr)
 0x12d	f link		(const char *old, const char *new)
 0x12e	f symlink	(const char *old, const char *new)
 0x12f	f readlink	(short buflen, char *buf, const char *linkfile)
@@ -400,9 +400,9 @@ opcode	class name	args */
 0x13e	  RESERVED   /* Psigintr(), cancelled in 1.16 */
 0x13f	s uptime	(ulong *cur_uptim, ulong loadave[3])
 
-0x140	p trace		(short request, short pid, void *addr, long data) /* 1.15.11 */
-0x141	m validate	(short pid, void *addr, long size, long *flags) /* 1.15.11 */
-0x142	d xreaddir	(short len, long handle, char *buf, XATTR *xattr, long *xret)
+0x140	p trace		(short request, short pid, void *addr, long data) /* since 1.15.11 */
+0x141	m validate	(short pid, void *addr, long size, long *flags) /* since 1.15.11 */
+0x142	d xreaddir	(short len, long handle, char *buf, struct xattr *xattr, long *xret)
 0x143	p seteuid	(ushort id)
 0x144	p setegid	(ushort id)
 0x145	p getauid	(void)
@@ -410,10 +410,10 @@ opcode	class name	args */
 0x147	p getgroups	(short gidsetlen, ushort gidset[])
 0x148	p setgroups	(short ngroups, ushort gidset[])
 0x149	t setitimer	(short which, long *interval, long *value, long *ointerval, long *ovalue)
-0x14a	d chroot	(const char *dir)				/* 1.15.3  */
-0x14b	f stat64	(short flag, const char *name, STAT *stat)	/* 1.15.4  */
-0x14c	f seek64	(llong place, short fh, short how, llong *newpos)	/* 1.15.10 */
-0x14d	d setkey	(llong dev, char *key, short cipher)		/* 1.15.4  */
+0x14a	d chroot	(const char *dir) /* since 1.15.3  */
+0x14b	f stat64	(short flag, const char *name, struct stat *stat) /* since 1.15.4  */
+0x14c	f seek64	(long hiplace, long lowplace, short fh, short how, void *newpos) /* since 1.15.10 */
+0x14d	d setkey	(long hidev, long lowdev, char *key, short cipher) /* since 1.15.4  */
 0x14e	p setreuid	(ushort rid, ushort eid)
 0x14f	p setregid	(ushort rid, ushort eid)
 
@@ -427,14 +427,14 @@ opcode	class name	args */
 0x157	t adjtime	(const struct timeval *delta, struct timeval *olddelta)
 0x158	p getpriority	(short which, short who)
 0x159	p setpriority	(short which, short who, short prio)
-0x15a	f poll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
-0x15b	f writev	(short fd, const struct iovec *iov, long niov)	/* 1.16 */
-0x15c	f readv		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
-0x15d	f fstat		(short fd, struct stat *st)			/* 1.16 */
+0x15a	f poll		(struct pollfd *fds, ulong nfds, ulong timeout) /* since 1.15.10 */
+0x15b	f writev	(short fd, const struct iovec *iov, long niov) /* since 1.16 */
+0x15c	f readv		(short fd, const struct iovec *iov, long niov) /* since 1.16 */
+0x15d	f fstat		(short fd, struct stat *st) /* since 1.16 */
 0x15e	p sysctl	(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
 0x15f	s emulation	(ushort which, ushort op,
 			 long a1, long a2, long a3, long a4,
-			 long a5, long a6, long a7)			/* 1.15.8  */
+			 long a5, long a6, long a7) /* since 1.15.8  */
 
 	/* 1.16 - socket extensions */
 
@@ -470,11 +470,11 @@ opcode	class name	args */
 0x17a	p msgsnd	(long msqid, const void *msgp, long msgsz, long msgflg)
 0x17b	p msgrcv	(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
 0x17c	  RESERVED
-0x17d	m access	(void *addr, long size, int mode) /* 1.15.12 */
+0x17d	m access	(void *addr, long size, short mode) /* since 1.15.12 */
 0x17e	  RESERVED	/* mmap */
 0x17f	  RESERVED	/* munmap */
 
-0x180	f chown16	(const char *name, short uid, short gid, short follow)	/* 1.16 */
+0x180	f chown16	(const char *name, short uid, short gid, short follow)	/* since 1.16 */
 0x181	  RESERVED
 0x182	  RESERVED
 0x183	  RESERVED
@@ -575,7 +575,7 @@ opcode	class name	args */
 0x023	  NULL
 0x024	  NULL
 0x025	  NULL
-0x026	b supexec	(Func funcptr, long a1, long a2, long a3, long a4, long a5)
+0x026	b supexec	(void *funcptr, long a1, long a2, long a3, long a4, long a5)
 0x027	  NULL
 0x028	  NULL
 0x029	  NULL
