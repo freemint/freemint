@@ -1207,7 +1207,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		RECT *clp;
 		
-		if (pb->control[N_INTIN] >= 6)
+		if (pb->control[N_INTIN] >= 6 && (pb->intin[4] | pb->intin[5]))
 		{
 			struct xa_rect_list *rl;
 
