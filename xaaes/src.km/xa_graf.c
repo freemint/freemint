@@ -50,6 +50,7 @@
  * This routine assumes that any clipping is going to be done elsewhere
  * before we get to here.
  */
+#if 0
 int
 watch_object(enum locks lock, XA_TREE *wt,
 	     int ob, int in_state, int out_state)
@@ -61,7 +62,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 
 	check_mouse(wt->owner, &mb, &omx, &omy);
 
-	ob_offset(dial, ob, &x, &y);
+	obj_offset(wt, ob, &x, &y);
 
 	x--;
 	y--;
@@ -116,6 +117,7 @@ watch_object(enum locks lock, XA_TREE *wt,
 	else
 		return 0;
 }
+#endif
 
 /*
  *	Ghost outline dragging routines.
@@ -403,13 +405,19 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	//wt = check_widget_tree(lock, client, (OBJECT*)pb->addrin[0]);
 	
-
+#if 0
 	pb->intout[0] = watch_object(	lock,
 					wt,
 					/*	pb->intin[0]   is reserved */
 					pb->intin[1],
 					pb->intin[2],
 					pb->intin[3]);
+#endif
+	pb->intout[0] = obj_watch( wt,
+				   pb->intin[1],
+				   pb->intin[2],
+				   pb->intin[3],
+				   NULL);
 
 	DIAG((D_graf,client,"_watchbox"));
 

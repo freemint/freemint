@@ -125,11 +125,25 @@ XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (obtree)
 	{
-		pb->intout[0] = ob_find(obtree,
-					pb->intin[0],
-					pb->intin[1],
-					pb->intin[2],
-					pb->intin[3]);
+		struct widget_tree *wt;
+
+		wt = obtree_to_wt(client, obtree);
+		if (wt)
+		{
+			pb->intout[0] = obj_find(wt,
+						 pb->intin[0],
+						 pb->intin[1],
+						 pb->intin[2],
+						 pb->intin[3]);
+		}
+		else
+		{
+			pb->intout[0] = ob_find(obtree,
+						pb->intin[0],
+						pb->intin[1],
+						pb->intin[2],
+						pb->intin[3]);
+		}
 	}
 	else
 		pb->intout[0] = -1;

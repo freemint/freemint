@@ -150,33 +150,38 @@ void
 object_offsets(OBJECT *ob, RECT *c)
 {
 	short dx = 0, dy = 0, dw = 0, dh = 0, db = 0;
-	short thick = object_thickness(ob);   /* type dependent */
-
-	if (thick < 0)
-		db = thick;
-
-	/* HR 0080801: oef oef oef, if foreground any thickness has the 3d enlargement!! */
-	if (d3_foreground(ob)) 
-		db -= 2;
-
-	dx = db;
-	dy = db;
-	dw = 2 * db;
-	dh = 2 * db;
-
-	if (ob->ob_state & OS_OUTLINED)
+	short thick;
+	
+	if (ob->ob_type != G_PROGDEF)
 	{
-		dx = min(dx, -3);
-		dy = min(dy, -3);
-		dw = min(dw, -6);
-		dh = min(dh, -6);
-	}
+		thick = object_thickness(ob);   /* type dependent */
 
-	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
-	if (thick < 0 && ob->ob_state & OS_SHADOWED)
-	{
-		dw += 2 * thick;
-		dh += 2 * thick;
+		if (thick < 0)
+			db = thick;
+
+		/* HR 0080801: oef oef oef, if foreground any thickness has the 3d enlargement!! */
+		if (d3_foreground(ob)) 
+			db -= 2;
+
+		dx = db;
+		dy = db;
+		dw = 2 * db;
+		dh = 2 * db;
+
+		if (ob->ob_state & OS_OUTLINED)
+		{
+			dx = min(dx, -3);
+			dy = min(dy, -3);
+			dw = min(dw, -6);
+			dh = min(dh, -6);
+		}
+
+		/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
+		if (thick < 0 && ob->ob_state & OS_SHADOWED)
+		{
+			dw += 2 * thick;
+			dh += 2 * thick;
+		}
 	}
 	c->x = dx;
 	c->y = dy;
@@ -605,6 +610,62 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
  * Get the true screen coords of an object
  */
 short
+obj_offset(XA_TREE *wt, short object, short *mx, short *my)
+{
+	OBJECT *obtree = wt->tree;
+	short next;
+	short current = 0;
+	short x = -wt->dx, y = -wt->dy;
+	
+	DIAG((D_objc, NULL, "obj_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
+		obtree, object, mx, my));
+
+	do
+	{
+		/* Found the object in the tree? cool, return the coords */
+		if (current == object)
+		{
+			x += obtree[current].ob_x;
+			y += obtree[current].ob_y;
+			
+			*mx = x; // + obtree[current].ob_x;
+			*my = y; // + obtree[current].ob_y;
+
+			DIAG((D_objc, NULL, "obj_offset: return found obj=%d at x=%d, y=%d",
+				object, x, y));
+			return 1;
+		}
+
+		/* Any children? */
+		if (obtree[current].ob_head != -1)
+		{
+			x += obtree[current].ob_x;
+			y += obtree[current].ob_y;
+			current = obtree[current].ob_head;
+		}
+		else
+		{
+			/* Try for a sibling */
+			next = obtree[current].ob_next;
+
+			while ((next != -1) && (obtree[next].ob_tail == current))
+			{
+				/* Trace back up tree if no more siblings */
+				current = next;
+				x -= obtree[current].ob_x;
+				y -= obtree[current].ob_y;
+				next = obtree[current].ob_next;
+			}
+			current = next;
+		}
+	}
+	while (current != -1); /* If 'current' is -1 then we have finished */
+
+	/* Bummer - didn't find the object, so return error */
+	DIAG((D_objc, NULL, "obj_offset: didnt find object"));
+	return 0;
+}
+short
 ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 {
 	short next;
@@ -661,6 +722,20 @@ ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 }
 
 void
+obj_rectangle(XA_TREE *wt, short obj, RECT *c)
+{
+	OBJECT *b;
+
+	if (!obj_offset(wt, obj, &c->x, &c->y))
+	{
+		obj = 0;
+		obj_offset(wt, obj, &c->x, &c->y);
+	}
+	b = wt->tree + obj;
+	c->w = b->ob_width;
+	c->h = b->ob_height;
+}
+void
 ob_rectangle(OBJECT *obtree, short obj, RECT *c)
 {
 	OBJECT *b;
@@ -674,6 +749,27 @@ ob_rectangle(OBJECT *obtree, short obj, RECT *c)
 	c->w = b->ob_width;
 	c->h = b->ob_height;
 }
+void
+obj_area(XA_TREE *wt, short obj, RECT *c)
+{
+	OBJECT *b;
+	RECT r;
+	
+	if (!obj_offset(wt, obj, &c->x, &c->y))
+	{
+		obj = 0;
+		obj_offset(wt, obj, &c->x, &c->y);
+	}
+	b = wt->tree + obj;
+	c->w = b->ob_width;
+	c->h = b->ob_height;
+	object_offsets(b, &r);
+	c->x += r.x;
+	c->y += r.y;
+	c->w -= r.w;
+	c->h -= r.h;
+}
+
 void
 ob_area(OBJECT *obtree, short obj, RECT *c)
 {
@@ -720,11 +816,12 @@ ob_border_diff(OBJECT *obtree, short obj1, short obj2, RECT *r)
  *
  */
 short
-ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
+obj_find(XA_TREE *wt, short object, short depth, short mx, short my)
 {
+	OBJECT *obtree = wt->tree;
 	short next;
 	short current = 0, rel_depth = 1;
-	short x = 0, y = 0;
+	short x = -wt->dx, y = -wt->dy;
 	bool start_checking = false;
 	short pos_object = -1;
 
@@ -781,6 +878,71 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 	while ((current != -1) && (rel_depth > 0));
 
 	DIAG((D_objc, NULL, "obj_find: found %d", pos_object));
+
+	return pos_object;
+}
+short
+ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
+{
+	short next;
+	short current = 0, rel_depth = 1;
+	short x = 0, y = 0;
+	bool start_checking = false;
+	short pos_object = -1;
+
+	DIAG((D_objc, NULL, "ob_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
+		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
+		mx, my));
+	do {
+		if (current == object)	/* We can start considering objects at this point */
+		{
+			start_checking = true;
+			rel_depth = 0;
+		}
+		
+		if (start_checking)
+		{
+			if (  (obtree[current].ob_flags & OF_HIDETREE) == 0
+			    && obtree[current].ob_x + x                     <= mx
+			    && obtree[current].ob_y + y                     <= my
+			    && obtree[current].ob_x + x + obtree[current].ob_width  >= mx
+			    && obtree[current].ob_y + y + obtree[current].ob_height >= my)
+			{
+				/* This is only a possible object, as it may have children on top of it. */
+				pos_object = current;
+			}
+		}
+
+		if ( ((!start_checking) || (rel_depth < depth))
+		    && (obtree[current].ob_head != -1)
+		    && (obtree[current].ob_flags & OF_HIDETREE) == 0)
+		{
+			/* Any children? */
+			x += obtree[current].ob_x;
+			y += obtree[current].ob_y;
+			rel_depth++;
+			current = obtree[current].ob_head;
+		}
+		else
+		{
+			/* Try for a sibling */
+			next = obtree[current].ob_next;
+
+			/* Trace back up tree if no more siblings */
+			while ((next != -1) && (obtree[next].ob_tail == current))
+			{
+				current = next;
+				x -= obtree[current].ob_x;
+				y -= obtree[current].ob_y;
+				next = obtree[current].ob_next;
+				rel_depth--;
+			}
+			current = next;
+		}	
+	}
+	while ((current != -1) && (rel_depth > 0));
+
+	DIAG((D_objc, NULL, "ob_find: found %d", pos_object));
 
 	return pos_object;
 }
@@ -867,7 +1029,7 @@ obj_draw(XA_TREE *wt, short obj, struct xa_rect_list *rl)
 
 	hidem();
 
-	ob_area(wt->tree, obj, &or);
+	obj_area(wt, obj, &or);
 
 	while (object_is_transparent(wt->tree + start))
 	{
@@ -1528,7 +1690,7 @@ obj_watch(XA_TREE *wt,
 	short mx, my, mb, x, y, omx, omy;
 	short flags = focus->ob_flags;
 
-	ob_offset(wt->tree, obj, &x, &y);
+	obj_offset(wt, obj, &x, &y);
 
 	x--;
 	y--;
@@ -1556,7 +1718,7 @@ obj_watch(XA_TREE *wt,
 			{
 				omx = mx;
 				omy = my;
-				obf = ob_find(wt->tree, obj, 10, mx, my);
+				obf = obj_find(wt, obj, 10, mx, my);
 
 				if (obf == obj)
 					s = in_state;

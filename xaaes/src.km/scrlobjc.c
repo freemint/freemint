@@ -171,7 +171,8 @@ set_slist_object(enum locks lock,
 	    so we do a little cheat here. */
 	r.w += SHADOW_OFFSET;
 	r.h += SHADOW_OFFSET;
-	ob_offset(form, item, &r.x, &r.y);
+	//ob_offset(form, item, &r.x, &r.y);
+	obj_offset(wt, item, &r.x, &r.y);
 	if (title)
 		wkind |= NAME;
 	if (info)

@@ -575,6 +575,7 @@ create_window(
 		/* Dont put in the windowlist */
 
 		/* Attach the appropriate widgets to the window */
+		DIAGS((" -- nolist window"));
 		standard_widgets(w, tp, false);
 	}
 	else
@@ -688,16 +689,37 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	if (r.h <= 0) r.h = 6 * cfg.widg_h;
 #endif
 
-	if (wind->nolist)
-		/* dont open unlisted windows */
-		return 0;
-
 	if (wind->is_open == true)
 	{
 		/* The window is already open, no need to do anything */
 
 		DIAGS(("WARNING: Attempt to open window when it was already open"));
 		return 0;
+	}
+
+	if (wind->nolist)
+	{
+		DIAGS(("open_window: nolist window"));
+		C.focus = wind;
+		wind->r = r;
+		wind->is_open = true;
+		wind->window_status = XAWS_OPEN;
+		calc_work_area(wind);
+		make_rect_list(wind, true);
+
+		if (wind->active_widgets & STORE_BACK)
+		{
+			form_save(0, wind->r, &(wind->background));
+		}
+
+		draw_window(lock|winlist, wind);
+
+		if (wind->send_message)
+			wind->send_message(lock|winlist, wind, NULL,
+					   WM_REDRAW, 0, 0, wind->handle,
+					   wind->r.x, wind->r.y, wind->r.w, wind->r.h);
+		/* dont open unlisted windows */
+		return 1;
 	}
 
 	wi_remove(&S.closed_windows, wind);
@@ -866,24 +888,36 @@ draw_window(enum locks lock, struct xa_window *wind)
 		else
 		{
 			short pnt[8];
+			RECT tcl;
 
 			f_color(screen.dial_colours.bg_col);
 			f_interior(FIS_SOLID);
 
-			pnt[0] = cl.x;
-			pnt[1] = cl.y;
-			pnt[2] = cl.x + cl.w - 1;
+			tcl = cl;
+			if (wind->frame > 0)
+			{
+				l_color(9);
+				gbox(0, &cl);
+				tcl.x++;
+				tcl.y++;
+				tcl.w -= 2;
+				tcl.h -= 2;
+			}
+			
+			pnt[0] = tcl.x;
+			pnt[1] = tcl.y;
+			pnt[2] = tcl.x + tcl.w - 1;
 			pnt[3] = wa.y - 1;
 			if_bar(pnt); 			/* top */
 			pnt[1] = wa.y + wa.h;
-			pnt[3] = cl.y + cl.h - 1;
+			pnt[3] = tcl.y + tcl.h - 1;
 			if_bar(pnt);			/* bottom */
-			pnt[0] = cl.x;
-			pnt[1] = cl.y;
+			pnt[0] = tcl.x;
+			pnt[1] = tcl.y;
 			pnt[2] = wa.x - 1;
 			if_bar(pnt);			/* left */
 			pnt[0] = wa.x + wa.w;
-			pnt[2] = cl.x + cl.w - 1;
+			pnt[2] = tcl.x + tcl.w - 1;
 			if_bar(pnt);			/* right */
 
 			/* Display the work area */
@@ -1197,8 +1231,26 @@ close_window(enum locks lock, struct xa_window *wind)
 	DIAG((D_wind, wind->owner, "close_window: %d (%s)",
 		wind->handle, wind->is_open ? "open" : "closed"));
 
-	if (wind->is_open == false || wind->nolist)
+	if (wind->is_open == false)
 		return false;
+
+	if (wind->nolist)
+	{
+		DIAGS(("close_window: nolist window %d, bkg=%lx",
+			wind->handle, wind->background));
+
+		if (wind->active_widgets & STORE_BACK)
+			form_restore(0, wind->r, &(wind->background));
+		if (C.focus == wind)
+			C.focus = window_list;
+		
+		free_rect_list(wind->rect_start);
+		wind->rect_user = wind->rect_list = wind->rect_start = NULL;
+		wind->is_open = false;
+		wind->window_status = XAWS_CLOSED;
+
+		return true;
+	}	
 
 	is_top = is_topped(wind);
 
@@ -1280,20 +1332,6 @@ close_window(enum locks lock, struct xa_window *wind)
 			}
 		}
 	}			
-#if 0
-	if (window_list)
-	{
-		if (   window_list->owner != client
-		    && !client->std_menu) //client->std_menu.tree == NULL)
-		{
-			set_active_client(lock, window_list->owner);
-			swap_menu(lock, window_list->owner, true, 0);
-			top_window(lock, window_list, NULL);
-			send_ontop(lock);
-		}
-	}
-#endif
-
 	return true;
 }
 
@@ -1332,13 +1370,15 @@ delete_window1(enum locks lock, struct xa_window *wind)
 		if (wind->background)
 			kfree(wind->background);
 
-		if (wind->rect_start)
-			free_rect_list(wind->rect_start);
+		free_rect_list(wind->rect_start);
+		wind->rect_user = wind->rect_list = wind->rect_start = NULL;
 	}
 	else
 	{
+		DIAGS(("delete_window1: nolist window %d, bgk=%lx", wind->handle, wind->background));
 		free_standard_widgets(wind);
-
+		free_rect_list(wind->rect_start);
+		wind->rect_user = wind->rect_list = wind->rect_start = NULL;
 		if (wind->destructor)
 			wind->destructor(lock, wind);
 	}
@@ -1413,9 +1453,9 @@ void display_window(enum locks lock, int which, struct xa_window *wind, RECT *cl
 {
 	if (wind->is_open)
 	{
-		if (wind->nolist)
-			draw_window(lock, wind);
-		else
+		//if (wind->nolist)
+		//	draw_window(lock, wind);
+		//else
 		{
 			struct xa_rect_list *rl;
 			RECT d;
@@ -1579,9 +1619,9 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 		{
 			make_rect_list(wl, true);
 
-			if (wl->nolist)
-				draw_window(lock, wl);
-			else
+			//if (wl->nolist)
+			//	draw_window(lock, wl);
+			//else
 			{
 				rl = wl->rect_start;
 				while (rl)
