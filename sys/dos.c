@@ -713,13 +713,6 @@ sys_s_hutdown(long restart)
 {
 	PROC *p = curproc;
 
-	/* The -1 argument returns a longword which indicates
-	 * what bits of the `restart' argument are valid
-	 * (new as of 1.15.6)
-	 */
-	if (restart < 0)
-		return 0x00000003L;
-
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
 	{
@@ -727,21 +720,21 @@ sys_s_hutdown(long restart)
 
 		switch (restart)
 		{
-			case  0:
+			case  SHUT_POWER:
 			{
 				hw_poweroff();
 				/* fall through */
 			}
-			case  3:
+			case  SHUT_HALT:
 			{
 				DEBUG(("Halting system ..."));
 				hw_halt();
 			}
-			case  2:
+			case  SHUT_COLD:
 			{
 				hw_coldboot();
 			}
-			case  1:
+			case  SHUT_BOOT:
 			default:
 			{
 				DEBUG(("Rebooting ..."));
