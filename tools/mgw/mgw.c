@@ -506,7 +506,7 @@ st_gethostname (long fnc, char *name, int namelen)
 	
 	DEBUG (("st_gethostname: enter\n"));
 	
-	r = gethostname(name, namelen);
+	r = gethostname (name, namelen);
 	if (!r)
 		DEBUG (("st_gethostname: ok (%s)\n", name));
 	else
@@ -578,7 +578,7 @@ st_getservbyname(long fnc, char *name, char *proto)
 	
 	DEBUG (("st_getservbyname: enter (%s, %s)\n", name, proto));
 	
-	r = getservbyname(name, proto);
+	r = getservbyname (name, proto);
 	if (!r)
 		DEBUG (("st_getservbyname: fail\n"));
 	else
@@ -623,7 +623,7 @@ st_read (char *fnc, int sfd, void *buf, size_t len)
 {
 	DEBUG (("st_getsockname [%i, %i]: -> -1\n", sfd, map_sfd (sfd)));
 	
-	/*return read (map_sfd (sfd), buf, len);*/
+	/* return read (map_sfd (sfd), buf, len); */
 	return -1;
 }
 
@@ -633,7 +633,6 @@ st_read (char *fnc, int sfd, void *buf, size_t len)
 static size_t _cdecl
 st_recv (char *fnc, int sfd, void *buf, size_t buflen, unsigned flags)
 {
-# if 1
 	struct recv_cmd cmd;
 	void *zwbuf = NULL;
 	int r;
@@ -660,18 +659,6 @@ st_recv (char *fnc, int sfd, void *buf, size_t buflen, unsigned flags)
 	DEBUG (("st_recv [%i, %i]: return %i\n", sfd, map_sfd (sfd), r));
 	
 	return r;
-# else
-	struct recv_cmd cmd;
-	
-	DEBUG (("st_recv [%i, %i]: enter\n", sfd, map_sfd (sfd)));
-	
-	cmd.cmd 	= RECV_CMD;
-	cmd.buf 	= buf;
-	cmd.buflen	= buflen;
-	cmd.flags 	= flags;
-	
-	return Fcntl (map_sfd (sfd), (long) &cmd, SOCKETCALL);
-# endif
 }
 
 /* -------------------------------------------------------------
@@ -1060,17 +1047,43 @@ st_write (long fnc, int sfd, void *buf, size_t len)
 static int _cdecl 
 st_getsockopt (int sfd, int level, int optname, char *optval, int *optlen)
 {
-	return ENOSYS;
+	struct getsockopt_cmd cmd;
+	long optlen32;
+	int r;
+	
+	if (optlen)
+		optlen32 = *optlen;
+	
+	cmd.cmd		= GETSOCKOPT_CMD;
+	cmd.level	= level;
+	cmd.optname	= optname;
+	cmd.optval	= optval;
+	cmd.optlen	= &optlen32;
+	
+	r = Fcntl (map_sfd (sfd), (long) &cmd, SOCKETCALL);
+	
+	if (optlen)
+		*optlen = optlen32;
+	
+	return r;
 }
 
 static int _cdecl 
 st_setsockopt (int sfd, int level, int optname, char *optval, int optlen)
 {
-	return ENOSYS;
+	struct setsockopt_cmd cmd;
+	
+	cmd.cmd		= SETSOCKOPT_CMD;
+	cmd.level	= level;
+	cmd.optname	= optname;
+	cmd.optval	= optval;
+	cmd.optlen	= optlen;
+	
+	return Fcntl (map_sfd (sfd), (long) &cmd, SOCKETCALL);
 }
 
 static long _cdecl 
 st_sockfcntl (int sfd, int cmd, long args)
 {
-	return ENOSYS;
+	return Fcntl (map_sfd (sfd), args, cmd);
 }
