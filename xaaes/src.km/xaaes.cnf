@@ -115,6 +115,34 @@ usehome = yes
 #lrmb_swap = yes
 
 #
+# Mouse wheel configuration.
+#
+# There are currently four configuration variables that is used to to set
+# wheel configuration;
+#
+# vertical_wheel_id = <value>      (default is 0)
+# vertical_wheel_amount = <value>  (default = 1)
+# horizontal_wheel_id = <value>    (default is 1)
+# horizontal_wheel_amount <value>  (default is 1)
+#
+# With 'vertical_wheel_id' you can choose which wheel you want to use as the
+# vertical wheel. Likewise, you set the ID of the wheel you want to define as
+# the horizontal wheel. Do NOT set the same value for both vertical and
+# horizontal wheel ID's.
+#
+# With vertical_wheel_amount you can set the amount of lines to scroll per
+# turn of the vertical wheel. Likewise, you can set the amount of columns to
+# to scroll per turn of the horizontal wheel using 'horizontal_wheel_amount'.
+# The value for these configuration variables must be a number between
+# 1 and 20. Per now, this actually sets the number of WM_ARROWED messages
+# send to the application per turn of the wheel.
+#
+#vertical_wheel_id = 0
+#vertical_wheel_amount = 3
+#horizontal_wheel_id = 1
+#horizontal_wheel_amount = 3
+
+#
 # redraw_timeout. This is the time in ms XaAES will wait for clients to
 # service WM_REDRAW messages between actions that generate redraws,
 # like moving/closing/opening/etc. windows. If a client is busy and this

@@ -579,7 +579,7 @@ Exit_form_do( struct xa_client *client,
 			if (wind->send_message)
 			{
 				struct xa_widget *widg = wt->widg;
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						WM_TOOLBAR, 0, 0, wind->handle,
 						fr->obj, fr->dblmask ? 2 : 1, widg->k, 0);
 			}
@@ -859,7 +859,7 @@ void
 do_formwind_msg(
 	struct xa_window *wind,
 	struct xa_client *to,			/* if different from wind->owner */
-	short amq,
+	short amq, short qmflags,
 	short *msg)
 {
 	XA_WIDGET *widg = wind->tool;

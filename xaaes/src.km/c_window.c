@@ -484,7 +484,7 @@ send_untop(enum locks lock, struct xa_window *wind)
 	struct xa_client *client = wind->owner;
 
 	if (wind->send_message && !client->fmd.wind)
-		wind->send_message(lock, wind, NULL, AMQ_NORM,
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_UNTOPPED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
 }
@@ -496,7 +496,7 @@ send_ontop(enum locks lock)
 	struct xa_client *client = top->owner;
 
 	if (is_topped(top) && top->send_message && !client->fmd.wind)
-		top->send_message(lock, top, NULL, AMQ_NORM,
+		top->send_message(lock, top, NULL, AMQ_NORM, QMF_CHKDUP,
 				  WM_ONTOP, 0, 0, top->handle,
 				  0, 0, 0, 0);
 }
@@ -506,7 +506,7 @@ send_moved(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 {
 	if (wind->send_message)
 	{
-		wind->send_message(lock, wind, NULL, amq,
+		wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 			WM_MOVED, 0, 0, wind->handle,
 			r->x, r->y, r->w, r->h);
 	}
@@ -518,7 +518,7 @@ send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 	{
 		if (wind->send_message)
 		{
-			wind->send_message(lock, wind, NULL, amq,
+			wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 				WM_SIZED, 0,0, wind->handle,
 				r->x, r->y, r->w, r->h);
 		}
@@ -530,7 +530,7 @@ send_redraw(enum locks lock, struct xa_window *wind, RECT *r)
 {
 	if (!(wind->window_status & XAWS_SHADED) && wind->send_message)
 	{
-		wind->send_message(lock, wind, NULL, AMQ_REDRAW,
+		wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
 			WM_REDRAW, 0,0, wind->handle,
 			r->x, r->y, r->w, r->h);
 	}
@@ -919,7 +919,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			wind->r.h = wind->sh;
 
 			if (wind->send_message)
-				wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
+				wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 					WM_SHADED, 0,0, wind->handle, 0,0,0,0);
 		}
 	}
@@ -984,7 +984,7 @@ void
 do_rootwind_msg(
 	struct xa_window *wind,
 	struct xa_client *to,			/* if different from wind->owner */
-	short amq,
+	short amq, short qmflags,
 	short *msg)
 {
 	DIAG((D_form, wind->owner, "do_rootwind_msg: wown %s, to %s, msg %d, %d, %d, %d, %d, %d, %d, %d",

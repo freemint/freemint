@@ -1348,7 +1348,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		if ((widg->k & 3) && (!((wind->active_widgets & STORE_BACK) !=0 ) || !((wind->active_widgets & BACKDROP) == 0)))
 		{
 			if (wind->send_message)
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   WM_BOTTOMED, 0, 0, wind->handle, 0, 0, 0, 0);
 			else
 				bottom_window(lock, wind);
@@ -1361,7 +1361,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			if (!is_topped(wind))
 			{
 				if (wind->send_message)
-					wind->send_message(lock, wind, NULL, AMQ_NORM,
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 							   WM_TOPPED, 0, 0, wind->handle,
 							   0, 0, 0, 0);
 				else
@@ -1375,13 +1375,14 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			else if ((wind->window_status & XAWS_ICONIFIED))
 			{
 				if (wind->send_message)
-					wind->send_message(lock, wind, NULL, AMQ_NORM, WM_BOTTOMED, 0, 0, wind->handle, 0,0,0,0);
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+							   WM_BOTTOMED, 0, 0, wind->handle, 0,0,0,0);
 			}
 			else if (!((wind->active_widgets & STORE_BACK) != 0		/* Don't bottom STORE_BACK windows */
 				    || (wind->active_widgets & BACKDROP) == 0) )	/* Don/t bottom NO BACKDROP windows */
 			{
 					if (wind->send_message)
-						wind->send_message(lock, wind, NULL, AMQ_NORM,
+						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 								   WM_BOTTOMED, 0, 0, wind->handle,
 								   0, 0, 0, 0);
 					else
@@ -1401,7 +1402,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 					DIAGS(("Click_title: unshading window %d for %s",
 						wind->handle, wind->owner->name));
 
-					wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
+					wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 						WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
 
 					move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
@@ -1415,7 +1416,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 						wind->handle, wind->owner->name));
 
 					move_window(lock, wind, true, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
-					wind->send_message(lock, wind, NULL, AMQ_CRITICAL,
+					wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 						WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
 				}
 			}
@@ -1436,7 +1437,7 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 
 		if ((wind->window_status & XAWS_ICONIFIED))
 		{
-			wind->send_message(lock, wind, NULL, AMQ_NORM,
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_UNICONIFY, 0, 0, wind->handle,
 					   wind->pr.x, wind->pr.y, wind->pr.w, wind->pr.h);
 		}
@@ -1444,7 +1445,7 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 		{
 			/* Ozk 100503: Double click on title now sends WM_FULLED,
 			 * as N.AES does it */
-			wind->send_message(lock, wind, NULL, AMQ_NORM,
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_FULLED, 0, 0, wind->handle,
 					   0, 0, 0, 0);
 		}
@@ -1500,7 +1501,7 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 {
 	if (wind->send_message)
 	{
-		wind->send_message(lock, wind, NULL, AMQ_NORM,
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_CLOSED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
 
@@ -1528,7 +1529,7 @@ static bool
 click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	if (wind->send_message)
-		wind->send_message(lock, wind, NULL, AMQ_NORM,
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_FULLED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
 	return true;
@@ -1556,7 +1557,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 		{
 			/* Window is already iconified - send request to restore it */
 
-			wind->send_message(lock, wind, NULL, AMQ_NORM,
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_UNICONIFY, 0, 0, wind->handle,
 					   wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
 		}
@@ -1573,7 +1574,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 			{
 				short msg = (md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
 
-				wind->send_message(lock|winlist, wind, NULL, AMQ_NORM,
+				wind->send_message(lock|winlist, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   msg/*WM_ICONIFY*/, 0, 0, wind->handle,
 					   ic.x, ic.y, ic.w, ic.h);
 			}
@@ -1885,7 +1886,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 								  slider->r.w - ssl->r.w));
 
 				if (wind->send_message)
-					wind->send_message(lock, wind, NULL, AMQ_NORM,
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 							   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
 							   0, 0, wind->handle, offs, 0, 0, 0);
 			}
@@ -1898,20 +1899,20 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 		{
 			if (reverse)
 			{
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
 						   0, 0, wind->handle, widg->xlimit, 0, 0, 0);
 			}
 			else
 			{
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID, 
 						   0, 0, wind->handle, widg->limit, 0, 0, 0);
 			}
 		}
 		else
 		{
-			wind->send_message(lock, wind, NULL, AMQ_NORM,
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_ARROWED, 0, 0, wind->handle,
 					   reverse ? widg->xarrow : widg->arrowx, 0, 0, 0);
 
@@ -2185,7 +2186,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			if (offs != sl->position && wind->send_message)
 			{
 				sl->rpos = offs;
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   WM_VSLID, 0,0, wind->handle,
 						   offs, 0,0,0);
 			}
@@ -2223,7 +2224,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			if (offs != sl->position && wind->send_message)
 			{
 				sl->rpos = offs;
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   WM_HSLID, 0,0, wind->handle,
 						   offs, 0,0,0);
 			}

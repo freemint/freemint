@@ -253,6 +253,11 @@ init(struct kentry *k, const char *path)
 	cfg.widg_w = ICON_W;
 	cfg.widg_h = ICON_H;
 
+	cfg.ver_wheel_id = 0;
+	cfg.ver_wheel_amount = 1;
+	cfg.hor_wheel_id = 1;
+	cfg.hor_wheel_amount = 1;
+
 #if !FILESELECTOR
 #error external fileselectors not supported yet!
 	cfg.no_xa_fsel = true;

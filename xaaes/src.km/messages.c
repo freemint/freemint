@@ -36,7 +36,8 @@
 #include "xa_global.h"
 #include "xa_evnt.h"
 
-static void queue_message(enum locks lock, struct xa_client *dest_client, short amq, union msg_buf *msg);
+
+static void queue_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
 
 #if GENERATE_DIAGS
 static const char *xmsgs[] =
@@ -263,6 +264,7 @@ struct KT_do_winmesag_data
 	struct xa_client *client;
 	bool block_move;
 	short amq;
+	short qmf;
 	short msg[8];
 };
 
@@ -272,7 +274,7 @@ KT_do_winmesag(void *_args)
 	struct KT_do_winmesag_data *args = _args;
 	assert(args);
 
-	args->wind->do_message(args->wind, args->client, args->amq, args->msg);
+	args->wind->do_message(args->wind, args->client, args->amq, args->qmf, args->msg);
 
 	if (args->block_move)
 	{
@@ -291,7 +293,7 @@ void
 do_winmesag(enum locks lock,
 	struct xa_window *wind,
 	struct xa_client *to,			/* if different from wind->owner */
-	short amq,
+	short amq, short qmf,
 	short mp0, short mp1, short mp2, short mp3,
 	short mp4, short mp5, short mp6, short mp7)
 {
@@ -324,7 +326,7 @@ do_winmesag(enum locks lock,
 		if (wo == rc || wo == C.Aes)
 		{
 			DIAGS((" --==-- do_winmesag: Doing direct handle_form_wind"));
-			wind->do_message(wind, wo, amq, msg);
+			wind->do_message(wind, wo, amq, qmf, msg);
 			if (block_move)
 			{
 				if (--C.redraws)
@@ -345,6 +347,7 @@ do_winmesag(enum locks lock,
 				p->client = wo;
 				p->block_move = block_move;
 				p->amq = amq;
+				p->qmf = qmf;
 				for (i = 0; i < 8; i++)
 					p->msg[i] = msg[i];
 
@@ -378,9 +381,9 @@ is_inside(const RECT *r, const RECT *o)
 }
 static void
 #if GENERATE_DIAGS
-add_msg_2_queue(struct xa_client *client, struct xa_aesmsg_list **queue, union msg_buf *msg, bool prepend)
+add_msg_2_queue(struct xa_client *client, struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags)
 #else
-add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, bool prepend)
+add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags)
 #endif
 {
 	short *new = msg->m;
@@ -437,7 +440,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, bool prepend)
 	/* There are already some pending messages */
 	next = queue;
 
-	if (*queue)
+	if (*queue && (qmflags & QMF_CHKDUP))
 	{
 
 		if (new[0] == WM_MOVED)
@@ -526,6 +529,11 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, bool prepend)
 				next = &((*next)->next);
 		}
 	}
+	else
+	{
+		while (*next)
+			next = &((*next)->next);
+	}
 
 	/* If still there */
 	if (msg)
@@ -534,7 +542,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, bool prepend)
 		if (new_msg)
 		{
 			new_msg->message = *msg;
-			if (prepend)
+			if (qmflags & QMF_PREPEND)
 			{
 				new_msg->next = *queue;
 				*queue = new_msg;
@@ -555,34 +563,34 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, bool prepend)
  * queue a message for dest_client
  */
 static void
-queue_message(enum locks lock, struct xa_client *client, short amq, union msg_buf *msg)
+queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, union msg_buf *msg)
 {
 	switch (amq)
 	{
 		case AMQ_NORM:
 		{
 #if GENERATE_DIAGS
-			add_msg_2_queue(client, &client->msg, msg, false);
+			add_msg_2_queue(client, &client->msg, msg, qmf);
 #else
-			add_msg_2_queue(&client->msg, msg, false);
+			add_msg_2_queue(&client->msg, msg, qmf);
 #endif
 			break;
 		}
 		case AMQ_REDRAW:
 		{
 #if GENERATE_DIAGS
-			add_msg_2_queue(client, &client->rdrw_msg, msg, false);
+			add_msg_2_queue(client, &client->rdrw_msg, msg, qmf);
 #else
-			add_msg_2_queue(&client->rdrw_msg, msg, false);
+			add_msg_2_queue(&client->rdrw_msg, msg, qmf);
 #endif
 			break;
 		}
 		case AMQ_CRITICAL:
 		{
 #if GENERATE_DIAGS
-			add_msg_2_queue(client, &client->crit_msg, msg, false);
+			add_msg_2_queue(client, &client->crit_msg, msg, qmf);
 #else
-			add_msg_2_queue(&client->crit_msg, msg, false);
+			add_msg_2_queue(&client->crit_msg, msg, qmf);
 #endif
 			break;
 		}
@@ -601,7 +609,7 @@ queue_message(enum locks lock, struct xa_client *client, short amq, union msg_bu
  * WM_REDRAW rectangles, etc.).
  */
 void
-send_a_message(enum locks lock, struct xa_client *dest_client, short amq, union msg_buf *msg)
+send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 
@@ -649,7 +657,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, union 
 	if (msg->m[0] == WM_REDRAW)
 		amq = AMQ_REDRAW;
 
-	queue_message(lock, dest_client, amq, msg);
+	queue_message(lock, dest_client, amq, qmf, msg);
 
 	if (rc != dest_client)
 		Unblock(dest_client, 1, 123);
@@ -663,7 +671,7 @@ send_app_message(
 	enum locks lock,
 	struct xa_window *wind,
 	struct xa_client *to, /* if different from wind->owner */
-	short amq,
+	short amq, short qmf,
 	short mp0, short mp1, short mp2, short mp3,
 	short mp4, short mp5, short mp6, short mp7)
 {
@@ -682,5 +690,5 @@ send_app_message(
 	*p++ = mp6;
 	*p++ = mp7;
 
-	send_a_message(lock, to, amq, &m);
+	send_a_message(lock, to, amq, qmf, &m);
 }

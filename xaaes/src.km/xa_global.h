@@ -256,9 +256,15 @@ struct config
 	short double_click_time;	/* Double click timing */
 	short mouse_packet_timegap;	
 	short redraw_timeout;
+	
 	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
 					   we have a VDI that supports mouse wheels. */
-	short wheel_amount;		/* amount of lines for a wheel click. */
+	short ver_wheel_id;		/* ID of horizontal wheel */
+	short ver_wheel_amount;
+	short hor_wheel_id;		/* ID of vertical wheel */
+	short hor_wheel_amount;
+	//short wheel_amount;		/* amount of lines for a wheel click. */
+	
 	short standard_font_point;	/* Size for normal text */
 	short medium_font_point;	/* The same, but for low resolution screens */
 	short small_font_point;		/* Size for small text */

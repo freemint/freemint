@@ -446,7 +446,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		{
 			DIAGS(("sending CH_EXIT to %d for %s", client->p->ppid, c_owner(client)));
 
-			send_app_message(NOLOCKS, NULL, parent, AMQ_NORM,
+			send_app_message(NOLOCKS, NULL, parent, AMQ_NORM, 0,
 					 CH_EXIT, 0, 0, client->p->pid,
 					 code,    0, 0, 0);
 		}
@@ -738,7 +738,7 @@ handle_XaAES_msgs(enum locks lock, union msg_buf *msg)
 
 		dest_clnt = pid2client(m.m[1]);
 		if (dest_clnt)
-			send_a_message(lock, dest_clnt, AMQ_NORM, &m);
+			send_a_message(lock, dest_clnt, AMQ_NORM, QMF_CHKDUP, &m);
 	}
 }
 
@@ -792,7 +792,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (dest_clnt)
 		{
-			send_a_message(lock, dest_clnt, AMQ_NORM, m);
+			send_a_message(lock, dest_clnt, AMQ_NORM, QMF_CHKDUP, m);
 			yield();
 		}
 	}
@@ -1274,7 +1274,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				app_in_front(lock, cl);
 				if (cl->type == APP_ACCESSORY)
-					send_app_message(lock, NULL, cl, AMQ_NORM,
+					send_app_message(lock, NULL, cl, AMQ_NORM, QMF_CHKDUP,
 							 AC_OPEN, 0, 0, 0,
 							 cl->p->pid, 0, 0, 0);
 				break;
