@@ -11,6 +11,7 @@
 
 # include "ipc_unix_cache.h"
 
+# include "mint/proc.h"
 # include "mint/stat.h"
 
 # include "dosdir.h"
