@@ -97,7 +97,7 @@ DEVDRV *
 init (struct kerinfo *k)
 {
 	char msg[128];
-	long r;
+	long mch, r;
 
 	kernel = k;
 
