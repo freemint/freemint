@@ -943,7 +943,7 @@ kick_mousemove_timeout(void)
 			cancelroottimeout(m_rto);
 			m_rto = 0;
 			if (!m_to)
-				m_to = addroottimeout(0L, move_timeout, 0);
+				m_to = addroottimeout(0L, move_timeout, 1);
 		}
 	}
 }
