@@ -270,7 +270,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 		return E_OK;
 	}
 
-	drvs = drvmap() | dosdrvs;
+	drvs = sys_b_drvmap() | dosdrvs;
 
 	/*
 	 * OK, check the list of aliases and special directories
@@ -591,7 +591,7 @@ uni_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	long index;
 	long r;
 
-	map = dosdrvs | drvmap();
+	map = dosdrvs | sys_b_drvmap();
 
 	i = dirh->index++;
 	u = u_root;

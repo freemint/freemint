@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -14,14 +14,13 @@
 
 extern char *kbshft;
 
-long _cdecl getmpb (void *ptr);
-long _cdecl tickcal (void);
-long _cdecl drvmap (void);
-long _cdecl kbshift (int mode);
-long _cdecl mediach (int dev);
-long _cdecl getbpb (int dev);
-long _cdecl rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno);
-long _cdecl setexc (int number, long vector);
+long _cdecl sys_b_tickcal (void);
+long _cdecl sys_b_drvmap (void);
+long _cdecl sys_b_kbshift (int mode);
+long _cdecl sys_b_mediach (int dev);
+long _cdecl sys_b_getbpb (int dev);
+long _cdecl sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno);
+long _cdecl sys_b_setexc (int number, long vector);
 
 extern IOREC_T *keyrec; /* keyboard i/o record pointer */
 extern BCONMAP2_T *bconmap2;
@@ -39,10 +38,10 @@ void checkbttys_vbl (void);
 void	init_bdevmap (void);
 long	overlay_bdevmap (int dev, BDEVMAP *newmap);
 
-long _cdecl ubconstat (int dev);
-long _cdecl ubconin (int dev);
-long _cdecl ubconout (int dev, int c);
-long _cdecl ubcostat (int dev);
+long _cdecl sys_b_ubconstat (int dev);
+long _cdecl sys_b_ubconin (int dev);
+long _cdecl sys_b_ubconout (int dev, int c);
+long _cdecl sys_b_ubcostat (int dev);
 long _cdecl ursconf (int baud, int flow, int uc, int rs, int ts, int sc);
 
 long bconstat (int dev);
