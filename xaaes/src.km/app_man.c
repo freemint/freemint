@@ -383,7 +383,7 @@ unhide_app(enum locks lock, struct xa_client *client)
 			break;
 
 		if (w->owner == client)
-			unhide_window(lock|winlist, w);
+			unhide_window(lock|winlist, w, false);
 
 		w = w->next;
 	}
@@ -418,7 +418,7 @@ repos_iconified(struct proc *p, long arg)
 void
 hide_app(enum locks lock, struct xa_client *client)
 {
-	bool reify = false;
+	bool reify = false, hidden = false;
 	struct xa_client *focus = focus_owner(), *nxtclient;
 	struct xa_window *w;
 
@@ -426,7 +426,9 @@ hide_app(enum locks lock, struct xa_client *client)
 	DIAG((D_appl, NULL, "   focus is  %s", c_owner(focus) ));
 
 	nxtclient = next_app(lock, true, true);
-	if (client->type == APP_SYSTEM || (!nxtclient || nxtclient == client))
+	if ((client->type & APP_SYSTEM) ||
+	    (!nxtclient || nxtclient == client) ||
+	    (client->swm_newmsg & NM_INHIBIT_HIDE))
 		return;
 	
 	w = window_list;
@@ -440,11 +442,13 @@ hide_app(enum locks lock, struct xa_client *client)
 				reify = true;
 
 			hide_window(lock, w);
+			hidden = true;
 		}
 		w = w->next;
 	}
-	
-	client->name[1] = '*';
+
+	if (hidden)
+		client->name[1] = '*';
 	
 	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
 	
@@ -481,8 +485,14 @@ unhide_all(enum locks lock, struct xa_client *client)
 	app_in_front(lock, client);
 }
 
+void
+set_unhidden(enum locks lock, struct xa_client *client)
+{
+	client->name[1] = ' ';
+}
+
 bool
-any_hidden(enum locks lock, struct xa_client *client)
+any_hidden(enum locks lock, struct xa_client *client, struct xa_window *exclude)
 {
 	bool ret = false;
 	struct xa_window *w;
@@ -490,13 +500,16 @@ any_hidden(enum locks lock, struct xa_client *client)
 	w = window_list;
 	while (w)
 	{
-		if (w == root_window)
-			break;
-
-		if (w->owner == client && is_hidden(w))
+		if (w != exclude)
 		{
-			ret = true;
-			break;
+			if (w == root_window)
+				break;
+
+			if (w->owner == client && is_hidden(w))
+			{
+				ret = true;
+				break;
+			}
 		}
 		w = w->next;
 	}
@@ -635,7 +648,7 @@ next_app(enum locks lock, bool wwom, bool no_acc)
 	{
 		while (client)
 		{
-			if (client->type != APP_SYSTEM || !(no_acc && (client->type == APP_ACCESSORY)))
+			if (!(client->type & APP_SYSTEM) || !(no_acc && (client->type & APP_ACCESSORY)))
 			{
 				if (client->std_menu ||
 				    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
@@ -649,7 +662,7 @@ next_app(enum locks lock, bool wwom, bool no_acc)
 	{
 		while (client)
 		{
-			if (!((no_acc && client->type == APP_ACCESSORY) || client->type == APP_SYSTEM))
+			if (!((no_acc && (client->type & APP_ACCESSORY)) || (client->type & APP_SYSTEM)))
 				break;
 			client = PREV_APP(client);
 		}
@@ -679,7 +692,8 @@ app_in_front(enum locks lock, struct xa_client *client)
 	struct xa_window *wl,*wf,*wp;
 
 	if (client)
-	{	
+	{
+		bool was_hidden;
 		struct xa_client *infront;
 		struct xa_window *topped = NULL, *wastop;
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
@@ -708,7 +722,10 @@ app_in_front(enum locks lock, struct xa_client *client)
 				if ((wl->window_status & XAWS_OPEN))
 				{
 					if (is_hidden(wl))
-						unhide_window(lock|winlist, wl);
+					{
+						unhide_window(lock|winlist, wl, false);
+						was_hidden = true;
+					}
 
 					wi_remove(&S.open_windows, wl);
 					wi_put_first(&S.open_windows, wl);
@@ -721,6 +738,9 @@ app_in_front(enum locks lock, struct xa_client *client)
 			
 			wl = wp;
 		}
+		
+		if (was_hidden)
+			set_unhidden(lock, client);
 
 		if (topped)
 		{

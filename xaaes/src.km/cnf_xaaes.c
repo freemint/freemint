@@ -551,6 +551,8 @@ pCB_app_options(char *line)
 				get_boolarg(s + 4, &opts->naes);
 			else if (!strnicmp(s, "winframe_size", 13))
 				get_argument(s + 13, &opts->thinframe);
+			else if (!strnicmp(s, "inhibit_hide", 12))
+				get_boolarg(s + 12, &opts->inhibit_hide);
 
 #if GENERATE_DIAGS
 			else
