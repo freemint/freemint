@@ -5,7 +5,6 @@ If something is missing just add it; freestyle text!
 kernel
 - test and bugfix slip.xif (sld, ppp)
 - bugfix rtl8012 driver
-- there are problems with resolution switches
 
 this is the "rather must" kernel-stuff:
 - finish and implement the new syscall stuff.
@@ -57,6 +56,8 @@ docu
   - mint.ini
 - OLDTOSFS not supported anymore (metados never work)
 - xdds integrated (audio, dsp, lp, whlmoose)
+- also invent some sane format for the documentation
+  (STG? info? HTML?) and convert everything into it.
 
 general
 - create rpm spec files
