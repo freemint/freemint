@@ -35,7 +35,7 @@
 #include "xa_evnt.h"
 
 #if GENERATE_DIAGS
-static char xmsgs[][32] =
+static const char *xmsgs[] =
 {
 	"WM_REDRAW",
 	"WM_TOPPED",
@@ -86,9 +86,8 @@ static char xmsgs[][32] =
 	"                             "
 };
 
-#if 0
 /* messages series 0x4700 */
-static char va_msgs[][32] =
+static const char *va_msgs[] =
 {
 	"AV_PROTOKOLL",			/* 0x4700 */
 	"VA_PROTOSTATUS",		/* 0x4701 */
@@ -192,21 +191,22 @@ static char va_msgs[][32] =
 	"VA_PATH_UPDATE",		/* 0x4760 */
 	"4761                  "
 };
-#endif
 
 static char unknown[32];
 
 const char *
 pmsg(short m)
 {
-	char *ret;
+	const char *ret;
 
 	if (m >= WM_REDRAW && m <= AP_DRAGDROP)
+	{
 		ret = xmsgs[m - WM_REDRAW];
-#if 0
-	else if (m >= AV_PROTOKOLL and m < VA_HIGH)
+	}
+	else if (m >= AV_PROTOKOLL && m < VA_HIGH)
+	{
 		ret = va_msgs[m - AV_PROTOKOLL];
-#endif
+	}
 	else
 	{
 		sprintf(unknown, sizeof(unknown), "%d(%x)", m, m);
@@ -217,38 +217,26 @@ pmsg(short m)
 }
 #endif
 
-static bool
-is_inside(RECT r, RECT o)
-{
-	if (   (r.x       < o.x      )
-	    || (r.y       < o.y      )
-	    || (r.x + r.w > o.x + o.w)
-	    || (r.y + r.h > o.y + o.h)
-	   )
-		return false;
-
-	return true;
-}
-
 void
 cancel_aesmsgs(struct xa_aesmsg_list **m)
 {
 	while (*m)
 	{
-		struct xa_aesmsg_list *nm = (*m)->next;
+		struct xa_aesmsg_list *nm;
+
+		nm = (*m)->next;
 		kfree(*m);
 		*m = nm;
 	}
 }
 
-/* Ozk:
+/*
+ * context dependant
  * deliver_message is guaranteed to run in the dest_client's context
-*/
+ */
 void
 deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
 {
-	//Sema_Up(clients);
-
 	/* Is the dest client waiting for a message at the moment? */
 	if (dest_client->waiting_for & MU_MESAG)
 	{
@@ -308,6 +296,19 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 	}
 }
 
+static bool inline
+is_inside(const RECT *r, const RECT *o)
+{
+	if (   (r->x        < o->x       )
+	    || (r->y        < o->y       )
+	    || (r->x + r->w > o->x + o->w)
+	    || (r->y + r->h > o->y + o->h)
+	   )
+		return false;
+
+	return true;
+}
+
 /*
  * Context independant.
  * queue a message for dest_client
@@ -326,7 +327,7 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 
 		DIAG((D_m, NULL, "WM_REDRAW rect %d/%d,%d/%d", new[4], new[5], new[6], new[7]));
 
-		next = &dest_client->rdrw_msg;
+		next = &(dest_client->rdrw_msg);
 		ml = *next;
 
 		while (ml)
@@ -335,16 +336,17 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 
 			if (old[3] == new[3])
 			{
-				if (is_inside(*((RECT *)&new[4]), *((RECT *)&old[4])))
+				if (is_inside((RECT *)&(new[4]), (RECT *)&(old[4])))
 					return;
-				if (is_inside(*((RECT *)&old[4]), *((RECT *)&new[4])))
+
+				if (is_inside((RECT *)&(old[4]), (RECT *)&(new[4])))
 				{
 					/* old inside new: replace by new. */
 					ml->message.s = msg->s;
 					return;
 				}
 			}
-			next	= &ml->next;
+			next	= &(ml->next);
 			ml	= *next;
 		}
 
@@ -359,6 +361,7 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 
 		return;
 	}
+
 	/* There are already some pending messages */
 	if (dest_client->msg)
 	{
@@ -482,11 +485,11 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 		}
 	}
 }
+
 /*
  * Send an AES message to a client application.
  * generalized version, which now can be used by appl_write. :-)
- */
-/*
+ * 
  * Ozk: Okie, new semantics now; If the caller of send_a_message is NOT the receiver
  * of the message, ALWAYS queue it on behalf of the receiver. Then Unblock() receiver.
  * The receiver, when it is woken up, will then call check_queued_events() and detect
@@ -509,21 +512,16 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	{
 #if GENERATE_DIAGS
 		if (dest_client->status & CS_FORM_ALERT)
-			DIAG((D_appl, dest_client, "send_a_message: Client %s is in form_alert - AES message discarded!", dest_client->name));
+			DIAG((D_appl, dest_client, "send_a_message: Client %s is in form_alert "
+				"- AES message discarded!", dest_client->name));
+
 		if (dest_client->status & CS_LAGGING)
-			DIAG((D_appl, dest_client, "send_a_message: Client %s is lagging - AES message discarded!", dest_client->name));
+			DIAG((D_appl, dest_client, "send_a_message: Client %s is lagging - "
+				"AES message discarded!", dest_client->name));
 #endif
 		return;
 	}
 
-#if 0
-	if (!dest_client->waiting_for & MU_MESAG
-	    || (msg->m[0] == WM_REDRAW && (dest_client->status & CS_CE_REDRAW_SENT)))
-	{
-		queue_message(lock, dest_client, msg);
-		return;
-	}
-#endif
 	if (rc == dest_client)
 	{
 		if (msg->m[0] == WM_REDRAW)
@@ -537,22 +535,6 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	{
 		queue_message(lock, dest_client, msg);
 		Unblock(dest_client, 1, 123);
-#if 0
-		m = kmalloc(sizeof(*m));
-		if (m)
-		{
-			if (dest_client)
-			{
-				*m = *msg;
-				if (msg->m[0] == WM_REDRAW)
-				{
-					dest_client->status |= CS_CE_REDRAW_SENT;
-					C.redraws++;
-				}
-				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
-			}
-		}
-#endif
 	}
 }
 
