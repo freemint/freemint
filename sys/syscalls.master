@@ -556,7 +556,7 @@ opcode	class name	args */
 			 short side, short n) passthrough
 0x00a	Flopfmt		(long buf, long x, short d, short spt, short t,
 			 short sd, short i, long m, short v) passthrough
-0x00b	passthrough
+0x00b	Dbmsg		(short rsrvd, short msg_num, long msg_arg) passthrough /* ATARI Debugger */
 0x00c	Midiws		(short cnt, const char *buf)
 0x00d	Mfpint		(short vnum, long vptr) passthrough
 0x00e	Iorec		(short dev)
@@ -569,10 +569,10 @@ opcode	class name	args */
 			 short sd, short n) passthrough
 0x014	Scrdmp		(void) passthrough
 0x015	Cursconf	(short cmd, short op)
-0x016	Settime		(void)
-0x017	Gettime		(ulong datetime)
+0x016	Settime		(ulong datetime)
+0x017	Gettime		(void)
 0x018	Bioskeys	(void)
-0x019	Okbdws		(short len_minus1, long ptr) passthrough
+0x019	Ikbdws		(short len_minus1, long ptr) passthrough
 0x01a	Jdisint		(short vnum) passthrough
 0x01b	Jenabint	(short vnum) passthrough
 0x01c	Giaccess	(short data, short reg) passthrough
@@ -697,7 +697,7 @@ opcode	class name	args */
 
 0x080	Locksnd		(void) passthrough
 0x081	Unlocksnd	(void) passthrough
-0x082	Soundcmd	(short mode, short data) passthrough
+0x082	Soundcmd	(short mode, short data) passthrough /* NSoundcmd for MilanBlaster */
 0x083	Setbuffer	(short region, long beg, long end) passthrough
 0x084	Setmode		(short stereo_mode) passthrough
 0x085	Settracks	(short play, short rec) passthrough
@@ -729,13 +729,13 @@ opcode	class name	args */
 0x09e	passthrough
 0x09f	passthrough
 
-0x0a0	CacheCtrl	(void /* XXX docu? */) passthrough /* Milan TOS, control CPU cache */
-0x0a1	WdgCtrl		(void /* XXX docu? */) passthrough /* Milan TOS, control hardware watchdog */
-0x0a2	ExtRsConf	(void /* XXX docu? */) passthrough /* Milan TOS, extended RsConf for
-							    * RS-422/RS-485 ports */
+0x0a0	CacheCtrl	(short opcode, short param) passthrough /* Milan TOS, control CPU cache */
+0x0a1	WdgCtrl		(short opcode) passthrough /* Milan TOS, control hardware watchdog */
+0x0a2	ExtRsConf	(short command, short device, long param) passthrough
+			 /* Milan TOS, extended RsConf for RS-422/RS-485 ports */
 0x0a3	passthrough
 0x0a4	passthrough
-0x0a5	Waveplay	(void /* XXX docu? */) passthrough /* SAM, play a sample */
+0x0a5	Waveplay	(short flags, long rate, long sptr, long slen) passthrough /* SAM, play a sample */
 0x0a6	passthrough
 0x0a7	passthrough
 0x0a8	passthrough
@@ -749,16 +749,33 @@ opcode	class name	args */
 
 0x0b0	MAX
 
-//
-// 0x1f4	StarTrack /* StarTrack extended XBIOS calls */
-//
-// 0x1068	Oscanis
-// 0x1069	Oscantab
-// 0x106a	Oscanphy
-// 0x106b	Oscanscr
-// 0x106c	Oscanvb
-// 0x106d	Oscanpatch
-// 0x106e	Oscanswitch
-//
-// 0xc60a	ct60_read_core_temperature /* read CT60 CPU temperature */
-// 0xc60b	ct60_rw_parameter /* set/query CT60 parameters */
+// 0x00c2 /* Crazy-Dots */ GetScreenDescriptor()
+// 0x00c3 /* Crazy-Dots */ ResetScreen()
+// 0x00c4 /* Crazy-Dots */ GetNumberofPModes()
+// 0x00c5 /* Crazy-Dots */ GetPMode()
+// 0x00c6 /* Crazy-Dots */ ReadMode()
+// 0x00c7 /* Crazy-Dots */ CopyModeToActiveMode()
+// 0x00c8 /* Crazy-Dots */ ActiveModeNumber()
+// 0x00c9 /* Crazy-Dots */ GetActiveModeDesc()
+// 0x00ca /* Crazy-Dots */ GetRegisterbase()
+// 0x00cb /* Crazy-Dots */ GetFeatures()
+// 0x00cf /* Crazy-Dots */ GetActiveFeatures()
+// 
+// 0x012c /* PCI-BIOS v2.00 */ Find_PCI_device(long id, short index)
+// 0x012d /* PCI-BIOS v2.00 */ Find_PCI_class_code(long classcode, short index)
+// 
+// 0x01f4 /* StarTrack */ StarTrack()
+// 
+// 0x022b /* Trapper */ Trapper(short magic, short layer, short install, short opcode, void *func)
+//                              /* magic must be 555 */
+// 
+// 0x1068 /* Overscan */ Oscanis()
+// 0x1069 /* Overscan */ Oscantab()
+// 0x106a /* Overscan */ Oscanphy()
+// 0x106b /* Overscan */ Oscanscr()
+// 0x106c /* Overscan */ Oscanvb()
+// 0x106d /* Overscan */ Oscanpatch()
+// 0x106e /* Overscan */ Oscanswitch()
+// 
+// 0xc60a /* CT60 */ ct60_read_core_temperature() /* read CT60 CPU temperature */
+// 0xc60b /* CT60 */ ct60_rw_parameter() /* set/query CT60 parameters */
