@@ -15,7 +15,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: kernel
+all-here: buildkernel
 
 # default overwrites
 
