@@ -22,7 +22,7 @@
  * 
  * 
  * begin:	2000-11-09
- * last change:	2000-11-09
+ * last change:	2001-03-01
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -32,9 +32,13 @@
  */
 
 # ifndef _mint_emu_tos_h
-# define _mint_rmu_tos_h
+# define _mint_emu_tos_h
 
+# ifdef __KERNEL__
 # include "ktypes.h"
+# else
+# include <sys/types.h>
+# endif
 
 
 # define TOS_NAMELEN 13
@@ -57,6 +61,17 @@ struct dtabuf
 	char	dta_name [TOS_NAMELEN+1];
 };
 
+/* defines for TOS attribute bytes */
+# define FA_RDONLY	0x01
+# define FA_HIDDEN	0x02
+# define FA_SYSTEM	0x04
+# define FA_LABEL	0x08
+# define FA_DIR		0x10
+# define FA_CHANGED	0x20
+# ifdef __KERNEL__
+# define FA_VFAT	0x0f	/* VFAT entry */
+# define FA_SYMLINK	0x40	/* symbolic link */
+# endif
 
 /* structure used to hold i/o buffers */
 typedef struct io_rec
