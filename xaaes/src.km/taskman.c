@@ -68,35 +68,32 @@ refresh_tasklist(enum locks lock)
 	client = S.client_list;
 	while (client)
 	{
+		const size_t tx_len = 128;
 		OBJECT *icon;
 		char *tx;
 
-#if 0
-		if (client->msg)
-		{
-			icon = form + TM_ICN_MESSAGE;
-		}
-		else if (   client->pid == S.mouse_lock
-		         || client->pid == S.update_lock)
-		{
-			icon = form + TM_ICN_LOCK;
-		}
-		else
-#endif
+		/* default icon */
+		icon = form + TM_ICN_XAAES;
 
 		if (client->type == APP_ACCESSORY)
 			icon = form + TM_ICN_MENU;
-		else
-			icon = form + TM_ICN_XAAES;
 
-		tx = kmalloc(128);
+		tx = kmalloc(tx_len);
 		if (tx)
 		{
 			long prio = p_getpriority(0, client->p->pid);
+
 			if (prio >= 0)
-				sprintf(tx, 128, " %d/%ld %s", client->p->pid, prio-20, client->name);
+			{
+				prio -= 20;
+
+				if (prio < 0 && prio > -10)
+					sprintf(tx, tx_len, " %3d/ %2ld%s", client->p->pid, prio, client->name);
+				else
+					sprintf(tx, tx_len, " %3d/%3ld%s", client->p->pid, prio, client->name);
+			}
 			else
-				sprintf(tx, 128, " %d/E%ld %s", client->p->pid, prio, client->name);
+				sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
 
 			add_scroll_entry(form, TM_LIST, icon, tx, FLAG_MAL);
 		}
@@ -126,8 +123,12 @@ update_tasklist(enum locks lock)
 static int
 taskmanager_destructor(enum locks lock, struct xa_window *wind)
 {
-	OBJECT *ob = ResourceTree(C.Aes_rsc, TASK_MANAGER) + TM_LIST;
+	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+	OBJECT *ob = form + TM_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+
+	/* Empty the task list */
+	empty_scroll_list(form, TM_LIST, -1);
 
 	delayed_delete_window(lock, list->wi);
 	task_man_win = NULL;
@@ -477,6 +478,7 @@ systemalerts_destructor(enum locks lock, struct xa_window *wind)
 
 	delayed_delete_window(lock, list->wi);
 	systemalerts_win = NULL;
+
 	return true;
 }
 
@@ -492,13 +494,14 @@ refresh_systemalerts(OBJECT *form)
 static void
 open_systemalerts(enum locks lock)
 {
-	struct xa_window *dialog_window;
-	XA_TREE *wt;
-	OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-	static RECT remember = {0,0,0,0};
-	
+	static RECT remember = { 0, 0, 0, 0 };
+
 	if (!systemalerts_win)
 	{
+		OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
+		struct xa_window *dialog_window;
+		XA_TREE *wt;
+
 		form[SALERT_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
