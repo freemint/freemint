@@ -18,20 +18,18 @@
 # include "xbios.h"
 # include "global.h"
 
+# include "mint/arch/mfp.h"
 # include "mint/asm.h"
-# include "arch/timer.h"
+# include "mint/falcon.h"
 
 # include "arch/detect.h"
 # include "arch/mprot.h"
 # include "arch/syscall.h"
+# include "arch/timer.h"
 
 # include "bios.h"
 # include "biosfs.h"
-# ifndef __TURBOC__
-# include "falcon.h"	/* FIXME: Include this in osbind.h and ostruct.h! */
-# endif
 # include "memory.h"
-# include "mfp.h"
 # include "proc.h"
 # include "signal.h"
 # include "tty.h"

@@ -12,12 +12,12 @@
 
 # include "dossig.h"
 
+# include "mint/arch/mfp.h"
 # include "mint/asm.h"
 # include "mint/signal.h"
 
 # include "bios.h"
 # include "kmemory.h"
-# include "mfp.h"
 # include "proc.h"
 # include "signal.h"
 # include "util.h"
