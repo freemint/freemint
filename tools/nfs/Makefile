@@ -19,7 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: $(TARGET)
 
 # default overwrites
-OPTS = -mshort
+GENERAL = -mshort
 INCLUDES = -Ilib
 
 # default definitions

@@ -64,7 +64,6 @@ install-recursive uninstall-recursive dist-recursive:
 # global CFLAGS and ASFLAGS
 #
 INCLUDES = -I$(top_srcdir)
-DEFINITIONS = 
 CFLAGS = $(INCLUDES) $(DEFINITIONS) $(MODEL) $(GENERAL) $(OPTS) $(WARN)
 ASFLAGS = $(DEFINITIONS) $(GENERAL) -m68030
 
