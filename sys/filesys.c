@@ -1202,7 +1202,11 @@ relpath2cookie (fcookie *relto, const char *path, char *lastname, fcookie *res, 
 	/* special cases: CON:, AUX:, etc. should be converted to U:\DEV\CON,
 	 * U:\DEV\AUX, etc.
 	 */
+# if 1
+	if (path[0] && path[1] && path[2] && (path[3] == ':') && !path[4])
+# else
 	if (strlen (path) == 4 && path[3] == ':')
+# endif
 	{
 		strncpy (newpath+7, path, 3);
 		path = newpath;
