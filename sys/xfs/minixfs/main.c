@@ -9,8 +9,6 @@
  *
  */
 
-# include <mintbind.h>
-
 # include "main.h"
 
 # include "minixsys.h"
