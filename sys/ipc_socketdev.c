@@ -411,7 +411,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 			short newfd = MIN_OPEN - 1;
 			long ret;
 			
-			if (cmd == ACCEPT_CMD)
+			if (((struct generic_cmd *) buf)->cmd == ACCEPT_CMD)
 			{
 				if (so->state != SS_ISUNCONNECTED)
 					return EINVAL;
@@ -487,7 +487,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 			return newfd;
 			
 		error:
-			if (cmd == ACCEPT_CMD) so_drop (so, f->flags & O_NDELAY);
+			if (((struct generic_cmd *) buf)->cmd == ACCEPT_CMD) so_drop (so, f->flags & O_NDELAY);
 		error1:
 			if (newfp) { newfp->links--; FP_FREE (newfp); }
 			if (newfd >= MIN_OPEN) FD_REMOVE (p, newfd);
