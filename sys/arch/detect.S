@@ -171,7 +171,7 @@ _DataRegB:	dc.l 0xFFFF8C87
 // old routine
 
 _detect_cpu:
-	movem.l	a0-a2/d1-d2,-(sp)  
+	movem.l	a0-a2/d1-d2,-(sp)
 	move.l	(0x10).w,a1	// save the illegal instr. exception vector
 	move.l	(0xf4).w,a2	// save the unimplemented instr. exception vector
 	lea	exit.w(PC),a0
@@ -218,21 +218,31 @@ exit:	move.l	a2,(0xf4).w	// restore stuff and exit
 
 // new routine, does not change the CPU state (esp. caches)
 // <draco@atari.org>
+//
+// It is supposed to detect the ColdFire processor as 68020
+//
+//
 
 _detect_cpu:
-	movem.l	a0-a2/d1-d2,-(sp)  
+	movem.l	a0-a2/d1-d2,-(sp)
+
 	move.l	(0x10).w,-(sp)	// save the illegal instr. exception vector
+	move.l	(0x2c).w,-(sp)	// save the Line-F exception vector (for ColdFire V2)
 	move.l	(0xf4).w,-(sp)	// save the unimplemented instr. exception vector
 
-	lea	exit.w(PC),a0
-	move.l	a0,(0x10).w	// set either vector
+	lea	exit.w(PC),a0	// set all vectors to point to the label `exit'
+	move.l	a0,(0x10).w
+	move.l	a0,(0x2c).w
 	move.l	a0,(0xf4).w
+
 	move.l	sp,a1		// save the ssp
-	nop			// eventually flush pipelines
+
+	nop			// flush write pipelines
+
+	clr.l	d0              // assume 68000
 
 // on 68000 we try out a `move from CCR'.
 
-	clr.l	d0              // assume 68000
 	move.w	ccr,d1		// legal on 68010+
 	moveq	#10,d0
 
@@ -243,8 +253,10 @@ _detect_cpu:
 
 	lea	no_040.w(PC),a0	// test if 68040 now
 	move.l	a0,(0x10).w
+	move.l	a0,(0x2c).w
 	move.l	a0,(0xf4).w
-	nop
+
+	nop			// flush write pipelines
 
 // this is CINVA, but the cache field specifies no cache
 // (so this is NOP, in fact). According to Motorola, this
@@ -256,18 +268,26 @@ _detect_cpu:
 
 no_040:	lea	exit.w(PC),a0	// change vectors back to 'exit'
 	move.l	a0,(0x10).w
+	move.l	a0,(0x2c).w
 	move.l	a0,(0xf4).w
-	nop
+
+	nop			// flush write pipelines
+
+	move.l	a1,sp		// just to be sure
 
 	cmp.w	#40,d0
 	beq.s	x040
 
 // this idea is borrowed from Linux/m68k, following the suggestion
 // of Petr Stehlik <joy@sophics.cz>.
+//
+// By the way: gas accepts `pmove tt0,d1' which is illegal. Why?
+//
 
 	clr.l	-(sp)		// make some room on the stack
-	pmove	tt0,(sp)	// 68030 only (this is borrowed from Linux/m68k)
+	pmove	tt0,(sp)	// 68030 only
 	moveq	#30,d0
+
 	bra.s	exit
 
 // 68040 or 68060. Quad word mulu test.
@@ -277,9 +297,13 @@ x040:	moveq	#60,d0		// assume 68060
 	moveq	#40,d0		// no fault -> this is 68040
 
 exit:	move.l	a1,sp
+
 	move.l	(sp)+,(0xf4).w	// restore stuff and exit
+	move.l	(sp)+,(0x2c).w
 	move.l	(sp)+,(0x10).w
-	nop			// flush pipelines
+
+	nop			// flush write pipelines
+
 	movem.l	(sp)+,a0-a2/d1-d2
 	rts
 
@@ -319,7 +343,7 @@ exit:	move.l	a1,sp
 	.globl	_mcpu
 
 _detect_fpu:
-	movem.l	a0-a2/d1,-(sp)  
+	movem.l	a0-a2/d1,-(sp)
 	move.l	sp,a0		// save the ssp
 	clr.l	d0		// assume no FPU
 	move.l	(0x2c).w,a1	// save the Line-F vector
