@@ -6,9 +6,11 @@
  */
 
 #ifndef _FALCON_H
-#define _FALCON_H
+#define _FALCON_H 1
 
-#include <mint/osbind.h>
+#ifndef _MINT_OSBIND_H
+# include <mint/osbind.h>
+#endif
 
 
 #ifndef trap_14_wwwwww

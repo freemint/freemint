@@ -58,8 +58,6 @@
 # include "random.h"
 # include "time.h"
 
-# include <mint/osbind.h>
-
 
 static long	_cdecl mouse_open	(FILEPTR *f);
 static long	_cdecl mouse_read	(FILEPTR *f, char *buf, long nbytes);
@@ -211,7 +209,7 @@ mouse_open (FILEPTR *f)
 	/* jr: save old joystick vector */
 	oldjvec = syskey->joyvec;
 	
-	Initmous (1, parameters, newmvec);
+	ROM_Initmous (1, parameters, newmvec);
 	
 	/* jr: set up new joystick handler */
 	syskey->joyvec = (long) newjvec;
@@ -244,7 +242,7 @@ mouse_close (FILEPTR *f, int pid)
 			return -1;
 		}
 		
-		Initmous (1, parameters, oldvec);
+		ROM_Initmous (1, parameters, oldvec);
 		
 		/* jr: restore old joystick handler */
 		syskey->joyvec = oldjvec;

@@ -45,6 +45,7 @@
 # include "syscall_vectors.h"
 
 # include "arch/sig_mach.h"
+# include "arch/tosbind.h"
 
 # include "bios.h"
 # include "console.h"
@@ -77,8 +78,6 @@
 # include "timeout.h"
 # include "slb.h"
 # include "xbios.h"
-
-# include <osbind.h>
 
 
 /*
@@ -605,7 +604,7 @@ Func bios_tab [BIOS_MAX] =
 void
 init_bios (void)
 {
-	keyrec = (IOREC_T *) Iorec (1);
+	keyrec = (IOREC_T *) TRAP_Iorec (1);
 
 	init_bdevmap ();
 }

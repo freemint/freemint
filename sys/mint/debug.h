@@ -86,8 +86,6 @@ void	_cdecl	Debug		(const char *s, ...);
 void	_cdecl	ALERT		(const char *s, ...);
 void	_cdecl	FORCE		(const char *s, ...);
 
-void		PAUSE		(void);
-
 EXITING	_cdecl	FATAL		(const char *s, ...)	NORETURN;
 
 void		DUMPLOG		(void);

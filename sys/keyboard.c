@@ -40,6 +40,7 @@
 # include "mint/signal.h"	/* SIGQUIT */
 
 # include "arch/intr.h"		/* click */
+# include "arch/tosbind.h"
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
@@ -61,8 +62,6 @@
 # include "random.h"		/* add_keyboard_randomness() */
 # include "signal.h"		/* killgroup() */
 # include "timeout.h"		/* addroottimeout() */
-
-# include <osbind.h>		/* Keytbl() */
 
 # define CAD_TIMEOUT	5*200
 # define ROOT_TIMEOUT	1
@@ -875,7 +874,7 @@ void
 init_keybd(void)
 {
 	/* call the underlying XBIOS */
-	tos_keytab = Keytbl(-1, -1, -1);
+	tos_keytab = TRAP_Keytbl(-1, -1, -1);
 }
 
 /* EOF */
