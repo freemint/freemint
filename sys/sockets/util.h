@@ -18,7 +18,7 @@
 INLINE void *
 setstack (register void *sp)
 {
-	register void *osp __asm__("d0") = 0;				\
+	register void *osp __asm__("d0") = 0;
 	
 	__asm__ volatile
 	(
