@@ -365,6 +365,12 @@ lock_screen(XA_CLIENT *client, long time_out, short *ret, int which)
 	DIAG((D_sema, NULL, "[%d]lock_screen for %s, state: %d for %d\n",
 		which, c_owner(client), S.update_cnt, S.update_lock));
 
+	if (S.update_lock == client->pid)
+	{
+		S.update_cnt++;
+		return true;
+	}
+
 	r = Psemaphore(2, UPDATE_LOCK, time_out);
 
 	if (r == 0)
@@ -708,7 +714,7 @@ XA_handler(ushort c, AESPB *pb)
 	{
 
 #if 0
-		if ( /*(!strcmp("  Thing Desktop", client->name)) || */(!strcmp("  AtarIRC ", client->name)) )
+		if ( /*(!strcmp("  Thing Desktop", client->name)) || */(!strcmp("  FontList 1.11 ", client->name)) )
 			display("%s opcod %d - %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", client->name, cmd,
 			pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], pb->intin[4],
 			pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], pb->intin[9] );
