@@ -4,6 +4,4 @@
 - resizing the window may crash toswin, be careful.  Will be fixed soon.
 - switching to line drawing mode in tw100 is merely heuristics
 - some redraw errors with resizing and changing scrollback buffer
-- cannot reach last column when typing charcacters (whereas normal
-  writes work?)
-- cursor sometimes left behind after moving
+- cvvis does not work correctly
