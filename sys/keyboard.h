@@ -101,6 +101,7 @@ void key_repeat(void);
 void init_keybd(void);
 void load_keytbl(void);
 long load_keyboard_table(char *filename, short flag);
+struct keytab *sys_b_keytbl(char *unshift, char *shift, char *caps);
 void sys_b_bioskeys(void);
 
 extern short gl_kbd;
