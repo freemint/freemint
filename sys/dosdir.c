@@ -38,7 +38,7 @@
 long _cdecl
 sys_d_setdrv (int d)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	long r;
 
 	r = sys_b_drvmap() | dosdrvs;
@@ -62,7 +62,7 @@ sys_d_setdrv (int d)
 long _cdecl
 sys_d_getdrv (void)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 
 	TRACELOW (("Dgetdrv"));
 	assert (p->p_fd && p->p_cwd);
@@ -73,7 +73,7 @@ sys_d_getdrv (void)
 long _cdecl
 sys_d_free (long *buf, int d)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	fcookie *dir = 0;
 	FILESYS *fs;
 	fcookie root;
@@ -142,7 +142,8 @@ aliased:
 long _cdecl
 sys_d_create (const char *path)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
+
 	fcookie dir;
 	long r;
 	char temp1[PATH_MAX];
@@ -167,7 +168,7 @@ sys_d_create (const char *path)
 	}
 
 	/* check for write permission on the directory */
-	r = dir_access(&dir, S_IWOTH, &mode);
+	r = dir_access(p->p_cred->ucr, &dir, S_IWOTH, &mode);
 	if (r)
 	{
 		DEBUG(("Dcreate(%s): write access to directory denied",path));
@@ -204,11 +205,11 @@ sys_d_create (const char *path)
 long _cdecl
 sys_d_delete (const char *path)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct proc *cp = curproc;
+	struct ucred *cred = cp->p_cred->ucr;
 
 	fcookie parentdir, targdir;
 	long r;
-	PROC *p;
 	int i;
 	XATTR xattr;
 	char temp1[PATH_MAX];
@@ -228,7 +229,7 @@ sys_d_delete (const char *path)
 	/* check for write permission on the directory which the target
 	 * is located
 	 */
-	r = dir_access (&parentdir, S_IWOTH, &mode);
+	r = dir_access (cred, &parentdir, S_IWOTH, &mode);
 	if (r)
 	{
 		DEBUG(("Ddelete(%s): access to directory denied", path));
@@ -276,6 +277,8 @@ bailout:
 	}
 	else
 	{
+		struct proc *p;
+		
 		/* don't delete anyone else's root or current directory */
 		for (p = proclist; p; p = p->gl_next)
 		{
@@ -295,7 +298,7 @@ bailout:
 					release_cookie (&parentdir);
 					return EACCES;
 				}
-				else if (i == cwd->curdrv && p != curproc && samefile (&targdir, &cwd->curdir[i]))
+				else if (i == cwd->curdrv && p != cp && samefile (&targdir, &cwd->curdir[i]))
 				{
 					DEBUG(("Ddelete: directory %s is in use", path));
 					release_cookie (&targdir);
@@ -336,7 +339,7 @@ bailout:
 long _cdecl
 sys_d_setpath (const char *path)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct cwd *cwd = p->p_cwd;
 
 	XATTR xattr;
@@ -381,7 +384,7 @@ sys_d_setpath (const char *path)
 		return ENOTDIR;
 	}
 
-	if (denyaccess (&xattr, S_IXOTH))
+	if (denyaccess (p->p_cred->ucr, &xattr, S_IXOTH))
 	{
 		DEBUG (("Dsetpath(%s): access denied", path));
 		release_cookie (&dir);
@@ -429,7 +432,7 @@ sys_d_setpath (const char *path)
 long _cdecl
 sys_d_getcwd (char *path, int drv, int size)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct cwd *cwd = p->p_cwd;
 
 	FILESYS *fs;
@@ -512,7 +515,7 @@ sys_d_getpath (char *path, int drv)
 long _cdecl
 sys_f_setdta (DTABUF *dta)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 
 	TRACE(("Fsetdta: %lx", dta));
 	p->p_fd->dta = dta;
@@ -524,7 +527,7 @@ sys_f_setdta (DTABUF *dta)
 long _cdecl
 sys_f_getdta (void)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	long r;
 
 	r = (long) p->p_fd->dta;
@@ -540,7 +543,7 @@ sys_f_getdta (void)
 long _cdecl
 sys_f_sfirst (const char *path, int attrib)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 
 	char *s, *slash;
 	FILESYS *fs;
@@ -703,7 +706,7 @@ sys_f_sfirst (const char *path, int attrib)
 	if (i == NUM_SEARCH)
 	{
 		int oldest = 0;
-		long oldtime = curproc->p_fd->srchtim[0];
+		long oldtime = p->p_fd->srchtim[0];
 
 		DEBUG(("Fsfirst(%s): having to re-use a directory slot!", path));
 		for (i = 1; i < NUM_SEARCH; i++)
@@ -733,7 +736,7 @@ sys_f_sfirst (const char *path, int attrib)
 	/* check to see if we have read permission on the directory (and make
 	 * sure that it really is a directory!)
 	 */
-	r = dir_access(&dir, S_IROTH, &mode);
+	r = dir_access(p->p_cred->ucr, &dir, S_IROTH, &mode);
 	if (r)
 	{
 		DEBUG(("Fsfirst(%s): access to directory denied (error code %ld)", path, r));
@@ -794,7 +797,7 @@ long searchtime;
 long _cdecl
 sys_f_snext (void)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 
 	char buf[TOS_NAMELEN+1];
 	DTABUF *dta = p->p_fd->dta;
@@ -940,7 +943,7 @@ baderror:
 long _cdecl
 sys_f_attrib (const char *name, int rwflag, int attr)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie fc;
@@ -999,7 +1002,7 @@ sys_f_attrib (const char *name, int rwflag, int attr)
 long _cdecl
 sys_f_delete (const char *name)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie dir, fc;
@@ -1020,7 +1023,7 @@ sys_f_delete (const char *name)
 	}
 
 	/* check for write permission on directory */
-	r = dir_access (&dir, S_IWOTH, &mode);
+	r = dir_access (cred, &dir, S_IWOTH, &mode);
 	if (r)
 	{
 		DEBUG(("Fdelete(%s): write access to directory denied",name));
@@ -1074,7 +1077,7 @@ sys_f_delete (const char *name)
 	if (p->domain == DOM_TOS)
 	{
 		/* see if we're allowed to kill it */
-		if (denyaccess (&xattr, S_IWOTH))
+		if (denyaccess (cred, &xattr, S_IWOTH))
 		{
 			release_cookie (&dir);
 			release_cookie (&fc);
@@ -1094,7 +1097,7 @@ sys_f_delete (const char *name)
 long _cdecl
 sys_f_rename (int junk, const char *old, const char *new)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie olddir, newdir, oldfil;
@@ -1163,12 +1166,12 @@ sys_f_rename (int junk, const char *old, const char *new)
 	}
 
 	/* check for write permission on both directories */
-	r = dir_access (&olddir, S_IWOTH, &mode);
+	r = dir_access (cred, &olddir, S_IWOTH, &mode);
 	if (!r && (mode & S_ISVTX) && cred->euid
 	    && cred->euid != xattr.uid)
 		r = EACCES;
 
-	if (!r) r = dir_access (&newdir, S_IWOTH, &mode);
+	if (!r) r = dir_access (cred, &newdir, S_IWOTH, &mode);
 
 	if (r)
 		DEBUG(("Frename(%s,%s): access to a directory denied",old,new));
@@ -1234,7 +1237,7 @@ sys_d_pathconf (const char *name, int which)
 long _cdecl
 sys_d_opendir (const char *name, int flag)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 
 	DIR *dirh;
 	fcookie dir;
@@ -1248,7 +1251,7 @@ sys_d_opendir (const char *name, int flag)
 		return r;
 	}
 
-	r = dir_access (&dir, S_IROTH, &mode);
+	r = dir_access (p->p_cred->ucr, &dir, S_IROTH, &mode);
 	if (r)
 	{
 		DEBUG(("Dopendir(%s): read permission denied", name));
@@ -1355,7 +1358,7 @@ sys_d_rewind (long handle)
 long _cdecl
 sys_d_closedir (long handle)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	DIR *dirh = (DIR *)handle;
 	DIR **where;
 	long r;
@@ -1435,6 +1438,8 @@ sys_f_xattr (int flag, const char *name, XATTR *xattr)
 long _cdecl
 sys_f_link (const char *old, const char *new)
 {
+	struct proc *p = curproc;
+	
 	fcookie olddir, newdir;
 	char temp1[PATH_MAX], temp2[PATH_MAX];
 	long r;
@@ -1467,7 +1472,7 @@ sys_f_link (const char *old, const char *new)
 
 	/* check for write permission on the destination directory
 	 */
-	r = dir_access (&newdir, S_IWOTH, &mode);
+	r = dir_access (p->p_cred->ucr, &newdir, S_IWOTH, &mode);
 	if (r)
 		DEBUG(("Flink(%s,%s): access to directory denied",old,new));
 	else
@@ -1487,6 +1492,8 @@ sys_f_link (const char *old, const char *new)
 long _cdecl
 sys_f_symlink (const char *old, const char *new)
 {
+	struct proc *p = curproc;
+	
 	fcookie newdir;
 	long r;
 	char temp1[PATH_MAX];
@@ -1501,7 +1508,7 @@ sys_f_symlink (const char *old, const char *new)
 		return r;
 	}
 
-	r = dir_access (&newdir, S_IWOTH, &mode);
+	r = dir_access (p->p_cred->ucr, &newdir, S_IWOTH, &mode);
 	if (r)
 		DEBUG(("Fsymlink(%s,%s): access to directory denied",old,new));
 	else
@@ -1623,7 +1630,7 @@ sys_f_chown (const char *name, int uid, int gid)
 long _cdecl
 sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie fc;
@@ -1700,7 +1707,7 @@ sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
 long _cdecl
 sys_f_chmod (const char *name, unsigned int mode)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie fc;
@@ -1753,12 +1760,14 @@ sys_f_chmod (const char *name, unsigned int mode)
  * it was locked by pid 0, in which case ELOCKED is still returned).
  */
 
-PROC *dlockproc [NUM_DRIVES];
+struct proc *dlockproc [NUM_DRIVES];
 
 long _cdecl
 sys_d_lock (int mode, int _dev)
 {
-	PROC *p;
+	struct proc *cp = curproc;
+	struct proc *p;
+
 	FILEPTR *f;
 	int i;
 	ushort dev = _dev;
@@ -1775,7 +1784,7 @@ sys_d_lock (int mode, int _dev)
 
 	if ((mode & 1) == 0)	/* unlock */
 	{
-		if (dlockproc[dev] == curproc)
+		if (dlockproc[dev] == cp)
 		{
 			dlockproc[dev] = NULL;
 			/* changedrv (dev); */
@@ -1818,7 +1827,8 @@ sys_d_lock (int mode, int _dev)
 			f = fd->ofiles[i];
 			if (f && (f != (FILEPTR *) 1) && (f->fc.dev == dev))
 			{
-				DEBUG (("Dlock: process %d (%s) has an open handle on the drive", p->pid, p->name));
+				DEBUG (("Dlock: process %d (%s) has an open "
+					"handle on the drive", p->pid, p->name));
 
 				if ((mode & 2) && (p->pid != 0))
 					return p->pid;
@@ -1917,7 +1927,7 @@ sys_d_readlabel (const char *name, char *buf, int buflen)
 long _cdecl
 sys_d_writelabel (const char *name, const char *label)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie dir;
@@ -1952,7 +1962,7 @@ sys_d_writelabel (const char *name, const char *label)
 long _cdecl
 sys_d_chroot (const char *path)
 {
-	PROC *p = curproc;
+	struct proc *p = curproc;
 	struct ucred *cred = p->p_cred->ucr;
 	struct cwd *cwd = p->p_cwd;
 

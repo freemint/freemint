@@ -68,6 +68,12 @@ static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
 { return _dmabuf_alloc (size, cm, "xfs/xdd"); }
 
 
+static LOCK * _cdecl
+denylock_curproc(LOCK *list, LOCK *newlock)
+{
+	return denylock(curproc->pid, list, newlock);
+}
+
 static long _cdecl
 old_kthread_create(void _cdecl (*func)(void *), void *arg,
 		   struct proc **np, const char *fmt, ...)
@@ -105,7 +111,7 @@ struct kerinfo kernelinfo =
 	ksprintf_old,
 	ms_time, unixtime, dostime,
 	nap, sleep, wake, (void _cdecl (*)(long)) wakeselect,
-	denyshare, denylock,
+	denyshare, denylock_curproc,
 	addtimeout_curproc, canceltimeout,
 	addroottimeout, cancelroottimeout,
 	ikill, iwake,

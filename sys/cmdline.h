@@ -37,7 +37,7 @@
 # include "mint/mint.h"
 
 
-int make_real_cmdline (PROC *p);
+int make_real_cmdline(struct proc *p);
 
 
 # endif /* _cmdline_h */
