@@ -35,7 +35,6 @@ long kern_get_unimplemented	(SIZEBUF **buffer);
 
 long kern_get_buildinfo		(SIZEBUF **buffer);
 long kern_get_cookiejar		(SIZEBUF **buffer);
-long kern_get_cpuinfo		(SIZEBUF **buffer);
 long kern_get_filesystems	(SIZEBUF **buffer);
 long kern_get_hz		(SIZEBUF **buffer);
 long kern_get_loadavg		(SIZEBUF **buffer);

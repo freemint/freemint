@@ -234,107 +234,6 @@ kern_get_cookiejar (SIZEBUF **buffer)
 	return 0;
 }
 
-/* This is mostly stolen from linux-m68k and should be adapted to MiNT
- */
-long 
-kern_get_cpuinfo (SIZEBUF **buffer)
-{
-	SIZEBUF *info;
-	int len = 256;
-	char *cpu, *mmu, *fpuname;
-	ulong clockfreq, clockfactor;
-
-	info = kmalloc (sizeof (*info) + len);
-	if (!info)
-		return ENOMEM;
-
-	cpu = "68000";
-	fpuname = mmu = "none";
-
-	clockfactor = 0;
-
-	switch (mcpu)
-	{
-		case 10:
-			cpu = "68010";
-			break;
-		case 20:
-			cpu = "68020";
-			clockfactor = 8;
-			break;
-		case 30:
-			cpu = mmu = "68030";
-			clockfactor = 8;
-			break;
-		case 40:
-			cpu = mmu = "68040";
-			clockfactor = 3;
-			break;
-		case 60:
-			cpu = mmu = "68060";
-			clockfactor = 1;
-			break;
-
-		/* Add more processors here */
-
-		default:
-			cpu = "680x0";
-			break;
-	}
-	
-	if (fpu)
-	{
-		switch (fputype >> 16)
-		{
-			case 0x02:
-				fpuname = "68881/82";
-				break;
-			case 0x04:
-				fpuname = "68881";
-				break;
-			case 0x06:
-				fpuname = "68882";
-				break;
-			case 0x08:
-				fpuname = "68040";
-				break;
-			case 0x10:
-				fpuname = "68060";
-				break;
-			default:
-				fpuname = "680x0";
-				break;
-		}
-	}
-
-	clockfreq = loops_per_sec * clockfactor;
-
-	if (mcpu <= 10)
-	{
-		/* Assume 8 MHz ST
-		 */
-		
-		clockfreq = 8 * 1000000;
-		loops_per_sec = 83 * 5000;
-	}
-
-	info->len = ksprintf (info->buf, len,
-				"CPU:\t\t%s\n"
-				"MMU:\t\t%s\n"
-				"FPU:\t\t%s\n"
-		   		"Clocking:\t%lu.%1luMHz\n"
-				"BogoMIPS:\t %lu.%02lu\n"
-		   		"Calibration:\t%lu loops\n",
-				cpu, mmu, fpuname,
-		  		clockfreq / 1000000, (clockfreq / 100000) % 10,
-		   		loops_per_sec / 500000, (loops_per_sec / 5000) % 100,
-		   		loops_per_sec
-	);
-	
-	*buffer = info;
-	return 0;
-}
-
 long 
 kern_get_filesystems (SIZEBUF **buffer)
 {
@@ -998,7 +897,6 @@ kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
 	for (i = 1; i < NSIG; i++)
 	{
 		switch (SIGACTION(p, i).sa_handler)
-//		switch (p->sighandle [i])
 		{
 			case SIG_DFL:
 				break;
@@ -1200,7 +1098,6 @@ kern_procdir_get_status (SIZEBUF **buffer, const PROC *p)
 	for (i = 1; i < NSIG; i++)
 	{
 		switch (SIGACTION(p, i).sa_handler)
-//		switch (p->sighandle[i])
 		{
 			case SIG_DFL:
 				break;
