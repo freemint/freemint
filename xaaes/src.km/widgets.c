@@ -462,7 +462,10 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 
 		new->next = client->wtlist;
 		client->wtlist = new;
-		
+
+		if ((obtree[3].ob_type & 0xff) == G_TITLE)
+			new->is_menu = true;
+
 	}
 	DIAGS((" return new wt=%lx", new));
 	return new;
