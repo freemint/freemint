@@ -18,8 +18,8 @@
 # include "debug.h"
 # include "global.h"
 
-# include "mint/asm.h"		/* cpu_stop(), cpu_lpstop() */
-
+# include "arch/aranym.h"
+# include "arch/halt.h"
 # include "arch/mprot.h"
 # include "arch/startup.h"	/* _base */
 # include "libkern/libkern.h"
@@ -115,6 +115,10 @@ debug_ws(const char *s)
 	
 	while (*s)
 	{
+# ifdef ARANYM
+		if (!nf_debug(s))
+			/* fall back to Bconout */
+# endif
 		(void) Bconout(out_device, *s);
 		
 		while (*s == '\n' && out_device != 0 && Bconstat(out_device))
@@ -431,7 +435,7 @@ PAUSE(void)
 	debug_ws(MSG_init_hitanykey);
 	(void) Bconin(2);
 }
-  
+
 EXITING _cdecl
 FATAL(const char *s, ...)
 {
@@ -445,118 +449,6 @@ FATAL(const char *s, ...)
 		DUMPLOG();
 	
 	HALT();
-}
-
-
-/* uk: a normal halt() function without an error message. This function
- *     may only be called if all processes are shut down and the file
- *     systems are synced.
- */
-
-EXITING
-halt (void)
-{
-	long r;
-	long key;
-	int scan;
-	
-	DEBUG(("halt() called, system halting...\r\n"));
-	debug_ws(MSG_system_halted);
-	
-	sys_q[READY_Q] = 0;	/* prevent context switches */
-	restr_intr();		/* restore interrupts to normal */
-	
-	for (;;)
-	{
-		/* get a key; if ctl-alt then do it, else halt */
-		if (mcpu == 60)
-			cpu_lpstop();
-		else
-			cpu_stop();
-
-		key = Bconin(out_device);
-		
-		if ((key & 0x0c000000L) == 0x0c000000L)
-		{
-			scan = (int)((key >> 16) & 0xff);
-			do_func_key(scan);
-		}
-		else
-			break;
-	}
-	
-	for (;;)
-	{
-		debug_ws(MSG_system_halted);
-		
-		if (mcpu == 60)
-			cpu_lpstop();
-		else
-			cpu_stop();
-
-		r = Bconin(2);
-		if ((r & 0x0ff) == 'x')
-		{
-		}
-	}
-}
-
-EXITING 
-HALT (void)
-{
-	long r;
-	long key;
-	int scan;
-	
-	DEBUG(("Fatal MiNT error: adjust debug level and hit a key...\r\n"));
-	debug_ws(MSG_fatal_reboot);
-	
-	sys_q[READY_Q] = 0;	/* prevent context switches */
-	restr_intr ();		/* restore interrupts to normal */
-	
-	for (;;)
-	{
-		/* get a key; if ctl-alt then do it, else halt */
-		if (mcpu == 60)
-			cpu_lpstop();
-		else
-			cpu_stop();
-
-		key = Bconin(2);
-		
-		if ((key & 0x0c000000L) == 0x0c000000L)
-		{
-			scan = (int)((key >> 16) & 0xff);
-			do_func_key(scan);
-		}
-		else
-			break;
-	}
-	
-	for (;;)
-	{
-		debug_ws(MSG_fatal_reboot);
-
-		if (mcpu == 60)
-			cpu_lpstop();
-		else
-			cpu_stop();
-
-		r = Bconin(2);
-		
-		if (((r & 0x0ff) == 'x') || ((r & 0xff) == 's'))
-		{
-			close_filesys();
-			
-			/* if the user pressed 's', try to sync before halting the system */
-			if ((r & 0xff) == 's')
-			{
-				debug_ws(MSG_debug_syncing);
-				sys_s_ync();
-				debug_ws(MSG_debug_syncdone);
-			}
-		}
-	}
 }
 
 void

@@ -101,7 +101,8 @@ static const long skiplist [] =
 {
 	COOKIE__CPU,
 	COOKIE__FPU,
-	COOKIE_RSVF,
+	COOKIE_RSVF,	/* hsmodem TSR */
+	COOKIE_NF,	/* natfeats of emulators are not for userspace */
 # ifndef OLDTOSFS
 	COOKIE__FLK,
 # endif
