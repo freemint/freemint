@@ -10,8 +10,8 @@
  */
 
 # include "timeout.h"
-# include "global.h"
 
+# include "arch/timer.h"
 # include "mint/asm.h"
 
 # include "dosdir.h"
@@ -84,7 +84,7 @@ static void
 dispose_old_timeouts (void)
 {
 	register TIMEOUT *t, **prev, *old;
-	register long now = *(long *) 0x4ba;
+	register long now = *hz_200;
 	register short sr = spl7 ();
 	
 	for (prev = &expire_list, t = *prev; t; prev = &t->next, t = *prev)
@@ -141,7 +141,7 @@ inserttimeout (TIMEOUT *t, long delta)
 	
 	spl (sr);
 }
-	
+
 /*
  * addtimeout(long delta, void (*func)()): schedule a timeout for the current
  * process, to take place in "delta" milliseconds. "func" specifies a
@@ -154,8 +154,8 @@ inserttimeout (TIMEOUT *t, long delta)
  * allocated timeout struct (fallback method).
  */
 
-TIMEOUT * _cdecl
-addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *))
+static TIMEOUT *
+__addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
 {
 	TIMEOUT *t;
 	
@@ -181,24 +181,28 @@ addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *))
 		spl (sr);
 	}
 	
-	if (!t) t = newtimeout (0);
+	if (!t) t = newtimeout (flags & 1);
 	
-	/* BUG: we should have some fallback mechanism for timeouts when the
-	 * kernel memory is exhausted
-	 */
-	assert (t);
-	
-	t->proc = p;
-	t->func = func;
-	inserttimeout (t, delta);
+	if (t)
+	{
+		t->proc = p;
+		t->func = func;
+		inserttimeout (t, delta);
+	}
 	
 	return t;
 }
 
 TIMEOUT * _cdecl
+addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *))
+{
+	return __addtimeout (p, delta, func, 0);
+}
+
+TIMEOUT * _cdecl
 addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
 {
-	return addtimeout (curproc, delta, func);
+	return __addtimeout (curproc, delta, func, 0);
 }
 
 /*
@@ -223,38 +227,7 @@ addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
 TIMEOUT * _cdecl
 addroottimeout (long delta, void _cdecl (*func)(PROC *), ushort flags)
 {
-	TIMEOUT *t;
-	
-	{
-		register TIMEOUT **prev;
-		register short sr = spl7 ();
-		
-		/* Try to reuse an already expired timeout that had the
-		 * same function attached
-		 */
-		prev = &expire_list;
-		for (t = *prev; t != NULL; t = *prev)
-		{
-			if (t->proc == rootproc && t->func == func)
-			{
-				*prev = t->next;
-				break;
-			}
-			prev = &t->next;
-		}
-		spl (sr);
-	}
-	
-	if (!t) t = newtimeout (flags & 1);
-	
-	if (t)
-	{
-		t->proc = rootproc;
-		t->func = func;
-		inserttimeout (t, delta);
-	}
-	
-	return t;
+	return __addtimeout (rootproc, delta, func, flags);
 }
 
 /*
@@ -322,8 +295,8 @@ cancelalltimeouts (void)
  * find it there!
  */
 
-void _cdecl
-canceltimeout (TIMEOUT *this)
+static void
+__canceltimeout (TIMEOUT *this, struct proc *p)
 {
 	TIMEOUT *cur, **prev;
 	short sr = spl7 ();
@@ -332,7 +305,7 @@ canceltimeout (TIMEOUT *this)
 	prev = &expire_list;
 	for (cur = *prev; cur; cur = *prev)
 	{
-		if (cur == this && cur->proc == curproc)
+		if (cur == this && cur->proc == p)
 		{
 			*prev = cur->next;
 			spl (sr);
@@ -345,7 +318,7 @@ canceltimeout (TIMEOUT *this)
 	prev = &tlist;
 	for (cur = tlist; cur; cur = cur->next)
 	{
-		if (cur == this && cur->proc == curproc)
+		if (cur == this && cur->proc == p)
 		{
 			*prev = cur->next;
 			if (cur->next)
@@ -363,43 +336,15 @@ canceltimeout (TIMEOUT *this)
 }
 
 void _cdecl
+canceltimeout (TIMEOUT *this)
+{
+	__canceltimeout (this, curproc);
+}
+
+void _cdecl
 cancelroottimeout (TIMEOUT *this)
 {
-	TIMEOUT *cur, **prev;
-	short sr = spl7 ();
-	
-	/* First look at the list of expired timeouts */
-	prev = &expire_list;
-	for (cur = *prev; cur; cur = *prev)
-	{
-		if (cur == this && cur->proc == rootproc)
-		{
-			*prev = cur->next;
-			spl (sr);
-			disposetimeout (this);
-			return;
-		}
-		prev = &cur->next;
-	}
-	
-	prev = &tlist;
-	for (cur = tlist; cur; cur = cur->next)
-	{
-		if (cur == this && (cur->proc == rootproc))
-		{
-			*prev = cur->next;
-			if (cur->next)
-			{
-				cur->next->when += this->when;
-			}
-			spl (sr);
-			disposetimeout (this);
-			return;
-		}
-		prev = &cur->next;
-	}
-	
-	spl (sr);
+	__canceltimeout (this, rootproc);
 }
 
 /*
