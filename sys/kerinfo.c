@@ -72,7 +72,8 @@ static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
 
 struct kerinfo kernelinfo =
 {
-	MAJ_VERSION, MIN_VERSION,
+	MINT_MAJ_VERSION,
+	MINT_MIN_VERSION,
 	DEFAULT_MODE,
 	2,
 	bios_tab, dos_tab,

@@ -1358,7 +1358,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if (info)
 			{
 				strcpy (info->name, "kern");
-				info->version = ((long) MAJ_VERSION << 16) | MIN_VERSION;
+				info->version = ((long) MINT_MAJ_VERSION << 16) | MINT_MIN_VERSION;
 				info->type = 0;
 				strcpy (info->type_asc, "kern pseudo-filesystem");
 			}
