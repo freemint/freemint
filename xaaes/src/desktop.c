@@ -55,7 +55,7 @@ click_desktop_widget(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	DIAG((D_button, NULL, "                         menu owner: %s\n", c_owner(mowner) ));
 
 	/* HR 280801!!!! menu, desktop and rootwindow ownership are all different!!! */
-	if (   S.mouse_lock == 0
+	if (  S.mouse_lock == 0
 	    && mowner       != client)
 	{
     		short b,x,y;

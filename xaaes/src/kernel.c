@@ -26,6 +26,7 @@
 #include <mint/mintbind.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #include "xa_types.h"
 #include "xa_global.h"
@@ -99,6 +100,44 @@ xa_invalid(int which, int pid, void *addr, long size, bool allowNULL)
 void
 get_mouse(short which)
 {
+
+
+	/* Ozk: This stuff below reads current mouse from mooses, which
+	 * is a new device (of moose). I wonder if this is the way to go,
+	 * or if we should stay with calling the VDI. It works great, tho.
+	 */
+#if 0
+	long	n, h;
+	struct mooses_data msd;
+
+//	if (!button.have)
+//	{
+		h = Fopen("u:\\dev\\mooses", O_RDONLY);
+		if (h > 0)
+		{
+			n = Fread(h, sizeof(msd), &msd);
+			if (n == sizeof(msd))
+			{
+				button.cb	= msd.state;
+				button.x	= msd.x;
+				button.y	= msd.y;
+			}
+			Fclose(h);
+		}
+//		else
+//		{
+//			vq_mouse(C.P_handle, &button.cb, &button.x, &button.y);
+//		}
+
+		vq_key_s( C.vh, &button.ks );
+		button.client	= NULL;
+		button.have	= true;
+		button.b	= button.cb;
+//	}
+
+#endif
+
+#if 1
 	if (!button.have)
 	{
 		short b;
@@ -111,7 +150,9 @@ get_mouse(short which)
 		/* if (b != button.b)
 			button.skip = true; */
 		button.b = b;
+		button.cb = b;
 	}
+#endif
 }
 
 static void
@@ -119,36 +160,52 @@ no_mouse(void)
 {
 	DIAG((D_v, NULL, "no_mouse\n"));
 	button.have = false;
-	button.got = false;		/* This is for still button handling. */
+/*	button.got = false; */		/* This is for still button handling.
+					 * Ozk: yes, but it should not be cleared until we
+					 * have a new button event!!!!
+					 */
 }
 
 static void
 have_mouse(struct moose_data *md)
 {
-	button.b = md->state;
-	button.x = md->x;
-	button.y = md->y;
+	button.b	= md->state;
+	button.cb	= md->cstate;
+	button.x	= md->x;
+	button.y	= md->y;
 	vq_key_s(C.vh, &button.ks);
 	DIAG((D_v, NULL, "have_mouse %d,%d/%d\n", button.b, button.x, button.y));
-	button.have = true;
+	button.have 	= true;
+	button.got	= false;
+}
+
+static void
+new_mu_mouse(struct moose_data *md)
+{
+	mu_button.b	= md->state;
+	mu_button.cb	= md->cstate;
+	mu_button.x	= md->x;
+	mu_button.y	= md->y;
+	mu_button.clicks = md->clicks;
+	vq_key_s(C.vh, &mu_button.ks);
 }
 
 void
 remove_client_handle(XA_CLIENT *client)
 {	
-	client_handle_mask &= ~(1L << client->kernel_end);
+	client_handle_mask &= ~(1UL << client->kernel_end);
 }
 
 void
 insert_client_handle(XA_CLIENT *client)
 {
-	client_handle_mask |=  (1L << client->kernel_end);
+	client_handle_mask |=  (1UL << client->kernel_end);
 }
 
 void
 Block(XA_CLIENT *client, int which)
 {
-	client_waiting_mask |=  (1L << client->kernel_end);
+	client_waiting_mask |=  (1UL << client->kernel_end);
 	DIAG((D_kern,client,"[%d]Blocked %s\n", which, c_owner(client)));
 }
 
@@ -158,7 +215,7 @@ Unblock(XA_CLIENT *client, unsigned long value, int which)
 	client->tinybuf = value;
 		/* Write a value to clients reply pipe to unblock the process */
 	Fwrite(client->kernel_end, sizeof(unsigned long), &client->tinybuf);
-	client_waiting_mask &= ~(1L << client->kernel_end);
+	client_waiting_mask &= ~(1UL << client->kernel_end);
 
 	/* HR 041201: the following served as a excellent safeguard on the
 	 *            internal consistency of the event handling mechanisms.
@@ -356,6 +413,7 @@ kernel_key(LOCK lock, KEY *key)
 }
 
 BUTTON button = {NULL};
+BUTTON mu_button = {NULL};
 
 static int alert_pending = 0;
 
@@ -378,6 +436,26 @@ XaAES(void)
 
 	DIAGS(("Handles: MOUSE %ld, KBD %ld, AES %ld, ALERT %ld\n",
 		C.MOUSE_dev, C.KBD_dev, C.AES_in_pipe, C.Salert_pipe));
+
+//	display(" mdev %d, kbd %d, aesin %d, alrt %d", C.MOUSE_dev, C.KBD_dev, C.AES_in_pipe, C.Salert_pipe);
+	display(" int is %d, short is %d", sizeof(int), sizeof(short));
+
+	pending_button[0].client = 0;
+	pending_button[1].client = 0;
+	pending_button[2].client = 0;
+	pending_button[3].client = 0;
+
+	button.b = 0;
+	button.cb = 0;
+	button.clicks = 0;
+	button.got = true;
+
+	mu_button.b = 0;
+	mu_button.cb = 0;
+	mu_button.clicks = 0;
+	mu_button.x = 0;
+	mu_button.y = 0;
+
 
 	do {
 		/* HR: The root of all locking under AES pid. */
@@ -441,10 +519,11 @@ XaAES(void)
 			}
 		}
 
-		input_channels  = 1L << C.MOUSE_dev;
-		input_channels |= 1L << C.KBD_dev;	/* We are waiting on all these channels */
-		input_channels |= 1L << C.AES_in_pipe;	/* This is only used for appl_init() now */
-		input_channels |= 1L << C.Salert_pipe;	/* Monitor the system alert pipe */
+
+		input_channels  = 1UL << C.MOUSE_dev;
+		input_channels |= 1UL << C.KBD_dev;	/* We are waiting on all these channels */
+		input_channels |= 1UL << C.AES_in_pipe;	/* This is only used for appl_init() now */
+		input_channels |= 1UL << C.Salert_pipe;	/* Monitor the system alert pipe */
 		input_channels |= client_handle_mask;	/* Clients send general requests via their own pipes now */
 		/* Feedback: */
 		input_channels &= ~client_waiting_mask;	/* Dont select clients that are supposed to be waiting. */
@@ -458,6 +537,7 @@ XaAES(void)
 		 */
 		fs_rtn = Fselect(C.active_timeout.timeout, (long *) &input_channels, 0L, 0L);	
 
+//		display("fs_rtn = %d %d %d %d %d %d\n", fs_rtn, C.MOUSE_dev, C.KBD_dev, C.AES_in_pipe, C.Salert_pipe, client_handle_mask);
 		DIAG((D_kern, NULL,">>Fselect(t%d) :: %d, channels: 0x%08lx, U%dM%d\n",
 			C.active_timeout.timeout, fs_rtn, input_channels, S.update_lock, S.mouse_lock));
 
@@ -478,12 +558,14 @@ XaAES(void)
 			/* HR Fselect returns no of bits set in input_channels */
 			evnt_count++;
 
-			if (input_channels & (1L << C.Salert_pipe))
+			if (input_channels & (1UL << C.Salert_pipe))
 			{
 				/* System alert? Alert and add it to the log */
 				OBJECT *icon;
 				char *buf, c;
 				long n;
+
+				// display("alrt\n");
 
 				n = Finstat(C.Salert_pipe);
 				/* HR MiNT's Fselect bug still there? */
@@ -569,25 +651,37 @@ XaAES(void)
 			}
 
 			/* Did we get a mouse message? */
-			if (input_channels & (1L << C.MOUSE_dev))
+			if (input_channels & (1UL << C.MOUSE_dev))
 			{
 				struct moose_data mdata;
 				long n;
 
+				// display("mouse\n");
+
+			#if 0
 				mdata.l = 0;
 				mdata.ty = 0;
 				mdata.x = 0;
 				mdata.y = 0;
 				mdata.state = 0;
+				mdata.cstate = 0;
 				mdata.clicks = 0;
 				mdata.dbg1 = 0;
 				mdata.dbg2 = 0;
+			#endif
 
 				/* Read always whole packets, otherwise loose
 				 * sync. For now ALL packets are same size,
 				 * faster anyhow.
 				 * BTW. The record length can still be used
 				 * to decide on the amount to read.
+				 */
+				/* Ozk:
+				 * Added 'cstate', in addition to 'state' to the moose_data structure.
+				 *'state' indicates which button(s) triggered the event,
+				 *'cstate' contains the button state at the time when
+				 * double-click timer expires.
+				 * Makes it much easier, yah know ;-)
 				 */
 				n = Fread(C.MOUSE_dev, sizeof(mdata), &mdata);
 				if (n == sizeof(mdata))
@@ -602,7 +696,38 @@ XaAES(void)
 					{
 						DIAG((D_button, NULL, "Button %d on: %d/%d\n",
 							mdata.state, mdata.x, mdata.y));
+						
+						//display("butv pkt: Len = %d, - x,y = %d,%d - state,cstate %d,%d - clicks %d",
+						//	mdata.l, mdata.x, mdata.y, mdata.state, mdata.cstate, mdata.clicks);
 
+						have_mouse(&mdata);
+						new_mu_mouse(&mdata);
+						XA_button_event(lock, &mdata, true);
+
+						/* Ozk: If we get a button packet in which the button
+						 * state at the time moose sent it is 'released', we
+						 * need to fake a 'button-released' event.
+						 * If state == cstate != 0, moose will send a 'button-released'
+						 * packet.
+						*/ 
+						if ( mdata.state && !mdata.cstate )
+						{
+							mdata.state	= 0;
+							mdata.cstate	= 0;
+							mdata.clicks	= 0;
+							have_mouse(&mdata);
+							new_mu_mouse(&mdata);
+							XA_button_event(lock, &mdata, true);
+						}
+
+						/* Ozk: button.got is now used as a flag indicating
+						 * whether or not a mouse-event packet has been
+						 * delivered, queued as pending or not.
+						 */
+						button.got = true;
+						break;
+
+#if 0 /* Ozk: Lets skip all this shit.. what is this anyway? */
 						if (button.skip)
 						{
 							/* HR 121102: already processed */
@@ -618,7 +743,9 @@ XaAES(void)
 							button.got = true;
 						}
 						break;
+#endif
 					}
+
 					case MOOSE_MOVEMENT_PREFIX:
 					{
 						/* HR: new mouse rectangle events */
@@ -634,6 +761,7 @@ XaAES(void)
 						XA_move_event(lock, &mdata);
 						break;
 					}
+
 					case MOOSE_WHEEL_PREFIX:
 					{
 						XA_wheel_event(lock, &mdata);
@@ -656,12 +784,14 @@ XaAES(void)
 				}
 			}
 
-			if (input_channels & (1L << C.KBD_dev))
+			if (input_channels & (1UL << C.KBD_dev))
 			{
 				/* Did we get some keyboard input? */
 				KEY key;
 				key.raw.bcon = Bconin(2); /* Crawcin(); */
 				
+				// display("kbd\n");
+
 				/* Translate the BIOS raw data into AES format */
 				key.aes = (key.raw.conin.scan<<8) | key.raw.conin.code;
 				key.norm = 0;
@@ -674,7 +804,7 @@ XaAES(void)
 					XA_keyboard_event(lock, &key);
 			}
 
-			input_channels &= (client_handle_mask | (1L << C.AES_in_pipe));
+			input_channels &= (client_handle_mask | (1UL << C.AES_in_pipe));
 			client_handle = 0;
 
 			/* HR: Removed stupid inner loop which was the cause of
@@ -682,7 +812,7 @@ XaAES(void)
 			 */
 			while (input_channels)
 			{
-				if (input_channels & 1L)
+				if (input_channels & 1UL)
 				{
 					K_CMD_PACKET b;
 
@@ -692,6 +822,9 @@ XaAES(void)
 						XA_CLIENT *client = Pid2Client(b.pid);
 						int cmd = b.pb->contrl[0];
 						repl = XAC_DONE;
+						
+						// display("h %d, cmd %d, client %s\n", client_handle, cmd, client->name);
+
 #if GENERATE_DIAGS
 						if (cmd >= 0 && cmd <= MAX_NAMED_DIAG)	/* HR >= 0 */
 						{
@@ -797,6 +930,7 @@ cont:
 			/* Call the active function if we need to */
 			if (C.active_timeout.task)
 			{
+//				display(" timeout!\n");
 				if (C.active_timeout.timeout != 0
 				     && (fs_rtn == 0 || (evnt_count & 0xff) == 1))
 					(*C.active_timeout.task)(&C.active_timeout);

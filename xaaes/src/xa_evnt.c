@@ -66,9 +66,11 @@ struct key_queue
 };
 
 static struct key_queue pending_keys;
+static int pending_button_head	= 0;
+static int pending_button_tail	= 0;
+BUTTON pending_button[4] = { {NULL}, {NULL}, {NULL}, {NULL} };  /* for evnt fall thru */
 
-BUTTON pending_button = { NULL }; /* for evnt fall thru */
-
+#if 0
 void
 cancel_pending_button(void)
 {
@@ -78,6 +80,7 @@ cancel_pending_button(void)
 		DIAG((D_button,NULL,"cancel_pending_button\n"));
 	}
 }
+#endif
 
 /* HR 180601: Now use the global (once) set values in the button structure */
 void
@@ -88,7 +91,7 @@ multi_intout(short *o, int evnt)
 	*o++ = evnt;
 	*o++ = button.x;
 	*o++ = button.y;
-	*o++ = button.b;
+	*o++ = mu_button.b;	/*button.b;*/
 	*o++ = button.ks;
 
 	if (evnt)
@@ -106,6 +109,37 @@ em_flag(int f)
 	return mo[f & 3];
 }
 #endif
+
+static void
+do_widget_repeat(struct task_administration_block *tab)
+{
+
+
+	do_active_widget(tab->lock, tab->client);
+
+	if (widget_active.b)
+	{
+		tab->timeout = 1;
+	}
+	else
+	{
+		tab->timeout = 0;
+		tab->task = 0;
+	}
+		
+}
+void
+set_widget_repeat(LOCK lock, XA_WINDOW *wind)
+{
+	Tab *t = &C.active_timeout;
+
+	t->timeout = 1;
+	t->wind = wind;
+	t->client = wind->owner;
+	t->task = do_widget_repeat;
+	t->lock = lock;
+}
+
 
 
 /*
@@ -184,6 +218,8 @@ button_event(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 				*to++ = button.ks;
 				*to++ = 0;
 				*to++ = md->clicks;
+
+				button.got = true;
 			/* Write success to clients reply pipe to unblock the process */
 				Unblock(client, XA_OK, 3);
 				DIAG((D_button,NULL," - written\n"));
@@ -199,6 +235,7 @@ button_event(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 				*to++ = md->y;
 				*to++ = md->state;
 				*to   = button.ks;
+				button.got = true;
 			/* Write success to clients reply pipe to unblock the process */
 				Unblock(client, XA_OK, 4);
 				DIAG((D_button,NULL," - written\n"));
@@ -207,19 +244,50 @@ button_event(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 	}
 }
 
+/* Ozk 040503: Collect up to 4 pending button events */
+static void
+add_pending_button(LOCK lock, XA_CLIENT *client, struct moose_data *md)
+{
+
+	Sema_Up(pending);
+
+	if (!(pending_button[pending_button_head].client == client))
+	{
+		pending_button_tail = 0;
+		pending_button_head = 0;
+		pending_button[1].client = 0;
+		pending_button[2].client = 0;
+		pending_button[3].client = 0;
+	}
+
+	
+	pending_button[pending_button_tail].client = client;
+	pending_button[pending_button_tail].b = md->state;
+	pending_button[pending_button_tail].cb = md->cstate;
+	pending_button[pending_button_tail].clicks = md->clicks;
+
+	pending_button_tail++;
+	pending_button_tail &= 3;
+
+	Sema_Dn(pending);
+}
+
+#if 0
 static void
 button_pending(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 {
 	Sema_Up(pending);
 
-	pending_button.client = client;
-	pending_button.b = md->state;
-	pending_button.clicks = md->clicks;			/* HR 310501: Oof! bad omission fixed. */
-	/* A pending button is a single shot. */
-	DIAG((D_button,NULL,"button queued st:%d\n", pending_button.b));
+		pending_button.client = client;
+		pending_button.b = md->state;
+		pending_button.cb = md->cstate;
+		pending_button.clicks = md->clicks;			/* HR 310501: Oof! bad omission fixed. */
+		/* A pending button is a single shot. */
+		DIAG((D_button,NULL,"button queued st:%d\n", pending_button.b));
 
 	Sema_Dn(pending);
 }
+#endif
 
 static bool
 do_fmd(LOCK lock, int up, struct moose_data *md)
@@ -248,6 +316,15 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 /* HR: 19 october 2000; switched over to VMOOSE, the vdi vector based moose. */
 
 	DIAG((D_button,NULL,"XA_button_event: %d/%d, state=0x%x, clicks=%d\n", md->x, md->y, md->state, md->clicks));
+
+	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
+	if (!md->state)		/* button released? */
+	{
+		widget_active.nx = md->x;
+		widget_active.ny = md->y;
+		widget_active.b  = 0;
+		do_active_widget(lock, widget_active.wind->owner);
+	}
 
 	if (C.menu_base && md->state)		/* any button down */
 	{
@@ -284,8 +361,8 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 			return;
 
 	wind = find_window(lock, md->x, md->y);				/* Try for a window */
-    if (!wind)
-    {
+	if (!wind)
+	{
 		DIAG((D_button,NULL,"click not in window\n"));
 		return;
 	}
@@ -325,7 +402,8 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 			if (client->waiting_for & MU_BUTTON)
 				button_event(lock, client, md);
 			else
-				button_pending(lock, client, md);
+//				button_pending(lock, client, md);
+				add_pending_button(lock, client, md);
 			return;
 		}
 	}
@@ -347,13 +425,13 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	/* - otherwise forget it, 'coz we don't want delayed clicks (they are confusing to the user [ie. me] ) */
 
 	DIAG((D_button,NULL,"  -- client %s\n", c_owner(client)));
-
+	
 	/* HR: Very annoying not getting WM_TOPPED if you click a workarea	*/
 	if (   md->state == 1
 	    && wind != window_list
 	    && wind != root_window
 	    && wind->owner == client				/* HR 150601: Mouse lock !!! */
-	    && (client->waiting_for & MU_MESAG)
+/*	    && (client->waiting_for & MU_MESAG) */
 	    && (wind->active_widgets&NO_TOPPED) == 0)		/* WF_BEVENT set */
 	{
 		DIAG((D_wind,wind->owner,"send WM_TOPPED to %s\n", c_owner(client)));
@@ -368,6 +446,7 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	{
 		C.focus = window_list;
 		client = window_list->owner;
+//		display("Click on unfocused top_window of (%d) %s\n", client->pid, client->name);
 		DIAG((D_menu,NULL,"Click on unfocused top_window of %s\n", c_owner(client)));
 		display_window(lock|clients, 112, window_list, NULL);   /* Redisplay titles */
 		send_ontop(lock|clients);
@@ -376,7 +455,8 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	else if (client->waiting_for & MU_BUTTON)
 		button_event(lock, client, md);
 	else
-		button_pending(lock, client, md);
+//		button_pending(lock, client, md);
+		add_pending_button(lock, client, md);
 
 	Sema_Dn(clients);
 }
@@ -413,6 +493,20 @@ XA_move_event(LOCK lock, struct moose_data *md)
 	XA_CLIENT *client;
 	short x = md->x;
 	short y = md->y;
+
+	/* Ozk 040503: Moved the continuing handling of widgets actions here
+	 * so we dont have to msg the client to make real-time stuff
+	 * work. Having it here saves time, since it only needs to be
+	 * done when the mouse moves.
+	 */
+	if (widget_active.widg)
+	{
+		widget_active.nx = md->x;
+		widget_active.ny = md->y;
+		widget_active.b  = md->state;
+		do_active_widget(lock, widget_active.wind->owner);
+		return false;
+	}
 
 	/* XaAES internal move event handling */
 	if (C.menu_base)
@@ -943,9 +1037,12 @@ pending_msgs(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	Sema_Up(clients);
 
+#if 0
 	if (!client->msg)
 		/* now a function; used in woken_slist as well. */
 		do_active_widget(lock|clients, client);
+
+#endif
 
 	rtn = (client->msg != NULL);
 	/* Are there any messages pending? */
@@ -1034,7 +1131,31 @@ bool naes12 = false;
 static bool
 still_button(LOCK lock, XA_CLIENT *client, short *o)
 {
-#if 1
+
+	XA_CLIENT *owner;
+	XA_WINDOW *wind;
+	short b;
+
+
+	if ( C.menu_base || widget_active.widg || !mouse_ok(client) )
+		return false;
+
+	vq_mouse(C.vh, &b, &mu_button.x, &mu_button.y);
+	vq_key_s(C.vh, &mu_button.ks);
+
+	wind = find_window(lock, mu_button.x, mu_button.y);
+	owner = wind == root_window ? get_desktop()-> owner : wind->owner;
+
+	if (owner != client)
+		return false;
+
+	if (	m_inside(mu_button.x, mu_button.y, &wind->wa) &&
+		!(client->fmd.lock && client->fmd.mousepress)	)
+		return true;
+
+	return false;
+
+#if 0
 	/* probably needs more work though. */
 	XA_CLIENT *owner;
 	XA_WINDOW *wind;
@@ -1066,7 +1187,9 @@ still_button(LOCK lock, XA_CLIENT *client, short *o)
 
 	return false;
 
-#else
+#endif
+
+#if 0
 	get_mouse(11);
 	return
             !button.got			/* XA_button_event() has not been called */
@@ -1108,10 +1231,13 @@ evnt_diag_output(void *pb, XA_CLIENT *client, char *which)
 unsigned long
 XA_evnt_multi(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
+	bool mu_butt_p = 0;			/* Ozk 040503: Need to know if MU_BUTTON came from a pending button event
+						 * or checking current button state in mu_button */
 	short events = pb->intin[0];
 	unsigned long ret = XAC_BLOCK;		/* HR: another example of choosing inconvenient default fixed. */
 	int new_waiting_for = 0,
-	    fall_through = 0;
+	    fall_through = 0,
+	    pbi = pending_button_head;
 	
 	CONTROL(16,7,1)
 
@@ -1156,17 +1282,30 @@ XA_evnt_multi(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
  */
 
+ /*
+	Ozk 040503:
+	Now this is how things work; if we're waiting for MU_BUTTON,
+	we check if there'a pending button. If there is, we check that.
+	If there are no pending buttons, we check with mu_button instead,
+	because it contains the last mouse event packet returned from moose.
+ */
+
 	if (events & MU_BUTTON)
 	{
+
 		Sema_Up(pending);
 
-		if (pending_button.client == client && mouse_ok(client))
+		if (pending_button[pbi].client	== client && mouse_ok(client))
 		{
 			DIAG((D_button,NULL,"pending_button multi %d\n", pending_button.b));
-			pending_button.client = NULL;			/* is single shot. */
-			if (is_bevent(pending_button.b, pending_button.clicks, pb->intin + 1, 1))
+			pending_button[pbi].client = NULL;			/* is single shot. */
+			pending_button_head++;
+			pending_button_head &= 3;
+
+			if (is_bevent(pending_button[pbi].b, pending_button[pbi].clicks, pb->intin + 1, 1))
 			{
 				fall_through |= MU_BUTTON;
+				mu_butt_p = true;		/* pending button used */
 DIAG((D_button,NULL,"fall_through |= MU_BUTTON\n"));
 			}
 		}
@@ -1177,10 +1316,9 @@ DIAG((D_button,NULL,"still_button multi?? o[0,2] %x,%x button.got %d, lock %d, M
 			if (still_button(lock, client, pb->intin + 1))
 			{
 DIAG((D_button,NULL,"still_button multi %d,%d/%d\n", button.b, button.x, button.y));
-
-				if (is_bevent(button.b, 0, pb->intin + 1, 2))
+				if (is_bevent(mu_button.b, 0, pb->intin + 1, 2))
 				{
-DIAG((D_button,NULL,"still button %d: fall_through |= MU_BUTTON\n", button.b));
+DIAG((D_button,NULL,"still button %d: fall_through |= MU_BUTTON\n", button.b));					
 					fall_through |= MU_BUTTON;
 					button.got = true;				/* Mark button state processed. */
 				}
@@ -1291,8 +1429,18 @@ DIAG((D_multi,client,"    M2 rectangle: %d/%d,%d/%d, flag: 0x%x: %s\n", r->x, r-
 		if ((fall_through&MU_TIMER) == 0)
 			ret = XAC_DONE;
 		if ((fall_through&MU_BUTTON) != 0)
+		{
 			/* HR 190601: Pphooo :-( This solves the Thing desk popup missing clicks. */
-			pb->intout[6] = pending_button.clicks;
+			/* Ozk 040501: And we need to take the data from the correct place. */
+			if (mu_butt_p)
+			{
+				pb->intout[3] = pending_button[pbi].b;
+				pb->intout[6] = pending_button[pbi].clicks;
+			}
+			else
+				pb->intout[6] = mu_button.clicks;
+		}
+			
 		pb->intout[0] = fall_through;
 		diag_out(pb,client,"fall_thru ");
 	}
@@ -1348,6 +1496,8 @@ XA_evnt_mesag(LOCK lock, XA_CLIENT *client, AESPB *pb)
 unsigned long
 XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
+	int pbi = pending_button_head;
+
 	CONTROL(3,5,1)
 
 	DIAG((D_button,NULL,"evnt_button for %s; clicks %d mask 0x%x state 0x%x\n",
@@ -1355,14 +1505,18 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	Sema_Up(pending);
 
-	if (pending_button.client == client && mouse_ok(client))
+	if (pending_button[pbi].client == client && mouse_ok(client))
 	{
 		DIAG((D_button,NULL,"pending_button %d\n", pending_button.b));
-		pending_button.client = NULL;			/* is single shot. */
-		if (is_bevent(pending_button.b, pending_button.clicks, pb->intin, 3))
+		pending_button[pbi].client = NULL;			/* is single shot. */
+		pending_button_head++;
+		pending_button_head &= 3;
+
+		if (is_bevent(pending_button[pbi].b, pending_button[pbi].clicks, pb->intin, 3))
 		{
 			multi_intout(pb->intout, 0);
-			pb->intout[0] = pending_button.clicks;
+			pb->intout[0] = pending_button[pbi].clicks;	/* Ozk 040503: Take correct data */
+			pb->intout[3] = pending_button[pbi].b;
 			Sema_Dn(pending);
 			return XAC_DONE;
 		}
@@ -1375,7 +1529,7 @@ XA_evnt_button(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		if (still_button(lock, client, pb->intin))
 		{
 			DIAG((D_button,NULL,"still_button %d,%d/%d\n", button.b, button.x, button.y));
-			if (is_bevent(button.b, 0, pb->intin, 4))
+			if (is_bevent(mu_button.b, 0, pb->intin, 4))
 			{
 				DIAG((D_button,NULL,"    --    implicit button %d\n",button.b));
 				multi_intout(pb->intout, 0);		/* 0 : for evnt_button */
