@@ -275,6 +275,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				break;
 			case 8:
 				tw->curs_vvis = 1;
+				tw->curs_on = 1;
 				break;
 			}
 			++count;
@@ -749,6 +750,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				break;
 			case 34:
 				tw->curs_vvis = 1;
+				tw->curs_on = 1;
 				break;
 			}
 			count++;
