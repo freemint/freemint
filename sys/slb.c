@@ -752,9 +752,6 @@ slb_close_on_exit (int terminate)
 		mark_opened(slb, curproc->pid, 0);
 		assert (slb->slb_proc->p_mem);
 
-		/* Unblock the signal deliveries */
-		slb->slb_proc->p_flag &= ~P_FLAG_SLB;
-
 		mr = slb->slb_proc->p_mem->mem;
 		if (mr)
 		{
@@ -770,6 +767,10 @@ slb_close_on_exit (int terminate)
 
 			slb->slb_name[0] = 0;
 			mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+
+			/* Unblock the signal deliveries */
+			slb->slb_proc->p_flag &= ~P_FLAG_SLB;
+
 			sys_p_kill(pid, SIGCONT);
 		}
 		else
