@@ -277,19 +277,28 @@ sld (void *bp)
 	kthread_exit (1);
 }
 
-void
+long
 serial_init (void)
 {
+	long r;
+	
+	if (!kthread_create)
+	{
+		ALERT (("This slip.xif require an uptodate 1.16 kernel!"));
+		return -1;
+	}
+	
 	glfd = f_open (pname, O_NDELAY|O_WRONLY|O_CREAT|O_GLOBAL);
 	if (glfd < 100)
 		glfd += 100;
 	
 	f_chmod (pname, 0600);
 	
-	if (!kthread_create)
-		FATAL ("This slip.xif require an uptodate 1.16 kernel!");
+	r = kthread_create (sld, (void *) 0x1, &sld_p, "sld");
+	if (r != 0)
+		f_close (glfd);
 	
-	kthread_create (sld, (void *) 0x1, &sld_p, "sld");
+	return r;
 }
 
 static long

@@ -43,4 +43,7 @@
 # define PPPPROTO_UNCOMP_TCP	0x002f	/* VJ uncompressed TCP */
 
 
+long ppp_init (void);
+
+
 # endif /* _ppp_h */
