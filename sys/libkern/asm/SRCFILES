@@ -6,7 +6,6 @@ SOBJS = \
 	memset.S \
 	quickmove.S \
 	quickswap.S \
-	quickzero.S \
-#	peekpoke.S
+	quickzero.S
 
 SRCFILES = $(SOBJS)
