@@ -182,4 +182,96 @@ enum xa_mouse
 #define ED_CRSRON	7
 #define ED_CRSROFF	8
 
+#define XMU_KEYBD	0x80000000
+#define XMU_BUTTON	0x40000000
+#define XMU_M1		0x20000000
+#define XMU_M2		0x10000000
+#define XMU_MX		0x08000000
+#define XMU_MESAG	0x04000000
+#define XMU_TIMER	0x02000000
+#define XMU_FSELECT	0x01000000
+#define XMU_PMSG	0x00800000
+
+/* XaAES new xevent_multi definitions */
+struct xevnt_mask
+{
+  unsigned long ev_0;
+  unsigned long ev_1;
+  unsigned long ev_2;
+  unsigned long ev_3;
+};
+
+struct xevnts
+{
+  struct evnt_mu_keyboard  *e_kbd;
+  struct evnt_mu_button    *e_but;
+  struct evnt_mu_mr        *e_mu1;
+  struct evnt_mu_mr        *e_mu2;
+  struct evnt_mu_mx        *e_mx;
+  struct evnt_mu_mesag     *e_mesag;
+  struct evnt_mu_timer     *e_timer;
+  struct evnt_mu_fselect   *e_fselect;
+  struct evnt_mu_pmsg      *e_pmsg;
+  long reserved[(32*4)-9];
+};
+
+struct evnt_mu_keyboard
+{
+  unsigned short scan;
+  unsigned short ascii;
+  unsigned short aes;
+  unsigned short norm;
+  unsigned short kstate;
+};
+
+struct evnt_mu_button
+{
+  short clicks;
+  short mask;
+  short state;
+  short kstate;
+  short x, y;
+};
+
+struct evnt_mu_mr
+{
+  short x, y, w, h;
+  short flag;
+};
+
+struct evnt_mu_mx
+{
+  short reserved;
+};
+
+struct evnt_mu_mesag
+{
+  short type;
+  short id_sender;
+  short len;
+  short data[16-3];
+};
+
+struct evnt_mu_timer
+{
+  long delta;
+};
+
+struct evnt_mu_pmsg
+{
+  long userlong1;
+  long userlong2;
+  short pid;
+  short reserved[16-5];
+};
+
+struct evnt_mu_fselect
+{
+  long timeout;
+  unsigned long rfds;
+  unsigned long wfds;
+  unsigned long ret;
+  long reserved[8-4];
+};
+
 #endif /* _xa_aes_h */
