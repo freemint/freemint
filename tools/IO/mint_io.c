@@ -47,7 +47,7 @@
 # include <sys/stat.h>
 
 # include <mintbind.h>
-# include "stdlib.h"
+# include "mint_io.h"
 # include "xhdi.h"
 
 
@@ -724,6 +724,14 @@ llseek (int fd, loff_t offset, int origin)
 	
 	mydev->pos = offset;
 	return mydev->pos;
+}
+
+loff_t lseek64 (int fd, loff_t offset, int origin);
+
+loff_t
+lseek64 (int fd, loff_t offset, int origin)
+{
+	return llseek (fd, offset, origin);
 }
 
 off_t
