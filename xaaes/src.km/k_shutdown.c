@@ -216,7 +216,10 @@ k_shutdown(void)
 #if GENERATE_DIAGS
 	/* Close the debug output file */
 	if (D.debug_file)
+	{
 		kernel_close(D.debug_file);
+		D.debug_file = NULL;
+	}
 #endif
 
 	t_color(G_BLACK);
@@ -242,4 +245,6 @@ k_shutdown(void)
 		v_clsvwk(C.vh);
 		mt_appl_exit(my_global_aes);
 	}
+
+	DIAGS(("leaving k_shutdown()"));
 }
