@@ -57,9 +57,10 @@ long	del_rsvfentry	(char *name);
 # define COOKIE__IDT	0x5f494454L
 # define COOKIE__AKP	0x5f414b50L
 
-/* MiNT cookies */
+/* MiNT cookies (MiNT is now TOS) */
 # define COOKIE_MiNT	0x4d694e54L
 # define COOKIE_PMMU	0x504d4d55L
+# define COOKIE__ISO	0x5f49534fL
 
 /* Some third party cookies */
 # define COOKIE_XHDI	0x58484449L
