@@ -55,8 +55,8 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *new_window;
 	XA_WIND_ATTR kind = (unsigned short)(pb->intin[0]);
 
-	CONTROL(5,1,0)	
-
+	CONTROL(5,1,0)
+	
 	if (pb->intin[0] < 0 && pb->control[1] == 6)
 		kind |= (long) pb->intin[5] << 16;
 
@@ -410,10 +410,35 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_WHEEL:
 	{
+		long o = 0, om = ~(XAWO_WHEEL);
+		short mode = -1;
+		
+		if (pb->intin[2])
+		{
+			o |= XAWO_WHEEL;
+			mode = pb->intin[3];
+			if (mode < 0 || mode > MAX_XWHLMODE)
+				mode = DEF_XWHLMODE;
+		}
+		
 		if (wind == 0)
-			client->wa_wheel = pb->intin[2];
+		{
+			client->options.wind_opts &= om;
+			client->options.wind_opts |= o;
+			if (mode != -1)
+				client->options.wheel_mode = mode;	
+		}
 		else if (w)
-			w->wa_wheel = pb->intin[2];
+		{
+			w->opts &= om;
+			w->opts |= o;
+			if (mode != -1)
+				w->wheel_mode = mode;
+		}
+		
+		if (mode != -1)
+			client->options.app_opts |= XAPP_XT_WF_SLIDE;
+
 		DIAGS(("wind_set(%d,WF_WHEEL,%d) for %s, %d, %d",
 			wind, pb->intin[2], c_owner(client), client->wa_wheel, w->wa_wheel ));
 		break;
@@ -429,6 +454,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			XA_SLIDER_WIDGET *slw = widg->stuff;
 			slw->position = bound_sl(pb->intin[2]);
+			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+				slw->rpos = bound_sl(pb->intin[3]);
 			display_widget(lock, w, widg);
 		}
 		break;
@@ -444,6 +471,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			XA_SLIDER_WIDGET *slw = widg->stuff;
 			slw->position = bound_sl(pb->intin[2]);
+			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+				slw->rpos = bound_sl(pb->intin[3]);
 			display_widget(lock, w, widg);
 		}
 		break;
@@ -1008,23 +1037,24 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		switch (cmd)
 		{
-		case WF_BOTTOM: /* Some functions may be allowed without a real window handle */
-		case WF_FULLXYWH:
-		case WF_TOP:
-		case WF_NEWDESK:
-		case WF_SCREEN:
-		case WF_XAAES: /* 'XA', idee stolen from WINX */
-			break;
-		default:
-			DIAGS(("WARNING:wind_get for %s: Invalid window handle %d", c_owner(client), wind));
-			o[0] = 0;	/* Invalid window handle, return error */
-			o[1] = 0;	/* HR 020402: clear args */
-			o[2] = 0;	/*            Prevents FIRST/NEXTXYWH loops with
+			case WF_BOTTOM: /* Some functions may be allowed without a real window handle */
+			case WF_FULLXYWH:
+			case WF_TOP:
+			case WF_NEWDESK:
+			case WF_SCREEN:
+			case WF_WHEEL:
+			case WF_XAAES: /* 'XA', idee stolen from WINX */
+				break;
+			default:
+				DIAGS(("WARNING:wind_get for %s: Invalid window handle %d", c_owner(client), wind));
+				o[0] = 0;	/* Invalid window handle, return error */
+				o[1] = 0;	/* HR 020402: clear args */
+				o[2] = 0;	/*            Prevents FIRST/NEXTXYWH loops with
 						      invalid handle from looping forever. */
-			o[3] = 0;
-			o[4] = 0;
+				o[3] = 0;
+				o[4] = 0;
 
-			return XAC_DONE;
+				return XAC_DONE;
 		}
 	}
 
@@ -1061,6 +1091,15 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 			o[0] = 0;
+		break;
+	}
+	case WF_WHEEL:
+	{
+		long opt = w ? w->opts : client->options.wind_opts;
+		short mode = w ? w->wheel_mode : client->options.wheel_mode;
+		
+		o[1] = (opt & XAWO_WHEEL) ? 1 : 0;
+		o[2] = mode;
 		break;
 	}
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
@@ -1310,6 +1349,8 @@ next:
 		{
 			slw = get_widget(w, XAW_VSLIDE)->stuff;
 			o[1] = slw->position;
+			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+				o[2] = slw->rpos;
 		}
 		else
 			o[0] = o[1] = 0;
@@ -1321,6 +1362,8 @@ next:
 		{
 			slw = get_widget(w, XAW_HSLIDE)->stuff;
 			o[1] = slw->position;
+			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+				o[2] = slw->rpos;
 		}
 		else
 			o[0] = o[1] = 0;

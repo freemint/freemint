@@ -301,7 +301,7 @@ cwhlv(void)
 	md.ty		= MOOSE_WHEEL_PREFIX;
 	md.x = md.sx	= sample_x;
 	md.y = md.sy	= sample_y;
-	md.state	= sample_wheel; //pak_head->t.whl.wheel;
+	md.state	= (unsigned char)sample_wheel; //pak_head->t.whl.wheel;
 	md.cstate	= md.state;
 	md.clicks	= sample_wclicks; //pak_head->t.whl.clicks;
 	md.kstate	= 0;

@@ -135,3 +135,74 @@ Add to your header file
         need for a wind_get(handle, WF_CURRXYWH,...) call.
  
 -------------------------------------------------------------------------------
+===============================================================================
+                       XaAES and wheel mouse handling.
+
+  This has changed a little compared to the original documentation and
+ implementation. When the wheel is on a window whose owner dont know about
+ mouse wheels at all, normal WM_ARROWED messages are sent. There is no extra
+ info added to these messages in this case, as it were in the original
+ implementation.
+
+  Currently mouse wheel events are sent to the owner of the window underneath
+ the mouse pointer in all cases except when owner of mouse_lock() is waiting
+ for MU_WHEEL.
+
+  For programmers who want to take advantage of mouse wheels in a better way,
+ here's an overview;
+
+  wind_set(handle, WF_WHEEL, mode, wheel_mode, 0, 0);
+
+  handle      Window handle, or 0 if one wants settings to apply to all windows
+              opened hereafter by the application.
+  
+  mode        0 = Turn extended wheel awareness off, 1 = Turn on.
+  
+  wheel_mode
+           XWHL_REALWHEEL ( 0 )
+              When wheel_mode is set to 0 (XWHL_REALWHEEL), XaAES will send
+              real wheel messages, constructed as follows;
+
+              msg[0] = WM_WHEEL ( 345 )
+              msg[1] = ID of sender
+              msg[2] = ...
+              msg[3] = window handle
+              msg[4] = orient
+              msg[5] = wheel ID
+              msg[6] = wheel amount
+              msg[7] = Not used, always 0
+  
+              'orient' is a bitmask where bit 0 indicates direction, and
+              bit 1 indicates orientation;
+
+               bit 0  -  0 = up or left
+                         1 = down or right
+               bit 1  -  0 = vertical (bit 0 indicates UP/DOWN)
+                         1 = horizontal (bit 0 indicates LEFT/RIGHT)
+
+              'wheel ID' contains the wheel number. 0 is wheel #1, etc..
+	      'wheel amount' holds the number of wheel-turns.
+	      
+           XWHL_AROWWHEEL ( 1 ) This is the default wheel_mode set if the
+              value passed is outside the available range. When this mode is
+              selected, normal WM_ARROWED messages are sent upon each wheel
+              turn. With this mode, WM_ARROWED messages are send even when
+              the window has no ARROW gadgets.
+
+           XWHL_SLDRWHEEL ( 2 )
+              When wheel_mode is set to 2 (XHWL_SLDRWHEEL), XaAES converts
+              wheel turns into slider movements. XaAES sends standard
+              WM_VSLID/WM_HSLID messages reflecting the wheel turns.
+              For this to work, WF_VSLIDE/WF_HSLIDE wind_get/set() modes have
+              been extended. When the application gets the WM_xSLIDE message,
+              it must pass back the position from the message unmodified
+              together with your modified position;
+
+              wind_set(handle, WF_[V,H]SLIDE, postion, unmodified, 0, 0);
+
+              Even if the application snaps slider movements and finds that
+              the slider does not move, it has to pass back the unmodified
+              slider position via wind_set(). In cases where the original
+              slider position match the prevsiously set position, XaAES does
+              not set or redraw the slider. But it needs to collect the 'real'
+              position of the slider for wheel -> slider calculations to work.

@@ -44,6 +44,7 @@
 #define MAX_WINDOW_NAME 200
 #define MAX_WINDOW_INFO 200
 
+#define WM_WHEEL  345
 
 /* forward declarations */
 struct task_administration_block;
@@ -126,9 +127,11 @@ struct options
 	short thinframe;		/* -1: keep colour frame thin
 					 * +1: make a thicker frame for wasier border grabbing and sizing. */
 	short wheel_page;		/* how many wheel clicks for a page */
-
+	short wheel_mode;
+	long wind_opts;			/* Default window options - see struct xa_window.opts */
+	long app_opts;
 	long half_screen;
-	IFDIAG(enum debug_item point[D_max];)
+	//IFDIAG(enum debug_item point[D_max];)
 };
 
 struct opt_list
@@ -499,6 +502,8 @@ struct keyqueue
 	struct rawkey	key;
 };
 
+#define XAPP_XT_WF_SLIDE	0x00000001	/**/
+
 /* Main client application descriptor */
 struct xa_client
 {
@@ -511,7 +516,7 @@ struct xa_client
 
 	bool apterm;			/* true if application understands 
 	AP_TERM. */
-	bool wa_wheel;			/* The client wants WA_HEEL messages. */
+	//bool wa_wheel;			/* The client wants WA_HEEL messages. */
 
 	struct xa_aesmsg_list *msg;	 /* Pending AES messages */
 	struct xa_aesmsg_list *rdrw_msg; /* WM_REDRAW messages */
@@ -774,6 +779,7 @@ struct xa_slider_widget
 {
 	short position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
 	short length;			/* Length (0-1000(SL_RANGE)) */
+	short rpos;
 	RECT r;				/* physical */
 };
 typedef struct xa_slider_widget XA_SLIDER_WIDGET;
@@ -816,7 +822,14 @@ typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 #define XAWS_FULLED	0x0020
 
 /* Window options */
-#define XAWO_NAES_FF	0x00000001
+#define XAWO_NAES_FF	0x00000001	/**/
+#define XAWO_WHEEL	0x00000002	/* Windows want WHEEL messages */
+
+#define XWHL_REALWHEEL	0	/* */
+#define XWHL_AROWWHEEL  1
+#define XWHL_SLDRWHEEL  2
+#define MAX_XWHLMODE	2
+#define DEF_XWHLMODE	XWHL_AROWWHEEL
 
 /* Window Descriptor */
 struct xa_window
@@ -827,10 +840,11 @@ struct xa_window
 	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
 	XA_WIND_ATTR save_widgets;	/* Remember active_widgets if iconified */
 
-	long opts;
+	long opts;			/* Window options. XAWO_xxx */
+	short wheel_mode;		/* mouse wheel mode */
 	bool nolist;			/* If true, dont put in the window_list. For embedded listboxes mainly. */
 	bool thinwork;			/* if true and colour then work := single line box */
-	bool wa_wheel;			/* Client wants to receive WA_WHEEL */
+	//bool wa_wheel;			/* Client wants to receive WA_WHEEL */
 	bool outline_adjust;		/* For outlined root object put ny XaAES in a window:
 					 * let the window draw the 3 pixel space that emanates from construction. */
 	bool dial_followed;		/* false immediate after opening a dial window.
