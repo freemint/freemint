@@ -22,8 +22,6 @@
 # ifndef _lp_h
 # define _lp_h
 
-# define __KERNEL_XDD__
-
 # include "mint/mint.h"
 # include "libkern/libkern.h"
 

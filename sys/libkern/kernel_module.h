@@ -664,6 +664,9 @@ INLINE long s_hutdown(long restart)
 INLINE long s_system(int mode, ulong arg1, ulong arg2)
 { return ((long _cdecl (*)(int, ulong, ulong)) _s_system)(mode, arg1, arg2); }
 
+INLINE long p_setpriority(int which, int who, int prio)
+{ return ((long _cdecl (*)(int, int, int)) _p_setpriority)(which, who, prio); }
+
 INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
 { return ((long _cdecl (*)(long *, ulong, void *, ulong *, const void *, ulong)) _p_sysctl)(name, namelen, old, oldlenp, new, newlen); }
 
@@ -747,6 +750,15 @@ INLINE long p_sysctl(long *name, ulong namelen, void *old, ulong *oldlenp, const
  */
 
 # define load_modules		(*KENTRY->vec_module.load_modules)
+
+
+/*
+ * kentry_cnf
+ */
+
+# define parse_cnf		(*KENTRY->vec_cnf.parse_cnf)
+# define parse_include		(*KENTRY->vec_cnf.parse_include)
+# define parser_msg		(*KENTRY->vec_cnf.parser_msg)
 
 
 /*

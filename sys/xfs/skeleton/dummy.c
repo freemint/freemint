@@ -44,8 +44,6 @@
  * 
  */
 
-# define __KERNEL_XFS__
-
 # include "mint/mint.h"
 
 # include "mint/dcntl.h"
