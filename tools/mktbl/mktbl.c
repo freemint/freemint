@@ -64,11 +64,50 @@
  */
 
 # include <ctype.h>
-# include <malloc.h>
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
 # include <unistd.h>
+
+/* Own getdelim(). The `n' buffer size must definitely be bigger than 0!
+ */
+static short eof = 0;
+
+static long
+getdelim(char **lineptr, size_t *n, int terminator, FILE *stream)
+{
+	int ch;
+	char *buf;
+	size_t len = 0;
+
+	buf = *lineptr;
+
+	while ((ch = fgetc(stream)) != -1)
+	{
+		if ((len + 1) >= *n)
+		{
+			buf = realloc(buf, len + 256L);
+			*n += 256L;
+			*lineptr = buf;
+		}
+
+		if (ch == terminator)
+			break;
+
+		buf[len++] = (char)ch;
+	}
+
+	if (eof && ch == -1)
+		return -1;
+	else if (eof && ch != -1)
+		eof = 0;
+	else if (!eof && ch == -1)
+		eof = 1;
+
+	buf[len] = 0;	
+
+	return 0;
+}
 
 int
 main(int argc, char **argv)
@@ -122,7 +161,7 @@ main(int argc, char **argv)
 
 	do
 	{
-		r = getline(&line, &buf, fd);
+		r = getdelim(&line, &buf, '\n', fd);
 		if (r > 1 && line[0] != ';' && (ln = strstr(line, "dc.")))
 		{
 			w = strncmp(ln, "dc.b", 4);
