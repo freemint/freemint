@@ -13,6 +13,7 @@
 # include "time.h"
 
 # include "libkern/libkern.h"
+# include "arch/timer.h"
 
 # include "mfp.h"
 # include "pipefs.h"
@@ -21,9 +22,6 @@
 
 # include <osbind.h>
 
-
-# define _hz_200	(ulong *) 0x000004ba
-ulong *hz_200;
 
 ushort timestamp;
 ushort datestamp;
@@ -367,7 +365,6 @@ init_time ()
 		timestamp = tostime & 0xffff;
 	}
 	
-	hz_200 = _hz_200;
 	sys_lastticks = *hz_200;
 	
 	xtime.tv_sec = unixtime (timestamp, datestamp);

@@ -251,6 +251,7 @@
 
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
+# include "arch/timer.h"
 
 # include "dev-null.h"
 # include "kmemory.h"
@@ -729,8 +730,7 @@ add_timer_randomness (struct random_bucket *r, struct timer_rand_state *state, u
 # ifdef RANDOM_BENCHMARK
 	begin_benchmark (&timer_benchmark);
 # endif
-# define _hz_200 (*(ulong *) 0x000004baL)
-	time = _hz_200;
+	time = jiffies;
 	
 	fast_add_entropy_words (r, (ulong) num, time);
 	
