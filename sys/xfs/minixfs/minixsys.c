@@ -908,7 +908,7 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 			d_inode riptemp;
 			ret = is_parent (newdir->index, finode, olddir->dev);
 			if (ret < 0) return ret;
-			if (ret) return EACCES;
+			if (ret) return EINVAL;
 			read_inode (newdir->index, &riptemp, newdir->dev);
 			if (riptemp.i_nlinks == MINIX2_LINK_MAX) return EACCES;
 			TRACE (("Minix-FS (%c): valid directory move", olddir->dev+'A'));
