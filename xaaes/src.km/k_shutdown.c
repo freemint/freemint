@@ -136,12 +136,12 @@ k_shutdown(void)
 	/* empty alert scrollbar */
 	{
 		OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		empty_scroll_list(form, SYSALERT_LIST, -1);
+		if (form) empty_scroll_list(form, SYSALERT_LIST, -1);
 	}
 
 	/* To demonstrate the working on multiple resources. */
-	FreeResources(C.Aes, 0);/* first:  widgets */
-	FreeResources(C.Aes, 0);/* then:   big resource */
+	FreeResources(C.Aes, 0);/* first: widgets */
+	FreeResources(C.Aes, 0);/* then: big resource */
 
 	/* just to be sure */
 	if (C.button_waiter == C.Aes)
@@ -154,7 +154,9 @@ k_shutdown(void)
 	if (C.Aes->attach)
 		kfree(C.Aes->attach);
 
-	kfree(C.Aes->mnu_clientlistname);
+	if (C.Aes->mnu_clientlistname)
+		kfree(C.Aes->mnu_clientlistname);
+
 	free_wtlist(C.Aes);
 	kfree(C.Aes);
 
@@ -196,9 +198,6 @@ k_shutdown(void)
 
 	DIAGS(("Bye!"));
 	DIAGS((""));
-
-	if (log)
-		kernel_close(log);
 
 #if GENERATE_DIAGS
 	/* Close the debug output file */

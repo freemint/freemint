@@ -61,6 +61,9 @@ xaaes_kfree(void *addr, const char *func)
 {
 	register unsigned long *tmp = addr;
 
+	if (!addr)
+		FATAL("xaaes_kfree(NULL) from %s", func);
+
 	tmp--;
 	memory -= *tmp;
 
