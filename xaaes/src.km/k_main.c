@@ -391,7 +391,7 @@ struct display_alert_data
 static void
 display_alert(struct proc *p, long arg)
 {
-	if (update_locked())
+	if (C.update_lock)
 	{
 		/* we need to delay */
 		struct timeout *t;

@@ -939,7 +939,11 @@ draw_window(enum locks lock, struct xa_window *wind)
 	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
 
 	if (C.update_lock && C.update_lock != wind->owner)
+	{
+		DIAG((D_wind, wind->owner, "draw_window %d for %s, updatelock (%d for %s)",
+			wind->handle, wind->owner->name, C.updatelock_count, C.update_lock->name));
 		return;
+	}
 
 	DIAG((D_wind, wind->owner, "draw_window %d for %s to %d/%d,%d/%d",
 		wind->handle, w_owner(wind),
