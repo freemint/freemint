@@ -328,8 +328,6 @@ XA_button_event(LOCK lock, struct moose_data *md, bool widgets)		/* HR at the mo
 	XA_CLIENT *client;
 	XA_WINDOW *wind;
 
-/* HR: 19 october 2000; switched over to VMOOSE, the vdi vector based moose. */
-
 	DIAG((D_button,NULL,"XA_button_event: %d/%d, state=0x%x, clicks=%d\n", md->x, md->y, md->state, md->clicks));
 
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
@@ -659,12 +657,13 @@ XA_move_event(LOCK lock, struct moose_data *md)
 
 /*
  * HR: Generalization of focus determination.
- *      Each step checks MU_KEYBD except the first.
- *		The top or focus window can have a keypress handler in stead of the XAWAIT_KEY flag.
+ *     Each step checks MU_KEYBD except the first.
+ *     The top or focus window can have a keypress handler
+ *     instead of the XAWAIT_KEY flag.
  *
- *       first:    check focus keypress handler (no MU_KEYBD or update_lock needed)
- *       second:   check update lock
- *       last:     check top or focus window
+ *       first:  check focus keypress handler (no MU_KEYBD or update_lock needed)
+ *       second: check update lock
+ *       last:   check top or focus window
  *
  *  240401: Interesting bug found and killed:
  *       If the update lock is set, then the key must go to that client,
