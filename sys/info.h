@@ -165,13 +165,13 @@ extern const char *MSG_init_menu_norn;
 extern const char *MSG_init_bootmenu;
 extern const char *MSG_init_menuwarn;
 extern const char *MSG_init_hitanykey;
+extern const char *MSG_must_be_auto;
 # ifdef VERBOSE_BOOT
 extern const char *MSG_init_mp;
 extern const char *MSG_init_mp_enabled;
 extern const char *MSG_init_mp_disabled;
 # endif
 extern const char *MSG_init_delay_loop;
-extern const char *MSG_init_specify_prg;
 extern const char *MSG_couldnt_run_init;
 
 /* keyboard.c */

@@ -48,8 +48,8 @@
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
 # include "dossig.h"		/* p_kill() */
-# include "global.h"		/* tosver, mch */
-# include "init.h"		/* boot_printf(), *sysdir */
+# include "global.h"		/* tosver, mch, *sysdir */
+# include "init.h"		/* boot_printf() */
 # include "info.h"		/* messages */
 # include "k_exec.h"		/* sys_pexec() */
 # include "k_fds.h"		/* fp_alloc() */

@@ -39,8 +39,8 @@
 # include "libkern/libkern.h"	/* strcpy(), strcat() */
 
 # include "console.h"		/* c_conws() */
+# include "global.h"		/* *sysdir */
 # include "info.h"		/* messages */
-# include "init.h"		/* *sysdir */
 # include "k_fds.h"		/* FP_ALLOC() */
 # include "kmemory.h"		/* kmalloc(), kfree() */
 # include "proc.h"		/* rootproc */
