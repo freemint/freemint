@@ -731,14 +731,9 @@ p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			else
 			{
 				if (!d_getcwd (&tmp[2], tmp[0] - ((tmp[0] <= 'Z'+6) ? 'A' : '1'-26) + 1, PATH_MAX-2))
-				{
 					ksprintf (p->fname, sizeof (p->fname), "%s\\%s", tmp, source);
-				}
 				else
-				{
 					ksprintf (p->fname, sizeof (p->fname), "%s", source);
-				}
-
 			}
 			
 			status = make_real_cmdline (p);
@@ -838,7 +833,11 @@ p_exec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 		/* turn on tracing for the new process */
 		if (p->ptracer)
+		{
 			p->ctxt[CURRENT].ptrace = 1;
+			// XXX - hack alert - handled by context_*
+			// post_sig (p, SIGTRAP);
+		}
 		
 		/* set the time/date stamp of u:\proc */
 		procfs_stmp = xtime;
@@ -1442,9 +1441,11 @@ p_waitpid(int pid, int nohang, long *rusage)
 	PROC *p, *q;
 	int ourpid, ourpgrp;
 	int found;
-
+	
+	
 	TRACE(("Pwaitpid(%d, %d, %lx)", pid, nohang, rusage));
-
+	
+	
 	ourpid = curproc->pid;
 	ourpgrp = curproc->pgrp;
 	
@@ -1469,17 +1470,19 @@ p_waitpid(int pid, int nohang, long *rusage)
 			{
 				found++;
 				if (p->wait_q == ZOMBIE_Q || p->wait_q == TSR_Q)
-				{
 					break;
-				}
-
+				
 				/* p->wait_cond == 0 if a stopped process
 				 * has already been waited for
 				 */
-				if (p->wait_q == STOP_Q && p->wait_cond)
+				if ((p->wait_q == STOP_Q) && p->wait_cond)
 				{
 					if ((nohang & 2)
-						|| ((p->wait_cond&0x1f00) == (SIGTRAP<<8)))
+# if 0
+						|| ((p->wait_cond & 0x1f00) == (SIGTRAP << 8)))
+# else
+						|| p->ptracer)
+# endif
 					{
 						break;
 					}
@@ -1492,7 +1495,10 @@ p_waitpid(int pid, int nohang, long *rusage)
 			if (found)
 			{
 				if (nohang & 1)
+				{
+					TRACE(("Pwaitpid(%d, %d) -> 0 [nohang & 1]", pid, nohang));
 					return 0;
+				}
 				
 				if (curproc->pid)
 					TRACE(("Pwaitpid: going to sleep"));
@@ -1503,9 +1509,7 @@ p_waitpid(int pid, int nohang, long *rusage)
 			{
 				/* Don't report that for WNOHANG.  */
 				if (!(nohang & 1))
-				{
 					DEBUG(("Pwaitpid: no children found"));
-				}
 				
 				return ENOENT;
 			}
@@ -1554,6 +1558,8 @@ p_waitpid(int pid, int nohang, long *rusage)
 	if (p->wait_q == STOP_Q)
 	{
 		p->wait_cond = 0;
+		
+		TRACE(("Pwaitpid(%d, %d) -> %lx [p->wait_q == STOP_Q]", pid, nohang, r));
 		return r;
 	}
 
@@ -1567,7 +1573,8 @@ p_waitpid(int pid, int nohang, long *rusage)
 		if (curproc == p->ptracer)
 		{
 			/* deliver the signal to the tracing process first */
-			TRACE(("Pwaitpid(ptracer): returning status to tracing process"));
+			TRACE(("Pwaitpid(ptracer): returning status %lx to tracing process", r));
+			
 			p->ptracer = NULL;
 			if (p->ppid != -1)
 				return r;
@@ -1575,7 +1582,8 @@ p_waitpid(int pid, int nohang, long *rusage)
 		else
 		{
 			/* Hmmm, the real parent got here first */
-			TRACE(("Pwaitpid(ptracer): returning status to parent process"));
+			TRACE(("Pwaitpid(ptracer): returning status %lx to parent process", r));
+			
 			p->ppid = -1;
 			return r;
 		}
@@ -1585,6 +1593,8 @@ p_waitpid(int pid, int nohang, long *rusage)
 	if (p->wait_q == TSR_Q)
 	{
 		p->ppid = -1;
+		
+		TRACE(("Pwaitpid(%d, %d) -> %lx [p->wait_q == TSR_Q]", pid, nohang, r));
 		return r;
 	}
 
@@ -1615,10 +1625,11 @@ p_waitpid(int pid, int nohang, long *rusage)
 		q->gl_next = p->gl_next;
 		p->gl_next = 0;
 	}
-
+	
 	/* free the PROC structure */
 	dispose_proc(p);
-
+	
+	TRACE(("Pwaitpid(%d, %d) -> %lx [end]", pid, nohang, r));
 	return r;
 }
 
