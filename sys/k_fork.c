@@ -77,6 +77,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	 */
 	p2->ppid = p1->pid;
 	p2->pid = newpid ();
+	p2->p_flag = 0;
 	p2->sigpending = 0;
 	p2->nsigs = 0;
 	p2->sysstack = (long) (p2->stack + STKSIZE - 12);
