@@ -30,8 +30,8 @@
 # include <string.h>
 
 
-static inline __u32
-__asm_bswap32 (register __u32 x)
+static inline ulong
+__asm_bswap32 (register ulong x)
 {
 	__asm__
 	(
@@ -45,10 +45,10 @@ __asm_bswap32 (register __u32 x)
 	return x;
 }
 
-static inline __u32
-__const_bswap32 (register __u32 x)
+static inline ulong
+__const_bswap32 (register ulong x)
 {
-	register __u32 r;
+	register ulong r;
 	
 	r  = (x << 24) & 0xff000000;
 	r |= (x <<  8) & 0x00ff0000;
@@ -58,8 +58,8 @@ __const_bswap32 (register __u32 x)
 	return r;
 }
 
-static inline __u32
-bswap32 (register __u32 x)
+static inline ulong
+bswap32 (register ulong x)
 {
 	return (__builtin_constant_p (x) ? __const_bswap32 (x) : __asm_bswap32 (x));
 }
@@ -102,13 +102,13 @@ MD5Init (struct MD5Context *ctx)
 void
 MD5Update (struct MD5Context *ctx, uchar const *buf, ushort len)
 {
-	__u32 t;
+	ulong t;
 	
 	/* Update bitcount */
 	t = ctx->bits[0];
-	if ((ctx->bits[0] = t + ((__u32) len << 3)) < t)
+	if ((ctx->bits[0] = t + ((ulong) len << 3)) < t)
 		ctx->bits[1]++;		/* Carry from low to high */
-	ctx->bits[1] += (__u32) len >> 29;
+	ctx->bits[1] += (ulong) len >> 29;
 	
 	/* Bytes already in shsInfo->data */
 	t = (t >> 3) & 0x3f;
@@ -126,7 +126,7 @@ MD5Update (struct MD5Context *ctx, uchar const *buf, ushort len)
 		}
 		memcpy (p, buf, t);
 		byteReverse ((ulong *) ctx->in, 16);
-		MD5Transform (ctx->buf, (__u32 *) ctx->in);
+		MD5Transform (ctx->buf, (ulong *) ctx->in);
 		buf += t;
 		len -= t;
 	}
@@ -136,7 +136,7 @@ MD5Update (struct MD5Context *ctx, uchar const *buf, ushort len)
 	{
 		memcpy (ctx->in, buf, 64);
 		byteReverse ((ulong *) ctx->in, 16);
-		MD5Transform (ctx->buf, (__u32 *) ctx->in);
+		MD5Transform (ctx->buf, (ulong *) ctx->in);
 		buf += 64;
 		len -= 64;
 	}
@@ -173,7 +173,7 @@ MD5Final (uchar digest[16], struct MD5Context *ctx)
 		/* Two lots of padding:  Pad the first block to 64 bytes */
 		bzero (p, count);
 		byteReverse ((ulong *) ctx->in, 16);
-		MD5Transform (ctx->buf, (__u32 *) ctx->in);
+		MD5Transform (ctx->buf, (ulong *) ctx->in);
 		
 		/* Now fill the next block with 56 bytes */
 		bzero (ctx->in, 56);
@@ -186,10 +186,10 @@ MD5Final (uchar digest[16], struct MD5Context *ctx)
 	byteReverse ((ulong *) ctx->in, 14);
 	
 	/* Append length in bits and transform */
-	((__u32 *) ctx->in)[14] = ctx->bits[0];
-	((__u32 *) ctx->in)[15] = ctx->bits[1];
+	((ulong *) ctx->in)[14] = ctx->bits[0];
+	((ulong *) ctx->in)[15] = ctx->bits[1];
 	
-	MD5Transform (ctx->buf, (__u32 *) ctx->in);
+	MD5Transform (ctx->buf, (ulong *) ctx->in);
 	byteReverse (ctx->buf, 4);
 	memcpy (digest, ctx->buf, 16);
 	bzero (ctx, sizeof (ctx));	/* In case it's sensitive */
@@ -211,9 +211,9 @@ MD5Final (uchar digest[16], struct MD5Context *ctx)
  * the data and converts bytes into longwords for this routine.
  */
 void
-MD5Transform (__u32 buf[4], __u32 const in[16])
+MD5Transform (ulong buf[4], ulong const in[16])
 {
-	register __u32 a, b, c, d;
+	register ulong a, b, c, d;
 	
 	a = buf[0];
 	b = buf[1];

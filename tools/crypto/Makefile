@@ -7,7 +7,7 @@ CC = gcc -pipe
 DEFINITIONS = 
 WARN = -Wall -Wmissing-prototypes -Winline
 OPT = -fomit-frame-pointer -O2
-CFLAGS = -mshort $(MODEL) $(OPT) $(DEFINITIONS) $(WARN)
+CFLAGS = $(MODEL) $(OPT) $(DEFINITIONS) $(WARN)
 RANLIB = ranlib
 CRLF = crlf -s
 

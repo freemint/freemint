@@ -38,8 +38,8 @@ int	io_init		(void);
 int	io_open		(int64_t dev);
 int	io_close	(int handle);
 int	io_ioctrl	(int handle, int mode, void *buf);
-int32_t	io_read		(int handle, void *buf, int32_t size);
-int32_t	io_write	(int handle, void *buf, int32_t size);
+long	io_read		(int handle, void *buf, long size);
+long	io_write	(int handle, void *buf, long size);
 int64_t	io_seek		(int handle, int whence, int64_t where);
 
 
