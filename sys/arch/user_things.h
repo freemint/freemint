@@ -37,6 +37,10 @@
 # include "mint/mint.h"
 # include "mint/slb.h"
 
+long *user_header;
+
+void terminateme(int code);
+
 void sig_return (void);
 void *pc_valid_return;
 
