@@ -166,7 +166,7 @@ mouse_ok(struct xa_client *client)
 	/* mouse locked by another client */
 	return false;
 }
-
+#if 0
 static bool
 still_button(enum locks lock, struct xa_client *client, const short *o)
 {
@@ -179,6 +179,12 @@ still_button(enum locks lock, struct xa_client *client, const short *o)
 
 	check_mouse(client, &b, &x, &y);
 	//vq_key_s(C.vh, &mu_button.ks);
+
+	/*
+	 * Still clicks?
+	*/
+	if (o[0] && !mu_button.newc)
+		return false;
 
 	if (!o[2])
 		return true;
@@ -196,6 +202,7 @@ still_button(enum locks lock, struct xa_client *client, const short *o)
 	return false;
 
 }
+#endif
 
 #if GENERATE_DIAGS
 static char *xev[] = {"KBD","BUT","M1","M2","MSG","TIM","WHL","MX","NKBD","9","10","11","12","13","14","15"};
@@ -317,31 +324,37 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
+			bool bev = false;
+
 			DIAG((D_button, NULL, "still_button multi?? o[0,2] "
-				"%x,%x mu_button.got %d, lock %d, Mbase %lx, active.widg %lx\n",
-				pb->intin[1], pb->intin[3], mu_button.got,
+				"%x,%x newc/newr %d/%d, lock %d, Mbase %lx, active.widg %lx\n",
+				pb->intin[1], pb->intin[3], mu_button.newc, mu_button.newr,
 				mouse_locked() ? mouse_locked()->p->pid : 0,
 				C.menu_base, widget_active.widg));
 
-			if (still_button(lock, client, pb->intin + 1))
+			DIAG((D_button, NULL, "evnt_multi: Check if button event"));
+
+			if (mu_button.newc)
 			{
-				DIAG((D_button, NULL, "still_button multi %d,%d/%d",
-					mu_button.b, mu_button.x, mu_button.y));
-
-				if (is_bevent(mu_button.cb, 0, pb->intin + 1, 2))
-				{
-					DIAG((D_button, NULL, "still button %d: fall_through |= MU_BUTTON",
-						mu_button.b));					
-
-					fall_through |= MU_BUTTON;
-					mu_button.got = true;	/* Mark button state processed. */
-				}
+				bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin + 1, 2);
+				mu_button.newc = 0;
 			}
+			else if (mu_button.newr)
+			{
+				bev = is_bevent(mu_button.cb, 1, pb->intin + 1, 2);
+				mu_button.newr = 0;
+			}
+			else if (!(pb->intin[1] & 0xff))
+				bev = is_bevent(mu_button.cb, 0, pb->intin + 1, 2);
+
+			if (bev == true)
+				fall_through |= MU_BUTTON;
+
 		}
 
 		Sema_Dn(pending);
 
-		if ((fall_through&MU_BUTTON) == 0)
+		if ((fall_through & MU_BUTTON) == 0)
 		{
 			new_waiting_for |= MU_BUTTON;		/* Flag the app as waiting for button changes */
 			pb->intout[0] = 0;
@@ -561,24 +574,33 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 	{
-		DIAG((D_button,NULL,"still_button? o[0,2] %x,%x mu_button.got %d, lock %d, Mbase %lx, active.widg %lx",
-			pb->intin[0], pb->intin[2], mu_button.got,
+		bool bev = false;
+
+		DIAG((D_button,NULL,"still_button? o[0,2] %x,%x newc/newr %d/%d, lock %d, Mbase %lx, active.widg %lx",
+			pb->intin[0], pb->intin[2], mu_button.newc, mu_button.newr,
 			mouse_locked() ? mouse_locked()->p->pid : 0,
 			C.menu_base, widget_active.widg));
 
-		if (still_button(lock, client, pb->intin))
+		if (mu_button.newc)
 		{
-			DIAG((D_button,NULL,"still_button %d,%d/%d", mu_button.b, mu_button.x, mu_button.y));
-			if (is_bevent(mu_button.cb, 0, pb->intin, 4))
-			{
-				DIAG((D_button,NULL,"    --    implicit button %d",mu_button.b));
-				multi_intout(client, pb->intout, 0);		/* 0 : for evnt_button */
-				pb->intout[0] = 1;
-				pb->intout[3] = mu_button.cb;
-				mu_button.got = true;
-				Sema_Dn(pending);
-				return XAC_DONE;
-			}
+			bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin, 2);
+			mu_button.newc = 0;
+		}
+		else if (mu_button.newr)
+		{
+			bev = is_bevent(mu_button.cb, 1, pb->intin, 2);
+			mu_button.newr = 0;
+		}
+		else if (!(pb->intin[0] & 0xff))
+			bev = is_bevent(mu_button.cb, 0, pb->intin, 2);
+
+		if (bev == true)
+		{
+			DIAG((D_button, NULL, "evnt_multi: Check if button event"));
+			multi_intout(client, pb->intout, 0);
+			pb->intout[0] = 1;
+			Sema_Dn(pending);
+			return XAC_DONE;
 		}
 	}
 

@@ -146,7 +146,10 @@ void
 cXA_deliver_button_event(enum locks lock, struct c_event *ce)
 {
 	DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s", ce->client->name));
-	button_event(lock, ce->client, &ce->md);
+	if (ce->client->waiting_for & MU_BUTTON)
+		button_event(lock, ce->client, &ce->md);
+	else
+		add_pending_button(lock, ce->client);
 }
 
 void
