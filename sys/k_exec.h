@@ -35,8 +35,8 @@
 
 void rts (void); /* XXX */
 
-long _cdecl sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3);
+long _cdecl sys_pexec (short mode, const void *ptr1, const void *ptr2, const void *ptr3);
 long _cdecl create_process(const void *ptr1, const void *ptr2, const void *ptr3,
-			  struct proc **pret, long stack);
+			   struct proc **pret, long stack);
 
 # endif /* _k_exec_h */

@@ -270,8 +270,8 @@ struct kentry_proc
 	void  _cdecl (*detach_extension)(struct proc *p, long ident);
 
 	/* internal setuid/setgid/setlimit */
-	long _cdecl (*proc_setuid)(struct proc *p, unsigned int uid);
-	long _cdecl (*proc_setgid)(struct proc *p, unsigned int gid);
+	long _cdecl (*proc_setuid)(struct proc *p, unsigned short uid);
+	long _cdecl (*proc_setgid)(struct proc *p, unsigned short gid);
 };
 #define DEFAULTS_kentry_proc \
 { \

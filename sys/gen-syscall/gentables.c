@@ -115,14 +115,14 @@ generate_tab(FILE *out, struct systab *tab, const char *prefix)
 			{
 				char *name = lowercase(call->name);
 				
-				fprintf(out, "sys_%s", name);
+				fprintf(out, "(Func) sys_%s", name);
 				
 				free(name);
 			}
 			else if (is_passthrough_syscall(call))
 				fprintf(out, "NULL");
 			else
-				fprintf(out, "sys_enosys");
+				fprintf(out, "       sys_enosys");
 		}
 		else
 			/* unspecified -> ENOSYS */
@@ -214,6 +214,12 @@ main(int argc, char **argv)
 		fprintf(f, "# define _syscalls_h\n\n");
 		fprintf(f, "# include \"mint/mint.h\"\n");
 		fprintf(f, "# include \"mint/mem.h\"\n");
+		fprintf(f, "# include \"mint/msg.h\"\n");
+		fprintf(f, "# include \"mint/sem.h\"\n");
+		fprintf(f, "# include \"mint/shm.h\"\n");
+		fprintf(f, "# include \"mint/signal.h\"\n");
+		fprintf(f, "# include \"mint/socket.h\"\n");
+		fprintf(f, "# include \"mint/time.h\"\n");
 		fprintf(f, "\n");
 		fprintf(f, "\n");
 		fprintf(f, "extern Func dos_tab[];\n");
@@ -253,7 +259,7 @@ main(int argc, char **argv)
 		fprintf(f, "# include \"syscalls.h\"\n\n");
 		
 		fprintf(f, "\n");
-		fprintf(f, "static long\n");
+		fprintf(f, "static long _cdecl\n");
 		fprintf(f, "sys_enosys(void)\n");
 		fprintf(f, "{\n");
 		fprintf(f, "\treturn ENOSYS;\n");
