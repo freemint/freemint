@@ -22,6 +22,11 @@ distclean: distclean-recursive
 	rm -f foobar foo bar baz junk schrott muell
 	rm -rf .deps $(GENFILES)
 
+strip: strip-recursive
+ifneq "$(TARGET)" ""
+	-$(STRIP) $(TARGET)
+endif
+
 install: all-here install-recursive
 
 uninstall: uninstall-recursive
@@ -51,7 +56,7 @@ distdir: $(DISTFILES) distdir-local
 distdir-local:
 
 all-recursive clean-recursive bakclean-recursive distclean-recursive \
-install-recursive uninstall-recursive dist-recursive:
+install-recursive uninstall-recursive dist-recursive strip-recursive:
 	@set fnord $(MAKEFLAGS); amf=$$2; \
 	list='$(SUBDIRS)'; for subdir in $$list; do \
 	  target=`echo $@ | sed s/-recursive//`; \
