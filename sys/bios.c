@@ -231,6 +231,7 @@ sys_b_setexc (int number, long vector)
 			raise (SIGSYS);
 			return EPERM;
 		}
+# ifndef NO_MMU
 		else
 		{
 			/* What about this: a program can only change an
@@ -256,6 +257,7 @@ sys_b_setexc (int number, long vector)
 				}
 			}
 		}
+# endif
 	}
 
 	place = (long *)(((long) number) << 2);
