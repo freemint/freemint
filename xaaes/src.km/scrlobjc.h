@@ -3,9 +3,9 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
- * A multitasking AES replacement for MiNT
+ * A multitasking AES replacement for FreeMiNT
  *
  * This file is part of XaAES.
  *
@@ -24,8 +24,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _SCRLOBJC_H_
-#define _SCRLOBJC_H_
+#ifndef _scrlobjc_h
+#define _scrlobjc_h
+
+#include "global.h"
 
 int set_scroll(struct xa_client *client, OBJECT *form, int objc);
 bool add_scroll_entry(OBJECT *form, int objc, OBJECT *icon, void *text, SCROLL_ENTRY_TYPE flag);
@@ -46,4 +48,4 @@ SCROLL_INFO *set_slist_object(
 int scrl_cursor(SCROLL_INFO *list, ushort keycode);
 void free_scrollist(SCROLL_INFO *list);
 
-#endif
+#endif /* _scrlobjc_h */

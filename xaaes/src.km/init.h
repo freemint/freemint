@@ -5,7 +5,7 @@
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
  *
- * A multitasking AES replacement for MiNT
+ * A multitasking AES replacement for FreeMiNT
  *
  * This file is part of XaAES.
  *
