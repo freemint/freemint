@@ -10,6 +10,7 @@ COBJS = \
 	info_mach.c \
 	init_mach.c \
 	kernfs_mach.c \
+	mprot000.c \
 	mprot030.c \
 	mprot040.c \
 	process_reg.c \
