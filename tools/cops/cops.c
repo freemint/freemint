@@ -394,31 +394,18 @@ static void
 init_cpx(char *file_path, char *file_name, short inactive)
 {
 	CPX_DESC *cpx_desc;
+	size_t cpx_desc_len = sizeof(CPX_DESC) + strlen(file_name) + 1;
 
-	cpx_desc = (CPX_DESC *) malloc(sizeof(CPX_DESC) + strlen(file_name) + 1);
-
+	cpx_desc = malloc(cpx_desc_len);
 	if (cpx_desc)
 	{
 		void *addr;
 		long size;
-		
-		cpx_desc->next = 0L;
-		
-		cpx_desc->start_of_cpx = 0L;
-		cpx_desc->end_of_cpx = 0L;
-		cpx_desc->sp_memory = 0L;
 
-		cpx_desc->info = 0L;
-		cpx_desc->dialog = 0L;
-		cpx_desc->tree = 0L;
-		
-		cpx_desc->whdl = 0;
-		cpx_desc->is_evnt_cpx = 0;
-		cpx_desc->msg = 0L;
+		memset(cpx_desc, 0, cpx_desc_len);
+
 		cpx_desc->button = -1;
 
-		cpx_desc->selected = 0;
-		cpx_desc->flags = 0;
 		/* CPZ? */
 		if (inactive)
 			cpx_desc->flags |= CPXD_INACTIVE;
@@ -431,7 +418,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 		cpx_desc->obfix_cnt = 0;
 		cpx_desc->box_width = -1;
 		cpx_desc->box_height = -1;
-		
+
 		strcpy(cpx_desc->file_name, file_name);
 
 		cpx_desc->xctrl_pb = xctrl_pb; /* Parameterblock fuer CPX kopieren */
