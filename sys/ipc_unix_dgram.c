@@ -90,7 +90,7 @@ check:
 	dstdata = un_lookup (index, so->type);
 	if (!dstdata)
 	{
-		DEBUG (("unix: unix_send: destination not found"));
+		DEBUG (("unix_dgram_send: destination not found"));
 		return EINVAL;
 	}
 	
@@ -101,14 +101,14 @@ check:
 	if (dstdata->flags & UN_ISCONNECTED
 		&& dstdata->index2 != UN_INDEX (srcdata))
 	{
-		DEBUG (("unix: unix_send: dst connected, but not to us"));
+		DEBUG (("unix_dgram_send: dst connected, but not to us"));
 		return nbytes;
 	}
 	
 	if (dstdata->sock->flags & SO_CANTRCVMORE
 		|| so->flags & SO_CANTSNDMORE)
 	{
-		DEBUG (("unix: unix_send: shut down"));
+		DEBUG (("unix_dgram_send: shut down"));
 		raise (SIGPIPE);
 		return EPIPE;
 	}
@@ -126,7 +126,7 @@ check:
 		
 		if (sleep (IO_Q, (long) dstdata->sock))
 		{
-			DEBUG (("unix: unix_send: interrupted"));
+			DEBUG (("unix_dgram_send: interrupted"));
 			return EINTR;
 		}
 		
@@ -206,7 +206,7 @@ unix_dgram_recv (struct socket *so, struct iovec *iov, short niov, short nonbloc
 		
 		if (sleep (IO_Q, (long) so))
 		{
-			DEBUG (("unix: unix_recv: interrupted"));
+			DEBUG (("unix_dgram_recv: interrupted"));
 			return EINTR;
 		}
 		
@@ -220,7 +220,7 @@ unix_dgram_recv (struct socket *so, struct iovec *iov, short niov, short nonbloc
 	
 	if (header.nbytes < 0)
 	{
-		FATAL ("unix: unix_recv: msg size < 0!!!");
+		FATAL ("unix_dgram_recv: msg size < 0!!!");
 		return EINTERNAL;
 	}
 	
@@ -275,7 +275,7 @@ unix_dgram_recv (struct socket *so, struct iovec *iov, short niov, short nonbloc
 		}
 		else
 		{
-			DEBUG (("unix_recv: cannot find address for sender"));
+			DEBUG (("unix_dgram_recv: cannot find address for sender"));
 			*addrlen = 0;		
 		}
 	}
@@ -327,8 +327,7 @@ unix_dgram_ioctl (struct socket *so, short cmd, void *buf)
 					un_read_header (undata, &header, 0);
 				
 				if (header.nbytes < 0)
-					FATAL ("unix: unix_ioctl (FIONREAD): paket "
-						"size < 0!!!");
+					FATAL ("unix_dgram_ioctl (FIONREAD): paket size < 0!!!");
 				
 				*(long *) buf = header.nbytes;
 			}
@@ -376,13 +375,13 @@ unix_dgram_getname (struct socket *so, struct sockaddr *addr, short *addrlen, sh
 			undata = un_lookup (undata->index2, so->type);
 			if (!undata)
 			{
-				DEBUG (("unix_getname: cannot find peer"));
+				DEBUG (("unix_dgram_getname: cannot find peer"));
 				return EINVAL;
 			}
 		}
 		else
 		{
-			DEBUG (("unix_getname: not connected"));
+			DEBUG (("unix_dgram_getname: not connected"));
 			return ENOTCONN;
 		}
 	}
@@ -391,7 +390,7 @@ unix_dgram_getname (struct socket *so, struct sockaddr *addr, short *addrlen, sh
 	{
 		if (*addrlen < 0)
 		{
-			DEBUG (("unix_getname: invalid addresslen"));
+			DEBUG (("unix_dgram_getname: invalid addresslen"));
 			return EINVAL;
 		}
 		
