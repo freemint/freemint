@@ -86,7 +86,7 @@ INITIALMEM=1024
 # very processor intensive applications in the foreground, you might
 # want to put SLICES=3 (this makes CPU hogs get more time than they
 # otherwise would).
-# The higher the SLICES value, your processes have faster response time
+# The smaller the SLICES value, your processes have faster response time
 # but the general performance is worse.
 
 SLICES=2
