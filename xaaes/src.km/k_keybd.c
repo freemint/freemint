@@ -308,7 +308,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
 		{
-			client = next_app(lock, false);  /* including the AES for its menu bar. */
+			client = next_app(lock, true);  /* including the AES for its menu bar. */
 			if (client)
 			{
 				DIAGS(("next_app() :: %s", c_owner(client)));
