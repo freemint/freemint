@@ -21,6 +21,7 @@
 
 # include "biosfs.h"
 # include "filesys.h"
+# include "ipc_socketdev.h"
 # include "k_fds.h"
 # include "k_prot.h"
 # include "kmemory.h"
@@ -450,6 +451,60 @@ f_lock (short fd, short mode, long start, long length)
  * extensions to GEMDOS:
  */
 
+static long
+sys__fstat_1_12 (struct file *f, XATTR *xattr)
+{
+	long ret;
+	
+	if (f->dev == &sockdev)
+		return so_fstat_old (f, xattr);
+	
+	if (!f->fc.fs)
+	{
+		DEBUG (("sys__fstat_1_12: no xfs!"));
+		return ENOSYS;
+	}
+	
+	ret = xfs_getxattr (f->fc.fs, &f->fc, xattr);
+	if ((ret == E_OK) && (f->fc.fs->fsflags & FS_EXT_3))
+	{
+		/* UTC -> localtime -> DOS style */
+		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
+		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
+		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
+	}
+	
+	return ret;
+}
+
+static long
+sys__fstat_1_16 (struct file *f, struct stat *st)
+{
+	if (f->dev == &sockdev)
+		return so_fstat (f, st);
+	
+	if (!f->fc.fs)
+	{
+		DEBUG (("sys__fstat_1_16: no xfs"));
+		return ENOSYS;
+	}
+	
+	return xfs_stat64 (f->fc.fs, &f->fc, st);
+}
+
+long _cdecl
+sys_fstat (short fd, struct stat *st)
+{
+	struct proc *p = curproc;
+	FILEPTR	*f;
+	long ret;
+	
+	ret = GETFILEPTR (&p, &fd, &f);
+	if (ret) return ret;
+	
+	return sys__fstat_1_16 (f, st);
+}
+
 /*
  * f_cntl: a combination "ioctl" and "fcntl". Some functions are
  * handled here, if they apply to the file descriptors directly
@@ -510,37 +565,13 @@ f_cntl (short fd, long arg, short cmd)
 		}
 		case FSTAT:
 		{
-			XATTR *xattr = (XATTR *) arg;
-			
-			if (!f->fc.fs)
-				return EINVAL;
-			
-			r = xfs_getxattr (f->fc.fs, &f->fc, xattr);
-			if ((r == E_OK) && (f->fc.fs->fsflags & FS_EXT_3))
-			{
-				/* UTC -> localtime -> DOS style */
-				*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-				*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-				*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
-			}
-			
-			TRACE (("Fcntl FSTAT (%i, %lx) on \"%s\" -> %li", fd, xattr, xfs_name (&(f->fc)), r));
-			return r;
+			TRACE (("Fcntl FSTAT (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name (&(f->fc)), r));
+			return sys__fstat_1_12 (f, (XATTR *) arg);
 		}
 		case FSTAT64:
 		{
-			STAT *ptr = (STAT *) arg;
-			
-			if (!f->fc.fs)
-				return EINVAL;
-			
-			if (f->fc.fs->fsflags & FS_EXT_3)
-				r = xfs_stat64 (f->fc.fs, &f->fc, ptr);
-			else
-				r = EINVAL;
-			
-			TRACE (("Fcntl FSTAT64 (%i, %lx) on \"%s\" -> %li", fd, ptr, xfs_name (&(f->fc)), r));
-			return r;
+			TRACE (("Fcntl FSTAT64 (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name (&(f->fc)), r));
+			return sys__fstat_1_16 (f, (struct stat *) arg);
 		}
 		case FUTIME:
 		{
