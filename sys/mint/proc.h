@@ -161,6 +161,7 @@ struct proc
 # define P_FLAG_SYS	0x0001		/* Unkillable system process */
 # define P_FLAG_SLB	0x0002		/* Unkillable SLB */
 # define P_FLAG_SLO	0x0004		/* Flag for exec_region() */
+# define P_FLAG_SUPER	0x0008		/* Program called Super() or Supexec() */
 
 	ushort	p_flag;
 	ushort	p_stat;			/* */
