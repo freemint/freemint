@@ -167,25 +167,74 @@ main (void)
 		
 		for (;;)
 		{
-			PMSG pmsg;
+			PMSG pmsg_in;
+			PMSG pmsg_out;
 			long r;
 			
-			r = Pmsg (0, MGW_GETHOSTBYNAME, &pmsg);
+			r = Pmsg (0, MGW_LIBSOCKETCALL, &pmsg_in);
 			if (r)
 			{
 				/* printf ("Pmsg wait fail!\n"); */
-				break;
+				continue;
 			}
 			
-			if ((pmsg.msg2 != 0) && (pmsg.msg1 == 0))
-				break;
+			switch (pmsg_in.msg1)
+			{
+				case MGW_GETHOSTBYNAME:
+				{
+					char *s = (char *) pmsg_in.msg2;
+					
+					pmsg_out.msg1 = MGW_GETHOSTBYNAME;
+					pmsg_out.msg2 = (long) gethostbyname (s);
+					
+					break;
+				}
+				case MGW_GETHOSTBYADDR:
+				{
+					long *buf = (long *) pmsg_in.msg2;
+					
+					pmsg_out.msg1 = MGW_GETHOSTBYADDR;
+					pmsg_out.msg2 = (long) gethostbyaddr ((char *) buf[0], buf[1], buf[2]);
+					
+					break;
+				}
+				case MGW_GETHOSTNAME:
+				{
+					long *buf = (long *) pmsg_in.msg2;
+					
+					pmsg_out.msg1 = MGW_GETHOSTNAME;
+					pmsg_out.msg2 = (long) gethostname ((char *) buf[0], buf[1]);
+					
+					break;
+				}
+				case MGW_GETSERVBYNAME:
+				{
+					long *buf = (long *) pmsg_in.msg2;
+					
+					pmsg_out.msg1 = MGW_GETSERVBYNAME;
+					pmsg_out.msg2 = (long) getservbyname ((char *) buf[0], (char *) buf[1]);
+					
+					break;
+				}
+				case MGW_GETSERVBYPORT:
+				{
+					long *buf = (long *) pmsg_in.msg2;
+					
+					pmsg_out.msg1 = MGW_GETSERVBYPORT;
+					pmsg_out.msg2 = (long) getservbyport (buf[0], (char *) buf[1]);
+					
+					break;
+				}
+				default:
+					continue;
+			}
 			
-			pmsg.msg2 = (long) gethostbyname ((char *) pmsg.msg1);
-			
-			r = Pmsg (1, 0xffff0000L | pmsg.pid, &pmsg);
+			pmsg_out.pid = pmsg_in.pid;
+			r = Pmsg (1, 0xffff0000L | pmsg_in.pid, &pmsg_out);
 			if (r)
 			{
-				printf ("Pmsg back fail!\n");
+				/* printf ("Pmsg back fail!\n"); */
+				continue;
 			}
 		}
 		
