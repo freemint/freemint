@@ -43,7 +43,7 @@
  * Window Stack Management Functions
  */
  
-static void Ddraw_window(enum locks lock, struct xa_window *wind);
+//static void draw_window(enum locks lock, struct xa_window *wind);
 
 /* HR:
  * I hated the kind of runaway behaviour (return wind_handle++)
@@ -707,7 +707,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	{
 		form_save(0, wind->r, &(wind->background));
 		/* This is enough, it is only for TOOLBAR windows. */
-		Ddraw_window(lock|winlist, wind);
+		draw_window(lock|winlist, wind);
 		redraw_menu(lock);
 	}
 	else
@@ -751,13 +751,13 @@ if_bar(short pnt[4])
 }
 
 
-static void
+void
 //draw_window(enum locks lock, struct xa_window *wind)
-Ddraw_window(enum locks lock, struct xa_window *wind)
+draw_window(enum locks lock, struct xa_window *wind)
 {
 	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
 
-	DIAG((D_wind, wind->owner, "Ddraw_window %d for %s to %d/%d,%d/%d",
+	DIAG((D_wind, wind->owner, "draw_window %d for %s to %d/%d,%d/%d",
 		wind->handle, w_owner(wind),
 		wind->r.x, wind->r.y, wind->r.w, wind->r.h));
 
@@ -887,12 +887,12 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 
 			
 		widg = get_widget(wind, XAW_TITLE);
-		DIAG((D_wind, wind->owner, "Ddraw_window %d: display widget %d (func: %lx)",
+		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
 			wind->handle, XAW_TITLE, widg->display));
 		widg->display(lock, wind, widg);
 
 		widg = get_widget(wind, XAW_ICONIFY);
-		DIAG((D_wind, wind->owner, "Ddraw_window %d: display widget %d (func: %lx)",
+		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
 			wind->handle, XAW_ICONIFY, widg->display));
 		widg->display(lock, wind, widg);
 	}
@@ -919,14 +919,14 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 				{
 					if (widg->display)
 					{
-						DIAG((D_wind, wind->owner, "Ddraw_window %d: display widget %d (func: %lx)",
+						DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
 							wind->handle, f, widg->display));
 						widg->display(lock, wind, widg);
 					}
 				}
 				else
 				{
-					DIAG((D_wind, wind->owner, "Ddraw_window %d: (%d) draw menu", wind->handle, f));
+					DIAG((D_wind, wind->owner, "draw_window %d: (%d) draw menu", wind->handle, f));
 				}
 			}
 		}
@@ -944,7 +944,7 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 
 	showm();
 
-	DIAG((D_wind, wind->owner, "Ddraw_window %d for %s exit ok",
+	DIAG((D_wind, wind->owner, "draw_window %d for %s exit ok",
 		wind->handle, w_owner(wind)));
 }
 
@@ -1176,7 +1176,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
  */
 #if 1
 			{
-				short dir, resize;
+				short dir, resize, move;
 				struct xa_rect_list *oldrl, *orl, *newrl, *brl, *prev, *next, *rrl, *nrl;
 				RECT bs, bd, wa;
 
@@ -1185,7 +1185,8 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 				newrl = make_rect_list(wind, 0);
 				wind->rect_start = newrl;
 
-				resize = new.w != old.w || new.h != old.h ? 1 : 0;
+				resize	= new.w != old.w || new.h != old.h ? 1 : 0;
+				move	= new.x != old.x || new.y != old.y ? 1 : 0;
 				
 				if (oldrl && newrl)
 				{
@@ -1244,7 +1245,6 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 
 					while (newrl)
 					{						
-						short ok = 1;
 						bs.x = newrl->r.x - new.x;
 						bs.y = newrl->r.y - new.y;
 						bs.w = newrl->r.w;
@@ -1253,10 +1253,13 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 						if (resize)
 						{
 							if (!xa_rect_clip(&wa, &bs, &bs))
-								ok = 0;
+								orl = NULL;
+							else
+								orl = oldrl;
 						}
-						orl = oldrl;
-						while (orl && ok)
+						else
+							orl = oldrl;
+						while (orl)
 						{
 							DIAGS(("Check for common areas (newrl=%d/%d/%d/%d, oldrl=%d/%d/%d/%d)",
 								bs, orl->r));
@@ -1422,23 +1425,26 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 						/*
 						 * Do the blitting first...
 						 */
-						nrl = brl;
-						while (nrl)
+						if (move)
 						{
-							bd = nrl->r;
+							nrl = brl;
+							while (nrl)
+							{
+								bd = nrl->r;
 							
-							bs.x = bd.x + new.x;
-							bs.y = bd.y + new.y;
-							bs.w = bd.w;
-							bs.h = bd.h;
-							bd.x += old.x;
-							bd.y += old.y;
+								bs.x = bd.x + new.x;
+								bs.y = bd.y + new.y;
+								bs.w = bd.w;
+								bs.h = bd.h;
+								bd.x += old.x;
+								bd.y += old.y;
 
-							DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
-								bd, bs, brl, (long)brl->next));
+								DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
+									bd, bs, brl, (long)brl->next));
 
-							form_copy(&bd, &bs);
-							nrl = nrl->next;
+								form_copy(&bd, &bs);
+								nrl = nrl->next;
+							}
 						}
 						/*
 						 * Calculate rectangles that needs to be redrawn...
@@ -1446,7 +1452,6 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 						newrl = wind->rect_start;
 						while (newrl)
 						{
-							short ok = 1;
 							nrl = kmalloc(sizeof(*nrl));
 
 							nrl->next = NULL;
@@ -1459,10 +1464,13 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 							if (resize)
 							{
 								if (!xa_rect_clip(&wa, &nrl->r, &nrl->r))
-									ok = 0;
+									orl = NULL;
+								else
+									orl = brl;
 							}
-							orl = brl;
-							while (orl && nrl && ok)
+							else
+								orl = brl;
+							while (orl && nrl)
 							{
 								short w, h, flag;
 								short bx2 = orl->r.x + orl->r.w;
@@ -1612,7 +1620,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 								/*
 								 * we only redraw window borders here if wind moves
 								 */
-								if (new.h == old.h && new.w == old.w)
+								if (!resize) //new.h == old.h && new.w == old.w)
 									display_window(wlock, 2, wind, &nrl->r);
 								if (xa_rect_clip(&wind->wa, &nrl->r, &bs))
 								{
@@ -1643,7 +1651,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y,
 						/*
 						 * If window was resized, redraw all window borders
 						 */
-						if (new.h != old.h || new.w != old.w)
+						if (resize) //new.h != old.h || new.w != old.w)
 							display_window(wlock, 2, wind, NULL);
 						
 					} /* if (brl) */
@@ -2050,7 +2058,7 @@ diswin(enum locks lock, struct xa_window *wind, RECT *clip)
 	if (wind->is_open)
 	{
 		if (wind->nolist)
-			Ddraw_window(lock, wind);
+			draw_window(lock, wind);
 		else
 		{
 			struct xa_rect_list *rl;
@@ -2064,13 +2072,13 @@ diswin(enum locks lock, struct xa_window *wind, RECT *clip)
 					if (xa_rect_clip(clip, &rl->r, &d))
 					{
 						set_clip(&d);
-						Ddraw_window(lock, wind);
+						draw_window(lock, wind);
 					}
 				}
 				else
 				{
 					set_clip(&rl->r);
-					Ddraw_window(lock, wind);
+					draw_window(lock, wind);
 				}
 				rl = rl->next;
 			}
@@ -2173,7 +2181,7 @@ CE_display_windows_below(enum locks lock, struct c_event *ce, bool cancel)
 				{
 					set_clip(&clip);
 
-					Ddraw_window(lock, wl);
+					draw_window(lock, wl);
 				
 					if (wl->send_message)
 					{
