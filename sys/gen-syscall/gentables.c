@@ -73,7 +73,7 @@ generate_proto(FILE *out, struct systab *tab)
 	{
 		struct syscall *call = tab->table[i];
 		
-		if (call && strcmp(call->name, "RESERVED"))
+		if (call && IS_REGULAR_SYSCALL(call))
 		{
 			fprintf(out, "long _cdecl sys_%c_%s\t", call->class, call->name);
 			
@@ -110,7 +110,7 @@ generate_tab(FILE *out, struct systab *tab, const char *prefix)
 		{
 			int nr_args = arg_length(call->args);
 			
-			if (strcmp(call->name, "RESERVED"))
+			if (IS_REGULAR_SYSCALL(call))
 			{
 				fprintf(out, "sys_%c_%s, ", call->class, call->name);
 				fprintf(out, "%i, ", nr_args);
@@ -152,7 +152,7 @@ generate_wrapper(FILE *out, struct systab *tab, const char *prefix)
 	{
 		struct syscall *call = tab->table[i];
 		
-		if (call && strcmp(call->name, "RESERVED"))
+		if (call && IS_REGULAR_SYSCALL(call))
 		{
 			fprintf(out, "static long\n");
 			fprintf(out, "old_%c_%s(", call->class, call->name);
@@ -190,7 +190,7 @@ generate_wrapper(FILE *out, struct systab *tab, const char *prefix)
 		
 		if (call)
 		{
-			if (strcmp(call->name, "RESERVED"))
+			if (IS_REGULAR_SYSCALL(call))
 				fprintf(out, "old_%c_%s", call->class, call->name);
 			else
 				fprintf(out, "old_enosys");
