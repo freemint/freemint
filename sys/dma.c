@@ -118,6 +118,7 @@
 
 # include "dma.h"
 
+# include "info.h"
 # include "proc.h"
 # include "timeout.h"
 
@@ -232,11 +233,11 @@ dma_start (ulong i)
 	DMA_DEBUG (("dma_start: enter (%lu)", i));
 	
 	if (--i >= CHANNELS)
-		FATAL ("dma_start on incorrect handle %lu", i+1);
+		FATAL (ERR_dma_start_on_inv_handle, i+1);
 	
 	c = &channels[i];
 	if (!c->used)
-		FATAL ("dma_start on invalid handle %lu", i+1);
+		FATAL (ERR_dma_start_on_inv_handle, i+1);
 	
 	while (c->lock)
 	{
@@ -264,14 +265,14 @@ dma_end (ulong i)
 	DMA_DEBUG (("dma_end: enter (%lu)", i));
 	
 	if (--i >= CHANNELS)
-		FATAL ("dma_end on incorrect handle %lu", i+1);
+		FATAL (ERR_dma_end_on_inv_handle, i+1);
 	
 	c = &channels[i];
 	if (!c->used)
-		FATAL ("dma_end on invalid handle %lu", i+1);
+		FATAL (ERR_dma_end_on_inv_handle, i+1);
 	
 	if (!c->lock)
-		FATAL ("dma_end on non-locked handle %lu", i+1);
+		FATAL (ERR_dma_end_on_unlocked_handle, i+1);
 	
 	c->lock = 0;
 	c->pid = -1;
@@ -300,11 +301,11 @@ dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p))
 	DMA_DEBUG (("dma_block: enter (%lu)", i));
 	
 	if (--i >= CHANNELS)
-		FATAL ("dma_block on incorrect handle %lu", i+1);
+		FATAL (ERR_dma_block_on_inv_handle, i+1);
 	
 	c = &channels[i];
 	if (!c->used)
-		FATAL ("dma_block on invalid handle %lu", i+1);
+		FATAL (ERR_dma_block_on_inv_handle, i+1);
 	
 	if (timeout)
 	{
@@ -312,7 +313,7 @@ dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p))
 				func ? func
 				: (void _cdecl (*)(PROC *)) dma_timeout, 0);
 		if (!c->t)
-			FATAL ("dma_block: addroottimeout failed!");
+			FATAL (ERR_dma_addroottimeout);
 		
 		c->t->arg = i;
 	}
@@ -338,11 +339,11 @@ dma_deblock (ulong i, void *idev)
 	CHANNEL *c;
 	
 	if (--i >= CHANNELS)
-		FATAL ("dma_deblock on incorrect handle %lu", i+1);
+		FATAL (ERR_dma_deblock_on_inv_handle, i+1);
 	
 	c = &channels[i];
 	if (!c->used)
-		FATAL ("dma_deblock on invalid handle %lu", i+1);
+		FATAL (ERR_dma_deblock_on_inv_handle, i+1);
 	
 	c->idev = idev;
 	iwake (IO_Q, (long) &(c->pid), c->pid);

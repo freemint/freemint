@@ -58,6 +58,7 @@
 # include "dos.h"
 # include "dosmem.h"
 # include "dossig.h"
+# include "info.h"
 # include "k_exec.h"
 # include "k_exit.h"
 # include "kmemory.h"
@@ -67,7 +68,6 @@
 # include "util.h"
 
 # include <osbind.h>
-
 
 const char slbpath[]="SLBPATH=";	/* used by slb_util.spp */
 
@@ -538,7 +538,7 @@ s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn)
 		r = load_and_init_slb(name, path, min_ver, sl);
 		if (r < 0L)
 		{
-			ALERT ("Could not open shared library %s", name);
+			ALERT (MSG_slb_couldnt_open, name);
 			return(r); /* DEBUG info already written out */
 		}
 		slb = *sl;
@@ -826,8 +826,7 @@ remove_slb(void)
 	 */
 	if (slb->slb_used)
 	{
-		ALERT("Freeing shared library %s, which is still in use!",
-			slb->slb_name);
+		ALERT(MSG_slb_freeing_used, slb->slb_name);
 	}
 	if (last)
 	{
