@@ -1,10 +1,74 @@
 #
 # the new mint style configuration for xaaes
-# it reuse the mint cnf parser
+# (it reuse the mint cnf parser :-))
 #
 # upper/lowercase don't matter for all keywords
 # bool values can be expressed as 1/0, y/n, yes/no, true/false
 # 
+
+#
+# video mode select
+# -----------------
+# 
+# Selects the video mode that XaAES will boot into. If not set mode = 1
+# will be used, e.g. use current/default video mode.
+# 
+# If you don't have a Falcon <mode> can be:
+# -----------------------------------------
+#   - 2 =  320*200,  16 colour (ST-Low)
+#   - 3 =  640*200,   4 colour (ST-Medium)
+#   - 4 =  640*400,   2 colour (ST-High)
+#   - 6 =  640*480,  16 colour (TT Medium)
+#   - 8 = 1280*960,   2 colour (TT High)
+#   - 9 =  320*480, 256 colour (TT Low)
+#   
+#   All other values are ignored!
+# 
+# If you have a Falcon <mode> is the sam argument as to the
+# VsetMode() OS call:
+# ---------------------------------------------------------
+#   BIT     Name     Meaning
+#   
+#   0-2     BPS      Number of bitplanes:
+#                    - 000 = 2colour
+#                    - 001 = 4colour
+#                    - 010 = 16colour
+#                    - 011 = 256colour
+#                    - 100 = 16bits/pixel (True colour)
+#   
+#   3       COL      Number of columns
+#                    - 0 = 40
+#                    - 1 = 80
+#   
+#   4       VGA      Monitor select
+#                    - 0 = TV mode
+#                    - 1 = VGA mode
+#   
+#   5       TVSEL    TV standard select
+#                    - 0 = NTSC
+#                    - 1 = PAL
+#   
+#   6       OVERSCN  Overscan flag (not valid for VGA)
+#                    - 0 = don't overscan
+#                    - 1 = overscan
+#   
+#   7       STMODES  ST Compatibility mode
+#                    - 0 = Standard VGA video modes
+#                    - 1 = ST Compatible Video modes
+#   
+#   8       VERTFLAG Vertical mode
+#                    - VGA: 0 = standard
+#                           1 = line doubling (half res)
+#                    - TV:  0 = standard
+#                           1 = Interlace (double res!!!)
+#   
+#   9-14    unused
+#   
+#   15               Additive mode bit for non standard resolutions
+#                    If set, use the default screen resolution as preset by
+#                    CentScreen.
+#
+#video = <mode>
 
 #
 # setenv name val ..... set up environment
@@ -12,20 +76,9 @@
 #setenv 
 
 #
-# process priority of the xaaes task
-# 20 lowest, -20 highest priority
-#
-#priority = 0
-
-#
 # use $HOME in shell_find
 #
 usehome = yes
-
-#
-# disable XaAES builtin fileselector
-#
-#nofsel = no
 
 #
 # double click time (ms)
@@ -49,9 +102,9 @@ menu = leave
 #toppage = faint
 
 #
-# clipboard = <path>
-# accpath   = <path>
-# launcher  = <path>
+# clipboard = <path>   # path to clipboard
+# accpath   = <path>   # path from which accs are loaded
+# launcher  = <path>   # path to tos program launcher
 #
 clipboard = c:\clipbrd\
 accpath   = c:\
