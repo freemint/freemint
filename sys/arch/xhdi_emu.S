@@ -31,6 +31,9 @@
  * 
  */
 
+# define ASM_ONLY
+# include "xhdi_emu.h"
+
 	.text
 
 	.globl	_emu_xhdi
@@ -50,3 +53,38 @@ _emu_xhdi:
 	trap	#1
 	lea	34(sp),sp
 	rts
+
+
+# ifdef XHDI_MON
+
+	.globl	_xhdi_mon_dispatcher
+	.globl	_xhdi_mon_dispatcher_table
+
+	dc.l	0x27011992	// XHDIMAGIC
+_xhdi_mon_dispatcher:
+	link	a6,#-4
+	movem.l	a0-a5/d1-d7,-(sp)
+	move	8(a6),d2	// function number
+	cmp	#20,d2		// correct function number?
+	bcc.s	out		// no
+	mulu	#8,d2
+	lea	_xhdi_mon_dispatcher_table(pc),a1
+	moveq	#-1,d0		// #ERROR
+	move.l	4(a1,d2),d0
+	move.l	d0,-4(a6)
+	sub.l	d0,sp
+	bra.s	push1
+push0:
+	move.b	10(a6,d0),(sp,d0)
+push1:
+	dbra	d0,push0
+	move.l	(a1,d2),a0
+	jsr	(a0)
+	move.l	-4(a6),d2
+	add.l	d2,sp
+out:
+	movem.l	(sp)+,a0-a5/d1-d7
+	unlk	a6
+	rts
+
+# endif
