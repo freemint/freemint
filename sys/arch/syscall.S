@@ -87,11 +87,99 @@ _old_dos:
 	dc.l	0
 _mint_dos:
 
+	tst.w	_in_kernel
+	beq	norm_gemdos
+
+	| New code to handle traps from kernel space
+	movea.l	sp,a0
+	move.w	(a0),d0		| sr before the trap
+	addq.w	#2+4+2,a0	| A0 now points past the stackfram, where the params are
+	
+	| This should never happen. Since _in_kernel is set, this is
+	| a trap done from kernel context, which always runs in supervisor
+	|
+	|btst	#13,d0
+	|bne.s	mg_in_super
+
+	|move.l	usp,sp
+
+mg_in_super:
+	| Do some simple saving of registers...
+	movem.l	d2-d7/a2-a6,-(sp)
+	tst.w	_fpu
+	beq.s	mg_fpu_saved
+	fsave	-(sp)
+	cmp.w	#60,_mcpu+2
+	bne.s	mg_no_060
+	tst.b	2(sp)
+	beq.s	mg_fpu_notused
+	bra.s	mg_save_fpu
+mg_no_060:
+	tst.b	(sp)
+	beq.s	mg_fpu_notused
+mg_save_fpu:
+	fmovem.x fp0-fp7,-(sp)
+	fmovem.l fpcr/fpsr/fpiar,-(sp)
+	move.w	#1,-(sp)
+	bra.s	mg_fpu_saved
+mg_fpu_notused:
+	clr.w	-(sp)
+mg_fpu_saved:
+	
+	| Copy parameters
+	lea	32(a0),a0
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+	move.l	-(a0),-(sp)
+
+	lea	_dos_tab,a5
+	move.w	_dos_max,d5
+
+	move.w	(sp)+,d0
+	cmp.w	d5,d0
+	bhi.s	mg_enosys
+
+#ifdef NEW_SYSCALL
+	move.l	(a5,d0.w*8),d0
+#else
+	move.l	(a5,d0.w*4),d0
+#endif
+	beq.s	mg_enosys
+
+	move.l	d0,a0
+	jsr	(a0)
+mg_out:
+	lea	30(sp),sp
+	tst.w	_fpu
+	beq.s	mg_out_no_fpu
+	tst.w	(sp)+
+	beq.s	mg_no_fpu_saved
+	fmovem.l (sp)+,fpcr/fpsr/fpiar
+	fmovem.x (sp)+,fp0-fp7
+mg_no_fpu_saved:
+	frestore (sp)+
+
+mg_out_no_fpu:
+	movem.l	(sp)+,d2-d7/a2-a6
+	rte
+
+mg_enosys:
+	moveq	#-32,d0
+	bra.s	mg_out
+
+| ------ END new stuff to handle traps from kernel context ----
+
 // NOTICE: MiNT *no longer ever* traps to ROM GEMDOS, because even
 //         the TOSFS *jumps* (not traps) there. So these two lines
 //         below only waste space and CPU time. And btw I really hate
 //         doing same changes twice! (draco)
 
+norm_gemdos:
 #ifndef SYSCALL_REENTRANT
 	tst.w	_in_kernel
 	bne.s	rom_gemdos
