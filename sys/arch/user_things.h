@@ -61,7 +61,7 @@ typedef struct
 	long slb_exec_p;		/* exec an SLB function */
 	long user_xhdi_p;		/* call the XHDI interface */
 # ifdef JAR_PRIVATE
-	long user_jar_p;		/* user's copy of the Cookie Jar (not yet implemented) */
+	long user_jar_p;		/* user's copy of the Cookie Jar */
 # endif
 } USER_THINGS;
 
