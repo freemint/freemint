@@ -583,6 +583,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				(const RECT *)ir = (const RECT *)&pb->intin[2];
 				move = true;
 			}
+			DIAGS(("wind_set: WF_CURRXYWH - blit=%s, ir=%lx",
+				blit?"yes":"no", ir));
+
 			blit = true;
 		}
 
@@ -611,6 +614,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			mh = ir->h;
 			ir = (RECT *)&w->rc;
 
+			DIAGS(("wind_set: move to %d/%d/%d/%d for %s",
+				mx, my, mw, mh, client->name));
+
 			if (!mh)
 			{
 				if (!(w->window_status & XAWS_SHADED))
@@ -632,7 +638,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				if (!(w->window_status & XAWS_SHADED) && status == -1)
 				{
-					if (mx == w->max.x &&
+					if (w->max.w && w->max.h &&
+					    mx == w->max.x &&
 					    my == w->max.y &&
 					    mw == w->max.w &&
 					    mh == w->max.h)
@@ -643,7 +650,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						if (w->window_status & XAWS_FULLED)
 							status = ~XAWS_FULLED;
-
 						/* Ozk: I really, really dont like to do this, but it is
 						 *	how N.AES does it; Send a full redraw whenever either
 						 *	x,y or w,h both changes.
@@ -657,7 +663,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 							    mw != w->rc.w && mh != w->rc.h)
 							blit = false;
 						}
-
 					}
 				}
 				else if ((w->window_status & XAWS_ZWSHADED) && mh != w->sh)
@@ -669,9 +674,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					msg = WM_UNSHADED;
 				}
 			}
-			if (mw > w->max.w)
+			if (w->max.w && mw > w->max.w)
 				mw = w->max.w;
-			if (mh > w->max.h)
+			if (w->max.w && mh > w->max.h)
 				mh = w->max.h;
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
@@ -686,7 +691,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (!ir)
 				ir = (RECT *)&w->rc;
-
 			*((RECT *)pb->intout + 1) = *ir;
 		}
 
