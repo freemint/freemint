@@ -973,8 +973,8 @@ init (void)
 # endif
 	
 	/* set up cookie jar */
-	init_cookies ();
-	DEBUG (("init_cookies() ok!"));
+	init_cookies();
+	DEBUG(("init_cookies() ok!"));
 	
 	/* add our pseudodrives */
 	*((long *) 0x4c2L) |= PSEUDODRVS;
@@ -984,23 +984,23 @@ init (void)
 	 * so that AHDI doesn't get upset by references to drive U:
 	 */
 	
-	r = FP_ALLOC (rootproc, &f);
-	if (r) FATAL ("Can't allocate fp!");
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
 	
-	r = do_open (&f, "U:\\DEV\\CONSOLE", O_RDWR, 0, NULL);
+	r = do_open(&f, "U:\\DEV\\CONSOLE", O_RDWR, 0, NULL);
 	if (r)
-		FATAL ("unable to open CONSOLE device");
+		FATAL("unable to open CONSOLE device");
 	
 	curproc->p_fd->control = f;
 	curproc->p_fd->ofiles[0] = f; f->links++;
 	curproc->p_fd->ofiles[1] = f; f->links++;
 	
-	r = FP_ALLOC (rootproc, &f);
-	if (r) FATAL ("Can't allocate fp!");
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
 	
-	r = do_open (&f, "U:\\DEV\\MODEM1", O_RDWR, 0, NULL);
+	r = do_open(&f, "U:\\DEV\\MODEM1", O_RDWR, 0, NULL);
 	if (r)
-		FATAL ("unable to open MODEM1 device");
+		FATAL("unable to open MODEM1 device");
 	
 	curproc->p_fd->aux = f;
 	((struct tty *) f->devinfo)->aux_cnt = 1;
@@ -1011,7 +1011,7 @@ init (void)
 		/* If someone has already done a Bconmap call, then
 		 * MODEM1 may no longer be the default
 		 */
-		bconmap (curbconmap);
+		bconmap(curbconmap);
 		f = curproc->p_fd->aux;	/* bconmap can change curproc->aux */
 	}
 	
@@ -1021,10 +1021,10 @@ init (void)
 		f->links++;
 	}
 	
-	r = FP_ALLOC (rootproc, &f);
-	if (r) FATAL ("Can't allocate fp!");
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
 	
-	r = do_open (&f, "U:\\DEV\\CENTR", O_RDWR, 0, NULL);
+	r = do_open(&f, "U:\\DEV\\CENTR", O_RDWR, 0, NULL);
 	if (!r)
 	{
 		curproc->p_fd->ofiles[3] = f;
@@ -1032,10 +1032,10 @@ init (void)
 		f->links++;
 	}
 	
-	r = FP_ALLOC (rootproc, &f);
-	if (r) FATAL ("Can't allocate fp!");
+	r = FP_ALLOC(rootproc, &f);
+	if (r) FATAL("Can't allocate fp!");
 	
-	r = do_open (&f, "U:\\DEV\\MIDI", O_RDWR, 0, NULL);
+	r = do_open(&f, "U:\\DEV\\MIDI", O_RDWR, 0, NULL);
 	if (!r)
 	{
 		curproc->p_fd->midiin = f;
@@ -1049,7 +1049,7 @@ init (void)
 	
 	/* print the warning message if MP is turned off */
 	if (no_mem_prot && mcpu > 20)
-		c_conws (memprot_warning);
+		c_conws(memprot_warning);
 	
 	/* initialize delay */
 	{
@@ -1060,20 +1060,20 @@ init (void)
 		calibrate_delay();
 		
 		/* Round the value and print it */
-		ksprintf (buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
+		ksprintf(buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
 			(loops_per_sec + 2500) / 500000,
 			((loops_per_sec + 2500) / 5000) % 100);
 		
-		c_conws (buf);
+		c_conws(buf);
 	}
 	
 	/* initialize internal xdd */
 # ifdef DEV_RANDOM
-	c_conws (random_greet);
+	c_conws(random_greet);
 # endif
 	
 	/* initialize built-in domain ops */
-	domaininit ();
+	domaininit();
 	
 	/* Load the keyboard table */
 	load_keytbl();
@@ -1087,13 +1087,13 @@ init (void)
 	boot_print("\r\n");
 
 	/* load the kernel modules */
-	load_all_modules (curpath, (load_xdd_f | (load_xfs_f << 1)));
+	load_all_modules(curpath, (load_xdd_f | (load_xfs_f << 1)));
 	
 	/* start system update daemon */
-	start_sysupdate ();
+	start_sysupdate();
 	
 	/* load the configuration file */
-	load_config ();
+	load_config();
 	
 # ifdef OLDTOSFS
 	/*
@@ -1109,20 +1109,20 @@ init (void)
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if ((drives[i] == &tos_filesys) &&
-				(fatfs_config (i, FATFS_DRV, ASK) == ENABLE))
+				(fatfs_config(i, FATFS_DRV, ASK) == ENABLE))
 			{
 				/* We have to preserve the current directory,
 				 * as d_lock() will reset it to \
 				 */
 				cwd[0] = i + ((i < 26) ? 'A' : '1' - 26);
-				if (d_getcwd (cwd + 2, i + 1, PATH_MAX - 2) != E_OK)
+				if (d_getcwd(cwd + 2, i + 1, PATH_MAX - 2) != E_OK)
 				{
 					continue;
 				}
 				if (d_lock (1, i) == E_OK)
 				{
-					d_lock (0, i);
-					d_setpath (cwd);
+					d_lock(0, i);
+					d_setpath(cwd);
 				}
 			}
 		}
@@ -1148,19 +1148,19 @@ init (void)
 	 */
 	if (!gem_active && init_is_gem)
 	{
-		xbra_install (&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
+		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
 	
 	/* run any programs appearing after us in the AUTO folder */
 	if (load_auto)
-		run_auto_prgs ();
+		run_auto_prgs();
 
 	/* prepare to run the init program as PID 1. */
-	set_pid_1 ();
+	set_pid_1();
 	
 # ifdef PROFILING
 	/* compiled with profiling support */
-	monstartup (_base->p_tbase, (_base->p_tbase + _base->p_tlen));
+	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
 # endif
 	
 	/* run the initial program
@@ -1176,11 +1176,13 @@ init (void)
 	 */
 	if (init_prg && (!init_is_gem || gem_active))
 	{
-		r = sys_pexec (0, (char *) init_prg, init_tail, init_env);
+		r = sys_pexec(0, (char *) init_prg, init_tail, init_env);
 	}
 	else if (!gem_active)
 	{   
-		BASEPAGE *bp; int pid;
+		BASEPAGE *bp;
+		int pid;
+		
 		bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
 		bp->p_tbase = *((long *) EXEC_OS);
 # ifndef MULTITOS
@@ -1188,12 +1190,12 @@ init (void)
 			gem_start = ((long *) sysbase[5])[2];
 		gem_base = bp;
 # endif
-		r = sys_pexec (106, (char *) "GEM", bp, 0L);
+		r = sys_pexec(106, (char *) "GEM", bp, 0L);
 		pid = (int) r;
 		if (pid > 0)
 		{
 			do {
-				r = sys_pwaitpid (-1, 0, NULL);
+				r = sys_pwaitpid(-1, 0, NULL);
 			}
 			while (pid != ((r & 0xffff0000L) >> 16));
 			r &= 0x0000ffff;
@@ -1201,14 +1203,14 @@ init (void)
 	}
 	else
 	{
-		boot_print (MSG_init_specify_prg);
+		boot_print(MSG_init_specify_prg);
 		r = 0;
 	}
 	
 	if (r < 0 && init_prg)
 	{
-		boot_printf ("FATAL: couldn't run `%s'.\r\n", init_prg);
-		boot_printf ("exit code: %ld\r\n", r);
+		boot_printf("FATAL: couldn't run `%s'.\r\n", init_prg);
+		boot_printf("exit code: %ld\r\n", r);
 	}
 	
 	rootproc->base = _base;
@@ -1217,11 +1219,11 @@ init (void)
 	/* On r < 0 (error executing init) perform a halt
 	 * else reboot the system. Never go back to TOS.
 	 */ 
-	(void) s_hutdown ((r < 0 && init_prg) ? 0 : 1);
+	(void) s_hutdown((r < 0 && init_prg) ? 0 : 1);
 # else
 	/* With debug kernels, always halt
 	 */
-	(void) s_hutdown (0);
+	(void) s_hutdown(0);
 # endif
 	
 	/* Never returns */	
@@ -1254,7 +1256,7 @@ short *aes_pb[6] = { aes_cntrl, aes_globl, aes_dummy, aes_intout,
 static int
 check_for_gem (void)
 {
-	call_aes (aes_pb);	/* does an appl_init */
+	call_aes(aes_pb);	/* does an appl_init */
 	return aes_globl[0];
 }
 
@@ -1275,32 +1277,30 @@ run_auto_prgs (void)
 	/* OK, now let's run through \\AUTO looking for
 	 * programs...
 	 */
-	d_getpath (curpath,0);
-	curdriv = d_getdrv ();
+	d_getpath(curpath,0);
+	curdriv = d_getdrv();
 	
 	/* We are in Supervisor mode, so we can do this */
 	bootdriv = *((short *) 0x446);
-	d_setdrv (bootdriv);
-	d_setpath ("\\");
+	d_setdrv(bootdriv);
+	d_setpath("\\");
 	
-	dta = (DTABUF *) f_getdta ();
-	r = f_sfirst ("\\auto\\*.prg", 0);
+	dta = (DTABUF *) f_getdta();
+	r = f_sfirst("\\auto\\*.prg", 0);
 	while (r >= 0)
 	{
-		if (strcmp (dta->dta_name, my_name) == 0)
+		if (strcmp(dta->dta_name, my_name) == 0)
 		{
 			runthem = 1;
 		}
 		else if (runthem)
 		{
-			strcpy (pathspec+6, dta->dta_name);
-			sys_pexec (0, pathspec, (char *)"", init_env);
+			strcpy(pathspec+6, dta->dta_name);
+			sys_pexec(0, pathspec, (char *)"", init_env);
 		}
-		r = f_snext ();
+		r = f_snext();
 	}
 	
- 	d_setdrv (curdriv);
- 	d_setpath (curpath);
+ 	d_setdrv(curdriv);
+ 	d_setpath(curpath);
 }
-
-/* EOF */
