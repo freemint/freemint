@@ -54,28 +54,26 @@
 
 # include "libkern/libkern.h"
 
-# include "mint/basepage.h"	/* BASEPAGE struct */
-# include "mint/signal.h"	/* SIGCHLD etc. */
-# include "mint/stat.h"		/* struct stat */
-
-# include "cnf.h"		/* init_env */
-# include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
-# include "info.h"		/* national stuff */
-# include "k_exec.h"		/* sys_pexec() */
+# include "arch/startup.h"	/* _base */
 
 # ifdef DEBUG_INFO
 # include "mint/proc.h"		/* curproc (for DEBUG) */
 # endif
 
-# include "arch/startup.h"	/* _base */
+# include "mint/stat.h"		/* struct stat */
+
+# include "cnf.h"		/* init_env */
 # include "console.h"		/* c_conin(), c_conrs() */
 # include "dos.h"		/* p_umask(), p_domain() */
 # include "dosdir.h"		/* d_opendir(), d_readdir(), d_closedir(), f_symlink(), f_stat64(), ...*/
 # include "dosfile.h"		/* f_write() */
+# include "dosmem.h"		/* m_xalloc(), m_free(), m_shrink() */
 # include "dossig.h"		/* p_kill() */
+# include "info.h"		/* national stuff */
+# include "k_exec.h"		/* sys_pexec() */
 # include "k_kthread.h"		/* kthread_create(), kthread_exit() */
 # include "proc.h"		/* struct proc */
-# include "time.h"
+# include "time.h"		/* struct timeval */
 
 # include "mis.h"
 
@@ -90,8 +88,10 @@
 
 # define COPYCOPY	"(c) 2003 Konrad M.Kokoszkiewicz (draco@atari.org)\r\n"
 
-# define SHELL_ARGS	1024L		/* number of pointers in the argument vector table (i.e. 4K) */
-# define SHELL_MAXPATH	1024L		/* max length of a pathname */
+# define SHELL_ARGS	2048L		/* number of pointers in the argument vector table (i.e. 8K) */
+# define SHELL_MAXFN	1024L		/* max length of a filename */
+# define SHELL_MAXPATH	6144L		/* max length of a pathname */
+# define SHELL_MAXLINE	8192L		/* max line for the shell_fprintf() */
 
 /* this is an average number of seconds in Gregorian year
  * (365 days, 6 hours, 11 minutes, 15 seconds).
@@ -104,26 +104,40 @@
 static EXITING shell(void) NORETURN;
 
 /* Global variables */
-static struct proc *p;
-static BASEPAGE *shell_base;
 static short xcommands;		/* if 1, the extended command set is active */
 
 /* Fake command line to prevent complaints from the kernfs and fork() */
-static char shell_cmdline[10] = { 0, 0, 0, sizeof(shell_cmdline), 0, 0, 0, 0, 0, 0 };
+struct kcmd
+{
+	long length;
+	long argvl;
+	short dnull;
+};
+
+static struct kcmd shell_cmdline = { sizeof(shell_cmdline), 0L, 0 };
 
 /* Utility routines */
 
 static void
 shell_fprintf(long handle, const char *fmt, ...)
 {
-	static char buf[SHELL_MAXPATH << 1];
+	char *buf;
 	va_list args;
 
-	va_start(args, fmt);
-	vsprintf(buf, sizeof (buf), fmt, args);
-	va_end(args);
+	buf = (char *)m_xalloc(SHELL_MAXLINE, 3);
 
-	f_write(handle, strlen(buf), buf);
+	if (buf)
+	{
+		va_start(args, fmt);
+		vsprintf(buf, SHELL_MAXLINE, fmt, args);
+		va_end(args);
+
+		f_write(handle, strlen(buf), buf);
+
+		m_free((long)buf);
+	}
+	else
+		c_conws("Out of RAM!\r\n");
 }
 
 INLINE void
@@ -163,18 +177,15 @@ env_size(char *var)
 {
 	long count = 0;
 
-	if (var)
+	while (var && *var)
 	{
 		while (*var)
 		{
-			while (*var)
-			{
-				var++;
-				count++;
-			}
 			var++;
 			count++;
 		}
+		var++;
+		count++;
 	}
 
 	return ++count;		/* plus trailing NULL */
@@ -196,40 +207,38 @@ shell_delenv(const char *strng)
 	char *name, *var;
 
 	/* find the tag in the environment */
-	var = _mint_getenv(shell_base, strng);
+	var = _mint_getenv(_base, strng);
 	if (!var)
 		return;
 
 	/* if it's found, move all the other environment variables down by 1 to
    	 * delete it
          */
-	var -= strlen(strng);
-	name = var + strlen(var);
-
-	var--;
+	var -= (strlen(strng) + 1);
+	name = var + strlen(var) + 1;
 
 	do
 	{
 		while (*name)
 			*var++ = *name++;
 		*var++ = *name++;
+
 	} while (*name);
 
 	*var = 0;
 
-	m_shrink(0, (long)shell_base->p_env, env_size(shell_base->p_env));
+	m_shrink(0, (long)_base->p_env, env_size(_base->p_env));
 }
 
 /* XXX try to avoid reallocation whenever possible */
 static void
 shell_setenv(const char *var, char *value)
 {
-	char *env_str = shell_base->p_env;
-	char *new_env, *old_var, *es, *ne;
+	char *env_str = _base->p_env, *new_env, *old_var, *es, *ne;
 	long new_size;
 
 	new_size = env_size(env_str) + strlen(value) + 2;	/* '=' and trailing zero */
-	old_var = _mint_getenv(shell_base, var);
+	old_var = _mint_getenv(_base, var);
 
 	if (old_var)
 		new_size -= strlen(old_var);	/* this is the VALUE of the var */
@@ -261,7 +270,7 @@ shell_setenv(const char *var, char *value)
 	ne += strlen(ne);
 	*++ne = 0;
 
-	shell_base->p_env = new_env;
+	_base->p_env = new_env;
 
 	m_free((long)env_str);
 }
@@ -274,41 +283,39 @@ shell_setenv(const char *var, char *value)
 INLINE long
 crunch(char *cmd, char **argv)
 {
-	char *start, *endquote = NULL;
+	char *start, *endquote;
 	long idx = 0;
 	short special;
 
 	while (*cmd)
 	{
-		/* Kill leading spaces */
-		while (*cmd && isspace(*cmd))
+		if (isspace(*cmd))
 			cmd++;
-
-		/* If the argument is an enviroment variable, evaluate it.
-		 * It is assumed, that a space or NULL terminates the argument.
-		 */
-		if (cmd[0] == '$' && isupper(cmd[1]))
-		{
-			start = cmd + 1;
-
-			while (*cmd && !isspace(*cmd))
-				cmd++;
-
-			if (*cmd)
-				*cmd++ = 0;		/* terminate the tag for getenv() */
-
-			start = _mint_getenv(shell_base, start);
-			if (start)
-				argv[idx++] = start;
-		}
 		else
 		{
+			/* If the argument is an enviroment variable, evaluate it.
+			 * It is assumed, that a space or NULL terminates the argument.
+			 */
+			if (cmd[0] == '$' && isupper(cmd[1]))
+			{
+				start = cmd + 1;
+
+				while (*cmd && !isspace(*cmd))
+					cmd++;
+
+				if (*cmd)
+					*cmd++ = 0;		/* terminate the tag for getenv() */
+
+				start = _mint_getenv(_base, start);
+				if (start)
+					argv[idx++] = start;
+			}
 			/* Check if there may be a quoted argument. A quoted argument will begin with
 			 * a quote and end with a quote. Quotes do not belong to the argument.
 			 * Everything between quotes is litterally taken as argument, without any
 			 * internal interpretation.
 			 */
-			if (*cmd == '\'')
+			else if (cmd[0] == '\'')
 			{
 				cmd++;
 				endquote = cmd;
@@ -317,16 +324,19 @@ crunch(char *cmd, char **argv)
 					endquote++;
 
 				if (!*endquote)
-					return -1;		/* unbalanced quotes, syntax error */
+					return -1;		/* unmatched quotes */
+
+				argv[idx++] = cmd;
+				cmd = endquote;
+				*cmd++ = 0;
 			}
-
-			start = cmd;
-
-			if (endquote == NULL)
+			else
 			{
-				/* Search for the ending separator. In a non-quoted argument any space
-				 * is understood as a separator except when preceded by the backslash.
-				 */
+			/* Search for the ending separator. In a non-quoted argument any space
+			 * is understood as a separator except when preceded by the backslash.
+			 */
+				start = cmd;
+
 				while (*cmd && !isspace(*cmd))
 				{
 					special = (*cmd == '\\');
@@ -334,17 +344,12 @@ crunch(char *cmd, char **argv)
 						strcpy(cmd, cmd + 1);	/* physically remove the backslash */
 					cmd++;
 				}
-			}
-			else
-			{
-				cmd = endquote;
-				endquote = NULL;
-			}
 
-			if (*cmd)
-				*cmd++ = 0;
+				if (*cmd)
+					*cmd++ = 0;
 
-			argv[idx++] = start;
+				argv[idx++] = start;
+			}
 		}
 	}
 
@@ -357,12 +362,11 @@ crunch(char *cmd, char **argv)
 INLINE long
 execvp(char **argv)
 {
-	static char oldcmd[128], npath[SHELL_MAXPATH + 256];
-	char *var, *new_env, *new_var, *t, *path, *np;
+	char *oldcmd, *npath, *var, *new_env, *new_var, *t, *path, *np;
 	long count, x, y, r = -1L, blanks = 0;
 
 	/* Calculate the size of the environment */
-	var = shell_base->p_env;
+	var = _base->p_env;
 	count = env_size(var) + sizeof("ARGV=NULL:");
 
 	/* Add space for the ARGV strings.
@@ -376,21 +380,18 @@ execvp(char **argv)
 	if (!new_env)
 		return -40;
 
-	var = shell_base->p_env;
+	var = _base->p_env;
 	new_var = new_env;
 
 	/* Copy variables from `var' to `new_var', but don't copy ARGV strings
 	 */
-	if (var)
+	while (var && *var)
 	{
+		if (strncmp(var, "ARGV=", 5) == 0)
+			break;
 		while (*var)
-		{
-			if (strncmp(var, "ARGV=", 5) == 0)
-				break;
-			while (*var)
-				*new_var++ = *var++;
 			*new_var++ = *var++;
-		}
+		*new_var++ = *var++;
 	}
 
 	/* Append new ARGV strings.
@@ -437,18 +438,24 @@ execvp(char **argv)
 	/* Since crunch() evaluates some arguments, we have now to
 	 * re-create the old GEMDOS style command line string.
 	 */
-	bzero(oldcmd, sizeof(oldcmd));
+	oldcmd = (char *)m_xalloc(SHELL_MAXPATH + SHELL_MAXFN + 128, 3);
+	npath = oldcmd + 128;
+
+	if (!oldcmd)
+		return -40;
+
+	bzero(oldcmd, 128);
 
 	x = 1;			/* must skip the first argument (program name) */
 	y = 0;
-	while (y < (sizeof(oldcmd) - 2) && argv[x])
+	while (y < 126 && argv[x])
 	{
 		oldcmd[y++] = ' ';
 
 		if (argv[x][0] == 0)
-			strncpy_f(oldcmd + y, "''", sizeof(oldcmd) - 2 - y);
+			strncpy_f(oldcmd + y, "''", 126 - y);
 		else
-			strncpy_f(oldcmd + y, argv[x], sizeof(oldcmd) - 2 - y);
+			strncpy_f(oldcmd + y, argv[x], 126 - y);
 
 		y += strlen(oldcmd + y);
 		x++;
@@ -464,7 +471,7 @@ execvp(char **argv)
 
 	if (t == NULL)
 	{
-		path = _mint_getenv(shell_base, "PATH");
+		path = _mint_getenv(_base, "PATH");
 		if (path == NULL)
 			path = "./";
 	}
@@ -489,6 +496,7 @@ execvp(char **argv)
 	} while (*path && r < 0);
 
 	m_free((long)new_env);
+	m_free((long)oldcmd);
 
 	return r;
 }
@@ -523,14 +531,11 @@ sh_help(long argc, char **argv)
 static long
 sh_ls(long argc, char **argv)
 {
-	static char path[SHELL_MAXPATH], link[SHELL_MAXPATH];
-	static char entry[256];
 	struct stat st;
 	struct timeval tv;
-	short year, month, day, hour, minute;
 	short i, all = 0, full = 0;
 	long x, r, s, handle;
-	char *dir;
+	char *dir, *path, *link, *entry;
 
 	dir = ".";
 
@@ -569,9 +574,16 @@ sh_ls(long argc, char **argv)
 
 	t_gettimeofday(&tv, NULL);
 
+	path = (char *)m_xalloc((SHELL_MAXPATH * 2) + SHELL_MAXFN, 3);
+	link = path + SHELL_MAXPATH;
+	entry = link + SHELL_MAXPATH;
+
+	if (!path)
+		return -40;
+
 	do
 	{
-		r = d_readdir(sizeof(entry), handle, entry);
+		r = d_readdir(SHELL_MAXFN, handle, entry);
 
 		/* Display only names not starting with a dot, unless -a was specified */
 		if (r == 0 && (entry[sizeof(long)] != '.' || all))
@@ -586,13 +598,15 @@ sh_ls(long argc, char **argv)
 			{
 				if (S_ISLNK(st.mode))
 				{
-					s = f_readlink(sizeof(link), link, path);
+					s = f_readlink(SHELL_MAXPATH, link, path);
 					if (s == 0)
 						dos2unix(link);
 				}
 
 				if (full)
 				{
+					short year, month, day, hour, minute;
+
 					/* Reuse the path[] space for attributes */
 					strcpy(path, "?---------");
 
@@ -672,6 +686,8 @@ sh_ls(long argc, char **argv)
 		}
 	} while (r == 0);
 
+	m_free((long)path);
+
 	d_closedir(handle);
 
 	return 0;
@@ -682,9 +698,8 @@ sh_ls(long argc, char **argv)
 static long
 sh_cd(long argc, char **argv)
 {
-	static char cwd[SHELL_MAXPATH];
 	long r;
-	char *newdir, *pwd;
+	char *newdir, *pwd, *cwd, *opwd;
 
 	if (argc >= 2)
 	{
@@ -699,7 +714,7 @@ sh_cd(long argc, char **argv)
 	}
 	else
 	{
-		newdir = _mint_getenv(shell_base, "HOME");
+		newdir = _mint_getenv(_base, "HOME");
 		if (!newdir)
 			newdir = "/";
 	}
@@ -708,19 +723,33 @@ sh_cd(long argc, char **argv)
 
 	if (r == 0)
 	{
-		d_getcwd(cwd, 0, sizeof(cwd));
+		cwd = (char *)m_xalloc(SHELL_MAXPATH, 3);
+		if (!cwd)
+			return -40;
+
+		d_getcwd(cwd, 0, SHELL_MAXPATH);
 
 		if (*cwd == 0)
 			strcpy(cwd, "/");
 		else
 			dos2unix(cwd);
 
-		pwd = _mint_getenv(shell_base, "PWD");
+		pwd = _mint_getenv(_base, "PWD");
 
 		if (pwd && strcmp(pwd, cwd))
-			shell_setenv("OLDPWD", pwd);
+		{
+			opwd = (char *)m_xalloc(SHELL_MAXPATH, 3);
+			if (opwd)
+			{
+				strcpy(opwd, pwd);
+				shell_setenv("OLDPWD", opwd);
+				m_free((long)opwd);
+			}
+		}
 
 		shell_setenv("PWD", cwd);
+
+		m_free((long)cwd);
 	}
 
 	return r;
@@ -944,21 +973,17 @@ sh_ln(long argc, char **argv)
 static long
 sh_setenv(long argc, char **argv)
 {
-	char *var = shell_base->p_env;
-
 	if (argc < 2)
 	{
-		if (var)
-		{
-			while (*var)
-			{
-				shell_fprintf(STDOUT, "%s\r\n", var);
-				while (*var)
-					var++;
-				var++;
-			}
-		}
+		char *var = _base->p_env;
 
+		while (var && *var)
+		{
+			shell_fprintf(STDOUT, "%s\r\n", var);
+			while (*var)
+				var++;
+			var++;
+		}
 	}
 	else if (argc == 2)
 	{
@@ -1041,9 +1066,8 @@ static const char *commands[] =
 INLINE long
 execute(char *cmdline)
 {
-	static char *argv[SHELL_ARGS];
-	char *c;
-	long cnt, cmdno, argc;
+	char *c, **argv;
+	long r = 0, cnt, cmdno, argc;
 
 	c = cmdline;
 
@@ -1059,6 +1083,11 @@ execute(char *cmdline)
 		c++;
 	}
 
+	argv = (char **)m_xalloc(SHELL_ARGS * sizeof(long), 3);
+
+	if (!argv)
+		return -40;
+
 	/* This destroys the cmdline string */
 	argc = crunch(cmdline, argv);
 
@@ -1066,8 +1095,7 @@ execute(char *cmdline)
 	{
 		if (argc < 0)
 			shell_fprintf(STDERR, MSG_shell_unmatched_quotes);
-
-		return 0;
+		goto exit;
 	}
 
 	/* Result a zero if the string given is not an internal command,
@@ -1092,7 +1120,11 @@ execute(char *cmdline)
 	if ((commands[cnt] == NULL) || (!xcommands && cmdno > MAX_BASIC_CMD))
 		cmdno = 0;
 
-	return (cmdno == 0) ? execvp(argv) : cmd_routs[cnt](argc, argv);
+	r = (cmdno == 0) ? execvp(argv) : cmd_routs[cnt](argc, argv);
+exit:
+	m_free((long)argv);
+
+	return r;
 }
 
 /* XXX because of Cconrs() the command line cannot be longer than 254 bytes.
@@ -1100,21 +1132,25 @@ execute(char *cmdline)
 INLINE char *
 prompt(uchar *buffer, long buflen)
 {
-	static char cwd[SHELL_MAXPATH];
-	char *lbuff;
+	char *lbuff, *cwd;
 	short idx;
 
 	buffer[0] = LINELEN;
 	buffer[1] = 0;
 
-	d_getcwd(cwd, 0, sizeof(cwd));
+	cwd = (char *)m_xalloc(SHELL_MAXPATH, 3);
 
-	if (*cwd == 0)
-		strcpy(cwd, "/");
-	else
-		dos2unix(cwd);
+	if (cwd)
+	{
+		d_getcwd(cwd, 0, SHELL_MAXPATH);
 
-	shell_fprintf(STDOUT, "mint:%s#", cwd);
+		if (*cwd == 0)
+			strcpy(cwd, "/");
+		else
+			dos2unix(cwd);
+	}
+
+	shell_fprintf(STDOUT, "mint:%s#", cwd ? cwd : "");
 
 	c_conrs(buffer);
 
@@ -1125,19 +1161,22 @@ prompt(uchar *buffer, long buflen)
 	idx = buffer[1];
 	lbuff[--idx] = 0;
 
+	if (cwd)
+		m_free((long)cwd);
+
 	return lbuff;
 }
 
 static EXITING
 shell(void)
 {
-	static uchar linebuf[LINELEN + 2];
+	uchar linebuf[LINELEN + 2];
 	uchar *lbuff;
 	long r;
 
 	(void)p_domain(1);			/* switch to MiNT domain */
 	(void)f_force(2, -1);			/* redirect the stderr to console */
-	(void)p_sigsetmask(-1L);		/* mask out the signals */
+//	(void)p_sigsetmask(-1L);		/* mask out the signals */
 	(void)p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
 
 	shell_print("\ee\ev\r\n");		/* enable cursor, enable word wrap, make newline */
@@ -1164,6 +1203,7 @@ long
 startup_shell(void)
 {
 	long r;
+	struct proc *p;
 
 	r = kthread_create((void *)shell, NULL, &p, "shell");
 	if (r)
@@ -1173,10 +1213,9 @@ startup_shell(void)
 		return -1;
 	}
 
-	shell_base = _base;
-	shell_base->p_env = init_env;
+	_base->p_env = init_env;
 
-	p->real_cmdline = shell_cmdline;	/* fake cmdline */
+	p->real_cmdline = (char *)&shell_cmdline;	/* fake cmdline */
 
 	return p->pid;
 }
