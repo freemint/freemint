@@ -85,7 +85,9 @@ new_wind_handle(void)
 		if (wind_handle[word] != LFULL)
 			break;
 
-	// assert(word < words);
+#if XXX
+	assert(word < words);
+#endif
 
 	l = 0;
 	while (btst(wind_handle[word], l))
