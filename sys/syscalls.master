@@ -1,52 +1,52 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 2000-01-01
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
+ *
  */
 
 
-/* 
+/*
  * RESERVED - return ENOSYS
  * NULL     - no entry
  * MAX      - size of table
- * 
+ *
  * otherwise interpreted as systemcall
  * missing entries are automatically set to NULL
- * 
+ *
  */
 
 
 [ DOS ]
 
 /* special Opcodes:
- * 
+ *
  * - 0x16 MagiC-like shared library scheme
  * - 0x17 MagiC-like shared library scheme
  * - 0x33 reserved for MagiC - LONG Sconfig(WORD subfn, LONG flags);
@@ -552,7 +552,7 @@ opcode	class name	args */
 0x00e	b uiorec	(short dev)
 0x00f	b ursconf	(short baud, short flow, short uc, short rs, short ts, short sc)
 
-0x010	  NULL
+0x010	b keytbl	(char *unshift, char *shift, char *caps)
 0x011	b random	(void)
 0x012	  NULL
 0x013	  NULL
@@ -560,7 +560,7 @@ opcode	class name	args */
 0x015	b cursconf	(short cmd, short op)
 0x016	b settime	(void)
 0x017	b gettime	(ulong datetime)
-0x018	  NULL
+0x018	b bioskeys	(void)
 0x019	  NULL
 0x01a	  NULL
 0x01b	  NULL
