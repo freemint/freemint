@@ -1545,6 +1545,7 @@ obj_watch(XA_TREE *wt,
 	else
 	{
 		S.wm_count++;
+		obj_change(wt, obj, in_state, flags, true, rl);
 		while (mb)
 		{
 			short s;
