@@ -70,7 +70,15 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		if (C.menu_base && md->state && C.menu_base->client == client)
 		{
-			Tab *tab = C.menu_base;
+			Tab *tab;
+
+			tab = find_pop(C.menu_base, md->x, md->y);
+			
+			if (tab && tab != C.menu_base)
+				tab = collapse(C.menu_base, tab);
+			else if (!tab)
+				tab = C.menu_base;
+
 			DIAG((D_button, client, "cXA_button_event: Menu click"));
 			if (tab->ty)
 			{
