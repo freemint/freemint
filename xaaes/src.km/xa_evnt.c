@@ -237,8 +237,16 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_multi,client,"evnt_multi for %s, %s clks=0x%x, msk=0x%x, bst=0x%x T:%d",
 				c_owner(client),
 				evtxt,pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1));
+		DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
 	}
 #endif
+
+	if (client->status & CS_LAGGING)
+	{
+		client->status &= ~CS_LAGGING;
+		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
+	}
+
 	/*
 	 * Ozk: We absolutely prioritize WM_REDRAW messages, which are
 	 * queued in a separate message queue.
@@ -298,12 +306,6 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	If there are no pending buttons, we check with mu_button instead,
 	because it contains the last mouse event packet returned from moose.
  */
-
-	if (client->status & CS_LAGGING)
-	{
-		client->status &= ~CS_LAGGING;
-		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
-	}
 
 	if (events & MU_BUTTON)
 	{
