@@ -667,6 +667,59 @@ static N_AESINFO naes_cookie =
 	0L,
 };
 
+#define C_MAGX 0x4d616758	/* MagX */
+static MAGX_COOKIE *c_magx = NULL;
+
+static MAGX_AESVARS magx_aesvars =
+{
+	0x87654321,
+	NULL,
+	NULL,
+	(((long)'M'<<24)|((long)'A'<<16)|('G'<<8)|'X'),
+	(25<<9)|(1<<5)|1,		/* 1 jan, 2005	*/
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	0x0600,
+	0x0003
+};
+
+static MAGX_DOSVARS magx_dosvars =
+{
+	NULL,
+	0,
+	0,
+	0L,
+	0L,
+	0L,
+	NULL,
+	0L,
+	0,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	0L,
+	0L,
+	0L
+};
+	
+static MAGX_COOKIE magx_cookie =
+{
+	0L,
+	&magx_dosvars,
+	&magx_aesvars,
+	NULL,
+	NULL,
+	0L
+};
+
+
 void
 k_main(void *dummy)
 {
@@ -711,7 +764,45 @@ k_main(void *dummy)
 		}
 #endif
 	}
+#if 0
+	/* Ozk:
+	 * This was extremely not successful! :-) MagiC's fantastic "think I'll do this shel_write() mode like this insteadof
+	 * like MultiTOS's way" is the biggest problem.
+	 */
+	{
+		DIAGS(("Install 'magx' cookie.."));
+		if ( ((long)c_magx = m_xalloc(sizeof(*c_magx) + sizeof(MAGX_DOSVARS) + sizeof(MAGX_AESVARS) + 16, (4<<4)|(1<<3)|3) ))
+		{
+			MAGX_COOKIE *mc;
+			MAGX_DOSVARS *dv;
+			MAGX_AESVARS *av;
+			int *p;
 
+			mc = c_magx;
+			dv = (MAGX_DOSVARS *)((long)mc + sizeof(MAGX_COOKIE));
+			av = (MAGX_AESVARS *)((long)dv + sizeof(MAGX_DOSVARS));
+			p  = (int *)((long)av + sizeof(MAGX_AESVARS));
+			
+			memcpy(mc, &magx_cookie, sizeof(*mc));
+			mc->dosvars = dv;
+			mc->aesvars = av;
+			memcpy(dv, &magx_dosvars, sizeof(*dv));
+			memcpy(av, &magx_aesvars, sizeof(*av));
+			
+			p[0] = naes_cookie.time;
+			p[1] = naes_cookie.date;
+			dv->dos_time = (int *)&p[0];
+			dv->dos_date = (int *)&p[1];
+
+			if (s_system(S_SETCOOKIE, C_MAGX, (long)c_magx) != 0)
+			{
+				m_free(c_magx);
+				c_magx = NULL;
+				DIAGS(("Installing 'magx' cookie failed"));
+			}
+		}
+	}
+#endif
 	/*
 	 * register trap#2 handler
 	 */
@@ -1011,6 +1102,13 @@ k_exit(void)
 		s_system(S_DELCOOKIE, C_nAES, 0L);
 		m_free(c_naes);
 		c_naes = NULL;
+	}
+
+	if (c_magx)
+	{
+		s_system(S_DELCOOKIE, C_MAGX, 0L);
+		m_free(c_magx);
+		c_magx = NULL;
 	}
 
 	/*
