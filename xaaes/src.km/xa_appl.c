@@ -472,10 +472,17 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	/* Unlock mouse & screen */
 	if (update_locked() == client)
+	{
+		if (C.update_lock == client)
+			C.update_lock = NULL;
 		free_update_lock();
+	}
 	if (mouse_locked() == client)
+	{
+		if (C.mouse_lock == client)
+			C.mouse_lock = NULL;
 		free_mouse_lock();
-
+	}
 
 	// if (!client->killed)
 	//	remove_attachments(lock|clients, client, client->std_menu);

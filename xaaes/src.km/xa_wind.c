@@ -1496,7 +1496,10 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_sema, NULL, "'%s' BEG_UPDATE", client->name));
 
 		if (lock_screen(client, try, pb->intout, 1))
+		{
 			client->fmd.lock |= SCREEN_UPD;
+			C.update_lock = client;
+		}
 
 		break;
 	}
@@ -1504,7 +1507,10 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	case END_UPDATE:
 	{
 		if (unlock_screen(client, 1))
+		{
 			client->fmd.lock &= ~SCREEN_UPD;
+			C.update_lock = NULL;
+		}
 
 		DIAG((D_sema, NULL, "'%s' END_UPDATE", client->name));
 		break;
@@ -1516,7 +1522,10 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_sema, NULL, "'%s' BEG_MCTRL", client->name));
 
 		if (lock_mouse(client, try, pb->intout, 1))
+		{
 			client->fmd.lock |= MOUSE_UPD;
+			C.mouse_lock = client;
+		}
 
 		break;
 	}
@@ -1525,7 +1534,10 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		
 		if (unlock_mouse(client, 1))
+		{
 			client->fmd.lock &= ~MOUSE_UPD;
+			C.mouse_lock = NULL;
+		}
 
 		DIAG((D_sema, NULL, "'%s' END_MCTRL", client->name));
 		break;
