@@ -1159,6 +1159,7 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 		struct mbs mbs;
 
 		get_mbstate(client, &mbs);
+		
 		pb->intout[1] = mbs.x;
 		pb->intout[2] = mbs.y;
 		pb->intout[3] = mbs.b;
@@ -1207,7 +1208,7 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client)
 	{
 		DIAG((D_mouse,client,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
-			mainmd.x, mainmd.y, mainmd.state, mainmd.kstate));
+			pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4]));
 	}
 	else
 	{
