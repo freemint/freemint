@@ -170,15 +170,17 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 
 	while (pending_iredraw_msgs(lock, client, &ibuf))
 	{
-		wind = (struct xa_window *)ibuf.irdrw.ptr; //(((long)ibuf.m[2]) << 16 | ibuf.m[3]);
-		//widg = get_widget(wind, ibuf.irdrw.xaw); //ibuf.m[1]);
-		r = (RECT *)&ibuf.irdrw.x; //(RECT *)(ibuf.m + 4);
+		wind = (struct xa_window *)ibuf.irdrw.ptr;
 
-		if (!(r->w | r->h))
-			r = NULL;
+		if (wind != root_window || (wind == root_window && get_desktop()->owner == client))
+		{		
+			r = (RECT *)&ibuf.irdrw.x;
+
+			if (!(r->w | r->h))
+				r = NULL;
 		
-		display_window(lock, 0, wind, r);
-		
+			display_window(lock, 0, wind, r);
+		}
 		kick_mousemove_timeout();
 	}
 	if (!client->rdrw_msg && C.redraws)
