@@ -217,7 +217,7 @@ set_clip(const RECT *r)
 {
 	if (r->w <= 0 || r->h <= 0)
 		rtopxy(C.global_clip, &screen.r);
-	else	
+	else
 		rtopxy(C.global_clip, r);
 
 	vs_clip(C.vh, 1, C.global_clip);
@@ -2294,7 +2294,7 @@ init_objects(void)
 void
 display_object(enum locks lock, XA_TREE *wt, short item, short parent_x, short parent_y, short which)
 {
-	RECT r;
+	RECT r, o;
 	OBJECT *ob = wt->tree + item;
 	ObjectDisplay *display_routine = NULL;
 
@@ -2307,15 +2307,22 @@ display_object(enum locks lock, XA_TREE *wt, short item, short parent_x, short p
 	unsigned short state_mask = (OS_SELECTED|OS_CROSSED|OS_CHECKED|OS_DISABLED|OS_OUTLINED);
 	unsigned short t = ob->ob_type & 0xff;
 
+	object_offsets(ob, &o);
+
 	r.x = parent_x + ob->ob_x;
 	r.y = parent_y + ob->ob_y;
 	r.w = ob->ob_width; 
 	r.h = ob->ob_height;
 
-	if (   r.x       > C.global_clip[2]	/* x + w */
-	    || r.x+r.w-1 < C.global_clip[0]	/* x     */
-	    || r.y       > C.global_clip[3]	/* y + h */
-	    || r.y+r.h-1 < C.global_clip[1])	/* y     */
+	o.x = r.x + o.x;
+	o.y = r.y + o.y;
+	o.w = r.w - o.w;
+	o.h = r.h - o.h;
+	
+	if (   o.x		> C.global_clip[2]	/* x + w */
+	    || o.x + o.w - 1	< C.global_clip[0]	/* x     */
+	    || o.y		> C.global_clip[3]	/* y + h */
+	    || o.y + o.h - 1	< C.global_clip[1])	/* y     */
 		return;
 
 	if (t <= G_UNKNOWN)
