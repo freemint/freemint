@@ -142,19 +142,19 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 
 		if (sel_b > -1)
 		{
-			/* HR 210501: Really must do this BEFORE unblocking!!! */
-			close_window(lock, wind);		
-			delete_window(lock, wind);
-
 			if (wt->owner != C.Aes)
 			{
 				struct xa_client *client = wt->owner;
 				client->waiting_pb->intout[0] = f - ALERT_BUT1 +1;
 				Unblock(client, XA_OK, 7);
 			}
+
+			/* invalidate our data structures */
+			close_window(lock, wind);		
+			delete_window(lock, wind);
 		}
 	}
-	
+
 	return false;
 }
 
