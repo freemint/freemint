@@ -74,6 +74,10 @@ struct shared
 	struct opt_list *app_options;	/* individual option settings. */
 
 	short wm_count;			/* XXX ??? */
+	short clients_exiting;		/* Increased by exit_client() upon enry and decreased upon exit
+					 * used to prevent interrupt-handling during shutdown of a client
+					 */
+	
 };
 
 /* Area's shared between server and client, subject to locking. */
