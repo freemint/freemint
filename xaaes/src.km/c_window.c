@@ -1098,7 +1098,7 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
  * Change an open window's coordinates, updating rectangle lists as appropriate
  */
 void
-move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y, int w, int h)
+move_window(enum locks lock, struct xa_window *wind, int newstate, int X, int Y, int W, int H)
 {
 	enum locks wlock = lock|winlist;
 	IFDIAG(struct xa_client *client = wind->owner;)
@@ -1108,7 +1108,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 
 	DIAG((D_wind,client,"move_window(%s) %d for %s from %d/%d,%d/%d to %d/%d,%d,%d",
 	      wind->is_open ? "open" : "closed",
-	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, x,y,w,h));
+	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, X,Y,W,H));
 
 #if 0
 	temporary commented out, because I dont know exactly the consequences.
@@ -1132,10 +1132,10 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 		oldw = wind->wa;
 
 		/* Change the window coords */
-		wind->r.x = x;
-		wind->r.y = y;
-		wind->r.w = w;
-		wind->r.h = h;
+		wind->r.x = X;
+		wind->r.y = Y;
+		wind->r.w = W;
+		wind->r.h = H;
 
 		inside_root(&wind->r, &wind->owner->options);
 
@@ -1171,6 +1171,513 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 				wt->tree->ob_y = wind->wa.y;
 			}
 
+/*
+ * Change this to '#if 0' to disable rectangle gymnastics.
+ */
+#if 1
+			{
+				short dir, resize;
+				struct xa_rect_list *oldrl, *orl, *newrl, *brl, *prev, *next, *rrl, *nrl;
+				RECT bs, bd, wa;
+
+				oldrl = wind->rect_start;
+				wind->rect_start = NULL;
+				newrl = make_rect_list(wind, 0);
+				wind->rect_start = newrl;
+
+				resize = new.w != old.w || new.h != old.h ? 1 : 0;
+				
+				if (oldrl && newrl)
+				{
+					DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",
+						old, new));
+
+					if (new.y > old.y)
+						dir = 1;
+					else
+						dir = 0;
+					if (new.x > old.x)
+						dir |= 2;
+					
+					brl = NULL;
+
+					oldw.x -= old.x;
+					oldw.y -= old.y;
+					
+					wa.x = wind->wa.x - new.x;
+					wa.y = wind->wa.y - new.y;
+					wa.w = wind->wa.w;
+					wa.h = wind->wa.h;
+					
+					/*
+					 * Convert to relative coords
+					 */
+					orl = oldrl;
+					prev = NULL;
+					while (orl)
+					{
+						orl->r.x -= old.x;
+						orl->r.y -= old.y;
+
+						if (resize)
+						{
+							if (!xa_rect_clip(&oldw, &orl->r, &orl->r))
+							{
+								if (prev)
+									prev->next = orl->next;
+								else
+									oldrl = orl->next;
+
+								nrl = orl;
+								orl = orl->next;
+								kfree(nrl);
+							}
+							else
+							{
+								prev = orl;
+								orl = orl->next;
+							}
+						}
+						else
+							orl = orl->next;
+					}
+
+					while (newrl)
+					{						
+						short ok = 1;
+						bs.x = newrl->r.x - new.x;
+						bs.y = newrl->r.y - new.y;
+						bs.w = newrl->r.w;
+						bs.h = newrl->r.h;
+
+						if (resize)
+						{
+							if (!xa_rect_clip(&wa, &bs, &bs))
+								ok = 0;
+						}
+						orl = oldrl;
+						while (orl && ok)
+						{
+							DIAGS(("Check for common areas (newrl=%d/%d/%d/%d, oldrl=%d/%d/%d/%d)",
+								bs, orl->r));
+
+							if (xa_rect_clip(&bs, &orl->r, &bd))
+							{
+								{
+									nrl = kmalloc(sizeof(*nrl));
+									DIAGS(("COMMON brl=%lx, nrl=%lx, brl->nxt=%lx", brl, nrl, brl ? (long)brl->next : 0xFACEDACE));
+
+									if (brl)
+									{
+										struct xa_rect_list *n, *p;
+										switch (dir)
+										{
+											case 0:	// up/left
+											{
+												n = brl;
+												p = NULL;
+												
+												while (n)
+												{
+													if (bd.x < n->r.x && bd.y <= (n->r.y + n->r.h))
+													{
+														if (p)
+														{
+															nrl->next = n;
+															p->next = nrl;
+														}
+														else
+														{
+															nrl->next = brl;
+															brl = nrl;
+														}
+														break;
+													}
+													p = n;
+													n = n->next;
+												}
+												if (!n)
+												{
+													p->next = nrl;
+													nrl->next = NULL;
+												}
+												break;
+											}
+											case 1: // down/left
+											{
+												n = brl;
+												p = NULL;
+												while (n)
+												{
+													if (bd.x < n->r.x || bd.y >= (n->r.y + n->r.h))
+													{
+														if (p)
+														{
+															nrl->next = n;
+															p->next = nrl;
+														}
+														else
+														{
+															nrl->next = brl;
+															brl = nrl;
+														}
+														break;
+													}
+													p = n;
+													n = n->next;
+												}
+												if (!n)
+												{
+													p->next = nrl;
+													nrl->next = NULL;
+												}
+												break;
+											}
+											case 2: // up/right
+											{
+												n = brl;
+												p = NULL;
+												while (n)
+												{
+													if (bd.x > n->r.x && bd.y < (n->r.y + n->r.h))
+													{
+														if (p)
+														{
+															nrl->next = n;
+															p->next = nrl;
+														}
+														else
+														{
+															nrl->next = brl;
+															brl = nrl;
+														}
+														break;
+													}
+													p = n;
+													n = n->next;
+												}
+												if (!n)
+												{
+													p->next = nrl;
+													nrl->next = NULL;
+												}
+												break;
+											}
+											case 3: // down/right
+											{
+												n = brl;
+												p = NULL;
+												while (n)
+												{
+													if (bd.x > n->r.x || bd.y >= (n->r.y + n->r.h))
+													{
+														if (p)
+														{
+															nrl->next = n;
+															p->next = nrl;
+														}
+														else
+														{
+															nrl->next = brl;
+															brl = nrl;
+														}
+														break;
+													}
+													p = n;
+													n = n->next;
+												}
+												if (!n)
+												{
+													p->next = nrl;
+													nrl->next = NULL;
+												}
+												break;
+											}
+										}
+									}
+									else
+									{
+										brl = next = nrl;
+										brl->next = NULL;
+									}
+									nrl->r = bd;
+									DIAGS(("save blitarea %d/%d/%d/%d", nrl->r));
+								}
+							}
+							orl = orl->next;
+						}
+						newrl = newrl->next;
+					}
+					/*
+					 * Release previous rectangle list
+					 */
+					while (oldrl)
+					{
+						nrl = oldrl;
+						oldrl = oldrl->next;
+						kfree(nrl);
+					}
+					if (brl)
+					{
+						/*
+						 * Do the blitting first...
+						 */
+						nrl = brl;
+						while (nrl)
+						{
+							bd = nrl->r;
+							
+							bs.x = bd.x + new.x;
+							bs.y = bd.y + new.y;
+							bs.w = bd.w;
+							bs.h = bd.h;
+							bd.x += old.x;
+							bd.y += old.y;
+
+							DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
+								bd, bs, brl, (long)brl->next));
+
+							form_copy(&bd, &bs);
+							nrl = nrl->next;
+						}
+						/*
+						 * Calculate rectangles that needs to be redrawn...
+						 */
+						newrl = wind->rect_start;
+						while (newrl)
+						{
+							short ok = 1;
+							nrl = kmalloc(sizeof(*nrl));
+
+							nrl->next = NULL;
+							nrl->r.x = newrl->r.x - new.x;
+							nrl->r.y = newrl->r.y - new.y;
+							nrl->r.w = newrl->r.w;
+							nrl->r.h = newrl->r.h;
+							DIAGS(("NEWRECT %lx %d/%d/%d/%d (%d/%d/%d/%d)", nrl, nrl->r, newrl->r));
+
+							if (resize)
+							{
+								if (!xa_rect_clip(&wa, &nrl->r, &nrl->r))
+									ok = 0;
+							}
+							orl = brl;
+							while (orl && nrl && ok)
+							{
+								short w, h, flag;
+								short bx2 = orl->r.x + orl->r.w;
+								short by2 = orl->r.y + orl->r.h;
+
+								DIAGS(("BLITRECT (orl=%lx, nxt=%lx)(nrl=%lx, nxt=%lx) %d/%d/%d/%d, x2/y2=%d/%d",
+									orl, (long)orl->next, nrl, (long)nrl->next, orl->r, bx2, by2));
+								prev = NULL;
+
+								for (rrl = nrl; rrl; rrl = next)
+								{
+									RECT our = rrl->r;
+
+									w = orl->r.x - rrl->r.x;
+									h = orl->r.y - rrl->r.y;
+
+									DIAGS(("CLIPPING %d/%d/%d/%d, w/h=%d/%d", our, w, h));
+
+									next = rrl->next;
+									
+									if (   h < our.h   &&
+									       w < our.w   &&
+									     bx2 > our.x   &&
+									     by2 > our.y )
+									{
+										short nx2 = our.x + our.w;
+										short ny2 = our.y + our.h;
+
+
+										flag = 0;
+
+										if (orl->r.y > our.y)
+										{
+											rrl->r.x = our.x;
+											rrl->r.y = our.y;
+											rrl->r.w = our.w;
+											rrl->r.h = h;
+											our.y += h;
+											our.h -= h;
+											flag = 1;
+											DIAGS((" -- 1. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+												rrl->r, our));
+										}
+										if (orl->r.x > our.x)
+										{
+											if (flag)
+											{
+												DIAGS((" -- 2. new"));
+												prev = rrl;
+												rrl = kmalloc(sizeof(*rrl));
+												rrl->next = prev->next;
+												prev->next = rrl;
+											}
+											rrl->r.x = our.x;
+											rrl->r.y = our.y;
+											rrl->r.h = our.h;
+											rrl->r.w = w;
+
+											our.x += w;
+											our.w -= w;
+											flag = 1;
+											DIAGS((" -- 2. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+												rrl->r, our));
+										}
+										if (ny2 > by2)
+										{
+											if (flag)
+											{
+												DIAGS((" -- 3. new"));
+												prev = rrl;
+												rrl = kmalloc(sizeof(*rrl));
+												rrl->next = prev->next;
+												prev->next = rrl;
+											}
+											rrl->r.x = our.x;
+											rrl->r.y = by2;
+											rrl->r.w = our.w;
+											rrl->r.h = ny2 - by2;
+
+											our.h -= rrl->r.h;
+
+											flag = 1;
+											DIAGS((" -- 3. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+												rrl->r, our));
+										}
+										if (nx2 > bx2)
+										{
+											if (flag)
+											{
+												DIAGS((" -- 4. new"));
+												prev = rrl;
+												rrl = kmalloc(sizeof(*rrl));
+												rrl->next = prev->next;
+												prev->next = rrl;
+											}	
+											rrl->r.x = bx2;
+											rrl->r.y = our.y;
+											rrl->r.w = nx2 - bx2;
+											rrl->r.h = our.h;
+
+											our.w -= rrl->r.w;
+
+											flag = 1;
+											DIAGS((" -- 4. redraw part %d/%d/%d/%d, remain(blit) %d/%d/%d/%d",
+												rrl->r, our));
+										}
+										if (!flag)
+										{
+											DIAGS((" ALL BLIT (removed) nrl=%lx, rrl=%lx, prev=%lx, nxt=%lx, %d/%d/%d/%d",
+												nrl, rrl, prev, (long)rrl->next, rrl->r));
+
+											if (nrl == rrl)
+											{
+												nrl = next;
+											}
+											else if (nrl->next == rrl)
+												nrl->next = next;
+											
+											if (prev)
+												prev->next = next;
+										
+											kfree(rrl);
+										}
+									}
+									else
+									{
+										DIAGS((" -- ALL REDRAW %d/%d/%d/%d", rrl->r));
+									}
+									prev = rrl;
+									DIAGS((" .. .. .."));
+								} /* for (rrl = nrl; rrl; rrl = next) */
+								DIAGS(("FROM %lx to %lx", orl, (long)orl->next));
+								orl = orl->next;
+							} /* while (orl && nrl) */
+							DIAGS(("DONE CLIPPING"));
+
+							/*
+							 * nrl is the first in a list of rectangles that needs
+							 * to be redrawn
+							 */
+							while (nrl)
+							{
+								nrl->r.x += new.x;
+								nrl->r.y += new.y;
+								DIAGS(("redrawing area %d/%d/%d/%d",
+									nrl->r));
+								/*
+								 * we only redraw window borders here if wind moves
+								 */
+								if (new.h == old.h && new.w == old.w)
+									display_window(wlock, 2, wind, &nrl->r);
+								if (xa_rect_clip(&wind->wa, &nrl->r, &bs))
+								{
+									wind->send_message(wlock, wind, NULL,
+										WM_REDRAW, 0, 0, wind->handle,
+										bs.x,
+										bs.y,
+										bs.w,
+										bs.h);
+								}
+								orl = nrl;
+								nrl = nrl->next;
+								kfree(orl);
+							}
+							newrl = newrl->next;
+						} /* while (newrl) */
+
+						/*
+						 * free blitting list
+						 */
+						while (brl)
+						{
+							nrl = brl;
+							brl = brl->next;
+							kfree(nrl);
+						}
+
+						/*
+						 * If window was resized, redraw all window borders
+						 */
+						if (new.h != old.h || new.w != old.w)
+							display_window(wlock, 2, wind, NULL);
+						
+					} /* if (brl) */
+					else
+					{
+						while (newrl)
+						{
+							display_window(wlock, 12, wind, &newrl->r);
+							wind->send_message(wlock, wind, NULL,
+								WM_REDRAW, 0, 0, wind->handle,
+								newrl->r.x,
+								newrl->r.y,
+								newrl->r.w,
+								newrl->r.h);
+							newrl = newrl->next;
+						}
+					}
+				}
+				else if (newrl)
+				{
+					while (newrl)
+					{
+						display_window(wlock, 12, wind, &newrl->r);
+						wind->send_message(wlock, wind, NULL,
+							WM_REDRAW, 0, 0, wind->handle,
+							newrl->r.x,
+							newrl->r.y,
+							newrl->r.w,
+							newrl->r.h);
+						newrl = newrl->next;
+					}
+				}
+			}
+#else
 			/* Update the window's rectangle list, it will be out of date now */
 			make_rect_list(wind, 1);
 
@@ -1216,7 +1723,7 @@ move_window(enum locks lock, struct xa_window *wind, int newstate, int x, int y,
 					}
 				}
 			}
-		
+#endif
 			wl = wind->next;
 
 			/* For some reason the open window had got behind
