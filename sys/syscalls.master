@@ -94,9 +94,10 @@ opcode	class name	args */
 0x012	Cauxis		(void)
 0x013	Cauxos		(void)
 0x014	Maddalt		(long start, long size)
-0x015	Srealloc	(void)
-0x016	Sslbopen	(void)				/* since 1.15.3, MagiC 5 */
-0x017	Sslbclose	(void)				/* since 1.15.3, MagiC 5 */
+0x015	Srealloc	(long size)
+0x016	Slbopen		(char *name, char *path, long min_ver,
+			 SHARED_LIB **sl, SLB_EXEC *fn) /* since 1.15.3, MagiC 5 */
+0x017	Slbclose	(SHARED_LIB *sl)		/* since 1.15.3, MagiC 5 */
 0x018	undefined
 0x019	Dgetdrv		(void)
 0x01a	Fsetdta		(struct dtabuf *dta)
@@ -106,7 +107,7 @@ opcode	class name	args */
 0x01e	undefined
 0x01f	undefined
 
-0x020	Ssuper		(long new_ssp)
+0x020	Super		(long new_ssp)
 0x021	undefined
 0x022	undefined
 0x023	undefined
@@ -132,7 +133,7 @@ opcode	class name	args */
 0x036	Dfree		(long *buf, short d)
 0x037	undefined
 0x038	undefined
-0x039	Dcreate		(const char *name, short attrib)
+0x039	Dcreate		(const char *name)
 0x03a	Ddelete		(const char *path)
 0x03b	Dsetpath	(const char *path)
 0x03c	Fcreate		(const char *name, short attrib)
@@ -351,8 +352,8 @@ opcode	class name	args */
 0x100	Fpipe		(short *usrh)
 0x101	Ffchown		(short fh, short uid, short gid)	/* since 1.15.2  */
 0x102	Ffchmod		(short fh, ushort mode)			/* since 1.15.2  */
-0x103	Ffsync		(short fh)				/* since 1.15.10 */
-0x104	Ffcntl		(short fh, long arg, short cmd)
+0x103	Fsync		(short fh)				/* since 1.15.10 */
+0x104	Fcntl		(short fh, long arg, short cmd)
 0x105	Finstat		(short fh)
 0x106	Foutstat	(short fh)
 0x107	Fgetchar	(short fh, short mode)
@@ -436,7 +437,7 @@ opcode	class name	args */
 0x14f	Psetregid	(ushort rid, ushort eid)
 
 0x150	Ssync		(void)
-0x151	Shalt		(long restart)
+0x151	Shutdown	(long restart)
 0x152	Dreadlabel	(const char *path, char *label, short maxlen)
 0x153	Dwritelabel	(const char *path, const char *label)
 0x154	Ssystem		(short mode, ulong arg1, ulong arg2)

@@ -74,6 +74,7 @@ struct arg
 #define FLAG_UNION	0x04
 #define FLAG_POINTER	0x08
 #define FLAG_ARRAY	0x10
+#define FLAG_POINTER2	0x20
 	int ar_size;
 	
 	char types[STRMAX];
