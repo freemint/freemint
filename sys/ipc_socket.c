@@ -229,11 +229,11 @@ getsock (struct proc *p, short fd, struct file **fp)
 	r = FP_GET1 (p, fd, fp);
 	if (r) return r;
 	
-	if ((*fp)->dev != &sockdev
 # ifdef OLDSOCKDEVEMU
-		&& (*fp)->dev != &sockdevemu
+	if ((*fp)->dev != &sockdev && (*fp)->dev != &sockdevemu)
+# else
+	if ((*fp)->dev != &sockdev)
 # endif
-	)
 		return ENOTSOCK;
 	
 	
@@ -478,7 +478,11 @@ sys_connect (short fd, struct sockaddr *addr, long addrlen)
 	DEBUG (("sys_connect(%i, %lx, %li)", fd, addr, addrlen));
 	
 	r = getsock (p, fd, &fp);
-	if (r) return r;
+	if (r)
+	{
+		DEBUG (("sys_connect(%i): not a socket (%li)", fd, r));
+		return r;
+	}
 	
 	so = (struct socket *) fp->devinfo;
 	switch (so->state)
@@ -491,7 +495,9 @@ sys_connect (short fd, struct sockaddr *addr, long addrlen)
 				DEBUG (("sys_connect: attempt to connect a listening socket"));
 				return EINVAL;
 			}
-			return (*so->ops->connect)(so, addr, addrlen, fp->flags & O_NDELAY);
+			r = (*so->ops->connect)(so, addr, addrlen, fp->flags & O_NDELAY);
+			if (r) DEBUG (("sys_connect(%i): error %li", fd, r));
+			return r;
 		}
 		case SS_ISCONNECTED:
 		{
