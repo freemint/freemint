@@ -202,17 +202,6 @@ setexc (int number, long vector)
 	PROC *p = curproc;
 	long *place;
 	long old;
-# ifdef VM_EXTENSION
-	/* usually debuggers which are non-MiNT aware (like nearly all of them)
-	 * set their own vectors. This is disastrous when using VM....
-	 * We support only the one which are nice. i.e use setexc.
-	 * In the future this should be change so that the system vectors
-	 * are moved by using vbr...
-	 * However i believe that Fenix will be used then..
-	 * 1996 il Profesore
-	 */
-	extern ulong kludge_bus;			/* in intr.spp */ 
-# endif
 	
 	/* If the caller has no root privileges, we'll attempt
 	 * to terminate it. We allow to change the critical error handler
@@ -266,10 +255,6 @@ setexc (int number, long vector)
 	if (number == 0x102)
 		/* GEMDOS term vector */
 		old = p->ctxt[SYSCALL].term_vec;
-# ifdef VM_EXTENSION
-	else if (number == 0x02)
-		old = kludge_bus;
-# endif
 	else
 		old = *place;
 	
@@ -339,19 +324,7 @@ setexc (int number, long vector)
 			
 			if (intr_shadow && number < 0x0100 && p->in_dos == 0)
 				intr_shadow[number] = vector;
-# ifndef VM_EXTENSION
 			old = (long) Setexc (number, (void (*)()) vector);
-# else
-			if (number == 2)
-			{
-				/* now MonST should work with VM ... */
-				kludge_bus = (ulong) vector;
-			}
-			else
-			{
-				old = (long) Setexc (number, (void (*)()) vector);
-			}
-# endif
 		}
 	}
 	

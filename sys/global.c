@@ -175,23 +175,6 @@ int gl_lang = -1;
 long gemdos_version;
 # endif
 
-/* 
- * when memory protection is not used vm is switched on.
- * vm is switched off if not 030
- * (current implementation can not handle 68851,040 or 060 mmus)
- */
-
-# ifdef VM_EXTENSION
-int vm_in_use=0; /* true if vm is used */
-ulong st_left_after_vm = 0x00400000L;
-# endif
-
-
-
-
-
-
-
 # if 0
 
 # include "mfp.h"

@@ -153,19 +153,11 @@ s_system (int mode, ulong arg1, ulong arg2)
  */
 		case S_OSFEATURES:
 		{
-# ifdef VM_EXTENSION
-#  ifdef CRYPTO_CODE
-			r =  ((!no_mem_prot) & 0x01) | ((vm_in_use << 1) & 0x02) | 0x04;
-#  else
-			r =  ((!no_mem_prot) & 0x01) | ((vm_in_use << 1) & 0x02);
-#  endif
-# else
-#  ifdef CRYPTO_CODE
+# ifdef CRYPTO_CODE
 			r =  ((!no_mem_prot) & 0x01) | 0x04;
-#  else
+# else
 			r = (!no_mem_prot) & 0x01);
-#  endif
-# endif 
+# endif
 			break;
 		}
 		/*
