@@ -1,0 +1,27 @@
+.TH "FFORCE" 2 "3 March 1993" "MiNT docs 0.1" "MiNT SYSTEM CALLS"
+.SH NAME
+Fforce - redirect a standard channel
+.SH SYNOPSIS
+.nf
+#include <osbind.h>
+
+int Fforce(int stdhandle, int nonstdh);
+.fi
+.SH DESCRIPTION
+A standard channel with handle stdhandle is redirected to a
+file with handle nonstdh.
+
+Standard handles are:
+.br
+  0   keyboard (stdin)
+  1   screen (stdout)
+  2   serial port
+  3   parallel port
+  4   MIDI input        (MiNT)
+  5   MIDI output       (MiNT)
+.SH RETURN VALUES
+0 on success
+.SH SEE ALSO
+.BR Fdup(2),
+.BR Fpipe(2),
+.BR Fmidipipe(2)

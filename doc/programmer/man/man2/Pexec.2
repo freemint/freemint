@@ -1,0 +1,41 @@
+.TH "PEXEC" 2 "3 March 1993" "MiNT docs 0.1" "MiNT SYSTEM CALLS"
+.SH NAME
+Pexec - load and execute a program
+.SH SYNOPSIS
+.nf
+#include <osbind.h>
+
+long Pexec(int mode, char *name, void *cmdline, void *envptr);
+.fi
+.SH DESCRIPTION
+Pexec loads and/or runs a program, depending on the mode given.
+Under MiNT, extra modes have been added that run the program
+asynchronically, i.e. do not wait for it to finish.
+The modes unique to MiNT have codes 100 or above.
+
+The following modes are available:
+.br
+    0:  Load and run program.
+    3:  Just load program. Returns pointer to basepage.
+    4:  Start a program that has been set up before.
+        cmdline contains a pointer to the basepage,
+        envptr is not used. Parent and child share memory.
+    5:  Build new basepage. Returns pointer to basepage
+    6:  Start a program that has been set up before.
+        cmdline contains a pointer to the basepage,
+        envptr is not used. Parent and child don't
+        share memory.
+  100:  Load and run program async. Returns child's pid.
+  104:  Start a program, async. Parent and child share
+        memory. Parameter name gives name of the child
+        program.
+  106:  Start a program, async. Memory is not shared.
+        Parameter name gives name of the child program.
+  200:  Load and run program. Old program is replaced.
+.SH SEE ALSO
+.BR Pterm(2),
+.BR Pterm0(2),
+.BR Ptermres(2),
+.BR Pfork(2),
+.BR Pvfork(2),
+.BR Pwait3(2)
