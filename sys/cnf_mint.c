@@ -32,6 +32,7 @@
 
 # include "mint/filedesc.h"
 # include "arch/mprot.h"
+# include "arch/startup.h"	/* _base */
 
 # include "bios.h"
 # include "block_IO.h"
@@ -59,7 +60,6 @@
 int init_is_gem = INIT_IS_PRG;	/* set to 1 if init_prg is GEM (ROM or external) */
 
 char *init_prg = NULL;
-char *init_env = NULL;
 char init_tail[256];
 /*
  * note: init_tail is *NOT* used as a temporary stack for resets in
@@ -195,15 +195,13 @@ static struct parser_item parser_tab[] =
 
 struct cnfdata
 {
-	char *env_ptr;		/* temporary pointer into that environment for setenv */
-	long env_len;		/* length of the environment */
 };
 
 /*----------------------------------------------------------------------------*/
 void
 load_config(void)
 {
-	struct cnfdata mydata = { NULL, 0 };
+	struct cnfdata mydata;
 	
 	parse_cnf("mint.cnf", parser_tab, &mydata);
 }
@@ -350,7 +348,7 @@ pCB_exec(const char *path, const char *line, struct parsinf *inf)
 	strncpy(cmdline+1, line, i);
 	cmdline[i+1] = 0;
 	
-	i = (int) sys_pexec(0, (char*) path, cmdline, init_env);
+	i = (int) sys_pexec(0, (char*) path, cmdline, _base->p_env);
 	if (i < 0)
 	{
 		parser_msg(inf, NULL);
@@ -474,32 +472,7 @@ pCB_prn(const char *path)
 static void
 pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 {
-	struct cnfdata *mydata = inf->data;
-	
-	long env_used = mydata->env_ptr - init_env;
-	long var_len  = strlen(var);
-	long arg_len  = strlen(arg)       +1;   /* + '\0' */
-	long env_plus = var_len + arg_len +1;   /* + '='  */
-
-	if (env_used + env_plus + 1 > mydata->env_len)
-	{
-		char *new_env = (char *)sys_m_xalloc(mydata->env_len += 1024, 0x13);
-		if (init_env)
-		{
-			memcpy(new_env, init_env, env_used);
-			sys_m_free((long) init_env);
-		}
-		init_env     = new_env;
-		mydata->env_ptr = new_env + env_used;
-	}
-	
-	memcpy( mydata->env_ptr,            var, var_len);
-	        mydata->env_ptr[var_len]  = '=';
-	
-	memcpy(&mydata->env_ptr[var_len+1], arg, arg_len);
-	        mydata->env_ptr[env_plus] = '\0';
-	
-	mydata->env_ptr += env_plus;
+	_mint_setenv(_base, var, arg);
 }
 
 /*----------------------------------------------------------------------------*/
