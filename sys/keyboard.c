@@ -1103,11 +1103,13 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	}
 
 	/*
-	* Control alters scancodes of Clr/Home
+	* Control alters scancodes of some keys
 	*/
 	if (shift & MM_CTRL)
 	{
-		if (scan == 0x0047) scan = 0x0077;
+		if (scan == 0x004b) scan = 0x0073;	/* arrow */
+		else if (scan == 0x004d) scan = 0x0074;	/* arrow */
+		else if (scan == 0x0047) scan = 0x0077;	/* Clr/Home */
 	}
 
 	if (shift == MM_ALTERNATE)
