@@ -21,7 +21,7 @@
 ; 99/08/11-
 ; 99/08/17: - Creation (Gryf)
 
-%include "magic/magic.i"
+%include "../magic/magic.i"
 
 	TEXT
 
