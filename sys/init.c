@@ -80,8 +80,8 @@
 # define RES_MAGIC	0x31415926L
 # define EXEC_OS	0x4feL
 
-static long _cdecl mint_criticerr (long);
-static void _cdecl do_exec_os (register long basepage);
+long _cdecl mint_criticerr (long);
+void _cdecl do_exec_os (register long basepage);
 
 void mint_thread(void *arg);
 
@@ -132,29 +132,6 @@ stop_and_ask(void)
 KBDVEC *syskey;
 static KBDVEC oldkey;
 
-xbra_vec old_criticerr;
-xbra_vec old_execos;
-
-/* bus error, address error, illegal instruction, etc. vectors
- */
-xbra_vec old_bus;
-xbra_vec old_addr;
-xbra_vec old_ill;
-xbra_vec old_divzero;
-xbra_vec old_priv;
-xbra_vec old_trace;
-xbra_vec old_linef;
-xbra_vec old_chk;
-xbra_vec old_trapv;
-xbra_vec old_mmuconf;
-xbra_vec old_format;
-xbra_vec old_cpv;
-xbra_vec old_uninit;
-xbra_vec old_spurious;
-xbra_vec old_fpcp[7];
-xbra_vec old_pmmuill;
-xbra_vec old_pmmuacc;
-
 long old_term;
 long old_resval;	/* old reset validation */
 long olddrvs;		/* BIOS drive map */
@@ -182,39 +159,8 @@ uchar framesizes[16] =
 	/*F*/	13	/* 68070 and 9xC1xx microcontroller address error */
 };
 
-/*
- * install a new vector for address "addr", using the XBRA protocol.
- * must run in supervisor mode!
- *
- *
- * WHO DID THIS?
- * self-modifying code is a bad idea - especially when not flushing
- * CPU caches afterwards!
- *
- * The best idea would be to get rid of the separate struct xbra,
- * and instead have enough space in front of all routines that might be
- * installed in a XBRA chain, so we can just patch in the XBRA chain
- * vector. This would also get rid of one unneccessary jump (which
- * flushes the instruction pipe on '040).
- */
-
-static void
-xbra_install (xbra_vec *xv, long addr, long _cdecl (*func)())
-{
-	xv->xbra_magic = XBRA_MAGIC;
-	xv->xbra_id = MINT_MAGIC;
-	xv->jump = JMP_OPCODE;
-	xv->this = func;
-	xv->next = *((struct xbra **) addr);
-	*((short **) addr) = &xv->jump;
-
-	/* ms - workaround for now */
-	cpush (xv, sizeof (xv));
-}
-
-/* new XBRA installer; for now only used on VBL, 200Hz and GEMDOS timer
- * but other stuff should be subsequently made linked by this
- * instead of by the xbra_install()
+/* New XBRA installer. The XBRA structure must be located
+ * directly before the routine it belongs to.
  */
 
 void
@@ -229,11 +175,9 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func)())
 }
 
 /*
- * MiNT critical error handler; all it does is to jump through
- * the vector for the current process
+ * MiNT critical error handler (called from intr.S)
  */
-
-static long _cdecl
+long _cdecl
 mint_criticerr (long error) /* high word is error, low is drive */
 {
 	/* just return with error */
@@ -251,7 +195,6 @@ static void
 init_intr (void)
 {
 	ushort savesr;
-	int i;
 	long *syskey_aux;
 
 	syskey = (KBDVEC *) TRAP_Kbdvbase ();
@@ -303,7 +246,7 @@ init_intr (void)
 # endif
 	}
 
-	xbra_install (&old_criticerr, 0x404L, mint_criticerr);
+	new_xbra_install (&old_criticerr, 0x404L, new_criticerr);
 	new_xbra_install (&old_5ms, 0x114L, mint_5ms);
 
 #if 0	/* this should really not be necessary ... rincewind */
@@ -315,29 +258,34 @@ init_intr (void)
 	spl (savesr);
 
 	/* set up signal handlers */
-	xbra_install (&old_bus, 8L, new_bus);
-	xbra_install (&old_addr, 12L, new_addr);
-	xbra_install (&old_ill, 16L, new_ill);
-	xbra_install (&old_divzero, 20L, new_divzero);
-	xbra_install (&old_trace, 36L, new_trace);
+	new_xbra_install (&old_bus, 8L, new_bus);
+	new_xbra_install (&old_addr, 12L, new_addr);
+	new_xbra_install (&old_ill, 16L, new_ill);
+	new_xbra_install (&old_divzero, 20L, new_divzero);
+	new_xbra_install (&old_trace, 36L, new_trace);
 
-	xbra_install (&old_priv, 32L, new_priv);
+	new_xbra_install (&old_priv, 32L, new_priv);
 
 	if (tosvers >= 0x106)
-		xbra_install (&old_linef, 44L, new_linef);
-	xbra_install (&old_chk, 24L, new_chk);
-	xbra_install (&old_trapv, 28L, new_trapv);
+		new_xbra_install (&old_linef, 44L, new_linef);
+	new_xbra_install (&old_chk, 24L, new_chk);
+	new_xbra_install (&old_trapv, 28L, new_trapv);
 
-	for (i = (int)(sizeof (old_fpcp) / sizeof (old_fpcp[0])); i--; )
-		xbra_install (&old_fpcp[i], 192L + i * 4, new_fpcp);
+	new_xbra_install (&old_fpcp_0, 192L + (0 * 4), new_fpcp);
+	new_xbra_install (&old_fpcp_1, 192L + (1 * 4), new_fpcp);
+	new_xbra_install (&old_fpcp_2, 192L + (2 * 4), new_fpcp);
+	new_xbra_install (&old_fpcp_3, 192L + (3 * 4), new_fpcp);
+	new_xbra_install (&old_fpcp_4, 192L + (4 * 4), new_fpcp);
+	new_xbra_install (&old_fpcp_5, 192L + (5 * 4), new_fpcp);
+	new_xbra_install (&old_fpcp_6, 192L + (6 * 4), new_fpcp);
 
-	xbra_install (&old_mmuconf, 224L, new_mmu);
-	xbra_install (&old_pmmuill, 228L, new_mmu);
-	xbra_install (&old_pmmuacc, 232L, new_pmmuacc);
-	xbra_install (&old_format, 56L, new_format);
-	xbra_install (&old_cpv, 52L, new_cpv);
-	xbra_install (&old_uninit, 60L, new_uninit);
-	xbra_install (&old_spurious, 96L, new_spurious);
+	new_xbra_install (&old_mmuconf, 224L, new_mmuconf);
+	new_xbra_install (&old_pmmuill, 228L, new_mmu);
+	new_xbra_install (&old_pmmuacc, 232L, new_pmmuacc);
+	new_xbra_install (&old_format, 56L, new_format);
+	new_xbra_install (&old_cpv, 52L, new_cpv);
+	new_xbra_install (&old_uninit, 60L, new_uninit);
+	new_xbra_install (&old_spurious, 96L, new_spurious);
 
 	/* set up disk vectors */
 	new_xbra_install (&old_mediach, 0x47eL, new_mediach);
@@ -378,7 +326,6 @@ void
 restr_intr (void)
 {
 	ushort savesr;
-	int i;
 	long *syskey_aux;
 
 	savesr = splhigh();
@@ -392,35 +339,40 @@ restr_intr (void)
 		*syskey_aux = (long) oldkeys;
 	}
 
-	*((long *) 0x008L) = (long) old_bus.next;
+	*((long *) 0x008L) = old_bus;
 
-	*((long *) 0x00cL) = (long) old_addr.next;
-	*((long *) 0x010L) = (long) old_ill.next;
-	*((long *) 0x014L) = (long) old_divzero.next;
-	*((long *) 0x024L) = (long) old_trace.next;
+	*((long *) 0x00cL) = old_addr;
+	*((long *) 0x010L) = old_ill;
+	*((long *) 0x014L) = old_divzero;
+	*((long *) 0x024L) = old_trace;
 
-	if (old_linef.next)
-		*((long *) 0x2cL) = (long) old_linef.next;
+	if (old_linef)
+		*((long *) 0x2cL) = old_linef;
 
-	*((long *) 0x018L) = (long) old_chk.next;
-	*((long *) 0x01cL) = (long) old_trapv.next;
+	*((long *) 0x018L) = old_chk;
+	*((long *) 0x01cL) = old_trapv;
 
-	for (i = (int)(sizeof (old_fpcp) / sizeof (old_fpcp[0])); i--; )
-		((long *) 0x0c0L)[i] = (long) old_fpcp[i].next;
+	((long *) 0x0c0L)[0] = old_fpcp_0;
+	((long *) 0x0c0L)[1] = old_fpcp_1;
+	((long *) 0x0c0L)[2] = old_fpcp_2;
+	((long *) 0x0c0L)[3] = old_fpcp_3;
+	((long *) 0x0c0L)[4] = old_fpcp_4;
+	((long *) 0x0c0L)[5] = old_fpcp_5;
+	((long *) 0x0c0L)[6] = old_fpcp_6;
 
-	*((long *) 0x0e0L) = (long) old_mmuconf.next;
-	*((long *) 0x0e4L) = (long) old_pmmuill.next;
-	*((long *) 0x0e8L) = (long) old_pmmuacc.next;
-	*((long *) 0x038L) = (long) old_format.next;
-	*((long *) 0x034L) = (long) old_cpv.next;
-	*((long *) 0x03cL) = (long) old_uninit.next;
-	*((long *) 0x060L) = (long) old_spurious.next;
+	*((long *) 0x0e0L) = old_mmuconf;
+	*((long *) 0x0e4L) = old_pmmuill;
+	*((long *) 0x0e8L) = old_pmmuacc;
+	*((long *) 0x038L) = old_format;
+	*((long *) 0x034L) = old_cpv;
+	*((long *) 0x03cL) = old_uninit;
+	*((long *) 0x060L) = old_spurious;
 
 	*((long *) 0x084L) = old_dos;
 	*((long *) 0x0b4L) = old_bios;
 	*((long *) 0x0b8L) = old_xbios;
 	*((long *) 0x408L) = old_term;
-	*((long *) 0x404L) = (long) old_criticerr.next;
+	*((long *) 0x404L) = old_criticerr;
 	*((long *) 0x114L) = old_5ms;
 #if 0	//
 	*((long *) 0x426L) = old_resval;
@@ -1040,6 +992,8 @@ _mint_delenv(BASEPAGE *bp, const char *strng)
 	if (!var)
 		return;
 
+	TRACE(("_mint_delenv(): delete existing %s=%s", strng, var));
+ 
 	/* if it's found, move all the other environment variables down by 1 to
    	 * delete it
          */
@@ -1063,6 +1017,8 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 	char *env_str = bp->p_env, *ne;
 	long old_size, var_size;
 	MEMREGION *m;
+
+	TRACE(("_mint_setenv(): %s=%s", var, value));
 
 	/* If it already exists, delete it */
 	_mint_delenv(bp, var);
@@ -1093,7 +1049,10 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 
 		new_env = (char *)sys_m_xalloc(old_size + var_size, 0x0003);
 		if (new_env == NULL)
+		{
+			DEBUG(("_mint_setenv(): failed to alloc %ld bytes", old_size + var_size));
 			return;
+		}
 
 		/* just to be sure */
 		bzero(new_env, old_size + var_size);
@@ -1133,8 +1092,9 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
  * NOTE: we must use Pexec instead of sys_pexec here, because we will
  * be running in a user context (that of process 1, not process 0)
  */
-
-static void _cdecl
+/* This is called by new_exec_os() residing in intr.S.
+ */
+void _cdecl
 do_exec_os (long basepage)
 {
 	register long r;
@@ -1158,6 +1118,8 @@ mint_thread(void *arg)
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
 # endif
+
+	DEBUG(("mint_thread(): startup"));
 
 	/* Delete old TOS environment, we don't inherit it */
 	_base->p_env = (char *)sys_m_xalloc(QUANTUM, 0x0003);
@@ -1236,7 +1198,7 @@ mint_thread(void *arg)
 	 */
 	if (init_is_gem && init_prg)
 	{
-		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
+		new_xbra_install(&old_exec_os, EXEC_OS, (long _cdecl (*)())new_exec_os);
 	}
 
 	/* Load the keyboard table */
@@ -1273,6 +1235,8 @@ mint_thread(void *arg)
 	 */
 	if (init_prg)
 	{
+		TRACE(("mint_thread(): init_prg is %s", init_prg));
+
 # ifdef VERBOSE_BOOT
 		boot_printf(MSG_init_launching_init, init_is_gem ? "GEM" : "init", init_prg);
 # endif
@@ -1280,10 +1244,11 @@ mint_thread(void *arg)
 		{
 # if 1
 			r = sys_pexec(100, init_prg, init_tail, _base->p_env);
+			DEBUG(("mint_thread(): exec(%s) returned %ld", init_prg, r));
 # else
 			r = sys_pexec(0, init_prg, init_tail, _base->p_env);
+			DEBUG(("mint_thread(): init terminated, returned %ld", init_prg, r));
 # endif
-			DEBUG(("init_prg done!"));
 		}
 		else
 		{
@@ -1293,6 +1258,7 @@ mint_thread(void *arg)
 			bp->p_tbase = *((long *) EXEC_OS);
 
 			r = sys_pexec(106, (char *)"GEM", bp, 0L);
+			DEBUG(("mint_thread(): exec(%s) returned %ld", init_prg, r));
 		}
 # ifdef VERBOSE_BOOT
 		if (r >= 0)
@@ -1315,6 +1281,7 @@ mint_thread(void *arg)
 			bp->p_tbase = entry;
 
 			r = sys_pexec(106, (char *) "GEM", bp, 0L);
+			DEBUG(("mint_thread(): exec ROM AES returned %ld", r));
 	  	}
 	  	else
 	  	{
