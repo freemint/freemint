@@ -66,32 +66,26 @@
 void
 Block(struct xa_client *client, int which)
 {
-	//if (!client->blockcnt)
-	//{
-	        DIAG((D_kern, client, "[%d]Blocked %s, cnt %d", which, c_owner(client), client->blockcnt));
-		client->blockcnt++;
-		sleep(IO_Q, (long)client);
-	//}
+        DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+	sleep(IO_Q, (long)client);
 }
 
 void
 Unblock(struct xa_client *client, unsigned long value, int which)
 {
-	//if (client->blockcnt)
-	//{
-		client->blockcnt--;
-		wake(IO_Q, (long)client);
-		DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx, cnt %d", which, c_owner(client), value, client->blockcnt));
+	wake(IO_Q, (long)client);
+	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 
-		/* HR 041201: the following served as a excellent safeguard on the
-		 *            internal consistency of the event handling mechanisms.
-		 */
-		if (value == XA_OK)
-		{
-			cancel_evnt_multi(client,1);
-		}
-	//}
+	/* HR 041201: the following served as a excellent safeguard on the
+	 *            internal consistency of the event handling mechanisms.
+	 */
+	if (value == XA_OK)
+	{
+		cancel_evnt_multi(client,1);
+	}
 }
+
+struct file *kmoose;
 
 static const char alert_pipe_name[] = "u:\\pipe\\alert";
 static const char KBD_dev_name[] = "u:\\dev\\console";
@@ -311,6 +305,25 @@ k_main(void *dummy)
 	p_signal (SIGUSR1, (long) ignore);
 	p_signal (SIGUSR2, (long) ignore);
 
+	/*
+	 * Ozk: Open a fileptr to moose so that every application can read
+	 * indipendant of filedescriptors. I tried to open this in
+	 * exclusive_mouse_input(), which is _after_ moose is opened and
+	 * initialized using normal gemdos calls. This turned out to make
+	 * Fselect() not work properly so I tried here and it worked.
+	 * I dont know if this is pure luck, or what it is. Gurus (That is,
+	 * Frank Naumann ;-) ), please see if this is OK.
+	*/
+	{
+		long err;
+
+		kmoose = kernel_open(moose_name, O_RDONLY, &err);
+		if (err)
+		{
+			DIAGS(("kernel_open moose failed %lx", err));
+			kmoose = 0;
+		}
+	}
 
 	/*
 	 * register trap#2 handler
