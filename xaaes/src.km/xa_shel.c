@@ -321,20 +321,19 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	if (!parm)
 		return -1;
 
-	x_shell = *(const struct xshelw *) parm;
-
 	real_mode = mode & 0xff;
 	x_mode = mode & 0xff00;
 
 	if (x_mode)
 	{
+		x_shell = *(const struct xshelw *) parm;
+
 		/* Do some checks before allocating anything. */
 		if (!x_shell.newcmd)
 			return -1;
-	}
 
-	if (x_mode)
 		pcmd = x_shell.newcmd;
+	}
 	else
 		pcmd = parm;
 
@@ -543,9 +542,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 				{
 					assert(p);
 
-					if (((x_mode & SW_PRENICE) == 0)
-					    || ((x_mode & SW_PRENICE) != 0 && x_shell.prenice == 0))
-						p_renice(p->pid, -4);
+					if (x_mode & SW_PRENICE)
+						p_renice(p->pid, x_shell.prenice);
 
 					DIAG((D_appl, 0, "Alloc client; APP %d", p->pid));
 
@@ -682,16 +680,17 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		Sema_Up(envstr);
 
 		pb->intout[0] = launch(lock|envstr,
-				       pb->intin[0],
+				       wdoex,
 				       wisgr,
 				       wiscr,
 				       (char *)pb->addrin[0],
 				       (char *)pb->addrin[1],
 				       client);
 
-		// XXX wait until appl_init from new child???
-
 		Sema_Dn(envstr);
+
+		/* let the new process run */
+		yield();
 	}
 	else
 	{
