@@ -322,7 +322,7 @@ typedef struct _mn_set
 /* shel_get modes */
 #define SHEL_BUFSIZE (-1)
 
-/** Struktur fr erweiterte Start-Daten (fr shel_write) */
+/** Struktur fr erweiterte Start-Daten (fr shel_write) */
 typedef struct
 {
 	char *newcmd;		/**< TODO */
@@ -332,7 +332,7 @@ typedef struct
 	char *env;			/**< TODO */
 } SHELW;
 
-/** Andere Definition dafr (aus MagiC-Doku) */
+/** Andere Definition dafr (aus MagiC-Doku) */
 typedef struct
 {
 	char	*command;	/**< TODO */
@@ -410,7 +410,7 @@ typedef  struct
 /* shel_write: mode SWM_NEWMSG, parameter 'wisgr' */
 #define NM_APTERM		0x0001
 
-/* Werte fr Modus SWM_AESMSG (fr shel_write) */
+/* Werte fr Modus SWM_AESMSG (fr shel_write) */
 #define AP_AESTERM		52     /* Mode 10: N.AES komplett terminieren. */
 
 /* extended shel_write() modes and parameter structure */
@@ -463,6 +463,7 @@ typedef  struct
 #define MENUBAR			0x1000		/* XaAES */
 #define BACKDROP		0x2000
 #define SMALLER			0x4000
+#define BORDER			0x8000
 #define ICONIFIER		SMALLER
 
 /* wind_create flags */
