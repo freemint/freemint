@@ -14,8 +14,9 @@
 # -DONLY030		build for 68020+
 # -DCPU030		build for 68030
 # -DCPU040		build for 040/060
-# -DMILAN		build Milan kernel
 # -DMMU040		add 040/060 MMU support instead 030 MMU
+# -DMILAN		build Milan kernel
+# -DARANYM		build Aranym kernel
 
 # 
 # debug flags
@@ -39,7 +40,7 @@ ifneq ($(kernel),000)
 KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 KERNELDEFAULTDEFS += -DCRYPTO_CODE
 KERNELDEFAULTDEFS += -DSOFT_UNITABLE
-KERNELDEFAULTDEFS += -DBUILTIN_SHELL
+#KERNELDEFAULTDEFS += -DBUILTIN_SHELL
 #KERNELDEFAULTDEFS += -DJAR_PRIVATE
 endif
 
@@ -64,14 +65,20 @@ endif
 
 ifeq ($(kernel),deb)
 MINT = mintnp.prg
-CPU  = 030
-KERNELDEFS = -DDEBUG_INFO -DONLY030 -DCPU030
+CPU  = 020-60
+KERNELDEFS = -DDEBUG_INFO -DONLY030 -DMMU040 -DCPU040
 endif
 
 ifeq ($(kernel),mil)
 MINT = mintmil.prg
 CPU  = 020-60
 KERNELDEFS = -DONLY030 -DMMU040 -DMILAN -DCPU040
+endif
+
+ifeq ($(kernel),ara)
+MINT = mintara.prg
+CPU  = 020-60
+KERNELDEFS = -DONLY030 -DMMU040 -DARANYM -DCPU040
 endif
 
 ifeq ($(kernel),my1)
@@ -98,5 +105,5 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 deb mil my1 my2 my3
+kerneltargets = 000 030 040 deb mil ara my1 my2 my3
 cputargets = 000 030 020-60

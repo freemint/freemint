@@ -31,7 +31,7 @@ extern long 	*intr_shadow;
 # endif
 
 long _cdecl	reset		(void);
-void _cdecl	reboot		(void);
+void _cdecl	reboot		(void) NORETURN;
 void _cdecl	newmvec		(void);
 void _cdecl	newjvec		(void);
 long _cdecl	newkeys		(void);
