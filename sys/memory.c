@@ -1476,14 +1476,6 @@ create_env (const char *env, ulong flags)
 	return m;
 }
 
-# if 0
-static void
-terminateme (int code)
-{
-	Pterm (code);
-}
-# endif
-
 MEMREGION *
 create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *execproc, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err)
 {
@@ -1626,12 +1618,14 @@ create_base (const char *cmd, MEMREGION *env, ulong flags, ulong prgsize, PROC *
 
 	if (execproc)
 	{
+		USER_THINGS *ut = (USER_THINGS *)execproc->p_mem->tp_ptr;
+
 		/* free exec'ing process memory... if the exec returns after this make it
 		 * _exit (SIGKILL << 8);
 		 */
 		*((short *) (execproc->stack + ISTKSIZE + sizeof (void (*)()))) = (SIGKILL << 8);
 		execproc->ctxt[SYSCALL].term_vec = (long)rts;
-		execproc->ctxt[SYSCALL].pc = (long)terminateme;
+		execproc->ctxt[SYSCALL].pc = ut->terminateme_p;
 		execproc->ctxt[SYSCALL].sr |= 0x2000;
 		execproc->ctxt[SYSCALL].ssp = (long)(execproc->stack + ISTKSIZE);
 
