@@ -40,6 +40,7 @@
 #include "draw_obj.h"
 #include "semaphores.h"
 #include "xa_shel.h"
+#include "xa_appl.h"
 
 #include "version.h"
 
@@ -439,6 +440,8 @@ init(struct kentry *k, const char *path)
 	DIAGS(("load adi modules"));
 	adi_load();
 
+	init_apgi_infotab();
+	
 	DIAGS(("Creating XaAES kernel thread"));
 	{
 		long r;

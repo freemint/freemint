@@ -676,6 +676,7 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 		/* Fill in the application's global array with a pointer to the resource */
 		gl->ptree = o;
 		gl->rshdr = h;
+
 		DIAGS(("Resources %ld(%lx) in global[5,6]", o, o));
 		DIAGS(("      and %ld(%lx) in global[7,8]", h, h));
 	}
@@ -1134,6 +1135,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* For multiple resource, first look at the supplied global ptr. */
 	if (pb->global)
 	{
+		
 		rsc = ((struct aes_global *)pb->global)->rshdr;
 		trees = ((struct aes_global *)pb->global)->ptree;
 		DIAG((D_rsrc,client,"  --  pb->gl  rsc %lx, ptree %lx", rsc, trees));

@@ -202,12 +202,17 @@ XA_objc_add(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	
 	CONTROL(2,1,1)
+	
+	DIAG((D_form, client, "xa_objc_add: obtree=%lx, parent=%d, child=%d",
+		obtree, pb->intin[0], pb->intin[1]));
 
 	if (obtree)
 		pb->intout[0] = ob_add(obtree, pb->intin[0], pb->intin[1]);
 	else
 		pb->intout[0] = 0;
 
+	DIAGS((" -- return %d", pb->intout[0]));
+	
 	return XAC_DONE;
 }
 

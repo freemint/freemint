@@ -482,9 +482,9 @@ typedef  struct
 #define WF_HSLIDE 		  8
 #define WF_VSLIDE 		  9
 #define WF_TOP 			 10
-#define WF_FIRSTXYWH 	 11
+#define WF_FIRSTXYWH 		 11
 #define WF_NEXTXYWH		 12
-#define WF_RESVD		 13
+#define WF_FIRSTAREAXYWH	 13
 #define WF_NEWDESK		 14
 #define WF_HSLSIZE		 15
 #define WF_VSLSIZE		 16
