@@ -40,12 +40,12 @@
 # include "mint/arch/register.h"
 
 
-long process_single_step	(PROC *p, int flag);
-long process_set_pc		(PROC *p, long pc);
-long process_getregs		(PROC *p, struct reg *reg);
-long process_setregs		(PROC *p, struct reg *reg);
-long process_getfpregs		(PROC *p, struct fpreg *fpreg);
-long process_setfpregs		(PROC *p, struct fpreg *fpreg);
+long process_single_step	(struct proc *p, int flag);
+long process_set_pc		(struct proc *p, long pc);
+long process_getregs		(struct proc *p, struct reg *reg);
+long process_setregs		(struct proc *p, struct reg *reg);
+long process_getfpregs		(struct proc *p, struct fpreg *fpreg);
+long process_setfpregs		(struct proc *p, struct fpreg *fpreg);
 
 
 # endif /* _m68k_process_reg_h */
