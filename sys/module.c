@@ -41,6 +41,7 @@
 # include "dosdir.h"
 # include "filesys.h"
 # include "global.h"
+# include "init.h"
 # include "k_fds.h"
 # include "kentry.h"
 # include "kerinfo.h"
@@ -565,6 +566,10 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 			if (x)
 				*x = extra;
 			ret = 0;
+
+			/* if trap #2 is not active install it now */
+			if (old_trap2 == 0)
+				new_xbra_install(&old_trap2, 0x88L, mint_trap2); /* trap #2, GEM */
 		}
 	}
 	else if (mode == 1)
