@@ -843,10 +843,10 @@ void config_save(void)
 			write_str("WinTitle", p->title);
 			write_int("WinVtMode", p->vt_mode);
 			write_bool("WinWrap", p->wrap);
-			write_str("WinCfgEnd", p->progname);
 			write_int("WinVDIColors", p->vdi_colors);
 			write_ulong("WinFGEffects", p->fg_effects);
 			write_ulong("WinBGEffects", p->bg_effects);
+			write_str("WinCfgEnd", p->progname);
 			p = p->next;
 		}
 

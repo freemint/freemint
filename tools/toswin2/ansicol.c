@@ -192,15 +192,17 @@ use_ansi_colors (TEXTWIN* v, unsigned long flag,
 	*fgcolor = (flag & CFGCOL) >> 4;
 	*texteffects = flag & CEFFECTS;
 
-	if (flag & (CINVERSE|CSELECTED)) {	
-		int temp = *bgcolor; 
-		*bgcolor = *fgcolor; 
-		*fgcolor = temp;
-	}
-
 	if (!v->vdi_colors) {
 		*texteffects &= ~CE_ANSI_EFFECTS;
-			
+		
+		if (*fgcolor == 9) {
+			*fgcolor = v->cfg->fg_color;
+			if (v->cfg->fg_effects & CE_BOLD)
+				flag |= CE_BOLD;
+			else if (v->cfg->fg_effects & CE_LIGHT)
+				flag |= CE_LIGHT;
+		}
+	
 		if (*fgcolor >= 0 && *fgcolor <= 7) {
 			*texteffects &= ~CE_ANSI_EFFECTS;
 			
@@ -213,20 +215,31 @@ use_ansi_colors (TEXTWIN* v, unsigned long flag,
 			} else {
 				*fgcolor = renderer[*fgcolor].normal;
 			}
-		} else if (*fgcolor == 9) {
-			*fgcolor = v->cfg->fg_color;
 		} else {
 			*fgcolor &= 0xf;
 		}
+		
 		if (*bgcolor >= 0 && *bgcolor <= 7) {
 			*bgcolor = renderer[*bgcolor].normal;
 		} else if (*bgcolor == 9) {
-			*bgcolor = v->cfg->bg_color;
+			*bgcolor = v->cfg->bg_color & 0x7;
+			if (v->cfg->bg_effects & CE_BOLD)
+				*bgcolor = renderer[*bgcolor].bright;
+			else if (v->cfg->bg_effects & CE_LIGHT)
+				*bgcolor = renderer[*bgcolor].hbright;
+			else
+				*bgcolor = renderer[*bgcolor].normal;
 		} else {
 			*bgcolor &= 0xf;
 		}
 	}
 	
+	if (flag & (CINVERSE|CSELECTED)) {	
+		int temp = *bgcolor; 
+		*bgcolor = *fgcolor; 
+		*fgcolor = temp;
+	}
+
 	*texteffects >>= 8;
 }
 
