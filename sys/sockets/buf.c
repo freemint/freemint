@@ -3,7 +3,7 @@
  *	done using a so called `buddy system'. It allows allocating
  *	different sized memory chunks with minimal overhead.
  *
- *	NOTE: debug output at spl7 hangs the system !!!
+ *	NOTE: debug output at splhigh hangs the system !!!
  *
  *	01/12/93, kay roemer.
  */
@@ -74,9 +74,10 @@ buf_add_block (void)
 	
 	new->buflen = BUF_BLOCK_SIZE;
 	new->links  = 0;
-	new->_n     = new->_p = 0;
+	new->_n     = 
+	new->_p	    = NULL;
 	
-	sr = spl7 ();
+	sr = splhigh();
 	new->_nfree = pool[0]._nfree;
 	new->_pfree = &pool[0];
 	new->_nfree->_pfree = new;
@@ -99,7 +100,7 @@ buf_free_block (void)
 	BUF *buf;
 	ushort sr;
 	
-	sr = spl7 ();
+	sr = splhigh();
 	buf = pool[0]._nfree;
 	if (buf == &pool[0] || buf->_nfree == &pool[0])
 	{
@@ -172,11 +173,48 @@ buf_check (void)
 }
 # endif
 
+# ifdef BUF_DEBUG
+static void
+sanity_check (BUF *buf)
+{
+	int correct = 1;
+	
+	
+	if (buf->dend < buf->dstart)
+		correct = 0;
+	
+	
+	if (buf->dstart < buf->data)
+		correct = 0;
+	
+	if (buf->dstart > ((char *) buf + buf->buflen))
+		correct = 0;
+	
+	
+	if (buf->dend < buf->data)
+		correct = 0;
+	
+	if (buf->dend > ((char *) buf + buf->buflen))
+		correct = 0;
+	
+	
+	if (buf->buflen > BUF_BLOCK_SIZE)
+		correct = 0;
+	
+	
+	if (!correct)
+		ALERT (("sanity check -> invalid buf"));
+}
+# define SANITY_CHECK(b) sanity_check(b)
+# else
+# define SANITY_CHECK(b)
+# endif
+
 BUF *
 buf_reserve (BUF *buf, long reserve, short mode)
 {
 	BUF *nbuf;
-	long nspace, ospace, used;
+	ulong nspace, ospace, used;
 	
 	reserve = (reserve + 1) & ~1;
 	
@@ -205,17 +243,20 @@ buf_reserve (BUF *buf, long reserve, short mode)
 		}
 		case BUF_RESERVE_END:
 		{
-			nspace = (long) buf->dend - (long) buf->data + reserve;
+			nspace = (ulong) buf->dend - (ulong) buf->data + reserve;
 			ospace = buf->buflen - sizeof (BUF);
 			if (nspace <= ospace)
 				return buf;
 			
 			DEBUG (("buf_reserve: allocating new buf"));
+			SANITY_CHECK(buf);
 			
-			used = (long) buf->dend - (long) buf->dstart;
-			nbuf = buf_alloc (nspace, (long) buf->dstart - (long) buf->data, BUF_NORMAL);
+			used = (ulong) buf->dend - (ulong) buf->dstart;
+			nbuf = buf_alloc (nspace, (ulong) buf->dstart - (ulong) buf->data, BUF_NORMAL);
 			if (!nbuf)
 				return 0;
+			
+			SANITY_CHECK(nbuf);
 			
 			memcpy (nbuf->dstart, buf->dstart, used);
 			nbuf->dend = nbuf->dstart + used;
@@ -249,7 +290,7 @@ buf_alloc (ulong size, ulong reserve, short mode)
 	if (size < BUF_SIZE (BUF_NSPLIT))
 		size = BUF_SIZE (BUF_NSPLIT);
 	
-	for (index = BUF_NSPLIT; index >= 0; --index)
+	for (index = BUF_NSPLIT; index >= 0; index--)
 		if (size <= BUF_SIZE (index))
 			break;
 	
@@ -263,8 +304,8 @@ buf_alloc (ulong size, ulong reserve, short mode)
 	}
 	
 try_again:
-	sr = spl7 ();
-	for (i = index; i >= 0 && BUF_EMPTY (i); --i)
+	sr = splhigh();
+	for (i = index; i >= 0 && BUF_EMPTY (i); i--)
 		;
 	
 	if (i < 0)
@@ -314,6 +355,12 @@ try_again:
 		while (nxtbuf->buflen < BUF_SIZE (i))
 			i++;
 		
+		if (i > BUF_NSPLIT)
+		{
+			spl (sr);
+			FATAL("%i > BUF_NSPLIT, buflen = %lu", i, nxtbuf->buflen);
+		}
+		
 		nxtbuf->_nfree = pool[i]._nfree;
 		nxtbuf->_pfree = &pool[i];
 		nxtbuf->_nfree->_pfree = nxtbuf;
@@ -336,14 +383,11 @@ try_again:
 	return newbuf;
 }
 
-void
-buf_free (BUF *buf, short mode)
+static void
+_buf_free (BUF *buf, ushort sr)
 {
-	short i;
-	ushort sr;
 	BUF *b;
-	
-	sr = spl7 ();
+	short i;
 	
 	b = buf->_p;
 	if (b && !b->links)
@@ -372,7 +416,7 @@ buf_free (BUF *buf, short mode)
 		buf->buflen += b->buflen;
 	}
 	
-	for (i = 0; i <= BUF_NSPLIT; ++i)
+	for (i = 0; i <= BUF_NSPLIT; i++)
 		if (buf->buflen >= BUF_SIZE (i))
 			break;
 	
@@ -392,12 +436,28 @@ buf_free (BUF *buf, short mode)
 }
 
 void
+buf_free (BUF *buf, short mode)
+{
+	FORCE ("Warning, buf_free called directly, update your xif!");
+	
+	_buf_free(buf, splhigh());
+}
+
+void
 buf_deref (BUF *buf, short mode)
 {
+	ushort sr = splhigh();
+	
 	buf->links--;
 	
-	if (buf->links <= 0)
-		buf_free (buf, mode);
+	if (buf->links < 0)
+	{
+		spl(sr);
+		FATAL("buf_deref: links < 0 (%i)", buf->links);
+	}
+	
+	if (buf->links) spl(sr);
+	else _buf_free (buf, sr);
 }
 
 BUF *
