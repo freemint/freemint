@@ -191,8 +191,9 @@ extern const char *MSG_init_error;
 
 /* keyboard.c */
 # ifdef VERBOSE_BOOT
-extern const char *MSG_keytable_loaded;
 extern const char *MSG_keytable_loading;
+extern const char *MSG_keytable_internal;
+extern const char *MSG_keytable_loaded;
 # endif
 
 /* memory.c */
