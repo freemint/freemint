@@ -651,6 +651,14 @@ k_main(void *dummy)
 			if (cfg.cnf_run[i])
 			{
 				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run[i]);
+				/*
+				 * fna: this is like in taskman, handle_launcher()
+				 * but I don't understand the behaviour or meaning here
+				 * especially the interaction in launch and all the cmdline
+				 * manipulation
+				 */ 
+				parms[0] = '\0';
+
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
 			}
 		}
