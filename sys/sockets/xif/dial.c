@@ -101,7 +101,7 @@ static int in_dial_output = 0;
  */
 static long	dial_open	(struct netif *);
 static long	dial_close	(struct netif *);
-static long	dial_output	(struct netif *, BUF *, char *, short, short);
+static long	dial_output	(struct netif *, BUF *, const char *, short, short);
 static void	dial_timeout	(struct netif *);
 static long	dial_ioctl	(struct netif *, short, long);
 static long	dial_config	(struct netif *, struct ifopt *);
@@ -263,7 +263,7 @@ dial_timeout (struct netif *nif)
  */
  
 static long
-dial_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+dial_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	long retcode;
 	
