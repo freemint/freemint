@@ -1,14 +1,14 @@
 #
-# Makefile for crypt I/O initialization
+# Makefile for fsetter
 #
-TARGET = mkfatfs
+TARGET = fsetter.app
 
 SHELL = /bin/sh
 SUBDIRS = 
 
 srcdir = .
 top_srcdir = ..
-subdir = mkfatfs
+subdir = fsetter
 
 default: all
 
@@ -20,10 +20,12 @@ all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)/IO
+INCLUDES += -I/usr/GEM/include
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
 LIBS += $(LIBIO)
+LIBS += -L/usr/GEM/lib -lcflib -lgemx -lgem
 GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBIOSTMP)
