@@ -20,13 +20,18 @@ all-here: magic.i
 
 # default overwrites
 CFLAGS = $(GENERAL) -I$(top_srcdir)
+LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
+LIBS = $(LIBKERN) -lgcc
 
 # default definitions
-OBJS = genmagic.o
+OBJS = $(COBJS:%.c=%.o) $(SOBJS:%.s=%.o) $(SPPOBJS:%.spp=%.o)
 GENFILES = $(TARGET) magic.i
+CPU = 000
 
-$(TARGET): genmagic.o
-	$(CC) $(CFLAGS) -o $@ $<
+
+$(TARGET): $(OBJS) $(LIBKERNSTMP)
+	$(LD) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
 
 ifeq ($(CROSS),yes)
 
@@ -40,6 +45,7 @@ magic.i: $(TARGET)
 	./$(TARGET) $@
 
 endif
+
 
 # default dependencies
 # must be included last
