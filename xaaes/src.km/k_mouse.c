@@ -679,13 +679,13 @@ new_mu_mouse(struct moose_data *md)
 }
 
 static void
-new_active_widget_mouse(void)
+new_active_widget_mouse(struct moose_data *md)
 {
-	widget_active.b		= mu_button.b;
-	widget_active.cb	= mu_button.cb;
-	widget_active.nx	= mu_button.x;
-	widget_active.ny	= mu_button.y;
-	widget_active.clicks	= mu_button.clicks;
+	widget_active.b		= md->state;
+	widget_active.cb	= md->cstate;
+	widget_active.nx	= md->x;
+	widget_active.ny	= md->y;
+	widget_active.clicks	= md->clicks;
 }
 
 static void
@@ -778,7 +778,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *imd)
 		 * new_moose_pkt unconditionally sends only received packet.
 		 */
 		new_mu_mouse(md);
-		new_active_widget_mouse();
+		new_active_widget_mouse(md);
 		XA_button_event(lock, md, true);
 
 		/* Ozk: button.got is now used as a flag indicating
@@ -830,22 +830,6 @@ preprocess_mouse(enum locks lock)
 	if ( !C.buffer_moose && unbuffer_moose_pkt(&md) )
 		new_moose_pkt(lock, 0, &md);
 	mu_button.have = false;
-#if 0
-	/*
-	 * Check if a fake button-released packet needs to be sent
-	 */
-	if (mainmd.state && !mainmd.cstate)
-	{
-		mainmd.state = mainmd.cstate = mainmd.clicks = 0;
-		mainmd.x = mu_button.x;
-		mainmd.y = mu_button.y;
-
-		new_moose_pkt(lock, 0, &mainmd);
-	}
-
-	/* no_mouse */
-	mu_button.have = false;
-#endif
 }
 
 int
