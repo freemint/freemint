@@ -31,6 +31,8 @@
  * 
  */
 
+# ifdef __MINT__
+
 # include <assert.h>
 # include <ctype.h>
 # include <errno.h>
@@ -43,8 +45,15 @@
 # include <time.h>
 # include <unistd.h>
 
+#ifdef E2FSPROGS_WRAPPER
+# include "ext2_fs.h"
+# include "ext2fs.h"
+# define loff_t ext2_loff_t
+# define llseek ext2fs_llseek
+#else
 # include <sys/ioctl.h>
 # include <sys/stat.h>
+#endif
 
 # include <mintbind.h>
 # include "mint_io.h"
@@ -60,33 +69,33 @@
 
 /* prototypes */
 
-int __open_v (const char *_filename, int iomode, va_list argp);
+int __open_v(const char *_filename, int iomode, va_list argp);
 
-int open (__const char *__file, int __oflag, ...) __THROW;
-int __open (__const char *__file, int __oflag, ...) __THROW;
+int open(__const char *__file, int __oflag, ...) __THROW;
+int __open(__const char *__file, int __oflag, ...) __THROW;
 
-int ioctl (int fd, int cmd, void *arg);
-int __ioctl (int fd, int cmd, void *arg);
+int ioctl(int fd, int cmd, void *arg);
+int __ioctl(int fd, int cmd, void *arg);
 
-int fsync (int __fd) __THROW;
-int __fsync (int __fd) __THROW;
+int fsync(int __fd) __THROW;
+int __fsync(int __fd) __THROW;
 
-__off_t lseek (int __fd, __off_t __offset, int __whence) __THROW;
-__off_t __lseek (int __fd, __off_t __offset, int __whence) __THROW;
+__off_t lseek(int __fd, __off_t __offset, int __whence) __THROW;
+__off_t __lseek(int __fd, __off_t __offset, int __whence) __THROW;
 
-int close (int __fd) __THROW;
-int __close (int __fd) __THROW;
+int close(int __fd) __THROW;
+int __close(int __fd) __THROW;
 
-ssize_t read (int __fd, void *__buf, size_t __nbytes) __THROW;
-ssize_t __read (int __fd, void *__buf, size_t __nbytes) __THROW;
+ssize_t read(int __fd, void *__buf, size_t __nbytes) __THROW;
+ssize_t __read(int __fd, void *__buf, size_t __nbytes) __THROW;
 
-ssize_t write (int __fd, __const void *__buf, size_t __n) __THROW;
-ssize_t __write (int __fd, __const void *__buf, size_t __n) __THROW;
+ssize_t write(int __fd, __const void *__buf, size_t __n) __THROW;
+ssize_t __write(int __fd, __const void *__buf, size_t __n) __THROW;
 
-int fstat (int __fd, struct stat *__buf) __THROW;
-int __fstat (int __fd, struct stat *__buf) __THROW;
+int fstat(int __fd, struct stat *__buf) __THROW;
+int __fstat(int __fd, struct stat *__buf) __THROW;
 
-int stat (const char *filename, struct stat *st) __THROW;
+int stat(const char *filename, struct stat *st) __THROW;
 
 
 struct device
@@ -110,7 +119,7 @@ struct device
 static struct device devs[DEVS];
 
 static void
-init_device (struct device *dev)
+init_device(struct device *dev)
 {
 	dev->used = 0;
 	
@@ -126,7 +135,7 @@ init_device (struct device *dev)
 }
 
 static inline void
-init (void)
+init(void)
 {
 	static int done = 0;
 	int i;
@@ -134,19 +143,19 @@ init (void)
 	if (done)
 		return;
 	
-	assert (sizeof (loff_t) == sizeof (long long));
+	assert(sizeof(loff_t) == sizeof(long long));
 	
 	for (i = 0; i < DEVS; i++)
 		init_device (&devs[i]);
 	
-	init_XHDI ();
+	init_XHD();
 	
 	/* we are now initialized */
 	done = 1;
 }
 
 static struct device *
-get_device (int fd)
+get_device(int fd)
 {
 	struct device *dev;
 	
@@ -156,13 +165,13 @@ get_device (int fd)
 	fd -= 1024;
 	dev = &devs[fd];
 	
-	assert (dev->used);
+	assert(dev->used);
 	
 	return dev;
 }
 
 static int
-alloc_device (void)
+alloc_device(void)
 {
 	int i;
 	
@@ -177,38 +186,38 @@ alloc_device (void)
 		}
 	}
 	
-	__set_errno (ENOMEM);
+	__set_errno(ENOMEM);
 	return -1;
 }
 
 static void
-free_device (struct device *dev)
+free_device(struct device *dev)
 {
-	assert (dev->used);
+	assert(dev->used);
 	
 	init_device (dev);
 }
 
 
 int
-open (const char *filename, int iomode, ...)
+open(const char *filename, int iomode, ...)
 {
 	const char *f = filename;
 	struct device *mydev = NULL;
 	int dev = -1;
 	long ret;
 	
-	init ();
+	init();
 	
 	if (!filename)
 	{
-		__set_errno (EINVAL);
+		__set_errno(EINVAL);
 		return -1;
 	}
 	
 	if ((f[1] == ':') && (f[2] == '\0'))
 	{
-		int c = tolower (f[0]);
+		int c = tolower(f[0]);
 		
 		if (c >= 'a' && c <= 'z')
 			c = c - 'a';
@@ -217,11 +226,11 @@ open (const char *filename, int iomode, ...)
 		
 		if ((c >= 0) && (c < 32))
 		{
-			dev = alloc_device ();
+			dev = alloc_device();
 			if (dev != -1)
 			{
-				mydev = get_device (dev);
-				assert (mydev);
+				mydev = get_device(dev);
+				assert(mydev);
 				
 				mydev->drv = c;
 				mydev->open_flags = iomode;
@@ -236,46 +245,52 @@ open (const char *filename, int iomode, ...)
 		va_list args;
 		int retval;
 		
-		va_start (args, iomode);
-		retval = __open_v (filename, iomode, args);
-		va_end (args);
+		va_start(args, iomode);
+		retval = __open_v(filename, iomode, args);
+		va_end(args);
 		
 		return retval;
 	}
 	
 	if (mydev->open_flags == O_RDONLY)
 	{
-		DEBUG (("readonly mode!\n"));
-		sync ();
+		DEBUG(("readonly mode!\n"));
+		sync();
 	}
-	else if (Dlock (1, mydev->drv))
+	else if (Dlock(1, mydev->drv))
 	{
-		printf ("Can't lock partition %c:!\n", mydev->drv+'A');
+		printf("Can't lock partition %c:!\n", mydev->drv+'A');
 		
 		if (mydev)
-			free_device (mydev);
+			free_device(mydev);
 		
-		__set_errno (EACCES);
+		__set_errno(EACCES);
 		return -1;
 	}
 	
-	__set_errno (EERROR);
+	__set_errno(EERROR);
 	
 	ret = XHGetVersion ();
-	DEBUG (("XHDI version: %lx\n", ret));
+	DEBUG(("XHDI version: %lx\n", ret));
 	
-	ret = XHInqDev2 (mydev->drv, &mydev->xhdi_maj, &mydev->xhdi_min, &mydev->xhdi_start, NULL, &mydev->xhdi_blocks, mydev->xhdi_id);
+	ret = XHInqDev2(mydev->drv,
+			&mydev->xhdi_maj, &mydev->xhdi_min,
+			&mydev->xhdi_start, NULL,
+			&mydev->xhdi_blocks, mydev->xhdi_id);
 	if (ret)
 	{
-		printf ("XHInqDev2 [%c] fail (ret = %li, errno = %i)\n", mydev->drv+'A', ret, errno);
+		printf("XHInqDev2 [%c] fail (ret = %li, errno = %i)\n",
+			mydev->drv+'A', ret, errno);
 		ret = -1;
 	}
 	else
 	{
-		ret = XHInqTarget (mydev->xhdi_maj, mydev->xhdi_min, &mydev->xhdi_blocksize, NULL, NULL);
+		ret = XHInqTarget(mydev->xhdi_maj, mydev->xhdi_min,
+				  &mydev->xhdi_blocksize, NULL, NULL);
 		if (ret)
 		{
-			printf ("XHInqTarget [%i:%i] fail (ret = %li, errno = %i)\n", mydev->xhdi_maj, mydev->xhdi_min, ret, errno);
+			printf("XHInqTarget [%i:%i] fail (ret = %li, errno = %i)\n",
+				mydev->xhdi_maj, mydev->xhdi_min, ret, errno);
 			ret = -1;
 		}
 		else
@@ -290,16 +305,18 @@ open (const char *filename, int iomode, ...)
 				|| ((xhdi_id[0] == 'M') && (xhdi_id[1] == 'I') && (xhdi_id[2] == 'X')) /* MIX */
 				|| ((xhdi_id[0] == '\0') && (xhdi_id[1] == 'D')))                  /* any DOS */
 			{
-				DEBUG (("Partition ok and accepted!\n"));
-				DEBUG (("start = %lu, blocks = %lu, blocksize = %lu\n", mydev->xhdi_start, mydev->xhdi_blocks, mydev->xhdi_blocksize));
+				DEBUG(("Partition ok and accepted!\n"));
+				DEBUG(("start = %lu, blocks = %lu, blocksize = %lu\n",
+					mydev->xhdi_start, mydev->xhdi_blocks,
+					mydev->xhdi_blocksize));
 			}
 			else
 			{
 				xhdi_id [3] = '\0';
-				printf ("Wrong partition ID [%s]!\n", xhdi_id);
-				printf ("Only 'RAW', 'LNX' and DOS partitions are supported.\n");
+				printf("Wrong partition ID [%s]!\n", xhdi_id);
+				printf("Only 'RAW', 'LNX' and DOS partitions are supported.\n");
 				
-				__set_errno (EPERM);
+				__set_errno(EPERM);
 				ret = -1;
 			}
 		}
@@ -308,7 +325,7 @@ open (const char *filename, int iomode, ...)
 	if (ret)
 	{
 		if (mydev)
-			free_device (mydev);
+			free_device(mydev);
 		
 		dev = -1;
 	}
@@ -317,28 +334,28 @@ open (const char *filename, int iomode, ...)
 }
 
 int
-close (int fd)
+close(int fd)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	int ret = 0;
 	
 	if (!mydev)
 		/* fall through */
-		return __close (fd);
+		return __close(fd);
 	
 	if (mydev->open_flags == O_RDONLY)
 	{
 		;
 	}
-	else if (Dlock (0, mydev->drv))
+	else if (Dlock(0, mydev->drv))
 	{
-		printf ("Can't unlock partition %c:!\n", 'A'+mydev->drv);
+		printf("Can't unlock partition %c:!\n", 'A'+mydev->drv);
 		
-		__set_errno (EACCES);
+		__set_errno(EACCES);
 		ret = -1;
 	}
 	
-	free_device (mydev);
+	free_device(mydev);
 	return ret;
 }
 
@@ -348,36 +365,36 @@ static ulong buf_recno = 0;
 static long buf_n = 0;
 
 static long
-rwabs_xhdi (struct device *mydev, ushort rw, void *buf, ulong size, ulong recno)
+rwabs_xhdi(struct device *mydev, ushort rw, void *buf, ulong size, ulong recno)
 {
 	ulong n = size / mydev->xhdi_blocksize;
 	long r;
 	
-	assert ((size % mydev->xhdi_blocksize) == 0);
+	assert((size % mydev->xhdi_blocksize) == 0);
 	
 	if (!n || (recno + n) > mydev->xhdi_blocks)
 	{
-		printf ("rwabs_xhdi: access outside partition (drv = %c:)\n", 'A'+mydev->drv);
-		exit (2);
+		printf("rwabs_xhdi: access outside partition (drv = %c:)\n", 'A'+mydev->drv);
+		exit(2);
 	}
 	
 	if (n > 65535UL)
 	{
-		printf ("rwabs_xhdi: n to large (drv = %c)\n", 'A'+mydev->drv);
-		exit (2);
+		printf("rwabs_xhdi: n to large (drv = %c)\n", 'A'+mydev->drv);
+		exit(2);
 	}
 	
 	if (!rw && (buf_recno == recno) && (buf_n == n))
 	{
-		bcopy (buffer, buf, buf_n * mydev->xhdi_blocksize);
+		bcopy(buffer, buf, buf_n * mydev->xhdi_blocksize);
 		return 0;
 	}
 	
 	r = XHReadWrite (mydev->xhdi_maj, mydev->xhdi_min, rw, mydev->xhdi_start + recno, n, buf);
 	
-	if (!r && (n * mydev->xhdi_blocksize) <= sizeof (buffer))
+	if (!r && (n * mydev->xhdi_blocksize) <= sizeof(buffer))
 	{
-		bcopy (buf, buffer, n * mydev->xhdi_blocksize);
+		bcopy(buf, buffer, n * mydev->xhdi_blocksize);
 		
 		buf_recno = recno;
 		buf_n = n;
@@ -392,13 +409,13 @@ rwabs_xhdi (struct device *mydev, ushort rw, void *buf, ulong size, ulong recno)
 # define min(a,b)	(a > b ? b : a)
 
 int
-read (int fd, void *_buf, size_t size)
+read(int fd, void *_buf, size_t size)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	
 	if (!mydev)
 		/* fall through */
-		return __read (fd, _buf, size);
+		return __read(fd, _buf, size);
 		
 {
 	char *buf = _buf;
@@ -422,17 +439,17 @@ read (int fd, void *_buf, size_t size)
 		ulong data;
 		long ret;
 		
-		ret = rwabs_xhdi (mydev, 0, tmp, mydev->xhdi_blocksize, recno);
+		ret = rwabs_xhdi(mydev, 0, tmp, mydev->xhdi_blocksize, recno);
 		if (ret)
 		{
-			DEBUG (("read: partial part: read failure (r = %li, errno = %i)\n", ret, errno));
+			DEBUG(("read: partial part: read failure (r = %li, errno = %i)\n", ret, errno));
 			goto out;
 		}
 		
 		data = mydev->xhdi_blocksize - offset;
 		data = min (todo, data);
 		
-		memcpy (buf, tmp + offset, data);
+		memcpy(buf, tmp + offset, data);
 		
 		buf += data;
 		todo -= data;
@@ -442,8 +459,8 @@ read (int fd, void *_buf, size_t size)
 	
 	if (todo)
 	{
-		assert ((todo > 0));
-		assert ((mydev->pos % mydev->xhdi_blocksize) == 0);
+		assert((todo > 0));
+		assert((mydev->pos % mydev->xhdi_blocksize) == 0);
 	}
 	
 	
@@ -458,7 +475,7 @@ read (int fd, void *_buf, size_t size)
 		ret = rwabs_xhdi (mydev, 0, buf, data, recno);
 		if (ret)
 		{
-			DEBUG (("read: full blocks: read failure (r = %li, errno = %i)\n", ret, errno));
+			DEBUG(("read: full blocks: read failure (r = %li, errno = %i)\n", ret, errno));
 			goto out;
 		}
 		
@@ -470,8 +487,8 @@ read (int fd, void *_buf, size_t size)
 	
 	if (todo)
 	{
-		assert ((todo > 0) && (todo < mydev->xhdi_blocksize));
-		assert ((mydev->pos % mydev->xhdi_blocksize) == 0);
+		assert((todo > 0) && (todo < mydev->xhdi_blocksize));
+		assert((mydev->pos % mydev->xhdi_blocksize) == 0);
 	}
 	
 	/* anything left?
@@ -486,17 +503,17 @@ read (int fd, void *_buf, size_t size)
 		ret = rwabs_xhdi (mydev, 0, tmp, mydev->xhdi_blocksize, recno);
 		if (ret)
 		{
-			DEBUG (("read: left part: read failure (r = %li, errno = %i)]\n", ret, errno));
+			DEBUG(("read: left part: read failure (r = %li, errno = %i)]\n", ret, errno));
 			goto out;
 		}
 		
-		memcpy (buf, tmp, todo);
+		memcpy(buf, tmp, todo);
 		
 		done += todo;
 		mydev->pos += todo;
 	}
 	
-	assert (done == size);
+	assert(done == size);
 	
 out:
 	return done;
@@ -504,17 +521,17 @@ out:
 }
 
 int
-write (int fd, const void *_buf, size_t size)
+write(int fd, const void *_buf, size_t size)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	
 	if (!mydev)
 		/* fall through */
-		return __write (fd, _buf, size);
+		return __write(fd, _buf, size);
 	
 	if (mydev->open_flags == O_RDONLY)
 	{
-		__set_errno (EPERM);
+		__set_errno(EPERM);
 		return -1;
 	}
 {
@@ -539,22 +556,22 @@ write (int fd, const void *_buf, size_t size)
 		ulong data;
 		long ret;
 		
-		ret = rwabs_xhdi (mydev, 0, tmp, mydev->xhdi_blocksize, recno);
+		ret = rwabs_xhdi(mydev, 0, tmp, mydev->xhdi_blocksize, recno);
 		if (ret)
 		{
-			DEBUG (("write: partial part: read failure (r = %li, errno = %i)\n", ret, errno));
+			DEBUG(("write: partial part: read failure (r = %li, errno = %i)\n", ret, errno));
 			goto out;
 		}
 		
 		data = mydev->xhdi_blocksize - offset;
 		data = min (todo, data);
 		
-		memcpy (tmp + offset, buf, data);
+		memcpy(tmp + offset, buf, data);
 		
-		ret = rwabs_xhdi (mydev, 1, tmp, mydev->xhdi_blocksize, recno);
+		ret = rwabs_xhdi(mydev, 1, tmp, mydev->xhdi_blocksize, recno);
 		if (ret)
 		{
-			DEBUG (("write: partial part: write failure (r = %li, errno = %i)\n", ret, errno));
+			DEBUG(("write: partial part: write failure (r = %li, errno = %i)\n", ret, errno));
 			goto out;
 		}
 		
@@ -566,8 +583,8 @@ write (int fd, const void *_buf, size_t size)
 	
 	if (todo)
 	{
-		assert ((todo > 0));
-		assert ((mydev->pos % mydev->xhdi_blocksize) == 0);
+		assert((todo > 0));
+		assert((mydev->pos % mydev->xhdi_blocksize) == 0);
 	}
 	
 	/* full blocks
@@ -578,10 +595,10 @@ write (int fd, const void *_buf, size_t size)
 		ulong data = (todo / mydev->xhdi_blocksize) * mydev->xhdi_blocksize;
 		long ret;
 		
-		ret = rwabs_xhdi (mydev, 1, buf, data, recno);
+		ret = rwabs_xhdi(mydev, 1, buf, data, recno);
 		if (ret)
 		{
-			DEBUG (("write: full blocks: write failure (r = %li, errno = %i)\n", ret, errno));
+			DEBUG(("write: full blocks: write failure (r = %li, errno = %i)\n", ret, errno));
 			goto out;
 		}
 		
@@ -593,8 +610,8 @@ write (int fd, const void *_buf, size_t size)
 	
 	if (todo)
 	{
-		assert ((todo > 0) && (todo < mydev->xhdi_blocksize));
-		assert ((mydev->pos % mydev->xhdi_blocksize) == 0);
+		assert((todo > 0) && (todo < mydev->xhdi_blocksize));
+		assert((mydev->pos % mydev->xhdi_blocksize) == 0);
 	}
 	
 	/* anything left?
@@ -606,19 +623,19 @@ write (int fd, const void *_buf, size_t size)
 		ulong recno = mydev->pos / mydev->xhdi_blocksize;
 		long ret;
 		
-		ret = rwabs_xhdi (mydev, 0, tmp, mydev->xhdi_blocksize, recno);
+		ret = rwabs_xhdi(mydev, 0, tmp, mydev->xhdi_blocksize, recno);
 		if (ret)
 		{
-			DEBUG (("write: left part: read failure (r = %li, errno = %i)]\n", ret, errno));
+			DEBUG(("write: left part: read failure (r = %li, errno = %i)]\n", ret, errno));
 			goto out;
 		}
 		
-		memcpy (tmp, buf, todo);
+		memcpy(tmp, buf, todo);
 		
-		ret = rwabs_xhdi (mydev, 1, tmp, mydev->xhdi_blocksize, recno);
+		ret = rwabs_xhdi(mydev, 1, tmp, mydev->xhdi_blocksize, recno);
 		if (ret)
 		{
-			DEBUG (("write: partial part: write failure (r = %li, errno = %i)\n", ret, errno));
+			DEBUG(("write: partial part: write failure (r = %li, errno = %i)\n", ret, errno));
 			goto out;
 		}
 		
@@ -626,7 +643,7 @@ write (int fd, const void *_buf, size_t size)
 		mydev->pos += todo;
 	}
 	
-	assert (done == size);
+	assert(done == size);
 	
 out:
 	return done;
@@ -634,15 +651,15 @@ out:
 }
 
 int
-ioctl (int fd, int cmd, void *arg)
+ioctl(int fd, int cmd, void *arg)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	
 	if (!mydev)
 		/* fall through */
-		return __ioctl (fd, cmd, arg);
+		return __ioctl(fd, cmd, arg);
 	
-	DEBUG (("ioctl: cmd = %i\n", cmd));
+	DEBUG(("ioctl: cmd = %i\n", cmd));
 	
 	switch (cmd)
 	{
@@ -659,7 +676,7 @@ ioctl (int fd, int cmd, void *arg)
 			break;
 		}
 		default:
-			__set_errno (EINVAL);
+			__set_errno(EINVAL);
 			return -1;
 	}
 	
@@ -667,15 +684,15 @@ ioctl (int fd, int cmd, void *arg)
 }
 
 int
-fstat (int fd, struct stat *st)
+fstat(int fd, struct stat *st)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	
 	if (!mydev)
 		/* fall through */
-		return __fstat (fd, st);
+		return __fstat(fd, st);
 	
-	bzero (st, sizeof (*st));
+	bzero(st, sizeof(*st));
 	
 	st->st_dev	= mydev->xhdi_maj;
 	st->st_ino	= mydev->drv;
@@ -697,43 +714,53 @@ fstat (int fd, struct stat *st)
 }
 
 int
-stat (const char *filename, struct stat *st)
+stat(const char *filename, struct stat *st)
 {
-	int fd = open (filename, O_RDONLY);
+	struct device *mydev;
+	int fd, res;
+	
+	fd = open(filename, O_RDONLY);
 	if (fd == -1)
 		return -1;
 
+	mydev = get_device(fd);
+	if (!mydev)
 	{
-		int res = fstat(fd, st); 
 		close(fd);
-		return res;
+		
+		/* fall through */
+		return __stat(filename, st);
 	}
+	
+	res = fstat(fd, st); 
+	close(fd);
+	
+	return res;
 }
 
-
 int
-fsync (int fd)
+fsync(int fd)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	
 	if (!mydev)
 		/* fall through */
-		return __fsync (fd);
+		return __fsync(fd);
 	
 	/* nothing todo */
 	return 0;
 }
 
-loff_t llseek (int fd, loff_t offset, int origin);
+loff_t llseek(int fd, loff_t offset, int origin);
 
 loff_t
-llseek (int fd, loff_t offset, int origin)
+llseek(int fd, loff_t offset, int origin)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	
 	if (!mydev)
 		/* fall through */
-		return __lseek (fd, (off_t) offset, origin);
+		return __lseek(fd, (off_t) offset, origin);
 	
 	
 	switch (origin)
@@ -752,7 +779,7 @@ llseek (int fd, loff_t offset, int origin)
 	
 	if (offset > (loff_t) mydev->xhdi_blocks * mydev->xhdi_blocksize)
 	{
-		__set_errno (EINVAL);
+		__set_errno(EINVAL);
 		return -1;
 	}
 	
@@ -760,22 +787,22 @@ llseek (int fd, loff_t offset, int origin)
 	return mydev->pos;
 }
 
-loff_t lseek64 (int fd, loff_t offset, int origin);
+loff_t lseek64(int fd, loff_t offset, int origin);
 
 loff_t
-lseek64 (int fd, loff_t offset, int origin)
+lseek64(int fd, loff_t offset, int origin)
 {
-	return llseek (fd, offset, origin);
+	return llseek(fd, offset, origin);
 }
 
 __off_t
-lseek (int fd, __off_t offset, int mode)
+lseek(int fd, __off_t offset, int mode)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	
 	if (!mydev)
 		/* fall through */
-		return __lseek (fd, offset, mode);
+		return __lseek(fd, offset, mode);
 	
 {
 	loff_t _offset = offset;
@@ -796,13 +823,13 @@ lseek (int fd, __off_t offset, int mode)
 	
 	if (_offset > LONG_MAX)
 	{
-		__set_errno (EINVAL);
+		__set_errno(EINVAL);
 		return -1;
 	}
 	
 	if (_offset > (loff_t) mydev->xhdi_blocks * mydev->xhdi_blocksize)
 	{
-		__set_errno (EINVAL);
+		__set_errno(EINVAL);
 		return -1;
 	}
 	
@@ -811,12 +838,12 @@ lseek (int fd, __off_t offset, int mode)
 }
 }
 
-int gettype (int fd);
+int gettype(int fd);
 
 int
-gettype (int fd)
+gettype(int fd)
 {
-	struct device *mydev = get_device (fd);
+	struct device *mydev = get_device(fd);
 	char *xhdi_id;
 	
 	if (!mydev)
@@ -829,3 +856,5 @@ gettype (int fd)
 	else
 		return 1;   /* Atari (GEM/GBM) */
 }
+
+# endif /* __MINT__ */
