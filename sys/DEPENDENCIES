@@ -13,6 +13,10 @@ $(LIBKERNTARGET):
 	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
 	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
 
+%.o: %.s
+	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
+	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
+
 #
 # dependencies
 #
