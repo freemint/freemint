@@ -29,8 +29,8 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <basepage.h>
-#include <mintbind.h>
+#include <mint/basepage.h>
+#include <mint/mintbind.h>
 #include <sys/ioctl.h>
 
 #include "../global.h"
