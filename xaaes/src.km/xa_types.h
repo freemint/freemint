@@ -1065,6 +1065,7 @@ struct menu_task
 	short omx, omy;
 	short x, y;
 	RECT bar, drop;
+	void	(*outof)(struct task_administration_block *tab);
 	struct xa_rect_list *rl_bar;
 	struct xa_rect_list *rl_drop;
 	
