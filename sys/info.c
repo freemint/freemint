@@ -141,6 +141,17 @@ const char *greet2 =
 
 # endif /* THIRD_PARTY */
 
+/* Since this place messages can be translated
+ * Don't forget to add specific define that enables the national version,
+ * like for example -DLANG_FRENCH for French version and so on.
+ * It is assumed, that these defines are exclusive, i.e. you cannot
+ * simultaneously do -DLANG_ENGLISH and -DLANG_FRENCH
+ *
+ * Only English support at the moment.
+ */
+
+# ifdef LANG_ENGLISH
+
 const char *memprot_warning =
 	"\007\033p"
 	"             *** WARNING ***              \033q\r\n"
@@ -258,5 +269,7 @@ const char *MSG_xhdi_present = "This system features XHDI level %x.%x (kerinfo %
 const char *MSG_kerinfo_accepted = "accepted";
 const char *MSG_kerinfo_rejected = "rejected";
 const char *MSG_xhdi_absent = "This system does not feature XHDI.\r\n\r\n";
+
+# endif /* LANG_ENGLISH */
 
 /* EOF */
