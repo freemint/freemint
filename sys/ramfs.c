@@ -144,6 +144,7 @@
 # include "libkern/libkern.h"
 
 # include "dev-null.h"
+# include "dos.h"
 # include "filesys.h"
 # include "init.h"
 # include "k_prot.h"
