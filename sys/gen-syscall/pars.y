@@ -90,25 +90,25 @@ SYSTAB *tab = NULL;
 	LIST	*list;
 }
 
-%token	<ident>	_DOS
-%token	<ident>	_BIOS
-%token	<ident>	_XBIOS
-%token	<ident>	_RESERVED
-%token	<ident>	_NULL
-%token	<ident>	_MAX
+%token	<ident>	_IDENT_DOS
+%token	<ident>	_IDENT_BIOS
+%token	<ident>	_IDENT_XBIOS
+%token	<ident>	_IDENT_RESERVED
+%token	<ident>	_IDENT_NULL
+%token	<ident>	_IDENT_MAX
 
-%token	<ident>	_VOID
-%token	<ident>	_CONST
-%token	<ident>	_STRUCT
-%token	<ident>	_UNION
+%token	<ident>	_IDENT_VOID
+%token	<ident>	_IDENT_CONST
+%token	<ident>	_IDENT_STRUCT
+%token	<ident>	_IDENT_UNION
 
-%token	<ident>	_CHAR
-%token	<ident>	_SHORT
-%token	<ident>	_LONG
-%token	<ident>	_UNSIGNED
-%token	<ident>	_UCHAR
-%token	<ident>	_USHORT
-%token	<ident>	_ULONG
+%token	<ident>	_IDENT_CHAR
+%token	<ident>	_IDENT_SHORT
+%token	<ident>	_IDENT_LONG
+%token	<ident>	_IDENT_UNSIGNED
+%token	<ident>	_IDENT_UCHAR
+%token	<ident>	_IDENT_USHORT
+%token	<ident>	_IDENT_ULONG
 
 %token	<ident>	Identifier
 %token	<value>	Integer
@@ -151,7 +151,7 @@ dos
 		
 		bzero (tab->table, tab->size * sizeof (*(tab->table)));
 	}
-	'[' _DOS ']' definition_list
+	'[' _IDENT_DOS ']' definition_list
 	{
 		$$ = tab;
 	}
@@ -170,7 +170,7 @@ bios
 		
 		bzero (tab->table, tab->size * sizeof (*(tab->table)));
 	}
-	'[' _BIOS ']' definition_list
+	'[' _IDENT_BIOS ']' definition_list
 	{
 		$$ = tab;
 	}
@@ -189,7 +189,7 @@ xbios
 		
 		bzero (tab->table, tab->size * sizeof (*(tab->table)));
 	}
-	'[' _XBIOS ']' definition_list
+	'[' _IDENT_XBIOS ']' definition_list
 	{
 		$$ = tab;
 	}
@@ -211,7 +211,7 @@ definition
 		if (add_tab (tab, $1, $2, $3, $5))
 		{ yyerror ("out of memory"); YYERROR; }
 	}
-|	Integer _NULL
+|	Integer _IDENT_NULL
 	{
 		if (tab->max && $1 >= tab->max)
 		{ yyerror ("entry greater than MAX"); YYERROR; }
@@ -219,7 +219,7 @@ definition
 		if (add_tab (tab, $1, NULL, NULL, NULL))
 		{ yyerror ("out of memory"); YYERROR; }
 	}
-|	Integer _RESERVED
+|	Integer _IDENT_RESERVED
 	{
 		if (tab->max && $1 >= tab->max)
 		{ yyerror ("entry greater than MAX"); YYERROR; }
@@ -227,7 +227,7 @@ definition
 		if (add_tab (tab, $1, NULL, $2, NULL))
 		{ yyerror ("out of memory"); YYERROR; }
 	}
-|	Integer _MAX
+|	Integer _IDENT_MAX
 	{
 		if (tab->max)
 		{ yyerror ("MAX already defined"); YYERROR; }
@@ -242,13 +242,8 @@ definition
 	}
 ;
 
-/* class
-:	Identifier
-|
-; */
-
 parameter_list
-:	_VOID
+:	_IDENT_VOID
 	{
 		$$ = NULL;
 	}
@@ -322,7 +317,7 @@ simple_type
 		
 		$$ = l;
 	}
-|	_CONST type
+|	_IDENT_CONST type
 	{
 		LIST *l = $2;
 		
@@ -331,7 +326,7 @@ simple_type
 		
 		$$ = l;
 	}
-|	_STRUCT type
+|	_IDENT_STRUCT type
 	{
 		LIST *l = $2;
 		
@@ -340,7 +335,7 @@ simple_type
 		
 		$$ = l;
 	}
-|	_CONST _STRUCT type
+|	_IDENT_CONST _IDENT_STRUCT type
 	{
 		LIST *l = $3;
 		
@@ -350,7 +345,7 @@ simple_type
 		
 		$$ = l;
 	}
-|	_UNION type
+|	_IDENT_UNION type
 	{
 		LIST *l = $2;
 		
@@ -362,7 +357,7 @@ simple_type
 ;
 
 type
-:	_CHAR
+:	_IDENT_CHAR
 	{
 		LIST *l;
 		
@@ -371,7 +366,7 @@ type
 		
 		$$ = l;
 	}
-|	_SHORT
+|	_IDENT_SHORT
 	{
 		LIST *l;
 		
@@ -380,7 +375,7 @@ type
 		
 		$$ = l;
 	}
-|	_LONG
+|	_IDENT_LONG
 	{
 		LIST *l;
 		
@@ -389,7 +384,7 @@ type
 		
 		$$ = l;
 	}
-|	_UNSIGNED
+|	_IDENT_UNSIGNED
 	{
 		LIST *l;
 		
@@ -398,7 +393,7 @@ type
 		
 		$$ = l;
 	}
-|	_UCHAR
+|	_IDENT_UCHAR
 	{
 		LIST *l;
 		
@@ -407,7 +402,7 @@ type
 		
 		$$ = l;
 	}
-|	_USHORT
+|	_IDENT_USHORT
 	{
 		LIST *l;
 		
@@ -416,7 +411,7 @@ type
 		
 		$$ = l;
 	}
-|	_ULONG
+|	_IDENT_ULONG
 	{
 		LIST *l;
 		
@@ -425,7 +420,7 @@ type
 		
 		$$ = l;
 	}
-|	_VOID
+|	_IDENT_VOID
 	{
 		LIST *l;
 		
