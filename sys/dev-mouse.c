@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,31 +26,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 1999-07-27
- * 
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- * 
- * 
- * changes since last version:
- * 
- * 1999-07-27:
- * 
- * initial version; moved from biosfs.c
- * some cleanup
- * 
- * known bugs:
- * 
- * todo:
- * 
- * optimizations to do:
- * 
  */
 
 # include "dev-mouse.h"
-# include "global.h"
 
 # include "arch/intr.h"
 # include "arch/syscall.h"
@@ -54,6 +36,7 @@
 
 # include "biosfs.h"
 # include "dev-null.h"
+# include "init.h"
 # include "proc.h"
 # include "random.h"
 # include "time.h"

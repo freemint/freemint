@@ -132,7 +132,8 @@ stop_and_ask(void)
 }
 
 /* structures for keyboard/MIDI interrupt vectors */
-KBDVEC *syskey, oldkey;
+KBDVEC *syskey;
+static KBDVEC oldkey;
 
 xbra_vec old_criticerr;
 xbra_vec old_execos;
@@ -897,7 +898,7 @@ init (void)
 	sysbase = *((long **)(0x4f2L));	/* gets the RAM OS header */
 	sysbase = (long *)sysbase[2];	/* gets the ROM one */
 
-	tosvers = (int)(sysbase[0] & 0x0000ffff);
+	tosvers = (short)(sysbase[0] & 0x0000ffff);
 	kbshft = (tosvers == 0x100) ? (char *) 0x0e1bL : (char *)sysbase[9];
 	falcontos = (tosvers >= 0x0400 && tosvers <= 0x0404) || (tosvers >= 0x0700);
 

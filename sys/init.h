@@ -9,7 +9,9 @@
 # define _init_h
 
 # include "mint/mint.h"
+# include "mint/emu_tos.h"
 
+extern KBDVEC *syskey;
 extern short intr_done;
 
 void	boot_print	(const char *s);

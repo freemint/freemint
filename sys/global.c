@@ -34,52 +34,29 @@
 # include "global.h"
 
 
-ulong c20ms = 0;
+struct global global =
+{
+	0, 0, 0, 0, 0, 0, ""
+};
 
+long mcpu = 0;
+short fpu = 0;
+short secure_mode = 0;
+unsigned long c20ms = 0;
 
-long mch = 0;		/* machine we are are running */
-long mcpu;		/* processor we are running */
-long fputype = 0;	/* value for cookie jar */
 /*
- * AGK: for proper co-processors we must consider saving their context.
- * This variable when non-zero indicates that the BIOS considers a true
- * coprocessor to be present. We use this variable in the context switch
- * code to decide whether to attempt an FPU context save.
+ * special flags for workarounds
  */
-short fpu = 0;		/* flag */
-
-int tosvers;		/* version of TOS we're running over */
 
 /* flag for Falcon TOS kludges: TRUE if TOS 4.00 - 4.04
  * what about TOS 4.50 in Milan? see syscall.spp
  */
-short falcontos;
+short falcontos = 0;
 
-/*
- * if this variable is set, then we have "secure mode" enabled; that
- * means only the superuser may access some functions those may be critical
- * for system security.
- *
+/* variable set to 1 if the _VDO cookie indicates Falcon style video
  */
-int secure_mode = 0;
+short FalconVideo = 0;
 
-/*
- * variable set to 1 if the _VDO cookie indicates Falcon style video
- */
-int FalconVideo = 0;
-
-/*
- * variable set to 1 if the _VDO cookie indicates STE style video
+/* variable set to 1 if the _VDO cookie indicates STE style video
  */
 short ste_video = 0;
-
-/*
- * variable holds language preference
- */
-int gl_lang = -1;
-
-/*
- * The path to the system directory
- */
-char sysdir[32];
-short sysdrv;
