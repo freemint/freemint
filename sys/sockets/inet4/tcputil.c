@@ -13,8 +13,6 @@
 # include "route.h"
 # include "tcpout.h"
 
-# include "util.h"
-
 
 static void tcb_deltimers (struct tcb *);
 

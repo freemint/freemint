@@ -17,7 +17,6 @@
 # include "port.h"
 
 # include "buf.h"
-# include "util.h"
 
 # include "mint/file.h"
 # include "mint/socket.h"

@@ -12,8 +12,6 @@
 # include "loopback.h"
 # include "route.h"
 
-# include "util.h"
-
 # include <mint/asm.h>
 # include <mint/file.h>
 
@@ -31,8 +29,23 @@ struct netif *allinterfaces, *if_lo, *if_primary;
 /*
  * Stack used while processing incoming packets
  */
-char stack[8192];
+static char stack[8192];
 
+INLINE void *
+setstack (register void *sp)
+{
+	register void *osp __asm__("d0") = 0;
+	
+	__asm__ volatile
+	(
+		"movel sp,%0;"
+		"movel %2,sp;"
+		: "=a" (osp)
+		: "0" (osp), "a" (sp)
+	);
+	
+	return osp;
+}
 
 short
 if_enqueue (struct ifq *q, BUF *buf, short pri)

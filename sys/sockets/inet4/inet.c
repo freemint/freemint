@@ -17,7 +17,6 @@
 # include "port.h"
 
 # include "timer.h"
-# include "util.h"
 
 
 static void	inet_autobind	(struct in_data *);

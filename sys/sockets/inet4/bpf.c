@@ -12,7 +12,6 @@
 
 # include "buf.h"
 # include "timer.h"
-# include "util.h"
 
 # include <mint/asm.h>
 # include <mint/dcntl.h>
