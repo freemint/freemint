@@ -53,7 +53,7 @@
 # include "mint/signal.h"
 
 # include "arch/mprot.h"
-# include "arch/slb_util.h"
+# include "arch/user_things.h"
 
 # include "dos.h"
 # include "dosmem.h"
@@ -72,63 +72,6 @@
 
 /* The linked list of used SLBs */
 SHARED_LIB *slb_list = NULL;
-
-/*
- * slb_init_and_exit
- *
- * Helper function that is used as the text segment for shared libraries. It
- * calls the library's init() function and stores the return value in the
- * basepage (which in turn is read by s_lbopen()). After that, it goes to
- * sleep, and calls the library's exit() function when it is woken up again.
- *
- * Input:
- * b: Pointer to the basepage
- */
-/* Moved to arch/slb_util.S
- */
-# if 0
-static void _cdecl
-slb_init_and_exit (BASEPAGE *b)
-{
-	long *exec_longs;
-	volatile SLB_HEAD *head;
-
-	/* Act like a daemon */
-	P_domain (1);
-	Fclose (0);
-	Fclose (1);
-	Fclose (2);
-	Fclose (3);
-	Fclose (4);
-	P_setpgrp (0, 0);
-
-	/*
-	 * Note: Unlike MagiC, this implementation calls a library's init() and
-	 * exit() function in user mode, as anything else would be a security
-	 * risk. Maybe this should depend on secure_mode?
-	 */
-
-	/* Test for the new programm-format */
-	exec_longs = (long *) (b->p_lowtpa + 256L);
-	if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
-	{
-		head = (SLB_HEAD *)(b->p_lowtpa + 256L + 228L);
-	}
-	else
-	{
-		head = (SLB_HEAD *)(b->p_lowtpa + 256L);
-	}
-
-	if (head->slh_magic != 0x70004afcL)
-		*(long *) b->p_cmdlin = -1L;
-	else
-		*(long *) b->p_cmdlin = head->slh_slb_init ();
-
-	P_kill (0, SIGSTOP);
-	head->slh_slb_exit ();
-	Pterm0 ();
-}
-# endif
 
 /*
  * mark_users
