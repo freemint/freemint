@@ -475,26 +475,29 @@ kern_get_stat (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
 	ulong len = 64;
-	PROC *p = curproc;
-	ulong all_systime = 0, all_usrtime = 0, all_nice = 1, all_idle = 1;
-
+	PROC *p;
+	ulong all_systime = 0, all_usrtime = 0, all_nice = 0;
+	
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 	
-
-	for (curproc = proclist; curproc; curproc = curproc->gl_next)
+	for (p = proclist; p; p = p->gl_next)
 	{
-	  all_systime += curproc->systime;
-	  all_usrtime += curproc->usrtime;
+		if (p->pid)
+		{
+			all_systime += p->systime;
+			all_usrtime += p->usrtime;
+		}
 	}
-	curproc = p;	/* restore the real curproc */
+	
+# define cpus 1L
 	
 	info->len = ksprintf (info->buf, len, "cpu \t%9lu %9lu %9lu %9lu\n",
 		              all_usrtime,
 			      all_nice,
 			      all_systime,
-			      all_idle);
+			      jiffies * cpus - (all_usrtime + all_nice + all_systime));
 	
 	*buffer = info;
 	return 0;
