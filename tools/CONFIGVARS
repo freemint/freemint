@@ -63,3 +63,14 @@ WARN = \
 	-Wpointer-arith \
 	-Wcast-qual \
 	-Waggregate-return
+
+#
+# default definitions
+#
+DEFINITIONS = 
+
+
+#
+# model type
+#
+MODEL = 
