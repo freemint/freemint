@@ -93,8 +93,11 @@ if_load (void)
 {
 	c_conws ("Loading interfaces:\r\n");
 	
-	if (load_modules)
-		load_modules (".xif", load_xif);
-	else
-		FATAL ("This version require a newer kernel!");
+	if (!load_modules)
+	{
+		ALERT (("inet4.xdd: Loading xif's require an uptodate 1.16 kernel!"));
+		return;
+	}
+	
+	load_modules (".xif", load_xif);
 }
