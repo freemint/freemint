@@ -61,7 +61,7 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 	*/
 	if (!mouse_locked() && mowner != client && (mu_button.b & 1))
 	{
-		int item;
+		int item, b;
 
 		item = find_object(get_desktop()->tree, 0, 1, widg->mx, widg->my, 0, 0);
 
@@ -69,7 +69,9 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 
 		/* button must be released on the root object. */
 
-		if (mu_button.cb == 0 && item == 0)
+		check_mouse(client, &b, 0, 0);
+
+		if (b == 0 && item == 0)
 		{
 			/* Also unhides the windows. */
 			app_in_front(lock, client);
