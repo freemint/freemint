@@ -318,6 +318,7 @@ struct xa_client
 	struct xa_client *next, *prior;
 
 	struct proc *p;			/* context back ptr */
+	struct xa_user_things *ut;	/* trampoline code for user callbacks */
 
 	bool apterm;			/* true if application understands AP_TERM. */
 	bool wa_wheel;			/* The client wants WA_HEEL messages. */
