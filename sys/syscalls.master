@@ -397,7 +397,7 @@
 0x13f	suptime		(ulong *cur_uptim, ulong loadave[3])
 
 0x140	ptrace		(int request, int pid, void *addr, long data) /* 1.15.11 */
-0x141	mvalidate	(int pid, void *addr, long size) /* 1.15.11 */
+0x141	mvalidate	(int pid, void *addr, long size, long *flags) /* 1.15.11 */
 0x142	dxreaddir	(int len, long handle, char *buf, XATTR *xattr, long *xret)
 0x143	pseteuid	(int id)
 0x144	psetegid	(int id)
@@ -424,15 +424,53 @@
 0x158	pgetpriority	(int which, int who)
 0x159	psetpriority	(int which, int who, int prio)
 0x15a	fpoll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
-0x15b	RESERVED
-0x15c	RESERVED
-0x15d	RESERVED
+0x15b	fwritev		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
+0x15c	freadv		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
+0x15d	ffstat		(short fd, struct stat *st)			/* 1.16 */
 0x15e	psysctl		(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
 0x15f	emulation	(ushort which, ushort op,
 				long a1, long a2, long a3, long a4,
 				long a5, long a6, long a7)		/* 1.15.8  */
 
-0x160	MAX
+	/* 1.16 - socket extensions */
+
+0x160	fsocket		(long domain, long type, long protocol)
+0x161	fsocketpair	(long domain, long type, long protocol, short fds[2])
+0x162	faccept		(short fd, struct sockaddr *name, ulong *anamelen)
+0x163	fconnect	(short fd, const struct sockaddr *name, ulong namelen)
+0x164	fbind		(short fd, const struct sockaddr *name, ulong namelen)
+0x165	flisten		(short fd, long backlog)
+0x166	frecvmsg	(short fd, struct msghdr *msg, long flags)
+0x167	fsendmsg	(short fd, const struct msghdr *msg, long flags)
+0x168	frecvfrom	(short fd, void *buf, ulong len, long flags, struct sockaddr *from, ulong *fromlenaddr)
+0x169	fsendto		(short fd, const void *buf, ulong len, long flags, const struct sockaddr *to, ulong tolen)
+0x16a	fsetsockopt	(short fd, long level, long name, const void *val, ulong valsize)
+0x16b	fgetsockopt	(short fd, long level, long name, void *val, ulong *avalsize)
+0x16c	fgetpeername	(short fd, struct sockaddr *asa, ulong *alen)
+0x16d	fgetsockname	(short fd, struct sockaddr *asa, ulong *alen)
+0x16e	fshutdown	(short fd, long how)
+0x16f	RESERVED
+
+	/* 1.16 - svr5 IPC */
+
+0x170	pshmget		(long key, long size, long shmflg)
+0x171	pshmctl		(long shmid, long cmd, struct shmid_ds *buf)
+0x172	pshmat		(long shmid, const void *shmaddr, long shmflg)
+0x173	pshmdt		(const void *shmaddr)
+0x174	psemget		(long key, long nsems, long semflg)
+0x175	psemctl		(long semid, long semnum, long cmd, union __semun *arg)
+0x176	psemop		(long semid, struct sembuf *sops, long nsops)
+0x177	psemconfig	(long flag)
+0x178	pmsgget		(long key, long msgflg)
+0x179	pmsgctl		(long msqid, long cmd, struct msqid_ds *buf)
+0x17a	pmsgsnd		(long msqid, const void *msgp, long msgsz, long msgflg)
+0x17b	pmsgrcv		(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
+0x17c	RESERVED
+0x17d	maccess		(short mode, void *addr, long size) /* 1.15.12 */
+0x17e	RESERVED	/* mmap */
+0x17f	RESERVED	/* munmap */
+
+0x180	MAX
 
 
 [ BIOS ]

@@ -418,7 +418,7 @@ m_shrink(int dummy, virtaddr block, long size)
 }
 
 long _cdecl
-m_validate (int pid, void *addr, long size)
+m_validate (int pid, void *addr, long size, long *flags)
 {
 	struct proc *p = NULL;
 	MEMREGION *m;
@@ -444,9 +444,61 @@ m_validate (int pid, void *addr, long size)
 	
 	m = proc_addr2region (p, (long) addr);
 	if (m && ((long) addr + size) <= (m->loc + m->len))
+	{
+		if (flags)
+		{
+			long mflags;
+			
+			mflags = get_prot_mode (m);
+			
+			*flags = (mflags << F_PROTSHIFT) | (m->mflags & M_MAP);
+		}
+		
 		return 0;
+	}
 	
 	DEBUG (("Mvalidate: invalid vector"));
+	return EINVAL;
+}
+
+long _cdecl
+m_access (int mode, void *addr, long size)
+{
+	struct proc *p = curproc;
+	MEMREGION *m;
+	
+	TRACE (("Maccess(%i, %lx, %li)", mode, addr, size));
+	
+	if ((mode < 0) || (mode > 1))
+	{
+		DEBUG (("Maccess: invalid argument"));
+		return EINVAL;
+	}
+	
+	/* search in the process memory regions */
+	m = proc_addr2region (p, (long) addr);
+	if (m && ((long) addr + size) <= (m->loc + m->len))
+		/* always accessible */
+		return 0;
+	
+	/* search in all memory reagions */
+	m = addr2region ((long) addr);
+	if (m && ((long) addr + size) <= (m->loc + m->len))
+	{
+		long mflags;
+		
+		mflags = get_prot_mode (m);
+		
+		/* want read only access -> true for global and read-only */
+		if ((mode == 1) && ((mflags == PROT_G) || (mflags == PROT_PR)))
+			return 0;
+		
+		/* want read/write access -> true for global */
+		if (mflags == PROT_G)
+			return 0;
+	}
+	
+	DEBUG (("Maccess: invalid vector"));
 	return EINVAL;
 }
 

@@ -91,7 +91,7 @@ enosys (void)
  * - 0x33 reserved for MagiC - LONG Sconfig(WORD subfn, LONG flags);
  */
 
-# define DOS_MAX 0x160
+# define DOS_MAX 0x180
 ushort dos_max = DOS_MAX;
 
 Func dos_tab [DOS_MAX] =
@@ -469,13 +469,47 @@ Func dos_tab [DOS_MAX] =
 	/* 0x158 */		p_getpriority,
 	/* 0x159 */		p_setpriority,
 	/* 0x15a */		f_poll,		/* 1.15.10 */
-	/* 0x15b */		enosys,		/* reserved */
-	/* 0x15c */		enosys,		/* reserved */
-	/* 0x15d */		enosys,		/* reserved */
+	/* 0x15b */		enosys,		/* 1.16 fwritev */
+	/* 0x15c */		enosys,		/* 1.16 freadv */
+	/* 0x15d */		enosys,		/* 1.16 ffstat */
 	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.15.11 */
-	/* 0x15f */	(Func)	sys_emu		/* 1.15.8, interface emulation */
+	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
 	
-	/* 0x160 */		/* DOS_MAX */
+	/* 0x160 */		enosys,		/* 1.16 socket */
+	/* 0x161 */		enosys,		/* 1.16 socketpair */
+	/* 0x162 */		enosys,		/* 1.16 accept */
+	/* 0x163 */		enosys,		/* 1.16 connect */
+	/* 0x164 */		enosys,		/* 1.16 bind */
+	/* 0x165 */		enosys,		/* 1.16 listen */
+	/* 0x166 */		enosys,		/* 1.16 recvmsg */
+	/* 0x167 */		enosys,		/* 1.16 sendmsg */
+	/* 0x168 */		enosys,		/* 1.16 recvfrom */
+	/* 0x169 */		enosys,		/* 1.16 sendto */
+	/* 0x16a */		enosys,		/* 1.16 setsockopt */
+	/* 0x16b */		enosys,		/* 1.16 getsockopt */
+	/* 0x16c */		enosys,		/* 1.16 getpeername */
+	/* 0x16d */		enosys,		/* 1.16 getsockname */
+	/* 0x16e */		enosys,		/* 1.16 shutdown */
+	/* 0x16f */		enosys,		/* reserved */
+	
+	/* 0x170 */		enosys,		/* 1.16 p_shmget */
+	/* 0x171 */		enosys,		/* 1.16 p_shmctl */
+	/* 0x172 */		enosys,		/* 1.16 p_shmat */
+	/* 0x173 */		enosys,		/* 1.16 p_shmdt */
+	/* 0x174 */		enosys,		/* 1.16 p_semget */
+	/* 0x175 */		enosys,		/* 1.16 p_semctl */
+	/* 0x176 */		enosys,		/* 1.16 p_semop */
+	/* 0x177 */		enosys,		/* 1.16 p_semconfig */
+	/* 0x178 */		enosys,		/* 1.16 p_msgget */
+	/* 0x179 */		enosys,		/* 1.16 p_msgctl */
+	/* 0x17a */		enosys,		/* 1.16 p_msgsnd */
+	/* 0x17b */		enosys,		/* 1.16 p_msgrcv */
+	/* 0x17c */		enosys,		/* reserved */
+	/* 0x17d */		m_access,	/* 1.15.12 */
+	/* 0x17e */		enosys,		/* sys_mmap */
+	/* 0x17f */		enosys		/* sys_munmap */
+	
+	/* 0x180 */		/* DOS_MAX */
 };
 
 Func sys_mon_tab [1] =
