@@ -26,6 +26,6 @@ sysseek(M, $offset, 0) || die "can't seek";
 while (sysread(M, $d, length(pack( "A28 N", 0)))) {
     ($name, $valx) = unpack( "A28 N", $d);
     last if !$name;
-    print "#define $name $valx\n";
+    print "%define $name $valx\n";
 }
 close M || die "Can't close";
