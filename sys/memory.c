@@ -2699,19 +2699,10 @@ addr2mem (PROC *p, virtaddr a)
  * MiNT doesn't own or which is virtualized
  */
 
-MEMREGION *
-addr2region (long addr)
+static MEMREGION *
+addr2region1 (MMAP map, long addr)
 {
-	ulong ua = (ulong) addr;
 	MEMREGION *r;
-	MMAP map;
-	
-	if (ua < mint_top_st)
-		map = core;
-	else if (ua < mint_top_tt)
-		map = alt;
-	else
-		return NULL;
 	
 	for (r = *map; r; r = r->next)
 	{
@@ -2728,6 +2719,17 @@ addr2region (long addr)
 	}
 	
 	return NULL;
+}
+
+MEMREGION *
+addr2region (long addr)
+{
+	MEMREGION *r;
+	
+	r = addr2region1 (core, addr);
+	if (!r) r = addr2region1 (alt, addr);
+	
+	return r;
 }
 
 /*
