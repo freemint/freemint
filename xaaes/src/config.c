@@ -1050,6 +1050,10 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 			}
 #endif
 #if FILESELECTOR
+			else if (strcmp(rstr, "nofsel") == 0)
+			{
+				cfg.no_xa_fsel = true;
+			}
 			else if (strcmp(rstr, "filters") == 0)
 			{
 				int i = 0;
