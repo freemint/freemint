@@ -1207,13 +1207,16 @@ obj_ED_INIT(struct widget_tree *wt,
 
 	/* Ozk:
 	 * If this object has already been init'ed, no need to do it again
+	 * I was wrong! Gotta do the init thing no matter what.
 	 */
+#if 0
 	if (wt->edit_obj == obj)
 	{
 		ted = object_get_tedinfo(obtree + obj);
 		ret = 1;
 		obj = -1;
 	}
+#endif
 	/* Ozk:
 	 * See if the object passed to us really is editable.
 	 * We give up here if object not editable, because I think
@@ -1222,7 +1225,7 @@ obj_ED_INIT(struct widget_tree *wt,
 	 * XXX - see how continuing setup with the lookedup object affects
 	 *       applications.
 	 */
-	else if ( !chk_edobj(obtree, obj, last) || !(ted = object_get_tedinfo(obtree + obj)) )
+	if ( !chk_edobj(obtree, obj, last) || !(ted = object_get_tedinfo(obtree + obj)) )
 	{
 		obj = -1;
 		old_ed_obj = wt->edit_obj;
