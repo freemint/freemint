@@ -304,7 +304,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 							set_cookie((COOKIE *)ut->user_jar_p, arg1, arg2);
 							detach_region(curproc, p->p_mem->tp_reg);
 						}
-						else
+						else if (p->pid == 0)
 							set_cookie((COOKIE *)kernel_things.user_jar_p, arg1, arg2);
 					}
 				}
@@ -341,7 +341,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 							del_cookie((COOKIE *)ut->user_jar_p, arg1);
 							detach_region(curproc, p->p_mem->tp_reg);
 						}
-						else
+						else if (p->pid == 0)
 							del_cookie((COOKIE *)kernel_things.user_jar_p, arg1);
 					}
 				}
