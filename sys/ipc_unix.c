@@ -141,9 +141,11 @@ unix_dup (struct socket *newso, struct socket *oldso)
 static long
 unix_abort (struct socket *so, enum so_state ostate)
 {
+	/* wake anyone waiting on the socket */
 	wake (IO_Q, (long) so);
 	so_wakersel (so);
 	so_wakewsel (so);
+	so_wakexsel (so);
 	
 	return 0;
 }
