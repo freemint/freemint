@@ -2050,6 +2050,31 @@ error:
 }
 
 /*
+ * convert an address to the memory region attached to a process
+ */
+MEMREGION *
+proc_addr2region (PROC *p, long addr)
+{
+	struct memspace *mem = p->p_mem;
+	int i;
+	
+	if (!mem || !mem->mem)
+		goto error;
+	
+	for (i = 0; i < mem->num_reg; i++)
+	{
+		MEMREGION *m;
+		
+		m = mem->mem[i];
+		if (m && m->loc <= addr && addr < m->loc + m->len)
+			return m;
+	}
+	
+error:
+	return NULL;
+}
+
+/*
  * convert an address to a memory region; this works only in
  * the ST RAM and TT RAM maps, and will fail for memory that
  * MiNT doesn't own or which is virtualized
@@ -2082,31 +2107,6 @@ addr2region (long addr)
 		}
 	}
 	
-	return NULL;
-}
-
-/*
- * convert an address to the memory region attached to a process
- */
-MEMREGION *
-proc_addr2region (PROC *p, long addr)
-{
-	struct memspace *mem = p->p_mem;
-	int i;
-	
-	if (!mem || !mem->mem)
-		goto error;
-	
-	for (i = 0; i < mem->num_reg; i++)
-	{
-		MEMREGION *m;
-		
-		m = mem->mem[i];
-		if (m && m->loc <= addr && addr < m->loc + m->len)
-			return m;
-	}
-	
-error:
 	return NULL;
 }
 

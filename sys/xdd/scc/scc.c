@@ -129,7 +129,7 @@
 # include "mint/signal.h"
 # include "mint/stat.h"
 
-# include <osbind.h>
+# include <mint/osbind.h>
 # include "scc.h"
 
 
@@ -146,7 +146,7 @@
  * debugging stuff
  */
 
-# if 1
+# if 0
 # define DEV_DEBUG	1
 # endif
 
@@ -2720,10 +2720,8 @@ scc_open (FILEPTR *f)
 				t = t->next;
 			}
 # endif
-			DEBUG (("scc_open: file sharing denied, ignored for bkx now"));
-			
-			// DEBUG (("scc_open: file sharing denied"));
-			// return EACCES;
+			DEBUG (("scc_open: file sharing denied"));
+			return EACCES;
 		}
 	}
 	

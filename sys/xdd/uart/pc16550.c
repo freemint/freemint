@@ -183,7 +183,7 @@
 # include "mint/signal.h"
 # include "mint/stat.h"
 
-# include <osbind.h>
+# include <mint/osbind.h>
 # include "pc16550.h"
 
 
