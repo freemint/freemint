@@ -814,7 +814,7 @@ change_window_attribs(enum locks lock,
 		set_toolbar_coords(w);
 	}
 	
-	if ( w->active_widgets & XAW_TOOLBAR )
+	if ( w->active_widgets & TOOLBAR )
 	{
 		OBJECT *obtree = ((XA_TREE *)get_widget(w, XAW_TOOLBAR)->stuff)->tree;
 

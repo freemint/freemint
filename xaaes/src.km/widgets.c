@@ -2454,10 +2454,11 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		DIAGS(("clear sizer"));
 		zwidg(wind, XAW_RESIZE, keep_stuff);
 	}
-
-	if ( (tp & (SIZER|MOVER)) == (SIZER|MOVER) )
+			
+	if ( (tp & BORDER) || (tp & (SIZER|MOVER)) == (SIZER|MOVER) )
 	{
-		if ( (old_tp & (SIZER|MOVER)) != (SIZER|MOVER) )
+		tp |= BORDER;
+		if ( (old_tp & BORDER) || (old_tp & (SIZER|MOVER)) != (SIZER|MOVER) )
 		{
 			DIAGS(("Make border"));
 			make_widget(wind, &stdl_border, display_border, drag_border, drag_border, NULL);
@@ -2467,7 +2468,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			DIAGS(("border already made"));
 #endif
 	}
-	else if ( (old_tp & (SIZER|MOVER)) == (SIZER|MOVER) )
+	else if ( (old_tp & BORDER) || (old_tp & (SIZER|MOVER)) == (SIZER|MOVER) )
 	{
 		DIAGS(("clear border"));
 		zwidg(wind, XAW_BORDER, keep_stuff);
@@ -2769,6 +2770,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		get_widget(wind, XAW_LFPAGE)->r.x -= cfg.widg_w;
 		get_widget(wind, XAW_HSLIDE)->r.x -= cfg.widg_w;
 	}
+	wind->active_widgets = tp;
 }
 
 /*
@@ -3366,16 +3368,20 @@ wind_mshape(struct xa_window *wind, short x, short y)
 				redisplay_widget(0, rwind, rwidg, OS_NORMAL);
 		}
 		
-		if (wind->active_widgets & SIZER)
+		if (wind->active_widgets & (SIZER|BORDER))
 		{
 			widg = wind->widgets + XAW_RESIZE;
-			if (wind->frame > 0 && !(wind->widgets[XAW_BORDER].loc.statusmask & status) && (!m_inside(x, y, &wind->ba)))
+			if ( wind->frame > 0 &&
+			    (wind->active_widgets & BORDER) &&
+			   !(wind->widgets[XAW_BORDER].loc.statusmask & status) &&
+			    (!m_inside(x, y, &wind->ba)))
 			{
 				r = wind->r;
 				shape = border_mouse[compass(16, x, y, r)];
 			}
-			else
+			else if (wind->active_widgets & SIZER)
 			{
+				widg = wind->widgets + XAW_RESIZE;
 				if (!(widg->loc.statusmask & status))
 				{
 					rp_2_ap_cs(wind, widg, &r);
