@@ -39,6 +39,8 @@
 # include <mint/mint.h>
 # include <mint/proc.h>		/* struct proc */
 
+# include <arch/cpu.h>		/* get_usp() */
+
 # include <global.h>		/* mcpu */
 
 # include "check_exc.h"
@@ -59,6 +61,17 @@ static struct access allow_write[] =
 	{ 0L, 0L }
 };
 
+static long
+handle_68000_bus_frame(MC68000_BUS_FRAME *frame)
+{
+	return 0;
+}
+
+static long
+handle_68010_bus_frame(MC68010_BUS_FRAME *frame)
+{
+	return 0;
+}
 
 static long
 handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
@@ -97,21 +110,21 @@ check_bus(struct frame_zero frame)
 	if ((curproc->p_flag & P_FLAG_SUPER) == 0)
 		return 0;
 
-	if ((mcpu == 20) || (mcpu == 30))
+	if (mcpu == 0)
+		return handle_68000_bus_frame((MC68000_BUS_FRAME *)&frame);
+	else if (mcpu >= 10)
 	{
-		if ((frame.format_word & 0xf000) == 0xa000)
+		ushort frame_format = frame.format_word & 0xf000;
+
+		if (frame_format == 0x8000)
+			return handle_68010_bus_frame((MC68010_BUS_FRAME *)&frame);
+		else if (frame_format == 0xa000)
 			return handle_68030_short_frame((MC68030_SHORT_FRAME *)&frame);
-		else if ((frame.format_word & 0xf000) == 0xb000)
+		else if (frame_format == 0xb000)
 			return handle_68030_long_frame((MC68030_LONG_FRAME *)&frame);
-	}
-	else if (mcpu == 40)
-	{
-		if ((frame.format_word & 0xf000) == 0x7000)
+		else if (frame_format == 0x7000)
 			return handle_68040_frame((MC68040_BUS_FRAME *)&frame);
-	}
-	else if (mcpu == 60)
-	{
-		if ((frame.format_word & 0xf000) == 0x4000)
+		else if (frame_format == 0x4000)
 			return handle_68060_frame((MC68060_BUS_FRAME *)&frame);
 	}
 
@@ -139,6 +152,12 @@ check_bus(struct frame_zero frame)
 # define MOVE_FROM_SR	0x40c0
 # define MOVE_TO_SR	0x46c0
 # define MODE_REG_MASK	0xffc0
+
+# define RESET		0x4e70
+# define STOP		0x4e72
+
+# define MOVEC_C2G	0x4e7a
+# define MOVEC_G2C	0x4e7b
 
 long
 check_priv(struct privilege_violation_stackframe frame)
@@ -298,6 +317,220 @@ check_priv(struct privilege_violation_stackframe frame)
 		frame.pc += 2;
 
 		return -1;		/* reload everything and RTE */
+	}
+
+	/* Ignore this */
+	if (opcode == RESET)
+	{
+		frame.pc++;
+
+		return -1;
+	}
+
+	/* Ignore STOP instruction, unless the user wants to set the IPL to
+	 * 6 or 7. This means that the user wants to lock the machine up
+	 * totally, and it may be that there's not even any valid code
+	 * behind the instruction. So we kill the process.
+	 */
+	if (opcode == STOP)
+	{
+		ushort imm, ipl;
+
+		imm = frame.pc[1];
+		if (imm & 0x2000)
+		{
+			ipl = imm >> 8;
+			ipl &= 3;
+			if (ipl > 5)
+				return 0;	/* make privilege violation */
+		}
+		frame.pc += 2;
+
+		return -1;
+	}
+
+	/* MOVEC is available as of 68010 */
+	if (mcpu)
+	{
+		/* All data read from the control registers we read as zeros
+		 * except user stack pointer.
+		 */
+		if (opcode == MOVEC_C2G)
+		{
+			ushort imm, reg, control;
+			ulong *register_set;
+
+			imm = frame.pc[1];
+			reg = imm >> 12;
+			control = imm & 0x0fff;
+
+			register_set = (reg & 0x8) ? frame.addr_reg : frame.data_reg;
+			reg &= 7;
+
+			if (mcpu >= 10)
+			{
+				switch (control)
+				{
+					case 0x000:	/* Source function code */
+					case 0x001:	/* Destination function code */
+					case 0x801:	/* Vector base register */
+					{
+						register_set[reg] = 0L;	/* pretend 0 */
+
+						frame.pc += 2;
+
+						return -1;
+					}
+					case 0x800:	/* User stack pointer */
+					{
+						register_set[reg] = get_usp();
+
+						frame.pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu >= 20)
+			{
+				switch (control)
+				{
+					case 0x002:	/* Cache control register */
+					{
+						register_set[reg] = 0L;	/* pretend 0 */
+
+						frame.pc += 2;
+
+						return -1;
+					}
+					case 0x802:	/* Cache address register */
+					{
+						if (mcpu == 20 || mcpu == 30)
+						{
+							register_set[reg] = 0;
+
+							frame.pc += 2;
+
+							return -1;
+						}
+						break;
+					}
+					case 0x803:
+					case 0x804:
+					{
+						register_set[reg] = get_usp();
+						
+						frame.pc += 2;
+
+						return -1;
+					}
+				}			
+			}
+
+			if (mcpu >= 40)
+			{
+				switch (control)
+				{
+					case 0x003:	/* MMU translation control register */
+					case 0x004:	/* Instruction transparent translation register 0 */
+					case 0x005:	/* Instruction transparent translation register 0 */
+					case 0x006:	/* Data transparent translation register 0 */
+					case 0x007:	/* Data transparent translation register 0 */
+					case 0x805:	/* MMUSR */
+					case 0x806:	/* URP */
+					case 0x807:	/* SRP */
+					{
+						register_set[reg] = 0;
+
+						frame.pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu == 60)
+			{
+			}
+		}
+
+		/* We ignore all writes to control registers */
+		if (opcode == MOVEC_G2C)
+		{
+			ushort control = frame.pc[1] & 0x0fff;
+
+			if (mcpu >= 10)
+			{
+				switch (control)
+				{
+					case 0x000:	/* Source function code */
+					case 0x001:	/* Destination function code */
+					case 0x801:	/* Vector base register */
+					{
+						frame.pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu >= 20)
+			{
+				switch (control)
+				{
+					case 0x002:	/* Cache control register */
+					{
+						frame.pc += 2;
+
+						return -1;
+					}
+					case 0x802:	/* Cache address register */
+					{
+						if (mcpu == 20 || mcpu == 30)
+						{
+							frame.pc += 2;
+
+							return -1;
+						}
+						break;
+					}
+					case 0x803:
+					case 0x804:
+					{
+						frame.pc += 2;
+
+						return -1;
+					}
+				}			
+			}
+
+			if (mcpu >= 40)
+			{
+				switch (control)
+				{
+					case 0x003:	/* MMU translation control register */
+					case 0x004:	/* Instruction transparent translation register 0 */
+					case 0x005:	/* Instruction transparent translation register 0 */
+					case 0x006:	/* Data transparent translation register 0 */
+					case 0x007:	/* Data transparent translation register 0 */
+					case 0x805:	/* MMUSR */
+					case 0x806:	/* URP */
+					case 0x807:	/* SRP */
+					{
+						frame.pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu == 60)
+			{
+			}
+
+			return -1;
+		}
 	}
 
 	return 0;
