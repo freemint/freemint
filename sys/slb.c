@@ -107,10 +107,7 @@ mark_users (SHARED_LIB *sl, int pid, int setflag)
 INLINE int
 is_user (SHARED_LIB *sl, int pid)
 {
-	if (sl->slb_users [pid/8] & (1 << (pid % 8)))
-		return 1;
-	else
-		return 0;
+	return (sl->slb_users [pid/8] & (1 << (pid % 8)));
 }
 
 /*
@@ -150,10 +147,7 @@ mark_opened (SHARED_LIB *sl, int pid, int setflag)
 INLINE int
 has_opened (SHARED_LIB *sl, int pid)
 {
-	if (sl->slb_opened [pid/8] & (1 << (pid % 8)))
-		return 1;
-	else
-		return 0;
+	return (sl->slb_opened [pid/8] & (1 << (pid % 8)));
 }
 
 /*
