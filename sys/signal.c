@@ -829,7 +829,6 @@ stop (ushort sig)
 {
 	ushort code;
 	ulong oldmask;
-	PROC *p;
 	
 	/* just to be sure */
 	assert (sig < NSIG);
@@ -845,12 +844,12 @@ stop (ushort sig)
 	/* notify parent */
 	if (curproc->ptracer)
 	{
-		p = curproc->ptracer;
-		post_sig (p, SIGCHLD);
+		DEBUG (("stop (%i) SIGCHLD -> ptracer %lx", sig, curproc->ptracer));
+		post_sig (curproc->ptracer, SIGCHLD);
 	}
 	else
 	{
-		p = pid2proc (curproc->ppid);
+		PROC *p = pid2proc (curproc->ppid);
 		if (p && !(p->sigflags[SIGCHLD] & SA_NOCLDSTOP))
 		{
 			ushort sr;
@@ -900,7 +899,7 @@ exception (ushort sig)
 	assert (sig < NSIG);
 	
 	curproc->sigflags[sig] |= SA_RESET;
-	DEBUG (("exception #%d raised", sig));
+	DEBUG (("exception #%d raised [pc %lx]", sig, curproc->ctxt[SYSCALL].pc));
 	
 	raise (sig);
 }
