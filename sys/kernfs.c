@@ -260,15 +260,15 @@ static KENTRY __procdir [] =
 {
 	{ PROCDIR_DIR,		S_IFDIR | 0555,	".",		kern_get_unimplemented	},
 	{ ROOTDIR_ROOT,		S_IFDIR | 0555,	"..",		kern_get_unimplemented	},
-	{ PROCDIR_CMDLINE,	S_IFREG | 0555,	"cmdline",	kern_procdir_get_cmdline},
-	{ PROCDIR_CWD,		S_IFLNK | 0500,	"cwd",		kern_get_unimplemented	},
+	{ PROCDIR_CMDLINE,	S_IFREG | 0444,	"cmdline",	kern_procdir_get_cmdline},
+	{ PROCDIR_CWD,		S_IFLNK | 0700,	"cwd",		kern_get_unimplemented	},
 	{ PROCDIR_ENVIRON,	S_IFREG | 0400,	"environ",	kern_procdir_get_environ},
 	{ PROCDIR_EXE,		S_IFLNK | 0500,	"exe",		kern_get_unimplemented	},
 	{ PROCDIR_FD,		S_IFDIR | 0500,	"fd",		kern_get_unimplemented	},
 	{ PROCDIR_FNAME,	S_IFREG | 0444,	"fname",	kern_procdir_get_fname	},
 	{ PROCDIR_MEM,		S_IFREG | 0600,	"mem",		kern_get_unimplemented	},
 	{ PROCDIR_MEMINFO,	S_IFREG | 0444,	"meminfo",	kern_procdir_get_meminfo},
-	{ PROCDIR_ROOT,		S_IFLNK | 0500,	"root",		kern_get_unimplemented	},
+	{ PROCDIR_ROOT,		S_IFLNK | 0700,	"root",		kern_get_unimplemented	},
 	{ PROCDIR_STAT,		S_IFREG | 0444,	"stat",		kern_procdir_get_stat	},
 	{ PROCDIR_STATM,	S_IFREG | 0444,	"statm",	kern_get_unimplemented	},
 	{ PROCDIR_STATUS,	S_IFREG | 0444,	"status",	kern_procdir_get_status	}
