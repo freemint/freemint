@@ -368,13 +368,8 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 */
 	client->status |= CS_EXITING;
 
-	if (client->timeout)
-	{
-		canceltimeout(client->timeout);
-		client->timeout = NULL;
-		client->timer_val = 0;
-	}
-
+	cancel_mutimeout(client);
+	
 	if (TAB_LIST_START && TAB_LIST_START->client == client)
 	{
 		popout(TAB_LIST_START);

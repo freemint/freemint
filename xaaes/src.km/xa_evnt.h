@@ -34,6 +34,7 @@ void exec_iredraw_queue(enum locks lock, struct xa_client *client);
 short checkfor_mumx_evnt(struct xa_client *client, bool is_locker, short x, short y);
 void get_mbstate(struct xa_client *client, struct mbs *mbs);
 bool check_queued_events(struct xa_client *client);
+void cancel_mutimeout(struct xa_client *client);
 
 AES_function
 	XA_xevnt_multi,

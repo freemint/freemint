@@ -657,6 +657,17 @@ XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;	
 }
+
+void
+cancel_mutimeout(struct xa_client *client)
+{
+	if (client->timeout)
+	{
+		canceltimeout(client->timeout);
+		client->timeout = NULL;
+		client->timer_val = 0;
+	}
+}
 /* HR 070601: We really must combine events. especially for the button still down situation.
 */
 
@@ -715,6 +726,8 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (events & MU_TIMER)
 	{
+		cancel_mutimeout(client);
+		
 		/* The Intel ligent format */
 		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
@@ -873,6 +886,8 @@ unsigned long
 XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
+
+	cancel_mutimeout(client);
 
 	if (!(client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]))
 	{
