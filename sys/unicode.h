@@ -36,10 +36,13 @@
 
 # include "mint/mint.h"
 
-extern uchar *t_uni2atari [256];
-extern uchar  t_atari2uni [256];
+
+extern uchar *t_uni2atari[256];
+extern uchar  t_atari2uni[256];
+
 
 void init_unicode(void);
+
 
 /*
  * uni2atari
@@ -47,8 +50,8 @@ void init_unicode(void);
  * Transform a Unicode character - if possible - in an Atari ST character.
  * Other characters are replaced by a '?'. Also swap bytes from Intel words.
  *
- * off: offset codepage	- wchar [0]
- * cp: codepage		- wchar [1]
+ * off: offset codepage	- wchar[0]
+ * cp: codepage		- wchar[1]
  *
  *
  * atari2uni
@@ -63,8 +66,8 @@ void init_unicode(void);
 INLINE char
 UNI2ATARI (register uchar off, register uchar cp)
 {
-	register char *codepage = t_uni2atari [cp];
-	return (codepage == NULL) ? '?' : codepage [off];
+	register char *codepage = t_uni2atari[cp];
+	return (codepage == NULL) ? '?' : codepage[off];
 }
 
 INLINE void
@@ -74,8 +77,8 @@ ATARI2UNI (register uchar atari_st, register uchar *dst)
 	{
 		atari_st &= 0x7f;
 		atari_st <<= 1;
-		dst[1] = t_atari2uni [atari_st]; atari_st++;
-		dst[0] = t_atari2uni [atari_st];
+		dst[1] = t_atari2uni[atari_st]; atari_st++;
+		dst[0] = t_atari2uni[atari_st];
 	}
 	else
 	{
