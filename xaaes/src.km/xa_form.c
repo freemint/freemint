@@ -464,7 +464,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 				C.Aes->options.thinwork,
 				*(RECT *)&alert_form->ob_x);
 
-		alert_window = create_window(lock, NULL, client, false,
+		alert_window = create_window(lock, NULL, NULL, client, false,
 					     kind,
 					     created_for_AES,
 					     MG,

@@ -30,10 +30,16 @@
 #include "global.h"
 #include "xa_types.h"
 
-struct xa_window *create_window(enum locks lock, SendMessage *message_handler,
-				struct xa_client *client, bool nolist, XA_WIND_ATTR tp,
+struct xa_window *create_window(enum locks lock,
+				SendMessage *message_handler,
+				DoWinMesag *message_doer,
+				struct xa_client *client,
+				bool nolist,
+				XA_WIND_ATTR tp,
 				WINDOW_TYPE dial,
-				int frame, int thinframe, bool thinwork,
+				int frame,
+				int thinframe,
+				bool thinwork,
 				const RECT r, const RECT *max, RECT *rem);
 
 void change_window_attribs(enum locks lock,

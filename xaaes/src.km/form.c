@@ -120,7 +120,8 @@ Setup_form_do(struct xa_client *client,
 
 		kind |= (TOOLBAR | USE_MAX);
 		wind = create_window(lock,
-				     handle_form_window,
+				     do_winmesag, //handle_form_window,
+				     do_formwind_msg,
 				     client,
 				     false,
 				     kind,
@@ -132,7 +133,10 @@ Setup_form_do(struct xa_client *client,
 				     NULL,
 				     NULL);
 		if (wind)
+		{
+			client->fmd.wind = wind;
 			wt = set_toolbar_widget(lock, wind, obtree, edobj);
+		}
 		else
 		{
 		/* XXX - Ozk:
@@ -486,10 +490,18 @@ Exit_form_do( struct xa_client *client,
 			DIAG((D_form, NULL, "Exit_form_do: exit windowed form_do() for %s",
 				client->name));
 
-			client->fmd.wind = NULL;
-			client->fmd.state = 0;
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
+			if (wind->dial & created_for_FORM_DO)
+			{
+				client->fmd.wind = NULL;
+				client->fmd.state = 0;
+				close_window(lock, wind);
+				delayed_delete_window(lock, wind);
+			}
+			/* Ozk:
+			 * If window was created by XA_form_dial(FMD_START)
+			 * we let the window live until client calls
+			 * form_dial(FMD_FINISH)
+			 */
 		}
 		else if (wind->dial & created_for_TOOLBAR)
 		{
@@ -813,15 +825,14 @@ set_button_timer(enum locks lock, struct xa_window *wind)
 }
 
 /*
- * WinMsgHandler()
+ * WinMsgHandler() - This MUST run in the context of the window owner!
  */ 
 void
-handle_form_window(
-	enum locks lock,
+do_formwind_msg(
+//handle_form_window(
 	struct xa_window *wind,
 	struct xa_client *to,			/* if different from wind->owner */
-	short mp0, short mp1, short mp2, short mp3,
-	short mp4, short mp5, short mp6, short mp7)
+	short *msg)
 {
 	XA_WIDGET *widg = wind->tool;
 	bool draw = false;
@@ -840,15 +851,15 @@ handle_form_window(
 		short wd = ow - ww,			/* space ouside workarea */
 		      hd = oh - wh;
 #endif
-		switch (mp0)
+		switch (msg[0])
 		{
 		case WM_ARROWED:
 		{
-			if (mp4 < WA_LFPAGE)
+			if (msg[4] < WA_LFPAGE)
 			{
 				if (wh < oh)
 				{
-					switch (mp4)
+					switch (msg[4])
 					{
 					case WA_UPLINE:
 						dy -= screen.c_max_h;
@@ -872,7 +883,7 @@ handle_form_window(
 			{
 				if (ww < ow)
 				{
-					switch (mp4)
+					switch (msg[4])
 					{
 					case WA_LFLINE:
 						dx -= screen.c_max_w;
@@ -897,13 +908,13 @@ handle_form_window(
 		case WM_VSLID:
 		{
 			if (wh < oh)
-				dy = sl_to_pix(oh - wh, mp4);
+				dy = sl_to_pix(oh - wh, msg[4]);
 			break;
 		}
 		case WM_HSLID:
 		{
 			if (ww < ow)
-				dx = sl_to_pix(ow - ww, mp4);
+				dx = sl_to_pix(ow - ww, msg[4]);
 			break;
 		}
 #if 0
@@ -911,7 +922,7 @@ handle_form_window(
 		{
 			/* if (!wind->nolist && (wind->active_widgets & SIZE)) */
 			{
-				move_window(lock, wind, -1, mp4, mp5, mp6, mp7);
+				move_window(0, wind, -1, msg[4], msg[5], msg[6], msg[7]);
 				ww = wind->wa.w,		/* window measures */
 				wh = wind->wa.h,
 				wd = ow - ww,			/* space ouside workarea */
@@ -949,8 +960,64 @@ handle_form_window(
 		{
 			wt->dx = dx;
 			wt->dy = dy;
-			display_window(lock, 120, wind, NULL);
+			display_window(0, 120, wind, NULL);
 		}
-		set_button_timer(lock, wind);
+		set_button_timer(0, wind);
 	}
 }
+#if 0
+static void
+Phfw(void *_parm)
+{
+	long *parms = _parm;
+	
+	Handle_Form_Window( 0,
+			   (struct xa_window *)parms[0],
+			   (struct xa_client *)parms[1],
+			   (short *)parms[2]);
+
+	wake(IO_Q, (long)_parm);
+	kfree(_parm);
+	kthread_exit(0);
+}
+
+void
+handle_form_window(
+	enum locks lock,
+	struct xa_window *wind,
+	struct xa_client *to,			/* if different from wind->owner */
+	short mp0, short mp1, short mp2, short mp3,
+	short mp4, short mp5, short mp6, short mp7)
+{
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+	short msg[8] = { mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7 };
+
+	if (!rc)
+		rc = C.Aes;
+
+	if (wind->owner == rc)
+	{
+		DIAGS((" --==-- Doing direct handle_form_wind"));
+		Handle_Form_Window(lock, wind, to, msg);
+	}
+	else
+	{
+		long *p = kmalloc(16);
+
+		if (p)
+		{
+			p[0] = (long)wind;
+			p[1] = (long)to;
+			p[2] = (long)msg;
+
+			DIAGS((" --==-- Doing kthread handle_form_wind"));
+
+			kthread_create(wind->owner->p,
+					Phfw,
+					p,
+					NULL, "k%s", wind->owner->name);
+			sleep(IO_Q, (long)p);
+		}
+	}
+}
+#endif

@@ -451,6 +451,7 @@ struct xa_window *
 create_window(
 	enum locks lock,
 	SendMessage *message_handler,
+	DoWinMesag *message_doer,
 	struct xa_client *client,
 	bool nolist,
 	XA_WIND_ATTR tp,
@@ -536,6 +537,7 @@ create_window(
 	w->nolist = nolist;
 	w->dial = dial;
 	w->send_message = message_handler;
+	w->do_message	= message_doer;
 	get_widget(w, XAW_TITLE)->stuff = client->name;
 
 	if (nolist)
@@ -1674,7 +1676,7 @@ calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, in
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
 
 	/* Create a temporary window with the required widgets */
-	w_temp = create_window(lock, NULL, client, true, tp, 0, mg, thinframe, thinwork, r, 0, 0);
+	w_temp = create_window(lock, NULL, NULL, client, true, tp, 0, mg, thinframe, thinwork, r, 0, 0);
 
 	switch(request)
 	{

@@ -61,6 +61,12 @@ SendMessage(
 	short mp0, short mp1, short mp2, short mp3,
 	short mp4, short mp5, short mp6, short mp7);
 
+typedef void
+DoWinMesag(struct xa_window *w,
+	   struct xa_client *c,
+	   short *msg);
+
+SendMessage do_winmesag;
 SendMessage send_app_message;
 
 #endif /* _messages_h */

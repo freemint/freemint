@@ -53,6 +53,7 @@ void set_button_timer(enum locks lock, struct xa_window *wind);
 WidgetBehaviour	Click_windowed_form_do;
 FormMouseInput	Click_form_do;
 FormKeyInput	Key_form_do;
-SendMessage	handle_form_window;
+//SendMessage	handle_form_window;
+DoWinMesag	do_formwind_msg;
 
 #endif /* _form_h */

@@ -815,7 +815,8 @@ display_popup(Tab *tab, OBJECT *root, int item, short rdx, short rdy)
 			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, 1, 1, r);
 
 			wind = create_window(	tab->lock,
-						handle_form_window,
+						do_winmesag, //handle_form_window,
+						do_formwind_msg,
 						tab->client,
 						cfg.menu_locking,	/* yields nolist if locking. */
 						tp,
@@ -831,6 +832,7 @@ display_popup(Tab *tab, OBJECT *root, int item, short rdx, short rdy)
 			r = popup_inside(tab, r);
 
 			wind = create_window(	tab->lock,
+						NULL,
 						NULL,
 						tab->client,
 						cfg.menu_locking,	/* yields nolist if locking. */

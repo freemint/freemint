@@ -37,7 +37,7 @@
 #include "xa_form.h"
 #include "c_window.h"
 
-
+#if 0
 static void
 slist_msg_handler(
 	enum locks lock,
@@ -45,7 +45,9 @@ slist_msg_handler(
 	struct xa_client *to,
 	short mp0, short mp1, short mp2, short mp3,
 	short mp4, short mp5, short mp6, short mp7);
-
+#endif
+static void
+slist_msg_handler(struct xa_window *wind, struct xa_client *to, short *msg);
 
 static void
 sliders(struct scroll_info *list)
@@ -182,7 +184,9 @@ set_slist_object(enum locks lock,
 		wkind |= LFARROW|HSLIDE|RTARROW;
 	wkind |= TOOLBAR;
 
-	list->wi = create_window(lock, slist_msg_handler,
+	list->wi = create_window(lock,
+				 do_winmesag, //slist_msg_handler,
+				 slist_msg_handler,
 				 wt->owner,
 				 true, 					/* nolist */
 				 wkind,
@@ -307,12 +311,11 @@ empty_scroll_list(OBJECT *form, int item, SCROLL_ENTRY_TYPE flag)
 */
 static void
 slist_msg_handler(
-	enum locks lock,
 	struct xa_window *wind,
 	struct xa_client *to,
-	short mp0, short mp1, short mp2, short mp3,
-	short mp4, short mp5, short mp6, short mp7)
+	short *msg)
 {
+	enum locks lock = 0;
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *old;
 	OBJECT *ob;
@@ -323,15 +326,15 @@ slist_msg_handler(
 	old = list->top;
 	ol  = list->left;
 
-	switch (mp0)		/* message number */
+	switch (msg[0])		/* message number */
 	{
 	case WM_ARROWED:
-		if (mp4 < WA_LFPAGE)
+		if (msg[4] < WA_LFPAGE)
 		{
 			p = list->s;
 			if (p < list->n)
 			{
-				switch (mp4)
+				switch (msg[4])
 				{
 				case WA_UPLINE:
 					if (list->top->prev)
@@ -359,7 +362,7 @@ slist_msg_handler(
 			p = list->v;
 			if (p < list->max)
 			{
-				switch (mp4)
+				switch (msg[4])
 				{
 				case WA_LFLINE:
 					list->left--;
@@ -384,7 +387,7 @@ slist_msg_handler(
 		p = list->s;
 		if (p < list->n)
 		{
-			int new = sl_to_pix(list->n - (p-1), mp4);
+			int new = sl_to_pix(list->n - (p-1), msg[4]);
 			if (list->top->n > new) /* go up */
 			{
 				while (list->top->n > new && list->top->prev)
@@ -401,7 +404,7 @@ slist_msg_handler(
 	case WM_HSLID:
 		p = list->v;
 		if (p < list->max)
-			list->left = sl_to_pix(list->max - p, mp4);
+			list->left = sl_to_pix(list->max - p, msg[4]);
 	break;
 	case WM_CLOSED:
 		if (list->closer)
@@ -434,46 +437,69 @@ slist_msg_handler(
 	 */
 	set_button_timer(lock, wind);
 }
-
 int
 scrl_cursor(SCROLL_INFO *list, ushort keycode)
 {
 	SCROLL_ENTRY *save = list->cur;
+
 	if (!list->cur)
 		list->cur = list->top;
 
 	switch (keycode)
 	{
 	case 0x4800:			/* up arrow */
+	{
 		if (list->cur->prev)
 			list->cur = list->cur->prev;
-	break;
+
+		break;
+	}
 	case 0x5000:			/* down arrow */
+	{
 		if (list->cur->next)
 			list->cur = list->cur->next;
-	break;
+		break;
+	}
 	case 0x4900:			/* page up */
 	case 0x4838:			/* shift + up arrow */
+	{
+		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_UPPAGE,0,0,0 };
+		slist_msg_handler(list->wi, NULL, msg);
+#if 0
 		slist_msg_handler(list->lock, list->wi, NULL,
 					WM_ARROWED, 0, 0, list->wi->handle,
 					WA_UPPAGE,  0, 0, 0);
+#endif
 		return keycode;
+	}
 	case 0x5032:			/* shift + down arrow */
 	case 0x5100:			/* page down */
+	{
+		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_DNPAGE,0,0,0 };
+		slist_msg_handler(list->wi, NULL, msg);
+#if 0
 		slist_msg_handler(list->lock, list->wi, NULL,
 					WM_ARROWED, 0, 0, list->wi->handle,
 					WA_DNPAGE,  0, 0, 0);
+#endif
 		return keycode;
+	}
 	case 0x4700:			/* home */
+	{
 		list->cur = list->start;
-	break;
+		break;
+	}
 	case 0x4737:			/* shift + home */
+	{
 		list->cur = list->last;
-	break;
+		break;
+	}
 	default:
+	{
 		list->cur = save;	/* Only change cur if a valid cursor key
 		                       was pressed. See fs_dclick() */
 		return -1;
+	}
 	}
 
 	list->vis(list,list->cur);

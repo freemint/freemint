@@ -65,6 +65,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	new_window = create_window(lock,
 				   send_app_message,
+				   NULL,
 				   client,
 				   false,
 				   kind|BACKDROP,
