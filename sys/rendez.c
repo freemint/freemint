@@ -1,16 +1,16 @@
 /*
+ * $Id$
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- */
-
-/*
+ *
+ *
  * Copyright 1991, 1992 Eric R. Smith
  * Copyright 1992 Atari Corporation.
  * All rights reserved.
- */
-
-/* 
- * The rendezvous: 
+ *
+ *
+ * The rendezvous:
  * a little bit of message passing with a lot of synchronization.
  *
  * Pmsg(mode,mboxid,msgptr);
@@ -25,7 +25,7 @@
  *
  *   8000	OR with this bit to make the operation non-blocking.
  *
- * The messages are five words long: two longs and a short, in that order. 
+ * The messages are five words long: two longs and a short, in that order.
  * The values  of the first two longs are totally up to the processes in
  * question.  The value of the short is the PID of the sender.  On return
  * from writes, the short is the PID of the process that read your message.
@@ -228,7 +228,7 @@ got_rendezvous:
  * already waiting at the other end.
  */
 
-dosleep: 
+dosleep:
 	if (noblock) {
 	    return -1L;
 	}
@@ -299,43 +299,46 @@ dosleep:
  *
  */
 
-#define NSEMAPHORES 10
-
-typedef struct sema {
-    struct sema *next;
-    long id;
-    short owner;	/* -1 means "available" */
-} SEMA;
-
-static SEMA *semalist;
-
 static void _cdecl
-unsemame (PROC *p)
+unsemame(struct proc *p)
 {
-    short sr;
-    /* take process P off the WAIT_Q and put it on the READY_Q */
-    TRACE(("semaphore sleep ends for pid %d",p->pid));
-    sr = spl7();
-    if (p->wait_q == WAIT_Q) {
-	    rm_q(WAIT_Q,p);
-	    add_q(READY_Q,p);
-    }
-    p->wait_cond = 0;
-    spl(sr);
+	ushort sr;
+
+	/* take process P off the WAIT_Q and put it on the READY_Q */
+	TRACE(("semaphore sleep ends for pid %d",p->pid));
+
+	sr = spl7();
+	
+	if (p->wait_q == WAIT_Q)
+	{
+		rm_q(WAIT_Q,p);
+		add_q(READY_Q,p);
+	}
+	p->wait_cond = 0;
+	
+	spl(sr);
 }
+
+struct sema
+{
+	struct sema *next;
+	long id;
+	short owner; /* -1 means "available" */
+};
+
+static struct sema *semalist;
 
 long _cdecl
 p_semaphore(int mode, long id, long timeout)
 {
-	SEMA *s, **q;
-	TIMEOUT *timeout_ptr = NULL;
-
 	TRACELOW(("Psemaphore(%d,%lx)", mode, id));
 
 	switch (mode)
 	{
 		case 0:	/* create */
 		{
+			struct sema *s;
+
 			for (s = semalist; s; s = s->next)
 			{
 				if (s->id == id)
@@ -344,21 +347,23 @@ p_semaphore(int mode, long id, long timeout)
 					return EACCES;
 				}
 			}
-			
+
 			/* get a new one */
-			s = kmalloc (sizeof (*s));
+			s = kmalloc(sizeof(*s));
 			if (!s)
 				return ENOMEM;
-			
+
 			s->id = id;
 			s->owner = curproc->pid;
 			s->next = semalist;
 			semalist = s;
-			
+
 			return E_OK;
 		}
 		case 2:	/* get */
 		{
+			TIMEOUT *timeout_ptr = NULL;
+			struct sema *s;
 loop:
 			for (s = semalist; s; s = s->next)
 			{
@@ -367,15 +372,18 @@ loop:
 					/* found your semaphore */
 					if (s->owner == curproc->pid)
 					{
-						DEBUG(("Psemaphore(%d,%lx): curproc already owns it!", mode, id));
+						DEBUG(("Psemaphore(%d,%lx): curproc already owns it!",
+							mode, id));
 						return EERROR;
 					}
-					
+
 					if (s->owner == -1)
 					{
 						/* it's free; you get it */
 						s->owner = curproc->pid;
-						if (timeout_ptr) canceltimeout(timeout_ptr);
+						if (timeout_ptr)
+							canceltimeout(timeout_ptr);
+						
 						return 0;
 					}
 					else
@@ -391,30 +399,37 @@ loop:
 							if (timeout != -1 && !timeout_ptr)
 							{
 								/* schedule a timeout */
-								timeout_ptr = addtimeout (curproc, timeout, unsemame);
+								timeout_ptr = addtimeout(curproc, timeout, unsemame);
 							}
-							
+
 							/* block until it's released, then try again */
-							sleep (WAIT_Q, WAIT_SEMA);
+							sleep(WAIT_Q, WAIT_SEMA);
 							if (curproc->wait_cond != WAIT_SEMA)
 							{
-								TRACE(("Psemaphore(%d,%lx) timed out", mode, id));
+								TRACE(("Psemaphore(%d,%lx) timed out",
+									mode, id));
 								return EACCES;
 							}
+							
 							goto loop;
 						}
 					}
 				}
 			}
-			
+
 			/* no such semaphore (possibly deleted while we were waiting) */
-			if (timeout_ptr) canceltimeout(timeout_ptr);
 			DEBUG(("Psemaphore(%d,%lx): no such semaphore", mode, id));
+			
+			if (timeout_ptr)
+				canceltimeout(timeout_ptr);
+			
 			return EBADARG;
 		}
 		case 3:	/* release */
 		case 1:	/* destroy */
 		{
+			struct sema *s, **q;
+
 			/*
 			 * Style note: this is a handy way to chain down a linked list.
 			 * q follows along behind s pointing at the "next" field of the
@@ -428,37 +443,38 @@ loop:
 				if (s->id == id)
 				{
 					/* found your semaphore */
-					if (s->owner != curproc->pid)
+
+					if (s->owner != curproc->pid
+					    && s->owner != -1)
 					{
-						DEBUG(("Psemaphore(%d,%lx): you don't own it", mode, id));
+						DEBUG(("Psemaphore(%d,%lx): access denied, locked by pid %i",
+							mode, id, s->owner));
 						return EACCES;
+					}
+
+					if (mode == 3)
+					{
+						s->owner = -1;	/* make it free */
 					}
 					else
 					{
-						if (mode == 3)
-						{
-							s->owner = -1;	/* make it free, or */
-						}
-						else
-						{
-							*q = s->next;		/* delete from list */
-							kfree(s);		/* and free it */
-						}
-						
-						/* wake up anybody who's waiting for a semaphore */
-						wake (WAIT_Q, WAIT_SEMA);
-						
-						return E_OK;
+						*q = s->next;	/* delete from list */
+						kfree(s);	/* and free it */
 					}
+
+					/* wake up anybody who's waiting for a semaphore */
+					wake(WAIT_Q, WAIT_SEMA);
+
+					return E_OK;
 				}
 			}
-			
+
 			/* no such semaphore */
 			DEBUG(("Psemaphore(%d,%lx): no such semaphore",mode,id));
 			return EBADARG;
 		}
 	}
-	
+
 	DEBUG(("Psemaphore(%d,%lx): invalid mode", mode, id));
 	return ENOSYS;
 }
@@ -468,23 +484,26 @@ loop:
  * The semaphores are only released, not destroyed. This function
  * is called from terminate() in dos_mem.c during process termination.
  */
-
 void
 free_semaphores(int pid)
 {
-	SEMA *s;
-	int didsomething = 0;		/* did any semaphores get freed? */
+	int didsomething = 0;
+	struct sema *s;
 
-	for (s = semalist; s; s = s->next) {
-		if (s->owner == pid) {
-			s->owner = -1;		/* mark the semaphore as free */
+	for (s = semalist; s; s = s->next)
+	{
+		if (s->owner == pid)
+		{
+			s->owner = -1; /* mark the semaphore as free */
 			didsomething = 1;
 		}
 	}
-	if (didsomething) {
-	/* wake up anybody waiting for a semaphore, in case it's one of
-	 * the ones we just freed
-	 */
+
+	if (didsomething)
+	{
+		/* wake up anybody waiting for a semaphore, in case it's one of
+		 * the ones we just freed
+		 */
 		wake(WAIT_Q, WAIT_SEMA);
 	}
 }
