@@ -878,10 +878,8 @@ BTRACE(224);
 
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
-	Ssystem(S_GETBVAL, 0x0484, helper);
-	helper |= 8;
-	Ssystem(S_SETBVAL, 0x0484, helper);
-
+	(char)helper = (Ssystem(S_GETBVAL, 0x0484, NULL)) | 8;
+	Ssystem(S_SETBVAL, 0x0484, (char)helper);
 
 BTRACE(25);
 
