@@ -1128,6 +1128,7 @@ handle_fsel(enum locks lock, const char *path, const char *file)
 
 	close_fileselector(lock);
 
+	fs.owner->usr_evnt = 1;
 	Unblock(fs.owner, XA_OK, 20);
 }
 
@@ -1139,6 +1140,7 @@ cancel_fsel(enum locks lock, const char *path, const char *file)
 
 	close_fileselector(lock);
 
+	fs.owner->usr_evnt = 1;
 	Unblock(fs.owner, XA_OK, 21);
 }
 
