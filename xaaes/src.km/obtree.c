@@ -249,6 +249,7 @@ void
 ob_order(OBJECT *root, short object, ushort pos)
 {
 	short parent = ob_remove(root, object);
+
 	short current = root[parent].ob_head;
 
 	if (current == -1)		/* No siblings */

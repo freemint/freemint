@@ -259,6 +259,18 @@ static struct xa_ftab aes_tab[220] =
 	/* 158 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 159 */ { NULL,                      0,        DESCR(NULL)              },
 
+#if WDIALOG_WDLG
+	/* 160 */ { XA_wdlg_create,            0,        DESCR("wdlg_create")     }, // MagiC extension
+	/* 161 */ { XA_wdlg_open,              0,        DESCR("wdlg_open")       }, // MagiC extension
+	/* 162 */ { XA_wdlg_close,             0,        DESCR("wdlg_close")      }, // MagiC extension
+	/* 163 */ { XA_wdlg_delete,            0,        DESCR("wdlg_delete")     }, // MagiC extension
+	/* 164 */ { XA_wdlg_get,               0,        DESCR("wdlg_get")        }, // MagiC extension
+	/* 165 */ { XA_wdlg_set,               0,        DESCR("wdlg_set")        }, // MagiC extension
+	/* 166 */ { XA_wdlg_event,             0,        DESCR("wdlg_event")      }, // MagiC extension
+	/* 167 */ { XA_wdlg_redraw,            0,        DESCR("wdlg_redraw")     }, // MagiC extension
+	/* 168 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 169 */ { NULL,                      0,        DESCR(NULL)              },
+#else
 	/* 160 */ { NULL,                      0,        DESCR("wdlg_create")     }, // MagiC extension
 	/* 161 */ { NULL,                      0,        DESCR("wdlg_open")       }, // MagiC extension
 	/* 162 */ { NULL,                      0,        DESCR("wdlg_close")      }, // MagiC extension
@@ -269,7 +281,19 @@ static struct xa_ftab aes_tab[220] =
 	/* 167 */ { NULL,                      0,        DESCR("wdlg_redraw")     }, // MagiC extension
 	/* 168 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 169 */ { NULL,                      0,        DESCR(NULL)              },
-
+#endif
+#if WDIALOG_LBOX
+	/* 170 */ { XA_lbox_create,            0,        DESCR("lbox_create")     }, // MagiC extension
+	/* 171 */ { NULL,                      0,        DESCR("lbox_update")     }, // MagiC extension
+	/* 172 */ { XA_lbox_do,                0,        DESCR("lbox_do")         }, // MagiC extension
+	/* 173 */ { NULL,                      0,        DESCR("lbox_delete")     }, // MagiC extension
+	/* 174 */ { NULL,                      0,        DESCR("lbox_get")        }, // MagiC extension
+	/* 175 */ { XA_lbox_set,               0,        DESCR("lbox_set")        }, // MagiC extension
+	/* 176 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 177 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 178 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 179 */ { NULL,                      0,        DESCR(NULL)              },
+#else
 	/* 170 */ { NULL,                      0,        DESCR("lbox_create")     }, // MagiC extension
 	/* 171 */ { NULL,                      0,        DESCR("lbox_update")     }, // MagiC extension
 	/* 172 */ { NULL,                      0,        DESCR("lbox_do")         }, // MagiC extension
@@ -280,7 +304,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 177 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 178 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 179 */ { NULL,                      0,        DESCR(NULL)              },
-
+#endif
 	/* 180 */ { NULL,                      0,        DESCR("fnts_create")     }, // MagiC extension
 	/* 181 */ { NULL,                      0,        DESCR("fnts_delete")     }, // MagiC extension
 	/* 182 */ { NULL,                      0,        DESCR("fnts_open")       }, // MagiC extension
