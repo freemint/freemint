@@ -671,8 +671,11 @@ app_in_front(enum locks lock, struct xa_client *client)
 			wastop = NULL;
 		
 		infront = get_app_infront();
-		set_active_client(lock, client);
-		swap_menu(lock, client, true, false, 1);
+		if (infront != client)
+		{
+			set_active_client(lock, client);
+			swap_menu(lock, client, true, false, 1);
+		}
 
 		wl = root_window->prev;
 		wf = window_list;
