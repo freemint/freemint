@@ -80,7 +80,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 		set_clip(r);		/* HR 110601: checks for special case? w <= 0 or h <= 0 */
 	
 		pb->intout[0] = draw_object_tree(lock,
-						 wt, //check_widget_tree(lock, client, tree),
+						 wt,
 						 obtree,
 						 item,
 						 pb->intin[1],		/* depth */

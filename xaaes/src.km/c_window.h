@@ -85,6 +85,8 @@ bool	is_topped(struct xa_window *wind);
 bool	is_hidden(struct xa_window *wind);
 bool	unhide(struct xa_window *w, short *x, short *y);
 
+void	set_and_update_window(struct xa_window *wind, bool blit, RECT *new);
+
 XA_WIND_ATTR hide_move(struct options *o);
 
 #endif /* _c_window_h */

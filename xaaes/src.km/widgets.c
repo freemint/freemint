@@ -635,11 +635,18 @@ redraw_menu(enum locks lock)
 	struct xa_client *rc, *mc;
 	struct xa_widget *widg;
 
+	DIAGS(("redraw_menu: yeehaa"));
+
 	rc = lookup_extension(NULL, XAAES_MAGIC);
 	if (!rc)
 		rc = C.Aes;
+
+	DIAGS(("redraw_menu: rc = %lx, %s", rc, rc->name));
+
 	widg = get_menu_widg();
+	DIAGS(("redaw_menu: widg = %lx", widg));
 	mc = ((XA_TREE *)widg->stuff)->owner;
+	DIAGS(("redaw_menu: widg owner = %s", mc->name));
 
 	if (mc == rc || mc == C.Aes)
 	{
@@ -648,7 +655,7 @@ redraw_menu(enum locks lock)
 	}
 	else
 	{
-		DIAGS(("Display MENU: post cevnt (%lx) to owner %s by %s", mc->name, rc->name));
+		DIAGS(("Display MENU: post cevnt (%lx) to owner %s by %s", CE_redraw_menu, mc->name, rc->name));
 		post_cevent(mc,
 			    CE_redraw_menu,
 			    NULL,
@@ -1089,7 +1096,7 @@ display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	}
 	else
 	{
-		if (wind == window_list && wind == C.focus)
+		if (is_topped(wind)) //wind == window_list && wind == C.focus)
 			/* Highlight the title bar of the top window */
 			t_color(G_BLACK);
 		else

@@ -216,9 +216,9 @@ void
 set_clip(const RECT *r)
 {
 	if (r->w <= 0 || r->h <= 0)
-		rtopxy(C.global_clip,&screen.r);
+		rtopxy(C.global_clip, &screen.r);
 	else	
-		rtopxy(C.global_clip,r);
+		rtopxy(C.global_clip, r);
 
 	vs_clip(C.vh, 1, C.global_clip);
 }
