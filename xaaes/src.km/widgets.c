@@ -31,6 +31,7 @@
 
 #include "app_man.h"
 #include "c_window.h"
+#include "k_main.h"
 #include "k_mouse.h"
 #include "menuwidg.h"
 #include "objects.h"
@@ -42,6 +43,7 @@
 #include "xa_graf.h"
 #include "xa_rsrc.h"
 
+#include "mint/signal.h"
 
 static OBJECT *def_widgets;
 
@@ -246,8 +248,8 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	return NULL;
 }
 
-void
-display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
+static void
+Display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 {
 	/* if removed or lost */
 	if (widg->display)
@@ -273,11 +275,92 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 		}
 	}
 }
+static void _cdecl
+Pdisplay_widget(struct proc *p, void *_parm)
+{
+	long *parm = _parm;
+
+	Display_widget(0, (struct xa_window *)parm[0], (struct xa_widget *)parm[1]);
+	wake(IO_Q, (long)parm);
+	kfree(parm);
+}
+
+#if 0
+void
+display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
+{
+	Display_widget(lock, wind, widg);
+}
+#endif
+
+void
+display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
+{
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+
+	if (!rc || rc == wind->owner)
+	{
+		DIAGS(("Display widget (same client) for %s", wind->owner->name));
+		Display_widget(lock, wind, widg);
+	}
+	else
+	{
+		long *p;
+
+		DIAGS(("Display widget (other client %s) for %s", wind->owner->name, rc->name));
+		p = (long *)kmalloc(16);
+		if (p)
+		{
+			p[0] = (long)wind;
+			p[1] = (long)widg;
+			p[2] = (long)rc;
+			addonprocwakeup(wind->owner->p, Pdisplay_widget, p);
+			if (wind->owner->sleeplock)
+				wake(wind->owner->sleepqueue, wind->owner->sleeplock);
+			sleep(IO_Q, (long)p);
+		}
+	}
+}
 
 void
 redraw_menu(enum locks lock)
 {
-	display_widget(lock, root_window, get_widget(root_window, XAW_MENU) );
+	struct xa_client *rc, *mc;
+	struct xa_widget *widg;
+
+	rc = lookup_extension(NULL, XAAES_MAGIC);
+	widg = get_widget(root_window, XAW_MENU);
+	mc = ((XA_TREE *)widg->stuff)->owner;
+
+	if (mc == rc)
+	{
+		DIAGS(("Display MENU (same client) for %s", rc->name));
+		Display_widget(lock, root_window, widg);
+	}
+	else
+	{
+		long *p;
+
+		DIAGS(("Display MENU (other client %s) for %s", mc->name, rc->name));
+
+		p = (long *)kmalloc(16);
+		if (p)
+		{
+			p[0] = (long)root_window;
+			p[1] = (long)widg;
+			p[2] = (long)rc;
+			addonprocwakeup(mc->p, Pdisplay_widget, p);
+			if (mc->sleeplock)
+				wake(mc->sleepqueue, mc->sleeplock);
+			sleep(IO_Q, (long)p);
+		}
+	}
+
+	DIAGS(("Display MENU - exit OK"));
+#if 0
+
+	dIsplay_widget(lock, root_window, get_widget(root_window, XAW_MENU) );
+#endif
 }
 
 
