@@ -647,6 +647,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 		}
 	}
 }
+
 static void
 CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -656,10 +657,13 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		struct xa_widget *widg = get_menu_widg();
 
 		mc = ((XA_TREE *)widg->stuff)->owner;
-		if (ce->client == mc )
+		if (ce->client == mc)
 		{
 			DIAGS(("CE_redraw_menu: for %s", ce->client->name));
-			display_widget(lock, root_window, widg);
+			hidem();
+			widg->display(lock|winlist, root_window, widg);
+			showm();
+			//display_widget(lock, root_window, widg);
 		}
 		else
 		{
@@ -702,7 +706,10 @@ redraw_menu(enum locks lock)
 			return;
 
 		DIAGS(("Display MENU (same client) for %s", rc->name));
-		display_widget(lock, root_window, widg);
+		hidem();
+		widg->display(lock|winlist, root_window, widg);
+		showm();
+		//display_widget(lock, root_window, widg);
 	}
 	else
 	{

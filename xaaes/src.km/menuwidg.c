@@ -724,6 +724,20 @@ desk_menu(Tab *tab)
 	       && k->clicked_title == k->wt->tree[k->titles].ob_head;
 }
 
+static void
+title_tnormal(Tab *tab)
+{
+	MENU_TASK *k = &tab->task_data.menu;
+
+	if (barred(tab))
+	{
+		if (!NEXT_TAB(tab))
+		{
+			if (k->clicked_title > 0)
+				change_title(tab, 0);
+		}
+	}
+}
 
 static Tab *
 menu_pop(Tab *tab)
@@ -758,8 +772,8 @@ menu_pop(Tab *tab)
 	{
 		if (!NEXT_TAB(tab))
 		{
-			if (k->clicked_title > 0)
-				change_title(tab, 0);
+			//if (k->change_title && k->clicked_title > 0)
+			//	change_title(tab, 0);
 			obtree[k->pop_item].ob_flags |= OF_HIDETREE;
 		}
 		if (desk_menu(tab))
@@ -870,6 +884,7 @@ popout(struct task_administration_block *tab)
 	if (tab)
 	{
 		t = collapse(tab, NULL);
+		title_tnormal(t);
 
 		IFDIAG(tab->dbg2 = 1;)
 		
@@ -1468,6 +1483,7 @@ menu_bar(struct task_administration_block *tab)
 			tab = collapse(TAB_LIST_START, tab);
 	
 		tab = menu_pop(tab);
+		title_tnormal(tab);
 		if (!menu_title(tab->lock, tab, tab->wind, tab->widg, tab->locker))
 			menu_finish(tab);
 	}
@@ -1651,6 +1667,7 @@ click_menu_entry(struct task_administration_block *tab)
 	{
 		DIAG((D_menu, NULL, "[3]collapse"));
 		tab = collapse(TAB_LIST_START, NULL);
+		title_tnormal(tab);
 		menu_finish(tab);
 	}
 	else
@@ -1664,11 +1681,12 @@ click_menu_entry(struct task_administration_block *tab)
 		int about, kc, ks;
 		bool a = false;
 
-		if ((m = find_menu_object(tab, 0, k->rdx, k->rdy, &k->drop)) < 0)
+		if ((m = find_menu_object(tab, k->pop_item/*0*/, k->rdx, k->rdy, &k->drop)) < 0)
 		{
 			popout(TAB_LIST_START);
 			return;
 		}
+		
 		d = obtree[m].ob_state & OS_DISABLED;
 		if (!d)
 			a = is_attach(menu_client(tab), wt, m, NULL);
@@ -1687,13 +1705,17 @@ click_menu_entry(struct task_administration_block *tab)
 
 			DIAG((D_menu, NULL, "%sABLED,ti=%d,ab=%d,kc=%d,ks=%d,m=%d",d ? "DIS" : "EN",
 				titles, about, kc, ks, m));
-
+			/*
+			 * Ozk: Found out that one should not deselect the menu-title on behalf of
+			 *	a client if a valid menu-entry is clicked on, so we dont :-)
+			 */
 			if (m > -1 && !d)
-			{	
-				obtree[m].ob_state &= ~OS_SELECTED;	/* Deselect the menu entry */
+			{
+				//obtree[m].ob_state &= ~OS_SELECTED;	/* Deselect the menu entry */
 				if (wind != root_window)
 				{
 					OBJECT *rs = obtree;
+					
 					DIAG((D_menu, NULL, "indirect call"));
 					wind->send_message(lock, wind, wt->owner, AMQ_NORM, QMF_CHKDUP,
 							   MN_SELECTED, 0, 0, kc,
@@ -1718,10 +1740,18 @@ click_menu_entry(struct task_administration_block *tab)
 					{
 						/* Otherwise, process system menu clicks */
 						DIAG((D_menu, NULL, "do_system_menu()"));
+						title_tnormal(tab);
+						obtree[m].ob_state &= ~OS_SELECTED;	/* Deselect the menu entry */
 						do_system_menu(lock, kc, m);
 					}
 				}
 			}
+			else
+			{
+				DIAG((D_menu, NULL, "Disabled entry, title_tnormal"));
+				title_tnormal(tab);
+			}
+
 			menu_finish(tab);
 		}
 		else
