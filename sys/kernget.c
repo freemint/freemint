@@ -345,14 +345,17 @@ long
 kern_get_loadavg (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
-	char buf[32];
-	ulong len;
+	ulong len = 64;
 	PROC *p;
 	short tasks = 0;
 	short running = 0;
 	int last_pid = 0; /* ??? */
 	
 	DEBUG (("kern_get_loadavg"));
+	
+	info = kmalloc (sizeof (*info) + len);
+	if (!info)
+		return ENOMEM;
 	
 	for (p = proclist; p; p = p->gl_next)
 	{
@@ -365,22 +368,11 @@ kern_get_loadavg (SIZEBUF **buffer)
 			running++;
 	}
 	
-	len = ksprintf (buf, sizeof (buf), "%lu.%03lu %lu.%03lu %lu.%03lu %d/%d %d\n",
-			LOAD_INT (avenrun[0]), LOAD_FRAC (avenrun[0]),
-			LOAD_INT (avenrun[1]), LOAD_FRAC (avenrun[1]),
-			LOAD_INT (avenrun[2]), LOAD_FRAC (avenrun[2]),
-			running, tasks, last_pid);
-	
-	info = kmalloc (sizeof (*info) + len);
-	if (!info)
-	{
-		DEBUG (("kern_get_loadavg: virtual memory exhausted"));
-		return ENOMEM;
-	}
-	
-	/* Not null-terminated! */
-	info->len = len;
-	memcpy (info->buf, buf, len);
+	info->len = ksprintf (info->buf, len, "%lu.%03lu %lu.%03lu %lu.%03lu %d/%d %d\n",
+			      LOAD_INT (avenrun[0]), LOAD_FRAC (avenrun[0]),
+			      LOAD_INT (avenrun[1]), LOAD_FRAC (avenrun[1]),
+			      LOAD_INT (avenrun[2]), LOAD_FRAC (avenrun[2]),
+			      running, tasks, last_pid);
 	
 	*buffer = info;
 	return 0;
@@ -393,7 +385,7 @@ kern_get_loadavg (SIZEBUF **buffer)
   Uses the "tot_rsize( MMAP, flag)"-function.
   Layout-idea taken from LiNUX.
   Flames, Critics, ... to pralle@informatik.uni-hannover.de
-*/
+ */
 long 
 kern_get_meminfo (SIZEBUF **buffer)
 {
@@ -417,8 +409,7 @@ kern_get_meminfo (SIZEBUF **buffer)
 	
 	i = ksprintf( crs, len,
 			 "\t  total:  \t  used:   \t  free:\n");
-	len -= i;
-	crs += i;
+	crs += i; len -= i;
 	
 	i = ksprintf( crs, len,
 			 "Mem:\t%10lu\t%10lu\t%10lu\n",
