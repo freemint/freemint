@@ -35,7 +35,7 @@ static MFDB scr_mfdb;	/* left NULL so it refers to the screen by default */
 static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short force);
 static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstline, short lastline, short force);
 static void update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc, 
-			   short force, bool clipped);
+			   short force);
 static void update_cursor (WINDOW* win, int top);
 static void draw_textwin(WINDOW *v, short x, short y, short w, short h);
 static void close_textwin(WINDOW *v);
@@ -769,6 +769,7 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 		py += t->cheight;
 		firstline++;
 	}
+	t->curs_drawn = 0;
 	if (t->curs_on)
 		update_cursor (t->win, -1);
 }
@@ -910,6 +911,8 @@ update_cursor (WINDOW* win, int top)
 							 &texteffects);
 					set_fillcolor (textcolor);
 					set_fillstyle (1, 1);
+					set_clipping (vdi_handle, curr.g_x, curr.g_y,
+						      curr.g_w, curr.g_h, FALSE);
 					v_bar (vdi_handle, xy);		
 				}
 			}
@@ -954,7 +957,7 @@ void mark_clean(TEXTWIN *t)
  */
 static void 
 update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc, 
-	       short force, bool clipped)
+	       short force)
 {
 	short firstline, lastline, firstscroll;
 	short firstcol, lastcol;
@@ -991,7 +994,7 @@ update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 		vro_cpyfm(vdi_handle, S_ONLY, pxy, &scr_mfdb, &scr_mfdb);
 	}
 
-#if 0
+#if 1
 	/* if `force' is set, clear the area to be redrawn -- it looks better */
 	if (force == CLEARED) 
 	{
@@ -1023,11 +1026,8 @@ update_screen (TEXTWIN *t, short xc, short yc, short wc, short hc,
 	else if (firstline >= t->maxy) 
 		firstline = t->maxy - 1;
 
-	lastline = firstline + hc / t->cheight;
+	lastline = 1 + firstline + (hc + t->cheight - 1) / t->cheight;
 
-	if (clipped)
-		++lastline;
-		
 	if (lastline > t->maxy) 
 		lastline = t->maxy;
 
@@ -1076,18 +1076,12 @@ void refresh_textwin(TEXTWIN *t, short force)
 	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
 	while (t1.g_w && t1.g_h) {
 		if (rc_intersect(&t2, &t1)) {
-			bool clipped;
-			
 			if (!off)
 				off = hide_mouse_if_needed(&t1);
-			if (memcmp (&t1, &t2, sizeof t1))
-				clipped = TRUE;
-			else
-				clipped = FALSE;
 			set_clipping (vdi_handle, t1.g_x, t1.g_y, 
-				      t1.g_w, t1.g_h, clipped);
+				      t1.g_w, t1.g_h, TRUE);
 			update_screen (t, t1.g_x, t1.g_y, t1.g_w, t1.g_h, 
-				       force, clipped);
+				       force);
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
 	}
@@ -1107,7 +1101,7 @@ static void draw_textwin (WINDOW *v, short x, short y, short w, short h)
 	TEXTWIN *t = v->extra;
 
 	t->scrolled = 0;
-	update_screen (v->extra, x, y, w, h, CLEARED, FALSE);
+	update_screen (v->extra, x, y, w, h, CLEARED);
 	t->nbytes = t->draw_time = 0;
 }
 
@@ -1223,20 +1217,14 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 	wind_get_grect(v->handle, WF_FIRSTXYWH, &t1);
 	while (t1.g_w && t1.g_h) {
 		if (rc_intersect(&t2, &t1)) {
-			bool clipped;
-			
 			if (!m_off)
 				m_off = hide_mouse_if_needed(&t1);
-			if (memcmp (&t1, &t2, sizeof t1))
-				clipped = TRUE;
-			else
-				clipped = FALSE;
-			set_clipping(vdi_handle, t1.g_x, t1.g_y, 
-						 t1.g_w, t1.g_h, clipped);
+			set_clipping (vdi_handle, t1.g_x, t1.g_y, 
+						  t1.g_w, t1.g_h, TRUE);
 			
 			if (off >= t1.g_h) 
 				update_screen(t, t1.g_x, t1.g_y, 
-						 t1.g_w, t1.g_h, TRUE, clipped);
+						 t1.g_w, t1.g_h, TRUE);
 			else {
 				if (direction  == UP) {
 					pxy[0] = t1.g_x;	/* "from" address */
@@ -1260,10 +1248,10 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 				vro_cpyfm (vdi_handle, S_ONLY, pxy, &scr_mfdb, &scr_mfdb);
 				if (direction == UP)
 					update_screen (t, t1.g_x, pxy[7], 
-						       t1.g_w, off, TRUE, clipped);
+						       t1.g_w, off, TRUE);
 				else
 					update_screen (t, t1.g_x, t1.g_y, 
-						       t1.g_w, off, TRUE, clipped);
+						       t1.g_w, off, TRUE);
 			}
 		}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
@@ -1673,8 +1661,8 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	set_cwidths(t);
 
 	/* initialize the window data */
-	t->alloc_width = NCOLS (t);
-	t->alloc_height = t->maxy;
+	t->alloc_width = (NCOLS (t) + 15) & 0xfffffff0;
+	t->alloc_height = (t->maxy + 15) & 0xfffffff0;
 		
 	t->data = malloc(sizeof(char *) * t->alloc_height);
 	t->cflag = malloc(sizeof(void *) * t->alloc_height);
@@ -1960,7 +1948,7 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 			size_t data_chunk;
 			size_t cflag_chunk;		
 
-			tw->alloc_height = tw->maxy + diff;
+			tw->alloc_height = (tw->maxy + diff + 15) & 0xfffffff0;
 			data_chunk = (sizeof tw->data[0][0]) * 
 			              tw->alloc_width;
 			cflag_chunk = (sizeof tw->cflag[0][0]) * 
@@ -2049,7 +2037,7 @@ change_height (TEXTWIN* tw, short rows)
 			size_t data_chunk;
 			size_t cflag_chunk;		
 
-			tw->alloc_height = tw->maxy + diff;
+			tw->alloc_height = (tw->maxy + diff + 15) & 0xfffffff0;
 			data_chunk = (sizeof tw->data[0][0]) * 
 			             tw->alloc_width;
 			cflag_chunk = (sizeof tw->cflag[0][0]) * 
@@ -2132,7 +2120,7 @@ change_width (TEXTWIN* tw, short cols)
 			size_t data_chunk;
 			size_t cflag_chunk;		
 
-			tw->alloc_width = tw->maxx + diff;
+			tw->alloc_width = (tw->maxx + diff + 15) & 0xfffffff0;
 			data_chunk = (sizeof tw->data[0][0]) * tw->alloc_width;
 			cflag_chunk = (sizeof tw->cflag[0][0]) * tw->alloc_width;
 			
