@@ -1302,14 +1302,15 @@ mint_thread(void *arg)
 	{
 		do
 		{
-# if 0
+# if 1
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (r == 0)
 			{
 				sleep(WAIT_Q, (long)init);
-				if (mcpu == 60)
-					cpu_lpstop();	/* low power stop and wait for an interrupt */
-				else
+				// LPSTOP don't work (at least on Milan060)
+				// if (mcpu == 60)
+				// 	cpu_lpstop();	/* low power stop and wait for an interrupt */
+				// else
 					cpu_stop();	/* stop and wait for an interrupt */
 			}
 # else
