@@ -112,7 +112,8 @@ FILESYS uni_filesys =
 typedef struct unifile UNIFILE;
 struct unifile
 {
-	char	name[NAME_MAX + 1];
+# define UNINAME_MAX 15
+	char	name[UNINAME_MAX + 1];
 	ushort	mode;
 	ushort	dev;
 	FILESYS	*fs;
@@ -264,7 +265,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 	 */
 	for (u = u_root; u; u = u->next)
 	{
-		if (!strnicmp (name, u->name, NAME_MAX))
+		if (!strnicmp (name, u->name, UNINAME_MAX))
 		{
 			if ((u->mode & S_IFMT) == S_IFDIR)
 			{
@@ -384,7 +385,7 @@ uni_remove (fcookie *dir, const char *name)
 	u = u_root;
 	while (u)
 	{
-		if (!strnicmp (u->name, name, NAME_MAX))
+		if (!strnicmp (u->name, name, UNINAME_MAX))
 		{
 			if ((u->mode & S_IFMT) != S_IFLNK)
 				return ENOENT;
@@ -526,7 +527,7 @@ uni_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 
 	for (u = u_root; u; u = u->next)
 	{
-		if (!strnicmp (u->name, oldname, NAME_MAX))
+		if (!strnicmp (u->name, oldname, UNINAME_MAX))
 			break;
 	}
 
@@ -547,7 +548,7 @@ uni_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 		return (r == E_OK) ? EACCES : r;
 	}
 
-	strncpy (u->name, newname, NAME_MAX);
+	strncpy (u->name, newname, UNINAME_MAX);
 	
 	return E_OK;
 }
@@ -672,7 +673,7 @@ uni_pathconf (fcookie *dir, int which)
 		case DP_IOPEN:		return 0;		/* no files to open */
 		case DP_MAXLINKS:	return 1;		/* no hard links available */
 		case DP_PATHMAX:	return PATH_MAX;
-		case DP_NAMEMAX:	return NAME_MAX;
+		case DP_NAMEMAX:	return UNINAME_MAX;
 		case DP_ATOMIC:		return 1;		/* no atomic writes */
 		case DP_TRUNC:		return DP_AUTOTRUNC;
 		case DP_CASE:		return DP_CASEINSENS;
@@ -734,8 +735,8 @@ uni_symlink (fcookie *dir, const char *name, const char *to)
 	u = kmalloc (sizeof (*u));
 	if (!u) return ENOMEM;
 	
-	strncpy (u->name, name, NAME_MAX);
-	u->name[NAME_MAX] = 0;
+	strncpy (u->name, name, UNINAME_MAX);
+	u->name[UNINAME_MAX] = 0;
 	
 	u->data = kmalloc ((long) strlen (to) + 1);
 	if (!u->data)
@@ -868,8 +869,8 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			u = kmalloc (sizeof (*u));
 			if (!u) return ENOMEM;
 			
-			strncpy (u->name, name, NAME_MAX);
-			u->name[NAME_MAX] = 0;
+			strncpy (u->name, name, UNINAME_MAX);
+			u->name[UNINAME_MAX] = 0;
 			u->mode = S_IFDIR|DEFAULT_DIRMODE;
 			u->data = 0;
 			u->fs = d->file_system;
