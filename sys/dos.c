@@ -528,7 +528,7 @@ foundalarm:
 
 	/* add a new alarm, to occur in x milliseconds */
 	if (x)
-		curproc->alarmtim = addtimeout (x, alarmme);
+		curproc->alarmtim = addtimeout (curproc, x, alarmme);
 	else
 		curproc->alarmtim = 0;
 
@@ -543,20 +543,14 @@ foundalarm:
  * helper function for t_setitimer: this will be called when the ITIMER_REAL
  * timer goes off
  */
-
 static void _cdecl
 itimer_real_me (PROC *p)
 {
-	PROC *real_curproc;
-
-	real_curproc = curproc;
-	curproc = p;
 	if (p->itimer[ITIMER_REAL].interval)
-		p->itimer[ITIMER_REAL].timeout = addtimeout (p->itimer[ITIMER_REAL].interval, itimer_real_me);
+		p->itimer[ITIMER_REAL].timeout = addtimeout (p, p->itimer[ITIMER_REAL].interval, itimer_real_me);
 	else
 		p->itimer[ITIMER_REAL].timeout = 0;
-
-	curproc = real_curproc;
+	
 	post_sig (p, SIGALRM);
 }
 
@@ -564,20 +558,16 @@ itimer_real_me (PROC *p)
  * helper function for t_setitimer: this will be called when the ITIMER_VIRTUAL
  * timer goes off
  */
-
 static void _cdecl
 itimer_virtual_me (PROC *p)
 {
-	PROC *real_curproc;
 	long timeleft;
-
-	real_curproc = curproc;
-	curproc = p;
+	
 	timeleft = p->itimer[ITIMER_VIRTUAL].reqtime
 			- (p->usrtime - p->itimer[ITIMER_VIRTUAL].startusrtime);
 	if (timeleft > 0)
 	{
-		p->itimer[ITIMER_VIRTUAL].timeout = addtimeout (timeleft, itimer_virtual_me);
+		p->itimer[ITIMER_VIRTUAL].timeout = addtimeout (p, timeleft, itimer_virtual_me);
 	}
 	else
 	{
@@ -591,31 +581,26 @@ itimer_virtual_me (PROC *p)
 			p->itimer[ITIMER_VIRTUAL].reqtime = timeleft;
 			p->itimer[ITIMER_VIRTUAL].startsystime = p->systime;
 			p->itimer[ITIMER_VIRTUAL].startusrtime = p->usrtime;
-			p->itimer[ITIMER_VIRTUAL].timeout = addtimeout (timeleft, itimer_virtual_me);
+			p->itimer[ITIMER_VIRTUAL].timeout = addtimeout (p, timeleft, itimer_virtual_me);
 		}
 		post_sig (p, SIGVTALRM);
 	}
-	curproc = real_curproc;
 }
 
 /*
  * helper function for t_setitimer: this will be called when the ITIMER_PROF
  * timer goes off
  */
-
 static void _cdecl
 itimer_prof_me (PROC *p)
 {
-	PROC *real_curproc;
 	long timeleft;
-
-	real_curproc = curproc;
-	curproc = p;
+	
 	timeleft = p->itimer[ITIMER_PROF].reqtime
 			- (p->usrtime - p->itimer[ITIMER_PROF].startusrtime);
 	if (timeleft > 0)
 	{
-		p->itimer[ITIMER_PROF].timeout = addtimeout (timeleft, itimer_prof_me);
+		p->itimer[ITIMER_PROF].timeout = addtimeout (p, timeleft, itimer_prof_me);
 	}
 	else
 	{
@@ -629,11 +614,10 @@ itimer_prof_me (PROC *p)
 			p->itimer[ITIMER_PROF].reqtime = timeleft;
 			p->itimer[ITIMER_PROF].startsystime = p->systime;
 			p->itimer[ITIMER_PROF].startusrtime = p->usrtime;
-			p->itimer[ITIMER_PROF].timeout = addtimeout (timeleft, itimer_prof_me);
+			p->itimer[ITIMER_PROF].timeout = addtimeout (p, timeleft, itimer_prof_me);
 		}
 		post_sig (p, SIGPROF);
 	}
-	curproc = real_curproc;
 }
 
 /*
@@ -646,7 +630,6 @@ itimer_prof_me (PROC *p)
  * value is the current timer value
  * ointerval and ovalue are the previous values
  */
-
 long _cdecl
 t_setitimer (int which, long *interval, long *value, long *ointerval, long *ovalue)
 {
@@ -654,7 +637,7 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 	TIMEOUT *t;
 	void _cdecl (*handler)() = 0;
 	long tmpold;
-
+	
 	if ((which != ITIMER_REAL)
 		&& (which != ITIMER_VIRTUAL)
 		&& (which != ITIMER_PROF))
@@ -672,10 +655,10 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 	{
 			return EFAULT;
 	}
-
+	
 	/* see how many milliseconds there were to the timeout */
 	oldtimer = 0;
-
+	
 	if (curproc->itimer[which].timeout)
 	{
 		for (t = tlist; t; t = t->next)
@@ -689,9 +672,10 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 foundtimer:
 		;
 	}
-
+	
 	if (ointerval)
 		*ointerval = curproc->itimer[which].interval;
+	
 	if (ovalue)
 	{
 		if (which == ITIMER_REAL)
@@ -714,20 +698,20 @@ foundtimer:
 	}
 	
 	if (interval)
-		curproc->itimer[which].interval = *interval;
+		curproc->itimer[which].interval = MAX (*interval, 10);
 	
 	if (value)
 	{
 		/* cancel old timer */
 		if (curproc->itimer[which].timeout)
-			canceltimeout(curproc->itimer[which].timeout);
+			canceltimeout (curproc->itimer[which].timeout);
 		
-		curproc->itimer[which].timeout = 0;
-
+		curproc->itimer[which].timeout = NULL;
+		
 		/* add a new timer, to occur in x milliseconds */
 		if (*value)
 		{
-			curproc->itimer[which].reqtime = *value;
+			curproc->itimer[which].reqtime = MAX (*value, 10);
 			curproc->itimer[which].startsystime = curproc->systime;
 			curproc->itimer[which].startusrtime = curproc->usrtime;
 			
@@ -745,11 +729,12 @@ foundtimer:
 				default:
 					break;
 			}
-			curproc->itimer[which].timeout = addtimeout (*value, handler);
+			curproc->itimer[which].timeout = addtimeout (curproc, MAX (*value, 10), handler);
 		}
 		else
 			curproc->itimer[which].timeout = 0;
 	}
+	
 	return 0;
 }
 
@@ -887,7 +872,7 @@ shutdown (void)
 		 * a chance to shut down
 		 */
 		
-		if (addtimeout (1000, shutmedown))
+		if (addtimeout (curproc, 1000, shutmedown))
 		{
 			do {
 				DEBUG (("Sleeping..."));

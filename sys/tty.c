@@ -152,7 +152,7 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 			TIMEOUT *t;
 			
 			curproc->wait_cond = (long) wakeselect;	/* flag */
-			t = addtimeout ((long) tty->vtime, (to_func *) wakeselect);
+			t = addtimeout (curproc, (long) tty->vtime, (to_func *) wakeselect);
 			if (!t)
 			{
 				(*f->dev->unselect)(f, (long) curproc, O_RDONLY);

@@ -75,7 +75,7 @@ struct kerinfo kernelinfo =
 	ms_time, unixtime, dostime,
 	nap, sleep, wake, (void _cdecl (*)(long)) wakeselect,
 	denyshare, denylock,
-	addtimeout, canceltimeout,
+	addtimeout_curproc, canceltimeout,
 	addroottimeout, cancelroottimeout,
 	ikill, iwake,
 	&bio,

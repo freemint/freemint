@@ -601,7 +601,7 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 #endif
 			majdev = FAKE_RDEV;
 			mindev = ((int)fc->aux) & 0x00ff;
-			set_xattr(xattr, S_IFCHR | DEFAULT_MODE, majdev|mindev);
+			set_xattr (xattr, S_IFCHR | DEFAULT_MODE, majdev|mindev);
 #ifndef FOLLOW_XATTR_CHAIN
 			xattr->index = fc->index;
 #else
@@ -622,7 +622,7 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 #endif
 			majdev = FAKE_RDEV;
 			mindev = ((int)b->private) & 0x00ff;
-			set_xattr(xattr, S_IFCHR|DEFAULT_MODE, majdev|mindev);
+			set_xattr (xattr, S_IFCHR|DEFAULT_MODE, majdev|mindev);
 #ifndef FOLLOW_XATTR_CHAIN
 			xattr->index = fc->index;
 #else
@@ -1037,14 +1037,24 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				strncpy (b->name, name, BNAME_MAX);
 				b->name[BNAME_MAX] = 0;
 			}
+			
+			b->drvsize = d->drvsize;
 			b->device = d->driver;
 			b->private = d->dinfo;
 			b->flags = d->flags;
-			b->tty = d->tty;
-			b->drvsize = d->drvsize;
-			set_xattr(&(b->xattr), S_IFCHR|DEFAULT_MODE, UNK_RDEV|devindex);
+			
+			if (b->flags & O_TTY)
+			{
+				b->tty = d->tty;
+				*b->tty = default_tty;
+			}
+			else
+				b->tty = NULL;
+			
+			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, UNK_RDEV|devindex);
 			if (d->fmode)
 				b->xattr.mode = (short) d->fmode & 0177777;
+			
 			devindex = (devindex+1) & 0x00ff;
 			
 			if ((cmd == DEV_INSTALL2) && d->bdev)
@@ -1059,15 +1069,15 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				b = kmalloc (sizeof (*b));
 				if (!b) return ENOMEM;
 				
-				strncpy (b->name, name, BNAME_MAX);
-				b->name[BNAME_MAX] = 0;
-				
 				b->tty = kmalloc (sizeof (*(b->tty)));
 				if (!b->tty)
 				{
 					kfree (b);
 					return ENOMEM;
 				}
+				
+				strncpy (b->name, name, BNAME_MAX);
+				b->name[BNAME_MAX] = 0;
 				
 				b->next = broot;
 				broot = b;
@@ -1086,12 +1096,15 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				
 				b->tty = ttyptr;
 			}
+			
 			b->drvsize = 0;
 			b->device = &bios_tdevice;
 			b->private = arg;
 			b->flags = O_TTY;
 			*b->tty = default_tty;
+			
 			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, BIOS_RDEV|(b->private&0x00ff));
+			
 			return E_OK;
 		}
 		case DEV_NEWBIOS:
@@ -1101,11 +1114,13 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				b = kmalloc (sizeof (*b));
 				if (!b) return ENOMEM;
 				
-				b->next = broot;
-				broot = b;
 				strncpy (b->name, name, BNAME_MAX);
 				b->name[BNAME_MAX] = 0;
+				
+				b->next = broot;
+				broot = b;
 			}
+			
 			b->drvsize = 0;
 			/*  ts: it's probably better not to free an old tty
 			 * structure here, cause we don't know if any process
@@ -1115,14 +1130,14 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			b->device = &bios_ndevice;
 			b->private = arg;
 			b->flags = 0;
+			
 			set_xattr (&(b->xattr), S_IFCHR|DEFAULT_MODE, BIOS_RDEV|(b->private&0x00ff));
+			
 			return E_OK;
 		}
-		default:
-		{
-			return ENOSYS;
-		}
 	}
+	
+	return ENOSYS;
 }
 
 static long _cdecl
@@ -1503,13 +1518,13 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 			else
 			{
 				TIMEOUT *t;
-
+				
 				if (isleep > 200)
 					isleep = 200;
 				
 				curproc->wait_cond = (long) &tty->state;
 				
-				t = addtimeout ((long) isleep, wakewrite);
+				t = addtimeout (curproc, (long) isleep, wakewrite);
 				if (t)
 				{
 					TRACE (("sleeping in iwrite"));
@@ -1517,7 +1532,7 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 					canceltimeout (t);
 				}
 			}
-
+			
 			/* loop and try again. */
 			slept = (ulong) free < 2;
 			continue;
