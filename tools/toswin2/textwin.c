@@ -14,6 +14,10 @@
 #include "vt.h"
 #include "window.h"
 
+#ifdef DEBUG
+extern int do_debug;
+# include <syslog.h>
+#endif
 
 #define CLEARED 2			/* redrawing a cleared area */
 
@@ -1009,7 +1013,16 @@ static bool text_type(WINDOW *w, short code, short shift)
 				}
 			}
 			else
+#ifdef DEBUG
+			{
+				if (do_debug)
+					syslog (LOG_ERR, "Writing code 0x%08x",
+						(unsigned) c);
+#endif
 				(void)Fputchar(t->fd, c, 0);
+#ifdef DEBUG
+			}
+#endif
 			return TRUE;
 		}
 	}

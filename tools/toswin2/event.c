@@ -22,6 +22,10 @@
 
 #include "event.h"
 
+#ifdef DEBUG
+extern int do_debug;
+# include <syslog.h>
+#endif
 
 bool gl_done = FALSE;
 
@@ -309,7 +313,16 @@ void event_loop(void)
 				if (gl_shortcut && is_menu_key(kreturn, kstate, &title, &item))
 					handle_menu(title, item, FALSE);
 				else
+#ifdef DEBUG
+				{
+					if (do_debug)
+						syslog (LOG_ERR, "Got key 0x%04x | 0x%04x", 
+							(unsigned) kreturn, (unsigned) kstate);
+#endif
 					window_key(kreturn, kstate);
+#ifdef DEBUG
+				}
+#endif
 			}
 		}
 
