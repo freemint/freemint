@@ -1,7 +1,6 @@
 
 # include "global.h"
 # include "netinfo.h"
-# include "util.h"
 
 # include "pl0.h"
 # include "plip.h"
