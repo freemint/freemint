@@ -39,12 +39,11 @@
  * TODO in random order:
  *
  * - cp, mv;
- * - i/o redirection;
  * - filename completion;
  * - make crunch() expand wildcards;
  * - make possible to execute some sort of init script (shellrc or something);
- * - after the code stops changing so quickly, move all the messages to info.c;
- * - get rid of static buffers and Cconrs();
+ * - get rid of static Cconrs();
+ * - make `ls -l |more' work.
  *
  */
 
@@ -103,6 +102,10 @@
 /* Global variables */
 static short xcommands;		/* if 1, the extended command set is active */
 
+/* For i/o redirection */
+static long stdout = STDOUT;
+static long stderr = STDERR;
+
 /* Fake command line to prevent complaints from the kernfs and fork() */
 struct kcmd
 {
@@ -134,13 +137,13 @@ shell_fprintf(long handle, const char *fmt, ...)
 		m_free((long)buf);
 	}
 	else
-		c_conws("Out of RAM!\r\n");
+		f_write(stderr, 13, "Out of RAM!\n");
 }
 
 INLINE void
 shell_print(const char *text)
 {
-	shell_fprintf(STDOUT, text);
+	shell_fprintf(stdout, text);
 }
 
 /* Simple conversion of a pathname from the DOS to Unix format,
@@ -277,75 +280,163 @@ shell_setenv(const char *var, char *value)
  *
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
  */
+INLINE short
+get_arg(char *cmd, char **arg, char **next, short *io)
+{
+	char *start = NULL, *endquote;
+	short special, r = 0;
+
+	*io = 0;
+
+	/* I/O redirection */
+	if (isdigit(cmd[0]) && cmd[1] == '>')
+	{
+		*io = cmd[0] & 0x0f;
+		*cmd++ = 0;
+		*cmd++ = 0;
+		*next = cmd;
+		r = 1;
+	}
+	else if (cmd[0] == '>')
+	{
+		*io = 1;
+		*cmd++ = 0;
+		*next = cmd;
+		r = 1;
+	}
+	/* If the argument is an enviroment variable, evaluate it.
+	 * It is assumed, that a space or NULL terminates the argument.
+	 */
+	else if (cmd[0] == '$' && isupper(cmd[1]))
+	{
+		start = cmd + 1;
+
+		while (*cmd && *cmd != '>' && !isspace(*cmd))
+			cmd++;
+
+		if (cmd[0] == '>')
+		{
+			if (isdigit(cmd[-1]))
+			{
+				*io = cmd[-1] & 0x0f;
+				cmd[-1] = 0;
+			}
+			else
+				*io = 1;
+		}
+		if (*cmd)
+			*cmd++ = 0;		/* terminate the tag for getenv() */
+
+		*next = cmd;
+
+		start = _mint_getenv(_base, start);
+
+		if (!start)
+			return 1;		/* ignore and try again */
+	}
+	/* Check if there may be a quoted argument. A quoted argument will begin with
+	 * a quote and end with a quote. Quotes do not belong to the argument.
+	 * Everything between quotes is litterally taken as argument, without any
+	 * internal interpretation.
+	 */
+	else if (cmd[0] == '\'')
+	{
+		cmd++;
+		endquote = cmd;
+
+		while (*endquote && *endquote != '\'')
+			endquote++;
+
+		if (!*endquote)
+			return -1000;		/* unmatched quotes */
+
+		start = cmd;
+		cmd = endquote;
+		*cmd++ = 0;
+	}
+	else
+	{
+	/* Search for the ending separator. In a non-quoted argument any space
+	 * is understood as a separator except when preceded by the backslash.
+	 */
+		start = cmd;
+
+		while (*cmd && *cmd != '>' && !isspace(*cmd))
+		{
+			special = (*cmd == '\\');
+			if (special && cmd[1])
+				strcpy(cmd, cmd + 1);	/* physically remove the backslash */
+			cmd++;
+		}
+
+		if (cmd[0] == '>')
+		{
+			if (isdigit(cmd[-1]))
+			{
+				*io = cmd[-1] & 0x0f;
+				cmd[-1] = 0;
+			}
+			else
+				*io = 1;
+		}
+		if (*cmd)
+			*cmd++ = 0;
+	}
+
+	while (isspace(*cmd))
+		cmd++;
+
+	*arg = start;
+	*next = cmd;
+
+	return r;
+}
+
 INLINE long
 crunch(char *cmd, char **argv)
 {
-	char *start, *endquote;
-	long idx = 0;
-	short special;
+	char *argument;
+	short r, io, saveio;
+	long idx = 0, fd;
+
+	while (*cmd && isspace(*cmd))
+		cmd++;
 
 	while (*cmd)
 	{
-		if (isspace(*cmd))
-			cmd++;
-		else
+		r = get_arg(cmd, &argument, &cmd, &io);
+		/* r == 0 means that getting the argument succeeded;
+		 * r < 0 means syntax error;
+		 * r == 1 means that next argument has to be skipped;
+		 */
+		if (r == 0)
+			argv[idx++] = argument;
+		else if (r < 0)
+			return r;
+		/* else fall through */
+
+		if (io)
 		{
-			/* If the argument is an enviroment variable, evaluate it.
-			 * It is assumed, that a space or NULL terminates the argument.
+			saveio = io;
+			r = get_arg(cmd, &argument, &cmd, &io);
+			if (r < 0)
+				return r;
+			/* r == 1 means that the user has supplied an undefined env. variable
+			 * as an argument for I/O redirection. We can't tolerate that this
+			 * time. Also, syntax like `ls -l 1> 2> out' is not allowed.
 			 */
-			if (cmd[0] == '$' && isupper(cmd[1]))
-			{
-				start = cmd + 1;
-
-				while (*cmd && !isspace(*cmd))
-					cmd++;
-
-				if (*cmd)
-					*cmd++ = 0;		/* terminate the tag for getenv() */
-
-				start = _mint_getenv(_base, start);
-				if (start)
-					argv[idx++] = start;
-			}
-			/* Check if there may be a quoted argument. A quoted argument will begin with
-			 * a quote and end with a quote. Quotes do not belong to the argument.
-			 * Everything between quotes is litterally taken as argument, without any
-			 * internal interpretation.
-			 */
-			else if (cmd[0] == '\'')
-			{
-				cmd++;
-				endquote = cmd;
-
-				while (*endquote && *endquote != '\'')
-					endquote++;
-
-				if (!*endquote)
-					return -1;		/* unmatched quotes */
-
-				argv[idx++] = cmd;
-				cmd = endquote;
-				*cmd++ = 0;
-			}
+			else if (io || r == 1)
+				return -1000;
 			else
 			{
-			/* Search for the ending separator. In a non-quoted argument any space
-			 * is understood as a separator except when preceded by the backslash.
-			 */
-				start = cmd;
-
-				while (*cmd && !isspace(*cmd))
-				{
-					special = (*cmd == '\\');
-					if (special && cmd[1])
-						strcpy(cmd, cmd + 1);	/* physically remove the backslash */
-					cmd++;
-				}
-
-				if (*cmd)
-					*cmd++ = 0;
-
-				argv[idx++] = start;
+				fd = f_create(argument, 0);
+				if (fd < 0)
+					return fd;
+				if (saveio == 1)
+					stdout = fd;		/* will be closed after we return to shell() */
+				else if (saveio == 2)
+					stderr = fd;
+				/* else ignore */
 			}
 		}
 	}
@@ -361,6 +452,7 @@ execvp(char **argv)
 {
 	char *oldcmd, *npath, *var, *new_env, *new_var, *t, *path, *np;
 	long count, x, y, r = -1L, blanks = 0;
+	short dupout, duperr;
 
 	/* Calculate the size of the environment */
 	var = _base->p_env;
@@ -373,9 +465,16 @@ execvp(char **argv)
 
 	count <<= 1;				/* make this twice as big (will be shrunk later) */
 
-	new_env = (char *)m_xalloc(count, 3);
-	if (!new_env)
+	/* Allocate one buffer that would satisfy all requirements of this function */
+	oldcmd = (char *)m_xalloc(count + 128 + SHELL_MAXPATH + SHELL_MAXFN, 3);
+	if (!oldcmd)
 		return -40;
+
+	/* First part is the command line and path buffer.
+	 * Last part is the environment buffer. Hope these
+	 * will never overlap.
+	 */
+	new_env = oldcmd + 128 + SHELL_MAXPATH + SHELL_MAXFN;
 
 	var = _base->p_env;
 	new_var = new_env;
@@ -430,17 +529,12 @@ execvp(char **argv)
 
 	*new_var = 0;
 
-	(void)m_shrink(0, (long)new_env, env_size(new_env));
+	(void)m_shrink(0, (long)oldcmd, env_size(new_env) + SHELL_MAXPATH + SHELL_MAXFN + 128);
 
 	/* Since crunch() evaluates some arguments, we have now to
 	 * re-create the old GEMDOS style command line string.
 	 */
-	oldcmd = (char *)m_xalloc(SHELL_MAXPATH + SHELL_MAXFN + 128, 3);
 	npath = oldcmd + 128;
-
-	if (!oldcmd)
-		return -40;
-
 	bzero(oldcmd, 128);
 
 	x = 1;			/* must skip the first argument (program name) */
@@ -488,11 +582,39 @@ execvp(char **argv)
 			strcat(npath, "/");
 		strcat(npath, argv[0]);
 
+		/* If stdout/stderr vary from their default values, it means
+		 * that crunch() has redirected the output.
+		 */
+		dupout = duperr = 0;
+
+		if (stdout != STDOUT)
+		{
+			dupout = f_dup(STDOUT);		/* duplicate the stdout */
+			f_force(STDOUT, stdout);
+		}
+
+		if (stderr != STDERR)
+		{
+			duperr = f_dup(STDERR);		/* duplicate the stderr */
+			f_force(STDERR, stderr);
+		}
+
 		r = sys_pexec(0, npath, oldcmd, new_env);
 
-	} while (*path && r < 0);
+		if (dupout)
+		{
+			f_force(STDOUT, dupout);
+			f_close(dupout);
+		}
 
-	m_free((long)new_env);
+		if (duperr)
+		{
+			f_force(STDERR, duperr);
+			f_close(duperr);
+		}
+	}
+	while (*path && r < 0);
+
 	m_free((long)oldcmd);
 
 	return r;
@@ -501,7 +623,7 @@ execvp(char **argv)
 static void
 xcmdstate(void)
 {
-	shell_fprintf(STDOUT, MSG_shell_xcmd_info, xcommands ? MSG_shell_xcmd_on : MSG_shell_xcmd_off);
+	shell_fprintf(stdout, MSG_shell_xcmd_info, xcommands ? MSG_shell_xcmd_on : MSG_shell_xcmd_off);
 }
 
 /* End utilities, begin commands */
@@ -509,7 +631,7 @@ xcmdstate(void)
 static long
 sh_ver(long argc, char **argv)
 {
-	shell_fprintf(STDOUT, MSG_shell_name, SH_VER_MAIOR, SH_VER_MINOR, COPYCOPY);
+	shell_fprintf(stdout, MSG_shell_name, SH_VER_MAIOR, SH_VER_MINOR, COPYCOPY);
 
 	return 0;
 }
@@ -517,7 +639,7 @@ sh_ver(long argc, char **argv)
 static long
 sh_help(long argc, char **argv)
 {
-	shell_fprintf(STDOUT, MSG_shell_help, xcommands ? MSG_shell_xcmd_on : MSG_shell_xcmd_off);
+	shell_fprintf(stdout, MSG_shell_help, xcommands ? MSG_shell_xcmd_on : MSG_shell_xcmd_off);
 
 	return 0;
 }
@@ -543,7 +665,7 @@ sh_ls(long argc, char **argv)
 		{
 			if (strcmp(argv[x], "--help") == 0)
 			{
-				shell_fprintf(STDOUT, MSG_shell_ls_help, argv[0]);
+				shell_fprintf(stdout, MSG_shell_ls_help, argv[0]);
 
 				return 0;
 			}
@@ -651,7 +773,7 @@ sh_ls(long argc, char **argv)
 					/* Now recalculate the time stamp */
 					unix2calendar(st.mtime.time, &year, &month, &day, &hour, &minute, NULL);
 
-					shell_fprintf(STDOUT, "%s %5d %8ld %8ld %8ld %s %2d ", \
+					shell_fprintf(stdout, "%s %5d %8ld %8ld %8ld %s %2d ", \
 							path, (short)st.nlink, st.uid, st.gid, \
 							(long)st.size, months_abbr_3[month - 1], day);
 
@@ -668,17 +790,17 @@ sh_ls(long argc, char **argv)
 					 * unix2calendar again).
 					 */
 					if ((tv.tv_sec - st.mtime.time) > (SEC_OF_YEAR >> 1))
-						shell_fprintf(STDOUT, "%5d ", year);
+						shell_fprintf(stdout, "%5d ", year);
 					else
-						shell_fprintf(STDOUT, "%02d:%02d ", hour, minute);
+						shell_fprintf(stdout, "%02d:%02d ", hour, minute);
 				}
 
-				shell_fprintf(STDOUT, "%s", entry + sizeof(long));
+				shell_fprintf(stdout, "%s", entry + sizeof(long));
 
 				if (S_ISLNK(st.mode))
-					shell_fprintf(STDOUT, " -> %s\r\n", link);
+					shell_fprintf(stdout, " -> %s\n", link);
 				else
-					shell_print("\r\n");
+					shell_print("\n");
 			}
 		}
 	} while (r == 0);
@@ -702,7 +824,7 @@ sh_cd(long argc, char **argv)
 	{
 		if (strcmp(argv[1], "--help") == 0)
 		{
-			shell_fprintf(STDOUT, MSG_shell_cd_help, argv[0]);
+			shell_fprintf(stdout, MSG_shell_cd_help, argv[0]);
 
 			return 0;
 		}
@@ -762,7 +884,7 @@ sh_chgrp(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
+		shell_fprintf(stderr, "%s%s\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -790,7 +912,7 @@ sh_chown(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
+		shell_fprintf(stderr, "%s%s\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -836,7 +958,7 @@ sh_chmod(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
+		shell_fprintf(stderr, "%s%s\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -864,7 +986,7 @@ sh_xcmd(long argc, char **argv)
 		else if (strcmp(argv[1], "off") == 0)
 			xcommands = 0;
 		else if (strcmp(argv[1], "--help") == 0)
-			shell_fprintf(STDOUT, MSG_shell_xcmd_help, argv[0]);
+			shell_fprintf(stdout, MSG_shell_xcmd_help, argv[0]);
 	}
 	xcmdstate();
 
@@ -896,7 +1018,7 @@ sh_exit(long argc, char **argv)
 static long
 sh_cp(long argc, char **argv)
 {
-	shell_fprintf(STDOUT, "%s not implemented yet!\r\n", argv[0]);
+	shell_fprintf(stdout, "%s not implemented yet!\n", argv[0]);
 
 	return -1;
 }
@@ -904,7 +1026,7 @@ sh_cp(long argc, char **argv)
 static long
 sh_mv(long argc, char **argv)
 {
-	shell_fprintf(STDOUT, "%s not implemented yet!\r\n", argv[0]);
+	shell_fprintf(stdout, "%s not implemented yet!\n", argv[0]);
 
 	return -1;
 }
@@ -917,7 +1039,7 @@ sh_rm(long argc, char **argv)
 
 	if (argc < 2)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
+		shell_fprintf(stderr, "%s%s\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -928,7 +1050,7 @@ sh_rm(long argc, char **argv)
 		{
 			if (strcmp(argv[x], "--help") == 0)
 			{
-				shell_fprintf(STDOUT, MSG_shell_rm_help, argv[0]);
+				shell_fprintf(stdout, MSG_shell_rm_help, argv[0]);
 
 				return 0;
 			}
@@ -956,7 +1078,7 @@ sh_ln(long argc, char **argv)
 
 	if (argc < 3)
 	{
-		shell_fprintf(STDERR, "%s%s\r\n", argv[0], MSG_shell_missing_arg);
+		shell_fprintf(stderr, "%s%s\n", argv[0], MSG_shell_missing_arg);
 
 		return 0;
 	}
@@ -976,7 +1098,7 @@ sh_setenv(long argc, char **argv)
 
 		while (var && *var)
 		{
-			shell_fprintf(STDOUT, "%s\r\n", var);
+			shell_fprintf(stdout, "%s\n", var);
 			while (*var)
 				var++;
 			var++;
@@ -985,7 +1107,7 @@ sh_setenv(long argc, char **argv)
 	else if (argc == 2)
 	{
 		if (strcmp(argv[1], "--help") == 0)
-			shell_fprintf(STDOUT, MSG_shell_setenv_help, argv[0]);
+			shell_fprintf(stdout, MSG_shell_setenv_help, argv[0]);
 		else
 			shell_delenv(argv[1]);
 	}
@@ -1005,7 +1127,7 @@ sh_export(long argc, char **argv)
 	else
 	{
 		if (strcmp(argv[1], "--help") == 0)
-			shell_fprintf(STDOUT, MSG_shell_export_help, argv[0]);
+			shell_fprintf(stdout, MSG_shell_export_help, argv[0]);
 		else
 		{
 			arg2 = strrchr(argv[1], '=');
@@ -1032,9 +1154,13 @@ sh_echo(long argc, char **argv)
 	short x = 0;
 
 	while (--argc)
-		shell_fprintf(STDOUT, "%s ", argv[++x]);
+	{
+		shell_fprintf(stdout, "%s", argv[++x]);
+		if (argv[x + 1])
+			shell_fprintf(stdout, " ");
+	}
 
-	shell_fprintf(STDOUT, "\r\n");
+	shell_fprintf(stdout, "\n");
 
 	return 0;
 }
@@ -1090,8 +1216,10 @@ execute(char *cmdline)
 
 	if (argc <= 0)				/* empty command line or parse error */
 	{
-		if (argc < 0)
-			shell_fprintf(STDERR, MSG_shell_unmatched_quotes);
+		if (argc == -1000)
+			shell_fprintf(stderr, MSG_shell_syntax_error, argc);
+		else
+			r = argc;
 		goto exit;
 	}
 
@@ -1147,7 +1275,7 @@ prompt(uchar *buffer, long buflen)
 			dos2unix(cwd);
 	}
 
-	shell_fprintf(STDOUT, "mint:%s#", cwd ? cwd : "");
+	shell_fprintf(stdout, "%s:%s#", _mint_getenv(_base, "HOSTNAME") ?: "mint", cwd ?: "");
 
 	c_conrs(buffer);
 
@@ -1172,11 +1300,11 @@ shell(void *arg)
 	long r;
 
 	(void)p_domain(1);			/* switch to MiNT domain */
-	(void)f_force(2, -1);			/* redirect the stderr to console */
+	(void)f_force(STDERR, -1);		/* redirect the stderr to console */
 //	(void)p_sigsetmask(-1L);		/* mask out the signals */
 	(void)p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
 
-	shell_print("\ee\ev\r\n");		/* enable cursor, enable word wrap, make newline */
+	shell_print("\ee\ev\n");		/* enable cursor, enable word wrap, make newline */
 	sh_ver(0, NULL);
 	xcmdstate();
 	shell_print(MSG_shell_type_help);
@@ -1191,8 +1319,21 @@ shell(void *arg)
 
 		r = execute(lbuff);
 
+		/* Terminate the I/O redirection */
+		if (stdout != STDOUT)
+		{
+			f_close(stdout);
+			stdout = STDOUT;
+		}
+
+		if (stderr != STDERR)
+		{
+			f_close(stderr);
+			stderr = STDERR;
+		}
+
 		if (r < 0)
-			shell_fprintf(STDERR, MSG_shell_error, lbuff, r);
+			shell_fprintf(stderr, MSG_shell_error, lbuff, r);
 	}
 
 	kthread_exit (0);
