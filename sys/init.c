@@ -78,8 +78,6 @@
 static long _cdecl mint_criticerr (long);
 static void _cdecl do_exec_os (register long basepage);
 
-static int gem_active;		/* 0 if AES has not started, nonzero otherwise */
-
 # define EXEC_OS 0x4feL
 static int	check_for_gem (void);
 static void	run_auto_prgs (void);
@@ -740,11 +738,6 @@ long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_ALLOCZERO
 long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 # endif
 
-/*
- * The path to the system directory. Added 17.IV.2001.
- */
-char *sysdir = NULL;
-
 void
 init (void)
 {
@@ -779,6 +772,15 @@ init (void)
 	boot_print (greet1);
 	boot_print (greet2);
 
+	/* check for GEM -- this must be done from user mode */
+	if (check_for_gem())
+	{
+		boot_print(MSG_must_be_auto);
+		boot_print(MSG_init_hitanykey);
+		(void) Cconin();
+		Pterm0();
+	}
+
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
 	 * - also sets no_mem_prot
@@ -800,32 +802,12 @@ init (void)
 			Pterm0 ();
 	}
 
-# if 0
-	/* if less than 1 megabyte free, turn off memory protection */
-	if (Mxalloc (-1L, 3) < ONE_MEG && !no_mem_prot)
-	{
-		boot_print (insuff_mem_warning);
-		no_mem_prot = 1;
-	}
-# endif
-# if 0
-	/* look for ourselves as \AUTO\MINTNP.PRG; if so, we turn memory
-	 * protection off
-	 */
-	if (!no_mem_prot && Fsfirst ("\\AUTO\\MINTNP.PRG", 0) == 0)
-		no_mem_prot = 1;
-# endif
-
 # ifdef OLDTOSFS
 	/* Get GEMDOS version from ROM for later use by our own Sversion() */
 	gemdos_version = Sversion ();
 # endif
 
-	/* check for GEM -- this must be done from user mode */
-	gem_active = check_for_gem ();
-
-	if (!gem_active)
-		get_my_name();
+	get_my_name();
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_mp);
@@ -848,6 +830,8 @@ init (void)
 	}
 
 	(void) Super (0L);
+
+	sysdrv = *((short *) 0x446);	/* get the boot drive number */
 
 	if (!no_mem_prot)
 		save_mmu ();		/* save current MMU setup */
@@ -1150,7 +1134,7 @@ init (void)
 	 * is in fact GEM, take the exec_os() vector. (We know that INIT
 	 * is GEM if the user told us so by using GEM= instead of INIT=.)
 	 */
-	if (!gem_active && init_is_gem)
+	if (init_is_gem)
 	{
 		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
@@ -1178,22 +1162,25 @@ init (void)
 	 * order to start it. We *never* go through exec_os if we're not in
 	 * the AUTO folder.
 	 */
-	if (init_prg && (!init_is_gem || gem_active))
+	if (init_prg)
 	{
-		r = sys_pexec(100, (char *) init_prg, init_tail, init_env);
-	}
-	else if (!gem_active)
-	{
-		BASEPAGE *bp;
+		if (!init_is_gem)
+		{
+			r = sys_pexec(100, (char *) init_prg, init_tail, init_env);
+		}
+		else
+		{
+			BASEPAGE *bp;
 
-		bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
-		bp->p_tbase = *((long *) EXEC_OS);
+			bp = (BASEPAGE *) sys_pexec (7, (char *) GEM_memflags, (char *) "\0", init_env);
+			bp->p_tbase = *((long *) EXEC_OS);
 # ifndef MULTITOS
-		if (((long *) sysbase[5])[0] == 0x87654321)
-			gem_start = ((long *) sysbase[5])[2];
-		gem_base = bp;
+			if (((long *) sysbase[5])[0] == 0x87654321)
+				gem_start = ((long *) sysbase[5])[2];
+			gem_base = bp;
 # endif
-		r = sys_pexec(106, (char *) "GEM", bp, 0L);
+			r = sys_pexec(106, (char *) "GEM", bp, 0L);
+		}
 	}
 	else
 		r = 0;
@@ -1201,30 +1188,52 @@ init (void)
 	/* r < 0 means an error during sys_pexec() execution (e.g. file not found);
 	 * r == 0 means that mint.cnf lacks the GEM= or INIT= line.
 	 *
-	 * In this case we halt the system, but in the future we will want rather
+	 * In both cases we halt the system, but in the future we will want rather
 	 * to execute some sort of internal minimal shell that could help
 	 * to fix minor fs problems without rebooting to TOS.
 	 */
 	if (r <= 0)
 	{
+		char shellpath[32];	/* 32 should be plenty */
+
 		if (r < 0)
-			boot_printf(MSG_couldnt_run_init, init_prg, r);	/* temporary here */
-		else
-			boot_print(MSG_init_specify_prg);
+			boot_printf(MSG_couldnt_run_init, init_prg, r);
+
+		/* Last resort: try to execute sysdir/shell.tos.
+		 * For that, the absolute path must be used, because the user
+		 * could have changed the current drive/dir inside mint.cnf file.
+		 */
+
+		strcpy(shellpath, "u:\\a");
+		strcat(shellpath, sysdir);
+		strcat(shellpath, "shell.tos");
+
+		shellpath[3] = (char)sysdrv + 'A';	/* the boot drive */
+
+		r = sys_pexec(100, (char *)shellpath, init_tail, init_env);
+
+		if (r < 0)
+			boot_printf(MSG_couldnt_run_init, shellpath, r);
 
 # if 0
-		r = shell();			/* r is the shell's pid (not yet exists) */
+		if (r <= 0)
+			r = internal_shell();	/* r is the shell's pid (not yet exists) */
 # else
-		rootproc->base = _base;
-		s_hutdown(0);
+		/* Everything failed. Halt. */
+		if (r <= 0)
+		{
+			rootproc->base = _base;
+			s_hutdown(0);
+		}
 # endif
 	}
 
 	/* Here we have the code for the process 0 (MiNT itself).
+	 *
 	 * It waits for the init program to terminate. When it is checked that
 	 * the init program is still alive, the pid 0 goes to sleep.
 	 * It can only be awaken, when noone else is ready to run, sleep()
-	 * in proc.c moves it to the run queque then (q.v.). In this case,
+	 * in proc.c moves it to the run queue then (q.v.). In this case,
 	 * instead of calling sleep() again and force the CPU to execute the
 	 * loop again and again, we request it to be stopped.
          *
@@ -1232,7 +1241,8 @@ init (void)
 	pid = (int) r;
 	if (pid > 0)
 	{
-		do {
+		do
+		{
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (!r)
 			{
@@ -1240,20 +1250,12 @@ init (void)
 				if (mcpu == 60)
 					cpu_lpstop();	/* low power stop and wait for an interrupt */
 				else
-					cpu_stop();	/* stop and wait for interrupt */
+					cpu_stop();	/* stop and wait for an interrupt */
 			}
-		}
-		while (pid != ((r & 0xffff0000L) >> 16));
+		} while (pid != ((r & 0xffff0000L) >> 16));
+
 		r &= 0x0000ffff;
 	}
-
-# if 0
-	if (r < 0 && init_prg)
-	{
-		boot_printf("FATAL: couldn't run `%s'.\r\n", init_prg);
-		boot_printf("exit code: %ld\r\n", r);
-	}
-# endif
 
 	rootproc->base = _base;
 
@@ -1310,11 +1312,7 @@ run_auto_prgs (void)
 	static char pathspec[32] = "\\auto\\";
 	short runthem = 0;	/* set to 1 after we find MINT.PRG */
 	char curpath[PATH_MAX];
- 	int curdriv, bootdriv;
-
-	/* if the AES is running, don't check AUTO */
-	if (gem_active)
-		return;
+ 	int curdriv;
 
 	/* OK, now let's run through \\AUTO looking for
 	 * programs...
@@ -1322,9 +1320,7 @@ run_auto_prgs (void)
 	d_getpath(curpath,0);
 	curdriv = d_getdrv();
 
-	/* We are in Supervisor mode, so we can do this */
-	bootdriv = *((short *) 0x446);
-	d_setdrv(bootdriv);
+	d_setdrv(sysdrv);	/* set above, right after Super() */
 	d_setpath("\\");
 
 	dta = (DTABUF *) f_getdta();
