@@ -59,6 +59,7 @@
 # include "mint/proc.h"		/* curproc (for DEBUG) */
 # endif
 
+# include "mint/errno.h"
 # include "mint/stat.h"		/* struct stat */
 
 # include "cnf.h"		/* init_env */
@@ -87,7 +88,6 @@
 
 # define COPYCOPY	"(c) 2003 Konrad M.Kokoszkiewicz (draco@atari.org)\n"
 
-# define SHELL_ARGS	2048L		/* number of pointers in the argument vector table (i.e. 8K) */
 # define SHELL_MAXFN	1024L		/* max length of a filename */
 # define SHELL_MAXPATH	6144L		/* max length of a pathname */
 # define SHELL_MAXLINE	8192L		/* max line for the shell_fprintf() */
@@ -298,6 +298,8 @@ get_arg(char *cmd, char **arg, char **next, short *io)
 	}
 	/* If the argument is an enviroment variable, evaluate it.
 	 * It is assumed, that a space or NULL terminates the argument.
+	 *
+	 * XXX crap code, doesn't evaluate $HOME/dirname properly.
 	 */
 	else if (cmd[0] == '$' && isupper(cmd[1]))
 	{
@@ -316,6 +318,7 @@ get_arg(char *cmd, char **arg, char **next, short *io)
 			else
 				*io = 1;
 		}
+
 		if (*cmd)
 			*cmd++ = 0;		/* terminate the tag for getenv() */
 
@@ -384,17 +387,33 @@ get_arg(char *cmd, char **arg, char **next, short *io)
 	return r;
 }
 
-INLINE long
+/* Convert MS commandline into ARGV argument vector.
+ * If argv argument is NULL, only count arguments, but
+ * don't create the argument vector.
+ *
+ * Notice: crunch() is destructive for the `cmd'.
+ */
+static long
 crunch(char *cmd, char **argv)
 {
-	char *argument;
+	char *argument, *tmp = NULL;
 	short r, io, saveio;
 	long idx = 0, fd;
+
+	/* Save the original commandline */
+	if (argv == NULL)
+	{
+		tmp = (char *)m_xalloc(strlen(cmd) + 1, 3);
+		if (!tmp)
+			return ENOMEM;
+		strcpy(tmp, cmd);
+		cmd = tmp;
+	}
 
 	while (*cmd && isspace(*cmd))
 		cmd++;
 
-	while (*cmd && idx < (SHELL_ARGS - 1))
+	while (*cmd)
 	{
 		r = get_arg(cmd, &argument, &cmd, &io);
 		/* r == 0 means that getting the argument succeeded;
@@ -402,7 +421,11 @@ crunch(char *cmd, char **argv)
 		 * r == 1 means that next argument has to be skipped;
 		 */
 		if (r == 0)
-			argv[idx++] = argument;
+		{
+			if (argv)
+				argv[idx] = argument;
+			idx++;
+		}
 		else if (r < 0)
 			return r;
 		/* else fall through */
@@ -419,18 +442,25 @@ crunch(char *cmd, char **argv)
 			 */
 			else if (!io && r != 1)
 			{
-				if ((fd = f_create(argument, 0)) < 0)
-					return fd;
+				if (argv)
+				{
+					if ((fd = f_create(argument, 0)) < 0)
+						return fd;
 
-				stdout = (saveio == 1) ? fd : stdout;
-				stderr = (saveio == 2) ? fd : stderr;
+					stdout = (saveio == 1) ? fd : stdout;
+					stderr = (saveio == 2) ? fd : stderr;
+				}
 			}
 			else
 				return -1000;
 		}
 	}
 
-	argv[idx] = NULL;
+	if (argv)
+		argv[idx] = NULL;
+
+	if (tmp)
+		m_free((long)tmp);
 
 	return idx;
 }
@@ -457,7 +487,7 @@ execvp(char **argv)
 	/* Allocate one buffer that would satisfy all requirements of this function */
 	oldcmd = (char *)m_xalloc(count + 128 + SHELL_MAXPATH + SHELL_MAXFN, 3);
 	if (!oldcmd)
-		return -40;
+		return ENOMEM;
 
 	/* First part is the command line and path buffer.
 	 * Last part is the environment buffer. Hope these
@@ -632,7 +662,7 @@ sh_ls(long argc, char **argv)
 	struct stat st;
 	struct timeval tv;
 	short all = 0, full = 0;
-	long x, r, s, handle;
+	long i, x, r, s, handle;
 	char *dir, *path, *link, *entry;
 
 	dir = ".";
@@ -650,10 +680,13 @@ sh_ls(long argc, char **argv)
 			}
 			else
 			{
-				if (strcmp(argv[x], "-a") == 0)
-					all = 1;
-				else if (strcmp(argv[x], "-f") == 0)
-					full = 1;
+				for (i = 1; argv[x][i]; i++)
+				{
+					if (argv[x][i] == 'a')
+						all = 1;
+					else if (argv[x][i] == 'l')
+						full = 1;
+				}
 			}
 		}
 		else
@@ -674,7 +707,7 @@ sh_ls(long argc, char **argv)
 	entry = link + SHELL_MAXPATH;
 
 	if (!path)
-		return -40;
+		return ENOMEM;
 
 	do
 	{
@@ -820,7 +853,7 @@ sh_cd(long argc, char **argv)
 	{
 		cwd = (char *)m_xalloc(SHELL_MAXPATH, 3);
 		if (!cwd)
-			return -40;
+			return ENOMEM;
 
 		d_getcwd(cwd, 0, SHELL_MAXPATH);
 
@@ -991,18 +1024,184 @@ sh_exit(long argc, char **argv)
  * file -> file
  * file file file file ... -> directory
  */
+
+# define SHELL_COPYBUF	65536L
+
+static long
+copy_from_to(short move, char *from, char *to)
+{
+	char *buf;
+	struct stat st, tost;
+	long r, sfd, dfd, bufsize;
+	llong size;
+
+	r = f_stat64(0, from, &st);
+	if (r < 0)
+		return r;
+
+	r = f_stat64(0, to, &tost);
+	if (r == 0)
+	{
+		if (st.ino == tost.ino)
+		{
+			shell_fprintf(stderr, MSG_shell_cp_the_same, from, to);
+
+			return 0;
+		}
+	}
+
+	if (move)
+	{
+		r = f_rename(0, from, to);
+		if (r != EXDEV)
+			return r;
+	}
+
+	sfd = f_open(from, O_RDONLY);
+	if (sfd < 0)
+		return sfd;
+	dfd = f_create(to, 0);
+	if (dfd < 0)
+	{
+		f_close(sfd);
+		return dfd;
+	}
+
+	buf = (char *)m_xalloc(SHELL_COPYBUF, 3);
+
+	if (buf)
+	{
+		size = st.size;
+
+		while (size)
+		{
+			if (size > SHELL_COPYBUF)
+				bufsize = SHELL_COPYBUF;
+			else
+				bufsize = size;
+			r = f_read(sfd, bufsize, buf);
+			if (r == bufsize)
+				r = f_write(dfd, bufsize, buf);
+			if (r < 0)
+				break;
+			size -= bufsize;
+		}
+
+		m_free((long)buf);
+
+		if (r >= 0)
+		{
+			f_chmod(to, st.mode & S_IALLUGO);
+			f_chown(to, st.uid, st.gid);
+		}
+		else
+			f_delete(to);
+
+		if (move)
+			f_delete(from);
+
+	}
+	else
+		r = ENOMEM;
+
+	f_close(sfd);
+	f_close(dfd);
+
+	return r;
+}
+
 static long
 sh_cp(long argc, char **argv)
 {
-	shell_fprintf(stdout, "%s not implemented yet!\n", argv[0]);
+	char *path;
+	struct stat st;
+	long r = 0, x;
 
-	return -1;
+	if (argc < 3)
+	{
+		shell_fprintf(stderr, "%s%s\n", argv[0], MSG_shell_missing_arg);
+
+		return 0;
+	}
+
+	path = (char *)m_xalloc(SHELL_MAXPATH, 3);
+	if (!path)
+		return ENOMEM;
+
+	r = f_stat64(0, argv[argc-1], &st);
+
+	if (r < 0 || (r == 0 && !S_ISDIR(st.mode)))
+	{
+		if (argc > 3)
+			shell_fprintf(stderr, MSG_shell_cp_not_dir, argv[0], argv[argc-1]);
+		else
+			r = copy_from_to(0, argv[1], argv[2]);
+	}
+	else
+	{
+		for (x = 1; x < (argc - 1); x++)
+		{
+			strcpy(path, argv[argc-1]);
+			strcat(path, "/");
+			strcat(path, argv[x]);
+
+			r = copy_from_to(0, argv[x], path);
+
+			if (r < 0)
+				break;
+		}
+	}
+
+	m_free((long)path);
+
+	return r;
 }
 
 static long
 sh_mv(long argc, char **argv)
 {
-	return sh_cp(argc, argv);
+	char *path;
+	struct stat st;
+	long r = 0, x;
+
+	if (argc < 3)
+	{
+		shell_fprintf(stderr, "%s%s\n", argv[0], MSG_shell_missing_arg);
+
+		return 0;
+	}
+
+	path = (char *)m_xalloc(SHELL_MAXPATH, 3);
+	if (!path)
+		return ENOMEM;
+
+	r = f_stat64(0, argv[argc-1], &st);
+
+	if (r < 0 || (r == 0 && !S_ISDIR(st.mode)))
+	{
+		if (argc > 3)
+			shell_fprintf(stderr, MSG_shell_cp_not_dir, argv[0], argv[argc-1]);
+		else
+			r = copy_from_to(1, argv[1], argv[2]);
+	}
+	else
+	{
+		for (x = 1; x < (argc - 1); x++)
+		{
+			strcpy(path, argv[argc-1]);
+			strcat(path, "/");
+			strcat(path, argv[x]);
+
+			r = copy_from_to(1, argv[x], path);
+
+			if (r < 0)
+				break;
+		}
+	}
+
+	m_free((long)path);
+
+	return r;
 }
 
 static long
@@ -1159,12 +1358,14 @@ static const char *commands[] =
 	"ls", "cp", "mv", "rm", "ln", "chmod", "chown", "chgrp", NULL
 };
 
-/* Execute the given command */
+/* Execute the given command line */
 INLINE long
 execute(char *cmdline)
 {
 	char *c, **argv;
-	long r = 0, cnt, cmdno, argc;
+	long r = 0, cnt, cmdno, argc, x, cmde;
+
+	cmde = strlen(cmdline) - 1;
 
 	c = cmdline;
 
@@ -1180,22 +1381,27 @@ execute(char *cmdline)
 		c++;
 	}
 
-	argv = (char **)m_xalloc(SHELL_ARGS * sizeof(long), 3);
-
-	if (!argv)
-		return -40;
-
-	/* This destroys the cmdline string */
-	argc = crunch(cmdline, argv);
+	/* To allocate the proper amount of memory for the ARGV we first
+	 * have to count the arguments. We achieve this by calling crunch()
+	 * with NULL as second argument.
+	 */
+	argc = crunch(cmdline, NULL);
 
 	if (argc <= 0)				/* empty command line or parse error */
 	{
 		if (argc == -1000)
 			shell_fprintf(stderr, MSG_shell_syntax_error, argc);
-		else
-			r = argc;
-		goto exit;
+
+		return argc;
 	}
+
+	/* Construct the proper ARGV stuff now */
+	argv = (char **)m_xalloc(argc * sizeof(long), 3);
+	if (!argv)
+		return ENOMEM;
+
+	/* I/O redirections occur here */
+	crunch(cmdline, argv);
 
 	/* Result a zero if the string given is not an internal command,
 	 * or the number of the internal command otherwise (the number is
@@ -1220,7 +1426,13 @@ execute(char *cmdline)
 		cmdno = 0;
 
 	r = (cmdno == 0) ? execvp(argv) : cmd_routs[cnt](argc, argv);
-exit:
+
+	for (x = 1; x < argc; x++)
+	{
+		if (argv[x] && !(((long)argv[x] >= (long)cmdline) && ((long)argv[x] <= ((long)cmdline + cmde))))
+			m_free((long)argv[x]);
+	}
+
 	m_free((long)argv);
 
 	return r;
@@ -1275,16 +1487,18 @@ shell(void *arg)
 
 	(void)p_domain(1);			/* switch to MiNT domain */
 	(void)f_force(STDERR, -1);		/* redirect the stderr to console */
-//	(void)p_sigsetmask(-1L);		/* mask out the signals */
 	(void)p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
 
+	/* If there is no $PATH defined, enable internal commands by default
+	 */
+	xcommands = (_mint_getenv(_base, "PATH") == NULL);
+
 	shell_fprintf(stdout, "\ee\ev\n");	/* enable cursor, enable word wrap, make newline */
-	sh_ver(0, NULL);
-	xcmdstate();
+	sh_ver(0, NULL);			/* printout the version number */
+	xcmdstate();				/* print 'Extended commands are ...' */
 	shell_fprintf(stdout, MSG_shell_type_help);
 
 	d_setdrv('U' - 'A');
-
 	sh_cd(1, NULL);				/* this sets $HOME as current dir */
 
 	for (;;)

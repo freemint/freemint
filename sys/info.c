@@ -365,6 +365,8 @@ const char *MSG_shell_xcmd_help = "Usage: %s [on|off]\n";
 const char *MSG_shell_xcmd_info = "Extended commands are %s\n";
 const char *MSG_shell_xcmd_on = "on";
 const char *MSG_shell_xcmd_off = "off";
+const char *MSG_shell_cp_not_dir = "%s: %s is not a directory\n";
+const char *MSG_shell_cp_the_same = "`%s' and `%s' are the same file\n";
 const char *MSG_shell_cd_help = "Usage: %s [NEWDIR]\n";
 const char *MSG_shell_ls_help = "Usage: %s [-l|-a] [DIR]\n";
 const char *MSG_shell_help = \
@@ -386,10 +388,10 @@ const char *MSG_shell_help = \
 	"	chgrp DEC-GROUP FILE - change group the file belongs to\n" \
 	"	chmod OCTAL-MODE FILE - change access permissions for file\n" \
 	"	chown DEC-OWNER[:DEC-GROUP] FILE - change file's ownership\n" \
-	"	*cp - copy file\n" \
+	"	cp SOURCE [SOURCE...] DEST - copy file\n" \
 	"	ln OLD NEW - create a symlink `new' pointing to file `old'\n" \
 	"	ls [-l|-a] [DIR] - display directory\n" \
-	"	*mv - move/rename a file\n" \
+	"	mv SOURCE [SOURCE...] DEST - move/rename a file\n" \
 	"	rm [-f] FILE [FILE...] - delete a file\n" \
 	"\n" \
 	"	All other words typed are understood as names of programs\n" \
