@@ -230,6 +230,7 @@ mint_criticerr (long error) /* high word is error, low is drive */
  * then we grab the exec_os vector and use that to start GEM; that
  * way programs that expect exec_os to act a certain way will still
  * work.
+ *
  * NOTE: we must use Pexec instead of sys_pexec here, because we will
  * be running in a user context (that of process 1, not process 0)
  */
@@ -239,28 +240,13 @@ do_exec_os (long basepage)
 {
 	register long r;
 
-	/* if the user didn't specify a startup program, jump to the ROM */
-	if (!init_prg)
-	{
-		register void _cdecl (*f)(long);
-		f = (void _cdecl (*)(long)) old_execos.next;
-		(*f)(basepage);
-		Pterm0();
-	}
-	else
-	{
-		/* we have to set a7 to point to lower in our TPA;
-		 * otherwise we would bus error right after the Mshrink call!
-		 */
-		setstack(basepage+500L);
-# if defined(__TURBOC__) && !defined(__MINT__)
-		Mshrink (0, (void *)basepage, 512L);
-# else
-		Mshrink ((void *)basepage, 512L);
-# endif
-		r = Pexec(200, (char *) init_prg, init_tail, init_env);
-		Pterm ((int)r);
-	}
+	/* we have to set a7 to point to lower in our TPA;
+	 * otherwise we would bus error right after the Mshrink call!
+	 */
+	setstack(basepage+500L);
+	Mshrink ((void *)basepage, 512L);
+	r = Pexec(200, (char *) init_prg, init_tail, init_env);
+	Pterm ((int)r);
 }
 
 
@@ -1126,7 +1112,7 @@ init (void)
 	if (init_env[0] == 0)
 	{
 		static char path_env[] = "PATH=\0C:\0";
-		path_env[6] = curproc->p_cwd->curdrv + 'A';
+		path_env[6] = curproc->p_cwd->curdrv + 'A';	/* this actually means drive u: */
 		init_env = path_env;
 	}
 
@@ -1217,7 +1203,7 @@ init (void)
 
 # if 0
 		if (r <= 0)
-			r = internal_shell();	/* r is the shell's pid (not yet exists) */
+			r = startup_shell();	/* r is the shell's pid (not yet exists) */
 # endif
 		/* Everything failed. Halt. */
 		if (r <= 0)
