@@ -16,7 +16,7 @@
 
  
  
-struct gsxb_device gsxbdev; 
+struct gsxb_device gd; 
  
  
  /* Xbios function 96 (0x60) */
@@ -212,47 +212,59 @@ sys_gsxb_dsp_multblocks(long numsend, long numreceive, DSPBLOCK *sendblks, DSPBL
 }
 
 /* Xbios function 128 (0x80) */
+/* If process already owns lock, return 1
+ * If another process owns lock, return ESNDLOCKED
+ * If no GSXB device installed, return ENODEV
+ * else return error returned by device driver
+ */
 long _cdecl
 sys_gsxb_locksnd(void)
 {
 	long lock;
 
 	if (gd.dacio)
-		lock = gd.dacio(gd.dev_id, bd.dac_id, PCM_IOCTL_SEMAPHORE, GET);
+	{
+		lock = gd.dacio(gd.dev_id, bd.dac_id, PCM_IOCTL_SEMAPHORE, GSXB_SEMA_GET);
+		
+		if (!lock)
+			lock = 1;
+		else if (lock == ELOCKED)
+			lock = ESNDLOCKED;
+	}
 	else
-		return ENODEV;
+		lock = ENODEV;
 
-	if (lock == ELOCKED)
-		return ESNDLOCKED & 0xffff;
-	else
-		return 1;
-	
+	return lock;
 }
 
 /* Xbios function 129 (0x81) */
+/* If another process owns lock, return = ELOCKED
+ * If no GSXB device installed, return = ENODEV
+ * If this process already owns the lock, return = E_OK
+ * If no lock is set, return ESNDNOTLOCK
+ */
 long _cdecl
 sys_gsxb_unlocksnd(void)
 {
 	long lock;
 
 	if (gd.dacio)
-		lock = gd.dacio(gd.dev_id, gd.dac_id, PCM_IOCTL_SEMAPHORE, QUERY);
+	{
+		lock = gd.dacio(gd.dev_id, gd.dac_id, PCM_IOCTL_SEMAPHORE, GSXB_SEMA_REL);
+		if (lock = ENOLOCK)
+			lock = ESNDNOTLOCK;
+	}
 	else
-		return ENSLOCK;
-	
-	if (!lock)
-		return ESNDNOTLOCK;
-	else
-		lock = gd.dacio(gd.dev_id, gd.dac_id, PCM_IOCTL_SEMAPHORE, RELEASE)
+		lock = ENODEV;
 
-	if (
-	
+	return lock;
 }
 
 /* Xbios function 130 (0x82) */
 long _cdecl
 sys_gsxb_soundcmd(short mode, short data, long data2)
 {
+	
 }
 
 /* Xbios function 131 (0x83) */

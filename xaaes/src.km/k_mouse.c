@@ -763,7 +763,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 
 			WA += orient & 1;
 
-			if (wind->opts & WO_WHEEL)
+			if (wind->opts & XAWO_WHEEL)
 			{
 				switch (wind->wheel_mode)
 				{

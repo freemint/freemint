@@ -451,12 +451,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_WHEEL:
 	{
-		long o = 0, om = ~(WO_WHEEL);
+		long o = 0, om = ~(XAWO_WHEEL);
 		short mode = -1;
 		
 		if (pb->intin[2])
 		{
-			o |= WO_WHEEL;
+			o |= XAWO_WHEEL;
 			mode = pb->intin[3];
 			if (mode < 0 || mode > MAX_WHLMODE)
 				mode = DEF_WHLMODE;
@@ -680,8 +680,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			mh = ir->h;
 			ir = (RECT *)&w->rc;
 
-			if ( (mw != w->rc.w && (w->opts & WO_NOBLITW)) ||
-			     (mh != w->rc.h && (w->opts & WO_NOBLITH)))
+			if ( (mw != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
+			     (mh != w->rc.h && (w->opts & XAWO_NOBLITH)))
 				blit = false;
 			
 			DIAGS(("wind_set: move to %d/%d/%d/%d for %s",
@@ -727,7 +727,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						 *	so we dont render resizing using left/top border useless!
 						 *	Hopefully this will be good enough...
 						 */
-						if (blit && w->opts & WO_FULLREDRAW)
+						if (blit && w->opts & XAWO_FULLREDRAW)
 						{
 							if (mx != w->rc.x && my != w->rc.y &&
 							    mw != w->rc.w && mh != w->rc.h)
@@ -1198,7 +1198,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		long opt = w ? w->opts : client->options.wind_opts;
 		short mode = w ? w->wheel_mode : client->options.wheel_mode;
 		
-		o[1] = (opt & WO_WHEEL) ? 1 : 0;
+		o[1] = (opt & XAWO_WHEEL) ? 1 : 0;
 		o[2] = mode;
 		break;
 	}
@@ -1207,7 +1207,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		struct xa_rect_list *rl;
 
 		DIAG((D_wind, client, "wind_xget: N_INTIN=%d, (%d/%d/%d/%d) on wind=%d for %s",
-			pb->control[N_INTIN], *(RECT *)(pb->intin+2), w->handle, client->name));
+			pb->control[N_INTIN], *(const RECT *)(pb->intin+2), w->handle, client->name));
 				
 		w->rl_clip = *(const RECT *)(pb->intin + 2);
 		w->use_rlc = true;
@@ -1626,8 +1626,9 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_XAAES: /* 'XA' */
 	{
 		o[0] = WF_XAAES;
-		o[1] = HEX_VERSION;
-		DIAGS(("hex_version = %04x",o[1]));
+		o[1] = VER_MAJOR; //HEX_VERSION;
+		o[2] = VER_MINOR;
+		DIAGS(("hex_version = v%01x%04x",o[1], o[2]));
 		break;
 	}
 	case WF_OPTS:
