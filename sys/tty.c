@@ -1188,7 +1188,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (f->flags & O_HEAD)
 				return ENOTTY;
 				
-			if (curproc->pgrp != curproc->pid || !curproc->p_fd->control)
+			if (curproc->pgrp != curproc->pid || curproc->p_fd->control)
 				return EPERM;
 
 			f->links++;
