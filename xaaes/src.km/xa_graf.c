@@ -860,7 +860,7 @@ set_mouse_shape(short m_shape, MFORM *m_form, struct xa_client *client, bool aes
 
 	if (aesm)
 	{
-		/* If the shape to set is -1, we want to turn off the AES-mouse, whish
+		/* If the shape to set is -1, we want to turn off the AES-mouse, which
 		 * is used to indicate possible actions underneath it, like showing that
 		 * a widget can be used to resize a window.
 		 */
@@ -892,12 +892,12 @@ set_mouse_shape(short m_shape, MFORM *m_form, struct xa_client *client, bool aes
 	else
 	{
 		/* If aesmouse shape == -1, the AES have not overridded the current
-		 * mouseshape (which is does to indicate that a widget can be used
+		 * mouseshape (which it does to indicate that a widget can be used
 		 * to resize, for example). So we do the actual mouse-shape change...
 		 */
 		if (C.aesmouse == -1)
 		{
-			chg = C.realmouse != m_shape ? true : false;
+			chg = (C.realmouse != m_shape || C.realmouse_owner != client) ? true : false;
 			C.realmouse = m_shape;
 			C.realmouse_form = m_form;
 			C.realmouse_owner = client;

@@ -2254,7 +2254,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			s.h = sl->r.h;
 
 			lock_screen(wind->owner->p, 0, 0, 0);
-			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist(wind->owner, &s, &d), &r);
 			unlock_screen(wind->owner->p, 0);
 			
