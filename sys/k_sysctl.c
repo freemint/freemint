@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -21,13 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2001-04-30
- *
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
  *
  */
 
@@ -159,7 +156,7 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 			return sysctl_rdstring (oldp, oldlenp, newp, osrelease);
 
 		case KERN_OSREV:
-			return sysctl_rdlong (oldp, oldlenp, newp, PATCH_LEVEL);
+			return sysctl_rdlong (oldp, oldlenp, newp, MINT_PATCH_LEVEL);
 
 		case KERN_VERSION:
 			return sysctl_rdstring (oldp, oldlenp, newp, version);

@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  *
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,16 +26,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- *
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 1999-08-07
- *
- * please send suggestions, patches or bug reports to me or
- * the MiNT mailing list
- *
- *
+ */
+
+/*
  * cookie jar handling routines
- *
+ * ----------------------------
  * The "cookie jar" is an area of memory reserved by TOS for TSR's and utility
  * programs. The idea is that you put a cookie in the jar to notify people of
  * available services. The BIOS uses the cookie jar in TOS 1.6 and higher. For
@@ -43,20 +42,6 @@
  * MiNT also puts a cookie in the jar, with tag field 'MiNT' (of course)
  * and with the major version of MiNT in the high byte of the low word,
  * and the minor version in the low byte.
- *
- *
- * changes since last version:
- *
- * 1999-08-07:
- *
- * initial version; moved from main.c
- * some cleanup
- *
- * known bugs:
- *
- * todo:
- *
- * optimizations to do:
  *
  */
 
@@ -207,7 +192,7 @@ init_cookies (void)
 	/* install MiNT cookie
 	 */
 	newcookie[i].tag   = COOKIE_MiNT;
-	newcookie[i].value = (MAJ_VERSION << 8) | MIN_VERSION;
+	newcookie[i].value = (MINT_MAJ_VERSION << 8) | MINT_MIN_VERSION;
 	i++;
 
 	/* install _FLK cookie to indicate that file locking works

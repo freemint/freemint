@@ -48,6 +48,7 @@
 # include "kmemory.h"		/* kmalloc, kfree, umalloc, ufree */
 # include "module.h"		/* load_modules */
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
+# include "proc_help.h"		/* proc_extensions */
 # include "signal.h"		/* ikill */
 # include "syscall_vectors.h"	/* bios_tab, dos_tab */
 # include "time.h"		/* xtime */
@@ -63,11 +64,11 @@
 
 struct kentry kentry =
 {
-	MAJ_VERSION,
-	MIN_VERSION,
-	PATCH_LEVEL,
-	KENTRY_VERSION_MAJOR,
-	KENTRY_VERSION_MINOR,
+	MINT_MAJ_VERSION,
+	MINT_MIN_VERSION,
+	MINT_PATCH_LEVEL,
+	KENTRY_MAJ_VERSION,
+	KENTRY_MIN_VERSION,
 	
 	0x00000040,
 	0,
