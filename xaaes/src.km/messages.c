@@ -279,13 +279,6 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 		/* Fill in the client's message buffer */
 		*clnt_buf = *msg;
 
-#if 0
-		{
-			short *c = msg;
-			if ( c[0] == 0x4711 && (!strcmp("  CAB", dest_client->name) || !strcmp("  CAB ", dest_client->name)) )
-				DEBUG(("message sent to '%s'\n", dest_client->name));
-		}
-#endif
 		DIAG((D_m, NULL, "Send message %s to %s", pmsg(msg->s.msg), c_owner(dest_client)));
 		/* Write success to client's reply pipe to unblock the process */
 
@@ -489,16 +482,22 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 		}
 	}
 }
-
 /*
  * Send an AES message to a client application.
  * generalized version, which now can be used by appl_write. :-)
+ */
+/*
+ * Ozk: Okie, new semantics now; If the caller of send_a_message is NOT the receiver
+ * of the message, ALWAYS queue it on behalf of the receiver. Then Unblock() receiver.
+ * The receiver, when it is woken up, will then call check_queued_events() and detect
+ * the pending message. No need to use client events for this, plus it is easier to
+ * combine messages in the queue (like keeping only one WM_ARROWED message, combining
+ * WM_REDRAW rectangles, etc.).
  */
 void
 send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-	union msg_buf *m;
 
 	if (dest_client == NULL)
 	{
@@ -517,13 +516,14 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 		return;
 	}
 
+#if 0
 	if (!dest_client->waiting_for & MU_MESAG
 	    || (msg->m[0] == WM_REDRAW && (dest_client->status & CS_CE_REDRAW_SENT)))
 	{
 		queue_message(lock, dest_client, msg);
 		return;
 	}
-
+#endif
 	if (rc == dest_client)
 	{
 		if (msg->m[0] == WM_REDRAW)
@@ -535,6 +535,9 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 	}
 	else
 	{
+		queue_message(lock, dest_client, msg);
+		Unblock(dest_client, 1, 123);
+#if 0
 		m = kmalloc(sizeof(*m));
 		if (m)
 		{
@@ -549,6 +552,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *ms
 				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
 			}
 		}
+#endif
 	}
 }
 
