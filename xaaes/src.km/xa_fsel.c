@@ -950,7 +950,8 @@ fs_msg_handler(
 	}
 	case WM_MOVED:
 	{
-		move_window(lock, fs.wind, -1, msg[4], msg[5], fs.wind->r.w, fs.wind->r.h);
+		msg[6] = fs.wind->r.w, msg[7] = fs.wind->r.h;
+		//move_window(lock, fs.wind, true, -1, msg[4], msg[5], fs.wind->r.w, fs.wind->r.h);
 	}
 	default:
 	{

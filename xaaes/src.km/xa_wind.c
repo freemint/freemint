@@ -290,6 +290,9 @@ setget(int i)
 	"WF_TOOLBAR(30)",
 	"WF_FTOOLBAR(31)",
 	"WF_NTOOLBAR(32)",
+	"WF_MENU(33)",
+	"34","35","36","37","38","39",
+	"WF_WHEEL",
 	"      "
 	};
 
@@ -541,61 +544,154 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		break;
 	}
-
 	/* Move a window, check sizes */
+	/* Ozk: We support WF_FULLXYWH and WF_PREVXYWH in XaAES.
+	 *
+	 */
+	case WF_FULLXYWH:
+	case WF_PREVXYWH:
 	case WF_CURRXYWH:
 	{
-		short mw = pb->intin[4];
-		short mh = pb->intin[5];
+		bool blit;
+		bool move = (pb->intin[2] == -1 && pb->intin[3] == -1 && pb->intin[4] == -1 && pb->intin[5] == -1) ? true : false;
+		RECT *ir;
+		short mx, my, mw, mh;
 		short status = -1, msg = -1;
 
-		if (!mh)
+		if (cmd == WF_PREVXYWH)
 		{
-			if (!(w->window_status & XAWS_SHADED))
-			{
-				DIAGS(("wind_set: zero heigh, shading window %d for %s",
-					w->handle, client->name));
-
-				status = XAWS_SHADED|XAWS_ZWSHADED;
-				msg = WM_SHADED;
-			}
-#if GENERATE_DIAGS
-			else
-				DIAGS(("wind_set: zero heigh, window %d already shaded for %s",
-					w->handle, client->name));
-#endif
+			DIAGS(("wind_set: WF_PREVXYWH"));
+			ir = (RECT *)&w->pr;
+			status = ~XAWS_FULLED;
+			blit = false;
+		}
+		else if (cmd == WF_FULLXYWH)
+		{
+			DIAGS(("wind_set: WF_FULLXYWH"));
+			ir = (RECT *)&w->max;
+			status = XAWS_FULLED;
+			blit = false;
 		}
 		else
 		{
-			if (!(w->window_status & XAWS_SHADED))
+			/* A WF_CURRXYWH call with all coords set to -1 makes no sense
+			 */
+			if (move)
+				ir = NULL;
+			else
 			{
-				if (w->active_widgets & USE_MAX)
-				{
-					if (w->max.w && mw > w->max.w)
-						mw = w->max.w;
-					if (w->max.h && mh > w->max.h)
-						mh = w->max.h;
-				}
+				(const RECT *)ir = (const RECT *)&pb->intin[2];
+				move = true;
 			}
-			else if ((w->window_status & XAWS_ZWSHADED) && mh != w->sh)
-			{
-				DIAGS(("wind_set: window %d for %s shaded - unshade by different height",
-					w->handle, client->name));
-
-				status = ~(XAWS_SHADED|XAWS_ZWSHADED);
-				msg = WM_UNSHADED;
-			}
+			blit = true;
 		}
 
-		DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
+		if (!move)
+		{
+			/* Not all coords have a value of -1 meaning we should
+			 * modify some (or all) of the coordinates..
+			 */
+			if (ir)
+			{
+				if (pb->intin[2] != -1)
+					ir->x = pb->intin[2];
+				if (pb->intin[3] != -1)
+					ir->y = pb->intin[3];
+				if (pb->intin[4] != -1)
+					ir->w = pb->intin[4];
+				if (pb->intin[5] != -1)
+					ir->h = pb->intin[5];
+			}
+		}
+		else if (ir)
+		{
+			mx = ir->x;
+			my = ir->y;
+			mw = ir->w;
+			mh = ir->h;
+			ir = (RECT *)&w->rc;
+
+			if (!mh)
+			{
+				if (!(w->window_status & XAWS_SHADED))
+				{
+					DIAGS(("wind_set: zero heigh, shading window %d for %s",
+						w->handle, client->name));
+
+					status = XAWS_SHADED|XAWS_ZWSHADED;
+					msg = WM_SHADED;
+				}
+				else
+				{
+					DIAGS(("wind_set: zero heigh, window %d already shaded for %s",
+						w->handle, client->name));
+				}
+				mh = w->sh;
+			}
+			else
+			{
+				if (!(w->window_status & XAWS_SHADED) && status == -1)
+				{
+					if (mx == w->max.x &&
+					    my == w->max.y &&
+					    mw == w->max.w &&
+					    mh == w->max.h)
+					{
+						status = XAWS_FULLED;
+					}
+					else
+					{
+						if (w->window_status & XAWS_FULLED)
+							status = ~XAWS_FULLED;
+
+						/* Ozk: I really, really dont like to do this, but it is
+						 *	how N.AES does it; Send a full redraw whenever either
+						 *	x,y or w,h both changes.
+						 *	We do it slightly different using X1/Y1 & X2/Y2 instead
+						 *	so we dont render resizing using left/top border useless!
+						 *	Hopefully this will be good enough...
+						 */
+						if (w->opts & XAWO_NAES_FF)
+						{
+							if (mx != w->rc.x && my != w->rc.y &&
+							    mw != w->rc.w && mh != w->rc.h)
+							blit = false;
+						}
+
+					}
+				}
+				else if ((w->window_status & XAWS_ZWSHADED) && mh != w->sh)
+				{
+					DIAGS(("wind_set: window %d for %s shaded - unshade by different height",
+						w->handle, client->name));
+
+					status = ~(XAWS_SHADED|XAWS_ZWSHADED);
+					msg = WM_UNSHADED;
+				}
+			}
+			if (mw > w->max.w)
+				mw = w->max.w;
+			if (mh > w->max.h)
+				mh = w->max.h;
+
+			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
 		
-		move_window(lock, w, status, pb->intin[2], pb->intin[3], mw, mh);
-		if (msg != -1 && w->send_message)
-			w->send_message(lock, w, NULL, AMQ_NORM, msg, 0, 0, w->handle, 0,0,0,0);
+			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
+
+			if (msg != -1 && w->send_message)
+				w->send_message(lock, w, NULL, AMQ_NORM, msg, 0, 0, w->handle, 0,0,0,0);
+		}
+
+		if (pb->control[2] >= 5)
+		{
+			if (!ir)
+				ir = (RECT *)&w->rc;
+
+			*((RECT *)pb->intout + 1) = *ir;
+		}
 
 		break;
 	}
-
 	/* */
 	case WF_BEVENT:
 	{
@@ -634,8 +730,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if ((w->window_status & XAWS_OPEN))
 		{
-			//if (    w != window_list ||
-			//       (w == window_list && w != C.focus))
 			if ( !is_topped(w))
 			{
 				if (is_hidden(w))
@@ -700,19 +794,30 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		break;
 	}
-
-	/* Iconify a window */
+	/* Ozk: According to 'AES.TXT' in the english MagiC documentation,
+	 *	wind_set() should return error if attempting to (un)iconfify
+	 *	and already (un)iconified window. so we check and return error
+	 *	accordingly...
+	 */
 	case WF_ICONIFY:
 	{
-		RECT in = *((const RECT *)(pb->intin+2));
-		iconify_window(lock, w, &in);
+		if (w->window_status & XAWS_ICONIFIED)
+			pb->intout[0] = 0;
+		else
+		{
+			RECT in = *((const RECT *)(pb->intin+2));
+			iconify_window(lock, w, &in);
+		}
 		break;
 	}
 
 	/* Un-Iconify a window */
 	case WF_UNICONIFY:
 	{
-		uniconify_window(lock, w, (RECT *)&w->ro);
+		if (!(w->window_status & XAWS_ICONIFIED))
+			pb->intout[0] = 0;
+		else
+			uniconify_window(lock, w, (RECT *)&w->ro);
 		break;
 	}
 
@@ -807,6 +912,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		break;
 	}
+	case WF_MINXYWH:
+	{
+		/* XXX Ozk: Add some boundary checks...?
+		*/
+		w->min = *((const RECT *)pb->intin + 2);
+		break;
+	}
 	case WF_SHADE:
 	{
 		short status, msg;
@@ -831,7 +943,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			w->send_message(lock, w, NULL, AMQ_CRITICAL,
 				msg, 0, 0, w->handle, 0,0,0,0);
 
-		move_window(lock, w, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
+		move_window(lock, w, true, status, w->rc.x, w->rc.y, w->rc.w, w->rc.h);
 		break;
 	}
 

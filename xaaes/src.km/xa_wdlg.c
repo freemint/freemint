@@ -190,7 +190,8 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 		{
 			if (wh != mh)
 				return -1;
-			move_window(wlock, wind, -1, wind->max.x, wind->max.y, wind->max.w, wind->max.h);
+			//move_window(wlock, wind, -1, wind->max.x, wind->max.y, wind->max.w, wind->max.h);
+			move_window(wlock, wind, true, XAWS_FULLED, wind->max.x, wind->max.y, wind->max.w, wind->max.h);
 			break;
 		}
 		case WM_SIZED:
@@ -207,7 +208,7 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 			if (wind->r.w != r.w || wind->r.h != r.h)
 			{
 				inside_root(&r, &wind->owner->options);
-				move_window(wlock, wind, -1, r.x, r.y, r.w, r.h);
+				move_window(wlock, wind, true, -1, r.x, r.y, r.w, r.h);
 			}
 			break;
 		}
@@ -226,7 +227,7 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 			{
 				r.w = wind->rc.w, r.h = wind->rc.h;
 				inside_root(&r, &wind->owner->options);
-				move_window(wlock, wind, -1, r.x, r.y, r.w, r.h);
+				move_window(wlock, wind, true, -1, r.x, r.y, r.w, r.h);
 			}
 			break;
 		}
@@ -696,7 +697,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 						r.x = wind->r.x;
 						r.y = wind->r.y;
-						move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
+						move_window(lock, wind, true, -1, r.x, r.y, r.w, r.h);
 						obtree->ob_x = wind->wa.x;
 						obtree->ob_y = wind->wa.y;
 					}
@@ -720,7 +721,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					nr.w += wind->rc.w - wind->wa.w;
 					nr.h += wind->rc.h - wind->wa.h;
 
-					move_window(lock, wind, -1, nr.x, nr.y, nr.w, nr.h);
+					move_window(lock, wind, true, -1, nr.x, nr.y, nr.w, nr.h);
 				}
 				break;
 			}
@@ -771,7 +772,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					wind->redraw = NULL; //wdlg_redraw;
 					//wind->save_widgets = wind->active_widgets;
 					//standard_widgets(wind, NAME|MOVER|ICONIFIER, true);
-					move_window(lock, wind, XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
+					move_window(lock, wind, true, XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
 				}
 				break;
 			}
@@ -823,7 +824,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						r.w = obtree->ob_width;
 						r.h = obtree->ob_height;
 					}
-					move_window(lock, wind, ~XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
+					move_window(lock, wind, true, ~XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
 				}
 				pb->intout[0] = 1;
 				break;

@@ -162,7 +162,7 @@ Setup_form_do(struct xa_client *client,
 		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, obtree, edobj);
 		wt->zen = false; //true;
-		move_window(lock, wind, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h); //wind->r.x, wind->r.y, wind->r.w, wind->r.h);
+		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h); //wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 	}
 #if 1
 	/*
@@ -1016,7 +1016,7 @@ do_formwind_msg(
 		{
 			if (wind != root_window && wt && wt->tree)
 			{
-				move_window(0, wind, -1, msg[4],msg[5],msg[6],msg[7]);
+				move_window(0, wind, true, -1, msg[4],msg[5],msg[6],msg[7]);
 			}
 			break;
 		}
@@ -1114,7 +1114,7 @@ do_formwind_msg(
 		{
 			/* if (!wind->nolist && (wind->active_widgets & SIZE)) */
 			{
-				move_window(0, wind, -1, msg[4], msg[5], msg[6], msg[7]);
+				move_window(0, wind, true, -1, msg[4], msg[5], msg[6], msg[7]);
 				ww = wind->wa.w,		/* window measures */
 				wh = wind->wa.h,
 				wd = ow - ww,			/* space ouside workarea */

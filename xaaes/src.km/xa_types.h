@@ -120,6 +120,7 @@ struct options
 					 * or rather the window content? */
 	bool naes;			/* N.Aes 3d compatability */
 	bool naes12;
+	bool naes_ff;			/**/
 
 	short thinframe;		/* -1: keep colour frame thin
 					 * +1: make a thicker frame for wasier border grabbing and sizing. */
@@ -796,11 +797,15 @@ typedef enum window_type WINDOW_TYPE;
 /* Callback for a window's auto-redraw function */
 typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 
-#define XAWS_OPEN	 1
-#define XAWS_ICONIFIED	 2
-#define XAWS_SHADED	 4
-#define XAWS_ZWSHADED	 8
-#define XAWS_HIDDEN	16
+#define XAWS_OPEN	0x0001
+#define XAWS_ICONIFIED	0x0002
+#define XAWS_SHADED	0x0004
+#define XAWS_ZWSHADED	0x0008
+#define XAWS_HIDDEN	0x0010
+#define XAWS_FULLED	0x0020
+
+/* Window options */
+#define XAWO_NAES_FF	0x00000001
 
 /* Window Descriptor */
 struct xa_window
@@ -811,6 +816,7 @@ struct xa_window
 	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
 	XA_WIND_ATTR save_widgets;	/* Remember active_widgets if iconified */
 
+	long opts;
 	bool nolist;			/* If true, dont put in the window_list. For embedded listboxes mainly. */
 	bool thinwork;			/* if true and colour then work := single line box */
 	bool wa_wheel;			/* Client wants to receive WA_WHEEL */
