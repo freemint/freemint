@@ -1267,6 +1267,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		    || wind->send_message == NULL
 		    || wind->owner->options.nolive)
 		{
+			//short x, y;
 			RECT bound;
 			
 			bound.x = wind->owner->options.noleft ?
@@ -1276,7 +1277,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			bound.h = root_window->r.h*2;
 
 			lock_screen(wind->owner->p, 0, 0, 1234);
-			drag_box(wind->owner, r, &bound, rect_dist(wind->owner, &r, &d), &r);
+			drag_box(wind->owner, r, &bound, rect_dist_xy(wind->owner, md->x, md->y, &r, &d), &r);
 			unlock_screen(wind->owner->p, 1235);
 
 			if (r.x != wind->rc.x || r.y != wind->rc.y)
@@ -1295,7 +1296,6 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			if (widget_active.widg)
 			{
 				/* pending widget: take that */
-
 				pmx = widget_active.x;
 				pmy = widget_active.y;
 				d   = widget_active.d;
@@ -1305,7 +1305,9 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 				pmx = widget_active.m.x;
 				pmy = widget_active.m.y;
 				mb  = widget_active.m.cstate;
-				rect_dist(wind->owner, &r, &d);
+				rect_dist_xy(wind->owner, pmx, pmy, &r, &d);
+				widget_active.m.x = md->sx;
+				widget_active.m.y = md->sy;
 			}
 
 			//if (widget_active.m.cstate)	/*(mb)*/
@@ -1652,7 +1654,7 @@ compass(short d, short x, short y, RECT r)
  *            and use it here for outline sizing.
  */
 static bool
-size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, WidgetBehaviour next)
+size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer, WidgetBehaviour next, const struct moose_data *md)
 {
 	bool move, size;
 	RECT r = wind->r, d;
@@ -1669,7 +1671,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		lock_screen(wind->owner->p, 0, 0, 1234);
 		rubber_box(wind->owner, xy,
 		           r,
-			   rect_dist(wind->owner, &r, &d),
+			   rect_dist_xy(wind->owner, md->x, md->y, &r, &d),
 			   wind->min.w,
 			   wind->min.h,
 			   wind->max.w,
@@ -1711,7 +1713,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			pmx = widget_active.m.x;
 			pmy = widget_active.m.y;
 			xy  = sizer ? SE : compass(16, pmx, pmy, r);
-			rect_dist(wind->owner, &r, &d);
+			rect_dist_xy(wind->owner, md->x, md->y, &r, &d);
+			widget_active.m.x = md->sx;
+			widget_active.m.y = md->sy;
 		}
 
 		/* Drag border */
@@ -1781,12 +1785,12 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 static inline bool
 drag_resize(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	return size_window(lock, wind, widg, true, drag_resize);
+	return size_window(lock, wind, widg, true, drag_resize, md);
 }
 static inline bool
 drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	return size_window(lock, wind, widg, false, drag_border);
+	return size_window(lock, wind, widg, false, drag_border, md);
 }
 
 
@@ -2200,7 +2204,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 			lock_screen(wind->owner->p, 0, 0, 0);
 			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
-			drag_box(wind->owner, s, &b, rect_dist(wind->owner, &s, &d), &r);
+			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			unlock_screen(wind->owner->p, 0);
 
 			offs = bound_sl(pix_to_sl(r.y - widg->ar.y, widg->r.h - sl->r.h));
@@ -2213,6 +2217,8 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		}
 		else
 		{
+			short y;
+
 			if (!widget_active.cont)
 			{
 				widget_active.cont = true;
@@ -2221,18 +2227,21 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 				rp_2_ap(wind, widg, &widg->ar);
 				widget_active.offs = md->y - (widg->ar.y + sl->r.y);
 				widget_active.y = md->y;
+				y = md->sy;
 			}
-			else if (widget_active.y != md->y)
-			{
+			else
+				y = md->y;
 
-				offs = bound_sl(pix_to_sl((md->y - widget_active.offs) - widg->ar.y, widg->r.h - sl->r.h));
+			if (widget_active.y != y) //md->y)
+			{
+				offs = bound_sl(pix_to_sl((y - widget_active.offs) - widg->ar.y, widg->r.h - sl->r.h));
 		
 				if (offs != sl->position && wind->send_message)
 				{
 					sl->rpos = offs;
 					send_vslid(lock, wind, offs);
 				}
-				widget_active.y = md->y;
+				widget_active.y = y;
 			}
 			set_widget_active(wind, widg, drag_vslide, 3);
 			return false;
@@ -2266,7 +2275,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 			lock_screen(wind->owner->p, 0, 0, 0);
 			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
-			drag_box(wind->owner, s, &b, rect_dist(wind->owner, &s, &d), &r);
+			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			unlock_screen(wind->owner->p, 0);
 			
 			offs = bound_sl(pix_to_sl(r.x - widg->ar.x, widg->r.w - sl->r.w));
@@ -2279,6 +2288,8 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		}
 		else
 		{
+			short x;
+			
 			if (!widget_active.cont)
 			{
 				widget_active.cont = true;
@@ -2287,18 +2298,22 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 				rp_2_ap(wind, widg, &widg->ar);
 				widget_active.offs = md->x - (widg->ar.x + sl->r.x);
 				widget_active.x = md->x;
+				x = md->sx;
 			}
-			else if (widget_active.x != md->x)
+			else
+				x = md->x;
+			
+			if (widget_active.x != x)
 			{
 			
-				offs = bound_sl(pix_to_sl((md->x - widget_active.offs) - widg->ar.x, widg->r.w - sl->r.w));
+				offs = bound_sl(pix_to_sl((x - widget_active.offs) - widg->ar.x, widg->r.w - sl->r.w));
 		
 				if (offs != sl->position && wind->send_message)
 				{
 					sl->rpos = offs;
 					send_hslid(lock, wind, offs);
 				}
-				widget_active.x = md->x;
+				widget_active.x = x;
 			}
 			set_widget_active(wind, widg, drag_hslide, 4);
 			return false;

@@ -99,6 +99,60 @@ cancel_cevents(struct xa_client *client)
 		C.ce_menu_move = NULL;
 
 }
+/*
+ * cancel_CE() - search for a client event with function callback == f.
+ * If found, call the 'callback' with pointer to this client event along
+ * with 'arg'. If the 'callback' return true, the found client event is
+ * deleted.
+ */
+void
+cancel_CE(struct xa_client *client,
+	  void *f,
+	  bool(*callback)(struct c_event *ce, long arg),
+	  long arg)
+{
+	struct c_event *ce = client->cevnt_head, *p = NULL;
+
+	DIAG((D_evnt, client, "cancel_CE: find function %lx in client events for %s", f, client->name));
+
+	while (ce)
+	{
+		bool removed = false;
+
+		if (ce->funct == f)
+		{
+			DIAGS((" --- Found func==%lx, calling callback=%lx", f, callback));
+			if (callback(ce, arg))
+			{
+				struct c_event *nce;
+				DIAGS((" --- delete client event!"));
+
+				if (p)
+					p->next = ce->next;
+				else
+					client->cevnt_head = ce->next;
+
+				if (!(nce = ce->next))
+					client->cevnt_tail = p;
+
+				client->cevnt_count--;
+				DIAGS(("---------- freeing CE %lx with function %lx", ce, f));
+				kfree(ce);
+				ce = nce;
+				removed = true;
+			}
+#if GENERATE_DIAGS
+			else
+				DIAGS((" --- dont delete client event"));
+#endif
+		}
+		if (!removed)
+		{
+			p = ce;
+			ce = ce->next;
+		}
+	}
+}
 
 void
 post_cevent(struct xa_client *client,
@@ -667,6 +721,7 @@ static N_AESINFO naes_cookie =
 	0L,
 };
 
+#if 0
 #define C_MAGX 0x4d616758	/* MagX */
 static MAGX_COOKIE *c_magx = NULL;
 
@@ -718,7 +773,7 @@ static MAGX_COOKIE magx_cookie =
 	NULL,
 	0L
 };
-
+#endif
 
 void
 k_main(void *dummy)
@@ -1103,13 +1158,14 @@ k_exit(void)
 		m_free(c_naes);
 		c_naes = NULL;
 	}
-
+#if 0
 	if (c_magx)
 	{
 		s_system(S_DELCOOKIE, C_MAGX, 0L);
 		m_free(c_magx);
 		c_magx = NULL;
 	}
+#endif
 
 	/*
 	 * deinstall trap #2 handler

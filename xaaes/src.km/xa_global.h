@@ -272,6 +272,10 @@ struct common
 
 	struct xa_client	*do_widget_repeat_client;
 	enum locks		 do_widget_repeat_lock;
+#if BOOTLOG
+	struct file *bootlog_file;
+	char bootlog_path[200];
+#endif
 };
 
 /* All areas that are common. */

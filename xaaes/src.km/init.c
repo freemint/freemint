@@ -133,6 +133,17 @@ init(struct kentry *k, const char *path)
 	/* setup kernel entry */
 	kentry = k;
 
+	/* zero anything out */
+	bzero(&default_options, sizeof(default_options));
+	bzero(&cfg, sizeof(cfg));
+	bzero(&S, sizeof(S));
+	bzero(&C, sizeof(C));
+
+#if BOOTLOG
+	strcpy(C.bootlog_path, "xa_boot.log");
+	C.bootlog_file = kernel_open(C.bootlog_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
+#endif
+	
 	if (check_kentry_version())
 		return ENOSYS;
 
@@ -213,12 +224,6 @@ init(struct kentry *k, const char *path)
 			return EINVAL;
 		}
 	}
-
-	/* zero anything out */
-	bzero(&default_options, sizeof(default_options));
-	bzero(&cfg, sizeof(cfg));
-	bzero(&S, sizeof(S));
-	bzero(&C, sizeof(C));
 
 	sprintf(version, sizeof(version), "%i.%i", VER_MAJOR, VER_MINOR);
 	sprintf(vversion, sizeof(vversion), "%s %s %s", version,  DEV_STATUS & AES_FDEVSTATUS_STABLE ? "Stable" : "Unstable", ASCII_DEV_STATUS);

@@ -295,7 +295,27 @@ CE_do_winmesag(enum locks lock, struct c_event *ce, bool cancel)
 	
 	kfree(args);
 }
-	
+
+static bool
+cdwm(struct c_event *ce, long arg)
+{
+	struct CE_do_winmesag_data *args = ce->ptr1;
+	struct xa_window *wind = (struct xa_window *)arg;
+
+	if (args->wind == wind)
+	{
+		kfree(args);
+		return true;
+	}
+	return false;
+}
+
+void
+cancel_do_winmesag(enum locks lock, struct xa_window *wind)
+{
+	cancel_CE(wind->owner, CE_do_winmesag, cdwm, (long)wind);
+}
+
 void
 do_winmesag(enum locks lock,
 	struct xa_window *wind,

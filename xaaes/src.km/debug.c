@@ -50,6 +50,13 @@ display(const char *fmt, ...)
 		kernel_write(D.debug_file, buf, l+1);
 	}
 #endif
+#if BOOTLOG
+	if (C.bootlog_file)
+	{
+		buf[l] = '\n';
+		kernel_write(C.bootlog_file, buf, l+1);
+	}
+#endif
 
 	buf[l] = '\r';
 	buf[l+1] = '\n';
