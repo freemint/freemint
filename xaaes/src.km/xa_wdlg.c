@@ -26,9 +26,7 @@
 
 #define WDIAL_CALLBACK 1
 
-#include "xa_types.h"
-#include "xa_global.h"
-#include "xa_form.h"
+#include "xa_wdlg.h"
 
 #include "objects.h"
 #include "c_window.h"
@@ -43,11 +41,11 @@
 
 
 /*
- * WDIALOG FUNCTIONS (wdial)
+ * WDIALOG FUNCTIONS (wdlg)
  *
  */
 
-#if WDIAL
+#if WDIALOG_WDLG
 
 unsigned long
 XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -537,4 +535,4 @@ XA_wdlg_redraw(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-#endif /* WDIAL */
+#endif /* WDIALOG_WDLG */

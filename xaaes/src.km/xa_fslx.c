@@ -24,91 +24,67 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "xa_lbox.h"
-#include "xa_form.h"
-
-#include "objects.h"
-#include "c_window.h"
-#include "widgets.h"
-#include "xa_graf.h"
-#include "xa_rsrc.h"
-#include "xa_form.h"
-#include "objects.h"
-#include "scrlobjc.h"
-
-#include "nkcc.h"
+#include "xa_fslx.h"
 
 
 /*
- * WDIALOG FUNCTIONS (lbox)
+ * WDIALOG FUNCTIONS (fslx)
  */
 
-#if WDIALOG_LBOX
+#if WDIALOG_FSLX
 
 unsigned long
-XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(4,0,8)
-
-	DIAG((D_lbox, client, "XA_lbox_create"));
+	DIAG((D_fslx, client, "XA_fslx_open"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_update(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_close(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(0,0,2)
-
-	DIAG((D_lbox, client, "XA_lbox_update"));
+	DIAG((D_fslx, client, "XA_fslx_close"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_getnxtfile(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(1,1,1)
-
-	DIAG((D_lbox, client, "XA_lbox_do"));
+	DIAG((D_fslx, client, "XA_fslx_getnxtfile"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_delete(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(0,1,1)
-
-	DIAG((D_lbox, client, "XA_lbox_delete"));
+	DIAG((D_fslx, client, "XA_fslx_evnt"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_do(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(1,0,1)
-
-	DIAG((D_lbox, client, "XA_lbox_get"));
+	DIAG((D_fslx, client, "XA_fslx_do"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
 unsigned long
-XA_lbox_set(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_fslx_set_flags(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(2,0,2)
-
-	DIAG((D_lbox, client, "XA_lbox_set"));
+	DIAG((D_fslx, client, "XA_fslx_set_flags"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
 
-#endif /* WDIALOG_LBOX */
+#endif /* WDIALOG_FSLX */

@@ -30,7 +30,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-#if WDIAL
+#if WDIALOG_WDLG
 AES_function
 	XA_wdlg_create,
 	XA_wdlg_open,

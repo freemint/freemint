@@ -38,22 +38,437 @@
 #include "c_window.h"
 #include "k_main.h"
 #include "k_mouse.h"
-#include "xa_codes.h"
 
 #include "mint/signal.h"
 
+
+/*
+ * initialize trap handler table
+ * 
+ * lockscreen flag for AES functions that are writing the screen
+ * and are supposed to be locking
+ */
+
+#include "xa_appl.h"
+#include "xa_form.h"
+#include "xa_fsel.h"
+#include "xa_evnt.h"
+#include "xa_graf.h"
+#include "xa_wind.h"
+#include "xa_objc.h"
+#include "xa_rsrc.h"
+#include "xa_menu.h"
+#include "xa_shel.h"
+#include "xa_scrp.h"
+
+#include "xa_fnts.h"
+#include "xa_fslx.h"
+#include "xa_lbox.h"
+#include "xa_wdlg.h"
 
 struct xa_ftab
 {
 	AES_function *f;	/* function pointer */
 	bool lockscreen;	/* if true syscall is enclosed with lock/unclock_screen */
 #if GENERATE_DIAGS
-	char *descr;
+	const char *descr;
+#define DESCR(x) x
+#else
+#define DESCR(x)
 #endif
 };
 
-/* The main AES kernal command jump table */
-static struct xa_ftab aes_tab[KtableSize];
+/* The main AES kernel command jump table */
+static struct xa_ftab aes_tab[220] =
+{
+	/*   0 */ { NULL,                      false, DESCR(NULL)              },
+	/*   1 */ { NULL,                      false, DESCR(NULL)              },
+	/*   2 */ { NULL,                      false, DESCR(NULL)              },
+	/*   3 */ { NULL,                      false, DESCR(NULL)              },
+	/*   4 */ { NULL,                      false, DESCR(NULL)              },
+	/*   5 */ { NULL,                      false, DESCR(NULL)              },
+	/*   6 */ { NULL,                      false, DESCR(NULL)              },
+	/*   7 */ { NULL,                      false, DESCR(NULL)              },
+	/*   8 */ { NULL,                      false, DESCR(NULL)              },
+	/*   9 */ { NULL,                      false, DESCR(NULL)              },
+
+	/*  10 */ { XA_appl_init,              false, DESCR("appl_init")       },
+	/*  11 */ { NULL,                      false, DESCR("appl_read")       }, // unimplemented
+	/*  12 */ { XA_appl_write,             false, DESCR("appl_write")      },
+	/*  13 */ { XA_appl_find,              false, DESCR("appl_find")       },
+	/*  14 */ { NULL,                      false, DESCR("appl_tplay")      }, // unimplemented
+	/*  15 */ { NULL,                      false, DESCR("appl_trecord")    }, // unimplemented
+	/*  16 */ { NULL,                      false, DESCR(NULL)              },
+	/*  17 */ { XA_appl_yield,             false, DESCR("appl_yield")      },
+	/*  18 */ { XA_appl_search,            false, DESCR("appl_search")     },
+	/*  19 */ { XA_appl_exit,              false, DESCR("appl_exit")       },
+
+	/*  20 */ { XA_evnt_keybd,             false, DESCR("evnt_keybd")      },
+	/*  21 */ { XA_evnt_button,            false, DESCR("evnt_button")     },
+	/*  22 */ { XA_evnt_mouse,             false, DESCR("evnt_mouse")      },
+	/*  23 */ { XA_evnt_mesag,             false, DESCR("evnt_mesag")      },
+	/*  24 */ { XA_evnt_timer,             false, DESCR("evnt_timer")      },
+	/*  25 */ { XA_evnt_multi,             false, DESCR("evnt_multi")      },
+	/*  26 */ { NULL,                      false, DESCR("evnt_dclick")     },
+	/*  27 */ { NULL,                      false, DESCR(NULL)              },
+	/*  28 */ { NULL,                      false, DESCR(NULL)              },
+	/*  29 */ { NULL,                      false, DESCR(NULL)              },
+
+	/*  30 */ { XA_menu_bar,               false, DESCR("menu_bar")        },
+	/*  31 */ { XA_menu_icheck,            false, DESCR("menu_icheck")     },
+	/*  32 */ { XA_menu_ienable,           false, DESCR("menu_ienable")    },
+	/*  33 */ { XA_menu_tnormal,           false, DESCR("menu_tnormal")    },
+	/*  34 */ { XA_menu_text,              false, DESCR("menu_text")       },
+	/*  35 */ { XA_menu_register,          false, DESCR("menu_register")   },
+	/*  36 */ { XA_menu_popup,             false, DESCR("menu_popup")      },
+	/*  37 */ { XA_menu_attach,            false, DESCR("menu_attach")     },
+	/*  38 */ { XA_menu_istart,            false, DESCR("menu_istart")     },
+	/*  39 */ { XA_menu_settings,          false, DESCR("menu_settings")   },
+
+	/*  40 */ { XA_objc_add,               false, DESCR("objc_add")        },
+	/*  41 */ { XA_objc_delete,            false, DESCR("objc_delete")     },
+	/*  42 */ { XA_objc_draw,              false, DESCR("objc_draw")       },
+	/*  43 */ { XA_objc_find,              false, DESCR("objc_find")       },
+	/*  44 */ { XA_objc_offset,            false, DESCR("objc_offset")     },
+	/*  45 */ { XA_objc_order,             false, DESCR("objc_order")      },
+	/*  46 */ { XA_objc_edit,              false, DESCR("objc_edit")       },
+	/*  47 */ { XA_objc_change,            false, DESCR("objc_change")     },
+	/*  48 */ { XA_objc_sysvar,            false, DESCR("objc_sysvar")     },
+	/*  49 */ { NULL,                      false, DESCR(NULL)              },
+
+	/*  50 */ { XA_form_do,                false, DESCR("form_do")         },
+	/*  51 */ { XA_form_dial,              false, DESCR("form_dial")       },
+	/*  52 */ { XA_form_alert,             false, DESCR("form_alert")      },
+	/*  53 */ { XA_form_error,             false, DESCR("form_error")      },
+	/*  54 */ { XA_form_center,            false, DESCR("form_center")     },
+	/*  55 */ { XA_form_keybd,             false, DESCR("form_keybd")      },
+	/*  56 */ { XA_form_button,            false, DESCR("form_button")     },
+	/*  57 */ { NULL,                      false, DESCR(NULL)              },
+	/*  58 */ { NULL,                      false, DESCR(NULL)              },
+	/*  59 */ { NULL,                      false, DESCR(NULL)              },
+
+	/*  60 */ { NULL,                      false, DESCR("objc_wdraw")      }, // MagiC 5.10 extension
+	/*  61 */ { NULL,                      false, DESCR("objc_wchange")    }, // MagiC 5.10 extension
+	/*  62 */ { NULL,                      false, DESCR("graf_wwatchbox")  }, // MagiC 5.10 extension
+	/*  63 */ { NULL,                      false, DESCR("objc_wbutton")    }, // MagiC 5.10 extension
+	/*  64 */ { NULL,                      false, DESCR("objc_wkeybd")     }, // MagiC 5.10 extension
+	/*  65 */ { NULL,                      false, DESCR("objc_wedit")      }, // MagiC 5.10 extension
+	/*  66 */ { NULL,                      false, DESCR(NULL)              },
+	/*  67 */ { NULL,                      false, DESCR(NULL)              },
+	/*  68 */ { NULL,                      false, DESCR(NULL)              },
+	/*  69 */ { NULL,                      false, DESCR(NULL)              },
+
+	/*  70 */ { XA_graf_rubberbox,         false, DESCR("graf_rubberbox")  },
+	/*  71 */ { XA_graf_dragbox,           false, DESCR("graf_dragbox")    },
+	/*  72 */ { NULL,                      false, DESCR("graf_movebox")    }, // unimplemented
+	/*  73 */ { NULL,                      false, DESCR("graf_growbox")    }, // unimplemented
+	/*  74 */ { NULL,                      false, DESCR("graf_shrinkbox")  }, // unimplemented
+	/*  75 */ { XA_graf_watchbox,          false, DESCR("graf_watchbox")   },
+	/*  76 */ { XA_graf_slidebox,          false, DESCR("graf_slidebox")   },
+	/*  77 */ { XA_graf_handle,            false, DESCR("graf_hand")       },
+	/*  78 */ { XA_graf_mouse,             false, DESCR("graf_mouse")      },
+	/*  79 */ { XA_graf_mkstate,           false, DESCR("graf_mkstate")    },
+
+	/*  80 */ { XA_scrp_read,              false, DESCR("scrp_read")       },
+	/*  81 */ { XA_scrp_write,             false, DESCR("scrp_write")      },
+	/*  82 */ { NULL,                      false, DESCR(NULL)              },
+	/*  83 */ { NULL,                      false, DESCR(NULL)              },
+	/*  84 */ { NULL,                      false, DESCR(NULL)              },
+	/*  85 */ { NULL,                      false, DESCR(NULL)              },
+	/*  86 */ { NULL,                      false, DESCR(NULL)              },
+	/*  87 */ { NULL,                      false, DESCR(NULL)              },
+	/*  88 */ { NULL,                      false, DESCR(NULL)              },
+	/*  89 */ { NULL,                      false, DESCR(NULL)              },
+
+	/*  90 */ { XA_fsel_input,             false, DESCR("fsel_input")      },
+	/*  91 */ { XA_fsel_exinput,           false, DESCR("fsel_exinput")    },
+	/*  92 */ { NULL,                      false, DESCR(NULL)              },
+	/*  93 */ { NULL,                      false, DESCR(NULL)              },
+	/*  94 */ { NULL,                      false, DESCR(NULL)              },
+	/*  95 */ { NULL,                      false, DESCR(NULL)              },
+	/*  96 */ { NULL,                      false, DESCR(NULL)              },
+	/*  97 */ { NULL,                      false, DESCR(NULL)              },
+	/*  98 */ { NULL,                      false, DESCR(NULL)              },
+	/*  99 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 100 */ { XA_wind_create,            false, DESCR("wind_create")     },
+	/* 101 */ { XA_wind_open,              false, DESCR("wind_open")       },
+	/* 102 */ { XA_wind_close,             false, DESCR("wind_close")      },
+	/* 103 */ { XA_wind_delete,            false, DESCR("wind_delete")     },
+	/* 104 */ { XA_wind_get,               false, DESCR("wind_get")        },
+	/* 105 */ { XA_wind_set,               false, DESCR("wind_set")        },
+	/* 106 */ { XA_wind_find,              false, DESCR("wind_find")       },
+	/* 107 */ { XA_wind_update,            false, DESCR("wind_update")     },
+	/* 108 */ { XA_wind_calc,              false, DESCR("wind_calc")       },
+	/* 109 */ { XA_wind_new,               false, DESCR("wind_new")        },
+
+	/* 110 */ { XA_rsrc_load,              false, DESCR("rsrc_load")       },
+	/* 111 */ { XA_rsrc_free,              false, DESCR("rsrc_free")       },
+	/* 112 */ { XA_rsrc_gaddr,             false, DESCR("rsrc_gaddr")      },
+	/* 113 */ { NULL,                      false, DESCR("rsrc_saddr")      }, // unimplemented
+	/* 114 */ { XA_rsrc_obfix,             false, DESCR("rsrc_obfix")      },
+	/* 115 */ { XA_rsrc_rcfix,             false, DESCR("rsrc_rcfix")      },
+	/* 116 */ { NULL,                      false, DESCR(NULL)              },
+	/* 117 */ { NULL,                      false, DESCR(NULL)              },
+	/* 118 */ { NULL,                      false, DESCR(NULL)              },
+	/* 119 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 120 */ { XA_shell_read,             false, DESCR("shell_read")      },
+	/* 121 */ { XA_shell_write,            false, DESCR("shell_write")     },
+	/* 122 */ { NULL,                      false, DESCR("shell_get")       }, // unimplemented
+	/* 123 */ { NULL,                      false, DESCR("shell_put")       }, // unimplemented
+	/* 124 */ { XA_shell_find,             false, DESCR("shell_find")      },
+	/* 125 */ { XA_shell_envrn,            false, DESCR("shell_envrn")     },
+	/* 126 */ { NULL,                      false, DESCR(NULL)              },
+	/* 127 */ { NULL,                      false, DESCR(NULL)              },
+	/* 128 */ { NULL,                      false, DESCR(NULL)              },
+	/* 129 */ { XA_appl_control,           false, DESCR("appl_control")    },
+
+	/* 130 */ { XA_appl_getinfo,           false, DESCR("appl_getinfo")    },
+	/* 131 */ { NULL,                      false, DESCR(NULL)              },
+	/* 132 */ { NULL,                      false, DESCR(NULL)              },
+	/* 133 */ { NULL,                      false, DESCR(NULL)              },
+	/* 134 */ { NULL,                      false, DESCR(NULL)              },
+	/* 135 */ { XA_form_popup,             false, DESCR("form_popup")      },
+	/* 136 */ { NULL,                      false, DESCR("form_err")        }, // unimplemented
+	/* 137 */ { NULL,                      false, DESCR(NULL)              },
+	/* 138 */ { NULL,                      false, DESCR(NULL)              },
+	/* 139 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 140 */ { NULL,                      false, DESCR(NULL)              },
+	/* 141 */ { NULL,                      false, DESCR(NULL)              },
+	/* 142 */ { NULL,                      false, DESCR(NULL)              },
+	/* 143 */ { NULL,                      false, DESCR(NULL)              },
+	/* 144 */ { NULL,                      false, DESCR(NULL)              },
+	/* 145 */ { NULL,                      false, DESCR(NULL)              },
+	/* 146 */ { NULL,                      false, DESCR(NULL)              },
+	/* 147 */ { NULL,                      false, DESCR(NULL)              },
+	/* 148 */ { NULL,                      false, DESCR(NULL)              },
+	/* 149 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 150 */ { NULL,                      false, DESCR(NULL)              },
+	/* 151 */ { NULL,                      false, DESCR(NULL)              },
+	/* 152 */ { NULL,                      false, DESCR(NULL)              },
+	/* 153 */ { NULL,                      false, DESCR(NULL)              },
+	/* 154 */ { NULL,                      false, DESCR(NULL)              },
+	/* 155 */ { NULL,                      false, DESCR(NULL)              },
+	/* 156 */ { NULL,                      false, DESCR(NULL)              },
+	/* 157 */ { NULL,                      false, DESCR(NULL)              },
+	/* 158 */ { NULL,                      false, DESCR(NULL)              },
+	/* 159 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 160 */ { NULL,                      false, DESCR("wdlg_create")     }, // MagiC extension
+	/* 161 */ { NULL,                      false, DESCR("wdlg_open")       }, // MagiC extension
+	/* 162 */ { NULL,                      false, DESCR("wdlg_close")      }, // MagiC extension
+	/* 163 */ { NULL,                      false, DESCR("wdlg_delete")     }, // MagiC extension
+	/* 164 */ { NULL,                      false, DESCR("wdlg_get")        }, // MagiC extension
+	/* 165 */ { NULL,                      false, DESCR("wdlg_set")        }, // MagiC extension
+	/* 166 */ { NULL,                      false, DESCR("wdlg_event")      }, // MagiC extension
+	/* 167 */ { NULL,                      false, DESCR("wdlg_redraw")     }, // MagiC extension
+	/* 168 */ { NULL,                      false, DESCR(NULL)              },
+	/* 169 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 170 */ { NULL,                      false, DESCR("lbox_create")     }, // MagiC extension
+	/* 171 */ { NULL,                      false, DESCR("lbox_update")     }, // MagiC extension
+	/* 172 */ { NULL,                      false, DESCR("lbox_do")         }, // MagiC extension
+	/* 173 */ { NULL,                      false, DESCR("lbox_delete")     }, // MagiC extension
+	/* 174 */ { NULL,                      false, DESCR("lbox_get")        }, // MagiC extension
+	/* 175 */ { NULL,                      false, DESCR("lbox_set")        }, // MagiC extension
+	/* 176 */ { NULL,                      false, DESCR(NULL)              },
+	/* 177 */ { NULL,                      false, DESCR(NULL)              },
+	/* 178 */ { NULL,                      false, DESCR(NULL)              },
+	/* 179 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 180 */ { NULL,                      false, DESCR("fnts_create")     }, // MagiC extension
+	/* 181 */ { NULL,                      false, DESCR("fnts_delete")     }, // MagiC extension
+	/* 182 */ { NULL,                      false, DESCR("fnts_open")       }, // MagiC extension
+	/* 183 */ { NULL,                      false, DESCR("fnts_close")      }, // MagiC extension
+	/* 184 */ { NULL,                      false, DESCR("fnts_get")        }, // MagiC extension
+	/* 185 */ { NULL,                      false, DESCR("fnts_set")        }, // MagiC extension
+	/* 186 */ { NULL,                      false, DESCR("fnts_evnt")       }, // MagiC extension
+	/* 187 */ { NULL,                      false, DESCR("fnts_do")         }, // MagiC extension
+	/* 188 */ { NULL,                      false, DESCR(NULL)              },
+	/* 189 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 190 */ { NULL,                      false, DESCR("fslx_open")       }, // MagiC extension
+	/* 191 */ { NULL,                      false, DESCR("fslx_close")      }, // MagiC extension
+	/* 192 */ { NULL,                      false, DESCR("fslx_getnxtfile") }, // MagiC extension
+	/* 193 */ { NULL,                      false, DESCR("fslx_evnt")       }, // MagiC extension
+	/* 194 */ { NULL,                      false, DESCR("fslx_do")         }, // MagiC extension
+	/* 195 */ { NULL,                      false, DESCR("fslx_set_flags")  }, // MagiC extension
+	/* 196 */ { NULL,                      false, DESCR(NULL)              },
+	/* 197 */ { NULL,                      false, DESCR(NULL)              },
+	/* 198 */ { NULL,                      false, DESCR(NULL)              },
+	/* 199 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 200 */ { NULL,                      false, DESCR("pdlg_create")     }, // MagiC extension
+	/* 201 */ { NULL,                      false, DESCR("pdlg_delete")     }, // MagiC extension
+	/* 202 */ { NULL,                      false, DESCR("pdlg_open")       }, // MagiC extension
+	/* 203 */ { NULL,                      false, DESCR("pdlg_close")      }, // MagiC extension
+	/* 204 */ { NULL,                      false, DESCR("pdlg_get")        }, // MagiC extension
+	/* 205 */ { NULL,                      false, DESCR("pdlg_set")        }, // MagiC extension
+	/* 206 */ { NULL,                      false, DESCR("pdlg_evnt")       }, // MagiC extension
+	/* 207 */ { NULL,                      false, DESCR("pdlg_do")         }, // MagiC extension
+	/* 208 */ { NULL,                      false, DESCR(NULL)              },
+	/* 209 */ { NULL,                      false, DESCR(NULL)              },
+
+	/* 210 */ { NULL,                      false, DESCR("edit_create")     }, // MagiC extension
+	/* 211 */ { NULL,                      false, DESCR("edit_open")       }, // MagiC extension
+	/* 212 */ { NULL,                      false, DESCR("edit_close")      }, // MagiC extension
+	/* 213 */ { NULL,                      false, DESCR("edit_delete")     }, // MagiC extension
+	/* 214 */ { NULL,                      false, DESCR("edit_cursor")     }, // MagiC extension
+	/* 215 */ { NULL,                      false, DESCR("edit_evnt")       }, // MagiC extension
+	/* 216 */ { NULL,                      false, DESCR("edit_get")        }, // MagiC extension
+	/* 217 */ { NULL,                      false, DESCR("edit_set")        }, // MagiC extension
+	/* 218 */ { NULL,                      false, DESCR(NULL)              },
+	/* 219 */ { NULL,                      false, DESCR(NULL)              },
+};
+#define aes_tab_size	(sizeof(aes_tab) / sizeof(aes_tab[0]))
+
+#define XA_APPL_INIT	 10
+#define XA_RSRC_LOAD	110
+#define XA_SHELL_FIND	124
+
+void
+setup_handler_table(void)
+{
+	/*
+	 * auto lock/unlock
+	 */
+
+	aes_tab[ 30].lockscreen = true; /* XA_MENU_BAR */
+	aes_tab[ 31].lockscreen = true; /* XA_MENU_ICHECK */
+	aes_tab[ 32].lockscreen = true; /* XA_MENU_IENABLE */
+	aes_tab[ 33].lockscreen = true; /* XA_MENU_TNORMAL */
+	aes_tab[ 36].lockscreen = true; /* XA_MENU_POPUP */
+
+	aes_tab[ 50].lockscreen = true; /* XA_FORM_DO */
+	aes_tab[ 51].lockscreen = true; /* XA_FORM_DIAL */
+	aes_tab[ 52].lockscreen = true; /* XA_FORM_ALERT */
+	aes_tab[ 53].lockscreen = true; /* XA_FORM_ERROR */
+
+	aes_tab[ 90].lockscreen = true; /* XA_FSEL_INPUT */
+	aes_tab[ 91].lockscreen = true; /* XA_FSEL_EXINPUT */
+
+	aes_tab[101].lockscreen = true; /* XA_WIND_OPEN */
+	aes_tab[102].lockscreen = true; /* XA_WIND_CLOSE */
+	aes_tab[105].lockscreen = true; /* XA_WIND_SET */
+	aes_tab[109].lockscreen = true; /* XA_WIND_NEW */
+
+	aes_tab[135].lockscreen = true; /* XA_FORM_POPUP */
+
+
+#ifndef WDIALOG_WDLG
+#define WDIALOG_WDLG 0
+#endif
+#if WDIALOG_WDLG
+	/*
+	 * optional wdlg_? class functions
+	 */
+	aes_tab[160].f = XA_wdlg_create;
+	aes_tab[161].f = XA_wdlg_open;
+	aes_tab[162].f = XA_wdlg_close;
+	aes_tab[163].f = XA_wdlg_delete;
+	aes_tab[164].f = XA_wdlg_get;
+	aes_tab[165].f = XA_wdlg_set;
+	aes_tab[166].f = XA_wdlg_event;
+	aes_tab[167].f = XA_wdlg_redraw;
+#endif
+
+#ifndef WDIALOG_LBOX
+#define WDIALOG_LBOX 0
+#endif
+#if WDIALOG_LBOX
+	/*
+	 * optional lbox_? class functions
+	 */
+	aes_tab[170].f = XA_lbox_create;
+	aes_tab[171].f = XA_lbox_update;
+	aes_tab[172].f = XA_lbox_do;
+	aes_tab[173].f = XA_lbox_delete;
+	aes_tab[174].f = XA_lbox_get;
+	aes_tab[175].f = XA_lbox_set;
+#endif
+
+#ifndef WDIALOG_FNTS
+#define WDIALOG_FNTS 0
+#endif
+#if WDIALOG_FNTS
+	/*
+	 * optional fnts_? class functions
+	 */
+	aes_tab[180].f = XA_fnts_create;
+	aes_tab[181].f = XA_fnts_delete;
+	aes_tab[182].f = XA_fnts_open;
+	aes_tab[183].f = XA_fnts_close;
+	aes_tab[184].f = XA_fnts_get;
+	aes_tab[185].f = XA_fnts_set;
+	aes_tab[186].f = XA_fnts_evnt;
+	aes_tab[187].f = XA_fnts_do;
+#endif
+
+#ifndef WDIALOG_FSLX
+#define WDIALOG_FSLX 0
+#endif
+#if WDIALOG_FSLX
+	/*
+	 * optional fslx_? class functions
+	 */
+	aes_tab[190].f = XA_fslx_open;
+	aes_tab[191].f = XA_fslx_close;
+	aes_tab[192].f = XA_fslx_getnxtfile;
+	aes_tab[193].f = XA_fslx_evnt;
+	aes_tab[194].f = XA_fslx_do;
+	aes_tab[195].f = XA_fslx_set_flags;
+#endif
+
+#ifndef WDIALOG_PDLG
+#define WDIALOG_PDLG 0
+#endif
+#if WDIALOG_PDLG
+	/*
+	 * optional pdlg_? class functions
+	 */
+	aes_tab[200].f = XA_pdlg_create;
+	aes_tab[201].f = XA_pdlg_delete;
+	aes_tab[202].f = XA_pdlg_open;
+	aes_tab[203].f = XA_pdlg_close;
+	aes_tab[204].f = XA_pdlg_get;
+	aes_tab[205].f = XA_pdlg_set;
+	aes_tab[206].f = XA_pdlg_evnt;
+	aes_tab[207].f = XA_pdlg_do;
+#endif
+
+#ifndef WDIALOG_EDIT
+#define WDIALOG_EDIT 0
+#endif
+#if WDIALOG_EDIT
+	/*
+	 * optional edit_? class functions
+	 */
+	aes_tab[210].f = XA_edit_create;
+	aes_tab[211].f = XA_edit_open;
+	aes_tab[212].f = XA_edit_close;
+	aes_tab[213].f = XA_edit_delete;
+	aes_tab[214].f = XA_edit_cursor;
+	aes_tab[215].f = XA_edit_evnt;
+	aes_tab[216].f = XA_edit_get;
+	aes_tab[217].f = XA_edit_set;
+#endif
+
+#if GENERATE_DIAGS
+	/*
+	 * fill unused numbers with description
+	 */
+	{
+		int i;
+
+		for (i = 0; i < aes_tab_size; i++)
+			if (!aes_tab[i].descr)
+				aes_tab[i].descr = "unknown";
+	}
+#endif
+}
 
 /* timeout callback */
 static void
@@ -120,7 +535,7 @@ XA_handler(void *_pb)
 	}
 
 	/* better check this first */
-	if ((cmd >= 0) && (cmd < KtableSize))
+	if ((cmd >= 0) && (cmd < aes_tab_size))
 	{
 		AES_function *cmd_routine;
 		unsigned long cmd_rtn;
@@ -279,392 +694,4 @@ XA_handler(void *_pb)
 	/* error exit */
 	pb->intout[0] = 0;
 	return 0;
-}
-
-
-/*
- * initialize trap handler table
- * 
- * lockscreen flag for AES functions that are writing the screen
- * and are supposed to be locking
- */
-
-#include "xa_appl.h"
-#include "xa_form.h"
-#include "xa_fsel.h"
-#include "xa_evnt.h"
-#include "xa_graf.h"
-#include "xa_wind.h"
-#include "xa_objc.h"
-#include "xa_rsrc.h"
-#include "xa_menu.h"
-#include "xa_shel.h"
-#include "xa_scrp.h"
-#include "xa_wdlg.h"
-#include "xa_lbox.h"
-
-void
-setup_handler_table(void)
-{
-	int i;
-
-	bzero(aes_tab, sizeof(aes_tab));
-
-	/*
-	 * appl_? class functions
-	 */
-	aes_tab[XA_APPL_INIT      ].f = XA_appl_init;
-	aes_tab[XA_APPL_EXIT      ].f = XA_appl_exit;
-	aes_tab[XA_APPL_GETINFO   ].f = XA_appl_getinfo;
-	aes_tab[XA_APPL_FIND      ].f = XA_appl_find;
-	aes_tab[XA_APPL_WRITE     ].f = XA_appl_write;
-	aes_tab[XA_APPL_YIELD     ].f = XA_appl_yield;
-	aes_tab[XA_APPL_SEARCH    ].f = XA_appl_search;
-	aes_tab[XA_APPL_CONTROL   ].f = XA_appl_control;
-
-
-	/*
-	 * form_? class functions
-	 */
-	aes_tab[XA_FORM_ALERT     ].f = XA_form_alert;
-	aes_tab[XA_FORM_ERROR     ].f = XA_form_error;
-	aes_tab[XA_FORM_CENTER    ].f = XA_form_center;
-	aes_tab[XA_FORM_DIAL      ].f = XA_form_dial;
-	aes_tab[XA_FORM_BUTTON    ].f = XA_form_button;
-	aes_tab[XA_FORM_DO        ].f = XA_form_do;
-	aes_tab[XA_FORM_KEYBD     ].f = XA_form_keybd;
-
-
-#if FILESELECTOR
-	/*
-	 * fsel_? class functions
-	 */
-	aes_tab[XA_FSEL_INPUT     ].f = XA_fsel_input;
-	aes_tab[XA_FSEL_EXINPUT   ].f = XA_fsel_exinput;
-#endif
-
-
-	/*
-	 * evnt_? class functions
-	 */
-	aes_tab[XA_EVNT_BUTTON    ].f = XA_evnt_button;
-	aes_tab[XA_EVNT_KEYBD     ].f = XA_evnt_keybd;
-	aes_tab[XA_EVNT_MESAG     ].f = XA_evnt_mesag;
-	aes_tab[XA_EVNT_MULTI     ].f = XA_evnt_multi;
-	aes_tab[XA_EVNT_TIMER     ].f = XA_evnt_timer;
-	aes_tab[XA_EVNT_MOUSE     ].f = XA_evnt_mouse;
-/*	aes_tab[XA_EVNT_DCLICK    ].f = XA_evnt_dclick; */
-
-
-	/*
-	 * graf_? class functions
-	 */
-	aes_tab[XA_GRAF_RUBBERBOX ].f = XA_graf_rubberbox;
-	aes_tab[XA_GRAF_DRAGBOX   ].f = XA_graf_dragbox;
-	aes_tab[XA_GRAF_HANDLE    ].f = XA_graf_handle;
-	aes_tab[XA_GRAF_MOUSE     ].f = XA_graf_mouse;
-	aes_tab[XA_GRAF_MKSTATE   ].f = XA_graf_mkstate;
-/*	aes_tab[XA_GRAF_GROWBOX   ].f = XA_graf_growbox; */
-/*	aes_tab[XA_GRAF_SHRINKBOX ].f = XA_graf_growbox; */
-/*	aes_tab[XA_GRAF_MOVEBOX   ].f = XA_graf_movebox; */
-	aes_tab[XA_GRAF_SLIDEBOX  ].f = XA_graf_slidebox;
-	aes_tab[XA_GRAF_WATCHBOX  ].f = XA_graf_watchbox;
-
-
-	/*
-	 * wind_? class functions
-	 */
-	aes_tab[XA_WIND_CREATE    ].f = XA_wind_create;
-	aes_tab[XA_WIND_OPEN      ].f = XA_wind_open;
-	aes_tab[XA_WIND_CLOSE     ].f = XA_wind_close;
-	aes_tab[XA_WIND_SET       ].f = XA_wind_set;
-	aes_tab[XA_WIND_GET       ].f = XA_wind_get;
-	aes_tab[XA_WIND_FIND      ].f = XA_wind_find;
-	aes_tab[XA_WIND_UPDATE    ].f = XA_wind_update;
-	aes_tab[XA_WIND_DELETE    ].f = XA_wind_delete;
-	aes_tab[XA_WIND_NEW       ].f = XA_wind_new;
-	aes_tab[XA_WIND_CALC      ].f = XA_wind_calc;
-
-
-	/*
-	 * objc_? class functions
-	 */
-	aes_tab[XA_OBJC_ADD       ].f = XA_objc_add;
-	aes_tab[XA_OBJC_DELETE    ].f = XA_objc_delete;
-	aes_tab[XA_OBJC_DRAW      ].f = XA_objc_draw;
-	aes_tab[XA_OBJC_FIND      ].f = XA_objc_find;
-	aes_tab[XA_OBJC_OFFSET    ].f = XA_objc_offset;
-	aes_tab[XA_OBJC_ORDER     ].f = XA_objc_order;
-	aes_tab[XA_OBJC_CHANGE    ].f = XA_objc_change;
-	aes_tab[XA_OBJC_EDIT      ].f = XA_objc_edit;
-	aes_tab[XA_OBJC_SYSVAR    ].f = XA_objc_sysvar;
-
-
-	/*
-	 * rsrc_? class functions
-	 */
-	aes_tab[XA_RSRC_LOAD      ].f = XA_rsrc_load;
-	aes_tab[XA_RSRC_FREE      ].f = XA_rsrc_free;
-	aes_tab[XA_RSRC_GADDR     ].f = XA_rsrc_gaddr;
-	aes_tab[XA_RSRC_OBFIX     ].f = XA_rsrc_obfix;
-	aes_tab[XA_RSRC_RCFIX     ].f = XA_rsrc_rcfix;
-
-
-	/*
-	 * menu_? class functions
-	 */
-	aes_tab[XA_MENU_BAR       ].f = XA_menu_bar;
-	aes_tab[XA_MENU_TNORMAL   ].f = XA_menu_tnormal;
-	aes_tab[XA_MENU_ICHECK    ].f = XA_menu_icheck;
-	aes_tab[XA_MENU_IENABLE   ].f = XA_menu_ienable;
-	aes_tab[XA_MENU_TEXT      ].f = XA_menu_text;
-	aes_tab[XA_MENU_REGISTER  ].f = XA_menu_register;
-	aes_tab[XA_MENU_POPUP     ].f = XA_menu_popup;
-	aes_tab[XA_MENU_ATTACH    ].f = XA_menu_attach;
-	aes_tab[XA_MENU_ISTART    ].f = XA_menu_istart;
-	aes_tab[XA_MENU_SETTINGS  ].f = XA_menu_settings;
-
-
-	/*
-	 * shell_? class functions
-	 */
-	aes_tab[XA_SHELL_WRITE    ].f = XA_shell_write;
-	aes_tab[XA_SHELL_READ     ].f = XA_shell_read;
-	aes_tab[XA_SHELL_FIND     ].f = XA_shell_find;
-	aes_tab[XA_SHELL_ENVRN    ].f = XA_shell_envrn;
-
-
-	/*
-	 * scrap_? class functions
-	 */
-	aes_tab[XA_SCRAP_READ     ].f = XA_scrp_read;
-	aes_tab[XA_SCRAP_WRITE    ].f = XA_scrp_write;
-
-	aes_tab[XA_FORM_POPUP     ].f = XA_form_popup;
-
-
-#if WDIAL
-	/*
-	 * wdlg_? class functions
-	 */
-	aes_tab[XA_WDIAL_CREATE   ].f = XA_wdlg_create;
-	aes_tab[XA_WDIAL_OPEN     ].f = XA_wdlg_open;
-	aes_tab[XA_WDIAL_CLOSE    ].f = XA_wdlg_close;
-	aes_tab[XA_WDIAL_DELETE   ].f = XA_wdlg_delete;
-	aes_tab[XA_WDIAL_GET      ].f = XA_wdlg_get;
-	aes_tab[XA_WDIAL_SET      ].f = XA_wdlg_set;
-	aes_tab[XA_WDIAL_EVENT    ].f = XA_wdlg_event;
-	aes_tab[XA_WDIAL_REDRAW   ].f = XA_wdlg_redraw;
-#endif
-
-
-#if LBOX
-	/*
-	 * lbox_? class functions
-	 */
-	aes_tab[XA_LBOX_CREATE    ].f = XA_lbox_create;
-	aes_tab[XA_LBOX_UPDATE    ].f = XA_lbox_update;
-	aes_tab[XA_LBOX_DO        ].f = XA_lbox_do;
-	aes_tab[XA_LBOX_DELETE    ].f = XA_lbox_delete;
-	aes_tab[XA_LBOX_GET       ].f = XA_lbox_get;
-	aes_tab[XA_LBOX_SET       ].f = XA_lbox_set;
-#endif
-
-
-	/*
-	 * auto lock/unlock
-	 */
-
-	aes_tab[XA_FORM_ALERT     ].lockscreen = true;
-	aes_tab[XA_FORM_ERROR     ].lockscreen = true;
-	aes_tab[XA_FORM_DIAL      ].lockscreen = true;
-	aes_tab[XA_FORM_DO        ].lockscreen = true;
-
-	aes_tab[XA_FSEL_INPUT     ].lockscreen = true;
-	aes_tab[XA_FSEL_EXINPUT   ].lockscreen = true;
-
-	aes_tab[XA_WIND_OPEN      ].lockscreen = true;
-	aes_tab[XA_WIND_CLOSE     ].lockscreen = true;
-	aes_tab[XA_WIND_SET       ].lockscreen = true;
-	aes_tab[XA_WIND_NEW       ].lockscreen = true;
-
-	aes_tab[XA_MENU_BAR       ].lockscreen = true;
-	aes_tab[XA_MENU_TNORMAL   ].lockscreen = true;
-	aes_tab[XA_MENU_ICHECK    ].lockscreen = true;
-	aes_tab[XA_MENU_IENABLE   ].lockscreen = true;
-	aes_tab[XA_MENU_POPUP     ].lockscreen = true;
-
-	aes_tab[XA_FORM_POPUP     ].lockscreen = true;
-
-
-#if GENERATE_DIAGS
-	/*
-	 * human readable description of the syscall
-	 */
-
-	for (i = 0; i < KtableSize; i++)
-		aes_tab[i].descr = "unknown";
-
-
-	/*
-	 * appl_? class functions
-	 */
-	aes_tab[XA_APPL_INIT      ].descr = "appl_init";
-	aes_tab[XA_APPL_READ      ].descr = "appl_read";
-	aes_tab[XA_APPL_WRITE     ].descr = "appl_write";
-	aes_tab[XA_APPL_FIND      ].descr = "appl_find";
-	aes_tab[XA_APPL_TPLAY     ].descr = "appl_tplay";
-	aes_tab[XA_APPL_TRECORD   ].descr = "appl_trecord";
-	aes_tab[XA_APPL_YIELD     ].descr = "appl_yield";
-	aes_tab[XA_APPL_SEARCH    ].descr = "appl_search";
-	aes_tab[XA_APPL_EXIT      ].descr = "appl_exit";
-	aes_tab[XA_APPL_CONTROL   ].descr = "appl_control";
-	aes_tab[XA_APPL_GETINFO   ].descr = "appl_getinfo";
-
-
-	/*
-	 * evnt_? class functions
-	 */
-	aes_tab[XA_EVNT_KEYBD     ].descr = "evnt_keybd";
-	aes_tab[XA_EVNT_BUTTON    ].descr = "evnt_button";
-	aes_tab[XA_EVNT_MOUSE     ].descr = "evnt_mouse";
-	aes_tab[XA_EVNT_MESAG     ].descr = "evnt_mesag";
-	aes_tab[XA_EVNT_TIMER     ].descr = "evnt_timer";
-	aes_tab[XA_EVNT_MULTI     ].descr = "evnt_multi";
-	aes_tab[XA_EVNT_DCLICK    ].descr = "evnt_dclick";
-
-
-	/*
-	 * menu_? class functions
-	 */
-	aes_tab[XA_MENU_BAR       ].descr = "menu_bar";
-	aes_tab[XA_MENU_ICHECK    ].descr = "menu_icheck";
-	aes_tab[XA_MENU_IENABLE   ].descr = "menu_ienable";
-	aes_tab[XA_MENU_TNORMAL   ].descr = "menu_tnormal";
-	aes_tab[XA_MENU_TEXT      ].descr = "menu_text";
-	aes_tab[XA_MENU_REGISTER  ].descr = "menu_register";
-	aes_tab[XA_MENU_POPUP     ].descr = "menu_popup";
-	aes_tab[XA_MENU_ATTACH    ].descr = "menu_attach";
-	aes_tab[XA_MENU_ISTART    ].descr = "menu_istart";
-	aes_tab[XA_MENU_SETTINGS  ].descr = "menu_settings";
-
-
-	/*
-	 * objc_? class functions
-	 */
-	aes_tab[XA_OBJC_ADD       ].descr = "objc_add";
-	aes_tab[XA_OBJC_DELETE    ].descr = "objc_delete";
-	aes_tab[XA_OBJC_DRAW      ].descr = "objc_draw";
-	aes_tab[XA_OBJC_FIND      ].descr = "objc_find";
-	aes_tab[XA_OBJC_OFFSET    ].descr = "objc_offset";
-	aes_tab[XA_OBJC_ORDER     ].descr = "objc_order";
-	aes_tab[XA_OBJC_EDIT      ].descr = "objc_edit";
-	aes_tab[XA_OBJC_CHANGE    ].descr = "objc_change";
-	aes_tab[XA_OBJC_SYSVAR    ].descr = "objc_sysvar";
-
-
-	/*
-	 * form_? class functions
-	 */
-	aes_tab[XA_FORM_DO        ].descr = "form_do";
-	aes_tab[XA_FORM_DIAL      ].descr = "form_dial";
-	aes_tab[XA_FORM_ALERT     ].descr = "form_alert";
-	aes_tab[XA_FORM_ERROR     ].descr = "form_error";
-	aes_tab[XA_FORM_CENTER    ].descr = "form_center";
-	aes_tab[XA_FORM_KEYBD     ].descr = "form_keybd";
-	aes_tab[XA_FORM_BUTTON    ].descr = "form_button";
-	aes_tab[XA_FORM_POPUP     ].descr = "form_popup";
-
-
-	/*
-	 * graf_? class functions
-	 */
-	aes_tab[XA_GRAF_RUBBERBOX ].descr = "graf_rubberbox";
-	aes_tab[XA_GRAF_DRAGBOX   ].descr = "graf_dragbox";
-	aes_tab[XA_GRAF_MOVEBOX   ].descr = "graf_movebox";
-	aes_tab[XA_GRAF_GROWBOX   ].descr = "graf_growbox";
-	aes_tab[XA_GRAF_SHRINKBOX ].descr = "graf_shrinkbox";
-	aes_tab[XA_GRAF_WATCHBOX  ].descr = "graf_watchbox";
-	aes_tab[XA_GRAF_SLIDEBOX  ].descr = "graf_slidebox";
-	aes_tab[XA_GRAF_HANDLE    ].descr = "graf_handle";
-	aes_tab[XA_GRAF_MOUSE     ].descr = "graf_mouse";
-	aes_tab[XA_GRAF_MKSTATE   ].descr = "graf_mkstate";
-
-
-	/*
-	 * scrap_? class functions
-	 */
-	aes_tab[XA_SCRAP_READ     ].descr = "scrp_read";
-	aes_tab[XA_SCRAP_WRITE    ].descr = "scrp_write";
-
-
-	/*
-	 * fsel_? class functions
-	 */
-	aes_tab[XA_FSEL_INPUT     ].descr = "fsel_input";
-	aes_tab[XA_FSEL_EXINPUT   ].descr = "fsel_exinput";
-
-
-	/*
-	 * wind_? class functions
-	 */
-	aes_tab[XA_WIND_CREATE    ].descr = "wind_create";
-	aes_tab[XA_WIND_OPEN      ].descr = "wind_open";
-	aes_tab[XA_WIND_CLOSE     ].descr = "wind_close";
-	aes_tab[XA_WIND_DELETE    ].descr = "wind_delete";
-	aes_tab[XA_WIND_GET       ].descr = "wind_get";
-	aes_tab[XA_WIND_SET       ].descr = "wind_set";
-	aes_tab[XA_WIND_FIND      ].descr = "wind_find";
-	aes_tab[XA_WIND_UPDATE    ].descr = "wind_update";
-	aes_tab[XA_WIND_CALC      ].descr = "wind_calc";
-	aes_tab[XA_WIND_NEW       ].descr = "wind_new";
-
-
-	/*
-	 * rsrc_? class functions
-	 */
-	aes_tab[XA_RSRC_LOAD      ].descr = "rsrc_load";
-	aes_tab[XA_RSRC_FREE      ].descr = "rsrc_free";
-	aes_tab[XA_RSRC_GADDR     ].descr = "rsrc_gaddr";
-	aes_tab[XA_RSRC_SADDR     ].descr = "rsrc_saddr";
-	aes_tab[XA_RSRC_OBFIX     ].descr = "rsrc_obfix";
-	aes_tab[XA_RSRC_RCFIX     ].descr = "rsrc_rcfix";
-
-
-	/*
-	 * shell_? class functions
-	 */
-	aes_tab[XA_SHELL_READ     ].descr = "shell_read";
-	aes_tab[XA_SHELL_WRITE    ].descr = "shell_write";
-	aes_tab[XA_SHELL_GET      ].descr = "shell_get";
-	aes_tab[XA_SHELL_PUT      ].descr = "shell_put";
-	aes_tab[XA_SHELL_FIND     ].descr = "shell_find";
-	aes_tab[XA_SHELL_ENVRN    ].descr = "shell_envrn";
-
-
-
-
-	/*
-	 * wdlg_? class functions
-	 */
-	aes_tab[XA_WDIAL_CREATE   ].descr = "wdlg_create";
-	aes_tab[XA_WDIAL_OPEN     ].descr = "wdlg_open";
-	aes_tab[XA_WDIAL_CLOSE    ].descr = "wdlg_close";
-	aes_tab[XA_WDIAL_DELETE   ].descr = "wdlg_delete";
-	aes_tab[XA_WDIAL_GET      ].descr = "wdlg_get";
-	aes_tab[XA_WDIAL_SET      ].descr = "wdlg_set";
-	aes_tab[XA_WDIAL_EVENT    ].descr = "wdlg_event";
-	aes_tab[XA_WDIAL_REDRAW   ].descr = "wdlg_redraw";
-
-
-	/*
-	 * lbox_? class functions
-	 */
-	aes_tab[XA_LBOX_CREATE    ].descr = "lbox_create";
-	aes_tab[XA_LBOX_UPDATE    ].descr = "lbox_update";
-	aes_tab[XA_LBOX_DO        ].descr = "lbox_do";
-	aes_tab[XA_LBOX_DELETE    ].descr = "lbox_delete";
-	aes_tab[XA_LBOX_GET       ].descr = "lbox_get";
-	aes_tab[XA_LBOX_SET       ].descr = "lbox_set";
-#endif
 }
