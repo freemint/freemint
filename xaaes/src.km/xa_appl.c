@@ -305,6 +305,7 @@ clean_out:
 	globl->pprivate = NULL;
 	globl->ptree = NULL;			/* Atari: pointer to pointerarray of trees in rsc. */
 	globl->rshdr = NULL;			/* Pointer to resource header. */
+	globl->lmem = 0;
 	globl->nplanes = screen.planes;
 	globl->res1 = 0;
 	globl->res2 = 0;
@@ -356,6 +357,8 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
+	S.clients_exiting++;
+
 #if 0
 	if (client->tp)
 	{
@@ -395,10 +398,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	if (C.mouse_owner == client || C.realmouse_owner == client)
 		graf_mouse(ARROW, NULL, NULL, false);
 
-#if 0		
-	if (C.realmouse_form == client->mouse_form)
-		graf_mouse(ARROW, NULL, NULL, false);
-#endif
 
 	remove_widget_active(client);
 
@@ -411,21 +410,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	redraws = cancel_app_aesmsgs(client);
 	cancel_cevents(client);
 	cancel_keyqueue(client);
-
-	if (client->attach)
-	{
-		/* if menu attachments */
-#if GENERATE_DIAGS
-		XA_MENU_ATTACHMENT *at = client->attach;
-		while (at->to)
-		{
-			DIAGS(("wt left in attachments %lx(%s)", at->to, at->to->owner));
-			at++;
-		}
-#endif
-		kfree(client->attach);
-		client->attach = NULL;
-	}
 
 	client->rsrc = NULL;
 	FreeResources(client, NULL);
@@ -555,6 +539,8 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	client->cmd_tail = "\0";
 	//client->wt.e.obj = -1;
+
+	S.clients_exiting--;
 
 	DIAG((D_appl, NULL, "client exit done"));
 }

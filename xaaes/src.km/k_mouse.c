@@ -283,15 +283,17 @@ add_client_md(struct xa_client *client, const struct moose_data *md)
 void
 button_event(enum locks lock, struct xa_client *client, const struct moose_data *md)
 {
-	DIAG((D_button, NULL, "button event for %s", c_owner(client)));
-
+	bool exiting = client->status & CS_EXITING ? true : false;
+	
+	DIAG((D_button, NULL, "button event for %s, exiting? %s", c_owner(client), exiting ? "Yes" : "No"));
 	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
-	if (md->state && md->cstate)
+	if (md->state && md->cstate && !exiting)
 		C.button_waiter = client;
 
-	add_client_md(client, md);
+	if (!exiting)
+		add_client_md(client, md);
 
 	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
@@ -375,9 +377,10 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 */
 	if (TAB_LIST_START && md->state)
 	{
-		if (!C.ce_menu_click)
+		client = TAB_LIST_START->client;
+		if (!C.ce_menu_click && !(client->status & CS_EXITING))
 		{
-			client = TAB_LIST_START->client;
+			//client = TAB_LIST_START->client;
 			C.ce_menu_click = client;
 			DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
 			post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
@@ -393,8 +396,11 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	{
 		widget_active.m = *md;
 		client = widget_active.wind->owner;
-		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
-		post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
+		if (!(client->status & CS_EXITING))
+		{
+			DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+			post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
+		}
 		return;
 	}
 	{
@@ -508,7 +514,9 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 	if (TAB_LIST_START)
 	{
-		if (!C.ce_menu_move && !C.ce_menu_click)
+		client = TAB_LIST_START->client;
+		
+		if (!(client->status & CS_EXITING) && !C.ce_menu_move && !C.ce_menu_click)
 		{
 			client = TAB_LIST_START->client;
 			C.ce_menu_move = client;
@@ -528,9 +536,12 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	{
 		widget_active.m = *md;
 		client = widget_active.wind->owner;
-		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
-		C.move_block = 1;
-		post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
+		if (!(client->status & CS_EXITING))
+		{
+			DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+			C.move_block = 1;
+			post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
+		}
 		return false;
 	}
 
@@ -562,10 +573,13 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 				menu = (XA_TREE *)widg->stuff;
 				client = menu->owner;
-				DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
-				C.ce_open_menu = client;
-				post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
-				//post_tpcevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
+				if (!(client->status & CS_EXITING))
+				{
+					DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
+					C.ce_open_menu = client;
+					post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
+					//post_tpcevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
+				}
 				return false;
 			}
 		}
@@ -1015,73 +1029,73 @@ static void
 move_timeout(struct proc *p, long arg)
 {
 	struct moose_data md;
-
-	/*
-	 * Did mouse move since last time?
-	*/
-	if (last_x != x_mouse || last_y != y_mouse)
+	
+	m_to = NULL;
+	
+	if (!S.clients_exiting)
 	{
-		last_x = x_mouse;
-		last_y = y_mouse;
-
 		/*
-		 * Construct a moose_data using the the latest
-		 * button-event data, only changing the mouse coords.
-		*/
-		mainmd.sx = x_mouse;
-		mainmd.sy = y_mouse;
-		md = mainmd;
-		md.x = last_x;
-		md.y = last_y;
-		md.ty = MOOSE_MOVEMENT_PREFIX;
-		vq_key_s(C.vh, &md.kstate);
-		/*
-		 * Deliver move event
-		*/
-		new_moose_pkt(0, 0, &md);
-
-		/*
-		 * Did the mouse move while processing last coords?
-		 * If so, add a timeout on ourselves.
+		 * Did mouse move since last time?
 		*/
 		if (last_x != x_mouse || last_y != y_mouse)
 		{
-			if (C.move_block) //C.redraws)
+			last_x = x_mouse;
+			last_y = y_mouse;
+
+			/*
+			 * Construct a moose_data using the the latest
+			 * button-event data, only changing the mouse coords.
+			*/
+			mainmd.sx = x_mouse;
+			mainmd.sy = y_mouse;
+			md = mainmd;
+			md.x = last_x;
+			md.y = last_y;
+			md.ty = MOOSE_MOVEMENT_PREFIX;
+			vq_key_s(C.vh, &md.kstate);
+			/*
+			 * Deliver move event
+			*/
+			new_moose_pkt(0, 0, &md);
+
+			/*
+			 * Did the mouse move while processing last coords?
+			 * If so, add a timeout on ourselves.
+			*/
+			if (last_x != x_mouse || last_y != y_mouse)
 			{
-				/*
-				 * If redraw messages are still pending,
-				 * start a timeout which will handle clients
-				 * not responding/too busy to react to WM_REDRAWS
-				*/
-				if (cfg.redraw_timeout)
+				if (C.move_block) //C.redraws)
 				{
-					if (!m_rto)
-						m_rto = addroottimeout(cfg.redraw_timeout/*400L*/, move_rtimeout, 1);
-					m_to = NULL;
+					/*
+					 * If redraw messages are still pending,
+					 * start a timeout which will handle clients
+					 * not responding/too busy to react to WM_REDRAWS
+					*/
+					if (cfg.redraw_timeout)
+					{
+						if (!m_rto)
+							m_rto = addroottimeout(cfg.redraw_timeout/*400L*/, move_rtimeout, 1);
+					}
 				}
-			}
-			else
-			{
-				/*
-				 * no redraws; if a pending timeout to handle locked/busy
-				 * clients was issued earlier, cancel it
-				*/
-				if (m_rto)
+				else
 				{
-					cancelroottimeout(m_rto);
-					m_rto = NULL;
+					/*
+					 * no redraws; if a pending timeout to handle locked/busy
+					 * clients was issued earlier, cancel it
+					*/
+					if (m_rto)
+					{
+						cancelroottimeout(m_rto);
+						m_rto = NULL;
+					}
+					/*
+					 * new movement...
+					*/
+					m_to = addroottimeout(0L, move_timeout, 1);
 				}
-				/*
-				 * new movement...
-				*/
-				m_to = addroottimeout(0L, move_timeout, 1);
 			}
 		}
-		else
-			m_to = NULL;
 	}
-	else
-		m_to = NULL;
 }
 
 /*
@@ -1152,23 +1166,26 @@ kick_mousemove_timeout(void)
 static void
 button_timeout(struct proc *p, long arg)
 {
-	if (pending_md())
+	b_to = NULL;
+
+	if (!S.clients_exiting)
 	{
-		struct moose_data md;
+		if (pending_md())
+		{
+			struct moose_data md;
 
-		get_md(&md);
-		DIAGS(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
-			md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
-			md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) ));
+			get_md(&md);
+			DIAGS(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
+				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
+				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) ));
 
-		vq_key_s(C.vh, &md.kstate);
+			vq_key_s(C.vh, &md.kstate);
 
-		new_moose_pkt(0, 0, &md);
+			new_moose_pkt(0, 0, &md);
 
-		if ( pending_md() )
-			b_to = addroottimeout(0L, button_timeout, 1);
-		else
-			b_to = NULL;
+			if ( pending_md() )
+				b_to = addroottimeout(0L, button_timeout, 1);
+		}
 	}
 }	
 
