@@ -713,7 +713,10 @@ st_connect (struct st_connect_param p)
 		return r;
 	}
 	else	
-		return r_map (r);
+		if (r == -EALREADY)
+		  return -ST_EISCONN;
+		else
+   		  return r_map (r);
 }
 
 /* --------------------
