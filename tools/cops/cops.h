@@ -65,7 +65,7 @@ struct alphaheader
 };
 extern struct alphaheader settings;
 
-extern CPX_LIST *cpxlist;
+extern struct cpxlist *cpxlist;
 extern CPX_DESC *cpx_desc_list;
 
 void open_cpx_context(CPX_DESC *cpx_desc);

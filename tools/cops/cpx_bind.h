@@ -29,12 +29,6 @@
 #include "global.h"
 #include "cpx.h"
 
-short  _cdecl Xform_do(OBJECT *tree, short edit_obj, short *msg);
-GRECT *_cdecl GetFirstRect(GRECT *prect);
-GRECT *_cdecl GetNextRect(void);
-void   _cdecl Set_Evnt_Mask(short mask, MOBLK *m1, MOBLK *m2, long evtime);
-void * _cdecl Get_Buffer(void);
-
 void a_call_main(void);
 void new_context(CPX_DESC *cpx_desc);
 void switch_context(CPX_DESC *cpx_desc);
@@ -42,7 +36,7 @@ void switch_context(CPX_DESC *cpx_desc);
 void cpx_userdef(void (*cpx_userdef)(void));
 
 /* cpx callbacks */
-CPXINFO	*cpx_init(CPX_DESC *cpx_desc, XCPB *xcpb);
+CPXINFO	*cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb);
 short cpx_call(CPX_DESC *cpx_desc, GRECT *work);
 void cpx_draw(CPX_DESC *cpx_desc, GRECT *clip);
 void cpx_wmove(CPX_DESC *cpx_desc, GRECT *work);

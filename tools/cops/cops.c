@@ -129,7 +129,7 @@ char inf_name[128];
 
 struct alphaheader settings;
 
-CPX_LIST *cpxlist = NULL;
+struct cpxlist *cpxlist = NULL;
 CPX_DESC *cpx_desc_list = NULL;
 
 static CPX_DESC *g_open_cpx = NULL;
@@ -384,7 +384,7 @@ static void
 remove_cpx(CPX_DESC *cpx_desc)
 {
 	list_remove((void **) &cpx_desc_list, cpx_desc, offsetof(CPX_DESC, next));
-	list_remove((void **) &cpxlist, &cpx_desc->old, offsetof(CPX_LIST, next));
+	list_remove((void **) &cpxlist, &cpx_desc->old, offsetof(struct cpxlist, next));
 
 	/* resident? */
 	if (cpx_desc->start_of_cpx)
@@ -454,7 +454,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 
 				list_append((void **) &cpx_desc_list, cpx_desc, offsetof(CPX_DESC, next));
 				/* Kompatibilitaetsliste */
-				list_append((void **) &cpxlist, &cpx_desc->old, offsetof(CPX_LIST, next));
+				list_append((void **) &cpxlist, &cpx_desc->old, offsetof(struct cpxlist, next));
 
 				/* CPX aufrufen? */
 				if (cpx_desc->old.header.flags.boot_init ||
@@ -1238,13 +1238,13 @@ static void
 cpx_to_end(CPX_DESC *cpx_desc)
 {
 	list_remove((void **) &cpx_desc_list, cpx_desc, offsetof(CPX_DESC, next));
-	list_remove((void **) &cpxlist, &cpx_desc->old, offsetof(CPX_LIST, next));
+	list_remove((void **) &cpxlist, &cpx_desc->old, offsetof(struct cpxlist, next));
 
 	cpx_desc->next = 0L;
 	cpx_desc->old.next = 0L;
 
 	list_append((void **) &cpx_desc_list, cpx_desc, offsetof(CPX_DESC, next));
-	list_append((void **) &cpxlist, &cpx_desc->old, offsetof(CPX_LIST, next));
+	list_append((void **) &cpxlist, &cpx_desc->old, offsetof(struct cpxlist, next));
 }
 
 static void
@@ -1378,7 +1378,7 @@ redraw_main_window(WINDOW *w, GRECT *area)
 		cpx_desc = cpx_desc_list;
 		while (cpx_desc)
 		{
-			CPX_LIST *cpx;
+			struct cpxlist *cpx;
 			short mode;
 			
 			cpx = &cpx_desc->old;
@@ -1840,7 +1840,7 @@ cpx_info(CPX_DESC *cpx_desc)
 {
 	OBJECT *cpxinfo;
 	char txt[34];
-	CPX_LIST *cpx;
+	struct cpxlist *cpx;
 	char *str;
 	
 	cpx = &cpx_desc->old;
