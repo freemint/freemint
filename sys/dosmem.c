@@ -127,7 +127,7 @@ _do_malloc (MMAP map, long size, int mode)
 	/* some programs crash when newly allocated memory isn't all zero,
 	 * like TOS 1.04 GEM when loading xcontrol.acc ...
 	 */
-	if ((curproc->memflags & F_ALLOCZERO) || (mode & F_ALLOCZERO))
+	if ((curproc->p_mem->memflags & F_ALLOCZERO) || (mode & F_ALLOCZERO))
 		bzero ((void *) m->loc, m->len);
 
 	return (long) v;
@@ -165,7 +165,7 @@ m_xalloc (long size, int mode)
 
 	if (protmode == 0)
 	{
-		protmode = (curproc->memflags & F_PROTMODE) >> F_PROTSHIFT;
+		protmode = (curproc->p_mem->memflags & F_PROTMODE) >> F_PROTSHIFT;
 	}
 	else
 		--protmode;
@@ -273,7 +273,7 @@ m_alloc (long size)
 	long r;
 
 	TRACE(("Malloc(%lx)", size));
-	if (curproc->memflags & F_ALTALLOC)
+	if (curproc->p_mem->memflags & F_ALTALLOC)
 		r = m_xalloc(size, 3);
 	else
 		r = m_xalloc(size, 0);
@@ -416,7 +416,7 @@ sys_m_validate (int pid, long addr, long size, long *flags)
 		return ESRCH;
 	}
 
-	if (p != curproc && !suser (curproc->p_cred->ucr) && !(curproc->memflags & F_OS_SPECIAL))
+	if (p != curproc && !suser (curproc->p_cred->ucr) && !(curproc->p_mem->memflags & F_OS_SPECIAL))
 	{
 		DEBUG (("Mvalidate: permission denied"));
 		return EPERM;

@@ -231,10 +231,10 @@ sys_b_setexc (int number, long vector)
 			 * Unfortunately some programs go Super() then change
 			 * vectors directly. Common practice in games/demos :(
 	 		 */
-			if ((p->memflags & F_OS_SPECIAL) == 0)
+			if ((p->p_mem->memflags & F_OS_SPECIAL) == 0)
 			{
-				if (((p->memflags & F_PROTMODE) == F_PROT_P) ||
-					((p->memflags & F_PROTMODE) == F_PROT_PR))
+				if (((p->p_mem->memflags & F_PROTMODE) == F_PROT_P) ||
+					((p->p_mem->memflags & F_PROTMODE) == F_PROT_PR))
 				{
 					ALERT (MSG_bios_kill);
 					/* Avoid an additional alert,

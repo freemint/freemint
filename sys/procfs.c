@@ -671,7 +671,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 			save_id[5] = p->sgid;
 			save_id[6] = p->auid;
 
-			save_flags = p->memflags;
+			save_flags = p->p_mem->memflags;
 
 			save_limit[0] = p->maxmem;
 			save_limit[1] = p->maxdata;
@@ -695,8 +695,8 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 			p->auid = save_id[6];
 
 			/* Here be picky only on the F_OS_SPECIAL flag */
-			if ((p->memflags & F_OS_SPECIAL) && !(save_flags & F_OS_SPECIAL))
-				p->memflags &= ~(F_OS_SPECIAL);
+			if ((p->p_mem->memflags & F_OS_SPECIAL) && !(save_flags & F_OS_SPECIAL))
+				p->p_mem->memflags &= ~(F_OS_SPECIAL);
 
 			p->maxmem = save_limit[0];
 			p->maxdata = save_limit[1];
@@ -1022,7 +1022,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			int newflags = (ushort)(*(long *) buf);
 			
 			if ((newflags & F_OS_SPECIAL)
-				&& (!(p->memflags & F_OS_SPECIAL)))
+				&& (!(p->p_mem->memflags & F_OS_SPECIAL)))
 			{
 				/* Restrict F_OS_SPECIAL to root. Some
 				 * day this flag will go away, I hope.
@@ -1032,18 +1032,18 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 					return EPERM;
 				/* you're making the process OS_SPECIAL */
 				TRACE (("Fcntl OS_SPECIAL pid %d",p->pid));
-				p->memflags = newflags;
+				p->p_mem->memflags = newflags;
 				mem_prot_special (p);
 			}
 			
 			/* note: only the low 16 bits are actually used */
-			p->memflags = *((long *) buf);
+			p->p_mem->memflags = *((long *) buf);
 			
 			return E_OK;
 		}
 		case PGETFLAGS:
 		{
-			*((long *) buf) = p->memflags;
+			*((long *) buf) = p->p_mem->memflags;
 			return E_OK;
 		}
 		case PTRACESFLAGS:
