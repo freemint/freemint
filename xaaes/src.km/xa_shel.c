@@ -290,7 +290,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	int ret;
 	int drv = 0;
 	Path path,name;
-	struct shel_write_info *info = NULL;
+	struct proc *p = NULL;
+	int type;
 
 	DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
 		c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
@@ -353,10 +354,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			DIAG((D_shel, NULL, "int tailsize: %ld", tailsize));
 		}
 	}
-
-	info = xmalloc(sizeof(*info), 1013);
-	if (!info)
-		goto out;
 
 	DIAG((D_shel, NULL, "Launch(0x%x): wisgr:%d, wiscr:%d\r\n cmd='%s'\r\n tail=%d'%s'",
 		mode, wisgr, wiscr, pcmd, *tail, tail+1));
@@ -500,22 +497,20 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 			if (wisgr != 0)
 			{
-				Sema_Up(clients);
-
-				ret = p_exec(100, cmd, *argvtail ? argvtail : tail,
-					     (x_mode & SW_ENVIRON) ? x_shell.env : *C.strings);
-
-				if (ret > 0)
+				ret = create_process(cmd, *argvtail ? argvtail : tail,
+						     (x_mode & SW_ENVIRON) ? x_shell.env : *C.strings,
+						     &p, 0);
+				if (ret == 0)
 				{
+					assert(p);
+
 					if (((x_mode & SW_PRENICE) == 0)
 					    || ((x_mode & SW_PRENICE) != 0 && x_shell.prenice == 0))
-						p_renice(ret, -4);
+						p_renice(p->pid, -4);
 
-					DIAG((D_appl, 0, "Alloc client; APP %d", ret));
-					info->type = APP_APPLICATION;
+					DIAG((D_appl, 0, "Alloc client; APP %d", p->pid));
+					type = APP_APPLICATION;
 				}
-
-				Sema_Dn(clients);
 			}
 
 			break;
@@ -523,32 +518,24 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 		case 3:
 		{
 			struct basepage *b;
-			long p_rtn;
-			long size;
+			long size, p_rtn;
 
 			drv = drive_and_path(save_cmd, path, name, true, true);
 
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
-			p_rtn = p_exec(3, cmd, *argvtail ? argvtail : tail, 0);
+			p_rtn = create_process(cmd, *argvtail ? argvtail : tail, *C.strings, &p, 128);
 			if (p_rtn < 0)
 			{
 				DIAG((D_shel, 0, "acc launch failed:error=%ld", p_rtn));
+				ret = p_rtn;
 				break;
 			}
 
-			b = (struct basepage *)p_rtn;
+			b = p->base;
 
 			/* accsize */
 			size = 256 + b->p_tlen + b->p_dlen + b->p_blen;
-			{
-				long shrink, shrinked;
-
-				shrink = size + 512; /* plus a little bit stack, or? */
-				shrinked = m_shrink(0, (long)b, shrink);
-
-				DIAGS(("Shrinked accessory@0x%lx to %ld: %d", b, shrink, shrinked));
-			}
 
 			DIAGS(("Copy accstart to 0x%lx, size %lu", (char *)b + size, (long)accend - (long)accstart));
 			memcpy((char *)b + size, accstart, (long)accend - (long)accstart);
@@ -556,61 +543,43 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			b->p_dbase = b->p_tbase;
 			b->p_tbase = (char *)b + size;
 
-			Sema_Up(clients);
+			ret = p->pid;
 
-			DIAG((D_shel, 0, "Pexec(106) '%s'", cmd));
+			p_renice(p->pid, -4);
+			type = APP_ACCESSORY;
 
-			ret = p_exec(106, cmd, b, *C.strings);
-			if (ret > 0)
-			{
-				DIAG((D_shel, 0, "child = %d", ret));
-
-				p_renice(ret, -4);
-				info->type = APP_ACCESSORY;
-			}
-			else
-				/* XXX failure, shouldn't happen */
-				assert(0);
-
-			Sema_Dn(clients);
 			break;
 		}
 	}
 
-	if (ret > 0)
+	if (p)
 	{
-		info->pid = ret;
-		info->ppid = caller->p->pid;
+		struct shel_info *info;
 
-		info->cmd_tail = save_tail;
-		info->tail_is_heap = true;
-
-		strcpy(info->cmd_name, save_cmd);
-
-		/* As we now unambiguously know the path from which the client is loaded,
-		 * why not fill it out here? :-)
-		 */
-		*(info->home_path) = drv + 'a';
-		*(info->home_path + 1) = ':';
-		strcpy(info->home_path+2, path);
-
-		/* add to info list */
+		info = attach_extension(p, XAAES_MAGIC_SH, sizeof(*info), NULL);
+		if (info)
 		{
-			struct shel_write_info **list = &(C.info);
+			info->type = type;
 
-			while (*list)
-				list = &((*list)->next);
+			info->cmd_tail = save_tail;
+			info->tail_is_heap = true;
 
-			*list = info;
+			strcpy(info->cmd_name, save_cmd);
+
+			/* As we now unambiguously know the path from which the client is loaded,
+			 * why not fill it out here? :-)
+			 */
+			*(info->home_path) = drv + 'a';
+			*(info->home_path + 1) = ':';
+			strcpy(info->home_path+2, path);
 		}
+		else
+			ikill(SIGKILL, p->pid);
 	}
 
 out:
 	if (tail != argvtail)
 		free(tail);
-
-	if (ret <= 0)
-		free(info);
 
 	DIAG((D_shel, 0, "Launch for %s returns child %d", c_owner(caller), ret));
 	DIAG((D_shel, 0, "Remove ARGV"));

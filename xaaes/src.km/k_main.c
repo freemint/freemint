@@ -275,12 +275,9 @@ sigchld(void)
 {
 	long r;
 
-again:
-	r = p_waitpid(-1, 0, NULL);
-	if (r > 0)
+	while ((r = p_waitpid(-1, 1, NULL)) > 0)
 	{
-		DIAGS(("sigchld -> %li (%li)", r, ((r & 0xffff0000L) >> 16)));
-		goto again;
+		DIAGS(("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16)));
 	}
 }
 
