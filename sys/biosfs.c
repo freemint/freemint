@@ -36,6 +36,7 @@
 # include "ipc_unix.h"
 # include "k_fds.h"
 # include "k_prot.h"
+# include "kerinfo.h"
 # include "kmemory.h"
 # include "nullfs.h"
 # include "proc.h"

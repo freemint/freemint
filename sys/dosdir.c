@@ -24,6 +24,7 @@
 # include "filesys.h"
 # include "k_fds.h"
 # include "k_prot.h"
+# include "kerinfo.h"
 # include "kmemory.h"
 # include "proc.h"
 # include "time.h"
