@@ -54,7 +54,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	const RECT r = *((const RECT *)&pb->intin[1]);
 	struct xa_window *new_window;
-	XA_WIND_ATTR kind = (ushort) pb->intin[0];
+	XA_WIND_ATTR kind = (unsigned short)(pb->intin[0]);
 
 	CONTROL(5,1,0)	
 
