@@ -75,12 +75,9 @@ struct common
 	short vh;			/* Virtual workstation handle used by the AES */
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
-	short home_drv;
 
 	short P_handle;			/* Physical workstation handle used by the AES */
 	short global_clip[4];
-
-	Path home;			/* XaAES's home location */
 
 	struct xa_client *Aes;		/* */
 
@@ -176,8 +173,10 @@ struct config
 	struct helpserver *helpservers;	/* configured helpservers */
 
 	/* postponed cnf things */
-	Path cnf_shell;			/* SHELL= */
-	char *cnf_run[32];		/* RUN= */
+	char *cnf_shell;		/* SHELL= */
+	char *cnf_shell_arg;		/* args for SHELL cnf directive */
+	char *cnf_run[32];		/* RUN directives */
+	char *cnf_run_arg[32];		/* args for RUN cnf directives */
 };
 
 /* Global config data */

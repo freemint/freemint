@@ -60,51 +60,27 @@
 
 
 /*
- * find a xaaes file. When the cd command to XaAES load directory is
- * missing in mint.cnf (which is likely for inexperienced mint users. ;-) 
- * XaAES wont fail completely.
+ * check if file exist in Aes_home_path
  */
-static char *dirs[] =
-{
-	"",			/* plain name only */
-	Aes_home_path,		/* Dont forget to fill. */
-	NULL
-};
-
-/* last resort if shell_find fails. */
 static char *
-xa_find(char *fn)
+xaaes_sysfile(const char *file)
 {
 	static char p[128];
+	struct file *fp;
 
-	char **aes_path;
-	char *f;
+	strcpy(p, C.Aes->home_path);
+	strcat(p, file);
 
-	DIAGS(("xa_find '%s'", fn ? fn : "~"));
+	DIAGS(("xaaes_sysfile: looking for '%s'", p));
 
-	/* combined shell_find & xa_find permanently. */
-	f = shell_find(NOLOCKING, C.Aes, fn);
-	if (f) return f;
-
-	aes_path = dirs;
-	while (*aes_path)
+	fp = kernel_open(p, O_RDONLY, NULL);
+	if (fp)
 	{
-		char *pad = *aes_path;
-		struct file *fp;
-
-		sprintf(p, sizeof(p), "%s%s", pad, fn);
-		DIAGS(("%s", p));
-
-		fp = kernel_open(p, O_RDONLY, NULL);
-		if (fp)
-		{
-			kernel_close(fp);
-			return p;
-		}
-		aes_path++;
+		kernel_close(fp);
+		return p;
 	}
 
-	DIAGS((" - NULL"));
+	DIAGS(("xaaes_sysfile: no such file"));
 	return NULL;
 }
 
@@ -290,7 +266,7 @@ k_init(void)
 	DIAGS((" size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
 	/* Load the system resource files */
-	resource_name = xa_find(cfg.rsc_name);
+	resource_name = xaaes_sysfile(cfg.rsc_name);
 	if (resource_name)
 	{
 		C.Aes_rsc = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
@@ -303,7 +279,7 @@ k_init(void)
 	}
 
 	/* Load the widget resource files */
-	resource_name = xa_find(cfg.widg_name);
+	resource_name = xaaes_sysfile(cfg.widg_name);
 	if (resource_name)
 	{
 		widget_resources = LoadResources(C.Aes, resource_name, 0, DU_RSX_CONV, DU_RSY_CONV);
