@@ -322,7 +322,6 @@ k_init(void)
 	{
 		RECT c;
 		OBJECT *tree = ResourceTree(widget_resources, 0);
-		//ob_area(tree, 1, &c);
 		if (!ob_spec_xywh(tree, 1, &c))
 			ob_area(tree, 1, &c);
 		
