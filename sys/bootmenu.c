@@ -204,10 +204,40 @@ emit_mem_prot(short fd)
 # endif
 }
 
+/* INI_STEP=YES makes step_by_step equal to -1 and acts traditionally.
+ * INI_STEP=NO makes step by step equal to 0 and acts traditionally
+ *
+ * INI_STEP=number makes a delay of 'number' seconds on each
+ * step point.
+ */
 static void
 do_ini_step(char *arg)
 {
-	step_by_step = (strncmp(arg, "YES", 3) == 0) ? 1 : 0;
+	if (!isdigit(*arg))
+	{
+		if (strncmp(arg, "YES", 3) == 0)
+			step_by_step = -1;
+		else if (strncmp(arg, "NO", 2) == 0)
+			step_by_step = 0;
+		else
+			boot_printf(MSG_init_syntax_error, "INI_STEP");
+	}
+	else
+	{
+		long val;
+
+		val = atol(arg);
+
+		if (val < 0 || val > 10)
+		{
+			boot_printf(MSG_init_value_out_of_range, \
+					"INI_STEP", val, (short)0, (short)10);
+
+			return;
+		}
+
+		step_by_step = (short)val;
+	}
 }
 
 static long
@@ -215,7 +245,12 @@ emit_ini_step(short fd)
 {
 	char line[MAX_CMD_LEN];
 
-	ksprintf(line, sizeof(line), "INI_STEP=%s\n", step_by_step ? "YES" : "NO");
+	if (step_by_step == -1)
+		ksprintf(line, sizeof(line), "INI_STEP=%s\n", "YES");
+	else if (step_by_step == 0)
+		ksprintf(line, sizeof(line), "INI_STEP=%s\n", "NO");
+	else
+		ksprintf(line, sizeof(line), "INI_STEP=%d\n", step_by_step);
 
 	return TRAP_Fwrite(fd, strlen(line), line);
 }
@@ -526,10 +561,17 @@ wait:
 				option[MENU_OPTIONS-1] = option[MENU_OPTIONS-1] ? 0 : 1;
 				break;
 			}
-			case '1' ... '6':
+			case '1' ... '5':
 			{
 				off = ((c & 0x0f) - 1);
 				option[off] = option[off] ? 0 : 1;
+
+				break;
+			}
+			case '6':
+			{
+				off = ((c & 0x0f) - 1);
+				option[off] = option[off] ? 0 : -1;
 
 				break;
 			}

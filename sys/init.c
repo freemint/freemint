@@ -32,49 +32,49 @@
 # include "arch/mmu.h"		/* save_mmu */
 # include "arch/mprot.h"	/* */
 # include "arch/syscall.h"	/* call_aes */
+# include "arch/timer.h"	/* delay_seconds() */
 # include "arch/tosbind.h"
 
-# include "bios.h"	/* */
-# include "block_IO.h"	/* init_block_IO */
-# include "bootmenu.h"	/* boot_kernel_p(), read_ini() */
-# include "cnf_mint.h"	/* load_config, some variables */
-# include "console.h"	/* */
-# include "cookie.h"	/* restr_cookie */
-# include "crypt_IO.h"	/* init_crypt_IO */
-# include "delay.h"	/* calibrate_delay */
-# include "dos.h"	/* */
-# include "dosdir.h"	/* */
-# include "dosmem.h"	/* QUANTUM */
-# include "filesys.h"	/* init_filesys, s_ync, close_filesys */
+# include "bios.h"		/* */
+# include "block_IO.h"		/* init_block_IO */
+# include "bootmenu.h"		/* boot_kernel_p(), read_ini() */
+# include "cnf_mint.h"		/* load_config, some variables */
+# include "console.h"		/* */
+# include "cookie.h"		/* restr_cookie */
+# include "crypt_IO.h"		/* init_crypt_IO */
+# include "delay.h"		/* calibrate_delay */
+# include "dos.h"		/* */
+# include "dosdir.h"		/* */
+# include "dosmem.h"		/* QUANTUM */
+# include "filesys.h"		/* init_filesys, s_ync, close_filesys */
 # ifdef FLOPPY_ROUTINES
-# include "floppy.h"	/* init_floppy */
+# include "floppy.h"		/* init_floppy */
 # endif
-# include "gmon.h"	/* monstartup */
-# include "info.h"	/* welcome messages */
-# include "ipc_socketutil.h" /* domaininit() */
-# include "k_exec.h"	/* sys_pexec */
-# include "k_exit.h"	/* sys_pwaitpid */
-# include "k_fds.h"	/* do_open/do_pclose */
-# include "keyboard.h"	/* init_keytbl() */
-# include "kmemory.h"	/* kmalloc */
-# include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
-# include "mis.h"	/* startup_shell */
-# include "module.h"	/* load_all_modules */
-# include "proc.h"	/* init_proc, add_q, rm_q */
-# include "signal.h"	/* post_sig */
+# include "gmon.h"		/* monstartup */
+# include "info.h"		/* welcome messages */
+# include "ipc_socketutil.h"	/* domaininit() */
+# include "k_exec.h"		/* sys_pexec */
+# include "k_exit.h"		/* sys_pwaitpid */
+# include "k_fds.h"		/* do_open/do_pclose */
+# include "keyboard.h"		/* init_keytbl() */
+# include "kmemory.h"		/* kmalloc */
+# include "memory.h"		/* init_mem, get_region, attach_region, restr_screen */
+# include "mis.h"		/* startup_shell */
+# include "module.h"		/* load_all_modules */
+# include "proc.h"		/* init_proc, add_q, rm_q */
+# include "signal.h"		/* post_sig */
 # include "syscall_vectors.h"
-# include "time.h"	/* */
-# include "timeout.h"	/* */
-# include "unicode.h"	/* init_unicode() */
-# include "update.h"	/* start_sysupdate */
-# include "util.h"	/* */
-# include "xbios.h"	/* has_bconmap, curbconmap */
+# include "time.h"		/* */
+# include "timeout.h"		/* */
+# include "unicode.h"		/* init_unicode() */
+# include "update.h"		/* start_sysupdate */
+# include "util.h"		/* */
+# include "xbios.h"		/* has_bconmap, curbconmap */
 
 # ifdef OLDTOSFS
-# include "fatfs.h"	/* fatfs_config() */
-# include "tosfs.h"	/* tos_filesys */
+# include "fatfs.h"		/* fatfs_config() */
+# include "tosfs.h"		/* tos_filesys */
 # endif
-
 
 /* magic number to show that we have captured the reset vector */
 # define RES_MAGIC	0x31415926L
@@ -117,7 +117,7 @@ short step_by_step;
 static void
 stop_and_ask(void)
 {
-	if (step_by_step)
+	if (step_by_step == -1)
 	{
 		boot_print(MSG_init_hitanykey);
 
@@ -126,6 +126,9 @@ stop_and_ask(void)
 		else
 			TRAP_Cconin();
 	}
+	else if (step_by_step > 0)
+		delay_seconds((ulong)step_by_step);
+	/* else pass on */
 }
 
 /* structures for keyboard/MIDI interrupt vectors */
@@ -1008,7 +1011,7 @@ _mint_delenv(BASEPAGE *bp, const char *strng)
 		return;
 
 	TRACE(("_mint_delenv(): delete existing %s=%s", strng, var));
- 
+
 	/* if it's found, move all the other environment variables down by 1 to
    	 * delete it
          */
