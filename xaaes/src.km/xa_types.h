@@ -378,6 +378,9 @@ struct xa_client
 /*
  * This part is for Client event dispatching
 */
+	bool	md_valid;
+	struct moose_data md;
+
 #define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
 	int	sleepqueue;
 	long	sleeplock;

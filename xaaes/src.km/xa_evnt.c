@@ -334,15 +334,31 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			DIAG((D_button, NULL, "evnt_multi: Check if button event"));
 
-			if (mu_button.newc)
+			if (client->md_valid)
 			{
-				bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin + 1, 2);
-				mu_button.newc = 0;
+				struct moose_data *md = &client->md;
+				if (md->clicks)
+				{
+					bev = is_bevent(md->state, md->clicks, pb->intin + 1, 1);
+					md->clicks = 0;
+				}
+				else if (md->state && !md->cstate)
+				{
+					bev = is_bevent(md->cstate, 1, pb->intin + 1, 1);
+					client->md_valid = 0;
+				}
+				else
+					client->md_valid = 0;
+			}
+			else if (mu_button.newc)
+			{
+				if ((bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin + 1, 2)))
+					mu_button.newc = 0;
 			}
 			else if (mu_button.newr)
 			{
-				bev = is_bevent(mu_button.cb, 1, pb->intin + 1, 2);
-				mu_button.newr = 0;
+				if ((bev = is_bevent(mu_button.cb, 1, pb->intin + 1, 2)))
+					mu_button.newr = 0;
 			}
 			else if (!(pb->intin[1] & 0xff))
 				bev = is_bevent(mu_button.cb, 0, pb->intin + 1, 2);
@@ -581,15 +597,31 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 			mouse_locked() ? mouse_locked()->p->pid : 0,
 			C.menu_base, widget_active.widg));
 
-		if (mu_button.newc)
+		if (client->md_valid)
 		{
-			bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin, 2);
-			mu_button.newc = 0;
+			struct moose_data *md = &client->md;
+			if (md->clicks)
+			{
+				bev = is_bevent(md->state, md->clicks, pb->intin, 1);
+				md->clicks = 0;
+			}
+			else if (md->state && !md->cstate)
+			{
+				bev = is_bevent(md->cstate, 1, pb->intin, 1);
+				client->md_valid = 0;
+			}
+			else
+				client->md_valid = 0;
+		}
+		else if (mu_button.newc)
+		{
+			if ((bev = is_bevent(mu_button.b, mu_button.clicks, pb->intin, 2)))
+				mu_button.newc = 0;
 		}
 		else if (mu_button.newr)
 		{
-			bev = is_bevent(mu_button.cb, 1, pb->intin, 2);
-			mu_button.newr = 0;
+			if ((bev = is_bevent(mu_button.cb, 1, pb->intin, 2)))
+				mu_button.newr = 0;
 		}
 		else if (!(pb->intin[0] & 0xff))
 			bev = is_bevent(mu_button.cb, 0, pb->intin, 2);
