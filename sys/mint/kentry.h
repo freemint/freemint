@@ -240,8 +240,30 @@ struct kentry_proc
 	long _cdecl (*create_process)(const void *ptr1, const void *ptr2, const void *ptr3,
 				      struct proc **pret, long stack);
 
-	/* fork/leave a kernel thread */
-	long _cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);
+	/* 
+	 * fork a kernel thread for process p
+	 * 
+	 * arguments:
+	 * ----------
+	 * p    - the process context for which the kernel thread is created;
+	 *        can be NULL, in this case a kernel thread of rootproc is created
+	 *        NOTE: Anything except the signal handler is shared!
+	 * 
+	 * func - the function where the thread starts
+	 * 
+	 * arg  - additional argument passed to func
+	 * 
+	 * fmt  - printf format string for the process name
+	 * 
+	 * ...  - printf args
+	 */
+	long _cdecl (*kthread_create)(struct proc *p, void (*func)(void *), void *arg,
+				      struct proc **np, const char *fmt, ...);
+	/*
+	 * leave kernel thread previously created by kthread_create
+	 * 
+	 * NOTE: can only be called from INSIDE the thread
+	 */
 	void _cdecl (*kthread_exit)(short code);
 
 	/* return current process context descriptor */
