@@ -67,14 +67,23 @@
 void
 cancel_cevents(struct xa_client *client)
 {
-	while (client->cevnt_head)
+	struct c_event *ce, *nxt;
+
+	ce = client->cevnt_head;
+	while (ce)
 	{
-		struct c_event *ce = client->cevnt_head->next;
-		kfree(client->cevnt_head);
-		client->cevnt_head = ce;
+		nxt = ce->next;
+
+		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",
+			ce, nxt, client->name));
+		(*ce->funct)(0, ce, true);
+		kfree(ce);
+		ce = nxt;
 	}
+
 	client->cevnt_head = NULL;
 	client->cevnt_tail = NULL;
+	client->cevnt_count = 0;
 
 	if (C.ce_open_menu == client)
 		C.ce_open_menu = NULL;
@@ -82,14 +91,13 @@ cancel_cevents(struct xa_client *client)
 
 void
 post_cevent(struct xa_client *client,
-	void (*func)(enum locks, struct c_event *),
+	void (*func)(enum locks, struct c_event *, bool cancel),
 	void *ptr1, void *ptr2,
 	int d0, int d1, RECT *r,
 	const struct moose_data *md)
 {
 	struct c_event *c;
 
-	//if (!(client->status & CS_LAGGING))
 	{
 		c = kmalloc(sizeof(*c));
 		if (c)
@@ -128,10 +136,6 @@ post_cevent(struct xa_client *client,
 		else
 			dispatch_cevent(client);
 	}
-//#if GENERATE_DIAGS
-//	else
-//		DIAG((D_mouse, client, "post_cevent: Client %s is lagging - event thrown away!", client->name));
-//#endif
 }
 
 int
@@ -153,7 +157,7 @@ dispatch_cevent(struct xa_client *client)
 
 		DIAG((D_kern, client, "Dispatch evnt %lx (head %lx, tail %lx, count %d) for %s",
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
-		(*ce->funct)(0, ce);
+		(*ce->funct)(0, ce, false);
 		kfree(ce);
 		ret = 1;
 	}
