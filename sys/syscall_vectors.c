@@ -517,7 +517,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x17c */		enosys,		/* reserved */
 	/* 0x17d */		sys_m_access,	/* 1.15.12 */
 	/* 0x17e */		enosys,		/* sys_mmap */
-	/* 0x17f */		enosys		/* sys_munmap */
+	/* 0x17f */		enosys,		/* sys_munmap */
 	
 	/* 0x180 */		/* DOS_MAX */
 };
