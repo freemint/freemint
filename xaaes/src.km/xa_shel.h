@@ -3,7 +3,7 @@
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -36,7 +36,7 @@ int launch(enum locks lock,
 	   struct xa_client *caller);
 
 char *shell_find(enum locks lock, struct xa_client *client, char *fn);
-long put_env(enum locks lock, short wisgr, short wiscr, char *cmd);
+long put_env(enum locks lock, const char *cmd);
 
 AES_function
 	XA_shell_write,
