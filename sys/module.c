@@ -553,7 +553,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
 
 		if (*handler == NULL)
 		{
-			DEBUG(("register_trap2: installing 0x%lx as handler"));
+			DEBUG(("register_trap2: installing handler at 0x%lx", dispatch));
 
 			*handler = dispatch;
 			ret = 0;
@@ -565,7 +565,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag)
 
 		if (*handler == dispatch)
 		{
-			DEBUG(("register_trap2: removing 0x%lx handler"));
+			DEBUG(("register_trap2: removing handler at 0x%lx", dispatch));
 
 			*handler = NULL;
 			ret = 0;
