@@ -42,9 +42,9 @@
 #define	GAI_GSHORTCUT	0x2000	/* Objekttyp G_SHORTCUT wird unterstÅtzt */
 
 short get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d);
-void adapt3d_rsrc(OBJECT *objs, u_short no_objs, short hor_3d, short ver_3d);
-void no3d_rsrc(OBJECT *objs, u_short no_objs, short ftext_to_fboxtext);
-void substitute_objects(OBJECT *objs, u_short no_objs, short aes_flags, OBJECT *rslct, OBJECT *rdeslct);
+void adapt3d_rsrc(OBJECT *objs, unsigned short no_objs, short hor_3d, short ver_3d);
+void no3d_rsrc(OBJECT *objs, unsigned short no_objs, short ftext_to_fboxtext);
+void substitute_objects(OBJECT *objs, unsigned short no_objs, short aes_flags, OBJECT *rslct, OBJECT *rdeslct);
 void substitute_free(void);
 char *is_userdef_title(OBJECT *obj);
 
