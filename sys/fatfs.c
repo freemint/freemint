@@ -1608,6 +1608,14 @@ c_hash_remove  (register COOKIE *c)
 	}
 }
 
+/*
+ * Get new cookie from cookie cache by searching an unused cache entry.
+ * If a cookie is found (normal case) it's initialized with the name
+ * argument and installed in the hash table.
+ * 
+ * NOTE: If the function succeed ownership of the argument is moved into the
+ *       newly allocated cookie.
+ */
 # ifdef LRU_COOKIE_CACHE
 static COOKIE *
 c_get_cookie (register char *s)
@@ -3179,7 +3187,12 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	s = src + len; s--;
 	while (*s && *s != '.') s--;
 
-	if (*s == '.')
+	/* copy over extension
+	 * but only if there is really something after the '.'
+	 * if not we skip this as this is otherwise not a valid
+	 * 8+3 name
+	 */
+	if (*s == '.' && *(s+1))
 	{
 		*d++ = '.';
 		s++;
@@ -3260,7 +3273,12 @@ vfat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	s = src + len; s--;
 	while (*s && *s != '.') s--;
 
-	if (*s == '.')
+	/* copy over extension
+	 * but only if there is really something after the '.'
+	 * if not we skip this as this is otherwise not a valid
+	 * 8+3 name
+	 */
+	if (*s == '.' && *(s+1))
 	{
 		ext[0] = *d++ = '.';
 		s++;
