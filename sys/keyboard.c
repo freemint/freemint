@@ -538,33 +538,38 @@ bioskeys(void)
  * that the softloaded keyboard table is consistent.
  */
 static uchar *
-tbl_scan_fwd(uchar *tmp)
+tbl_scan_fwd(uchar *tmp, uchar *end)
 {
 	short sanity;
 	
 	sanity = 0;
-	while (*tmp)
+	while (*tmp && tmp < end)
 	{
 		sanity++;
 		if (sanity > 255)	/* One `alt' table can contain up to 128 key definitions */
 			return 0;
+		
 		tmp++;
 	}
 	
 	sanity = 0;
-	while (*tmp == 0)
+	while (*tmp == 0 && tmp < end)
 	{
 		sanity++;
 		if (sanity > 31)	/* Up to 32 zeros can follow */
 			return 0;
+		
 		tmp++;
 	}
+	
+	if (tmp == end)
+		return NULL;
 	
 	return tmp;
 }
 
 static long
-fill_keystruct(uchar *table)
+fill_keystruct(uchar *table, uchar *end)
 {
 	uchar *unshift, *shift, *caps, *alt, *altshift, *altcaps, *altgr;
 	
@@ -573,23 +578,15 @@ fill_keystruct(uchar *table)
 	caps = table + 256;
 	alt = table + 384;
 	
-	altshift = tbl_scan_fwd(alt);
+	altshift = tbl_scan_fwd(alt, end);
 	if (!altshift)
 		return 0;
 	
-	altcaps = tbl_scan_fwd(altshift);
+	altcaps = tbl_scan_fwd(altshift, end);
 	if (!altcaps)
 		return 0;
 	
-	/* XXX */
-	if (mch == MILAN_C)
-	{
-		altgr = tbl_scan_fwd(altcaps);
-		if (!altgr)
-			return 0;
-	}
-	else
-		altgr = NULL;
+	altgr = tbl_scan_fwd(altcaps, end);
 	
 	keytable_vecs.unshift = unshift;
 	keytable_vecs.shift = shift;
@@ -606,7 +603,7 @@ fill_keystruct(uchar *table)
 static long
 load_table(FILEPTR *fp, char *name, long size)
 {
-	char *kbuf;
+	uchar *kbuf;
 	long ret = 0;
 	MEMREGION *key_reg;
 	
@@ -619,7 +616,7 @@ load_table(FILEPTR *fp, char *name, long size)
 	
 	/* Crap, the keyboard table must be globally readable :/ */
 	key_reg = get_region(core, size, PROT_G);
-	kbuf = (char *) attach_region(rootproc, key_reg);
+	kbuf = (uchar *) attach_region(rootproc, key_reg);
 	
 	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
@@ -627,7 +624,8 @@ load_table(FILEPTR *fp, char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				ret = fill_keystruct((uchar *) kbuf + sizeof(short));
+				ret = fill_keystruct(kbuf + sizeof(short),
+						     kbuf + size);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -641,7 +639,8 @@ load_table(FILEPTR *fp, char *name, long size)
 				
 				if (sbuf[1] <= MAXAKP)
 				{
-					ret = fill_keystruct((uchar *) kbuf + sizeof(long));
+					ret = fill_keystruct(kbuf + sizeof(long),
+							     kbuf + size);
 					if (ret)
 						gl_kbd = sbuf[1];
 				}
@@ -672,7 +671,7 @@ static long
 load_default_table(void)
 {
 # ifdef WITHOUT_TOS
-	char *kbuf;
+	uchar *kbuf;
 	
 	if (key_region)
 	{
@@ -681,14 +680,14 @@ load_default_table(void)
 	}
 	
 	key_region = get_region(core, 387L, PROT_PR);
-	kbuf = (char *) attach_region(rootproc, key_region);
+	kbuf = (uchar *) attach_region(rootproc, key_region);
 	quickmove(kbuf, usa_kbd, 387L);
-	fill_keystruct((uchar *) kbuf);
+	fill_keystruct(kbuf, kbuf + 387L);
 	
 	return 0;
 # else
 	struct keytab *syskeytab;
-	char *kbuf, *p;
+	uchar *kbuf, *p;
 	long size;
 	
 	/* call the underlying XBIOS */
@@ -711,7 +710,7 @@ load_default_table(void)
 	}
 	
 	key_region = get_region(core, size, PROT_G);
-	kbuf = (char *) attach_region(rootproc, key_region);
+	kbuf = (uchar *) attach_region(rootproc, key_region);
 	
 	p = kbuf;
 	
@@ -726,27 +725,31 @@ load_default_table(void)
 	
 	if (tosvers >= 0x200)
 	{
-		size = strlen(syskeytab->alt) + 1;
-		quickmove(p, syskeytab->alt, size);
-		p += size;
+		long len;
 		
-		size = strlen(syskeytab->altshift) + 1;
-		quickmove(p, syskeytab->altshift, size);
-		p += size;
+		len = strlen(syskeytab->alt) + 1;
+		quickmove(p, syskeytab->alt, len);
+		p += len;
 		
-		size = strlen(syskeytab->altcaps) + 1;
-		quickmove(p, syskeytab->altcaps, size);
-		p += size;
+		len = strlen(syskeytab->altshift) + 1;
+		quickmove(p, syskeytab->altshift, len);
+		p += len;
+		
+		len = strlen(syskeytab->altcaps) + 1;
+		quickmove(p, syskeytab->altcaps, len);
+		p += len;
 	}
 	
 	if (mch == MILAN_C)
 	{
-		size = strlen(syskeytab->altgr) + 1;
-		quickmove(p, syskeytab->altgr, size);
-		p += size;
+		long len;
+		
+		len = strlen(syskeytab->altgr) + 1;
+		quickmove(p, syskeytab->altgr, len);
+		p += len;
 	}
 	
-	size = fill_keystruct((uchar *) kbuf);
+	size = fill_keystruct(kbuf, kbuf + size);
 	assert(size == 1);
 	
 	return 0;
@@ -822,7 +825,7 @@ void
 init_keybd(void)
 {
 # ifdef WITHOUT_TOS
-	fill_keystruct((uchar *) usa_kbd);
+	fill_keystruct(usa_kbd, kbuf + sizeof(usa_kbd));
 	gl_kbd = 0;
 # else
 	struct keytab *syskeytab;
