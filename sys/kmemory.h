@@ -38,33 +38,32 @@
 MEMREGION *	_kmr_get	(void);
 void		_kmr_free	(MEMREGION *ptr);
 
-void *	_cdecl	_kcore		(ulong size, const char *func);	/* ST-RAM alloc */
-void *	_cdecl	_kmalloc	(ulong size, const char *func);	/* TT-RAM alloc */
+void *	_cdecl	_kcore		(unsigned long size, const char *func);	/* ST-RAM alloc */
+void *	_cdecl	_kmalloc	(unsigned long size, const char *func);	/* TT-RAM alloc */
 void	_cdecl	_kfree		(void *place, const char *func);
 
-void *	_cdecl	_dmabuf_alloc	(ulong size, short cmode, const char *func);
+void *	_cdecl	_dmabuf_alloc	(unsigned long size, short cmode, const char *func);
 
-void *	_cdecl	_umalloc	(ulong size, const char *func);	/* user space alloc */
+void *	_cdecl	_umalloc	(unsigned long size, const char *func);	/* user space alloc */
 void	_cdecl	_ufree		(void *place, const char *func);/* user space free */
-
-
-void	init_kmemory		(void); /* initalize km allocator */
-long	km_config		(long mode, long arg);
-
-# define KM_STAT_DUMP	1
-
 
 # define kmr_get		_kmr_get
 # define kmr_free		_kmr_free
 
-# define kcore(size)		_kcore (size, FUNCTION)
-# define kmalloc(size)		_kmalloc (size, FUNCTION)
-# define kfree(place)		_kfree (place, FUNCTION)
+# define kcore(size)		_kcore(size, FUNCTION)
+# define kmalloc(size)		_kmalloc(size, FUNCTION)
+# define kfree(place)		_kfree(place, FUNCTION)
 
-# define dmabuf_alloc(size,cm)	_dmabuf_alloc (size, cm, FUNCTION)
+# define dmabuf_alloc(size,cm)	_dmabuf_alloc(size, cm, FUNCTION)
 
-# define umalloc(size)		_umalloc (size, FUNCTION)
-# define ufree(place)		_ufree (place, FUNCTION)
+# define umalloc(size)		_umalloc(size, FUNCTION)
+# define ufree(place)		_ufree(place, FUNCTION)
 
+void		init_kmemory	(void); /* initalize km allocator */
+long		km_config	(long mode, long arg);
+
+# define KM_STAT_DUMP	1
+
+const char *	alloc_lookup	(void *ptr, unsigned long *size);
 
 # endif /* _kmemory_h */
