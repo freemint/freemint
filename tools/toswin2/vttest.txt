@@ -1,4 +1,4 @@
-These are the results of the vttest program (Dickey version 2.7  from 
+These are the results of the vttest program (Dickey version 2.7  from
 2 Aug 2000) on Toswin in tw100 emulation:
 
 Test Of Cursor Movements
@@ -14,12 +14,12 @@ Test Of Screen Features
 
 [x] Wrap around
 [x] Tab setting/resetting
-[ ] 132 column mode, light background
-[ ] 80 column mode, light background
+[x] 132 column mode, light background
+[x] 80 column mode, light background
 [x] 132 column mode, dark background
 [x] 80 column mode, dark background
 [ ] Soft scroll down 1
-[x] Soft scroll down 2
+[ ] Soft scroll down 2
 [ ] Jump scroll down 1
 [ ] Jump scroll down 2
 [ ] Origin mode test
@@ -38,7 +38,7 @@ Test Of Double-Sized Characters
 
 Test Of Keyboard
 ================
-[x] LED Lights
+[ ] LED Lights
 [ ] Auto repeat
     Keyboard layout
     [ ] US ASCII
@@ -70,7 +70,7 @@ Test Of VT102 Features
 [ ] Screen accordeon test 80
 [ ] AX 80
 [ ] A**B 80
-[ ] Delete character 80 
+[ ] Delete character 80
 [x] Staggered 1 80
 [x] Staggered 2 80
 [x] ANSI Insert Character 80
