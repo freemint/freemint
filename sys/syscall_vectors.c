@@ -452,7 +452,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x13f */		s_uptime,
 	
 	/* 0x140 */	(Func)	p_trace,	/* 1.16.0 */
-	/* 0x141 */		enosys,		/* reserved */
+	/* 0x141 */		sys_m_validate,	/* 1.15.11 */
 	/* 0x142 */		d_xreaddir,
 	/* 0x143 */	(Func)	sys_pseteuid,
 	/* 0x144 */	(Func)	sys_psetegid,
