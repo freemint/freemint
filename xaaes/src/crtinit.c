@@ -2,7 +2,7 @@
  * $Id$
  *
  * Modified for XaAES by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Crtinit: C run-time initialization code.
  * Written by Eric R. Smith, and placed in the public domain.
  * Use at your own risk.
@@ -22,7 +22,7 @@
 #include <mint/basepage.h>
 #include <mint/osbind.h>
 
-#include "libkern.h"
+#include "global.h"
 #include "bootup.h"
 
 
@@ -36,7 +36,7 @@
 
 
 /* setstack.S */
-void _setstack(void *newsp);
+void _cdecl _setstack(void *newsp);
 
 /* in startup.S */
 extern BASEPAGE *_base;
@@ -140,12 +140,12 @@ parseargs(BASEPAGE *bp)
 			/* find list of empty params
 			 */
 			if (*from == 'N' && *(from+1) == 'U'
-			    && *(from+2) == 'L' && *(from+3) == 'L' 
+			    && *(from+2) == 'L' && *(from+3) == 'L'
 			    && *(from+4) == ':')
 			{
 				null_list = from + 5;
 			}
-			    
+
 			while (*from++) ; /* skip ARGV= value */
 			__libc_argv = arg = envp;
 			*arg++ = from; count+= 4;
@@ -171,7 +171,7 @@ parseargs(BASEPAGE *bp)
 		 * see if the last environment variable ended with '=\0', and
 		 * if so we append this one to the last one
 		 */
-		if (desktoparg && envp > &environ[1]) 
+		if (desktoparg && envp > &environ[1])
 		{
 			/* launched from desktop -- fix up env */
 			char *p, *q;
@@ -211,11 +211,11 @@ old_cmdlin:
 	while(i > 0 && isspace(*cmdln) )
 		cmdln++,--i;
 
-	/* 
+	/*
 	 * MagXDesk only uses ARGV if the arg is longer than the 126 character
 	 * of bp->cmdlin. If the arg is short enough and contains a file name with
 	 * blanks it will be come quoted via bp->cmdlin!!
-	 */ 
+	 */
 	if (cmdln[0] != '\'')
 	{
 		while (i > 0)
@@ -239,11 +239,11 @@ old_cmdlin:
 	{
 		int in_quote = 0;
 
-		while (i > 0) 
+		while (i > 0)
 		{
 			if (*cmdln == '\'')
 			{
-				i--; 
+				i--;
 				cmdln++;
 				if (in_quote)
 				{
@@ -301,10 +301,10 @@ do_argc:
 			p = strrchr (program_invocation_name, '/');
  		if (p != 0)
  			p++;
- 		program_invocation_short_name = (p == 0) ? 
+ 		program_invocation_short_name = (p == 0) ?
  			program_invocation_name : p;
  	}
- 
+
 	__libc_argc = 1; /* at this point __libc_argv[0] is done */
 	while (*from)
 	{
@@ -325,7 +325,7 @@ do_argc:
 		while (*null_list)
 		{
 			s = null_list;
-			
+
 			while (* ++null_list) /* find ',' or '\0' */
 			{
 				if (*null_list == ',')
@@ -342,7 +342,7 @@ do_argc:
 					goto bail_out;
 
 				/* don't feed this to strtol(),
-				 * do the ascii -> long conversion by 
+				 * do the ascii -> long conversion by
 				 * hand for efficency
 				 */
 				idx += *s++ - '0';
