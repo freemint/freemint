@@ -1,0 +1,23 @@
+Pliki *.tbl zawieraj± tabele dla poszczególnych, fizycznych typów 
+klawiatur rozszerzonych o polskie znaki w standardzie ISO-8859-2, w 
+uk³adzie programisty (Alternate + a = ± etc.).
+
+Do uzyskania poprawnego wygl±du liter na ekranie potrzebny jest 
+ponadto font z polskimi znakami w ISO-8859-2. Namiastka takiego fontu 
+znajduje siê w katalogu fonts/.
+
+Instalacja:
+
+1) Wybierz jeden z plików *.tbl stosownie do tego, jaki masz typ 
+   klawiatury (np. je¶li masz hiszpañsk±, wybierasz spanish-pl.tbl).
+
+2) Przekopiuj go do tego samego katalogu, gdzie jest plik mint.cnf.
+
+3) Zmieñ nazwê tej kopii na keyboard.tbl
+
+4) Zrób restart systemu.
+
+Poniewa¿ nie mam wszystkich typów klawiatur, wiêc nie mia³em szansy 
+sprawdziæ, czy tablice konwersji dzia³aj± poprawnie.
+
+EOF
