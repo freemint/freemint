@@ -580,8 +580,9 @@ menu_finish(struct task_administration_block *tab)
 	C.Aes->waiting_for = XAWAIT_MENU; /* ready for next menu choice */
 	C.Aes->em.flags = MU_M1;
 
+#if 0
 	/* Ozk: Only unlock screen here if locker is XaAES kernel itself! */
-	//if (cfg.menu_locking && update_locked() == C.Aes)
+	if (cfg.menu_locking && update_locked() == C.Aes)
 	{
 		if (is_bar && client)
 			unlock_mouse(client, 10);
@@ -589,6 +590,7 @@ menu_finish(struct task_administration_block *tab)
 		//unlock_screen(C.Aes, 10);
 		unlock_screen(client, 10);
 	}
+#endif
 }
 
 static Tab *
@@ -1205,6 +1207,7 @@ click_form_popup_entry(struct task_administration_block *tab)
 	popout(tab);			/* incl. screen unlock */
 
 	pb->intout[0] = item;
+
 	tab->client->usr_evnt = 1;
 	Unblock(tab->client, XA_OK, 2);
 }
@@ -1268,6 +1271,7 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 static bool
 click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
+	bool l = false;
 	int pid; // = C.AESpid;
 	struct xa_client *client;
 
@@ -1292,10 +1296,19 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 			unlock_screen(client, 5);
 			return false;
 		}
+		l = true;
 	}
 
 	if (!menu_title(lock, wind, widg, client->p->pid))
+	{
 		menu_finish(NULL);
+	}
+
+	if (l)
+	{
+		unlock_screen(client, 6);
+		unlock_mouse(client, 7);
+	}
 
 	return false;
 }
