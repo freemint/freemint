@@ -21,63 +21,6 @@ extern int do_debug;
  */
 static void escy_putch (TEXTWIN *v, unsigned int c);
 
-/*
- * delete_line(v, r): delete line r of window v. The screen below this
- * line is scrolled up, and the bottom line is cleared.
- */
-static void delete_line(TEXTWIN *v, int r)
-{
-	int 				y;
-	int 				doscroll = (r == 0);
-	unsigned char	*oldline;
-	long 			*oldflag;
-
-	oldline = v->data[r];
-	oldflag = v->cflag[r];
-	for (y = r; y < v->maxy-1; y++) 
-	{
-		v->data[y] = v->data[y+1];
-		v->cflag[y] = v->cflag[y+1];
-		v->dirty[y] = doscroll ? v->dirty[y+1] : ALLDIRTY;
-	}
-
-	v->data[y] = oldline;
-	v->cflag[y] = oldflag;
-
-	/* clear the last line */
-	clrline(v, v->maxy - 1);
-	if (doscroll)
-		v->scrolled++;
-}
-
-/*
- * insert_line(v, r): scroll all of the window from line r down,
- * and then clear line r.
- */
-static void insert_line(TEXTWIN *v, int r)
-{
-	int 				i, limit;
-	unsigned char	*oldline;
-	long 			*oldflag;
-
-	limit = v->maxy - 1;
-	oldline = v->data[limit];
-	oldflag = v->cflag[limit];
-
-	for (i = limit-1; i >= r ; --i) 
-	{
-		/* move line i to line i+1 */
-		v->data[i+1] = v->data[i];
-		v->cflag[i+1] = v->cflag[i];
-		v->dirty[i+1] = ALLDIRTY;
-	}
-
-	v->cflag[r] = oldflag;
-	v->data[r] = oldline;
-	/* clear line r */
-	clrline(v, r);
-}
-
 /* capture(v, c): put character c into the capture buffer
  * if c is '\r', then we're finished and we call the callback
  * function
@@ -177,7 +120,6 @@ static void putesc(TEXTWIN *v, unsigned int c)
 	}
 #endif
 
-	curs_off(v);
 	cx = v->cx; 
 	cy = v->cy;
 
@@ -250,7 +192,7 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			if (do_debug) syslog (LOG_ERR, "is cursor up, insert line");
 #endif
 			if (cy == v->miny)
-				insert_line(v, v->miny);
+				insert_line(v, v->miny, v->maxy - 1);
 			else
 				gotoxy(v, cx, cy-1);
 			break;
@@ -270,14 +212,14 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is insert line");
 #endif
-			insert_line(v, cy);
+			insert_line(v, cy, v->maxy - 1);
 			gotoxy(v, 0, cy);
 			break;
 		case 'M':		/* delete line */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is delete line");
 #endif
-			delete_line(v, cy);
+			delete_line(v, cy, v->maxy -1);
 			gotoxy(v, 0, cy);
 			break;
 		case 'R':		/* TW extension: set window size */
@@ -287,7 +229,6 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			v->captsiz = 0;
 			v->output = capture;
 			v->callback = set_size;
-			curs_on(v);
 			return;
 		case 'S':		/* MW extension: set title bar */
 #ifdef DEBUG
@@ -296,14 +237,12 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			v->captsiz = 0;
 			v->output = capture;
 			v->callback = set_title;
-			curs_on(v);
 			return;
 		case 'Y':
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is goto xy");
 #endif
 			v->output = escy_putch;
-			curs_on(v);
 			return;
 		case 'a':		/* MW extension: delete character */
 #ifdef DEBUG
@@ -316,14 +255,12 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			if (do_debug) syslog (LOG_ERR, "is set foreground color");
 #endif
 			v->output = fgcol_putch;
-			curs_on(v);
 			return;		/* `return' to avoid resetting v->output */
 		case 'c':		/* set background color */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is set background color");
 #endif
 			v->output = bgcol_putch;
-			curs_on(v);
 			return;
 		case 'd':		/* clear to cursor position */
 #ifdef DEBUG
@@ -335,13 +272,13 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor on");
 #endif
-			v->term_flags |= FCURS;
+			v->curs_on = 1;
 			break;
 		case 'f':		/* cursor off */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor off");
 #endif
-			v->term_flags &= ~FCURS;
+			v->curs_on = 0;
 			break;
 		case 'h':		/* MW extension: enter insert mode */
 #ifdef DEBUG
@@ -421,18 +358,15 @@ static void putesc(TEXTWIN *v, unsigned int c)
 			if (do_debug) syslog (LOG_ERR, "is set text effects");
 #endif
 			v->output = seffect_putch;
-			curs_on(v);
 			return;
 		case 'z':		/* TW extension: clear special effects */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "clear text effects");
 #endif
 			v->output = ceffect_putch;
-			curs_on(v);
 			return;
 	}
 	v->output = vt52_putch;
-	curs_on(v);
 }
 
 /*
@@ -440,14 +374,12 @@ static void putesc(TEXTWIN *v, unsigned int c)
  */
 static void escy1_putch(TEXTWIN *v, unsigned int c)
 {
-	curs_off(v);
 	if (v->escy1 - ' ' < 0) {
 		gotoxy (v, c - ' ', v->cy);
 	} else {
 		gotoxy (v, c - ' ', v->miny + v->escy1 - ' ');
 	}
 	v->output = vt52_putch;
-	curs_on(v);
 }
 
 /*
@@ -469,7 +401,6 @@ void vt52_putch(TEXTWIN *v, unsigned int c)
 
 	cx = v->cx; 
 	cy = v->cy;
-	curs_off(v);
 
 	c &= 0x00ff;
 
@@ -485,8 +416,7 @@ void vt52_putch(TEXTWIN *v, unsigned int c)
 			case '\n':
 				if (cy == v->maxy - 1)
 				{
-					curs_off(v);
-					delete_line(v, 0);
+					delete_line(v, 0, v->maxy - 1);
 				}
 				else 
 				{
@@ -525,5 +455,4 @@ void vt52_putch(TEXTWIN *v, unsigned int c)
 	{
 		vt_quote_putch (v, c);
 	}
-	curs_on(v);
 }

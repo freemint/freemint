@@ -15,7 +15,6 @@
  * of window v. If insert mode is on, this involves moving all the
  * other characters one space to the right, first.
  */
-int force_refresh = 0;
 void paint(TEXTWIN *v, unsigned int c)
 {
 	int i;
@@ -64,8 +63,6 @@ void paint(TEXTWIN *v, unsigned int c)
 	else
 		v->cflag[line][v->cx] = (CTOUCHED | use_attribute);
 	v->dirty[line] |= SOMEDIRTY;
-	if (force_refresh)
-		refresh_textwin (v, 0);
 }
 
 /* Unconditionally display character C even if it is a 
@@ -80,15 +77,13 @@ vt_quote_putch (TEXTWIN* tw, unsigned int c)
 		/* Character was drawn in last column.  */
 		if (tw->do_wrap && !(tw->term_flags & FNOAM)) {
 			vt100_putch (tw, '\n');
-			tw->cx = 0;
+			tw->cx = 1;
 			tw->do_wrap = 0;
 		} else {
 			tw->cx = tw->maxx - 1;
 		}
 	} else if (tw->cx >= tw->maxx - 1)
 		tw->do_wrap = 1;
-		
-	curs_on (tw);
 }
 
 /*
@@ -106,11 +101,74 @@ void gotoxy(TEXTWIN *v, short x, short y)
 	else if (y >= v->maxy) 
 		y = v->maxy - 1;
 
-	curs_off (v);
 	v->cx = x;
 	v->cy = y;
 	v->do_wrap = 0;
-	curs_on (v);
+}
+
+/* Delete line ROW of window TW. The screen up to and
+ * including line END is scrolled up, and line END is cleared.
+ */
+void 
+delete_line (TEXTWIN* tw, int row, int end)
+{
+	int doscroll = (row == 0);
+	unsigned char* saved_data;
+	unsigned long* saved_cflag;
+
+	if (end > tw->maxy - 1)
+		end = tw->maxy - 1;
+	if (row == tw->miny)
+		row = 0;
+
+	/* FIXME: A ring buffer would be better.  */	
+	saved_data = tw->data[row];
+	saved_cflag = tw->cflag[row];
+	memmove (tw->data + row, tw->data + row + 1,
+		 (end - row) * sizeof (tw->data[row]));
+	memmove (tw->cflag + row, tw->cflag + row + 1,
+		 (end - row) * sizeof (tw->cflag[row]));
+	if (doscroll) {
+		memmove (tw->dirty + row, tw->dirty + row + 1,
+			 (end - row) * sizeof (tw->dirty[row]));
+	} else {
+		memset (tw->dirty, ALLDIRTY, end - row);
+	}
+	tw->data[end] = saved_data;
+	tw->cflag[end] = saved_cflag;
+	
+	/* clear the last line */
+	clrline (tw, end);
+	if (doscroll)
+		++tw->scrolled;
+	tw->do_wrap = 0;
+}
+
+/* Scroll the entire window from line ROW to line END down,
+ * then clear line ROW.
+ */
+void 
+insert_line (TEXTWIN* tw, int row, int end)
+{
+	unsigned char* saved_data;
+	unsigned long* saved_cflag;
+
+	if (end > tw->maxy - 1)
+		end = tw->maxy - 1;
+
+	/* FIXME: A ring buffer would be better.  */	
+	saved_data = tw->data[end];
+	saved_cflag = tw->cflag[end];
+	memulset (tw->dirty + row, ALLDIRTY, end - row);
+	memmove (tw->data + row - 1, tw->data + row, 
+		 (end - row) * sizeof tw->data[0]);
+	memmove (tw->cflag + row - 1, tw->cflag + row,
+		 (end - row) * sizeof tw->cflag[0]);
+	tw->data[row] = saved_data;
+	tw->cflag[row] = saved_cflag;
+
+	clrline (tw, row);
+	tw->do_wrap = 0;
 }
 
 /*
@@ -257,23 +315,25 @@ void set_size(TEXTWIN *v)
 	resize_textwin(v, cols, rows, v->miny);
 }
 
+#if 0
 /*
  * routines for setting the cursor state in window v 
 */
 void set_curs(TEXTWIN *v, int on)
 {
 	short cx = v->cx;
+	
 	if (cx >= v->maxx)
 		cx = v->maxx - 1;
-		
-	if (on && (v->term_flags & FCURS) && !(v->term_flags & FFLASH)) 
+			
+	if (on && (v->term_flags & FCURS)) 
 	{
 		v->cflag[v->cy][cx] ^= CINVERSE;
 		v->cflag[v->cy][cx] |= CTOUCHED;
 		v->dirty[v->cy] |= SOMEDIRTY;
 		v->term_flags |= FFLASH;
 	} 
-	else if ( (!on) && (v->term_flags & FFLASH)) 
+	else if (!on) 
 	{
 		v->cflag[v->cy][cx] ^= CINVERSE;
 		v->cflag[v->cy][cx] |= CTOUCHED;
@@ -291,6 +351,7 @@ void curs_off(TEXTWIN *v)
 {
 	 set_curs(v, 0);
 }
+#endif
 
 /* Reset colors to original colors (i. e. those that were
  * configured in the window configuration dialog).

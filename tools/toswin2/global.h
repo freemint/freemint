@@ -58,6 +58,7 @@ struct win
 	bool	(*mouseinp)	(struct win *win, short clicks, short x, short y, short shft, short mbuttons);
 	void	(*oldfulled)	(struct win *win);
 	bool	(*oldmouse)	(struct win *win, short clicks, short x, short y, short shft, short mbuttons);
+	void	(*timer) 	(struct win *win, int top);
 };
 
 
@@ -112,8 +113,6 @@ struct tablist
 
 /* text->term_flags */
 #define FINSERT		0x1000	/* insert characters */
-#define FFLASH		0x2000	/* cursor is currently showing */
-#define FCURS		0x4000	/* cursor enabled */
 #define FNOAM		0x8000  /* Disable automatic margins  */
 
 /* text->cflag */
@@ -224,7 +223,17 @@ struct textwin
 	ulong	bg_effects;			/* Bit vector with background effects
 						   (only CE_BOLD/CE_LIGHT are used).  */
 	
+	int	curs_height;			/* Height of the cursor block.  */
+	int	curs_offy;			/* Distance from bottom of cursor to bottom
+						   of line.  */
+	short	last_cx, last_cy;		/* Last position of cursor.  */
+						   
 	/* Various flags.  */
+	unsigned curs_on: 1;			/* 0 - invisible, 1 - visible.  */
+	unsigned curs_vvis: 1;			/* 0 - normal, 1 - very visible.  */
+	unsigned curs_drawn: 1;			/* 1 - cursor needs to be updated.  */
+	unsigned wintop: 1;			/* 1 - if active window.  */
+	
 	unsigned vdi_colors: 1;			/* Non-zero if vdi colors active.  */
 	unsigned windirty: 1;			/* Non-zero if window size has changed.  */
 	unsigned do_wrap: 1;			/* Non-zero if cursor in last column and 
@@ -255,6 +264,7 @@ extern int	vdi_handle;
 extern int	font_anz;
 extern int	draw_ticks;
 #define MAX_DRAW_TICKS 3
+extern int	curs_ticks;
 
 /*
  * Translation tables

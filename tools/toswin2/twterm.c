@@ -52,7 +52,6 @@ static void gototab(TEXTWIN* tw, int x, int y)
 			x = tab->tabpos;
 		gotoxy(tw, x, y);
 	}
-	curs_on (tw);
 	return;
 }
 
@@ -74,69 +73,6 @@ static void insert_char(TEXTWIN* tw, int x, int y)
 	twdata[x] = ' ';
 	twcflag[x] = CDIRTY | (tw->term_cattr & (CBGCOL | CFGCOL));
 	tw->dirty[y] |= SOMEDIRTY;
-	tw->do_wrap = 0;
-}
-
-/* Delete line ROW of window TW. The screen up to and
-* including line END is scrolled up, and line END is cleared.
- */
-static void delete_line(TEXTWIN* tw, int row, int end)
-{
-	int doscroll = (row == 0);
-	unsigned char *oldline;
-	long *oldflag;
-
-	if (end > tw->maxy - 1)
-		end = tw->maxy - 1;
-	if (row == tw->miny)
-		row = 0;
-
-	/* FIXME: A ring buffer would be better.  */	
-	oldline = tw->data[row];
-	oldflag = tw->cflag[row];
-	memmove (tw->data + row, tw->data + row + 1,
-		 (end - row) * sizeof (tw->data[row]));
-	memmove (tw->cflag + row, tw->cflag + row + 1,
-		 (end - row) * sizeof (tw->cflag[row]));
-	if (doscroll) {
-		memmove (tw->dirty + row, tw->dirty + row + 1,
-			 (end - row) * sizeof (tw->dirty[row]));
-	} else {
-		memset (tw->dirty, ALLDIRTY, end - row);
-	}
-	tw->data[end] = oldline;
-	tw->cflag[end] = oldflag;
-
-	/* clear the last line */
-	clrline(tw, end);
-	if (doscroll)
-		++tw->scrolled;
-	tw->do_wrap = 0;
-}
-
-/* Scroll the entire window from line ROW to line END down,
- * then clear line ROW.
- */
-static void insert_line(TEXTWIN* tw, int row, int end)
-{
-	unsigned char *oldline;
-	long *oldflag;
-
-	if (end > tw->maxy - 1)
-		end = tw->maxy - 1;
-
-	/* FIXME: A ring buffer would be better.  */	
-	oldline = tw->data[end];
-	oldflag = tw->cflag[end];
-	memulset (tw->dirty + row, ALLDIRTY, end - row);
-	memmove (tw->data + row - 1, tw->data + row, 
-		 (end - row) * sizeof tw->data[0]);
-	memmove (tw->cflag + row - 1, tw->cflag + row,
-		 (end - row) * sizeof tw->cflag[0]);
-	tw->cflag[row] = oldflag;
-	tw->data[row] = oldline;
-
-	clrline(tw, row);
 	tw->do_wrap = 0;
 }
 
@@ -214,7 +150,6 @@ fill_window (TEXTWIN* tw, unsigned int c)
 		memulset (tw->cflag[row], new_attribute, cols);
 	}
 	memset (tw->dirty + tw->miny, ALLDIRTY, NROWS (tw));
-	curs_on (tw);
 }
 
 /* Return int (n) from [?n, #n, }n or (n esc sequence:
@@ -249,7 +184,6 @@ keylockedl (TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case 'l':		/* Unlock keyboard */
 		tw->output = vt100_putch;
-		curs_on (tw);
 		break;
 	}
 }
@@ -315,25 +249,37 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		gotoxy(tw, cx - 1, cy);
-		curs_on (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy + 1);
-		curs_on (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy - 2);
-		curs_on (tw);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		gotoxy(tw, cx + 1, cy);
-		curs_on (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
-		curs_on (tw);
 		return;
+	case 'c':		/* Extended private modes.  */
+		count = 0;
+		do {
+			ei = popescbuf (tw, tw->escbuf);
+			if (count == 0 && ei == -1)
+				ei = 0;
+			switch (ei) {
+			case 0:
+				tw->curs_vvis = 0;
+				break;
+			case 8:
+				tw->curs_vvis = 1;
+				break;
+			}
+			++count;
+		} while (ei >= 0);
+		break;
 	case 'h':		/* mode set */
 		count = 0;
 		do {
@@ -378,13 +324,10 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				/* Not yet implemented */
 				break;
 			case 25:	/* cursor on */
-				tw->term_flags |= FCURS;
+				tw->curs_on = 1;
 				break;
 			case 40:	/* Set column mode.  */
 				tw->deccolm = 1;
-				break;
-			case 50:	/* cursor on */
-				tw->term_flags |= FCURS;
 				break;
 			case 75:	/* screen display on */
 				/* Not yet implemented */
@@ -443,13 +386,10 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				/* Not yet implemented */
 				break;
 			case 25:	/* cursor off */
-				tw->term_flags &= ~FCURS;
+				tw->curs_on = 0;
 				break;
 			case 40:	/* Reset column mode.  */
 				tw->deccolm = 0;
-				break;
-			case 50:	/* cursor off */
-				tw->term_flags &= ~FCURS;
 				break;
 			case 75:	/* screen display off */
 				/* Not yet implemented */
@@ -489,7 +429,6 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 #endif
 		break;
 	}
-	curs_on (tw);
 	tw->output = vt100_putch;
 }
 
@@ -606,24 +545,19 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		gotoxy (tw, cx - 1, cy);
-		curs_on (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
 		gotoxy (tw, cx, cy + 1);
-		curs_on (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
 		gotoxy (tw, cx, cy - 2);
-		curs_on (tw);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		gotoxy (tw, cx + 1, cy);
-		curs_on (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
-		curs_on (tw);
 		return;
 	case '0':
 	case '1':
@@ -789,6 +723,9 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			case 20:	/* <return> sends crlf */
 				/* Not yet implemented */
 				break;
+			case 34:
+				tw->curs_vvis = 0;
+				break;
 			}
 			count++;
 		}
@@ -809,6 +746,9 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 				break;
 			case 20:	/* <return> sends lf */
 				/* Not yet implemented */
+				break;
+			case 34:
+				tw->curs_vvis = 1;
 				break;
 			}
 			count++;
@@ -968,7 +908,6 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 #endif
 		break;
 	}
-	curs_on (tw);
 	tw->output = vt100_putch;
 }
 
@@ -992,24 +931,19 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		gotoxy(tw, cx - 1, cy);
-		curs_on (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy + 1);
-		curs_on (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy - 2);
-		curs_on (tw);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		gotoxy(tw, cx + 1, cy);
-		curs_on (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
-		curs_on (tw);
 		return;
 	case '1':		/* double height, single width top half chars */
 		/* Not yet implemented */
@@ -1039,7 +973,6 @@ vt100_esc_char_size (TEXTWIN* tw, unsigned int c)
 #endif
 		break;
 	}
-	curs_on (tw);
 	tw->output = vt100_putch;
 }
 
@@ -1063,24 +996,19 @@ vt100_esc_tests (TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		gotoxy(tw, cx - 1, cy);
-		curs_on (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy + 1);
-		curs_on (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy - 2);
-		curs_on (tw);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		gotoxy(tw, cx + 1, cy);
-		curs_on (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
-		curs_on (tw);
 		return;
 	case '1':		/* fill screen with following character */
 		/* Not yet implemented */
@@ -1097,7 +1025,6 @@ vt100_esc_tests (TEXTWIN* tw, unsigned int c)
 #endif
 		break;
 	}
-	curs_on (tw);
 	tw->output = vt100_putch;
 }
 
@@ -1121,24 +1048,19 @@ vt100_esc_std_char (TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		gotoxy(tw, cx - 1, cy);
-		curs_on (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy + 1);
-		curs_on (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy - 2);
-		curs_on (tw);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		gotoxy(tw, cx + 1, cy);
-		curs_on (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
-		curs_on (tw);
 		return;
 	case 'A':		/* British */
 	case 'B':		/* North American ASCII */
@@ -1170,7 +1092,6 @@ vt100_esc_std_char (TEXTWIN* tw, unsigned int c)
 #endif
 		break;
 	}
-	curs_on (tw);
 	tw->output = vt100_putch;
 }
 
@@ -1194,24 +1115,19 @@ vt100_esc_alt_char (TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		gotoxy(tw, cx - 1, cy);
-		curs_on (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy + 1);
-		curs_on (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy - 2);
-		curs_on (tw);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		gotoxy(tw, cx + 1, cy);
-		curs_on (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
-		curs_on (tw);
 		return;
 	case 'A':		/* British */
 	case 'B':		/* North American ASCII */
@@ -1239,7 +1155,6 @@ vt100_esc_alt_char (TEXTWIN* tw, unsigned int c)
 #endif
 		break;
 	}
-	curs_on (tw);
 	tw->output = vt100_putch;
 }
 
@@ -1281,7 +1196,9 @@ full_reset (TEXTWIN* tw)
 
 	set_ansi_fg_color (tw, ANSI_DEFAULT + 48);
 	set_ansi_bg_color (tw, ANSI_DEFAULT + 48);
-	tw->term_flags |= FCURS;	
+	
+	tw->curs_on = 1;
+	tw->curs_vvis = 0;	
 
 	tw->term_cattr &= ~CE_BOLD;
 	tw->term_cattr &= ~CE_LIGHT;
@@ -1303,7 +1220,6 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 {
 	int cx, cy;
 
-	curs_off (tw);
 	cx = tw->cx;
 	cy = tw->cy;
 
@@ -1316,24 +1232,19 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	switch (c) {
 	case '\010':		/* ANSI spec - ^H in middle of ESC (yuck!) */
 		gotoxy(tw, cx - 1, cy);
-		curs_on (tw);
 		return;
 	case '\012':		/* ANSI spec - ^J in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy + 1);
-		curs_on (tw);
 		return;
 	case '\013':		/* ANSI spec - ^K in middle of ESC (yuck!) */
 		gotoxy(tw, cx, cy - 2);
-		curs_on (tw);
 		return;
 	case '\014':		/* ANSI spec - ^L in middle of ESC (yuck!) */
 		gotoxy(tw, cx + 1, cy);
-		curs_on (tw);
 		return;
 	case '\033':		/* ESC - restart sequence */
 		tw->output = vt100_putesc;
 		tw->escbuf[0] = '\0';
-		curs_on (tw);
 		return;
 	case '<':		/* switch to vt100 mode */
 		switch (tw->vt_mode) {
@@ -1423,7 +1334,6 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 			break;
 		case MODE_VT100:	/* reverse cr */
 			if (cy == tw->scroll_top) {
-				curs_off (tw);
 				insert_line(tw, tw->scroll_top,
 					    tw->scroll_bottom);
 			} else
@@ -1435,17 +1345,14 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		tw->captsiz = 0;
 		tw->output = capture;
 		tw->callback = set_size;
-		curs_on (tw);
 		return;
 	case 'S':		/* MW extension: set title bar */
 		tw->captsiz = 0;
 		tw->output = capture;
 		tw->callback = set_title;
-		curs_on (tw);
 		return;
 	case 'Y':		/* Cursor motion follows */
 		tw->output = escy_putch;
-		curs_on (tw);
 		return;
 	case 'Z':		/* return terminal id */
 		tw->escbuf[0] = '\0';
@@ -1457,7 +1364,6 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'b':		/* set foreground color */
 #if 0
 		tw->output = fgcol_putch;
-		curs_on (tw);
 		return;		/* `return' to avoid resetting tw->output */
 #else
 		break;
@@ -1467,7 +1373,6 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		case MODE_VT52:	/* set background color */
 #if 0
 			tw->output = bgcol_putch;
-			curs_on (tw);
 			return;
 #else
 			break;
@@ -1481,10 +1386,10 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		clrfrom(tw, 0, tw->miny, cx, cy);
 		break;
 	case 'e':		/* enable cursor */
-		tw->term_flags |= FCURS;
+		tw->curs_on = 1;
 		break;
 	case 'f':		/* cursor off */
-		tw->term_flags &= ~FCURS;
+		tw->curs_on = 0;
 		break;
 	case 'h':		/* MW extension: enter insert mode */
 		tw->term_flags |= FINSERT;
@@ -1522,11 +1427,9 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		break;
 	case 'y':		/* TW extension: set special effects */
 		tw->output = seffect_putch;
-		curs_on (tw);
 		return;
 	case 'z':		/* TW extension: clear special effects */
 		tw->output = ceffect_putch;
-		curs_on (tw);
 		return;
 	case '[':		/* extended escape [ - various attributes */
 		tw->output = vt100_esc_attr;
@@ -1565,7 +1468,6 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 		break;
 	}
 	tw->output = vt100_putch;
-	curs_on (tw);
 }
 
 /* Save character after ESC Y + char.  */
@@ -1578,20 +1480,16 @@ escy1_putch (TEXTWIN* tw, unsigned int c)
 #ifdef DUMP
 	dump (c);
 #endif
-	curs_off (tw);
 	gotoxy(tw, c - ' ', tw->miny + tw->escy1 - ' ');
 	tw->output = vt100_putch;
-	curs_on (tw);
 }
 
 /* Save character after ESC Y.  */
 static void 
 escy_putch (TEXTWIN* tw, unsigned int c)
 {
-	curs_off (tw);
 	tw->escy1 = c;
 	tw->output = escy1_putch;
-	curs_on (tw);
 }
 
 /* Put character C on screen V. This is the default
@@ -1608,7 +1506,6 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 
 	cx = tw->cx;
 	cy = tw->cy;
-	curs_off (tw);
 
 	c &= 0x00ff;
 
@@ -1622,7 +1519,6 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 
 		case '\n':	/* new line */
 			if (cy == tw->scroll_bottom) {
-				curs_off (tw);
 				delete_line (tw, tw->scroll_top,
 					     tw->scroll_bottom);
 			} else {
@@ -1674,5 +1570,4 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 	} else {
 		vt_quote_putch (tw, c);
 	}
-	curs_on (tw);
 }
