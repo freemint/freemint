@@ -1,19 +1,19 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
+ *
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
  * Started: 1998-09-05
- * 
- * 
+ *
+ *
  * This replaces enter_kernel() and leave_kernel()
  * previously defined in main.c. Purpose: speed optimization.
  *
  * NOTICE: these routines are mainly responsible for the fact that
  * the kernel is not reentrant. Some day we will have to fix it.
- * 
+ *
  */
 
 #include "magic/magic.i"
@@ -24,7 +24,7 @@
 
 	.globl	_curproc
 	.globl	_in_kernel
-	.globl	_tosbp,__base
+	.globl	__base
 
 // Formerly, the enter_kernel() was called with an argument, that was
 // copied to the curproc->in_dos. We are compatible with this behaviour
@@ -50,7 +50,6 @@ _in_kernel:
 
 _enter_bios:
 	bset	#0x07,_in_kernel
-	beq.s	bp
 	rts
 
 _enter_gemdos:
@@ -58,10 +57,7 @@ _enter_gemdos:
 	bne.s	exit
 	move.l	_curproc,a0
 	move.w	#0x0001,P_INDOS(a0)
-bp:	move.l	_tosbp,a0
-	move.l	__base,(a0)
-exit:
-	rts
+exit:	rts
 
 //
 // leave_kernel: called before leaving the kernel, either back to
@@ -73,9 +69,7 @@ exit:
 // and additionally doesn't change the d0. See syscall.spp.
 //
 _leave_kernel:
-	move.l	_tosbp,a1
 	move.l	_curproc,a0
-	move.l	P_BASE(a0),(a1)
 	clr.w	P_INDOS(a0)
 	clr.w	_in_kernel
 	rts

@@ -41,21 +41,14 @@
 	.globl	_kernel_things
 
 _kernel_things:
-	.long	0xdeadbabe		// nice magic value first, for validation
-	.long	0			// useless field, see below
-	.long	0			// useless field, see below
-	.long	8			// number of valid addresses in the jumptable below
+	.long	0,0			// two useless fields, which must be here, see below
 
 // now the jumptable, with *absolute* addresses
 
 	.long	terminateme
 	.long	sig_return
 	.long	pc_valid_return
-	.long	slb_init_and_exit
-	.long	slb_open
-	.long	slb_close
-	.long	slb_close_and_pterm
-	.long	slb_exec
+	.long	0,0,0,0,0		// SLB stuff is currently useless for the kernel/threads
 
 	.text
 
@@ -65,10 +58,8 @@ _kernel_things:
 	.globl	_user_things
 
 _user_things:
-	.long	0xdeadbabe		// nice magic value first, for validation
 	.long	user_end-_user_things	// total number of bytes (to copy)
 usr_bp:	.long	0			// user process' basepage pointer (filled in by Slbopen())
-	.long	8			// number of valid addresses in the jumptable below
 
 // now the jumptable, with relative addresses
 
@@ -103,6 +94,91 @@ pc_valid_return:			// tells kernel its us
 	bsr.s	terminateme		// never returns
 
 // SLB stuff
+
+// slb_open
+//
+// Fake routine for returning from Slbopen(). Calls the library's open()
+// function in user mode and in the context of the calling process.
+//
+// Input:
+// 0(sp): Pointer to shared library header
+// 4(sp): Pointer to basepage of current process
+// 8(sp): Pointer to name of shared library structure
+//
+// Returns:
+// d0: Version number of the shared library, or GEMDOS error code
+
+slb_open:
+	move.l	(sp),a0
+	move.l	4(sp),-(sp)
+	move.l	SH_OPEN(a0),a1
+	jsr	(a1)
+	addq.l	#4,sp
+	move.l	8(sp),a0
+	tst.l	d0
+	bmi.s	failed
+	lea	SL_NAME(a0),a0
+	clr.l	-(sp)
+	clr.l	-(sp)
+	clr.l	-(sp)
+	clr.l	-(sp)
+	move.l	a0,-(sp)
+	move.w	#0x0016,-(sp)
+	trap	#1
+	lea	34(sp),sp
+	rts
+
+failed:	move.l	d0,-(sp)
+	move.l	a0,-(sp)
+	move.w	#0x0017,-(sp)
+	trap	#1
+	addq.l	#6,sp
+	move.l	(sp)+,d0
+	lea	12(sp),sp
+	rts
+
+// slb_close_and_pterm
+//
+// Like slb_close(), but instead of calling Slbclose() again, Pterm() is called.
+// This function is used when a process exited without calling Slbclose().
+
+slb_close_and_pterm:
+	move.l	d0,-(sp)
+	move.l	8(sp),a0
+	move.l	SL_HEAD(a0),a0
+	move.l	SH_CLOSE(a0),a0
+	move.l	4(sp),-(sp)
+	jsr	(a0)
+	addq.l	#4,sp
+	move.l	(sp)+,d0
+	addq.l	#8,sp
+	move.w	d0,-(sp)
+	bsr.s	terminateme		// never returns
+
+// slb_close
+//
+// Fake routine for returning from Slbclose(). Calls the library's close()
+// function in user mode and in the context of the calling process.
+//
+// Input:
+// 0(sp): Pointer to basepage of current process
+// 4(sp): Pointer to shared library structure, as passed to Slbclose()
+//
+// Returns:
+// d0: Version number of the shared library, or GEMDOS error code
+
+slb_close:
+	move.l	4(sp),a0
+	move.l	SL_HEAD(a0),a0
+	move.l	SH_CLOSE(a0),a0
+	move.l	(sp),-(sp)
+	jsr	(a0)
+	addq.l	#4,sp
+	move.l	4(sp),-(sp)
+	move.w	#0x0017,-(sp)
+	trap	#1
+	lea	14(sp),sp
+	rts
 
 slb_init_and_exit:
 
@@ -169,92 +245,6 @@ halt:	move.w	#0x0011,-(sp)
 	clr.w	-(sp)
 	trap	#1
 
-// slb_open
-//
-// Fake routine for returning from Slbopen(). Calls the library's open()
-// function in user mode and in the context of the calling process.
-//
-// Input:
-// 0(sp): Pointer to shared library header
-// 4(sp): Pointer to basepage of current process
-// 8(sp): Pointer to name of shared library structure
-//
-// Returns:
-// d0: Version number of the shared library, or GEMDOS error code
-
-slb_open:
-	move.l	(sp),a0
-	move.l	4(sp),-(sp)
-	move.l	SH_OPEN(a0),a1
-	jsr	(a1)
-	addq.l	#4,sp
-	tst.l	d0
-	bmi.s	failed
-	move.l	8(sp),a0
-	lea	SL_NAME(a0),a0
-	clr.l	-(sp)
-	clr.l	-(sp)
-	clr.l	-(sp)
-	clr.l	-(sp)
-	move.l	a0,-(sp)
-	move.w	#0x0016,-(sp)
-	trap	#1
-	lea	34(sp),sp
-	rts
-
-failed:	move.l	8(sp),a0
-	move.l	d0,-(sp)
-	move.l	a0,-(sp)
-	move.w	#0x0017,-(sp)
-	trap	#1
-	addq.l	#6,sp
-	move.l	(sp)+,d0
-	lea	12(sp),sp
-	rts
-
-// slb_close
-//
-// Fake routine for returning from Slbclose(). Calls the library's close()
-// function in user mode and in the context of the calling process.
-//
-// Input:
-// 0(sp): Pointer to basepage of current process
-// 4(sp): Pointer to shared library structure, as passed to Slbclose()
-//
-// Returns:
-// d0: Version number of the shared library, or GEMDOS error code
-
-slb_close:
-	move.l	4(sp),a0
-	move.l	SL_HEAD(a0),a0
-	move.l	SH_CLOSE(a0),a0
-	move.l	(sp),-(sp)
-	jsr	(a0)
-	addq.l	#4,sp
-	move.l	4(sp),-(sp)
-	move.w	#0x0017,-(sp)
-	trap	#1
-	lea	14(sp),sp
-	rts
-
-// slb_close_and_pterm
-//
-// Like slb_close(), but instead of calling Slbclose() again, Pterm() is called.
-// This function is used when a process exited without calling Slbclose().
-
-slb_close_and_pterm:
-	move.l	d0,-(sp)
-	move.l	8(sp),a0
-	move.l	SL_HEAD(a0),a0
-	move.l	SH_CLOSE(a0),a0
-	move.l	4(sp),-(sp)
-	jsr	(a0)
-	addq.l	#4,sp
-	move.l	(sp)+,d0
-	addq.l	#8,sp
-	move.w	d0,-(sp)
-	bsr.w	terminateme
-
 // slb_exec
 //
 // Helper function to call an SLB's function from within an application.
@@ -289,8 +279,7 @@ slb_exec:
 	move.l	d0,a0
 	jmp	(a0)
 
-einvfn:	sub.l	a0,a0		// hide the shared lib struct address
-	moveq	#-32,d0
+einvfn:	moveq	#-32,d0
 	rts
 
 user_end:
