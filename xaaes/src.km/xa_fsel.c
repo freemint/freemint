@@ -194,7 +194,6 @@ fs_prompt(SCROLL_INFO *list)
 		list->get(list, NULL, SEGET_SELECTED, &s);
 		if (s)
 		{
-			display("unselect");
 			list->set(list, s, SESET_UNSELECTED, 0, NORMREDRAW);
 			ret = true;
 		}
@@ -1030,8 +1029,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
 			c_owner(client), path, file, title, s, c));
 
-	display("open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
-			client->name, path, file, title, s, c);
 	if (fs)
 	{
 		bzero(fs, sizeof(*fs));
