@@ -396,7 +396,7 @@ f_datime (ushort *timeptr, short fd, short wflag)
 	if (is_terminal (f))
 		return EACCES;
 	
-	if (f->fc.fs->fsflags & FS_EXT_3)
+	if (f->fc.fs && f->fc.fs->fsflags & FS_EXT_3)
 	{
 		ulong t = 0;
 		long r;
@@ -609,6 +609,9 @@ f_cntl (short fd, long arg, short cmd)
 		{
 			XATTR *xattr = (XATTR *) arg;
 			
+			if (!f->fc.fs)
+				return EINVAL;
+			
 			r = xfs_getxattr (f->fc.fs, &f->fc, xattr);
 			if ((r == E_OK) && (f->fc.fs->fsflags & FS_EXT_3))
 			{
@@ -625,6 +628,9 @@ f_cntl (short fd, long arg, short cmd)
 		{
 			STAT *ptr = (STAT *) arg;
 			
+			if (!f->fc.fs)
+				return EINVAL;
+			
 			if (f->fc.fs->fsflags & FS_EXT_3)
 				r = xfs_stat64 (f->fc.fs, &f->fc, ptr);
 			else
@@ -635,7 +641,7 @@ f_cntl (short fd, long arg, short cmd)
 		}
 		case FUTIME:
 		{
-			if ((f->fc.fs->fsflags & FS_EXT_3) && arg)
+			if (f->fc.fs && (f->fc.fs->fsflags & FS_EXT_3) && arg)
 			{
 				MUTIMBUF *buf = (MUTIMBUF *) arg;
 				ulong t [2];
