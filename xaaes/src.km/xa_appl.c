@@ -1068,7 +1068,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			gi_type = 17;
 		}
-		else if ((gi_type & 0xff00) == 0x58)
+		else if ((gi_type & 0xff00) == 0x5800)
 		{
 			gi_type = (gi_type & 0xff) + XA_AGI;
 			if (gi_type > XA_MAGI)
