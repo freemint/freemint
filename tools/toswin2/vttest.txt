@@ -8,3 +8,130 @@ Test Of Cursor Movements
 [ ] DECALN in 132 column mode
 [ ] Cursor control characters in ESC sequences
 [x] Test of leading zeros in ESC sequences
+
+Test Of Screen Features
+=======================
+
+[x] Wrap around
+[ ] Tab setting/resetting
+[ ] 132 column mode, light background
+[ ] 80 column mode, light background
+[x] 132 column mode, dark background
+[x] 80 column mode, dark background
+[ ] Soft scroll down 1
+[x] Soft scroll down 2
+[ ] Jump scroll down 1
+[x] Jump scroll down 2
+[ ] Origin mode test
+[ ] Graphic rendition dark background
+[ ] Graphic rendition light background
+[ ] Test of save/restore cursor
+
+Test Of Double-Sized Characters
+===============================
+[ ] 80 column mode, test 1
+[ ] 80 column mode, test 2
+[ ] 132 column mode, test 1
+[ ] 132 column mode, test 2
+[ ] centered frame
+[ ] bottom frame
+
+Test Of Keyboard
+================
+[x] LED Lights
+[ ] Auto repeat
+    Keyboard layout
+    [ ] US ASCII
+    [ ] Swedish national layout D47
+    [ ] Swedish national layout E47
+[x] Cursor keys
+[x] Numeric keypad
+[ ] Answerback
+[ ] Control keys
+
+Test Of Terminal Reports
+========================
+[ ] <ENQ> (AnswerBack Message
+[ ] Set/Reset Mode - LineFeed/Newline
+[ ] Device Status Report (DSR)
+[ ] Primary Device Attributes (DA)
+[ ] Secondary Device Attributes (DA)
+[ ] Tertiary Device Attributes (DA)
+[ ] Request Terminal Parameters (DECREQTPARM)
+
+Test Of VT52 Mode
+=================
+[x] Full screen
+[ ] Character sets
+[ ] Terminal Response to IDENTIFY COMMAND
+
+Test Of VT102 Features
+======================
+[ ] Screen accordeon test 80
+[ ] AX 80
+[ ] A**B 80
+[ ] Delete character 80 
+[x] Staggered 1 80
+[x] Staggered 2 80
+[x] ANSI Insert Character 80
+[ ] Screen accordeon test 132
+[ ] AX 132
+[ ] A**B 132
+[ ] Delete character 132
+[x] Staggered 1 132
+[x] Staggered 2 132
+[x] ANSI Insert Character 132
+
+Known Bugs
+==========
+[x] Bug A: smooth scroll to jump scroll
+[x] Bug B: Scrolling region
+[x] Bug C: Wide to narrow screen
+[x] Bug D: Narrow to wide screen
+[x] Bug E: Cursor move from double- to single-wide line
+[ ] Bug F: Column mode escape sequence
+[x] Wrap around with cursor addressing
+[x] Erase right half of double width lines
+[x] Funny scroll regions
+
+Test Of Reset And Self-Test
+===========================
+[x] Reset to initial state (RIS)
+[x] Invoke Terminal Test (DECTST)
+[ ] Soft Terminal Reset (DECSTR)
+
+Test Of Non-VT100 Features
+==========================
+1. Test of VT220/VT320 features
+   [ ] Test 8-bit controls
+   [ ]Test Device Status Report (DSR)
+       [ ] Test Keyboard Status
+       [ ] Test Printer Status
+       [ ] Test UDK Status
+       [ ] Test Locator Status
+   [ ] Test Erase Char (ECH)
+   [ ] Test Printer (MC)
+       [ ] Assign printer to active session (MC)
+       [ ] Start printer-to-host session (MC)
+       [ ] Enable Printer-Extent mode (DECPEX)
+       [ ] Enable Print Form Feed Mode (DECPFF)
+       [ ] Test Auto-print mode (MC - DEC private mode)
+       [ ] Test Printer-controller mode (MC)
+       [ ] Test Print-page (MC)
+       [ ] Test Print composed main-display (MC)
+       [ ] Test Print all pages (MC)
+       [ ] Test Print cursor line (MC)
+   [ ] Test Protected-Areas (DECSCA)
+   [ ] Test Soft Character Sets (DECDLD)
+   [ ] Test Terminal Modes
+       [x] Test Send/Receive mode (SRM)
+       [x] Test Visible/Invisible Cursor (DECTCEM)
+   [ ] Test user-defined keys (DECUDK)
+
+To be continued ...
+
+2. Test of VT420 features
+3. Test ISO-6429 cursor-movement
+4. Test ISO-6429 colors
+5. Test other ISO-6429 features
+6. Test XTERM special features
