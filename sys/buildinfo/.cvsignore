@@ -11,3 +11,7 @@ lib*.a
 *.app
 *.prg
 __target.*
+mkbuild
+cdef.h
+build.h
+buildserial

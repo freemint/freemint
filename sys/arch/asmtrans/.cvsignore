@@ -11,3 +11,6 @@ lib*.a
 *.app
 *.prg
 __target.*
+asmtab.h
+asmtab.c
+asmtrans
