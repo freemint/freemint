@@ -19,6 +19,7 @@
 #include "av.h"
 #include "window.h"
 #include "ansicol.h"
+#include "console.h"
 
 WINDOW	*gl_topwin;		/* oberstes Fenster */
 WINDOW	*gl_winlist;		/* LIFO Liste der offenen Fenster */
