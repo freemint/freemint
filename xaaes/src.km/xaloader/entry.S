@@ -1,6 +1,6 @@
 /*
  * $Id$
- *
+ * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -24,17 +24,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _init_h
-#define _init_h
+	.globl	__base
+	.globl	__start
+	.globl	__crtinit
 
-#include "global.h"
+	.bss
+__base:
+	ds.l	1
 
-extern short my_global_aes[];
+	.text
 
-extern char version[];
-extern Path Aes_home_path;
-extern long loader_pid;
+__start:
+	move.l	0x4(sp),a0		// basepage address
+	move.l	a0,__base
 
-long init(struct kentry *k);
-
-#endif /* _init_h */
+	movel	a0@(4),d0		// get _base->p_hitpa
+	bclr	#0,d0			// round off
+	movel	d0,sp			// set stack (temporarily)
+	jmp	__crtinit		// in crtinit.c
