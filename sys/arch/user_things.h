@@ -37,18 +37,24 @@
 # include "mint/mint.h"
 # include "mint/slb.h"
 
-extern long user_header[];
+typedef struct
+{
+	const long	magic;
+	const long	len;
+	BASEPAGE	*bp;		/* user basepage ptr, internal use */
+	const long	jmpno;
 
-void terminateme(int code);
+	long terminateme_p;
+	long sig_return_p;
+	long pc_valid_return_p;
+	long slb_init_and_exit_p;
+	long slb_open_p;
+	long slb_close_p;
+	long slb_close_and_pterm_p;
+	long slb_exec_p;
+} USER_THINGS;
 
-void sig_return (void);
-void *pc_valid_return;
-
-long slb_open (void);
-long slb_close (void);
-long slb_close_and_pterm (void);
-void _cdecl slb_init_and_exit(BASEPAGE *b);
-
-long _cdecl slb_exec (SHARED_LIB *sl, long fn, short nargs, ...);
+extern USER_THINGS user_things;
+extern USER_THINGS kernel_things;
 
 # endif /* _m68k_user_things_h */

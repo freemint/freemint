@@ -30,7 +30,7 @@
 # include "arch/kernel.h"
 # include "arch/mprot.h"
 # include "arch/startup.h"
-# include "arch/user_things.h"	/* user_header */
+# include "arch/user_things.h"	/* trampoline */
 
 # include "bios.h"
 # include "dosfile.h"
@@ -154,7 +154,7 @@ init_proc (void)
 	bzero (curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof (long));
 	
 	/* init trampoline things */
-	curproc->p_mem->tp_ptr = user_header;
+	curproc->p_mem->tp_ptr = &kernel_things;
 	curproc->p_mem->tp_reg = NULL;
 	
 	/* init page table for curproc */

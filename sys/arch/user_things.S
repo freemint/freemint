@@ -33,34 +33,55 @@
 
 #include "magic/magic.i"
 
+// The kernel_things is for the kernel itself and its threads.
+// It is directly addressed, not copied anywhere.
+
+	.data
+
+	.globl	_kernel_things
+
+_kernel_things:
+	.long	0xdeadbabe		// nice magic value first, for validation
+	.long	0			// useless field, see below
+	.long	0			// useless field, see below
+	.long	8			// number of valid addresses in the jumptable below
+
+// now the jumptable, with *absolute* addresses
+
+	.long	terminateme
+	.long	sig_return
+	.long	pc_valid_return
+	.long	slb_init_and_exit
+	.long	slb_open
+	.long	slb_close
+	.long	slb_close_and_pterm
+	.long	slb_exec
+
 	.text
 
-// Some sort of a header first
+// The user_things is for user processes. It is copied to the
+// process address space and addressed there.
 
-	.globl	_user_header
+	.globl	_user_things
 
-_user_header:
+_user_things:
 	.long	0xdeadbabe		// nice magic value first, for validation
-	.long	0x0100			// version number
-	.long	user_end-_user_header	// total number of bytes (to copy)
-	.long	0			// user process' basepage pointer (to be filled)
+	.long	user_end-_user_things	// total number of bytes (to copy)
+usr_bp:	.long	0			// user process' basepage pointer (filled in by Slbopen())
 	.long	8			// number of valid addresses in the jumptable below
 
 // now the jumptable, with relative addresses
 
-	.long	_terminateme-_user_header
-	.long	_sig_return-_user_header
-	.long	_pc_valid_return-_user_header
-	.long	_slb_init_and_exit-_user_header
-	.long	_slb_open-_user_header
-	.long	_slb_close-_user_header
-	.long	_slb_close_and_pterm-_user_header
-	.long	_slb_exec-_user_header
-	.long	0
+	.long	terminateme-_user_things
+	.long	sig_return-_user_things
+	.long	pc_valid_return-_user_things
+	.long	slb_init_and_exit-_user_things
+	.long	slb_open-_user_things
+	.long	slb_close-_user_things
+	.long	slb_close_and_pterm-_user_things
+	.long	slb_exec-_user_things
 
-	.globl	_terminateme
-
-_terminateme:
+terminateme:
 	move.w	4(sp),-(sp)
 	move.w	#0x004c,-(sp)
 	trap	#1
@@ -70,22 +91,20 @@ _terminateme:
 //  -4(sp)	(long) sfmt
 //    (sp)	(long) signal number -- was a parameter for user routine
 
-	.globl	_sig_return
-	.globl	_pc_valid_return
-
-_sig_return:	addq.w	#8,sp		// pop signal number and sfmt
+sig_return:
+	addq.w	#8,sp			// pop signal number and sfmt
 	move.w	#0x011a,-(sp)		// Psigreturn() system call
 	trap	#1
-_pc_valid_return:			// tells kernel its us
+pc_valid_return:			// tells kernel its us
 // we had better not come back
 // if we did, something terrible
 // happened, and we might as well terminate
 	move.w	#-998,-(sp)
-	bsr.s	_terminateme		// never returns
+	bsr.s	terminateme		// never returns
 
-	.globl	_slb_init_and_exit
+// SLB stuff
 
-_slb_init_and_exit:
+slb_init_and_exit:
 
 	move.l	4(sp),a0		// basepage pointer
 	move.l	B_ENV(a0),d0		// bp->p_env
@@ -163,9 +182,7 @@ halt:	move.w	#0x0011,-(sp)
 // Returns:
 // d0: Version number of the shared library, or GEMDOS error code
 
-	.globl	_slb_open
-
-_slb_open:
+slb_open:
 	move.l	(sp),a0
 	move.l	4(sp),-(sp)
 	move.l	SH_OPEN(a0),a1
@@ -207,9 +224,7 @@ failed:	move.l	8(sp),a0
 // Returns:
 // d0: Version number of the shared library, or GEMDOS error code
 
-	.globl	_slb_close
-
-_slb_close:
+slb_close:
 	move.l	4(sp),a0
 	move.l	SL_HEAD(a0),a0
 	move.l	SH_CLOSE(a0),a0
@@ -227,9 +242,7 @@ _slb_close:
 // Like slb_close(), but instead of calling Slbclose() again, Pterm() is called.
 // This function is used when a process exited without calling Slbclose().
 
-	.globl	_slb_close_and_pterm
-
-_slb_close_and_pterm:
+slb_close_and_pterm:
 	move.l	d0,-(sp)
 	move.l	8(sp),a0
 	move.l	SL_HEAD(a0),a0
@@ -240,7 +253,7 @@ _slb_close_and_pterm:
 	move.l	(sp)+,d0
 	addq.l	#8,sp
 	move.w	d0,-(sp)
-	bsr.w	_terminateme
+	bsr.w	terminateme
 
 // slb_exec
 //
@@ -257,10 +270,7 @@ _slb_close_and_pterm:
 //     Otherwise: Return code of function
 //
 
-	.globl	_slb_exec
-	.globl	_tosbp
-
-_slb_exec:
+slb_exec:
 	move.l	8(sp),d0
 	bmi.s	einvfn
 	move.l	4(sp),a0
@@ -274,7 +284,7 @@ _slb_exec:
 	move.l	SH_FUNCTIONS(a0,d0.l),d0
 #endif
 	beq.s	einvfn
-	move.l	_tosbp,a0
+	move.l	usr_bp.w(pc),a0
 	move.l	(a0),4(sp)
 	move.l	d0,a0
 	jmp	(a0)
