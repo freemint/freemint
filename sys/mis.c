@@ -91,9 +91,9 @@
 # define SHELL_MAXLINE	8192L		/* max line for the shell_fprintf() */
 
 /* this is an average number of seconds in Gregorian year
- * (365 days, 6 hours, 11 minutes, 15 seconds).
+ * (365 days, 5 hours, 48 minutes, 45 seconds).
  */
-# define SEC_OF_YEAR	31558275L
+# define SEC_OF_YEAR	31556925L
 
 # define LINELEN	254
 
