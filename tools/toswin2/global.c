@@ -9,7 +9,7 @@
 #include "global.h"
 #include "console.h"
 #include "toswin2.h"
-
+#include "ansicol.h"
 
 /*
  * Globale Variablen
@@ -202,6 +202,7 @@ void global_init(void)
 	if (gl_gdos)
 		font_anz += vst_load_fonts(vdi_handle, 0);
 	
+	init_ansi_colors (work_out);
 }
 
 void global_term(void)

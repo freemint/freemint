@@ -9,6 +9,7 @@
 #include "textwin.h"
 #include "vt.h"
 #include "window.h"
+#include "ansicol.h"
 
 #ifdef DEBUG
 extern int do_debug;
@@ -125,37 +126,31 @@ static void quote_putch(TEXTWIN *v, int c)
 	v->output = vt52_putch;
 }
 
-short color_translate[] = {
-	0,
-	2,
-	3,
-	6,
-	4,
-	7,
-	5,
-	8,
-	9,
-	10,
-	11,
-	14,
-	12,
-	15,
-	13,
-	1
-};
-	
-/* short color_translate[] = { 1, 10, 11, 14, 12, 15, 13, 0, 
- 			       0, 9, 2, 3, 6, 4, 7, 5, 8 }; */
-
 static void fgcol_putch(TEXTWIN *v, int c)
 {
-	v->term_cattr = (v->term_cattr & ~CFGCOL) | (color_translate[c & 0xf]<<4);
+	v->term_cattr = ((v->term_cattr & ~CFGCOL) | 
+			 (vdi2ansi[c & 0x7] << 4));
 	v->output = vt52_putch;
 }
 
 static void bgcol_putch(TEXTWIN *v, int c)
 {
-	v->term_cattr = (v->term_cattr & ~CBGCOL) | color_translate[c & 0xf];
+	v->term_cattr = (v->term_cattr & ~CBGCOL) | 
+			 vdi2ansi[c & 0x7];
+	v->output = vt52_putch;
+}
+
+static 
+void ansi_fgcol_putch (TEXTWIN *v, int c)
+{
+	set_ansi_fg_color (v, c);
+	v->output = vt52_putch;
+}
+
+static void 
+ansi_bgcol_putch (TEXTWIN *v, int c)
+{
+	set_ansi_bg_color (v, c);
 	v->output = vt52_putch;
 }
 
@@ -169,6 +164,9 @@ static void seffect_putch(TEXTWIN *v, int c)
 /* clear special effects */
 static void ceffect_putch(TEXTWIN *v, int c)
 {
+	if (c == '_')
+		v->term_cattr &= ~(C_ANSI_FG | C_ANSI_BG);
+	
 	v->term_cattr &= ~((c & 0x1f) << 8);
 	v->output = vt52_putch;
 }
@@ -204,6 +202,18 @@ static void putesc(TEXTWIN *v, int c)
 
 	switch (c) 
 	{
+		case '3':		/* GFL: Set ANSI fg color.  */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is set ANSI fg");
+#endif
+			v->output = ansi_fgcol_putch;
+			return;
+		case '4':		/* GFL: Set ANSI fg color.  */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is set ANSI bg");
+#endif
+			v->output = ansi_bgcol_putch;
+			return;
 		case 'A':		/* cursor up */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor up");
@@ -489,9 +499,13 @@ void vt52_putch(TEXTWIN *v, int c)
 				{
 					curs_off(v);
 					delete_line(v, 0);
+					/* FIXME: Smear background!  */
 				}
-				else
+				else 
+				{
 					gotoxy(v, cx, cy+1);
+					smear_background (v, cy); 
+				}
 				break;
 
 			case '\b':
@@ -514,19 +528,16 @@ void vt52_putch(TEXTWIN *v, int c)
 				break;
 
 			case '\t':
-				gotoxy(v, (v->cx +8) & ~7, v->cy); 
+				gotoxy(v, (v->cx +8) & ~7, v->cy);
+				smear_background (v, ((v->cx + 8) & ~7) - 1); 
 				break;
 
 			case '\016':		/* smacs, start alternate character set.  */
-printf ("%s:%d:term_cattr was: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
 				v->term_cattr |= CACS;
-printf ("%s:%d:term_cattr is: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
 				break;
 				
 			case '\017':		/* rmacs, end alternate character set.  */
-printf ("%s:%d:term_cattr was: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
 				v->term_cattr &= ~CACS;
-printf ("%s:%d:term_cattr was: 0x%08x\n", __FILE__, __LINE__, v->term_cattr);
 				break;
 				
 			default:

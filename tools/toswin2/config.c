@@ -10,7 +10,9 @@
 #include "toswin2.h"
 #include "version.h"
 #include "window.h"
+#include "ansicol.h"
 
+#define COLOR_BITS 4
 
 /*
  * exportierte Variablen
@@ -76,8 +78,8 @@ static WINCFG *crt_newcfg(char *prog)
 	new->wrap = TRUE;
 	new->autoclose = FALSE;
 	new->iconified = FALSE;
-	new->fg_color = 1;
-	new->bg_color = 0;
+	new->fg_color = 0;
+	new->bg_color = 1;
 	new->char_tab = TAB_ATARI;
 	return new;
 }
@@ -108,9 +110,9 @@ static void validate_cfg(WINCFG *cfg)
 	if (cfg->vt_mode < MODE_VT52 || cfg->vt_mode > MODE_VT100)
 		cfg->vt_mode = MODE_VT52;
 	if (cfg->fg_color < 0 || cfg->fg_color > 15)
-		cfg->fg_color = 1;
-	if (cfg->bg_color < 0 || cfg->bg_color > 15)
-		cfg->bg_color = 0;
+		cfg->fg_color = 0;
+	if (cfg->bg_color < 0 || cfg->bg_color > 7)
+		cfg->bg_color = 1;
 	if (cfg->char_tab < TAB_ATARI || cfg->char_tab > TAB_ISO)
 		cfg->char_tab = TAB_ATARI;
 }
@@ -365,9 +367,9 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 		case WFGSTR :
 		case WFGCOL :
 			if (exit_obj == WFGCOL)
-				y = handle_colorpop(wd->tree, WFGCOL, POP_OPEN, 4, 0);
+				y = handle_colorpop(wd->tree, WFGCOL, POP_OPEN, COLOR_BITS, 0);
 			else
-				y = handle_colorpop(wd->tree, WFGCOL, POP_CYCLE, 4, 0);
+				y = handle_colorpop(wd->tree, WFGCOL, POP_CYCLE, COLOR_BITS, 0);
 			if (y > -1)
 				new_fg = y;
 			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
@@ -377,9 +379,9 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 		case WBGSTR :
 		case WBGCOL :
 			if (exit_obj == WBGCOL)
-				y = handle_colorpop(wd->tree, WBGCOL, POP_OPEN, 4, 0);
+				y = handle_colorpop(wd->tree, WBGCOL, POP_OPEN, COLOR_BITS, 0);
 			else
-				y = handle_colorpop(wd->tree, WBGCOL, POP_CYCLE, 4, 0);
+				y = handle_colorpop(wd->tree, WBGCOL, POP_CYCLE, COLOR_BITS, 0);
 			if (y > -1)
 				new_bg = y;
 			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
@@ -846,7 +848,7 @@ void config_init(void)
 	fix_dial(tmp);
 	cfg_wd = create_wdial(tmp, winicon, WCOL, open_cfgwd, exit_cfgwd);
 	/* Farbpopup */
-	init_colorpop(4);
+	init_colorpop(COLOR_BITS);
 	fix_colorpopobj(tmp, WFGCOL, 0);
 	fix_colorpopobj(tmp, WBGCOL, 0);
 

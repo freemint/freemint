@@ -4,6 +4,7 @@
 
 void	paint		(TEXTWIN *v, int c);
 void	gotoxy		(TEXTWIN *v, int x, int y);
+void	smear_background (TEXTWIN *v, int lastx);
 void	clrline		(TEXTWIN *v, int r);
 void	clear		(TEXTWIN *v);
 void	clrchar		(TEXTWIN *v, int x, int y);
