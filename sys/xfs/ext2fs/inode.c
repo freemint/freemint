@@ -422,8 +422,10 @@ rel_cookie (COOKIE *c)
 		}
 	}
 	else
-		ALERT (("Ext2-FS [%c]: rel_cookie -> links = 0 (#%li)",
+	{
+		DEBUG (("Ext2-FS [%c]: rel_cookie -> links = 0 (#%li)",
 			c->dev+'A', c->inode));
+	}
 }
 
 void
