@@ -301,21 +301,23 @@ proc_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	
 	if (name[1] == PROC_PID_DEBUG)
 	{
-		long ret;
 		long flag = 0;
-
+		long ret;
+		
 		if (namelen != 2)
 			return EINVAL;
 		
 		ret = sysctl_long (oldp, oldlenp, newp, newlen, &flag);
-		if ( ret) {
-			DEBUG( ("ERROR!!!\n"));
+		if (ret)
 			return ret;
-		} else {
-			DEBUG(("pid %i: flag will be set now to %li", ptmp->pid, flag));
-			ptmp->debug_level = flag;
-		}
+		
+		DEBUG(("pid %i: flag will be set now to %li", ptmp->pid, flag));
+		ptmp->debug_level = flag;
+		
+		return 0;
 	}
+	
+	return EINVAL;
 }
 
 
