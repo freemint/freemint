@@ -101,12 +101,6 @@
 static BASEPAGE *shell_base;
 static short xcommands;
 
-static const char *commands[] =
-{
-	"exit", "ver", "ls", "cd", "cp", "mv", "rm", "chmod", \
-	"help", "ln", "exec", "env", "chown", "chgrp", "xcmd", NULL
-};
-
 static const char *months[] =
 {
 	"Jan", "Feb", "Mar", "Apr", "May", "Jun", \
@@ -251,7 +245,7 @@ sh_getenv(const char *var)
 
 /* `static void' when it gets used more often (once for now)
  */
-INLINE void
+static void
 sh_setenv(const char *var, char *value)
 {
 	char *env_str = shell_base->p_env;
@@ -308,14 +302,14 @@ sh_setenv(const char *var, char *value)
 	Mfree(env_str);
 }
 
-/* Split command line into separate strings and put their pointers
- * into argv[].
+/* Split command line into separate strings, put their pointers
+ * into argv[], return argc.
  *
  * XXX add 'quoted arguments' handling.
  * XXX add wildcard expansion (at least the `*'), see fnmatch().
  *
  */
-INLINE long
+static long
 crunch(char *cmdline, char *argv[])
 {
 	char *cmd = cmdline, *start;
@@ -354,12 +348,12 @@ crunch(char *cmdline, char *argv[])
 	} while (cmdlen > 0);
 
 	argv[idx] = NULL;
-	
+
 	return idx;
 }
 
 /* Execute an external program */
-INLINE long
+static long
 execvp(char *oldcmd, char *argv[])
 {
 	char *var, *new_env, *new_var, *t, *path, *np, npath[2048];
@@ -373,7 +367,7 @@ execvp(char *oldcmd, char *argv[])
 	count += strlen(oldcmd + 1);	/* add some space for the ARGV= strings */
 	count += sizeof("ARGV=");	/* this is 6 bytes */
 
-	new_env = (char *)Mxalloc(count + 1, 3);
+	new_env = (char *)Mxalloc(count, 3);
 
 	if (!new_env)
 		return -40;
@@ -446,7 +440,6 @@ execvp(char *oldcmd, char *argv[])
 	return r;
 }
 
-/* Used twice, don't INLINE */
 static void
 xcmdstate(void)
 {
@@ -455,19 +448,16 @@ xcmdstate(void)
 
 /* End utilities, begin commands */
 
-/* XXX it would be more convenient for internal commands to get standard
- * argc/argv[] arguments as normal C programs do, for flexibility.
- */
-
-/* Used twice, don't INLINE */
-static void
-ver(void)
+static long
+sh_ver(long argc, char **argv)
 {
 	shell_printf(COPYCOPY, SH_VER_MAIOR, SH_VER_MINOR);
+
+	return 0;
 }
 
-INLINE void
-help(void)
+static long
+sh_help(long argc, char **argv)
 {
 	shell_printf( \
 	"	MiS is not intended to be a regular system shell, so don't\r\n" \
@@ -500,24 +490,36 @@ help(void)
 	"	or supply the full pathname." \
 	"\r\n", \
 	xcommands ? "on" : "off");
+
+	return 0;
 }
 
 /* Display all files in the current directory, with attributes et ceteris.
  * No wilcards filtering what to display, no sorted output, no nothing.
  */
 
-INLINE long
-sh_ls(char *dir)
+static long
+sh_ls(long argc, char **argv)
 {
 	struct stat st;
 	struct timeval tv;
 	short year, month, day, hour, minute;
 	long r, s, handle;
-	char *p, path[1024];
+	char *p, *dir, path[1024];
 	char entry[256];
 
-	if (!dir || *dir == 0)
-		dir = "./";
+	dir = ".";
+
+	if (argc >= 2)
+	{
+		if (strcmp(argv[1], "--help") == 0)
+		{
+			shell_printf("%s [dirspec]\r\n", argv[0]);
+
+			return 0;
+		}
+		dir = argv[1];
+	}
 
 	r = Dopendir(dir, 0);
 	if (r < 0)
@@ -596,7 +598,7 @@ sh_ls(char *dir)
 				/* Unfortunately ksprintf() lacks many formatting features ...
 				 */
 				ksprintf(p, sizeof(path), "%d", (short)st.nlink);	/* XXX */
-				p = justify_right(p, 4);
+				p = justify_right(p, 5);
 				*p++ = ' ';
 
 				ksprintf(p, sizeof(path), "%ld", st.uid);
@@ -642,31 +644,72 @@ sh_ls(char *dir)
 	return 0;
 }
 
+/* Change cwd to the given path. If none give, change to $HOME */
+static long
+sh_cd(long argc, char **argv)
+{
+	long r = 0;
+	char *home;
+
+	if (argc >= 2)
+	{
+		if (strcmp(argv[1], "--help") == 0)
+			shell_printf("%s [newdir]\r\n", argv[0]);
+		else
+			r = Dsetpath(argv[1]);
+	}
+	else
+	{
+		home = sh_getenv("HOME=");
+		if (home)
+			r = Dsetpath(home);
+	}
+
+	return r;
+}
+
 /* chgrp, chown, chmod: change various attributes */
-INLINE long
-sh_chgrp(char *grp, char *fname)
+static long
+sh_chgrp(long argc, char **argv)
 {
 	struct stat st;
 	long r, gid;
 
-	r = Fstat64(0, fname, &st);
+	if (argc < 3)
+	{
+		shell_printf("%s DEC-GROUP file\r\n", argv[0]);
+
+		return 0;
+	}
+
+	r = Fstat64(0, argv[2], &st);
 	if (r < 0)
 		return r;
 
-	gid = atol(grp);
+	gid = atol(argv[1]);
 
 	if (gid == st.gid)
 		return 0;			/* no change */
 
-	return Fchown(fname, st.uid, gid);
+	return Fchown(argv[2], st.uid, gid);
 }
 
-INLINE long
-sh_chown(char *own, char *fname)
+static long
+sh_chown(long argc, char **argv)
 {
 	struct stat st;
 	long r, uid, gid;
-	char *grp;
+	char *own, *fname, *grp;
+
+	if (argc < 3)
+	{
+		shell_printf("%s DEC-OWNER[:DEC-GROUP] file\r\n", argv[0]);
+
+		return 0;
+	}
+
+	own = argv[1];
+	fname = argv[2];
 
 	r = Fstat64(0, fname, &st);
 	if (r < 0)
@@ -697,14 +740,21 @@ sh_chown(char *own, char *fname)
 	return Fchown(fname, uid, gid);
 }
 
-INLINE long
-sh_chmod(char *attr, char *fname)
+static long
+sh_chmod(long argc, char **argv)
 {
 	long d = 0;
 	short c;
 	char *s;
 
-	s = attr;
+	if (argc < 3)
+	{
+		shell_printf("%s OCTAL-MODE file\r\n", argv[0]);
+
+		return 0;
+	}
+
+	s = argv[1];
 
 	while ((c = *s++) != 0 && isodigit(c))
 	{
@@ -714,24 +764,21 @@ sh_chmod(char *attr, char *fname)
 
 	d &= S_IALLUGO;
 
-	return Fchmod(fname, d);
+	return Fchmod(argv[2], d);
 }
 
-INLINE void
-env(char *envie)
+static long
+sh_env(long argc, char **argv)
 {
 	char *var;
 
-	if (envie)
-		var = envie;		/* debug reasons */
-	else
-		var = shell_base->p_env;
+	var = shell_base->p_env;
 
 	if (var == NULL || *var == 0)
 	{
 		shell_printf("mint: %s: no environment string!\r\n", __FUNCTION__);
 
-		return;
+		return 0;
 	}
 
 	while (*var)
@@ -741,17 +788,99 @@ env(char *envie)
 			var++;
 		var++;
 	}
+
+	return 0;
+}
+
+static long
+sh_xcmd(long argc, char **argv)
+{
+	if (argc >= 2)
+	{
+		if (strcmp(argv[1], "on") == 0)
+			xcommands = 1;
+		else if (strcmp(argv[1], "off") == 0)
+			xcommands = 0;
+		else if (strcmp(argv[1], "--help") == 0)
+			shell_printf("%s [on|off]\r\n", argv[0]);
+	}
+	xcmdstate();
+
+	return 0;
+}
+
+static long
+sh_exit(long argc, char **argv)
+{
+	short y;
+
+	shell_print("Are you sure to exit and reboot (y/n)?");
+	y = (short)Cconin();
+	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
+		Pterm(0);
+	shell_print("\r\n");
+
+	return 0;
+}
+
+static long
+sh_cp(long argc, char **argv)
+{
+	return -1;
+}
+
+static long
+sh_mv(long argc, char **argv)
+{
+	return -1;
+}
+
+static long
+sh_rm(long argc, char **argv)
+{
+	return -1;
+}
+
+static long
+sh_ln(long argc, char **argv)
+{
+	return -1;
+}
+
+static long
+sh_exec(long argc, char **argv)
+{
+	return -1;
 }
 
 /* End of the commands, begin control routines */
+
+static const char *commands[] =
+{
+	"exit", "ver", "ls", "cd", "cp", "mv", "rm", "chmod", \
+	"help", "ln", "exec", "env", "chown", "chgrp", "xcmd", NULL
+};
+
+static const char is_ext[] =
+{
+	0, 0, 1, 0, 1, 1, 1, 1, \
+	0, 1, 0, 0, 1, 1, 0	\
+};
+
+typedef long (FUNC)();
+
+static FUNC *cmd_routs[] =
+{
+	sh_exit, sh_ver, sh_ls, sh_cd, sh_cp, sh_mv, sh_rm, sh_chmod, \
+	sh_help, sh_ln, sh_exec, sh_env, sh_chown, sh_chgrp, sh_xcmd \
+};
 
 /* Execute the given command */
 INLINE long
 execute(char *cmdline)
 {
-	char *argv[SHELL_ARGS], newcmd[128], *c, *home;
+	char *argv[SHELL_ARGS], newcmd[128], *c;
 	long r, cnt, cmdno, argc;
-	short y;
 
 	c = cmdline;
 
@@ -801,113 +930,13 @@ execute(char *cmdline)
 	/* If xcommands == 1 internal code is used for the commands
 	 * below, or external programs are executed otherwise
 	 */
-	if (!xcommands)
+	if (cmdno && !xcommands)
 	{
-		switch (cmdno)
-		{
-			case	SHCMD_LS:
-			case	SHCMD_CP:
-			case	SHCMD_MV:
-			case	SHCMD_RM:
-			case	SHCMD_CHMOD:
-			case	SHCMD_LN:
-			case	SHCMD_ENV:
-			case	SHCMD_CHOWN:
-			case	SHCMD_CHGRP:
-			{
-				cmdno = 0;
-				break;
-			}
-		}
+		if (is_ext[cmdno - 1])
+			cmdno = 0;
 	}
 
-	switch (cmdno)
-	{
-		case	SHCMD_EXIT:
-		{
-			shell_print("Are you sure to exit and reboot (y/n)?");
-			y = (short)Cconin();
-			if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
-				Pterm(0);
-			shell_print("\r\n");
-			break;
-		}
-		case	SHCMD_VER:
-		{
-			ver();
-			break;
-		}
-		case	SHCMD_LS:
-		{
-			r = sh_ls(argv[1]);
-			break;
-		}
-		case	SHCMD_CD:
-		{
-			if (argv[1])
-				r = Dsetpath(argv[1]);
-			else
-			{
-				home = sh_getenv("HOME=");
-				if (home)
-					r = Dsetpath(home);
-			}
-			break;
-		}
-		case	SHCMD_CHMOD:
-		{
-			if (argv[1] && argv[2])
-				r = sh_chmod(argv[1], argv[2]);
-			else
-				shell_print("chmod OCTAL-MODE FILE\r\n");
-			break;
-		}
-		case	SHCMD_CHOWN:
-		{
-			if (argv[1] && argv[2])
-				r = sh_chown(argv[1], argv[2]);
-			else
-				shell_print("chown DEC-OWNER[:DEC-GROUP] FILE\r\n");
-			break;
-		}
-		case	SHCMD_CHGRP:
-		{
-			if (argv[1] && argv[2])
-				r = sh_chgrp(argv[1], argv[2]);
-			else
-				shell_print("chgrp DEC-GROUP FILE\r\n");
-			break;
-		}
-		case	SHCMD_HELP:
-		{
-			help();
-			break;
-		}
-		case	SHCMD_ENV:
-		{
-			env(0);
-			break;
-		}
-		case	SHCMD_XCMD:
-		{
-			if (argv[1])
-			{
-				if (strcmp(argv[1], "on") == 0)
-					xcommands = 1;
-				else if (strcmp(argv[1], "off") == 0)
-					xcommands = 0;
-			}
-			xcmdstate();
-			break;
-		}
-		default:
-		{
-			r = execvp(newcmd, argv);
-			break;
-		}
-	}
-
-	return r;
+	return (cmdno == 0) ? execvp(newcmd, argv) : cmd_routs[cmdno - 1](argc, argv);
 }
 
 /* XXX because of Cconrs() the command line cannot be longer than 126 bytes.
@@ -921,7 +950,7 @@ shell(void)
 
 	/* XXX enable word wrap for the console, cursor etc. */
 	shell_print("\r\n");
-	ver();
+	sh_ver(0, NULL);
 	xcmdstate();
 	shell_print("Type `help' for help\r\n\r\n");
 
