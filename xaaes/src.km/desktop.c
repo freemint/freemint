@@ -30,6 +30,7 @@
 #include "xa_global.h"
 
 #include "app_man.h"
+#include "k_mouse.h"
 #include "objects.h"
 #include "menuwidg.h"
 #include "widgets.h"
@@ -61,7 +62,8 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 	*/
 	if (!mouse_locked() && mowner != client && (mu_button.b & 1))
 	{
-		int item, b;
+		int item;
+		short b;
 
 		item = find_object(get_desktop()->tree, 0, 1, widg->mx, widg->my, 0, 0);
 

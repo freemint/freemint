@@ -104,7 +104,7 @@ new_client(enum locks lock, struct xa_client *client)
 	 * temporarily...
 	 * When changing this, also change it in k_init.c for the AESSYS
 	*/
-	strncpy(&client->mnu_clientlistname, "  Clients \3", 14);
+	strncpy(client->mnu_clientlistname, "  Clients \3", 14);
 
 	strncpy(client->proc_name, client->p->name, 8);
 
