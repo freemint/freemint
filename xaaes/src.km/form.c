@@ -162,8 +162,8 @@ Setup_form_do(struct xa_client *client,
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIDG_NOTEXT, NULL);
-		wt->zen = false; //true;
-		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h); //wind->r.x, wind->r.y, wind->r.w, wind->r.h);
+		wt->zen = false;
+		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
 	}
 	/*
 	 * Should this client do classic blocking form_do's?
@@ -241,7 +241,7 @@ bool
 form_button(XA_TREE *wt,
 	    short obj,
 	    const struct moose_data *md,
-	    unsigned long fbflags, //bool redraw,
+	    unsigned long fbflags,
 	    struct xa_rect_list *rl,
 	    /* Outputs */
 	    short *newstate,
@@ -847,14 +847,12 @@ dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *
 						{
 							set_clip(&dr);
 							widg->display(0, wind, widg);
-							//draw_object_tree(0, wt, wt->tree, 0, 10, NULL);
 						}
 					}
 					else
 					{
 						set_clip(&dr);
 						widg->display(0, wind, widg);
-						//draw_object_tree(0, wt, wt->tree, 0, 10, NULL);
 					}
 				}
 				rl = rl->next;

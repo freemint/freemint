@@ -172,7 +172,6 @@ XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
 void
 top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *old_focus, struct xa_client *desk_menu_owner)
 {
-	//struct xa_window *old_focus;
 	struct xa_client *client = w->owner;
 
 	if (!desk_menu_owner)
@@ -209,7 +208,7 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	 */
 	if (old_focus && !is_topped(old_focus))
 	{
-		send_iredraw(lock, old_focus, 0, NULL); //display_window(lock, 40, old_focus, NULL);
+		send_iredraw(lock, old_focus, 0, NULL);
 		if (domsg) send_untop(lock, old_focus);
 	}
 	/* Ozk: Make sure the window we should top is not the same as
@@ -220,7 +219,7 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	{
 		if (is_topped(w) && w != root_window)
 		{
-			send_iredraw(lock, w, 0, NULL); //display_window(lock, 41, w, NULL);
+			send_iredraw(lock, w, 0, NULL);
 			if (domsg) send_ontop(lock);
 		}
 	}
@@ -250,7 +249,7 @@ bottom_window(enum locks lock, struct xa_window *w)
 
 	/* Redisplay titles */
 	if (was_top)
-		send_iredraw(lock, w, 0, NULL); //display_window(lock, 42, w, NULL);
+		send_iredraw(lock, w, 0, NULL);
 	
 	/* Our window is now right above root_window */
 	update_windows_below(lock, &w->r, NULL, wl, w);
@@ -258,8 +257,6 @@ bottom_window(enum locks lock, struct xa_window *w)
 	if (was_top)
 	{
 		/*  send WM_ONTOP to just topped window. */
-		//if (is_topped(window_list))
-		//	send_ontop(lock);
 		send_untop(lock, w);
 		if (!is_infront(window_list->owner))
 		{
@@ -268,7 +265,7 @@ bottom_window(enum locks lock, struct xa_window *w)
 		}
 		if (is_topped(window_list))
 		{
-			send_iredraw(lock, window_list, 0, NULL); //display_window(lock, 43, window_list, NULL);
+			send_iredraw(lock, window_list, 0, NULL);
 			send_ontop(lock);
 		}
 	}
@@ -1278,8 +1275,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		o[1] = o[2] = 0;
 		o[3] = o[4] = -1;
 
-		//while (is_hidden(w))
-		//	w = w->next;
 		if (w)
 		{
 			if (w != root_window)
@@ -1437,7 +1432,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			if (i > 0 && (widg[i].ob_type & 0xff) == G_BOXCHAR)
 			{
-				/* c = get_ob_spec(widg + i)->this.colours; */
 				c = object_get_spec(widg + i)->obspec;
 			}
 			else

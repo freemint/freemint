@@ -349,7 +349,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 	sl = form + FS_LIST;
 	DIAG((D_fsel, NULL, "refresh_filelist: fs = %lx, obtree = %lx, sl = %lx",
 		fs, fs->form->tree, sl));
-	list = object_get_slist(sl); //(SCROLL_INFO *)sl->ob_spec.index;
+	list = object_get_slist(sl);
 	add_slash(fs->path, fs->fslash);
 	csens = inq_xfs(fs, fs->path, fs->fslash);
 
@@ -696,12 +696,10 @@ fileselector_form_exit(struct xa_client *client,
 {
 	enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
-	struct scroll_info *list = object_get_slist(obtree + FS_LIST); //(struct scroll_info *)(obtree[FS_LIST].ob_spec.index);
+	struct scroll_info *list = object_get_slist(obtree + FS_LIST);
 	struct fsel_data *fs = list->data;
 #ifdef FS_FILTER
-	//OBJECT *ob = odc_p->tree + FS_LIST;
-	//SCROLL_INFO *list = ob->ob_spec.index;
-	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER); //(TEDINFO *)(obtree + FS_FILTER)->ob_spec.tedinfo;
+	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER);
 #endif
 #if 0
 #ifdef FS_UPDIR
@@ -938,7 +936,7 @@ fs_msg_handler(
 	case WM_MOVED:
 	{
 		msg[6] = fs->wind->r.w, msg[7] = fs->wind->r.h;
-		//move_window(lock, fs.wind, true, -1, msg[4], msg[5], fs.wind->r.w, fs.wind->r.h);
+		/* fall through */
 	}
 	default:
 	{
@@ -950,25 +948,7 @@ fs_msg_handler(
 static int
 fs_destructor(enum locks lock, struct xa_window *wind)
 {
-	//XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-	//OBJECT *form = wt->tree;
-	//OBJECT *sl = form + FS_LIST;
-	//SCROLL_INFO *list = object_get_slist(sl); //(SCROLL_INFO *)sl->ob_spec.index;
-
-#if 0
-	if (list->wi)
-	{
-		DIAG((D_fsel, NULL, "fs_destructor: wi=%lx, status=%x", list->wi, list->wi->window_status));
-
-		if ((list->wi->window_status & XAWS_OPEN))
-			close_window(lock, list->wi);
-		
-		delayed_delete_window(lock, list->wi);
-		list->wi	= NULL;
-	}
-#endif	
-	//free_scrollist(list);
-	//DIAG((D_fsel,NULL,"fsel destructed"));
+	DIAG((D_fsel,NULL,"fsel destructed"));
 	return true;
 }
 
@@ -1118,14 +1098,9 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		 */
 		dialog_window->keypress = fs_key_form_do; //fs_key_handler;
 
-		//dialog_window->data = fs;
-
-		//set_scroll(C.Aes, form, FS_LIST, true);
-		
 		/* HR: set a scroll list object */
 		set_slist_object(lock,
 				 wt,
-				 //form,
 				 dialog_window,
 				 FS_LIST,
 				 SIF_SELECTABLE,

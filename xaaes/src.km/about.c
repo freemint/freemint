@@ -163,13 +163,6 @@ open_about(enum locks lock)
 
 		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = about_form_exit;
-#if 0
-		/* set a scroll list widget */
-		list = set_slist_object(lock, wt, form, dialog_window, ABOUT_LIST,
-				        NULL, NULL, NULL, NULL,
-					NULL, NULL, NULL, NULL,
-					NULL, NULL, NULL, 42);
-#endif
 		list = object_get_slist(obtree + ABOUT_LIST);
 
 		/* fill the list if already list */
@@ -178,7 +171,7 @@ open_about(enum locks lock)
 			char **t = about_lines;
 			while (*t)
 			{
-				list->add(list, NULL, *t, 0, NULL); //add_scroll_entry(form, ABOUT_LIST, 0, *t, 0, NULL);
+				list->add(list, NULL, *t, 0, NULL);
 				t++;
 			}
 		}
