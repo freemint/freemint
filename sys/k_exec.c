@@ -53,6 +53,7 @@
 # include "k_fds.h"
 # include "k_fork.h"
 # include "k_prot.h"
+# include "k_resource.h"	/* sys_prenice */
 # include "kmemory.h"
 # include "memory.h"
 # include "proc.h"
@@ -679,7 +680,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 	}
 
 	/* initialize memory */
-	recalc_maxmem(p);
+	recalc_maxmem(p, b->p_tlen + b->p_dlen + b->p_blen);
 	if (p->maxmem)
 	{
 		shrink_region(mem, p->maxmem);
@@ -830,7 +831,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 
 long _cdecl
 create_process(const void *filename, const void *cmdline, const void *newenv,
-	       struct proc **pret, long stack)
+	       struct proc **pret, long stack, struct create_process_opts *opts)
 {
 	char localname[PNAMSIZ+1];
 	MEMREGION *env = NULL;
@@ -849,14 +850,14 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	{
 		DEBUG(("create_process: unable to create environment"));
 		r = ENOMEM;
-		goto error;
+		goto leave;
 	}
 
 	base = load_region(filename, env, cmdline, NULL, NULL, &r);
 	if (!base)
 	{
 		DEBUG(("create_process: load_region failed"));
-		goto error;
+		goto leave;
 	}
 
 	TRACE(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
@@ -876,12 +877,35 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	r = 0;
 	p = fork_proc(0, &r);
 	if (!p)
-		goto error;
+		goto leave;
 
 	/* jr: add Pexec information to PROC struct */
 	strncpy(p->cmdlin, b->p_cmdlin, 128);
 
 	make_fname(p, filename);
+
+	/* optionally set some things */
+	if (opts && opts->mode)
+	{
+		if (opts->mode & CREATE_PROCESS_OPTS_MAXCORE)
+		{
+			/* just set maxcore, exec_region calls recalc_maxmem for us */
+			if (opts->maxcore >= 0)
+				p->maxcore = opts->maxcore;
+		}
+
+		if (opts->mode & CREATE_PROCESS_OPTS_NICELEVEL)
+			sys_prenice(p->pid, opts->nicelevel);
+
+		if (opts->mode & CREATE_PROCESS_OPTS_DEFDIR)
+			sys_d_setpath0(p, opts->defdir);
+
+		if (opts->mode & CREATE_PROCESS_OPTS_UID)
+			proc_setuid(p, opts->uid);
+
+		if (opts->mode & CREATE_PROCESS_OPTS_GID)
+			proc_setgid(p, opts->gid);
+	}
 
 	/* notify proc extensions */
 	proc_ext_on_exec(curproc);
@@ -919,7 +943,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 
 	run_next(p, 3);
 
-error:
+leave:
 	if (base) detach_region(curproc, base);
 	if (env) detach_region(curproc, env);
 

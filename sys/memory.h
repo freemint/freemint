@@ -48,7 +48,7 @@ MEMREGION *load_region (const char *name, MEMREGION *env, const char *cmdlin, XA
 long	load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start,
 			long nbytes, BASEPAGE *base);
 long	memused (struct proc *p);
-void	recalc_maxmem (struct proc *p);
+void	recalc_maxmem (struct proc *p, long size);
 int	valid_address (long addr);
 MEMREGION *_cdecl addr2mem (struct proc *p, long addr);
 MEMREGION *addr2region (long addr);

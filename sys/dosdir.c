@@ -336,10 +336,9 @@ bailout:
 	return r;
 }
 
-long _cdecl
-sys_d_setpath (const char *path)
+long
+sys_d_setpath0 (struct proc *p, const char *path)
 {
-	struct proc *p = curproc;
 	struct cwd *cwd = p->p_cwd;
 
 	XATTR xattr;
@@ -417,6 +416,12 @@ sys_d_setpath (const char *path)
 	cwd->curdir[drv] = dir;
 
 	return E_OK;
+}
+
+long _cdecl
+sys_d_setpath (const char *path)
+{
+	return sys_d_setpath0(curproc, path);
 }
 
 /*

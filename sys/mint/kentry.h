@@ -43,6 +43,7 @@
 /* forward declarations */
 struct basepage;
 struct bio;
+struct create_process_opts;
 struct dirstruct;
 struct dma;
 struct file;
@@ -101,7 +102,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	11
+#define KENTRY_MIN_VERSION	12
 
 
 /* hardware dependant vector
@@ -227,12 +228,10 @@ struct kentry_proc
 	struct timeout *_cdecl (*addroottimeout)(long, void (*)(), unsigned short);
 	void _cdecl (*cancelroottimeout)(struct timeout *);
 
-	/* add wakeup things for process p */
-	void _cdecl (*addonprocwakeup)(struct proc *, void _cdecl (*)(struct proc *, void *), void *);
-
 	/* create a new process */
 	long _cdecl (*create_process)(const void *ptr1, const void *ptr2, const void *ptr3,
-				      struct proc **pret, long stack);
+				      struct proc **pret, long stack,
+				      struct create_process_opts *);
 
 	/* 
 	 * fork a kernel thread for process p
@@ -251,7 +250,7 @@ struct kentry_proc
 	 * 
 	 * ...  - printf args
 	 */
-	long _cdecl (*kthread_create)(struct proc *p, void (*func)(void *), void *arg,
+	long _cdecl (*kthread_create)(struct proc *p, void _cdecl (*func)(void *), void *arg,
 				      struct proc **np, const char *fmt, ...);
 	/*
 	 * leave kernel thread previously created by kthread_create
@@ -266,10 +265,11 @@ struct kentry_proc
 
 	/* proc extension management */
 	void *_cdecl (*lookup_extension)(struct proc *p, long ident);
-	void *_cdecl (*attach_extension)(struct proc *p, long ident, unsigned long size, struct module_callback *);
+	void *_cdecl (*attach_extension)(struct proc *p, long ident,
+					 unsigned long size, struct module_callback *);
 	void  _cdecl (*detach_extension)(struct proc *p, long ident);
 
-	/* internal setuid/setgid/setlimit */
+	/* internal setuid/setgid */
 	long _cdecl (*proc_setuid)(struct proc *p, unsigned short uid);
 	long _cdecl (*proc_setgid)(struct proc *p, unsigned short gid);
 };
@@ -289,8 +289,6 @@ struct kentry_proc
 	canceltimeout, \
 	addroottimeout, \
 	cancelroottimeout, \
-	\
-	addonprocwakeup, \
 	\
 	create_process, \
 	\
@@ -398,7 +396,7 @@ struct kentry_fs
 	 * min_version >= 94. Otherwise, it will be a null pointer.
 	 */
 	int _cdecl (*denyshare)(struct file *, struct file *);
-	LOCK *_cdecl (*denylock)(struct ilock *, struct ilock *);
+	LOCK *_cdecl (*denylock)(ushort pid, struct ilock *, struct ilock *);
 
 	struct bio *bio; /* buffered block I/O */
 	const struct timeval *xtime; /* pointer to current kernel time - UTC */

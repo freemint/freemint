@@ -33,10 +33,31 @@
 
 # include "mint/mint.h"
 
+struct create_process_opts
+{
+	unsigned long mode;
+#define CREATE_PROCESS_OPTS_MAXCORE	0x01
+#define CREATE_PROCESS_OPTS_NICELEVEL	0x02
+#define CREATE_PROCESS_OPTS_DEFDIR	0x04
+#define CREATE_PROCESS_OPTS_UID		0x08
+#define CREATE_PROCESS_OPTS_GID		0x10
+	
+	long maxcore;
+	long nicelevel;
+	const char *defdir;
+	unsigned short uid;
+	unsigned short gid;
+};
+
+#if __KERNEL__ == 1
+
 void rts (void); /* XXX */
 
 long _cdecl sys_pexec (short mode, const void *ptr1, const void *ptr2, const void *ptr3);
+
 long _cdecl create_process(const void *ptr1, const void *ptr2, const void *ptr3,
-			   struct proc **pret, long stack);
+			   struct proc **pret, long stack, struct create_process_opts *);
+
+#endif
 
 # endif /* _k_exec_h */
