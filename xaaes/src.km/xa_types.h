@@ -1266,15 +1266,21 @@ extern struct xa_window *root_window;
 #define nolist_list S.open_nlwindows.first
 
 struct scroll_info;
+
 /* Directory entry flags */
 enum scroll_entry_type
 {
+	FLAG_AMAL	= 0x001,
+	FLAG_MAL	= 0x002,
+
+#if 0
 	FLAG_DIR        = 0x001,
 	FLAG_EXECUTABLE = 0x002,
 	FLAG_LINK       = 0x004,
 	FLAG_MAL        = 0x100,	/* text part is malloc'd and must be freed. */
 	FLAG_ENV        = 0x200,
 	FLAG_AMAL	= 0x400
+#endif
 };
 typedef enum scroll_entry_type SCROLL_ENTRY_TYPE;
 
@@ -1409,8 +1415,9 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 #define SESET_MULTISEL		 7
 #define SESET_OPEN		 8
 #define SESET_TEXTTAB		 9
-#define SESET_USRFLAG		10
+#define SESET_USRFLAGS		10
 #define SESET_USRDATA		11
+#define SESET_TEXT		12
 
 /* SESET_UNSELECTED arguments */
 #define UNSELECT_ONE	0
@@ -1436,10 +1443,13 @@ struct seset_txttab
 #define SEGET_ENTRYBYUSRFLG	10
 #define SEGET_LISTXYWH		11
 #define SEGET_TEXTTAB		12
-#define SEGET_USRFLAG		13
+#define SEGET_USRFLAGS		13
 #define SEGET_USRDATA		14
 #define SEGET_NEXTENT		15
 #define SEGET_PREVENT		16
+#define SEGET_TEXTCPY		17
+#define SEGET_TEXTCMP		18
+#define SEGET_TEXTPTR		19
 
 /*
  * structure used to pass parameters with get(SEGET_ENTRYBYIDX
@@ -1456,12 +1466,19 @@ struct seget_entrybyarg
 		long usr_flag;
 		struct
 		{
-			short level;
+			short maxlevel;
+			short curlevel;
 #define ENT_VISIBLE	1
 #define ENT_ISROOT	2
 			short flags;
 		}pnent;
-	} arg;		
+	} arg;
+	
+	union
+	{
+		long	ret;
+		void	*ptr;
+	}ret;
 };
 
 #define OS_OPENED	1

@@ -67,8 +67,15 @@ static struct xa_wcol_inf default_col =
 };
 
 static SCROLL_ENTRY *
-next_entry(SCROLL_ENTRY *this, short flags)
+next_entry(SCROLL_ENTRY *this, short flags, short *level)
 {
+	short lev;
+
+	if (level)
+		lev = *level;
+	else
+		lev = 0;
+
 //	display("next_entry %lx (n=%lx, p=%lx, u=%lx, d=%lx)",
 //		this, this->next, this->prev, this->up, this->down);
 	
@@ -77,23 +84,40 @@ next_entry(SCROLL_ENTRY *this, short flags)
 		if (flags & ENT_VISIBLE)
 		{
 			if (this->down && (this->xstate & OS_OPENED))
-				this = this->down;
+				this = this->down, lev++;
 			else if (this->next)
 				this = this->next;
 			else
 			{
-				this = this->up;
 				if (flags & ENT_ISROOT)
 				{
-					/*
-					 * If ROOT flag is set, we do not go up past
-					 * the level in  which we started
-					 */
-					if (this)
+					if (!lev)
 						this = this->next;
+					else
+					{
+						lev--;
+						this = this->up;
+						while (this)
+						{
+							if (this->next)
+							{
+								this = this->next;
+								break;
+							}
+							else if (lev)
+							{
+								this = this->up;
+								lev--;
+							}
+							else
+								this = NULL;
+						}
+					}
 				}
 				else
 				{
+					this = this->up;
+					lev--;
 					while (this)
 					{
 						if (this->next)
@@ -102,31 +126,49 @@ next_entry(SCROLL_ENTRY *this, short flags)
 							break;
 						}
 						else
-							this = this->up;
+							this = this->up, lev--;
 					}
 				}
+				
 			}
 		}
 		else
 		{
 			if (this->down)
-				this = this->down;
+				this = this->down, lev++;
 			else if (this->next)
 				this = this->next;
 			else
 			{
-				this = this->up;
 				if (flags & ENT_ISROOT)
 				{
-					/*
-					 * If ROOT flag is set, we do not go up past
-					 * the level in  which we started
-					 */
-					if (this)
+					if (!lev)
 						this = this->next;
+					else
+					{
+						lev--;
+						this = this->up;
+						while (this)
+						{
+							if (this->next)
+							{
+								this = this->next;
+								break;
+							}
+							else if (lev)
+							{
+								this = this->up;
+								lev--;
+							}
+							else
+								this = NULL;
+						}
+					}
 				}
 				else
 				{
+					this = this->up;
+					lev--;
 					while (this)
 					{
 						if (this->next)
@@ -135,7 +177,7 @@ next_entry(SCROLL_ENTRY *this, short flags)
 							break;
 						}
 						else
-							this = this->up;
+							this = this->up, lev--;
 					}
 				}
 			}
@@ -143,6 +185,8 @@ next_entry(SCROLL_ENTRY *this, short flags)
 	}
 //	display("--- return %lx (n=%lx, p=%lx, u=%lx, d=%lx)",
 //		this, this->next, this->prev, this->up, this->down);
+	if (level)
+		*level = lev;
 
 	return this;
 }
@@ -512,7 +556,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 			
 			xy.y += this->r.h;
 			xy.h -= this->r.h;
-			this = next_entry(this, ENT_VISIBLE);
+			this = next_entry(this, ENT_VISIBLE, NULL);
 		}
 		
 		if (!entry && xy.h > 0)
@@ -658,7 +702,7 @@ get_last_entry(SCROLL_INFO *list)
 	struct scroll_entry *this = list->start;
 
 	while (this)
-		this = next_entry(this, 0);
+		this = next_entry(this, 0, NULL);
 	
 	return this;
 }
@@ -666,12 +710,12 @@ get_last_entry(SCROLL_INFO *list)
 static struct scroll_entry *
 get_next_selected(struct scroll_info *list, struct scroll_entry *this)
 {
-	this = next_entry(this, 0);
+	this = next_entry(this, 0, NULL);
 	while (this)
 	{
 		if (this->state & OS_SELECTED)
 			break;
-		this = next_entry(this, 0);
+		this = next_entry(this, 0, NULL);
 	}
 	return this;
 }
@@ -685,7 +729,7 @@ get_first_selected(SCROLL_INFO *list)
 	{
 		if (this->state & OS_SELECTED)
 			break;
-		this = next_entry(this, 0);
+		this = next_entry(this, 0, NULL);
 	}
 	return this;
 }
@@ -732,7 +776,7 @@ find_widest(SCROLL_INFO *list, SCROLL_ENTRY *start)
 	{
 		if (start->r.w > widest)
 			widest = start->r.w;
-		start = next_entry(start, ENT_VISIBLE);
+		start = next_entry(start, ENT_VISIBLE, NULL);
 	}
 	return widest;
 }
@@ -743,26 +787,31 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 {
 	long x = 0, y = 0, w = 0, h = 0;
 	struct scroll_entry *this = l->start;
+	short level = 0;
 
 	while (this)
 	{
 		if (e == this)
 			break;
 		y += this->r.h;
-		this = next_entry(this, ENT_VISIBLE);
+		this = next_entry(this, ENT_VISIBLE, NULL);
 	}
-
 	if (this)
 	{
 		w = this->r.w;
 		h = this->r.h;
-
-		if ((flags & 1) && this->down && (this->xstate & OS_OPENED))
+		if ((flags & 1))
 		{
-			struct scroll_entry *stop = this->next;
-
-			while ((this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT))) && this != stop)
-				w += this->r.w, h += this->r.h;
+			this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), &level);
+			if (this && level)
+			{
+				level = 0;
+				while (this)
+				{
+					w += this->r.w, h += this->r.h;
+					this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), &level);
+				}
+			}
 		}
 		r->x = x;
 		r->y = y;
@@ -1070,7 +1119,7 @@ set(SCROLL_INFO *list,
 				ret = 0;
 			break;
 		}
-		case SESET_USRFLAG:
+		case SESET_USRFLAGS:
 		{
 			if (entry)
 				entry->c.usr_flags = arg;
@@ -1229,7 +1278,7 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 					*(struct scroll_entry **)arg = get_first_selected(list);
 				break;
 			}
-			case SEGET_USRFLAG:
+			case SEGET_USRFLAGS:
 			{
 				if (arg && entry)
 					*(long *)arg = entry->c.usr_flags;
@@ -1247,10 +1296,10 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 				
 				if (entry)
 				{
-					if (!p->arg.pnent.level)
+					if (!p->arg.pnent.maxlevel)
 						p->e = entry->next;
 					else
-						p->e = next_entry(entry, p->arg.pnent.flags);
+						p->e = next_entry(entry, p->arg.pnent.flags, &p->arg.pnent.curlevel);
 				}
 				break;
 			}
@@ -1260,14 +1309,74 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 				
 				if (entry)
 				{
-					if (!p->arg.pnent.level)
+					if (!p->arg.pnent.maxlevel)
 						p->e = entry->prev;
 					else
-						p->e = next_entry(entry, p->arg.pnent.flags);
+						p->e = prev_entry(entry, p->arg.pnent.flags);
 				}
 				break;
 			}
-			
+			case SEGET_TEXTCPY:
+			{
+				struct seget_entrybyarg *p = arg;
+				struct se_text *setext = NULL;
+				short idx = p->idx;
+
+				if (entry && p && p->arg.txt)
+				{
+					setext = entry->c.td.text.text;
+					while (setext && idx--)
+					{
+						setext = setext->next;
+					}
+				}
+				if (setext)
+					strcpy(p->arg.txt, setext->text);
+				else
+					ret = 0, p->ret.ret = 0L;
+
+				break;
+			}
+			case SEGET_TEXTCMP:
+			{
+				struct seget_entrybyarg *p = arg;
+				struct se_text *setext = NULL;
+				short idx = p->idx;
+
+				if (entry && p && p->arg.txt)
+				{
+					setext = entry->c.td.text.text;
+					while (setext && idx--)
+					{
+						setext = setext->next;
+					}
+				}
+				if (setext)
+					p->ret.ret = strcmp(p->arg.txt, setext->text);
+				else
+					ret = 0;
+				break;
+			}
+			case SEGET_TEXTPTR:
+			{
+				struct seget_entrybyarg *p = arg;
+				struct se_text *setext = NULL;
+				short idx = p->idx;
+
+				if (entry && p)
+				{
+					setext = entry->c.td.text.text;
+					while (setext && idx--)
+					{
+						setext = setext->next;
+					}
+				}
+				if (setext)
+					p->ret.ptr = setext->text;
+				else
+					ret = 0;
+				break;
+			}
 			default:
 			{
 				ret = 0;
@@ -1576,7 +1685,7 @@ add_scroll_entry(SCROLL_INFO *list,
 							{
 								struct scroll_entry *next;
 								hidem();
-								if ((next = next_entry(new, ENT_VISIBLE)))
+								if ((next = next_entry(new, ENT_VISIBLE, NULL)))
 								{
 									RECT d, s = list->wi->wa;
 							
@@ -1875,15 +1984,16 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 static void
 empty_scroll_list(SCROLL_INFO *list, SCROLL_ENTRY *this, SCROLL_ENTRY_TYPE type)
 {
+	short level = 0;
 	if (!this)
 	{
 		this = list->start;
 		while (this)
 		{
-			if (type == -2 || (!this->c.usr_flags && ((this->type & type) || type == -1)))
+			if (type == -2 || ((this->type & type) || type == -1))
 				this = del_scroll_entry(list, this, false);
 			else
-				this = next_entry(this, ENT_ISROOT);
+				this = next_entry(this, ENT_ISROOT, &level);
 		}
 	}
 	else
@@ -1914,7 +2024,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 	this = list->top;
 		
-	while (n > 0 && (next = next_entry(this, ENT_VISIBLE))) //this->next)
+	while (n > 0 && (next = next_entry(this, ENT_VISIBLE, NULL))) //this->next)
 	{
 		h = this->r.h;
 		if (list->off_y)
@@ -2212,7 +2322,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 			{
 				if (start->c.data == data)
 					break;
-				start = next_entry(start, 0);
+				start = next_entry(start, 0, NULL);
 			}
 			ret = start;
 			break;
@@ -2223,7 +2333,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 			{
 				if (!strcmp(start->c.td.text.text->text, data))
 					break;
-				start = next_entry(start, 0);
+				start = next_entry(start, 0, NULL);
 			}
 			ret = start;
 			break;
@@ -2262,7 +2372,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 		
 			while (this && y < cy)
 			{
-				this = next_entry(this, ENT_VISIBLE);
+				this = next_entry(this, ENT_VISIBLE, NULL);
 				if (this) y += this->r.h;
 			}
 		}
@@ -2317,7 +2427,7 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 			y = list->top->r.h - list->off_y;
 			while(this && y < cy)
 			{
-				this = next_entry(this, ENT_VISIBLE); //this->next;
+				this = next_entry(this, ENT_VISIBLE, NULL); //this->next;
 				if (this) y += this->r.h;
 			}
 		}
@@ -2745,7 +2855,7 @@ slist_msg_handler(
 					}
 					case WA_DNLINE:
 					{
-						if ((n = next_entry(top, ENT_VISIBLE)))
+						if ((n = next_entry(top, ENT_VISIBLE, NULL)))
 						{
 							if (list->off_y)
 								scroll_up(list, top->r.h - list->off_y, true);
@@ -2877,7 +2987,7 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 		}
 		else
 		{
-			SCROLL_ENTRY *n = next_entry(list->cur, ENT_VISIBLE);
+			SCROLL_ENTRY *n = next_entry(list->cur, ENT_VISIBLE, NULL);
 			if (n)
 			{
 				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
