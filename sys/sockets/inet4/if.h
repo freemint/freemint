@@ -198,7 +198,7 @@ struct ifopt
 # define IFO_HWADDR	2	/* hardware address, v_string[0..5] */
 
 
-extern struct netif *allinterfaces, *if_lo, *if_primary;
+extern struct netif *allinterfaces, *if_lo;
 
 short		if_enqueue	(struct ifq *, BUF *, short pri);
 short		if_putback	(struct ifq *, BUF *, short pri);
