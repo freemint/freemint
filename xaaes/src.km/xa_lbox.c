@@ -855,7 +855,7 @@ move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, RECT *lbox_
 			set_slide_pos(lbox, s);
 		if (lbox_r)
 			redraw_lbox(lbox, lbox->parent, 2, lbox_r);
-		if (slide_r)
+		if (slide_r && s->bkg >= 0)
 			redraw_lbox(lbox, parent, 2, slide_r);
 	}
 	return ret;
@@ -866,7 +866,7 @@ move_slider(struct xa_lbox_info *lbox, struct lbox_slide *s, short num, bool upd
 {
 	bool ret = false;
 
-	if (num && s->bkg >= 0 && s->sld >= 0)
+	if (num)
 	{
 		if (num < 0)
 		{
@@ -884,7 +884,7 @@ move_slider(struct xa_lbox_info *lbox, struct lbox_slide *s, short num, bool upd
 
 			if (lbox_r)
 				redraw_lbox(lbox, lbox->parent, 2, lbox_r);
-			if (slide_r)
+			if (slide_r && s->bkg >= 0)
 				redraw_lbox(lbox, s->bkg, 2, slide_r);
 		}
 	}
@@ -1169,29 +1169,69 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		else if (obj == lbox->aslide.bkg)
 		{
 			DIAG((D_lbox, client, "XA_lbox_do: page.."));
-			hidem();
-			move_page(lbox, &lbox->aslide, true, &r, &asr);
-			showm();
+			do
+			{
+				hidem();
+				move_page(lbox, &lbox->aslide, true, &r, &asr);
+				showm();
+				check_mouse(client, &mb, NULL, NULL);
+				if (mb && lbox->aslide.pause)
+				{
+					f_select((long)(lbox->aslide.pause), NULL, 0, 0);
+					//nap((long)(lbox->aslide.pause));
+					check_mouse(client, &mb, NULL, NULL);
+				}
+			} while (mb);	
 		}
 		else if (obj == lbox->bslide.dr)
 		{
-			hidem();
-			move_slider(lbox, &lbox->bslide, 1, true, &r, &bsr);
-			showm();
+			do
+			{
+				hidem();
+				move_slider(lbox, &lbox->bslide, 1, true, &r, &bsr);
+				showm();
+				check_mouse(client, &mb, NULL, NULL);
+				if (mb && lbox->bslide.pause)
+				{
+					f_select((long)(lbox->bslide.pause), NULL, 0, 0);
+					//nap((long)(lbox->aslide.pause));
+					check_mouse(client, &mb, NULL, NULL);
+				}
+			} while (mb);
 		}
 		else if (obj == lbox->bslide.ul)
 		{
-			hidem();
-			move_slider(lbox, &lbox->bslide, -1, true, &r, &bsr);
-			showm();
+			do
+			{
+				hidem();
+				move_slider(lbox, &lbox->bslide, -1, true, &r, &bsr);
+				showm();
+				check_mouse(client, &mb, NULL, NULL);
+				if (mb && lbox->bslide.pause)
+				{
+					f_select((long)(lbox->bslide.pause), NULL, 0, 0);
+					//nap((long)(lbox->aslide.pause));
+					check_mouse(client, &mb, NULL, NULL);
+				}
+			} while (mb);
 		}
 		else if (obj == lbox->bslide.sld)
 			drag_slide(lbox, &lbox->bslide);
 		else if (obj == lbox->bslide.bkg)
 		{
-			hidem();
-			move_page(lbox, &lbox->bslide, true, &r, &bsr);
-			showm();
+			do
+			{
+				hidem();
+				move_page(lbox, &lbox->bslide, true, &r, &bsr);
+				showm();
+				check_mouse(client, &mb, NULL, NULL);
+				if (mb && lbox->bslide.pause)
+				{
+					f_select((long)(lbox->bslide.pause), NULL, 0, 0);
+					//nap((long)(lbox->aslide.pause));
+					check_mouse(client, &mb, NULL, NULL);
+				}
+			} while (mb);
 		}
 		else if ((item = obj_to_item(lbox, obj)))
 		{			
@@ -1254,6 +1294,8 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 								redraw_lbox(lbox, lbox->parent, 2, &r);
 								redraw_lbox(lbox, lbox->aslide.bkg, 2, &asr);
 								showm();
+								if (lbox->aslide.pause)
+									f_select(lbox->aslide.pause, NULL, 0, 0);
 							}	
 							check_mouse(client, &mb, &nx, &ny);
 						}
@@ -1273,6 +1315,8 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 								redraw_lbox(lbox, lbox->parent, 2, &r);
 								redraw_lbox(lbox, lbox->aslide.bkg, 2, &asr);
 								showm();
+								if (lbox->aslide.pause)
+									f_select(lbox->aslide.pause, NULL, 0, 0);
 							}
 							check_mouse(client, &mb, &nx, &ny);
 						}
@@ -1281,7 +1325,15 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						while (mb && nx > x2)
 						{
-							move_slider(lbox, &lbox->bslide, 1, true, &r, &bsr);
+							if (move_slider(lbox, &lbox->bslide, 1, true, NULL, NULL))
+							{
+								hidem();
+								redraw_lbox(lbox, lbox->parent, 2, &r);
+								redraw_lbox(lbox, lbox->bslide.bkg, 2, &bsr);
+								showm();
+								if (lbox->bslide.pause)
+									f_select(lbox->bslide.pause, NULL, 0, 0);
+							}
 							check_mouse(client, &mb, &nx, &ny);
 						}
 					}
@@ -1289,7 +1341,15 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						while (mb && nx < r.x)
 						{
-							move_slider(lbox, &lbox->bslide, -1, true, &r, &bsr);
+							if (move_slider(lbox, &lbox->bslide, -1, true, NULL, NULL))
+							{
+								hidem();
+								redraw_lbox(lbox, lbox->parent, 2, &r);
+								redraw_lbox(lbox, lbox->bslide.bkg, 2, &bsr);
+								showm();
+								if (lbox->bslide.pause)
+									f_select(lbox->bslide.pause, NULL, 0, 0);
+							}
 							check_mouse(client, &mb, &nx, &ny);
 						}
 					}
