@@ -41,6 +41,7 @@
 # include "kmemory.h"
 # include "memory.h"
 # include "proc_help.h"
+# include "proc_wakeup.h"
 # include "random.h"
 # include "signal.h"
 # include "time.h"
@@ -49,24 +50,18 @@
 # include "xbios.h"
 
 
-static void swap_in_curproc	(void);
-static void do_wakeup_things	(short sr, int newslice, long cond);
-INLINE void do_wake		(int que, long cond);
-INLINE ulong gen_average	(ulong *sum, uchar *load_ptr, ulong max_size);
-
-
 /*
  * We initialize proc_clock to a very large value so that we don't have
  * to worry about unexpected process switches while starting up
  */
-ushort proc_clock = 0x7fff;
+unsigned short proc_clock = 0x7fff;
 
 
 /* global process variables */
-PROC *proclist = NULL;		/* list of all active processes */
-PROC *curproc  = NULL;		/* current process		*/
-PROC *rootproc = NULL;		/* pid 0 -- MiNT itself		*/
-PROC *sys_q[NUM_QUEUES] =
+struct proc *proclist = NULL;		/* list of all active processes */
+struct proc *curproc  = NULL;		/* current process		*/
+struct proc *rootproc = NULL;		/* pid 0 -- MiNT itself		*/
+struct proc *sys_q[NUM_QUEUES] =
 {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
@@ -80,7 +75,7 @@ struct proc *_cdecl get_curproc(void) { return curproc; }
  * initialize the process table
  */
 void
-init_proc (void)
+init_proc(void)
 {
 	static DTABUF dta;
 
@@ -94,14 +89,14 @@ init_proc (void)
 	static struct plimit	limits0;
 
 	/* XXX */
-	bzero (&rootproc0, sizeof (rootproc0));
-	bzero (&mem0, sizeof (mem0));
-	bzero (&ucred0, sizeof (ucred0));
-	bzero (&pcred0, sizeof (pcred0));
-	bzero (&fd0, sizeof (fd0));
-	bzero (&cwd0, sizeof (cwd0));
-	bzero (&sigacts0, sizeof (sigacts0));
-	bzero (&limits0, sizeof (limits0));
+	bzero(&rootproc0, sizeof(rootproc0));
+	bzero(&mem0, sizeof(mem0));
+	bzero(&ucred0, sizeof(ucred0));
+	bzero(&pcred0, sizeof(pcred0));
+	bzero(&fd0, sizeof(fd0));
+	bzero(&cwd0, sizeof(cwd0));
+	bzero(&sigacts0, sizeof(sigacts0));
+	bzero(&limits0, sizeof(limits0));
 
 	pcred0.ucr = &ucred0;			ucred0.links = 1;
 
@@ -116,7 +111,7 @@ init_proc (void)
 	fd0.ofileflags = fd0.dfileflags;
 	fd0.nfiles = NDFILE;
 
-	DEBUG (("%lx, %lx, %lx, %lx, %lx, %lx, %lx",
+	DEBUG(("%lx, %lx, %lx, %lx, %lx, %lx, %lx",
 		&rootproc0, &mem0, &pcred0, &ucred0, &fd0, &cwd0, &sigacts0));
 
 	rootproc = curproc = &rootproc0;	rootproc0.links = 1;
@@ -127,7 +122,7 @@ init_proc (void)
 	curproc->ppid = -1;		/* no parent */
 //	curproc->pgrp = 1;		/* 0 isn't an process group */
 	curproc->domain = DOM_TOS;	/* TOS domain */
-	curproc->sysstack = (long) (curproc->stack + STKSIZE - 12);
+	curproc->sysstack = (long)(curproc->stack + STKSIZE - 12);
 	curproc->magic = CTXT_MAGIC;
 
 	((long *) curproc->sysstack)[1] = FRAME_MAGIC;
@@ -136,30 +131,30 @@ init_proc (void)
 
 	curproc->p_fd->dta = &dta;	/* looks ugly */
 	curproc->base = _base;
-	strcpy (curproc->name, "MiNT");
-	strcpy (curproc->fname, "MiNT");
-	strcpy (curproc->cmdlin, "MiNT");
+	strcpy(curproc->name, "MiNT");
+	strcpy(curproc->fname, "MiNT");
+	strcpy(curproc->cmdlin, "MiNT");
 
 	/* get some memory */
 	curproc->p_mem->memflags = F_PROT_S | F_OS_SPECIAL; /* default prot mode: super-only */
 	curproc->p_mem->num_reg = NUM_REGIONS;
-	curproc->p_mem->mem = kmalloc (curproc->p_mem->num_reg * sizeof (MEMREGION *));
-	curproc->p_mem->addr = kmalloc (curproc->p_mem->num_reg * sizeof (long));
+	curproc->p_mem->mem = kmalloc(curproc->p_mem->num_reg * sizeof(MEMREGION *));
+	curproc->p_mem->addr = kmalloc(curproc->p_mem->num_reg * sizeof(long));
 
 	/* make sure kmalloc was successful */
 	assert (curproc->p_mem->mem && curproc->p_mem->addr);
 
 	/* make sure it's filled with zeros */
-	bzero (curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof (MEMREGION *));
-	bzero (curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof (long));
+	bzero(curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof(MEMREGION *));
+	bzero(curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof(long));
 
 	/* init trampoline things */
 	curproc->p_mem->tp_ptr = &kernel_things;
 	curproc->p_mem->tp_reg = NULL;
 
 	/* init page table for curproc */
-	init_page_table_ptr (curproc->p_mem);
-	init_page_table (curproc, curproc->p_mem);
+	init_page_table_ptr(curproc->p_mem);
+	init_page_table(curproc, curproc->p_mem);
 
 	/* get root and current directories for all drives */
 	{
@@ -170,11 +165,11 @@ init_proc (void)
 		{
 			fcookie dir;
 
-			fs = drives [i];
-			if (fs && xfs_root (fs, i, &dir) == E_OK)
+			fs = drives[i];
+			if (fs && xfs_root(fs, i, &dir) == E_OK)
 			{
 				curproc->p_cwd->root[i] = dir;
-				dup_cookie (&curproc->p_cwd->curdir[i], &dir);
+				dup_cookie(&curproc->p_cwd->curdir[i], &dir);
 			}
 			else
 			{
@@ -187,7 +182,7 @@ init_proc (void)
 	/* Set the correct drive. The current directory we
 	 * set later, after all file systems have been loaded.
 	 */
-	curproc->p_cwd->curdrv = TRAP_Dgetdrv ();
+	curproc->p_cwd->curdrv = TRAP_Dgetdrv();
 	proclist = curproc;
 
 	curproc->p_cwd->cmask = 0;
@@ -205,7 +200,7 @@ init_proc (void)
 
 	if (has_bconmap)
 		/* init_xbios not happened yet */
-		curproc->p_fd->bconmap = (int) TRAP_Bconmap (-1);
+		curproc->p_fd->bconmap = (int) TRAP_Bconmap(-1);
 	else
 		curproc->p_fd->bconmap = 1;
 
@@ -227,12 +222,12 @@ init_proc (void)
  * (its actually 50 Hz).
  *
  */
-ulong _cdecl
+unsigned long _cdecl
 remaining_proc_time(void)
 {
-	ulong proc_ms = (ulong)proc_clock;
+	unsigned long proc_ms = proc_clock;
 
-	proc_ms *= 20;		/* one tick is 20 ms */
+	proc_ms *= 20; /* one tick is 20 ms */
 
 	return proc_ms;
 }
@@ -244,16 +239,16 @@ remaining_proc_time(void)
  * slices :-).
  */
 void
-reset_priorities (void)
+reset_priorities(void)
 {
-	PROC *p;
+	struct proc *p;
 
 	for (p = proclist; p; p = p->gl_next)
 	{
 		if (p->slices >= 0)
 		{
 			p->curpri = p->pri;
-			p->slices = SLICES (p->curpri);
+			p->slices = SLICES(p->curpri);
 		}
 	}
 }
@@ -264,11 +259,9 @@ reset_priorities (void)
  * "p" does not actually start running until the next context switch
  */
 void
-run_next (PROC *p, int slices)
+run_next(struct proc *p, int slices)
 {
-	register ushort sr;
-
-	sr = spl7 ();
+	register unsigned short sr = splhigh();
 
 	p->slices = -slices;
 	p->curpri = MAX_NICE;
@@ -276,7 +269,7 @@ run_next (PROC *p, int slices)
 	p->q_next = sys_q[READY_Q];
 	sys_q[READY_Q] = p;
 
-	spl (sr);
+	spl(sr);
 }
 
 /* fresh_slices(slices):
@@ -284,9 +277,9 @@ run_next (PROC *p, int slices)
  * give the current process "slices" more slices in which to run
  */
 void
-fresh_slices (int slices)
+fresh_slices(int slices)
 {
-	reset_priorities ();
+	reset_priorities();
 
 	curproc->slices = 0;
 	curproc->curpri = MAX_NICE + 1;
@@ -298,15 +291,14 @@ fresh_slices (int slices)
  *
  * processes go onto a queue in first in-first out order
  */
-
 void
-add_q (int que, PROC *proc)
+add_q(int que, struct proc *proc)
 {
-	PROC *q, **lastq;
+	struct proc *q, **lastq;
 
 	/* "proc" should not already be on a list */
-	assert (proc->wait_q == 0);
-	assert (proc->q_next == 0);
+	assert(proc->wait_q == 0);
+	assert(proc->q_next == 0);
 
 	lastq = &sys_q[que];
 	q = *lastq;
@@ -321,21 +313,20 @@ add_q (int que, PROC *proc)
 	if (que != READY_Q && proc->slices >= 0)
 	{
 		proc->curpri = proc->pri;	/* reward the process */
-		proc->slices = SLICES (proc->curpri);
+		proc->slices = SLICES(proc->curpri);
 	}
 }
 
 /*
  * remove a process from a queue
  */
-
 void
-rm_q (int que, PROC *proc)
+rm_q(int que, struct proc *proc)
 {
-	PROC *q;
-	PROC *old = 0;
+	struct proc *q;
+	struct proc *old = 0;
 
-	assert (proc->wait_q == que);
+	assert(proc->wait_q == que);
 
 	q = sys_q[que];
 	while (q && q != proc)
@@ -345,7 +336,7 @@ rm_q (int que, PROC *proc)
 	}
 
 	if (q == 0)
-		FATAL ("rm_q: unable to remove process from queue");
+		FATAL("rm_q: unable to remove process from queue");
 
 	if (old)
 		old->q_next = proc->q_next;
@@ -364,13 +355,13 @@ rm_q (int que, PROC *proc)
  */
 
 void _cdecl
-preempt (void)
+preempt(void)
 {
 	assert(!(curproc->p_flag & P_FLAG_SYS));
 
 	if (bconbsiz)
 	{
-		bflush ();
+		bflush();
 	}
 	else
 	{
@@ -379,7 +370,7 @@ preempt (void)
 			curproc->curpri -= 1;
 	}
 
-	sleep (READY_Q, curproc->wait_cond);
+	sleep(READY_Q, curproc->wait_cond);
 }
 
 /*
@@ -388,14 +379,14 @@ preempt (void)
  */
 
 static void
-swap_in_curproc (void)
+swap_in_curproc(void)
 {
 	struct memspace *mem = curproc->p_mem;
 	long txtsize = curproc->p_mem->txtsize;
 	MEMREGION *m, *shdw, *save;
 	int i;
 
-	assert (mem && mem->mem);
+	assert(mem && mem->mem);
 
 	for (i = 0; i < mem->num_reg; i++)
 	{
@@ -412,12 +403,12 @@ swap_in_curproc (void)
 			m->save = 0;
 			if (i != 1 || txtsize == 0)
 			{
-				quickswap ((char *) m->loc, (char *) save->loc, m->len);
+				quickswap((char *)m->loc, (char *)save->loc, m->len);
 			}
 			else
 			{
-				quickswap ((char *) m->loc, (char *) save->loc, 256);
-				quickswap ((char *) m->loc + (txtsize+256), (char *) save->loc + 256, m->len - (txtsize+256));
+				quickswap((char *)m->loc, (char *)save->loc, 256);
+				quickswap((char *)m->loc + (txtsize+256), (char *)save->loc + 256, m->len - (txtsize+256));
 			}
 		}
 	}
@@ -431,7 +422,7 @@ swap_in_curproc (void)
  */
 
 static void
-do_wakeup_things (short sr, int newslice, long cond)
+do_wakeup_things(short sr, int newslice, long cond)
 {
 	/*
 	 * check for stack underflow, just in case
@@ -444,10 +435,11 @@ do_wakeup_things (short sr, int newslice, long cond)
 	if ((sr & 0x700) < 0x500)
 	{
 		/* skip all this if int level is too high */
+
 		if (p->pid && ((long) &foo) < (long) p->stack + ISTKSIZE + 512)
 		{
-			ALERT ("stack underflow");
-			handle_sig (SIGBUS);
+			ALERT("stack underflow");
+			handle_sig(SIGBUS);
 		}
 
 		/* see if process' time limit has been exceeded */
@@ -455,17 +447,20 @@ do_wakeup_things (short sr, int newslice, long cond)
 		{
 			if (p->maxcpu <= p->systime + p->usrtime)
 			{
-				DEBUG (("cpu limit exceeded"));
-				raise (SIGXCPU);
+				DEBUG(("cpu limit exceeded"));
+				raise(SIGXCPU);
 			}
 		}
 
 		/* check for alarms and similar time out stuff */
-		checkalarms ();
+		checkalarms();
 
 		if (p->sigpending && cond != (long) sys_pwaitpid)
 			/* check for signals */
-			check_sigs ();
+			check_sigs();
+
+		/* check for proc specific wakeup things */
+		checkprocwakeup(p);
 	}
 
 	/* Kludge: restore the cookie jar pointer. If this to be restored,
@@ -490,7 +485,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 			p->curpri = p->pri;
 		}
 
-		p->slices = SLICES (p->curpri);
+		p->slices = SLICES(p->curpri);
 	}
 }
 
@@ -502,12 +497,12 @@ static long sleepcond, iwakecond;
  */
 
 int _cdecl
-sleep (int _que, long cond)
+sleep(int _que, long cond)
 {
-	PROC *p;
-	ushort sr;
+	struct proc *p;
+	unsigned short sr;
 	short que = _que & 0xff;
-	ulong onsigs = curproc->nsigs;
+	unsigned long onsigs = curproc->nsigs;
 	int newslice = 1;
 
 	/* save condition, checkbttys may just wake() it right away ...
@@ -520,33 +515,33 @@ sleep (int _que, long cond)
 	/* if there have been keyboard interrupts since our last sleep,
 	 * check for special keys like CTRL-ALT-Fx
 	 */
-	sr = splhigh ();
+	sr = splhigh();
 	if ((sr & 0x700) < 0x500)
 	{
 		/* can't call checkkeys if sleep was called
 		 * with interrupts off  -nox
 		 */
-		spl (sr);
-		(void) checkbttys ();
+		spl(sr);
+		checkbttys();
 		if (kintr)
 		{
-			(void) checkkeys ();
+			checkkeys();
 			kintr = 0;
 		}
 
 # ifdef DEV_RANDOM
 		/* Wake processes waiting for random bytes */
-		checkrandom ();
+		checkrandom();
 # endif
 
-		sr = splhigh ();
+		sr = splhigh();
 		if ((curproc->sigpending & ~(curproc->p_sigmask))
 			&& curproc->pid && que != ZOMBIE_Q && que != TSR_Q)
 		{
-			spl (sr);
-			check_sigs ();
+			spl(sr);
+			check_sigs();
 			sleepcond = 0;	/* possibly handled a signal, return */
-			sr = spl7 ();
+			sr = splhigh();
 		}
 	}
 
@@ -555,13 +550,14 @@ sleep (int _que, long cond)
 	 * actually go to sleep and return immediatly.
 	 */
 	if ((que == READY_Q && !sys_q[READY_Q])
-		|| ((sleepcond != cond || (iwakecond == cond && cond) || (_que & 0x100 && curproc->wait_cond != cond))
-			&& (!sys_q[READY_Q] || (newslice = 0, proc_clock))))
+	    || ((sleepcond != cond || (iwakecond == cond && cond) || (_que & 0x100 && curproc->wait_cond != cond))
+		&& (!sys_q[READY_Q] || (newslice = 0, proc_clock))))
 	{
 		/* we're just going to wake up again right away! */
 		iwakecond = 0;
-		spl (sr);
-		do_wakeup_things (sr, newslice, cond);
+
+		spl(sr);
+		do_wakeup_things(sr, newslice, cond);
 
 		return (onsigs != curproc->nsigs);
 	}
@@ -575,12 +571,12 @@ sleep (int _que, long cond)
 	else
 		curproc->wait_cond = cond;
 
-	add_q (que, curproc);
+	add_q(que, curproc);
 
 	/* alright curproc is on que now... maybe there's an
 	 * interrupt pending that will wakeselect or signal someone
 	 */
-	spl (sr);
+	spl(sr);
 
 	if (!sys_q[READY_Q])
 	{
@@ -589,15 +585,15 @@ sleep (int _que, long cond)
 		 * if that doesn't work, run the root process,
 		 * just so we have someone to charge time to.
 		 */
-		wake (SELECT_Q, (long) nap);
+		wake(SELECT_Q, (long) nap);
 
 		if (!sys_q[READY_Q])
 		{
-			sr = splhigh ();
+			sr = splhigh();
 			p = rootproc;		/* pid 0 */
-			rm_q (p->wait_q, p);
-			add_q (READY_Q, p);
-			spl (sr);
+			rm_q(p->wait_q, p);
+			add_q(READY_Q, p);
+			spl(sr);
 		}
 	}
 
@@ -625,7 +621,7 @@ sleep (int _que, long cond)
 	 *	}
 	 */
 
-	sr = splhigh ();
+	sr = splhigh();
 	p = 0;
 	while (!p)
 	{
@@ -638,16 +634,16 @@ sleep (int _que, long cond)
 		}
 	}
 	/* p is our victim */
-	rm_q (READY_Q, p);
-	spl (sr);
+	rm_q(READY_Q, p);
+	spl(sr);
 
 	if (save_context(&(curproc->ctxt[CURRENT])))
 	{
 		/*
 		 * restore per-process variables here
 		 */
-		swap_in_curproc ();
-		do_wakeup_things (sr, 1, cond);
+		swap_in_curproc();
+		do_wakeup_things(sr, 1, cond);
 
 		return (onsigs != curproc->nsigs);
 	}
@@ -661,10 +657,10 @@ sleep (int _que, long cond)
 	proc_clock = time_slice;			/* fresh time */
 
 	if ((p->ctxt[CURRENT].sr & 0x2000) == 0)	/* user mode? */
-		leave_kernel ();
+		leave_kernel();
 
-	assert (p->magic == CTXT_MAGIC);
-	change_context (&(p->ctxt[CURRENT]));
+	assert(p->magic == CTXT_MAGIC);
+	change_context(&(p->ctxt[CURRENT]));
 
 	/* not reached */
 	return 0;
@@ -676,51 +672,56 @@ sleep (int _que, long cond)
  */
 
 INLINE void
-do_wake (int que, long cond)
+do_wake(int que, long cond)
 {
-	PROC *p;
+	struct proc *p;
+
 top:
-	for (p = sys_q[que]; p; )
+	p = sys_q[que];
+
+	while (p)
 	{
-		PROC *q;
-		register short s;
+		register unsigned short s = splhigh();
 
-		s = spl7 ();
-
-		/* check p is still on the right queue,
+		/* check if p is still on the right queue,
 		 * maybe an interrupt just woke it...
 		 */
 		if (p->wait_q != que)
 		{
-			spl (s);
+			spl(s);
 			goto top;
 		}
 
-		q = p;
-		p = p->q_next;
-		if (q->wait_cond == cond)
+		/* move to ready queue */
 		{
-			rm_q (que, q);
-			add_q (READY_Q, q);
+			struct proc *q = p;
+
+			p = p->q_next;
+
+			if (q->wait_cond == cond)
+			{
+				rm_q(que, q);
+				add_q(READY_Q, q);
+			}
 		}
 
-		spl (s);
+		spl(s);
 	}
 }
 
 void _cdecl
-wake (int que, long cond)
+wake(int que, long cond)
 {
 	if (que == READY_Q)
 	{
-		ALERT ("wake: why wake up ready processes??");
+		ALERT("wake: why wake up ready processes??");
 		return;
 	}
 
 	if (sleepcond == cond)
 		sleepcond = 0;
 
-	do_wake (que, cond);
+	do_wake(que, cond);
 }
 
 /*
@@ -760,27 +761,25 @@ wake (int que, long cond)
  */
 
 void _cdecl
-iwake (int que, long cond, short pid)
+iwake(int que, long cond, short pid)
 {
 	if (pid >= 0)
 	{
-		register ushort s;
-
-		s = spl7 ();
+		register unsigned short s = splhigh();
 
 		if (iwakecond == cond)
 		{
-			spl (s);
+			spl(s);
 			return;
 		}
 
 		if (curproc->pid == pid && !curproc->wait_q)
 			iwakecond = cond;
 
-		spl (s);
+		spl(s);
 	}
 
-	do_wake (que, cond);
+	do_wake(que, cond);
 }
 
 /*
@@ -789,11 +788,9 @@ iwake (int que, long cond, short pid)
  */
 
 void _cdecl
-wakeselect (PROC *p)
+wakeselect(struct proc *p)
 {
-	short s;
-
-	s = spl7 ();
+	unsigned short s = splhigh();
 
 	if (p->wait_cond == (long) wakeselect
 		|| p->wait_cond == (long) &select_coll)
@@ -803,11 +800,11 @@ wakeselect (PROC *p)
 
 	if (p->wait_q == SELECT_Q)
 	{
-		rm_q (SELECT_Q, p);
-		add_q (READY_Q, p);
+		rm_q(SELECT_Q, p);
+		add_q(READY_Q, p);
 	}
 
-	spl (s);
+	spl(s);
 }
 
 /*
@@ -833,26 +830,26 @@ static const char *qstring[] =
 # define qname(x) ((x >= 0 && x < NUM_QUEUES) ? qstring[x] : "unkn")
 # endif
 
-ulong uptime = 0;
-ulong avenrun[3] = { 0, 0, 0 };
-ushort uptimetick = 200;
+unsigned long uptime = 0;
+unsigned long avenrun[3] = { 0, 0, 0 };
+unsigned short uptimetick = 200;
 
-static ushort number_running;
+static unsigned short number_running;
 
 void
-DUMPPROC (void)
+DUMPPROC(void)
 {
 # ifdef DEBUG_INFO
-	PROC *p = curproc;
+	struct proc *p = curproc;
 
-	FORCE ("Uptime: %ld seconds Loads: %ld %ld %ld Processes running: %d",
+	FORCE("Uptime: %ld seconds Loads: %ld %ld %ld Processes running: %d",
 		uptime,
 		(avenrun[0] * 100) / 2048 , (avenrun[1] * 100) / 2048, (avenrun[2] * 100 / 2048),
  		number_running);
 
 	for (curproc = proclist; curproc; curproc = curproc->gl_next)
 	{
-		FORCE ("state %s PC: %lx BP: %lx (pgrp %i)",
+		FORCE("state %s PC: %lx BP: %lx (pgrp %i)",
 			qname(curproc->wait_q),
 			curproc->p_flag & P_FLAG_SYS ?
 			curproc->ctxt[CURRENT].pc : curproc->ctxt[SYSCALL].pc,
@@ -863,13 +860,13 @@ DUMPPROC (void)
 # endif
 }
 
-INLINE ulong
-gen_average (ulong *sum, uchar *load_ptr, ulong max_size)
+INLINE unsigned long
+gen_average(unsigned long *sum, unsigned char *load_ptr, unsigned long max_size)
 {
 	register long old_load = (long) *load_ptr;
 	register long new_load = number_running;
 
-	*load_ptr = (uchar) new_load;
+	*load_ptr = (unsigned char) new_load;
 
 	*sum += (new_load - old_load) * LOAD_SCALE;
 
@@ -877,21 +874,21 @@ gen_average (ulong *sum, uchar *load_ptr, ulong max_size)
 }
 
 void
-calc_load_average (void)
+calc_load_average(void)
 {
-	static uchar one_min [SAMPS_PER_MIN];
-	static uchar five_min [SAMPS_PER_5MIN];
-	static uchar fifteen_min [SAMPS_PER_15MIN];
+	static unsigned char one_min [SAMPS_PER_MIN];
+	static unsigned char five_min [SAMPS_PER_5MIN];
+	static unsigned char fifteen_min [SAMPS_PER_15MIN];
 
-	static ushort one_min_ptr = 0;
-	static ushort five_min_ptr = 0;
-	static ushort fifteen_min_ptr = 0;
+	static unsigned short one_min_ptr = 0;
+	static unsigned short five_min_ptr = 0;
+	static unsigned short fifteen_min_ptr = 0;
 
-	static ulong sum1 = 0;
-	static ulong sum5 = 0;
-	static ulong sum15 = 0;
+	static unsigned long sum1 = 0;
+	static unsigned long sum5 = 0;
+	static unsigned long sum15 = 0;
 
-	register PROC *p;
+	register struct proc *p;
 
 # if 0	/* moved to intr.spp */
 	uptime++;
@@ -917,21 +914,21 @@ calc_load_average (void)
 		 * been increased.
 		 */
 		if (p->stack_magic != STACK_MAGIC)
-			FATAL ("proc %lx has invalid stack_magic %lx", (long) p, p->stack_magic);
+			FATAL("proc %lx has invalid stack_magic %lx", (long) p, p->stack_magic);
 	}
 
 	if (one_min_ptr == SAMPS_PER_MIN)
 		one_min_ptr = 0;
 
-	avenrun [0] = gen_average (&sum1, &one_min [one_min_ptr++], SAMPS_PER_MIN);
+	avenrun [0] = gen_average(&sum1, &one_min [one_min_ptr++], SAMPS_PER_MIN);
 
 	if (five_min_ptr == SAMPS_PER_5MIN)
 		five_min_ptr = 0;
 
-	avenrun [1] = gen_average (&sum5, &five_min [five_min_ptr++], SAMPS_PER_5MIN);
+	avenrun [1] = gen_average(&sum5, &five_min [five_min_ptr++], SAMPS_PER_5MIN);
 
 	if (fifteen_min_ptr == SAMPS_PER_15MIN)
 		fifteen_min_ptr = 0;
 
-	avenrun [2] = gen_average (&sum15, &fifteen_min [fifteen_min_ptr++], SAMPS_PER_15MIN);
+	avenrun [2] = gen_average(&sum15, &fifteen_min [fifteen_min_ptr++], SAMPS_PER_15MIN);
 }

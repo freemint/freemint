@@ -797,10 +797,12 @@ check_kentry_version(void)
 # define addroottimeout		(*KENTRY->vec_proc.addroottimeout)
 # define cancelroottimeout	(*KENTRY->vec_proc.cancelroottimeout)
 
-# define kthread_create		(*KENTRY->vec_proc.kthread_create)
-# define kthread_exit		(*KENTRY->vec_proc.kthread_exit)
+# define addprocwakeup		(*KENTRY->vec_proc.addprocwakeup)
 
 # define create_process		(*KENTRY->vec_proc.create_process)
+
+# define kthread_create		(*KENTRY->vec_proc.kthread_create)
+# define kthread_exit		(*KENTRY->vec_proc.kthread_exit)
 
 # define get_curproc		(*KENTRY->vec_proc.get_curproc)
 # define pid2proc		(*KENTRY->vec_proc.pid2proc)

@@ -59,6 +59,7 @@ COBJS = \
 	pipefs.c \
 	proc.c \
 	proc_help.c \
+	proc_wakeup.c \
 	procfs.c \
 	profil.c \
 	ptrace.c \

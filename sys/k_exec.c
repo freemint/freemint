@@ -833,7 +833,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	return p;
 }
 
-int _cdecl
+long _cdecl
 create_process(const void *filename, const void *cmdline, const void *newenv,
 		struct proc **pret, long stack)
 {
