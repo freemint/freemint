@@ -133,8 +133,8 @@ _getmch (void)
 				
 				case COOKIE__AKP:
 				{
-					gl_lang = (int) ((jar->value >> 8) & 0x00ff);
 					gl_kbd = (short)(jar->value & 0x00ffL);
+					gl_lang = (short)((jar->value >> 8) & 0x00ff);
 					break;
 				}
 				

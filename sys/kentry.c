@@ -42,6 +42,7 @@
 # include "delay.h"		/* loops_per_sec */
 # include "dma.h"		/* dma */
 # include "filesys.h"		/* changedrv, denyshare, denylock */
+# include "global.h"		/* global */
 # include "ipc_socketutil.h"	/* so_* */
 # include "k_exec.h"		/* create_process */
 # include "k_kthread.h"		/* kthread_create, kthread_exit */
