@@ -25,6 +25,7 @@
 # include "mint/xbra.h"
 
 # include "arch/cpu.h"		/* init_cache, cpush, setstack */
+# include "arch/context.h"	/* restore_context */
 # include "arch/intr.h"		/* new_mediach, new_rwabs, new_getbpb, same for old_ */
 # include "arch/init_mach.h"	/* */
 # include "arch/kernel.h"	/* enter_gemdos */
@@ -55,9 +56,7 @@
 # include "keyboard.h"	/* init_keytbl() */
 # include "kmemory.h"	/* kmalloc */
 # include "memory.h"	/* init_mem, get_region, attach_region, restr_screen */
-# ifdef BUILTIN_SHELL
 # include "mis.h"	/* startup_shell */
-# endif
 # include "module.h"	/* load_all_modules */
 # include "proc.h"	/* init_proc, add_q, rm_q */
 # include "signal.h"	/* post_sig */
@@ -85,6 +84,9 @@ static void _cdecl do_exec_os (register long basepage);
 static int	check_for_gem (void);
 static void	run_auto_prgs (void);
 static int	boot_kernel_p (void);
+
+void mint_thread(void *arg);
+
 
 /* print a additional boot message
  */
@@ -242,7 +244,7 @@ do_exec_os (long basepage)
 	 */
 	setstack(basepage + 500L);
 	Mshrink((void *)basepage, 512L);
-	r = Pexec(200, (char *)init_prg, init_tail, init_env);
+	r = Pexec(200, init_prg, init_tail, init_env);
 	Pterm ((int)r);
 }
 
@@ -717,7 +719,6 @@ init (void)
 	/* XXX: why `static' ?? */
 	static char curpath[128];
 
-	int pid;
 	long *sysbase;
 	long r;
 	FILEPTR *f;
@@ -946,9 +947,9 @@ init (void)
 	if (r)
 		FATAL("unable to open CONSOLE device");
 
-	curproc->p_fd->control = f;
-	curproc->p_fd->ofiles[0] = f; f->links++;
-	curproc->p_fd->ofiles[1] = f; f->links++;
+	rootproc->p_fd->control = f;
+	rootproc->p_fd->ofiles[0] = f; f->links++;
+	rootproc->p_fd->ofiles[1] = f; f->links++;
 
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
@@ -957,7 +958,7 @@ init (void)
 	if (r)
 		FATAL("unable to open MODEM1 device");
 
-	curproc->p_fd->aux = f;
+	rootproc->p_fd->aux = f;
 	((struct tty *) f->devinfo)->aux_cnt = 1;
 	f->pos = 1;	/* flag for close to --aux_cnt */
 
@@ -967,12 +968,12 @@ init (void)
 		 * MODEM1 may no longer be the default
 		 */
 		bconmap(curbconmap);
-		f = curproc->p_fd->aux;	/* bconmap can change curproc->aux */
+		f = rootproc->p_fd->aux;	/* bconmap can change rootproc->aux */
 	}
 
 	if (f)
 	{
-		curproc->p_fd->ofiles[2] = f;
+		rootproc->p_fd->ofiles[2] = f;
 		f->links++;
 	}
 
@@ -982,8 +983,8 @@ init (void)
 	r = do_open(&f, "U:\\DEV\\CENTR", O_RDWR, 0, NULL);
 	if (!r)
 	{
-		curproc->p_fd->ofiles[3] = f;
-		curproc->p_fd->prn = f;
+		rootproc->p_fd->ofiles[3] = f;
+		rootproc->p_fd->prn = f;
 		f->links++;
 	}
 
@@ -993,8 +994,8 @@ init (void)
 	r = do_open(&f, "U:\\DEV\\MIDI", O_RDWR, 0, NULL);
 	if (!r)
 	{
-		curproc->p_fd->midiin = f;
-		curproc->p_fd->midiout = f;
+		rootproc->p_fd->midiin = f;
+		rootproc->p_fd->midiout = f;
 		f->links++;
 
 		((struct tty *) f->devinfo)->use_cnt++;
@@ -1064,7 +1065,7 @@ init (void)
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			if ((drives[i] == &tos_filesys) &&
-				(fatfs_config(i, FATFS_DRV, ASK) == ENABLE))
+			    (fatfs_config(i, FATFS_DRV, ASK) == ENABLE))
 			{
 				/* We have to preserve the current directory,
 				 * as d_lock() will reset it to \
@@ -1093,7 +1094,7 @@ init (void)
 	if (init_env[0] == 0)
 	{
 		static char path_env[] = "PATH=\0C:\0";
-		path_env[6] = curproc->p_cwd->curdrv + 'A';	/* this actually means drive u: */
+		path_env[6] = rootproc->p_cwd->curdrv + 'A';	/* this actually means drive u: */
 		init_env = path_env;
 	}
 
@@ -1106,122 +1107,34 @@ init (void)
 		xbra_install(&old_execos, EXEC_OS, (long _cdecl (*)())do_exec_os);
 	}
 
-	/* run any programs appearing after us in the AUTO folder */
-	if (load_auto)
-		run_auto_prgs();
-
-	/* prepare to run the init program as PID 1. */
-	set_pid_1();
-
 # ifdef PROFILING
 	/* compiled with profiling support */
 	monstartup(_base->p_tbase, (_base->p_tbase + _base->p_tlen));
 # endif
 
-	/* run the initial program
-	 *
-	 * if that program is in fact GEM, we start it via exec_os, otherwise
-	 * we do it with Pexec.
-	 * the logic is: if the user specified init_prg, and it is not
-	 * GEM, then we try to execute it; if it *is* GEM (e.g. gem.sys),
-	 * then we try to execute it if gem is already active, otherwise
-	 * we jump through the exec_os vector (which we grabbed above) in
-	 * order to start it. We *never* go through exec_os if we're not in
-	 * the AUTO folder.
-	 */
-	if (init_prg)
-	{
-		if (!init_is_gem)
-		{
-			r = sys_pexec(100, (char *)init_prg, init_tail, init_env);
-		}
-		else
-		{
-			BASEPAGE *bp;
+	/* zero the user registers, and set the FPU in a "clear" state */
+	for (r = 0; r < 15; r++)
+		rootproc->ctxt[CURRENT].regs[r] = 0;
 
-			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", init_env);
-			bp->p_tbase = *((long *) EXEC_OS);
+	rootproc->ctxt[CURRENT].sr = 0x2000;	/* kernel threads work in super mode */
+	rootproc->ctxt[CURRENT].fstate[0] = 0;
+	rootproc->ctxt[CURRENT].pc = (long) mint_thread;
+	rootproc->ctxt[CURRENT].usp = rootproc->sysstack;
+	rootproc->ctxt[CURRENT].term_vec = (long) rts;
 
-			r = sys_pexec(106, (char *)"GEM", bp, 0L);
-		}
-	}
-	else
-		r = 0;
+	rootproc->ctxt[SYSCALL].sr = 0x2000;	/* kernel threads work in super mode */
+	rootproc->ctxt[SYSCALL].fstate[0] = 0;
+	rootproc->ctxt[SYSCALL].pc = (long) mint_thread;
+	rootproc->ctxt[SYSCALL].usp = rootproc->sysstack;
+	rootproc->ctxt[SYSCALL].term_vec = (long) rts;
 
-	/* r < 0 means an error during sys_pexec() execution (e.g. file not found);
-	 * r == 0 means that mint.cnf lacks the GEM= or INIT= line.
-	 *
-	 * In both cases we halt the system, but before that we will want
-	 * to execute some sort of shell that could help to fix minor fs problems
-	 * without rebooting to TOS.
-	 */
-	if (r <= 0)
-	{
-		char shellpath[32];	/* 32 should be plenty */
+	*((long *)(rootproc->ctxt[CURRENT].usp + 4)) = 0;
+	*((long *)(rootproc->ctxt[SYSCALL].usp + 4)) = 0;
 
-		if (r < 0)
-			boot_printf(MSG_couldnt_run_init, init_prg, r);
+	restore_context(&(rootproc->ctxt[CURRENT]));
 
-		/* Last resort: try to execute sysdir/shell.tos.
-		 * For that, the absolute path must be used, because the user
-		 * could have changed the current drive/dir inside mint.cnf file.
-		 */
-		ksprintf(shellpath, sizeof(shellpath), "u:\\a%sshell.tos", sysdir);
-
-		shellpath[3] = (char)sysdrv + 'a';	/* the boot drive */
-
-		r = sys_pexec(100, (char *)shellpath, init_tail, init_env);
-
-		if (r < 0)
-			boot_printf(MSG_couldnt_run_init, shellpath, r);
-
-# ifdef BUILTIN_SHELL
-		if (r <= 0)
-			r = startup_shell();	/* r is the shell's pid */
-# endif
-	}
-
-	/* Here we have the code for the process 0 (MiNT itself).
-	 *
-	 * It waits for the init program to terminate. When it is checked that
-	 * the init program is still alive, the pid 0 goes to sleep.
-	 * It can only be awaken, when noone else is ready to run, sleep()
-	 * in proc.c moves it to the run queue then (q.v.). In this case,
-	 * instead of calling sleep() again and force the CPU to execute the
-	 * loop again and again, we request it to be stopped.
-         *
-	 */
-	pid = (int) r;
-	if (pid > 0)
-	{
-		do
-		{
-			r = sys_pwaitpid(-1, 1, NULL);
-			if (!r)
-			{
-				sleep(WAIT_Q, (long)init);
-				if (mcpu == 60)
-					cpu_lpstop();	/* low power stop and wait for an interrupt */
-				else
-					cpu_stop();	/* stop and wait for an interrupt */
-			}
-		} while (pid != ((r & 0xffff0000L) >> 16));
-	}
-# ifndef DEBUG_INFO
-	else
-		s_hutdown(0);		/* Everything failed. Halt. */
-
-	/* If init program exited, reboot the system.
-	 * Never go back to TOS.
-	 */
-	(void) s_hutdown(2);	/* cold reboot is more efficient ;-) */
-# else
-	/* With debug kernels, always halt
-	 */
-	(void) s_hutdown(0);
-# endif
-
-	/* Never returns */
+	/* not reached */
+	FATAL("restore_context() returned ???");
 }
 
 /*
@@ -1292,4 +1205,132 @@ run_auto_prgs (void)
 
  	d_setdrv(curdriv);
  	d_setpath(curpath);
+}
+
+void
+mint_thread(void *arg)
+{
+	int pid;
+	long r;
+
+	/* run any programs appearing after us in the AUTO folder */
+	if (load_auto)
+		run_auto_prgs();
+
+	/* prepare to run the init program as PID 1. */
+	set_pid_1();
+
+	/* run the initial program
+	 *
+	 * if that program is in fact GEM, we start it via exec_os, otherwise
+	 * we do it with Pexec.
+	 * the logic is: if the user specified init_prg, and it is not
+	 * GEM, then we try to execute it; if it *is* GEM (e.g. gem.sys),
+	 * then we try to execute it if gem is already active, otherwise
+	 * we jump through the exec_os vector (which we grabbed above) in
+	 * order to start it. We *never* go through exec_os if we're not in
+	 * the AUTO folder.
+	 */
+	if (init_prg)
+	{
+		if (!init_is_gem)
+		{
+# if 0
+			r = sys_pexec(100, init_prg, init_tail, init_env);
+# else
+			r = sys_pexec(0, init_prg, init_tail, init_env);
+# endif
+			ALERT("init_prg done!");
+		}
+		else
+		{
+			BASEPAGE *bp;
+
+			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", init_env);
+			bp->p_tbase = *((long *) EXEC_OS);
+
+			r = sys_pexec(106, (char *)"GEM", bp, 0L);
+		}
+	}
+	else
+		r = 0;
+
+	/* r < 0 means an error during sys_pexec() execution (e.g. file not found);
+	 * r == 0 means that mint.cnf lacks the GEM= or INIT= line.
+	 *
+	 * In both cases we halt the system, but before that we will want
+	 * to execute some sort of shell that could help to fix minor fs problems
+	 * without rebooting to TOS.
+	 */
+	if (r <= 0)
+	{
+		char shellpath[32];	/* 32 should be plenty */
+
+		if (r < 0)
+			boot_printf(MSG_couldnt_run_init, init_prg, r);
+
+		/* Last resort: try to execute sysdir/shell.tos.
+		 * For that, the absolute path must be used, because the user
+		 * could have changed the current drive/dir inside mint.cnf file.
+		 */
+		ksprintf(shellpath, sizeof(shellpath), "u:\\a%sshell.tos", sysdir);
+
+		shellpath[3] = (char)sysdrv + 'a';	/* the boot drive */
+
+		r = sys_pexec(100, shellpath, init_tail, init_env);
+		if (r < 0)
+			boot_printf(MSG_couldnt_run_init, shellpath, r);
+
+# ifdef BUILTIN_SHELL
+		if (r <= 0)
+			r = startup_shell();	/* r is the shell's pid */
+# endif
+	}
+
+	/* Here we have the code for the process 0 (MiNT itself).
+	 *
+	 * It waits for the init program to terminate. When it is checked that
+	 * the init program is still alive, the pid 0 goes to sleep.
+	 * It can only be awaken, when noone else is ready to run, sleep()
+	 * in proc.c moves it to the run queue then (q.v.). In this case,
+	 * instead of calling sleep() again and force the CPU to execute the
+	 * loop again and again, we request it to be stopped.
+         *
+	 */
+	pid = (int) r;
+	if (pid > 0)
+	{
+		do
+		{
+# if 0
+			r = sys_pwaitpid(-1, 1, NULL);
+			if (r == 0)
+			{
+				sleep(WAIT_Q, (long)init);
+				if (mcpu == 60)
+					cpu_lpstop();	/* low power stop and wait for an interrupt */
+				else
+					cpu_stop();	/* stop and wait for an interrupt */
+			}
+# else
+			r = sys_pwaitpid(-1, 0, NULL);
+			ALERT("sys_pwaitpid done -> %li (%li)", r, ((r & 0xffff0000L) >> 16));
+# endif
+		} while (pid != ((r & 0xffff0000L) >> 16));
+	}
+# ifndef DEBUG_INFO
+	else
+		s_hutdown(0);		/* Everything failed. Halt. */
+
+	/* If init program exited, reboot the system.
+	 * Never go back to TOS.
+	 */
+	(void) s_hutdown(2);	/* cold reboot is more efficient ;-) */
+# else
+	/* With debug kernels, always halt
+	 */
+	(void) s_hutdown(0);
+# endif
+
+	/* Never returns */
 }
