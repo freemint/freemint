@@ -7,9 +7,9 @@
 
 # include "inet.h"
 
-# include "mint/dcntl.h"
 # include "mint/net.h"
 # include "mint/signal.h"
+# include "mint/sockio.h"
 
 # include "arp.h"
 # include "inetdev.h"

@@ -47,11 +47,11 @@
 # include "rtl8012_vblint.h"
 # include "netinfo.h"
 
-# include <arch/timer.h>
-# include <mint/asm.h>
-# include <mint/dcntl.h>
-# include <mint/delay.h>
-# include <mint/mdelay.h>
+# include "arch/timer.h"
+# include "mint/asm.h"
+# include "mint/delay.h"
+# include "mint/mdelay.h"
+# include "mint/sockio.h"
 
 # include <osbind.h>
 

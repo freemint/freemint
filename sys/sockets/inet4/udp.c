@@ -6,7 +6,10 @@
 
 # include "udp.h"
 
+# include "mint/fcntl.h"
+# include "mint/ioctl.h"
 # include "mint/net.h"
+# include "mint/pathconf.h"
 
 # include "icmp.h"
 # include "if.h"

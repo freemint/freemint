@@ -6,7 +6,10 @@
 
 # include "rawip.h"
 
+# include "mint/fcntl.h"
+# include "mint/ioctl.h"
 # include "mint/net.h"
+# include "mint/pathconf.h"
 
 # include "if.h"
 # include "in.h"

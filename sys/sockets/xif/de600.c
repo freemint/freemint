@@ -37,9 +37,9 @@
 # include "de600.h"
 # include "netinfo.h"
 
-# include <mint/asm.h>
-# include <mint/dcntl.h>
-# include <arch/timer.h>
+# include "mint/asm.h"
+# include "mint/sockio.h"
+# include "arch/timer.h"
 
 # include <osbind.h>
 
