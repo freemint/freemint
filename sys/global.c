@@ -101,3 +101,10 @@ int gl_lang = -1;
 # ifdef OLDTOSFS
 long gemdos_version;
 # endif
+
+/*
+ * The path to the system directory. Added 17.IV.2001.
+ */
+char *sysdir = NULL;
+short sysdrv;
+

@@ -53,7 +53,7 @@
 
 # include "dosdir.h"
 # include "filesys.h"
-# include "init.h"		/* *sysdir */
+# include "global.h"
 # include "k_fds.h"
 # include "kerinfo.h"
 # include "kmemory.h"

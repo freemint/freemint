@@ -331,7 +331,7 @@ const char *MSG_init_menuwarn =
 	"# This file is automatically created,\n"
 	"# do not edit.\n\n"
 ;
-
+const char *MSG_must_be_auto = "MiNT MUST be executed from the AUTO folder!\r\n";
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
 # ifdef VERBOSE_BOOT
 const char *MSG_init_mp = "Memory protection ";
@@ -339,9 +339,6 @@ const char *MSG_init_mp_enabled = "enabled\r\n";
 const char *MSG_init_mp_disabled = "disabled\r\n";
 # endif
 const char *MSG_init_delay_loop = "Calibrating delay loop... ";
-const char *MSG_init_specify_prg =
-	"If MiNT is run after GEM starts, you must specify a program\r\n"
-	"to run initially in mint.cnf, with an INIT= line\r\n";
 const char *MSG_couldnt_run_init = "Couldn't run `%s', error %ld!\r\n";
 
 /* ---------- keyboard.c ---------- */
