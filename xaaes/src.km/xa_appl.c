@@ -293,7 +293,15 @@ remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 	while (wl)
 	{
 		if (wl->owner == client)
-		{			
+		{
+			/* Ozk:
+			 * Lets make sure window is closed before we remove
+			 * any refs, making sure it is not attempted redrawn
+			 * during remove_windows() later on.
+			 */
+			if (wl->is_open)
+				close_window(0, wl);
+
 			remove_widget(0, wl, XAW_TOOLBAR);
 			remove_widget(0, wl, XAW_MENU   );
 			wl->redraw = NULL;
@@ -317,6 +325,16 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
+	/*
+	 * It is no longer interested in button released packet
+	 */
+	if (C.button_waiter == client)
+		C.button_waiter = NULL;
+
+	cancel_aesmsgs(&client->rdrw_msg);
+	cancel_aesmsgs(&client->msg);
+	cancel_cevents(client);
+
 	remove_wind_refs(window_list, client);
 	remove_wind_refs(S.closed_windows.first, client);
 
@@ -327,16 +345,6 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	remove_windows(lock, client);
 
 	top_owner = window_list->owner;
-
-	/*
-	 * It is no longer interested in button released packet
-	 */
-	if (C.button_waiter == client)
-		C.button_waiter = NULL;
-
-	cancel_aesmsgs(&client->rdrw_msg);
-	cancel_aesmsgs(&client->msg);
-	cancel_cevents(client);
 
 	if (client->attach)
 	{
