@@ -38,6 +38,65 @@ struct xa_user_things
 	long parmblk_p;
 };
 
+struct xa_co_wdlgexit
+{
+	const long len;
+	long	sighand_p;
+	long	exit_p;
+	long	userdata_p;
+	long	mclicks_p;
+	long	nxtobj_p;
+	long	ev_p;
+	long	handle_p;
+	long	ret_p;
+	long	feedback_p;
+};
+
+struct xa_co_lbox
+{
+	const long len;
+	long	sighand_p;
+	long	parm_p;
+};
+
+struct co_lboxsel_parms
+{
+	long	funct;
+	short	last_state;
+	short	obj_index;
+	long	user_data;
+	long	item;
+	long	tree;
+	long	box;
+};
+
+struct co_lboxset_parms
+{
+	long	funct;
+	short	first;
+	long	rect;
+	long	user_data;
+	short	obj_index;
+	long	item;
+	long	tree;
+	long	box;
+	long	ret;
+};
+
+struct co_lboxscrl_parms
+{
+	long	funct;
+	short	n;
+	long	lbox_slide;
+	long	box;
+	long	ret;
+};
+
 extern const struct xa_user_things xa_user_things;
+extern const struct xa_co_wdlgexit xa_co_wdlgexit;
+
+extern const struct xa_co_lbox xa_co_lboxselect;
+extern const struct xa_co_lbox xa_co_lboxset;
+extern const struct xa_co_lbox xa_co_lboxscroll;
 
 #endif /* _xa_user_things_h */

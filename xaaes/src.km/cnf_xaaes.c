@@ -823,8 +823,8 @@ pCB_run(const char *path, const char *line, struct parsinf *inf)
 			{
 				strcpy(cfg.cnf_run[i], path);
 				strcpy(cfg.cnf_run_arg[i], line);
-				DIAGS(("pCB_run[%i]: %s", i, path));
-				DIAGS(("pCB_run[%i]: args %s", i, line));
+				DIAGS(("pCB_run[%i]:(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i]));
+				DIAGS(("pCB_run[%i]:(%lx) args '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i]));
 			}
 			else
 			{

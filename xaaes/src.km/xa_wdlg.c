@@ -43,7 +43,9 @@
 #include "xa_form.h"
 #include "scrlobjc.h"
 
+#include "xa_user_things.h"
 #include "nkcc.h"
+#include "mint/signal.h"
 
 
 /*
@@ -59,6 +61,90 @@
  */
 
 #if WDIALOG_WDLG
+
+
+static short
+callout_exit(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short nxtobj, short mclicks, void *udata, void *feedback)
+{
+	struct sigaction oact, act;
+	struct xa_co_wdlgexit *u;
+	short ret = 0;
+
+	if (wdlg->exit)
+	{
+		u = umalloc(xa_co_wdlgexit.len);
+	
+		if (u)
+		{
+			DIAGS(("wdlg=%lx, ev=%lx, wdlg->exit=%lx, nxtob=%d, mclicks=%d, udata=%lx, feedback=%lx",
+				wdlg, ev, (long)wdlg->exit, nxtobj, mclicks, udata, feedback));
+
+			bcopy(&xa_co_wdlgexit, u, xa_co_wdlgexit.len);
+		
+			u->sighand_p	+= (long)u;
+			u->exit_p	+= (long)u;
+			u->userdata_p	+= (long)u;
+			u->mclicks_p	+= (long)u;
+			u->nxtobj_p	+= (long)u;
+			u->ev_p		+= (long)u;
+			u->handle_p	+= (long)u;
+			u->ret_p	+= (long)u;
+			u->feedback_p	+= (long)u;
+		
+			DIAGS(("u=%lx, sighand=%lx, exit=%lx, udata=%lx, mclick=%lx, nxtobj=%lx, ev=%lx, hand=%lx, ret=%lx, feedb=%lx",
+				u, u->sighand_p, u->exit_p, u->userdata_p, u->mclicks_p, u->nxtobj_p, u->ev_p, u->handle_p, u->ret_p, u->feedback_p));
+		
+			*(long  *)u->exit_p	= (long)wdlg->exit;
+
+			if (feedback)
+			{
+				DIAGS(("callout_exit: feedback needed"));
+				*(long *)u->userdata_p = (long)u->feedback_p;
+			}
+			else
+				*(long  *)u->userdata_p	= (long)udata;
+
+			*(short *)u->mclicks_p	= mclicks;
+			*(short *)u->nxtobj_p	= nxtobj;
+			*(long  *)u->ev_p	= (long)ev;
+			*(long  *)u->handle_p	= (long)wdlg->handle;
+
+			DIAGS(("u=%lx, sighand=%lx, exit=%lx, udata=%lx, mclick=%d, nxtobj=%d, ev=%lx, hand=%lx, ret=%x",
+				u, u->sighand_p, *(long *)u->exit_p, *(long *)u->userdata_p,
+				*(short *)u->mclicks_p, *(short *)u->nxtobj_p, *(long *)u->ev_p, *(long *)u->handle_p, *(short *)u->ret_p));
+		
+			cpush(NULL, -1); //(u, xa_co_wdlgexit.len);
+
+			act.sa_handler	= u->sighand_p;
+			act.sa_mask	= 0xffffffff;
+			act.sa_flags	= SA_RESET;
+
+			p_sigaction(SIGUSR2, &act, &oact);
+			DIAGS(("raise(SIGUSR2)"));
+			raise(SIGUSR2);
+			DIAGS(("handled SIGUSR2 wdlgexit callout"));
+			/* restore old handler */
+			p_sigaction(SIGUSR2, &oact, NULL);
+		
+			DIAGS(("u=%lx, sighand=%lx, exit=%lx, udata=%lx, mclick=%d, nxtobj=%d, ev=%lx, hand=%lx, ret=%x",
+				u, u->sighand_p, *(long *)u->exit_p, *(long *)u->userdata_p,
+				*(short *)u->mclicks_p, *(short *)u->nxtobj_p, *(long *)u->ev_p, *(long *)u->handle_p, *(short *)u->ret_p));
+		
+			ret = *(short *)u->ret_p;
+		
+			if (feedback)
+			{
+				DIAGS((" -- return feedback from %lx into %lx (%d)", u->feedback_p, feedback, *(short *)(u->feedback_p)));
+				*(short *)feedback = *(short *)u->feedback_p;
+			}
+		
+			ufree(u);
+		}
+	}
+	return ret;
+}
+
+//ret = wdlg->exit(wdlg->handle, ev, nxtobj, ev->mclicks, wdlg->user_data);
 
 static inline void
 cpy_ev2md(EVNT *e, struct moose_data *m)
@@ -174,7 +260,8 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 	if (!(wdlg = wind->wdlg))
 		return -1;
 
-	if (msg[0] >= 20 && msg[0] <= 39 && !wdlg->exit(wdlg->handle, ev, HNDL_MESG, ev->mclicks, wdlg->user_data) )
+	//if (msg[0] >= 20 && msg[0] <= 39 && !wdlg->exit(wdlg->handle, ev, HNDL_MESG, ev->mclicks, wdlg->user_data) )
+	if (msg[0] >= 20 && msg[0] <= 39 && !callout_exit(wind->owner, wdlg, ev, HNDL_MESG, ev->mclicks, wdlg->user_data, NULL) )
 		return 0;
 
 	switch (msg[0])
@@ -233,7 +320,8 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 
 			if (wh != mh)
 				return -1;
-			if ( !wdlg->exit(wdlg->handle, ev, HNDL_MOVE, ev->mclicks, wdlg->user_data) )
+			//if ( !wdlg->exit(wdlg->handle, ev, HNDL_MOVE, ev->mclicks, wdlg->user_data) )
+			if ( !callout_exit(wind->owner, wdlg, ev, HNDL_MOVE, ev->mclicks, wdlg->user_data, NULL))
 				return 0;
 
 			r.x = msg[4], r.y = msg[5];
@@ -251,13 +339,15 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 		{
 			if (wh != mh)
 				return -1;
-			return wdlg->exit(wdlg->handle, ev, HNDL_TOPW, ev->mclicks, wdlg->user_data);
+			//return wdlg->exit(wdlg->handle, ev, HNDL_TOPW, ev->mclicks, wdlg->user_data);
+			return callout_exit(wind->owner, wdlg, ev, HNDL_TOPW, ev->mclicks, wdlg->user_data, NULL);
 		}
 		case WM_UNTOPPED:
 		{
 			if (wh != mh)
 				return -1;
-			return wdlg->exit(wdlg->handle, ev, HNDL_UNTP, ev->mclicks, wdlg->user_data);
+			//return wdlg->exit(wdlg->handle, ev, HNDL_UNTP, ev->mclicks, wdlg->user_data);
+			return callout_exit(wind->owner, wdlg, ev, HNDL_UNTP, ev->mclicks, wdlg->user_data, NULL);
 		}
 		case WM_BOTTOM:
 		{
@@ -382,7 +472,8 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				wdlg->ify_wt = wt;
 
 				wdlg->exit      = (void*)pb->addrin[0];
-				rep = wdlg->exit(wdlg->handle/*0*/, 0, HNDL_INIT, wdlg->code, wdlg->data);
+				//rep = wdlg->exit(wdlg->handle/*0*/, 0, HNDL_INIT, wdlg->code, wdlg->data);
+				rep = callout_exit(client, wdlg, NULL, HNDL_INIT, wdlg->code, wdlg->data, NULL);
 				if (rep == 0)
 					delete_window(lock, wind);
 				else
@@ -467,7 +558,8 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		wdlg->std_wt->tree->ob_y = wind->wa.y;
 		open_window(lock, wind, wind->rc);
 		wdlg->data = (void*)pb->addrin[2];
-		wdlg->exit(wdlg->handle, 0, HNDL_OPEN, pb->intin[3], wdlg->data);
+		//wdlg->exit(wdlg->handle, 0, HNDL_OPEN, pb->intin[3], wdlg->data);
+		callout_exit(client, wdlg, NULL, HNDL_OPEN, pb->intin[3], wdlg->data, NULL);
 
 		pb->intout[0] = handle;
 	}
@@ -854,7 +946,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
-
+		
 unsigned long
 XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -929,7 +1021,8 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 								{
 									DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): call wdlg->exit(%lx) with exitobj=%d for %s",
 										wdlg->exit, nxtobj, client->name));
-									ret = wdlg->exit(wdlg->handle, ev, nxtobj, ev->mclicks, wdlg->user_data);
+									//ret = wdlg->exit(wdlg->handle, ev, nxtobj, ev->mclicks, wdlg->user_data);
+									ret = callout_exit(client, wdlg, ev, nxtobj, ev->mclicks, wdlg->user_data, NULL);
 								}
 								else
 								{
@@ -940,7 +1033,8 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 										obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, wind->rect_start, NULL, &nxtobj);
 										DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Call wdlg->exit(%lx) with new editobj=%d for %s",
 											wdlg->exit, nxtobj, client->name));
-										ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, ev->mclicks, &nxtobj);
+										//ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, ev->mclicks, &nxtobj);
+										ret = callout_exit(client, wdlg, ev, HNDL_EDCH, ev->mclicks, NULL, &nxtobj);
 									}
 								}							
 							}
@@ -995,7 +1089,8 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 						{
 							obj_edit(wt, ED_END, 0, 0, 0, true, wind->rect_start, NULL, NULL);
 							obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, wind->rect_start, NULL, NULL);
-							ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, 0, &nxtobj);
+							//ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, 0, &nxtobj);
+							ret = callout_exit(client, wdlg, ev, HNDL_EDCH, 0, 0, &nxtobj);
 						}
 					}
 					else 
@@ -1042,7 +1137,8 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 							{
 								DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): call exit(%lx) with exitobj=%d for %s",
 									wdlg->exit, nxtobj, client->name));
-								ret = wdlg->exit(wdlg->handle, ev, nxtobj, 0 /*ev->mclicks*/, wdlg->user_data);
+								//ret = wdlg->exit(wdlg->handle, ev, nxtobj, 0 /*ev->mclicks*/, wdlg->user_data);
+								ret = callout_exit(client, wdlg, ev, nxtobj, 0, wdlg->user_data, NULL);
 							}
 						}
 						else if (key != 0x1c0d && key != 0x720d)
@@ -1058,7 +1154,8 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 								 wind->rect_start,
 								 NULL,
 								 NULL);
-							ret = wdlg->exit(wdlg->handle, ev, HNDL_EDIT, 0, &key);
+							//ret = wdlg->exit(wdlg->handle, ev, HNDL_EDIT, 0, &key);
+							ret = callout_exit(client, wdlg, ev, HNDL_EDIT, 0, 0, &key);
 							ev->mwhich &= ~MU_KEYBD;
 						}
 					}

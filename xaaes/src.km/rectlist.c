@@ -76,13 +76,13 @@ build_rect_list(struct build_rl_parms *p)
 	{
 		short flag, win_x2, win_y2, our_x2, our_y2;
 		short w, h;
-#if GENERATE_DIAGS
+#if 0 //GENERATE_DIAGS
 		short i;
 #endif
 
 		while (p->getnxtrect(p))
 		{
-#if GENERATE_DIAGS
+#if 0 //GENERATE_DIAGS
 			i = 0;
 #endif
 			r_win = *p->next_r;
@@ -99,7 +99,7 @@ build_rect_list(struct build_rl_parms *p)
 				w = r_win.x - r_ours.x;
 
 				rl_next = rl->next;
-#if GENERATE_DIAGS
+#if 0 //GENERATE_DIAGS
 				i++;
 #endif
 				if ( h < r_ours.h	&&
@@ -120,7 +120,7 @@ build_rect_list(struct build_rl_parms *p)
 						r_ours.x += w;
 						r_ours.w -= w;
 						flag = 1;
-						DIAGS((" -- 2. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						//DIAGS((" -- 2. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
 					if (r_win.y > r_ours.y)
 					{
@@ -131,9 +131,9 @@ build_rect_list(struct build_rl_parms *p)
 							assert(rl);
 							rl->next = rl_prev->next;
 							rl_prev->next = rl;
-							DIAGS((" -- 2. alloc new=%lx", rl));
+							//DIAGS((" -- 2. alloc new=%lx", rl));
 						}
-#if GENERATE_DIAGS
+#if 0 //GENERATE_DIAGS
 						else
 							DIAGS((" -- 2. using orig=%lx", rl));
 #endif
@@ -146,7 +146,7 @@ build_rect_list(struct build_rl_parms *p)
 						r_ours.h -= h;
 					
 						flag = 1;
-						DIAGS((" -- 1. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						//DIAGS((" -- 1. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
 					if (our_x2 > win_x2)
 					{
@@ -157,9 +157,9 @@ build_rect_list(struct build_rl_parms *p)
 							assert(rl);
 							rl->next = rl_prev->next;
 							rl_prev->next = rl;
-							DIAGS((" -- 4. alloc new=%lx", rl));
+							//DIAGS((" -- 4. alloc new=%lx", rl));
 						}
-#if GENERATE_DIAGS
+#if 0 //GENERATE_DIAGS
 						else
 							DIAGS((" -- 4. using orig=%lx", rl));
 #endif
@@ -171,7 +171,7 @@ build_rect_list(struct build_rl_parms *p)
 
 						r_ours.w -= rl->r.w;
 						flag = 1;
-						DIAGS((" -- 4. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						//DIAGS((" -- 4. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
 					if (our_y2 > win_y2)
 					{
@@ -182,9 +182,9 @@ build_rect_list(struct build_rl_parms *p)
 							assert(rl);
 							rl->next = rl_prev->next;
 							rl_prev->next = rl;
-							DIAGS((" -- 3. alloc new=%lx", rl));
+							//DIAGS((" -- 3. alloc new=%lx", rl));
 						}
-#if GENERATE_DIAGS
+#if 0 //GENERATE_DIAGS
 						else
 							DIAGS((" -- 3. using orig=%lx", rl));
 #endif
@@ -195,19 +195,19 @@ build_rect_list(struct build_rl_parms *p)
 
 						r_ours.h -= rl->r.h;
 						flag = 1;
-						DIAGS((" -- 3. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
+						//DIAGS((" -- 3. new=(%d/%d/%d/%d), remain=(%d/%d/%d/%d)", rl->r, r_ours));
 					}
 				}
 				else
 				{
 					flag = 1;
-					DIAGS((" -- 1. whole=(%d/%d/%d/%d)", rl->r));
+					//DIAGS((" -- 1. whole=(%d/%d/%d/%d)", rl->r));
 				}
 
 				if (!flag)
 				{
-					DIAGS((" covered, releasing (nrl=%lx) %lx=(%d/%d/%d/%d) rl_prev=%lx(%lx)",
-						nrl, rl, rl->r, rl_prev, rl_prev ? (long)rl_prev->next : 0));
+					//DIAGS((" covered, releasing (nrl=%lx) %lx=(%d/%d/%d/%d) rl_prev=%lx(%lx)",
+					//	nrl, rl, rl->r, rl_prev, rl_prev ? (long)rl_prev->next : 0));
 					if (rl == nrl)
 					{
 						nrl = rl_next;
@@ -226,7 +226,7 @@ build_rect_list(struct build_rl_parms *p)
 			} /* for (rl = nrl; rl; rl = rl_next) */
 		} /* while (wl) */
 	} /* if (nrl && w->prev) */
-#if GENERATE_DIAGS
+#if 0 //GENERATE_DIAGS
 	else
 		DIAGS((" -- RECT is topped"));
 	
