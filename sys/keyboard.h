@@ -108,10 +108,10 @@ extern short kbd_mpixels_fine;
 extern struct cad_def cad[3];
 
 /* Interrupt routines */
-short ikbd_scan(ushort scancode, IOREC_T *rec);
+void ikbd_scan(ushort scancode, IOREC_T *rec);
 void autorepeat_timer(void);
 
-/* keyboard releated BIOS system calls */
+/* keyboard related BIOS system calls */
 struct keytab *sys_b_keytbl(char *unshift, char *shift, char *caps);
 void sys_b_bioskeys(void);
 ushort sys_b_kbrate(ushort del, ushort rep);
