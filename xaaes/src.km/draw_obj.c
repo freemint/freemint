@@ -24,10 +24,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include WIDGHNAME
+
 #include "xa_types.h"
 #include "xa_global.h"
-
-#include WIDGHNAME
 
 #include "xalloc.h"
 #include "rectlist.h"
@@ -195,12 +195,10 @@ void ritopxy(short *p, short x, short y, short w, short h)
 
 void line(short x, short y, short x1, short y1, int col)
 {
-	short pxy[4];
+	short pxy[4] = { x, y, x1, y1 };
 
-	pxy[0]=x;pxy[2]=x1;
-	pxy[1]=y;pxy[3]=y1;
 	l_color(col);
-	v_pline(C.vh,2,pxy);
+	v_pline(C.vh, 2, pxy);
 }
 
 void bar(int d,  short x, short y, short w, short h)
@@ -1683,6 +1681,135 @@ static char *pstates[] =
 };
 #endif
 
+#if 0
+struct user_things
+{
+	const long len;		/* number of bytes to copy (this struct and the code) */
+	long progdef_p;
+	long userblk_p;
+	long ret_p;
+	long parmblk_p;
+};
+#define userblk(ut) (*(USERBLK **)(ut->userblk_p))
+#define ret(ut)     (     (long *)(ut->ret_p    ))
+#define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p))
+
+extern const struct user_things xa_user_things;
+
+void
+d_g_progdef(enum locks lock, struct widget_tree *wt)
+{
+	OBJECT *ob = wt->tree + wt->current;
+	struct sigaction oact, act;
+	struct user_things *ut;
+
+	struct proc *curproc = get_curproc();
+	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
+
+	KERNEL_DEBUG("XaAES d_g_progdef: curproc - pid %i, name %s", curproc->pid, curproc->name);
+	KERNEL_DEBUG("XaAES d_g_progdef: client  - pid %i, name %s", client->p->pid, client->name);
+
+	// XXX alloc it on client creation
+	ut = umalloc(xa_user_things.len);
+	assert(ut);
+
+	bcopy(&xa_user_things, ut, xa_user_things.len);
+
+	ut->progdef_p += (long)ut;
+	ut->userblk_p += (long)ut;
+	ut->ret_p     += (long)ut;
+	ut->parmblk_p += (long)ut;
+
+	KERNEL_DEBUG("ut = 0x%lx", ut);
+	KERNEL_DEBUG("ut->progdef_p = 0x%lx", ut->progdef_p);
+	KERNEL_DEBUG("ut->userblk_p = 0x%lx", ut->userblk_p);
+	KERNEL_DEBUG("ut->ret_p     = 0x%lx", ut->ret_p    );
+	KERNEL_DEBUG("ut->parmblk_p = 0x%lx", ut->parmblk_p);
+
+	userblk(ut) = get_ob_spec(ob)->userblk;
+
+	KERNEL_DEBUG("userblk 0x%lx (0x%lx)", get_ob_spec(ob)->userblk, userblk(ut));
+
+	parmblk(ut)->pb_tree = wt->tree;
+	parmblk(ut)->pb_obj = wt->current;
+
+	parmblk(ut)->pb_prevstate = parmblk(ut)->pb_currstate = ob->ob_state;
+
+	*(RECT *)&(parmblk(ut)->pb_x) = wt->r;
+
+	parmblk(ut)->pb_xc = C.global_clip[0];
+	parmblk(ut)->pb_yc = C.global_clip[1];
+	parmblk(ut)->pb_wc = C.global_clip[2] - C.global_clip[0] + 1;
+	parmblk(ut)->pb_hc = C.global_clip[3] - C.global_clip[1] + 1;
+
+	parmblk(ut)->pb_parm = userblk(ut)->ub_parm;
+
+	wr_mode(MD_TRANS);
+
+#if GENERATE_DIAGS
+	{
+		char statestr[128];
+
+		show_bits(*wt->state_mask & ob->ob_state, "state ", pstates, statestr);
+		DIAG((D_o, wt->owner, "progdef before %s %04x", statestr, *wt->state_mask & ob->ob_state));
+	}
+#endif
+
+	act.sa_handler = ut->progdef_p;
+	act.sa_mask = 0xffffffff;
+	act.sa_flags = SA_RESET;
+
+	/* set new signal handler; remember old */
+	p_sigaction(SIGUSR2, &act, &oact);
+
+	KERNEL_DEBUG("raise(SIGUSR2)");
+	raise(SIGUSR2);
+	KERNEL_DEBUG("-> back from SIGUSR2");
+
+	/* restore old handler */
+	p_sigaction(SIGUSR2, &oact, NULL);
+
+	/* The PROGDEF function returns the ob_state bits that
+	 * remain to be handled by the AES:
+	 */
+	*wt->state_mask = *ret(ut);
+	ufree(ut);
+
+
+	/* BUG: OS_SELECTED bit only handled in non-color mode!!!
+	 * (Not too serious I believe... <mk>)
+	 * HR: Yes I would call that correct, cause in color mode
+	 *     selected appearance is object specific.
+	 *     I even think that it shouldnt be done at ALL.
+	 * 		
+	 * The whole state_mask returning mechanism of progdefs should
+         * be taken into account.
+         * So we actually dont need to do anything special here.
+         * But for progdef'd menu separators it is nicer to check here
+         * and use bg_col.	              
+	 */
+
+#if GENERATE_DIAGS
+	{
+		char statestr[128];
+
+		show_bits(*wt->state_mask, "state ", pstates, statestr);
+		DIAG((D_o, wt->owner, "progdef remaining %s %04x", statestr, *wt->state_mask));
+	}
+#endif
+
+	if (*wt->state_mask & OS_DISABLED)
+	{
+		write_disable(&wt->r, screen.dial_colours.bg_col);
+		done(OS_DISABLED);
+	}
+
+	wr_mode(MD_REPLACE);
+}
+#undef userblk
+#undef ret
+#undef parmblk
+#else
 void
 d_g_progdef(enum locks lock, struct widget_tree *wt)
 {
@@ -1757,6 +1884,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt)
 
 	wr_mode(MD_REPLACE);
 }
+#endif
 
 static void
 l_text(short x, short y, char *t, short w, int left)
