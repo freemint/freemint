@@ -70,8 +70,7 @@ obfix(OBJECT *tree, int object)
 	 * Special case handling: any OBJECT 80 characters wide is supposed
 	 * to be a menu bar, which always covers the entire screen width...
 	 */
-	o->ob_width = (o->ob_width == 80) ?
-			screen.r.w : fixup(o->ob_width, screen.c_max_w);
+	o->ob_width = (o->ob_width == 80) ? screen.r.w : fixup(o->ob_width, screen.c_max_w);
 	o->ob_height = fixup(o->ob_height, screen.c_max_h);
 }
 
@@ -81,10 +80,8 @@ obfix(OBJECT *tree, int object)
  * me to use his code.
  */
 
-static short resWidth, resHeight;
-
-/* HR 021101: new function to make the code orthogonal.
-*/
+/* new function to make the code orthogonal.
+ */
 static short *
 transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long len, int planes, short vdih)
 {
@@ -100,9 +97,8 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 	{
 		DIAG((D_x, client, "XA_calloc 3 %ld", new_len));
 
-		/* XXX new_data = XA_calloc(&client->base, 1, new_len, 3, client->rsct); */
 		new_data = proc_malloc(new_len);
-		if (new_data == NULL)
+		if (!new_data)
 			return map;
 
 		memcpy(new_data, map, icon_len);
@@ -138,18 +134,19 @@ transform_icon_bitmap(struct xa_client *client, CICONBLK *icon, short *map, long
 static void
 FixColourIconData(struct xa_client *client, CICONBLK *icon, long base, short vdih)
 {
-	CICON *c, *best_cicon = NULL;
+	CICON *best_cicon = NULL;
+	CICON *c;
 	long len = calc_back((RECT *) &icon->monoblk.ib_xicon, 1);
 
 	DIAG((D_s, client, "color icon: '%s' %d*%d %ld tx.w=%d",
 		icon->monoblk.ib_ptext,
 		icon->monoblk.ib_wicon, icon->monoblk.ib_hicon, len, icon->monoblk.ib_wtext));
 
-	/* HR 021101: Use the same mechanism from d_g_cicon() for reducing the
-	 *            number of transformations done.
+	/* Use the same mechanism from d_g_cicon() for reducing the
+	 * number of transformations done.
 	 */
 	c = icon->mainlist;
-	while(c)
+	while (c)
 	{
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
 	
@@ -187,7 +184,6 @@ list_resource(struct xa_client *client, void *resource)
 
 	DIAG((D_x, client, "XA_alloc 2 %ld", sizeof(*new)));
 
-	/* XXX new = XA_alloc(&client->base, sizeof(XA_RSCS), 2, 0); */
 	new = proc_malloc(sizeof(*new));
 	if (new)
 	{
@@ -199,6 +195,7 @@ list_resource(struct xa_client *client, void *resource)
 		new->prior = NULL;
 		if (new->next)
 			new->next->prior = new;
+
 		client->resources = new;			
 
 		/* set defaults up */
@@ -210,13 +207,16 @@ list_resource(struct xa_client *client, void *resource)
 }
 
 /*
- * LoadResources : Load a GEM resource file
+ * LoadResources: Load a GEM resource file
  * fname = name of file to load
  * Return = base pointer of resources or NULL on failure
  */
 void *
 LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight)
 {
+#define resWidth (screen.c_max_w)
+#define resHeight (screen.c_max_h)
+
 	RSHDR hdr;
 	CICONBLK **cibh = NULL;
 	OBJECT *obj, **trees;
@@ -226,9 +226,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	short vdih = C.vh;
 
 	IFDIAG(OBJECT *tree;)
-
-	resWidth = screen.c_max_w;
-	resHeight = screen.c_max_h;
 
 	if (fname)
 	{
@@ -259,7 +256,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		kernel_lseek(f, 0, 0);
 
 		DIAG((D_x, client, "XA_alloc 1 %ld", size));
-		/* XXX base = XA_alloc(&client->base, size, 1, client->rsct + 1); */
+
 		base = proc_malloc(size);
 		if (!base)
 		{
@@ -289,29 +286,34 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	/* Put the resource in a list. */
 	list_resource(client, base);
 
-	{	/* fixup all free string pointers */
+	/* fixup all free string pointers */
+	{
 		char **fs = (char **)(base + hdr.rsh_frstr);
 		for (i = 0; i < hdr.rsh_nstring; i++, fs++)
 		{
-			IFDIAG(char *d = *fs;)
+//			IFDIAG(char *d = *fs;)
 			*fs += (long)base;
-			DIAG((D_s,client,"fs[%d]>%ld='%s'",i,d,*fs));
+//			DIAG((D_s,client,"fs[%d]>%ld='%s'",i,d,*fs));
 		}
 		
 		DIAG((D_rsrc, client, "fixed up %d free_string pointers", hdr.rsh_nstring));
 	}
-	{	/* HR: fixup all free image pointers */
+
+	/* fixup all free image pointers */
+	{
 		char **fs = (char **)(base + hdr.rsh_frimg);
 		for (i = 0; i < hdr.rsh_nimages; i++, fs++)
 		{
-			IFDIAG(char *d = *fs;)
+//			IFDIAG(char *d = *fs;)
 			*fs += (long)base;
-			DIAG((D_s, client, "imgs[%d]>%ld=%lx",i, d, *fs));
+//			DIAG((D_s, client, "imgs[%d]>%ld=%lx",i, d, *fs));
 		}
 		
 		DIAG((D_rsrc,client,"fixed up %d free_image pointers", hdr.rsh_nimages));
 	}
-	{	/* fixup all tedinfo field pointers */
+
+	/* fixup all tedinfo field pointers */
+	{
 		TEDINFO *ti = (TEDINFO *)(base + hdr.rsh_tedinfo);
 		for (i = 0; i < hdr.rsh_nted; i++, ti++)
 		{
@@ -322,7 +324,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	
 		DIAG((D_rsrc, client, "fixed up %d tedinfo's", hdr.rsh_nted));
 	}
-	{	/* fixup all iconblk field pointers */
+
+	/* fixup all iconblk field pointers */
+	{
 		ICONBLK *ib = (ICONBLK *)(base + hdr.rsh_iconblk);
 		for (i = 0; i < hdr.rsh_nib; i++, ib++)
 		{
@@ -333,7 +337,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		
 		DIAG((D_rsrc, client, "fixed up %d iconblk's", hdr.rsh_nib));
 	}
-	{	/* fixup all bitblk data pointers */
+
+	/* fixup all bitblk data pointers */
+	{
 		BITBLK *bb = (BITBLK *)(base + hdr.rsh_bitblk);
 		for (i = 0; i < hdr.rsh_nbb; i++, bb++)
 		{
@@ -508,12 +514,14 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	{
 		type = obj->ob_type & 255;
 
+#if 0
 		DIAG((D_s, client, "obj[%d]>%ld=%lx, %s;\t%d,%d,%d",
 			i,
 			(long)obj-(long)base,
 			obj,
 			object_type(tree,i),
 			obj->ob_next,obj->ob_head,obj->ob_tail));
+#endif
 
 		/* What kind of object is it? */
 		switch (type)
@@ -609,8 +617,7 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 }
 
 /*
- * FreeResources : Dispose of a set of loaded resources
- * HR: improvements regarding multiple resources.
+ * FreeResources: Dispose of a set of loaded resources
  */
 void
 FreeResources(struct xa_client *client, AESPB *pb)
@@ -650,14 +657,13 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				{
 					int f = 0;
 					obj = trees[i];
-					do
-					{	if ((obj[f].ob_type & 255) == G_SLIST)
-							/* XXX XA_free(&client->base, (SCROLL_INFO*)obj[f].ob_spec.index); */
+					do {
+						if ((obj[f].ob_type & 255) == G_SLIST)
 							proc_free((SCROLL_INFO*)obj[f].ob_spec.index);
-					} while ( ! (obj[f++].ob_flags & OF_LASTOB));
+					}
+					while (!(obj[f++].ob_flags & OF_LASTOB));
 				}
-		
-				/* XXX XA_free_all(&client->base, -1, client->rsct); */
+
 				proc_free_all();
 
 				/* unhook the entry from the chain */
@@ -669,7 +675,6 @@ FreeResources(struct xa_client *client, AESPB *pb)
 					client->resources = cur->next;
 
 				DIAG((D_rsrc,client,"Free: cur %lx", cur));
-				/* XXX XA_free(&client->base, cur); */
 				proc_free(cur);
 			}
 			else if (cur->handle == client->rsct - 1)
@@ -680,21 +685,22 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				client->rsrc = cur->rsc;
 				Rsrc_setglobal(cur->rsc, client->globl_ptr);
 			}
+
 			if (have)
 				break;
 
 			cur = nx;
 		}
+
 		client->rsct--;
 	}
 }
 
 
 /*
- *	HR: The routines below are almost entirely rewritten such, that it is
- *      quite easy to see the subtle differences.
+ * The routines below are almost entirely rewritten such, that it is
+ * quite easy to see the subtle differences.
  *
- * ResourceTree : Find the tree with a given index
  * hdr = pointer to base of resources
  * num = index number of tree
  * Return = pointer to tree or object or stuff, or NULL on failure
@@ -703,14 +709,18 @@ FreeResources(struct xa_client *client, AESPB *pb)
 #define num_nok(t) (!hdr || num < 0 || num >= hdr->rsh_ ## t)
 #define start(t) (unsigned long)index = (unsigned long)hdr + hdr->rsh_ ## t
 
-/* HR: fixing up the pointer array is now done in Loadresources, to make it usable via global[5] */
+/*
+ * Find the tree with a given index
+ * fixing up the pointer array is now done in Loadresources, to make it usable via global[5]
+ */
 OBJECT *
 ResourceTree(RSHDR *hdr, int num)
 {
 	OBJECT **index;
-	
-	if num_nok(ntree)
+
+	if (num_nok(ntree))
 		return NULL;
+
 	start(trindex);
 	return index[num];
 }
@@ -721,8 +731,9 @@ ResourceObject(RSHDR *hdr, int num)
 {
 	OBJECT *index;
 
-	if num_nok(nobs)
+	if (num_nok(nobs))
 		return NULL;
+
 	start(object);
 	return index + num;
 }
@@ -733,13 +744,12 @@ ResourceTedinfo(RSHDR *hdr, int num)
 {
 	TEDINFO *index;
 
-	if num_nok(nted)
+	if (num_nok(nted))
 		return NULL;
+
 	start(tedinfo);
 	return index + num;
 }
-
-/* Colour icons are too new */
 
 /* Find the iconblk with a given index */
 static ICONBLK *
@@ -747,8 +757,9 @@ ResourceIconblk(RSHDR *hdr, int num)
 {
 	ICONBLK *index;
 
-	if num_nok(nib)
+	if (num_nok(nib))
 		return NULL;
+
 	start(iconblk);
 	return index + num;
 }
@@ -759,8 +770,9 @@ ResourceBitblk(RSHDR *hdr, int num)
 {
 	BITBLK *index;
 
-	if num_nok(nbb)
+	if (num_nok(nbb))
 		return NULL;
+
 	start(bitblk);
 	return index + num;
 }
@@ -776,11 +788,12 @@ ResourceString(RSHDR *hdr, int num)
 {
 	char **index;
 
-	if num_nok(nstring)
+	if (num_nok(nstring))
 		return NULL;
+
 	start(frstr);
 
-	DIAG((D_s, NULL, "Gaddr 5 %lx '%s'", index[num], index[num]));
+//	DIAG((D_s, NULL, "Gaddr 5 %lx '%s'", index[num], index[num]));
 	return index[num];
 }
 
@@ -794,8 +807,9 @@ ResourceImage(RSHDR *hdr, int num)
 {
 	void **index;
 
-	if num_nok(nimages)
+	if (num_nok(nimages))
 		return NULL;
+
 	start(frimg);
 	return index[num];
 }
@@ -810,7 +824,7 @@ ResourceFrstr(RSHDR *hdr, int num)
 
 	start(frstr);
 
-	DIAG((D_s, NULL, "Gaddr 15 %lx '%s'", index, *index));
+//	DIAG((D_s, NULL, "Gaddr 15 %lx '%s'", index, *index));
 	return index + num;
 }
 
@@ -822,7 +836,7 @@ ResourceFrimg(RSHDR *hdr, int num)
 
 	start(frimg);
 
-	DIAG((D_s, NULL, "Gaddr 16 %lx", index));
+//	DIAG((D_s, NULL, "Gaddr 16 %lx", index));
 	return index + num;
 }
 
@@ -845,7 +859,6 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	    7/9/200   done.  As well as the memory allocated for colour icon data.
 */
 	path = shell_find(lock, client, (char*)pb->addrin[0]);
-	
 	if (path)
 	{
 		RSHDR *rsc;
@@ -896,13 +909,10 @@ XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 		pb->intout[0] = 1;
 	}
 	else
-	{
 		pb->intout[0] = 0;
-	}
 
 	return XAC_DONE;
 }
-
 
 unsigned long
 XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -934,7 +944,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		/* Nothing specified: take the last rsc read. */
 
-		rsc = client->rsrc; /* global is a structure */
+		rsc = client->rsrc;
 		trees = client->trees;
 		DIAG((D_rsrc,client,"  --  client->gl  rsc %lx, ptree %lx", rsc, trees));
 	}
@@ -1053,8 +1063,8 @@ XA_rsrc_obfix(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	ob = (OBJECT*)pb->addrin[0];
 
-	DIAG((D_rsrc, client, "rsrc_obfix for %s: tree %lx + %d",
-		c_owner(client), ob, item));
+//	DIAG((D_rsrc, client, "rsrc_obfix for %s: tree %lx + %d",
+//		c_owner(client), ob, item));
 
 	if (ob)
 	{
@@ -1083,7 +1093,6 @@ XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			DIAGS(("WARNING: rsrc_rcfix global %ld(%lx) is different from appl_init's global %ld(%lx)",
 				pb->global, pb->global, client->globl_ptr, client->globl_ptr));
-			/* client->globl_ptr = pb->global; */
 		}
 #endif
 		Rsrc_setglobal(client->rsrc, client->globl_ptr);
