@@ -47,11 +47,6 @@
 # define CREATE_PIPES
 
 /*
- * try to gather the MiNT executable's name from the parent's DTA
- */
-# define AUTO_FIX
-
-/*
  * define if you want a daemon process for sync'ing (otherwise uses timeout)
  */
 # define SYSUPDATE_DAEMON
