@@ -3,7 +3,7 @@
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for MiNT
  *
@@ -228,33 +228,6 @@ DeBug(enum debug_item item, struct xa_client *client, char *t, ...)
 		{
 			line[l++] = '\n';
 			kernel_write(D.debug_file, line, l);
-		}
-	}
-}
-
-void
-display_env(char **env, int which)
-{
-	if (D.debug_level > 2 && D.point[D_shel])
-	{
-		if (which == 1)
-		{
-			char *e = *env;
-			display("Environment as superstring:\n");
-			while (*e)
-			{
-				display("%lx='%s'\n", e, e);
-				e += strlen(e)+1;
-			}
-		}
-		else
-		{
-			display("Environment as row of pointers:\n");
-			while (*env)
-			{
-				display("%lx='%s'\n", *env, *env);
-				env++;
-			}
 		}
 	}
 }

@@ -40,6 +40,12 @@
 #include "mint/stat.h"
 
 
+#define STRINGS 1024 /* number of environment variable allowes in zaaes.cnf */
+static char *strings[STRINGS];
+
+char * const * const get_raw_env(void) { return strings; }
+
+static void display_env(char **env, int which);
 static const char *get_env(enum locks lock, const char *name);
 static int copy_env(char *to, char *s[], const char *without, char **last);
 static long count_env(char *s[], const char *without);
@@ -113,27 +119,26 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 	
 	DIAGS(("make_argv: %lx, %ld, %lx, %lx", p_tail, tailsize, command, argvtail));
 	
-	l = count_env(C.strings, 0);
+	l = count_env(strings, 0);
 	DIAG((D_shel, NULL, "count_env: %ld", l));
 	argtail = xmalloc(l + 1 + tailsize + 1 + i + 1 + argvl + 1, 2012);
 	if (argtail)
 	{
 		int j; char *last;
-		j = copy_env(argtail, C.strings, 0, &last);
-		DIAG((D_shel, NULL, "copy_env: %d, last-start: %ld", j, last - C.strings[0]));
+		j = copy_env(argtail, strings, 0, &last);
+		DIAG((D_shel, NULL, "copy_env: %d, last-start: %ld", j, last - strings[0]));
 		strcpy(last, ARGV);
 		strcpy(last + argvl + 1, command);
 		parse_tail(last + argvl + 1 + i + 1, p_tail + 1);
-		C.strings[j++] = last;
-		C.strings[j] = 0;
-#if XXX
-		// XXX raise with initialization in bootup
-		// free(C.env);
-#endif
+		strings[j++] = last;
+		strings[j] = 0;
+
+		if (C.env) free(C.env);
 		C.env = argtail;
+
 		argvtail[0] = 0x7f;
 		DIAGS(("ARGV constructed"));
-		IFDIAG (display_env(C.strings, 0);)
+		IFDIAG(display_env(strings, 0);)
 	}
 	else
 		DIAGS(("ARGV: out of memory"));
@@ -195,7 +200,7 @@ xa_fork_exec(short x_mode, const struct xshelw *xsh, const char *fname, char *ta
 		fname, tail, tail, *tail, tail + 1));
 	DIAGS(("Normal Pexec"));
 #if GENERATE_DIAGS
-	display_env(C.strings, 1);
+	display_env(strings, 1);
 #endif
 
 	/* block SIGCHLD until we setup our data structures */
@@ -254,13 +259,13 @@ xa_fork_exec(short x_mode, const struct xshelw *xsh, const char *fname, char *ta
 			}
 		}
 
-		/* It took me a few hours to realize that C.strings must be dereferenced,
+		/* It took me a few hours to realize that strings must be dereferenced,
 		 * to get to the original type of string (which I call a 'superstring'
 		 */
 
 		/* exec */
 		rep = p_exec(200, fname, tail,
-				(x_mode & SW_ENVIRON) ? x_shell.env : *C.strings);
+				(x_mode & SW_ENVIRON) ? x_shell.env : *strings);
 
 		DIAG((D_shel, NULL, "Pexec replied %ld(%lx)", rep, rep));
 
@@ -362,7 +367,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	if (wiscr == 1)
 	{
 		DIAGS(("wiscr == 1"));
-		display_env(C.strings, 0);
+		display_env(strings, 0);
 	}
 #endif
 
@@ -497,7 +502,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			if (wisgr != 0)
 			{
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
-						     (x_mode & SW_ENVIRON) ? x_shell.env : *C.strings,
+						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0);
 				if (ret == 0)
 				{
@@ -525,7 +530,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
-			p_rtn = create_process(cmd, *argvtail ? argvtail : tail, *C.strings, &p, 128);
+			p_rtn = create_process(cmd, *argvtail ? argvtail : tail, *strings, &p, 128);
 			if (p_rtn < 0)
 			{
 				DIAG((D_shel, 0, "acc launch failed:error=%ld", p_rtn));
@@ -675,7 +680,7 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					case 0:
 					{
-						long ct = count_env(C.strings, NULL);
+						long ct = count_env(strings, NULL);
 						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 0) -- count = %d", ct));
 						pb->intout[0] = ct;
 						break;
@@ -689,11 +694,11 @@ XA_shell_write(enum locks lock, struct xa_client *client, AESPB *pb)
 					}
 					case 2:
 					{
-						long ct = count_env(C.strings, NULL);
+						long ct = count_env(strings, NULL);
 						long ret;
 
 						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 2) -- copy"));
-						memcpy(cmd, C.strings[0], wiscr > ct ? ct : wiscr);
+						memcpy(cmd, strings[0], wiscr > ct ? ct : wiscr);
 						ret = ct > wiscr ? ct - wiscr : 0;
 
 						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 2) -- & left %ld", ret));
@@ -871,6 +876,35 @@ XA_shell_find(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+#if GENERATE_DIAGS
+static void
+display_env(char **env, int which)
+{
+	if (D.debug_level > 2 && D.point[D_shel])
+	{
+		if (which == 1)
+		{
+			char *e = *env;
+			display("Environment as superstring:\n");
+			while (*e)
+			{
+				display("%lx='%s'\n", e, e);
+				e += strlen(e)+1;
+			}
+		}
+		else
+		{
+			display("Environment as row of pointers:\n");
+			while (*env)
+			{
+				display("%lx='%s'\n", *env, *env);
+				env++;
+			}
+		}
+	}
+}
+#endif
+
 /* This version finds XX & XX= */
 static const char *
 get_env(enum locks lock, const char *name)
@@ -879,9 +913,9 @@ get_env(enum locks lock, const char *name)
 
 	Sema_Up(envstr);
 
-	for (i = 0; C.strings[i]; i++)
+	for (i = 0; strings[i]; i++)
 	{
-		const char *f = C.strings[i];
+		const char *f = strings[i];
 		const char *n = name;
 
 		for (;;)
@@ -943,7 +977,7 @@ copy_env(char *to, char *s[], const char *without, char **last)
 		i++;
 	}
 
-	C.strings[j] = '\0';
+	strings[j] = '\0';
 
 	*to = '\0';		/* the last extra \0 */
 	if (last)
@@ -991,7 +1025,7 @@ put_env(enum locks lock, const char *cmd)
 		DIAG((D_shel, NULL, " -- change; '%s'", cmd ? cmd : "~~"));
 
 		/* count without */
-		ct = count_env(C.strings, cmd);	
+		ct = count_env(strings, cmd);	
 		/* ct is including the extra \0 at the end! */
 
 		/* ends with '=': remove */
@@ -1000,7 +1034,7 @@ put_env(enum locks lock, const char *cmd)
 			newenv = xmalloc(ct, 19);
 			if (newenv)
 				/* copy without */
-				copy_env(newenv, C.strings, cmd, NULL);
+				copy_env(newenv, strings, cmd, NULL);
 		}
 		else
 		{
@@ -1010,26 +1044,23 @@ put_env(enum locks lock, const char *cmd)
 			{
 				char *last;
 				/* copy without */
-				int j = copy_env(newenv, C.strings, cmd, &last);
-				C.strings[j] = last;
+				int j = copy_env(newenv, strings, cmd, &last);
+				strings[j] = last;
 				/* add new */
-				strcpy(C.strings[j], cmd);
-				*(C.strings[j] + l) = '\0';
-				C.strings[j + 1] = NULL;
+				strcpy(strings[j], cmd);
+				*(strings[j] + l) = '\0';
+				strings[j + 1] = NULL;
 			}
 		}
 
 		if (newenv)
 		{
-#if XXX
-			// XXX raise with initialization in bootup
-			// free(C.env);
-#endif
+			if (C.env) free(C.env);
 			C.env = newenv;
 		}
 
 		DIAGS(("putenv"));
-		IFDIAG (display_env(C.strings, 0);)
+		IFDIAG(display_env(strings, 0);)
 	}
 
 	Sema_Dn(envstr);

@@ -379,7 +379,7 @@ pCB_run(const char *path, struct parsinf *inf)
 #endif
 
 void
-SCL(const char *name)
+load_config(const char *name)
 {
 	struct cnfdata mydata;
 //	struct options *curopt = &default_options;	/* specify some options for some programs. */
