@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  */
 
 /* miscellaneous DOS functions */
@@ -36,7 +36,7 @@
 # include "util.h"
 
 
-long _cdecl 
+long _cdecl
 s_version (void)
 {
 # ifdef OLDTOSFS
@@ -57,7 +57,7 @@ s_uper (long new_ssp)
 	PROC *p = curproc;
 	register int in_super;
 	register long r;
-	
+
 	/* Inappropriate callers will be killed. This is
 	 * lotsa safer when you set no memory protection.
 	 */
@@ -67,10 +67,10 @@ s_uper (long new_ssp)
 		raise (SIGSYS);
 		return new_ssp;
 	}
-	
+
 	TRACE (("Super(%lx)", new_ssp));
 	in_super = p->ctxt[SYSCALL].sr & 0x2000;
-	
+
 	if (new_ssp == 1)
 	{
 		r = in_super ? -1L : 0;
@@ -98,7 +98,7 @@ s_uper (long new_ssp)
 				new_ssp : p->ctxt[SYSCALL].usp;
 		}
 	}
-	
+
 	return r;
 }
 
@@ -110,11 +110,11 @@ long _cdecl
 s_yield (void)
 {
 	PROC *p = curproc;
-	
+
 	/* reward the nice process */
 	p->curpri = p->pri;
 	sleep (READY_Q, p->wait_cond);
-	
+
 	return E_OK;
 }
 
@@ -137,9 +137,9 @@ p_setpgrp (int pid, int newgrp)
 {
 	PROC *p = curproc;
 	PROC *t;
-	
+
 	TRACE (("Psetpgrp(%i, %i)", pid, newgrp));
-	
+
 	if (pid == 0)
 	{
 		t = curproc;
@@ -149,7 +149,7 @@ p_setpgrp (int pid, int newgrp)
 		t = pid2proc (pid);
 		if (!t) return ENOENT;
 	}
-	
+
 	if (p->p_cred->ucr->euid
 		&& (t->p_cred->ruid != p->p_cred->ruid)
 		&& (t->ppid != p->pid))
@@ -162,31 +162,31 @@ p_setpgrp (int pid, int newgrp)
 
 	if (newgrp == 0)
 		newgrp = t->pid;
-	
+
 	return (t->pgrp = newgrp);
 }
 
 /* tesche: audit user id functions, these id's never change once set to != 0
  * and can therefore be used to determine who the initially logged in user was.
- * 
+ *
  * XXX what's that???
  */
 long _cdecl
 p_getauid (void)
 {
 	PROC *p = curproc;
-	
+
 	TRACE (("Pgetauid()"));
-	
+
 	return p->auid;
 }
 long _cdecl
 p_setauid (int id)
 {
 	PROC *p = curproc;
-	
+
 	TRACE (("Psetauid(%i)", id));
-	
+
 	if (p->auid)
 		return EACCES;	/* this may only be changed once */
 
@@ -205,11 +205,11 @@ p_usrval (long arg)
 	long r;
 
 	TRACE (("Pusrval(%lx)", arg));
-	
+
 	r = p->usrdata;
 	if (arg != -1L)
 		p->usrdata = arg;
-	
+
 	return r;
 }
 
@@ -238,11 +238,11 @@ p_domain (int arg)
 	PROC *p = curproc;
 	long r;
 	TRACE (("Pdomain(%i)", arg));
-	
+
 	r = p->domain;
 	if (arg >= 0)
 		p->domain = arg ? 1 : 0;
-	
+
 	return r;
 }
 
@@ -277,10 +277,10 @@ long _cdecl
 t_alarm (long x)
 {
 	register long oldalarm;
-	
+
 	oldalarm = t_malarm (x * 1000);
 	oldalarm = (oldalarm + 999) / 1000;	/* convert to seconds */
-	
+
 	return oldalarm;
 }
 
@@ -297,13 +297,13 @@ t_malarm (long x)
 
 	/* see how many milliseconds there were to the alarm timeout */
 	oldalarm = 0;
-	
+
 	if (p->alarmtim)
 	{
 		ushort sr;
-		
+
 		sr = splhigh ();
-		
+
 		for (t = tlist; t; t = t->next)
 		{
 			oldalarm += t->when;
@@ -313,7 +313,7 @@ t_malarm (long x)
 		DEBUG (("Talarm: old alarm not found!"));
 		oldalarm = 0;
 		p->alarmtim = 0;
-		
+
 foundalarm:
 		spl (sr);
 	}
@@ -350,7 +350,7 @@ itimer_real_me (PROC *p)
 		p->itimer[ITIMER_REAL].timeout = addtimeout (p, p->itimer[ITIMER_REAL].interval, itimer_real_me);
 	else
 		p->itimer[ITIMER_REAL].timeout = 0;
-	
+
 	post_sig (p, SIGALRM);
 }
 
@@ -362,7 +362,7 @@ static void _cdecl
 itimer_virtual_me (PROC *p)
 {
 	long timeleft;
-	
+
 	timeleft = p->itimer[ITIMER_VIRTUAL].reqtime
 			- (p->usrtime - p->itimer[ITIMER_VIRTUAL].startusrtime);
 	if (timeleft > 0)
@@ -395,7 +395,7 @@ static void _cdecl
 itimer_prof_me (PROC *p)
 {
 	long timeleft;
-	
+
 	timeleft = p->itimer[ITIMER_PROF].reqtime
 			- (p->usrtime - p->itimer[ITIMER_PROF].startusrtime);
 	if (timeleft > 0)
@@ -438,7 +438,7 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 	TIMEOUT *t;
 	void _cdecl (*handler)() = 0;
 	long tmpold;
-	
+
 	if ((which != ITIMER_REAL)
 		&& (which != ITIMER_VIRTUAL)
 		&& (which != ITIMER_PROF))
@@ -456,16 +456,16 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 	{
 			return EFAULT;
 	}
-	
+
 	/* see how many milliseconds there were to the timeout */
 	oldtimer = 0;
-	
+
 	if (p->itimer[which].timeout)
 	{
 		ushort sr;
-		
+
 		sr = splhigh ();
-		
+
 		for (t = tlist; t; t = t->next)
 		{
 			oldtimer += t->when;
@@ -477,10 +477,10 @@ t_setitimer (int which, long *interval, long *value, long *ointerval, long *oval
 foundtimer:
 		spl (sr);
 	}
-	
+
 	if (ointerval)
 		*ointerval = p->itimer[which].interval;
-	
+
 	if (ovalue)
 	{
 		if (which == ITIMER_REAL)
@@ -491,35 +491,35 @@ foundtimer:
 		{
 			tmpold = p->itimer[which].reqtime
 				- (p->usrtime - p->itimer[which].startusrtime);
-			
+
 			if (which == ITIMER_PROF)
 				tmpold -= (curproc->systime - p->itimer[which].startsystime);
-			
+
 			if (tmpold <= 0)
 				tmpold = 0;
-			
+
 			*ovalue = tmpold;
 		}
 	}
-	
+
 	if (interval)
 		p->itimer[which].interval = MAX (*interval, 10);
-	
+
 	if (value)
 	{
 		/* cancel old timer */
 		if (p->itimer[which].timeout)
 			canceltimeout (curproc->itimer[which].timeout);
-		
+
 		p->itimer[which].timeout = NULL;
-		
+
 		/* add a new timer, to occur in x milliseconds */
 		if (*value)
 		{
 			p->itimer[which].reqtime = MAX (*value, 10);
 			p->itimer[which].startsystime = curproc->systime;
 			p->itimer[which].startusrtime = curproc->usrtime;
-			
+
 			switch (which)
 			{
 				case ITIMER_REAL:
@@ -539,7 +539,7 @@ foundtimer:
 		else
 			p->itimer[which].timeout = 0;
 	}
-	
+
 	return 0;
 }
 
@@ -562,7 +562,7 @@ long _cdecl
 s_ysconf (int which)
 {
 	PROC *p = curproc;
-	
+
 	switch (which)
 	{
 		case -1:	return 4;
@@ -589,7 +589,7 @@ s_alert (char *str)
 	 */
 	if (_ALERT (str) == 0)
 		ALERT (str);
-	
+
 	return E_OK;
 }
 
@@ -601,7 +601,7 @@ long _cdecl
 s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 {
 	*cur_uptime = uptime;
-	
+
 	loadaverage[0] = avenrun[0];
 	loadaverage[1] = avenrun[1];
 	loadaverage[2] = avenrun[2];
@@ -609,25 +609,10 @@ s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 	return E_OK;
 }
 
-/* uk: shutdown function
- *     if the parameter is nonzero, reboot the machine, otherwise
- *     halt it after syncing the file systems.
- */
-
 /*
  * shut down processes; this involves waking them all up, and sending
  * them SIGTERM to give them a chance to clean up after themselves
  */
-
-# if 0
-static void _cdecl
-shutmedown (PROC *p)
-{
-	wake (WAIT_Q, (long) s_hutdown);
-	p->wait_cond = 0;
-}
-# endif
-
 /*
  * This is the code that shuts the system down. It's no longer in s_hutdown(),
  * as it's also called from main.c, where there has been a similar routine,
@@ -639,11 +624,13 @@ void
 shutdown (void)
 {
 	PROC *p;
+# if 0
 	short proc_left = 0;
+# endif
 	short i;
-	
+
 	assert (curproc->p_sigacts);
-	
+
 	/* Ignore signals, that could terminate this process */
 	SIGACTION(curproc, SIGCHLD).sa_handler = SIG_IGN;
 	SIGACTION(curproc, SIGTERM).sa_handler = SIG_IGN;
@@ -656,7 +643,7 @@ shutdown (void)
 		if (!p->pid) continue;
 		if (p == curproc) continue;  /* curproc is trapped in this code */
 		if (p->memflags & F_OS_SPECIAL) continue;	/* AES :< */
-		
+
 		if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 		{
 			if (p->wait_q != READY_Q)
@@ -667,21 +654,23 @@ shutdown (void)
 				spl (sr);
 			}
 			post_sig (p, SIGTERM);
+
+			for (i = 0; i < 16; i++)	/* sleep */
+				s_yield();
+# if 0
 			proc_left++;
+# endif
 		}
 	}
-	
+
+/* Please don't delete this for now
+ */
+# if 0
 	if (proc_left)
 	{
 		/* sleep a little while, to give the other processes
 		 * a chance to shut down
 		 */
-# if 1
-		long yields = proc_left << 4;	/* 16 turns for everyone */
-
-		for (i = 0; i < yields; i++)
-			s_yield();
-# else
 		if (addtimeout (curproc, 1000, shutmedown))
 		{
 			do {
@@ -698,23 +687,23 @@ shutdown (void)
 				continue;
 			post_sig (p, SIGKILL);
 		}
-# endif
 	}
-	
+# endif
+
 	sys_q[READY_Q] = 0;
-	
+
 	DEBUG (("Close open files ..."));
 	close_filesys ();
 	DEBUG (("done"));
-	
+
 	DEBUG (("Syncing file systems ..."));
 	s_ync ();
 	DEBUG (("done"));
-	
+
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
 		FILESYS *fs = drives [i];
-		
+
 		if (fs)
 		{
 			if (fs->fsflags & FS_EXT_1)
@@ -729,7 +718,7 @@ shutdown (void)
 			}
 		}
 	}
-	
+
 	DEBUG (("Syncing file systems ..."));
 	s_ync ();
 	DEBUG (("done"));
@@ -739,7 +728,7 @@ long _cdecl
 s_hutdown (long restart)
 {
 	PROC *p = curproc;
-	
+
 	/* The -1 argument returns a longword which indicates
 	 * what bits of the `restart' argument are valid
 	 * (new as of 1.15.6)
@@ -777,6 +766,6 @@ s_hutdown (long restart)
 			}
 		}
 	}
-	
-	return EPERM;	
+
+	return EPERM;
 }
