@@ -70,12 +70,18 @@ struct proc_ext
 
 	void *data;		/* module data (private kernel memory),
 				 * allocation managed by the kernel */
-	struct proc_ext *next;	/* extensions are chained */
 
 	/* module callback vector */
 	struct module_callback *cb_vector;
 
 	long reserved[6];	/* sizeof() => 44 bytes */
+};
+
+struct p_ext
+{
+	unsigned short size;
+	unsigned short used;
+	struct proc_ext *ext[10];
 };
 
 # endif /* _mint_proc_extensions_h */
