@@ -23,7 +23,7 @@
 	.globl	_leave_kernel
 	.globl	_preempt		// C function in proc.c
 	.globl	_in_kernel
-	.globl	_tosbp,__base
+	.globl	__base
 	.globl	_calc_load_average
 	.globl	_uptimetick
 	.globl	_checkbttys_vbl
@@ -204,8 +204,6 @@ L_switch:
 // so no need to tst.w _in_kernel & stuff. Also, we don't need to increase
 // the IPL anymore.
 //
-	move.l	_tosbp,a0
-	move.l	__base,(a0)
 	move.w	sr,d0
 	eor.w	d0,d7
 	and.w	#0x0700,d7
@@ -216,9 +214,7 @@ L_switch:
 
 // inlined leave_kernel()
 
-	move.l	_tosbp,a1
 	move.l	_curproc,a0
-	move.l	P_BASE(a0),(a1)
 //	ori.w	#0x0700,sr
 	clr.w	_in_kernel
 	pea	4(a0)
