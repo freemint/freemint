@@ -1,3 +1,6 @@
+/* Keyboard handling stuff
+ */
+
 /*
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.
@@ -20,7 +23,31 @@
  *
  */
 
-/* Keyboard tables for MiNT (taken off TOS 4.04, with fixes) */
+# include "mint/mint.h"
+
+# include "bios.h"	/* kbshft, kintr, ...  */
+# include "debug.h"	/* do_func_key() */
+# include "dos.h"	/* s_hutdown() */
+# include "init.h"	/* boot_printf() */
+# include "k_fds.h"	/* fp_alloc() */
+# include "kmemory.h"	/* kmalloc() */
+# include "proc.h"	/* rootproc */
+# include "random.h"	/* add_keyboard_randomness() */
+# include "timeout.h"	/* addroottimeout() */
+
+/* some key definitions */
+# define RSHIFT		0x01
+# define CTRLALT	0x0c
+# define DEL		0x53	/* scan code of delete key */
+# define UNDO		0x61	/* scan code of undo key */
+
+# define MAXKBD		8	/* maximum keyboard code supported */
+
+/* Functions exported */
+short ikbd_scan(short scancode);
+void load_keytbl(void);
+
+/* Keyboard definition tables (taken off TOS 4.04, with fixes) */
 
 /* USA, _AKP code 0 */
 
@@ -616,20 +643,221 @@ static const char sw_german_kbd[] =
 	'+' ,'~' ,0x00
 };
 
-const short max_kbd = 8;
+/* Keyboard scancode interrupt routine.
+ *
+ * TOS goes through here with the freshly baked and
+ * warm key scancode in hands. If there are any keys or
+ * key combinations we want to handle (e.g. Ctrl/Alt/Del)
+ * then we intercept it now.
+ *
+ * At the end, you need to return the original scancode for
+ * TOS to process it. If you change the value, TOS will buy
+ * this as well. If you want to omit the TOS routines at all,
+ * return -1 (see code in intr.spp).
+ *
+ * Developing this code will probably allow us to get rid of
+ * checkkeys() in bios.c, have processes waiting for keyboard
+ * awaken immediately, load own scancode->ASCII keyboard tables
+ * and do other such nifty things (draco).
+ *
+ */
 
-const char *keyboards[10] =
+static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
+short 	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
+
+const char *keyboards[] =
 {
-	usa_kbd,
-	german_kbd,
-	french_kbd,
-	british_kbd,
-	spanish_kbd,
-	italian_kbd,
-	british_kbd,	/* reserved for soft loaded table */
-	sw_french_kbd,
-	sw_german_kbd,
+	usa_kbd, german_kbd, french_kbd, british_kbd, spanish_kbd,
+	italian_kbd, british_kbd, sw_french_kbd, sw_german_kbd,
 	0
 };
+
+/* Routines called after the user hit Ctrl/Alt/Del
+ * and Ctrl/Alt/RShift/Del respectively.
+ */
+
+static void
+ctrl_alt_del(PROC *p)
+{
+	s_hutdown(1);
+}
+
+static void
+ctrl_alt_rshift_del(PROC *p)
+{
+	s_hutdown(2);
+}
+
+/* The handler
+ */
+short
+ikbd_scan(short scancode)
+{
+	extern char mshift;		/* for mouse -- see biosfs.c */
+	ushort mod = 0, shift = *kbshft;
+
+	scancode &= 0x00ff;		/* better safe than sorry */
+
+# ifdef DEV_RANDOM
+	add_keyboard_randomness((ushort)((scancode << 8) | shift));
+# endif
+
+	/* The Ctrl/Alt/Fx, Ctrl/Alt/Del and Ctrl/Alt/Undo
+	 * we do internally and don't pass away to TOS
+	 */
+	if ((shift & CTRLALT) == CTRLALT)
+	{
+		if (scancode == DEL)
+		{
+			if (!cad_lock)
+			{
+				cad_lock = 1;
+
+				if (shift & RSHIFT)	
+					addroottimeout(0L, ctrl_alt_rshift_del, 1);
+				else
+					addroottimeout(0L, ctrl_alt_del, 1);
+			}
+			return -1;
+		}
+		else if (((scancode >= 0x003b) && \
+				(scancode <= 0x0044)) || \
+					((scancode >= 0x0054) && \
+						(scancode <= 0x005d)))
+		{
+			do_func_key(scancode);
+			return -1;
+		}
+	}
+
+	/* Also we handle modifiers here
+	 */
+	switch(scancode)
+	{
+		case	0x001d:		/* Control */
+		{
+			shift |= 0x04;
+			mod++;
+			break;
+		}
+		case	0x002a:		/* Left shift */
+		{
+			shift |= 0x02;
+			mod++;
+			break;
+		}
+		case	0x0036:		/* Right shift */
+		{
+			shift |= 0x01;
+			mod++;
+			break;
+		}
+		case	0x0038:		/* Alternate */
+		{
+			shift |= 0x08;
+			mod++;
+			break;
+		}
+		case	0x009d:		/* Control (release) */
+		{
+			shift &= ~0x04;
+			mod++;
+			break;
+		}
+		case	0x00aa:		/* Left shift (release) */
+		{
+			shift &= ~0x02;
+			mod++;
+			break;
+		}
+		case	0x00B6:		/* Right shift (release) */
+		{
+			shift &= ~0x01;
+			mod++;
+			break;
+		}
+		case	0x00B8:		/* Alternate (release) */
+		{
+			shift &= ~0x08;
+			mod++;
+			break;
+		}
+	}
+	if (mod)
+	{					
+		mshift = shift;
+		*kbshft = (char)shift;
+	
+		return -1;
+	}
+
+	kintr = 1;		/* keyboard event occurred */
+	
+	return scancode;	/* give the scancode away to TOS */
+}
+
+static void
+load_table(FILEPTR *fp, char *name, long size)
+{
+	char *kbuf;
+
+	/* This is 128+128+128 for unshifted, shifted and caps
+	 * tables respectively; plus 3 bytes for three alt ones,
+	 * plus two bytes magic header, gives 389 bytes minimum.
+	 */
+	if (size < 389L)
+		return;
+	kbuf = kmalloc(size);
+	if (!kbuf)
+		return;
+	if ((*fp->dev->read)(fp, kbuf, size) != size)
+	{
+		kfree(kbuf);
+		return;
+	}
+	if (*(short *)kbuf != 0x2771)	/* magic word */
+	{
+		kfree(kbuf);
+		return;
+	}
+
+	/* Success */
+	gl_kbd = 6;
+	keyboards[6] = kbuf + 2;
+
+	boot_printf("Loaded keyboard table %s\r\n", name);
+}
+
+void
+load_keytbl(void)
+{
+	XATTR xattr;
+	FILEPTR *fp;
+	long ret;
+	char *name;
+
+	ret = fp_alloc (rootproc, &fp);
+	if (ret) return;
+	
+	/* `keybd.tbl' is already used by GEM.SYS, we can't conflict
+	 */
+	name = "\\keybd.sys";
+	ret = do_open (&fp, name, O_RDONLY, 0, &xattr);
+	if (ret)
+	{
+		name = "\\multitos\\keybd.sys";
+		ret = do_open (&fp, name, O_RDONLY, 0, &xattr);
+	}
+	if (ret)
+	{
+		name = "\\mint\\keybd.sys";
+		ret = do_open (&fp, name, O_RDONLY, 0, &xattr);
+	}	
+	if (!ret)
+	{
+		load_table(fp, name, xattr.size); 
+		do_close (rootproc, fp);
+	}
+}
 
 /* EOF */
