@@ -1671,7 +1671,7 @@ init_keybd(void)
 # endif
 	load_internal_table(); /* either from BIOS or builtin */
 # ifdef VERBOSE_BOOT
-	boot_printf(MSG_keytable_loaded, gl_kbd);
+	boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
 # endif
 }
 
