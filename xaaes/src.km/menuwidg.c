@@ -119,8 +119,8 @@ change_entry(Tab *tab, int state)
 	OBJECT *obtree = wt->tree;
 	short t = k->point_at_menu;
 
-	DIAGS(("change entry: obtree=%lx, obj=%d, state=%d",
-		obtree, k->point_at_menu, state));
+	DIAGS(("change entry: tab=%lx, obtree=%lx, obj=%d, state=%d",
+		tab, obtree, k->point_at_menu, state));
 
 	if (t < 0)
 		return;
@@ -398,7 +398,7 @@ free_menutask(Tab *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
 
-	DIAG((D_menu, tab->client, "free_menutask: Task=%lx, task->next=%lx, task_prev=%lx for %s",
+	DIAG((D_menu, tab->client, "free_menutask: Tab=%lx, tab->next=%lx, task_prev=%lx for %s",
 		tab, NEXT_TAB(tab), PREV_TAB(tab), tab->client->name));
 	
 	cancel_pop_timeouts();
@@ -432,7 +432,7 @@ nest_menutask(Tab *tab)
 	new_tab = new_menutask();
 	
 	DIAG((D_menu, tab->client, "nest_menutask: new %lx, old %lx for %s",
-		new_tab, tab, tab->client->name));
+		new_tab, tab, tab->client ? tab->client->name : "initial"));
 
 	if (new_tab)
 	{
@@ -718,7 +718,7 @@ menu_pop(Tab *tab)
 	MENU_TASK *k = &tab->task_data.menu;
 	OBJECT *obtree = k->wt->tree;
 
-	DIAG((D_menu, tab->client, "menu_pop for %s"));
+	DIAG((D_menu, tab->client, "menu_pop: tab=%lx for %s", tab, tab->client->name));
 	
 	cancel_pop_timeouts();
 
@@ -782,7 +782,6 @@ menu_finish(struct task_administration_block *tab)
 {
 	struct xa_client *client;
 	struct proc *proc;
-
 	bool is_bar;
 	
 	/* after !menu_title */
@@ -796,7 +795,7 @@ menu_finish(struct task_administration_block *tab)
 		is_bar = barred(tab);
 		client = tab->client;
 
-		DIAG((D_menu, tab->client, "[%d]menu_finish, ty:%d for %s", tab->dbg2, tab->ty, tab->client->name));
+		DIAG((D_menu, tab->client, "[%d]menu_finish, tab=%lx, ty:%d for %s", tab->dbg2, tab, tab->ty, tab->client->name));
 
 		if (is_bar && !NEXT_TAB(tab))
 			obtree[k->menus].ob_flags |= OF_HIDETREE;
@@ -826,7 +825,7 @@ menu_finish(struct task_administration_block *tab)
 Tab *
 collapse(Tab *tab, Tab *upto)
 {
-	DIAG((D_menu, tab->client,"collapse tab:%lx, upto:%lx for %s", tab, upto, tab->client->name));
+	DIAG((D_menu, tab->client,"collapse tab=%lx, upto=%lx for %s", tab, upto, tab->client->name));
 
 	while (tab != upto)
 	{
@@ -948,10 +947,9 @@ nextdrop_rect(struct build_rl_parms *p)
 	if (tab)
 	{
 		p->next_r = &tab->task_data.menu.drop;
-		tab = PREV_TAB(tab);
+		p->ptr1 = PREV_TAB(tab);
 		ret = 1;
 	}
-	p->ptr1 = tab;
 	return ret;
 }
 
@@ -970,7 +968,7 @@ make_drop_rectlist(Tab *tab)
 	p.getnxtrect = nextdrop_rect;
 	p.area = &tab->task_data.menu.drop;
 	p.ptr1 = PREV_TAB(tab);
-	tab->task_data.menu.rl_drop = build_rect_list(&p);
+	k->rl_drop = build_rect_list(&p);
 }
 
 static void
@@ -994,7 +992,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 
 	obj_rectangle(wt, item, &r);
 	//obj_area(wt, item, &r);
-	DIAG((D_menu, tab->client, "display_popup: %d/%d/%d/%d", r));
+	DIAG((D_menu, tab->client, "display_popup: tab=%lx, %d/%d/%d/%d", tab, r));
 	r = popup_inside(tab, r);
 	wash = r.h;
 	obtree->ob_x = k->pdx;
@@ -1034,7 +1032,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, 1, 0, r);
 
 			wind = create_window(	tab->lock,
-						do_winmesag, //handle_form_window,
+						do_winmesag,
 						do_formwind_msg,
 						tab->client,
 						cfg.menu_locking,	/* yields nolist if locking. */
@@ -1069,7 +1067,6 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	if (wind)
 	{
 		k->popw = wind;
-		//k->drop = r;
 		k->drop = wind->wa;
 		k->drop.w = r.w;
 		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r));
@@ -1087,23 +1084,13 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	}
 	else
 	{
-		DIAGS(("display_popup: wt=%lx, obtree=%lx, item=%d", wt, wt->tree, item));
+		DIAGS(("display_popup: tab=%lx, wt=%lx, obtree=%lx, item=%d", tab, wt, wt->tree, item));
 
 		obj_area(wt, item, &r);
 		r = popup_inside(tab, r);
-#if GENERATE_DIAGS
-		if (!strnicmp(wt->owner->proc_name, "start", 5))
-		{
-			yield();
-			yield();
-			yield();
-			yield();
-		}
-#endif
 		hidem();
 		form_save(k->border, k->drop, &(k->Mpreserve));
 		DIAG((D_menu, tab->client, "pop draw %lx + %d", obtree, item));
-		wr_mode(MD_TRANS);
 		obtree->ob_x = k->pdx;
 		obtree->ob_y = k->pdy;
 		wt->is_menu = true;
@@ -1122,7 +1109,7 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 	OBJECT *root = wt->tree;
 	MENU_TASK *k = &tab->task_data.menu;
 
-	DIAG((D_menu, tab->client, "do_popup: tab=%lx for %s", tab->client->name));
+	DIAG((D_menu, tab->client, "do_popup: tab=%lx for %s", tab, tab->client->name));
 	menu_spec(root,item);
 	k->stage = IN_DESK;
 	k->point_at_menu = -1;
@@ -1152,8 +1139,8 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 void
 start_popup_session(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 {
-	DIAG((D_menu, tab->client, "start_popup_session: for %s",
-		tab->client->name));
+	DIAG((D_menu, tab->client, "start_popup_session: tab=%lx for %s",
+		tab, tab->client->name));
 
 	tab->client->status |= CS_MENU_NAV;
 	do_popup(tab, wt, item, click, rdx, rdy);
@@ -1189,11 +1176,13 @@ do_timeout_popup(Tab *tab)
 	XA_MENU_ATTACHMENT *at;
 
 	cancel_popout_timeout();
-		
+	
+	DIAG((D_menu, NULL, "do_timeout_popup: tab=%lx", tab));
+			
 	if (tab != TAB_LIST_START)
 		collapse(TAB_LIST_START, tab);
 
-	DIAG((D_menu, NULL, "popup: is attach"));
+	DIAG((D_menu, NULL, " --- is attach"));
 
 	if (!is_attach(menu_client(tab), k->wt, k->point_at_menu, &at))
 		return;
@@ -1209,7 +1198,7 @@ do_timeout_popup(Tab *tab)
 	ob = new_wt->tree;
 	menu_area(&tra, tab, k->point_at_menu, k->pdx, k->pdy);
 
-	DIAG((D_menu, NULL, "popup: attach=%lx, wt=%lx, obtree=%lx",
+	DIAG((D_menu, NULL, " --- attach=%lx, wt=%lx, obtree=%lx",
 		at, new_wt, ob));
 
 	ob->ob_x = 0, ob->ob_y = 0;
@@ -1265,6 +1254,8 @@ CE_do_collapse(enum locks lock, struct c_event *ce, bool cancel)
 static bool
 CE_cb(struct c_event *ce, long arg)
 {
+	cancel_pop_timeouts();
+	//display("CE_cb: --- ");
 	return true;
 }
 
@@ -1295,8 +1286,8 @@ do_popup_to(struct proc *p, Tab *tab)
 	S.popin_timeout = NULL;
 	S.popin_timeout_ce = tab->client;
 	
-	DIAGS((" -- do_popup_timeout: posting CE_do_popup(%lx) to %s",
-		CE_do_popup, tab->client->name));
+	DIAGS((" -- do_popup_timeout: posting CE_do_popup(%lx) tab=%lx, to %s",
+		CE_do_popup, tab, tab->client->name));
 
 	post_cevent(tab->client, CE_do_popup, tab, NULL, 0,0, NULL,NULL);
 }
@@ -1307,8 +1298,8 @@ do_popout_timeout(struct proc *p, Tab *tab)
 	S.popout_timeout = NULL;
 	S.popout_timeout_ce = tab->client;
 	
-	DIAGS((" -- do_popout_timeout: posting CE_do_collapse(%lx) to %s",
-		CE_do_collapse, tab->client->name));
+	DIAGS((" -- do_popout_timeout: posting CE_do_collapse(%lx) tab=%lx, to %s",
+		CE_do_collapse, tab, tab->client->name));
 
 	post_cevent(tab->client, CE_do_collapse, tab, NULL, 0,0, NULL,NULL);
 }
@@ -1430,8 +1421,7 @@ menu_bar(struct task_administration_block *tab)
 		k->em.flags |= MU_M1;
 		k->em.m1_flag = 0;
 		k->em.m1 = k->bar;
-		k->em.t1 = menu_bar;
-		
+		k->em.t1 = menu_bar;	
 	}
 	else if (title == k->clicked_title)
 	{
@@ -1451,7 +1441,7 @@ menu_bar(struct task_administration_block *tab)
 		title_tnormal(tab);
 		if (!menu_title(tab->lock, tab, tab->wind, tab->widg, tab->locker))
 		{
-			menu_finish(tab);
+			//menu_finish(tab);
 			tab = NULL;
 		}
 	}
@@ -1555,7 +1545,7 @@ popup(struct task_administration_block *tab)
 			dis = obtree[m].ob_state & OS_DISABLED;
 		
 			DIAG((D_menu, NULL, "popup: tab=%lx, obj=%d, point_at_menu=%d",
-				m, k->point_at_menu));
+				tab, m, k->point_at_menu));
 
 
 			if (   k->point_at_menu > -1
@@ -1735,7 +1725,7 @@ click_menu_entry(struct task_administration_block *tab)
 			}
 		}
 	}
-	IFDIAG(tab->dbg2 = 2;)
+	//IFDIAG(tab->dbg2 = 2;)
 	return tab;
 }
 
@@ -1899,7 +1889,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	
 	if (!menu_title(lock, NULL, wind, widg, client->p->pid))
 	{
-		menu_finish(NULL);
+		//menu_finish(NULL);
 	}
 
 	return false;
@@ -1924,6 +1914,8 @@ menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, i
 		if (!tab)
 			return false;
 	}
+	
+	DIAG((D_menu, NULL, " --- tab = %lx", tab));
 
 	k = &tab->task_data.menu;
 	k->attach_wt = NULL;
@@ -2200,6 +2192,7 @@ menuclick(Tab *tab)
 	short m;
 
 	cancel_pop_timeouts();
+	DIAG((D_menu, NULL, "menuclick: tab=%lx", tab));
 	
 	m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
 	if (m > 0 && k->clicks < 2 && is_attach(menu_client(tab), k->wt, m, NULL))
