@@ -685,31 +685,7 @@ XA_handler(ushort c, AESPB *pb)
 	 * so we need to get them here when we run under the process id.
 
 	 */
-/*
-..25...51, 258, 3,   0,      1, 753,226, 1, 1, 0 - evnt_multi( ... )
 
- 106. 835, 178, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_find(x, y)
- 107,   3, 178, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_mctrl )
- 24 , 100,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - evnt_timer( 100, 0 )
- 79 , 100,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mkstate()
- 107,   2,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( end_mctrl )
- 107,   3,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_mctrl )
- 78 ,   4,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mouse( flathand(4), 0)
-
-..79..  4,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mkstate()
-
- 78,    0,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - graf_mouse(ARROW, 0)
- 107,   2,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( end_mctrl)
- 107,   1,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_update)
- 107,   3,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - wind_update( beg_mctrl)
- 30 ,  -1,   0, 4, 444, -14948, 441, 64, 1, 0, 0 - menu_bar( MENU_INQUIRE )
- 105,   4,  10, 4, 444, -14949, 441, 64, 1, 0, 0 - win_set( hand, WF_TOP)
- 107,   2,  10, 4, 444, -14949, 441, 64, 1, 0, 0 - wind_update( end_mctrl )
- 107,   0,  10, 4, 444, -14949, 441, 64, 1, 0, 0 - wind_update( end_update )
-
-..25...51, 258, 3,   0,      1, 753,226, 1, 1, 0 - evnt_multi( ... )
-
-*/
 	if (client)
 	{
 
@@ -857,6 +833,7 @@ XA_handler(ushort c, AESPB *pb)
 
 			if (isfsel)
 				Sema_Up(fsel);	/* Wait for access to the fileselector */
+
 
 			if (Ktab[cmd].p & LOCKSCREEN)
 				lock_screen(client, -1, NULL, 3);
