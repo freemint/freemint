@@ -211,8 +211,8 @@ unlock_screen(struct xa_client *client, int which)
 
 	if (update_lock.client == client)
 	{
-		r = ressource_semaphore_rel(&update_lock, client);
 		r = ressource_semaphore_rel(&mouse_lock, client);
+		r = ressource_semaphore_rel(&update_lock, client);
 	}
 	else
 	{

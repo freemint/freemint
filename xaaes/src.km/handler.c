@@ -371,14 +371,25 @@ setup_handler_table(void)
 	/*
 	 * optional wdlg_? class functions
 	 */
-	aes_tab[160].f = XA_wdlg_create;
-	aes_tab[161].f = XA_wdlg_open;
-	aes_tab[162].f = XA_wdlg_close;
-	aes_tab[163].f = XA_wdlg_delete;
-	aes_tab[164].f = XA_wdlg_get;
-	aes_tab[165].f = XA_wdlg_set;
-	aes_tab[166].f = XA_wdlg_event;
-	aes_tab[167].f = XA_wdlg_redraw;
+	aes_tab[160].f		=  XA_wdlg_create;
+
+	aes_tab[161].f		=  XA_wdlg_open;
+	aes_tab[161].flags 	|= DO_LOCKSCREEN;
+	
+	aes_tab[162].f		=  XA_wdlg_close;
+	aes_tab[162].flags	|= DO_LOCKSCREEN;
+	
+	aes_tab[163].f		=  XA_wdlg_delete;
+
+	aes_tab[164].f		=  XA_wdlg_get;
+
+	aes_tab[165].f		=  XA_wdlg_set;
+	aes_tab[165].flags	|= DO_LOCKSCREEN;
+
+	aes_tab[166].f		=  XA_wdlg_event;
+
+	aes_tab[167].f		=  XA_wdlg_redraw;
+	aes_tab[167].flags	|= DO_LOCKSCREEN;
 #endif
 
 #ifndef WDIALOG_LBOX

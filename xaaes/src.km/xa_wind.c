@@ -1499,7 +1499,10 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			client->fmd.lock |= SCREEN_UPD;
 			C.update_lock = client;
+			C.updatelock_count++;
 		}
+		DIAG((D_sema, NULL, " -- count %d for %s",
+			C.updatelock_count, C.update_lock->name));
 
 		break;
 	}
@@ -1509,10 +1512,17 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (unlock_screen(client, 1))
 		{
 			client->fmd.lock &= ~SCREEN_UPD;
-			C.update_lock = NULL;
+		}
+		if (C.update_lock == client)
+		{
+			C.updatelock_count--;
+			if (!C.updatelock_count)
+				C.update_lock = NULL;
 		}
 
 		DIAG((D_sema, NULL, "'%s' END_UPDATE", client->name));
+		DIAG((D_sema, NULL, " -- count %d for %s",
+			C.updatelock_count, C.update_lock->name));
 		break;
 	}
 
@@ -1525,8 +1535,11 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			client->fmd.lock |= MOUSE_UPD;
 			C.mouse_lock = client;
+			C.mouselock_count++;
 		}
 
+		DIAG((D_sema, NULL, " -- count %d for %s",
+			C.mouselock_count, C.mouse_lock->name));
 		break;
 	}
 	/* Release the mouse lock */
@@ -1536,10 +1549,18 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (unlock_mouse(client, 1))
 		{
 			client->fmd.lock &= ~MOUSE_UPD;
-			C.mouse_lock = NULL;
+		}
+		if (C.mouse_lock == client)
+		{
+			C.mouselock_count--;
+			if (!C.mouselock_count)
+				C.mouse_lock = NULL;
 		}
 
 		DIAG((D_sema, NULL, "'%s' END_MCTRL", client->name));
+
+		DIAG((D_sema, NULL, " -- count %d for %s",
+			C.mouselock_count, C.mouse_lock->name));
 		break;
 	}
 
