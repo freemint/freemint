@@ -725,9 +725,26 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 	{
-		struct xa_client *dest_clnt;
+		short i = 50;
+		struct xa_client *dest_clnt = NULL;
 
+		/*
+		 * Ozk: Problem; 1. aMail starts asock to do network stuff.
+		 *               2. aMail sends asock an AES message.
+		 *               3. Since asock didnt get the chance to do appl_init() yet,
+		 *                  this message ends up in the great big void.
+		 *     Solution; If pid2client returns NULL, we yield() and try again upto 50
+		 *               times before giving up. Anyone else got better ideas? 
+		 */ 
 		dest_clnt = pid2client(dest_id);
+
+		while (i && !dest_clnt)
+		{
+			yield();
+			dest_clnt = pid2client(dest_id);
+			i--;
+		}
+
 		if (dest_clnt)
 		{
 			send_a_message(lock, dest_clnt, m);
