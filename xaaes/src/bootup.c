@@ -33,6 +33,7 @@
 
 #include <mint/mintbind.h>
 #include <mint/dcntl.h>
+#include <mint/ssystem.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
@@ -73,15 +74,17 @@
 #define BTRACE(n)
 #endif
 
-/* Ssystem() codes */
+/* Ssystem() codes 
 enum
 {
 	S_OSNAME,
 	S_OSXNAME,
 	S_OSVERSION,
 	S_GETCOOKIE = 8,
-	S_SETCOOKIE
-};
+	S_SETCOOKIE,
+	S_GET_BVAL = 12,
+	S_SET_BVAL = 15
+}; */
 
 #if GENERATE_DIAGS
 static void punit(XA_memory *base, XA_block *blk, XA_unit *unit, char *txt);
@@ -558,7 +561,7 @@ xaaes_init(int argc, char **argv, char **env)
 	short f;
 	char *resource_name, *full;
 	long old_sp = 0;
-	long screenblaster = 0;
+	long helper = 0;
 
 	XA_set_base(0, 32768, -1, 0);
 
@@ -785,8 +788,8 @@ BTRACE(21);
 					/* '_VDO' */
 					Ssystem(S_GETCOOKIE, 0x5f56444fL, (long)&lcfg.falcon);
 					/* ´SCPN´ - Screenblaster present? */
-					screenblaster = Ssystem(S_GETCOOKIE, 0x5343504e, 0L);
-					screenblaster = (screenblaster == -1) ? 0 : 1;
+					helper = Ssystem(S_GETCOOKIE, 0x5343504e, 0L);
+					helper = (helper == -1) ? 0 : 1;
 
 					if (lcfg.falcon == 0x00030000L)
 					{
@@ -840,11 +843,11 @@ BTRACE(21);
 			/* this is done because screenblaster-software  */
 			/* tries to write the new screen-adress to $44E */
 
-			if (screenblaster) old_sp = Super(0L);
+			if (helper) old_sp = Super(0L);
 			
 			v_opnwk(work_in, &C.P_handle, work_out);
 
-			if (screenblaster) Super(old_sp);
+			if (helper) Super(old_sp);
 
 			fdisplay(loghandle, true, "\033HPhysical work station opened: %d\n",C.P_handle);
 		}
@@ -883,6 +886,14 @@ BTRACE(124);
 BTRACE(224);
 	/* Print a text boot message */
 	bootmessage(lcfg.mint);
+
+
+	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
+	Ssystem(S_GETBVAL, 0x0484, helper);
+	helper |= 8;
+	Ssystem(S_SETBVAL, 0x0484, helper);
+
+
 BTRACE(25);
 
 
