@@ -129,6 +129,11 @@ XA_appl_init(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	CONTROL(0,1,0)
 
+#if 0
+	if ( !strcmp("  PORTHOS ", client->name) )
+		display("appl init '%s'", client->name);
+#endif
+
 	if unlocked(appl)
 	{
 #if DEBUG_SEMA
@@ -461,7 +466,6 @@ unlock_screen(XA_CLIENT *client, int which)
 			DIAG((D_sema, NULL, "Sema U down\n"));
 		}
 	}
-
 	return r;
 }
 
@@ -572,7 +576,7 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	case END_UPDATE:
 	{
 		r = unlock_screen(client, 1);
-		if (r)
+		if (r == 1)
 			client->fmd.lock &= ~SCREEN_UPD;
 
 		DIAG((D_sema, NULL, "<< Sema U: lock %d, cnt %d r:%ld\n", S.update_lock, S.update_cnt, r));
@@ -592,7 +596,7 @@ XA_wind_update(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		
 		r = unlock_mouse(client, 1);
-		if (r)
+		if (r == 1)
 			client->fmd.lock &= ~MOUSE_UPD;
 
 		DIAG((D_sema, NULL, "<< Sema M: lock %d, cnt %d r:%ld\n", S.mouse_lock, S.mouse_cnt, r));
@@ -692,10 +696,15 @@ XA_handler(ushort c, AESPB *pb)
 	{
 
 #if 0
-		if ( /*(!strcmp("  Thing Desktop", client->name)) || */(!strcmp("  CAB", client->name)) )
-			display("%s opcod %d - %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", client->name, cmd,
+		if ( /*(!strcmp("  Thing Desktop", client->name)) || */(!strcmp("  PORTHOS ", client->name)) )
+		{
+			display("%s opcod %d - %d, %d, %d, %d, %d, %d, %d, %d, %d, %d", client->name, cmd,
 			pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], pb->intin[4],
 			pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], pb->intin[9] );
+
+			if (cmd == XA_SHELL_WRITE)
+				display("\n SW '%s','%s'", pb->addrin[0], pb->addrin[1]);
+		}
 #endif
 
 		if (   cmd == XA_RSRC_LOAD
@@ -755,7 +764,7 @@ XA_handler(ushort c, AESPB *pb)
 				/* callout the AES function */
 				cmd_rtn = (*cmd_routine)(lock, client, pb);
 
-				if (Ktab[cmd].p & LOCKSCREEN)
+				if (Ktab[cmd].p & LOCKSCREEN && cmd_rtn != XAC_BLOCK)
 					unlock_screen(client, 2);
 
 				if (!client)
@@ -774,6 +783,8 @@ XA_handler(ushort c, AESPB *pb)
 					break;
 				/* Block indefinitely (like for evnt_mesag) */
 				case XAC_BLOCK:
+					if (Ktab[cmd].p & LOCKSCREEN)
+						unlock_screen(client, 2);
 					Fread(client->client_end, sizeof(cmd_rtn), &cmd_rtn);
 					break;
 				/* Block and the close the pipe (for appl_exit) */
@@ -786,6 +797,10 @@ XA_handler(ushort c, AESPB *pb)
 					break;
 				}
 
+#if 0
+				if (!strcmp("  PORTHOS ", client->name))
+					display(" ret from dir\n");
+#endif
 				return AES_MAGIC;
 			}
 			/* else pb->intout[0] = 0;  HR: proceed to error exit */
@@ -847,70 +862,78 @@ XA_handler(ushort c, AESPB *pb)
 			/* New timeout stuff */
 			switch (cmd_rtn)
 			{
-			/* Standard stuff, operation completed, etc */
-			case XA_OK:
-			case XA_ILLEGAL:
-			case XA_UNIMPLEMENTED:
-				break;
-			/* Read again. */
-			case XA_UNLOCK:
-				Fread(client->client_end, sizeof(unsigned long), &cmd_rtn);
-				break;
-			/* Unclumsify the timer value passing.
-			 * Ahh - block again, with a timeout
-			 */
-			case XA_TIMER:
-			{
-				reply_s = 1L << client->client_end;
-
-				if (!client->timer_val)
-					/* Immediate timeout */
-					cmd_rtn = 0;
-				else
-					cmd_rtn = Fselect(client->timer_val, (long *)&reply_s, NULL, NULL);
-
-/*				#if DEBUG_SEMA
-					DIAGS(("For %d:\n", clnt_pid));
-				#endif
-				Sema_Up(CLIENTS_SEMA);
-*/
-				if (!cmd_rtn)
+				/* Standard stuff, operation completed, etc */
+				case XA_OK:
+				case XA_ILLEGAL:
+				case XA_UNIMPLEMENTED:
+					break;
+				/* Read again. */
+				case XA_UNLOCK:
 				{
-					/* Timed out */
-
-					if (client->waiting_for & XAWAIT_MULTI)
-						/* HR: fill out mouse data!!! */
-						timer_intout(client->waiting_pb->intout);
-					else
-						/* evnt_timer() always returns 1 */
-						client->waiting_pb->intout[0] = 1;
-
-					cancel_evnt_multi(client,3);
-					DIAG((D_kern,client,"[20]Unblocked timer for %s\n",c_owner(client)));
-				}
-				else
-				{
-					/* Second dummy read until unblock */
-
-					DIAG((D_kern,client,"Timer block for %s\n",c_owner(client)));
 					Fread(client->client_end, sizeof(unsigned long), &cmd_rtn);
+					break;
 				}
+				/* Unclumsify the timer value passing.
+				 * Ahh - block again, with a timeout
+				 */
+				case XA_TIMER:
+				{
+					reply_s = 1L << client->client_end;
 
-/*				#if DEBUG_SEMA
-					DIAGS(("For %d:\n", clnt_pid));
-				#endif
-				Sema_Dn(CLIENTS_SEMA);
+					if (!client->timer_val)
+						/* Immediate timeout */
+						cmd_rtn = 0;
+					else
+						cmd_rtn = Fselect(client->timer_val, (long *)&reply_s, NULL, NULL);
+
+/*					#if DEBUG_SEMA
+						DIAGS(("For %d:\n", clnt_pid));
+					#endif
+					Sema_Up(CLIENTS_SEMA);
 */
-				break;
+					if (!cmd_rtn)
+					{
+						/* Timed out */
+
+						if (client->waiting_for & XAWAIT_MULTI)
+							/* HR: fill out mouse data!!! */
+							timer_intout(client->waiting_pb->intout);
+						else
+							/* evnt_timer() always returns 1 */
+							client->waiting_pb->intout[0] = 1;
+
+						cancel_evnt_multi(client,3);
+						DIAG((D_kern,client,"[20]Unblocked timer for %s\n",c_owner(client)));
+					}
+					else
+					{
+						/* Second dummy read until unblock */
+
+						DIAG((D_kern,client,"Timer block for %s\n",c_owner(client)));
+						Fread(client->client_end, sizeof(unsigned long), &cmd_rtn);
+					}
+
+/*					#if DEBUG_SEMA
+						DIAGS(("For %d:\n", clnt_pid));
+					#endif
+					Sema_Dn(CLIENTS_SEMA);
+*/
+					break;
+				}
 			}
-			}
+
 #if 0
-		if ( cmd == 25 && (!strcmp("  CAB", client->name)) )
-			display("  return   %d %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
-			pb->intout[0], pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4],
-			pb->intout[5], pb->intout[6], pb->intout[7], pb->intout[8], pb->intout[9] );
+			if (!strcmp("  PORTHOS ", client->name))
+				display(" ret\n");
 #endif
-			return AES_MAGIC;
+
+#if 0
+			if ( cmd == 25 && (!strcmp("  CAB", client->name)) )
+				display("  return   %d %d, %d, %d, %d, %d, %d, %d, %d, %d\n",
+				pb->intout[0], pb->intout[1], pb->intout[2], pb->intout[3], pb->intout[4],
+				pb->intout[5], pb->intout[6], pb->intout[7], pb->intout[8], pb->intout[9] );
+#endif
+				return AES_MAGIC;
 		}
 		else
 		{
@@ -919,7 +942,6 @@ XA_handler(ushort c, AESPB *pb)
 			return AES_MAGIC;
 		}
 	}
-
 	/* error exit */
 	DIAGS(("Unimplemented AES code: %d\n", cmd));
 	pb->intout[0] = 0;

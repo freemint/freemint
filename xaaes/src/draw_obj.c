@@ -706,7 +706,7 @@ static void g_text(XA_TREE *wt, RECT r, RECT *o, char *text, int state)
 {
 	/* HR: only center the text. ;-) */
 	r.y += (r.h-screen.c_max_h) / 2;
-	if (!MONO && (state&DISABLED) != 0)
+	if (!MONO && (state&DISABLED))
 	{
 		t_color(screen.dial_colours.lit_col);
 		v_gtext(C.vh, r.x+1, r.y+1, text);

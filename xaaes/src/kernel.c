@@ -824,6 +824,13 @@ XaAES(void)
 
 							if (b.cmd == AESCMD_NOREPLY || repl == XAC_BLOCK)
 							{
+								Block(client, 1);
+
+								/* Ozk: This will ofcourse not work right, unlocking
+								 *	the screen while, for example, menu_popup does
+								 *	its thing!
+								*/
+#if 0
 								if (Ktab[cmd].p & LOCKSCREEN)
 									/* HR 250202:
 									 * screen locking AES functions:
@@ -833,6 +840,7 @@ XaAES(void)
 									Unblock(client, XA_UNLOCK, 10);
 								else
 									Block(client, 1);
+#endif
 							}
 							else
 							{
@@ -1061,7 +1069,7 @@ setup_k_function_table(void)
 	Ktab[XA_MENU_TEXT    ].f = XA_menu_text;
 	Ktab[XA_MENU_REGISTER].f = XA_menu_register;
 	Ktab[XA_MENU_POPUP   ].f = XA_menu_popup;
-/*	Ktab[XA_MENU_POPUP   ].p = LOCKSCREEN; */	/* Ozk: Since we cannot lock with client PID
+	Ktab[XA_MENU_POPUP   ].p = LOCKSCREEN;		/* Ozk: Since we cannot lock with client PID
 							 * and unlock under kernel PID
 							 * we gotta let the function itself (under kernel PID)
 							 * do the lock_screen() call
@@ -1085,7 +1093,7 @@ setup_k_function_table(void)
 	Ktab[XA_SCRAP_WRITE].f = XA_scrap_write;
 
 	Ktab[XA_FORM_POPUP ].f = XA_form_popup;
-//	Ktab[XA_FORM_POPUP ].p = LOCKSCREEN;		/* Ozk: Same situation as for XA_menu_popup */
+	Ktab[XA_FORM_POPUP ].p = LOCKSCREEN;		/* Ozk: Same situation as for XA_menu_popup */
 
 #if WDIAL
 	/* HR 261101: started implementation of WDIALOG functions. */
