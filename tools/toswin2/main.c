@@ -5,16 +5,14 @@
 #include <unistd.h>
 
 #include "global.h"
+#include "textwin.h"
+#include "proc.h"
 #include "av.h"
-#include "config.h"
+#include "version.h"
+#include "event.h"
 #include "console.h"
 #include "environ.h"
-#include "event.h"
-#include "proc.h"
-#include "textwin.h"
 #include "toswin2.h"
-#include "version.h"
-#include "window.h"
 
 #ifdef DEBUG
 # include <syslog.h>

@@ -1,6 +1,10 @@
 
-#ifndef _tw2_av_h_
-#define _tw2_av_h_
+#ifndef tw2_av_h
+# define tw2_av_h 1
+
+#ifndef tw_global_h
+# include "global.h"
+#endif
 
 /*
  * Communication with AV server.
@@ -19,7 +23,8 @@
 /*
  * Send key to AV server.
  */
-bool	send_avkey	(short ks, short kr);
+extern bool	gl_avcycle;
+extern bool	send_avkey	(short ks, short kr);
 
 /*
  * Send opened or cloased window to AV server.

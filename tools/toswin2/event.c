@@ -6,21 +6,18 @@
  */
 
 #include <string.h>
+#include <gem.h>
 
-#include "global.h"
-#include "av.h"
-#include "config.h"
-#include "console.h"
-#include "drag.h"
 #include "event.h"
-#include "proc.h"
-#include "share.h"
-#include "textwin.h"
-#include "toswin2.h"
 #include "version.h"
-#include "window.h"
-
-#include "event.h"
+#include "av.h"
+#include "textwin.h"
+#include "config.h"
+#include "proc.h"
+#include "drag.h"
+#include "share.h"
+#include "console.h"
+#include "toswin2.h"
 
 #ifdef DEBUG
 extern int do_debug;

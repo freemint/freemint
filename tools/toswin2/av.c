@@ -3,16 +3,15 @@
 
 #include <osbind.h>
 
-#include "global.h"
 #include "av.h"
-#include "config.h"
-#include "drag.h"
-#include "proc.h"
 #include "toswin2.h"
-
+#include "proc.h"
+#include "drag.h"
 
 int		av_shell_id = -1;		/* ID des Desktops */
 unsigned short	av_shell_status = 0;		/* Welche AV_* kann Desktop */
+
+bool	gl_avcycle = FALSE;
 
 static char	*global_str = NULL;
 static short	msgbuff[8];
