@@ -33,7 +33,7 @@
 # include "dossig.h"		/* p_kill() */
 # include "init.h"		/* boot_printf() */
 # include "k_exec.h"		/* sys_pexec() */
-# include "k_fds.h"		/* fp_alloc() */
+# include "k_fds.h"		/* FP_ALLOC() */
 # include "kmemory.h"		/* kmalloc() */
 # include "proc.h"		/* rootproc */
 # include "random.h"		/* add_keyboard_randomness() */
@@ -1000,7 +1000,7 @@ load_keytbl(void)
 	long ret;
 	char *name;
 
-	ret = fp_alloc(rootproc, &fp);
+	ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return;
 
 	/* `keybd.tbl' is already used by GEM.SYS, we can't conflict
