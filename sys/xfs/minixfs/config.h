@@ -31,8 +31,5 @@
 # define BADCHR(c)	((c == '/') || (c & 0x80))
 # endif
 
-# define SYMLINK_NAME_MAX	127	/* Maximum size of symlink name */
-# define MINIX_MAX_LINK		127	/* Max links to an inode *MUST* be < 256 */
-
 
 # endif /* _config_h */
