@@ -401,7 +401,7 @@ opcode	class name	args */
 0x13f	s uptime	(ulong *cur_uptim, ulong loadave[3])
 
 0x140	p trace		(short request, short pid, void *addr, long data) /* 1.15.11 */
-0x141	m validate	(short pid, void *addr, long size) /* 1.15.11 */
+0x141	m validate	(short pid, void *addr, long size, long *flags) /* 1.15.11 */
 0x142	d xreaddir	(short len, long handle, char *buf, XATTR *xattr, long *xret)
 0x143	p seteuid	(short id)
 0x144	p setegid	(short id)
@@ -470,7 +470,7 @@ opcode	class name	args */
 0x17a	p msgsnd	(long msqid, const void *msgp, long msgsz, long msgflg)
 0x17b	p msgrcv	(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
 0x17c	  RESERVED
-0x17d	  RESERVED
+0x17d	m access	(void *addr, long size, int mode) /* 1.15.12 */
 0x17e	  RESERVED	/* mmap */
 0x17f	  RESERVED	/* munmap */
 
