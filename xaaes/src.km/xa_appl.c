@@ -201,6 +201,8 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	/* awaiting menu_register */
 	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
+
+	/* update the taskmanager if open */
 	update_tasklist(lock);
 
 	DIAGS(("appl_init: checking shel info (pid %i)", client->p->pid));
@@ -294,7 +296,11 @@ remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 
 /*
  * close and free all client resources
- * called on appl_exit() or on process termination (if app crashed)
+ * 
+ * Called on appl_exit() or on process termination (if app crashed
+ * or exit without appl_exit). With other words, this is the final
+ * routine *before* the process becomes invalid and should do any
+ * cleanup related to this client.
  */
 void
 exit_client(enum locks lock, struct xa_client *client, int code)
@@ -456,6 +462,9 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 		client->prior->next = client->next;
 	if (client->next)
 		client->next->prior = client->prior;
+
+	/* if taskmanager is open the tasklist will be updated */
+	update_tasklist(lock);
 
 	/* free the quart screen buffer */
 	if (client->half_screen_buffer)
@@ -848,11 +857,9 @@ static short info_tab[17][4] =
 
 /*
  * appl_getinfo() handler
- */
-
-/*
- * Ozk: XA_appl_getinfo() may be called by processes not yet called
- * appl_ini(). So, it must not depend on client being valid!
+ *
+ * Ozk: appl_getinfo() may be called by processes not yet called
+ * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
 XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -874,7 +881,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		/* N.AES extensions */
 		if (gi_type == 64 || gi_type == 65)
 		{
-			gi_type -= 64 - 15;
+			gi_type -= (64 - 15);
 		}
 		else
 		{
@@ -905,9 +912,8 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
  * appl_find()
  *
  * HR: the -1 -2 support wasnt good at all
- */
-/*
- * Ozk: XA_appl_find() may be called by processes not yet called
+ *
+ * Ozk: appl_find() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
@@ -1061,3 +1067,38 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
+
+#if 0
+unsigned long
+XA_appl_trecord(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	EVNTREC *ap_tbuffer = (void *)pb->addrin[0];
+	short ap_trcount = pb->intin[0];
+
+	CONTROL(1,1,1)
+
+	DIAG((D_appl, client, "appl_trecord for %s", c_owner(client)));
+
+	/* error */
+	pb->intout[0] = 0;
+
+	return XAC_DONE;
+}
+
+unsigned long
+XA_appl_tplay(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	EVNTREC *ap_tpmem = (void *)pb->addrin[0];
+	short ap_tpnum = pb->intin[0];
+	short ap_tpscale = pb->intin[1];
+
+	CONTROL(2,1,1)
+
+	DIAG((D_appl, client, "appl_tplay for %s", c_owner(client)));
+
+	/* error */
+	pb->intout[0] = 0;
+
+	return XAC_DONE;
+}
+#endif
