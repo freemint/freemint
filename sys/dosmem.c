@@ -27,6 +27,7 @@
 
 # include "k_prot.h"
 # include "memory.h"
+# include "util.h" /* pid2proc */
 
 
 /* new call for TT TOS, for the user to inform DOS of alternate memory
@@ -384,4 +385,37 @@ m_shrink (int dummy, virtaddr block, long size)
 	DEBUG(("Mshrink: bad address (%lx)", block));
 error:
 	return EFAULT;
+}
+
+long _cdecl
+sys_m_validate (int pid, void *addr, long size)
+{
+	struct proc *p = NULL;
+	MEMREGION *m;
+	
+	TRACE (("Mvalidate(%i, %lx, %li)", pid, addr, size));
+	
+	if (pid == 0)
+		p = curproc;
+	else if (pid > 0)
+		p = pid2proc (pid);
+	
+	if (!p)
+	{
+		DEBUG (("Mvalidate: no such process (pid %i)", pid));
+		return ESRCH;
+	}
+	
+	if (p != curproc && !suser (curproc->p_cred->ucr) && !(p->memflags & F_OS_SPECIAL))
+	{
+		DEBUG (("Mvalidate: permission denied"));
+		return EPERM;
+	}
+	
+	m = proc_addr2region (p, (long) addr);
+	if (m && ((long) addr + size) <= (m->loc + m->len))
+		return 0;
+	
+	DEBUG (("Mvalidate: invalid vector"));
+	return EINVAL;
 }
