@@ -4,6 +4,8 @@
 STARTUP = startup.o
 
 COBJS = \
+	info_mach.c \
+	init_mach.c \
 	kernfs_mach.c \
 	mprot030.c \
 	mprot040.c \

@@ -61,6 +61,7 @@
 # include "k_fork.h"
 # include "k_prot.h"
 # include "k_resource.h"
+# include "k_sysctl.h"
 # include "memory.h"
 # include "proc.h"
 # include "ptrace.h"
@@ -481,7 +482,7 @@ Func dos_tab [DOS_MAX] =
 	/* 0x15b */	(Func)	sys_fwritev,	/* 1.16 */
 	/* 0x15c */	(Func)	sys_freadv,	/* 1.16 */
 	/* 0x15d */	(Func)	sys_ffstat,	/* 1.16 */
-	/* 0x15e */		enosys,		/* reserved */
+	/* 0x15e */	(Func)	sys_p_sysctl,	/* 1.16 */
 	/* 0x15f */	(Func)	sys_emu,	/* 1.15.8, interface emulation */
 	
 	/* 0x160 */	(Func)	sys_socket,	/* 1.16 */

@@ -400,7 +400,7 @@ s_system (int mode, ulong arg1, ulong arg2)
 		 */
 		case S_KNAME:
 		{
-			strncpy_f ((char *) arg1, THIRD_PARTY " " VERS_STRING, arg2);
+			strncpy_f ((char *) arg1, version, arg2);
 			break;
 		}
 		case S_CNAME:
