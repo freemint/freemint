@@ -190,9 +190,9 @@ do_TCP_open (struct TCP_open_param p)
 	if (p.rhost == 0)
 	{
 		p.rhost = 0;
-		p.rport = 0;
 		lhost = INADDR_ANY;
 		lport = p.rport;
+		p.rport = 0;
 	}
 	else if (p.rport == 0)
 	{
