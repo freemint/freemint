@@ -122,9 +122,10 @@ struct kerinfo kernelinfo =
 	kthread_exit,
 	
 	NULL, /* m_dmabuf_alloc, */
+	NULL, /* nf_ops */
 	
 	{
-		0, 0, 0
+		0, 0
 	}
 };
 
