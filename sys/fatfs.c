@@ -32,6 +32,13 @@
  * 
  * changes since last version:
  * 
+ * 2000-09-27:	(v1.22)
+ * 
+ * - fix: spelling correction, replaced most 'actual' with 'current'
+ * - new: added kernel ALERT for illegal FAT entries
+ * - new: changed getcl{12,16}/fixcl{12,16} to read/write FAT#2 at first
+ *        like TOS, MagiC, DOS/Windows
+ * 
  * 2000-06-30:	(v1.21)
  * 
  * - fix: c_del_cookie now bzero the complete COOKIE struct;
@@ -292,7 +299,7 @@
  * 
  * - fix: little bug in nextcl16/32 (last free clusters are not found)
  * - fix: bug in lseek
- * - new: __updatedir to mark the actual dir entry as modified
+ * - new: __updatedir to mark the current dir entry as modified
  * - change: new strategie for extend directorys
  * - new: some Dcntl's
  * - new: ISO, GEMDOS and MSDOS name modus
@@ -894,7 +901,7 @@ typedef struct
 	
 	/* FAT32 extensions */
 	ushort	fmirroring;	/* status of fat mirroring (flag) */
-	ushort	actual_fat;	/* active fat if fat mirroring is disabled */
+	ushort	current_fat;	/* active fat if fat mirroring is disabled */
 	UNIT	*info_unit;	/* unit descriptor for the info sector */
 _FAT32_BFSINFO	*info;		/* info sector pointer */
 	
@@ -906,12 +913,12 @@ typedef struct
 	ushort	dev;		/* device */
 	ushort	rdev;		/* not used at the moment */
 	long	stcl;		/* start cluster */
-	long	actual;		/* actual cluster (sector number) */
+	long	current;	/* current cluster (sector number) */
 	long	cl;		/* cluster number */
 	long	index;		/* logical index */
 	long	real_index;	/* index there normal & vfat point */
 	UNIT	*u;		/* the locked UNIT */
-	_DIR	*info;		/* points to the actual _DIR */
+	_DIR	*info;		/* points to the current _DIR */
 	
 } oDIR;
 
@@ -919,8 +926,8 @@ typedef struct
 typedef struct
 {
 	long	mode;		/* the file I/O mode */
-	long	actual;		/* actual cluster */
-	long	cl;		/* number of the actual cluster */
+	long	current;	/* current cluster */
+	long	cl;		/* number of the current cluster */
 	long	error;		/* holds the last error */
 	
 } FILE;
@@ -1104,7 +1111,7 @@ static struct
 	ushort	__slnk;		/* symbolic link configuration */
 	
 	ushort	__new_mode;	/* newname mode configuration */
-const	char *	__table;	/* actual character table */
+const	char *	__table;	/* current character table */
 	
 	ushort	__uid;		/* root permissions */
 	ushort	__gid;
@@ -1177,7 +1184,7 @@ const	char *	__table;	/* actual character table */
 
 /* special for FAT32 */
 # define FAT32mirr(dev)	(BPB (dev)->fmirroring)
-# define FAT32prim(dev)	(BPB (dev)->actual_fat)
+# define FAT32prim(dev)	(BPB (dev)->current_fat)
 # define FAT32infu(dev)	(BPB (dev)->info_unit)
 # define FAT32info(dev)	(BPB (dev)->info)
 
@@ -1369,7 +1376,7 @@ fullname (const COOKIE *c, const char *name)
 	}
 	else
 	{
-		FAT_ALERT (("fatfs.c: kmalloc fail in: fullname (%s, %s)", c->name, name));
+		FAT_ALERT (("FATFS: kmalloc fail in: fullname (%s, %s)", c->name, name));
 	}
 	
 	return full;
@@ -1578,7 +1585,7 @@ c_get_cookie (register char *s)
 	}
 	else
 	{
-		FAT_ALERT (("fatfs.c: c_get_cookie: no free COOKIE found for %s", s));
+		FAT_ALERT (("FATFS: c_get_cookie: no free COOKIE found for %s", s));
 		FAT_DEBUG_HASH (());
 	}
 	
@@ -1611,7 +1618,7 @@ c_get_cookie (register char *s)
 		}
 	}
 	
-	FAT_ALERT (("fatfs.c: c_get_cookie: no free COOKIE found for %s", s));
+	FAT_ALERT (("FATFS: c_get_cookie: no free COOKIE found for %s", s));
 	
 	FAT_DEBUG_HASH (());
 	return NULL;
@@ -1626,10 +1633,10 @@ c_del_cookie (register COOKIE *c)
 	c_hash_remove (c);
 	
 	if (c->open)
-		FAT_ALERT (("fatfs.c: open FILEPTR detect in: c_del_cookie (%s)", c->name));
+		FAT_ALERT (("FATFS [%c]: open FILEPTR detect in: c_del_cookie (%s)", c->name, c->dev));
 	
 	if (c->locks)
-		FAT_ALERT (("fatfs.c: open LOCKS detect in: c_del_cookie (%s)", c->name));
+		FAT_ALERT (("FATFS [%c]: open LOCKS detect in: c_del_cookie (%s)", c->name, c->dev));
 	
 	if (c->lastlookup)
 		kfree (c->lastlookup);
@@ -1773,7 +1780,7 @@ getcl12 (long cluster, const ushort dev, ulong n)
 	FAT_DEBUG (("getcl12: enter (cluster = %li, n = %li)", cluster, n));
 	
 	/* input validation */
-	if (cluster < 2 || cluster >= MAXCL (dev))
+	if (!FAT_VALID12 (cluster, dev) /* cluster < 2 || cluster >= MAXCL (dev) */)
 	{
 		FAT_DEBUG (("getcl12: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -1785,21 +1792,23 @@ getcl12 (long cluster, const ushort dev, ulong n)
 		UNIT *u = NULL;
 		
 		do {
-			register const ulong sector = FATSTART (dev) + ((cluster / entrys) * 3);
+			register const ulong sector = FATSTART (dev) + FATSIZE (dev) + ((cluster / entrys) * 3);
 			register const ulong offset = ((cluster % entrys) * 12) / 8;
 # if 1
 			register long newcl;
 # endif
+			long prevcluster = cluster;
 			
 			if (sector != old_sector)
 			{
 				register long sectors;
 				
-				sectors = FATSIZE (dev) - (sector - FATSTART (dev));
+				sectors = FATSIZE (dev) - (sector - (FATSTART (dev) + FATSIZE (dev)));
 				sectors = MIN (3, sectors);
 				
 				FAT_ASSERT ((sectors == 1 || sectors == 2 || sectors == 3));
-				FAT_ASSERT (((sector + sectors) <= (FATSTART (dev) + FATSIZE (dev))));
+				FAT_ASSERT (((sector + sectors) >= (FATSTART (dev) + FATSIZE (dev))));
+				FAT_ASSERT (((sector + sectors) <= (FATSTART (dev) + 2 * FATSIZE (dev))));
 				
 				FAT_DEBUG (("getcl12: start = %li, sectors = %li", sector, sectors));
 				
@@ -1834,9 +1843,13 @@ getcl12 (long cluster, const ushort dev, ulong n)
 			{
 				register long ret;
 				
-				FAT_FREE (cluster) ? (ret =  CLFREE) :
+				FAT_FREE (cluster) ? (ret = CLFREE) :
 				FAT_LAST12 (cluster) ? (ret = CLLAST) :
-				FAT_BAD12  (cluster) ? (ret = CLBAD) : (ret = CLILLEGAL);
+				FAT_BAD12  (cluster) ? (ret = CLBAD) :
+				({
+					ret = CLILLEGAL;
+					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
+				});
 				
 				FAT_DEBUG (("getcl12: leave failure (invalid entry, ret = %li)", ret));
 				return ret;
@@ -1855,7 +1868,7 @@ getcl16 (long cluster, const ushort dev, ulong n)
 	FAT_DEBUG (("getcl16: enter (cluster = %li, n = %li)", cluster, n));
 	
 	/* input validation */
-	if (cluster < 2 || cluster >= MAXCL (dev))
+	if (!FAT_VALID16 (cluster, dev) /* cluster < 2 || cluster >= MAXCL (dev) */)
 	{
 		FAT_DEBUG (("getcl16: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -1867,8 +1880,9 @@ getcl16 (long cluster, const ushort dev, ulong n)
 		UNIT *u = NULL;
 		
 		do {
-			register const ulong sector = FATSTART (dev) + cluster / entrys;
+			register const ulong sector = FATSTART (dev) + FATSIZE (dev) + cluster / entrys;
 			register const ulong offset = cluster % entrys;
+			long prevcluster = cluster;
 			
 			if (sector != old_sector)
 			{
@@ -1889,9 +1903,13 @@ getcl16 (long cluster, const ushort dev, ulong n)
 			{
 				register long ret;
 				
-				FAT_FREE (cluster) ? (ret =  CLFREE) :
+				FAT_FREE (cluster) ? (ret = CLFREE) :
 				FAT_LAST16 (cluster) ? (ret = CLLAST) :
-				FAT_BAD16  (cluster) ? (ret = CLBAD) : (ret = CLILLEGAL);
+				FAT_BAD16  (cluster) ? (ret = CLBAD) :
+				({
+					ret = CLILLEGAL;
+					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
+				});
 				
 				FAT_DEBUG (("getcl16: leave failure (invalid entry, ret = %li)", ret));
 				return ret;
@@ -1910,7 +1928,7 @@ getcl32 (long cluster, const ushort dev, ulong n)
 	FAT_DEBUG (("getcl32: enter (cluster = %li, n = %li)", cluster, n));
 	
 	/* input validation */
-	if (cluster < 2 || cluster >= MAXCL (dev))
+	if (!FAT_VALID32 (cluster, dev) /* cluster < 2 || cluster >= MAXCL (dev) */)
 	{
 		FAT_DEBUG (("getcl32: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -1924,6 +1942,7 @@ getcl32 (long cluster, const ushort dev, ulong n)
 		do {
 			register const ulong sector = FAT32prim (dev) + cluster / entrys;
 			register const ulong offset = cluster % entrys;
+			long prevcluster = cluster;
 			
 			if (sector != old_sector)
 			{
@@ -1947,9 +1966,13 @@ getcl32 (long cluster, const ushort dev, ulong n)
 			{
 				register long ret;
 				
-				FAT_FREE (cluster) ? (ret =  CLFREE) :
+				FAT_FREE (cluster) ? (ret = CLFREE) :
 				FAT_LAST32 (cluster) ? (ret = CLLAST) :
-				FAT_BAD32  (cluster) ? (ret = CLBAD) : (ret = CLILLEGAL);
+				FAT_BAD32  (cluster) ? (ret = CLBAD) :
+				({
+					ret = CLILLEGAL;
+					FAT_ALERT (("FATFS [%c]: FAT corrupted, illegal successor %lu for cluster %lu!", 'A'+dev, cluster, prevcluster));
+				});
 				
 				FAT_DEBUG (("getcl32: leave failure (invalid entry, ret = %li)", ret));
 				return ret;
@@ -1972,7 +1995,7 @@ fixcl12 (long cluster, const ushort dev, long next)
 	FAT_DEBUG (("fixcl12: enter (cluster = %li, next = %li)", cluster, next));
 	
 	/* input validation */
-	if (cluster < 2 || cluster >= MAXCL (dev))
+	if (!FAT_VALID12 (cluster, dev) /*cluster < 2 || cluster >= MAXCL (dev)*/)
 	{
 		FAT_DEBUG (("fixcl12: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -2001,7 +2024,8 @@ fixcl12 (long cluster, const ushort dev, long next)
 		
 		FAT_DEBUG (("fixcl12: (1) start = %li, sectors = %li", sector, sectors));
 		
-		u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev) * sectors);
+		/* update FAT#2 */
+		u = bio_fat_read (dev, DI (dev), sector + FATSIZE (dev), SECSIZE (dev) * sectors);
 		if (u)
 		{
 			register long newcl;
@@ -2031,7 +2055,8 @@ fixcl12 (long cluster, const ushort dev, long next)
 			{
 				FAT_DEBUG (("fixcl12: (2) start = %li, sectors = %li", sector + FATSIZE (dev), sectors));
 				
-				u = bio_fat_read (dev, DI (dev), sector + FATSIZE (dev), SECSIZE (dev) * sectors);
+				/* update FAT#1 */
+				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev) * sectors);
 				if (u)
 				{
 					/* write the entry to the second FAT */
@@ -2057,7 +2082,7 @@ fixcl16 (long cluster, const ushort dev, long next)
 	FAT_DEBUG (("fixcl16: enter (cluster = %li, next = %li)", cluster, next));
 	
 	/* input validation */
-	if (cluster < 2 || cluster >= MAXCL (dev))
+	if (!FAT_VALID16 (cluster, dev) /*cluster < 2 || cluster >= MAXCL (dev)*/)
 	{
 		FAT_DEBUG (("fixcl16: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -2076,7 +2101,8 @@ fixcl16 (long cluster, const ushort dev, long next)
 		
 		UNIT *u;
 		
-		u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
+		/* update FAT#2 */
+		u = bio_fat_read (dev, DI (dev), sector + FATSIZE (dev), SECSIZE (dev));
 		if (u)
 		{
 			/* write the entry to the first FAT */
@@ -2086,7 +2112,8 @@ fixcl16 (long cluster, const ushort dev, long next)
 			
 			if (FAT2ON (dev))
 			{
-				u = bio_fat_read (dev, DI (dev), sector + FATSIZE (dev), SECSIZE (dev));
+				/* update FAT#1 */
+				u = bio_fat_read (dev, DI (dev), sector, SECSIZE (dev));
 				if (u)
 				{
 					/* write the entry to the second FAT */
@@ -2111,7 +2138,7 @@ fixcl32 (long cluster, const ushort dev, long next)
 	FAT_DEBUG (("fixcl32: enter (cluster = %li, next = %li)", cluster, next));
 	
 	/* input validation */
-	if (cluster < 2 || cluster >= MAXCL (dev))
+	if (!FAT_VALID32 (cluster, dev) /*cluster < 2 || cluster >= MAXCL (dev)*/)
 	{
 		FAT_DEBUG (("fixcl32: leave failure (cluster out of range)"));
 		return CLILLEGAL;
@@ -3300,7 +3327,7 @@ __opendir (register oDIR *dir, register const long cluster, register const ushor
 	dir->dev = dev;
 	dir->rdev = dev;
 	dir->stcl = cluster;
-	dir->actual = 0;
+	dir->current = 0;
 	dir->cl = -1;
 	dir->index = -1;
 	dir->real_index = -1;
@@ -3362,7 +3389,7 @@ __seekdir (register oDIR *dir, register long index, ushort mode)
 				if (dir->u)
 					bio.unlock (dir->u);
 				
-				dir->actual = sector;
+				dir->current = sector;
 				dir->cl = sector;
 				dir->u = bio_data_read (dev, DI (dev), ROOT (dev) + sector, SECSIZE (dev));
 				
@@ -3392,43 +3419,43 @@ __seekdir (register oDIR *dir, register long index, ushort mode)
 		{
 			/* read the right cluster */
 			
-			register long actual = GETCL (dir->stcl, dev, cluster);
-			if (actual <= 0)
+			register long current = GETCL (dir->stcl, dev, cluster);
+			if (current <= 0)
 			{
-				FAT_DEBUG (("__seekdir: failure get right cluster (error = %li)", actual));
+				FAT_DEBUG (("__seekdir: failure get right cluster (error = %li)", current));
 				if (mode == READ)
 				{
 					FAT_DEBUG (("__seekdir: leave ENMFILES (read only)"));
 					return ENMFILES;
 				}
-				actual = GETCL (dir->stcl, dev, cluster - 1);
-				if (actual <= 0)
+				current = GETCL (dir->stcl, dev, cluster - 1);
+				if (current <= 0)
 				{
-					FAT_DEBUG (("__seekdir: can't read prev cl (error = %li)", actual));
+					FAT_DEBUG (("__seekdir: can't read prev cl (error = %li)", current));
 					return ENMFILES;
 				}
-				actual = nextcl (actual, dev);
-				if (actual <= 0)
+				current = nextcl (current, dev);
+				if (current <= 0)
 				{
-					FAT_DEBUG (("__seekdir: can't expand dir (error = %li)", actual));
+					FAT_DEBUG (("__seekdir: can't expand dir (error = %li)", current));
 					return ENMFILES;
 				}
-				zero_cl (actual, dev);
+				zero_cl (current, dev);
 			}
 			
 			if (dir->u)
 				bio.unlock (dir->u);
 			
-			dir->actual = actual;
+			dir->current = current;
 			dir->cl = cluster;
-			dir->u = bio_data_read (dev, DI (dev), C2S (actual, dev), CLUSTSIZE (dev));
+			dir->u = bio_data_read (dev, DI (dev), C2S (current, dev), CLUSTSIZE (dev));
 			
 			if (!dir->u)
 			{
 				dir->cl = -1;
 				dir->info = NULL;
 				
-				FAT_DEBUG (("__seekdir: leave failure (read cluster, sector = %li);", dir->actual));
+				FAT_DEBUG (("__seekdir: leave failure (read cluster, sector = %li);", dir->current));
 				return EREAD;
 			}
 			
@@ -5123,15 +5150,15 @@ get_devinfo (const ushort drv, long *err)
 				/* FAT stuff
 				 */
 				d->fmirroring	= t->fflag & FAT32_NoFAT_Mirror;
-				d->actual_fat	= t->fflag & FAT32_ActiveFAT_Mask;
+				d->current_fat	= t->fflag & FAT32_ActiveFAT_Mask;
 				
 				if (d->fmirroring)	/* disabled, setup up primary FAT */
 				{
-					if (d->actual_fat <= t->fats)
+					if (d->current_fat <= t->fats)
 					{
 						d->fmirroring = DISABLE;
-						d->actual_fat *= d->flen;
-						d->actual_fat += d->fstart;
+						d->current_fat *= d->flen;
+						d->current_fat += d->fstart;
 					}
 				}
 				else			/* enabled */
@@ -5141,7 +5168,7 @@ get_devinfo (const ushort drv, long *err)
 				
 				if (d->fmirroring)	/* enabled, primary FAT = first FAT */
 				{
-					d->actual_fat = d->fstart;
+					d->current_fat = d->fstart;
 				}
 				
 				/* info sector stuff
@@ -7233,7 +7260,7 @@ __FTRUNCATE (COOKIE *c, long newlen)
 {
 	const long oldlen = c->flen;
 	long cl = newlen / CLUSTSIZE (c->dev);
-	long actual;
+	long current;
 	long r;
 	
 	FAT_DEBUG (("__FTRUNCATE [%s]: enter (newlen = %li)", c->name, newlen));
@@ -7254,20 +7281,20 @@ __FTRUNCATE (COOKIE *c, long newlen)
 	}
 	
 	/* search the new last cluster */
-	actual = GETCL (c->stcl, c->dev, cl);
-	if (actual <= 0)
+	current = GETCL (c->stcl, c->dev, cl);
+	if (current <= 0)
 	{
 		/* bad clustered or read error */
-		FAT_DEBUG (("__FTRUNCATE: leave failure, bad clustered (error = %li)", actual));
-		return actual;
+		FAT_DEBUG (("__FTRUNCATE: leave failure, bad clustered (error = %li)", current));
+		return current;
 	}
 	
 	/* truncate cluster chain and update last cluster */
-	r = GETCL (actual, c->dev, 1);
+	r = GETCL (current, c->dev, 1);
 	if (r > 0)
 	{
 		(void) del_chain (r, c->dev);
-		(void) FIXCL (actual, c->dev, CLLAST);
+		(void) FIXCL (current, c->dev, CLLAST);
 	}
 	
 	/* write new file len */
@@ -7289,14 +7316,14 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 	COOKIE *c = (COOKIE *) f->fc.index;
 	FILE *ptr = (FILE *) f->devinfo;
 	const ushort dev = c->dev;
-	long actual = ptr->actual;
+	long current = ptr->current;
 	long temp = c->flen - f->pos;
 	long todo;
 	long offset;
 	long data;
 	
 	FAT_DEBUG (("__FIO [%s]: enter (bytes = %li, mode: %s)", c->name, bytes, (mode == READ) ? "READ" : "WRITE"));
-	FAT_DEBUG (("__FIO: f->pos = %li, ptr->actual = %li", f->pos, ptr->actual));
+	FAT_DEBUG (("__FIO: f->pos = %li, ptr->current = %li", f->pos, ptr->current));
 	
 	if (ptr->error < 0)
 	{
@@ -7346,14 +7373,14 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 		/* no first cluster,
 		 * here only writing, if reading we leave before (while flen == 0)
 		 */
-		actual = nextcl (0, dev);
-		if (actual <= 0)
+		current = nextcl (0, dev);
+		if (current <= 0)
 		{
-			FAT_DEBUG (("__FIO: leave failure (nextcl = %li)", actual));
+			FAT_DEBUG (("__FIO: leave failure (nextcl = %li)", current));
 			return EACCES;
 		}
-		c->stcl = ptr->actual = actual;
-		PUT_STCL (&(c->info), dev, actual);
+		c->stcl = ptr->current = current;
+		PUT_STCL (&(c->info), dev, current);
 	}
 	
 	while (todo > 0)
@@ -7365,16 +7392,16 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			
 			FAT_DEBUG (("__FIO: temp - ptr->cl = %li", temp - ptr->cl));
 			
-			actual = NEXTCL (actual, dev, mode);
-			if (actual <= 0)
+			current = NEXTCL (current, dev, mode);
+			if (current <= 0)
 			{
 				/* bad clustered */
-				ptr->error = actual;
+				ptr->error = current;
 				FAT_DEBUG (("__FIO: leave failure, bad clustered (return = %li)", bytes - todo));
 				break;
 			}
 			
-			ptr->actual = actual;
+			ptr->current = current;
 			ptr->cl++;
 		}
 		
@@ -7390,7 +7417,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			
 			if (todo - data > CLUSTSIZE (dev))
 			{
-				register long oldcl = ptr->actual;
+				register long oldcl = ptr->current;
 				register long newcl = NEXTCL (oldcl, dev, mode);
 				
 				/* linear read/write optimization */
@@ -7399,7 +7426,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 					data += CLUSTSIZE (dev);
 					cls++;
 					
-					ptr->actual++;
+					ptr->current++;
 					ptr->cl++;
 					
 					if (todo - data > CLUSTSIZE (dev))
@@ -7417,11 +7444,11 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			/* read/write direct */
 			if (mode == READ)
 			{
-				ptr->error = bio_data_l_read (dev, DI (dev), C2S (actual, dev), cls, CLUSTSIZE (dev), buf);
+				ptr->error = bio_data_l_read (dev, DI (dev), C2S (current, dev), cls, CLUSTSIZE (dev), buf);
 			}
 			else
 			{
-				ptr->error = bio_data_l_write (dev, DI (dev), C2S (actual, dev), cls, CLUSTSIZE (dev), buf);
+				ptr->error = bio_data_l_write (dev, DI (dev), C2S (current, dev), cls, CLUSTSIZE (dev), buf);
 			}
 			
 			if (ptr->error)
@@ -7430,7 +7457,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 				break;
 			}
 			
-			actual = ptr->actual;
+			current = ptr->current;
 		}
 		else
 		{
@@ -7442,7 +7469,7 @@ __FIO (FILEPTR *f, char *buf, long bytes, ushort mode)
 			data = MIN (todo, data);
 			
 			/* read the unit */
-			u = bio_data_read (dev, DI (dev), C2S (ptr->actual, dev), CLUSTSIZE (dev));
+			u = bio_data_read (dev, DI (dev), C2S (ptr->current, dev), CLUSTSIZE (dev));
 			if (!u)
 			{
 				ptr->error = EREAD;
@@ -7536,7 +7563,7 @@ fatfs_open (FILEPTR *f)
 	}
 	
 	ptr->mode = f->flags;
-	ptr->actual = c->stcl;
+	ptr->current = c->stcl;
 	ptr->cl = 0;
 	ptr->error = 0;
 	
@@ -7640,15 +7667,15 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 	{
 		f->pos = 0;
 		ptr->cl = 0;
-		ptr->actual = c->stcl;
+		ptr->current = c->stcl;
 		
 		FAT_DEBUG (("fatfs_lseek: leave ok (where = %li)", where));
 		return 0;
 	}
 	
-	{	/* calculate and set the new actual cluster and position */
+	{	/* calculate and set the new current cluster and position */
 		
-		long actual = 0;
+		long current = 0;
 		register long cl = where / CLUSTSIZE (c->dev);
 		
 		if ((where % CLUSTSIZE (c->dev) == 0) && (where == c->flen))
@@ -7661,24 +7688,24 @@ fatfs_lseek (FILEPTR *f, long where, int whence)
 		{
 			if (cl > ptr->cl)
 			{
-				actual = GETCL (ptr->actual, c->dev, cl - ptr->cl);
+				current = GETCL (ptr->current, c->dev, cl - ptr->cl);
 			}
 			else
 			{
-				actual = GETCL (c->stcl, c->dev, cl);
+				current = GETCL (c->stcl, c->dev, cl);
 			}
 			
-			if (actual <= 0)
+			if (current <= 0)
 			{
 				/* bad clustered or read error */
-				ptr->error = actual;
+				ptr->error = current;
 				
 				FAT_DEBUG (("fatfs_lseek: leave failure, bad clustered (ptr->error = %li)", ptr->error));
 				return EACCES;
 			}
 			
 			ptr->cl = cl;
-			ptr->actual = actual;
+			ptr->current = current;
 		}
 		
 		f->pos = where;
