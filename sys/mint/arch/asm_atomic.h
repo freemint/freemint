@@ -34,12 +34,26 @@
 # ifndef _m68k_asm_atomic_h
 # define _m68k_asm_atomic_h
 
-# include "ktypes.h"
 
+// TAS
+// CAS2
 
-TAS
-CAS
-CAS2
+static inline long
+compare_and_swap (volatile long *p, long old, long new)
+{
+	register long read;
+	register char ret;
+	
+	__asm__ __volatile__
+	(
+		"cas%.l %2,%3,%1\n"
+		"seq %0"
+		: "=dm" (ret), "=m" (*p), "=d" (read)
+		: "d" (new), "m" (*p), "2" (old)
+	);
+	
+	return ret;
+}
 
 
 # endif /* _m68k_asm_atomic_h */

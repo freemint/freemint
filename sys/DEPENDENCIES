@@ -6,16 +6,21 @@
 $(LIBKERNTARGET):
 	cd $(top_srcdir)/libkern; $(MAKE) CPU="$(CPU)" libkern$(CPU).a
 
+
+COMPILE = $(filter-out $(NOCFLAGS-$(<F)), $(filter-out $(nocflags),\
+$(CC) $(cflags) $(CFLAGS) $(CFLAGS-$(<F)) $(CFLAGS-$(DIRSTEM))) \
+$(DEFS-$(<F)) $(DEFS-$(DIRSTEM)))
+
 #
 # compile rule
 #
 %.o: %.c
-	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
-	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
+	@echo "$(COMPILE) -c $< -o $@"; \
+	$(COMPILE) -Wp,-MD,.deps/$(@:.o=.P) -c $< -o $@
 
 %.o: %.s
-	@echo "$(CC) $(CFLAGS) -c $< -o $@"; \
-	$(CC) -Wp,-MD,.deps/$(@:.o=.P) $(CFLAGS) -c $< -o $@
+	@echo "$(COMPILE) -c $< -o $@"; \
+	$(COMPILE) -Wp,-MD,.deps/$(@:.o=.P) -c $< -o $@
 
 #
 # dependencies
