@@ -1,3 +1,33 @@
+/*
+ * $Id:
+ *
+ * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
+ *                                 1999 - 2003 H.Robbers
+ *                                        2004 F.Naumann
+ *
+ * A multitasking AES replacement for MiNT
+ *
+ * This file is part of XaAES.
+ *
+ * XaAES is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * XaAES is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with XaAES; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+/*
+ * This file contains the client side of mouse event processing
+*/
+
 #include "c_mouse.h"
 #include "xa_global.h"
 
@@ -117,7 +147,28 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce)
 	DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s", ce->client->name));
 	button_event(lock, ce->client, &ce->md);
 }
-	
+
+void
+cXA_deliver_rect_event(enum locks lock, struct c_event *ce)
+{
+	struct xa_client *client = ce->client;
+	AESPB *pb = client->waiting_pb;
+	int events = ce->d0;
+
+	if (pb)
+	{
+		if (client->waiting_for & XAWAIT_MULTI)
+		{
+			multi_intout(client, pb->intout, events);
+		}
+		else
+		{
+			multi_intout(client, pb->intout, 0);
+			pb->intout[0] = 1;
+		}
+	}
+}
+
 void
 cXA_form_do(enum locks lock, struct c_event *ce)
 {
@@ -192,4 +243,3 @@ cXA_widget_click(enum locks lock, struct c_event *ce)
 	DIAG((D_mouse, ce->client, "cXA_widget_click for %s", ce->client->name));
 	widg->click(lock, root_window, widg);
 }
-	

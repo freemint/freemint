@@ -666,7 +666,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				 */
 				wt->tree = ob;
 				wt->owner = client;
-				fix_menu(ob, false);
+				fix_menu(client, ob, false);
 				set_menu_widget(w, &w->menu_bar);
 			}
 		}

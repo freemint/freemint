@@ -148,7 +148,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (mnu)
 		{
 			/* Do a special fix on the menu  */
-			fix_menu(mnu,true);
+			fix_menu(client, mnu,true);
 			DIAG((D_menu,NULL,"fixed menu"));
 
 			mnu->ob_width = mnu[mnu->ob_tail].ob_width = mnu[mnu->ob_head].ob_width = screen.r.w;
