@@ -200,7 +200,7 @@ make_real_cmdline(struct proc *p)
 
 		TRACE (("make_real_cmdline: fallback"));
 
-		max_length = _mint_strlen (p->cmdlin + 1);
+		max_length = strlen (p->cmdlin + 1);
 		translate_space = 1;
 		copy_fname = 1;
 
@@ -235,7 +235,7 @@ make_real_cmdline(struct proc *p)
 	 * about the little rest for now.  We will copy that over later.
 	 */
 	if (copy_fname)
-		max_length += _mint_strlen (p->fname) + 1;
+		max_length += strlen (p->fname) + 1;
 
 	max_length += 2;     /* Two null-bytes */
 

@@ -806,7 +806,7 @@ kern_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 		crs++;
 	}
 
-	len = _mint_strlen (crs);
+	len = strlen (crs);
 	if (len >= size)
 	{
 		DEBUG (("kern_getname, relto: 0x%lx, dir: 0x%lx, rootname: %s, crs: %s, name too long",
@@ -821,7 +821,7 @@ kern_getname (fcookie *relto, fcookie *dir, char *pathname, int size)
 		(ulong) relto->index, (ulong) dir->index,
 		rootname, crs));
 
-	_mint_strncpy_f (pathname, rootname, size);
+	strncpy_f (pathname, rootname, size);
 
 	return E_OK;
 }
@@ -867,9 +867,9 @@ kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	/* The MiNT documentation appendix E states that we always have
 	 * to stuff as many bytes as possible into the buffer.
 	 */
-	_mint_strncpy_f (name, src, namelen);
+	strncpy_f (name, src, namelen);
 
-	len = _mint_strlen (src);
+	len = strlen (src);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_pr_readdir, dirh->index: %d, name: %s: name too long", dirh->index, src));
@@ -977,9 +977,9 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	/* The MiNT documentation appendix E states that we always have
 	 * to stuff as many bytes as possible into the buffer.
 	 */
-	_mint_strncpy_f (name, buf, namelen);
+	strncpy_f (name, buf, namelen);
 
-	len = _mint_strlen (buf);
+	len = strlen (buf);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_fddir_readdir: /sys/%d/fd/%s: Name too long", pid, buf));
@@ -1074,9 +1074,9 @@ kern_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	/* The MiNT documentation appendix E states that we always have
 	 * to stuff as many bytes as possible into the buffer.
 	 */
-	_mint_strncpy_f (name, src, namelen);
+	strncpy_f (name, src, namelen);
 
-	len = _mint_strlen (src);
+	len = strlen (src);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_readdir, dirh->index: %d, name: %s, name too long", dirh->index, src));
@@ -1177,7 +1177,7 @@ kern_readlabel (fcookie *dir, char *name, int namelen)
 		return ENAMETOOLONG;
 	}
 
-	_mint_strncpy (name, "Sysinfo", namelen);
+	strncpy (name, "Sysinfo", namelen);
 	return E_OK;
 }
 
@@ -1236,9 +1236,9 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 		}
 	}
 
-	_mint_strncpy_f (name, buf, namelen);
+	strncpy_f (name, buf, namelen);
 
-	len = _mint_strlen (buf);
+	len = strlen (buf);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_proc_readlink, dir->index: %ld, name: %s: name too long", dir->index, buf));
@@ -1291,9 +1291,9 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 			(unsigned) fd->ofiles[desc]->fc.dev,
 			(ulong) fd->ofiles[desc]->fc.index);
 
-	_mint_strncpy_f (name, buf, namelen);
+	strncpy_f (name, buf, namelen);
 
-	len = _mint_strlen (buf);
+	len = strlen (buf);
 	if (len >= namelen)
 	{
 		DEBUG (("kern_fddir_readlink: /sys/%d/fd/<desc> -> %s: Name too long", pid, buf));
@@ -1320,9 +1320,9 @@ kern_readlink (fcookie *file, char *name, int namelen)
 		int len;
 
 		ksprintf (buf, sizeof (buf), "%d", curproc->pid);
-		_mint_strncpy_f (name, buf, namelen);
+		strncpy_f (name, buf, namelen);
 
-		len = _mint_strlen (buf);
+		len = strlen (buf);
 
 		if (len >= namelen)
 		{
@@ -1349,7 +1349,7 @@ kern_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			_mint_strcpy ((char *) arg, "kern");
+			strcpy ((char *) arg, "kern");
 			break;;
 		}
 		case FS_INFO:

@@ -270,7 +270,7 @@ kern_get_filesystems (SIZEBUF **buffer)
 		char *name = "unknown";
 		int i;
 
-		_mint_strcpy (device, "nodev   ");
+		strcpy (device, "nodev   ");
 
 		if (fs == &uni_filesys)
 			continue;
@@ -286,7 +286,7 @@ kern_get_filesystems (SIZEBUF **buffer)
 			name = "bios pseudo file-system";
 		else
 		{
-			_mint_strcpy (device, "        ");
+			strcpy (device, "        ");
 
 			for (i = 2; i < NUM_DRIVES; i++)
 				if (rootproc->p_cwd->root[i].fs == fs)
@@ -635,7 +635,7 @@ kern_get_welcome (SIZEBUF **buffer)
 	uchar *to;
 
 	for (greet = greets; *greet != NULL; greet++)
-		len += _mint_strlen (*greet);
+		len += strlen (*greet);
 
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
@@ -881,7 +881,7 @@ kern_procdir_get_fname (SIZEBUF **buffer, const struct proc *p)
 	SIZEBUF *info;
 	ulong len;
 
-	len = _mint_strlen (p->fname);
+	len = strlen (p->fname);
 
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
