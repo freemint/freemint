@@ -182,32 +182,24 @@ is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **
 #if GENERATE_DIAGS
 	OBJECT *attach_to = wt->tree + item;
 #endif
-	int i;
 
 	DIAGS(("is_attach: for %s, wt=%lx, obj=%d, obtree=%lx",
 		client->name, wt, item, wt->tree));
 
-	if (pat)
-		*pat = NULL;
-
-	if (at == NULL) // || (attach_to->ob_flags & OF_SUBMENU) == 0)
-		return false;
-
 	DIAG((D_menu, client, "is_attach: at=%lx,flags=%x,type=%x, spec=%lx",
 	       at, attach_to->ob_flags, attach_to->ob_type, object_get_spec(attach_to)->index));
 
-	for (i = 0; i < ATTACH_MAX; i++)
+	while (at)
 	{
-		if (   wt == at[i].to
-		    && item == at[i].to_item)
-		{
-			if (pat)
-				*pat = at + i;
-
-			return true;
-		}
+		if (at->to == wt && at->to_item == item)
+			break;
+		at = at->next;
 	}
-	return false;
+
+	if (pat)
+		*pat = at;
+
+	return at ? true : false;
 }
 
 /*
@@ -250,7 +242,7 @@ inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, X
 int
 attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn)
 {
-	XA_MENU_ATTACHMENT *at = client->attach;
+	//XA_MENU_ATTACHMENT *at = client->attach;
 	OBJECT *attach_to;
 	int ret = 0;
 
@@ -264,27 +256,20 @@ attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XA
 	/* You can only attach submenu's to normal menu entries */
 	if (wt->tree && mn && mn->wt)
 	{
-		/* Allocate a table for at least ATTACH_MAX attachments */
-		if (!at)
-		{
-			at = kmalloc(sizeof(*at) * ATTACH_MAX);
-			if (!at)
-			{
-				Sema_Dn(clients);
-				return 0;
-			}
-		}
+		XA_MENU_ATTACHMENT *new;
+		
+		new = kmalloc(sizeof(*new));
 
-		client->attach = at;
-
-		while (at)
+		if (new)
 		{
-			/* find a free place in the table */
-			if (at->to)
-				at++;
-			else
-				break;
-		}
+			char *text;
+
+			bzero(new, sizeof(*new));
+
+			new->next = client->attach;
+			if (client->attach)
+				client->attach->prev = new;
+			client->attach = new;
 
 		/* A menu is attached by replacing ob_spec (the text string)
 		 * to point to a structure in the above allocated table.
@@ -292,19 +277,14 @@ attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XA
 		 * structure. The remainder being additional information.
 		 */
 
-		/* room left in table ? */
-		if (at < at + ATTACH_MAX)
-		{
-			char *text;
-
 			/* OK now we can attach the menu */
 			menu_spec(mn->wt->tree, mn->menu.mn_menu);
 			attach_to->ob_flags |= OF_SUBMENU;
-			at->to = wt;
-			at->to_item = item;
+			new->to = wt;
+			new->to_item = item;
+			new->item = mn->menu.mn_menu;	 /* This is the submenu */
+			new->wt = mn->wt;
 
-			at->item = mn->menu.mn_menu;	 /* This is the submenu */
-			at->wt = mn->wt;
 			if ((attach_to->ob_type & 0xff) == G_STRING)
 			{
 				text = object_get_spec(attach_to)->free_string;
@@ -347,6 +327,17 @@ detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item)
 			text = object_get_spec(attach_to)->free_string;
 			text[strlen(text)-1] = ' ';
 		}
+
+		if (xt->prev)
+			xt->prev->next = xt->next;
+		else
+			client->attach = xt->next;
+
+		if (xt->next)
+			xt->next->prev = xt->prev;
+
+		kfree(xt);
+
 		ret = 1;
 	}
 
@@ -354,6 +345,19 @@ detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item)
 	return ret;
 }
 
+void
+free_attachments(struct xa_client *client)
+{
+	XA_MENU_ATTACHMENT *a;
+
+	while (( a = client->attach))
+	{
+		client->attach = a->next;
+		DIAGS(("freeing remaining attachment %lx", a));
+		kfree(a);
+	}
+}
+	
 void
 remove_attachments(enum locks lock, struct xa_client *client, XA_TREE *wt)
 {

@@ -37,6 +37,7 @@ bool	is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHME
 int	inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
 int	attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
 int	detach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item);
+void	free_attachments(struct xa_client *client);
 void	remove_attachments(enum locks lock, struct xa_client *client, XA_TREE *wt);
 void	set_menu_widget(struct xa_window *wind, XA_TREE *menu);
 void	fix_menu(struct xa_client *client, OBJECT *root, bool);

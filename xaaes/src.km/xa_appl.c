@@ -472,6 +472,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	 * free remaining resources
 	 */
 
+	free_attachments(client);
 	free_wtlist(client);
 
 	/* free the quart screen buffer */
