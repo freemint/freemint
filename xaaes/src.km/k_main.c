@@ -111,8 +111,8 @@ post_cevent(struct xa_client *client,
 
 	if (client != C.Aes)
 	{
-		if (!C.buffer_moose && client->inblock)
-			C.buffer_moose = client;
+		//if (!C.buffer_moose && client->inblock)
+		//	C.buffer_moose = client;
 		Unblock(client, 1, 5000);
 	}
 	else
@@ -158,8 +158,6 @@ Block(struct xa_client *client, int which)
 		}
 	}
 
-	if (C.buffer_moose == client)
-		C.buffer_moose = 0;
 	/*
 	 * Getting here if no more client events are in the queue
 	 * Looping around doing client events until a user event
@@ -177,16 +175,9 @@ Block(struct xa_client *client, int which)
 		client->sleeplock = 0;
 		if ((client->waiting_for & MU_TIMER) && !client->timeout)
 		{
-#if 1
-			if (C.buffer_moose == client)
-				C.buffer_moose = 0;
-#endif
 			return;
 		}
 		while (!client->usr_evnt && dispatch_cevent(client) ){}
-
-		if (C.buffer_moose == client)
-			C.buffer_moose = 0;
 	}
 	cancel_evnt_multi(client, 1);
 }
@@ -607,7 +598,7 @@ k_main(void *dummy)
 			}
 		}
 #endif
-		preprocess_mouse(lock); 
+		//preprocess_mouse(lock); 
 
 		input_channels  = 1UL << C.MOUSE_dev;
 		input_channels |= 1UL << C.KBD_dev;	/* We are waiting on all these channels */

@@ -96,6 +96,33 @@ static struct moose_data md_buff[MDBUF_SIZE];
  * pressed". Nice, isn't it?!
  */
 
+
+static void
+new_mu_mouse(struct moose_data *md)
+{
+	DIAG((D_v, NULL, "new_mu_mouse %d %d,%d/%d", md->state, md->cstate, md->x, md->y));
+	mu_button.b		= md->state;
+	mu_button.cb		= md->cstate;
+	mu_button.x = x_mouse	= md->x;
+	mu_button.y = y_mouse	= md->y;
+	mu_button.clicks 	= md->clicks;
+	mu_button.ks		= md->kstate;
+	mu_button.got		= false;
+
+	/*
+	 * Copy into the global main moose data if necessary
+	 */
+	if (md != &mainmd)
+		mainmd = *md;
+
+}
+
+static void
+new_active_widget_mouse(struct moose_data *md)
+{
+	widget_active.m	= *md;
+}
+
 /*
  * Ozk: Store a moose packet in our queue
  * We dont collec more than one MOVEMENT packet, the most recent one.
@@ -134,27 +161,7 @@ unbuffer_moose_pkt(struct moose_data *md)
 	}
 	*md = md_buff[md_tail++];
 	md_tail &= MDBUF_SIZE - 1;
-		return 1;
-}
-
-/*
- * Ozk: Check if packet is a BUTTON packet, and immediately queue
- * a fake button released packet if 'cstate' indicates that
- * button was released at the time moose.xdd sent it.
-*/
-static void
-check_and_buffer_if_fake(struct moose_data *md)
-{
-#if 0
-	if (md->ty == MOOSE_BUTTON_PREFIX && md->state && !md->cstate)
-	{
-		struct moose_data m;
-		DIAGS(("Fake release generated"));
-		m = *md;
-		m.state = m.cstate = m.clicks = 0;
-		buffer_moose_pkt(&m);
-	}
-#endif
+	return 1;
 }
 
 /*
@@ -170,7 +177,6 @@ getput_moose_pkt(struct moose_data *new, struct moose_data *ret)
 		if (new->ty == MOOSE_BUTTON_PREFIX)
 		{
 			md_lmvalid = 0;
-			check_and_buffer_if_fake(new);
 			*ret = *new;
 		}
 		else
@@ -183,7 +189,6 @@ getput_moose_pkt(struct moose_data *new, struct moose_data *ret)
 	{
 		//DIAGS(("getput: read head, buffer at tail"));
 		buffer_moose_pkt(new);
-		check_and_buffer_if_fake(new);
 		unbuffer_moose_pkt(ret);
 	}
 }
@@ -343,6 +348,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 
 	if ( (locker = mouse_locked()) )
 	{
+		DIAG((D_mouse, locker, "XA_button_event - mouse locked by %s", locker->name));
 		if (locker->fmd.lock && locker->fmd.mousepress)
 		{
 			DIAG((D_mouse, locker, "post form do to %s", locker->name));
@@ -352,6 +358,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	}
 	if ( (locker = update_locked()) )
 	{
+		DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
 		if (locker->fmd.lock && locker->fmd.mousepress)
 		{
 			DIAG((D_mouse, locker, "post form do to %s", locker->name));
@@ -360,10 +367,13 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 	}
 
-
+	locker = mouse_locked();
 	wind = find_window(lock, md->x, md->y);
 
-	if (wind)
+	/*
+	 * Found a window under mouse, and no mouse lock
+	*/
+	if (wind && !locker)
 	{
 		client = wind == root_window ? get_desktop()->owner : wind->owner;
 		/*
@@ -383,6 +393,19 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 		return;
 	}
+	else if (locker)
+	{
+		if (wind && wind->owner == locker && (wind->active_widgets & TOOLBAR))
+		{
+			DIAG((D_mouse, locker, "post button event to mouselocker %s", locker->name));
+			post_cevent(locker, cXA_button_event, wind,0, 0,0, 0,md);
+		}
+		else
+		{
+			DIAG((D_mouse, locker, "post deliver button event to mouselocker %s", locker->name));
+			post_cevent(locker, cXA_deliver_button_event, 0,0, 0,0, 0,md);
+		}
+	}
 }
 
 int
@@ -400,11 +423,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	if (widget_active.widg)
 	{
 		widget_active.m = *md;
-#if 0
-		widget_active.nx = md->x;
-		widget_active.ny = md->y;
-		widget_active.cb = md->state;
-#endif
 		client = widget_active.wind->owner;
 		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
 		post_cevent(client, cXA_active_widget, 0,0, 0,0, 0, md);
@@ -705,86 +723,71 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 	}
 }
 
-static void
-new_mu_mouse(struct moose_data *md)
-{
-	DIAG((D_v, NULL, "new_mu_mouse %d %d,%d/%d", md->state, md->cstate, md->x, md->y));
-	mu_button.b		= md->state;
-	mu_button.cb		= md->cstate;
-	mu_button.x = x_mouse	= md->x;
-	mu_button.y = y_mouse	= md->y;
-	mu_button.clicks 	= md->clicks;
-	mu_button.ks		= md->kstate;
-	mu_button.got		= false;
-
-	/*
-	 * Copy into the global main moose data if necessary
-	 */
-	if (md != &mainmd)
-		mainmd = *md;
-
-}
-
-static void
-new_active_widget_mouse(struct moose_data *md)
-{
-	widget_active.m	= *md;
-#if 0
-	widget_active.b		= md->state;
-	widget_active.cb	= md->cstate;
-	widget_active.nx	= md->x;
-	widget_active.ny	= md->y;
-	widget_active.clicks	= md->clicks;
-	widget_active.ks	= md->kstate;
-#endif
-}
-
 /*
  * Here we decide what to do with a new moose packet.
  * Separeted to make it possible to send moose packets from elsewhere...
  */
 static int
-new_moose_pkt(enum locks lock, int internal, struct moose_data *imd)
+new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 {
-	struct moose_data *md;
-	struct moose_data m;
+	//struct moose_data *md;
+	//struct moose_data m;
 
-	md = &m;
+	//md = &m;
 
 	/* exclusive mouse input */
-	if (internal || (S.wait_mouse && (S.wait_mouse->waiting_for & XAWAIT_MOUSE)))
+	/*
+	 * Ozk: We cannot distpach anything while a client wants exclusive
+	 * right to mouse inputs. So, we need a flag.
+	*/
+	if (S.wm_count)
 	{
-		/* a client wait exclusivly for the mouse */
-		short *data = S.wait_mouse->waiting_short;
-
-		getput_moose_pkt(imd, md);
-
-		if (md->ty == MOOSE_BUTTON_PREFIX)
+		if (internal || (S.wait_mouse && (S.wait_mouse->waiting_for & XAWAIT_MOUSE)))
 		{
-			new_mu_mouse(md);
-			data[0] = md->cstate;
-		}
-		else
-			data[0] = md->cstate; //mu_button.cb;
+			/* a client wait exclusivly for the mouse */
+			short *data = S.wait_mouse->waiting_short;
+
+			if (md->ty == MOOSE_BUTTON_PREFIX)
+			{
+				new_mu_mouse(md);
+			}
+			else
+			{
+				x_mouse = md->x;
+				y_mouse = md->y;
+			}
 			
-		data[1] = md->x;
-		data[2] = md->y;
+			data[0] = md->cstate;
+			data[1] = md->x;
+			data[2] = md->y;
 
-		if (!internal)
-			wake(IO_Q, (long)S.wait_mouse);
-			//Unblock(S.wait_mouse, XA_OK, 3);
+			if (!internal)
+				wake(IO_Q, (long)S.wait_mouse);
+				//Unblock(S.wait_mouse, XA_OK, 3);
 
+			//return true;
+		}
+		/*
+		 * Ozk: We may loose packets here because we dont buffer'em when
+		 * S.wm_count is non-zero, and no listeners are listening.
+		*/
 		return true;
 	}
 
+#if 0
+	/*
+	 * Ozk: Do not dispatch mouse events to clients as long as
+	 * buffer moose flag is set, or if a client is exclusively
+	 * waiting for mouse events! Instead we buffer'em.
+	*/
 	if (C.buffer_moose)
 	{
 		buffer_moose_pkt(imd);
-		check_and_buffer_if_fake(imd);
 		return true;
 	}
 
 	getput_moose_pkt(imd, md);
+#endif
 
 	/* Mouse data packet type */
 	switch (md->ty)
@@ -844,15 +847,17 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *imd)
 	return true;
 }
 
+#if 0
 void
 preprocess_mouse(enum locks lock)
 {
 	struct moose_data md;
 
-	if ( !C.buffer_moose && unbuffer_moose_pkt(&md) )
+	if ( !C.buffer_moose && !S.wait_mouse && unbuffer_moose_pkt(&md) )
 		new_moose_pkt(lock, 0, &md);
 	mu_button.have = false;
 }
+#endif
 
 int
 mouse_input(enum locks lock, int internal)
@@ -903,7 +908,7 @@ void
 wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 {
 	short data[3];
-	struct moose_data md;
+	//struct moose_data md;
 
 	/*
 	 * Ozk: Make absolutely sure wether we're the AES kernel or a user
@@ -915,6 +920,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 
 		DIAGS(("wait_mouse for XaAES"));
 
+#if 0
 		if (unbuffer_moose_pkt(&md))
 		{
 			DIAGS(("wait_mouse XaAES - return buffered"));
@@ -926,6 +932,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			data[2] = md.y;
 		}
 		else
+#endif
 		{	
 			client->waiting_for |= XAWAIT_MOUSE;
 			client->waiting_short = data;
@@ -949,6 +956,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		/* wait for input from AESSYS */	
 		DIAGS(("wait_mouse for %s", client->name));
 
+#if 0
 		if (unbuffer_moose_pkt(&md))
 		{
 			DIAGS(("wait_mouse - return buffered"));
@@ -960,6 +968,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			data[2] = md.y;
 		}
 		else
+#endif
 		{	
 			client->waiting_for |= XAWAIT_MOUSE;
 			client->waiting_short = data;
@@ -968,7 +977,14 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			assert(S.wait_mouse == NULL);
 
 			S.wait_mouse = client;
-			sleep(IO_Q, (long)client); //Block(client, 2);
+
+			/* XXX */
+			data[0] = 0xffff;
+			while (data[0] == 0xffff)
+			{
+				sleep(IO_Q, (long)client); //Block(client, 2);
+			}
+
 			S.wait_mouse = NULL;
 
 			client->waiting_for &= ~XAWAIT_MOUSE;
@@ -993,9 +1009,10 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 void
 check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 {
-	struct moose_data md;
+	//struct moose_data md;
 	//short b, x, y;
 
+#if 0
 	/*
 	 * First we check if a fake button-released packet is to be delivered
 	 */
@@ -1015,8 +1032,6 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		else
 		{
 			n = kernel_read(C.kmoose, &md, sizeof(md));
-			if (n == sizeof(md))
-				check_and_buffer_if_fake(&md);
 		}
 		if (n == sizeof(md))
 		{
@@ -1058,7 +1073,7 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			DIAGS(("check_mouse - no new data %lx", n));
 		}
 	}
-
+#endif
 	DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
 		mu_button.cb, x_mouse, y_mouse, client->name));
 

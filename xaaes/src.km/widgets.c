@@ -275,14 +275,15 @@ Display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 		}
 	}
 }
-static void _cdecl
-Pdisplay_widget(struct proc *p, void *_parm)
+static void
+Pdisplay_widget(void *_parm)
 {
 	long *parm = _parm;
 
 	Display_widget(0, (struct xa_window *)parm[0], (struct xa_widget *)parm[1]);
 	wake(IO_Q, (long)parm);
 	kfree(parm);
+	kthread_exit(0);
 }
 
 #if 0
@@ -314,9 +315,10 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 			p[0] = (long)wind;
 			p[1] = (long)widg;
 			p[2] = (long)rc;
-			addonprocwakeup(wind->owner->p, Pdisplay_widget, p);
-			if (wind->owner->sleeplock)
-				wake(wind->owner->sleepqueue, wind->owner->sleeplock);
+			kthread_create(wind->owner->p, Pdisplay_widget, p, NULL, "k%s", wind->owner->name);
+			//addonprocwakeup(wind->owner->p, Pdisplay_widget, p);
+			//if (wind->owner->sleeplock)
+			//	wake(wind->owner->sleepqueue, wind->owner->sleeplock);
 			sleep(IO_Q, (long)p);
 		}
 	}
@@ -349,9 +351,10 @@ redraw_menu(enum locks lock)
 			p[0] = (long)root_window;
 			p[1] = (long)widg;
 			p[2] = (long)rc;
-			addonprocwakeup(mc->p, Pdisplay_widget, p);
-			if (mc->sleeplock)
-				wake(mc->sleepqueue, mc->sleeplock);
+			kthread_create(mc->p, Pdisplay_widget, p, NULL, "k%S", mc->name);
+			//addonprocwakeup(mc->p, Pdisplay_widget, p);
+			//if (mc->sleeplock)
+			//	wake(mc->sleepqueue, mc->sleeplock);
 			sleep(IO_Q, (long)p);
 		}
 	}
@@ -1406,7 +1409,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, st
 			int inside;
 			RECT r;
 
-			/*
+			/* XXX 
 			 * Center sliders at the clicked position.
 			 * Wait for mousebutton release
 			 */
@@ -1415,8 +1418,10 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, st
 				graf_mouse(XACRS_POINTSLIDE, NULL);
 				check_mouse(wind->owner, &mb, 0, 0);
 
-				while (mb == md->state)
+				S.wm_count++;
+				while (mb == md->cstate)
 					wait_mouse(wind->owner, &mb, &mx, &my);
+				S.wm_count--;
 			}
 
 			/* Convert relative coords and window location to absolute screen location */
@@ -1475,6 +1480,20 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, st
 
 			if (md->cstate)
 			{
+				/* If the button has been held down, set a
+				 * pending/active widget for the client */
+
+				set_widget_active(wind, widg, widg->drag, 2);
+				set_widget_repeat(lock, wind);
+
+				/* We return false here so the widget display
+				 * status stays selected whilst it repeats */
+				return false;
+			}
+#if 0
+
+			if (md->cstate)
+			{
 				check_mouse(wind->owner, &mb, &mx, &my);
 
 				if (mb)
@@ -1490,6 +1509,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, st
 					return false;
 				}
 			}
+#endif
 		}
 	}
 
@@ -2401,6 +2421,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 								short tx = rx, ty = ry; //tx = widget_active.nx, ty = widget_active.ny;
 								bool ins = 1;
 								check_mouse(w->owner, &b, 0, 0);
+								S.wm_count++;
 								while (b)
 								{
 									/* Wait for the mouse to be released */
@@ -2425,6 +2446,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 										ty = ry;
 									}
 								}
+								S.wm_count--;
 							}
 							if (m_inside(rx, ry, &r))
 							{
