@@ -1,0 +1,735 @@
+2001-07-31 Tuesday 22:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/magic/genmagic.pl:
+
+	Fixed cross-compiling bug, generate %define instead #define for asmtrans.
+	
+2001-07-31 Tuesday 22:38  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/sysctl/sysctl.c:
+
+	Added sysctl systemcall binding for MiNTLib < 0.57.
+	
+2001-07-31 Tuesday 19:08  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/: mmu030.spp, mprot030.c:
+
+	Merged back Falcon CT2 memory protection patches (from Didier Mequignon).
+	
+2001-07-31 Tuesday 18:29  Frank Naumann <fnaumann@freemint.de>
+
+	* README, README, mkinstalldirs, ChangeLog.#1.15.10, doc/FAQ,
+	doc/INSTALL, doc/NEWS, doc/README, doc/README.1st,
+	doc/block_IO.txt, doc/cnf.txt, doc/fatfs.txt, doc/limits.txt,
+	doc/minttime.txt, doc/mp.txt, doc/mp_list.txt, doc/timezone.txt,
+	doc/unixmode.txt, doc/cnf.hyp/mint1150.hyp,
+	doc/cnf.hyp/mint1150.ref, doc/cnf.hyp/mint1150.stg,
+	doc/examples/fscheck.readme, doc/examples/fscheck.sh,
+	doc/examples/mint.cnf, doc/german/CONFIG.ger, doc/german/FAQ.ger,
+	doc/german/INSTALL.ger, doc/german/LIESMICH, doc/german/guide.txt,
+	doc/german/tuning.txt, doc/programmer/appendix.A,
+	doc/programmer/appendix.B, doc/programmer/appendix.C,
+	doc/programmer/appendix.D, doc/programmer/appendix.E,
+	doc/programmer/block_IO.txt, doc/programmer/dma.txt,
+	doc/programmer/fatfs.txt, doc/programmer/kerinfo.txt,
+	doc/programmer/mint.txt, doc/programmer/mint2.pap,
+	doc/programmer/mint2.readme, doc/programmer/ssystem.txt,
+	doc/programmer/examples/README, doc/programmer/examples/psigintr.c,
+	doc/programmer/examples/cache/caches.c,
+	doc/programmer/examples/cache/ctrlcache.c,
+	doc/programmer/examples/memspeed/Makefile,
+	doc/programmer/examples/memspeed/README,
+	doc/programmer/examples/memspeed/blockcopy.s,
+	doc/programmer/examples/memspeed/memspeed.c,
+	doc/programmer/man/README, doc/programmer/man/man2/Dchroot.2,
+	doc/programmer/man/man2/Dclosedir.2,
+	doc/programmer/man/man2/Dcntl.2, doc/programmer/man/man2/Dgetcwd.2,
+	doc/programmer/man/man2/Dlock.2,
+	doc/programmer/man/man2/Dopendir.2,
+	doc/programmer/man/man2/Dpathconf.2,
+	doc/programmer/man/man2/Dreaddir.2,
+	doc/programmer/man/man2/Dreadlabel.2,
+	doc/programmer/man/man2/Drewind.2,
+	doc/programmer/man/man2/Dwritelabel.2,
+	doc/programmer/man/man2/Fchmod.2, doc/programmer/man/man2/Fchown.2,
+	doc/programmer/man/man2/Fcntl.2,
+	doc/programmer/man/man2/Fgetchar.2,
+	doc/programmer/man/man2/Finstat.2, doc/programmer/man/man2/Flink.2,
+	doc/programmer/man/man2/Fmidipipe.2,
+	doc/programmer/man/man2/Foutstat.2,
+	doc/programmer/man/man2/Fpipe.2,
+	doc/programmer/man/man2/Fputchar.2,
+	doc/programmer/man/man2/Freadlink.2,
+	doc/programmer/man/man2/Fselect.2,
+	doc/programmer/man/man2/Fsymlink.2,
+	doc/programmer/man/man2/Fxattr.2, doc/programmer/man/man2/Itimer.2,
+	doc/programmer/man/man2/Pause.2, doc/programmer/man/man2/Pdomain.2,
+	doc/programmer/man/man2/Pfork.2,
+	doc/programmer/man/man2/Pgetegid.2,
+	doc/programmer/man/man2/Pgeteuid.2,
+	doc/programmer/man/man2/Pgetgid.2,
+	doc/programmer/man/man2/Pgetpgrp.2,
+	doc/programmer/man/man2/Pgetpid.2,
+	doc/programmer/man/man2/Pgetppid.2,
+	doc/programmer/man/man2/Pgetuid.2, doc/programmer/man/man2/Pkill.2,
+	doc/programmer/man/man2/Pmsg.2, doc/programmer/man/man2/Pnice.2,
+	doc/programmer/man/man2/Prenice.2,
+	doc/programmer/man/man2/Prusage.2,
+	doc/programmer/man/man2/Psemaphore.2,
+	doc/programmer/man/man2/Psetgid.2,
+	doc/programmer/man/man2/Psetlimit.2,
+	doc/programmer/man/man2/Psetpgrp.2,
+	doc/programmer/man/man2/Psetuid.2,
+	doc/programmer/man/man2/Psigaction.2,
+	doc/programmer/man/man2/Psigblock.2,
+	doc/programmer/man/man2/Psigmask.2,
+	doc/programmer/man/man2/Psignal.2,
+	doc/programmer/man/man2/Psigpause.2,
+	doc/programmer/man/man2/Psigpending.2,
+	doc/programmer/man/man2/Psigreturn.2,
+	doc/programmer/man/man2/Pumask.2,
+	doc/programmer/man/man2/Pusrval.2,
+	doc/programmer/man/man2/Pvfork.2, doc/programmer/man/man2/Pwait.2,
+	doc/programmer/man/man2/Pwait3.2, doc/programmer/man/man2/Salert.2,
+	doc/programmer/man/man2/Syield.2,
+	doc/programmer/man/man2/Sysconf.2,
+	doc/programmer/man/man2/Talarm.2,
+	doc/programmer/newcall.html/Pgetpid.html,
+	doc/programmer/newcall.html/Pgetppid.html,
+	doc/programmer/newcall.html/README.FIRST,
+	doc/programmer/newcall.html/Super.html,
+	doc/programmer/newcall.html/Sversion.html,
+	doc/programmer/newcall.html/Syield.html,
+	doc/programmer/newcall.html/Tsetitimer.html,
+	doc/programmer/newcall.html/dreadlabel.html,
+	doc/programmer/newcall.html/dwritelabel.html,
+	doc/programmer/newcall.html/dxreaddir.html,
+	doc/programmer/newcall.html/index.html,
+	doc/programmer/newcall.html/indexname.html,
+	doc/programmer/newcall.html/indexopcode.html,
+	doc/programmer/newcall.html/pgetauid.html,
+	doc/programmer/newcall.html/pgetgroups.html,
+	doc/programmer/newcall.html/pgetpriority.html,
+	doc/programmer/newcall.html/psetauid.html,
+	doc/programmer/newcall.html/psetegid.html,
+	doc/programmer/newcall.html/pseteuid.html,
+	doc/programmer/newcall.html/psetgroups.html,
+	doc/programmer/newcall.html/psetpriority.html,
+	doc/programmer/newcall.html/psetregid.html,
+	doc/programmer/newcall.html/psetreuid.html,
+	doc/programmer/newcall.html/psigintr.html,
+	doc/programmer/newcall.html/shutdown.html,
+	doc/programmer/newcall.html/slbclose.html,
+	doc/programmer/newcall.html/slbopen.html,
+	doc/programmer/newcall.html/ssystem.html,
+	doc/programmer/newcall.html/suptime.html,
+	doc/programmer/newcall.html/sync.html,
+	doc/programmer/newcall.html/talarm.html,
+	doc/programmer/newcall.html/tgettimeofday.html,
+	doc/programmer/newcall.html/tmalarm.html,
+	doc/programmer/newcall.html/tsetitimer.html,
+	doc/programmer/newcall.html/tsettimeofday.html:
+
+	Initial checkin of the FreeMiNT docu.
+	
+2001-07-31 Tuesday 18:19  Frank Naumann <fnaumann@freemint.de>
+
+	* doc/: FAQ, INSTALL, NEWS, README, README.1st, block_IO.txt,
+	cnf.txt, fatfs.txt, limits.txt, minttime.txt, mp.txt, mp_list.txt,
+	timezone.txt, unixmode.txt, cnf.hyp/mint1150.hyp,
+	cnf.hyp/mint1150.ref, cnf.hyp/mint1150.stg,
+	examples/fscheck.readme, examples/fscheck.sh, examples/mint.cnf,
+	german/CONFIG.ger, german/FAQ.ger, german/INSTALL.ger,
+	german/LIESMICH, german/guide.txt, german/tuning.txt,
+	programmer/appendix.A, programmer/appendix.B,
+	programmer/appendix.C, programmer/appendix.D,
+	programmer/appendix.E, programmer/block_IO.txt, programmer/dma.txt,
+	programmer/fatfs.txt, programmer/kerinfo.txt, programmer/mint.txt,
+	programmer/mint2.pap, programmer/mint2.readme,
+	programmer/ssystem.txt, programmer/examples/README,
+	programmer/examples/psigintr.c, programmer/examples/cache/caches.c,
+	programmer/examples/cache/ctrlcache.c,
+	programmer/examples/memspeed/Makefile,
+	programmer/examples/memspeed/README,
+	programmer/examples/memspeed/blockcopy.s,
+	programmer/examples/memspeed/memspeed.c, programmer/man/README,
+	programmer/man/man2/Dchroot.2, programmer/man/man2/Dclosedir.2,
+	programmer/man/man2/Dcntl.2, programmer/man/man2/Dgetcwd.2,
+	programmer/man/man2/Dlock.2, programmer/man/man2/Dopendir.2,
+	programmer/man/man2/Dpathconf.2, programmer/man/man2/Dreaddir.2,
+	programmer/man/man2/Dreadlabel.2, programmer/man/man2/Drewind.2,
+	programmer/man/man2/Dwritelabel.2, programmer/man/man2/Fchmod.2,
+	programmer/man/man2/Fchown.2, programmer/man/man2/Fcntl.2,
+	programmer/man/man2/Fgetchar.2, programmer/man/man2/Finstat.2,
+	programmer/man/man2/Flink.2, programmer/man/man2/Fmidipipe.2,
+	programmer/man/man2/Foutstat.2, programmer/man/man2/Fpipe.2,
+	programmer/man/man2/Fputchar.2, programmer/man/man2/Freadlink.2,
+	programmer/man/man2/Fselect.2, programmer/man/man2/Fsymlink.2,
+	programmer/man/man2/Fxattr.2, programmer/man/man2/Itimer.2,
+	programmer/man/man2/Pause.2, programmer/man/man2/Pdomain.2,
+	programmer/man/man2/Pfork.2, programmer/man/man2/Pgetegid.2,
+	programmer/man/man2/Pgeteuid.2, programmer/man/man2/Pgetgid.2,
+	programmer/man/man2/Pgetpgrp.2, programmer/man/man2/Pgetpid.2,
+	programmer/man/man2/Pgetppid.2, programmer/man/man2/Pgetuid.2,
+	programmer/man/man2/Pkill.2, programmer/man/man2/Pmsg.2,
+	programmer/man/man2/Pnice.2, programmer/man/man2/Prenice.2,
+	programmer/man/man2/Prusage.2, programmer/man/man2/Psemaphore.2,
+	programmer/man/man2/Psetgid.2, programmer/man/man2/Psetlimit.2,
+	programmer/man/man2/Psetpgrp.2, programmer/man/man2/Psetuid.2,
+	programmer/man/man2/Psigaction.2, programmer/man/man2/Psigblock.2,
+	programmer/man/man2/Psigmask.2, programmer/man/man2/Psignal.2,
+	programmer/man/man2/Psigpause.2, programmer/man/man2/Psigpending.2,
+	programmer/man/man2/Psigreturn.2, programmer/man/man2/Pumask.2,
+	programmer/man/man2/Pusrval.2, programmer/man/man2/Pvfork.2,
+	programmer/man/man2/Pwait.2, programmer/man/man2/Pwait3.2,
+	programmer/man/man2/Salert.2, programmer/man/man2/Syield.2,
+	programmer/man/man2/Sysconf.2, programmer/man/man2/Talarm.2,
+	programmer/newcall.html/Pgetpid.html,
+	programmer/newcall.html/Pgetppid.html,
+	programmer/newcall.html/README.FIRST,
+	programmer/newcall.html/Super.html,
+	programmer/newcall.html/Sversion.html,
+	programmer/newcall.html/Syield.html,
+	programmer/newcall.html/Tsetitimer.html,
+	programmer/newcall.html/dreadlabel.html,
+	programmer/newcall.html/dwritelabel.html,
+	programmer/newcall.html/dxreaddir.html,
+	programmer/newcall.html/index.html,
+	programmer/newcall.html/indexname.html,
+	programmer/newcall.html/indexopcode.html,
+	programmer/newcall.html/pgetauid.html,
+	programmer/newcall.html/pgetgroups.html,
+	programmer/newcall.html/pgetpriority.html,
+	programmer/newcall.html/psetauid.html,
+	programmer/newcall.html/psetegid.html,
+	programmer/newcall.html/pseteuid.html,
+	programmer/newcall.html/psetgroups.html,
+	programmer/newcall.html/psetpriority.html,
+	programmer/newcall.html/psetregid.html,
+	programmer/newcall.html/psetreuid.html,
+	programmer/newcall.html/psigintr.html,
+	programmer/newcall.html/shutdown.html,
+	programmer/newcall.html/slbclose.html,
+	programmer/newcall.html/slbopen.html,
+	programmer/newcall.html/ssystem.html,
+	programmer/newcall.html/suptime.html,
+	programmer/newcall.html/sync.html,
+	programmer/newcall.html/talarm.html,
+	programmer/newcall.html/tgettimeofday.html,
+	programmer/newcall.html/tmalarm.html,
+	programmer/newcall.html/tsetitimer.html,
+	programmer/newcall.html/tsettimeofday.html:
+
+	Initial checkin of the FreeMiNT docu.
+	
+2001-07-31 Tuesday 15:07  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: dosmem.c, dosmem.h, syscalls.master:
+
+	Corrected argument order of the new Maccess() syscall.
+	
+2001-07-31 Tuesday 12:08  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: dosmem.c, dosmem.h, syscall_vectors.c, syscalls.master:
+
+	Enhanced Mvalidate(), report additionaly MP flags if wanted. Also
+	added a new Maccess() syscall for all applications. Check if
+	the given vector is read/write or read-only accessible.
+	
+2001-07-31 Tuesday 12:05  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/init.c:
+
+	Kludge for PAK'ed ST/STE computer. They have TOS 3.06 but
+	Bconmap() don't work at all.
+	
+2001-07-31 Tuesday 12:02  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: gluestik/gs.h, mgw/global.h, net-tools/netstat.c,
+	net-tools/tests/client.c, net-tools/tests/sockname.c,
+	net-tools/tests/speed.c, net-tools/tests/speed2.c,
+	net-tools/tests/udpclnt.c, net-tools/tests/udpserv.c:
+
+	Added conditional socklen_t type definition (to avoid library conflicts).
+	
+2001-07-31 Tuesday 12:01  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/Makefile:
+
+	Don't compile the mount_nfs on default, there is a library conflict.
+	
+2001-07-31 Tuesday 12:01  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/IO/: SRCFILES, bswap.h, mint_io.c, mint_io.h, mytypes.h,
+	xhdi.c, xhdi.h:
+
+	Merged back 1.16 enhancements.
+	
+2001-07-03 Tuesday 21:07  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: xfs/Makefile, xfs/skeleton/.cvsignore,
+	xfs/skeleton/BINFILES, xdd/Makefile, xfs/skeleton/COPYING,
+	xfs/skeleton/EXTRAFILES, xfs/skeleton/MISCFILES,
+	xfs/skeleton/Makefile, xfs/skeleton/README, xfs/skeleton/SRCFILES,
+	xfs/skeleton/dummy.c, xfs/skeleton/dummy.h, xdd/audio/.cvsignore,
+	xdd/audio/BINFILES, xdd/audio/EXTRAFILES, xdd/audio/F030.TODO,
+	xdd/audio/MISCFILES, xdd/audio/Makefile, xdd/audio/README,
+	xdd/audio/README.v0.9, xdd/audio/SRCFILES, xdd/audio/actrl.c,
+	xdd/audio/afmts.c, xdd/audio/afmts.h, xdd/audio/audioasm.s,
+	xdd/audio/audiodev.c, xdd/audio/device.h, xdd/audio/dma.c,
+	xdd/audio/dmasnd.h, xdd/audio/falcon.c, xdd/audio/global.h,
+	xdd/audio/lmc.c, xdd/audio/mfp.h, xdd/audio/psg.c,
+	xdd/audio/psgsnd.h, xdd/audio/psgtab.c, xdd/flop-raw/Makefile,
+	xdd/flop-raw/flop_raw.c, xdd/mfp/Makefile, xdd/mfp/mfp.c,
+	xdd/mfp/mfp.h, xdd/scc/Makefile, xdd/scc/scc.c, xdd/scc/scc.h,
+	xdd/skeleton/.cvsignore, xdd/skeleton/BINFILES,
+	xdd/skeleton/COPYING, xdd/skeleton/EXTRAFILES,
+	xdd/skeleton/MISCFILES, xdd/skeleton/Makefile, xdd/skeleton/README,
+	xdd/skeleton/SRCFILES, xdd/skeleton/dummy.c, xdd/skeleton/dummy.h,
+	xdd/uart/pc16550.c, xdd/xconout2/Makefile, xdd/xconout2/xconout2.c:
+
+	Merged back new import of the audio.xdd, the xdd/xfs skeletons, and
+	all the xdd improvements.
+	
+2001-07-03 Tuesday 12:49  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: Makefile, net-tools/.cvsignore, net-tools/BINFILES,
+	net-tools/COPYING, net-tools/EXTRAFILES, net-tools/MISCFILES,
+	net-tools/Makefile, net-tools/SRCFILES, net-tools/arp.c,
+	net-tools/diald.c, net-tools/ifconfig.8, net-tools/ifconfig.c,
+	net-tools/iflink.c, net-tools/ifopts.c, net-tools/ifopts.h,
+	net-tools/ifstats.c, net-tools/masqconf.c, net-tools/masquerade.h,
+	net-tools/netstat.8, net-tools/netstat.c, net-tools/pppconf.c,
+	net-tools/route.8, net-tools/route.c, net-tools/slattach.c,
+	net-tools/tests/.cvsignore, net-tools/tests/BINFILES,
+	net-tools/tests/EXTRAFILES, net-tools/tests/MISCFILES,
+	net-tools/tests/Makefile, net-tools/tests/README,
+	net-tools/tests/SRCFILES, net-tools/tests/client.c,
+	net-tools/tests/dgram.c, net-tools/tests/dgramd.c,
+	net-tools/tests/hostlookup.c, net-tools/tests/oobcl.c,
+	net-tools/tests/oobsv.c, net-tools/tests/pipes.c,
+	net-tools/tests/protolookup.c, net-tools/tests/server.c,
+	net-tools/tests/servlookup.c, net-tools/tests/sockname.c,
+	net-tools/tests/sockpair.c, net-tools/tests/speed.c,
+	net-tools/tests/speed2.c, net-tools/tests/speedd.c,
+	net-tools/tests/tcpcl.c, net-tools/tests/tcpsv.c,
+	net-tools/tests/udpclnt.c, net-tools/tests/udpserv.c:
+
+	Merged back new 1.16 net-tools.
+	
+2001-07-03 Tuesday 12:34  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: fsetter/Makefile, gluestik/gs_func.c, gluestik/main.c,
+	gluestik/transprt.h, toswin2/Makefile, toswin2/tw-call/Makefile,
+	toswin2/tw-call/tw-call.c:
+
+	Corrections for newer libs.
+	
+2001-07-03 Tuesday 12:25  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/nfs/: Makefile, SRCFILES, mntent.c, mntent.h, mount.c,
+	mount.h, mount_xdr.c, mount_xdr.h, nfsmnt.c, nfsmnt.h,
+	lib/.cvsignore, lib/BINFILES, lib/EXTRAFILES, lib/MISCFILES,
+	lib/Makefile, lib/SRCFILES, lib/atarierr.h, lib/auth_unix.h,
+	lib/clnt.c, lib/clnt.h, lib/pmap.h, lib/pmap_get.c, lib/pmap_set.c,
+	lib/pmap_xdr.c, lib/rpc.h, lib/rpc_xdr.c, lib/svc.c, lib/svc.h,
+	lib/svc_auth.c, lib/svc_main.c, lib/thread.c, lib/thread.h,
+	lib/xdr.c, lib/xdr.h:
+
+	Merged back 1.16 changes, require at least 0.57 MiNTLib now.
+	
+2001-07-03 Tuesday 12:08  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/: Makefile, sysctl/.cvsignore, sysctl/BINFILES,
+	sysctl/EXTRAFILES, sysctl/MISCFILES, sysctl/Makefile,
+	sysctl/SRCFILES, sysctl/fparseln.c, sysctl/fparseln.h,
+	sysctl/sysctl.c:
+
+	Merged back new 1.16 tool sysctl.
+	
+2001-07-03 Tuesday 12:05  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: SRCFILES, dosmem.c, dosmem.h, info.c, info.h, init.c,
+	k_sysctl.c, k_sysctl.h, memory.c, memory.h, ptrace.c, ptrace.h,
+	syscall_vectors.c, syscalls.master, time.c, time.h, arch/SRCFILES,
+	arch/info_mach.c, arch/info_mach.h, arch/init_mach.c,
+	arch/init_mach.h, arch/process_reg.c, arch/process_reg.h,
+	mint/iov.h, mint/ptrace.h, mint/sysctl.h, mint/arch/ptrace.h,
+	mint/arch/register.h, sys/param.h:
+
+	Merged back new 1.16 syscalls: Pvalidate(), Psysctl(), Ptrace().
+	
+2001-07-03 Tuesday 12:01  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/minixfs/zone.c:
+
+	Merged back 1.16 bugfix, wrong timestamp on directory update.
+	
+2001-07-03 Tuesday 12:00  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/: global.h, inet4/inet.c, inet4/tcp.c, inet4/tcpin.c:
+
+	Merged back 1.16 changes, automatic lo0 intialization, connect/select
+	bugfix, removed kmalloc wrappers.
+	
+2001-07-03 Tuesday 11:57  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/magic/genmagic.pl:
+
+	1.16 bugfix, new pl script for crosscompiling.
+	
+2001-07-03 Tuesday 11:57  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/tty.c:
+
+	1.16 bugfix for wrong ioctl handling.
+	
+2001-07-03 Tuesday 11:53  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: DEPENDENCIES, KERNELDEFS, Makefile, RULES, arch/Makefile,
+	libkern/Makefile, libkern/asm/Makefile:
+
+	Merged back 1.16 changes.
+	
+2001-06-29 Friday 10:44  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/IO/: mint_io.c, mint_io.h:
+
+	Renamed new std I/O wrappers to a more intelligent name.
+	
+2001-06-28 Thursday 20:00  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: k_sysctl.c, mint/sysctl.h:
+
+	Added new hw.freephysmem read value. Return the free physical memory.
+	
+2001-06-15 Friday 22:51  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/: process_reg.c, process_reg.h:
+
+	Replaced typedef PROC by struct proc.
+	
+2001-06-13 Wednesday 20:21  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: ptrace.c, ptrace.h, arch/info_mach.c, arch/info_mach.h,
+	arch/init_mach.h, arch/process_reg.c, arch/process_reg.h,
+	mint/iov.h, mint/ptrace.h, mint/arch/ptrace.h,
+	mint/arch/register.h, sys/param.h, xdd/skeleton/dummy.c,
+	xdd/skeleton/dummy.h, xfs/skeleton/dummy.c, xfs/skeleton/dummy.h:
+
+	Cleanup of copyright messages, added $Id to most of the src files
+	for automatic recording of the last change.
+	
+2001-06-09 Saturday 22:41  Jens Heitmann <jheitmann@debitel.net>
+
+	* tools/mgw/: mgw.c, Makefile, main.c:
+
+	"select" was sometimes blocking, when a timeout was encountered.
+	
+2001-05-17 Thursday 21:15  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: k_sysctl.c, mint/sysctl.h:
+
+	Added initialtpa kernel limit.
+	
+2001-05-15 Tuesday 23:41  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/inet4/ip.c:
+
+	Backported bugfix from 1.16.
+	
+2001-05-15 Tuesday 23:41  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/filesys.c:
+
+	Added inet4.xdd to the module don't load list.
+	
+2001-05-15 Tuesday 23:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/Makefile:
+
+	Don't rebuild the lib every time.
+	
+2001-05-11 Friday 22:39  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/sysctl/Makefile:
+
+	Small bugfix, removed incorrect dependency.
+	
+2001-05-10 Thursday 12:44  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/sysctl/: .cvsignore, BINFILES, EXTRAFILES, MISCFILES,
+	Makefile, SRCFILES, fparseln.c, fparseln.h, sysctl.c:
+
+	Frontend for the new sysctl system call.
+	
+2001-05-10 Thursday 12:06  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/: info_mach.c, info_mach.h, init_mach.c:
+
+	Updated the info strings and hardware detection sequence.
+	
+2001-05-09 Wednesday 17:19  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: k_sysctl.c, mint/sysctl.h:
+
+	Fixed wrong permission check, only super user is allowed to set values.
+	
+2001-05-08 Tuesday 20:09  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: k_sysctl.c, k_sysctl.h, arch/info_mach.c, arch/info_mach.h,
+	arch/init_mach.c, arch/init_mach.h, mint/sysctl.h, sys/param.h:
+
+	Added new system call sysctl for an easy and extendible kernel
+	control interface. Restructured some parts of the kernel for that.
+	Features at the moment getting/setting hostname/domainname and
+	extended info.
+	
+2001-04-27 Friday 20:17  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/net-tools/: Makefile, tests/Makefile:
+
+	Don't strip the linked binaries, this must be done on installation.
+	
+2001-04-11 Wednesday 21:56  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/ext2fs/: bitmap.c, bitmap.h, ext2dev.c, ext2sys.c,
+	global.h, inode.c, version.h:
+
+	Backported 1.16 bugfixes.
+	
+2001-04-10 Tuesday 18:36  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/net-tools/: masqconf.c, tests/client.c, tests/speed.c,
+	tests/speed2.c, tests/udpclnt.c, tests/udpserv.c:
+
+	Updates for the reworked MiNTLib socket header files.
+	
+2001-04-10 Tuesday 15:27  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: xdd/skeleton/.cvsignore, xdd/skeleton/BINFILES,
+	xdd/skeleton/COPYING, xdd/skeleton/EXTRAFILES,
+	xdd/skeleton/MISCFILES, xdd/skeleton/Makefile, xdd/skeleton/README,
+	xdd/skeleton/SRCFILES, xdd/skeleton/dummy.c, xdd/skeleton/dummy.h,
+	xfs/skeleton/.cvsignore, xfs/skeleton/BINFILES,
+	xfs/skeleton/COPYING, xfs/skeleton/EXTRAFILES,
+	xfs/skeleton/MISCFILES, xfs/skeleton/Makefile, xfs/skeleton/README,
+	xfs/skeleton/SRCFILES, xfs/skeleton/dummy.c, xfs/skeleton/dummy.h:
+
+	Created xdd/xfs skeleton for whose who want to write a device
+	driver or filesystem driver. Just copy the folder and start
+	with a compiling and working skeleton.
+	
+2001-04-10 Tuesday 15:15  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xdd/audio/: .cvsignore, BINFILES, EXTRAFILES, F030.TODO,
+	MISCFILES, Makefile, README, README.v0.9, SRCFILES, actrl.c,
+	afmts.c, afmts.h, audioasm.s, audiodev.c, device.h, dma.c,
+	dmasnd.h, falcon.c, global.h, lmc.c, mfp.h, psg.c, psgsnd.h,
+	psgtab.c:
+
+	Added reworked and updated audiodev v0.9. This version safely work
+	with kernels above 1.15.5.
+	
+2001-04-09 Monday 15:11  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/nfs/: mount_xdr.h, nfsmnt.h:
+
+	Reworked, removed the rpc lib and use the mintlib rpc calls. Changed
+	to 32bit int too.
+	
+2001-03-28 Wednesday 21:09  Guido Flohr <guido@freemint.de>
+
+	* mkinstalldirs:
+
+	- added Makefile target install.
+	
+2001-03-08 Thursday 16:06  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/mint/iov.h:
+
+	Added the missing Freadv/Fwritev systemcalls. The socket interface
+	is complete now.
+	
+2001-03-08 Thursday 15:52  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xfs/nfs/: nfssys.c, version.h:
+
+	Backported 1.16 bugfix in nfs rename function. Bumped version to
+	0.56 stable.
+	
+2001-03-08 Thursday 15:50  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/sockets/inet4/tcp.c:
+
+	Corrected unknown function call (failure from 1.16 bugfix backport).
+	
+2001-02-23 Friday 16:00  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/net-tools/: .cvsignore, BINFILES, COPYING, EXTRAFILES,
+	MISCFILES, Makefile, SRCFILES, arp.c, diald.c, ifconfig.8,
+	ifconfig.c, iflink.c, ifopts.c, ifopts.h, ifstats.c, masqconf.c,
+	masquerade.h, netstat.8, netstat.c, pppconf.c, route.8, route.c,
+	slattach.c, tests/.cvsignore, tests/BINFILES, tests/EXTRAFILES,
+	tests/MISCFILES, tests/Makefile, tests/README, tests/SRCFILES,
+	tests/client.c, tests/dgram.c, tests/dgramd.c, tests/hostlookup.c,
+	tests/oobcl.c, tests/oobsv.c, tests/pipes.c, tests/protolookup.c,
+	tests/server.c, tests/servlookup.c, tests/sockname.c,
+	tests/sockpair.c, tests/speed.c, tests/speed2.c, tests/speedd.c,
+	tests/tcpcl.c, tests/tcpsv.c, tests/udpclnt.c, tests/udpserv.c:
+
+	Added the basic net tools from the obsoleted MiNTNet package. No
+	the cvs repository is complete, the libs are in the mintlib
+	tree and the sockets + tools are in the freemint tree.
+	
+2001-02-23 Friday 01:58  Frank Naumann <fnaumann@freemint.de>
+
+	* CONFIGVARS, sys/CONFIGVARS, sys/KERNELDEFS, sys/dosdir.c,
+	sys/dosmem.c, sys/fatfs.c, sys/filesys.c, sys/signal.c,
+	sys/update.c, sys/update.h, sys/mint/errno.h, sys/sockets/global.h,
+	sys/sockets/version.h, sys/sockets/inet4/rawip.c,
+	sys/sockets/inet4/tcp.c, sys/sockets/inet4/udp.c,
+	sys/sockets/unix/dgram.c, sys/sockets/unix/stream.c,
+	sys/xdd/mfp/mfp.c, sys/xdd/scc/scc.c, sys/xdd/uart/pc16550.c,
+	sys/xdd/xconout2/xconout2.c, sys/xfs/ext2fs/ext2sys.c,
+	sys/xfs/ext2fs/inode.c, sys/xfs/minixfs/config.h,
+	sys/xfs/minixfs/minix.h, sys/xfs/minixfs/minixsys.c,
+	tools/IO/xhdi.c, tools/fsetter/fsetter.c, tools/gluestik/Makefile,
+	tools/mgw/Makefile, tools/minix/fsck/common.c,
+	tools/minix/fsck/common.h, tools/minix/fsck/fsck.c,
+	tools/minix/fsck/fsck.h, tools/minix/fsck/main.c,
+	tools/toswin2/av.c, tools/toswin2/av.h, tools/toswin2/clipbrd.c,
+	tools/toswin2/clipbrd.h, tools/toswin2/config.c,
+	tools/toswin2/config.h, tools/toswin2/console.c,
+	tools/toswin2/console.h, tools/toswin2/drag.c,
+	tools/toswin2/drag.h, tools/toswin2/environ.c,
+	tools/toswin2/environ.h, tools/toswin2/event.c,
+	tools/toswin2/event.h, tools/toswin2/global.c,
+	tools/toswin2/global.h, tools/toswin2/main.c, tools/toswin2/proc.c,
+	tools/toswin2/proc.h, tools/toswin2/share.c, tools/toswin2/share.h,
+	tools/toswin2/textwin.c, tools/toswin2/textwin.h,
+	tools/toswin2/toswin2.rsc, tools/toswin2/version.h,
+	tools/toswin2/vt.c, tools/toswin2/vt.h, tools/toswin2/vt100.c,
+	tools/toswin2/vt52.c, tools/toswin2/window.c,
+	tools/toswin2/window.h, tools/toswin2/tw-call/tw-call.c:
+
+	Backported 1.16 bugfixes and updates.
+	
+2001-01-26 Friday 03:01  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/unifs.c:
+
+	Fixed possible invalid memory accesses.
+	
+2001-01-17 Wednesday 22:15  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/mint/iov.h:
+
+	Added socket system calls, moved required header files to the mint/
+	include directory. There exist an emulation for the old socket device.
+	It can be disabled at compile time in mint/config.h (default is on).
+	
+2000-12-14 Thursday 01:31  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/ptrace.c:
+
+	Enhanced PT_KILL to really kill the process.
+	
+2000-11-28 Tuesday 15:27  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/ptrace.c:
+
+	Updated, removed unnecessary code.
+	
+2000-11-28 Tuesday 15:25  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/arch/process_reg.c:
+
+	Added security checks for setregister.
+	
+2000-11-21 Tuesday 02:38  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: ptrace.c, arch/process_reg.c, mint/ptrace.h:
+
+	Fixed various bugs, removed PC base correction.
+	
+2000-11-16 Thursday 22:31  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/ptrace.c:
+
+	Reorganized totally the PROC structure. This requires heavy changes
+	over most of the kernel source. Sorted out sharable substructures
+	for a future support of threads and variable wight process (BSD style).
+	
+	From now this is alpha code.
+	
+2000-11-11 Saturday 01:43  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/biosfs.c:
+
+	Clear fcookie aux field in bios_root, fix mysterious effects as
+	aux is internally used.
+	
+2000-11-10 Friday 22:21  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: dosdir.c, dosmem.c, filesys.c, signal.c, tosfs.c, tty.c,
+	arch/mprot030.c, arch/mprot040.c:
+
+	Added ZOMBIE_Q and TSR_Q checks for traversing global proclist.
+	
+2000-11-09 Thursday 12:40  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/xdd/flop-raw/flop_raw.c:
+
+	Fix startup crash.
+	
+2000-11-09 Thursday 12:35  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/libkern/asm/Makefile.objs:
+
+	Include now default dependencies, fix the libkern build problems.
+	
+2000-11-09 Thursday 12:34  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: biosfs.c, filesys.c:
+
+	Made new_fileptr more robust, removed the FATAL on kmalloc fail.
+	
+2000-10-31 Tuesday 16:44  Konrad M. Kokoszkiewicz <draco@obta.uw.edu.pl>
+
+	* sys/: init.c, kernget.c:
+
+	Clockspeed calculation, bugfixes.
+	
+2000-10-30 Monday 13:18  Frank Naumann <fnaumann@freemint.de>
+
+	* ChangeLog.#1.15.10:
+
+	Use correct generated ChangeLog, full names are missing.
+	
+2000-10-30 Monday 13:13  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/: ptrace.c, ptrace.h, arch/process_reg.c, arch/process_reg.h,
+	mint/ptrace.h, mint/arch/ptrace.h, mint/arch/register.h:
+
+	Started to implement BSD/Linux compatible ptrace() system call.
+	Still not finished and alpha. Interface may change!
+	
+2000-10-29 Sunday 20:09  Frank Naumann <fnaumann@freemint.de>
+
+	* sys/buildinfo/version.h:
+
+	Bumped version to 1.15.11.
+	
+2000-10-29 Sunday 13:43  Frank Naumann <fnaumann@freemint.de>
+
+	* ChangeLog.#1.15.10:
+
+	New file, all changes of the 1.15.10 beta.
+	
+2000-10-29 Sunday 00:39  Frank Naumann <fnaumann@freemint.de>
+
+	* tools/toswin2/tw-call/tw-call.c:
+
+	Corrected header include.
+	
