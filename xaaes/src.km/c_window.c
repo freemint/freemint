@@ -2006,7 +2006,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					nrl = orl;
 					orl = orl->next;
 					kfree(nrl);
-					DIAGS(("kfree %lx (unused oldrl)", nrl));
+					//DIAGS(("kfree %lx (unused oldrl)", nrl));
 				}
 				else
 				{
@@ -2043,7 +2043,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					nrl = kmalloc(sizeof(*nrl));
 					assert(nrl);
 
-					DIAGS(("kmalloc %lx (%ld bytes) blitrect", nrl, sizeof(*nrl)));
+					//DIAGS(("kmalloc %lx (%ld bytes) blitrect", nrl, sizeof(*nrl)));
 					
 					//DIAGS(("COMMON brl=%lx, nrl=%lx, brl->nxt=%lx", brl, nrl, brl ? (long)brl->next : 0xFACEDACE));
 					if (brl)
@@ -2208,7 +2208,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			oldrl = oldrl->next;
 			//DIAGS(("freeing oldrl %lx", nrl));
 			kfree(nrl);
-			DIAGS(("kfree %lx (rest of oldrl)", nrl));
+			//DIAGS(("kfree %lx (rest of oldrl)", nrl));
 		}
 		if (brl)
 		{
@@ -2242,7 +2242,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				nrl = kmalloc(sizeof(*nrl));
 				assert(nrl);
 
-				DIAGS(("kmalloc %lx (%ld bytes)", nrl, sizeof(*nrl)));
+				//DIAGS(("kmalloc %lx (%ld bytes)", nrl, sizeof(*nrl)));
 				nrl->next = NULL;
 				nrl->r.x = newrl->r.x - new->x;
 				nrl->r.y = newrl->r.y - new->y;
@@ -2256,7 +2256,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					if (!xa_rect_clip(&wa, &nrl->r, &nrl->r))
 					{
 						kfree(nrl);
-						DIAGS(("kfree %lx", nrl));
+						//DIAGS(("kfree %lx", nrl));
 						nrl = NULL;
 					}
 				}
@@ -2312,7 +2312,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 									rrl = kmalloc(sizeof(*rrl));
 									assert(rrl);
 
-									DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
+									//DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
 									rrl->next = prev->next;
 									prev->next = rrl;
 									//DIAGS((" -- 2. new (%lx)", rrl));
@@ -2336,7 +2336,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 									rrl = kmalloc(sizeof(*rrl));
 									assert(rrl);
 
-									DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
+									//DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
 									rrl->next = prev->next;
 									prev->next = rrl;
 									//DIAGS((" -- 3. new (%lx)", rrl));
@@ -2359,7 +2359,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 									rrl = kmalloc(sizeof(*rrl));
 									assert(rrl);
 
-									DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
+									//DIAGS(("kmalloc %lx (%ld bytes)", rrl, sizeof(*rrl)));
 									rrl->next = prev->next;
 									prev->next = rrl;
 									//DIAGS((" -- 4. new (%lx)", rrl));
@@ -2391,7 +2391,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 									prev->next = next;
 
 								kfree(rrl);
-								DIAGS(("kfree %lx", rrl));
+								//DIAGS(("kfree %lx", rrl));
 							}
 							else
 								prev = rrl;
@@ -2425,7 +2425,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					nrl = nrl->next;
 					//DIAGS(("Freeing redrawed rect %lx", orl));
 					kfree(orl);
-					DIAGS(("kfree %lx", orl));
+					//DIAGS(("kfree %lx", orl));
 				}
 				newrl = newrl->next;
 			} /* while (newrl) */
@@ -2438,7 +2438,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				brl = brl->next;
 				//DIAGS(("Freeing blitrect %lx", nrl));
 				kfree(nrl);
-				DIAGS(("kfree %lx", nrl));
+				//DIAGS(("kfree %lx", nrl));
 			}
 			/*
 			 * If window was resized, redraw all window borders
@@ -2470,9 +2470,9 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			orl = oldrl;
 			oldrl = oldrl->next;
 			kfree(orl);
-			DIAGS(("kfree %lx", orl));
+			//DIAGS(("kfree %lx", orl));
 		}
 	}
 			
-	DIAGS(("set_and_update_window: DONE!!!"));
+	//DIAGS(("set_and_update_window: DONE!!!"));
 }

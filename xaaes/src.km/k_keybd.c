@@ -305,18 +305,13 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 		case 'A':
 		{
-			struct xa_client *dsk = NULL;
 			struct cfg_name_list *nl = NULL;
 
 			if (!(key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
-			{
-				dsk = pid2client(C.DSKpid);
 				nl = cfg.ctlalta;
-			}
 			
 			DIAGS(("Quit all apps by CtlAlt A"));
-			//quit_all_apps(lock, NULL);
-			quit_all_clients(lock, nl, dsk);
+			quit_all_clients(lock, nl, NULL);
 			return true;
 		}
 		case 'Q':

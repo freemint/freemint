@@ -225,9 +225,14 @@ init(struct kentry *k, const char *path)
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;
+#if LOGDEBUG
 	/* Set the default debug file */
 	strcpy(D.debug_path, "xaaes.log");
 	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
+#else
+	D.debug_file = NULL;
+#endif
+
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s", vversion);
 #else
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);

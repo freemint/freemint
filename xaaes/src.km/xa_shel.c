@@ -215,6 +215,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	{
 		DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
 			c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
+		DIAG((D_shel, caller, " --- parm='%s', tail='%s'",
+			parm ? parm : "no parm",
+			tail ? tail : "no tail"));
 	}
 	else
 	{
@@ -490,7 +493,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					ret = p->pid;
 				}
 			}
-
 			break;
 		}
 		case 3:
@@ -1018,19 +1020,20 @@ display_env(char **env, int which)
 		if (which == 1)
 		{
 			const char *e = *env;
-			display("Environment as superstring:\n");
+			DIAGS(("Environment as superstring:\n"));
 			while (*e)
 			{
-				display("%lx='%s'\n", e, e);
+				DIAGS((" -- %lx='%s'\n", e, e));
 				e += strlen(e)+1;
 			}
 		}
 		else
 		{
-			display("Environment as row of pointers:\n");
+			//display("Environment as row of pointers:\n");
+			DIAGS(("Environment as row of pointers:"));
 			while (*env)
 			{
-				display("%lx='%s'\n", *env, *env);
+				DIAGS((" -- %lx='%s'\n", *env, *env));
 				env++;
 			}
 		}

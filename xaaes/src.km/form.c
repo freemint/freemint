@@ -291,23 +291,37 @@ form_button(XA_TREE *wt,
 	DIAGS(("form_button: state %x, flags %x",
 		state, flags));
 
+	DIAGS(("form_button: newstate=%lx, nxtob=%lx, clickmsk=%lx",
+		newstate, nxtob, clickmsk));
+
 	if ((state & OS_SELECTED) && (flags & OF_EXIT))
 		no_exit = false;
+		
+	DIAGS(("form_button: 0"));
 
 	if (!no_exit || (flags & OF_EDITABLE))
 		next_obj = obj;
 
+	DIAGS(("form_button: 1"));
 	if (clickmsk)
-		*clickmsk = dc ? 0x8000:0;
+		*clickmsk = dc ? 0x8000 : 0;
 
+	DIAGS(("form_button: 2"));
 	if (nxtob)
 		*nxtob = next_obj;
 	
+	DIAGS(("form_button: 3"));
 	if (newstate)
 		*newstate = state;
 
 	DIAGS(("form_button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0));
+
+	DIAGS(("form_button: 4"));
+
+	yield();
+	
+	DIAGS(("form_button: 5"));
 
 	return no_exit;
 }

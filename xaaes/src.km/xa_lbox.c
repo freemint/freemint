@@ -41,7 +41,10 @@
 
 #include "k_mouse.h"
 
+
 #include "nkcc.h"
+#include "xa_user_things.h"
+#include "mint/signal.h"
 
 
 /*
@@ -57,6 +60,107 @@
  */
 
 #if WDIALOG_LBOX
+
+static void
+callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, void *user_data, short obj_index, short last_state)
+{
+	struct sigaction oact, act;
+	struct xa_co_lbox *u;
+
+	if (lbox->slct)
+	{
+		u = umalloc(xa_co_lboxselect.len);
+		if (u)
+		{
+			struct co_lboxsel_parms *p;
+
+			bcopy(&xa_co_lboxselect, u, xa_co_lboxselect.len);
+			u->sighand_p	+= (long)u;
+			u->parm_p	+= (long)u;
+
+			p = (struct co_lboxsel_parms *)u->parm_p;
+
+			p->funct	= (long)lbox->slct;
+			p->last_state	= last_state;
+			p->obj_index	= obj_index;
+			p->user_data	= (long)user_data;
+			p->item		= (long)item;
+			p->tree		= (long)tree;
+			p->box		= (long)lbox->lbox_handle;
+
+			cpush(NULL, -1); //(u, xa_co_lboxselect.len);
+
+			act.sa_handler	= u->sighand_p;
+			act.sa_mask	= 0xffffffff;
+			act.sa_flags	= SA_RESET;
+
+			p_sigaction(SIGUSR2, &act, &oact);
+			DIAGS(("raise(SIGUSR2)"));
+			raise(SIGUSR2);
+			DIAGS(("handled SIGUSR2 lbox->slct callout"));
+			/* restore old handler */
+			p_sigaction(SIGUSR2, &oact, NULL);
+
+			ufree(u);
+		}
+	}
+}
+
+static short
+callout_set(struct xa_lbox_info *lbox,
+	OBJECT *tree,
+	struct lbox_item *item,
+	short obj_index,
+	void *user_data,
+	GRECT *rect,
+	short first)
+{
+	struct sigaction oact, act;
+	struct xa_co_lbox *u;
+	short ret = 0;
+
+	if (lbox->set)
+	{
+		u = umalloc(xa_co_lboxset.len);
+		if (u)
+		{
+			struct co_lboxset_parms *p;
+
+			bcopy(&xa_co_lboxset, u, xa_co_lboxset.len);
+			u->sighand_p	+= (long)u;
+			u->parm_p	+= (long)u;
+
+			p = (struct co_lboxset_parms *)u->parm_p;
+
+			p->funct	= (long)lbox->set;
+			p->first	= first;
+			p->rect		= (long)rect;
+			p->user_data	= (long)user_data;
+			p->obj_index	= obj_index;
+			p->item		= (long)item;
+			p->tree		= (long)tree;
+			p->box		= (long)lbox->lbox_handle;
+		
+			cpush(NULL, -1); //(u, xa_co_lboxset.len);
+
+			act.sa_handler	= u->sighand_p;
+			act.sa_mask	= 0xffffffff;
+			act.sa_flags	= SA_RESET;
+
+			p_sigaction(SIGUSR2, &act, &oact);
+			DIAGS(("raise(SIGUSR2)"));
+			raise(SIGUSR2);
+			DIAGS(("handled SIGUSR2 lbox->set callout"));
+			/* restore old handler */
+			p_sigaction(SIGUSR2, &oact, NULL);
+
+			ret = (short)(*(long *)p->ret);
+
+			ufree(u);
+		}
+	}
+	return ret;
+}
 
 static struct xa_lbox_info *
 get_lbox(struct xa_client *client, void *lbox_handle)
@@ -289,6 +393,14 @@ setup_lbox_objects(struct xa_lbox_info *lbox)
 				else
 					x += obtree[obj].ob_width;
 
+				callout_set(lbox,
+					    obtree,
+					    item,
+					    obj,
+					    lbox->user_data,
+					    NULL,
+					    lbox->bslide.first_visible);
+			#if 0
 				lbox->set(lbox->lbox_handle,
 					  obtree,
 					  item,
@@ -296,7 +408,8 @@ setup_lbox_objects(struct xa_lbox_info *lbox)
 					  lbox->user_data,
 					  NULL,
 					  lbox->bslide.first_visible);
-
+			#endif
+			
 				item->selected = obtree[obj].ob_state;
 				index++;
 			}
@@ -343,12 +456,19 @@ scroll_up(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 			{
 				if (idx++ < s->num_visible)
 				{
+					callout_select(lbox,
+							lbox->wt->tree,
+							item,
+							lbox->user_data,
+							0,0);
+				#if 0
 					lbox->slct(lbox->lbox_handle,
 						   lbox->wt->tree,
 						   item,
 						   lbox->user_data,
 						   0,
 						   0);
+				#endif
 				}
 				item = item->next;
 			}
@@ -357,6 +477,14 @@ scroll_up(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 			item = get_first_visible_item(lbox);
 			for (i = 0; i < s->num_visible && item; i++, item = item->next)
 			{
+				callout_set(lbox,
+					    lbox->wt->tree,
+					    item,
+					    lbox->objs[i],
+					    lbox->user_data,
+					    NULL,
+					    lbox->bslide.first_visible);
+			#if 0
 				lbox->set(lbox->lbox_handle,
 					  lbox->wt->tree,
 					  item,
@@ -364,6 +492,7 @@ scroll_up(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 					  lbox->user_data,
 					  NULL,
 					  lbox->bslide.first_visible);
+			#endif
 			}
 
 			//setup_lbox_objects(lbox);
@@ -394,11 +523,18 @@ scroll_down(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 
 		for (j = s->num_visible - i; j > 0 && last; j--)
 		{
+			callout_select(lbox,
+					lbox->wt->tree,
+					last,
+					lbox->user_data,
+					0, 0);
+		#if 0
 			lbox->slct(lbox->lbox_handle,
 				   lbox->wt->tree,
 				   last,
 				   lbox->user_data,
 				   0, 0);
+		#endif
 			last = last->next;
 		}
 		s->first_visible -= num;
@@ -406,6 +542,14 @@ scroll_down(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 		item = get_first_visible_item(lbox);
 		for (i = 0; i < s->num_visible && item; i++, item = item->next)
 		{
+			callout_set(lbox,
+				    lbox->wt->tree,
+				    item,
+				    lbox->objs[i],
+				    lbox->user_data,
+				    NULL,
+				    lbox->bslide.first_visible);
+		#if 0
 			lbox->set(lbox->lbox_handle,
 				  lbox->wt->tree,
 				  item,
@@ -413,6 +557,7 @@ scroll_down(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 				  lbox->user_data,
 				  NULL,
 				  lbox->bslide.first_visible);
+		#endif
 		}
 
 		//setup_lbox_objects(lbox);
@@ -441,6 +586,14 @@ scroll_right(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 
 			for (i = 0; i < lbox->aslide.num_visible && item; i++, item = item->next)
 			{
+				callout_set(lbox,
+					    lbox->wt->tree,
+					    item,
+					    objs[i],
+					    lbox->user_data,
+					    NULL,
+					    newfirst);
+			#if 0
 				lbox->set(lbox->lbox_handle,
 					  lbox->wt->tree,
 					  item,
@@ -448,6 +601,7 @@ scroll_right(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 					  lbox->user_data,
 					  NULL,
 					  newfirst);
+			#endif
 			}
 			return true;
 		}
@@ -479,6 +633,14 @@ scroll_left(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 
 			for (i = 0; i < lbox->aslide.num_visible && item; i++, item = item->next)
 			{
+				callout_set(lbox,
+					    lbox->wt->tree,
+					    item,
+					    objs[i],
+					    lbox->user_data,
+					    NULL,
+					    newfirst);
+			#if 0
 				lbox->set(lbox->lbox_handle,
 					  lbox->wt->tree,
 					  item,
@@ -486,6 +648,7 @@ scroll_left(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 					  lbox->user_data,
 					  NULL,
 					  newfirst);
+			#endif
 			}
 			return true;
 		}
@@ -759,12 +922,20 @@ clear_all_selected(struct xa_lbox_info *lbox, short skip, RECT *r)
 				last_state = obtree[obj].ob_state;
 				obtree[obj].ob_state &= ~OS_SELECTED;
 				item->selected = 0;
+				callout_select(lbox,
+						obtree,
+						item,
+						lbox->user_data,
+						obj,
+						last_state);
+			#if 0
 				lbox->slct(lbox->lbox_handle,
 					   obtree,
 					   item,
 					   lbox->user_data,
 					   obj,
 					   last_state);
+			#endif
 
 				if (r)
 				{
@@ -976,8 +1147,13 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			/*
 			 * lbox callback functions...
 			 */
+		#if 0
 			lbox->slct	= (lbox_select *)	pb->addrin[1];
 			lbox->set	= (lbox_set *)		pb->addrin[2];
+		#endif
+			lbox->slct	= pb->addrin[1];
+			lbox->set	= pb->addrin[2];
+			
 
 			/*
 			 * Address of initial items and the list of object indexes
@@ -1087,13 +1263,20 @@ click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, sho
 
 	item->selected = obtree[obj].ob_state & OS_SELECTED ? 1 : 0;
 
+	callout_select(lbox,
+			obtree,
+			item,
+			lbox->user_data,
+			obj | dc,
+			last_state);
+#if 0
 	lbox->slct(lbox->lbox_handle,
 		   obtree,
 		   item,
 		   lbox->user_data,
 		   obj | dc,
 		   last_state);
-
+#endif
 	if (r)
 		redraw_lbox(lbox, obj/*lbox->parent*/, 2, r);
 	//showm();
