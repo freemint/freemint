@@ -1292,7 +1292,8 @@ setenv UNIXMODE /brUs
 
 # Default path
 #
-# Default (on 1.16.0) is u:/
+# Default on 1.16.0 is c:/, on 1.16.1 u:/c/mint (i.e.
+# same as sysdir).
 
 setenv PATH /boot/mint/bin;/sbin;/bin;/usr/sbin;/usr/bin
 
