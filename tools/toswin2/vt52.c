@@ -29,47 +29,47 @@ static void capture(TEXTWIN *v, unsigned int c)
 {
 	int 	i = v->captsiz;
 
-	if (c == '\r') 
+	if (c == '\r')
 		c = 0;
 
-	if (i < CAPTURESIZE || c == 0) 
+	if (i < CAPTURESIZE || c == 0)
 	{
 		v->captbuf[i++] = c;
 		v->captsiz = i;
 	}
-	if (c == 0) 
+	if (c == 0)
 	{
 		v->output = vt52_putch;
 		(*v->callback)(v);
 	}
 }
 
-/* Legacy functions for color support.  */
-static 
+/* Legacy functions for color support.	*/
+static
 void fgcol_putch (TEXTWIN *v, unsigned int c)
 {
-	v->term_cattr = (v->term_cattr & ~CFGCOL) | 
+	v->term_cattr = (v->term_cattr & ~CFGCOL) |
 			 ((c & 0xff) << 4);
 	v->output = vt52_putch;
 }
 
-static 
+static
 void bgcol_putch (TEXTWIN *v, unsigned int c)
 {
-	v->term_cattr = (v->term_cattr & ~CBGCOL) | 
+	v->term_cattr = (v->term_cattr & ~CBGCOL) |
 			 (c & 0xff);
 	v->output = vt52_putch;
 }
 
 /* ANSI color functions.  */
-static 
+static
 void ansi_fgcol_putch (TEXTWIN *v, unsigned int c)
 {
 	set_ansi_fg_color (v, c);
 	v->output = vt52_putch;
 }
 
-static void 
+static void
 ansi_bgcol_putch (TEXTWIN *v, unsigned int c)
 {
 	set_ansi_bg_color (v, c);
@@ -90,7 +90,7 @@ static void ceffect_putch(TEXTWIN *v, unsigned int c)
 {
 	if (c == '_' && !v->vdi_colors)
 		v->term_cattr &= ~CE_ANSI_EFFECTS;
-	
+
 	v->term_cattr &= ~((c & 0x1f) << 8);
 	v->output = vt52_putch;
 }
@@ -101,13 +101,13 @@ static void ceffect_putch(TEXTWIN *v, unsigned int c)
 static void putesc(TEXTWIN *v, unsigned int c)
 {
 	int 		cx, cy;
-	
+
 #ifdef DEBUG
 	if (do_debug) {
 		char* printable;
 		char ctrl[3] = { '^', 'X', '\0' };
 		char letter[2] = { 'X', '\0' };
-		
+
 		if (c < ' ') {
 			ctrl[1] = c + 32;
 			printable = ctrl;
@@ -120,10 +120,10 @@ static void putesc(TEXTWIN *v, unsigned int c)
 	}
 #endif
 
-	cx = v->cx; 
+	cx = v->cx;
 	cy = v->cy;
 
-	switch (c) 
+	switch (c)
 	{
 		case '3':		/* GFL: Set ANSI fg color.  */
 #ifdef DEBUG
@@ -141,25 +141,25 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor up");
 #endif
-			gotoxy(v, cx, cy-1);
+			cuu1 (v);
 			break;
 		case 'B':		/* cursor down */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor down");
 #endif
-			gotoxy(v, cx, cy+1);
+			cud1 (v);
 			break;
 		case 'C':		/* cursor right */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor right");
 #endif
-			gotoxy(v, cx+1, cy);
+			cuf1 (v);
 			break;
 		case 'D':		/* cursor left */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor left");
 #endif
-			gotoxy(v, cx-1, cy);
+			cub1 (v);
 			break;
 		case 'F':		/* smacs, start alternate character set.  */
 #ifdef DEBUG
@@ -167,14 +167,14 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #endif
 			v->term_cattr |= CACS;
 			break;
-			
+
 		case 'G':		/* rmacs, end alternate character set.  */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is rmacs");
 #endif
 			v->term_cattr &= ~CACS;
 			break;
-				
+
 		case 'E':		/* clear home */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is clear");
@@ -185,16 +185,13 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is home");
 #endif
-			gotoxy(v, 0, v->miny);
+			gotoxy (v, 0, 0);
 			break;
 		case 'I':		/* cursor up, insert line */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor up, insert line");
 #endif
-			if (cy == v->miny)
-				insert_line(v, v->miny, v->maxy - 1);
-			else
-				gotoxy(v, cx, cy-1);
+			reverse_cr (v);
 			break;
 		case 'J':		/* clear below cursor */
 #ifdef DEBUG
@@ -212,15 +209,13 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is insert line");
 #endif
-			insert_line(v, cy, v->maxy - 1);
-			gotoxy(v, 0, cy);
+			insert_line (v);
 			break;
 		case 'M':		/* delete line */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is delete line");
 #endif
-			delete_line(v, cy, v->maxy -1);
-			gotoxy(v, 0, cy);
+			delete_line (v);
 			break;
 		case 'R':		/* TW extension: set window size */
 #ifdef DEBUG
@@ -303,14 +298,15 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is restore cursor position");
 #endif
-			gotoxy(v, v->savex, v->savey);
+			/* FIXME: origin mode!!! */
+			gotoxy (v, v->savex, v->savey);
 			break;
 		case 'l':		/* clear line */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is clear line");
 #endif
-			clrline(v, cy);
-			gotoxy(v, 0, cy);
+			clrline (v, cy);
+			gotoxy (v, 0, cy - RELOFFSET (v));
 			break;
 		case 'o':		/* clear from start of line to cursor */
 #ifdef DEBUG
@@ -399,37 +395,30 @@ void vt52_putch(TEXTWIN *v, unsigned int c)
 {
 	int cx, cy;
 
-	cx = v->cx; 
+	cx = v->cx;
 	cy = v->cy;
 
 	c &= 0x00ff;
 
 	/* control characters */
-	if (c < ' ') 
+	if (c < ' ')
 	{
-		switch (c) 
+		switch (c)
 		{
 			case '\r':
-				gotoxy(v, 0, cy);
+				gotoxy (v, 0, cy - RELOFFSET (v));
 				break;
 
 			case '\n':
-				if (cy == v->maxy - 1)
-				{
-					delete_line(v, 0, v->maxy - 1);
-				}
-				else 
-				{
-					gotoxy(v, cx, cy+1);
-				}
+				new_line (v);
 				break;
 
 			case '\b':
-				gotoxy(v, cx-1, cy);
+				cub1 (v);
 				break;
 
 			case '\007':		/* BELL */
-				if (con_fd)						
+				if (con_fd)
 				{
 					/* xconout2: Bconout wrde zu deadlock fhren! */
 					char ch = 7;
@@ -444,7 +433,8 @@ void vt52_putch(TEXTWIN *v, unsigned int c)
 				break;
 
 			case '\t':
-				gotoxy(v, (v->cx +8) & ~7, v->cy);
+				gotoxy (v, (v->cx +8) & ~7,
+					v->cy - RELOFFSET (v));
 				break;
 
 			default:
