@@ -1356,7 +1356,9 @@ mint_thread(void *arg)
 	    int pid;
 	    long entry;
 	    
+# ifdef VERBOSE_BOOT
 	    boot_print(MSG_init_rom_AES);
+# endif
 	  
 	    entry = *((long *) EXEC_OS);
 	  
