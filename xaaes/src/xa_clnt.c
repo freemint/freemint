@@ -28,6 +28,7 @@
 #include "xa_global.h"
 
 #include "xalloc.h"
+#include "util.h"
 #include "c_window.h"
 #include "rectlist.h"
 #include "desktop.h"
@@ -269,10 +270,12 @@ get_app_options(XA_CLIENT *client)
 	}
 }
 
+
+#include "ipff.h"
+
 char *
 get_procname(short pid)
 {
-#include "ipff.h"
 
 	/* static */ Path name;
 	char *suf, *nm = name + 4;
