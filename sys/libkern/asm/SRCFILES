@@ -2,11 +2,11 @@
 # the files that should go only into source distributions.
 
 SOBJS = \
-	blockcopy.spp \
-	memset.spp \
-	quickmove.spp \
-	quickswap.spp \
-	quickzero.spp \
-#	peekpoke.spp
+	blockcopy.S \
+	memset.S \
+	quickmove.S \
+	quickswap.S \
+	quickzero.S \
+#	peekpoke.S
 
 SRCFILES = $(SOBJS)
