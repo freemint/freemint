@@ -74,6 +74,12 @@ extern const char *greet2;
 /* bios.c */
 extern const char *MSG_bios_kill;
 
+/* biosfs.c */
+extern const char *ERR_biosfs_aux_fptr;
+
+/* block_IO.c */
+extern const char *ERR_bio_cant_init_cache;
+
 /* cnf.c */
 extern const char *MSG_cnf_bad_drive;
 extern const char *MSG_cnf_tos_error;
@@ -111,6 +117,14 @@ extern const char *MSG_debug_syncdone;
 extern const char *MSG_fatal_reboot;
 extern const char *MSG_system_halted;
 
+/* dma.c */
+extern const char *ERR_dma_start_on_inv_handle;
+extern const char *ERR_dma_end_on_inv_handle;
+extern const char *ERR_dma_end_on_unlocked_handle;
+extern const char *ERR_dma_block_on_inv_handle;
+extern const char *ERR_dma_deblock_on_inv_handle;
+extern const char *ERR_dma_addroottimeout;
+
 /* init.c */
 extern const char *MSG_init_getname;
 extern const char *MSG_init_askmenu;
@@ -133,8 +147,18 @@ extern const char *MSG_init_specify_prg;
 extern const char *MSG_keytable_loaded;
 extern const char *MSG_keytable_faulty;
 
+/* slb.c */
+extern const char *MSG_slb_couldnt_open;
+extern const char *MSG_slb_freeing_used;
+
 /* unicode.c */
 extern const char *MSG_unitable_loaded;
+extern const char *MSG_unicode_cannot_below_128;
+
+/* unifs.c */
+extern const char *MSG_unifs_wrong_getxattr;
+extern const char *MSG_unifs_couldnt_match;
+extern const char *MSG_unifs_fs_doesnt_match_dirs;
 
 /* xhdi.c */
 extern const char *MSG_xhdi_present;

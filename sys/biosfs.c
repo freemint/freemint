@@ -34,6 +34,7 @@
 # include "dev-null.h"
 # include "cookie.h"
 # include "fasttext.h"
+# include "info.h"
 # include "ipc_socketdev.h"
 # include "ipc_unix.h"
 # include "k_fds.h"
@@ -455,7 +456,7 @@ biosfs_init (void)
 	midi_btty.bdev = 3;
 	
 	if (FP_ALLOC (rootproc, &defaultaux))
-		FATAL ("Can't allocate defaultaux FILEPTR!");
+		FATAL (ERR_biosfs_aux_fptr);
 	
 	defaultaux->links = 1;		/* so it never gets freed */
 	defaultaux->flags = O_RDWR;

@@ -169,6 +169,7 @@
 # include "libkern/libkern.h"
 
 # include "bios.h"
+# include "info.h"
 # include "k_prot.h"
 # include "kmemory.h"
 # include "pun.h"
@@ -1448,7 +1449,7 @@ init_block_IO (void)
 	cache.blocks = NULL;
 	
 	if (bio_set_cache_size (DEFAULT))
-		FATAL ("init_block_IO: can't initialize default cache!");
+		FATAL (ERR_bio_cant_init_cache);
 	
 	bio_set_percentage (DEFAULT_PERC);
 }
