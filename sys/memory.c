@@ -1322,14 +1322,10 @@ fork_region (MEMREGION *reg, long txtsize)
  */
 
 MEMREGION *
-create_env (const char *env, ulong flags)
+create_env (const char *env, unsigned long flags)
 {
-	long size;
 	MEMREGION *m;
-	long v;
-	const char *old;
-	char *new;
-	short protmode;
+	long size;
 
 	TRACELOW (("create_env: %lx, %lx", env, flags));
 
@@ -1341,33 +1337,43 @@ create_env (const char *env, ulong flags)
 		TRACELOW (("create_env: using parents env: %lx", env));
 	}
 
-	size = 2;
-	old = env;
-	while (*env || *(env+1))
-		env++,size++;
-
-	protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
-
-	v = alloc_region(core, size, protmode);
-	/* if core fails, try alt */
-	if (!v)
-	    v = alloc_region(alt, size, protmode);
-
-	if (!v)
+	/* calculate environment size */
 	{
-		DEBUG(("create_env: alloc_region failed"));
-		return NULL;
-	}
-	m = addr2mem(curproc, v);
+		const char *s = env;
 
-	/* copy the old environment into the new */
-	new = (char *) m->loc;
-	TRACE(("copying environment: from %lx to %lx", old, new));
-	while (size > 0)
-	{
-		*new++ = *old++;
-		size--;
+		size = 2;
+
+		while (*s || *(s+1))
+		{
+			s++;
+			size++;
+		}
 	}
+
+	/* allocate memory
+	 * if core fails, try alt
+	 *
+	 * XXX: why we default to ST-RAM ???
+	 */
+	{
+		short protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
+		long v;
+
+		v = alloc_region(core, size, protmode);
+		if (!v) v = alloc_region(alt, size, protmode);
+
+		if (!v)
+		{
+			DEBUG(("create_env: alloc_region failed"));
+			return NULL;
+		}
+
+		m = addr2mem(curproc, v);
+		assert(m);
+	}
+
+	TRACE(("copying environment: from %lx to %lx", env, m->loc));
+	memcpy((void *) m->loc, env, size);
 	TRACE(("finished copying environment"));
 
 	return m;
