@@ -29,6 +29,8 @@ LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
+SGENFILES = *.xif
+ 
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
 
 COMMON_OBJS = $(addsuffix .o, $(basename $(notdir $(COMMON_SRCS))))
