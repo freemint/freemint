@@ -34,7 +34,7 @@
 # -DNO_RAMFS		disables the internal ramdisk (/ram)
 # -DNO_FAKE_SUPER	disables the extended bus error handler
 # -DNO_AKP_KEYBOARD	disables the extended keyboard routines
-#
+# -DQUANTUM_SMALLER	changes QUANTUM to 2k, experimental!
 
 # 
 # experimental; for developers only
@@ -60,7 +60,7 @@ ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
 KERNELDEFS = -DONLY68000 -DNO_MMU -DNO_CPU_CACHE -DNO_RAMFS -DNO_FAKE_SUPER 
-KERNELDEFS += -DNO_AKP_KEYBOARD #-DDEBUG_INFO
+KERNELDEFS += #-DDEBUG_INFO
 OPTS += -fstrength-reduce
 endif
 
