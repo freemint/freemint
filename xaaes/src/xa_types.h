@@ -32,6 +32,8 @@
 #include "display.h"
 #include "messages.h"
 
+#include "../../sys/xdd/whlmoose/whlmoose.h"
+
 
 /* forward declarations */
 struct task_administration_block;
@@ -165,26 +167,6 @@ struct app_list
 	Path name;
 };
 typedef struct app_list APP_LIST;
-
-struct moose_data
-{
-	unsigned short l;	/* record length */
-	unsigned short ty;	/* button & movement */
-	short x;
-	short y;
-	short state;
-	short cstate;
-	short clicks;
-	short dbg1;
-	short dbg2;
-};
-
-struct mooses_data
-{
-	short	state;
-	short	x;
-	short	y;
-};
 
 /*-----------------------------------------------------------------
  * Client application data structures

@@ -50,38 +50,6 @@ Tab *new_task(Tab *new);
 void free_task(Tab *, int *);
 
 
-/* Mouse device commands */
-
-#define	MOOSE_INIT_PREFIX	0x4d49	/* 'MI' */
-#define	MOOSE_DCLICK_PREFIX	0x4d44	/* 'MD' */
-#define MOOSE_BUTTON_PREFIX	0x5842	/* 'XB' */
-#define MOOSE_MOVEMENT_PREFIX	0x584d	/* 'XM' */
-#define MOOSE_WHEEL_PREFIX	0x5857	/* 'XW' */
-#define MOOSE_VECS_PREFIX	0x4d56	/* 'MV' */
-
-struct moose_init_com
-{
-	ushort init_prefix;
-	void *dum;
-};
-
-struct moose_dclick_com
-{
-	unsigned short dclick_prefix;
-	unsigned short dclick_time;
-};
-
-typedef short vdi_vec(void *, ...);
-
-struct moose_vecs_com
-{
-	ushort vecs_prefix;
-	vdi_vec *motv;
-	vdi_vec *butv;
-	vdi_vec *timv;
-	vdi_vec *whlv;
-};
-
 AES_function
 	XA_appl_init,
 	XA_appl_exit,
