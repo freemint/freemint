@@ -311,7 +311,7 @@ struct wdlg_info
 	char std_name[MAX_WINDOW_NAME];
 	char ify_name[40];
 };
-
+#if 0
 typedef	void  _cdecl lbox_select(LIST_BOX *box,
 				OBJECT *tree,
 				struct lbox_item *item,
@@ -325,7 +325,7 @@ typedef	short _cdecl lbox_set	(LIST_BOX *box,
 				void *user_data,
 				GRECT *rect,
 				short first);
-
+#endif
 typedef bool _cdecl lbox_scroll	(struct xa_lbox_info *lbox,
 				 struct lbox_slide *s,
 				 short n);
@@ -361,8 +361,12 @@ struct xa_lbox_info
 	struct lbox_slide bslide;	/* Slider B object indexes + info */
 	struct widget_tree *wt;		/* Pointer to the widget tree this LBOX is attached to */
 	void *user_data;		/* User data */
+	long slct;
+	long set;
+#if 0
 	lbox_select	*slct;		/* Select callback function */
 	lbox_set	*set;		/* Set callback funtion */
+#endif
 };
 	
 #define OB_CURS_ENABLED	1
@@ -521,6 +525,9 @@ struct xa_client
 	LIST_ENTRY(xa_client) client_entry;
 	LIST_ENTRY(xa_client) app_entry;
 
+#if GENERATE_DIAGS
+	short enter;
+#endif
 	short  rppid;			/* Pid of our 'real' parent, the client that called shel_write() to give birth*/
 
 	struct proc *p;			/* context back ptr */

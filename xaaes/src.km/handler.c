@@ -507,14 +507,23 @@ XA_handler(void *_pb)
 	{
 		DIAGS(("XaAES: No AES Parameter Block (pid %ld)\n", p_getpid()));
 
+#if 0
 		/* inform user what's going on */
 		ALERT(("XaAES: No AES Parameter Block, killing it", p_getpid()));
-
+	
 		exit_proc(0, get_curproc());
 
 		raise(SIGKILL);
+#else
+		/* inform user what's going on */
+		ALERT(("XaAES: No AES Parameter Block, returning", p_getpid()));
+#endif
 		return 0;
 	}
+#if GENERATE_DIAGS
+	DIAGS((" -- pb=%lx, control=%lx, intin=%lx, intout=%lx, addrin=%lx, addrout=%lx",
+		pb, pb->control, pb->intin, pb->intout, pb->addrin, pb->addrout));
+#endif
 
 	cmd = pb->control[0];
 
@@ -587,8 +596,8 @@ XA_handler(void *_pb)
 #if GENERATE_DIAGS
 		if (client)
 		{
-			DIAG((D_trap, client, "AES trap: %s[%d] made by %s",
-				aes_tab[cmd].descr, cmd, client->name));
+			DIAG((D_trap, client, "AES trap[enter=%d]: %s[%d] made by %s",
+				client->enter, aes_tab[cmd].descr, cmd, client->name));
 		}
 		else
 		{
@@ -607,7 +616,10 @@ XA_handler(void *_pb)
 			 * semaphores are not needed and are effectively skipped.
 			 */
 			enum locks lock = winlist|envstr|pending;
-
+#if GENERATE_DIAGS
+			if (client)
+				client->enter++;
+#endif
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
 				lock_screen(client->p, 0, NULL, 2);
 
@@ -635,8 +647,14 @@ XA_handler(void *_pb)
 #endif
 
 			if (!client)
+			{
 				client = lookup_extension(NULL, XAAES_MAGIC);
-
+#if GENERATE_DIAGS
+				if (client)
+					client->enter++;
+#endif
+			}
+			
 			switch (cmd_rtn)
 			{
 				case XAC_DONE:
@@ -719,9 +737,12 @@ XA_handler(void *_pb)
 				}
 				else
 					DIAG((D_kern, client, "Leaving AES %s", client->name));
+
+				client->enter--;
 			}
 			else
 				DIAG((D_kern, NULL, "Leaving AES non AES process (pid %ld)", p_getpid()));
+			
 #endif
 			return 0;
 		}
@@ -739,7 +760,6 @@ XA_handler(void *_pb)
 	{
 		DIAGS(("Unimplemented AES trap: %d", cmd));
 	}
-
 	/* error exit */
 	pb->intout[0] = 0;
 	return 0;
