@@ -30,6 +30,7 @@ void xfs_block (FILESYS *fs, ushort dev, const char *func);
 void xfs_deblock (FILESYS *fs, ushort dev, const char *func);
 
 long getxattr (FILESYS *fs, fcookie *fc, XATTR *xattr);
+long getstat64 (FILESYS *fs, fcookie *fc, STAT *ptr);
 
 void kill_cache (fcookie *dir, char *name);
 long cache_lookup (fcookie *dir, char *name, fcookie *res);
@@ -412,13 +413,18 @@ xfs_unmount (FILESYS *fs, int drv)
 INLINE long
 xfs_stat64 (FILESYS *fs, fcookie *fc, STAT *stat)
 {
-	register long r;
+	if (fs->fsflags & FS_EXT_3)
+	{
+		register long r;
+		
+		xfs_lock (fs, fc->dev, "xfs_stat64");
+		r = (*fs->stat64)(fc, stat);
+		xfs_unlock (fs, fc->dev, "xfs_stat64");
+		
+		return r;
+	}
 	
-	xfs_lock (fs, fc->dev, "xfs_stat64");
-	r = (*fs->stat64)(fc, stat);
-	xfs_unlock (fs, fc->dev, "xfs_stat64");
-	
-	return r;
+	return getstat64 (fs, fc, stat);
 }
 
 
