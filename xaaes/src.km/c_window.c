@@ -328,6 +328,39 @@ unhide_window(enum locks lock, struct xa_window *wind)
 	}
 }
 
+/*
+ * ONLY call from from correct context
+ */
+void
+set_window_title(struct xa_window *wind, const char *title)
+{
+	char *dst = wind->wname;
+	XA_WIDGET *widg;
+
+	if (title)
+	{
+		int i;
+
+		for (i = 0; i < (sizeof(wind->wname)-1) && (*dst++ = *title++); i++)
+			;
+	}
+	*dst = '\0';
+
+	widg = get_widget(wind, XAW_TITLE);
+	widg->stuff = wind->wname;
+
+	DIAG((D_wind, wind->owner, "    -   %s", wind->wname));
+
+	/* redraw if necessary */
+	if ((wind->active_widgets & NAME) && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN))
+	{
+		RECT clip;
+
+		rp_2_ap(wind, widg, &clip);
+		display_window(0, 45, wind, &clip);
+	}
+}
+
 /* SendMessage */
 void
 send_untop(enum locks lock, struct xa_window *wind)

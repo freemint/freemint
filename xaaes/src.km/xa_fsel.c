@@ -1104,7 +1104,9 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 
 	/* Set the window title */
 	/* XXX - pointer into user space, correct here? */
-	(const char *)get_widget(dialog_window, XAW_TITLE)->stuff = title;
+	/*   ozk: no, absolutely not right here! */
+	set_window_title(dialog_window, title);
+	//(const char *)get_widget(dialog_window, XAW_TITLE)->stuff = title;
 
 	/* HR: at last actually there */
 	/* Set the menu widget */				
