@@ -48,26 +48,23 @@ struct in_sock_ops
 	long	(*abort)	(struct in_data *, short ostate);
 	long	(*detach)	(struct in_data *, short wait);
 	long	(*connect)	(struct in_data *, struct sockaddr_in *,
-				short addrlen, short flags);
+				 short addrlen, short flags);
 	long	(*listen)	(struct in_data *);
 	long	(*accept)	(struct in_data *, struct in_data *,
-				short flags);
+				 short flags);
 	long	(*ioctl)	(struct in_data *, short, void *);
 	long	(*select)	(struct in_data *, short, long);
-	long	(*send)		(struct in_data *, struct iovec *,
-				short niov, short block, short flags,
-				struct sockaddr_in *addr, short addrlen);
-
-	long	(*recv)		(struct in_data *, struct iovec *,
-				short niov, short block, short flags,
-				struct sockaddr_in *addr, short *addrlen);
-
+	long	(*send)		(struct in_data *, const struct iovec *,
+				 short niov, short block, short flags,
+				 struct sockaddr_in *addr, short addrlen);
+	long	(*recv)		(struct in_data *, const struct iovec *,
+				 short niov, short block, short flags,
+				 struct sockaddr_in *addr, short *addrlen);
 	long	(*shutdown)	(struct in_data *, short how);
 	long	(*setsockopt)	(struct in_data *, short level, short optname,
-				char *optval, long optlen);
-
+				 char *optval, long optlen);
 	long	(*getsockopt)	(struct in_data *, short level, short optname,
-				char *optval, long *optlen);
+				 char *optval, long *optlen);
 };
 
 /* Interface to IP */

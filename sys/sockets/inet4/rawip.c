@@ -30,8 +30,8 @@ static long	rip_connect	(struct in_data *, struct sockaddr_in *, short, short);
 static long	rip_accept	(struct in_data *, struct in_data *, short);
 static long	rip_ioctl	(struct in_data *, short, void *);
 static long	rip_select	(struct in_data *, short, long);
-static long	rip_send	(struct in_data *, struct iovec *, short, short, short, struct sockaddr_in *, short);
-static long	rip_recv	(struct in_data *, struct iovec *, short, short, short, struct sockaddr_in *, short *);
+static long	rip_send	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short);
+static long	rip_recv	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short *);
 static long	rip_shutdown	(struct in_data *, short);
 static long	rip_setsockopt	(struct in_data *, short, short, char *, long);
 static long	rip_getsockopt	(struct in_data *, short, short, char *, long *);
@@ -167,7 +167,7 @@ rip_select (struct in_data *data, short mode, long proc)
 }
 
 static long
-rip_send (struct in_data *data, struct iovec *iov, short niov, short nonblock, short flags, struct sockaddr_in * addr, short addrlen)
+rip_send (struct in_data *data, const struct iovec *iov, short niov, short nonblock, short flags, struct sockaddr_in * addr, short addrlen)
 {
 	long size, r, copied;
 	ulong dstaddr;
@@ -246,7 +246,7 @@ rip_send (struct in_data *data, struct iovec *iov, short niov, short nonblock, s
 }
 
 static long
-rip_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock, short flags, struct sockaddr_in *addr, short *addrlen)
+rip_recv (struct in_data *data, const struct iovec *iov, short niov, short nonblock, short flags, struct sockaddr_in *addr, short *addrlen)
 {
 	struct socket *so = data->sock;
 	long size, todo, copied;
