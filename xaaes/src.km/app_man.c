@@ -169,67 +169,6 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 	DIAGS(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
 
 	return client;
-
-#if 0
-#if GENERATE_DIAGS
-	if (C.focus == root_window)
-	{
-		DIAGS(("C.focus == root_window"));
-	}
-#endif
-	if (top == C.focus && top->keypress)
-	{
-		/* this is for windowed form_do which doesn't
-		 * set the update lock.
-		 */
-		*waiting = true;
-		DIAGS(("-= 1 =-"));
-		return top->owner;
-	}
-
-	/* special case, no menu bar, possibly no windows either
-	 * but a dialogue on the screen, not governed by form_do. (handled above)
-	 * The client must also be waiting.
-	 */
-	if (update_locked())
-	{
-		locked = update_locked();
-
-		*locked_client = locked;
-		DIAGS(("-= 2 =-"));
-	}
-	else if (mouse_locked())
-	{
-		locked = mouse_locked();
-
-		*locked_client = locked;
-		DIAGS(("-= 3 =-"));
-	}
-
-	if (locked)
-	{
-		client = locked;
-		if (client->fmd.keypress) /* classic (blocked) form_do */
-		{
-			*waiting = true;
-			DIAGS(("-= 4 =-"));
-			return client;
-		}
-
-		if ((client->waiting_for & (MU_KEYBD|MU_NORM_KEYBD)) != 0 || top->keypress != NULL)
-		{
-			*waiting = true;
-			DIAGS(("-= 5 =-"));
-			return client;
-		}
-	}
-
-	client = focus_owner();
-	*waiting = (client->waiting_for & (MU_KEYBD|MU_NORM_KEYBD)) != 0 || top->keypress != NULL;
-
-	DIAGS(("-= 9 =-"));
-	return client;
-#endif
 }
 
 /*
@@ -463,18 +402,6 @@ repos_iconified(struct proc *p, long arg)
 			r = free_icon_pos(lock, w);
 			send_moved(lock, w, AMQ_NORM, &r);
 			w->t = r;
-#if 0
-			if ((w->window_status & XAWS_SHADED))
-				r.w = wind->sw, r.h = wind->sh;
-
-			if (w->send_message)
-				w->send_message(lock, w, NULL, AMQ_NORM,
-						   WM_MOVED, 0, 0, w->handle,
-						   r.x, r.y, r.w, r.h);
-			else
-				move_window(lock, w, -1, r.x, r.y, r.w, r.h);
-			w->t = r;
-#endif
 		}
 		w = w->next;
 	}
@@ -502,6 +429,9 @@ hide_app(enum locks lock, struct xa_client *client)
 
 			if ((w->window_status & XAWS_ICONIFIED))
 				reify = true;
+
+			hide_window(lock, w);
+#if 0
 #if HIDE_TO_HEIGHT
 			r.y += d.h;
 #else
@@ -513,6 +443,7 @@ hide_app(enum locks lock, struct xa_client *client)
 					r.x -= d.w;
 #endif
 			send_moved(lock|winlist, w, AMQ_NORM, &r);
+#endif
 		}
 		w = w->next;
 	}

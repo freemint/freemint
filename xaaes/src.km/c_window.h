@@ -84,6 +84,7 @@ void	inside_root(RECT *r, struct options *o);
 void	iconify_window(enum locks lock, struct xa_window *wind, RECT *r);
 void	uniconify_window(enum locks lock, struct xa_window *wind, RECT *r);
 
+void	hide_window(enum locks lock, struct xa_window *wind);
 void	unhide_window(enum locks lock, struct xa_window *wind);
 void	clear_wind_handles(void);
 
