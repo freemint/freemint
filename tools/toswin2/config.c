@@ -78,8 +78,9 @@ static WINCFG *crt_newcfg(char *prog)
 	new->wrap = TRUE;
 	new->autoclose = FALSE;
 	new->iconified = FALSE;
-	new->fg_color = 0;
-	new->bg_color = 1;
+	new->fg_color = 7;
+	new->bg_color = 0;
+	new->vdi_colors = new->fg_effects = new->bg_effects = 0;
 	new->char_tab = TAB_ATARI;
 	return new;
 }
@@ -109,10 +110,15 @@ static void validate_cfg(WINCFG *cfg)
 	if (cfg->scroll < 0)		cfg->scroll = 0;
 	if (cfg->vt_mode < MODE_VT52 || cfg->vt_mode > MODE_VT100)
 		cfg->vt_mode = MODE_VT52;
-	if (cfg->fg_color < 0 || cfg->fg_color > 15)
-		cfg->fg_color = 0;
-	if (cfg->bg_color < 0 || cfg->bg_color > 7)
-		cfg->bg_color = 1;
+	cfg->fg_color &= 0xf;
+	
+	if (cfg->vdi_colors) {
+		cfg->fg_color &= 0xf;
+		cfg->bg_color &= 0xf;
+	} else {
+		cfg->fg_color &= 0x7;
+		cfg->bg_color &= 0x7;
+	}
 	if (cfg->char_tab < TAB_ATARI || cfg->char_tab > TAB_ISO)
 		cfg->char_tab = TAB_ATARI;
 }
@@ -296,16 +302,22 @@ static void open_cfgwd(WDIALOG *wd)
 		get_string(popups, TPATARI + cfg->char_tab, str);
 		set_string(cfg_wd->tree, WTAB, str);
 
-		set_popobjcolor(cfg_wd->tree, WFGCOL, cfg->fg_color);
-		set_popobjcolor(cfg_wd->tree, WBGCOL, cfg->bg_color);
+		if (cfg->vdi_colors) {
+			set_popobjcolor (cfg_wd->tree, WFGCOL, cfg->fg_color);
+			set_popobjcolor (cfg_wd->tree, WBGCOL, cfg->bg_color);
+		} else {
+			set_popobjcolor (cfg_wd->tree, WFGCOL, ansi2vdi[cfg->fg_color]);
+			set_popobjcolor (cfg_wd->tree, WBGCOL, ansi2vdi[cfg->bg_color]);
+		}
+		/* FIXME: Set future checkboxes for pseudo effects.  */
 		
 		set_state(cfg_wd->tree, WWRAP, OS_SELECTED, cfg->wrap);
 		set_state(cfg_wd->tree, WCLOSE, OS_SELECTED, cfg->autoclose);
 
 		new_id = cfg->font_id;
 		new_pts = cfg->font_pts;
-		new_fg = cfg->fg_color;
-		new_bg = cfg->bg_color;
+		new_fg = cfg->vdi_colors ? cfg->fg_color : ansi2vdi[cfg->fg_color & 0x7];
+		new_bg = cfg->vdi_colors ? cfg->bg_color : ansi2vdi[cfg->bg_color & 0x7];
 		new_tab = cfg->char_tab;
 	}
 /*
@@ -371,7 +383,7 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 			else
 				y = handle_colorpop(wd->tree, WFGCOL, POP_CYCLE, COLOR_BITS, 0);
 			if (y > -1)
-				new_fg = y;
+				new_fg = y & 0xf;
 			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, exit_obj);
 			break;
@@ -383,7 +395,7 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 			else
 				y = handle_colorpop(wd->tree, WBGCOL, POP_CYCLE, COLOR_BITS, 0);
 			if (y > -1)
-				new_bg = y;
+				new_bg = y & 0xf;
 			set_state(wd->tree, exit_obj, OS_SELECTED, FALSE);
 			redraw_wdobj(wd, exit_obj);
 			break;
@@ -444,8 +456,8 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 				cfg->vt_mode = MODE_VT100;
 			cfg->char_tab = new_tab;
 		
-			cfg->fg_color = new_fg;
-			cfg->bg_color = new_bg;
+			cfg->fg_color = cfg->vdi_colors ? new_fg : vdi2ansi[new_fg & 0x7];
+			cfg->bg_color = cfg->vdi_colors ? new_bg : vdi2ansi[new_bg & 0x7];
 
 			cfg->wrap = get_state(wd->tree, WWRAP, OS_SELECTED);
 			cfg->autoclose = get_state(wd->tree, WCLOSE, OS_SELECTED);
@@ -646,62 +658,66 @@ static void parse_line(char *zeile)
 			validate_cfg(p_cfg);
 			p_cfg = NULL;
 		}
-		else if ((strcmp(var, "WinArg") == 0) && (p_cfg != NULL))
-			get_str(value, p_cfg->arg);
-		else if ((strcmp(var, "WinAsIcon") == 0) && (p_cfg != NULL))
-			get_bool(value, &p_cfg->iconified);
-		else if ((strcmp(var, "WinAutoClose") == 0) && (p_cfg != NULL))
-			get_bool(value, &p_cfg->autoclose);
-		else if ((strcmp(var, "WinCharTab") == 0) && (p_cfg != NULL))
-			p_cfg->char_tab = atoi(value);
-		else if ((strcmp(var, "WinCol") == 0) && (p_cfg != NULL))
-			p_cfg->col = atoi(value);
-		else if ((strcmp(var, "WinColorBg") == 0) && (p_cfg != NULL))
-			p_cfg->bg_color = atoi(value);
-		else if ((strcmp(var, "WinColorFg") == 0) && (p_cfg != NULL))
-			p_cfg->fg_color = atoi(value);
-		else if ((strcmp(var, "WinFontID") == 0) && (p_cfg != NULL))
-			p_cfg->font_id = atoi(value);
-		else if ((strcmp(var, "WinFontPts") == 0) && (p_cfg != NULL))
-			p_cfg->font_pts = atoi(value);
-		else if ((strcmp(var, "WinKind") == 0) && (p_cfg != NULL))
-			p_cfg->kind = atoi(value);
-		else if ((strcmp(var, "WinPosX") == 0) && (p_cfg != NULL))
+		else if (p_cfg != NULL)
 		{
-			l = atoi(value);
-			if (l >= 0)
-				p_cfg->xpos = (int)(l * (gl_desk.g_x + gl_desk.g_w - 1L) / 10000L);
-			else
-				p_cfg->xpos = -1;
+			if (strcmp(var, "WinArg") == 0)
+				get_str(value, p_cfg->arg);
+			else if (strcmp(var, "WinAsIcon") == 0)
+				get_bool(value, &p_cfg->iconified);
+			else if (strcmp(var, "WinAutoClose") == 0)
+				get_bool(value, &p_cfg->autoclose);
+			else if (strcmp(var, "WinCharTab") == 0)
+				p_cfg->char_tab = atoi(value);
+			else if (strcmp(var, "WinCol") == 0)
+				p_cfg->col = atoi(value);
+			else if (strcmp(var, "WinColorBg") == 0)
+				p_cfg->bg_color = atoi(value);
+			else if (strcmp(var, "WinColorFg") == 0)
+				p_cfg->fg_color = atoi(value);
+			else if (strcmp(var, "WinFontID") == 0)
+				p_cfg->font_id = atoi(value);
+			else if (strcmp(var, "WinFontPts") == 0)
+				p_cfg->font_pts = atoi(value);
+			else if (strcmp(var, "WinKind") == 0)
+				p_cfg->kind = atoi(value);
+			else if (strcmp(var, "WinPosX") == 0)
+			{
+				l = atoi(value);
+				if (l >= 0)
+					p_cfg->xpos = (int)(l * (gl_desk.g_x + gl_desk.g_w - 1L) / 10000L);
+				else
+					p_cfg->xpos = -1;
+			}
+			else if (strcmp(var, "WinPosY") == 0)
+			{
+				l = atoi(value);
+				if (l >= 0)
+					p_cfg->ypos = (int)(l * (gl_desk.g_y + gl_desk.g_h - 1L) / 10000L);
+				else
+					p_cfg->ypos = -1;
+			}
+			else if (strcmp(var, "WinRow") == 0)
+				p_cfg->row = atoi(value);
+			else if (strcmp(var, "WinScroll") == 0)
+				p_cfg->scroll = atoi(value);
+			else if (strcmp(var, "WinSizeW") == 0)
+				p_cfg->width = atoi(value);
+			else if (strcmp(var, "WinSizeH") == 0)
+				p_cfg->height = atoi(value);
+			else if (strcmp(var, "WinTitle") == 0)
+				get_str(value, p_cfg->title);
+			else if (strcmp(var, "WinWrap") == 0)
+				get_bool(value, &p_cfg->wrap);
+			else if (strcmp(var, "WinVtMode") == 0)
+				p_cfg->vt_mode = atoi(value);
+			else if (strcmp(var, "WinVDIColors") == 0)
+				p_cfg->vdi_colors = atoi(value);
+			else if (strcmp(var, "WinFGEffects") == 0)
+				p_cfg->fg_effects = (CE_ANSI_EFFECTS) & atoi(value);
+			else if (strcmp(var, "WinBGEffects") == 0)
+				p_cfg->bg_effects = (CE_ANSI_EFFECTS) & atoi(value);
+			}
 		}
-		else if ((strcmp(var, "WinPosY") == 0) && (p_cfg != NULL))
-		{
-			l = atoi(value);
-			if (l >= 0)
-				p_cfg->ypos = (int)(l * (gl_desk.g_y + gl_desk.g_h - 1L) / 10000L);
-			else
-				p_cfg->ypos = -1;
-		}
-		else if ((strcmp(var, "WinRow") == 0) && (p_cfg != NULL))
-			p_cfg->row = atoi(value);
-		else if ((strcmp(var, "WinScroll") == 0) && (p_cfg != NULL))
-			p_cfg->scroll = atoi(value);
-		else if ((strcmp(var, "WinSizeW") == 0) && (p_cfg != NULL))
-			p_cfg->width = atoi(value);
-		else if ((strcmp(var, "WinSizeH") == 0) && (p_cfg != NULL))
-			p_cfg->height = atoi(value);
-		else if ((strcmp(var, "WinTitle") == 0) && (p_cfg != NULL))
-			get_str(value, p_cfg->title);
-		else if ((strcmp(var, "WinWrap") == 0) && (p_cfg != NULL))
-			get_bool(value, &p_cfg->wrap);
-		else if ((strcmp(var, "WinVtMode") == 0) && (p_cfg != NULL))
-			p_cfg->vt_mode = atoi(value);
-		
-		else
-		{
-			/* Unbekannte Zeile */
-		}
-	}
 }
 
 bool config_load(void)
@@ -747,6 +763,11 @@ static void write_str(char *var, char *value)
 static void write_int(char *var, int value)
 {
 	fprintf(fd, "%s=%d\n", var, value);
+}
+
+static void write_ulong(char *var, ulong value)
+{
+	fprintf(fd, "%s=%lu\n", var, value);
 }
 
 static void write_bool(char *var, bool value)
@@ -823,6 +844,9 @@ void config_save(void)
 			write_int("WinVtMode", p->vt_mode);
 			write_bool("WinWrap", p->wrap);
 			write_str("WinCfgEnd", p->progname);
+			write_int("WinVDIColors", p->vdi_colors);
+			write_ulong("WinFGEffects", p->fg_effects);
+			write_ulong("WinBGEffects", p->bg_effects);
 			p = p->next;
 		}
 
