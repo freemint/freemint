@@ -173,7 +173,7 @@ static struct xa_ftab aes_tab[220] =
 
 	/*  80 */ { XA_scrp_read,              0,        DESCR("scrp_read")       },
 	/*  81 */ { XA_scrp_write,             0,        DESCR("scrp_write")      },
-	/*  82 */ { NULL,                      0,        DESCR(NULL)              },
+	/*  82 */ { NULL,                      0,        DESCR("scrp_clear")      }, // unimplemented
 	/*  83 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  84 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  85 */ { NULL,                      0,        DESCR(NULL)              },
