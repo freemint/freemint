@@ -390,7 +390,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			bool bev = false;
 
 			DIAG((D_button, NULL, "still_button multi?? o[0,2] "
-				"%x,%x newc/newr %d/%d, lock %d, Mbase %lx, active.widg %lx\n",
+				"%x,%x newc/newr %d/%d, lock %d, Mbase %lx, active.widg %lx",
 				pb->intin[1], pb->intin[3], mu_button.newc, mu_button.newr,
 				mouse_locked() ? mouse_locked()->p->pid : 0,
 				C.menu_base, widget_active.widg));
