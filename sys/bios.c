@@ -16,6 +16,7 @@
 # include "bios.h"
 # include "global.h"
 
+# include "mint/arch/mfp.h"
 # include "mint/asm.h"
 # include "mint/signal.h"
 # include "mint/xbra.h"
@@ -32,7 +33,6 @@
 # include "dosmem.h"
 # include "filesys.h"
 # include "memory.h"
-# include "mfp.h"
 # include "proc.h"
 # include "random.h"
 # include "signal.h"

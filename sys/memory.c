@@ -14,6 +14,7 @@
 
 # include "libkern/libkern.h"
 # include "mint/basepage.h"
+# include "mint/falcon.h"	/* FIXME: Include this in osbind.h and ostruct.h! */
 # include "mint/signal.h"
 # include "mint/slb.h"
 
@@ -30,9 +31,6 @@
 # include "kmemory.h"
 # include "util.h"
 
-# ifndef __TURBOC__
-# include "falcon.h"	/* FIXME: Include this in osbind.h and ostruct.h! */
-# endif
 
 /*
  * all functions in this module (!!)
@@ -68,7 +66,7 @@ MEMREGION *	create_base	(const char *cmd, MEMREGION *env, ulong flags, ulong prg
 				 PROC *execproc, SHTEXT *s, FILEPTR *f, FILEHEAD *fh, XATTR *xp, long *err);
 MEMREGION *	load_region	(const char *name, MEMREGION *env, const char *cmdlin, XATTR *x,
 				 MEMREGION **text, long *fp, int isexec, long *err);
-SHTEXT	*	get_text_seg	(FILEPTR *f, FILEHEAD *fh, XATTR *xp, SHTEXT *s, int noalloc, long *err);
+SHTEXT *	get_text_seg	(FILEPTR *f, FILEHEAD *fh, XATTR *xp, SHTEXT *s, int noalloc, long *err);
 MEMREGION *	find_text_seg	(FILEPTR *f);
 long		load_and_reloc	(FILEPTR *f, FILEHEAD *fh, char *where, long start,
 				 long nbytes, BASEPAGE *base);

@@ -13,9 +13,9 @@
 # include "time.h"
 
 # include "libkern/libkern.h"
+# include "mint/arch/mfp.h"
 # include "arch/timer.h"
 
-# include "mfp.h"
 # include "pipefs.h"
 # include "procfs.h"
 # include "shmfs.h"
