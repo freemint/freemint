@@ -93,7 +93,7 @@ about_form_exit(struct xa_client *client,
 		case ABOUT_OK:
 		{
 			object_deselect(obtree + ABOUT_OK);
-			display_toolbar(lock, about_window, ABOUT_OK);
+			redraw_toolbar(lock, about_window, ABOUT_OK);
 			close_window(lock, about_window);
 			delete_window(lock, about_window);
 			break;
@@ -161,7 +161,7 @@ open_about(enum locks lock)
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 
-		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, -1, WIDG_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, -1, WIP_NOTEXT, NULL);
 		wt->exit_form = about_form_exit;
 		list = object_get_slist(obtree + ABOUT_LIST);
 

@@ -60,6 +60,24 @@
 #include "cookie.h"
 
 
+static short
+vcheckmode(short mode)
+{
+	__asm__ volatile
+	(
+		"movem.l	d1-d7/a0-a6,-(sp)\n\t"	\
+		"move.w		%0,-(sp)\n\t"
+		"move.w		#0x5f,-(sp)\n\t"
+		"trap		#14\n\t"
+		"addq.w		#4,sp\n\t"
+//		"move.w		d0,%0\n\t"
+		"movem.l	(sp)+,d1-d7/a0-a6\n\t"
+		:
+		: "d"(mode), "r"(mode)
+		: "memory"
+	);
+	return mode;
+}
 /*
  * check if file exist in Aes_home_path
  */
@@ -136,7 +154,6 @@ k_init(void)
 
 	work_in[10] = 2;
 
-	
 	if (cfg.auto_program)
 	{
 		short mode = 1;
@@ -150,11 +167,19 @@ k_init(void)
 		{
 			if (vdo == 0x00030000L)
 			{
+
 				DIAGS(("Falcon video: mode %d(%x)", cfg.videomode, cfg.videomode));
 
 				/* Ronald Andersson:
 				 * This should be the method for falcon!
 				 */
+				cfg.videomode = vcheckmode(cfg.videomode);
+				if ((cfg.videomode & (1 << 4)) &&	/* VGA_FALCON */
+				    (cfg.videomode & 7) == 4)		/* is 16bit */
+				{
+					cfg.videomode &= ~(1 << 3);		/* Set 320 pixels */
+				}
+				
 				work_out[45] = cfg.videomode;
 				mode = 5;
 			}
@@ -175,12 +200,14 @@ k_init(void)
 		{
 			DIAGS(("Default screenmode"));
 		}
-
 		DIAGS(("Screenmode is: %d", mode));
+		display("Screenmode is: %d", mode);
+		
 		work_in[0] = mode;
 
 		v_opnwk(work_in, &(C.P_handle), work_out);
 		DIAGS(("Physical work station opened: %d", C.P_handle));
+		display("Physical work station opened: %d", C.P_handle);
 
 		if (C.P_handle == 0)
 		{
@@ -208,6 +235,7 @@ k_init(void)
 	/* Open us a virtual workstation for XaAES to play with */
 	C.vh = C.P_handle;
 	v_opnvwk(work_in, &C.vh, work_out);
+	display("AES virtual vdi handle = %d", C.vh);
 
 	if (C.vh == 0)
 	{

@@ -109,6 +109,62 @@ struct xa_colour_scheme
 	int highlight_col;		/* Colour used for highlighting */
 };
 
+struct xa_wcol_inf
+{
+
+#define WCOL_ACT3D	1
+#define WCOL_DRAW3D	2
+#define WCOL_DRAWBKG	4
+
+	short	flags;	/* */
+	short	wrm;	/* wrmode */
+	short	c;	/* color */
+	short	i;	/* Interior style */
+	short	f;	/* Fill Style */
+	short	tlc;	/* Top-Left color for 3-d effect */
+	short	brc;	/* Bottom-Right color for 3-d effect */
+};
+
+struct xa_wtxt_inf
+{
+#define WTXT_ACT3D	1
+#define WTXT_DRAW3D	2
+
+	short	flags;	/* Flags */
+	short	f;	/* Font ID */
+	short	p;	/* Point size */
+	short	e;	/* Effects */
+	short	fgc;	/* Foreground colour */
+	short	bgc;	/* Background colour (used to obtain 3-d effect) */
+};
+	
+struct xa_window_colours
+{
+	short frame_col;
+
+	struct xa_wcol_inf	win;
+
+	struct xa_wcol_inf	slider;
+	struct xa_wcol_inf	slide;
+
+	struct xa_wcol_inf	title;
+	struct xa_wtxt_inf	title_txt;
+
+	struct xa_wcol_inf	info;
+	struct xa_wtxt_inf	info_txt;
+
+	struct xa_wcol_inf	closer;
+	struct xa_wcol_inf	hider;
+	struct xa_wcol_inf	iconifier;
+	struct xa_wcol_inf	fuller;	
+	struct xa_wcol_inf	sizer;
+	struct xa_wcol_inf	uparrow;
+	struct xa_wcol_inf	dnarrow;
+	struct xa_wcol_inf	lfarrow;
+	struct xa_wcol_inf	rtarrow;
+
+};
+
 /*-----------------------------------------------------------------
  * Configuration and options structures
  *-----------------------------------------------------------------*/
@@ -747,19 +803,35 @@ typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AE
  * Windows & Widgets
  *----------------------------------------------------------------- */
 
-
 /* Relative coordinate types */
 typedef enum
 {
-	RT = 0,				/* Top right */
-	RB,				/* Bottom right */
-	LT,				/* Top left */
-	LB,				/* Bottom left */
-	CT,				/* Top centred */
-	CR,				/* right centered */
-	CB,				/* Bottom centred */
-	CL				/* Left centered */
+	/* Bit 0 - 0 = top,	1 = bottom	*/
+	/* bit 1 - 0 = left,	1 = right	*/
+	/* bit 2 - 0 = no Center 1 = center	*/
+	
+	R_BOTTOM = 1,
+	R_RIGHT  = 2,
+	R_CENTER = 4,
+	R_NONE	 = 8,
+	
+	LT = 0,	/* 0000 */			/* Top right */
+	LB,	/* 0001 */			/* Bottom right */
+	RT,	/* 0010 */			/* Top left */
+	RB,	/* 0011 */			/* Bottom left */
+	CT,	/* 0100 */			/* Top centred */
+	CB,	/* 0101 */			/* Bottom Centered */
+	
+	CR,	/* 0110 */			/* Right centered */
+	CL,	/* 0111 */			/* Left centered */
+	NO,	/* 1000 */
+
+	//CR,	/* 0101 */			/* right centered */
+	
+	//CB,	/* 0110 */			/* Bottom centred */
+	//CL	/* 0111 */			/* Left centered */
 } XA_RELATIVE;
+
 
 /* Widget Index's */
 
@@ -817,7 +889,13 @@ struct xa_widget_location
 	XA_WIND_ATTR mask;		/* disconnect NAME|SMALLER etc from emumerated type XA_WIDGETS */
 	short statusmask;
 	int rsc_index;			/* If a bitmap widget, index in rsc file */
-	bool top;			/* does the widget add to the number widgets at the top of the window. */
+#define WIP_NOTEXT	1		/* Widget is NOT part of window exterior, will not be automatically redrawn */
+#define WIP_WACLIP	2		/* Widget is part of, and will be clipped by, windows work area */
+#define WIP_ACTIVE	4		/* If this bit is set, widget is clickable, else is just to draw the
+					 * corresponding part of window exterior and clicks on it is ignored
+					 */
+	short properties;
+	//bool top;			/* does the widget add to the number widgets at the top of the window. */
 	void (*destruct)(struct xa_widget *widg);
 };
 typedef struct xa_widget_location XA_WIDGET_LOCATION;
@@ -847,12 +925,12 @@ struct toolbar_handlers
 struct xa_widget
 {
 	struct xa_widget *next;		/* For future use. */
-	
+	struct xa_window *wind;		/* Window to which this widget belongs */
 	struct xa_client *owner;
 	
 	XA_WIDGET_LOCATION loc;		/* Location of widget relative to window extents */
 	RECT r;
-	RECT ar;			/**/
+	RECT ar;			/* */
 
 	DisplayWidget	*display;		/* Function pointers to the behaviours of the widget */
 	WidgetBehaviour *click;
@@ -864,8 +942,7 @@ struct xa_widget
 #define XAWF_STUFFKMALLOC	2
 	short flags;
 
-#define WIDG_NOTEXT	1
-	short properties;
+	//short properties;
 
 	void (*destruct)(struct xa_widget *w);
 
@@ -892,6 +969,20 @@ struct xa_widget
 	int  start;			/* If stuff is a OBJECT tree, we want start drawing here */
 };
 typedef struct xa_widget XA_WIDGET;
+
+struct widget_row;
+struct widget_row
+{
+	struct widget_row	*prev;
+	struct widget_row	*next;
+
+	XA_RELATIVE		rel;
+	XA_WIND_ATTR		tp_mask;
+	struct xa_widget 	*start;
+	short	rownr;
+	RECT r;
+};
+
 
 /* Pending action from a widget */
 struct xa_pending_widget
@@ -969,7 +1060,11 @@ struct xa_window
 {
 	struct xa_window *next;		/* Window list stuff - next is the window below */
 	struct xa_window *prev;		/*		     - prev is the window above (both NULL terminated) */
-	
+
+	struct xa_window_colours *colours;
+	struct xa_window_colours *ontop_cols;
+	struct xa_window_colours *untop_cols;
+		
 	short vdi_handle;
 
 	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
@@ -1044,6 +1139,7 @@ struct xa_window
 	XA_WIDGET_LIST *user_widgets;	/* Pointer to a list of user added widgets */
 #endif
 	XA_WIDGET *tool;		/* If dialogue or popup: which widget is used. */
+	struct widget_row	*widg_rows;	
 	XA_WIDGET widgets[XA_MAX_WIDGETS]; /* The windows standard widget set (array for speed) */
 
 	XA_TREE widg_info;		/* Holds the object tree information for def_widgets. */
