@@ -425,4 +425,83 @@ xfs_stat64 (FILESYS *fs, fcookie *fc, STAT *stat)
 }
 
 
+INLINE long
+xdd_open (FILEPTR *f)
+{
+	register long r;
+	
+	xfs_lock (f->fc.fs, f->fc.dev, "xdd_open");
+	r = (f->dev->open)(f);
+	xfs_unlock (f->fc.fs, f->fc.dev, "xdd_open");
+	
+	return r;
+}
+INLINE long
+xdd_write (FILEPTR *f, const char *buf, long bytes)
+{
+	register long r;
+	
+	xfs_lock (f->fc.fs, f->fc.dev, "xdd_write");
+	r = (f->dev->write)(f, buf, bytes);
+	xfs_unlock (f->fc.fs, f->fc.dev, "xdd_write");
+	
+	return r;
+}
+INLINE long
+xdd_read (FILEPTR *f, char *buf, long bytes)
+{
+	register long r;
+	
+	xfs_lock (f->fc.fs, f->fc.dev, "xdd_read");
+	r = (f->dev->read)(f, buf, bytes);
+	xfs_unlock (f->fc.fs, f->fc.dev, "xdd_read");
+	
+	return r;
+}
+INLINE long
+xdd_lseek (FILEPTR *f, long where, int whence)
+{
+	register long r;
+	
+	xfs_lock (f->fc.fs, f->fc.dev, "xdd_lseek");
+	r = (f->dev->lseek)(f, where, whence);
+	xfs_unlock (f->fc.fs, f->fc.dev, "xdd_lseek");
+	
+	return r;
+}
+INLINE long
+xdd_ioctl (FILEPTR *f, int mode, void *buf)
+{
+	register long r;
+	
+	xfs_lock (f->fc.fs, f->fc.dev, "xdd_ioctl");
+	r = (f->dev->ioctl)(f, mode, buf);
+	xfs_unlock (f->fc.fs, f->fc.dev, "xdd_ioctl");
+	
+	return r;
+}
+INLINE long
+xdd_datime (FILEPTR *f, ushort *timeptr, int rwflag)
+{
+	register long r;
+	
+	xfs_lock (f->fc.fs, f->fc.dev, "xdd_datime");
+	r = (f->dev->datime)(f, timeptr, rwflag);
+	xfs_unlock (f->fc.fs, f->fc.dev, "xdd_datime");
+	
+	return r;
+}
+INLINE long
+xdd_close (FILEPTR *f, int pid)
+{
+	register long r;
+	
+	xfs_lock (f->fc.fs, f->fc.dev, "xdd_close");
+	r = (f->dev->close)(f, pid);
+	xfs_unlock (f->fc.fs, f->fc.dev, "xdd_close");
+	
+	return r;
+}
+
+
 # endif /* _filesys_h */
