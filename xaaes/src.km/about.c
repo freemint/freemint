@@ -124,15 +124,17 @@ open_about(enum locks lock)
 		struct xa_window *dialog_window;
 		XA_TREE *wt;
 		SCROLL_INFO *list;
-		OBJECT *form = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
+		OBJECT *obtree = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
+
+		wt = obtree_to_wt(C.Aes, obtree);
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			form_center(form, ICON_H);
+			form_center(wt->tree, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME,
 						C.Aes->options.thinframe,
-						C.Aes->options.thinwork, *(RECT*)&form->ob_x);
+						C.Aes->options.thinwork, *(RECT*)&obtree->ob_x);
 		}
 
 		/* Create the window */
@@ -147,23 +149,28 @@ open_about(enum locks lock)
 						remember, 0, &remember);
 
 		/* Set the window title */
-		get_widget(dialog_window, XAW_TITLE)->stuff = "  About  ";
+		set_window_title(dialog_window, "  About  ", true);
 		/* set version */
-		(form + ABOUT_VERSION)->ob_spec.free_string = vversion;
+		(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
 		/* Set version date */
-		(form + ABOUT_DATE)->ob_spec.free_string = __DATE__;
-		(form + ABOUT_TARGET)->ob_spec.free_string = arch_target;
+		(obtree + ABOUT_DATE)->ob_spec.free_string = __DATE__;
+		(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
 #if XAAES_RELEASE
-		(form + ABOUT_INFOSTR)->ob_spec.free_string = '\0';
+		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = '\0';
 #else
-		(form + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
+		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 
-		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, form, -1, WIDG_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = about_form_exit;
-
+#if 0
 		/* set a scroll list widget */
-		list = set_slist_object(lock, wt, form, dialog_window, ABOUT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 42);
+		list = set_slist_object(lock, wt, form, dialog_window, ABOUT_LIST,
+				        NULL, NULL, NULL, NULL,
+					NULL, NULL, NULL, NULL,
+					NULL, NULL, NULL, 42);
+#endif
+		list = object_get_slist(obtree + ABOUT_LIST);
 
 		/* fill the list if already list */
 		if (!list->start)
@@ -171,7 +178,7 @@ open_about(enum locks lock)
 			char **t = about_lines;
 			while (*t)
 			{
-				add_scroll_entry(form, ABOUT_LIST, 0, *t, 0, NULL);
+				list->add(list, NULL, *t, 0, NULL); //add_scroll_entry(form, ABOUT_LIST, 0, *t, 0, NULL);
 				t++;
 			}
 		}

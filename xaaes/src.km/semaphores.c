@@ -193,7 +193,7 @@ free_mouse_lock(void)
 void
 free_menustruct_lock(void)
 {
-	free_update_lock();
+	//free_update_lock();
 	ressource_semaphore_free(&ms_lock);
 }
 
@@ -305,14 +305,7 @@ lock_menustruct(struct proc *proc, bool try)
 
 	if (try)
 	{
-		//if (lock_screen(proc, true, NULL, 1))
-		//{
-			if (ressource_semaphore_try(&ms_lock, proc))
-				return true;
-		//	else
-		//		unlock_screen(proc, 1);
-		//}
-		return false;
+		return ressource_semaphore_try(&ms_lock, proc);
 	}
 
 	//lock_screen(proc, false, NULL, 2);
@@ -334,7 +327,7 @@ unlock_menustruct(struct proc *proc)
 	if (ms_lock.proc == proc)
 	{
 		r = ressource_semaphore_rel(&ms_lock, proc);
-		unlock_screen(proc, 3);
+		//unlock_screen(proc, 3);
 	}
 	else
 	{

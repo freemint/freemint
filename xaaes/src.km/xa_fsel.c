@@ -349,7 +349,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, int which)
 	sl = form + FS_LIST;
 	DIAG((D_fsel, NULL, "refresh_filelist: fs = %lx, obtree = %lx, sl = %lx",
 		fs, fs->form->tree, sl));
-	list = (SCROLL_INFO *)sl->ob_spec.index;
+	list = object_get_slist(sl); //(SCROLL_INFO *)sl->ob_spec.index;
 	add_slash(fs->path, fs->fslash);
 	csens = inq_xfs(fs, fs->path, fs->fslash);
 
@@ -643,7 +643,7 @@ fs_item_action(enum locks lock, struct scroll_info *list, OBJECT *form, int objc
 	DIAG((D_fsel, NULL, "fs_item_action: %s%s", fs->path, fs->file));
 
 	if (fs->selected)
-		(*fs->selected)(lock, fs, fs->path, fs->file);
+		fs->selected(lock, fs, fs->path, fs->file);
 
 	return true;
 }
@@ -696,12 +696,12 @@ fileselector_form_exit(struct xa_client *client,
 {
 	enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
-	struct scroll_info *list = (struct scroll_info *)(obtree[FS_LIST].ob_spec.index);
+	struct scroll_info *list = object_get_slist(obtree + FS_LIST); //(struct scroll_info *)(obtree[FS_LIST].ob_spec.index);
 	struct fsel_data *fs = list->data;
 #ifdef FS_FILTER
 	//OBJECT *ob = odc_p->tree + FS_LIST;
 	//SCROLL_INFO *list = ob->ob_spec.index;
-	TEDINFO *filter = (TEDINFO *)(obtree + FS_FILTER)->ob_spec.tedinfo;
+	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER); //(TEDINFO *)(obtree + FS_FILTER)->ob_spec.tedinfo;
 #endif
 #if 0
 #ifdef FS_UPDIR
@@ -767,9 +767,8 @@ fileselector_form_exit(struct xa_client *client,
 	{
 		object_deselect(wt->tree + FS_CANCEL);
 		display_toolbar(lock, wind, FS_CANCEL);
-
 		if (fs->canceled)
-			(*fs->canceled)(lock, fs, fs->path, "");
+	 		fs->canceled(lock, fs, fs->path, "");
 		else
 			close_fileselector(lock, fs);
 		break;
@@ -828,17 +827,10 @@ fs_key_form_do(enum locks lock,
 {
 	unsigned short keycode = key->aes;
 	unsigned short nkcode = key->norm;
-	struct scroll_info *list = (struct scroll_info *)((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree[FS_LIST].ob_spec.index;
+	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
 	struct fsel_data *fs = list->data;
 	SCROLL_ENTRY *old_entry = list->cur;
 
-	//struct scroll_info *list = (struct scroll_info *)((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree[FS_LIST].ob_spec.index;
-	//struct fsel_data *fs = list->data;
-	//OBJECT *obtree = ResourceTree(C.Aes_rsc, FILE_SELECT);
-	//OBJECT *ob = obtree + FS_LIST;
-	//SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
-	//SCROLL_ENTRY *old_entry = list->cur;
-	
 	/* HR 310501: ctrl|alt + letter :: select drive */
 	if ((key->raw.conin.state & (K_CTRL|K_ALT)) != 0)
 	{
@@ -916,9 +908,9 @@ fs_msg_handler(
 	short *msg)
 {
 	enum locks lock = 0;
-	struct scroll_info *list = (struct scroll_info *)((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree[FS_LIST].ob_spec.index;
+	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
 	struct fsel_data *fs = list->data;
-	
+
 	switch (msg[0])
 	{
 	case MN_SELECTED:
@@ -958,11 +950,12 @@ fs_msg_handler(
 static int
 fs_destructor(enum locks lock, struct xa_window *wind)
 {
-	XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-	OBJECT *form = wt->tree;
-	OBJECT *sl = form + FS_LIST;
-	SCROLL_INFO *list = (SCROLL_INFO *)sl->ob_spec.index;
+	//XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+	//OBJECT *form = wt->tree;
+	//OBJECT *sl = form + FS_LIST;
+	//SCROLL_INFO *list = object_get_slist(sl); //(SCROLL_INFO *)sl->ob_spec.index;
 
+#if 0
 	if (list->wi)
 	{
 		DIAG((D_fsel, NULL, "fs_destructor: wi=%lx, status=%x", list->wi, list->wi->window_status));
@@ -971,11 +964,11 @@ fs_destructor(enum locks lock, struct xa_window *wind)
 			close_window(lock, list->wi);
 		
 		delayed_delete_window(lock, list->wi);
-		list->wi = NULL;
+		list->wi	= NULL;
 	}
-	
-	free_scrollist(list);
-	DIAG((D_fsel,NULL,"fsel destructed"));
+#endif	
+	//free_scrollist(list);
+	//DIAG((D_fsel,NULL,"fsel destructed"));
 	return true;
 }
 
@@ -1096,7 +1089,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 						C.Aes->options.thinwork,
 						remember,
 						NULL,
-						&remember);
+						NULL); //&remember);
 		
 		if (!dialog_window)
 			goto memerr;
@@ -1104,7 +1097,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		/* Set the window title */
 		/* XXX - pointer into user space, correct here? */
 		/*   ozk: no, absolutely not right here! */
-		set_window_title(dialog_window, title);
+		set_window_title(dialog_window, title, true);
 
 		set_menu_widget(dialog_window, client, fs->menu);
 
@@ -1127,16 +1120,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		//dialog_window->data = fs;
 
-		set_scroll(C.Aes, form, FS_LIST, true);
+		//set_scroll(C.Aes, form, FS_LIST, true);
 		
 		/* HR: set a scroll list object */
 		set_slist_object(lock,
 				 wt,
-				 form,
+				 //form,
 				 dialog_window,
 				 FS_LIST,
+				 SIF_SELECTABLE,
 				 fs_closer, NULL,
 				 fs_dclick, fs_click,
+				 NULL, NULL, NULL, free_scrollist,
 				 fs->path, NULL, fs, 30);
 
 		/* HR: after set_menu_widget (fs_destructor must cover what is in menu_destructor())

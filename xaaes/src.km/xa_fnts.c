@@ -344,7 +344,8 @@ delete_fnts_info(void *_fnts)
 		if (fnts->wt)
 		{
 			fnts->wt->links--;
-			remove_wt(fnts->wt, true);
+			//display("delete_fnts_inf: links-- on %lx (links=%d)", fnts->wt, fnts->wt->links);
+			remove_wt(fnts->wt, false);
 		}
 
 		kfree(fnts);
@@ -770,7 +771,7 @@ select_edsize(struct xa_fnts_info *fnts)
 	struct scroll_entry *ent;
 	OBJECT *obtree = fnts->wt->tree;
 
-	list = (struct scroll_info *)object_get_spec(obtree + FNTS_POINTS)->index;
+	list = object_get_slist(obtree + FNTS_POINTS);
 	ent = list->search(list, NULL, object_get_tedinfo(obtree + FNTS_EDSIZE)->te_ptext, SEFM_BYTEXT);
 	
 	if (ent)
@@ -789,9 +790,10 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 {
 	int i;
 	OBJECT *obtree = fnts->wt->tree;
+	struct scroll_info *list = object_get_slist(obtree + FNTS_POINTS);
 	char b[8];
 
-	empty_scroll_list(obtree, FNTS_POINTS, -1);
+	list->empty(list, -1); //empty_scroll_list(obtree, FNTS_POINTS, -1);
 
 	if (f)
 	{
@@ -799,7 +801,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 		{
 			sprintf(b, sizeof(b), "%d", f->f.pts[i]);
 			DIAGS(("set_point_list: add '%s'", b));
-			add_scroll_entry(obtree, FNTS_POINTS, NULL, b, FLAG_AMAL, f);
+			list->add(list, NULL, b, FLAG_AMAL, f); //add_scroll_entry(obtree, FNTS_POINTS, NULL, b, FLAG_AMAL, f);
 		}
 	}
 
@@ -815,10 +817,10 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 {
 	struct xa_fnts_item *f;
 	OBJECT *obtree = fnts->wt->tree;
-	SCROLL_INFO *list = (SCROLL_INFO *)object_get_spec(obtree + FNTS_FNTLIST)->index;
-	SCROLL_INFO *list_type = (SCROLL_INFO *)object_get_spec(obtree + FNTS_TYPE)->index;
+	SCROLL_INFO *list = object_get_slist(obtree + FNTS_FNTLIST);
+	SCROLL_INFO *list_type = object_get_slist(obtree + FNTS_TYPE);
 
-	empty_scroll_list(obtree, FNTS_TYPE, -1);
+	list_type->empty(list_type, -1); //empty_scroll_list(obtree, FNTS_TYPE, -1);
 
 	if (list->cur)
 	{
@@ -827,7 +829,7 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 		{
 			while (f)
 			{
-				add_scroll_entry(obtree, FNTS_TYPE, NULL, f->f.style_name, 0, f);
+				list_type->add(list_type, NULL, f->f.style_name, 0, f); //add_scroll_entry(obtree, FNTS_TYPE, NULL, f->f.style_name, 0, f);
 				f = f->nxt_kin;
 			}
 		}
@@ -869,11 +871,11 @@ update_slists(struct xa_fnts_info *fnts)
 	struct xa_fnts_item *f;
 	SCROLL_INFO *list_name, *list_style;
 	
-	list_name  = (SCROLL_INFO *)object_get_spec(obtree + FNTS_FNTLIST)->index;
-	list_style = (SCROLL_INFO *)object_get_spec(obtree + FNTS_TYPE)->index;
+	list_name  = object_get_slist(obtree + FNTS_FNTLIST);
+	list_style = object_get_slist(obtree + FNTS_TYPE);
 
-	empty_scroll_list(obtree, FNTS_FNTLIST, -1);
-	empty_scroll_list(obtree, FNTS_TYPE, -1);
+	list_name->empty(list_name, -1); //empty_scroll_list(obtree, FNTS_FNTLIST, -1);
+	list_style->empty(list_style, -1); //empty_scroll_list(obtree, FNTS_TYPE, -1);
 
 	/*
 	 * Rebuild font item list according to flags
@@ -889,7 +891,7 @@ update_slists(struct xa_fnts_info *fnts)
 	f = fnts->fnts_list;
 	while (f)
 	{
-		add_scroll_entry(obtree, FNTS_FNTLIST, NULL, *f->f.family_name != '\0' ? f->f.family_name : f->f.full_name, 0, f);
+		list_name->add(list_name, NULL, *f->f.family_name != '\0' ? f->f.family_name : f->f.full_name, 0, f);
 		f = f->nxt_family;
 	}
 	
@@ -1012,6 +1014,8 @@ create_new_fnts(enum locks lock,
 		fnts->wind		= wind;
 		fnts->handle		= (void *)((unsigned long)fnts >> 16 | (unsigned long)fnts << 16);
 		fnts->wt		= wt;
+		wt->links++;
+		//display("create_new_fnts: links++ on %lx (links=%d)", wt, wt->links);
 		fnts->vdi_handle	= vdih;
 		fnts->num_fonts		= num_fonts;
 		fnts->font_flags	= font_flags;
@@ -1036,36 +1040,42 @@ create_new_fnts(enum locks lock,
 		
 		fnts->fnts_ring = get_font_items(fnts);
 
-		set_scroll(C.Aes, wt->tree, FNTS_FNTLIST, true);
-		set_scroll(C.Aes, wt->tree, FNTS_TYPE, true);
-		set_scroll(C.Aes, wt->tree, FNTS_POINTS, true);
+		//set_scroll(C.Aes, wt->tree, FNTS_FNTLIST, true);
+		//set_scroll(C.Aes, wt->tree, FNTS_TYPE, true);
+		//set_scroll(C.Aes, wt->tree, FNTS_POINTS, true);
 
 		/* HR: set a scroll list object */
 		set_slist_object(lock,
 				 wt,
-				 wt->tree,
+				 //wt->tree,
 				 wind,
 				 FNTS_FNTLIST,
+				 SIF_SELECTABLE,
 				 NULL, NULL,		/* scrl_widget closer, fuller*/
 				 NULL, click_name,	/* scrl_click dclick, click */
+				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 
 		set_slist_object(lock,
 				 wt,
-				 wt->tree,
+				 //wt->tree,
 				 wind,
 				 FNTS_TYPE,
+				 SIF_SELECTABLE,
 				 NULL, NULL,
 				 NULL, click_style,
+				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 		
 		set_slist_object(lock,
 				 wt,
-				 wt->tree,
+				 //wt->tree,
 				 wind,
 				 FNTS_POINTS,
+				 SIF_SELECTABLE,
 				 NULL, NULL,
 				 NULL, click_size,
+				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 
 		/* XXX
@@ -1110,8 +1120,6 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if ((wt = duplicate_fnts_obtree(client)))
 	{
-		wt->links++;
-
 		obtree = wt->tree;
 		ob_area(obtree, 0, &or);
 		
@@ -1319,7 +1327,7 @@ init_fnts(struct xa_fnts_info *fnts)
 	
 		if (family)
 		{
-			list = (struct scroll_info *)object_get_spec(obtree + FNTS_FNTLIST)->index;	
+			list = object_get_slist(obtree + FNTS_FNTLIST);	
 			ent = list->search(list, NULL, family, SEFM_BYDATA);
 			DIAG((D_fnts, NULL, " --- search found family entry %lx", ent));
 			if (ent)
@@ -1685,7 +1693,7 @@ fntsKeypress(enum locks lock,
 		unsigned long val;
 		
 		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-		list = (struct scroll_info *)object_get_spec(wt->tree + FNTS_FNTLIST)->index;
+		list = object_get_slist(wt->tree + FNTS_FNTLIST);
 		fnts = list->data;
 		val = get_edpoint(fnts);
 
@@ -1796,7 +1804,7 @@ fntsFormexit( struct xa_client *client,
 	      XA_TREE *wt,
 	      struct fmd_result *fr)
 {
-	struct xa_fnts_info *fnts = (struct xa_fnts_info *)((struct scroll_info *)object_get_spec(wt->tree + FNTS_FNTLIST)->index)->data;
+	struct xa_fnts_info *fnts = (struct xa_fnts_info *)(object_get_slist(wt->tree + FNTS_FNTLIST))->data;
 
 	fnts->exit_button = fr->obj >= 0 ? fr->obj : 0;
 	client->usr_evnt = 1;
@@ -1886,7 +1894,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			*(long *)&pb->intout[4] = fnts->fnt_pt;
 			*(long *)&pb->intout[6] = fnts->fnt_ratio;
 			
-			DIAGS((D_fnts, client, " --- return %d, cbstat=%x, id=%ld, pt=%ld, ratio=%ld",
+			DIAG((D_fnts, client, " --- return %d, cbstat=%x, id=%ld, pt=%ld, ratio=%ld",
 				pb->intout[0], pb->intout[1], *(long *)&pb->intout[2], *(long *)&pb->intout[4], *(long *)&pb->intout[6]));
 		}
 	}

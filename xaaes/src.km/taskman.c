@@ -58,11 +58,11 @@ refresh_tasklist(enum locks lock)
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	OBJECT *tl = form + TM_LIST;
-	SCROLL_INFO *list = (SCROLL_INFO *)tl->ob_spec.index;
+	SCROLL_INFO *list = object_get_slist(tl); //(SCROLL_INFO *)tl->ob_spec.index;
 	struct xa_client *client;
 
 	/* Empty the task list */
-	empty_scroll_list(form, TM_LIST, -1);
+	list->empty(list, -1); //empty_scroll_list(form, TM_LIST, -1);
 
 	Sema_Up(clients);
 
@@ -96,10 +96,10 @@ refresh_tasklist(enum locks lock)
 			else
 				sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
 
-			add_scroll_entry(form, TM_LIST, icon, tx, FLAG_MAL, NULL);
+			list->add(list, icon, tx, FLAG_MAL, NULL); //add_scroll_entry(form, TM_LIST, icon, tx, FLAG_MAL, NULL);
 		}
 		else
-			add_scroll_entry(form, TM_LIST, icon, client->name, 0, NULL);
+			list->add(list, icon, client->name, 0, NULL); //add_scroll_entry(form, TM_LIST, icon, client->name, 0, NULL);
 	}
 
 	list->slider(list);
@@ -230,10 +230,13 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	OBJECT *ob = form + TM_LIST;
-	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+	SCROLL_INFO *list = object_get_slist(ob); //(SCROLL_INFO *)ob->ob_spec.index;
 
+	list->empty(list, -1);
+
+#if 0
 	/* Empty the task list */
-	empty_scroll_list(form, TM_LIST, -1);
+	list->empty(list, -1); //empty_scroll_list(form, TM_LIST, -1);
 
 	if (list->wi)
 	{
@@ -243,6 +246,7 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 		delayed_delete_window(lock, list->wi);
 		list->wi = NULL;
 	}
+#endif
 	task_man_win = NULL;
 
 	return true;
@@ -381,7 +385,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_KILL:
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			SCROLL_INFO *list = object_get_slist(ob);
 			struct xa_client *client = cur_client(list);
 
 			DIAGS(("taskmanager: KILL for %s", c_owner(client)));
@@ -396,7 +400,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_TERM:
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			SCROLL_INFO *list = object_get_slist(ob);
 			struct xa_client *client = cur_client(list);
 
 			DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
@@ -411,7 +415,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_SLEEP:
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			SCROLL_INFO *list = object_get_slist(ob);
 			struct xa_client *client = cur_client(list);
 
 			DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
@@ -427,7 +431,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_WAKE:
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+			SCROLL_INFO *list = object_get_slist(ob);
 			struct xa_client *client = cur_client(list);
 
 			DIAGS(("taskmanager: TM_WAKE for %s", c_owner(client)));
@@ -505,22 +509,23 @@ open_taskmanager(enum locks lock)
 
 	struct xa_window *dialog_window;
 	XA_TREE *wt;
-	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 
+	wt = obtree_to_wt(C.Aes, obtree);
 
 	if (!task_man_win)
 	{
-		form[TM_ICONS].ob_flags |= OF_HIDETREE;
+		obtree[TM_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			form_center(form, ICON_H);
+			form_center(obtree, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						*(RECT*)&form->ob_x);
+						*(RECT*)&obtree->ob_x);
 		}
 
 		/* Create the window */
@@ -535,13 +540,18 @@ open_taskmanager(enum locks lock)
 						remember, NULL, &remember);
 
 		/* Set the window title */
-		get_widget(dialog_window, XAW_TITLE)->stuff = " Task Manager";
+		set_window_title(dialog_window, " Task Manager ", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, form, -1, WIDG_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = taskmanager_form_exit;
 
+#if 0
 		/* set a scroll list widget */
-		set_slist_object(lock, wt, form, dialog_window, TM_LIST, NULL, NULL, NULL, NULL, "Client Applications", NULL, NULL, NICE_NAME);
+		set_slist_object(lock, wt, form, dialog_window, TM_LIST,
+				 NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, NULL,
+				 "Client Applications", NULL, NULL, NICE_NAME);
+#endif
 
 		/* Set the window destructor */
 		dialog_window->destructor = taskmanager_destructor;
@@ -694,7 +704,8 @@ sysalerts_form_exit(struct xa_client *Client,
 		/* Empty the task list */
 		case SALERT_CLEAR:
 		{
-			empty_scroll_list(form, SYSALERT_LIST, -1);
+			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
+			list->empty(list, -1); //empty_scroll_list(form, SYSALERT_LIST, -1);
 			object_deselect(wt->tree + item);
 			display_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 			display_toolbar(lock, systemalerts_win, item);
@@ -714,9 +725,9 @@ sysalerts_form_exit(struct xa_client *Client,
 static int
 systemalerts_destructor(enum locks lock, struct xa_window *wind)
 {
-	OBJECT *ob = ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST;
-	SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
-
+	//OBJECT *ob = ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST;
+	//SCROLL_INFO *list = (SCROLL_INFO *)ob->ob_spec.index;
+#if 0
 	if (list->wi)
 	{
 		if ((list->wi->window_status & XAWS_OPEN))
@@ -725,7 +736,7 @@ systemalerts_destructor(enum locks lock, struct xa_window *wind)
 		delayed_delete_window(lock, list->wi);
 		list->wi = NULL;
 	}
-
+#endif
 	systemalerts_win = NULL;
 
 	return true;
@@ -735,7 +746,7 @@ static void
 refresh_systemalerts(OBJECT *form)
 {
 	OBJECT *sl = form + SYSALERT_LIST;
-	SCROLL_INFO *list = (SCROLL_INFO *)sl->ob_spec.index;
+	SCROLL_INFO *list = object_get_slist(sl);
 
 	list->slider(list);
 }
@@ -747,21 +758,23 @@ open_systemalerts(enum locks lock)
 
 	if (!systemalerts_win)
 	{
-		OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
+		OBJECT *obtree = ResourceTree(C.Aes_rsc, SYS_ERROR);
 		struct xa_window *dialog_window;
 		XA_TREE *wt;
 
-		form[SALERT_ICONS].ob_flags |= OF_HIDETREE;
+		wt = obtree_to_wt(C.Aes, obtree);
+
+		obtree[SALERT_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			form_center(form, ICON_H);
+			form_center(obtree, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						*(RECT*)&form->ob_x);
+						*(RECT*)&obtree->ob_x);
 		}
 
 		/* Create the window */
@@ -778,16 +791,21 @@ open_systemalerts(enum locks lock)
 
 		/* Set the window title */
 		get_widget(dialog_window, XAW_TITLE)->stuff = " System window & Alerts Log";
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, form, -1, WIDG_NOTEXT, NULL);
+		set_window_title(dialog_window, " System window & Alerts log", false);
+
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = sysalerts_form_exit;
-
+#if 0
 		/* HR: set a scroll list widget */
-		set_slist_object(lock, wt, form, dialog_window, SYSALERT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 256);
-
+		set_slist_object(lock, wt, form, dialog_window, SYSALERT_LIST,
+				 NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, 256);
+#endif
 		/* Set the window destructor */
 		dialog_window->destructor = systemalerts_destructor;
 
-		refresh_systemalerts(form);
+		refresh_systemalerts(obtree);
 
 		open_window(lock, dialog_window, dialog_window->r);
 		systemalerts_win = dialog_window;
@@ -841,13 +859,14 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		case SYS_MN_ENV:
 		{
 			OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
+			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 			char * const * const strings = get_raw_env();
 			int i;
 
-			empty_scroll_list(form, SYSALERT_LIST, FLAG_ENV);
+			list->empty(list, FLAG_ENV); //empty_scroll_list(form, SYSALERT_LIST, FLAG_ENV);
 
 			for (i = 0; strings[i]; i++)
-				add_scroll_entry(form, SYSALERT_LIST, NULL, strings[i], FLAG_ENV, NULL);
+				list->add(list, NULL, strings[i], FLAG_ENV, NULL); //add_scroll_entry(form, SYSALERT_LIST, NULL, strings[i], FLAG_ENV, NULL);
 
 			open_systemalerts(lock);
 			break;

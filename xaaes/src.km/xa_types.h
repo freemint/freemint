@@ -634,7 +634,9 @@ struct xa_client
 #define CS_FSEL_INPUT		0x00000020
 #define CS_MISS_RDRW		0x00000040
 #define CS_MENU_NAV		0x00000080
-#define CS_EXITING		0x00000100
+#define CS_BLOCK_MENU_NAV	0x00000100
+
+#define CS_EXITING		0x00000200
 
 	long status;
 
@@ -662,6 +664,7 @@ struct xa_client
 	XA_TREE *wtlist;
 
 	XA_TREE *std_menu;
+	XA_TREE *nxt_menu;
 	XA_TREE *desktop;
 
 	XA_MENU_ATTACHMENT *attach;	/* submenus */
@@ -1062,17 +1065,6 @@ extern struct xa_window *root_window;
 #define nolist_list S.open_nlwindows.first
 
 struct scroll_info;
-
-typedef int scrl_click(enum locks lock, struct scroll_info *list, OBJECT *form, int objc);
-typedef void scrl_widget(struct scroll_info *list);
-typedef void scrl_vis(struct scroll_info *list, struct scroll_entry *s, bool redraw);
-typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scroll_entry *start, void *data, short mode);
-
-/* HR: The FS_LIST box is the place holder and the
- *     entrypoint via its TOUCHEXIT flag.
- *     The list box itself is turned into a full fledged window.
- */
-
 /* Directory entry flags */
 enum scroll_entry_type
 {
@@ -1084,6 +1076,27 @@ enum scroll_entry_type
 	FLAG_AMAL	= 0x400
 };
 typedef enum scroll_entry_type SCROLL_ENTRY_TYPE;
+
+enum scroll_info_flags
+{
+	SIF_KMALLOC	= 0x0001,
+	SIF_SELECTABLE	= 0x0002,
+};
+typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
+
+typedef int scrl_click		(enum locks lock, struct scroll_info *list, OBJECT *form, int objc);
+typedef void scrl_widget	(struct scroll_info *list);
+typedef void scrl_empty		(struct scroll_info *list, SCROLL_ENTRY_TYPE flags);
+typedef int scrl_add		(struct scroll_info *list, OBJECT *icon, void *text, SCROLL_ENTRY_TYPE flags, void *data);
+typedef int scrl_del		(struct scroll_info *list, struct scroll_entry *s);
+typedef void scrl_vis		(struct scroll_info *list, struct scroll_entry *s, bool redraw);
+typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scroll_entry *start, void *data, short mode);
+
+/* HR: The FS_LIST box is the place holder and the
+ *     entrypoint via its TOUCHEXIT flag.
+ *     The list box itself is turned into a full fledged window.
+ */
+
 
 #define SEFM_BYDATA	0
 #define SEFM_BYTEXT	1
@@ -1115,6 +1128,7 @@ struct scroll_info
 	struct xa_window *wi;		/* make the scroll box a real window */
 	struct xa_window *pw;		/* If the listbox is part of a windowed dialogue, we must know that,
 					 * otherwise we couldnt move that window (rp_2_ap). */
+	SCROLL_INFO_FLAGS flags;
 	XA_TREE *wt;
 
 	OBJECT *tree;			/* originating object */
@@ -1145,9 +1159,14 @@ struct scroll_info
 	scrl_widget *closer;		/* closer function */
 	scrl_widget *fuller;		/* fuller function */
 
-	scrl_vis *vis;			/* check visibility */
-	scrl_search *search;
+	scrl_vis	*vis;			/* check visibility */
+	scrl_search	*search;
+	scrl_add	*add;
+	scrl_del	*del;
+	scrl_empty	*empty;
+	scrl_widget	*destroy;
 
+	
 	void	*data;
 };
 typedef struct scroll_info SCROLL_INFO;

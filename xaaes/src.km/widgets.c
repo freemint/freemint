@@ -573,13 +573,13 @@ free_wt(XA_TREE *wt)
 {
 
 	DIAGS(("free_wt: wt=%lx", wt));
-	
+#if 0
 	if (wt->links)
 	{
 		display("free_wt: links not NULL!!!!!");
 		display("free_wt: wt=%lx, links=%d, flags=%lx, owner=%s", wt, wt->links, wt->flags, wt->owner->name);
 	}
-
+#endif
 	if (wt->flags & WTF_STATIC)
 	{
 		DIAGS(("free_wt: Declared as static!"));
@@ -639,16 +639,15 @@ remove_wt(XA_TREE *wt, bool force)
 {
 	if (force || (wt->flags & (WTF_STATIC|WTF_AUTOFREE)) == WTF_AUTOFREE)
 	{
-		if (!wt->links)
+		if (force || wt->links == 0)
 		{
-			//display("remove_wt: removing %lx", wt);
+			//display("remove_wt: removing %lx (links=%d, force = %d)", wt, wt->links, force);
 			remove_from_wtlist(wt);
 			free_wt(wt);
 			return true;
 		}
 		//else
 		//	display("remove_wt: links = %d", wt->links);
-
 	}
 	//else
 	//	display("remove_wt: flags =%lx, links = %d", wt->flags, wt->links);
@@ -996,10 +995,11 @@ free_xawidget_resources(struct xa_widget *widg)
 				XA_TREE *wt = widg->stuff;
 				DIAGS(("  --- stuff is wt=%lx in widg=%lx",
 					wt, widg));
-			//	display(" free_xawidget_re: stuff is wt=%lx in widg=%lx",
-			//		wt, widg);
 
 				wt->links--;
+			//	display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
+			//		wt, wt->links, widg);
+				
 				if (!remove_wt(wt, false))
 				{
 					wt->widg = NULL;
@@ -3067,11 +3067,14 @@ set_toolbar_widget(enum locks lock,
 
 	if (widg->stuff)
 	{
-		set_toolbar_handlers(NULL, NULL, NULL, (XA_TREE *)widg->stuff);
-		((XA_TREE *)widg->stuff)->widg = NULL;
-		((XA_TREE *)widg->stuff)->wind = NULL;
-		((XA_TREE *)widg->stuff)->zen  = false;
-		((XA_TREE *)widg->stuff)->links--;
+		struct widget_tree *owt = widg->stuff;
+
+		set_toolbar_handlers(NULL, NULL, NULL, owt);
+		owt->widg = NULL;
+		owt->wind = NULL;
+		owt->zen  = false;
+		owt->links--;
+	//	display("set_toolbar_widg: links-- on %lx (links=%d)", owt, owt->links);
 	}
 
 	if (owner)
@@ -3089,6 +3092,7 @@ set_toolbar_widget(enum locks lock,
 	wt->wind = wind;
 	wt->zen  = true;
 	wt->links++;
+	//display("set_toolbar_widg: link++ on %lx (links=%d)", wt, wt->links);
 
 	/*
 	 * Ozk: if edobj == -2, we want to look for an editable and place the

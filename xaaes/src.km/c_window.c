@@ -185,7 +185,7 @@ check_menu_desktop(enum locks lock, struct xa_window *old_top, struct xa_window 
 			old_top->owner->name, new_top->owner->name));
 
 		set_active_client(lock, new_top->owner);
-		swap_menu(lock|desk, new_top->owner, true, true, 2);
+		swap_menu(lock|desk, new_top->owner, NULL, true, true, 2);
 
 		Sema_Dn(desk);
 	}
@@ -352,7 +352,7 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
  * ONLY call from from correct context
  */
 void
-set_window_title(struct xa_window *wind, const char *title)
+set_window_title(struct xa_window *wind, const char *title, bool redraw)
 {
 	char *dst = wind->wname;
 	XA_WIDGET *widg;
@@ -372,7 +372,7 @@ set_window_title(struct xa_window *wind, const char *title)
 	DIAG((D_wind, wind->owner, "    -   %s", wind->wname));
 
 	/* redraw if necessary */
-	if ((wind->active_widgets & NAME) && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN))
+	if (redraw && (wind->active_widgets & NAME) && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN))
 	{
 		RECT clip;
 
@@ -394,7 +394,7 @@ get_window_title(struct xa_window *wind, char *dst)
  * ONLY call from from correct context
  */
 void
-set_window_info(struct xa_window *wind, const char *info)
+set_window_info(struct xa_window *wind, const char *info, bool redraw)
 {
 	char *dst = wind->winfo;
 	XA_WIDGET *widg;
@@ -413,7 +413,7 @@ set_window_info(struct xa_window *wind, const char *info)
 
 	DIAG((D_wind, wind->owner, "    -   %s", wind->winfo));
 
-	if ((wind->active_widgets & INFO) && (wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_ICONIFIED|XAWS_HIDDEN)) == XAWS_OPEN)
+	if (redraw && (wind->active_widgets & INFO) && (wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_ICONIFIED|XAWS_HIDDEN)) == XAWS_OPEN)
 	{
 		RECT clip;
 
