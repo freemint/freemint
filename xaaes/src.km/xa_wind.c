@@ -895,7 +895,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			else if (!widg->stuff)
 			{
 				DIAGS(("  --- Set new toolbar"));
-				set_toolbar_widget(lock, w, ob, pb->intin[5]);
+				set_toolbar_widget(lock, w, client, ob, pb->intin[5]);
 				w->dial |= created_for_TOOLBAR;
 			}
 		}
@@ -939,7 +939,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					fix_menu(client, ob, false);
 					if (!wt)
 						wt = new_widget_tree(client, ob);
-					set_menu_widget(w, wt);
+					set_menu_widget(w, client, wt);
 				}
 			}
 			else if (widg->stuff)
