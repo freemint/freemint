@@ -124,9 +124,27 @@ static void quote_putch(TEXTWIN *v, int c)
 	v->output = vt52_putch;
 }
 
-/* short color_translate[]={0,2,3,6,4,7,5,8,9,10,11,14,12,15,13,1}; */
-short color_translate[] = { 1, 10, 11, 14, 12, 15, 13, 0, 
-			    0, 9, 2, 3, 6, 4, 7, 5, 8 };
+short color_translate[] = {
+	0,
+	2,
+	3,
+	6,
+	4,
+	7,
+	5,
+	8,
+	9,
+	10,
+	11,
+	14,
+	12,
+	15,
+	13,
+	1
+};
+	
+/* short color_translate[] = { 1, 10, 11, 14, 12, 15, 13, 0, 
+ 			       0, 9, 2, 3, 6, 4, 7, 5, 8 }; */
 
 static void fgcol_putch(TEXTWIN *v, int c)
 {
@@ -137,13 +155,6 @@ static void fgcol_putch(TEXTWIN *v, int c)
 static void bgcol_putch(TEXTWIN *v, int c)
 {
 	v->term_cattr = (v->term_cattr & ~CBGCOL) | color_translate[c & 0xf];
-	v->output = vt52_putch;
-}
-
-static void original_colors(TEXTWIN *v)
-{
-	v->term_cattr = (v->term_cattr & ~CFGCOL) | v->cfg->fg_color;
-	v->term_cattr = (v->term_cattr & ~CBGCOL) | v->cfg->bg_color;
 	v->output = vt52_putch;
 }
 
@@ -388,17 +399,17 @@ static void putesc(TEXTWIN *v, int c)
 			if (do_debug) syslog (LOG_ERR, "set cursor timer");
 #endif
 			return;
-		case 'v':		/* wrap on */
-#ifdef DEBUG
-			if (do_debug) syslog (LOG_ERR, "is linewrap on");
-#endif
-			v->term_flags |= FWRAP;
-			break;
 		case 'u':		/* original colors */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is original colors");
 #endif
 			original_colors (v);
+			break;
+		case 'v':		/* wrap on */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is linewrap on");
+#endif
+			v->term_flags |= FWRAP;
 			break;
 		case 'w':
 #ifdef DEBUG
