@@ -3,7 +3,7 @@
  * Version:      
  * Author:       Frank Naumann
  * Started:      1999-09-14
- * Last Updated: 2000-05-24
+ * Last Updated: 2000-06-12
  * Target O/S:   TOS/MiNT
  * Description:  
  * 
@@ -29,6 +29,15 @@
  * 
  * 
  * changes since last version:
+ * 
+ * 2000-06-12:	(v0.25)
+ * 
+ * - new: exact delay routine for SCC register access delay
+ * 
+ * 2000-06-06:	(v0.24)
+ * 
+ * - fix: tt_scca baudtable had a typo for 115200 setting; also
+ *        removed falcon_scca table as it's the same as the tt_scca
  * 
  * 2000-05-24:	(v0.23)
  * 
@@ -97,11 +106,15 @@
 # define __KERNEL_XDD__
 
 # include <mint/mint.h>
+
+# include <arch/timer.h>
+# include <libkern/libkern.h>
+# include <mint/arch/delay.h>
+# include <mint/asm.h>
 # include <mint/dcntl.h>
 # include <mint/file.h>
 # include <mint/proc.h>
 # include <mint/signal.h>
-# include <libkern/libkern.h>
 
 # include <osbind.h>
 # include "scc.h"
@@ -112,7 +125,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	23
+# define VER_MINOR	25
 # define VER_STATUS	
 
 
@@ -279,13 +292,6 @@ INLINE int	iorec_put	(IOREC *iorec, uchar data);
 INLINE long	iorec_used	(IOREC *iorec);
 INLINE long	iorec_free	(IOREC *iorec);
 INLINE ushort	iorec_size	(IOREC *iorec);
-
-
-/*
- * locking functions - bottom/top half
- */
-INLINE ushort	splhigh		(void);
-INLINE void	splx		(ushort old_sr);
 
 
 /*
@@ -611,7 +617,7 @@ static BAUDS baudtable_tt_scca [] =
 	{  19200,     4,  TAKT_16x,  0x50,  0x1  },
 	{  38400,     1,  TAKT_16x,  0x50,  0x1  },
 	{  57600,     0,  TAKT_16x,  0x50,  0x1  },
-	{ 115200,     0,  TAKT_16x,  0x00,  0x0  },
+	{ 115200,     0,  TAKT_32x,  0x00,  0x0  },
 	{ 230400,     0,  TAKT_16x,  0x00,  0x0  },
 	{      0,     0,         0,     0,    0  }
 };
@@ -640,6 +646,7 @@ static BAUDS baudtable_tt_sccb [] =
 	{      0,     0,         0,     0,    0  }
 };
 
+# if 0
 static BAUDS baudtable_falcon_scca [] =
 {
 	{     50,  2293,  TAKT_16x,  0x50,  0x1  },
@@ -664,6 +671,7 @@ static BAUDS baudtable_falcon_scca [] =
 	{ 230400,     0,  TAKT_16x,  0x00,  0x0  },
 	{      0,     0,         0,     0,    0  }
 };
+# endif
 
 static BAUDS baudtable_falcon_sccb [] =
 {
@@ -728,48 +736,9 @@ static BAUDS baudtable_14_7456_mhz [] =
 /****************************************************************************/
 
 /****************************************************************************/
-/* BEGIN locking functions - bottom/top half */
-
-INLINE ushort
-splhigh (void)
-{
-	ushort old_sr;
-	
-	__asm__ volatile
-	(
-		"move.w %%sr,%0;"
-		"ori #0x0700,%%sr"
-		: "=d" (old_sr)			/* output register */
-		: 				/* input registers */
-		: "cc"				/* clobbered */
-	);
-	
-	return old_sr;
-}
-
-INLINE void
-splx (ushort old_sr)
-{
-	__asm__ volatile
-	(
-		"move.w %0,%%sr"
-		: 				/* output register */
-		: "d" (old_sr)			/* input registers */
-		: "cc"				/* clobbered */
-	);
-}
-
-/* END locking functions - bottom/top half */
-/****************************************************************************/
-
-/****************************************************************************/
 /* BEGIN  */
 
-# if 0
-# define ZS_PAUSE	(void) *(short *) 0x00fffa00L
-# else
-# define ZS_PAUSE	{ int i = 10; do { i--; } while (i); }
-# endif
+# define ZS_PAUSE	udelay (10)
 
 INLINE void
 ZS_WRITE_0 (SCC *regs, uchar data)
@@ -885,7 +854,7 @@ top_rts_on (IOVAR *iovar)
 	
 	sr = splhigh ();
 	rts_on (iovar, iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 INLINE void
@@ -895,7 +864,7 @@ top_rts_off (IOVAR *iovar)
 	
 	sr = splhigh ();
 	rts_off (iovar, iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 INLINE void
@@ -905,7 +874,7 @@ top_dtr_on (IOVAR *iovar)
 	
 	sr = splhigh ();
 	dtr_on (iovar, iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 INLINE void
@@ -915,7 +884,7 @@ top_dtr_off (IOVAR *iovar)
 	
 	sr = splhigh ();
 	dtr_off (iovar, iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 INLINE void
@@ -925,7 +894,7 @@ top_brk_on (IOVAR *iovar)
 	
 	sr = splhigh ();
 	brk_on (iovar, iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 INLINE void
@@ -935,7 +904,7 @@ top_brk_off (IOVAR *iovar)
 	
 	sr = splhigh ();
 	brk_off (iovar, iovar->regs);
-	splx (sr);
+	spl (sr);
 }
 
 INLINE void
@@ -945,7 +914,7 @@ top_txint_off (IOVAR *iovar)
 	
 	sr = splhigh ();
 	ZS_WRITE_0 (iovar->regs, RESINT);
-	splx (sr);
+	spl (sr);
 }
 
 /* END inline assembler primitives - top half */
@@ -1021,7 +990,7 @@ init_SCC (IOVAR **iovar, SCC *regs)
 			src += 2;
 		}
 		
-		splx (sr);
+		spl (sr);
 		
 		(*iovar)->wr3 = 0xC1;
 		(*iovar)->wr4 = STB_ASYNC1|TAKT_16x;
@@ -1082,7 +1051,6 @@ init_scc (void)
 {
 	void *old;
 	
-# define _hz_200	((volatile ulong *) 0x000004ba)
 	{
 		SCC *regs = scca;
 		
@@ -1112,7 +1080,7 @@ init_scc (void)
 			src += 2;
 		}
 		
-		splx (sr);
+		spl (sr);
 		
 		i = 40;
 		time = *_hz_200;
@@ -1123,13 +1091,13 @@ init_scc (void)
 			do {
 				sr = splhigh ();
 				status = ZS_READ (regs, RR3);
-				splx (sr);
+				spl (sr);
 			}
 			while (!(status & 0x8));
 			
 			sr = splhigh ();
 			(void) ZS_READ (regs, RR2);
-			splx (sr);
+			spl (sr);
 			
 			ZS_WRITE_0 (regs, RESESI);
 			ZS_WRITE_0 (regs, RHIUS);
@@ -1194,12 +1162,14 @@ init_scc (void)
 	{
 		if (flag_14_7456_mhz)
 			iovar_scca->table = baudtable_14_7456_mhz;
-		else if (mch == FALCON)
-			iovar_scca->table = baudtable_falcon_scca;
+		/* else if (mch == FALCON)
+			iovar_scca->table = baudtable_falcon_scca; */
 		else
 			iovar_scca->table = baudtable_tt_scca;
 		
-		/* SCC-A is serial2/lan BIOS 8 except TT there it is BIOS 9 */
+		/* SCC-A is serial2/lan BIOS 8 except TT there it is BIOS 9
+		 * as BIOS 8 is TT-MFP
+		 */
 		if (mch != TT)
 			iovar_scca->bdev = BDEV_OFFSET + 1;
 		else
@@ -1280,6 +1250,12 @@ init (struct kerinfo *k)
 	
 	if ((MINT_MAJOR == 0)
 		|| ((MINT_MAJOR == 1) && ((MINT_MINOR < 15) || (MINT_KVERSION < 2))))
+	{
+		c_conws (MSG_MINT);
+		goto failure;
+	}
+	
+	if (!loops_per_sec_ptr)
 	{
 		c_conws (MSG_MINT);
 		goto failure;
@@ -1465,6 +1441,7 @@ scc_rxavail (void)
 	IOVAR *iovar;
 	SCC *regs;
 	register uchar data;
+	register ushort sr;
 	
 	asm volatile
 	(
@@ -1473,6 +1450,8 @@ scc_rxavail (void)
 		: 			/* input registers */
 		: "cc"			/* clobbered */
 	);
+	
+	sr = splhigh ();
 	
 	regs = iovar->regs;
 	DEBUG_I (("scc_rxavail: %lx", regs));
@@ -1491,9 +1470,7 @@ scc_rxavail (void)
 			iovar->state |= STATE_SOFT;
 			txint_off (iovar, regs);
 			
-			ZS_WRITE_0 (regs, RHIUS);
-			
-			return;
+			goto out;
 		}
 		
 		if (data == XON)
@@ -1505,9 +1482,7 @@ scc_rxavail (void)
 			iovar->state &= ~STATE_SOFT;
 			wr_scc (iovar, regs);
 			
-			ZS_WRITE_0 (regs, RHIUS);
-			
-			return;
+			goto out;
 		}
 	}
 	
@@ -1539,7 +1514,10 @@ scc_rxavail (void)
 	
 	notify_top_half (iovar);
 	
+out:
 	ZS_WRITE_0 (regs, RHIUS);
+	
+	spl (sr);
 }
 
 static void
@@ -1547,7 +1525,7 @@ scc_stchange (void)
 {
 	IOVAR *iovar;
 	SCC *regs;
-	uchar ctlreg;
+	register uchar ctlreg;
 	
 	asm volatile
 	(
@@ -1854,7 +1832,7 @@ send_byte (IOVAR *iovar)
 		
 		sr = splhigh ();
 		wr_scc (iovar, regs);
-		splx (sr);
+		spl (sr);
 	}
 }
 
@@ -1931,7 +1909,7 @@ ctl_TIOCBAUD (IOVAR *iovar, long *buf)
 			ZS_WRITE (regs, WR13, high);
 			ZS_WRITE (regs, WR14, table [i].brgenmode);
 			
-			splx (sr);
+			spl (sr);
 			
 			iovar->baudrate = baudrate;
 		}
@@ -2331,7 +2309,7 @@ flush_output (IOVAR *iovar)
 	
 	sr = splhigh ();
 	iorec->head = iorec->tail = 0;
-	splx (sr);
+	spl (sr);
 }
 
 static void
@@ -2342,7 +2320,7 @@ flush_input (IOVAR *iovar)
 	
 	sr = splhigh ();
 	iorec->head = iorec->tail = 0;
-	splx (sr);
+	spl (sr);
 }
 
 /* END start/stop primitives - top half */
@@ -2652,7 +2630,7 @@ scc_open (FILEPTR *f)
 				*_giwrite = *_giread | 0x80;
 			}
 			
-			splx (sr);
+			spl (sr);
 		}
 		
 		/* assign dtr line */
@@ -3409,7 +3387,7 @@ scc_ioctl (FILEPTR *f, int mode, void *buf)
 				
 				sr = splhigh ();
 				ZS_WRITE (iovar->regs, WR5, iovar->wr5);
-				splx (sr);
+				spl (sr);
 			}
 			
 			break;
