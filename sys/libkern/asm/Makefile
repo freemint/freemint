@@ -20,14 +20,14 @@ all-here:
 # default overwrites
 
 # default definitions
-GENFILES = .000 .030 .020-60
+GENFILES = .cpu_*
 
 #
 # main target
 #
-asm-files: .$(CPU)
-	cd .$(CPU); $(MAKE)
+asm-files: .cpu_$(CPU)
+	cd .cpu_$(CPU); $(MAKE)
 
-.$(CPU):
+.cpu_$(CPU):
 	$(MKDIR) $@
-	$(CP) Makefile.asm-files $@/Makefile
+	$(CP) Makefile.objs $@/Makefile

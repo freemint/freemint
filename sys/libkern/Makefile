@@ -15,28 +15,27 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-# all-here: $(shell basename $(LIBKERNTARGET))
 all-here: 
 
 # default overwrites
 
 # default definitions
-GENFILES = .000 .030 .020-60 libkern000.a libkern030.a libkern020-60.a
+GENFILES = .cpu_* libkern*.a
 
 
 libkern$(CPU).a: objs asm-files
 	$(RM) $@
 	$(AR) rc $@ \
-		$(shell for file in `cat .$(CPU)/objs` ; \
-			do echo .$(CPU)/$$file ; done) \
-		$(shell for file in `cat asm/.$(CPU)/asm-files` ; \
-			do echo asm/.$(CPU)/$$file ; done)
+		$(shell for file in `cat .cpu_$(CPU)/objs` ; \
+			do echo .cpu_$(CPU)/$$file ; done) \
+		$(shell for file in `cat asm/.cpu_$(CPU)/asm-files` ; \
+			do echo asm/.cpu_$(CPU)/$$file ; done)
 	$(RANLIB) $@
 
-objs: .$(CPU)
-	cd .$(CPU); $(MAKE)
+objs: .cpu_$(CPU)
+	cd .cpu_$(CPU); $(MAKE)
 
-.$(CPU):
+.cpu_$(CPU):
 	$(MKDIR) $@
 	$(CP) Makefile.objs $@/Makefile
 

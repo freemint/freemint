@@ -1,0 +1,76 @@
+# 
+# 
+# cross compiling
+#CROSS = yes
+CROSS = no
+
+#
+# target and host compiler
+# 
+ifeq ($(CROSS),yes)
+
+CC = /scratch_hp/fnaumann/bin/m68k-atari-mint-gcc
+AS = $(CC)
+NATIVECC = gcc
+NATIVECFLAGS = -O
+AR = m68k-atari-mint-ar
+RANLIB = m68k-atari-mint-ranlib
+STRIP = m68k-atari-mint-strip
+FLAGS = m68k-atari-mint-flags
+
+else
+
+CC = gcc -pipe
+AS = $(CC)
+NATIVECC = gcc -pipe
+NATIVECFLAGS = -O
+AR = ar
+RANLIB = ranlib
+STRIP = strip
+FLAGS = flags
+
+endif
+
+# 
+# some tools
+# 
+YACC  = bison -dk
+LEX   = flex
+MV    = mv
+CP    = cp
+RM    = rm -f
+TOUCH = touch
+MKDIR = mkdir
+MAKE  = make
+SED   = sed
+CRLF  = crlf -s
+
+
+#
+# optimizations
+# 
+OPTS = -O2 -fomit-frame-pointer
+
+
+#
+# warning options
+#
+WARN = \
+	-Wall \
+	-Wmissing-prototypes \
+	-Winline \
+	-Wshadow \
+	-Wpointer-arith \
+	-Wcast-qual \
+	-Waggregate-return
+
+#
+# default definitions
+#
+DEFINITIONS = 
+
+
+#
+# model type
+#
+MODEL = 
