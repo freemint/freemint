@@ -135,25 +135,11 @@ struct kerinfo *kernel;
 
 
 /*
- * bios emulation - top half
- */
-static long _cdecl	dummy_instat	(int dev);
-static long _cdecl	dummy_in	(int dev);
-static long _cdecl	dummy_outstat	(int dev);
-static long _cdecl	dummy_out	(int dev, int c);
-static long _cdecl	dummy_rsconf	(int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr);
-
-
-/*
  * device driver routines - top half
  */
 static long _cdecl	dummy_open	(FILEPTR *f);
 static long _cdecl	dummy_write	(FILEPTR *f, const char *buf, long bytes);
 static long _cdecl	dummy_read	(FILEPTR *f, char *buf, long bytes);
-static long _cdecl	dummy_writeb	(FILEPTR *f, const char *buf, long bytes);
-static long _cdecl	dummy_readb	(FILEPTR *f, char *buf, long bytes);
-static long _cdecl	dummy_twrite	(FILEPTR *f, const char *buf, long bytes);
-static long _cdecl	dummy_tread	(FILEPTR *f, char *buf, long bytes);
 static long _cdecl	dummy_lseek	(FILEPTR *f, long where, int whence);
 static long _cdecl	dummy_ioctl	(FILEPTR *f, int mode, void *buf);
 static long _cdecl	dummy_datime	(FILEPTR *f, ushort *timeptr, int rwflag);
@@ -163,14 +149,8 @@ static void _cdecl	dummy_unselect	(FILEPTR *f, long proc, int mode);
 
 
 /*
- * device driver maps
+ * device driver map
  */
-static BDEVMAP bios_devtab =
-{
-	dummy_instat, dummy_in,
-	dummy_outstat, dummy_out,
-	dummy_rsconf
-};
 
 static DEVDRV raw_devtab =
 {
@@ -179,15 +159,6 @@ static DEVDRV raw_devtab =
 	dummy_close,
 	dummy_select, dummy_unselect,
 	NULL, NULL
-};
-
-static DEVDRV tty_devtab =
-{
-	dummy_open,
-	dummy_twrite, dummy_tread, dummy_lseek, dummy_ioctl, dummy_datime,
-	dummy_close,
-	dummy_select, dummy_unselect,
-	dummy_writeb, dummy_readb
 };
 
 
@@ -252,8 +223,6 @@ init (struct kerinfo *k)
 {
 //	long mch;
 	
-	// if you have raw devices
-	// and BIOS emulation
 	struct dev_descr raw_dev_descriptor =
 	{
 		&raw_devtab,
@@ -268,27 +237,7 @@ init (struct kerinfo *k)
 		S_IWGRP |
 		S_IROTH |
 		S_IWOTH,	/* fmode */
-		&bios_devtab,	/* bdevmap */
-		0,		/* bdev */
-		0		/* reserved */
-	};
-	
-	// if you tty devices
-	struct dev_descr tty_dev_descriptor =
-	{
-		&tty_devtab,
-		0,		/* dinfo -> fc.aux */
-		O_TTY,		/* flags */
-		NULL,		/* struct tty * */
-		44,		/* drvsize */
-		S_IFCHR |
-		S_IRUSR |
-		S_IWUSR |
-		S_IRGRP |
-		S_IWGRP |
-		S_IROTH |
-		S_IWOTH,	/* fmode */
-		NULL,		/* bdevmap */
+		0,		/* bdevmap */
 		0,		/* bdev */
 		0		/* reserved */
 	};
@@ -324,22 +273,10 @@ init (struct kerinfo *k)
 	// this is FILEPTR *f->fc.aux
 	raw_dev_descriptor.dinfo = 0;
 	
-	// BIOS device number
-	raw_dev_descriptor.bdev = 0;
-	
 	// install it
 	if (d_cntl (DEV_INSTALL2, "dummy", (long) &raw_dev_descriptor) >= 0)
 		DEBUG (("%s: %s installed with BIOS remap", __FILE__, "dummy"));
 	
-	// this is FILEPTR *f->fc.aux
-	tty_dev_descriptor.dinfo = 0;
-	
-	// we need a tty struct
-	tty_dev_descriptor.tty = NULL; // &(->tty);
-	
-	// install it
-	if (d_cntl (DEV_INSTALL, "ttyS-dummy", (long) &tty_dev_descriptor) >= 0)
-		DEBUG (("%s: %s installed", __FILE__, "ttyS-dummy"));
 	
 	return (DEVDRV *) 1;
 	
@@ -425,101 +362,6 @@ check_ioevent (PROC *p, long arg)
 /****************************************************************************/
 
 /****************************************************************************/
-/* BEGIN bios emulation - top half */
-
-static long _cdecl
-dummy_instat (int dev)
-{
-	long used = 0;
-	
-	return (used ? -1 : 0);
-}
-
-static long _cdecl
-dummy_in (int dev)
-{
-	long ret = 0;
-	
-	return ret;
-}
-
-static long _cdecl
-dummy_outstat (int dev)
-{
-	long free = 0;
-	
-	return (free ? -1 : 0);
-}
-
-static long _cdecl
-dummy_out (int dev, int c)
-{
-	return E_OK;
-}
-
-/* 
- * rsconf modes
- * 
- * speed:
- * 
- * -2 - return current baudrate
- * -1 - no change
- *  0 - 19200
- *  1 - 9600
- *  2 - 4800
- *  3 - 3600
- *  4 - 2400
- *  5 - 2000
- *  6 - 1800
- *  7 - 1200
- *  8 - 600
- *  9 - 300
- * 10 - 200	-> 230400	(HSMODEM)
- * 11 - 150	-> 115200	(HSMODEM)
- * 12 - 134	-> 57600	(HSMODEM)
- * 13 - 110	-> 38400	(HSMODEM)
- * 14 - 75	-> 153600	(HSMODEM)
- * 15 - 50	-> 76800	(HSMODEM)
- * 
- * flowctl:
- * 
- * -1 - no change
- *  0 - no handshake
- *  1 - soft (XON/XOFF)
- *  2 - hard (RTS/CTS)
- *  3 - hard & soft
- * 
- * ucr:
- * bit 5..6: wordlength: 00: 8, 01: 7, 10: 6, 11: 5
- * bit 3..4: stopbits: 01: 1, 10: 1.5, 11: 2, 00: invalid
- * bit 2   : 0: parity off  1: parity on
- * bit 1   : 0: odd parity, 1: even parity - only valid if parity is enabled
- * 
- * rsr: - not used, 0
- * tsr: - bit 3 break on/off
- * scr: - not used, 0
- */
-static long _cdecl
-dummy_rsconf (int dev, int speed, int flowctl, int ucr, int rsr, int tsr, int scr)
-{
-//	static ulong baud [16] =
-//	{
-//		19200, 9600, 4800, 3600, 2400, 2000, 1800, 1200,
-//		600, 300, 230400, 115200, 57600, 38400, 153600, 76800
-//	};
-	
-	ulong ret = 0;
-	
-	DEBUG (("dummy_rsconf: enter %i, %i", dev, speed));
-	
-	
-	return ret;
-}
-
-/* END bios emulation - top half */
-/****************************************************************************/
-
-/****************************************************************************/
 /* BEGIN device driver routines - top half */
 
 static long _cdecl
@@ -537,29 +379,13 @@ dummy_open (FILEPTR *f)
 	{
 		/* first open */
 		
-		/* assign dtr line */
-		top_dtr_on (iovar);
-		
-		/* start receiver */
-		rx_start (iovar);
+		// assign ressources
+		// do whatever is neccessary to bring the device up and running
 	}
 	else
 	{
 		if (denyshare (iovar->open, f))
 		{
-# if DEV_DEBUG > 0
-			FILEPTR *t = iovar->open;
-			while (t)
-			{
-				DEBUG (("t = %lx, t->next = %lx", t, t->next));
-				DEBUG (("  links = %i, flags = %x", t->links, t->flags));
-				DEBUG (("  pos = %li, devinfo = %lx", t->pos, t->devinfo));
-				DEBUG (("  dev = %lx, next = %lx", t->dev, t->next));
-				DEBUG (("  fc.index = %li, fc.dev = %i, fc.aux = %i", t->fc.index, t->fc.dev, t->fc.aux));
-				
-				t = t->next;
-			}
-# endif
 			DEBUG (("dummy_open: file sharing denied"));
 			return EACCES;
 		}
@@ -568,9 +394,6 @@ dummy_open (FILEPTR *f)
 	f->pos = 0;
 	f->next = iovar->open;
 	iovar->open = f;
-	
-	if (dev == tty device)
-		f->flags |= O_TTY;
 	
 	DEBUG (("dummy_open: return E_OK (added %lx)", f));
 	return E_OK;
@@ -634,9 +457,6 @@ dummy_close (FILEPTR *f, int pid)
 
 
 /* raw write/read routines
- * 
- * they never block (???)
- * they don't do any carrier check or so
  */
 static long _cdecl
 dummy_write (FILEPTR *f, const char *buf, long bytes)
@@ -662,118 +482,11 @@ dummy_read (FILEPTR *f, char *buf, long bytes)
 	return done;
 }
 
-
-/* terminal fast raw I/O routines
- * 
- * they must implement all the nice tty features
- * like O_NDELAY handling, vmin/vtime support and so on
- * 
- * they are called in non-canonical mode
- */
-static long _cdecl
-dummy_writeb (FILEPTR *f, const char *buf, long bytes)
-{
-// 
-// look at the scc/uart xdd for examples
-//
-	long done = 0;
-	
-	DEBUG (("dummy_writeb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	
-	
-	DEBUG (("dummy_writeb: leave (%ld)", done));
-	return done;
-}
-
-static long _cdecl
-dummy_readb (FILEPTR *f, char *buf, long bytes)
-{
-// 
-// look at the scc/uart xdd for examples
-//
-	int ndelay = (f->flags & O_NDELAY);
-	long done = 0;
-	
-	DEBUG (("dummy_readb [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	
-	if (!bytes)
-		/* nothing to do... */
-		return 0;
-	
-//	if (iovar->tty.state & TS_BLIND)
-//		/* line disconnected */
-//		return 0;
-	
-	if (!ndelay)
-	{
-		/* blocking read
-		 * handle all vmin and vtime combinations
-		 */
-		
-	}
-	
-	
-	DEBUG (("dummy_readb: leave (%ld)", done));
-	return done;
-}
-
-
-/* slow terminal I/O routines
- * 
- * they must implement only N_DELAY correctly
- * 
- * they are called in canonical mode and only from kernel level
- * with kernel buffers
- * 
- * Note: buf doesn't point to a byte stream; it's rather a int32 array
- *       with one 32bit int for every char; bytes is the array size in _bytes_
- */
-static long _cdecl
-dummy_twrite (FILEPTR *f, const char *buf, long bytes)
-{
-// 
-// look at the scc/uart xdd for examples
-//
-	int ndelay = f->flags & O_NDELAY;
-	long done = 0;
-//	const long *r = (const long *) buf;
-	
-	DEBUG (("dummy_twrite [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	
-	
-	if (ndelay && !done)
-		done = EAGAIN;
-	
-	DEBUG (("dummy_twrite: leave (%ld)", done));
-	return done;
-}
-
-static long _cdecl
-dummy_tread (FILEPTR *f, char *buf, long bytes)
-{
-// 
-// look at the scc/uart xdd for examples
-//
-	int ndelay = f->flags & O_NDELAY;
-	long done = 0;
-//	long *r = (long *) buf;
-	
-	DEBUG (("dummy_tread [%i]: enter (%lx, %ld)", f->fc.aux, buf, bytes));
-	
-	
-	if (ndelay && !done)
-		done = EAGAIN;
-	
-	DEBUG (("dummy_tread: leave (%ld)", done));
-	return done;
-}
-
 static long _cdecl
 dummy_lseek (FILEPTR *f, long where, int whence)
 {
 	DEBUG (("dummy_lseek [%i]: enter (%ld, %d)", f->fc.aux, where, whence));
 	
-	/* (terminal) devices are always at position 0 */
 	return 0;
 }
 
@@ -804,10 +517,6 @@ dummy_ioctl (FILEPTR *f, int mode, void *buf)
 			r = ENOSYS;
 			break;
 		}
-// 
-// look at the scc/uart xdd for ioctl() for tty devices
-// that must be implemented
-//
 		
 # if 0
 // 
