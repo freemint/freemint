@@ -272,11 +272,6 @@ set_option(struct options *cur, int which)
  */
 #if GENERATE_DIAGS
 #define debugp(d,s) curopt->point[d] = s
-static char *
-truthvalue(bool b)
-{
-	return b == 0 ? "true" : "false";
-}
 #endif
 
 /* since xa_scl, SCL needs lock */
@@ -1019,13 +1014,13 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 
 				if (*ident)
 				{
-					int c = sk();
+					int ch = sk();
 
 					strcpy(p,ident);
 					strupr(p);
 					strcat(p,"=");
 
-					if (s && (c == 0 || c != '=' || c == ';'))
+					if (s && (ch == 0 || ch != '=' || ch == ';'))
 					{
 						/* pattern 'export var' */
 						if (s->mode == String)
@@ -1035,7 +1030,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 					}
 					else
 					{
-						if (c == '=')
+						if (ch == '=')
 							skc();
 						fstr(p + strlen(p), 0, 0);
 					}

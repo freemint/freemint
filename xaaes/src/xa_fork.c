@@ -62,13 +62,13 @@ xa_fork_exec(short x_mode, XSHELW *xsh, char *fname, char *tail)
 			strcat(ppp, "SW_PRENICE,");
 		if (x_mode & SW_ENVIRON)
 			strcat(ppp, "SW_ENVIRON");
-		if (x_mode & SW_PDEFDIR)
+		if (x_mode & SW_DEFDIR)
 			/* Was the a default dir passed? */
-			strcat(ppp, "SW_PDEFDIR");
+			strcat(ppp, "SW_DEFDIR");
 
 		DIAG((D_shel, NULL, "Extended shell_write bits: %s\n", ppp));
 
-		if (x_mode & SW_PDEFDIR)
+		if (x_mode & SW_DEFDIR)
 			/* Was the a default dir passed? */
 			DIAG((D_shel, NULL, "def dir: '%s'\n", x_shell.defdir));
 	}
@@ -79,7 +79,7 @@ xa_fork_exec(short x_mode, XSHELW *xsh, char *fname, char *tail)
 #endif
 
 	/* Make it local (for memory protection) */
-	if (x_mode & SW_PDEFDIR)
+	if (x_mode & SW_DEFDIR)
 		strcpy(shelldir, x_shell.defdir);
 	else
 		*shelldir = 0;
@@ -150,7 +150,7 @@ xa_fork_exec(short x_mode, XSHELW *xsh, char *fname, char *tail)
 			if ((x_mode & SW_PRENICE) && x_shell.prenice)
 				(void) Pnice(x_shell.prenice);
 
-			if ((x_mode & SW_PDEFDIR) && *shelldir)
+			if ((x_mode & SW_DEFDIR) && *shelldir)
 			{
 				/* no name, set */
 				defdrive = drive_and_path(shelldir, defdir, NULL, false, true);
@@ -179,7 +179,7 @@ xa_fork_exec(short x_mode, XSHELW *xsh, char *fname, char *tail)
 	if (new)
 	{
 		/* Was the a default dir passed? */
-		if ((x_mode & SW_PDEFDIR) && *shelldir)
+		if ((x_mode & SW_DEFDIR) && *shelldir)
 		{
 			new->xdrive = defdrive;
 			strcpy(new->xpath, defdir);

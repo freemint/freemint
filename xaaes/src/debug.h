@@ -121,7 +121,7 @@ void display_env(char **env, int which);
 #endif
 
 #if DEBUG_CONTROL
-#define CONTROL(a,b,c) {short *co = pb->contrl; \
+#define CONTROL(a,b,c) {short *co = pb->control; \
 			 if (co[1] != a || co[2] != b || co[3] != c) \
 				display(D_cl,a,co[1],b,co[2],c,co[3]); }
 #else

@@ -21,4 +21,4 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-bool transform_gem_bitmap_data(MFDB msrc, MFDB mdest, int src_planes, int dst_planes);
+bool transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int dst_planes);

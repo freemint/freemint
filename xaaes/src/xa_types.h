@@ -284,7 +284,7 @@ struct wdlg_info
 	void *user_data;
 	void *data;
 	EVNT *evnt;
-	HNDL_OBJ *exit;
+	HNDL_OBJ exit;
 };
 typedef struct wdlg_info WDLG_INFO;
 
@@ -546,7 +546,7 @@ struct xa_widget
 	WidgetBehaviour *drag;
 	WidgetBehaviour *release;
 
-	OB_STATE state;			/* Current status (selected, etc) */
+	short state;			/* Current status (selected, etc) */
 	XA_WIDGETS type;		/* For convenience, makes it possible to disconnect type from index */
 	short x, y;			/* If we are activated because we've been clicked on, this is the
 					 * relative location of the click (click_object_widget)*/
@@ -721,9 +721,13 @@ XA_WINDOW *get_top(void);
 extern XA_WINDOW *root_window;
 #define window_list S.open_windows.first
 
+struct scroll_info;
+
 typedef void fsel_handler(LOCK lock, char *path, char *file);
 typedef int scrl_click(LOCK lock, OBJECT *form, int objc);
+typedef void scrl_widget(struct scroll_info *list);
 typedef void scrl_vis(struct scroll_info *list, struct scroll_entry *s);
+
 
 /* HR: The FS_LIST box is the place holder and the
  *     entrypoint via its TOUCHEXIT flag.
@@ -761,8 +765,6 @@ struct scroll_entry
 };
 typedef struct scroll_entry SCROLL_ENTRY;
 
-
-typedef void scrl_widget(struct scroll_info *list);
 
 struct scroll_info
 {

@@ -118,7 +118,7 @@ set_desktop_widget(XA_WINDOW *wind, XA_TREE *desktop)
 	wi->dclick = click_desktop_widget;
 	wi->drag = click_desktop_widget;
 	wi->loc = loc;
-	wi->state = NONE;
+	wi->state = OS_NORMAL;
 	wi->stuff = nt;
 	wi->start = 0;
 }
@@ -158,7 +158,7 @@ set_desktop(XA_TREE *new_desktop)
 	*desktop = *new_desktop;
 
 	ob = desktop->tree;
-	r = ob->r;
+	r = *(RECT*)&ob->ob_x;
 
 	/* Now use the root window's auto-redraw function to redraw it
 	 * 
@@ -170,7 +170,7 @@ set_desktop(XA_TREE *new_desktop)
 
 	/* HR 010501: general fix */
 	if (root_window->r.h > r.h)
-		wi->loc.r.y = ob->r.y = root_window->r.h - r.h;
+		wi->loc.r.y = ob->ob_y = root_window->r.h - r.h;
 }
 
 XA_CLIENT *

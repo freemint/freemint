@@ -25,7 +25,7 @@
 #define _RECTLIST_H_
 
 bool was_visible(XA_WINDOW *w);			/* HR 251002: redraw optimizations */
-bool rc_intersect(RECT s, RECT *d);		/* HR 210801: s by value in stead of const */
+bool xa_rc_intersect(RECT s, RECT *d);		/* HR 210801: s by value in stead of const */
 XA_RECT_LIST *generate_rect_list(LOCK lock, XA_WINDOW *w, short which);
 void dispose_rect_list(XA_WINDOW *w);
 

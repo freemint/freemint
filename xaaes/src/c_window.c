@@ -197,7 +197,7 @@ hide_move(struct options *o)
 	if (!o->xa_nohide)
 		kind |= HIDE;
 	if (!o->xa_nomove)
-		kind |= MOVE;
+		kind |= MOVER;
 	return kind;
 }
 
@@ -345,7 +345,7 @@ bool
 is_hidden(XA_WINDOW *wind)
 {
 	RECT d = root_window->r;
-	return !rc_intersect(wind->r, &d);
+	return !xa_rc_intersect(wind->r, &d);
 }
 
 bool
@@ -433,8 +433,8 @@ create_window(
 	int frame,
 	int thinframe,
 	bool thinwork,
-	RECT r,
-	RECT *max,
+	const RECT r,
+	const RECT *max,
 	RECT *remember)
 {
 	XA_WINDOW *new;
@@ -463,7 +463,7 @@ create_window(
 	if ((tp & LFARROW) || (tp & RTARROW))
 		tp |= LFARROW|RTARROW;
 	/* cant hide a window that cannot be moved. */
-	if ((tp & MOVE) == 0)
+	if ((tp & MOVER) == 0)
 		tp &= ~HIDE;
 	/* temporary until solved. */
 	if (tp & MENUBAR)
@@ -611,7 +611,7 @@ open_window(LOCK lock, XA_WINDOW *wind, RECT r)
 		{
 			clip = wl->r;
 
-			if (rc_intersect(our_win, &clip))
+			if (xa_rc_intersect(our_win, &clip))
 				generate_rect_list(lock|winlist, wl, 1);
 
 			wl = wl->next;
@@ -658,7 +658,7 @@ draw_window(LOCK lock, XA_WINDOW *wind)
 		return;
 	}
 
-	l_color(BLACK);
+	l_color(G_BLACK);
 	hidem();
 
 	/* Dont waste precious CRT glass */
@@ -751,7 +751,7 @@ draw_window(LOCK lock, XA_WINDOW *wind)
 #endif
 		if (wind->frame > 0)
 		{
-			shadow_object(0, SHADOWED, &cl, BLACK, SHADOW_OFFSET/2);
+			shadow_object(0, OS_SHADOWED, &cl, G_BLACK, SHADOW_OFFSET/2);
 
 #if 0
 			/* only usefull if we can distinguish between
@@ -911,7 +911,7 @@ pull_wind_to_top(LOCK lock, XA_WINDOW *w)
 			{
 				clip = wl->r;
 				DIAG((D_r, wl->owner, "wllist %d\n", wl->handle));
-				if (rc_intersect(r, &clip))
+				if (xa_rc_intersect(r, &clip))
 					generate_rect_list(wlock, wl, 2);
 				wl = wl->prev;
 			}
@@ -945,7 +945,7 @@ send_wind_to_bottom(LOCK lock, XA_WINDOW *w)
 	while (wl)
 	{
 		clip = wl->r;
-		if (rc_intersect(r, &clip))
+		if (xa_rc_intersect(r, &clip))
 			generate_rect_list(lock|winlist, wl, 4);
 		wl = wl->next;
 	}
@@ -1028,8 +1028,8 @@ move_window(LOCK lock, XA_WINDOW *wind, int newstate, int x, int y, int w, int h
 			/* Temporary hack 070702 */
 			if (wt && wt->tree)
 			{
-				wt->tree->r.x = wind->wa.x;
-				wt->tree->r.y = wind->wa.y;
+				wt->tree->ob_x = wind->wa.x;
+				wt->tree->ob_y = wind->wa.y;
 			}
 
 			/* Update the window's rectangle list, it will be out of date now */
@@ -1093,7 +1093,7 @@ move_window(LOCK lock, XA_WINDOW *wind, int newstate, int x, int y, int w, int h
 				clip = wl->r;
 
 				/* Check for newly exposed windows */
-				if (rc_intersect(old, &clip))
+				if (xa_rc_intersect(old, &clip))
 				{			
 					generate_rect_list(wlock, wl, 7);
 					display_window(wlock, 13, wl, &clip);
@@ -1105,7 +1105,7 @@ move_window(LOCK lock, XA_WINDOW *wind, int newstate, int x, int y, int w, int h
 				{
 					clip = wl->r;
 					/* Check for newly covered windows */
-					if (rc_intersect(new, &clip))
+					if (xa_rc_intersect(new, &clip))
 					{
 						/* We don't need to send a redraw to
 						 * these windows, we just have to update
@@ -1226,7 +1226,7 @@ close_window(LOCK lock, XA_WINDOW *wind)
 	{
 		clip = wl->r;
 		DIAG((D_wind, client, "[2]redisplay %d\n", wl->handle));
-		if (rc_intersect(r, &clip))
+		if (xa_rc_intersect(r, &clip))
 		{
 			DIAG((D_wind, client, "   --   clip %d/%d,%d/%d\n", clip));
 			/* If a new focus was pulled up, some of these are not needed */
@@ -1353,7 +1353,7 @@ display_window(LOCK lock, int which, XA_WINDOW *wind, RECT *clip)
 				{
 					RECT target = rl->r;				
 
-					if (rc_intersect(*clip, &target))
+					if (xa_rc_intersect(*clip, &target))
 					{
 						set_clip(&target);
 						DIAG((D_rect, wind->owner, "clip: %d/%d,%d/%d\n",
@@ -1384,7 +1384,7 @@ display_window(LOCK lock, int which, XA_WINDOW *wind, RECT *clip)
  * HR: at the time only called for form_dial(FMD_FINISH)
  */
 void
-display_windows_below(LOCK lock, RECT *r, XA_WINDOW *wl)
+display_windows_below(LOCK lock, const RECT *r, XA_WINDOW *wl)
 {
 	RECT win_r;
 
@@ -1394,7 +1394,7 @@ display_windows_below(LOCK lock, RECT *r, XA_WINDOW *wl)
 		while (rl)
 		{
 			win_r = rl->r;		
-			if (rc_intersect(*r, &win_r))
+			if (xa_rc_intersect(*r, &win_r))
 			{
 				set_clip(&win_r);
 				draw_window(lock, wl);		/* Display the window */

@@ -150,7 +150,7 @@
 #define fsel_SEMA			FSELECT_SEMA
 #define envstr_SEMA			ENV_SEMA
 
-#define update_SEMA			UPDATE_LOCK
+#define lck_update_SEMA			UPDATE_LOCK
 #define mouse_SEMA			MOUSE_LOCK
 
 #define pending_SEMA			PENDING_SEMA

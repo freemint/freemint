@@ -62,15 +62,15 @@ obfix(OBJECT *tree, int object)
 {
 	OBJECT *o = tree + object;
 
-	o->r.x = fixup(o->r.x, screen.c_max_w) ;
-	o->r.y = fixup(o->r.y, screen.c_max_h) ;
+	o->ob_x = fixup(o->ob_x, screen.c_max_w) ;
+	o->ob_y = fixup(o->ob_y, screen.c_max_h) ;
 	/*
 	 * Special case handling: any OBJECT 80 characters wide is supposed
 	 * to be a menu bar, which always covers the entire screen width...
 	 */
-	o->r.w = (o->r.w == 80) ? screen.r.w
-				: fixup(o->r.w, screen.c_max_w) ;
-	o->r.h = fixup(o->r.h, screen.c_max_h) ;
+	o->ob_width = (o->ob_width == 80) ? screen.r.w
+				: fixup(o->ob_width, screen.c_max_w) ;
+	o->ob_height = fixup(o->ob_height, screen.c_max_h) ;
 }
 
 /*
@@ -84,7 +84,7 @@ static short resWidth, resHeight;
 /* HR 021101: new function to make the code orthogonal.
 */
 static short *
-transform_icon_bitmap(XA_CLIENT *client, CICONBLK *icon, short *map, long len, int planes)
+transform_icon_bitmap(XA_CLIENT *client, CICONBLK *icon, short *map, long len, int planes, short vdih)
 {
 	MFDB src, dst;
 	short *new_data = map;
@@ -105,8 +105,8 @@ transform_icon_bitmap(XA_CLIENT *client, CICONBLK *icon, short *map, long len, i
 		memcpy(new_data, map, icon_len);
 	}
 
-	src.fd_w = icon->monoblk.ic.w;			/* Transform MFDB's */
-	src.fd_h = icon->monoblk.ic.h;
+	src.fd_w = icon->monoblk.ib_wicon;			/* Transform MFDB's */
+	src.fd_h = icon->monoblk.ib_hicon;
 	src.fd_wdwidth = (src.fd_w + 15) / 16;		/* round up */
 	src.fd_stand = 1;
 	src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
@@ -122,8 +122,8 @@ transform_icon_bitmap(XA_CLIENT *client, CICONBLK *icon, short *map, long len, i
 	{
 		memcpy(tmp, new_data, new_len);
 		src.fd_addr = tmp;
-		transform_gem_bitmap_data(src, dst, planes, screen.planes);
-		/* vr_trnfm( C.vh, &src, &dst ); */
+		transform_gem_bitmap_data(vdih, src, dst, planes, screen.planes);
+		/* vr_trnfm( vdih, &src, &dst ); */
 		free(tmp);
 	}
 
@@ -134,14 +134,14 @@ transform_icon_bitmap(XA_CLIENT *client, CICONBLK *icon, short *map, long len, i
  * FixColourIconData : Convert a colour icon from device independent to device specific
  */
 static void
-FixColourIconData(XA_CLIENT *client, CICONBLK *icon, long base)
+FixColourIconData(XA_CLIENT *client, CICONBLK *icon, long base, short vdih)
 {
 	CICON *c, *best_cicon = NULL;
-	long len = calc_back(&icon->monoblk.ic, 1);
+	long len = calc_back((RECT*)&icon->monoblk.ib_xicon, 1);
 
 	DIAG((D_s, client, "color icon: '%s' %d*%d %ld tx.w=%d\n",
 		icon->monoblk.ib_ptext,
-		icon->monoblk.ic.w, icon->monoblk.ic.h, len, icon->monoblk.tx.w));
+		icon->monoblk.ib_wicon, icon->monoblk.ib_hicon, len, icon->monoblk.ib_wtext));
 
 	/* HR 021101: Use the same mechanism from d_g_cicon() for reducing the
 	 *            number of transformations done.
@@ -149,7 +149,7 @@ FixColourIconData(XA_CLIENT *client, CICONBLK *icon, long base)
 	c = icon->mainlist;
 	while(c)
 	{
-		/* DIAG((D_rsrc,client,"[1]probe cicon planes %d\n", c->num_planes)); */
+		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx\n", c));
 	
 		if (    c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
@@ -165,15 +165,16 @@ FixColourIconData(XA_CLIENT *client, CICONBLK *icon, long base)
 
 		c = best_cicon;
 		if (c->col_data)
-			c->col_data = transform_icon_bitmap(client, icon, c->col_data, len, c->num_planes);
+			c->col_data = transform_icon_bitmap(client, icon, c->col_data, len, c->num_planes, vdih);
 		if (c->sel_data)
-			c->sel_data = transform_icon_bitmap(client, icon, c->sel_data, len, c->num_planes);
+			c->sel_data = transform_icon_bitmap(client, icon, c->sel_data, len, c->num_planes, vdih);
+
 		/* set the new data plane count */
 		c->num_planes = screen.planes;
 	}
 	else
 	{
-		/* DIAG((D_rsrc,client,"[1]No matching icon\n")); */
+		DIAG((D_rsrc,client,"[1]No matching icon\n"));
 	}
 }
 
@@ -214,12 +215,13 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 	long handle;
 	RSHDR hdr;
 	OBJECT *obj, **trees;
+	short vdih = C.vh;
 
 	IFDIAG (OBJECT *tree;)
 
-	CICONBLK **cibh;
-	unsigned long osize, size;
-	char *base;
+	CICONBLK **cibh = NULL;
+	unsigned long osize = 0, size = 0;
+	char *base = NULL;
 	int i, j, type, numCibs = 0;
 
 	resWidth = screen.c_max_w;
@@ -344,7 +346,7 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 		/* terminated by a 0L */
 		earray = (unsigned long *)(osize + (long)base);
 		cibh = (CICONBLK **)(earray[1] + (long)base);
-		if ((long)cibh > 0L)	/* Get colour icons */
+		if (earray[1] > 0L)	/* Get colour icons */
 		{
 			CICONBLK *cib, **cp = cibh;
 
@@ -361,7 +363,7 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 				short *pdata, numRez;
 
 				cibh[i] = cib;
-				size = calc_back(&ib->ic, 1);
+				size = calc_back((RECT*)&ib->ib_xicon, 1);
 				addr = (unsigned long*)((long)cib + sizeof(ICONBLK));
 				numRez = addr[0];
 				pdata = (short *)&addr[1];
@@ -375,7 +377,7 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 				 */
 				if (ib->ib_ptext)
 				{
-					short l = ib->tx.w/6;
+					short l = ib->ib_wtext/6;
 					/* fix some resources */
 					ib->ib_ptext += (long)base;
 					if (strlen(ib->ib_ptext) > l)
@@ -429,6 +431,29 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 			}
 			DIAG((D_rsrc, client, "fixed up %d color icons\n", numCibs));
 		}
+
+		if (0 /*FIXME: the palette support doesn't work yet properly*/ &&
+		    earray[1] > 0L && earray[2] > 0L) /* Get color palette */
+		{
+			short *rsrc_colour_lut = (short *)(earray[2] + (long)base);
+
+			int rc;
+			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
+			short work_out[58];
+			vdih = C.P_handle;
+			v_opnvwk(work_in, &vdih, work_out);
+
+			/* set the palette up to the vdi workstation */
+			for (rc=0;rc<16;rc++) {
+				static short tos_colours[] = { 0, 255, 1, 2, 4, 6, 3, 5, 7, 8, 9, 10, 12, 14, 11, 13};
+				vs_color( vdih, rc, &rsrc_colour_lut[tos_colours[rc]*4] );
+			}
+			vs_color( vdih, 255, &rsrc_colour_lut[15*4] );
+
+			/* 1:1 mapping for other colors */
+			for (rc=16;rc<255;rc++)
+				vs_color( vdih, rc, &rsrc_colour_lut[rc*4] );
+		}
 	}
 
 	/* As you see, the objects are NOT in a pointer array!!! */
@@ -461,14 +486,14 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 		case G_FBOXTEXT:
 		case G_TITLE:
 		case G_ICON:
-			obj->ob_spec.string += (long)base;
+			obj->ob_spec.free_string += (long)base;
 			break;
 		case G_CICON:
-			FixColourIconData(client, cibh[obj->ob_spec.lspec], (long)base);
-			obj->ob_spec.ciconblk = cibh[obj->ob_spec.lspec];
+			FixColourIconData(client, cibh[obj->ob_spec.index], (long)base, vdih);
+			obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
 			break;
 		case G_PROGDEF:
-			obj->ob_spec.appblk = NULL;
+			obj->ob_spec.userblk = NULL;
 			break;
 		case G_IBOX:
 		case G_BOX:
@@ -479,6 +504,9 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 			break;
 		}
 	}
+
+	if ( vdih != C.vh )
+		v_clsvwk(vdih);
 
 	DIAG((D_rsrc, client, "fixed up %d objects ob_spec\n", hdr.rsh_nobs));
 
@@ -496,12 +524,12 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 			/* Not a menu tree */
 			do {
 				/* Fix all object coordinates */
-				obj->r.x = (((obj->r.x & 255) * designWidth + (obj->r.x >> 8)) * resWidth) / designWidth;
-				obj->r.y = (((obj->r.y & 255) * designHeight + (obj->r.y >> 8)) * resHeight) / designHeight;
-				obj->r.w = (((obj->r.w & 255) * designWidth + (obj->r.w >> 8)) * resWidth) / designWidth;
-				obj->r.h = (((obj->r.h & 255) * designHeight + (obj->r.h >> 8)) * resHeight) / designHeight;
+				obj->ob_x = (((obj->ob_x & 255) * designWidth + (obj->ob_x >> 8)) * resWidth) / designWidth;
+				obj->ob_y = (((obj->ob_y & 255) * designHeight + (obj->ob_y >> 8)) * resHeight) / designHeight;
+				obj->ob_width = (((obj->ob_width & 255) * designWidth + (obj->ob_width >> 8)) * resWidth) / designWidth;
+				obj->ob_height = (((obj->ob_height & 255) * designHeight + (obj->ob_height >> 8)) * resHeight) / designHeight;
 			}
-			while (!(obj++->ob_flags & LASTOB));
+			while (!(obj++->ob_flags & OF_LASTOB));
 		}
 		else
 		{
@@ -511,7 +539,7 @@ LoadResources(XA_CLIENT *client, char *fname, RSHDR *rshdr, short designWidth, s
 			do {
 				obfix(obj, j);
 			}
-			while (!(obj[j++].ob_flags & LASTOB));
+			while (!(obj[j++].ob_flags & OF_LASTOB));
 		}
 	}
 	
@@ -545,11 +573,11 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 	RSHDR *rsc = NULL;
 
 	if (pb)
-		if (pb->globl)
-			rsc = pb->globl->rshdr;
+		if (pb->global)
+			rsc = ((struct aes_global *)pb->global)->rshdr;
 
 	cur = client->resources;
-	DIAG((D_rsrc,client,"FreeResources: %ld for %d, ct=%d, pb->globl->rsc=%lx\n",
+	DIAG((D_rsrc,client,"FreeResources: %ld for %d, ct=%d, pb->global->rsc=%lx\n",
 		cur, client->pid, client->rsct, rsc));
 
 	if (cur && client->rsct)
@@ -576,8 +604,8 @@ FreeResources(XA_CLIENT *client, AESPB *pb)
 					obj = trees[i];
 					do
 					{	if ((obj[f].ob_type & 255) == G_SLIST)
-							XA_free(&client->base, obj[f].ob_spec.listbox);
-					} while ( ! (obj[f++].ob_flags & LASTOB));
+							XA_free(&client->base, (SCROLL_INFO*)obj[f].ob_spec.index);
+					} while ( ! (obj[f++].ob_flags & OF_LASTOB));
 				}
 		
 				XA_free_all(&client->base, -1, client->rsct);
@@ -758,7 +786,7 @@ XA_rsrc_load(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	    left in XA_client_exit.
 	    7/9/200   done.  As well as the memory allocated for colour icon data.
 */
-	path = shell_find(lock, client, pb->addrin[0]);
+	path = shell_find(lock, client, (char*)pb->addrin[0]);
 	
 	if (path)
 	{
@@ -774,7 +802,7 @@ XA_rsrc_load(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			client->trees = o;
 
 #if GENERATE_DIAGS
-			if (client->globl_ptr != pb->globl)
+			if (client->globl_ptr != (struct aes_global *)pb->global)
 			{
 				DIAGS(("WARNING: rsrc_load global is different from appl_init's global\n"));
 			}
@@ -782,18 +810,18 @@ XA_rsrc_load(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			Rsrc_setglobal(rsc, client->globl_ptr);
 
 			DIAG((D_rsrc,client,"pb %lx, gl %lx, gl->rsc %lx, gl->ptree %lx\n",
-				pb, pb->globl, pb->globl->rshdr, pb->globl->ptree));
+				pb, pb->global, ((struct aes_global *)pb->global)->rshdr, ((struct aes_global *)pb->global)->ptree));
 
-			if (pb->globl)
-				/* Fill it out in the globl of the rsrc_load. */
-				Rsrc_setglobal(rsc, pb->globl);
+			if (pb->global)
+				/* Fill it out in the global of the rsrc_load. */
+				Rsrc_setglobal(rsc, (struct aes_global *)pb->global);
 
 			pb->intout[0] = 1;
 			return XAC_DONE;
 		}
 	}
 
-	DIAGS(("ERROR: rsrc_load '%s' failed\n", pb->addrin[0] ? pb->addrin[0] : "~~"));
+	DIAGS(("ERROR: rsrc_load '%s' failed\n", pb->addrin[0] ? (char*)pb->addrin[0] : "~~"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;
@@ -817,8 +845,6 @@ XA_rsrc_free(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-OBJECT **trees = NULL;
-RSHDR *rsc = NULL;
 
 unsigned long
 XA_rsrc_gaddr(LOCK lock, XA_CLIENT *client, AESPB *pb)
@@ -838,10 +864,10 @@ XA_rsrc_gaddr(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	DIAG((D_s,client,"rsrc_gaddr type %d, index %d pb %lx\n", type, index, pb));
 
 	/* For multiple resource, first look at the supplied global ptr. */
-	if (pb->globl)
+	if (pb->global)
 	{
-		rsc = pb->globl->rshdr;
-		trees = pb->globl->ptree;
+		rsc = ((struct aes_global *)pb->global)->rshdr;
+		trees = ((struct aes_global *)pb->global)->ptree;
 		DIAG((D_rsrc,client,"  --  pb->gl  rsc %lx, ptree %lx\n", rsc, trees));
 	}
 	
@@ -870,7 +896,7 @@ XA_rsrc_gaddr(LOCK lock, XA_CLIENT *client, AESPB *pb)
 				*addr = trees[index];
 				break;
 			}
-			DIAG((D_s,client,"  from pb->globl --> %ld\n",*addr));		
+			DIAG((D_s,client,"  from pb->global --> %ld\n",*addr));		
 			pb->intout[0] = 1;
 		}
 		else
@@ -920,7 +946,7 @@ XA_rsrc_gaddr(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			*addr = ResourceImage(client->rsrc, index);
 			break;
 		case R_OBSPEC:
-			*addr = (void *)ResourceObject(client->rsrc, index)->ob_spec.lspec;
+			*addr = (void *)ResourceObject(client->rsrc, index)->ob_spec.index;
 			break;
 		case R_TEPTEXT:
 			*addr = ResourceTedinfo(client->rsrc, index)->te_ptext;
@@ -967,7 +993,7 @@ XA_rsrc_obfix(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	CONTROL(1,1,1)
 
-	ob = pb->addrin[0];
+	ob = (OBJECT*)pb->addrin[0];
 
 	DIAG((D_rsrc, client, "rsrc_obfix for %s: tree %lx + %d\n",
 		c_owner(client), ob, item));
@@ -991,15 +1017,15 @@ XA_rsrc_rcfix(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	DIAG((D_rsrc, client, "rsrc_rcfix for %s on %ld(%lx)\n",
 		c_owner(client), pb->addrin[0], pb->addrin[0]));
 
-	client->rsrc = LoadResources(client, NULL, pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV);
+	client->rsrc = LoadResources(client, NULL, (RSHDR*)pb->addrin[0], DU_RSX_CONV, DU_RSY_CONV);
 	if (client->rsrc)
 	{
 #if GENERATE_DIAGS
-		if (client->globl_ptr != pb->globl)
+		if (client->globl_ptr != (struct aes_global *)pb->global)
 		{
 			DIAGS(("WARNING: rsrc_rcfix global %ld(%lx) is different from appl_init's global %ld(%lx)\n",
-				pb->globl, pb->globl, client->globl_ptr, client->globl_ptr));
-			/* client->globl_ptr = pb->globl; */
+				pb->global, pb->global, client->globl_ptr, client->globl_ptr));
+			/* client->globl_ptr = pb->global; */
 		}
 #endif
 		Rsrc_setglobal(client->rsrc, client->globl_ptr);

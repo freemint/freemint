@@ -51,13 +51,13 @@
 unsigned long
 XA_wind_create(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
+	const RECT r = *((const RECT *)&pb->intin[1]);
 	XA_WINDOW *new_window;
-	RECT r = *((RECT *)&pb->intin[1]);
 	XA_WIND_ATTR kind = (ushort) pb->intin[0];
 
 	CONTROL(5,1,0)	
 
-	if (pb->intin[0] < 0 && pb->contrl[1] == 6)
+	if (pb->intin[0] < 0 && pb->control[1] == 6)
 		kind |= (long) pb->intin[5] << 16;
 	if (!client->options.nohide)
 		kind |= HIDE;
@@ -89,8 +89,8 @@ XA_wind_create(LOCK lock, XA_CLIENT *client, AESPB *pb)
 unsigned long
 XA_wind_open(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
+	const RECT r = *((const RECT *)&pb->intin[1]);
 	XA_WINDOW *w;
-	RECT r = *((RECT *)&pb->intin[1]);
 
 	CONTROL(5,1,0)	
 
@@ -164,13 +164,13 @@ XA_wind_find(LOCK lock, XA_CLIENT *client, AESPB *pb)
 }
 
 void
-top_window(LOCK lock, XA_WINDOW *w, XA_CLIENT *menu_owner)
+top_window(LOCK lock, XA_WINDOW *w, XA_CLIENT *desk_menu_owner)
 {
 	XA_WINDOW *old_focus;
 	XA_CLIENT *client = w->owner;
 
-	if (menu_owner == 0)
-		menu_owner = w->owner;
+	if (desk_menu_owner == 0)
+		desk_menu_owner = w->owner;
 
 	DIAG((D_wind, client, "top_window %d for %s\n",  w->handle, c_owner(client)));
 
@@ -179,7 +179,7 @@ top_window(LOCK lock, XA_WINDOW *w, XA_CLIENT *menu_owner)
 	/* New top window - change the cursor to this client's choice */
 	pull_wind_to_top(lock, w);
 
-	if (client != menu_owner)
+	if (client != desk_menu_owner)
 		C.focus = root_window;
 	else
 		C.focus = window_list;
@@ -234,7 +234,7 @@ bottom_window(LOCK lock, XA_WINDOW *w)
 	while (wl != w)
 	{
 		clip = wl->r;
-		if (rc_intersect(w->r, &clip))
+		if (xa_rc_intersect(w->r, &clip))
 		{
 			/* Re-display any revealed windows */
 			display_window(lock, 44, wl, &clip);
@@ -254,9 +254,12 @@ bottom_window(LOCK lock, XA_WINDOW *w)
 
 #if GENERATE_DIAGS
 
-/* Want to see quickly what app's are doing. */
-static char setget_names[][32] =
+static char *
+setget(int i)
 {
+	/* Want to see quickly what app's are doing. */
+	static char *setget_names[] =
+	{
 	"0",
 	"WF_KIND(1)",
 	"WF_NAME(2)",
@@ -291,14 +294,11 @@ static char setget_names[][32] =
 	"WF_FTOOLBAR(31)",
 	"WF_NTOOLBAR(32)",
 	"      "
-};
+	};
 
-static char unknown[32];
+	static char unknown[32];
 
-static char *
-setget(int i)
-{
-	if (i < 0 || i >= WF_LAST)
+	if (i < 0 || i >= sizeof(setget_names)/sizeof(*setget_names))
 	{
 		sdisplay(unknown, "%d", i);
 		return unknown;
@@ -317,7 +317,7 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	OBJECT *ob;
 	RECT clip;
 	int wind = pb->intin[0], cmd = pb->intin[1];
-	ushort *l;
+	const ushort *l;
 	char *t;
 
 	CONTROL(6,1,0)	
@@ -403,7 +403,7 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		break;
 	case WF_NAME:
 		widg = get_widget(w, XAW_TITLE);
-		l = (ushort *)(pb->intin);
+		l = (const ushort *)(pb->intin);
 		t = (char*)((long)l[2] << 16);
 		t += l[3];
 		if (t == 0)
@@ -419,7 +419,7 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		break;
 	case WF_INFO:
 		widg = get_widget(w, XAW_INFO);
-		l = (ushort *)(pb->intin);
+		l = (const ushort *)(pb->intin);
 		t = (char *)((long)l[2] << 16);
 		t += l[3];
 		if (t == 0)
@@ -495,7 +495,7 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	/* Set a new desktop object tree */
 	case WF_NEWDESK:
-		l = (ushort  *)pb->intin;
+		l = (const ushort  *)pb->intin;
 		t = (char *)((long)l[2] << 16);
 		t += l[3];
 		ob = (OBJECT *)t;
@@ -506,7 +506,7 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			client->desktop.owner = client;
 			set_desktop(&client->desktop);
 			DIAGS(("  desktop for %s to (%d/%d,%d/%d)\n", 
-				c_owner(client), ob->r.x, ob->r.y, ob->r.w, ob->r.h));
+				c_owner(client), ob->ob_x, ob->ob_y, ob->ob_width, ob->ob_height));
 			display_window(lock, 47, root_window, 0);
 		}
 		else
@@ -528,11 +528,11 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	/* Iconify a window */
 	case WF_ICONIFY:
 	{
-		RECT in = *((RECT *)&pb->intin[2]);
+		RECT in = *((const RECT *)&pb->intin[2]);
 		if (in.w == -1 && in.h == -1)
 			in = free_icon_pos(lock);
 		w->save_widgets = w->active_widgets;
-		standard_widgets(w, NAME|MOVE|ICONIFY, true);
+		standard_widgets(w, NAME|MOVER|ICONIFIER, true);
 		move_window(lock, w, XAWS_ICONIFIED, in.x, in.y, in.w, in.h);
 		break;
 	}
@@ -546,8 +546,9 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	case WF_TOOLBAR:
 		{
 			OBJECT *have;
+			short obptr[2] = { pb->intin[2], pb->intin[3] };
 
-			ob = *(OBJECT **)&pb->intin[2];
+			ob = *(OBJECT **)&obptr;
 			widg = get_widget(w, XAW_TOOLBAR);
 			wt = widg->stuff;
 			have = wt ? wt->tree : 0;
@@ -590,8 +591,12 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		    && (w->active_widgets & XaMENU) != 0)
 		{
 			OBJECT *have;
+			/* -Wcast-qual in gcc 2.95.x
+			   warns here: ob = *(OBJECT **)&pb->intin[2];
+                         */
+			short obptr[2] = { pb->intin[2], pb->intin[3] };
+			ob = *(OBJECT **)&obptr;
 
-			ob = *(OBJECT **)&pb->intin[2];
 			widg = get_widget(w, XAW_MENU);
 			wt = widg->stuff;
 			have = wt ? wt->tree : 0;
@@ -625,7 +630,7 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 /* Convert GEM widget numbers to XaAES widget indices. */
 /* -1 means it is not a GEM object. */
-static enum widget_t GtoX[] =
+static short GtoX[] =
 {
 	-1,		/* W_BOX,	*/
 	-1, 		/* W_TITLE,	*/
@@ -647,7 +652,7 @@ static enum widget_t GtoX[] =
 	-1,		/* W_HSLIDE,	*/
 	-1,		/* W_HELEV,	*/
 	WIDG_ICONIFY,	/* W_SMALLER,	*/
-	WIDG_HIDE	/* W_HIDER	*/
+	WIDG_HIDE	/* W_BOTTOMER(W_HIDER?) */
 };
 
 /*
@@ -712,7 +717,12 @@ XA_wind_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		break;
 	case WF_NAME:		/* new since N.Aes */
 	{
-		char *s = *(char **)&pb->intin[2];
+		/* -Wcast-qual doesn't work as expected in gcc 2.95.x
+		 * the worning is not valid here (seems to be fixed in 3.3.2 at least) 
+		 * warns here: char *s = *(char **)&pb->intin[2];
+		 */
+		short sptr[2] = { pb->intin[2], pb->intin[3] };
+		char * const s = *(char * const *)&sptr;
 		if (s)
 			strcpy(s, get_widget(w, XAW_TITLE)->stuff);
 		break;
@@ -720,7 +730,9 @@ XA_wind_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	case WF_INFO:		/* new since N.Aes */
 		if (w->active_widgets&INFO)
 		{
-			char *s = *(char **)&pb->intin[2];
+			/* -Wcast-qual: char * const s = *(char * const *)&pb->intin[2]; */
+			short sptr[2] = { pb->intin[2], pb->intin[3] };
+			char * const s = *(char * const *)&sptr;
 			if (s)
 				strcpy(s, get_widget(w, XAW_INFO)->stuff);
 		}
@@ -735,7 +747,7 @@ XA_wind_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		if (rl)
 		{
 			d = w->wa;
-			if (!rc_intersect(rl->r, &d))
+			if (!xa_rc_intersect(rl->r, &d))
 				goto next;		
 			/* Return the first rectangle coords */
 			*ro = d;
@@ -760,7 +772,7 @@ next:
 			if (rl)
 			{
 				d = w->wa;
-				if (rc_intersect(rl->r, &d))
+				if (xa_rc_intersect(rl->r, &d))
 				{
 					/* Return the next rectangle coords */
 					*ro = d;
@@ -1018,29 +1030,30 @@ DIAGS(("half_screen_buffer for %s: mode:%x, %ld(%lx) size %ld use %ld\n",
 	case WF_COLOR:
 		DIAGS(("WF_COLOR %d for %s\n", o[1], c_owner(client)));
 	oeps:
-		if (o[1] < W_HIGHEST)
+		if (o[1] <= W_BOTTOMER /*valid widget id*/)
 		{
 			OBJECT *widg = get_widgets();
 			int i = GtoX[o[1]];
-			OBJC_COLOURS c;
+			BFOBSPEC c;
 
 			if (i > 0 && (widg[i].ob_type & 0xff) == G_BOXCHAR)
 			{
-				c = get_ob_spec(widg + i)->this.colours;
+				/* c = get_ob_spec(widg + i)->this.colours; */
+				c = get_ob_spec(widg + i)->obspec;
 			}
 			else
 			{
-				c.borderc = screen.dial_colours.border_col;
-				c.textc = BLACK;
-				c.pattern = IP_SOLID;
+				c.framecol = screen.dial_colours.border_col;
+				c.textcol = G_BLACK;
+				c.fillpattern = IP_SOLID;
 				if (o[1] == W_VELEV || o[1] == W_HELEV)
-					c.fillc = screen.dial_colours.shadow_col;
+					c.interiorcol = screen.dial_colours.shadow_col;
 				else
-					c.fillc = screen.dial_colours.bg_col;
-				c.opaque = 0;	/* transparant */
+					c.interiorcol = screen.dial_colours.bg_col;
+				c.textmode = 0;	/* transparant */
 			}
 
-			o[2] = *(short *)&c;
+			o[2] = ((short *)&c)[1];
 		}
 		else
 		{
@@ -1177,7 +1190,7 @@ XA_wind_calc(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			    MG,
 			    client->options.thinframe,
 			    client->options.thinwork,
-			    *(RECT *) &pb->intin[2]);
+			    *(const RECT *)&pb->intin[2]);
 
 	pb->intout[0] = 1;
 	return XAC_DONE;

@@ -14,7 +14,7 @@ void init_objects(void);
 void display_object(LOCK lock, XA_TREE *wt, int object, short parent_x, short parent_y, int which);
 int draw_object_tree(LOCK lock, XA_TREE *wt, OBJECT *tree, int item, int depth, int which);
 int object_offset(OBJECT *tree, int object, short dx, short dy, short *mx, short *my);
-void change_object(LOCK lock, XA_TREE *wt, OBJECT *tree, int i, RECT *r, int state, bool draw);
+void change_object(LOCK lock, XA_TREE *wt, OBJECT *tree, int i, const RECT *r, int state, bool draw);
 int find_object(OBJECT *tree, int object, int depth, short mx, short my, short dx, short dy);
 bool ed_char(XA_TREE *wt, TEDINFO *ed_txt, ushort keycode);
 XA_TREE *check_widget_tree(LOCK lock, XA_CLIENT *client, OBJECT *tree);
@@ -41,7 +41,7 @@ bool d3_indicator(OBJECT *ob);
 bool d3_foreground(OBJECT *ob);
 bool d3_background(OBJECT *ob);
 bool d3_activator(OBJECT *ob);
-void d3_pushbutton(int d, RECT *r, OBJC_COLOURS *col, int state, int thick, int mode);
+void d3_pushbutton(int d, RECT *r, BFOBSPEC *col, int state, int thick, int mode);
 
 /* Clipping stuff */
 void set_clip(const RECT *r);
@@ -55,26 +55,26 @@ void object_rectangle(RECT *c, OBJECT *ob, int i, short dx, short dy);
 void object_area     (RECT *c, OBJECT *ob, int i, short dx, short dy);
 void write_menu_line(RECT *cl);
 void write_selection(int d, RECT *r);
-long calc_back(RECT *r, int planes);
+long calc_back(const RECT *r, int planes);
 
 /* HR: intermediate level draw functions & misc. */
 void adjust_size(int d, RECT *r);
-void p_gbar(int d, RECT *r);
+void p_gbar(int d, const RECT *r);
 void bar(int d,  short x, short y, short w, short h);
 void p_bar(int d, short x, short y, short w, short h);	/* for perimeter = 1 */
-void gbar (int d, RECT *r);
-void gbox(int d, RECT *r);
+void gbar (int d, const RECT *r);
+void gbox(int d, const RECT *r);
 void box  (int d, short x, short y, short w, short h);
 void line (short x, short y, short x1,short y1, int col);
-void tl_hook(int d, RECT *r, int col);
-void br_hook(int d, RECT *r, int col);
-void chiseled_gbox(int d, RECT *r);
+void tl_hook(int d, const RECT *r, int col);
+void br_hook(int d, const RECT *r, int col);
+void chiseled_gbox(int d, const RECT *r);
 void t_extent(char *t, short *w, short *h);
 void rtopxy(short *p, const RECT *r);
 void ritopxy(short *p, short x, short y, short w, short h);
 void *form_save(int d, RECT r, void *area);
 void form_restore(int d, RECT r, void *area);
-void form_copy(RECT *fr, RECT *to);
+void form_copy(const RECT *fr, const RECT *to);
 void strip_name(char *to, char *fro);
 void cramped_name(void *s, char *t, int w);
 char *clipped_name(void *s, char *t, int w);
