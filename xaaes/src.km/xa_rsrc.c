@@ -265,7 +265,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		DIAG((D_rsrc, client, "LoadResources(%s)", fname));
 
-		f = kernel_open(fname, O_RDONLY, &err);
+		f = kernel_open(fname, O_RDONLY, &err, NULL);
 		if (!f)
 		{
 			DIAG((D_rsrc, client, "LoadResources(): file not found"));

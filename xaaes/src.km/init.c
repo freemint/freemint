@@ -153,7 +153,7 @@ init(struct kentry *k, const char *path)
 
 		flag = false;
 
-		check = kernel_open("u:\\dev\\moose", O_RDONLY, NULL);
+		check = kernel_open("u:\\dev\\moose", O_RDONLY, NULL, NULL);
 		if (check)
 		{
 			kernel_close(check);
@@ -166,7 +166,7 @@ init(struct kentry *k, const char *path)
 			strcpy(buf, sysdir);
 			strcat(buf, "moose.xdd");
 
-			check = kernel_open(buf, O_RDONLY, NULL);
+			check = kernel_open(buf, O_RDONLY, NULL, NULL);
 			if (check)
 			{
 				kernel_close(check);
@@ -194,7 +194,7 @@ init(struct kentry *k, const char *path)
 			strcpy(buf, sysdir);
 			strcat(buf, "moose.adi");
 
-			check = kernel_open(buf, O_RDONLY, NULL);
+			check = kernel_open(buf, O_RDONLY, NULL, NULL);
 			if (check)
 			{
 				kernel_close(check);
@@ -226,7 +226,7 @@ init(struct kentry *k, const char *path)
 	D.debug_level = 4;
 	/* Set the default debug file */
 	strcpy(D.debug_path, "xaaes.log");
-	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL);
+	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s", vversion);
 #else
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
@@ -346,7 +346,7 @@ init(struct kentry *k, const char *path)
 			strcpy(buf, C.Aes->home_path);
 			strcat(buf, "moose.adi");
 
-			check = kernel_open(buf, O_RDONLY, NULL);
+			check = kernel_open(buf, O_RDONLY, NULL, NULL);
 			if (check)
 			{
 				kernel_close(check);

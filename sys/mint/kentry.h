@@ -102,7 +102,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	12
+#define KENTRY_MIN_VERSION	13
 
 
 /* hardware dependant vector
@@ -405,7 +405,7 @@ struct kentry_fs
 	long _cdecl (*kernel_readdir)(struct dirstruct *dirh, char *buf, int len);
 	void _cdecl (*kernel_closedir)(struct dirstruct *dirh);
 
-	struct file * _cdecl (*kernel_open)(const char *path, int rwmode, long *err);
+	struct file * _cdecl (*kernel_open)(const char *path, int rwmode, long *err, XATTR *x);
 	long _cdecl (*kernel_read)(struct file *f, void *buf, long buflen);
 	long _cdecl (*kernel_write)(struct file *f, const void *buf, long buflen);
 	long _cdecl (*kernel_lseek)(FILEPTR *f, long where, int whence);
