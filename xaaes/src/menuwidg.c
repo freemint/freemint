@@ -578,11 +578,8 @@ menu_finish(struct task_administration_block *tab)
 	C.Aes->waiting_for = XAWAIT_MENU; /* ready for next menu choice */
 	C.Aes->em.flags = MU_M1|0;
 
-	if (cfg.menu_locking)
+	if (cfg.menu_locking && S.update_lock == C.Aes->pid)
 	{
-		if (!strcmp("  FontList 1.11 ", client->name))
-			display("unlocking now\n");
-
 		if (is_bar)
 			unlock_mouse(client, 10);
 

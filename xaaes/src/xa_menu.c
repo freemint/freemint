@@ -374,8 +374,8 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 		short x, y;
 		OBJECT *ob = mn->mn_tree;
 
-		if (cfg.menu_locking)
-			lock_screen(C.Aes, -1, NULL, 0);
+//		if (cfg.menu_locking)
+//			lock_screen(C.Aes, -1, NULL, 0);
 
 
 		if (tab->ty == NO_TASK)		/* else already locked */
@@ -386,7 +386,7 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			C.menu_base = tab;
 			tab->pb = pb;
-			tab->locker = C.Aes->pid; /*client->pid;*/
+			tab->locker = client->pid; /*C.Aes->pid;*/ /*client->pid;*/
 			tab->client = client;
 			tab->lock = lock;
 			ob->r.x = 0;
@@ -405,8 +405,8 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			return XAC_BLOCK;
 		}
-		if (cfg.menu_locking)
-			unlock_screen(C.Aes, 0);
+//		if (cfg.menu_locking)
+//			unlock_screen(C.Aes, 0);
 	}
  	return XAC_DONE;
 }
@@ -427,8 +427,8 @@ XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 	{
 		Tab *tab = C.active_menu;
 
-		if (cfg.menu_locking)
-			lock_screen(C.Aes, -1, 0, 0);
+//		if (cfg.menu_locking)
+//			lock_screen(C.Aes, -1, 0, 0);
 
 		if (tab->ty == NO_TASK)		/* else already locked */
 		{
@@ -436,7 +436,7 @@ XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			C.menu_base = tab;
 			tab->pb = pb;
-			tab->locker = C.Aes->pid;	/*client->pid;*/
+			tab->locker = client->pid; /*C.Aes->pid;*/	/*client->pid;*/
 			tab->client = client;
 			tab->lock = lock;
 			tab->wind = NULL;
@@ -472,8 +472,8 @@ XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			return XAC_BLOCK;
 		}
-		if (cfg.menu_locking)
-			unlock_screen(C.Aes, 0);
+//		if (cfg.menu_locking)
+//			unlock_screen(C.Aes, 0);
 	}
 
 	return XAC_DONE;
