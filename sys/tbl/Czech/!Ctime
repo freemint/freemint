@@ -1,0 +1,9 @@
+Soubory *.tbl jsou mapovaci tabulky klavesnice. 
+
+czech_kam   klavesnice v kodu bratri Kamenickych
+czech_iso	klavesnice v kodu ISO 8859-2
+
+Pro spravne zobrazeni ceskych znaku je potreba mit nainstalovan prislusny font.
+
+Pro instalaci staci nakopirovat prislusnou tabulku do systemoveho adresare
+a pojmenovat ji KEYBOARD.TBL. Po pristim startu systemu bude tabulka zavedena.
