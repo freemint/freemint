@@ -213,6 +213,30 @@ init_proc (void)
 	curproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
 }
 
+/* remaining_proc_time():
+ *
+ * this function returns the numer of milliseconds remaining to
+ * the normal preemption. It may be useful for drivers of devices,
+ * which do not generate interrupts (Falcon IDE for example).
+ * Such a device must give the CPU up from time to time, while
+ * looping.
+ *
+ * Actually reading the proc_clock directly would be much simpler,
+ * but doing it so we retain compatibility if we ever resize the
+ * proc_clock variable to long or increase its granularity
+ * (its actually 50 Hz).
+ *
+ */
+ulong _cdecl
+remaining_proc_time(void)
+{
+	ulong proc_ms = (ulong)proc_clock;
+
+	proc_ms *= 20;		/* one tick is 20 ms */
+
+	return proc_ms;
+}
+
 /* reset_priorities():
  *
  * reset all process priorities to their base level
@@ -442,7 +466,7 @@ do_wakeup_things (short sr, int newslice, long cond)
 			check_sigs ();
 	}
 
-	/* Kludge: restore the cookie jar pointer. If this to be restored, 
+	/* Kludge: restore the cookie jar pointer. If this to be restored,
 	 * this means that the process has changed it directly, not through
 	 * Setexc(). We don't like that.
 	 */
