@@ -534,33 +534,15 @@ bioskeys(void)
 	kbd_lock = 0;
 }
 
-/* Sanity checks are because we don't completely trust
- * that the softloaded keyboard table is consistent.
- */
 static uchar *
 tbl_scan_fwd(uchar *tmp, uchar *end)
 {
-	short sanity;
-	
-	sanity = 0;
 	while (*tmp && tmp < end)
-	{
-		sanity++;
-		if (sanity > 255)	/* One `alt' table can contain up to 128 key definitions */
-			return 0;
-		
 		tmp++;
-	}
 	
-	sanity = 0;
-	while (*tmp == 0 && tmp < end)
-	{
-		sanity++;
-		if (sanity > 31)	/* Up to 32 zeros can follow */
-			return 0;
-		
+	/* skip terminating '0' */
+	if (tmp < end)
 		tmp++;
-	}
 	
 	if (tmp == end)
 		return NULL;
@@ -738,15 +720,15 @@ load_default_table(void)
 		len = strlen(syskeytab->altcaps) + 1;
 		quickmove(p, syskeytab->altcaps, len);
 		p += len;
-	}
-	
-	if (mch == MILAN_C)
-	{
-		long len;
 		
-		len = strlen(syskeytab->altgr) + 1;
-		quickmove(p, syskeytab->altgr, len);
-		p += len;
+		if (mch == MILAN_C)
+		{
+			long len;
+			
+			len = strlen(syskeytab->altgr) + 1;
+			quickmove(p, syskeytab->altgr, len);
+			p += len;
+		}
 	}
 	
 	size = fill_keystruct(kbuf, kbuf + size);
@@ -782,7 +764,7 @@ load_keyboard_table(char *name, short flag)
 		FP_FREE(fp);
 		
 		/* Special case: `load' the default table */
-		if (!flag)
+		if (flag == 0)
 			ret = load_default_table();
 	}
 	
@@ -798,7 +780,7 @@ load_keyboard_table(char *name, short flag)
 void
 load_keytbl(void)
 {
-	char name[32];
+	char name[64];
 	long r;
 	
 	/* `keybd.tbl' is already used by gem.sys, we can't conflict
