@@ -28,10 +28,11 @@
 # include "bios.h"
 # include "filesys.h"
 # include "info.h"
-# include "init.h"		/* __printf(f) */
+# include "init.h"		/* boot_printf() */
 # include "k_exec.h"
 # include "k_fds.h"
 # include "kmemory.h"
+# include "proc_help.h"
 # include "util.h"
 
 
@@ -569,8 +570,6 @@ long
 attach_region (PROC *p, MEMREGION *reg)
 {
 	struct memspace *mem = p->p_mem;
-	MEMREGION **newmem;
-	long *newaddr;
 	int i;
 
 	TRACELOW(("attach_region %lx (%s) len %lx to pid %d",
@@ -589,7 +588,7 @@ attach_region (PROC *p, MEMREGION *reg)
 		return 0;
 	}
 
-again:
+retry:
 	for (i = 0; i < mem->num_reg; i++)
 	{
 		if (!mem->mem[i])
@@ -608,57 +607,9 @@ again:
 
 	/* Hmmm, OK, we have to expand the process' memory table */
 	TRACELOW(("Expanding process memory table"));
-	i = mem->num_reg + NUM_REGIONS;
 
-	newmem = kmalloc (i * sizeof (MEMREGION *));
-	newaddr = kmalloc (i * sizeof (long));
-
-	if (newmem && newaddr)
-	{
-		/*
-		 * We have to use temps while allocating and freeing mem
-		 * and addr so the memory protection code won't walk this
-		 * process' memory list in the middle.
-		 */
-		void *pmem, *paddr;
-
-		/* copy over the old address mapping */
-		for (i = 0; i < mem->num_reg; i++)
-		{
-			newmem[i] = mem->mem[i];
-			newaddr[i] = mem->addr[i];
-
-			if (newmem[i] == 0)
-				assert (newaddr[i] == 0);
-		}
-
-		/* initialize the rest of the tables */
-		for(; i < mem->num_reg + NUM_REGIONS; i++)
-		{
-			newmem[i] = 0;
-			newaddr[i] = 0;
-		}
-
-		/* free the old tables (carefully! for memory protection) */
-		pmem = mem->mem;
-		paddr = mem->addr;
-
-//		mem->mem = NULL;
-//		mem->addr = NULL;
-
-		mem->mem = newmem;
-		mem->addr = newaddr;
-		mem->num_reg += NUM_REGIONS;
-
-		kfree (pmem);
-		kfree (paddr);
-
-		/* this time we will succeed */
-		goto again;
-	}
-
-	if (newmem) kfree (newmem);
-	if (newaddr) kfree (newaddr);
+	if (increase_mem(mem) == 0)
+		goto retry;
 
 	DEBUG(("attach_region: failed"));
 	return 0;
