@@ -150,6 +150,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 		p2->real_cmdline = NULL;
 	}
 
+
 	if (flags & FORK_SHAREVM)
 		p2->p_mem = share_mem (p1);
 	else
@@ -179,11 +180,19 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 	else
 		p2->p_sigacts = copy_sigacts (p1);
 
-//	p_limits
+//	if (flags & FORK_SHARELIMITS)
+//		p2->p_limits = share_limits (p1);
+//	else
+//		p2->p_limits = copy_limits (p1);
 
-//	p_ext
+	if (flags & FORK_SHAREEXT)
+		p2->p_ext = share_ext (p1);
+	else
+		p2->p_ext = NULL; /* proc extensions can only be shared */
 
-	if (!p2->p_mem || !p2->p_cred || !p2->p_fd || !p2->p_cwd || !p2->p_sigacts)
+
+	/* checking memory allocation */
+	if (!p2->p_mem || !p2->p_cred || !p2->p_fd || !p2->p_cwd || !p2->p_sigacts /*|| !p2->p_limits*/)
 		goto nomem;
 
 
