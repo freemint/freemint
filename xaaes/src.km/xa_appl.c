@@ -134,12 +134,12 @@ init_client(enum locks lock)
 		ALERT(("attach_extension for %u failed, out of memory?", p->pid));
 		return NULL;
 	}
+
 	bzero(client, sizeof(*client));
 
 	client->md_head = client->mdb;
 	client->md_tail = client->mdb;
 	client->md_end = client->mdb + CLIENT_MD_BUFFERS;
-
 	client->md_head->clicks = -1;
 
 	client->ut = umalloc(xa_user_things.len);
@@ -180,11 +180,7 @@ init_client(enum locks lock)
 	/* make sure data cache is flushed */
 	cpush(client->ut, xa_user_things.len);
 
-
-
-
 	client->cmd_tail = "\0";
-	//client->wt.e.obj = -1;
 
 	/* Ozk: About the fix_menu() thing; This is just as bad as it
 	 * originally was, the client should have an attachment with
@@ -234,12 +230,7 @@ init_client(enum locks lock)
 			 * shel_write() to start us..
 			 */
 			client->rppid = info->rppid;
-
 			client->cmd_tail = info->cmd_tail;
-			
-			/* invalidate */
-			//info->cmd_tail = NULL;
-
 			strcpy(client->cmd_name, info->cmd_name);
 			strcpy(client->home_path, info->home_path);
 		}
@@ -424,20 +415,19 @@ remove_shel_info(struct proc *p)
 
 	if (info)
 	{
-		if (info->tail_is_heap)
+		if (info->tail_is_heap && info->cmd_tail)
 		{
 			kfree(info->cmd_tail);
 			info->cmd_tail = NULL;
 			info->tail_is_heap = false;
 		}
-		
-		/* 
-		 * ozk: Hmm... cannot detach from within module callbacks?
+		/*
+		 * Ozk: we trust the kernel to release the extensions.
+		 * If that changes, release shel_info here.
 		 */
-		//detach_extension(p, XAAES_MAGIC_SH);
 	}
 }
-	
+
 /*
  * close and free all client resources
  * 
@@ -456,13 +446,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 
 	S.clients_exiting++;
 
-#if 0
-	if (client->tp)
-	{
-		post_tpcevent(client, TP_terminate, NULL, NULL, 0,0, NULL,NULL);
-	}
-#endif
-
 	/*
 	 * Clear if client was exclusively waiting for mouse input
 	 */
@@ -475,10 +458,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 		popout(TAB_LIST_START);
 	}
 
-	/* Ozk:
-	 * exit_proc() will not detach shel_write extension, because
-	 * xaaes_client extension is still attached.
-	 */
 	exit_proc(lock, client->p, code);
 
 	if (S.wait_mouse == client)
@@ -524,38 +503,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	}
 
 	/* Ozk:
-	 * sending CH_EXIT is done when shel_info extension is detached
+	 * sending CH_EXIT is done by proc_exit()
 	 */
-#if 0
-	if (client->p->ppid != C.AESpid)
-	{
-		/* Send a CH_EXIT message if the client
-		 * is not an AES child of the XaAES system
-		 */
-		struct xa_client *parent = pid2client(client->p->ppid);
-
-		/* is the parent a active AES client? */
-		if (parent && parent != C.Aes)
-		{
-			DIAGS(("sending CH_EXIT to %d for %s", client->p->ppid, c_owner(client)));
-
-			send_app_message(NOLOCKS, NULL, parent, AMQ_NORM, 0,
-					 CH_EXIT, 0, 0, client->p->pid,
-					 code,    0, 0, 0);
-		}
-	}
-	else
-	{
-		struct xa_client *real_parent = pid2client(client->rppid);
-		send_ch_exit(real_parent, client->p->pid, code);
-#if GENERATE_DIAGS
-		if (real_parent)
-			DIAGS(("Sent CH_EXIT to real parent (pid %d)%s for (pid %d)%s",
-				real_parent->p->pid, real_parent->name, client->p->pid, client->name));
-#endif
-	}
-#endif
-	/* remove any references */
+	 
+	/*
+	 * remove any references
+	 */
 	{
 		XA_WIDGET *widg = get_menu_widg();
 
@@ -572,17 +525,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 		{
 			if (client->std_menu == widg->stuff)
 			{
-				//C.menu_base = NULL;
 				widg->stuff = C.Aes->std_menu;
 			}
-		//	else
-		//		widg->stuff = C.Aes->std_menu;
-
 			client->std_menu = NULL;
 		}
 		if (menustruct_locked() == client->p)
 			free_menustruct_lock();
-
 
 		if (client->desktop)
 		{
@@ -593,10 +541,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 			client->desktop = NULL;
 		}
 	}
-
-	// if (!client->killed)
-	//	remove_attachments(lock|clients, client, client->std_menu);
-
 
 	/*
 	 * Figure out which client to make active
@@ -665,7 +609,11 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 		
 		DIAG((D_appl, NULL, "Process terminating - detaching extensions..."));
 		client->pexit = true;
-		//detach_extension(p, XAAES_MAGIC);
+		/* Ozk:
+		 * We trust the kernel to detach the client extension.
+		 * If that changes, detach client here (means extensions must be detachable
+		 * by its callbacks).
+		 */
 		remove_shel_info(p);
 	}
 		
@@ -938,7 +886,6 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				yield();
 		}
 	}
-
 	pb->intout[0] = rep;
 	return XAC_DONE;
 }

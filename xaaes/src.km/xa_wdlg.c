@@ -63,6 +63,7 @@
 #if WDIALOG_WDLG
 
 
+//ret = wdlg->exit(wdlg->handle, ev, nxtobj, ev->mclicks, wdlg->user_data);
 static short
 callout_exit(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short nxtobj, short mclicks, void *udata, void *feedback)
 {
@@ -137,14 +138,11 @@ callout_exit(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short n
 				DIAGS((" -- return feedback from %lx into %lx (%d)", u->feedback_p, feedback, *(short *)(u->feedback_p)));
 				*(short *)feedback = *(short *)u->feedback_p;
 			}
-		
 			ufree(u);
 		}
 	}
 	return ret;
 }
-
-//ret = wdlg->exit(wdlg->handle, ev, nxtobj, ev->mclicks, wdlg->user_data);
 
 static inline void
 cpy_ev2md(EVNT *e, struct moose_data *m)
@@ -195,15 +193,6 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		{
 			wt = wdlg->std_wt;
 			obtree = wt->tree;
-		#if 0
-			obtree->ob_x = wind->wa.x;
-			obtree->ob_y = wind->wa.y;
-			if (!wt->zen)
-			{
-				obtree->ob_x += wt->ox;
-				obtree->ob_y += wt->oy;
-			}
-		#endif
 		}
 
 		lock_screen(wind->owner->p, false, NULL, 0);
@@ -260,7 +249,6 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 	if (!(wdlg = wind->wdlg))
 		return -1;
 
-	//if (msg[0] >= 20 && msg[0] <= 39 && !wdlg->exit(wdlg->handle, ev, HNDL_MESG, ev->mclicks, wdlg->user_data) )
 	if (msg[0] >= 20 && msg[0] <= 39 && !callout_exit(wind->owner, wdlg, ev, HNDL_MESG, ev->mclicks, wdlg->user_data, NULL) )
 		return 0;
 
@@ -270,7 +258,6 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 		{
 			if (wh != mh)
 				return -1;
-			//display_window(wlock, 1, wind, (RECT *)&msg[4]);
 			wdlg_redraw(wlock, wind, 0, 10, (RECT *)&msg[4]);
 			break;
 		}
@@ -281,7 +268,6 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 			if (is_hidden(wind))
 				unhide_window(wlock, wind);
 			top_window(wlock, true, wind, (void *)-1L, NULL);
-			//after_top(0, true);
 			break;
 		}
 		case WM_CLOSED:
@@ -292,7 +278,6 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 		{
 			if (wh != mh)
 				return -1;
-			//move_window(wlock, wind, -1, wind->max.x, wind->max.y, wind->max.w, wind->max.h);
 			move_window(wlock, wind, true, XAWS_FULLED, wind->max.x, wind->max.y, wind->max.w, wind->max.h);
 			break;
 		}
@@ -320,7 +305,6 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 
 			if (wh != mh)
 				return -1;
-			//if ( !wdlg->exit(wdlg->handle, ev, HNDL_MOVE, ev->mclicks, wdlg->user_data) )
 			if ( !callout_exit(wind->owner, wdlg, ev, HNDL_MOVE, ev->mclicks, wdlg->user_data, NULL))
 				return 0;
 
@@ -339,14 +323,12 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 		{
 			if (wh != mh)
 				return -1;
-			//return wdlg->exit(wdlg->handle, ev, HNDL_TOPW, ev->mclicks, wdlg->user_data);
 			return callout_exit(wind->owner, wdlg, ev, HNDL_TOPW, ev->mclicks, wdlg->user_data, NULL);
 		}
 		case WM_UNTOPPED:
 		{
 			if (wh != mh)
 				return -1;
-			//return wdlg->exit(wdlg->handle, ev, HNDL_UNTP, ev->mclicks, wdlg->user_data);
 			return callout_exit(wind->owner, wdlg, ev, HNDL_UNTP, ev->mclicks, wdlg->user_data, NULL);
 		}
 		case WM_BOTTOM:
@@ -367,45 +349,6 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 	}
 	return 1;
 }
-
-#if 0
-static void
-exit_wdial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
-	   struct widget_tree *wt, int f, int os, int dbl, int which,
-	   struct rawkey *key)
-{
-	struct xa_client *client = wt->owner;
-	OBJECT *form = wt->tree;
-	struct moose_data md;
-
-	md.x = form->ob_x + widg->x;
-	md.y = form->ob_y + widg->y;
-	md.state = widg->s;
-	md.clicks = dbl ? 2 : 1;
-
-	if (os != -1)
-	{
-		form[f].ob_state = os;
-		redraw_object(lock, wt, f);
-	}
-	wt->tree = form;	/* After redraw of object. :-) */
-	wt->current = f|dbl;	/* pass the double click to the internal handlers as well. */
-	wt->which = which;	/* pass the event type. */
-
-	if (which == MU_BUTTON)
-	{
-		DIAG((D_wdlg, client, "button_event: x=%d, y=%d, clicks=%d",
-			md.x, md.y, md.clicks));
-		button_event(lock, client, &md);
-	}
-	else
-	{
-		DIAG((D_wdlg, client, "keybd_event: x=%d, y=%d, clicks=%d",
-			md.x, md.y, md.clicks));
-		keybd_event(lock, client, key);
-	}
-}
-#endif
 
 unsigned long
 XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -438,7 +381,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				tp,
 				client->options.thinframe,
 				client->options.thinwork,
-				*(RECT *)&or);		// *(RECT*)&tree->ob_x);
+				*(RECT *)&or);
 
 		wind = create_window(lock, send_app_message, NULL, client, false,
 				     tp,
@@ -463,8 +406,8 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
 				wdlg->wind = wind;
-				wdlg->code = pb->intin[0];			/* Code */
-				wdlg->flag = pb->intin[1];			/* Flags */
+				wdlg->code = pb->intin[0];		/* Code */
+				wdlg->flag = pb->intin[1];		/* Flags */
 				wdlg->user_data = (void*)pb->addrin[2];	/* user_data */
 				wdlg->data      = (void*)pb->addrin[3];	/* data - is passed to handle_exit() */
 
@@ -472,12 +415,11 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				wdlg->ify_wt = wt;
 
 				wdlg->exit      = (void*)pb->addrin[0];
-				//rep = wdlg->exit(wdlg->handle/*0*/, 0, HNDL_INIT, wdlg->code, wdlg->data);
 				rep = callout_exit(client, wdlg, NULL, HNDL_INIT, wdlg->code, wdlg->data, NULL);
 				if (rep == 0)
 					delete_window(lock, wind);
 				else
-					(long)pb->addrout[0] = (long)wdlg->handle; //0xae000000 + wind->handle;
+					(long)pb->addrout[0] = (long)wdlg->handle;
 			}
 			else
 				delete_window(lock, wind);
@@ -558,7 +500,6 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		wdlg->std_wt->tree->ob_y = wind->wa.y;
 		open_window(lock, wind, wind->rc);
 		wdlg->data = (void*)pb->addrin[2];
-		//wdlg->exit(wdlg->handle, 0, HNDL_OPEN, pb->intin[3], wdlg->data);
 		callout_exit(client, wdlg, NULL, HNDL_OPEN, pb->intin[3], wdlg->data, NULL);
 
 		pb->intout[0] = handle;
@@ -766,8 +707,6 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_set_tree */
 			case 1:
 			{
-#if 1
-				/* HR: rubbish! a new tree is a new dialogue is a new window! */
 				OBJECT *obtree;
 
 				pb->intout[0] = 0;
@@ -814,7 +753,6 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					display_window(lock, 200, wind, NULL);
 				break;
 			}
-#endif
 			/* wdlg_set_size */
 			case 2:
 			{
@@ -877,9 +815,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						nr = &r;
 					}
 				
-					wind->redraw = NULL; //wdlg_redraw;
-					//wind->save_widgets = wind->active_widgets;
-					//standard_widgets(wind, NAME|MOVER|ICONIFIER, true);
+					wind->redraw = NULL;
 					move_window(lock, wind, true, XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
 				}
 				break;
@@ -895,7 +831,6 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					RECT r;
 
 					wind->redraw = NULL;
-					//standard_widgets(wind, wind->save_widgets, true);
 
 					if (!t)
 						t = wdlg->std_name;
@@ -1021,7 +956,6 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 								{
 									DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): call wdlg->exit(%lx) with exitobj=%d for %s",
 										wdlg->exit, nxtobj, client->name));
-									//ret = wdlg->exit(wdlg->handle, ev, nxtobj, ev->mclicks, wdlg->user_data);
 									ret = callout_exit(client, wdlg, ev, nxtobj, ev->mclicks, wdlg->user_data, NULL);
 								}
 								else
@@ -1033,7 +967,6 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 										obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, wind->rect_start, NULL, &nxtobj);
 										DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Call wdlg->exit(%lx) with new editobj=%d for %s",
 											wdlg->exit, nxtobj, client->name));
-										//ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, ev->mclicks, &nxtobj);
 										ret = callout_exit(client, wdlg, ev, HNDL_EDCH, ev->mclicks, NULL, &nxtobj);
 									}
 								}							
@@ -1065,8 +998,6 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 						if (is_hidden(wind))
 							unhide_window(wlock, wind);
 						top_window(wlock, true, wind, (void *)-1L, NULL);
-						//swap_menu(wlock, wind->owner, true, 10);
-						//after_top(wlock, true);
 						ret = 1;
 						cont = 0;
 					}
@@ -1089,7 +1020,6 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 						{
 							obj_edit(wt, ED_END, 0, 0, 0, true, wind->rect_start, NULL, NULL);
 							obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, wind->rect_start, NULL, NULL);
-							//ret = wdlg->exit(wdlg->handle, ev, HNDL_EDCH, 0, &nxtobj);
 							ret = callout_exit(client, wdlg, ev, HNDL_EDCH, 0, 0, &nxtobj);
 						}
 					}
@@ -1137,7 +1067,6 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 							{
 								DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): call exit(%lx) with exitobj=%d for %s",
 									wdlg->exit, nxtobj, client->name));
-								//ret = wdlg->exit(wdlg->handle, ev, nxtobj, 0 /*ev->mclicks*/, wdlg->user_data);
 								ret = callout_exit(client, wdlg, ev, nxtobj, 0, wdlg->user_data, NULL);
 							}
 						}
@@ -1154,7 +1083,6 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 								 wind->rect_start,
 								 NULL,
 								 NULL);
-							//ret = wdlg->exit(wdlg->handle, ev, HNDL_EDIT, 0, &key);
 							ret = callout_exit(client, wdlg, ev, HNDL_EDIT, 0, 0, &key);
 							ev->mwhich &= ~MU_KEYBD;
 						}
@@ -1176,7 +1104,6 @@ unsigned long
 XA_wdlg_redraw(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *wind;
-	//struct wdlg_info *wdlg;
 	short handle;
 
 	CONTROL(2,0,2)
