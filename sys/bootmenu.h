@@ -4,10 +4,6 @@
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
  *
- *
- * Copyright 1998, 1999, 2000 Frank Naumann <fnaumann@freemint.de>
- * All rights reserved.
- *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
