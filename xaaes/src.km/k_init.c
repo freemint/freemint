@@ -53,7 +53,6 @@
 
 #include "objects.h"
 #include "menuwidg.h"
-#include "my_aes.h"
 #include "xa_graf.h"
 
 
