@@ -1190,12 +1190,14 @@ remove_windows(enum locks lock, struct xa_client *client)
 
 		if (wl == root_window)
 			break;
+
 		if (wl->owner == client)
 		{
 			/* checks is_open */
 			close_window(lock|winlist, wl);
 			delete_window(lock|winlist, wl);
 		}
+
 		wl = nwl;
 	}
 
@@ -1203,8 +1205,10 @@ remove_windows(enum locks lock, struct xa_client *client)
 	while (wl)
 	{
 		nwl = wl->next;
+
 		if (wl->owner == client)
 			delete_window(lock|winlist, wl);
+
 		wl = nwl;
 	}
 }

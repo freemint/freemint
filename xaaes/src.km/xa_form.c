@@ -144,11 +144,11 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 		{
 			if (wt->owner != C.Aes)
 			{
-				struct xa_client *client;
+				struct xa_client *client = wt->owner;
 
-				client = wt->owner;
 				client->waiting_pb->intout[0] = f - ALERT_BUT1 +1;
 				client->usr_evnt = 1;
+
 				Unblock(client, XA_OK, 7);
 			}
 
@@ -954,7 +954,6 @@ make_fmd(enum locks lock, struct xa_client *client)
  *  Begin/end form handler
  *  This is important - I hope most programs call this, as XaAES puts its dialogs
  *  in windows, and the windows are created here...
- *  HR 250602: postpone creating the window until form_do is called.
  */
 unsigned long
 XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
@@ -962,9 +961,9 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *wind;
 	XA_WIND_ATTR kind = NAME
 #if TEST_DIAL_SIZE
-					|HSLIDE|LFARROW|VSLIDE|UPARROW|SIZE
+			|HSLIDE|LFARROW|VSLIDE|UPARROW|SIZE
 #endif
-					;
+			;
 
 	CONTROL(9,1,0)
 
@@ -974,9 +973,9 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_form, client, "form_dial(FMD_START,%d,%d,%d,%d) for %s",
 			pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], c_owner(client)));
 
-/*   HR 060201: If the client forgot to FMD_FINISH, we dont create a new window, but
-       simply move the window to the new coordinates.
-*/
+		/* If the client forgot to FMD_FINISH, we dont create a new window, but
+		 * simply move the window to the new coordinates.
+		 */
 		if (client->fmd.wind)
 		{
 			RECT r;
@@ -993,31 +992,38 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
-/*   HR 250602: Provisions made in the case form_do isnt used by the client at all.
-              So the window creation is actually postponed until form_do is called.
-              If the client doesnt call form_do, it probably has locked the screen already and XaAES will
-              behave just like any other AES.
-     HR 060702:
-              As a benefit all handling of the 3 pixel gap caused by form_center on OUTLINED forms
-              can be removed.
-*/
+			/* Provisions made in the case form_do isnt used by the
+			 * client at all. So the window creation is actually
+			 * postponed until form_do is called. If the client doesnt
+			 * call form_do, it probably has locked the screen already
+			 * and XaAES will behave just like any other AES.
+		         * As a benefit all handling of the 3 pixel gap caused by
+			 * form_center on OUTLINED forms can be removed.
+			 */
 			client->fmd.state = 1;
 			client->fmd.kind = kind;
 		}
 		break;
+
 	case FMD_GROW:
 		break;
+
 	case FMD_SHRINK:
 		break;
+
 	case FMD_FINISH:
 		DIAG((D_form,client,"form_dial(FMD_FINISH) for %s", c_owner(client)));
-		if (client->fmd.wind)	/* If the client's dialog window is still hanging around, dispose of it... */
+
+		if (client->fmd.wind)
 		{
+			/* If the client's dialog window is still hanging around, dispose of it... */
 			wind = client->fmd.wind;
 			DIAG((D_form,client,"Finish fmd.wind %d", wind->handle));
 			close_window(lock, wind);
 			delete_window(lock, wind);
-		} else	/* This was just a redraw request */
+		}
+		else
+			/* This was just a redraw request */
 			display_windows_below(lock, (const RECT *)&pb->intin[5], window_list);
 
 		bzero(&client->fmd, sizeof(client->fmd));
@@ -1115,12 +1121,13 @@ exit_form_do(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 	client->fmd.wind = NULL;
 	client->fmd.state = 0;
 
-	close_window(lock, wind);
-	delete_window(lock, wind);
-
-	/* Write success to clients reply pipe to unblock the process */
 	client->usr_evnt = 1;
 	Unblock(client, XA_OK, 8);
+
+	/* invalidate our data structures */
+	close_window(lock, wind);
+	/* delete on the next possible time */
+	delayed_delete_window(lock, wind);
 }
 
 void
@@ -1134,12 +1141,11 @@ exit_form_dial(enum locks lock, struct xa_window *wind, struct xa_widget *widg,
 
 	DIAG((D_form,client,"exit_form_dial: obno=%d", f));
 
-	/* HR 120201: Because we are out of the form_do any form_do()
+	/* Because we are out of the form_do any form_do()
 	 * handlers must be removed!
 	 */
 	remove_widget(lock, wind, XAW_TOOLBAR);
 
-	/* Write success to clients reply pipe to unblock the process */
 	client->usr_evnt = 1;
 	Unblock(client, XA_OK, 9);
 }
@@ -1382,7 +1388,6 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 /*
- * HR:
  * Small handler for ENTER/RETURN/UNDO on an alert box
  */
 static int
@@ -1412,19 +1417,20 @@ key_alert_widget(enum locks lock, struct xa_window *wind, struct widget_tree *wt
 	    && f <  ALERT_BUT1 + 3
 	    && !(alert_form[f].ob_flags & OF_HIDETREE))
 	{
-		/* HR 210501: Really must do this BEFORE unblocking!!! */
-		close_window(lock, wind);
-		delete_window(lock, wind);
-
 		if (wt->owner != C.Aes)
 		{
-			/* HR static pid array */
 			struct xa_client *client = wt->owner;
+
 			client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
-			/* Write success to clients reply pipe to unblock the process */
 			client->usr_evnt = 1;
+
 			Unblock(client, XA_OK, 11);
 		}
+
+		/* invalidate our data structures */
+		close_window(lock, wind);
+		/* delete on the next possible time */
+		delayed_delete_window(lock, wind);
 	}
 
 	/* Always discontinue */
