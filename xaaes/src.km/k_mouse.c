@@ -1083,11 +1083,25 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 /*
  * non-blocking and context free mouse input check
  */
+/*
+ * Ozk: check_mouse() may be called by processes not yet called
+ * appl_ini(). So, it must not depend on 'client' being valid!
+ */
 void
 check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 {
-	DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
-		mu_button.cb, x_mouse, y_mouse, client->name));
+#if GENERATE_DIAGS
+	if (client)
+	{
+		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for %s",
+			mu_button.cb, x_mouse, y_mouse, client->name));
+	}
+	else
+	{
+		DIAG((D_mouse, NULL, "check_mouse - return %d, %d.%d for non AES process (%d)",
+			mu_button.cb, x_mouse, y_mouse, p_getpid()));
+	}
+#endif
 
 	if (br)
 		*br = mu_button.cb;

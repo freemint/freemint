@@ -991,6 +991,10 @@ graf_mouse(int m_shape, MFORM *mf)
  * A non-top application can still hide & show the mouse though, to ensure that redraws
  * are done correctly
  */
+/*
+ * Ozk: XA_graf_mkstate() may be called by processes not yet called
+ * appl_ini(). So, it must not depend on client being valid!
+ */
 unsigned long
 XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1002,34 +1006,47 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
 		graf_mouse(m, NULL);
-		DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
+#if GENERATE_DIAGS
+		if (client)
+			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
+		else
+			DIAG((D_f,NULL,"mouse (non AES process (%d)) %s", p_getpid(), m == M_ON ? "on" : "off"));
+#endif
 	}
-	else if (m == M_SAVE)
+
+	/*
+	 * Ozk: For now we ignore modes other than M_OFF & M_ON
+	 * when process is not a valid AES process.
+	 */
+	if (client)
 	{
-		client->save_mouse      = client->mouse;
-		client->save_mouse_form = client->mouse_form;
-		DIAG((D_f,client,"M_SAVE; mouse_form %d", client->mouse));
-	}
-	else if (m == M_RESTORE)
-	{
-		graf_mouse(client->save_mouse, client->save_mouse_form);
-		DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
-		client->mouse       = client->save_mouse;
-		client->mouse_form  = client->save_mouse_form;
-	}
-	else if (m == M_PREVIOUS)
-	{
-		graf_mouse(C.mouse, C.mouse_form);
-		DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
-		client->mouse       = C.mouse;
-		client->mouse_form  = C.mouse_form;
-	}
-	else
-	{
-		graf_mouse(m, (MFORM*)pb->addrin[0]);
-		client->mouse = m;
-		client->mouse_form = (MFORM*)pb->addrin[0];	
-		DIAG((D_f,client,"mouse_form to %d", m));
+		if (m == M_SAVE)
+		{
+			client->save_mouse      = client->mouse;
+			client->save_mouse_form = client->mouse_form;
+			DIAG((D_f,client,"M_SAVE; mouse_form %d", client->mouse));
+		}
+		else if (m == M_RESTORE)
+		{
+			graf_mouse(client->save_mouse, client->save_mouse_form);
+			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
+			client->mouse       = client->save_mouse;
+			client->mouse_form  = client->save_mouse_form;
+		}
+		else if (m == M_PREVIOUS)
+		{
+			graf_mouse(C.mouse, C.mouse_form);
+			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
+			client->mouse       = C.mouse;
+			client->mouse_form  = C.mouse_form;
+		}
+		else
+		{
+			graf_mouse(m, (MFORM*)pb->addrin[0]);
+			client->mouse = m;
+			client->mouse_form = (MFORM*)pb->addrin[0];	
+			DIAG((D_f,client,"mouse_form to %d", m));
+		}
 	}
 
 	/* Always return no error */
@@ -1039,8 +1056,9 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 /*
- * Callable without a client structure
-*/
+ * Ozk: XA_graf_handle() may be called by processes not yet called
+ * appl_ini(). So, it must not depend on client being valid!
+ */
 unsigned long
 XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1063,6 +1081,11 @@ XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+
+/*
+ * Ozk: XA_graf_mkstate() may be called by processes not yet called
+ * appl_ini(). So, it must not depend on client being valid!
+ */
 unsigned long
 XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1071,8 +1094,17 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 	multi_intout(client, pb->intout, 0);
 	pb->intout[0] = 1;
 
-	DIAG((D_mouse,client,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
-		mu_button.x, mu_button.y, mu_button.b, mu_button.ks));
-
+#if GENERATE_DIAGS
+	if (client)
+	{
+		DIAG((D_mouse,client,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
+			mu_button.x, mu_button.y, mu_button.b, mu_button.ks));
+	}
+	else
+	{
+		DIAG((D_mouse,NULL,"_mkstate: %d/%d, b=0x%x, ks=0x%x",
+			mu_button.x, mu_button.y, mu_button.b, mu_button.ks));
+	}
+#endif
 	return XAC_DONE;
 }

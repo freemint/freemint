@@ -167,8 +167,8 @@ static struct xa_ftab aes_tab[220] =
 	/*  75 */ { XA_graf_watchbox,          false, true,  DESCR("graf_watchbox")   },
 	/*  76 */ { XA_graf_slidebox,          false, true,  DESCR("graf_slidebox")   },
 	/*  77 */ { XA_graf_handle,            false, false, DESCR("graf_hand")       },
-	/*  78 */ { XA_graf_mouse,             false, true,  DESCR("graf_mouse")      },
-	/*  79 */ { XA_graf_mkstate,           false, true,  DESCR("graf_mkstate")    },
+	/*  78 */ { XA_graf_mouse,             false, false, DESCR("graf_mouse")      },
+	/*  79 */ { XA_graf_mkstate,           false, false,  DESCR("graf_mkstate")    },
 
 	/*  80 */ { XA_scrp_read,              false, true,  DESCR("scrp_read")       },
 	/*  81 */ { XA_scrp_write,             false, true,  DESCR("scrp_write")      },
