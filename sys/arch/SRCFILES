@@ -25,7 +25,6 @@ SOBJS = \
 	sigreturn.S \
 	slb_util.S \
 	syscall.S \
-	vm5.S \
 	xhdi_emu.S
 
 SRCFILES = $(STARTUP) $(COBJS) $(SOBJS)
