@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _m68k_register_h
-# define _m68k_register_h
+# ifndef _mint_m68k_register_h
+# define _mint_m68k_register_h
 
 
 struct reg
@@ -51,4 +51,4 @@ struct fpreg
 };
 
 
-# endif /* _m68k_register_h */
+# endif /* _mint_m68k_register_h */

@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _m68k_ptrace_h
-# define _m68k_ptrace_h
+# ifndef _mint_m68k_ptrace_h
+# define _mint_m68k_ptrace_h
 
 
 # define PT_STEP	(PT_FIRSTMACH + 0)
@@ -42,4 +42,4 @@
 # define PT_SETFPREGS	(PT_FIRSTMACH + 4)
 
 
-# endif /* _m68k_ptrace_h */
+# endif /* _mint_m68k_ptrace_h */
