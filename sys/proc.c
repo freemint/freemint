@@ -26,6 +26,7 @@
 # include "arch/context.h"	/* save_context, change_context */
 # include "arch/kernel.h"
 # include "arch/mprot.h"
+# include "arch/startup.h"
 
 # include "bios.h"
 # include "dosfile.h"

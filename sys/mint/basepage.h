@@ -40,12 +40,4 @@ struct basep
 };
 
 
-# ifdef __KERNEL__
-
-/* pointer to our basepage, set by compiler startup code */
-extern	BASEPAGE	*_base;
-
-# endif /* __KERNEL__ */
-
-
 # endif /* _mint_basepage_h */
