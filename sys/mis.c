@@ -332,52 +332,52 @@ crunch(char *cmd, char **argv)
 			start = _mint_getenv(shell_base, start);
 			if (start)
 				argv[idx++] = start;
-
-			continue;
-		}
-
-		/* Check if there may be a quoted argument. A quoted argument will begin with
-		 * a quote and end with a quote. Quotes do not belong to the argument.
-		 * Everything between quotes is litterally taken as argument, without any
-		 * internal interpretation.
-		 */
-		if (*cmd == '\'')
-		{
-			cmd++;
-			endquote = cmd;
-
-			while (*endquote && *endquote != '\'')
-				endquote++;
-
-			if (!*endquote)
-				return -1;		/* unbalanced quotes, syntax error */
-		}
-
-		start = cmd;
-
-		if (endquote)
-		{
-			cmd = endquote;
-			endquote = NULL;
 		}
 		else
 		{
-			/* Search for the ending separator. In a non-quoted argument any space
-			 * is understood as a separator except when preceded by the backslash.
+			/* Check if there may be a quoted argument. A quoted argument will begin with
+			 * a quote and end with a quote. Quotes do not belong to the argument.
+			 * Everything between quotes is litterally taken as argument, without any
+			 * internal interpretation.
 			 */
-			while (*cmd && !isspace(*cmd))
+			if (*cmd == '\'')
 			{
-				special = (*cmd == '\\');
-				if (special && cmd[1])
-					strcpy(cmd, cmd + 1);	/* physically remove the backslash */
 				cmd++;
+				endquote = cmd;
+
+				while (*endquote && *endquote != '\'')
+					endquote++;
+
+				if (!*endquote)
+					return -1;		/* unbalanced quotes, syntax error */
 			}
+
+			start = cmd;
+
+			if (endquote == NULL)
+			{
+				/* Search for the ending separator. In a non-quoted argument any space
+				 * is understood as a separator except when preceded by the backslash.
+				 */
+				while (*cmd && !isspace(*cmd))
+				{
+					special = (*cmd == '\\');
+					if (special && cmd[1])
+						strcpy(cmd, cmd + 1);	/* physically remove the backslash */
+					cmd++;
+				}
+			}
+			else
+			{
+				cmd = endquote;
+				endquote = NULL;
+			}
+
+			if (*cmd)
+				*cmd++ = 0;
+
+			argv[idx++] = start;
 		}
-
-		if (*cmd)
-			*cmd++ = 0;
-
-		argv[idx++] = start;
 	}
 
 	argv[idx] = NULL;
@@ -394,7 +394,6 @@ execvp(char **argv)
 
 	/* Calculate the size of the environment */
 	var = shell_base->p_env;
-
 	count = env_size(var) + sizeof("ARGV=NULL:");
 
 	/* Add space for the ARGV strings.
@@ -432,10 +431,10 @@ execvp(char **argv)
 
 	/* Append new ARGV strings.
 	 *
-	 * First check if there are blank arguments.
+	 * First check if there are NULL arguments.
 	 */
 	for (x = 0; !blanks && argv[x]; x++)
-		blanks = (*argv[x] == 0);
+		blanks = (argv[x][0] == 0);
 
 	/* Now create the ARGV variable.
 	 */
@@ -446,7 +445,7 @@ execvp(char **argv)
 
 		for (x = 0; argv[x]; x++)
 		{
-			if (*argv[x] == 0)
+			if (argv[x][0] == 0)
 			{
 				ksprintf(new_var, 8, "%ld,", x);
 				new_var += strlen(new_var);
@@ -461,7 +460,7 @@ execvp(char **argv)
 	 */
 	for (x = 0; argv[x]; x++)
 	{
-		if (*argv[x] == 0)
+		if (argv[x][0] == 0)
 			new_var = env_append(new_var, " ");
 		else
 			new_var = env_append(new_var, argv[x]);
@@ -486,7 +485,7 @@ execvp(char **argv)
 	{
 		oldcmd[y++] = ' ';
 
-		if (*argv[x] == 0)
+		if (argv[x][0] == 0)
 			strncpy_f(oldcmd + y, "''", sizeof(oldcmd) - 2 - y);
 		else
 			strncpy_f(oldcmd + y, argv[x], sizeof(oldcmd) - 2 - y);
@@ -575,22 +574,33 @@ sh_ls(long argc, char **argv)
 	struct stat st;
 	struct timeval tv;
 	short year, month, day, hour, minute;
+	short i, all = 0, full = 0;
 	long x, r, s, handle;
 	char *dir, path[SHELL_MAXPATH], link[SHELL_MAXPATH];
 	char entry[256];
 
 	dir = ".";
 
-	/* Ignore options like -l for compatibility */
+	/* Accept options like --help, -a and -l */
 	for (x = 1; x < argc; x++)
 	{
-		if (*argv[x] == '-')
+		if (argv[x][0] == '-')
 		{
 			if (strcmp(argv[x], "--help") == 0)
 			{
 				shell_fprintf(STDOUT, MSG_shell_ls_help, argv[0]);
 
 				return 0;
+			}
+			else
+			{
+				for (i = 1; argv[x][i]; i++)
+				{
+					if (argv[x][i] == 'a')
+						all = 1;
+					else if (argv[x][i] == 'l')
+						full = 1;
+				}
 			}
 		}
 		else
@@ -622,106 +632,112 @@ sh_ls(long argc, char **argv)
 		r = Dreaddir(sizeof(entry), handle, entry);
 # endif
 
-		if (r == 0)
+		/* Display only names not starting with a dot, unless -a was specified */
+		if (r == 0 && (entry[sizeof(long)] != '.' || all))
 		{
-			strcpy(path, dir);
-			strcat(path, "/");
-			strcat(path, entry + sizeof(long));
-
-			/* `/bin/ls -l' doesn't dereference links, so we don't either */
-# ifdef _SHELL_THREAD
-			s = f_stat64(1, path, &st);
-# else
-			s = Fstat64(1, path, &st);
-# endif
-			if (s == 0)
+			s = -1;
+			if (full)
 			{
-				if (S_ISLNK(st.mode))
-				{
+				strcpy(path, dir);
+				strcat(path, "/");
+				strcat(path, entry + sizeof(long));
+
+				/* `/bin/ls -l' doesn't dereference links, so we don't either */
 # ifdef _SHELL_THREAD
-					s = f_readlink(sizeof(link), link, path);
+				s = f_stat64(1, path, &st);
 # else
-					s = Freadlink(sizeof(link), link, path);
+				s = Fstat64(1, path, &st);
 # endif
-					if (s == 0)
-						dos2unix(link);
+				if (s == 0)
+				{
+					if (S_ISLNK(st.mode))
+					{
+# ifdef _SHELL_THREAD
+						s = f_readlink(sizeof(link), link, path);
+# else
+						s = Freadlink(sizeof(link), link, path);
+# endif
+						if (s == 0)
+							dos2unix(link);
+					}
+
+					/* Reuse the path[] space for attributes */
+					strcpy(path, "?---------");
+
+					if (S_ISLNK(st.mode))		/* file type */
+						path[0] = 'l';
+					else if (S_ISMEM(st.mode))
+						path[0] = 'm';
+					else if (S_ISFIFO(st.mode))
+						path[0] = 'p';
+					else if (S_ISREG(st.mode))
+						path[0] = '-';
+					else if (S_ISBLK(st.mode))
+						path[0] = 'b';
+					else if (S_ISDIR(st.mode))
+						path[0] = 'd';
+					else if (S_ISCHR(st.mode))
+						path[0] = 'c';
+					else if (S_ISSOCK(st.mode))
+						path[0] = 's';
+
+					/* access attibutes: user */
+					if (st.mode & S_IRUSR)
+						path[1] = 'r';
+					if (st.mode & S_IWUSR)
+						path[2] = 'w';
+					if (st.mode & S_IXUSR)
+						path[3] = (st.mode & S_ISUID) ? 's' : 'x';
+
+					/* ... group */
+					if (st.mode & S_IRGRP)
+						path[4] = 'r';
+					if (st.mode & S_IWGRP)
+						path[5] = 'w';
+					if (st.mode & S_IXGRP)
+						path[6] = (st.mode & S_ISGID) ? 's' : 'x';
+
+					/* ... others */
+					if (st.mode & S_IROTH)
+						path[7] = 'r';
+					if (st.mode & S_IWOTH)
+						path[8] = 'w';
+					if (st.mode & S_IXOTH)
+						path[9] = (st.mode & S_ISVTX) ? 't' : 'x';
+
+					/* Now recalculate the time stamp */
+					unix2calendar(st.mtime.time, &year, &month, &day, &hour, &minute, NULL);
+
+					shell_fprintf(STDOUT, "%s %5d %8ld %8ld %8ld %s %2d ", \
+							path, (short)st.nlink, st.uid, st.gid, \
+							(long)st.size, months_abbr_3[month - 1], day);
+
+					/* Here we decide whether the timestamp displayed should
+					 * contain the year or the hour/minute of the modification.
+					 *
+					 * Basically everything that was modified 6 months ago or
+					 * earlier will have the year, more recent stuff will get
+					 * hour/minute. This is less or more what /bin/ls does.
+					 *
+					 * There can be up to 18 hours, 33 minutes and 45 seconds
+					 * of error relative to the calendar time, but for this purpose
+					 * it does not matter so much (and we avoid calling
+					 * unix2calendar again).
+					 */
+					if ((tv.tv_sec - st.mtime.time) > (SEC_OF_YEAR >> 1))
+						shell_fprintf(STDOUT, "%5d ", year);
+					else
+						shell_fprintf(STDOUT, "%02d:%02d ", hour, minute);
 				}
-
-				/* Now recalculate the time stamp */
-				unix2calendar(st.mtime.time, &year, &month, &day, &hour, &minute, NULL);
-
-				/* Reuse the path[] space for attributes */
-				strcpy(path, "?---------");
-
-				if (S_ISLNK(st.mode))		/* file type */
-					path[0] = 'l';
-				else if (S_ISMEM(st.mode))
-					path[0] = 'm';
-				else if (S_ISFIFO(st.mode))
-					path[0] = 'p';
-				else if (S_ISREG(st.mode))
-					path[0] = '-';
-				else if (S_ISBLK(st.mode))
-					path[0] = 'b';
-				else if (S_ISDIR(st.mode))
-					path[0] = 'd';
-				else if (S_ISCHR(st.mode))
-					path[0] = 'c';
-				else if (S_ISSOCK(st.mode))
-					path[0] = 's';
-
-				/* access attibutes: user */
-				if (st.mode & S_IRUSR)
-					path[1] = 'r';
-				if (st.mode & S_IWUSR)
-					path[2] = 'w';
-				if (st.mode & S_IXUSR)
-					path[3] = (st.mode & S_ISUID) ? 's' : 'x';
-
-				/* ... group */
-				if (st.mode & S_IRGRP)
-					path[4] = 'r';
-				if (st.mode & S_IWGRP)
-					path[5] = 'w';
-				if (st.mode & S_IXGRP)
-					path[6] = (st.mode & S_ISGID) ? 's' : 'x';
-
-				/* ... others */
-				if (st.mode & S_IROTH)
-					path[7] = 'r';
-				if (st.mode & S_IWOTH)
-					path[8] = 'w';
-				if (st.mode & S_IXOTH)
-					path[9] = (st.mode & S_ISVTX) ? 't' : 'x';
-
-				shell_fprintf(STDOUT, "%s %5d %8ld %8ld %8ld %s %2d ", \
-						path, (short)st.nlink, st.uid, st.gid, \
-						(long)st.size, months_abbr_3[month - 1], day);
-
-				/* Here we decide whether the timestamp displayed should
-				 * contain the year or the hour/minute of the modification.
-				 *
-				 * Basically everything that was modified 6 months ago or
-				 * earlier will have the year, more recent stuff will get
-				 * hour/minute. This is less or more what /bin/ls does.
-				 *
-				 * There can be up to 18 hours, 33 minutes and 45 seconds
-				 * of error relative to the calendar time, but for this purpose
-				 * it does not matter so much (and we avoid calling
-				 * unix2calendar again).
-				 */
-				if ((tv.tv_sec - st.mtime.time) > (SEC_OF_YEAR >> 1))
-					shell_fprintf(STDOUT, "%5d", year);
-				else
-					shell_fprintf(STDOUT, "%02d:%02d", hour, minute);
-
-				shell_fprintf(STDOUT, " %s", entry + sizeof(long));
-
-				if (S_ISLNK(st.mode) && s == 0)
-					shell_fprintf(STDOUT, " -> %s\r\n", link);
-				else
-					shell_print("\r\n");
 			}
+
+			shell_fprintf(STDOUT, "%s", entry + sizeof(long));
+
+			if (s == 0 && S_ISLNK(st.mode))
+				shell_fprintf(STDOUT, " -> %s\r\n", link);
+			else
+				shell_print("\r\n");
+
 		}
 	} while (r == 0);
 
@@ -946,15 +962,12 @@ sh_exit(long argc, char **argv)
 # endif
 
 	if (tolower(y & 0x00ff) == *MSG_init_menu_yes)
-	{
 # ifndef _SHELL_THREAD
-		/* Tell the parent to exit */
-		(void)Pkill(Pgetppid(), SIGTERM);
-		Pterm(0);
+		Shutdown(2);
 # else
-		kthread_exit(0);
+		s_hutdown(2);
 # endif
-	}
+
 	shell_print("\r\n");
 
 	return 0;
@@ -996,7 +1009,7 @@ sh_rm(long argc, char **argv)
 
 	for (x = 1; x < argc; x++)
 	{
-		if (*argv[x] == '-')
+		if (argv[x][0] == '-')
 		{
 			if (strcmp(argv[x], "--help") == 0)
 			{
@@ -1205,7 +1218,7 @@ execute(char *cmdline)
 INLINE char *
 prompt(uchar *buffer, long buflen)
 {
-	char *lbuff, cwd[1024];
+	char *lbuff, cwd[SHELL_MAXPATH];
 	short idx;
 
 	buffer[0] = LINELEN;
@@ -1344,7 +1357,7 @@ startup_shell(void)
 	{
 		DEBUG("can't create \"shell\" kernel thread");
 
-		return r;
+		return -1;
 	}
 
 	shell_base = _base;
