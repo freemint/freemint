@@ -101,7 +101,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	7
+#define KENTRY_MIN_VERSION	8
 
 
 /* hardware dependant vector
@@ -264,10 +264,15 @@ struct kentry_proc
 	struct proc *_cdecl (*get_curproc)(void);
 	struct proc *_cdecl (*pid2proc)(int pid);
 
-	/* */
+	/* proc extension management */
 	void *_cdecl (*lookup_extension)(struct proc *p, long ident);
 	void *_cdecl (*attach_extension)(struct proc *p, long ident, unsigned long size, struct module_callback *);
 	void  _cdecl (*detach_extension)(struct proc *p, long ident);
+
+	/* internal setuid/setgid/setlimit */
+	long _cdecl (*proc_setuid)(struct proc *p, unsigned int uid);
+	long _cdecl (*proc_setgid)(struct proc *p, unsigned int gid);
+	long _cdecl (*proc_setlimit)(struct proc *p, int i, long v);
 };
 #define DEFAULTS_kentry_proc \
 { \
@@ -299,6 +304,10 @@ struct kentry_proc
 	proc_lookup_extension, \
 	proc_attach_extension, \
 	proc_detach_extension, \
+	\
+	proc_setuid, \
+	proc_setgid, \
+	proc_setlimit, \
 }
 
 

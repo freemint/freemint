@@ -150,146 +150,50 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 		DIAGS(("ARGV: out of memory"));
 }
 
-#if 0
-static int
-xa_fork_exec(short x_mode, const struct xshelw *xsh, const char *fname, char *tail)
+#if GENERATE_DIAGS
+static void
+print_x_shell(short x_mode, struct xshelw *x_shell)
 {
-	struct xshelw x_shell = *xsh;
-	Path defdir, shelldir;
-	int defdrive = -1;
-	int child;
-	long oldmask;
+	if (x_mode & SW_PSETLIMIT)
+		/* memory limit */
+		DIAG((D_shel, NULL, "shel_write: x_mode SW_PSETLIMIT (%li)",
+			x_shell->psetlimit));
 
-#if GENERATE_DIAGS
-	{
-		char ppp[128];
+	if (x_mode & SW_PRENICE)
+		/* priority renice */
+		DIAG((D_shel, NULL, "shel_write: x_mode SW_PRENICE (%li)",
+			x_shell->prenice));
 
-		*ppp = 0;
-
-		if (x_mode & SW_PSETLIMIT)
-			/* Limit child's memory? */
-			strcat(ppp,"SW_PSETLIMIT,");
-		if (x_mode & SW_UID)
-			/* XaAES extension - set user id */
-			strcat(ppp, "SW_UID,");
-		if (x_mode & SW_GID)
-			/* XaAES extension - set group id */
-			strcat(ppp, "SW_GID,");
-		if (x_mode & SW_PRENICE)
-			/* Was the child spawned as 'nice'? */
-			strcat(ppp, "SW_PRENICE,");
-		if (x_mode & SW_ENVIRON)
-			strcat(ppp, "SW_ENVIRON");
-		if (x_mode & SW_DEFDIR)
-			/* Was the a default dir passed? */
-			strcat(ppp, "SW_DEFDIR");
-
-		DIAG((D_shel, NULL, "Extended shell_write bits: %s", ppp));
-
-		if (x_mode & SW_DEFDIR)
-			/* Was the a default dir passed? */
-			DIAG((D_shel, NULL, "def dir: '%s'", x_shell.defdir));
-	}
-
-	if ((x_mode & SW_ENVIRON))
-		display_env(&x_shell.env, 1);
-#endif
-
-	/* Make it local (for memory protection) */
 	if (x_mode & SW_DEFDIR)
-		strcpy(shelldir, x_shell.defdir);
-	else
-		*shelldir = 0;
+		/* explicit default dir */
+		DIAG((D_shel, NULL, "shel_write: x_mode SW_DEFDIR (%s)",
+			x_shell->defdir));
 
+	if (x_mode & SW_UID)
+		/* XaAES extension - set user id */
+		DIAG((D_shel, NULL, "shel_write: x_mode SW_UID (%i)",
+			x_shell->uid));
 
-	DIAG((D_shel, NULL, "Pexec(200) '%s', tail: %ld(%lx) %d '%s'",
-		fname, tail, tail, *tail, tail + 1));
-	DIAGS(("Normal Pexec"));
-#if GENERATE_DIAGS
-	display_env(strings, 1);
-#endif
+	if (x_mode & SW_GID)
+		/* XaAES extension - set group id */
+		DIAG((D_shel, NULL, "shel_write: x_mode SW_GID (%i)",
+			x_shell->gid));
 
-	/* block SIGCHLD until we setup our data structures */
-	oldmask = p_sigblock(1UL << SIGCHLD);
-
-	/* Fork off a new process */
-	child = p_vfork();
-	if (child == 0)
+	if (x_mode & SW_ENVIRON)
 	{
-		/* In child here */
-		long rep;
-
-		/* restore old sigmask */
-		p_sigsetmask(oldmask);
-
-#if GENERATE_DIAGS
-		{
-			Path havedir;
-			int drv;
-
-			DIAG((D_shel, NULL, "*****   in Fork for '%s' *****", fname));
-			drv = d_getdrv();
-			d_getpath(havedir, 0);
-			DIAG((D_shel, NULL, "havedir(0) '%s'", havedir));
-			d_getpath(havedir, drv + 1);
-			DIAG((D_shel, NULL, "havedir(%d) '%s'", drv, havedir));
-			DIAG((D_shel, NULL, "Parent = %d", p_getppid()));
-		}
-#endif
-
-		if (x_mode)
-		{
-			/* Limit child's memory? */
-			if (x_mode & SW_PSETLIMIT)
-				p_setlimit(2, x_shell.psetlimit);
-
-			/* XaAES extension - set user id */
-			if (x_mode & SW_UID)
-				p_setuid(x_shell.uid);
-
-			/* XaAES extension - set group id */
-			if (x_mode & SW_GID)
-				p_setgid(x_shell.gid);
-
-			/* Was the child spawned as 'nice'? */
-			if ((x_mode & SW_PRENICE) && x_shell.prenice)
-				p_nice(x_shell.prenice);
-
-			if ((x_mode & SW_DEFDIR) && *shelldir)
-			{
-				/* no name, set */
-				defdrive = drive_and_path(shelldir, defdir, NULL, false, true);
-
-				DIAG((D_shel, NULL, "x_mode drive: %d", defdrive));
-				DIAG((D_shel, NULL, "       path: '%s'", defdir));
-			}
-		}
-
-		/* It took me a few hours to realize that strings must be dereferenced,
-		 * to get to the original type of string (which I call a 'superstring'
-		 */
-
-		/* exec */
-		rep = p_exec(200, fname, tail,
-				(x_mode & SW_ENVIRON) ? x_shell.env : *strings);
-
-		DIAG((D_shel, NULL, "Pexec replied %ld(%lx)", rep, rep));
-
-		/* If we Pterm, we've failed to execute */
-		p_term(rep);
+		/* explicit environment */
+		char **env = &(x_shell->env);
+		DIAG((D_shel, NULL, "shel_write: x_mode SW_ENVIRON"));
+		display_env(env, 1);
 	}
-
-	/* restore old sigmask */
-	p_sigsetmask(oldmask);
-
-	return child;
 }
 #endif
 
 int
-launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, char *p_tail, struct xa_client *caller)
+launch(enum locks lock, short mode, short wisgr, short wiscr,
+       const char *parm, char *p_tail, struct xa_client *caller)
 {
-	char cmd[260];		/* 2 full paths */
+	char cmd[260]; /* 2 full paths */
 	char argvtail[4];
 	struct xshelw x_shell;
 	short x_mode, real_mode;
@@ -317,7 +221,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	}
 #endif
 
-
 	if (!parm)
 		return -1;
 
@@ -327,6 +230,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	if (x_mode)
 	{
 		x_shell = *(const struct xshelw *) parm;
+
+#if GENERATE_DIAGS
+		print_x_shell(x_mode, &x_shell);
+#endif
 
 		/* Do some checks before allocating anything. */
 		if (!x_shell.newcmd)
@@ -547,11 +454,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 				{
 					assert(p);
 
-					if (x_mode & SW_PRENICE)
-						p_renice(p->pid, x_shell.prenice);
-
-					DIAG((D_appl, 0, "Alloc client; APP %d", p->pid));
-
 					type = APP_APPLICATION;
 					ret = p->pid;
 				}
@@ -564,17 +466,18 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 			struct proc *curproc = get_curproc();
 			struct memregion *m;
 			struct basepage *b;
-			long size, p_rtn;
+			long size;
 
 			drv = drive_and_path(save_cmd, path, name, true, true);
 
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
-			p_rtn = create_process(cmd, *argvtail ? argvtail : tail, *strings, &p, 128);
-			if (p_rtn < 0)
+			ret = create_process(cmd, *argvtail ? argvtail : tail,
+					     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
+					     &p, 128);
+			if (ret < 0)
 			{
-				DIAG((D_shel, 0, "acc launch failed:error=%ld", p_rtn));
-				ret = p_rtn;
+				DIAG((D_shel, 0, "acc launch failed: error %i", ret));
 				break;
 			}
 			assert(p);
@@ -622,7 +525,29 @@ launch(enum locks lock, short mode, short wisgr, short wiscr, const char *parm, 
 	{
 		struct shel_info *info;
 
-		info = attach_extension(p, XAAES_MAGIC_SH, sizeof(*info), &xaaes_cb_vector_sh_info);
+		/*
+		 * post x_mode handling
+		 */
+
+		if (x_mode & SW_PSETLIMIT)
+			proc_setlimit(p, 2, x_shell.psetlimit);
+
+		if (x_mode & SW_PRENICE)
+			p_renice(p->pid, x_shell.prenice);
+
+		// XXX SW_DEFDIR
+
+		if (x_mode & SW_UID)
+			proc_setuid(p, x_shell.uid);
+
+		if (x_mode & SW_GID)
+			proc_setgid(p, x_shell.gid);
+
+		/*
+		 * remember shel_write info for appl_init
+		 */
+		info = attach_extension(p, XAAES_MAGIC_SH, sizeof(*info),
+					&xaaes_cb_vector_sh_info);
 		if (info)
 		{
 			info->type = type;
@@ -1024,7 +949,7 @@ display_env(char **env, int which)
 	{
 		if (which == 1)
 		{
-			char *e = *env;
+			const char *e = *env;
 			display("Environment as superstring:\n");
 			while (*e)
 			{

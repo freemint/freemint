@@ -46,10 +46,10 @@ typedef struct { short x, y, w, h; } RECT;
  */
 struct xshelw
 {
-	char *newcmd;
+	const char *newcmd;
 	long psetlimit;
 	long prenice;
-	char *defdir;
+	const char *defdir;
 	char *env;
 	short uid;			/* New child's UID */
 	short gid;			/* New child's GID */
