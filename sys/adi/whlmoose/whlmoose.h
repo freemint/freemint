@@ -32,6 +32,9 @@
 #ifndef _whlmoose_h
 #define _whlmoose_h
 
+#define MBS_RIGHT 1
+#define MBS_LEFT 2
+
 struct moose_data
 {
 	unsigned short l;	/* record length */
