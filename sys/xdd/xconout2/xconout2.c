@@ -195,6 +195,7 @@ init (struct kerinfo *k)
 		0,
 		0
 	};
+	long r;
 	
 	kernel = k;
 	
@@ -203,17 +204,18 @@ init (struct kerinfo *k)
 	
 	DEBUG (("%s: enter init", __FILE__));
 	
-	if (d_cntl (DEV_INSTALL, INSTALL, (long) &dev_descriptor) >= 0)
+	r = d_cntl (DEV_INSTALL, INSTALL, (long) &dev_descriptor);
+	if (r < 0)
 	{
-		oldxconout2 = NULL;
-		rsel = 0;
-		
-		DEBUG (("%s: init ok", __FILE__));
-		return (DEVDRV *) 1;
+		c_conws (MSG_FAILURE);
+		return NULL;
 	}
 	
-	c_conws (MSG_FAILURE);
-	return NULL;
+	oldxconout2 = NULL;
+	rsel = 0;
+	
+	DEBUG (("%s: init ok", __FILE__));
+	return (DEVDRV *) 1;
 }
 
 
