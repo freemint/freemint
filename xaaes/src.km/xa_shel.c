@@ -1204,3 +1204,110 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }
+
+unsigned long
+XA_shel_help(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	short sh_hmode;
+	char *tmp = NULL;
+
+	CONTROL(1,1,2)
+
+	pb->intout[0] = 0;
+
+	sh_hmode = pb->intin[0];
+	if (sh_hmode == 0)
+	{
+		struct helpserver *help = NULL;
+
+		const char *sh_hfile = (const char *)pb->addrin[0];
+		const char *sh_hkey = (const char *)pb->addrin[1];
+
+		const char *file;
+		const char *ext;
+
+		if (!sh_hfile) sh_hfile = "";
+		if (!sh_hkey) sh_hkey = "";
+
+		file = sh_hfile;
+
+		/* search end of string */
+		while (*file++)
+			;
+
+		/* search first path delimiter */
+		do {
+			file--;
+		}
+		while (file >= sh_hfile && *file != '\\' && *file != '/' && *file != ':');
+
+		/* filename starts here */
+		file++;
+
+		/* in case someone called without filename on path */
+		if (!*file)
+		{
+			DIAGS(("shel_help: wrong argument, no filename (%s)", sh_hfile));
+			goto out;
+		}
+
+		/* lookup extension */
+		ext = strrchr(file, '.');
+		if (!ext)
+		{
+			/* use first extension */
+
+			help = cfg.helpservers;
+			if (!help)
+			{
+				DIAGS(("shel_help: no helpservers configured"));
+				goto out;
+			}
+
+			tmp = kmalloc(strlen(sh_hfile) + strlen(help->ext) + 2);
+			if (!tmp)
+			{
+				DIAGS(("shel_help: out of memory"));
+				goto out;
+			}
+
+			strcpy(tmp, sh_hfile);
+			strcat(tmp, ".");
+			strcat(tmp, help->ext);
+
+			sh_hfile = tmp;
+		}
+		else
+			ext++;
+
+		if (!help)
+		{
+			/* search for registered extension */
+
+			help = cfg.helpservers;
+			while (help)
+			{
+				if (stricmp(ext, help->ext) == 0)
+					break;
+
+				help = help->next;
+			}
+		}
+
+		if (help)
+		{
+			// check if helpserver is running
+			// if not running start helpserver, argv with sh_hfile/sh_hkey
+			// if running send VA_START with sh_hfile/sh_hkey
+		}
+		else
+		{
+			DIAGS(("shel_help: no helpserver for '%s' found!", sh_hfile));
+		}
+	}
+
+out:
+	if (tmp) kfree(tmp);
+
+	return XAC_DONE;
+}
