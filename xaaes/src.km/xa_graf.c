@@ -248,6 +248,15 @@ rubber_box(struct xa_client *client, COMPASS cp,
 	new_box(&r, NULL);
 
 	S.wm_count++;
+	check_mouse(client, &mb, &x, &y);
+	while (mb)
+	{
+		r = widen_rectangle(cp, x, y, r, dist);
+		check_wh_cp(&r, cp, minw, minh, maxw, maxh);
+		new_box(&r, &old);
+		wait_mouse(client, &mb, &x, &y);
+	}
+#if 0
 	do {
 		wait_mouse(client, &mb, &x, &y);
 
@@ -256,8 +265,8 @@ rubber_box(struct xa_client *client, COMPASS cp,
 		new_box(&r, &old);
 	}
 	while(mb);
+#endif
 	S.wm_count--;
-	
 	new_box(&r, NULL);
 	wr_mode(MD_TRANS);
 
@@ -279,6 +288,15 @@ drag_box(struct xa_client *client, RECT r,
 	new_box(&r, NULL);
 
 	S.wm_count++;
+	check_mouse(client, &mb, &x, &y);
+	while (mb)
+	{
+		r = move_rectangle(x, y, r, dist);
+		keep_inside(&r, bound);
+		new_box(&r, &old);
+		wait_mouse(client, &mb, &x, &y);
+	}
+#if 0
 	do
 	{
 		wait_mouse(client, &mb, &x, &y);
@@ -288,6 +306,7 @@ drag_box(struct xa_client *client, RECT r,
 		new_box(&r, &old);
 	}
 	while (mb);
+#endif
 	S.wm_count--;
 
 	new_box(&r,NULL);

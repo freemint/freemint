@@ -608,7 +608,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			DIAG((D_rsrc, client, "LoadResources(): file not found"));
 			return NULL;
 		}
+		
 		fsize = x.size;
+		
 		if (client == C.Aes)
 			base = kmalloc(fsize + sizeof(RSXHDR));
 		else
@@ -619,10 +621,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (size != fsize)
 		{
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-			if (client == C.Aes)
-				kfree(base);
-			else
-				ufree(base);
+			if (client == C.Aes)	kfree(base);
+			else			ufree(base);
 			return NULL;
 		}
 
@@ -646,10 +646,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			client->rsct--;
 
-			if (client == C.Aes)
-				kfree(base);
-			else
-				ufree(base);
+			if (client == C.Aes)	kfree(base);
+			else			ufree(base);
 		}
 	}
 	else
