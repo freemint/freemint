@@ -549,6 +549,25 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		struct shel_info *info;
 
 		/*
+		 * reparent child
+		 * 
+		 * This is very, very ugly; we are forced todo so because all
+		 * other AES implementations for FreeMiNT (and the old XaAES)
+		 * use something like an server that handle most of the
+		 * AES syscalls. As the server is a seperate process from
+		 * the view of the FreeMiNT kernel newly created processes
+		 * have this server process as parent and not the caller of
+		 * shel_write(). That's why most AES programs don't handle
+		 * this correctly, e.g. not calling Pwaitpid() and zombies
+		 * appear (or is there something in AES I oversee here?).
+		 * 
+		 * TODO: add XaAES extension that don't do this.
+		 */
+
+		p->ppid = C.Aes->p->pid;
+
+
+		/*
 		 * post x_mode handling
 		 */
 
