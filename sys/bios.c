@@ -1266,9 +1266,9 @@ bcostat(int dev)
  * switch occurs.
  */
 
-short bconbsiz;		/* number of characters in buffer */
 char bconbuf[256];	/* buffer contents */
-short bconbdev;		/* BIOS device for which the buffer is valid */
+short bconbsiz = 0;	/* number of characters in buffer */
+short bconbdev = -1;	/* BIOS device for which the buffer is valid */
 			/* (-1 means no buffering is active) */
 
 /* flush pending BIOS output. Return 0 if some bytes were not successfully
