@@ -219,8 +219,8 @@ static struct xa_ftab aes_tab[220] =
 	/* 123 */ { NULL,                      false, DESCR("shell_put")       }, // unimplemented
 	/* 124 */ { XA_shell_find,             false, DESCR("shell_find")      },
 	/* 125 */ { XA_shell_envrn,            false, DESCR("shell_envrn")     },
-	/* 126 */ { NULL,                      false, DESCR(NULL)              },
-	/* 127 */ { NULL,                      false, DESCR(NULL)              },
+	/* 126 */ { NULL,                      false, DESCR("shell_rdef")      }, // unimplemented
+	/* 127 */ { NULL,                      false, DESCR("shell_wdef")      }, // unimplemented
 	/* 128 */ { NULL,                      false, DESCR(NULL)              },
 	/* 129 */ { XA_appl_control,           false, DESCR("appl_control")    },
 
