@@ -32,10 +32,8 @@ IKBDTODO	=	IKBDSTATE+1
 
 	.text
 
-	.globl	_syskey
-	.globl	_new_acia
-	.globl	_old_acia
-	.globl	_keyrec
+	.globl	_syskey,_keyrec
+	.globl	_old_acia,_new_acia
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
@@ -94,6 +92,7 @@ skip:	btst	#0x05,d1		// Receiver overrun
 	jmp	(a1)			// error
 
 no_error:
+	clr.l	d0
 	move.b	(0xfc02).w,d0		// ACIA data
 	tst.b	IKBDSTATE(a3)
 	bne.s	mid_multiple
@@ -104,7 +103,6 @@ no_error:
 
 not_keyboard:
 	sub.b	#0xf6,d0
-	and.w	#0x00ff,d0
 
 // unlike some documentation states, syskey->ikbdstate contains
 // the type of the packet, and not the number of bytes transmitted.
@@ -147,14 +145,10 @@ nostk:	lea	buffers,a2
 
 	subq.w	#1,d2
 
-#ifdef ONLY030
-	mulu.w	#12,d2
-#else
 	move.w	d2,d3
 	lsl.w	#3,d2			// multiply by 8
 	lsl.w	#2,d3			// multiply by 4
 	add.w	d3,d2			// multiply by 12
-#endif
 
 	move.l	(a2,d2.w),a0		// get buffer address for packet
 	move.l	4(a2,d2.w),a1		// get buffer end for packet
