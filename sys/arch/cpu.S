@@ -344,8 +344,10 @@ s61:	addq.l	#0x02,a0
 
 _cpush:
 #ifndef NO_CPU_CACHES
-	movem.l	4(sp),d0/a0		// get parameters
-	exg	a0,d0			// and in the right order
+	move.l	4(sp),a0
+	move.l	8(sp),d0
+//	movem.l	4(sp),d0/a0		// get parameters
+//	exg	a0,d0			// and in the right order
 	nop				// flush pipelines
 	move.l	_cachevec,a1
 	jmp	(a1)
@@ -377,17 +379,23 @@ _cache000:				// 68000 cache (i.e. no cache)
 #endif
 	rts
 
+// Ozk: I think we'll have to check this code, as on my Milan040
+//	cpush(addr, size) dont work as expected. Gotta check this
+//	later. For now, "cpusha bc" is done on every cpush() call
+
 #ifndef NO_CPU_CACHES
-_cache040:				// 68040 cache
+_cache040:
+#ifdef never				// 68040 cache
 	addq.l	#1,d0			// if was -1
 	beq.s	abc040			// then flush everything
 	add.l	#14,d0			// round up to line boundary
 	lsr.l	#4,d0			// convert to number of lines
 	cmp.l	#256,d0
 	bcs.s	fls040			// not too many lines, so dump only some
+#endif
 abc040:	dc.w	0xF4F8			// this is "cpusha bc" if your asm knows '040
 	rts
-
+#ifdef never
 fls040:
 // run through d0+1 times (since a0 may not be on a line boundary)
 	moveq	#16,d1
@@ -409,7 +417,7 @@ do040:
 	add.w	d1,a0
 	dbf	d0,do040
 	rts
-
+#endif
 _cache060:				// 68060 cache (double the 040)
 #ifdef never
 	addq.l	#1,d0			// if was -1
