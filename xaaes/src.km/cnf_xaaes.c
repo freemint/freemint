@@ -95,7 +95,7 @@ static struct parser_item parser_tab[] =
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap},
 	{ "VIDEO",	           PI_R_S,   & cfg.videomode		},
-	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(10, 32000)	},
+	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(0, 32000)	},
 	
 	/* config settings */
 	{ "SETENV",                PI_C_TT,  pCB_setenv		},
