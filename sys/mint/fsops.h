@@ -262,8 +262,12 @@ struct tty
 # define BIOSDRV		(NUM_DRIVES)
 # define PIPEDRV		(BIOSDRV + 1)
 # define PROCDRV		(PIPEDRV + 1)
+# ifndef NO_RAMFS
 # define RAM_DRV		(PROCDRV + 1)
 # define SHM_DRV		(RAM_DRV + 1)
+# else
+# define SHM_DRV		(PROCDRV + 1)
+# endif
 # define KERNDRV		(SHM_DRV + WITH_KERNFS)
 # define UNI_NUM_DRVS		(KERNDRV + 1)
 
