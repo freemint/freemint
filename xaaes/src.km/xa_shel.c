@@ -806,7 +806,9 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			case 9:
 			{
 				if (client)
-					client->apterm = (wisgr & 1) != 0;
+				{
+					client->swm_newmsg |= wisgr; //client->apterm = (wisgr & 1) != 0;
+				}
 				pb->intout[0] = 1;
 				break;
 			}

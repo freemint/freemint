@@ -421,6 +421,7 @@ typedef  struct
 
 /* shel_write: mode SWM_NEWMSG, parameter 'wisgr' */
 #define NM_APTERM		0x0001
+#define NM_INHIBIT_HIDE		0x0002
 
 /* Werte fr Modus SWM_AESMSG (fr shel_write) */
 #define AP_AESTERM		52     /* Mode 10: N.AES komplett terminieren. */

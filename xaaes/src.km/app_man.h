@@ -44,6 +44,7 @@ void hide_app(enum locks lock, struct xa_client *client);
 void unhide_app(enum locks lock, struct xa_client *client);
 void hide_other(enum locks lock, struct xa_client *client);
 void unhide_all(enum locks lock, struct xa_client *client);
+void set_unhidden(enum locks lock, struct xa_client *client);
 void recover(void);
 
 XA_TREE *find_menu_bar(enum locks lock);
@@ -53,7 +54,7 @@ bool wind_has_focus(struct xa_window *wind);
 struct xa_client *find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind);
 
 //bool app_is_hidable(struct xa_client *client);
-bool any_hidden(enum locks lock, struct xa_client *client);
+bool any_hidden(enum locks lock, struct xa_client *client, struct xa_window *exclude);
 bool taskbar(struct xa_client *client);
 
 #endif /* _app_man_h */
