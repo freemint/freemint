@@ -287,7 +287,7 @@ clean_out:
 
 	return XAC_DONE;
 }
-
+#if 0
 static void
 remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 {
@@ -310,6 +310,7 @@ remove_wind_refs(struct xa_window *wl, struct xa_client *client)
 		wl = wl->next;
 	}
 }
+#endif
 /*
  * close and free all client resources
  * 

@@ -57,7 +57,7 @@ struct xa_window *root_w(enum locks lock);
 bool	close_window(enum locks lock, struct xa_window *wind);
 int	open_window(enum locks lock, struct xa_window *w, RECT r);
 void	send_wind_to_bottom(enum locks lock, struct xa_window *w);
-void	move_window(enum locks lock, struct xa_window *wind, short newstate, short x, short y, short w, short h);
+void	move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, short x, short y, short w, short h);
 void	delete_window(enum locks lock, struct xa_window *wind);
 void	delayed_delete_window(enum locks lock, struct xa_window *wind);
 void	do_delayed_delete_window(enum locks lock);
