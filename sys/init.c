@@ -71,6 +71,7 @@ static int	check_for_gem (void);
 static void	run_auto_prgs (void);
 static int	boot_kernel_p (void);
 
+unsigned long bogomips[2];	/* Calculated BogoMIPS units and fraction */
 
 /* print a additional boot message
  */
@@ -1100,9 +1101,12 @@ init (void)
 	/* Round the value and print it */
 	{
 		char buf[128];
+
+		bogomips[0] = (loops_per_sec + 2500) / 500000;
+		bogomips[1] = ((loops_per_sec + 2500) / 5000) % 100;
+
 		ksprintf (buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
-			(loops_per_sec + 2500) / 500000,
-			((loops_per_sec + 2500) / 5000) % 100);
+			bogomips[0], bogomips[1]);
 		c_conws (buf);
 	}
 	
