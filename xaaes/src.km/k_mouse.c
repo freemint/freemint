@@ -145,6 +145,7 @@ unbuffer_moose_pkt(struct moose_data *md)
 static void
 check_and_buffer_if_fake(struct moose_data *md)
 {
+#if 0
 	if (md->ty == MOOSE_BUTTON_PREFIX && md->state && !md->cstate)
 	{
 		struct moose_data m;
@@ -153,6 +154,7 @@ check_and_buffer_if_fake(struct moose_data *md)
 		m.state = m.cstate = m.clicks = 0;
 		buffer_moose_pkt(&m);
 	}
+#endif
 }
 
 /*
@@ -317,60 +319,6 @@ do_fmd(enum locks lock, struct xa_client *client, const struct moose_data *md)
 }
 #endif
 
-static void
-post_cevent(struct xa_client *client,
-	void (*func)(enum locks, struct c_event *),
-	void *ptr1, void *ptr2,
-	int d0, int d1, RECT *r,
-	const struct moose_data *md)
-{
-	int h = client->ce_head;
-
-	/*
-	 * Ozk: Some different tests I did before re-learning
-	 * about screen/mouse lock (see semaphore.c).
-	 * Things here needs going-over, dont have time right now.
-	*/
-	if (client != C.Aes)
-	{
-		if (!client->inblock)
-		{
-			DIAGS(("Client %s not in AES", client->name));
-			return;
-		}
-		if ( ((h + 1) & MAX_CEVENTS) == client->ce_tail)
-		{
-			DIAGS(("CLIENT (%s) EVENT MESSAGE QUEUE FULL!!", client->name));
-			Unblock(client, 1, 5001);
-			return;
-		}
-	}
-
-	client->ce[h].funct = func;
-	client->ce[h].client = client;
-	client->ce[h].ptr1 = ptr1;
-	client->ce[h].ptr2 = ptr2;
-	client->ce[h].d0 = d0;
-	client->ce[h].d1 = d1;
-	if (r)
-		client->ce[h].r = *r;
-	if (md)
-		client->ce[h].md = *md;
-
-	h++;
-	DIAG((D_mouse, client, "added cevnt at %d, nxt %d (tail %d) for %s", client->ce_head, h, client->ce_tail, client->name));
-	client->ce_head = h & MAX_CEVENTS;
-
-	if (client != C.Aes)
-	{
-		if (!C.buffer_moose && client->inblock)
-			C.buffer_moose = client;
-		Unblock(client, 1, 5000);
-	}
-	else
-		dispatch_cevent(client);
-}
-
 /*
  * at the moment widgets is always true.
  */
@@ -393,10 +341,16 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		return;
 	}
 
-	locker = mouse_locked();
-	if (!locker)
-		locker = update_locked();
-	if (locker && md->state)
+	if ( (locker = mouse_locked()) )
+	{
+		if (locker->fmd.lock && locker->fmd.mousepress)
+		{
+			DIAG((D_mouse, locker, "post form do to %s", locker->name));
+			post_cevent(locker, cXA_form_do, 0, 0, 0, 0, 0, md);
+			return;
+		}
+	}
+	if ( (locker = update_locked()) )
 	{
 		if (locker->fmd.lock && locker->fmd.mousepress)
 		{
@@ -406,7 +360,9 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 	}
 
+
 	wind = find_window(lock, md->x, md->y);
+
 	if (wind)
 	{
 		client = wind == root_window ? get_desktop()->owner : wind->owner;
@@ -443,9 +399,12 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	 */
 	if (widget_active.widg)
 	{
+		widget_active.m = *md;
+#if 0
 		widget_active.nx = md->x;
 		widget_active.ny = md->y;
 		widget_active.cb = md->state;
+#endif
 		client = widget_active.wind->owner;
 		DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
 		post_cevent(client, cXA_active_widget, 0,0, 0,0, 0, md);
@@ -755,7 +714,7 @@ new_mu_mouse(struct moose_data *md)
 	mu_button.x = x_mouse	= md->x;
 	mu_button.y = y_mouse	= md->y;
 	mu_button.clicks 	= md->clicks;
-	vq_key_s(C.vh, &mu_button.ks);
+	mu_button.ks		= md->kstate;
 	mu_button.got		= false;
 
 	/*
@@ -769,11 +728,15 @@ new_mu_mouse(struct moose_data *md)
 static void
 new_active_widget_mouse(struct moose_data *md)
 {
+	widget_active.m	= *md;
+#if 0
 	widget_active.b		= md->state;
 	widget_active.cb	= md->cstate;
 	widget_active.nx	= md->x;
 	widget_active.ny	= md->y;
 	widget_active.clicks	= md->clicks;
+	widget_active.ks	= md->kstate;
+#endif
 }
 
 /*
@@ -799,10 +762,10 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *imd)
 		if (md->ty == MOOSE_BUTTON_PREFIX)
 		{
 			new_mu_mouse(md);
-			data[0] = md->state;
+			data[0] = md->cstate;
 		}
 		else
-			data[0] = mu_button.b;
+			data[0] = md->cstate; //mu_button.cb;
 			
 		data[1] = md->x;
 		data[2] = md->y;
@@ -855,6 +818,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *imd)
 		/* Call the mouse movement event handler (doesnt use md->state) */
 		x_mouse = md->x;
 		y_mouse = md->y;
+		new_active_widget_mouse(md);
 		XA_move_event(lock, md);
 
 		break;
@@ -922,6 +886,7 @@ mouse_input(enum locks lock, int internal)
 	n = f_read(C.MOUSE_dev, sizeof(md), &md);
 	if (n == sizeof(md))
 	{
+		vq_key_s(C.vh, &md.kstate);
 		return new_moose_pkt(lock, internal, &md);
 	}
 
@@ -956,7 +921,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			if (md.ty == MOOSE_BUTTON_PREFIX)
 				new_mu_mouse(&md);
 
-			data[0] = mu_button.b;			
+			data[0] = mu_button.cb;
 			data[1] = md.x;
 			data[2] = md.y;
 		}
@@ -990,7 +955,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 			if (md.ty == MOOSE_BUTTON_PREFIX)
 				new_mu_mouse(&md);
 
-			data[0] = mu_button.b;			
+			data[0] = mu_button.cb;			
 			data[1] = md.x;
 			data[2] = md.y;
 		}
@@ -1098,7 +1063,7 @@ check_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		mu_button.b, x_mouse, y_mouse, client->name));
 
 	if (br)
-		*br = mu_button.b;
+		*br = mu_button.cb;
 	if (xr)
 		*xr = x_mouse;
 	if (yr)
