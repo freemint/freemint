@@ -94,7 +94,12 @@ _do_malloc(MMAP map, long size, int mode)
 		}
 		
 		/* make sure to round down */
-		return maxsize & ~MASKBITS;
+		maxsize &= ~MASKBITS;
+		maxsize -= (MASKBITS + 1);
+		if (maxsize < 0)
+			maxsize = 0;
+		
+		return maxsize;
 	}
 
 	/* special case: Malloc(0) should always return NULL */
