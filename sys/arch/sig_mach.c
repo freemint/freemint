@@ -45,9 +45,7 @@ struct sigcontext
 int
 sendsig (ushort sig)
 {
-# if 1
 	struct sigaction *sigact = & SIGACTION (curproc, sig);
-# endif
 	
 	long oldstack, newstack;
 	long *stack;
@@ -152,7 +150,7 @@ sendsig (ushort sig)
 		call->ssp = ((long) stack);
 	else
 		call->usp = ((long) stack);
-# if 1
+	
 	call->pc = sigact->sa_handler;
 	/* don't restart FPU communication */
 	call->sfmt = call->fstate[0] = 0;
@@ -162,17 +160,6 @@ sendsig (ushort sig)
 		sigact->sa_handler = SIG_DFL;
 		sigact->sa_flags &= ~SA_RESET;
 	}
-# else
-	call->pc = (long) curproc->sighandle[sig];
-	/* don't restart FPU communication */
-	call->sfmt = call->fstate[0] = 0;
-	
-	if (curproc->sigflags[sig] & SA_RESET)
-	{
-		curproc->sighandle[sig] = SIG_DFL;
-		curproc->sigflags[sig] &= ~SA_RESET;
-	}
-# endif
 	
 	if (save_context (&newcurrent) == 0)
 	{
@@ -599,7 +586,6 @@ exception (ushort sig)
 	DEBUG (("exception #%d raised [pc %lx, proc pc %lx]", sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
 	SIGACTION(curproc, sig).sa_flags |= SA_RESET;
-//	curproc->sigflags[sig] |= SA_RESET;
 	raise (sig);
 }
 
@@ -611,13 +597,8 @@ sigbus (void)
 	
 	DEBUG (("sigbus [pc %lx, proc pc %lx]", curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
-# if 1
 	if (SIGACTION(curproc, SIGBUS).sa_handler == SIG_DFL)
 		report_buserr ();
-# else
-	if (curproc->sighandle[SIGBUS] == SIG_DFL)
-		report_buserr ();
-# endif
 	
 	exception (SIGBUS);
 }

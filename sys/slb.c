@@ -370,7 +370,6 @@ slb_error:
 		return(r);
 	}
 
-# if 1
 	/* Wait for the init routine to finish */
 	
 	assert (curproc->p_sigacts);
@@ -386,17 +385,6 @@ slb_error:
 	
 	SIGACTION(curproc, SIGINT).sa_handler = oldsigint;
 	SIGACTION(curproc, SIGQUIT).sa_handler = oldsigquit;
-# else
-	/* Wait for the init routine to finish */
-	oldsigint = curproc->sighandle[SIGINT];
-	oldsigquit = curproc->sighandle[SIGQUIT];
-	curproc->sighandle[SIGINT] =
-		 curproc->sighandle[SIGQUIT] = SIG_IGN;
-	newpid = (int)r;
-	r = sys_pwaitpid(newpid, 2, (long *)0);
-	curproc->sighandle[SIGINT] = oldsigint;
-	curproc->sighandle[SIGQUIT] = oldsigquit;
-# endif
 	
 	if (r < 0)
 	{

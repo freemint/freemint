@@ -103,7 +103,6 @@ p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
 	if (act && (sig == SIGKILL || sig == SIGSTOP))
 		return EACCES;
 	
-# if 1
 	if (oact)
 	{
 		*oact = SIGACTION(p, sig);
@@ -133,37 +132,6 @@ p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
 		/* I dunno if this is right, but bash seems to expect it */
 		p->p_sigmask &= ~(1L << sig);
 	}
-# else
-	if (oact)
-	{
-		oact->sa_handler = curproc->sighandle[sig];
-		oact->sa_mask = curproc->sigextra[sig];
-		oact->sa_flags = curproc->sigflags[sig] & SAUSER;
-	}
-	
-	if (act)
-	{
-		ushort flags;
-
-		curproc->sighandle[sig] = act->sa_handler;
-		curproc->sigextra[sig] = act->sa_mask & ~UNMASKABLE;
-
-		/* only the flags in SAUSER can be changed by the user */
-		flags = curproc->sigflags[sig] & ~SAUSER;
-		flags |= act->sa_flags & SAUSER;
-		curproc->sigflags[sig] = flags;
- 
-		/* various special things that should happen */
-		if (act->sa_handler == SIG_IGN)
-		{
-			/* discard pending signals */
-			curproc->sigpending &= ~(1L << sig);
-		}
-
-		/* I dunno if this is right, but bash seems to expect it */
- 		curproc->p_sigmask &= ~(1L << sig);
-	}
-# endif
 	
 	return E_OK;
 }
@@ -174,7 +142,6 @@ p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
 long _cdecl
 p_signal (short sig, long handler)
 {
-# if 1
 	PROC *p = curproc;
 	struct sigaction *sigact;
 	long ret;
@@ -217,33 +184,6 @@ p_signal (short sig, long handler)
 out:
 	TRACE (("Psignal() ok (%li)", ret));
 	return ret;
-# else
-	long oldhandle;
-
-	TRACE (("Psignal(%d, %lx)", sig, handler));
-	
-	if (sig < 1 || sig >= NSIG)
-		return EBADARG;
-	if (sig == SIGKILL || sig == SIGSTOP)
-		return EACCES;
-	
-	oldhandle = curproc->sighandle[sig];
-	curproc->sighandle[sig] = handler;
-	curproc->sigextra[sig] = 0;
-	curproc->sigflags[sig] = 0;
-	
-	/* various special things that should happen */
-	if (handler == SIG_IGN)
-	{
-		/* discard pending signals */
-		curproc->sigpending &= ~(1L<<sig);
-	}
-
-	/* I dunno if this is right, but bash seems to expect it */
-	curproc->p_sigmask &= ~(1L<<sig);
-
-	return oldhandle;
-# endif
 }
 
 /*
